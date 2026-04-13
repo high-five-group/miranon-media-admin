@@ -1,0 +1,10 @@
+/*
+ * Komponent-tokens — lager 3 i designsystemet.
+ *
+ * Fylls på när respektive komponent byggs (Fas 3+).
+ * Regel: Komponent-tokens refererar SEMANTISKA tokens (--mm-*),
+ * aldrig primitiva (--p-*) direkt.
+ *
+ * Se DESIGN-SYSTEM-SPEC §1 "Komponent-tokens" för exempel
+ * (StatCard, DataTable, AppMenu).
+ */

@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "pre-commit": [
+      {
+        "command": "cd ~/Repon/miranon-media-admin && npx @biomejs/biome check . && npx tsc --noEmit",
+        "description": "[GA] Lint + typcheck innan commit"
+      }
+    ]
+  }
+}

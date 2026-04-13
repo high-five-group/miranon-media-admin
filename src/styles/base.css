@@ -1,0 +1,77 @@
+/* ══════════════════════════════════════════
+   base.css — reset, fokusregel, typografi-defaults
+   Importerar alla token-lager + Google Fonts Inter (variabel)
+   ══════════════════════════════════════════ */
+
+@import "./tokens/primitives.css";
+@import "./tokens/semantic.css";
+@import "./tokens/components.css";
+
+/* Google Fonts — Inter variabel font (opsz 14-32, wght 300-700) */
+@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&display=swap");
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--p-font-sans);
+  font-size: var(--p-text-base);
+  line-height: var(--p-leading-normal);
+  color: var(--mm-text);
+  background: var(--mm-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Global fokusregel — portad från Vue-projektet (session 26).
+   Skiljer mellan mus-fokus (dölj) och tangentbords-fokus (synlig ring).
+   Fokusringen använder --mm-focus-ring (#1B4965) — exklusiv färg. */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: var(--mm-focus-ring-width) solid var(--mm-focus-ring);
+  outline-offset: var(--mm-focus-ring-offset);
+  border-radius: 2px;
+}
+
+/* Rubriker: aktivera Inter Display-variant via opsz-axel.
+   Se marcus-system DESIGN-FOUNDATION-v1. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--p-font-sans);
+  font-variation-settings: "opsz" 32;
+  margin: 0;
+  color: var(--mm-text);
+}
+
+p {
+  margin: 0;
+}
+
+/* Respektera prefers-reduced-motion globalt. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

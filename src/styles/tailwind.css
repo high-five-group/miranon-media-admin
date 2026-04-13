@@ -1,0 +1,109 @@
+/* src/styles/tailwind.css */
+@import "tailwindcss";
+
+/* ══════════════════════════════════════════
+   Miranon Media Admin — Tailwind v4 @theme
+   Ersätter tailwind.config.ts (CSS-first)
+   Alla värden refererar semantiska tokens från semantic.css
+   ══════════════════════════════════════════ */
+
+@theme {
+  /* ── Nollställ defaults — vi äger hela paletten ── */
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+
+  /* ── Färger (--color-* → bg-*, text-*, border-*, ring-*) ── */
+
+  /* Systemfärger */
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Primär */
+  --color-primary: var(--mm-primary);
+  --color-primary-hover: var(--mm-primary-hover);
+  --color-primary-tint: var(--mm-primary-tint);
+  --color-primary-pale: var(--mm-primary-pale);
+  --color-primary-muted: var(--mm-primary-muted);
+
+  /* Accent (CTA / handling) */
+  --color-accent: var(--mm-accent);
+  --color-accent-hover: var(--mm-accent-hover);
+  --color-accent-tint: var(--mm-accent-tint);
+
+  /* Text */
+  --color-text: var(--mm-text);
+  --color-text-secondary: var(--mm-text-secondary);
+  --color-text-muted: var(--mm-text-muted);
+  --color-text-inverse: var(--mm-text-inverse);
+
+  /* Bakgrund */
+  --color-bg: var(--mm-bg);
+  --color-bg-subtle: var(--mm-bg-subtle);
+  --color-bg-muted: var(--mm-bg-muted);
+
+  /* Ytor */
+  --color-surface: var(--mm-surface);
+  --color-surface-raised: var(--mm-surface-raised);
+  --color-surface-overlay: var(--mm-surface-overlay);
+
+  /* Borders */
+  --color-border: var(--mm-border);
+  --color-border-light: var(--mm-border-light);
+  --color-border-strong: var(--mm-border-strong);
+  --color-border-focus: var(--mm-border-focus);
+
+  /* Feedback */
+  --color-success: var(--mm-success);
+  --color-success-bg: var(--mm-success-bg);
+  --color-error: var(--mm-error);
+  --color-error-bg: var(--mm-error-bg);
+  --color-info: var(--mm-info);
+  --color-info-bg: var(--mm-info-bg);
+  --color-warning: var(--mm-warning);
+  --color-warning-bg: var(--mm-warning-bg);
+
+  /* Kategori (meny) */
+  --color-cat-personal: var(--mm-cat-personal);
+  --color-cat-event: var(--mm-cat-event);
+  --color-cat-people: var(--mm-cat-people);
+  --color-cat-comm: var(--mm-cat-comm);
+  --color-cat-system: var(--mm-cat-system);
+
+  /* ── Typsnitt (--font-* → font-*) ── */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* ── Typografiskala (--text-* → text-*) ── */
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.5;
+  --text-caption--letter-spacing: 0.02em;
+
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.5;
+
+  --text-body: 1rem;
+  --text-body--line-height: 1.5;
+
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.375;
+
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.3;
+
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.25;
+  --text-2xl--letter-spacing: -0.01em;
+
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 1.2;
+  --text-3xl--letter-spacing: -0.01em;
+
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 1.2;
+  --text-4xl--letter-spacing: -0.02em;
+
+  --text-5xl: 2.5rem;
+  --text-5xl--line-height: 1.2;
+  --text-5xl--letter-spacing: -0.02em;
+}

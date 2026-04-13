@@ -1,0 +1,108 @@
+:root {
+  /* ── Guld/Amber-skala ── */
+  --p-gold-100: #fbf3e0;
+  --p-gold-200: #f5e6bc;
+  --p-gold-300: #f0d68a;
+  --p-gold-400: #c4a840;
+  --p-gold-500: #d4960a;
+  --p-gold-600: #b8800a;
+  --p-gold-700: #96680a;
+
+  /* ── Copper-skala ── */
+  --p-copper-100: #fdf4ee;
+  --p-copper-200: #f5d8c4;
+  --p-copper-400: #c46a3a;
+  --p-copper-500: #a3491c;
+  --p-copper-600: #8a3d17;
+
+  /* ── Neutrala ── */
+  --p-neutral-0: #ffffff;
+  --p-neutral-25: #fafaf8;
+  --p-neutral-50: #f5f5f3;
+  --p-neutral-100: #edeee9;
+  --p-neutral-200: #e1e3e1;
+  --p-neutral-300: #c4c4c2;
+  --p-neutral-400: #898989;
+  --p-neutral-500: #6b6b6b;
+  --p-neutral-600: #525151;
+  --p-neutral-700: #3a3a3a;
+  --p-neutral-800: #282928;
+  --p-neutral-900: #242424;
+  --p-neutral-1000: #1a1a1a;
+
+  /* ── Semantiska färger (primitiva) ── */
+  --p-blue-700: #1b4965; /* Fokusring — exklusiv färg, används inte till något annat */
+  --p-red-500: #a90000;
+  --p-red-100: #fef2f2;
+  --p-blue-500: #4a6b8a;
+  --p-blue-100: #eff6ff;
+  --p-green-500: #686648;
+  --p-green-100: #f0fdf4;
+
+  /* ── Typsnitt ── */
+  --p-font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --p-font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* ── Typografiskala (modular, ratio 1.25) ── */
+  --p-text-xs: 0.75rem; /* 12px */
+  --p-text-sm: 0.875rem; /* 14px */
+  --p-text-base: 1rem; /* 16px */
+  --p-text-lg: 1.125rem; /* 18px */
+  --p-text-xl: 1.25rem; /* 20px */
+  --p-text-2xl: 1.5rem; /* 24px */
+  --p-text-3xl: 1.875rem; /* 30px */
+  --p-text-4xl: 2.25rem; /* 36px */
+  --p-text-5xl: 2.5rem; /* 40px */
+
+  /* ── Line-heights (avrundade till 4px-grid) ── */
+  --p-leading-tight: 1.2; /* rubriker */
+  --p-leading-snug: 1.375; /* underrubriker */
+  --p-leading-normal: 1.5; /* brödtext */
+  --p-leading-relaxed: 1.625; /* liten text */
+
+  /* ── Font-vikter ── */
+  --p-weight-normal: 400;
+  --p-weight-medium: 500;
+  --p-weight-semibold: 600;
+  --p-weight-bold: 700;
+
+  /* ── Spacing (4px-bas) ── */
+  --p-space-0: 0;
+  --p-space-0-5: 0.125rem; /* 2px */
+  --p-space-1: 0.25rem; /* 4px */
+  --p-space-1-5: 0.375rem; /* 6px */
+  --p-space-2: 0.5rem; /* 8px */
+  --p-space-3: 0.75rem; /* 12px */
+  --p-space-4: 1rem; /* 16px */
+  --p-space-5: 1.25rem; /* 20px */
+  --p-space-6: 1.5rem; /* 24px */
+  --p-space-8: 2rem; /* 32px */
+  --p-space-10: 2.5rem; /* 40px */
+  --p-space-12: 3rem; /* 48px */
+  --p-space-16: 4rem; /* 64px */
+  --p-space-20: 5rem; /* 80px */
+
+  /* ── Radier ── */
+  --p-radius-none: 0;
+  --p-radius-sm: 0.25rem; /* 4px */
+  --p-radius-md: 0.5rem; /* 8px */
+  --p-radius-lg: 0.75rem; /* 12px */
+  --p-radius-xl: 1rem; /* 16px */
+  --p-radius-full: 9999px;
+
+  /* ── Skuggor ── */
+  --p-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --p-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --p-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --p-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.07), 0 4px 6px rgba(0, 0, 0, 0.04);
+  --p-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.08), 0 8px 10px rgba(0, 0, 0, 0.04);
+
+  /* ── Transitions ── */
+  --p-duration-fast: 100ms;
+  --p-duration-normal: 200ms;
+  --p-duration-slow: 300ms;
+  --p-duration-slower: 500ms;
+  --p-ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --p-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --p-ease-out: cubic-bezier(0, 0, 0.2, 1);
+}

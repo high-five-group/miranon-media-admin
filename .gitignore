@@ -1,5 +1,32 @@
 node_modules
 dist
+dist-ssr
+*.local
+
+# Environment
 .env
 .env.*
+!.env.example
+
+# macOS / editor
 .DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Vite / TypeScript
+*.tsbuildinfo
+
+# TanStack Router — genererad
+src/routeTree.gen.ts
+
+# Playwright
+/playwright-report
+/blob-report
+/test-results
+/playwright/.cache
+
+# Logs
+logs
+*.log
+npm-debug.log*

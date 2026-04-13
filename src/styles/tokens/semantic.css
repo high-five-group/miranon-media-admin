@@ -1,0 +1,66 @@
+:root {
+  /* ── Primär ── */
+  --mm-primary: var(--p-gold-500);
+  --mm-primary-hover: var(--p-gold-600);
+  --mm-primary-tint: var(--p-gold-100);
+  --mm-primary-pale: var(--p-gold-300);
+  --mm-primary-muted: var(--p-gold-400);
+
+  /* ── Accent (CTA / handling) ── */
+  --mm-accent: var(--p-copper-500);
+  --mm-accent-hover: var(--p-copper-600);
+  --mm-accent-tint: var(--p-copper-100);
+
+  /* ── Text ── */
+  --mm-text: var(--p-neutral-900);
+  --mm-text-secondary: var(--p-neutral-600);
+  --mm-text-muted: var(--p-neutral-400);
+  --mm-text-inverse: var(--p-neutral-0);
+
+  /* ── Ytor ── */
+  --mm-bg: var(--p-neutral-0);
+  --mm-bg-subtle: var(--p-neutral-25);
+  --mm-bg-muted: var(--p-neutral-50);
+  --mm-surface: var(--p-neutral-0);
+  --mm-surface-raised: var(--p-neutral-0); /* + shadow */
+  --mm-surface-overlay: var(--p-neutral-0); /* + shadow-xl */
+
+  /* ── Borders ── */
+  --mm-border: var(--p-neutral-200);
+  --mm-border-light: var(--p-neutral-100);
+  --mm-border-strong: var(--p-neutral-300);
+  --mm-border-focus: var(--p-gold-500);
+
+  /* ── Feedback ── */
+  --mm-success: var(--p-green-500);
+  --mm-success-bg: var(--p-green-100);
+  --mm-error: var(--p-red-500);
+  --mm-error-bg: var(--p-red-100);
+  --mm-info: var(--p-blue-500);
+  --mm-info-bg: var(--p-blue-100);
+  --mm-warning: var(--p-copper-500);
+  --mm-warning-bg: var(--p-copper-100);
+
+  /* ── Kategori (meny) ── */
+  --mm-cat-personal: var(--p-gold-500);
+  --mm-cat-event: var(--p-gold-500);
+  --mm-cat-people: var(--p-copper-500);
+  --mm-cat-comm: var(--p-blue-500);
+  --mm-cat-system: var(--p-neutral-400);
+
+  /* ── Knappar ── */
+  --mm-btn-primary-bg: var(--p-neutral-800);
+  --mm-btn-primary-text: var(--p-neutral-0);
+  --mm-btn-primary-hover: var(--p-neutral-700);
+  --mm-btn-secondary-bg: transparent;
+  --mm-btn-secondary-text: var(--p-neutral-800);
+  --mm-btn-secondary-border: var(--p-neutral-200);
+  --mm-btn-cta-bg: var(--p-copper-500);
+  --mm-btn-cta-text: var(--p-neutral-0);
+  --mm-btn-cta-hover: var(--p-copper-600);
+
+  /* ── Fokus ── */
+  --mm-focus-ring: var(--p-blue-700); /* Exklusiv färg #1B4965 — aldrig använd till annat */
+  --mm-focus-ring-width: 2px;
+  --mm-focus-ring-offset: 2px;
+}
