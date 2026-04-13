@@ -1,5 +1,5 @@
 # todo.md — Miranon Media Admin (React)
-*Senast uppdaterad: 2026-04-13*
+*Senast uppdaterad: 2026-04-13 (Tailwind v4 @theme-migration)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Styrande dokument: `~/Repon/miranon-media-os/docs/react-migration/conversion-plan.md`
@@ -24,16 +24,14 @@
 - [ ] `tsconfig.json`
 - [ ] `tsconfig.app.json`
 - [ ] `tsconfig.node.json`
-- [ ] `tailwind.config.ts` (komplett, från DESIGN-SYSTEM-SPEC §8)
 - [ ] [GA] `biome.json` (ersätter `.eslintrc.cjs` + `.stylelintrc.cjs` — Biome 2.0 med Tailwind-plugin)
-- [ ] `postcss.config.js`
 - [ ] `index.html`
 - [ ] `src/main.tsx` (minimal — renderar "Hello" + [GA] registrerar service worker)
 - [ ] `src/styles/tokens/primitives.css` (från DESIGN-SYSTEM-SPEC §1)
 - [ ] `src/styles/tokens/semantic.css` (från DESIGN-SYSTEM-SPEC §1)
 - [ ] `src/styles/tokens/components.css` (skelett)
 - [ ] `src/styles/base.css` (reset, fokusregel, typografi)
-- [ ] `src/styles/tailwind.css` (`@tailwind` directives)
+- [ ] `src/styles/tailwind.css` (`@import "tailwindcss"` + `@theme`-block från DESIGN-SYSTEM-SPEC §8 — ersätter `tailwind.config.ts`)
 - [ ] `src/lib/cn.ts` (clsx + tailwind-merge)
 - [ ] [GA] `src/lib/report-web-vitals.ts` (web-vitals → Sentry/sendBeacon)
 - [ ] [GA] `src/env.ts` (@t3-oss/env-core — validerar VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY vid uppstart)
@@ -43,12 +41,12 @@
 
 ### Verifiering
 
-- [ ] 1. `npm run dev` startar utan fel
+- [ ] 1. `npm run dev` startar utan fel (bekräftar `@tailwindcss/vite` fungerar utan postcss)
 - [ ] 2. `npm run build` producerar output utan varningar
 - [ ] 3. `npx tsc --noEmit` — noll TypeScript-fel
 - [ ] 4. [GA] `npx @biomejs/biome check .` — noll fel (ersätter ESLint)
-- [ ] 5. Token-CSS laddas: inspektera `:root` i DevTools, verifiera att `--mm-primary` resolvar till `#D4960A`
-- [ ] 6. Tailwind genererar utilities: `text-primary`, `bg-accent`, `text-small` fungerar
+- [ ] 5. Token-CSS laddas: inspektera `:root` i DevTools, verifiera att `--mm-primary` resolvar till `#D4960A`. Tailwind exponerar även `@theme`-vars som `--color-primary` etc.
+- [ ] 6. Tailwind genererar utilities från `@theme`: `text-primary`, `bg-surface`, `text-text-secondary`, `text-caption`, `text-body` (1rem/line-height 1.5), `font-sans` (Inter) fungerar
 - [ ] 7. [GA] Service worker registrerad: `navigator.serviceWorker.controller` !== null i DevTools
 - [ ] 8. [GA] web-vitals hook importerbar utan fel
 - [ ] 9. [GA] Saknad env-variabel → uppstartsfel (testa genom att ta bort VITE_SUPABASE_URL)
@@ -56,7 +54,7 @@
 
 ### Risker
 
-- Tailwind v4 CSS-first vs config — vi använder `tailwind.config.ts` (JS-baserad). Verifiera att v4 accepterar detta format korrekt.
+- Tailwind v4 `@theme` (CSS-first) — verifiera att alla utility-klasser genereras korrekt vid dev-start. Se ändringsspec 2026-04-13 (migrering från `tailwind.config.ts`).
 - [GA] Biome 2.0 Tailwind-plugin: verifiera att `classnames-order` och `no-arbitrary-value` fungerar.
 
 ---
