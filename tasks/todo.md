@@ -13,6 +13,10 @@
 **Beroenden:** Inga.
 **Uppskattad tid:** 1 session.
 
+### Initiering
+
+- [ ] 0. Initiera Vite-projekt: `npm create vite@latest . -- --template react-ts && npm install`
+
 ### Filer som skapas
 
 - [ ] `package.json` (alla dependencies)
@@ -34,7 +38,7 @@
 - [ ] [GA] `src/lib/report-web-vitals.ts` (web-vitals → Sentry/sendBeacon)
 - [ ] [GA] `src/env.ts` (@t3-oss/env-core — validerar VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY vid uppstart)
 - [ ] `playwright.config.ts` (från DESIGN-SYSTEM-SPEC §6)
-- [ ] `.env.local` (Supabase URL + anon key — INTE i git)
+- [ ] `.env.local` (Supabase URL + anon key — skapa lokalt, INTE `git add`. Verifiera att den matchas av `.env*` i `.gitignore`)
 - [ ] [GA] `public/sw.js` (tom service worker-skelett — registreras i main.tsx, utökas med Workbox i Fas 5)
 
 ### Verifiering
