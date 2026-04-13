@@ -20,7 +20,7 @@
 ### Filer som skapas
 
 - [ ] `package.json` (alla dependencies)
-- [ ] `vite.config.ts` (React-plugin + [GA] security headers-plugin med CSP-nonce)
+- [ ] `vite.config.ts` (React-plugin + `@tailwindcss/vite` + [GA] security headers-plugin med CSP-nonce)
 - [ ] `tsconfig.json`
 - [ ] `tsconfig.app.json`
 - [ ] `tsconfig.node.json`
