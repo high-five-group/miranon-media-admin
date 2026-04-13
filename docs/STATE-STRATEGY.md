@@ -1,0 +1,322 @@
+# STATE-STRATEGY -- State-arkitektur
+
+*Skapad: 2026-04-07 | Integrerad fran gap-analysis.md (Del 2, punkt 6)*
+*Galler: miranon-media-admin (React 19 SPA)*
+
+---
+
+## 1. State-kategorisering
+
+Varje bit state tilhor exakt en kategori. Ingen state far leva i "fel" lager.
+
+| Typ | Exempel i Miranon | Verktyg | Persistens |
+|-----|-------------------|---------|------------|
+| Server state | Event, anmalningar, personer | TanStack Query | Cache (staleTime 5 min) |
+| URL state | Filter, sokterm, aktiv flik | nuqs | URL (overlever reload) |
+| UI state | Modal oppen, tab bar aktiv | useState | Minne |
+| Form state | Login-falt, sokfalt | React Aria | Minne |
+| Offline state | Koade mutationer | Background Sync | IndexedDB |
+| Auth state | Session, tokens | AuthProvider Context | localStorage (1h TTL) |
+
+---
+
+## 2. Per-vy state-plan
+
+### Hem (/hem)
+| State | Typ | Verktyg |
+|-------|-----|---------|
+| Dashboard-data | Server | `useQuery(queryKeys.dashboard)` |
+
+Ingen URL state, inga filter. Ingen UI state, inga expanderbara sektioner.
+
+### Event (/event)
+| State | Typ | Verktyg |
+|-------|-----|---------|
+| Event-lista | Server | `useQuery(queryKeys.events.list({ status, sort }))` |
+| Status-filter | URL | `nuqs: ?status=upcoming\|past\|all` |
+| Sortering | URL | `nuqs: ?sort=date\|name` |
+
+### Event-detalj (/event/$eventId)
+| State | Typ | Verktyg |
+|-------|-----|---------|
+| Event + registreringar | Server | `useQuery(queryKeys.events.detail(id))` |
+| Aktiv flik | URL | `nuqs: ?tab=registrations\|payments\|attendance` |
+| Expanderade rader | UI | `useState<Set<string>>` |
+
+### Personer (/personer)
+| State | Typ | Verktyg |
+|-------|-----|---------|
+| Personlista | Server | `useQuery(queryKeys.persons.search({ q, page }))` |
+| Sokterm | URL | `nuqs: ?q=sokterm` |
+| Paginering | URL | `nuqs: ?page=2` |
+
+### Mer (/mer)
+Statisk lista. Ingen dynamisk state.
+
+---
+
+## 3. TanStack Query konfiguration
+
+### Globala defaults
+
+```typescript
+// src/providers/query-provider.tsx
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,       // 5 min -- data anses farsk
+      gcTime: 30 * 60 * 1000,          // 30 min -- cachad data lever kvar
+      retry: 3,
+      retryDelay: (attempt) => Math.min(200 * 2 ** attempt, 2000),
+      refetchOnWindowFocus: true,       // Uppdatera nar Lotta atervander
+      refetchOnReconnect: 'always',     // Uppdatera nar internet atergar
+    },
+  },
+});
+```
+
+### Query key factory
+
+```typescript
+// src/queries/keys.ts
+export const queryKeys = {
+  events: {
+    all: ['events'] as const,
+    list: (filters: EventFilters) => ['events', filters] as const,
+    detail: (id: string) => ['events', id] as const,
+  },
+  registrations: {
+    all: ['registrations'] as const,
+    byEvent: (eventId: string) => ['registrations', eventId] as const,
+  },
+  persons: {
+    all: ['persons'] as const,
+    search: (params: { q: string; page: number }) =>
+      ['persons', params] as const,
+  },
+  payments: {
+    byEvent: (eventId: string) => ['payments', eventId] as const,
+  },
+  dashboard: ['dashboard'] as const,
+} as const;
+```
+
+**Hierarkisk invalidering:** `invalidateQueries({ queryKey: queryKeys.events.all })`
+invaliderar ALLA event-queries. Perfekt nar Lotta skapar ett nytt event.
+
+### Prefetching via route loaders
+
+```typescript
+// src/routes/_authenticated/event/index.tsx
+export const Route = createFileRoute('/_authenticated/event/')({
+  validateSearch: z.object({
+    status: z.enum(['upcoming', 'past', 'all']).default('upcoming'),
+    sort: z.enum(['date', 'name']).default('date'),
+  }),
+  loader: ({ context, search }) =>
+    context.queryClient.ensureQueryData(
+      eventListQueryOptions({ status: search.status, sort: search.sort })
+    ),
+  component: EventPage,
+});
+```
+
+Hover-prefetch via `preload="intent"` pa `<Link>` startar loadern
+200-300ms innan Lotta klickar.
+
+---
+
+## 4. Optimistisk UI
+
+Nar Lotta markerar en betalning som betald syns det *direkt*. Om servern
+misslyckas rullas det tillbaka med felmeddelande.
+
+```typescript
+// src/hooks/use-mark-payment.ts
+export function useMarkPayment(eventId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (registrationId: string) =>
+      dataSource.updatePaymentStatus(registrationId, 'paid'),
+
+    onMutate: async (registrationId) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.registrations.byEvent(eventId),
+      });
+      const previous = queryClient.getQueryData(
+        queryKeys.registrations.byEvent(eventId)
+      );
+      // Optimistisk uppdatering
+      queryClient.setQueryData(
+        queryKeys.registrations.byEvent(eventId),
+        (old: Registration[] | undefined) =>
+          old?.map((r) =>
+            r.id === registrationId ? { ...r, paymentStatus: 'paid' } : r
+          ),
+      );
+      return { previous };
+    },
+
+    onError: (_err, _id, context) => {
+      // Rollback till sparad data
+      if (context?.previous) {
+        queryClient.setQueryData(
+          queryKeys.registrations.byEvent(eventId), context.previous
+        );
+      }
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.registrations.byEvent(eventId),
+      });
+    },
+  });
+}
+```
+
+**Samma monster for:** narvaromarkering, skicka paminnelse, uppdatera status.
+
+---
+
+## 5. Supabase Realtime-integration
+
+Nar Roger registrerar en anmalning medan Lotta har appen oppen ska
+hon se det utan att ladda om.
+
+```typescript
+// src/hooks/use-realtime-sync.ts
+export function useRealtimeSync() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'registrations' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: queryKeys.registrations.all });
+          queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
+        }
+      )
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'events' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+}
+```
+
+Anropa i `_authenticated.tsx` -- aktiv pa alla autentiserade sidor.
+
+| Tabell | Events | Varfor |
+|--------|--------|--------|
+| registrations | INSERT, UPDATE, DELETE | Nya anmalningar, statusandringar |
+| events | UPDATE | Andringar i event-detaljer |
+
+---
+
+## 6. Offline state
+
+Lottas mest kritiska scenario: ta narvaro pa event-plats med dalig uppkoppling.
+
+### IndexedDB for koade mutationer
+
+```typescript
+// src/lib/offline-queue.ts
+import { openDB } from 'idb';
+
+async function getDB() {
+  return openDB('miranon-offline', 1, {
+    upgrade(db) {
+      db.createObjectStore('pending-mutations', { keyPath: 'id', autoIncrement: true });
+    },
+  });
+}
+
+export async function queueMutation(mutation: {
+  type: 'mark-attendance' | 'mark-payment' | 'send-reminder';
+  payload: Record<string, unknown>;
+  timestamp: number;
+}) {
+  const db = await getDB();
+  await db.add('pending-mutations', mutation);
+}
+```
+
+### Background Sync
+
+Service workern synkar koade mutationer nar internet atergar:
+
+```typescript
+// public/sw.js
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-mutations') {
+    event.waitUntil(syncPendingMutations());
+  }
+});
+```
+
+**Konfliktlosning:** Last-write-wins med timestamp. For narvaromarkering
+ar detta tillrackligt -- ordningen spelar ingen roll.
+
+**Bekraftelse:** `alertScreenReader('3 andringar har synkroniserats.')` efter sync.
+
+---
+
+## 7. Beslutstrad
+
+```
+1. Kommer datan fran ett API?     -> TanStack Query
+2. Ska det overleva page reload?  -> URL state (nuqs)
+3. Ska det overleva app-stangning? -> localStorage / IndexedDB
+4. Ar det enbart UI-state?        -> useState
+5. Ar det en mutation?            -> useMutation med optimistisk UI
+```
+
+### Snabbreferens
+
+| "Lotta vill..." | Typ | Verktyg |
+|------------------|-----|---------|
+| Se event-listan | Server | `useQuery(queryKeys.events.list(...))` |
+| Filtrera pa status | URL | `nuqs: ?status=upcoming` |
+| Vaxla flik i event-detalj | URL | `nuqs: ?tab=payments` |
+| Expandera en rad | UI | `useState<Set<string>>` |
+| Markera som betald | Mutation | `useMutation` + optimistisk UI |
+| Soka bland personer | URL | `nuqs: ?q=sokterm` |
+| Markera narvaro offline | Offline | IndexedDB + Background Sync |
+| Forbli inloggad | Auth | localStorage (1h TTL) |
+
+---
+
+## 8. Anti-monster
+
+| Anti-monster | Varfor fel | Ratt losning |
+|--------------|-----------|--------------|
+| Global store (Redux/Zustand) | Ingen komplex delad klient-state | TanStack Query + useState + URL |
+| `useEffect` for datahemtning | Race conditions, ingen cache | TanStack Query |
+| Filter i useState | Forsvinner vid reload, back-knappen bryts | nuqs (URL state) |
+| localStorage for server-data | Ingen invalidering, manuell JSON | TanStack Query cache |
+| Props-drilling for auth | 5+ nivaer prop-forwarding | AuthProvider Context |
+
+---
+
+## Sammanfattning
+
+| Princip | Regel |
+|---------|-------|
+| Server state | TanStack Query -- alltid. Ingen `useEffect` + `fetch`. |
+| URL state | nuqs -- allt som bor overleva reload eller delas via lank. |
+| UI state | useState -- bara lokalt for en komponent. |
+| Mutationer | useMutation med optimistisk UI -- Lotta vantar aldrig. |
+| Offline | IndexedDB + Background Sync -- appen dor aldrig. |
+| Auth | Context med localStorage TTL. |
+
+**Principen:** Varje bit state har exakt ett hem. Om du ar osaker,
+folj belutsatradet (sektion 7).

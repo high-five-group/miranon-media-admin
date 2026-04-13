@@ -1,0 +1,85 @@
+import type { Attendance } from '../../domain/models/Attendance';
+import type { Engagement } from '../../domain/models/Engagement';
+import type { Event } from '../../domain/models/Event';
+import type { Lead } from '../../domain/models/Lead';
+import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload';
+import type { Person } from '../../domain/models/Person';
+import type { Registration } from '../../domain/models/Registration';
+import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
+import type {
+  AttendanceFilters,
+  LeadFilters,
+  MailLogFilters,
+  PersonFilters,
+  RegistrationFilters,
+  WaitlistFilters,
+} from '../../domain/types/Filters';
+import type { DataSourceAdapter } from './DataSourceAdapter';
+
+const NOT_IMPLEMENTED = 'SupabaseAdapter: Not implemented — migrate Edge Functions first';
+
+export class SupabaseAdapter implements DataSourceAdapter {
+  async fetchEvents(): Promise<Event[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchRegistrations(_filters?: RegistrationFilters): Promise<Registration[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchPersons(_filters?: PersonFilters): Promise<Person[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async updateRecord(
+    _tableId: string,
+    _recordId: string,
+    _fields: Record<string, unknown>,
+  ): Promise<void> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchEvent(_id: string): Promise<Event> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchPerson(_id: string): Promise<Person> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async updateRegistration(_id: string, _fields: Partial<Registration>): Promise<void> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async createRegistration(_data: Omit<Registration, 'id'>): Promise<Registration> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchAttendance(_filters?: AttendanceFilters): Promise<Attendance[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async updateAttendance(_id: string, _status: string): Promise<void> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchWaitlist(_filters?: WaitlistFilters): Promise<WaitlistEntry[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchLeads(_filters?: LeadFilters): Promise<Lead[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchEngagements(_personId?: string): Promise<Engagement[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async sendEmail(_payload: MailPayload): Promise<void> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchMailLog(_filters?: MailLogFilters): Promise<MailLogEntry[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+}

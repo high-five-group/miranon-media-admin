@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <!-- Miranon Media Logo — 4 parallelogrammer -->
+  <!-- Gap yttre-inre ~30px, inre överlapp ökat -->
+
+  <!-- Stapel 1: Sage / (yttre vänster) -->
+  <polygon points="103,10 155,10 85,390 33,390" fill="#636b5b"/>
+
+  <!-- Stapel 2: Copper / (inre vänster, UNDER stapel 3) -->
+  <polygon points="189,10 241,10 171,390 119,390" fill="#984f2b"/>
+
+  <!-- Stapel 4: Copper \ (yttre höger) -->
+  <polygon points="245,10 297,10 367,390 315,390" fill="#984f2b"/>
+
+  <!-- Stapel 3: Sage \ (inre höger, ÖVERST) — ritas sist -->
+  <polygon points="159,10 211,10 281,390 229,390" fill="#636b5b"/>
+</svg>
