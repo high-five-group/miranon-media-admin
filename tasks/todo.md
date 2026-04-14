@@ -1,64 +1,187 @@
 # todo.md — Miranon Media Admin (React)
-*Senast uppdaterad: 2026-04-13 (Tailwind v4 @theme-migration)*
+*Senast uppdaterad: 2026-04-14 (Session 31 — Fas 0 + Fas 1 klara)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
-> Styrande dokument: `~/Repon/miranon-media-os/docs/react-migration/conversion-plan.md`
+> Arkitekturbeslut fångas i `docs/decisions/`.
+> Implementation-journal i `docs/BUILD-LOG.md`.
+> Styrande dokument: [`docs/conversion-plan.md`](../docs/conversion-plan.md)
 
 ---
 
-## Fas 0: Projektsetup + tokens
+## Aktuellt fokus
+
+**Fas 2: Routing + Auth** — TanStack Router file-based routes, auth guard, Supabase login/logout. Se [`docs/conversion-plan.md`](../docs/conversion-plan.md) §D Fas 2 och [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) för kontext från Fas 0 + Fas 1.
+
+**Session-historik:**
+- **Session 31: 2026-04-14** — Fas 0 + Fas 1 klara. 10 ADR:er + BUILD-LOG skapade. Commits: `fcc6de3`, `e3d8e8a`, `c91bfa0`.
+
+---
+
+## Fas 0: Projektsetup + tokens ✅ KLAR
 
 **Mål:** Fungerande React-projekt med alla verktyg installerade, tokens konfigurerade, lint som passerar.
-
-**Beroenden:** Inga.
-**Uppskattad tid:** 1 session.
+**Klar:** 2026-04-14 (Session 31, commit `fcc6de3`).
+**Dokumentation:** [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) → Session 31 → Fas 0.
 
 ### Initiering
 
-- [ ] 0. Initiera Vite-projekt: `npm create vite@latest . -- --template react-ts && npm install`
+- [x] 0. Initiera Vite-projekt (manuellt, eftersom katalogen inte var tom)
 
 ### Filer som skapas
 
-- [ ] `package.json` (alla dependencies)
-- [ ] `vite.config.ts` (React-plugin + `@tailwindcss/vite` + [GA] security headers-plugin med CSP-nonce)
-- [ ] `tsconfig.json`
-- [ ] `tsconfig.app.json`
-- [ ] `tsconfig.node.json`
-- [ ] [GA] `biome.json` (ersätter `.eslintrc.cjs` + `.stylelintrc.cjs` — Biome 2.0 med Tailwind-plugin)
-- [ ] `index.html`
-- [ ] `src/main.tsx` (minimal — renderar "Hello" + [GA] registrerar service worker)
-- [ ] `src/styles/tokens/primitives.css` (från DESIGN-SYSTEM-SPEC §1)
-- [ ] `src/styles/tokens/semantic.css` (från DESIGN-SYSTEM-SPEC §1)
-- [ ] `src/styles/tokens/components.css` (skelett)
-- [ ] `src/styles/base.css` (reset, fokusregel, typografi)
-- [ ] `src/styles/tailwind.css` (`@import "tailwindcss"` + `@theme`-block från DESIGN-SYSTEM-SPEC §8 — ersätter `tailwind.config.ts`)
-- [ ] `src/lib/cn.ts` (clsx + tailwind-merge)
-- [ ] [GA] `src/lib/report-web-vitals.ts` (web-vitals → Sentry/sendBeacon)
-- [ ] [GA] `src/env.ts` (@t3-oss/env-core — validerar VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY vid uppstart)
-- [ ] `playwright.config.ts` (från DESIGN-SYSTEM-SPEC §6)
-- [ ] `.env.local` (Supabase URL + anon key — skapa lokalt, INTE `git add`. Verifiera att den matchas av `.env*` i `.gitignore`)
-- [ ] [GA] `public/sw.js` (tom service worker-skelett — registreras i main.tsx, utökas med Workbox i Fas 5)
+- [x] `package.json` (alla dependencies)
+- [x] `vite.config.ts` (React-plugin + `@tailwindcss/vite` — TanStack Router-plugin återinförs i Fas 2)
+- [x] `tsconfig.json`
+- [x] `tsconfig.app.json`
+- [x] `tsconfig.node.json`
+- [x] [GA] `biome.json` (Biome 2.4 — se [ADR-001](../docs/decisions/ADR-001-biome-over-eslint-stylelint-prettier.md))
+- [x] `index.html`
+- [x] `src/main.tsx` (minimal — renderar "Miranon Media Admin" + [GA] registrerar service worker)
+- [x] `src/vite-env.d.ts` (bonus-fil för `import.meta.env`-typer)
+- [x] `src/styles/tokens/primitives.css` (från DESIGN-SYSTEM-SPEC §1, bindestreck för halvsteg — se [ADR-003](../docs/decisions/ADR-003-css-custom-property-naming.md))
+- [x] `src/styles/tokens/semantic.css` (från DESIGN-SYSTEM-SPEC §1)
+- [x] `src/styles/tokens/components.css` (skelett)
+- [x] `src/styles/base.css` (reset, fokusregel, typografi, Inter-font)
+- [x] `src/styles/tailwind.css` (`@import "tailwindcss"` + `@theme`-block från DESIGN-SYSTEM-SPEC §8 — se [ADR-002](../docs/decisions/ADR-002-tailwind-v4-theme-css-first.md))
+- [x] `src/lib/cn.ts` (clsx + tailwind-merge)
+- [x] [GA] `src/lib/report-web-vitals.ts` (web-vitals → Sentry/sendBeacon)
+- [x] [GA] `src/env.ts` (@t3-oss/env-core — validerar VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY vid uppstart)
+- [x] `playwright.config.ts` (från DESIGN-SYSTEM-SPEC §6)
+- [x] `.env.local` (skapad lokalt, inte committad — `.env.*` i `.gitignore`)
+- [x] [GA] `public/sw.js` (tom service worker-skelett — utökas med Workbox i Fas 5)
 
 ### Verifiering
 
-- [ ] 1. `npm run dev` startar utan fel (bekräftar `@tailwindcss/vite` fungerar utan postcss)
-- [ ] 2. `npm run build` producerar output utan varningar
-- [ ] 3. `npx tsc --noEmit` — noll TypeScript-fel
-- [ ] 4. [GA] `npx @biomejs/biome check .` — noll fel (ersätter ESLint)
-- [ ] 5. Token-CSS laddas: inspektera `:root` i DevTools, verifiera att `--mm-primary` resolvar till `#D4960A`. Tailwind exponerar även `@theme`-vars som `--color-primary` etc.
-- [ ] 6. Tailwind genererar utilities från `@theme`: `text-primary`, `bg-surface`, `text-text-secondary`, `text-caption`, `text-body` (1rem/line-height 1.5), `font-sans` (Inter) fungerar
-- [ ] 7. [GA] Service worker registrerad: `navigator.serviceWorker.controller` !== null i DevTools
-- [ ] 8. [GA] web-vitals hook importerbar utan fel
-- [ ] 9. [GA] Saknad env-variabel → uppstartsfel (testa genom att ta bort VITE_SUPABASE_URL)
-- [ ] 10. [GA] `npm audit --audit-level=high` — 0 high/critical
-
-### Risker
-
-- Tailwind v4 `@theme` (CSS-first) — verifiera att alla utility-klasser genereras korrekt vid dev-start. Se ändringsspec 2026-04-13 (migrering från `tailwind.config.ts`).
-- [GA] Biome 2.0 Tailwind-plugin: verifiera att `classnames-order` och `no-arbitrary-value` fungerar.
+- [x] 1. `npm run dev` startar utan fel (Vite 8.0.8, redo på 320 ms)
+- [x] 2. `npm run build` producerar output utan varningar (97 moduler, 244.73 kB JS / 10.83 kB CSS)
+- [x] 3. `npx tsc --noEmit` — noll TypeScript-fel
+- [x] 4. [GA] `npx @biomejs/biome check .` — exit=0 (4 warnings på `!important` i `prefers-reduced-motion`, accepterat)
+- [x] 5. Token-CSS laddas: `--mm-primary` → `#d4960a` verifierat via grep i `dist/assets/index-*.css`
+- [x] 6. Tailwind genererar utilities från `@theme`: `text-primary`, `bg-surface`, `text-text-secondary`, `text-caption`, `text-body` (1rem/line-height 1.5), `font-sans` (Inter) — alla 8 verifierade i bundled CSS
+- [x] 7. [GA] Service worker registrering-kod på plats i `main.tsx`
+- [x] 8. [GA] `reportWebVitals` importerbar utan fel (tsc + build passerar)
+- [x] 9. [GA] Saknad env-variabel → uppstartsfel (Node-test bevisar ZodError)
+- [x] 10. [GA] `npm audit --audit-level=high` — 0 high/critical
 
 ---
 
-## Nästa fas
+## Fas 1: Domäntransplant ✅ KLAR
 
-**Fas 1: Domäntransplant** — kopiera 13 domänfiler från Vue-repot via `FILE-INVENTORY.md`-scriptet, lägg på Zod-scheman, verifiera mot Airtable MCP. Kräver Fas 0 klar.
+**Mål:** Alla domain- och data-filer kopierade från Vue-repot, Zod-scheman tillagda, supabase-client konsoliderad via `@/env`, `fetchWithRetry` på infrastrukturnivå.
+**Klar:** 2026-04-14 (Session 31, commit `c91bfa0`).
+**Dokumentation:** [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) → Session 31 → Fas 1.
+
+### Kopierade filer (src)
+
+- [x] `src/domain/models/*.ts` (8 filer — rakt av)
+- [x] `src/domain/types/*.ts` (Filters.ts, Status.ts — rakt av)
+- [x] `src/data/adapters/*.ts` (DataSourceAdapter, AirtableAdapter, SupabaseAdapter — rakt av)
+- [x] `src/data/config/supabase-client.ts` (modifierad — [ADR-009](../docs/decisions/ADR-009-supabase-client-env-consolidation.md) + [ADR-006](../docs/decisions/ADR-006-fetch-with-retry-infrastructure.md))
+- [x] `src/lib/alert-screen-reader.ts` (kebab-case rename från `alertScreenReader.ts`)
+- [x] `src/lib/focus-utils.ts` (kebab-case rename från `focusUtils.ts`)
+
+### Kopierade filer (binaries + docs + supabase)
+
+- [x] `public/favicon/` (7 filer)
+- [x] `public/miranon-logo.svg`
+- [x] `docs/` (21 filer — selektivt, ej `tasks/` eller `.claude/`, se [ADR-008](../docs/decisions/ADR-008-file-inventory-selective-run.md))
+- [x] `supabase/functions/` (7 Edge Function-filer, Deno-kod)
+
+### [GA] Skapade filer
+
+- [x] `src/domain/schemas/*.schema.ts` (8 filer + barrel `index.ts`) — [ADR-005](../docs/decisions/ADR-005-zod-parallell-definitions.md)
+- [x] `src/domain/__tests__/schemas.assignable.ts` (`AssertEqual` compile-time-test)
+- [x] `src/data/utils.ts` (`fetchWithRetry`) — [ADR-006](../docs/decisions/ADR-006-fetch-with-retry-infrastructure.md)
+- [x] `scripts/verify-phase-1.ts` (runtime-verifiering, 11 assertions)
+
+### Konfigändringar
+
+- [x] `biome.json` exkluderar `supabase/functions` — [ADR-010](../docs/decisions/ADR-010-biome-exclude-deno-edge-functions.md)
+
+### Verifiering
+
+- [x] `npx tsc --noEmit` — 0 fel
+- [x] Testfil importerar Event, Registration, Person → resolvar (via `schemas.assignable.ts`)
+- [x] `EventSchema.parse({})` → ZodError (runtime-verifierat)
+- [x] TypeScript-test: 10 `AssertEqual`-asserts passerar (schema ↔ interface parity för alla domain-typer)
+- [x] `fetchWithRetry`: 4 försök (1 + 3 retries), backoff 200ms/400ms/800ms ± jitter (runtime-verifierat)
+- [x] `alertScreenReader('test')` → aria-live-element i DOM (runtime-verifierat via stub)
+- [x] `npx @biomejs/biome check .` — exit=0
+- [x] `git add -A && git commit -m "fas 1: domäntransplant"` → `c91bfa0`
+- [x] `git push` → `origin/main`
+
+---
+
+## Fas 2: Routing + Auth ← NU
+
+**Mål:** TanStack Router file-based routes, auth guard, Supabase login/logout fungerande.
+**Beroenden:** Fas 0 + Fas 1 klara.
+**Uppskattad tid:** 1 session.
+**Styrande dokument:** [`docs/conversion-plan.md`](../docs/conversion-plan.md) §D Fas 2 + §I Fas 2-prompten.
+
+### Förberedelse innan Fas 2
+
+- [ ] Återinföra `TanStackRouterVite`-plugin i `vite.config.ts` när `src/routes/` skapas (se kommentar i `vite.config.ts` rad 6–9)
+- [ ] Bestäma om `Event`-namnkollision triggar per-fil alias eller global rename (se [ADR-007](../docs/decisions/ADR-007-event-name-collision-deferred-aliasing.md))
+
+### Filer som ska skapas
+
+- [ ] `src/app.tsx` (QueryClient, RouterProvider)
+- [ ] `src/providers/auth-provider.tsx` (Supabase auth → Context)
+- [ ] `src/providers/data-source-provider.tsx` (AirtableAdapter → Context)
+- [ ] `src/providers/query-provider.tsx` (QueryClientProvider)
+- [ ] `src/hooks/use-auth.ts` (useContext-wrapper)
+- [ ] `src/hooks/use-data-source.ts` (useContext-wrapper)
+- [ ] `src/routes/__root.tsx`
+- [ ] `src/routes/_authenticated.tsx` (auth guard + app-shell)
+- [ ] `src/routes/login.tsx`
+- [ ] `src/routes/index.tsx` (redirect → /hem)
+- [ ] `src/routes/_authenticated/hem.tsx` (placeholder)
+- [ ] `src/routes/_authenticated/event/index.tsx` (placeholder)
+- [ ] `src/routes/_authenticated/event/$eventId.tsx` (placeholder)
+- [ ] `src/routes/_authenticated/personer/index.tsx` (placeholder)
+- [ ] `src/routes/_authenticated/personer/$personId.tsx` (placeholder)
+- [ ] `src/routes/_authenticated/mer.tsx` (placeholder)
+
+### Verifiering
+
+- [ ] `/login` visar formulär med email + lösenord
+- [ ] Inloggning → redirect till `/hem`
+- [ ] `/hem`, `/event`, `/personer`, `/mer` — alla renderar placeholder
+- [ ] `/event/[id]` och `/personer/[id]` — dynamiska routes fungerar
+- [ ] Logga ut → redirect till `/login`
+- [ ] Ej inloggad + direktnavigering → `/login`
+- [ ] `npx tsc --noEmit` → 0 fel
+- [ ] `npx @biomejs/biome check .` → exit=0
+- [ ] `git add -A && git commit -m "fas 2: routing + auth" && git push`
+
+### Risker
+
+- TanStack Router file-based routes genererar `src/routeTree.gen.ts` automatiskt — verifiera att den är `.gitignore`-ad (finns redan i `.gitignore` från Fas 0)
+- Auth guard måste hantera både "ej inloggad" och "inloggad men session expired" — fallback till `/login` i båda fall
+- `Event`-alias: kanske blir aktuellt i `_authenticated/event/index.tsx` när vi importerar `Event` från `@/domain/models/Event`
+
+---
+
+## Kommande faser (från conversion-plan §D)
+
+- **Fas 3: UI-primitiver** — React Aria + CVA + [GA] ARIA 1.3
+- **Fas 5: App-shell + Tab bar** — minimal, FK-inspirerad + [GA] error boundaries, service worker, View Transitions
+- **Fas 6: Hem + Event + Personer + Mer** — 4 flikar + [GA] optimistic UI, Realtime, stale-while-error
+- **Fas 6.5: Aktivitetslogg** — [GA] xAPI-schema, trace_id, GDPR retention
+- **Fas 7: Konsolidering** — [GA] CSP, Trusted Types, chaos testing, deploy-pipeline, Golden Master-test, Deno lint på edge functions
+- **Fas 8 (framtid):** Passkeys, push-notifieringar, avancerad offline
+
+---
+
+## Teknisk skuld som spåras (från Fas 0 + Fas 1)
+
+- **Zod refaktorering:** Schema blir sanningskälla i Fas 2/3 ([ADR-005](../docs/decisions/ADR-005-zod-parallell-definitions.md))
+- **Event-aliasering:** Per-fil alias i Fas 2+, global rename om 5+ filer behöver alias ([ADR-007](../docs/decisions/ADR-007-event-name-collision-deferred-aliasing.md))
+- **TanStack Router-plugin:** Återinförs i Fas 2 när `src/routes/` skapas
+- **CSP-nonce security headers-plugin:** Fas 7
+- **Biomes `no-arbitrary-value` + `no-hardcoded-colors`:** Custom GritQL-plugins i Fas 7
+- **Deno lint/check på supabase/functions:** Fas 7 ([ADR-010](../docs/decisions/ADR-010-biome-exclude-deno-edge-functions.md))
+- **Schema-validering i adapter-metoder:** Fas 2 ska wrappa `callEdgeFunction`-resultat med `.parse()`
+- **`lucide-react@1.8.0` versionsanomalier:** Undersök innan Fas 3 (UI-primitiver) när ikoner börjar användas
+- **docs/DESIGN-SYSTEM-SPEC.md stale-risk:** Governance-beslut uppskjutet efter alla faser
