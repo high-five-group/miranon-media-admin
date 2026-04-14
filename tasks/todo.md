@@ -1,5 +1,5 @@
 # todo.md — Miranon Media Admin (React)
-*Senast uppdaterad: 2026-04-14 (Session 31 — Fas 0 + Fas 1 klara)*
+*Senast uppdaterad: 2026-04-14 (Session 1 (React) — Fas 0 + Fas 1 klara, dokumentationsrutiner etablerade)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -13,15 +13,16 @@
 **Fas 2: Routing + Auth** — TanStack Router file-based routes, auth guard, Supabase login/logout. Se [`docs/conversion-plan.md`](../docs/conversion-plan.md) §D Fas 2 och [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) för kontext från Fas 0 + Fas 1.
 
 **Session-historik:**
-- **Session 31: 2026-04-14** — Fas 0 + Fas 1 klara. 10 ADR:er + BUILD-LOG skapade. Commits: `fcc6de3`, `e3d8e8a`, `c91bfa0`.
+- **Session 1 (React): 2026-04-14** — Fas 0 + Fas 1 klara. BUILD-LOG + 10 ADR:er skapade. Dokumentationsrutiner (BUILD-LOG + ADR) integrerade i CLAUDE.md sessionsstart/avslut. Commits: `fcc6de3`, `e3d8e8a`, `c91bfa0`, `680858c`.
+- *Session 1 (React) motsvarar Session 31 i total projekthistorik. Vue-bygget var session 1–30 i `~/Repon/miranon-media-os/`.*
 
 ---
 
 ## Fas 0: Projektsetup + tokens ✅ KLAR
 
 **Mål:** Fungerande React-projekt med alla verktyg installerade, tokens konfigurerade, lint som passerar.
-**Klar:** 2026-04-14 (Session 31, commit `fcc6de3`).
-**Dokumentation:** [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) → Session 31 → Fas 0.
+**Klar:** 2026-04-14 (Session 1 (React), commit `fcc6de3`).
+**Dokumentation:** [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) → Session 1 (React) → Fas 0.
 
 ### Initiering
 
@@ -68,8 +69,8 @@
 ## Fas 1: Domäntransplant ✅ KLAR
 
 **Mål:** Alla domain- och data-filer kopierade från Vue-repot, Zod-scheman tillagda, supabase-client konsoliderad via `@/env`, `fetchWithRetry` på infrastrukturnivå.
-**Klar:** 2026-04-14 (Session 31, commit `c91bfa0`).
-**Dokumentation:** [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) → Session 31 → Fas 1.
+**Klar:** 2026-04-14 (Session 1 (React), commit `c91bfa0`).
+**Dokumentation:** [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) → Session 1 (React) → Fas 1.
 
 ### Kopierade filer (src)
 

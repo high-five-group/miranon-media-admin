@@ -1,5 +1,5 @@
 # CLAUDE.md — Miranon Media Admin (React)
-*Senast uppdaterad: 2026-04-13 | v0.1 — projektsetup, Fas 0*
+*Senast uppdaterad: 2026-04-14 | v0.2 — Session 1 (React), Fas 0 + Fas 1 klara*
 
 ---
 
@@ -62,24 +62,128 @@ Hela `docs/react-migration/`-mappen i Vue-repot är sanningskälla:
 
 ---
 
-## Viktiga filer och sökvägar
+## Filstruktur
+
+> Genererad 2026-04-14 (Session 1 (React), efter Fas 0 + Fas 1). Uppdateras vid sessionsavslut.
+> Exkluderar: `node_modules`, `.git`, `dist`, `package-lock.json`.
 
 ```
-~/Repon/miranon-media-admin/        ← detta repo (React)
-├── CLAUDE.md
-├── tasks/
-│   ├── todo.md
-│   └── lessons.md
-└── (allt under src/ skapas i Fas 0)
+~/Repon/miranon-media-admin/
+├── CLAUDE.md                              ← denna fil
+├── README.md                              ← projektintro + dokumentationstabell
+├── biome.json                             ← [ADR-001] Biome 2.4
+├── index.html
+├── package.json
+├── playwright.config.ts
+├── tsconfig.json
+├── tsconfig.app.json
+├── tsconfig.node.json
+├── vite.config.ts                         ← @tailwindcss/vite (TanStack Router återinförs Fas 2)
+│
+├── .claude/
+│   └── settings.json                      ← pre-commit hook (biome check + tsc)
+│
+├── .env.local                             ← .gitignore-skyddad
+├── .gitignore
+│
+├── docs/
+│   ├── BUILD-LOG.md                       ← implementation journal per session
+│   ├── README.md
+│   ├── conversion-plan.md                 ← STYRANDE — fas-för-fas-plan
+│   ├── gap-analysis.md
+│   ├── DESIGN-MANIFESTO.md
+│   ├── DESIGN-OPERATING-SYSTEM.md
+│   ├── DESIGN-SYSTEM-SPEC.md              ← 3-lagers tokens (ADR-002, ADR-003)
+│   ├── SECURITY-SPEC.md
+│   ├── PERFORMANCE-BUDGET.md
+│   ├── STATE-STRATEGY.md
+│   ├── URL-STATE-SPEC.md
+│   ├── ARIA-UPGRADE.md
+│   ├── FUTURE-COMPAT.md
+│   ├── SPA-ARCHITECTURE-DECISION.md
+│   ├── ACCESSIBILITY-CHECKLIST.md
+│   ├── ACCESSIBILITY-AUDIT-MALL.md
+│   ├── KVALITETSDEFINITIONER-11.md
+│   ├── DOKUMENTATIONSSTANDARD.md
+│   ├── BYGGPLAN-LÄTTLÄST.md
+│   ├── BYGGPLAN-LÄTTLÄST-v2.md
+│   ├── decisions/                         ← ADR:er (1 per beslut)
+│   │   ├── README.md                      ← index-tabell för ADR:er
+│   │   ├── ADR-001-biome-over-eslint-stylelint-prettier.md
+│   │   ├── ADR-002-tailwind-v4-theme-css-first.md
+│   │   ├── ADR-003-css-custom-property-naming.md
+│   │   ├── ADR-004-typescript-baseurl-removal.md
+│   │   ├── ADR-005-zod-parallell-definitions.md
+│   │   ├── ADR-006-fetch-with-retry-infrastructure.md
+│   │   ├── ADR-007-event-name-collision-deferred-aliasing.md
+│   │   ├── ADR-008-file-inventory-selective-run.md
+│   │   ├── ADR-009-supabase-client-env-consolidation.md
+│   │   └── ADR-010-biome-exclude-deno-edge-functions.md
+│   ├── features/
+│   │   └── FEATURE-ACTIVITY-LOG.md
+│   └── research/
+│       ├── beyond-best-practices-2026.md
+│       ├── react-headless-ui-research.md
+│       ├── react-stack-research.md
+│       └── vue-project-analysis.md
+│
+├── public/
+│   ├── favicon/                           (7 filer)
+│   ├── miranon-logo.svg
+│   └── sw.js                              ← [GA] service worker-skelett
+│
+├── scripts/
+│   └── verify-phase-1.ts                  ← runtime-verifiering (11 assertions)
+│
+├── src/
+│   ├── main.tsx                           ← entry point
+│   ├── env.ts                             ← [GA] @t3-oss/env-core env-validering
+│   ├── vite-env.d.ts
+│   ├── data/
+│   │   ├── utils.ts                       ← [GA] fetchWithRetry (ADR-006)
+│   │   ├── adapters/
+│   │   │   ├── DataSourceAdapter.ts
+│   │   │   ├── AirtableAdapter.ts
+│   │   │   └── SupabaseAdapter.ts
+│   │   └── config/
+│   │       └── supabase-client.ts         ← modifierad (ADR-006, ADR-009)
+│   ├── domain/
+│   │   ├── __tests__/
+│   │   │   └── schemas.assignable.ts      ← AssertEqual compile-time-test
+│   │   ├── models/                        (8 filer)
+│   │   ├── schemas/                       ← [GA] Zod (8 + index, ADR-005)
+│   │   └── types/                         (Filters.ts, Status.ts)
+│   ├── lib/
+│   │   ├── cn.ts                          ← clsx + tailwind-merge
+│   │   ├── alert-screen-reader.ts
+│   │   ├── focus-utils.ts
+│   │   └── report-web-vitals.ts           ← [GA] web-vitals
+│   └── styles/
+│       ├── base.css                       ← reset + Inter + fokusregel
+│       ├── tailwind.css                   ← @theme (ADR-002)
+│       └── tokens/
+│           ├── primitives.css             ← lager 1 (ADR-003)
+│           ├── semantic.css               ← lager 2
+│           └── components.css             ← lager 3 (skelett)
+│
+├── supabase/
+│   └── functions/                         ← [ADR-010] Deno-kod, ej lintad av Biome
+│       ├── _shared/                       (airtable-client.ts, cors.ts)
+│       ├── create-admin-user/
+│       ├── get-events/
+│       ├── get-persons/
+│       ├── get-registrations/
+│       └── update-record/
+│
+└── tasks/
+    ├── todo.md                            ← aktiva uppgifter
+    └── lessons.md                         ← organisatoriskt minne
 
-~/Repon/miranon-media-os/           ← Vue-referensen
-└── docs/react-migration/           ← STYRANDE DOKUMENT
-    ├── conversion-plan.md          ← läs innan varje fas
-    ├── FILE-INVENTORY.md           ← kopieringslistan
-    ├── DESIGN-SYSTEM-SPEC.md       ← 3-lagers tokens
-    ├── DESIGN-OPERATING-SYSTEM.md
-    ├── DESIGN-MANIFESTO.md
-    └── (7 [GA] spec-dokument)
+~/Repon/miranon-media-os/                  ← Vue-referensen (original)
+└── docs/react-migration/                  ← ursprungs-källa till React-repots docs/
+    ├── conversion-plan.md
+    ├── FILE-INVENTORY.md                  ← kopieringsscriptet (selektivt körd — ADR-008)
+    └── ... (15 spec-dokument kopierade till React-repot)
 ```
 
 ---
@@ -156,22 +260,48 @@ Allt som byggs bedöms utifrån båda perspektiven:
 
 1. Läs denna fil
 2. Läs `tasks/todo.md` + `tasks/lessons.md`
-3. Läs aktuell fas i `~/Repon/miranon-media-os/docs/react-migration/conversion-plan.md`
-4. Kör `git pull`
-5. Sammanfatta aktuell uppgift, relevanta lärdomar och verifieringskrav
+3. Läs `docs/BUILD-LOG.md` — senaste fasens resultat, avvikelser och uppskjutna beslut
+4. Läs aktuell fas i `docs/conversion-plan.md`
+5. Kör `git pull`
+6. Sammanfatta: aktuell uppgift, relevanta lärdomar, uppskjutna beslut från BUILD-LOG, verifieringskrav
 
 ## Sessionsavslut
 
 När Marcus säger "Nu avslutar vi denna session":
 1. Gå igenom HELA sessionen — beslut, lärdomar, misstag, vad som inte fungerade
-2. Uppdatera CLAUDE.md med status och beslut
-3. Uppdatera `tasks/lessons.md` (markera `[UNIVERSAL]` där relevant — synca till hubben)
-4. Uppdatera `tasks/todo.md`
-5. Uppdatera ## Filstruktur i CLAUDE.md
-6. Committa och pusha
+2. Uppdatera `docs/BUILD-LOG.md`:
+   - Ny fas-sektion med datum, commit-range, planerat vs faktiskt
+   - Avvikelser med ADR-referens
+   - Verifieringsresultat (faktisk output, inte bara "passerade")
+   - Kända uppskjutna beslut / teknisk skuld
+   - Filstruktur-snapshot (`tree src/`)
+   - Definition of Done uppfylld: Ja/Nej
+3. Skapa ADR i `docs/decisions/` för varje nytt arkitekturbeslut (format: `ADR-NNN`)
+4. Uppdatera `docs/decisions/README.md` med nya ADR:er
+5. Uppdatera CLAUDE.md med status och beslut
+6. Uppdatera `tasks/lessons.md` (markera `[UNIVERSAL]` där relevant)
+7. Uppdatera `tasks/todo.md`
+8. Uppdatera ## Filstruktur i CLAUDE.md
+9. Committa och pusha
+
+**Checklista:**
+- [ ] Stämmer alla statusmarkeringar med verkligheten?
+- [ ] Finns beslut som bara lever i chatten men inte i dokumenten?
+- [ ] Har varje arkitekturbeslut en ADR?
+- [ ] Är BUILD-LOG uppdaterad med faktisk output (inte bara "passerade")?
+- [ ] Är "Definition of Done" explicit markerad i BUILD-LOG?
+- [ ] Är "Status och nästa steg" uppdaterad?
+- [ ] Uppdatera ## Filstruktur i CLAUDE.md
+- [ ] Påminn Marcus: klicka "Update" i Claude Chat-projektet (claude.ai)
 
 ---
 
 ## Status
 
-**Fas 0: Projektsetup + tokens** — pågående. Repo skapat 2026-04-13.
+**Fas 0 + Fas 1 klara** — Session 1 (React), 2026-04-14. Se [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md) för fullständig fashistorik.
+
+**Aktuellt fokus:** Fas 2 — Routing + Auth (TanStack Router file-based, Supabase auth).
+
+> **Sessionsnumrering:** React-projektet startar på Session 1.
+> Session 1 (React) motsvarar Session 31 i den samlade projekthistoriken
+> (Vue-bygget var session 1–30 i `~/Repon/miranon-media-os/`).

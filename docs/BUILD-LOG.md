@@ -4,19 +4,34 @@ Kronologisk implementation journal per session. Varje session dokumenterar vad s
 
 Detta är **inte** en kravspec (den finns i `conversion-plan.md`) och **inte** en arkitekturbeskrivning (den finns i `DESIGN-SYSTEM-SPEC.md` + `decisions/`). Det är en förstekammare för framtida läsare som frågar *"varför gjordes det så här, på den tiden?"*.
 
+## Miljö
+
+| Parameter | Värde |
+|-----------|-------|
+| OS | Darwin 25.3.0 (macOS, `x86_64`) — Darwin Kernel Version 25.3.0: Wed Jan 28 20:53:28 PST 2026 |
+| Node | v24.13.1 |
+| npm | 11.8.0 |
+| TypeScript | 6.0.2 |
+| Vite | 8.0.8 |
+| React | 19.2.5 |
+| Tailwind CSS | 4.2.2 (`@tailwindcss/vite` 4.2.2) |
+| Biome | 2.4.11 |
+
+Uppdateras vid större versionsändringar. Mindre patch-uppdateringar (auto via `npm audit fix`, dependabot) noteras i `package-lock.json`-diff men inte här.
+
 ## Innehåll
 
-- [Session 31 — Fas 0 + Fas 1 + dokumentation](#session-31--fas-0--fas-1--dokumentation)
+- [Session 1 (React) — Fas 0 + Fas 1 + dokumentation](#session-1-react--fas-0--fas-1--dokumentation)
   - [Fas 0: Projektsetup + tokens](#fas-0-projektsetup--tokens)
   - [Fas 1: Domäntransplant](#fas-1-domäntransplant)
 - [Session-modellen](#session-modellen)
 
 ---
 
-## Session 31 — Fas 0 + Fas 1 + dokumentation
+## Session 1 (React) — Fas 0 + Fas 1 + dokumentation
 
 **Datum:** 2026-04-13 till 2026-04-14
-**Session-nummer:** 31 (session 1–30 var Vue-bygget i `~/Repon/miranon-media-os/`)
+**Session-nummer:** 1 (React) — motsvarar Session 31 i total projekthistorik. Vue-bygget var session 1–30 i `~/Repon/miranon-media-os/`.
 **Commit-range:** `1aa2544` → `c91bfa0` → docs-commit (denna session)
 **Effort-nivå:** max
 
@@ -162,6 +177,10 @@ Två nya `[UNIVERSAL]`-poster tillagda i `tasks/lessons.md` vid Fas 0-avslutet (
 1. **CSS custom properties: undvik perioder i namn.** Biome + Lightning CSS avvisar dem. Bindestreck (`--p-space-0-5`) är den kompatibla formen.
 2. **Hävda aldrig en specifik versionsorsak utan att först verifiera installerad version.** Fas 0 motiverade `baseUrl`-borttag med "TS 7.0 deprecated" — verkligheten var TS 6.0.2 med en varning. Kör `tsc --version` / `node --version` / `npm ls <paket>` innan du skriver "enligt version X".
 
+#### Definition of Done uppfylld: Ja ✅
+
+Godkänt av Marcus efter manuell granskning av verifieringsresultat och avvikelser. Alla 10 verifieringssteg i `tasks/todo.md` Fas 0 är gröna, samtliga avvikelser dokumenterade i [ADR-001](decisions/ADR-001-biome-over-eslint-stylelint-prettier.md) → [ADR-004](decisions/ADR-004-typescript-baseurl-removal.md). Fas 0 → `fcc6de3` + lärdoms-commit → `e3d8e8a`.
+
 ---
 
 ### Fas 1: Domäntransplant
@@ -278,7 +297,7 @@ Samtliga verifierade via `scripts/verify-phase-1.ts` (runtime) + `tsc` + `biome`
 - **Event-aliasering:** Lokal alias per `.tsx`-fil i Fas 2+. Global rename till `MiranonEvent` om 5+ filer behöver alias. ([ADR-007](decisions/ADR-007-event-name-collision-deferred-aliasing.md))
 - **Deno lint/format/check på edge functions:** Fas 7 ska lägga till `deno check supabase/functions/**/*.ts` i pre-commit-hook + CI. ([ADR-010](decisions/ADR-010-biome-exclude-deno-edge-functions.md))
 - **Schema-validering i adapter-metoder:** Fas 1 har scheman men inga adapter-metoder använder `.parse()`-anrop ännu. Fas 2 ska wrappar `callEdgeFunction`-resultat med `EventSchema.array().parse(data.events)` etc.
-- **docs/DESIGN-SYSTEM-SPEC.md stale-risk:** Kopierad till React-repot. Framtida uppdateringar i Vue-repot synkas inte automatiskt. Governance-beslut uppskjutet efter alla faser per Marcus beslut (session 31).
+- **docs/DESIGN-SYSTEM-SPEC.md stale-risk:** Kopierad till React-repot. Framtida uppdateringar i Vue-repot synkas inte automatiskt. Governance-beslut uppskjutet efter alla faser per Marcus beslut (Session 1 (React), = Session 31 i total historik).
 
 #### Tidsåtgång & observationer
 
@@ -345,6 +364,10 @@ src/
 
 **Totalt:** 37 `.ts`/`.tsx`/`.css`-filer i `src/` efter Fas 1.
 
+#### Definition of Done uppfylld: Ja ✅
+
+Godkänt av Marcus efter manuell granskning av verifieringsresultat och avvikelser. Alla 9 verifieringspunkter i Fas 1 (tsc, biome, schema-parity, ZodError, fetchWithRetry retry-count + backoff, alertScreenReader DOM-stub, commit, push) är gröna. Runtime-verifiering via `scripts/verify-phase-1.ts`: **11 passed, 0 failed**. Samtliga avvikelser dokumenterade i [ADR-005](decisions/ADR-005-zod-parallell-definitions.md) → [ADR-010](decisions/ADR-010-biome-exclude-deno-edge-functions.md). Fas 1 → `c91bfa0`.
+
 ---
 
 ## Session-modellen
@@ -361,7 +384,7 @@ Syftet är att en ny läsare ska kunna läsa sista sessionen och förstå var vi
 
 ## Referenser
 
-- [`decisions/`](decisions/) — Architecture Decision Records (10 st efter session 31)
+- [`decisions/`](decisions/) — Architecture Decision Records (10 st efter Session 1 (React))
 - [`conversion-plan.md`](conversion-plan.md) — fas-för-fas-planen (styrande)
 - [`gap-analysis.md`](gap-analysis.md) — gap-analys som motiverade `[GA]`-tilläggen
 - [`../tasks/lessons.md`](../tasks/lessons.md) — universella lärdomar

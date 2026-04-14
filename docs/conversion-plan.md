@@ -440,6 +440,9 @@ Kör på riktigt: `DRY_RUN=0 bash docs/react-migration/FILE-INVENTORY-copy.sh`
 
 ### Fas 0: Projektsetup + tokens
 
+> ✅ **KLAR** — Session 1 (2026-04-14). Se `docs/BUILD-LOG.md` Fas 0.
+> Avvikelser: ADR-001 till ADR-004, ADR-010. Uppskjutna: TanStack Router-plugin (Fas 2).
+
 **Mål:** Fungerande React-projekt med alla verktyg installerade, tokens konfigurerade, lint som passerar.
 
 **Filer som skapas:**
@@ -482,6 +485,9 @@ Kör på riktigt: `DRY_RUN=0 bash docs/react-migration/FILE-INVENTORY-copy.sh`
 ---
 
 ### Fas 1: Domäntransplant
+
+> ✅ **KLAR** — Session 1 (2026-04-14). Se `docs/BUILD-LOG.md` Fas 1.
+> Avvikelser: ADR-005 till ADR-009. Uppskjutna: Zod som sanningskälla (Fas 2/3), Event-aliasering (Fas 2+).
 
 **Mål:** Alla domain- och data-filer kopierade och verifierade. Supabase-klient fungerande.
 
@@ -1264,6 +1270,12 @@ VERIFIERA:
 - document.title ändras per route
 - TanStack Router DevTools visar alla routes
 - npx tsc --noEmit → 0 fel
+
+DOKUMENTERA:
+- Uppdatera docs/BUILD-LOG.md med fasens resultat (avvikelser, verifieringsoutput, filstruktur, Definition of Done)
+- Skapa ADR i docs/decisions/ för varje nytt arkitekturbeslut
+- Uppdatera docs/decisions/README.md
+
 - git add -A && git commit -m "fas 2: routing + auth"
 ```
 
@@ -1392,6 +1404,12 @@ VERIFIERA per komponent:
 - aria-attribut korrekta (inspektera med devtools)
 - Alla tokens från systemet (inga hårdkodade hex)
 - npx tsc --noEmit → 0 fel
+
+DOKUMENTERA:
+- Uppdatera docs/BUILD-LOG.md med fasens resultat (avvikelser, verifieringsoutput, filstruktur, Definition of Done)
+- Skapa ADR i docs/decisions/ för varje nytt arkitekturbeslut
+- Uppdatera docs/decisions/README.md
+
 - git commit per komponent (8 commits)
 ```
 
@@ -1498,6 +1516,12 @@ VERIFIERA:
 - prefers-contrast:more: starkare borders/text
 - axe-core: 0 violations
 - Playwright baselines (mobil + iPad + desktop)
+
+DOKUMENTERA:
+- Uppdatera docs/BUILD-LOG.md med fasens resultat (avvikelser, verifieringsoutput, filstruktur, Definition of Done)
+- Skapa ADR i docs/decisions/ för varje nytt arkitekturbeslut
+- Uppdatera docs/decisions/README.md
+
 - git commit
 ```
 
@@ -1580,6 +1604,12 @@ VERIFIERA:
 - Playwright baselines per vy
 - Friction log (alla 4 flikar)
 - Design audit (Hem-vyn)
+
+DOKUMENTERA:
+- Uppdatera docs/BUILD-LOG.md med fasens resultat (avvikelser, verifieringsoutput, filstruktur, Definition of Done)
+- Skapa ADR i docs/decisions/ för varje nytt arkitekturbeslut
+- Uppdatera docs/decisions/README.md
+
 - git commit per flik
 ```
 
@@ -1592,6 +1622,11 @@ VERIFIERA:
 **Estimat:** 2 sessioner
 
 Automatisk loggning av alla relevanta användarhandlingar. Ger Lotta en historisk vy över allt hon gjort — betalningar, anmälningar, mail, närvaro.
+
+DOKUMENTERA vid fasens avslut (gäller alla faser):
+- Uppdatera docs/BUILD-LOG.md med fasens resultat (avvikelser, verifieringsoutput, filstruktur, Definition of Done)
+- Skapa ADR i docs/decisions/ för varje nytt arkitekturbeslut
+- Uppdatera docs/decisions/README.md
 
 ### Fas 7: Konsolidering
 
@@ -1657,6 +1692,12 @@ VERIFIERA (definition av klart):
 - [ ] axe-core: 0 critical, 0 serious
 - [ ] DataTable-beslut dokumenterat (byggt eller eliminerat)
 - [ ] Kvarvarande skuld dokumenterad
+
+DOKUMENTERA:
+- Uppdatera docs/BUILD-LOG.md med fasens resultat (avvikelser, verifieringsoutput, filstruktur, Definition of Done)
+- Skapa ADR i docs/decisions/ för varje nytt arkitekturbeslut
+- Uppdatera docs/decisions/README.md
+
 - git add -A && git commit -m "fas 7: konsolidering + kvalitetssäkring"
 ```
 
