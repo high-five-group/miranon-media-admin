@@ -1,3 +1,8 @@
+> **📎 Kopia finns i:** `~/Repon/psionautics/docs/hur-systemet-funkar.md`
+> (för psionautics-projektets Claude-chatt under prototyp-fasen)
+
+---
+
 # Hur systemet funkar
 
 *Guide till Miranon Medias och Psionautics bakomliggande system.*

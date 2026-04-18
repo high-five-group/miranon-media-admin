@@ -1,3 +1,8 @@
+> **📎 Kopia finns i:** `~/Repon/psionautics/docs/data-model.md`
+> (för psionautics-projektets Claude-chatt under prototyp-fasen)
+
+---
+
 # Datamodell — Miranon Media & Psionautics
 
 *Levande referens. Version 1. Skapad 2026-04-16. Växer när vi lär oss mer.*
