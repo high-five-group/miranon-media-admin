@@ -267,6 +267,8 @@ Allt som byggs bedöms utifrån båda perspektiven:
 
 ## Sessionsavslut
 
+Se `marcus-system/WORKFLOW.md` sessionsavslut-sektion för transcript-disciplin. Transcripts sparas i `tasks/sessions/transcripts/`.
+
 När Marcus säger "Nu avslutar vi denna session":
 1. Gå igenom HELA sessionen — beslut, lärdomar, misstag, vad som inte fungerade
 2. Uppdatera `docs/BUILD-LOG.md`:

@@ -171,6 +171,30 @@ Någon hämtar "Kraftfältet" mot sin e-post.
 
 ---
 
+## Personens tillstånd — vad namnlös Person betyder
+
+En Person kan vara i olika tillstånd beroende på hur långt relationen gått. Det är inte ett fel att en Person saknar namn — det är ett normalt tillstånd i livscykeln.
+
+| Tillstånd | Vad finns i Personer | Vad finns kopplat | Hur hamnar man här |
+|---|---|---|---|
+| Leads | Förnamn/Efternamn tomt, bara e-post | Touchpoints, Hämtade erbjudanden | A4 skapar via Lead-tabellen (rad skapad från miranon.se) |
+| Anmäld kurs | Förnamn/Efternamn ifyllt | + Anmälningar | A2 Gren 1 fyller i namn vid första kursanmälan, eller Gren 4 skapar med namn från första anmälan |
+| Deltagare | Samma som ovan | + Deltaganden med Närvaropoäng = 1 | Närvaro markerad via A9/A10 |
+| Alumn | Samma + rollups (RIM 1 ×, RIM 2 × osv) | (räknas från Deltaganden-historiken) | Rollup-beräkning |
+| Återkommande | Samma + Har aktiv anmälan? = "Ja" | + ytterligare Anmälningar | Ny anmälan efter tidigare genomförd kurs |
+
+### Operationella konsekvenser
+
+- **Personer med tomt Förnamn är leads** — inte skräp. De kan ha värdefull historik (Touchpoints, Hämtade erbjudanden) och representerar faktiska människor som visat intresse.
+
+- **Radera ALDRIG Personer.** Inte ens de som ser "tomma" ut. Kopplade Touchpoints/Hämtade erbjudanden går förlorade och framtida matchning mot e-post bryts.
+
+- **Fyll ALDRIG i placeholder-värden** som "Okänd" i Förnamn. Det bryter A2 Gren 1:s villkor `isEmpty(Förnamn)` och förhindrar att namnet senare fylls i automatiskt när personen anmäler sig till kurs.
+
+- **Vid normal drift** bör antal namnlösa Personer ungefär motsvara antal leads som ännu inte anmält sig till kurs.
+
+---
+
 ## Vanliga missförstånd
 
 | Det man tror | Så är det faktiskt |

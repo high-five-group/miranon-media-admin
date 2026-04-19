@@ -525,6 +525,19 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 
 20. **Airtable Restore skapar KOPIA, ersätter inte in-place.** Den ursprungliga basen är oförändrad. Rollback av delvis skrivning kräver manuell radering i original-basen.
 
+21. **Namnlösa Personer är leads, inte skräp.** Rader i Lead-tabellen (från miranon.se) innehåller ofta endast e-post. När leads senare anmäler sig till kurs (där namn krävs), triggar A2 Gren 1 som uppdaterar Personen med namn från Anmälan. Detta är FEATURE, inte bug. Systemet är designat för lead först, anmälan sedan.
+
+    Men: Gren 1 uppdaterar Personens namn men kopplar INTE Anmälan till Personen. Det är Gren 2 som gör det. I normalt flöde (lead först) spelar det ingen roll — framtida anmälningar från samma e-post matchar Gren 2 sedan Personen fått namn.
+
+    I reverse-flöden (backfill av historisk anmälan på lead-Person): Gren 1 körs, namnet uppdateras, men Anmälan hänger lös utan Person-länk. Konsekvens: A3 triggas aldrig (kräver Anmälan.Person isNotEmpty) → inget Deltagande skapas → A11 kedjar aldrig. Scriptet måste kompensera genom att PATCH:a Person-länken manuellt efter create. Patch:et triggar A3 → A11 kedjar korrekt.
+
+22. **Namnlösa Personer är ett normalt tillstånd, inte ett fel.** Rader i Lead-tabellen (se Scenario 5 i hur-systemet-funkar.md) skapas ofta med endast e-post från miranon.se. A4 skapar då Person med Förnamn/Efternamn tomma. Personen förblir namnlös tills hen anmäler sig till en kurs, då A2 Gren 1 fyller i namnet från Anmälan.
+
+    Operationella regler:
+    - Radera ALDRIG namnlösa Personer — de är leads med potentiellt värdefull historik (Touchpoints, Hämtade erbjudanden).
+    - Sätt ALDRIG placeholder-värden ("Okänd" etc) på Förnamn — det bryter A2 Gren 1:s `isEmpty(Förnamn)`-villkor och förhindrar automatisk namnkomplettering vid framtida kursanmälan.
+    - Reverse-flöden (t.ex. backfill av historisk kursanmälan på en nuvarande lead) måste kompensera genom att scriptet manuellt PATCH:ar Anmälan.Person-länken, eftersom A2 Gren 1 uppdaterar Personens namn men kopplar inte Anmälan till Personen.
+
 ---
 
 ## Datakvalitetsstatus (2026-04-16)
