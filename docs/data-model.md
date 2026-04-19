@@ -517,6 +517,14 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 
 16. **Manuella rader i Anmälningar kopplas inte automatiskt till eventet via formulärmatchning.** Skapad direkt i Airtable utan EventKey → A1 matchar inte → Event förblir tom → A3 triggas aldrig.
 
+17. **Airtable formula-fält har beräkningsfördröjning.** Just-skapade rader (av automation) kan returnera tomt eller fel värde från formel-fält i upp till 30s innan Airtable hunnit beräkna klart. Läs ALDRIG formel-värden omedelbart efter automation-triggad create. Använd poll-med-timeout eller läs länkfältet direkt istället.
+
+18. **Lookup-fält har egen uppdateringskedja, snabbare än formel-fält.** Vid programmatisk matchning på länkad data: föredra lookup framför formula.
+
+19. **A1–A11 är async och rapporterar "Ran successfully" även när delresultat saknas.** Run-history bekräftar att trigger kördes, inte att alla action-steg slutförde sidoeffekter. Verifiera sidoeffekter direkt (t.ex. länkfält på mål-recordet), inte run-status.
+
+20. **Airtable Restore skapar KOPIA, ersätter inte in-place.** Den ursprungliga basen är oförändrad. Rollback av delvis skrivning kräver manuell radering i original-basen.
+
 ---
 
 ## Datakvalitetsstatus (2026-04-16)
