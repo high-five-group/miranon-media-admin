@@ -1,12 +1,14 @@
-> **📎 Kopia finns i:** `~/Repon/psionautics/docs/hur-systemet-funkar.md`
-> (för psionautics-projektets Claude-chatt under prototyp-fasen)
+> **Primär version. Senast uppdaterad 2026-04-28.**
+>
+> Kopia för psionautics-projektets Claude-chatt synkas separat till
+> `~/Repon/psionautics/docs/hur-systemet-funkar.md` efter varje uppdatering här.
 
 ---
 
 # Hur systemet funkar
 
 *Guide till Miranon Medias och Psionautics bakomliggande system.*
-*För Marcus, Roger, Lotta. Version 2 · 2026-04-16.*
+*För Marcus, Roger, Lotta. Version 3 · 2026-04-28.*
 
 ---
 
@@ -18,8 +20,9 @@
 | Antal tabeller | 18 (3 kärn + 15 stöd) |
 | Automationer | 11 (A1–A11, alla aktiva) |
 | Formulär | 7 (Elfsight-baserade) |
-| Psionautics-admin | Används skarpt sedan april 2026 |
-| Miranon Media-admin | Under uppbyggnad |
+| Psionautics-admin | Aktivt i drift sedan april 2026 |
+| Miranon Media-admin | Under uppbyggnad (React-konvertering pågår) |
+| Backfill av historisk närvaro | Klar 2026-04-19 |
 
 ---
 
@@ -80,7 +83,7 @@ Anna fyller i formuläret på psionautics.se.
 | 1 | Ny rad skapas i Anmälningar | — |
 | 2 | Rätt event kopplas på | A1 |
 | 3 | Person matchas på e-post (skapas om ny) | A2 |
-| 4 | Deltaganden-rader skapas (en per sessionsdag), alla "Ej avstämt" | A3 |
+| 4 | Deltaganden-rader skapas (en per session enligt Sessionsmall), alla "Ej avstämt" | A3 |
 | 5 | Person-länk kopieras till Deltaganden-raderna | A11 |
 | 6 | Bekräftelsemail skickas (separat flöde) | Resend |
 
@@ -103,7 +106,7 @@ Anna fyller i formuläret på psionautics.se.
 
 ## Scenario 3 — En person går kursen
 
-**Det här är där systemet oftast används fel idag.**
+**Det här är där systemet oftast användes fel — fram till backfillen 2026-04-19.**
 
 Kursen äger rum. Anna är där. Kursen är slut.
 
@@ -123,7 +126,7 @@ Status = "Närvarande"
         ▼
 Närvaropoäng = 1
         ▼
-Räknas som genomförd RIM 1 (eller RIM 2 eller Fjärrskådning)
+Räknas som genomförd RIM 1 (eller RIM 2 eller RIM 3 eller Fjärrskådning)
         ▼
 Personens siffror uppdateras automatiskt:
   • RIM 1 × räknare +1
@@ -141,19 +144,19 @@ Personens siffror uppdateras automatiskt:
 | Erfarenhetsnivå | "Ej påbörjat" |
 | Rapporter om kurshistorik | Tomma |
 
-**Nuläge (2026-04-16):** 487 av 517 Deltaganden-rader är "Ej avstämt". Systemet fungerar — steget "markera närvaro" har bara inte körts.
+**Nuläge (2026-04-28):** 1 012 av 1 500 Deltaganden-rader är "Närvarande" (67.5%) — backfillen 2026-04-19 markerade Lottas historiska kurshistorik. Resterande 488 är framtida event som ännu inte ägt rum (varav 218 ligger på Medveten Kontakt 1–3 maj 2026). Pre-backfill var bara 30 av 517 rader markerade (5.8%).
 
 ---
 
 ## Scenario 4 — "Vilka har gått kurs tidigare?"
 
-Lotta vill segmentera mail. Hon vill veta vilka av de 75 anmälda till Medveten Kontakt som gått RIM 1 förut.
+Lotta vill segmentera mail. Hon vill veta vilka av de anmälda till Medveten Kontakt som gått RIM 1 förut.
 
 | | |
 |---|---|
 | **Teoretiskt** | Data finns — varje Person har fält "RIM 1 ×" |
-| **I praktiken** | Siffran är bara korrekt om närvaro markerats på alla tidigare RIM 1-kurser |
-| **Lösning** | Backfill — gå igenom genomförda kurser, markera närvaro retroaktivt |
+| **I praktiken (pre-backfill)** | Siffran var bara korrekt om närvaro markerats på alla tidigare RIM 1-kurser |
+| **Lösning** | **Backfill genomförd 2026-04-19.** 924 historiska Deltaganden importerade. Rapporter om kurshistorik fungerar nu. Se data-model.md §Backfill — historik. |
 
 ---
 
@@ -218,6 +221,8 @@ En Person kan vara i olika tillstånd beroende på hur långt relationen gått. 
 | Beläggningsprocent stämmer inte | Status på anmälningar är fel | Kolla att aktiva har korrekt Status |
 | Mail gick inte ut till alla | Dublett-person orsakar fel | Kolla Error-log-tabellen |
 | Väntelista visar redan flyttade | Markering saknas | Kryssa i "Flyttad till anmälan" |
+| Mail skickades men UI visar inte timestamp | Bakomliggande sparning misslyckades efter mail-skick | Kolla Cloud → Edge functions → Logs i Lovable. Möjligen behöver fältet sättas manuellt i Airtable. |
+| Inställd anmälan visas som aktiv i rapporter | Datamodell-skuld i "Är aktiv"-formeln | Förvänta detta tills formeln uppdateras. Påverkar bara rapporter, inte själva flödet. |
 
 ---
 
@@ -251,10 +256,10 @@ En Person kan vara i olika tillstånd beroende på hur långt relationen gått. 
 | Vad | Status |
 |---|---|
 | Psionautics-admin | Aktivt i drift |
-| Miranon Media-admin | Under uppbyggnad |
-| Backfill av historisk närvaro | Ska köras före deltagarinsikter-rapporten |
+| Miranon Media-admin | Under uppbyggnad (React-konvertering — Fas 2 pågår) |
+| Backfill av historisk närvaro | **Klar 2026-04-19.** 924 historiska Deltaganden importerade. |
 | Deltagarinsikter-rapport i admin | Planerad |
-| Fullständig övergång Lotta → admin | När Miranon-admin är klar |
+| Fullständig övergång Lotta → Miranon Media-admin | När Miranon-admin är klar |
 
 ---
 
@@ -272,5 +277,6 @@ En Person kan vara i olika tillstånd beroende på hur långt relationen gått. 
 
 | Datum | Ändring |
 |---|---|
+| 2026-04-28 | **Version 3.** Snabbfakta uppdaterad (Psionautics-admin "i drift", Miranon Media-admin "under uppbyggnad", backfill markerad klar). Scenario 3 nuläge-not uppdaterad till live-state 2026-04-28 (1 012 av 1 500 Närvarande, 67.5%). Scenario 3 + 4: backfill markerad genomförd 2026-04-19. Scenario 4 lösning rättad från "ska köras" till "klar — 924 historiska Deltaganden importerade". "Vad kan gå fel"-tabell utökad med 2 rader (mail-PATCH-tystnad, Inställt räknas som aktiv). Vägen framåt: backfill markerad klar, Miranon Media-admin status preciserad. Insiktskedjan: RIM 3 tillagd i exempel-listan (RIM 1 / RIM 2 / RIM 3 / Fjärrskådning). |
 | 2026-04-16 | Version 2 — omstrukturerad till tabell-format. Samma innehåll, tätare presentation. |
 | 2026-04-16 | Version 1 — scenariodriven prosa (ersatt). |
