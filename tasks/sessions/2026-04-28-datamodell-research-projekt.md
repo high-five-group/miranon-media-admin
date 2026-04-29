@@ -50,6 +50,7 @@ Forwards-look-projekt: är modellen i sig 11/10, eller bara dokumentationen av d
 | 2026-04-28 | Codex' Fas 4+5 sammanslås till Fas 4 med A-/S-track-milstolpar | Chat | Färre gates, tydligare sekvens |
 | 2026-04-28 | 7-fas-strukturen (0–6) godkänd | Marcus | Ersätter 8-fas |
 | 2026-04-29 | Förkontroll Code: GO. Förkontroll Codex: NO-GO på Airtable MCP — separat connector-fix krävs senare. REST API-väg verifierad för automationer/webhooks. Tre constraint-påståenden korrigerade (fields-parameter, search_records, MCP-blindhet). Zapier-research: 10 Zaps totalt, 6 aktiva skriver till Airtable, 0 webhooks. DQ4 omklassificerad: hårdkodade Zapier-värden, inte formulärdata. | Marcus + Chat | Constraint-korrigeringar för Fas 1-prompt; H7 omdefinieras; DS7 (NY) tillagd; DQ4 omklassad |
+| 2026-04-29 | G0.3 = soft multi-tenant | Marcus | S-track designas med tenant_id + RLS från dag ett. A-track berörs inte direkt — ingen tenant-abstraktion i Airtable före behov (per P10). |
 
 ---
 
