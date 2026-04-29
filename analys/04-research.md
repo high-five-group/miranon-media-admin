@@ -1,6 +1,6 @@
 # 04 — Worldclass Research
 
-> **Status:** Fas 1 (Baseline) klar. Fas 2 (Research) ej påbörjad.
+> **Status:** Fas 1 (Baseline) klar. Fas 2 (Research) klar för Gate 2.
 >
 > **Källprincip:** Detta är en designbar sammanfattning av frusen baseline, inte ny live-extraktion. Vid konflikt gäller live-state och arbetsdokumentets 2026-04-29-korrigeringar före äldre dokumentation.
 
@@ -97,4 +97,134 @@ flowchart LR
 
 ## Del 1 — Research (Fas 2)
 
-*(tom — Fas 2-leverans)*
+### R0 — Metod och scope
+
+Detta är principresearch för designfasen, inte en ny Airtable-extraktion. Källorna är valda för att täcka både nuvarande Airtable/no-code-drift och möjlig Supabase/Postgres-target. Vid konflikt gäller live-state och arbetsdokumentets 2026-04-29-korrigeringar före äldre docs. H6 behandlas som **REJECTED**. DQ4 behandlas därför som **config-as-data drift i Zapier-ingest**, inte som form-input-dedup.
+
+Källbredden är medvetet klustrad: officiella Airtable-källor för operativ no-code-modell, officiella Supabase/Postgres-källor för relationsdatabas/target, webhook/idempotency-källor för integrationskanter, observability/audit-källor för driftbarhet, och öppna produktrepoexempel för hur etablerade system modellerar liknande relationer.
+
+### R1 — Principregister
+
+| ID | Princip | Kort definition | Airtable-tillämpning | Supabase/Postgres-tillämpning | Styrande DS/DQ/H |
+|---|---|---|---|---|---|
+| P1 | Lifecycle-first domain model | Modellera Person, Anmälan, Deltagande, Event och Väntelista utifrån livscykel och ansvar, inte bara efter tabell-/fältvolym. | Bevara Lottas workflows och namnlös lead-state; undvik att "städa" bort normala mellanlägen. | Separera entities/aggregates när invariants kräver det, men splittra inte Personer mekaniskt utan domain-skäl. | H2, DQ6, DS2 |
+| P2 | Identity resolution as subsystem | E-postmatchning, normaliserad e-post, alias/merge och ofullständig lead-identitet är ett eget styrt område. | Canonical email och namnlösa Personer ska hanteras med views/automationer som gör matchningsstatus synlig. | Unique/partial indexes, normaliserade kontaktvärden, merge-logg och validerade kontaktfält ersätter ad hoc-matchning. | DQ1, DQ5, DQ6, H1, H5, H12 |
+| P3 | Explicit state machines | Statusfält ska ha tydliga tillåtna värden, transitions och konsekvenser; "aktiv", "inställt", "betald", "närvarande" får inte blandas. | Namnge och dokumentera statussemantik i vyer/fält; undvik formler vars namn lovar mer än de gör. | CHECK/enum/reference tables och transition-logik i transaktioner där status driver downstream-effekter. | DS1, DS2, H2 |
+| P4 | Derived data as read model | Rollups/formler/caches är läsmodeller, inte primär sanning; varje parallell härledning behöver ägare och konsument. | Rollup/lookup/count används för operativ läsbarhet men får inte bli dolda sanningskällor utan konsumentsök. | Materialized/read models, views eller generated data ska kunna återskapas från kanoniska tabeller. | DS3, DS4, DS5, DS6, DQ7, H4, H8, H9 |
+| P5 | Audit before event sourcing | Logga actor/source/time/result för kritiska ändringar och side effects; full event sourcing är övervikt om replay inte är ett konkret krav. | Lägg fokus på förståelig historik för Lotta/Roger, inte abstrakt event-store. | Audit/communication tables i samma transaktion som state change där möjligt; event sourcing bara om Fas 3 visar behov. | DQ8, DQ9, DS7 |
+| P6 | Integration edges are products | Varje Zapier/Edge Function/webhook-kant behöver idempotency, source, version, retries, config och dedupe som designobjekt. | Zapier-statiska värden ska behandlas som config-as-data med ägare, inte som "skräpdata" i formulärfält. | Inbox/outbox, idempotency keys, webhook signature checks, retry-logg och transactional boundaries. | DQ4, DQ8, DQ9, H3, H7, H13 |
+| P7 | Operational observability | Systemet måste visa vad som hände, var det brast och om side effects är delvis klara. | Error-log/views/statusflaggor ska skilja mail skickat, Airtable PATCH, flyttad väntelista och dubblettfall. | Traces/logs/metrics med correlation ids över frontend, Edge Function, Zapier/webhook och DB-operationer. | DQ8, DQ9, DS7, H7 |
+| P8 | Airtable-native ergonomics | Airtable ska designas som ett operativt verktyg för människor: linked records, views, rollups och automations ska vara läsbara och säkra. | Fältstädning, val-listor, views och rollups görs post-MK med låg blast radius. | Migrationen ska inte kopiera Airtable-magi 1:1; den ska bevara vad Airtable gör bra som explicit UX/read models. | DQ2, DQ3, DS5, H10, H11 |
+| P9 | Constraint-backed relational target | Supabase-target ska låta databasen äga integritet där det är rimligt: PK/FK/unique/check/RLS/transactions. | Airtable kan dokumentera target-invariants men ska inte tvingas bära allt före MK. | Constraints och RLS är förstaklassdesign, särskilt för Person/Anmälan/Deltagande/Event och framtida multi-tenant. | DS1, DS6, DQ5, DQ7, DQ9, H12 |
+| P10 | Tenant/readiness is a gate, not a guess | Multi-tenant-readiness ska bedömas explicit med tenant boundary, RLS och driftmodell; inte smygas in i alla tabeller utan beslut. | Nuvarande Airtable-bas är en operativ single-base reality; inför inte tenant-abstraktion i Airtable före behov/beslut. | Om Supabase ska bära flera kunder/workspaces krävs tenant_id + RLS-policyer + testbar isolation från start. | H2, H7, strategiska G0 |
+
+### R2 — Airtable/no-code-principer
+
+Officiell Airtable-dokumentation stöder att relationer bör modelleras som separata tabeller med linked records när ett workflow har egna objekt och detaljer. Det passar nuvarande kärna: Personer, Anmälningar, Deltaganden och Eventplanering är inte bara olika vyer av samma rad, utan olika operativa objekt. Airtable rollups/lookups/counts är samtidigt uttryckligen beroende av linked records och kan filtreras. Slutsats: i Airtable ska härledd data behållas som operativ läsbarhet, men konsumenter och villkor måste vara synliga innan cleanup.
+
+Viktiga konsekvenser:
+- DS3/DS4/DS5/H8/H9 ska bedömas som read-model/fälthygien, inte som skäl att ändra grunddomänen före MK.
+- DQ2/DQ3/H10/H11 är lågrisk efter MK om de är bekräftat okonsumerade, men de ska inte blandas ihop med DQ4.
+- Airtable API har 5 requests/second/base och returnerar inte tomma fält i API-svar; export/migration måste därför behandla "saknas" och "tomt" försiktigt.
+
+Källor:
+- https://support.airtable.com/docs/linking-records-in-airtable
+- https://support.airtable.com/docs/rollup-field-overview
+- https://support.airtable.com/docs/en/conditional-counts-lookups-and-rollups
+- https://support.airtable.com/docs/getting-started-with-airtables-web-api
+- https://support.airtable.com/docs/airtable-webhooks-api-overview
+- https://airtable.com/developers/web/api/get-base-schema
+
+### R3 — Supabase/Postgres-principer
+
+Postgres-dokumentationen gör constraints till datamodellens integritetslager: primary keys, foreign keys, unique, check och exclusion constraints ska användas när de uttrycker invariant bättre än applikationskod. Supabase bygger vidare på Postgres RLS och säger att RLS ska vara på för tabeller i exponerade schema. RLS är därmed inte en UI-behörighet utan en dataåtkomstmodell. Database Webhooks i Supabase är en bekvämlighetswrapper runt Postgres triggers via pg_net och är asynkrona, vilket gör dem användbara för side effects men inte till ersättning för transaktionsintegritet.
+
+Viktiga konsekvenser:
+- DQ9 ska lösas i target som en transaktions-/boundary-fråga, inte som "kom ihåg att patcha väntelistan".
+- DQ5/H12 ska bli typed contact/invariant-fråga i target, inte bara Airtable field-type cleanup.
+- DS6/DQ7/H4 är tydligt target-bortdesign: RECORD_ID-formelbuggen ska inte migreras som semantik.
+- Multi-tenant ska inte antas, men om den väljs kräver den explicit tenant boundary och RLS-testning.
+
+Källor:
+- https://www.postgresql.org/docs/current/ddl-constraints.html
+- https://www.postgresql.org/docs/current/ddl-rowsecurity.html
+- https://www.postgresql.org/docs/current/triggers.html
+- https://supabase.com/docs/guides/database/postgres/row-level-security
+- https://supabase.com/docs/guides/database/webhooks
+- https://supabase.com/docs/guides/database/joins-and-nesting
+
+### R4 — Integration, idempotency och config-as-data
+
+Stripe visar den etablerade retry-principen: klienten skickar idempotency key så samma operation kan upprepas utan dubbel side effect. GitHub webhook-dokumentation betonar secret/signature-validering och tydlig hantering av deliveries. Supabase Database Webhooks och Postgres triggers visar samtidigt att externa side effects ofta ligger utanför huvudtransaktionen. För Miranon betyder det att integrationer behöver egna dataobjekt: event/source, config version, payload, idempotency key, processing status, retry count, last error och resultat.
+
+DQ4 hör hemma här. Hashvärdena i `Källa (formulärkälla)` är enligt arbetsdokumentets 2026-04-29-korrigering hårdkodad Zapier-config i Zap 5+6. Rätt researchfråga är därför config-as-data drift: hur statisk integration-config blir data och hur migrationen kan kanonisera den utan att skylla på formulär-input.
+
+Viktiga konsekvenser:
+- H7/Zapier ska modelleras som primär extern write-path tills Fas 5 säger annat.
+- H3/H13 ska behandlas som ingest-template/config-frågor, inte som allmän datahygien.
+- DQ8/DQ9 kräver side-effect-status och transaction/retry-design.
+
+Källor:
+- https://docs.stripe.com/api/idempotent_requests
+- https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
+- https://docs.github.com/en/webhooks/using-webhooks/handling-webhook-deliveries
+- https://supabase.com/docs/guides/database/webhooks
+- https://www.postgresql.org/docs/current/trigger-definition.html
+- https://airtable.com/developers/web/api/webhooks-overview
+
+### R5 — Audit, historik och observability
+
+Fowler skiljer enkel Audit Log från tyngre temporal/event sourcing-mönster: audit log är enkelt och nyttigt men blir svårare att fråga när historiken blir central affärslogik. Event sourcing ger replay och djup felsökning men ska bara väljas om systemet faktiskt behöver att state härleds från events. OpenTelemetrys observability-primer ger rätt driftkrav: traces, metrics och logs ska göra systemet felsökningsbart utan ny instrumentation.
+
+Viktiga konsekvenser:
+- Miranon behöver audit/communication log för mail, betalning, väntelista, Zapier-ingest och personmatchning.
+- Full event sourcing/CQRS är ett anti-pattern här tills Fas 3 hittar ett konkret replay-behov.
+- DQ8 är inte bara en buggrisk; det är frånvaro av state för en delvis lyckad side effect.
+
+Källor:
+- https://martinfowler.com/eaaDev/AuditLog.html
+- https://martinfowler.com/eaaDev/EventSourcing.html
+- https://opentelemetry.io/docs/concepts/observability-primer/
+- https://opentelemetry.io/docs/what-is-opentelemetry/
+- https://docs.sentry.io/product/sentry-basics/tracing/
+
+### R6 — Domain modelling och identity
+
+DDD-källorna används här pragmatiskt, inte dogmatiskt: entities har identity, value objects saknar egen identity, och aggregates ska skydda invariants. För Miranon pekar det på att Personer inte ska splittras bara för att tabellen har 87 fält. Split ska bara ske där livscykel, access, historik eller invariant skiljer sig. Däremot är Person identity resolution sannolikt ett eget subsystem eftersom namnlösa leads, normaliserad e-post, case-dubletter och A2-grenordning styr om anmälningar får korrekt Person-länk.
+
+Viktiga konsekvenser:
+- H2 är fortfarande OPEN till Fas 3, men "87 fält" räcker inte som designargument.
+- DQ6 ska preserve/formaliseras som lead lifecycle.
+- DQ1/DQ5/H1/H5/H12 hör ihop i en identity-resolution cluster.
+
+Källor:
+- https://learn.microsoft.com/en-us/dotnet/architecture/microservices/microservice-ddd-cqrs-patterns/net-core-microservice-domain-model
+- https://learn.microsoft.com/en-us/dotnet/architecture/microservices/microservice-ddd-cqrs-patterns/implement-value-objects
+- https://learn.microsoft.com/en-us/archive/msdn-magazine/2009/february/best-practice-an-introduction-to-domain-driven-design
+- https://support.airtable.com/docs/linking-records-in-airtable
+- https://www.postgresql.org/docs/current/ddl-constraints.html
+
+### R7 — Öppna repoexempel
+
+Cal.com modellerar bokning som egen entity med `BookingStatus`, relationer till EventType och Attendee, unik `uid`, optional unik `idempotencyKey`, index på status/tid/eventType/user och webhook-config kopplad till user/team/eventType. Detta är relevant för Anmälningar/Deltaganden/Eventplanering: status, deltagare, eventtyp och idempotency ligger inte som obestämd text runt samma rad.
+
+Källa: https://github.com/calcom/cal.com/blob/c2c95b371a691a5db042db7705f7708dbe62ce96/packages/prisma/schema.prisma
+
+Plane modellerar issues med project/workspace, state, assignees via join table, activity/version-historik och webhook/webhook-log med uniqueness constraints per workspace/url. Detta är relevant för state machines, historik och webhook-operabilitet.
+
+Källor:
+- https://github.com/makeplane/plane/blob/db1c5b95138e8bf641208bfae00e9e07e1cc0295/apps/api/plane/db/models/issue.py
+- https://github.com/makeplane/plane/blob/db1c5b95138e8bf641208bfae00e9e07e1cc0295/apps/api/plane/db/models/state.py
+- https://github.com/makeplane/plane/blob/db1c5b95138e8bf641208bfae00e9e07e1cc0295/apps/api/plane/db/models/webhook.py
+
+NocoDB modellerar Airtable-liknande metadata som data: model/table har `base_id`, `source_id`, columns, views och display value; columns har typed `uidt`, select options och link/lookup/rollup-relaterad metadata. Detta stöder principen att Airtable-liknande schema/config inte ska vara osynlig magi i target.
+
+Källor:
+- https://github.com/nocodb/nocodb/blob/ee146551d86dc8191cf81dfc1333df1f43575c2f/packages/nocodb/src/models/Model.ts
+- https://github.com/nocodb/nocodb/blob/ee146551d86dc8191cf81dfc1333df1f43575c2f/packages/nocodb/src/models/Column.ts
+
+### R8 — Gate 2-slutsats för Fas 3
+
+Principerna är relevanta för både Airtable och Supabase, men de ska användas olika. Airtable-principerna skyddar operativ ergonomi och post-MK cleanup. Supabase/Postgres-principerna styr target-invariants, transactions, RLS och migration. Integrationsprinciperna är den tydligaste bron mellan båda världar, särskilt DQ4, DQ8, DQ9, H7 och H13.
+
+Fas 3 bör därför klassificera varje skuldpunkt mot minst en av dessa principer och markera om åtgärden hör hemma i Airtable-fix, Supabase target, migration transform, integration-config eller preserve/defer. En Fas 3-design som inte kan peka tillbaka till P1-P10 ska betraktas som för lös.

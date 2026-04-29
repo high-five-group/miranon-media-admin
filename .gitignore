@@ -30,3 +30,6 @@ src/routeTree.gen.ts
 logs
 *.log
 npm-debug.log*
+
+# Codex scratch
+.codex-scratch/
