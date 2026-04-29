@@ -86,7 +86,7 @@ flowchart LR
 | H3 | EventKey-bug är formel-symptom, inte data-skuld. | `tasks/sessions/2026-04-28-datamodell-research-projekt.md:67` | Supabase target / designa bort | DECIDED (förbi), men H13 preciserar källa. |
 | H4 | RECORD_ID()-bug i Deltaganden är formel-bug. | `tasks/sessions/2026-04-28-datamodell-research-projekt.md:68` | Supabase target | DECIDED. |
 | H5 | A2 sätter `Person?` på Anmälan i alla 4 grenar. | `tasks/sessions/2026-04-28-datamodell-research-projekt.md:69` | Verifiera i Fas 3 | SUPPORTED men inte bevisad. |
-| H6 | SHA256-hashar är form-input-data. | `tasks/sessions/2026-04-28-datamodell-research-projekt.md:70` | Revidera mot DQ4 | OPEN men kolliderar med 2026-04-29 DQ4-omklassning; bör stängas/reformuleras i Fas 3. |
+| H6 | SHA256-hashar är form-input-data. | `tasks/sessions/2026-04-28-datamodell-research-projekt.md:70` | REJECTED — ersatt av DQ4-omklassning | Stängd 2026-04-29: hasharna är hårdkodade i Zap 5+6 enligt arbetsdokumentets beslutslogg. Cleanup hanteras via DQ4. |
 | H7 | Zapier är primär extern write-path. | `tasks/sessions/2026-04-28-datamodell-research-projekt.md:71` | Kartlägg i Fas 5 | DECIDED (omdefinierad). |
 | H8 | `Antal genomförda event (gammal)` kan tas bort. | `tasks/sessions/2026-04-28-datamodell-research-projekt.md:72` | Airtable cleanup post-MK | Kräver konsumentsök. |
 | H9 | `RIM 3 ×` ska vara rollup, inte formula. | `tasks/sessions/2026-04-28-datamodell-research-projekt.md:73` | Beslut i Fas 4 | OPEN. |

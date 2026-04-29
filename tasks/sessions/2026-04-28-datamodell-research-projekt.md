@@ -67,7 +67,7 @@ Forwards-look-projekt: är modellen i sig 11/10, eller bara dokumentationen av d
 | H3 | EventKey-bug är formel-symptom, inte data-skuld | dm-110 O5 | Påverkar ny modells matchningsstrategi | Live-MCP + formel-analys | Förbi: ny modell har ej EventKey | DECIDED (förbi) |
 | H4 | RECORD_ID()-bug i Deltaganden är formel-bug | dm-110 G1 | Kan inte fixas i Airtable | Fält-test (klart i dm-110) | Migrera bort i Supabase | DECIDED |
 | H5 | A2 sätter `Person?` på Anmälan i alla 4 grenar | dm-110 4.M2 | Identity resolution-logik | Live-test eller formel-spårning | Verifiera i Fas 3 | SUPPORTED |
-| H6 | SHA256-hashar i `Källa (formulärkälla)` är form-input-data | dm-110 §D.4 | Datakvalitets-cleanup | Källa-spårning (HTML-form) | Cleanup vid migration | OPEN |
+| H6 | SHA256-hashar i `Källa (formulärkälla)` är form-input-data | dm-110 §D.4 | Ersatt: hasharna är hårdkodade Zapier-värden, inte form-data | Avgjord 2026-04-29 via Zapier-research (schema_reference.md §1042-1170, Zap 5+6) | Cleanup hanteras via DQ4 (Zapier-config-fix + Migration transform) | REJECTED |
 | H7 | Zapier är primär extern write-path: 6 aktiva Zaps skriver till Anmälningar (Zap 1,3,4), Väntelista (Zap 2), Hämtade erbjudanden (Zap 5,6). 0 native Airtable-webhooks. Make.com är reaktivt (knapp-triggers inifrån basen). | Verifierat 2026-04-29: schema_reference.md §1042-1170 + REST API webhooks-endpoint | Migrationsplan Fas 5 måste ersätta Elfsight→Zapier→Airtable-kedjan (troligt: HTML-form direkt mot Edge Function) | Manuell verifiering i Zapier UI om förändring upptäcks | Kartlägg i Fas 5 | DECIDED (omdefinierad) |
 | H8 | `Antal genomförda event` (gammal) kan tas bort | dm-110 DS5 | Cleanup-säkerhet | Konsumentsök i basen | Cleanup post-MK | OPEN |
 | H9 | `RIM 3 ×` ska vara rollup, inte formula | dm-110 4.M1 | Schema-konsistens | Live-MCP-verifiering | Beslut i Fas 4 | OPEN |
@@ -158,7 +158,7 @@ Forwards-look-projekt: är modellen i sig 11/10, eller bara dokumentationen av d
 | H3 | EventKey-bug (förbi) | Lyft i `04-research.md` B3; kopplad till H13 | – | – | – | – |
 | H4 | RECORD_ID()-bug | Lyft i `04-research.md` B3; DECIDED/Supabase target | – | – | – | – |
 | H5 | A2 sätter Person? i alla grenar | Lyft i `04-research.md` B3; B2 C5 markerar verifieringsbehov | – | – | – | – |
-| H6 | SHA256-hashar | Lyft i `04-research.md` B3; flaggad för revidering mot DQ4 | – | – | – | – |
+| H6 | SHA256-hashar | Lyft i `04-research.md` B3; stängd 2026-04-29 som REJECTED — ersatt av DQ4-omklassning | – | – | – | – |
 | H7 | Zapier extern write-path (omdefinierad) | Lyft i `04-research.md` B3; driftconstraint B2 C14 | – | – | – | – |
 | H8 | `Antal genomförda event` (gammal) | Lyft i `04-research.md` B3; off-limits före MK | – | – | – | – |
 | H9 | `RIM 3 ×` rollup vs formula | Lyft i `04-research.md` B3; kopplad till Personer/Deltaganden rollups | – | – | – | – |
@@ -326,6 +326,7 @@ Lyft-status: Kandidat. Kopplad till Kandidat 4 (problemet som denna metod adress
 | 2026-04-29 | Förkontroller mot Codex och Code. Codex blockerad på Airtable-MCP — fix planerad efter arbetsdokumentet uppdaterats. Code: GO. REST API-verifiering: Bash + curl mot /v0/meta/bases/{baseId}/automations gav 11 automationer (snapshot sparad i /tmp/airtable-automations-2026-04-29.json). Webhooks-endpoint: 0 webhooks. Constraint-korrigeringar i tre tidigare påståenden om MCP-tools. Zapier-research: 10 Zaps i schema_reference.md §1042-1170, 6 aktiva skriver till basen (Zap 1-6). DQ4-källa identifierad: hårdkodade statiska värden i Zap 5+6, inte formulärdata. H7 omdefinierad till Zapier-kartläggning. Inga blockerare för Fas 1. |
 | 2026-04-29 | Fas 1 startad av Codex från quickstart `tasks/sessions/fas-1-prompt.md`. Källor lästa i angiven ordning; `git pull` körd och repot var redan uppdaterat. |
 | 2026-04-29 | Fas 1 klar: `analys/04-research.md` skapad med Del 0 Baseline & Constraint Map (B1 Domänkarta, B2 Driftkarta, B3 Skuldregister). §6 spårbarhetsmatris uppdaterad för alla 29 punkter. §2 markerad Fas 1 KLAR/Gate 1. Stoppar här enligt Gate 1. |
+| 2026-04-29 | Mini-uppdrag mellan Fas 1 och Fas 2: H6 stängd som REJECTED. SHA256-hash-hypotesen direkt motsagd av 2026-04-29 DQ4-omklassning (hashar är hårdkodade Zapier-värden i Zap 5+6, inte form-data). §4 hypotesregister, §6 spårbarhetsmatris och `04-research.md` B3 uppdaterade. Cleanup-ansvar flyttat till DQ4. |
 
 ---
 
