@@ -206,18 +206,33 @@ Källor:
 
 ### R7 — Öppna repoexempel
 
-Cal.com modellerar bokning som egen entity med `BookingStatus`, relationer till EventType och Attendee, unik `uid`, optional unik `idempotencyKey`, index på status/tid/eventType/user och webhook-config kopplad till user/team/eventType. Detta är relevant för Anmälningar/Deltaganden/Eventplanering: status, deltagare, eventtyp och idempotency ligger inte som obestämd text runt samma rad.
+#### Cal.com
+
+- **Likt oss:** Cal.com modellerar bokning som egen entity med `BookingStatus`, relationer till EventType och Attendee, unik `uid`, optional unik `idempotencyKey`, index på status/tid/eventType/user och webhook-config kopplad till user/team/eventType. Det mappar mot vår Anmälan som bokningsrad, Eventplanering som eventtyp/eventinstans, Deltaganden som deltagar-/närvarospår, och Personer som identitet bakom bokningen.
+- **Annorlunda:** Cal.com är en produktiserad schedulingplattform där bokning, eventtyp, attendee, calendar, payment och webhook redan är separata tekniska subdomäner. Miranon är ett operativt Airtable-system där samma arbetsflöde också måste vara läsbart för Lotta/Roger och där Deltaganden förskapas för sessionsnärvaro, inte bara som attendee-lista.
+- **Värt att kopiera:** `idempotencyKey` på bokningsnivå, tydlig `BookingStatus`, separata attendee-rader, index runt status/tid/event och webhook-config som explicit relation till ägare/event. För Miranon pekar det mot att Anmälan behöver egen stabil idempotency/dedupe-nyckel och att Deltaganden inte ska vara formel-härledd restprodukt.
+- **Värt att avvisa:** Cal.coms breda EventType-konfiguration och många kalender-/payment-/routingfält ska inte kopieras 1:1. Miranon behöver inte ett generiskt scheduling-schema; target ska bära kurs-/eventdriften och inte produktisera alla Cal.com-varianter.
 
 Källa: https://github.com/calcom/cal.com/blob/c2c95b371a691a5db042db7705f7708dbe62ce96/packages/prisma/schema.prisma
 
-Plane modellerar issues med project/workspace, state, assignees via join table, activity/version-historik och webhook/webhook-log med uniqueness constraints per workspace/url. Detta är relevant för state machines, historik och webhook-operabilitet.
+#### Plane.so
+
+- **Likt oss:** Plane modellerar issues med workspace/project, state, assignees via join table, activity/version-historik och webhook/webhook-log med uniqueness constraints per workspace/url. Det mappar inte domänmässigt mot kurser, men strukturellt mot våra Event/Anmälan/Deltaganden-statusar, Person-kopplingar, automationshistorik och externa write-/notify-kanter.
+- **Annorlunda:** Plane är multi-workspace från början och har projekt/issue som huvudobjekt, inte person/event/närvaro. Deras state machine gäller work items, medan Miranon har flera parallella tillstånd: anmälan, betalning, väntelista, eventstatus, sessionsnärvaro och mail-side effects.
+- **Värt att kopiera:** Explicit state-tabell, join tables för många-till-många, activity/version-historik och webhook-loggar med uniqueness constraints. För Miranon stärker det P3/P5/P7: status ska vara begriplig och historiserad, och Zapier/Edge/webhook-resultat ska kunna felsökas utan att läsa automationer.
+- **Värt att avvisa:** Plane-lik workspace/project-abstraktion och generell issue-versionering ska inte införas mekaniskt. Multi-tenant/workspace-modell är en Gate-fråga (P10), och full versionering av alla fält vore övervikt om audit/communication log räcker.
 
 Källor:
 - https://github.com/makeplane/plane/blob/db1c5b95138e8bf641208bfae00e9e07e1cc0295/apps/api/plane/db/models/issue.py
 - https://github.com/makeplane/plane/blob/db1c5b95138e8bf641208bfae00e9e07e1cc0295/apps/api/plane/db/models/state.py
 - https://github.com/makeplane/plane/blob/db1c5b95138e8bf641208bfae00e9e07e1cc0295/apps/api/plane/db/models/webhook.py
 
-NocoDB modellerar Airtable-liknande metadata som data: model/table har `base_id`, `source_id`, columns, views och display value; columns har typed `uidt`, select options och link/lookup/rollup-relaterad metadata. Detta stöder principen att Airtable-liknande schema/config inte ska vara osynlig magi i target.
+#### NocoDB
+
+- **Likt oss:** NocoDB modellerar Airtable-liknande metadata som data: model/table har `base_id`, `source_id`, columns, views och display value; columns har typed `uidt`, select options och link/lookup/rollup-relaterad metadata. Det mappar mot Miranons nuvarande Airtable-verklighet där fält, select-options, linked records, rollups, vyer och displayfält är en del av det operativa systemet, inte bara presentation.
+- **Annorlunda:** NocoDB är ett generiskt databas-/Airtable-lager som måste kunna representera många baser, tabeller och kolumntyper dynamiskt. Miranon behöver inte bygga ett generiskt schemaverktyg; vi behöver en domänmodell som bevarar de Airtable-mekanismer som faktiskt bär verksamheten.
+- **Värt att kopiera:** Behandla schema/config/field-options som explicit metadata med ägare och historik, särskilt för select-options, source/base-koppling och Airtable-liknande read models. Det är direkt relevant för DQ2/DQ3/DQ4 och för migration av linked-record/lookup/rollup-semantik.
+- **Värt att avvisa:** Ett helt dynamiskt metadata-lager där varje fält blir runtime-konfig är sannolikt fel nivå för Miranon. Target bör vara typed och domänspecifik; endast de delar av Airtable-config som faktiskt ändras operativt eller behövs för migration/observability ska lyftas som data.
 
 Källor:
 - https://github.com/nocodb/nocodb/blob/ee146551d86dc8191cf81dfc1333df1f43575c2f/packages/nocodb/src/models/Model.ts
