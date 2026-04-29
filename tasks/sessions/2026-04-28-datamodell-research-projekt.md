@@ -35,7 +35,7 @@ Forwards-look-projekt: är modellen i sig 11/10, eller bara dokumentationen av d
 | 1 | Baseline & Constraint Map | Domänkarta + driftkarta + skuldregister | **KLAR — Gate 1** | 1 h |
 | 2 | Worldclass Research | `04-research.md` | **KLAR — Gate 2** | 1,5–2 h |
 | 3 | Gap vs Worldclass | `05-gap-vs-worldclass.md` | **KLAR — Gate 3** | 1,5 h |
-| 4 | Redesign (A-track + S-track) | `06a` + `06b` | **PÅGÅR — Gate 4A klar, inväntar 4b** | 3,5–4 h |
+| 4 | Redesign (A-track + S-track) | `06a` + `06b` | **KLAR — Gate 4B** | 3,5–4 h |
 | 5 | Tvåstegs-migrationsplan | `07-migration-plan.md` | Ej påbörjad | 1,5–2 h |
 | 6 | Slutgranskning | UNIVERSAL-lyft + arkivering | Ej påbörjad | 30 min |
 
@@ -139,35 +139,35 @@ Forwards-look-projekt: är modellen i sig 11/10, eller bara dokumentationen av d
 
 | ID | Beskrivning | Fas 1 (lyft) | Fas 2 (research-princip) | Fas 3 (klass) | Fas 4 (åtgärd) | Fas 5 (migration) | Fas 6 (closure) |
 |---|---|---|---|---|---|---|---|
-| DS1 | `Är aktiv` exkluderar inte Inställt | Lyft i `04-research.md` B3; driftconstraint i B2 (C16/off-limits före MK) | P3 state machines; P9 constraints | Airtable fix; Gap G3 | A1: post-MK formelfix för aktiv-semantik | – | – |
-| DS2 | `Återkommande?` missvisande | Lyft i `04-research.md` B3; domänkontext i B1 Personer/Anmälningskedjan | P1 lifecycle; P3 state semantics | Airtable preserve+rename; Gap G4 | A4/A10: preserve logik, rename/dokumentera semantik | – | – |
-| DS3 | Dead branches Erfarenhetsbadge | Lyft i `04-research.md` B3; domänkontext i B1 Deltaganden→Personer | P4 derived data/read model | Airtable cleanup; Gap G8 | A6: dokumentera read-model-skuld; ingen formelrewrite i A-track | – | – |
-| DS4 | Gammal total missar RIM 3 | Lyft i `04-research.md` B3; kopplad till Personer rollups | P4 derived data; P8 Airtable ergonomics | Airtable cleanup; Gap G8 | A6/A11: canonical count + bevara RIM3x-rollup | – | – |
-| DS5 | Parallella `Antal genomförda event` | Lyft i `04-research.md` B3; off-limits före MK tills konsumentsök | P4 derived data; P8 field hygiene | Airtable cleanup; Gap G8 | A6: rename/dölj gammalt countfält, delete först efter karantän | – | – |
-| DS6 | RECORD_ID-bug Deltaganden | Lyft i `04-research.md` B3; markerad Supabase target | P4 no formula truth; P9 relational target | Supabase target; Gap G7 | – | – | – |
-| DS7 | A1–A11 versions-diff | Lyft i `04-research.md` B3; driftconstraint via A1–A11 | P5 audit; P6 integration lifecycle; P7 observability | Defer; Gap G15 | – | – | – |
-| DQ1 | Case-dubletter `Vill anmäla sig till` | Lyft i `04-research.md` B3; cleanup + migration transform | P2 identity/canonical values; P8 field hygiene | Airtable cleanup + Migration transform; Gap G5 | A5: kanonisera options efter formulär/Zapier-kontroll | – | – |
+| DS1 | `Är aktiv` exkluderar inte Inställt | Lyft i `04-research.md` B3; driftconstraint i B2 (C16/off-limits före MK) | P3 state machines; P9 constraints | Airtable fix; Gap G3 | A1: post-MK formelfix för aktiv-semantik; S-track B3/C2: registration/event status + event_capacity_view ersätter aktiv-formel | – | – |
+| DS2 | `Återkommande?` missvisande | Lyft i `04-research.md` B3; domänkontext i B1 Personer/Anmälningskedjan | P1 lifecycle; P3 state semantics | Airtable preserve+rename; Gap G4 | A4/A10: preserve logik, rename/dokumentera semantik; S-track B1/C2: aktiv återkommande process separeras från historisk deltagande-read model | – | – |
+| DS3 | Dead branches Erfarenhetsbadge | Lyft i `04-research.md` B3; domänkontext i B1 Deltaganden→Personer | P4 derived data/read model | Airtable cleanup; Gap G8 | A6: dokumentera read-model-skuld; ingen formelrewrite i A-track; S-track C2: person_experience_summary_view från canonical relationer | – | – |
+| DS4 | Gammal total missar RIM 3 | Lyft i `04-research.md` B3; kopplad till Personer rollups | P4 derived data; P8 Airtable ergonomics | Airtable cleanup; Gap G8 | A6/A11: canonical count + bevara RIM3x-rollup; S-track C2: RIM3x som read model från attendances/events/programs | – | – |
+| DS5 | Parallella `Antal genomförda event` | Lyft i `04-research.md` B3; off-limits före MK tills konsumentsök | P4 derived data; P8 field hygiene | Airtable cleanup; Gap G8 | A6: rename/dölj gammalt countfält, delete först efter karantän; S-track C2: canonical course-history views ersätter parallella totals | – | – |
+| DS6 | RECORD_ID-bug Deltaganden | Lyft i `04-research.md` B3; markerad Supabase target | P4 no formula truth; P9 relational target | Supabase target; Gap G7 | S-track B3: attendances med riktiga FK till registration_attendees, event_sessions och persons; RECORD_ID-formler ignoreras som sanning | – | – |
+| DS7 | A1–A11 versions-diff | Lyft i `04-research.md` B3; driftconstraint via A1–A11 | P5 audit; P6 integration lifecycle; P7 observability | Defer; Gap G15 | S-track C1/D1: audit_log, sensitive_change_log, integration_requests och processing attempts; action-level legacy-diff lämnas till Fas 5 | – | – |
+| DQ1 | Case-dubletter `Vill anmäla sig till` | Lyft i `04-research.md` B3; cleanup + migration transform | P2 identity/canonical values; P8 field hygiene | Airtable cleanup + Migration transform; Gap G5 | A5: kanonisera options efter formulär/Zapier-kontroll; S-track B2: programs/program_key som canonical kursavsikt | – | – |
 | DQ2 | `Manuella flagga` tom | Lyft i `04-research.md` B3; Airtable fix post-MK | P8 Airtable field hygiene | Airtable cleanup; Gap G10 | A7: delete/arkivera eller definiera beslutad taxonomi | – | – |
 | DQ3 | `Systemkälla` tom | Lyft i `04-research.md` B3; Airtable fix post-MK | P8 Airtable field hygiene | Airtable cleanup; Gap G10 | A7: delete/arkivera eller definiera beslutad taxonomi | – | – |
-| DQ4 | SHA256-options (Zapier-config-källa) | Lyft i `04-research.md` B3 med 2026-04-29 omklassning; constraint B2 C15 | P6 config-as-data drift; P8 visible config | Airtable cleanup + Migration transform; Gap G11 | A8: Zap 5/6 static values + Airtable-options görs läsbara | – | – |
-| DQ5 | E-post som multilineText | Lyft i `04-research.md` B3; typ-skuld inför migration | P2 identity; P9 typed constraints | Migration transform; Gap G2 | – | – | – |
-| DQ6 | Namnlösa Personer | Lyft i `04-research.md` B3; B2 C6 säger preserve, inte radera | P1 lead lifecycle; P2 identity resolution | Airtable preserve + Supabase target; Gap G1 | A9: active preserve; ingen radering/placeholder | – | – |
-| DQ7 | RECORD_ID-bug datakvalitet | Lyft i `04-research.md` B3; kopplad till DS6 | P4 derived data; P9 target integrity | Supabase target; Gap G7 | – | – | – |
-| DQ8 | Mail-PATCH tyst failure | Lyft i `04-research.md` B3; driftconstraint B2 C12 | P5 audit; P6 side-effect state; P7 observability | Airtable fix; Gap G12 | A2: synlig partial-success + manuell kompensation/retry | – | – |
-| DQ9 | Väntelista ej transactional | Lyft i `04-research.md` B3; driftconstraint B2 C13 | P6 integration boundary; P9 transaction | Airtable fix + Supabase target; Gap G13 | A3: idempotent/kompenserbar flyttoperation | – | – |
+| DQ4 | SHA256-options (Zapier-config-källa) | Lyft i `04-research.md` B3 med 2026-04-29 omklassning; constraint B2 C15 | P6 config-as-data drift; P8 visible config | Airtable cleanup + Migration transform; Gap G11 | A8: Zap 5/6 static values + Airtable-options görs läsbara; S-track B4/D1: integration_sources + configs med stable keys för alla integration sources | – | – |
+| DQ5 | E-post som multilineText | Lyft i `04-research.md` B3; typ-skuld inför migration | P2 identity; P9 typed constraints | Migration transform; Gap G2 | S-track B1: person_identifiers med typed email/phone, canonical_value och unique constraints | – | – |
+| DQ6 | Namnlösa Personer | Lyft i `04-research.md` B3; B2 C6 säger preserve, inte radera | P1 lead lifecycle; P2 identity resolution | Airtable preserve + Supabase target; Gap G1 | A9: active preserve; ingen radering/placeholder; S-track B1/B4: nullable display_name, lead_profiles och offer_downloads stödjer namnlös lead-state | – | – |
+| DQ7 | RECORD_ID-bug datakvalitet | Lyft i `04-research.md` B3; kopplad till DS6 | P4 derived data; P9 target integrity | Supabase target; Gap G7 | S-track B3: attendances/registration_attendees/event_sessions med FK och tenant-aware unique constraints | – | – |
+| DQ8 | Mail-PATCH tyst failure | Lyft i `04-research.md` B3; driftconstraint B2 C12 | P5 audit; P6 side-effect state; P7 observability | Airtable fix; Gap G12 | A2: synlig partial-success + manuell kompensation/retry; S-track B5/D3: communication_outbox + attempts skiljer mail skickat från targetstatus | – | – |
+| DQ9 | Väntelista ej transactional | Lyft i `04-research.md` B3; driftconstraint B2 C13 | P6 integration boundary; P9 transaction | Airtable fix + Supabase target; Gap G13 | A3: idempotent/kompenserbar flyttoperation; S-track B6: waitlist_entries + waitlist_conversions med operation_key/status per steg | – | – |
 | H1 | A2-grenordning | Lyft i `04-research.md` B3; driftconstraint B2 C5 | P2 identity; P6 integration edge | Defer; Gap G6 | A12: ingen A2-prodpatch; sandbox/test först | – | – |
-| H2 | Personer 87 fält splittra | Lyft i `04-research.md` B3; B1 Personer som kärndomän | P1 lifecycle; P2 identity; P10 tenant gate | Supabase target; G0.3-beroende; Gap G1 | – | – | – |
-| H3 | EventKey-bug (förbi) | Lyft i `04-research.md` B3; kopplad till H13 | P6 ingest/config boundary | Supabase target; Gap G9 | – | – | – |
-| H4 | RECORD_ID()-bug | Lyft i `04-research.md` B3; DECIDED/Supabase target | P4 formula bug not truth; P9 target integrity | Supabase target; Gap G7 | – | – | – |
+| H2 | Personer 87 fält splittra | Lyft i `04-research.md` B3; B1 Personer som kärndomän | P1 lifecycle; P2 identity; P10 tenant gate | Supabase target; G0.3-beroende; Gap G1 | S-track B1: identity cluster, inte mekanisk 87-fälts-split; persons + identifiers + lead_profiles + lifecycle state | – | – |
+| H3 | EventKey-bug (förbi) | Lyft i `04-research.md` B3; kopplad till H13 | P6 ingest/config boundary | Supabase target; Gap G9 | S-track B2: events.event_key och event_ingest_configs ersätter EventKey-formelberoende | – | – |
+| H4 | RECORD_ID()-bug | Lyft i `04-research.md` B3; DECIDED/Supabase target | P4 formula bug not truth; P9 target integrity | Supabase target; Gap G7 | S-track B3: FK-baserade attendances ersätter RECORD_ID()-formler | – | – |
 | H5 | A2 sätter Person? i alla grenar | Lyft i `04-research.md` B3; B2 C5 markerar verifieringsbehov | P2 identity; P6 integration edge | Defer; Gap G6 | A12: verifieringsinstruktion, ingen otestad ändring | – | – |
 | H6 | SHA256-hashar | Lyft i `04-research.md` B3; stängd 2026-04-29 som REJECTED — ersatt av DQ4-omklassning | REJECTED; täcks av DQ4/P6 config-as-data drift | Reject; hanteras endast via DQ4/G11 | A8: endast DQ4/G11 Zapier-config cleanup; H6 förblir REJECTED | – | – |
-| H7 | Zapier extern write-path (omdefinierad) | Lyft i `04-research.md` B3; driftconstraint B2 C14 | P6 integration edges; P7 observability | Defer; villkorat G0.3-beroende; Gap G14 | – | – | – |
+| H7 | Zapier extern write-path (omdefinierad) | Lyft i `04-research.md` B3; driftconstraint B2 C14 | P6 integration edges; P7 observability | Defer; villkorat G0.3-beroende; Gap G14 | S-track B4/D1: integration_sources som produkter, integration_requests med idempotency och request-logg | – | – |
 | H8 | `Antal genomförda event` (gammal) | Lyft i `04-research.md` B3; off-limits före MK | P4 derived data; P8 field hygiene | Airtable cleanup; Gap G8 | A6: pensionera gammalt fält efter konsumentsök | – | – |
 | H9 | `RIM 3 ×` rollup vs formula | Lyft i `04-research.md` B3; kopplad till Personer/Deltaganden rollups | P4 derived data; P8 rollup ergonomics | Airtable preserve; Gap G8 | A11: bevara RIM3x som Airtable-native rollup | – | – |
 | H10 | `Manuella flagga` tom-default | Lyft i `04-research.md` B3; kopplad till DQ2 | P8 Airtable field hygiene | Airtable cleanup; Gap G10 | A7: delete/arkivera eller definiera taxonomi | – | – |
 | H11 | `Systemkälla` tom-default | Lyft i `04-research.md` B3; kopplad till DQ3 | P8 Airtable field hygiene | Airtable cleanup; Gap G10 | A7: delete/arkivera eller definiera taxonomi | – | – |
-| H12 | E-post multilineText | Lyft i `04-research.md` B3; kopplad till DQ5 | P2 identity; P9 typed constraints | Migration transform; Gap G2 | – | – | – |
-| H13 | EventKey HTML-template-källa | Lyft i `04-research.md` B3; verifieringsväg: inspektera HTML-template | P6 ingest/config boundary | Defer; Gap G9 | – | – | – |
+| H12 | E-post multilineText | Lyft i `04-research.md` B3; kopplad till DQ5 | P2 identity; P9 typed constraints | Migration transform; Gap G2 | S-track B1: person_identifiers; migration transformerar multiline till canonical typed identifiers | – | – |
+| H13 | EventKey HTML-template-källa | Lyft i `04-research.md` B3; verifieringsväg: inspektera HTML-template | P6 ingest/config boundary | Defer; Gap G9 | S-track B2/D1: target har event_key + ingest config; exakt legacy-template-källa lämnas till Fas 5 vid mappingbehov | – | – |
 
 **Total: 29 punkter att spåra.** Ingen ska tappas.
 
@@ -344,6 +344,14 @@ Konsekvens: när en skuld bevaras medvetet ska dokumentet säga vad som inte få
 
 Lyft-status: Kandidat.
 
+### Kandidat 9 — Stable identifiers ska separeras från displaynamn vid integrationskanter
+
+Fas 4b visade att integrationskanter blir svåra att migrera och felsöka när displaynamn, formulärlabel, Zapier-config och domain source blandas i samma fält. DQ4-beslutet generaliseras därför: integrationer behöver stable keys som primär identitet, medan displaynamn är ett översättnings-/presentationslager.
+
+Konsekvens: nya system som tar emot extern data bör kräva stable key + owner + status + idempotency från början. UI-text, kampanjnamn och formulärlabel får aldrig vara den identifierare som migration, retry eller audit bygger på.
+
+Lyft-status: Kandidat.
+
 ---
 
 ## 10. Daglig logg
@@ -361,6 +369,8 @@ Lyft-status: Kandidat.
 | 2026-04-29 | Fas 3 klar för Gate 3. `analys/05-gap-vs-worldclass.md` skapad med 15 gap, 29/29 DS/DQ/H klassade, prioriteringskarta och öppna Fas 4-frågor. §6 Fas 3-kolumnen uppdaterad för alla 29 rader. §9 fick Kandidat 7 om att öppen gate vinner över preliminär rekommendation. H6 förblev REJECTED; G0.3 markerades som öppen gate utan tenantbeslut. |
 | 2026-04-29 | Fas 4a A-track startad av Codex efter Gate 3 och G0.3-beslut. Alla §2-källfiler i `tasks/sessions/fas-4a-prompt.md` lästa i ordning. `.codex-scratch/fas-4a-context.md` skapad och `git check-ignore` bekräftade att `.codex-scratch/` täcks av `.gitignore`. MK-frysen och P10/G0.3-disciplinen gäller: alla A-track-åtgärder post-MK, ingen tenant-abstraktion i Airtable. |
 | 2026-04-29 | Fas 4a klar för Gate 4A. `analys/06a-airtable-redesign.md` skapad med 12 A-track-åtgärder: driftkritiska fixar A1-A3, cleanup A4-A8, preserve/defer A9-A12. §6 Fas 4-kolumnen uppdaterad för A-track-rader. §9 fick Kandidat 8 om preserve som aktivt guardrail-beslut. MK-frysen respekterad absolut; ingen tenant-abstraktion i Airtable; H6 förblev REJECTED och DQ4/G11 hanterades som Zapier-config-skuld. |
+| 2026-04-30 | Fas 4b S-track startad av Codex efter Gate 4A och push av prompt/arbetsdokument. §2-källfiler i `tasks/sessions/fas-4b-prompt.md` lästa från setup till frusen indata, inklusive 06a Del F-lockning. `.codex-scratch/fas-4b-context.md` skapad och reloaded efter kontextövergång. Inga MCP-anrop ska göras i Fas 4b; S-track designar target utifrån frusen live-state. |
+| 2026-04-30 | Fas 4b klar för Gate 4B. `analys/06b-supabase-target.md` skapad med Supabase target för tenancy, identity/persons, events, registrations/attendances, integration sources, communication outbox, waitlist, audit, read models och integration requests. §6 Fas 4-kolumnen uppdaterad för S-track-rader. §9 fick Kandidat 9 om stable identifiers vid integrationskanter. Scratch-filen raderades inför Gate 4B. Inga commits gjorda av Codex. |
 
 ---
 
