@@ -1,6 +1,6 @@
 # 2026-04-28 — Datamodell-research-projektet
 
-> **Status:** PÅGÅR — Fas 0 startad 2026-04-28.
+> **Status:** PÅGÅR — Fas 1 klar 2026-04-29. Gate 1 inväntar Marcus godkännande.
 > **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-research-projekt.md`
 > **Plan:** `~/Repon/miranon-media-admin/tasks/datamodell-research-plan.md`
 > **Direktiv:** `~/Repon/miranon-media-admin/tasks/datamodell-research-direktiv.md`
@@ -31,8 +31,8 @@ Forwards-look-projekt: är modellen i sig 11/10, eller bara dokumentationen av d
 
 | Fas | Namn | Output | Status | Estimat |
 |---|---|---|---|---|
-| 0 | Ramning & projektprotokoll | Godkänd plan + arbetsdokument + G0-beslut | **PÅGÅR** | 30–45 min |
-| 1 | Baseline & Constraint Map | Domänkarta + driftkarta + skuldregister | Ej påbörjad | 1 h |
+| 0 | Ramning & projektprotokoll | Godkänd plan + arbetsdokument + G0-beslut | **KLAR** | 30–45 min |
+| 1 | Baseline & Constraint Map | Domänkarta + driftkarta + skuldregister | **KLAR — Gate 1** | 1 h |
 | 2 | Worldclass Research | `04-research.md` | Ej påbörjad | 1,5–2 h |
 | 3 | Gap vs Worldclass | `05-gap-vs-worldclass.md` | Ej påbörjad | 1,5 h |
 | 4 | Redesign (A-track + S-track) | `06a` + `06b` | Ej påbörjad | 3,5–4 h |
@@ -137,35 +137,35 @@ Forwards-look-projekt: är modellen i sig 11/10, eller bara dokumentationen av d
 
 | ID | Beskrivning | Fas 1 (lyft) | Fas 3 (klass) | Fas 4 (åtgärd) | Fas 5 (migration) | Fas 6 (closure) |
 |---|---|---|---|---|---|---|
-| DS1 | `Är aktiv` exkluderar inte Inställt | – | – | – | – | – |
-| DS2 | `Återkommande?` missvisande | – | – | – | – | – |
-| DS3 | Dead branches Erfarenhetsbadge | – | – | – | – | – |
-| DS4 | Gammal total missar RIM 3 | – | – | – | – | – |
-| DS5 | Parallella `Antal genomförda event` | – | – | – | – | – |
-| DS6 | RECORD_ID-bug Deltaganden | – | – | – | – | – |
-| DS7 | A1–A11 versions-diff | – | – | – | – | – |
-| DQ1 | Case-dubletter `Vill anmäla sig till` | – | – | – | – | – |
-| DQ2 | `Manuella flagga` tom | – | – | – | – | – |
-| DQ3 | `Systemkälla` tom | – | – | – | – | – |
-| DQ4 | SHA256-options (Zapier-config-källa) | Lyft i §5 omklassad | – | – | – | – |
-| DQ5 | E-post som multilineText | – | – | – | – | – |
-| DQ6 | Namnlösa Personer | – | – | – | – | – |
-| DQ7 | RECORD_ID-bug datakvalitet | – | – | – | – | – |
-| DQ8 | Mail-PATCH tyst failure | – | – | – | – | – |
-| DQ9 | Väntelista ej transactional | – | – | – | – | – |
-| H1 | A2-grenordning | – | – | – | – | – |
-| H2 | Personer 87 fält splittra | – | – | – | – | – |
-| H3 | EventKey-bug (förbi) | – | – | – | – | – |
-| H4 | RECORD_ID()-bug | – | – | – | – | – |
-| H5 | A2 sätter Person? i alla grenar | – | – | – | – | – |
-| H6 | SHA256-hashar | – | – | – | – | – |
-| H7 | Zapier extern write-path (omdefinierad) | – | – | – | – | – |
-| H8 | `Antal genomförda event` (gammal) | – | – | – | – | – |
-| H9 | `RIM 3 ×` rollup vs formula | – | – | – | – | – |
-| H10 | `Manuella flagga` tom-default | – | – | – | – | – |
-| H11 | `Systemkälla` tom-default | – | – | – | – | – |
-| H12 | E-post multilineText | – | – | – | – | – |
-| H13 | EventKey HTML-template-källa | – | – | – | – | – |
+| DS1 | `Är aktiv` exkluderar inte Inställt | Lyft i `04-research.md` B3; driftconstraint i B2 (C16/off-limits före MK) | – | – | – | – |
+| DS2 | `Återkommande?` missvisande | Lyft i `04-research.md` B3; domänkontext i B1 Personer/Anmälningskedjan | – | – | – | – |
+| DS3 | Dead branches Erfarenhetsbadge | Lyft i `04-research.md` B3; domänkontext i B1 Deltaganden→Personer | – | – | – | – |
+| DS4 | Gammal total missar RIM 3 | Lyft i `04-research.md` B3; kopplad till Personer rollups | – | – | – | – |
+| DS5 | Parallella `Antal genomförda event` | Lyft i `04-research.md` B3; off-limits före MK tills konsumentsök | – | – | – | – |
+| DS6 | RECORD_ID-bug Deltaganden | Lyft i `04-research.md` B3; markerad Supabase target | – | – | – | – |
+| DS7 | A1–A11 versions-diff | Lyft i `04-research.md` B3; driftconstraint via A1–A11 | – | – | – | – |
+| DQ1 | Case-dubletter `Vill anmäla sig till` | Lyft i `04-research.md` B3; cleanup + migration transform | – | – | – | – |
+| DQ2 | `Manuella flagga` tom | Lyft i `04-research.md` B3; Airtable fix post-MK | – | – | – | – |
+| DQ3 | `Systemkälla` tom | Lyft i `04-research.md` B3; Airtable fix post-MK | – | – | – | – |
+| DQ4 | SHA256-options (Zapier-config-källa) | Lyft i `04-research.md` B3 med 2026-04-29 omklassning; constraint B2 C15 | – | – | – | – |
+| DQ5 | E-post som multilineText | Lyft i `04-research.md` B3; typ-skuld inför migration | – | – | – | – |
+| DQ6 | Namnlösa Personer | Lyft i `04-research.md` B3; B2 C6 säger preserve, inte radera | – | – | – | – |
+| DQ7 | RECORD_ID-bug datakvalitet | Lyft i `04-research.md` B3; kopplad till DS6 | – | – | – | – |
+| DQ8 | Mail-PATCH tyst failure | Lyft i `04-research.md` B3; driftconstraint B2 C12 | – | – | – | – |
+| DQ9 | Väntelista ej transactional | Lyft i `04-research.md` B3; driftconstraint B2 C13 | – | – | – | – |
+| H1 | A2-grenordning | Lyft i `04-research.md` B3; driftconstraint B2 C5 | – | – | – | – |
+| H2 | Personer 87 fält splittra | Lyft i `04-research.md` B3; B1 Personer som kärndomän | – | – | – | – |
+| H3 | EventKey-bug (förbi) | Lyft i `04-research.md` B3; kopplad till H13 | – | – | – | – |
+| H4 | RECORD_ID()-bug | Lyft i `04-research.md` B3; DECIDED/Supabase target | – | – | – | – |
+| H5 | A2 sätter Person? i alla grenar | Lyft i `04-research.md` B3; B2 C5 markerar verifieringsbehov | – | – | – | – |
+| H6 | SHA256-hashar | Lyft i `04-research.md` B3; flaggad för revidering mot DQ4 | – | – | – | – |
+| H7 | Zapier extern write-path (omdefinierad) | Lyft i `04-research.md` B3; driftconstraint B2 C14 | – | – | – | – |
+| H8 | `Antal genomförda event` (gammal) | Lyft i `04-research.md` B3; off-limits före MK | – | – | – | – |
+| H9 | `RIM 3 ×` rollup vs formula | Lyft i `04-research.md` B3; kopplad till Personer/Deltaganden rollups | – | – | – | – |
+| H10 | `Manuella flagga` tom-default | Lyft i `04-research.md` B3; kopplad till DQ2 | – | – | – | – |
+| H11 | `Systemkälla` tom-default | Lyft i `04-research.md` B3; kopplad till DQ3 | – | – | – | – |
+| H12 | E-post multilineText | Lyft i `04-research.md` B3; kopplad till DQ5 | – | – | – | – |
+| H13 | EventKey HTML-template-källa | Lyft i `04-research.md` B3; verifieringsväg: inspektera HTML-template | – | – | – | – |
 
 **Total: 29 punkter att spåra.** Ingen ska tappas.
 
@@ -324,6 +324,8 @@ Lyft-status: Kandidat. Kopplad till Kandidat 4 (problemet som denna metod adress
 |---|---|
 | 2026-04-28 | Direktiv skapat. Plan föreslagen av Chat (sammanslagning av Codex' tvåstegsstrategi + Chats ramning). Plan godkänd av Marcus. Fas 0 startad. Arbetsdokument skapat med 27 spårbarhetsrader populerade. G0-frågor lyfta till Marcus. |
 | 2026-04-29 | Förkontroller mot Codex och Code. Codex blockerad på Airtable-MCP — fix planerad efter arbetsdokumentet uppdaterats. Code: GO. REST API-verifiering: Bash + curl mot /v0/meta/bases/{baseId}/automations gav 11 automationer (snapshot sparad i /tmp/airtable-automations-2026-04-29.json). Webhooks-endpoint: 0 webhooks. Constraint-korrigeringar i tre tidigare påståenden om MCP-tools. Zapier-research: 10 Zaps i schema_reference.md §1042-1170, 6 aktiva skriver till basen (Zap 1-6). DQ4-källa identifierad: hårdkodade statiska värden i Zap 5+6, inte formulärdata. H7 omdefinierad till Zapier-kartläggning. Inga blockerare för Fas 1. |
+| 2026-04-29 | Fas 1 startad av Codex från quickstart `tasks/sessions/fas-1-prompt.md`. Källor lästa i angiven ordning; `git pull` körd och repot var redan uppdaterat. |
+| 2026-04-29 | Fas 1 klar: `analys/04-research.md` skapad med Del 0 Baseline & Constraint Map (B1 Domänkarta, B2 Driftkarta, B3 Skuldregister). §6 spårbarhetsmatris uppdaterad för alla 29 punkter. §2 markerad Fas 1 KLAR/Gate 1. Stoppar här enligt Gate 1. |
 
 ---
 
