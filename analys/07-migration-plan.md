@@ -442,3 +442,31 @@ Verifiera per steg:
 
 Inga nya gap läggs till. Dessa är implementationfrågor eller Gate 6/slutgranskningsfrågor.
 
+---
+
+## Del J — Projekt-slutsektion (Fas 6)
+
+### J1 — Sammanfattning
+
+Datamodell-research-projektet har levererat fem analysfiler: `04` med 10 principer och baseline, `05` med 15 gap, `06a` med 12 Airtable-åtgärder, `06b` med 36 Supabase target-tabeller/objekt och `07` med 10 migrationssteg. Alla 29 DS/DQ/H-rader är spårade genom Fas 1-6. Slutresultatet svarar på projektfrågan: modellen var inte 11/10 ännu, men det finns nu en konkret väg till Airtable 11/10 och Supabase target utan att ärva Airtable-skuld. Future Code-prompten i Del H är redo som startpunkt för separat implementation.
+
+### J2 — Valideringsutfall
+
+| Test | Pass/Fail | Motivering |
+|---|---|---|
+| Airtable excellence | Pass | A1-A3 löser tre konkreta driftproblem från driftkartan: Inställt räknas inte längre som aktivt (C7/rapportering), mail partial-success blir synlig (C12/DQ8) och väntelistaflytt blir idempotent/kompenserbar (C13/DQ9). A4-A8 lägger dessutom kontrollerad cleanup för återkommande-semantik, case-dubletter, read models, tomma selects och Zapier-config. |
+| Supabase readiness | Pass | Alla sex låsningar i 06b F4 hanteras utan Airtable-skuld-arv: namnlösa leads modelleras explicit, RIM3x blir read model, Återkommande-semantik separeras från historik, DQ4 blir integration config, G12/G13 får outbox/audit/transactional operation och DS6/DQ7/H4 ersätts av riktiga FK via `attendances`. |
+| DS/DQ closure | Pass | Arbetsdokumentets §6 har 29/29 rader med Fas 2-princip, Fas 3-klass, Fas 4-åtgärd och Fas 5-migration ifyllda. Fas 6 closure är markerad som pass för samtliga rader. |
+| Spårbarhets-test | Pass | Stickprov på 10 faktapåståenden fördelade över 04-07 gav 10/10 spårbara, 0 delvis spårbara och 0 ej spårbara. Källspår fanns via `docs/data-model.md`, `analys/02-live-state.md`, arbetsdokumentets besluts-/spårbarhetsrader och interna 04-07-referenser. |
+
+### J3 — Hand-off till future Code-implementation
+
+Future Code-implementation ska starta från Del H i detta dokument. Den pekar på fyra kärnfiler: `07-migration-plan.md`, `06a-airtable-redesign.md`, `06b-supabase-target.md` och arbetsdokumentet. Code behöver därmed inte läsa hela projektets historik innan första implementationen; `docs/data-model.md` används bara när en konkret legacyfält-/flödesdetalj kräver det.
+
+### J4 — Vad nästa session ska tänka på
+
+- MK ska vara avslutat och driftläget stabilt innan Steg 2-3 genomförs.
+- Supabase-projekt, staging-miljö, service-role credentials och RLS-testväg behöver finnas innan Steg 4.
+- Marcus behöver ge explicit go per domän innan parallel run eller cutover.
+- Stable keys och crosswalk ska behandlas som produktionskritiska migration artefakter, inte skriptdetaljer.
+- Nya luckor under implementation flaggas som implementationfrågor; inga nya gap smygs in i den frusna designleveransen.

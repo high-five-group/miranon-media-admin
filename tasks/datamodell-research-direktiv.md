@@ -1,6 +1,6 @@
 # Datamodell-research-projekt — direktiv
 
-> **Status:** Ej påbörjat. Skapad 2026-04-28 efter avslut
+> **Status:** SLUTFÖRT — 2026-04-30. Skapad 2026-04-28 efter avslut
 > av datamodell-110-projektet.
 
 ## Vad detta är
@@ -149,3 +149,7 @@ Två viktiga premisser från direktivet:
 | Påbörjat | – |
 | Ägare | Marcus |
 | Senast uppdaterad | 2026-04-28 |
+
+## Slutnot
+
+Projektet slutfört 2026-04-30 efter Gate 6. Leveransen finns i `analys/04-research.md`, `analys/05-gap-vs-worldclass.md`, `analys/06a-airtable-redesign.md`, `analys/06b-supabase-target.md` och `analys/07-migration-plan.md`. Arbetsdokumentet är fruset i `tasks/sessions/2026-04-28-datamodell-research-projekt.md`.
