@@ -450,4 +450,31 @@ Vid varje fält-referens i Fas 1+: verifiera mot live-schema via describe_table 
 
 Projektet avslutat 2026-04-30 efter Gate 6. Alla output-filer levererade, UNIVERSAL-lärdomar lyfta till `~/Repon/marcus-system/tasks/lessons.md`, direktivet markerat SLUTFÖRT. Future Code-implementation startar från `analys/07-migration-plan.md` Del H när Marcus signalerar go.
 
-Detta dokument är frusen referens. Inga ändringar från denna punkt.
+Detta dokument är frusen referens för Fas 0–6. Eventuella sidospår dokumenteras nedan utan att modifiera tidigare sektioner.
+
+---
+
+## 13. Sidospår — Odoo-validering
+
+> **Status:** Sidospår körd 2026-05-03, post-Gate 6. Påverkar inte 06b (Gate 4B är passerad) och uppdaterar inte 07 i denna körning — bara producerar valideringsanalys för Fas 5:s nästa iteration.
+
+| Fält | Innehåll |
+|---|---|
+| Datum | 2026-05-03 |
+| Output | [`analys/08-odoo-validation.md`](../../analys/08-odoo-validation.md) |
+| Källpinning | Odoo core 19.0 SHA `2154e11ef5c7860adee88013ad80422d2b4f5816`; OCA/event 18.0 (19.0 saknar moduler) |
+| Mandat | Validera S-track event-domän mot Odoos 20-åriga modell. Ingen 06b-ändring. |
+| Resultat | 4 luckor klassade som **Lyfta** (D1, D2, D3, D6), 6 som Defer, 3 som Avvisa. 8 kandidater i Del E till `07-migration-plan.md`. |
+
+### Inter-fas-kontrakt: kandidater E1–E8 till Fas 5
+
+Kandidaterna i `08-odoo-validation.md` Del E är **ofullständiga som migrationsplan-poster**. När Fas 5 nästa iteration tar in dem måste varje kandidat kompletteras med:
+
+- **Rollback-väg** — vad gör vi om DB-trigger/constraint orsakar regressions efter att den gått live? Specifikt för triggers (E1, E2, E3): hur tar man bort dem utan att lämna inkonsistent data efter sig.
+- **Ownership** — vem äger implementation, verifiering och drift av varje kandidat? Trigger/DDL hör hemma i Supabase-schema build (Fas 5 steg 4); app-kontrakt-varianter hör hemma i Edge Function-/domain-operation-design (Fas 5 steg 7 strangler-fig).
+
+**Detta gäller särskilt E1–E4** (de fyra Lyfta-luckorna), där implementationsformen kan vara antingen DB-trigger/constraint eller dokumenterat app-lager-kontrakt — valet påverkar både rollback och ownership. E5–E8 är Defer/spec-frågor och kan tas in halvspecade tills Marcus signalerar att de ska lyftas, men E1–E4 ska aldrig tas in i `07-migration-plan.md` utan rollback-väg + ägare.
+
+### Universella lärdomar
+
+Tre [UNIVERSAL]-lärdomar markerade i `08-odoo-validation.md` (sista sektionen). Lyfts till `~/Repon/marcus-system/tasks/lessons.md` vid nästa hub-sync — inte i denna sidospår-körning, eftersom hub-sync hör hemma i ordinarie sessionsavslut.
