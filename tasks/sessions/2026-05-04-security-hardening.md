@@ -795,6 +795,95 @@ Förväntat: event syns med environment=staging, samma DSN-prefix `edc36f9f`.
 
 **M7 = klar 2026-05-04.**
 
+---
+
+## Fas A — Slutsummering
+
+| | |
+|---|---|
+| Påbörjad | 2026-05-04 09:24 |
+| Slutförd | 2026-05-04 11:31 |
+| Total tid | ~2 h 07 min (sammanhängande session, inga pauser i transcript) |
+| Commits | 15 säkerhetscommits (+ 1 byggplan-direktiv av Marcus parallellt = 16 på branch) |
+| Tester före | 23 (efter M2+M6 baseline) |
+| Tester efter | 110 passed + 3 skipped = 113 totalt |
+| Bundle före | 244 kB (gzip 75 kB) |
+| Bundle efter | 324 kB (gzip 102 kB) — +80 kB Sentry SDK |
+
+### Stängda exponeringar (8 från Code-verifieringen 2026-04-29)
+
+| Fynd | Stängdes via | Verifiering |
+|---|---|---|
+| **A1.** Wildcard CORS `Access-Control-Allow-Origin: *` | M3 — `corsHeadersFor(req)` med env-driven exakt-match-allowlist, 403 på preflight med otillåten origin | curl: tillåten origin → 200 + Allow-Origin speglat; otillåten → 403 |
+| **A2.** Ingen `requireUser`-gate i någon datafunktion | M1 (helper) + M2 (wire i 4 datafunktioner) | 20 deny-path-tester per funktion + isolerad helper-test via test-auth |
+| **A3.** Anon-key-fallback i klient + ingen role-check server | M1 — requireUser fångar anon-key via role-check; M2 — wire i alla 4 funktioner | curl: anon-key → 401 från requireUser |
+| **A4.** `update-record` saknar fält/operations-allowlist | M4 — operations-baserad signatur, deny-by-default vid tom allowlist | curl: `{operationKey:'unknown',...}` → 400 |
+| **A5.** Formula-injektion i `get-registrations` + `get-persons` | M5 — `escapeFormulaValue()` + parameteriserade builders, INVARIANT round-trip-bevisning | curl: `?status=") OR TRUE() OR ("` → 200 tom resultat (eskaperat till strikt-equals) |
+| **A6.** `create-admin-user` saknar caller-verifiering | M6 — requireUser + `ADMIN_EMAILS`-allowlist, generic 403 | curl: anon → 401, non-admin → 403, admin → 400 (Supabase user-exists, gate passerade) |
+| **A7.** Råa felmeddelanden i alla 5 funktioner | M7 — `mapErrorToResponse()` med structured JSON-loggar + generic external 5xx-body | curl: malformed body → `{"error":"Internal error","requestId":"<uuid>"}` |
+| **A8.** Sentry installerat men oinitierat | M7 — `src/observability/sentry.ts` + `initSentry()` i main.tsx före React-mount | Bundle innehåller @sentry/react (+80 kB), DSN satt i staging-secret + .env.local |
+
+**Plus tilläggsfynd från §A:**
+- **A9.** `supabase/config.toml` saknades → M8 — committad med per-funktion `verify_jwt`
+- **A10.** PostCSS moderate vulnerability → defer:at till sidofix (Marcus M3-godkännande)
+- **A11.** Vite saknar säkerhetsplugin → defer:at till Fas 7 (känd avvikelse, dokumenterad i §F)
+
+### Etablerade arkitekturmönster
+
+Mönster som ska fortleva i Fas 5.5+ och framåt:
+
+- **`requireUser(req, corsHeaders)` → `AuthContext | Response`** — discriminated union istället för throw. Caller använder `if (auth instanceof Response) return auth`. Strukturerad för K7-utökning till `{ user, tenant_id, memberships }` post-S-track utan API-ändring.
+- **Operations-baserat write-API** — `{ operationKey, recordId, fields }` istället för `{ tableId, ... }`. Operations-mappen i `field-allowlists.ts` definierar `{ tableId, allowedFields }` per operation. Deny-by-default vid okänd operation eller fält utanför allowlist. K9-respekt: domännamn i klient, table-IDs i Edge Function-implementationen.
+- **`corsHeadersFor(req)` per request** — inte global konstant. Bygger headers dynamiskt baserat på request's Origin matchat mot env-allowlist. Skiljer browser-CORS (preflight 403 på otillåten) från server-till-server (no Origin → tillåts genom).
+- **`AuthContext | Response`-discriminated union** — generaliserbart mönster för alla auth/validation-helpers. Lyckad path returnerar typad data, fel-path returnerar färdig Response.
+- **Deny-by-default genomgående** — tom allowlist (operations, ADMIN_EMAILS, CORS_ALLOWED_ORIGINS) → allt nekas, inte allt tillåts. Säkrast vid konfigurations-glitches.
+- **Generic external errors + requestId** — klient ser `{error: 'Internal error', requestId}` för 5xx, server-loggar har full stack. Operationella 4xx behåller specifika error-meddelanden.
+- **Structured JSON-loggning** — `console.error(JSON.stringify({level, requestId, errorName, errorMessage, stack, context}))`. Sökbart i Supabase Logs på requestId.
+- **`isOperationalError(error)` klassning** — 4xx-HttpError loggas info-nivå (ingen Sentry), 5xx error-nivå (Sentry). Skyddar Sentry-quota mot 401/400-spam.
+- **INVARIANT round-trip-pattern (M5)** — för transformeringar (escape/parse, encode/decode), bevisa atomärt att roundtrip är förlustfri. Samma princip som `classify401Body` atomär status + body. Inte "ser ut som det funkar".
+- **`classify401Body(response)` atomär verifiering** — testtid-helper som assertar status + body atomärt. Returnerar `{source: 'gateway' | 'requireUser', body}` så caller kan göra extra checks utan double-fetch. Future-bug-skydd: 200 med felmeddelande kastar.
+
+### UNIVERSAL-lärdomar lyfta till lessons.md
+
+3 nya [UNIVERSAL]-poster i [tasks/lessons.md](../../tasks/lessons.md):
+
+1. **Test-only-endpoints (prefix `test-*`) får ALDRIG nå produktion.** Spårbarhet: M2 — `test-auth`-funktion infördes för isolerad helper-testing. Fas 7-deploy-pipeline måste filtrera bort `test-*` explicit. Naming-not: ursprungligt prefix `_test_*` (underscore) gick ej genom Supabase CLI:s funktionsnamn-validering.
+
+2. **Supabase Edge Functions har två-stegs auth-check.** Gateway-nivå (`verify_jwt` i `config.toml`) fångar saknad/ogiltig JWT med eget felformat. Funktion-nivå (egen `requireUser`-helper) fångar role-check (anon-key, missing claims). Båda är legitima 401-svar. Mönstret är inte Supabase-specifikt — gäller alla gateway+function-arkitekturer (AWS API Gateway + Lambda Authorizer, Cloudflare Workers + custom auth).
+
+3. **Hypotes om UI-flöden måste valideras mot faktisk implementation, inte mot specs.** Fas A M4 antog att Vue-versionen var sanningskälla för skrivflöden — discovery visade att 8/11 Vue-views var placeholders. När empiri saknas → infrastruktur + tom allowlist > deploy av oförankrade hypoteser. Att bygga icke-bevisade kapabilitetsytor är onödig attack-yta.
+
+### Defer:at till senare faser
+
+| Vad | Spår | Anledning |
+|---|---|---|
+| Adapter-debt (9 metoder pekar på Edge Functions som inte finns) | Fas 2.5 | UI byggs i Fas 5.5+, debt-ytan adresseras då |
+| `Status.ts` sync mot `data-model.md` (saknar `Inställt` + `Flytta till väntelista`) | Fas 2.5 | Bridge-fix, K8 (preserve aktivt), inte kritisk innan UI konsumerar status-värden |
+| CSP/security headers (vite plugin med nonce) | Fas 7 | SECURITY-SPEC §1 säger Fas 0, men medvetet uppskjutet — dokumenterat i §F som känd avvikelse |
+| Service worker tom innehåll (`public/sw.js`) | Fas 7 | Workbox läggs in i Fas 5 enligt conversion-plan |
+| PostCSS audit fix (`npm audit fix`) | Sidofix när helst | Trivialt, ej blocker, ej Fas A-arbete |
+| Klient-side Sentry-verifiering (syntetiskt fel) | Fas 5.5 | Verifieras naturligt när första vertikala slice triggar riktiga fel — syntetiskt test nu är teater |
+
+### Test-infrastruktur etablerad
+
+Allt under nedan finns på plats för Fas 5.5+ att fortsätta använda:
+
+- **2 test-users i staging-Supabase:**
+  - `playwright-test@miranon-admin.local` (non-admin) — för "user utan admin-email"-tester
+  - `playwright-admin@miranon-admin.local` (i `ADMIN_EMAILS`) — för "admin-email → 200"-tester
+- **`test-auth` Edge Function** — minimal endpoint för isolerad `requireUser`-testning. `verify_jwt = false` i config.toml så gateway släpper genom. Får aldrig deployas till produktion (test-* prefix).
+- **`classify401Body(response): {source, body}` atomär helper** — verifierar status === 401 + body matchar gateway- ELLER requireUser-format. Returnerar source så caller vet vem som svarade. Future-bug-skydd: 200 med felmeddelande kastar.
+- **`.env.test` pattern** — gitignored fil med TEST_*-vars. `.env.test.example` mall committad. `getApiConfig()` skipper alla API-tester om TEST_*-env saknas (så `npm run test:visual` fungerar utan API-infra).
+- **Playwright config med separata projekt** — `api`, `visual-desktop`, `visual-mobile` med projekt-specifika `testDir`. Scripts: `npm run test:api` och `npm run test:visual` separerade.
+- **Fuzz-test-pattern (M5)** — per-kategori fuzz-tester med separata `test.describe()` så framtida regression syns tydligt om någon attack-klass smyger genom. Plus INVARIANT round-trip-test som atomär bevisning. Unicode-input via `String.fromCharCode(0xNNNN)` så testerna är encoding-deterministiska.
+
+### Frusen status
+
+Detta arbetsdokument arkiveras som **SLUTFÖRT** efter denna slutsummering. Inga fler ändringar.
+
+Hela exponeringen från Code-verifieringen 2026-04-29 är stängd. Fas A levererad enligt scope.
+
+
 
 
 
