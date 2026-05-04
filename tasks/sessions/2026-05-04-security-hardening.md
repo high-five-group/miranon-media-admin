@@ -678,6 +678,52 @@ Re-deploy av update-record lyckades. `npm run test:api` mot deployad runtime:
 
 **M4 = klar 2026-05-04.**
 
+### M5 — Formula-injection-eskapering (klar 2026-05-04)
+
+**Commits:** Pågående (denna session).
+
+**Levererat:**
+- **NY:** [supabase/functions/_shared/airtable-filter.ts](supabase/functions/_shared/airtable-filter.ts) — pure ESM-helpers (importerbar både av Deno och Node):
+  - `escapeFormulaValue(s)`: returnerar `"<escaped>"`. Eskaperar `\` och `"` (i den ordningen). Reject:ar input > 1000 tecken eller med kontrolltecken (U+0000–U+001F + U+007F + U+200B–U+200F + U+202A–U+202E + U+2066–U+2069). FORBIDDEN_CHARS_REGEX konstrueras via `new RegExp()` med `\u`-escapes så filens visuella encoding inte spelar roll.
+  - `parseAirtableString(s)`: inverse av escapeFormulaValue. Validerar Airtable string-syntax (\\\\ → \, \\" → ", inget annat). Används för INVARIANT round-trip-test.
+  - `buildLinkedRecordFilter(field, recordId)`: `FIND(escaped, ARRAYJOIN({field}))`. Validerar recordId mot `^rec[A-Za-z0-9]+$`.
+  - `buildEqualsFilter(field, value)`: `{field} = escaped`.
+  - `buildSearchAcrossFieldsFilter(term, fields)`: `OR(SEARCH(LOWER(escaped), LOWER(field1)), ...)`. Stödjer scalar och array-fält (ARRAYJOIN).
+  - `combineWithAnd(filters)`: tom → undefined, ett → unchanged, flera → `AND(f1, f2, ...)`.
+  - K6-respekt-kommentar: "Filter-buildern vet ingenting om source-koncept eller integration_sources. När S-track ersätter Airtable-Edge-Functions blir denna helper obsolet, inte migrerad."
+- **Refactor:** [get-registrations/index.ts](supabase/functions/get-registrations/index.ts) använder `buildLinkedRecordFilter` + `buildEqualsFilter` + `combineWithAnd`. Builder-fel → 400 (klient-fel) med generic body, full detail loggas server-side.
+- **Refactor:** [get-persons/index.ts](supabase/functions/get-persons/index.ts) använder `buildSearchAcrossFieldsFilter` med `SEARCH_FIELDS`-konstant (4 fält, varav `Ort` är array). Samma 400-mönster för builder-fel.
+- **NY:** [tests/api/airtable-filter.test.ts](tests/api/airtable-filter.test.ts) — 84 tester i två lager:
+  - **Lager 1 (pure-logik, importerar helpers direkt):**
+    - INVARIANT round-trip × ~28 inputs (alla SAFE/QUOTE/FUNCTION/UNICODE_SAFE/LONG)
+    - Per-kategori fuzz: quote/escape (6), formula-functions (9), unicode-dangerous (11 reject:as), unicode-safe (3 accepteras), långa (4)
+    - Builder-tester: buildLinkedRecordFilter (4), buildEqualsFilter (3), buildSearchAcrossFieldsFilter (3), combineWithAnd (3)
+  - **Lager 2 (E2E mot deployad runtime):** 6 illvilliga inputs × 2 endpoints = 12 tester. Förväntar 200 (filter passerade, gav tomt resultat) eller 400 (filter rejected) — ALDRIG 500. Säkerställer att inget illvilligt input kan trigga server-fel.
+  - Alla unicode-tecken konstrueras via `String.fromCharCode(0xNNNN)` så testen är deterministiska oberoende av filens encoding (lärdom från attempts att skriva inline unicode).
+
+**Verifiering (lokalt):** tsc 0, biome 0.
+
+**Verifiering (staging — empiriskt 2026-05-04):**
+Re-deploy av get-registrations + get-persons lyckades. `npm run test:api` → **110 passed + 3 skipped (= 113 totalt)**.
+
+Manuell curl-injection-trippel mot deployad runtime:
+- `?status=") OR TRUE() OR ("` (URL-encoded) → `HTTP/2 200`. Formel utvärderas till `{Status} = "\") OR TRUE() OR (\""` (eskaperat) → ingen registrering matchar exakt strängen → tom resultat. **Tautologi-injection misslyckades**.
+- `?status=<2000 tecken>` → `HTTP/2 400`. Builder reject:ar pga `too long`. **DoS-skydd fungerar**.
+
+**M5 DoD-status:**
+- ✅ (a) NY airtable-filter.ts skapad
+- ✅ (b) escapeFormulaValue hanterar `"`, `'`, `\`, `(`, `)`, komma, nyrad/CR, kontrolltecken (alla testade — kontrolltecken reject:as, övriga eskaperas eller passerar oförändrat genom string-litteralen)
+- ✅ (c) Typade builders: `buildLinkedRecordFilter`, `buildEqualsFilter`, plus `buildSearchAcrossFieldsFilter` + `combineWithAnd` för komposition
+- ✅ (d) Båda funktioner refactorerade — inga string-interpolation kvar
+- ✅ (e) Fuzz-test med 30+ inputs (Marcus tilläggs-katalog inkluderad: TRUE/OR/IF/curly + Unicode-bidi + 1000-tecken-DoS)
+- ✅ Marcus tillägg #1 — separat test-fall per attack-klass (4 describe:s för olika fuzz-kategorier)
+- ✅ Marcus tillägg #2 — INVARIANT round-trip-test bevisar atomärt att eskaperad output kan tolkas EXAKT som input-strängen och inget annat
+- ✅ K6-respekt: filter-buildern vet ingenting om source-koncept
+
+**M5 = klar 2026-05-04.**
+
+
+
 **Aktiveringsguide för Fas 5.5+:** När produktionsslicen anropar första write-operation:
 1. Lägg till operation i `OPERATIONS`-mappen i `field-allowlists.ts` (t.ex. `'registration.set-status': { tableId: 'tbloOcrppVoyrHbrq', allowedFields: ['Status'] }`)
 2. Avskip:a relevanta tester i `tests/api/update-record.test.ts` (3 stycken)

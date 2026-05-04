@@ -1,3 +1,8 @@
+import {
+  buildEqualsFilter,
+  buildLinkedRecordFilter,
+  combineWithAnd,
+} from '../_shared/airtable-filter.ts';
 import { fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
@@ -46,27 +51,40 @@ Deno.serve(async (req) => {
   const auth = await requireUser(req, corsHeaders);
   if (auth instanceof Response) return auth;
 
-  try {
-    const url = new URL(req.url);
-    const eventId = url.searchParams.get('eventId');
-    const status = url.searchParams.get('status');
-    const flagga = url.searchParams.get('flagga');
+  const url = new URL(req.url);
+  const eventId = url.searchParams.get('eventId');
+  const status = url.searchParams.get('status');
+  const flagga = url.searchParams.get('flagga');
 
-    // Bygg filterByFormula
+  // Bygg filterByFormula via parameteriserade builders (M5).
+  // Builders kastar vid kontrolltecken / ogiltigt recordId-format /
+  // för långa strängar / Unicode-bidi-overrides → 400 (klient-fel,
+  // inte server-fel). Servern loggar full detail för audit; klient
+  // ser generic "Invalid filter input".
+  let filterByFormula: string | undefined;
+  try {
     const filters: string[] = [];
     if (eventId) {
-      filters.push(`FIND("${eventId}", ARRAYJOIN({Event}))`);
+      filters.push(buildLinkedRecordFilter('Event', eventId));
     }
     if (status) {
-      filters.push(`{Status} = "${status}"`);
+      filters.push(buildEqualsFilter('Status', status));
     }
     if (flagga) {
-      filters.push(`{Flagga} = "${flagga}"`);
+      filters.push(buildEqualsFilter('Flagga', flagga));
     }
+    filterByFormula = combineWithAnd(filters);
+  } catch (filterError) {
+    console.warn(
+      `[get-registrations] DENY invalid filter input: ${(filterError as Error).message}`,
+    );
+    return new Response(JSON.stringify({ error: 'Invalid filter input' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
-    const filterByFormula =
-      filters.length > 1 ? `AND(${filters.join(', ')})` : (filters[0] ?? undefined);
-
+  try {
     const records = await fetchFromAirtable(TABLE_ID, {
       filterByFormula,
       sort: [{ field: 'Inskickad', direction: 'desc' }],

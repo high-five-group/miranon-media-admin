@@ -1,3 +1,7 @@
+import {
+  buildSearchAcrossFieldsFilter,
+  type SearchField,
+} from '../_shared/airtable-filter.ts';
 import { fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
@@ -50,22 +54,36 @@ Deno.serve(async (req) => {
   const auth = await requireUser(req, corsHeaders);
   if (auth instanceof Response) return auth;
 
-  try {
-    const url = new URL(req.url);
-    const search = url.searchParams.get('search');
-    const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
+  const url = new URL(req.url);
+  const search = url.searchParams.get('search');
+  const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
 
-    let filterByFormula: string | undefined;
-    if (search) {
-      const term = search.replace(/"/g, '\\"');
-      filterByFormula = `OR(
-        SEARCH(LOWER("${term}"), LOWER({Namn})),
-        SEARCH(LOWER("${term}"), LOWER({E-post})),
-        SEARCH(LOWER("${term}"), LOWER({Telefon})),
-        SEARCH(LOWER("${term}"), LOWER(ARRAYJOIN({Ort})))
-      )`;
+  // Bygg filterByFormula via parameteriserade builders (M5).
+  // Builders kastar vid kontrolltecken / för långa strängar /
+  // Unicode-bidi-overrides → 400 (klient-fel). Servern loggar full
+  // detail för audit; klient ser generic "Invalid filter input".
+  const SEARCH_FIELDS: readonly SearchField[] = [
+    { name: 'Namn', isArray: false },
+    { name: 'E-post', isArray: false },
+    { name: 'Telefon', isArray: false },
+    { name: 'Ort', isArray: true },
+  ];
+  let filterByFormula: string | undefined;
+  if (search) {
+    try {
+      filterByFormula = buildSearchAcrossFieldsFilter(search, SEARCH_FIELDS);
+    } catch (filterError) {
+      console.warn(
+        `[get-persons] DENY invalid search input: ${(filterError as Error).message}`,
+      );
+      return new Response(JSON.stringify({ error: 'Invalid filter input' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+  }
 
+  try {
     const records = await fetchFromAirtable(TABLE_ID, {
       filterByFormula,
       sort: [{ field: 'Namn', direction: 'asc' }],
