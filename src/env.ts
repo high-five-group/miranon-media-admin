@@ -13,6 +13,10 @@ export const env = createEnv({
   client: {
     VITE_SUPABASE_URL: z.string().url(),
     VITE_SUPABASE_ANON_KEY: z.string().min(1),
+    // Sentry DSN är optional — initieras bara i prod/staging där
+    // den är satt. Lokal dev körs utan Sentry för att inte spam:a
+    // Sentry-kvoten med utvecklings-fel.
+    VITE_SENTRY_DSN: z.string().url().optional(),
   },
   runtimeEnv: import.meta.env,
   emptyStringAsUndefined: true,

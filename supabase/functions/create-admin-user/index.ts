@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
+import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 
 // Caller-verifiering — endast users vars email finns i ADMIN_EMAILS-listan
 // (komma-separerad env-secret) får skapa nya admin-users.
@@ -30,6 +31,7 @@ Deno.serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   const corsHeaders = corsHeadersFor(req);
+  const requestId = generateRequestId();
 
   // 1. Auth-gate: caller måste vara en inloggad user (inte anon-key,
   //    inte saknad header).
@@ -100,9 +102,10 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return mapErrorToResponse(error, requestId, corsHeaders, {
+      function: 'create-admin-user',
+      method: req.method,
+      callerUserId: user.id,
     });
   }
 });

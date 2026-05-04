@@ -6,6 +6,7 @@ import {
 import { fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
+import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 
 const TABLE_ID = 'tbloOcrppVoyrHbrq'; // Anmälningar
 
@@ -48,6 +49,8 @@ Deno.serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   const corsHeaders = corsHeadersFor(req);
+  const requestId = generateRequestId();
+
   const auth = await requireUser(req, corsHeaders);
   if (auth instanceof Response) return auth;
 
@@ -96,10 +99,10 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('get-registrations error:', error);
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return mapErrorToResponse(error, requestId, corsHeaders, {
+      function: 'get-registrations',
+      method: req.method,
+      callerUserId: auth.user.id,
     });
   }
 });

@@ -8,6 +8,11 @@ import './styles/base.css';
 import './styles/tailwind.css';
 
 import { reportWebVitals } from './lib/report-web-vitals';
+import { initSentry } from './observability/sentry';
+
+// M7: initiera Sentry FÖRE React mountas så att tidiga fel
+// (env-validering, root-element-fel, ...) fångas. Skip i lokal dev.
+initSentry();
 
 function App() {
   return (

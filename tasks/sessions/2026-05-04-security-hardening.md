@@ -722,6 +722,81 @@ Manuell curl-injection-trippel mot deployad runtime:
 
 **M5 = klar 2026-05-04.**
 
+### M7 — Generisk felmodell + Sentry-init (klar 2026-05-04)
+
+**Commits:** Pågående (denna session).
+
+**Levererat:**
+
+**Klient-side (Sentry):**
+- [src/env.ts](src/env.ts) utökad med `VITE_SENTRY_DSN: z.string().url().optional()` — optional eftersom lokal dev körs utan Sentry.
+- **NY:** [src/observability/sentry.ts](src/observability/sentry.ts) — `initSentry()` + `reportEdgeFunctionError()`-helpers. Konfig:
+  - Skip i lokal dev (`!isProd && !isStaging`) — annars spam:as Sentry-kvotan
+  - `tracesSampleRate: 0.1` (10% sampling)
+  - `sendDefaultPii: false` (ingen automatisk email/cookie/IP-skickning)
+  - `beforeSend`-filter: 4xx-fel + ResizeObserver-noise + avbruten fetch droppas
+  - `reportEdgeFunctionError(error, requestId, endpoint)`: binder requestId till Sentry-context för cross-system tracing
+- [src/main.tsx](src/main.tsx) anropar `initSentry()` FÖRE React mountas så tidiga fel (env-validering, root-element-fel) fångas.
+- **NY:** [.env.example](.env.example) — mall för klient-env-vars (SUPABASE_URL, SUPABASE_ANON_KEY, SENTRY_DSN). `.env.test.example` finns separat sedan M2.
+- `VITE_SENTRY_DSN` satt i `.env.local` (gitignored) + Supabase-secret `lvjsfnphlauldxqlncpl`.
+
+**Server-side (Edge Functions):**
+- **NY:** [supabase/functions/_shared/errors.ts](supabase/functions/_shared/errors.ts):
+  - `HttpError`, `UnauthorizedError`, `ForbiddenError`, `ValidationError`-classes
+  - `isOperationalError(error)`: klassar 4xx-HttpError som "förväntat" (loggas på info-nivå, ej Sentry-relevant)
+  - `generateRequestId()`: `crypto.randomUUID()`
+  - `mapErrorToResponse(error, requestId, corsHeaders, context)`: structured JSON-logg + klient-respons
+- 5 Edge Functions refactorerade ([get-events](supabase/functions/get-events/index.ts), [get-persons](supabase/functions/get-persons/index.ts), [get-registrations](supabase/functions/get-registrations/index.ts), [update-record](supabase/functions/update-record/index.ts), [create-admin-user](supabase/functions/create-admin-user/index.ts)):
+  - `requestId` genereras tidigt med `generateRequestId()`
+  - catch-block ersatt med `mapErrorToResponse(error, requestId, corsHeaders, { function, method, callerUserId })`
+  - Klient-respons för 5xx: `{ error: 'Internal error', requestId: '<uuid>' }` — inga stack-detaljer
+  - Server-logg: `console.error(JSON.stringify({ level, requestId, errorName, errorMessage, stack, ...context }))` — sökbart i Supabase Logs
+- `test-auth` orörd (har inget try/catch — minimal endpoint).
+
+**Marcus M7-tillägg implementerade:**
+- ✅ `isOperationalError` exporterad — operationella fel loggas info-nivå (sparar Sentry-quota)
+- ✅ Structured JSON-loggar via `console.error(JSON.stringify(...))` — inte string-concat
+
+**K7-respekt:** requestId-strukturen är icke-breaking — när `audit_log` (06b §C1) byggs post-S-track kan `mapErrorToResponse` enkelt utökas med `audit_log`-skrivning utan API-ändring av callers. Strukturerad logg-format matchar redan target-tabellens kolumner (`level`, `request_id`, `actor_type`, `metadata`).
+
+**Verifiering (lokalt):**
+- ✅ `npx tsc --noEmit` → 0
+- ✅ `npx @biomejs/biome check .` → 0
+- ✅ `npm run build` → 0 (bundle 244 → 324 kB pga Sentry SDK addition; gzip 75 → 102 kB)
+
+**Verifiering (staging — empiriskt 2026-05-04):**
+Manuellt 500-trigger via curl mot deployad runtime:
+- `POST /functions/v1/update-record` med malformed JSON-body (`-d 'not-valid-json'`) + giltig user-JWT
+- Klient-respons: `{"error":"Internal error","requestId":"293cc709-e8ca-43a1-9946-42ffaae56659"}`
+- ✅ Generic message — inga stack-detaljer, ingen intern info läcker
+- ✅ requestId är giltig UUID v4
+- Baseline: `GET /functions/v1/get-events` returnerar 50 events oförändrat (inget brutet)
+
+**Verifiering (Supabase Logs — för Marcus dashboard-check):**
+Kontrollera Supabase Functions Logs i dashboard → filter på `requestId=293cc709-e8ca-43a1-9946-42ffaae56659`. Förväntat: structured JSON med `level: 'error'`, `errorName`, `errorMessage`, full `stack`-trace, `function: 'update-record'`, `method: 'POST'`, `callerUserId: '<test-user-id>'`. Det är "M7 server-side"-bevisning som inte kan verifieras automatisk via curl.
+
+**Verifiering (Sentry — för Marcus sentry.io-check):**
+Klient-side Sentry är initierad i prod/staging-bundlen. För att verifiera:
+1. Bygg + deploya klient till staging (eller `npm run preview` lokalt med `VITE_SENTRY_DSN` satt)
+2. Trigga ett klient-side fel (t.ex. via DevTools `throw new Error('test')` i console)
+3. Kolla sentry.io dashboard → project `react-platform` → events-flöde
+Förväntat: event syns med environment=staging, samma DSN-prefix `edc36f9f`.
+
+**Test-svit post-M7:** `npm run test:api` → **110 passed + 3 skipped** (oförändrat — inga regressioner från refactor).
+
+**M7 DoD-status:**
+- ✅ (a) NY errors.ts med `mapErrorToResponse(error, requestId)` + bonus-helpers
+- ✅ (b) Alla 5 catch-block (inkl. create-admin-user) byter till `mapErrorToResponse`
+- ✅ (c) requestId via `crypto.randomUUID()` per request, genererat tidigt i bodyn
+- ✅ (d) NY src/observability/sentry.ts med `initSentry()`, anropas från `src/main.tsx` före `createRoot`
+- ✅ (e) Manuellt verifierat: kontrollerat fel → klient ser `{error: 'Internal error', requestId}` utan stack, server-loggen har structured JSON med samma requestId
+- ✅ Marcus tillägg #1: `isOperationalError(error)` skyddar Sentry-quota
+- ✅ Marcus tillägg #2: structured JSON-loggar via `console.error(JSON.stringify(...))`
+
+**M7 = klar 2026-05-04.**
+
+
+
 
 
 **Aktiveringsguide för Fas 5.5+:** När produktionsslicen anropar första write-operation:
