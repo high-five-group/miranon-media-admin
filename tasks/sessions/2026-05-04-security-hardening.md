@@ -433,4 +433,28 @@ Marcus valde **alternativ A**: `test-auth` (och alla `test-*`-prefixade funktion
 2. Sätta `[functions.<övriga>] verify_jwt = true` per funktion.
 3. Lägga en kommentar i config.toml som hänvisar till TODO Fas 7 ovan.
 
+#### M2 staging-verifiering 2026-05-04 — gateway vs helper
+
+Vid första körning av `npm run test:api` mot staging visade sig att Supabase Gateway (default `verify_jwt=true`) fångar saknad header + ogiltig JWT INNAN min funktion ens körs. Body blir då `{"code":"UNAUTHORIZED_*","message":"..."}` istället för min `{"error":"..."}`-format.
+
+**Empiriskt observerat (curl 2026-05-04):**
+- Saknad header → `401 {"code":"UNAUTHORIZED_NO_AUTH_HEADER","message":"Missing authorization header"}` (gateway)
+- Ogiltig JWT → `401 {"code":"UNAUTHORIZED_LEGACY_JWT","message":"Invalid JWT"}` (gateway)
+- Anon-key → `401 {"error":"Invalid or expired token"}` (gateway släpper genom — anon-key ÄR ett valid JWT — requireUser fångar)
+- Giltig user-JWT → `200 {"ok":true,"userId":"..."}` (requireUser godkänner)
+
+**Implikationer:**
+- M2:s wiring (requireUser i datafunktioner) är fortfarande värd det: anon-key fångas, defense-in-depth, user-id loggas, framtida M3-M8 bygger på user-context.
+- Pre-M8: tester accepterar BÅDA bodyformat via `classify401Body()` i `tests/api/helpers.ts`. Returnerar `'gateway'` eller `'requireUser'` för spårbarhet.
+- Post-M8 (när `verify_jwt=false` på `test-auth`): isolerade helper-tester börjar nå requireUser för alla paths och bodyformat blir konsekvent `requireUser`. Då kan strängare assertions införas.
+
+**M2 DoD-status efter staging-fix:**
+- ✅ requireUser anropas i alla 4 datafunktioner direkt efter handleCors
+- ✅ caller_user_id loggas i update-record
+- ✅ 4 tester direkt mot test-auth (3 deny + 1 allow) körs grönt
+- ✅ 16 tester per datafunktion (4 deny-paths × 4) körs grönt
+- ✅ Total: **20/20 gröna** mot deployad staging-runtime
+
+**M2 = klar 2026-05-04.**
+
 

@@ -70,3 +70,19 @@ export async function getValidUserJWT(
 // nonsens. Supabase auth.getUser() returnerar AuthError + null user.
 export const INVALID_JWT =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpbnZhbGlkIn0.invalidsignature123';
+
+// Verifierar att en 401-response kommer antingen från Supabase Gateway
+// (default verify_jwt=true fångar saknad/ogiltig JWT) eller från
+// requireUser-helpern (fångar anon-key + alla andra fall).
+//
+// Båda är acceptabla 401-vägar — M2:s DoD säger "deny → 401", inte
+// "deny → 401 från specifik plats". När M8 sätter verify_jwt=false på
+// test-auth så börjar requireUser:s format dyka upp för alla paths.
+//
+// Returnerar 'gateway' eller 'requireUser' så testet vet vem som svarade.
+export function classify401Body(body: unknown): 'gateway' | 'requireUser' {
+  const b = body as { error?: string; code?: string; message?: string };
+  if (b.code?.startsWith('UNAUTHORIZED_')) return 'gateway';
+  if (typeof b.error === 'string' && b.error.length > 0) return 'requireUser';
+  throw new Error(`Unexpected 401 body shape: ${JSON.stringify(body)}`);
+}
