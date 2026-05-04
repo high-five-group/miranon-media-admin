@@ -472,7 +472,8 @@ Allt nedanstående är frusen indata för revisionen.
 | | |
 |---|---|
 | Skapat | 2026-05-04 |
-| Påbörjat (P0) | – |
+| Klar (P0) | 2026-05-04 |
+| Klar (P1) | 2026-05-04 |
 | Fas A-status | **SLUTFÖRD 2026-05-04** — alla M1–M8 levererade, 14 commits, 113 tester |
 | Ägare | Marcus + Claude Chat |
 | Code-medverkan | Endast vid kodbasverifiering, slutlig commit av byggplanen, och eventuell M5+ av framtida implementations-faser |

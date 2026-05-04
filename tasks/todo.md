@@ -175,6 +175,26 @@
 
 ---
 
+## Byggplan-revision (P0 → P3)
+
+Meta-arbete parallellt med byggfaserna. Reviderar conversion-plan
+till byggplan baserat på Fas A-fynd, datamodell-research och
+Codex/Code-verifiering.
+
+- [x] **P0 — Inventering** ✅ AVSLUTAD 2026-05-04
+      Leverans: `docs/byggplan-revision-inventory.md`
+- [x] **P1 — Fas-sekvens-revision** ✅ AVSLUTAD 2026-05-04
+      Leverans: `tasks/sessions/2026-05-04-byggplan-revision-p1.md`
+      §5-uppdatering applicerad i commit `5ed4668`
+- [ ] **P2 — Stödspec-synkning** ← NÄSTA
+      Startkontext: `tasks/sessions/2026-05-04-p1-avslutning.md` Del 4
+      Direktiv: `tasks/byggplan-direktiv.md` §6 P2
+- [ ] **P3 — Skriv byggplanen + städning**
+      Direktiv: `tasks/byggplan-direktiv.md` §6 P3
+      Förutsätter: P2 klar
+
+---
+
 ## Teknisk skuld som spåras (från Fas 0 + Fas 1)
 
 - **Zod refaktorering:** Schema blir sanningskälla i Fas 2/3 ([ADR-005](../docs/decisions/ADR-005-zod-parallell-definitions.md))
