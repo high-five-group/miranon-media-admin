@@ -457,4 +457,34 @@ Vid första körning av `npm run test:api` mot staging visade sig att Supabase G
 
 **M2 = klar 2026-05-04.**
 
+### M8 — `supabase/config.toml` med `verify_jwt` per funktion (klar 2026-05-04)
+
+**Commit:** Pågående (denna session).
+
+**Levererat:**
+- **NY:** [supabase/config.toml](supabase/config.toml) — versionerad per-funktion `verify_jwt`-konfig.
+  - `[functions.test-auth] verify_jwt = false` — gateway släpper genom så requireUser kan testas isolerat.
+  - `[functions.get-events|get-persons|get-registrations|update-record] verify_jwt = true` — gateway-första-försvar.
+  - `[functions.create-admin-user] verify_jwt = true` — pre-M6-gate. Caller-verifiering läggs i M6.
+  - `project_id = "miranon-media-admin"`.
+  - Header-kommentar med TODO Fas 7-länk om `test-*`-exkludering.
+
+**Verifiering (lokalt):** tsc 0, biome 0, build 0 (config.toml påverkar inte client-bundle).
+
+**Verifiering (staging — empiriskt 2026-05-04):**
+- Re-deploy av alla 6 funktioner med config.toml aktiv lyckades.
+- `curl GET /functions/v1/test-auth` (utan auth) → `{"error":"Missing Authorization header"}` (requireUser-format → gateway släpper genom som planerat).
+- `curl GET /functions/v1/get-events` (utan auth) → `{"code":"UNAUTHORIZED_NO_AUTH_HEADER",...}` (gateway-format → gateway blockerar som planerat).
+- Kontrast bekräftar att config.toml respekteras: same-server, olika beteende per funktion.
+
+**Test-svit post-M8:** `npm run test:api` → **20/20 gröna** (samma resultat som pre-M8 — `classify401Body()` accepterar båda format så cutoveren är icke-breaking för testerna).
+
+**M8 DoD-status:**
+- ✅ (a) config.toml committad med explicit `verify_jwt` per funktion (alla 6).
+- ✅ (b) Deploy till staging verifierar att config.toml respekteras (curl-kontrast ovan + 20/20 tester).
+- ✅ test-auth har `verify_jwt = false` så framtida M8-relaterade fynd kan testas isolerat.
+- ✅ Header-kommentar i config.toml hänvisar till TODO Fas 7 i §F (a).
+
+**M8 = klar 2026-05-04.**
+
 

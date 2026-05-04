@@ -1,0 +1,41 @@
+# Supabase project configuration.
+#
+# Lever i git så att deploy-tid-konfig per funktion är versionerad.
+# Per-funktion verify_jwt är gateway-första-försvar — appen lägger
+# requireUser-helpern OVANPÅ för defense-in-depth (anon-key fångas
+# där eftersom anon-key ÄR ett valid JWT som passerar gateway).
+#
+# TODO Fas 7 — test-*-funktioner får ALDRIG nå produktion. När
+# prod-deploy-pipelinen byggs måste den filtrera bort dem explicit.
+# Se tasks/sessions/2026-05-04-security-hardening.md §F.
+
+project_id = "miranon-media-admin"
+
+# Test-only endpoint för isolerad requireUser-testning.
+# verify_jwt = false så att testerna kan nå requireUser för alla
+# auth-deny-paths (saknad header, ogiltig JWT, anon-key) direkt.
+# Annars fångar gateway:n saknad/ogiltig JWT innan helpern körs.
+# Inert i prod — test-auth deployas aldrig dit.
+[functions.test-auth]
+verify_jwt = false
+
+# Datafunktioner: gateway-första-försvar aktivt. requireUser läggs
+# OVANPÅ i koden för defense-in-depth (anon-key, user-id-loggning).
+[functions.get-events]
+verify_jwt = true
+
+[functions.get-persons]
+verify_jwt = true
+
+[functions.get-registrations]
+verify_jwt = true
+
+[functions.update-record]
+verify_jwt = true
+
+# create-admin-user: caller-verifiering läggs i M6 (requireUser +
+# admin-email-allowlist). Pre-M6 ger verify_jwt = true gateway-
+# första-försvar — men anon-key passerar (anon-key ÄR valid JWT)
+# vilket är hela poängen med M6.
+[functions.create-admin-user]
+verify_jwt = true
