@@ -34,9 +34,13 @@ const ENDPOINTS: EndpointSpec[] = [
     name: 'update-record',
     method: 'POST',
     path: '/functions/v1/update-record',
-    // En harmless body — funktionen ska först checka auth (401),
-    // INNAN den validerar tableId/recordId/fields. Det är hela poängen.
-    body: { tableId: 'tbloOcrppVoyrHbrq', recordId: 'recDOESNOTEXIST', fields: {} },
+    // Operations-baserad body (M4). Funktionen ska först checka auth (401),
+    // INNAN den validerar operationKey/recordId/fields. Det är hela
+    // poängen. För allow-testet (giltig user-JWT) blir resultatet 400
+    // ("Unknown operation") eftersom OPERATIONS-listan är tom (M4
+    // discovery-fyndet) — det är OK eftersom allow-testet asserterar
+    // !=401, vilket bevisar att auth-gaten passerade.
+    body: { operationKey: 'unknown.test-op', recordId: 'recDOESNOTEXIST', fields: {} },
   },
 ];
 

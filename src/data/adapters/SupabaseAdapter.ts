@@ -32,7 +32,7 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async updateRecord(
-    _tableId: string,
+    _operationKey: string,
     _recordId: string,
     _fields: Record<string, unknown>,
   ): Promise<void> {
@@ -47,7 +47,11 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
-  async updateRegistration(_id: string, _fields: Partial<Registration>): Promise<void> {
+  async updateRegistration(
+    _operationKey: string,
+    _id: string,
+    _fields: Partial<Registration>,
+  ): Promise<void> {
     throw new Error(NOT_IMPLEMENTED);
   }
 
@@ -59,7 +63,7 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
-  async updateAttendance(_id: string, _status: string): Promise<void> {
+  async updateAttendance(_operationKey: string, _id: string, _status: string): Promise<void> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

@@ -1,28 +1,19 @@
 import { updateAirtableRecord } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
+import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
 
-// Allowlist — bara våra tabeller
-const ALLOWED_TABLES = new Set([
-  'tblVE3UKWl1CKrphV', // Eventplanering
-  'tbloOcrppVoyrHbrq', // Anmälningar
-  'tbl6ZyCm3V026iFTU', // Personer
-  'tbldWHH6sSHWoQPHH', // Deltaganden
-  'tblqFpgxEhJ95AEcM', // Hämtade erbjudanden
-  'tbl9H2SoGFfysBj5y', // Engagemang
-  'tbl22SCvlHrgcAiZi', // Touchpoints
-  'tblcCFGCVrnl1JZfg', // Erbjudanden
-  'tblzg4DsRzCCXH8Vy', // Kontaktlogg
-  'tblWarzSse85NI1Zx', // Bulkutskick
-  'tbl2VxMx7JMkIxD4Q', // Väntelista
-  'tblXFJyGRahQDhhqc', // Email Opens
-  'tblIesjbuSWNp6oxK', // Utskickslogg
-  'tblnnmWswnRp9gFws', // Error-log
-  'tbll2N6JKCj4u6y9o', // Segment
-  'tbl8qhuJQ5ZWPMRk4', // Eventformat
-  'tblor5TK8HeryGXIj', // Path to Conversion
-  'tblMpQI1crF521Xsp', // Instagram Posts
-]);
+// Operations-baserad write-API (M4).
+//
+// Klient skickar { operationKey, recordId, fields }. operationKey
+// matchas mot OPERATIONS-registret i _shared/field-allowlists.ts.
+// Okänd operation → 400. Fält utanför operationens allowedFields → 400.
+// Deny-by-default på alla nivåer.
+//
+// Operations-registret är tomt idag (Discovery 2026-05-04 visade att
+// inga UI-callers finns). Operations läggs till när Fas 5.5+
+// produktionsslicen faktiskt anropar dem. Se §F i
+// tasks/sessions/2026-05-04-security-hardening.md.
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -42,23 +33,41 @@ Deno.serve(async (req) => {
   const { user } = auth;
 
   try {
-    const { tableId, recordId, fields } = await req.json();
+    const { operationKey, recordId, fields } = await req.json();
 
-    // Validera input
-    if (!tableId || !recordId || !fields) {
-      return new Response(JSON.stringify({ error: 'tableId, recordId, and fields are required' }), {
+    // 1. Validera input-shape.
+    if (typeof operationKey !== 'string' || !operationKey) {
+      return new Response(JSON.stringify({ error: 'operationKey is required (string)' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (typeof recordId !== 'string' || !recordId) {
+      return new Response(JSON.stringify({ error: 'recordId is required (string)' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (!fields || typeof fields !== 'object' || Array.isArray(fields)) {
+      return new Response(JSON.stringify({ error: 'fields is required (object)' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (!ALLOWED_TABLES.has(tableId)) {
-      return new Response(JSON.stringify({ error: `Table ${tableId} not in allowlist` }), {
-        status: 403,
+    // 2. Verifiera att operationen finns på allowlisten.
+    const operation = getOperation(operationKey);
+    if (!operation) {
+      console.warn(
+        `[update-record] DENY unknown operation | caller_user_id=${user.id} | operationKey=${operationKey}`,
+      );
+      return new Response(JSON.stringify({ error: `Unknown operation: ${operationKey}` }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    // 3. recordId-format-check (befintligt beteende, behållet).
     if (!recordId.startsWith('rec')) {
       return new Response(JSON.stringify({ error: 'Invalid recordId format' }), {
         status: 400,
@@ -66,11 +75,32 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 4. Verifiera att alla fält i payload är på operationens allowedFields.
+    const disallowed = findDisallowedField(operation, fields as Record<string, unknown>);
+    if (disallowed !== null) {
+      console.warn(
+        `[update-record] DENY field not in allowlist | caller_user_id=${user.id} | operationKey=${operationKey} | field=${disallowed}`,
+      );
+      return new Response(
+        JSON.stringify({
+          error: `Field "${disallowed}" not allowed for operation "${operationKey}"`,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
     console.log(
-      `[update-record] ${new Date().toISOString()} | caller_user_id=${user.id} | table=${tableId} | record=${recordId} | fields=${JSON.stringify(fields)}`,
+      `[update-record] ALLOW | caller_user_id=${user.id} | operationKey=${operationKey} | record=${recordId} | fields=${JSON.stringify(fields)}`,
     );
 
-    const updated = await updateAirtableRecord(tableId, recordId, fields);
+    const updated = await updateAirtableRecord(
+      operation.tableId,
+      recordId,
+      fields as Record<string, unknown>,
+    );
 
     return new Response(JSON.stringify({ record: { id: updated.id, fields: updated.fields } }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

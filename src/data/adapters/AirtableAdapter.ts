@@ -17,9 +17,12 @@ import type {
 import { callEdgeFunction, postEdgeFunction } from '../config/supabase-client';
 import type { DataSourceAdapter } from './DataSourceAdapter';
 
-/** Airtable tabell-ID:n (från docs/schema_reference.md) */
-const REGISTRATIONS_TABLE_ID = 'tbloOcrppVoyrHbrq';
-const ATTENDANCE_TABLE_ID = 'tbldWHH6sSHWoQPHH';
+// Airtable tabell-ID:n (från docs/schema_reference.md). Behålls som
+// referens i kommentarer för framtida operations-definitioner i
+// supabase/functions/_shared/field-allowlists.ts. Selva mappningen
+// operation → tabell sker i Edge Function via getOperation(), inte
+// längre i klient-koden (M4 K9-respekt: domännamn i klient, table-IDs
+// i Edge Function-implementationen).
 
 export class AirtableAdapter implements DataSourceAdapter {
   // === Befintliga metoder (oförändrade) ===
@@ -55,11 +58,11 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   async updateRecord(
-    tableId: string,
+    operationKey: string,
     recordId: string,
     fields: Record<string, unknown>,
   ): Promise<void> {
-    await postEdgeFunction('update-record', { tableId, recordId, fields });
+    await postEdgeFunction('update-record', { operationKey, recordId, fields });
   }
 
   // === Nya metoder ===
@@ -80,9 +83,13 @@ export class AirtableAdapter implements DataSourceAdapter {
     return data.person;
   }
 
-  /** Uppdatera anmälan — använder befintlig update-record Edge Function */
-  async updateRegistration(id: string, fields: Partial<Registration>): Promise<void> {
-    await this.updateRecord(REGISTRATIONS_TABLE_ID, id, fields as Record<string, unknown>);
+  /** Uppdatera anmälan — kräver explicit operationKey (M4). */
+  async updateRegistration(
+    operationKey: string,
+    id: string,
+    fields: Partial<Registration>,
+  ): Promise<void> {
+    await this.updateRecord(operationKey, id, fields as Record<string, unknown>);
   }
 
   /** Skapa ny anmälan */
@@ -110,9 +117,9 @@ export class AirtableAdapter implements DataSourceAdapter {
     return data.attendance;
   }
 
-  /** Uppdatera deltagandes status — använder befintlig update-record Edge Function */
-  async updateAttendance(id: string, status: string): Promise<void> {
-    await this.updateRecord(ATTENDANCE_TABLE_ID, id, { Status: status });
+  /** Uppdatera deltagandes status — kräver explicit operationKey (M4). */
+  async updateAttendance(operationKey: string, id: string, status: string): Promise<void> {
+    await this.updateRecord(operationKey, id, { Status: status });
   }
 
   /** Hämta väntelistan */

@@ -633,6 +633,60 @@ Detta invaliderar Gate A1-strategin "discovery-fas mot Vue-versionen" eftersom d
 
 **Stoppar här.** Inga kodändringar görs. Discovery-fasen är klar — inväntar Marcus beslut på Alt A/B/C.
 
+#### M4 Implementation (Marcus valde Alt A med justering — "infrastruktur + tom allowlist")
+
+Marcus 2026-05-04: *"Implementera M4 som 'infrastruktur + tom allowlist', inte 'infrastruktur + 8 hypotes-operations'. Att lägga till operations utan empirisk användning är onödig attack-yta."*
+
+**Levererat:**
+- **NY:** [supabase/functions/_shared/field-allowlists.ts](supabase/functions/_shared/field-allowlists.ts) — operations-registret med:
+  - `OperationDef`-interface: `{ tableId, allowedFields }`
+  - `getOperation(operationKey)`: returnerar OperationDef eller null
+  - `findDisallowedField(operation, fields)`: returnerar första oväntade fältet eller null
+  - `OPERATIONS`-mapp: **TOM** (per Marcus instruktion)
+  - Header-kommentar förklarar varför listan är tom + K7-respekt om migration till `integration_source_configs.config_values.write_allowlist` post-S-track
+- **Refactor:** [supabase/functions/update-record/index.ts](supabase/functions/update-record/index.ts) — operations-baserad signatur:
+  - Body: `{ operationKey, recordId, fields }` istället för `{ tableId, recordId, fields }`
+  - 4-stegs validering: input-shape → operation känd → recordId-format → fields i allowlist
+  - Audit-loggar: `DENY unknown operation`, `DENY field not in allowlist`, `ALLOW`
+  - Borttagen `ALLOWED_TABLES`-konstanten — operations äger nu tabell-mappningen
+- **Klient-sida (signatur-uppdatering):** [src/data/adapters/DataSourceAdapter.ts](src/data/adapters/DataSourceAdapter.ts), [AirtableAdapter.ts](src/data/adapters/AirtableAdapter.ts), [SupabaseAdapter.ts](src/data/adapters/SupabaseAdapter.ts):
+  - `updateRecord(operationKey, recordId, fields)` — operationKey istället för tableId
+  - `updateRegistration(operationKey, id, fields)` — explicit operationKey för thin wrappers
+  - `updateAttendance(operationKey, id, status)` — explicit operationKey
+  - K9-respekt-kommentar i AirtableAdapter: domännamn i klient, table-IDs i Edge Function-implementationen
+- **Test-uppdatering:** [tests/api/edge-functions.test.ts](tests/api/edge-functions.test.ts) update-record-body bytt till `{ operationKey: 'unknown.test-op', recordId: '...', fields: {} }`. Allow-testet ger nu 400 (Unknown operation) istället för 4xx (User-exists), men `expect(res.status()).not.toBe(401)` håller — auth-gaten passerade.
+- **NY:** [tests/api/update-record.test.ts](tests/api/update-record.test.ts) — 4 M4-specifika tester:
+  - `deny: okänd operation → 400` — körs idag, grönt med tom allowlist (alla operations är okända)
+  - `deny: recordId utan rec-prefix → 400` — `test.skip()` med kommentar "Aktiveras när Fas 5.5 lägger till första operation" (kräver känd operation att nå recordId-checken)
+  - `deny: fält utanför allowlist → 400` — `test.skip()` (kräver känd operation med specifik allowedFields)
+  - `allow: registrerad operation + tillåtna fält → 200` — `test.skip()` (kräver känd operation + verklig recordId)
+
+**Verifiering (lokalt):** tsc 0, biome 0.
+
+**Verifiering (staging — empiriskt 2026-05-04):**
+Re-deploy av update-record lyckades. `npm run test:api` mot deployad runtime:
+- **26 passed + 3 skipped = 29 totalt** (3 skip:s är M4 update-record-tester som aktiveras vid Fas 5.5)
+- update-record:s allow-test ger nu 400 ("Unknown operation") med valid user-JWT → bekräftar att tom allowlist är deny-by-default på riktigt
+
+**M4 DoD-status:**
+- ✅ Infrastruktur byggd: field-allowlists.ts + operations-baserad update-record + uppdaterad klient-API
+- ✅ Allowlist är tom (per Marcus justering)
+- ✅ Deny-by-default: okänd operation → 400 (verifierat empiriskt)
+- ✅ Recordid-format-check och field-allowlist-check skissade men `test.skip()`:ade till Fas 5.5
+- ✅ K7-kommentar: operations migreras till `integration_source_configs.config_values.write_allowlist` post-S-track
+- ✅ Discovery-fyndet lyfted till lessons.md som [UNIVERSAL]: "Hypotes om UI-flöden måste valideras mot faktisk implementation"
+
+**M4 = klar 2026-05-04.**
+
+**Aktiveringsguide för Fas 5.5+:** När produktionsslicen anropar första write-operation:
+1. Lägg till operation i `OPERATIONS`-mappen i `field-allowlists.ts` (t.ex. `'registration.set-status': { tableId: 'tbloOcrppVoyrHbrq', allowedFields: ['Status'] }`)
+2. Avskip:a relevanta tester i `tests/api/update-record.test.ts` (3 stycken)
+3. Byt `TODO_REPLACE_WITH_REGISTERED_OPERATION` till den nya operationKey + uppdatera fields-objekten
+4. Re-deploya update-record
+5. Kör `npm run test:api` → ska gå från 26+3skip till 29 passed (eller 30 om allow:n adderas)
+
+
+
 
 
 
