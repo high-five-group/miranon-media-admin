@@ -1,39 +1,49 @@
 import { defineConfig } from '@playwright/test';
 
 /**
- * Playwright — visuella regressionstester.
- * Konfiguration portad från DESIGN-SYSTEM-SPEC §6.
+ * Playwright — visuella regressionstester + API-säkerhetstester.
  *
- * Baselines skapas per fas-avslut i Fas 3+. I Fas 0 finns bara konfiguration.
+ * Två projekt:
+ *   - api      → tests/api/ (Edge Function deny-path-tester, M2+)
+ *   - visual-* → tests/visual/ (skärmdumpar, Fas 3+)
+ *
+ * API-tester kräver TEST_SUPABASE_URL satt. Saknas den → testerna
+ * skippas i runtime (se tests/api/helpers.ts).
  */
 export default defineConfig({
-  testDir: './tests/visual',
-  snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}',
+  testDir: './tests',
+  snapshotPathTemplate: '{testDir}/visual/__screenshots__/{testFilePath}/{arg}{ext}',
   expect: {
     toHaveScreenshot: {
-      // Tolerans för anti-aliasing
       maxDiffPixelRatio: 0.01,
-      // Threshold per pixel (0 = exakt, 1 = allt tillåtet)
       threshold: 0.2,
-      // Animationer ska vara klara
       animations: 'disabled',
     },
   },
   use: {
-    // Konsekvent rendering
-    viewport: { width: 1440, height: 900 },
-    colorScheme: 'light',
     locale: 'sv-SE',
     timezoneId: 'Europe/Stockholm',
   },
   projects: [
     {
-      name: 'desktop',
-      use: { viewport: { width: 1440, height: 900 } },
+      name: 'api',
+      testDir: './tests/api',
+      use: {
+        baseURL: process.env.TEST_SUPABASE_URL,
+        extraHTTPHeaders: {
+          'Content-Type': 'application/json',
+        },
+      },
     },
     {
-      name: 'mobile',
-      use: { viewport: { width: 375, height: 812 } },
+      name: 'visual-desktop',
+      testDir: './tests/visual',
+      use: { viewport: { width: 1440, height: 900 }, colorScheme: 'light' },
+    },
+    {
+      name: 'visual-mobile',
+      testDir: './tests/visual',
+      use: { viewport: { width: 375, height: 812 }, colorScheme: 'light' },
     },
   ],
 });

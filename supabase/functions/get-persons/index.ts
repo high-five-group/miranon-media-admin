@@ -1,4 +1,5 @@
 import { fetchFromAirtable } from '../_shared/airtable-client.ts';
+import { requireUser } from '../_shared/auth.ts';
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
 
 const TABLE_ID = 'tbl6ZyCm3V026iFTU'; // Personer
@@ -44,6 +45,9 @@ function mapPerson(record: { id: string; fields: Record<string, unknown> }) {
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
+
+  const auth = await requireUser(req, corsHeaders);
+  if (auth instanceof Response) return auth;
 
   try {
     const url = new URL(req.url);

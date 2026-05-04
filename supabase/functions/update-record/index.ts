@@ -1,4 +1,5 @@
 import { updateAirtableRecord } from '../_shared/airtable-client.ts';
+import { requireUser } from '../_shared/auth.ts';
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
 
 // Allowlist — bara våra tabeller
@@ -34,6 +35,10 @@ Deno.serve(async (req) => {
     });
   }
 
+  const auth = await requireUser(req, corsHeaders);
+  if (auth instanceof Response) return auth;
+  const { user } = auth;
+
   try {
     const { tableId, recordId, fields } = await req.json();
 
@@ -60,7 +65,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `[update-record] ${new Date().toISOString()} | table=${tableId} | record=${recordId} | fields=${JSON.stringify(fields)}`,
+      `[update-record] ${new Date().toISOString()} | caller_user_id=${user.id} | table=${tableId} | record=${recordId} | fields=${JSON.stringify(fields)}`,
     );
 
     const updated = await updateAirtableRecord(tableId, recordId, fields);
