@@ -571,6 +571,70 @@ Manuell curl-trippel mot deployad runtime:
 
 **M3 = klar 2026-05-04.**
 
+### M4 — Discovery (start 2026-05-04, STOPPAD vid Gate A4)
+
+Per Marcus M3-godkännande + Gate A1 fråga 6: M4 öppnar med discovery-fas innan implementation. Inga kodändringar i denna fas.
+
+#### Vad jag inventerade
+
+**1. React-repo (`~/Repon/miranon-media-admin/src/`):**
+- `AirtableAdapter.updateRecord()` definierad i [src/data/adapters/AirtableAdapter.ts:57](src/data/adapters/AirtableAdapter.ts#L57)
+- 2 högre-nivå-metoder anropar den internt:
+  - `updateRegistration(id, fields)` → `updateRecord(REGISTRATIONS_TABLE_ID, id, fields)`
+  - `updateAttendance(id, status)` → `updateRecord(ATTENDANCE_TABLE_ID, id, { Status: status })`
+- **0 UI-callers** — `src/components/`, `src/views/`, `src/routes/` existerar inte (Fas 0/1, ingen riktig app)
+
+**2. Vue-repo (`~/Repon/miranon-media-os/src/`):**
+- Samma 2 stub-metoder i [src/data/adapters/AirtableAdapter.ts](../miranon-media-os/src/data/adapters/AirtableAdapter.ts) (Vue-källan som React-versionen kopierades från)
+- 11 views i `src/views/`. Inspektion av samtliga:
+  - **Riktiga views** (>20 rader): `DashboardView.vue` (286), `MinaSidorView.vue` (358), `LoginView.vue` (129)
+  - **Placeholder-stubs** (19 rader var, MmMessageBox med "Byggs i V8/V9/V10/V12"): `RegistrationsView`, `PersonsView`, `EventsView`, `AttendanceView`, `PaymentsView`, `WaitlistView`, `LeadsView`, `MailView`
+- Riktiga views inspekterade: `grep updateRegistration|updateAttendance|updateRecord|update\(|dataSource\.|adapter\.` → **0 träffar** i DashboardView, MinaSidorView, EventCard, NewRegistrationsList
+- Composables: `useDashboardData.ts` har 0 update/patch/create/delete-anrop. Övriga composables är generiska (a11y, focus, asyncData) — inga write-flöden
+
+**3. Dokumentation av Lottas Interface (sökt):**
+- `docs/`: 21 filer, ingen om Lottas Interface skrivflöden
+- `analys/`: 11 filer, ingen om Lottas Interface skrivflöden (06a/06b/07 är target-design, inte aktuell Interface-state)
+- HAR-exports: 0 hittade
+- "lottas-flow"/"airtable-interface"-dokument: 0 hittade
+
+**4. Sammanfattat:** `grep -rn "updateRegistration\|updateAttendance\|updateRecord" ~/Repon/miranon-media-os/src/` utanför `data/adapters/`-mappen → **0 träffar**.
+
+#### Fyndet
+
+**Vue-versionen har INGA implementerade write-flöden i UI-lagret.** Adapter-metoderna `updateRegistration`/`updateAttendance` finns som stubbar utan callers. Lottas faktiska skrivande sker idag genom (a) Airtable Interface direkt eller (b) Zapier-ingest från externa formulär (per K6/G14/H7-noteringen i datamodell-research-projektet) — INGENDERA går genom dessa Edge Functions.
+
+Detta invaliderar Gate A1-strategin "discovery-fas mot Vue-versionen" eftersom det inte finns någon empiri att discovery:a mot. Hypotes-listan från Gate A1 fråga 6 är **inte** härledd från empirisk UI-kod — den är härledd från `data-model.md` (vad fält finns) + Marcus mentala modell av sannolika Lotta-flöden.
+
+#### 3-list-diff (omöjlig att producera meningsfullt)
+
+| Lista | Status | Anledning |
+|---|---|---|
+| (a) Bekräftade (hypotes ∩ empiriskt) | **Tom** | Ingen empiri att intersektera mot |
+| (b) Saknas (empiriskt ∖ hypotes) | **Tom** | Ingen empiri |
+| (c) Överflödiga (hypotes ∖ empiriskt) | **8 hypoteser hittills oförankrade** | Allt i Gate A1 fråga 6 är hypotes utan empirisk bekräftelse |
+
+#### Tre val för Marcus
+
+| Alt | Vad | Konsekvens |
+|---|---|---|
+| **A** | **Gå vidare med hypotes-listan som är.** Implementera M4 mot 8 operations från Gate A1 fråga 6. Markera dem som "preliminär lista, baserad på data-model.md + sannolika flöden — verifieras mot riktig UI när produktionsslicen byggs (Codex/Code rekommenderad nästa runda)". K8-respekt: dokumentera att listan är pre-aktiv, inte slutgiltig. | M4 levereras i ~3 h. Risk: 1-2 operations kan saknas eller vara fel formulerade. Fångas vid produktionsslicen och kan korrigeras då (uppdatera `field-allowlists.ts` är ett 5-min-fix). |
+| **B** | **Vänta tills produktionsslicen byggs.** Skjut M4 till efter Codex/Code rekommenderad "Steg 5: produktionsslice". Då har vi en empirisk minst-en-write-flow att basera operations på. | M4 skjuts framåt. Update-record-funktionen står utan field-allowlist tills dess — vilket är en *känd* exponering (M2 + M8 har redan stängt anon-key-vägen, men autentiserad user kan fortfarande skriva på alla 18 tabeller och alla fält). |
+| **C** | **Bygg empiri först — utöver kod-discovery.** Lottas Airtable Interface-flöden dokumenteras (HAR-export från Lottas Chrome när hon utför vanliga operationer, eller skärmdumpar + intervju). Sedan diff:a mot hypotes-listan på riktigt. | M4 förskjuts ~1-2 dagar för empiri-insamling. Ger högsta säkerhet att operations-listan matchar verkligt Lotta-beteende. Kräver Lottas tid eller HAR-export-koordinering. |
+
+#### Min rekommendation
+
+**Alt A.** Anledning:
+- M2 + M8 har redan stängt den största exponeringen (anon-key + saknad caller-verifiering på create-admin-user).
+- Hypotes-listan är inte slumpmässig — den är härledd från `data-model.md`-fält och rimliga UI-flöden Marcus + Chat resonerade fram i Gate A1.
+- Field-allowlists är trivial att korrigera senare (5-min-fix per ändring).
+- Fas A:s syfte är att stänga uppenbara exponeringar innan UI växer — Alt B förlänger en känd exponering, Alt C är overkill för pre-produktionsslice.
+- K7-respekt bevaras: hårdkodad lista är pre-S-track-bridge oavsett hur den valideras nu.
+
+**Stoppar här.** Inga kodändringar görs. Discovery-fasen är klar — inväntar Marcus beslut på Alt A/B/C.
+
+
+
 
 
 
