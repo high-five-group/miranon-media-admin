@@ -1,6 +1,6 @@
 # Byggplan — direktiv
 
-> **Status:** Direktiv skapat 2026-05-04. Revisionsarbete inte påbörjat. Sektion 8.5 tillagd löpande under Fas A.
+> **Status:** Direktiv skapat 2026-05-04. Revisionsarbete inte påbörjat. Sektion 8.5 uppdaterad löpande under Fas A. Fas A SLUTFÖRD 2026-05-04.
 > **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/byggplan-direktiv.md`
 > **Föregångare:** `~/Repon/miranon-media-admin/docs/conversion-plan.md` (2026-04-14, ersätts av byggplanen)
 > **Output (när revisionen är klar):** `~/Repon/miranon-media-admin/docs/byggplan.md`
@@ -13,7 +13,9 @@ Conversion-plan är skriven 2026-04-14 och tjänade Fas 0+1 av React-konverterin
 
 Detta dokument är direktivet för byggplanen som ersätter conversion-plan: vad ska göras, varför, i vilken ordning, och vad som är beslutat sedan tidigare och därför INTE är öppet för omprövning.
 
-Revisionsarbetet är fyra fokussessioner Chat-arbete (P0–P3) som körs parallellt med Code:s Fas A — säkerhetshardening. Output är `docs/byggplan.md` plus uppdaterade stödspecs.
+Revisionsarbetet är fyra fokussessioner Chat-arbete (P0–P3). Fas A — säkerhetshardening genomfördes parallellt 2026-05-04 och är nu slutförd; revisionen kan starta i ren context.
+
+Output är `docs/byggplan.md` plus uppdaterade stödspecs.
 
 ---
 
@@ -29,7 +31,7 @@ Sedan conversion-plan skrevs har följande hänt, i kronologisk ordning:
 | 2026-04-29 | Code:s verifiering av Codex-analysen mot HEAD `245422c` | `docs/Code-verification-of-codex-analysis.md` |
 | 2026-04-28 → 30 | Datamodell-research-projektet (forwards-look, 7 faser, Gate 6 passerad) | `analys/04-research.md` → `analys/07-migration-plan.md`, K1–K10 lyfta till lessons |
 | 2026-05-03 | Odoo-validering som sidospår, post-Gate 6 | `analys/08-odoo-validation.md`, 8 nya kandidater (E1–E8) |
-| 2026-05-04 | Säkerhetshardening (Fas A) påbörjad av Code | Pågående mot HEAD |
+| 2026-05-04 | Säkerhetshardening (Fas A) — alla 8 milstolpar levererade | 14 commits, 110+3 tester, 3 nya UNIVERSAL |
 
 Ingen av dessa händelser är reflekterad i conversion-plan. Det är därför vi måste skriva en byggplan innan Fas 2 startar.
 
@@ -39,17 +41,17 @@ Ingen av dessa händelser är reflekterad i conversion-plan. Det är därför vi
 
 Två skäl.
 
-**Det första är konceptuellt: ramen "konvertering" är inte längre sann.** När conversion-plan skrevs var Vue källan och vi porterade fil för fil. Idag är knappt något i den föreslagna fasstrukturen genuin konvertering — Fas A är hardening, Fas 2.5 är schema-sync mot data-model.md, Fas 3 bygger React Aria-primitiver från scratch, Fas B är Airtable-drift, Fas E är Supabase-migration. Det enda som var Vue→React-konvertering var Fas 0+1, och de är redan klara. Resten är att bygga ett system. Därav: byggplan, inte conversion-plan v2.
+**Det första är konceptuellt: ramen "konvertering" är inte längre sann.** När conversion-plan skrevs var Vue källan och vi porterade fil för fil. Idag är knappt något i den föreslagna fasstrukturen genuin konvertering — Fas A var hardening, Fas 2.5 är schema-sync mot data-model.md, Fas 3 bygger React Aria-primitiver från scratch, Fas B är Airtable-drift, Fas E är Supabase-migration. Det enda som var Vue→React-konvertering var Fas 0+1, och de är redan klara. Resten är att bygga ett system. Därav: byggplan, inte conversion-plan v2.
 
 **Det andra skälet är konkret: åtta luckor i conversion-plan som påverkar genomförandet** (inte stilfrågor):
 
-### 3.1 Säkerhet ligger i Fas 7, men risken är aktiv NU
+### 3.1 Säkerhet ligger i Fas 7, men risken var aktiv
 
 **Conversion-plan säger:** "CSP, chaos testing, deploy" landar i Fas 7.
 
-**Verkligheten:** Code-verifieringen 2026-04-29 visar att Edge Functions är publikt skrivbara mot 18 produktionstabeller redan idag — wildcard CORS, ingen `requireUser`-gate, anon-key-fallback i klienten, formula-injektion i `get-registrations`/`get-persons`, `create-admin-user` utan caller-verifiering. Detta är inte hardening, det är aktiv exponering.
+**Verkligheten 2026-04-29:** Code-verifieringen visade att Edge Functions var publikt skrivbara mot 18 produktionstabeller — wildcard CORS, ingen `requireUser`-gate, anon-key-fallback i klienten, formula-injektion, `create-admin-user` utan caller-verifiering.
 
-**Konsekvens i byggplanen:** En ny Fas A — Säkerhetshardening läggs in före Fas 2. Code är redan igång med den.
+**Konsekvens i byggplanen:** En Fas A — Säkerhetshardening lades in före Fas 2. **Status: SLUTFÖRD 2026-05-04.** Hela exponeringen stängd. Se §8.5 för detaljer.
 
 ### 3.2 Datamodellen som conversion-plan utgår från finns inte längre
 
@@ -99,15 +101,15 @@ Två skäl.
 
 **Conversion-plan säger:** "Sentry/Faro" nämns diffust i gap-analysen.
 
-**Verkligheten:** Code-fynd D — `@sentry/react: ^10.48.0` finns i `package.json`, men `grep "Sentry" src/` ger noll träffar. Det är paid-for-but-unused.
+**Verkligheten 2026-04-29:** Code-fynd D — `@sentry/react: ^10.48.0` finns i `package.json`, men `grep "Sentry" src/` ger noll träffar.
 
-**Konsekvens i byggplanen:** Sentry-init blir explicit del av Fas A (eller Fas 2 senast). DSN-strategi och PII-scrubbing dokumenterad. **Uppdatering 2026-05-04:** Klient-DSN beslutat i Gate A1, implementeras i M7.
+**Status 2026-05-04:** Stängd i Fas A M7. Klient-DSN beslutat i Gate A1 (alternativ A). Sentry-konto + projekt `react-platform` etablerat. `initSentry()` anropas i `src/main.tsx` före React mount. `isOperationalError`-klassning skyddar quota mot 401/403-spam.
 
 ### 3.8 ~20 nya UNIVERSAL-lärdomar inte integrerade
 
 **Conversion-plan säger:** Refererar lessons.md generellt.
 
-**Verkligheten:** dm-110 (9 poster), datamodell-research (K1–K10), Odoo-validering (3 nya). Flera är direkt relevanta för byggplanen — t.ex. K6 om config-as-data drift, lärdomen om att verifiera mot kod inte minne, Odoo-lärdomen om mogen open source som referens. Plus tre nya UNIVERSAL från Fas A (se §8.5.2).
+**Verkligheten:** dm-110 (9 poster), datamodell-research (K1–K10), Odoo-validering (3 nya), Fas A (3 nya). Flera är direkt relevanta för byggplanen — t.ex. K6 om config-as-data drift, lärdomen om att verifiera mot kod inte minne, Odoo-lärdomen om mogen open source som referens, Fas A-lärdomarna om test-prefix, två-stegs auth-check, hypotes-validering.
 
 **Konsekvens i byggplanen:** P2-steget i revisionen syntetiserar de mest relevanta lärdomarna in i fas-prompterna och stödspecsen.
 
@@ -128,6 +130,7 @@ Under revisionen ska vi inte återuppfinna saker som redan är beslutade. Följa
 | H6 REJECTED, H3/H4/H7 DECIDED | Datamodell-research arbetsdokument §9 | LÅST |
 | MK 1–3 maj är genomfört, freezen är lyft | Drift | FRUSEN |
 | Fas 0 + Fas 1 är genomförda | commits `fcc6de3` + `c91bfa0` | FRUSEN |
+| Fas A är slutförd (M1–M8) | commits `9490d8e` → `924af41` | FRUSEN |
 | Bottom tab bar, max-width 600px, FK-inspirerad app-shell | Conversion-plan §L | LÅST |
 | 21st.dev component-strategi (testa builder, fall tillbaka till inspiration) | Conversion-plan öppna beslut #5 | OFÖRÄNDRAD |
 | Kvalitetsribba: bibliotek 11/11/11, vyer 11/10/10 | CLAUDE.md | LÅST |
@@ -136,6 +139,9 @@ Under revisionen ska vi inte återuppfinna saker som redan är beslutade. Följa
 | Operations-baserad write-API (operationKey, inte tableId) | Fas A M4 design | LÅST |
 | `corsHeadersFor(req)` per-call-mönster | Fas A M3 design | LÅST |
 | `AuthContext \| Response` discriminated union | Fas A M1 design | LÅST |
+| INVARIANT round-trip-mönster för säkerhetshelpers | Fas A M5 + classify401Body | LÅST |
+| Structured JSON-loggning + isOperationalError-klassning | Fas A M7 | LÅST |
+| Test-only-prefix `test-*` (ej `_test_*`) | Fas A M2 | LÅST |
 
 Allt annat är öppet för omprövning under revisionen.
 
@@ -147,7 +153,7 @@ Allt annat är öppet för omprövning under revisionen.
 |---|---|---|---|---|
 | 0 | Projektsetup + tokens | KLAR | – | Frusen |
 | 1 | Domäntransplant | KLAR | – | Frusen |
-| **A** | **Säkerhetshardening** | **PÅGÅR (Code)** | **1–2 v** | **NY** — M1, M2, M3, M6, M8 KLARA. M4–M5–M7 återstår. |
+| **A** | **Säkerhetshardening** | **KLAR** | **1 dag** | **Genomförd 2026-05-04** — se §8.5 |
 | 2 | Routing + Auth | NY scope | 1 session | Bygger på Fas A:s `requireUser` |
 | **2.5** | **Schema-kontrakt-sync** | **EJ PÅB.** | **1 session** | **NY** |
 | 3 | UI-primitiver | NY scope | 2–3 sessioner | Förutsätter ny a11y-baseline |
@@ -166,7 +172,7 @@ Allt annat är öppet för omprövning under revisionen.
 
 ## 6. Revisionsplan — P0 → P3
 
-Fyra fokussessioner Chat-arbete, körs parallellt med Code:s Fas A.
+Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren context.
 
 ### P0 — Inventering (1 session)
 
@@ -181,6 +187,7 @@ Fyra fokussessioner Chat-arbete, körs parallellt med Code:s Fas A.
 - `analys/04-research.md` → `analys/08-odoo-validation.md`
 - `marcus-system/tasks/lessons.md` (sektioner 2026-04-28 → 2026-05-04)
 - §8.5 i detta direktiv (Fas A-fynd)
+- `tasks/sessions/2026-05-04-security-hardening.md` (Fas A-arbetsdokument inkl. slutsummering)
 
 **Stop-test:** Inventering är klar när varje påstående i conversion-plan §D (fas-för-fas-plan) är klassad: oförändrad / behöver justering / behöver omformuleras / försvinner.
 
@@ -202,7 +209,7 @@ Fyra fokussessioner Chat-arbete, körs parallellt med Code:s Fas A.
 **Mål:** Uppdatera de stödspecs som är direkta beroenden för byggplanens fasprompter.
 
 **Filer att uppdatera (preliminär lista):**
-- `docs/SECURITY-SPEC.md` — införliva Code-verifieringens fynd, Fas A-resultat (klient-DSN, två-stegs auth-check, test-*-prefix-konvention, operations-baserad API)
+- `docs/SECURITY-SPEC.md` — införliva Code-verifieringens fynd, Fas A-resultat (klient-DSN, två-stegs auth-check, test-*-prefix-konvention, operations-baserad API, INVARIANT-mönster, structured JSON-loggning)
 - `docs/ACCESSIBILITY-CHECKLIST.md` — skriv om för React Aria + WCAG 2.2 AA
 - `docs/STATE-STRATEGY.md` — synk mot strangler-fig-ordningen i 07
 - `docs/research/react-stack-research.md` — markera vad som är överspelat sedan 2026-04
@@ -214,18 +221,41 @@ Fyra fokussessioner Chat-arbete, körs parallellt med Code:s Fas A.
 - PERFORMANCE-BUDGET, URL-STATE-SPEC, ARIA-UPGRADE — kontrolleras kort men förväntas oförändrade
 - FUTURE-COMPAT.md — uppdateras endast om Passionslyftet-tidsplanen ändrats
 
-### P3 — Skriv byggplanen (1 session)
+### P3 — Skriv byggplanen + städning (1–2 sessioner)
 
-**Mål:** `docs/byggplan.md` är klar, granskad och committad.
+**Mål:** `docs/byggplan.md` är klar, granskad och committad. Repo:t är "rent och 11/10" — alla artefakter på rätt plats, ingen drift mellan dokument och verklighet.
 
-**Output:**
+**Output (byggplan):**
 - `docs/byggplan.md` (ny fil, ersätter conversion-plan som styrande dokument)
 - `docs/archive/conversion-plan-2026-04-14.md` (arkiverad conversion-plan)
 - ADR i `docs/decisions/` om varför conversion-plan ersattes av byggplan, inte uppdaterades till v2
-- Uppdaterad `docs/decisions/README.md`
-- Uppdaterad `CLAUDE.md` (sektionen "Fasordning" + alla referenser till conversion-plan)
-- Uppdaterad `tasks/todo.md` (rensad från conversion-plan-fas-poster, ny lista enligt byggplanen)
-- Lärdoms-commit i `marcus-system/tasks/lessons.md` om revisionsmönstret om något UNIVERSAL framkommer
+
+**Output (städning) — DoD för "rent och 11/10":**
+
+*Repo-hygien:*
+- `tasks/byggplan-direktiv.md` markeras SLUTFÖRT
+- `docs/BUILD-LOG.md` får ny sektion för Fas A (alla 8 milstolpar med commit-hashar, planerat vs faktiskt, avvikelser)
+- ADR:er skrivna för alla beslut Fas A låst (operations-baserat API, corsHeadersFor, AuthContext|Response, klient-DSN, INVARIANT-mönster, structured logging)
+- `tasks/todo.md` rensad från conversion-plan-poster + uppdaterad enligt byggplanen
+- Lessons.md UNIVERSAL-poster lyfta från projekt → marcus-system per WORKFLOW.md
+- `docs/decisions/README.md` uppdaterad
+
+*Dokument-hygien:*
+- `CLAUDE.md` (projekt) uppdaterad med ny fasordning + alla referenser till conversion-plan
+- `CLAUDE.md` (global, marcus-system) uppdaterad om något UNIVERSAL kommer från revisionen
+- Stödspecs uppdaterade per P2
+
+*Verifierings-hygien (sanity-baseline innan UI-bygg startar):*
+- `npm run test:api` → grön (113 tester förväntas)
+- `npx tsc --noEmit` → 0 fel
+- `npx @biomejs/biome check .` → 0 fel
+- `npm run build` → grön
+- Lighthouse-baseline tagen på en placeholder-route (för senare jämförelse)
+
+*Beslut värda att ta i P3 (men kan defer:as till första session de blir aktuella):*
+- 4 CSS-warnings i `src/styles/base.css:72-75` — behåll eller städa?
+- PostCSS audit-fix — kör nu eller vänta?
+- ADR för CSP-plugin-deferral till Fas 7
 
 ---
 
@@ -233,9 +263,9 @@ Fyra fokussessioner Chat-arbete, körs parallellt med Code:s Fas A.
 
 | Vecka från idag | Code | Marcus + Chat | Lotta/Roger |
 |---|---|---|---|
-| 1 (nu) | Fas A — säkerhetshardening, M1–M8 | P0 + P1 | – |
-| 2 | Fas A fortsatt | P2 + P3 | (Eventuell start på Fas B) |
-| 3 | Fas A klar, börja Fas 2 mot byggplanen | Granska Fas 2-output | Fas B om ej påbörjat |
+| 1 (klar) | Fas A — säkerhetshardening, M1–M8 ✅ | – | – |
+| 2 | – | P0 + P1 + P2 + P3 | (Eventuell start på Fas B) |
+| 3 | Börja Fas 2 mot byggplanen | Granska Fas 2-output | Fas B om ej påbörjat |
 | 4–5 | Fas 2.5 + Fas 3 | Granska + uppdatera lessons | Fas B fortsatt |
 | 6–7 | Fas 5 + 5.5 (vertikal slice) | Granska | – |
 | 8–11 | Fas 6 (4 flikar mot live-data) | Granska | – |
@@ -256,14 +286,14 @@ Tidsangivelser är illustrativa — verkliga sessionsfrekvensen styrs av Marcus.
 4. **Ska Fas B (Airtable hardening) ägas av Code eller Marcus + Lotta?** A1–A12 är drift på Airtable-basen. Code kan stödja men driver inte rutinarbete.
 5. **Hur hanterar byggplanen conversion-plans "öppna beslut" som ännu inte är stängda?** Färgvariabler #8E5F07 vs #96680A, fokusring guld vs mörkblå, 21st.dev component_builder.
 6. **Vad i adapter-debt-listan (Code-fynd F) ska deployas vs defer:as i Fas 2.5?**
-7. ~~DSN-strategi för Sentry — klient eller backend?~~ **STÄNGD** — klient-DSN beslutat i Gate A1, implementeras i M7.
+7. ~~DSN-strategi för Sentry — klient eller backend?~~ **STÄNGD** — klient-DSN beslutat i Gate A1, implementerad i Fas A M7.
 8. **Ska aktivitetsloggen (Fas 6.5) byggas mot Airtable eller direkt mot Supabase?** Påverkar timing relativt Fas E.
 
 ---
 
 ## 8.5 Fynd och flaggor från Fas A som påverkar byggplanen
 
-> Sektionen uppdateras löpande under Fas A. Fynd integreras i fas-prompterna under P3.
+> Fas A är slutförd 2026-05-04. Sektionen är frusen. Fynd integreras i fas-prompterna under P3.
 
 ### 8.5.1 M4 discovery-fyndet (2026-05-04)
 
@@ -273,10 +303,10 @@ Discovery-fasen i M4 visade att Vue-versionen är **mestadels placeholder**, int
 
 Edge Functions är byggda men har inga UI-callers. Hypotes-listan från Gate A1 fråga 6 är härledd från `data-model.md`, inte från observerad användning.
 
-**Beslut:** M4 implementeras som "infrastruktur + tom allowlist". Operations läggs till när faktiska write-flöden byggs.
+**Beslut:** M4 implementerades som "infrastruktur + tom allowlist". Operations läggs till när faktiska write-flöden byggs.
 
 **Konsekvens för Fas 5.5 (vertikal slice):**
-- Sliceen måste vara en write-flow för att ha värde som mall (bara läsa-flöden bevisar ingenting om M4-infrastrukturen)
+- Sliceen måste vara en write-flow för att ha värde som mall
 - Sliceens DoD ska inkludera: lägg till första operation i `field-allowlists.ts` + skapa motsvarande Playwright deny/allow-test mot operation
 - Allowlist växer organiskt med UI:t, inte i förväg
 
@@ -284,6 +314,8 @@ Edge Functions är byggda men har inga UI-callers. Hypotes-listan från Gate A1 
 - Varje vy som skriver lägger till sin operation i `field-allowlists.ts`
 - Fas 6:s per-vy-checklista måste innehålla: "operation registrerad? deny/allow-test grönt?"
 - Estimatet för Fas 6 är inte påverkat (5–15 min per operation)
+
+**Aktiveringsguide för Fas 5.5+** är dokumenterad i `tasks/sessions/2026-05-04-security-hardening.md` §F (5 steg: lägg till operation, avskip 3 tester, byt TODO_REPLACE-token, re-deploya, kör tester).
 
 ### 8.5.2 Nya UNIVERSAL-lärdomar från Fas A
 
@@ -295,19 +327,27 @@ Tre UNIVERSAL-lärdomar har lyfts till `tasks/lessons.md` under Fas A. De ska re
 
 3. **Hypotes om UI-flöden måste valideras mot faktisk implementation, inte mot specs.** Discovery-fasen i Fas A M4 antog Vue-versionen som sanningskälla — den var själv placeholder. Mönster: verifiera att källan faktiskt gör det den påstås göra innan inventering. Källa: Fas A M4 discovery 2026-05-04.
 
-### 8.5.3 Test-infrastruktur etablerad i Fas A
+### 8.5.3 Test- och produktions-infrastruktur etablerad i Fas A
 
-Följande infrastruktur är på plats i staging och ska inte återimplementeras i senare faser:
+Följande infrastruktur är på plats och ska inte återimplementeras i senare faser:
 
-- 2 Playwright API test-användare i staging:
+**Staging:**
+- 2 Playwright API test-användare:
   - `playwright-test@miranon-admin.local` (icke-admin)
   - `playwright-admin@miranon-admin.local` (admin)
 - Test-only Edge Function `test-auth` (deployad bara i staging, dokumenterad som icke-prod)
 - `test-*`-prefix-konvention för framtida test-only-endpoints
 - `.env.test` + `.env.test.example` setup-mönster
+- Staging secrets: `ADMIN_EMAILS`, `CORS_ALLOWED_ORIGINS`, `VITE_SENTRY_DSN`
+
+**Produktion (förberett):**
+- Sentry-organisation + projekt `react-platform` skapat på sentry.io
+- Klient-DSN konfigurerad (publik per Gate A1-beslut, alternativ A)
+
+**Test-helpers:**
 - `classify401Body`-helper för dual-format auth-test (gateway + funktion)
-- Staging secrets: `ADMIN_EMAILS`, `CORS_ALLOWED_ORIGINS` (M7 lägger till Sentry-DSN)
 - Playwright-konfiguration med två projekt: `api` + `visual-*`
+- Fuzz-test-pattern (per-kategori + INVARIANT round-trip)
 
 Fas 5.5+ ska *inherita* denna infrastruktur, inte uppfinna parallella mönster.
 
@@ -319,15 +359,40 @@ Följande mönster är beslutade under Fas A och ska refereras i fas-prompterna:
 - **`corsHeadersFor(req)` per-call:** CORS-headers genereras per-request baserat på origin, inte hårdkodade. Mönstret skalar till tenant-baserade allowlists post-S-track.
 - **`AuthContext | Response` discriminated union:** auth-helpers returnerar antingen success-payload eller färdig 401-Response. Callers gör `if (result instanceof Response) return result`.
 - **Deny-by-default genomgående:** tom config → deny, okänd input → deny, missing claims → deny. Aldrig "allow om vi inte vet."
-- **Generic external errors:** `{error: 'Internal error', requestId}` utåt. Full detaljer i server-loggen. Inget läcker till klient. (M7 implementerar.)
+- **Generic external errors:** `{error: 'Internal error', requestId}` utåt. Full detaljer i server-loggen. `requestId` (UUID v4) länkar klient-fel till server-stack.
+- **`isOperationalError`-klassning:** förväntade fel (401/403/400) loggas på info-nivå, oväntade på error-nivå. Skyddar Sentry-quota mot triviala 4xx-events.
+- **Structured JSON-loggning:** `console.error(JSON.stringify({level, requestId, errorName, stack, function, method, callerUserId}))`. Sökbart i Supabase Logs.
+- **INVARIANT round-trip-mönster för säkerhetshelpers:** för säkerhetskritiska transformationer (eskapering, parsing, klassning) skall det finnas ett atomärt round-trip-test som bevisar att transformation→inverse återger exakt input. Skyddar mot hela klasser av attacker, inte bara de vi tänkt på. Tillämpat i `escapeFormulaValue` (M5) och `classify401Body` (M2).
 
-### 8.5.5 Pre-existerande teknisk skuld verifierad under Fas A
+### 8.5.5 Fas A-arkitektur-summering — kvalitativt
 
-Saker som inte är Fas A-scope men verifierade som existerande:
+Fas A levererade 8 milstolpar (M1–M8) över ~14 commits:
+
+| Milstolpe | Stänger |
+|---|---|
+| M1 — `requireUser`-helper | Auth-grund |
+| M2 — wire i 4 datafunktioner + tester | Ingen `requireUser`-gate |
+| M3 — CORS origin-allowlist | Wildcard CORS |
+| M4 — operations-allowlist (infrastruktur) | `update-record` saknar fält/operations-allowlist |
+| M5 — formula-eskapering + INVARIANT | Formula-injektion i `get-registrations`/`get-persons` |
+| M6 — caller-verifiering i `create-admin-user` | Vem som helst kan skapa admins |
+| M7 — generisk felmodell + Sentry-init | Råa felmeddelanden + Sentry oinitierad |
+| M8 — `config.toml` med `verify_jwt` per funktion | `config.toml` saknades |
+
+**Resultat:** Hela exponeringen från Code-verifieringen 2026-04-29 stängd. 113 tester (110 + 3 skipped för Fas 5.5-aktivering). Bundle 244 → 324 kB (+80 kB Sentry SDK).
+
+Detaljer: `tasks/sessions/2026-05-04-security-hardening.md` (frusen efter slutsummering).
+
+### 8.5.6 Pre-existerande teknisk skuld verifierad under Fas A
+
+Saker som inte var Fas A-scope men verifierade som existerande:
 
 - **4 CSS-warnings** i `src/styles/base.css:72-75` (`!important` i `prefers-reduced-motion`-block) — legitimt CSS-mönster, ingen åtgärd nödvändig om inte Fas 7-cleanup vill rensa
 - **PostCSS moderate vulnerability** (`<8.5.10`) — fixbar med `npm audit fix`. Kan tas som sidofix när som helst
 - **`vite.config.ts` saknar säkerhetsplugin** (CSP-nonce) — medvetet uppskjutet till Fas 7 enligt SECURITY-SPEC. Saknar ADR. Bör få en ADR i P3.
+- **AirtableAdapter:s 9 odeployade metoder** — Code-fynd F. Hanteras i Fas 2.5.
+- **`Status.ts` out-of-sync mot data-model.md** — Code blocker 5. Hanteras i Fas 2.5.
+- **Service worker registreras tyst** men `public/sw.js` är skelett — Code-fynd G. Hanteras i Fas 7.
 
 ---
 
@@ -343,6 +408,7 @@ För att undvika scope-creep:
 - **Inte ändringar i hub-and-spoke-arkitekturen** eller marcus-system. Det är ett separat system.
 - **Inte början på Supabase-implementation.** Fas E är defer:ad. Den körs när byggplanen är skriven, inte under revisionen.
 - **Inte återöppning av Gate 4B eller Gate 6.** Datamodell-research-besluten är frusna.
+- **Inte återöppning av Fas A-beslut.** M1–M8 är slutförda och låsta.
 
 ---
 
@@ -384,12 +450,19 @@ Allt nedanstående är frusen indata för revisionen.
 - `~/Repon/miranon-media-admin/tasks/datamodell-research-plan.md`
 - `~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-research-projekt.md` (FRUSEN)
 
+**Fas A-leverans:**
+- `~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-security-hardening.md` (frusen efter slutsummering)
+- `~/Repon/miranon-media-admin/supabase/functions/_shared/auth.ts`
+- `~/Repon/miranon-media-admin/supabase/functions/_shared/cors.ts`
+- `~/Repon/miranon-media-admin/supabase/functions/_shared/field-allowlists.ts`
+- `~/Repon/miranon-media-admin/supabase/functions/_shared/airtable-filter.ts`
+- `~/Repon/miranon-media-admin/supabase/functions/_shared/errors.ts`
+- `~/Repon/miranon-media-admin/supabase/config.toml`
+- `~/Repon/miranon-media-admin/src/observability/sentry.ts`
+
 **Lärdomar:**
 - `~/Repon/marcus-system/tasks/lessons.md` (sektioner 2026-04-28 → 2026-05-04)
 - `~/Repon/miranon-media-admin/tasks/lessons.md`
-
-**Pågående arbete:**
-- Code:s Fas A-arbetsdokument: `~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-security-hardening.md`
 
 ---
 
@@ -399,10 +472,10 @@ Allt nedanstående är frusen indata för revisionen.
 |---|---|
 | Skapat | 2026-05-04 |
 | Påbörjat (P0) | – |
-| Fas A-status | M1, M2, M3, M6, M8 KLARA. M4 pågår. M5, M7 återstår. |
+| Fas A-status | **SLUTFÖRD 2026-05-04** — alla M1–M8 levererade, 14 commits, 113 tester |
 | Ägare | Marcus + Claude Chat |
-| Code-medverkan | Endast vid kodbasverifiering och slutlig commit av byggplanen |
-| Senast uppdaterat | 2026-05-04 (sektion 8.5 tillagd efter M4 discovery) |
+| Code-medverkan | Endast vid kodbasverifiering, slutlig commit av byggplanen, och eventuell M5+ av framtida implementations-faser |
+| Senast uppdaterat | 2026-05-04 (efter Fas A slutförande — §3.7, §4, §5, §6 P3 utökad, §8.5 frusen, §10 utökad) |
 
 ---
 
@@ -412,6 +485,7 @@ När P3 är klar och `docs/byggplan.md` är committad:
 - Detta direktiv markeras SLUTFÖRT i headern
 - Conversion-plan flyttas till `docs/archive/conversion-plan-2026-04-14.md`
 - ADR skrivs i `docs/decisions/` om varför conversion-plan ersattes av byggplan (ramen "konvertering" var efterlöpare)
+- Alla städnings-DoD per §6 P3 verifierade
 - Fas 2 av React-arbetet kan starta mot byggplanen
 
-Mellan nu och dess: detta direktiv är referensen som hindrar oss från att tappa kontext mellan sessioner.
+Mellan nu och dess: detta direktiv är referensen som hindrar oss från att tappa kontext mellan sessioner. Fas A är klar och frusen — revisionsarbetet kan starta i ren context.
