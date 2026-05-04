@@ -416,4 +416,19 @@ Kort logg per milstolpe. Spårbarhet: commits + DoD-uppfyllnad + avvikelser frå
 
 **Notering om `_test_auth` säkerhet:** Endpointen exponerar bara `userId` för en redan auth'd user. Den utför inga sidoeffekter och läser ingen data. Risken vid att den lever i produktion är minimal, men M8 bör bestämma om den ska deployas eller exkluderas via `config.toml`.
 
+#### M2-godkännande (Marcus 2026-05-04) + TODO till Fas 7
+
+Marcus valde **alternativ A**: `_test_auth` (och alla `_test_*`-prefixade funktioner generellt) deployas ENDAST till staging-projektet, aldrig till produktion. Två konsekvenser:
+
+**(a) Prod-deploy-procedur måste exkludera test-prefixade funktioner.**
+
+> **TODO Fas 7 — `_test_*` får ALDRIG nå produktion.** När Fas 7-deploy-pipelinen byggs (Vercel/Supabase deploy-script eller CI-jobb), måste prod-deploy explicit filtrera bort funktioner med prefix `_test_` (eller motsvarande konvention). Lämpligast som ett deploy-script eller en allowlist i CI/deploy-flödet. Mekanism kan vara `supabase functions deploy --project-ref <prod>` med uttrycklig funktion-lista, eller en `.deployignore`-konvention.
+
+**(b) M8 — `_test_auth` får `verify_jwt = false` i `config.toml`.**
+
+`config.toml` är samma fil oavsett projekt — eftersom `_test_auth` aldrig deployas till prod blir `verify_jwt=false`-raden inert där. M8-implementationen ska:
+1. Sätta `[functions._test_auth] verify_jwt = false` (annars dubbel auth-check som blockerar testet).
+2. Sätta `[functions.<övriga>] verify_jwt = true` per funktion.
+3. Lägga en kommentar i config.toml som hänvisar till TODO Fas 7 ovan.
+
 
