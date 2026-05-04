@@ -11,7 +11,13 @@
 // snarare än auth-bug — se output.
 
 import { type APIRequestContext, expect, test } from '@playwright/test';
-import { type ApiConfig, getApiConfig, getValidUserJWT, INVALID_JWT } from './helpers';
+import {
+  type ApiConfig,
+  classify401Body,
+  getApiConfig,
+  getValidUserJWT,
+  INVALID_JWT,
+} from './helpers';
 
 interface EndpointSpec {
   name: string;
@@ -55,19 +61,21 @@ for (const endpoint of ENDPOINTS) {
     test('deny: anonym → 401', async ({ request }) => {
       const config = getApiConfig();
       const res = await callEndpoint(request, config, endpoint);
-      expect(res.status()).toBe(401);
+      // Atomärt: status===401 + body matchar gateway- ELLER requireUser-format.
+      // Throw vid 200/403/500 eller oväntat body-format.
+      await classify401Body(res);
     });
 
     test('deny: ogiltig JWT → 401', async ({ request }) => {
       const config = getApiConfig();
       const res = await callEndpoint(request, config, endpoint, `Bearer ${INVALID_JWT}`);
-      expect(res.status()).toBe(401);
+      await classify401Body(res);
     });
 
     test('deny: anon-key → 401', async ({ request }) => {
       const config = getApiConfig();
       const res = await callEndpoint(request, config, endpoint, `Bearer ${config.anonKey}`);
-      expect(res.status()).toBe(401);
+      await classify401Body(res);
     });
 
     test('allow: giltig user-JWT → 200 (eller 4xx från senare validering)', async ({ request }) => {

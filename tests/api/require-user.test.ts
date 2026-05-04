@@ -33,9 +33,9 @@ test.describe('requireUser — isolerad helper-test via test-auth', () => {
 
     const res = await request.get(`${config.baseUrl}${ENDPOINT}`);
 
-    expect(res.status()).toBe(401);
-    const body = await res.json();
-    classify401Body(body); // kastar om bodyformat oväntat
+    // Atomärt: status===401 + body matchar gateway- ELLER requireUser-format.
+    // Throw vid 200/403/500 eller oväntat body-format.
+    await classify401Body(res);
   });
 
   test('deny: ogiltig JWT → 401', async ({ request }) => {
@@ -45,9 +45,7 @@ test.describe('requireUser — isolerad helper-test via test-auth', () => {
       headers: { Authorization: `Bearer ${INVALID_JWT}` },
     });
 
-    expect(res.status()).toBe(401);
-    const body = await res.json();
-    classify401Body(body);
+    await classify401Body(res);
   });
 
   test('deny: anon-key (ej user-JWT) → 401', async ({ request }) => {
@@ -57,15 +55,15 @@ test.describe('requireUser — isolerad helper-test via test-auth', () => {
       headers: { Authorization: `Bearer ${config.anonKey}` },
     });
 
-    expect(res.status()).toBe(401);
-    const body = (await res.json()) as { error?: string };
     // Anon-key är ett valid JWT (signerad av Supabase med role: anon) →
     // gateway släpper genom → requireUser fångar.
+    const { source, body } = await classify401Body(res);
+    expect(source).toBe('requireUser');
     // Antingen "Invalid or expired token" (om auth.getUser returnerar null
     // user) eller "Anon key not accepted as user identity" (om role-check
     // triggas). Båda är giltiga requireUser-svar.
-    expect(classify401Body(body)).toBe('requireUser');
-    expect(body.error).toMatch(
+    const b = body as { error?: string };
+    expect(b.error).toMatch(
       /^(Invalid or expired token|Anon key not accepted as user identity)$/,
     );
   });

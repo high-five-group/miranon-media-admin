@@ -71,18 +71,62 @@ export async function getValidUserJWT(
 export const INVALID_JWT =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpbnZhbGlkIn0.invalidsignature123';
 
-// Verifierar att en 401-response kommer antingen från Supabase Gateway
-// (default verify_jwt=true fångar saknad/ogiltig JWT) eller från
-// requireUser-helpern (fångar anon-key + alla andra fall).
+export interface UnauthorizedClassification {
+  source: 'gateway' | 'requireUser';
+  body: unknown;
+}
+
+// Atomärt verifierar att en response är ett legitimt 401-deny.
 //
-// Båda är acceptabla 401-vägar — M2:s DoD säger "deny → 401", inte
-// "deny → 401 från specifik plats". När M8 sätter verify_jwt=false på
-// test-auth så börjar requireUser:s format dyka upp för alla paths.
+// Krav som måste alla uppfyllas, annars throw med faktisk status +
+// body-snippet i felmeddelandet (så future regression syns i test-output):
+//   1. response.status() === 401 (inte 200, inte 403, inte 500)
+//   2. body är JSON som matchar ANTINGEN
+//        gateway-format       — { code: 'UNAUTHORIZED_*', message: ... }
+//      ELLER
+//        requireUser-format   — { error: '<non-empty string>' }
+//      Tom body, godtycklig JSON eller "ser ut som ett fel" → throw.
 //
-// Returnerar 'gateway' eller 'requireUser' så testet vet vem som svarade.
-export function classify401Body(body: unknown): 'gateway' | 'requireUser' {
+// Returnerar { source, body } så caller kan göra extra body-checks
+// (t.ex. regex på error-message i anon-key-testet) utan double-fetch
+// (Playwright APIResponse.json() kan bara läsas en gång).
+//
+// Designnot: båda formaten är legitima 401-vägar — gateway fångar
+// saknad/ogiltig JWT (verify_jwt=true), requireUser fångar anon-key
+// (anon-key passerar gateway eftersom det ÄR ett valid JWT). När
+// verify_jwt=false sätts på en funktion (t.ex. test-auth) börjar
+// requireUser-format dyka upp för alla paths.
+export async function classify401Body(
+  response: APIResponse,
+): Promise<UnauthorizedClassification> {
+  const status = response.status();
+  if (status !== 401) {
+    const text = await response.text();
+    throw new Error(
+      `classify401Body: förväntade status 401, fick ${status}. Body-snippet: ${text.slice(0, 200)}`,
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch (parseError) {
+    const text = await response.text().catch(() => '<unreadable>');
+    throw new Error(
+      `classify401Body: 401-response hade icke-JSON body. Body-snippet: ${text.slice(0, 200)}. Parse-fel: ${(parseError as Error).message}`,
+    );
+  }
+
   const b = body as { error?: string; code?: string; message?: string };
-  if (b.code?.startsWith('UNAUTHORIZED_')) return 'gateway';
-  if (typeof b.error === 'string' && b.error.length > 0) return 'requireUser';
-  throw new Error(`Unexpected 401 body shape: ${JSON.stringify(body)}`);
+
+  if (typeof b.code === 'string' && b.code.startsWith('UNAUTHORIZED_')) {
+    return { source: 'gateway', body };
+  }
+  if (typeof b.error === 'string' && b.error.length > 0) {
+    return { source: 'requireUser', body };
+  }
+
+  throw new Error(
+    `classify401Body: 401-body matchar varken gateway-format ({code:'UNAUTHORIZED_*',...}) eller requireUser-format ({error:'<non-empty>'}). Body-snippet: ${JSON.stringify(body).slice(0, 200)}`,
+  );
 }
