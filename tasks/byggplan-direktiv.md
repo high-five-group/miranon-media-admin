@@ -1,6 +1,6 @@
 # Byggplan — direktiv
 
-> **Status:** Direktiv skapat 2026-05-04. Revisionsarbete inte påbörjat.
+> **Status:** Direktiv skapat 2026-05-04. Revisionsarbete inte påbörjat. Sektion 8.5 tillagd löpande under Fas A.
 > **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/byggplan-direktiv.md`
 > **Föregångare:** `~/Repon/miranon-media-admin/docs/conversion-plan.md` (2026-04-14, ersätts av byggplanen)
 > **Output (när revisionen är klar):** `~/Repon/miranon-media-admin/docs/byggplan.md`
@@ -101,13 +101,13 @@ Två skäl.
 
 **Verkligheten:** Code-fynd D — `@sentry/react: ^10.48.0` finns i `package.json`, men `grep "Sentry" src/` ger noll träffar. Det är paid-for-but-unused.
 
-**Konsekvens i byggplanen:** Sentry-init blir explicit del av Fas A (eller Fas 2 senast). DSN-strategi och PII-scrubbing dokumenterad.
+**Konsekvens i byggplanen:** Sentry-init blir explicit del av Fas A (eller Fas 2 senast). DSN-strategi och PII-scrubbing dokumenterad. **Uppdatering 2026-05-04:** Klient-DSN beslutat i Gate A1, implementeras i M7.
 
 ### 3.8 ~20 nya UNIVERSAL-lärdomar inte integrerade
 
 **Conversion-plan säger:** Refererar lessons.md generellt.
 
-**Verkligheten:** dm-110 (9 poster), datamodell-research (K1–K10), Odoo-validering (3 nya). Flera är direkt relevanta för byggplanen — t.ex. K6 om config-as-data drift, lärdomen om att verifiera mot kod inte minne, Odoo-lärdomen om mogen open source som referens.
+**Verkligheten:** dm-110 (9 poster), datamodell-research (K1–K10), Odoo-validering (3 nya). Flera är direkt relevanta för byggplanen — t.ex. K6 om config-as-data drift, lärdomen om att verifiera mot kod inte minne, Odoo-lärdomen om mogen open source som referens. Plus tre nya UNIVERSAL från Fas A (se §8.5.2).
 
 **Konsekvens i byggplanen:** P2-steget i revisionen syntetiserar de mest relevanta lärdomarna in i fas-prompterna och stödspecsen.
 
@@ -132,6 +132,10 @@ Under revisionen ska vi inte återuppfinna saker som redan är beslutade. Följa
 | 21st.dev component-strategi (testa builder, fall tillbaka till inspiration) | Conversion-plan öppna beslut #5 | OFÖRÄNDRAD |
 | Kvalitetsribba: bibliotek 11/11/11, vyer 11/10/10 | CLAUDE.md | LÅST |
 | Hub-and-spoke-arkitekturen för marcus-system | CLAUDE.md global | LÅST — utanför detta projekts scope |
+| Sentry klient-DSN (alternativ A) | Gate A1 fråga 5 | LÅST |
+| Operations-baserad write-API (operationKey, inte tableId) | Fas A M4 design | LÅST |
+| `corsHeadersFor(req)` per-call-mönster | Fas A M3 design | LÅST |
+| `AuthContext \| Response` discriminated union | Fas A M1 design | LÅST |
 
 Allt annat är öppet för omprövning under revisionen.
 
@@ -143,16 +147,16 @@ Allt annat är öppet för omprövning under revisionen.
 |---|---|---|---|---|
 | 0 | Projektsetup + tokens | KLAR | – | Frusen |
 | 1 | Domäntransplant | KLAR | – | Frusen |
-| **A** | **Säkerhetshardening** | **PÅGÅR (Code)** | **1–2 v** | **NY** |
+| **A** | **Säkerhetshardening** | **PÅGÅR (Code)** | **1–2 v** | **NY** — M1, M2, M3, M6, M8 KLARA. M4–M5–M7 återstår. |
 | 2 | Routing + Auth | NY scope | 1 session | Bygger på Fas A:s `requireUser` |
 | **2.5** | **Schema-kontrakt-sync** | **EJ PÅB.** | **1 session** | **NY** |
 | 3 | UI-primitiver | NY scope | 2–3 sessioner | Förutsätter ny a11y-baseline |
 | **3.5** | **A11y-baseline (alt. integrerat i Fas 3)** | **EJ PÅB.** | **0,5–1 session** | **NY** |
 | 5 | App-shell + tab bar | NY scope | 1–2 sessioner | Möjligen förenklad |
-| **5.5** | **Första vertikala produktionsslice** | **EJ PÅB.** | **2 sessioner** | **NY** (Codex rec #4) |
-| 6 | Hem + Event + Personer + Mer | NY scope | 3,5 sessioner | Sekvens följer 07 strangler-fig |
+| **5.5** | **Första vertikala produktionsslice** | **EJ PÅB.** | **2 sessioner** | **NY** (Codex rec #4). **Måste vara write-flow** per §8.5.1. |
+| 6 | Hem + Event + Personer + Mer | NY scope | 3,5 sessioner | Sekvens följer 07 strangler-fig. Per-vy: registrera operation i `field-allowlists.ts`. |
 | 6.5 | Aktivitetslogg | OFÖRÄNDRAD | 2 sessioner | – |
-| 7 | Konsolidering | NY scope | 2 sessioner | Renodlad — säkerhet redan i Fas A |
+| 7 | Konsolidering | NY scope | 2 sessioner | Renodlad — säkerhet redan i Fas A. Inkluderar `test-*`-prefix-exkludering från prod-deploy. |
 | **B** | **Airtable hardening (A1–A12)** | **EJ PÅB.** | **Parallell** | **NY** — Lotta/Roger-arbete |
 | **E** | **Supabase migration (07 Del H)** | **DEFER** | **Senare** | **NY** — pekar på 07 Del H |
 
@@ -175,7 +179,8 @@ Fyra fokussessioner Chat-arbete, körs parallellt med Code:s Fas A.
 - `docs/Codex-project-analysis-after-fas-1.md`
 - `docs/Code-verification-of-codex-analysis.md`
 - `analys/04-research.md` → `analys/08-odoo-validation.md`
-- `marcus-system/tasks/lessons.md` (sektioner 2026-04-28 → 2026-05-03)
+- `marcus-system/tasks/lessons.md` (sektioner 2026-04-28 → 2026-05-04)
+- §8.5 i detta direktiv (Fas A-fynd)
 
 **Stop-test:** Inventering är klar när varje påstående i conversion-plan §D (fas-för-fas-plan) är klassad: oförändrad / behöver justering / behöver omformuleras / försvinner.
 
@@ -187,7 +192,7 @@ Fyra fokussessioner Chat-arbete, körs parallellt med Code:s Fas A.
 
 **Beslut som måste fattas i P1:**
 - Är Fas 3.5 (a11y-baseline) en egen fas eller integrerad i Fas 3?
-- Är Fas 5.5 (vertikal slice) "list-anmälningar" eller något annat?
+- Är Fas 5.5 (vertikal slice) "list-anmälningar" eller något annat? **(Måste vara write-flow per §8.5.1)**
 - Sekvenseras Fas 6 enligt strangler-fig (Persons → Events → Registrations) eller enligt "Hem först"-prioritet?
 - Är Fas B (Airtable hardening) helt parallell, eller har den beroenden mot Fas A?
 - Vilka adapter-debt-metoder ska deployas i Fas 2.5 vs defer:as till senare faser?
@@ -197,7 +202,7 @@ Fyra fokussessioner Chat-arbete, körs parallellt med Code:s Fas A.
 **Mål:** Uppdatera de stödspecs som är direkta beroenden för byggplanens fasprompter.
 
 **Filer att uppdatera (preliminär lista):**
-- `docs/SECURITY-SPEC.md` — införliva Code-verifieringens fynd, Fas A-resultat
+- `docs/SECURITY-SPEC.md` — införliva Code-verifieringens fynd, Fas A-resultat (klient-DSN, två-stegs auth-check, test-*-prefix-konvention, operations-baserad API)
 - `docs/ACCESSIBILITY-CHECKLIST.md` — skriv om för React Aria + WCAG 2.2 AA
 - `docs/STATE-STRATEGY.md` — synk mot strangler-fig-ordningen i 07
 - `docs/research/react-stack-research.md` — markera vad som är överspelat sedan 2026-04
@@ -247,12 +252,82 @@ Tidsangivelser är illustrativa — verkliga sessionsfrekvensen styrs av Marcus.
 
 1. **Hur strängt sekvenseras Fas 6 efter strangler-fig?** Persons-domän först, eller Hem-vyn först? Argumenten: Persons-först bygger fundament som resten lutar mot; Hem-först ger Lotta värde tidigast.
 2. **Ska Fas 3.5 vara egen fas eller integrerad i Fas 3?** Argumenten: egen fas ger tydlig kvalitetsgrind; integrerad sparar overhead.
-3. **Vad är "Första vertikala slice" konkret?** "Lista anmälningar end-to-end" är förslag — finns bättre kandidater?
+3. **Vad är "Första vertikala slice" konkret?** Måste vara write-flow per §8.5.1 — bara läsa-flöden bevisar inget om M4-infrastrukturen. Konkret förslag fattas i P1.
 4. **Ska Fas B (Airtable hardening) ägas av Code eller Marcus + Lotta?** A1–A12 är drift på Airtable-basen. Code kan stödja men driver inte rutinarbete.
 5. **Hur hanterar byggplanen conversion-plans "öppna beslut" som ännu inte är stängda?** Färgvariabler #8E5F07 vs #96680A, fokusring guld vs mörkblå, 21st.dev component_builder.
 6. **Vad i adapter-debt-listan (Code-fynd F) ska deployas vs defer:as i Fas 2.5?**
-7. **DSN-strategi för Sentry — klient eller backend? Hur lagras DSN?** (Också del av Fas A:s Gate A1.)
+7. ~~DSN-strategi för Sentry — klient eller backend?~~ **STÄNGD** — klient-DSN beslutat i Gate A1, implementeras i M7.
 8. **Ska aktivitetsloggen (Fas 6.5) byggas mot Airtable eller direkt mot Supabase?** Påverkar timing relativt Fas E.
+
+---
+
+## 8.5 Fynd och flaggor från Fas A som påverkar byggplanen
+
+> Sektionen uppdateras löpande under Fas A. Fynd integreras i fas-prompterna under P3.
+
+### 8.5.1 M4 discovery-fyndet (2026-05-04)
+
+Discovery-fasen i M4 visade att Vue-versionen är **mestadels placeholder**, inte sanningskälla för UI-skrivflöden. Lottas skrivande idag sker via:
+- Airtable Interface direkt (Lotta klickar i Airtable-UI)
+- Zapier-ingest från externa formulär (per K6/G14/H7)
+
+Edge Functions är byggda men har inga UI-callers. Hypotes-listan från Gate A1 fråga 6 är härledd från `data-model.md`, inte från observerad användning.
+
+**Beslut:** M4 implementeras som "infrastruktur + tom allowlist". Operations läggs till när faktiska write-flöden byggs.
+
+**Konsekvens för Fas 5.5 (vertikal slice):**
+- Sliceen måste vara en write-flow för att ha värde som mall (bara läsa-flöden bevisar ingenting om M4-infrastrukturen)
+- Sliceens DoD ska inkludera: lägg till första operation i `field-allowlists.ts` + skapa motsvarande Playwright deny/allow-test mot operation
+- Allowlist växer organiskt med UI:t, inte i förväg
+
+**Konsekvens för Fas 6:**
+- Varje vy som skriver lägger till sin operation i `field-allowlists.ts`
+- Fas 6:s per-vy-checklista måste innehålla: "operation registrerad? deny/allow-test grönt?"
+- Estimatet för Fas 6 är inte påverkat (5–15 min per operation)
+
+### 8.5.2 Nya UNIVERSAL-lärdomar från Fas A
+
+Tre UNIVERSAL-lärdomar har lyfts till `tasks/lessons.md` under Fas A. De ska refereras i P2 (stödspec-synkning) och i fas-prompterna i P3:
+
+1. **Test-only-endpoints (prefix `test-*`) får ALDRIG nå produktion.** Källa: Fas A M2 staging-uppsättning. Implikation: deploy-pipelinen i Fas 7 måste filtrera `test-*`-prefix.
+
+2. **Supabase Edge Functions har två-stegs auth-check.** Gateway-nivå (`verify_jwt` i `config.toml`) + funktion-nivå (`requireUser`) returnerar olika 401-format. Klient-felhantering och deny-path-tester måste acceptera båda. Källa: Fas A M2 staging-verifiering, commit `605502f`. Generaliserbart till AWS API Gateway + Lambda Authorizer, Cloudflare Workers + custom auth.
+
+3. **Hypotes om UI-flöden måste valideras mot faktisk implementation, inte mot specs.** Discovery-fasen i Fas A M4 antog Vue-versionen som sanningskälla — den var själv placeholder. Mönster: verifiera att källan faktiskt gör det den påstås göra innan inventering. Källa: Fas A M4 discovery 2026-05-04.
+
+### 8.5.3 Test-infrastruktur etablerad i Fas A
+
+Följande infrastruktur är på plats i staging och ska inte återimplementeras i senare faser:
+
+- 2 Playwright API test-användare i staging:
+  - `playwright-test@miranon-admin.local` (icke-admin)
+  - `playwright-admin@miranon-admin.local` (admin)
+- Test-only Edge Function `test-auth` (deployad bara i staging, dokumenterad som icke-prod)
+- `test-*`-prefix-konvention för framtida test-only-endpoints
+- `.env.test` + `.env.test.example` setup-mönster
+- `classify401Body`-helper för dual-format auth-test (gateway + funktion)
+- Staging secrets: `ADMIN_EMAILS`, `CORS_ALLOWED_ORIGINS` (M7 lägger till Sentry-DSN)
+- Playwright-konfiguration med två projekt: `api` + `visual-*`
+
+Fas 5.5+ ska *inherita* denna infrastruktur, inte uppfinna parallella mönster.
+
+### 8.5.4 Arkitekturmönster etablerade i Fas A
+
+Följande mönster är beslutade under Fas A och ska refereras i fas-prompterna:
+
+- **Operations-baserad write-API:** klient skickar `{operationKey, recordId, fields}` istället för tabellnamn/fältnamn direkt. Operations-registret är den enda sanningskällan för "vad får skrivas av vem."
+- **`corsHeadersFor(req)` per-call:** CORS-headers genereras per-request baserat på origin, inte hårdkodade. Mönstret skalar till tenant-baserade allowlists post-S-track.
+- **`AuthContext | Response` discriminated union:** auth-helpers returnerar antingen success-payload eller färdig 401-Response. Callers gör `if (result instanceof Response) return result`.
+- **Deny-by-default genomgående:** tom config → deny, okänd input → deny, missing claims → deny. Aldrig "allow om vi inte vet."
+- **Generic external errors:** `{error: 'Internal error', requestId}` utåt. Full detaljer i server-loggen. Inget läcker till klient. (M7 implementerar.)
+
+### 8.5.5 Pre-existerande teknisk skuld verifierad under Fas A
+
+Saker som inte är Fas A-scope men verifierade som existerande:
+
+- **4 CSS-warnings** i `src/styles/base.css:72-75` (`!important` i `prefers-reduced-motion`-block) — legitimt CSS-mönster, ingen åtgärd nödvändig om inte Fas 7-cleanup vill rensa
+- **PostCSS moderate vulnerability** (`<8.5.10`) — fixbar med `npm audit fix`. Kan tas som sidofix när som helst
+- **`vite.config.ts` saknar säkerhetsplugin** (CSP-nonce) — medvetet uppskjutet till Fas 7 enligt SECURITY-SPEC. Saknar ADR. Bör få en ADR i P3.
 
 ---
 
@@ -310,11 +385,11 @@ Allt nedanstående är frusen indata för revisionen.
 - `~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-research-projekt.md` (FRUSEN)
 
 **Lärdomar:**
-- `~/Repon/marcus-system/tasks/lessons.md` (sektioner 2026-04-28, 2026-04-29, 2026-04-30, 2026-05-03)
+- `~/Repon/marcus-system/tasks/lessons.md` (sektioner 2026-04-28 → 2026-05-04)
 - `~/Repon/miranon-media-admin/tasks/lessons.md`
 
 **Pågående arbete:**
-- Code:s Fas A-arbetsdokument: `~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-security-hardening.md` (skapas av Code i pågående session)
+- Code:s Fas A-arbetsdokument: `~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-security-hardening.md`
 
 ---
 
@@ -324,9 +399,10 @@ Allt nedanstående är frusen indata för revisionen.
 |---|---|
 | Skapat | 2026-05-04 |
 | Påbörjat (P0) | – |
+| Fas A-status | M1, M2, M3, M6, M8 KLARA. M4 pågår. M5, M7 återstår. |
 | Ägare | Marcus + Claude Chat |
 | Code-medverkan | Endast vid kodbasverifiering och slutlig commit av byggplanen |
-| Senast uppdaterat | 2026-05-04 |
+| Senast uppdaterat | 2026-05-04 (sektion 8.5 tillagd efter M4 discovery) |
 
 ---
 
