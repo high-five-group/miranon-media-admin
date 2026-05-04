@@ -379,7 +379,7 @@ Kort logg per milstolpe. Spårbarhet: commits + DoD-uppfyllnad + avvikelser frå
 **Levererat:**
 - `supabase/functions/_shared/auth.ts` — 103 rader. `requireUser(req, corsHeaders): Promise<AuthContext | Response>`. Discriminated union istället för throw (Marcus godkänd avvikelse).
 
-**Verifiering:** tsc 0, biome 0, build 0. Playwright deferred till M2 (Marcus godkänd, men M2 DoD utökad så de tre deny-paths också körs direkt mot helpern via `_test_auth`).
+**Verifiering:** tsc 0, biome 0, build 0. Playwright deferred till M2 (Marcus godkänd, men M2 DoD utökad så de tre deny-paths också körs direkt mot helpern via `test-auth`).
 
 **Inga avvikelser från §B-design utöver throw → discriminated union.**
 
@@ -389,11 +389,11 @@ Kort logg per milstolpe. Spårbarhet: commits + DoD-uppfyllnad + avvikelser frå
 
 **Levererat:**
 - Wire i 4 funktioner: [get-events](supabase/functions/get-events/index.ts), [get-persons](supabase/functions/get-persons/index.ts), [get-registrations](supabase/functions/get-registrations/index.ts), [update-record](supabase/functions/update-record/index.ts). Alla anropar `requireUser` direkt efter `handleCors` (eller `405`-check i update-record). update-record:s `console.log` inkluderar nu `caller_user_id=${user.id}`.
-- **NY:** [supabase/functions/_test_auth/index.ts](supabase/functions/_test_auth/index.ts) — minimal endpoint för isolerad helper-testning. Anropar bara `requireUser`, returnerar `{ ok, userId }` vid success.
+- **NY:** [supabase/functions/test-auth/index.ts](supabase/functions/test-auth/index.ts) — minimal endpoint för isolerad helper-testning. Anropar bara `requireUser`, returnerar `{ ok, userId }` vid success. (Renamed från `_test_auth` 2026-05-04 — Supabase CLI accepterar inte underscore-prefix.)
 - **NY:** Playwright-test-infrastruktur:
   - [playwright.config.ts](playwright.config.ts) — uppdaterad med `api`-projekt + `visual-desktop`/`visual-mobile`-projekt. testDir: `./tests`.
   - [tests/api/helpers.ts](tests/api/helpers.ts) — `getApiConfig()` skipper tester om TEST_*-env saknas. `getValidUserJWT()` loggar in test-user via Supabase Auth REST. `INVALID_JWT`-konstant för deny-test.
-  - [tests/api/require-user.test.ts](tests/api/require-user.test.ts) — 4 tester direkt mot `_test_auth` (3 deny + 1 allow).
+  - [tests/api/require-user.test.ts](tests/api/require-user.test.ts) — 4 tester direkt mot `test-auth` (3 deny + 1 allow).
   - [tests/api/edge-functions.test.ts](tests/api/edge-functions.test.ts) — 16 tester (4 deny-paths × 4 funktioner). update-record:s allow-test väntar `!= 401` (4xx från senare validering är OK — poängen är att auth har passerat).
 - **NY:** [.env.test.example](.env.test.example) — mall för test-env-vars.
 - **Ändrad:** [.gitignore](.gitignore) — `!.env.test.example`-undantag så mallen committas.
@@ -405,29 +405,31 @@ Kort logg per milstolpe. Spårbarhet: commits + DoD-uppfyllnad + avvikelser frå
 - `npm run build` → 0 (244 kB bundle, oförändrad — supabase/+ tests/ påverkar inte src/-bundlen)
 
 **Verifiering (staging — kräver Marcus):**
-- Deploy `_test_auth` + de 4 ändrade funktionerna till staging Supabase
+- Deploy `test-auth` + de 4 ändrade funktionerna till staging Supabase
 - Sätt `TEST_SUPABASE_URL`, `TEST_SUPABASE_ANON_KEY`, `TEST_USER_EMAIL`, `TEST_USER_PASSWORD` i Marcus shell-env
 - Kör `npm run test:api` → förväntat 20 tester gröna (4 i require-user.test + 16 i edge-functions.test)
 
 **Avvikelser från §B-design:**
-- `_test_auth` Edge Function lades till för att möta Marcus utökade DoD (isolerad helper-test). Detta tillkom inte i §B-original — bör städas bort eller markeras som "test-only" före produktionsdeploy. Föreslår att `supabase/config.toml` (M8) sätter `verify_jwt=false` på `_test_auth` eftersom den ÄR auth-testet.
+- `test-auth` Edge Function lades till för att möta Marcus utökade DoD (isolerad helper-test). Detta tillkom inte i §B-original — bör städas bort eller markeras som "test-only" före produktionsdeploy. Föreslår att `supabase/config.toml` (M8) sätter `verify_jwt=false` på `test-auth` eftersom den ÄR auth-testet.
 - `playwright.config.ts` ändrade testDir-struktur (`./tests/visual` → `./tests` med projekt-specifika `testDir`). Existerande `tests/visual/`-mappen finns inte ännu så ingen migration krävdes.
 - `package.json` `test:visual`-script smalnades till `--project=visual-desktop --project=visual-mobile` så det inte också drar in API-tester. Ny `test:api`-script.
 
-**Notering om `_test_auth` säkerhet:** Endpointen exponerar bara `userId` för en redan auth'd user. Den utför inga sidoeffekter och läser ingen data. Risken vid att den lever i produktion är minimal, men M8 bör bestämma om den ska deployas eller exkluderas via `config.toml`.
+**Notering om `test-auth` säkerhet:** Endpointen exponerar bara `userId` för en redan auth'd user. Den utför inga sidoeffekter och läser ingen data. Risken vid att den lever i produktion är minimal, men M8 bör bestämma om den ska deployas eller exkluderas via `config.toml`.
 
 #### M2-godkännande (Marcus 2026-05-04) + TODO till Fas 7
 
-Marcus valde **alternativ A**: `_test_auth` (och alla `_test_*`-prefixade funktioner generellt) deployas ENDAST till staging-projektet, aldrig till produktion. Två konsekvenser:
+Marcus valde **alternativ A**: `test-auth` (och alla `test-*`-prefixade funktioner generellt) deployas ENDAST till staging-projektet, aldrig till produktion. Två konsekvenser:
+
+**Naming-uppdatering 2026-05-04:** Ursprungligt namn var `_test_auth` (underscore-prefix per Marcus + Chats förslag). Supabase CLI accepterar inte underscore-prefix på funktionsnamn (regex `^[A-Za-z][A-Za-z0-9_-]*$`) — funktionsnamn måste börja med en bokstav. Renamed till `test-auth` (hyphen-prefix). Konventionen blir `test-*`-prefix istället för `_test_*`. Samma intent (deploy-pipe-filtrering), bara annat tecken.
 
 **(a) Prod-deploy-procedur måste exkludera test-prefixade funktioner.**
 
-> **TODO Fas 7 — `_test_*` får ALDRIG nå produktion.** När Fas 7-deploy-pipelinen byggs (Vercel/Supabase deploy-script eller CI-jobb), måste prod-deploy explicit filtrera bort funktioner med prefix `_test_` (eller motsvarande konvention). Lämpligast som ett deploy-script eller en allowlist i CI/deploy-flödet. Mekanism kan vara `supabase functions deploy --project-ref <prod>` med uttrycklig funktion-lista, eller en `.deployignore`-konvention.
+> **TODO Fas 7 — `test-*` får ALDRIG nå produktion.** När Fas 7-deploy-pipelinen byggs (Vercel/Supabase deploy-script eller CI-jobb), måste prod-deploy explicit filtrera bort funktioner med prefix `test-` (eller motsvarande konvention). Lämpligast som ett deploy-script eller en allowlist i CI/deploy-flödet. Mekanism kan vara `supabase functions deploy --project-ref <prod>` med uttrycklig funktion-lista, eller en `.deployignore`-konvention.
 
-**(b) M8 — `_test_auth` får `verify_jwt = false` i `config.toml`.**
+**(b) M8 — `test-auth` får `verify_jwt = false` i `config.toml`.**
 
-`config.toml` är samma fil oavsett projekt — eftersom `_test_auth` aldrig deployas till prod blir `verify_jwt=false`-raden inert där. M8-implementationen ska:
-1. Sätta `[functions._test_auth] verify_jwt = false` (annars dubbel auth-check som blockerar testet).
+`config.toml` är samma fil oavsett projekt — eftersom `test-auth` aldrig deployas till prod blir `verify_jwt=false`-raden inert där. M8-implementationen ska:
+1. Sätta `[functions.test-auth] verify_jwt = false` (annars dubbel auth-check som blockerar testet).
 2. Sätta `[functions.<övriga>] verify_jwt = true` per funktion.
 3. Lägga en kommentar i config.toml som hänvisar till TODO Fas 7 ovan.
 

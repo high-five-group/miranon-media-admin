@@ -1,20 +1,20 @@
-// Isolerade deny-path-tester direkt mot requireUser-helpern via _test_auth.
+// Isolerade deny-path-tester direkt mot requireUser-helpern via test-auth.
 //
 // Per M2:s utökade DoD (Marcus 2026-05-04): de tre deny-path-testerna
 // (anonym/ogiltig/anon-key) ska köras direkt mot requireUser-helpern,
 // inte bara mot M2:s wiring i datafunktionerna. Annars tappar vi
 // helperns isolerade verifiering.
 //
-// _test_auth (supabase/functions/_test_auth/index.ts) är en minimal
+// test-auth (supabase/functions/test-auth/index.ts) är en minimal
 // endpoint som anropar requireUser och returnerar { ok, userId } vid
 // success, eller den 401 som requireUser producerar vid fel.
 
 import { expect, test } from '@playwright/test';
 import { getApiConfig, getValidUserJWT, INVALID_JWT } from './helpers';
 
-const ENDPOINT = '/functions/v1/_test_auth';
+const ENDPOINT = '/functions/v1/test-auth';
 
-test.describe('requireUser — isolerad helper-test via _test_auth', () => {
+test.describe('requireUser — isolerad helper-test via test-auth', () => {
   test('deny: anonym (ingen Authorization-header) → 401', async ({ request }) => {
     const config = getApiConfig();
 

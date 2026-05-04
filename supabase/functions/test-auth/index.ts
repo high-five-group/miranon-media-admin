@@ -1,4 +1,10 @@
-// _test_auth — minimal endpoint för isolerad testning av requireUser-helpern.
+// test-auth — minimal endpoint för isolerad testning av requireUser-helpern.
+//
+// Naming: Supabase CLI accepterar inte underscore-prefix på funktionsnamn
+// (regex ^[A-Za-z][A-Za-z0-9_-]*$). Konventionen blev därför `test-`-prefix
+// (med hyphen) istället för `_test_`. Samma intent: prefix för deploy-pipe-
+// filtrering så test-funktioner ALDRIG når produktion. Se TODO Fas 7 i
+// tasks/sessions/2026-05-04-security-hardening.md §F.
 //
 // Anropar BARA requireUser och returnerar { ok: true, userId } vid success
 // eller den 401-Response som requireUser producerar vid fel.

@@ -34,3 +34,6 @@ npm-debug.log*
 
 # Codex scratch
 .codex-scratch/
+
+# Supabase CLI state (link, project-ref cache)
+supabase/.temp/
