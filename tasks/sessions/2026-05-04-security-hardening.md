@@ -487,4 +487,52 @@ Vid första körning av `npm run test:api` mot staging visade sig att Supabase G
 
 **M8 = klar 2026-05-04.**
 
+### M6 — Caller-verifiering i `create-admin-user` (klar 2026-05-04)
+
+**Commits:** Pågående (denna session).
+
+**Test-infrastruktur uppbyggd (Marcus godkände Alternativ B):**
+- Ny test-admin-user skapad: `playwright-admin@miranon-admin.local`, `user_id=5aa3537e-8bb0-4241-8af4-543d0508b8da`. Lösenord genererat med `openssl rand -hex 24`, skrivet till `.env.test`.
+- ADMIN_EMAILS-secret i staging satt till `marcus@h5gruppen.se,playwright-admin@miranon-admin.local` (komma-separerad).
+- [.env.test.example](.env.test.example) utökad med `TEST_ADMIN_EMAIL` + `TEST_ADMIN_PASSWORD`.
+- [tests/api/helpers.ts](tests/api/helpers.ts):
+  - `ApiConfig` utökad med `adminEmail` + `adminPassword`
+  - `getApiConfig()` skipper om någon TEST_*-env (inkl. nya admin) saknas
+  - `loginUser()`-helper extraherad (DRY mellan user/admin login)
+  - Ny `getValidAdminUserJWT(request, config)` parallellt med `getValidUserJWT(request, config)`
+
+**Levererat:**
+- [supabase/functions/create-admin-user/index.ts](supabase/functions/create-admin-user/index.ts) — full M6-implementation:
+  - `requireUser(req, corsHeaders)` direkt efter handleCors (samma mönster som M2)
+  - `isAdminEmail(callerEmail)`-helper läser ADMIN_EMAILS-env, normaliserar (lowercase, trim), deny-by-default vid tom lista
+  - 500-respons om ADMIN_EMAILS saknas (server-config-fel, inte client-fel)
+  - 403 `{"error":"Forbidden"}` (generic — läcker inte allowlist eller varför)
+  - Strukturerade audit-loggar: DENY innehåller `caller_user_id`, `email`; ALLOW innehåller `caller_user_id`, `email`, target-email
+  - K7-respekt-kommentar: *"Ersätts av `tenant_memberships.role IN ('owner', 'admin')` när 06b §A3 byggs."*
+- **NY:** [tests/api/create-admin-user.test.ts](tests/api/create-admin-user.test.ts) — 3 deny-path-tester:
+  - `deny: anon-key → 401` via `classify401Body` (anon-key passerar gateway, requireUser fångar via role-check)
+  - `deny: user utan admin-email → 403` med strikt body-assertion `{error: 'Forbidden'}`
+  - `allow: admin-email → 200 (eller 4xx från Supabase user-exists)` — använder admin-email själv som target → Supabase admin.createUser returnerar 4xx ("User already registered"). Testet asserterar `!=401 && !=403 && <500` — bevisar att auth-gaten passerade utan att skapa nya users per testkörning (inga test-databas-bivirkningar).
+
+**Verifiering (lokalt):** tsc 0, biome 0.
+
+**Verifiering (staging — empiriskt 2026-05-04):**
+Manuell curl-trippel mot deployad runtime:
+- `curl POST /functions/v1/create-admin-user -H "Authorization: Bearer $ANON_KEY" ...` → `{"error":"Invalid or expired token"}` (requireUser fångar anon-key)
+- `curl POST ... -H "Authorization: Bearer $USER_JWT" ...` → `{"error":"Forbidden"}` (M6 ADMIN_EMAILS-check fångar non-admin)
+- `curl POST ... -H "Authorization: Bearer $ADMIN_JWT" -d '{"email":"$TEST_ADMIN_EMAIL",...}'` → `HTTP/2 400` (auth-gate passerade, Supabase blockerar duplicate user)
+
+**Test-svit post-M6:** `npm run test:api` → **23/23 gröna** (20 från M2/M8 + 3 nya M6-tester).
+
+**M6 DoD-status:**
+- ✅ (a) requireUser anropas i create-admin-user direkt efter handleCors
+- ✅ (b) Caller's email matchas mot Deno.env.get('ADMIN_EMAILS') (komma-separerad). Mismatch → 403 med generic body
+- ✅ (c) supabase/config.toml har verify_jwt=true för create-admin-user (verifierad oförändrad sedan M8)
+- ✅ (d) Tre deny-path-tester gröna mot staging (anon-key, non-admin, admin-email)
+- ✅ K7-kommentar i koden: ersätts av `tenant_memberships.role` post-S-track
+
+**M6 = klar 2026-05-04.**
+
+
+
 

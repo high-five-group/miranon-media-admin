@@ -7,10 +7,12 @@
 // Krav på env för att API-testerna ska köra:
 //   TEST_SUPABASE_URL          — t.ex. https://<projekt>.supabase.co
 //   TEST_SUPABASE_ANON_KEY     — anon-key (publik) för "anon-key → 401"
-//   TEST_USER_EMAIL            — login för "giltig user-JWT → 200"
+//   TEST_USER_EMAIL            — non-admin login för deny-tester
 //   TEST_USER_PASSWORD         — lösenord för samma test-user
+//   TEST_ADMIN_EMAIL           — admin login (på ADMIN_EMAILS-listan)
+//   TEST_ADMIN_PASSWORD        — lösenord för samma test-admin
 //
-// Test-user måste finnas i staging-projektet. Skapa med
+// Båda test-users måste finnas i staging-projektet. Skapa med
 // supabase CLI eller via dashboard innan testerna körs.
 
 import { type APIRequestContext, test } from '@playwright/test';
@@ -20,6 +22,8 @@ export interface ApiConfig {
   anonKey: string;
   userEmail: string;
   userPassword: string;
+  adminEmail: string;
+  adminPassword: string;
 }
 
 export function getApiConfig(): ApiConfig {
@@ -27,10 +31,12 @@ export function getApiConfig(): ApiConfig {
   const anonKey = process.env.TEST_SUPABASE_ANON_KEY;
   const userEmail = process.env.TEST_USER_EMAIL;
   const userPassword = process.env.TEST_USER_PASSWORD;
+  const adminEmail = process.env.TEST_ADMIN_EMAIL;
+  const adminPassword = process.env.TEST_ADMIN_PASSWORD;
 
   test.skip(
-    !baseUrl || !anonKey || !userEmail || !userPassword,
-    'API-tester kräver TEST_SUPABASE_URL, TEST_SUPABASE_ANON_KEY, TEST_USER_EMAIL och TEST_USER_PASSWORD i env.',
+    !baseUrl || !anonKey || !userEmail || !userPassword || !adminEmail || !adminPassword,
+    'API-tester kräver TEST_SUPABASE_URL, TEST_SUPABASE_ANON_KEY, TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_ADMIN_EMAIL och TEST_ADMIN_PASSWORD i env.',
   );
 
   return {
@@ -38,32 +44,60 @@ export function getApiConfig(): ApiConfig {
     anonKey: anonKey ?? '',
     userEmail: userEmail ?? '',
     userPassword: userPassword ?? '',
+    adminEmail: adminEmail ?? '',
+    adminPassword: adminPassword ?? '',
   };
 }
 
-// Loggar in test-user via Supabase Auth REST API och returnerar
-// access_token (= en giltig user-JWT).
-export async function getValidUserJWT(
+// Generell login-helper. Loggar in via Supabase Auth REST API och
+// returnerar access_token (= en giltig user-JWT).
+async function loginUser(
   request: APIRequestContext,
-  config: ApiConfig,
+  baseUrl: string,
+  anonKey: string,
+  email: string,
+  password: string,
 ): Promise<string> {
-  const res = await request.post(`${config.baseUrl}/auth/v1/token?grant_type=password`, {
+  const res = await request.post(`${baseUrl}/auth/v1/token?grant_type=password`, {
     headers: {
-      apikey: config.anonKey,
+      apikey: anonKey,
       'Content-Type': 'application/json',
     },
-    data: { email: config.userEmail, password: config.userPassword },
+    data: { email, password },
   });
 
   if (!res.ok()) {
-    throw new Error(`Login failed: ${res.status()} ${await res.text()}`);
+    throw new Error(`Login failed for ${email}: ${res.status()} ${await res.text()}`);
   }
 
   const body = (await res.json()) as { access_token?: string };
   if (!body.access_token) {
-    throw new Error('Login returned no access_token');
+    throw new Error(`Login returned no access_token for ${email}`);
   }
   return body.access_token;
+}
+
+// Loggar in non-admin test-user (TEST_USER_*).
+export async function getValidUserJWT(
+  request: APIRequestContext,
+  config: ApiConfig,
+): Promise<string> {
+  return loginUser(request, config.baseUrl, config.anonKey, config.userEmail, config.userPassword);
+}
+
+// Loggar in admin test-user (TEST_ADMIN_*) — måste finnas i staging
+// ADMIN_EMAILS-secret för att create-admin-user ska godkänna calleren.
+export async function getValidAdminUserJWT(
+  request: APIRequestContext,
+  config: ApiConfig,
+): Promise<string> {
+  return loginUser(
+    request,
+    config.baseUrl,
+    config.anonKey,
+    config.adminEmail,
+    config.adminPassword,
+  );
 }
 
 // En klart ogiltig JWT — 3 segment med base64url, men signaturen är
@@ -96,9 +130,7 @@ export interface UnauthorizedClassification {
 // (anon-key passerar gateway eftersom det ÄR ett valid JWT). När
 // verify_jwt=false sätts på en funktion (t.ex. test-auth) börjar
 // requireUser-format dyka upp för alla paths.
-export async function classify401Body(
-  response: APIResponse,
-): Promise<UnauthorizedClassification> {
+export async function classify401Body(response: APIResponse): Promise<UnauthorizedClassification> {
   const status = response.status();
   if (status !== 401) {
     const text = await response.text();

@@ -63,9 +63,7 @@ test.describe('requireUser — isolerad helper-test via test-auth', () => {
     // user) eller "Anon key not accepted as user identity" (om role-check
     // triggas). Båda är giltiga requireUser-svar.
     const b = body as { error?: string };
-    expect(b.error).toMatch(
-      /^(Invalid or expired token|Anon key not accepted as user identity)$/,
-    );
+    expect(b.error).toMatch(/^(Invalid or expired token|Anon key not accepted as user identity)$/);
   });
 
   test('allow: giltig user-JWT → 200', async ({ request }) => {
