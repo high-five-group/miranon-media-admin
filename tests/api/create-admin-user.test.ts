@@ -63,11 +63,15 @@ test.describe('create-admin-user — auth + admin-allowlist', () => {
       data: { email: config.adminEmail, password: 'irrelevant-but-required' },
     });
 
+    // Vi asserterar (!=401 && !=403 && <500) istället för == 200
+    // medvetet: target-emailen är admin-userens egen email, så Supabase
+    // admin.createUser returnerar 400 ("User already registered"). 400
+    // bevisar att auth-gaten passerade — annars hade vi fått 401/403
+    // innan vi ens nådde admin.createUser. Strikt == 200 skulle kräva
+    // unik email per testkörning (test-databas-bivirkningar) eller
+    // cleanup-step. 5xx skulle indikera bug i M6 och fångas separat.
     expect(res.status()).not.toBe(401);
     expect(res.status()).not.toBe(403);
-    // 200 (om någon framtida test-cleanup tagit bort usern) eller 4xx
-    // (User already registered) — båda är OK eftersom auth-gaten
-    // passerade. 5xx skulle indikera bug i M6.
     expect(res.status()).toBeLessThan(500);
   });
 });

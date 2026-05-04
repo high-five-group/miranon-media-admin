@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireUser } from '../_shared/auth.ts';
-import { corsHeaders, handleCors } from '../_shared/cors.ts';
+import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 
 // Caller-verifiering — endast users vars email finns i ADMIN_EMAILS-listan
 // (komma-separerad env-secret) får skapa nya admin-users.
@@ -28,6 +28,8 @@ function isAdminEmail(callerEmail: string | undefined): boolean {
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
+
+  const corsHeaders = corsHeadersFor(req);
 
   // 1. Auth-gate: caller måste vara en inloggad user (inte anon-key,
   //    inte saknad header).

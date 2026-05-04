@@ -533,6 +533,46 @@ Manuell curl-trippel mot deployad runtime:
 
 **M6 = klar 2026-05-04.**
 
+### M3 — CORS origin-allowlist (klar 2026-05-04)
+
+**Commits:** Pågående (denna session).
+
+**Levererat:**
+- [supabase/functions/_shared/cors.ts](supabase/functions/_shared/cors.ts) — full refactor:
+  - `BASE_HEADERS`-konstant: `Access-Control-Allow-Headers` + `Access-Control-Allow-Methods` (oberoende av origin)
+  - `corsHeadersFor(req)`: returnerar BASE_HEADERS + `Access-Control-Allow-Origin: ${origin}` om origin på allowlist, annars bara BASE_HEADERS (utan Allow-Origin → browser blockerar response)
+  - `handleCors(req)`: returnerar 403 på OPTIONS-preflight med saknad/otillåten Origin; 200 med corsHeadersFor på OPTIONS med tillåten Origin; null för non-OPTIONS (caller fortsätter)
+  - `isAllowedOrigin(origin)`: matchar exakt mot `Deno.env.get('CORS_ALLOWED_ORIGINS')` (komma-separerad, deny-by-default vid tom lista)
+  - K7-respekt-kommentar: *"Kan flyttas till `tenants.allowed_origins` när 06b §A1 byggs."*
+- 6 Edge Functions uppdaterade: `import { corsHeadersFor }` istället för `corsHeaders`; lokal `const corsHeaders = corsHeadersFor(req)` tidigt i `Deno.serve`-bodyn så resten av koden kan fortsätta använda `...corsHeaders`-spread oförändrad. Påverkar [test-auth](supabase/functions/test-auth/index.ts), [get-events](supabase/functions/get-events/index.ts), [get-persons](supabase/functions/get-persons/index.ts), [get-registrations](supabase/functions/get-registrations/index.ts), [update-record](supabase/functions/update-record/index.ts), [create-admin-user](supabase/functions/create-admin-user/index.ts).
+- **NY:** [tests/api/cors.test.ts](tests/api/cors.test.ts) — 2 CORS-deny-path-tester:
+  - `preflight: tillåten origin → 200 + Access-Control-Allow-Origin speglar`
+  - `preflight: otillåten origin → 403 (utan Allow-Origin-header)`
+- Staging-secret satt: `CORS_ALLOWED_ORIGINS=https://admin.miranon.se,http://localhost:5173,http://localhost:4173` (per Marcus Gate A1-svar).
+
+**Verifiering (lokalt):** tsc 0, biome 0.
+
+**Verifiering (staging — empiriskt 2026-05-04):**
+Manuell curl-trippel mot deployad runtime:
+- `OPTIONS /functions/v1/test-auth` med `Origin: http://localhost:5173` → `HTTP/2 200`, `access-control-allow-origin: http://localhost:5173`
+- `OPTIONS ...` med `Origin: https://evil.example.com` → `HTTP/2 403`, ingen Allow-Origin-header
+- `GET ...` UTAN Origin (server-till-server) → går genom (401 från requireUser-saknad auth), ingen CORS-blockering. **Bekräftar att non-browser-trafik fungerar — Marcus särskilda fall #2 OK.**
+
+**Test-svit post-M3:** `npm run test:api` → **25/25 gröna** (23 befintliga + 2 nya CORS-tester). Befintliga tester (utan Origin-header) fortsätter passera — **bekräftar att Playwright-runner-flödet inte bryts av M3 — Marcus särskilda fall #1 OK.**
+
+**M3 DoD-status:**
+- ✅ (a) corsHeadersFor(req) returnerar `Access-Control-Allow-Origin: ${origin}` om allowlist, annars utelämnar
+- ✅ (b) handleCors returnerar 403 på preflight med saknad/otillåten Origin
+- ✅ (c) Allowlist från `Deno.env.get('CORS_ALLOWED_ORIGINS')` (komma-separerad, deny-by-default)
+- ✅ (d) 2 Playwright-tester gröna mot staging
+- ✅ Marcus särskilda fall #1: test-auth fungerar från Playwright-runner (ingen Origin → server-till-server → tillåts)
+- ✅ Marcus särskilda fall #2: curl/server-till-server utan Origin → tillåts (CORS skyddar bara browsers)
+- ✅ K7-kommentar i koden
+
+**M3 = klar 2026-05-04.**
+
+
+
 
 
 

@@ -1,6 +1,6 @@
 import { updateAirtableRecord } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
-import { corsHeaders, handleCors } from '../_shared/cors.ts';
+import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 
 // Allowlist — bara våra tabeller
 const ALLOWED_TABLES = new Set([
@@ -27,6 +27,8 @@ const ALLOWED_TABLES = new Set([
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
+
+  const corsHeaders = corsHeadersFor(req);
 
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {

@@ -19,12 +19,13 @@
 // känsligt data och utför inga sidoeffekter.
 
 import { requireUser } from '../_shared/auth.ts';
-import { corsHeaders, handleCors } from '../_shared/cors.ts';
+import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 
+  const corsHeaders = corsHeadersFor(req);
   const auth = await requireUser(req, corsHeaders);
   if (auth instanceof Response) return auth;
 
