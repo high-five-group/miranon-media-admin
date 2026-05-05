@@ -77,7 +77,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **B** | PARALLELL | Airtable-hardening — parallell-spår med 2 synk-gates mot React-bygget (innan Fas 6c + innan Fas E). Roger/Lotta-arbete. | (parallell, separat estimat) |
 | **E** | DEFER | Supabase-migration enligt 07 §A2. Aktualiseras post-Fas 7. Inkluderar Realtime-omläggning per B1. | (defer, separat planering) |
 
-**Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR (#3) (Fas 4-borttagningen).
+**Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR-013 (Fas 4-borttagningen).
 
 **Total estimat (Fas 2 → Fas 7, exkl. klara Fas 0/1/A och defer:ade Fas 8/B/E):** 16,5 sessioner. Beräkning: 2 + 1 + 2 + 1 + 1 + 2 + 3,5 + 1 + 3 = 16,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
 
@@ -131,7 +131,7 @@ M4-principen från Fas A: deploya inte EF i förskott. Varje deploy ska följa e
 
 **Output:** Vite + React 19 + Tailwind v4 (`@theme`-baserad) + Biome 2.4 + 3-lagers tokens (ADR-002, ADR-003) + 20-raders SW-skelett.
 
-**Skuld:** `[GA] vite.config.ts` säkerhetsheaders-plugin med CSP-nonce **uppskjuten till Fas 7** — ADR (#1) (CSP-plugin-deferral) skrivs i P3a för spårbarhet.
+**Skuld:** `[GA] vite.config.ts` säkerhetsheaders-plugin med CSP-nonce **uppskjuten till Fas 7** — ADR-011 (CSP-plugin-deferral) skrivs i P3a för spårbarhet.
 
 **Korsreferens:** `docs/BUILD-LOG.md` Fas 0-sektion.
 
@@ -366,7 +366,7 @@ Ingen mot tidigare faser. Blockerar Fas 3:s DoD (Fas 3 kan inte kvalitetsgranska
 6. "A11y-baseline godkänd"-gate dokumenterad i `docs/BUILD-LOG.md` innan Fas 6 startar
 
 #### ADR-krav
-**ADR (#10) — Fas 3.5 = egen fas (P2 A1-utfall)**: dokumenterar trigger-tabellen från P1 + utfallet från P2 (rad 2 + rad 3 båda JA).
+**ADR-020 — Fas 3.5 = egen fas (P2 A1-utfall)**: dokumenterar trigger-tabellen från P1 + utfallet från P2 (rad 2 + rad 3 båda JA).
 
 #### Korsreferens
 - `ACCESSIBILITY-CHECKLIST.md` (omskriven i P2)
@@ -428,7 +428,7 @@ Minimal app-shell som tål mobil-först-användning (Lotta på telefon i mötet)
 10. axe-core 0 violations på shell
 
 #### ADR-krav
-**ADR (#8) — Fas 5-förenklingen** (per B3): dokumenterar vilka [GA]-tillägg som flyttas till Fas 7 + motiv.
+**ADR-018 — Fas 5-förenklingen** (per B3): dokumenterar vilka [GA]-tillägg som flyttas till Fas 7 + motiv.
 
 #### Korsreferens
 - `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 5 (B3-beslutet)
@@ -485,10 +485,10 @@ Etablera mutation-mönstret (TanStack `useMutation` + optimistic UI + operations
 8. axe-core 0 violations + status-flip annonseras till skärmläsare via `aria-live`
 9. Fas A aktiveringsguides 5 steg avbockade i sessionsdok
 10. Mönstret dokumenterat som "mall för Fas 6 mutationer" i sessionsdok
-11. ADR (#6) (TanStack optimistic mutation-mönster) skriven
+11. ADR-016 (TanStack optimistic mutation-mönster) skriven
 
 #### ADR-krav
-**ADR (#6) — TanStack optimistic mutation-mönster med operations-baserat API** (per A2 + dependency på Fas A M4): dokumenterar `mutationFn` med `executeOperation({operationKey, recordId, fields})` + `onMutate`-rollback-pattern + cache-invalidation-strategy. Skrivs i Fas 5.5 som mall.
+**ADR-016 — TanStack optimistic mutation-mönster med operations-baserat API** (per A2 + dependency på Fas A M4): dokumenterar `mutationFn` med `executeOperation({operationKey, recordId, fields})` + `onMutate`-rollback-pattern + cache-invalidation-strategy. Skrivs i Fas 5.5 som mall.
 
 #### Korsreferens
 - `STATE-STRATEGY.md` §4 (Optimistisk UI), §8 (Operations-baserat write-API)
@@ -580,9 +580,9 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `analys/07-migration-
 7. TanStack Query cache + invalidation fungerar (verifiera med devtools)
 
 #### ADR-krav (Fas 6)
-- **ADR (#4) — `createRegistration`-idempotency** (per A5, Fas 6c): dokumenterar idempotency-nyckel-strategin (mot dubbletter vid retry/dubbel-klick) — adresserar `data-model.md §F.4`-buggen.
-- **ADR (#5) — `sendEmail` direct-Resend-skuld** (per A5, Fas 6e): om sendEmail deployas i 6e, dokumenterar varför direct-Resend-anrop används och planen för migration till mail-event-pattern.
-- **ADR (#7) — Polling-vs-Realtime + migrations-vägen post-Fas E** (per B1, Fas 6d): dokumenterar 60s + pull-to-refresh + visibility-trigger som interimslösning + Supabase Realtime-omläggning som Fas E-uppgift.
+- **ADR-014 — `createRegistration`-idempotency** (per A5, Fas 6c): dokumenterar idempotency-nyckel-strategin (mot dubbletter vid retry/dubbel-klick) — adresserar `data-model.md §F.4`-buggen.
+- **ADR-015 — `sendEmail` direct-Resend-skuld** (per A5, Fas 6e): om sendEmail deployas i 6e, dokumenterar varför direct-Resend-anrop används och planen för migration till mail-event-pattern.
+- **ADR-017 — Polling-vs-Realtime + migrations-vägen post-Fas E** (per B1, Fas 6d): dokumenterar 60s + pull-to-refresh + visibility-trigger som interimslösning + Supabase Realtime-omläggning som Fas E-uppgift.
 
 #### Korsreferens
 - `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 3 (A5-tabellen) + Del 4 (A3 + A2 + B1)
@@ -698,7 +698,7 @@ Säkra appen för production: CSP-plugin (defer:ad från Fas 0), prestandamätni
 12. Design audit (skill) körd på Hem, Mer, AppShell — rapport committad
 
 #### ADR-krav
-- **Refererar ADR (#1) — CSP-plugin-deferral** (per P0-inventory): ADR skrevs i P3a vid byggplan-skiftet, dokumenterar varför plugin defer:ats från Fas 0 till Fas 7. Inget *nytt* ADR krävs här — endast verifikation att ADR (#1):s villkor uppfylls (CSP-plugin aktiv i prod, inga inline-script-violations).
+- **Refererar ADR-011 — CSP-plugin-deferral** (per P0-inventory): ADR skrevs i P3a vid byggplan-skiftet, dokumenterar varför plugin defer:ats från Fas 0 till Fas 7. Inget *nytt* ADR krävs här — endast verifikation att ADR-011:s villkor uppfylls (CSP-plugin aktiv i prod, inga inline-script-violations).
 
 #### Korsreferens
 - `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 5 (B3-beslutet — vilka [GA] som flyttats hit)
@@ -729,7 +729,7 @@ Implementera Background Sync API för offline-mutationskö — defer:ad från Fa
 TBD — fastställs vid aktualisering.
 
 #### ADR-krav
-- **ADR (#9) — Background Sync defer från Fas 7 till Fas 8** (per B2): dokumenterar arkitekturskuld + Fas 7-storlek + Lotta-flow-tolerans + plan för aktualisering. Skrivs vid Fas 7-start så det är tydligt att Fas 7 *inte glömde* — det var medvetet.
+- **ADR-019 — Background Sync defer från Fas 7 till Fas 8** (per B2): dokumenterar arkitekturskuld + Fas 7-storlek + Lotta-flow-tolerans + plan för aktualisering. Skrivs vid Fas 7-start så det är tydligt att Fas 7 *inte glömde* — det var medvetet.
 
 #### Korsreferens
 - `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 5 (B2-beslutet)
@@ -801,22 +801,22 @@ ADR:er per migrationsbeslut — skrivs vid aktualisering.
 
 ## 5. ADR-index
 
-10 ADR:er skrivs i P3a (eller startas med skelett). Numrering tilldelas av Code mot befintlig `docs/decisions/`-katalog vid commit-tillfället.
+10 ADR:er skrivna i P3a (2026-05-05) som ADR-011 till ADR-020 — tilldelade efter befintliga ADR-001 till ADR-010 (Fas 0 + Fas 1, Session 1, 2026-04-14). Fullständigt index i `docs/decisions/README.md`.
 
-| # i P3a-katalog | Ämne | Fas där den skrivs/refereras | Källa |
+| ADR | Ämne | Fas där den skrivs/refereras | Källa |
 |---|---|---|---|
-| 1 | CSP-plugin-deferral i `vite.config.ts` | Fas 0 (skrivs nu, refereras från Fas 7) | P0-inventory Fas 0.1 + 7.3 + direktiv §8.5.6 |
-| 2 | Conversion-plan → byggplan-skiftet | Meta (skrivs i P3a) | Direktiv §12 ("ramen 'konvertering' var efterlöpare") |
-| 3 | Fas 4-borttagningen (DataTable flyttad till Fas 7) | Meta (skrivs i P3a) | P0-inventory Fas 4.1 + direktiv §12 (Numreringsnot) |
-| 4 | `createRegistration`-idempotency | Fas 6c | P1-sessionsdok Del 3 (A5) + `data-model.md §F.4` |
-| 5 | `sendEmail` direct-Resend-skuld | Fas 6e | P1-sessionsdok Del 3 (A5) |
-| 6 | TanStack optimistic mutation-mönster med operations-baserat API | Fas 5.5 | P1-sessionsdok Del 4 (A2) |
-| 7 | Polling-vs-Realtime + migrations-vägen post-Fas E | Fas 6d | P1-sessionsdok Del 4 (B1) |
-| 8 | Fas 5-förenklingen (vilka [GA] flyttas till Fas 7) | Fas 5 | P1-sessionsdok Del 5 (B3) |
-| 9 | Background Sync defer från Fas 7 till Fas 8 | Fas 7-start | P1-sessionsdok Del 5 (B2) |
-| 10 | **Fas 3.5 = egen fas** (P2 A1-utfall) | Fas 3.5 | P2-sessionsdok Del 5 (A1-trigger-rapport) |
+| ADR-011 | CSP-plugin-deferral i `vite.config.ts` | Fas 0 (skrivs nu, refereras från Fas 7) | P0-inventory Fas 0.1 + 7.3 + direktiv §8.5.6 |
+| ADR-012 | Conversion-plan → byggplan-skiftet | Meta (skrivs i P3a) | Direktiv §12 ("ramen 'konvertering' var efterlöpare") |
+| ADR-013 | Fas 4-borttagningen (DataTable flyttad till Fas 7) | Meta (skrivs i P3a) | P0-inventory Fas 4.1 + direktiv §12 (Numreringsnot) |
+| ADR-014 | `createRegistration`-idempotency | Fas 6c | P1-sessionsdok Del 3 (A5) + `data-model.md §F.4` |
+| ADR-015 | `sendEmail` direct-Resend-skuld | Fas 6e | P1-sessionsdok Del 3 (A5) |
+| ADR-016 | TanStack optimistic mutation-mönster med operations-baserat API | Fas 5.5 | P1-sessionsdok Del 4 (A2) |
+| ADR-017 | Polling-vs-Realtime + migrations-vägen post-Fas E | Fas 6d | P1-sessionsdok Del 4 (B1) |
+| ADR-018 | Fas 5-förenklingen (vilka [GA] flyttas till Fas 7) | Fas 5 | P1-sessionsdok Del 5 (B3) |
+| ADR-019 | Background Sync defer från Fas 7 till Fas 8 | Fas 7-start | P1-sessionsdok Del 5 (B2) |
+| ADR-020 | **Fas 3.5 = egen fas** (P2 A1-utfall) | Fas 3.5 | P2-sessionsdok Del 5 (A1-trigger-rapport) |
 
-ADR:erna skrivs i K3 av P3a (Del 4 i sessionsdok). Fullständigt innehåll per ADR levereras i K3.
+Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs när Fas 6.5 implementeras (per P0-inventory Fas 6.5 öppen fråga). Numreras vid Fas 6.5-tidpunkt.
 
 ---
 
@@ -824,7 +824,8 @@ ADR:erna skrivs i K3 av P3a (Del 4 i sessionsdok). Fullständigt innehåll per A
 
 | Version | Datum | Förändring |
 |---|---|---|
-| 1.0 | 2026-05-05 | Initial — ersätter `docs/conversion-plan.md`. Baserad på P0-inventory + P1 fas-sekvens-revision + P2 stödspec-synk. 13 fas-prompter + 10 ADR:er identifierade. |
+| 1.0 | 2026-05-05 | Initial (P3a K2) — ersätter `docs/conversion-plan.md`. Baserad på P0-inventory + P1 fas-sekvens-revision + P2 stödspec-synk. 13 fas-prompter + 10 ADR:er identifierade som ADR (#1)–ADR (#10). |
+| 1.1 | 2026-05-05 | P3a K3 — 10 ADR:er skrivna och numrerade som ADR-011 till ADR-020 i `docs/decisions/`. ADR-referenser i fas-prompter + §5 ADR-index uppdaterade till slutgiltiga ADR-NNN-format. |
 
 ---
 
