@@ -474,10 +474,12 @@ Allt nedanstående är frusen indata för revisionen.
 | Skapat | 2026-05-04 |
 | Klar (P0) | 2026-05-04 |
 | Klar (P1) | 2026-05-04 |
+| Klar (P2) | 2026-05-04 |
+| Klar (P3a) | 2026-05-05 |
 | Fas A-status | **SLUTFÖRD 2026-05-04** — alla M1–M8 levererade, 14 commits, 113 tester |
 | Ägare | Marcus + Claude Chat |
 | Code-medverkan | Endast vid kodbasverifiering, slutlig commit av byggplanen, och eventuell M5+ av framtida implementations-faser |
-| Senast uppdaterat | 2026-05-04 (efter Fas A slutförande — §3.7, §4, §5, §6 P3 utökad, §8.5 frusen, §10 utökad) |
+| Senast uppdaterat | 2026-05-05 (P3a slutförd — se tasks/sessions/2026-05-05-byggplan-skriv-p3a.md) |
 
 ---
 
