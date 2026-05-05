@@ -186,12 +186,12 @@ Codex/Code-verifiering.
 - [x] **P1 — Fas-sekvens-revision** ✅ AVSLUTAD 2026-05-04
       Leverans: `tasks/sessions/2026-05-04-byggplan-revision-p1.md`
       §5-uppdatering applicerad i commit `5ed4668`
-- [ ] **P2 — Stödspec-synkning** ← NÄSTA
-      Startkontext: `tasks/sessions/2026-05-04-p1-avslutning.md` Del 4
-      Direktiv: `tasks/byggplan-direktiv.md` §6 P2
-- [ ] **P3 — Skriv byggplanen + städning**
+- [x] **P2 — Stödspec-synkning** ✅ AVSLUTAD 2026-05-04
+      Leverans: `tasks/sessions/2026-05-04-stodspec-synk-p2.md`
+      A1-utfall: Fas 3.5 = egen fas (test-infra + mönsterbibliotek bägge JA)
+- [ ] **P3 — Skriv byggplanen + städning** ← NÄSTA
+      Startkontext: `tasks/sessions/2026-05-04-stodspec-synk-p2.md` Del 8
       Direktiv: `tasks/byggplan-direktiv.md` §6 P3
-      Förutsätter: P2 klar
 
 ---
 
