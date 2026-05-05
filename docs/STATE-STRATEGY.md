@@ -22,6 +22,11 @@ Varje bit state tilhor exakt en kategori. Ingen state far leva i "fel" lager.
 
 ## 2. Per-vy state-plan
 
+> **Sekvensering:** Vyerna byggs i strangler-fig-ordning per P1 Del 4 A3:
+> **6a Persons → 6b Events → 6c Registrations + Väntelista → 6d Hem-aggregering → 6e Mer (villkorlig).**
+> Fas-prompter i Fas 6 ska INTE plocka Hem-vyn före underliggande domäner är på plats.
+> Källa: `analys/07-migration-plan.md` §A2 + `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 4 A3.
+
 ### Hem (/hem)
 | State | Typ | Verktyg |
 |-------|-----|---------|
@@ -138,7 +143,11 @@ export function useMarkPayment(eventId: string) {
 
   return useMutation({
     mutationFn: (registrationId: string) =>
-      dataSource.updatePaymentStatus(registrationId, 'paid'),
+      dataSource.executeOperation({
+        operationKey: 'registration.set-status',
+        recordId: registrationId,
+        fields: { Status: 'Bekräftad (mail skickat)' },  // Airtable-shape; target-shape post-Fas E
+      }),
 
     onMutate: async (registrationId) => {
       await queryClient.cancelQueries({
@@ -178,9 +187,19 @@ export function useMarkPayment(eventId: string) {
 
 **Samma monster for:** narvaromarkering, skicka paminnelse, uppdatera status.
 
+**Operations-baserat write-API:** klienten skickar `{operationKey, recordId, fields}` (inte `{tableId, ...}`).
+Se §8 för det fullständiga mönstret. Operations-registret är sanningskälla för "vad får skrivas av vem."
+Fas 6 sub-fas-prompter (6a–6e) refererar §8 direkt — varje sub-fas registrerar sina nya
+operations i `supabase/functions/_shared/field-allowlists.ts`.
+
 ---
 
-## 5. Supabase Realtime-integration
+## 5. Supabase Realtime-integration (framtida arkitektur — Fas E)
+
+> **Status:** Defer:ad till **Fas E (Supabase-migration)** per P1 Del 4 B1-beslutet.
+> Realtime fungerar inte så länge Airtable är primär DB utan Edge Function-triggers (inte specat).
+> Mönstret nedan dokumenteras för Fas E-aktivering, men Fas 6:s Hem-aggregering (6d) använder
+> polling-strategin i §5b istället.
 
 Nar Roger registrerar en anmalning medan Lotta har appen oppen ska
 hon se det utan att ladda om.
@@ -219,6 +238,36 @@ Anropa i `_authenticated.tsx` -- aktiv pa alla autentiserade sidor.
 |--------|--------|--------|
 | registrations | INSERT, UPDATE, DELETE | Nya anmalningar, statusandringar |
 | events | UPDATE | Andringar i event-detaljer |
+
+---
+
+## 5b. Hybrid polling (Fas 6d Hem-aggregering)
+
+Tills Realtime aktiveras (Fas E) använder Hem-vyn polling + pull-to-refresh:
+
+```typescript
+// src/routes/_authenticated/hem/index.tsx
+export const Route = createFileRoute('/_authenticated/hem/')({
+  loader: ({ context }) =>
+    context.queryClient.ensureQueryData(dashboardQueryOptions()),
+  component: HemPage,
+});
+
+// Per-query refetchInterval (60s) på Hem-relevanta queries
+function useDashboardQuery() {
+  return useQuery({
+    ...dashboardQueryOptions(),
+    refetchInterval: 60_000,           // 60s polling
+    refetchIntervalInBackground: false, // pausar när tabben inte är aktiv
+  });
+}
+```
+
+**Pull-to-refresh-kontroll:** En `<RefreshButton>` i Hem-headern triggar `queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })`. Detta är den enda manuella refresh-affordancen — inga andra vyer behöver den (TanStack Querys `refetchOnWindowFocus` täcker övriga fall).
+
+**Varför 60s, inte 30s eller 5min:** P1 Del 4 B1: 60s är balanspunkt mellan upplevd "live-känsla" (Roger anmäler ny → Lotta ser det inom 1 minut) och kostnadseffektivitet (4 Edge Function-anrop/min × Lottas aktiva minuter ≈ försumbart i Supabase-quoten). Detta är ett **medvetet val**, inte default — ADR i P3 (P1 Del 7 ADR-katalog #7).
+
+**Övergångsväg post-Fas E:** §5-mönstret ovan ersätter §5b. `refetchInterval: 60_000` tas bort. `useRealtimeSync()` aktiveras i `_authenticated.tsx`. Migration kan ske domän-för-domän — registrations först (mest värde), events sist (lägst frekvens av ändringar).
 
 ---
 
@@ -295,7 +344,72 @@ ar detta tillrackligt -- ordningen spelar ingen roll.
 
 ---
 
-## 8. Anti-monster
+## 8. Operations-baserat write-API (Fas A M4)
+
+> **Källa:** Implementerat i Fas A M4 (`supabase/functions/_shared/field-allowlists.ts` + `update-record/index.ts`).
+> Detaljerad spec: `SECURITY-SPEC.md §6.1` + `tasks/sessions/2026-05-04-security-hardening.md`.
+> Denna sektion är klient-sidans referens — den ska refereras från Fas 6 sub-fas-prompter (6a–6e).
+
+### 8.1 Mönster
+
+Klient skickar `{operationKey, recordId, fields}` till Edge Function `update-record`:
+
+```typescript
+// src/data/adapters/AirtableAdapter.ts (förenklat)
+async executeOperation(args: {
+  operationKey: string;        // domännamn, t.ex. 'registration.set-status'
+  recordId: string;            // Airtable record-ID, t.ex. 'recXYZ123'
+  fields: Record<string, unknown>;  // fältvärden — INTE råa table-IDs
+}): Promise<UpdateResult> {
+  return postEdgeFunction<UpdateResult>('update-record', args);
+}
+```
+
+Edge Function:
+1. Verifierar caller via `requireUser(req, corsHeaders)` (`SECURITY-SPEC §6.3`)
+2. Slår upp `operationKey` i `field-allowlists.ts` → `{tableId, allowedFields[]}`
+3. Avvisar 400 om okänd operation eller fält utanför allowlist (deny-by-default)
+4. Skickar PATCH till Airtable med strikt validerade fält
+5. Loggar med `{requestId, callerUserId, operationKey}` (`SECURITY-SPEC §6.7`)
+
+### 8.2 Per-vy operations-registrering
+
+Varje Fas 6 sub-fas registrerar sina operations innan vyn levereras:
+
+| Sub-fas | Domän | Förväntade operations |
+|---|---|---|
+| 6a | Persons | `person.update-note`, `person.update-flag` |
+| 6b | Events | (ingen write — info-vy + närvaro-flik som läs-only) |
+| 6c | Registrations + Väntelista | `registration.set-status`, `registration.mark-paid`, `registration.create` (idempotency-ADR), `waitlist.convert-to-registration` |
+| 6d | Hem-aggregering | (ingen ny write — aggregerar 6a/6b/6c-data) |
+| 6e | Mer (villkorlig) | `email.send` (direct-Resend-skuld-ADR), `lead.flag` om Leads behålls |
+
+Per-sub-fas-DoD: tillhörande operation registrerad i `field-allowlists.ts`, deny-test grönt (400 vid okänd op), allow-test grönt (200 vid valid op).
+
+### 8.3 K9-respekt: domännamn vs table-IDs
+
+`'registration.set-status'` är ett *domännamn*. `'tbloOcrppVoyrHbrq'` är ett *table-ID*. Klient-API:t exponerar enbart domännamn. Table-ID-mappningen lever i `field-allowlists.ts` på server-sidan. Detta:
+
+- Gör klient-koden migreringsbar mot Supabase utan API-ändring (operations-namn behålls, mappning byts från Airtable till Postgres-tabell)
+- Skyddar mot felmappning vid future S-track (target-tabeller har UUID-IDs, inte Airtable-format)
+- Gör operations-registret till en explicit kontraktsyta, inte en sidoartefakt
+
+### 8.4 Optimistic mutation-mönster (refererad från §4)
+
+`useMutation`-mönstret i §4 wrappar `executeOperation` med onMutate (snapshot + optimistisk uppdatering), onError (rollback), onSettled (invalidate). Mönstret är samma — bara mutationFn-anropet ändras (operations-baserat istället för direct-method).
+
+**ADR-krav i P3:** "TanStack optimistic mutation-mönster med operations-baserat API" (P1 Del 7 ADR #6). Skrivs i Fas 5.5.
+
+### 8.5 Korsreferenser
+
+- `SECURITY-SPEC.md §6.1` — server-sidans definition (operations-registret, deny-by-default)
+- `byggplan-direktiv.md §8.5.4` — Fas A:s arkitekturmönster-översikt
+- `tasks/sessions/2026-05-04-security-hardening.md` — Fas A:s implementations-detaljer
+- `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 4 A3 + Del 7 ADR-katalog
+
+---
+
+## 9. Anti-monster
 
 | Anti-monster | Varfor fel | Ratt losning |
 |--------------|-----------|--------------|
