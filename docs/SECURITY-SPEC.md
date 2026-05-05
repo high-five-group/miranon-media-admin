@@ -375,15 +375,15 @@ Innan `npm install <nytt-paket>`:
 
 | # | OWASP-kategori | Risknivå | Status | Åtgärd |
 |---|----------------|----------|--------|--------|
-| A01 | Broken Access Control | **Hög** | Delvis | Supabase RLS policies på alla tabeller. Session-token (inte anon key) i Edge Function-anrop. Verifiera att Edge Functions kontrollerar `supabase.auth.getUser(token)` |
+| A01 | Broken Access Control | **Hög** | **Implementerat (M1+M2)** | `requireUser(req, corsHeaders)` i `supabase/functions/_shared/auth.ts` extraherar JWT, verifierar mot Supabase Auth, returnerar `AuthContext \| Response`. Wired i alla 4 datafunktioner + `create-admin-user`. 20 deny-path-tester per funktion. Se §6. |
 | A02 | Cryptographic Failures | Låg | OK | Supabase hanterar JWT-signering. HTTPS via Vercel. Inga hemligheter i klientkod |
 | A03 | Injection | **Medel** | Delvis | Supabase Edge Functions MÅSTE använda parameteriserade frågor. Validera alla inputs med Zod. `DOMPurify` för HTML-rendering |
 | A04 | Insecure Design | Låg | OK | Scenariodriven utveckling, DataSourceAdapter-pattern, auth guard på alla routes |
-| A05 | Security Misconfiguration | **Medel** | Saknas | CSP, säkerhetsheaders, CORS på Edge Functions, env-validering. Se paragraf 1 och 3 |
+| A05 | Security Misconfiguration | **Medel** | **Delvis (M3 klar, CSP defer:ad)** | CORS implementerat via `corsHeadersFor(req)` per-request, env-driven allowlist (M3). CSP Vite-plugin medvetet defer:ad till Fas 7 (ADR i P3). Env-validering klar via `@t3-oss/env-core` (Fas 0). Se §6. |
 | A06 | Vulnerable Components | **Medel** | Delvis | npm audit, men inga automatiserade kontroller i CI. Se paragraf 4 |
-| A07 | Auth Failures | **Hög** | Delvis | Supabase PKCE för OAuth. Se paragraf 7. Session-timeout, token refresh |
+| A07 | Auth Failures | **Hög** | Delvis | Supabase PKCE för OAuth. Se paragraf 8. Session-timeout, token refresh |
 | A08 | Data Integrity Failures | Låg | Delvis | npm provenance ej konfigurerat. Se paragraf 4.4 |
-| A09 | Logging & Monitoring | **Medel** | Saknas | Ingen strukturerad loggning. Ingen Sentry. Se gap-analysis.md del 2 |
+| A09 | Logging & Monitoring | **Medel** | **Implementerat (M7)** | Structured JSON-loggning i alla Edge Functions med `{level, requestId, errorName, stack, function, method, callerUserId}`. `isOperationalError`-klassning skyddar Sentry-quota mot 4xx-spam. Sentry-init i `src/observability/sentry.ts` + `initSentry()` i `main.tsx`. Se §6. |
 | A10 | SSRF | Låg | OK | Inte relevant — SPA har inga server-side requests. Edge Functions: validera URL-inputs |
 
 ### Detaljerade åtgärder för hög-risk
@@ -462,7 +462,83 @@ Bara appens egen domän tillåts.
 
 ---
 
-## 6. React 19-specifik granskning
+## 6. Fas A — etablerade arkitekturmönster (2026-05-04)
+
+Fas A levererade 8 milstolpar (M1–M8) som stänger hela exponeringen från Code-verifieringen 2026-04-29. Mönstren nedan ska refereras i fas-prompterna i Fas 5.5+ och alla framtida Edge Function-utvecklingar.
+
+Detaljer: `tasks/sessions/2026-05-04-security-hardening.md` (frusen efter slutsummering).
+
+### 6.1 Operations-baserat write-API
+
+Klient skickar `{operationKey, recordId, fields}` istället för `{tableId, ...}`. Operations-registret (`supabase/functions/_shared/field-allowlists.ts`) är den enda sanningskällan för "vad får skrivas av vem."
+
+- Deny-by-default vid okänd `operationKey` eller fält utanför `allowedFields[]`.
+- K9-respekt: domännamn (`'registration.set-status'`) i klient-API, table-IDs i Edge Function-implementationen.
+- Strukturerad för K7-utökning till `{tenant_id, operation_scope}` post-S-track utan API-ändring.
+
+Korsreferens: `STATE-STRATEGY.md §8` för klient-sidans optimistic-mutation-mönster.
+
+### 6.2 `corsHeadersFor(req)` per request
+
+CORS-headers genereras per-request baserat på Origin matchat mot env-allowlist (`CORS_ALLOWED_ORIGINS`). Inte en global konstant.
+
+- Browser-CORS (preflight 403 på otillåten origin) särskiljs från server-till-server (no Origin → tillåts genom).
+- Skalar till tenant-baserade allowlists post-S-track utan refaktorering.
+
+### 6.3 `AuthContext | Response` discriminated union
+
+Auth-helpers returnerar antingen success-payload eller färdig 401-Response. Caller-mönster:
+
+```ts
+const auth = await requireUser(req, corsHeaders);
+if (auth instanceof Response) return auth;
+const { user } = auth;
+```
+
+Generaliserbart för alla validation-helpers — inte bara auth.
+
+### 6.4 Deny-by-default genomgående
+
+Tom config (operations-allowlist, `ADMIN_EMAILS`, `CORS_ALLOWED_ORIGINS`) → allt nekas. Aldrig "allow om vi inte vet." Säkrast vid konfigurations-glitches.
+
+### 6.5 Generic external errors + `requestId`
+
+Klient ser `{error: 'Internal error', requestId}` för 5xx. Server-loggen har full stack. `requestId` (UUID v4) länkar klient-fel till server-stack. Operationella 4xx (401/403/400) behåller specifika error-meddelanden för debugging.
+
+### 6.6 `isOperationalError`-klassning
+
+4xx-HttpError loggas på info-nivå (ingen Sentry-event), 5xx på error-nivå (Sentry-event skapas). Skyddar Sentry-quota mot triviala 4xx-spam.
+
+### 6.7 Structured JSON-loggning
+
+`console.error(JSON.stringify({level, requestId, errorName, errorMessage, stack, function, method, callerUserId}))`. Sökbart i Supabase Logs på `requestId`. Inte fri text.
+
+### 6.8 INVARIANT round-trip-mönster för säkerhetshelpers
+
+För säkerhetskritiska transformationer (eskapering, parsing, klassning) ska det finnas ett atomärt round-trip-test som bevisar att `transform → inverse` återger exakt input. Skyddar mot hela klasser av attacker, inte bara de vi tänkt på.
+
+Tillämpat i:
+- `escapeFormulaValue` (M5) — escape → unescape returnerar exakt input för alla edge-cases (`"`, `'`, `\`, `(`, `)`, `,`, nyrad, kontrolltecken).
+- `classify401Body` (M2) — atomär status + body-verifiering i tester. Future-bug-skydd: 200 med felmeddelande kastar.
+
+### 6.9 Fas A-milstolpsöversikt
+
+| Milstolpe | Stänger | Mönster införs |
+|---|---|---|
+| M1 | Auth-grund | §6.3 (`AuthContext \| Response`) |
+| M2 | Ingen `requireUser`-gate i datafunktioner | §6.3 + §6.8 (`classify401Body` round-trip) |
+| M3 | Wildcard CORS | §6.2 (`corsHeadersFor(req)`) |
+| M4 | `update-record` saknar fält/operations-allowlist | §6.1 + §6.4 |
+| M5 | Formula-injektion | §6.4 + §6.8 (`escapeFormulaValue` round-trip) |
+| M6 | `create-admin-user` saknar caller-verifiering | §6.4 + ADMIN_EMAILS-allowlist |
+| M7 | Råa felmeddelanden + Sentry oinitierad | §6.5 + §6.6 + §6.7 |
+| M8 | `config.toml` saknades | Per-funktion `verify_jwt`-kontroll |
+
+Hela exponeringen från Code-verifieringen 2026-04-29 stängd. 113 tester (110 + 3 skipped för Fas 5.5-aktivering). Bundle 244 → 324 kB (+80 kB Sentry SDK).
+
+---
+
+## 7. React 19-specifik granskning
 
 ### React2Shell (CVE-2025-55182)
 
@@ -517,7 +593,7 @@ function SafeHTML({ html }: { html: string }) {
 
 ---
 
-## 7. Auth-strategi
+## 8. Auth-strategi
 
 ### Supabase Auth — sessionflöde
 
@@ -729,7 +805,7 @@ const options = await generateRegistrationOptions({
 
 ---
 
-## 8. Bilaga: Säkerhetschecklista
+## 9. Bilaga: Säkerhetschecklista
 
 Använd denna checklista i Fas 7 för att verifiera all säkerhetsinfrastruktur.
 
@@ -812,6 +888,6 @@ Använd denna checklista i Fas 7 för att verifiera all säkerhetsinfrastruktur.
 
 ---
 
-*Dokument: SECURITY-SPEC.md*
-*Underlag: gap-analysis.md paragraf 3 (Säkerhet: noll), gap-analysis.md paragraf 5 (OWASP)*
-*Nästa review: efter Fas 7 är klar*
+*Senast uppdaterad: 2026-05-04 (P2 — Fas A-införlivande)*
+*Underlag: gap-analysis.md paragraf 3 + 5, byggplan-direktiv.md §8.5.4–§8.5.5, tasks/sessions/2026-05-04-security-hardening.md*
+*Nästa review: efter Fas 5.5 (operations-baserade write-flow etablerade i UI)*
