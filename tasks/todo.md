@@ -1,20 +1,21 @@
 # todo.md — Miranon Media Admin (React)
-*Senast uppdaterad: 2026-04-14 (Session 1 (React) — Fas 0 + Fas 1 klara, dokumentationsrutiner etablerade)*
+*Senast uppdaterad: 2026-05-05 (Session 2 (React) — Fas A + P0–P3a klara, P3b städning pågår)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
 > Implementation-journal i `docs/BUILD-LOG.md`.
-> Styrande dokument: [`docs/conversion-plan.md`](../docs/conversion-plan.md)
+> Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
 ---
 
 ## Aktuellt fokus
 
-**Fas 2: Routing + Auth** — TanStack Router file-based routes, auth guard, Supabase login/logout. Se [`docs/conversion-plan.md`](../docs/conversion-plan.md) §D Fas 2 och [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) för kontext från Fas 0 + Fas 1.
+**Fas 2: Routing + Auth** — TanStack Router file-based routes, auth guard, Supabase login/logout. Se [`docs/byggplan.md`](../docs/byggplan.md) §4 Fas 2-prompten och [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 2 för kontext från Fas A + Fas 0/1.
 
 **Session-historik:**
 - **Session 1 (React): 2026-04-14** — Fas 0 + Fas 1 klara. BUILD-LOG + 10 ADR:er skapade. Dokumentationsrutiner (BUILD-LOG + ADR) integrerade i CLAUDE.md sessionsstart/avslut. Commits: `fcc6de3`, `e3d8e8a`, `c91bfa0`, `680858c`.
-- *Session 1 (React) motsvarar Session 31 i total projekthistorik. Vue-bygget var session 1–30 i `~/Repon/miranon-media-os/`.*
+- **Session 2 (React): 2026-04-30 → 2026-05-05** — Fas A (säkerhetshardening, M1–M8, 14 commits, 113 tester) + P0–P3a byggplan-revision (`docs/byggplan.md` 832 rader, 13 fas-prompter, 10 nya ADR:er ADR-011..ADR-020, 7 UNIVERSAL-lessons). P3b städning pågår. Se [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 2 för full retrospektiv.
+- *Session 1 (React) motsvarar Session 31 i total projekthistorik. Vue-bygget var session 1–30 i `~/Repon/miranon-media-os/`. Session 2 = Session 32–34.*
 
 ---
 
@@ -118,7 +119,7 @@
 **Mål:** TanStack Router file-based routes, auth guard, Supabase login/logout fungerande.
 **Beroenden:** Fas 0 + Fas 1 klara.
 **Uppskattad tid:** 1 session.
-**Styrande dokument:** [`docs/conversion-plan.md`](../docs/conversion-plan.md) §D Fas 2 + §I Fas 2-prompten.
+**Styrande dokument:** [`docs/byggplan.md`](../docs/byggplan.md) §4 Fas 2-prompten.
 
 ### Förberedelse innan Fas 2
 
@@ -164,7 +165,7 @@
 
 ---
 
-## Kommande faser (från conversion-plan §D)
+## Kommande faser (från `docs/byggplan.md` §4)
 
 - **Fas 3: UI-primitiver** — React Aria + CVA + [GA] ARIA 1.3
 - **Fas 5: App-shell + Tab bar** — minimal, FK-inspirerad + [GA] error boundaries, service worker, View Transitions
@@ -175,11 +176,9 @@
 
 ---
 
-## Byggplan-revision (P0 → P3)
+## Byggplan-revision (P0 → P3b)
 
-Meta-arbete parallellt med byggfaserna. Reviderar conversion-plan
-till byggplan baserat på Fas A-fynd, datamodell-research och
-Codex/Code-verifiering.
+Meta-arbete parallellt med byggfaserna. Reviderade conversion-plan till byggplan baserat på Fas A-fynd, datamodell-research och Codex/Code-verifiering. Slutprodukt: `docs/byggplan.md` (P3a). P3b avslutar med städning + arkivering.
 
 - [x] **P0 — Inventering** ✅ AVSLUTAD 2026-05-04
       Leverans: `docs/byggplan-revision-inventory.md`
@@ -189,9 +188,12 @@ Codex/Code-verifiering.
 - [x] **P2 — Stödspec-synkning** ✅ AVSLUTAD 2026-05-04
       Leverans: `tasks/sessions/2026-05-04-stodspec-synk-p2.md`
       A1-utfall: Fas 3.5 = egen fas (test-infra + mönsterbibliotek bägge JA)
-- [ ] **P3 — Skriv byggplanen + städning** ← NÄSTA
-      Startkontext: `tasks/sessions/2026-05-04-stodspec-synk-p2.md` Del 8
-      Direktiv: `tasks/byggplan-direktiv.md` §6 P3
+- [x] **P3a — Skriv byggplan + ADR-katalog** ✅ AVSLUTAD 2026-05-05
+      Leverans: `docs/byggplan.md` (832 rader, 13 fas-prompter), 10 ADR:er (ADR-011..ADR-020), `tasks/sessions/2026-05-05-byggplan-skriv-p3a.md`
+- [ ] **P3b — Städning + arkivering + BUILD-LOG retrospektiv** ← NU
+      Pågår i nuvarande session: K1 (skelett) + K2 (arkivering + BUILD-LOG) + K3 (CLAUDE.md + todo.md) klara. K4 (verifiering + UNIVERSAL-lyft + SLUTFÖRT) återstår.
+      Trail: `tasks/sessions/2026-05-05-byggplan-stadning-p3b.md`
+      Direktiv: `tasks/byggplan-direktiv.md` §6 P3 städnings-DoD + §12 slutnot
 
 ---
 
@@ -206,3 +208,6 @@ Codex/Code-verifiering.
 - **Schema-validering i adapter-metoder:** Fas 2 ska wrappa `callEdgeFunction`-resultat med `.parse()`
 - **`lucide-react@1.8.0` versionsanomalier:** Undersök innan Fas 3 (UI-primitiver) när ikoner börjar användas
 - **docs/DESIGN-SYSTEM-SPEC.md stale-risk:** Governance-beslut uppskjutet efter alla faser
+- **DEFER → Fas 3:** 4 CSS-warnings i `src/styles/base.css:72-75` (`!important` i `prefers-reduced-motion`). Fas 3 omarbetar `base.css` när primitiver landas — städning sker som biprodukt. Trigger: första Fas 3-session. Källa: P3b sessionsdok Del 3.4 H.1.
+- **DEFER → passiv (bevakas):** PostCSS audit-fix. `npm audit` rapporterar PostCSS-relaterade transitive dependencies, inga high/critical. PostCSS uppdateras naturligt via Tailwind v4-uppgradering eller dependabot. Trigger: om `npm audit --audit-level=high` blir röd, ELLER vid Tailwind v5-migration. Källa: P3b sessionsdok Del 3.4 H.2.
+- **DEFER → Fas 7:** `supabase/functions/test-auth/` borttagning från produktion. Lever idag med `verify_jwt = false` i `config.toml` — Playwright-helper för deny-paths-tester. Fas 7 (Konsolidering: CSP, chaos testing, deploy) ska exkludera `test-*`-funktioner från produktions-deploy via CI-pipeline. Källa: P3b sessionsdok Del 3.4 H.4.
