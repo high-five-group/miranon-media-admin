@@ -42,11 +42,11 @@ Första session där React-repot faktiskt får kod. Innan denna session fanns ba
 **Commit-range:** `1aa2544` → `fcc6de3` → `e3d8e8a`
 **Primär commit:** `fcc6de3 fas 0: projektsetup + tokens`
 **Lärdoms-commit:** `e3d8e8a lessons: två UNIVERSAL-lärdomar från Fas 0`
-**Mål:** Fungerande React-projekt med alla verktyg installerade, tokens konfigurerade, lint som passerar. Se [`conversion-plan.md`](conversion-plan.md) §D Fas 0.
+**Mål:** Fungerande React-projekt med alla verktyg installerade, tokens konfigurerade, lint som passerar. Se [`conversion-plan.md`](archive/conversion-plan-2026-04-14.md) §D Fas 0.
 
 #### Planerat vs faktiskt
 
-**Planerat:** 19 filer enligt [`conversion-plan.md`](conversion-plan.md) §D Fas 0 + `tasks/todo.md` Fas 0-checklista (inklusive [GA]-tillägg).
+**Planerat:** 19 filer enligt [`conversion-plan.md`](archive/conversion-plan-2026-04-14.md) §D Fas 0 + `tasks/todo.md` Fas 0-checklista (inklusive [GA]-tillägg).
 
 **Faktiskt skapat (22 filer, 6 502 insertions enligt `git show --stat fcc6de3`):**
 
@@ -187,7 +187,7 @@ Godkänt av Marcus efter manuell granskning av verifieringsresultat och avvikels
 
 **Commit-range:** `e3d8e8a` → `c91bfa0`
 **Primär commit:** `c91bfa0 fas 1: domäntransplant`
-**Mål:** Alla domain- och data-filer kopierade från Vue-repot, Zod-scheman tillagda, supabase-client konsoliderad via `@/env`, `fetchWithRetry` på infrastrukturnivå. Se [`conversion-plan.md`](conversion-plan.md) §D Fas 1 + §C/C2 (transplant-inventering).
+**Mål:** Alla domain- och data-filer kopierade från Vue-repot, Zod-scheman tillagda, supabase-client konsoliderad via `@/env`, `fetchWithRetry` på infrastrukturnivå. Se [`conversion-plan.md`](archive/conversion-plan-2026-04-14.md) §D Fas 1 + §C/C2 (transplant-inventering).
 
 #### Planerat vs faktiskt
 

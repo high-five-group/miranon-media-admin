@@ -13,7 +13,7 @@
 
 ### Syfte
 
-Detta dokument är leveransen för P0-steget i byggplan-revisionen. Dess uppgift är att fånga vilka påståenden i `docs/conversion-plan.md` som motsägs av nyare dokument — så att P1 kan fatta beslut om fas-sekvensen, P2 kan synka stödspecsen, och P3 kan skriva en byggplan utan kvarvarande drift mellan dokument och verklighet.
+Detta dokument är leveransen för P0-steget i byggplan-revisionen. Dess uppgift är att fånga vilka påståenden i `docs/archive/conversion-plan-2026-04-14.md` som motsägs av nyare dokument — så att P1 kan fatta beslut om fas-sekvensen, P2 kan synka stödspecsen, och P3 kan skriva en byggplan utan kvarvarande drift mellan dokument och verklighet.
 
 Varje rad i klassningstabellen är ett *beslutsbärande* påstående — ett som styr scope, sekvens, beroenden, verifiering, eller filer som skapas. Tabellen är medvetet kompakt; all tonvikt ligger på rader som flyttar nålen i P1.
 

@@ -43,11 +43,12 @@ En ADR är **oföränderlig** efter att den accepterats. Om ett beslut senare ä
 | [ADR-018](ADR-018-fas-5-forenkling.md) | Fas 5 selektivt förenklad — 4 [GA] till Fas 7 | Accepted | 5 |
 | [ADR-019](ADR-019-background-sync-defer.md) | Background Sync defer från Fas 7 till Fas 8 | Accepted | 8 |
 | [ADR-020](ADR-020-fas-3-5-egen-fas.md) | Fas 3.5 = egen fas (a11y-baseline) | Accepted | 3.5 |
+| [ADR-021](ADR-021-docs-omstrukturering.md) | docs/-omstrukturering till specs/analysis/reference/logs/ | Accepted | Pre-Fas-2 |
 | [ADR-024](ADR-024-publika-professionalitetssignaler.md) | Publika professionalitetssignaler — LICENSE, package.json, .github/, top-level docs | Accepted | Pre-Fas-2 |
 
 ## Relaterade dokument
 
 - [BUILD-LOG.md](../BUILD-LOG.md) — kronologisk implementation journal som refererar dessa ADR:er
-- [conversion-plan.md](../conversion-plan.md) — fas-för-fas-planen
-- [gap-analysis.md](../gap-analysis.md) — gap-analys mellan conversion-plan och research
+- [conversion-plan.md](../archive/conversion-plan-2026-04-14.md) — fas-för-fas-planen
+- [gap-analysis.md](../logs/gap-analysis.md) — gap-analys mellan conversion-plan och research
 - [../tasks/lessons.md](../../tasks/lessons.md) — universella lärdomar som uppstått under implementation

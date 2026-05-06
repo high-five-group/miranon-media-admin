@@ -1310,7 +1310,7 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 
 5. **Instagram Posts-tabellens syfte.** Samma som ovan. Kan vara tom.
 
-6. **Miranon Media Admin — utbytbar datakälla.** React-projektet har `DataSourceAdapter`-mönstret förberett för Airtable → Supabase-migration. Exakt migrationsplan och trigger bor i `miranon-media-admin/docs/conversion-plan.md`.
+6. **Miranon Media Admin — utbytbar datakälla.** React-projektet har `DataSourceAdapter`-mönstret förberett för Airtable → Supabase-migration. Exakt migrationsplan och trigger bor i `miranon-media-admin/docs/byggplan.md`.
 
 7. **Datamodell-research för världsklass.** Separat uppdrag som ska köras i miranon-media-admin: identifiera principer för toppklass-datamodeller → gapanalys mot nuvarande modell → migrationsplan. Se `miranon-media-admin/tasks/todo.md`.
 
