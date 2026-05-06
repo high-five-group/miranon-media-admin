@@ -1,5 +1,9 @@
 # Konverteringsplan — Miranon Media Admin (Vue 3 → React)
 
+> **Status:** ARKIVERAD 2026-05-05 — ersatt av [`docs/byggplan.md`](../byggplan.md) per [ADR-012](../decisions/ADR-012-conversion-plan-ersatt-av-byggplan.md).
+> **Skapelsedatum:** 2026-04-14 (Session 1 (React), Fas 0 + Fas 1).
+> **Bevarad provenance:** Detta dokument är historiskt referensmaterial. För aktuell fas-för-fas-plan, se [`docs/byggplan.md`](../byggplan.md). BUILD-LOG-poster för Fas 0 + Fas 1 refererar fortfarande denna fil — sökvägar är uppdaterade till `archive/`-prefixet i Session 2-injiceringen (commit 2).
+
 *Baserad på: react-stack-research.md, vue-project-analysis.md, DESIGN-MANIFESTO.md, DESIGN-OPERATING-SYSTEM.md, DESIGN-SYSTEM-SPEC.md*
 *Skapad: 2026-04-05*
 
