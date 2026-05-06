@@ -2,7 +2,7 @@
 
 Kronologisk implementation journal per session. Varje session dokumenterar vad som faktiskt hände — planerat vs. faktiskt, avvikelser, verifieringsresultat, och teknisk skuld som skjuts upp.
 
-Detta är **inte** en kravspec (den finns i `conversion-plan.md`) och **inte** en arkitekturbeskrivning (den finns i `DESIGN-SYSTEM-SPEC.md` + `decisions/`). Det är en förstekammare för framtida läsare som frågar *"varför gjordes det så här, på den tiden?"*.
+Detta är **inte** en kravspec (den finns i `byggplan.md`) och **inte** en arkitekturbeskrivning (den finns i `DESIGN-SYSTEM-SPEC.md` + `decisions/`). Det är en förstekammare för framtida läsare som frågar *"varför gjordes det så här, på den tiden?"*.
 
 ## Miljö
 
@@ -370,6 +370,155 @@ Godkänt av Marcus efter manuell granskning av verifieringsresultat och avvikels
 
 ---
 
+## Session 2 (React) — Fas A: Säkerhetshardening + P0–P3a (byggplan-revision)
+
+**Datum:** 2026-04-30 till 2026-05-05
+**Session-nummer:** 2 (React) — motsvarar Session 32–34 i total projekthistorik (3 arbetsdagar effektiv tid spridda över 7 kalenderdagar).
+**Commit-range:** `9490d8e` → `b2ab337` (Fas A: 18 commits — 14 M-mappade + 4 omgivande doc; P0–P3a: ~17 commits — kärna + städning + direktiv-status)
+**Effort-nivå:** max
+
+Sammansatt session som omfattar Fas A (säkerhetshardening, M1–M8) och hela byggplan-revisionen (P0 → P1 → P2 → P3a). Fas A låste arkitekturmönster post-Vue (operations-baserat API, AuthContext|Response, INVARIANT, structured logging, klient-DSN, test-prefix-konvention). Byggplan-revisionen ersatte conversion-plan med [`byggplan.md`](byggplan.md) — 13 fas-prompter + 10 nya ADR:er (ADR-011..ADR-020). P3b avslutar genom att städa repo-hygien.
+
+### Fas A: Säkerhetshardening (M1–M8)
+
+**Commit-range:** `9490d8e` (arbetsdokument + Gate A1) → `eee29c1` (övergång till P0). 14 implementations-commits + 4 omgivande dokumentations-commits.
+**Mål:** Stänga 8 säkerhetsluckor identifierade i Code-verifieringen 2026-04-29 (auth, CORS, write-API, payload-eskapering, observability, config).
+**Auktoritativ trail:** [`tasks/sessions/2026-05-04-security-hardening.md`](../tasks/sessions/2026-05-04-security-hardening.md) — full DoD per M, Gate A1-A4-svar, 8 arkitekturmönster.
+
+#### Planerat vs faktiskt
+
+**Planerat:** 8 milstolpar i körordningen M1 → M2 → M8 → M6 → M3 → M4 → M5 → M7 (per direktiv §8.5.4 + Gate A1).
+**Faktiskt:** 8 milstolpar levererade i exakt planerad ordning. 14 commits (snitt 1.75 commits/M). Tre milstolpar krävde hot-fixes (M2 ×2, M4 discovery, M8 ×1) — inom toleransramen för "max"-effort.
+
+#### Milstolpar — commit-tabell + 1-rads sammanfattning
+
+| # | Commit | M | Subject | Sammanfattning |
+|---|---|---|---|---|
+| 1 | `6d84bb8` | M1 | feat(security): M1 — requireUser-helper för Edge Functions | Helper i `_shared/auth.ts` returnerar `{user}` eller 401. Mönster: AuthContext\|Response. |
+| 2 | `26e38bc` | M2 | feat(security): M2 — wire requireUser i datafunktioner + Playwright deny-paths | requireUser anropas först efter handleCors i 4 datafunktioner. |
+| 3 | `249193b` | M2 | docs(security): M2 — TODO Fas 7-not för test*-exkludering + lessons | Test-prefix-konvention dokumenterad. |
+| 4 | `382c6b5` | M2 | fix(security): rename _test_auth → test-auth (Supabase CLI namn-constraint) | Hot-fix. Underscore-prefix förkastas av Supabase CLI. |
+| 5 | `605502f` | M2 | fix(security): M2 staging-verifiering — assertions hanterar gateway+helper | Hot-fix. Tester skiljer Supabase Gateway-401 från requireUser-401. |
+| 6 | `09f780b` | M8 | feat(security): M8 — supabase/config.toml med verify_jwt per funktion | Per-funktion JWT-verifiering, config committad. |
+| 7 | `620c407` | M8 | docs(lessons): nya UNIVERSAL — Supabase två-stegs auth-check | Lessons-fångst. |
+| 8 | `86e7953` | M8 | fix(security): classify401Body atomär — status + body i ett anrop | Hot-fix. Race condition stängd: ATOMÄR-LÄSNING-mönstret. |
+| 9 | `e76179e` | M6 | feat(security): M6 — caller-verifiering i create-admin-user | admin-only via JWT-claim-kontroll. |
+| 10 | `1259d53` | M3 | feat(security): M3 — CORS origin-allowlist (env-driven) | Wildcard CORS borttaget; allowlist via env-var. |
+| 11 | `10dcc51` | M4 | docs(security): M4 discovery — Vue saknar write-UI, hypotes oförankrad | Discovery-rapport före implementation: operations-allowlist måste bli infrastruktur. |
+| 12 | `8773de0` | M4 | feat(security): M4 — operations-allowlist (infrastruktur, tom lista) | `_shared/field-allowlists.ts` — operations registreras stegvis i Fas 5.5/6 per ADR-016. |
+| 13 | `0cf27b8` | M5 | feat(security): M5 — formula-injection-eskapering + INVARIANT-test | `_shared/airtable-filter.ts` — INVARIANT round-trip-tester. |
+| 14 | `924af41` | M7 | feat(security): M7 — generisk felmodell + Sentry-init | `_shared/errors.ts` + `src/observability/sentry.ts`. requestId + structured JSON-loggning. |
+
+**Omgivande dokumentations-commits (icke-M-mappade):**
+
+| Commit | Subject | Roll |
+|---|---|---|
+| `9490d8e` | docs(security): Fas A arbetsdokument + Gate A1 godkänt | Pre-M1 — arbetsdokumentet etablerat |
+| `f097dd6` | direktiv §8.5 Fas A-fynd | Mid-Fas A — direktiv-uppdatering |
+| `126abf0` | Fas A slutsummering | Post-M7 — sessionsdok låst |
+| `eee29c1` | direktiv: Fas A slutförd + städnings-DoD i P3 | Övergång — markerar Fas A SLUTFÖRD i direktiv §11 |
+
+#### Avvikelser
+
+Tre M:er krävde mer än en commit. Detaljerade orsaker + lärdomar finns i [`security-hardening.md`](../tasks/sessions/2026-05-04-security-hardening.md) §B (per-M DoD-block):
+
+- **M2 (4 commits):** Hot-fix `382c6b5` — Supabase CLI accepterar inte underscore-prefix på funktionsnamn → test-prefix-konvention `test-*` införs. Hot-fix `605502f` — staging-tester misstog Supabase Gateway-401 för requireUser-401 → assertions skiljer på källan.
+- **M4 (2 commits):** Discovery-rapport `10dcc51` bekräftade att operations-allowlist måste byggas som infrastruktur (tom lista) eftersom Vue inte har write-UI som källa. ADR-016 bygger på detta.
+- **M8 (3 commits):** Hot-fix `86e7953` — `classify401Body` läste status och body i två separata anrop, race condition stängd med ATOMÄR-LÄSNING-mönstret.
+
+#### Arkitekturmönster + tester
+
+Fas A etablerade 8 arkitekturmönster (operations-API, AuthContext, INVARIANT, klient-DSN, structured logging, requestId, isOperationalError, test-prefix). Mönstren införlivades i [`SECURITY-SPEC.md`](SECURITY-SPEC.md) §6 + [`STATE-STRATEGY.md`](STATE-STRATEGY.md) §8 i P2 (commits `176984d` + `c2ecffd`) och bär byggplanens §3.
+
+113 tester (Playwright deny-paths per funktion + INVARIANT round-trip + auth-suite). Förväntat antal per direktiv §6 P3-DoD: 113. Verifieras grön i P3b K4 via `npm run test:api`.
+
+#### Filstruktur-snapshot (verifierad mot HEAD 2026-05-05)
+
+```
+supabase/
+├── config.toml                       [NY — M8: verify_jwt per funktion]
+└── functions/
+    ├── _shared/
+    │   ├── airtable-client.ts        [PRE-FAS A — etablerad 2026-04-13]
+    │   ├── airtable-filter.ts        [NY — M5: formula-injection-eskapering + INVARIANT-test]
+    │   ├── auth.ts                   [NY — M1: requireUser-helper]
+    │   ├── cors.ts                   [MODIFIERAD — M3: origin-allowlist]
+    │   ├── errors.ts                 [NY — M7: generisk felmodell]
+    │   └── field-allowlists.ts       [NY — M4: operations- + fält-allowlist (infrastruktur)]
+    ├── create-admin-user/index.ts    [MODIFIERAD — M6: caller-verifiering]
+    ├── get-events/index.ts           [MODIFIERAD — M2: requireUser]
+    ├── get-persons/index.ts          [MODIFIERAD — M2: requireUser]
+    ├── get-registrations/index.ts    [MODIFIERAD — M2: requireUser]
+    ├── update-record/index.ts        [MODIFIERAD — M2 + M4 + M5]
+    └── test-auth/                    [NY — M2-helper för Playwright deny-paths-tester. TEKNISK SKULD: ska tas bort från produktion i Fas 7 — verify_jwt = false i config.toml just nu.]
+
+src/
+├── observability/
+│   └── sentry.ts                     [NY — M7: Sentry-init med klient-DSN]
+└── main.tsx                          [MODIFIERAD — M7: initSentry före React-mount]
+```
+
+Avvikelser från security-hardening sessionsdokens namnkonvention dokumenterade ovan: `field-allowlists.ts` (kallad `operations.ts` i några tidiga refs), `airtable-filter.ts` (kallad `escape-formula.ts` i några tidiga refs). Faktiska filnamn är de auktoritativa.
+
+#### Tidsåtgång
+
+- **Planerat:** ~19 h (per direktiv §8.5.4) över 2,5 dagars koncentrerad utveckling
+- **Faktiskt:** ~3 arbetsdagar spridda över 5 kalenderdagar (2026-04-30 → 2026-05-04). Hot-fixes i M2 (×2) och M8 (×1) lade till ~3-4 h utöver prognos. Inom toleransramen.
+
+#### Definition of Done — Fas A
+
+Ja ✅ (godkänt av Marcus 2026-05-04 vid sessionsavslut för security-hardening). Alla 8 milstolpar levererade per direktiv §8.5.4. Gates A1–A4 godkända. Se sessionsdok §C för Marcus' Gate-svar verbatim.
+
+---
+
+### P0 — Byggplan-revision inventering
+
+**Commit:** `f3e4426 p0: byggplan-revision inventory — alla 9 §D-faser klassade`
+**Trail:** Inventeringen är sin egen output — se [`byggplan-revision-inventory.md`](byggplan-revision-inventory.md).
+**Mål:** Klassa varje påstående i conversion-plan §D som *oförändrad / behöver justering / behöver omformuleras / försvinner*.
+**Resultat:** 9 fas-rader klassade. P0 stop-test passerat 2026-05-04.
+
+---
+
+### P1 — Fas-sekvens-revision (8 beslut, 9 ADR-katalog)
+
+**Commits (kärna):** `810d669` (sessionsdok) → `5ed4668` (§5-applicering till `tasks/byggplan-direktiv.md`, +10/-9 rader) → `5336d02` (avslutningsdok)
+**Commits (städning):** `97573c0` (3 UNIVERSAL lessons) + `def879a` (todo P-fas tracking + §11 status-sync)
+**Trail:** [`2026-05-04-byggplan-revision-p1.md`](../tasks/sessions/2026-05-04-byggplan-revision-p1.md) + [`2026-05-04-p1-avslutning.md`](../tasks/sessions/2026-05-04-p1-avslutning.md)
+**Mål:** Slutgiltig fas-lista för byggplanen. 8 beslut (A1-A5 + B1-B3) på alla "NEW" och "modified scope"-faser.
+**Resultat:** §5-tabellen uppdaterad till 15 rader (Fas 8 ny). 9 ADR:er identifierade för P3 (blir ADR-011..ADR-019 efter P3a). 3 UNIVERSAL-lessons. P1 stop-test passerat 2026-05-04.
+
+---
+
+### P2 — Stödspec-synkning (4 specs uppdaterade)
+
+**Commits (kärna):** `89979b5` (sessionsdok + ACCESSIBILITY-CHECKLIST omskrivning) → `176984d` (SECURITY-SPEC: 8 Fas A-mönster införlivade) → `c2ecffd` (STATE-STRATEGY: strangler-fig + operations-API §8)
+**Commits (städning):** `1fbb70c` (4 UNIVERSAL lessons) + `167afd7` (todo P3 next)
+**Trail:** [`2026-05-04-stodspec-synk-p2.md`](../tasks/sessions/2026-05-04-stodspec-synk-p2.md)
+**Mål:** Uppdatera stödspecs. Avgöra A1-scenariobeslutet (Fas 3.5 egen fas eller integrerad).
+**Resultat:** 4 specs uppdaterade. **Fas 3.5 = egen fas** (P2-utfall — alla 4 trigger-tabellrader visade JA). 1 ny ADR identifierad (blir ADR-020). 4 UNIVERSAL-lessons. P2 stop-test passerat 2026-05-04.
+
+---
+
+### P3a — Byggplan + ADR-katalog
+
+**Commits:** `6de7c94` (K1 sessionsdok-skelett) → `2ffede0` (K2 byggplan.md, 832 rader) → `866b430` (K3 10 ADRs ADR-011..ADR-020) → `ce9dd02` (K4 README index + sessionsdok pass-status, +266/-14 rader på sessionsdoket)
+**Avslutning:** `b2ab337` (track P2 + P3a completion in §11 Status)
+**Direktiv-bonus:** `60ad326` (direktiv: byggplan ersätter conversion-plan, P0-P3) — meta-rad i direktivets header som dokumenterar plan-skiftet.
+**Trail:** [`2026-05-05-byggplan-skriv-p3a.md`](../tasks/sessions/2026-05-05-byggplan-skriv-p3a.md)
+**Mål:** Skriv `docs/byggplan.md` (slutprodukten) + 10 ADR:er + uppdatera `decisions/README.md` index.
+**Resultat:** [`byggplan.md`](byggplan.md) v1.1 (832 rader, 13 fas-prompter, alla 8 sektioner per fas). 10 nya ADR:er ADR-011..ADR-020 (snitt 75 rader/ADR). README-index 20 rader. P3a stop-test passerat 2026-05-05.
+
+---
+
+### Definition of Done — Session 2
+
+**Fas A:** Ja ✅ (godkänt av Marcus 2026-05-04). Alla 8 milstolpar levererade per direktiv §8.5.4.
+**P0 → P3a:** Ja ✅ (varje fas hade egen stop-test, alla passerade).
+**P3b (denna sessions följande klungor):** Avslutar §6 P3-städnings-DoD och markerar direktivet SLUTFÖRT i §12.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
@@ -377,15 +526,16 @@ Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion
 Per session:
 
 - **Datum, session-nummer, commit-range** (hash → hash)
-- **Mål** (1 mening + länk till conversion-plan §D)
+- **Mål** (1 mening + länk till byggplan.md §4)
 - **Fas/fasers subsektioner** med planerat vs faktiskt, dependencies, avvikelser (ADR-referenser), verifiering, teknisk skuld, filstruktur-snapshot
 
 Syftet är att en ny läsare ska kunna läsa sista sessionen och förstå var vi står idag, utan att scrolla uppåt hela filen.
 
 ## Referenser
 
-- [`decisions/`](decisions/) — Architecture Decision Records (10 st efter Session 1 (React))
-- [`conversion-plan.md`](conversion-plan.md) — fas-för-fas-planen (styrande)
+- [`decisions/`](decisions/) — Architecture Decision Records (20 ADR:er totalt — ADR-001..ADR-010 från Session 1 (React) Fas 0+1, ADR-011..ADR-020 från Session 2 (React) P3a)
+- [`byggplan.md`](byggplan.md) — fas-för-fas-planen (styrande)
+- [`archive/conversion-plan-2026-04-14.md`](archive/conversion-plan-2026-04-14.md) — historisk fas-för-fas-plan, ersatt av `byggplan.md` per [ADR-012](decisions/ADR-012-conversion-plan-ersatt-av-byggplan.md)
 - [`gap-analysis.md`](gap-analysis.md) — gap-analys som motiverade `[GA]`-tilläggen
 - [`../tasks/lessons.md`](../tasks/lessons.md) — universella lärdomar
 - [`../tasks/todo.md`](../tasks/todo.md) — aktuell todo-status
