@@ -1,8 +1,46 @@
-# Miranon Media Admin
+# miranon-media-admin
 
-Admin-app för **Miranon Media** (Roger & Lotta) — hanterar event, anmälningar, betalningar, personer, leads, närvaro och mail.
+React-admin för Miranon Media — eventhantering, anmälningar och rapportering ovanpå Airtable + Supabase.
 
-React-konvertering av Vue-projektet i [`~/Repon/miranon-media-os/`](../miranon-media-os/) som fortsätter vara referens under konverteringen.
+[![CI](https://github.com/marcus803/miranon-media-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/marcus803/miranon-media-admin/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-UNLICENSED-red.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](.nvmrc)
+[![Biome](https://img.shields.io/badge/lint-Biome%202.4-60a5fa)](biome.json)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](vite.config.ts)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](package.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
+[![TanStack](https://img.shields.io/badge/TanStack-Router%20%2B%20Query%20%2B%20Table-FF4154)](package.json)
+
+> **Status:** Pre-Fas-2 (verifiering klar 2026-05-06). Fas 2 — Routing + Auth — startar mot [`docs/byggplan.md`](docs/byggplan.md) §4 Fas 2-prompt.
+
+## Dokumentation
+
+### Styrande dokument (läs först)
+
+- [`CLAUDE.md`](CLAUDE.md) — projekt-konstitution
+- [`docs/byggplan.md`](docs/byggplan.md) — styrande fas-plan (Fas 2 → Fas 8)
+- [`docs/decisions/README.md`](docs/decisions/README.md) — ADR-katalog (24 arkitekturbeslut)
+- [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md) — kronologisk sessions-journal
+
+### Specs och referens
+
+- [`docs/specs/`](docs/specs/) — säkerhet, design, prestanda, accessibility, state, URL, ARIA, kvalitet, framtidskompabilitet
+- [`docs/reference/`](docs/reference/) — datamodell, hur-systemet-funkar
+- [`docs/research/`](docs/research/) — Fas 0-research + datamodell-research-pipeline
+
+### Process
+
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — sessions-disciplin, aktör-rollfördelning, DoD
+- [`SECURITY.md`](SECURITY.md) — säkerhetspolicy
+- [`CHANGELOG.md`](CHANGELOG.md) — versionshistorik
+
+### Logs
+
+- [`docs/logs/`](docs/logs/) — historiska arbetsmaterial (gap-analysis, byggplan-revision-inventory)
+- [`docs/archive/`](docs/archive/) — superceded artefakter
+- [`tasks/sessions/`](tasks/sessions/) — sessions-trail (aktiv + arkiv)
+
+---
 
 ## Snabbstart
 
@@ -42,27 +80,6 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 | Observability | web-vitals + Sentry |
 | Offline | Workbox (service worker) |
 | Test | Playwright |
-
-## Dokumentation
-
-| Fil | Syfte |
-|-----|-------|
-| [`CLAUDE.md`](CLAUDE.md) | Projektkonstitution — regler, stack, arbetsflöde, filstruktur |
-| [`docs/conversion-plan.md`](docs/conversion-plan.md) | Konverteringsplan Vue → React (enda sanningskällan för faser) |
-| [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md) | Implementation journal — plan vs. verklighet per fas |
-| [`docs/decisions/`](docs/decisions/) | Architecture Decision Records (ADR) — ett beslut per fil |
-| [`tasks/todo.md`](tasks/todo.md) | Aktiva uppgifter |
-| [`tasks/lessons.md`](tasks/lessons.md) | Organisatoriskt minne — lärdomar från alla sessioner |
-
-## Designsystem
-
-FK-inspirerat 3-lagers token-system:
-
-1. **Primitiv** (`src/styles/tokens/primitives.css`) — råa värden: `--p-gold-500: #D4960A`, `--p-neutral-900: #242424`, etc.
-2. **Semantisk** (`src/styles/tokens/semantic.css`) — roller: `--mm-primary`, `--mm-text`, `--mm-focus-ring`.
-3. **Komponent** (`src/styles/tokens/components.css`) — komponentspecifikt, fylls på vid Fas 3+.
-
-Fullständig spec: [`docs/DESIGN-SYSTEM-SPEC.md`](docs/DESIGN-SYSTEM-SPEC.md). Token-arkitektur motiverad i [`docs/decisions/ADR-002-tailwind-v4-theme-css-first.md`](docs/decisions/ADR-002-tailwind-v4-theme-css-first.md) och [`ADR-003`](docs/decisions/ADR-003-css-custom-property-naming.md).
 
 ## Projektstatus
 
