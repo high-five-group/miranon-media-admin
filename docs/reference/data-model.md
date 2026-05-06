@@ -33,8 +33,8 @@ Detta dokument är **AUKTORITATIV** för datamodellen. `~/Repon/miranon-media-os
 
 | Behöver du... | Läs... |
 |---|---|
-| Fält-för-fält-referens med typer, formler, relationer | **Detta dokument §Snabbreferens / Schema cheat sheet.** Live-pull i `~/Repon/miranon-media-admin/analys/02-live-state.md` (2026-04-28, 18 tabeller × 358 fält). |
-| Källextraktion + datamodell-skuldlista (under detta projekts gång) | `~/Repon/miranon-media-admin/analys/` (manifest, extraktion, live-state, gap-analys) |
+| Fält-för-fält-referens med typer, formler, relationer | **Detta dokument §Snabbreferens / Schema cheat sheet.** Live-pull i `~/Repon/miranon-media-admin/docs/research/datamodell-research/02-live-state.md` (2026-04-28, 18 tabeller × 358 fält). |
+| Källextraktion + datamodell-skuldlista (under detta projekts gång) | `~/Repon/miranon-media-admin/docs/research/datamodell-research/` (manifest, extraktion, live-state, gap-analys) |
 | Maskinläsbar fält-ID → namn-mapping | `~/Repon/miranon-media-os/docs/field_lookup.json` (genererad 2026-03, verifiera aktualitet vid behov) |
 | Rå automation-JSON (triggers, actions, scripts) | `~/Repon/miranon-media-os/docs/miranon_automations_COMPLETE.json` (15 741 rader, export 2026-03-16) |
 | Sammanfattning med TypeScript-interfaces och HAR-metoden | `~/Repon/miranon-media-os/docs/AIRTABLE-REFERENS.md` (298 rader, arkiverad — historik) |
@@ -297,7 +297,7 @@ Personer ─────────┬─────────────�
 | Publik funnel | Väntelista |
 | Systemstöd | Error-log, Path to Conversion (tom strukturell behållare), Instagram Posts (tom strukturell behållare) |
 
-Se §Snabbreferens / Tabell-ID:n ovan för fullständig översikt med fält-räknare. Live-pull i `~/Repon/miranon-media-admin/analys/02-live-state.md`.
+Se §Snabbreferens / Tabell-ID:n ovan för fullständig översikt med fält-räknare. Live-pull i `~/Repon/miranon-media-admin/docs/research/datamodell-research/02-live-state.md`.
 
 ---
 

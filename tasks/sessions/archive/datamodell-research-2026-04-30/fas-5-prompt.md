@@ -2,7 +2,7 @@
 
 > **Detta är en session-bro, inte en sanningskälla.** Substansen för projektet bor i direktivet, planen, arbetsdokumentet, gap-analysen, A-track-leveransen, S-track-leveransen och `lessons.md`. Den här filen säger bara: läs dessa, i denna ordning, sekvensera migrationen så här, hantera kontexten så här, rapportera så här.
 >
-> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/fas-5-prompt.md`
+> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/archive/datamodell-research-2026-04-30/fas-5-prompt.md`
 > **Skapad:** 2026-04-30 av Claude Chat efter avslutad Fas 4 (Gate 4A + 4B passerade)
 > **För:** Codex CLI (GPT-5.5, 400K kontextfönster) — **ny session**
 > **Avlöser:** `fas-4b-prompt.md` (Fas 4 är klar — både A-track och S-track låsta)
@@ -27,10 +27,10 @@ Du läser denna prompt i en **ny Codex CLI-session**. Tidigare sessioners kontex
 
 **Levererat hittills:**
 - **Fas 0–4 KLARA:** Hela design- och researchblocket är klart. Fas 5 sekvenserar och planerar implementationen, men är fortfarande research/plan — ingen kod, inga schemaändringar, inga commits utöver dokumentationsfilen.
-- **`analys/04-research.md`:** 10 principer P1–P10 + R7 stickprov (Cal.com, Plane.so, NocoDB)
-- **`analys/05-gap-vs-worldclass.md`:** 15 gap (G1–G15) klassade enligt §8
-- **`analys/06a-airtable-redesign.md`:** 12 A-track-åtgärder (A1–A12) med sekvens, blast radius, rollback
-- **`analys/06b-supabase-target.md`:** 36 target-tabeller med soft multi-tenant, integration sources som produkter, audit före event sourcing
+- **`docs/research/datamodell-research/04-research.md`:** 10 principer P1–P10 + R7 stickprov (Cal.com, Plane.so, NocoDB)
+- **`docs/research/datamodell-research/05-gap-vs-worldclass.md`:** 15 gap (G1–G15) klassade enligt §8
+- **`docs/research/datamodell-research/06a-airtable-redesign.md`:** 12 A-track-åtgärder (A1–A12) med sekvens, blast radius, rollback
+- **`docs/research/datamodell-research/06b-supabase-target.md`:** 36 target-tabeller med soft multi-tenant, integration sources som produkter, audit före event sourcing
 
 **Vad Fas 5 INTE är:**
 - Inte implementation. Ingen SQL-DDL skrivs i 07. Migrationsskripten skrivs av Code i ett separat post-projekt.
@@ -75,25 +75,25 @@ Du läser denna prompt i en **ny Codex CLI-session**. Tidigare sessioners kontex
 
 4. `~/Repon/miranon-media-admin/tasks/datamodell-research-direktiv.md`
 5. `~/Repon/miranon-media-admin/tasks/datamodell-research-plan.md` — **särskilt §6 Fas 5 (10-stegs planstruktur), §8 DS/DQ-beslutsmatris**
-6. `~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-research-projekt.md` — **arbetsdokumentet**
+6. `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md` — **arbetsdokumentet**
 
 **Indata för Fas 5 — kärnmaterialet:**
 
-7. `~/Repon/miranon-media-admin/analys/04-research.md` — principregistret (referens)
-8. `~/Repon/miranon-media-admin/analys/05-gap-vs-worldclass.md` — gap-analysen (referens)
-9. `~/Repon/miranon-media-admin/analys/06a-airtable-redesign.md` — **A-tracks 12 åtgärder + sekvens (Del D) blir steg 2–3 i migrationsplanen**
-10. `~/Repon/miranon-media-admin/analys/06b-supabase-target.md` — **S-tracks 36 tabeller + Del F transformationskontrakt blir steg 4–8 i migrationsplanen**
+7. `~/Repon/miranon-media-admin/docs/research/datamodell-research/04-research.md` — principregistret (referens)
+8. `~/Repon/miranon-media-admin/docs/research/datamodell-research/05-gap-vs-worldclass.md` — gap-analysen (referens)
+9. `~/Repon/miranon-media-admin/docs/research/datamodell-research/06a-airtable-redesign.md` — **A-tracks 12 åtgärder + sekvens (Del D) blir steg 2–3 i migrationsplanen**
+10. `~/Repon/miranon-media-admin/docs/research/datamodell-research/06b-supabase-target.md` — **S-tracks 36 tabeller + Del F transformationskontrakt blir steg 4–8 i migrationsplanen**
 
 **Frusen indata (referens):**
 
 11. `~/Repon/miranon-media-admin/docs/reference/data-model.md`
 12. `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md`
-13. `~/Repon/miranon-media-admin/analys/02-live-state.md`
+13. `~/Repon/miranon-media-admin/docs/research/datamodell-research/02-live-state.md`
 14. `~/Repon/miranon-media-admin/docs/conversion-plan.md` — **äldre conversion-plan, kan ge mönsterhjälp men har lägre prioritet än 06a/06b**
 
 **Föregående fas-prompter (för disciplin- och stilkonsistens):**
 
-15. `~/Repon/miranon-media-admin/tasks/sessions/fas-4b-prompt.md`
+15. `~/Repon/miranon-media-admin/tasks/sessions/archive/datamodell-research-2026-04-30/fas-4b-prompt.md`
 
 **Total: ~12 000 rader.** Med 400K kontextfönster får allt plats. Använd scratch-persistens (§4).
 
@@ -115,7 +115,7 @@ Skapa en exekverbar plan från nuvarande Airtable till Airtable 11/10 (post-MK) 
 
 ### 3.2 Output
 
-`~/Repon/miranon-media-admin/analys/07-migration-plan.md` — **ny fil**.
+`~/Repon/miranon-media-admin/docs/research/datamodell-research/07-migration-plan.md` — **ny fil**.
 
 Strukturen följer planens §6 Fas 5:
 
@@ -355,7 +355,7 @@ Lärdomar från Fas 0–4 plus några specifikt för Fas 5:
 1. Läs källfilerna i §2 i ordning, i sin helhet. Ta särskilt tid på `06a` Del D + Del E + Del F och `06b` Del F (transformations + lockning).
 2. Skapa `.codex-scratch/fas-5-context.md` enligt §4.
 3. Uppdatera arbetsdokumentet §10 med rad för Fas 5-start. Uppdatera §2 status PÅGÅR.
-4. Skapa `analys/07-migration-plan.md` med skelett enligt §3.2.
+4. Skapa `docs/research/datamodell-research/07-migration-plan.md` med skelett enligt §3.2.
 5. **M1 — Steg 1–3 (Airtable hardening):** integrera A-tracks 12 åtgärder som steg 2–3 med 8-fältsformatet. Steg 1 är pre-MK freeze (kort). Skriv löpande.
 6. **M2 — Steg 4–8 (Supabase migration):** sekvensera 06b Del F2 transformations-tabellen som steg 4–8 med strangler-fig-ordning per Del D. Validation per steg.
 7. **M3 — Del F + G + Steg 9 (validation + rollback):** validation-tester per steg, rollback-väg per steg, helhetsrollback från olika cutover-punkter.

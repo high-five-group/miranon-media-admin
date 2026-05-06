@@ -2,7 +2,7 @@
 
 > **Detta är en session-bro, inte en sanningskälla.** Substansen för projektet bor i direktivet, planen, arbetsdokumentet, principregistret i `04-research.md` och `lessons.md`. Den här filen säger bara: läs dessa, i denna ordning, kör gap-analysen så här, hantera kontexten så här, rapportera så här.
 >
-> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/fas-3-prompt.md`
+> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/archive/datamodell-research-2026-04-30/fas-3-prompt.md`
 > **Skapad:** 2026-04-29 av Claude Chat efter avslutad Fas 2 (Gate 2 passerad)
 > **För:** Codex CLI (GPT-5.5, 400K kontextfönster) — **ny session**
 > **Avlöser:** `fas-2-prompt.md` (Fas 2 är klar, R7 utökad enligt Marcus' Gate 2-granskning)
@@ -26,8 +26,8 @@ Du läser denna prompt i en **ny Codex CLI-session**. Tidigare sessioners kontex
 
 **Levererat hittills:**
 - **Fas 0 (KLAR):** Direktiv, 7-fasplan, arbetsdokument med 27→29 spårbarhetsrader.
-- **Fas 1 (KLAR — Gate 1 passerad):** `analys/04-research.md` Del 0 — Baseline & Constraint Map (B1 Domänkarta, B2 Driftkarta, B3 Skuldregister).
-- **Fas 2 (KLAR — Gate 2 passerad):** `analys/04-research.md` Del 1 — 10 principer P1–P10, källkluster R2–R6, fyrdelade stickprov i R7 (Cal.com, Plane.so, NocoDB), Gate 2-slutsats i R8.
+- **Fas 1 (KLAR — Gate 1 passerad):** `docs/research/datamodell-research/04-research.md` Del 0 — Baseline & Constraint Map (B1 Domänkarta, B2 Driftkarta, B3 Skuldregister).
+- **Fas 2 (KLAR — Gate 2 passerad):** `docs/research/datamodell-research/04-research.md` Del 1 — 10 principer P1–P10, källkluster R2–R6, fyrdelade stickprov i R7 (Cal.com, Plane.so, NocoDB), Gate 2-slutsats i R8.
 
 **Viktiga beslut och korrigeringar att hålla i huvudet:**
 - **H6 är REJECTED** (stängd 2026-04-29). SHA256-hasharna i `Källa (formulärkälla)` är inte form-input — de är hårdkodad Zapier-config i Zap 5+6. Cleanup hanteras via DQ4.
@@ -64,25 +64,25 @@ Sanningen om projektet bor i dessa filer. Läs dem **innan** du börjar klassa.
 
 4. `~/Repon/miranon-media-admin/tasks/datamodell-research-direktiv.md` — scope, mål, premisser
 5. `~/Repon/miranon-media-admin/tasks/datamodell-research-plan.md` — **särskilt §6 Fas 3, §7 hypotesdisciplin, §8 DS/DQ-beslutsmatris**
-6. `~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-research-projekt.md` — **arbetsdokumentet, levande genom hela projektet** (alla beslut, hypoteser, DS/DQ, spårbarhetsmatris med Fas 2-principer ifyllda, UNIVERSAL-kandidater, §11 live-verifierade tekniska fakta)
+6. `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md` — **arbetsdokumentet, levande genom hela projektet** (alla beslut, hypoteser, DS/DQ, spårbarhetsmatris med Fas 2-principer ifyllda, UNIVERSAL-kandidater, §11 live-verifierade tekniska fakta)
 
 **Indata för Fas 3 — kärnmaterialet:**
 
-7. `~/Repon/miranon-media-admin/analys/04-research.md` — **Del 0 (baseline) + Del 1 (10 principer P1–P10 + R7 stickprov)**. Detta är den primära input för gap-analysen.
+7. `~/Repon/miranon-media-admin/docs/research/datamodell-research/04-research.md` — **Del 0 (baseline) + Del 1 (10 principer P1–P10 + R7 stickprov)**. Detta är den primära input för gap-analysen.
 
 **Frusen indata (samma som Fas 1–2):**
 
 8. `~/Repon/miranon-media-admin/docs/reference/data-model.md`
 9. `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md`
-10. `~/Repon/miranon-media-admin/analys/01-extraction.md`
-11. `~/Repon/miranon-media-admin/analys/02-live-state.md`
-12. `~/Repon/miranon-media-admin/analys/03-gap-analysis.md` — **mall för gap-format, struktur återanvänds**
+10. `~/Repon/miranon-media-admin/docs/research/datamodell-research/01-extraction.md`
+11. `~/Repon/miranon-media-admin/docs/research/datamodell-research/02-live-state.md`
+12. `~/Repon/miranon-media-admin/docs/research/datamodell-research/03-gap-analysis.md` — **mall för gap-format, struktur återanvänds**
 13. `~/Repon/miranon-media-admin/docs/conversion-plan.md`
 
 **Föregående fas-prompter (för disciplin- och stilkonsistens):**
 
-14. `~/Repon/miranon-media-admin/tasks/sessions/fas-1-prompt.md`
-15. `~/Repon/miranon-media-admin/tasks/sessions/fas-2-prompt.md`
+14. `~/Repon/miranon-media-admin/tasks/sessions/archive/datamodell-research-2026-04-30/fas-1-prompt.md`
+15. `~/Repon/miranon-media-admin/tasks/sessions/archive/datamodell-research-2026-04-30/fas-2-prompt.md`
 
 **Total: ~8 500 rader källfiler. Med 400K kontextfönster får allt plats.** Använd scratch-persistens-strategin i §4 — inte /compact, den fungerar inte i din runtime.
 
@@ -100,7 +100,7 @@ Jämför nuvarande modell mot principerna P1–P10 i `04-research.md`. Klassific
 
 ### 3.2 Output
 
-`~/Repon/miranon-media-admin/analys/05-gap-vs-worldclass.md` — **ny fil**.
+`~/Repon/miranon-media-admin/docs/research/datamodell-research/05-gap-vs-worldclass.md` — **ny fil**.
 
 Strukturen:
 
@@ -311,7 +311,7 @@ Lärdomar från Fas 0–2 plus några som specifikt riskerar Fas 3:
 2. Skapa `.codex-scratch/fas-3-context.md` enligt §4.1. Verifiera att `.codex-scratch/` fortfarande är `git`-ignorerad.
 3. Uppdatera arbetsdokumentet §10 med rad för Fas 3-start.
 4. Uppdatera arbetsdokumentet §2 med status PÅGÅR.
-5. Skapa `analys/05-gap-vs-worldclass.md` med skelett enligt §3.2.
+5. Skapa `docs/research/datamodell-research/05-gap-vs-worldclass.md` med skelett enligt §3.2.
 6. **M1 — Del A (gap per domänområde):** gå igenom A1–A7. Skriv löpande till filen.
 7. **M2 — Del B (DS/DQ/H-matris):** klassa alla 29 punkter enligt planens §8. Sanity-check: varje punkt har Fas 2-princip i spårbarhetsmatrisen — använd den som ingång.
 8. **M3 — Del C (prioriteringskarta):** placera varje gap i exakt en ruta.

@@ -29,8 +29,8 @@ Sedan conversion-plan skrevs har följande hänt, i kronologisk ordning:
 | 2026-04-28 | dm-110-projektet — uttömmande dokumentation av befintlig Airtable-modell | `docs/reference/data-model.md`, 9 UNIVERSAL-lärdomar |
 | 2026-04-28 | Codex projektanalys efter Fas 1 | `docs/analysis/Codex-project-analysis-after-fas-1.md` |
 | 2026-04-29 | Code:s verifiering av Codex-analysen mot HEAD `245422c` | `docs/analysis/Code-verification-of-codex-analysis.md` |
-| 2026-04-28 → 30 | Datamodell-research-projektet (forwards-look, 7 faser, Gate 6 passerad) | `analys/04-research.md` → `analys/07-migration-plan.md`, K1–K10 lyfta till lessons |
-| 2026-05-03 | Odoo-validering som sidospår, post-Gate 6 | `analys/08-odoo-validation.md`, 8 nya kandidater (E1–E8) |
+| 2026-04-28 → 30 | Datamodell-research-projektet (forwards-look, 7 faser, Gate 6 passerad) | `docs/research/datamodell-research/04-research.md` → `docs/research/datamodell-research/07-migration-plan.md`, K1–K10 lyfta till lessons |
+| 2026-05-03 | Odoo-validering som sidospår, post-Gate 6 | `docs/research/datamodell-research/08-odoo-validation.md`, 8 nya kandidater (E1–E8) |
 | 2026-05-04 | Säkerhetshardening (Fas A) — alla 8 milstolpar levererade | 14 commits, 110+3 tester, 3 nya UNIVERSAL |
 
 Ingen av dessa händelser är reflekterad i conversion-plan. Det är därför vi måste skriva en byggplan innan Fas 2 startar.
@@ -58,10 +58,10 @@ Två skäl.
 **Conversion-plan säger:** Airtable är datakällan. Supabase nämns som "Fas 8 framtid".
 
 **Verkligheten:** Vi har nu:
-- `analys/06a-airtable-redesign.md` — 12 Airtable hardening-åtgärder (A1–A12)
-- `analys/06b-supabase-target.md` — 36 Supabase target-tabeller
-- `analys/07-migration-plan.md` — strangler-fig-migrationssekvens i 10 steg, Future Code-prompt i Del H
-- `analys/08-odoo-validation.md` — 8 ytterligare kandidater (E1–E8)
+- `docs/research/datamodell-research/06a-airtable-redesign.md` — 12 Airtable hardening-åtgärder (A1–A12)
+- `docs/research/datamodell-research/06b-supabase-target.md` — 36 Supabase target-tabeller
+- `docs/research/datamodell-research/07-migration-plan.md` — strangler-fig-migrationssekvens i 10 steg, Future Code-prompt i Del H
+- `docs/research/datamodell-research/08-odoo-validation.md` — 8 ytterligare kandidater (E1–E8)
 
 **Konsekvens i byggplanen:** Två nya parallella spår behöver placeras i fasstrukturen — Fas B (Airtable hardening A1–A12, drift-arbete) och Fas E (Supabase-migration, framtida implementation som pekar på 07 Del H).
 
@@ -185,10 +185,10 @@ Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren 
 - `docs/conversion-plan.md` (~1 800 rader) — sektion för sektion
 - `docs/analysis/Codex-project-analysis-after-fas-1.md`
 - `docs/analysis/Code-verification-of-codex-analysis.md`
-- `analys/04-research.md` → `analys/08-odoo-validation.md`
+- `docs/research/datamodell-research/04-research.md` → `docs/research/datamodell-research/08-odoo-validation.md`
 - `marcus-system/tasks/lessons.md` (sektioner 2026-04-28 → 2026-05-04)
 - §8.5 i detta direktiv (Fas A-fynd)
-- `tasks/sessions/2026-05-04-security-hardening.md` (Fas A-arbetsdokument inkl. slutsummering)
+- `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` (Fas A-arbetsdokument inkl. slutsummering)
 
 **Stop-test:** Inventering är klar när varje påstående i conversion-plan §D (fas-för-fas-plan) är klassad: oförändrad / behöver justering / behöver omformuleras / försvinner.
 
@@ -316,7 +316,7 @@ Edge Functions är byggda men har inga UI-callers. Hypotes-listan från Gate A1 
 - Fas 6:s per-vy-checklista måste innehålla: "operation registrerad? deny/allow-test grönt?"
 - Estimatet för Fas 6 är inte påverkat (5–15 min per operation)
 
-**Aktiveringsguide för Fas 5.5+** är dokumenterad i `tasks/sessions/2026-05-04-security-hardening.md` §F (5 steg: lägg till operation, avskip 3 tester, byt TODO_REPLACE-token, re-deploya, kör tester).
+**Aktiveringsguide för Fas 5.5+** är dokumenterad i `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` §F (5 steg: lägg till operation, avskip 3 tester, byt TODO_REPLACE-token, re-deploya, kör tester).
 
 ### 8.5.2 Nya UNIVERSAL-lärdomar från Fas A
 
@@ -382,7 +382,7 @@ Fas A levererade 8 milstolpar (M1–M8) över ~14 commits:
 
 **Resultat:** Hela exponeringen från Code-verifieringen 2026-04-29 stängd. 113 tester (110 + 3 skipped för Fas 5.5-aktivering). Bundle 244 → 324 kB (+80 kB Sentry SDK).
 
-Detaljer: `tasks/sessions/2026-05-04-security-hardening.md` (frusen efter slutsummering).
+Detaljer: `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` (frusen efter slutsummering).
 
 ### 8.5.6 Pre-existerande teknisk skuld verifierad under Fas A
 
@@ -446,13 +446,13 @@ Allt nedanstående är frusen indata för revisionen.
 **Datamodell-leverans:**
 - `~/Repon/miranon-media-admin/docs/reference/data-model.md`
 - `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md`
-- `~/Repon/miranon-media-admin/analys/01-extraction.md` → `08-odoo-validation.md` (åtta filer)
+- `~/Repon/miranon-media-admin/docs/research/datamodell-research/01-extraction.md` → `08-odoo-validation.md` (åtta filer)
 - `~/Repon/miranon-media-admin/tasks/datamodell-research-direktiv.md`
 - `~/Repon/miranon-media-admin/tasks/datamodell-research-plan.md`
-- `~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-research-projekt.md` (FRUSEN)
+- `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md` (FRUSEN)
 
 **Fas A-leverans:**
-- `~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-security-hardening.md` (frusen efter slutsummering)
+- `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` (frusen efter slutsummering)
 - `~/Repon/miranon-media-admin/supabase/functions/_shared/auth.ts`
 - `~/Repon/miranon-media-admin/supabase/functions/_shared/cors.ts`
 - `~/Repon/miranon-media-admin/supabase/functions/_shared/field-allowlists.ts`
@@ -481,7 +481,7 @@ Allt nedanstående är frusen indata för revisionen.
 | Ägare | Marcus + Claude Chat |
 | Code-medverkan | Endast vid kodbasverifiering, slutlig commit av byggplanen, och eventuell M5+ av framtida implementations-faser |
 | Direktiv-status | **SLUTFÖRT 2026-05-05** — alla §6 P3-städnings-DoD verifierade, byggplanen är aktiv styrande plan |
-| Senast uppdaterat | 2026-05-05 (P3b SLUTFÖRT — se tasks/sessions/2026-05-05-byggplan-stadning-p3b.md) |
+| Senast uppdaterat | 2026-05-05 (P3b SLUTFÖRT — se tasks/sessions/archive/2026-05/2026-05-05-byggplan-stadning-p3b.md) |
 
 ---
 
@@ -491,7 +491,7 @@ P3 är klar och `docs/byggplan.md` är committad:
 - ✅ Detta direktiv markerades SLUTFÖRT i §11 (P3b K4 commit 7, 2026-05-05)
 - ✅ Conversion-plan flyttades till `docs/archive/conversion-plan-2026-04-14.md` (P3b K2 commit 1: `2075ab3`, 2026-05-05)
 - ✅ ADR skrevs i `docs/decisions/` om varför conversion-plan ersattes av byggplan (ADR-012, P3a commit `866b430`, 2026-05-05)
-- ✅ Alla städnings-DoD per §6 P3 verifierade (P3b K2/K3/K4, se `tasks/sessions/2026-05-05-byggplan-stadning-p3b.md` Del 7 Stop-test)
+- ✅ Alla städnings-DoD per §6 P3 verifierade (P3b K2/K3/K4, se `tasks/sessions/archive/2026-05/2026-05-05-byggplan-stadning-p3b.md` Del 7 Stop-test)
 - ✅ Fas 2 av React-arbetet kan starta mot byggplanen (klart efter denna commit)
 
 Direktivet är nu arkivvärt. Det utförde sin roll — höll oss i kontext över 5 sessioner (P0 → P1 → P2 → P3a → P3b) och säkerställde att Fas A-fynden införlivades i byggplanen utan drift. Framtida läsare: använd `docs/byggplan.md` som styrande plan; använd detta direktiv som arkivreferens om frågor uppstår om varför conversion-plan ersattes.

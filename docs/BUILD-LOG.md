@@ -383,7 +383,7 @@ Sammansatt session som omfattar Fas A (säkerhetshardening, M1–M8) och hela by
 
 **Commit-range:** `9490d8e` (arbetsdokument + Gate A1) → `eee29c1` (övergång till P0). 14 implementations-commits + 4 omgivande dokumentations-commits.
 **Mål:** Stänga 8 säkerhetsluckor identifierade i Code-verifieringen 2026-04-29 (auth, CORS, write-API, payload-eskapering, observability, config).
-**Auktoritativ trail:** [`tasks/sessions/2026-05-04-security-hardening.md`](../tasks/sessions/2026-05-04-security-hardening.md) — full DoD per M, Gate A1-A4-svar, 8 arkitekturmönster.
+**Auktoritativ trail:** [`tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md`](../tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md) — full DoD per M, Gate A1-A4-svar, 8 arkitekturmönster.
 
 #### Planerat vs faktiskt
 
@@ -420,7 +420,7 @@ Sammansatt session som omfattar Fas A (säkerhetshardening, M1–M8) och hela by
 
 #### Avvikelser
 
-Tre M:er krävde mer än en commit. Detaljerade orsaker + lärdomar finns i [`security-hardening.md`](../tasks/sessions/2026-05-04-security-hardening.md) §B (per-M DoD-block):
+Tre M:er krävde mer än en commit. Detaljerade orsaker + lärdomar finns i [`security-hardening.md`](../tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md) §B (per-M DoD-block):
 
 - **M2 (4 commits):** Hot-fix `382c6b5` — Supabase CLI accepterar inte underscore-prefix på funktionsnamn → test-prefix-konvention `test-*` införs. Hot-fix `605502f` — staging-tester misstog Supabase Gateway-401 för requireUser-401 → assertions skiljer på källan.
 - **M4 (2 commits):** Discovery-rapport `10dcc51` bekräftade att operations-allowlist måste byggas som infrastruktur (tom lista) eftersom Vue inte har write-UI som källa. ADR-016 bygger på detta.
@@ -484,7 +484,7 @@ Ja ✅ (godkänt av Marcus 2026-05-04 vid sessionsavslut för security-hardening
 
 **Commits (kärna):** `810d669` (sessionsdok) → `5ed4668` (§5-applicering till `tasks/byggplan-direktiv.md`, +10/-9 rader) → `5336d02` (avslutningsdok)
 **Commits (städning):** `97573c0` (3 UNIVERSAL lessons) + `def879a` (todo P-fas tracking + §11 status-sync)
-**Trail:** [`2026-05-04-byggplan-revision-p1.md`](../tasks/sessions/2026-05-04-byggplan-revision-p1.md) + [`2026-05-04-p1-avslutning.md`](../tasks/sessions/2026-05-04-p1-avslutning.md)
+**Trail:** [`2026-05-04-byggplan-revision-p1.md`](../tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md) + [`2026-05-04-p1-avslutning.md`](../tasks/sessions/archive/2026-05/2026-05-04-p1-avslutning.md)
 **Mål:** Slutgiltig fas-lista för byggplanen. 8 beslut (A1-A5 + B1-B3) på alla "NEW" och "modified scope"-faser.
 **Resultat:** §5-tabellen uppdaterad till 15 rader (Fas 8 ny). 9 ADR:er identifierade för P3 (blir ADR-011..ADR-019 efter P3a). 3 UNIVERSAL-lessons. P1 stop-test passerat 2026-05-04.
 
@@ -494,7 +494,7 @@ Ja ✅ (godkänt av Marcus 2026-05-04 vid sessionsavslut för security-hardening
 
 **Commits (kärna):** `89979b5` (sessionsdok + ACCESSIBILITY-CHECKLIST omskrivning) → `176984d` (SECURITY-SPEC: 8 Fas A-mönster införlivade) → `c2ecffd` (STATE-STRATEGY: strangler-fig + operations-API §8)
 **Commits (städning):** `1fbb70c` (4 UNIVERSAL lessons) + `167afd7` (todo P3 next)
-**Trail:** [`2026-05-04-stodspec-synk-p2.md`](../tasks/sessions/2026-05-04-stodspec-synk-p2.md)
+**Trail:** [`2026-05-04-stodspec-synk-p2.md`](../tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md)
 **Mål:** Uppdatera stödspecs. Avgöra A1-scenariobeslutet (Fas 3.5 egen fas eller integrerad).
 **Resultat:** 4 specs uppdaterade. **Fas 3.5 = egen fas** (P2-utfall — alla 4 trigger-tabellrader visade JA). 1 ny ADR identifierad (blir ADR-020). 4 UNIVERSAL-lessons. P2 stop-test passerat 2026-05-04.
 
@@ -505,7 +505,7 @@ Ja ✅ (godkänt av Marcus 2026-05-04 vid sessionsavslut för security-hardening
 **Commits:** `6de7c94` (K1 sessionsdok-skelett) → `2ffede0` (K2 byggplan.md, 832 rader) → `866b430` (K3 10 ADRs ADR-011..ADR-020) → `ce9dd02` (K4 README index + sessionsdok pass-status, +266/-14 rader på sessionsdoket)
 **Avslutning:** `b2ab337` (track P2 + P3a completion in §11 Status)
 **Direktiv-bonus:** `60ad326` (direktiv: byggplan ersätter conversion-plan, P0-P3) — meta-rad i direktivets header som dokumenterar plan-skiftet.
-**Trail:** [`2026-05-05-byggplan-skriv-p3a.md`](../tasks/sessions/2026-05-05-byggplan-skriv-p3a.md)
+**Trail:** [`2026-05-05-byggplan-skriv-p3a.md`](../tasks/sessions/archive/2026-05/2026-05-05-byggplan-skriv-p3a.md)
 **Mål:** Skriv `docs/byggplan.md` (slutprodukten) + 10 ADR:er + uppdatera `decisions/README.md` index.
 **Resultat:** [`byggplan.md`](byggplan.md) v1.1 (832 rader, 13 fas-prompter, alla 8 sektioner per fas). 10 nya ADR:er ADR-011..ADR-020 (snitt 75 rader/ADR). README-index 20 rader. P3a stop-test passerat 2026-05-05.
 

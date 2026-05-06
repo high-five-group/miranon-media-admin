@@ -101,10 +101,10 @@ Lägg till "Senast verifierad: 2026-04-28" eller motsvarande i sektioner som inn
 
 | Op | Detalj |
 |---|---|
-| RÄTTA | Rad 36 — "schema_reference.md (1 682 rader)" är stale. Ersätt med: "Live MCP-pull mot bas `app8uGPrVCVOm6LfD` (alltid aktuell). Senaste extraktion: `analys/02-live-state.md` 2026-04-28." |
+| RÄTTA | Rad 36 — "schema_reference.md (1 682 rader)" är stale. Ersätt med: "Live MCP-pull mot bas `app8uGPrVCVOm6LfD` (alltid aktuell). Senaste extraktion: `docs/research/datamodell-research/02-live-state.md` 2026-04-28." |
 | RÄTTA | Rad 37 — "field_lookup.json (153 fält)" — verifiera räknare. Live-state visar ~290 fält (preliminär uppskattning) eller 358 (summa per tabell). Beräkning behövs i Fas 4. |
 | RÄTTA | Rad 39 — "AIRTABLE-REFERENS.md (298 rader)" — verifiera storlek. Manifestet säger 12 344 B. Räkna rader. |
-| UTÖKA | Lägg till rad: "Källextraktion + datamodell-skuldlista (under projektets gång) → `~/Repon/miranon-media-admin/analys/`" — för spårbarhet av detta projekt. |
+| UTÖKA | Lägg till rad: "Källextraktion + datamodell-skuldlista (under projektets gång) → `~/Repon/miranon-media-admin/docs/research/datamodell-research/`" — för spårbarhet av detta projekt. |
 
 ### 2.3 Snabbreferens — ID:n och nyckelfält (rad 45-122)
 
@@ -185,7 +185,7 @@ Källa: 01-extraction §A.4 + §I (Edge Function-kontrakt) + 02-live-state §3.
 |---|---|
 | BEHÅLL | Strukturen, kärntabells-diagrammet (rad 134-149) |
 | UTÖKA | Rad 130-132 — verifiera "10 Zapier-zaps", "2 Make.com-scenarier". Om inte verifierbara just nu, markera som [HYPOTES — EJ VERIFIERAD] eller flytta till "Luckor". |
-| RÄTTA | Rad 162 — "Se schema_reference.md rad 7–30 för full tabellöversikt" → ersätt med: "Se §Snabbreferens / Tabell-ID:n ovan. Live-pull i `analys/02-live-state.md`." |
+| RÄTTA | Rad 162 — "Se schema_reference.md rad 7–30 för full tabellöversikt" → ersätt med: "Se §Snabbreferens / Tabell-ID:n ovan. Live-pull i `docs/research/datamodell-research/02-live-state.md`." |
 | UTÖKA | Övriga tabeller (rad 153-162) — lägg till Path to Conversion + Instagram Posts (markerade "tom strukturell behållare"). |
 
 ### 2.5 Psionautics-tillägg (rad 164-184)

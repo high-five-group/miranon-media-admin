@@ -183,16 +183,16 @@ Meta-arbete parallellt med byggfaserna. Reviderade conversion-plan till byggplan
 - [x] **P0 — Inventering** ✅ AVSLUTAD 2026-05-04
       Leverans: `docs/logs/byggplan-revision-inventory.md`
 - [x] **P1 — Fas-sekvens-revision** ✅ AVSLUTAD 2026-05-04
-      Leverans: `tasks/sessions/2026-05-04-byggplan-revision-p1.md`
+      Leverans: `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md`
       §5-uppdatering applicerad i commit `5ed4668`
 - [x] **P2 — Stödspec-synkning** ✅ AVSLUTAD 2026-05-04
-      Leverans: `tasks/sessions/2026-05-04-stodspec-synk-p2.md`
+      Leverans: `tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md`
       A1-utfall: Fas 3.5 = egen fas (test-infra + mönsterbibliotek bägge JA)
 - [x] **P3a — Skriv byggplan + ADR-katalog** ✅ AVSLUTAD 2026-05-05
-      Leverans: `docs/byggplan.md` (832 rader, 13 fas-prompter), 10 ADR:er (ADR-011..ADR-020), `tasks/sessions/2026-05-05-byggplan-skriv-p3a.md`
+      Leverans: `docs/byggplan.md` (832 rader, 13 fas-prompter), 10 ADR:er (ADR-011..ADR-020), `tasks/sessions/archive/2026-05/2026-05-05-byggplan-skriv-p3a.md`
 - [ ] **P3b — Städning + arkivering + BUILD-LOG retrospektiv** ← NU
       Pågår i nuvarande session: K1 (skelett) + K2 (arkivering + BUILD-LOG) + K3 (CLAUDE.md + todo.md) klara. K4 (verifiering + UNIVERSAL-lyft + SLUTFÖRT) återstår.
-      Trail: `tasks/sessions/2026-05-05-byggplan-stadning-p3b.md`
+      Trail: `tasks/sessions/archive/2026-05/2026-05-05-byggplan-stadning-p3b.md`
       Direktiv: `tasks/byggplan-direktiv.md` §6 P3 städnings-DoD + §12 slutnot
 
 ---

@@ -6,7 +6,7 @@
 ## Vad detta är
 
 Forwards-look-projekt som följer på datamodell-110 (avslutat
-2026-04-28, dokumenterat i `tasks/sessions/2026-04-28-datamodell-110-projekt.md`).
+2026-04-28, dokumenterat i `tasks/sessions/archive/2026-04/2026-04-28-datamodell-110-projekt.md`).
 
 Datamodell-110 lyfte dokumentationen av nuvarande Airtable-
 modell till 11/10. Det här projektet utgår därifrån och
@@ -55,7 +55,7 @@ världsklass-modell.
 
 ## Output (förväntat)
 
-Filer i `~/Repon/miranon-media-admin/analys/`:
+Filer i `~/Repon/miranon-media-admin/docs/research/datamodell-research/`:
 
 | Fil | Innehåll | Fas |
 |---|---|---|
@@ -80,10 +80,10 @@ schema-ändringar).
 |---|---|
 | `docs/reference/data-model.md` | Sanningskällan för "var vi är" |
 | `docs/reference/hur-systemet-funkar.md` | Affärslogik som måste bevaras |
-| `analys/01-extraction.md` | Källextraktion från datamodell-110 |
-| `analys/02-live-state.md` | Live-state-snapshot 2026-04-28 |
-| `analys/03-gap-analysis.md` | **Mall** för gap-analyser (struktur återanvänds) |
-| `tasks/sessions/2026-04-28-datamodell-110-projekt.md` | Process-mall (6 faser + milstolpar) |
+| `docs/research/datamodell-research/01-extraction.md` | Källextraktion från datamodell-110 |
+| `docs/research/datamodell-research/02-live-state.md` | Live-state-snapshot 2026-04-28 |
+| `docs/research/datamodell-research/03-gap-analysis.md` | **Mall** för gap-analyser (struktur återanvänds) |
+| `tasks/sessions/archive/2026-04/2026-04-28-datamodell-110-projekt.md` | Process-mall (6 faser + milstolpar) |
 | `marcus-system/tasks/lessons.md` (sektion 2026-04-28) | 9 UNIVERSAL-lärdomar att tillämpa |
 | `miranon-media-admin/docs/conversion-plan.md` | Befintlig Vue → React-plan + Supabase-förberedelse |
 
@@ -97,14 +97,14 @@ mot världsklass.
 
 Bakgrund: Vi avslutade just datamodell-110-projektet (sex faser,
 11/10-dokumentation av befintlig Airtable-modell), dokumenterat i
-~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-110-projekt.md.
+~/Repon/miranon-media-admin/tasks/sessions/archive/2026-04/2026-04-28-datamodell-110-projekt.md.
 
 Nu vill jag att du läser i denna ordning:
 
 1. tasks/datamodell-research-direktiv.md (detta dokuments
    scope + mål)
 2. docs/reference/data-model.md (vår nuvarande modell)
-3. tasks/sessions/2026-04-28-datamodell-110-projekt.md
+3. tasks/sessions/archive/2026-04/2026-04-28-datamodell-110-projekt.md
    (för process-mönstret — vi använder samma fasindelade
    upplägg med milstolpar och hypotes-disciplin)
 
@@ -152,4 +152,4 @@ Två viktiga premisser från direktivet:
 
 ## Slutnot
 
-Projektet slutfört 2026-04-30 efter Gate 6. Leveransen finns i `analys/04-research.md`, `analys/05-gap-vs-worldclass.md`, `analys/06a-airtable-redesign.md`, `analys/06b-supabase-target.md` och `analys/07-migration-plan.md`. Arbetsdokumentet är fruset i `tasks/sessions/2026-04-28-datamodell-research-projekt.md`.
+Projektet slutfört 2026-04-30 efter Gate 6. Leveransen finns i `docs/research/datamodell-research/04-research.md`, `docs/research/datamodell-research/05-gap-vs-worldclass.md`, `docs/research/datamodell-research/06a-airtable-redesign.md`, `docs/research/datamodell-research/06b-supabase-target.md` och `docs/research/datamodell-research/07-migration-plan.md`. Arbetsdokumentet är fruset i `tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md`.

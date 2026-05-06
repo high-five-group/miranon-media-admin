@@ -2,7 +2,7 @@
 
 > **Detta är en session-bro, inte en sanningskälla.** Substansen för projektet bor i direktivet, planen, arbetsdokumentet och lessons.md. Den här filen säger bara: läs dessa, i denna ordning, sedan denna uppgift, sedan rapportera så här.
 >
-> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/fas-1-prompt.md`
+> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/archive/datamodell-research-2026-04-30/fas-1-prompt.md`
 > **Skapad:** 2026-04-29 av Claude Chat efter avslutad Fas 0
 > **För:** Codex i ny session
 
@@ -33,19 +33,19 @@ Sanningen om projektet bor i dessa filer. Läs dem **innan** du rör något verk
 
 4. `~/Repon/miranon-media-admin/tasks/datamodell-research-direktiv.md` — scope, mål, premisser
 5. `~/Repon/miranon-media-admin/tasks/datamodell-research-plan.md` — 7-faser, gates, milstolpar, anti-patterns
-6. `~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-research-projekt.md` — **arbetsdokumentet, levande genom hela projektet** (innehåller alla beslut, hypoteser, DS/DQ, spårbarhetsmatris, UNIVERSAL-kandidater och §11 live-verifierade tekniska fakta)
+6. `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md` — **arbetsdokumentet, levande genom hela projektet** (innehåller alla beslut, hypoteser, DS/DQ, spårbarhetsmatris, UNIVERSAL-kandidater och §11 live-verifierade tekniska fakta)
 
 **Indata för Fas 1:**
 
 7. `~/Repon/miranon-media-admin/docs/reference/data-model.md` — frusen indata
 8. `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md` — affärslogik som ska bevaras
-9. `~/Repon/miranon-media-admin/analys/01-extraction.md` — källextraktion från dm-110
-10. `~/Repon/miranon-media-admin/analys/02-live-state.md` — live-state-snapshot
-11. `~/Repon/miranon-media-admin/analys/03-gap-analysis.md` — mall för gap-analyser
+9. `~/Repon/miranon-media-admin/docs/research/datamodell-research/01-extraction.md` — källextraktion från dm-110
+10. `~/Repon/miranon-media-admin/docs/research/datamodell-research/02-live-state.md` — live-state-snapshot
+11. `~/Repon/miranon-media-admin/docs/research/datamodell-research/03-gap-analysis.md` — mall för gap-analyser
 
 **Process-mall:**
 
-12. `~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-110-projekt.md` — för att se hur dm-110 körde sin Fas 1 och vilken disciplin som tillämpades
+12. `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-04/2026-04-28-datamodell-110-projekt.md` — för att se hur dm-110 körde sin Fas 1 och vilken disciplin som tillämpades
 
 **Tilläggskontext:**
 
@@ -61,7 +61,7 @@ Total: ~7 500 rader. Med 400k kontextfönster ryms allt.
 
 Hela uppgiftsspecen finns i planen §6 "Fas 1 — Baseline & Constraint Map". Kortversionen:
 
-**Output:** Skapa `~/Repon/miranon-media-admin/analys/04-research.md` med Del 0 — Baseline & Constraint Map. Strukturen:
+**Output:** Skapa `~/Repon/miranon-media-admin/docs/research/datamodell-research/04-research.md` med Del 0 — Baseline & Constraint Map. Strukturen:
 
 ```
 # 04 — Worldclass Research

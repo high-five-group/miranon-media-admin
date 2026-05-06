@@ -594,7 +594,7 @@ Per Marcus M3-godkännande + Gate A1 fråga 6: M4 öppnar med discovery-fas inna
 
 **3. Dokumentation av Lottas Interface (sökt):**
 - `docs/`: 21 filer, ingen om Lottas Interface skrivflöden
-- `analys/`: 11 filer, ingen om Lottas Interface skrivflöden (06a/06b/07 är target-design, inte aktuell Interface-state)
+- `docs/research/datamodell-research/`: 11 filer, ingen om Lottas Interface skrivflöden (06a/06b/07 är target-design, inte aktuell Interface-state)
 - HAR-exports: 0 hittade
 - "lottas-flow"/"airtable-interface"-dokument: 0 hittade
 

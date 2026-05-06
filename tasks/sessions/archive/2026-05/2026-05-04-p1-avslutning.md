@@ -1,7 +1,7 @@
 # P1 Avslutning — Städning + nästa session-startkontext
 
 > **Datum:** 2026-05-04
-> **Föregående:** `tasks/sessions/2026-05-04-byggplan-revision-p1.md` (sessionsdokument, klar)
+> **Föregående:** `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` (sessionsdokument, klar)
 > **Avsedd användning:** En läsning av detta dokument räcker för att (1) committa P1, (2) starta P2 i ren context, (3) lyfta UNIVERSAL-lärdomar.
 
 ---
@@ -105,7 +105,7 @@ Färdig prompt att klistra in i Code (kör efter att P1-sessionsdoket är commit
 
 ```
 LÄS först:
-- ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-byggplan-revision-p1.md
+- ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md
   (P1-sessionsdok — Del 6 "Konsoliderad §5-uppdatering" är källan för denna uppgift)
 - ~/Repon/miranon-media-admin/tasks/byggplan-direktiv.md
   (Målfilen — §5 är sektionen som ska uppdateras)
@@ -139,7 +139,7 @@ DOKUMENTERA + COMMITTA:
 - Commit-message: "chore(byggplan): apply P1 §5-updates from session 2026-05-04
 
   Applies decisions A1-A5 + B1-B3 from P1 phase-sequence revision.
-  Sources: tasks/sessions/2026-05-04-byggplan-revision-p1.md Del 6.
+  Sources: tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md Del 6.
   
   Updated rows: 2.5, 3.5, 5, 5.5, 6, 7, B, E
   Added row: 8 (framtid - Background Sync defer-target)
@@ -169,7 +169,7 @@ Läs i denna ordning:
 1. ~/Repon/marcus-system/CLAUDE.md
 2. ~/Repon/miranon-media-admin/CLAUDE.md
 3. ~/Repon/miranon-media-admin/tasks/lessons.md
-4. ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-byggplan-revision-p1.md
+4. ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md
    (P1-leveransen — främst Del 5 ADR-katalog, Del 6 §5-uppdatering, och Del 2 A1 trigger-kriterier)
 5. ~/Repon/miranon-media-admin/tasks/byggplan-direktiv.md §6 P2
    (uppgiftsbeskrivningen)
@@ -256,8 +256,8 @@ PLANERA:
 - Ingen ändring i någon annan fil
 
 IMPLEMENTERA:
-- Flytta filen till tasks/sessions/2026-05-04-byggplan-revision-p1.md
-- git add tasks/sessions/2026-05-04-byggplan-revision-p1.md
+- Flytta filen till tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md
+- git add tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md
 - git commit med följande message (kopiera ordagrant inkl. blankrader):
 
     docs(byggplan): add P1 session document — phase-sequence revision
@@ -308,7 +308,7 @@ Klistra in i Code efter Steg 2 är klart.
 LÄS först:
 - ~/Repon/miranon-media-admin/tasks/lessons.md
   (för att se nuvarande sektion-struktur och hitta "Arbetsflöde och process"-sektionen)
-- ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-p1-avslutning.md Del 2
+- ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-p1-avslutning.md Del 2
   (källan — tre färdig-formaterade lessons-poster i kodblock)
 
 RAPPORTERA:
@@ -347,7 +347,7 @@ DOKUMENTERA + COMMITTA:
     - Beroendegraf före beslutsserier
 
     All flagged [UNIVERSAL] for lift to marcus-system at next sync.
-    Source: tasks/sessions/2026-05-04-byggplan-revision-p1.md.
+    Source: tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md.
 
 - Pusha
 ```
@@ -382,7 +382,7 @@ IMPLEMENTERA + VERIFIERA + COMMITTA:
     chore(todo): mark P1 complete, add P2 as next
 
     P1 byggplan-revision (phase-sequence) completed 2026-05-04.
-    See tasks/sessions/2026-05-04-byggplan-revision-p1.md.
+    See tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md.
     P2 startup context: see Del 4 in p1-avslutning.md.
 
 - Pusha
@@ -401,7 +401,7 @@ RAPPORTERA:
 - Bekräfta filstorlek (~14-15 kB, ~310-330 rader efter dessa redigeringar)
 
 PLANERA:
-- mv från Downloads till tasks/sessions/2026-05-04-p1-avslutning.md
+- mv från Downloads till tasks/sessions/archive/2026-05/2026-05-04-p1-avslutning.md
 - git add + commit + push
 
 IMPLEMENTERA + VERIFIERA + COMMITTA:
@@ -446,6 +446,6 @@ I ny Chat-session: klistra in P2-startprompten från Del 4. Sessionen startar me
 
 **Vad nästa session ska göra:** P2 — stödspec-synkning enligt direktiv §6 P2. Specifikt: omskrivning av ACCESSIBILITY-CHECKLIST.md (som triggar A1-scenariobeslutet), uppdatering av SECURITY-SPEC.md (Fas A-mönster), synk av STATE-STRATEGY.md (operations-API + strangler-fig).
 
-**Var den auktoritativa P1-trailen finns:** `tasks/sessions/2026-05-04-byggplan-revision-p1.md` — 591 rader, åtta delar + tre bilagor.
+**Var den auktoritativa P1-trailen finns:** `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` — 591 rader, åtta delar + tre bilagor.
 
 **Var den auktoritativa byggplan-strukturen finns (efter Code applicerat §5-uppdateringen):** `tasks/byggplan-direktiv.md` §5 — 15 rader, kommer matcha P1-sessionsdokets Del 6.

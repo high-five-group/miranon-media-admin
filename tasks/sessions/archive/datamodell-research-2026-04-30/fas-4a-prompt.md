@@ -2,7 +2,7 @@
 
 > **Detta är en session-bro, inte en sanningskälla.** Substansen för projektet bor i direktivet, planen, arbetsdokumentet, principregistret i `04-research.md`, gap-analysen i `05-gap-vs-worldclass.md` och `lessons.md`. Den här filen säger bara: läs dessa, i denna ordning, kör A-track-redesignen så här, hantera kontexten så här, rapportera så här.
 >
-> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/fas-4a-prompt.md`
+> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/archive/datamodell-research-2026-04-30/fas-4a-prompt.md`
 > **Skapad:** 2026-04-29 av Claude Chat efter avslutad Fas 3 (Gate 3 passerad)
 > **För:** Codex CLI (GPT-5.5, 400K kontextfönster) — **ny session**
 > **Avlöser:** `fas-3-prompt.md` (Fas 3 är klar)
@@ -27,9 +27,9 @@ Du läser denna prompt i en **ny Codex CLI-session**. Tidigare sessioners kontex
 
 **Levererat hittills:**
 - **Fas 0 (KLAR):** Direktiv, 7-fasplan, arbetsdokument med 29 spårbarhetsrader.
-- **Fas 1 (KLAR — Gate 1 passerad):** `analys/04-research.md` Del 0 — Baseline & Constraint Map.
-- **Fas 2 (KLAR — Gate 2 passerad):** `analys/04-research.md` Del 1 — 10 principer P1–P10 + R7 stickprov (Cal.com, Plane.so, NocoDB).
-- **Fas 3 (KLAR — Gate 3 passerad):** `analys/05-gap-vs-worldclass.md` — 15 gap (G1–G15) + DS/DQ/H-matris + prioriteringskarta + 9 öppna frågor till Fas 4.
+- **Fas 1 (KLAR — Gate 1 passerad):** `docs/research/datamodell-research/04-research.md` Del 0 — Baseline & Constraint Map.
+- **Fas 2 (KLAR — Gate 2 passerad):** `docs/research/datamodell-research/04-research.md` Del 1 — 10 principer P1–P10 + R7 stickprov (Cal.com, Plane.so, NocoDB).
+- **Fas 3 (KLAR — Gate 3 passerad):** `docs/research/datamodell-research/05-gap-vs-worldclass.md` — 15 gap (G1–G15) + DS/DQ/H-matris + prioriteringskarta + 9 öppna frågor till Fas 4.
 
 **Strukturbeslut för Fas 4 (taget mellan Fas 3 och 4):**
 - **Fas 4 splittas i två sessioner med två gates:** 4a (A-track, denna prompt) + 4b (S-track, separat prompt). Avviker från planens "en gate per fas" men bevarar planens output-filer (`06a-airtable-redesign.md` + `06b-supabase-target.md`) och inter-fas-kontraktet till Fas 5. Disciplin-skäl: A-track ska vara stabil innan S-track bygger på den.
@@ -66,24 +66,24 @@ Du läser denna prompt i en **ny Codex CLI-session**. Tidigare sessioners kontex
 
 4. `~/Repon/miranon-media-admin/tasks/datamodell-research-direktiv.md`
 5. `~/Repon/miranon-media-admin/tasks/datamodell-research-plan.md` — **särskilt §6 Fas 4 A-track, §7 hypotesdisciplin, §8 DS/DQ-beslutsmatris**
-6. `~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-research-projekt.md` — **arbetsdokumentet**
+6. `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md` — **arbetsdokumentet**
 
 **Indata för Fas 4a — kärnmaterialet:**
 
-7. `~/Repon/miranon-media-admin/analys/04-research.md` — principregistret P1–P10 + R7 stickprov
-8. `~/Repon/miranon-media-admin/analys/05-gap-vs-worldclass.md` — **gap-analysen, primär input för A-track**
+7. `~/Repon/miranon-media-admin/docs/research/datamodell-research/04-research.md` — principregistret P1–P10 + R7 stickprov
+8. `~/Repon/miranon-media-admin/docs/research/datamodell-research/05-gap-vs-worldclass.md` — **gap-analysen, primär input för A-track**
 
 **Frusen indata:**
 
 9. `~/Repon/miranon-media-admin/docs/reference/data-model.md`
 10. `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md`
-11. `~/Repon/miranon-media-admin/analys/01-extraction.md`
-12. `~/Repon/miranon-media-admin/analys/02-live-state.md`
-13. `~/Repon/miranon-media-admin/analys/03-gap-analysis.md`
+11. `~/Repon/miranon-media-admin/docs/research/datamodell-research/01-extraction.md`
+12. `~/Repon/miranon-media-admin/docs/research/datamodell-research/02-live-state.md`
+13. `~/Repon/miranon-media-admin/docs/research/datamodell-research/03-gap-analysis.md`
 
 **Föregående fas-prompter (för disciplin- och stilkonsistens):**
 
-14. `~/Repon/miranon-media-admin/tasks/sessions/fas-3-prompt.md` — närmaste mönstermatchning
+14. `~/Repon/miranon-media-admin/tasks/sessions/archive/datamodell-research-2026-04-30/fas-3-prompt.md` — närmaste mönstermatchning
 
 **Total: ~9 500 rader.** Med 400K kontextfönster får allt plats. Använd scratch-persistens (§4).
 
@@ -103,7 +103,7 @@ Designa "Airtable 11/10" — den sanerade, formaliserade versionen av nuvarande 
 
 ### 3.2 Output
 
-`~/Repon/miranon-media-admin/analys/06a-airtable-redesign.md` — **ny fil**.
+`~/Repon/miranon-media-admin/docs/research/datamodell-research/06a-airtable-redesign.md` — **ny fil**.
 
 Strukturen:
 
@@ -298,7 +298,7 @@ Lärdomar från Fas 0–3 plus några specifikt för A-track:
 1. Läs källfilerna i §2 i ordning, i sin helhet. Ta särskilt tid på `05-gap-vs-worldclass.md` Del C (prioriteringskartan) och Del D (öppna frågor).
 2. Skapa `.codex-scratch/fas-4a-context.md` enligt §4.1.
 3. Uppdatera arbetsdokumentet §3 Beslutslogg med G0.3 = soft multi-tenant (Marcus 2026-04-29). Uppdatera §10 med rad för Fas 4a-start. Uppdatera §2 status.
-4. Skapa `analys/06a-airtable-redesign.md` med skelett enligt §3.2.
+4. Skapa `docs/research/datamodell-research/06a-airtable-redesign.md` med skelett enligt §3.2.
 5. **M1 — Del A (driftkritiska fixar):** designa A-åtgärder för G3, G12, G13. Skriv till disk.
 6. **M2 — Del B (cleanup) + Del C (preserve):** designa A-åtgärder för G4, G5, G8, G10, G11 plus preserve-besluten för G6/DQ6/DS2/H9. Skriv till disk.
 7. **M3 — Del D (sekvens) + Del E (risk) + Del F (inter-fas-kontrakt):** sekvensering, riskmatris, vad som låses till S-track.

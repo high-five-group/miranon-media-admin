@@ -86,10 +86,10 @@ disciplin utöver vanliga gates och faser:
 | `tasks/datamodell-research-direktiv.md` | Scope, mål, output, avgränsningar |
 | `docs/reference/data-model.md` (1 334 r) | Frusen sanning om nuvarande Airtable-modell |
 | `docs/reference/hur-systemet-funkar.md` (282 r) | Affärslogik som ska bevaras |
-| `analys/01-extraction.md` (964 r) | Källextraktion från datamodell-110 |
-| `analys/02-live-state.md` (726 r) | Live-state-snapshot 2026-04-28 |
-| `analys/03-gap-analysis.md` (~600 r) | Mall för gap-analysens struktur |
-| `tasks/sessions/2026-04-28-datamodell-110-projekt.md` | Processmönster: faser, gates, hypotesdisciplin |
+| `docs/research/datamodell-research/01-extraction.md` (964 r) | Källextraktion från datamodell-110 |
+| `docs/research/datamodell-research/02-live-state.md` (726 r) | Live-state-snapshot 2026-04-28 |
+| `docs/research/datamodell-research/03-gap-analysis.md` (~600 r) | Mall för gap-analysens struktur |
+| `tasks/sessions/archive/2026-04/2026-04-28-datamodell-110-projekt.md` | Processmönster: faser, gates, hypotesdisciplin |
 | `docs/conversion-plan.md` | Befintlig Vue → React-plan + Supabase-förberedelse |
 | `marcus-system/tasks/lessons.md` | 6 universal-lärdomar från 2026-04-28 |
 
@@ -108,7 +108,7 @@ disciplin utöver vanliga gates och faser:
 
 ## 5. Output-artefakter
 
-Alla filer i `~/Repon/miranon-media-admin/analys/` om inget annat anges.
+Alla filer i `~/Repon/miranon-media-admin/docs/research/datamodell-research/` om inget annat anges.
 
 | Fil | Innehåll | Levereras i fas |
 |---|---|---|
@@ -182,7 +182,7 @@ innan research börjar.
 |---|---|---|
 | Plan-1 | Är tvåstegsstrategin korrekt? | Ja/nej |
 | Plan-2 | Är output-filerna rätt (5 filer, 06 splittad i a+b)? | Ja/justera |
-| Plan-3 | Ska planen leva i `tasks/` och output i `analys/`? | Ja/justera |
+| Plan-3 | Ska planen leva i `tasks/` och output i `docs/research/datamodell-research/`? | Ja/justera |
 | Plan-4 | Vilka ändringar är absolut förbjudna under projektet? | Bekräfta |
 | **G0.1** | **Räcker textbaserad research, eller stickprov mot konkreta scheman från öppen källkod (Cal.com, Plane.so, NocoDB)?** | Min rekommendation: ja, minst 2–3 stickprov. Konkreta scheman slår abstrakta principer för migrationsplanering. |
 | **G0.2** | **Hur djup går vi på event sourcing/CQRS?** | Min rekommendation: utvärdera, sannolikt skip. Audit-logg + immutable history räcker för era behov. Komplexitet för komplexitet är inte 11/10. |
@@ -237,7 +237,7 @@ användbar i gap-analysen.
 **Mål:** Identifiera principer för världsklass-datamodeller som är *relevanta*
 för detta system. Inte generiska best practices.
 
-**Output:** `analys/04-research.md`
+**Output:** `docs/research/datamodell-research/04-research.md`
 
 **Avgränsning:** Researchen ska täcka både Airtable som operativt
 no-code/low-code-system OCH Supabase som relationsdatabas. Inte enbart
@@ -290,7 +290,7 @@ SQL-normalisering.
 **Mål:** Jämföra nuvarande modell mot research-principerna och klassificera
 varje gap.
 
-**Output:** `analys/05-gap-vs-worldclass.md`
+**Output:** `docs/research/datamodell-research/05-gap-vs-worldclass.md`
 
 **Gap-format:** Varje gap har:
 
@@ -355,7 +355,7 @@ Plus: alla 12 hypoteser från dm-110.
 target. Sekvensen är medveten: S-track byggs på A-trackens output, inte
 parallellt.
 
-**Output:** `analys/06a-airtable-redesign.md` + `analys/06b-supabase-target.md`
+**Output:** `docs/research/datamodell-research/06a-airtable-redesign.md` + `docs/research/datamodell-research/06b-supabase-target.md`
 
 **Sekvens:** A1 → A2 → **A-track-gate** → S1 → S2
 
@@ -429,7 +429,7 @@ parallellt.
 **Mål:** Skapa en exekverbar plan från nuvarande Airtable till Airtable 11/10
 och därefter till Supabase.
 
-**Output:** `analys/07-migration-plan.md`
+**Output:** `docs/research/datamodell-research/07-migration-plan.md`
 
 **Code används här:** läsa `DataSourceAdapter.ts`, `AirtableAdapter.ts`,
 `SupabaseAdapter.ts` (skelett), 7 Edge Functions, domain-modeller. Mappa:
@@ -737,7 +737,7 @@ Projektet är klart när:
 |---|---|---|
 | B1 | Godkänna tvåstegsstrategin | Ja: Airtable 11/10 först, Supabase sedan |
 | B2 | Godkänna output-filerna (5 filer, 06 splittad till a+b) | Ja |
-| B3 | Godkänna att planen lever i `tasks/` och output i `analys/` | Ja |
+| B3 | Godkänna att planen lever i `tasks/` och output i `docs/research/datamodell-research/` | Ja |
 | B4 | Godkänna arbetsdokument i `tasks/sessions/` (dm-110-mönster) | Ja |
 | B5 | Bekräfta att `docs/reference/hur-systemet-funkar.md` är måste-läs i Fas 1 | Ja: affärslogik är hård constraint |
 | B6 | Bestäm research-ribba för Fas 2 | Min rek: minst 5–8 högkvalitativa källor per princip-kluster, inte modellens allmänkunskap ensam |

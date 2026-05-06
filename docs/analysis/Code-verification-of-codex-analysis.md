@@ -431,7 +431,7 @@ Min ursprungliga rapport behandlade kodgapen som tekniska defekter att fixa. 04-
 
 **Varför inte noll-arbete:**
 
-- A1 ([06a Del A](analys/06a-airtable-redesign.md)) ändrar formeln `Anmälningar.Är aktiv (1/0)` post-MK från `IF({Status}="Avbokad/Ombokad", 0, 1)` till `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)`. **A1 ändrar inte status-värdena** — de sex värdena `Obekräftad`, `Bekräftad (mail skickat)`, `Betalningspåminnelse skickad`, `Avbokad/Ombokad`, `Flytta till väntelista`, `Inställt` finns redan i Airtable idag och kommer fortsätta finnas post-A-track. Status.ts ska alltså spegla **alla sex värden idag**.
+- A1 ([06a Del A](docs/research/datamodell-research/06a-airtable-redesign.md)) ändrar formeln `Anmälningar.Är aktiv (1/0)` post-MK från `IF({Status}="Avbokad/Ombokad", 0, 1)` till `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)`. **A1 ändrar inte status-värdena** — de sex värdena `Obekräftad`, `Bekräftad (mail skickat)`, `Betalningspåminnelse skickad`, `Avbokad/Ombokad`, `Flytta till väntelista`, `Inställt` finns redan i Airtable idag och kommer fortsätta finnas post-A-track. Status.ts ska alltså spegla **alla sex värden idag**.
 - 06b §B3 designar `registrations.status` som en **annan** enum: `'draft','pending','confirmed','waitlisted','cancelled','rebooked','completed','no_show'`. Den är target-modellen, inte Airtable-modellen. Att blanda dem i samma `RegistrationStatus`-konstant är en feldesign mot K9 (stable identifiers separeras från displaynamn vid integrationskanter): Airtable-värdet `"Bekräftad (mail skickat)"` är ett displaynamn, inte en stable key, och target-värdet `"confirmed"` är en target-state-nyckel.
 
 **Hur fixen ska göras:**

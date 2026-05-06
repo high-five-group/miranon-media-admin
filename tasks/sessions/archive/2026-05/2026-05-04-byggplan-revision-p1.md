@@ -3,7 +3,7 @@
 > **Status:** ✅ KLAR — alla fyra klungor genomförda, stop-test passerat.
 > **Skapat:** 2026-05-04
 > **Ägare:** Marcus + Claude Chat
-> **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-byggplan-revision-p1.md`
+> **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md`
 > **Styrande:** `tasks/byggplan-direktiv.md` §6 P1
 > **Föregångare:** `docs/logs/byggplan-revision-inventory.md` (P0, slutförd 2026-05-04)
 > **Stop-test:** Slutgiltig fas-lista för byggplanen. Beslut på alla "NEW" och "modified scope"-faser i direktiv §5 fas-tabell.
@@ -29,12 +29,12 @@ Lästa i denna ordning vid sessionsstart:
 | 3 | `~/Repon/marcus-system/tasks/lessons.md` | Universella lärdomar |
 | 4 | `docs/logs/byggplan-revision-inventory.md` | P0-leveransen — primär indata |
 | 5 | `tasks/byggplan-direktiv.md` §3, §5, §6 P1, §8.5 | Direktivets ram + frusen kontext + uppgift |
-| 6 | `analys/06b-supabase-target.md` | Target-modell för adapter-debt-klassningens 06b-impact-bedömning |
-| 7 | `analys/07-migration-plan.md` §A2 | Strangler-fig-sekvens (Persons → Events → Registrations) |
+| 6 | `docs/research/datamodell-research/06b-supabase-target.md` | Target-modell för adapter-debt-klassningens 06b-impact-bedömning |
+| 7 | `docs/research/datamodell-research/07-migration-plan.md` §A2 | Strangler-fig-sekvens (Persons → Events → Registrations) |
 | 8 | `src/data/adapters/AirtableAdapter.ts` | Verifiering av 9 TODO-metoder direkt mot kod |
 | 9 | `docs/research/vue-project-analysis.md` | Korsverifiering av adapter-metod-status |
-| 10 | `analys/01-extraction.md` §I, §J | Edge Function-kontrakt + mail-flöden |
-| 11 | `analys/02-live-state.md` §A | Faktiskt deployade Airtable-automationer |
+| 10 | `docs/research/datamodell-research/01-extraction.md` §I, §J | Edge Function-kontrakt + mail-flöden |
+| 11 | `docs/research/datamodell-research/02-live-state.md` §A | Faktiskt deployade Airtable-automationer |
 | 12 | `docs/reference/data-model.md` §F.4 | F.4-dubblettbuggen i create-registration |
 | 13 | `docs/conversion-plan.md` §D Fas 6, §L | Hem-flikens scope + 4-flikars-design |
 
@@ -42,8 +42,8 @@ Lästa i denna ordning vid sessionsstart:
 
 1. `tasks/byggplan-direktiv.md` §3 (åtta luckor) + §8.5 (Fas A-fynd) — auktoritativ för revisionen
 2. `docs/logs/byggplan-revision-inventory.md` (P0, klar 2026-05-04) — klassad drift mellan conversion-plan och verklighet
-3. `analys/06b-supabase-target.md` + `analys/07-migration-plan.md` — låsta target-kontrakt och migrations-sekvens (Gate 4B passerad, Gate 5 underlag)
-4. `analys/02-live-state.md` — observerad Airtable-status (MCP-läst 2026-04-28)
+3. `docs/research/datamodell-research/06b-supabase-target.md` + `docs/research/datamodell-research/07-migration-plan.md` — låsta target-kontrakt och migrations-sekvens (Gate 4B passerad, Gate 5 underlag)
+4. `docs/research/datamodell-research/02-live-state.md` — observerad Airtable-status (MCP-läst 2026-04-28)
 5. `src/data/adapters/AirtableAdapter.ts` — kodverkligheten
 
 ### Beslutsstrukturen — fyra klungor
@@ -563,14 +563,14 @@ Beroenden mellan beslut, verifierade i Klunga 0-strukturen:
 
 | Beslut | Primär källa | Korsverifiering |
 |---|---|---|
-| A4 — Fas B parallell-spår, drift | `analys/06a-airtable-redesign.md` Del A–C, `tasks/sessions/fas-4a-prompt.md` §3.4 | Direktiv §3.2, §5 fas-tabell rad B |
+| A4 — Fas B parallell-spår, drift | `docs/research/datamodell-research/06a-airtable-redesign.md` Del A–C, `tasks/sessions/archive/datamodell-research-2026-04-30/fas-4a-prompt.md` §3.4 | Direktiv §3.2, §5 fas-tabell rad B |
 | A1 — Fas 3.5 scenariobeslut | Direktiv §3.5, §6 P1 fråga 1 | P0-inventory Fas 3 öppen P1-fråga, `docs/research/react-stack-research.md` (React Aria-mönster) |
-| A5 — Adapter-debt-klassning | `src/data/adapters/AirtableAdapter.ts` (kodverifiering), `docs/research/vue-project-analysis.md` (status per metod) | Direktiv §3.4, §8.5.1 (M4-princip), `analys/06b-supabase-target.md` Del B+E (target-impact), `analys/01-extraction.md` §I (EF-kontrakt) |
-| A3 — Fas 6 strangler-fig-sekvens | `analys/07-migration-plan.md` §A2 | Direktiv §5 ("Sekvens följer 07 strangler-fig"), P0-inventory 6.2, `docs/conversion-plan.md` §D Fas 6 + §L |
-| A2 — Fas 5.5 markera betalning | Direktiv §8.5.1 (write-flow-krav), `analys/02-live-state.md` §A.7 (Synka ej mottagna slutbetalningar — bekräftar Betald-fältet) | Klunga 2-klassning (inga TODO-EF deployas före Fas 6) |
-| B1 — Hybrid polling + manuell refresh | `docs/conversion-plan.md` §D Fas 6 [GA] (Realtime-tillägg), P0-inventory 6.5 (Realtime-frågan), `analys/01-extraction.md` (Airtable rate-limit) | Direktiv §5 (Fas E DEFER), `docs/specs/STATE-STRATEGY.md` (TanStack-arkitektur — refereras i P2) |
+| A5 — Adapter-debt-klassning | `src/data/adapters/AirtableAdapter.ts` (kodverifiering), `docs/research/vue-project-analysis.md` (status per metod) | Direktiv §3.4, §8.5.1 (M4-princip), `docs/research/datamodell-research/06b-supabase-target.md` Del B+E (target-impact), `docs/research/datamodell-research/01-extraction.md` §I (EF-kontrakt) |
+| A3 — Fas 6 strangler-fig-sekvens | `docs/research/datamodell-research/07-migration-plan.md` §A2 | Direktiv §5 ("Sekvens följer 07 strangler-fig"), P0-inventory 6.2, `docs/conversion-plan.md` §D Fas 6 + §L |
+| A2 — Fas 5.5 markera betalning | Direktiv §8.5.1 (write-flow-krav), `docs/research/datamodell-research/02-live-state.md` §A.7 (Synka ej mottagna slutbetalningar — bekräftar Betald-fältet) | Klunga 2-klassning (inga TODO-EF deployas före Fas 6) |
+| B1 — Hybrid polling + manuell refresh | `docs/conversion-plan.md` §D Fas 6 [GA] (Realtime-tillägg), P0-inventory 6.5 (Realtime-frågan), `docs/research/datamodell-research/01-extraction.md` (Airtable rate-limit) | Direktiv §5 (Fas E DEFER), `docs/specs/STATE-STRATEGY.md` (TanStack-arkitektur — refereras i P2) |
 | B3 — Fas 5 selektiv förenkling | P0-inventory 5.2 (möjliga axlar), `docs/conversion-plan.md` §D Fas 5 [GA] (sex tilläggens originaldefinitioner) | `docs/logs/gap-analysis.md` Fas 5-sektion (kvalitetsbetyg + essentiellt-vs-nice-to-have-resonemang), Fas 0 BUILD-LOG (`sw.js`-skelett-leverans) |
-| B2 — Background Sync defer till Fas 8 | `docs/conversion-plan.md` §D Fas 7 [GA] (Background Sync-tillägget), `docs/conversion-plan.md` §D Fas 8 (original "Passkeys, push, offline") | `analys/06b-supabase-target.md` Del B5 (`communication_outbox` + `communication_attempts` — visar varför post-Fas E-arkitektur skiljer sig) |
+| B2 — Background Sync defer till Fas 8 | `docs/conversion-plan.md` §D Fas 7 [GA] (Background Sync-tillägget), `docs/conversion-plan.md` §D Fas 8 (original "Passkeys, push, offline") | `docs/research/datamodell-research/06b-supabase-target.md` Del B5 (`communication_outbox` + `communication_attempts` — visar varför post-Fas E-arkitektur skiljer sig) |
 
 ---
 
@@ -585,7 +585,7 @@ Beroenden mellan beslut, verifierade i Klunga 0-strukturen:
 | **strangler-fig** | Migrations-pattern där gammal modell (Airtable) ersätts domän-för-domän, inte big bang |
 | **Fas A** | Säkerhetshardening-fasen, M1–M8, slutförd 2026-05-04 |
 | **Fas B** | Airtable hardening (A1–A12), drift-spår |
-| **Fas E** | Supabase migration, DEFER (pekar på `analys/07-migration-plan.md` Del H) |
+| **Fas E** | Supabase migration, DEFER (pekar på `docs/research/datamodell-research/07-migration-plan.md` Del H) |
 | **F.4-buggen** | Dubblettrisken i `data-model.md` §F.4 — väntelista-konvertering kan skapa både Anmälan-rad och kvarvarande Väntelista-rad om steg 3 (PATCH `Flyttad till anmälan`) misslyckas efter steg 2 (skapa anmälan) |
 | **DoD** | Definition of Done |
 | **ADR** | Architecture Decision Record (i `docs/decisions/`) |

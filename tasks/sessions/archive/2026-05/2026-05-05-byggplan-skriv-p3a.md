@@ -3,14 +3,14 @@
 > **Status:** ✅ KLAR — alla fyra klungor genomförda, stop-test passerat 2026-05-05.
 > **Skapat:** 2026-05-05
 > **Ägare:** Marcus + Claude Chat
-> **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/2026-05-05-byggplan-skriv-p3a.md`
+> **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-05-byggplan-skriv-p3a.md`
 > **Styrande:** `tasks/byggplan-direktiv.md` §6 P3 + §12
 > **Föregångare:**
 > - `docs/logs/byggplan-revision-inventory.md` (P0, slutförd 2026-05-04)
-> - `tasks/sessions/2026-05-04-byggplan-revision-p1.md` (P1, slutförd 2026-05-04)
-> - `tasks/sessions/2026-05-04-p1-avslutning.md` (P1-avslutning, 2026-05-04)
-> - `tasks/sessions/2026-05-04-stodspec-synk-p2.md` (P2, slutförd 2026-05-04)
-> **Efterföljare:** `tasks/sessions/2026-05-05-byggplan-stadning-p3b.md` (P3b — städning + arkivering + BUILD-LOG retrospektiv, planerad)
+> - `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` (P1, slutförd 2026-05-04)
+> - `tasks/sessions/archive/2026-05/2026-05-04-p1-avslutning.md` (P1-avslutning, 2026-05-04)
+> - `tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md` (P2, slutförd 2026-05-04)
+> **Efterföljare:** `tasks/sessions/archive/2026-05/2026-05-05-byggplan-stadning-p3b.md` (P3b — städning + arkivering + BUILD-LOG retrospektiv, planerad)
 > **Stop-test (P3a):** `docs/byggplan.md` innehåller per-fas-prompt för alla 13 faser (Fas 2, 2.5, 3, 3.5, 5, 5.5, 6a–6e, 6.5, 7, 8, B, E) + alla 10 ADR:er har minst skelett (Context, Decision, Alternatives, Consequences) + `docs/decisions/README.md` uppdaterad med 10 nya rader.
 
 ---
@@ -38,8 +38,8 @@ Lästa i denna ordning vid sessionsstart (Chat-miljö → projektkunskap):
 | 1 | `~/Repon/marcus-system/CLAUDE.md` | Hub-konstitution, principer |
 | 2 | `~/Repon/miranon-media-admin/CLAUDE.md` | Projektkonstitution, kvalitetsribba |
 | 3 | `tasks/lessons.md` | Universella lärdomar (inkl. 7 nya: 3 från P1 + 4 från P2) |
-| 4 | `tasks/sessions/2026-05-04-byggplan-revision-p1.md` | P1: Del 5 Pass-status, Del 6 §5-uppdatering (15 rader), Del 7 ADR-katalog (9 st) |
-| 5 | `tasks/sessions/2026-05-04-stodspec-synk-p2.md` | P2: Del 5 A1-utfall = Fas 3.5 egen fas, Del 7 lessons-poster |
+| 4 | `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` | P1: Del 5 Pass-status, Del 6 §5-uppdatering (15 rader), Del 7 ADR-katalog (9 st) |
+| 5 | `tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md` | P2: Del 5 A1-utfall = Fas 3.5 egen fas, Del 7 lessons-poster |
 | 6 | `tasks/byggplan-direktiv.md` §5 (post-P1) + §6 P3 + §12 | Direktivets fas-tabell + uppgift + arkiveringskrav |
 | 7 | `docs/specs/SECURITY-SPEC.md` | Uppdaterad i P2 — operations-API + Fas A:s 8 mönster införlivade |
 | 8 | `docs/specs/STATE-STRATEGY.md` | Uppdaterad i P2 — strangler-fig + §8 operations-API + §5b polling |
@@ -51,8 +51,8 @@ Lästa i denna ordning vid sessionsstart (Chat-miljö → projektkunskap):
 ### Källprioritet vid konflikt
 
 1. `tasks/byggplan-direktiv.md` §5 (post-P1) + §6 P3 + §8.5 — auktoritativ för P3
-2. `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 6 + Del 7 — fas-tabell + ADR-katalog
-3. `tasks/sessions/2026-05-04-stodspec-synk-p2.md` Del 5 (A1-utfall) — Fas 3.5 = egen fas
+2. `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 6 + Del 7 — fas-tabell + ADR-katalog
+3. `tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md` Del 5 (A1-utfall) — Fas 3.5 = egen fas
 4. P2-uppdaterade specs (SECURITY-SPEC, STATE-STRATEGY, ACCESSIBILITY-CHECKLIST) — referensmaterial som byggplan.md pekar mot
 5. `docs/conversion-plan.md` §D — innehåll för per-fas-prompter, men där conversion-plan motsägs av P0-inventory eller P1/P2 vinner P0/P1/P2
 
@@ -263,7 +263,7 @@ Läs i denna ordning:
 1. ~/Repon/marcus-system/CLAUDE.md
 2. ~/Repon/miranon-media-admin/CLAUDE.md
 3. ~/Repon/miranon-media-admin/tasks/lessons.md
-4. ~/Repon/miranon-media-admin/tasks/sessions/2026-05-05-byggplan-skriv-p3a.md
+4. ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-05-byggplan-skriv-p3a.md
    (P3a-leveransen — främst Del 6 Pass-status, Del 7 Stop-test)
 5. ~/Repon/miranon-media-admin/docs/byggplan.md (slutprodukten — referensmaterial)
 6. ~/Repon/miranon-media-admin/docs/conversion-plan.md (ska arkiveras)
@@ -285,7 +285,7 @@ B. Uppdatera docs/BUILD-LOG.md med Fas A-sektion retrospektivt:
    - 113 tester (planerat antal vs faktiskt)
    - Avvikelser med ADR-pekare
    - Definition of Done
-   - Källa: tasks/sessions/2026-05-04-security-hardening.md
+   - Källa: tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md
    - Plus mindre P0/P1/P2-poster (eller hänvisning till sessionsdoken)
 
 C. Markera tasks/byggplan-direktiv.md som SLUTFÖRT i headern (§12).
@@ -338,7 +338,7 @@ Code är fri, P3a committad. Detta är Chat-arbete.
 
 **Vad nästa session ska göra:** P3b — städning + arkivering + BUILD-LOG retrospektiv per direktiv §6 P3 städnings-DoD + §12 slutnot.
 
-**Var den auktoritativa P3a-trailen finns:** `tasks/sessions/2026-05-05-byggplan-skriv-p3a.md` — denna fil, ~410 rader efter K4.
+**Var den auktoritativa P3a-trailen finns:** `tasks/sessions/archive/2026-05/2026-05-05-byggplan-skriv-p3a.md` — denna fil, ~410 rader efter K4.
 
 **Var den auktoritativa byggplanen finns (efter Code committat K2+K3):** `docs/byggplan.md` v1.1 — 832 rader, ersätter conversion-plan som styrande dokument.
 

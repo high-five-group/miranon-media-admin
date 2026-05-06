@@ -209,9 +209,9 @@ Var fakta extraheras från i Fas 1. Uppdaterad efter Fas 0-manifest (2026-04-27)
 
 | Fas | Vem | Output | Status | Estimat |
 |---|---|---|---|---|
-| 0 — Inventering | Code | `analys/00-file-manifest.md` | **Klar 2026-04-27** | ~30 min |
-| 1 — Källextraktion | Code+Chat | `analys/01-extraction.md` (964 r) + `analys/02-live-state.md` (726 r) | **Klar 2026-04-28** | ~3,5 h |
-| 1.1 Live-state-pull | Code (MCP) | `analys/02-live-state.md` | **Klar 2026-04-28** | 45 min |
+| 0 — Inventering | Code | `docs/research/datamodell-research/00-file-manifest.md` | **Klar 2026-04-27** | ~30 min |
+| 1 — Källextraktion | Code+Chat | `docs/research/datamodell-research/01-extraction.md` (964 r) + `docs/research/datamodell-research/02-live-state.md` (726 r) | **Klar 2026-04-28** | ~3,5 h |
+| 1.1 Live-state-pull | Code (MCP) | `docs/research/datamodell-research/02-live-state.md` | **Klar 2026-04-28** | 45 min |
 | 1.2 Verifiera Q5 | Code | inline | **Klar** (tblVE3UKWl1CKrphV = Eventplanering) | parallellt |
 | 1.3 Verifiera Q2 | Code | inline | **Klar** (01-extraction §G) | — |
 | 1.4 A1–A11 från JSON | Code | `01-extraction.md` §B | **Klar** | 60 min |
@@ -220,7 +220,7 @@ Var fakta extraheras från i Fas 1. Uppdaterad efter Fas 0-manifest (2026-04-27)
 | 1.7 Lessons.md-delta | Code | `01-extraction.md` "Lessons-delta" | **Klar** | 15 min |
 | 1.8 Korrelation + öppna frågor | Code | `01-extraction.md` slutsektion | **Klar** | — |
 | ~~2 — Live-state~~ | ~~Code~~ | ~~separat fil~~ | **Slogs ihop med 1.1 (B6)** | — |
-| 3 — Gapanalys | Chat | `analys/03-gap-analysis.md` | **Klar 2026-04-28** (~600 r) | 1,5 h |
+| 3 — Gapanalys | Chat | `docs/research/datamodell-research/03-gap-analysis.md` | **Klar 2026-04-28** (~600 r) | 1,5 h |
 | H1 — Automations-versionsverifiering | Marcus | versionsdata per A1–A11 | **Klar 2026-04-28** ✅ | 5 min |
 | 4 — Skriv | Chat (design) + Code (impl.) | Uppdaterade `data-model.md` + `hur-systemet-funkar.md` | Pågår — M1 klar | 9 h totalt fördelat på 3 milstolpar |
 | 4.M1 | Code (steg 4.1–4.7) | data-model.md (642 → 835 r) | **Klar 2026-04-28** | ~3,5 h faktisk |
@@ -230,7 +230,7 @@ Var fakta extraheras från i Fas 1. Uppdaterad efter Fas 0-manifest (2026-04-27)
 
 ### Fas 0 — Inventering ✅
 
-**Status:** Klar 2026-04-27. Manifest levererat: `~/Repon/miranon-media-admin/analys/00-file-manifest.md`.
+**Status:** Klar 2026-04-27. Manifest levererat: `~/Repon/miranon-media-admin/docs/research/datamodell-research/00-file-manifest.md`.
 
 **Resultat:**
 - 9 sessionsfiler hittade (3 fler än jag hade i kartan från projektkunskapen)
@@ -247,7 +247,7 @@ Var fakta extraheras från i Fas 1. Uppdaterad efter Fas 0-manifest (2026-04-27)
 
 **Status:** Inväntar godkännande av justerad prompt.
 
-**Output:** `~/Repon/miranon-media-admin/analys/01-extraction.md`
+**Output:** `~/Repon/miranon-media-admin/docs/research/datamodell-research/01-extraction.md`
 
 **Justeringar efter manifest:**
 - `miranon_automations_COMPLETE.json` läses via jq/grep — inte i sin helhet (B4)
@@ -262,7 +262,7 @@ Var fakta extraheras från i Fas 1. Uppdaterad efter Fas 0-manifest (2026-04-27)
 
 **Status:** Ej påbörjad.
 
-**Output:** `~/Repon/miranon-media-admin/analys/02-live-state.md`
+**Output:** `~/Repon/miranon-media-admin/docs/research/datamodell-research/02-live-state.md`
 
 ### Fas 3 — Gapanalys
 
@@ -270,7 +270,7 @@ Var fakta extraheras från i Fas 1. Uppdaterad efter Fas 0-manifest (2026-04-27)
 
 **Status:** Ej påbörjad.
 
-**Output:** `~/Repon/miranon-media-admin/analys/03-gap-analysis.md`
+**Output:** `~/Repon/miranon-media-admin/docs/research/datamodell-research/03-gap-analysis.md`
 
 ### Fas 4 — Skriv
 
@@ -317,11 +317,11 @@ Slutliga leveranser. Uppdateras allt eftersom de blir klara.
 
 | Fil | Plats | Status |
 |---|---|---|
-| `00-file-manifest.md` | miranon-media-admin/analys/ | **Klar 2026-04-27** |
-| `02-live-state.md` | miranon-media-admin/analys/ | **Klar 2026-04-28** (726 rader) |
-| `01-extraction.md` | miranon-media-admin/analys/ | **Klar 2026-04-28** (964 rader) |
-| `03-gap-analysis.md` | miranon-media-admin/analys/ | **Klar 2026-04-28** (~600 rader) |
-| `03-gap-analysis.md` | miranon-media-admin/analys/ | Ej påbörjad |
+| `00-file-manifest.md` | miranon-media-admin/docs/research/datamodell-research/ | **Klar 2026-04-27** |
+| `02-live-state.md` | miranon-media-admin/docs/research/datamodell-research/ | **Klar 2026-04-28** (726 rader) |
+| `01-extraction.md` | miranon-media-admin/docs/research/datamodell-research/ | **Klar 2026-04-28** (964 rader) |
+| `03-gap-analysis.md` | miranon-media-admin/docs/research/datamodell-research/ | **Klar 2026-04-28** (~600 rader) |
+| `03-gap-analysis.md` | miranon-media-admin/docs/research/datamodell-research/ | Ej påbörjad |
 | `data-model.md` (M1) | miranon-media-admin/docs/ | **Klar 2026-04-28** (835 r, +30%) — väntar på commit efter M3 |
 | `data-model.md` (M3 final) | miranon-media-admin/docs/ | **Klar 2026-04-28** (1 334 r, +108% från ursprung) — inväntar commit |
 | `hur-systemet-funkar.md` (M3 final) | miranon-media-admin/docs/ | **Klar 2026-04-28** (282 r, V3) — inväntar commit |

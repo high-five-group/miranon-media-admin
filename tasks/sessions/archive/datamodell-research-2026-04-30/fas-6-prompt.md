@@ -2,7 +2,7 @@
 
 > **Detta är den sista fasen i projektet.** Inga nya beslut, ingen ny design, ingen ny analys. Fas 6 validerar, lyfter lärdomar och arkiverar.
 >
-> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/fas-6-prompt.md`
+> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/archive/datamodell-research-2026-04-30/fas-6-prompt.md`
 > **Skapad:** 2026-04-30 av Claude Chat efter avslutad Fas 5 (Gate 5 passerad)
 > **För:** Codex CLI (GPT-5.5, 400K kontextfönster) — **ny session**
 > **Avlöser:** `fas-5-prompt.md` (hela design- och planblocket är klart)
@@ -25,12 +25,12 @@ Fas 6 är 30 min estimat. Du gör inte arbete utanför scope. Du stoppar vid Gat
 
 **Levererat hittills (allt KLAR):**
 - Fas 0: Plan + arbetsdokument + G0-beslut
-- Fas 1: `analys/04-research.md` Del 0 — Baseline & Constraint Map
-- Fas 2: `analys/04-research.md` Del 1 — 10 principer P1–P10 + R7 stickprov
-- Fas 3: `analys/05-gap-vs-worldclass.md` — 15 gap, 29 DS/DQ/H klassade
-- Fas 4a: `analys/06a-airtable-redesign.md` — 12 A-track-åtgärder
-- Fas 4b: `analys/06b-supabase-target.md` — 36 target-tabeller
-- Fas 5: `analys/07-migration-plan.md` — 10-stegs migrationsplan + Future Code-prompt
+- Fas 1: `docs/research/datamodell-research/04-research.md` Del 0 — Baseline & Constraint Map
+- Fas 2: `docs/research/datamodell-research/04-research.md` Del 1 — 10 principer P1–P10 + R7 stickprov
+- Fas 3: `docs/research/datamodell-research/05-gap-vs-worldclass.md` — 15 gap, 29 DS/DQ/H klassade
+- Fas 4a: `docs/research/datamodell-research/06a-airtable-redesign.md` — 12 A-track-åtgärder
+- Fas 4b: `docs/research/datamodell-research/06b-supabase-target.md` — 36 target-tabeller
+- Fas 5: `docs/research/datamodell-research/07-migration-plan.md` — 10-stegs migrationsplan + Future Code-prompt
 
 **UNIVERSAL-kandidater i arbetsdokumentet §9 (alla med Lyft-status: Kandidat):**
 - K1: Verifieringsprompter avslöjar verktygskompetens
@@ -75,15 +75,15 @@ Båda commits ska göras med `cd` till rätt repo först. Inga push från dig �
 
 4. `~/Repon/miranon-media-admin/tasks/datamodell-research-direktiv.md`
 5. `~/Repon/miranon-media-admin/tasks/datamodell-research-plan.md` — **särskilt §6 Fas 6 (valideringstester) och §10 (definition of done)**
-6. `~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-research-projekt.md` — **arbetsdokumentet, särskilt §9 K1–K10**
+6. `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md` — **arbetsdokumentet, särskilt §9 K1–K10**
 
 **Indata för validering (referens, läs översiktligt):**
 
-7. `~/Repon/miranon-media-admin/analys/04-research.md`
-8. `~/Repon/miranon-media-admin/analys/05-gap-vs-worldclass.md`
-9. `~/Repon/miranon-media-admin/analys/06a-airtable-redesign.md`
-10. `~/Repon/miranon-media-admin/analys/06b-supabase-target.md`
-11. `~/Repon/miranon-media-admin/analys/07-migration-plan.md`
+7. `~/Repon/miranon-media-admin/docs/research/datamodell-research/04-research.md`
+8. `~/Repon/miranon-media-admin/docs/research/datamodell-research/05-gap-vs-worldclass.md`
+9. `~/Repon/miranon-media-admin/docs/research/datamodell-research/06a-airtable-redesign.md`
+10. `~/Repon/miranon-media-admin/docs/research/datamodell-research/06b-supabase-target.md`
+11. `~/Repon/miranon-media-admin/docs/research/datamodell-research/07-migration-plan.md`
 
 **Total: ~14 000 rader.** Du behöver inte läsa 7-11 i detalj — du har sett dem genom faserna. Skanna efter validering, gå djupt bara där det krävs.
 
@@ -101,10 +101,10 @@ Bevisa att projektet svarar på frågan "Är vår modell i sig 11/10, eller bara
 
 Tre platser:
 
-1. **Slutsektion i `analys/07-migration-plan.md`** — projekt-sammanfattning + valideringsutfall
+1. **Slutsektion i `docs/research/datamodell-research/07-migration-plan.md`** — projekt-sammanfattning + valideringsutfall
 2. **`~/Repon/marcus-system/tasks/lessons.md`** — K1–K10 i slutformulering
 3. **Status-uppdateringar:**
-   - `tasks/sessions/2026-04-28-datamodell-research-projekt.md` markeras FRUSEN i headern
+   - `tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md` markeras FRUSEN i headern
    - `tasks/datamodell-research-direktiv.md` markeras SLUTFÖRT i headern
 
 ### 3.3 Fyra milstolpar (M1, M2, M3, M4)
@@ -226,7 +226,7 @@ Samma struktur för K1–K5, K7, K8, K9, K10.
 Projektet avslutat 2026-04-30 efter Gate 6. Alla output-filer levererade,
 UNIVERSAL-lärdomar lyfta till `~/Repon/marcus-system/tasks/lessons.md`,
 direktivet markerat SLUTFÖRT. Future Code-implementation startar från
-`analys/07-migration-plan.md` Del H när Marcus signalerar go.
+`docs/research/datamodell-research/07-migration-plan.md` Del H när Marcus signalerar go.
 
 Detta dokument är frusen referens. Inga ändringar från denna punkt.
 ```

@@ -2,7 +2,7 @@
 
 > **Detta är en session-bro, inte en sanningskälla.** Substansen för projektet bor i direktivet, planen, arbetsdokumentet och `lessons.md`. Den här filen säger bara: läs dessa, i denna ordning, kör forskningen så här, hantera kontexten så här, rapportera så här.
 >
-> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/fas-2-prompt.md`
+> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/archive/datamodell-research-2026-04-30/fas-2-prompt.md`
 > **Skapad:** 2026-04-29 av Claude Chat efter avslutad Fas 1 (commits `56d32e8` + `245422c`)
 > **För:** Codex CLI (GPT-5.5, 400K kontextfönster) — inte VS Code-extensionen (258K-cap räcker inte för Fas 2 med marginal)
 > **Avlöser:** `fas-1-prompt.md` (Fas 1 är klar, Gate 1 passerad)
@@ -34,19 +34,19 @@ Sanningen om projektet bor i dessa filer. Läs dem **innan** du rör web search 
 
 4. `~/Repon/miranon-media-admin/tasks/datamodell-research-direktiv.md` — scope, mål, premisser
 5. `~/Repon/miranon-media-admin/tasks/datamodell-research-plan.md` — **särskilt §6 Fas 2 och §7 hypotesdisciplin**
-6. `~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-research-projekt.md` — **arbetsdokumentet, levande genom hela projektet** (alla beslut, hypoteser, DS/DQ, spårbarhetsmatris, UNIVERSAL-kandidater, §11 live-verifierade tekniska fakta)
+6. `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md` — **arbetsdokumentet, levande genom hela projektet** (alla beslut, hypoteser, DS/DQ, spårbarhetsmatris, UNIVERSAL-kandidater, §11 live-verifierade tekniska fakta)
 
 **Indata från Fas 1 (din egen leverans):**
 
-7. `~/Repon/miranon-media-admin/analys/04-research.md` — Del 0 (Baseline & Constraint Map) är klar. Del 1 är tom-stansad och ska fyllas i denna fas.
+7. `~/Repon/miranon-media-admin/docs/research/datamodell-research/04-research.md` — Del 0 (Baseline & Constraint Map) är klar. Del 1 är tom-stansad och ska fyllas i denna fas.
 
 **Frusen indata (samma som Fas 1):**
 
 8. `~/Repon/miranon-media-admin/docs/reference/data-model.md`
 9. `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md`
-10. `~/Repon/miranon-media-admin/analys/01-extraction.md`
-11. `~/Repon/miranon-media-admin/analys/02-live-state.md`
-12. `~/Repon/miranon-media-admin/analys/03-gap-analysis.md`
+10. `~/Repon/miranon-media-admin/docs/research/datamodell-research/01-extraction.md`
+11. `~/Repon/miranon-media-admin/docs/research/datamodell-research/02-live-state.md`
+12. `~/Repon/miranon-media-admin/docs/research/datamodell-research/03-gap-analysis.md`
 13. `~/Repon/miranon-media-admin/docs/conversion-plan.md`
 
 **Total: ~7 500 rader källfiler + Del 0 i 04-research. Med 400K kontextfönster får allt plats — men du ska compact:a proaktivt enligt §4 så att research-fasen har gott om utrymme.**
@@ -65,7 +65,7 @@ Identifiera 8–12 principer för världsklass-datamodeller som är **relevanta 
 
 ### 3.2 Output
 
-`~/Repon/miranon-media-admin/analys/04-research.md` Del 1 (skriv direkt i existerande fil — Del 0 från Fas 1 är låst, ändra inte den).
+`~/Repon/miranon-media-admin/docs/research/datamodell-research/04-research.md` Del 1 (skriv direkt i existerande fil — Del 0 från Fas 1 är låst, ändra inte den).
 
 Strukturen för Del 1:
 
@@ -161,7 +161,7 @@ Scratch-filen är ditt minne efter compact. Allt som inte finns i den eller i 04
 **Vad behålls i kontexten:**
 - Scratch-filens path
 - Plan-§6 (Fas 2-specen)
-- Output-filens path (`analys/04-research.md`)
+- Output-filens path (`docs/research/datamodell-research/04-research.md`)
 - Arbetsdokumentets path
 - Denna prompt
 

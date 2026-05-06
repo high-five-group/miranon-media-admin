@@ -17,7 +17,7 @@
 | Sekvens | Första driftkritiska schemaändringen post-MK. Kör i testbas eller Airtable snapshot först. Kör efter att MK är avslutat och efter att Mia/Daniel/andra `Inställt`-records kan användas som verifieringsfall. Ska göras före A6/A7 cleanup eftersom aktiv-semantiken är grund för rapport-/segmentförtroende. |
 | Blast radius | Medel. En formeländring i en central rollup påverkar Personer-rollups och rapporter, men ändrar inte rådata, relationer eller automation actions. |
 | Rollback | Återställ formeln till `IF({Status}="Avbokad/Ombokad", 0, 1)`. Eftersom detta är computed data krävs ingen data-backfill; verifiera bara att Personer-rollups räknas om. |
-| Spårbarhet | DS1; `docs/reference/data-model.md:1170`; `analys/02-live-state.md:166`; `analys/05-gap-vs-worldclass.md:38` |
+| Spårbarhet | DS1; `docs/reference/data-model.md:1170`; `docs/research/datamodell-research/02-live-state.md:166`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:38` |
 
 **Slut-test post-MK:** de två verifierade `Inställt`-anmälningarna ska ge `Är aktiv (1/0)=0`, och berörda Personer ska inte längre få aktiv-rollup från dessa records.
 
@@ -33,7 +33,7 @@
 | Sekvens | Post-MK efter A1. Först dokumentera nuvarande fem mailtyper och deras timestampfält. Sedan ändra `send-email`-kontraktet och UI-feedback i test. Sist, om nytt Airtable-fält behövs, skapa fält och vy efter att Edge Function-output är beslutad. |
 | Blast radius | Medel-hög. Flödet rör skarpa mail; fel retry-design kan skapa dubbelutskick. Därför ska första implementationen fokusera på synlighet och manuell kompensation, inte automatisk resend. |
 | Rollback | Återställ `send-email` till tidigare kontrakt och dölj/arkivera nya partial-failure-vyer. Nya Error-log-rader kan ligga kvar som incidenthistorik; nya fält kan lämnas tomma eller döljas tills nästa iteration. |
-| Spårbarhet | DQ8; `docs/reference/data-model.md:940`; `docs/reference/data-model.md:1186`; `analys/01-extraction.md:497`; `analys/05-gap-vs-worldclass.md:173` |
+| Spårbarhet | DQ8; `docs/reference/data-model.md:940`; `docs/reference/data-model.md:1186`; `docs/research/datamodell-research/01-extraction.md:497`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:173` |
 
 **Slut-test post-MK:** simulera PATCH-fel i testmiljö utan att skicka skarpt mail, och verifiera att operatören ser skillnaden mellan "mail ej skickat" och "mail skickat men Airtable ej uppdaterad".
 
@@ -49,7 +49,7 @@
 | Sekvens | Post-MK efter A1 och parallellt med eller efter A2 beroende på utvecklingsfönster. Gör först en testbas-/stagingvariant med två fall: lyckad flytt och artificiellt PATCH-fel efter Anmälan-create. Inför inte automatisk massflytt; detta gäller operatörsklick en rad i taget. |
 | Blast radius | Hög. Åtgärden rör write-path mellan Väntelista och Anmälningar, påverkar beläggning och kan skapa dubbla records om den görs fel. Därför krävs testbas och manuell rollback-plan innan skarp ändring. |
 | Rollback | Återgå till nuvarande frontendflöde. Om ny flyttoperation skapat en extra Anmälan: radera eller markera den manuellt enligt skyddad incidentrutin, bocka av `Flyttad till anmälan` på Väntelista om flytten ska ångras, och dokumentera i Error-log/Notering. Nya fält kan döljas utan dataförlust. |
-| Spårbarhet | DQ9; `docs/reference/data-model.md:651`; `docs/reference/data-model.md:1192`; `analys/01-extraction.md:505`; `analys/05-gap-vs-worldclass.md:188` |
+| Spårbarhet | DQ9; `docs/reference/data-model.md:651`; `docs/reference/data-model.md:1192`; `docs/research/datamodell-research/01-extraction.md:505`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:188` |
 
 **Slut-test post-MK:** samma Väntelista-record ska inte kunna skapa två aktiva Anmälningar även om flyttoperationen återkörs efter nätverksfel.
 
@@ -74,7 +74,7 @@
 | Sekvens | Efter A1, eftersom aktiv-semantiken ska vara korrekt innan labels runt återkommande/aktivitet bedöms. Gör först kod-/export-sök på exakt fältnamn, sedan rename i testbas, sedan skarp rename post-MK. |
 | Blast radius | Medel. Rename kan bryta konsumenter som använder fältnamn, men ändrar ingen data eller formel. |
 | Rollback | Byt tillbaka displaynamnet till `Återkommande?`. Fältbeskrivningen kan lämnas kvar eller tas bort. |
-| Spårbarhet | DS2; `docs/reference/data-model.md:574`; `analys/05-gap-vs-worldclass.md:53`; `analys/04-research.md:68` |
+| Spårbarhet | DS2; `docs/reference/data-model.md:574`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:53`; `docs/research/datamodell-research/04-research.md:68` |
 
 ### A5 — Kanonisera `Vill anmäla sig till` case-dubletter
 
@@ -88,7 +88,7 @@
 | Sekvens | Efter A4. Först exportera records som använder dubblett-options. Sedan byt deras values till kanoniska values i liten batch post-MK. Sist ta bort eller arkivera dubblett-options när 0 records använder dem och formulär/Zaps är uppdaterade. |
 | Blast radius | Medel. MultipleSelect-option cleanup kan påverka formulär/Zapier om inkommande labels inte matchar. |
 | Rollback | Återskapa dubblett-options med samma labels och återställ berörda records från pre-cleanup-export. Om bara rename/merge gjorts i Airtable kan rollback kräva manuell reapplicering av gamla values. |
-| Spårbarhet | DQ1; `docs/reference/data-model.md:1142`; `analys/02-live-state.md:140`; `analys/05-gap-vs-worldclass.md:68` |
+| Spårbarhet | DQ1; `docs/reference/data-model.md:1142`; `docs/research/datamodell-research/02-live-state.md:140`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:68` |
 
 ### A6 — Markera canonical read models och pensionera gamla counts
 
@@ -102,7 +102,7 @@
 | Sekvens | Efter A5. Rename/dölj först, delete senare. Ingen formelombyggnad före att konsumenterna är kartlagda. |
 | Blast radius | Medel-hög. Read models används ofta i rapporter och export; deletion är farligare än rename/dölj. |
 | Rollback | Byt tillbaka fältnamnet och återlägg i berörda views. Om fältet raderats krävs Airtable backup/restore eller återskapande av rollup från dokumenterad definition, därför ska delete vara separat beslut. |
-| Spårbarhet | DS3, DS4, DS5, H8; `docs/reference/data-model.md:1176`; `docs/reference/data-model.md:1182`; `analys/02-live-state.md:247`; `analys/05-gap-vs-worldclass.md:113` |
+| Spårbarhet | DS3, DS4, DS5, H8; `docs/reference/data-model.md:1176`; `docs/reference/data-model.md:1182`; `docs/research/datamodell-research/02-live-state.md:247`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:113` |
 
 ### A7 — Avgör tomma singleSelects: ta bort eller ge beslutad taxonomi
 
@@ -116,7 +116,7 @@
 | Sekvens | Efter A6. Beslut tas per fält, inte som bulk-delete. Kör `Manuella flagga` och `Systemkälla` separat eftersom de har olika tabeller och konsumenter. |
 | Blast radius | Låg-medel. Fälten är tomma och kan inte användas som select idag, men `get-persons` läser `Manuella flagga`, så rename/delete kan påverka frontend. |
 | Rollback | Återställ fältnamn och eventuella options från pre-change schemaanteckning. Om fältet raderats krävs återskapande med samma namn/typ och uppdatering av konsumenter. |
-| Spårbarhet | DQ2, DQ3, H10, H11; `docs/reference/data-model.md:1154`; `analys/02-live-state.md:204`; `analys/02-live-state.md:370`; `analys/05-gap-vs-worldclass.md:143` |
+| Spårbarhet | DQ2, DQ3, H10, H11; `docs/reference/data-model.md:1154`; `docs/research/datamodell-research/02-live-state.md:204`; `docs/research/datamodell-research/02-live-state.md:370`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:143` |
 
 ### A8 — Gör Zapier-source values läsbara
 
@@ -130,7 +130,7 @@
 | Sekvens | Efter A7 eller parallellt med A7 om separat operatör äger Zapier. Först besluta naming. Sedan uppdatera Zap 5/6 static value i Zapier. Därefter rename/backfill Airtable-options. Sist verifiera nya lead-magnet-submit i test eller kontrollerat skarpt test post-MK. |
 | Blast radius | Medel. Ändringen påverkar inkommande lead-magnet-data och rapportläsbarhet men inte Anmälningar-kärnflödet. |
 | Rollback | Sätt tillbaka Zap 5/6 static values till hashsträngarna och rename options tillbaka. Befintliga records återställs från export om values hunnit backfillas. |
-| Spårbarhet | DQ4, H6; `tasks/sessions/2026-04-28-datamodell-research-projekt.md:111`; `docs/reference/data-model.md:1160`; `analys/05-gap-vs-worldclass.md:158` |
+| Spårbarhet | DQ4, H6; `tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md:111`; `docs/reference/data-model.md:1160`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:158` |
 
 ### M2 cleanup sanity-check
 
@@ -153,7 +153,7 @@
 | Sekvens | Gäller omedelbart som designbeslut, men inga basändringar före MK. Om en vy/fältbeskrivning läggs till görs det post-MK efter A1. |
 | Blast radius | Låg för preserve-beslutet, medel om ny vy används operativt. Största risk är utebliven preserve-disciplin, inte åtgärden. |
 | Rollback | Om vy/fältbeskrivning skapas kan den döljas/tas bort. Rader ska inte ändras. |
-| Spårbarhet | DQ6, H2; `docs/reference/data-model.md:1110`; `docs/reference/hur-systemet-funkar.md:177`; `analys/05-gap-vs-worldclass.md:8` |
+| Spårbarhet | DQ6, H2; `docs/reference/data-model.md:1110`; `docs/reference/hur-systemet-funkar.md:177`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:8` |
 
 ### A10 — Bevara `Återkommande?`-logiken, men med rätt namn
 
@@ -167,7 +167,7 @@
 | Sekvens | Låses samtidigt som A4. Eventuellt nytt "har gått tidigare"-fält är en separat post-MK designfråga och ska inte smygas in i A4. |
 | Blast radius | Låg som preserve-beslut; medel om rename sker. |
 | Rollback | Se A4. |
-| Spårbarhet | DS2; `docs/reference/data-model.md:574`; `analys/05-gap-vs-worldclass.md:53` |
+| Spårbarhet | DS2; `docs/reference/data-model.md:574`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:53` |
 
 ### A11 — Bevara `RIM 3 ×` som Airtable-native rollup
 
@@ -181,7 +181,7 @@
 | Sekvens | Bevaras under A6. Om badge/erfarenhetsformler revideras senare ska RIM3x vara källa, inte raderas. |
 | Blast radius | Låg. Preserve minskar risk. |
 | Rollback | Ingen dataändring. Om fältbeskrivning/canonical-markering läggs till kan den tas bort. |
-| Spårbarhet | H9, DS4/DS5-kontext; `docs/reference/data-model.md:337`; `analys/02-live-state.md:245`; `analys/05-gap-vs-worldclass.md:113` |
+| Spårbarhet | H9, DS4/DS5-kontext; `docs/reference/data-model.md:337`; `docs/research/datamodell-research/02-live-state.md:245`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:113` |
 
 ### A12 — Defer A2-grenordning tills verifiering finns
 
@@ -195,7 +195,7 @@
 | Sekvens | Efter MK men före eventuell A2-patch. Kan planeras parallellt med A9 preserve eftersom de rör samma lead-lifecycle, men får inte ändra A2 i produktion utan test. |
 | Blast radius | Hög om man ändrar A2; låg om man bara verifierar i sandbox. Därför är detta defer. |
 | Rollback | Ingen produktionsändring. Om testdata skapas i testbas raderas den där. |
-| Spårbarhet | H1, H5; `docs/reference/data-model.md:557`; `docs/reference/data-model.md:597`; `analys/05-gap-vs-worldclass.md:83` |
+| Spårbarhet | H1, H5; `docs/reference/data-model.md:557`; `docs/reference/data-model.md:597`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:83` |
 
 ### M2 preserve sanity-check
 

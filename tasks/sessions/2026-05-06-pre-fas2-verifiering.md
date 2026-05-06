@@ -6,7 +6,7 @@
 > **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/2026-05-06-pre-fas2-verifiering.md`
 > **Styrande:** `tasks/byggplan-direktiv.md` §11/§12 (SLUTFÖRT 2026-05-05) + P3b Del 8 lärdomskandidater + Marcus pre-Fas-2-prompt 2026-05-06
 > **Föregångare:**
-> - `tasks/sessions/2026-05-05-byggplan-stadning-p3b.md` (P3b, slutförd 2026-05-05)
+> - `tasks/sessions/archive/2026-05/2026-05-05-byggplan-stadning-p3b.md` (P3b, slutförd 2026-05-05)
 > **Efterföljare:** Fas 2 — Routing + Auth, mot `docs/byggplan.md` §4 Fas 2-prompt.
 > **Stop-test (denna session):** Codex-verifieringsprompt levererad + alla fynd ≤10/10 åtgärdade + 3 P3b-lärdomskandidater (+ ev. nya) lyfta till `tasks/lessons.md` + hub-synk klar + sessionsdok låst.
 > **Sessionsdok-commit-disciplin (P3a/P3b-mönster):** K1 = skelett-commit. K2-K3-K4 rör INTE sessionsdoket. K5 sista commit bakar in (a) sista innehållet (Codex-prompt + slutsignal) + (b) sessionsdok Del 3/4/5/6/7/8 fyllning. Total touch-count = 2 (K1 skapande + K5 sista commit).
@@ -35,12 +35,12 @@ Lästa i denna ordning vid sessionsstart (Chat-miljö → projektkunskap):
 | 1 | `~/Repon/marcus-system/CLAUDE.md` | Hub-konstitution (transcript-disciplin, sessionsdok-rutin, P-fas-mönster) |
 | 2 | `~/Repon/miranon-media-admin/CLAUDE.md` | Projekt-konstitution + kvalitetsribba |
 | 3 | `tasks/lessons.md` | Universella lärdomar (befintliga, jämförelse-baseline för K4-lyft) |
-| 4 | `tasks/sessions/2026-05-05-byggplan-stadning-p3b.md` Del 8 | Tre lärdomskandidater + sammanfattning + slutstatus |
+| 4 | `tasks/sessions/archive/2026-05/2026-05-05-byggplan-stadning-p3b.md` Del 8 | Tre lärdomskandidater + sammanfattning + slutstatus |
 | 5 | `docs/byggplan.md` | Slutprodukt v1.1 (832 rader, 13 fas-prompter) |
 | 6 | `tasks/byggplan-direktiv.md` §11+§12 | SLUTFÖRT-status verifierad 2026-05-05 |
 | 7 | `docs/BUILD-LOG.md` Session 2 | Retrospektiv av Fas A M1–M8 + P0/P1/P2/P3a/P3b |
 | 8 | `docs/decisions/README.md` + ADR-001..ADR-020 | Beslutskatalog (20 ADR:er) |
-| 9 | `analys/00-file-manifest.md` (datamodell-research, 2026-04-27) | Pre-revision filinventering — historisk baseline för jämförelse |
+| 9 | `docs/research/datamodell-research/00-file-manifest.md` (datamodell-research, 2026-04-27) | Pre-revision filinventering — historisk baseline för jämförelse |
 
 ### Källprioritet vid konflikt
 

@@ -111,7 +111,7 @@ Alla test-EF prefix:as med `test-` (hyphen, inte underscore — Supabase CLI-reg
 
 ### 3.6 Strangler-fig migrationsväg
 
-Persons → Events → Registrations → Hem-aggregering är primärordning för Fas 6. Samma ordning gäller framtida Fas E (Supabase-migration). Källa: `analys/07-migration-plan.md` §A2.
+Persons → Events → Registrations → Hem-aggregering är primärordning för Fas 6. Samma ordning gäller framtida Fas E (Supabase-migration). Källa: `docs/research/datamodell-research/07-migration-plan.md` §A2.
 
 ### 3.7 Operations utan empirisk användning är onödig attack-yta
 
@@ -158,7 +158,7 @@ M4-principen från Fas A: deploya inte EF i förskott. Varje deploy ska följa e
 
 **Output:** 8 etablerade arkitekturmönster (se §3 ovan) + uppdaterad `SECURITY-SPEC.md` §6 + `STATE-STRATEGY.md` §8.
 
-**Korsreferens:** `tasks/sessions/2026-05-04-security-hardening.md`, `docs/BUILD-LOG.md` Fas A-sektion (skrivs retrospektivt i P3b).
+**Korsreferens:** `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md`, `docs/BUILD-LOG.md` Fas A-sektion (skrivs retrospektivt i P3b).
 
 ---
 
@@ -258,7 +258,7 @@ Synka kodens domäntyper mot `data-model.md` (källa) + införa Zod-validering v
 Inget nytt ADR. A5-beslutet är dokumenterat i P1-sessionsdok Del 3 — kan refereras därifrån.
 
 #### Korsreferens
-- `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 3 (A5-klassningstabell)
+- `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 3 (A5-klassningstabell)
 - `docs/reference/data-model.md` (källa för status-typer per dm-110)
 
 ---
@@ -370,7 +370,7 @@ Ingen mot tidigare faser. Blockerar Fas 3:s DoD (Fas 3 kan inte kvalitetsgranska
 
 #### Korsreferens
 - `ACCESSIBILITY-CHECKLIST.md` (omskriven i P2)
-- `tasks/sessions/2026-05-04-stodspec-synk-p2.md` Del 5 (A1-trigger-rapport)
+- `tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md` Del 5 (A1-trigger-rapport)
 
 ---
 
@@ -431,7 +431,7 @@ Minimal app-shell som tål mobil-först-användning (Lotta på telefon i mötet)
 **ADR-018 — Fas 5-förenklingen** (per B3): dokumenterar vilka [GA]-tillägg som flyttas till Fas 7 + motiv.
 
 #### Korsreferens
-- `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 5 (B3-beslutet)
+- `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 5 (B3-beslutet)
 
 ---
 
@@ -493,14 +493,14 @@ Etablera mutation-mönstret (TanStack `useMutation` + optimistic UI + operations
 #### Korsreferens
 - `STATE-STRATEGY.md` §4 (Optimistisk UI), §8 (Operations-baserat write-API)
 - `SECURITY-SPEC.md` §6.1 (operations-registret)
-- `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 4 (A2-beslutet)
+- `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 4 (A2-beslutet)
 
 ---
 
 ### Fas 6 — Hem + Event + Personer + Mer (strangler-fig)
 
 #### Mål
-Bygga de fyra produkt-flikarna i strangler-fig-ordning per `analys/07-migration-plan.md` §A2: Persons-domän → Events-domän → Registrations + Väntelista → Hem-aggregering → Mer (villkorlig). Hem byggs SIST eftersom den aggregerar de tre andra.
+Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamodell-research/07-migration-plan.md` §A2: Persons-domän → Events-domän → Registrations + Väntelista → Hem-aggregering → Mer (villkorlig). Hem byggs SIST eftersom den aggregerar de tre andra.
 
 #### Sub-fas-allokering
 
@@ -585,8 +585,8 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `analys/07-migration-
 - **ADR-017 — Polling-vs-Realtime + migrations-vägen post-Fas E** (per B1, Fas 6d): dokumenterar 60s + pull-to-refresh + visibility-trigger som interimslösning + Supabase Realtime-omläggning som Fas E-uppgift.
 
 #### Korsreferens
-- `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 3 (A5-tabellen) + Del 4 (A3 + A2 + B1)
-- `analys/07-migration-plan.md` §A2 (strangler-fig-ordningen)
+- `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 3 (A5-tabellen) + Del 4 (A3 + A2 + B1)
+- `docs/research/datamodell-research/07-migration-plan.md` §A2 (strangler-fig-ordningen)
 - `STATE-STRATEGY.md` §2 (per-vy state-plan med strangler-fig-not), §5b (polling-pattern)
 
 ---
@@ -701,7 +701,7 @@ Säkra appen för production: CSP-plugin (defer:ad från Fas 0), prestandamätni
 - **Refererar ADR-011 — CSP-plugin-deferral** (per P0-inventory): ADR skrevs i P3a vid byggplan-skiftet, dokumenterar varför plugin defer:ats från Fas 0 till Fas 7. Inget *nytt* ADR krävs här — endast verifikation att ADR-011:s villkor uppfylls (CSP-plugin aktiv i prod, inga inline-script-violations).
 
 #### Korsreferens
-- `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 5 (B3-beslutet — vilka [GA] som flyttats hit)
+- `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 5 (B3-beslutet — vilka [GA] som flyttats hit)
 - `SECURITY-SPEC.md` §5 (OWASP-tabellen)
 
 ---
@@ -732,7 +732,7 @@ TBD — fastställs vid aktualisering.
 - **ADR-019 — Background Sync defer från Fas 7 till Fas 8** (per B2): dokumenterar arkitekturskuld + Fas 7-storlek + Lotta-flow-tolerans + plan för aktualisering. Skrivs vid Fas 7-start så det är tydligt att Fas 7 *inte glömde* — det var medvetet.
 
 #### Korsreferens
-- `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 5 (B2-beslutet)
+- `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 5 (B2-beslutet)
 - `STATE-STRATEGY.md` (Background Sync-not när aktualiseras)
 
 ---
@@ -743,9 +743,9 @@ TBD — fastställs vid aktualisering.
 Säkra Airtable-basen som single source of truth för Miranon Media Admin tills Fas E migreras: rensa drift, etablera redesign-konsistens, dokumentera operativa gränser. Roger/Lotta-arbete med Marcus-stöd.
 
 #### Scope (preliminärt — fastställs av Roger/Lotta i samråd med Marcus)
-- Drift-rensning per `analys/06a-airtable-redesign.md` Del A–C
+- Drift-rensning per `docs/research/datamodell-research/06a-airtable-redesign.md` Del A–C
 - Schema-kontrakt mellan Airtable-fält och `data-model.md`
-- 11 automationer granskade (live-state per `analys/02-live-state.md` §A)
+- 11 automationer granskade (live-state per `docs/research/datamodell-research/02-live-state.md` §A)
 - Synk-gates mot React-bygget: Gate B1 (innan Fas 6c — Registrations) + Gate B2 (innan Fas E — migration)
 
 #### Beroenden
@@ -758,16 +758,16 @@ Separat estimat — fastställs av Roger/Lotta.
 Inget nytt ADR i React-byggets katalog. Airtable-side-beslut dokumenteras i Roger/Lottas eget spår.
 
 #### Korsreferens
-- `analys/06a-airtable-redesign.md` Del A–C
-- `tasks/sessions/fas-4a-prompt.md` §3.4
-- `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 2 (A4-beslutet)
+- `docs/research/datamodell-research/06a-airtable-redesign.md` Del A–C
+- `tasks/sessions/archive/datamodell-research-2026-04-30/fas-4a-prompt.md` §3.4
+- `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 2 (A4-beslutet)
 
 ---
 
 ### Fas E — Supabase-migration (DEFER)
 
 #### Mål
-Migrera Miranon Media Admin från Airtable som primär datakälla till Supabase (Postgres + RLS + Realtime), enligt strangler-fig-ordningen i `analys/07-migration-plan.md` §A2.
+Migrera Miranon Media Admin från Airtable som primär datakälla till Supabase (Postgres + RLS + Realtime), enligt strangler-fig-ordningen i `docs/research/datamodell-research/07-migration-plan.md` §A2.
 
 #### Scope (preliminärt — låses vid aktualisering)
 - Persons → Events → Registrations → Hem-aggregering enligt 07 §A2
@@ -793,9 +793,9 @@ Separat planering — fastställs vid aktualisering.
 ADR:er per migrationsbeslut — skrivs vid aktualisering.
 
 #### Korsreferens
-- `analys/06b-supabase-target.md` (target-modellen)
-- `analys/07-migration-plan.md` §A2 (strangler-fig-sekvens)
-- `analys/08-odoo-validation.md` (sista valideringen av target)
+- `docs/research/datamodell-research/06b-supabase-target.md` (target-modellen)
+- `docs/research/datamodell-research/07-migration-plan.md` §A2 (strangler-fig-sekvens)
+- `docs/research/datamodell-research/08-odoo-validation.md` (sista valideringen av target)
 
 ---
 

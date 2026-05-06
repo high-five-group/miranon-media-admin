@@ -3,14 +3,14 @@
 > **Status:** ✅ SLUTFÖRT 2026-05-05 — alla fyra klungor genomförda, stop-test passerat, direktivet markerat SLUTFÖRT i §11.
 > **Skapat:** 2026-05-05 (K1) | **Slutgiltig version:** 2026-05-05 (K4 commit 7 — bakar in Del 3/4/5/6/7/8)
 > **Ägare:** Marcus + Claude Chat
-> **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/2026-05-05-byggplan-stadning-p3b.md`
+> **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-05-byggplan-stadning-p3b.md`
 > **Styrande:** `tasks/byggplan-direktiv.md` §6 P3 (städnings-DoD) + §12 (slutnot)
 > **Föregångare:**
 > - `docs/logs/byggplan-revision-inventory.md` (P0, slutförd 2026-05-04)
-> - `tasks/sessions/2026-05-04-byggplan-revision-p1.md` (P1, slutförd 2026-05-04)
-> - `tasks/sessions/2026-05-04-p1-avslutning.md` (P1-avslutning, 2026-05-04)
-> - `tasks/sessions/2026-05-04-stodspec-synk-p2.md` (P2, slutförd 2026-05-04)
-> - `tasks/sessions/2026-05-05-byggplan-skriv-p3a.md` (P3a, slutförd 2026-05-05)
+> - `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` (P1, slutförd 2026-05-04)
+> - `tasks/sessions/archive/2026-05/2026-05-04-p1-avslutning.md` (P1-avslutning, 2026-05-04)
+> - `tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md` (P2, slutförd 2026-05-04)
+> - `tasks/sessions/archive/2026-05/2026-05-05-byggplan-skriv-p3a.md` (P3a, slutförd 2026-05-05)
 > **Efterföljare:** Ingen — P3b avslutar byggplan-revisionen. Nästa Chat-session: Fas 2 — Routing + Auth, mot `docs/byggplan.md`.
 > **Stop-test (P3b):** ✅ PASSERAT — direktivet markerat SLUTFÖRT + alla städnings-DoD avbockade + git status ren + 5 verifieringskommandon gröna + UNIVERSAL-lyft genomfört.
 > **Sessionsdok-commit-disciplin (P3a-mönster, verifierat):** K1 = skelett-commit. K2-K3 = innehålls-commits, rörde INTE sessionsdoket. K4 sista commit (commit 7) bakar in (a) sista innehållet (direktivet SLUTFÖRT) + (b) sessionsdok Del 3/4/5/6/7/8 fyllning. Detta dokument committades 2 gånger totalt (K1 + K4 sista).
@@ -40,7 +40,7 @@ Lästa i denna ordning vid sessionsstart (Chat-miljö → projektkunskap):
 | 1 | `~/Repon/marcus-system/CLAUDE.md` | Hub-konstitution, principer |
 | 2 | `~/Repon/miranon-media-admin/CLAUDE.md` | Projektkonstitution, sessionsstart-checklista (uppdaterades i K3) |
 | 3 | `tasks/lessons.md` | Universella lärdomar — 7 nya poster (3 P1 + 4 P2) som lyftes i K4 |
-| 4 | `tasks/sessions/2026-05-05-byggplan-skriv-p3a.md` | P3a-leveransen — Del 6 Pass-status, Del 7 Stop-test PASSERAT |
+| 4 | `tasks/sessions/archive/2026-05/2026-05-05-byggplan-skriv-p3a.md` | P3a-leveransen — Del 6 Pass-status, Del 7 Stop-test PASSERAT |
 | 5 | `docs/byggplan.md` | Slutprodukten — referensmaterial för CLAUDE.md/todo.md-uppdatering |
 | 6 | `docs/conversion-plan.md` | Källan som arkiverades i K2 |
 | 7 | `tasks/byggplan-direktiv.md` §6 P3 + §12 | Uppgifts- och slutnot-beskrivning |
@@ -48,15 +48,15 @@ Lästa i denna ordning vid sessionsstart (Chat-miljö → projektkunskap):
 
 **Tilläggskällor för K2 (BUILD-LOG retrospektivt):**
 
-- `tasks/sessions/2026-05-04-security-hardening.md` — Fas A M1–M8, DoD per milstolpe, 8 arkitekturmönster
-- `tasks/sessions/2026-05-04-byggplan-revision-p1.md` — P1-leveransen
-- `tasks/sessions/2026-05-04-stodspec-synk-p2.md` — P2-leveransen
+- `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` — Fas A M1–M8, DoD per milstolpe, 8 arkitekturmönster
+- `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` — P1-leveransen
+- `tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md` — P2-leveransen
 - `docs/logs/byggplan-revision-inventory.md` — P0-leveransen
 
 ### Källprioritet vid konflikt
 
 1. `tasks/byggplan-direktiv.md` §6 P3 + §12 — auktoritativ för P3b
-2. `tasks/sessions/2026-05-05-byggplan-skriv-p3a.md` Del 6 + Del 7 — P3a-leveransstatus och stop-test
+2. `tasks/sessions/archive/2026-05/2026-05-05-byggplan-skriv-p3a.md` Del 6 + Del 7 — P3a-leveransstatus och stop-test
 3. `docs/byggplan.md` (post-P3a) — styrande dokument efter K2-arkivering
 4. `docs/conversion-plan.md` (arkiverad) — historiskt referensmaterial, **inte styrande** efter K2
 5. **Code mini-RAPPORTERA mot HEAD** (2026-05-05) — auktoritativ för faktiska filnamn, drift-strängar, commit-hashar
@@ -303,8 +303,8 @@ K3 var sista klungan med kirurgiska str_replace-edits mot text-dokument. Mönstr
 
 > Källa-projekt: miranon-media-admin (React-konvertering / byggplan-revision)
 > Källa-sessioner:
-> - P1: tasks/sessions/2026-05-04-byggplan-revision-p1.md (commit 97573c0)
-> - P2: tasks/sessions/2026-05-04-stodspec-synk-p2.md (commit 1fbb70c)
+> - P1: tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md (commit 97573c0)
+> - P2: tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md (commit 1fbb70c)
 > Lyft till hub: 2026-05-05 (P3b K4 commit 6)
 > Antal poster: 7 ([UNIVERSAL]-flaggade i källan, alla bevarade verbatim)
 ```
@@ -330,7 +330,7 @@ K3 var sista klungan med kirurgiska str_replace-edits mot text-dokument. Mönstr
 **Två filer ändras i denna commit:**
 
 1. `tasks/byggplan-direktiv.md` — §11 Status-tabell + §12 Slutnot
-2. `tasks/sessions/2026-05-05-byggplan-stadning-p3b.md` — denna fil (262 rader → ~700 rader, bakar in Del 3/4/5/6/7/8)
+2. `tasks/sessions/archive/2026-05/2026-05-05-byggplan-stadning-p3b.md` — denna fil (262 rader → ~700 rader, bakar in Del 3/4/5/6/7/8)
 
 #### §11 Status-uppdatering
 
@@ -338,7 +338,7 @@ Två nya rader injicerade i tabellen:
 - `| Klar (P3b) | 2026-05-05 |`
 - `| Direktiv-status | **SLUTFÖRT 2026-05-05** — alla §6 P3-städnings-DoD verifierade, byggplanen är aktiv styrande plan |`
 
-Plus uppdatering av "Senast uppdaterat"-raden till `2026-05-05 (P3b SLUTFÖRT — se tasks/sessions/2026-05-05-byggplan-stadning-p3b.md)`.
+Plus uppdatering av "Senast uppdaterat"-raden till `2026-05-05 (P3b SLUTFÖRT — se tasks/sessions/archive/2026-05/2026-05-05-byggplan-stadning-p3b.md)`.
 
 #### §12 Slutnot — alla 5 punkter markerade ✅
 
@@ -440,16 +440,16 @@ P3b avslutade hela byggplan-revisionen som startade med direktivet 2026-05-04. K
 
 ### Var den auktoritativa P3b-trailen finns
 
-Denna fil — `tasks/sessions/2026-05-05-byggplan-stadning-p3b.md`. Detta är slutgiltiga versionen — committas en (1) gång till efter K1, sedan låst.
+Denna fil — `tasks/sessions/archive/2026-05/2026-05-05-byggplan-stadning-p3b.md`. Detta är slutgiltiga versionen — committas en (1) gång till efter K1, sedan låst.
 
 ### Var byggplan-revisionen som helhet finns spårad
 
 | Fas | Trail | Slutprodukt |
 |---|---|---|
 | P0 | `docs/logs/byggplan-revision-inventory.md` | Klassningstabell över conversion-plan §D |
-| P1 | `tasks/sessions/2026-05-04-byggplan-revision-p1.md` + `2026-05-04-p1-avslutning.md` | §5-tabell uppdaterad i direktivet (15 rader, Fas 8 ny) + 9 ADR-katalog |
-| P2 | `tasks/sessions/2026-05-04-stodspec-synk-p2.md` | 4 stödspecs uppdaterade (SECURITY-SPEC, STATE-STRATEGY, ACCESSIBILITY-CHECKLIST omskriven) + Fas 3.5 = egen fas-beslut |
-| P3a | `tasks/sessions/2026-05-05-byggplan-skriv-p3a.md` | `docs/byggplan.md` v1.1 (832 rader, 13 fas-prompter) + 10 nya ADR:er ADR-011..ADR-020 + decisions/README.md uppdaterad till 20 rader |
+| P1 | `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` + `2026-05-04-p1-avslutning.md` | §5-tabell uppdaterad i direktivet (15 rader, Fas 8 ny) + 9 ADR-katalog |
+| P2 | `tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md` | 4 stödspecs uppdaterade (SECURITY-SPEC, STATE-STRATEGY, ACCESSIBILITY-CHECKLIST omskriven) + Fas 3.5 = egen fas-beslut |
+| P3a | `tasks/sessions/archive/2026-05/2026-05-05-byggplan-skriv-p3a.md` | `docs/byggplan.md` v1.1 (832 rader, 13 fas-prompter) + 10 nya ADR:er ADR-011..ADR-020 + decisions/README.md uppdaterad till 20 rader |
 | P3b | denna fil | Repo "rent och 11/10" — alla artefakter på rätt plats, ingen drift mellan dokument och verklighet |
 
 ### Slutprodukten

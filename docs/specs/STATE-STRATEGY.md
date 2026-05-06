@@ -25,7 +25,7 @@ Varje bit state tilhor exakt en kategori. Ingen state far leva i "fel" lager.
 > **Sekvensering:** Vyerna byggs i strangler-fig-ordning per P1 Del 4 A3:
 > **6a Persons → 6b Events → 6c Registrations + Väntelista → 6d Hem-aggregering → 6e Mer (villkorlig).**
 > Fas-prompter i Fas 6 ska INTE plocka Hem-vyn före underliggande domäner är på plats.
-> Källa: `analys/07-migration-plan.md` §A2 + `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 4 A3.
+> Källa: `docs/research/datamodell-research/07-migration-plan.md` §A2 + `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 4 A3.
 
 ### Hem (/hem)
 | State | Typ | Verktyg |
@@ -347,7 +347,7 @@ ar detta tillrackligt -- ordningen spelar ingen roll.
 ## 8. Operations-baserat write-API (Fas A M4)
 
 > **Källa:** Implementerat i Fas A M4 (`supabase/functions/_shared/field-allowlists.ts` + `update-record/index.ts`).
-> Detaljerad spec: `SECURITY-SPEC.md §6.1` + `tasks/sessions/2026-05-04-security-hardening.md`.
+> Detaljerad spec: `SECURITY-SPEC.md §6.1` + `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md`.
 > Denna sektion är klient-sidans referens — den ska refereras från Fas 6 sub-fas-prompter (6a–6e).
 
 ### 8.1 Mönster
@@ -404,8 +404,8 @@ Per-sub-fas-DoD: tillhörande operation registrerad i `field-allowlists.ts`, den
 
 - `SECURITY-SPEC.md §6.1` — server-sidans definition (operations-registret, deny-by-default)
 - `byggplan-direktiv.md §8.5.4` — Fas A:s arkitekturmönster-översikt
-- `tasks/sessions/2026-05-04-security-hardening.md` — Fas A:s implementations-detaljer
-- `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 4 A3 + Del 7 ADR-katalog
+- `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` — Fas A:s implementations-detaljer
+- `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 4 A3 + Del 7 ADR-katalog
 
 ---
 

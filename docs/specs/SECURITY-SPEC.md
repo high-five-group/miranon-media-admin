@@ -466,7 +466,7 @@ Bara appens egen domän tillåts.
 
 Fas A levererade 8 milstolpar (M1–M8) som stänger hela exponeringen från Code-verifieringen 2026-04-29. Mönstren nedan ska refereras i fas-prompterna i Fas 5.5+ och alla framtida Edge Function-utvecklingar.
 
-Detaljer: `tasks/sessions/2026-05-04-security-hardening.md` (frusen efter slutsummering).
+Detaljer: `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` (frusen efter slutsummering).
 
 ### 6.1 Operations-baserat write-API
 
@@ -889,5 +889,5 @@ Använd denna checklista i Fas 7 för att verifiera all säkerhetsinfrastruktur.
 ---
 
 *Senast uppdaterad: 2026-05-04 (P2 — Fas A-införlivande)*
-*Underlag: gap-analysis.md paragraf 3 + 5, byggplan-direktiv.md §8.5.4–§8.5.5, tasks/sessions/2026-05-04-security-hardening.md*
+*Underlag: gap-analysis.md paragraf 3 + 5, byggplan-direktiv.md §8.5.4–§8.5.5, tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md*
 *Nästa review: efter Fas 5.5 (operations-baserade write-flow etablerade i UI)*

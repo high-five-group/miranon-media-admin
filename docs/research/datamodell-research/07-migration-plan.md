@@ -388,10 +388,10 @@ Använd denna prompt i separat implementation/post-projekt-session. Den ska inte
 ```text
 Du ska implementera migrationsförberedelserna för Miranon Media Admin enligt Fas 5-planen. Börja inte med kod innan du har läst dessa kärnfiler:
 
-1. analys/07-migration-plan.md
-2. analys/06a-airtable-redesign.md
-3. analys/06b-supabase-target.md
-4. tasks/sessions/2026-04-28-datamodell-research-projekt.md
+1. docs/research/datamodell-research/07-migration-plan.md
+2. docs/research/datamodell-research/06a-airtable-redesign.md
+3. docs/research/datamodell-research/06b-supabase-target.md
+4. tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md
 
 Läs därefter docs/reference/data-model.md endast för frusen legacyfält-/flödesdetalj när en mapping kräver det.
 
@@ -457,7 +457,7 @@ Datamodell-research-projektet har levererat fem analysfiler: `04` med 10 princip
 | Airtable excellence | Pass | A1-A3 löser tre konkreta driftproblem från driftkartan: Inställt räknas inte längre som aktivt (C7/rapportering), mail partial-success blir synlig (C12/DQ8) och väntelistaflytt blir idempotent/kompenserbar (C13/DQ9). A4-A8 lägger dessutom kontrollerad cleanup för återkommande-semantik, case-dubletter, read models, tomma selects och Zapier-config. |
 | Supabase readiness | Pass | Alla sex låsningar i 06b F4 hanteras utan Airtable-skuld-arv: namnlösa leads modelleras explicit, RIM3x blir read model, Återkommande-semantik separeras från historik, DQ4 blir integration config, G12/G13 får outbox/audit/transactional operation och DS6/DQ7/H4 ersätts av riktiga FK via `attendances`. |
 | DS/DQ closure | Pass | Arbetsdokumentets §6 har 29/29 rader med Fas 2-princip, Fas 3-klass, Fas 4-åtgärd och Fas 5-migration ifyllda. Fas 6 closure är markerad som pass för samtliga rader. |
-| Spårbarhets-test | Pass | Stickprov på 10 faktapåståenden fördelade över 04-07 gav 10/10 spårbara, 0 delvis spårbara och 0 ej spårbara. Källspår fanns via `docs/reference/data-model.md`, `analys/02-live-state.md`, arbetsdokumentets besluts-/spårbarhetsrader och interna 04-07-referenser. |
+| Spårbarhets-test | Pass | Stickprov på 10 faktapåståenden fördelade över 04-07 gav 10/10 spårbara, 0 delvis spårbara och 0 ej spårbara. Källspår fanns via `docs/reference/data-model.md`, `docs/research/datamodell-research/02-live-state.md`, arbetsdokumentets besluts-/spårbarhetsrader och interna 04-07-referenser. |
 
 ### J3 — Hand-off till future Code-implementation
 

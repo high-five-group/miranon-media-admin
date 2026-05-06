@@ -18,7 +18,7 @@
 | Supabase target-implikation | Modellera identity cluster/person/lead-lifecycle explicit. Eventuell split av Personer ar en S-track-fraga, inte ett fas-3-beslut. |
 | Risk | Overnormalisering innan G0.3 ar avgjord kan skapa fel tenant- och lifecycle-granser. |
 | Rekommendation | Airtable preserve + Supabase target. H2 ska inte avgoras utifran "87 falt" utan utifran livscykler, invariants och G0.3. |
-| Sparbarhet | DQ6, H2; docs/reference/data-model.md:1110; analys/04-research.md:193; analys/04-research.md:243 |
+| Sparbarhet | DQ6, H2; docs/reference/data-model.md:1110; docs/research/datamodell-research/04-research.md:193; docs/research/datamodell-research/04-research.md:243 |
 
 ### G2 - Kontaktidentitet ar inte constraint-backed
 
@@ -33,7 +33,7 @@
 | Supabase target-implikation | Normalisera e-post/telefon som typed identifiers med constraints, canonicalisering och konfliktlogik. |
 | Risk | En mekanisk Airtable-typfix kan bryta formular, Zapier eller gamla data utan att losa identity-fragan. |
 | Rekommendation | Migration transform + Supabase target. Airtable-fix endast om konsumenter ar kontrollerade. |
-| Sparbarhet | DQ5, H12; analys/04-research.md:68; analys/04-research.md:140; analys/04-research.md:193 |
+| Sparbarhet | DQ5, H12; docs/research/datamodell-research/04-research.md:68; docs/research/datamodell-research/04-research.md:140; docs/research/datamodell-research/04-research.md:193 |
 
 ### G3 - Anmalningsstatus saknar fullstandig state-semantik
 
@@ -48,7 +48,7 @@
 | Supabase target-implikation | Definiera anmalningsstatus som state machine med tillatna transitions och explicit active/terminal-semantik. |
 | Risk | Snabb formelandring utan view-/automationstest kan ge regressions i befintligt arbetssatt. |
 | Rekommendation | Airtable fix. Detta ar ett driftkritiskt gap som kan atgardas innan stor redesign, men forst efter MK. |
-| Sparbarhet | DS1; docs/reference/data-model.md:1170; analys/04-research.md:68 |
+| Sparbarhet | DS1; docs/reference/data-model.md:1170; docs/research/datamodell-research/04-research.md:68 |
 
 ### G4 - `Aterkommande?` blandar historik och framtida plan
 
@@ -63,7 +63,7 @@
 | Supabase target-implikation | Separera historiskt deltagande, sjalvrapporterad erfarenhet och aktiv aterkommande process i skilda read models eller state-flaggor. |
 | Risk | Att "fixa" formeln for att matcha namnet kan bryta verkligt arbetsflode. |
 | Rekommendation | Airtable preserve+rename. Detta ar semantisk skuld, inte nodvandigtvis fel logik. |
-| Sparbarhet | DS2; docs/reference/data-model.md:574; analys/04-research.md:68 |
+| Sparbarhet | DS2; docs/reference/data-model.md:574; docs/research/datamodell-research/04-research.md:68 |
 
 ### G5 - Kursintention i `Vill anmala sig till` ar svagt kanoniserad
 
@@ -78,7 +78,7 @@
 | Supabase target-implikation | Mappa till canonical course/program-intent i migrationen, med alias-tabell for historiska varden. |
 | Risk | Direkt options-merge utan mapping kan dölja historiska skillnader eller bryta filter. |
 | Rekommendation | Airtable cleanup + Migration transform. |
-| Sparbarhet | DQ1; docs/reference/data-model.md:1142; analys/04-research.md:68 |
+| Sparbarhet | DQ1; docs/reference/data-model.md:1142; docs/research/datamodell-research/04-research.md:68 |
 
 ### G6 - A2 personkoppling har oavklarad reverse-flow-risk
 
@@ -93,7 +93,7 @@
 | Supabase target-implikation | Ersatt branch-ordning med explicit identity-resolution och idempotent write path. |
 | Risk | Att andra A2 utan verifiering kan forvarra personkoppling i skarp drift. |
 | Rekommendation | Defer. Designa target for robust personkoppling; verifiera Airtable-fragan separat innan atgard. |
-| Sparbarhet | H1, H5; docs/reference/data-model.md:557; docs/reference/data-model.md:607; analys/04-research.md:68 |
+| Sparbarhet | H1, H5; docs/reference/data-model.md:557; docs/reference/data-model.md:607; docs/research/datamodell-research/04-research.md:68 |
 
 ### G7 - Deltaganden har record-id-formler som ser auktoritativa ut
 
@@ -108,7 +108,7 @@
 | Supabase target-implikation | Bygg Deltaganden pa riktiga foreign keys mot person/anmalan/event och lat display-id vara read model. |
 | Risk | Mekanisk export kan cementera felaktiga ID:n i Supabase. |
 | Rekommendation | Supabase target. Migrationen ska explicit ignorera eller transformera dessa falt. |
-| Sparbarhet | DS6, DQ7, H4; docs/reference/data-model.md:1127; analys/04-research.md:68 |
+| Sparbarhet | DS6, DQ7, H4; docs/reference/data-model.md:1127; docs/research/datamodell-research/04-research.md:68 |
 
 ### G8 - Erfarenhets- och count-read models ar parallella och delvis doda
 
@@ -123,7 +123,7 @@
 | Supabase target-implikation | Definiera canonical read models for erfarenhet, deltagarhistorik och programniva. |
 | Risk | Cleanup utan konsumentkarta kan bryta dashboards, views eller utskick som fortfarande laser gamla falt. |
 | Rekommendation | Airtable cleanup. Target ska samtidigt gora derived data explicita read models. |
-| Sparbarhet | DS3, DS4, DS5, H8, H9; docs/reference/data-model.md:1176; analys/04-research.md:68; analys/04-research.md:123 |
+| Sparbarhet | DS3, DS4, DS5, H8, H9; docs/reference/data-model.md:1176; docs/research/datamodell-research/04-research.md:68; docs/research/datamodell-research/04-research.md:123 |
 
 ### G9 - EventKey och event-ingest ar config-skuld
 
@@ -138,7 +138,7 @@
 | Supabase target-implikation | Ersatt string-/template-beroenden med explicit event identity, ingest config och constraints. |
 | Risk | Snabb patch i Airtable kan reparera ett symptom men bevara fel integration boundary. |
 | Rekommendation | Supabase target + Defer for H13-kallutredning. |
-| Sparbarhet | H3, H13; docs/reference/data-model.md:615; analys/04-research.md:158; analys/04-research.md:211 |
+| Sparbarhet | H3, H13; docs/reference/data-model.md:615; docs/research/datamodell-research/04-research.md:158; docs/research/datamodell-research/04-research.md:211 |
 
 ### G10 - Tomma singleSelects ar doda eller ofardiga operational fields
 
@@ -153,7 +153,7 @@
 | Supabase target-implikation | Migrera inte tomma konfigfalt som domansanning utan beslut. |
 | Risk | Att fylla pa options utan domanbeslut kan skapa ny, oanvand terminologi. |
 | Rekommendation | Airtable cleanup. |
-| Sparbarhet | DQ2, DQ3, H10, H11; docs/reference/data-model.md:1154; analys/04-research.md:68 |
+| Sparbarhet | DQ2, DQ3, H10, H11; docs/reference/data-model.md:1154; docs/research/datamodell-research/04-research.md:68 |
 
 ### G11 - Formular-/leadmagnet-kalla ar Zapier-config, inte form-input
 
@@ -168,7 +168,7 @@
 | Supabase target-implikation | Modellera integration source/config separat fran lead source och transformera historiska config-varden. |
 | Risk | H6-resurrektion skulle leda analysen fel och skapa onodig jakt pa formularpayloads. |
 | Rekommendation | Airtable cleanup + Migration transform. H6 forblir Reject. |
-| Sparbarhet | DQ4, H6; tasks/sessions/2026-04-28-datamodell-research-projekt.md:52; analys/04-research.md:102 |
+| Sparbarhet | DQ4, H6; tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md:52; docs/research/datamodell-research/04-research.md:102 |
 
 ### G12 - Mailutskick har inte forstaklassig partial-success-state
 
@@ -183,7 +183,7 @@
 | Supabase target-implikation | Inför communication log/outbox-liknande modell med status per steg och audit trail. |
 | Risk | Att bara kasta hard error kan orsaka dubbla utskick vid retry. |
 | Rekommendation | Airtable fix + Supabase target. |
-| Sparbarhet | DQ8; docs/reference/data-model.md:643; docs/reference/data-model.md:1186; analys/04-research.md:177 |
+| Sparbarhet | DQ8; docs/reference/data-model.md:643; docs/reference/data-model.md:1186; docs/research/datamodell-research/04-research.md:177 |
 
 ### G13 - Vantelista till anmalan ar inte transaktionell
 
@@ -198,7 +198,7 @@
 | Supabase target-implikation | Gor flytten som transaktion med uniqueness/idempotency och audit. |
 | Risk | Frontend-only retry utan idempotency kan oka dubblettrisken. |
 | Rekommendation | Airtable fix + Supabase target. |
-| Sparbarhet | DQ9; docs/reference/data-model.md:655; docs/reference/data-model.md:1192; analys/04-research.md:158 |
+| Sparbarhet | DQ9; docs/reference/data-model.md:655; docs/reference/data-model.md:1192; docs/research/datamodell-research/04-research.md:158 |
 
 ### G14 - Zapier/Elfsight ar extern write path utan produktiserad edge-modell
 
@@ -213,7 +213,7 @@
 | Supabase target-implikation | Definiera ingest endpoints, webhook config, idempotency keys, request logg och tenant/workspace-boundary om G0.3 leder dit. |
 | Risk | Att ersatta Zapier innan write-path ar kartlagd riskerar regressions i skarp lead capture. |
 | Rekommendation | Defer till Fas 5 for kartlaggning, med Supabase target-princip redan fastlagd. |
-| Sparbarhet | H7; analys/04-research.md:158; analys/04-research.md:211; analys/04-research.md:220 |
+| Sparbarhet | H7; docs/research/datamodell-research/04-research.md:158; docs/research/datamodell-research/04-research.md:211; docs/research/datamodell-research/04-research.md:220 |
 
 ### G15 - Automationer saknar action-level diff och audit
 
@@ -228,7 +228,7 @@
 | Supabase target-implikation | Inför audit/event-logg for skrivningar och integration actions innan eventuell full event sourcing. |
 | Risk | Att hoppa direkt till event sourcing kan gora modellen tung utan att losa dagens felsokningsgap. |
 | Rekommendation | Defer. Audit/observability ska designas i target och kartlaggas i Fas 5. |
-| Sparbarhet | DS7; analys/02-live-state.md:406; analys/02-live-state.md:719; analys/04-research.md:177; tasks/sessions/2026-04-28-datamodell-research-projekt.md:52 |
+| Sparbarhet | DS7; docs/research/datamodell-research/02-live-state.md:406; docs/research/datamodell-research/02-live-state.md:719; docs/research/datamodell-research/04-research.md:177; tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md:52 |
 
 ## M1 sanity-check
 

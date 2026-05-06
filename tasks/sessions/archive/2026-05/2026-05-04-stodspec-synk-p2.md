@@ -3,9 +3,9 @@
 > **Status:** ✅ KLAR — alla fyra klungor genomförda, stop-test passerat.
 > **Skapat:** 2026-05-04
 > **Ägare:** Marcus + Claude Chat
-> **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-stodspec-synk-p2.md`
+> **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md`
 > **Styrande:** `tasks/byggplan-direktiv.md` §6 P2
-> **Föregångare:** `tasks/sessions/2026-05-04-byggplan-revision-p1.md` (P1, slutförd 2026-05-04)
+> **Föregångare:** `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` (P1, slutförd 2026-05-04)
 > **Stop-test:** Stödspecs uppdaterade per direktiv §6 P2 + A1-utfall avgjort mot trigger-tabellen.
 
 ---
@@ -27,11 +27,11 @@ Lästa i denna ordning vid sessionsstart (Chat-miljö → projektkunskap, inte `
 | 1 | `~/Repon/marcus-system/CLAUDE.md` | Hub-konstitution, principer |
 | 2 | `~/Repon/miranon-media-admin/CLAUDE.md` | Projektkonstitution, kvalitetsribba |
 | 3 | `tasks/lessons.md` | Universella lärdomar (inkl. 3 nya från P1) |
-| 4 | `tasks/sessions/2026-05-04-byggplan-revision-p1.md` | P1-leveransen — Del 2 A1, Del 5 Pass-status, Del 6 §5-uppdatering, Del 7 ADR-katalog |
-| 5 | `tasks/sessions/2026-05-04-p1-avslutning.md` | P2 startkontext + scope-anmärkning (1,5–2 sessioner) |
+| 4 | `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` | P1-leveransen — Del 2 A1, Del 5 Pass-status, Del 6 §5-uppdatering, Del 7 ADR-katalog |
+| 5 | `tasks/sessions/archive/2026-05/2026-05-04-p1-avslutning.md` | P2 startkontext + scope-anmärkning (1,5–2 sessioner) |
 | 6 | `tasks/byggplan-direktiv.md` §6 P2, §8.5.4, §8.5.5 | Uppgift + Fas A-mönster |
-| 7 | `tasks/sessions/2026-05-04-security-hardening.md` | Fas A:s implementations-detaljer för K2 |
-| 8 | `analys/07-migration-plan.md` §A2 | Strangler-fig-ordning för K3 |
+| 7 | `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` | Fas A:s implementations-detaljer för K2 |
+| 8 | `docs/research/datamodell-research/07-migration-plan.md` §A2 | Strangler-fig-ordning för K3 |
 | 9 | `docs/specs/SECURITY-SPEC.md` | K2-källa |
 | 10 | `docs/specs/ACCESSIBILITY-CHECKLIST.md` | K4-källa (Vue/FKUI-baserad) |
 | 11 | `docs/specs/STATE-STRATEGY.md` | K3-källa |
@@ -43,9 +43,9 @@ Lästa i denna ordning vid sessionsstart (Chat-miljö → projektkunskap, inte `
 ### Källprioritet vid konflikt
 
 1. `tasks/byggplan-direktiv.md` §6 P2 + §8.5 — auktoritativ för P2
-2. `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 2 A1, Del 6, Del 7 — beslut och kontrakt
-3. `tasks/sessions/2026-05-04-security-hardening.md` — Fas A:s konkreta implementation
-4. `analys/07-migration-plan.md` §A2 — strangler-fig-sekvens
+2. `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 2 A1, Del 6, Del 7 — beslut och kontrakt
+3. `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` — Fas A:s konkreta implementation
+4. `docs/research/datamodell-research/07-migration-plan.md` §A2 — strangler-fig-sekvens
 5. `docs/reference/data-model.md` — sanningskälla för status-typer (per dm-110)
 6. Befintliga stödspecs — modifieras med spårbar diff, inte ersätts okritiskt
 
@@ -148,7 +148,7 @@ Införliva Fas A:s arkitekturmönster (operations-baserat API, `corsHeadersFor(r
 
 **Tillägg, inte omskrivning.** SECURITY-SPEC §1–§6 är fortfarande aktuella (CSP-strategi, npm-säkerhet, OWASP-mappning, beroende-säkerhet). Fas A *implementerade* delar av §5 (A01, A05, A09) plus mönster som inte fanns i specen alls (operations-API, INVARIANT, structured logging, requestId). Lösningen:
 
-1. **Ny sektion §6 — "Fas A — etablerade arkitekturmönster (2026-05-04)"** infogas före nuvarande §6 (som blir §7). Sektionen dokumenterar de 8 mönstren från `byggplan-direktiv.md` §8.5.4 + `tasks/sessions/2026-05-04-security-hardening.md` "Etablerade arkitekturmönster".
+1. **Ny sektion §6 — "Fas A — etablerade arkitekturmönster (2026-05-04)"** infogas före nuvarande §6 (som blir §7). Sektionen dokumenterar de 8 mönstren från `byggplan-direktiv.md` §8.5.4 + `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` "Etablerade arkitekturmönster".
 2. **§5 OWASP-tabell uppdateras** — A01 från "Hög/Delvis" till "Hög/Implementerat (M1+M2)", A05 från "Medel/Saknas" till "Medel/Implementerat (M3)", A07 från "Hög/Delvis" till oförändrad (auth-flow ej levererat ännu — Fas 5.5 etablerar mönstret), A09 från "Medel/Saknas" till "Medel/Implementerat (M7)".
 3. **§5 detaljerade åtgärder för hög-risk:** A01-kodexemplet (rad 393–419) ersätts med pekare till den nya §6 + `supabase/functions/_shared/auth.ts`. A05-kodexemplet (CORS hårdkodad origin) ersätts med pekare till `corsHeadersFor(req)` per-request-mönstret.
 4. **Footer-uppdatering:** "Senast uppdaterad: 2026-05-04 (P2 — Fas A-införlivande)". "Nästa review" ändras från "efter Fas 7" till "efter Fas 5.5 (operations-baserade write-flow etableras i UI)".
@@ -170,7 +170,7 @@ Tre str_replace-operationer + en ny sektion-injektion. Code-prompten i Del 6 §B
 
 ### Mål
 
-Synka mot strangler-fig-ordningen i `analys/07-migration-plan.md` §A2 + dokumentera operations-baserat write-API från Fas A M4 så Fas 6 sub-fas-prompter (6a→6e) kan referera ett ställe.
+Synka mot strangler-fig-ordningen i `docs/research/datamodell-research/07-migration-plan.md` §A2 + dokumentera operations-baserat write-API från Fas A M4 så Fas 6 sub-fas-prompter (6a→6e) kan referera ett ställe.
 
 ### Strategi
 
@@ -306,7 +306,7 @@ RAPPORTERA:
 - Befintliga ACCESSIBILITY-CHECKLIST.md storlek (förvänta ~6,3 kB) och första rad för spårning
 
 PLANERA:
-- mv av sessionsdok till tasks/sessions/2026-05-04-stodspec-synk-p2.md
+- mv av sessionsdok till tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md
 - mv av ny checklist över befintlig docs/specs/ACCESSIBILITY-CHECKLIST.md (overwrite)
 - git add av båda filerna
 - git commit med message-mallen nedan
@@ -322,7 +322,7 @@ IMPLEMENTERA + VERIFIERA + COMMITTA:
     som aktiverar Fas 3.5 som egen fas (test-infrastruktur + mönsterbibliotek
     bägge JA → dubbel egen-fas-trigger).
 
-    Sources: tasks/sessions/2026-05-04-byggplan-revision-p1.md Del 2 (A1-trigger),
+    Sources: tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md Del 2 (A1-trigger),
     docs/analysis/Code-verification-of-codex-analysis.md (befintliga Vue/FKUI-träffar).
 
     Stop-test §6 P2: rad 4/5 levererade. Rad 1-3 i Del 6 nedan.
@@ -343,8 +343,8 @@ DOKUMENTERA:
 ```
 LÄS först:
 - ~/Repon/miranon-media-admin/docs/specs/SECURITY-SPEC.md  (för att verifiera nuvarande sektion-numrering och hitta exakta str_replace-anchors)
-- ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-stodspec-synk-p2.md Del 3
-- ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-security-hardening.md  (för §6-källinnehållet)
+- ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md Del 3
+- ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md  (för §6-källinnehållet)
 - ~/Repon/miranon-media-admin/tasks/byggplan-direktiv.md §8.5.4 + §8.5.5
 
 RAPPORTERA:
@@ -373,7 +373,7 @@ PLANERA — fyra str_replace-operationer:
               *Underlag: gap-analysis.md paragraf 3 (Säkerhet: noll), gap-analysis.md paragraf 5 (OWASP)*
               *Nästa review: efter Fas 7 är klar*
     new_str = *Senast uppdaterad: 2026-05-04 (P2 — Fas A-införlivande)*
-              *Underlag: gap-analysis.md paragraf 3 + 5, byggplan-direktiv.md §8.5.4–§8.5.5, tasks/sessions/2026-05-04-security-hardening.md*
+              *Underlag: gap-analysis.md paragraf 3 + 5, byggplan-direktiv.md §8.5.4–§8.5.5, tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md*
               *Nästa review: efter Fas 5.5 (operations-baserade write-flow etablerade i UI)*
 
 PLANERA — en sektion-injektion (efter §5 OWASP-checklistans slut, före nuvarande §6):
@@ -388,7 +388,7 @@ PLANERA — en sektion-injektion (efter §5 OWASP-checklistans slut, före nuvar
 
     Fas A levererade 8 milstolpar (M1–M8) som stänger hela exponeringen från Code-verifieringen 2026-04-29. Mönstren nedan ska refereras i fas-prompterna i Fas 5.5+ och alla framtida Edge Function-utvecklingar.
 
-    Detaljer: `tasks/sessions/2026-05-04-security-hardening.md` (frusen efter slutsummering).
+    Detaljer: `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` (frusen efter slutsummering).
 
     ### 6.1 Operations-baserat write-API
 
@@ -485,7 +485,7 @@ DOKUMENTERA + COMMITTA:
     (M1+M2 implementerat), A05 (M3 klar, CSP defer:ad), A09 (M7
     implementerat). Footer uppdaterad till 2026-05-04 med ny review-trigger.
 
-    Sources: byggplan-direktiv.md §8.5.4–§8.5.5, tasks/sessions/2026-05-04-security-hardening.md.
+    Sources: byggplan-direktiv.md §8.5.4–§8.5.5, tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md.
 
     P2 Klunga 2 av 4. Next: STATE-STRATEGY-uppdatering (Del 6 §C i p2-sessionsdoket).
 
@@ -497,9 +497,9 @@ DOKUMENTERA + COMMITTA:
 ```
 LÄS först:
 - ~/Repon/miranon-media-admin/docs/specs/STATE-STRATEGY.md  (för exakta str_replace-anchors)
-- ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-stodspec-synk-p2.md Del 4
-- ~/Repon/miranon-media-admin/analys/07-migration-plan.md §A2  (för strangler-fig-ordningen)
-- ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-byggplan-revision-p1.md Del 4 A3 + B1
+- ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md Del 4
+- ~/Repon/miranon-media-admin/docs/research/datamodell-research/07-migration-plan.md §A2  (för strangler-fig-ordningen)
+- ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md Del 4 A3 + B1
 
 RAPPORTERA:
 - Bekräfta att §2 ("Per-vy state-plan") finns och har header utan strangler-fig-not
@@ -519,7 +519,7 @@ PLANERA — fyra str_replace-operationer + en sektion-injektion:
               > **Sekvensering:** Vyerna byggs i strangler-fig-ordning per P1 Del 4 A3:
               > **6a Persons → 6b Events → 6c Registrations + Väntelista → 6d Hem-aggregering → 6e Mer (villkorlig).**
               > Fas-prompter i Fas 6 ska INTE plocka Hem-vyn före underliggande domäner är på plats.
-              > Källa: `analys/07-migration-plan.md` §A2 + `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 4 A3.
+              > Källa: `docs/research/datamodell-research/07-migration-plan.md` §A2 + `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 4 A3.
 
               ### Hem (/hem)
 
@@ -592,7 +592,7 @@ PLANERA — fyra str_replace-operationer + en sektion-injektion:
     ## 8. Operations-baserat write-API (Fas A M4)
 
     > **Källa:** Implementerat i Fas A M4 (`supabase/functions/_shared/field-allowlists.ts` + `update-record/index.ts`).
-    > Detaljerad spec: `SECURITY-SPEC.md §6.1` + `tasks/sessions/2026-05-04-security-hardening.md`.
+    > Detaljerad spec: `SECURITY-SPEC.md §6.1` + `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md`.
     > Denna sektion är klient-sidans referens — den ska refereras från Fas 6 sub-fas-prompter (6a–6e).
 
     ### 8.1 Mönster
@@ -649,8 +649,8 @@ PLANERA — fyra str_replace-operationer + en sektion-injektion:
 
     - `SECURITY-SPEC.md §6.1` — server-sidans definition (operations-registret, deny-by-default)
     - `byggplan-direktiv.md §8.5.4` — Fas A:s arkitekturmönster-översikt
-    - `tasks/sessions/2026-05-04-security-hardening.md` — Fas A:s implementations-detaljer
-    - `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 4 A3 + Del 7 ADR-katalog
+    - `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` — Fas A:s implementations-detaljer
+    - `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 4 A3 + Del 7 ADR-katalog
 
 IMPLEMENTERA: kör 4 str_replace + 1 sektion-injektion.
 
@@ -677,9 +677,8 @@ DOKUMENTERA + COMMITTA:
     Fas E per B1-beslutet. Ny §5b dokumenterar hybrid polling + pull-to-
     refresh för Fas 6d Hem.
 
-    Sources: byggplan-direktiv.md §8.5.4, tasks/sessions/2026-05-04-byggplan-
-    revision-p1.md Del 4 A3 + B1, analys/07-migration-plan.md §A2,
-    tasks/sessions/2026-05-04-security-hardening.md.
+    Sources: byggplan-direktiv.md §8.5.4, tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md Del 4 A3 + B1, docs/research/datamodell-research/07-migration-plan.md §A2,
+    tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md.
 
     P2 Klunga 3 av 4 klar. Next: lessons.md + todo.md (Steg 4-5).
 
@@ -691,7 +690,7 @@ DOKUMENTERA + COMMITTA:
 ```
 LÄS först:
 - ~/Repon/miranon-media-admin/tasks/lessons.md
-- ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-stodspec-synk-p2.md Del 7
+- ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md Del 7
   (källan — fyra färdig-formaterade lessons-poster)
 
 RAPPORTERA:
@@ -715,7 +714,7 @@ IMPLEMENTERA + VERIFIERA + COMMITTA:
     - Källa-vs-implementation-skiktning vid stack-byte
 
     All flagged [UNIVERSAL] for lift to marcus-system at next sync.
-    Source: tasks/sessions/2026-05-04-stodspec-synk-p2.md Del 7.
+    Source: tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md Del 7.
 
 - Pusha
 ```
@@ -732,7 +731,7 @@ RAPPORTERA:
 
 PLANERA:
 - Markera P2 som ✅ KLAR med datum 2026-05-04
-- Lägg till pekare till tasks/sessions/2026-05-04-stodspec-synk-p2.md
+- Lägg till pekare till tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md
 - Lägg till P3 som nästa uppgift med pekare till p2-sessionsdokets Del 8 för startkontext
 - Behåll Marcus' format — ingen omstrukturering
 
@@ -742,7 +741,7 @@ IMPLEMENTERA + VERIFIERA + COMMITTA:
     chore(todo): mark P2 complete, add P3 as next
 
     P2 stödspec-synk completed 2026-05-04.
-    See tasks/sessions/2026-05-04-stodspec-synk-p2.md.
+    See tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md.
     P3 startup context: see Del 8 in p2-sessionsdoc.
 
     A1-utfall: Fas 3.5 = egen fas (test-infra + mönsterbibliotek bägge JA).
@@ -812,7 +811,7 @@ Vid omskrivning av en spec som har överlappande domän med en annan spec: **byg
 **Tillämpning P2:**
 - ARIA 1.3-attribut per komponent → äger ARIA-UPGRADE.md. ACCESSIBILITY-CHECKLIST refererar dit.
 - Operations-baserat API → server-definition i SECURITY-SPEC §6.1, klient-mönster i STATE-STRATEGY §8. Båda korsrefererar varandra.
-- Strangler-fig-ordning → äger analys/07-migration-plan.md §A2. STATE-STRATEGY refererar dit.
+- Strangler-fig-ordning → äger docs/research/datamodell-research/07-migration-plan.md §A2. STATE-STRATEGY refererar dit.
 
 **Kostnad om man väljer duplicering:** Initial leverans är snabbare (copy-paste) men varje framtida ändring måste göras på N ställen, och drift fångas inte förrän en konsument läser fel version.
 
@@ -860,9 +859,9 @@ Läs i denna ordning:
 2. ~/Repon/miranon-media-admin/CLAUDE.md
 3. ~/Repon/miranon-media-admin/tasks/lessons.md
    (särskilt 7 nya UNIVERSAL-poster: 3 från P1 + 4 från P2)
-4. ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-byggplan-revision-p1.md
+4. ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md
    (P1: Del 5 Pass-status, Del 6 §5-uppdatering, Del 7 ADR-katalog 9 st)
-5. ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-stodspec-synk-p2.md
+5. ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md
    (P2: Del 5 A1-utfall = Fas 3.5 egen fas, Del 7 lessons-poster)
 6. ~/Repon/miranon-media-admin/tasks/byggplan-direktiv.md §5 (uppdaterad efter P1) + §6 P3
 7. ~/Repon/miranon-media-admin/docs/specs/SECURITY-SPEC.md (uppdaterad i P2)

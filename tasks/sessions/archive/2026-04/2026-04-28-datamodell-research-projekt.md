@@ -1,7 +1,7 @@
 # 2026-04-28 — Datamodell-research-projektet
 
 > **Status:** FRUSEN — Projekt avslutat 2026-04-30.
-> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/2026-04-28-datamodell-research-projekt.md`
+> **Plats:** `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md`
 > **Plan:** `~/Repon/miranon-media-admin/tasks/datamodell-research-plan.md`
 > **Direktiv:** `~/Repon/miranon-media-admin/tasks/datamodell-research-direktiv.md`
 > **Bakgrund:** Följer på datamodell-110-projektet (avslutat 2026-04-28, arbetsdokument arkiverat i samma mapp).
@@ -16,7 +16,7 @@ Forwards-look-projekt: är modellen i sig 11/10, eller bara dokumentationen av d
 1. Airtable 11/10 först — sanera nuvarande modell efter MK
 2. Supabase target sedan — designa målmodell från sanerad bas
 
-**Output (5 filer i `analys/`):**
+**Output (5 filer i `docs/research/datamodell-research/`):**
 - `04-research.md` — världsklass-principer
 - `05-gap-vs-worldclass.md` — gap-analys
 - `06a-airtable-redesign.md` — Airtable 11/10-design
@@ -181,7 +181,7 @@ Forwards-look-projekt: är modellen i sig 11/10, eller bara dokumentationen av d
 |---|---|---|
 | Plan-1 | Tvåstegsstrategin korrekt? | Ja |
 | Plan-2 | Output-filer rätt (5 filer, 06 splittad)? | Ja |
-| Plan-3 | Plan i `tasks/`, output i `analys/`, arbetsdokument i `tasks/sessions/`? | Ja |
+| Plan-3 | Plan i `tasks/`, output i `docs/research/datamodell-research/`, arbetsdokument i `tasks/sessions/`? | Ja |
 | Plan-4 | Vilka ändringar är förbjudna? | Inga schemaändringar i basen, inga commits, ingen migration |
 
 ### Strategiska G0-frågor (styr Fas 2)
@@ -368,20 +368,20 @@ Lyft-status: Kandidat.
 |---|---|
 | 2026-04-28 | Direktiv skapat. Plan föreslagen av Chat (sammanslagning av Codex' tvåstegsstrategi + Chats ramning). Plan godkänd av Marcus. Fas 0 startad. Arbetsdokument skapat med 27 spårbarhetsrader populerade. G0-frågor lyfta till Marcus. |
 | 2026-04-29 | Förkontroller mot Codex och Code. Codex blockerad på Airtable-MCP — fix planerad efter arbetsdokumentet uppdaterats. Code: GO. REST API-verifiering: Bash + curl mot /v0/meta/bases/{baseId}/automations gav 11 automationer (snapshot sparad i /tmp/airtable-automations-2026-04-29.json). Webhooks-endpoint: 0 webhooks. Constraint-korrigeringar i tre tidigare påståenden om MCP-tools. Zapier-research: 10 Zaps i schema_reference.md §1042-1170, 6 aktiva skriver till basen (Zap 1-6). DQ4-källa identifierad: hårdkodade statiska värden i Zap 5+6, inte formulärdata. H7 omdefinierad till Zapier-kartläggning. Inga blockerare för Fas 1. |
-| 2026-04-29 | Fas 1 startad av Codex från quickstart `tasks/sessions/fas-1-prompt.md`. Källor lästa i angiven ordning; `git pull` körd och repot var redan uppdaterat. |
-| 2026-04-29 | Fas 1 klar: `analys/04-research.md` skapad med Del 0 Baseline & Constraint Map (B1 Domänkarta, B2 Driftkarta, B3 Skuldregister). §6 spårbarhetsmatris uppdaterad för alla 29 punkter. §2 markerad Fas 1 KLAR/Gate 1. Stoppar här enligt Gate 1. |
+| 2026-04-29 | Fas 1 startad av Codex från quickstart `tasks/sessions/archive/datamodell-research-2026-04-30/fas-1-prompt.md`. Källor lästa i angiven ordning; `git pull` körd och repot var redan uppdaterat. |
+| 2026-04-29 | Fas 1 klar: `docs/research/datamodell-research/04-research.md` skapad med Del 0 Baseline & Constraint Map (B1 Domänkarta, B2 Driftkarta, B3 Skuldregister). §6 spårbarhetsmatris uppdaterad för alla 29 punkter. §2 markerad Fas 1 KLAR/Gate 1. Stoppar här enligt Gate 1. |
 | 2026-04-29 | Mini-uppdrag mellan Fas 1 och Fas 2: H6 stängd som REJECTED. SHA256-hash-hypotesen direkt motsagd av 2026-04-29 DQ4-omklassning (hashar är hårdkodade Zapier-värden i Zap 5+6, inte form-data). §4 hypotesregister, §6 spårbarhetsmatris och `04-research.md` B3 uppdaterade. Cleanup-ansvar flyttat till DQ4. |
-| 2026-04-29 | Fas 2 startad av Codex. Alla §2-källfiler i `tasks/sessions/fas-2-prompt.md` lästa i ordning. `.codex-scratch/fas-2-context.md` skapad enligt §4.1 och `.codex-scratch/` lades till i `.gitignore` eftersom ignore-regel saknades. Compact-punkt 1: scratch reloaded; `codex --help` verifierade ingen non-interactive compact-subcommand i denna API-runtime, så compact-disciplinen körs via scratch-persistens + reload och råmaterial släpps från arbetsminnet. |
-| 2026-04-29 | Fas 2 klar för Gate 2. `analys/04-research.md` Del 1 fylld med 10 principer (P1–P10), källkluster och öppna repoexempel. §6 spårbarhetsmatris fick kolumnen Fas 2 (research-princip) för alla 29 punkter. §9 fick Kandidat 6 om config-as-data drift. Compact-punkt 2/3 behövde inte aktiveras utöver scratch-persistens eftersom context hölls under kontroll. Scratch-filen raderades inför Gate 2. |
-| 2026-04-29 | Fas 3 startad av Codex efter Gate 2 och R7-utökning. Alla §2-källfiler i `tasks/sessions/fas-3-prompt.md` lästa i ordning. `.codex-scratch/fas-3-context.md` skapad och `git check-ignore` bekräftade att `.codex-scratch/` täcks av `.gitignore`. |
-| 2026-04-29 | Fas 3 klar för Gate 3. `analys/05-gap-vs-worldclass.md` skapad med 15 gap, 29/29 DS/DQ/H klassade, prioriteringskarta och öppna Fas 4-frågor. §6 Fas 3-kolumnen uppdaterad för alla 29 rader. §9 fick Kandidat 7 om att öppen gate vinner över preliminär rekommendation. H6 förblev REJECTED; G0.3 markerades som öppen gate utan tenantbeslut. |
-| 2026-04-29 | Fas 4a A-track startad av Codex efter Gate 3 och G0.3-beslut. Alla §2-källfiler i `tasks/sessions/fas-4a-prompt.md` lästa i ordning. `.codex-scratch/fas-4a-context.md` skapad och `git check-ignore` bekräftade att `.codex-scratch/` täcks av `.gitignore`. MK-frysen och P10/G0.3-disciplinen gäller: alla A-track-åtgärder post-MK, ingen tenant-abstraktion i Airtable. |
-| 2026-04-29 | Fas 4a klar för Gate 4A. `analys/06a-airtable-redesign.md` skapad med 12 A-track-åtgärder: driftkritiska fixar A1-A3, cleanup A4-A8, preserve/defer A9-A12. §6 Fas 4-kolumnen uppdaterad för A-track-rader. §9 fick Kandidat 8 om preserve som aktivt guardrail-beslut. MK-frysen respekterad absolut; ingen tenant-abstraktion i Airtable; H6 förblev REJECTED och DQ4/G11 hanterades som Zapier-config-skuld. |
-| 2026-04-30 | Fas 4b S-track startad av Codex efter Gate 4A och push av prompt/arbetsdokument. §2-källfiler i `tasks/sessions/fas-4b-prompt.md` lästa från setup till frusen indata, inklusive 06a Del F-lockning. `.codex-scratch/fas-4b-context.md` skapad och reloaded efter kontextövergång. Inga MCP-anrop ska göras i Fas 4b; S-track designar target utifrån frusen live-state. |
-| 2026-04-30 | Fas 4b klar för Gate 4B. `analys/06b-supabase-target.md` skapad med Supabase target för tenancy, identity/persons, events, registrations/attendances, integration sources, communication outbox, waitlist, audit, read models och integration requests. §6 Fas 4-kolumnen uppdaterad för S-track-rader. §9 fick Kandidat 9 om stable identifiers vid integrationskanter. Scratch-filen raderades inför Gate 4B. Inga commits gjorda av Codex. |
+| 2026-04-29 | Fas 2 startad av Codex. Alla §2-källfiler i `tasks/sessions/archive/datamodell-research-2026-04-30/fas-2-prompt.md` lästa i ordning. `.codex-scratch/fas-2-context.md` skapad enligt §4.1 och `.codex-scratch/` lades till i `.gitignore` eftersom ignore-regel saknades. Compact-punkt 1: scratch reloaded; `codex --help` verifierade ingen non-interactive compact-subcommand i denna API-runtime, så compact-disciplinen körs via scratch-persistens + reload och råmaterial släpps från arbetsminnet. |
+| 2026-04-29 | Fas 2 klar för Gate 2. `docs/research/datamodell-research/04-research.md` Del 1 fylld med 10 principer (P1–P10), källkluster och öppna repoexempel. §6 spårbarhetsmatris fick kolumnen Fas 2 (research-princip) för alla 29 punkter. §9 fick Kandidat 6 om config-as-data drift. Compact-punkt 2/3 behövde inte aktiveras utöver scratch-persistens eftersom context hölls under kontroll. Scratch-filen raderades inför Gate 2. |
+| 2026-04-29 | Fas 3 startad av Codex efter Gate 2 och R7-utökning. Alla §2-källfiler i `tasks/sessions/archive/datamodell-research-2026-04-30/fas-3-prompt.md` lästa i ordning. `.codex-scratch/fas-3-context.md` skapad och `git check-ignore` bekräftade att `.codex-scratch/` täcks av `.gitignore`. |
+| 2026-04-29 | Fas 3 klar för Gate 3. `docs/research/datamodell-research/05-gap-vs-worldclass.md` skapad med 15 gap, 29/29 DS/DQ/H klassade, prioriteringskarta och öppna Fas 4-frågor. §6 Fas 3-kolumnen uppdaterad för alla 29 rader. §9 fick Kandidat 7 om att öppen gate vinner över preliminär rekommendation. H6 förblev REJECTED; G0.3 markerades som öppen gate utan tenantbeslut. |
+| 2026-04-29 | Fas 4a A-track startad av Codex efter Gate 3 och G0.3-beslut. Alla §2-källfiler i `tasks/sessions/archive/datamodell-research-2026-04-30/fas-4a-prompt.md` lästa i ordning. `.codex-scratch/fas-4a-context.md` skapad och `git check-ignore` bekräftade att `.codex-scratch/` täcks av `.gitignore`. MK-frysen och P10/G0.3-disciplinen gäller: alla A-track-åtgärder post-MK, ingen tenant-abstraktion i Airtable. |
+| 2026-04-29 | Fas 4a klar för Gate 4A. `docs/research/datamodell-research/06a-airtable-redesign.md` skapad med 12 A-track-åtgärder: driftkritiska fixar A1-A3, cleanup A4-A8, preserve/defer A9-A12. §6 Fas 4-kolumnen uppdaterad för A-track-rader. §9 fick Kandidat 8 om preserve som aktivt guardrail-beslut. MK-frysen respekterad absolut; ingen tenant-abstraktion i Airtable; H6 förblev REJECTED och DQ4/G11 hanterades som Zapier-config-skuld. |
+| 2026-04-30 | Fas 4b S-track startad av Codex efter Gate 4A och push av prompt/arbetsdokument. §2-källfiler i `tasks/sessions/archive/datamodell-research-2026-04-30/fas-4b-prompt.md` lästa från setup till frusen indata, inklusive 06a Del F-lockning. `.codex-scratch/fas-4b-context.md` skapad och reloaded efter kontextövergång. Inga MCP-anrop ska göras i Fas 4b; S-track designar target utifrån frusen live-state. |
+| 2026-04-30 | Fas 4b klar för Gate 4B. `docs/research/datamodell-research/06b-supabase-target.md` skapad med Supabase target för tenancy, identity/persons, events, registrations/attendances, integration sources, communication outbox, waitlist, audit, read models och integration requests. §6 Fas 4-kolumnen uppdaterad för S-track-rader. §9 fick Kandidat 9 om stable identifiers vid integrationskanter. Scratch-filen raderades inför Gate 4B. Inga commits gjorda av Codex. |
 | 2026-04-30 | Fas 5 startad av Codex efter Gate 4B och push av prompt/arbetsdokument. §2-källfiler lästa från setup till conversion-plan, `.codex-scratch/fas-5-context.md` skapad och reloaded efter kontextövergång. Inga MCP-anrop görs i Fas 5; 07 ska sekvensera migrationen, inte implementera eller skriva SQL-DDL. |
-| 2026-04-30 | Fas 5 klar för Gate 5. `analys/07-migration-plan.md` skapad med 10-stegs strangler-fig-plan, 8-fältsformat per steg, crosswalk-strategi, validation/rollback, future Code-prompt och öppna implementationfrågor. §6 Fas 5-kolumnen uppdaterad för alla 29 DS/DQ/H-rader. §9 fick Kandidat 10 om crosswalk som förstaklassartefakt. Scratch-filen raderad inför Gate 5. Inga commits gjorda av Codex. |
-| 2026-04-30 | Fas 6 klar för Gate 6. Tre valideringstester passerade: Airtable excellence, Supabase readiness och DS/DQ closure 29/29. `analys/07-migration-plan.md` utökad med Del J, §6 Fas 6-kolumnen markerad PASS för alla 29 rader, direktivet markerat SLUTFÖRT och K1-K10 lyfta till `~/Repon/marcus-system/tasks/lessons.md`. Projektet arkiveras som FRUSEN referens. |
+| 2026-04-30 | Fas 5 klar för Gate 5. `docs/research/datamodell-research/07-migration-plan.md` skapad med 10-stegs strangler-fig-plan, 8-fältsformat per steg, crosswalk-strategi, validation/rollback, future Code-prompt och öppna implementationfrågor. §6 Fas 5-kolumnen uppdaterad för alla 29 DS/DQ/H-rader. §9 fick Kandidat 10 om crosswalk som förstaklassartefakt. Scratch-filen raderad inför Gate 5. Inga commits gjorda av Codex. |
+| 2026-04-30 | Fas 6 klar för Gate 6. Tre valideringstester passerade: Airtable excellence, Supabase readiness och DS/DQ closure 29/29. `docs/research/datamodell-research/07-migration-plan.md` utökad med Del J, §6 Fas 6-kolumnen markerad PASS för alla 29 rader, direktivet markerat SLUTFÖRT och K1-K10 lyfta till `~/Repon/marcus-system/tasks/lessons.md`. Projektet arkiveras som FRUSEN referens. |
 
 ---
 
@@ -448,7 +448,7 @@ Vid varje fält-referens i Fas 1+: verifiera mot live-schema via describe_table 
 
 ## 12. Avslutande not
 
-Projektet avslutat 2026-04-30 efter Gate 6. Alla output-filer levererade, UNIVERSAL-lärdomar lyfta till `~/Repon/marcus-system/tasks/lessons.md`, direktivet markerat SLUTFÖRT. Future Code-implementation startar från `analys/07-migration-plan.md` Del H när Marcus signalerar go.
+Projektet avslutat 2026-04-30 efter Gate 6. Alla output-filer levererade, UNIVERSAL-lärdomar lyfta till `~/Repon/marcus-system/tasks/lessons.md`, direktivet markerat SLUTFÖRT. Future Code-implementation startar från `docs/research/datamodell-research/07-migration-plan.md` Del H när Marcus signalerar go.
 
 Detta dokument är frusen referens för Fas 0–6. Eventuella sidospår dokumenteras nedan utan att modifiera tidigare sektioner.
 
@@ -461,7 +461,7 @@ Detta dokument är frusen referens för Fas 0–6. Eventuella sidospår dokument
 | Fält | Innehåll |
 |---|---|
 | Datum | 2026-05-03 |
-| Output | [`analys/08-odoo-validation.md`](../../analys/08-odoo-validation.md) |
+| Output | [`docs/research/datamodell-research/08-odoo-validation.md`](../../docs/research/datamodell-research/08-odoo-validation.md) |
 | Källpinning | Odoo core 19.0 SHA `2154e11ef5c7860adee88013ad80422d2b4f5816`; OCA/event 18.0 (19.0 saknar moduler) |
 | Mandat | Validera S-track event-domän mot Odoos 20-åriga modell. Ingen 06b-ändring. |
 | Resultat | 4 luckor klassade som **Lyfta** (D1, D2, D3, D6), 6 som Defer, 3 som Avvisa. 8 kandidater i Del E till `07-migration-plan.md`. |
