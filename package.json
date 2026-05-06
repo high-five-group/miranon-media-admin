@@ -48,5 +48,28 @@
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2",
     "vite": "^8.0.8"
+  },
+  "description": "React-admin för Miranon Media — eventhantering, anmälningar och rapportering ovanpå Airtable + Supabase. Privat projekt.",
+  "author": "marcus803 <marcus803@users.noreply.github.com>",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcus803/miranon-media-admin.git"
+  },
+  "homepage": "https://github.com/marcus803/miranon-media-admin#readme",
+  "keywords": [
+    "miranon",
+    "react",
+    "react-19",
+    "airtable",
+    "supabase",
+    "vite",
+    "tanstack",
+    "tailwind-v4",
+    "biome",
+    "admin"
+  ],
+  "engines": {
+    "node": ">=20"
   }
 }
