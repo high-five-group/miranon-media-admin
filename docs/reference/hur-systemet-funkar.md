@@ -1,7 +1,7 @@
 > **Primär version. Senast uppdaterad 2026-04-28.**
 >
 > Kopia för psionautics-projektets Claude-chatt synkas separat till
-> `~/Repon/psionautics/docs/hur-systemet-funkar.md` efter varje uppdatering här.
+> `~/Repon/psionautics/docs/reference/hur-systemet-funkar.md` efter varje uppdatering här.
 
 ---
 

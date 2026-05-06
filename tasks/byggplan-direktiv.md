@@ -26,9 +26,9 @@ Sedan conversion-plan skrevs har följande hänt, i kronologisk ordning:
 | Datum | Händelse | Output |
 |---|---|---|
 | 2026-04-14 | Fas 0 + Fas 1 av conversion-plan genomförda | commits `fcc6de3` (Fas 0) + `c91bfa0` (Fas 1) |
-| 2026-04-28 | dm-110-projektet — uttömmande dokumentation av befintlig Airtable-modell | `docs/data-model.md`, 9 UNIVERSAL-lärdomar |
-| 2026-04-28 | Codex projektanalys efter Fas 1 | `docs/Codex-project-analysis-after-fas-1.md` |
-| 2026-04-29 | Code:s verifiering av Codex-analysen mot HEAD `245422c` | `docs/Code-verification-of-codex-analysis.md` |
+| 2026-04-28 | dm-110-projektet — uttömmande dokumentation av befintlig Airtable-modell | `docs/reference/data-model.md`, 9 UNIVERSAL-lärdomar |
+| 2026-04-28 | Codex projektanalys efter Fas 1 | `docs/analysis/Codex-project-analysis-after-fas-1.md` |
+| 2026-04-29 | Code:s verifiering av Codex-analysen mot HEAD `245422c` | `docs/analysis/Code-verification-of-codex-analysis.md` |
 | 2026-04-28 → 30 | Datamodell-research-projektet (forwards-look, 7 faser, Gate 6 passerad) | `analys/04-research.md` → `analys/07-migration-plan.md`, K1–K10 lyfta till lessons |
 | 2026-05-03 | Odoo-validering som sidospår, post-Gate 6 | `analys/08-odoo-validation.md`, 8 nya kandidater (E1–E8) |
 | 2026-05-04 | Säkerhetshardening (Fas A) — alla 8 milstolpar levererade | 14 commits, 110+3 tester, 3 nya UNIVERSAL |
@@ -179,12 +179,12 @@ Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren 
 
 **Mål:** Konkret lista över påståenden i conversion-plan som motsägs av nyare dokument.
 
-**Output:** `docs/byggplan-revision-inventory.md` med tabellen "Påstående → Källa → Korrigering".
+**Output:** `docs/logs/byggplan-revision-inventory.md` med tabellen "Påstående → Källa → Korrigering".
 
 **Indata att gå igenom:**
 - `docs/conversion-plan.md` (~1 800 rader) — sektion för sektion
-- `docs/Codex-project-analysis-after-fas-1.md`
-- `docs/Code-verification-of-codex-analysis.md`
+- `docs/analysis/Codex-project-analysis-after-fas-1.md`
+- `docs/analysis/Code-verification-of-codex-analysis.md`
 - `analys/04-research.md` → `analys/08-odoo-validation.md`
 - `marcus-system/tasks/lessons.md` (sektioner 2026-04-28 → 2026-05-04)
 - §8.5 i detta direktiv (Fas A-fynd)
@@ -210,11 +210,11 @@ Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren 
 **Mål:** Uppdatera de stödspecs som är direkta beroenden för byggplanens fasprompter.
 
 **Filer att uppdatera (preliminär lista):**
-- `docs/SECURITY-SPEC.md` — införliva Code-verifieringens fynd, Fas A-resultat (klient-DSN, två-stegs auth-check, test-*-prefix-konvention, operations-baserad API, INVARIANT-mönster, structured JSON-loggning)
-- `docs/ACCESSIBILITY-CHECKLIST.md` — skriv om för React Aria + WCAG 2.2 AA
-- `docs/STATE-STRATEGY.md` — synk mot strangler-fig-ordningen i 07
+- `docs/specs/SECURITY-SPEC.md` — införliva Code-verifieringens fynd, Fas A-resultat (klient-DSN, två-stegs auth-check, test-*-prefix-konvention, operations-baserad API, INVARIANT-mönster, structured JSON-loggning)
+- `docs/specs/ACCESSIBILITY-CHECKLIST.md` — skriv om för React Aria + WCAG 2.2 AA
+- `docs/specs/STATE-STRATEGY.md` — synk mot strangler-fig-ordningen i 07
 - `docs/research/react-stack-research.md` — markera vad som är överspelat sedan 2026-04
-- `docs/data-model.md` — kontrollera att den fortfarande är källan för status-typer (den ska vara det per dm-110)
+- `docs/reference/data-model.md` — kontrollera att den fortfarande är källan för status-typer (den ska vara det per dm-110)
 
 **Filer som troligen INTE behöver uppdateras (kontrolleras kort):**
 - DESIGN-MANIFESTO, DESIGN-OPERATING-SYSTEM, DESIGN-SYSTEM-SPEC — designprinciper är oförändrade
@@ -425,27 +425,27 @@ Allt nedanstående är frusen indata för revisionen.
 - `~/Repon/miranon-media-admin/tasks/lessons.md`
 
 **Stödspecs (kontrolleras, vissa uppdateras):**
-- `~/Repon/miranon-media-admin/docs/SECURITY-SPEC.md`
-- `~/Repon/miranon-media-admin/docs/ACCESSIBILITY-CHECKLIST.md`
-- `~/Repon/miranon-media-admin/docs/STATE-STRATEGY.md`
-- `~/Repon/miranon-media-admin/docs/PERFORMANCE-BUDGET.md`
-- `~/Repon/miranon-media-admin/docs/URL-STATE-SPEC.md`
-- `~/Repon/miranon-media-admin/docs/ARIA-UPGRADE.md`
-- `~/Repon/miranon-media-admin/docs/FUTURE-COMPAT.md`
-- `~/Repon/miranon-media-admin/docs/SPA-ARCHITECTURE-DECISION.md`
-- `~/Repon/miranon-media-admin/docs/DESIGN-MANIFESTO.md`
-- `~/Repon/miranon-media-admin/docs/DESIGN-OPERATING-SYSTEM.md`
-- `~/Repon/miranon-media-admin/docs/DESIGN-SYSTEM-SPEC.md`
-- `~/Repon/miranon-media-admin/docs/KVALITETSDEFINITIONER-11.md`
-- `~/Repon/miranon-media-admin/docs/gap-analysis.md`
+- `~/Repon/miranon-media-admin/docs/specs/SECURITY-SPEC.md`
+- `~/Repon/miranon-media-admin/docs/specs/ACCESSIBILITY-CHECKLIST.md`
+- `~/Repon/miranon-media-admin/docs/specs/STATE-STRATEGY.md`
+- `~/Repon/miranon-media-admin/docs/specs/PERFORMANCE-BUDGET.md`
+- `~/Repon/miranon-media-admin/docs/specs/URL-STATE-SPEC.md`
+- `~/Repon/miranon-media-admin/docs/specs/ARIA-UPGRADE.md`
+- `~/Repon/miranon-media-admin/docs/specs/FUTURE-COMPAT.md`
+- `~/Repon/miranon-media-admin/docs/specs/SPA-ARCHITECTURE-DECISION.md`
+- `~/Repon/miranon-media-admin/docs/specs/DESIGN-MANIFESTO.md`
+- `~/Repon/miranon-media-admin/docs/specs/DESIGN-OPERATING-SYSTEM.md`
+- `~/Repon/miranon-media-admin/docs/specs/DESIGN-SYSTEM-SPEC.md`
+- `~/Repon/miranon-media-admin/docs/specs/KVALITETSDEFINITIONER-11.md`
+- `~/Repon/miranon-media-admin/docs/logs/gap-analysis.md`
 
 **Externa analyser:**
-- `~/Repon/miranon-media-admin/docs/Codex-project-analysis-after-fas-1.md`
-- `~/Repon/miranon-media-admin/docs/Code-verification-of-codex-analysis.md`
+- `~/Repon/miranon-media-admin/docs/analysis/Codex-project-analysis-after-fas-1.md`
+- `~/Repon/miranon-media-admin/docs/analysis/Code-verification-of-codex-analysis.md`
 
 **Datamodell-leverans:**
-- `~/Repon/miranon-media-admin/docs/data-model.md`
-- `~/Repon/miranon-media-admin/docs/hur-systemet-funkar.md`
+- `~/Repon/miranon-media-admin/docs/reference/data-model.md`
+- `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md`
 - `~/Repon/miranon-media-admin/analys/01-extraction.md` → `08-odoo-validation.md` (åtta filer)
 - `~/Repon/miranon-media-admin/tasks/datamodell-research-direktiv.md`
 - `~/Repon/miranon-media-admin/tasks/datamodell-research-plan.md`

@@ -453,7 +453,7 @@ Appen är funktionellt klar sedan Fas 6. Nu granskar vi allt — som en slutbesi
 ### Vad gör vi konkret?
 
 **Säkerhet:**
-- Aktiverar *Content Security Policy* (CSP) — regler som berättar för webbläsaren exakt vilka resurser appen får ladda. Om någon försöker injicera skadlig kod blockeras det automatiskt. Se [SECURITY-SPEC.md](docs/SECURITY-SPEC.md).
+- Aktiverar *Content Security Policy* (CSP) — regler som berättar för webbläsaren exakt vilka resurser appen får ladda. Om någon försöker injicera skadlig kod blockeras det automatiskt. Se [SECURITY-SPEC.md](docs/specs/SECURITY-SPEC.md).
 - Aktiverar *Trusted Types* — en extra säkerhetsnivå som förhindrar en specifik typ av attack (XSS — Cross-Site Scripting, där angripare lurar webbläsaren att köra deras kod).
 - Granskar alla beroenden (tredjepartspaket) för kända säkerhetsproblem.
 
@@ -674,6 +674,6 @@ Här förklaras alla verktyg och tekniker som nämns i planen. De är grupperade
 
 ---
 
-*Dokumentet baserat på: [conversion-plan.md](docs/conversion-plan.md), [DESIGN-MANIFESTO.md](docs/DESIGN-MANIFESTO.md), [DESIGN-OPERATING-SYSTEM.md](docs/DESIGN-OPERATING-SYSTEM.md), [DESIGN-SYSTEM-SPEC.md](docs/DESIGN-SYSTEM-SPEC.md), [SECURITY-SPEC.md](docs/SECURITY-SPEC.md), [PERFORMANCE-BUDGET.md](docs/PERFORMANCE-BUDGET.md), [ARIA-UPGRADE.md](docs/ARIA-UPGRADE.md), [gap-analysis.md](docs/gap-analysis.md) och [FILE-INVENTORY.md](docs/react-migration/FILE-INVENTORY.md).*
+*Dokumentet baserat på: [conversion-plan.md](docs/conversion-plan.md), [DESIGN-MANIFESTO.md](docs/specs/DESIGN-MANIFESTO.md), [DESIGN-OPERATING-SYSTEM.md](docs/specs/DESIGN-OPERATING-SYSTEM.md), [DESIGN-SYSTEM-SPEC.md](docs/specs/DESIGN-SYSTEM-SPEC.md), [SECURITY-SPEC.md](docs/specs/SECURITY-SPEC.md), [PERFORMANCE-BUDGET.md](docs/specs/PERFORMANCE-BUDGET.md), [ARIA-UPGRADE.md](docs/specs/ARIA-UPGRADE.md), [gap-analysis.md](docs/logs/gap-analysis.md) och [FILE-INVENTORY.md](docs/react-migration/FILE-INVENTORY.md).*
 
 *Senast uppdaterad: 2026-04-07*

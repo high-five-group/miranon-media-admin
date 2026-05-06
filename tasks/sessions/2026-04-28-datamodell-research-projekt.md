@@ -223,7 +223,7 @@ Fas 3-status: **ÖPPEN GATE**. Rekommendationen ovan är inte ett beslut. Fas 3 
 
 | ID | Beslut | Min rekommendation |
 |---|---|---|
-| B5 | `docs/hur-systemet-funkar.md` är måste-läs i Fas 1 | Ja — affärslogik är hård constraint |
+| B5 | `docs/reference/hur-systemet-funkar.md` är måste-läs i Fas 1 | Ja — affärslogik är hård constraint |
 | B6 | Research-ribba för Fas 2 | Min rek: minst 5–8 högkvalitativa källor per princip-kluster, inte modellens allmänkunskap |
 | B7 | Webhooks/Zapier/Make kartläggs i detta projekt | Ja för designpåverkan, nej för full implementation |
 

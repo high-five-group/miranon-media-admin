@@ -32,13 +32,13 @@ Lästa i denna ordning vid sessionsstart (Chat-miljö → projektkunskap, inte `
 | 6 | `tasks/byggplan-direktiv.md` §6 P2, §8.5.4, §8.5.5 | Uppgift + Fas A-mönster |
 | 7 | `tasks/sessions/2026-05-04-security-hardening.md` | Fas A:s implementations-detaljer för K2 |
 | 8 | `analys/07-migration-plan.md` §A2 | Strangler-fig-ordning för K3 |
-| 9 | `docs/SECURITY-SPEC.md` | K2-källa |
-| 10 | `docs/ACCESSIBILITY-CHECKLIST.md` | K4-källa (Vue/FKUI-baserad) |
-| 11 | `docs/STATE-STRATEGY.md` | K3-källa |
-| 12 | `docs/data-model.md` (status-tabell) | E-verifiering |
-| 13 | `docs/Code-verification-of-codex-analysis.md` | Status.ts-out-of-sync-bevis (för E) |
+| 9 | `docs/specs/SECURITY-SPEC.md` | K2-källa |
+| 10 | `docs/specs/ACCESSIBILITY-CHECKLIST.md` | K4-källa (Vue/FKUI-baserad) |
+| 11 | `docs/specs/STATE-STRATEGY.md` | K3-källa |
+| 12 | `docs/reference/data-model.md` (status-tabell) | E-verifiering |
+| 13 | `docs/analysis/Code-verification-of-codex-analysis.md` | Status.ts-out-of-sync-bevis (för E) |
 | 14 | `src/domain/types/Status.ts` | Verifiering att kod är out-of-sync mot data-model.md |
-| 15 | `docs/DESIGN-MANIFESTO.md`, `DESIGN-OPERATING-SYSTEM.md`, `DESIGN-SYSTEM-SPEC.md`, `KVALITETSDEFINITIONER-11.md`, `PERFORMANCE-BUDGET.md`, `URL-STATE-SPEC.md`, `ARIA-UPGRADE.md`, `FUTURE-COMPAT.md` | D-listans 8 kontroll-specs |
+| 15 | `docs/specs/DESIGN-MANIFESTO.md`, `DESIGN-OPERATING-SYSTEM.md`, `DESIGN-SYSTEM-SPEC.md`, `KVALITETSDEFINITIONER-11.md`, `PERFORMANCE-BUDGET.md`, `URL-STATE-SPEC.md`, `ARIA-UPGRADE.md`, `FUTURE-COMPAT.md` | D-listans 8 kontroll-specs |
 
 ### Källprioritet vid konflikt
 
@@ -46,7 +46,7 @@ Lästa i denna ordning vid sessionsstart (Chat-miljö → projektkunskap, inte `
 2. `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 2 A1, Del 6, Del 7 — beslut och kontrakt
 3. `tasks/sessions/2026-05-04-security-hardening.md` — Fas A:s konkreta implementation
 4. `analys/07-migration-plan.md` §A2 — strangler-fig-sekvens
-5. `docs/data-model.md` — sanningskälla för status-typer (per dm-110)
+5. `docs/reference/data-model.md` — sanningskälla för status-typer (per dm-110)
 6. Befintliga stödspecs — modifieras med spårbar diff, inte ersätts okritiskt
 
 ### Miljö-anmärkning
@@ -54,7 +54,7 @@ Lästa i denna ordning vid sessionsstart (Chat-miljö → projektkunskap, inte `
 P2 körs i Claude Chat — inte i Code. Specs ligger i projektkunskapen, inte tillgängliga via `view`-verktyget mot `~/Repon/...`. Leveransen är:
 
 1. Detta sessionsdok (full fil att committa)
-2. Ny `docs/ACCESSIBILITY-CHECKLIST.md` (full fil att skriva över)
+2. Ny `docs/specs/ACCESSIBILITY-CHECKLIST.md` (full fil att skriva över)
 3. Code-prompter i Del 3 för str_replace-uppdateringar av SECURITY-SPEC och STATE-STRATEGY
 
 ---
@@ -128,9 +128,9 @@ För varje spec: vad granskningen bevisade + utfall (oförändrad / liten drift 
 
 **Bevis:**
 
-1. `docs/data-model.md` §121–130 listar **6 statusvärden** för `Anmälningar.Status`: `Obekräftad`, `Bekräftad (mail skickat)`, `Betalningspåminnelse skickad`, `Avbokad/Ombokad`, `Flytta till väntelista`, `Inställt`. Med kommentar *"Inställt: Ny 2026-04-26"* och *"Flytta till väntelista: Tillagd i april 2026"*.
+1. `docs/reference/data-model.md` §121–130 listar **6 statusvärden** för `Anmälningar.Status`: `Obekräftad`, `Bekräftad (mail skickat)`, `Betalningspåminnelse skickad`, `Avbokad/Ombokad`, `Flytta till väntelista`, `Inställt`. Med kommentar *"Inställt: Ny 2026-04-26"* och *"Flytta till väntelista: Tillagd i april 2026"*.
 2. `src/domain/types/Status.ts` listar idag **bara 4** värden — saknar `INSTALLT` och `FLYTTA_TILL_VANTELISTA`. Header-kommentar "Faktiska värden från Airtable (verifierade via MCP 2026-03-30)" är 30+ dagar inaktuell.
-3. `docs/Code-verification-of-codex-analysis.md` (sektion 5 + Tillägg) bekräftar diskrepansen och låser strategin: **Status.ts ska skrivas så att den speglar Airtable som det är idag (sex värden), pre-A-track-läget.** A1 (formel-fix) ändrar inte status-värden. 06b §B3 designar en *separat* `TargetRegistrationStatus`-enum (`'draft','pending','confirmed','waitlisted','cancelled','rebooked','completed','no_show'`) som introduceras vid 07 Steg 4. K9-respekt: stable identifiers separeras från displaynamn.
+3. `docs/analysis/Code-verification-of-codex-analysis.md` (sektion 5 + Tillägg) bekräftar diskrepansen och låser strategin: **Status.ts ska skrivas så att den speglar Airtable som det är idag (sex värden), pre-A-track-läget.** A1 (formel-fix) ändrar inte status-värden. 06b §B3 designar en *separat* `TargetRegistrationStatus`-enum (`'draft','pending','confirmed','waitlisted','cancelled','rebooked','completed','no_show'`) som introduceras vid 07 Steg 4. K9-respekt: stable identifiers separeras från displaynamn.
 
 **Slutsats:** `data-model.md` är **fortfarande** sanningskällan. Synken sker i **kod**, inte i specen, och hanteras i **Fas 2.5 (schema-kontrakt-sync)** per direktiv §3.3 + P1 Del 6 rad 2.5.
 
@@ -297,7 +297,7 @@ Klistras in i Code i ordning. Varje prompt är fristående: den läser källfile
 LÄS först:
 - ~/Repon/miranon-media-admin/CLAUDE.md
 - ~/Repon/miranon-media-admin/tasks/sessions/  (verifiera att 2026-05-04-stodspec-synk-p2.md inte redan finns)
-- ~/Repon/miranon-media-admin/docs/ACCESSIBILITY-CHECKLIST.md  (befintlig fil — ska skrivas över)
+- ~/Repon/miranon-media-admin/docs/specs/ACCESSIBILITY-CHECKLIST.md  (befintlig fil — ska skrivas över)
 
 RAPPORTERA:
 - Working tree status (förvänta clean)
@@ -307,7 +307,7 @@ RAPPORTERA:
 
 PLANERA:
 - mv av sessionsdok till tasks/sessions/2026-05-04-stodspec-synk-p2.md
-- mv av ny checklist över befintlig docs/ACCESSIBILITY-CHECKLIST.md (overwrite)
+- mv av ny checklist över befintlig docs/specs/ACCESSIBILITY-CHECKLIST.md (overwrite)
 - git add av båda filerna
 - git commit med message-mallen nedan
 - git push
@@ -323,7 +323,7 @@ IMPLEMENTERA + VERIFIERA + COMMITTA:
     bägge JA → dubbel egen-fas-trigger).
 
     Sources: tasks/sessions/2026-05-04-byggplan-revision-p1.md Del 2 (A1-trigger),
-    docs/Code-verification-of-codex-analysis.md (befintliga Vue/FKUI-träffar).
+    docs/analysis/Code-verification-of-codex-analysis.md (befintliga Vue/FKUI-träffar).
 
     Stop-test §6 P2: rad 4/5 levererade. Rad 1-3 i Del 6 nedan.
     Next: Steg 2-3 i Del 6 (SECURITY-SPEC + STATE-STRATEGY str_replace).
@@ -342,7 +342,7 @@ DOKUMENTERA:
 
 ```
 LÄS först:
-- ~/Repon/miranon-media-admin/docs/SECURITY-SPEC.md  (för att verifiera nuvarande sektion-numrering och hitta exakta str_replace-anchors)
+- ~/Repon/miranon-media-admin/docs/specs/SECURITY-SPEC.md  (för att verifiera nuvarande sektion-numrering och hitta exakta str_replace-anchors)
 - ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-stodspec-synk-p2.md Del 3
 - ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-security-hardening.md  (för §6-källinnehållet)
 - ~/Repon/miranon-media-admin/tasks/byggplan-direktiv.md §8.5.4 + §8.5.5
@@ -496,7 +496,7 @@ DOKUMENTERA + COMMITTA:
 
 ```
 LÄS först:
-- ~/Repon/miranon-media-admin/docs/STATE-STRATEGY.md  (för exakta str_replace-anchors)
+- ~/Repon/miranon-media-admin/docs/specs/STATE-STRATEGY.md  (för exakta str_replace-anchors)
 - ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-stodspec-synk-p2.md Del 4
 - ~/Repon/miranon-media-admin/analys/07-migration-plan.md §A2  (för strangler-fig-ordningen)
 - ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-byggplan-revision-p1.md Del 4 A3 + B1
@@ -865,9 +865,9 @@ Läs i denna ordning:
 5. ~/Repon/miranon-media-admin/tasks/sessions/2026-05-04-stodspec-synk-p2.md
    (P2: Del 5 A1-utfall = Fas 3.5 egen fas, Del 7 lessons-poster)
 6. ~/Repon/miranon-media-admin/tasks/byggplan-direktiv.md §5 (uppdaterad efter P1) + §6 P3
-7. ~/Repon/miranon-media-admin/docs/SECURITY-SPEC.md (uppdaterad i P2)
-8. ~/Repon/miranon-media-admin/docs/STATE-STRATEGY.md (uppdaterad i P2)
-9. ~/Repon/miranon-media-admin/docs/ACCESSIBILITY-CHECKLIST.md (omskriven i P2)
+7. ~/Repon/miranon-media-admin/docs/specs/SECURITY-SPEC.md (uppdaterad i P2)
+8. ~/Repon/miranon-media-admin/docs/specs/STATE-STRATEGY.md (uppdaterad i P2)
+9. ~/Repon/miranon-media-admin/docs/specs/ACCESSIBILITY-CHECKLIST.md (omskriven i P2)
 
 Mål: Skriv `docs/byggplan.md` (slutprodukten). Repo:t blir "rent och 11/10":
 - Fas-prompter per fas (Fas 0 + 1 redan klara, Fas 2 → Fas 8 + Fas A + Fas B + Fas E)
@@ -941,18 +941,18 @@ Code är fri, P2 committad. Detta är Chat-arbete.
 
 | Spec | Status | Kommentar |
 |---|---|---|
-| `docs/SECURITY-SPEC.md` | Uppdaterad | Ny §6 (Fas A-mönster). §5 OWASP-tabellen status-uppdaterad för A01/A05/A09. |
-| `docs/STATE-STRATEGY.md` | Uppdaterad | Ny §8 (Operations-API). §2 strangler-fig-not. §5 → Fas E. Ny §5b polling. |
-| `docs/ACCESSIBILITY-CHECKLIST.md` | Omskriven | React Aria + WCAG 2.2 AA. Mönsterbibliotek-sektion (Fas 3.5-leverabel). Test-infra-sektion (Fas 3.5-leverabel). |
-| `docs/data-model.md` | Oförändrad | Bekräftad sanningskälla för status-typer per dm-110. Synk till Status.ts sker i Fas 2.5 (kod, inte spec). |
-| `docs/DESIGN-MANIFESTO.md` | Oförändrad | Teknik-agnostiskt — ingen drift möjlig. |
-| `docs/DESIGN-OPERATING-SYSTEM.md` | Oförändrad | Teknik-agnostiskt. |
-| `docs/DESIGN-SYSTEM-SPEC.md` | Oförändrad | Redan synkad mot React + Tailwind v4 + @theme (2026-04-13). |
-| `docs/KVALITETSDEFINITIONER-11.md` | Oförändrad | Vue-terminologi noterad (composables, onUnmounted) — defer:ad till Fas 3. |
-| `docs/PERFORMANCE-BUDGET.md` | Oförändrad | React + web-vitals — aktuell. |
-| `docs/URL-STATE-SPEC.md` | Oförändrad | nuqs + TanStack Router — aktuell. |
-| `docs/ARIA-UPGRADE.md` | Oförändrad | React Aria + ARIA 1.3 + EAA — aktuell. ACCESSIBILITY-CHECKLIST refererar hit. |
-| `docs/FUTURE-COMPAT.md` | Oförändrad | Passionslyftet-tidsplan oförändrad. |
+| `docs/specs/SECURITY-SPEC.md` | Uppdaterad | Ny §6 (Fas A-mönster). §5 OWASP-tabellen status-uppdaterad för A01/A05/A09. |
+| `docs/specs/STATE-STRATEGY.md` | Uppdaterad | Ny §8 (Operations-API). §2 strangler-fig-not. §5 → Fas E. Ny §5b polling. |
+| `docs/specs/ACCESSIBILITY-CHECKLIST.md` | Omskriven | React Aria + WCAG 2.2 AA. Mönsterbibliotek-sektion (Fas 3.5-leverabel). Test-infra-sektion (Fas 3.5-leverabel). |
+| `docs/reference/data-model.md` | Oförändrad | Bekräftad sanningskälla för status-typer per dm-110. Synk till Status.ts sker i Fas 2.5 (kod, inte spec). |
+| `docs/specs/DESIGN-MANIFESTO.md` | Oförändrad | Teknik-agnostiskt — ingen drift möjlig. |
+| `docs/specs/DESIGN-OPERATING-SYSTEM.md` | Oförändrad | Teknik-agnostiskt. |
+| `docs/specs/DESIGN-SYSTEM-SPEC.md` | Oförändrad | Redan synkad mot React + Tailwind v4 + @theme (2026-04-13). |
+| `docs/specs/KVALITETSDEFINITIONER-11.md` | Oförändrad | Vue-terminologi noterad (composables, onUnmounted) — defer:ad till Fas 3. |
+| `docs/specs/PERFORMANCE-BUDGET.md` | Oförändrad | React + web-vitals — aktuell. |
+| `docs/specs/URL-STATE-SPEC.md` | Oförändrad | nuqs + TanStack Router — aktuell. |
+| `docs/specs/ARIA-UPGRADE.md` | Oförändrad | React Aria + ARIA 1.3 + EAA — aktuell. ACCESSIBILITY-CHECKLIST refererar hit. |
+| `docs/specs/FUTURE-COMPAT.md` | Oförändrad | Passionslyftet-tidsplan oförändrad. |
 
 ## Bilaga B — A1-utfallets konsekvenser för P3
 

@@ -2,7 +2,7 @@
 
 *Datum: 2026-04-29 | Verifierat mot HEAD `245422c` (main, clean)*
 *Författare: Claude Code (Opus 4.7) — direkt mot kodbas, inte minnesbild*
-*Källa: `docs/Codex-project-analysis-after-fas-1.md` (2026-04-28)*
+*Källa: `docs/analysis/Codex-project-analysis-after-fas-1.md` (2026-04-28)*
 
 ---
 
@@ -95,13 +95,13 @@ Det som finns i `src/` utöver `main.tsx`:
 
 ### 3. Tillgänglighetsdokumentationen är delvis stale
 
-**Codex påstår:** `docs/ACCESSIBILITY-CHECKLIST.md` nämner Vue, FKUI och Composition API.
+**Codex påstår:** `docs/specs/ACCESSIBILITY-CHECKLIST.md` nämner Vue, FKUI och Composition API.
 
 **Stämmer mot kod:** **Ja — och mer omfattande än Codex antyder.**
 
 **Konkret bevis:** `grep -ni "vue|fkui|composition api"` returnerar **11 träffar**:
 
-- [docs/ACCESSIBILITY-CHECKLIST.md:4](docs/ACCESSIBILITY-CHECKLIST.md#L4): *"Admin är en intern Vue 3 SPA — inte en publik..."*
+- [docs/specs/ACCESSIBILITY-CHECKLIST.md:4](docs/specs/ACCESSIBILITY-CHECKLIST.md#L4): *"Admin är en intern Vue 3 SPA — inte en publik..."*
 - Rad 14: *"Finns det en FKUI-komponent för detta? Kolla komponentbiblioteket FÖRST"*
 - Rad 18: *"Har du kollat FK:s senaste release? (Se 'Underhåll av FKUI-fork' nedan)"*
 - Rad 19: *"Har du kollat vue-byggplan-v2.md..."*
@@ -154,7 +154,7 @@ På Edge Function-sidan: ingen Zod-validering varken på input eller output. [su
 
 **Konkret bevis:**
 
-- [docs/data-model.md:121–130](docs/data-model.md#L121-L130) listar 6 värden:
+- [docs/reference/data-model.md:121–130](docs/reference/data-model.md#L121-L130) listar 6 värden:
   ```
   Obekräftad, Bekräftad (mail skickat), Betalningspåminnelse skickad,
   Avbokad/Ombokad, Flytta till väntelista, Inställt
@@ -176,7 +176,7 @@ På Edge Function-sidan: ingen Zod-validering varken på input eller output. [su
 
 - Header-kommentaren på rad 1 säger *"Faktiska värden från Airtable (verifierade via MCP 2026-03-30)"* — den är **30 dagar inaktuell** mot 2026-04-26-tilläggen i Airtable.
 
-- Eventplaneringens `Status` (`Planerat, Genomfört, Inställt, Flyttat`) finns inte alls som typ i koden — bara nämnd i [docs/data-model.md:140](docs/data-model.md#L140).
+- Eventplaneringens `Status` (`Planerat, Genomfört, Inställt, Flyttat`) finns inte alls som typ i koden — bara nämnd i [docs/reference/data-model.md:140](docs/reference/data-model.md#L140).
 
 **Min bedömning:** Codex har rätt. Detta är en **liten fix nu**, **stor källa till buggar senare** — exakt som Codex skriver. När UI byggs i Fas 6 kommer status-filterval, status-knappar och status-badge-färger att referera till denna enum. Två saknade värden = två osynliga buggar.
 

@@ -6,7 +6,7 @@
 > **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/2026-05-05-byggplan-skriv-p3a.md`
 > **Styrande:** `tasks/byggplan-direktiv.md` §6 P3 + §12
 > **Föregångare:**
-> - `docs/byggplan-revision-inventory.md` (P0, slutförd 2026-05-04)
+> - `docs/logs/byggplan-revision-inventory.md` (P0, slutförd 2026-05-04)
 > - `tasks/sessions/2026-05-04-byggplan-revision-p1.md` (P1, slutförd 2026-05-04)
 > - `tasks/sessions/2026-05-04-p1-avslutning.md` (P1-avslutning, 2026-05-04)
 > - `tasks/sessions/2026-05-04-stodspec-synk-p2.md` (P2, slutförd 2026-05-04)
@@ -41,12 +41,12 @@ Lästa i denna ordning vid sessionsstart (Chat-miljö → projektkunskap):
 | 4 | `tasks/sessions/2026-05-04-byggplan-revision-p1.md` | P1: Del 5 Pass-status, Del 6 §5-uppdatering (15 rader), Del 7 ADR-katalog (9 st) |
 | 5 | `tasks/sessions/2026-05-04-stodspec-synk-p2.md` | P2: Del 5 A1-utfall = Fas 3.5 egen fas, Del 7 lessons-poster |
 | 6 | `tasks/byggplan-direktiv.md` §5 (post-P1) + §6 P3 + §12 | Direktivets fas-tabell + uppgift + arkiveringskrav |
-| 7 | `docs/SECURITY-SPEC.md` | Uppdaterad i P2 — operations-API + Fas A:s 8 mönster införlivade |
-| 8 | `docs/STATE-STRATEGY.md` | Uppdaterad i P2 — strangler-fig + §8 operations-API + §5b polling |
-| 9 | `docs/ACCESSIBILITY-CHECKLIST.md` | Omskriven i P2 — React Aria + WCAG 2.2 AA + Fas 3.5-leverabler |
+| 7 | `docs/specs/SECURITY-SPEC.md` | Uppdaterad i P2 — operations-API + Fas A:s 8 mönster införlivade |
+| 8 | `docs/specs/STATE-STRATEGY.md` | Uppdaterad i P2 — strangler-fig + §8 operations-API + §5b polling |
+| 9 | `docs/specs/ACCESSIBILITY-CHECKLIST.md` | Omskriven i P2 — React Aria + WCAG 2.2 AA + Fas 3.5-leverabler |
 | 10 | `docs/conversion-plan.md` | Källa för per-fas-innehåll (arkiveras i P3b — kvar som indata för P3a) |
 | 11 | `docs/decisions/README.md` | Befintlig ADR-katalog (för numrerings-nollställning) |
-| 12 | `docs/byggplan-revision-inventory.md` | P0-leveransen — klassningstabell per fas (informerar per-fas-prompter) |
+| 12 | `docs/logs/byggplan-revision-inventory.md` | P0-leveransen — klassningstabell per fas (informerar per-fas-prompter) |
 
 ### Källprioritet vid konflikt
 

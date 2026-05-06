@@ -97,4 +97,4 @@ Adapters fortsätter anropa `callEdgeFunction` som tidigare — de får retry "g
 - `src/data/utils.ts` — implementationen
 - `src/data/config/supabase-client.ts` — integrationen
 - `scripts/verify-phase-1.ts` — runtime-verifieringen
-- `docs/gap-analysis.md` §GA-6 — motiveringen bakom `[GA]`-markeringen
+- `docs/logs/gap-analysis.md` §GA-6 — motiveringen bakom `[GA]`-markeringen

@@ -241,7 +241,7 @@ Fullständig spec: `~/Repon/miranon-media-os/docs/react-migration/DESIGN-SYSTEM-
 
 Tillgänglighet är alltid 11 — inga undantag. Bibliotekskod ska bära flera produkter.
 
-Fullständiga checklistor: `~/Repon/miranon-media-os/docs/KVALITETSDEFINITIONER-11.md`
+Fullständiga checklistor: `~/Repon/miranon-media-os/docs/specs/KVALITETSDEFINITIONER-11.md`
 
 ---
 

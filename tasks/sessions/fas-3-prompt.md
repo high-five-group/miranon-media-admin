@@ -72,8 +72,8 @@ Sanningen om projektet bor i dessa filer. Läs dem **innan** du börjar klassa.
 
 **Frusen indata (samma som Fas 1–2):**
 
-8. `~/Repon/miranon-media-admin/docs/data-model.md`
-9. `~/Repon/miranon-media-admin/docs/hur-systemet-funkar.md`
+8. `~/Repon/miranon-media-admin/docs/reference/data-model.md`
+9. `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md`
 10. `~/Repon/miranon-media-admin/analys/01-extraction.md`
 11. `~/Repon/miranon-media-admin/analys/02-live-state.md`
 12. `~/Repon/miranon-media-admin/analys/03-gap-analysis.md` — **mall för gap-format, struktur återanvänds**

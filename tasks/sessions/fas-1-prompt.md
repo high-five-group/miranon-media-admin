@@ -37,8 +37,8 @@ Sanningen om projektet bor i dessa filer. Läs dem **innan** du rör något verk
 
 **Indata för Fas 1:**
 
-7. `~/Repon/miranon-media-admin/docs/data-model.md` — frusen indata
-8. `~/Repon/miranon-media-admin/docs/hur-systemet-funkar.md` — affärslogik som ska bevaras
+7. `~/Repon/miranon-media-admin/docs/reference/data-model.md` — frusen indata
+8. `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md` — affärslogik som ska bevaras
 9. `~/Repon/miranon-media-admin/analys/01-extraction.md` — källextraktion från dm-110
 10. `~/Repon/miranon-media-admin/analys/02-live-state.md` — live-state-snapshot
 11. `~/Repon/miranon-media-admin/analys/03-gap-analysis.md` — mall för gap-analyser

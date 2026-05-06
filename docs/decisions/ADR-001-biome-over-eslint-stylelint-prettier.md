@@ -12,7 +12,7 @@ Fas 0 behövde etablera lint- och formateringsverktyg för ett React 19 + TypeSc
 - **Stylelint** för CSS-linting
 - **Prettier** för formatering
 
-Varje verktyg har egen config-fil, egen pre-commit-hook, egen CI-integration och egen update-cadence. Initial gap-analysen av conversion-plan vs research (`docs/gap-analysis.md` §7) identifierade detta som teknisk skuld redan innan projektet startade — research från `docs/research/react-stack-research.md` och `docs/research/beyond-best-practices-2026.md` pekade mot Biome 2.0 som branschens nya standard.
+Varje verktyg har egen config-fil, egen pre-commit-hook, egen CI-integration och egen update-cadence. Initial gap-analysen av conversion-plan vs research (`docs/logs/gap-analysis.md` §7) identifierade detta som teknisk skuld redan innan projektet startade — research från `docs/research/react-stack-research.md` och `docs/research/beyond-best-practices-2026.md` pekade mot Biome 2.0 som branschens nya standard.
 
 ## Beslut
 
@@ -63,6 +63,6 @@ Prompten till Fas 0 specificerade redan Biome och markerade dependencien med `[G
 ## Referenser
 
 - `docs/research/beyond-best-practices-2026.md` — research-rekommendation
-- `docs/gap-analysis.md` §7 — motiveringen för `[GA]`-markeringen
+- `docs/logs/gap-analysis.md` §7 — motiveringen för `[GA]`-markeringen
 - `biome.json` — den faktiska konfigurationen
 - [BUILD-LOG.md](../BUILD-LOG.md) Session 31, Fas 0 — installationen

@@ -247,8 +247,8 @@ Inventering av alla filer som kan tänkas ingå i nästa fas. Rapport är ren ob
 
 | Filpar | Diff (rader) |
 |---|---|
-| `psionautics/docs/data-model.md` ↔ `miranon-media-admin/docs/data-model.md` | +2 rader / -9 rader (≈11 rader skiljer) |
-| `psionautics/docs/hur-systemet-funkar.md` ↔ `miranon-media-admin/docs/hur-systemet-funkar.md` | +2 rader / -8 rader (≈10 rader skiljer) |
+| `psionautics/docs/reference/data-model.md` ↔ `miranon-media-admin/docs/reference/data-model.md` | +2 rader / -9 rader (≈11 rader skiljer) |
+| `psionautics/docs/reference/hur-systemet-funkar.md` ↔ `miranon-media-admin/docs/reference/hur-systemet-funkar.md` | +2 rader / -8 rader (≈10 rader skiljer) |
 
 **Tolkning:** miranon-media-admin-versionerna är **äldre kopior** (2026-04-19) av psionautics-versionerna. Diff är minimal — sannolikt minisula textförbättringar i psionautics-versionen efter kopieringen. **Behandla psionautics-versionen som master.**
 

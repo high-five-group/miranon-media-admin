@@ -69,7 +69,7 @@ Det fullständiga `@theme`-blocket specificerades i [DESIGN-SYSTEM-SPEC.md](../D
 
 ## Referenser
 
-- `docs/DESIGN-SYSTEM-SPEC.md` §8 — det fullständiga `@theme`-blocket
+- `docs/specs/DESIGN-SYSTEM-SPEC.md` §8 — det fullständiga `@theme`-blocket
 - `docs/conversion-plan.md` F.3 — motivering och ändringsspec 2026-04-13
 - `src/styles/tailwind.css` — implementationen
 - `vite.config.ts` — `@tailwindcss/vite`-pluginet

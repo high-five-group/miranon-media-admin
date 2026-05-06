@@ -2,7 +2,7 @@
 
 > **STATUS: ARKIVERAT 2026-04-28** — projektet komplett (Fas 0–5).
 >
-> Slutdokument: `~/Repon/miranon-media-admin/docs/data-model.md` (1 334 r, primär) + `docs/hur-systemet-funkar.md` (282 r). Synkade kopior i psionautics. 6 universal-lärdomar lyfta till `marcus-system/tasks/lessons.md` sektion "2026-04-28 — Datamodell-doc-projekt" (3 till var redan i hub sedan tidigare synk).
+> Slutdokument: `~/Repon/miranon-media-admin/docs/reference/data-model.md` (1 334 r, primär) + `docs/reference/hur-systemet-funkar.md` (282 r). Synkade kopior i psionautics. 6 universal-lärdomar lyfta till `marcus-system/tasks/lessons.md` sektion "2026-04-28 — Datamodell-doc-projekt" (3 till var redan i hub sedan tidigare synk).
 >
 > Detta dokument bevaras som projekthistorik. Inga ändringar från och med arkiveringsdatumet.
 
@@ -149,10 +149,10 @@ Var fakta extraheras från i Fas 1. Uppdaterad efter Fas 0-manifest (2026-04-27)
 
 | Fil | Repo | Storlek | Senast ändrad | Status |
 |---|---|---|---|---|
-| `docs/data-model.md` | psionautics | 32 kB / 641 r | 2026-04-27 10:11 | **MASTER** — utgångspunkt för Fas 4 |
-| `docs/hur-systemet-funkar.md` | psionautics | 10 kB / 282 r | 2026-04-19 18:52 | Master (oförändrad sedan backfill) |
-| `docs/data-model.md` | miranon-media-admin | 31 kB / 634 r | 2026-04-19 18:53 | Äldre kopia (10–11 r diff) |
-| `docs/hur-systemet-funkar.md` | miranon-media-admin | 10 kB / 276 r | 2026-04-19 18:52 | Äldre kopia (10 r diff) |
+| `docs/reference/data-model.md` | psionautics | 32 kB / 641 r | 2026-04-27 10:11 | **MASTER** — utgångspunkt för Fas 4 |
+| `docs/reference/hur-systemet-funkar.md` | psionautics | 10 kB / 282 r | 2026-04-19 18:52 | Master (oförändrad sedan backfill) |
+| `docs/reference/data-model.md` | miranon-media-admin | 31 kB / 634 r | 2026-04-19 18:53 | Äldre kopia (10–11 r diff) |
+| `docs/reference/hur-systemet-funkar.md` | miranon-media-admin | 10 kB / 276 r | 2026-04-19 18:52 | Äldre kopia (10 r diff) |
 
 ### Schema- och automations-källor (miranon-media-os)
 

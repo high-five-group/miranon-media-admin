@@ -181,7 +181,7 @@
 Meta-arbete parallellt med byggfaserna. Reviderade conversion-plan till byggplan baserat på Fas A-fynd, datamodell-research och Codex/Code-verifiering. Slutprodukt: `docs/byggplan.md` (P3a). P3b avslutar med städning + arkivering.
 
 - [x] **P0 — Inventering** ✅ AVSLUTAD 2026-05-04
-      Leverans: `docs/byggplan-revision-inventory.md`
+      Leverans: `docs/logs/byggplan-revision-inventory.md`
 - [x] **P1 — Fas-sekvens-revision** ✅ AVSLUTAD 2026-05-04
       Leverans: `tasks/sessions/2026-05-04-byggplan-revision-p1.md`
       §5-uppdatering applicerad i commit `5ed4668`
@@ -207,7 +207,7 @@ Meta-arbete parallellt med byggfaserna. Reviderade conversion-plan till byggplan
 - **Deno lint/check på supabase/functions:** Fas 7 ([ADR-010](../docs/decisions/ADR-010-biome-exclude-deno-edge-functions.md))
 - **Schema-validering i adapter-metoder:** Fas 2 ska wrappa `callEdgeFunction`-resultat med `.parse()`
 - **`lucide-react@1.8.0` versionsanomalier:** Undersök innan Fas 3 (UI-primitiver) när ikoner börjar användas
-- **docs/DESIGN-SYSTEM-SPEC.md stale-risk:** Governance-beslut uppskjutet efter alla faser
+- **docs/specs/DESIGN-SYSTEM-SPEC.md stale-risk:** Governance-beslut uppskjutet efter alla faser
 - **DEFER → Fas 3:** 4 CSS-warnings i `src/styles/base.css:72-75` (`!important` i `prefers-reduced-motion`). Fas 3 omarbetar `base.css` när primitiver landas — städning sker som biprodukt. Trigger: första Fas 3-session. Källa: P3b sessionsdok Del 3.4 H.1.
 - **DEFER → passiv (bevakas):** PostCSS audit-fix. `npm audit` rapporterar PostCSS-relaterade transitive dependencies, inga high/critical. PostCSS uppdateras naturligt via Tailwind v4-uppgradering eller dependabot. Trigger: om `npm audit --audit-level=high` blir röd, ELLER vid Tailwind v5-migration. Källa: P3b sessionsdok Del 3.4 H.2.
 - **DEFER → Fas 7:** `supabase/functions/test-auth/` borttagning från produktion. Lever idag med `verify_jwt = false` i `config.toml` — Playwright-helper för deny-paths-tester. Fas 7 (Konsolidering: CSP, chaos testing, deploy) ska exkludera `test-*`-funktioner från produktions-deploy via CI-pipeline. Källa: P3b sessionsdok Del 3.4 H.4.

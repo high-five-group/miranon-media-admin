@@ -173,9 +173,9 @@ Läs i denna ordning:
    (P1-leveransen — främst Del 5 ADR-katalog, Del 6 §5-uppdatering, och Del 2 A1 trigger-kriterier)
 5. ~/Repon/miranon-media-admin/tasks/byggplan-direktiv.md §6 P2
    (uppgiftsbeskrivningen)
-6. ~/Repon/miranon-media-admin/docs/SECURITY-SPEC.md
-7. ~/Repon/miranon-media-admin/docs/ACCESSIBILITY-CHECKLIST.md
-8. ~/Repon/miranon-media-admin/docs/STATE-STRATEGY.md
+6. ~/Repon/miranon-media-admin/docs/specs/SECURITY-SPEC.md
+7. ~/Repon/miranon-media-admin/docs/specs/ACCESSIBILITY-CHECKLIST.md
+8. ~/Repon/miranon-media-admin/docs/specs/STATE-STRATEGY.md
 
 Mål: Uppdatera de stödspecs som är direkta beroenden för byggplanens
 fasprompter. Filer enligt direktiv §6 P2.

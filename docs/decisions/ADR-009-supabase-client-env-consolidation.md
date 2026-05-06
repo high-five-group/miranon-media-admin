@@ -102,4 +102,4 @@ Env-validering sker nu **en enda gång** — i `src/env.ts` vid app-uppstart. `s
 - `src/env.ts` — den konsoliderade env-valideringen
 - `src/data/config/supabase-client.ts` — den modifierade kopian
 - [ADR-006](ADR-006-fetch-with-retry-infrastructure.md) — relaterad modifiering av samma fil (fetchWithRetry)
-- `docs/gap-analysis.md` §GA-7 — motiveringen bakom `@t3-oss/env-core`
+- `docs/logs/gap-analysis.md` §GA-7 — motiveringen bakom `@t3-oss/env-core`

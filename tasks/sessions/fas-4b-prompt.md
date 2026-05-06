@@ -79,8 +79,8 @@ Du läser denna prompt i en **ny Codex CLI-session**. Tidigare sessioners kontex
 
 **Frusen indata:**
 
-10. `~/Repon/miranon-media-admin/docs/data-model.md`
-11. `~/Repon/miranon-media-admin/docs/hur-systemet-funkar.md`
+10. `~/Repon/miranon-media-admin/docs/reference/data-model.md`
+11. `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md`
 12. `~/Repon/miranon-media-admin/analys/01-extraction.md`
 13. `~/Repon/miranon-media-admin/analys/02-live-state.md`
 14. `~/Repon/miranon-media-admin/analys/03-gap-analysis.md`

@@ -3,7 +3,7 @@
 > **Status:** ✅ AVSLUTAD — P0-leveransen klar och godkänd 2026-05-04.
 > **Skapat:** 2026-05-04
 > **Ägare:** Marcus + Claude Chat
-> **Avsedd plats:** `~/Repon/miranon-media-admin/docs/byggplan-revision-inventory.md`
+> **Avsedd plats:** `~/Repon/miranon-media-admin/docs/logs/byggplan-revision-inventory.md`
 > **Styrande:** `tasks/byggplan-direktiv.md` §6 P0
 > **Stop-test:** Varje påstående i conversion-plan §D (fas-för-fas-plan) klassad — *oförändrad* / *behöver justering* / *behöver omformuleras* / *försvinner*.
 
@@ -20,8 +20,8 @@ Varje rad i klassningstabellen är ett *beslutsbärande* påstående — ett som
 ### Källprioritet vid konflikt
 
 1. `tasks/byggplan-direktiv.md` §3 (åtta luckor) + §8.5 (Fas A-fynd) — auktoritativ för revisionen
-2. `docs/Code-verification-of-codex-analysis.md` (HEAD `245422c`, 2026-04-29) — kodbasverifiering
-3. `docs/Codex-project-analysis-after-fas-1.md` (2026-04-28) — extern projektanalys
+2. `docs/analysis/Code-verification-of-codex-analysis.md` (HEAD `245422c`, 2026-04-29) — kodbasverifiering
+3. `docs/analysis/Codex-project-analysis-after-fas-1.md` (2026-04-28) — extern projektanalys
 4. `analys/04-research.md` → `analys/08-odoo-validation.md` — datamodell-research (frusen efter Gate 6 + Odoo)
 5. `marcus-system/tasks/lessons.md` (sektioner 2026-04-28 → 2026-05-04) — universella lärdomar
 6. `tasks/sessions/2026-05-04-security-hardening.md` — Fas A-arbetsdokument (frusen efter slutsummering)

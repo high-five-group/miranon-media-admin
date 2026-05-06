@@ -69,9 +69,9 @@ disciplin utöver vanliga gates och faser:
 | MK-eventet 1–3 maj 2026 är skarp drift | Inga schemaändringar i Airtable under MK-perioden |
 | Airtable är aktivt driftssystem | Airtable-förbättringar måste vara säkra, sekvenserade och reversibla |
 | Supabase är definitiv målplattform | Designen ska inte låsa fast oss i Airtable-kompromisser |
-| `docs/data-model.md` är frusen indata | Vi läser den, men skriver inte om den i detta projekt |
+| `docs/reference/data-model.md` är frusen indata | Vi läser den, men skriver inte om den i detta projekt |
 | Faktisk migration sker senare | `07-migration-plan.md` ska kunna lämnas till framtida Code-session |
-| Affärslogik ska bevaras | Allt i `docs/hur-systemet-funkar.md` ska fungera även efter redesign |
+| Affärslogik ska bevaras | Allt i `docs/reference/hur-systemet-funkar.md` ska fungera även efter redesign |
 | DS1–DS6, DQ1–DQ9 och 12 hypoteser ska adresseras | Varje punkt får explicit klassning enligt §8 |
 | `SupabaseAdapter`-skelettet finns redan i koden | Strangler-fig-migration är förvald över big-bang |
 
@@ -84,8 +84,8 @@ disciplin utöver vanliga gates och faser:
 | Källa | Roll |
 |---|---|
 | `tasks/datamodell-research-direktiv.md` | Scope, mål, output, avgränsningar |
-| `docs/data-model.md` (1 334 r) | Frusen sanning om nuvarande Airtable-modell |
-| `docs/hur-systemet-funkar.md` (282 r) | Affärslogik som ska bevaras |
+| `docs/reference/data-model.md` (1 334 r) | Frusen sanning om nuvarande Airtable-modell |
+| `docs/reference/hur-systemet-funkar.md` (282 r) | Affärslogik som ska bevaras |
 | `analys/01-extraction.md` (964 r) | Källextraktion från datamodell-110 |
 | `analys/02-live-state.md` (726 r) | Live-state-snapshot 2026-04-28 |
 | `analys/03-gap-analysis.md` (~600 r) | Mall för gap-analysens struktur |
@@ -739,7 +739,7 @@ Projektet är klart när:
 | B2 | Godkänna output-filerna (5 filer, 06 splittad till a+b) | Ja |
 | B3 | Godkänna att planen lever i `tasks/` och output i `analys/` | Ja |
 | B4 | Godkänna arbetsdokument i `tasks/sessions/` (dm-110-mönster) | Ja |
-| B5 | Bekräfta att `docs/hur-systemet-funkar.md` är måste-läs i Fas 1 | Ja: affärslogik är hård constraint |
+| B5 | Bekräfta att `docs/reference/hur-systemet-funkar.md` är måste-läs i Fas 1 | Ja: affärslogik är hård constraint |
 | B6 | Bestäm research-ribba för Fas 2 | Min rek: minst 5–8 högkvalitativa källor per princip-kluster, inte modellens allmänkunskap ensam |
 | B7 | Bestäm om webhooks/Zapier/Make ska kartläggas i detta projekt | Min rek: ja för designpåverkan, nej för full implementation |
 | **G0.1** | **Källdjup för Fas 2-research** | Min rek: textbaserade källor + 2–3 stickprov mot konkreta scheman (Cal.com, Plane.so eller liknande) |

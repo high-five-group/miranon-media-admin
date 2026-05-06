@@ -21,7 +21,7 @@ Det viktiga nyanserade svaret:
 | --- | ---: | --- |
 | Vision, dokumentation och process | 9.5/10 | Ribban är tydligt definierad och arbetssättet är moget. |
 | Tidig infra, build och TypeScript | 8/10 | Ren start med fungerande lint, typecheck, build och tokens. |
-| Datamodell-dokumentation | 11/10 | `docs/data-model.md` är exceptionellt stark som nulägeskarta. |
+| Datamodell-dokumentation | 11/10 | `docs/reference/data-model.md` är exceptionellt stark som nulägeskarta. |
 | App-implementation | 3/10 | Det finns ännu mest placeholder-UI och planerade faser. |
 | Säkerhetsgrund | 5/10 | Riktningen är bra, men Edge Functions saknar ännu den faktiska auth/authorization-nivå som specen kräver. |
 | Tillgänglighetsgrund | 6/10 | Ambitionen är hög, men checklistan är delvis stale och appen har ännu inte bevisad a11y i riktig UI. |
@@ -31,7 +31,7 @@ Det viktiga nyanserade svaret:
 
 ### 1. Kvalitetsdefinitionerna är ovanligt tydliga
 
-`docs/KVALITETSDEFINITIONER-11.md` gör en viktig sak: den beskriver 11/10 som praktiskt beteende, inte bara som känsla. Det gör det möjligt att granska projektet mot konkreta axlar som teknisk korrekthet, tillgänglighet, återanvändbarhet och dokumentationsdisciplin.
+`docs/specs/KVALITETSDEFINITIONER-11.md` gör en viktig sak: den beskriver 11/10 som praktiskt beteende, inte bara som känsla. Det gör det möjligt att granska projektet mot konkreta axlar som teknisk korrekthet, tillgänglighet, återanvändbarhet och dokumentationsdisciplin.
 
 Detta är en stor styrka. Många projekt försöker "höja kvaliteten" utan att definiera vad kvalitet betyder. Här finns ett språk för kvalitet redan på plats.
 
@@ -43,7 +43,7 @@ Det minskar risken för att tekniska förbättringar blir impulsiva schemaändri
 
 ### 3. Datamodellen är mycket väl kartlagd
 
-`docs/data-model.md` ger en stark nulägesbild av basen, fält, relationer, vyer, automationsberoenden och riskområden. Det gör att nästa researchfas inte behöver börja i dimma.
+`docs/reference/data-model.md` ger en stark nulägesbild av basen, fält, relationer, vyer, automationsberoenden och riskområden. Det gör att nästa researchfas inte behöver börja i dimma.
 
 Särskilt bra:
 
@@ -70,7 +70,7 @@ Att appen fortfarande är liten är faktiskt en fördel just nu. Det finns mindr
 
 ### 1. Säkerhetsmodellen är inte ikapp säkerhetsspecen
 
-`docs/SECURITY-SPEC.md` beskriver rätt riktning: Edge Functions ska validera användare med Supabase Auth, och klienten ska aldrig prata direkt med Airtable.
+`docs/specs/SECURITY-SPEC.md` beskriver rätt riktning: Edge Functions ska validera användare med Supabase Auth, och klienten ska aldrig prata direkt med Airtable.
 
 Men implementationen är inte där än.
 
@@ -91,7 +91,7 @@ Det betyder att vi inte kan säga att appen är 11/10. Vi kan bara säga att app
 
 ### 3. Tillgänglighetsdokumentationen är delvis stale
 
-`docs/ACCESSIBILITY-CHECKLIST.md` nämner Vue, FKUI och Composition API, medan nuvarande appstack är React/Vite och sannolikt React Aria-orienterad.
+`docs/specs/ACCESSIBILITY-CHECKLIST.md` nämner Vue, FKUI och Composition API, medan nuvarande appstack är React/Vite och sannolikt React Aria-orienterad.
 
 Det är inte bara kosmetiskt. Om checklistan inte matchar stacken finns risk att den inte används som faktisk kvalitetsgrind.
 
@@ -111,7 +111,7 @@ Detta blir extra viktigt eftersom Airtable-modellen är rik, relationell och und
 
 ### 5. Domäntyperna är inte helt i synk med den dokumenterade Airtable-modellen
 
-`docs/data-model.md` dokumenterar sex statusvärden för `Anmälningar.Status`, inklusive `Inställt` och `Flytta till väntelista`.
+`docs/reference/data-model.md` dokumenterar sex statusvärden för `Anmälningar.Status`, inklusive `Inställt` och `Flytta till väntelista`.
 
 `src/domain/types/Status.ts` verkar ännu spegla en äldre eller förenklad statusmodell.
 
@@ -202,7 +202,7 @@ Här är projektet mycket nära, och på vissa delar redan över, 11/10.
 
 Särskilt starkt:
 
-- `docs/data-model.md`
+- `docs/reference/data-model.md`
 - datamodell-110-processen
 - kvalitetsdefinitionerna
 - build-logg och fasstruktur
@@ -237,7 +237,7 @@ Mål:
 
 Output:
 
-- reviderad `docs/ACCESSIBILITY-CHECKLIST.md`
+- reviderad `docs/specs/ACCESSIBILITY-CHECKLIST.md`
 - första axe/Playwright-baserade a11y-testet
 - dokumenterad focus/error/loading-standard
 
@@ -246,7 +246,7 @@ Output:
 Mål:
 
 - Zod-validering vid alla externa datagränser
-- uppdatera status- och domäntyper från `docs/data-model.md`
+- uppdatera status- och domäntyper från `docs/reference/data-model.md`
 - definiera ett tydligt adapterkontrakt som fungerar både för Airtable och Supabase
 
 Output:

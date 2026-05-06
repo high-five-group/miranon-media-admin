@@ -76,8 +76,8 @@ Spårbarheten dokumenteras i en fotnot eller källangivelse per sektion — INTE
 
 Per arbetsdokumentet B3 (justerad): Idag säger psionautics-headern att miranon-media-admin är "primär" men i praktiken har psionautics-versionen redigerats senare. Vi rättar detta i Fas 4 genom att:
 
-1. Göra miranon-media-admin/docs/data-model.md till **faktiskt** primär (skriv där först)
-2. Synka till psionautics/docs/data-model.md som kopia (header säger "kopia")
+1. Göra miranon-media-admin/docs/reference/data-model.md till **faktiskt** primär (skriv där först)
+2. Synka till psionautics/docs/reference/data-model.md som kopia (header säger "kopia")
 3. Samma för hur-systemet-funkar.md
 
 ### D5. Datumstämpel + version på alla sektioner
@@ -92,7 +92,7 @@ Lägg till "Senast verifierad: 2026-04-28" eller motsvarande i sektioner som inn
 
 | Op | Detalj |
 |---|---|
-| RÄTTA | Headerblocket (rad 1-8) — psionautics-versionen säger "Primär version: ~/Repon/miranon-media-admin/docs/data-model.md". Detta blir korrekt först efter D4. När miranon-media-admin-versionen är skriven först kan psionautics-kopian peka dit ärligt. |
+| RÄTTA | Headerblocket (rad 1-8) — psionautics-versionen säger "Primär version: ~/Repon/miranon-media-admin/docs/reference/data-model.md". Detta blir korrekt först efter D4. När miranon-media-admin-versionen är skriven först kan psionautics-kopian peka dit ärligt. |
 | RÄTTA | Rad 14 "Version 1. Skapad 2026-04-16" → "Version 2. Skapad 2026-04-16. Senast verifierad 2026-04-28." |
 | RÄTTA | Rad 22 — "Människor — Marcus, Roger, Lotta — läser hur-systemet-funkar.md istället" är OK. Men lägg också till: "Detta dokument är AUKTORITATIV för datamodellen. schema_reference.md (miranon-media-os) är arkiverad för historik." |
 | RÄTTA | Rad 27 — Principen "Delegera detaljer. Fältlistor, choice-IDs, vyer och formulärkonfigurationer bor i schema_reference.md." → Ändra till: "Detta dokument är primär källa för fält-IDs och options. Vyer och formulär dokumenteras separat (eller delegeras till live MCP-pull)." |
@@ -529,10 +529,10 @@ Per D4. Två filer i två repon. Idag inkonsistent (psionautics-version har sena
 
 | Steg | Operation |
 |---|---|
-| 1 | Skriv ny version av `data-model.md` direkt i `~/Repon/miranon-media-admin/docs/data-model.md`. |
+| 1 | Skriv ny version av `data-model.md` direkt i `~/Repon/miranon-media-admin/docs/reference/data-model.md`. |
 | 2 | Headern på den ska säga: "Primär version. Senast uppdaterad 2026-04-28 (Marcus + Claude)." |
-| 3 | Kopiera till `~/Repon/psionautics/docs/data-model.md`. |
-| 4 | Headern på psionautics-kopian ska säga: "Kopia för psionautics-projektets Claude-chatt. Primär version: ~/Repon/miranon-media-admin/docs/data-model.md. Senast synkad 2026-04-28." |
+| 3 | Kopiera till `~/Repon/psionautics/docs/reference/data-model.md`. |
+| 4 | Headern på psionautics-kopian ska säga: "Kopia för psionautics-projektets Claude-chatt. Primär version: ~/Repon/miranon-media-admin/docs/reference/data-model.md. Senast synkad 2026-04-28." |
 | 5 | Samma steg 1–4 för `hur-systemet-funkar.md`. |
 | 6 | I miranon-media-admin: skapa `docs/CHANGELOG.md` om den inte finns, lägg till entry för 2026-04-28-revisionen. |
 
@@ -585,7 +585,7 @@ Föreslagen ordning för Code att skriva. Varje steg är en logisk enhet — kon
 
 | Steg | Vad | Estimat | Beroenden |
 |---|---|---|---|
-| 4.1 | Master/kopia-fix (skapa miranon-media-admin/docs/data-model.md som primär, kopiera psionautics) | 15 min | – |
+| 4.1 | Master/kopia-fix (skapa miranon-media-admin/docs/reference/data-model.md som primär, kopiera psionautics) | 15 min | – |
 | 4.2 | Header + Vad det här dokumentet är + Karta — RÄTTA + uppdatera referens till schema_reference | 20 min | 4.1 |
 | 4.3 | **Schema cheat sheet** — ny stor sektion under Snabbreferens | 60 min | 4.1, 02-live-state §3 |
 | 4.4 | Snabbreferens — UTÖKA tabell-IDs (Path/Instagram), MK Max=88, kritiska länkfält | 20 min | 4.3 |

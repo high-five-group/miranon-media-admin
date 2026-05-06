@@ -78,8 +78,8 @@ schema-ändringar).
 
 | Fil | Roll |
 |---|---|
-| `docs/data-model.md` | Sanningskällan för "var vi är" |
-| `docs/hur-systemet-funkar.md` | Affärslogik som måste bevaras |
+| `docs/reference/data-model.md` | Sanningskällan för "var vi är" |
+| `docs/reference/hur-systemet-funkar.md` | Affärslogik som måste bevaras |
 | `analys/01-extraction.md` | Källextraktion från datamodell-110 |
 | `analys/02-live-state.md` | Live-state-snapshot 2026-04-28 |
 | `analys/03-gap-analysis.md` | **Mall** för gap-analyser (struktur återanvänds) |
@@ -103,7 +103,7 @@ Nu vill jag att du läser i denna ordning:
 
 1. tasks/datamodell-research-direktiv.md (detta dokuments
    scope + mål)
-2. docs/data-model.md (vår nuvarande modell)
+2. docs/reference/data-model.md (vår nuvarande modell)
 3. tasks/sessions/2026-04-28-datamodell-110-projekt.md
    (för process-mönstret — vi använder samma fasindelade
    upplägg med milstolpar och hypotes-disciplin)

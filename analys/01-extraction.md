@@ -876,7 +876,7 @@ Lila            = Informationsmail 1 skickad (ny 2026-04-27, endast Väntelista-
 
 ## Steg 1.8 — Korrelation, inkonsistenser, öppna frågor, sammanfattning
 
-### A. Korrelation: fält i basen som INTE är dokumenterade i nuvarande `psionautics/docs/data-model.md`
+### A. Korrelation: fält i basen som INTE är dokumenterade i nuvarande `psionautics/docs/reference/data-model.md`
 
 | Fält | Tabell | Anteckning |
 |---|---|---|

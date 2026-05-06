@@ -6,7 +6,7 @@
 
 ## Kontext
 
-`docs/data-model.md §F.4` dokumenterar en känd dubblettbug: när användaren klickar "Lägg till anmälan" och nätverket är långsamt eller request:en time:ar ut innan svar, kan ett andra klick resultera i två Registration-records för samma person+event-kombination. I Vue-versionen (miranon-media-os) löstes detta tyst med en client-side debounce + en post-create unique-constraint-check.
+`docs/reference/data-model.md §F.4` dokumenterar en känd dubblettbug: när användaren klickar "Lägg till anmälan" och nätverket är långsamt eller request:en time:ar ut innan svar, kan ett andra klick resultera i två Registration-records för samma person+event-kombination. I Vue-versionen (miranon-media-os) löstes detta tyst med en client-side debounce + en post-create unique-constraint-check.
 
 I React-bygget med operations-baserat API + TanStack `useMutation` + optimistic UI är problemet annorlunda:
 - TanStack retryMutationsByDefault är `false`, men nätverkstimeout + manuell retry är fortfarande möjligt

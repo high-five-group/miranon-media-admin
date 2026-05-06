@@ -39,7 +39,7 @@ Research §5.1 rekommenderar service worker-registrering från start (även om f
 
 1. Byt ESLint+Stylelint → Biome 2.0 med Tailwind-plugin. En config-fil, ett kommando: `biome check --write .` (research §4.5).
 2. Skapa `vite.config.ts` med security headers-plugin. Definiera CSP-nonce-generering redan nu.
-3. Skapa `docs/PERFORMANCE-BUDGET.md`: FCP <1.5s, LCP <2.5s, INP <200ms, CLS <0.1. Mät med `web-vitals` npm-paket.
+3. Skapa `docs/specs/PERFORMANCE-BUDGET.md`: FCP <1.5s, LCP <2.5s, INP <200ms, CLS <0.1. Mät med `web-vitals` npm-paket.
 4. Installera `@sentry/react` eller `@grafana/faro-web-sdk` som observability-grund. Konfigureras minimalt nu, utökas i Fas 7.
 5. Skapa `public/sw.js` skelett (tom, men registrerad). Utökas med Workbox i Fas 5.
 6. Lägg till `npm audit --audit-level=high` som preinstall-hook. Committa `package-lock.json`.
@@ -108,7 +108,7 @@ Research §2.2: Speculation Rules API. TanStack Router har `preload="intent"` me
 
 ### Åtgärdsplan
 
-1. Skapa `docs/URL-STATE-SPEC.md`: Definiera vilken state som lever i URL per vy. Hem: ingen. Event: `?status=upcoming&sort=date`. Personer: `?q=sökterm&page=2`. Event-detalj: `?tab=payments`.
+1. Skapa `docs/specs/URL-STATE-SPEC.md`: Definiera vilken state som lever i URL per vy. Hem: ingen. Event: `?status=upcoming&sort=date`. Personer: `?q=sökterm&page=2`. Event-detalj: `?tab=payments`.
 2. Installera `nuqs`. Använd i Event-fliken (Fas 6) för filter/sort. Research §3.6 visar att nuqs + TanStack Query ger "perfekt" URL-state.
 3. Lägg till passkey som framtida fas (Fas 8). Dokumentera i konverteringsplanen. Implementera inte nu, men designa LoginView med utrymme för "Logga in med passkey"-knapp.
 4. Konfigurera `preload="intent"` på alla tab bar-länkar i Fas 5.
@@ -148,7 +148,7 @@ Research §4.3: CLAUDE.md som projektkonstitution. Planen specificerar att Vue-R
 ### Åtgärdsplan
 
 1. Implementera View Transitions i Fas 5 (app-shell): `startViewTransition()` vid tab-byte. CSS: `@view-transition { navigation: auto; }`. Research §2.3 visar att Next.js 15+ och Astro har inbyggt stöd — Vite SPA kräver manuell implementation via React 19 `useTransition`.
-2. Skapa `docs/ARIA-UPGRADE.md`: Lista ARIA 1.3-attribut som ska implementeras per komponent. `aria-errormessage` på alla formulärfält. `aria-description` på knappar med kontextuellt beteende.
+2. Skapa `docs/specs/ARIA-UPGRADE.md`: Lista ARIA 1.3-attribut som ska implementeras per komponent. `aria-errormessage` på alla formulärfält. `aria-description` på knappar med kontextuellt beteende.
 3. Lägg till EAA-checklista i auditprocessen (Fas 7). Research §7.5: EAA trädde i kraft 28 juni 2025, böter upp till 100k EUR.
 4. Definiera komponent-dokumentationsstandard: JSDoc på alla exported props + `@example` i varje komponent-fil.
 

@@ -6,7 +6,7 @@
 > **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/2026-05-05-byggplan-stadning-p3b.md`
 > **Styrande:** `tasks/byggplan-direktiv.md` §6 P3 (städnings-DoD) + §12 (slutnot)
 > **Föregångare:**
-> - `docs/byggplan-revision-inventory.md` (P0, slutförd 2026-05-04)
+> - `docs/logs/byggplan-revision-inventory.md` (P0, slutförd 2026-05-04)
 > - `tasks/sessions/2026-05-04-byggplan-revision-p1.md` (P1, slutförd 2026-05-04)
 > - `tasks/sessions/2026-05-04-p1-avslutning.md` (P1-avslutning, 2026-05-04)
 > - `tasks/sessions/2026-05-04-stodspec-synk-p2.md` (P2, slutförd 2026-05-04)
@@ -51,7 +51,7 @@ Lästa i denna ordning vid sessionsstart (Chat-miljö → projektkunskap):
 - `tasks/sessions/2026-05-04-security-hardening.md` — Fas A M1–M8, DoD per milstolpe, 8 arkitekturmönster
 - `tasks/sessions/2026-05-04-byggplan-revision-p1.md` — P1-leveransen
 - `tasks/sessions/2026-05-04-stodspec-synk-p2.md` — P2-leveransen
-- `docs/byggplan-revision-inventory.md` — P0-leveransen
+- `docs/logs/byggplan-revision-inventory.md` — P0-leveransen
 
 ### Källprioritet vid konflikt
 
@@ -224,7 +224,7 @@ Båda Code-prompter levererades inline i Chat med **inline-källa-disciplin** (l
 | FIX 7 | 178 | H2-rubrik "Byggplan-revision (P0 → P3b)" |
 | FIX 8 | 180-182 | Verbtempus-fix: "Reviderar" → "Reviderade" + slutprodukt-pekare. 3 rader → 1 rad (mjuka radbrytningar komprimerade) |
 | FIX 9 | 192-194 | P-fas-tracking splittad: P3 → P3a ✅ AVSLUTAD 2026-05-05 + P3b ← NU. 3 rader → 6 rader |
-| FIX 10 | Teknisk skuld | 3 nya defer-bullets appendade efter sista befintliga (`docs/DESIGN-SYSTEM-SPEC.md stale-risk`) — H.1, H.2, H.4 |
+| FIX 10 | Teknisk skuld | 3 nya defer-bullets appendade efter sista befintliga (`docs/specs/DESIGN-SYSTEM-SPEC.md stale-risk`) — H.1, H.2, H.4 |
 
 **Resultat:** `grep -c "conversion-plan" tasks/todo.md` → 0 träffar. Var 5. ✅
 
@@ -446,7 +446,7 @@ Denna fil — `tasks/sessions/2026-05-05-byggplan-stadning-p3b.md`. Detta är sl
 
 | Fas | Trail | Slutprodukt |
 |---|---|---|
-| P0 | `docs/byggplan-revision-inventory.md` | Klassningstabell över conversion-plan §D |
+| P0 | `docs/logs/byggplan-revision-inventory.md` | Klassningstabell över conversion-plan §D |
 | P1 | `tasks/sessions/2026-05-04-byggplan-revision-p1.md` + `2026-05-04-p1-avslutning.md` | §5-tabell uppdaterad i direktivet (15 rader, Fas 8 ny) + 9 ADR-katalog |
 | P2 | `tasks/sessions/2026-05-04-stodspec-synk-p2.md` | 4 stödspecs uppdaterade (SECURITY-SPEC, STATE-STRATEGY, ACCESSIBILITY-CHECKLIST omskriven) + Fas 3.5 = egen fas-beslut |
 | P3a | `tasks/sessions/2026-05-05-byggplan-skriv-p3a.md` | `docs/byggplan.md` v1.1 (832 rader, 13 fas-prompter) + 10 nya ADR:er ADR-011..ADR-020 + decisions/README.md uppdaterad till 20 rader |

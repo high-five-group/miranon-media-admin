@@ -86,8 +86,8 @@ Du läser denna prompt i en **ny Codex CLI-session**. Tidigare sessioners kontex
 
 **Frusen indata (referens):**
 
-11. `~/Repon/miranon-media-admin/docs/data-model.md`
-12. `~/Repon/miranon-media-admin/docs/hur-systemet-funkar.md`
+11. `~/Repon/miranon-media-admin/docs/reference/data-model.md`
+12. `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md`
 13. `~/Repon/miranon-media-admin/analys/02-live-state.md`
 14. `~/Repon/miranon-media-admin/docs/conversion-plan.md` — **äldre conversion-plan, kan ge mönsterhjälp men har lägre prioritet än 06a/06b**
 

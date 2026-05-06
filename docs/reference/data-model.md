@@ -1,7 +1,7 @@
 > **Primär version. Senast uppdaterad 2026-04-28 (Marcus + Claude).**
 >
 > Detta är källsanningen för datamodellen. Kopia för psionautics-projektets
-> Claude-chatt synkas separat till `~/Repon/psionautics/docs/data-model.md`
+> Claude-chatt synkas separat till `~/Repon/psionautics/docs/reference/data-model.md`
 > efter varje uppdatering här. Vid arbete: redigera ALLTID denna fil först.
 
 ---
@@ -39,7 +39,7 @@ Detta dokument är **AUKTORITATIV** för datamodellen. `~/Repon/miranon-media-os
 | Rå automation-JSON (triggers, actions, scripts) | `~/Repon/miranon-media-os/docs/miranon_automations_COMPLETE.json` (15 741 rader, export 2026-03-16) |
 | Sammanfattning med TypeScript-interfaces och HAR-metoden | `~/Repon/miranon-media-os/docs/AIRTABLE-REFERENS.md` (298 rader, arkiverad — historik) |
 | TypeScript-domänmodeller för React-appen | `~/Repon/miranon-media-admin/src/domain/models/` och `src/domain/schemas/` |
-| Förstå *varför* och *hur* systemet fungerar, utan jargong | `~/Repon/miranon-media-admin/docs/hur-systemet-funkar.md` |
+| Förstå *varför* och *hur* systemet fungerar, utan jargong | `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md` |
 | Förstå flöden, beroenden, fällor och backfill-historik | *Det här dokumentet* |
 
 ---

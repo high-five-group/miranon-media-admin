@@ -212,7 +212,7 @@ Alla M1–M8 är *säkert-idag*-arbete enligt 06a Del F + K6/K7 i datamodell-res
 | Fält | Värde |
 |---|---|
 | Estimat | 4 h |
-| Påverkade filer | **NY:** `supabase/functions/_shared/errors.ts`, `src/observability/sentry.ts`. Ändrad: alla 5 funktioners catch-block, `src/main.tsx`. **Uppdaterad:** `docs/SECURITY-SPEC.md` (DSN-strategi). |
+| Påverkade filer | **NY:** `supabase/functions/_shared/errors.ts`, `src/observability/sentry.ts`. Ändrad: alla 5 funktioners catch-block, `src/main.tsx`. **Uppdaterad:** `docs/specs/SECURITY-SPEC.md` (DSN-strategi). |
 | Beroenden | Marcus beslut på Sentry-DSN-strategi (Gate A1 fråga 5). |
 | Definition of Done | (a) `errors.ts` exporterar `mapErrorToResponse(error, requestId): Response` som loggar full stack via `console.error` (Edge Functions runtime → Supabase logs) + ev. Sentry-edge, returnerar `{ error: 'Internal error', requestId }`. (b) Alla fem catch-block byter till `mapErrorToResponse`. (c) `requestId` genereras per request via `crypto.randomUUID()` i en wrapper. (d) `src/observability/sentry.ts` exporterar `initSentry()`, anropas från `src/main.tsx` före React-mount. (e) Manuellt test: trigga ett kontrollerat fel (t.ex. ogiltigt `recordId`-format), verifiera att klient ser `{ error: 'Internal error', requestId: 'uuid' }` utan stack-detaljer, och att server-loggen har full stack med samma `requestId`. |
 | K7-respekt | Felmodellen struktureras så att framtida `audit_log`-skrivning (06b §C1) kan ta över utan API-ändring mot klient. |

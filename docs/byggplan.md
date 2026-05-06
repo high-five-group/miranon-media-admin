@@ -259,7 +259,7 @@ Inget nytt ADR. A5-beslutet är dokumenterat i P1-sessionsdok Del 3 — kan refe
 
 #### Korsreferens
 - `tasks/sessions/2026-05-04-byggplan-revision-p1.md` Del 3 (A5-klassningstabell)
-- `docs/data-model.md` (källa för status-typer per dm-110)
+- `docs/reference/data-model.md` (källa för status-typer per dm-110)
 
 ---
 

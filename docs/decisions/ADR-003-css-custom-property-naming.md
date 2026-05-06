@@ -87,6 +87,6 @@ Uppdaterade **både** [DESIGN-SYSTEM-SPEC.md](../DESIGN-SYSTEM-SPEC.md) §1 (i V
 ## Referenser
 
 - `tasks/lessons.md` — universell lärdom tillagd i Fas 0-avslutet
-- `docs/DESIGN-SYSTEM-SPEC.md` §1 — uppdaterad spec
+- `docs/specs/DESIGN-SYSTEM-SPEC.md` §1 — uppdaterad spec
 - `src/styles/tokens/primitives.css` — implementationen
 - Vue-repo commit `7013896` — synkning av DESIGN-SYSTEM-SPEC.md

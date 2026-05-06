@@ -97,4 +97,4 @@ Om någon ändrar antingen schemat eller interfacet så de divergerar, får vi e
 - `src/domain/schemas/` — scheman
 - `src/domain/__tests__/schemas.assignable.ts` — compile-time assertion-test
 - `scripts/verify-phase-1.ts` — runtime-verifiering av `parse({})` kraschar
-- `docs/gap-analysis.md` §GA-5 — motiveringen bakom `[GA]`-markeringen
+- `docs/logs/gap-analysis.md` §GA-5 — motiveringen bakom `[GA]`-markeringen

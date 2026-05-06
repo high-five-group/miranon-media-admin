@@ -169,7 +169,7 @@ Målet är ett identity cluster, inte en mekanisk split av `Personer` efter anta
 | FK-relationer | `person_id -> persons`; `lead_source_id -> lead_sources`; `first_integration_source_id -> integration_sources`. |
 | Index-överväganden | `(tenant_id, lead_status, captured_at)`; `(tenant_id, first_integration_source_id)`. |
 | Skiftet från Airtable | Namnlösa lead-magnet-personer blir designat lead-state med spårbar källa. |
-| Spårbarhet | `docs/hur-systemet-funkar.md` namnlös Person-semantik; `06a` Del F. |
+| Spårbarhet | `docs/reference/hur-systemet-funkar.md` namnlös Person-semantik; `06a` Del F. |
 
 ### B2 — Events & Eventplanering
 
