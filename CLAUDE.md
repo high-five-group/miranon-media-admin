@@ -1,5 +1,5 @@
 # CLAUDE.md — Miranon Media Admin (React)
-*Senast uppdaterad: 2026-05-05 | v0.3 — Session 2 (React), Fas A + P0–P3a klara, P3b städning pågår*
+*Senast uppdaterad: 2026-05-06 | v0.4 — Session 3 (Pre-Fas-2-verifiering): repo-strukturell polish + publika professionalitetssignaler. Fas 2 — Routing + Auth — startar nästa session mot `docs/byggplan.md`.*
 
 ---
 
@@ -16,6 +16,8 @@ Hela `docs/react-migration/`-mappen i Vue-repot var sanningskälla för Fas 0 + 
 - `SECURITY-SPEC.md`, `PERFORMANCE-BUDGET.md`, `STATE-STRATEGY.md`, `URL-STATE-SPEC.md`, `ARIA-UPGRADE.md`, `FUTURE-COMPAT.md`, `SPA-ARCHITECTURE-DECISION.md` — [GA] gap-analys-spec
 - `FILE-INVENTORY.md` — vilka filer som ska kopieras från Vue-repot
 - `gap-analysis.md`, `react-stack-research.md`, `vue-project-analysis.md` — research
+
+> **Sedan Pre-Fas-2 (ADR-021, 2026-05-06):** Spec-filerna finns lokalt i [`docs/specs/`](docs/specs/), research i [`docs/research/`](docs/research/) (inkl. `datamodell-research/`), externa analyser i [`docs/analysis/`](docs/analysis/), referens i [`docs/reference/`](docs/reference/), historiska arbetsmaterial i [`docs/logs/`](docs/logs/), arkiv i [`docs/archive/`](docs/archive/). Vue-repots `docs/react-migration/` är ursprungs-källa men frusen referens.
 
 ---
 
@@ -48,7 +50,7 @@ Hela `docs/react-migration/`-mappen i Vue-repot var sanningskälla för Fas 0 + 
 | Headless UI | React Aria (react-aria-components) |
 | Styling | Tailwind v4 + 3-lagers CSS-tokens (primitiv → semantisk → komponent) |
 | Animationer | Motion (Framer Motion) |
-| Lint/format | Biome 2.0 (ersätter ESLint + Stylelint) |
+| Lint/format | Biome 2.4 (ersätter ESLint + Stylelint + Prettier — `npm run format` använder Biome) |
 | Auth | Supabase Auth |
 | API-proxy | Supabase Edge Functions (Airtable-nyckel serverside) |
 | Datakälla | Airtable (bas `app8uGPrVCVOm6LfD`) via DataSource-adapter |
@@ -63,130 +65,123 @@ Hela `docs/react-migration/`-mappen i Vue-repot var sanningskälla för Fas 0 + 
 
 ## Filstruktur
 
-> Genererad 2026-04-14 (Session 1 (React), efter Fas 0 + Fas 1). Uppdateras vid sessionsavslut.
-> Exkluderar: `node_modules`, `.git`, `dist`, `package-lock.json`.
+> Snapshot post-K3 åa–åf (2026-05-06). Pedagogisk översikt — för exakt nuvarande state, kör `tree -L 3 -I 'node_modules|dist|.git|coverage|test-results'`.
+
+### Repo-rot
 
 ```
-~/Repon/miranon-media-admin/
-├── CLAUDE.md                              ← denna fil
-├── README.md                              ← projektintro + dokumentationstabell
-├── biome.json                             ← [ADR-001] Biome 2.4
+miranon-media-admin/
+├── CLAUDE.md                      ← projekt-konstitution (läs först)
+├── README.md                      ← entry-point med badges + Documentation map
+├── CHANGELOG.md                   ← Keep-a-Changelog 1.1.0 (ADR-024)
+├── SECURITY.md                    ← säkerhetspolicy (privat-rapportering)
+├── CONTRIBUTING.md                ← aktör-rollfördelning + sessions-disciplin
+├── LICENSE                        ← UNLICENSED (proprietary)
+├── package.json, package-lock.json
+├── biome.json                     ← lint + format (ersätter ESLint/Stylelint/Prettier)
+├── vite.config.ts, playwright.config.ts
+├── tsconfig*.json
 ├── index.html
-├── package.json
-├── playwright.config.ts
-├── tsconfig.json
-├── tsconfig.app.json
-├── tsconfig.node.json
-├── vite.config.ts                         ← @tailwindcss/vite (TanStack Router återinförs Fas 2)
-│
-├── .claude/
-│   └── settings.json                      ← pre-commit hook (biome check + tsc)
-│
-├── .env.local                             ← .gitignore-skyddad
-├── .gitignore
-│
-├── docs/
-│   ├── BUILD-LOG.md                       ← implementation journal per session
-│   ├── README.md
-│   ├── byggplan.md                        ← STYRANDE — fas-för-fas-plan (post-P3a)
-│   ├── archive/conversion-plan-2026-04-14.md  ← arkiverad 2026-05-05 per ADR-012
-│   ├── gap-analysis.md
-│   ├── DESIGN-MANIFESTO.md
-│   ├── DESIGN-OPERATING-SYSTEM.md
-│   ├── DESIGN-SYSTEM-SPEC.md              ← 3-lagers tokens (ADR-002, ADR-003)
-│   ├── SECURITY-SPEC.md
-│   ├── PERFORMANCE-BUDGET.md
-│   ├── STATE-STRATEGY.md
-│   ├── URL-STATE-SPEC.md
-│   ├── ARIA-UPGRADE.md
-│   ├── FUTURE-COMPAT.md
-│   ├── SPA-ARCHITECTURE-DECISION.md
-│   ├── ACCESSIBILITY-CHECKLIST.md
-│   ├── ACCESSIBILITY-AUDIT-MALL.md
-│   ├── KVALITETSDEFINITIONER-11.md
-│   ├── DOKUMENTATIONSSTANDARD.md
-│   ├── BYGGPLAN-LÄTTLÄST.md
-│   ├── BYGGPLAN-LÄTTLÄST-v2.md
-│   ├── decisions/                         ← ADR:er (1 per beslut)
-│   │   ├── README.md                      ← index-tabell för ADR:er
-│   │   ├── ADR-001-biome-over-eslint-stylelint-prettier.md
-│   │   ├── ADR-002-tailwind-v4-theme-css-first.md
-│   │   ├── ADR-003-css-custom-property-naming.md
-│   │   ├── ADR-004-typescript-baseurl-removal.md
-│   │   ├── ADR-005-zod-parallell-definitions.md
-│   │   ├── ADR-006-fetch-with-retry-infrastructure.md
-│   │   ├── ADR-007-event-name-collision-deferred-aliasing.md
-│   │   ├── ADR-008-file-inventory-selective-run.md
-│   │   ├── ADR-009-supabase-client-env-consolidation.md
-│   │   └── ADR-010-biome-exclude-deno-edge-functions.md
-│   ├── features/
-│   │   └── FEATURE-ACTIVITY-LOG.md
-│   └── research/
-│       ├── beyond-best-practices-2026.md
-│       ├── react-headless-ui-research.md
-│       ├── react-stack-research.md
-│       └── vue-project-analysis.md
-│
-├── public/
-│   ├── favicon/                           (7 filer)
-│   ├── miranon-logo.svg
-│   └── sw.js                              ← [GA] service worker-skelett
-│
-├── scripts/
-│   └── verify-phase-1.ts                  ← runtime-verifiering (11 assertions)
-│
-├── src/
-│   ├── main.tsx                           ← entry point
-│   ├── env.ts                             ← [GA] @t3-oss/env-core env-validering
-│   ├── vite-env.d.ts
-│   ├── data/
-│   │   ├── utils.ts                       ← [GA] fetchWithRetry (ADR-006)
-│   │   ├── adapters/
-│   │   │   ├── DataSourceAdapter.ts
-│   │   │   ├── AirtableAdapter.ts
-│   │   │   └── SupabaseAdapter.ts
-│   │   └── config/
-│   │       └── supabase-client.ts         ← modifierad (ADR-006, ADR-009)
-│   ├── domain/
-│   │   ├── __tests__/
-│   │   │   └── schemas.assignable.ts      ← AssertEqual compile-time-test
-│   │   ├── models/                        (8 filer)
-│   │   ├── schemas/                       ← [GA] Zod (8 + index, ADR-005)
-│   │   └── types/                         (Filters.ts, Status.ts)
-│   ├── lib/
-│   │   ├── cn.ts                          ← clsx + tailwind-merge
-│   │   ├── alert-screen-reader.ts
-│   │   ├── focus-utils.ts
-│   │   └── report-web-vitals.ts           ← [GA] web-vitals
-│   └── styles/
-│       ├── base.css                       ← reset + Inter + fokusregel
-│       ├── tailwind.css                   ← @theme (ADR-002)
-│       └── tokens/
-│           ├── primitives.css             ← lager 1 (ADR-003)
-│           ├── semantic.css               ← lager 2
-│           └── components.css             ← lager 3 (skelett)
-│
-├── supabase/
-│   └── functions/                         ← [ADR-010] Deno-kod, ej lintad av Biome
-│       ├── _shared/                       (airtable-client.ts, cors.ts)
-│       ├── create-admin-user/
-│       ├── get-events/
-│       ├── get-persons/
-│       ├── get-registrations/
-│       └── update-record/
-│
-└── tasks/
-    ├── todo.md                            ← aktiva uppgifter
-    └── lessons.md                         ← organisatoriskt minne
-
-~/Repon/miranon-media-os/                  ← Vue-referensen (original)
-└── docs/react-migration/                  ← ursprungs-källa till React-repots docs/
-    ├── conversion-plan.md
-    ├── FILE-INVENTORY.md                  ← kopieringsscriptet (selektivt körd — ADR-008)
-    └── ... (15 spec-dokument kopierade till React-repot)
+├── .editorconfig, .nvmrc, .gitignore
+├── .vscode/extensions.json        ← rekommenderade VS Code-extensions
+└── .github/                       ← CI + dependabot + templates (ADR-024)
+    ├── workflows/ci.yml           ← biome + tsc + test:api + build på PR/push
+    ├── dependabot.yml             ← npm veckovis + github-actions månadsvis
+    ├── CODEOWNERS
+    ├── PULL_REQUEST_TEMPLATE.md   ← DoD-checklista
+    └── ISSUE_TEMPLATE/{bug,feature}.md
 ```
 
----
+### docs/
+
+```
+docs/
+├── README.md                      ← navigeringspekare för docs/
+├── byggplan.md                    ← STYRANDE plan för Fas 2 → Fas 8 (832 rader, 13 fas-prompter)
+├── BUILD-LOG.md                   ← kronologisk sessions-journal
+├── DOKUMENTATIONSSTANDARD.md
+│
+├── specs/                         ← 14 styrande specs (ADR-021)
+│   ├── DESIGN-MANIFESTO.md, DESIGN-OPERATING-SYSTEM.md, DESIGN-SYSTEM-SPEC.md
+│   ├── SECURITY-SPEC.md, STATE-STRATEGY.md, URL-STATE-SPEC.md
+│   ├── ARIA-UPGRADE.md, ACCESSIBILITY-CHECKLIST.md, ACCESSIBILITY-AUDIT-MALL.md
+│   ├── FUTURE-COMPAT.md, PERFORMANCE-BUDGET.md, KVALITETSDEFINITIONER-11.md
+│   ├── SPA-ARCHITECTURE-DECISION.md
+│   └── BYGGPLAN-LÄTTLÄST-v2.md
+│
+├── analysis/                      ← extern analys (ADR-021)
+│   ├── Codex-project-analysis-after-fas-1.md
+│   └── Code-verification-of-codex-analysis.md
+│
+├── reference/                     ← datamodell + system-beskrivning (ADR-021)
+│   ├── data-model.md
+│   └── hur-systemet-funkar.md
+│
+├── logs/                          ← historiska arbetsmaterial (ADR-021)
+│   ├── gap-analysis.md
+│   └── byggplan-revision-inventory.md
+│
+├── research/                      ← Fas 0-research + datamodell-research (ADR-022)
+│   ├── beyond-best-practices-2026.md
+│   ├── react-headless-ui-research.md
+│   ├── react-stack-research.md
+│   ├── vue-project-analysis.md
+│   └── datamodell-research/       ← 10 frysta leveransfiler (00-file-manifest..08-odoo-validation)
+│
+├── decisions/                     ← 24 ADR:er (ADR-001..024)
+│   ├── README.md                  ← ADR-katalog/index
+│   └── ADR-{001..024}-*.md
+│
+├── features/
+│   └── FEATURE-ACTIVITY-LOG.md
+│
+└── archive/                       ← superceded artefakter
+    ├── conversion-plan-2026-04-14.md       ← arkiverad i P3b (ADR-012)
+    └── BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md  ← arkiverad i Pre-Fas-2 (ADR-021)
+```
+
+### tasks/
+
+```
+tasks/
+├── todo.md                        ← aktuell todo-status
+├── lessons.md                     ← projekt-lessons (UNIVERSAL-poster lyfts till hub)
+├── byggplan-direktiv.md           ← arkivvärt (SLUTFÖRT 2026-05-05)
+├── datamodell-research-direktiv.md, datamodell-research-plan.md  ← frysta efter Fas 6
+└── sessions/
+    ├── <aktiv>.md                 ← en sessionsdok åt gången (just nu: 2026-05-06-pre-fas2-verifiering.md)
+    └── archive/                   ← arkiverade per ADR-023
+        ├── 2026-04/   (2 sessionsloggar)
+        ├── 2026-05/   (6 sessionsloggar inkl. P3a + P3b)
+        └── datamodell-research-2026-04-30/   (7 frysta fas-prompts + README)
+```
+
+### src/, supabase/, tests/, övrigt
+
+```
+src/
+├── data/         ← AirtableAdapter, callEdgeFunction, supabase-client, retry-infra
+├── domain/       ← 10 domain-filer (transplanterade från Vue-referens, Fas 1)
+├── lib/          ← alert-screen-reader, focus-utils
+├── observability/sentry.ts
+└── styles/       ← base.css + token-system (3-lager: primitiv → semantisk → komponent)
+
+supabase/
+├── config.toml
+└── functions/
+    ├── _shared/  ← auth, cors, field-allowlists, airtable-filter, errors (Fas A)
+    └── {create-admin-user, get-events, get-persons, get-registrations, test-auth, update-record}/
+
+tests/
+└── api/          ← 7 testfiler, 113 tester (72 körda lokalt + 41 staging-only-skipped)
+
+public/           ← favicon, sw.js, miranon-logo.svg
+scripts/          ← verify-phase-1.ts (runtime-verifiering)
+```
+
+### Vue-referens (historik)
+
+Det ursprungliga Vue-projektet `~/Repon/miranon-media-os/` är **fryst** och ersätts av detta React-repo. Spec-filerna kopierades därifrån i Fas 0 (2026-04-13) och flyttades till lokala `docs/specs/` i Pre-Fas-2 (ADR-021). Vue-repot är historisk källa, inte aktiv referens.
 
 ## Design-system
 
@@ -202,7 +197,7 @@ Hela `docs/react-migration/`-mappen i Vue-repot var sanningskälla för Fas 0 + 
 - Foundation: `~/Repon/marcus-system/design-system/DESIGN-FOUNDATION-v1.md` (4px spacing-bas, Inter, FK-inspirerat)
 - Varje komponent ska klara prefers-contrast: more, prefers-reduced-motion, print
 
-Fullständig spec: `~/Repon/miranon-media-os/docs/react-migration/DESIGN-SYSTEM-SPEC.md`
+Fullständig spec: [`docs/specs/DESIGN-SYSTEM-SPEC.md`](docs/specs/DESIGN-SYSTEM-SPEC.md) (lokalt sedan ADR-021, ursprungligen i Vue-referensens `docs/react-migration/`).
 
 ---
 
@@ -220,15 +215,29 @@ Fullständig spec: `~/Repon/miranon-media-os/docs/react-migration/DESIGN-SYSTEM-
 **Metod:** Marcus och Claude planerar i Chat → Claude Code bygger fas för fas → Marcus verifierar i browsern → feedback → nästa steg.
 
 **Fasordning (enligt `docs/byggplan.md` §4):**
-1. Fas 0 — Projektsetup + tokens ← **NU**
-2. Fas 1 — Domäntransplant (13 filer + Zod + fetchWithRetry)
-3. Fas 2 — Routing + Auth (TanStack Router, Supabase, nuqs)
-4. Fas 3 — UI-primitiver (React Aria + CVA + ARIA 1.3)
-5. Fas 5 — App-shell + tab bar + service worker
-6. Fas 6 — Hem + Event + Personer + Mer
-7. Fas 6.5 — Aktivitetslogg (xAPI)
-8. Fas 7 — Konsolidering (CSP, chaos testing, deploy)
-9. Fas 8 (framtid) — Passkeys, push, offline
+
+*Klara faser:*
+1. ✅ Fas 0 — Projektsetup + tokens (Session 1, 2026-04-13/14)
+2. ✅ Fas 1 — Domäntransplant — 13 filer + Zod + fetchWithRetry (Session 1)
+3. ✅ Fas A — Säkerhetshardening M1–M8 (Session 2, 2026-05-04)
+4. ✅ P0–P3b — Byggplan-revision (Session 2, 2026-05-04/05) — `docs/byggplan.md` 832 rader, 13 fas-prompter, ADR-011..020
+5. ✅ Pre-Fas-2 — Repo-strukturell polish + publika professionalitetssignaler (Session 3, 2026-05-06) — ADR-021..024
+
+*Aktuellt fokus:*
+6. ← **NU:** Fas 2 — Routing + Auth (TanStack Router, Supabase, nuqs)
+
+*Kommande:*
+7. Fas 2.5 — Adapter-debt-städning
+8. Fas 3 — UI-primitiver (React Aria + CVA + ARIA 1.3)
+9. Fas 3.5 — Test-infra + mönsterbibliotek (egen fas per ADR-020)
+10. Fas 5 — App-shell + tab bar + service worker
+11. Fas 5.5 — Vertikal slice (write-flow)
+12. Fas 6 (a–e) — Hem + Event + Personer + Mer
+13. Fas 6.5 — Aktivitetslogg (xAPI)
+14. Fas 7 — Konsolidering (CSP, chaos testing, deploy)
+15. Fas 8 (defer) — Passkeys, push, offline
+16. Fas B (parallell) — Airtable hardening
+17. Fas E (defer) — Supabase target-migration
 
 ---
 
@@ -241,7 +250,7 @@ Fullständig spec: `~/Repon/miranon-media-os/docs/react-migration/DESIGN-SYSTEM-
 
 Tillgänglighet är alltid 11 — inga undantag. Bibliotekskod ska bära flera produkter.
 
-Fullständiga checklistor: `~/Repon/miranon-media-os/docs/specs/KVALITETSDEFINITIONER-11.md`
+Fullständiga checklistor: [`docs/specs/KVALITETSDEFINITIONER-11.md`](docs/specs/KVALITETSDEFINITIONER-11.md) (lokalt sedan ADR-021).
 
 ---
 
@@ -300,10 +309,17 @@ När Marcus säger "Nu avslutar vi denna session":
 
 ## Status
 
-**Fas 0 + Fas 1 klara** — Session 1 (React), 2026-04-14. Se [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md) för fullständig fashistorik.
+**Sessions klara:**
 
-**Aktuellt fokus:** Fas 2 — Routing + Auth (TanStack Router file-based, Supabase auth).
+- **Session 1** (React, 2026-04-13/14): Fas 0 + Fas 1 — projektsetup, domäntransplant, ADR-001..010
+- **Session 2** (React, 2026-04-30 → 2026-05-05): Fas A (säkerhetshardening M1–M8, 14 commits, 113 tester) + P0–P3b (byggplan-revision, `docs/byggplan.md` 832 rader, ADR-011..020, 7 UNIVERSAL-lessons lyfta till hub)
+- **Session 3** (Pre-Fas-2, 2026-05-06): Repo-strukturell polish + publika professionalitetssignaler. K3 åa–åf: LICENSE + package.json metadata + .github/-paketet + CHANGELOG/SECURITY/CONTRIBUTING + README badges/Documentation map + docs/-omstrukturering (specs/analysis/reference/logs) + analys/ → docs/research/datamodell-research/ + tasks/sessions/-arkivering. ADR-021..024. **Total ADR-räkning: 24.**
+
+**Aktuellt fokus:** Fas 2 — Routing + Auth (TanStack Router file-based, Supabase auth) — startar nästa Chat-session mot `docs/byggplan.md` §4 Fas 2-prompt.
+
+För full retrospektiv historik: [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md).
 
 > **Sessionsnumrering:** React-projektet startar på Session 1.
 > Session 1 (React) motsvarar Session 31 i den samlade projekthistoriken
 > (Vue-bygget var session 1–30 i `~/Repon/miranon-media-os/`).
+> Session 2 = Session 32–34. Session 3 (Pre-Fas-2) = Session 35.

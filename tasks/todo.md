@@ -1,5 +1,5 @@
 # todo.md — Miranon Media Admin (React)
-*Senast uppdaterad: 2026-05-05 (Session 2 (React) — Fas A + P0–P3a klara, P3b städning pågår)*
+*Senast uppdaterad: 2026-05-06 (Session 3 — Pre-Fas-2-verifiering klar, Fas 2 startar)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -15,6 +15,7 @@
 **Session-historik:**
 - **Session 1 (React): 2026-04-14** — Fas 0 + Fas 1 klara. BUILD-LOG + 10 ADR:er skapade. Dokumentationsrutiner (BUILD-LOG + ADR) integrerade i CLAUDE.md sessionsstart/avslut. Commits: `fcc6de3`, `e3d8e8a`, `c91bfa0`, `680858c`.
 - **Session 2 (React): 2026-04-30 → 2026-05-05** — Fas A (säkerhetshardening, M1–M8, 14 commits, 113 tester) + P0–P3a byggplan-revision (`docs/byggplan.md` 832 rader, 13 fas-prompter, 10 nya ADR:er ADR-011..ADR-020, 7 UNIVERSAL-lessons). P3b städning pågår. Se [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 2 för full retrospektiv.
+- **Session 3 (Pre-Fas-2-verifiering): 2026-05-06** — Repo-strukturell polish + publika professionalitetssignaler. K3 åa-åf: LICENSE + package.json metadata + .github/-paketet (CI + dependabot + templates) + CHANGELOG/SECURITY/CONTRIBUTING + README badges/Documentation map + docs/-omstrukturering (specs/analysis/reference/logs) + analys/ → docs/research/datamodell-research/ + tasks/sessions/-arkivering. 4 nya ADR:er (ADR-021..024). Trail: [`tasks/sessions/2026-05-06-pre-fas2-verifiering.md`](sessions/2026-05-06-pre-fas2-verifiering.md).
 - *Session 1 (React) motsvarar Session 31 i total projekthistorik. Vue-bygget var session 1–30 i `~/Repon/miranon-media-os/`. Session 2 = Session 32–34.*
 
 ---
@@ -190,8 +191,10 @@ Meta-arbete parallellt med byggfaserna. Reviderade conversion-plan till byggplan
       A1-utfall: Fas 3.5 = egen fas (test-infra + mönsterbibliotek bägge JA)
 - [x] **P3a — Skriv byggplan + ADR-katalog** ✅ AVSLUTAD 2026-05-05
       Leverans: `docs/byggplan.md` (832 rader, 13 fas-prompter), 10 ADR:er (ADR-011..ADR-020), `tasks/sessions/archive/2026-05/2026-05-05-byggplan-skriv-p3a.md`
-- [ ] **P3b — Städning + arkivering + BUILD-LOG retrospektiv** ← NU
-      Pågår i nuvarande session: K1 (skelett) + K2 (arkivering + BUILD-LOG) + K3 (CLAUDE.md + todo.md) klara. K4 (verifiering + UNIVERSAL-lyft + SLUTFÖRT) återstår.
+- [x] **P3b — Städning + arkivering + BUILD-LOG retrospektiv** ✅ AVSLUTAD 2026-05-05
+      Leverans: `tasks/sessions/archive/2026-05/2026-05-05-byggplan-stadning-p3b.md`. 7 commits, direktivet markerat SLUTFÖRT i §11+§12, 7 UNIVERSAL-lessons lyfta till hub.
+- [x] **Pre-Fas-2-verifiering — repo 11/10 inför Fas 2** ✅ AVSLUTAD 2026-05-06
+      Leverans: `tasks/sessions/2026-05-06-pre-fas2-verifiering.md`. 4 nya ADR (ADR-021..024), docs/-omstrukturering, .github/-paketet, top-level professional docs, analys/-flyttning, tasks/sessions/-arkivering. Repo redo för Codex-verifiering + Fas 2.
       Trail: `tasks/sessions/archive/2026-05/2026-05-05-byggplan-stadning-p3b.md`
       Direktiv: `tasks/byggplan-direktiv.md` §6 P3 städnings-DoD + §12 slutnot
 
