@@ -14,10 +14,10 @@
     "test:api": "playwright test --project=api"
   },
   "dependencies": {
-    "@react-aria/focus": "^3.21.5",
-    "@react-aria/overlays": "^3.31.2",
-    "@react-aria/utils": "^3.33.1",
-    "@react-stately/collections": "^3.12.10",
+    "@react-aria/focus": "^3.22.0",
+    "@react-aria/overlays": "^3.32.0",
+    "@react-aria/utils": "^3.34.0",
+    "@react-stately/collections": "^3.13.0",
     "@sentry/react": "^10.48.0",
     "@supabase/supabase-js": "^2.103.0",
     "@t3-oss/env-core": "^0.13.11",
@@ -31,7 +31,7 @@
     "lucide-react": "^1.8.0",
     "motion": "^12.38.0",
     "react": "^19.2.5",
-    "react-aria-components": "^1.16.0",
+    "react-aria-components": "^1.17.0",
     "react-dom": "^19.2.5",
     "react-remove-scroll": "^2.7.2",
     "tailwind-merge": "^3.5.0",
