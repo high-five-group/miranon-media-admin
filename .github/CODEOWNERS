@@ -1,0 +1,13 @@
+# Default owner för allt i repot
+* @marcus803
+
+# Styrande dokument — extra uppmärksamhet vid ändring
+/CLAUDE.md @marcus803
+/docs/byggplan.md @marcus803
+/docs/decisions/ @marcus803
+/tasks/ @marcus803
+
+# CI / publika signaler
+/.github/ @marcus803
+/LICENSE @marcus803
+/SECURITY.md @marcus803
