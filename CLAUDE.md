@@ -1,5 +1,5 @@
 # CLAUDE.md — Miranon Media Admin (React)
-*Senast uppdaterad: 2026-04-14 | v0.2 — Session 1 (React), Fas 0 + Fas 1 klara*
+*Senast uppdaterad: 2026-05-05 | v0.3 — Session 2 (React), Fas A + P0–P3a klara, P3b städning pågår*
 
 ---
 
@@ -9,10 +9,9 @@ Admin-app för **Miranon Media** (Roger & Lotta). Hanterar event, anmälningar, 
 
 Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/miranon-media-os/`. Vue-projektet ligger kvar som referens under hela konverteringen — alla 4 komponenter på 11/11/11, 12 composables och hela arkitekturen porteras steg för steg enligt en styrande plan.
 
-**Styrande dokument för konverteringen:** `~/Repon/miranon-media-os/docs/react-migration/conversion-plan.md`
+**Styrande dokument för byggandet:** `docs/byggplan.md` (i detta repo). Vue-repots `react-migration/`-mapp är historiskt referensmaterial — användes som källa under Fas 0 + Fas 1 men ersätts av byggplan.md från och med Fas 2.
 
-Hela `docs/react-migration/`-mappen i Vue-repot är sanningskälla:
-- `conversion-plan.md` — fas-för-fas-plan, verifieringar, prompts
+Hela `docs/react-migration/`-mappen i Vue-repot var sanningskälla för Fas 0 + Fas 1 (historiskt). För Fas 2+ är `docs/byggplan.md` (i detta repo) sanningskällan.
 - `DESIGN-MANIFESTO.md`, `DESIGN-OPERATING-SYSTEM.md`, `DESIGN-SYSTEM-SPEC.md` — design
 - `SECURITY-SPEC.md`, `PERFORMANCE-BUDGET.md`, `STATE-STRATEGY.md`, `URL-STATE-SPEC.md`, `ARIA-UPGRADE.md`, `FUTURE-COMPAT.md`, `SPA-ARCHITECTURE-DECISION.md` — [GA] gap-analys-spec
 - `FILE-INVENTORY.md` — vilka filer som ska kopieras från Vue-repot
@@ -29,7 +28,7 @@ Hela `docs/react-migration/`-mappen i Vue-repot är sanningskälla:
 - Kör ALLTID `git pull` innan du gör ändringar i repot
 - Kör ALLTID `ls` på arbetsmappen innan du söker med glob/grep — titta först, sök sedan
 - Claude Code-prompts ska ALLTID ange fullständig sökväg
-- **Styrande dokument för konverteringen:** `~/Repon/miranon-media-os/docs/react-migration/conversion-plan.md`. Läs den innan varje fas. Avvik aldrig utan att uppdatera planen först.
+- **Styrande dokument för byggandet:** `docs/byggplan.md`. Läs den innan varje fas. Avvik aldrig utan att uppdatera byggplanen först.
 - Research före implementation: kolla React Aria, TanStack, Radix, FK Designsystemet INNAN du designar en lösning. Branschledarnas mönster är golvet.
 - Testa nytt bibliotek/approach med minimalt test (1 komponent, 1 hook) innan full implementation
 - LÄS → RAPPORTERA → PLANERA → IMPLEMENTERA → VERIFIERA. Aldrig hoppa direkt till implementation.
@@ -89,7 +88,8 @@ Hela `docs/react-migration/`-mappen i Vue-repot är sanningskälla:
 ├── docs/
 │   ├── BUILD-LOG.md                       ← implementation journal per session
 │   ├── README.md
-│   ├── conversion-plan.md                 ← STYRANDE — fas-för-fas-plan
+│   ├── byggplan.md                        ← STYRANDE — fas-för-fas-plan (post-P3a)
+│   ├── archive/conversion-plan-2026-04-14.md  ← arkiverad 2026-05-05 per ADR-012
 │   ├── gap-analysis.md
 │   ├── DESIGN-MANIFESTO.md
 │   ├── DESIGN-OPERATING-SYSTEM.md
@@ -219,7 +219,7 @@ Fullständig spec: `~/Repon/miranon-media-os/docs/react-migration/DESIGN-SYSTEM-
 
 **Metod:** Marcus och Claude planerar i Chat → Claude Code bygger fas för fas → Marcus verifierar i browsern → feedback → nästa steg.
 
-**Fasordning (enligt conversion-plan §D):**
+**Fasordning (enligt `docs/byggplan.md` §4):**
 1. Fas 0 — Projektsetup + tokens ← **NU**
 2. Fas 1 — Domäntransplant (13 filer + Zod + fetchWithRetry)
 3. Fas 2 — Routing + Auth (TanStack Router, Supabase, nuqs)
@@ -261,7 +261,7 @@ Allt som byggs bedöms utifrån båda perspektiven:
 1. Läs denna fil
 2. Läs `tasks/todo.md` + `tasks/lessons.md`
 3. Läs `docs/BUILD-LOG.md` — senaste fasens resultat, avvikelser och uppskjutna beslut
-4. Läs aktuell fas i `docs/conversion-plan.md`
+4. Läs aktuell fas i `docs/byggplan.md` (per ADR-012 — `conversion-plan.md` arkiverad till `docs/archive/conversion-plan-2026-04-14.md` i P3b)
 5. Kör `git pull`
 6. Sammanfatta: aktuell uppgift, relevanta lärdomar, uppskjutna beslut från BUILD-LOG, verifieringskrav
 
