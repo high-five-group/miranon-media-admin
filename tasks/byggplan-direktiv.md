@@ -476,20 +476,22 @@ Allt nedanstående är frusen indata för revisionen.
 | Klar (P1) | 2026-05-04 |
 | Klar (P2) | 2026-05-04 |
 | Klar (P3a) | 2026-05-05 |
+| Klar (P3b) | 2026-05-05 |
 | Fas A-status | **SLUTFÖRD 2026-05-04** — alla M1–M8 levererade, 14 commits, 113 tester |
 | Ägare | Marcus + Claude Chat |
 | Code-medverkan | Endast vid kodbasverifiering, slutlig commit av byggplanen, och eventuell M5+ av framtida implementations-faser |
-| Senast uppdaterat | 2026-05-05 (P3a slutförd — se tasks/sessions/2026-05-05-byggplan-skriv-p3a.md) |
+| Direktiv-status | **SLUTFÖRT 2026-05-05** — alla §6 P3-städnings-DoD verifierade, byggplanen är aktiv styrande plan |
+| Senast uppdaterat | 2026-05-05 (P3b SLUTFÖRT — se tasks/sessions/2026-05-05-byggplan-stadning-p3b.md) |
 
 ---
 
 ## 12. Slutnot
 
-När P3 är klar och `docs/byggplan.md` är committad:
-- Detta direktiv markeras SLUTFÖRT i headern
-- Conversion-plan flyttas till `docs/archive/conversion-plan-2026-04-14.md`
-- ADR skrivs i `docs/decisions/` om varför conversion-plan ersattes av byggplan (ramen "konvertering" var efterlöpare)
-- Alla städnings-DoD per §6 P3 verifierade
-- Fas 2 av React-arbetet kan starta mot byggplanen
+P3 är klar och `docs/byggplan.md` är committad:
+- ✅ Detta direktiv markerades SLUTFÖRT i §11 (P3b K4 commit 7, 2026-05-05)
+- ✅ Conversion-plan flyttades till `docs/archive/conversion-plan-2026-04-14.md` (P3b K2 commit 1: `2075ab3`, 2026-05-05)
+- ✅ ADR skrevs i `docs/decisions/` om varför conversion-plan ersattes av byggplan (ADR-012, P3a commit `866b430`, 2026-05-05)
+- ✅ Alla städnings-DoD per §6 P3 verifierade (P3b K2/K3/K4, se `tasks/sessions/2026-05-05-byggplan-stadning-p3b.md` Del 7 Stop-test)
+- ✅ Fas 2 av React-arbetet kan starta mot byggplanen (klart efter denna commit)
 
-Mellan nu och dess: detta direktiv är referensen som hindrar oss från att tappa kontext mellan sessioner. Fas A är klar och frusen — revisionsarbetet kan starta i ren context.
+Direktivet är nu arkivvärt. Det utförde sin roll — höll oss i kontext över 5 sessioner (P0 → P1 → P2 → P3a → P3b) och säkerställde att Fas A-fynden införlivades i byggplanen utan drift. Framtida läsare: använd `docs/byggplan.md` som styrande plan; använd detta direktiv som arkivreferens om frågor uppstår om varför conversion-plan ersattes.
