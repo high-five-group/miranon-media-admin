@@ -1,4 +1,5 @@
 external-source/
+local-only/
 source-exports/
 *.zip
 *.dump
