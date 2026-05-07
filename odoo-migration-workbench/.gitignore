@@ -1,0 +1,9 @@
+external-source/
+source-exports/
+*.zip
+*.dump
+*.sql
+*.sqlite
+*.sqlite3
+raw-transcripts/
+api-raw/

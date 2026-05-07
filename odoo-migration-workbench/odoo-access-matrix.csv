@@ -1,0 +1,9 @@
+access_method,deployment,read_possible,write_possible,requires_plan,requires_credentials,direct_database_access,safe_for_codex_analysis,safe_for_migration,production_risk,notes,verification_status,source
+Web UI,All,true,true,user access,true,false,limited,manual,medium,"Manual inspection only",Ej verifierat,Odoo UI
+Database Manager,Odoo Online,true,true,admin,true,false,false,backup/duplicate,high,"Use manually",Ej verifierat,Odoo Online docs
+UI Export Import,All,true,true,user rights,true,false,true,true,medium,"Good fallback if API unavailable",Ej verifierat,Odoo docs
+Backup Download,Odoo Online,true,false,admin,true,false,false,exit,medium,"Contains personal data",Ej verifierat,Odoo Online docs
+JSON-2 API,Custom plan,true,true,Custom,true,false,true,true,high,"Read-only first",Ej verifierat,External API docs
+/doc,Custom plan,true,false,Custom,true,false,true,metadata,low,"Model/field discovery",Ej verifierat,External API docs
+Odoo.sh shell,Odoo.sh,true,true,Odoo.sh,true,possible,limited,advanced,high,"For custom modules/admin",Ej verifierat,Odoo.sh docs
+PostgreSQL,on-premise,true,true,self-host,true,true,false,false,very high,"Avoid direct migration writes",Ej verifierat,Hosting docs

@@ -1,0 +1,7 @@
+source_system,source_entity,source_field,source_field_verified,source_verification_source,odoo_app,odoo_model,odoo_model_verified,odoo_field,odoo_field_verified,required,transform_rule,notes,confidence,blocker
+Airtable,Eventplanering,Status,true,docs/reference/data-model.md,Events,event.event,true,TBD,false,TBD,TBD,"Mappa Miranon eventstatus till Odoo stage/state efter export",Medium,"Odoo importfält saknas"
+Airtable,Eventplanering,Max antal platser,true,docs/reference/data-model.md,Events,event.event,true,seats_max,true,TBD,number,"Kodverifierat i Odoo 19.0, ej instans/importverifierat",Medium,"Importfält saknas"
+Airtable,Anmälningar,Status,true,docs/reference/data-model.md,Events,event.registration,true,state,true,TBD,map,"Miranon har fler statusar än Odoo standard",Medium,"Statusmapping krävs"
+Airtable,Anmälningar,E-post,true,docs/reference/data-model.md,Events,event.registration,true,email,true,TBD,normalize email,"Kodverifierat, ej importverifierat",Medium,"Importfält saknas"
+Airtable,Personer,E-post,true,docs/reference/data-model.md,Contacts,res.partner,false,email,false,TBD,normalize email,"Standard Odoo contact field måste instansverifieras",Low,"Contact export krävs"
+Airtable,Deltaganden,Status,true,docs/reference/data-model.md,Events,TBD,false,TBD,false,TBD,TBD,"Odoo attendance/check-in mapping ej klar",Low,"POC behövs"

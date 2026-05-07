@@ -1,0 +1,10 @@
+| app_area | source_title | url | source_type | relevance_to_miranon | verified_claims | unresolved_questions | followup_needed |
+|---|---|---|---|---|---|---|---|
+| Events | Odoo Events 19.0 | https://www.odoo.com/documentation/19.0/applications/marketing/events.html | Official docs | High | Events settings, tickets, website integration, reporting, barcode, tracks. | Faktisk installation okänd. | Verifiera i Odoo UI/API. |
+| Studio | Odoo Studio 19.0 | https://www.odoo.com/documentation/19.0/applications/studio.html | Official docs | High | Studio kan ändra fields/views/models/automation/webhooks/reports/approval/security. | Studio-plan/access okänd. | Kontrollera plan och Studio-app. |
+| Online | Odoo Online 19.0 | https://www.odoo.com/documentation/19.0/administration/odoo_online.html | Official docs | High | Private Odoo-hosted databases, browser access, no custom modules. | Miranon deployment ej verifierad. | Database Manager. |
+| Odoo.sh | Odoo.sh 19.0 | https://www.odoo.com/documentation/19.0/administration/odoo_sh.html | Official docs | Medium | Official platform with web shell, module dependencies, CI and SSH. | Om Miranon behöver Odoo.sh är ej bevisat. | Endast efter gap. |
+| Hosting | Hosting 19.0 | https://www.odoo.com/documentation/19.0/administration/hosting.html | Official docs | High | Flyttvägar Online/Odoo.sh/on-premise och backupdownload. | Version/plan/backupstorlek okänd. | Database Manager. |
+| Security | Odoo Security | https://www.odoo.com/security | Official web | High | Encryption in transit/at rest, server hardening, limited staff access. | Kundspecifika regioner/loggar okända. | Kontrollera avtal/Database Manager. |
+| SLA | Odoo Cloud SLA | https://www.odoo.com/cloud-sla | Official web | High | 99.9% target, RPO/RTO objectives, regions. | Exakt region okänd. | Database Manager/avtal. |
+| API | External JSON-2 API | https://www.odoo.com/documentation/19.0/developer/reference/external_api.html | Official docs | High | `/json/2`, `/doc`, API requires Custom plan. | Plan/API-access okänd. | Testa read-only. |
