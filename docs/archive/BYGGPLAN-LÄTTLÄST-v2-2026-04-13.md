@@ -1,3 +1,15 @@
+> **ARKIVERAD 2026-05-09 — superceded av v3**
+>
+> Denna fil är **superceded** av [`../specs/BYGGPLAN-LÄTTLÄST-v3.md`](../specs/BYGGPLAN-LÄTTLÄST-v3.md).
+> v2 bevaras som historisk referens med full git-historik tillgänglig via `git log --follow`.
+>
+> **Använd v3** för aktuell lättläst byggplan.
+> **Detta dokument** används endast för historisk kontext om hur byggplanen formulerades 2026-04-13, innan byggplan-revisionen P0–P3a (maj 2026).
+>
+> Referens: ADR-025 (BYGGPLAN-LÄTTLÄST v2 → v3-skiftet)
+
+---
+
 # Miranon Media Admin — Byggplan
 
 *Vad vi bygger, varför och vad det innebär för dig.*
