@@ -13,6 +13,9 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 - analys/ flyttad till docs/research/datamodell-research/ (ADR-022)
 - tasks/sessions/-arkivering till archive/2026-04/, archive/2026-05/, archive/datamodell-research-2026-04-30/ (ADR-023)
 
+### Changed
+- BYGGPLAN-LÄTTLÄST v2 → v3 efter byggplan-revisionen (ADR-025). v2 arkiverad till docs/archive/. Speglar docs/byggplan.md v1.1 (13 fas-prompter inkl. nya Fas A/2.5/3.5/5.5/6a-e/8/B/E).
+
 ## [0.1.0] - 2026-05-05
 
 ### Added

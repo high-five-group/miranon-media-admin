@@ -107,7 +107,7 @@ docs/
 │   ├── ARIA-UPGRADE.md, ACCESSIBILITY-CHECKLIST.md, ACCESSIBILITY-AUDIT-MALL.md
 │   ├── FUTURE-COMPAT.md, PERFORMANCE-BUDGET.md, KVALITETSDEFINITIONER-11.md
 │   ├── SPA-ARCHITECTURE-DECISION.md
-│   └── BYGGPLAN-LÄTTLÄST-v2.md
+│   └── BYGGPLAN-LÄTTLÄST-v3.md
 │
 ├── analysis/                      ← extern analys (ADR-021)
 │   ├── Codex-project-analysis-after-fas-1.md
@@ -128,16 +128,17 @@ docs/
 │   ├── vue-project-analysis.md
 │   └── datamodell-research/       ← 10 frysta leveransfiler (00-file-manifest..08-odoo-validation)
 │
-├── decisions/                     ← 24 ADR:er (ADR-001..024)
+├── decisions/                     ← 25 ADR:er (ADR-001..025)
 │   ├── README.md                  ← ADR-katalog/index
-│   └── ADR-{001..024}-*.md
+│   └── ADR-{001..025}-*.md
 │
 ├── features/
 │   └── FEATURE-ACTIVITY-LOG.md
 │
 └── archive/                       ← superceded artefakter
     ├── conversion-plan-2026-04-14.md       ← arkiverad i P3b (ADR-012)
-    └── BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md  ← arkiverad i Pre-Fas-2 (ADR-021)
+    ├── BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md  ← arkiverad i Pre-Fas-2 (ADR-021)
+    └── BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md  ← arkiverad 2026-05-09 (ADR-025)
 ```
 
 ### tasks/

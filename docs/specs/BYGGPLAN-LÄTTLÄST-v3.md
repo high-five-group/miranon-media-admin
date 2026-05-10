@@ -6,7 +6,7 @@
 >
 > **Senast uppdaterad:** 2026-05-09 — version 3
 > **Status just nu:** Fas 0, Fas 1 och Fas A är klara. **Fas 2 (Routing + Auth) startar nästa session.**
-> **Föregångare:** [v2](BYGGPLAN-LÄTTLÄST-v2.md) (april 2026, frusen) och [v1](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md) (arkiverad). v3 ersätter v2 och speglar byggplan-revisionen från maj 2026.
+> **Föregångare:** [v2](../archive/BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md) (april 2026, arkiverad 2026-05-09) och [v1](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md) (arkiverad 2026-05-06). v3 ersätter v2 och speglar byggplan-revisionen från maj 2026.
 
 > **Till dig som läser detta:** Det här dokumentet beskriver hela planen för Miranon Medias nya digitala verktyg. Det är skrivet så att du ska förstå allt — oavsett teknisk bakgrund. Första gången ett tekniskt begrepp dyker upp förklaras det direkt i texten. Du behöver aldrig lämna det stycke du läser för att förstå det.
 
