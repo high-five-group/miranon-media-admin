@@ -41,6 +41,7 @@ sanningskällan vid sessionsavslut, inte LLM-minne. Källa:
 - [ ] `docs/BUILD-LOG.md` uppdaterad med sessionens resultat (planerat vs faktiskt, avvikelser, verifieringsoutput)
 - [ ] ADR skapad i `docs/decisions/` för varje arkitekturbeslut
 - [ ] `tasks/lessons.md` uppdaterad (markera `[UNIVERSAL]` där tillämpligt; lyft till hub inom 7 dagar)
+- [ ] `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad om sessionen har implications för icke-tekniska läsare (per ADR-025)
 - [ ] Commits pushade
 
 ## Pull Request-flöde

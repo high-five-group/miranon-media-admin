@@ -292,12 +292,14 @@ När Marcus säger "Nu avslutar vi denna session":
 4. Uppdatera `docs/decisions/README.md` med nya ADR:er
 5. Uppdatera CLAUDE.md med status och beslut
 6. Uppdatera `tasks/lessons.md` (markera `[UNIVERSAL]` där relevant)
-7. Uppdatera `tasks/todo.md`
-8. Uppdatera ## Filstruktur i CLAUDE.md
-9. Committa och pusha
+7. Uppdatera `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` om sessionen har implications för icke-tekniska läsare (Roger/Lotta) — t.ex. ny avslutad fas, scope-ändring, eller statusbyte. Bumpa "Senast uppdaterad"-datumet i headern + status-raden. v3 är levande dokument per ADR-025 — det driver ifrån `docs/byggplan.md` annars.
+8. Uppdatera `tasks/todo.md`
+9. Uppdatera ## Filstruktur i CLAUDE.md
+10. Committa och pusha
 
 **Checklista:**
 - [ ] Stämmer alla statusmarkeringar med verkligheten?
+- [ ] `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad om sessionen har implications för icke-tekniska läsare (ny fas klar, scope-ändring, statusbyte)?
 - [ ] Finns beslut som bara lever i chatten men inte i dokumenten?
 - [ ] Har varje arkitekturbeslut en ADR?
 - [ ] Är BUILD-LOG uppdaterad med faktisk output (inte bara "passerade")?
