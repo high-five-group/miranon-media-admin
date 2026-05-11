@@ -47,7 +47,7 @@ Per fas finns en fas-prompt med åtta sektioner:
 
 | Lager | Dokument | Roll |
 |---|---|---|
-| **Strategi** | `tasks/byggplan-direktiv.md` (post-P3 SLUTFÖRT), `IDENTITET.md`, `KVALITETSDEFINITIONER-11.md` | Vad och varför — låsta principer |
+| **Strategi** | `tasks/byggplan-direktiv.md` (post-P3 SLUTFÖRT), `IDENTITET.md`, `KVALITETSDEFINITIONER-11-REACT.md` | Vad och varför — låsta principer |
 | **Plan** | **`docs/byggplan.md`** (detta dokument) | Hur — fas-för-fas, sekvens, beroenden |
 | **Implementation** | `docs/decisions/` (ADR), `docs/BUILD-LOG.md`, `tasks/sessions/` | Vad faktiskt skedde — beslut, avvikelser, retrospektiv |
 
@@ -298,7 +298,7 @@ Bygga den minimala uppsättning UI-primitiver som Fas 5 + 5.5 + 6 behöver: Butt
 - Demo-route eller Storybook-config
 
 #### DoD
-1. Varje primitiv passerar 11/11/11 mot `KVALITETSDEFINITIONER-11.md`:
+1. Varje primitiv passerar 11/11/11 mot `KVALITETSDEFINITIONER-11-REACT.md`:
    - Tillgänglighet: axe-core 0 violations + manuell tangentbordstest + skärmläsartest
    - Teknik: TypeScript strikt, Biome 0 fel, < 150 rader, single responsibility
    - Återanvändbarhet: ingen produktspecifik logik, props-driven, kan exporteras till Mm Component Library utan ändring
@@ -571,7 +571,7 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamo
 - `tests/e2e/mer.spec.ts`
 
 #### DoD (per sub-fas)
-1. Vyer passerar 11/10/10 mot `KVALITETSDEFINITIONER-11.md` (Tillgänglighet 11, Teknik 10, Återanvändbarhet 10 — vyer är produktspecifika så Återanvändbarhet/Teknik kan acceptera produktbundna val)
+1. Vyer passerar 11/10/10 mot `KVALITETSDEFINITIONER-11-REACT.md` (Tillgänglighet 11, Teknik 10, Återanvändbarhet 10 — vyer är produktspecifika så Återanvändbarhet/Teknik kan acceptera produktbundna val)
 2. Vy renderar mot live-data (eller Airtable-mockad fixture i CI)
 3. Mutation registrerad i `field-allowlists.ts` med 1 deny + 1 allow-test grön
 4. Vy-Playwright baseline grön

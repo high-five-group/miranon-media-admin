@@ -630,6 +630,6 @@ Följande krav är stack-agnostiska och bevarades exakt från 2026-04-01-version
 ---
 
 *Dokument: ACCESSIBILITY-CHECKLIST.md (P2-version)*
-*Korsreferenser: ARIA-UPGRADE.md (ARIA 1.3 + EAA), DESIGN-SYSTEM-SPEC.md (tokens + Fem Kvaliteter §13), STATE-STRATEGY.md (loading/empty/error-state), KVALITETSDEFINITIONER-11.md (kvalitetsdimensioner), tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md (P2-leverans + A1-utfall)*
+*Korsreferenser: ARIA-UPGRADE.md (ARIA 1.3 + EAA), DESIGN-SYSTEM-SPEC.md (tokens + Fem Kvaliteter §13), STATE-STRATEGY.md (loading/empty/error-state), KVALITETSDEFINITIONER-11-REACT.md (kvalitetsdimensioner), tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md (P2-leverans + A1-utfall)*
 *Underlag: WCAG 2.2 AA, ARIA Authoring Practices Guide, React Aria docs, gap-analysis.md (Fas 3 + Del 2 punkt 7)*
 *Nästa review: efter Fas 3.5 (a11y-baseline-gate)*

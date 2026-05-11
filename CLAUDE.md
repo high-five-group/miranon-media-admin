@@ -105,7 +105,7 @@ docs/
 │   ├── DESIGN-MANIFESTO.md, DESIGN-OPERATING-SYSTEM.md, DESIGN-SYSTEM-SPEC.md
 │   ├── SECURITY-SPEC.md, STATE-STRATEGY.md, URL-STATE-SPEC.md
 │   ├── ARIA-UPGRADE.md, ACCESSIBILITY-CHECKLIST.md, ACCESSIBILITY-AUDIT-MALL.md
-│   ├── FUTURE-COMPAT.md, PERFORMANCE-BUDGET.md, KVALITETSDEFINITIONER-11.md
+│   ├── FUTURE-COMPAT.md, PERFORMANCE-BUDGET.md, KVALITETSDEFINITIONER-11-REACT.md
 │   ├── SPA-ARCHITECTURE-DECISION.md
 │   └── BYGGPLAN-LÄTTLÄST-v3.md
 │
@@ -257,7 +257,7 @@ Fullständig spec: [`docs/specs/DESIGN-SYSTEM-SPEC.md`](docs/specs/DESIGN-SYSTEM
 
 Tillgänglighet är alltid 11 — inga undantag. Bibliotekskod ska bära flera produkter.
 
-Fullständiga checklistor: [`docs/specs/KVALITETSDEFINITIONER-11.md`](docs/specs/KVALITETSDEFINITIONER-11.md) (lokalt sedan ADR-021).
+Fullständiga checklistor: [`docs/specs/KVALITETSDEFINITIONER-11-REACT.md`](docs/specs/KVALITETSDEFINITIONER-11-REACT.md) (lokalt sedan ADR-021; React-versionen ersätter Vue-eran per ADR-027 stack-skifte 2026-05-11).
 
 ---
 

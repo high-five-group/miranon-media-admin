@@ -57,7 +57,7 @@ PR mergas först när:
 ## Kvalitetsribba
 
 Detta projekt arbetar mot **11/11/11**: 11/10 på data quality, design quality
-och code quality. Definitionerna finns i [`docs/specs/KVALITETSDEFINITIONER-11.md`](docs/specs/KVALITETSDEFINITIONER-11.md).
+och code quality. Definitionerna finns i [`docs/specs/KVALITETSDEFINITIONER-11-REACT.md`](docs/specs/KVALITETSDEFINITIONER-11-REACT.md).
 
 ## Resurser
 
