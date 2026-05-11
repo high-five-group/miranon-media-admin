@@ -1,6 +1,6 @@
 # Fas 2 — Routing + Auth (TanStack Router + Supabase + nuqs)
 
-> **Status:** PÅGÅR — K1 skelett 2026-05-11. K0åa..åf preflight + K2-K4 Fas 2-implementation följer.
+> **Status:** K0 FULLSTÄNDIGT KLAR 2026-05-11 (alla 6 åtgärder committade). K2-K4 Fas 2-implementation följer i Session 5. Sessionsdoket är aktivt över Session 4 + Session 5 (samma Fas 2) — arkiveras vid Fas 2-avslut per ADR-023 + scope-splitt-anmärkning nedan.
 > **Skapat:** 2026-05-11 (K1)
 > **Slutgiltig version:** TBD (K-sista bakar in Del 3-8)
 > **Ägare:** Marcus + Claude Chat (planering) + Claude Code (implementation)
@@ -10,7 +10,7 @@
 > - `tasks/sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md` (Pre-Fas-2, slutförd 2026-05-07) — arkiveras i K1 enligt ADR-023 sessions-arkivering
 > **Efterföljare:** Fas 2.5 — Schema-kontrakt-sync, mot `docs/byggplan.md` §4 Fas 2.5-prompt.
 > **Stop-test (denna session):** 6 K0-åtgärder committade + Fas 2 DoD 1-8 passerade + Playwright auth-fixture etablerad + ev. ADR:er committade + lessons-skörd lyft + sessionsdok låst + transcript sparat.
-> **Sessionsdok-commit-disciplin (P3a-baserad, reviderad för Fas 2):** K1 = skelett. Faktiska arbets-commits (K0åa-åf, K2-K4) rör INTE detta sessionsdok. **K1.N early bake-ins** committas efter substantiella K0-sub-klungor för att fånga commit-hashar + avvikelser + lärdomskandidater innan K-sista. K-sista bakar in Del 3-8 retrospektiv. Mönsterbyte från ursprungliga 'K1 + K-sista' till 'K1 + K1.N bake-ins + K-sista' beslutat 2026-05-11 efter K0åb genererat 8 dolda type-fel-fynd + flera lärdomskandidater — för mycket att hålla i Chat-kontext tills K-sista. Ren str_replace-patch är konfliktfri och billig. Touch-count revideras dynamiskt under sessionen; aktuell post-K1.5b = 7 (K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K-sista planerad). **K0 startvillkor-fas 1-3 komplett 2026-05-11** efter K0åc.2 CI grön (36s, 72 pure + 38 staging passed + 3 M4-defer skipped) — Fas 2-implementation (K2) nu unblockad strikt-sekvens-wise; K0åd-K0åf kan tas före eller parallellt med K2 per Marcus' beslut. **Mini-överlämning klar 2026-05-11** (Steg 1 lessons-lyft + Steg 2 CLAUDE.md + Steg 3 todo.md + Steg 4 Sessions-handoff + Steg 5b Kandidat 13-15-bake-in + cross-repo-lessons-lyft) — sessionsdoket är komplett-handoff-redo, väntar på Marcus' Update-klick i Claude.ai-projektet innan ny session-start.
+> **Sessionsdok-commit-disciplin (P3a-baserad, reviderad för Fas 2):** K1 = skelett. Faktiska arbets-commits (K0åa-åf, K2-K4) rör INTE detta sessionsdok. **K1.N early bake-ins** committas efter substantiella K0-sub-klungor för att fånga commit-hashar + avvikelser + lärdomskandidater innan K-sista. K-sista bakar in Del 3-8 retrospektiv. Mönsterbyte från ursprungliga 'K1 + K-sista' till 'K1 + K1.N bake-ins + K-sista' beslutat 2026-05-11 efter K0åb genererat 8 dolda type-fel-fynd + flera lärdomskandidater — för mycket att hålla i Chat-kontext tills K-sista. Ren str_replace-patch är konfliktfri och billig. Touch-count revideras dynamiskt under sessionen; aktuell post-K1.6 = 8 (K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 = K-sista för K0-fasen i Session 4). Session 5 (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. **K0 startvillkor-fas 1-3 komplett 2026-05-11** efter K0åc.2 CI grön (36s, 72 pure + 38 staging passed + 3 M4-defer skipped) — Fas 2-implementation (K2) nu unblockad strikt-sekvens-wise; K0åd-K0åf kan tas före eller parallellt med K2 per Marcus' beslut. **Mini-överlämning klar 2026-05-11** (Steg 1 lessons-lyft + Steg 2 CLAUDE.md + Steg 3 todo.md + Steg 4 Sessions-handoff + Steg 5b Kandidat 13-15-bake-in + cross-repo-lessons-lyft) — sessionsdoket är komplett-handoff-redo, väntar på Marcus' Update-klick i Claude.ai-projektet innan ny session-start.
 > **Scope-splitt-anmärkning:** Fas 2-estimat enligt byggplan §4 = 2 sessioner. Om K0+K2+K3+K4 inte ryms i en chat-session, splitta i Session A (K1+K0+K2) och Session B (K3+K4+K5) per P1-lärdom ("Var beredd att splitta i 2 sessioner om scope växer"). Splitten är förväntad, inte avvikelse.
 
 ---
@@ -21,7 +21,7 @@
 
 ### Var vi är (2026-05-11)
 
-Fas 2 K0 startvillkor 1-3 ✅ **KLAR**. K0åd-K0åf "Direkt efter Fas 2"-fynd (från Codex kategori 2) återstår innan K2 implementation av TanStack Router + AuthProvider. Sessionsdoket är på touch nr 7 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a (Sessions-handoff) + K1.5b (Kandidat 13-15-bake-in, denna) + K-sista planerad. 12 UNIVERSAL-lessons från K0åa-K0åc + 3 meta-UNIVERSAL från mini-överlämningen (Kandidat 13-15) lyfta till `tasks/lessons.md` + hub (`marcus-system/tasks/lessons.md`) under H2 `## 2026-05-11 — Fas 2 K0 startvillkoren`. CI grön på första försök efter K0åc.2 (run 25663357991, 36s).
+Fas 2 K0 startvillkor 1-3 ✅ **KLAR**. K0åd-K0åf "Direkt efter Fas 2"-fynd (från Codex kategori 2) återstår innan K2 implementation av TanStack Router + AuthProvider. Sessionsdoket är på touch nr 8 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a (Sessions-handoff) + K1.5b (Kandidat 13-15-bake-in) + K1.6 (K-sista för K0-fasen i Session 4, denna). Session 5 (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. 12 UNIVERSAL-lessons från K0åa-K0åc + 3 meta-UNIVERSAL från mini-överlämningen (Kandidat 13-15) lyfta till `tasks/lessons.md` + hub (`marcus-system/tasks/lessons.md`) under H2 `## 2026-05-11 — Fas 2 K0 startvillkoren`. CI grön på första försök efter K0åc.2 (run 25663357991, 36s).
 
 ### Läs-ordning för ny session (sessionsstart-checklista anpassad för Fas 2)
 
@@ -119,7 +119,7 @@ Sex klung-grupper. Sessionsdok rörs i K1 + K-sista — mellan-klungor lämnar d
 | **K2** | Fas 2 implementation Part 1 — TanStack Router file-based setup: `vite.config.ts` plugin återinförs (togs bort i Fas 0), `tsr.config.json`, `src/routes/__root.tsx` med AuthProvider + ErrorBoundary + Suspense, generated route tree, devtools dev-only | byggplan §4 Fas 2 DoD-rad 1 (delvis) + 5 + 7 + 8 passerade |
 | **K3** | Fas 2 implementation Part 2 — `src/auth/AuthProvider.tsx` + `src/auth/useAuth.ts`, `src/routes/login.tsx`, `src/routes/index.tsx` (login-redirect-stub), skyddade routes via `beforeLoad`-guard mot Supabase-session, logout-flöde<br><br>**Arkitektur-not (från P0-inventeringen rad 2.3):** `auth-provider.tsx` får INTE falla tillbaka på anon-key. Klienten ska behandla anon-fallback som unauthenticated (Codex' startvillkor 2 i Fråga 1). Skyddad route utan session → redirect FÖRE datafetch (inte efter 401). | byggplan §4 Fas 2 DoD-rad 1 + 2 + 3 passerade |
 | **K4** | Fas 2 implementation Part 3 — nuqs `useQueryState` setup på test-route + Playwright `authenticatedPage`-fixture med TEST_*-credentials<br><br>**Korsreferens:** auth-fixture är 3:e komponenten av Codex' tre startvillkor — CI-split (K0åc) säkrar att fixture-frånvaro hard-failer, fixture-implementationen själv är K4. | byggplan §4 Fas 2 DoD-rad 4 + 6 passerade |
-| **K5 (K-sista)** | Stop-test verifiering mot alla 8 DoD-punkter + lessons-skörd lyft till `tasks/lessons.md` (+ ev. hub-synk) + ev. ADR:er + sessionsdok bake-in (Del 3-8) + `tasks/todo.md` uppdaterad + `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (per ADR-025) + transcript-save | Alla 8 DoD-punkter passerade. lessons.md uppdaterad. Sessionsdok låst (denna commit är touch nr 7 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b — touch-count revideras vid varje K1.N bake-in framåt, se header disciplin-not + Del 7.1 "Sessionsdok låst"-rad för aktuell siffra). BYGGPLAN-LÄTTLÄST-v3.md "Senast uppdaterad"-stämpel bumpad. |
+| **K5 (K-sista)** | Stop-test verifiering mot alla 8 DoD-punkter + lessons-skörd lyft till `tasks/lessons.md` (+ ev. hub-synk) + ev. ADR:er + sessionsdok bake-in (Del 3-8) + `tasks/todo.md` uppdaterad + `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (per ADR-025) + transcript-save | Alla 8 DoD-punkter passerade. lessons.md uppdaterad. Sessionsdok låst (denna commit är touch nr 8 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 — touch-count revideras vid varje K1.N bake-in framåt, se header disciplin-not + Del 7.1 "Sessionsdok låst"-rad för aktuell siffra). BYGGPLAN-LÄTTLÄST-v3.md "Senast uppdaterad"-stämpel bumpad. |
 
 ---
 
@@ -236,17 +236,51 @@ Pre-Fas-2-verifieringen Del 6.5 identifierade 6 öppna åtgärder som hanteras s
 - GitHub Settings → Secrets and variables → Actions saknade alla 6 TEST_*-secrets före K0åc.2-push. Marcus satte dem manuellt från lokal `.env.test` (filen dold i Finder pga punkt-prefix). Aldrig-läcka-disciplin: värdena ekade aldrig i terminal-output eller commit-history.
 
 ### 3.4 K0åd — byggplan.md:249 svenska statusvärden
-TBD — `str_replace` i `docs/byggplan.md:249`. Engelska tokens (`pending, confirmed, cancelled, attended, no-show, waitlist`) ersätts med svenska Airtable-värden från `docs/reference/data-model.md:121-130` (`Bekräftad (mail skickat), Betalningspåminnelse skickad, Avbokad/Ombokad, Obekräftad, Flytta till väntelista, Inställt`). Anmärkning: `attended`/`no-show` finns inte i Airtable-källan över huvud taget — det är `AttendanceStatus`-värden som blandats in. Rätta DoD-formuleringen att hänvisa till data-model.md som källa.
 
-### 3.5 K0åe — Zod parse i AirtableAdapter
-TBD — `src/data/adapters/AirtableAdapter.ts:30, :41, :53` (typ-castade reads idag). Aktivera `.parse()` eller `.safeParse()` med befintliga Zod-scheman. Beslut: `.parse()` (throw) eller `.safeParse()` (Result-typ)? Påverkar error-flöde uppströms. **Eventuell ADR-trigger** — om runtime-validering-mönstret kodifieras som arkitekturbeslut, skriv ADR-026 "Runtime-validering vid datagräns". Annars en kommentar i SECURITY-SPEC §6 eller STATE-STRATEGY §3.
+✅ **KLAR** 2026-05-11. Commit `f2a2d9a` — "docs(byggplan): rätta engelska→svenska statusvärden på :249 (K0åd 'Direkt efter Fas 2'-fynd 1)".
 
-### 3.6 K0åf — KVALITETSDEFINITIONER-11.md Vue→React
-TBD — 13 Vue/composables-träffar enligt P3b-verifiering. Två alternativ:
-- **Alt A:** Skriv om för React (useState/useEffect-mönster, JSX-exempel, React Aria-hooks). Behåll filen som styrande.
-- **Alt B:** Markera filen som legacy och flytta styrning till ny spec (t.ex. `docs/specs/KVALITETSDEFINITIONER-11-REACT.md`).
+**Formuleringsval:** Variant B (ren källhänvisning, inga värden i DoD). Tre varianter övervägdes — Variant A (verbatim svenska hårdkodade), Variant B (källhänvisning till `data-model.md:121-130` + strategi-pekare till `Code-verification-of-codex-analysis.md` Tillägg Fråga 1), Variant C (hybrid). Marcus' beslut: Variant B per tre argument — (1) K9-respekt: displaynamn lever på en plats, drift-säkert om Lotta lägger till sjunde Anmälningar.Status-värde post-A-track; (2) Strategi-pekare till Tillägg Fråga 1 fungerar som explicit guard mot att framtida AI introducerar target-enum:n (`draft`/`pending`/`confirmed`/...) för tidigt vid Fas 2.5; (3) Binär verifierbar DoD ("är `RegistrationStatus` i Status.ts identisk med `data-model.md:121-130`?") utan att verifieraren behöver öppna två filer + jämföra listor.
 
-**Eventuell ADR-trigger** om Alt B väljs — ADR-027 "Kvalitetsdefinitioner-spec stack-skifte". Alt A kräver ingen ADR (omskrivning i samma fil).
+**Faktisk str_replace:** En enda ändring på rad 249. Block 4-grep verifierade att :557 (`get-waitlist` Edge Function-filnamn) var den enda andra träffen — klassad som filnamn för EF, inte driftfel. Övriga grep-träffar i Fas 2.5-sektionen var korrekta (`byggplan.md:224` "Status.ts skrivs om: 4 → 6 statusvärden för Anmälningar (mot data-model.md 2026-04-26)" — pekar redan på rätt källa, rörs inte).
+
+**Bekräftelse av hand-på-snabbminne-blandingen i ursprungsraden:** `attended`/`no-show` finns INTE som `RegistrationStatus`-värden — deras semantiska motsvarighet (Närvarande/Frånvarande) ligger i `AttendanceStatus` för Deltaganden-tabellen (helt annan tabell, helt annan enum, helt annan livscykel). Den som skrev :249 blandade två konceptuellt åtskilda Airtable-tabeller (Anmälningar vs Deltaganden) under en gemensam engelsk-token-räcka.
+
+**Verifieringssvit (7/7 grön):** git diff 1 fil 1+/1-, grep visuell-verifiering, grep "RegistrationStatus matchande" 1 träff på :249, grep engelska tokens endast :557 kvar, typecheck 0 fel, biome 4 baseline-warnings oförändrade, build 623ms 405 modules.
+
+### 3.5 K0åe — Zod parse i AirtableAdapter (delat i K0åe.1 kod + K0åe.2 ADR)
+
+✅ **KLAR** 2026-05-11. Två commits per Kandidat 7 (refactor/semantik-separation):
+
+**K0åe.1 commit `8095a62`** — "feat(data): aktivera Zod .parse() runtime-validering i AirtableAdapter (K0åe.1)". 3 aktiva fetch-metoder (Events, Registrations, Persons) aktiverade med `z.array(Schema).parse()`-mönster. 8 stub-metoder fick `@todo`-JSDoc med ADR-026-referens. Block 2-RAPPORTERA avslöjade att sessionsdokets ursprungliga Del 3.5-not "rad :30, :41, :53" var de aktiva metoderna men filen har 14 metoder totalt (3 aktiva + 8 stubs + 3 void-metoder). Scope-val: Alt A (3 aktiva + 8 stub-todos) över Alt B (alla 11) — `.parse()` på död kod är död kod med extra steg; aktiveras per stub vid EF-deploy i Fas 2.5/Fas 6.
+
+**K0åe.2 commit `497a89f`** — "docs(decisions): add ADR-026 Runtime-validering vid datagräns med Zod .parse() (K0åe.2)". ADR-026 89 rader, dokumenterar 6 designval (.parse() vs .safeParse(), callsite-pattern, signatur orörd, helper-tröskel ≥5 calls, stub-strategi, rå ZodError uppströms). README.md Index-tabellen uppdaterad (4-kolumns-format anpassat från prompt-utkastets 5-kolumns per Block 2-fynd).
+
+**6 designval låsta (refererade i ADR-026):**
+
+1. `.parse()` (throw), inte `.safeParse()` — TanStack Query catchar throw automatiskt, bevarar `Promise<T[]>` return-types, konsistent med Fas A throw-mönster, ADR-005 förautoriserade exakt detta i Konsekvenser-sektionen 2026-04-14
+2. Callsite-pattern `<{ X: unknown }>` + inline `z.array(Schema).parse()` — funktionssignatur `callEdgeFunction<T>` rörs inte (defense-in-depth via signature-default `<T = unknown>` avvisat — för bred scope, ADR-026-callsite-pattern är striktare)
+3. Inline-mönster, inte generisk helper — KISS för 3 calls (helper-tröskel ≥5 i ADR-026)
+4. Rå ZodError uppströms — AppError-mappning defereras till Fas 3 UI-konsumtion när receiving-end finns
+5. Stub-strategi via JSDoc `@todo Apply Zod .parse() when get-X Edge Function deploys. See ADR-026.` — synligt i editor-hover, kräver disciplin men markeras explicit
+6. SupabaseAdapter (Fas E) följer samma mönster — låst i ADR-026 Konvention-sektion
+
+**Bundle-storlek:** ±0 byte. Zod redan importerad sedan Fas 1 (för AssertEqual-test-typer i `domain/__tests__/schemas.assignable.ts`); K0åe.1 återanvände samma runtime. Identisk vite-bundle-hash bekräftade.
+
+**Verifieringssvit (K0åe.1 7/8 grön, K0åe.2 6/6 grön):** Block 8-tilläggsverifiering (grep `@todo Apply Zod .parse()` = exakt 8 i AirtableAdapter.ts) passerade. Biome auto-fix flyttade schemas-import mellan models och Filters (Biome:s organizeImports preferrerar non-type imports separerat från type-imports inom samma path-grupp). Safe fix, ingen funktionell påverkan.
+
+### 3.6 K0åf — KVALITETSDEFINITIONER-11.md Vue→React-stack-skifte
+
+✅ **KLAR** 2026-05-11. Commit `a7bdaea` — "docs(specs): arkivera Vue-eran KVALITETSDEFINITIONER-11 + skapa React-skelett + ADR-027 (K0åf)".
+
+**Strategi-val:** Alt B (legacy-arkivering + ny React-version) över Alt A (komplett omskrivning in-place). Tre argument: (1) Strukturell Vue-rot, inte ytlig — filen innehåller composables-tabeller, scoped slots (Vue-only-koncept utan 1:1-mappning till React), `<MmDialog>`-Vue-template-exempel, pushFocus/popFocus från FKUI. ~80% omskrivning hade producerat 90%-delete/90%-insert-diff, oläsbar git-historik, risk för glömda träffar; (2) Etablerat arkivmönster per ADR-012/021/025 (conversion-plan, BYGGPLAN-LÄTTLÄST v1→v2→v3); (3) Vue-arkivet har långsiktigt referensvärde när Fas 3+ React-komponenter byggs — 12 mönster från 5 bibliotek är konkret översättningsmaterial.
+
+**Single-commit-strategi:** ADR-027 + git mv Vue→archive + ARKIVERAD-header + ny React-skelett + path-ref-uppdateringar i 4 aktiva styrande dokument — allt i en commit. Innehållsfyllning av React-versionen defereras till Fas 3 K0 (Sektion 1+2 Teknisk kvalitet/Återanvändbarhet), Fas 3.5 (Sektion 3 Checklista per ADR-020), Fas 6 (Sektion 4+5 Källor/Vad-INTE-tas-med när stack-bibliotek-val är låsta). Skelett + TBD-noteringar är "preliminärt — låses vid aktualisering"-mönster från P3a.
+
+**ADR-027 dokumenterar 5 beslut + Konvention-sektion för framtida stack-skiften:** klassificera spec som "principer + checklista" (omskrivning in-place per ADR-021-mönster på ACCESSIBILITY-CHECKLIST) eller "arkitektur-mönster" (arkivera + ny version, denna ADR). Konvention för arkivnamn (`<original>-<gammal-stack>-<skapelsedatum>.md`), placering (samma katalog + stack-suffix `-REACT`), innehållsfyllnings-trigger (defer till nästa relevanta fas vid stack-konkretion-saknad).
+
+**RAPPORTERA Block 2-bugg + STOPPA-OCH-FRÅGA-fångst:** Block 2-grepen `grep -v "docs/specs/KVALITETSDEFINITIONER-11.md"` filtrerade bort BÅDE filen själv (avsedd) OCH markdown-länkmål `[text](docs/specs/X.md)` i andra dokument (oavsiktligt). Resultatet missade 2 aktiva refs i CLAUDE.md:260 + CONTRIBUTING.md:60. VERIFIERA-stegets Check 8 (oberoende formulerad grep) fångade missan. Code stoppade, rapporterade, Marcus' beslut: Alt 1 (uppdatera båda i samma K0åf-commit) över Alt 2 (separat följdcommit) — splitt skapar oklara borderline-fall, bryter ADR-027 Beslut §4. Lärdom lyfts som Kandidat 16 (se Del 7.2).
+
+**Verifieringssvit (9/9 grön efter Check 8-korrigering):** 7 ref-träffar uppdaterade i 4 aktiva dokument (CLAUDE.md ×2, CONTRIBUTING.md ×1, docs/byggplan.md ×3, ACCESSIBILITY-CHECKLIST.md ×1). 22 träffar bevarade i frysta zoner per ADR-022 kategori 2 (sessions-arkiv, extern analys, frysta levereranser, ADR-008 oföränderlig, BUILD-LOG retrospektiv, byggplan-direktiv SLUTFÖRT, aktivt sessionsdok). Build 325.37 kB JS oförändrat — ren docs-omflyttning utan kod-impact.
 
 ---
 
@@ -328,8 +362,8 @@ Pass/fail per krav:
 | Hub-synk klar (om UNIVERSAL-poster) | TBD | `~/Repon/marcus-system/tasks/lessons.md` synkad |
 | `tasks/todo.md` uppdaterad | TBD | Fas 2 markerad ✅, Fas 2.5 listad som nästa |
 | `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (ADR-025) | TBD | "Senast uppdaterad"-stämpel bumpad + Fas 2-status reflekterad |
-| Sessionsdok låst | TBD | Denna commit (K-sista) är touch nr 7 efter K1 (skelett) + K1.2 (K1+K0åa bake-in) + K1.3 (K0åb bake-in) + K1.4 (K0åc bake-in + startvillkor-fas 1-3 milstolpe) + K1.5a (Sessions-handoff-sektion) + K1.5b (Kandidat 13-15-bake-in + mini-överlämnings-stängning). Disciplin reviderad i header — K1.N bake-ins är etablerat mönster för Fas 2-sessionen, inte enstaka avsteg. |
-| Transcript sparat | TBD — Marcus' beslut vid K5 mellan (a) återupptag transcript-disciplinen (skapa `tasks/sessions/transcripts/`-mappen + första transcript-save) eller (b) defer till separat process-runda. Frågan exponerades i K1-leveransen (mappen saknas i repot). | `tasks/sessions/transcripts/2026-05-11.txt` finns + Marcus' beslut dokumenterat — eller defer-not committad |
+| Sessionsdok låst | TBD | Denna commit (K1.6 = K-sista för K0-fasen i Session 4) är touch nr 8 efter K1 (skelett) + K1.2 (K1+K0åa bake-in) + K1.3 (K0åb bake-in) + K1.4 (K0åc bake-in + startvillkor-fas 1-3 milstolpe) + K1.5a (Sessions-handoff-sektion) + K1.5b (Kandidat 13-15-bake-in + mini-överlämnings-stängning) + K1.6 (denna — K0-fasens K-sista, Session 5 K2-K4 + K5 följer). Disciplin reviderad i header — K1.N bake-ins är etablerat mönster för Fas 2-sessionen, inte enstaka avsteg. |
+| Transcript sparat | **DEFER** — Marcus' beslut 2026-05-11 K1.6: transcript-disciplin etableras i separat process-runda Session 5+. Mappen `tasks/sessions/transcripts/` saknas fortfarande. Todo-pinpoint lagt i `tasks/todo.md`. Motivering: K1.6 är redan substantiellt (sessionsdok-bake-in + lessons-lyft + todo + CLAUDE.md + ev. ADR), att etablera ny disciplin samtidigt ökar halvslar-risk per Kandidat 5 (disciplin tjänar dokumentet). | Defer-not committad + todo-pinpoint i tasks/todo.md |
 
 ### 7.2 Lessons-skörd
 
@@ -416,7 +450,16 @@ Sessionsdoket har expanderat 3-5 paragraf-format per kandidat (Mönstret / Anti-
 
 Chat sade "jag fångar det här i Chat-kontexten" om Kandidat 13 + 14 mitt under mini-överlämningsförberedelse. Mini-överlämningen finns EXAKT för att Chat-kontext inte överlever sessionsbyte — så att säga "fångas i Chat" mitt under är logisk självmotsägelse. Marcus fångade brottet ("Du har nu två lärdomskanditater till, alltså 13 och 14, som du säger att du sparar i Chat-kontexten som du måste förstå att du INTE kan göra, vi ska ju starta NY session nu, det är ju därför vi gör detta!!!"). **Generaliserbar regel:** "fångas i Chat-kontexten" är aldrig en giltig fångst-strategi för information som ska överleva sessionsbyte. Det är endast giltigt för "håll i huvudet de närmaste 2-3 turerna i samma session". För allt annat finns tre giltiga vägar: (a) sessionsdok-bake-in (för work-in-progress), (b) lessons.md-lyft (för UNIVERSAL-mönster), (c) ADR-skapande (för arkitekturbeslut). Mönster-förstärkning av Kandidat 5 (sessionsdok-disciplin revideras när avvikelse-volym kräver det): högvolyms-sessioner kräver bake-ins, inte minne. **Meta-meta-observation:** Chat sade "fångas i Chat" minst 3 gånger under mini-överlämningen efter att Kandidat 5 redan var bake-baked i sessionsdoket. Det indikerar att Chat kan deklarera en disciplin utan att internalisera den. Värt att fånga som disciplinens-disciplin: "Att ha skrivit en regel innebär inte att den följs i samma session" — kräver aktiv vakthållning av Marcus eller framtida Chat-kontext.
 
-**Kandidat 16-N:** TBD — fångas under K0åd-K0åf eller K2-K4.
+**Kandidat 16 — Grep -v exklusion av filnamn fångar både filen själv OCH markdown-länkmål i andra dokument [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: K0åf Block 2-RAPPORTERA missade 2 aktiva refs (CLAUDE.md:260 + CONTRIBUTING.md:60), fångade av VERIFIERA Check 8
+
+K0åf Block 2 körde `grep -rn "KVALITETSDEFINITIONER-11" --include="*.md" --include="*.ts" --include="*.tsx" | grep -v "node_modules\|docs/archive\|docs/specs/KVALITETSDEFINITIONER-11.md"` för att lista aktiva refs som behövde uppdateras inför stack-skifte-arkiveringen. Resultatet missade 2 aktiva refs eftersom `grep -v "docs/specs/KVALITETSDEFINITIONER-11.md"` filtrerade bort BÅDE filen själv (avsedd) OCH markdown-länkmål `[text](docs/specs/KVALITETSDEFINITIONER-11.md)` i andra dokument (oavsiktligt). VERIFIERA-stegets Check 8 (oberoende formulerad grep utan samma substring-filter) fångade missan.
+
+**Mönstret:** vid grep-exklusion av filpath, använd path-prefix-disciplin (`grep -v "^docs/specs/X.md:"` — leading `^` + trailing `:` matchar bara `grep -n`-output där fil-path följs av radnummer) istället för naken substring-match.
+
+**Anti-mönster att undvika:** `grep -v "docs/specs/X.md"` matchar både fil-output OCH alla länkmål, refs, dokumentations-pekare som råkar innehålla samma substring. Producerar falska negatives som är osynliga utan oberoende verifiering.
+
+**Generaliserbar:** gäller alla grep-exklusioner av filpaths i markdown-tunga repos. Mönster-förstärkning: Code:s VERIFIERA-checks ska ALDRIG återanvända samma grep-filter som RAPPORTERA-stegets — annars är de bara samma kontroll i nytt format. Check 8 lyckades fånga missan exakt eftersom den var oberoende formulerad (sökte path-prefix för historiska zoner via `docs/archive\|tasks/sessions/archive`, inte negativ-substring av aktiv path). UNIVERSAL-värdig för hub-lyft eftersom alla cross-repo-disciplin-arbete med path-refs kan stöta på det.
 
 ### 7.3 ADR-kandidater
 

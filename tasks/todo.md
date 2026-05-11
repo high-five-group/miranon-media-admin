@@ -12,14 +12,12 @@
 
 **Fas 2: Routing + Auth** — TanStack Router file-based routes, auth guard, Supabase login/logout, nuqs URL-state.
 
-**K0 startvillkor 1-3 ✅ KLAR 2026-05-11** (Session 4): nuqs install, typecheck:tests + APIResponse-fix, falsk-grön CI-fix via STAGING_REQUIRED + 6 GitHub-secrets. CI grön på första försök (36s).
+**K0 FULLSTÄNDIGT KLAR 2026-05-11** (Session 4 avslut): alla 6 K0-åtgärder committade. Startvillkor 1-3 (nuqs `13cdf86`, typecheck:tests `a5a477b`+`1d02b3b`, CI-split `3015d08`+`1138e38`) + "Direkt efter Fas 2"-fynd (K0åd `f2a2d9a`, K0åe.1 `8095a62`, K0åe.2 ADR-026 `497a89f`, K0åf ADR-027 `a7bdaea`). 2 nya ADR:er (ADR-026 Runtime-validering, ADR-027 Kvalitetsdefinitioner stack-skifte). K1.6 K-sista-commit för K0-fasen i Session 4 (denna commit).
 
-**Återstår innan Fas 2 K2 implementation:**
-- K0åd: `docs/byggplan.md:249` engelska→svenska statusvärden (Codex' "Direkt efter Fas 2"-fynd 1)
-- K0åe: Aktivera Zod `.parse()` i `AirtableAdapter` reads (fynd 2 — ev. ADR-026-trigger)
-- K0åf: `docs/specs/KVALITETSDEFINITIONER-11.md` Vue→React (fynd 3 — ev. ADR-027-trigger)
+**Session 5 startar med Fas 2 K2** — TanStack Router file-based + AuthProvider + ErrorBoundary + Suspense per `docs/byggplan.md` §4 Fas 2-prompt. Inga blockers — alla 6 K0-åtgärder är hanterade. Sessionsdoket `tasks/sessions/2026-05-11-fas2-routing-auth.md` är aktivt över Session 4 + Session 5 (samma Fas 2) — arkiveras vid Fas 2-avslut per ADR-023.
 
-Marcus' val vid ny session-start: K0åd-K0åf först (rekommenderat — håller K0-fasens scope rent) eller K2 direkt (startvillkoren är klara, ingen blocker).
+**Defer-poster från K1.6:**
+- Etablera transcript-disciplin Session 5+: mappen `tasks/sessions/transcripts/` saknas, export-rutin för claude.ai-chat ej etablerad. Per CONTRIBUTING.md "Transcript-disciplin" är detta DoD-krav vid sessionsavslut — disciplin-drift sedan Session 2/3 (mappen aldrig skapad). K1.6-prompt-utbyte 2026-05-11 dokumenterade defer-skäl: K1.6 var redan substantiellt + ny disciplin-etablering kräver dedikerad runda. Plan: vid Session 5-sessionsstart, Marcus bestämmer export-metod (Settings → Privacy → Export data JSON, manuell kopiering till .txt, eller browser print-to-PDF) och skapar mappen + första 2026-05-11.txt.
 
 Aktiv sessionsdok: [`tasks/sessions/2026-05-11-fas2-routing-auth.md`](sessions/2026-05-11-fas2-routing-auth.md) (K1.4-baked, väntar på Steg 4 Sessions-handoff + Steg 5 Kandidat 13-15-bake-in innan session-byte).
 
