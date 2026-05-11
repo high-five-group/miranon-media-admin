@@ -10,7 +10,7 @@
 > - `tasks/sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md` (Pre-Fas-2, slutförd 2026-05-07) — arkiveras i K1 enligt ADR-023 sessions-arkivering
 > **Efterföljare:** Fas 2.5 — Schema-kontrakt-sync, mot `docs/byggplan.md` §4 Fas 2.5-prompt.
 > **Stop-test (denna session):** 6 K0-åtgärder committade + Fas 2 DoD 1-8 passerade + Playwright auth-fixture etablerad + ev. ADR:er committade + lessons-skörd lyft + sessionsdok låst + transcript sparat.
-> **Sessionsdok-commit-disciplin (P3a-baserad, reviderad för Fas 2):** K1 = skelett. Faktiska arbets-commits (K0åa-åf, K2-K4) rör INTE detta sessionsdok. **K1.N early bake-ins** committas efter substantiella K0-sub-klungor för att fånga commit-hashar + avvikelser + lärdomskandidater innan K-sista. K-sista bakar in Del 3-8 retrospektiv. Mönsterbyte från ursprungliga 'K1 + K-sista' till 'K1 + K1.N bake-ins + K-sista' beslutat 2026-05-11 efter K0åb genererat 8 dolda type-fel-fynd + flera lärdomskandidater — för mycket att hålla i Chat-kontext tills K-sista. Ren str_replace-patch är konfliktfri och billig. Touch-count revideras dynamiskt under sessionen; aktuell post-K1.3 = 4 (K1 + K1.2 + K1.3 + K-sista planerad).
+> **Sessionsdok-commit-disciplin (P3a-baserad, reviderad för Fas 2):** K1 = skelett. Faktiska arbets-commits (K0åa-åf, K2-K4) rör INTE detta sessionsdok. **K1.N early bake-ins** committas efter substantiella K0-sub-klungor för att fånga commit-hashar + avvikelser + lärdomskandidater innan K-sista. K-sista bakar in Del 3-8 retrospektiv. Mönsterbyte från ursprungliga 'K1 + K-sista' till 'K1 + K1.N bake-ins + K-sista' beslutat 2026-05-11 efter K0åb genererat 8 dolda type-fel-fynd + flera lärdomskandidater — för mycket att hålla i Chat-kontext tills K-sista. Ren str_replace-patch är konfliktfri och billig. Touch-count revideras dynamiskt under sessionen; aktuell post-K1.4 = 5 (K1 + K1.2 + K1.3 + K1.4 + K-sista planerad). **K0 startvillkor-fas 1-3 komplett 2026-05-11** efter K0åc.2 CI grön (36s, 72 pure + 38 staging passed + 3 M4-defer skipped) — Fas 2-implementation (K2) nu unblockad strikt-sekvens-wise; K0åd-K0åf kan tas före eller parallellt med K2 per Marcus' beslut.
 > **Scope-splitt-anmärkning:** Fas 2-estimat enligt byggplan §4 = 2 sessioner. Om K0+K2+K3+K4 inte ryms i en chat-session, splitta i Session A (K1+K0+K2) och Session B (K3+K4+K5) per P1-lärdom ("Var beredd att splitta i 2 sessioner om scope växer"). Splitten är förväntad, inte avvikelse.
 
 ---
@@ -64,7 +64,7 @@ Sex klung-grupper. Sessionsdok rörs i K1 + K-sista — mellan-klungor lämnar d
 | **K2** | Fas 2 implementation Part 1 — TanStack Router file-based setup: `vite.config.ts` plugin återinförs (togs bort i Fas 0), `tsr.config.json`, `src/routes/__root.tsx` med AuthProvider + ErrorBoundary + Suspense, generated route tree, devtools dev-only | byggplan §4 Fas 2 DoD-rad 1 (delvis) + 5 + 7 + 8 passerade |
 | **K3** | Fas 2 implementation Part 2 — `src/auth/AuthProvider.tsx` + `src/auth/useAuth.ts`, `src/routes/login.tsx`, `src/routes/index.tsx` (login-redirect-stub), skyddade routes via `beforeLoad`-guard mot Supabase-session, logout-flöde<br><br>**Arkitektur-not (från P0-inventeringen rad 2.3):** `auth-provider.tsx` får INTE falla tillbaka på anon-key. Klienten ska behandla anon-fallback som unauthenticated (Codex' startvillkor 2 i Fråga 1). Skyddad route utan session → redirect FÖRE datafetch (inte efter 401). | byggplan §4 Fas 2 DoD-rad 1 + 2 + 3 passerade |
 | **K4** | Fas 2 implementation Part 3 — nuqs `useQueryState` setup på test-route + Playwright `authenticatedPage`-fixture med TEST_*-credentials<br><br>**Korsreferens:** auth-fixture är 3:e komponenten av Codex' tre startvillkor — CI-split (K0åc) säkrar att fixture-frånvaro hard-failer, fixture-implementationen själv är K4. | byggplan §4 Fas 2 DoD-rad 4 + 6 passerade |
-| **K5** | Stop-test verifiering mot alla 8 DoD-punkter + lessons-skörd lyft till `tasks/lessons.md` (+ ev. hub-synk) + ev. ADR:er + sessionsdok bake-in (Del 3-8) + `tasks/todo.md` uppdaterad + `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (per ADR-025) + transcript-save | Alla 8 DoD-punkter passerade. lessons.md uppdaterad. Sessionsdok låst (denna commit är touch nr 2 efter K1). BYGGPLAN-LÄTTLÄST-v3.md "Senast uppdaterad"-stämpel bumpad. |
+| **K5 (K-sista)** | Stop-test verifiering mot alla 8 DoD-punkter + lessons-skörd lyft till `tasks/lessons.md` (+ ev. hub-synk) + ev. ADR:er + sessionsdok bake-in (Del 3-8) + `tasks/todo.md` uppdaterad + `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (per ADR-025) + transcript-save | Alla 8 DoD-punkter passerade. lessons.md uppdaterad. Sessionsdok låst (denna commit är touch nr 5 efter K1 + K1.2 + K1.3 + K1.4 — touch-count revideras vid varje K1.N bake-in framåt, se header disciplin-not + Del 7.1 "Sessionsdok låst"-rad för aktuell siffra). BYGGPLAN-LÄTTLÄST-v3.md "Senast uppdaterad"-stämpel bumpad. |
 
 ---
 
@@ -100,7 +100,7 @@ Pre-Fas-2-verifieringen Del 6.5 identifierade 6 öppna åtgärder som hanteras s
 |---|---|---|---|---|
 | K0åa | `npm install nuqs` | Startvillkor 1 — måste lösas före första route-fil | ~5 min | `13cdf86` |
 | K0åb | `tsconfig.tests.json` + `typecheck:tests`-script + CI-koppling + `helpers.ts:18` `APIResponse`-import + dold-isberg-fix (6× `process` + 1× `URL`) | Startvillkor 2 | ~20 min est, faktisk ~45 min (dold isberg) | `a5a477b` (deps) + `1d02b3b` (fix) |
-| K0åc | CI `test:api`-split (`pure`/`staging` eller `if`-villkor) | Startvillkor 3 | ~15 min | TBD |
+| K0åc | CI `test:api`-split via naming convention `.staging.test.ts` (Strategi 1.5) + helpers.ts `STAGING_REQUIRED`-villkor + ci.yml env-block för 6 secrets | Startvillkor 3 | ~15 min est, faktisk ~90 min (pre-flight + GitHub-secrets-set + M4-defer-design-pivot) | `3015d08` (refactor) + `1138e38` (semantik) |
 | K0åd | `docs/byggplan.md:249` — engelska→svenska statusvärden | "Direkt efter Fas 2"-fynd 1 | ~5 min | TBD |
 | K0åe | Aktivera Zod `.parse()` i `AirtableAdapter` reads | "Direkt efter Fas 2"-fynd 2 | ~30 min, ev. ADR | TBD |
 | K0åf | `docs/specs/KVALITETSDEFINITIONER-11.md` Vue→React | "Direkt efter Fas 2"-fynd 3 | ~30 min, ev. ADR | TBD |
@@ -137,11 +137,48 @@ Pre-Fas-2-verifieringen Del 6.5 identifierade 6 öppna åtgärder som hanteras s
 - `npm audit`: 0 vulnerabilities
 
 ### 3.3 K0åc — CI test:api-split (startvillkor 3)
-TBD — Code-prompt levereras efter K0åb committad. Två alternativ:
-- **Alt A:** Dela `npm run test:api` i `test:api:pure` (vitest, ingen staging) + `test:api:staging` (vitest mot staging, hard-fail om TEST_*-env saknas). CI kör båda separat, staging-steg failar om secrets saknas.
-- **Alt B:** Behåll en `test:api`-script, lägg till `if: ${{ secrets.TEST_SUPABASE_URL != '' }}`-villkor på test:api-stepen i CI. Då skipas hela stepen utan staging-secrets — synligare än "skipped 41 tests".
 
-Marcus väljer Alt A eller Alt B i K0åc Code-prompten. Codex' rekommendation (per `docs/analysis/Codex-project-analysis-2026-05-07.md` Fråga 3 fynd 2) lutade mot Alt A för synlighet.
+✅ KLAR 2026-05-11. **Två commits** (Refactor → Semantik-separation per 11/10-disciplin):
+
+- **K0åc.1 — `3015d08`** "refactor(tests): split tests/api/ in pure + staging Playwright projects — Fas 2 K0 startvillkor 3 (1/2)" (9 filer: 1 ny + 5 renames + 3 modifierade)
+- **K0åc.2 — `1138e38`** "fix(tests,ci): eliminate false-green via STAGING_REQUIRED + ci env-block — Fas 2 K0 startvillkor 3 (2/2)" (2 filer: helpers.ts + ci.yml)
+
+**Mellan commits:** Marcus satte 6 TEST_*-secrets manuellt i GitHub Settings (Codex' tvivel bekräftades — secrets saknades helt i repo-settings, vanligt mönster när staging-suite skyddats av tyst test.skip()). Värdena kopierades från lokal `.env.test` (filen var dold i Finder pga punkt-prefix — separat Code-diagnos-runda löste det).
+
+**Strategi 1.5 vald** (varken Strategi 1 ren testMatch eller Strategi 2 mapp-separation): naming convention `*.staging.test.ts`. Motivering: helpers.ts stannar i tests/api/ (inga import-omvägar), filnamn är binärt och syns i `git status`, glömske-immun (ny staging-test väljer suffix vid skapande). Strategi 3 (--grep tags) avvisades pga tag-glömska-risk.
+
+**Filändringar K0åc.1 (refactor, ingen beteende-ändring):**
+- `tests/api/airtable-filter.test.ts` splittad: LAGER 1 (~242 rader pure) behålls, LAGER 2 (~50 rader e2e fuzz) flyttad till ny `airtable-filter.staging.test.ts`. Ren split — befintlig header-kommentar dokumenterade redan tvålagring som konceptgräns.
+- 5 git mv med 100% similarity: `cors.test.ts`, `create-admin-user.test.ts`, `edge-functions.test.ts`, `require-user.test.ts`, `update-record.test.ts` → `*.staging.test.ts`
+- `playwright.config.ts`: `api`-projektet splittat i `api-pure` (testIgnore `*.staging.test.ts`) + `api-staging` (testMatch `*.staging.test.ts`, behåller TEST_SUPABASE_URL baseURL)
+- `package.json` scripts: `test:api` behålls (kör båda projekt), nya `test:api:pure` + `test:api:staging`
+
+**Filändringar K0åc.2 (semantik, falsk-grön-fix):**
+- `tests/api/helpers.ts:getApiConfig()`: reviderad med positiv kontrollflöde via `missing`-array → konkret felmeddelande ("saknas: X av 6: TEST_..."). Om `STAGING_REQUIRED === '1'` → throw Error med actionable text för CI- och dev-fall. Annars (lokal default) → tyst `test.skip(true, skipReason)` för dev-ergonomi.
+- `.github/workflows/ci.yml`: splittat "API tests"-stepet i "API tests (pure)" (alltid kör, inga secrets) + "API tests (staging)" (STAGING_REQUIRED='1' + 6 TEST_*-secrets via env-block).
+
+**M4-defer-design-pivot — UNIVERSAL-kandidat 11 i Del 7.2:** Promtens designnot påstod att de 3 intentional skipped i `update-record.staging.test.ts` (`test.skip(true, 'Aktiveras när Fas 5.5 lägger till första operation')`) inte gick via `getApiConfig()`. Code:s STOP-rapport visade tvärtom: rad 41/66/89 anropar `getApiConfig()` FÖRE `test.skip(true, ...)`. Med STAGING_REQUIRED=1 + saknad env throwas alla 41 tester (38 + 3 M4-defer) tillsammans. Code presenterade 3-alternativs interactive popup:
+- **Alt 1 (vald):** Behåll designen — Scenario 3 (CI utan secrets + STAGING_REQUIRED=1) är abnormt-tillstånd där hela staging-stepet ska faila. 41 throws funktionellt ekvivalent med 38 throws + 3 skips för signalering. Ingen kod-ändring i update-record.staging.test.ts.
+- Alt 2 avvisat: flytta test.skip(true, ...) FÖRE getApiConfig() bryter symmetri inom samma fil (första M4-testet rad 22-38 är inte skipped och anropar getApiConfig först) + introducerar "skip-first"-konvention som måste minnas vid Fas 5.5-aktivering (glömske-fälla 6+ månader fram).
+- Alt 3 avvisat: STAGING_REQUIRED-check i getApiConfig för att differentiera bryter Kandidat 6 (self-documenting positiv kontrollflöde) — komplexitet utan värde.
+
+**Lokal verifiering 5/5 testfall grön (K0åc.2-prompten):**
+- Lokal utan env, ingen flagga → 41 skipped tyst (dev-ergonomi)
+- Lokal STAGING_REQUIRED=1 utan env → throw "saknas: 6 av 6", exit 1 (CI hard-fail-läge bevisad)
+- Lokal `.env.test` + STAGING_REQUIRED=1 → 38 passed + 3 skipped (M4-defer)
+- Lokal `test:api` default → 72+41 (baseline-invariant från K0åc.1)
+- Lokal `test:api:pure` → 72 passed
+
+**CI grön på första försök efter K0åc.2-push** (`run 25663357991`, 36s total runtime):
+- API tests (pure): 72 passed (1.4s)
+- API tests (staging): 38 passed + 3 skipped (11.5s) — 38 staging-tester körde faktiskt mot staging-Supabase, inte tyst skippats
+- Övriga 8 steps gröna (Setup + lint + typecheck + typecheck:tests + build + cleanup)
+
+**Falsk-grön-eliminering bevisad:** om någon framöver glömmer att rotera en secret eller secrets utgår, kommer api-staging-stepet hard-faila med "STAGING_REQUIRED=1 men staging-env är ofullständig. saknas: X av 6" — synligt i CI med konkret actionable text, inte tyst skippat.
+
+**Pre-flight-fynd (separat sub-runda mellan K0åc.1 och K0åc.2):**
+- Codex' analys 2026-05-07 sa "41 deployade deny-path-tester skippas". Faktisk verifiering 2026-05-11: 38 körbara + 3 intentional M4-defer = 41 totalt. Drift på 3 tester (~7%) som inte var fel i Codex' analys utan reflektion av att projektet är levande. Fångat som UNIVERSAL-kandidat 10 i Del 7.2.
+- GitHub Settings → Secrets and variables → Actions saknade alla 6 TEST_*-secrets före K0åc.2-push. Marcus satte dem manuellt från lokal `.env.test` (filen dold i Finder pga punkt-prefix). Aldrig-läcka-disciplin: värdena ekade aldrig i terminal-output eller commit-history.
 
 ### 3.4 K0åd — byggplan.md:249 svenska statusvärden
 TBD — `str_replace` i `docs/byggplan.md:249`. Engelska tokens (`pending, confirmed, cancelled, attended, no-show, waitlist`) ersätts med svenska Airtable-värden från `docs/reference/data-model.md:121-130` (`Bekräftad (mail skickat), Betalningspåminnelse skickad, Avbokad/Ombokad, Obekräftad, Flytta till väntelista, Inställt`). Anmärkning: `attended`/`no-show` finns inte i Airtable-källan över huvud taget — det är `AttendanceStatus`-värden som blandats in. Rätta DoD-formuleringen att hänvisa till data-model.md som källa.
@@ -236,7 +273,7 @@ Pass/fail per krav:
 | Hub-synk klar (om UNIVERSAL-poster) | TBD | `~/Repon/marcus-system/tasks/lessons.md` synkad |
 | `tasks/todo.md` uppdaterad | TBD | Fas 2 markerad ✅, Fas 2.5 listad som nästa |
 | `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (ADR-025) | TBD | "Senast uppdaterad"-stämpel bumpad + Fas 2-status reflekterad |
-| Sessionsdok låst | TBD | Denna commit (K-sista) är touch nr 4 efter K1 (skelett) + K1.2 (K1+K0åa bake-in) + K1.3 (K0åb bake-in). Disciplin reviderad i header — K1.N bake-ins är etablerat mönster för Fas 2-sessionen, inte enstaka avsteg. |
+| Sessionsdok låst | TBD | Denna commit (K-sista) är touch nr 5 efter K1 (skelett) + K1.2 (K1+K0åa bake-in) + K1.3 (K0åb bake-in) + K1.4 (K0åc bake-in + startvillkor-fas 1-3 milstolpe-not). Disciplin reviderad i header — K1.N bake-ins är etablerat mönster för Fas 2-sessionen, inte enstaka avsteg. |
 | Transcript sparat | TBD — Marcus' beslut vid K5 mellan (a) återupptag transcript-disciplinen (skapa `tasks/sessions/transcripts/`-mappen + första transcript-save) eller (b) defer till separat process-runda. Frågan exponerades i K1-leveransen (mappen saknas i repot). | `tasks/sessions/transcripts/2026-05-11.txt` finns + Marcus' beslut dokumenterat — eller defer-not committad |
 
 ### 7.2 Lessons-skörd
@@ -279,7 +316,37 @@ Ursprunglig sessionsdok-disciplin (P3a-mönster): "K1 + K-sista". I Fas 2 K1 + K
 
 K1.2-prompten specificerade `grep -c "Kandidat 1" → 1 träff` som verifieringscheck. Faktisk träffmängd: 2 (rubriken i Del 7.2 + korslänk från Del 2). Båda specificerade i str_replace själv — räkningsmisstaget var Chat:s, inte Code's. **Generaliserbar regel:** när en str_replace-patch lägger till en identifierare på flera ställen (rubrik + korslänkar + commit-message-mention etc.), räkna alla förekomster i den nya texten innan verifieringsgreparna formuleras. Annars triggar Code "STOPPA OCH FRÅGA" på falsk positiv, vilket bryter flödet. **Mönstret:** efter att ha skrivit `new_str` för en str_replace, kör mental `grep -c "<token>"` på den nya texten + alla andra ändringar i patchen innan exakta siffror sätts i verifieringsblocket. Bättre: använd "minst X träffar" istället för "exakt X" när osäkerhet finns — Code STOPPAR bara på färre träffar, inte fler.
 
-**Kandidat 7-N:** TBD — fångas under K0åc-K4.
+**Kandidat 7 — Refactor → Semantik-separation som 11/10-disciplin för flerstegs-ändringar [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: K0åc.1 + K0åc.2 split 2026-05-11
+
+När en ändring kan ses som BÅDE "samma utfall, ny struktur" (refactor) OCH "ny utfall, ny eller samma struktur" (semantik-ändring), splitta i två commits. K0åc-fallet: K0åc.1 splittade tester i pure/staging-projekt utan beteende-ändring (`npm run test:api` gav 72+41 både före och efter). K0åc.2 ändrade semantiken (STAGING_REQUIRED → hard-fail istället för tyst skip). Granskbarhet vinner stort: K0åc.1-diff är "ren struktur", K0åc.2-diff är "ren beteende". I en monolitisk commit hade granskaren behövt resonera om båda samtidigt. **Generaliserbar regel:** vid varje multi-fil-ändring, fråga: "kan jag splitta detta i en commit som bevarar utfall (refactor) + en commit som ändrar utfall (semantik)?" Om ja → gör det. 10/10-praxis är monolit; 11/10 är separation.
+
+**Kandidat 8 — Beteende-invariant som hård test-check i refactor-commits [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: K0åc.1 verifiering 2026-05-11
+
+K0åc.1-prompten specificerade `npm run test:api` 72 passed + 41 skipped som hård invariant + STOPPA-OCH-FRÅGA på avvikelse. Code stannade om aggregatet brutits. Refactorn bevisad ren-strukturell, inte hypotetiskt. **Generaliserbar regel:** refactor-commits ska ha minst en hård test-invariant + explicit STOPPA-checkpoint. Annars är "refactor" bara påstående, inte bevis. Test-invarianten är vad som skiljer "jag tror jag inte ändrade beteendet" från "jag har bevisat att beteendet är oförändrat". Generaliserar bortom test-suite till alla mätbara invariants (build-storlek, lint-warnings, dep-count, etc. — välj den som matchar refactorns scope).
+
+**Kandidat 9 — Förebyggande extern-resurs-verifiering mellan refactor och semantik [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: GitHub-secrets-set mellan K0åc.1 och K0åc.2 2026-05-11
+
+K0åc.2 krävde extern resurs (GitHub repo-secrets) för att fungera i CI. Att lyfta "verifiera secrets manuellt" som steg MELLAN K0åc.1 och K0åc.2 sparade en falsk-röd CI-körning. Reaktiv approach hade varit "kör K0åc.2, se vad som händer, fixa secrets om CI failar". Förebyggande approach är 11/10-disciplin. **Generaliserbar regel:** när semantik-commit kräver extern resurs (secrets, env, deployerad endpoint, externa API-keys, DNS-records, etc.), bygg in verifierings-steg FÖRE push i prompt-flödet. Pre-flight-prompt är billig (~5 min); falsk-röd CI är dyr (förvirring, debugging-runda, extra commits).
+
+**Kandidat 10 — Pre-flight verifiering avslöjar dokumentations-drift [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: K0åc pre-flight-rapport 2026-05-11
+
+Codex' analys 2026-05-07 dokumenterade "41 deployade deny-path-tester skippas lokalt". Verkligheten 4 dagar senare (vid K0åc pre-flight 2026-05-11): 38 körbara + 3 intentional M4-defer = 41 totalt. Drift på ~7% där 3 tester ändrade natur (M4-defer-tillägg). Codex hade rätt på sammanräkningen, fel på fördelningen. **Inte fel i Codex' analys** — reflektion av att projektet är levande. Detta är fjärde gången jag stöter på "siffran är subtilare än rapporten påstod" (K0åb 1→8 fel, K1 ref-räkningen 4 vs 3+4, K1.2 grep-count 1→2, K0åc 41→38+3). **Generaliserbar regel:** när en analys är 1+ vecka gammal och implementations-design hänger på dess siffror, kör samma verifierings-kommando lokalt FÖRE du litar på dem. Speciellt viktigt för räkningar (X tester, Y filer, Z fel) som lätt driver. Mönstret är universellt: "verkligheten på pushtid > analys vid skrivtid". Pre-flight som disciplin, inte som extra-steg.
+
+**Kandidat 11 — Designnoter i prompter ska vara verifierade, inte påstådda [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: K0åc.2 M4-defer-design-pivot 2026-05-11
+
+K0åc.2-promtens designnot påstod att de 3 intentional skipped i `update-record.staging.test.ts` "inte går via getApiConfig() och triggas inte av STAGING_REQUIRED". Påstående baserat på antagande från pre-flight-rapporten "alla 6 testfiler importerar getApiConfig" som jag tolkade som "import = användning per default men inte i defer-tester". Code:s strikta RAPPORTERA visade tvärtom: rad 41/66/89 anropar getApiConfig() FÖRE test.skip(true, ...). Code's interactive popup tvingade designval. **Påstående klätt som faktum men byggt på antagande är 9/10-praxis.** Generaliserbar regel: designnoter i prompter ska antingen (a) hänvisa till verifierad data från RAPPORTERA-block ("per Block 1 rad 17"), eller (b) markeras explicit som "förmodad — Code verifierar i RAPPORTERA". Påståenden utan källa eller modaliterad osäkerhet är fällor. Code:s STOPPA-OCH-FRÅGA fångade detta — bekräftar Kandidat 2-mönstret (STOPPA-OCH-FRÅGA fungerar) ännu en gång. **Mönsterförstärkning:** över K0åa-K0åc har STOPPA-OCH-FRÅGA fångat 3 substantiella problem (K0åb 1→8 fel, K0åc.2 M4-defer-design, K0åc.2 GitHub-secrets-saknad). Detta är inte slump — det är systematisk osäkerhets-fångst. STOPPA-OCH-FRÅGA är basinstrument, inte luxus.
+
+**Kandidat 12 — Multipla sanningskällor inom samma sessionsdok driver [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: K1.4 pre-flight-fynd (Code Block 4 sidofynd) 2026-05-11
+
+K1.4-pre-flight avslöjade att touch-count för K-sista var dokumenterat på tre ställen i sessionsdoket: (a) header disciplin-not, (b) Del 1 klunge-strukturtabellens K5-cell (rad 67), (c) Del 7.1 "Sessionsdok låst"-rad. K1.2 + K1.3 uppdaterade (a) och (c) men missade (b). Vid K1.4-pre-flight stod rad 67 fortfarande på "touch nr 2" medan (a) och (c) sa "4". K1.4 fixar rad 67 retroaktivt + uppdaterar alla tre i samma str_replace-pass framåt. **Generaliserbar regel:** när samma faktum dokumenteras på flera ställen i ett dokument, finns två giltiga vägar: (1) en sanningskälla + korslänkar, eller (2) uppdatera alla ställen i en enda atomisk str_replace-pass. Mixed approach (vissa ställen uppdateras, andra glöms) ger drift inom samma fil — låg-disciplin signal och förvirrande för granskare. Sessionsdoket har tre touch-count-mentions; identifiera och uppdatera alla i varje K1.N bake-in framåt. Mer generellt: vid varje sessionsdok-bake-in, gör en `grep`-pass på det faktum som ändras för att hitta alla mentions innan str_replace-uppsättningen skrivs.
+
+**Kandidat 13-N:** TBD — fångas under K0åd-K0åf eller K2-K4.
 
 ### 7.3 ADR-kandidater
 
