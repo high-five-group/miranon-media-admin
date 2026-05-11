@@ -10,7 +10,7 @@
 > - `tasks/sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md` (Pre-Fas-2, slutförd 2026-05-07) — arkiveras i K1 enligt ADR-023 sessions-arkivering
 > **Efterföljare:** Fas 2.5 — Schema-kontrakt-sync, mot `docs/byggplan.md` §4 Fas 2.5-prompt.
 > **Stop-test (denna session):** 6 K0-åtgärder committade + Fas 2 DoD 1-8 passerade + Playwright auth-fixture etablerad + ev. ADR:er committade + lessons-skörd lyft + sessionsdok låst + transcript sparat.
-> **Sessionsdok-commit-disciplin (P3a/P3b/Pre-Fas-2-mönster):** K1 = skelett-commit + pre-Fas-2-arkivering. K0åa-åf + K2-K4 rör INTE detta sessionsdok. K-sista commit bakar in Del 3/4/5/6/7/8. Total touch-count på denna fil = 2 (K1 skapande + K-sista bake-in).
+> **Sessionsdok-commit-disciplin (P3a/P3b/Pre-Fas-2-mönster + en K1.2-avvikelse):** K1 = skelett-commit + pre-Fas-2-arkivering. K0åa-åf + K2-K4 rör INTE detta sessionsdok. K-sista commit bakar in Del 3/4/5/6/7/8. **Avvikelse 2026-05-11:** K1.2 early bake-in committad efter K1+K0åa för att fånga avvikelse-info + commit-hashar innan K5 — medvetet disciplin-avsteg, motiverat av att informationen var värd risken att tappa och str_replace-patch är ren. Total touch-count på denna fil = 3 (K1 skapande + K1.2 early bake-in + K-sista).
 > **Scope-splitt-anmärkning:** Fas 2-estimat enligt byggplan §4 = 2 sessioner. Om K0+K2+K3+K4 inte ryms i en chat-session, splitta i Session A (K1+K0+K2) och Session B (K3+K4+K5) per P1-lärdom ("Var beredd att splitta i 2 sessioner om scope växer"). Splitten är förväntad, inte avvikelse.
 
 ---
@@ -74,10 +74,17 @@ Sex klung-grupper. Sessionsdok rörs i K1 + K-sista — mellan-klungor lämnar d
 
 **K1.A — Skelett:** Denna fil. Innehållet i Del 1 utgör K1.A:s leverans.
 
-**K1.B — Arkivering av pre-Fas-2:** Per ADR-023 konvention 1 ("Sessionsstart: ny `tasks/sessions/<datum>-<tema>.md` skapas i roten") + 2 ("Sessionsavslut: föregående aktiv flyttas till lämplig `archive/<år>-<månad>/`"). Flytt: `tasks/sessions/2026-05-06-pre-fas2-verifiering.md` → `tasks/sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md`. Refs i CLAUDE.md, todo.md och andra dokument som pekar mot pre-Fas-2-doket ska uppdateras i samma commit (kategori 2 fix-vs-skip per ADR-022 — mekanisk path-fix, säker).
+**K1.B — Arkivering av pre-Fas-2:** Per ADR-023 konvention 1 ("Sessionsstart: ny `tasks/sessions/<datum>-<tema>.md` skapas i roten") + 2 ("Sessionsavslut: föregående aktiv flyttas till lämplig `archive/<år>-<månad>/`"). Flytt: `tasks/sessions/2026-05-06-pre-fas2-verifiering.md` → `tasks/sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md`. Refs i CLAUDE.md, todo.md och andra dokument som pekar mot pre-Fas-2-doket uppdaterades i samma commit (kategori 2 fix-vs-skip per ADR-022 — mekanisk path-fix, säker).
 
-**K1-commit (efter Code-körning):** "docs(fas2): start Fas 2 session document + archive pre-Fas-2 per ADR-023"
-**K5-commit (efter session-avslut):** "docs(fas2): bake in Del 3-8 + Fas 2 retrospektiv"
+**K1-leverans-avvikelser (Code 2026-05-11):**
+1. **3 filer / 4 string-ändringar** istället för "4 filer" i ursprungsprompten — `git diff --stat` räknar per fil, inte per string-ref (två refs på olika rader i samma fil = 1 fil-ändring).
+2. **CLAUDE.md rad 153 fick semantisk uppdatering**, inte mekanisk archive-prefix: raden beskriver "just nu aktiv session" (rollbeskrivning), inte pre-Fas-2-dokets identitet — byttes från pre-Fas-2-doket-ref till `2026-05-11-fas2-routing-auth.md`. Rad 156 bumpad i samma str_replace från "6 sessionsloggar" till "7" för filstruktur-sannhet. Mönster identifierat som UNIVERSAL-lärdomskandidat (se Del 7.2 Kandidat 1).
+3. **`tasks/sessions/transcripts/`-mappen saknas i repot** — verifieringspunkten "transcripts/ kvar" från K1-prompten hoppades över eftersom mappen inte finns. Indikerar att transcript-disciplin från CLAUDE.md sessionsstart/sessionsavslut + CONTRIBUTING.md "Transcript-disciplin" inte applicerats genom Session 2/3. Disciplin-drift exponerad av K1, inte skapad av den. Marcus' beslut behövs vid K5 (se Del 7.1).
+
+**K1-commit (`6af3927`):** "docs(fas2): start Fas 2 session document + archive pre-Fas-2 per ADR-023"
+**K0åa-commit (`13cdf86`, separat klunga):** "chore(deps): install nuqs for URL-state — Fas 2 K0 startvillkor 1"
+**K1.2-commit (denna early bake-in):** "docs(fas2): early bake-in of K1 avvikelser + K0åa commit-hash"
+**K-sista-commit (efter session-avslut):** "docs(fas2): bake in Del 3-8 + Fas 2 retrospektiv"
 
 ---
 
@@ -91,7 +98,7 @@ Pre-Fas-2-verifieringen Del 6.5 identifierade 6 öppna åtgärder som hanteras s
 
 | Sub-K | Åtgärd | Kategori | Estimat | Commit-hash |
 |---|---|---|---|---|
-| K0åa | `npm install nuqs` | Startvillkor 1 — måste lösas före första route-fil | ~5 min | TBD |
+| K0åa | `npm install nuqs` | Startvillkor 1 — måste lösas före första route-fil | ~5 min | `13cdf86` |
 | K0åb | `tsconfig.tests.json` + `typecheck:tests`-script + CI-koppling + `helpers.ts:18` `APIResponse`-import | Startvillkor 2 | ~20 min | TBD |
 | K0åc | CI `test:api`-split (`pure`/`staging` eller `if`-villkor) | Startvillkor 3 | ~15 min | TBD |
 | K0åd | `docs/byggplan.md:249` — engelska→svenska statusvärden | "Direkt efter Fas 2"-fynd 1 | ~5 min | TBD |
@@ -101,7 +108,7 @@ Pre-Fas-2-verifieringen Del 6.5 identifierade 6 öppna åtgärder som hanteras s
 **Sekvenskrav:** åa → åb → åc är strikt (alla tre måste vara klara innan K2 startar). åd → åe → åf kan tas i valfri ordning eller parallellt; ingen blockerar K2 strikt, men Marcus' beslut 2026-05-07 var att alla 6 hanteras i Fas 2 K0 innan första route-fil.
 
 ### 3.1 K0åa — nuqs install (startvillkor 1)
-TBD — Code-prompt levererad i Chat 2026-05-11. Code committar mot main. Slutsignal bakas in i K5.
+✅ KLAR 2026-05-11. Commit `13cdf86` — "chore(deps): install nuqs for URL-state — Fas 2 K0 startvillkor 1". Full slutsignal (faktisk nuqs-version, bundle-storleksdiff, verifierings-output) bakas in i K5.
 
 ### 3.2 K0åb — tsconfig.tests + typecheck:tests + helpers.ts:18-fix (startvillkor 2)
 TBD — Code-prompt levereras efter K0åa committad. Förväntad omfattning: ny fil `tsconfig.tests.json` (utökar `tsconfig.json` med `tests/**/*.ts` i `include`), ny script-rad i `package.json` (`"typecheck:tests": "tsc --noEmit -p tsconfig.tests.json"`), ny step i `.github/workflows/ci.yml` mellan typecheck och test:api, `str_replace` i `tests/api/helpers.ts:18` (lägger till `APIResponse` i imports från relevant typ-fil).
@@ -206,13 +213,25 @@ Pass/fail per krav:
 | Hub-synk klar (om UNIVERSAL-poster) | TBD | `~/Repon/marcus-system/tasks/lessons.md` synkad |
 | `tasks/todo.md` uppdaterad | TBD | Fas 2 markerad ✅, Fas 2.5 listad som nästa |
 | `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (ADR-025) | TBD | "Senast uppdaterad"-stämpel bumpad + Fas 2-status reflekterad |
-| Sessionsdok låst | TBD | Denna commit (K5 sista) är touch nr 2 efter K1 |
-| Transcript sparat | TBD | `tasks/sessions/transcripts/2026-05-11.txt` finns |
+| Sessionsdok låst | TBD | Denna commit (K-sista) är touch nr 3 efter K1 (skelett) + K1.2 (early bake-in 2026-05-11) |
+| Transcript sparat | TBD — Marcus' beslut vid K5 mellan (a) återupptag transcript-disciplinen (skapa `tasks/sessions/transcripts/`-mappen + första transcript-save) eller (b) defer till separat process-runda. Frågan exponerades i K1-leveransen (mappen saknas i repot). | `tasks/sessions/transcripts/2026-05-11.txt` finns + Marcus' beslut dokumenterat — eller defer-not committad |
 
 ### 7.2 Lessons-skörd
 
 TBD — fångas under sessionen. Kandidater fylls i löpande:
-- (Kommer fyllas i under K5)
+
+**Kandidat 1 — Semantisk path-ref vs mekanisk prefix-fix vid sessionsdok-arkivering [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: K1-leveransen 2026-05-11, Code's självständiga byte av CLAUDE.md rad 153 + komplementär bumpa av rad 156
+
+När en ref till en sessionsdok ska flyttas till `archive/` vid sessionsstart/-avslut, klassificera refen först: beskriver den dokets *identitet* ("se 2026-05-06-pre-fas2-verifiering.md") eller dokets *roll* ("just nu aktiv session", "senaste leveransen", "session N av M")? Identitets-refs ska få mekanisk archive-prefix per ADR-022 kategori 2. Roll-refs ska få semantisk uppdatering till nya rollens innehavare (det nya sessionsdoket som nu fyller rollen) — rollen har flyttat, inte dokets identitet. Klassrelaterade följdändringar (t.ex. "N sessionsloggar" → "N+1" för filstruktur-sannhet) görs i samma str_replace för konsistens.
+
+**Mönstret:** vid arkivering, gå igenom alla ref-träffar och klassificera var och en innan str_replace körs. Frågan: "om jag tar bort denna ref och läser meningen runt, beskriver den ett dokument eller en roll?"
+
+**Anti-mönster att undvika:** mekanisk path-prefix på roll-refs producerar nonsens-meningar (t.ex. "just nu aktiv session: archive/2026-05/pre-Fas-2..." — logiskt motsägelsefullt eftersom archive-prefix signalerar "inte aktiv").
+
+**Generaliserbar:** gäller alla "aktiv X"-pekare som någonsin arkiveras (sessionsdok, ADR-status, fas-status, dokumentversioner). Föreslås UNIVERSAL-lyft + cross-repo-synk till `marcus-system/tasks/lessons.md` vid K5.
+
+**Kandidat 2-N:** TBD — fångas under K0åb-K4.
 
 ### 7.3 ADR-kandidater
 
