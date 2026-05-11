@@ -1,18 +1,16 @@
-// M5 fuzz- och INVARIANT-tester för airtable-filter helpers.
+// M5 fuzz- och INVARIANT-tester för airtable-filter helpers (LAGER 1, pure).
 //
-// Två lager av tester:
-//   1. Pure-logik (importerar helpers direkt — ingen HTTP):
-//      - INVARIANT round-trip: escape → parse → exakt samma input
-//      - Per-kategori fuzz: quote/escape, funktionsnamn, unicode,
-//        långa strängar
-//      Atomär verifiering — om alla 30+ inputs round-trip:as
-//      förlustfritt så vet vi att Airtable inte kan tolka outputen
-//      som något annat än input-strängen.
+// Pure-logik (importerar helpers direkt — ingen HTTP):
+//   - INVARIANT round-trip: escape → parse → exakt samma input
+//   - Per-kategori fuzz: quote/escape, funktionsnamn, unicode,
+//     långa strängar
+//   Atomär verifiering — om alla 30+ inputs round-trip:as förlustfritt
+//   så vet vi att Airtable inte kan tolka outputen som något annat än
+//   input-strängen.
 //
-//   2. End-to-end (HTTP mot deployad endpoint):
-//      - Illvilliga query params till get-registrations + get-persons
-//        ska ge 200 (med tom resultat) eller 400 (Invalid filter input)
-//        — ALDRIG 500 (formula-syntax-fel) eller 200 med tautologi.
+// LAGER 2 (end-to-end fuzz mot deployad runtime) flyttades till
+// airtable-filter.staging.test.ts i K0åc.1 2026-05-11 för Playwright-
+// projekt-split (api-pure vs api-staging).
 
 import { expect, test } from '@playwright/test';
 import {
@@ -23,7 +21,6 @@ import {
   escapeFormulaValue,
   parseAirtableString,
 } from '../../supabase/functions/_shared/airtable-filter';
-import { getApiConfig, getValidUserJWT } from './helpers';
 
 // =============================================================
 // LAGER 1: Pure-logik tester
@@ -239,49 +236,3 @@ test.describe('airtable-filter — combineWithAnd', () => {
     expect(combineWithAnd(['{A} = "1"', '{B} = "2"'])).toBe('AND({A} = "1", {B} = "2")');
   });
 });
-
-// =============================================================
-// LAGER 2: End-to-end fuzz mot deployad runtime
-// =============================================================
-
-const E2E_ENDPOINTS = [
-  { name: 'get-registrations', path: '/functions/v1/get-registrations', param: 'status' },
-  { name: 'get-persons', path: '/functions/v1/get-persons', param: 'search' },
-] as const;
-
-const ILLVILLIG_INPUTS = [
-  { label: 'TRUE-tautology', input: '") OR TRUE() OR ("' },
-  { label: 'OR-injection', input: 'X") OR ({Status}="Y' },
-  { label: 'NOT-injection', input: '"+NOT(TRUE())+"' },
-  { label: 'curly-break', input: '"}' },
-  { label: 'too long (DoS)', input: 'a'.repeat(2000) },
-  { label: 'NUL-attempt', input: `evil${ch(0x00)}injection` },
-];
-
-for (const endpoint of E2E_ENDPOINTS) {
-  test.describe(`end-to-end fuzz: ${endpoint.name}`, () => {
-    for (const { label, input } of ILLVILLIG_INPUTS) {
-      test(`illvillig ${endpoint.param}=${label} → 200 eller 400 (aldrig 500)`, async ({
-        request,
-      }) => {
-        const config = getApiConfig();
-        const jwt = await getValidUserJWT(request, config);
-
-        const url = new URL(`${config.baseUrl}${endpoint.path}`);
-        url.searchParams.set(endpoint.param, input);
-
-        const res = await request.get(url.toString(), {
-          headers: { Authorization: `Bearer ${jwt}` },
-        });
-
-        // 400 (filter rejected) eller 200 (filter passerade men gav
-        // tom/normalt svar). 500 = server-fel = M5-bugg som maste
-        // atgardas. 401/403 = auth-fel = test-setup-bugg.
-        expect(res.status()).not.toBe(500);
-        expect(res.status()).not.toBe(401);
-        expect(res.status()).not.toBe(403);
-        expect([200, 400]).toContain(res.status());
-      });
-    }
-  });
-}

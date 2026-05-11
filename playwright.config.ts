@@ -3,12 +3,14 @@ import { defineConfig } from '@playwright/test';
 /**
  * Playwright — visuella regressionstester + API-säkerhetstester.
  *
- * Två projekt:
- *   - api      → tests/api/ (Edge Function deny-path-tester, M2+)
- *   - visual-* → tests/visual/ (skärmdumpar, Fas 3+)
+ * Fyra projekt:
+ *   - api-pure    → tests/api/*.test.ts (pure-logik, ingen staging-koppling)
+ *   - api-staging → tests/api/*.staging.test.ts (HTTP mot deployad Supabase)
+ *   - visual-*    → tests/visual/ (skärmdumpar, Fas 3+)
  *
- * API-tester kräver TEST_SUPABASE_URL satt. Saknas den → testerna
- * skippas i runtime (se tests/api/helpers.ts).
+ * api-staging-projektet kräver TEST_SUPABASE_URL satt. Saknas den →
+ * testerna skippas i runtime (se tests/api/helpers.ts). api-pure körs
+ * alltid utan staging-koppling.
  */
 export default defineConfig({
   testDir: './tests',
@@ -26,8 +28,14 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'api',
+      name: 'api-pure',
       testDir: './tests/api',
+      testIgnore: '**/*.staging.test.ts',
+    },
+    {
+      name: 'api-staging',
+      testDir: './tests/api',
+      testMatch: '**/*.staging.test.ts',
       use: {
         baseURL: process.env.TEST_SUPABASE_URL,
         extraHTTPHeaders: {
