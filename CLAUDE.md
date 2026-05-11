@@ -150,10 +150,10 @@ tasks/
 ├── byggplan-direktiv.md           ← arkivvärt (SLUTFÖRT 2026-05-05)
 ├── datamodell-research-direktiv.md, datamodell-research-plan.md  ← frysta efter Fas 6
 └── sessions/
-    ├── <aktiv>.md                 ← en sessionsdok åt gången (just nu: 2026-05-06-pre-fas2-verifiering.md)
+    ├── <aktiv>.md                 ← en sessionsdok åt gången (just nu: 2026-05-11-fas2-routing-auth.md)
     └── archive/                   ← arkiverade per ADR-023
         ├── 2026-04/   (2 sessionsloggar)
-        ├── 2026-05/   (6 sessionsloggar inkl. P3a + P3b)
+        ├── 2026-05/   (7 sessionsloggar inkl. P3a, P3b, pre-Fas-2)
         └── datamodell-research-2026-04-30/   (7 frysta fas-prompts + README)
 ```
 

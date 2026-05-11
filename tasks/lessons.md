@@ -488,7 +488,7 @@ När en sanningskälla (specifikation/datamodell) speglas i implementation (kod/
 
 ## 2026-05-06 — Pre-Fas-2-verifiering (Session 3)
 
-> Källa: `tasks/sessions/2026-05-06-pre-fas2-verifiering.md` (Pre-Fas-2-verifiering inför Fas 2 Routing+Auth).
+> Källa: `tasks/sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md` (Pre-Fas-2-verifiering inför Fas 2 Routing+Auth).
 > Sub-klungor: K1 (sessionsdok + Code-RAPPORTERA), K2 (klassificering + åtgärdsplan), K3 åa-åf + åg (åtgärds-implementation över 8 sub-klungor + 17 commits), K4 (denna lärdomslyft).
 > Antal poster: 14, alla UNIVERSAL.
 > Lyft till hub: 2026-05-06 (samma session, K4b).
