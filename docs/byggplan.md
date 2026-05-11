@@ -246,7 +246,7 @@ Synka kodens domäntyper mot `data-model.md` (källa) + införa Zod-validering v
 - `src/data/schemas/*.ts` (Zod-scheman, ev. justering)
 
 #### DoD
-1. `Status.ts` har 6 värden matchande `data-model.md` (`pending`, `confirmed`, `cancelled`, `attended`, `no-show`, `waitlist` — exakt enum-värden bekräftas mot källan vid sessionsstart)
+1. `Status.ts` har 6 värden för RegistrationStatus matchande `docs/reference/data-model.md:121-130` (verbatim svenska Airtable-värden, pre-A-track-läget per `docs/analysis/Code-verification-of-codex-analysis.md` Tillägg Fråga 1)
 2. `tsc --noEmit` 0 fel — alla konsumenter av Status uppdaterade
 3. Zod-scheman validerar runtime vid varje read i AirtableAdapter — fångar shape-drift
 4. 9 adapter-metoder har JSDoc-klassning per A5-tabellen (defer-fas + 06b-impact)
