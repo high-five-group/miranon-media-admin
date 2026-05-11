@@ -65,7 +65,7 @@ Hela `docs/react-migration/`-mappen i Vue-repot var sanningskälla för Fas 0 + 
 
 ## Filstruktur
 
-> Snapshot post-K3 åa–åf (2026-05-06). Pedagogisk översikt — för exakt nuvarande state, kör `tree -L 3 -I 'node_modules|dist|.git|coverage|test-results'`.
+> Snapshot post-Session 4 K0 (2026-05-11). Pedagogisk översikt — för exakt nuvarande state, kör `tree -L 3 -I 'node_modules|dist|.git|coverage|test-results'`.
 
 ### Repo-rot
 
@@ -174,7 +174,10 @@ supabase/
     └── {create-admin-user, get-events, get-persons, get-registrations, test-auth, update-record}/
 
 tests/
-└── api/          ← 7 testfiler, 113 tester (72 körda lokalt + 41 staging-only-skipped)
+└── api/          ← 7 testfiler + helpers.ts. Split i pure (airtable-filter.test.ts, 72 tests)
+                   och staging (*.staging.test.ts × 6, 41 tests = 38 körbara + 3 M4-defer).
+                   Playwright-projekt: api-pure (testIgnore *.staging.test.ts) + api-staging
+                   (testMatch *.staging.test.ts, STAGING_REQUIRED=1 i CI för hard-fail).
 
 public/           ← favicon, sw.js, miranon-logo.svg
 scripts/          ← verify-phase-1.ts (runtime-verifiering)
@@ -225,7 +228,10 @@ Fullständig spec: [`docs/specs/DESIGN-SYSTEM-SPEC.md`](docs/specs/DESIGN-SYSTEM
 5. ✅ Pre-Fas-2 — Repo-strukturell polish + publika professionalitetssignaler (Session 3, 2026-05-06) — ADR-021..024
 
 *Aktuellt fokus:*
-6. ← **NU:** Fas 2 — Routing + Auth (TanStack Router, Supabase, nuqs)
+6. ⏳ **PÅGÅR — Fas 2 — Routing + Auth (TanStack Router, Supabase, nuqs):**
+   - ✅ K0 startvillkor 1-3 (Session 4, 2026-05-11) — nuqs + typecheck:tests + falsk-grön CI-fix
+   - ← **NÄSTA:** K0åd-K0åf (Codex' "Direkt efter Fas 2"-fynd) eller K2 (TanStack Router skelett)
+   - Trail: [`tasks/sessions/2026-05-11-fas2-routing-auth.md`](tasks/sessions/2026-05-11-fas2-routing-auth.md)
 
 *Kommande:*
 7. Fas 2.5 — Adapter-debt-städning
@@ -317,12 +323,13 @@ När Marcus säger "Nu avslutar vi denna session":
 - **Session 1** (React, 2026-04-13/14): Fas 0 + Fas 1 — projektsetup, domäntransplant, ADR-001..010
 - **Session 2** (React, 2026-04-30 → 2026-05-05): Fas A (säkerhetshardening M1–M8, 14 commits, 113 tester) + P0–P3b (byggplan-revision, `docs/byggplan.md` 832 rader, ADR-011..020, 7 UNIVERSAL-lessons lyfta till hub)
 - **Session 3** (Pre-Fas-2, 2026-05-06): Repo-strukturell polish + publika professionalitetssignaler. K3 åa–åf: LICENSE + package.json metadata + .github/-paketet + CHANGELOG/SECURITY/CONTRIBUTING + README badges/Documentation map + docs/-omstrukturering (specs/analysis/reference/logs) + analys/ → docs/research/datamodell-research/ + tasks/sessions/-arkivering. ADR-021..024. **Total ADR-räkning: 24.**
+- **Session 4** (Fas 2 K0 startvillkor, 2026-05-11): K0 startvillkor 1-3 av 3 klara — nuqs install (`13cdf86`), typecheck:tests + APIResponse-fix (`a5a477b` + `1d02b3b`), falsk-grön CI-fix via STAGING_REQUIRED + secrets (`3015d08` + `1138e38`). Plus 4 K1.N early bake-ins av sessionsdoket (`6af3927` + `fc6f43e` + `3b29f41` + `3927a24`). CI grön på första försök efter K0åc.2 (36s, 72 pure passed + 38 staging passed + 3 M4-defer skipped). 12 UNIVERSAL-lessons lyfta till lessons.md + hub (`f1e609e` + `91db29b`). **Total ADR-räkning: 24 (oförändrad — ingen ADR-trigger från K0; Fas 2 K0åe Zod parse kan ge ADR-026 om/när den körs).** Sessionsdok-trail: `tasks/sessions/2026-05-11-fas2-routing-auth.md`. PÅGÅR — Fas 2 K0åd-K0åf "Direkt efter Fas 2"-fynd + K2 implementation återstår.
 
-**Aktuellt fokus:** Fas 2 — Routing + Auth (TanStack Router file-based, Supabase auth) — startar nästa Chat-session mot `docs/byggplan.md` §4 Fas 2-prompt.
+**Aktuellt fokus:** Fas 2 — Routing + Auth (TanStack Router file-based, Supabase auth, nuqs). **K0 startvillkor 1-3 ✅ KLAR 2026-05-11.** Återstående K0-arbete: K0åd-K0åf ("Direkt efter Fas 2"-fynd från Codex kategori 2 — byggplan.md:249 svenska statusvärden + Zod parse i AirtableAdapter + KVALITETSDEFINITIONER-11.md Vue→React). Sedan K2 implementation start (TanStack Router file-based + AuthProvider + ErrorBoundary). Trail: `tasks/sessions/2026-05-11-fas2-routing-auth.md`. Marcus väljer vid ny session-start: K0åd-K0åf först (Codex' rekommenderade ordning) eller K2 direkt (startvillkoren är klara, ingen blocker).
 
 För full retrospektiv historik: [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md).
 
 > **Sessionsnumrering:** React-projektet startar på Session 1.
 > Session 1 (React) motsvarar Session 31 i den samlade projekthistoriken
 > (Vue-bygget var session 1–30 i `~/Repon/miranon-media-os/`).
-> Session 2 = Session 32–34. Session 3 (Pre-Fas-2) = Session 35.
+> Session 2 = Session 32–34. Session 3 (Pre-Fas-2) = Session 35. Session 4 (Fas 2 K0 startvillkor) = Session 36.
