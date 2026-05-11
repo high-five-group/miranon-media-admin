@@ -10,7 +10,7 @@
 > - `tasks/sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md` (Pre-Fas-2, slutförd 2026-05-07) — arkiveras i K1 enligt ADR-023 sessions-arkivering
 > **Efterföljare:** Fas 2.5 — Schema-kontrakt-sync, mot `docs/byggplan.md` §4 Fas 2.5-prompt.
 > **Stop-test (denna session):** 6 K0-åtgärder committade + Fas 2 DoD 1-8 passerade + Playwright auth-fixture etablerad + ev. ADR:er committade + lessons-skörd lyft + sessionsdok låst + transcript sparat.
-> **Sessionsdok-commit-disciplin (P3a/P3b/Pre-Fas-2-mönster + en K1.2-avvikelse):** K1 = skelett-commit + pre-Fas-2-arkivering. K0åa-åf + K2-K4 rör INTE detta sessionsdok. K-sista commit bakar in Del 3/4/5/6/7/8. **Avvikelse 2026-05-11:** K1.2 early bake-in committad efter K1+K0åa för att fånga avvikelse-info + commit-hashar innan K5 — medvetet disciplin-avsteg, motiverat av att informationen var värd risken att tappa och str_replace-patch är ren. Total touch-count på denna fil = 3 (K1 skapande + K1.2 early bake-in + K-sista).
+> **Sessionsdok-commit-disciplin (P3a-baserad, reviderad för Fas 2):** K1 = skelett. Faktiska arbets-commits (K0åa-åf, K2-K4) rör INTE detta sessionsdok. **K1.N early bake-ins** committas efter substantiella K0-sub-klungor för att fånga commit-hashar + avvikelser + lärdomskandidater innan K-sista. K-sista bakar in Del 3-8 retrospektiv. Mönsterbyte från ursprungliga 'K1 + K-sista' till 'K1 + K1.N bake-ins + K-sista' beslutat 2026-05-11 efter K0åb genererat 8 dolda type-fel-fynd + flera lärdomskandidater — för mycket att hålla i Chat-kontext tills K-sista. Ren str_replace-patch är konfliktfri och billig. Touch-count revideras dynamiskt under sessionen; aktuell post-K1.3 = 4 (K1 + K1.2 + K1.3 + K-sista planerad).
 > **Scope-splitt-anmärkning:** Fas 2-estimat enligt byggplan §4 = 2 sessioner. Om K0+K2+K3+K4 inte ryms i en chat-session, splitta i Session A (K1+K0+K2) och Session B (K3+K4+K5) per P1-lärdom ("Var beredd att splitta i 2 sessioner om scope växer"). Splitten är förväntad, inte avvikelse.
 
 ---
@@ -99,7 +99,7 @@ Pre-Fas-2-verifieringen Del 6.5 identifierade 6 öppna åtgärder som hanteras s
 | Sub-K | Åtgärd | Kategori | Estimat | Commit-hash |
 |---|---|---|---|---|
 | K0åa | `npm install nuqs` | Startvillkor 1 — måste lösas före första route-fil | ~5 min | `13cdf86` |
-| K0åb | `tsconfig.tests.json` + `typecheck:tests`-script + CI-koppling + `helpers.ts:18` `APIResponse`-import | Startvillkor 2 | ~20 min | TBD |
+| K0åb | `tsconfig.tests.json` + `typecheck:tests`-script + CI-koppling + `helpers.ts:18` `APIResponse`-import + dold-isberg-fix (6× `process` + 1× `URL`) | Startvillkor 2 | ~20 min est, faktisk ~45 min (dold isberg) | `a5a477b` (deps) + `1d02b3b` (fix) |
 | K0åc | CI `test:api`-split (`pure`/`staging` eller `if`-villkor) | Startvillkor 3 | ~15 min | TBD |
 | K0åd | `docs/byggplan.md:249` — engelska→svenska statusvärden | "Direkt efter Fas 2"-fynd 1 | ~5 min | TBD |
 | K0åe | Aktivera Zod `.parse()` i `AirtableAdapter` reads | "Direkt efter Fas 2"-fynd 2 | ~30 min, ev. ADR | TBD |
@@ -111,7 +111,30 @@ Pre-Fas-2-verifieringen Del 6.5 identifierade 6 öppna åtgärder som hanteras s
 ✅ KLAR 2026-05-11. Commit `13cdf86` — "chore(deps): install nuqs for URL-state — Fas 2 K0 startvillkor 1". Full slutsignal (faktisk nuqs-version, bundle-storleksdiff, verifierings-output) bakas in i K5.
 
 ### 3.2 K0åb — tsconfig.tests + typecheck:tests + helpers.ts:18-fix (startvillkor 2)
-TBD — Code-prompt levereras efter K0åa committad. Förväntad omfattning: ny fil `tsconfig.tests.json` (utökar `tsconfig.json` med `tests/**/*.ts` i `include`), ny script-rad i `package.json` (`"typecheck:tests": "tsc --noEmit -p tsconfig.tests.json"`), ny step i `.github/workflows/ci.yml` mellan typecheck och test:api, `str_replace` i `tests/api/helpers.ts:18` (lägger till `APIResponse` i imports från relevant typ-fil).
+
+✅ KLAR 2026-05-11. **Två commits** (Code applicerade K0åa-mönstret spontant — UNIVERSAL-kandidat 4 i Del 7.2):
+
+- **K0åb.1 — `a5a477b`** "chore(deps): add @types/node as explicit devDep for tests typecheck" (2 filer: package.json + package-lock.json)
+- **K0åb.2 — `1d02b3b`** "chore(tests): aktivera typecheck för tests/ — Fas 2 K0 startvillkor 2" (5 filer: tsconfig.tests.json + tsconfig.json + package.json + tests/api/helpers.ts + .github/workflows/ci.yml)
+
+**Avvikelse — dold-isberg:** Förväntade 1 dolt type-fel (`APIResponse` i helpers.ts:133). `npm run typecheck:tests` avslöjade 8 totalt:
+- 1× `APIResponse` (helpers.ts:133, känd och adresserad i prompten)
+- 6× `process` (helpers.ts:30-35, `process.env`-användning utan Node-typer)
+- 1× `URL` (tests/api/airtable-filter.test.ts:270, Node-runtime-global)
+
+**Grundorsak:** `tsconfig.node.json` (som `tsconfig.tests.json` extends) har `"lib": ["ES2023"]` utan DOM och utan explicit `"types": ["node"]`. För `vite.config.ts`/`playwright.config.ts` löste TS:s automatic type acquisition Node-globaler tyst (alla `@types/*` i `node_modules` plockades in när inget `types`-fält var satt). Men kombinationen module-resolution + filtyper i `tests/` triggade att automatic acquisition inte räckte.
+
+**Lösning (Marcus' val Alt 2 av 3-alternativs-popup från Code):** Installera `@types/node` som explicit devDep + lägg `"types": ["node"]` i tsconfig.tests.json som pekar på det. Motivering: explicit > implicit (Fas A-mönster), Dependabot-synlighet, 11/10-disciplin. Alt 1 (transitiv via @playwright/test peer) avvisades pga risken att Playwright slutar peera @types/node tyst. Alt 3 (lämna 7 fel som dokumenterad skuld) avvisades pga signalförlust.
+
+**Versionsnot:** `@types/node` v25.6.2 installerades som ny devDep — npm valde patch utöver v25.6.0 som var transitivt installerad via Playwright peer-dep. Ingen reell version-flytt, bara explicit-deklarering.
+
+**Verifieringssvit grön (K0åb.2 post-commit):**
+- `npm run typecheck`: 0 fel
+- `npm run typecheck:tests`: 0 fel (huvudverifiering — alla 8 dolda fel åtgärdade)
+- `npm run lint`: 4 warnings (P3b-baseline) — nu 60 filer scannade istället för 59 pga ny tsconfig.tests.json
+- `npm run build`: 325.37 kB / gzip 102.56 kB (oförändrad — typecheck-tillägget påverkar inte runtime)
+- `npm run test:api`: 72 passed + 41 skipped (P3b-baseline)
+- `npm audit`: 0 vulnerabilities
 
 ### 3.3 K0åc — CI test:api-split (startvillkor 3)
 TBD — Code-prompt levereras efter K0åb committad. Två alternativ:
@@ -213,7 +236,7 @@ Pass/fail per krav:
 | Hub-synk klar (om UNIVERSAL-poster) | TBD | `~/Repon/marcus-system/tasks/lessons.md` synkad |
 | `tasks/todo.md` uppdaterad | TBD | Fas 2 markerad ✅, Fas 2.5 listad som nästa |
 | `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (ADR-025) | TBD | "Senast uppdaterad"-stämpel bumpad + Fas 2-status reflekterad |
-| Sessionsdok låst | TBD | Denna commit (K-sista) är touch nr 3 efter K1 (skelett) + K1.2 (early bake-in 2026-05-11) |
+| Sessionsdok låst | TBD | Denna commit (K-sista) är touch nr 4 efter K1 (skelett) + K1.2 (K1+K0åa bake-in) + K1.3 (K0åb bake-in). Disciplin reviderad i header — K1.N bake-ins är etablerat mönster för Fas 2-sessionen, inte enstaka avsteg. |
 | Transcript sparat | TBD — Marcus' beslut vid K5 mellan (a) återupptag transcript-disciplinen (skapa `tasks/sessions/transcripts/`-mappen + första transcript-save) eller (b) defer till separat process-runda. Frågan exponerades i K1-leveransen (mappen saknas i repot). | `tasks/sessions/transcripts/2026-05-11.txt` finns + Marcus' beslut dokumenterat — eller defer-not committad |
 
 ### 7.2 Lessons-skörd
@@ -231,7 +254,32 @@ När en ref till en sessionsdok ska flyttas till `archive/` vid sessionsstart/-a
 
 **Generaliserbar:** gäller alla "aktiv X"-pekare som någonsin arkiveras (sessionsdok, ADR-status, fas-status, dokumentversioner). Föreslås UNIVERSAL-lyft + cross-repo-synk till `marcus-system/tasks/lessons.md` vid K5.
 
-**Kandidat 2-N:** TBD — fångas under K0åb-K4.
+**Kandidat 2 — STOPPA-OCH-FRÅGA-mönster i Code-prompter fungerar [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: K0åb-prompten 2026-05-11
+
+Code-prompter som inkluderar explicit STOPPA-checkpoints vid förväntat-osäkra utfall (typ "STANNA om typecheck:tests visar fler än X fel") fångar dolda isberg som annars hade fortsatt orörda. K0åb-prompten innehöll: "STOPPA OCH FRÅGA om npm run typecheck:tests visar fler än 0 fel — vi vill verifiera att helpers.ts:18-fixen var den enda dolda type-buggen, inte bara den vi visste om." Code stannade exakt rätt vid 8 fel istället för att försöka maskera dem. **Generaliserbar regel:** när en åtgärd avslöjar tidigare osynliga delar av kodbasen (typecheck över ny path, lint över ny mapp, test över ny domän), bygg in STOPPA-OCH-FRÅGA i prompten innan IMPLEMENTERA-blocket. Förväntat: scope växer med 5-10× när luckor öppnas.
+
+**Kandidat 3 — Implicit transitiv dep → explicit när direkt-användning kommer [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: K0åb @types/node-beslut 2026-05-11
+
+När `tests/` eller `src/` börjar referera typer/paket som funnits transitivt (via peer-deps eller indirect dependencies), lyft till explicit devDep/dep. Logisk ägandelogik: om koden använder det direkt, äger paketet sin position i package.json. Risk för implicit transitiv: (a) Dependabot ser inte uppdateringar, (b) version-fluktuation om peer-providern uppgraderas, (c) tyst-bryt om peer-providern slutar peera. **Generaliserbar regel:** vid varje "varför fungerar det här?" om en typ/funktion som inte är explicit deklarerad — lyft till explicit deklaration. Konsistens med Fas A "operations-baserat API explicit istället för fritt tableId"-mönster: explicit > implicit i alla riktningar.
+
+**Kandidat 4 — Code applicerar tidigare commit-mönster automatiskt utan explicit instruktion när scope matchar [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: K0åb två-commit-separation 2026-05-11
+
+K0åb-prompten skrev inte explicit "dela i två commits". När Marcus svarade Alt 2 (install @types/node) applicerade Code spontant K0åa-mönstret (deps-install separerat från fix-commit) och producerade två commits (`a5a477b` + `1d02b3b`) utan att fråga. Resultatet var korrekt och följde best practice. **Generaliserbar regel:** Code internaliserar kommit-mönster över sessioner — om K_N använder ett mönster, K_(N+1) med liknande scope tenderar att följa det utan explicit prompt. Implikation för prompt-design: när ett tidigare mönster fungerade, behöver det inte upprepas i varje prompt; Code känner igen det. Men: om man vill avvika från etablerat mönster, MÅSTE det vara explicit i prompten. Tystnad = mönster-igenkänning.
+
+**Kandidat 5 — Sessionsdok-disciplin revideras när avvikelse-volym kräver det [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: K1.2 + K1.3 early bake-ins 2026-05-11
+
+Ursprunglig sessionsdok-disciplin (P3a-mönster): "K1 + K-sista". I Fas 2 K1 + K0åa + K0åb genererade tillsammans 4 commit-hashar + 8 dolda type-fel + 5 lärdomskandidater + 3 K1-leverans-avvikelser. För mycket information för K-sista att baka in från Chat-kontext utan tappad detalj. Praktiskt mönster blev: **K1 (skelett) + K1.N bake-ins efter substantiella K0-sub-klungor + K-sista (full retrospektiv)**. Disciplin reviderad i sessionsdok-headern 2026-05-11 (K1.3). **Generaliserbar regel:** sessionsdok-disciplin är inte universell — den beror på faktisk avvikelse-volym per K. Lågvolyms-sessioner (få commits, få avvikelser) följer "K1 + K-sista". Högvolyms-sessioner (många commits, många avvikelser) behöver "K1 + K1.N bake-ins + K-sista". Beslutskriterium: när Chat-kontextens minne av exakt detaljer börjar tunnas, är det dags för bake-in. Disciplin tjänar dokumentet, inte tvärtom.
+
+**Kandidat 6 — Verifieringsräkning i str_replace-prompter ska räkna alla refs i ny string [UNIVERSAL]**
+> Datum: 2026-05-11 | Källa: K1.2-verifiering 2026-05-11
+
+K1.2-prompten specificerade `grep -c "Kandidat 1" → 1 träff` som verifieringscheck. Faktisk träffmängd: 2 (rubriken i Del 7.2 + korslänk från Del 2). Båda specificerade i str_replace själv — räkningsmisstaget var Chat:s, inte Code's. **Generaliserbar regel:** när en str_replace-patch lägger till en identifierare på flera ställen (rubrik + korslänkar + commit-message-mention etc.), räkna alla förekomster i den nya texten innan verifieringsgreparna formuleras. Annars triggar Code "STOPPA OCH FRÅGA" på falsk positiv, vilket bryter flödet. **Mönstret:** efter att ha skrivit `new_str` för en str_replace, kör mental `grep -c "<token>"` på den nya texten + alla andra ändringar i patchen innan exakta siffror sätts i verifieringsblocket. Bättre: använd "minst X träffar" istället för "exakt X" när osäkerhet finns — Code STOPPAR bara på färre träffar, inte fler.
+
+**Kandidat 7-N:** TBD — fångas under K0åc-K4.
 
 ### 7.3 ADR-kandidater
 
