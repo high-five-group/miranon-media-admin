@@ -37,3 +37,6 @@ npm-debug.log*
 
 # Supabase CLI state (link, project-ref cache)
 supabase/.temp/
+
+# Odoo migration workbench — separat test-migrationsexperiment, ej del av app-bygget
+odoo-migration-workbench/
