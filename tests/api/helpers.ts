@@ -34,10 +34,33 @@ export function getApiConfig(): ApiConfig {
   const adminEmail = process.env.TEST_ADMIN_EMAIL;
   const adminPassword = process.env.TEST_ADMIN_PASSWORD;
 
-  test.skip(
-    !baseUrl || !anonKey || !userEmail || !userPassword || !adminEmail || !adminPassword,
-    'API-tester kräver TEST_SUPABASE_URL, TEST_SUPABASE_ANON_KEY, TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_ADMIN_EMAIL och TEST_ADMIN_PASSWORD i env.',
-  );
+  const missing = [
+    !baseUrl && 'TEST_SUPABASE_URL',
+    !anonKey && 'TEST_SUPABASE_ANON_KEY',
+    !userEmail && 'TEST_USER_EMAIL',
+    !userPassword && 'TEST_USER_PASSWORD',
+    !adminEmail && 'TEST_ADMIN_EMAIL',
+    !adminPassword && 'TEST_ADMIN_PASSWORD',
+  ].filter(Boolean) as string[];
+
+  if (missing.length > 0) {
+    const skipReason = `API-staging-tester kräver ${missing.join(', ')} i env (saknas: ${missing.length} av 6).`;
+
+    // STAGING_REQUIRED=1 → hard-fail istället för tyst skip.
+    // Sätts av CI på api-staging-stepet för att eliminera falsk-grön signal.
+    // Lokal dev utan .env.test laddad → tyst skip (dev-ergonomi behålls).
+    if (process.env.STAGING_REQUIRED === '1') {
+      throw new Error(
+        `STAGING_REQUIRED=1 men staging-env är ofullständig. ${skipReason}\n\n` +
+          `I CI: verifiera att alla 6 TEST_*-secrets är satta i repo-settings ` +
+          `(Settings → Secrets and variables → Actions) och att api-staging-stepet ` +
+          `injicerar dem via env:-block. Lokalt: ladda .env.test före npm run test:api:staging ` +
+          `(set -a; . ./.env.test; set +a).`,
+      );
+    }
+
+    test.skip(true, skipReason);
+  }
 
   return {
     baseUrl: baseUrl ?? '',

@@ -36,8 +36,19 @@ jobs:
       - name: TypeScript check (tests)
         run: npm run typecheck:tests
 
-      - name: API tests
-        run: npm run test:api
+      - name: API tests (pure)
+        run: npm run test:api:pure
+
+      - name: API tests (staging)
+        run: npm run test:api:staging
+        env:
+          STAGING_REQUIRED: '1'
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
 
       - name: Build
         run: npm run build
