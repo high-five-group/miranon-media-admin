@@ -15,7 +15,7 @@
 // Båda test-users måste finnas i staging-projektet. Skapa med
 // supabase CLI eller via dashboard innan testerna körs.
 
-import { type APIRequestContext, test } from '@playwright/test';
+import { type APIRequestContext, type APIResponse, test } from '@playwright/test';
 
 export interface ApiConfig {
   baseUrl: string;

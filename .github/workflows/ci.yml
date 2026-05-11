@@ -33,6 +33,9 @@ jobs:
       - name: TypeScript check
         run: npx tsc --noEmit
 
+      - name: TypeScript check (tests)
+        run: npm run typecheck:tests
+
       - name: API tests
         run: npm run test:api
 
