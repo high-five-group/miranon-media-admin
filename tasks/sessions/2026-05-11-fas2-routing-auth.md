@@ -15,6 +15,61 @@
 
 ---
 
+## Sessions-handoff (för kall sessionsstart)
+
+> **Om du är en ny Chat-context som öppnar detta dokument utan föregående minnesläge — läs detta block först, sedan följ läs-ordningen nedan. Skippa Del 1-8 för översikt; gå direkt till handoff-sammanfattningen.**
+
+### Var vi är (2026-05-11)
+
+Fas 2 K0 startvillkor 1-3 ✅ **KLAR**. K0åd-K0åf "Direkt efter Fas 2"-fynd (från Codex kategori 2) återstår innan K2 implementation av TanStack Router + AuthProvider. Sessionsdoket är på touch nr 5 efter K1 + K1.2 + K1.3 + K1.4 + K1.5 (denna senaste = lessons-skörd Kandidat 13-15-bake-in). 12 UNIVERSAL-lessons från K0åa-K0åc lyfta till `tasks/lessons.md` + hub (`marcus-system/tasks/lessons.md`) under H2 `## 2026-05-11 — Fas 2 K0 startvillkoren`. CI grön på första försök efter K0åc.2 (run 25663357991, 36s).
+
+### Läs-ordning för ny session (sessionsstart-checklista anpassad för Fas 2)
+
+Per `~/Repon/miranon-media-admin/CLAUDE.md` sessionsstart-checklistan + denna handoff-tilläggsrad:
+
+1. `~/Repon/marcus-system/CLAUDE.md` — Hub-konstitution, principer, sessionsdok-rutin
+2. `~/Repon/miranon-media-admin/CLAUDE.md` — Projektkonstitution, **Status-sektionen är aktuell post-Session 4** (Fas 2 K0 1-3 ✅, K0åd-K0åf eller K2 nästa)
+3. `tasks/lessons.md` — UNIVERSAL-lärdomar. Senaste H2-sektion `## 2026-05-11 — Fas 2 K0 startvillkoren` har 14-15 nya poster relevanta för Fas 2-arbetet (specifikt: Kandidat 2 STOPPA-OCH-FRÅGA, Kandidat 5 sessionsdok-disciplin, Kandidat 7 refactor/semantik-separation, Kandidat 11 designnoter-ska-verifieras, Kandidat 12 multipla sanningskällor, Kandidat 15 chat-kontext-disciplin)
+4. `tasks/todo.md` — Aktuellt fokus reflekterar Fas 2 K0-status
+5. `docs/byggplan.md` — Aktuell fas: §4 Fas 2-prompten
+6. **Detta sessionsdok — Del 3 (K0åa-K0åf-progress) + Del 7.2 (lessons-skörd) är värda att skanna; Del 4-8 är TBD-placeholders för K2-K4 och K-sista**
+7. `git log -10 --oneline` — senaste 10 commits ger sekvens-överblick. Förvänta: 8400c3d (todo) + b4f42f2 (CLAUDE.md) + 91db29b (hub-lessons) + f1e609e (miranon-lessons) + <K1.5-hash> + 3927a24 (K1.4) + 1138e38 (K0åc.2) + 3015d08 (K0åc.1) + 3b29f41 (K1.3) + fc6f43e (K1.2)
+
+### Vad nästa session ska göra
+
+Marcus väljer en av två startpunkter:
+
+- **Alt A (rekommenderat) — K0åd-K0åf "Direkt efter Fas 2"-fynd:**
+  - K0åd: `docs/byggplan.md:249` engelska→svenska statusvärden (~5 min)
+  - K0åe: Aktivera Zod `.parse()` i `AirtableAdapter` reads (~30 min, ev. ADR-026)
+  - K0åf: `docs/specs/KVALITETSDEFINITIONER-11.md` Vue→React (~30 min, ev. ADR-027)
+  - Motivering: håller K0-fasens scope rent + stänger Codex' kategori 2-fynd före K2 startar. Dessa tre är dokumenterade i Del 3.4-3.6 nedan.
+
+- **Alt B — K2 implementation direkt:**
+  - TanStack Router file-based skelett (`vite.config.ts` + `tsr.config.json` + `src/routes/__root.tsx`)
+  - AuthProvider + ErrorBoundary + Suspense
+  - 8 DoD-punkter i byggplan §4 Fas 2-prompten
+  - Motivering: startvillkoren är klara, ingen blocker. K0åd-K0åf kan tas parallellt eller efter K2.
+
+### Disciplin-noteringar för ny session
+
+- **Sessionsdok-disciplin är reviderad** (se header + Kandidat 5 i Del 7.2): "K1 + K1.N bake-ins + K-sista" är etablerat mönster för denna högvolyms-session. K1.N bake-ins committas efter substantiella K-sub-klungor. Touch-count revideras dynamiskt.
+- **STOPPA-OCH-FRÅGA-mönstret** har fångat 3 substantiella problem i K0åa-K0åc (Kandidat 2 + 11 i lessons.md). Bygg in det i Code-prompter vid förväntat-osäkra utfall.
+- **Format-bridge** mellan sessionsdok och lessons.md är hybrid: kompakt 1-paragraph i lessons.md med korslänk till expanderat resonemang i sessionsdokets Del 7.2 (se Kandidat 14).
+- **Inline-källor i Code-prompter** (UNIVERSAL från P3b 2026-05-05) — referera inte "Del N i sessionsdoket" som källa under körning. Lägg innehåll inline i prompten.
+- **Chat-kontext lever inte över sessionsbyte** (Kandidat 15 från denna session — meta-lärdom från Steg 5-bake-in). Allt som ska överleva ska in i en av: sessionsdok-bake-in / lessons.md / ADR.
+
+### Var den auktoritativa Fas 2-trailen finns (efter Session 4)
+
+- **Sessionsdok:** denna fil (`tasks/sessions/2026-05-11-fas2-routing-auth.md`)
+- **K0-commits:** `13cdf86` (åa nuqs) + `a5a477b` + `1d02b3b` (åb typecheck:tests) + `3015d08` + `1138e38` (åc CI-split + STAGING_REQUIRED)
+- **K1.N bake-ins:** `6af3927` (K1) + `fc6f43e` (K1.2) + `3b29f41` (K1.3) + `3927a24` (K1.4) + `<K1.5-hash>` (K1.5 lessons-skörd 13-15)
+- **Lessons-lyft:** `f1e609e` (miranon) + `91db29b` (hub) + `<K1.5-lessons-hash>` (miranon) + `<K1.5-hub-hash>` (hub)
+- **Mini-överlämnings-commits:** `b4f42f2` (CLAUDE.md) + `8400c3d` (todo.md) + `<denna handoff-commit>`
+- **CI grön-bekräftelse:** [run 25663357991](https://github.com/marcus803/miranon-media-admin/actions/runs/25663357991) (36s, alla 10 steg gröna)
+
+---
+
 ## Del 1 — Prolog
 
 ### Syfte
