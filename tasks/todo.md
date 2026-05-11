@@ -1,5 +1,5 @@
 # todo.md — Miranon Media Admin (React)
-*Senast uppdaterad: 2026-05-06 (Session 3 — Pre-Fas-2-verifiering klar, Fas 2 startar)*
+*Senast uppdaterad: 2026-05-11 (Session 4 — Fas 2 K0 startvillkor 1-3 ✅ klara, K0åd-K0åf + K2 återstår)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -10,13 +10,27 @@
 
 ## Aktuellt fokus
 
-**Fas 2: Routing + Auth** — TanStack Router file-based routes, auth guard, Supabase login/logout. Se [`docs/byggplan.md`](../docs/byggplan.md) §4 Fas 2-prompten och [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 2 för kontext från Fas A + Fas 0/1.
+**Fas 2: Routing + Auth** — TanStack Router file-based routes, auth guard, Supabase login/logout, nuqs URL-state.
+
+**K0 startvillkor 1-3 ✅ KLAR 2026-05-11** (Session 4): nuqs install, typecheck:tests + APIResponse-fix, falsk-grön CI-fix via STAGING_REQUIRED + 6 GitHub-secrets. CI grön på första försök (36s).
+
+**Återstår innan Fas 2 K2 implementation:**
+- K0åd: `docs/byggplan.md:249` engelska→svenska statusvärden (Codex' "Direkt efter Fas 2"-fynd 1)
+- K0åe: Aktivera Zod `.parse()` i `AirtableAdapter` reads (fynd 2 — ev. ADR-026-trigger)
+- K0åf: `docs/specs/KVALITETSDEFINITIONER-11.md` Vue→React (fynd 3 — ev. ADR-027-trigger)
+
+Marcus' val vid ny session-start: K0åd-K0åf först (rekommenderat — håller K0-fasens scope rent) eller K2 direkt (startvillkoren är klara, ingen blocker).
+
+Aktiv sessionsdok: [`tasks/sessions/2026-05-11-fas2-routing-auth.md`](sessions/2026-05-11-fas2-routing-auth.md) (K1.4-baked, väntar på Steg 4 Sessions-handoff + Steg 5 Kandidat 13-15-bake-in innan session-byte).
+
+Se [`docs/byggplan.md`](../docs/byggplan.md) §4 Fas 2-prompten och [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 2 för kontext från Fas A + Fas 0/1.
 
 **Session-historik:**
 - **Session 1 (React): 2026-04-14** — Fas 0 + Fas 1 klara. BUILD-LOG + 10 ADR:er skapade. Dokumentationsrutiner (BUILD-LOG + ADR) integrerade i CLAUDE.md sessionsstart/avslut. Commits: `fcc6de3`, `e3d8e8a`, `c91bfa0`, `680858c`.
 - **Session 2 (React): 2026-04-30 → 2026-05-05** — Fas A (säkerhetshardening, M1–M8, 14 commits, 113 tester) + P0–P3a byggplan-revision (`docs/byggplan.md` 832 rader, 13 fas-prompter, 10 nya ADR:er ADR-011..ADR-020, 7 UNIVERSAL-lessons). P3b städning pågår. Se [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 2 för full retrospektiv.
 - **Session 3 (Pre-Fas-2-verifiering): 2026-05-06** — Repo-strukturell polish + publika professionalitetssignaler. K3 åa-åf: LICENSE + package.json metadata + .github/-paketet (CI + dependabot + templates) + CHANGELOG/SECURITY/CONTRIBUTING + README badges/Documentation map + docs/-omstrukturering (specs/analysis/reference/logs) + analys/ → docs/research/datamodell-research/ + tasks/sessions/-arkivering. 4 nya ADR:er (ADR-021..024). Trail: [`tasks/sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md`](sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md).
-- *Session 1 (React) motsvarar Session 31 i total projekthistorik. Vue-bygget var session 1–30 i `~/Repon/miranon-media-os/`. Session 2 = Session 32–34.*
+- **Session 4 (Fas 2 K0 startvillkor): 2026-05-11** — K0 startvillkor 1-3 av 3 klara. Två sub-faser per startvillkor där refactor/semantik kan separeras (K0åb.1+.2, K0åc.1+.2). Plus 4 K1.N early bake-ins av sessionsdoket (`6af3927` + `fc6f43e` + `3b29f41` + `3927a24`). 6 K0-commits: `13cdf86` (nuqs) + `a5a477b` + `1d02b3b` (typecheck:tests + APIResponse + @types/node) + `3015d08` + `1138e38` (CI test:api-split + STAGING_REQUIRED + 6 GitHub-secrets). CI grön på första försök efter K0åc.2 (36s, run 25663357991): 72 pure passed + 38 staging passed + 3 M4-defer skipped + 8 övriga steps. 12 UNIVERSAL-lessons lyfta till lessons.md + hub (`f1e609e` + `91db29b`). Aktiv sessionsdok-trail: [`tasks/sessions/2026-05-11-fas2-routing-auth.md`](sessions/2026-05-11-fas2-routing-auth.md). PÅGÅR — K0åd-K0åf "Direkt efter Fas 2"-fynd + K2 implementation återstår.
+- *Session 1 (React) motsvarar Session 31 i total projekthistorik. Vue-bygget var session 1–30 i `~/Repon/miranon-media-os/`. Session 2 = Session 32–34. Session 3 = Session 35. Session 4 = Session 36.*
 
 ---
 
