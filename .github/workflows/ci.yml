@@ -57,5 +57,22 @@ jobs:
           TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
 
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+        # Engångs-installation per CI-run för E2E-testerna nedan. ~30s extra.
+
+      - name: E2E tests (staging)
+        run: npm run test:e2e:staging
+        env:
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          # Vite dev-server (startas av Playwright webServer-config) validerar VITE_*-vars
+          # vid uppstart via @t3-oss/env-core. Sätt = staging-Supabase så dev-servern
+          # kopplar mot samma backend som testerna förväntar.
+          VITE_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+
       - name: Build
         run: npm run build
