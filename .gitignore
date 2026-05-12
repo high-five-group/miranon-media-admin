@@ -27,6 +27,11 @@ src/routeTree.gen.ts
 /test-results
 /playwright/.cache
 
+# Playwright auth state — innehåller TEST_USER session-tokens, ALDRIG committa
+playwright/.auth/*
+!playwright/.auth/.gitkeep
+!playwright/.auth/README.md
+
 # Logs
 logs
 *.log
