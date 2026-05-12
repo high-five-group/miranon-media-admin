@@ -27,6 +27,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Audit dependencies (audit-ci with allowlist)
+        run: npx audit-ci --config audit-ci.jsonc
+        # audit-ci ersätter `npm audit --audit-level=high` per K0åg + ADR-028.
+        # Allowlist GHSA-rmmr-r34h-pfm5 är aktiv för pre-malware @tanstack/history@1.161.6.
+        # Fail-fast supply-chain-gate FÖRE secrets exponeras till staging-tester.
+        # Granskas veckovis per tasks/todo.md.
+
       - name: Biome check
         run: npx @biomejs/biome check .
 

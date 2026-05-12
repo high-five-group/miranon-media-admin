@@ -21,6 +21,20 @@
 
 Aktiv sessionsdok: [`tasks/sessions/2026-05-11-fas2-routing-auth.md`](sessions/2026-05-11-fas2-routing-auth.md) (K1.4-baked, väntar på Steg 4 Sessions-handoff + Steg 5 Kandidat 13-15-bake-in innan session-byte).
 
+### Återkommande disciplin: Veckovis audit-ci allowlist-granskning (K0åg whitelist-period)
+
+`audit-ci.jsonc` allowlist mot GHSA-rmmr-r34h-pfm5 är aktiv tills TanStack publicerar patched versioner för `@tanstack/history`, `@tanstack/react-router`, `@tanstack/router-plugin`.
+
+- **Senast granskad:** 2026-05-12 (K0åg etablering)
+- **Nästa granskning senast:** 2026-05-19
+- **Granskningssteg:**
+  1. `npm view @tanstack/react-router@latest version` + `npm view @tanstack/react-router time --json | tail -10`
+  2. `npm view @tanstack/history@latest version` analogt
+  3. `npm view @tanstack/router-plugin@latest version` analogt
+  4. Kolla GitHub advisory-status: `curl -s https://api.github.com/advisories/GHSA-rmmr-r34h-pfm5 | grep -E '"patched_versions"|"withdrawn_at"'`
+  5. Om patched finns ELLER advisory withdrawn → starta K0-analog sub-klunga (förslag K0åh eller motsvarande inom aktuell fas) för uppgradering + allowlist-rensning per [ADR-028](../docs/decisions/ADR-028-supply-chain-incident-respons.md) 5-stegs Konvention-flöde
+- **Tas bort från denna lista** när allowlist är borttagen från `audit-ci.jsonc`
+
 Se [`docs/byggplan.md`](../docs/byggplan.md) §4 Fas 2-prompten och [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 2 för kontext från Fas A + Fas 0/1.
 
 **Session-historik:**

@@ -1,0 +1,20 @@
+{
+  // $schema ger IDE-completion. Källa: https://github.com/IBM/audit-ci
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+
+  // Fail vid high+critical (matchar pre-K2 `npm audit --audit-level=high`-beteende).
+  // Moderate/low rapporteras men failar inte CI.
+  "high": true,
+
+  // Allowlist för känd-acceptat tillstånd. Tas bort när TanStack publicerar
+  // patched versioner och K0-analog uppgraderings-runda är klar.
+  // Se ADR-028 5-stegs Konvention-flöde för borttagnings-protokoll.
+  // Granskas veckovis per tasks/todo.md.
+  "allowlist": [
+    // GHSA-rmmr-r34h-pfm5 — TanStack supply chain malware in @tanstack/history
+    // (publicerad 2026-05-11 23:39 UTC). Vår installerade 1.161.6 är pre-malware
+    // (integrity-MATCH verifierat i K0åg, commit ea59787). Whitelist är aktiv
+    // tills patched versioner publiceras. Se ADR-028.
+    "GHSA-rmmr-r34h-pfm5"
+  ]
+}
