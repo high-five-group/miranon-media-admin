@@ -1,10 +1,10 @@
-import type { AuthContextValue } from '@/auth/AuthProvider';
 import * as Sentry from '@sentry/react';
 import type { QueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { Outlet, createRootRouteWithContext } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { Suspense } from 'react';
+import type { AuthContextValue } from '@/auth/AuthProvider';
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -22,7 +22,7 @@ function RootLayout() {
     <Sentry.ErrorBoundary
       fallback={({ resetError }) => (
         <div role="alert" className="p-4">
-          <h1 className="text-2xl font-bold">Något gick fel</h1>
+          <h1 className="font-bold text-2xl">Något gick fel</h1>
           <p className="mt-2">Vi kunde inte ladda sidan. Försök ladda om.</p>
           <button
             type="button"

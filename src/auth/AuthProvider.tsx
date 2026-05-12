@@ -1,4 +1,4 @@
-import { type ReactNode, createContext } from 'react';
+import { createContext, type ReactNode } from 'react';
 
 export interface AuthContextValue {
   // Full implementation i K3 — denna typ är skelett för router-context-typing.
