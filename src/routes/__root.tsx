@@ -3,6 +3,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { Suspense } from 'react';
 import type { AuthContextValue } from '@/auth/AuthProvider';
 
@@ -44,7 +45,9 @@ function RootLayout() {
           </div>
         }
       >
-        <Outlet />
+        <NuqsAdapter>
+          <Outlet />
+        </NuqsAdapter>
       </Suspense>
       {import.meta.env.DEV && (
         <>
