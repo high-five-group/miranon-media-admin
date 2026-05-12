@@ -1,3 +1,6 @@
+import * as Sentry from '@sentry/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -7,19 +10,56 @@ import './env';
 import './styles/base.css';
 import './styles/tailwind.css';
 
+import { AuthProvider } from './auth/AuthProvider';
 import { reportWebVitals } from './lib/report-web-vitals';
 import { initSentry } from './observability/sentry';
+import { routeTree } from './routeTree.gen';
 
 // M7: initiera Sentry FÖRE React mountas så att tidiga fel
 // (env-validering, root-element-fel, ...) fångas. Skip i lokal dev.
 initSentry();
 
+// QueryClient med defaults per STATE-STRATEGY.md §3.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 min — data anses färsk
+      gcTime: 30 * 60 * 1000, // 30 min — cachad data lever kvar
+      retry: 3,
+      retryDelay: (attempt) => Math.min(200 * 2 ** attempt, 2000),
+      refetchOnWindowFocus: true, // Uppdatera när Lotta återvänder
+      refetchOnReconnect: 'always', // Uppdatera när internet återgår
+    },
+  },
+});
+
+// Router instantierad på modul-scope. context.auth fylls per-render i App-komponenten
+// nedan (TanStack Router-rekommendation för auth-context-pattern).
+const router = createRouter({
+  routeTree,
+  context: {
+    queryClient,
+    auth: { user: null, isLoading: false }, // K2-skelett: overrides i App via useAuth() i K3
+  },
+});
+
+// Type-safe router registreras globalt.
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
+
 function App() {
+  // I K2 är AuthProvider-skelettet trivialt (statiskt value). K3 byter till useAuth()-hook
+  // från src/auth/useAuth.ts som dynamiskt läser context.
   return (
-    <main className="min-h-screen bg-bg p-8 font-sans">
-      <h1 className="text-4xl text-primary">Miranon Media Admin</h1>
-      <p className="mt-4 text-body text-text-secondary">Fas 0 — projektsetup klar.</p>
-    </main>
+    <RouterProvider
+      router={router}
+      context={{
+        auth: { user: null, isLoading: false },
+      }}
+    />
   );
 }
 
@@ -28,9 +68,22 @@ if (!rootEl) {
   throw new Error('Root-elementet #root saknas i index.html');
 }
 
-createRoot(rootEl).render(
+// React 19 createRoot-hooks integrerar Sentry för root-level error-capture.
+// Sentry.ErrorBoundary i __root.tsx fångar UI-render-fel; createRoot-hooks fångar
+// allt som passerar förbi (event handlers, async, recoverable errors).
+createRoot(rootEl, {
+  onUncaughtError: Sentry.reactErrorHandler((error, errorInfo) => {
+    console.error('Uncaught error:', error, errorInfo);
+  }),
+  onCaughtError: Sentry.reactErrorHandler(),
+  onRecoverableError: Sentry.reactErrorHandler(),
+}).render(
   <StrictMode>
-    <App />
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );
 
