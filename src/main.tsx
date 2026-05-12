@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createRouter, RouterProvider } from '@tanstack/react-router';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider } from '@tanstack/react-router';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -13,51 +13,31 @@ import './styles/tailwind.css';
 import { AuthProvider } from './auth/AuthProvider';
 import { reportWebVitals } from './lib/report-web-vitals';
 import { initSentry } from './observability/sentry';
-import { routeTree } from './routeTree.gen';
+import { queryClient, router } from './router';
 
 // M7: initiera Sentry FÖRE React mountas så att tidiga fel
 // (env-validering, root-element-fel, ...) fångas. Skip i lokal dev.
 initSentry();
 
-// QueryClient med defaults per STATE-STRATEGY.md §3.
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 min — data anses färsk
-      gcTime: 30 * 60 * 1000, // 30 min — cachad data lever kvar
-      retry: 3,
-      retryDelay: (attempt) => Math.min(200 * 2 ** attempt, 2000),
-      refetchOnWindowFocus: true, // Uppdatera när Lotta återvänder
-      refetchOnReconnect: 'always', // Uppdatera när internet återgår
-    },
-  },
-});
-
-// Router instantierad på modul-scope. context.auth fylls per-render i App-komponenten
-// nedan (TanStack Router-rekommendation för auth-context-pattern).
-const router = createRouter({
-  routeTree,
-  context: {
-    queryClient,
-    auth: { user: null, isLoading: false }, // K2-skelett: overrides i App via useAuth() i K3
-  },
-});
-
-// Type-safe router registreras globalt.
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router;
-  }
-}
-
 function App() {
-  // I K2 är AuthProvider-skelettet trivialt (statiskt value). K3 byter till useAuth()-hook
-  // från src/auth/useAuth.ts som dynamiskt läser context.
+  // K3.1: hardcoded K2-skelett-context behålls tills K3.2 byter till InnerApp-pattern.
+  // K3.2 ersätter detta med useAuth()-baserat context från en InnerApp-wrapper
+  // + router.invalidate() vid auth-state-byte.
   return (
     <RouterProvider
       router={router}
       context={{
-        auth: { user: null, isLoading: false },
+        auth: {
+          user: null,
+          isLoading: false,
+          isAuthenticated: false,
+          login: async () => {
+            throw new Error('K3.1 skelett — login implementeras i K3.2');
+          },
+          logout: async () => {
+            throw new Error('K3.1 skelett — logout implementeras i K3.2');
+          },
+        },
       }}
     />
   );
