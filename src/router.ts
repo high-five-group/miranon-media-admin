@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { createRouter } from '@tanstack/react-router';
+import type { AuthContextValue } from './auth/AuthProvider';
 import { routeTree } from './routeTree.gen';
 
 // QueryClient defaults per docs/specs/STATE-STRATEGY.md §3.
@@ -21,16 +22,18 @@ export const queryClient = new QueryClient({
  * i main.tsx (TanStack-rekommenderat mönster för auth-context). queryClient är statisk
  * modul-singleton.
  *
- * Router invalideras via router.invalidate() i AuthProvider vid auth-state-byte (login/logout)
- * så beforeLoad-guard re-evalueras och redirect:ar korrekt.
+ * Router invalideras via router.invalidate() i InnerApp (main.tsx) vid auth-state-byte
+ * (login/logout) så beforeLoad-guard re-evalueras och redirect:ar korrekt.
+ *
+ * `auth: undefined as unknown as AuthContextValue`-cast är TanStack-etablerat mönster.
+ * InnerApp fyller den faktiska auth-context-värdet innan någon route kör.
+ * (Alternativet `undefined!` non-null-assertion bryter biome's noNonNullAssertion-regel.)
  */
 export const router = createRouter({
   routeTree,
   context: {
     queryClient,
-    // InnerApp i main.tsx fyller auth via useAuth() innan någon route kör.
-    // `undefined!` non-null-assertion är TanStack-etablerat mönster för detta.
-    auth: undefined!,
+    auth: undefined as unknown as AuthContextValue,
   },
 });
 

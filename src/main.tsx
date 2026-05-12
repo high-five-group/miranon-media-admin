@@ -32,6 +32,9 @@ initSentry();
 function InnerApp() {
   const auth = useAuth();
 
+  // auth.isAuthenticated är medveten TRIGGER för router.invalidate() vid login/logout-byte.
+  // Effekten KÖR när isAuthenticated ändras — den refererar inte värdet i body (router är modul-singleton).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: medveten TRIGGER på auth-state-byte
   useEffect(() => {
     router.invalidate();
   }, [auth.isAuthenticated]);
