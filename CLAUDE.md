@@ -290,6 +290,24 @@ Vid varje sessionsstart, kontrollera audit-status mot känd-acceptat tillstånd:
 - Om `npm audit --json | grep -c GHSA-rmmr-r34h-pfm5` visar färre än 6 träffar → eventuellt TanStack-team har publicerat patched versioner. Granska, uppgradera, ta bort allowlist-post + overrides + pin-disciplin. Se ADR-028.
 - Veckovis granskning av allowlist-relevans: se [`tasks/todo.md`](tasks/todo.md).
 
+### Pre-commit biome-disciplin (Kandidat 25 — K2.2 + K2.3 dubbel-bekräftad)
+
+Innan varje `git add` för commits som introducerar nya filer eller nya imports:
+
+```bash
+npx @biomejs/biome check --write .
+```
+
+INTE bara `npx @biomejs/biome format --write .` — `format` täcker bara formatter-actions. `check --write` täcker även `organizeImports` + safe assist + safe linter-fixes som CI använder.
+
+Lokal `biome format` exit=0 är INTE garanti för CI-grön. Två CI-fails på samma orsak i K2.2 + K2.3 bekräftade mönstret. Kandidat 25 i [`tasks/lessons.md`](tasks/lessons.md).
+
+Verifiera efter:
+```bash
+npx @biomejs/biome check .
+```
+Förvänta: 4 baseline-warnings (reduced-motion `!important` i `src/styles/base.css`) + 1 info (eller motsvarande projekt-baseline). Inga errors.
+
 ## Sessionsavslut
 
 Se `marcus-system/WORKFLOW.md` sessionsavslut-sektion för transcript-disciplin. Transcripts sparas i `tasks/sessions/transcripts/`.
