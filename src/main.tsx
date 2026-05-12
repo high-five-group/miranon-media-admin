@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
-import { StrictMode } from 'react';
+import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 
 // Validera env-variabler vid uppstart — kraschar direkt om något saknas.
@@ -11,6 +11,7 @@ import './styles/base.css';
 import './styles/tailwind.css';
 
 import { AuthProvider } from './auth/AuthProvider';
+import { useAuth } from './auth/useAuth';
 import { reportWebVitals } from './lib/report-web-vitals';
 import { initSentry } from './observability/sentry';
 import { queryClient, router } from './router';
@@ -19,28 +20,23 @@ import { queryClient, router } from './router';
 // (env-validering, root-element-fel, ...) fångas. Skip i lokal dev.
 initSentry();
 
-function App() {
-  // K3.1: hardcoded K2-skelett-context behålls tills K3.2 byter till InnerApp-pattern.
-  // K3.2 ersätter detta med useAuth()-baserat context från en InnerApp-wrapper
-  // + router.invalidate() vid auth-state-byte.
-  return (
-    <RouterProvider
-      router={router}
-      context={{
-        auth: {
-          user: null,
-          isLoading: false,
-          isAuthenticated: false,
-          login: async () => {
-            throw new Error('K3.1 skelett — login implementeras i K3.2');
-          },
-          logout: async () => {
-            throw new Error('K3.1 skelett — logout implementeras i K3.2');
-          },
-        },
-      }}
-    />
-  );
+/**
+ * InnerApp-pattern (officiell TanStack-rekommendation):
+ * useAuth() kan bara anropas i React-komponent, inte i modul-scope. InnerApp wrappar
+ * RouterProvider och passar auth-context dynamiskt. Vid auth-state-byte triggas
+ * router.invalidate() så beforeLoad-guarder re-evalueras.
+ *
+ * Utan router.invalidate() kan _authenticated-routes fortsätta tänka att user är obehörig
+ * efter login, eller vice versa efter logout.
+ */
+function InnerApp() {
+  const auth = useAuth();
+
+  useEffect(() => {
+    router.invalidate();
+  }, [auth.isAuthenticated]);
+
+  return <RouterProvider router={router} context={{ auth }} />;
 }
 
 const rootEl = document.getElementById('root');
@@ -61,7 +57,7 @@ createRoot(rootEl, {
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <App />
+        <InnerApp />
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,

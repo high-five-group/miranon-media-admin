@@ -1,6 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
 import { createRouter } from '@tanstack/react-router';
-import type { AuthContextValue } from './auth/AuthProvider';
 import { routeTree } from './routeTree.gen';
 
 // QueryClient defaults per docs/specs/STATE-STRATEGY.md §3.
@@ -29,7 +28,9 @@ export const router = createRouter({
   routeTree,
   context: {
     queryClient,
-    auth: undefined as unknown as AuthContextValue,
+    // InnerApp i main.tsx fyller auth via useAuth() innan någon route kör.
+    // `undefined!` non-null-assertion är TanStack-etablerat mönster för detta.
+    auth: undefined!,
   },
 });
 
