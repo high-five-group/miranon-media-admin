@@ -10,7 +10,7 @@
 > - `tasks/sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md` (Pre-Fas-2, slutförd 2026-05-07) — arkiveras i K1 enligt ADR-023 sessions-arkivering
 > **Efterföljare:** Fas 2.5 — Schema-kontrakt-sync, mot `docs/byggplan.md` §4 Fas 2.5-prompt.
 > **Stop-test (denna session):** 6 K0-åtgärder committade + Fas 2 DoD 1-8 passerade + Playwright auth-fixture etablerad + ev. ADR:er committade + lessons-skörd lyft + sessionsdok låst + transcript sparat.
-> **Sessionsdok-commit-disciplin (P3a-baserad, reviderad för Fas 2):** K1 = skelett. Faktiska arbets-commits (K0åa-åf, K2-K4) rör INTE detta sessionsdok. **K1.N early bake-ins** committas efter substantiella K0-sub-klungor för att fånga commit-hashar + avvikelser + lärdomskandidater innan K-sista. K-sista bakar in Del 3-8 retrospektiv. Mönsterbyte från ursprungliga 'K1 + K-sista' till 'K1 + K1.N bake-ins + K-sista' beslutat 2026-05-11 efter K0åb genererat 8 dolda type-fel-fynd + flera lärdomskandidater — för mycket att hålla i Chat-kontext tills K-sista. Ren str_replace-patch är konfliktfri och billig. Touch-count revideras dynamiskt under sessionen; aktuell post-K1.6 = 8 (K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 = K-sista för K0-fasen i Session 4). Session 5 (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. **K0 startvillkor-fas 1-3 komplett 2026-05-11** efter K0åc.2 CI grön (36s, 72 pure + 38 staging passed + 3 M4-defer skipped) — Fas 2-implementation (K2) nu unblockad strikt-sekvens-wise; K0åd-K0åf kan tas före eller parallellt med K2 per Marcus' beslut. **Mini-överlämning klar 2026-05-11** (Steg 1 lessons-lyft + Steg 2 CLAUDE.md + Steg 3 todo.md + Steg 4 Sessions-handoff + Steg 5b Kandidat 13-15-bake-in + cross-repo-lessons-lyft) — sessionsdoket är komplett-handoff-redo, väntar på Marcus' Update-klick i Claude.ai-projektet innan ny session-start.
+> **Sessionsdok-commit-disciplin (P3a-baserad, reviderad för Fas 2):** K1 = skelett. Faktiska arbets-commits (K0åa-åf, K2-K4) rör INTE detta sessionsdok. **K1.N early bake-ins** committas efter substantiella K0-sub-klungor för att fånga commit-hashar + avvikelser + lärdomskandidater innan K-sista. K-sista bakar in Del 3-8 retrospektiv. Mönsterbyte från ursprungliga 'K1 + K-sista' till 'K1 + K1.N bake-ins + K-sista' beslutat 2026-05-11 efter K0åb genererat 8 dolda type-fel-fynd + flera lärdomskandidater — för mycket att hålla i Chat-kontext tills K-sista. Ren str_replace-patch är konfliktfri och billig. Touch-count revideras dynamiskt under sessionen; aktuell post-K1.7 = 9 (K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 + K1.7 = K-sista för K0-fasen i Session 4 + K0åg-spårbarhet och skelett-utfyllnad inför Session 5 K2-K5). Session 5 (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. **K0 startvillkor-fas 1-3 komplett 2026-05-11** efter K0åc.2 CI grön (36s, 72 pure + 38 staging passed + 3 M4-defer skipped) — Fas 2-implementation (K2) nu unblockad strikt-sekvens-wise; K0åd-K0åf kan tas före eller parallellt med K2 per Marcus' beslut. **Mini-överlämning klar 2026-05-11** (Steg 1 lessons-lyft + Steg 2 CLAUDE.md + Steg 3 todo.md + Steg 4 Sessions-handoff + Steg 5b Kandidat 13-15-bake-in + cross-repo-lessons-lyft) — sessionsdoket är komplett-handoff-redo, väntar på Marcus' Update-klick i Claude.ai-projektet innan ny session-start.
 > **Scope-splitt-anmärkning:** Fas 2-estimat enligt byggplan §4 = 2 sessioner. Om K0+K2+K3+K4 inte ryms i en chat-session, splitta i Session A (K1+K0+K2) och Session B (K3+K4+K5) per P1-lärdom ("Var beredd att splitta i 2 sessioner om scope växer"). Splitten är förväntad, inte avvikelse.
 
 ---
@@ -21,7 +21,7 @@
 
 ### Var vi är (2026-05-11)
 
-Fas 2 K0 startvillkor 1-3 ✅ **KLAR**. K0åd-K0åf "Direkt efter Fas 2"-fynd (från Codex kategori 2) återstår innan K2 implementation av TanStack Router + AuthProvider. Sessionsdoket är på touch nr 8 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a (Sessions-handoff) + K1.5b (Kandidat 13-15-bake-in) + K1.6 (K-sista för K0-fasen i Session 4, denna). Session 5 (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. 12 UNIVERSAL-lessons från K0åa-K0åc + 3 meta-UNIVERSAL från mini-överlämningen (Kandidat 13-15) lyfta till `tasks/lessons.md` + hub (`marcus-system/tasks/lessons.md`) under H2 `## 2026-05-11 — Fas 2 K0 startvillkoren`. CI grön på första försök efter K0åc.2 (run 25663357991, 36s).
+Fas 2 K0 startvillkor 1-3 ✅ **KLAR** (Session 4). K0åd-K0åf "Direkt efter Fas 2"-fynd ✅ **KLAR** (Session 4-avslut, K1.6). **K0åg (supply chain malware-respons GHSA-rmmr-r34h-pfm5) ✅ KLAR 2026-05-12** (Session 5 K1.7-spårning) — upptäcktes i K1.7 RAPPORTERA Block B, åtgärdades via Strategi 2 (pin exakt + overrides, commits `ea59787` + `35cd10e` ADR-028). Sessionsdoket är på touch nr 9 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a (Sessions-handoff) + K1.5b (Kandidat 13-15-bake-in) + K1.6 (K-sista K0-fasen Session 4) + K1.7 (K0åg-spårning + Del 4-7-skelett inför Session 5, denna). Session 5 implementation (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. 12 UNIVERSAL-lessons från K0åa-K0åc + 3 meta-UNIVERSAL från mini-överlämningen (Kandidat 13-15) + 1 från K0åf (Kandidat 16) lyfta till `tasks/lessons.md` + hub (`marcus-system/tasks/lessons.md`) under H2 `## 2026-05-11 — Fas 2 K0 startvillkoren`. Kandidat 17-19 från K0åg flaggade i Del 7.2-skelettet, lyfts vid K5. CI grön på första försök efter K0åc.2 (run 25663357991, 36s) och efter K0åg-paret (separata runs 2026-05-12 morgon).
 
 ### Läs-ordning för ny session (sessionsstart-checklista anpassad för Fas 2)
 
@@ -35,21 +35,11 @@ Per `~/Repon/miranon-media-admin/CLAUDE.md` sessionsstart-checklistan + denna ha
 6. **Detta sessionsdok — Del 3 (K0åa-K0åf-progress) + Del 7.2 (lessons-skörd) är värda att skanna; Del 4-8 är TBD-placeholders för K2-K4 och K-sista**
 7. `git log -10 --oneline` — senaste 10 commits ger sekvens-överblick. Förvänta: 8400c3d (todo) + b4f42f2 (CLAUDE.md) + 91db29b (hub-lessons) + f1e609e (miranon-lessons) + <K1.5-hash> + 3927a24 (K1.4) + 1138e38 (K0åc.2) + 3015d08 (K0åc.1) + 3b29f41 (K1.3) + fc6f43e (K1.2)
 
-### Vad nästa session ska göra
+### Vad nästa session ska göra (uppdaterat K1.7, 2026-05-12)
 
-Marcus väljer en av två startpunkter:
+Session 5 startar med **Fas 2 K2** — TanStack Router file-based skelett + provider-mounting i `src/main.tsx` + `audit-ci`-disciplin för GHSA-rmmr-r34h-pfm5-whitelist-period. Alla 6 K0-startåtgärder (åa-åf) klara per Session 4. **K0åg (säkerhetsincident-respons) klar 2026-05-12** (commits `ea59787` + `35cd10e`), kodifierad i ADR-028. Sub-klungor K2 → K3 → K4 → K5 enligt Del 4-7 (konkretiserade i K1.7). Estimat: en session om scope håller; splitta till Session 6 om K4+K5 inte ryms.
 
-- **Alt A (rekommenderat) — K0åd-K0åf "Direkt efter Fas 2"-fynd:**
-  - K0åd: `docs/byggplan.md:249` engelska→svenska statusvärden (~5 min)
-  - K0åe: Aktivera Zod `.parse()` i `AirtableAdapter` reads (~30 min, ev. ADR-026)
-  - K0åf: `docs/specs/KVALITETSDEFINITIONER-11.md` Vue→React (~30 min, ev. ADR-027)
-  - Motivering: håller K0-fasens scope rent + stänger Codex' kategori 2-fynd före K2 startar. Dessa tre är dokumenterade i Del 3.4-3.6 nedan.
-
-- **Alt B — K2 implementation direkt:**
-  - TanStack Router file-based skelett (`vite.config.ts` + `tsr.config.json` + `src/routes/__root.tsx`)
-  - AuthProvider + ErrorBoundary + Suspense
-  - 8 DoD-punkter i byggplan §4 Fas 2-prompten
-  - Motivering: startvillkoren är klara, ingen blocker. K0åd-K0åf kan tas parallellt eller efter K2.
+**Aktiv whitelist-disciplin:** `audit-ci.json` skapas i K2 med whitelist för GHSA-rmmr-r34h-pfm5. CI:s audit-steg byter från `npm audit --audit-level=high` till `audit-ci`. Veckovis manuell granskning i `tasks/todo.md`. Sessionsstart-not i CLAUDE.md. Hela disciplinen tas bort när TanStack publicerar patched versioner per ADR-028 5-stegs Konvention-flöde.
 
 ### Disciplin-noteringar för ny session
 
@@ -119,7 +109,7 @@ Sex klung-grupper. Sessionsdok rörs i K1 + K-sista — mellan-klungor lämnar d
 | **K2** | Fas 2 implementation Part 1 — TanStack Router file-based setup: `vite.config.ts` plugin återinförs (togs bort i Fas 0), `tsr.config.json`, `src/routes/__root.tsx` med AuthProvider + ErrorBoundary + Suspense, generated route tree, devtools dev-only | byggplan §4 Fas 2 DoD-rad 1 (delvis) + 5 + 7 + 8 passerade |
 | **K3** | Fas 2 implementation Part 2 — `src/auth/AuthProvider.tsx` + `src/auth/useAuth.ts`, `src/routes/login.tsx`, `src/routes/index.tsx` (login-redirect-stub), skyddade routes via `beforeLoad`-guard mot Supabase-session, logout-flöde<br><br>**Arkitektur-not (från P0-inventeringen rad 2.3):** `auth-provider.tsx` får INTE falla tillbaka på anon-key. Klienten ska behandla anon-fallback som unauthenticated (Codex' startvillkor 2 i Fråga 1). Skyddad route utan session → redirect FÖRE datafetch (inte efter 401). | byggplan §4 Fas 2 DoD-rad 1 + 2 + 3 passerade |
 | **K4** | Fas 2 implementation Part 3 — nuqs `useQueryState` setup på test-route + Playwright `authenticatedPage`-fixture med TEST_*-credentials<br><br>**Korsreferens:** auth-fixture är 3:e komponenten av Codex' tre startvillkor — CI-split (K0åc) säkrar att fixture-frånvaro hard-failer, fixture-implementationen själv är K4. | byggplan §4 Fas 2 DoD-rad 4 + 6 passerade |
-| **K5 (K-sista)** | Stop-test verifiering mot alla 8 DoD-punkter + lessons-skörd lyft till `tasks/lessons.md` (+ ev. hub-synk) + ev. ADR:er + sessionsdok bake-in (Del 3-8) + `tasks/todo.md` uppdaterad + `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (per ADR-025) + transcript-save | Alla 8 DoD-punkter passerade. lessons.md uppdaterad. Sessionsdok låst (denna commit är touch nr 8 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 — touch-count revideras vid varje K1.N bake-in framåt, se header disciplin-not + Del 7.1 "Sessionsdok låst"-rad för aktuell siffra). BYGGPLAN-LÄTTLÄST-v3.md "Senast uppdaterad"-stämpel bumpad. |
+| **K5 (K-sista)** | Stop-test verifiering mot alla 8 DoD-punkter + lessons-skörd lyft till `tasks/lessons.md` (+ ev. hub-synk) + ev. ADR:er + sessionsdok bake-in (Del 3-8) + `tasks/todo.md` uppdaterad + `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (per ADR-025) + transcript-save | Alla 8 DoD-punkter passerade. lessons.md uppdaterad. Sessionsdok låst (denna commit är touch nr 9 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 + K1.7 — touch-count revideras vid varje K1.N bake-in framåt, se header disciplin-not + Del 7.1 "Sessionsdok låst"-rad för aktuell siffra). BYGGPLAN-LÄTTLÄST-v3.md "Senast uppdaterad"-stämpel bumpad. |
 
 ---
 
@@ -156,11 +146,12 @@ Pre-Fas-2-verifieringen Del 6.5 identifierade 6 öppna åtgärder som hanteras s
 | K0åa | `npm install nuqs` | Startvillkor 1 — måste lösas före första route-fil | ~5 min | `13cdf86` |
 | K0åb | `tsconfig.tests.json` + `typecheck:tests`-script + CI-koppling + `helpers.ts:18` `APIResponse`-import + dold-isberg-fix (6× `process` + 1× `URL`) | Startvillkor 2 | ~20 min est, faktisk ~45 min (dold isberg) | `a5a477b` (deps) + `1d02b3b` (fix) |
 | K0åc | CI `test:api`-split via naming convention `.staging.test.ts` (Strategi 1.5) + helpers.ts `STAGING_REQUIRED`-villkor + ci.yml env-block för 6 secrets | Startvillkor 3 | ~15 min est, faktisk ~90 min (pre-flight + GitHub-secrets-set + M4-defer-design-pivot) | `3015d08` (refactor) + `1138e38` (semantik) |
-| K0åd | `docs/byggplan.md:249` — engelska→svenska statusvärden | "Direkt efter Fas 2"-fynd 1 | ~5 min | TBD |
-| K0åe | Aktivera Zod `.parse()` i `AirtableAdapter` reads | "Direkt efter Fas 2"-fynd 2 | ~30 min, ev. ADR | TBD |
-| K0åf | `docs/specs/KVALITETSDEFINITIONER-11.md` Vue→React | "Direkt efter Fas 2"-fynd 3 | ~30 min, ev. ADR | TBD |
+| K0åd | `docs/byggplan.md:249` — engelska→svenska statusvärden | "Direkt efter Fas 2"-fynd 1 | ~5 min | `f2a2d9a` |
+| K0åe | Aktivera Zod `.parse()` i `AirtableAdapter` reads + ADR-026 | "Direkt efter Fas 2"-fynd 2 | ~30 min, ADR-026 trigger | `8095a62` (kod) + `497a89f` (ADR-026) |
+| K0åf | `docs/specs/KVALITETSDEFINITIONER-11.md` Vue→React + ADR-027 | "Direkt efter Fas 2"-fynd 3 | ~30 min, ADR-027 trigger | `a7bdaea` |
+| K0åg | Supply chain malware-respons GHSA-rmmr-r34h-pfm5 — pin exakt `@tanstack/react-router` + `@tanstack/router-plugin`, `overrides` `@tanstack/history` → `1.161.6`, regenererad lock-fil, integrity-MATCH pre/post, ADR-028 | Säkerhetsincident (publicerad 2026-05-11 23:39 UTC, upptäckt i K1.7 RAPPORTERA Block B 2026-05-12) | ~60 min inkl. diagnostik + research + verifiering, ADR-028 trigger | `ea59787` (security-fix) + `35cd10e` (ADR-028) |
 
-**Sekvenskrav:** åa → åb → åc är strikt (alla tre måste vara klara innan K2 startar). åd → åe → åf kan tas i valfri ordning eller parallellt; ingen blockerar K2 strikt, men Marcus' beslut 2026-05-07 var att alla 6 hanteras i Fas 2 K0 innan första route-fil.
+**Sekvenskrav:** åa → åb → åc strikt (alla tre måste vara klara innan K2 startar). åd → åe → åf valfri ordning eller parallellt; ingen blockerar K2 strikt, men Marcus' beslut 2026-05-07 var att alla 6 hanteras i Fas 2 K0 innan första route-fil. **K0åg är säkerhetsincident-respons utanför ursprunglig sekvensplanering** — blockerade K1.7-progress tills åtgärdad per Kandidat 2 STOPPA-OCH-FRÅGA-mönster, kodifierad i ADR-028.
 
 ### 3.1 K0åa — nuqs install (startvillkor 1)
 ✅ KLAR 2026-05-11. Commit `13cdf86` — "chore(deps): install nuqs for URL-state — Fas 2 K0 startvillkor 1". Full slutsignal (faktisk nuqs-version, bundle-storleksdiff, verifierings-output) bakas in i K5.
@@ -282,71 +273,260 @@ Pre-Fas-2-verifieringen Del 6.5 identifierade 6 öppna åtgärder som hanteras s
 
 **Verifieringssvit (9/9 grön efter Check 8-korrigering):** 7 ref-träffar uppdaterade i 4 aktiva dokument (CLAUDE.md ×2, CONTRIBUTING.md ×1, docs/byggplan.md ×3, ACCESSIBILITY-CHECKLIST.md ×1). 22 träffar bevarade i frysta zoner per ADR-022 kategori 2 (sessions-arkiv, extern analys, frysta levereranser, ADR-008 oföränderlig, BUILD-LOG retrospektiv, byggplan-direktiv SLUTFÖRT, aktivt sessionsdok). Build 325.37 kB JS oförändrat — ren docs-omflyttning utan kod-impact.
 
+### 3.7 K0åg — Supply chain malware-respons (GHSA-rmmr-r34h-pfm5)
+
+✅ **KLAR** 2026-05-12. Två commits per ADR-027-mönster (refactor/semantik-separation per Kandidat 7):
+
+**K0åg arbets-commit `ea59787`** — "security(fas2): remediate GHSA-rmmr-r34h-pfm5 supply chain malware in @tanstack/* (K0åg)". Paket-impact: `@tanstack/react-router` `^1.168.19` → `1.168.19` (pin, prefix borttaget), `@tanstack/router-plugin` `^1.167.20` → `1.167.20` (pin), nytt `overrides`-block `"@tanstack/history": "1.161.6"` (transitiv tvång). Lock-fil regenererad helt (`rm -rf node_modules package-lock.json && npm install`). Backup `package-lock.json.pre-k0åg` lokalt untracked för integrity-diff-verifiering.
+
+**K0åg ADR-commit `35cd10e`** — "docs(decisions): add ADR-028 Supply chain incident-respons-protokoll (K0åg)". ADR-028 (`docs/decisions/ADR-028-supply-chain-incident-respons.md`) kodifierar 5 process-regler + 5-stegs Konvention-flöde för framtida supply chain-incidenter.
+
+**Upptäcktssekvens (Kandidat 2 STOPPA-OCH-FRÅGA-mönster i praktik):**
+
+Session 5 K1.7 RAPPORTERA Block B (verifieringssvit-baseline-check) körde `npm audit` mot post-K1.6-state ~9 timmar efter advisory-publicering (2026-05-11 23:39 UTC). Audit-output rapporterade 6 critical vulnerabilities under GHSA-rmmr-r34h-pfm5. Code STOPPADE per Block B-disciplin (vulnerabilities >0), eskalerade till Marcus, K1.7 pausades och K0åg öppnades som ny sub-klunga.
+
+**Diagnostik-syntes från K0åg Block D (RAPPORTERA-fas, 2026-05-12):**
+
+| Bedömningsdimension | Resultat | Källa |
+|---|---|---|
+| Postinstall-script i `@tanstack/history@1.161.6` | FINNS INTE (endast clean/test:*/build-scripts) | Block A2 |
+| Senaste lokala `npm install` före advisory | 2026-05-11 12:02 UTC (Session 4 K0åa) | Block A5 |
+| Tidsfönster mellan lokal install och malware-publicering | 7h 18min före (advisory 19:20 UTC) | Block A5 + B2 |
+| Misstänkta runtime-mönster i `node_modules/@tanstack/history/` | INGA (inga child_process/exec/spawn/eval/base64-decode/fetch) | Block A4 |
+| Senaste CI-run före advisory | 2026-05-11 12:01 UTC (`bc9d6aa` K1.6) | Block C3 |
+| CI-runs i kompromettfönstret (19:20 UTC →) | 0 | Block C3 |
+| → Marcus' maskin-bedömning | SANNOLIKT SÄKER | A2 + A4 + A5 + B2 evidens |
+| → CI-miljö-bedömning | SANNOLIKT SÄKER | C3 7h+ marginal |
+
+**Patched-status (Block B research mot live npm-registret + GitHub advisory API):**
+
+- `@tanstack/history`: vår 1.161.6, malware 1.161.9 + 1.161.12 (publicerade 2026-05-11 19:20-19:26 UTC), **patched: ingen**
+- `@tanstack/react-router`: vår 1.168.19, malware 1.169.5 + 1.169.8, **patched: ingen**
+- `@tanstack/router-plugin`: vår 1.167.20, malware 1.167.38 + 1.167.41, **patched: ingen**
+- `nuqs@2.8.9`: egen status opåverkad (transitiv flag via peerDep)
+- npm-registret `dist-tags.latest: 1.161.6` — registret har återställt latest-pekare till pre-malware (stark signal att 1.161.6 anses säker)
+
+**Strategi-val: Strategi 2 — Pin exakt + overrides** (Marcus' beslut 2026-05-12). Tre alternativ övervägdes: Strategi 1 (uppgradera till patched — ej möjligt), Strategi 3 (downgrade per `npm audit fix --force` till `@tanstack/router-plugin@1.111.6`, 56 versioner bak — sannolik breaking changes), Strategi 4 (status quo + vänta — risk-bärande utan att lösa). Strategi 2 vald per: (a) inga breaking changes, (b) skydd mot framtida drift om Dependabot eller `npm install` försöker plocka malware-version inom semver-range, (c) reversibelt när patched publiceras.
+
+**Marcus' fyra K0åg-beslut (per STOPPA-OCH-FRÅGA-checkpoint, 2026-05-12):**
+
+1. **Strategi:** 2 (pin exakt + overrides) — med tilläggsverifikation: integrity-MATCH pre/post-install via lokal backup `package-lock.json.pre-k0åg`
+2. **Secret-rotation:** DEFENSIV DEFER. Block A-evidens stark (ingen kompromettmarkör). VITE_*-vars är klient-bundle-konfig (inte hemliga i traditionell mening). Service role keys + GitHub PAT bor utanför `.env.local` — roteras vid annat tillfälle om säkerhetsmarginal önskas
+3. **CI-secrets:** INGEN ÅTGÄRD — Block C bekräftade 7h+ marginal mellan senaste CI-run och malware-publicering
+4. **ADR-028:** SKAPA — kodifiera 5 process-regler för framtida incidenter (separat commit efter security-fix-commit)
+
+**Artefakt-kontinuitet-verifikation (Marcus' tilläggsdisciplin per ADR-028 regel 3):**
+
+Pre/post-install diff av integrity-hashes mot `package-lock.json.pre-k0åg`-backup bekräftade: alla 6 kritiska paket (`@tanstack/history`, `react-router`, `router-core`, `router-generator`, `router-plugin`, `nuqs`) har **identiska versioner + integrity-hashes** pre/post. Bara 1 override (för `@tanstack/history`) räckte — npm-resolveringen träffade samma transitiva versioner via lock-genereringen. **Bevis att installerade artefakter är pre-malware-builds**, inte malware-runtime. Lock-fil-storleksminskning (370 → 258 paket-entries) är dedup-effekt från `overrides`-disciplinen, inte tappade dependencies (build + typecheck + tests gröna).
+
+**Verifieringssvit-utfall post-K0åg (CI grön båda commits):**
+
+- `npm audit`: 6 critical kvarstår (förväntat — advisory `vulnerable_versions: >=0` täcker alla versioner; faktiska bytes är pre-malware via integrity-MATCH). **Etablerat känd-tillstånd, hanteras via `audit-ci`-whitelist i K2 per öppen post 3.7.1 nedan.**
+- `npx tsc --noEmit`: 0 fel
+- `biome check`: 4 baseline-warnings + 1 info (oförändrat)
+- `npm run build`: 327.28 kB JS / 103.13 kB gzip (+1.91 kB vs pre-K0åg baseline 325.37 från transitive minor/patch-bumps via lock-regen)
+- `npm run test:api` lokalt: 72 passed + 41 skipped (baseline, STAGING_REQUIRED ej satt); CI med STAGING_REQUIRED=1: 72 pure passed + 38 staging passed + 3 M4-defer skipped
+- CI: båda commits gröna alla 13 steg (`ea59787` run 25719311115, `35cd10e` post-run grön per `gh run list --workflow=CI`)
+
+**Lessons-kandidater för K5-skörd (Kandidat 17-19, fullständig formulering bakas in i K5 efter Session 5-implementation):**
+
+- **Kandidat 17 (potentiell):** Live security-state ska verifieras vid sessionsstart, inte antas vara samma som senaste session. Mönster-förstärkning av Kandidat 10 (verkligheten på pushtid > analys vid skrivtid) — generaliserat till säkerhetsdimensionen. K1.7 Block B-disciplin FÅNGADE advisoryn ~9h efter publicering; utan den hade K2:s `npm install`-steg dragit in malware-versioner inom `^1.168.19`-range.
+- **Kandidat 18 (potentiell):** Advisory `vulnerable_versions: >=0` är false-positive-trigger för installerade pre-malware-versioner. `npm audit` rapporterar critical även när artefakterna är säkra. Verifiering via integrity-MATCH pre/post är vad som faktiskt bevisar säker artefakt. **Audit-output är signal, inte sanning.** Hanteras kirurgiskt via `audit-ci`-whitelist i K2 — full-stop-CI istället för bruskällan.
+- **Kandidat 19 (potentiell):** Pin exakt + `overrides` är reversibel respons. När patched versioner publiceras: ta bort overrides, ta tillbaka `^`-prefix, vanlig uppgradering. Pin är inte permanent — det är "väntar på patched".
+
+**Öppen post 3.7.1 — `npm audit`-disciplin under whitelist-period (kodifieras i K2 + CLAUDE.md + todo.md per 11/10-mål):**
+
+`npm audit --audit-level=high` rapporterar 6 critical under GHSA-rmmr-r34h-pfm5 i förväntat-känt-tillstånd tills TanStack publicerar patched versioner. Detta ska INTE accepteras som permanent röd CI — det förstör signal-systemets värde (Kandidat 10 "verkligheten på pushtid > analys vid skrivtid" tappar mening om CI alltid är röd). K2 löser disciplinen kirurgiskt via `audit-ci`-paketet med specifik whitelist mot GHSA-rmmr-r34h-pfm5. Plus återkommande veckovis manuell granskning i `tasks/todo.md`. Plus sessionsstart-disciplin-not i CLAUDE.md. Se Del 4 K2 nedan.
+
+**Promt-räknings-mismatch-fynd från K1.7 RAPPORTERA (för K5 lessons-skörd):**
+
+K1.7-prompten hade två räknings-antaganden som inte stämde mot faktisk repo-state: (a) Block D förväntade "3 touch-counter-mentions" men faktiskt 4 (rader 13, 24, 122, 365 — alla konsistent på "8"); (b) Block B förväntade "6 GHSA-grep-träffar" men npm audit JSON grupperar 6 vulns under 1 advisory-URL = 1 grep-träff. Båda är prompt-räknings-fel (Chat gissade utan att kolla), inte tillstånd-fel. **Inte STOPPA-triggers** — Kandidat 12-fångst skulle krävt drift mellan källor, men alla 4 mentions var konsistenta. Hanterades genom att uppdatera 4 ställen atomiskt istället för 3, och förstå JSON-strukturen istället för anta. Mönster-förstärkning av Kandidat 6 (verifieringsräkning ska räkna alla refs) + Kandidat 11 (designnoter ska vara verifierade) + Kandidat 10 (verkligheten > analys).
+
 ---
 
-## Del 4 — K2: Fas 2 implementation Part 1 — TanStack Router skelett
+## Del 4 — K2: Fas 2 implementation Part 1 — TanStack Router skelett + audit-ci-disciplin
 
-TBD — bakas in i K5.
+TBD — bakas in i K-sista.
 
-**Förväntad output:**
-- `vite.config.ts` — TanStack Router-plugin återinförs (togs bort i Fas 0)
-- `tsr.config.json` — TanStack Router-konfiguration
-- `src/routes/` — ny mapp för file-based routing
-- `src/routes/__root.tsx` — root route med AuthProvider + ErrorBoundary + Suspense (skelett, full provider-logik i K3)
-- Generated route tree (`src/routeTree.gen.ts` eller motsvarande)
-- `src/main.tsx` — uppdaterad med `RouterProvider` (`initSentry()` från Fas A behålls FÖRE React-mount per P0-inventering rad 2.2)
-- Router devtools + Query devtools, dev-only
+### 4.0 Översikt
 
-**DoD-rad från byggplan §4 Fas 2:**
-- 1 (delvis): `npm run dev` ger fungerande app utan crash (full login-redirect i K3)
-- 5: Router devtools synliga i dev, inte i prod
-- 7: `[GA]` Suspense-fallback på root visar laddningsindikator
-- 8: `[GA]` Error boundary på root fångar router-fel + visar fallback
+K2 etablerar TanStack Router file-based-skelettet utan auth-logik + införar `audit-ci`-baserad audit-disciplin för whitelist-perioden mot GHSA-rmmr-r34h-pfm5. Provider-mounting + Router-instantiering sker i `src/main.tsx`. Layout-route `__root.tsx` äger Suspense + ErrorBoundary + Devtools. Pathless layout-route `_authenticated.tsx` äger guard-skelett (full implementation i K3). Inga skyddade routes aktiverade funktionellt i K2 — det är K3-scope.
+
+**Arkitektur-tier (verifierat 2026-05-12 mot post-K0åg paket-state per Kandidat 11):**
+
+- `src/main.tsx` — modul-scope `queryClient` (med config från STATE-STRATEGY.md §3), `router`-instans (`createRouter({ routeTree, context: { queryClient, auth: undefined! } })`), providers wrappar `<RouterProvider>`: `<QueryClientProvider> > <AuthProvider> (skelett i K2) > <App> > <RouterProvider>`. `initSentry()` FÖRE `createRoot` per P0-inventering rad 2.2 (verifierat i K1.7 Block G).
+- `src/routes/__root.tsx` — `createRootRouteWithContext<{ queryClient: QueryClient; auth: AuthContextValue }>()`. RootLayout: Suspense fallback (inline-spinner, JSDoc-not `// Tillfällig — ersätts av Mm-Spinner från Fas 3`) + ErrorBoundary fallback (inline `<div role="alert">` med "Ladda om"-knapp, samma JSDoc-not) + `<Outlet />` + Router Devtools + Query Devtools (alla dev-only via `import.meta.env.DEV`).
+- `src/routes/_authenticated.tsx` — pathless layout-route. Skelett: `createFileRoute('/_authenticated')({ beforeLoad: () => { /* TODO K3: full guard mot context.auth */ } })`. Pathless `_`-prefix → ingen URL-effekt; barn-routes blir `/hem`, inte `/_authenticated/hem`.
+- `src/routes/_authenticated/hem.tsx` — placeholder `<h1>Hem</h1>` (minimum för byggplan §4 DoD-rad 1).
+- `audit-ci.json` (repo-rot) — whitelist-config för GHSA-rmmr-r34h-pfm5 med kommentar + ADR-028-referens + expiry-policy.
+
+### 4.1 Förväntad output
+
+**Nya filer:**
+
+- `tsr.config.json` — TanStack Router-config. Format verifieras mot senaste TanStack Router-docs i K2-RAPPORTERA per Kandidat 10. Förmodade fält: `routesDirectory: "./src/routes"`, `generatedRouteTree: "./src/routeTree.gen.ts"`, `routeFileIgnorePrefix: "-"`.
+- `src/routes/__root.tsx` — innehåll per 4.0 Arkitektur-tier.
+- `src/routes/_authenticated.tsx` — skelett per 4.0.
+- `src/routes/_authenticated/hem.tsx` — minimal placeholder per 4.0.
+- `src/routeTree.gen.ts` — auto-genererad av TanStack Router-pluginen vid första `npm run dev`. **Måste vara .gitignore-ad** (är det per Fas 0-config — verifieras i K2 Block-F).
+- `audit-ci.json` — whitelist-config:
+
+```json
+{
+  "$schema-comment": "audit-ci v7+ config for kirurgisk audit-disciplin",
+  "high": true,
+  "allowlist": ["GHSA-rmmr-r34h-pfm5"],
+  "allowlist-comment": "GHSA-rmmr-r34h-pfm5 — TanStack supply chain incident 2026-05-11. Vår installerade @tanstack/history@1.161.6 är pre-malware (integrity-MATCH verifierat i K0åg). Whitelist-post tas bort när TanStack publicerar patched versioner. Se ADR-028. Granskas veckovis per tasks/todo.md."
+}
+```
+
+**Ändrade filer:**
+
+- `vite.config.ts` — aktivera `TanStackRouterVite({ target: 'react', autoCodeSplitting: true })`-pluginen. Pluginen läggs FÖRE `react()` per TanStack-rekommendation. För-Fas-0-kommentar rad 6-9 (verifierat i K1.7 Block F) ger import-mall.
+- `src/main.tsx` — uppdatera till providers + `<RouterProvider>`-pattern. K2 levererar AuthProvider som tom Context-provider med `value={undefined}` — full Supabase-session-logik i K3. Detta möjliggör att TypeScript-typerna är på plats, devtools renderar, och `__root.tsx` kan instantieras utan att blocka på auth-implementationen. `initSentry()`-anropet på rad 14 bevaras orört FÖRE createRoot.
+- `.github/workflows/ci.yml` — byt audit-steg från `npm audit --audit-level=high` till `npx audit-ci --config audit-ci.json`. Kommentar i workflow-fil pekar till ADR-028 + audit-ci.json.
+- `~/Repon/miranon-media-admin/CLAUDE.md` — lägg till not i sessionsstart-checklistan:
+
+```markdown
+**Sessionsstart audit-disciplin (K0åg → ADR-028):**
+- Kontrollera att `npx audit-ci --config audit-ci.json` är grön (whitelist GHSA-rmmr-r34h-pfm5 ska vara enda undantaget).
+- Om `npm audit` rapporterar critical UTANFÖR whitelisten → STOPPA-OCH-FRÅGA per Kandidat 2.
+- Om GHSA-rmmr-r34h-pfm5 visar färre än 6 träffar → eventuellt TanStack-team har publicerat patched versioner. Granska, uppgradera, ta bort whitelist + overrides + pin-discipline. Se ADR-028 5-stegs Konvention-flöde.
+```
+
+- `~/Repon/miranon-media-admin/tasks/todo.md` — lägg till återkommande post under "Aktuellt fokus":
+
+```markdown
+**Återkommande disciplin: Veckovis npm-audit-granskning (K0åg whitelist-period)**
+
+audit-ci whitelist mot GHSA-rmmr-r34h-pfm5 är aktiv tills TanStack publicerar patched versioner.
+
+- Senast granskad: 2026-05-12 (K0åg)
+- Nästa granskning senast: 2026-05-19
+- Granskningssteg: (1) `npm view @tanstack/react-router@latest` — kolla om patched version finns, (2) `npm view @tanstack/history@latest` analogt, (3) GitHub advisory-status (withdrawn? patched_versions uppdaterad?), (4) om patched finns → starta K0åh/Fas-2.5-sub-klunga för uppgradering + whitelist-rensning per ADR-028 5-stegs Konvention-flöde
+- Tas bort från denna lista när whitelist är borttagen från audit-ci.json
+```
+
+**Nya devDependencies (npm install i K2 via `npm install -D`):**
+
+- `@tanstack/react-router-devtools` — separat paket sedan 1.114+. Krav för byggplan §4 DoD-rad 5. **STOPPA om version som tas är inom malware-range** (jämför mot K0åg whitelist — react-router-devtools är inte i listan, men paketet kan ha egen advisory som inte fångats). Pin exakt om så.
+- `audit-ci` — för kirurgisk audit-disciplin. K0åg ADR-028 regel 4 ("npm audit vid sessionsstart") + öppen post 3.7.1.
+
+**Nya dependencies (`npm install`):**
+
+- `react-error-boundary` — för root-nivå ErrorBoundary. Krav för byggplan §4 DoD-rad 8.
+
+### 4.2 DoD-rader från byggplan §4 Fas 2 som K2 stänger
+
+- **1 (delvis):** `npm run dev` ger fungerande app utan crash (full login-redirect i K3). Visar `<h1>Hem</h1>`-placeholder på `/hem` (utan funktionell guard).
+- **5:** Router Devtools synliga i dev, inte i prod (`import.meta.env.DEV`-gating).
+- **7:** `[GA]` Suspense-fallback på root visar laddningsindikator.
+- **8:** `[GA]` Error boundary på root fångar router-fel + visar fallback med "ladda om"-knapp.
+
+### 4.3 STOPPA-OCH-FRÅGA-punkter för K2-prompten (Kandidat 2-mönster)
+
+1. Efter `npm install @tanstack/react-router-devtools react-error-boundary audit-ci` — STOPPA om någon paket-version dras in som är inom malware-range (jämför mot K0åg whitelist) eller peer-dep-warnings introduceras.
+2. Efter första `npm run dev` post-plugin-aktivering — STOPPA om `routeTree.gen.ts` inte genereras eller har TS-fel.
+3. Efter `npx tsc --noEmit` — STOPPA om typecheck visar >0 fel (route-typer från generated `routeTree.gen.ts` kan exponera latent type-frågor).
+4. Efter `npm run build` — STOPPA om JS-bundle bumpar med mer än ~30 kB (förväntad bumpa för TanStack Router-runtime + react-error-boundary; överskott indikerar tree-shaking-failure eller devtools i prod).
+5. Efter byte av `ci.yml` audit-steg → `audit-ci`-anrop — STOPPA om CI-run rapporterar fler träffar än 6 under GHSA-rmmr-r34h-pfm5 (whitelist gav inte förväntad effekt) eller om audit-ci rapporterar någon advisory utanför whitelist.
+
+### 4.4 Sub-klung-mönster (om scope växer per Kandidat 5)
+
+Om K2 visar sig vara större än en clean klunge, splitta till K2.1 (deps + audit-ci-config + plugin + tsr.config), K2.2 (file-skelett + main.tsx), K2.3 (CLAUDE.md + todo.md disciplin-uppdateringar + ci.yml audit-byte). K1.N bake-ins av sessionsdoket mellan sub-klungor per etablerat mönster.
 
 ---
 
 ## Del 5 — K3: Fas 2 implementation Part 2 — AuthProvider + login/logout + skyddade routes
 
-TBD — bakas in i K5.
+TBD — bakas in i K-sista.
 
-**Förväntad output:**
-- `src/auth/AuthProvider.tsx` — Context-provider mot Supabase session
-- `src/auth/useAuth.ts` — hook för auth-state
-- `src/routes/login.tsx` — login-vy (publik, ingen guard)
-- `src/routes/index.tsx` — login-redirect-stub (`/` → `/login` eller `/hem` beroende på session)
-- `beforeLoad`-guard på skyddade routes (placeholder-route `/hem` eller motsvarande)
-- Logout-flöde — `supabase.auth.signOut()` + redirect
+### 5.0 Översikt
 
-**Arkitektur-not (kritisk — från P0-inventeringen rad 2.3 + Codex' Fråga 1 startvillkor 2):**
-`auth-provider.tsx` får INTE falla tillbaka på anon-key. Klientens `getAuthHeader()` faller idag tillbaka till anon key när session saknas (`src/data/config/supabase-client.ts:16`). I Fas 2 ska detta åtgärdas: skyddad route utan session → redirect till `/login` FÖRE Edge Function-anrop. Servern nekar anon key via `requireUser` (Fas A M2), men UI-flow ska aldrig komma dit.
+K3 implementerar full Supabase-auth-flöde + aktiverar `_authenticated.tsx`-guard. Innehåller den enskilt mest kritiska arkitekturpunkten i hela Fas 2: **AuthProvider får INTE falla tillbaka på anon-key**. Server-sidans `requireUser` (Fas A M2) nekar anon-key, men UI-flow ska aldrig komma dit — guarden redirectar FÖRE datafetch.
 
-**DoD-rad från byggplan §4 Fas 2:**
-- 1: `npm run dev` ger fungerande login → redirect till `/hem` (placeholder)
-- 2: Logout klart — session rensas, redirect till `/login`
-- 3: Skyddad route utan session → automatisk redirect till `/login`
+### 5.1 Förväntad output
+
+**Nya filer:**
+
+- `src/auth/AuthProvider.tsx` — Context-provider med `{ user: User | null, isLoading: boolean, login: (email, password) => Promise<void>, logout: () => Promise<void> }`. Lyssnar på `supabase.auth.onAuthStateChange` med cleanup i `useEffect`. **Faller INTE tillbaka på anon-key** (anti-mönster mot `src/data/config/supabase-client.ts:16`-fallbacken; K3 säkrar att UI-flow inte triggar fallbacken — själva supabase-client.ts:s anon-fallback rörs först i Fas 2.5+).
+- `src/auth/useAuth.ts` — `useContext`-wrapper. Throws om använd utanför Provider.
+- `src/routes/login.tsx` — publik route (INGEN `_authenticated`-parent). Minimal `<form>` med `<label>` + `<input type="email">` + `<input type="password">` + `<button type="submit">`. A11y full 11 (label-input-koppling, `aria-describedby` för fel-state, `aria-live="polite"` för status, fokus-management). JSDoc-not: `// Refactor till React Aria Form + MmInput + MmButton i Fas 3`.
+- `src/routes/index.tsx` — `createFileRoute('/')({ beforeLoad: ({ context }) => { redirect till '/hem' om context.auth.user, annars '/login' } })`. Pure-redirect-route, ingen `component`.
+
+**Ändrade filer:**
+
+- `src/routes/_authenticated.tsx` — full `beforeLoad`-guard:
+```typescript
+beforeLoad: ({ context, location }) => {
+  if (context.auth.isLoading) return;  // vänta tills auth-state är känd
+  if (!context.auth.user) {
+    throw redirect({ to: '/login', search: { redirect: location.href } });
+  }
+}
+```
+- `src/main.tsx` — AuthProvider-skelettet från K2 ersätts med full implementation-import (samma struktur, byter bara från placeholder till `src/auth/AuthProvider`).
+
+### 5.2 Anti-mönster som K3 explicit förbjuder
+
+**Förbjudet 1:** Röra `src/data/config/supabase-client.ts:16` anon-fallback. K3 säkrar att UI-flow aldrig anropar `getAuthHeader()` utan session via guard-redirect FÖRE datafetch. Fallbacken själv åtgärdas i Fas 2.5+.
+
+**Förbjudet 2:** "Optimistisk auth" — anta session finns och rendera vy-skin medan auth laddar. Inkonsekvent UX. Guarden blockerar render via `beforeLoad` Promise-await.
+
+**Förbjudet 3:** Logout som bara rensar lokal Context utan `supabase.auth.signOut()`. Server-sidan måste invalidera session.
+
+### 5.3 DoD-rader från byggplan §4 Fas 2 som K3 stänger
+
+- **1 (full):** `npm run dev` → `/login`-formulär → inloggning → redirect till `/hem`.
+- **2:** Logout → `supabase.auth.signOut()` + Context-rensning + redirect till `/login`.
+- **3:** Direkt-navigering till `/hem` utan session → `beforeLoad` throws `redirect({ to: '/login' })` → renderar inte `/hem`-komponenten.
+
+### 5.4 STOPPA-OCH-FRÅGA-punkter
+
+1. Efter AuthProvider — STOPPA om `onAuthStateChange` har subscription-cleanup-issues (memory leak-risk).
+2. Efter `beforeLoad`-aktivering — STOPPA om redirect-loop (kan hända om login-routen oavsiktligt blir auth-skyddad).
+3. Efter logout-flöde — STOPPA om `supabase.auth.getSession()` post-logout inte returnerar `{ session: null }`.
 
 ---
 
 ## Del 6 — K4: Fas 2 implementation Part 3 — nuqs + Playwright auth-fixture
 
-TBD — bakas in i K5.
+TBD — bakas in i K-sista.
 
-**Förväntad output:**
-- nuqs `useQueryState` setup på test-route (t.ex. `/test?test=value`)
-- `tests/playwright/fixtures/authenticatedPage.ts` (eller motsvarande path) — Playwright-fixture som loggar in mot Supabase med TEST_*-credentials
-- Test-environment-koppling: fixture beroende av `TEST_SUPABASE_URL` + `TEST_USER_EMAIL` + `TEST_USER_PASSWORD` env-vars. Hard-fail om saknas (kompletterar K0åc CI-split).
+### 6.0 Översikt
 
-**DoD-rad från byggplan §4 Fas 2:**
-- 4: nuqs `useQueryState` fungerar mot test-route med `?test=value`
-- 6: Playwright auth-fixture (`authenticatedPage`) etablerad
+K4 stänger sista 2 DoD-raderna: nuqs URL-state-setup (initial, inte per-vy — det är Fas 6) och Playwright `authenticatedPage`-fixture. Auth-fixture är 3:e komponenten av Codex' tre startvillkor (`docs/analysis/Codex-project-analysis-2026-05-07.md` Fråga 1 startvillkor 3) — CI-split via STAGING_REQUIRED från K0åc säkrar att fixture-frånvaro hard-failer; fixture-implementationen själv är K4.
 
-**Korsreferens:** auth-fixture är 3:e komponenten av Codex' tre startvillkor (`docs/analysis/Codex-project-analysis-2026-05-07.md` Fråga 1 startvillkor 3). CI-split (K0åc) säkrar att fixture-frånvaro hard-failer; fixture-implementationen själv är K4.
+### 6.1 Förväntad output
+
+**Nya filer:**
+
+- `src/routes/_authenticated/test-nuqs.tsx` — temporär dev-route gated på `import.meta.env.DEV`. Använder `useQueryState('test', parseAsString.withDefault(''))`. JSDoc-not: `// Tas bort i Fas 6 när första riktiga nuqs-vy aktiveras`. Mönster-val (gated route vs render-guard) bekräftas i K4-RAPPORTERA mot TanStack file-based router-docs per Kandidat 10.
+- `tests/playwright/fixtures/authenticated-page.ts` — Playwright-fixture med `TEST_USER_EMAIL` + `TEST_USER_PASSWORD`. **Hard-fail om TEST_*-env saknas** (kompletterar K0åc CI-split).
+- `tests/playwright/auth.staging.test.ts` — minimal smoke-test: `authenticatedPage` → `/hem` → assert `<h1>Hem</h1>` synligt. `.staging.test.ts`-suffix per K0åc-konvention.
+
+**Ändrade filer:** Inga obligatoriska (verifieras i K4-RAPPORTERA om Playwright redan har annan mapp-konvention från Fas 0 visual-regression-uppsättning).
+
+### 6.2 DoD-rader
+
+- **4:** `useQueryState` mot dev-route → URL skriver `?test=value`.
+- **6:** Playwright `authenticatedPage`-fixture körbar mot staging.
+
+### 6.3 STOPPA-OCH-FRÅGA
+
+1. Efter nuqs-setup — STOPPA om `useQueryState` triggar fler re-renders än förväntat.
+2. Efter fixture — STOPPA om login-flöde inte avslutas inom rimlig tid (AuthProvider loading-state-regression från K3).
+3. Efter `npm run test:api` mot fixture — STOPPA om staging-test failar med auth-fel (TEST_USER ej seedat).
 
 ---
 
-## Del 7 — K5: Stop-test + lessons-skörd + ADR + bake-in
+## Del 7 — K5: Stop-test + lessons-skörd + ADR + bake-in + transcript-save
 
-TBD — bakas in i K5.
+TBD — bakas in i denna sista commit (K-sista).
+
+### 7.0 Översikt
+
+Sessionens slut-disciplin: verifiera alla 8 DoD från byggplan §4 Fas 2, skörda UNIVERSAL-lessons från Session 5, ev. ADR:er, baka in Del 3-7 i sessionsdoket, uppdatera todo.md + BYGGPLAN-LÄTTLÄST-v3 + CLAUDE.md-filstruktur. **Transcript-disciplin etableras som absolut SISTA steg** (defer-post från K1.6 — se 7.7).
 
 ### 7.1 Stop-test
 
@@ -362,7 +542,7 @@ Pass/fail per krav:
 | Hub-synk klar (om UNIVERSAL-poster) | TBD | `~/Repon/marcus-system/tasks/lessons.md` synkad |
 | `tasks/todo.md` uppdaterad | TBD | Fas 2 markerad ✅, Fas 2.5 listad som nästa |
 | `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (ADR-025) | TBD | "Senast uppdaterad"-stämpel bumpad + Fas 2-status reflekterad |
-| Sessionsdok låst | TBD | Denna commit (K1.6 = K-sista för K0-fasen i Session 4) är touch nr 8 efter K1 (skelett) + K1.2 (K1+K0åa bake-in) + K1.3 (K0åb bake-in) + K1.4 (K0åc bake-in + startvillkor-fas 1-3 milstolpe) + K1.5a (Sessions-handoff-sektion) + K1.5b (Kandidat 13-15-bake-in + mini-överlämnings-stängning) + K1.6 (denna — K0-fasens K-sista, Session 5 K2-K4 + K5 följer). Disciplin reviderad i header — K1.N bake-ins är etablerat mönster för Fas 2-sessionen, inte enstaka avsteg. |
+| Sessionsdok låst | TBD | Sessionsdoket är post-K1.7 på touch nr 9 efter K1 (skelett) + K1.2 (K1+K0åa bake-in) + K1.3 (K0åb bake-in) + K1.4 (K0åc bake-in + startvillkor-fas 1-3 milstolpe) + K1.5a (Sessions-handoff-sektion) + K1.5b (Kandidat 13-15-bake-in + mini-överlämnings-stängning) + K1.6 (K0-fasens K-sista Session 4) + K1.7 (K0åg-spårning + Del 4-7 skelett-utfyllnad inför Session 5 K2-K5, sista touch före K5-implementation). Disciplin reviderad i header — K1.N bake-ins är etablerat mönster för Fas 2-sessionen, inte enstaka avsteg. |
 | Transcript sparat | **DEFER** — Marcus' beslut 2026-05-11 K1.6: transcript-disciplin etableras i separat process-runda Session 5+. Mappen `tasks/sessions/transcripts/` saknas fortfarande. Todo-pinpoint lagt i `tasks/todo.md`. Motivering: K1.6 är redan substantiellt (sessionsdok-bake-in + lessons-lyft + todo + CLAUDE.md + ev. ADR), att etablera ny disciplin samtidigt ökar halvslar-risk per Kandidat 5 (disciplin tjänar dokumentet). | Defer-not committad + todo-pinpoint i tasks/todo.md |
 
 ### 7.2 Lessons-skörd
@@ -463,13 +643,58 @@ K0åf Block 2 körde `grep -rn "KVALITETSDEFINITIONER-11" --include="*.md" --inc
 
 ### 7.3 ADR-kandidater
 
-**Obligatoriska per byggplan §4 Fas 2 ADR-krav-rad:** Inga ("Inget nytt ADR krävs. URL-state-strategin följer befintlig `URL-STATE-SPEC.md`.").
+**Obligatoriska per byggplan §4 Fas 2 ADR-krav-rad:** Inget nytt krävs (URL-state följer URL-STATE-SPEC.md).
 
-**Möjliga sidoeffekt-ADR:er:**
-- K0åe Zod parse i AirtableAdapter — ADR-026 "Runtime-validering vid datagräns" om mönstret kodifieras
-- K0åf KVALITETSDEFINITIONER-11.md — ADR-027 "Kvalitetsdefinitioner stack-skifte" om Alt B (flytta styrning) väljs
+**Realiserade ADR:er under K0-fasen (sub-klungor med ADR-trigger):**
+- ✅ ADR-026 (K0åe.2 commit `497a89f`) — Runtime-validering vid datagräns med Zod `.parse()`
+- ✅ ADR-027 (K0åf commit `a7bdaea`) — KVALITETSDEFINITIONER-11.md stack-skifte (Vue → React)
+- ✅ ADR-028 (K0åg commit `35cd10e`) — Supply chain incident-respons-protokoll (npm advisories)
 
-Beslut tas i respektive K0-sub-klunga.
+**Möjliga sidoeffekt-ADR:er för Session 5 K2-K4 (skapas bara om implementation kodifierar arkitekturbeslut bortom byggplan):**
+- ADR-029 om `_authenticated.tsx`-layout-route + `context.auth`-pattern blir mer än trivial
+- ADR-030 om `react-error-boundary`-val kodifieras som princip
+- ADR-031 om annat oförutsett
+
+Beslut tas in-situ per sub-klunga.
+
+### 7.4 Sessionsdok bake-in
+
+Bakas in i K-sista-commit:
+
+- Del 3.7 verifierings-utfall (CI-run-id post-K0åg, integrity-MATCH-detaljer, audit-ci-disciplin etablering)
+- Del 4 (K2) skelett → verklig progress + faktiska commit-hashes
+- Del 5 (K3) skelett → verklig progress
+- Del 6 (K4) skelett → verklig progress
+- Del 7.2-7.4 (lessons + ADR + bake-in själv) bakas in
+- Del 8 (Sammanfattning) bakas in
+
+Per Kandidat 12: touch-counter uppdateras atomiskt på alla **4** ställen (header disciplin-not + Sessions-handoff-blocket + Del 1 K-tabellens K5-cell + Del 7.1 "Sessionsdok låst"-rad) i samma str_replace-pass — verifierat 2026-05-12 att 4 mentions, inte 3, är faktisk räkning per K1.7 RAPPORTERA Block D.
+
+### 7.5 Övriga dokument-uppdateringar
+
+- `tasks/todo.md` — Fas 2 status → KLAR, Fas 2.5 → AKTUELLT FOKUS, audit-ci-whitelist-veckogransknings-post uppdaterad med "senast granskad: <K5-datum>"
+- `~/Repon/miranon-media-admin/CLAUDE.md` — Status-sektion + Filstruktur (`src/auth/`, `src/routes/`, `audit-ci.json`) + sessionsstart audit-disciplin-not (K0åg → ADR-028)
+- `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` — "Senast uppdaterad" + Fas 2 → KLAR (ADR-025)
+- `docs/decisions/README.md` Index-tabellen — om någon ADR-029+ tillkommer
+- `docs/BUILD-LOG.md` — Session 5-sektion med Fas 2-retrospektiv + K0åg-spårning + audit-ci-disciplin-etablering
+
+### 7.6 Sessionsdok-arkivering (DEFER till Fas 2.5-sessionsstart)
+
+Sessionsdoket `2026-05-11-fas2-routing-auth.md` arkiveras INTE i K5 — arkiveras vid Fas 2.5-sessionsstart (nästa session) per ADR-023 konvention 2 ("Sessionsavslut: föregående aktiv flyttas till lämplig `archive/<år>-<månad>/`"). Sessionsdoket täcker hela Fas 2 över Session 4 + Session 5; arkiveringspunkten är Fas 2-avslut, inte Session 5-avslut.
+
+### 7.7 Transcript-disciplin etablering (ABSOLUT SISTA STEG)
+
+Defer-post från K1.6. Per CONTRIBUTING.md "Transcript-disciplin": transcripts sparas till `tasks/sessions/transcripts/<datum>.txt` som originalkopia.
+
+**K5-flöde:**
+
+1. ALLA andra commits klara och pushade (sessionsdok, todo, CLAUDE.md, BYGGPLAN-LÄTTLÄST-v3, BUILD-LOG, ev. ADR:er, lessons-lyft repo + hub)
+2. Marcus exporterar Session 5-transcripten från claude.ai (Marcus väljer metod: Settings → Privacy → JSON / kopiering / print-to-PDF)
+3. `mkdir -p ~/Repon/miranon-media-admin/tasks/sessions/transcripts && mv <export> ~/Repon/miranon-media-admin/tasks/sessions/transcripts/2026-MM-DD-fas2-session5.txt`
+4. `git add tasks/sessions/transcripts/2026-MM-DD-fas2-session5.txt && git commit -m "docs(fas2): save Session 5 transcript per CONTRIBUTING.md transcript-disciplin" && git push`
+5. Detta är sessionens sista commit. Inget annat efter.
+
+**Session 4-transcript:** förlorad — acceptabel disciplin-etablerings-kostnad för att inte fortsätta drift. Dokumenteras i CLAUDE.md Filstruktur som "transcripts/ etablerad <K5-datum> från Session 5 framåt".
 
 ---
 
