@@ -1,10 +1,42 @@
 # todo.md — Miranon Media Admin (React)
-*Senast uppdaterad: 2026-05-11 (Session 4 — Fas 2 K0 startvillkor 1-3 ✅ klara, K0åd-K0åf + K2 återstår)*
+*Senast uppdaterad: 2026-05-12 (Session 5 paused efter K5.3 — K3.4 + K5 final återstår för Session 5b)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
 > Implementation-journal i `docs/BUILD-LOG.md`.
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
+
+---
+
+## 🔄 Session 5 paused — Session 5b startpunkt
+
+**Session 5 avslutades 2026-05-12 efter K4 + K5.1-K5.3.** Marcus pausade för vila innan K3.4 + K5 final.
+
+### Fas 2 status post-Session-5
+
+- ✅ K0 (åa-åg) + K1 + K2 + K3 + K3.5 + K4.1 + K4.2 + K4.3 KLAR
+- ✅ DoD 1-8 alla stängda och empiriskt verifierade via 6-tests Playwright-regression
+- ⏳ K3.4 (anon-key-fallback-borttagning) — kvar för Session 5b
+- ⏳ K5 final (sessionsdok-arkivering + Kandidat 17-23 lessons-skörd + hub-lyft K34+K36 + BYGGPLAN-LÄTTLÄST-v3 + transcript-disciplin) — kvar för Session 5b
+
+### Session 5b startpunkt: K3.4
+
+**Scope K3.4 (~30-45 min):**
+
+1. Ta bort `?? env.VITE_SUPABASE_ANON_KEY`-fallback på rad 16-22 av `src/data/config/supabase-client.ts`
+2. `getAuthHeader()` returnerar null eller throws explicit AuthError istället för anon-token
+3. Lägg till CLAUDE.md-tillägg om strict-mode-rules (Kandidat 31 disciplin-uppdatering)
+4. **Verifikation:** K4.3 Test 5 (INGA `functions/v1`-anrop) är regression-skydd — om Test 5 failar efter K3.4 har vi UI-flow-bug
+
+**Status: säkert att göra med kall start.** Sessionsdokets Del 4+5+6 är bake:ade (K5.2). Lessons K24-K36 är skördade (K5.1). Defense-in-depth-arkitekturen är empiriskt verifierad via K4.3 6-tests-suite.
+
+### Session 5b post-K3.4: K5 final
+
+- Skörda Kandidat 17-23 från sessionsdok Del 3.7 (K0åg-relaterade) till `tasks/lessons.md`
+- Hub-lyft K34 + K36 till `~/Repon/marcus-system/tasks/lessons.md`
+- Sessionsdok-arkivering till `tasks/sessions/archive/2026-05/`
+- BYGGPLAN-LÄTTLÄST-v3.md Fas 2-status (om existerar)
+- Transcript-disciplin etablering (`tasks/sessions/transcripts/`-mapp + Session 5-transcript som ABSOLUT SISTA commit)
 
 ---
 

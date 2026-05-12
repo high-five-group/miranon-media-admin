@@ -519,6 +519,93 @@ Ja ✅ (godkänt av Marcus 2026-05-04 vid sessionsavslut för security-hardening
 
 ---
 
+## Session 5 (React) — Fas 2: Routing + Auth
+
+**Datum:** 2026-05-11 till 2026-05-12 (Session 5 paused efter K5.3 — K3.4 + K5 final återstår för Session 5b)
+
+### Sammanfattning
+
+15 commits från K0åg-respons (supply chain malware) + K1.7 sessionsdok-skelett + K2-K4 + K3.5 race-condition-fix + K5.1-K5.3 session-avslut. **Fas 2 alla 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression.** K3.4 (anon-key-fallback-borttagning) återstår för Session 5b — K4.3 Test 5 är regression-skydd.
+
+### Commits Session 5 (kronologisk ordning)
+
+K0-tilläggsåtgärd (säkerhetsincident från Session 4-natt → Session 5-morgon):
+
+- `ea59787` — security(fas2): remediate GHSA-rmmr-r34h-pfm5 supply chain malware (K0åg)
+- `35cd10e` — docs(decisions): add ADR-028 Supply chain incident-respons-protokoll
+- `807195f` — docs(fas2): K1.7 sessionsdok-skelett-utfyllnad
+
+K2 — TanStack Router skelett + audit-ci-disciplin:
+
+- `5709f26` — build(fas2): introduce audit-ci with GHSA-rmmr-r34h-pfm5 allowlist (K2.1)
+- `135ff6a` — feat(fas2): TanStack Router file-based skelett + Sentry ErrorBoundary (K2.2)
+- `b32ec51` — fix(fas2): sort imports + tailwind classes per biome 2.4.15 strict mode (K2.2 follow-up)
+- `0194787` — fix(fas2): pre-generate routeTree before tsc -b in build script (K2.2 follow-up 2)
+- `34a3a33` — feat(fas2): main.tsx providers + React 19 createRoot Sentry-hooks (K2.3)
+- `02a35a0` — fix(fas2): sort imports in main.tsx per biome organizeImports (K2.3 follow-up)
+
+K3 + K3.5 — AuthProvider + login/logout + skyddade routes + race-condition-fix:
+
+- `8e72a10` — docs(claude): activate Kandidat 25 biome check disciplin pre-commit (K3.0)
+- `2bb5a21` — refactor(fas2): extract router + queryClient to src/router.ts (K3.1)
+- `4dc675c` — feat(fas2): AuthProvider full Supabase-integration + InnerApp-pattern (K3.2)
+- `e42f395` — fix(fas2): satisfy biome noNonNullAssertion + useExhaustiveDependencies (K3.2 follow-up)
+- `9078d9f` — feat(fas2): login route + index redirect + _authenticated guard (K3.3)
+- `ea673f4` — fix(fas2): InnerApp useEffect deps inkluderar isLoading för guard re-eval (K3.5)
+
+K4 — nuqs + Playwright auth-fixture + arkitektur-regression-suite:
+
+- `a49d8f6` — feat(fas2): NuqsAdapter + dev-only test-route för DoD 4 (K4.1)
+- `fca8bfd` — feat(fas2): Playwright auth.setup + storageState för DoD 6 (K4.2)
+- `d0eab46` — test(fas2): K3-arkitektur regression-suite via Playwright (K4.3)
+
+K5 (Session 5-scope — final defer till Session 5b):
+
+- `40a2060` — docs(lessons): skörda Kandidater 24-36 från Session 5 (K5.1)
+- `e4a5faf` — docs(sessions): full bake-in K2-K4 + K3.5 i sessionsdok (K5.2)
+- (K5.3 denna commit)
+
+### Bundle-evolution Session 5
+
+| Milstolpe | Main JS raw | Main JS gzip | Delta vs Pre-Session 5 |
+|---|---|---|---|
+| Pre-Session 5 (post-K1.6) | 327.28 kB | 103.13 kB | — |
+| Post-K2.3 (provider-tree) | 440.22 kB | 138.83 kB | **+113 kB raw / +35.7 kB gzip** |
+| Post-K3.2 (AuthProvider full) | 637.97 kB | 188.86 kB | **+311 kB raw / +85.7 kB gzip** |
+| Post-K4.1 (nuqs) | 640.80 kB | 189.22 kB | **+313.5 kB raw / +86.1 kB gzip** |
+
+**Total Fas 2 bumpa: +313 kB raw / +86 kB gzip.** Hög andel från `@supabase/supabase-js` runtime-stack (~197 kB raw, Kandidat 32). Defer till Fas 7 perf-budget: `lazyRouteComponent` på `_authenticated`-trädet + tree-shake-verifikation av Realtime + `chunkSizeWarningLimit: 600`.
+
+### Lessons-skörd
+
+13 nya kandidater (K24-K36) i `tasks/lessons.md` under H2 `## 2026-05-12 — Fas 2 Session 5 (K2-K4 + K3.5)`. K34 (test-credentials aldrig-läcka) + K36 (automatiserad test fångar timing-bugs) markerade som hub-lyft-kandidater. K17-K23 (K0åg-kandidater) hänskjutna till Session 5b K5 final.
+
+### ADR-tillägg Session 5
+
+- **ADR-028** (commit `35cd10e`, K0åg): Supply chain incident-respons-protokoll. Etablerar process för audit-ci-allowlist + pinning-disciplin vid security-incidents.
+
+### DoD-rader stängda Session 5
+
+Alla 8 DoD-rader från byggplan §4 Fas 2:
+
+| # | Krav | Stängd i |
+|---|---|---|
+| 1 | npm run dev → login → /hem | K3.3 (verifierad K4.3 Test 3) |
+| 2 | Logout → /login | K3.2 (verifierad K4.3 Test 6) |
+| 3 | Skyddad route utan session → /login | K3.3 + K3.5 (verifierad K4.3 Test 4) |
+| 4 | nuqs useQueryState mot test-route | K4.1 |
+| 5 | Router Devtools dev-only | K2.2 |
+| 6 | Playwright authenticatedPage-fixture | K4.2 (verifierad K4.3) |
+| 7 | [GA] Suspense-fallback på root | K2.2 |
+| 8 | [GA] Error boundary på root | K2.2 |
+
+### Återstår för Session 5b
+
+- **K3.4:** anon-key-fallback-borttagning i `src/data/config/supabase-client.ts:16-22` (~30-45 min). K4.3 Test 5 är regression-skydd.
+- **K5 final:** Sessionsdok-arkivering till `tasks/sessions/archive/2026-05/`, K17-K23 lessons-skörd, hub-lyft K34+K36, BYGGPLAN-LÄTTLÄST-v3-uppdatering, transcript-disciplin etablering.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

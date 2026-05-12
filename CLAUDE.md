@@ -65,7 +65,9 @@ Hela `docs/react-migration/`-mappen i Vue-repot var sanningskälla för Fas 0 + 
 
 ## Filstruktur
 
-> Snapshot post-Session 4 K0 (2026-05-11). Pedagogisk översikt — för exakt nuvarande state, kör `tree -L 3 -I 'node_modules|dist|.git|coverage|test-results'`.
+> Snapshot post-Session 5 K2-K4 (2026-05-12). Pedagogisk översikt — för exakt nuvarande state, kör `tree -L 3 -I 'node_modules|dist|.git|coverage|test-results|playwright/.auth'`.
+>
+> **Session 5 nya filer (K2-K4 + K3.5):** Se "src/-struktur post-Fas-2" + "Tests-struktur post-K4"-sektioner nedan.
 
 ### Repo-rot
 
@@ -187,6 +189,58 @@ scripts/          ← verify-phase-1.ts (runtime-verifiering)
 
 Det ursprungliga Vue-projektet `~/Repon/miranon-media-os/` är **fryst** och ersätts av detta React-repo. Spec-filerna kopierades därifrån i Fas 0 (2026-04-13) och flyttades till lokala `docs/specs/` i Pre-Fas-2 (ADR-021). Vue-repot är historisk källa, inte aktiv referens.
 
+### src/-struktur post-Fas-2 (Session 5 K2-K4 + K3.5)
+
+```
+src/
+├── auth/                             ← NY i K3.2 + K3.5
+│   ├── AuthProvider.tsx              ← Full Supabase-integration (K3.2 + K3.5 race-condition-fix)
+│   └── useAuth.ts                    ← Defensive null-check (K3.2)
+├── data/
+│   ├── adapters/                     ← AirtableAdapter, DataSourceAdapter (Fas 1)
+│   └── config/supabase-client.ts     ← anon-key-fallback rad 16-22 — K3.4 borttagning i Session 5b
+├── domain/                           ← models, types, schemas (Fas 1)
+├── lib/                              ← cn, focus-utils, report-web-vitals (Fas 0)
+├── observability/sentry.ts           ← initSentry FÖRE createRoot (M7)
+├── routes/                           ← NY i K2.2 (TanStack Router file-based)
+│   ├── __root.tsx                    ← Sentry.ErrorBoundary + Suspense + NuqsAdapter + Devtools (K2.2 + K4.1)
+│   ├── _authenticated.tsx            ← Full beforeLoad-guard tre-tillstånds-hantering (K3.3)
+│   ├── _authenticated/
+│   │   ├── hem.tsx                   ← Placeholder <h1>Hem</h1> (K2.2)
+│   │   └── test-nuqs.tsx             ← Dev-only nuqs-verifiering (K4.1, tas bort Fas 6)
+│   ├── index.tsx                     ← Pure redirect-stub utloggad→/login, inloggad→/hem (K3.3)
+│   └── login.tsx                     ← Zod validateSearch + a11y full 11 (K3.3)
+├── styles/                           ← tokens/, base.css, tailwind.css (Fas 0)
+├── env.ts                            ← @t3-oss/env-core (Fas 0)
+├── main.tsx                          ← InnerApp-pattern + React 19 createRoot Sentry-hooks (K2.3 + K3.2 + K3.5)
+├── router.ts                         ← NY i K3.1 — router + queryClient singletons
+└── routeTree.gen.ts                  ← Auto-genererad via `tsr generate`, .gitignored (K2.2)
+```
+
+### Tests-struktur post-K4
+
+```
+tests/
+├── api/                              ← Fas 0/K0åc API/HTTP-tester (7 filer)
+├── visual/                           ← Fas 3+ screenshot-regression (referenced i playwright.config)
+└── e2e/                              ← NY i K4 (e2e auth-flow)
+    ├── auth.setup.ts                 ← storageState-fixture för chromium-authenticated (K4.2)
+    └── auth-flow.staging.test.ts     ← 6-tests K3-arkitektur-regression-suite (K4.3)
+```
+
+### Repo-rot post-Fas-2 (nya filer)
+
+- `audit-ci.jsonc`                    ← allowlist GHSA-rmmr-r34h-pfm5 (K2.1 + K0åg + ADR-028)
+- `tsr.config.json`                   ← TanStack Router defaults explicit (K2.2)
+- `playwright/.auth/`                 ← storageState-cache, gitignored utom .gitkeep + README.md (K4.2)
+
+**5 paket exakt-pinnade** (post-K0åg supply chain-disciplin per ADR-028):
+- `@tanstack/react-router: 1.168.19`
+- `@tanstack/router-plugin: 1.167.20`
+- `@tanstack/react-router-devtools: 1.166.13`
+- `@tanstack/router-cli: 1.166.43`
+- `overrides: { "@tanstack/history": "1.161.6" }`
+
 ## Design-system
 
 **FK-inspirerat 3-lagers token-system** (DESIGN-SYSTEM-SPEC.md §1):
@@ -290,7 +344,7 @@ Vid varje sessionsstart, kontrollera audit-status mot känd-acceptat tillstånd:
 - Om `npm audit --json | grep -c GHSA-rmmr-r34h-pfm5` visar färre än 6 träffar → eventuellt TanStack-team har publicerat patched versioner. Granska, uppgradera, ta bort allowlist-post + overrides + pin-disciplin. Se ADR-028.
 - Veckovis granskning av allowlist-relevans: se [`tasks/todo.md`](tasks/todo.md).
 
-### Pre-commit biome-disciplin (Kandidat 25 — K2.2 + K2.3 dubbel-bekräftad)
+### Pre-commit biome-disciplin (Kandidat 25 + 31 — K2.2/K2.3 + K3.2 bekräftade)
 
 Innan varje `git add` för commits som introducerar nya filer eller nya imports:
 
@@ -298,9 +352,17 @@ Innan varje `git add` för commits som introducerar nya filer eller nya imports:
 npx @biomejs/biome check --write .
 ```
 
-INTE bara `npx @biomejs/biome format --write .` — `format` täcker bara formatter-actions. `check --write` täcker även `organizeImports` + safe assist + safe linter-fixes som CI använder.
+**INTE** bara `npx @biomejs/biome format --write .` — `format` täcker bara formatter-actions. `check --write` täcker även `organizeImports` + safe assist + safe linter-fixes som CI använder.
 
 Lokal `biome format` exit=0 är INTE garanti för CI-grön. Två CI-fails på samma orsak i K2.2 + K2.3 bekräftade mönstret. Kandidat 25 i [`tasks/lessons.md`](tasks/lessons.md).
+
+**Kandidat 31 tillägg (post-K3.2):** Strict-mode-regler (noNonNullAssertion, useExhaustiveDependencies m.fl.) kräver också explicit errors-räkning:
+
+```bash
+npx @biomejs/biome check . 2>&1 | grep -E "^Found .* error" || echo "0 errors"
+```
+
+Om träff > 0 fixa innan commit. Lokal `biome check` exit=0 är INTE garanti för CI-grön på alla strict-mode-regler — K3.2 trigrade `noNonNullAssertion` + `useExhaustiveDependencies` lokalt exit=0 → CI exit=1. Bekräftat empiriskt: efter aktivering har K3.1, K3.3, K4.1, K4.2, K4.3 alla varit CI-grön första försöket.
 
 Verifiera efter:
 ```bash
