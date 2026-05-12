@@ -342,11 +342,22 @@ Pre/post-install diff av integrity-hashes mot `package-lock.json.pre-k0åg`-back
 
 K1.7-prompten hade två räknings-antaganden som inte stämde mot faktisk repo-state: (a) Block D förväntade "3 touch-counter-mentions" men faktiskt 4 (rader 13, 24, 122, 365 — alla konsistent på "8"); (b) Block B förväntade "6 GHSA-grep-träffar" men npm audit JSON grupperar 6 vulns under 1 advisory-URL = 1 grep-träff. Båda är prompt-räknings-fel (Chat gissade utan att kolla), inte tillstånd-fel. **Inte STOPPA-triggers** — Kandidat 12-fångst skulle krävt drift mellan källor, men alla 4 mentions var konsistenta. Hanterades genom att uppdatera 4 ställen atomiskt istället för 3, och förstå JSON-strukturen istället för anta. Mönster-förstärkning av Kandidat 6 (verifieringsräkning ska räkna alla refs) + Kandidat 11 (designnoter ska vara verifierade) + Kandidat 10 (verkligheten > analys).
 
+### Audit-status-evolution under Session 5 (K5.2 bake-in)
+
+| Tidpunkt | Critical-räkning | Källa | Status |
+|---|---|---|---|
+| K0åg etablering | 6 | Initial GHSA-rmmr-r34h-pfm5-träffar (@tanstack/history + transitives) | Allowlisted via audit-ci.jsonc |
+| K2.1 efter audit-ci-install | 6 | Oförändrat (audit-ci-paket självt har inga vulns) | Allowlisted |
+| K2.2 efter devtools + router-cli | 9 | +2 från @tanstack/react-router-devtools + transitive router-devtools-core (K2.2). +1 från @tanstack/router-cli (K2.2-fix2). Alla inom GHSA-rmmr-r34h-pfm5. | Allowlist täcker hela GHSA — grön audit-ci |
+| Post-K4 (slut Session 5) | 9 | Oförändrat sedan K2.2 — inga nya @tanstack/*-deps efter router-cli | Grön audit-ci CI alla 14 steg |
+
+Räkning bumpade 6 → 9 förväntat. Allowlist täcker GHSA, inte enskilda paket. Veckovis granskning per todo.md återkommande disciplin. K3.4 (anon-key-fallback-borttagning) i Session 5b rör INTE @tanstack/*-paketen — audit-ci-räkning förväntas oförändrad post-K3.4.
+
 ---
 
 ## Del 4 — K2: Fas 2 implementation Part 1 — TanStack Router skelett + audit-ci-disciplin
 
-TBD — bakas in i K-sista.
+✅ **KLAR** 2026-05-12. 3 sub-klungor över 6 commits. Bake-in i 4.5 nedan.
 
 ### 4.0 Översikt
 
@@ -435,11 +446,52 @@ audit-ci whitelist mot GHSA-rmmr-r34h-pfm5 är aktiv tills TanStack publicerar p
 
 Om K2 visar sig vara större än en clean klunge, splitta till K2.1 (deps + audit-ci-config + plugin + tsr.config), K2.2 (file-skelett + main.tsx), K2.3 (CLAUDE.md + todo.md disciplin-uppdateringar + ci.yml audit-byte). K1.N bake-ins av sessionsdoket mellan sub-klungor per etablerat mönster.
 
+### 4.5 Bake-in (K5.2 — faktiskt utfall)
+
+**3 sub-klungor över 6 commits:**
+
+| Sub-klunga | Commit | Beskrivning | CI |
+|---|---|---|---|
+| K2.1 | `5709f26` | audit-ci + allowlist + ci.yml-byte + CLAUDE.md/todo.md disciplin | ✓ första försöket |
+| K2.2 | `135ff6a` | TanStack Router file-based skelett + tsr.config + 4 route-filer + AuthProvider-skelett | ✗ biome organize-imports |
+| K2.2-fix1 | `b32ec51` | biome organize-imports + useSortedClasses fix | ✗ tsc (routeTree saknas) |
+| K2.2-fix2 | `0194787` | `tsr generate &&` pre-build + @tanstack/router-cli@1.166.43 pinnad | ✓ |
+| K2.3 | `34a3a33` | main.tsx provider-tree + React 19 createRoot Sentry-hooks | ✗ biome organize-imports |
+| K2.3-fix | `02a35a0` | biome organize-imports fix | ✓ |
+
+**Designval K2 (verifierade post-K5):**
+
+- **Sentry.ErrorBoundary över react-error-boundary:** Sentry redan installerat (@sentry/react@10.48.0), automatisk error-instrumentation, sparar 1 dep
+- **React 19 createRoot-hooks bundna till Sentry.reactErrorHandler:** root-level error-capture utöver UI-boundary
+- **`autoCodeSplitting: true` i tanstackRouter-plugin:** automatisk per-route chunking utan special-konfiguration (validerad K3.3 + K4.1, Kandidat 33)
+- **`tsr.config.json` explicit (även om defaults räcker):** disciplin > implicit
+- **Pinning `@tanstack/react-router-devtools 1.166.13` + `@tanstack/router-cli 1.166.43` exakt:** konsistens med K0åg pinning-disciplin (totalt 5 paket pinnade i @tanstack/*-familjen)
+- **Path-konvention `tests/e2e/` (K4.2-val per Kandidat 11):** matchar befintlig `tests/api/` + `tests/visual/`, inte `tests/playwright/` som Chat antog
+
+**DoD-rader stängda i K2:**
+
+- DoD 5 (Devtools dev-only): `import.meta.env.DEV`-gating i __root.tsx ✓
+- DoD 7 (Suspense-fallback): "Laddar…" inom Sentry.ErrorBoundary i __root.tsx ✓
+- DoD 8 (Error boundary): Sentry.ErrorBoundary i __root.tsx + createRoot-hooks i main.tsx ✓
+- DoD 1 (delvis): /hem placeholder renderar utan crash (full guard i K3)
+
+**Bundle-evolution K2:**
+
+| Steg | Main JS raw | Main JS gzip | Anmärkning |
+|---|---|---|---|
+| Pre-K2 (post-K1.7) | 327.28 kB | 103.13 kB | Baseline |
+| Post-K2.2 (router-skelett) | ~327 kB | ~103 kB | Försumbar bumpa (router-runtime mest tree-shaked, devtools dev-only) |
+| Post-K2.3 (provider-tree) | 440.22 kB | 138.83 kB | **+113 kB raw / +35.7 kB gzip** — provider-tree + Sentry-react-runtime + TanStack Query-runtime |
+
+Bundle-bumpa från K2.3 var större än Chats initiala prognos. Förklarad: hela provider-tree-runtime (QueryClient + Sentry + Router) aktiveras vid K2.3, inte K2.2 (där router-runtime ensam är tree-shake-vänlig).
+
 ---
 
-## Del 5 — K3: Fas 2 implementation Part 2 — AuthProvider + login/logout + skyddade routes
+---
 
-TBD — bakas in i K-sista.
+## Del 5 — K3 + K3.5: AuthProvider + login/logout + skyddade routes + race-condition-fix
+
+✅ **KLAR** 2026-05-12. K3 = 4 sub-klungor över 5 commits (K3.0 disciplin + K3.1 router-extract + K3.2 AuthProvider core + K3.3 routes). K3.5 = 1 commit (race-condition-fix). Bake-in i 5.5 nedan.
 
 ### 5.0 Översikt
 
@@ -487,11 +539,101 @@ beforeLoad: ({ context, location }) => {
 2. Efter `beforeLoad`-aktivering — STOPPA om redirect-loop (kan hända om login-routen oavsiktligt blir auth-skyddad).
 3. Efter logout-flöde — STOPPA om `supabase.auth.getSession()` post-logout inte returnerar `{ session: null }`.
 
+### 5.5 Bake-in (K5.2 — faktiskt utfall inkl. K3.5 race-condition-fix)
+
+**4 sub-klungor över 6 commits (K3.0-K3.3 + K3.5):**
+
+| Sub-klunga | Commit | Beskrivning | CI |
+|---|---|---|---|
+| K3.0 | `8e72a10` | CLAUDE.md Pre-commit biome-disciplin (Kandidat 25 aktivering) | ✓ |
+| K3.1 | `2bb5a21` | Router-extract till src/router.ts + AuthProvider-skelett utökat | ✓ första försöket |
+| K3.2 | `4dc675c` | AuthProvider full Supabase + InnerApp-pattern + useAuth | ✗ biome strict-mode (noNonNullAssertion + useExhaustiveDependencies) |
+| K3.2-fix | `e42f395` | Fix för strict-mode-regler (biome-ignore-comment direkt FÖRE useEffect) | ✓ |
+| K3.3 | `9078d9f` | login + index + _authenticated full guard (3 routes) | ✓ första försöket |
+| **K3.5** | `ea673f4` | InnerApp useEffect deps fix `[isAuthenticated, isLoading]` för race-condition | ✓ första försöket |
+
+**Designval K3 (verifierade):**
+
+- **InnerApp-pattern (officiell TanStack-rekommendation):** useAuth() i InnerApp som wrappar RouterProvider, dynamisk context-passing
+- **`router.invalidate()` vid auth-state-byte:** reactive auth-guard re-eval via useEffect
+- **Router-extract till `src/router.ts`:** undviker cirkulär import AuthProvider ↔ main.tsx (Kandidat 29)
+- **`getSession()` för initial state + `onAuthStateChange` för reactive:** pragmatiskt 11/10 för SPA med server-side requireUser (Kandidat 30)
+- **`Sentry.captureException` i alla auth-paths:** defense-in-depth observability (getSession-init, getSession-init-throw, login, logout)
+- **Zod v4 schema direkt i `validateSearch`:** ingen @tanstack/zod-adapter behövs (zod@4.4.3)
+- **Tre-tillstånds-hantering i beforeLoad-guard:** isLoading → vänta (return), !isAuthenticated → throw redirect, isAuthenticated → tillåt
+- **Plain HTML-form med a11y full 11 + JSDoc om Fas 3-refactor:** medveten scope-disciplin (React Aria Form + MmInput/MmButton i Fas 3)
+
+**KRITISKT arkitekturbeslut: defense-in-depth utan anon-key-fallback**
+
+AuthProvider faller **INTE** tillbaka på anon-key. `user = null` när session saknas → `isAuthenticated = false` → guard redirectar FÖRE Edge Function-anrop.
+
+Tre skikt:
+
+1. **Klient (AuthProvider + beforeLoad-guard):** etablerat i K3.2 + K3.3
+2. **Klient (anon-key-fallback i `src/data/config/supabase-client.ts:16-22`):** FORTFARANDE där — defer till K3.4 i Session 5b
+3. **Server (`requireUser`, Fas A M2):** nekar anon-key
+
+K4.3 Test 5 (INGA functions/v1-anrop) verifierar empiriskt att skikt 1 fungerar — regression-skydd för K3.4 anon-key-fallback-borttagning.
+
+### 5.6 K3.5 race-condition — diagnostik + fix
+
+**Bug fångad av K4.3 Test 4 + Test 6 (K4-utvidgningens raison d'être):**
+
+- **Test 4:** utloggad direkt-nav till `/hem` → URL stannar på `/hem` (guard redirectar inte). Tom storage → AuthProvider initial state.
+- **Test 6:** storage-clear + reload efter inloggning → URL stannar på `/hem`. Reload skapar ny AuthProvider-instans med tom storage.
+
+**Underliggande mekanik:**
+
+```
+useState-default: { user: null, isAuthenticated: false, isLoading: true }
+↓ _authenticated.tsx beforeLoad ser isLoading: true → return (vänta)
+↓ getSession() settles (tom storage) → setUser(null) → isLoading: false
+↓ isAuthenticated förblir false (oförändrat värde)
+↓ useEffect([auth.isAuthenticated]) triggar INTE eftersom value oförändrat
+↓ router.invalidate() körs inte
+↓ guard re-evalueras aldrig
+↓ utloggad ser /hem (skyddat innehåll renderas)
+```
+
+**1-rads-fix (K3.5 commit `ea673f4`):**
+
+```typescript
+// FÖRE:
+useEffect(() => { router.invalidate(); }, [auth.isAuthenticated]);
+
+// EFTER:
+useEffect(() => { router.invalidate(); }, [auth.isAuthenticated, auth.isLoading]);
+```
+
+När `isLoading` flips `true → false` triggas effekten även om `isAuthenticated` förblir oförändrat. Beforeload-guard re-evaluerar → redirect till /login om ej autentiserad.
+
+**Empirisk verifikation FÖRE commit (Marcus' Steg 3-disciplin):** 7/7 Playwright-tester gröna lokalt mot fixad main.tsx. CI grön första försöket.
+
+**Lessons-kandidat 36 (skördad i K5.1, hub-lyft-kandidat):** Automatiserad test fångar timing-bugs som manuell test missar pga människa-tid-långsamhet. Race-fönstret ~50-200ms maskeras av människa-tid 5-10s mellan handlingar.
+
+### 5.7 DoD-rader stängda i K3 + K3.5
+
+- DoD 1 (full): `npm run dev` → login → /hem fungerar end-to-end ✓ (verifierad K4.3 Test 3)
+- DoD 2: Logout-funktion finns i `auth.logout()` (UI-knapp implementeras Fas 5 app-shell) — verifierad indirekt via K4.3 Test 6 (storage-clear simulerar logout)
+- DoD 3: Skyddad route utan session → redirect till `/login` med `search.redirect` ✓ (verifierad K4.3 Test 4 efter K3.5-fix)
+
+### 5.8 Bundle-evolution K3 + K3.5
+
+| Steg | Main JS raw | Main JS gzip | Anmärkning |
+|---|---|---|---|
+| Post-K2 | 440.22 kB | 138.83 kB | Baseline |
+| Post-K3.1 (router-extract) | 440.57 kB | 138.83 kB | +0.35 kB raw (försumbar refactor-bumpa) |
+| Post-K3.2 (AuthProvider full) | 637.97 kB | 188.86 kB | **+197 kB raw / +50 kB gzip** — Supabase auth-stack-runtime (Kandidat 32) |
+| Post-K3.3 (routes) | 636.99 kB | 187.69 kB | -0.98 kB raw (login auto-extraherat till egen chunk via Kandidat 33) |
+| Post-K3.5 (deps-fix) | 636.99 kB | 187.69 kB | Oförändrat (1-rads-ändring i main.tsx) |
+
+**+197 kB raw bumpa K3.2 är 20× större än Chats prognos.** Defer till Fas 7 perf-budget per Kandidat 32. Konkreta åtgärder: `lazyRouteComponent` på `_authenticated`-trädet, tree-shake-verifikation av Realtime-modulen, `chunkSizeWarningLimit: 600` om 500-warning är permanent.
+
 ---
 
-## Del 6 — K4: Fas 2 implementation Part 3 — nuqs + Playwright auth-fixture
+## Del 6 — K4: nuqs + Playwright auth-fixture + arkitektur-regression-suite
 
-TBD — bakas in i K-sista.
+✅ **KLAR** 2026-05-12. **Utvidgad scope per Marcus' Session 5-beslut:** K4 ersätter manuell K3-smoke-test med automatiserad Playwright-suite. 3 sub-klungor över 3 commits. Bake-in i 6.4 nedan.
 
 ### 6.0 Översikt
 
@@ -517,6 +659,60 @@ K4 stänger sista 2 DoD-raderna: nuqs URL-state-setup (initial, inte per-vy — 
 1. Efter nuqs-setup — STOPPA om `useQueryState` triggar fler re-renders än förväntat.
 2. Efter fixture — STOPPA om login-flöde inte avslutas inom rimlig tid (AuthProvider loading-state-regression från K3).
 3. Efter `npm run test:api` mot fixture — STOPPA om staging-test failar med auth-fel (TEST_USER ej seedat).
+
+### 6.4 Bake-in (K5.2 — faktiskt utfall)
+
+**3 sub-klungor över 3 commits — alla CI-grön första försöket:**
+
+| Sub-klunga | Commit | Beskrivning | CI |
+|---|---|---|---|
+| K4.1 | `a49d8f6` | NuqsAdapter wrappar Outlet + test-nuqs.tsx dev-route med data-testid | ✓ första försöket |
+| K4.2 | `fca8bfd` | Playwright auth.setup + storageState + tests/e2e/ + playwright/.auth/ gitignored | ✓ första försöket |
+| K4.3 | `d0eab46` | 6-tests regression-suite + CI E2E-step (ci.yml E2E + Chromium install) | ✓ första försöket |
+
+**Designval K4 (verifierade):**
+
+- **K4-utvidgning (Chat-Marcus-beslut Session 5):** ersätta manuell K3-smoke-test med automatiserad Playwright-suite. Marcus' "INTE ett jobb för mig"-vägran → automatiserad regression som körbar disciplin
+- **Path-konvention `tests/e2e/` (Code-fångst per Kandidat 11):** matchar befintlig `tests/api/` + `tests/visual/`-konvention, inte `tests/playwright/` som Chat antog
+- **Setup-project + storageState över worker-scoped fixture:** matchar `.staging.test.ts`-konvention från K0åc.2
+- **Hard-fail om TEST_*-env saknas:** matchar `STAGING_REQUIRED`-pattern från K0åc.2
+- **dev-server i CI (inte Vercel preview) — Väg A per Marcus' beslut:** Vercel preview är Fas 7 per byggplan + SPA-ARCHITECTURE + BYGGPLAN-LÄTTLÄST. Fas-disciplin > "snabbt 11/10". JSDoc-not i `auth-flow.staging.test.ts` flaggar Fas 7-komplettering. Playwright `webServer`-config startar `npm run dev` när `PLAYWRIGHT_TEST_BASE_URL` ej satt.
+- **Aldrig-läcka för test-credentials (Kandidat 34):** env-vars + maskering + gitignore + hard-fail. UNIVERSAL-disciplin.
+
+**DoD-rader stängda i K4:**
+
+- DoD 4 (nuqs `useQueryState`): test-nuqs.tsx dev-route fungerar mot `?test=value`-pattern ✓
+- DoD 6 (Playwright authenticatedPage-fixture): auth.setup.ts + storageState körbart end-to-end ✓
+- DoD 1, 2, 3, 5, 7, 8 (från K2 + K3 + K3.5) verifierade empiriskt via 6-tests suite ✓
+
+### 6.5 Test-suite K4.3 (6 tester — Test 5 är hjärtat)
+
+**Utloggat tillstånd (3 tester, `test.use({ storageState: { cookies: [], origins: [] } })`):**
+
+1. `/` redirectar utloggad → `/login`
+2. `/login` renderar form med a11y-attribut (label-input-koppling, autocomplete, submit enabled)
+3. `/hem` direkt-nav utan session → `/login?redirect=%2Fhem` (pathless `_authenticated`-konvention)
+
+**Autentiserat tillstånd (3 tester, storageState från setup):**
+
+4. `/hem` nås direkt
+5. **INGA `functions/v1/*`-anrop sker** — arkitektur-kritisk defense-in-depth verifiering (sessionsdok Del 5.0). **Test 5 är K4-utvidgningens hjärta** — fångar regression om guard skulle brista. Regression-skydd för K3.4 anon-key-fallback-borttagning.
+6. router.invalidate triggas vid auth-state-byte (storage-clear + reload simulerar logout). Verifierar K3.2 InnerApp-pattern + K3.5-fix.
+
+**K3.5-fångst:** Test 4 + Test 6 failade i K4.3 första iteration → fångade K3.2 InnerApp race-condition → K3.5 1-rads-fix → 7/7 gröna lokalt + CI.
+
+**Lokal körningstid:** 17.5s totalt (1 setup + 6 e2e). **CI körningstid:** 12.1s (snabbare disk/CPU).
+
+### 6.6 Bundle-evolution K4
+
+| Steg | Main JS raw | Main JS gzip | Anmärkning |
+|---|---|---|---|
+| Post-K3.5 | 636.99 kB | 187.69 kB | Baseline |
+| Post-K4.1 (nuqs) | 640.80 kB | 189.22 kB | **+3.81 kB raw / +1.53 kB gzip** (nuqs-runtime, inom prognos ~5-7 kB gzip) |
+| Post-K4.2 (tester) | 640.80 kB | 189.22 kB | Oförändrat (test-filer rör inte bundle) |
+| Post-K4.3 (tester) | 640.80 kB | 189.22 kB | Oförändrat |
+
+Plus auto-extraherade chunks (Kandidat 33): test-nuqs 12.21 kB raw / 4.33 kB gzip + react-chunk 7.52 kB raw / 2.88 kB gzip.
 
 ---
 
