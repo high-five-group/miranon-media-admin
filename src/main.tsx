@@ -32,12 +32,22 @@ initSentry();
 function InnerApp() {
   const auth = useAuth();
 
-  // auth.isAuthenticated är medveten TRIGGER för router.invalidate() vid login/logout-byte.
-  // Effekten KÖR när isAuthenticated ändras — den refererar inte värdet i body (router är modul-singleton).
+  // **TRIGGER på BÅDA isAuthenticated OCH isLoading** för router.invalidate().
+  // Race-condition utan isLoading-dep (upptäckt via K4.3 regression-test):
+  //   1. Initial mount: AuthProvider state är { user: null, isLoading: true, isAuthenticated: false }
+  //   2. _authenticated.tsx beforeLoad ser isLoading: true → return (vänta)
+  //   3. getSession() settles: { user: null, isLoading: false, isAuthenticated: false }
+  //   4. isAuthenticated förblev false (false → false) → useEffect TRIGGAR INTE → guard
+  //      re-evalueras ALDRIG → utloggad användare ser /hem (skyddat innehåll, "Not Found"
+  //      eller motsvarande beroende på route)
+  // Med isLoading i deps: settle-event (true → false) triggar router.invalidate() →
+  // guard re-evaluerar → redirect till /login om ej autentiserad.
+  // K4.3 Test 4 + Test 6 fångar denna race empiriskt.
+  // Effekten KÖR vid state-ändring — router är modul-singleton, refereras inte i body.
   // biome-ignore lint/correctness/useExhaustiveDependencies: medveten TRIGGER på auth-state-byte
   useEffect(() => {
     router.invalidate();
-  }, [auth.isAuthenticated]);
+  }, [auth.isAuthenticated, auth.isLoading]);
 
   return <RouterProvider router={router} context={{ auth }} />;
 }
