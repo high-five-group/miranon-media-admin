@@ -45,8 +45,9 @@ function sessionToUser(session: Session | null): AuthUser | null {
  * UI-flow ska aldrig anropa Edge Functions med anon-key som "lite auth" — guard:en i
  * `src/routes/_authenticated.tsx beforeLoad` (K3.3) redirectar till /login FÖRE datafetch.
  *
- * Klientens `getAuthHeader()` i `src/data/config/supabase-client.ts:16` har anon-key-fallback
- * som K3 RÖR INTE — den åtgärdas i Fas 2.5+. K3 säkrar att UI-flow aldrig triggar fallbacken.
+ * Klientens `getAuthHeader()` i `src/data/config/supabase-client.ts` throws AuthError när
+ * session saknas (K3.4, defense-in-depth skikt 2 — se `src/auth/AuthError.ts`). UI-flow ska
+ * aldrig nå dit pga guard-redirect, men throw är säkerhetsnätet om skikt 1 brister.
  */
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);

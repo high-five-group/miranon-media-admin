@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { AuthError } from '@/auth/AuthError';
 import { env } from '@/env';
 import { fetchWithRetry } from '../utils';
 
@@ -7,18 +8,26 @@ import { fetchWithRetry } from '../utils';
 export const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY);
 
 /**
- * Returnerar Authorization-header med session-token om inloggad,
- * annars fallback till anon key.
+ * Returnerar Authorization-header med session-token. Throws AuthError när
+ * ingen session finns — anon-key-fallbacken är borttagen i K3.4 (Fas A §A3
+ * fynd). Se `src/auth/AuthError.ts` för defense-in-depth-rationale.
  *
- * Edge Functions ska verifiera JWT serverside:
- *   const { data: { user } } = await supabase.auth.getUser(token)
+ * **Förväntat anropsmönster:** UI-flow ska aldrig nå callEdgeFunction/
+ * postEdgeFunction utan session — `_authenticated.tsx` beforeLoad-guard
+ * redirectar till /login först. Om AuthError fångas i produktion är skikt 1
+ * brustet (regression).
+ *
+ * **Server-side:** `requireUser` (supabase/functions/_shared/auth.ts) avvisar
+ * anon-key role oberoende — slutgiltig validator.
  */
 async function getAuthHeader(): Promise<string> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const token = session?.access_token ?? env.VITE_SUPABASE_ANON_KEY;
-  return `Bearer ${token}`;
+  if (!session?.access_token) {
+    throw new AuthError('No Supabase session — UI-flow guard should have redirected to /login');
+  }
+  return `Bearer ${session.access_token}`;
 }
 
 /**
@@ -27,6 +36,8 @@ async function getAuthHeader(): Promise<string> {
  *
  * [GA] Nätverkslagret använder fetchWithRetry: 3 retries med exponentiell
  * backoff + jitter. 5xx och nätverksfel retryas, 4xx propageras direkt.
+ *
+ * Throws AuthError (från getAuthHeader) om ingen session finns vid anrop.
  */
 export async function callEdgeFunction<T>(
   name: string,
@@ -57,6 +68,8 @@ export async function callEdgeFunction<T>(
  * Används för update-record och andra skrivoperationer.
  *
  * [GA] Samma retry-strategi som callEdgeFunction.
+ *
+ * Throws AuthError (från getAuthHeader) om ingen session finns vid anrop.
  */
 export async function postEdgeFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
   const url = `${env.VITE_SUPABASE_URL}/functions/v1/${name}`;
