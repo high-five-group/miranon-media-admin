@@ -152,7 +152,7 @@ tasks/
 ├── byggplan-direktiv.md           ← arkivvärt (SLUTFÖRT 2026-05-05)
 ├── datamodell-research-direktiv.md, datamodell-research-plan.md  ← frysta efter Fas 6
 └── sessions/
-    ├── <aktiv>.md                 ← en sessionsdok åt gången (just nu: 2026-05-11-fas2-routing-auth.md)
+    ├── <aktiv>.md                 ← en sessionsdok åt gången (just nu: ingen aktiv — Fas 2-sessionsdoket arkiverat 2026-05-13 till archive/2026-05/)
     └── archive/                   ← arkiverade per ADR-023
         ├── 2026-04/   (2 sessionsloggar)
         ├── 2026-05/   (7 sessionsloggar inkl. P3a, P3b, pre-Fas-2)
@@ -285,7 +285,7 @@ Fullständig spec: [`docs/specs/DESIGN-SYSTEM-SPEC.md`](docs/specs/DESIGN-SYSTEM
 6. ⏳ **PÅGÅR — Fas 2 — Routing + Auth (TanStack Router, Supabase, nuqs):**
    - ✅ K0 startvillkor 1-3 (Session 4, 2026-05-11) — nuqs + typecheck:tests + falsk-grön CI-fix
    - ← **NÄSTA:** K0åd-K0åf (Codex' "Direkt efter Fas 2"-fynd) eller K2 (TanStack Router skelett)
-   - Trail: [`tasks/sessions/2026-05-11-fas2-routing-auth.md`](tasks/sessions/2026-05-11-fas2-routing-auth.md)
+   - Trail: [`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`](tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md)
 
 *Kommande:*
 7. Fas 2.5 — Adapter-debt-städning
@@ -412,9 +412,10 @@ När Marcus säger "Nu avslutar vi denna session":
 - **Session 1** (React, 2026-04-13/14): Fas 0 + Fas 1 — projektsetup, domäntransplant, ADR-001..010
 - **Session 2** (React, 2026-04-30 → 2026-05-05): Fas A (säkerhetshardening M1–M8, 14 commits, 113 tester) + P0–P3b (byggplan-revision, `docs/byggplan.md` 832 rader, ADR-011..020, 7 UNIVERSAL-lessons lyfta till hub)
 - **Session 3** (Pre-Fas-2, 2026-05-06): Repo-strukturell polish + publika professionalitetssignaler. K3 åa–åf: LICENSE + package.json metadata + .github/-paketet + CHANGELOG/SECURITY/CONTRIBUTING + README badges/Documentation map + docs/-omstrukturering (specs/analysis/reference/logs) + analys/ → docs/research/datamodell-research/ + tasks/sessions/-arkivering. ADR-021..024. **Total ADR-räkning: 24.**
-- **Session 4** (Fas 2 K0 startvillkor, 2026-05-11): K0 startvillkor 1-3 av 3 klara — nuqs install (`13cdf86`), typecheck:tests + APIResponse-fix (`a5a477b` + `1d02b3b`), falsk-grön CI-fix via STAGING_REQUIRED + secrets (`3015d08` + `1138e38`). Plus 4 K1.N early bake-ins av sessionsdoket (`6af3927` + `fc6f43e` + `3b29f41` + `3927a24`). CI grön på första försök efter K0åc.2 (36s, 72 pure passed + 38 staging passed + 3 M4-defer skipped). 12 UNIVERSAL-lessons lyfta till lessons.md + hub (`f1e609e` + `91db29b`). **Total ADR-räkning: 24 (oförändrad — ingen ADR-trigger från K0; Fas 2 K0åe Zod parse kan ge ADR-026 om/när den körs).** Sessionsdok-trail: `tasks/sessions/2026-05-11-fas2-routing-auth.md`. PÅGÅR — Fas 2 K0 FULLSTÄNDIGT KLAR (alla 6 åtgärder). K2-K4 implementation följer i Session 5.
+- **Session 4** (Fas 2 K0 startvillkor, 2026-05-11): K0 startvillkor 1-3 av 3 klara — nuqs install (`13cdf86`), typecheck:tests + APIResponse-fix (`a5a477b` + `1d02b3b`), falsk-grön CI-fix via STAGING_REQUIRED + secrets (`3015d08` + `1138e38`). Plus 4 K1.N early bake-ins av sessionsdoket (`6af3927` + `fc6f43e` + `3b29f41` + `3927a24`). CI grön på första försök efter K0åc.2 (36s, 72 pure passed + 38 staging passed + 3 M4-defer skipped). 12 UNIVERSAL-lessons lyfta till lessons.md + hub (`f1e609e` + `91db29b`). **Total ADR-räkning: 24 (oförändrad — ingen ADR-trigger från K0; Fas 2 K0åe Zod parse kan ge ADR-026 om/när den körs).** Sessionsdok-trail: `tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`. PÅGÅR — Fas 2 K0 FULLSTÄNDIGT KLAR (alla 6 åtgärder). K2-K4 implementation följer i Session 5.
+- **Session 5+5b** (Fas 2 KOMPLETT, 2026-05-11 → 2026-05-13): Fas 2 — Routing + Auth komplett. Sessions 5+5b spänner samma sessionsdok (`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`). **Session 5 (2026-05-11 → 2026-05-12):** K0åg supply chain malware-respons (GHSA-rmmr-r34h-pfm5, ADR-028) + K2 TanStack Router skelett + audit-ci-disciplin + K3 AuthProvider + login/logout + skyddade routes + K3.5 race-condition-fix + K4 nuqs + Playwright auth-fixture + K4.3 6-tests arkitektur-regression-suite. ADR-026, ADR-027, ADR-028 nya. 13 UNIVERSAL-lessons skördade (K24-K36). **Session 5b (2026-05-13):** K3.4 anon-key-fallback-borttagning + AuthError contract (defense-in-depth skikt 2). K5 final: sessionsdok bake-ins (K5.4 + K5.5a), lessons-skörd K0åg-defer + Session 5b-kandidater (K5.5b: K17-K19 + K37 + K38), BUILD-LOG + todo.md Fas 2-stängning (K5.6a/b), hub-lyft 7 UNIVERSAL till marcus-system (K5.7), sessionsdok-arkivering + trail-link-uppdateringar (K5.8). 5 nya UNIVERSAL-lessons skördade. **Totalt över Fas 2:** 3 nya ADR:er (totalt 27), 18 nya UNIVERSAL-lessons lokalt, 7 hub-lyft till marcus-system. Defense-in-depth tre-skikt-arkitektur empiriskt verifierad via 6-tests Playwright-suite. K39 (case-sensitivity grep-form) flaggad för Session 6+ K0 lessons-sweep.
 
-**Aktuellt fokus:** Fas 2 — Routing + Auth (TanStack Router file-based, Supabase auth, nuqs). **K0 FULLSTÄNDIGT KLAR 2026-05-11** (Session 4): 3 startvillkor (`13cdf86`/`a5a477b`+`1d02b3b`/`3015d08`+`1138e38`) + 3 "Direkt efter Fas 2"-fynd (K0åd `f2a2d9a`, K0åe.1+K0åe.2 `8095a62`+`497a89f`, K0åf `a7bdaea`). 2 nya ADR:er introducerade: ADR-026 (Runtime-validering vid datagräns med Zod .parse()) + ADR-027 (KVALITETSDEFINITIONER-11.md stack-skifte Vue→React). **Session 5 startar med Fas 2 K2** — TanStack Router file-based + AuthProvider + ErrorBoundary + Suspense per `docs/byggplan.md` §4 Fas 2-prompt. Sessionsdoket `tasks/sessions/2026-05-11-fas2-routing-auth.md` är aktivt över Session 4 + Session 5 (samma Fas 2) — arkiveras vid Fas 2-avslut.
+**Aktuellt fokus:** Fas 2.5 — Schema-kontrakt-sync (per `docs/byggplan.md` §4). Fas 2 ✅ KLAR 2026-05-13 — sessionsdok arkiverad till `tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`.
 
 För full retrospektiv historik: [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md).
 
