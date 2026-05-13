@@ -64,7 +64,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **0** | ✅ KLAR | Projektsetup + tokens. Session 1 (React) 2026-04-14, commits `1aa2544` → `e3d8e8a`. | (avslutad) |
 | **1** | ✅ KLAR | Domäntransplant (13 filer + Zod + fetchWithRetry). Session 1, commits `e3d8e8a` → `c91bfa0`. Skuld → Fas 2.5. | (avslutad) |
 | **A** | ✅ KLAR | Säkerhetshardening M1–M8. Slutförd 2026-05-04, 14 commits, 113 tester. | (avslutad) |
-| **2** | NY scope | Routing + Auth (TanStack Router, Supabase, nuqs). | 2 sessioner |
+| **2** | ✅ KLAR | Routing + Auth — Sessions 4+5+5b 2026-05-13. ADR-026, ADR-027, ADR-028. Defense-in-depth tre-skikt-arkitektur. | 3 sessioner (faktiskt) |
 | **2.5** | NY | Schema-kontrakt-sync — `Status.ts` mot `data-model.md`, Zod vid externa datagränser, **adapter-debt klassad (deployar 0 EF — se A5-klassningstabell i P1-sessionsdok Del 3)**, ev. borttagning av död-kod-stubs. | 1 session |
 | **3** | NY scope | UI-primitiver (React Aria + CVA + ARIA 1.3). | 2 sessioner |
 | **3.5** | NY | **A11y-baseline EGEN FAS** per P2 A1-utfall. Test-infrastruktur (axe + Playwright a11y) + 5 React Aria-mönster. ACCESSIBILITY-CHECKLIST omskriven i P2. | 1 session |
@@ -79,7 +79,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 
 **Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR-013 (Fas 4-borttagningen).
 
-**Total estimat (Fas 2 → Fas 7, exkl. klara Fas 0/1/A och defer:ade Fas 8/B/E):** 16,5 sessioner. Beräkning: 2 + 1 + 2 + 1 + 1 + 2 + 3,5 + 1 + 3 = 16,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
+**Total estimat (Fas 2.5 → Fas 7, exkl. klara Fas 0/1/A/2 och defer:ade Fas 8/B/E):** 14,5 sessioner — uppdaterad 2026-05-13 efter Fas 2 levererad i 3 sessioner (4+5+5b). Beräkning: 1 + 2 + 1 + 1 + 2 + 3,5 + 1 + 3 = 14,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
 
 ---
 
@@ -162,7 +162,28 @@ M4-principen från Fas A: deploya inte EF i förskott. Varje deploy ska följa e
 
 ---
 
-### Fas 2 — Routing + Auth
+### Fas 2 — Routing + Auth (KLAR)
+
+✅ Slutförd 2026-05-13 över Sessions 4 + 5 + 5b. Alla 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression-suite (K4.3 Test 1-6).
+
+**Output:**
+- Defense-in-depth tre-skikt-arkitektur: skikt 1 (klient-guard K3.2/K3.3) + skikt 2 (AuthError throw K3.4) + skikt 3 (server requireUser, Fas A M2 oförändrad)
+- TanStack Router file-based skelett med pathless `_authenticated`-layout
+- AuthProvider med Supabase-integration (InnerApp-pattern + router-extract per Kandidat 29)
+- nuqs URL-state-setup + dev-only test-route (DoD 4)
+- Playwright `authenticatedPage`-fixture med `storageState` (DoD 6)
+- 3 nya ADR:er: ADR-026 (Runtime-validering med Zod .parse()), ADR-027 (KVALITETSDEFINITIONER stack-skifte Vue→React), ADR-028 (Supply chain incident-respons-protokoll, K0åg-respons)
+
+**Korsreferens:**
+- Sessionsdok-trail: [`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`](../tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md)
+- Commits: `13cdf86`..K5.9-trail (samtliga K0+K2+K3+K3.4+K3.5+K4+K5-commits)
+- BUILD-LOG.md "Session 5+5b"-sektion för retrospektiv
+
+**Kvalitetsklyfta deferred till Fas 3.5:** Skikt 2 (AuthError throw-path) är typkontrakt-bevisad via tsc + biome men inte regression-skyddad i isolation. Auth-error-path unit-test-mönster lyfts vid Fas 3.5 test-infra-arbetet (vitest-installation hör hemma där per Gate 1-beslut 2026-05-13).
+
+---
+
+#### Ursprunglig Fas 2-prompt (bevaras för historisk spårbarhet)
 
 #### Mål
 Etablera fil-baserad routing (TanStack Router) + Supabase-autentisering + URL-state-hantering (nuqs) som grund för alla efterföljande vyer.
@@ -826,6 +847,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 |---|---|---|
 | 1.0 | 2026-05-05 | Initial (P3a K2) — ersätter `docs/conversion-plan.md`. Baserad på P0-inventory + P1 fas-sekvens-revision + P2 stödspec-synk. 13 fas-prompter + 10 ADR:er identifierade som ADR (#1)–ADR (#10). |
 | 1.1 | 2026-05-05 | P3a K3 — 10 ADR:er skrivna och numrerade som ADR-011 till ADR-020 i `docs/decisions/`. ADR-referenser i fas-prompter + §5 ADR-index uppdaterade till slutgiltiga ADR-NNN-format. |
+| **1.2** | **2026-05-13** | **Fas 2 markerad KLAR** efter Sessions 4+5+5b. Defense-in-depth tre-skikt-arkitektur levererad. ADR-026 (Runtime-validering), ADR-027 (KVALITETSDEFINITIONER stack-skifte), ADR-028 (Supply chain incident-respons-protokoll) tillkomna under K0åe/K0åf/K0åg. §2 fas-tabell uppdaterad (Fas 2 ✅ KLAR + estimat-summa Fas 2.5 → Fas 7 = 14,5 sessioner). §4 Fas 2-prompt utökad med "✅ Slutförd"-paragraf per Fas A-mallen. K5.9a drift-stängning av sanningskälla mot BUILD-LOG/todo/v3/CLAUDE.md (Kandidat 12-disciplin). |
 
 ---
 
