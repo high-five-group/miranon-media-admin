@@ -4,8 +4,8 @@
 
 > **Levande dokument.** Den här planen uppdateras löpande när vi går vidare. När en fas är klar förvandlas den till "vad vi har gjort, och varför". När nästa fas planeras får den en plats här. Ingen behöver gissa var vi är — det står i det här dokumentet.
 >
-> **Senast uppdaterad:** 2026-05-09 — version 3
-> **Status just nu:** Fas 0, Fas 1 och Fas A är klara. **Fas 2 (Routing + Auth) startar nästa session.**
+> **Senast uppdaterad:** 2026-05-13 — version 3 (Fas 2 KOMPLETT, Sessions 4+5+5b)
+> **Status just nu:** Fas 0, Fas 1, Fas A och Fas 2 är klara. **Fas 2.5 (dubbelkoll på datan) startar nästa session.**
 > **Föregångare:** [v2](../archive/BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md) (april 2026, arkiverad 2026-05-09) och [v1](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md) (arkiverad 2026-05-06). v3 ersätter v2 och speglar byggplan-revisionen från maj 2026.
 
 > **Till dig som läser detta:** Det här dokumentet beskriver hela planen för Miranon Medias nya digitala verktyg. Det är skrivet så att du ska förstå allt — oavsett teknisk bakgrund. Första gången ett tekniskt begrepp dyker upp förklaras det direkt i texten. Du behöver aldrig lämna det stycke du läser för att förstå det.
@@ -173,39 +173,53 @@ Allt detta verifierades med 113 automatiska tester som körs vid varje ändring 
 
 > **Varför Fas "A" och inte Fas 4?** Det här arbetet var inte planerat när byggplanen skrevs. Det dök upp efter en granskning av serverkoden och var så omfattande att det förtjänade en egen fas-bokstav. Vi använde A för att markera "akut säkerhetsarbete" snarare än ett steg i den ordinarie sekvensen.
 
----
+### Fas 2: Dörrar och lås ✅ *(ny i v3 — klar 13 maj 2026)*
 
-## 6. Det här bygger vi nu
+**Klar 13 maj 2026** över tre arbetspass (Sessions 4 + 5 + 5b, 2026-05-11 till 2026-05-13).
 
-### Fas 2: Dörrar och lås
-
-*2 arbetspass · startar nästa session*
-
-**Vad händer?**
-
-Nu bygger vi appens **navigering** (hur du tar dig mellan sidor) och **inloggning**.
+Nu fungerar appens **navigering** mellan sidor och **inloggning**.
 
 Du loggar in med email och lösenord. Inloggningen sparas så du slipper logga in varje gång appen öppnas. Om du försöker öppna en sida utan att vara inloggad skickas du automatiskt till inloggningsskärmen.
 
-Tre saker byggs i samma fas:
+Tre saker byggdes i samma fas:
 
 - **Vägvalsystemet** — koden som vet vilken sida som ska visas när du klickar på en länk eller anger en webbadress. Vi använder [TanStack Router](https://tanstack.com/router), ett modernt vägvalsystem där varje sida automatiskt kopplas till en mapp i koden. När en ny sida läggs till behöver ingen registrera den manuellt — strukturen i mappen blir vägvalslistan.
 
 - **Inloggningssystemet** — kopplingen till Supabase Auth, samma server som hanterar all data. När du loggar in får din webbläsare ett digitalt "passerkort" som följer med varje förfrågan till servern. Säkerhetsvakten från Fas A kontrollerar passerkortet och släpper igenom dig om det är giltigt.
 
-- **Tillstånd som överlever omladdning** — om du till exempel filtrerar event-listan på "kommande" och sedan laddar om sidan, ska filtret ligga kvar. Det åstadkommer vi genom att lagra sådana val i webbadressen (URL:en). Det betyder också att du kan bokmärka en filtrerad vy, eller skicka en länk till någon annan som öppnar samma vy.
+- **Tillstånd som överlever omladdning** — om du till exempel filtrerar event-listan på "kommande" och sedan laddar om sidan, ligger filtret kvar. Det åstadkommer vi genom att lagra sådana val i webbadressen (URL:en). Det betyder också att du kan bokmärka en filtrerad vy, eller skicka en länk till någon annan som öppnar samma vy.
 
-**Varför nu?** Innan vi kan bygga någon riktig vy behöver vi ha (a) ett sätt att navigera mellan vyer och (b) en grind som hindrar obehöriga från att komma in. Den här fasen levererar bägge.
+**Tre lager av säkerhet mot oavsiktlig dataläcka:**
 
-**Vad du märker:** Du kan logga in! Men inuti appen ser du fortfarande tomma "platshållare" — sidorna heter "Hem", "Event", "Personer", "Mer", men innehållet är inte byggt än. Det kommer i Fas 6.
+1. **Klient-vakt** — webbsidan blockerar utloggade FÖRE den frågar servern om data.
+2. **Tydligt fel om vakten brister** — om något går fel i steg 1 (regression) ger koden ett typat felmeddelande istället för att tyst skicka en anonym nyckel.
+3. **Server-vakt** — Säkerhetsvakten från Fas A avvisar oberoende anonyma nycklar.
+
+Allt verifieras automatiskt via 6 Playwright-tester som körs vid varje kodändring — om något av lagren bryts vid framtida arbete fångas det innan koden går ut.
+
+**Vad du märker:** Du kan logga in! Sidorna heter fortfarande "Hem", "Event", "Personer", "Mer" — men innehållet är platshållare som byggs ut i Fas 6.
+
+---
+
+## 6. Det här bygger vi nu
+
+### Fas 2.5: Dubbelkoll på datan
+
+*1 arbetspass · startar nästa session*
+
+**Vad händer?**
+
+Det här är en kort, teknisk mellanfas. Vi går igenom kodens beskrivning av Anmälningars status (det vill säga listan på möjliga värden — "anmäld", "betald", "inställd" och så vidare) och kontrollerar att den exakt matchar den dokumenterade datamodellen. Om de inte stämmer överens uppdaterar vi koden.
+
+Vi aktiverar också den automatiska datakontrollen från Fas 1 i alla läsfunktioner. Det betyder att appen från och med nu kommer att meckra direkt om Airtable någon gång returnerar data som ser konstig ut, istället för att tyst visa felaktig information.
+
+**Varför nu?** Innan vi börjar bygga UI-vyerna i Fas 3 vill vi vara säkra på att alla datafält i appen matchar exakt det som finns i Airtable. Förebyggande arbete som sparar tid senare.
 
 **Fasen är klar när:**
 
-- Inloggning fungerar och tar dig vidare till Hem-sidan
-- Utloggning fungerar och tar dig tillbaka till inloggningssidan
-- Om du är utloggad och försöker öppna en intern sida skickas du till inloggningen
-- Webbadresser med filter eller söktermer fungerar och kan bokmärkas
-- Allt detta verifieras automatiskt med tester
+- Alla statusvärden i koden matchar datamodellen
+- Automatisk datakontroll aktiverad i alla läsfunktioner
+- Allt verifieras automatiskt med tester
 
 ---
 
@@ -213,15 +227,11 @@ Tre saker byggs i samma fas:
 
 Faserna nedan är planerade men inte påbörjade. Den exakta innebörden kan finjusteras när vi närmar oss respektive fas, men huvudriktningen är låst.
 
-### Fas 2.5: Dubbelkoll på datan
+### Fas 3: UI-primitiver
 
-*1 arbetspass*
+*Tidigare placerat på Fas 2.5 — flyttad till Sektion 6 "Det här bygger vi nu" 2026-05-13 när Fas 2 markerades klar.*
 
-**Vad händer?**
-
-Det här är en kort, teknisk mellanfas. Vi går igenom kodens beskrivning av Anmälningars status (det vill säga listan på möjliga värden — "anmäld", "betald", "inställd" och så vidare) och kontrollerar att den exakt matchar den dokumenterade datamodellen. Om de inte stämmer överens uppdaterar vi koden.
-
-Vi aktiverar också den automatiska datakontrollen från Fas 1 i alla läsfunktioner. Det betyder att appen från och med nu kommer att meckra direkt om Airtable någon gång returnerar data som ser konstig ut, istället för att tyst visa felaktig information.
+(Fas 2.5-content flyttad till "Det här bygger vi nu". Fas 3 är nästa kommande efter Fas 2.5.)
 
 Slutligen går vi igenom de nio adapter-funktionerna som idag bara är "skelett" (kallas TODO i kod-jargongen — funktioner som finns men ännu inte gör något) och klassar varje en: ska den byggas i Fas 5.5? Fas 6? Eller ska den tas bort som död kod?
 
@@ -528,7 +538,7 @@ Det här är de externa verktyg och tjänster appen står på. Du behöver inte 
 
 | Version | Datum | Ändring |
 |---------|-------|---------|
-| **v3** | **2026-05-09** | **Aktuell.** Speglar byggplan-revisionen från maj 2026 (P0–P3a). Lagt till: Fas A (säkerhetsvakten), Fas 2.5 (dubbelkoll på datan), Fas 3.5 (tillgänglighetstest), Fas 5.5 (första riktiga interaktionen), Fas 6 uppdelad i 6a–6e (strangler-fig), Fas 8 (framtid), Fas B (Airtable-städning som parallellspår), Fas E (databasbyte). Fas 5 förenklad — fyra polish-funktioner flyttade till Fas 7. Skriven i du-form. Senast uppdaterad-stämpel + status-rad i header. |
+| **v3** | **2026-05-09** (initial), **2026-05-13** (Fas 2 KLAR) | **Aktuell.** Speglar byggplan-revisionen från maj 2026 (P0–P3a). Lagt till: Fas A (säkerhetsvakten), Fas 2.5 (dubbelkoll på datan), Fas 3.5 (tillgänglighetstest), Fas 5.5 (första riktiga interaktionen), Fas 6 uppdelad i 6a–6e (strangler-fig), Fas 8 (framtid), Fas B (Airtable-städning som parallellspår), Fas E (databasbyte). Fas 5 förenklad — fyra polish-funktioner flyttade till Fas 7. Skriven i du-form. Senast uppdaterad-stämpel + status-rad i header. **Uppdaterad 2026-05-13:** Fas 2 — Routing + Auth markerad KLAR efter Sessions 4 + 5 + 5b. Defense-in-depth tre-skikt-arkitektur levererad. Fas 2.5 (schema-kontrakt-sync) flyttad till "Det här bygger vi nu". Status-rad och "Senast uppdaterad"-stämpel uppdaterade per ADR-025 levande dokument-disciplin. |
 | v2 | 2026-04-13 | Tonomställning från "om Lotta" till "till dig". Strukturmedling. **Frusen** efter v3 — beskrev planen innan byggplan-revisionen. |
 | v1 | 2026-04-13 | Första versionen. Skriven om Lotta i tredje person. **[Arkiverad](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md)** 2026-05-06 i Pre-Fas-2-städningen. |
 
