@@ -1,5 +1,5 @@
 # todo.md — Miranon Media Admin (React)
-*Senast uppdaterad: 2026-05-12 (Session 5 paused efter K5.3 — K3.4 + K5 final återstår för Session 5b)*
+*Senast uppdaterad: 2026-05-13 (Fas 2 KOMPLETT — Sessions 4 + 5 + 5b stängda, Fas 2.5 nästa)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -8,50 +8,13 @@
 
 ---
 
-## 🔄 Session 5 paused — Session 5b startpunkt
-
-**Session 5 avslutades 2026-05-12 efter K4 + K5.1-K5.3.** Marcus pausade för vila innan K3.4 + K5 final.
-
-### Fas 2 status post-Session-5
-
-- ✅ K0 (åa-åg) + K1 + K2 + K3 + K3.5 + K4.1 + K4.2 + K4.3 KLAR
-- ✅ DoD 1-8 alla stängda och empiriskt verifierade via 6-tests Playwright-regression
-- ⏳ K3.4 (anon-key-fallback-borttagning) — kvar för Session 5b
-- ⏳ K5 final (sessionsdok-arkivering + Kandidat 17-23 lessons-skörd + hub-lyft K34+K36 + BYGGPLAN-LÄTTLÄST-v3 + transcript-disciplin) — kvar för Session 5b
-
-### Session 5b startpunkt: K3.4
-
-**Scope K3.4 (~30-45 min):**
-
-1. Ta bort `?? env.VITE_SUPABASE_ANON_KEY`-fallback på rad 16-22 av `src/data/config/supabase-client.ts`
-2. `getAuthHeader()` returnerar null eller throws explicit AuthError istället för anon-token
-3. Lägg till CLAUDE.md-tillägg om strict-mode-rules (Kandidat 31 disciplin-uppdatering)
-4. **Verifikation:** K4.3 Test 5 (INGA `functions/v1`-anrop) är regression-skydd — om Test 5 failar efter K3.4 har vi UI-flow-bug
-
-**Status: säkert att göra med kall start.** Sessionsdokets Del 4+5+6 är bake:ade (K5.2). Lessons K24-K36 är skördade (K5.1). Defense-in-depth-arkitekturen är empiriskt verifierad via K4.3 6-tests-suite.
-
-### Session 5b post-K3.4: K5 final
-
-- Skörda Kandidat 17-23 från sessionsdok Del 3.7 (K0åg-relaterade) till `tasks/lessons.md`
-- Hub-lyft K34 + K36 till `~/Repon/marcus-system/tasks/lessons.md`
-- Sessionsdok-arkivering till `tasks/sessions/archive/2026-05/`
-- BYGGPLAN-LÄTTLÄST-v3.md Fas 2-status (om existerar)
-- Transcript-disciplin etablering (`tasks/sessions/transcripts/`-mapp + Session 5-transcript som ABSOLUT SISTA commit)
-
----
-
 ## Aktuellt fokus
 
-**Fas 2: Routing + Auth** — TanStack Router file-based routes, auth guard, Supabase login/logout, nuqs URL-state.
+**Fas 2 ✅ KLAR 2026-05-13** — Routing + Auth komplett. Alla 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression. Defense-in-depth tre-skikt-arkitektur levererad: skikt 1 (klient-guard K3.2/K3.3) + skikt 2 (AuthError throw K3.4) + skikt 3 (server requireUser Fas A M2). Sessions 4 + 5 + 5b (arkiveras till `tasks/sessions/archive/2026-05/` i K5.8). Hub-lyft-kandidater: 7 totalt (K17 + K18 + K19 + K34 + K36 + K37 + K38) för K5.7 hub-sync.
 
-**K0 FULLSTÄNDIGT KLAR 2026-05-11** (Session 4 avslut): alla 6 K0-åtgärder committade. Startvillkor 1-3 (nuqs `13cdf86`, typecheck:tests `a5a477b`+`1d02b3b`, CI-split `3015d08`+`1138e38`) + "Direkt efter Fas 2"-fynd (K0åd `f2a2d9a`, K0åe.1 `8095a62`, K0åe.2 ADR-026 `497a89f`, K0åf ADR-027 `a7bdaea`). 2 nya ADR:er (ADR-026 Runtime-validering, ADR-027 Kvalitetsdefinitioner stack-skifte). K1.6 K-sista-commit för K0-fasen i Session 4 (denna commit).
+**Nästa:** Fas 2.5 — Schema-kontrakt-sync (per `docs/byggplan.md` §4).
 
-**Session 5 startar med Fas 2 K2** — TanStack Router file-based + AuthProvider + ErrorBoundary + Suspense per `docs/byggplan.md` §4 Fas 2-prompt. Inga blockers — alla 6 K0-åtgärder är hanterade. Sessionsdoket `tasks/sessions/2026-05-11-fas2-routing-auth.md` är aktivt över Session 4 + Session 5 (samma Fas 2) — arkiveras vid Fas 2-avslut per ADR-023.
-
-**Defer-poster från K1.6:**
-- Etablera transcript-disciplin Session 5+: mappen `tasks/sessions/transcripts/` saknas, export-rutin för claude.ai-chat ej etablerad. Per CONTRIBUTING.md "Transcript-disciplin" är detta DoD-krav vid sessionsavslut — disciplin-drift sedan Session 2/3 (mappen aldrig skapad). K1.6-prompt-utbyte 2026-05-11 dokumenterade defer-skäl: K1.6 var redan substantiellt + ny disciplin-etablering kräver dedikerad runda. Plan: vid Session 5-sessionsstart, Marcus bestämmer export-metod (Settings → Privacy → Export data JSON, manuell kopiering till .txt, eller browser print-to-PDF) och skapar mappen + första 2026-05-11.txt.
-
-Aktiv sessionsdok: [`tasks/sessions/2026-05-11-fas2-routing-auth.md`](sessions/2026-05-11-fas2-routing-auth.md) (K1.4-baked, väntar på Steg 4 Sessions-handoff + Steg 5 Kandidat 13-15-bake-in innan session-byte).
+Sessionsdok pre-arkivering: [`tasks/sessions/2026-05-11-fas2-routing-auth.md`](sessions/2026-05-11-fas2-routing-auth.md). Post-arkivering länk uppdateras i K5.8.
 
 ### Återkommande disciplin: Veckovis audit-ci allowlist-granskning (K0åg whitelist-period)
 
@@ -173,60 +136,20 @@ Se [`docs/byggplan.md`](../docs/byggplan.md) §4 Fas 2-prompten och [`docs/BUILD
 
 ---
 
-## Fas 2: Routing + Auth ← NU
+## Fas 2: Routing + Auth ✅ KLAR
 
-**Mål:** TanStack Router file-based routes, auth guard, Supabase login/logout fungerande.
-**Beroenden:** Fas 0 + Fas 1 klara.
-**Uppskattad tid:** 1 session.
-**Styrande dokument:** [`docs/byggplan.md`](../docs/byggplan.md) §4 Fas 2-prompten.
+Slutförd 2026-05-13 över Sessions 4 + 5 + 5b. Alla 8 DoD-rader stängda och empiriskt verifierade via K4.3 6-tests Playwright-regression. Defense-in-depth tre-skikt-arkitektur levererad (klient-guard + AuthError throw + server requireUser). ADR-026, ADR-027, ADR-028 levererade. 7 hub-lyft-kandidater för K5.7 (K17 + K18 + K19 + K34 + K36 + K37 + K38).
 
-### Förberedelse innan Fas 2
+Sessionsdok pre-arkivering: [`tasks/sessions/2026-05-11-fas2-routing-auth.md`](sessions/2026-05-11-fas2-routing-auth.md). Arkiveras till `tasks/sessions/archive/2026-05/` i K5.8.
 
-- [ ] Återinföra `TanStackRouterVite`-plugin i `vite.config.ts` när `src/routes/` skapas (se kommentar i `vite.config.ts` rad 6–9)
-- [ ] Bestäma om `Event`-namnkollision triggar per-fil alias eller global rename (se [ADR-007](../docs/decisions/ADR-007-event-name-collision-deferred-aliasing.md))
-
-### Filer som ska skapas
-
-- [ ] `src/app.tsx` (QueryClient, RouterProvider)
-- [ ] `src/providers/auth-provider.tsx` (Supabase auth → Context)
-- [ ] `src/providers/data-source-provider.tsx` (AirtableAdapter → Context)
-- [ ] `src/providers/query-provider.tsx` (QueryClientProvider)
-- [ ] `src/hooks/use-auth.ts` (useContext-wrapper)
-- [ ] `src/hooks/use-data-source.ts` (useContext-wrapper)
-- [ ] `src/routes/__root.tsx`
-- [ ] `src/routes/_authenticated.tsx` (auth guard + app-shell)
-- [ ] `src/routes/login.tsx`
-- [ ] `src/routes/index.tsx` (redirect → /hem)
-- [ ] `src/routes/_authenticated/hem.tsx` (placeholder)
-- [ ] `src/routes/_authenticated/event/index.tsx` (placeholder)
-- [ ] `src/routes/_authenticated/event/$eventId.tsx` (placeholder)
-- [ ] `src/routes/_authenticated/personer/index.tsx` (placeholder)
-- [ ] `src/routes/_authenticated/personer/$personId.tsx` (placeholder)
-- [ ] `src/routes/_authenticated/mer.tsx` (placeholder)
-
-### Verifiering
-
-- [ ] `/login` visar formulär med email + lösenord
-- [ ] Inloggning → redirect till `/hem`
-- [ ] `/hem`, `/event`, `/personer`, `/mer` — alla renderar placeholder
-- [ ] `/event/[id]` och `/personer/[id]` — dynamiska routes fungerar
-- [ ] Logga ut → redirect till `/login`
-- [ ] Ej inloggad + direktnavigering → `/login`
-- [ ] `npx tsc --noEmit` → 0 fel
-- [ ] `npx @biomejs/biome check .` → exit=0
-- [ ] `git add -A && git commit -m "fas 2: routing + auth" && git push`
-
-### Risker
-
-- TanStack Router file-based routes genererar `src/routeTree.gen.ts` automatiskt — verifiera att den är `.gitignore`-ad (finns redan i `.gitignore` från Fas 0)
-- Auth guard måste hantera både "ej inloggad" och "inloggad men session expired" — fallback till `/login` i båda fall
-- `Event`-alias: kanske blir aktuellt i `_authenticated/event/index.tsx` när vi importerar `Event` från `@/domain/models/Event`
+**Fas 2.5 — Schema-kontrakt-sync ← NU** (per `docs/byggplan.md` §4)
 
 ---
 
 ## Kommande faser (från `docs/byggplan.md` §4)
 
 - **Fas 3: UI-primitiver** — React Aria + CVA + [GA] ARIA 1.3
+- **Fas 3.5: Test-infra + mönsterbibliotek** (egen fas per ADR-020)
 - **Fas 5: App-shell + Tab bar** — minimal, FK-inspirerad + [GA] error boundaries, service worker, View Transitions
 - **Fas 6: Hem + Event + Personer + Mer** — 4 flikar + [GA] optimistic UI, Realtime, stale-while-error
 - **Fas 6.5: Aktivitetslogg** — [GA] xAPI-schema, trace_id, GDPR retention
@@ -272,3 +195,4 @@ Meta-arbete parallellt med byggfaserna. Reviderade conversion-plan till byggplan
 - **DEFER → Fas 3:** 4 CSS-warnings i `src/styles/base.css:72-75` (`!important` i `prefers-reduced-motion`). Fas 3 omarbetar `base.css` när primitiver landas — städning sker som biprodukt. Trigger: första Fas 3-session. Källa: P3b sessionsdok Del 3.4 H.1.
 - **DEFER → passiv (bevakas):** PostCSS audit-fix. `npm audit` rapporterar PostCSS-relaterade transitive dependencies, inga high/critical. PostCSS uppdateras naturligt via Tailwind v4-uppgradering eller dependabot. Trigger: om `npm audit --audit-level=high` blir röd, ELLER vid Tailwind v5-migration. Källa: P3b sessionsdok Del 3.4 H.2.
 - **DEFER → Fas 7:** `supabase/functions/test-auth/` borttagning från produktion. Lever idag med `verify_jwt = false` i `config.toml` — Playwright-helper för deny-paths-tester. Fas 7 (Konsolidering: CSP, chaos testing, deploy) ska exkludera `test-*`-funktioner från produktions-deploy via CI-pipeline. Källa: P3b sessionsdok Del 3.4 H.4.
+- **K3.4-kvalitetsklyfta (2026-05-13, deferred till Fas 3.5):** auth-error-path unit-test-mönster för `getAuthHeader()` AuthError-kontraktet. Test-fall: `callEdgeFunction` + `postEdgeFunction` med session=null → AuthError + fetchWithRetry never called. Vitest-installation hör hemma där per Gate 1-beslut 2026-05-13 (scope-creep att göra i K3.4 utan ADR — projektet är Playwright-only). Sessionsdok-trail: `tasks/sessions/2026-05-11-fas2-routing-auth.md` Del 5.9. Lyfts till Fas 3.5-prompten när Session 6+ påbörjar Fas 2.5 → 3 → 3.5-sekvensen.
