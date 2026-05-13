@@ -391,6 +391,11 @@ När Marcus säger "Nu avslutar vi denna session":
 8. Uppdatera `tasks/todo.md`
 9. Uppdatera ## Filstruktur i CLAUDE.md
 10. Committa och pusha
+11. **Vid fas-avslut endast:** Uppdatera `docs/byggplan.md` §2 fas-tabell + Versionshistorik-rad. Markera fasen ✅ KLAR + datum. Uppdatera estimat-summa om fas levererad tidigare/senare än estimerat. Detta är styrande sanningskälla — drift mot byggplan.md är 11/10-disciplin-brott (per Kandidat 12).
+12. **Vid fas-avslut endast:** Uppdatera `README.md` Status-rad + Projektstatus-sektion + ev. ADR-räkning + Scripts-tabell om nya scripts tillkommit. Och `CHANGELOG.md` — ny release `[X.Y.0]` med Keep-a-Changelog-kategorier (Added/Changed/Security/Fixed) + compare-länkar. README + CHANGELOG är publika dokument — drift här syns externt.
+13. **Vid fas-avslut endast:** Sessionsdok-arkivering via `git mv` till `tasks/sessions/archive/<år>-<månad>/` per ADR-023. Trail-link-uppdateringar atomiskt i samma commit per Kandidat 1 (klassificera refs: identitet → mekanisk prefix-fix; roll → semantisk omformulering; frusen zon → orörd).
+14. **Vid UNIVERSAL-lyft i sessionen:** Hub-sync till `~/Repon/marcus-system/tasks/lessons.md` med H2 `## YYYY-MM-DD — <beskrivning> (miranon-media-admin)` + Källa-projekt/Sub-klungor/Commit-trail/Antal poster header-block. Inom 7 dagar är fortfarande OK för icke-akuta, men gör det samma session om K1 förenklar eftersom commit-trail är färsk.
+15. **Vid fas-avslut endast:** Kör `## Fas-avsluts-verifierings-rutin` (sektion nedan) — cross-doc grep-check att alla 5 styrande + 3 publika dokument säger samma sak.
 
 **Checklista:**
 - [ ] Stämmer alla statusmarkeringar med verkligheten?
@@ -402,6 +407,100 @@ När Marcus säger "Nu avslutar vi denna session":
 - [ ] Är "Status och nästa steg" uppdaterad?
 - [ ] Uppdatera ## Filstruktur i CLAUDE.md
 - [ ] Påminn Marcus: klicka "Update" i Claude Chat-projektet (claude.ai)
+- [ ] **Vid fas-avslut:** `docs/byggplan.md` §2 fas-tabell + Versionshistorik uppdaterade?
+- [ ] **Vid fas-avslut:** `README.md` Status-rad + Projektstatus + Scripts-tabell + ADR-räkning konsekvent med faktiskt repo-state?
+- [ ] **Vid fas-avslut:** `CHANGELOG.md` ny release med Keep-a-Changelog-kategorier + compare-länkar?
+- [ ] **Vid UNIVERSAL-lyft:** Hub-sync till `~/Repon/marcus-system/tasks/lessons.md` gjord eller schemalagd (≤7 dagar)?
+- [ ] **Vid fas-avslut:** Sessionsdok arkiverad till `tasks/sessions/archive/<år>-<månad>/` via `git mv` + trail-link-uppdateringar atomiskt per Kandidat 1?
+- [ ] **Vid fas-avslut:** Fas-avsluts-verifierings-rutin körd? Alla cross-doc-greps gröna?
+
+---
+
+## Fas-avsluts-verifierings-rutin
+
+När en fas (t.ex. Fas 2 → Fas 2.5) avslutats, kör denna cross-doc-grep-check FÖRE Marcus klickar "Update" i Claude.ai-projektet. Stäng all drift mellan styrande och publika dokument innan sessionen anses helt klar.
+
+Per Kandidat 12 (multipla sanningskällor driver) + Kandidat 38 (form-tolerant grep) + Kandidat 39 (case-insensitive default när exakt case inte är meningsfullt) + Kandidat 13 (meta-exklusion av drift-fix-grep).
+
+### Cross-doc-konsekvens (5 styrande + 3 publika dokument)
+
+Byt ut `<N>` mot fas-numret (t.ex. 2 för Fas 2) och `<datum>` mot fas-avslutsdatumet (ISO YYYY-MM-DD).
+
+```bash
+# === STYRANDE (5 dokument, generisk grep) ===
+# Form-tolerant per K38: KLAR/KOMPLETT/✅ är alla legitima fas-avslut-markörer
+# Case-insensitive per K39
+
+rg -ci "fas <N>.*(klar|komplett|✅)|✅.*fas <N>" docs/byggplan.md          # min 1
+rg -ci "fas <N>.*(klar|komplett|✅)|✅.*fas <N>" docs/BUILD-LOG.md         # min 1 (BUILD-LOG använder typiskt "KOMPLETT")
+rg -ci "fas <N>.*(klar|komplett|✅)|✅.*fas <N>" tasks/todo.md             # min 1
+rg -ci "fas <N>.*(klar|komplett|✅)|✅.*fas <N>" docs/specs/BYGGPLAN-LÄTTLÄST-v3.md  # min 1
+rg -ci "fas <N>.*(klar|komplett|✅)|✅.*fas <N>" CLAUDE.md                 # min 1 (Status-sektion)
+
+# === PUBLIKA (3 dokument, dokument-specifika checks) ===
+
+# README — generisk grep (har Status-rad + Projektstatus-sektion)
+rg -ci "fas <N>.*(klar|komplett|✅)|✅.*fas <N>" README.md                 # min 1
+
+# CHANGELOG — release-rubrik-validering (Keep-a-Changelog-format, INTE generisk "KLAR")
+rg -c "^## \[[0-9]+\.[0-9]+\.[0-9]+\] - <datum>" CHANGELOG.md              # exakt 1 (ny release för denna fas)
+
+# decisions/README — ADR-räkning matchar repo + README
+ADR_COUNT=$(ls docs/decisions/ADR-*.md | wc -l)
+README_COUNT=$(rg -o "[0-9]+ arkitekturbeslut" README.md | head -1 | grep -o "[0-9]\+")
+test "$ADR_COUNT" = "$README_COUNT" && echo "✅ ADR-räkning matchar ($ADR_COUNT)" || echo "❌ drift: filer=$ADR_COUNT, README=$README_COUNT"
+
+# === DATUM-KONSEKVENS ===
+rg -c "<datum>" docs/byggplan.md docs/BUILD-LOG.md tasks/todo.md docs/specs/BYGGPLAN-LÄTTLÄST-v3.md CLAUDE.md README.md CHANGELOG.md
+# totalt min 5 över alla 7 (varje dokument har inte nödvändigtvis exakt datumet, men summan ska vara minst 5)
+
+# === DRIFTSTÄNGNING (inga PÅGÅR/NY scope/Pre-Fas-N-rester i nutid-pekare) ===
+
+# byggplan.md §2 fas-tabell: ingen "NY scope" eller "EJ PÅBÖRJAD" för avslutad fas (utanför versionshistorik-cell)
+rg -ci "fas <N>.*(pågår|ej påbörjad|ny scope)" docs/byggplan.md | grep -v "v[0-9]\+\.[0-9]\+"
+# förvänta 0 utanför versionshistorik-celler
+
+# README Status-rad: ingen "Pre-Fas-<N>" eller "Fas <N> startar"
+rg -ci "pre-fas-<N>|fas <N> startar" README.md
+# 0 i Status-raden (kan finnas i klara-faser-listan eller Documentation map — kontextuellt OK)
+
+# === HUB-SYNC (om UNIVERSAL-lyft skördade i sessionen) ===
+cd ~/Repon/marcus-system && git log -3 --oneline | grep -i "miranon\|fas <N>\|hub-lyft"
+# senaste hub-commit för denna fas (om UNIVERSAL-lyft existerar)
+
+# === SESSIONSDOK ARKIVERAD ===
+test -f tasks/sessions/<sessionsdok>.md && echo "❌ ej arkiverad" || echo "✅ arkiverad"
+ls tasks/sessions/archive/<år>-<månad>/*.md | grep -c "<sessionsdok>"
+# förvänta 1 i archive
+```
+
+### Form-tolerans-not (per K38-tillämpning 2026-05-13)
+
+Olika dokument har legitimt olika konventioner för "fas avslutad":
+- **byggplan.md, todo.md, v3, CLAUDE.md, README.md** använder typiskt `KLAR` eller `✅`
+- **BUILD-LOG.md** använder typiskt `KOMPLETT` (retrospektiv-stil)
+- **CHANGELOG.md** använder `## [X.Y.0] - <datum>`-rubrik (Keep-a-Changelog-konvention) — inte explicit "KLAR/KOMPLETT"-fras
+- **docs/decisions/README.md** har ingen fas-status-fras alls; verifieras via ADR-räkning matchar README
+
+Att tvinga en gemensam "KLAR"-konvention i alla 7 dokument skulle bryta mot etablerade konventioner (Keep-a-Changelog för CHANGELOG, retrospektiv-stil för BUILD-LOG). Rutinen är därför form-tolerant per dokument-typ.
+
+### Stopp-disciplin
+
+Om någon grep visar ❌-utfall (0 där förväntat min 1, eller min 1 där förväntat 0): STOPPA. Klassificera driften:
+
+- **Verklig drift** → ny commit som stänger driften innan fas-avslut anses klar. K5.9-paketet 2026-05-13 är exempel-mall (3 commits: byggplan + publika + sessionsavsluts-disciplin-fix).
+- **Historisk ref i versionshistorik/arkivmaterial** → kontextuellt OK, exkludera via `grep -v` eller acceptera per K13-meta-exklusion.
+- **Form-variant** (case, kort/lång) → bredda grep per K38/K39.
+
+### Var rutinen körs
+
+- **Code** kör grep-suiten i RAPPORTERA-block av sista K i fas-avslutande session.
+- **Chat** verifierar rapportens utfall mot förväntat och STOPPA-OCH-FRÅGA vid avvikelse.
+- **Marcus** klickar "Update" först efter alla ❌ är åtgärdade.
+
+### Historik
+
+Etablerad 2026-05-13 i Session 5b K5.9c efter att K5.9a-driften av byggplan.md upptäcktes och K5.9b-driften av README/CHANGELOG fångades i Marcus-granskning. Tre saknade dokument-uppdateringar i sessionsavsluts-checklistan exponerade systematisk blind fläck. K42-defer-paketet i Session 6+ K0 lessons-sweep dokumenterar den underliggande process-lärdomen. K38b-flaggan (form-tolerans-validering INNAN checklist-commit) skördas i samma sweep.
 
 ---
 
