@@ -10,7 +10,7 @@
 > - `tasks/sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md` (Pre-Fas-2, slutförd 2026-05-07) — arkiveras i K1 enligt ADR-023 sessions-arkivering
 > **Efterföljare:** Fas 2.5 — Schema-kontrakt-sync, mot `docs/byggplan.md` §4 Fas 2.5-prompt.
 > **Stop-test (denna session):** 6 K0-åtgärder committade + Fas 2 DoD 1-8 passerade + Playwright auth-fixture etablerad + ev. ADR:er committade + lessons-skörd lyft + sessionsdok låst + transcript sparat.
-> **Sessionsdok-commit-disciplin (P3a-baserad, reviderad för Fas 2):** K1 = skelett. Faktiska arbets-commits (K0åa-åf, K2-K4) rör INTE detta sessionsdok. **K1.N early bake-ins** committas efter substantiella K0-sub-klungor för att fånga commit-hashar + avvikelser + lärdomskandidater innan K-sista. K-sista bakar in Del 3-8 retrospektiv. Mönsterbyte från ursprungliga 'K1 + K-sista' till 'K1 + K1.N bake-ins + K-sista' beslutat 2026-05-11 efter K0åb genererat 8 dolda type-fel-fynd + flera lärdomskandidater — för mycket att hålla i Chat-kontext tills K-sista. Ren str_replace-patch är konfliktfri och billig. Touch-count revideras dynamiskt under sessionen; aktuell post-K1.7 = 9 (K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 + K1.7 = K-sista för K0-fasen i Session 4 + K0åg-spårbarhet och skelett-utfyllnad inför Session 5 K2-K5). Session 5 (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. **K0 startvillkor-fas 1-3 komplett 2026-05-11** efter K0åc.2 CI grön (36s, 72 pure + 38 staging passed + 3 M4-defer skipped) — Fas 2-implementation (K2) nu unblockad strikt-sekvens-wise; K0åd-K0åf kan tas före eller parallellt med K2 per Marcus' beslut. **Mini-överlämning klar 2026-05-11** (Steg 1 lessons-lyft + Steg 2 CLAUDE.md + Steg 3 todo.md + Steg 4 Sessions-handoff + Steg 5b Kandidat 13-15-bake-in + cross-repo-lessons-lyft) — sessionsdoket är komplett-handoff-redo, väntar på Marcus' Update-klick i Claude.ai-projektet innan ny session-start.
+> **Sessionsdok-commit-disciplin (P3a-baserad, reviderad för Fas 2):** K1 = skelett. Faktiska arbets-commits (K0åa-åf, K2-K4) rör INTE detta sessionsdok. **K1.N early bake-ins** committas efter substantiella K0-sub-klungor för att fånga commit-hashar + avvikelser + lärdomskandidater innan K-sista. K-sista bakar in Del 3-8 retrospektiv. Mönsterbyte från ursprungliga 'K1 + K-sista' till 'K1 + K1.N bake-ins + K-sista' beslutat 2026-05-11 efter K0åb genererat 8 dolda type-fel-fynd + flera lärdomskandidater — för mycket att hålla i Chat-kontext tills K-sista. Ren str_replace-patch är konfliktfri och billig. Touch-count revideras dynamiskt under sessionen; aktuell post-K5.4 = 10 (K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 + K1.7 + K5.4 = K-sista för K0-fasen i Session 4 + K0åg-spårbarhet och skelett-utfyllnad inför Session 5 K2-K5 + Session 5b K3.4 bake-in). Session 5 (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. **K0 startvillkor-fas 1-3 komplett 2026-05-11** efter K0åc.2 CI grön (36s, 72 pure + 38 staging passed + 3 M4-defer skipped) — Fas 2-implementation (K2) nu unblockad strikt-sekvens-wise; K0åd-K0åf kan tas före eller parallellt med K2 per Marcus' beslut. **Mini-överlämning klar 2026-05-11** (Steg 1 lessons-lyft + Steg 2 CLAUDE.md + Steg 3 todo.md + Steg 4 Sessions-handoff + Steg 5b Kandidat 13-15-bake-in + cross-repo-lessons-lyft) — sessionsdoket är komplett-handoff-redo, väntar på Marcus' Update-klick i Claude.ai-projektet innan ny session-start.
 > **Scope-splitt-anmärkning:** Fas 2-estimat enligt byggplan §4 = 2 sessioner. Om K0+K2+K3+K4 inte ryms i en chat-session, splitta i Session A (K1+K0+K2) och Session B (K3+K4+K5) per P1-lärdom ("Var beredd att splitta i 2 sessioner om scope växer"). Splitten är förväntad, inte avvikelse.
 
 ---
@@ -21,7 +21,7 @@
 
 ### Var vi är (2026-05-11)
 
-Fas 2 K0 startvillkor 1-3 ✅ **KLAR** (Session 4). K0åd-K0åf "Direkt efter Fas 2"-fynd ✅ **KLAR** (Session 4-avslut, K1.6). **K0åg (supply chain malware-respons GHSA-rmmr-r34h-pfm5) ✅ KLAR 2026-05-12** (Session 5 K1.7-spårning) — upptäcktes i K1.7 RAPPORTERA Block B, åtgärdades via Strategi 2 (pin exakt + overrides, commits `ea59787` + `35cd10e` ADR-028). Sessionsdoket är på touch nr 9 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a (Sessions-handoff) + K1.5b (Kandidat 13-15-bake-in) + K1.6 (K-sista K0-fasen Session 4) + K1.7 (K0åg-spårning + Del 4-7-skelett inför Session 5, denna). Session 5 implementation (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. 12 UNIVERSAL-lessons från K0åa-K0åc + 3 meta-UNIVERSAL från mini-överlämningen (Kandidat 13-15) + 1 från K0åf (Kandidat 16) lyfta till `tasks/lessons.md` + hub (`marcus-system/tasks/lessons.md`) under H2 `## 2026-05-11 — Fas 2 K0 startvillkoren`. Kandidat 17-19 från K0åg flaggade i Del 7.2-skelettet, lyfts vid K5. CI grön på första försök efter K0åc.2 (run 25663357991, 36s) och efter K0åg-paret (separata runs 2026-05-12 morgon).
+Fas 2 K0 startvillkor 1-3 ✅ **KLAR** (Session 4). K0åd-K0åf "Direkt efter Fas 2"-fynd ✅ **KLAR** (Session 4-avslut, K1.6). **K0åg (supply chain malware-respons GHSA-rmmr-r34h-pfm5) ✅ KLAR 2026-05-12** (Session 5 K1.7-spårning) — upptäcktes i K1.7 RAPPORTERA Block B, åtgärdades via Strategi 2 (pin exakt + overrides, commits `ea59787` + `35cd10e` ADR-028). Sessionsdoket är på touch nr 10 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a (Sessions-handoff) + K1.5b (Kandidat 13-15-bake-in) + K1.6 (K-sista K0-fasen Session 4) + K1.7 (K0åg-spårning + Del 4-7-skelett inför Session 5) + K5.4 (Session 5b K3.4 bake-in, denna). Session 5 implementation (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. 12 UNIVERSAL-lessons från K0åa-K0åc + 3 meta-UNIVERSAL från mini-överlämningen (Kandidat 13-15) + 1 från K0åf (Kandidat 16) lyfta till `tasks/lessons.md` + hub (`marcus-system/tasks/lessons.md`) under H2 `## 2026-05-11 — Fas 2 K0 startvillkoren`. Kandidat 17-19 från K0åg flaggade i Del 7.2-skelettet, lyfts vid K5. CI grön på första försök efter K0åc.2 (run 25663357991, 36s) och efter K0åg-paret (separata runs 2026-05-12 morgon).
 
 ### Läs-ordning för ny session (sessionsstart-checklista anpassad för Fas 2)
 
@@ -109,7 +109,7 @@ Sex klung-grupper. Sessionsdok rörs i K1 + K-sista — mellan-klungor lämnar d
 | **K2** | Fas 2 implementation Part 1 — TanStack Router file-based setup: `vite.config.ts` plugin återinförs (togs bort i Fas 0), `tsr.config.json`, `src/routes/__root.tsx` med AuthProvider + ErrorBoundary + Suspense, generated route tree, devtools dev-only | byggplan §4 Fas 2 DoD-rad 1 (delvis) + 5 + 7 + 8 passerade |
 | **K3** | Fas 2 implementation Part 2 — `src/auth/AuthProvider.tsx` + `src/auth/useAuth.ts`, `src/routes/login.tsx`, `src/routes/index.tsx` (login-redirect-stub), skyddade routes via `beforeLoad`-guard mot Supabase-session, logout-flöde<br><br>**Arkitektur-not (från P0-inventeringen rad 2.3):** `auth-provider.tsx` får INTE falla tillbaka på anon-key. Klienten ska behandla anon-fallback som unauthenticated (Codex' startvillkor 2 i Fråga 1). Skyddad route utan session → redirect FÖRE datafetch (inte efter 401). | byggplan §4 Fas 2 DoD-rad 1 + 2 + 3 passerade |
 | **K4** | Fas 2 implementation Part 3 — nuqs `useQueryState` setup på test-route + Playwright `authenticatedPage`-fixture med TEST_*-credentials<br><br>**Korsreferens:** auth-fixture är 3:e komponenten av Codex' tre startvillkor — CI-split (K0åc) säkrar att fixture-frånvaro hard-failer, fixture-implementationen själv är K4. | byggplan §4 Fas 2 DoD-rad 4 + 6 passerade |
-| **K5 (K-sista)** | Stop-test verifiering mot alla 8 DoD-punkter + lessons-skörd lyft till `tasks/lessons.md` (+ ev. hub-synk) + ev. ADR:er + sessionsdok bake-in (Del 3-8) + `tasks/todo.md` uppdaterad + `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (per ADR-025) + transcript-save | Alla 8 DoD-punkter passerade. lessons.md uppdaterad. Sessionsdok låst (denna commit är touch nr 9 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 + K1.7 — touch-count revideras vid varje K1.N bake-in framåt, se header disciplin-not + Del 7.1 "Sessionsdok låst"-rad för aktuell siffra). BYGGPLAN-LÄTTLÄST-v3.md "Senast uppdaterad"-stämpel bumpad. |
+| **K5 (K-sista)** | Stop-test verifiering mot alla 8 DoD-punkter + lessons-skörd lyft till `tasks/lessons.md` (+ ev. hub-synk) + ev. ADR:er + sessionsdok bake-in (Del 3-8) + `tasks/todo.md` uppdaterad + `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (per ADR-025) + transcript-save | Alla 8 DoD-punkter passerade. lessons.md uppdaterad. Sessionsdok låst (denna commit är touch nr 10 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 + K1.7 + K5.4 — touch-count revideras vid varje K1.N/K5.N bake-in framåt, se header disciplin-not + Del 7.1 "Sessionsdok låst"-rad för aktuell siffra). BYGGPLAN-LÄTTLÄST-v3.md "Senast uppdaterad"-stämpel bumpad. |
 
 ---
 
@@ -541,7 +541,7 @@ beforeLoad: ({ context, location }) => {
 
 ### 5.5 Bake-in (K5.2 — faktiskt utfall inkl. K3.5 race-condition-fix)
 
-**4 sub-klungor över 6 commits (K3.0-K3.3 + K3.5):**
+**5 sub-klungor över 7 commits (K3.0-K3.3 + K3.5 + K3.4 Session 5b):**
 
 | Sub-klunga | Commit | Beskrivning | CI |
 |---|---|---|---|
@@ -551,6 +551,7 @@ beforeLoad: ({ context, location }) => {
 | K3.2-fix | `e42f395` | Fix för strict-mode-regler (biome-ignore-comment direkt FÖRE useEffect) | ✓ |
 | K3.3 | `9078d9f` | login + index + _authenticated full guard (3 routes) | ✓ första försöket |
 | **K3.5** | `ea673f4` | InnerApp useEffect deps fix `[isAuthenticated, isLoading]` för race-condition | ✓ första försöket |
+| **K3.4** | `1d3fc21` | feat: remove anon-key fallback — AuthError contract (Session 5b 2026-05-13) | ✓ första försöket |
 
 **Designval K3 (verifierade):**
 
@@ -628,6 +629,55 @@ När `isLoading` flips `true → false` triggas effekten även om `isAuthenticat
 | Post-K3.5 (deps-fix) | 636.99 kB | 187.69 kB | Oförändrat (1-rads-ändring i main.tsx) |
 
 **+197 kB raw bumpa K3.2 är 20× större än Chats prognos.** Defer till Fas 7 perf-budget per Kandidat 32. Konkreta åtgärder: `lazyRouteComponent` på `_authenticated`-trädet, tree-shake-verifikation av Realtime-modulen, `chunkSizeWarningLimit: 600` om 500-warning är permanent.
+
+### 5.9 K3.4 efterklunga (Session 5b, 2026-05-13)
+
+✅ **KLAR** 2026-05-13. Single commit `1d3fc21`, CI grön första försöket
+(run 25786032340, 1m47s inkl. E2E staging). Defense-in-depth-arkitekturens
+skikt 2 nu loud-failure istället för tyst anon-key-fallback.
+
+**Designval (Gate 1+2-bekräftat):**
+
+- **`AuthError extends Error` med `Object.setPrototypeOf`-pattern:** typad
+  diskriminering via `instanceof AuthError` över alla TS transpilation
+  targets. Single source of truth för "auth failed"-semantik istället för
+  null-return distribuerat över 2 call sites.
+- **Throw istället för null-return:** loud failure i strict-mode. Om
+  UI-flow-guarden brister på skikt 1 så kraschar anropet med typad error
+  istället för att tyst skicka anon-key. Sentry-tagga
+  `{ auth: 'getAuthHeader-no-session' }` per AuthProvider-konvention.
+- **AuthProvider.tsx rad 48 JSDoc-städning:** referens till anon-key-fallback
+  uppdaterad till post-K3.4-state. Pre-existerande "Fas 2.5+ defer"-not
+  borttagen (foundation flyttad från skuld till levererad).
+
+**Tre skikt nu komplett:**
+
+1. **Skikt 1 (klient guard):** Test 5 grön via CI = `_authenticated.tsx`
+   beforeLoad redirectar utloggade FÖRE datafetch.
+2. **Skikt 2 (klient throw):** typkontrakt + biome strict-mode garanterar
+   AuthError-pathen. Regression-skyddad i isolation = kvalitetsklyfta för
+   Fas 3.5 (se nedan).
+3. **Skikt 3 (server requireUser):** oförändrad, Fas A M2.
+
+**Kvalitetsklyfta för Fas 3.5:**
+
+Skikt 2:s throw-path är typkontrakt-bevisad via tsc + biome men inte
+regression-skyddad i isolation post-K3.4. Test 5 verifierar att skikt 1
+inte triggar skikt 2 — den verifierar inte skikt 2:s faktiska beteende.
+Fas 3.5 test-infra-arbetet ska inkludera unit-test-mönster för
+auth-error-paths (`callEdgeFunction` + `postEdgeFunction` med session=null
+→ AuthError + fetchWithRetry never called). Kvalitetsklyftan är medveten
+per Gate 1-beslut 2026-05-13 — vitest-installation = scope-creep mitt i
+K3.4 utan ADR. Lyfts som todo.md Fas 3.5-underpunkt i K5.6.
+
+**Pre-bake'ad scope-not (Kandidat 11/12-tillämpning):**
+
+tasks/todo.md K3.4 scope item 3 ("CLAUDE.md-tillägg om strict-mode-rules
+(Kandidat 31 disciplin-uppdatering)") visade sig redan vara committat i
+K5.3 (CLAUDE.md rad 359, post-K3.2-tillägg om strict-mode errors-grep).
+Block E i K3.4 RAPPORTERA fångade. Item struken från K3.4-scope per
+Gate 1 (a). Mönstret: verifiera-istället-för-att-anta-applicerat på
+cross-session-state.
 
 ---
 
@@ -738,7 +788,7 @@ Pass/fail per krav:
 | Hub-synk klar (om UNIVERSAL-poster) | TBD | `~/Repon/marcus-system/tasks/lessons.md` synkad |
 | `tasks/todo.md` uppdaterad | TBD | Fas 2 markerad ✅, Fas 2.5 listad som nästa |
 | `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (ADR-025) | TBD | "Senast uppdaterad"-stämpel bumpad + Fas 2-status reflekterad |
-| Sessionsdok låst | TBD | Sessionsdoket är post-K1.7 på touch nr 9 efter K1 (skelett) + K1.2 (K1+K0åa bake-in) + K1.3 (K0åb bake-in) + K1.4 (K0åc bake-in + startvillkor-fas 1-3 milstolpe) + K1.5a (Sessions-handoff-sektion) + K1.5b (Kandidat 13-15-bake-in + mini-överlämnings-stängning) + K1.6 (K0-fasens K-sista Session 4) + K1.7 (K0åg-spårning + Del 4-7 skelett-utfyllnad inför Session 5 K2-K5, sista touch före K5-implementation). Disciplin reviderad i header — K1.N bake-ins är etablerat mönster för Fas 2-sessionen, inte enstaka avsteg. |
+| Sessionsdok låst | TBD | Sessionsdoket är post-K5.4 på touch nr 10 efter K1 (skelett) + K1.2 (K1+K0åa bake-in) + K1.3 (K0åb bake-in) + K1.4 (K0åc bake-in + startvillkor-fas 1-3 milstolpe) + K1.5a (Sessions-handoff-sektion) + K1.5b (Kandidat 13-15-bake-in + mini-överlämnings-stängning) + K1.6 (K0-fasens K-sista Session 4) + K1.7 (K0åg-spårning + Del 4-7 skelett-utfyllnad inför Session 5 K2-K5) + K5.4 (Session 5b K3.4 bake-in, denna). Disciplin reviderad i header — K1.N/K5.N bake-ins är etablerat mönster för Fas 2-sessionen, inte enstaka avsteg. |
 | Transcript sparat | **DEFER** — Marcus' beslut 2026-05-11 K1.6: transcript-disciplin etableras i separat process-runda Session 5+. Mappen `tasks/sessions/transcripts/` saknas fortfarande. Todo-pinpoint lagt i `tasks/todo.md`. Motivering: K1.6 är redan substantiellt (sessionsdok-bake-in + lessons-lyft + todo + CLAUDE.md + ev. ADR), att etablera ny disciplin samtidigt ökar halvslar-risk per Kandidat 5 (disciplin tjänar dokumentet). | Defer-not committad + todo-pinpoint i tasks/todo.md |
 
 ### 7.2 Lessons-skörd
@@ -836,6 +886,42 @@ K0åf Block 2 körde `grep -rn "KVALITETSDEFINITIONER-11" --include="*.md" --inc
 **Anti-mönster att undvika:** `grep -v "docs/specs/X.md"` matchar både fil-output OCH alla länkmål, refs, dokumentations-pekare som råkar innehålla samma substring. Producerar falska negatives som är osynliga utan oberoende verifiering.
 
 **Generaliserbar:** gäller alla grep-exklusioner av filpaths i markdown-tunga repos. Mönster-förstärkning: Code:s VERIFIERA-checks ska ALDRIG återanvända samma grep-filter som RAPPORTERA-stegets — annars är de bara samma kontroll i nytt format. Check 8 lyckades fånga missan exakt eftersom den var oberoende formulerad (sökte path-prefix för historiska zoner via `docs/archive\|tasks/sessions/archive`, inte negativ-substring av aktiv path). UNIVERSAL-värdig för hub-lyft eftersom alla cross-repo-disciplin-arbete med path-refs kan stöta på det.
+
+**Kandidat 37 — Test-runner-konvention ska verifieras i RAPPORTERA, aldrig antas i PLANERA [UNIVERSAL]**
+> Datum: 2026-05-13 | Källa: K3.4 Gate 1 Block F-fynd 2026-05-13
+
+Chat-prompten för K3.4 inkluderade en unit-test-fil i PLANERA Fil 3 med
+vitest-syntax (`vi.spyOn`, `describe/it`, `vi.mock`). Detta baserades på
+antagande om projektets test-runner. Block F-instruktionen i RAPPORTERA
+fångade diskrepansen: projektet har endast `@playwright/test` installerat
+— ingen vitest, ingen jest, ingen `node:test`. Befintliga 8 `.test.ts`-filer
+importerar `from '@playwright/test'`. Code:s 3-alternativs popup tvingade
+designbeslut. Marcus valde (a) — skippa unit-test, kvalitetsklyfta för Fas 3.5.
+
+**Mönstret:** PLANERA-block skrev test-kod baserat på antagande om
+test-runner-konvention. RAPPORTERA Block F kontrollerade `package.json`
+deps + befintliga test-fil-imports och rapporterade Playwright-only.
+
+**Anti-mönster:** "vi.spyOn" eller "jest.mock" inline i PLANERA utan
+föregående verifikation av test-stack. Påstående om infra klätt som faktum
+(samma underliggande fel som Kandidat 11 men på test-konvention).
+
+**Generaliserbar regel:** när PLANERA innehåller test-kod, RAPPORTERA-blocket
+ska ha en explicit verifiering: `grep -E "\"(vitest|jest)\":" package.json` +
+inspektion av en befintlig `*.test.ts` för dess imports. Block F i K3.4 är
+färdig mall. För andra konventions-beroenden (linter-config, route-syntax,
+test-fil-placement) gäller samma princip: verifiera konvention i RAPPORTERA
+innan PLANERA refererar den.
+
+**Mönsterförstärkning av Kandidat 11 + 14:** denna är test-stack-varianten
+av samma underliggande disciplin (Kandidat 11 = designnoter ska verifieras;
+Kandidat 14 = format-konvention ska klargöras; K37 = test-stack-konvention
+ska verifieras). Tillsammans bildar de en regel-familj: **alla
+projekt-specifika konventioner som påverkar PLANERA-output ska
+verifieras i RAPPORTERA, aldrig antas.**
+
+**Hub-lyft-kandidat:** ja — generaliserbar för alla repon där Chat skriver
+test-kod baserat på minne snarare än verifikation. Lyfts i K5.7 hub-sync.
 
 ### 7.3 ADR-kandidater
 
