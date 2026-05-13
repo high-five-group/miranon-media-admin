@@ -7,7 +7,35 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+## [0.3.0] - 2026-05-13
+
+### Added — Fas 2: Routing + Auth (Sessions 4+5+5b)
+- Defense-in-depth tre-skikt-arkitektur: klient-side guard (TanStack Router `_authenticated` beforeLoad), AuthError throw-contract, server-side `requireUser` (oförändrad, Fas A M2)
+- TanStack Router file-based routing med pathless `_authenticated`-layout
+- AuthProvider med Supabase-integration (InnerApp-pattern)
+- nuqs URL-state-setup + dev-only test-route
+- Playwright `authenticatedPage`-fixture + 6-tests arkitektur-regression-suite (K4.3)
+- `src/auth/AuthError.ts` — typed error class
+- audit-ci-disciplin (allowlist för GHSA-rmmr-r34h-pfm5)
+- ADR-026 — Runtime-validering vid datagräns med Zod `.parse()`
+- ADR-027 — KVALITETSDEFINITIONER stack-skifte (Vue → React)
+- ADR-028 — Supply chain incident-respons-protokoll
+
+### Changed
+- `src/data/config/supabase-client.ts` — `getAuthHeader()` throws AuthError istället för anon-key-fallback (Fas A §A3-fynd stängt)
+- 18 nya UNIVERSAL-lessons (K17-K38) i `tasks/lessons.md`
+- 7 hub-lyft till `~/Repon/marcus-system/tasks/lessons.md`
+
+### Security
+- Supply chain malware-respons (GHSA-rmmr-r34h-pfm5): pin exakt `@tanstack/react-router` + `@tanstack/router-plugin`, `overrides` för `@tanstack/history`. Integrity-MATCH pre/post-install.
+- Anon-key-fallback i klient borttagen (defense-in-depth skikt 2).
+
+### Fixed
+- InnerApp useEffect race-condition (K3.5) — `[isAuthenticated, isLoading]` deps för korrekt guard re-eval.
+
+## [0.2.0] - 2026-05-06
+
+### Added — Pre-Fas-2 (Session 3)
 - Pre-Fas-2 publik professionalisering: LICENSE, package.json metadata, .editorconfig, .nvmrc, .vscode/extensions.json, .github/-paketet (CI + dependabot + CODEOWNERS + templates), CHANGELOG, SECURITY, CONTRIBUTING (ADR-024)
 - docs/-omstrukturering: docs/specs/, docs/analysis/, docs/reference/, docs/logs/ (ADR-021)
 - analys/ flyttad till docs/research/datamodell-research/ (ADR-022)
@@ -36,5 +64,7 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 ### Archived
 - `docs/conversion-plan.md` → `docs/archive/conversion-plan-2026-04-14.md` (ADR-012)
 
-[Unreleased]: https://github.com/marcus803/miranon-media-admin/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/marcus803/miranon-media-admin/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/marcus803/miranon-media-admin/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/marcus803/miranon-media-admin/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/marcus803/miranon-media-admin/releases/tag/v0.1.0
