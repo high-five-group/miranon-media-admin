@@ -10,7 +10,7 @@
 > - `tasks/sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md` (Pre-Fas-2, slutförd 2026-05-07) — arkiveras i K1 enligt ADR-023 sessions-arkivering
 > **Efterföljare:** Fas 2.5 — Schema-kontrakt-sync, mot `docs/byggplan.md` §4 Fas 2.5-prompt.
 > **Stop-test (denna session):** 6 K0-åtgärder committade + Fas 2 DoD 1-8 passerade + Playwright auth-fixture etablerad + ev. ADR:er committade + lessons-skörd lyft + sessionsdok låst + transcript sparat.
-> **Sessionsdok-commit-disciplin (P3a-baserad, reviderad för Fas 2):** K1 = skelett. Faktiska arbets-commits (K0åa-åf, K2-K4) rör INTE detta sessionsdok. **K1.N early bake-ins** committas efter substantiella K0-sub-klungor för att fånga commit-hashar + avvikelser + lärdomskandidater innan K-sista. K-sista bakar in Del 3-8 retrospektiv. Mönsterbyte från ursprungliga 'K1 + K-sista' till 'K1 + K1.N bake-ins + K-sista' beslutat 2026-05-11 efter K0åb genererat 8 dolda type-fel-fynd + flera lärdomskandidater — för mycket att hålla i Chat-kontext tills K-sista. Ren str_replace-patch är konfliktfri och billig. Touch-count revideras dynamiskt under sessionen; aktuell post-K5.4 = 10 (K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 + K1.7 + K5.4 = K-sista för K0-fasen i Session 4 + K0åg-spårbarhet och skelett-utfyllnad inför Session 5 K2-K5 + Session 5b K3.4 bake-in). Session 5 (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. **K0 startvillkor-fas 1-3 komplett 2026-05-11** efter K0åc.2 CI grön (36s, 72 pure + 38 staging passed + 3 M4-defer skipped) — Fas 2-implementation (K2) nu unblockad strikt-sekvens-wise; K0åd-K0åf kan tas före eller parallellt med K2 per Marcus' beslut. **Mini-överlämning klar 2026-05-11** (Steg 1 lessons-lyft + Steg 2 CLAUDE.md + Steg 3 todo.md + Steg 4 Sessions-handoff + Steg 5b Kandidat 13-15-bake-in + cross-repo-lessons-lyft) — sessionsdoket är komplett-handoff-redo, väntar på Marcus' Update-klick i Claude.ai-projektet innan ny session-start.
+> **Sessionsdok-commit-disciplin (P3a-baserad, reviderad för Fas 2):** K1 = skelett. Faktiska arbets-commits (K0åa-åf, K2-K4) rör INTE detta sessionsdok. **K1.N early bake-ins** committas efter substantiella K0-sub-klungor för att fånga commit-hashar + avvikelser + lärdomskandidater innan K-sista. K-sista bakar in Del 3-8 retrospektiv. Mönsterbyte från ursprungliga 'K1 + K-sista' till 'K1 + K1.N bake-ins + K-sista' beslutat 2026-05-11 efter K0åb genererat 8 dolda type-fel-fynd + flera lärdomskandidater — för mycket att hålla i Chat-kontext tills K-sista. Ren str_replace-patch är konfliktfri och billig. Touch-count revideras dynamiskt under sessionen; aktuell post-K5.5a = 11 (K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 + K1.7 + K5.4 + K5.5a = K-sista för K0-fasen i Session 4 + K0åg-spårbarhet och skelett-utfyllnad inför Session 5 K2-K5 + Session 5b K3.4 bake-in + K38 meta-lärdom bake-in). Session 5 (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. **K0 startvillkor-fas 1-3 komplett 2026-05-11** efter K0åc.2 CI grön (36s, 72 pure + 38 staging passed + 3 M4-defer skipped) — Fas 2-implementation (K2) nu unblockad strikt-sekvens-wise; K0åd-K0åf kan tas före eller parallellt med K2 per Marcus' beslut. **Mini-överlämning klar 2026-05-11** (Steg 1 lessons-lyft + Steg 2 CLAUDE.md + Steg 3 todo.md + Steg 4 Sessions-handoff + Steg 5b Kandidat 13-15-bake-in + cross-repo-lessons-lyft) — sessionsdoket är komplett-handoff-redo, väntar på Marcus' Update-klick i Claude.ai-projektet innan ny session-start.
 > **Scope-splitt-anmärkning:** Fas 2-estimat enligt byggplan §4 = 2 sessioner. Om K0+K2+K3+K4 inte ryms i en chat-session, splitta i Session A (K1+K0+K2) och Session B (K3+K4+K5) per P1-lärdom ("Var beredd att splitta i 2 sessioner om scope växer"). Splitten är förväntad, inte avvikelse.
 
 ---
@@ -21,7 +21,7 @@
 
 ### Var vi är (2026-05-11)
 
-Fas 2 K0 startvillkor 1-3 ✅ **KLAR** (Session 4). K0åd-K0åf "Direkt efter Fas 2"-fynd ✅ **KLAR** (Session 4-avslut, K1.6). **K0åg (supply chain malware-respons GHSA-rmmr-r34h-pfm5) ✅ KLAR 2026-05-12** (Session 5 K1.7-spårning) — upptäcktes i K1.7 RAPPORTERA Block B, åtgärdades via Strategi 2 (pin exakt + overrides, commits `ea59787` + `35cd10e` ADR-028). Sessionsdoket är på touch nr 10 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a (Sessions-handoff) + K1.5b (Kandidat 13-15-bake-in) + K1.6 (K-sista K0-fasen Session 4) + K1.7 (K0åg-spårning + Del 4-7-skelett inför Session 5) + K5.4 (Session 5b K3.4 bake-in, denna). Session 5 implementation (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. 12 UNIVERSAL-lessons från K0åa-K0åc + 3 meta-UNIVERSAL från mini-överlämningen (Kandidat 13-15) + 1 från K0åf (Kandidat 16) lyfta till `tasks/lessons.md` + hub (`marcus-system/tasks/lessons.md`) under H2 `## 2026-05-11 — Fas 2 K0 startvillkoren`. Kandidat 17-19 från K0åg flaggade i Del 7.2-skelettet, lyfts vid K5. CI grön på första försök efter K0åc.2 (run 25663357991, 36s) och efter K0åg-paret (separata runs 2026-05-12 morgon).
+Fas 2 K0 startvillkor 1-3 ✅ **KLAR** (Session 4). K0åd-K0åf "Direkt efter Fas 2"-fynd ✅ **KLAR** (Session 4-avslut, K1.6). **K0åg (supply chain malware-respons GHSA-rmmr-r34h-pfm5) ✅ KLAR 2026-05-12** (Session 5 K1.7-spårning) — upptäcktes i K1.7 RAPPORTERA Block B, åtgärdades via Strategi 2 (pin exakt + overrides, commits `ea59787` + `35cd10e` ADR-028). Sessionsdoket är på touch nr 11 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a (Sessions-handoff) + K1.5b (Kandidat 13-15-bake-in) + K1.6 (K-sista K0-fasen Session 4) + K1.7 (K0åg-spårning + Del 4-7-skelett inför Session 5) + K5.4 (Session 5b K3.4 bake-in) + K5.5a (K38 meta-lärdom bake-in, denna). Session 5 implementation (K2-K4 + K5) kommer addera fler touches innan Fas 2-arkivering. 12 UNIVERSAL-lessons från K0åa-K0åc + 3 meta-UNIVERSAL från mini-överlämningen (Kandidat 13-15) + 1 från K0åf (Kandidat 16) lyfta till `tasks/lessons.md` + hub (`marcus-system/tasks/lessons.md`) under H2 `## 2026-05-11 — Fas 2 K0 startvillkoren`. Kandidat 17-19 från K0åg flaggade i Del 7.2-skelettet, lyfts vid K5. CI grön på första försök efter K0åc.2 (run 25663357991, 36s) och efter K0åg-paret (separata runs 2026-05-12 morgon).
 
 ### Läs-ordning för ny session (sessionsstart-checklista anpassad för Fas 2)
 
@@ -109,7 +109,7 @@ Sex klung-grupper. Sessionsdok rörs i K1 + K-sista — mellan-klungor lämnar d
 | **K2** | Fas 2 implementation Part 1 — TanStack Router file-based setup: `vite.config.ts` plugin återinförs (togs bort i Fas 0), `tsr.config.json`, `src/routes/__root.tsx` med AuthProvider + ErrorBoundary + Suspense, generated route tree, devtools dev-only | byggplan §4 Fas 2 DoD-rad 1 (delvis) + 5 + 7 + 8 passerade |
 | **K3** | Fas 2 implementation Part 2 — `src/auth/AuthProvider.tsx` + `src/auth/useAuth.ts`, `src/routes/login.tsx`, `src/routes/index.tsx` (login-redirect-stub), skyddade routes via `beforeLoad`-guard mot Supabase-session, logout-flöde<br><br>**Arkitektur-not (från P0-inventeringen rad 2.3):** `auth-provider.tsx` får INTE falla tillbaka på anon-key. Klienten ska behandla anon-fallback som unauthenticated (Codex' startvillkor 2 i Fråga 1). Skyddad route utan session → redirect FÖRE datafetch (inte efter 401). | byggplan §4 Fas 2 DoD-rad 1 + 2 + 3 passerade |
 | **K4** | Fas 2 implementation Part 3 — nuqs `useQueryState` setup på test-route + Playwright `authenticatedPage`-fixture med TEST_*-credentials<br><br>**Korsreferens:** auth-fixture är 3:e komponenten av Codex' tre startvillkor — CI-split (K0åc) säkrar att fixture-frånvaro hard-failer, fixture-implementationen själv är K4. | byggplan §4 Fas 2 DoD-rad 4 + 6 passerade |
-| **K5 (K-sista)** | Stop-test verifiering mot alla 8 DoD-punkter + lessons-skörd lyft till `tasks/lessons.md` (+ ev. hub-synk) + ev. ADR:er + sessionsdok bake-in (Del 3-8) + `tasks/todo.md` uppdaterad + `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (per ADR-025) + transcript-save | Alla 8 DoD-punkter passerade. lessons.md uppdaterad. Sessionsdok låst (denna commit är touch nr 10 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 + K1.7 + K5.4 — touch-count revideras vid varje K1.N/K5.N bake-in framåt, se header disciplin-not + Del 7.1 "Sessionsdok låst"-rad för aktuell siffra). BYGGPLAN-LÄTTLÄST-v3.md "Senast uppdaterad"-stämpel bumpad. |
+| **K5 (K-sista)** | Stop-test verifiering mot alla 8 DoD-punkter + lessons-skörd lyft till `tasks/lessons.md` (+ ev. hub-synk) + ev. ADR:er + sessionsdok bake-in (Del 3-8) + `tasks/todo.md` uppdaterad + `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (per ADR-025) + transcript-save | Alla 8 DoD-punkter passerade. lessons.md uppdaterad. Sessionsdok låst (denna commit är touch nr 11 efter K1 + K1.2 + K1.3 + K1.4 + K1.5a + K1.5b + K1.6 + K1.7 + K5.4 + K5.5a — touch-count revideras vid varje K1.N/K5.N bake-in framåt, se header disciplin-not + Del 7.1 "Sessionsdok låst"-rad för aktuell siffra). BYGGPLAN-LÄTTLÄST-v3.md "Senast uppdaterad"-stämpel bumpad. |
 
 ---
 
@@ -788,7 +788,7 @@ Pass/fail per krav:
 | Hub-synk klar (om UNIVERSAL-poster) | TBD | `~/Repon/marcus-system/tasks/lessons.md` synkad |
 | `tasks/todo.md` uppdaterad | TBD | Fas 2 markerad ✅, Fas 2.5 listad som nästa |
 | `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad (ADR-025) | TBD | "Senast uppdaterad"-stämpel bumpad + Fas 2-status reflekterad |
-| Sessionsdok låst | TBD | Sessionsdoket är post-K5.4 på touch nr 10 efter K1 (skelett) + K1.2 (K1+K0åa bake-in) + K1.3 (K0åb bake-in) + K1.4 (K0åc bake-in + startvillkor-fas 1-3 milstolpe) + K1.5a (Sessions-handoff-sektion) + K1.5b (Kandidat 13-15-bake-in + mini-överlämnings-stängning) + K1.6 (K0-fasens K-sista Session 4) + K1.7 (K0åg-spårning + Del 4-7 skelett-utfyllnad inför Session 5 K2-K5) + K5.4 (Session 5b K3.4 bake-in, denna). Disciplin reviderad i header — K1.N/K5.N bake-ins är etablerat mönster för Fas 2-sessionen, inte enstaka avsteg. |
+| Sessionsdok låst | TBD | Sessionsdoket är post-K5.5a på touch nr 11 efter K1 (skelett) + K1.2 (K1+K0åa bake-in) + K1.3 (K0åb bake-in) + K1.4 (K0åc bake-in + startvillkor-fas 1-3 milstolpe) + K1.5a (Sessions-handoff-sektion) + K1.5b (Kandidat 13-15-bake-in + mini-överlämnings-stängning) + K1.6 (K0-fasens K-sista Session 4) + K1.7 (K0åg-spårning + Del 4-7 skelett-utfyllnad inför Session 5 K2-K5) + K5.4 (Session 5b K3.4 bake-in) + K5.5a (K38 meta-lärdom bake-in, denna). Disciplin reviderad i header — K1.N/K5.N bake-ins är etablerat mönster för Fas 2-sessionen, inte enstaka avsteg. |
 | Transcript sparat | **DEFER** — Marcus' beslut 2026-05-11 K1.6: transcript-disciplin etableras i separat process-runda Session 5+. Mappen `tasks/sessions/transcripts/` saknas fortfarande. Todo-pinpoint lagt i `tasks/todo.md`. Motivering: K1.6 är redan substantiellt (sessionsdok-bake-in + lessons-lyft + todo + CLAUDE.md + ev. ADR), att etablera ny disciplin samtidigt ökar halvslar-risk per Kandidat 5 (disciplin tjänar dokumentet). | Defer-not committad + todo-pinpoint i tasks/todo.md |
 
 ### 7.2 Lessons-skörd
@@ -922,6 +922,50 @@ verifieras i RAPPORTERA, aldrig antas.**
 
 **Hub-lyft-kandidat:** ja — generaliserbar för alla repon där Chat skriver
 test-kod baserat på minne snarare än verifikation. Lyfts i K5.7 hub-sync.
+
+**Kandidat 38 — VERIFIERA-grep-kriterier ska vara form-toleranta, inte exakt-fras [UNIVERSAL]**
+> Datum: 2026-05-13 | Källa: K5.4 VERIFIERA-utfall 2026-05-13
+
+K5.4-promtens VERIFIERA Steg 2 förväntade `rg -c "Kandidat 37" = 2`.
+Faktiskt utfall: 1 träff. Innehållet var korrekt (Kandidat 37 nämns
+2 gånger), men en mention i mönsterförstärknings-noten använder kortform
+"K37" istället för full form. Samma mönster för Steg 5: `rg -c "touch nr 10" = 4`
+förväntades; 3 träffar gavs eftersom en mention i headern formuleras som
+"post-K5.4 = 10". Båda avvikelserna var kriterie-fel (för smal
+grep-formulering), inte innehållsfel.
+
+**Mönstret:** VERIFIERA-grep-kriterier formulerade som "exakt fras X =
+exakt N träffar" där samma faktum i dokumentet kan uttryckas med kortformer,
+alternativa fraseringar, eller varierande punkt-ordning. Grep-formulering
+förlitar sig på fras-uniformitet som inte hålls naturligt över ett
+dokument med mänskliga författare.
+
+**Anti-mönster:** `rg -c "Kandidat 37"` när dokumentet konsekvent använder
+både "Kandidat N" och "KN" kortform. `rg -c "touch nr X"` när några
+mentions formuleras som "post-K-fas = X". Exakt-träff-räkning på fras
+som existerar i flera form-varianter inom samma dokument.
+
+**Generaliserbar regel:** VERIFIERA-grep ska antingen (a) använda
+alternation för kända form-varianter (`rg -c "Kandidat 37|K37"`,
+`rg -c "touch nr 10|= 10"`), eller (b) använda "minst X" istället för
+"exakt X" när varianter är möjliga. För Chat-prompter som skriver
+VERIFIERA-block: när faktum är räkning av specifik fras i ett dokument
+med varierande författar-konventioner, anta form-variation som default.
+Snäv fras + exakt räkning är giltig endast för automatiserat genererat
+innehåll (commit-meddelanden, structured JSON, generated routes).
+
+**Mönsterförstärkning av Kandidat 6 + 13:** K6 etablerade "räkna alla refs";
+K13 etablerade "form-variation existerar i meta-dokumentation"; K38 är
+konsekvensen för VERIFIERA-prompt-författande: prompten ska skrivas så
+att alla refs fångas trots form-variation. Levande verkan: K5.4-promtens
+VERIFIERA fångade båda avvikelserna utan att blockera commit (Gate-popup
+gav (a) accept-väg) — disciplin fungerade trots prompt-fel. Bekräftar
+också Kandidat 15:s meta-observation: att deklarera disciplin (K6 + K13)
+≠ att internalisera den (skrev själv promter som bröt mot dem).
+
+**Hub-lyft-kandidat:** ja — VERIFIERA-prompt-författande är universellt
+för alla Chat-Code-arbetsflöden, inte miranon-specifikt. Lyfts i K5.7
+hub-sync parallellt med K34 + K36 + K37.
 
 ### 7.3 ADR-kandidater
 
