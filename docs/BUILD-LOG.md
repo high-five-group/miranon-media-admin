@@ -519,13 +519,13 @@ Ja ✅ (godkänt av Marcus 2026-05-04 vid sessionsavslut för security-hardening
 
 ---
 
-## Session 5 (React) — Fas 2: Routing + Auth
+## Session 5+5b (React) — Fas 2: Routing + Auth
 
-**Datum:** 2026-05-11 till 2026-05-12 (Session 5 paused efter K5.3 — K3.4 + K5 final återstår för Session 5b)
+**Datum:** 2026-05-11 till 2026-05-13 (Session 4 + Session 5 + Session 5b — Fas 2 KOMPLETT 2026-05-13)
 
 ### Sammanfattning
 
-15 commits från K0åg-respons (supply chain malware) + K1.7 sessionsdok-skelett + K2-K4 + K3.5 race-condition-fix + K5.1-K5.3 session-avslut. **Fas 2 alla 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression.** K3.4 (anon-key-fallback-borttagning) återstår för Session 5b — K4.3 Test 5 är regression-skydd.
+Samtliga commits från K0åg-respons + K2-K4 + K5.1-K5.3 (Session 5) + K3.4 + K5.4-K5.6 (Session 5b) — sammanlagd commit-räkning verifierbar via `git log --oneline ea59787..HEAD` post-K5.6b. **Fas 2 alla 8 DoD-rader stängda och empiriskt verifierade via K4.3 6-tests Playwright-regression.** Defense-in-depth tre-skikt-arkitektur levererad: skikt 1 (klient-guard K3.2/K3.3) + skikt 2 (AuthError throw K3.4) + skikt 3 (server requireUser Fas A M2). Kvalitetsklyfta för Fas 3.5: skikt 2:s throw-path är typkontrakt-bevisad via tsc + biome men inte regression-skyddad i isolation post-K3.4 (vitest-installation deferred per Gate 1-beslut 2026-05-13). Lyfts som todo.md Fas 3.5-underpunkt i K5.6b.
 
 ### Commits Session 5 (kronologisk ordning)
 
@@ -563,7 +563,15 @@ K5 (Session 5-scope — final defer till Session 5b):
 
 - `40a2060` — docs(lessons): skörda Kandidater 24-36 från Session 5 (K5.1)
 - `e4a5faf` — docs(sessions): full bake-in K2-K4 + K3.5 i sessionsdok (K5.2)
-- (K5.3 denna commit)
+- `9bf3f41` — docs: Session 5 wrap-up + Session 5b handoff (K5.3)
+
+K3.4 + K5 final (Session 5b — Fas 2-stängning):
+
+- `1d3fc21` — feat(fas2): K3.4 remove anon-key fallback — AuthError contract
+- `f9328f7` — docs(sessions): K5.4 bake-in K3.4 in sessionsdok (Session 5b)
+- `7b3b693` — docs(sessions): K5.5a bake-in Kandidat 38 in sessionsdok Del 7.2
+- `e997eed` — docs(lessons): K5.5b skörd K0åg-kandidater + Session 5b-kandidater (K17-K19 + K37 + K38)
+- (K5.6a denna commit) — docs(build-log): K5.6a Fas 2-avslutning i BUILD-LOG
 
 ### Bundle-evolution Session 5
 
@@ -573,12 +581,24 @@ K5 (Session 5-scope — final defer till Session 5b):
 | Post-K2.3 (provider-tree) | 440.22 kB | 138.83 kB | **+113 kB raw / +35.7 kB gzip** |
 | Post-K3.2 (AuthProvider full) | 637.97 kB | 188.86 kB | **+311 kB raw / +85.7 kB gzip** |
 | Post-K4.1 (nuqs) | 640.80 kB | 189.22 kB | **+313.5 kB raw / +86.1 kB gzip** |
+| Post-K3.4 (Session 5b) | 640.82 kB | 189.22 kB | Oförändrat — AuthError-klass (~12 rader) tree-shakes om okatchad |
 
 **Total Fas 2 bumpa: +313 kB raw / +86 kB gzip.** Hög andel från `@supabase/supabase-js` runtime-stack (~197 kB raw, Kandidat 32). Defer till Fas 7 perf-budget: `lazyRouteComponent` på `_authenticated`-trädet + tree-shake-verifikation av Realtime + `chunkSizeWarningLimit: 600`.
 
 ### Lessons-skörd
 
-13 nya kandidater (K24-K36) i `tasks/lessons.md` under H2 `## 2026-05-12 — Fas 2 Session 5 (K2-K4 + K3.5)`. K34 (test-credentials aldrig-läcka) + K36 (automatiserad test fångar timing-bugs) markerade som hub-lyft-kandidater. K17-K23 (K0åg-kandidater) hänskjutna till Session 5b K5 final.
+**13 + 5 = 18 nya kandidater totalt.**
+
+Session 5 (under H2 `## 2026-05-12 — Fas 2 Session 5 (K2-K4 + K3.5)`): K24-K36 i `tasks/lessons.md`. K34 (test-credentials aldrig-läcka) + K36 (automatiserad test fångar timing-bugs) markerade som hub-lyft-kandidater.
+
+Session 5b (under H2 `## 2026-05-13 — Fas 2 Session 5b (K3.4 + K0åg-skörd)`):
+- K17 (live security-state vid sessionsstart) [hub-lyft]
+- K18 (audit-output är signal, inte sanning) [hub-lyft]
+- K19 (pin + overrides reversibel supply chain-respons) [hub-lyft]
+- K37 (test-runner-konvention ska verifieras i RAPPORTERA) [hub-lyft]
+- K38 (VERIFIERA-grep-kriterier ska vara form-toleranta) [hub-lyft]
+
+**7 hub-lyft-kandidater totalt** (K17 + K18 + K19 + K34 + K36 + K37 + K38) lyfts till `~/Repon/marcus-system/tasks/lessons.md` i K5.7 hub-sync.
 
 ### ADR-tillägg Session 5
 
@@ -599,10 +619,24 @@ Alla 8 DoD-rader från byggplan §4 Fas 2:
 | 7 | [GA] Suspense-fallback på root | K2.2 |
 | 8 | [GA] Error boundary på root | K2.2 |
 
-### Återstår för Session 5b
+**Defense-in-depth-arkitekturen empiriskt verifierad:**
 
-- **K3.4:** anon-key-fallback-borttagning i `src/data/config/supabase-client.ts:16-22` (~30-45 min). K4.3 Test 5 är regression-skydd.
-- **K5 final:** Sessionsdok-arkivering till `tasks/sessions/archive/2026-05/`, K17-K23 lessons-skörd, hub-lyft K34+K36, BYGGPLAN-LÄTTLÄST-v3-uppdatering, transcript-disciplin etablering.
+Test 5 (INGA functions/v1-anrop med anon-key) är hjärtat i K4.3-suiten — verifierar att UI-flow-guarden (skikt 1) blockerar otillåtna Edge Function-anrop. Post-K3.4: AuthError throw (skikt 2) garanterar loud-failure även om skikt 1 brister. Skikt 3 (server requireUser) avvisar anon-key oberoende. CI-grön för alla tre skikt på var sin Session 5b-commit.
+
+### Fas 2 — Definition of Done sammanfattning
+
+**Fas 2 KOMPLETT 2026-05-13.** Alla 8 DoD-rader från byggplan §4 stängda och empiriskt verifierade. Sessions 4 + 5 + 5b sammanlagt — sessionsdoket arkiveras till `tasks/sessions/archive/2026-05/` i K5.8.
+
+**Kvarvarande efter Fas 2:**
+- Hub-lyft 7 UNIVERSAL-kandidater till `~/Repon/marcus-system/tasks/lessons.md` (K5.7)
+- BYGGPLAN-LÄTTLÄST-v3 Fas 2-status-uppdatering om filen finns (K5.8)
+- Sessionsdok-arkivering + CLAUDE.md trail-link-uppdatering (K5.8)
+- Transcript-disciplin etablering (K5.9 — absolut sista commit)
+
+**Kvalitetsklyfta deferred till Fas 3.5:**
+Skikt 2 (AuthError throw-path) är inte regression-skyddad i isolation post-K3.4. Test 5 verifierar att skikt 1 inte triggar skikt 2 — den verifierar inte skikt 2:s faktiska beteende. Fas 3.5 test-infra-arbetet ska inkludera unit-test-mönster för auth-error-paths. Vitest-installation hör hemma där per Gate 1-beslut 2026-05-13 (scope-creep att göra i K3.4 utan ADR).
+
+**Nästa fas:** Fas 2.5 — Schema-kontrakt-sync (per `docs/byggplan.md` §4).
 
 ---
 
