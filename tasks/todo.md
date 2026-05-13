@@ -16,19 +16,14 @@
 
 Sessionsdok-trail (arkiverad 2026-05-13 i K5.8): [`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`](sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md).
 
-### Återkommande disciplin: Veckovis audit-ci allowlist-granskning (K0åg whitelist-period)
+### Återkommande disciplin: K0åi-trigger för pin-luckring (post-K0åh resolution 2026-05-13)
 
-`audit-ci.jsonc` allowlist mot GHSA-rmmr-r34h-pfm5 är aktiv tills TanStack publicerar patched versioner för `@tanstack/history`, `@tanstack/react-router`, `@tanstack/router-plugin`.
+Allowlist `audit-ci.jsonc` är tom (K0åh, 2026-05-13). Exakt-pin på 5 `@tanstack/*`-paket + `overrides: { "@tanstack/history": "1.161.6" }` bevaras tills TanStack rör `latest`-dist-tag bortom 1.161.6.
 
-- **Senast granskad:** 2026-05-12 (K0åg etablering)
-- **Nästa granskning senast:** 2026-05-19
-- **Granskningssteg:**
-  1. `npm view @tanstack/react-router@latest version` + `npm view @tanstack/react-router time --json | tail -10`
-  2. `npm view @tanstack/history@latest version` analogt
-  3. `npm view @tanstack/router-plugin@latest version` analogt
-  4. Kolla GitHub advisory-status: `curl -s https://api.github.com/advisories/GHSA-rmmr-r34h-pfm5 | grep -E '"patched_versions"|"withdrawn_at"'`
-  5. Om patched finns ELLER advisory withdrawn → starta K0-analog sub-klunga (förslag K0åh eller motsvarande inom aktuell fas) för uppgradering + allowlist-rensning per [ADR-028](../docs/decisions/ADR-028-supply-chain-incident-respons.md) 5-stegs Konvention-flöde
-- **Tas bort från denna lista** när allowlist är borttagen från `audit-ci.jsonc`
+- **Trigger:** Vid sessionsstart, om `npm view @tanstack/history@latest version` returnerar annan version än `1.161.6` → starta K0åi (pin-luckring `^`-prefix-återinförande + overrides-borttagning per [ADR-028](../docs/decisions/ADR-028-supply-chain-incident-respons.md) reverse-flow).
+- **Senast kontrollerad:** 2026-05-13 (K0åh, returnerade `1.161.6` — pin-disciplin fortsatt motiverad)
+- **K0åh resolution-detaljer:** Se [ADR-028](../docs/decisions/ADR-028-supply-chain-incident-respons.md) `## Updates` för advisory-snär-uppdaterings-spårning + reverse-flow-spec.
+- **Tas bort från denna lista** när K0åi har körts (overrides + exakt-pin upplöst, post-incident state).
 
 Se [`docs/byggplan.md`](../docs/byggplan.md) §4 Fas 2-prompten och [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 2 för kontext från Fas A + Fas 0/1.
 

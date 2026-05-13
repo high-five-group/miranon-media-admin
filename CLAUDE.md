@@ -335,14 +335,13 @@ Allt som byggs bedöms utifrån båda perspektiven:
 5. Kör `git pull`
 6. Sammanfatta: aktuell uppgift, relevanta lärdomar, uppskjutna beslut från BUILD-LOG, verifieringskrav
 
-### Sessionsstart audit-disciplin (K0åg → [ADR-028](docs/decisions/ADR-028-supply-chain-incident-respons.md))
+### Sessionsstart audit-disciplin (K0åg → [ADR-028](docs/decisions/ADR-028-supply-chain-incident-respons.md) → K0åh resolution 2026-05-13)
 
 Vid varje sessionsstart, kontrollera audit-status mot känd-acceptat tillstånd:
 
-- Kör `npx audit-ci --config audit-ci.jsonc` — ska vara grön
-- Om CI eller lokal `npm audit` rapporterar critical UTANFÖR `audit-ci.jsonc` allowlist → STOPPA-OCH-FRÅGA per Kandidat 2 ([`tasks/lessons.md`](tasks/lessons.md)). Sannolikt ny supply chain-incident; följ ADR-028 5-stegs Konvention-flöde.
-- Om `npm audit --json | grep -c GHSA-rmmr-r34h-pfm5` visar färre än 6 träffar → eventuellt TanStack-team har publicerat patched versioner. Granska, uppgradera, ta bort allowlist-post + overrides + pin-disciplin. Se ADR-028.
-- Veckovis granskning av allowlist-relevans: se [`tasks/todo.md`](tasks/todo.md).
+- Kör `npx audit-ci --config audit-ci.jsonc` — ska vara grön. Post-K0åh (2026-05-13): allowlist är tom (`"allowlist": []`).
+- Om CI eller lokal `npm audit` rapporterar critical → STOPPA-OCH-FRÅGA per Kandidat 2 ([`tasks/lessons.md`](tasks/lessons.md)). Sannolikt ny supply chain-incident; följ ADR-028 5-stegs Konvention-flöde.
+- Om `npm view @tanstack/history@latest version` returnerar **annan version än `1.161.6`** → TanStack har bumpat `latest`-dist-tag bortom pre-malware-versionen. Trigga K0åi (pin-luckring + overrides-borttagning per ADR-028 reverse-flow). Se [`tasks/todo.md`](tasks/todo.md) Återkommande disciplin-sektion.
 
 ### Pre-commit biome-disciplin (Kandidat 25 + 31 — K2.2/K2.3 + K3.2 bekräftade)
 

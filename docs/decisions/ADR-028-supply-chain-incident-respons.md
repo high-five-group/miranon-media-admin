@@ -73,5 +73,44 @@ När `npm audit` rapporterar new high/critical vulnerability:
 
 - K0åg arbets-commit: `ea59787` (security(fas2): remediate GHSA-rmmr-r34h-pfm5 supply chain malware in @tanstack/* (K0åg))
 - Advisory: https://github.com/advisories/GHSA-rmmr-r34h-pfm5
-- Sessionsdok-trail: `tasks/sessions/2026-05-11-fas2-routing-auth.md` Del 3.7 (bakas in i K1.7-skelett-utfyllnad efter denna ADR)
+- Sessionsdok-trail: `tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md` Del 3.7
 - Diagnostik-data: K0åg-prompten Block A-E (RAPPORTERA-output, bevarad i Session 5-transcript när transcript-disciplin etableras)
+
+## Updates
+
+### 2026-05-13 — K0åh allowlist-rensning (advisory snärjt)
+
+GitHub Security Advisory Database uppdaterade GHSA-rmmr-r34h-pfm5 `vulnerable_version_range` från `>=0` till `= 1.161.9` + `= 1.161.12` 2026-05-12 13:06:25Z (~14h efter advisory-publicering 2026-05-11 23:39:34Z). Vår installerade `@tanstack/history@1.161.6` är pre-malware och inte längre i vulnerable range — bekräftat säker av GitHub Security-teamet via snäv range-update.
+
+**Triggerande observation (Session 6 K1.A Block A.3 RAPPORTERA 2026-05-13):**
+
+- `npm audit` returnerade `critical: 0` (förväntat 6 från K0åg-baseline)
+- `npm audit --json | grep -c GHSA-rmmr-r34h-pfm5` → 0 träffar
+- `audit-ci`-utdata pre-rensning: `Consider not allowlisting advisory: GHSA-rmmr-r34h-pfm5. Passed npm security audit.`
+
+K17-disciplin (live security-state-verifikation vid sessionsstart, [`tasks/lessons.md`](../../tasks/lessons.md) `## 2026-05-13 — Fas 2 Session 5b`) fångade avvikelsen ~24h efter advisory-uppdatering.
+
+**K0åh-åtgärder (Session 6, 2026-05-13):**
+
+1. Allowlist-blocket rensat i `audit-ci.jsonc` (commit `0d19ede`) — `"allowlist": []` (struktur bevarad för framtida incident-respons).
+2. `npx audit-ci --config audit-ci.jsonc` → grön utan allowlist (verifierat post-rensning lokalt).
+3. `tasks/todo.md` Veckovis-granskning-rutin ersatt med K0åi-trigger för pin-luckring (commit i K0åh-paketet).
+4. `CLAUDE.md` Sessionsstart audit-disciplin uppdaterad — allowlist-villkoret obsolet, nytt `npm view @tanstack/history@latest`-version-villkor introducerat (commit i K0åh-paketet).
+5. Denna `## Updates`-sektion etablerad som living resolution-spårning (kontra ny ADR) — samma incident, status-iteration.
+
+**Bevarat per K7 refactor/semantik-separation:**
+
+- Exakt-pin på 5 `@tanstack/*`-paket bevaras tills TanStack rör `latest`-dist-tag (defense-in-depth: skyddar mot dependency-drift in i 1.161.9/1.161.12-range vid framtida transitive-uppgraderingar)
+- `overrides: { "@tanstack/history": "1.161.6" }` bevaras synkront med pin-disciplin
+- Pin-luckring + overrides-borttagning skjuts till **K0åi** — naturlig trigger när `npm view @tanstack/history@latest` returnerar annan version än `1.161.6`
+
+**Resterande osäkerheter:**
+
+- `first_patched_version: "1.161.13"` finns deklarerat per-vulnerability i advisory, men `npm view @tanstack/history@latest` returnerar fortfarande `1.161.6` (TanStack har inte bumpat `latest`-dist-tag bakåt). När/om det sker, trigga K0åi.
+- Advisoryns `withdrawn_at: null` + `summary: "Malware in @tanstack/history"` är aktiva — incidenten är inte avskriven, bara range-snärjt.
+
+**Spårbarhet:**
+
+- Advisory-snäv-uppdatering (live-data): https://github.com/advisories/GHSA-rmmr-r34h-pfm5 — kontrollera `updated_at`-fält + `vulnerable_version_range` per `vulnerabilities[]`-objekt
+- K0åh sessionsdok-trail: `tasks/sessions/2026-05-13-ci-optimering.md` (K-sista bake-in)
+- K0åh commit-trail: `0d19ede` (audit-ci.jsonc) + denna commit (docs)
