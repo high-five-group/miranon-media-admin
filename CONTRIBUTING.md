@@ -67,6 +67,19 @@ PR mergas först när:
 - DoD-checklistan i PR-mallen är fylld
 - ADR refererad om arkitekturbeslut tagits
 
+## Lokala dev-verktyg (frivilligt)
+
+Utöver `npm install` (se [README](README.md#snabbstart)) finns CI-grindvakter
+som inte kör automatiskt lokalt. Kör dem i förväg om du vill fånga fynd före
+push:
+
+| Verktyg | Install (macOS) | Kör |
+|---|---|---|
+| yamllint | `brew install yamllint` *eller* `pipx install yamllint` | `yamllint .github/` |
+
+Tilläggsverktyg läggs till här när Session 6.6 fortsätter (markdownlint-cli2,
+typos, Vale, scripted-checklist-check) per ADR-030.
+
 ## Kvalitetsribba
 
 Detta projekt arbetar mot **11/11/11**: 11/10 på data quality, design quality

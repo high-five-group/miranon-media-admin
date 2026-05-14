@@ -1,3 +1,4 @@
+---
 name: CI
 
 on:
@@ -40,7 +41,7 @@ jobs:
         # SHA-pin per ADR-029 §6 third-party Actions-policy.
         # tj-actions/changed-files v47.0.6 verifierad 2026-05-13 (K1.C Block 2).
         # Veckovis Actions-granskning per tasks/todo.md.
-        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
           files: |
             **/*.md
@@ -108,6 +109,16 @@ jobs:
         run: |
           bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
           ./actionlint -color
+
+      - name: Check YAML syntax (yamllint)
+        # Per ADR-030 § Del 1.4: yamllint kompletterar actionlint (yamllint =
+        # generic YAML syntax/style; actionlint = GitHub Actions semantics).
+        # Config: .yamllint.yml. Scope: .github/ (workflow + dependabot).
+        # Python pre-installed på ubuntu-latest; pip-install ~3-5s.
+        # Ingen pre-commit-hook — CI-only-grindvakt per Marcus' direktiv K2.
+        run: |
+          pip install --quiet yamllint
+          yamllint .github/
 
   # Job 3: Heavy test-suite + build. Conditional på changed-detection.
   # Per ADR-029 §1c. Skippas helt på doc-only-commits (~70s spill eliminerat).
@@ -209,7 +220,7 @@ jobs:
       - name: Run lychee link check
         # SHA-pin per ADR-029 §6.
         # lychee-action v2.8.0 verifierad 2026-05-13 (K1.C Block 2), Rust-baserad.
-        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2.8.0
+        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411  # v2.8.0
         with:
           # Scope efter Marcus' Gate 2 anti-genväg-review + Commit 4a scope-konsistens:
           # INKLUDERAR: aktiva docs + aktiva tasks-dok + repo-root .md

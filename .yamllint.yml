@@ -1,0 +1,20 @@
+---
+# .yamllint.yml — yamllint-config för Miranon Media Admin.
+# Per ADR-030 § Del 1.4 — kör i lint-jobbet (CI-only, ingen pre-commit-hook).
+# Komplementärt till actionlint (yamllint = generic YAML syntax/style;
+# actionlint = GitHub Actions semantics).
+# Etablerad: Session 6.6 K2 2026-05-14.
+
+extends: default
+
+rules:
+  # CI YAML har långa rader naturligt (SHA-pin Actions-versioner med kommentarer,
+  # env-vars med secrets, lychee scope-konfiguration). Per K2 baseline-fynd:
+  # 12 line-length errors, alla legitima långa rader.
+  line-length: disable
+
+  # `on:` är YAML-reserved word (boolean) men GitHub Actions kräver det.
+  # check-keys: false tystar varning på keys utan att tysta value-side
+  # truthy-checks (`yes`/`no` istället för `true`/`false` flaggas fortsatt).
+  truthy:
+    check-keys: false
