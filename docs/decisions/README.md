@@ -51,6 +51,7 @@ En ADR är **oföränderlig** efter att den accepterats. Om ett beslut senare ä
 | [ADR-026](ADR-026-runtime-validering-vid-datagrans.md) | Runtime-validering vid datagräns med Zod `.parse()` | Accepted | 2 |
 | [ADR-027](ADR-027-kvalitetsdefinitioner-stack-skifte.md) | KVALITETSDEFINITIONER-11.md stack-skifte (Vue → React) | Accepted | 2 |
 | [ADR-028](ADR-028-supply-chain-incident-respons.md) | Supply chain incident-respons-protokoll (npm advisories) | Accepted | 2 |
+| [ADR-029](ADR-029-ci-architektur-changed-files-pattern.md) | CI-arkitektur — changed-files-baserat skip-mönster + third-party Actions-policy | Accepted | Meta |
 
 ## Relaterade dokument
 

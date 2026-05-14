@@ -343,6 +343,24 @@ Vid varje sessionsstart, kontrollera audit-status mot känd-acceptat tillstånd:
 - Om CI eller lokal `npm audit` rapporterar critical → STOPPA-OCH-FRÅGA per Kandidat 2 ([`tasks/lessons.md`](tasks/lessons.md)). Sannolikt ny supply chain-incident; följ ADR-028 5-stegs Konvention-flöde.
 - Om `npm view @tanstack/history@latest version` returnerar **annan version än `1.161.6`** → TanStack har bumpat `latest`-dist-tag bortom pre-malware-versionen. Trigga K0åi (pin-luckring + overrides-borttagning per ADR-028 reverse-flow). Se [`tasks/todo.md`](tasks/todo.md) Återkommande disciplin-sektion.
 
+### Actions supply-chain-disciplin (ADR-029)
+
+Vid sessionsstart, för sessioner som rör `.github/workflows/*.yml`:
+
+```bash
+# Verifiera SHA-pin oförändrad på third-party Actions
+git log -1 --oneline .github/workflows/ci.yml
+
+# Kolla advisory-status (live security-state per K17)
+curl -s 'https://api.github.com/advisories?affects=tj-actions/changed-files' | \
+  jq '.[] | select(.severity == "critical" or .severity == "high") | {ghsa_id, first_patched_version, published_at}'
+
+curl -s 'https://api.github.com/advisories?affects=lycheeverse/lychee-action' | \
+  jq '.[] | select(.severity == "critical" or .severity == "high") | {ghsa_id, first_patched_version, published_at}'
+```
+
+Veckovis granskning per [`tasks/todo.md`](tasks/todo.md). Vid critical/high-träff: applicera **K18-disciplin** — analysera `first_patched_version` mot vald version FÖRE klassning som blockerande. Om vald version är post-patched: historisk advisory, inte aktiv risk. Om aktiv risk: STOPPA och kör Actions-anpassad ADR-028 5-stegs Konvention-flöde (SHA-pin pre-incident + uppgradering vid resolution).
+
 ### Pre-commit biome-disciplin (Kandidat 25 + 31 — K2.2/K2.3 + K3.2 bekräftade)
 
 Innan varje `git add` för commits som introducerar nya filer eller nya imports:

@@ -25,6 +25,33 @@ Allowlist `audit-ci.jsonc` är tom (K0åh, 2026-05-13). Exakt-pin på 5 `@tansta
 - **K0åh resolution-detaljer:** Se [ADR-028](../docs/decisions/ADR-028-supply-chain-incident-respons.md) `## Updates` för advisory-snär-uppdaterings-spårning + reverse-flow-spec.
 - **Tas bort från denna lista** när K0åi har körts (overrides + exakt-pin upplöst, post-incident state).
 
+### Återkommande disciplin: Veckovis Actions supply-chain-granskning (ADR-029 §6)
+
+Third-party GitHub Actions med SHA-pin granskas veckovis för:
+- Nya releases (uppdatera SHA om relevant security-fix)
+- Publicerade supply-chain-incidenter (typ tj-actions mars 2025)
+- Withdrawn actions eller maintainer-byten
+
+Pinned third-party Actions just nu:
+- `tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96` (v47.0.6)
+- `lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411` (v2.8.0)
+
+**Senast granskad:** 2026-05-13 (ADR-029 etablering)
+**Nästa granskning senast:** 2026-05-20
+
+**Granskningssteg:**
+1. `gh api repos/tj-actions/changed-files/releases/latest --jq '{tag_name, target_commitish, published_at}'`
+2. `gh api repos/tj-actions/changed-files/git/refs/tags/<tag_name> --jq '.object.sha'` — verifiera att SHA matchar release-tag
+3. Jämför verifierad SHA mot pinned SHA i `.github/workflows/ci.yml`
+4. Om SHA skiljer: läs release-notes via `gh api repos/tj-actions/changed-files/releases/latest --jq '.body'`
+5. Repetera 1-4 för `lycheeverse/lychee-action`
+6. Kolla advisory-status:
+   - `curl -s 'https://api.github.com/advisories?affects=tj-actions/changed-files' | jq '.[] | {ghsa_id, severity, first_patched_version, published_at}'`
+   - Analysera `first_patched_version` mot vår pinned-version per K18-disciplin
+   - Repetera för `lycheeverse/lychee-action`
+7. Om incident med vår version aktivt sårbar: följ ADR-028 5-stegs Konvention-flöde anpassat för Actions (SHA-pin till pre-incident-version + uppgradering vid resolution)
+8. Om alla rena: uppdatera "Senast granskad"-datum + "Nästa granskning senast" + commit
+
 Se [`docs/byggplan.md`](../docs/byggplan.md) §4 Fas 2-prompten och [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 2 för kontext från Fas A + Fas 0/1.
 
 **Session-historik:**
