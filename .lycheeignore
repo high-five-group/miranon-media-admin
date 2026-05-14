@@ -31,9 +31,6 @@
 # Fix-arbete spåras i tasks/todo.md Session 6.5-sektion.
 # ═══════════════════════════════════════════════════════════════════════
 
-# Kategori A.1: docs-omstrukturering (ADR-021) — rot-level refs flyttade till docs/specs|logs
-^file://.*/docs/(DESIGN-SYSTEM-SPEC|SECURITY-SPEC|STATE-STRATEGY|byggplan-revision-inventory|gap-analysis)\.md(>|#.*)?$
-
 # Kategori A.2: KVALITETSDEFINITIONER-stack-skifte (ADR-027) — gamla Vue-namn
 ^file://.*/docs/specs/KVALITETSDEFINITIONER-11\.md(>|#.*)?$
 

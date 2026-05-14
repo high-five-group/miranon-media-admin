@@ -6,7 +6,7 @@
 
 ## Kontext
 
-[DESIGN-SYSTEM-SPEC.md](../DESIGN-SYSTEM-SPEC.md) §1 specificerade ursprungligen spacing-tokens med punktnotation för halvsteg:
+[DESIGN-SYSTEM-SPEC.md](../specs/DESIGN-SYSTEM-SPEC.md) §1 specificerade ursprungligen spacing-tokens med punktnotation för halvsteg:
 
 ```css
 --p-space-0: 0;
@@ -41,7 +41,7 @@ Använd **bindestreck** för decimal-platser i CSS custom property-namn:
 --p-space-1-5: 0.375rem;  /* 6px */
 ```
 
-Uppdaterade **både** [DESIGN-SYSTEM-SPEC.md](../DESIGN-SYSTEM-SPEC.md) §1 (i Vue-repot, committad + pushad) och `src/styles/tokens/primitives.css`.
+Uppdaterade **både** [DESIGN-SYSTEM-SPEC.md](../specs/DESIGN-SYSTEM-SPEC.md) §1 (i Vue-repot, committad + pushad) och `src/styles/tokens/primitives.css`.
 
 ## Alternativ som övervägdes
 

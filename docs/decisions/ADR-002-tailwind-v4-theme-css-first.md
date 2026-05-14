@@ -31,7 +31,7 @@ Använd **Tailwind v4 `@theme` CSS-first** istället för `tailwind.config.ts`:
 - `@tailwindcss/vite` är den enda plugin-poängen; Lightning CSS (inbyggt) hanterar vendor prefixing och syntax transforms
 - **Ingen `postcss.config.js`, ingen `autoprefixer`, ingen `tailwind.config.ts`**
 
-Det fullständiga `@theme`-blocket specificerades i [DESIGN-SYSTEM-SPEC.md](../DESIGN-SYSTEM-SPEC.md) §8 och kopierades exakt in i `src/styles/tailwind.css`.
+Det fullständiga `@theme`-blocket specificerades i [DESIGN-SYSTEM-SPEC.md](../specs/DESIGN-SYSTEM-SPEC.md) §8 och kopierades exakt in i `src/styles/tailwind.css`.
 
 ## Alternativ som övervägdes
 
