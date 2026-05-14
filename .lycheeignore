@@ -34,9 +34,6 @@
 # Kategori A.2: KVALITETSDEFINITIONER-stack-skifte (ADR-027) — gamla Vue-namn
 ^file://.*/docs/specs/KVALITETSDEFINITIONER-11\.md(>|#.*)?$
 
-# Kategori A.3: sessionsdok-arkivering (ADR-023 / K5.8b)
-^file://.*/tasks/sessions/2026-05-11-fas2-routing-auth\.md(>|#.*)?$
-
 # Kategori B.1: docs/analysis/-rapporter — path-konstruktion utan ../-prefix
 ^file://.*/docs/analysis/(docs|src|supabase|public)/.*
 
