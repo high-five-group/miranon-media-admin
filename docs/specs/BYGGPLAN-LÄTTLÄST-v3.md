@@ -481,8 +481,8 @@ Det här är de externa verktyg och tjänster appen står på. Du behöver inte 
 | [Vite](https://vite.dev/) | Det som bygger ihop koden snabbt under utveckling. |
 | [TypeScript](https://www.typescriptlang.org/) | En striktare version av JavaScript som fångar fel innan koden körs. |
 | [TanStack Router](https://tanstack.com/router) | Vägvalsystem (Fas 2). |
-| [TanStack Query](https://tanstack.com/query) | Hanterar data från servern (Fas 6). |
-| [TanStack Table](https://tanstack.com/table) | Tabell-bygge om vi behöver det (Fas 7 — annars eliminerat). |
+| [TanStack Query](https://tanstack.com/query/latest) | Hanterar data från servern (Fas 6). |
+| [TanStack Table](https://tanstack.com/table/latest) | Tabell-bygge om vi behöver det (Fas 7 — annars eliminerat). |
 | [React Aria](https://react-spectrum.adobe.com/react-aria/) | Tillgänglighet för knappar och fält (Fas 3). |
 | [Tailwind v4](https://tailwindcss.com/) | Stylingsystem. |
 | [Biome](https://biomejs.dev/) | Kvalitetskontroll och formatering av kod. |
