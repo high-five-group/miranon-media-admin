@@ -160,9 +160,16 @@ jobs:
             ${{ runner.os }}-playwright-
 
       - name: Install Playwright Chromium
-        # --with-deps installerar OS-libraries även vid cache-hit (snabbt).
-        # Browser-binär hoppas vid cache-hit (~150MB sparade).
-        run: npx playwright install --with-deps chromium
+        # Skippar --with-deps per Vite-mönstret (verifierat 2026-05-13).
+        # ubuntu-latest har Playwright OS-libs förinstallerade
+        # (libgbm1, libnss3, libasound2t64, libxcomposite1, etc.).
+        # --with-deps krävde apt-get update som var fragilt mot
+        # azure-mirror-hängningar (Commit 1.5 timeout 615s, K11-anti-mönster
+        # skördat — Vite hade redan dropped --with-deps i sin ci.yml).
+        # Vid full cache-hit (lock-file oförändrad): browser-install hoppar (~5s).
+        # Vid restore-keys-hit: laddar nya browser-binärer vid version-mismatch.
+        # Vid cold cache: laddar browser-binärer (~30s vs 150s med --with-deps).
+        run: npx playwright install chromium
 
       - name: E2E tests (staging)
         run: npm run test:e2e:staging
@@ -229,9 +236,17 @@ jobs:
   # Per ADR-029 §1e. Grön status om alla föregående jobb antingen passerade
   # eller skippades. Required check vid framtida branch protection.
   # Enkel single-aggregator (utelämning #5 — branch protection ej aktiv).
+  #
+  # If-villkor använder needs.*.result-array istället för cancelled()/failure()
+  # (workflow-level context). cancelled() fångar bara workflow-cancellation,
+  # inte per-job-cancellation — välkänd GHA-gotcha bekräftad empiriskt i
+  # Commit 1.5 timeout-run (test-jobb cancellades; ci-passed rapporterade
+  # success felaktigt). Vite-mönstret har samma bug men fungerar mestadels
+  # pga failure-propagation i deras pipeline; för 11/10-strikthet använder
+  # vi GHA-officiella aggregator-pattern.
   ci-passed:
     name: CI Passed or Skipped
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     needs: [changed, lint, test, docs]
     runs-on: ubuntu-latest
     timeout-minutes: 1
