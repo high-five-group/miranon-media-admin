@@ -16,9 +16,6 @@
 # Block 1 — Acceptable (auth-gated, pre-release-mallar, stale-upstream)
 # ═══════════════════════════════════════════════════════════════════════
 
-# claude.ai — auth-gated (403 utan login)
-^https://claude\.ai/?$
-
 # Pre-release-mallar i CHANGELOG.md — vi har inga releases än
 ^https://github\.com/marcus803/miranon-media-admin/compare/v\d.*$
 ^https://github\.com/marcus803/miranon-media-admin/releases/tag/.*$
@@ -54,5 +51,5 @@
 # Buggy .md-refs (osannolikt) släpps igenom; krävs explicit fix per K11-disciplin.
 ^file://.*/docs/analysis/[^/]+\.(ts|tsx|css|js)(>|#.*)?$
 
-# Kategori B.2: docs/archive/-mappen — samma path-bugg
-^file://.*/docs/archive/docs/.*
+# Kategori B.2 obsolet (Commit 4a 2026-05-14): docs/archive/** är nu scope-exkluderat
+# i ci.yml lychee-args (ADR-023-mall normaliserad). Pattern borttagen.

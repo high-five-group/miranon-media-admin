@@ -211,14 +211,16 @@ jobs:
         # lychee-action v2.8.0 verifierad 2026-05-13 (K1.C Block 2), Rust-baserad.
         uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2.8.0
         with:
-          # Scope efter Marcus' Gate 2 anti-genväg-review:
+          # Scope efter Marcus' Gate 2 anti-genväg-review + Commit 4a scope-konsistens:
           # INKLUDERAR: aktiva docs + aktiva tasks-dok + repo-root .md
           # UTELÄMNAR: tasks/sessions/** (frozen ADR-023 + in-flight WIP) — K1.D §0 utelämning #1
+          #            docs/archive/** (frozen ADR-023-mall, normaliserad i Commit 4a 2026-05-14)
           args: >-
             --cache
             --max-cache-age 1d
             --no-progress
             --verbose
+            --exclude-path docs/archive
             './docs/**/*.md'
             './tasks/*.md'
             './*.md'
