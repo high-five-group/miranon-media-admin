@@ -20,6 +20,12 @@
 
 Sessionsdok-trail (arkiverad 2026-05-13 i K5.8): [`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`](sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md).
 
+### Mini-session 6.6.5 — Dependabot secrets-skuld + ADR-031
+
+Mini-session 6.6.5 — Dependabot secrets-skuld + ADR-031 (CI-strategi för PR-CI). **Trigger:** post-Session 6.6 ✅ KLAR. **Prep-fil:** [`tasks/sessions/2026-05-14-session-6-6-5-prep.md`](sessions/2026-05-14-session-6-6-5-prep.md). **Klass (e)** pre-existing skuld, **K2-orsakad: NEJ** (bekräftat via PR #21 5-dagar pre-K2 fail-historik 2026-05-12 07:12 UTC). **Estimat:** ~1h. **Strategi-val A/B/C/D** (D > B > C > A per K2.5-rekommendation) beslutas vid sessionsstart.
+
+Skuld-källa: GitHub Actions secrets-isolation — repository `secrets.TEST_*` injiceras som tomma strängar i Dependabot-PR:er (separat "Dependabot secrets"-zon). 5 öppna PR:er (#21-#25) failar på `API tests (staging)`-steget. Funktionellt korrekt på main + push-events; fail-by-design på Dependabot-PR:er.
+
 ### Operativ skuld — Transcript-disciplin ej implementerad
 
 `CONTRIBUTING.md` transcript-disciplin (sessions-transcripts till `tasks/sessions/transcripts/<datum>.txt` som sanningskälla vid sessionsavslut) är skriven men inte operativt implementerad. Session 6.5 är första session där noten explicit flaggas som process-skuld.
