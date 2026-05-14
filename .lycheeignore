@@ -37,9 +37,6 @@
 # Kategori A.3: sessionsdok-arkivering (ADR-023 / K5.8b)
 ^file://.*/tasks/sessions/2026-05-11-fas2-routing-auth\.md(>|#.*)?$
 
-# Kategori A.4: cirkulär-path-bug i docs/research/datamodell-research/06b-supabase-target.md
-^file://.*/docs/research/datamodell-research/docs/research/.*
-
 # Kategori B.1: docs/analysis/-rapporter — path-konstruktion utan ../-prefix
 ^file://.*/docs/analysis/(docs|src|supabase|public)/.*
 
