@@ -46,13 +46,14 @@ Refs uppdateras i alla styrande dokument utanför arkiv-zoner.
 
 ## Fix-vs-skip-disciplin på path-refs i frysta zoner (åf-erfarenhet)
 
-åf:s första försök antog att path-refs i frysta filer (datamodell-research-leveranser, sessions-arkiv) skulle exkluderas från sed-pass per arkiv-disciplin. Den antagandet var fel — det skulle skapat ~150 broken refs i nyligen-arkiverade filer. Per-rad-skanning visade att refs i dessa zoner är **källhänvisningar** (bare paths, "Källa: X", `[fil](path#Lrad)`), inte **relationskontext** ("ersätter X", "föregångare X"). Mekanisk substitution är därför säker — ny path pekar på samma innehåll på samma rad efter `git mv`.
+åf:s första försök antog att path-refs i frysta filer (datamodell-research-leveranser, sessions-arkiv) skulle exkluderas från sed-pass per arkiv-disciplin. Den antagandet var fel — det skulle skapat ~150 broken refs i nyligen-arkiverade filer. Per-rad-skanning visade att refs i dessa zoner är **källhänvisningar** (bare paths, "Källa: X", `[fil](path#Lrad)`), inte **relationskontext** ("ersätter X", "föregångare X"). Mekanisk substitution är därför säker — ny path pekar på samma innehåll på samma rad efter `git mv`. Distinkt från detta är **frusna externa leveranser** (Codex-/Code-rapporter, datumstämplade) där pre-flytt-spec arkiverats efter stack-skifte (ADR-027) — innehållet finns inte längre på pre-flytt-rader, så substitution bevarar inte intentionen. Kategori 4 hanterar detta fall.
 
 Skip-disciplinen från ADR-021 ska därför skiljas i tre kategorier:
 
 1. **Relationskontext** ("X ersätter Y", "föregångare Y") — substitution förvränger semantik. **SKIP.**
 2. **Källhänvisning** ("se rad N i fil Y", `[fil](path)`) — substitution bevarar exakt intention. **FIX mekaniskt.**
 3. **Beskrivning av flytt** ("X flyttad till Y") — substitution skapar nonsens. **SKIP.**
+4. **Frusen extern leverans** (datum-stämplad analys-/rapport-fil där refs pekar på pre-flytt-spec som arkiverats efter stack-skifte) — substitution mot post-flytt-fil bevarar inte intentionen eftersom innehållet inte längre finns på samma rad. Retroaktiv editering av leverans-fil bryter trail-integritet. **SKIP permanent.** (Etablerad i Session 6.5 2026-05-14 efter empirisk K3-fångst av 11 refs i `Code-verification-of-codex-analysis-2026-05-07.md` som pekade på `KVALITETSDEFINITIONER-11.md` pre-ADR-027.)
 
 `CHANGELOG.md` rad 13 (kategori 3) exkluderades från sed-passen via `find -not -path "./CHANGELOG.md"`. Alla andra refs i frysta zoner (kategori 2) uppdaterades mekaniskt. Stickprov för relationskontext-fraser (`ersätter|föregångare|fortsättning|tidigare|ursprungligen|innan` nära path-refs) gav 0 träffar i frysta zoner — D-strategin verifierades empiriskt innan körning.
 

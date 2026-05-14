@@ -6,9 +6,9 @@
 # Lägg endast till mönster när dokumenterad-flaky behavior bevisats.
 # Preventiv exklusion tystar K18-signal — undviks.
 #
-# Två block (K1.D Commit 3 baseline 2026-05-14):
-#   Block 1: Acceptable — auth-gated, pre-release-mallar, stale-upstream
-#   Block 2: DEFERRED-FIX-MARKER — verklig drift, fixas i Session 6.5
+# Endast acceptable-patterns kvarstår (Session 6.5 2026-05-14: alla
+# DEFERRED-FIX-MARKER-rader eliminerade; A.2 flyttad till kategori 4
+# permanent acceptable per ADR-022 § Fix-vs-skip-disciplin).
 #
 # Granska veckovis per tasks/todo.md (parallellt med Actions-granskning).
 
@@ -24,13 +24,12 @@
 # UI-primitiver om/när react-aria-components-ref blir aktuell.
 ^https://github\.com/adobe/react-spectrum/blob/main/packages/react-aria-components/CHANGELOG\.md$
 
-# ═══════════════════════════════════════════════════════════════════════
-# Block 2 — DEFERRED-FIX-MARKER (Session 6.5)
-# Drift efter ADR-021 (docs-omstrukturering) / ADR-023 (sessionsdok-arkivering)
-# / ADR-027 (KVALITETSDEFINITIONER stack-skifte) / K5.8b (sessionsdok-arkivering).
-# Fix-arbete spåras i tasks/todo.md Session 6.5-sektion.
-# ═══════════════════════════════════════════════════════════════════════
-
-# Kategori A.2: KVALITETSDEFINITIONER-stack-skifte (ADR-027) — gamla Vue-namn
+# Frusen ref till pre-ADR-027 KVALITETSDEFINITIONER-spec
+# Per ADR-022 § Fix-vs-skip-disciplin kategori 4: refs i frysta direktiv,
+# arkiverade analys-leveranser (Codex/Code 2026-05-07), historiska ADR:er
+# (ADR-008, ADR-027, ADR-029), och meta-sessionsdok pekar på pre-ADR-027-
+# KVALITETSDEFINITIONER-11.md som arkiverats post-stack-skifte. Retroaktiv
+# editering av frysta filer bryter trail-integritet. SKIP permanent.
+# Etablerad: Session 6.5 K2.2 2026-05-14.
 ^file://.*/docs/specs/KVALITETSDEFINITIONER-11\.md(>|#.*)?$
 
