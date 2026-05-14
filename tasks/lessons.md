@@ -764,3 +764,19 @@ tj-actions/changed-files v47.0.6 returnerade `should_skip_tests:false` + `docs_c
 ### Sammanfattning Session 6
 
 17 lessons-kandidater skördade. 10 hub-lyfta (K1.1, K1.2, K1.5, K1.7, K1.8, K1.12, K1.13, K1.14, K1.16, K1.17), varav K1.1+K1.4 konsoliderade och K1.7+K1.10 konsoliderade i hub. 5 lokala (K1.3, K1.6, K1.11, K1.15 + sub-fragment), 2 konsoliderade in i hub-rader. K-paradigm-spannande sammanfattning: supply-chain (K1.1+K1.4), meta-disciplin (K1.7+K1.10), branschledar-verifikation (K1.2+K1.9), anti-genväg (K1.5+K1.13), grindvakts-värde (K1.12+K1.16), tooling-bug-medvetenhet (K1.17). Strategi E etablerad som kanonisk CI-arkitektur per ADR-029.
+
+### Retroaktiv-skörd 2026-05-14 (post-K-sista, process-uppdaterings-commits)
+
+Två lessons-kandidater som inte fanns på K-sista lessons-skördens radar (17 ursprungliga). Skördade retroaktivt efter Marcus' process-feedback-runda och Code:s symlänk-tooling-quirk under process-uppdaterings-commits. Mönster bekräftar K1.19 — meta-process-observation kräver post-session-distance.
+
+### K1.18 [lokalt] — Edit-verktyget vägrar skriva via symlänk; använd real-path
+
+Datum: 2026-05-14 | Källa: Session 6 retrospektiv process-uppdaterings-commits 2026-05-14
+
+Hub-CLAUDE.md är symlänkad från `~/.claude/CLAUDE.md → ~/Repon/marcus-system/CLAUDE.md` (Claude Code globala-konfig-konvention). Vid hub-edits via Edit-verktyg: edit-anropet vägrar skriva genom symlänk-path. Workaround: redigera real-path direkt (`~/Repon/marcus-system/CLAUDE.md`). Symlänken läser sedan rätt innehåll vid filresolution. Generaliserbar regel: vid edits mot konfig-filer som har symlänk-aliases, peka edit-verktyget mot real-path, inte alias. Operativ tooling-kunskap för hub-disciplin — inte regel-nivå, inte ADR-värdig.
+
+### K1.19 [UNIVERSAL, hub-lyft] — Process-friction blir synligt först i retrospektiv
+
+Datum: 2026-05-14 | Källa: Session 6 retrospektiv post-K-sista process-feedback-runda
+
+Tre process-friction-punkter (Chat-output-otydlighet, popup-friction, sessionsdok-visibility-förlust) blev synliga FÖRST när Session 6 var formellt avslutad och Marcus fick distans till workflow:et. Inga av dem fanns på radarn för K-sista lessons-skörden (17 kandidater) trots intensiv K-disciplin-iteration. Mönster: meta-process-observation kräver post-session-distance; lessons-skörd inom sessionen fångar bara fenomen Code/Chat identifierar under arbete. Generaliserbar regel: sessionsslut är inte sluttillstånd för lessons-skörd — det är checkpoint för första-meta-observation. Lessons-skörd ska revisiteras vid nästa sessions K0 efter Marcus haft tid att reflektera. Bekräftar K15 (Chat-kontext lever inte över sessionsbyte) på meta-meta-nivå: även sessionens egen meta-observation kräver utanför-sessionen-perspektiv för att bli synlig. Hub-lyft-värdighet: hög — gäller alla projekt med session-arbetsflöde.
