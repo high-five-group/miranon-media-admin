@@ -34,3 +34,13 @@
 # Kategori A.2: KVALITETSDEFINITIONER-stack-skifte (ADR-027) — gamla Vue-namn
 ^file://.*/docs/specs/KVALITETSDEFINITIONER-11\.md(>|#.*)?$
 
+# Kategori B.1: docs/analysis/-rapporter — path-konstruktion utan ../-prefix
+^file://.*/docs/analysis/(docs|src|supabase|public)/.*
+
+# Smal pattern utan .md för att skydda legitima cross-analysis-md-refs
+# (typ docs/analysis/Codex-project-analysis.md → docs/analysis/Code-verification-...md).
+# Buggy .md-refs (osannolikt) släpps igenom; krävs explicit fix per K11-disciplin.
+^file://.*/docs/analysis/[^/]+\.(ts|tsx|css|js)(>|#.*)?$
+
+# Kategori B.2 obsolet (Commit 4a 2026-05-14): docs/archive/** är nu scope-exkluderat
+# i ci.yml lychee-args (ADR-023-mall normaliserad). Pattern borttagen.

@@ -26,7 +26,7 @@ Codex' övergripande dom stämmer i sak: projektet är inte en 11/10-app idag, m
 
 **Konkret bevis:**
 
-- **Wildcard CORS** — [supabase/functions/_shared/cors.ts:2](../supabase/functions/_shared/cors.ts#L2):
+- **Wildcard CORS** — [supabase/functions/_shared/cors.ts:2](supabase/functions/_shared/cors.ts#L2):
   ```ts
   'Access-Control-Allow-Origin': '*',
   ```
@@ -39,7 +39,7 @@ Codex' övergripande dom stämmer i sak: projektet är inte en 11/10-app idag, m
   ```
   Ingen av `get-events`, `get-persons`, `get-registrations`, `update-record` extraherar caller-identitet. SECURITY-SPEC.md §5 A01 (rad 393–419) visar exakt mönster som krävs — det är inte implementerat.
 
-- **Anon-key fallback** — [src/data/config/supabase-client.ts:16–22](../src/data/config/supabase-client.ts#L16-L22):
+- **Anon-key fallback** — [src/data/config/supabase-client.ts:16–22](src/data/config/supabase-client.ts#L16-L22):
   ```ts
   async function getAuthHeader(): Promise<string> {
     const { data: { session } } = await supabase.auth.getSession();
@@ -49,7 +49,7 @@ Codex' övergripande dom stämmer i sak: projektet är inte en 11/10-app idag, m
   ```
   Klienten faller tyst tillbaka till anon-key om session saknas. I kombination med att Edge Functions inte verifierar caller-identitet betyder det att vem som helst med anon-key (publik per definition) kan anropa funktionerna som om de vore inloggad admin.
 
-- **Otillräcklig allowlist i `update-record`** — [supabase/functions/update-record/index.ts:5–24](../supabase/functions/update-record/index.ts#L5-L24):
+- **Otillräcklig allowlist i `update-record`** — [supabase/functions/update-record/index.ts:5–24](supabase/functions/update-record/index.ts#L5-L24):
   18 tabeller på allowlist, men:
   - Inget `field`-allowlist (rad 38: `const { tableId, recordId, fields } = await req.json()` — `fields` skickas direkt vidare till Airtable PATCH)
   - Inget `operation`-koncept (alla fält är skrivbara — inkl. `Status`, `Är aktiv`, betalstatus, `Anteckningar`, automation-trigger-fält)
@@ -65,7 +65,7 @@ Codex' övergripande dom stämmer i sak: projektet är inte en 11/10-app idag, m
 
 **Stämmer mot kod:** **Ja — fullständigt.**
 
-**Konkret bevis:** [src/main.tsx:12–19](../src/main.tsx#L12-L19):
+**Konkret bevis:** [src/main.tsx:12–19](src/main.tsx#L12-L19):
 ```tsx
 function App() {
   return (
@@ -101,7 +101,7 @@ Det som finns i `src/` utöver `main.tsx`:
 
 **Konkret bevis:** `grep -ni "vue|fkui|composition api"` returnerar **11 träffar**:
 
-- [docs/specs/ACCESSIBILITY-CHECKLIST.md:4](../docs/specs/ACCESSIBILITY-CHECKLIST.md#L4): *"Admin är en intern Vue 3 SPA — inte en publik..."*
+- [docs/specs/ACCESSIBILITY-CHECKLIST.md:4](docs/specs/ACCESSIBILITY-CHECKLIST.md#L4): *"Admin är en intern Vue 3 SPA — inte en publik..."*
 - Rad 14: *"Finns det en FKUI-komponent för detta? Kolla komponentbiblioteket FÖRST"*
 - Rad 18: *"Har du kollat FK:s senaste release? (Se 'Underhåll av FKUI-fork' nedan)"*
 - Rad 19: *"Har du kollat vue-byggplan-v2.md..."*
@@ -129,9 +129,9 @@ grep -rn "\.parse(\|\.safeParse" src/ supabase/ --include="*.ts" --include="*.ts
 → NOLL TRÄFFAR
 ```
 
-Den enda referensen utanför schema-filerna är [src/domain/__tests__/schemas.assignable.ts](../src/domain/__tests__/schemas.assignable.ts) som gör `AssertEqual<z.infer<typeof Schema>, Type>` — det är en **compile-time-typkoll**, inte runtime-validering. Den kontrollerar att Zod-schemat och TypeScript-typen är ekvivalenta i form, men kör aldrig validering på faktisk data.
+Den enda referensen utanför schema-filerna är [src/domain/__tests__/schemas.assignable.ts](src/domain/__tests__/schemas.assignable.ts) som gör `AssertEqual<z.infer<typeof Schema>, Type>` — det är en **compile-time-typkoll**, inte runtime-validering. Den kontrollerar att Zod-schemat och TypeScript-typen är ekvivalenta i form, men kör aldrig validering på faktisk data.
 
-[src/data/adapters/AirtableAdapter.ts:27–30](../src/data/adapters/AirtableAdapter.ts#L27-L30):
+[src/data/adapters/AirtableAdapter.ts:27–30](src/data/adapters/AirtableAdapter.ts#L27-L30):
 ```ts
 async fetchEvents(): Promise<Event[]> {
   const data = await callEdgeFunction<{ events: Event[] }>('get-events');
@@ -140,7 +140,7 @@ async fetchEvents(): Promise<Event[]> {
 ```
 `Event[]` är en TypeScript-cast (`<{ events: Event[] }>`), inte en runtime-kontroll. Om Edge Function returnerar fel form blir det en silent typ-osanning ända in i UI:t.
 
-På Edge Function-sidan: ingen Zod-validering varken på input eller output. [supabase/functions/update-record/index.ts:38–46](../supabase/functions/update-record/index.ts#L38-L46) gör en handskriven `if (!tableId || !recordId || !fields)` — ingen typkontroll på `fields`-innehållet alls.
+På Edge Function-sidan: ingen Zod-validering varken på input eller output. [supabase/functions/update-record/index.ts:38–46](supabase/functions/update-record/index.ts#L38-L46) gör en handskriven `if (!tableId || !recordId || !fields)` — ingen typkontroll på `fields`-innehållet alls.
 
 **Min bedömning:** Codex har rätt. Mitt tillägg: schemana är **funktionellt dead code** idag. De konsumeras inte vid någon datagräns — varken klient, Edge Function, eller test. ADR-005 motiverar att de existerar parallellt med interface-typerna, vilket är OK som långtidsstrategi, men just nu betalar projektet för att underhålla dubbla definitioner utan att få runtime-säkerheten.
 
@@ -154,14 +154,14 @@ På Edge Function-sidan: ingen Zod-validering varken på input eller output. [su
 
 **Konkret bevis:**
 
-- [docs/reference/data-model.md:121–130](../docs/reference/data-model.md#L121-L130) listar 6 värden:
+- [docs/reference/data-model.md:121–130](docs/reference/data-model.md#L121-L130) listar 6 värden:
   ```
   Obekräftad, Bekräftad (mail skickat), Betalningspåminnelse skickad,
   Avbokad/Ombokad, Flytta till väntelista, Inställt
   ```
   Tillsammans med kommentar *"Inställt: Ny 2026-04-26"* och *"Flytta till väntelista: Tillagd i april 2026"*.
 
-- [src/domain/types/Status.ts:3–8](../src/domain/types/Status.ts#L3-L8) listar 4:
+- [src/domain/types/Status.ts:3–8](src/domain/types/Status.ts#L3-L8) listar 4:
   ```ts
   export const RegistrationStatus = {
     OBEKRAFTAD: 'Obekräftad',
@@ -176,7 +176,7 @@ På Edge Function-sidan: ingen Zod-validering varken på input eller output. [su
 
 - Header-kommentaren på rad 1 säger *"Faktiska värden från Airtable (verifierade via MCP 2026-03-30)"* — den är **30 dagar inaktuell** mot 2026-04-26-tilläggen i Airtable.
 
-- Eventplaneringens `Status` (`Planerat, Genomfört, Inställt, Flyttat`) finns inte alls som typ i koden — bara nämnd i [docs/reference/data-model.md:140](../docs/reference/data-model.md#L140).
+- Eventplaneringens `Status` (`Planerat, Genomfört, Inställt, Flyttat`) finns inte alls som typ i koden — bara nämnd i [docs/reference/data-model.md:140](docs/reference/data-model.md#L140).
 
 **Min bedömning:** Codex har rätt. Detta är en **liten fix nu**, **stor källa till buggar senare** — exakt som Codex skriver. När UI byggs i Fas 6 kommer status-filterval, status-knappar och status-badge-färger att referera till denna enum. Två saknade värden = två osynliga buggar.
 
@@ -216,7 +216,7 @@ För ett projekt med 11/11/11-ribba är det en luckuhål. ADR-005 nämner i för
 **Konkret bevis:**
 
 - `ls src/components/` → `No such file or directory`. Mappen existerar inte.
-- Tokens finns: `src/styles/tokens/primitives.css`, `semantic.css`, `components.css`. [components.css](../src/styles/tokens/components.css) är enligt CLAUDE.md "skelett".
+- Tokens finns: `src/styles/tokens/primitives.css`, `semantic.css`, `components.css`. [components.css](src/styles/tokens/components.css) är enligt CLAUDE.md "skelett".
 - Helpers finns: `lib/alert-screen-reader.ts`, `lib/focus-utils.ts`, `lib/cn.ts` — alla är portade utility-funktioner från FK Designsystemet, inga av dem är React-komponenter.
 - Inga `Button`, `Input`, `Modal`, `Table`, `StatusBadge`, `EmptyState`, `LoadingSpinner`, `ErrorBoundary`-komponenter finns att granska.
 
@@ -253,7 +253,7 @@ Den är **moderate**, inte **high** — så `--audit-level=high` skulle teoretis
 
 `get-registrations` interpolerar tre query-parametrar **utan eskapering** in i en Airtable filterByFormula:
 
-[supabase/functions/get-registrations/index.ts:51–60](../supabase/functions/get-registrations/index.ts#L51-L60):
+[supabase/functions/get-registrations/index.ts:51–60](supabase/functions/get-registrations/index.ts#L51-L60):
 ```ts
 if (eventId) {
   filters.push(`FIND("${eventId}", ARRAYJOIN({Event}))`);
@@ -266,7 +266,7 @@ if (flagga) {
 }
 ```
 
-`get-persons` har en **delvis** eskapering ([supabase/functions/get-persons/index.ts:55–61](../supabase/functions/get-persons/index.ts#L55-L61)) som bara hanterar `"`:
+`get-persons` har en **delvis** eskapering ([supabase/functions/get-persons/index.ts:55–61](supabase/functions/get-persons/index.ts#L55-L61)) som bara hanterar `"`:
 ```ts
 const term = search.replace(/"/g, '\\"');
 filterByFormula = `OR(SEARCH(LOWER("${term}"), LOWER({Namn})), ...)`;
@@ -277,7 +277,7 @@ Airtable-formler är inte SQL, men formula-injektion kan användas för att krin
 
 ### B. `create-admin-user` saknar caller-verifiering helt
 
-[supabase/functions/create-admin-user/index.ts](../supabase/functions/create-admin-user/index.ts):
+[supabase/functions/create-admin-user/index.ts](supabase/functions/create-admin-user/index.ts):
 
 ```ts
 Deno.serve(async (req) => {
@@ -296,7 +296,7 @@ Funktionen tar emot e-post och lösenord, skapar en admin-user med email_confirm
 Supabase default har `verify_jwt = true` på gateway-nivå, men:
 1. `supabase/config.toml` finns inte i repot (`ls supabase/` → bara `functions`). Default-konfig vid deploy varierar mellan CLI-versioner.
 2. Även med `verify_jwt = true` accepteras anon-key som "valid JWT" (det är ett JWT signerat av Supabase med `role: anon`).
-3. Anon-key är **publik** ([env.ts:14](../src/env.ts#L14): `VITE_SUPABASE_ANON_KEY` exponeras till klienten).
+3. Anon-key är **publik** ([env.ts:14](src/env.ts#L14): `VITE_SUPABASE_ANON_KEY` exponeras till klienten).
 
 **Konsekvens:** Om denna funktion deployas, kan vem som helst med anon-key (alla som besöker sajten + alla som lyssnar på nätverkstrafik + alla som granskar dist-buntar) skapa admin-användare. Det är inte en spec-fråga, det är en katastrofal exponering. Codex nämner "ingen requireUser" generellt, men denna specifika funktion förtjänar att lyftas.
 
@@ -328,11 +328,11 @@ SECURITY-SPEC.md §1 (rad 18 i tabellen) säger: *"Fas 0 | CSP-header-definition
 
 ### F. AirtableAdapter har 9 metoder som pekar på Edge Functions som inte finns
 
-[src/data/adapters/AirtableAdapter.ts](../src/data/adapters/AirtableAdapter.ts) deklarerar 14 metoder. Bara 4 av dem (`fetchEvents`, `fetchPersons`, `fetchRegistrations`, `updateRecord`) har motsvarande deployad funktion. De övriga 10 har `// TODO: Edge Function 'X' behöver deployas`-kommentarer. Detta är inte fel i sig (de är planerade), men det är skarp skuldskrivning som ADR-006 inte adresserar. När UI börjar konsumera adaptern i Fas 6 kommer dessa 10 att visa runtime-fel.
+[src/data/adapters/AirtableAdapter.ts](src/data/adapters/AirtableAdapter.ts) deklarerar 14 metoder. Bara 4 av dem (`fetchEvents`, `fetchPersons`, `fetchRegistrations`, `updateRecord`) har motsvarande deployad funktion. De övriga 10 har `// TODO: Edge Function 'X' behöver deployas`-kommentarer. Detta är inte fel i sig (de är planerade), men det är skarp skuldskrivning som ADR-006 inte adresserar. När UI börjar konsumera adaptern i Fas 6 kommer dessa 10 att visa runtime-fel.
 
 ### G. Service worker registreras tyst utan `sw.js` som faktiskt gör något
 
-[src/main.tsx:33–39](../src/main.tsx#L33-L39) registrerar `/sw.js` om browsern stödjer det, men [public/sw.js](../public/sw.js) är ett "skelett" enligt CLAUDE.md. Att registrera en tom service worker gör inget skadligt, men det är ett produktdetalj som kan förvirra: appen kommer att visa att den har SW i DevTools, men SW gör ingenting. Det syns aldrig i SECURITY-SPEC eller PERFORMANCE-BUDGET. Liten sak, men hör hemma i avvikelselistan.
+[src/main.tsx:33–39](src/main.tsx#L33-L39) registrerar `/sw.js` om browsern stödjer det, men [public/sw.js](public/sw.js) är ett "skelett" enligt CLAUDE.md. Att registrera en tom service worker gör inget skadligt, men det är ett produktdetalj som kan förvirra: appen kommer att visa att den har SW i DevTools, men SW gör ingenting. Det syns aldrig i SECURITY-SPEC eller PERFORMANCE-BUDGET. Liten sak, men hör hemma i avvikelselistan.
 
 ---
 
@@ -431,7 +431,7 @@ Min ursprungliga rapport behandlade kodgapen som tekniska defekter att fixa. 04-
 
 **Varför inte noll-arbete:**
 
-- A1 ([06a Del A](../docs/research/datamodell-research/06a-airtable-redesign.md)) ändrar formeln `Anmälningar.Är aktiv (1/0)` post-MK från `IF({Status}="Avbokad/Ombokad", 0, 1)` till `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)`. **A1 ändrar inte status-värdena** — de sex värdena `Obekräftad`, `Bekräftad (mail skickat)`, `Betalningspåminnelse skickad`, `Avbokad/Ombokad`, `Flytta till väntelista`, `Inställt` finns redan i Airtable idag och kommer fortsätta finnas post-A-track. Status.ts ska alltså spegla **alla sex värden idag**.
+- A1 ([06a Del A](docs/research/datamodell-research/06a-airtable-redesign.md)) ändrar formeln `Anmälningar.Är aktiv (1/0)` post-MK från `IF({Status}="Avbokad/Ombokad", 0, 1)` till `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)`. **A1 ändrar inte status-värdena** — de sex värdena `Obekräftad`, `Bekräftad (mail skickat)`, `Betalningspåminnelse skickad`, `Avbokad/Ombokad`, `Flytta till väntelista`, `Inställt` finns redan i Airtable idag och kommer fortsätta finnas post-A-track. Status.ts ska alltså spegla **alla sex värden idag**.
 - 06b §B3 designar `registrations.status` som en **annan** enum: `'draft','pending','confirmed','waitlisted','cancelled','rebooked','completed','no_show'`. Den är target-modellen, inte Airtable-modellen. Att blanda dem i samma `RegistrationStatus`-konstant är en feldesign mot K9 (stable identifiers separeras från displaynamn vid integrationskanter): Airtable-värdet `"Bekräftad (mail skickat)"` är ett displaynamn, inte en stable key, och target-värdet `"confirmed"` är en target-state-nyckel.
 
 **Hur fixen ska göras:**
@@ -509,11 +509,11 @@ Sex saker som tillkommer:
 
 Ursprungsrapporten nämnde att `update-record` returnerar `error.message` rakt till klient. Den **missade** den verkligt allvarliga delen: `update-record` har **ingen separation mellan "Airtable PATCH lyckades" och "Airtable PATCH lyckades men send-email misslyckades efteråt"**, och `send-email` finns inte ens som Edge Function i detta repo (det är `~/Repon/miranon-media-os/`-källan enligt 06a A2).
 
-I detta repo: `update-record` är blind — den vet inget om mail. Men **AirtableAdapter.sendEmail** är planerad ([AirtableAdapter.ts:159–162](../src/data/adapters/AirtableAdapter.ts#L159-L162)) med `// TODO: Edge Function 'send-email' behöver deployas`. När den implementeras post-MK (06a A2) **måste** den följa 06b §B5 outbox-mönstret — inte en naiv "skicka mail + PATCH"-sekvens. Annars repeterar vi DQ8.
+I detta repo: `update-record` är blind — den vet inget om mail. Men **AirtableAdapter.sendEmail** är planerad ([AirtableAdapter.ts:159–162](src/data/adapters/AirtableAdapter.ts#L159-L162)) med `// TODO: Edge Function 'send-email' behöver deployas`. När den implementeras post-MK (06a A2) **måste** den följa 06b §B5 outbox-mönstret — inte en naiv "skicka mail + PATCH"-sekvens. Annars repeterar vi DQ8.
 
 ### B. G13/DQ9 väntelista-race har också faktisk kod-bevis
 
-`AirtableAdapter.fetchWaitlist` finns ([AirtableAdapter.ts:119–129](../src/data/adapters/AirtableAdapter.ts#L119-L129)) med `// TODO: Edge Function 'get-waitlist' behöver deployas`. **`createRegistration` + flytt-PATCH-mönstret som beskrivs i 06a A3 är ännu inte implementerat någonstans i detta repo** — så just nu kan inte race-condition triggas eftersom funktionaliteten inte finns. Men när den implementeras post-MK enligt 06a A3 måste den följa 06b §B6 `waitlist_conversions`-mönstret med `operation_key` som idempotency-nyckel. Idag finns det fortfarande utrymme att designa rätt. Min ursprungsrapport behandlade `update-record` som det relevanta mönstret; 06b visar att rätt mönster är `waitlist_conversions` med status per steg.
+`AirtableAdapter.fetchWaitlist` finns ([AirtableAdapter.ts:119–129](src/data/adapters/AirtableAdapter.ts#L119-L129)) med `// TODO: Edge Function 'get-waitlist' behöver deployas`. **`createRegistration` + flytt-PATCH-mönstret som beskrivs i 06a A3 är ännu inte implementerat någonstans i detta repo** — så just nu kan inte race-condition triggas eftersom funktionaliteten inte finns. Men när den implementeras post-MK enligt 06a A3 måste den följa 06b §B6 `waitlist_conversions`-mönstret med `operation_key` som idempotency-nyckel. Idag finns det fortfarande utrymme att designa rätt. Min ursprungsrapport behandlade `update-record` som det relevanta mönstret; 06b visar att rätt mönster är `waitlist_conversions` med status per steg.
 
 ### C. K9 stable keys vs displaynamn är direkt relevant för dagens Edge Functions
 
