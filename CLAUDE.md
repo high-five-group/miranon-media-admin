@@ -433,6 +433,56 @@ När Marcus säger "Nu avslutar vi denna session":
 
 ---
 
+## P3a-pattern — sessionsdok-disciplin
+
+### P3a-utvidgning: Per-K-statusrad i sessionsdoket (Session 6 retrospektiv 2026-05-14)
+
+P3a-mönstret ("Chat producerar dokument, Code committar; mellan-K rör inte
+sessionsdoket") gäller fortfarande för full retrospektiv-bake-in. Men för att
+ge Marcus visibility under sessionens gång (vs gamla flödet där Chat ägde
+sessionsdoket löpande) etableras **per-K-statusrad-disciplin**:
+
+Vid varje K-fas-avslut (efter Marcus' beslut + Code:s RAPPORTERA grön)
+rapporterar Code en kort statusrad till sessionsdoket. Inte full bake-in —
+bara en rad:
+
+Exempel-format:
+
+```markdown
+### K1.A — Inventering ✅ KLAR 2026-05-13 14:32
+- Block A.1-A.4 rapporterade ~95s baseline, 12 steg
+- K17 baseline: 0 critical/high (post-K0åh)
+- Lessons-kandidat: K0åh-mönster (skördas K-sista)
+[Full retrospektiv: K-sista bake-in]
+```
+
+Statusraden:
+- Är max 3-5 bullets (datum + kort outcome + ev. lessons-flag)
+- Innehåller ALDRIG full retrospektiv (det är K-sista-territory)
+- Innehåller länk-text "[Full retrospektiv: K-sista bake-in]" för signalering
+- Committas av Code som del av K-fas-avsluts-flow, INTE som separat commit
+  (lägg statusraden i samma commit som K-fas-avsluts-PLANERA/IMPLEMENTERA)
+
+Vid K-sista bake-in: statusraderna utvidgas till full Del 3-8 (K-fas-
+kronologisk struktur per K1-skelett). Statusraderna ersätts av full text;
+de var navigations-stöd under sessionen.
+
+Detta ger Marcus:
+- Realtidsvisibility via `git log --oneline tasks/sessions/<sessionsdok>.md`
+- Inga content-duplikationer (statusrad → full bake-in är en utvidgning)
+- Bevarad K7-disciplin (mellan-K och K-sista är distinkta semantik-domäner)
+- Bevarad P3a-disciplin (Code äger sessionsdoket, ingen Chat-side-state)
+
+Anti-mönster:
+- Full retrospektiv-bake-in mellan-K (bryter K7)
+- Hoppa över statusrad (förlorar Marcus' visibility)
+- Statusrad som separat commit (skapar git-noise; läggs i K-fas-commits)
+
+Etablerad: Session 6 retrospektiv 2026-05-14 efter Marcus' feedback om
+visibility-förlust vs gamla Chat-ägd-sessionsdok-flödet.
+
+---
+
 ## Fas-avsluts-verifierings-rutin
 
 När en fas (t.ex. Fas 2 → Fas 2.5) avslutats, kör denna cross-doc-grep-check FÖRE Marcus klickar "Update" i Claude.ai-projektet. Stäng all drift mellan styrande och publika dokument innan sessionen anses helt klar.
