@@ -146,7 +146,22 @@ jobs:
           TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
 
+      # Cache Playwright browsers (~150MB) per ADR-029 §1c.
+      # Job-isolation från lint-jobbet kräver explicit cache för delade artefakter.
+      # hashFiles(package-lock.json) ger atomic cache-key vs full deps-state →
+      # ingen silent correctness violation vid semver-range-bump.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright Chromium
+        # --with-deps installerar OS-libraries även vid cache-hit (snabbt).
+        # Browser-binär hoppas vid cache-hit (~150MB sparade).
         run: npx playwright install --with-deps chromium
 
       - name: E2E tests (staging)
