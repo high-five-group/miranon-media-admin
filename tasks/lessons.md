@@ -780,3 +780,101 @@ Hub-CLAUDE.md är symlänkad från `~/.claude/CLAUDE.md → ~/Repon/marcus-syste
 Datum: 2026-05-14 | Källa: Session 6 retrospektiv post-K-sista process-feedback-runda
 
 Tre process-friction-punkter (Chat-output-otydlighet, popup-friction, sessionsdok-visibility-förlust) blev synliga FÖRST när Session 6 var formellt avslutad och Marcus fick distans till workflow:et. Inga av dem fanns på radarn för K-sista lessons-skörden (17 kandidater) trots intensiv K-disciplin-iteration. Mönster: meta-process-observation kräver post-session-distance; lessons-skörd inom sessionen fångar bara fenomen Code/Chat identifierar under arbete. Generaliserbar regel: sessionsslut är inte sluttillstånd för lessons-skörd — det är checkpoint för första-meta-observation. Lessons-skörd ska revisiteras vid nästa sessions K0 efter Marcus haft tid att reflektera. Bekräftar K15 (Chat-kontext lever inte över sessionsbyte) på meta-meta-nivå: även sessionens egen meta-observation kräver utanför-sessionen-perspektiv för att bli synlig. Hub-lyft-värdighet: hög — gäller alla projekt med session-arbetsflöde.
+
+## 2026-05-14 — Session 6.5 (Broken-links-batch + recovery)
+
+Session 6.5 etablerade DEFERRED-FIX-MARKER-eliminations-arbete: 54 broken refs fixade i 6 fix-commits + 1 disciplin-utvidgning (ADR-022 kategori 4) + 1 revert (K3 v1 path-matematik-fel). 15 lessons-kandidater skördade — majoritet mönsterförstärkningar av tidigare regler (K10, K11, K15, K16, K38, K1.16, K1.19). 13 av 15 [UNIVERSAL] för hub-lyft.
+
+### K2.1 [UNIVERSAL, hub-lyft] — Pattern-baseline-klassning kan visa sig vara förenklad efter empirisk grep
+
+Datum: 2026-05-14 | Källa: Session 6.5 K3 RAPPORTERA Block 2 (B.1+B.2 = samma skuld)
+
+ADR-029 baseline klassade B.1 ("path-konstruktion utan ../") och B.2 ("analys-internal bare-name") som separata kategorier. Empirisk verifikation visade att de var samma skuld (path-konstruktion utan korrekt prefix); B.2 var bara 5-6 B.1-refs felklassade. Mönsterförstärkning av K1.16: grindvakts-baseline-klassning är hypotes, inte sanning. Generaliserbar regel: baseline-klassning bör formuleras som "pattern-grupp X" snarare än "X separata kategorier". Faktisk fördelning per pattern-rad verifieras empiriskt vid implementation, inte vid baseline-design.
+
+### K2.2 [UNIVERSAL, hub-lyft] — Chat-prompt-spec driver mot faktisk repo-state (K10-Chat-sidan)
+
+Datum: 2026-05-14 | Källa: Session 6.5 K3 filnamn-glitch (Code-verification-of-codex-analysis.md vs -2026-05-07.md)
+
+Min K3-prompt skrev `Code-verification-of-codex-analysis-2026-05-07.md`, faktisk B.1-skuld-fil var utan datum-suffix. Code:s K11-disciplin fångade glitchet. Generaliserbar regel: K10-disciplin gäller även Chat-sidans prompt-spec — siffror, filnamn, paths driver mellan analyssession och implementations-prompt. K-prompter som refererar specifika filer/paths/rader ska antingen (a) re-verifieras mot HEAD innan prompt levereras, eller (b) inkludera explicit `LÄS först — verifiera fil-existens innan IMPLEMENTERA`-steg. Default-antagande "Chat-kontext synkad med repo-HEAD" är fel.
+
+### K2.3 [UNIVERSAL, hub-lyft] — Visa-text-uppdatering utan länkmål-uppdatering är klassisk markdown-drift-bug
+
+Datum: 2026-05-14 | Källa: Session 6.5 K2.3 STOPPA-OCH-FRÅGA (tasks/todo.md:92)
+
+K5.8 av Session 5b sessionsdok-arkivering uppdaterade visa-text i markdown-länk `[archive/2026-05/...](mål)` men missade länkmål. Klassisk markdown-drift: visa-text är vad läsaren ser i prosa, länkmål är "osynligt" tills någon klickar. Lychee fångar; cross-doc-grep missar (matchar visa-text och exkluderar raden). Generaliserbar regel: strukturell svaghet i markdown-formatet, inte mänsklig disciplin-svaghet. Mönsterförstärkning av K1.14 (lychee + cross-doc-grep är komplementära) — applicerat på samma-fil-divergens-fall.
+
+### K2.4 [UNIVERSAL, hub-lyft] — Path-matematik i markdown-länkar: djup N kräver N ".."
+
+Datum: 2026-05-14 | Källa: Session 6.5 K3 v1 broken (../-prefix istället för ../../)
+
+K3 v1-prompt designade sed-pattern med `../`-prefix för docs/analysis/-djup. Korrekt path-matematik: djup 2 från repo-root kräver `../../` (en .. per nivå upp). Banal regel som missades pga prompt-design utan empirisk verifikation. Generaliserbar regel: vid pattern-design för markdown-länkar, räkna nivåer från fil-position till mål — en `..` per nivå upp. Verifiera empiriskt via dry-resolv av en stickprov-länk INNAN pattern-applicering. Mönsterförstärkning av K11 ("verifiera, inte påstå") — applicerat på path-matematik.
+
+### K2.5 [UNIVERSAL, hub-lyft] — Form-tolerant grep: filändelse-pattern måste tolerera (#Lxx)?-anchor
+
+Datum: 2026-05-14 | Källa: Session 6.5 K3 v1 B.2-grep missade 3 träffar
+
+K3 v1 B.2-grep krävde `)` direkt efter filändelse: `\.(ts|tsx|css|js)\)`. Faktisk form i flera refs: `\.(ts|tsx|css|js)#Lxx)`. 3 träffar förbisedda → exposed vid `.lycheeignore` B.2-borttagning. Generaliserbar regel: filändelse-pattern i grep ska tolerera optional anchor mellan filändelse och stängande `)`: `\.(ts|tsx|css|js)(#[^)]+)?\)`. Tillämpning av K38 (VERIFIERA-grep form-tolerant) på path-pattern-domän.
+
+### K2.6 [UNIVERSAL, hub-lyft] — Dry-run-disciplin: diff-räkning ≠ resolution-test
+
+Datum: 2026-05-14 | Källa: Session 6.5 K3 v1 broken (24 ändringar dry-run, 25 errors lychee)
+
+K3 v1 dry-run visade 21 ändrade rader vilket matchade förväntan — Code stämplade pattern som säker. Men "diff-räkning matchar" säger inget om huruvida de N ändringarna producerade KORREKTA länkar. K3 v2 introducerade resolution-test: cd till fil-position + `test -f` för 5 stickprov post-fix. 5/5 grön = empiriskt bevis. Generaliserbar regel: vid sed-pass på path-pattern, dry-run-disciplin kräver TVÅ separata checks: (a) substitution-räkning (diff matchar förväntan), (b) resolution-test (fixade refs resolvar till existerande filer). Skillnaden är 9/10 vs 11/10-disciplin.
+
+### K2.7 [UNIVERSAL, hub-lyft] — Chat-prompt med pattern-design bär K11-disciplin
+
+Datum: 2026-05-14 | Källa: Session 6.5 K3 v1 mönstrad-design-fel
+
+K3 v1-prompten levererade sed-pattern utan empirisk verifikation av path-matematik. Code följde prompten korrekt; mitt fel propagerade. Generaliserbar regel: när Chat designar pattern (sed-regex, glob, classifier, lint-rule) som Code ska exekvera mekaniskt, Chat:s K11-disciplin innebär empirisk dry-resolv mot stickprov INNAN prompt levereras. Mönsterförstärkning av K15 (nedskriven regel ≠ tillämpad regel): K11 är skriven, men tillämpades inte konsekvent i K3-prompten.
+
+### K2.8 [UNIVERSAL, hub-lyft] — "Broken CI på main"-handover-disciplin
+
+Datum: 2026-05-14 | Källa: Session 6.5 K3 v1 STOPPA-OCH-FRÅGA-mönster
+
+När Code:s K3 v1 producerade 25 lychee-errors var första-instinkten "fixa det själv" tillgänglig. Code valde STOPPA-OCH-FRÅGA istället, med 3 alternativ klassificerade per destruktivitet (A icke-destruktiv revert / B forward-fix / C destruktiv force-push avvisad per Git Safety Protocol). Generaliserbar regel: när invariant brutits (CI grön på main), recovery-strategi-val ska lyftas till Marcus, inte autonomt försökas. Mönsterförstärkning av K1.13 (per-item spårbar defer > blanket-suppression) — applicerat på recovery-strategi-domän.
+
+### K2.9 [lokalt] — .lycheeignore-ändringar triggar Test+Build via Strategi E
+
+Datum: 2026-05-14 | Källa: Session 6.5 K2.1 + K2.3 + K2.4 + K3 v2 + K2.2 CI-mönster
+
+`.lycheeignore` är på repo-rot-nivå och inte i changed-files-pattern `docs/`-glob. Per Strategi E (ADR-029) klassas det som non-docs → Test + Build körs istället för doc-only-skip. Empiriskt: alla 6 K2.x/K3-commits hade ~80-95s CI-tid istället för ~35s doc-only-mönstret. Inte fel — design-konsekvens. Generaliserbar regel inom CI-domän: rot-level config-filer som påverkar docs-validation (lychee-config, prettier-config för markdown, etc.) klassas som non-docs i Strategi E. Empiriskt observable men inte blocker. CI-specifikt mönster — lokalt skördat.
+
+### K2.10 [lokalt] — .lycheeignore-rad-numrering driver inom samma session — K10-tillämpning
+
+Datum: 2026-05-14 | Källa: Session 6.5 K2.3/K2.4/K3-progressionen
+
+K1 RAPPORTERA listade `.lycheeignore`-rader 35/38/41/44 som A.1/A.2/A.3/A.4-positioner. Varje commit som tog bort en rad skiftade resterande raders position. Code:s re-verifiering mot HEAD vid varje K-start var korrekt disciplin. Generaliserbar regel: vid sekventiella edits mot samma config-fil, rad-numrering är endast giltig vid läs-tillfället. K-prompter ska be om re-verifiering mot HEAD, inte återanvända rad-pekare från tidigare K. CI-specifikt mönster — lokalt skördat (men generaliserar till alla iterativa config-fil-edits).
+
+### K2.11 [UNIVERSAL, hub-lyft] — Källa-pekare till etablerings-session i nya disciplin-regler
+
+Datum: 2026-05-14 | Källa: Session 6.5 K2.2 ADR-022 kategori 4-utvidgning
+
+ADR-022 kategori 4-text inkluderade explicit "(Etablerad i Session 6.5 2026-05-14 efter empirisk K3-fångst...)" — källa-pekare till sessionsdok där disciplinen empiriskt etablerades. Generaliserbar regel: nya disciplin-regler i ADR ska ha källa-pekare till sessionsdok där de empiriskt etablerades. Annars driver "varför finns regeln?" snabbt bortom återhämtbar historik. Mönsterförstärkning av sessions-trail-disciplin: ADR är what + how, sessionsdok är why + when.
+
+### K2.12 [UNIVERSAL, hub-lyft] — Polish-uppdatering inom samma semantik-domän är 11/10
+
+Datum: 2026-05-14 | Källa: Session 6.5 K2.2 .lycheeignore fil-header-uppdatering
+
+Code:s K2.2-implementation upptäckte att Block 2-borttagning gjorde `.lycheeignore` fil-header-noten internt inkonsekvent (gamla noten refererade Block 2-baseline). Code uppdaterade headern proaktivt inom samma commit. Generaliserbar regel: när huvud-ändring i en fil har konsekvenser för annan del av samma fil i samma semantik-domän, polish-uppdateringen INOM commit-scope är 11/10, inte scope-creep. K7-tillämpning omvänd: scope-disciplin är inte "lämna allt utanför primär-ändring orört", det är "ta med konsekvenser av primär-ändring som är semantiskt sammanhängande". Mönsterförstärkning av K15 (internalisera disciplin, inte bara deklarera den).
+
+### K2.13 [UNIVERSAL, hub-lyft] — Projektkunskap i Claude.ai är inte synkad med HEAD per default
+
+Datum: 2026-05-14 | Källa: Session 6.5 process-feedback om 4-zoner-mall
+
+Vid sessionsstart läste Chat marcus-system + miranon-media-admin CLAUDE.md men hittade inte nyligen-etablerad ## Chat output-disciplin (commit `c06d3ff` samma dag). Chat uppfann egen regel parallellt med befintlig, skapade förvirring. Generaliserbar regel: projektkunskap i Claude.ai är ETL-batch-synkad, inte realtid-synkad mot HEAD. Vid sessionsstart om CLAUDE.md-tilläggen kan ha tillkommit nyligen, verifiera explicit (a) "när uppdaterades projektkunskapen senast?" till Marcus, eller (b) Marcus får sessionsstart-not "klicka Update om CLAUDE.md ändrats sedan senaste session". Default-antagande "projektkunskap = HEAD" är fel. Mönsterförstärkning av K1.18 (symlänk-edits) + K1.19 (process-friction synligt först i retrospektiv): projektkunskaps-synk är liknande tooling-quirk.
+
+### K2.14 [UNIVERSAL, hub-lyft] — Chat-output 4-zoner-mall fanns redan; jag uppfann egen parallellt
+
+Datum: 2026-05-14 | Källa: Session 6.5 process-feedback (Marcus' fångst)
+
+Efter Marcus' feedback om format-otydlighet (prosa-resonemang vs Code-prompter blandade) försökte jag uppfinna nytt format `═══` istället för att söka efter befintlig regel. Marcus pekade på hub-CLAUDE.md ## Chat output-disciplin (commit `c06d3ff` samma dag) som etablerar 4-zoner-mall med `═══ <ZON-NAMN> ═══`-markörer. Generaliserbar regel: vid första instinkt att uppfinna ny disciplin-regel som svar på feedback, sök först om befintlig regel finns. Disciplinerad regel-katalog tenderar att redan ha svaret — uppfinnandet är genväg, sökningen är 11/10. Mönsterförstärkning av K1.19 (process-friction blir synligt i retrospektiv): nya regler är ofta redan dokumenterade men ovetenskap-internaliserade.
+
+### K2.15 [UNIVERSAL, hub-lyft] — Disciplin-arbete kräver Gate 2-review innan IMPLEMENTERA
+
+Datum: 2026-05-14 | Källa: Session 6.5 K2.2 RAPPORTERA+PLANERA-mönster
+
+K2.1/K2.3/K2.4/K3 v2 var mekanisk fix-disciplin (sed + verifiering, en commit). K2.2 var disciplin-utvidgning (ADR-022 text-redigering + `.lycheeignore`-strukturell-omflyttning). För disciplin-arbete delades K2.2 i RAPPORTERA+PLANERA → STOPPA → IMPLEMENTERA, även om scope (1 fil + 1 config-fil) var mindre än K3 v2 (1 fil + 1 config-fil + 24 sed-fixes). Generaliserbar regel: scope-storlek ≠ Gate 2-behov. Mekanisk fix kan gå direkt till IMPLEMENTERA med dry-run-disciplin. Text-design + policy-utvidgning kräver Gate 2-review oavsett scope-storlek, eftersom konsekvenser är icke-mekaniska (framtida läsare måste förstå disciplin-tillämpning). Mönsterförstärkning av K7 (refactor/semantik-separation) applicerat på K-fas-design: disciplin-arbete är semantik-fas, kräver review.
+
+### Sammanfattning Session 6.5
+
+15 lessons-kandidater skördade — större skörd än K1-baseline antagit. 13 hub-lyfta (K2.1, K2.2, K2.3, K2.4, K2.5, K2.6, K2.7, K2.8, K2.11, K2.12, K2.13, K2.14, K2.15). 2 lokala (K2.9, K2.10). Mönsterförstärkning av K1.16 (grindvakt avslöjar oväntade kategorier): Session 6.5 var planerad som mini-städning (~3-5 lessons förväntan), faktisk skörd 15 — emergent värde av defer-arbetet i sig. K3 v1-revert var pivotal: utan failet hade K2.4/K2.5/K2.6/K2.7/K2.8 inte funnits. "Försök som behövde reverteras" var lessons-rikast del av sessionen.

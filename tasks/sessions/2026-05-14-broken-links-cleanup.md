@@ -125,25 +125,128 @@ Per ADR-022 3-kategori-modell:
 
 ## Del 3 — K2 PLANERA + IMPLEMENTERA Kategori A
 
-*(Levereras post-K1-bekräftelse)*
+### K2.1 (A.1) — ADR-021 docs-omstrukturerings-drift (6 fixes)
+
+Commit: `eaf27ed` 2026-05-14, CI 25854977062 ✅ 88s.
+
+| # | Fil:rad | Old | New |
+|---|---|---|---|
+| 1 | ADR-002:34 | `(../DESIGN-SYSTEM-SPEC.md)` | `(../specs/DESIGN-SYSTEM-SPEC.md)` |
+| 2-3 | ADR-003:9 + :44 | Samma som ovan | Samma |
+| 4-5 | BUILD-LOG:431 | `(SECURITY-SPEC.md)` + `(STATE-STRATEGY.md)` | `(specs/SECURITY-SPEC.md)` + `(specs/STATE-STRATEGY.md)` |
+| 6 | BUILD-LOG:477 | `(byggplan-revision-inventory.md)` | `(logs/byggplan-revision-inventory.md)` |
+| 7 | BUILD-LOG:684 | `(gap-analysis.md)` | `(logs/gap-analysis.md)` |
+
+7 fixes i 4 distinkta rader. ADR-022 kategori 2 (källhänvisning). `.lycheeignore` rad 35 borttagen.
+
+Skip per ADR-022 kategori 3: `docs/BUILD-LOG.md:238` (pre-ADR-021-fillista, historisk-snapshot), `tasks/lessons.md:521` (inline-code-citat).
+
+### K2.4 (A.4) — cirkulär-path-bug i 08-odoo-validation.md (23 fixes)
+
+Commit: `c43a547` 2026-05-14, CI 25855166197 ✅ 80s.
+
+ADR-029 baseline antog A.4 var ~1 ref i `06b-supabase-target.md`. Empirisk verifikation: 23 refs i `08-odoo-validation.md` (annan fil). K10-mönster: siffror i baseline-estimat har drift, lokalisering driver också.
+
+Mekanisk sed på 23 refs:
+- Old: `](docs/research/datamodell-research/06b-supabase-target.md#L...)`
+- New: `](06b-supabase-target.md#L...)`
+
+Sibling-relative path för markdown-länk inom samma katalog. Pre-flight precisions-check: 0 false positives. ADR-022 kategori 2. `.lycheeignore` rad 44 borttagen.
+
+### K2.3 (A.3) — tasks/todo.md:92 visa-text/länkmål-divergens (1 fix)
+
+Commit: `798d1a3` 2026-05-14, CI 25855517352 ✅ 76s.
+
+K2 RAPPORTERA Block 3 rapporterade 0 markdown-länk-träffar för A.3. Skärpt path-prefix-grep (K1.16-tillämpning) avslöjade 1 broken länkmål i `tasks/todo.md:92`: visa-text uppdaterad i K5.8 av Session 5b sessionsdok-arkivering, länkmål missades.
+
+Fix:
+- Old länkmål: `(sessions/2026-05-11-fas2-routing-auth.md)`
+- New länkmål: `(sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md)`
+
+Alt A vald per K7-disciplin (singular content-fix + `.lycheeignore`-rad bort = samma trail-städnings-akt). `.lycheeignore` rad 41 borttagen.
 
 ---
 
-## Del 4 — K3 PLANERA + IMPLEMENTERA Kategori B
+## Del 4 — K3 PLANERA + IMPLEMENTERA Kategori B (path-konstruktion)
 
-*(Levereras post-K2)*
+### K3 v1 — Path-matematik-fel (broken)
+
+Commit: `b35abc4` 2026-05-14, CI 25855955000 ❌ failed.
+
+K3 v1-prompt antog `../`-prefix räcker för `docs/analysis/`-djup. Path-matematik-fel: `docs/analysis/foo.md` är djup 2 från repo-root → kräver `../..` (två nivåer), inte `../`. Plus B.2-grep missade `#Lxx`-anchor-form (3 träffar förbisedda).
+
+Code:s STOPPA-OCH-FRÅGA fångade 25 lychee-errors efter push. Marcus valde Alt A: `git revert` + re-implement K3 korrekt.
+
+### K3 STEG 1 — Revert till grön main
+
+Commit: `8bbb8c1` 2026-05-14, CI 25856208018 ✅. Icke-destruktiv revert, `b35abc4` bevarad i historik som "försök som behövde reverteras".
+
+### K3 v2 — Re-implementation med empirisk path-resolution
+
+Commit: `e49d7b0` 2026-05-14, CI 25856434696 ✅ 81s.
+
+Lessons från v1-failet internaliserade i v2-arbetet:
+- Empirisk dry-resolv mot 3 stickprov INNAN pattern-design (Block 1)
+- Form-tolerant B.2-grep med `(#Lxx)?`-anchor (Block 2)
+- 6-pass sed för uniform `../../` över alla sub-kategorier (Block 3)
+- Resolution-test 5/5 stickprov resolvar till existerande filer (Block 4)
+
+24 fixes (21 B.1 + 3 B.2) i `docs/analysis/Code-verification-of-codex-analysis.md`. ADR-022 kategori 2. `.lycheeignore` rad 38 + 41 (B.1 + B.2) borttagna. B.2-pattern var obsolet pga 0 träffar — K2 RAPPORTERA felklassade 5-6 B.1-refs som B.2.
 
 ---
 
-## Del 5 — K4 VERIFIERA (full lychee mot full scope)
+## Del 5 — K2.2 + slutverifikation
 
-*(Levereras post-K3)*
+### K2.2 (A.2) — ADR-022 kategori 4 disciplin-utvidgning + .lycheeignore-flytt
+
+Commit: `6a3ebcf` 2026-05-14, CI 25856786950 ✅ 96s.
+
+A.2-refsen är fryst extern leverans (Codex/Code-rapporter 2026-05-07 + `tasks/byggplan-direktiv.md` märkt SLUTFÖRT + historiska ADR:er + meta-sessionsdok). Mekanisk fix bryter trail-integritet per ADR-022 åf-erfarenhet — innehållet finns inte längre på pre-flytt-rader efter ADR-027 stack-skifte-arkivering.
+
+Lösning: disciplin-utvidgning istället för content-fix. ADR-022 § Fix-vs-skip-disciplin utvidgad med kategori 4 "Frusen extern leverans". `.lycheeignore`-pattern flyttad från Block 2 (DEFERRED-FIX-MARKER) till Block 1 (Acceptable) med kategori-4-kommentar. Block 2-header borttagen (0 defer-patterns kvarstår).
+
+Bonus polish: `.lycheeignore` fil-header rad 9-11 (Block-2-baseline-not) ersatt med Session 6.5-status-not eftersom Block 2-borttagning gjorde gamla noten internt inkonsekvent.
+
+### Slutverifikation (post-K2.2)
+
+| Stop-test-villkor | Resultat |
+|---|---|
+| 6/6 DEFERRED-FIX-MARKER-rader eliminerade | ✅ |
+| Block 1 (Acceptable, 4 patterns) orörd + utvidgad | ✅ |
+| Lychee mot full scope: 0 errors | ✅ (CI 25856786950) |
+| CI grön mot main efter sista commit | ✅ |
+| Lessons skördade + hub-synk schemalagd | ✅ (denna sessions K-sista) |
 
 ---
 
 ## Del 6 — K-sista: Lessons-skörd + bake-in + hub-sync
 
-*(Levereras post-K4)*
+### Lessons-skörd (15 kandidater)
+
+Session 6.5 producerade 15 lessons-kandidater — större skörd än K1-baseline antagit (initial ~3-5 förväntan). Majoritet är **mönsterförstärkningar** av tidigare lessons (K10, K11, K15, K16, K38, K1.16, K1.19), inte helt nya regler.
+
+Detaljer i `tasks/lessons.md` H2 `## 2026-05-14 — Session 6.5 (Broken-links-batch + recovery)`. 13 av 15 markerade [UNIVERSAL] för hub-lyft. 2 lokala (K2.9 + K2.10 är CI-specifika).
+
+### Empiriska siffror
+
+| Metrik | Värde |
+|---|---|
+| Fix-räkning (broken refs) | 54 (6 + 23 + 1 + 24) |
+| Disciplin-utvidgningar | 1 (ADR-022 kategori 4) |
+| Commits | 8 (6 fix + 1 revert + 1 disciplin) |
+| Reverts | 1 (`b35abc4` — K3 v1 broken) |
+| `.lycheeignore`-evolution | 55 → 35 rader, 6 → 0 DEFERRED-FIX-MARKER |
+| Lessons-kandidater | 15 (13 [UNIVERSAL], 2 lokala) |
+| CI-runs grön | 6/6 efter revert (8/9 inkl. K3 v1 broken) |
+
+### Beslut + ADR-spår
+
+- **ADR-022 utvidgad** med kategori 4 "Frusen extern leverans" — K1.4-konsistens (utvidgning över ny ADR)
+- **Inga nya ADR:er skapade** — Session 6.5 är ren defer-städning per K7
+
+### Stop-test ✅ KLAR
+
+Alla 5 villkor från Sessions-handoff uppfyllda (se Del 5 slutverifikation).
 
 ---
 
@@ -151,21 +254,21 @@ Per ADR-022 3-kategori-modell:
 
 Per `CONTRIBUTING.md` Definition of Done — per session:
 
-- [ ] `npm run test:api` grön (eller doc-only-skip-pattern)
-- [ ] `npx tsc --noEmit` 0 fel (eller doc-only-skip)
-- [ ] `npx @biomejs/biome check .` 0 fel (eller doc-only-skip)
-- [ ] `npm run build` grön (eller doc-only-skip)
-- [ ] **Lychee mot full scope: 0 errors** (Session 6.5-specifik DoD)
-- [ ] **Alla 6 DEFERRED-FIX-MARKER-regex-rader borttagna ur `.lycheeignore`** (Session 6.5-specifik DoD)
-- [ ] `docs/BUILD-LOG.md` uppdaterad med Session 6.5-block
-- [ ] `tasks/lessons.md` uppdaterad
-- [ ] `tasks/todo.md` uppdaterad — Session 6.5 ✅ KLAR + Session 7 K0 Fas-2-verifikation-defer flaggad
-- [ ] Commits pushade
+- [x] `npm run test:api` grön (doc-only-skip-pattern + Test/Build kört på `.lycheeignore`-commits)
+- [x] `npx tsc --noEmit` 0 fel
+- [x] `npx @biomejs/biome check .` 0 fel
+- [x] `npm run build` grön
+- [x] **Lychee mot full scope: 0 errors** (CI 25856786950)
+- [x] **Alla 6 DEFERRED-FIX-MARKER-regex-rader borttagna ur `.lycheeignore`**
+- [x] `docs/BUILD-LOG.md` uppdaterad med Session 6.5-block (denna commit)
+- [x] `tasks/lessons.md` uppdaterad (denna commit)
+- [x] `tasks/todo.md` uppdaterad — Session 6.5 ✅ KLAR + Session 7 K0 Fas-2-verifikation-defer flaggad (denna commit)
+- [x] Commits pushade
 
 ---
 
 ## Lessons-kandidater
 
-*(Skördas K-sista. Förväntat scope: 3-5 lessons baserat på mini-session-storlek. Initial-kandidater redan identifierade i Chat 2026-05-14:*
-*— Chat-output 4-zoner-mall-tillämpning (mönsterförstärkning K1.19 + möjligen ny K-post om projektkunskaps-synk-verifiering vid sessionsstart)*
-*— Eventuella nya från K2/K3 ADR-022-tillämpningar)*
+15 kandidater skördade. Lyfta till `tasks/lessons.md` H2 `## 2026-05-14 — Session 6.5 (Broken-links-batch + recovery)`. 13 [UNIVERSAL], 2 lokala.
+
+Hub-lyft till `marcus-system/tasks/lessons.md` schemaläggs som K-sista.3 (separat repo, separat commit per ADR-018).

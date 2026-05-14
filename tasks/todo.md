@@ -14,11 +14,13 @@
 
 **Session 6 ✅ KLAR 2026-05-14** — CI-optimering mellan Fas 2 och Fas 2.5. Strategi E (Vite-mönstret) etablerad per ADR-029. Empirisk verifikation: doc-only ~34s vs ~95s baseline = ~64 % besparing. Kod ~96s matchar baseline. Lychee broken-link-detection etablerad. ADR-028 utvidgad till ADR-029 § Third-party Actions-policy. 17 UNIVERSAL-lessons skördade (största enskilda session-skörd); 10 hub-lyfta. Sessionsdok-trail: [`tasks/sessions/2026-05-13-ci-optimering.md`](sessions/2026-05-13-ci-optimering.md).
 
-**Nästa:** Session 6.5 — broken-links-batch-städning (K0-mini-klunga, ~30-60 min FÖRE Fas 2.5), sedan Fas 2.5 — Schema-kontrakt-sync (per `docs/byggplan.md` §4).
+**Session 6.5 ✅ KLAR 2026-05-14** — Broken-links-batch-städning. 54 broken refs eliminerade (6 + 23 + 1 + 24) + 1 disciplin-utvidgning (ADR-022 kategori 4 "Frusen extern leverans"). 8 commits (6 fix + 1 revert + 1 disciplin). 15 lessons-kandidater skördade (13 [UNIVERSAL], 2 lokala). `.lycheeignore` 55 → 35 rader, 6 → 0 DEFERRED-FIX-MARKER. Sessionsdok-trail: [`tasks/sessions/2026-05-14-broken-links-cleanup.md`](sessions/2026-05-14-broken-links-cleanup.md) (arkiveras i K-sista.2).
+
+**Nästa:** Session 7 K0 — Fas 2 11/10-verification (7 gap-punkter committed i Session 6.5 pre-K1 som received-defer per K7; se [`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`](../docs/analysis/Fas-2-11-10-verification-2026-05-14.md)). Sedan Fas 2.5 — Schema-kontrakt-sync (per `docs/byggplan.md` §4).
 
 Sessionsdok-trail (arkiverad 2026-05-13 i K5.8): [`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`](sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md).
 
-### Session 6.5 — Lychee-baseline fix-arbete (deferred från Session 6 K1.D Commit 3)
+### Session 6.5 ✅ KLAR 2026-05-14 — Lychee-baseline fix-arbete (deferred från Session 6 K1.D Commit 3)
 
 K1.D Commit 2 lychee-baseline (2026-05-14) fångade 81 broken/stale refs. Per K7 refactor/semantik-separation: CI-arkitektur ≠ content-korrekturläsning. `.lycheeignore` accepterar baseline med DEFERRED-FIX-MARKER-block; fix-arbete spåras här.
 

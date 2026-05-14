@@ -664,6 +664,49 @@ Skikt 2 (AuthError throw-path) är inte regression-skyddad i isolation post-K3.4
 
 ---
 
+## Session 6.5 — Broken-links-batch-städning (2026-05-14)
+
+Commit-range: `041740b` (K1-skelett) → `6a3ebcf` (K2.2 + komplett DEFERRED-FIX-MARKER-eliminering). 8 commits totalt (6 fix + 1 revert + 1 disciplin).
+
+### Planerat vs faktiskt
+
+Planerat (per ADR-029 § Baseline-fynd 2026-05-14): ~71 broken links i kategori A (~25) + B (~46), estimat 30-60 min Code-arbete, 1 K2-IMPLEMENTERA-klunga.
+
+Faktiskt: 54 broken refs fixade (6 + 23 + 1 + 24) + 1 disciplin-utvidgning (ADR-022 kategori 4). Scope delades i 5 sub-klungor (K2.1, K2.4, K2.3, K3 v2, K2.2) + 1 revert. ~3 timmar Code-arbete inkl. K3 v1-recovery.
+
+### Avvikelser
+
+1. **A.4 estimat 1 ref → faktisk 23 refs i annan fil** — ADR-029 antog `06b-supabase-target.md`, faktisk lokalisering `08-odoo-validation.md`. K10-mönster (siffror driver). Hanterat via 6-pass sed efter empirisk verifikation.
+
+2. **K3 v1 broken (path-matematik-fel)** — `../`-prefix istället för `../../`. Reverted via `8bbb8c1`. Re-implementerat i K3 v2 (`e49d7b0`) med empirisk dry-resolv-disciplin INNAN pattern-applicering. 7 nya lessons-kandidater från recovery-arbetet.
+
+3. **B.1+B.2 visade sig vara samma skuld** — K2 RAPPORTERA klassade som 2 kategorier; empirisk verifikation i K3 visade att B.2 var 5-6 B.1-refs felklassade + 3 anchor-form-missar. Mönsterförstärkning av K1.16.
+
+4. **A.2 behövde disciplin-utvidgning, inte content-fix** — refs i frysta direktiv/ADR:er/analys-leveranser pekar på pre-ADR-027 spec. Mekanisk fix bryter trail-integritet. ADR-022 utvidgad med kategori 4 "Frusen extern leverans". `.lycheeignore`-pattern flyttad från Block 2 → Block 1 permanent acceptable.
+
+### Verifieringsoutput
+
+| Stop-test | Resultat |
+|---|---|
+| 6/6 DEFERRED-FIX-MARKER-rader eliminerade | ✅ (0 kvarstår i `.lycheeignore` Block 2; Block 2-header borttagen) |
+| Lychee mot full scope: 0 errors | ✅ CI 25856786950 |
+| CI grön mot main efter sista commit | ✅ |
+| Lessons skördade och hub-synk schemalagd | ✅ 15 kandidater (13 [UNIVERSAL], 2 lokala) |
+
+### Kända uppskjutna beslut / teknisk skuld
+
+- **Session 7 K0 — Fas 2 11/10-verification-paket** (`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`) committad som "received" i pre-K1 per K7. 7 gap-punkter ska adresseras i Session 7 K0 innan Fas 2.5 startar.
+
+### Filstruktur-snapshot
+
+`.lycheeignore`: 55 → 35 rader (6 DEFERRED-FIX-MARKER eliminerade + Block 2-header borttagen + A.2 flyttad till Block 1).
+
+`docs/decisions/ADR-022`: 60 → 63 rader (kategori 4 + utvidgad åf-paragraf).
+
+### Definition of Done uppfylld: Ja
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
