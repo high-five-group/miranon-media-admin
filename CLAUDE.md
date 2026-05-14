@@ -86,6 +86,7 @@ miranon-media-admin/
 ├── index.html
 ├── .editorconfig, .nvmrc, .gitignore
 ├── .vscode/extensions.json        ← rekommenderade VS Code-extensions
+├── .lycheeignore                  ← Lychee link-checker exclude-patterns (ADR-029, Session 6 K1.D Commit 3)
 └── .github/                       ← CI + dependabot + templates (ADR-024)
     ├── workflows/ci.yml           ← biome + tsc + test:api + build på PR/push
     ├── dependabot.yml             ← npm veckovis + github-actions månadsvis
@@ -130,9 +131,9 @@ docs/
 │   ├── vue-project-analysis.md
 │   └── datamodell-research/       ← 10 frysta leveransfiler (00-file-manifest..08-odoo-validation)
 │
-├── decisions/                     ← 25 ADR:er (ADR-001..025)
+├── decisions/                     ← 29 ADR:er (ADR-001..029)
 │   ├── README.md                  ← ADR-katalog/index
-│   └── ADR-{001..025}-*.md
+│   └── ADR-{001..029}-*.md
 │
 ├── features/
 │   └── FEATURE-ACTIVITY-LOG.md
@@ -152,7 +153,7 @@ tasks/
 ├── byggplan-direktiv.md           ← arkivvärt (SLUTFÖRT 2026-05-05)
 ├── datamodell-research-direktiv.md, datamodell-research-plan.md  ← frysta efter Fas 6
 └── sessions/
-    ├── <aktiv>.md                 ← en sessionsdok åt gången (just nu: ingen aktiv — Fas 2-sessionsdoket arkiverat 2026-05-13 till archive/2026-05/)
+    ├── 2026-05-13-ci-optimering.md ← Session 6 AKTIV (arkiveras vid Session 7-start per ADR-023)
     └── archive/                   ← arkiverade per ADR-023
         ├── 2026-04/   (2 sessionsloggar)
         ├── 2026-05/   (7 sessionsloggar inkl. P3a, P3b, pre-Fas-2)
@@ -580,8 +581,9 @@ Etablerad 2026-05-13 i Session 5b K5.9c efter att K5.9a-driften av byggplan.md u
 - **Session 3** (Pre-Fas-2, 2026-05-06): Repo-strukturell polish + publika professionalitetssignaler. K3 åa–åf: LICENSE + package.json metadata + .github/-paketet + CHANGELOG/SECURITY/CONTRIBUTING + README badges/Documentation map + docs/-omstrukturering (specs/analysis/reference/logs) + analys/ → docs/research/datamodell-research/ + tasks/sessions/-arkivering. ADR-021..024. **Total ADR-räkning: 24.**
 - **Session 4** (Fas 2 K0 startvillkor, 2026-05-11): K0 startvillkor 1-3 av 3 klara — nuqs install (`13cdf86`), typecheck:tests + APIResponse-fix (`a5a477b` + `1d02b3b`), falsk-grön CI-fix via STAGING_REQUIRED + secrets (`3015d08` + `1138e38`). Plus 4 K1.N early bake-ins av sessionsdoket (`6af3927` + `fc6f43e` + `3b29f41` + `3927a24`). CI grön på första försök efter K0åc.2 (36s, 72 pure passed + 38 staging passed + 3 M4-defer skipped). 12 UNIVERSAL-lessons lyfta till lessons.md + hub (`f1e609e` + `91db29b`). **Total ADR-räkning: 24 (oförändrad — ingen ADR-trigger från K0; Fas 2 K0åe Zod parse kan ge ADR-026 om/när den körs).** Sessionsdok-trail: `tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`. PÅGÅR — Fas 2 K0 FULLSTÄNDIGT KLAR (alla 6 åtgärder). K2-K4 implementation följer i Session 5.
 - **Session 5+5b** (Fas 2 KOMPLETT, 2026-05-11 → 2026-05-13): Fas 2 — Routing + Auth komplett. Sessions 5+5b spänner samma sessionsdok (`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`). **Session 5 (2026-05-11 → 2026-05-12):** K0åg supply chain malware-respons (GHSA-rmmr-r34h-pfm5, ADR-028) + K2 TanStack Router skelett + audit-ci-disciplin + K3 AuthProvider + login/logout + skyddade routes + K3.5 race-condition-fix + K4 nuqs + Playwright auth-fixture + K4.3 6-tests arkitektur-regression-suite. ADR-026, ADR-027, ADR-028 nya. 13 UNIVERSAL-lessons skördade (K24-K36). **Session 5b (2026-05-13):** K3.4 anon-key-fallback-borttagning + AuthError contract (defense-in-depth skikt 2). K5 final: sessionsdok bake-ins (K5.4 + K5.5a), lessons-skörd K0åg-defer + Session 5b-kandidater (K5.5b: K17-K19 + K37 + K38), BUILD-LOG + todo.md Fas 2-stängning (K5.6a/b), hub-lyft 7 UNIVERSAL till marcus-system (K5.7), sessionsdok-arkivering + trail-link-uppdateringar (K5.8). 5 nya UNIVERSAL-lessons skördade. **Totalt över Fas 2:** 3 nya ADR:er (totalt 27), 18 nya UNIVERSAL-lessons lokalt, 7 hub-lyft till marcus-system. Defense-in-depth tre-skikt-arkitektur empiriskt verifierad via 6-tests Playwright-suite. K39 (case-sensitivity grep-form) flaggad för Session 6+ K0 lessons-sweep.
+- **Session 6** (CI-optimering mellan Fas 2 och Fas 2.5, 2026-05-13 → 2026-05-14): Strategi E (Vite-mönstret med changed-files + needs-skip + aggregator) etablerad som kanonisk CI-arkitektur per ADR-029. ci.yml restrukturerad från 12-stegs verify-jobb (1 jobb) till 5 jobs (changed → lint → test → docs → ci-passed). **Empirisk verifikation:** doc-only-commits ~34s vs ~95s baseline = **~64 % besparing**. Kod-commits ~96s matchar baseline. Lychee broken-link-detection etablerad som NY kvalitetscheck (0 errors empiriskt verifierad post-K1.D Commit 4c run 25848500304). K0åh allowlist-rensning som biprodukt (GHSA-rmmr-r34h-pfm5 advisory snärjt 2026-05-12 → 0 critical). ADR-028 utvidgad med Resolution-section + K0åi-trigger; ADR-029 ny (Third-party Actions-policy paradigm-spanning). K17/K18 paradigm-spanning bekräftat (npm + Actions + cache). **17 UNIVERSAL-lessons lokalt** (största enskilda session-skörd; K1.1-K1.17 + retroaktiva K1.18-K1.19). **10 hub-lyfta** till marcus-system. 5 K11-fångster i samma session (meta-disciplin synliggjord). **Totalt över Session 6:** 2 nya ADR:er (totalt 29 inkl. ADR-029), ADR-028 uppdaterad, 19 nya UNIVERSAL-lessons lokalt (17 K-sista + 2 retroaktiva), 10 hub-lyft. **Defer:** Session 6.5 — Broken-links-batch-städning av ~71 errors (kategori A+B per ADR-029 § Baseline-fynd), trigger: K0-mini-klunga FÖRE Fas 2.5 i Session 7.
 
-**Aktuellt fokus:** Fas 2.5 — Schema-kontrakt-sync (per `docs/byggplan.md` §4). Fas 2 ✅ KLAR 2026-05-13 — sessionsdok arkiverad till `tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`.
+**Aktuellt fokus:** Session 6.5 — Broken-links-batch-städning (defer-paket, ~30-60 min FÖRE Fas 2.5), sedan Fas 2.5 — Schema-kontrakt-sync (per `docs/byggplan.md` §4). Session 6 ✅ KLAR 2026-05-14 — sessionsdok aktiv på `tasks/sessions/2026-05-13-ci-optimering.md`.
 
 För full retrospektiv historik: [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md).
 
