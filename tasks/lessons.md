@@ -658,3 +658,109 @@ När en sanningskälla (specifikation/datamodell) speglas i implementation (kod/
 
 - [UNIVERSAL] **VERIFIERA-grep-kriterier ska vara form-toleranta, inte exakt-fras** [K38, hub-lyft-kandidat]
   Symptom: K5.4-prompts VERIFIERA-grep `rg -c "Kandidat 37" = 2` och `rg -c "touch nr 10" = 4` gav 1 respektive 3 träffar — innehållet korrekt, men kortform "K37" och alt-form "post-K5.4 = 10" missades av exakt-fras-kriterier. Båda var kriterie-fel, inte innehållsfel. Generaliserbar regel: VERIFIERA-grep ska antingen (a) använda alternation för kända form-varianter (`Kandidat 37|K37`, `touch nr 10|= 10`), eller (b) använda "minst X" istället för "exakt X" när varianter är möjliga. Snäv fras + exakt räkning är giltig endast för automatiserat innehåll (commit-meddelanden, structured JSON, generated routes). Plus: meta-exklusion av kandidat-blocket självt när kandidat-content refererar K-fas-incidenten som exempel (K13-tillämpning). Mönsterförstärkning av Kandidat 6 (verifieringsräkning ska räkna alla refs) + Kandidat 13 (meta-exklusion av drift-fix-grep): K38 är konsekvensen för prompt-författande. Hub-lyft-kandidat: ja — universell för alla Chat-Code-arbetsflöden. Källa: 2026-05-13 Session 5b K5.4 + K5.5a VERIFIERA-utfall — se `tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md` Del 7.2 Kandidat 38 för expanderat resonemang (kriterie-fel-mönster + andra-ordnings-meta-not från K5.5a).
+
+## 2026-05-14 — Session 6 (K1.D CI-optimering, K1.1-K1.17)
+
+Session 6 etablerade Strategi E (Vite-mönstret) som kanonisk CI-arkitektur per ADR-029. Empirisk verifikation: doc-only-commits ~34s vs ~95s baseline (~64 % besparing); lychee broken-link-grindvakt etablerad. 17 UNIVERSAL-lessons skördade — största enskilda session-skörd. 10 av dessa hub-lyfta till `marcus-system/tasks/lessons.md`.
+
+### K1.1 [UNIVERSAL, hub-lyft] — K17/K18 är paradigm-spanning, inte ekosystem-specifik
+
+Datum: 2026-05-14 | Källa: Session 6 K0åh + K1.C Block 2.4 + K1.D Commit 1.5 cache-key-val
+
+K0åh-resolutionen tillämpade K18 på npm-audit (GHSA-rmmr-r34h-pfm5: vulnerable_range snävades; vår 1.161.6 utanför range → 0 critical trots advisory finns). K1.C Block 2.4 tillämpade samma K18 på GitHub Actions-advisories (tj-actions v47.0.6 post-patched för båda historiska high-advisories GHSA-mrrh-fwg8-r2c3 + GHSA-mcph-m25j-8j63 → ingen aktiv risk). K1.D Commit 1.5 utvidgade till cache-domän (hashFiles vs jq cache-key-val: cache-hit är signal, inte sanning; key-design är där correctness säkerställs). Generaliserbar regel: vid advisory-träff eller security-output i ETT supply-chain-ekosystem, applicera samma `first_patched_version`-analys-disciplin i ALLA ekosystem (npm, GitHub Actions, cargo, pypi, gem, helm-charts, Docker base images). K17 (live security-state) + K18 (audit-output är signal, inte sanning) är **paradigm-spanning**, inte ekosystem-specifik. Identifierar inte unique policy per ekosystem — utvidga befintlig ADR (ADR-028 → ADR-029 § 6 Actions-policy).
+
+### K1.2 [UNIVERSAL, hub-lyft] — Branschledar-mönster är golvet, inte taket; verifiera empiriskt
+
+Datum: 2026-05-14 | Källa: Session 6 K1.C Vite-research + K1.D Commit 1.6 ci-passed-bug + K1.D Commit 1.6 --with-deps-drop
+
+Vite-research vid Gate 1 ändrade Chat-rekommendation från Pure C till Strategi E — branschledar-validering är värdefullt golv. Men: Vite har **bug** i `cancelled() && !failure()`-pattern (workflow-level cancelled() fångar inte per-job-cancellation; empiriskt bekräftat Commit 1.5 timeout-run där ci-passed rapporterade success felaktigt). Vite har också **default-vana** att inkludera `--with-deps` på Playwright install — fragilt mot azure-mirror-hängningar (Commit 1.5 timeout 615s); Vite själva droppade det senare i sin ci.yml men det fanns i historisk research-pass. Generaliserbar regel: branschledar-mönster är **golvet, inte taket** — adoptera som default, men verifiera empiriskt mot vår kontext. Vid divergens: ändra dig hellre än följa blint. Mönster-förstärkning av K11 (designnoter ska verifieras): research-pass ska gå djupare än ytligt-mönster-igenkänning. Källa: Session 6 K1.D Commit 1.5/1.6 dubbel-bekräftad.
+
+### K1.3 [lokalt] — Aggregator-jobb-mönster löser branch-protection vs conditional-skip-elegant
+
+Datum: 2026-05-14 | Källa: Session 6 K1.C Strategi E-val
+
+Strategi A (paths-ignore på jobb) bryter branch protection eftersom required check inte rapporterar. Vite-mönstret med `ci-passed`-aggregator (`if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')`) löser detta genom att rapportera grön status om alla föregående jobb passerade eller skippades. CI-specifikt mönster — lokalt skördat. Generaliserbar regel inom CI-domän: vid villkorad-skip av kostsamma steg där required-status ska bibehållas, etablera aggregator-jobb istället för att modifiera trigger-paths.
+
+### K1.4 [konsoliderat med K1.1 i hub] — Supply-chain-disciplin är paradigm-spanning (ADR-028 → ADR-029-utvidgning)
+
+Datum: 2026-05-14 | Källa: Session 6 K1.C ADR-029 §6 design
+
+Konsoliderat med K1.1 i hub-lyft. ADR-028 etablerades för npm-supply-chain. K1.C avslöjade att exakt samma SHA-pin + veckovis-granskning + advisory-monitoring-mönster gäller GitHub Actions-marketplace. Utvidgade ADR-028 till ADR-029 § Third-party Actions-policy istället för att skapa separat ADR. Generaliserbar regel: när en disciplin etableras för ett supply-chain-ekosystem, kontrollera om den gäller andra (cargo, pypi, gem, helm-charts, Docker base images) och utvidga befintlig ADR istället för att skapa separat.
+
+### K1.5 [UNIVERSAL, hub-lyft] — Preventiv exklusion utan empirisk basis är genväg, inte försiktighet
+
+Datum: 2026-05-14 | Källa: Session 6 K1.C Gate 2-kvalitetscheck (Marcus)
+
+K1.C-planens initial lychee-scope utelämnade `tasks/*.md` med motiveringen "risk för broken links". Riskpåståendet var antagande, inte data — exakt det K11 förbjuder. Marcus' Gate 2-kvalitetscheck ("genväg = disciplin-brott") fångade det. Generaliserbar regel: vid scope-avgränsning, fråga (a) vilken empirisk data motiverar utelämning, (b) skulle senior-team utelämna detta, (c) är konsekvensen att förflyttning till framtiden acceptabel kostnad. Om något "nej" — det är genväg. K7-disciplin applicerad på scope: utelämning är semantik-beslut som ska kunna stå ensam, inte vara bekvämlighet smyggömd som design. Källa: Session 6 K1.C Gate 2 review 2026-05-13.
+
+### K1.6 [lokalt] — Job-isolering kräver explicit cache för delade artefakter
+
+Datum: 2026-05-14 | Källa: Session 6 K1.D Commit 1 regression (228s vs 95s)
+
+Strategi E:s job-splittring från Vite-research isolerar test-jobbet från lint-jobbets runner-instans. Playwright-browsers (~150MB) cachas i `~/.cache/ms-playwright` och delades automatiskt mellan steg i monolit-jobb-arkitekturen. Vid job-splittring tappas automatik-cache → install måste ladda från scratch (+120s regression i K1.D Commit 1). Vite hanterar detta explicit med `actions/cache@v4` + `hashFiles('package-lock.json')`-key. CI-specifik insikt — lokalt skördat. Generaliserbar regel inom CI-domän: när CI-arkitektur splittas till parallella jobb, identifiera ALLA delade artefakter (binärer, build-cache, downloaded deps) och konfigurera explicit cache med stable-keys.
+
+### K1.7 [UNIVERSAL, hub-lyft konsoliderat med K1.10] — K-disciplin-deklaration ≠ K-disciplin-tillämpning (meta)
+
+Datum: 2026-05-14 | Källa: Session 6 K1.D fyra K11-fångster + K-sista-paket femte K11-fångst
+
+K11 ("designnoter ska vara verifierade, inte påstådda") skördades i Fas 2 K0åc.2 (2026-05-11) och refererats 3+ gånger sedan. Trots det **fem K11-anti-mönster** i Session 6: (1) preventiv lychee-utelämning baserad på antagande (Marcus' Gate 2-fångst); (2) missad actions/cache för Playwright trots research-fynd (Commit 1 regression); (3) `--with-deps`-inkludering av default-vana (Commit 1.5 timeout); (4) Verify-4b Alt B "logisk slutsats"-frestelse (Marcus' val av Alt A); (5) K-sista-paket §1 antog sessionsdok-struktur tematiskt utan att verifiera mot K1-skelett-commit `120ef50` (Code:s STOPPA-OCH-FRÅGA fångade). Alla fångades externt — av Marcus' kvalitetscheck eller Code:s empiriska data. Mönster: **deklarerad disciplin ≠ tillämpad disciplin är inte automatisk översättning**. Generaliserbar regel: K-disciplinär checklist FÖRE PLANERA/IMPLEMENTERA-leverans = "Har jag verifierat varje icke-trivialt val mot empirisk data eller upstream-mönster? Varje utelämning mot senior-team-test? Varje strukturellt antagande mot etablerad konvention?". Disciplinär checklist är tyngre än disciplin-deklaration. Bekräftar Kandidat 15 (Chat-kontext lever inte över sessionsbyte) på meta-nivå: deklaration inom sessionen lever inte automatiskt vidare till nästa beslutspunkt utan aktiv re-applicering. Femte fångst i K-sista visar att även explicit "osäkerhets-flagga" (§0 i K-sista-paketet) inte är samma som stoppa-och-verifiera FÖRE leverans-design. Hub-lyft-värdighet: hög — meta-disciplin-mönster gäller alla K-tillämpningar oavsett domän.
+
+### K1.8 [UNIVERSAL, hub-lyft] — Cache-key-strategy bör prioritera korrekthet över optimering
+
+Datum: 2026-05-14 | Källa: Session 6 K1.D Commit 1.5 cache-key-val (jq vs hashFiles vs npm ls)
+
+Tre kandidater övervägdes: (a) jq mot package.json semver-range, (b) hashFiles på lock-file (Vite-mönster), (c) npm ls efter npm ci. Trade-off: optimering (cache-miss-frekvens) vs korrekthet (cache-hit-validitet). Alt A:s "fel-version-cache-hit vid `^`-range-bump" är silent correctness violation — Playwright minor-bump via Dependabot ger jq-extract `1.60.0` men semver-range-rensning kan ge tidigare cache-key-träff på fel browser-binärer. Generaliserbar regel: vid CI-cache-design, prioritera **invalidation-correctness över invalidation-frequency**. Silent correctness violations är dyrare än explicit cache-miss-kostnad eftersom de manifesterar som mystiska runtime-fel utan tydlig orsak. Mönster-förstärkning av K18 i cache-domänen: cache-hit är **signal**, inte **sanning**; key-design är där korrektheten säkerställs. Källa: Session 6 K1.D Commit 1.5 override till Vite-konsekvent hashFiles-cache-key 2026-05-14.
+
+### K1.9 [konsoliderat med K1.2] — Research mot upstream ändrar rekommendation 11/10 → mer-11/10
+
+Konsoliderat med K1.2 i hub-lyft. Min ursprungliga Pure C-rekommendation byggde på generisk arkitektur-resonemang utan upstream-validering. Vite-research avslöjade Strategi E som branschledar-mönster. Att revidera rekommendation efter ny data är K11-disciplin, inte vacklande.
+
+### K1.10 [konsoliderat med K1.7] — Default-vanor överlever K-deklaration
+
+Konsoliderat med K1.7 i hub-lyft. K1.D §1.1 inkluderade `--with-deps` på Playwright install av default-vana — inte verifierat mot Vite-mönstret som droppat det. Tredje K11-anti-mönstret i K1.D. Empirisk fångst: 615s timeout på Commit 1.5 pga apt-hängning. Default-vanor överlever K-deklaration om aktiv re-verifiering inte sker.
+
+### K1.11 [lokalt] — GHA `cancelled()` är workflow-level, inte per-job
+
+Datum: 2026-05-14 | Källa: Session 6 K1.D Commit 1.5 timeout-bug-analys
+
+Vites pattern (`!cancelled() && !failure()`) fungerar för dem mestadels pga failure-propagation i deras pipeline, men det är inte garanti. K1.D Commit 1.5 timeout cancellerade test-jobbet men ci-passed rapporterade success felaktigt. Korrekt pattern är `always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')` — needs.*.result-array fångar per-job-cancellation explicit. GHA-specifik insikt — lokalt skördat.
+
+### K1.12 [UNIVERSAL, hub-lyft] — Grindvakt-baseline avslöjar dold skuld; det är success-signal, inte session-blocker
+
+Datum: 2026-05-14 | Källa: Session 6 K1.D Commit 2 lychee 81 errors
+
+Strategi E etablerade lychee som ny markdown-link-grindvakt. Första körningen (Commit 2) avslöjade 81 broken links i 79 .md-filer — befintlig skuld som K3 åe manuellt-arbete missade. Detta är **kvalitetshöjning, inte session-blocker**. Per Marcus' Gate 2-disciplin + K7 (refactor/semantik-separation): defer batch-fix till egen mini-session (Session 6.5), fortsätt med ursprunglig session-scope. Generaliserbar regel: när ny automatiserad grindvakt etableras, accept-and-defer-mönstret är 11/10 — dokumentera fynden, defer batch-fix till egen mini-session, fortsätt med ursprunglig scope. Anti-mönster: panic-fix all findings i samma session bryter K7. Mönster-förstärkning: automatiserade kvalitets-checker etablerade vid lugn tid (mellan-fas-arbete) avslöjar skuld från tidigare arbete utan stress. Källa: Session 6 K1.D Commit 2 lychee-baseline + Marcus' Gate 2-defer-beslut 2026-05-14.
+
+### K1.13 [UNIVERSAL, hub-lyft] — DEFERRED-FIX-MARKER-pattern > blanket fail-suppression
+
+Datum: 2026-05-14 | Källa: Session 6 K1.D Commit 3 .lycheeignore design-beslut
+
+För Session 6.5-defer av ~71 broken links: alternativ A (blanket `fail: false` på lychee), alternativ B (`.lycheeignore`-patterns med DEFERRED-FIX-MARKER-kommentar). Alt A tystar lychee helt under defer-fönstret — 10/10. Alt B är **per-rad spårbar TODO med tydlig borttagnings-trigger** — 11/10. Varje DEFERRED-FIX-MARKER-rad är scope-explicit och blir obsolet när motsvarande fix landar. När alla rader borttagna = Session 6.5 ✅ KLAR. Generaliserbar regel: vid defer-paket av flera distinkta items, föredra per-item-spårbart-defer över blanket-suppression. Spårbarhet är 11/10-disciplinens kärna. Mönster-förstärkning av K7 (refactor/semantik-separation): defer ska kunna stå ensam med tydligt scope, inte vara bekvämlighet smyggömd som design.
+
+### K1.14 [UNIVERSAL, hub-lyft] — Lychee + cross-doc-grep är komplementära kvalitetsverktyg vid fas-avslut
+
+Datum: 2026-05-14 | Källa: Session 6 K1.D Commit 2 ADR-027-stack-skifte-drift-fångst
+
+Bland kategori A-fynden i lychee-baseline: `KVALITETSDEFINITIONER-11.md` refererad istället för `KVALITETSDEFINITIONER-11-REACT.md`. Direkt drift från ADR-027 (Vue → React stack-skifte, Session 5b K3.5/K5) som K5.9c cross-doc-grep-rutinen inte fångade (rutinen sökte efter Vue-specifika strängar, inte länkmål-validering). Mönster: lychee fångar **referensdrift** (samma ord, fel länkmål); cross-doc-grep fångar **innehållsdrift** (samma faktum, olika ord). Båda missade automatiskt av varandra. Generaliserbar regel: fas-avsluts-disciplin ska köra båda check-typer parallellt. Lychee i CI på docs-touching commits; cross-doc-grep manuellt vid fas-avslut (eller automatiserat i Fas 7-konsolidering). Mönster-förstärkning av K5.9c-rutinen — utvidgning från content-domän till referens-domän.
+
+### K1.15 [lokalt] — Arkivzoner ska behandlas konsekvent över repo-domäner
+
+Datum: 2026-05-14 | Källa: Session 6 K1.D Commit 3 lychee-baseline scope-inkonsekvens
+
+K1.D Commit 3-baseline avslöjade scope-inkonsekvens: `tasks/sessions/archive/**` utelämnades från lychee-scope per ADR-023 frozen-zone-mall, men `docs/archive/**` ingick. Båda är samma arkiv-natur. Code:s rapport flaggade det; Commit 4a normaliserade. Generaliserbar regel (men CI-domän-specifik): när policy etableras för en arkiv-subkatalog (typ ADR-023 för sessions-arkiv), generalisera över alla arkiv-subkataloger vid samma tillfälle. Annars drar policy-drift gradvis. Mönster-förstärkning av K5.9c "cross-doc-konsekvens"-rutinen, applicerat på scope-policy-domän. Lokalt skördat — närliggande UNIVERSAL men hub-lyft-värdig endast vid bredare paradigm-bekräftelse.
+
+### K1.16 [UNIVERSAL, hub-lyft] — Automatiserad grindvakt avslöjar oväntade drift-kategorier (emergent värde)
+
+Datum: 2026-05-14 | Källa: Session 6 K1.D Commit 2 + Commit 3 lychee-baseline
+
+K1.D-design förväntade content-drift-fynd (~30 stale refs efter ADR-021/K5.8b). Lychee-baseline avslöjade **också**: (a) ~46 path-konstruktion-fel i `docs/analysis/`-rapporter (relativ-path-bug, oförväntad kategori); (b) scope-policy-drift (`docs/archive/**` vs `tasks/sessions/archive/**`-inkonsekvens, oförväntad kategori). Inga av dessa sökta efter mänskligt — alla fångades av grindvakten. Generaliserbar regel: automatiserad kvalitets-grindvakt designad för X-kategori-fångst tenderar att avslöja Y-kategori-drift som mänsklig review missat. Det är **success-signal av investeringen**, inte scope-creep. Mönster-förstärkning av K1.12 ("grindvakt avslöjar dold skuld") — utvidgning från känt-okänt (förväntade kategorier) till okänt-okänt (oförväntade kategorier). Källa: Session 6 K1.D Commit 2 + Commit 3 lychee-baseline 2026-05-14.
+
+### K1.17 [UNIVERSAL, hub-lyft] — tj-actions/changed-files@v47.0.6 UTF-8-glob-bug för non-ASCII-paths
+
+Datum: 2026-05-14 | Källa: Session 6 K1.D Commit 4b UTF-8-glob-fail + Commit 4c ASCII-trigger
+
+tj-actions/changed-files v47.0.6 returnerade `should_skip_tests:false` + `docs_changed:false` för Commit 4b trots .md-ändring (`docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` med svenska tecken Ä). `git show --name-only` returnerade UTF-8-escape `BYGGPLAN-L\303\204TTL\303\204ST-v3.md`. Glob-pattern `**/*.md` i `files`-input matchade inte — antagligen pga UTF-8-encoding-skillnad mellan git-output och tj-actions-glob-engine. Verifierat: ASCII-path-ändringar (Commit 4c tasks/todo.md) triggade korrekt. Generaliserbar regel: vid val av third-party Action med glob-pattern-matching mot filnamn, verifiera empiriskt mot non-ASCII-paths om repot har internationaliserade filnamn. Hub-lyft-värdighet: hög — alla repos med internationaliserade dokument-namn riskerar samma bugg. Reproducerbarhet bör testas separat före ev. ADR-030 eller upstream-issue. Källa: Session 6 K1.D Commit 4b UTF-8-glob-fail 2026-05-14.
+
+### Sammanfattning Session 6
+
+17 lessons-kandidater skördade. 10 hub-lyfta (K1.1, K1.2, K1.5, K1.7, K1.8, K1.12, K1.13, K1.14, K1.16, K1.17), varav K1.1+K1.4 konsoliderade och K1.7+K1.10 konsoliderade i hub. 5 lokala (K1.3, K1.6, K1.11, K1.15 + sub-fragment), 2 konsoliderade in i hub-rader. K-paradigm-spannande sammanfattning: supply-chain (K1.1+K1.4), meta-disciplin (K1.7+K1.10), branschledar-verifikation (K1.2+K1.9), anti-genväg (K1.5+K1.13), grindvakts-värde (K1.12+K1.16), tooling-bug-medvetenhet (K1.17). Strategi E etablerad som kanonisk CI-arkitektur per ADR-029.

@@ -640,6 +640,30 @@ Skikt 2 (AuthError throw-path) är inte regression-skyddad i isolation post-K3.4
 
 ---
 
+## 2026-05-14 — Session 6 (CI-optimering mellan Fas 2 och Fas 2.5)
+
+**Status:** ✅ KLAR
+
+**Leverans:**
+- Strategi E (Vite-mönstret: changed-files + needs-skip + aggregator) etablerad per ADR-029
+- ci.yml restrukturerad från 12-stegs verify-jobb (1 jobb) till 5 jobs (changed → lint → test → docs → ci-passed)
+- Empirisk verifikation: doc-only-commits ~34s vs ~95s baseline = **~64 % besparing**
+- Kod-commits ~96s = matchar baseline med marginalia parallellisering
+- Lychee broken-link-detection etablerad som NY kvalitetscheck (0 errors empiriskt verifierad post-K1.D)
+- ADR-028 utvidgad till ADR-029 § Third-party Actions-policy (SHA-pin + veckogranskning för Actions)
+- K17 supply-chain-skydd bevarat (audit-ci kör på alla commits)
+- Branch-protection-readiness etablerad via `ci-passed`-aggregator (ej aktiverat)
+
+**Defer:** Session 6.5 — broken-links-batch-städning av ~71 verkliga drift-errors (kategori A: ~25 stale refs efter ADR-021/023/027 + K5.8b; kategori B: ~46 path-konstruktion-fel i `docs/analysis/`). Estimat ~30-60 min. Trigger: K0-mini-klunga FÖRE Fas 2.5 i Session 7. Detalj i ADR-029 § Baseline-fynd 2026-05-14.
+
+**Lessons:** 17 UNIVERSAL-kandidater skördade (största enskilda session-skörd i projektets historia). 10 hub-lyfta till `marcus-system/tasks/lessons.md`.
+
+**Commits:** 12 totalt (K1-skelett `120ef50` + K0åh `0d19ede` + `9a4d8d5` + K1.D 8 + K-sista 3-4)
+
+**Nästa:** Session 6.5 (defer-paket) → Session 7 (Fas 2.5 Schema-kontrakt-sync per docs/byggplan.md § 4).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
