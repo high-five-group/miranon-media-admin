@@ -6,14 +6,73 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: read
+# Security hardening: least-privilege default per ADR-029 §4.
+# GITHUB_TOKEN får endast contents:read via explicit grant i jobs.
+permissions: {}
+
+# Auto-cancel in-progress runs på samma branch/PR per ADR-029 §4.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
+  cancel-in-progress: true
 
 jobs:
-  verify:
-    name: Lint + TypeCheck + Test + Build
+  # Job 1: Detect changed files — sets should_skip_tests + docs_changed
+  # outputs for downstream conditional jobs. Per ADR-029 §1a.
+  changed:
+    name: Detect changed files
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    outputs:
+      should_skip_tests: ${{ steps.changed-files.outputs.only_changed == 'true' }}
+      docs_changed: ${{ steps.changed-files.outputs.any_changed == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # Single-author push-pattern <15 commits/session; 50 = 3x-marginal.
+          # Per K1.D §0 utelämning #6.
+          fetch-depth: 50
+
+      - name: Get changed files
+        id: changed-files
+        # SHA-pin per ADR-029 §6 third-party Actions-policy.
+        # tj-actions/changed-files v47.0.6 verifierad 2026-05-13 (K1.C Block 2).
+        # Veckovis Actions-granskning per tasks/todo.md.
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            **/*.md
+            LICENSE
+            docs/**
+            tasks/**
+            .github/ISSUE_TEMPLATE/**
+            .github/PULL_REQUEST_TEMPLATE.md
+            .github/CODEOWNERS
+            .vscode/extensions.json
+            .editorconfig
+            !.github/workflows/**
+            !.github/dependabot.yml
+            !package.json
+            !package-lock.json
+            !audit-ci.jsonc
+            !tsconfig*.json
+            !biome.json
+            !vite.config.ts
+            !playwright.config.ts
+            !tsr.config.json
+            !.nvmrc
+            !.gitignore
+
+  # Job 2: Always-on lint + audit + typecheck.
+  # Kör på ALLA commits oavsett doc-only-detection. Per ADR-029 §1b + K17.
+  lint:
+    name: Lint + Audit + TypeCheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -29,10 +88,8 @@ jobs:
 
       - name: Audit dependencies (audit-ci with allowlist)
         run: npx audit-ci --config audit-ci.jsonc
-        # audit-ci ersätter `npm audit --audit-level=high` per K0åg + ADR-028.
-        # Allowlist GHSA-rmmr-r34h-pfm5 är aktiv för pre-malware @tanstack/history@1.161.6.
-        # Fail-fast supply-chain-gate FÖRE secrets exponeras till staging-tester.
-        # Granskas veckovis per tasks/todo.md.
+        # K17 supply-chain-skydd: kör på varje commit (kod ELLER doc-only).
+        # Allowlist tom efter K0åh (2026-05-13). ADR-028 reverse-flow aktiv.
 
       - name: Biome check
         run: npx @biomejs/biome check .
@@ -42,6 +99,38 @@ jobs:
 
       - name: TypeScript check (tests)
         run: npm run typecheck:tests
+
+      - name: Check workflow files (actionlint)
+        # Install via maintainer-distribuerat script per K1.D §0 utelämning #3.
+        # Script verifierar binär-checksums; teknisk motsvarighet till SHA-pin.
+        # Migration-väg: vid framtida rhysd/actionlint-action-release, byt
+        # till SHA-pinnad action per ADR-029 §6.
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+
+  # Job 3: Heavy test-suite + build. Conditional på changed-detection.
+  # Per ADR-029 §1c. Skippas helt på doc-only-commits (~70s spill eliminerat).
+  test:
+    name: Test + Build
+    needs: changed
+    if: needs.changed.outputs.should_skip_tests != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: API tests (pure)
         run: npm run test:api:pure
@@ -59,7 +148,6 @@ jobs:
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-        # Engångs-installation per CI-run för E2E-testerna nedan. ~30s extra.
 
       - name: E2E tests (staging)
         run: npm run test:e2e:staging
@@ -68,11 +156,70 @@ jobs:
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
-          # Vite dev-server (startas av Playwright webServer-config) validerar VITE_*-vars
-          # vid uppstart via @t3-oss/env-core. Sätt = staging-Supabase så dev-servern
-          # kopplar mot samma backend som testerna förväntar.
           VITE_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
 
       - name: Build
         run: npm run build
+
+  # Job 4: Markdown link validation. Conditional på docs-changes.
+  # Per ADR-029 §1d. Ny kvalitets-check som inte fanns innan ("höjer kvaliten").
+  docs:
+    name: Docs link check
+    needs: changed
+    if: needs.changed.outputs.docs_changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Restore lychee cache
+        id: restore-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .lycheecache
+          key: cache-lychee-${{ github.sha }}
+          restore-keys: cache-lychee-
+
+      - name: Run lychee link check
+        # SHA-pin per ADR-029 §6.
+        # lychee-action v2.8.0 verifierad 2026-05-13 (K1.C Block 2), Rust-baserad.
+        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2.8.0
+        with:
+          # Scope efter Marcus' Gate 2 anti-genväg-review:
+          # INKLUDERAR: aktiva docs + aktiva tasks-dok + repo-root .md
+          # UTELÄMNAR: tasks/sessions/** (frozen ADR-023 + in-flight WIP) — K1.D §0 utelämning #1
+          args: >-
+            --cache
+            --max-cache-age 1d
+            --no-progress
+            --verbose
+            './docs/**/*.md'
+            './tasks/*.md'
+            './*.md'
+          fail: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save lychee cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: .lycheecache
+          key: cache-lychee-${{ github.sha }}
+
+  # Job 5: Aggregator för branch-protection-readiness.
+  # Per ADR-029 §1e. Grön status om alla föregående jobb antingen passerade
+  # eller skippades. Required check vid framtida branch protection.
+  # Enkel single-aggregator (utelämning #5 — branch protection ej aktiv).
+  ci-passed:
+    name: CI Passed or Skipped
+    if: ${{ !cancelled() && !failure() }}
+    needs: [changed, lint, test, docs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    permissions: {}
+    steps:
+      - run: echo "CI Passed or Skipped — all required jobs are green or skipped per design."

@@ -1,0 +1,16 @@
+# .lycheeignore — Lychee link-checker exclude-patterns.
+# Reguljära uttryck. En per rad. Tomma rader + #-kommentarer OK.
+# Etablerad: 2026-05-13 (Session 6 K1.D per ADR-029).
+#
+# Empirisk add-only-policy (K1.D §0 utelämning #2):
+# Lägg endast till mönster när dokumenterad-flaky behavior bevisats.
+# Preventiv exklusion tystar K18-signal — undviks.
+#
+# Lägg till mönster när:
+#  - Extern URL är empiriskt flaky men känd-bra (typ webbsida som 503:ar sporadiskt)
+#  - URL kräver auth som CI inte har (typ private GitHub repos)
+#  - Mall-platshållare i dokumentation (typ <YOUR_API_KEY>)
+#
+# Granska veckovis per tasks/todo.md (parallellt med Actions-granskning).
+
+# (tom baseline — utvidgas vid empiriskt-bevisade flaky-URLs efter K1.D-verifikation)
