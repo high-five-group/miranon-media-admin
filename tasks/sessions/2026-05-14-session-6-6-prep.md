@@ -394,6 +394,12 @@ Vid Session 6.6 K-sista:
   via `git mv` till `tasks/sessions/archive/2026-05/`. Trail-link-
   uppdateringar per Kandidat 1.
 
-Vid Session 6.6.5 (eller 6.7):
+Vid Session 6.7:
 - Observations-pass-rapporten från Session 6.6 K-sista är input.
-  Skills-extraktion + CLAUDE.md-refactor + checklist-trimning hanteras där.
+  Skills-extraktion + CLAUDE.md-refactor + checklist-trimning hanteras
+  där.
+- Prep-fil finns redan: `tasks/sessions/2026-05-14-session-6-7-prep.md`
+  (skapad samtidigt som denna prep-fil, Del 1 placeholder uppdateras
+  post-6.6 K-sista).
+- Beroende av denna sessions K-sista observations-pass-rapport för att
+  scope ska kunna konkretiseras.
