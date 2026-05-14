@@ -6,11 +6,53 @@
 # Lägg endast till mönster när dokumenterad-flaky behavior bevisats.
 # Preventiv exklusion tystar K18-signal — undviks.
 #
-# Lägg till mönster när:
-#  - Extern URL är empiriskt flaky men känd-bra (typ webbsida som 503:ar sporadiskt)
-#  - URL kräver auth som CI inte har (typ private GitHub repos)
-#  - Mall-platshållare i dokumentation (typ <YOUR_API_KEY>)
+# Två block (K1.D Commit 3 baseline 2026-05-14):
+#   Block 1: Acceptable — auth-gated, pre-release-mallar, stale-upstream
+#   Block 2: DEFERRED-FIX-MARKER — verklig drift, fixas i Session 6.5
 #
 # Granska veckovis per tasks/todo.md (parallellt med Actions-granskning).
 
-# (tom baseline — utvidgas vid empiriskt-bevisade flaky-URLs efter K1.D-verifikation)
+# ═══════════════════════════════════════════════════════════════════════
+# Block 1 — Acceptable (auth-gated, pre-release-mallar, stale-upstream)
+# ═══════════════════════════════════════════════════════════════════════
+
+# claude.ai — auth-gated (403 utan login)
+^https://claude\.ai/?$
+
+# Pre-release-mallar i CHANGELOG.md — vi har inga releases än
+^https://github\.com/marcus803/miranon-media-admin/compare/v\d.*$
+^https://github\.com/marcus803/miranon-media-admin/releases/tag/.*$
+
+# Stale upstream-ref (Adobe har flyttat CHANGELOG.md) — fixas vid Fas 3
+# UI-primitiver om/när react-aria-components-ref blir aktuell.
+^https://github\.com/adobe/react-spectrum/blob/main/packages/react-aria-components/CHANGELOG\.md$
+
+# ═══════════════════════════════════════════════════════════════════════
+# Block 2 — DEFERRED-FIX-MARKER (Session 6.5)
+# Drift efter ADR-021 (docs-omstrukturering) / ADR-023 (sessionsdok-arkivering)
+# / ADR-027 (KVALITETSDEFINITIONER stack-skifte) / K5.8b (sessionsdok-arkivering).
+# Fix-arbete spåras i tasks/todo.md Session 6.5-sektion.
+# ═══════════════════════════════════════════════════════════════════════
+
+# Kategori A.1: docs-omstrukturering (ADR-021) — rot-level refs flyttade till docs/specs|logs
+^file://.*/docs/(DESIGN-SYSTEM-SPEC|SECURITY-SPEC|STATE-STRATEGY|byggplan-revision-inventory|gap-analysis)\.md(>|#.*)?$
+
+# Kategori A.2: KVALITETSDEFINITIONER-stack-skifte (ADR-027) — gamla Vue-namn
+^file://.*/docs/specs/KVALITETSDEFINITIONER-11\.md(>|#.*)?$
+
+# Kategori A.3: sessionsdok-arkivering (ADR-023 / K5.8b)
+^file://.*/tasks/sessions/2026-05-11-fas2-routing-auth\.md(>|#.*)?$
+
+# Kategori A.4: cirkulär-path-bug i docs/research/datamodell-research/06b-supabase-target.md
+^file://.*/docs/research/datamodell-research/docs/research/.*
+
+# Kategori B.1: docs/analysis/-rapporter — path-konstruktion utan ../-prefix
+^file://.*/docs/analysis/(docs|src|supabase|public)/.*
+
+# Smal pattern utan .md för att skydda legitima cross-analysis-md-refs
+# (typ docs/analysis/Codex-project-analysis.md → docs/analysis/Code-verification-...md).
+# Buggy .md-refs (osannolikt) släpps igenom; krävs explicit fix per K11-disciplin.
+^file://.*/docs/analysis/[^/]+\.(ts|tsx|css|js)(>|#.*)?$
+
+# Kategori B.2: docs/archive/-mappen — samma path-bugg
+^file://.*/docs/archive/docs/.*

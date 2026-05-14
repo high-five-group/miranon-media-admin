@@ -118,3 +118,40 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13 ("genväg = disciplin-brott"): varj
 - **Lychee-källa:** [lycheeverse/lychee-action](https://github.com/lycheeverse/lychee-action) maintained jan 2026.
 - **Implementation:** Session 6 K1.D commits — denna ADR (commit 2) + ci.yml-omstrukturering (commit 1 + 1.5 + 1.6 iterativt med cache-fix + drop --with-deps + ci-passed-fix).
 - **Verifikation:** empirisk via K1.D commit 1 + 1.5 + 1.6 CI-runs (kod-config-iteration) + commit 2 CI-run (doc-only — testar själva skip-mekaniken).
+
+## Baseline-fynd 2026-05-14
+
+K1.D Commit 2 (a5411e1) körde lychee första gången mot repot. Resultat:
+
+| Kategori | Count | Beskrivning |
+|---|---|---|
+| 🔍 Total URLs checked | 559 | docs/**/*.md + tasks/*.md + ./*.md |
+| ✅ Successful | 439 | rena 200 OK |
+| 🔀 Redirected | 24 | följda redirects, slutligen OK |
+| 👻 Excluded | 11 | filer markerade exkluderade i lychee-config |
+| ❓ Unknown | 0 | inga unparsable URLs |
+| 🚫 Errors | **81** | broken/auth-gated/stale |
+
+**3-kategori-klassning av de 81 errors:**
+
+| Kategori | Antal | Mönster | Hantering |
+|---|---|---|---|
+| **A — Verklig drift** | ~25 (8 unika) | Stale refs efter ADR-021 (docs-omstrukturering) / ADR-023 (sessionsdok-arkivering) / ADR-027 (stack-skifte) / K5.8b. Exempel: `docs/STATE-STRATEGY.md` (flyttad till `docs/specs/`); `tasks/sessions/2026-05-11-fas2-routing-auth.md` (arkiverad till `archive/2026-05/`). | `.lycheeignore` DEFERRED-FIX-MARKER → Session 6.5 |
+| **B — Path-konstruktion-fel** | ~46 (20 unika) | docs/analysis/-rapporter använder `src/...` istället för `../src/...` (saknar ../-prefix för djup 2). Plus cirkulär-path-bug i `docs/research/datamodell-research/06b-supabase-target.md` (refererar sig själv via full absolut path). | `.lycheeignore` DEFERRED-FIX-MARKER → Session 6.5 |
+| **C — Acceptable** | ~14 (6 unika) | Auth-gated (`claude.ai` 403), pre-release-mallar (`compare/v0.1.0...v0.2.0` 404), stale upstream (adobe react-spectrum). | `.lycheeignore` Block 1 — Acceptable |
+
+Per K7 refactor/semantik-separation (Marcus' Gate 2-disciplin 2026-05-13): CI-arkitektur ≠ content-korrekturläsning. `.lycheeignore` accepterar baseline via 4 acceptable-patterns + 8 DEFERRED-FIX-MARKER-patterns. Fix-arbete spåras i `tasks/todo.md` Session 6.5-sektion.
+
+### Konkret mervärde: lychee synliggjorde ADR-027-stack-skifte-drift
+
+Bland kategori A-fynden: `KVALITETSDEFINITIONER-11.md` refererad istället för `KVALITETSDEFINITIONER-11-REACT.md`. Detta är direkt drift från ADR-027 (Vue → React stack-skifte, Session 5b K3.5/K5) som K5.9c cross-doc-grep-rutinen inte fångade (rutinen sökte efter Vue-specifika strängar, inte länkmål-validering).
+
+Mönster: lychee + cross-doc-grep är komplementära kvalitetsverktyg.
+- Cross-doc-grep fångar **innehållsdrift** (samma faktum, olika ord)
+- Lychee fångar **referensdrift** (samma ord, fel länkmål)
+
+Generaliserbar mönsterförstärkning av K5.9c-disciplinen: **fas-avsluts-rutinen ska inkludera båda check-typer**, inte bara cross-doc-grep. Lyfts som lessons-kandidat i Session 6 K-sista. Eventuellt Fas 7-konsolidering integrerar lychee-disciplin med K5.9c-grep-suite som unified "docs sanity check".
+
+### Pattern-design-skärpning
+
+Pattern `^file://.*/docs/analysis/[^/]+\.(ts|tsx|md|css|js)(>|#.*)?$` övervägdes initialt men smalades till `(ts|tsx|css|js)` (utan `.md`) per Marcus' Gate-skärpning 2026-05-14. Motivering: bredare pattern skulle tysta legitima cross-analysis-md-refs (typ `docs/analysis/Codex-project-analysis.md` → `docs/analysis/Code-verification-...md`). Buggy `.md`-refs (osannolikt vid path-konstruktion-fel) släpps igenom; krävs explicit fix per K11-disciplin. K11-tillämpning: pattern-design ska skydda mot kända risker, inte maximera täckning preventivt.
