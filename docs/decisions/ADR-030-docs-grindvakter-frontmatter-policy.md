@@ -22,26 +22,35 @@ Pre-Fas-2.5-positionen är fortfarande idealisk för process-investering: ingen 
 
 ## Beslut
 
-### Del 1 — 5 docs-grindvakter
+### Del 1 — 4 docs-grindvakter
 
-Följande 5 grindvakter etableras, fördelade över `docs`-jobbet och `lint`-jobbet per ADR-029 § Konvention:
+Följande 4 grindvakter etableras, fördelade över `docs`-jobbet och `lint`-jobbet per ADR-029 § Konvention. Position #2 (typos) är **Considered + rejected** post-K3-baseline (2026-05-14) men bevaras som slot-numrering för trail-spårbarhet per ADR-022 kategori-utvidgning-mönstret:
 
 1. **markdownlint-cli2** (docs-jobb)
    - Markdown-hygien: rubriknivåer (MD001/MD003), listor (MD007), kodblock (MD040 språk-tag), tabeller (MD055/056/058/060)
    - Lokal config `.markdownlint.jsonc` med svensk-text-anpassningar (inaktivera MD013 line-length per Session 6.5-stil)
    - Scope: `docs/**/*.md` + `tasks/*.md` + `./*.md` (matchar Lychee-scope; sessionsdok-archive exkluderas)
 
-2. **typos** (lint-jobb — snabb)
-   - Stavfels-detektion i `.md` + `.ts` + `.tsx` + `.css`
-   - Custom-dictionary i `_typos.toml`: Airtable, Supabase, TanStack, nuqs, Biome, Vite, Playwright, FK, Lotta, Roger, Miranon, RLS, JWT, OWASP, ARIA, CVA, OAuth, PKCE, Edge Functions, Dependabot, lychee, markdownlint, yamllint
-   - Scope: hela repot exkl. `node_modules/`, `dist/`, `coverage/`, `playwright/.auth/`
+2. **typos** — Considered + rejected per empirisk baseline 2026-05-14
+
+   **Pre-empirisk antagande:** typos listades som generic stavfels-detektor med custom-dictionary av 22 termer (prep-dok Del 3.3 — Airtable, Supabase, TanStack, nuqs, Biome, Vite, Playwright, FK, Lotta, Roger, Miranon, RLS, JWT, OWASP, ARIA, CVA, OAuth, PKCE, Edge Functions, Dependabot, lychee, markdownlint, yamllint).
+
+   **Empirisk baseline (Session 6.6 K3, 2026-05-14):** `typos-cli 1.46.1` default-extends mot full repo producerade **6 490 fynd**. Topp-30 fel-ord sorterat efter frekvens: alla är svenska ord (2742 `som` → `some`, 244 `appen` → `append`, 183 `dokument` → `document`, 178 `separat` → `separated`, 125 `tre` → `tree`, 120 `ser` → `seer`, 99 `modell` → `model`, 95 `manuell` → `manual`, etc.). 22-term-dictionary skulle åtgärda ~0.3 % av faktiska problemet.
+
+   **Beslut:** Skippa typos helt. Verktyget är engelsk-only-default; svensk-prosa-dominerande kodbas producerar massiv false-positive-rate. Stavnings-substans flyttas till Vale (#3, scope utvidgad nedan). Custom-vocabulary från ursprunglig design migreras till Vale-styles.
+
+   **Disciplin-trail:** K11-tillämpning ("minimalt test pre-implementation") på ADR-design-tid: empirisk baseline-mätning fångar tool-uppgift-mismatch innan permanent CI-integration. K1.16 success-signal i inverterad form — grindvakts-baseline avslöjar att verktyget inte hör hemma i stacken. Lokal `typos-cli` avinstallerad 2026-05-14 post-beslut.
+
+   Slot-numrering #2 bevaras för trail-spårbarhet per ADR-022 kategori-utvidgning-precedent.
 
 3. **Vale** (docs-jobb)
-   - Språk/ton/terminologi-konsistens via projektspecifik stilguide i `.vale/`
-   - Three rule-grupper:
+   - Språk/ton/terminologi-konsistens **+ stavnings-validering** via projektspecifik stilguide i `.vale/`
+   - Vale-scope utvidgad post-K3-baseline (2026-05-14): inkluderar stavnings-validering utöver språk/ton/terminologi-konsistens. Custom-vocabulary från ursprunglig typos-design (prep-dok Del 3.3, 22 termer) migreras till Vale-styles (`Vocab/Miranon/accept.txt` eller motsvarande Vale-konvention)
+   - Four rule-grupper:
      - **Vue→React-substitution** (error): `composable` → `hook`, `emit` → `callback`, `v-model` → `controlled component`, `.vue` → `.tsx`, `<script setup>` → `function component`, `ref()` → `useRef()/useState()`, `computed()` → `useMemo()`, `watchEffect()` → `useEffect()`, `Pinia` → `TanStack Store / Zustand`, `Vue Router` → `TanStack Router`
      - **Brand-konsistens** (error): `Miranon` → `Miranon Media` (canonical brand). Undantag i `.vale.ini`: repo-namn (`miranon-media-admin`, `miranon-media-os`), tekniska identifiers (Airtable base-namn, Supabase projekt-slug om de innehåller "miranon"), sökvägar (`~/Repon/miranon-media-*`)
      - **Stavning-canonical** (warning): `TypeScript` (inte `Typescript`), `GitHub` (inte `Github`), `Lotta`/`Roger`/`Claude` versaler
+     - **Stavnings-validering** (warning, ny post-K3): Vale's `spelling`-rule mot accept-list som inkluderar svensk-prosa-vokabulär + 22 brand/teknik-termer migrerade från typos-design. Migration sker i K6 implementation
    - Scope: `docs/**/*.md` + `tasks/lessons.md` + `tasks/todo.md` + `./*.md` (sessionsdok-archive exkluderas, ADR-er semi-fryss men inkluderas för Vue→React-drift-fångning)
 
 4. **yamllint** (lint-jobb — snabb)
@@ -118,30 +127,32 @@ Konsekvensen relateras explicit: ADR-030 § Spårbarhet pekar tillbaka till ADR-
 | C | Frontmatter på ALLA docs (inkl. sessionsdok + ADR:er) | ADR-023 immutability + ADR-egen-`Status:`-header-konvention bryts; sessionsdok är immutable vid arkivering så `updated:`-auto-bump är meningslös |
 | D | Externt metadata-register (`docs.json` eller liknande) | Otdetekterbart vid file-edit; två sanningskällor (fil + register) skapar synk-problem; bryter "läs filen och se metadata"-friktionsfrihet |
 | E | ESLint-style egen markdown-parser (single tool) | Ingen branschstandard; underhållsbörda; jämför med 5 specialiserade verktyg som har egen community |
-| **F** | **Markdownlint + typos + Vale + yamllint + scripted-check + frontmatter med pre-commit + CI-validering** | **VALD — minimal, mekanisk garanti, branschstandard-verktyg, en sanningskälla per dokument, bygger vidare på ADR-029 docs-jobb-arkitektur** |
+| **F** | **Markdownlint + typos + Vale + yamllint + scripted-check + frontmatter med pre-commit + CI-validering** | **Ursprunglig VAL — post-K3-baseline reviderad: typos avvisat per Alt G, övriga 4 grindvakter aktiva** |
+| G | Behåll typos med svensk allow-list (~100+ ord) | Avvisad post-empirisk K3-baseline 2026-05-14: 6 490 fynd indikerar tool-uppgift-mismatch, inte tunable config-gap. Permanent underhållsbörda utan substantiell vinst. K11-disciplin (testa minimalt pre-implementation) tillämpad på ADR-design-tid. Stavnings-substans flyttad till Vale (#3) post-revision |
 
 ## Konsekvenser
 
 **Positivt:**
 
-- 5 grindvakter fångar drift FÖREBYGGANDE (vs reaktivt som K5.9c cross-doc-grep + Lychee), bygger ut docs-jobb-yta etablerad av ADR-029
-- Vale specifikt fångar ADR-027-typ-stack-skifte-drift på rad-nivå — *före* den blir lessons-skuld
+- 4 grindvakter fångar drift FÖREBYGGANDE (vs reaktivt som K5.9c cross-doc-grep + Lychee), bygger ut docs-jobb-yta etablerad av ADR-029
+- Vale specifikt fångar ADR-027-typ-stack-skifte-drift på rad-nivå — *före* den blir lessons-skuld. Vale-scope utvidgad post-K3 med stavnings-validering — en sammanhållen pipeline för språk/ton/terminologi/stavning
 - Frontmatter ger mekanisk "när reviewades senast?"-svar (eliminerar manuell-prosa-drift bekräftad i K2.13)
 - `review_by`-fält tvingar tidsbunden re-verifiering — disciplin-trail genom CI istället för manuell påminnelse
 - Pre-commit hook = ingen manuell jobb för Marcus/AI vid commit (idempotent)
-- typos custom-dictionary ger tre-läsare-symmetri (terminologi i CLAUDE.md = terminologi i CI)
+- Vale-vocab ger tre-läsare-symmetri (terminologi i CLAUDE.md = terminologi i CI). 22-term-dictionary från ursprunglig typos-design migrerad
 - Scripted checklist-check fångar publika-docs-friktion utan att begränsa legitim CLAUDE.md/CONTRIBUTING-mall-användning
+- typos-avvisning post-K3-baseline är K11/K1.16-disciplin tillämpad på ADR-design-tid — empirisk pre-flight-test fångar tool-uppgift-mismatch innan permanent CI-friktion
 
 **Negativt:**
 
-- 5 nya CI-steg → docs-jobb-tid ökar (~30s baseline → uppskattat ~45-60s)
+- 4 nya CI-steg → docs-jobb-tid ökar (~30s baseline → uppskattat ~35-50s med markdownlint + Vale; lint-jobb ~22s → ~25-30s med yamllint + scripted-checklist). Yamllint empiriskt verifierat 2s overhead i K2 (run 25860230593)
   - Mitigation: ADR-029 changed-files-skip-mönster betyder docs-only-commits ändå är ~3-4x snabbare än kod-commits; absolut tid-ökning är liten
-- 4 nya verktyg (markdownlint-cli2, typos, Vale, yamllint) → utvecklingsmiljö-friktion (npm install + lokal-run-rekommendation för pre-commit-feedback)
-  - Mitigation: dokumentation i `CONTRIBUTING.md` + scripts/-aliaser
+- 3 nya CI-verktyg (markdownlint-cli2, Vale, yamllint) + 1 scripted-shell (scripted-checklist-check) → utvecklingsmiljö-friktion (npm install + lokal-run-rekommendation för pre-commit-feedback)
+  - Mitigation: dokumentation i `CONTRIBUTING.md` "Lokala dev-verktyg (frivilligt)"-sektion + brew/pipx-install-instruktioner per verktyg
 - Frontmatter-migration kräver bulk-add till 7+ filer + pre-commit-hook-verifikation att hooken funkar
   - Mitigation: K7 är dedikerad till migration + verifiering; "Senast uppdaterad"-prosa borttagning samordnas
-- Vale-vokabulär kräver underhåll vid nya stack-skiften eller brand-justeringar
-  - Mitigation: `.vale/`-config är versionerad; ändringar via PR med ADR-trail; veckovis-granskning *inte* nödvändig (drift är låg-frekvent)
+- Vale-vokabulär kräver underhåll vid nya stack-skiften eller brand-justeringar. Post-K3-utvidgning lägger till stavnings-vocab-underhåll
+  - Mitigation: `.vale/`-config är versionerad; ändringar via PR med ADR-trail; veckovis-granskning *inte* nödvändig (drift är låg-frekvent); accept-list growth-takten begränsad av Vale's smarta default-vocab
 - markdownlint kan rapportera baseline-fynd som kräver fix-paket eller DEFERRED-FIX-MARKER per ADR-029 § Baseline-fynd-mönster
   - Mitigation: empirisk add-only-policy (samma som `.lycheeignore`) — pre-existing-skuld blir explicit defer eller fix, inte tystas
 

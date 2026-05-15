@@ -78,7 +78,9 @@ push:
 | yamllint | `brew install yamllint` *eller* `pipx install yamllint` | `yamllint .github/` |
 
 Tilläggsverktyg läggs till här när Session 6.6 fortsätter (markdownlint-cli2,
-typos, Vale, scripted-checklist-check) per ADR-030.
+Vale, scripted-checklist-check) per ADR-030. typos övervägdes men avvisades
+per K3-baseline 2026-05-14 (tool-uppgift-mismatch; stavnings-substans
+flyttades till Vale).
 
 ## Kvalitetsribba
 
