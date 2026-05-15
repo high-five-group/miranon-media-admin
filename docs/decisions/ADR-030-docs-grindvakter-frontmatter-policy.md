@@ -71,10 +71,10 @@ Följande 4 grindvakter etableras, fördelade över `docs`-jobbet och `lint`-job
 5. **scripted-checklist-check** (lint-jobb — snabb shell) — implementerad K5 2026-05-14
    - Detektera oavslutade `- [ ]` i publika docs som **inte** är legitima mall-sektioner
    - Scope (vita listan, måste vara grön): `README.md`, `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md`, `docs/byggplan.md`, `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md`
-   - **Per-sektion-medveten exklusion i CONTRIBUTING.md:** `^## Definition of Done`-rubriker triggar skip=1 tills nästa `^## `-rubrik (säkerställer att `- [ ]`-rader UNDER en exklusions-sektion ignoreras MEN rader UNDER en följande sektion fångas normalt — Marcus' caveat-test bekräftad empiriskt)
+   - **Per-sektion-medveten exklusion i CONTRIBUTING.md:** `^## Definition of Done`-rubriker triggar skip=1 tills nästa H2-rubrik (`^##`) påträffas, då skip=0. Säkerställer att `- [ ]`-rader UNDER en exklusions-sektion ignoreras MEN rader UNDER en följande sektion fångas normalt — Marcus' caveat-test bekräftad empiriskt
    - **Empirisk baseline (K5):** 0 fynd utanför CONTRIBUTING-mallar — vita listan redan grön före grindvakt-aktivering
    - **Felmeddelande-design (K11.5 11/10-disciplin):** fil:rad-format (klickbart) + faktisk item-text + actionable fix-rekommendation (3 alternativ: complete / move-to-todo / move-to-sessionsdok)
-   - **Empirisk 4-test-suite verifierad:** (1) clean state → exit 0, (2) README.md inject → exit 1 + actionable output, (3) CONTRIBUTING.md inject UNDER Definition of Done → exit 0 (exkluderad), (4) Marcus' caveat-test CONTRIBUTING.md inject EFTER Definition of Done-sektioner under annan `## `-rubrik → exit 1 (per-sektion-skopa)
+   - **Empirisk 4-test-suite verifierad:** (1) clean state → exit 0, (2) README.md inject → exit 1 + actionable output, (3) CONTRIBUTING.md inject UNDER Definition of Done → exit 0 (exkluderad), (4) Marcus' caveat-test CONTRIBUTING.md inject EFTER Definition of Done-sektioner under annan H2-rubrik → exit 1 (per-sektion-skopa)
    - Implementation: [`scripts/check-public-checklists.sh`](../../scripts/check-public-checklists.sh) — bash + awk, inga deps, <1s exekvering
    - CI-integration: lint-jobb-step efter yamllint, kör alltid (även kod-only)
    - Ingen pre-commit-hook (CI-only-grindvakt; pre-commit reserveras för biome + K7-frontmatter)
