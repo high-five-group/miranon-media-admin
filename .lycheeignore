@@ -33,3 +33,10 @@
 # Etablerad: Session 6.5 K2.2 2026-05-14.
 ^file://.*/docs/specs/KVALITETSDEFINITIONER-11\.md(>|#.*)?$
 
+# tanstack.com CI-runner-specifik nätverks-flakiness (Session 6.6 K6).
+# Lokalt curl returnerar 307/200 men ubuntu-latest GitHub Actions-runner
+# får "Network error: Connection failed" → cached errors. Sannolik orsak:
+# Cloudflare/CDN blockerar GitHub Actions IP-ranges intermittent.
+# Lessons-flag: re-utvärdera i framtida session — om transient, ta bort.
+^https://tanstack\.com/router/.*$
+
