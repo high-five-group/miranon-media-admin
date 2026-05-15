@@ -3,7 +3,7 @@
 
 # ADR-030: Docs-grindvakter + frontmatter-policy
 
-- Status: Draft (bumpas till Accepted vid Session 6.6 K-sista bake-in)
+- Status: Accepted
 - Datum: 2026-05-14
 - Fas: Session 6.6 — Docs-grindvakter + frontmatter-policy + observations-pass (mellan Fas 2 och Fas 2.5)
 
@@ -104,16 +104,18 @@ status: stable  # draft | stable | deprecated
 ---
 ```
 
-**Tillämpas på styrande dokument** (lista verifieras + uppdateras i K7 mot HEAD):
+**Tillämpas på 10 styrande dokument** (1 hub off-scope + 9 i validator-scope per `.frontmatter-policy.conf`; konkretiserad post-Session 6.6 K-sista per K7.A pre-flight-fynd + K7.5 Block A drift-detektering):
 
-1. `~/Repon/marcus-system/CLAUDE.md` (hub-konstitution)
+1. `~/Repon/marcus-system/CLAUDE.md` (hub-konstitution, validerad separat i marcus-system-repot)
 2. `CLAUDE.md` (projekt-konstitution)
 3. `docs/byggplan.md`
 4. `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md`
-5. `tasks/lessons.md`
-6. `docs/decisions/README.md`
-7. `docs/specs/KVALITETSDEFINITIONER-11-REACT.md`
-8. Eventuella övriga styrande specs identifierade i K1-läsning av `docs/specs/`
+5. `docs/specs/KVALITETSDEFINITIONER-11-REACT.md`
+6. `docs/specs/SECURITY-SPEC.md`
+7. `docs/reference/hur-systemet-funkar.md`
+8. `docs/reference/data-model.md`
+9. `tasks/lessons.md`
+10. `docs/decisions/README.md`
 
 **Tillämpas EJ på:**
 
@@ -257,17 +259,15 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13: varje utelämning dokumenteras exp
 
 ## Baseline-fynd 2026-05-14
 
-*Fylls i vid K-sista bake-in efter K2-K9 har producerat empirisk data per grindvakt.*
-
-Förväntat format (analog till ADR-029):
+Empirisk data per grindvakt, ifylld vid Session 6.6 K-sista bake-in (commit #1, 2026-05-15). Format analogt till ADR-029 § Baseline-fynd.
 
 | Grindvakt | Filer skannade | Träffar | Klassning | Hantering |
 |---|---|---|---|---|
-| markdownlint-cli2 | TBD | TBD | TBD | TBD |
-| typos | TBD | TBD | TBD | TBD |
-| Vale | TBD | TBD | TBD | TBD |
-| yamllint | TBD | TBD | TBD | TBD |
-| scripted-checklist-check | TBD | TBD | TBD | TBD |
-| Frontmatter-validering | TBD | TBD | TBD | TBD |
+| yamllint | 2 (ci.yml + dependabot.yml) | 17 (12 line-length + 2 truthy + 2 doc-start + 2 comments-spacing + 1 truthy `on:`) | Pre-existing config-syntax-friktion | 2 config-disables (line-length + truthy check-keys) + 4 content-fixes |
+| typos | n/a (Considered + rejected) | 6 490 empirisk baseline; topp-30 ord svenska false-positives (`som`, `appen`, `dokument`) | Tool-uppgift-mismatch (engelsk-only-default mot svensk-dominant repo) | Inte aktiverad; slot-numrering bevarad per ADR-022 kategori-utvidgning-mönster |
+| markdownlint-cli2 | 83 (`docs/**/*.md` + `tasks/*.md` + `./*.md`) | 10 570 → 0 | Mix: 9 668 config-disable-domän (MD013/MD060/MD024) + 902 auto-fix + 38 MD036 hybrid + 77 MD040 manuell + 15 Sub-A defer | 3 config-disables + `--fix`-batch + 14 strukturella `### N. ...` + 24 inline-disable + DEFERRED-FIX-MARKER |
+| scripted-checklist-check | 6 publika docs (vita listan + CONTRIBUTING-exklusion) | 0 utanför `## Definition of Done`-mallar | 0 pre-existing skuld | Grön baseline från start; K7.5 retroaktivt config-driven (`.checklist-policy.conf`) |
+| Vale | docs/ + tasks/ + 5 toppfiler (README/CHANGELOG/SECURITY/CONTRIBUTING/CLAUDE.md-skikt) | 566 → 8 suggestions | Mix: 49 664 Vale.Spelling rejected (svensk false-positives); 539 defer (425 Vale.Terms + 114 VueToReact) | Vale.Spelling AV; 3 Miranon-stilguide-filer (Brand/VueToReact/Undvik); per-fil rad-1-disable Alt F → Session 6.6.6 |
+| Frontmatter-validering | 9 styrande docs (config-driven via `.frontmatter-policy.conf`) | 0 fel post-K7.C | 0 pre-existing skuld | Grön baseline från K7.C (commit `866dd7c`); 5 checks (existens + updated + review_by + status + owner) |
 
 Pre-existing-skuld klassas per ADR-022 3-kategori-modell + ADR-029-konvention: empirisk add-only-policy för ev. ignore-listor; defer-fix dokumenteras explicit per fil i `tasks/todo.md`.

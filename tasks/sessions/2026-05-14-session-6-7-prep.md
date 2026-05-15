@@ -5,10 +5,11 @@
 > prep-fil skapande), committad separat för att inte blanda trail-
 > domäner.
 >
-> **Status:** Prep (Session 6.7 ej startad). Del 1 placeholder —
-> uppdateras post-Session 6.6 K-sista med faktisk observations-pass-data.
+> **Status:** Prep (Session 6.7 ej startad). Del 1 ✅ uppdaterad
+> 2026-05-15 vid Session 6.6 K-sista commit #1 (observations-pass-data
+> + Vale-mönster-hub-extraktion + chat-self-review-skill från K-sista.1).
 > **Skapad:** 2026-05-14, post-Session 6.5 ✅ KLAR + Session 6.6 prep.
-> **Beroende av:** Session 6.6 K-sista observations-pass-rapport.
+> **Del 1 uppdaterad:** 2026-05-15 (Session 6.6 K-sista commit #1).
 > **Arkiveras:** Tillsammans med Session 6.7-sessionsdok vid dess
 > K-sista (`tasks/sessions/archive/2026-05/`).
 > **Parent-session:** Session 6.6 (Docs-grindvakter + frontmatter +
@@ -40,69 +41,91 @@ anropas vid relevant trigger.
 
 ---
 
-## Del 1 — Scope för Session 6.7 (PLACEHOLDER — uppdateras post-6.6)
+## Del 1 — Scope för Session 6.7 (uppdaterad post-Session 6.6 K-sista 2026-05-15)
 
-> **OBS:** Denna sektion är spekulativ idag eftersom Session 6.6:s
-> observations-pass-rapport (input) inte finns än. Vid Session 6.6
-> K-sista uppdateras denna del med faktisk data innan Session 6.7 startar.
->
-> Spekulativ bas: K1.3 + K1.4 av Session 6.6 prep-filen (CLAUDE.md
-> observations-pass-instruktioner) + min analys i Session 6.5-chat
-> om sessionsavslut-svullnad (15 steg + 14 checklista-punkter).
+> **Status:** Uppdaterad från PLACEHOLDER 2026-05-15 vid Session 6.6 K-sista
+> commit #1 (Code-host). Innehåll baserat på faktisk Session 6.6 sessionsdok
+> Del 3 observations-pass-rapport (12 kandidater fördelade i 4 kategorier
+> A-D) + K8-defer + 2 NYA scope-domäner skördade vid K7.5/K9/K-sista
+> (Vale-mönster-hub-extraktion + Chat self-review-skill).
 
-### 1.1 — CLAUDE.md-audit (preliminärt scope)
+### 1.1 — CLAUDE.md-audit (Session 6.6 observations-pass-baserat scope)
 
-**Hub:** `~/Repon/marcus-system/CLAUDE.md`
-- Identifiera operativa procedurer som ska bli skills
-- Identifiera duplicering med projekt-CLAUDE.md
-- Identifiera referens-data som ska stanna (designsystem, foundation,
-  produkter, principer)
+Källa: sessionsdok Del 3 rader 142-221. Kandidater fördelade i 4 kategorier.
 
-**Projekt:** `~/Repon/miranon-media-admin/CLAUDE.md`
-- Identifiera operativa procedurer som ska bli skills
-- Identifiera mekaniska checks som nu fångas av Session 6.6:s
-  grindvakter (kan tas bort från manuell checklista)
-- Identifiera Status-sektion + filstruktur-sektion som ska stanna
-  (levande projekt-state, inte procedur)
+**Kategori A — Skills-extraktion-kandidater (operativa procedurer i CLAUDE.md som hör hemma i skills):**
+
+- A.1 Sessionsstart-procedur (6-stegs läs-ordning + RAPPORTERA-format)
+- A.2 Sessionsavslut-disciplin (13-stegs sessionsavslut + transcript-disciplin + UNIVERSAL-lyft-flöde)
+- A.3 Fas-avslut-rutin (cross-doc-grep + byggplan.md + CHANGELOG-uppdatering)
+- A.4 ADR-skapande-procedur (numrering, format, README-katalog-uppdatering)
+- A.5 Hub-sync-procedur (cross-repo, real-path för symlänkar, H2-format)
+
+**Kategori C — "Senast uppdaterad"-prosa att ersätta med frontmatter:**
+
+- Post-K7.C är detta REDAN gjort på 9 styrande docs (frontmatter etablerad). Återstår: ev. stale-prosa i icke-styrande docs som migration missade. Audit i Session 6.7 K2-K3.
+
+**Kategori D — Övriga refactor-kandidater (INTE actionable Session 6.7-direct):**
+
+- D.1 Filstruktur-sektion komprimering (växer med varje session)
+- D.2 Sessions-historik-rad i todo.md (driver mot duplicering av BUILD-LOG)
 
 ### 1.2 — Skills att skapa (preliminär lista — bekräftas i K1)
 
 | Skill | Trigger | Innehåll |
 |---|---|---|
 | `session-start.skill` | Vid varje sessionsstart | Läs-ordning, projektkunskaps-färskhet-check, RAPPORTERA-format |
-| `session-end.skill` | Vid sessionsavslut | 15-stegs-disciplinen + 14 checklista-punkter (post-trimning) |
+| `session-end.skill` | Vid sessionsavslut | 13-stegs-disciplinen + DoD-checklist-bockning |
 | `phase-end.skill` | Vid fas-avslut | Cross-doc-grep, byggplan.md, CHANGELOG, README, fas-avsluts-verifierings-rutin |
 | `lessons-harvest.skill` | Vid K-sista lessons-skörd | UNIVERSAL-flagging, hub-konsolidering, format-bridge |
 | `hub-sync.skill` | Vid hub-lyft | ADR-018 cross-repo, real-path för symlänkar, H2-format |
+| `chat-self-review.skill` | **NY från K-sista.1 lesson** — Innan klass-eskalering | Pre-prompt verifikation av ADR/spec, kandidat-klass-tabell, anti-meta-blindhet-disciplin |
 
-**Eventuellt fler** baserat på Session 6.6:s observations-pass-rapport
-(typ `adr-creation.skill`, `sessionsdok-archiving.skill` etc.).
+**Eventuellt fler** baserat på K1-detalj-audit av sessionsdok Del 3 + skills-arkitektur-ADR-utforskning.
 
-### 1.3 — Checklist-trimning (om inte gjort i 6.6 K8)
+### 1.3 — Checklist-trimning (Session 6.6 K8 deferrad hit)
 
-Mekaniska checks som nu fångas av Session 6.6:s CI-grindvakter:
-- Cross-doc-konsekvens (lychee + ev. cross-doc-grep i CI)
-- ADR-räkning mellan README och `ls docs/decisions/`
-- Datum-konsistens (frontmatter `updated` vs git log)
-- Broken markdown-länkar
-- Stavfel i publika docs
-- YAML-syntax i config-filer
+Session 6.6 K8 deferrad fullt till Session 6.7 K7 per Marcus' Block D #3-caveat (K1-K7 + K7.5 + K9 åt tiden). Scope:
 
-Dessa tas bort från manuell sessionsavslut-checklistan i CLAUDE.md /
-`session-end.skill`. Endast **mänskliga omdömesfrågor** bevaras
-("är BUILD-LOG-formuleringen pedagogisk?", "är ADR-motiveringen tydlig
-för någon utanför teamet?").
+**Helt-mekaniska checks som nu fångas av Session 6.6 grindvakter:**
+
+- Cross-doc-konsekvens — Lychee (referenser) + frontmatter-validator (metadata)
+- Broken markdown-länkar — Lychee
+- YAML-syntax i config-filer — yamllint
+- Markdown-hygien — markdownlint-cli2
+- Stavning + Vue→React terminologi — Vale (post-6.6.6 full-aktiv)
+- Publika DoD-mallar — scripted-checklist-check
+- Datum-konsistens — frontmatter pre-commit auto-bump + CI Check 2
+
+**Halv-mekaniska checks (Session 6.6 Del 3 kategori B.5-B.8):**
+
+- B.5 ADR-räkning mellan README och `ls docs/decisions/` — möjlig grindvakt
+- B.6-B.8 övriga halv-mekaniska — bekräftas i K2-K3-audit
+
+Mänskliga omdömesfrågor bevaras: "är BUILD-LOG-formuleringen pedagogisk?", "är ADR-motiveringen tydlig för någon utanför teamet?".
 
 ### 1.4 — ADR för skill-arkitektur
 
-**ADR-XXX (numrering bestäms i K1):** Skill-arkitektur
+**ADR-031 eller -032** (numrering bestäms i K1; ADR-031 är reserverad för Session 6.6.5 Dependabot-strategi):
 
 - Hur skills är strukturerade (frontmatter, sektioner, exempel)
 - Hur skills uppdateras (versions-hantering, deprecation, ändrings-trail)
 - Hur skills testas (kall Chat-context-test, manual smoke test)
 - Relation till CLAUDE.md (CLAUDE.md har pekare, skills har innehåll)
-- Skills i hub vs projekt (hub-skills = universella, projekt-skills =
-  domän-specifika)
+- Skills i hub vs projekt (hub-skills = universella, projekt-skills = domän-specifika)
+- **NY från K-sista.1:** Skills för meta-disciplin (chat-self-review-pattern; klass-tänkande-checklist)
+
+### 1.5 — Vale-mönster-hub-extraktion (NY scope-domän Session 6.7)
+
+3 Vale-mönster att extrahera till `~/Repon/marcus-system/templates/` eller `~/Repon/claude-skills/` (per K7.6 hub-spoke-portabilitet, skördad från Session 6.6 K6.2-arbete):
+
+1. **`vale-brand-pattern.yml`** — inline-lookbehind+lookahead mall för brand-name detection (RE2-engine 3.14+). Brand.yml-pattern från Session 6.6 K6.2 är referens-implementation. Empirisk RE2-verifikation: lookbehind/lookahead stöds (mot pre-empirisk hypotes).
+
+2. **`vale-stack-shift-pattern.yml`** — substitution mall för stack-skiften. VueToReact.yml-pattern (11 substitutioner per ADR-027) är referens. Generisk över alla framtida stack-skiften (typ TanStack-Router v1 → v2, Vite 8 → 9).
+
+3. **`vale-vocab-dual-function.md`** — dokumentation av Vale Vocab dubbel-funktion (spelling-bypass + canonical-substitution via Vale.Terms case-folding). Emergent feature från K6.2 V2 empirisk verifikation — ej dokumenterat tydligt i Vale 3.14.1 docs.
+
+Flaggad från Session 6.6 K-sista. Schemalägs som K-sub i Session 6.7 K4 (Skill-design).
 
 ---
 
@@ -215,6 +238,13 @@ universella delar.
 7. **Sessions-numrerings-konvention** — 6.5 / 6.6 / 6.7 är mini-sessioner
    av Session 6-paradigm. Vid vilken punkt blir det Session 7?
    Numreringspolicy.
+
+8. **Chat self-review-skill (NY från Session 6.6 K-sista.1 lesson)** —
+   Chat:s 11/10-disciplin på Code:s output applicerades inte lika på
+   Chat:s egen analys (3 instanser i Session 6.6 fortsättning #2 fångade
+   av Marcus' 11/10-påminnelser). Skill-kandidat: pre-prompt self-review
+   "verifiera mot ADR/spec FÖRE klass-eskalering". Mönsterförstärkning av
+   K2.14 + K7.5.3.
 
 ---
 

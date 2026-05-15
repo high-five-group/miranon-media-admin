@@ -915,3 +915,93 @@ K2.1/K2.3/K2.4/K3 v2 var mekanisk fix-disciplin (sed + verifiering, en commit). 
 ### Sammanfattning Session 6.5
 
 15 lessons-kandidater skördade — större skörd än K1-baseline antagit. 13 hub-lyfta (K2.1, K2.2, K2.3, K2.4, K2.5, K2.6, K2.7, K2.8, K2.11, K2.12, K2.13, K2.14, K2.15). 2 lokala (K2.9, K2.10). Mönsterförstärkning av K1.16 (grindvakt avslöjar oväntade kategorier): Session 6.5 var planerad som mini-städning (~3-5 lessons förväntan), faktisk skörd 15 — emergent värde av defer-arbetet i sig. K3 v1-revert var pivotal: utan failet hade K2.4/K2.5/K2.6/K2.7/K2.8 inte funnits. "Försök som behövde reverteras" var lessons-rikast del av sessionen.
+
+## 2026-05-14 — Session 6.6 (Docs-grindvakter + frontmatter-policy + observations-pass)
+
+### K7.1 [UNIVERSAL, hub-lyft] — Frontmatter-migration är möjligt-omöjligt-test för befintlig prosa
+
+Datum: 2026-05-14 | Källa: Session 6.6 K7.A pre-flight Fångst #1
+
+Innan föreslå "behåll info i ny form" vid metadata-migration, verifiera empiriskt om infon redan finns annorstans. Generaliserbar regel: vid metadata-konsolidering är pre-flight-fråga "är denna prosa unik eller duplicerad?" — om duplicerad, ta bort utan ersättning; om unik, bevara/transformera. Mönsterförstärkning av K2.14 (sök befintliga lösningar) tillämpad på domän-migration.
+
+### K7.2 [UNIVERSAL, hub-lyft] — Migration är möjlighet för stale-detection
+
+Datum: 2026-05-14 | Källa: Session 6.6 K7.A Fångst #2 bonus-fynd
+
+Frontmatter-migration auditerar manuella metadata-värden mot faktisk state. I K7-empirisk audit visade 3 av 10 filer stale "Senast uppdaterad"-värden — CLAUDE.md (8 dagar stale + fundamentalt fel kontext), BYGGPLAN-LÄTTLÄST (1 dag), SECURITY-SPEC (potentiellt). Generaliserbar regel: bulk-migration av metadata är gratis tillfälle för stale-detection eftersom varje fil tvingas öppnas. Pre-flight-disciplin: vid migration, jämför pre-värde mot ground-truth FÖRE skriv-pass.
+
+### K7.3 [UNIVERSAL, hub-lyft] — Verifiera både INNEHÅLL och ROLL innan borttagning av metadata-prosa
+
+Datum: 2026-05-14 | Källa: Session 6.6 K7.A Fångst #1 reviderad
+
+Rader har funktioner, inte bara substans. tasks/lessons.md rad 12 hade datum-stämpel (substans → ersätts av frontmatter) OCH quick-reference/orienterings-anchor (roll → unik, måste bevaras). Generaliserbar regel: vid metadata-migration, klassificera per-rad i (a) substans-roll, (b) struktur-roll, (c) navigations-roll. Bara substans-roll får ersättas av frontmatter; struktur + navigation kräver behållning eller eksplicit re-routing.
+
+### K7.4 [UNIVERSAL, hub-lyft] — Roll-bevarande > substans-renhet vid migration
+
+Datum: 2026-05-14 | Källa: Session 6.6 K7.A Fångst #2
+
+Per-fil-empirisk-analys > generalisering. 10-fil-audit visade 4 distinkta roll-kategorier: (1) datum-stämpel (frontmatter ersätter), (2) roll-flagga (bevara, ta bort datum-del), (3) quick-reference med stale-fix (bumpa + reformulera), (4) ingen prosa (bara frontmatter-add). Generaliserbar regel: vid migration, refaktorera per-fil enligt roll, inte enligt en-storlek-passar-alla-pattern. Mönsterförstärkning av K7 (refactor/semantik-separation) tillämpat på doc-migration.
+
+### K7.5 [UNIVERSAL, hub-lyft] — Frontmatter auto-bump täcker datum-drift, INTE kontext-drift
+
+Datum: 2026-05-14 | Källa: Session 6.6 K7-design
+
+Pre-commit hook auto-bumpar `updated:` mekaniskt. Det löser datum-drift (manuell "Senast uppdaterad"-fält som glöms). Det löser INTE kontext-drift — kontext-rader (typ projekt-CLAUDE.md rad 3 "Fas 2 startar nästa session") kräver semantisk uppdatering vid relevant händelse. Generaliserbar regel: mekanisk auto-hook kan inte vara semantisk validator; kontext-rader hör hemma i sessionsavslut-checklista eller periodisk review_by-prompt. Mönsterförstärkning av "tooling-quirk vs review-disciplin"-distinktionen (K1.18 + K2.13).
+
+### K7.6 [UNIVERSAL, hub-lyft] — Hub-spoke-portabilitet är default-arkitektur, hårdkodning kräver explicit motivering
+
+Datum: 2026-05-14 | Källa: Session 6.6 K7.B Fångster #3 + #4 (Marcus' Gate 2)
+
+Skriptens LOGIK är universell (kan dupliceras till andra spokes utan refactor); VÄRDEN lever i `.<grindvakt>-policy.conf` per-projekt. Hardkodning av projekt-specifika paths/listor i skript är anti-mönster. Branschpraxis-bevisning: `.eslintrc` + `.prettierrc` + `.markdownlintrc` + `.vale.ini` är alla separata config-filer per grindvakt — vår konvention följer samma separation. Generaliserbar regel: vid CI-grindvakt-design, default är "config-driven från start"; hårdkodning är genväg som propagerar systematiskt om inte fångad tidigt (klass-tänkande). Etablerad som "Ristat i sten" i hub-CLAUDE.md vid Session 6.6 K-sista commit #2.
+
+### K7.7 [UNIVERSAL, hub-lyft] — Datum-stämplar i Code-prompter måste verifieras mot TODAY vid exekverings-tid
+
+Datum: 2026-05-15 | Källa: Session 6.6 K7.C Fångst #5 (Code Gate 2)
+
+Code-prompter med datum-stämplar måste kategoriseras: "historisk-stabil" (etablerings-datum, ADR-domän) vs "löpande-mekanisk" (frontmatter `updated:`, TODAY-relativ). Båda är korrekta i sina respektive domäner. Anti-mönster: ärva datum från föregående K-fas utan kategori-klassning. K7.C-prompten ärvde `updated: 2026-05-14` från ADR-030 men exekverades 2026-05-15 — Code fångade att TODAY-validering hade failat. Generaliserbar regel: vid Code-prompt-design, fråga per datum-stämpel "är detta etablerings-datum (fixt) eller bump-datum (TODAY)?".
+
+### K7.8 [UNIVERSAL, hub-lyft] — Gate 2-disciplin är inte aktör-specifik
+
+Datum: 2026-05-15 | Källa: Session 6.6 K7.C Fångst #5 generaliserad
+
+Gate 2-review (K2.15) är inte begränsad till Marcus. Code + ev. andra aktörer med ground-truth-tillgång + skarp empirisk fråga är legitima Gate 2-utövare. K7.C-Fångst #5 var Code-fångad datum-drift. K7.5 Block A var Code-fångad handoff-fil-strukturell-drift ("Del 1.5"). Generaliserbar regel: design för Gate 2 från alla aktörer som har ground-truth-perspektiv — Chat (hög-nivå design), Code (filsystem + CI ground-truth), Marcus (intentions-ground-truth + cross-projekt-konsekvens). Mönsterförstärkning av K2.15-generalisering.
+
+### K7.5.1 [UNIVERSAL, hub-lyft] — Handoff-fil-design med fil-strukturella referenser kräver empirisk verifikation FÖRE bake-in
+
+Datum: 2026-05-15 | Källa: Session 6.6 fortsättning #2 K7.5 Block A Gate 2-fångst (Code)
+
+Code fångade vid K7.5 Block A att handoff-fil refererade "ADR-030 § Del 1.5" som inte existerade i ADR-030 (Del 1-4). Ärvt från ci.yml-kommentar-drift som propagerades i K7.D-bake-in utan empirisk verifikation. Generaliserbar regel: handoff-fil-design som refererar specifika doc-sektioner/rader/IDs ska antingen (a) verifieras empiriskt mot HEAD vid bake-in, eller (b) använda neutral referens ("position #5 i Del 1" istället för "Del 1.5"). Mönsterförstärkning av K7.7 (verifiera vid exekverings-tid) + Disciplin #6 (empirisk verifikation FÖRE design-ratifikation).
+
+### K7.5.2 [UNIVERSAL, hub-lyft] — CI-kommentarer som refererar interna doc-sektioner kan drifta utan grindvakt-fångst
+
+Datum: 2026-05-15 | Källa: Session 6.6 fortsättning #2 K7.5 Block A bonus-fynd
+
+ci.yml rad 124 har refererat icke-existerande "ADR-030 § Del 1.5" sedan K5-implementationen f408469 (2026-05-14) — ej fångat av någon av 5 grindvakter eftersom Lychee fångar URL/file-refs men inte text-referenser till ADR-sektionsrubriker. Mitigation-domän: ny grindvakt-kategori (CI-kommentar-referens-validator) eller manuell sessionsavslut-disciplin. Mönsterförstärkning av K1.16 (grindvakt avslöjar oväntade kategorier — här FRÅNVARO av grindvakt avslöjar drift-domän). Generaliserbar regel: CI-konfig-filer behöver egen "drift mot doc-referens"-validator om de innehåller doc-sektion-pekare.
+
+### K7.5.3 [UNIVERSAL, hub-lyft] — Chat ska ifrågasätta ramen, inte bara rangordna inom den
+
+Datum: 2026-05-15 | Källa: Session 6.6 fortsättning #2 K7.5 Block A (Marcus' "vad hade ett seniorproffs valt?"-fångst)
+
+Vid A/B/C-fråga är default-instinkt "välj bästa av A/B/C" — instans-tänkande. Klass-tänkande är "är A/B/C rätt klass av svar, finns alt D utanför ramen?". I K7.5 Block A presenterade Chat A/B/C för ADR-030 § Del 1.5-fråga; Marcus' "11/10?"-fråga avslöjade Alt D (root cause-fix + minimal ADR-pekare + ci.yml-fix). Generaliserbar regel: när Chat presenterar alternativ till Marcus, default-pre-check är "är någon av dessa fel klass, finns 11/10-alt utanför ramen?". Mönsterförstärkning av K2.14 + Meta-lesson #3 (klass-tänkande > instans-tänkande).
+
+### K7.5.4 [UNIVERSAL, hub-lyft] — Pre-existerande warning-profil ≠ normativ standard
+
+Datum: 2026-05-15 | Källa: Session 6.6 fortsättning #2 K7.5 slutrapport (Marcus' 11/10-påminnelse)
+
+När nya filer skapas i samma klass som befintlig-med-warnings, lyfter 11/10-disciplin hela klassen — INTE matchar pre-existerande 9/10-nivå. "Identisk warning-profil som X" är motivering vid första instans men anti-mönster vid replikering. K7.5 reproducerade SC2034-warning-profil från `.frontmatter-policy.conf` (K7.C 2026-05-15) i ny `.checklist-policy.conf`; Marcus 11/10-fångade och båda filerna fick file-level disable-fix. Mönsterförstärkning av K7.6 (klass-tänkande, hub-spoke-portabilitet inkluderar kvalitets-baseline). Mitigation-domän: shellcheck-strict-grindvakt (Session 6.6.7) bör inkludera "0 warnings + 0 errors", inte bara "0 errors".
+
+### K9.1 [UNIVERSAL, hub-lyft] — Mekanism-installation ≠ mekanism-aktivering, och ibland är gap MEDVETET i ADR
+
+Datum: 2026-05-15 | Källa: Session 6.6 fortsättning #2 K9 Block C
+
+K9 avslöjade att `ci-passed`-aggregator finns sedan ADR-029 men gate:as inte på main (404 "Branch not protected"). Initial klassning (Chat-eskalering) "arkitektur-bug på ADR-029-nivå". Korrekt klassning efter ADR-verifikation: design-medveten defer per ADR-029 § Konsekvenser ("om Marcus aktiverar senare"). Generaliserbar regel: verifiera ADR-status FÖRE klassificering — "saknas och borde finnas" (bug) vs "saknas och ADR planerar manuell aktivering" (design-medveten gap). Mitigation skiljer sig: bug → scope-utvidgning + ADR-utvidgning; design-medveten gap → tasks/todo.md-pinpoint för manuell action. Mönsterförstärkning av K7.7 + Disciplin #6.
+
+### K-sista.1 [UNIVERSAL, hub-lyft] — Chat:s 11/10-disciplin på Code:s output måste appliceras LIKA på Chat:s egen analys
+
+Datum: 2026-05-15 | Källa: Session 6.6 fortsättning #2 K9 post-rapport (Marcus' "tänk alltid 11/10"-påminnelse → self-review)
+
+Chat kritiserade Code:s "K17-policy"-referens som odefinierad (11/10 på Code) medan Chat samtidigt eskalerade "arkitektur-bug på ADR-029-nivå" utan att verifiera ADR-029 (9/10 på sig själv). Meta-klass-blindhet: 11/10-disciplin på output appliceras INTE lika på self-analys. Generaliserbar regel: Chat:s default-klassningstendens behöver hårdare guard — sök projektkunskap för relevant ADR/spec FÖRE klass-eskalering, inte EFTER Gate 2-påminnelse. Marcus' 11/10-påminnelser fångar meta-blindhet konsekvent (Session 6.6 fortsättning #2: 3 instanser inom samma session). Mönsterförstärkning av K7.5.3 (ifrågasätt ramen) + Meta-lesson #3 (klass-tänkande). Mitigation-domän: Chat self-review-skill (Session 6.7 skills-arkitektur-kandidat).
+
+### Sammanfattning Session 6.6
+
+14 lessons-kandidater skördade (alla [UNIVERSAL] för hub-lyft). Domän-fördelning: K7-fasen 8 (handoff-fil-skördade vid K7.D), K7.5-fasen 4 (Code Gate 2 + Marcus 11/10-fångster), K9-fasen 1 (branch-protection ADR-029-status-verifikation), K-sista 1 (Chat meta-klass-blindhet). Mönsterförstärkning av K1.16 (grindvakt avslöjar oväntade kategorier) på meta-nivå: process-investering-session avslöjar både domän-lessons OCH meta-lessons om Chat/Code/Marcus-trippel-Gate 2-disciplin. 4 Gate 2-fångster av Marcus, 2 av Code, 1 av Chat self-review (efter Marcus' 11/10-påminnelse). Konsoliderad till 4-5 hub-rader vid K-sista commit #2 hub-sync.
