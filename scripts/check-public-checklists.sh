@@ -19,18 +19,28 @@
 
 set -euo pipefail
 
-# Vita listan — publika docs som måste vara grön
-FILES_PLAIN=(
-  "README.md"
-  "CHANGELOG.md"
-  "SECURITY.md"
-  "docs/byggplan.md"
-  "docs/specs/BYGGPLAN-LÄTTLÄST-v3.md"
-)
+# === Ladda projekt-config ===
+# Per K7 Lesson #6 (UNIVERSAL) hub-spoke-portabilitet — skriptet är
+# universellt, värden är per-projekt. Retroaktiv refactor 2026-05-15
+# (Session 6.6 fortsättning #2 K7.5).
+CONFIG_FILE=".checklist-policy.conf"
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "ERROR: Config saknas: $CONFIG_FILE (sök i: $(pwd))"
+    echo "   Fix: skapa .checklist-policy.conf i repo-root."
+    echo "        Se ADR-030 § Del 1 (position #5) för spec."
+    echo "        Om detta är ett nytt spoke: kopiera från miranon-media-admin"
+    echo "        och anpassa CHECKLIST_FILES_PLAIN-listan."
+    exit 1
+fi
+# shellcheck source=/dev/null
+source "$CONFIG_FILE"
 
-# Filer med sektion-baserad exklusion (CONTRIBUTING.md har
-# `## Definition of Done — per session` + `## Definition of Done — per fas`)
-FILE_WITH_EXCLUSION="CONTRIBUTING.md"
+# Verifiera att config har nödvändiga variabler
+: "${CHECKLIST_FILES_PLAIN?Config saknar CHECKLIST_FILES_PLAIN}"
+: "${CHECKLIST_FILE_WITH_EXCLUSION?Config saknar CHECKLIST_FILE_WITH_EXCLUSION}"
+
+FILES_PLAIN=("${CHECKLIST_FILES_PLAIN[@]}")
+FILE_WITH_EXCLUSION="$CHECKLIST_FILE_WITH_EXCLUSION"
 
 errors_total=0
 output=""

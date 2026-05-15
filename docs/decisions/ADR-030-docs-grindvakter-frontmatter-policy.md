@@ -89,6 +89,7 @@ Följande 4 grindvakter etableras, fördelade över `docs`-jobbet och `lint`-job
    - Implementation: [`scripts/check-public-checklists.sh`](../../scripts/check-public-checklists.sh) — bash + awk, inga deps, <1s exekvering
    - CI-integration: lint-jobb-step efter yamllint, kör alltid (även kod-only)
    - Ingen pre-commit-hook (CI-only-grindvakt; pre-commit reserveras för biome + K7-frontmatter)
+   - *Refactored 2026-05-15 till config-driven (`.checklist-policy.conf`) per K7 Lesson #6 (UNIVERSAL) hub-spoke-portabilitet. Test-suite utvidgad till 5 testfall (T5 = saknad config → actionable error). Trail: Session 6.6 fortsättning #2 K7.5.*
 
 ### Del 2 — Frontmatter-policy (4 fält)
 
