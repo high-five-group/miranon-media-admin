@@ -715,6 +715,82 @@ Faktiskt: 54 broken refs fixade (6 + 23 + 1 + 24) + 1 disciplin-utvidgning (ADR-
 
 ---
 
+## Session 6.6 — Docs-grindvakter + frontmatter-policy + observations-pass (2026-05-14 + fortsättning #2 2026-05-15)
+
+Commit-range Session 6.6 (2026-05-14 K1-K7): per sessionsdok Del 4 K2-K7 commits — yamllint + markdownlint + scripted-checklist + Vale + frontmatter-policy infrastruktur.
+
+Commit-range Session 6.6 fortsättning #2 (2026-05-15 K7.5 + K9 + K-sista):
+`74dcd1d` (K7.D handoff-prep) → `d12213d` (K7.5 atomic config-driven-refactor) → `2c4aac3` (K7.5 polish SC2034 klass-fix) → `01f5cbb` (K-sista #1 lessons + ADR-030 + sessionsdok + todo + 6.7-prep) → `4e80647` (K-sista #1 hotfix todo.md forward-pekare → pre-arkiv-path) → `173e75b` (K-sista #2 hub-bake-in — separat operation i marcus-system) → denna commit (K-sista #3 sessionsdok-arkivering + BUILD-LOG + retroaktiv K-sista.2).
+
+### Planerat vs faktiskt
+
+Planerat (per prep-dok Del 1.2 + Del 4): 5 CI-grindvakter (markdownlint, typos, Vale, yamllint, scripted-checklist) + frontmatter-policy 7 docs + 8-12 lessons. Estimat ~10-15h Code-arbete över 2 sessioner.
+
+Faktiskt: 5 grindvakter etablerade (typos rejected → ersatt av check-frontmatter-validator som #5; markdownlint + Vale + yamllint + scripted-checklist + frontmatter-validator). Frontmatter-policy 4 fält på 9 styrande docs (utvidgat från 7 till 9 per K7.A pre-flight + ADR-030 § Del 2 till 10 inkl. hub). 15 [UNIVERSAL] lessons skördade (större skörd än uppskattat — 8 K7.x + 4 K7.5.x + 1 K9.1 + 2 K-sista.x). ~12h Code-arbete inkl. K7.5 retroaktiv refactor + SC2034 polish.
+
+### Avvikelser
+
+1. **typos rejected post-empirisk baseline** — Pre-empirisk antagande att typos skulle täcka stavfel; empirisk K3-baseline 6 490 fynd (svenska false-positives). Tool-uppgift-mismatch (engelsk-only-default mot svensk-dominant repo). Slot-numrering bevarad i ADR-030 § Del 1 position #2 per ADR-022 kategori-utvidgning-mönster.
+
+2. **Vale 539 fynd → defer 6.6.6** — K6.2 V4 bekräftade Vale 3.14.1 har INGEN `--fix`-flagga. Per-fil rad-1-disable Alt F vald för regression-skydd. Mini-session 6.6.6 schemalägs.
+
+3. **K7.5 retroaktiv refactor (Marcus' Gate 2 Fångst #4)** — K5 scripted-checklist hade hårdkodade paths; refactoreras till config-driven (`.checklist-policy.conf`) post-K7-pattern för hub-spoke-portabilitet. Egen sub-fas Session 6.6 fortsättning #2.
+
+4. **K8 deferrad helt till Session 6.7** — Per Marcus' Block D #3-caveat: K1-K7 + K7.5 + K9 åt tiden. Konservativ defer per P3a "var beredd att splitta".
+
+5. **K-sista #1-hotfix 4e80647** — Lychee fångade forward-pekare i todo.md (sessionsdok-archive-path som inte existerade än). Skapade ny lesson-kandidat K-sista.2 (retroaktiv). Mitigation-mönster: arkiverings-pekare måste matcha HEAD-state vid commit-tid.
+
+6. **Dependabot secrets-skuld upptäckt post-K2 merge** — 5 öppna PR:er failar på staging-secrets (pre-existing 5 dagar pre-K2). Defer till mini-session 6.6.5 + ADR-031.
+
+7. **Session 6.6.7 NY defer** — shellcheck-grindvakt-mini-session från K7.B + K7.5.4 SC2034 klass-fix. Egen ADR-trail per ADR-029 § Konvention.
+
+### Verifieringsoutput
+
+| Stop-test | Resultat |
+|---|---|
+| 5 docs-grindvakter aktiva i CI | ✅ K9-verifierat på run 25923521145 (yamllint + markdownlint-cli2 + scripted-checklist + Vale + check-frontmatter) |
+| Frontmatter-policy på 9 styrande docs | ✅ K7.C commit `866dd7c` (0 fel post-implementation) |
+| Pre-commit hook auto-bump aktiv | ✅ K7.C via `git config core.hooksPath .githooks` |
+| Lychee 0 errors mot full scope | ✅ Bevarat från Session 6.5-baseline (+ hotfix 4e80647 åtgärdade ny forward-pekare-drift) |
+| ADR-030 Status Draft → Accepted | ✅ K-sista commit #1 `01f5cbb` |
+| 15 [UNIVERSAL] lessons skördade | ✅ K-sista commit #1 + retroaktiv K-sista.2 i commit #3 |
+| Hub-sync K6.6.1-K6.6.5 (5 konsoliderade rader) | ✅ Commit #2 hub `173e75b` |
+| Strategi E job-skip post-K7.5-baseline | ✅ docs-only 36s, full-CI 88s (empiriskt bättre än uppskattat ~50-65s/~110-130s) |
+| Sessionsdok + handoff-fil arkiverade | ✅ Denna commit `git mv` till `tasks/sessions/archive/2026-05/` |
+
+### Kända uppskjutna beslut / teknisk skuld
+
+- **Session 6.6.5:** Dependabot secrets-skuld (5 PR-fails) + ADR-031. Strategi-val A/B/C/D vid sessionsstart.
+- **Session 6.6.6:** Vale.Terms (425) + Miranon.VueToReact (114) manuell fix per förekomst (~7-10h över 52 filer).
+- **Session 6.6.7:** shellcheck-strict-grindvakt för scripts/*.sh + .githooks/* (0 warnings + 0 errors).
+- **Session 6.7:** CLAUDE.md-audit + skills-extraktion + checklist-trimning (K8 deferrad hit). Inkl. NY scope-domän: Vale-mönster-hub-extraktion (3 mönster: Brand + VueToReact + Vocab-dual-function) + chat-self-review-skill (K-sista.1 trigger).
+- **Marcus-action (när som helst):** Branch-protection-aktivering på main per ADR-029 § Konsekvenser. Aggregator `ci-passed` ready (3-4s konsekvent på 5/5 senaste runs). `gh api .../branches/main/protection` returnerar HTTP 404 "Branch not protected" — design-medveten defer, inte arkitektur-bug.
+- **Framtida hub-polish:** Hub-K6.6.4-rad i `~/Repon/marcus-system/tasks/lessons.md` refererar K-sista.1 men inte K-sista.2 (retroaktiv skapelse). Flaggas för polish-commit vid framtida hub-touch.
+
+### Filstruktur-snapshot
+
+`.checklist-policy.conf` (NY i K7.5 commit `d12213d`): 40 rader, file-level SC2034-disable.
+
+`.frontmatter-policy.conf` (NY i K7.C commit `866dd7c`): file-level SC2034-disable post-K7.5 polish `2c4aac3`.
+
+`scripts/check-public-checklists.sh`: refactored config-driven (post-K7.5).
+
+`scripts/check-frontmatter.sh` + `.githooks/pre-commit`: nya i K7.C.
+
+`scripts/test-check-frontmatter.sh` (9 testfall) + `scripts/test-check-public-checklists.sh` (5 testfall): nya empiriska test-suiter.
+
+3 Miranon-stilguide-filer: `styles/Miranon/VueToReact.yml` + `Brand.yml` + `Undvik.yml` + `Vocab/Miranon/accept.txt` (25 termer).
+
+`docs/decisions/ADR-030-docs-grindvakter-frontmatter-policy.md`: 273 rader, Status Accepted.
+
+`docs/specs/SECURITY-SPEC.md` + `docs/reference/hur-systemet-funkar.md` + `docs/reference/data-model.md` + 6 fler: frontmatter-add (4 fält × 9 styrande docs).
+
+ADR-räkning post-Session 6.6: 30 (ADR-001 till ADR-030).
+
+### Definition of Done uppfylld: Ja
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

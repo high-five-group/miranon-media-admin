@@ -244,7 +244,7 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13: varje utelämning dokumenteras exp
   - Session 6.5 K6.5.7 — Polish-uppdatering inom samma semantik-domän är 11/10 (motiverar samtidig migration vid frontmatter-add)
   - Session 6.5 K2.13 — Projektkunskaps-färskhet driftar; "Senast uppdaterad"-prosa-fält är instans av samma fenomen i versionskontroll
   - Marcus' explicita begäran 2026-05-14 om frontmatter-policy med pre-commit-auto-bump
-- **Etablerad:** Session 6.6 K1 2026-05-14 (sessionsdok [`tasks/sessions/2026-05-14-session-6-6.md`](../../tasks/sessions/2026-05-14-session-6-6.md)).
+- **Etablerad:** Session 6.6 K1 2026-05-14 (sessionsdok [`tasks/sessions/archive/2026-05/2026-05-14-session-6-6.md`](../../tasks/sessions/archive/2026-05/2026-05-14-session-6-6.md)).
 - **Implementation:**
   - K2 ✅ KLAR 2026-05-14 — yamllint (uppvärmning, 17 fynd → 0, commit `16ee4ec`)
   - K3 ✅ STÄNGD 2026-05-14 — typos avvisat per empirisk baseline (6 490 fynd, tool-uppgift-mismatch; commit `e74eb2f`)
