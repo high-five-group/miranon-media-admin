@@ -68,11 +68,16 @@ Följande 4 grindvakter etableras, fördelade över `docs`-jobbet och `lint`-job
    - Scope: `.github/workflows/*.yml` + `.github/dependabot.yml`
    - Lokal config `.yamllint.yml` med `line-length: disable` (CI YAML har långa rader)
 
-5. **scripted-checklist-check** (lint-jobb — snabb shell)
+5. **scripted-checklist-check** (lint-jobb — snabb shell) — implementerad K5 2026-05-14
    - Detektera oavslutade `- [ ]` i publika docs som **inte** är legitima mall-sektioner
-   - Scope (skannas): `README.md`, `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md`, `docs/byggplan.md`, `docs/BUILD-LOG.md`
-   - Undantag (legitima checklist-mallar, skip-skannas): `CONTRIBUTING.md` § Definition of Done-mall, `.github/PULL_REQUEST_TEMPLATE.md`, sessionsdok-mallar
-   - Implementation: `scripts/check-public-checklists.sh` med pattern-undantag per fil
+   - Scope (vita listan, måste vara grön): `README.md`, `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md`, `docs/byggplan.md`, `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md`
+   - **Per-sektion-medveten exklusion i CONTRIBUTING.md:** `^## Definition of Done`-rubriker triggar skip=1 tills nästa `^## `-rubrik (säkerställer att `- [ ]`-rader UNDER en exklusions-sektion ignoreras MEN rader UNDER en följande sektion fångas normalt — Marcus' caveat-test bekräftad empiriskt)
+   - **Empirisk baseline (K5):** 0 fynd utanför CONTRIBUTING-mallar — vita listan redan grön före grindvakt-aktivering
+   - **Felmeddelande-design (K11.5 11/10-disciplin):** fil:rad-format (klickbart) + faktisk item-text + actionable fix-rekommendation (3 alternativ: complete / move-to-todo / move-to-sessionsdok)
+   - **Empirisk 4-test-suite verifierad:** (1) clean state → exit 0, (2) README.md inject → exit 1 + actionable output, (3) CONTRIBUTING.md inject UNDER Definition of Done → exit 0 (exkluderad), (4) Marcus' caveat-test CONTRIBUTING.md inject EFTER Definition of Done-sektioner under annan `## `-rubrik → exit 1 (per-sektion-skopa)
+   - Implementation: [`scripts/check-public-checklists.sh`](../../scripts/check-public-checklists.sh) — bash + awk, inga deps, <1s exekvering
+   - CI-integration: lint-jobb-step efter yamllint, kör alltid (även kod-only)
+   - Ingen pre-commit-hook (CI-only-grindvakt; pre-commit reserveras för biome + K7-frontmatter)
 
 ### Del 2 — Frontmatter-policy (4 fält)
 
@@ -150,6 +155,7 @@ Konsekvensen relateras explicit: ADR-030 § Spårbarhet pekar tillbaka till ADR-
 
 - 4 grindvakter fångar drift FÖREBYGGANDE (vs reaktivt som K5.9c cross-doc-grep + Lychee), bygger ut docs-jobb-yta etablerad av ADR-029
 - K4 markdownlint-cli2 (Strategi B+) reducerade 10 570 pre-existing fynd till 0 i en enda session — bevisar att aggressiv config + auto-fix + manuell hybrid är 11/10-ergonomisk även för stora baselines. Mönsterförstärkning av K1.16 (grindvakt avslöjar emergent värde)
+- K5 scripted-checklist-check etablerade publika-docs-status-skydd med per-sektion-medveten awk-pattern (CONTRIBUTING.md `## Definition of Done`-mallar exkluderas korrekt). Felmeddelande-design per K11.5 11/10-disciplin: fil:rad + item-text + actionable fix-rekommendation
 - Vale specifikt fångar ADR-027-typ-stack-skifte-drift på rad-nivå — *före* den blir lessons-skuld. Vale-scope utvidgad post-K3 med stavnings-validering — en sammanhållen pipeline för språk/ton/terminologi/stavning
 - Frontmatter ger mekanisk "när reviewades senast?"-svar (eliminerar manuell-prosa-drift bekräftad i K2.13)
 - `review_by`-fält tvingar tidsbunden re-verifiering — disciplin-trail genom CI istället för manuell påminnelse
@@ -228,8 +234,8 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13: varje utelämning dokumenteras exp
 - **Implementation:**
   - K2 ✅ KLAR 2026-05-14 — yamllint (uppvärmning, 17 fynd → 0, commit `16ee4ec`)
   - K3 ✅ STÄNGD 2026-05-14 — typos avvisat per empirisk baseline (6 490 fynd, tool-uppgift-mismatch; commit `e74eb2f`)
-  - K4 ✅ KLAR 2026-05-14 — markdownlint-cli2 Strategi B+ (10 570 → 0 fynd, commit i denna K4-bunt)
-  - K5 — scripted-checklist-check (publika docs)
+  - K4 ✅ KLAR 2026-05-14 — markdownlint-cli2 Strategi B+ (10 570 → 0 fynd, commit `dba0440`)
+  - K5 ✅ KLAR 2026-05-14 — scripted-checklist-check (0 pre-existing skuld utanför CONTRIBUTING-mallar, commit i denna K5-bunt)
   - K6 — Vale + projektspecifik stilguide (utvidgad med stavnings-validering post-K3)
   - K7 — Frontmatter-policy + pre-commit hook + CI-validering (inkluderar "Senast uppdaterad"-prosa-borttagning)
   - K8 — Checklist-trimning av sessionsavslut-checklistan (konservativ; halv-mekaniska defer till Session 6.7 per Marcus' Block D #3)

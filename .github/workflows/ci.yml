@@ -120,6 +120,15 @@ jobs:
           pip install --quiet yamllint
           yamllint .github/
 
+      - name: Check public docs for unchecked items
+        # Per ADR-030 § Del 1.5: scripted-checklist-check fångar oavslutade
+        # `- [ ]` i publika docs (README/CHANGELOG/SECURITY/CONTRIBUTING/byggplan/
+        # BYGGPLAN-LÄTTLÄST-v3). CONTRIBUTING.md `## Definition of Done`-
+        # sektioner exkluderade via per-sektion-medveten awk-pattern.
+        # Snabb bash (<1s overhead). Ingen pre-commit-hook (CI-only).
+        # Empirisk 4-test-suite verifierade vid K5-implementation 2026-05-14.
+        run: bash scripts/check-public-checklists.sh
+
   # Job 3: Heavy test-suite + build. Conditional på changed-detection.
   # Per ADR-029 §1c. Skippas helt på doc-only-commits (~70s spill eliminerat).
   test:

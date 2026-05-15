@@ -78,11 +78,11 @@ push:
 |---|---|---|
 | yamllint | `brew install yamllint` *eller* `pipx install yamllint` | `yamllint .github/` |
 | markdownlint-cli2 | `npm install` (devDependency) *eller* `brew install markdownlint-cli2` | `npx markdownlint-cli2` |
+| scripted-checklist-check | (ingår i repo via `scripts/`) | `bash scripts/check-public-checklists.sh` |
 
-Tilläggsverktyg läggs till här när Session 6.6 fortsätter (Vale,
-scripted-checklist-check) per ADR-030. typos övervägdes men avvisades
-per K3-baseline 2026-05-14 (tool-uppgift-mismatch; stavnings-substans
-flyttades till Vale).
+Tilläggsverktyg läggs till här när Session 6.6 fortsätter (Vale) per
+ADR-030. typos övervägdes men avvisades per K3-baseline 2026-05-14
+(tool-uppgift-mismatch; stavnings-substans flyttades till Vale).
 
 ## Kvalitetsribba
 
