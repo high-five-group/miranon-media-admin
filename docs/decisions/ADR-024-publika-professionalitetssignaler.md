@@ -15,6 +15,7 @@ Code:s omdöme i K1.B Block 7.1: *"den ena halvan exceptionellt välbyggd — de
 Etablera publika professionalitetssignaler på senior-nivå även för privat-projekt. Implementeras i fyra sub-klungor (åa repo-root metadata, åb .github/-paketet, åc top-level professional docs, åd README-uppgradering). Alla fyra delar samma motivering — därför EN samlad ADR istället för splittade ADR-024a..d (per UNIVERSAL "Korsreferens > duplicering", lessons.md 2026-05-04).
 
 Konkret omfattning:
+
 - **Repo-root metadata** — LICENSE (proprietary, "UNLICENSED" i package.json), package.json kompletterad (description, author, license, repository, homepage, keywords, engines, "private": true), .editorconfig, .nvmrc, .vscode/extensions.json
 - **.github/-paketet** — workflows/ci.yml (biome+tsc+test:api+build på PR till main), dependabot.yml (npm + github-actions), CODEOWNERS, ISSUE_TEMPLATE/{bug.md, feature.md}, PULL_REQUEST_TEMPLATE.md
 - **Top-level professional docs** — CHANGELOG.md (Keep-a-Changelog 1.1.0, retroaktiv), SECURITY.md (privat-rapportering, scope-definition), CONTRIBUTING.md (aktör-rollfördelning, sessions-disciplin, transcript-disciplin, DoD)
@@ -30,6 +31,7 @@ Konkret omfattning:
 ## Konsekvenser
 
 **Positivt:**
+
 - Kategori-asymmetrin elimineras innan Codex-verifiering — repot klassas på sin substans, inte på sin publika fasad.
 - CI ersätter pre-commit-hookens manuell-disciplin med automatiserad verifiering på PR.
 - dependabot fångar säkerhets-uppdateringar utan manuell övervakning (defer-poster H.2 PostCSS audit kan hanteras i automatiska PR:er).
@@ -37,9 +39,11 @@ Konkret omfattning:
 - CONTRIBUTING formaliserar aktör-rollfördelningen (Marcus + Chat + Code) som hittills levde implicit i CLAUDE.md.
 
 **Negativt:**
+
 - 5 nya filer i .github/ + 4 nya filer i repo-rot + 5 nya metadata-filer = 14 nya artefakter att hålla aktuella. Lindras av att de flesta är "set-and-forget" (LICENSE, .editorconfig, .nvmrc).
 - CHANGELOG kräver disciplin per release — defer:as till första taggade version (0.2.0 efter Fas 2).
 
 **Spårbarhet:**
+
 - ADR-024 refereras i commit-meddelanden för åa, åb, åc, åd
 - README:s Documentation-map-sektion länkar tillbaka till denna ADR via decisions/README.md

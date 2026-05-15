@@ -1,4 +1,6 @@
 # todo.md — Miranon Media Admin (React)
+
+<!-- markdownlint-disable-next-line MD036 -->
 *Senast uppdaterad: 2026-05-13 (Fas 2 KOMPLETT — Sessions 4 + 5 + 5b stängda, Fas 2.5 nästa)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
@@ -50,6 +52,7 @@ K1.D Commit 2 lychee-baseline (2026-05-14) fångade 81 broken/stale refs. Per K7
 | B.2 docs/archive/ samma bugg | ~7 träffar | Som B.1 fast i `docs/archive/`-filer | Sök-och-ersätt eller markera frozen-zon explicit |
 
 **Per-fas-fix-procedure:**
+
 1. Per drift-kategori: lokalisera alla refererande filer via `rg -l '<gammal-path>' docs/ tasks/`
 2. Sök-och-ersätt med `sed -i ''` (macOS) eller motsvarande
 3. Verifiera via `git diff` att inga oavsiktliga matches gjordes
@@ -75,11 +78,13 @@ Allowlist `audit-ci.jsonc` är tom (K0åh, 2026-05-13). Exakt-pin på 5 `@tansta
 ### Återkommande disciplin: Veckovis Actions supply-chain-granskning (ADR-029 §6)
 
 Third-party GitHub Actions med SHA-pin granskas veckovis för:
+
 - Nya releases (uppdatera SHA om relevant security-fix)
 - Publicerade supply-chain-incidenter (typ tj-actions mars 2025)
 - Withdrawn actions eller maintainer-byten
 
 Pinned third-party Actions just nu:
+
 - `tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96` (v47.0.6)
 - `lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411` (v2.8.0)
 
@@ -87,6 +92,7 @@ Pinned third-party Actions just nu:
 **Nästa granskning senast:** 2026-05-20
 
 **Granskningssteg:**
+
 1. `gh api repos/tj-actions/changed-files/releases/latest --jq '{tag_name, target_commitish, published_at}'`
 2. `gh api repos/tj-actions/changed-files/git/refs/tags/<tag_name> --jq '.object.sha'` — verifiera att SHA matchar release-tag
 3. Jämför verifierad SHA mot pinned SHA i `.github/workflows/ci.yml`
@@ -102,6 +108,7 @@ Pinned third-party Actions just nu:
 Se [`docs/byggplan.md`](../docs/byggplan.md) §4 Fas 2-prompten och [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 2 för kontext från Fas A + Fas 0/1.
 
 **Session-historik:**
+
 - **Session 1 (React): 2026-04-14** — Fas 0 + Fas 1 klara. BUILD-LOG + 10 ADR:er skapade. Dokumentationsrutiner (BUILD-LOG + ADR) integrerade i CLAUDE.md sessionsstart/avslut. Commits: `fcc6de3`, `e3d8e8a`, `c91bfa0`, `680858c`.
 - **Session 2 (React): 2026-04-30 → 2026-05-05** — Fas A (säkerhetshardening, M1–M8, 14 commits, 113 tester) + P0–P3a byggplan-revision (`docs/byggplan.md` 832 rader, 13 fas-prompter, 10 nya ADR:er ADR-011..ADR-020, 7 UNIVERSAL-lessons). P3b städning pågår. Se [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 2 för full retrospektiv.
 - **Session 3 (Pre-Fas-2-verifiering): 2026-05-06** — Repo-strukturell polish + publika professionalitetssignaler. K3 åa-åf: LICENSE + package.json metadata + .github/-paketet (CI + dependabot + templates) + CHANGELOG/SECURITY/CONTRIBUTING + README badges/Documentation map + docs/-omstrukturering (specs/analysis/reference/logs) + analys/ → docs/research/datamodell-research/ + tasks/sessions/-arkivering. 4 nya ADR:er (ADR-021..024). Trail: [`tasks/sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md`](sessions/archive/2026-05/2026-05-06-pre-fas2-verifiering.md).

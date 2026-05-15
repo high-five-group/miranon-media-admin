@@ -11,6 +11,7 @@
 Denna spec ersätter `KVALITETSDEFINITIONER-11.md` (Vue-eran) som styrande kvalitetsribba för 11/11/11-anchorn i React-projektet. Vue-versionen är arkiverad och bevarad som referens.
 
 **Innehållsfyllning per sektion sker progressivt:**
+
 - **Fas 3 K0** — Sektion 1 Teknisk kvalitet + Sektion 2 Återanvändbarhet (när första React-komponent bygggs, etableras hooks-namn och primitiva mönster mot React Aria).
 - **Fas 3.5** — Sektion 3 Komplett 11/10-checklista (när a11y-baseline-mönster konkretiseras per ADR-020).
 - **Fas 6** — Sektion 4 Källor + Sektion 5 Vad vi INTE tar med (när stack-bibliotek-valen är låsta).

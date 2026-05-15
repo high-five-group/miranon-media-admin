@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD041 -->  <!-- filen saknar h1 (data-doc utan toc-rubrik som default) -->
 > **Primär version. Senast uppdaterad 2026-04-28 (Marcus + Claude).**
 >
 > Detta är källsanningen för datamodellen. Kopia för psionautics-projektets
@@ -50,7 +51,7 @@ För när Claude Code behöver slå upp snabbt utan att söka.
 
 ### Base
 
-```
+```text
 app8uGPrVCVOm6LfD
 ```
 
@@ -112,6 +113,7 @@ Dessa är broarna som hela rollup-kedjan bygger på. Ändra aldrig utan att för
 ### Session-värden (singleSelect)
 
 `Deltaganden.Session` (`fldBPZnsDL0bNIRHx`) accepterar:
+
 - `Dag 1` (sel: `selc3wPOyp1joKBez`) — räknas i `Genomfört event`
 - `Dag 2` (sel: `seljLxztZZUluCzNn`) — räknas INTE i `Genomfört event` (undviker dubbelräkning)
 - `Föreläsning` (sel: `selSJcKA6ZDmIvwhV`) — räknas i `Genomfört event`
@@ -271,7 +273,7 @@ Källa för Schema cheat sheet: `02-live-state.md` §3 + `01-extraction.md` §A.
 
 ### De tre kärntabellerna
 
-```
+```text
 Personer ─────────┬───────────────── Anmälningar
    (master        │                   (en rad per
    registry)      │                   person × event)
@@ -416,7 +418,7 @@ Alla dessa är **tomma eller noll** tills `Deltaganden.Status` har satts till `N
 
 Detta är DAG:en som gör att närvaromarkering på Deltaganden blir till en badge på Personer. Varje pil är ett beroende.
 
-```
+```text
 Deltaganden.Status
        │
        ▼
@@ -454,26 +456,32 @@ RIM 1 ×         RIM 2 ×        RIM 3 ×        Fjärrskådning ×    Antal gen
 
 ### Varje steg i klartext
 
-**1. Status → Närvaropoäng**
-```
+#### 1. Status → Närvaropoäng
+
+```text
 IF(Status="Närvarande" OR Status="Deltog online", 1, 0)
 ```
+
 Alla statusar som inte innebär närvaro (Ej avstämt, Frånvarande, Försenad, Avbröt) ger 0.
 
 **2. Närvaropoäng → Eventkey-formler**
 Fyra parallella formler som filtrerar på kursnamn:
-```
+
+```text
 RIM 1 eventkey      = IF(Närvaropoäng=1 AND Kursnamn="Resor i medvetandet 1", Eventkey, BLANK)
 RIM 2 eventkey      = IF(Närvaropoäng=1 AND Kursnamn="Resor i medvetandet 2", Eventkey, BLANK)
 RIM 3 eventkey      = IF(Närvaropoäng=1 AND Kursnamn="Resor i medvetandet 3", Eventkey, BLANK)
 Fjärrskådning ek.   = IF(Närvaropoäng=1 AND Kursnamn="Fjärrskådning", Eventkey, BLANK)
 ```
+
 **RIM 3-formeln tillagd 2026-04-26** (`fldL0YfWmdkOuxgsH`) för symmetri. Inget Session-filter på dessa fyra — räknar via Dag 1 OR Dag 2.
 
-**3. Närvaropoäng → Genomfört event (1 rad per event)**
-```
+#### 3. Närvaropoäng → Genomfört event (1 rad per event)
+
+```text
 IF(Närvaropoäng=1 AND (Session="Dag 1" OR Session="Föreläsning"), Eventlabel, BLANK)
 ```
+
 Session-filtret är kritiskt: det hindrar att ett tvådagars-event räknas dubbelt (eftersom både Dag 1 och Dag 2 är separata Deltaganden-poster).
 
 **Konsekvens av filter-divergensen:** Eventkey-formlerna räknar Dag 1 OR Dag 2 (ingen filter), Genomfört event räknar bara Dag 1 OR Föreläsning. För dag2_only-events kan en person samtidigt ha "RIM 1 × = 1" och "Antal genomförda event (gammal) = 0". Den nya `Antal genomförda event` (formula 2026-04-26) summerar Eventkey-räknarna istället → konsistent med RIM-räknarna.
@@ -510,6 +518,7 @@ Klassificerar personen utifrån RIM 1 × och RIM 2 × (full formel via MCP get_t
 ### ⚠️ Kända buggar i insiktskedjan
 
 **Dead branches i Erfarenhetsbadge.** SWITCH-formeln mappar också:
+
 - `"Genomfört alla"` → `"Miranon Media stjärna"`
 - `"Genomfört alla (upprepat)"` → `"Hängiven utforskare"`
 
@@ -523,7 +532,7 @@ Men `Erfarenhetsnivå`-formeln returnerar aldrig de värdena. Grenarna är döda
 
 Detta är det snabbare flödet som inte kräver närvaro. Det är det vi kan exportera idag.
 
-```
+```text
 Anmälan skapas
        │
        ▼
@@ -574,13 +583,15 @@ Källa: `01-extraction.md` §B.A2 (10 actions explicit listade) + `miranon_autom
 ### ⚠️ `Återkommande?` — missvisande namn
 
 Formeln är:
-```
+
+```text
 IF(tidigare genomförda utbildningar > 0 AND kommande utbildningar > 0, "Ja", "Nej")
 ```
 
 **Detta mäter INTE "har personen gått kurs tidigare".** Det mäter **"är personen en aktiv återkommande kund som bokat om"**. En person som gått RIM 1 2024 men inte har någon kommande bokning → `Återkommande? = Nej`.
 
 För en "Ny/Återkommande"-badge i admin-tabellen som betyder "har gått kurs tidigare" räcker *inte* det här fältet. Man behöver antingen:
+
 - `Antal tidigare genomförda utbildningar > 0` direkt, eller
 - `Antal genomförda event > 0` (som dock kräver närvaro-backfill)
 
@@ -597,10 +608,12 @@ För en "Ny/Återkommande"-badge i admin-tabellen som betyder "har gått kurs ti
 ### F.1 Backfill-flödet (kontra A2:s designflöde)
 
 **Designflödet (lead först → anmälan sedan):**
+
 1. Person hämtar erbjudande på miranon.se → A4 skapar Person (ofta namnlös, bara e-post)
 2. Person anmäler sig senare till kurs → A2 hittar Person via e-post → Gren 1 (uppdatera namn) eller Gren 2 (länka)
 
 **Backfill-flödet (anmälan först — ingen existerande Person):**
+
 1. Backfill-script POSTar Anmälan med E-post men ingen Person-länk
 2. A2 söker Person → ingen → **Gren 4** (skapa Person + länka Anmälan)
 
@@ -625,7 +638,8 @@ För en "Ny/Återkommande"-badge i admin-tabellen som betyder "har gått kurs ti
 ### F.3 Mail-flödet (frontend → Edge Function → Airtable + Resend)
 
 **Designflödet:**
-```
+
+```text
 [Admin UI] → POST /functions/v1/send-email { type, to, name, recordId }
             ↓
        send-email Edge Function
@@ -653,6 +667,7 @@ För en "Ny/Återkommande"-badge i admin-tabellen som betyder "har gått kurs ti
 **Scenario:** Lotta klickar "Lägg till som anmäld" på en Väntelista-rad i admin.
 
 **Flöde:**
+
 1. Frontend POSTar `create-registration` med `kalla="Väntelista"` + namn/email/telefon
 2. `create-registration` skapar ny rad i Anmälningar (Källa-fältet sätts explicit)
 3. Frontend PATCH:ar Väntelista-raden: `Flyttad till anmälan = true`
@@ -684,7 +699,7 @@ Alla 11 är `deployed` per JSON-export 2026-03-16 och verifierat empiriskt levan
 
 A11 ligger i Grupp 3 (Övervakning) i UI:t men kedjas naturligt på A3:s Deltaganden-creates och måste därför nämnas här.
 
-```
+```text
 Anmälan skapas
       │
       ▼
@@ -709,6 +724,7 @@ A11 (kedjas — Övervakning-gruppen): Koppla Deltagande till Person
 ```
 
 Efter sekvensen:
+
 - Anmälan är kopplad till event och person
 - Deltaganden-rader finns (en per sessionsdag), men närvaro är inte markerad
 - Personer-rollups uppdateras: Anmälningar-baserade fylls i direkt, Deltaganden-baserade förblir noll tills A9/A10 körs
@@ -719,7 +735,7 @@ Efter sekvensen:
 
 #### Sekvens — Lead-magnet (A4 → A5)
 
-```
+```text
 Rad skapas i Hämtade erbjudanden
       │
       ▼
@@ -787,7 +803,7 @@ A4 trigger: `RECORD_CREATED` på `tblqFpgxEhJ95AEcM` (Hämtade erbjudanden). 10 
 
 A9 och A10 triggar i sin tur A8 via Status-uppdateringen på Deltaganden:
 
-```
+```text
 Eventplanering."Markera alla närvarande [...]" = TRUE
       │
       ▼
@@ -834,6 +850,7 @@ Källa: `git log` per fil 2026-04-28 + `01-extraction.md` §I.
 **Endpoint:** POST `/functions/v1/create-registration`
 
 **Request body:**
+
 ```ts
 {
   fornamn: string,        // required
@@ -852,17 +869,20 @@ Källa: `git log` per fil 2026-04-28 + `01-extraction.md` §I.
 **Skriver till:** Anmälningar (`tbloOcrppVoyrHbrq`) — fälten `Förnamn`, `Efternamn`, `E-post`, `Status`, `Antal platser`, `EventKey`, `Event`, `Inskickad` (alltid). Plus `Mobilnummer`, `Notering`, `Betalning mottagen (psionautics-event)`, `Källa`, `Medföljande till` (villkorat).
 
 **Hårdkodade värden:**
+
 - `EventKey: 'Event-17'` (refererar till MK-eventet)
 - `Event: ['recQ2TPsY69fQXA8a']` (MK record-ID)
 
 **Dubblettcheck:** Sök Anmälningar med `AND({Normaliserad e-post}=$email, {EventKey}='Event-17')` → om hit returnera **409** med `{ error: 'duplicate', existingName }`.
 
 **Felfall:**
+
 - 400: namn saknas
 - 409: dubblett (existingName i body)
 - 500: AIRTABLE_TOKEN saknas eller Airtable POST-fel
 
 **Antaganden om automation-kaskad:**
+
 - A1 körs efter create → matchar EventKey → sätter Event-länk (idempotent eftersom create redan satt det — bälte och hängslen mot fälla 9)
 - A2 körs efter create → kedjas till matching/skapande av Person → skapar Touchpoint
 - A3 körs när Person + Event är satta → skapar 2 Deltaganden (Dag 1 + Dag 2 för MK)
@@ -875,6 +895,7 @@ Källa: `git log` per fil 2026-04-28 + `01-extraction.md` §I.
 **Endpoint:** POST `/functions/v1/create-waitlist-entry`
 
 **Request body:**
+
 ```ts
 { fornamn: string, efternamn: string, email: string, telefon?: string }
 ```
@@ -882,6 +903,7 @@ Källa: `git log` per fil 2026-04-28 + `01-extraction.md` §I.
 **Skriver till:** Väntelista (`tbl2VxMx7JMkIxD4Q`) — fälten `Förnamn`, `Efternamn`, `E-post`, `Telefonnummer`, `Event`, `Eventdatum-start`, `Eventdatum-slut`.
 
 **Hårdkodade värden:**
+
 - `Event: 'Medveten Kontakt'`
 - `Eventdatum-start: '2026-05-01'`
 - `Eventdatum-slut: '2026-05-03'`
@@ -897,11 +919,13 @@ Källa: `git log` per fil 2026-04-28 + `01-extraction.md` §I.
 **Endpoint:** POST `/functions/v1/update-registration`
 
 **Sätter:**
+
 - `Anmälningar.Status` (när `status`-param skickas)
 - `Anmälningar.Anmälningsavgift`, `Slutbetalning` (betalstatus)
 - `Eventplanering.Max antal platser`, `Extra platser`, `Arrangörsplatser`, `Manuella platser` (event-config)
 
 **Antaganden om automation-kaskad:**
+
 - A7 triggas vid varje Anmälningar-uppdatering → uppdaterar `Eventplanering.Ej betalda (records)`. **OBS:** triggas även för icke-betalningsfält — kan vara kostsamt (se fälla 10).
 
 ### `get-event-bookings`
@@ -909,6 +933,7 @@ Källa: `git log` per fil 2026-04-28 + `01-extraction.md` §I.
 **Endpoint:** POST eller GET `/functions/v1/get-event-bookings`
 
 **Read-only.** Läser `Anmälningar` + `Eventplanering`. Returnerar:
+
 - Event-metadata: `Manuella platser`, `Extra platser`, `Arrangörsplatser`, `Max antal platser` (med fallback 70 om okänt)
 - Booking-rader inkl. `Antal platser`, `Status`, `Källa`, `Medföljande till`, **`deltagarinfoSkickad`** (mappat från Airtable-fält `Deltagarinfo skickad`, fld3WBS0QQrqLpYtK)
 - Plus-one-relationer (Medföljande till)
@@ -920,6 +945,7 @@ Källa: `git log` per fil 2026-04-28 + `01-extraction.md` §I.
 **Endpoint:** GET `/functions/v1/get-waitlist`
 
 **Read-only.** Läser `Väntelista` med Airtable-filter `NOT({Flyttad till anmälan})` (URL-encoded i fetch). Paginerar med `offset` tills slut. Returnerar:
+
 ```ts
 {
   total: number,
@@ -942,6 +968,7 @@ Sorterad descending på `createdTime` (nyast först).
 **Endpoint:** POST `/functions/v1/send-email`
 
 **Request body:**
+
 ```ts
 {
   type: 'confirmation' | 'payment' | 'plus_one' | 'participant-info' | 'waitlist-info-1',
@@ -991,6 +1018,7 @@ else → patchAfterSend
 Etablerad 2026-04-27 (commit `1a07d1b`) för att hålla `patchAfterSend` orörd inför skarp event-vecka (regressionsskydd) medan väntelista-mail tillkom.
 
 **Felfall:**
+
 - 400: type saknas eller okänt
 - 422: Resend-fel (oftast variabel-mismatch — se Mail-flöden §Resend-fällor)
 - 500: AIRTABLE_TOKEN eller RESEND_API_KEY saknas
@@ -1113,7 +1141,7 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 
     I reverse-flöden (backfill av historisk anmälan på lead-Person): Gren 1 körs, namnet uppdateras, men Anmälan hänger lös utan Person-länk. Konsekvens: A3 triggas aldrig (kräver Anmälan.Person isNotEmpty) → inget Deltagande skapas → A11 kedjar aldrig. Scriptet måste kompensera genom att PATCH:a Person-länken manuellt efter create. Patch:et triggar A3 → A11 kedjar korrekt.
 
-    **Live-stickprov 2026-04-28:** 2 namnlösa Personer (`receoF3BY3ZCMEJ0U` tonetider@protonmail.com, `rec0uNum3YVL1tb1L` miranon.prominent654@passmail.net) skapade 2026-04-26 21:47–48 av A4 från lead-process. Båda har formel-värdet "Ej tillgängligt" på Namn-fältet eftersom Förnamn+Efternamn är tomma. Bekräftar att leads fortsätter strömma in i normalt tillstånd.
+    **Live-stickprov 2026-04-28:** 2 namnlösa Personer (`receoF3BY3ZCMEJ0U` <tonetider@protonmail.com>, `rec0uNum3YVL1tb1L` <miranon.prominent654@passmail.net>) skapade 2026-04-26 21:47–48 av A4 från lead-process. Båda har formel-värdet "Ej tillgängligt" på Namn-fältet eftersom Förnamn+Efternamn är tomma. Bekräftar att leads fortsätter strömma in i normalt tillstånd.
 
 22. **Namnlösa Personer är ett normalt tillstånd, inte ett fel.** Rader i Lead-tabellen (se Scenario 5 i hur-systemet-funkar.md) skapas ofta med endast e-post från miranon.se. A4 skapar då Person med Förnamn/Efternamn tomma. Personen förblir namnlös tills hen anmäler sig till en kurs, då A2 Gren 1 fyller i namnet från Anmälan.
 
@@ -1231,6 +1259,7 @@ A3 hade skapat 2 poster per anmälan (Dag 1 + Dag 2). Sessionsmallen fungerade.
 ### De 30 verifierade "Närvarande"-posterna (pre-backfill)
 
 Kom från tre specifika event:
+
 - RIM 1 Falköping 2026-03-21
 - RIM 1 Rönninge 2025-12-13
 - Fjärrskådning Rönninge 2025-11-29

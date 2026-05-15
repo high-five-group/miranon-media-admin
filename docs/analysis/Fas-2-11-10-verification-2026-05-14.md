@@ -27,20 +27,20 @@ Min klassning: Fas 2 är ungefär 9/10-10/10 beroende på axel, men inte 11/10 f
 
 Officiella primärkällor som användes:
 
-- TanStack Router — authenticated routes: https://tanstack.com/router/v1/docs/guide/authenticated-routes
-- TanStack Router — setup authentication: https://tanstack.com/router/latest/docs/how-to/setup-authentication
-- TanStack Router — router context: https://tanstack.com/router/latest/docs/guide/router-context
-- TanStack Router — code splitting: https://tanstack.com/router/latest/docs/guide/code-splitting
-- TanStack Router — routing concepts/pathless routes: https://tanstack.com/router/latest/docs/routing/routing-concepts
-- TanStack Router — data loading/error handling: https://tanstack.com/router/latest/docs/framework/react/guide/data-loading
-- Supabase JS — `getSession`: https://supabase.com/docs/reference/javascript/auth-getsession
-- Supabase JS — `getUser`: https://supabase.com/docs/reference/javascript/auth-getuser
-- Supabase JS — `onAuthStateChange`: https://supabase.com/docs/reference/javascript/auth-onauthstatechange
-- Supabase Auth — sign out scopes: https://supabase.com/docs/guides/auth/signout
-- nuqs adapters: https://nuqs.dev/docs/adapters
-- nuqs basic usage: https://nuqs.dev/docs/basic-usage
-- Playwright auth: https://playwright.dev/docs/auth
-- Playwright projects/dependencies: https://playwright.dev/docs/test-projects
+- TanStack Router — authenticated routes: <https://tanstack.com/router/v1/docs/guide/authenticated-routes>
+- TanStack Router — setup authentication: <https://tanstack.com/router/latest/docs/how-to/setup-authentication>
+- TanStack Router — router context: <https://tanstack.com/router/latest/docs/guide/router-context>
+- TanStack Router — code splitting: <https://tanstack.com/router/latest/docs/guide/code-splitting>
+- TanStack Router — routing concepts/pathless routes: <https://tanstack.com/router/latest/docs/routing/routing-concepts>
+- TanStack Router — data loading/error handling: <https://tanstack.com/router/latest/docs/framework/react/guide/data-loading>
+- Supabase JS — `getSession`: <https://supabase.com/docs/reference/javascript/auth-getsession>
+- Supabase JS — `getUser`: <https://supabase.com/docs/reference/javascript/auth-getuser>
+- Supabase JS — `onAuthStateChange`: <https://supabase.com/docs/reference/javascript/auth-onauthstatechange>
+- Supabase Auth — sign out scopes: <https://supabase.com/docs/guides/auth/signout>
+- nuqs adapters: <https://nuqs.dev/docs/adapters>
+- nuqs basic usage: <https://nuqs.dev/docs/basic-usage>
+- Playwright auth: <https://playwright.dev/docs/auth>
+- Playwright projects/dependencies: <https://playwright.dev/docs/test-projects>
 
 ## Verifieringsbas
 

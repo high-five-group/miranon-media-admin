@@ -65,21 +65,27 @@ Vi letar efter problemet bakom problemet.
 När antaganden är borta finns några få sanningar kvar. Allt vi bygger måste vila på dem.
 
 ### 1. Människan reagerar på kontrast, mönster och avvikelse
+
 Detta är inte trend. Det är perception. Blicken söker skillnad. Hjärnan söker ordning. Design som går emot detta kräver onödig ansträngning.
 
 ### 2. Uppmärksamhet är den knappaste resursen
+
 Tid, energi, motivation och tålamod är begränsade. Varje element kostar. Varje val tömmer en reserv. Att lägga till är att belasta.
 
 ### 3. Det tydliga slår det förklarade
+
 När något kräver förklaring ska första misstanken riktas mot designen, inte mot människan. Pedagogik kan ibland behövas, men den får aldrig användas för att dölja onödig komplexitet.
 
 ### 4. Varje designproblem är ett resursproblem
+
 Verkliga människor möter inte produkter i neutrala tillstånd. De möter dem under tidspress, trötthet, stress, splittrad uppmärksamhet och låg tolerans för friktion. Det som byggs måste fungera där.
 
-### 5. Form är billigare än någonsin. Omdöme är inte det.
+### 5. Form är billigare än någonsin. Omdöme är inte det
+
 AI kan generera layout, variation, copy och kod. Det gör inte mänskligt omdöme mindre viktigt. Det gör det mer centralt. När exekvering blir billig stiger värdet på val, subtraktion och riktning.
 
-### 6. Verktyg byts ut. Tänkesätt består.
+### 6. Verktyg byts ut. Tänkesätt består
+
 Inga beslut får vila på Figma, React, shadcn, Framer, Lovable eller något annat verktyg. Verktyg är tillfälliga. Perception, beteende och mänskliga begränsningar består.
 
 ---
@@ -108,30 +114,39 @@ Om det vi byggt fungerar tekniskt men lämnar människan i samma tillstånd som 
 ## IV. Nio principer
 
 ### 1. Eliminera, sedan designa
+
 Det bästa gränssnittet är ofta borttagandet av orsaken till behovet. Vi bygger inte först och förenklar sen. Vi tar bort först och bygger bara det som överlever.
 
 ### 2. En människa, ett ögonblick
+
 Vi designar inte för “användare”. Vi designar för en konkret människa i ett konkret läge. Abstrakta målgrupper gör tänkandet slappt. Verkliga ögonblick gör det skarpt.
 
 ### 3. Intentionen styr allt
+
 Varje beslut måste kunna spåras tillbaka till önskad tillståndsförändring. Om kopplingen saknas är beslutet svagt.
 
 ### 4. Beteende är målet, form är medlet
+
 Vi designar inte för att något ska se rätt ut. Vi designar för att rätt handling ska kännas självklar, möjlig och trygg.
 
 ### 5. Varje element har ett jobb
+
 Ingen pixel, inget ord, ingen färg, ingen animation får existera av vana. Om ett element inte aktivt tjänar intentionen ska det bort.
 
 ### 6. Det osynliga räknas
+
 Fokus, hover, laddning, felmeddelanden, tomma lägen, tangentbord, skärmläsare, print, mobilkanter, övergångar, språk, timing. Människor känner omsorg även när de inte kan namnge den.
 
 ### 7. Starka val slår neutral flexibilitet
+
 Bra produkter försöker inte vara allt samtidigt. De väljer väg. De guidar. De tar ansvar. För många öppna möjligheter är ofta designens sätt att undvika att tänka klart.
 
 ### 8. System bär kvalitet över tid
+
 Utan system blir kvalitet personberoende. Tokens, komponenter, regler och mönster gör att omsorg kan upprepas konsekvent.
 
 ### 9. Weniger, aber besser
+
 Inte minimalism som estetik.  
 Subtraktion som disciplin.  
 Det som återstår efter att allt oviktigt tagits bort ska inte kännas tomt. Det ska kännas koncentrerat.
@@ -143,12 +158,15 @@ Det som återstår efter att allt oviktigt tagits bort ska inte kännas tomt. De
 AI har tre legitima roller i designarbetet:
 
 ### Materialutforskning
+
 Det genererar variationer snabbt och gör sökningen bredare.
 
 ### Konsekvensvakt
+
 Det hjälper till att hålla system, copy, mönster och komponenter sammanhängande.
 
 ### Exekveringsarm
+
 Det producerar utkast, kod, struktur och implementering i hög hastighet.
 
 Men det finns en gräns:

@@ -57,6 +57,7 @@ Strategi E är *renare* än Pure C på fyra dimensioner: en sanningskälla (en w
 ## Konsekvenser
 
 **Positivt:**
+
 - ~74 % CI-tids-besparing per doc-only-commit (empiriskt verifieras i K1.D commit 2)
 - Branch-protection-readiness via `ci-passed`-aggregator (om Marcus aktiverar senare)
 - Lychee adderar broken-link-detection som inte fanns innan — kvalitetshöjning
@@ -66,6 +67,7 @@ Strategi E är *renare* än Pure C på fyra dimensioner: en sanningskälla (en w
 - Concurrency-grupp ger ytterligare gratis-besparing vid rapid-fire-pushar
 
 **Negativt:**
+
 - Två nya third-party Actions (`tj-actions/changed-files`, `lycheeverse/lychee-action`) — Actions-supply-chain-yta ökar
   - Mitigation: SHA-pinning + veckovis Actions-granskning (utvidgning av ADR-028-policy)
 - ci.yml växer från 12 steg (1 jobb) till 5 jobs / ~24 steps total — högre fil-komplexitet
@@ -147,6 +149,7 @@ Per K7 refactor/semantik-separation (Marcus' Gate 2-disciplin 2026-05-13): CI-ar
 Bland kategori A-fynden: `KVALITETSDEFINITIONER-11.md` refererad istället för `KVALITETSDEFINITIONER-11-REACT.md`. Detta är direkt drift från ADR-027 (Vue → React stack-skifte, Session 5b K3.5/K5) som K5.9c cross-doc-grep-rutinen inte fångade (rutinen sökte efter Vue-specifika strängar, inte länkmål-validering).
 
 Mönster: lychee + cross-doc-grep är komplementära kvalitetsverktyg.
+
 - Cross-doc-grep fångar **innehållsdrift** (samma faktum, olika ord)
 - Lychee fångar **referensdrift** (samma ord, fel länkmål)
 

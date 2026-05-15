@@ -8,7 +8,7 @@
 
 Fas 1-prompten specificerade:
 
-> 0. [FI] Kopiera docs, tasks och settings (kopieringsscriptet från FILE-INVENTORY.md):
+> 1. [FI] Kopiera docs, tasks och settings (kopieringsscriptet från FILE-INVENTORY.md):
 >    Kör bash-scriptet i sektion "Kopieringslista" i FILE-INVENTORY.md med DRY_RUN=0:
 >    `DRY_RUN=0 bash ~/Repon/miranon-media-os/docs/react-migration/FILE-INVENTORY.md`
 
@@ -46,17 +46,17 @@ Källfilerna till de manuella kopieringarna specificerades explicit i en bash-bl
 
 ## Alternativ som övervägdes
 
-**1. Kör scriptet rakt av, låt det skriva över**
+### 1. Kör scriptet rakt av, låt det skriva över
 
 - **Fördelar:** Följer prompten bokstavligt.
 - **Nackdelar:** Förstör de 2 nya `[UNIVERSAL]`-lärdomarna från Fas 0. Dessa lärdomar är resultatet av konkret friction och måste bevaras. Förstör också React-specifik todo.md.
 
-**2. Kör scriptet, återställ sedan de skippade filerna från git**
+### 2. Kör scriptet, återställ sedan de skippade filerna från git
 
 - **Fördelar:** Följer scriptets entry point.
 - **Nackdelar:** Farligare — ett misstag (glömma återställa) förstör data. Fler steg, fler chansen för fel. Saknar revert-cred om något går snett mitt i.
 
-**3. Modifiera scriptet i Vue-repot för att respektera React-repots versioner**
+### 3. Modifiera scriptet i Vue-repot för att respektera React-repots versioner
 
 - **Fördelar:** Generaliserbart för framtida fas-körningar.
 - **Nackdelar:** Scope-creep — kräver ändring i Vue-repot bara för Fas 1 i React-repot. Båda repos skulle behöva synkas.

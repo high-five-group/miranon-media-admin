@@ -16,6 +16,7 @@ Det finns för att göra kvalitet reproducerbar. Inte beroende av humör, talang
 Varje initiativ går genom sju steg. Ordningen bryts inte utan starkt skäl.
 
 ### 1. Orsakskedja
+
 Kartlägg varför problemet existerar.
 
 Inte symptom. Inte önskemål. Inte lösningsidéer.  
@@ -26,6 +27,7 @@ Målet är att se om problemet ska lösas genom tillägg, borttagning, omstruktu
 **Leverabel:** en enkel orsakskedja i klartext.
 
 Exempel:
+
 - information kommer sent
 - därför behöver admin kontrollera manuellt
 - därför öppnas flera vyer
@@ -33,12 +35,14 @@ Exempel:
 - därför ökar kognitiv belastning och felrisk
 
 ### 2. Scenario
+
 Beskriv ett verkligt ögonblick.
 
 Inte featurelista. Inte wireframe.  
 Ett konkret läge i en konkret människas dag.
 
 Scenariot ska svara på:
+
 - Vem möter detta?
 - I vilket tillstånd är personen?
 - Vad försöker personen förstå, känna eller få bekräftat?
@@ -53,12 +57,14 @@ Dåligt scenario:
 > Användaren ska kunna se dashboard, filtrera data och navigera till detaljvy.
 
 ### 3. Eliminering
+
 Skriv ned allt som medvetet inte ska byggas.
 
 Detta är ett av de viktigaste stegen.  
 Här skyddas projektet från överbygge.
 
 Frågor:
+
 - Vad kan tas bort helt?
 - Vad kan slås ihop?
 - Vad kan lösas uppströms?
@@ -68,23 +74,27 @@ Frågor:
 **Leverabel:** eliminationslista.
 
 Format:
+
 - Medvetet inte byggt
 - Medvetet förenklat
 - Framtida prövning
 
 ### 4. Beteendeprinciper
+
 Formulera 3–5 testbara regler som ska gälla för lösningen.
 
 Inte stämningar. Inte slogans.  
 Regler för faktiskt beteende.
 
 Bra exempel:
+
 - Kritiska avvikelser ska kunna identifieras inom 4 sekunder.
 - Nästa steg ska alltid vara synligt utan tolkning.
 - Statusändring ska ge tydlig återkoppling direkt.
 - Systemet ska premiera snabb väg till svar framför maximal informationsmängd.
 
 Dåligt exempel:
+
 - Det ska kännas enkelt.
 - Det ska vara användarvänligt.
 - Det ska vara modernt.
@@ -92,11 +102,13 @@ Dåligt exempel:
 **Leverabel:** 3–5 beteendeprinciper.
 
 ### 5. Struktur och subtraktion
+
 Nu får något byggas.
 
 Men första versionen är inte svaret. Den är råmaterialet för subtraktion.
 
 Arbetssätt:
+
 - bygg enklaste fungerande struktur
 - ta bort ett element i taget
 - testa om beteendeprinciperna fortfarande uppfylls
@@ -107,6 +119,7 @@ Det som återstår är inte det minsta möjliga i abstrakt mening. Det är det m
 **Leverabel:** minimal struktur.
 
 ### 6. Sensorisk kalibrering
+
 När strukturen håller börjar kalibreringen.
 
 Här justeras inte ytan för att “snygga till”. Här förstärks beteende och tillståndsförändring.
@@ -114,18 +127,22 @@ Här justeras inte ytan för att “snygga till”. Här förstärks beteende oc
 Fyra arbetsfrågor:
 
 #### Temperatur
+
 Vilken grundkänsla ska ytan ge?  
 Trygg? Skarp? Varm? Neutral? Handlingsinriktad?
 
 #### Rytm
+
 Hur snabbt ska ögat röra sig?  
 Långsamt och lugnt? Direkt och fokuserat?
 
 #### Volym
+
 Vad ska tala högt? Vad ska viska?  
 Visuell hierarki, kontrast, vikt, typografi.
 
 #### Textur
+
 Hur känns ytan?  
 Stram, mjuk, teknisk, varm, klinisk, friktionsfri?
 
@@ -134,9 +151,11 @@ All sensorik måste stödja samma intention. Om struktur säger en sak och estet
 **Leverabel:** kalibrerad helhet.
 
 ### 7. Stresstest
+
 Det som fungerar i lugn miljö kan falla sönder i verkligheten.
 
 Testa därför under sämre förhållanden:
+
 - låg uppmärksamhet
 - brådska
 - missförstånd
@@ -198,19 +217,23 @@ Täcker: API-fel, timeout, offline, korrupt data, expired auth.
 Varje fas eller större initiativ ska lämna efter sig tre saker.
 
 ### 1. Beteendespecifikation
+
 Korta testbara påståenden om vad som ska hända.
 
 Exempel:
+
 - Obetalda anmälningar ska kunna identifieras inom 4 sekunder.
 - Sökning ska börja ge signal om riktning inom 200 ms.
 - En statusändring ska kännas avslutad utan att användaren tvekar på om den gick igenom.
 
 ### 2. Eliminationslista
+
 Allt som medvetet inte byggdes och varför.
 
 Detta skyddar projektet mot framtida uppluckring.
 
 ### 3. Friction log
+
 Dokumenterad genomgång av upplevelsen där varje tvekan, väntan eller osäkerhet skrivs ned.
 
 ---
@@ -220,6 +243,7 @@ Dokumenterad genomgång av upplevelsen där varje tvekan, väntan eller osäkerh
 Friction logs är det mest konkreta sättet att upptäcka verklig kvalitetsbrist.
 
 ### Protokoll
+
 1. Öppna upplevelsen som om det vore första gången idag  
 2. Gå igenom ett realistiskt scenario  
 3. Markera varje ögonblick av tvekan, irritation, väntan eller feltolkning  
@@ -228,6 +252,7 @@ Friction logs är det mest konkreta sättet att upptäcka verklig kvalitetsbrist
 6. Åtgärda eller dokumentera som medveten skuld
 
 ### Fyra kategorier
+
 - **Utility** — löser detta det faktiska problemet?
 - **Usability** — går det att förstå och använda utan onödig tolkning?
 - **Craft** — är detaljer, feedback, tillstånd och övergångar genomtänkta?
@@ -240,9 +265,11 @@ Friction logs är det mest konkreta sättet att upptäcka verklig kvalitetsbrist
 Varje komponent eller vy bedöms i fyra dimensioner. Ingen dimension får falla ihop bara för att de andra är starka.
 
 ### 1. Tillgänglighet
+
 Kan fler faktiskt använda det här, även under andra förutsättningar än standard?
 
 Kontrollera minst:
+
 - kontrast
 - fokus
 - tangentbord
@@ -257,9 +284,11 @@ Kontrollera minst:
 - [GA] Manuell VoiceOver-genomgång (axe fångar bara 30-40%)
 
 ### 2. Teknisk kvalitet
+
 Är lösningen robust, begriplig och hållbar?
 
 Kontrollera minst:
+
 - tydlig struktur
 - konsekvent namngivning
 - defensiva gränser
@@ -268,9 +297,11 @@ Kontrollera minst:
 - ingen onödig komplexitet
 
 ### 3. Återanvändbarhet
+
 Är detta byggt som ett undantag eller som en del av ett system?
 
 Kontrollera minst:
+
 - tokens i stället för hårdkodning
 - tydliga props och gränssnitt
 - portabel logik
@@ -278,9 +309,11 @@ Kontrollera minst:
 - inga lokala speciallösningar utan god orsak
 
 ### 4. Craft
+
 Känns det genomarbetat eller bara färdigt?
 
 Kontrollera minst:
+
 - alla tillstånd hanterade
 - konsekvent copy
 - rätt feedback på rätt ställe
@@ -297,18 +330,23 @@ Om du vill använda en poängmodell, använd den som internt verktyg, inte som s
 Rekommenderad skala: **1–5 per dimension**
 
 ### 1 — Otillräckligt
+
 Brister som påverkar funktion eller förtroende tydligt.
 
 ### 2 — Svagt
+
 Grunden finns, men lösningen kräver omtag.
 
 ### 3 — Godkänt
+
 Fungerar, men utan tydlig excellens.
 
 ### 4 — Starkt
+
 Genomtänkt, robust och tydligt bättre än standard.
 
 ### 5 — Exceptionellt
+
 Nästan inget känns kvarlämnat åt slumpen.
 
 Detta är enklare och sannare i praktiken än 11-skalan, om ni verkligen ska använda det operativt.
@@ -322,21 +360,27 @@ Om du vill behålla 11-skalan som kulturell symbol går det, men då bör den li
 När osäkerhet uppstår används dessa regler i ordning:
 
 ### Regel 1
+
 Välj det som minskar kognitiv belastning.
 
 ### Regel 2
+
 Välj det som gör nästa steg tydligare.
 
 ### Regel 3
+
 Välj det som kräver minst förklaring.
 
 ### Regel 4
+
 Välj det som fungerar under sämre förhållanden.
 
 ### Regel 5
+
 Välj det som stärker systemet, inte bara den lokala lösningen.
 
 ### Regel 6
+
 När två lösningar verkar likvärdiga, välj den med mindre yta.
 
 ---
@@ -346,18 +390,23 @@ När två lösningar verkar likvärdiga, välj den med mindre yta.
 AI får användas i fyra lägen:
 
 ### Utforska
+
 Generera alternativ, copy, komponentriktningar, strukturvarianter.
 
 ### Destillera
+
 Sammanfatta, identifiera mönster, hitta överlapp, formulera eliminationsförslag.
 
 ### Implementera
+
 Producera kod, dokumentation, states, testutkast, struktur.
 
 ### Granska
+
 Jämföra nytt arbete mot principer, tokens, beteendespecifikation och tidigare mönster.
 
 AI får inte:
+
 - slutgodkänna smak
 - avgöra vad som är viktigt
 - introducera komplexitet utan uttryckligt skäl

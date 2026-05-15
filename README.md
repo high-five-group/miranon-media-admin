@@ -91,6 +91,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 **Aktuellt fokus:** Fas 2.5 — Schema-kontrakt-sync (per `docs/byggplan.md` §4).
 
 **Klara faser:**
+
 - ✅ **Fas 0** — Projektsetup + tokens (Session 1, 2026-04-14)
 - ✅ **Fas 1** — Domäntransplant (Session 1, 2026-04-14)
 - ✅ **Fas A** — Säkerhetshardening M1-M8 (Session 2, 2026-05-04)
@@ -101,6 +102,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - 3 nya ADR:er (ADR-026, ADR-027, ADR-028)
 
 **Statistik (post-Fas 2):**
+
 - 28 ADR:er totalt
 - ~18 nya UNIVERSAL-lessons i Sessions 4+5+5b (K17-K38)
 - CI grön första försöket genomgående (Kandidat 31 pre-commit-disciplin från K3.2)

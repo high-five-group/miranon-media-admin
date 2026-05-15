@@ -30,11 +30,11 @@ Sessionsdok 2026-05-11 Del 3.5 K0åe-noten flaggade tre öppna designval: `.pars
    return z.array(EventSchema).parse(data.events);
 ```
 
-3. **Funktionssignatur `callEdgeFunction<T>` i `src/data/config/supabase-client.ts` rörs inte** — generic-bytet sker per callsite, inte i helper-signaturen.
+1. **Funktionssignatur `callEdgeFunction<T>` i `src/data/config/supabase-client.ts` rörs inte** — generic-bytet sker per callsite, inte i helper-signaturen.
 
-4. **Inline-mönster gäller medan adapter har <5 data-returnerande callsites. Vid ≥5 callsites övervägs generisk helper** (`parseList<T>(schema: z.ZodType<T>, data: unknown[]): T[]`). K0åe.1 har 3 aktiva calls — inline-mönstret är KISS-rätt val.
+2. **Inline-mönster gäller medan adapter har <5 data-returnerande callsites. Vid ≥5 callsites övervägs generisk helper** (`parseList<T>(schema: z.ZodType<T>, data: unknown[]): T[]`). K0åe.1 har 3 aktiva calls — inline-mönstret är KISS-rätt val.
 
-5. **Stub-metoder (Edge Function ej deployad) får `@todo`-JSDoc istället för `.parse()`:**
+3. **Stub-metoder (Edge Function ej deployad) får `@todo`-JSDoc istället för `.parse()`:**
 
 ```ts
    /**
@@ -45,7 +45,7 @@ Sessionsdok 2026-05-11 Del 3.5 K0åe-noten flaggade tre öppna designval: `.pars
 
    `.parse()` aktiveras per stub vid EF-deploy (Fas 2.5 / Fas 6 sub-faser) när det finns en levande integrationsväg där validering faktiskt valideras mot riktig EF-output.
 
-6. **Error-flöde uppströms: rå `ZodError` propageras genom Promise-rejection. Mappning till `AppError` defereras till Fas 3 UI-konsumtion** där error-strategi faktiskt synts mot levande TanStack Query-flöden och fel-renderings-mönster. Förtida mappning utan konsument är Y2K-mönster.
+1. **Error-flöde uppströms: rå `ZodError` propageras genom Promise-rejection. Mappning till `AppError` defereras till Fas 3 UI-konsumtion** där error-strategi faktiskt synts mot levande TanStack Query-flöden och fel-renderings-mönster. Förtida mappning utan konsument är Y2K-mönster.
 
 ## Alternativ som övervägdes
 

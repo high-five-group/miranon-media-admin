@@ -17,12 +17,14 @@ Per B3-beslutet (P1-sessionsdok Del 5): Fas 5 förenklas selektivt. Skälen:
 3. **Estimat-press.** Konsoliderat 1-2 sessioner i Fas 5 + 4 [GA]-tillägg = överskattat budget. Förenkling till 1 session är realistiskt, [GA]-tillägg samlas i Fas 7 där deploy-pipeline ger dem rätt kontext.
 
 P1-sessionsdok Del 5 listade fyra `[GA]`-tillägg som flyttas:
+
 - View Transitions API
 - Speculation Rules
 - web-vitals-mätning
 - Widget-error-boundary
 
 Och fyra som *behålls* i Fas 5:
+
 - Error boundaries (app-nivå + sektion-nivå)
 - Workbox SW (cache-first/network-first/offline.html)
 - TanStack offline-config
@@ -33,6 +35,7 @@ Och fyra som *behålls* i Fas 5:
 Fas 5 levererar **förenklad app-shell**:
 
 ### Behålls i Fas 5
+
 - App-shell layout: minimal header + content-area (max-width 600px) + bottom tab bar
 - Tab bar: 4 flikar, fixed bottom, ARIA-tabs-pattern
 - Skip-to-content-länk + route announcer (skärmläsare-stöd)
@@ -43,12 +46,14 @@ Fas 5 levererar **förenklad app-shell**:
 - TanStack Query offline-config (`networkMode: 'offlineFirst'` för läs, `'online'` för skriv)
 
 ### Flyttas till Fas 7
+
 - View Transitions API
 - Speculation Rules
 - web-vitals-mätning (CLS, LCP, FID, INP, TTFB)
 - Widget-error-boundary (mer granulär än sektion-nivå)
 
 ### Estimat
+
 1 session (förenklat från 1-2 i conversion-plan).
 
 ## Alternativ som övervägdes
@@ -64,17 +69,20 @@ Fas 5 levererar **förenklad app-shell**:
 ## Konsekvenser
 
 **Positiva:**
+
 - Fas 5 levererar fokuserat (1 session) med kvalitet på behållet scope.
 - Foundation för Fas 6+ är komplett (offline + error + a11y) — ingen vy i Fas 6 byggs ovanpå halv app-shell.
 - Fas 7 har rätt kontext för flyttade `[GA]`-tillägg (production-mätning, multi-route-prefetching, widget-granularitet).
 - Tydlig spårbarhet: byggplan.md Fas 5 listar "Inte scope (flyttat till Fas 7 per B3)" + denna ADR refereras.
 
 **Negativa:**
+
 - Fas 5 ger ingen visuell wow-effekt vid leverans (View Transitions är polish-feature). Lotta märker ingen skillnad mellan förenklat och fullt — det är OK, hen optimerar för operativ flöde.
 - Fas 7-scope växer med 4 [GA]-tillägg. Mitigation: Fas 7-estimat är redan 3 sessioner, scope-tillägget är 0,5-1 session som ryms.
 - Risk att Fas 7 glömmer att leverera flyttade `[GA]`. Mitigation: byggplan.md Fas 7 listar dem explicit som scope-bullets med ADR-referens.
 
 **Verifiering (Fas 5 DoD):**
+
 - 10 DoD-punkter avbockade per byggplan.md Fas 5 (PWA-score ≥ 90, skip-to-content, route announcer, offline-läge, sektions-error, app-error, prefers-reduced-motion, responsiv, axe 0 violations)
 - `grep -r 'view-transition' src/` ger 0 träffar (View Transitions inte implementerat)
 - `grep -r 'web-vitals' src/main.tsx` ger 0 träffar (mätning inte aktiv)

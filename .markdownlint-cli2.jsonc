@@ -1,0 +1,47 @@
+// .markdownlint-cli2.jsonc — markdownlint-cli2 config för Miranon Media Admin.
+// Per ADR-030 § Del 1.1. Etablerad: Session 6.6 K4 2026-05-14.
+//
+// Kör i CI docs-jobb (conditional på docs_changed) efter Lychee.
+// Ingen pre-commit-hook (markdownlint är CI-only-grindvakt — pre-commit
+// reserveras för biome + K7-frontmatter).
+//
+// Disables under "config" är ALDRIG slapphet — varje disable är aktivt
+// motiverat val baserat på empirisk baseline 2026-05-14 (10 570 fynd) +
+// branschpraxis-research mot Vite/Next.js/Astro docs-konfigurationer.
+{
+  "config": {
+    // MD013 — line-length: disable.
+    // Svensk prosa har långa sammansatta ord ("verifikations-disciplin",
+    // "implementations-mönsterförstärkning") och 80-tecken-konventionen
+    // är engelsk-kod-tradition utan motsvarighet i svenskt skrivande.
+    // Branschpraxis (Vite, Next.js, Astro docs) disabelar MD013 i markdown.
+    // K2-precedent (yamllint line-length disable) följer samma logik.
+    "MD013": false,
+
+    // MD060 — table-column-style: disable.
+    // Repo använder kompakt tabell-stil |kol| (utan space-padding)
+    // konsekvent över ~250 tabeller. Auto-fix till paddad-stil |  kol  |
+    // skulle ändra 100 % av tabellerna utan kvalitetsvinst. Aktivt
+    // konvention-val per kompakt-läsbarhet, inte slapphet.
+    "MD060": false,
+
+    // MD024 — no-duplicate-heading: siblings_only.
+    // Keep-a-Changelog-konvention har ### Added / ### Changed / ### Security
+    // under varje ## [X.Y.Z]-release-rubrik. siblings_only tillåter samma
+    // rubrik under olika parent-hierarki men flaggar duplicering inom
+    // samma parent (vilket är legitim hygien-check).
+    "MD024": {
+      "siblings_only": true
+    }
+  },
+
+  "globs": ["docs/**/*.md", "tasks/*.md", "./*.md"],
+
+  "ignores": [
+    "tasks/sessions/archive/**",
+    "docs/archive/**",
+    "node_modules/**",
+    "dist/**",
+    "coverage/**"
+  ]
+}

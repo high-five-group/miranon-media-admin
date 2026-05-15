@@ -10,7 +10,7 @@
 
 ### Tre lager
 
-```
+```text
 PRIMITIV          → Råa värden. Aldrig refererade direkt i komponenter.
     ↓
 SEMANTISK         → Mening. Vad värdet *gör*. Refereras i @theme-blocket i tailwind.css.
@@ -324,7 +324,7 @@ konfiguration). Utdrag:
 
 ### 4px-bas, icke-linjär skala
 
-```
+```text
 0   →   0px       Noll
 0.5 →   2px       Mikroavstånd (borders, inline-gaps)
 1   →   4px       Minimum
@@ -360,6 +360,7 @@ Stack-beslutet är fattat i gap-analysen (se `gap-analysis.md` Fas 0).
 
 Konfiguration: `biome.json` i repo-roten. Genereras initialt via
 `npx @biomejs/biome init` och anpassas med:
+
 - `recommended` regler aktiverade
 - Tailwind-plugin för `classnames-order`
 - `organizeImports` aktiverat
@@ -372,6 +373,7 @@ Konfiguration: `biome.json` i repo-roten. Genereras initialt via
 | `tailwindcss/classnames-order` | Inkonsekvent Tailwind-klassordning | Hög | Biome-plugin |
 | `noArbitraryValue` (Biome, custom) | `text-[19px]`, `bg-[#D4960A]` | Hög | Biome custom |
 | CSS `color-no-hex` | Hex-värden i komponent-CSS (tvinga CSS custom properties) | Hög | Biome CSS lint |
+<!-- markdownlint-disable-next-line MD056 -->  <!-- tabell-cell-överskott (Vue-referens-doc, frusen) -->
 | CSS `custom-property-pattern` | Custom properties utanför `^(p-|mm-).*` | Medel | Biome CSS lint |
 | CSS `declaration-no-important` | `!important` i komponent-CSS | Medel | Biome CSS lint |
 | `mm/no-hardcoded-colors` | Hex-värden direkt i `className`/`style` | Hög | Custom (Fas 7) |
@@ -403,7 +405,7 @@ Vår skill svarar på designintention, inte pixelparitet.
 
 ### Filstruktur
 
-```
+```text
 ~/.claude/skills/design-audit/
 ├── SKILL.md              ← Skill-definition
 ├── audit-template.md     ← Output-mall
@@ -441,18 +443,21 @@ effort: max
      --viewport-size 1440x900 \
      --output /tmp/audit-screenshot.png
    ```
+
    Ta även en mobilvy:
+
    ```bash
    npx playwright screenshot --url http://localhost:5173/{route} \
      --viewport-size 375x812 \
      --output /tmp/audit-screenshot-mobile.png
    ```
 
-3. **Analysera mot tokens**
+1. **Analysera mot tokens**
    Skicka screenshots + token-filer till Claude API (vision):
 
    Prompt-struktur:
-   ```
+
+   ```text
    Du är en world-class designgranskare. Analysera denna screenshot
    mot det bifogade designsystemet.
 
@@ -501,12 +506,13 @@ effort: max
    Lista konkreta åtgärdspunkter.
    ```
 
-4. **Generera rapport**
+2. **Generera rapport**
    Skriv rapport till `docs/audits/YYYY-MM-DD-{vy}-design-audit.md`
 
-5. **Sammanfatta till Marcus**
+3. **Sammanfatta till Marcus**
    Visa 11/11/11/11-poäng och topp-3 åtgärder.
-```
+
+```text
 
 ### Output-mall (audit-template.md)
 
@@ -806,9 +812,11 @@ spacing-skalan via `--spacing`-basen.
 ## [GA] 9. View Transitions
 
 ### Princip
+
 View Transitions är inte animation — det är **kontinuitet**. När Lotta klickar på ett event i listan och det "expanderar" till detaljsidan behåller hon kontexten. Utan det: flash av vit skärm → ny sida → kognitiv belastning.
 
 ### CSS-grund
+
 ```css
 /* base.css — opt-in för cross-document transitions */
 @view-transition {
@@ -817,12 +825,15 @@ View Transitions är inte animation — det är **kontinuitet**. När Lotta klic
 ```
 
 ### Namngivningskonvention
+
 `view-transition-name` följer mönstret `{komponent}-{id}`:
+
 - Event-kort i lista: `view-transition-name: event-{eventId}`
 - Event-detalj: `view-transition-name: event-{eventId}` (samma namn = shared transition)
 - Tab bar pill: `view-transition-name: tab-pill`
 
 ### Navigeringar med transition
+
 | Från | Till | Typ | Element |
 |------|------|-----|---------|
 | Event-lista | Event-detalj | Shared element | Event-kort → hero |
@@ -830,6 +841,7 @@ View Transitions är inte animation — det är **kontinuitet**. När Lotta klic
 | Hem → undervy | Back | Cross-fade | Hela content-area |
 
 ### prefers-reduced-motion
+
 ```css
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
@@ -845,9 +857,11 @@ View Transitions är inte animation — det är **kontinuitet**. När Lotta klic
 ## [GA] 10. Stale-data-indikatorer
 
 ### Komponent: SyncIndicator
+
 Visar när data senast hämtades. Placeras i page-header eller som subtil text under rubriken.
 
 **Design:**
+
 - Text: "Senast uppdaterat: {HH:MM}" i `text-muted` (14px)
 - Online + färsk data: ingen indikator (inget visuellt brus)
 - Online + stale data (>5 min): "Uppdaterar..." med subtil puls
@@ -855,6 +869,7 @@ Visar när data senast hämtades. Placeras i page-header eller som subtil text u
 - Fel + cachad data: "Kunde inte hämta ny data. Visar version från {HH:MM}."
 
 **Tokens:**
+
 ```css
 :root {
   --mm-sync-text: var(--mm-text-muted);
@@ -868,6 +883,7 @@ Visar när data senast hämtades. Placeras i page-header eller som subtil text u
 ## [GA] 11. Error boundary-meddelanden
 
 ### Ton och formulering
+
 Error boundaries ska vara **lugnande, förklarande och handlingsinriktade**. Lotta ska aldrig se "Något gick fel" utan kontext.
 
 | Nivå | Meddelande | Åtgärd |
@@ -878,6 +894,7 @@ Error boundaries ska vara **lugnande, förklarande och handlingsinriktade**. Lot
 | App | "Något oväntat hände. Prova att ladda om sidan." | Ladda om-knapp |
 
 ### Design
+
 - Sektion-fel: `border-left: 3px solid var(--mm-warning)`, `bg: var(--mm-warning-bg)`, `padding: space-4`, `radius: radius-md`
 - App-fel: Centrerat, stor text, tydlig knapp
 
@@ -886,14 +903,17 @@ Error boundaries ska vara **lugnande, förklarande och handlingsinriktade**. Lot
 ## [GA] 12. Systemhälso-indikator
 
 ### Vad den är
+
 En komponent i Hem-vyn som bevisar att systemet arbetar. Lottas rädsla (#3: "tappa kontrollen") löses av **bevis**, inte av bra UX.
 
 ### Design
+
 - Placering: under hälsningen i Hem-vyn
 - Normal: "Allt fungerar. 234 anmälningar sedan start. 0 tappade." — text i `text-muted`
 - Problem: "1 sak behöver uppmärksamhet" — orange rad med ikon
 
 ### Data
+
 ```typescript
 interface SystemHealth {
   totalRegistrations: number;
@@ -912,27 +932,37 @@ interface SystemHealth {
 Dessa fem kvaliteter ska vara testbara principer i design-audits. De skiljer "bra" från "magi".
 
 ### 1. Omedelbarhet
+
 Appen ska kännas som om all data redan finns lokalt.
+
 - **Mekanism:** Service worker (cache-first för shell) + TanStack Query `staleTime` + Speculation Rules (prerender)
 - **Test:** Mät tid från app-öppning till "Hej Lotta" synlig. Budget: <500ms (cachad), <1.5s (kall start)
 
 ### 2. Kontinuitet
+
 Navigering ska inte vara "byta sida" utan "flytta fokus".
+
 - **Mekanism:** View Transitions + shared elements + route announcer
 - **Test:** Klicka event i lista → detaljsida. Finns spatial koppling (element "expanderar")?
 
 ### 3. Transparens
+
 Systemet bevisar sig. "0 tappade."
+
 - **Mekanism:** Systemhälso-indikator (§12) + aktivitetslogg som berättelse
 - **Test:** Finns "senast synkroniserat"-text? Finns "X anmälningar hanterade"-text?
 
 ### 4. Odödlighet
+
 Appen dör aldrig.
+
 - **Mekanism:** Service worker (offline fallback) + error boundaries (stale data) + Background Sync (köade mutationer)
 - **Test:** Sätt flygplansläge → öppna appen → ska visa cachad data, inte blank skärm
 
 ### 5. Profetia
+
 Appen vet vad Lotta ska göra härnäst.
+
 - **Mekanism:** Speculation Rules + `preload="intent"` + TanStack Router loaders
 - **Test:** Hovra över "Se alla event" → navigera → laddar sidan instant?
 

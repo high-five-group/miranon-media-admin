@@ -245,6 +245,23 @@ jobs:
           path: .lycheecache
           key: cache-lychee-${{ github.sha }}
 
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check markdown hygiene (markdownlint-cli2)
+        # Per ADR-030 § Del 1.1: markdownlint-cli2 som docs-grindvakt efter
+        # Lychee. Config: .markdownlint-cli2.jsonc. Scope definierad i
+        # config-filens "globs"-fält (docs + tasks + repo-root .md).
+        # Sessionsdok-archive + docs/archive exkluderade.
+        # Ingen pre-commit-hook — CI-only-grindvakt per Marcus' direktiv K4.
+        run: npx markdownlint-cli2
+
   # Job 5: Aggregator för branch-protection-readiness.
   # Per ADR-029 §1e. Grön status om alla föregående jobb antingen passerade
   # eller skippades. Required check vid framtida branch protection.

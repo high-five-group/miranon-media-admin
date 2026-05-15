@@ -12,6 +12,7 @@
 
 ## Fas 0: Projektsetup + Tokens
 
+<!-- markdownlint-disable-next-line MD036 -->
 **Betyg: 7/11**
 
 ### Vad fasen gör bra
@@ -52,6 +53,7 @@ Apples team sätter upp performance-dashboards och error tracking *innan de skri
 
 ## Fas 1: Domäntransplant
 
+<!-- markdownlint-disable-next-line MD036 -->
 **Betyg: 8/11**
 
 ### Vad fasen gör bra
@@ -83,6 +85,7 @@ Apple validerar varje byte som kommer in i appen. Inte för att de misstror sina
 
 ## Fas 2: Routing + Auth
 
+<!-- markdownlint-disable-next-line MD036 -->
 **Betyg: 6/11**
 
 ### Vad fasen gör bra
@@ -122,6 +125,7 @@ Apple lanserade aldrig en app med lösenordsbaserad inloggning efter 2023. FaceI
 
 ## Fas 3: UI-primitiver
 
+<!-- markdownlint-disable-next-line MD036 -->
 **Betyg: 8/11**
 
 ### Vad fasen gör bra
@@ -160,6 +164,7 @@ Apple bygger aldrig en UI-komponent utan att först definiera dess *animeringsko
 
 ## Fas 5: App-shell + Tab bar
 
+<!-- markdownlint-disable-next-line MD036 -->
 **Betyg: 7/11**
 
 ### Vad fasen gör bra
@@ -195,6 +200,7 @@ Apple testar alla appar på flygplansläge. Deras test-case #1 är inte "fungera
 
 ## Fas 6: Hem + Event + Personer + Mer
 
+<!-- markdownlint-disable-next-line MD036 -->
 **Betyg: 7/11**
 
 ### Vad fasen gör bra
@@ -234,6 +240,7 @@ Apple Notes synkar offline. Apple Mail kör optimistic send. Apples appar *föru
 
 ## Fas 6.5: Aktivitetslogg
 
+<!-- markdownlint-disable-next-line MD036 -->
 **Betyg: 5/11**
 
 ### Vad fasen gör bra
@@ -269,6 +276,7 @@ Apples Aktivitet-app loggar varje steg, varje träningspass, varje sömnperiod �
 
 ## Fas 7: Konsolidering + Kvalitetssäkring
 
+<!-- markdownlint-disable-next-line MD036 -->
 **Betyg: 6/11**
 
 ### Vad fasen gör bra
@@ -316,6 +324,7 @@ Dessa brister lever *mellan* faserna — ingen fas äger dem, men alla påverkas
 Planen väljer Vite SPA. Research §1 rekommenderar RSC + PPR (Next.js 15+) eller Islands (Astro) för content-tunga appar. En admin-app med enbart autentiserade användare och dynamisk data är dock en legitimate SPA-kandidat. **Men**: Planen definierar aldrig *varför* SPA valdes. Det beslut-dokumentet saknas. Det borde finnas en explicit eliminationslista: "Vi valde SPA framför Next.js App Router för att: (a) admin-app, inga SEO-krav, (b) inget offentligt innehåll att pre-rendera, (c) Vite bevisat i Vue-projektet, (d) enklare deploy." Utan denna motivering ser det ut som att SSR aldrig övervägdes.
 
 **Konsekvenser som borde adresseras:**
+
 - Ingen streaming SSR → hela appen renderas client-side → längre FCP
 - Ingen edge rendering → alla API-anrop från klient (inte edge-optimerade)
 - Inget PPR → allt eller inget (ingen mix av statisk/dynamisk)
@@ -407,7 +416,7 @@ Det Lotta upplever som: "Jag förstod direkt."
 
 ---
 
-### Tre områden där gapet är störst:
+### Tre områden där gapet är störst
 
 **1. Temporal stabilitet — appen ska kännas *närvarande*, inte *hämtande*.**
 
@@ -464,14 +473,17 @@ Inget av detta syns. Inget av detta mäts av Lighthouse. Inget av detta ber Lott
 | Fas 6.5: Aktivitetslogg | 5/11 | xAPI, strukturerad loggning, GDPR, push |
 | Fas 7: Konsolidering | 6/11 | CSP, chaos testing, RUM, deploy, manuell a11y-test |
 
+<!-- markdownlint-disable-next-line MD036 -->
 **Genomsnitt: 6.75/11**
 
 **De tre viktigaste tvärgående gapen:**
+
 1. Säkerhet (research §6 helt frånvarande)
 2. Resilience/offline (research §5 helt frånvarande)
 3. Performance-mätning (research §2 saknar implementationsplan)
 
 **Vad som krävs för 11/11 totalt:**
+
 - 3 nya specifikationsdokument (SECURITY-SPEC, PERFORMANCE-BUDGET, STATE-STRATEGY)
 - Service worker-implementation (Fas 0 skelett → Fas 5 full)
 - CSP + Trusted Types (Fas 0 + Fas 7)

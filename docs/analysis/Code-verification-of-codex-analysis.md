@@ -27,19 +27,24 @@ Codex' övergripande dom stämmer i sak: projektet är inte en 11/10-app idag, m
 **Konkret bevis:**
 
 - **Wildcard CORS** — [supabase/functions/_shared/cors.ts:2](../../supabase/functions/_shared/cors.ts#L2):
+
   ```ts
   'Access-Control-Allow-Origin': '*',
   ```
+
   SECURITY-SPEC.md §5 (rad 460–461) skriver explicit: *"`Access-Control-Allow-Origin` ska ALDRIG vara `*` i produktion."*
 
 - **Ingen `requireUser`-gate i någon Edge Function.** Sökning efter `getUser`/`getSession`/`auth.getUser` i alla fyra datafunktioner returnerar **noll träffar**:
-  ```
+
+  ```text
   grep -rn "createClient\|getUser\|getSession\|auth\." supabase/functions
   → bara create-admin-user/index.ts:1,19,24 (för admin-skapande, inte för verifiering)
   ```
+
   Ingen av `get-events`, `get-persons`, `get-registrations`, `update-record` extraherar caller-identitet. SECURITY-SPEC.md §5 A01 (rad 393–419) visar exakt mönster som krävs — det är inte implementerat.
 
 - **Anon-key fallback** — [src/data/config/supabase-client.ts:16–22](../../src/data/config/supabase-client.ts#L16-L22):
+
   ```ts
   async function getAuthHeader(): Promise<string> {
     const { data: { session } } = await supabase.auth.getSession();
@@ -47,6 +52,7 @@ Codex' övergripande dom stämmer i sak: projektet är inte en 11/10-app idag, m
     return `Bearer ${token}`;
   }
   ```
+
   Klienten faller tyst tillbaka till anon-key om session saknas. I kombination med att Edge Functions inte verifierar caller-identitet betyder det att vem som helst med anon-key (publik per definition) kan anropa funktionerna som om de vore inloggad admin.
 
 - **Otillräcklig allowlist i `update-record`** — [supabase/functions/update-record/index.ts:5–24](../../supabase/functions/update-record/index.ts#L5-L24):
@@ -66,6 +72,7 @@ Codex' övergripande dom stämmer i sak: projektet är inte en 11/10-app idag, m
 **Stämmer mot kod:** **Ja — fullständigt.**
 
 **Konkret bevis:** [src/main.tsx:12–19](../../src/main.tsx#L12-L19):
+
 ```tsx
 function App() {
   return (
@@ -78,12 +85,14 @@ function App() {
 ```
 
 Direktorier som **saknas helt** under `src/`:
+
 - `src/components/` — ej skapad
 - `src/routes/` — ej skapad (TanStack Router file-based finns i `package.json` men inte i `vite.config.ts`-pluginlistan, se [vite.config.ts:6–9](../../vite.config.ts#L6-L9): kommentar förklarar att den införs i Fas 2)
 - `src/views/` — ej skapad
 - `src/hooks/` — ej skapad
 
 Det som finns i `src/` utöver `main.tsx`:
+
 - `data/adapters/AirtableAdapter.ts` (177 rader, varav 9 av 14 metoder pekar på Edge Functions som inte är deployade — markerade `// TODO: Edge Function 'get-X' behöver deployas`)
 - `data/adapters/SupabaseAdapter.ts` — alla 14 metoder kastar `throw new Error(NOT_IMPLEMENTED)`
 - `domain/models/`, `domain/schemas/`, `domain/types/` — typdefinitioner och Zod-scheman som inte konsumeras av någon UI-kod
@@ -123,21 +132,23 @@ Det som finns i `src/` utöver `main.tsx`:
 
 **Konkret bevis:** Sökning efter `.parse(` eller `.safeParse(` i `src/` och `supabase/functions/`, exklusive `__tests__/` och själva `.schema.ts`-filerna:
 
-```
+```text
 grep -rn "\.parse(\|\.safeParse" src/ supabase/ --include="*.ts" --include="*.tsx" \
   | grep -v __tests__ | grep -v "\.schema\.ts:" | grep -v "schemas/index"
 → NOLL TRÄFFAR
 ```
 
-Den enda referensen utanför schema-filerna är [src/domain/__tests__/schemas.assignable.ts](../../src/domain/__tests__/schemas.assignable.ts) som gör `AssertEqual<z.infer<typeof Schema>, Type>` — det är en **compile-time-typkoll**, inte runtime-validering. Den kontrollerar att Zod-schemat och TypeScript-typen är ekvivalenta i form, men kör aldrig validering på faktisk data.
+Den enda referensen utanför schema-filerna är [src/domain/**tests**/schemas.assignable.ts](../../src/domain/__tests__/schemas.assignable.ts) som gör `AssertEqual<z.infer<typeof Schema>, Type>` — det är en **compile-time-typkoll**, inte runtime-validering. Den kontrollerar att Zod-schemat och TypeScript-typen är ekvivalenta i form, men kör aldrig validering på faktisk data.
 
 [src/data/adapters/AirtableAdapter.ts:27–30](../../src/data/adapters/AirtableAdapter.ts#L27-L30):
+
 ```ts
 async fetchEvents(): Promise<Event[]> {
   const data = await callEdgeFunction<{ events: Event[] }>('get-events');
   return data.events;
 }
 ```
+
 `Event[]` är en TypeScript-cast (`<{ events: Event[] }>`), inte en runtime-kontroll. Om Edge Function returnerar fel form blir det en silent typ-osanning ända in i UI:t.
 
 På Edge Function-sidan: ingen Zod-validering varken på input eller output. [supabase/functions/update-record/index.ts:38–46](../../supabase/functions/update-record/index.ts#L38-L46) gör en handskriven `if (!tableId || !recordId || !fields)` — ingen typkontroll på `fields`-innehållet alls.
@@ -155,13 +166,16 @@ På Edge Function-sidan: ingen Zod-validering varken på input eller output. [su
 **Konkret bevis:**
 
 - [docs/reference/data-model.md:121–130](../../docs/reference/data-model.md#L121-L130) listar 6 värden:
-  ```
+
+  ```text
   Obekräftad, Bekräftad (mail skickat), Betalningspåminnelse skickad,
   Avbokad/Ombokad, Flytta till väntelista, Inställt
   ```
+
   Tillsammans med kommentar *"Inställt: Ny 2026-04-26"* och *"Flytta till väntelista: Tillagd i april 2026"*.
 
 - [src/domain/types/Status.ts:3–8](../../src/domain/types/Status.ts#L3-L8) listar 4:
+
   ```ts
   export const RegistrationStatus = {
     OBEKRAFTAD: 'Obekräftad',
@@ -170,6 +184,7 @@ På Edge Function-sidan: ingen Zod-validering varken på input eller output. [su
     AVBOKAD: 'Avbokad/Ombokad',
   } as const;
   ```
+
   Saknar `INSTALLT: 'Inställt'` och `FLYTTA_TILL_VANTELISTA: 'Flytta till väntelista'`.
 
 - Status-fältet i `Registration.ts` är dessutom typat som `string | null`, inte `RegistrationStatusValue`. Så även om enum:en fixas hjälper det inte själva domänmodellen att tvinga konsistens.
@@ -198,6 +213,7 @@ På Edge Function-sidan: ingen Zod-validering varken på input eller output. [su
 Skript-namnet `test:visual` antyder fokus på visuella regressioner, men det betyder också att smoke/a11y/integration inte är planerade i samma kanal. Det är en design-fråga, inte ett fel i sig — men i kombination med avsaknaden av samtliga tester är det noterbart.
 
 **Min bedömning:** Codex har rätt. Mitt tillägg: detta är inte ett "Playwright-problem" utan en strategifråga. Repot saknar **all** test-infrastruktur:
+
 - Inga unit tests (det enda testlika filen är `schemas.assignable.ts` som körs av tsc, inte av en testrunner)
 - Inget vitest/jest
 - Inga a11y-tester
@@ -231,7 +247,8 @@ För ett projekt med 11/11/11-ribba är det en luckuhål. ADR-005 nämner i för
 **Stämmer mot kod:** **Ja — exakt en, och kvar idag.**
 
 **Konkret bevis:** `npm audit` 2026-04-29:
-```
+
+```text
 postcss  <8.5.10
 Severity: moderate
 PostCSS has XSS via Unescaped </style> in its CSS Stringify Output
@@ -254,6 +271,7 @@ Den är **moderate**, inte **high** — så `--audit-level=high` skulle teoretis
 `get-registrations` interpolerar tre query-parametrar **utan eskapering** in i en Airtable filterByFormula:
 
 [supabase/functions/get-registrations/index.ts:51–60](../../supabase/functions/get-registrations/index.ts#L51-L60):
+
 ```ts
 if (eventId) {
   filters.push(`FIND("${eventId}", ARRAYJOIN({Event}))`);
@@ -267,10 +285,12 @@ if (flagga) {
 ```
 
 `get-persons` har en **delvis** eskapering ([supabase/functions/get-persons/index.ts:55–61](../../supabase/functions/get-persons/index.ts#L55-L61)) som bara hanterar `"`:
+
 ```ts
 const term = search.replace(/"/g, '\\"');
 filterByFormula = `OR(SEARCH(LOWER("${term}"), LOWER({Namn})), ...)`;
 ```
+
 Otestat mot parenteser, kommatecken, formel-funktioner, eller andra Airtable-formel-tecken som kan ändra utvärdering.
 
 Airtable-formler är inte SQL, men formula-injektion kan användas för att kringgå avsedda filter (`OR(TRUE(), {Status}="anything")`), exfiltrera fält genom kreativ predikatkonstruktion, eller orsaka 422-fel (DoS via dålig formel). I kombination med saknad auth (se nedan) är detta en allvarligare versionerad risk än Codex' allmänna "validera alla inputs"-poäng.
@@ -294,6 +314,7 @@ Deno.serve(async (req) => {
 Funktionen tar emot e-post och lösenord, skapar en admin-user med email_confirm = true via service_role-nyckel — **utan att verifiera vem som ringer**.
 
 Supabase default har `verify_jwt = true` på gateway-nivå, men:
+
 1. `supabase/config.toml` finns inte i repot (`ls supabase/` → bara `functions`). Default-konfig vid deploy varierar mellan CLI-versioner.
 2. Även med `verify_jwt = true` accepteras anon-key som "valid JWT" (det är ett JWT signerat av Supabase med `role: anon`).
 3. Anon-key är **publik** ([env.ts:14](../../src/env.ts#L14): `VITE_SUPABASE_ANON_KEY` exponeras till klienten).
@@ -303,6 +324,7 @@ Supabase default har `verify_jwt = true` på gateway-nivå, men:
 ### C. Edge Functions läcker råa felmeddelanden
 
 Alla fem funktioner returnerar:
+
 ```ts
 return new Response(JSON.stringify({ error: (error as Error).message }), {
   status: 500, ...
@@ -310,6 +332,7 @@ return new Response(JSON.stringify({ error: (error as Error).message }), {
 ```
 
 `error.message` kan innehålla:
+
 - Airtable API-svar inkl. token-prefix/körnings-detaljer
 - Stack-trace-fragment
 - Internal table IDs (delvis OK eftersom de ändå läcker via allowlist, men)
@@ -410,6 +433,7 @@ Steg 1 är **noll-risk-arbete** som omedelbart minskar buggrisken i Fas 6. Steg 
 
 ---
 
+<!-- markdownlint-disable-next-line MD025 -->  <!-- analys-rapport med flera ## sektioner (legitim multi-section-rapport) -->
 # Tillägg: Påverkan från datamodell-research-projektet
 
 *Datum: 2026-04-30 | Skrivet efter att ha läst 04-research.md, 05-gap-vs-worldclass.md, 06a-airtable-redesign.md, 06b-supabase-target.md, 07-migration-plan.md, arbetsdokumentet och K1-K10 i ~/Repon/marcus-system/tasks/lessons.md.*

@@ -17,8 +17,8 @@
 5. [Resilience & Observability](#5-resilience--observability)
 6. [Säkerhet](#6-säkerhet)
 7. [Tillgänglighet](#7-tillgänglighet)
-8. [Domänspecifikt: LMS/CMS för Event, Utbildning & Coaching](#8-domänspecifikt-lmscms)
-9. [Tvärgående teman & Rekommendationer](#9-tvärgående-teman)
+8. [Domänspecifikt: LMS/CMS för Event, Utbildning & Coaching](#8-domänspecifikt-lmscms) <!-- markdownlint-disable-line MD051 --> <!-- broken-anchor (Vue-referens-doc, fixas vid Fas 6) -->
+9. [Tvärgående teman & Rekommendationer](#9-tvärgående-teman) <!-- markdownlint-disable-line MD051 --> <!-- broken-anchor (Vue-referens-doc, fixas vid Fas 6) -->
 
 ---
 
@@ -59,6 +59,7 @@ const db = drizzle(client);
 ```
 
 **Datareplikeringsmönster:**
+
 - Läsningar: Lokala replikor på edge (<1ms)
 - Skrivningar: Routas till primary (50-200ms, acceptabelt)
 - Eventual consistency: Replikor synkas inom 50-200ms
@@ -71,7 +72,7 @@ const db = drizzle(client);
 
 **Kärnan:** Sidan delas i isolerade "öar" av interaktivitet omgivna av statisk HTML. Bara interaktiva komponenter får JavaScript — resten skickar noll JS.
 
-```
+```text
 Traditionell: Total JS ~250KB (hela sidan hydratiseras)
 Islands:      Total JS ~15KB  (bara knappar och sökwidgets)
 ```
@@ -103,12 +104,13 @@ Islands:      Total JS ~15KB  (bara knappar och sökwidgets)
 
 **Kärnan:** Eliminerar hydration helt. Serialiserar applikationens tillstånd direkt i HTML. Klienten återtar där servern slutade — utan att köra JavaScript vid sidladdning.
 
-```
+```text
 Hydration:     Server renderar → Klient laddar ALL JS → Parsear → Kör → Matchar DOM → TTI: 2-10s
 Resumability:  Server renderar + serialiserar state → Klient laddar HTML → KLAR! → TTI: ~0ms
 ```
 
 **Hur det fungerar:**
+
 1. Qwik serialiserar listeners, component tree och state i HTML:en
 2. En minimal qwikloader (~800 bytes) installerar en global event listener
 3. Vid klick: QRL (Qwik Resumable Language) URL pekar på exakt vilken chunk som ska laddas
@@ -234,6 +236,7 @@ export async function addToCart(productId: string) {
 | `conservative` | Mousedown/touchstart | Bandbreddskänsliga |
 
 **Prefetch vs. Prerender:**
+
 - Prefetch: Laddar bara HTML (låg kostnad, stödjer cross-site)
 - Prerender: Renderar ALLT i osynlig flik (nästintill instant navigering, högre kostnad)
 
@@ -246,6 +249,7 @@ export async function addToCart(productId: string) {
 **Kärnan:** Nativa, GPU-accelererade övergångar mellan sidor — även i MPA — med enbart CSS.
 
 **Cross-document transitions (MPA — revolutionen):**
+
 ```css
 @view-transition { navigation: auto; }
 .product-card-42  { view-transition-name: product-42; }  /* Sida 1 */
@@ -254,6 +258,7 @@ export async function addToCart(productId: string) {
 ```
 
 **SPA-transitions:**
+
 ```javascript
 document.startViewTransition(async () => {
   const data = await fetchNewPage('/about');
@@ -276,6 +281,7 @@ document.startViewTransition(async () => {
 1. **Long Animation Frames API (LoAF):** Säger *exakt vilken funktion*, i vilken fil, på vilken rad som orsakade problemet (Long Tasks säger bara "något tog lång tid").
 
 2. **`scheduler.yield()`** — Yield till main thread utan att tappa prioritet:
+
 ```javascript
 for (const item of items) {
   processItem(item);
@@ -284,16 +290,17 @@ for (const item of items) {
 }
 ```
 
-3. **`scheduler.postTask()`** — Prioriterad uppgiftshantering:
+1. **`scheduler.postTask()`** — Prioriterad uppgiftshantering:
+
 ```javascript
 await scheduler.postTask(() => showSpinner(), { priority: 'user-blocking' });
 await scheduler.postTask(() => updateUI(data), { priority: 'user-visible' });
 scheduler.postTask(() => analytics.track(), { priority: 'background' });
 ```
 
-4. **`content-visibility: auto`** — Browsern skippar rendering av element utanför viewport.
+1. **`content-visibility: auto`** — Browsern skippar rendering av element utanför viewport.
 
-5. **Web Workers** — Flytta tungt arbete från main thread.
+2. **Web Workers** — Flytta tungt arbete från main thread.
 
 ---
 
@@ -302,6 +309,7 @@ scheduler.postTask(() => analytics.track(), { priority: 'background' });
 **Vites approach:** ESM i development (noll bundling), Rolldown i produktion.
 
 **Import Maps:** Browser-nativ modulupplösning utan bundler:
+
 ```html
 <script type="importmap">
 { "imports": { "react": "https://esm.sh/react@19" } }
@@ -326,12 +334,14 @@ scheduler.postTask(() => analytics.track(), { priority: 'background' });
 **Kärnan:** Reaktiva primitiver som uppdaterar ENBART de specifika DOM-delarna som beror på det ändrade värdet — utan virtual DOM-diffing.
 
 **Varför signals > useState:**
+
 1. State lever utanför komponenten → kirurgiskt precisa uppdateringar
 2. Inga stale closures (signals är pekare, inte closurefångade värden)
 3. Memoisering inbyggd — computed körs bara när beroenden ändras
 4. Ingen virtual DOM behövs
 
 **TC39 Signals Proposal (Stage 1):**
+
 ```javascript
 const counter = new Signal.State(0);
 const isPositive = new Signal.Computed(() => counter.get() > 0);
@@ -355,6 +365,7 @@ const isPositive = new Signal.Computed(() => counter.get() > 0);
 **SolidJS:** Komponenter körs EN gång — det React kallar "re-render" existerar inte. Kompilatorn genererar direkta DOM-operationer.
 
 **Svelte 5 Runes:**
+
 ```svelte
 <script>
   let count = $state(0);
@@ -364,6 +375,7 @@ const isPositive = new Signal.Computed(() => counter.get() > 0);
 ```
 
 **Jämförelse:**
+
 - React: Hela komponentträdet re-renderas → virtual DOM diff → bara ändrade noder uppdateras
 - Solid/Svelte: Signal → direkt till DOM-nod. Ingen traversering, inget diffing.
 
@@ -376,6 +388,7 @@ const isPositive = new Signal.Computed(() => counter.get() > 0);
 **TanStack Query-mönster:** Stale-while-revalidate, optimistiska mutationer med rollback, automatisk cache/retry/dedup.
 
 **RSC-principen:**
+
 - Serverstate = server-komponenter (direkt databasåtkomst)
 - Klientstate = client-komponenter (modaler, formulär, animationer)
 - Delat state = Server Actions + TanStack Query
@@ -406,6 +419,7 @@ const isPositive = new Signal.Computed(() => counter.get() > 0);
 ### 3.6 URL som State (nuqs)
 
 Type-safe URL-state med parsers:
+
 ```typescript
 const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''));
 const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1));
@@ -448,6 +462,7 @@ export type User = typeof users.$inferSelect;
 ```
 
 **tRPC vs Server Actions:**
+
 - tRPC: API konsumeras av flera klienter, subscriptions, komplex cache
 - Server Actions: Enkla formulär, enkel revalidering, inbyggt i React 19
 
@@ -466,6 +481,7 @@ export type User = typeof users.$inferSelect;
 | **GitHub Copilot** | Bäst autocomplete, billigast | Enkel autocomplete, boilerplate |
 
 **Context engineering** — den nya kärnkompetensen:
+
 - CLAUDE.md som projektkonstitution (hierarkisk: global → projekt → paket)
 - Lessons learned som levande dokument
 - PIV-mönstret: Plan → Implement → Verify
@@ -478,6 +494,7 @@ export type User = typeof users.$inferSelect;
 **Trunk-based development:** Alla committar till `main` varje dag. Ofärdig kod skyddas av feature flags istället för branches.
 
 **Expand/Contract-mönster** för databasmigrationer utan driftstopp:
+
 1. EXPAND: Lägg till nya kolumner, dual-write
 2. MIGRATE: Backfill data
 3. SWITCH: Byt läsning via flag
@@ -564,6 +581,7 @@ onLCP((metric) => sendToAnalytics(metric));
 ### 5.5 Observability Stack
 
 **OpenTelemetry för browsern:** Automatisk instrumentering + manuella spans.
+
 - W3C Trace Context-propagering (klient → server)
 - Strukturerad loggning med trace-korrelering
 - **Grafana Faro** — open source-alternativ till Datadog RUM
@@ -588,7 +606,7 @@ onLCP((metric) => sendToAnalytics(metric));
 
 **Kärnan:** 94% av allowlist-baserade CSP:er kan kringgås (Googles forskning). Den enda CSP som faktiskt skyddar är **strikt nonce-baserad med `strict-dynamic`**.
 
-```
+```text
 Content-Security-Policy:
   script-src 'nonce-{RANDOM}' 'strict-dynamic';
   object-src 'none';
@@ -625,6 +643,7 @@ const sanitizerPolicy = trustedTypes.createPolicy('dompurify', {
 ### 6.3 OWASP 2025+ — Nya Hotvektorer
 
 **OWASP Top 10 för LLM-applikationer (2025):**
+
 1. Prompt injection (direkt/indirekt)
 2. Sensitive information disclosure
 3. Supply chain vulnerabilities
@@ -632,6 +651,7 @@ const sanitizerPolicy = trustedTypes.createPolicy('dompurify', {
 5. System prompt leakage
 
 **Kritiska incidenter 2025-2026:**
+
 - React2Shell (CVE-2025-55182) — RCE via Server Actions
 - Shai-Hulud npm-masken (CISA-varning, 500+ paket)
 - Axios-kompromissen mars 2026
@@ -661,6 +681,7 @@ const credential = await startAuthentication(options, true);
 ### 6.5 Supply Chain Security
 
 **7 försvarslager:**
+
 1. Lockfiler (committade, verifierade)
 2. npm audit i CI
 3. Socket.dev (beteendeanalys, inte bara CVE-databas)
@@ -674,10 +695,12 @@ const credential = await startAuthentication(options, true);
 ### 6.6 Säkerhetsheaders
 
 **Cross-Origin Isolation (Spectre-försvar):**
-```
+
+```text
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp
 ```
+
 Möjliggör `SharedArrayBuffer`, high-resolution timers, `performance.measureUserAgentSpecificMemory()`.
 
 **Permissions-Policy:** Kontrollera API-åtkomst per origin (kamera, mikrofon, geolocation).
@@ -691,6 +714,7 @@ Möjliggör `SharedArrayBuffer`, high-resolution timers, `performance.measureUse
 ### 7.1 ARIA 1.3
 
 **Nya attribut:**
+
 - `aria-braillelabel` / `aria-brailleroledescription` — Punktskriftsstöd
 - `aria-description` — Beskrivning utan separat element
 - `aria-errormessage` — Felmeddelande som vokaliseras bara vid `aria-invalid="true"`
@@ -701,6 +725,7 @@ Möjliggör `SharedArrayBuffer`, high-resolution timers, `performance.measureUse
 **Första regeln om ARIA:** Använd INTE ARIA om du kan använda inbyggd HTML. `<button>` istället för `<div role="button">`.
 
 **Vanliga misstag:**
+
 | Misstag | Problem |
 |---------|---------|
 | `<div role="button">` utan tangentbord | Går inte att använda med tangentbord |
@@ -712,6 +737,7 @@ Möjliggör `SharedArrayBuffer`, high-resolution timers, `performance.measureUse
 ### 7.2 Kognitiv Tillgänglighet
 
 **WCAG 2.2 för neurodivergenta:**
+
 - **2.4.11 Fokus inte dolt (AA)** — Interaktiva element döljs inte av sticky headers
 - **2.5.7 Drag-rörelser (AA)** — Alternativ för drag-and-drop
 - **2.5.8 Målstorlek minimum (AA)** — 24x24 CSS-pixlar minimum
@@ -776,6 +802,7 @@ test('ska inte ha tillgänglighetsfel', async ({ page }) => {
 **MACH-principer:** Microservices, API-first, Cloud-native, Headless.
 
 **Payload CMS** (rekommendation):
+
 - Next.js-nativt — lever i samma kodbas
 - Local API: Querya innehåll direkt i Server Components (ingen HTTP-overhead)
 - Block-baserad editor (Lexical) — utbyggbar med quiz, övningar etc.
@@ -823,7 +850,7 @@ export const Course: CollectionConfig = {
 
 #### xAPI/cmi5 framför SCORM
 
-```
+```text
 SCORM = "Eleven klarade provet med 85%"
 xAPI  = "Eleven läste artikeln på mobilen, pausade videon vid 3:42,
          löste övning 3 på tredje försöket med 92%"
@@ -834,6 +861,7 @@ xAPI  = "Eleven läste artikeln på mobilen, pausade videon vid 3:42,
 **cmi5 = xAPI + LMS:** Innehåll kan ligga var som helst (CDN), offline-synk, obegränsad data.
 
 **LRS med Supabase:**
+
 ```sql
 CREATE TABLE learning_statements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -855,6 +883,7 @@ CREATE TABLE learning_statements (
 **LECTOR (2025):** LLM-Enhanced Concept-based Test-Oriented Repetition — 90.2% framgång.
 
 **Recommendation Engine-inputs:**
+
 - Kunskapsnivå (diagnostik)
 - Historiska prestationer (xAPI/LRS)
 - Spaced repetition-schema (SM-2)
@@ -878,7 +907,8 @@ CREATE TABLE learning_statements (
 **Open source SFU (Go).** Self-hosted, gratis. Adaptiv bitrate, simulcast, data channels.
 
 **Hybrid Event-arkitektur:**
-```
+
+```text
 LIVE SESSION                    ON-DEMAND REPLAY
 LiveKit Room ──Recording──→     Inspelning (HLS/DASH)
 + Chat/Polls ──Transcript──→   + Kapitel + Sökbar text
@@ -890,6 +920,7 @@ LiveKit Room ──Recording──→     Inspelning (HLS/DASH)
 #### Eventhantering
 
 **Atomisk biljettreservation:**
+
 ```sql
 CREATE OR REPLACE FUNCTION reserve_ticket(p_event_id UUID, p_user_id UUID)
 RETURNS UUID AS $$
@@ -982,6 +1013,7 @@ CREATE POLICY "Users access purchased courses"
 #### Gamification bortom Poäng
 
 **Fyra nivåer:**
+
 1. **Mastery-baserad progression:** Lås upp nästa nivå baserat på faktisk kunskap
 2. **Social bevisning:** "15 andra i din kohort har klarat denna modul"
 3. **Utmaningssystem:** Tidsbegränsade utmaningar med belöningar
@@ -1039,7 +1071,7 @@ Flera mönster konvergerar mot samma principer:
 
 ### 9.4 Implementationsprioritering
 
-```
+```text
 Fas 1: Grund (vecka 1-4)
 ├── Next.js 15 + Payload CMS + Supabase
 ├── Grundläggande kursstruktur med block-editor
@@ -1085,4 +1117,5 @@ Alla delrapporter finns i `~/Documents/research/`.
 
 ---
 
+<!-- markdownlint-disable-next-line MD036 -->
 *Sammanställd med Claude Code | 2026-04-06*

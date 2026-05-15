@@ -8,6 +8,8 @@
 > **Status just nu:** Fas 0, Fas 1, Fas A och Fas 2 är klara. **Fas 2.5 (dubbelkoll på datan) startar nästa session.**
 > **Föregångare:** [v2](../archive/BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md) (april 2026, arkiverad 2026-05-09) och [v1](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md) (arkiverad 2026-05-06). v3 ersätter v2 och speglar byggplan-revisionen från maj 2026.
 
+<!-- markdownlint-disable-next-line MD028 -->  <!-- BYGGPLAN-LÄTTLÄST formatering (pedagogisk struktur per ADR-025) -->
+
 > **Till dig som läser detta:** Det här dokumentet beskriver hela planen för Miranon Medias nya digitala verktyg. Det är skrivet så att du ska förstå allt — oavsett teknisk bakgrund. Första gången ett tekniskt begrepp dyker upp förklaras det direkt i texten. Du behöver aldrig lämna det stycke du läser för att förstå det.
 
 ---
@@ -205,6 +207,7 @@ Allt verifieras automatiskt via 6 Playwright-tester som körs vid varje kodändr
 
 ### Fas 2.5: Dubbelkoll på datan
 
+<!-- markdownlint-disable-next-line MD036 -->
 *1 arbetspass · startar nästa session*
 
 **Vad händer?**
@@ -239,6 +242,7 @@ Slutligen går vi igenom de nio adapter-funktionerna som idag bara är "skelett"
 
 ### Fas 3: Byggklossar
 
+<!-- markdownlint-disable-next-line MD036 -->
 *2 arbetspass*
 
 **Vad händer?**
@@ -260,6 +264,7 @@ Allt byggs ovanpå [React Aria](https://react-spectrum.adobe.com/react-aria/) �
 
 ### Fas 3.5: Tillgänglighetstest *(ny i v3)*
 
+<!-- markdownlint-disable-next-line MD036 -->
 *1 arbetspass*
 
 **Vad händer?**
@@ -276,6 +281,7 @@ Det här är en specialfas som tillkom efter att vi noggrant gick igenom vad det
 
 ### Fas 5: Skalet — det du ser först
 
+<!-- markdownlint-disable-next-line MD036 -->
 *1 arbetspass*
 
 > **Hopp i numreringen från 3.5 till 5:** Den ursprungliga Fas 4 (DataTable) togs bort när vi insåg att listor räcker. Numreringen lämnades orörd för att undvika förvirring i arkivet.
@@ -300,6 +306,7 @@ Nu bygger vi det som omger allt — appens *skal*.
 
 ### Fas 5.5: Första riktiga interaktionen *(ny i v3)*
 
+<!-- markdownlint-disable-next-line MD036 -->
 *2 arbetspass*
 
 **Vad händer?**
@@ -350,6 +357,7 @@ Leads, planera nytt event, skicka mail, inställningar, logga ut. Den här flike
 
 ### Fas 6.5: "Vad har hänt?" — automatisk historik
 
+<!-- markdownlint-disable-next-line MD036 -->
 *1 arbetspass*
 
 **Vad händer?**
@@ -364,6 +372,7 @@ Historiken sparas i 12 månader och hanteras enligt EU:s dataskyddsregler (GDPR)
 
 ### Fas 7: Slutbesiktning
 
+<!-- markdownlint-disable-next-line MD036 -->
 *3 arbetspass*
 
 **Vad händer?**
@@ -388,6 +397,7 @@ Appen fungerar sedan Fas 6. Nu granskar vi allt — som en slutbesiktning av ett
 
 ### Fas 8: Framtid
 
+<!-- markdownlint-disable-next-line MD036 -->
 *Storlek bestäms när vi kommer dit*
 
 **Vad händer?**
@@ -408,6 +418,7 @@ Vilken av dessa som byggs först bestäms när Fas 8 aktualiseras — sannolikt 
 
 ### Fas B: Airtable-hardening *(ny i v3)*
 
+<!-- markdownlint-disable-next-line MD036 -->
 *Storlek bestäms av Roger och Lotta · pågår löpande*
 
 **Vad händer?**
@@ -435,6 +446,7 @@ Konkret innehåller det:
 
 ### Fas E: Supabase-migration *(ny i v3 — DEFER)*
 
+<!-- markdownlint-disable-next-line MD036 -->
 *Långt fram · ingen tidsuppskattning ännu*
 
 **Vad händer?**

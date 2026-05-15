@@ -26,10 +26,20 @@ Pre-Fas-2.5-positionen är fortfarande idealisk för process-investering: ingen 
 
 Följande 4 grindvakter etableras, fördelade över `docs`-jobbet och `lint`-jobbet per ADR-029 § Konvention. Position #2 (typos) är **Considered + rejected** post-K3-baseline (2026-05-14) men bevaras som slot-numrering för trail-spårbarhet per ADR-022 kategori-utvidgning-mönstret:
 
-1. **markdownlint-cli2** (docs-jobb)
+1. **markdownlint-cli2** (docs-jobb) — implementerad K4 2026-05-14, Strategi B+
    - Markdown-hygien: rubriknivåer (MD001/MD003), listor (MD007), kodblock (MD040 språk-tag), tabeller (MD055/056/058/060)
-   - Lokal config `.markdownlint.jsonc` med svensk-text-anpassningar (inaktivera MD013 line-length per Session 6.5-stil)
-   - Scope: `docs/**/*.md` + `tasks/*.md` + `./*.md` (matchar Lychee-scope; sessionsdok-archive exkluderas)
+   - Lokal config `.markdownlint-cli2.jsonc` med 3 motiverade rule-anpassningar:
+     - **MD013 (line-length): disable** — svensk prosa har långa sammansatta ord; branschpraxis (Vite/Next.js/Astro) disable:ar MD013 i markdown
+     - **MD060 (table-column-style): disable** — repo använder kompakt `|kol|`-stil konsekvent över ~250 tabeller; aktivt val, ej slapphet
+     - **MD024 (no-duplicate-heading): siblings_only** — Keep-a-Changelog-konvention `### Changed` per `## [X.Y.Z]`-release; siblings_only flaggar duplicering inom samma parent (legitim hygien) utan TOC-störning
+   - Scope: `docs/**/*.md` + `tasks/*.md` + `./*.md` (matchar Lychee-scope; sessionsdok-archive + docs/archive exkluderade)
+   - **Empirisk baseline + fix-resa (K4):** 10 570 → 0 fynd (~99.86 % reduktion):
+     - Config-disables (MD013/MD060/MD024 siblings): 9 668 → 0
+     - Auto-fix `--fix` (MD032/22/31/58/34/50/29/26/7): 902 → 0 inkl. MD034 bare-URLs som auto-konverterades till `<url>`-format
+     - Manuell MD040 (77 språk-tags): `text`-default på alla bare ``` -block; selektiv upgrade till bash/yaml/json deferras som polish till framtida session
+     - Manuell MD036 (38 fynd, Strategi B+ hybrid): 14 strukturella → `### N. ...` (ADRs alternativ-listor + data-model.md trigger-sekvenser); 24 inline-emfas → `<!-- markdownlint-disable-next-line MD036 -->`-disable (gap-analysis Betyg-tags, BYGGPLAN-LÄTTLÄST estimat-tags, metadata-headers)
+     - Sub-A inline DEFERRED-FIX-MARKER (15 fynd, per K1.13 per-item-spårbarhet): MD051 (7 broken-anchors i Vue-referens-doc), MD056 (4 tabell-cell-överskott i frusen Vue-referens), MD041 (2 first-line-heading), MD028 (1 BYGGPLAN-LÄTTLÄST blockquote), MD025 (1 multi-section analys-rapport)
+   - **Implementation:** npm devDependency (`markdownlint-cli2: ^0.22.1` i package.json), körs via `npx markdownlint-cli2` i docs-jobbet efter Lychee. Ingen pre-commit-hook (markdownlint är CI-only-grindvakt; pre-commit reserveras för biome + K7-frontmatter)
 
 2. **typos** — Considered + rejected per empirisk baseline 2026-05-14
 
@@ -89,6 +99,7 @@ status: stable  # draft | stable | deprecated
 8. Eventuella övriga styrande specs identifierade i K1-läsning av `docs/specs/`
 
 **Tillämpas EJ på:**
+
 - Sessionsdok (immutable per ADR-023 vid arkivering)
 - ADR-er (egen `Status: ... | Datum: ... | Fas: ...`-header per `docs/decisions/README.md` § Format)
 - Publika top-level docs (`README.md`, `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md`) — egen ADR-024-domän (`README.md` har badges + status-rad istället; `CHANGELOG.md` har Keep-a-Changelog-format)
@@ -96,12 +107,14 @@ status: stable  # draft | stable | deprecated
 ### Del 3 — Pre-commit hook + CI-validering (frontmatter)
 
 **Pre-commit hook** (`.git/hooks/pre-commit` eller `lefthook`-style — beslutas i K7):
+
 - Vid stage av styrande dokument (lista ovan) — auto-bump `updated:` till `git log -1 --format=%cs` motsvarighet (om värdet driver)
 - Ingen ändring om `updated:` redan matchar dagens datum (idempotent)
 - Hoppas över för `--amend` (bevarar ursprunglig commit-datum)
 - Hoppas över om commit inte rör styrande docs (mekanisk file-pattern-check)
 
 **CI-validering** (lint-jobb — snabb):
+
 1. Validera att frontmatter finns på alla filer i styrande-docs-listan (failar om saknas)
 2. Validera att `updated` matchar `git log -1 --format=%cs <fil>` (mekanisk konsistens — failar om drift > 1 dag, tillåter race-condition mellan commit + push)
 3. Validera att `review_by > today()` (failar om passerat → tvingar re-verifiering)
@@ -111,6 +124,7 @@ status: stable  # draft | stable | deprecated
 ### Del 4 — ADR-numrering vs ADR-029-utvidgning
 
 ADR-030 är **ny ADR**, inte utvidgning av ADR-029. Konceptuellt distinkta domäner:
+
 - **ADR-029:** CI-arkitektur (jobs/job-flow/changed-files/aggregator) + third-party Actions supply-chain-policy
 - **ADR-030:** Docs-hygien-policy (lint-verktyg/språkstilguide/metadata-konvention)
 
@@ -135,6 +149,7 @@ Konsekvensen relateras explicit: ADR-030 § Spårbarhet pekar tillbaka till ADR-
 **Positivt:**
 
 - 4 grindvakter fångar drift FÖREBYGGANDE (vs reaktivt som K5.9c cross-doc-grep + Lychee), bygger ut docs-jobb-yta etablerad av ADR-029
+- K4 markdownlint-cli2 (Strategi B+) reducerade 10 570 pre-existing fynd till 0 i en enda session — bevisar att aggressiv config + auto-fix + manuell hybrid är 11/10-ergonomisk även för stora baselines. Mönsterförstärkning av K1.16 (grindvakt avslöjar emergent värde)
 - Vale specifikt fångar ADR-027-typ-stack-skifte-drift på rad-nivå — *före* den blir lessons-skuld. Vale-scope utvidgad post-K3 med stavnings-validering — en sammanhållen pipeline för språk/ton/terminologi/stavning
 - Frontmatter ger mekanisk "när reviewades senast?"-svar (eliminerar manuell-prosa-drift bekräftad i K2.13)
 - `review_by`-fält tvingar tidsbunden re-verifiering — disciplin-trail genom CI istället för manuell påminnelse
@@ -211,11 +226,11 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13: varje utelämning dokumenteras exp
   - Marcus' explicita begäran 2026-05-14 om frontmatter-policy med pre-commit-auto-bump
 - **Etablerad:** Session 6.6 K1 2026-05-14 (sessionsdok [`tasks/sessions/2026-05-14-session-6-6.md`](../../tasks/sessions/2026-05-14-session-6-6.md)).
 - **Implementation:**
-  - K2 — yamllint (uppvärmning, lägst risk)
-  - K3 — typos + custom-dictionary
-  - K4 — markdownlint-cli2 + svensk-text-config
+  - K2 ✅ KLAR 2026-05-14 — yamllint (uppvärmning, 17 fynd → 0, commit `16ee4ec`)
+  - K3 ✅ STÄNGD 2026-05-14 — typos avvisat per empirisk baseline (6 490 fynd, tool-uppgift-mismatch; commit `e74eb2f`)
+  - K4 ✅ KLAR 2026-05-14 — markdownlint-cli2 Strategi B+ (10 570 → 0 fynd, commit i denna K4-bunt)
   - K5 — scripted-checklist-check (publika docs)
-  - K6 — Vale + projektspecifik stilguide
+  - K6 — Vale + projektspecifik stilguide (utvidgad med stavnings-validering post-K3)
   - K7 — Frontmatter-policy + pre-commit hook + CI-validering (inkluderar "Senast uppdaterad"-prosa-borttagning)
   - K8 — Checklist-trimning av sessionsavslut-checklistan (konservativ; halv-mekaniska defer till Session 6.7 per Marcus' Block D #3)
   - K9 — Empirisk verifikation (full CI-run; tids-mätning per Strategi E-paradigm)

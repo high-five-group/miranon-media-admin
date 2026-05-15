@@ -86,7 +86,8 @@ Första session där React-repot faktiskt får kod. Innan denna session fanns ba
 Output från `npm ls --depth=0` efter Fas 0 + Fas 1 (versioner identiska, ingen ny dep i Fas 1):
 
 **Dependencies (runtime):**
-```
+
+```text
 @react-aria/focus@3.21.5
 @react-aria/overlays@3.31.2
 @react-aria/utils@3.33.1
@@ -113,7 +114,8 @@ zod@4.3.6
 ```
 
 **Dev dependencies:**
-```
+
+```text
 @biomejs/biome@2.4.11
 @playwright/test@1.59.1
 @tailwindcss/vite@4.2.2
@@ -310,7 +312,7 @@ Samtliga verifierade via `scripts/verify-phase-1.ts` (runtime) + `tsc` + `biome`
 
 #### Filstruktur-snapshot (slutet av Fas 1)
 
-```
+```text
 src/
 ├── data/
 │   ├── adapters/
@@ -434,7 +436,7 @@ Fas A etablerade 8 arkitekturmönster (operations-API, AuthContext, INVARIANT, k
 
 #### Filstruktur-snapshot (verifierad mot HEAD 2026-05-05)
 
-```
+```text
 supabase/
 ├── config.toml                       [NY — M8: verify_jwt per funktion]
 └── functions/
@@ -592,6 +594,7 @@ K3.4 + K5 final (Session 5b — Fas 2-stängning):
 Session 5 (under H2 `## 2026-05-12 — Fas 2 Session 5 (K2-K4 + K3.5)`): K24-K36 i `tasks/lessons.md`. K34 (test-credentials aldrig-läcka) + K36 (automatiserad test fångar timing-bugs) markerade som hub-lyft-kandidater.
 
 Session 5b (under H2 `## 2026-05-13 — Fas 2 Session 5b (K3.4 + K0åg-skörd)`):
+
 - K17 (live security-state vid sessionsstart) [hub-lyft]
 - K18 (audit-output är signal, inte sanning) [hub-lyft]
 - K19 (pin + overrides reversibel supply chain-respons) [hub-lyft]
@@ -628,6 +631,7 @@ Test 5 (INGA functions/v1-anrop med anon-key) är hjärtat i K4.3-suiten — ver
 **Fas 2 KOMPLETT 2026-05-13.** Alla 8 DoD-rader från byggplan §4 stängda och empiriskt verifierade. Sessions 4 + 5 + 5b sammanlagt — sessionsdoket arkiveras till `tasks/sessions/archive/2026-05/` i K5.8.
 
 **Kvarvarande efter Fas 2:**
+
 - Hub-lyft 7 UNIVERSAL-kandidater till `~/Repon/marcus-system/tasks/lessons.md` (K5.7)
 - BYGGPLAN-LÄTTLÄST-v3 Fas 2-status-uppdatering om filen finns (K5.8)
 - Sessionsdok-arkivering + CLAUDE.md trail-link-uppdatering (K5.8)
@@ -645,6 +649,7 @@ Skikt 2 (AuthError throw-path) är inte regression-skyddad i isolation post-K3.4
 **Status:** ✅ KLAR
 
 **Leverans:**
+
 - Strategi E (Vite-mönstret: changed-files + needs-skip + aggregator) etablerad per ADR-029
 - ci.yml restrukturerad från 12-stegs verify-jobb (1 jobb) till 5 jobs (changed → lint → test → docs → ci-passed)
 - Empirisk verifikation: doc-only-commits ~34s vs ~95s baseline = **~64 % besparing**

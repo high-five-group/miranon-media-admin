@@ -25,6 +25,7 @@ Direktivet `tasks/byggplan-direktiv.md` §12 formulerade insikten: "ramen 'konve
 `docs/conversion-plan.md` arkiveras till `docs/archive/conversion-plan-2026-04-14.md` (datumet är skapelsedatum, inte arkiveringsdatum — arkivnamnet bevarar provenance). `docs/byggplan.md` (skapad 2026-05-05 i P3a K2) blir det nya styrande fas-för-fas-direktivet. Skiftet är **ersättning, inte uppdatering**.
 
 Skälet för ersättning över uppdatering:
+
 - v1→v2 hade krävt patch-på-patch på 27+ bullets, med risk för otidsenlig prosa kvar i sektioner som *inte* uppdateras (lager 4-drift per UNIVERSAL-lärdom från REG 2026-04-19).
 - Ramen själv är fel — uppdatering hade kvarhållit Vue-jämförelser som inte längre är primär referens.
 - byggplan utgår från **låst target-arkitektur post-Fas A + Fas E**, inte från Vue-versionens komponentstruktur. Det är annan utgångspunkt.
@@ -41,12 +42,14 @@ Skälet för ersättning över uppdatering:
 ## Konsekvenser
 
 **Positiva:**
+
 - En aktiv plan (`byggplan.md`) — ingen drift mellan parallella styrande dokument.
 - Ramen explicit sagd: target-arkitektur-driven, inte Vue-konvertering-driven. Framtida läsare förstår *varför* byggplan ser ut som den gör.
 - BUILD-LOG-spårbarhet bevaras via arkiverad fil.
 - Fas 2+ kan startas mot byggplan utan tvetydighet om vilken plan som gäller.
 
 **Negativa:**
+
 - BUILD-LOG-referenser till conversion-plan-bullets måste justeras till `docs/archive/`-sökväg vid nästa uppdatering. Mitigation: P3b-DoD inkluderar verifikation av detta.
 - Vue-port-jobb som fortfarande pågår (komponentbiblioteket Mm Component Library) refererar inte byggplan direkt utan via `docs/research/vue-project-analysis.md`. Det är OK — Mm-biblioteket är produkt-output, inte byggplan-leverans.
 - Risk för förvirring under övergångsperioden (P3a K2 commit → P3b arkivering). Mitigation: byggplan.md-headern säger explicit "ersätter `docs/conversion-plan.md`".

@@ -162,11 +162,13 @@ slogs ihop till en designfas med två milstolpsspår.
 innan research börjar.
 
 **Output:**
+
 - Godkänd plan (denna fil eller revision)
 - Arbetsdokument i `tasks/sessions/` skapat med initial struktur
 - Beslut på G0-frågorna nedan dokumenterade
 
 **Arbete:**
+
 1. Bekräfta tvåstegsstrategin (Airtable 11/10 först, Supabase sedan)
 2. Bekräfta att projektet är research/design/plan, inte implementation
 3. Sätt hypotesregister-format (§7)
@@ -189,6 +191,7 @@ innan research börjar.
 | **G0.3** | **Multi-tenant ready (för Passionslyftet, Maxat Event, framtida produkter)?** | Strategiskt beslut med stor schema-påverkan. Behövs innan Fas 2 — annars riskerar S-track att designas om. |
 
 **Inter-fas-kontrakt → Fas 1:**
+
 - Godkänd plan (denna fil)
 - Beslut på G0.1, G0.2, G0.3 dokumenterade
 - Arbetsdokument finns i `tasks/sessions/` med tom hypotes-tabell, tom DS/DQ-matris, tom logg
@@ -204,6 +207,7 @@ användbar i gap-analysen.
 **Output:** Baseline-sektion i `04-research.md` (eller appendix om den blir stor).
 
 **Arbete:**
+
 - Sammanfatta kärnmodellen: Personer, Anmälningar, Deltaganden
 - Sammanfatta stödmodeller: Event, Väntelista, Lead magnets, Touchpoints, Bulkmail, systemtabeller
 - Lista hårda constraints från drift: MK, Lotta-workflows, Edge Functions, A1–A11, Resend-flöden
@@ -227,6 +231,7 @@ användbar i gap-analysen.
 | Finns workflows i `hur-systemet-funkar.md` som saknas i tekniska modellen? | Affärslogik måste bevaras |
 
 **Inter-fas-kontrakt → Fas 2:**
+
 - Domänkarta + driftkarta + populerat skuldregister
 - Lista över "off limits"-områden i Airtable
 
@@ -259,6 +264,7 @@ SQL-normalisering.
 | Operativ ergonomi | Hur ska modellen vara begriplig och trygg för Lotta/Roger? |
 
 **Källtyper (per G0.1-beslut):**
+
 - Etablerade källor (Stripe-data-modeller, Shopify-mönster, PostgreSQL/Supabase-best practices)
 - Konkreta öppna scheman (vilka beslutas i G0.1)
 - Multi-tenant SaaS-mönster (om G0.3 = ja)
@@ -280,6 +286,7 @@ SQL-normalisering.
 | Finns källor nog för att kalla detta research (>5 högkvalitativa per princip-kluster)? | Ja/komplettera |
 
 **Inter-fas-kontrakt → Fas 3:**
+
 - 8–12 principer med källor och bedömningsrubrik
 - Tydlig markering: principer som gäller Airtable, Supabase, eller båda
 
@@ -343,6 +350,7 @@ Plus: alla 12 hypoteser från dm-110.
 | Vilka gap är inte problem? | Preserve-beslut med motivering |
 
 **Inter-fas-kontrakt → Fas 4:**
+
 - Komplett gap-lista med rekommendation per gap
 - Alla DS/DQ/hypoteser klassade enligt §8
 - Prioriteringskarta för A-track och S-track
@@ -418,6 +426,7 @@ parallellt.
 | Multi-tenant-stöd (per G0.3)? | Bekräfta tidigare beslut |
 
 **Inter-fas-kontrakt → Fas 5:**
+
 - Komplett Airtable hardening-plan (06a)
 - Komplett Supabase target-modell (06b)
 - A-track och S-track kopplade — vad i 06a leder till vad i 06b
@@ -479,6 +488,7 @@ vilka komponenter påverkas av varje migrationssteg?
 | Kan framtida Code-session exekvera planen utan att gissa? | Ja/nej |
 
 **Inter-fas-kontrakt → Fas 6:**
+
 - Exekverbar tvåstegs-migrationsplan
 - Future Code-prompt utkastad
 - Rollback-strategi per migrationssteg
@@ -491,6 +501,7 @@ vilka komponenter påverkas av varje migrationssteg?
 användbart underlag.
 
 **Output:**
+
 - Slutsektion i `07-migration-plan.md`
 - UNIVERSAL-lärdomar lyfta till `marcus-system/tasks/lessons.md`
 - Arbetsdokument i `tasks/sessions/` arkiverat (status frusen)

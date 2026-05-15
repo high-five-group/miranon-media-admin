@@ -201,12 +201,12 @@ Men repo:t får inte börja tro att det är en produkt. Det är en mycket väldo
 
 ## Externa källor
 
-- Backstage ADR process: https://backstage.io/docs/architecture-decisions/
-- Rust RFC process: https://github.com/rust-lang/rfcs
-- Kubernetes enhancements / KEP tracking: https://github.com/kubernetes/enhancements och https://www.kubernetes.dev/community/community-groups/sigs/architecture/
-- Kubernetes security response repo: https://github.com/kubernetes/committee-security-response
-- GitLab vulnerability management: https://handbook.gitlab.com/handbook/security/product-security/vulnerability-management/
-- GOV.UK Design System accessibility statement: https://design-system.service.gov.uk/accessibility-statement/
-- Grafana accessibility overview/styleguide: https://grafana.com/developers/saga/foundations/accessibility/accessibility-overview och https://grafana.com/developers/saga/foundations/accessibility/accessibility-styleguide/
-- Grafana Playwright style guide: https://raw.githubusercontent.com/grafana/grafana/main/contribute/style-guides/e2e-playwright.md
-- Shopify Polaris accessibility: https://polaris-react.shopify.com/foundations/accessibility
+- Backstage ADR process: <https://backstage.io/docs/architecture-decisions/>
+- Rust RFC process: <https://github.com/rust-lang/rfcs>
+- Kubernetes enhancements / KEP tracking: <https://github.com/kubernetes/enhancements> och <https://www.kubernetes.dev/community/community-groups/sigs/architecture/>
+- Kubernetes security response repo: <https://github.com/kubernetes/committee-security-response>
+- GitLab vulnerability management: <https://handbook.gitlab.com/handbook/security/product-security/vulnerability-management/>
+- GOV.UK Design System accessibility statement: <https://design-system.service.gov.uk/accessibility-statement/>
+- Grafana accessibility overview/styleguide: <https://grafana.com/developers/saga/foundations/accessibility/accessibility-overview> och <https://grafana.com/developers/saga/foundations/accessibility/accessibility-styleguide/>
+- Grafana Playwright style guide: <https://raw.githubusercontent.com/grafana/grafana/main/contribute/style-guides/e2e-playwright.md>
+- Shopify Polaris accessibility: <https://polaris-react.shopify.com/foundations/accessibility>

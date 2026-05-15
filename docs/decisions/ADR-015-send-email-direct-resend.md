@@ -17,6 +17,7 @@ Vid eventuell deploy är arkitekturfrågan: hur ska mail skickas?
 2. **Mail-event-pattern:** EF lägger en `mail_event` i Airtable (eller queue post-Fas E), separat worker plockar event:et och kallar Resend. Asynkront, reliability via retry, ev. mail-batching, audit-log-vänligt.
 
 Mail-event-pattern är "rätt" arkitektur men kräver:
+
 - Worker-deploy-pipeline (separat från EFs)
 - Queue-tabell + cleanup-cron
 - Retry-logik + dead-letter-queue
@@ -32,6 +33,7 @@ Per UNIVERSAL "Operations utan empirisk användning är onödig attack-yta" (M4-
 `send-email` Edge Function implementeras med **direkt Resend-anrop** vid Fas 6e-deploy (om Mer-fliken behåller mail-vy). Detta är medveten **arkitekturskuld** med dokumenterad migrationsväg.
 
 **Direct-Resend-implementation:**
+
 - EF tar `to`, `subject`, `body_html`, `body_text` (+ `from` från env-config)
 - Synkron POST till `https://api.resend.com/emails` med `RESEND_API_KEY` från env
 - Returnerar `{messageId, sentAt}` vid framgång, INVARIANT-fail vid Resend 4xx/5xx
@@ -39,6 +41,7 @@ Per UNIVERSAL "Operations utan empirisk användning är onödig attack-yta" (M4-
 
 **Migrationsväg (mail-event-pattern):**
 Trigger för migration är **endera av**:
+
 1. Lotta rapporterar 2+ mail-incidenter (saknat mail, dubblett-mail, fel mottagare) inom 30 dagar
 2. Daglig mail-volym överstiger 50/dag (5x dagens estimat)
 3. Compliance-krav på audit-log för utskickade mail (t.ex. GDPR-bevis-spår)
@@ -59,16 +62,19 @@ Vid migration: ny ADR skrivs som superseder denna (`Supersedes ADR-015`). Mail-e
 ## Konsekvenser
 
 **Positiva:**
+
 - Snabb deploy (1 EF-fil + env-config), Mer-fliken levereras inom Fas 6e:s 0,5 session.
 - Etablerat mönster från psionautics — låg risk för okända fallgropar.
 - Migrationsvägen dokumenterad → framtida utvecklare (eller framtida-jag) vet *när* det är dags att refaktorera, inte bara *att* det bör göras.
 
 **Negativa:**
+
 - **Single point of failure:** om Resend är nere, fallar mail. Ingen retry-mekanism. Mitigation: TanStack `useMutation` har retry-config, men det är klient-side — Resend-downtime mellan EF och Resend ger fortfarande fail. Acceptabel risk vid ~5-20 mail/dag.
 - **Ingen audit-trail som överlever EF-restart:** mail skickas, ingen lokal kopia. Aktivitetsloggen (Fas 6.5) får `mail_sent`-event men inte mail-content. Mitigation: Resend har sin egen logging (90-dagars retention) — räcker för operativ debugging.
 - **Skuld glöms bort:** risk att direct-Resend blir permanent. Mitigation: ADR + trigger-kriterier ovan — när någon trigger uppfylls, skrivs ny ADR, inte tyst kvarhållen skuld.
 
 **Verifiering vid Fas 6e-deploy (om sendEmail behålls):**
+
 - `supabase/functions/send-email/index.ts` har INVARIANT-check på Resend-respons-shape
 - `RESEND_API_KEY` finns i env, INTE committad
 - `tests/api/sendEmail.spec.ts` mockar Resend och testar happy path + 4xx-fel + 5xx-fel

@@ -14,7 +14,7 @@ Av de 25 filerna hör endast 4 verkligen hemma i roten: `README.md`, `byggplan.m
 
 Strukturera `docs/` enligt:
 
-```
+```text
 docs/
 ├── README.md, byggplan.md, BUILD-LOG.md, DOKUMENTATIONSSTANDARD.md  (rot, 4 filer)
 ├── specs/      (14 filer — DESIGN-, SECURITY-, STATE-, URL-, ARIA-, ACCESSIBILITY-, FUTURE-, PERFORMANCE-, KVALITETSDEFINITIONER-, SPA-, BYGGPLAN-LÄTTLÄST-v2)
@@ -30,6 +30,7 @@ docs/
 Filerna flyttas med `git mv` så historik bevaras. Refs uppdateras i samma commit via sed-pass (1 sed-script, 20 substitutioner). `docs/archive/`-filer exkluderas från sed-passen — historiska refs bevaras där.
 
 I commit 2 (samma åe-klunga) hanteras dessutom:
+
 - Arkivering av BYGGPLAN-LÄTTLÄST.md v1 till `docs/archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md` med ARKIVERAD-header (superceded av v2 i specs/).
 - Kirurgisk fix av 8 broken refs över 6 filer (per-rad-bedömning, ingen mekanisk sed):
   - `docs/specs/BYGGPLAN-LÄTTLÄST-v2.md`:461 — markdown-länk → `../archive/conversion-plan-2026-04-14.md`
@@ -51,20 +52,24 @@ I commit 2 (samma åe-klunga) hanteras dessutom:
 ## Konsekvenser
 
 **Positivt:**
+
 - `docs/`-roten har 4 styrande filer + 8 undermappar = läsbar översikt vid första anblick.
 - Kategorier är intuitiva och självförklarande.
 - `git mv` bevarar full historik per fil.
 - README.md `Documentation map`-sektion (åd, refs ADR-024) refererar nu meningsfulla mappar.
 
 **Negativt:**
+
 - 20 ref-uppdateringar är riskmoment — sed-passen verifieras med post-grep att 0 gamla refs finns kvar (utanför `docs/archive/`).
 - Externa länkar till specifika filer (om sådana finns) bryts. Mitigerat: privat-projekt utan externa inlänkar.
 
 **Spårbarhet:**
+
 - Commit 1: filflyttningar + ref-uppdateringar (`7a6ec28`)
 - Commit 2: denna ADR + BYGGPLAN-LÄTTLÄST v1 arkivering + conversion-plan-refs-fix
 
 **Skip-disciplin (refs som medvetet INTE fixades):**
+
 - `CHANGELOG.md` historiska fil-namn (Keep-a-Changelog dokumenterar *vad som hände* — historiska namn bevaras exakt; "X → Y"-pilar är beskrivande, inte broken links).
 - `docs/byggplan.md` + `tasks/byggplan-direktiv.md` text-mentions och backtick-path-citat i historisk-relationskontext (typ "ersätter `docs/conversion-plan.md` som styrande" där refen är en historisk relationsbeskrivning, inte en levande pekare). Den ursprungliga sed-passen revertades efter att text-störningar upptäcktes.
 - `docs/BYGGPLAN-LÄTTLÄST.md` v1 internt content (arkiv-disciplin: snapshot bevaras med original-innehåll, endast ARKIVERAD-header läggs till).

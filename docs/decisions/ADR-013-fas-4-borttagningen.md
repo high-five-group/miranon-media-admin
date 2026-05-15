@@ -35,12 +35,14 @@ P0-inventory (2026-05-04) klassade Fas 4 som "försvinner" i fas-tabellen. Direk
 ## Konsekvenser
 
 **Positiva:**
+
 - Total estimat krymper: 16,5 sessioner istället för 16,5 + 1 (DataTable-fas).
 - Ingen kod byggs utan empirisk användning — följer M4-principen.
 - BUILD-LOG-spårbarhet bevaras (Fas 0/1-referenser intakta).
 - Fas 7 har scope-flexibilitet: om event-detalj klarar sig utan DataTable elimineras komponenten helt, om den behövs byggs den i deploy-kontext.
 
 **Negativa:**
+
 - Numreringssprånget 3.5 → 5 är initialt förvirrande för nya läsare. Mitigation: byggplan.md numreringsnot förklarar explicit + denna ADR refereras därifrån.
 - Om Mm Component Library ska levereras som återanvändbart paket post-Fas 7 (för Passionslyftet), kan DataTable behövas oavsett event-detalj-behov. Mitigation: Fas 7 scope-bullet skiljer "om event-detalj behöver det" från "annars eliminera" — Mm Library-behovet kan återaktivera scope vid behov, dokumenteras då med ny ADR.
 

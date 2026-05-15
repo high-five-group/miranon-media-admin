@@ -16,12 +16,17 @@ korresponderar med: 02-live-state.md (live MCP), 00-file-manifest.md (källista)
 
 - [A. Schema-ändringar (nya/ändrade fält + options)](#a-schema-ändringar)
 - [B. Automationer A1–A11 — detaljerad extraktion](#b-automationer-a1a11)
+<!-- markdownlint-disable-next-line MD051 -->  <!-- broken-anchor (Vue-referens-doc, fixas vid Fas 6 om sidan migreras) -->
 - [C. Edge Functions — kontrakt (sammandrag)](#c-edge-functions-kontrakt)
+<!-- markdownlint-disable-next-line MD051 -->  <!-- broken-anchor (Vue-referens-doc, fixas vid Fas 6 om sidan migreras) -->
 - [D. Datakvalitetsfällor — utöver de 24 i nuvarande data-model.md](#d-datakvalitetsfällor-nya)
 - [E. Driftsmässiga fakta](#e-driftsmässiga-fakta)
 - [F. Reverse-flow-scenarier](#f-reverse-flow-scenarier)
+<!-- markdownlint-disable-next-line MD051 -->  <!-- broken-anchor (Vue-referens-doc, fixas vid Fas 6 om sidan migreras) -->
 - [G. Sedan 26 april kl 23:59 — basen-delta](#g-basen-delta-sedan-26-april-2359)
+<!-- markdownlint-disable-next-line MD051 -->  <!-- broken-anchor (Vue-referens-doc, fixas vid Fas 6 om sidan migreras) -->
 - [H. Personer-bilaga (87 fält fullständigt)](#h-personer-bilaga-fullständig-fältkatalog)
+<!-- markdownlint-disable-next-line MD051 -->  <!-- broken-anchor (Vue-referens-doc, fixas vid Fas 6 om sidan migreras) -->
 - [I. Edge Functions — detaljerade kontrakt](#i-edge-functions-detaljerade-kontrakt)
 - [J. Mail-flöden (Resend)](#j-mail-flöden-resend)
 - [Lessons-delta sedan 2026-04-19](#lessons-delta-sedan-2026-04-19)
@@ -69,6 +74,7 @@ korresponderar med: 02-live-state.md (live MCP), 00-file-manifest.md (källista)
 Komplett lista över singleSelect/multipleSelect-optioner som behövs för Fas 4-skrivning:
 
 **Anmälningar.Status (`fldWr5cCPNx9HEKtL`) — 6 val:**
+
 1. Bekräftad (mail skickat) — sel6QGCNQN30jbU9p — greenLight1
 2. Betalningspåminnelse skickad — sel4mvpii2dWX6ROd — blueLight2
 3. Avbokad/Ombokad — selpxCJnPfU9AMlAB — orangeLight1
@@ -77,12 +83,14 @@ Komplett lista över singleSelect/multipleSelect-optioner som behövs för Fas 4
 6. **Inställt** — selebP2V3qmFRTtdP — redBright
 
 **Anmälningar.Källa (`fldwk2sl7CkBv9epw`) — 3 val + tom:**
+
 1. Manuell — selBgWo8mevep0W3j — purpleLight2
 2. +1 — selKRBSc3mTmYiwZK — tealLight2
 3. Väntelista — sely4zQsuvnXYTKKI — blueLight2
 4. *(tom)* = formulär — semantiskt definierat av frånvaro
 
 **Anmälningar.Typ (`fldGyYPbxkgS3BqVb`) — 3 val:**
+
 1. Utbildning, 2. Föreläsning, 3. Psionautics-event
 
 **Anmälningar.Anmälningsavgift (`fldJtKQ3qLxRKOvR6`) — 2 val:** Mottagen, Ej mottagen
@@ -92,6 +100,7 @@ Komplett lista över singleSelect/multipleSelect-optioner som behövs för Fas 4
 **Anmälningar.Flagga (`fld6DHDYJZeK2r7OE`) — 3 val:** Ny anmälan, Ej mottagen, Mottagen
 
 **Anmälningar.Vill anmäla sig till (`fld6RC3r0R9tuKgdF`) — 8 val (med dubletter pga case):**
+
 1. Resor i medvetandet 1 — selaU0tDZplhTK3dC
 2. Fjärrskådning — selqHhahrjJxIWRvL
 3. Resor i medvetandet 2 — selqLalsJ0FkkXLoP
@@ -123,6 +132,7 @@ Dag 1, Dag 2, Föreläsning
 Dag 1, Dag 2, Föreläsning
 
 **Deltaganden.Status (`fldRFOzNqVswqZ1mN`) — 6 val:**
+
 1. Ej avstämt (default) — sel6U4DjySnASdN8C — grayLight2
 2. Närvarande — selL6dOK1XDN8UmKQ — greenLight1
 3. Frånvarande — selhXfNgpF7dCoFn4 — redLight1
@@ -148,6 +158,7 @@ Meditationen Kraftfältet, Pyramidernas Vajrar
 
 **Hämtade erbjudanden.Källa (formulärkälla) (`fldF9SgJS1Zv5kmtr`) — 2 val:**
 Två SHA256-hashar (sannolikt webhook-källa-IDs):
+
 - `ae9a4975a6f8e77121ae6b8973e1e31411f49d45293638001a448de424a54d10`
 - `58947ba345f0013563663ba7916d05637403bcced327adb91dd81cd9c69fea9a`
 
@@ -186,6 +197,7 @@ Skickad, Redo att skickas, Under begrundande, Test, Arkiverad
 | Entry-action | wacDkQMtkfCRwDYxK |
 
 **Action-flöde (5 nodes):**
+
 1. `wacDkQMtkfCRwDYxK` (FIND_RECORDS Eventplanering) — primär matchning
 2. `wacXLk4YN5AzohqCn` (UPDATE_RECORD Anmälningar) — sätt Event-länk
 3. `wded6gggP5Gk0qSa9` (DECISION 1 villkorad gren)
@@ -223,6 +235,7 @@ Skickad, Redo att skickas, Under begrundande, Test, Arkiverad
 | 10 | `wacDCG3kSmETZg8lj` | CREATE_RECORD | Touchpoints | Skapa Touchpoint (alternativ branch) |
 
 **Decision-grenar:** 4 grenar, beslutas på resultat från FIND-actions:
+
 - Gren 1: `length(STEG_2 från wacmPhj6tKzUl65Wk) = 1` → uppdatera namn på namnlös Person
 - Gren 2: `length(STEG_1 från wacGpA7qtiHjlwD1x) = 1` → koppla Anmälan till Person
 - Gren 3: `length(STEG_1) > 1` → Error-log dubblett
@@ -373,6 +386,7 @@ Två fält i Deltaganden (`tbldWHH6sSHWoQPHH`) ser ut att ge länkat record's ID
 | `fld1PV4JDU0xkFrQ2` | "Event (ID)" | `RECORD_ID({Event})` | Returnerar **Deltagandets eget record-ID**, inte Eventets |
 
 **Bevis:** Delt #1683 (rec0gBwp1ItzlgBtH):
+
 - Faktisk Anmälan-länk: `recFaXedi3YB14m0F` (Anmälan #853)
 - Faktisk Event-länk: `rec6YyJSnP5V8IEaV` (Event-24)
 - "Anmälan (ID)" returnerar: `rec0gBwp1ItzlgBtH` ← Deltagandets eget ID
@@ -389,6 +403,7 @@ Två fält i Deltaganden (`tbldWHH6sSHWoQPHH`) ser ut att ge länkat record's ID
 **[VERIFIERAT 2026-04-28 via get_table_schema]**
 
 Optionerna i `fld6RC3r0R9tuKgdF` (Anmälningar) inkluderar både:
+
 - "Resor i medvetandet 1" (selaU0tDZplhTK3dC) — kanonisk, lowercase "medvetandet"
 - "Resor i Medvetandet 1" (selCYP1qT4eBptaoi) — capitalised "Medvetandet"
 
@@ -410,7 +425,7 @@ Båda fält har `choices=[]`. Sannolikt designade men ingen option har lagts til
 
 ### D.5 Två nya namnlösa Personer skapade 2026-04-26 21:47-48
 
-Recordsen `receoF3BY3ZCMEJ0U` (tonetider@protonmail.com) och `rec0uNum3YVL1tb1L` (miranon.prominent654@passmail.net) skapades med Förnamn/Efternamn = tom → Namn-formula returnerar "Ej tillgängligt".
+Recordsen `receoF3BY3ZCMEJ0U` (<tonetider@protonmail.com>) och `rec0uNum3YVL1tb1L` (<miranon.prominent654@passmail.net>) skapades med Förnamn/Efternamn = tom → Namn-formula returnerar "Ej tillgängligt".
 
 **Sannolik orsak:** Lead från Hämtade erbjudanden-formuläret som bara samlar e-post → A4 skapar Person utan namn. Detta är "normalt tillstånd" enligt lessons-psionautics-specifikt rad 67–70.
 
@@ -452,7 +467,7 @@ Från lessons-16-em (rad 95): Formel kräver `AND(Antal tidigare genomförda > 0
 | MK Max antal platser | 88 (uppdaterad från 70 → 88 av Marcus 2026-04-26) | session-26-fortsattning §Punkt 7 |
 | Aktiva Edge Functions | 13 (10 i `supabase/functions/` + 3 status: pausade Plausible-funktioner) | psionautics-CLAUDE.md "Supabase Edge Functions" |
 | Resend-mallar | 5 (`medveten-kontakt-bekraftelse`, `-betalning`, `-plus-one`, `-deltagarinformation`, `-vantelista-info-1`) | psionautics-CLAUDE.md + send-email/index.ts TEMPLATE_MAP |
-| Avsändar-domän | `noreply@h5gruppen.se` (Reply-to: lotta@outsidereality.se). DKIM ok | session-2026-04-16 §E-post-setup |
+| Avsändar-domän | `noreply@h5gruppen.se` (Reply-to: <lotta@outsidereality.se>). DKIM ok | session-2026-04-16 §E-post-setup |
 | Domän pending | outsidereality.se eller psionautics.se i Resend (kvarstår) | flera sessions |
 | Backfill-status | 459 backfill-Anmälningar + 924 backfill-Deltaganden + 22 nya Eventplanering, alla verifierade rena | verifiering-2026-04-24 §Resultat |
 | Plausible | Inaktiverad april 2026 (prenumeration löpt ut) | psionautics-CLAUDE.md |
@@ -470,10 +485,12 @@ Från lessons-16-em (rad 95): Formel kräver `AND(Antal tidigare genomförda > 0
 ### F.1 Backfill-flödet (kontra A2:s primära designflöde)
 
 **Designflödet (lead-först-anmälan-sedan):**
+
 1. Person hämtar erbjudande → A4 skapar Person (kanske namnlös)
 2. Person anmäler sig senare → A2 hittar Person via e-post → Gren 1 (uppdatera namn) eller Gren 2 (länka)
 
 **Backfill-flödet (anmälan-först-utan-existerande-Person):**
+
 1. Backfill-script POSTar Anmälan med E-post men ingen länk
 2. A2 söker Person → ingen → Gren 4 (skapa Person + länka Anmälan)
 
@@ -491,7 +508,7 @@ Från lessons-16-em (rad 95): Formel kräver `AND(Antal tidigare genomförda > 0
 
 ### F.3 Mail-flödet (frontend → Edge Function → Airtable + Resend)
 
-```
+```text
 [Admin UI] → POST /functions/v1/send-email { type, to, recordId }
             ↓
        send-email
@@ -504,7 +521,8 @@ Från lessons-16-em (rad 95): Formel kräver `AND(Antal tidigare genomförda > 0
 ```
 
 För `waitlist-info-1`:
-```
+
+```text
        send-email → patchByType (prefix-routing) → patchWaitlistAfterSend → PATCH Väntelista (Informationsmail 1 skickad)
 ```
 
@@ -513,6 +531,7 @@ För `waitlist-info-1`:
 ### F.4 Väntelista → Anmälningar-flytt
 
 Inte en automation utan UI-flöde:
+
 1. Lotta klickar "Lägg till som anmäld" på en Väntelista-rad
 2. Frontend POSTar `create-registration` med `kalla="Väntelista"` + namn/email/telefon
 3. PATCH Väntelista-rad: `Flyttad till anmälan = true`
@@ -560,6 +579,7 @@ Båda 27-april-deploys handlar om Väntelista-mail 1-funktionaliteten. Inga andr
 ### G.5 Ändrade automationer
 
 **Inte verifierbart via tillgängliga källor.** JSON-export är från 2026-03-16. Live-MCP kan inte läsa automationer. Att fastställa om någon automation ändrats måste göras via:
+
 - Airtable UI (manuell granskning)
 - HAR-export
 
@@ -658,6 +678,7 @@ Deltagandekedjan (rollups + formler) (10): RIM 1 ×, RIM 2 ×, RIM 3 ×, Fjärrs
 **Endpoint:** POST /functions/v1/create-registration
 
 **Request body:**
+
 ```ts
 {
   fornamn: string,        // required
@@ -676,17 +697,20 @@ Deltagandekedjan (rollups + formler) (10): RIM 1 ×, RIM 2 ×, RIM 3 ×, Fjärrs
 **Skriver till:** Anmälningar (`tbloOcrppVoyrHbrq`)
 
 **Hårdkodade värden:**
+
 - `EventKey: 'Event-17'` (refererar till MK-eventet — `recQ2TPsY69fQXA8a`)
 - `Event: ['recQ2TPsY69fQXA8a']`
 
 **Dubblettcheck:** Sök Anmälningar med `AND({Normaliserad e-post}=$email, {EventKey}='Event-17')` → om hit returnera 409 med `existingName`.
 
 **Felfall:**
+
 - 400: namn saknas
 - 409: dubblett
 - 500: token saknas eller Airtable-fel
 
 **Antaganden:**
+
 - A1 körs efter create → sätter Event-länk på "Event-17" (idempotent eftersom create redan satt det) → kedjar till A2 + A3
 - Kallad enbart för MK-eventet — inte generellt verktyg
 
@@ -695,6 +719,7 @@ Deltagandekedjan (rollups + formler) (10): RIM 1 ×, RIM 2 ×, RIM 3 ×, Fjärrs
 **Endpoint:** POST /functions/v1/create-waitlist-entry
 
 **Request body:**
+
 ```ts
 { fornamn: string, efternamn: string, email: string, telefon?: string }
 ```
@@ -702,6 +727,7 @@ Deltagandekedjan (rollups + formler) (10): RIM 1 ×, RIM 2 ×, RIM 3 ×, Fjärrs
 **Skriver till:** Väntelista (`tbl2VxMx7JMkIxD4Q`)
 
 **Hårdkodade värden:**
+
 - `Event: 'Medveten Kontakt'`
 - `Eventdatum-start: '2026-05-01'`
 - `Eventdatum-slut: '2026-05-03'`
@@ -715,6 +741,7 @@ Deltagandekedjan (rollups + formler) (10): RIM 1 ×, RIM 2 ×, RIM 3 ×, Fjärrs
 **Sätter:** Anmälningar.Status, Anmälningar.Anmälningsavgift, Anmälningar.Slutbetalning, Eventplanering.Max antal platser, Eventplanering.Extra platser, Eventplanering.Arrangörsplatser, Eventplanering.Manuella platser
 
 **Antaganden:**
+
 - A7 kan trigga vid Slutbetalning-uppdatering → uppdaterar event-rollups (idempotent eftersom rollup räknar)
 
 ### I.4 `get-event-bookings` (commit `6a7c9a9` 2026-04-16)
@@ -722,6 +749,7 @@ Deltagandekedjan (rollups + formler) (10): RIM 1 ×, RIM 2 ×, RIM 3 ×, Fjärrs
 **Endpoint:** POST eller GET /functions/v1/get-event-bookings
 
 **Read-only.** Läser från Anmälningar + Eventplanering. Returnerar:
+
 - Event-metadata (Manuella platser, Extra platser, Arrangörsplatser, Max antal platser med fallback 70)
 - Booking-rader inkl. Antal platser, Status, Källa, **deltagarinfoSkickad** (mappat från Deltagarinfo skickad)
 - Plus-one-relationer (Medföljande till)
@@ -731,6 +759,7 @@ Deltagandekedjan (rollups + formler) (10): RIM 1 ×, RIM 2 ×, RIM 3 ×, Fjärrs
 **Endpoint:** GET /functions/v1/get-waitlist
 
 **Read-only.** Läser från Väntelista med filter `NOT({Flyttad till anmälan})`. Paginerar med offset, returnerar:
+
 ```ts
 {
   total: number,
@@ -753,6 +782,7 @@ Sorterad descending på `createdTime` (nyast först).
 **Endpoint:** POST /functions/v1/send-email
 
 **Request body (huvudflöde):**
+
 ```ts
 {
   type: 'confirmation' | 'payment' | 'plus_one' | 'participant-info' | 'waitlist-info-1',
@@ -764,6 +794,7 @@ Sorterad descending på `createdTime` (nyast först).
 ```
 
 **TEMPLATE_MAP:**
+
 | type | Resend-mall |
 |---|---|
 | `confirmation` | `medveten-kontakt-bekraftelse` |
@@ -773,21 +804,25 @@ Sorterad descending på `createdTime` (nyast först).
 | `waitlist-info-1` | `medveten-kontakt-vantelista-info-1` |
 
 **`patchAfterSend(type, recordId)` — sätter på Anmälningar:**
+
 - `confirmation` → Status='Bekräftad (mail skickat)' + Bekräftelse skickad=NOW()
 - `payment` → Betalningspåminnelse skickad=NOW()
 - `plus_one` → Plus-one förfrågan skickad=NOW()
 - `participant-info` → Deltagarinfo skickad=NOW()
 
 **`patchWaitlistAfterSend(type, recordId)` — sätter på Väntelista:**
+
 - `waitlist-info-1` → Informationsmail 1 skickad=NOW()
 
 **Dispatcher `patchByType(type, recordId, token)`:**
-```
+
+```text
 if (type.startsWith('waitlist-')) → patchWaitlistAfterSend
 else → patchAfterSend
 ```
 
 **Antaganden:**
+
 - Resend-mall existerar med matchande `{{{name}}}` (lowercase) variabel — annars 422 "Missing required variable"
 - Mall för `participant-info` har också `{{{pdfUrl}}}` i rich-text-länk (inte markdown — Resend URL-encodar markdown)
 - recordId hänvisar till Anmälningar-tabellen för fyra första typer, Väntelista för `waitlist-info-1`
@@ -826,7 +861,7 @@ else → patchAfterSend
 
 ### J.4 Mail-prickar i admin-tabell (kronologisk färgordning)
 
-```
+```text
 Grön  #4ADE80 = Bekräftelse skickad
 Amber #F59E0B = Betalningspåminnelse skickad (ändrad från blå 2026-04-16)
 Blå   #3B82F6 = Deltagarinfo skickad
@@ -849,6 +884,7 @@ Lila            = Informationsmail 1 skickad (ny 2026-04-27, endast Väntelista-
 ### Nya UNIVERSAL-lärdomar att övervägs för marcus-system/tasks/lessons.md
 
 **Från session 2026-04-27 (3 nya):**
+
 1. **Verifiera Resend-mall-variabler i Resend UI direkt efter skapande, INNAN frontend-test.** (lessons rad 13)
 2. **Bygg ut struktur när hårdkodning visar sig bli mönster.** (rad 15)
 3. **Pills i CTA-kontext: whisper-stil UTAN border.** (rad 17)
@@ -858,9 +894,11 @@ Lila            = Informationsmail 1 skickad (ny 2026-04-27, endast Väntelista-
 5. **Källa-vs-write-path-diagnos.** (rad 39) — "Fråga 'vart skrivs det?' före 'vad skrev det?'"
 
 **Från åtgärdssessionen 2026-04-26 (formellt session-26-atgardssession.md, redan flyttade till lessons.md):**
+
 - Ingår i 2026-04-26-blocket ovan, ej dubbelräknat.
 
 **Från fortsättningssessionen 2026-04-26 (8 lärdomar listade i sessionen, ev. ej alla i lessons.md):**
+
 - Bulk-timestamp-mönster är inte tillräckligt bevis för "test-data"
 - createdTime ≠ data-uppdatering
 - Airtable update_records max 10 records per request

@@ -33,6 +33,7 @@ TanStack Router ager routens schema (Zod-validering i loaders). nuqs ager kompon
 ## Per-vy specifikation
 
 ### Hem (`/hem`)
+
 Ingen URL-state. Hem visar alltid aktuell status. Inget att bokmerka, inget att dela.
 
 ### Event (`/event`)
@@ -58,6 +59,7 @@ const [sort, setSort] = useQueryState(
 ```
 
 Koppling till TanStack Query -- nar `status` eller `sort` andras via nuqs andras query key automatiskt:
+
 ```typescript
 const { data: events } = useSuspenseQuery({
   queryKey: ['events', { status, sort }],
@@ -87,6 +89,7 @@ const [tab, setTab] = useQueryState(
 | `page` | `integer` | `1` | `parseAsInteger` |
 
 Debounced sokning med nuqs + `useDeferredValue` (React 19):
+
 ```tsx
 function PersonerPage() {
   const [q, setQ] = useQueryState('q', parseAsString.withDefault(''));
@@ -117,6 +120,7 @@ function PersonerPage() {
 ```
 
 ### Mer (`/mer`)
+
 Ingen URL-state. Statiska lankar -- inget att filtrera eller dela.
 
 ---
@@ -131,6 +135,7 @@ nuqs skriver till `window.history` via `pushState` (default) eller `replaceState
 4. Lotta ser exakt den vy hon var pa innan -- utan laddningstid
 
 **History-strategi per param:**
+
 ```typescript
 // push = ny historikpost (Back fungerar) — for filter och flikar
 const [status, setStatus] = useQueryState('status',
@@ -168,7 +173,7 @@ Alla parsers ar typsokra -- TypeScript vet att `status` ar `'upcoming' | 'past' 
 
 ## Samspel: nuqs + TanStack Router + TanStack Query
 
-```
+```text
 URL (/event?status=past&sort=name)
        |
        +-- TanStack Router: validerar route, kor loader

@@ -216,4 +216,5 @@ Status: Öppen / Pågår / Åtgärdad / Accepterad risk
 
 ---
 
+<!-- markdownlint-disable-next-line MD036 -->
 *Mall version: 1.0 — 2026-04-01*

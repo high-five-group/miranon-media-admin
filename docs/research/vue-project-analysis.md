@@ -1,4 +1,5 @@
 # Vue-projektanalys — Miranon Media Admin
+
 *Komplett teknisk analys baserad på faktisk kod, inte dokumentation.*
 *Genomförd: 2026-04-05 | 5 parallella research-agenter | Varje fil läst.*
 
@@ -159,7 +160,7 @@ Exkluderar docs/README/legacy/gitkeep (1 203 + 1 377 rader), kvar: **~10 121 rad
 
 #### Beroendediagram
 
-```
+```text
 useFocusScope
 ├── använder: focusUtils.findTabbableElements, useFocusStack.pushFocus/popFocus
 ├── används av: MmDialog, AppMenu
@@ -226,7 +227,7 @@ useAuth (singleton)
 
 #### Token-systemets tre lager
 
-```
+```text
 Lager 1: Foundation tokens (main.scss rad 71–89)
   --miranon-primary: #D4960A
   --miranon-copper: #A3491C
@@ -251,6 +252,7 @@ Konsumenter: var(--token) i template/style
 ```
 
 **Tre prefix-namespaces (inkonsekvens):**
+
 - `--f-*` (9 st) — font-tokens, arv från FK
 - `--fkds-*` (21 st) — semantiska tokens, arv från FK
 - `--miranon-*` (19 st) — egna brand-tokens
@@ -478,6 +480,7 @@ CLAUDE.md refererar till `src/data/config/airtable-config.ts` (fältmappning). *
 #### MmDialog — Composable-komposition
 
 Initialiseringsordning:
+
 1. `useId` ×3 → dialogId, titleId, descriptionId
 2. `useControllable` → isOpen (controlled/uncontrolled dual-mode)
 3. `usePresence` → isPresent + presenceRef (animerad mount/unmount)
@@ -518,6 +521,7 @@ Initialiseringsordning:
 **Kolumnregistrering:** MmTableColumn renderar dold `<span ref="colRef" hidden>` i DOM. I onMounted: skapar `MmTableColumnDef` från props + slots, anropar `register(columnDef)`. useCollection sorterar via `compareDocumentPosition()` — DOM-ordning = kolumnordning.
 
 **3× useControllable (i useTableFeatures.ts):**
+
 - Sort: `sortState` / `defaultSortState` → dual-mode
 - Selection: `modelValue` → dual-mode (single/multi)
 - Expand: `expanded` / `defaultExpanded` → dual-mode
@@ -585,6 +589,7 @@ Initialiseringsordning:
 **Import:** Google Fonts Inter (variabel font, opsz 14–32, wght 300–700).
 
 **48 custom properties i :root:**
+
 - 9 font-tokens (`--f-*`)
 - 1 border-token (`--f-border-radius-medium: 4px`)
 - 2 text (`--fkds-color-text-primary: var(--miranon-ink)`, `--fkds-color-text-secondary: #636363`)
@@ -601,10 +606,12 @@ Initialiseringsordning:
 **FK-rester:** Noll `@fkui`-importer. Prefixet `--fkds-*` är kvar men definieras helt av projektet.
 
 **Global fokusregel:**
+
 ```css
 *:focus:not(:focus-visible) { outline: none; }
 *:focus-visible { outline: 2px solid var(--focus-ring-color, #1B4965); outline-offset: 0; }
 ```
+
 Framework-agnostisk — kopieras rakt av.
 
 ### CSS per komponent
@@ -644,18 +651,22 @@ Token-systemet definierar: h1 (2.5rem), h2 (1.75rem), h4 (1.25rem), large (1.125
 ### void el.offsetHeight — Tvingad reflow
 
 **Fil:** `AppMenu.vue:450`, `AppMenuLegacy.vue:355`
+
 ```javascript
 void el.offsetHeight; // tvinga reflow → transition från closed → open
 ```
+
 Framtvingar layout-beräkning för att starta CSS-transition. Samma trick behövs i React.
 
 ### getCurrentInstance — Vue-intern API
 
 **Fil:** `useControllable.ts:37, 116`
+
 ```typescript
 const instance = getCurrentInstance();
 // Läser instance.vnode.props för att detektera explicit satta props
 ```
+
 **KRITISK.** Hela controlled/uncontrolled-detekteringen bygger på denna Vue-interna API. I React ersätts med enkel `undefined`-check. Se DEL 3c.
 
 ### nextTick — 12 förekomster
@@ -723,11 +734,13 @@ Alla timers måste rensas i `useEffect` cleanup.
 ### vite.config.ts
 
 Minimal:
+
 ```typescript
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 export default defineConfig({ plugins: [vue()] })
 ```
+
 Inga path aliases. Ingen proxy. I React: byt `@vitejs/plugin-vue` mot `@vitejs/plugin-react`.
 
 ### tsconfig
@@ -736,7 +749,7 @@ Strikta flaggor redan på: `strict: true`, `noUnusedLocals`, `noUnusedParameters
 
 ### Miljövariabler
 
-```
+```text
 VITE_SUPABASE_URL=https://lvjsfnphlauldxqlncpl.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_...
 ```
@@ -811,7 +824,7 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_...
 
 ### Migrationsfördelning
 
-```
+```text
 🟢 RAKT AV    23 filer   2 176 rader   Kopieras utan ändring
 🟡 PORTAS     34 filer   7 122 rader   Skrivs om Vue → React idiom
 🔴 ERSÄTTS    12 filer   2 200 rader   React-ekosystemet hanterar

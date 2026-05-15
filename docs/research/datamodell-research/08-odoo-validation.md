@@ -32,6 +32,7 @@ Multi-tenancy: via `company_id` och `ir.rule` `event_event_company_rule` med dom
 Modell: `event.registration` ([event_registration.py:14](https://github.com/odoo/odoo/blob/2154e11ef5c7860adee88013ad80422d2b4f5816/addons/event/models/event_registration.py#L14)).
 
 State machine ([event_registration.py:69-79](https://github.com/odoo/odoo/blob/2154e11ef5c7860adee88013ad80422d2b4f5816/addons/event/models/event_registration.py#L69-L79)):
+
 - `draft` ("Unconfirmed") → `open` ("Registered") → `done` ("Attended")
 - `cancel` ("Cancelled") som terminal sidoväg
 - 4 states totalt. Default: `open`.
@@ -39,6 +40,7 @@ State machine ([event_registration.py:69-79](https://github.com/odoo/odoo/blob/2
 Centrala fält: `event_id` + `event_slot_id` + `event_ticket_id` (tre Many2one), `partner_id` (Many2one → `res.partner`, tracking, **kan vara None**), `name`/`email`/`phone`/`company_name` (Char med compute-synk från partner men store=True så de kan ha eget värde — snapshot-mönster), `barcode` (random default, unique constraint), `active` (Boolean), `state`, `mail_registration_ids` (One2many → `event.mail.registration`), `registration_answer_ids` (One2many → `event.registration.answer`), UTM-fält (`utm_campaign_id`, `utm_source_id`, `utm_medium_id`).
 
 Constraints:
+
 - `_barcode_event_uniq = models.Constraint('unique(barcode)', ...)` ([event_registration.py:92-95](https://github.com/odoo/odoo/blob/2154e11ef5c7860adee88013ad80422d2b4f5816/addons/event/models/event_registration.py#L92-L95)) — global unik barcode.
 - `_check_seats_availability` ([event_registration.py:97-107](https://github.com/odoo/odoo/blob/2154e11ef5c7860adee88013ad80422d2b4f5816/addons/event/models/event_registration.py#L97-L107)) — Python-constraint som validerar capacity vid write/create.
 - `_check_event_slot` + `_check_event_ticket` ([event_registration.py:200-210](https://github.com/odoo/odoo/blob/2154e11ef5c7860adee88013ad80422d2b4f5816/addons/event/models/event_registration.py#L200-L210)) — säkerställer att slot/ticket tillhör samma event.
@@ -83,12 +85,12 @@ Sex moduler valda för relevans mot Miranons gap:
 
 | Modul | Adresserar | Källa (manifest) |
 |---|---|---|
-| `event_session` | Multi-day sessioner inom event (snarlikt 06b `event_sessions`) | [OCA/event/event_session/__manifest__.py @ 18.0](https://github.com/OCA/event/blob/18.0/event_session/__manifest__.py) |
-| `event_registration_partner_unique` | Idempotens: 1 registration per partner per event | [OCA/event/event_registration_partner_unique/__manifest__.py @ 18.0](https://github.com/OCA/event/blob/18.0/event_registration_partner_unique/__manifest__.py) |
-| `event_min_seat` | Minimum capacity (motsvarar Manuella/Extra/Arrangörsplatser) | [OCA/event/event_min_seat/__manifest__.py @ 18.0](https://github.com/OCA/event/blob/18.0/event_min_seat/__manifest__.py) |
-| `event_stage_cancelled` | Explicit cancel-state i event-pipelinen | [OCA/event/event_stage_cancelled/__manifest__.py @ 18.0](https://github.com/OCA/event/blob/18.0/event_stage_cancelled/__manifest__.py) |
-| `event_registration_cancel_reason` | Reason-kolumn vid avbokning (parallell till `registration_state_transitions.reason`) | [OCA/event/event_registration_cancel_reason/__manifest__.py @ 18.0](https://github.com/OCA/event/blob/18.0/event_registration_cancel_reason/__manifest__.py) |
-| `event_registration_multi_qty` | Antal platser per registration (parallell till `registration_attendees`-koncept) | [OCA/event/event_registration_multi_qty/__manifest__.py @ 18.0](https://github.com/OCA/event/blob/18.0/event_registration_multi_qty/__manifest__.py) |
+| `event_session` | Multi-day sessioner inom event (snarlikt 06b `event_sessions`) | [OCA/event/event_session/**manifest**.py @ 18.0](https://github.com/OCA/event/blob/18.0/event_session/__manifest__.py) |
+| `event_registration_partner_unique` | Idempotens: 1 registration per partner per event | [OCA/event/event_registration_partner_unique/**manifest**.py @ 18.0](https://github.com/OCA/event/blob/18.0/event_registration_partner_unique/__manifest__.py) |
+| `event_min_seat` | Minimum capacity (motsvarar Manuella/Extra/Arrangörsplatser) | [OCA/event/event_min_seat/**manifest**.py @ 18.0](https://github.com/OCA/event/blob/18.0/event_min_seat/__manifest__.py) |
+| `event_stage_cancelled` | Explicit cancel-state i event-pipelinen | [OCA/event/event_stage_cancelled/**manifest**.py @ 18.0](https://github.com/OCA/event/blob/18.0/event_stage_cancelled/__manifest__.py) |
+| `event_registration_cancel_reason` | Reason-kolumn vid avbokning (parallell till `registration_state_transitions.reason`) | [OCA/event/event_registration_cancel_reason/**manifest**.py @ 18.0](https://github.com/OCA/event/blob/18.0/event_registration_cancel_reason/__manifest__.py) |
+| `event_registration_multi_qty` | Antal platser per registration (parallell till `registration_attendees`-koncept) | [OCA/event/event_registration_multi_qty/**manifest**.py @ 18.0](https://github.com/OCA/event/blob/18.0/event_registration_multi_qty/__manifest__.py) |
 
 OCA-mönstret bekräftar att Odoos kärnmodell saknar fyra koncept som 06b bygger in från start: explicit session-tabell, idempotens per partner, cancel-reason, och multi-qty per anmälan. Communityn löser dessa via separata addons.
 

@@ -7,6 +7,7 @@
 ## Pedagogisk stil
 
 Dokumentation skrivs för Roger och Lotta — 55–60 år, ingen teknisk bakgrund. Tonen ska vara:
+
 - Förklarande, inte instruerande
 - Konkreta exempel ("t.ex. 15–16 november 2025 – Falköping")
 - Analogier ("Det är som att matcha en biljett med rätt konsert")
@@ -28,6 +29,7 @@ Varje automationssteg dokumenteras med:
 ## Infoblockrutor
 
 Viktiga koncept förklaras i färgade rutor:
+
 - Blå — förklaringar av Airtable-koncept
 - Grön — tips och bästa praxis
 - Orange — varningar och vanliga misstag

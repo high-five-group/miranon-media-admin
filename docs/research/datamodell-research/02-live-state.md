@@ -292,6 +292,7 @@ Verifiering Q5 — `tblVE3UKWl1CKrphV` = **Eventplanering**. Bekräftar att `get
 | fldbV3oTRW9i6w13U | Event ort | multipleLookupValues | från Event.Ort |
 | fldiDF6PWfYa8afMr | Event typ | multipleLookupValues | från Event.Typ (Utbildning/Föreläsning) |
 | fldKaxHf6UzcHN94v | Deltog sammanfattning | formula | `IF(Närvaropoäng=1, Eventlabel, BLANK())` |
+<!-- markdownlint-disable-next-line MD056 -->  <!-- tabell-cell-överskott (Vue-referens-doc, frusen) -->
 | fldGJ96lIhsFR3xwN | Deltog sortkey | formula | `YYYYMMDD|Eventlabel` |
 | fldjqBoR9LTJISIFz | När | formula | "Idag" / "Igår" / "Imorgon" / "X dagar sedan" / "om X dagar" |
 | fldvYGItTZkfc2yPZ | Deltog datum | formula | `IF(Närvaropoäng=1, Event startdatum, BLANK())` |
@@ -328,12 +329,15 @@ Verifiering Q5 — `tblVE3UKWl1CKrphV` = **Eventplanering**. Bekräftar att `get
 ## 4. Övriga tabeller — fält-katalog
 
 ### 4.1 Eventformat (`tbl8qhuJQ5ZWPMRk4`) — 3 fält
+
 - fldDLGIg6XnTWi8ge **Namn** (singleLineText)
 - fld1DsZdImXhyim4o **Format** (multipleSelects: Dag 1–7, Föreläsning, Intro, Kvällspass, Q&A, Bonuspass, Avslut — 13 val)
 - fldJrYz0crDjRRSi2 **Eventplanering** (multipleRecordLinks → Eventplanering)
 
 ### 4.2 Hämtade erbjudanden (`tblqFpgxEhJ95AEcM`) — 16 fält
+
 Triggar A4 (CREATE) och A5 (UPDATE).
+
 - fldezAV1MUXr4pJY7 ID (autoNumber)
 - fld8WVM0PwUazElUY E-post (rå) (singleLineText)
 - fldcTXSJXQR3d3zoG E-post (formula: `LOWER(TRIM(E-post (rå)))`)
@@ -352,11 +356,15 @@ Triggar A4 (CREATE) och A5 (UPDATE).
 - fldxBGxFRu7PZEl5A Source key (formula: `LOWER(TRIM(Erbjudande (source)))`)
 
 ### 4.3 Engagemang (`tbl9H2SoGFfysBj5y`) — 10 fält
+
 Skrivs av A5 (uppdatera senaste hämtning, totalt antal).
+
 - ID, Person, Erbjudande, Första hämtning (dateTime), Senaste hämtning (dateTime), Totalt antal hämtningar (rollup), Hämtade erbjudanden ID, Normaliserad e-post, Erbjudande (namn), Engagemang (nyckel) (formula).
 
 ### 4.4 Touchpoints (`tbl22SCvlHrgcAiZi`) — 17 fält
+
 Skrivs av A2 (vid ny anmälan) och A4 (vid ny lead).
+
 - fldv9JUvqCmnxh4wy Touchpoint ID (autoNumber)
 - fldLiC0ZiUAdxXu9u Person (länkat fält) (multipleRecordLinks — verifierat 26-april att det är multipleRecordLinks, inte single — möjliggör säkra merge-mönster)
 - fldD3LIpvbTOMnj1X Kanal (singleLineText)
@@ -373,30 +381,39 @@ Skrivs av A2 (vid ny anmälan) och A4 (vid ny lead).
 - (övriga formler)
 
 ### 4.5 Erbjudanden (`tblcCFGCVrnl1JZfg`) — 7 fält
+
 - ID (formula), Nummer (number), Namn (singleLineText), Engagemang (multipleRecordLinks), Hämtade erbjudanden (multipleRecordLinks), Lanseringsdatum (date), Source key (formula)
 
 ### 4.6 Kontaktlogg (rådata) (`tblzg4DsRzCCXH8Vy`) — 20 fält
+
 Riktning singleSelect, Källa singleSelect, e-postfält, telefonfält, body, bilagor, koppling till Person + Touchpoint.
 
 ### 4.7 Bulkutskick (`tblWarzSse85NI1Zx`) — 12 fält
+
 - Namn på utskick, Status (singleSelect: Skickad, Redo att skickas, Under begrundande, Test, Arkiverad), Segment (multipleRecordLinks → Segment), Antal i segment, Förhandsgranskning (formula: `"Hej [FÖRNAMN], " & Mailtext`), Ämne, Mailtext, Testad (checkbox), Skicka (button), Senast skickat (dateTime), Mottaget av antal, Utskickslogg.
 
 ### 4.8 Path to Conversion (`tblor5TK8HeryGXIj`) — 1 fält
+
 Bara `Name` (singleLineText). Tom strukturell behållare.
 
 ### 4.9 Email Opens (`tblXFJyGRahQDhhqc`) — 2 fält
+
 Name + Utskickslogg. Linkad till Utskickslogg.
 
 ### 4.10 Utskickslogg (`tblIesjbuSWNp6oxK`) — 9 fält
+
 Loggar varje bulk-utskick: Namn, Utskicks-ID, Skickat till (multipleRecordLinks → Personer), Antal skickade (formula), Datum (createdTime), Antal öppnade mail (multipleRecordLinks), Öppningsgrad (formula), Filter snapshot (multilineText), Mailutskick copy.
 
 ### 4.11 Error-log (`tblnnmWswnRp9gFws`) — 4 fält
+
 Skrivs av A2: Felmeddelande, Datum, E-post, Relaterar till.
 
 ### 4.12 Segment (`tbll2N6JKCj4u6y9o`) — 12 fält
+
 Namn på segment, Antal i segment, Beskrivning, Används för utskick (checkbox), Segmentformel (multilineText, "Make tittar på denna och gör segmenteringen"), Beräkna antal i segment (button), Senast beräknat, Senast uppdaterad, Senast uppdaterad av, Färgkod (singleSelect), Mailutskick (multipleRecordLinks), Segmentdefinition.
 
 ### 4.13 Instagram Posts (`tblMpQI1crF521Xsp`) — 1 fält
+
 Bara `Name`. Tom strukturell behållare.
 
 ---
@@ -435,6 +452,7 @@ Bara `Name`. Tom strukturell behållare.
 | Entry-action | wacDkQMtkfCRwDYxK |
 
 **Action-flöde:**
+
 1. wacDkQMtkfCRwDYxK — `FIND_RECORDS` på Eventplanering (matcha mot EventKey/Event+Ort+Startdatum)
 2. wacXLk4YN5AzohqCn — `UPDATE_RECORD` på Anmälningar (sätt Event-länk)
 3. wded6gggP5Gk0qSa9 — `DECISION` (1 villkorad gren)
@@ -452,6 +470,7 @@ Bara `Name`. Tom strukturell behållare.
 | Entry-action | wacGpA7qtiHjlwD1x |
 
 **Action-flöde (10 actions):**
+
 1. wacGpA7qtiHjlwD1x — `FIND_RECORDS` på Personer (sök på Normaliserad e-post)
 2. wacmPhj6tKzUl65Wk — `FIND_RECORDS` på Personer (alternativ sökning)
 3. wdezdzNWaL1MYcrkE — `DECISION` (4 grenar)
@@ -596,11 +615,11 @@ Edge Functions agerar effektivt som webhook-konsumenter (POST från Lovable-fron
 
 | Namn | Skapat (UTC) | E-post | Antal anmälningar | Status |
 |---|---|---|--:|---|
-| Henny Elisabet Fredrika Röckert | 2026-04-27 18:41:41 | fredrika.rockert@gmail.com | 1 | Aktiv |
-| Simon Ågren | 2026-04-27 18:26:50 | simon.agren83@gmail.com | 0 | Ingen aktiv |
-| Ej tillgängligt | 2026-04-26 21:48:25 | tonetider@protonmail.com | 0 | Ingen aktiv |
-| Ej tillgängligt | 2026-04-26 21:47:44 | miranon.prominent654@passmail.net | 0 | Ingen aktiv |
-| Siv-Åse | 2026-04-26 21:47:12 | sivan.nilsen@gmail.com | 0 | Ingen aktiv |
+| Henny Elisabet Fredrika Röckert | 2026-04-27 18:41:41 | <fredrika.rockert@gmail.com> | 1 | Aktiv |
+| Simon Ågren | 2026-04-27 18:26:50 | <simon.agren83@gmail.com> | 0 | Ingen aktiv |
+| Ej tillgängligt | 2026-04-26 21:48:25 | <tonetider@protonmail.com> | 0 | Ingen aktiv |
+| Ej tillgängligt | 2026-04-26 21:47:44 | <miranon.prominent654@passmail.net> | 0 | Ingen aktiv |
+| Siv-Åse | 2026-04-26 21:47:12 | <sivan.nilsen@gmail.com> | 0 | Ingen aktiv |
 
 **Observation:** 2 av 5 saknar Förnamn+Efternamn (formelvärde "Ej tillgängligt" från fldnYys0Ac3UGOdpe). Skapade av A2 från Hämtade erbjudanden (lead utan namn-fält). Ny datakvalitetsfälla — se 1.8.
 
@@ -664,12 +683,15 @@ Total: 44 records. Filter på `Flyttad till anmälan = false` ger aktiva väntel
 ## 8. Avvikelser från 00-file-manifest
 
 ### A. Tabellnamn mot manifest
+
 Manifestet listade 18 tabeller men nämnde inte specifika namn för några. **Inget i manifestet motsäger** den lista som MCP returnerar.
 
 ### B. Q5 löst — `tblVE3UKWl1CKrphV`
+
 Manifestet markerade `tblVE3UKWl1CKrphV` som "okänt" och "behöver verifieras". MCP svarar entydigt: **Eventplanering** (45 fält). Den primära tabellen för event-rekord.
 
 ### C. April-fält bekräftade i basen
+
 Manifestet identifierade att `schema_reference.md` saknar 4 april-fält. MCP bekräftar att alla 4 (+ 1 till) finns:
 
 | Fält | Tabell | Fält-ID | Skapad |

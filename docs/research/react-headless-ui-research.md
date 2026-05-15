@@ -1,4 +1,6 @@
 # Research: React Headless UI-bibliotek for Admin Dashboard
+
+<!-- markdownlint-disable-next-line MD036 -->
 *Datum: 2026-04-05 | Kontext: Miranon Media Admin (Vue 3 composable-arkitektur, potentiell React-migration)*
 
 ---
@@ -29,6 +31,7 @@
 **Bakgrund:** Skapades av Modulz, som forvarrades av WorkOS 2022. Radix var lange den dominerande headless-losningen i React-ekosystemet och ar grunden som shadcn/ui byggdes pa.
 
 **Styrkor:**
+
 - Extremt brett ekosystem: 54 paket totalt, ~28 UI-komponenter
 - Battle-tested: 36,6M veckonedladdningar for enbart `@radix-ui/react-dialog`
 - Beprovat `asChild`-monster for render delegation
@@ -37,6 +40,7 @@
 - shadcn/ui byggt pa Radix = enorm community
 
 **Svagheter:**
+
 - **KRITISKT: Underhallsavmattning.** Senaste commit: 2026-02-13. Fore det: 2025-12-17. Fore det: 2025-11-04. Manadslanga gap.
 - Senaste npm-release: 2025-12-17.
 - Flera ursprungliga underhallare har lamnat efter WorkOS-forvarvet.
@@ -54,6 +58,7 @@
 **Bakgrund:** Adobes headless-bibliotek, del av react-spectrum-monorepon. Tva lager: `react-aria` (hooks) och `react-aria-components` (sammansatta komponenter). Spectrum 2 (Adobes designsystem) ar byggt ovanpa React Aria Components.
 
 **Styrkor:**
+
 - **Branschledande tillganglighet.** Testat med manga skarmlasare och enheter.
 - Mest kompletta biblioteket: 40+ hooks, 50+ komponenter inklusive Calendar, DatePicker, DnD, Color picker, Tree, Tag group
 - Internationalisering inbyggd: 30+ sprak, 13 kalendersystem, 5 nummersystem, RTL
@@ -63,6 +68,7 @@
 - React 19-stod tidigt
 
 **Svagheter:**
+
 - Hogre inlarningskurva an Radix (mer verbose API)
 - Storre total bundle om man importerar allt (~166 KB gzip for `react-aria`); men tree-shakeable via individuella paket
 - API:t ar mer "opiniated" an Radix/Base UI i hur man komponerar
@@ -78,6 +84,7 @@
 **Bakgrund:** Skapad av MUI-teamet, men inkluderar nyckelmedlemmar fran Radix (Colm Tuite som Director of Design Engineering), Floating UI och Material UI. v1.0.0 slapptes 2025-12-11. Positioneras som "nasta generations" headless-bibliotek.
 
 **Styrkor:**
+
 - **Teamet:** 7 heltidsanstallda. Inkluderar skapare fran Radix, Floating UI OCH Material UI -- den mest erfarna kombinationen i ekosystemet.
 - Modern API: `render` prop istallet for `asChild` (renare, mer flexibelt)
 - 38 komponenter inklusive Combobox, Autocomplete, Menubar, Toast, Drawer -- saker Radix saknar
@@ -88,6 +95,7 @@
 - MUI:s affarsmodell (Material UI) ger langsiktig finansiering
 
 **Svagheter:**
+
 - Nytt: v1.0 slapptes december 2025, bara 4 manader sedan
 - Laga npm-nedladdningar (274K/vecka) -- ekosystemet ar ungt
 - Mindre community och farre resurser/tutorials
@@ -103,6 +111,7 @@
 **Bakgrund:** Skapat av Diego Haz (solo-maintainer). Borjade som Reakit, omskrevs till Ariakit. Anvands av WordPress Gutenberg och WooCommerce.
 
 **Styrkor:**
+
 - Aktiv utveckling: dagliga commits (senast 2026-04-04)
 - Elegant API med data-attribut for state-baserad styling (data-active-item, data-focus-visible)
 - React 17+ kompatibelt (inte last till senaste React)
@@ -113,6 +122,7 @@
 - 59+ exempelimplementationer
 
 **Svagheter:**
+
 - Solo-maintainer (Diego Haz) -- bus factor = 1
 - Fortfarande pa v0.4.x (inte v1.0) -- API kan andra sig
 - 25 komponenter -- mindre an Radix, React Aria och Base UI
@@ -129,6 +139,7 @@
 **Bakgrund:** Skapat av Tailwind Labs, designat for saker Tailwind-integration. Enklaste API:t av alla fem.
 
 **Styrkor:**
+
 - Flest GitHub-stjarnor (28 491) -- stark varumarveskannedom
 - 4,8M veckonedladdningar
 - Enklast att komma igang med
@@ -137,6 +148,7 @@
 - Stoder bade React och Vue
 
 **Svagheter:**
+
 - **KRITISKT: Underhall har avstannat.** Senaste release: 2025-09-25. Senaste commit: 2025-12-12. Inget pa 4+ manader.
 - Bara 16 komponenter -- langt efter konkurrenterna
 - Saknar: Calendar, DatePicker, DnD, Table, Toast, Toolbar, Menubar, Tree, m.fl.
@@ -155,6 +167,7 @@
 shadcn/ui ar INTE ett komponentbibliotek i traditionell mening. Det ar ett **koddistributionssystem** -- du kopierar komponentkod direkt in i ditt projekt och ager den. Komponenten ar din att modifiera utan begransningar.
 
 ### Nyckeldata
+
 - **GitHub stars:** 111 527 (enormt)
 - **Modell:** `npx shadcn@latest add dialog` kopierar komponentkod till ditt projekt
 - **Primitiver:** Byggda pa Radix UI ELLER Base UI (sedan januari 2026)
@@ -164,6 +177,7 @@ shadcn/ui ar INTE ett komponentbibliotek i traditionell mening. Det ar ett **kod
 ### Base UI-stod (januari 2026)
 
 I januari 2026 lade shadcn/ui till officielt stod for Base UI som alternativ till Radix. Det innebar:
+
 - `npx shadcn create` later utvecklare valja mellan Radix och Base UI
 - Samma komponent-API oavsett underliggande primitiv
 - Migration mellan Radix och Base UI kraver inga kodandringar i konsumerande kod
@@ -172,12 +186,14 @@ I januari 2026 lade shadcn/ui till officielt stod for Base UI som alternativ til
 ### "Copy code, own it"-modellen for eget designsystem
 
 **Fordelar:**
+
 - Full kontroll over komponentkod -- inga begransningar fran biblioteksabstraktioner
 - Inga versionskonflikter -- din kod gar aldrig sonder vid biblioteksuppdateringar
 - Utmarkt startpunkt for eget designsystem (anpassa allt)
 - AI-vanligt: hela koden ar synlig for AI-verktyg
 
 **Nackdelar:**
+
 - Du maste underhalla kopierad kod manuellt
 - Sakerhetsfixar i primitiver maste aktivt hamtas
 - Kan driva mot "not invented here"-mentalitet
@@ -244,6 +260,7 @@ Vue composables och React hooks ar **konceptuellt lika** men **mekaniskt olika**
 **For ett admin-system med WCAG 2.2 AA+-krav, eget komponentbibliotek och ambition att bara framtida produkter ar React Aria det sakraste valet.**
 
 Motivering:
+
 1. **Tillganglighet:** Ingen annan nar Adobes niva. Testat med riktiga skarmlasare, 30+ sprak, 13 kalendersystem. For ett projekt som har 11/11/11 som kvalitetsmal ar detta ovardepat.
 2. **Komplethet:** 40+ hooks + 50+ komponenter tacker allt Miranon behover: Dialog, Table, Calendar, DatePicker, DnD, Menu, Select, Combobox, Toast, etc.
 3. **Hook-lager:** Mojligheten att anvanda lagsta-niva-hooks ger samma kontroll som Vue composables -- man kan bygga exakt den komponent man vill utan att vara last vid ett komponent-API.
@@ -257,6 +274,7 @@ Om 6-12 manader, nar Base UI har mognat, kan det bli det basta alternativet. Tea
 ### Strategi: React Aria + shadcn/ui
 
 Den optimala strategin for ett Miranon-liknande projekt:
+
 1. **Anvand React Aria hooks som primitiver** (samma roll som Vue composables idag)
 2. **Bygg egna komponenter ovanpa** (samma "studera-och-bygg"-approach som med FK)
 3. **Anvand shadcn/ui som referens** for visuella monster och Tailwind-integration
@@ -267,6 +285,7 @@ Den optimala strategin for ett Miranon-liknande projekt:
 ## 6. Kallor
 
 ### Jamforelser och analyser
+
 - PkgPulse: "shadcn/ui vs Base UI vs Radix: Components in 2026" (pkgpulse.com)
 - LogRocket: "Headless UI alternatives: Radix vs React Aria vs Ark UI vs Base UI" (blog.logrocket.com)
 - BestskyTools: "Base UI vs Radix UI: A Detailed Comparison in 2026" (bestsky.tools)
@@ -274,11 +293,13 @@ Den optimala strategin for ett Miranon-liknande projekt:
 - Builder.io: "15 Best React UI Libraries for 2026" (builder.io)
 
 ### Radix-oro
+
 - Medium/dev.to: "Is Your Shadcn UI Project at Risk? A Deep Dive into Radix's Future" (mashuktamim.medium.com)
 - GitHub: tldraw issue #7584 "Investigate migrating from Radix UI to Base UI" (github.com/tldraw)
 - Reddit r/reactjs: "Radix UI vs Base UI - detailed comparison" (reddit.com)
 
 ### Biblioteksdokumentation
+
 - React Aria: react-aria.adobe.com
 - Base UI: base-ui.com
 - Ariakit: ariakit.com
@@ -287,6 +308,7 @@ Den optimala strategin for ett Miranon-liknande projekt:
 - shadcn/ui: ui.shadcn.com (changelog: 2026-01-base-ui)
 
 ### Datakallor
+
 - npm registry API (api.npmjs.org) -- veckonedladdningar hamtade 2026-04-05
 - GitHub API (api.github.com) -- stjarnor, issues, commits hamtade 2026-04-05
 - Bundlephobia API (bundlephobia.com) -- bundle-storlekar

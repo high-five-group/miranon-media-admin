@@ -19,6 +19,7 @@ Två oklarheter i denna formulering:
 **2. Hur ska den användas?**
 
 "Används i alla adapter-metoder" kan tolkas två sätt:
+
 - **(a)** Varje adapter-metod anropar `fetchWithRetry` direkt. Retry-kunskap sprids över alla adapters.
 - **(b)** `callEdgeFunction`/`postEdgeFunction` använder `fetchWithRetry` internt. Adapters är ovetande om retry.
 
@@ -66,7 +67,7 @@ Adapters fortsätter anropa `callEdgeFunction` som tidigare — de får retry "g
 - **Fördelar:** Minst kod, ingen extra fil.
 - **Nackdelar:** `fetchWithRetry` är återanvändbart — det finns scenarier i framtida faser där vi vill retrya externa anrop som inte går via Edge Functions (t.ex. direkta Airtable REST-anrop i Fas 8, web-vitals-rapportering i Fas 7). Extraherad utility är värd sitt utrymme.
 
-**4. Använd ett existerande bibliotek (p-retry, async-retry)**
+### 4. Använd ett existerande bibliotek (p-retry, async-retry)
 
 - **Fördelar:** Välbeprövat, mer features.
 - **Nackdelar:** Ny dep för 65 rader logik. Vår egen implementation är injicerbar för test (vilket p-retry inte är out-of-the-box) och har exakt den strategi vi behöver.

@@ -9,6 +9,7 @@
 Per Fas A M4 är klient → server-API:et **operations-baserat**: klienten skickar `{operationKey, recordId, fields}` (inte `{tableId, ...}`). Server äger operations-registret + fält-allowlist per operation. Källa: `SECURITY-SPEC.md §6.1`, `STATE-STRATEGY.md §8`.
 
 För mutation-flödet i React-bygget krävs ett etablerat mönster för:
+
 1. **Optimistic UI** — status-flip omedelbart vid klick (Lotta väntar aldrig på nätverk)
 2. **Rollback vid fel** — när server returnerar 4xx/5xx eller mutation tims out
 3. **Cache-invalidering** — TanStack Query måste veta vilka queries som påverkas
@@ -114,17 +115,20 @@ mutationFn: (input) => dataSource.executeOperation({
 ## Konsekvenser
 
 **Positiva:**
+
 - Mall för Fas 6:s ~6-10 mutationer (markPaid, markAttended, createRegistration, addNote, sendReminder, etc.) — varje mutation är 30-50 rader kod istället för att återuppfinna mönstret.
 - Operations-baserat API kvarhålls genomgående — ingen smyg-implementering av direct-method.
 - requestId-propagering fungerar automatiskt — ingen mutation kan glömma att visa requestId vid fel.
 - Aria-live-annonsering är en del av mallen — a11y inbyggt, inte adderat.
 
 **Negativa:**
+
 - Boilerplate per mutation (5 komponenter) — alternativet är custom hook (`useOperationMutation`) som wrappar mallen. Mitigation: Fas 5.5 bedömer om wrapper-hook är värd extra abstraktionslag eller om explicit mall är pedagogiskt bättre. Beslut tas vid Fas 5.5-implementation, dokumenteras i sessionsdok.
 - Optimistic UI-state kan diverga från server vid komplexa cascades. Mitigation: `onSettled`-invalidering korrigerar inom 1 cycle.
 - Cache-key-konvention måste vara konsekvent mellan reads och writes. Mitigation: dokumenteras som "[GA]"-bullet i Fas 5.5 + verifierat per-vy i Fas 6.
 
 **Verifiering (Fas 5.5 DoD):**
+
 - 11-punkts-DoD avbockad (per byggplan.md Fas 5.5)
 - 3 Playwright-tester gröna (2 deny + 1 allow per Fas A aktiveringsguide)
 - Mönstret dokumenterat i sessionsdok som "mall för Fas 6"

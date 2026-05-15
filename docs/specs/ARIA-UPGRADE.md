@@ -67,6 +67,7 @@ React Aria Dialog hanterar fokus-trapping, Escape och `role="dialog"` automatisk
 ### StatusBadge (`status-badge.tsx`)
 
 Farg ar aldrig ensam informationsbarare. Text-label alltid synlig. Verifiera:
+
 - [ ] Varje StatusBadge har synlig text (inte bara bakgrundsfarg)
 - [ ] Kontrast 4.5:1 for normal text mot bakgrund
 - [ ] I `prefers-contrast: more` — forstarkta kanter + okad kontrast

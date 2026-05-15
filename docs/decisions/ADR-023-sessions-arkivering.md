@@ -9,6 +9,7 @@
 `tasks/sessions/` innehöll 16 filer i platt struktur — 8 sessionslogg-filer (P0/P1/P2/P3a/P3b, security-hardening, datamodell-110, datamodell-research) + 7 fas-N-prompts (datamodell-research) + 1 aktiv (pre-Fas-2-verifiering, K1.A). Code:s K1.B Block 4.3: "16 filer är över den gräns där platt blir läsbar. Tröskelregel jag rekommenderar: arkivera vid ≥8 filer, behåll platt vid <8."
 
 Arkivering måste klara två krav:
+
 1. **Aktiv session ska vara omedelbart synlig** — inte begravd i arkiv-mapp.
 2. **Frysta artefakter (fas-prompts) ska markeras som sådana** — inte blandas med sessionslogg-filer.
 
@@ -16,7 +17,7 @@ Arkivering måste klara två krav:
 
 Strukturera enligt:
 
-```
+```text
 tasks/sessions/
 ├── <aktiv-session>.md   (pre-Fas-2-verifiering 2026-05-06; bytas vid varje ny session)
 └── archive/
@@ -39,12 +40,14 @@ Datamodell-research-prompts läggs i egen subarchive (`datamodell-research-2026-
 ## Konsekvenser
 
 **Positivt:**
+
 - `tasks/sessions/`-roten har 1 aktiv fil + 1 archive/-mapp = entydig översikt.
 - Aktiv session är omedelbart synlig.
 - Månadsbaserad arkivering skalar — 2026-06/, 2026-07/ etc tillkommer naturligt.
 - Frysta fas-prompts är markerade som sådana med README.
 
 **Negativt:**
+
 - Path-refs uppdateras i frysta zoner (~30 träffar) — mitigerat per ADR-022 fix-vs-skip-disciplin (kategori 2: källhänvisning, mekanisk fix säker).
 - Aktiv-session-konvention kräver disciplin: när nästa session startar (Fas 2), ska pre-Fas-2-verifieringen flyttas till `archive/2026-05/` innan ny aktiv läggs in.
 

@@ -190,11 +190,13 @@ Tabellformat per fas: `# | Påstående | Källa | Motsägs av | Klass | Korriger
 ## Del 3 — Sammanfattning per fas
 
 ### Fas 0
+
 - **Klassade rader:** 2. Fördelning: 1 oförändrad, 0 behöver justering, 1 behöver omformuleras, 0 försvinner.
 - **Öppen P1-fråga:** Ingen.
 - **Öppen P3-anteckning:** ADR för CSP-plugin-deferral — se konsoliderad ADR-katalog i Fas 7 Del 3 städnings-DoD (3 ADR:er totalt).
 
 ### Fas 1
+
 - **Klassade rader:** 1. Fördelning: 1 oförändrad.
 - **Skuld noterad — hänvisas till Fas 2.5, inte omklassad här:**
   - `src/domain/types/Status.ts` — out-of-sync mot `data-model.md` (Code Blocker 5)
@@ -203,26 +205,31 @@ Tabellformat per fas: `# | Påstående | Källa | Motsägs av | Klass | Korriger
 - **Princip:** Vi omdefinierar inte "klar" retroaktivt — analogt med att datamodell-research-projektet är frusen trots Odoo-valideringens nya kandidater (E1–E8).
 
 ### Fas 2
+
 - **Klassade rader:** 4. Fördelning: 1 oförändrad-explicit, 3 behöver justering, 0 behöver omformuleras, 0 försvinner.
 - **Öppen P1-fråga:** Ingen.
 - **Öppen P2-anteckning:** `auth-provider.tsx`-implementationen ska respektera Fas A:s anon-key-eliminering (M2) och `requireUser`-401-mönstret. Ingen ny stödspec krävs — uppdatering av Fas 2-prompten räcker.
 
 ### Fas 3
+
 - **Klassade rader:** 3. Fördelning: 0 oförändrad-explicit, 2 behöver justering, 1 behöver omformuleras, 0 försvinner. (Komponentbeskrivningar oförändrade-implicit.)
 - **Öppen P1-fråga:** Är Fas 3.5 (a11y-baseline) en separat fas eller integrerad i Fas 3? Direktiv §6 P1 nämner detta som ett av P1:s beslut.
 - **Öppen P2-fråga:** `ACCESSIBILITY-CHECKLIST.md` ska skrivas om för React Aria + WCAG 2.2 AA enligt direktiv §6 P2 — Fas 3 är blockerad tills detta är klart.
 
 ### ~~Fas 4~~
+
 - **Klassade rader:** 1. Fördelning: 1 oförändrad. Hela "fasen" är en borttagningsmarkering — DataTable flyttad till Fas 7 villkorligt.
 - **Öppen P1-fråga:** Ingen.
 - **Öppen P3-anteckning:** ADR för fas-borttagningen — se konsoliderad ADR-katalog i Fas 7 Del 3 städnings-DoD (3 ADR:er totalt).
 
 ### Fas 5
+
 - **Klassade rader:** 3. Fördelning: 1 oförändrad-explicit, 1 behöver justering, 1 behöver omformuleras, 0 försvinner.
 - **Öppen P1-fråga:** Vad förenklas i Fas 5? Direktiv §5 markerar fasen "Möjligen förenklad" utan att specificera. Möjliga axlar: View Transitions, Workbox-utbyggnad, error boundary-granularitet.
 - **Öppen P3-anteckning:** Om förenkling beslutas i P1, ska `[GA]`-tillägg som flyttas till Fas 7 explicit listas i städnings-DoD.
 
 ### Fas 6
+
 - **Klassade rader:** 6. Fördelning: 0 oförändrad-explicit, 3 behöver justering, 3 behöver omformuleras, 0 försvinner. (Designprinciper och designkontext per vy oförändrade-implicit.)
 - **Öppna P1-frågor (två stycken — direktiv §6 P1 listar redan båda):**
   - Sekvenseras Fas 6 enligt strangler-fig (Persons → Events → Registrations → Hem-aggregering) eller "Hem först"-prioritet?
@@ -231,11 +238,13 @@ Tabellformat per fas: `# | Påstående | Källa | Motsägs av | Klass | Korriger
 - **Beroende-not:** Fas 6 är gated av Fas 2.5 (adapter-klassning) och Fas 5.5 (mutation-mönster) — båda är *nya* faser i byggplanen som inte finns i conversion-plan. P1 låser deras placering.
 
 ### Fas 6.5
+
 - **Klassade rader:** 2. Fördelning: 0 oförändrad-explicit, 2 behöver justering, 0 behöver omformuleras, 0 försvinner. (Övriga påståenden oförändrade-implicit.)
 - **Öppen P1-fråga:** Hur klargörs förhållandet mellan `trace_id` och `requestId` — distinkta korrelerade IDs (alt. a) eller sammanslagna (alt. b)? Beslutet behövs innan `FEATURE-ACTIVITY-LOG.md` uppdateras i P2.
 - **Öppen P2-fråga:** `SECURITY-SPEC.md` får ärva `requestId`-mönstret från Fas A M7; `FEATURE-ACTIVITY-LOG.md` bör justeras därefter samt anpassas till operations-API-mönstret.
 
 ### Fas 7
+
 - **Klassade rader:** 5. Fördelning: 0 oförändrad-explicit, 4 behöver justering, 1 behöver omformuleras, 0 försvinner. Två av "behöver justering"-raderna är *tillägg* — bullets som saknas i conversion-plan och måste läggas till i byggplanen.
 - **Öppen P1-fråga:** Behåll Background Sync (offline-närvaro) i Fas 7, eller defer till Fas 8 om Fas 7-scope blir för stort?
 - **Öppen P3-anteckning (städnings-DoD):**

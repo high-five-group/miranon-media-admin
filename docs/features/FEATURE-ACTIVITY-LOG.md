@@ -25,7 +25,7 @@ Aktivitetsloggen ger Lotta ett svar på frågan: **"Vad har jag gjort?"** — oa
 
 ## Vad som loggas
 
-### Princip: Allt som förändrar data. Inget som bara visar data.
+### Princip: Allt som förändrar data. Inget som bara visar data
 
 **Loggas (mutation = relevant):**
 
@@ -102,7 +102,7 @@ interface ActivityContext {
 | 14:18 | Lotta registrerade närvaro för **Erik Holm** på **Medveten Kontakt, dag 1** |
 | 13:45 | Lotta skickade bekräftelsemejl till **Sara Björk** för **Medveten Kontakt** |
 | 11:30 | Lotta flyttade **Johan Dahl** från väntelista till anmäld på **Medveten Kontakt** |
-| 09:15 | Lotta skapade ny person: **Maria Svensson** (maria@example.com) |
+| 09:15 | Lotta skapade ny person: **Maria Svensson** (<maria@example.com>) |
 
 ---
 
@@ -112,7 +112,7 @@ interface ActivityContext {
 
 Loggen bor i DataSourceAdapter. Varje mutation-metod anropar en intern `logActivity()` efter lyckad operation. Konsumerande kod behöver inte tänka på loggning — det sker automatiskt.
 
-```
+```text
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────┐
 │   UI-lager   │ ──→ │ DataSourceAdapter │ ──→ │  Airtable   │
 │  (klick)     │     │  markAsPaid()     │     │  Betalning  │
@@ -157,6 +157,7 @@ Egen vy i menyn under **Vardagsgruppen**: "Historik" (med Clock-ikon).
 **Tidsgrupperad lista** — poster grupperade under datumrubriker ("Idag", "Igår", "3 april 2026").
 
 Varje post visar:
+
 - Klockslag (14:22)
 - Kategori-ikon (kreditkort för betalning, brevikon för mail, etc.)
 - Sammanfattning i naturligt språk
@@ -165,6 +166,7 @@ Varje post visar:
 ### Filtrering
 
 Enkel filterrad ovanför listan:
+
 - **Kategori** — dropdown: Alla, Betalning, Anmälan, Närvaro, Person, Mail
 - **Event** — dropdown med aktiva event
 - **Tidsperiod** — Idag, Senaste 7 dagarna, Senaste 30 dagarna, Allt
@@ -187,7 +189,7 @@ Tre fade-in-rader med animate-pulse medan data laddas.
 
 Adapter-metoden `logActivity()` bygger sammanfattningen automatiskt utifrån kategori + kontext. Lotta ser aldrig tekniska termer.
 
-```
+```text
 Mönster per kategori:
 
 betalning + created:

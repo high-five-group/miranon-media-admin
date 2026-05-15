@@ -9,6 +9,7 @@
 `docs/conversion-plan.md` listade `[GA] vite.config.ts ... security headers-plugin med CSP-nonce` som Fas 0-leverans. Vid faktisk Fas 0-implementation 2026-04-14 (Session 1, React) togs plugin medvetet inte med — endast en kommentar i `vite.config.ts:10` markerade behovet. Conversion-plan bullet-listades som "skapad i Fas 0" men implementationen var skjutsad. P0-inventory (2026-05-04) klassade detta som "behöver omformuleras" — driften måste dokumenteras med ADR snarare än maskeras genom att uppdatera conversion-plan i efterhand.
 
 CSP (Content Security Policy) med nonce kräver:
+
 1. Server-side header-injektion (deploy-pipeline)
 2. Klient-side nonce-passering till alla `<script>` och `<style>`-taggar
 3. Vite-plugin som genererar unik nonce per build/request
@@ -19,6 +20,7 @@ I Fas 0 var deploy-pipelinen inte etablerad, ingen route hade renderad HTML, och
 ## Beslut
 
 CSP-nonce-plugin implementeras i **Fas 7 (Konsolidering)**, inte i Fas 0. Plugin levereras tillsammans med:
+
 - Trusted Types
 - Säkerhetsheaders (HSTS, X-Frame-Options, etc.)
 - Deploy-pipeline (staging → production)
@@ -37,11 +39,13 @@ Fas 7-DoD inkluderar: "CSP-plugin aktiv i prod, ingen inline-script-violation i 
 ## Konsekvenser
 
 **Positiva:**
+
 - Plugin implementeras i kontext (deploy-pipeline finns) → mindre risk för fel.
 - Fas 0 levererar fokuserat (tokens, Biome, build-setup) utan teoretisk säkerhetskod.
 - Tydlig spårbarhet: skuld noterad i `byggplan.md` Fas 0 + ADR-pekare.
 
 **Negativa:**
+
 - Mellan Fas 0 och Fas 7 har appen ingen CSP-skydd. Mitigation: appen är inte i production under den tiden — staging-deploys kommer först i Fas 7.
 - Risk att Fas 7 glömmer plugin när scope växer. Mitigation: Fas 7 DoD-punkt 1 är "CSP-plugin aktiv i prod" — direkt mappad mot detta ADR.
 

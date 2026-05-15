@@ -63,7 +63,7 @@ Env-validering sker nu **en enda gång** — i `src/env.ts` vid app-uppstart. `s
 
 ## Alternativ som övervägdes
 
-**1. Behåll båda mekanismerna**
+### 1. Behåll båda mekanismerna
 
 - **Fördelar:** Bokstavligen "kopieras rakt av" från Vue-repot.
 - **Nackdelar:** Död kod (den manuella kontrollen körs aldrig). Dubbelt underhåll (ändras env-schemat måste båda uppdateras). Konsumenter av `supabase-client.ts` måste fortfarande hantera typer som `string | undefined`, vilket tvingar defensive checks eller `!`-asserts.

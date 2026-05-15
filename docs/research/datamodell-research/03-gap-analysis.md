@@ -12,6 +12,7 @@ operations: BEHÅLL / RÄTTA / UTÖKA / LÄGG TILL / OMSTRUKTURERA
 > **Användning.** Detta dokument är input till Fas 4. För varje sektion i de två levande dokumenten finns en rad operationer. Code utför operationerna i Fas 4. Chat (jag) granskar utfallet.
 >
 > **Operationsbetydelser:**
+>
 > - **BEHÅLL** — sektionen är korrekt och fullständig. Ingen ändring.
 > - **RÄTTA** — fel data eller inaktuell info. Specifik rättning anges.
 > - **UTÖKA** — befintlig sektion behöver mer innehåll. Tillägg specificeras.
@@ -48,6 +49,7 @@ Marcus har strukturerat A1–A11 i 3 kategorier i Airtable Automations-UI:t (ver
 | **Övervakning** | 6 | A6, A7, A8, A9, A10, A11 |
 
 **Beslut:** Använd denna gruppering som strukturerande princip i:
+
 - `data-model.md` §Automationssekvenser — omstrukturera enligt grupperna
 - `hur-systemet-funkar.md` — referera till grupperna pedagogiskt
 
@@ -122,7 +124,7 @@ Lägg till "Senast verifierad: 2026-04-28" eller motsvarande i sektioner som inn
 
 #### Schema cheat sheet — designskiss (LÄGG TILL)
 
-```
+```text
 ### Schema cheat sheet — operationella fält-IDs
 
 För Edge Functions, scripts, manuella PATCH-ops. Listar fält som
@@ -241,7 +243,7 @@ Källa: 01-extraction §A.3 + 02-live-state §3.4.
 
 #### A2:s 4 grenar — designskiss (LÄGG TILL)
 
-```
+```text
 ### A2:s decision — 4 grenar
 
 A2 söker Person via två separata FIND_RECORDS, sedan väljs gren 
@@ -276,7 +278,7 @@ OMSTRUKTURERA hela sektionen enligt D1. Nuvarande indelning är 3 sekvenser ("Ny
 
 #### Förslag på ny struktur (OMSTRUKTURERA)
 
-```
+```text
 ## Automationssekvenser
 
 A1–A11 är grupperade i 3 kategorier i Airtable Automations-UI:t. 
@@ -410,6 +412,7 @@ Källa: 01-extraction §J.
 Plats: efter §Anmälningskedjan, före §Automationssekvenser.
 
 Innehåll: 4 scenarier från 01-extraction §F:
+
 - F.1 Backfill-flödet (kontra A2:s primära designflöde)
 - F.2 EventKey-format-bug i Huvudformulär (öppet)
 - F.3 Mail-flödet (frontend → Edge Function → Airtable + Resend)
@@ -457,6 +460,7 @@ Källa: 01-extraction §F.
 
 | Op | Detalj |
 |---|---|
+<!-- markdownlint-disable-next-line MD056 -->  <!-- tabell-cell-överskott (Vue-referens-doc, frusen) -->
 | BEHÅLL |
 
 ### 3.7 Scenario 3 — En person går kursen (rad 101-141)
@@ -476,6 +480,7 @@ Källa: 01-extraction §F.
 
 | Op | Detalj |
 |---|---|
+<!-- markdownlint-disable-next-line MD056 -->  <!-- tabell-cell-överskott (Vue-referens-doc, frusen) -->
 | BEHÅLL |
 
 ### 3.10 Personens tillstånd — vad namnlös Person betyder (rad 161-178)

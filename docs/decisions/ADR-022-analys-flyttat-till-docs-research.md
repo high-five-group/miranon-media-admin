@@ -16,7 +16,7 @@ Flytta `analys/`-mappens 10 filer till `docs/research/datamodell-research/`. Map
 
 Resulterande struktur:
 
-```
+```text
 docs/research/
 ├── beyond-best-practices-2026.md
 ├── react-headless-ui-research.md
@@ -37,11 +37,13 @@ Refs uppdateras i alla styrande dokument utanför arkiv-zoner.
 ## Konsekvenser
 
 **Positivt:**
+
 - Hela `docs/research/` är samlad — Fas 0-research + datamodell-research = en ingång.
 - `analys/` försvinner som sibling — repo-roten har en standardform.
 - Frysta filer (datamodell-research-leveranserna) bevarar git-historik via `git mv`.
 
 **Negativt:**
+
 - ~150 path-refs uppdateras i frysta zoner (datamodell-research-leveranser, sessions-arkiv) — riskmoment, mitigerat med per-rad-skanning innan körning.
 
 ## Fix-vs-skip-disciplin på path-refs i frysta zoner (åf-erfarenhet)
@@ -60,4 +62,5 @@ Skip-disciplinen från ADR-021 ska därför skiljas i tre kategorier:
 En line-wrappad ref i `tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md` rad 680–681 (`tasks/sessions/2026-05-04-byggplan-\n    revision-p1.md`) fångades inte av sed (regex matchar inte över newlines) och fixades manuellt med Edit-tool.
 
 **Spårbarhet:**
+
 - åf commit 1: `git mv` + sed-pass + ADR-022 + ADR-023

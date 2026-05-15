@@ -15,6 +15,7 @@
 ## Kontext
 
 Research-rapporten (beyond-best-practices-2026.md) rekommenderar:
+
 - React Server Components + PPR (Next.js 15+) for content-tunga appar
 - Islands Architecture (Astro) for content-first sajter
 - Edge-first architecture for global latensreduktion
@@ -62,7 +63,8 @@ server-kostnader per request. Inga cold starts. Inga
 serverlosa funktioner for rendering. CDN cachelar allt.
 
 **Deploy-pipeline:**
-```
+
+```text
 git push → Vercel build (npm run build) → statiska filer → CDN → klart
 ```
 

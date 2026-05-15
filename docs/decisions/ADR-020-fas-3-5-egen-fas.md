@@ -48,14 +48,17 @@ P2-sessionsdok Del 5 dokumenterade utfallet. Denna ADR konsoliderar beslutet + s
   5. ComboBox (`useComboBox` + `useFilter`)
 
 ### Inte scope
+
 - Komponentimplementation per primitiv — Fas 3
 - A11y-fixar i befintlig kod — Fas 7 vid behov
 - WCAG 2.2 AAA — målet är AA
 
 ### Beroenden
+
 Ingen mot tidigare faser. Blockerar Fas 3:s formella DoD (Fas 3 kan inte 11/11/11-stämmas-av utan Fas 3.5:s test-infra).
 
 ### Sekvens-not
+
 Fas 3 byggs som primär leverans, Fas 3.5 levererar test-infra parallellt eller direkt efter. Fas 3:s DoD-punkt "axe-core 0 violations + Playwright a11y-runner grön" avbockas först när Fas 3.5:s infra finns. Fas 5 startar inte förrän både Fas 3 och Fas 3.5 är klara.
 
 ## Alternativ som övervägdes
@@ -71,16 +74,19 @@ Fas 3 byggs som primär leverans, Fas 3.5 levererar test-infra parallellt eller 
 ## Konsekvenser
 
 **Positiva:**
+
 - Test-infra + mönsterbibliotek levereras med fokus och kvalitet.
 - Fas 3:s primitiver verifieras mot Fas 3.5:s test-infra → 11/11/11-stämpling är meningsfull.
 - Fem React Aria-pattern dokumenterade en gång → Fas 6:s sub-faser konsumerar dem utan att återuppfinna.
 - Mönstret "trigger-beslut med självaktiverande indata" stärks som projekt-konvention — använd igen vid framtida scenariobeslut.
 
 **Negativa:**
+
 - 1 session extra i total estimat (16,5 sessioner istället för 15,5). Mitigation: kvaliteten + Fas 6-konsumtions-effektivitet kompenserar — sannolikt 1-2 sessioner sparade i Fas 6 genom etablerade mönster.
 - Risk att Fas 3.5 startar för tidigt (innan Fas 3 har primitiver att testa). Mitigation: Fas 3.5 kan börja med test-infra-setup parallellt med Fas 3, mönsterbibliotek skrivs när Fas 3 har minst 2-3 primitiver levererade. Sekvens-pragmatism, inte sekvens-fundamentalism.
 
 **Verifiering (Fas 3.5 DoD per byggplan.md):**
+
 - `npm run test:a11y` kör Playwright a11y-runner — 0 violations på alla 5 patterns
 - CI failar vid axe-violation (verifiera med medvetet brytande commit på branch)
 - Fixture-mönstret återanvänds i Fas 3:s primitiv-tester

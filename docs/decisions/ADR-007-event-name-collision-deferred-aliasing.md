@@ -36,9 +36,11 @@ Fas 1-scope var dock uteslutande `.ts`-filer — noll `.tsx`-filer. I `.ts`-kont
 **Strategi framåt — trepunkts-eskalering:**
 
 1. **Fas 2+ (första `.tsx`-fil som importerar `Event`):** Lokal alias per fil.
+
    ```tsx
    import type { Event as MmEvent } from '@/domain/models/Event';
    ```
+
    Detta isolerar effekten till den fil där det faktiskt uppstår.
 
 2. **Om 5+ `.tsx`-filer behöver samma alias:** Global rename till `MiranonEvent` (alternativt `MmEvent`) i `src/domain/models/Event.ts`. Alla konsumenter uppdaterar sina imports.

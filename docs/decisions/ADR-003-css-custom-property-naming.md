@@ -19,7 +19,7 @@ Detta ärvdes från Tailwinds spacing-skala där utility-klasserna heter `p-0.5`
 
 **Men:** när vi kopierade tokens till `src/styles/tokens/primitives.css` och körde `biome check` i Fas 0, exploderade parsern:
 
-```
+```text
 src/styles/tokens/primitives.css:73:23 parse
   × expected `,` but instead found `rem`
   > 73 │   --p-space-1.5: 0.375rem;  /* 6px */
@@ -60,7 +60,7 @@ Uppdaterade **både** [DESIGN-SYSTEM-SPEC.md](../specs/DESIGN-SYSTEM-SPEC.md) §
 - **Fördelar:** Enklast, inga konflikter.
 - **Nackdelar:** 4px-basen kräver halvsteg för fine-tuning (ikon-padding, divider-gaps). Att eliminera dem skulle kräva omarbetning av hela spacing-skalan.
 
-**4. Ignorera Biome-felet och köra med lint-warning**
+### 4. Ignorera Biome-felet och köra med lint-warning
 
 - **Fördelar:** Ingen förändring i spec.
 - **Nackdelar:** Lightning CSS i `@tailwindcss/vite` skulle fortfarande krascha vid dev/build. Inte ett alternativ — det fungerar bokstavligen inte.

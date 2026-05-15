@@ -113,12 +113,12 @@ Codex' diagnos är exakt: KVALITETSDEFINITIONER-11.md är det enda spec-dokument
 
 **Verifierat — det enda som behövdes var en grep, så jag körde flera:**
 
-```
+```text
 grep -rn "\.parse\|\.safeParse\|parseAsync\|safeParseAsync" src/ supabase/
 → noll träffar för Zod-bruk
 ```
 
-```
+```text
 grep -rn "parse" src/ supabase/ | grep -v node_modules
 → bara: parseInt(), parseAirtableString() (formula-utility)
 ```
@@ -146,6 +146,7 @@ Det enda stället zod används som validator i koden är [`src/env.ts:14-19`](..
 **Verifierat:**
 
 [`src/domain/types/Status.ts:3-8`](../../src/domain/types/Status.ts#L3-L8):
+
 ```ts
 export const RegistrationStatus = {
   OBEKRAFTAD: 'Obekräftad',
@@ -154,6 +155,7 @@ export const RegistrationStatus = {
   AVBOKAD: 'Avbokad/Ombokad',
 } as const;
 ```
+
 **4 värden.** ✓
 
 [`docs/reference/data-model.md:121-130`](../reference/data-model.md#L121-L130):
@@ -224,6 +226,7 @@ export const RegistrationStatus = {
 **Verifierat ord för ord:**
 
 - [`auth.ts:86-92`](../../supabase/functions/_shared/auth.ts#L86-L92):
+
   ```ts
   return {
     user: {
@@ -233,9 +236,11 @@ export const RegistrationStatus = {
     },
   };
   ```
+
   Bara tre fält. Ingen `tenant_id`, `memberships`, `role`-scope, `record_filter`. ✓
 
 - [`get-events/index.ts:49-65`](../../supabase/functions/get-events/index.ts#L49-L65):
+
   ```ts
   const auth = await requireUser(req, corsHeaders);
   if (auth instanceof Response) return auth;
@@ -252,6 +257,7 @@ export const RegistrationStatus = {
     });
   }
   ```
+
   `auth.user.id` används endast i error-loggningskontexten på rad 63. Ingen filtrering på vem som får läsa vilka records. ✓
 
 Identisk struktur i `get-persons/index.ts` och `get-registrations/index.ts` (verifierat via grep — bara `callerUserId: auth.user.id` i loggningskontext, ingen scope-filtrering).
@@ -267,6 +273,7 @@ Identisk struktur i `get-persons/index.ts` och `get-registrations/index.ts` (ver
 **Verifierat:**
 
 - [`tests/api/helpers.ts:29-40`](../../tests/api/helpers.ts#L29-L40):
+
   ```ts
   export function getApiConfig(): ApiConfig {
     const baseUrl = process.env.TEST_SUPABASE_URL;
@@ -278,13 +285,16 @@ Identisk struktur i `get-persons/index.ts` och `get-registrations/index.ts` (ver
     ...
   }
   ```
+
   Skippet är inkluderat — det är inte en bug. Men CI-effekten är reell.
 
 - [`.github/workflows/ci.yml:36-37`](../../.github/workflows/ci.yml#L36-L37):
+
   ```yaml
   - name: API tests
     run: npm run test:api
   ```
+
   Inget `if: ${{ secrets.TEST_SUPABASE_URL }}`-villkor. Inget `env:`-block som kräver att variabler är satta. Inget separat staging-jobb.
 
 **Konsekvens:** Om Marcus' GitHub-repo saknar `TEST_*`-secrets (verifiering kräver att jag tittar i settings, vilket jag inte kan via Code), kommer CI-jobbet rapportera grönt även om de 41 deployade deny-path-testerna aldrig körs. Detta är exakt det "signalproblem" Codex identifierar.
@@ -306,15 +316,19 @@ Identisk struktur i `get-persons/index.ts` och `get-registrations/index.ts` (ver
 **Den faktiska bug:en Codex pekar på:**
 
 [`tests/api/helpers.ts:18`](../../tests/api/helpers.ts#L18):
+
 ```ts
 import { type APIRequestContext, test } from '@playwright/test';
 ```
+
 **Importerar bara `APIRequestContext` och `test`.** Inte `APIResponse`.
 
 [`tests/api/helpers.ts:133`](../../tests/api/helpers.ts#L133):
+
 ```ts
 export async function classify401Body(response: APIResponse): Promise<UnauthorizedClassification> {
 ```
+
 **Använder `APIResponse` som typ-annotation utan import.** Detta är en reell type-error som TypeScript skulle fånga om filen var i någon `tsconfig`-include-path.
 
 Varför funkar det vid runtime? Playwright transpilerar via tsx/esbuild, vilket strippar typ-annotationer utan att verifiera dem. `APIResponse` försvinner från output, och funktionen tar bara `response` som vanligt argument. Det fungerar **i praktiken**, men type-säkerheten är inte bevisad.
@@ -328,26 +342,32 @@ Varför funkar det vid runtime? Playwright transpilerar via tsx/esbuild, vilket 
 **Verifierat:**
 
 - [`supabase/config.toml:8-10`](../../supabase/config.toml#L8-L10):
+
   ```toml
   # TODO Fas 7 — test-*-funktioner får ALDRIG nå produktion. När
   # prod-deploy-pipelinen byggs måste den filtrera bort dem explicit.
   ```
+
   ✓
 
 - [`config.toml:19-20`](../../supabase/config.toml#L19-L20):
+
   ```toml
   [functions.test-auth]
   verify_jwt = false
   ```
+
   ✓
 
 **Codex' analys av risknivå:** *"Låg till medel: endpointen exponerar bara `{ ok, userId }` efter requireUser, men en test-endpoint med bypassad gateway-JWT i prod är fel säkerhetssignal."*
 
 Jag verifierade test-auth-funktionens innehåll:
+
 ```bash
 ls supabase/functions/ | grep test
 → test-auth (mappnamn)
 ```
+
 test-auth finns som mapp men deployas inte automatiskt — den måste explicit listas i deploy-kommandot. Risken är att en framtida deploy-pipeline (Fas 7) glömmer att filtrera. Codex' poäng: filtrering ska komma TIDIGARE än Fas 7 om någon prod-deploy kan ske före dess.
 
 **Bedömning:** Korrekt fynd. Inte akut men reellt.
@@ -383,6 +403,7 @@ Codex' diagnos är exakt: byggplan-DoD listar sex engelska tokens (`pending`, `c
 **6.A — Quickstart kopierar `.env.local.example` som inte finns:**
 
 [`README.md:47-50`](../../README.md#L47-L50):
+
 ```bash
 npm install
 cp .env.local.example .env.local   # lägg in Supabase URL + anon key
@@ -390,6 +411,7 @@ npm run dev
 ```
 
 `ls -la .env*` ger:
+
 - `.env.example` (620 bytes) ✓ existerar
 - `.env.local` (241 bytes) ✓ existerar (egen)
 - `.env.test` (534 bytes) ✓
@@ -427,7 +449,8 @@ Codex' formulering "Offline | Workbox" i README antyder att det är aktiv stack 
 Hela filen handlar om `DESIGN-MANIFESTO.md` + `DESIGN-OPERATING-SYSTEM.md`. Inga referenser till `analysis/`, `archive/`, `decisions/`, `features/`, `logs/`, `reference/`, `research/`, `specs/`.
 
 `ls docs/` ger:
-```
+
+```text
 BUILD-LOG.md  DOKUMENTATIONSSTANDARD.md  README.md  analysis  archive
 byggplan.md  decisions  features  logs  reference  research  specs
 ```
@@ -446,7 +469,7 @@ Jag fact-checkade Codex' bärande påståenden mot offentliga källor (URLs som 
 
 **Codex påstår:** *"records aldrig raderas utan markeras superseded/deprecated, och att nya ADRs går via PR, feedback, numrering och docs-sidebar/mkdocs-indexering."*
 
-**WebFetch mot https://backstage.io/docs/architecture-decisions/:**
+**WebFetch mot <https://backstage.io/docs/architecture-decisions/>:**
 
 > "Records are never deleted but can be marked as superseded by new decisions or deprecated."
 > Process: PR → community feedback → "Eventually, assign a number"
@@ -458,7 +481,7 @@ Jag fact-checkade Codex' bärande påståenden mot offentliga källor (URLs som 
 
 **Codex påstår:** *"WCAG 2.2 AA compliance, dokumenterar kända accessibility concerns och externa audits av DAC."*
 
-**WebFetch mot https://design-system.service.gov.uk/accessibility-statement/:**
+**WebFetch mot <https://design-system.service.gov.uk/accessibility-statement/>:**
 
 > "fully compliant with the Web Content Accessibility Guidelines (WCAG) version 2.2 AA standard"
 > External audits: "Digital Accessibility Centre (DAC)" (juli 2024)
@@ -470,7 +493,7 @@ Jag fact-checkade Codex' bärande påståenden mot offentliga källor (URLs som 
 
 **Codex påstår:** *"delvis conformant WCAG 2.1 AA, listar begränsningar som charts, contrast och keyboard support, och beskriver både manual screen-reader matrix och pa11y/CI-fail vid a11y-regressioner."*
 
-**WebFetch mot https://grafana.com/developers/saga/foundations/accessibility/accessibility-overview:**
+**WebFetch mot <https://grafana.com/developers/saga/foundations/accessibility/accessibility-overview>:**
 
 > "partially conformant with WCAG 2.1 level AA"
 > Begränsningar: charts (color-blind), color contrast, keyboard support
@@ -483,7 +506,7 @@ Jag fact-checkade Codex' bärande påståenden mot offentliga källor (URLs som 
 
 **Codex påstår:** *"komponenters accessible markup, focus management för overlays, och automatiska + manuella tester."*
 
-**WebFetch mot https://polaris-react.shopify.com/foundations/accessibility:**
+**WebFetch mot <https://polaris-react.shopify.com/foundations/accessibility>:**
 
 > "This component code includes accessible markup"
 > "Polaris components that use controls to display overlays, such as modals and popovers, manage focus automatically"
@@ -495,7 +518,7 @@ Jag fact-checkade Codex' bärande påståenden mot offentliga källor (URLs som 
 
 **Codex påstår:** *"separat security-response-repo med security release process, severity ratings, security contacts, on-call och playbook-material" + filer SECURITY_CONTACTS, security-release-process.md, severity-ratings.md, src-oncall.md."*
 
-**WebFetch mot https://github.com/kubernetes/committee-security-response:**
+**WebFetch mot <https://github.com/kubernetes/committee-security-response>:**
 
 > Filer: SECURITY_CONTACTS, security-release-process.md, severity-ratings.md, src-oncall.md ✓
 > Roll: "triaging and handling the security issues for Kubernetes"
@@ -559,6 +582,7 @@ Codex' analys är **korrekt och ärlig.** Detta är samma slutsats som förra ru
 **Är Codex' "snäva ja" rätt kalibrerat?** Ja. Inte hårdare nej, inte mjukare ja. Säkerhetsgrunden är reell, appen är 0%, planen är stark men har två mikrofel. Det är exakt det Codex säger.
 
 **Är Codex' tre startvillkor tillräckliga?** Ja. Alla tre löser reella defekter:
+
 1. nuqs i deps — eliminerar att Fas 2 startar med en pseudo-installation.
 2. typecheck:tests — fångar faktiska type-fel som idag är osynliga (helpers.ts:133).
 3. auth-fixture-signal — eliminerar falsk grön CI.

@@ -1,4 +1,5 @@
 # CLAUDE.md — Miranon Media Admin (React)
+
 *Senast uppdaterad: 2026-05-06 | v0.4 — Session 3 (Pre-Fas-2-verifiering): repo-strukturell polish + publika professionalitetssignaler. Fas 2 — Routing + Auth — startar nästa session mot `docs/byggplan.md`.*
 
 ---
@@ -12,6 +13,7 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 **Styrande dokument för byggandet:** `docs/byggplan.md` (i detta repo). Vue-repots `react-migration/`-mapp är historiskt referensmaterial — användes som källa under Fas 0 + Fas 1 men ersätts av byggplan.md från och med Fas 2.
 
 Hela `docs/react-migration/`-mappen i Vue-repot var sanningskälla för Fas 0 + Fas 1 (historiskt). För Fas 2+ är `docs/byggplan.md` (i detta repo) sanningskällan.
+
 - `DESIGN-MANIFESTO.md`, `DESIGN-OPERATING-SYSTEM.md`, `DESIGN-SYSTEM-SPEC.md` — design
 - `SECURITY-SPEC.md`, `PERFORMANCE-BUDGET.md`, `STATE-STRATEGY.md`, `URL-STATE-SPEC.md`, `ARIA-UPGRADE.md`, `FUTURE-COMPAT.md`, `SPA-ARCHITECTURE-DECISION.md` — [GA] gap-analys-spec
 - `FILE-INVENTORY.md` — vilka filer som ska kopieras från Vue-repot
@@ -71,7 +73,7 @@ Hela `docs/react-migration/`-mappen i Vue-repot var sanningskälla för Fas 0 + 
 
 ### Repo-rot
 
-```
+```text
 miranon-media-admin/
 ├── CLAUDE.md                      ← projekt-konstitution (läs först)
 ├── README.md                      ← entry-point med badges + Documentation map
@@ -97,7 +99,7 @@ miranon-media-admin/
 
 ### docs/
 
-```
+```text
 docs/
 ├── README.md                      ← navigeringspekare för docs/
 ├── byggplan.md                    ← STYRANDE plan för Fas 2 → Fas 8 (832 rader, 13 fas-prompter)
@@ -146,7 +148,7 @@ docs/
 
 ### tasks/
 
-```
+```text
 tasks/
 ├── todo.md                        ← aktuell todo-status
 ├── lessons.md                     ← projekt-lessons (UNIVERSAL-poster lyfts till hub)
@@ -162,7 +164,7 @@ tasks/
 
 ### src/, supabase/, tests/, övrigt
 
-```
+```text
 src/
 ├── data/         ← AirtableAdapter, callEdgeFunction, supabase-client, retry-infra
 ├── domain/       ← 10 domain-filer (transplanterade från Vue-referens, Fas 1)
@@ -192,7 +194,7 @@ Det ursprungliga Vue-projektet `~/Repon/miranon-media-os/` är **fryst** och ers
 
 ### src/-struktur post-Fas-2 (Session 5 K2-K4 + K3.5)
 
-```
+```text
 src/
 ├── auth/                             ← NY i K3.2 + K3.5
 │   ├── AuthProvider.tsx              ← Full Supabase-integration (K3.2 + K3.5 race-condition-fix)
@@ -220,7 +222,7 @@ src/
 
 ### Tests-struktur post-K4
 
-```
+```text
 tests/
 ├── api/                              ← Fas 0/K0åc API/HTTP-tester (7 filer)
 ├── visual/                           ← Fas 3+ screenshot-regression (referenced i playwright.config)
@@ -236,6 +238,7 @@ tests/
 - `playwright/.auth/`                 ← storageState-cache, gitignored utom .gitkeep + README.md (K4.2)
 
 **5 paket exakt-pinnade** (post-K0åg supply chain-disciplin per ADR-028):
+
 - `@tanstack/react-router: 1.168.19`
 - `@tanstack/router-plugin: 1.167.20`
 - `@tanstack/react-router-devtools: 1.166.13`
@@ -251,6 +254,7 @@ tests/
 3. **Komponent** (`src/styles/tokens/components.css`) — komponentspecifikt: `--mm-button-primary-bg`, `--mm-dialog-overlay-bg`.
 
 **Regler:**
+
 - Inga hårdkodade färger i komponenter — allt via CSS custom properties
 - Inga komponentspecifika tokens utanför components.css
 - Foundation: `~/Repon/marcus-system/design-system/DESIGN-FOUNDATION-v1.md` (4px spacing-bas, Inter, FK-inspirerat)
@@ -263,6 +267,7 @@ Fullständig spec: [`docs/specs/DESIGN-SYSTEM-SPEC.md`](docs/specs/DESIGN-SYSTEM
 ## Arbetsflöde
 
 **Verktyg:**
+
 | Verktyg | Används för |
 |---|---|
 | Claude Chat (projekt) | Planering, arkitektur, prompts, FK-research |
@@ -276,6 +281,7 @@ Fullständig spec: [`docs/specs/DESIGN-SYSTEM-SPEC.md`](docs/specs/DESIGN-SYSTEM
 **Fasordning (enligt `docs/byggplan.md` §4):**
 
 *Klara faser:*
+
 1. ✅ Fas 0 — Projektsetup + tokens (Session 1, 2026-04-13/14)
 2. ✅ Fas 1 — Domäntransplant — 13 filer + Zod + fetchWithRetry (Session 1)
 3. ✅ Fas A — Säkerhetshardening M1–M8 (Session 2, 2026-05-04)
@@ -284,9 +290,10 @@ Fullständig spec: [`docs/specs/DESIGN-SYSTEM-SPEC.md`](docs/specs/DESIGN-SYSTEM
 
 *Aktuellt fokus:*
 6. ⏳ **PÅGÅR — Fas 2 — Routing + Auth (TanStack Router, Supabase, nuqs):**
-   - ✅ K0 startvillkor 1-3 (Session 4, 2026-05-11) — nuqs + typecheck:tests + falsk-grön CI-fix
-   - ← **NÄSTA:** K0åd-K0åf (Codex' "Direkt efter Fas 2"-fynd) eller K2 (TanStack Router skelett)
-   - Trail: [`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`](tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md)
+
+- ✅ K0 startvillkor 1-3 (Session 4, 2026-05-11) — nuqs + typecheck:tests + falsk-grön CI-fix
+- ← **NÄSTA:** K0åd-K0åf (Codex' "Direkt efter Fas 2"-fynd) eller K2 (TanStack Router skelett)
+- Trail: [`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`](tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md)
 
 *Kommande:*
 7. Fas 2.5 — Adapter-debt-städning
@@ -322,6 +329,7 @@ Fullständiga checklistor: [`docs/specs/KVALITETSDEFINITIONER-11-REACT.md`](docs
 2. **Mm Component Library** — komponentbiblioteket som bär framtida produkter (Passionslyftet, Maxat Event, kommande SaaS). Hooks, primitiver och komponenter byggda för återanvändning utan ändringar.
 
 Allt som byggs bedöms utifrån båda perspektiven:
+
 - Löser det Lottas behov? (produkt)
 - Kan det återanvändas i nästa produkt utan ändringar? (bibliotek)
 
@@ -383,9 +391,11 @@ npx @biomejs/biome check . 2>&1 | grep -E "^Found .* error" || echo "0 errors"
 Om träff > 0 fixa innan commit. Lokal `biome check` exit=0 är INTE garanti för CI-grön på alla strict-mode-regler — K3.2 trigrade `noNonNullAssertion` + `useExhaustiveDependencies` lokalt exit=0 → CI exit=1. Bekräftat empiriskt: efter aktivering har K3.1, K3.3, K4.1, K4.2, K4.3 alla varit CI-grön första försöket.
 
 Verifiera efter:
+
 ```bash
 npx @biomejs/biome check .
 ```
+
 Förvänta: 4 baseline-warnings (reduced-motion `!important` i `src/styles/base.css`) + 1 info (eller motsvarande projekt-baseline). Inga errors.
 
 ## Sessionsavslut
@@ -393,6 +403,7 @@ Förvänta: 4 baseline-warnings (reduced-motion `!important` i `src/styles/base.
 Se `marcus-system/WORKFLOW.md` sessionsavslut-sektion för transcript-disciplin. Transcripts sparas i `tasks/sessions/transcripts/`.
 
 När Marcus säger "Nu avslutar vi denna session":
+
 1. Gå igenom HELA sessionen — beslut, lärdomar, misstag, vad som inte fungerade
 2. Uppdatera `docs/BUILD-LOG.md`:
    - Ny fas-sektion med datum, commit-range, planerat vs faktiskt
@@ -416,6 +427,7 @@ När Marcus säger "Nu avslutar vi denna session":
 15. **Vid fas-avslut endast:** Kör `## Fas-avsluts-verifierings-rutin` (sektion nedan) — cross-doc grep-check att alla 5 styrande + 3 publika dokument säger samma sak.
 
 **Checklista:**
+
 - [ ] Stämmer alla statusmarkeringar med verkligheten?
 - [ ] `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad om sessionen har implications för icke-tekniska läsare (ny fas klar, scope-ändring, statusbyte)?
 - [ ] Finns beslut som bara lever i chatten men inte i dokumenten?
@@ -458,6 +470,7 @@ Exempel-format:
 ```
 
 Statusraden:
+
 - Är max 3-5 bullets (datum + kort outcome + ev. lessons-flag)
 - Innehåller ALDRIG full retrospektiv (det är K-sista-territory)
 - Innehåller länk-text "[Full retrospektiv: K-sista bake-in]" för signalering
@@ -469,12 +482,14 @@ kronologisk struktur per K1-skelett). Statusraderna ersätts av full text;
 de var navigations-stöd under sessionen.
 
 Detta ger Marcus:
+
 - Realtidsvisibility via `git log --oneline tasks/sessions/<sessionsdok>.md`
 - Inga content-duplikationer (statusrad → full bake-in är en utvidgning)
 - Bevarad K7-disciplin (mellan-K och K-sista är distinkta semantik-domäner)
 - Bevarad P3a-disciplin (Code äger sessionsdoket, ingen Chat-side-state)
 
 Anti-mönster:
+
 - Full retrospektiv-bake-in mellan-K (bryter K7)
 - Hoppa över statusrad (förlorar Marcus' visibility)
 - Statusrad som separat commit (skapar git-noise; läggs i K-fas-commits)
@@ -545,6 +560,7 @@ ls tasks/sessions/archive/<år>-<månad>/*.md | grep -c "<sessionsdok>"
 ### Form-tolerans-not (per K38-tillämpning 2026-05-13)
 
 Olika dokument har legitimt olika konventioner för "fas avslutad":
+
 - **byggplan.md, todo.md, v3, CLAUDE.md, README.md** använder typiskt `KLAR` eller `✅`
 - **BUILD-LOG.md** använder typiskt `KOMPLETT` (retrospektiv-stil)
 - **CHANGELOG.md** använder `## [X.Y.0] - <datum>`-rubrik (Keep-a-Changelog-konvention) — inte explicit "KLAR/KOMPLETT"-fras

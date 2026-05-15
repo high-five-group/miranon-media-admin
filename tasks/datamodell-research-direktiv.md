@@ -91,7 +91,7 @@ schema-ändringar).
 
 Inledning till ny Claude Chat-session:
 
-```
+```text
 Hej. Vi ska starta datamodell-research-projektet — forwards-look
 mot världsklass.
 

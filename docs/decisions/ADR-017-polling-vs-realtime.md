@@ -23,15 +23,19 @@ Per B1-beslutet (P1-sessionsdok Del 4): Supabase Realtime defer:as till **Fas E*
 **Fas 6d Hem-fliken implementerar hybrid polling-strategi:**
 
 ### 1. Polling-intervall: 60 sekunder
+
 TanStack Query `refetchInterval: 60_000` på `useHemQuery`-hook. Vid `document.hidden === true` pausas polling automatiskt (TanStack default-beteende).
 
 ### 2. Pull-to-refresh
+
 Touch-gesture: dra ner från top av Hem-fliken → manuell refetch. Implementerad med React Aria-pattern eller minimal custom touch-handler. Visuell feedback (laddningsindikator) per `prefers-reduced-motion`-respekt.
 
 ### 3. Visibility-trigger
+
 `document.visibilitychange` → om hidden→visible och senaste fetch > 30s: refetch omedelbart. Säkerställer att Lotta får fresh data när hen växlar tillbaka till appen från annat sammanhang (Gmail, kalender).
 
 ### 4. Stale-while-revalidate på alla read-EFs
+
 `staleTime: 30_000`, `gcTime: 5_60_000`. Vid inom-stale-period-render: cache returneras omedelbart, refetch i bakgrunden om stale.
 
 ### 5. Migrationsväg till Realtime (Fas E)
@@ -61,17 +65,20 @@ Vid Fas E-aktualisering, **ny ADR skrivs som superseder denna** (`Supersedes ADR
 ## Konsekvenser
 
 **Positiva:**
+
 - Fas 6d implementeras snabbt (0,5 session per estimat) — ingen pipeline-overhead.
 - TanStack Query handlar polling, visibility, stale-while-revalidate inbyggt — ingen custom kod för core-mönstret.
 - Migrationsvägen är tydligt dokumenterad — Fas E vet exakt vad som ska bytas ut.
 - Airtable-rate-limit hålls inom budget även med 10+ samtidiga sessioner (vilket inte händer i praktiken — Lotta är ensam användare).
 
 **Negativa:**
+
 - 0-60s latens för nya anmälningar kontra Realtime:s ~100ms. Mitigation: visibility-trigger + pull-to-refresh täcker majoriteten av Lottas reella refresh-tillfällen. Empirisk data i Fas 7 visar om 60s räcker.
 - Polling kostar API-anrop även när inget ändrats. Mitigation: Airtable-rate-limit långt inom budget; Supabase-anrop post-Fas E är obegränsade i Pro-tier.
 - Mer kod att rensa ut i Fas E (polling-config, pull-to-refresh-handler kan kvarhållas som fallback). Mitigation: rensning är 30-60 minuters arbete inom Fas E.
 
 **Verifiering (Fas 6d DoD):**
+
 - `useHemQuery` har `refetchInterval: 60_000` + `refetchIntervalInBackground: false`
 - Pull-to-refresh fungerar manuellt + Playwright-test grön
 - Visibility-trigger fungerar — `document.dispatchEvent(new Event('visibilitychange'))` triggar refetch om stale > 30s

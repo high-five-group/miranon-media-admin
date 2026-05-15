@@ -28,12 +28,12 @@ Prompten till Fas 0 specificerade redan Biome och markerade dependencien med `[G
 
 ## Alternativ som övervägdes
 
-**1. ESLint + Stylelint + Prettier (branschens tidigare standard)**
+### 1. ESLint + Stylelint + Prettier (branschens tidigare standard)
 
 - **Fördelar:** Ekosystem med tusentals plugins, stabilitet, alla kan det.
 - **Nackdelar:** Tre separata verktyg, tre configs, tre update-cadenser, 65× långsammare lint-körningar (Biome är skriven i Rust, ESLint i JavaScript — se `docs/research/beyond-best-practices-2026.md`). ESLint 9:s flat-config-migration ligger i limbo för många plugins. Stylelints Tailwind-stöd är begränsat.
 
-**2. Rolldown/Oxlint (Rust-baserad lint, Rolldown-teamet)**
+### 2. Rolldown/Oxlint (Rust-baserad lint, Rolldown-teamet)
 
 - **Fördelar:** Ännu snabbare än Biome på vissa benchmarks.
 - **Nackdelar:** Inte mogen — 2026-04 är Oxlint fortfarande i beta, ingen CSS-linting, ingen format-support.

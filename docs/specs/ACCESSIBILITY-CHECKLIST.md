@@ -30,12 +30,13 @@ Använd checklistan vid varje ny vy, komponent eller leveranssteg.
 | Browser-zoom & textförstoring | CSS rem-baserad sizing + flexlayout | §4 |
 
 **Referenser:**
-- WCAG 2.2 snabbguide: https://www.w3.org/WAI/WCAG22/quickref/?levels=aa
-- ARIA Authoring Practices Guide: https://www.w3.org/WAI/ARIA/apg/
-- React Aria docs: https://react-spectrum.adobe.com/react-aria/
-- React Aria Components: https://react-spectrum.adobe.com/react-aria/components.html
-- DIGG (svensk myndighet för digital förvaltning): https://www.digg.se/webbriktlinjer
-- autocomplete-värden för formulärfält (WCAG 1.3.5): https://www.w3.org/TR/WCAG22/#input-purposes
+
+- WCAG 2.2 snabbguide: <https://www.w3.org/WAI/WCAG22/quickref/?levels=aa>
+- ARIA Authoring Practices Guide: <https://www.w3.org/WAI/ARIA/apg/>
+- React Aria docs: <https://react-spectrum.adobe.com/react-aria/>
+- React Aria Components: <https://react-spectrum.adobe.com/react-aria/components.html>
+- DIGG (svensk myndighet för digital förvaltning): <https://www.digg.se/webbriktlinjer>
+- autocomplete-värden för formulärfält (WCAG 1.3.5): <https://www.w3.org/TR/WCAG22/#input-purposes>
 
 ---
 
@@ -291,6 +292,7 @@ test.describe('EventList — a11y', () => {
 ### Output i `tasks/todo.md`
 
 Varje a11y-violation som inte fixas direkt → todo-post med:
+
 - Vy + komponent
 - axe-rule-ID (t.ex. `color-contrast`)
 - Impact-nivå
@@ -331,6 +333,7 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, title, message }) {
 ```
 
 **A11y-acceptance:**
+
 - [ ] Fokus flyttas till modalen vid open
 - [ ] Fokus är trap:ad inom modalen (Tab cyklar)
 - [ ] Escape stänger modalen
@@ -391,6 +394,7 @@ function StatusFilter({ value, onChange }) {
 ```
 
 **A11y-acceptance:**
+
 - [ ] Roll: `combobox` på trigger-button
 - [ ] `aria-expanded` togglas vid open/close
 - [ ] `aria-controls` pekar på listbox
@@ -443,6 +447,7 @@ function MenuSection({ id, title, children }) {
 ```
 
 **A11y-acceptance:**
+
 - [ ] Trigger har `aria-expanded` synkad med open/closed-state
 - [ ] Trigger har `aria-controls` pekande på panel
 - [ ] Enter/Space togglar
@@ -491,6 +496,7 @@ function RegistrationActions({ registration, onAction }) {
 ```
 
 **A11y-acceptance:**
+
 - [ ] Trigger har `aria-haspopup="menu"` + `aria-expanded`
 - [ ] Trigger har descriptive `aria-label` (inte bara "⋯")
 - [ ] Pil-ner / Space / Enter öppnar menyn
@@ -538,6 +544,7 @@ function PersonSearch({ persons, onSelect }) {
 ```
 
 **A11y-acceptance:**
+
 - [ ] Input har `role="combobox"` + `aria-expanded` + `aria-controls`
 - [ ] Listbox har `role="listbox"`
 - [ ] Resultat-räkning annonseras via `aria-live` ("23 träffar")
@@ -570,7 +577,7 @@ function PersonSearch({ persons, onSelect }) {
 | Uppdatera `react-aria-components` + relaterade paket | Vid relevanta releaser, alltid via PR med smoke-test |
 | Dokumentera React Aria-version i package.json | Alltid |
 
-Changelog: https://github.com/adobe/react-spectrum/blob/main/packages/react-aria-components/CHANGELOG.md
+Changelog: <https://github.com/adobe/react-spectrum/blob/main/packages/react-aria-components/CHANGELOG.md>
 
 ---
 
@@ -578,7 +585,7 @@ Changelog: https://github.com/adobe/react-spectrum/blob/main/packages/react-aria
 
 Kopiera och använd vid kodgenerering:
 
-```
+```text
 VIKTIGT: Läs ACCESSIBILITY-CHECKLIST.md innan du genererar nya komponenter eller vyer.
 Följ §6 (React Aria-mönsterbibliotek) för Overlay, Listbox, Disclosure, MenuTrigger
 och ComboBox. Följ ARIA-UPGRADE.md för ARIA 1.3-attribut per komponent.

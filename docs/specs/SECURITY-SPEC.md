@@ -24,7 +24,7 @@ nonce-baserad CSP tillåts bara skript som servern explicit markerat.
 
 Exakt CSP-header för miranon-media-admin:
 
-```
+```text
 Content-Security-Policy:
   default-src 'self';
   script-src 'nonce-{RANDOM}' 'strict-dynamic';
@@ -40,6 +40,7 @@ Content-Security-Policy:
 ```
 
 **Förklaring:**
+
 - `script-src 'nonce-{RANDOM}' 'strict-dynamic'` — bara skript med korrekt nonce körs. `strict-dynamic` tillåter dynamiskt laddade skript från godkända skript (t.ex. chunks från Vite).
 - `connect-src` tillåter Supabase-anrop (REST + Realtime WebSocket).
 - `object-src 'none'` — blockerar Flash/Java-plugins (klassisk XSS-vektor).
@@ -112,7 +113,7 @@ export default defineConfig({
 
 `public/_headers`:
 
-```
+```text
 /*
   Content-Security-Policy: default-src 'self'; script-src 'nonce-{RANDOM}' 'strict-dynamic'; style-src 'nonce-{RANDOM}' 'self'; img-src 'self' data: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
 ```
@@ -148,7 +149,7 @@ export default function middleware(request: Request) {
 
 ### Bakåtkompatibilitet — 3-stegs fallback
 
-```
+```text
 Content-Security-Policy:
   script-src 'nonce-{RANDOM}' 'strict-dynamic' https: 'unsafe-inline';
 ```
@@ -215,7 +216,7 @@ if (window.trustedTypes) {
 
 Lägg till i CSP-headern:
 
-```
+```text
 require-trusted-types-for 'script';
 trusted-types dompurify default;
 ```
@@ -252,7 +253,7 @@ Supabase-resurser.
 
 ### Vercel `_headers`-fil (komplett)
 
-```
+```text
 /*
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
@@ -308,6 +309,7 @@ Kör `securityheaders.com` mot produktions-URL:en. Mål: **A+**-betyg.
 #### 3. Socket.dev för beteendeanalys
 
 Installera Socket.dev GitHub App på repot. Den analyserar:
+
 - Nya beroenden vid PR
 - Typosquatting
 - Obfuskerad kod
@@ -342,6 +344,7 @@ varje override med kommentar i `docs/SECURITY-OVERRIDES.md`.
 
 **Strategi:** Maximalt 30 direkta beroenden i `dependencies`. Varje nytt paket
 kräver motivering:
+
 - Hur många GitHub-stjärnor? (>1000)
 - Senaste commit? (<3 månader)
 - Hur många maintainers? (>1)
@@ -349,7 +352,7 @@ kräver motivering:
 
 **Nuvarande kärnberoenden (målbild):**
 
-```
+```text
 react, react-dom
 @tanstack/react-router, @tanstack/react-query, @tanstack/react-table
 react-aria-components
@@ -362,6 +365,7 @@ zod, @t3-oss/env-core
 #### 7. Granska alla nya beroenden innan installation
 
 Innan `npm install <nytt-paket>`:
+
 1. Kontrollera GitHub-repot: stjärnor, senaste commit, öppna issues
 2. Kör `npx socket-npm info <paket>` (om Socket installerat)
 3. Kontrollera `npm audit` efter installation
@@ -518,6 +522,7 @@ Klient ser `{error: 'Internal error', requestId}` för 5xx. Server-loggen har fu
 För säkerhetskritiska transformationer (eskapering, parsing, klassning) ska det finnas ett atomärt round-trip-test som bevisar att `transform → inverse` återger exakt input. Skyddar mot hela klasser av attacker, inte bara de vi tänkt på.
 
 Tillämpat i:
+
 - `escapeFormulaValue` (M5) — escape → unescape returnerar exakt input för alla edge-cases (`"`, `'`, `\`, `(`, `)`, `,`, nyrad, kontrolltecken).
 - `classify401Body` (M2) — atomär status + body-verifiering i tester. Future-bug-skydd: 200 med felmeddelande kastar.
 
@@ -597,7 +602,7 @@ function SafeHTML({ html }: { html: string }) {
 
 ### Supabase Auth — sessionflöde
 
-```
+```text
 Lotta öppnar appen
   |
   v
@@ -664,6 +669,7 @@ Supabase använder PKCE (Proof Key for Code Exchange) automatiskt för alla
 OAuth-flöden. Detta förhindrar authorization code interception-attacker.
 
 **Vad PKCE gör:**
+
 1. Klienten genererar en `code_verifier` (slumpsträng) och en `code_challenge` (SHA-256-hash).
 2. `code_challenge` skickas med i auth-request.
 3. Servern returnerar en authorization code.
@@ -676,6 +682,7 @@ krävs för `@supabase/supabase-js` v2.
 ### Token refresh
 
 Supabase refreshar JWT automatiskt när:
+
 - `supabase.auth.getSession()` anropas och JWT är utgången
 - `onAuthStateChange` triggas med event `TOKEN_REFRESHED`
 
@@ -746,6 +753,7 @@ export function clearCachedAuth() {
 ```
 
 **Beteende när TTL går ut offline:**
+
 1. Appen visar senast cachad data (read-only).
 2. Mutationer köas lokalt (Background Sync).
 3. En diskret banner visas: "Du är offline. Senast synkad: 08:14."

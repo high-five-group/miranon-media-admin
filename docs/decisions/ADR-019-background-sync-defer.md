@@ -59,17 +59,20 @@ Background Sync prioriteras till Fas 8-implementation när **endera av**:
 ## Konsekvenser
 
 **Positiva:**
+
 - Fas 7-scope hålls inom 3-session-budget med kvalitet på behållet scope.
 - Beslutet är *medvetet defer:at*, inte glömt — denna ADR + byggplan.md Fas 8-rad gör det synligt för framtida läsare.
 - Trigger-kriterier ger *empirisk-driven* aktualisering — implementation matchar reellt behov, inte hypotetiskt.
 - Fas 7-instrumentering är förberedande arbete för Fas 8 — ingen tid förlorad om/när Background Sync prioriteras.
 
 **Negativa:**
+
 - Mellan Fas 7-deploy och eventuell Fas 8-aktualisering har Lotta ingen offline-mutationskö. Mitigation: TanStack Query offline-config (Fas 5) ger optimistic UI som rollbackar vid fail — användaren ser felet, kan retry:a manuellt. Inte ideellt men acceptabelt för ~5-20 mutationer/dag.
 - Risk att Fas 8 aldrig aktualiseras (Lotta klagar inte tillräckligt högt). Mitigation: trigger 1 (5+ offline-incidenter) är empirisk, inte beroende på rapportering.
 - Risk att Passionslyftet/Maxat Event behöver Background Sync först → Mm Component Library tvingas implementera scope före Miranon Media Admin har empirisk data. Mitigation: trigger 4 hanterar det fallet — scope flyttas då till Mm Library.
 
 **Verifiering vid Fas 7-start:**
+
 - Denna ADR läses som första-grej i Fas 7-sessionsdok
 - byggplan.md Fas 7 scope-listan har INTE Background Sync (verifierat med `grep -i 'background sync' docs/byggplan.md` ger endast träffar i Fas 8-sektion)
 - Sentry/Faro-config inkluderar `navigator.onLine`-instrumentering (Fas 7 DoD-tillägg)

@@ -20,6 +20,7 @@ Sessioner körs enligt mönstret etablerat i `marcus-system/CLAUDE.md`:
 LÄS → RAPPORTERA → PLANERA → IMPLEMENTERA → VERIFIERA → DOKUMENTERA + COMMITTA → EFTER
 
 Varje session äger ett sessionsdokument i `tasks/sessions/`.
+
 - **Chat skapar skelett** vid sessionsstart (K1 i klunge-mönstret)
 - **Chat bakar in retrospektiv** vid sessionsavslut (sista K)
 - **Code rör inte sessionsdokumentet** under arbete (P3a-mönstret, etablerat 2026-05-05)
@@ -76,9 +77,10 @@ push:
 | Verktyg | Install (macOS) | Kör |
 |---|---|---|
 | yamllint | `brew install yamllint` *eller* `pipx install yamllint` | `yamllint .github/` |
+| markdownlint-cli2 | `npm install` (devDependency) *eller* `brew install markdownlint-cli2` | `npx markdownlint-cli2` |
 
-Tilläggsverktyg läggs till här när Session 6.6 fortsätter (markdownlint-cli2,
-Vale, scripted-checklist-check) per ADR-030. typos övervägdes men avvisades
+Tilläggsverktyg läggs till här när Session 6.6 fortsätter (Vale,
+scripted-checklist-check) per ADR-030. typos övervägdes men avvisades
 per K3-baseline 2026-05-14 (tool-uppgift-mismatch; stavnings-substans
 flyttades till Vale).
 

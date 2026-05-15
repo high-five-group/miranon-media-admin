@@ -32,6 +32,7 @@ Skillnaden mot conversion-plan: byggplan utgår från **etablerad arkitektur pos
 ### Läsanvisning
 
 Per fas finns en fas-prompt med åtta sektioner:
+
 - **Mål** — kort syfte (1–2 meningar)
 - **Scope** — vad fasen ska bygga
 - **Inte scope** — medvetet exkluderat (refererar var det bygges istället)
@@ -144,6 +145,7 @@ M4-principen från Fas A: deploya inte EF i förskott. Varje deploy ska följa e
 **Output:** 13 domänfiler portade från Vue, Zod-scheman, `fetchWithRetry`-utility, AirtableAdapter-skelett.
 
 **Skuld noterad — flyttas till Fas 2.5 (omdefinierar inte "klar" retroaktivt):**
+
 - `src/domain/types/Status.ts` — out-of-sync mot `data-model.md` (Status.ts har 4 värden, data-model 6)
 - `AirtableAdapter` — 9 odeployade EF-metoder, varje TODO-markerad
 - Zod — finns men används inte som runtime-validering vid alla externa datagränser (per ADR-005, defer till Fas 2/3)
@@ -167,6 +169,7 @@ M4-principen från Fas A: deploya inte EF i förskott. Varje deploy ska följa e
 ✅ Slutförd 2026-05-13 över Sessions 4 + 5 + 5b. Alla 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression-suite (K4.3 Test 1-6).
 
 **Output:**
+
 - Defense-in-depth tre-skikt-arkitektur: skikt 1 (klient-guard K3.2/K3.3) + skikt 2 (AuthError throw K3.4) + skikt 3 (server requireUser, Fas A M2 oförändrad)
 - TanStack Router file-based skelett med pathless `_authenticated`-layout
 - AuthProvider med Supabase-integration (InnerApp-pattern + router-extract per Kandidat 29)
@@ -175,6 +178,7 @@ M4-principen från Fas A: deploya inte EF i förskott. Varje deploy ska följa e
 - 3 nya ADR:er: ADR-026 (Runtime-validering med Zod .parse()), ADR-027 (KVALITETSDEFINITIONER stack-skifte Vue→React), ADR-028 (Supply chain incident-respons-protokoll, K0åg-respons)
 
 **Korsreferens:**
+
 - Sessionsdok-trail: [`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`](../tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md)
 - Commits: `13cdf86`..K5.9-trail (samtliga K0+K2+K3+K3.4+K3.5+K4+K5-commits)
 - BUILD-LOG.md "Session 5+5b"-sektion för retrospektiv
@@ -186,9 +190,11 @@ M4-principen från Fas A: deploya inte EF i förskott. Varje deploy ska följa e
 #### Ursprunglig Fas 2-prompt (bevaras för historisk spårbarhet)
 
 #### Mål
+
 Etablera fil-baserad routing (TanStack Router) + Supabase-autentisering + URL-state-hantering (nuqs) som grund för alla efterföljande vyer.
 
 #### Scope
+
 - TanStack Router file-based med `src/routes/`-struktur
 - `__root.tsx` med AuthProvider + ErrorBoundary + Suspense
 - Skyddade routes via `beforeLoad`-guard mot Supabase-session
@@ -197,18 +203,22 @@ Etablera fil-baserad routing (TanStack Router) + Supabase-autentisering + URL-st
 - Devtools för Router + Query (dev-only)
 
 #### Inte scope
+
 - Vy-implementation (Hem, Event, etc.) — Fas 6
 - Tab bar / app-shell — Fas 5
 - Optimistic mutations — Fas 5.5
 
 #### Beroenden
+
 - Fas 1 (domäntransplant) — Supabase-klient redan etablerad
 - Fas A (auth-mönster) — `AuthContext | Response` etablerat på server
 
 #### Estimat
+
 2 sessioner.
 
 #### Filer som skapas/uppdateras
+
 - `src/routes/__root.tsx`
 - `src/routes/index.tsx` (login-redirect-stub)
 - `src/routes/login.tsx`
@@ -218,6 +228,7 @@ Etablera fil-baserad routing (TanStack Router) + Supabase-autentisering + URL-st
 - `tsr.config.json`
 
 #### DoD
+
 1. `npm run dev` ger fungerande login → redirect till `/hem` (placeholder-route)
 2. Logout klart — session rensas, redirect till `/login`
 3. Skyddad route utan session → automatisk redirect till `/login`
@@ -228,9 +239,11 @@ Etablera fil-baserad routing (TanStack Router) + Supabase-autentisering + URL-st
 8. `[GA]` Error boundary på root fångar router-fel och visar fallback med "ladda om"-knapp
 
 #### ADR-krav
+
 Inget nytt ADR krävs. URL-state-strategin följer befintlig `URL-STATE-SPEC.md`.
 
 #### Korsreferens
+
 - `STATE-STRATEGY.md` §1, §3 (server/UI/URL-state-uppdelningen)
 - `URL-STATE-SPEC.md`
 
@@ -239,9 +252,11 @@ Inget nytt ADR krävs. URL-state-strategin följer befintlig `URL-STATE-SPEC.md`
 ### Fas 2.5 — Schema-kontrakt-sync
 
 #### Mål
+
 Synka kodens domäntyper mot `data-model.md` (källa) + införa Zod-validering vid alla externa datagränser + klassa adapter-debt utan att deploya EF i förskott.
 
 #### Scope
+
 - `Status.ts` skrivs om: 4 → 6 statusvärden för Anmälningar (mot `data-model.md` 2026-04-26)
 - Övriga enums i `src/domain/types/` granskade mot `data-model.md`
 - Zod-scheman aktiveras som runtime-validering i `AirtableAdapter` läs-metoderna
@@ -249,24 +264,29 @@ Synka kodens domäntyper mot `data-model.md` (källa) + införa Zod-validering v
 - Stub-metoder som klassas som död kod tas bort
 
 #### Inte scope
+
 - **Inga nya EF-deploys.** Per A5-beslutet: 0 EF deployas i denna fas.
 - Field-allowlists-implementation — sker per-vy i Fas 5.5/6
 - Refaktorering av AirtableAdapter:s read-metoder utöver Zod-aktivering
 
 #### Beroenden
+
 - Fas 1 (Status.ts + Zod-scheman finns)
 - Fas A (operations-API + INVARIANT-mönster låsta)
 
 #### Estimat
+
 1 session.
 
 #### Filer som skapas/uppdateras
+
 - `src/domain/types/Status.ts` (omskrivs)
 - `src/domain/types/*.ts` (granskas, ev. uppdateras)
 - `src/data/adapters/AirtableAdapter.ts` (Zod aktiveras, 9 metoder klassade i JSDoc)
 - `src/data/schemas/*.ts` (Zod-scheman, ev. justering)
 
 #### DoD
+
 1. `Status.ts` har 6 värden för RegistrationStatus matchande `docs/reference/data-model.md:121-130` (verbatim svenska Airtable-värden, pre-A-track-läget per `docs/analysis/Code-verification-of-codex-analysis.md` Tillägg Fråga 1)
 2. `tsc --noEmit` 0 fel — alla konsumenter av Status uppdaterade
 3. Zod-scheman validerar runtime vid varje read i AirtableAdapter — fångar shape-drift
@@ -276,9 +296,11 @@ Synka kodens domäntyper mot `data-model.md` (källa) + införa Zod-validering v
 7. Biome `0 fel`
 
 #### ADR-krav
+
 Inget nytt ADR. A5-beslutet är dokumenterat i P1-sessionsdok Del 3 — kan refereras därifrån.
 
 #### Korsreferens
+
 - `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 3 (A5-klassningstabell)
 - `docs/reference/data-model.md` (källa för status-typer per dm-110)
 
@@ -287,9 +309,11 @@ Inget nytt ADR. A5-beslutet är dokumenterat i P1-sessionsdok Del 3 — kan refe
 ### Fas 3 — UI-primitiver
 
 #### Mål
+
 Bygga den minimala uppsättning UI-primitiver som Fas 5 + 5.5 + 6 behöver: Button, Input, Select, MessageBox, Modal, Dialog. Alla med React Aria-bas + CVA-variantsystem + ARIA 1.3-attribut.
 
 #### Scope
+
 - 6 primitiver enligt ovan, med varianter (size: sm/md/lg, intent: primary/secondary/danger/ghost)
 - CVA-konfiguration per primitiv
 - React Aria-hooks som bas (`useButton`, `useTextField`, etc.) — ingen native-element-baserad implementation
@@ -297,18 +321,22 @@ Bygga den minimala uppsättning UI-primitiver som Fas 5 + 5.5 + 6 behöver: Butt
 - 11/11/11-verifiering per komponent (Tillgänglighet alltid 11)
 
 #### Inte scope
+
 - Komplex komponent-komposition (DataTable, Calendar) — Fas 7 vid behov
 - Toast/Notification — Fas 5 (app-shell-leverans)
 - Form-validering-orchestrering — Fas 6 per-vy
 
 #### Beroenden
+
 - Fas 0 (3-lagers tokens etablerade)
 - Fas 3.5 — **kvalitetsgranskningsbasen** etableras innan Fas 3:s DoD kan stämmas av (men Fas 3 kan börja byggas parallellt med Fas 3.5:s test-infra-setup)
 
 #### Estimat
+
 2 sessioner.
 
 #### Filer som skapas/uppdateras
+
 - `src/components/primitives/Button.tsx`
 - `src/components/primitives/Input.tsx`
 - `src/components/primitives/Select.tsx`
@@ -319,6 +347,7 @@ Bygga den minimala uppsättning UI-primitiver som Fas 5 + 5.5 + 6 behöver: Butt
 - Demo-route eller Storybook-config
 
 #### DoD
+
 1. Varje primitiv passerar 11/11/11 mot `KVALITETSDEFINITIONER-11-REACT.md`:
    - Tillgänglighet: axe-core 0 violations + manuell tangentbordstest + skärmläsartest
    - Teknik: TypeScript strikt, Biome 0 fel, < 150 rader, single responsibility
@@ -329,9 +358,11 @@ Bygga den minimala uppsättning UI-primitiver som Fas 5 + 5.5 + 6 behöver: Butt
 5. JSDoc per primitiv med usage-exempel
 
 #### ADR-krav
+
 Inget nytt ADR.
 
 #### Korsreferens
+
 - `ACCESSIBILITY-CHECKLIST.md` (omskriven 2026-05-04 — React Aria + WCAG 2.2 AA)
 - `ARIA-UPGRADE.md` (per-komponent ARIA 1.3-detaljer)
 - `DESIGN-SYSTEM-SPEC.md`
@@ -341,9 +372,11 @@ Inget nytt ADR.
 ### Fas 3.5 — A11y-baseline (NY EGEN FAS)
 
 #### Mål
+
 Etablera test-infrastruktur (axe + Playwright a11y) + 5 React Aria-mönster som Fas 6 kommer att konsumera. ACCESSIBILITY-CHECKLIST omskriven i P2 — denna fas levererar test-koden + mönsterbiblioteket som checklisten förutsätter.
 
 #### Scope
+
 - `axe-core` + `@axe-core/playwright` installerade
 - Playwright a11y-runner-config (separat eller integrerad i `playwright.config.ts`)
 - Fixture-mönster: `renderWithA11y(component)` eller motsvarande
@@ -357,17 +390,21 @@ Etablera test-infrastruktur (axe + Playwright a11y) + 5 React Aria-mönster som 
 - Per pattern: kodexempel + test-mall + a11y-acceptance-criteria
 
 #### Inte scope
+
 - Komponentimplementation per primitiv — Fas 3
 - A11y-fixar i befintlig kod — Fas 7 vid behov
 - WCAG 2.2 AAA-nivå — målet är AA
 
 #### Beroenden
+
 Ingen mot tidigare faser. Blockerar Fas 3:s DoD (Fas 3 kan inte kvalitetsgranskas mot React Aria utan testkoden).
 
 #### Estimat
+
 1 session.
 
 #### Filer som skapas/uppdateras
+
 - `playwright.config.ts` (a11y-runner-config tillagd)
 - `tests/a11y/fixtures.ts` (renderWithA11y + fixture-mönster)
 - `tests/a11y/patterns/Overlay.spec.ts`
@@ -379,6 +416,7 @@ Ingen mot tidigare faser. Blockerar Fas 3:s DoD (Fas 3 kan inte kvalitetsgranska
 - `package.json` (`axe-core`, `@axe-core/playwright`)
 
 #### DoD
+
 1. `npm run test:a11y` kör Playwright a11y-runner — 0 violations på alla 5 patterns
 2. CI failar vid axe-violation (verifiera med medvetet brytande commit på branch)
 3. Fixture-mönstret återanvänds i Fas 3:s primitiv-tester
@@ -387,9 +425,11 @@ Ingen mot tidigare faser. Blockerar Fas 3:s DoD (Fas 3 kan inte kvalitetsgranska
 6. "A11y-baseline godkänd"-gate dokumenterad i `docs/BUILD-LOG.md` innan Fas 6 startar
 
 #### ADR-krav
+
 **ADR-020 — Fas 3.5 = egen fas (P2 A1-utfall)**: dokumenterar trigger-tabellen från P1 + utfallet från P2 (rad 2 + rad 3 båda JA).
 
 #### Korsreferens
+
 - `ACCESSIBILITY-CHECKLIST.md` (omskriven i P2)
 - `tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md` Del 5 (A1-trigger-rapport)
 
@@ -398,9 +438,11 @@ Ingen mot tidigare faser. Blockerar Fas 3:s DoD (Fas 3 kan inte kvalitetsgranska
 ### Fas 5 — App-shell (förenklad)
 
 #### Mål
+
 Minimal app-shell som tål mobil-först-användning (Lotta på telefon i mötet) + tab bar + offline-foundation. **Förenklad** per B3-beslutet — ej full app-shell-leverans.
 
 #### Scope
+
 - App-shell layout: header (minimal) + content-area (max-width 600px) + bottom tab bar
 - Tab bar: 4 flikar, fixed bottom, ARIA-tabs-mönster
 - Skip-to-content-länk + route announcer (för skärmläsare)
@@ -411,20 +453,24 @@ Minimal app-shell som tål mobil-först-användning (Lotta på telefon i mötet)
 - TanStack Query offline-config (`networkMode: 'offlineFirst'` för läs, `'online'` för skriv)
 
 #### Inte scope (flyttat till Fas 7 per B3)
+
 - View Transitions API
 - Speculation Rules
 - web-vitals-mätning
 - Widget-error-boundary (mer granulär än sektion-nivå)
 
 #### Beroenden
+
 - Fas 2 (routing)
 - Fas 3 (Button, MessageBox för error-fallbacks)
 - Fas 3.5 (a11y-test för tab bar och skip-link)
 
 #### Estimat
+
 1 session (förenklat från 1–2 i conversion-plan).
 
 #### Filer som skapas/uppdateras
+
 - `src/routes/__root.tsx` (utökas med shell)
 - `src/components/AppShell/AppShell.tsx`
 - `src/components/AppShell/TabBar.tsx`
@@ -437,6 +483,7 @@ Minimal app-shell som tål mobil-först-användning (Lotta på telefon i mötet)
 - `src/data/queryClient.ts` (offline-config)
 
 #### DoD
+
 1. `/hem` placeholder visar shell + tab bar med 4 flikar (Hem/Event/Personer/Mer)
 2. Skip-to-content fungerar (Tab → Enter hoppar till `<main>`)
 3. Route-changes annonseras till skärmläsare (verifierat med VoiceOver eller NVDA)
@@ -449,9 +496,11 @@ Minimal app-shell som tål mobil-först-användning (Lotta på telefon i mötet)
 10. axe-core 0 violations på shell
 
 #### ADR-krav
+
 **ADR-018 — Fas 5-förenklingen** (per B3): dokumenterar vilka [GA]-tillägg som flyttas till Fas 7 + motiv.
 
 #### Korsreferens
+
 - `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 5 (B3-beslutet)
 
 ---
@@ -459,9 +508,11 @@ Minimal app-shell som tål mobil-först-användning (Lotta på telefon i mötet)
 ### Fas 5.5 — Vertikal write-slice
 
 #### Mål
+
 Etablera mutation-mönstret (TanStack `useMutation` + optimistic UI + operations-baserat API) genom en minimal vertikal slice: "markera anmälan som betald" via befintlig `update-record` EF med ny `operationKey`. Sliceen blir mall för Fas 6:s mutationer.
 
 #### Scope
+
 - Minimal Event-detaljvy med Betalning-flik
 - Anmälda-lista med betalning-status + "Markera som betald"-knapp
 - Mutation: `mark-registration-paid` (eller motsvarande operationKey, finslipas vid sessionsstart) via `update-record` EF
@@ -474,20 +525,24 @@ Etablera mutation-mönstret (TanStack `useMutation` + optimistic UI + operations
 - Fas A:s aktiveringsguides 5 steg följs (operationKey → allowlist → test → UI → integration)
 
 #### Inte scope
+
 - **Inga nya EF-deploys.** Använder befintlig `update-record`.
 - Andra mutationer (närvaro, mail) — Fas 6
 - Realtime-updates av anmälda-listan — polling (B1) istället, implementeras i Fas 6d
 
 #### Beroenden
+
 - Fas 5 (app-shell + tab bar)
 - Fas 3 (Button, MessageBox)
 - Fas 2.5 (operations-API och Status.ts uppdaterade)
 - Fas 3.5 (a11y-test för knapp + status-flip-announcement)
 
 #### Estimat
+
 2 sessioner.
 
 #### Filer som skapas/uppdateras
+
 - `src/routes/event/$eventId/betalning.tsx` (ny route)
 - `src/components/registrations/MarkPaidButton.tsx`
 - `src/data/mutations/markRegistrationPaid.ts`
@@ -496,6 +551,7 @@ Etablera mutation-mönstret (TanStack `useMutation` + optimistic UI + operations
 - `tests/api/markPaid.spec.ts` (deny/allow på server-nivå)
 
 #### DoD
+
 1. Manuellt: ladda Event-detalj/Betalning → klicka "Markera som betald" → status flippar omedelbart (optimistic) → rollback fungerar vid simulerat fel
 2. Server: deny-test 1 — försök ändra `Anteckningar`-fält via `mark-registration-paid` → 403
 3. Server: deny-test 2 — anonym användare → 401
@@ -509,9 +565,11 @@ Etablera mutation-mönstret (TanStack `useMutation` + optimistic UI + operations
 11. ADR-016 (TanStack optimistic mutation-mönster) skriven
 
 #### ADR-krav
+
 **ADR-016 — TanStack optimistic mutation-mönster med operations-baserat API** (per A2 + dependency på Fas A M4): dokumenterar `mutationFn` med `executeOperation({operationKey, recordId, fields})` + `onMutate`-rollback-pattern + cache-invalidation-strategy. Skrivs i Fas 5.5 som mall.
 
 #### Korsreferens
+
 - `STATE-STRATEGY.md` §4 (Optimistisk UI), §8 (Operations-baserat write-API)
 - `SECURITY-SPEC.md` §6.1 (operations-registret)
 - `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 4 (A2-beslutet)
@@ -521,6 +579,7 @@ Etablera mutation-mönstret (TanStack `useMutation` + optimistic UI + operations
 ### Fas 6 — Hem + Event + Personer + Mer (strangler-fig)
 
 #### Mål
+
 Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamodell-research/07-migration-plan.md` §A2: Persons-domän → Events-domän → Registrations + Väntelista → Hem-aggregering → Mer (villkorlig). Hem byggs SIST eftersom den aggregerar de tre andra.
 
 #### Sub-fas-allokering
@@ -536,6 +595,7 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamo
 **Total: 3,5 sessioner.**
 
 #### Scope (per sub-fas)
+
 - Domän-vy enligt sub-fas-tabell
 - Mutationer registreras i `field-allowlists.ts`
 - 1 deny-test + 1 allow-test per ny operationKey
@@ -543,11 +603,13 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamo
 - TanStack Query med stale-time + cache-time per vy
 
 #### Inte scope (per sub-fas)
+
 - Polling/Realtime utöver 6d Hem (per B1: hybrid polling 60s + pull-to-refresh; Realtime defer:as till Fas E)
 - Närvaro-Background-Sync — defer:ad till Fas 8 per B2
 - xAPI-aktivitetslogg — Fas 6.5
 
 #### Beroenden
+
 - Fas 5 + Fas 5.5 (mutation-mönstret etablerat)
 - Fas 3 (UI-primitiver)
 - Fas 3.5 (a11y-baseline)
@@ -555,23 +617,27 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamo
 - Inom Fas 6: 6a → 6b → 6c är hård kedja; 6d kräver att 6a + 6b + 6c levererat data-EF:er; 6e är fristående och kan defer:as
 
 #### Estimat
+
 3,5 sessioner totalt, sub-fördelat enligt tabell.
 
 #### Filer som skapas/uppdateras
 
 **6a (Persons):**
+
 - `src/routes/personer/index.tsx`, `src/routes/personer/$personId.tsx`
 - `supabase/functions/get-person/index.ts` (deploy)
 - `field-allowlists.ts` (utvidgas)
 - `tests/e2e/personer.spec.ts`
 
 **6b (Events):**
+
 - `src/routes/event/index.tsx`, `src/routes/event/$eventId/info.tsx`, `src/routes/event/$eventId/narvaro.tsx`
 - `supabase/functions/get-event/index.ts`, `supabase/functions/get-attendance/index.ts` (deploy)
 - `field-allowlists.ts` (utvidgas)
 - `tests/e2e/event.spec.ts`
 
 **6c (Registrations + Väntelista):**
+
 - `src/routes/event/$eventId/anmalda.tsx`
 - `src/routes/mer/vantelista.tsx`
 - `supabase/functions/create-registration/index.ts` (deploy med idempotency)
@@ -580,18 +646,21 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamo
 - `tests/e2e/registrations.spec.ts`
 
 **6d (Hem):**
+
 - `src/routes/hem.tsx`
 - `src/components/hem/Greeting.tsx`, `NyaAnmalningar.tsx`, `InfoCards.tsx`, `CTA.tsx`
 - `src/data/queries/usePollingQuery.ts` (60s + pull-to-refresh + visibility-trigger)
 - `tests/e2e/hem.spec.ts`
 
 **6e (Mer):**
+
 - `src/routes/mer/index.tsx`
 - Ev. `src/routes/mer/mail.tsx`, `src/routes/mer/leads.tsx`
 - Ev. `supabase/functions/send-email/index.ts` (deploy med direct-Resend-ADR)
 - `tests/e2e/mer.spec.ts`
 
 #### DoD (per sub-fas)
+
 1. Vyer passerar 11/10/10 mot `KVALITETSDEFINITIONER-11-REACT.md` (Tillgänglighet 11, Teknik 10, Återanvändbarhet 10 — vyer är produktspecifika så Återanvändbarhet/Teknik kan acceptera produktbundna val)
 2. Vy renderar mot live-data (eller Airtable-mockad fixture i CI)
 3. Mutation registrerad i `field-allowlists.ts` med 1 deny + 1 allow-test grön
@@ -601,11 +670,13 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamo
 7. TanStack Query cache + invalidation fungerar (verifiera med devtools)
 
 #### ADR-krav (Fas 6)
+
 - **ADR-014 — `createRegistration`-idempotency** (per A5, Fas 6c): dokumenterar idempotency-nyckel-strategin (mot dubbletter vid retry/dubbel-klick) — adresserar `data-model.md §F.4`-buggen.
 - **ADR-015 — `sendEmail` direct-Resend-skuld** (per A5, Fas 6e): om sendEmail deployas i 6e, dokumenterar varför direct-Resend-anrop används och planen för migration till mail-event-pattern.
 - **ADR-017 — Polling-vs-Realtime + migrations-vägen post-Fas E** (per B1, Fas 6d): dokumenterar 60s + pull-to-refresh + visibility-trigger som interimslösning + Supabase Realtime-omläggning som Fas E-uppgift.
 
 #### Korsreferens
+
 - `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 3 (A5-tabellen) + Del 4 (A3 + A2 + B1)
 - `docs/research/datamodell-research/07-migration-plan.md` §A2 (strangler-fig-ordningen)
 - `STATE-STRATEGY.md` §2 (per-vy state-plan med strangler-fig-not), §5b (polling-pattern)
@@ -615,9 +686,11 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamo
 ### Fas 6.5 — Aktivitetslogg (xAPI)
 
 #### Mål
+
 Implementera xAPI-baserad aktivitetslogg för spårning av Lottas operativa åtgärder (markera betalning, bekräfta anmälan, etc.) — för observability + framtida adaptiv lärning i Passionslyftet.
 
 #### Scope
+
 - xAPI-statement-shape definierad och Zod-validerad
 - `src/data/activityLog/recordActivity.ts` med `requestId`-propagering från Fas A M7
 - 5–10 aktivitetstyper definierade (markera-betald, bekräfta-anmälan, lägga-till-person, etc.)
@@ -625,18 +698,22 @@ Implementera xAPI-baserad aktivitetslogg för spårning av Lottas operativa åtg
 - `[GA]` Open Badges-kompatibel struktur (defer:as till Passionslyftet men shape förbereds)
 
 #### Inte scope
+
 - Adaptiv lärning-engine — Passionslyftet
 - LiveKit / Cal.com-integration — Passionslyftet
 - Real-time activity-stream-visning — Fas E
 
 #### Beroenden
+
 - Fas A M7 (`requestId`-propagering)
 - Fas 6 (5–10 aktivitetstyper kommer från reella vy-events)
 
 #### Estimat
+
 1 session.
 
 #### Filer som skapas/uppdateras
+
 - `src/data/activityLog/recordActivity.ts`
 - `src/data/activityLog/types.ts` (xAPI-statement-shape + Zod-schema)
 - `src/data/activityLog/activityTypes.ts` (5–10 typer, t.ex. `markera-betald`, `bekräfta-anmälan`, `lägga-till-person`)
@@ -645,6 +722,7 @@ Implementera xAPI-baserad aktivitetslogg för spårning av Lottas operativa åtg
 - `tests/e2e/activityLog.spec.ts`
 
 #### DoD
+
 1. Varje mutation från Fas 6 producerar ett xAPI-statement
 2. Statement-shape valideras runtime via Zod
 3. `requestId` propageras från klient → server → activity-log
@@ -652,9 +730,11 @@ Implementera xAPI-baserad aktivitetslogg för spårning av Lottas operativa åtg
 5. Bonus-ADR (utöver de 10 i ADR-index ovan) skriven om `trace_id` vs `requestId`-relationen — distinkta korrelerade IDs eller sammanslagna. Beslut tas vid sessionsstart.
 
 #### ADR-krav
+
 **Bonus-ADR (utöver P3a:s 10) — `trace_id` vs `requestId`-relationen**: distinkta korrelerade IDs eller sammanslagna. Per P0-inventory Fas 6.5 öppen fråga. Skrivs när Fas 6.5 implementeras, inte i P3a.
 
 #### Korsreferens
+
 - `FEATURE-ACTIVITY-LOG.md` (uppdateras i Fas 6.5 efter ADR-beslut)
 - `data-model.md` (Activity Log-tabell-shape)
 
@@ -663,9 +743,11 @@ Implementera xAPI-baserad aktivitetslogg för spårning av Lottas operativa åtg
 ### Fas 7 — Konsolidering
 
 #### Mål
+
 Säkra appen för production: CSP-plugin (defer:ad från Fas 0), prestandamätning, deploy-pipeline, chaos testing, samt de [GA]-tillägg som flyttades hit från Fas 5 per B3.
 
 #### Scope
+
 - CSP-nonce-plugin i `vite.config.ts` (defer:ad från Fas 0)
 - Trusted Types
 - Säkerhetsheaders (HSTS, X-Frame-Options, etc.)
@@ -685,18 +767,22 @@ Säkra appen för production: CSP-plugin (defer:ad från Fas 0), prestandamätni
 - Design audit (skill) på Hem, Mer, AppShell
 
 #### Inte scope
+
 - Background Sync (defer:ad till Fas 8 per B2)
 - Passkeys, push-notifications — Fas 8 eller senare
 - Lighthouse-perfekt på alla routes — endast på kritiska (Hem, Event-detalj, Personer-detalj)
 
 #### Beroenden
+
 - Fas 6 (alla flikar byggda — det finns något att deploya)
 - Fas 6.5 (aktivitetslogg etablerad — chaos-testing ger användbar data)
 
 #### Estimat
+
 3 sessioner.
 
 #### Filer som skapas/uppdateras
+
 - `vite.config.ts` (CSP-plugin aktiveras)
 - `src/main.tsx` (web-vitals + Speculation Rules)
 - `src/components/ErrorBoundary/WidgetError.tsx`
@@ -705,6 +791,7 @@ Säkra appen för production: CSP-plugin (defer:ad från Fas 0), prestandamätni
 - `tests/e2e/visual/*` (Golden Master)
 
 #### DoD
+
 1. CSP-plugin aktiv i prod, ingen inline-script-violation i console
 2. web-vitals-mätning rapporterar till Sentry/Faro
 3. Speculation Rules aktivt på utvalda routes (verifierat via Lighthouse)
@@ -719,9 +806,11 @@ Säkra appen för production: CSP-plugin (defer:ad från Fas 0), prestandamätni
 12. Design audit (skill) körd på Hem, Mer, AppShell — rapport committad
 
 #### ADR-krav
+
 - **Refererar ADR-011 — CSP-plugin-deferral** (per P0-inventory): ADR skrevs i P3a vid byggplan-skiftet, dokumenterar varför plugin defer:ats från Fas 0 till Fas 7. Inget *nytt* ADR krävs här — endast verifikation att ADR-011:s villkor uppfylls (CSP-plugin aktiv i prod, inga inline-script-violations).
 
 #### Korsreferens
+
 - `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 5 (B3-beslutet — vilka [GA] som flyttats hit)
 - `SECURITY-SPEC.md` §5 (OWASP-tabellen)
 
@@ -730,29 +819,36 @@ Säkra appen för production: CSP-plugin (defer:ad från Fas 0), prestandamätni
 ### Fas 8 — Background Sync (framtid)
 
 #### Mål
+
 Implementera Background Sync API för offline-mutationskö — defer:ad från Fas 7 per B2-beslutet. Aktualiseras när production-instrumentering från Fas 7 har samlat empirisk data om hur ofta Lotta hamnar i offline-läge med köade mutationer.
 
 #### Scope (preliminärt — låses vid aktualisering)
+
 - Background Sync API-integration i `public/sw.js`
 - IndexedDB-baserad mutationskö
 - Kö-status-UI i app-shell ("3 ändringar väntar på synk")
 - Konflikt-hantering (server-state vs lokal kö)
 
 #### Inte scope (denna revision)
+
 - Passkeys (defer:ad)
 - Push-notifications (defer:ad)
 
 #### Beroenden
+
 - Fas E klar (target-arkitektur låst)
 - Fas 7 deploy klar (production-instrumentering finns för empirisk data)
 
 #### Estimat
+
 TBD — fastställs vid aktualisering.
 
 #### ADR-krav
+
 - **ADR-019 — Background Sync defer från Fas 7 till Fas 8** (per B2): dokumenterar arkitekturskuld + Fas 7-storlek + Lotta-flow-tolerans + plan för aktualisering. Skrivs vid Fas 7-start så det är tydligt att Fas 7 *inte glömde* — det var medvetet.
 
 #### Korsreferens
+
 - `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 5 (B2-beslutet)
 - `STATE-STRATEGY.md` (Background Sync-not när aktualiseras)
 
@@ -761,24 +857,30 @@ TBD — fastställs vid aktualisering.
 ### Fas B — Airtable-hardening (parallell-spår)
 
 #### Mål
+
 Säkra Airtable-basen som single source of truth för Miranon Media Admin tills Fas E migreras: rensa drift, etablera redesign-konsistens, dokumentera operativa gränser. Roger/Lotta-arbete med Marcus-stöd.
 
 #### Scope (preliminärt — fastställs av Roger/Lotta i samråd med Marcus)
+
 - Drift-rensning per `docs/research/datamodell-research/06a-airtable-redesign.md` Del A–C
 - Schema-kontrakt mellan Airtable-fält och `data-model.md`
 - 11 automationer granskade (live-state per `docs/research/datamodell-research/02-live-state.md` §A)
 - Synk-gates mot React-bygget: Gate B1 (innan Fas 6c — Registrations) + Gate B2 (innan Fas E — migration)
 
 #### Beroenden
+
 **Parallell-spår — inga beroenden mot Fas A.** Synk-gates mot Fas 6c och Fas E.
 
 #### Estimat
+
 Separat estimat — fastställs av Roger/Lotta.
 
 #### ADR-krav
+
 Inget nytt ADR i React-byggets katalog. Airtable-side-beslut dokumenteras i Roger/Lottas eget spår.
 
 #### Korsreferens
+
 - `docs/research/datamodell-research/06a-airtable-redesign.md` Del A–C
 - `tasks/sessions/archive/datamodell-research-2026-04-30/fas-4a-prompt.md` §3.4
 - `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 2 (A4-beslutet)
@@ -788,9 +890,11 @@ Inget nytt ADR i React-byggets katalog. Airtable-side-beslut dokumenteras i Roge
 ### Fas E — Supabase-migration (DEFER)
 
 #### Mål
+
 Migrera Miranon Media Admin från Airtable som primär datakälla till Supabase (Postgres + RLS + Realtime), enligt strangler-fig-ordningen i `docs/research/datamodell-research/07-migration-plan.md` §A2.
 
 #### Scope (preliminärt — låses vid aktualisering)
+
 - Persons → Events → Registrations → Hem-aggregering enligt 07 §A2
 - DataSourceAdapter-byte: AirtableAdapter → SupabaseAdapter (target-shape från 06b)
 - Supabase Realtime ersätter polling (per B1) — anslutningar per tabell
@@ -799,21 +903,26 @@ Migrera Miranon Media Admin från Airtable som primär datakälla till Supabase 
 - Datasynk under övergångsperiod (dual-write eller CDC)
 
 #### Inte scope
+
 - Hela appens omskrivning — DataSourceAdapter-pattern (etablerat i Fas 1) tar 90% av sticket
 - Airtable-bortrivning omedelbart — kvar som backup tills Fas E är verifierad
 
 #### Beroenden
+
 - Fas 7 deploy klar (target för migration finns)
 - Fas B avslutad (Airtable-side städat innan migration)
 - Empirisk data från Fas 7-deploy om vilka tabeller som har högst läs/skriv-tryck (informerar migrationsordning inom Fas E)
 
 #### Estimat
+
 Separat planering — fastställs vid aktualisering.
 
 #### ADR-krav
+
 ADR:er per migrationsbeslut — skrivs vid aktualisering.
 
 #### Korsreferens
+
 - `docs/research/datamodell-research/06b-supabase-target.md` (target-modellen)
 - `docs/research/datamodell-research/07-migration-plan.md` §A2 (strangler-fig-sekvens)
 - `docs/research/datamodell-research/08-odoo-validation.md` (sista valideringen av target)

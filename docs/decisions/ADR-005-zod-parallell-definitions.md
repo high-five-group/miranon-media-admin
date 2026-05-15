@@ -56,17 +56,17 @@ Om någon ändrar antingen schemat eller interfacet så de divergerar, får vi e
 
 ## Alternativ som övervägdes
 
-**1. Schema-som-sanningskälla direkt i Fas 1**
+### 1. Schema-som-sanningskälla direkt i Fas 1
 
 - **Fördelar:** En sanningskälla, ingen duplicering, Zod definierar både runtime-validering och compile-time-typ i samma uttryck.
 - **Nackdelar:** Bryter "kopieras rakt av"-garantin från conversion-plan. Ändringen kräver att `models/Event.ts` blir `export type { Event } from '../schemas/...'` vilket är en semantisk förändring, inte bara kopiering. Skulle blanda Fas 1-copy-pasting med Fas 2-refaktorering och förvirra commits.
 
-**2. Bara interface, ingen Zod**
+### 2. Bara interface, ingen Zod
 
 - **Fördelar:** Enklast, noll nya filer.
 - **Nackdelar:** Gap-analysen §GA-5 identifierade avsaknaden av runtime-validering som en av tre blindfläckar i conversion-plan. Airtable-API är löst typat; utan Zod litar vi på att TypeScript-typen är sann — vilket den inte är om Airtable ändrar kolumn, om Edge Function har en bugg, eller om API-svaret mutilerats av en nätverks-proxy.
 
-**3. Manuell run-time-validering (utan Zod)**
+### 3. Manuell run-time-validering (utan Zod)
 
 - **Fördelar:** Ingen ny dep.
 - **Nackdelar:** 8 × ~20-rads validatorfunktioner = 160 rader handskriven kod med samma fel-prone som Airtable-schemaändringar försöker fånga. Zod löser detta på 8 × ~20 rader deklarativ kod som aldrig divergerar från schemat.

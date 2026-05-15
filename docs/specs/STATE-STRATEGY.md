@@ -28,6 +28,7 @@ Varje bit state tilhor exakt en kategori. Ingen state far leva i "fel" lager.
 > Källa: `docs/research/datamodell-research/07-migration-plan.md` §A2 + `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 4 A3.
 
 ### Hem (/hem)
+
 | State | Typ | Verktyg |
 |-------|-----|---------|
 | Dashboard-data | Server | `useQuery(queryKeys.dashboard)` |
@@ -35,6 +36,7 @@ Varje bit state tilhor exakt en kategori. Ingen state far leva i "fel" lager.
 Ingen URL state, inga filter. Ingen UI state, inga expanderbara sektioner.
 
 ### Event (/event)
+
 | State | Typ | Verktyg |
 |-------|-----|---------|
 | Event-lista | Server | `useQuery(queryKeys.events.list({ status, sort }))` |
@@ -42,6 +44,7 @@ Ingen URL state, inga filter. Ingen UI state, inga expanderbara sektioner.
 | Sortering | URL | `nuqs: ?sort=date\|name` |
 
 ### Event-detalj (/event/$eventId)
+
 | State | Typ | Verktyg |
 |-------|-----|---------|
 | Event + registreringar | Server | `useQuery(queryKeys.events.detail(id))` |
@@ -49,6 +52,7 @@ Ingen URL state, inga filter. Ingen UI state, inga expanderbara sektioner.
 | Expanderade rader | UI | `useState<Set<string>>` |
 
 ### Personer (/personer)
+
 | State | Typ | Verktyg |
 |-------|-----|---------|
 | Personlista | Server | `useQuery(queryKeys.persons.search({ q, page }))` |
@@ -56,6 +60,7 @@ Ingen URL state, inga filter. Ingen UI state, inga expanderbara sektioner.
 | Paginering | URL | `nuqs: ?page=2` |
 
 ### Mer (/mer)
+
 Statisk lista. Ingen dynamisk state.
 
 ---
@@ -321,7 +326,7 @@ ar detta tillrackligt -- ordningen spelar ingen roll.
 
 ## 7. Beslutstrad
 
-```
+```text
 1. Kommer datan fran ett API?     -> TanStack Query
 2. Ska det overleva page reload?  -> URL state (nuqs)
 3. Ska det overleva app-stangning? -> localStorage / IndexedDB
@@ -366,6 +371,7 @@ async executeOperation(args: {
 ```
 
 Edge Function:
+
 1. Verifierar caller via `requireUser(req, corsHeaders)` (`SECURITY-SPEC §6.3`)
 2. Slår upp `operationKey` i `field-allowlists.ts` → `{tableId, allowedFields[]}`
 3. Avvisar 400 om okänd operation eller fält utanför allowlist (deny-by-default)

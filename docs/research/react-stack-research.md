@@ -1,4 +1,6 @@
 # React Stack Research — Miranon Media Admin
+
+<!-- markdownlint-disable-next-line MD036 -->
 *Research genomförd: 2026-04-05 | 4 parallella research-agenter*
 
 ---
@@ -47,6 +49,7 @@ Radix var branschstandarden 2023–2024, men har ett reellt underhållsproblem e
 #### React Aria — Mest komplett
 
 Adobes React Aria är branschens mest kompletta tillgänglighetsbibliotek:
+
 - 50+ komponenter, 40+ hooks
 - 30+ språk, 13 kalendersystem (internationalisering)
 - Avancerad fokushantering (FocusScope, virtuellt fokus)
@@ -102,6 +105,7 @@ shadcn/ui är inte ett komponentbibliotek utan en **koddistributionsmodell**: du
 **Sekundärval att bevaka:** Base UI — bästa teamet och modernaste API:t, men bara 4 månader gammalt i v1.0. Kan bli primärval om 6–12 månader.
 
 **Risker:**
+
 - React Aria har en brantare inlärningskurva än Radix (hooks-baserat kräver mer boilerplate)
 - Mindre community-ekosystem kring styling/theming jämfört med Radix/shadcn
 - Adobe-beroende (företagsprioritering kan ändras, men Spectrum 2 behöver det)
@@ -133,7 +137,7 @@ shadcn/ui är inte ett komponentbibliotek utan en **koddistributionsmodell**: du
 
 Denna kombination är avgörande för vår dashboard-app:
 
-```
+```text
 Route loader → queryClient.ensureQueryData(options)
                         ↓
                 TanStack Query cache
@@ -175,12 +179,14 @@ React Router v7: `useSearchParams()` returnerar strängar. Manuell parsning och 
 ### Rekommendation: TanStack Router
 
 **Avgörande faktorer:**
+
 1. Typ-säkra search params (Zod-validering, hierarkiskt arv)
 2. TanStack Query-synergi (loader-prefetch, hover-prefetch)
 3. Dedikerade DevTools
 4. Automatisk code-splitting via router-plugin
 
 **Risker:**
+
 - Större bundle (+10–20 kB vs React Router) — acceptabelt för intern admin-app
 - Färre tutorials — kompenseras av utmärkt officiell dokumentation
 - 572 öppna issues (vs 162) — reflekterar delvis hög utvecklingstakt
@@ -219,6 +225,7 @@ React Router v7: `useSearchParams()` returnerar strängar. Manuell parsning och 
 Två strategier för optimistic updates:
 
 1. **Cache-manipulation** — onMutate snapsar cache, uppdaterar optimistiskt, onError rullar tillbaka:
+
 ```typescript
 useMutation({
   mutationFn: updateEvent,
@@ -237,9 +244,10 @@ useMutation({
 })
 ```
 
-2. **mutation.variables** (v5) — renderar pending-data utan cache-manipulation. Enklare, mindre felbenäget.
+1. **mutation.variables** (v5) — renderar pending-data utan cache-manipulation. Enklare, mindre felbenäget.
 
 **Dependent queries (Event → Registreringar → Person):**
+
 ```typescript
 const { data: event } = useQuery({ queryKey: ['events', id], queryFn: ... })
 const { data: regs } = useQuery({
@@ -250,6 +258,7 @@ const { data: regs } = useQuery({
 ```
 
 **Cache-invalidering (hierarkisk):**
+
 - `invalidateQueries({ queryKey: ['events'] })` — alla event-queries
 - `invalidateQueries({ queryKey: ['events', id] })` — specifikt event
 - `invalidateQueries({ predicate: (q) => ... })` — villkorsbaserad
@@ -267,6 +276,7 @@ Kräver Redux Toolkit som beroende. Att introducera hela Redux-ekosystemet enbar
 ### Rekommendation: TanStack Query v5
 
 **Avgörande faktorer:**
+
 1. CRUD-fokus — useMutation med optimistic updates och rollback
 2. Dependent queries — Miranons datamodell har relationer (Event → Registreringar → Person)
 3. TanStack Router-synergi — loader-prefetch, hover-prefetch, SSR-hydration
@@ -325,6 +335,7 @@ Den stora förändringen i v4 vs v3: tokens definieras i CSS, inte JavaScript:
 Tokens exponeras som CSS custom properties vid runtime OCH genererar utilities automatiskt (`bg-primary`, `text-copper` etc.). Ny Oxide-motor: 5x snabbare full-builds, 100x+ snabbare inkrementella.
 
 **prefers-contrast:more** (som vi redan har i Vue-buildet) mappas direkt:
+
 ```html
 <div class="bg-primary contrast-more:bg-primary-dark">
 ```
@@ -332,6 +343,7 @@ Tokens exponeras som CSS custom properties vid runtime OCH genererar utilities a
 ### CSS-in-JS: Sjunkande trend
 
 npm-data 2023 → 2026:
+
 - styled-components: 8,5M → 6,8M = **-20%**
 - Emotion: 10M → 9,1M = **-9%**
 - Tailwind: +100% på 3 år
@@ -347,6 +359,7 @@ Mantine v7 lämnade Emotion explicit för "performance and bundle size reasons."
 ### Rekommendation: Tailwind CSS v4 + CSS custom properties
 
 **Avgörande faktorer:**
+
 1. **Bäst token-integration** — våra `--miranon-*` tokens registreras direkt i @theme
 2. **shadcn/ui-kompatibilitet** — samma CSS vars + Tailwind + headless-mönster
 3. **Noll runtime** — all CSS kompileras build-time
@@ -381,7 +394,7 @@ Mantine v7 lämnade Emotion explicit för "performance and bundle size reasons."
 
 ### Synergieffekter
 
-```
+```text
 TanStack Router
     ├── Loaders → TanStack Query (prefetch)
     ├── Search params → Zod → TanStack Table (filter/sort/page)
@@ -402,21 +415,25 @@ Tailwind v4
 ## 6. Risker och trade-offs
 
 ### Arkitekturrisk: TanStack-beroende
+
 Tre kärnbibliotek från samma ekosystem (Router, Query, Table). Om TanStack-utvecklingen saktar ned påverkas hela stacken.
 
 **Mitigering:** TanStack är open source med stort community (49K+ stjärnor för Query). Tanner Linsley är heltid på TanStack. Varje del kan bytas oberoende — Router kan ersättas av React Router, Query av SWR, Table av @tanstack/react-table har inga alternativ ändå.
 
 ### React Aria: Inlärningskurva
+
 React Aria är hooks-baserat och kräver mer boilerplate än Radix. Varje komponent kräver att du monterar hooks manuellt och kopplar ARIA-attribut.
 
 **Mitigering:** Detta matchar vår filosofi — vi bygger redan egna komponenter med composables. Mer kontroll = högre kvalitet. Inlärningskurvan är en engångskostnad.
 
 ### Tailwind: className-läsbarhet
+
 Långa className-strängar i JSX kan bli svårlästa.
 
 **Mitigering:** cn()-helper + CVA-varianter + ESLint-plugin-tailwindcss. Konsekvent klassordning. Extrahera komplexa stilar till separata variabler.
 
 ### Bundle size
+
 Total estimerad JavaScript-bundle: ~95 kB gzip (Router 41 + Query 17 + Motion 15 + Table 15 + övrigt 7).
 
 **Bedömning:** Acceptabelt för intern admin-app. Inte lämpligt för publik landningssida (men det bygger vi i Framer).

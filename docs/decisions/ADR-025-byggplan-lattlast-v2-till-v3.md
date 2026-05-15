@@ -61,12 +61,14 @@ Skriv `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` som ersätter v2. Arkivera v2 till 
 ## Konsekvenser
 
 **Positiva:**
+
 - Tydlig brytpunkt mellan v2-eran och v3-eran. Git-historik bevarad via separata filer.
 - v2 bevarad som referens i `docs/archive/`. Kedjan v1 → v2 → v3 spårbar.
 - v3 är "current truth" för icke-teknisk plan-förståelse. byggplan.md fortsätter vara styrande för det tekniska bygget.
 - "Levande dokument"-disclaimer + "Senast uppdaterad"-stämpel etablerar förväntan att v3 uppdateras vid sessionsavslut för varje ny fas. Inget behov av v4 vid varje justering.
 
 **Negativa:**
+
 - En ny ADR-rad i katalogen (ADR-025).
 - Refs till v2 måste uppdateras i: CLAUDE.md filstruktur, README.md Documentation map, v1-arkivfilens "Använd v2"-rad. Hanteras i samma session som ADR-025 (Commit 3).
 - v3 introducerar förpliktelse: dokumentet ska uppdateras vid sessionsavslut för varje ny fas. Annars driver det ifrån byggplan.md igen.

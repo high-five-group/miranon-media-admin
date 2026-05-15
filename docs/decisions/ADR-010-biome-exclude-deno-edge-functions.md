@@ -61,7 +61,7 @@ Noteringar om syntax: Biome 2.2+ vill ha `!supabase/functions` utan trailing `/*
 
 ## Alternativ som övervägdes
 
-**1. Disable specifika Biome-regler globalt**
+### 1. Disable specifika Biome-regler globalt
 
 - **Fördelar:** Behåller supabase-filer i lint-scope.
 - **Nackdelar:** Disable av `noNonNullAssertion` och `useLiteralKeys` skulle tillåta samma problem i React-koden (där vi **vill** ha dem aktiva). Regler är projekt-globala, inte per-directory i Biome 2.4.

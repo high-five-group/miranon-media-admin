@@ -23,6 +23,7 @@ Inventering av alla filer som kan tänkas ingå i nästa fas. Rapport är ren ob
 | `plans/` (2 filer) | 38 429 B | 2026-04-22 19:48 | Planeringsdokument |
 
 ### `backfill/` — innehåll
+
 | Fil | Storlek | Senast ändrad |
 |---|---|---|
 | `README.md` | 14 595 B | 2026-04-20 |
@@ -42,6 +43,7 @@ Inventering av alla filer som kan tänkas ingå i nästa fas. Rapport är ren ob
 | `verifieringsrapport.md` | 40 189 B | 2026-04-19 |
 
 ### `plans/` — innehåll
+
 | Fil | Storlek | Senast ändrad |
 |---|---|---|
 | `plan-airtable-verifieringssession.md` | 25 335 B | 2026-04-22 |
@@ -59,6 +61,7 @@ Inventering av alla filer som kan tänkas ingå i nästa fas. Rapport är ren ob
 | `sessions/` (9 + transcripts) | — | 2026-04-27 12:04 |
 
 ### `tasks/sessions/` — sessionsfiler
+
 | Fil | Storlek | Datum | Titel (rad 1) |
 |---|---|---|---|
 | `psionautics-session-2026-04-15.md` | 14 272 B | 2026-04-15 | Psionautics Admin — Sessionslogg |
@@ -72,6 +75,7 @@ Inventering av alla filer som kan tänkas ingå i nästa fas. Rapport är ren ob
 | `psionautics-session-2026-04-27.md` | 7 324 B | 2026-04-27 | Väntelista-mail 1 |
 
 ### `tasks/sessions/transcripts/` — råtranscripts
+
 | Fil | Storlek | Senast ändrad |
 |---|---|---|
 | `2026-04-19-17-31-16-backfill-psionautics-2026-04-19.txt` | 746 972 B | 2026-04-22 |
@@ -100,6 +104,7 @@ Inventering av alla filer som kan tänkas ingå i nästa fas. Rapport är ren ob
 **Totalt:** 1 436 rader edge-function-kod över 10 funktioner.
 
 **Identifierade tabell-IDs i kod:**
+
 - `tbloOcrppVoyrHbrq` = Anmälningar
 - `tbl2VxMx7JMkIxD4Q` = Väntelista
 - `tblVE3UKWl1CKrphV` = (sannolikt Eventplanering eller Eventformat — verifiera mot schema)
@@ -137,6 +142,7 @@ Inventering av alla filer som kan tänkas ingå i nästa fas. Rapport är ren ob
 | `research/` (4 filer) | 125 868 B | 2026-04-13 | React-stack-research |
 
 ### `decisions/` — ADR-filer
+
 | Fil | Storlek |
 |---|---|
 | `README.md` | 2 510 B |
@@ -152,6 +158,7 @@ Inventering av alla filer som kan tänkas ingå i nästa fas. Rapport är ren ob
 | `ADR-010-biome-exclude-deno-edge-functions.md` | 5 149 B |
 
 ### `research/` — research-filer
+
 | Fil | Storlek |
 |---|---|
 | `beyond-best-practices-2026.md` | 37 979 B |
@@ -207,7 +214,9 @@ Inventering av alla filer som kan tänkas ingå i nästa fas. Rapport är ren ob
 | `research/` (3 filer) | ~82 kB | 2026-04-06 | Research |
 
 ### `schema_reference.md` — H2-rubriker (27 totalt)
+
 **Första 5:**
+
 1. Tabellöversikt (18 tabeller)
 2. Relationskarta
 3. Tabell 1: Eventplanering
@@ -222,6 +231,7 @@ Inventering av alla filer som kan tänkas ingå i nästa fas. Rapport är ren ob
 27. Scripts i Script Extension (3 st)
 
 ### `schema_reference.md` — sökning efter april-fält
+
 | Sökt sträng | Hits | Status |
 |---|---|---|
 | `Källa` | 14 | ✅ finns (men kan vara generiska träffar) |
@@ -258,7 +268,7 @@ Inventering av alla filer som kan tänkas ingå i nästa fas. Rapport är ren ob
 
 ✅ **MCP svarar.**
 
-```
+```text
 {
   "id": "app8uGPrVCVOm6LfD",
   "name": "Miranon Media OS",
@@ -274,30 +284,39 @@ Förväntat ID `app8uGPrVCVOm6LfD` matchar.
 ## 10. Observationer (flaggade saker)
 
 ### A. Schema-stalehet bekräftad
+
 `miranon-media-os/docs/schema_reference.md` saknar **0 av 4 verifierade april-fält**. Den är inte längre auktoritativ källa för Anmälningar/Väntelista. Den lever fortfarande som referens för stabila tabeller (Eventplanering, Eventformat) men måste **inte** användas för fält som ändrats sedan mars.
 
 ### B. Dubblett-dokumentation i två repon
+
 `data-model.md` och `hur-systemet-funkar.md` finns både i `psionautics/docs/` (master) och i `miranon-media-admin/docs/` (kopia, äldre). Detta är **risk för divergens** — om båda redigeras parallellt drift uppstår. Behöver beslut: konsolidera till ETT repo eller etablera tydlig "source of truth".
 
 ### C. miranon_automations_COMPLETE.json är massivt
+
 638 kB, 15 741 rader. Måste läsas programmatiskt (jq, grep, parsning) i Fas 1 — inte i sin helhet. Kommer kräva specifika queries, t.ex. "lista alla automationer som triggas av tabell X" eller "vilka fält skriver A1 till".
 
 ### D. Edge functions ger sann bild av faktiskt skrivande
+
 10 edge functions, varav 7 har rörts i april. De är **starkare bevis** på faktiskt systembeteende än dokumentationen, eftersom de är körkod. Bör läsas i Fas 1.
 
 ### E. Backfill-katalogen är ett separat scope
+
 `psionautics/docs/backfill/` (~700 kB) är ett avgränsat arbete (april 19–26) — inte primär datamodell-doc. Kan referera till denna för **kontext** men inte som källa till "hur ser tabellen ut idag".
 
 ### F. Sessions-transcripts är stora och oprocessade
+
 4 transcripts på 590–767 kB vardera (~2,7 MB totalt) från backfill-arbetet 2026-04-19. **Per CLAUDE.md transcript-disciplin:** transcripts är sanningskälla, men de är råa — bör inte läsas heltäckande. Använd dem för att verifiera enskilda påståenden i sessionsloggar.
 
 ### G. Inga saknade fil-referenser
+
 Sessionsfilerna refererar till 19 unika filer/sökvägar. **Alla 19 existerar.** Ingen "spökreferens" hittad.
 
 ### H. tblVE3UKWl1CKrphV är okänt utifrån denna analys
+
 Den tredje tabellen som edge-funktionerna skriver till har ID `tblVE3UKWl1CKrphV`. Den nämns inte explicit i CLAUDE.md eller inventeringen. **Verifiering krävs i Fas 1** (sannolikt Eventformat eller Eventplanering — kan kollas snabbt via MCP).
 
 ### I. miranon-media-os och miranon-media-admin överlappar
+
 Två separata repon med liknande dokumentation (BYGGPLAN-LÄTTLÄST, DESIGN-SYSTEM-SPEC, ACCESSIBILITY-*, KVALITETSDEFINITIONER, DOKUMENTATIONSSTANDARD). miranon-media-os är "Vue-referensen som ersätts", miranon-media-admin är "React-uppbygget". Beslut behövs: vad i miranon-media-os är fortfarande **load-bearing** för datamodellen, vs. vad är historik?
 
 ---
@@ -305,6 +324,7 @@ Två separata repon med liknande dokumentation (BYGGPLAN-LÄTTLÄST, DESIGN-SYST
 ## 11. Tids-estimering — Fas 1 (källextraktion)
 
 **Total volym datamodell-relevant källmaterial (exkl. binärt och react-migration-bygginstruktioner):**
+
 - Primär: schema_reference (84 kB) + miranon_automations_COMPLETE.json (638 kB) + data-model.md (31 kB) + hur-systemet-funkar.md (10 kB) + 10 edge functions (~38 kB källkod) ≈ **800 kB**
 - Sekundär (sessionsloggar för kontext): 9 sessions ≈ 230 kB
 - Verifiering mot Airtable-MCP: ~10–15 read-queries
@@ -312,6 +332,7 @@ Två separata repon med liknande dokumentation (BYGGPLAN-LÄTTLÄST, DESIGN-SYST
 **Estimering:** Fas 1 (extraktion + normalisering till en kanonisk källa) tar **2–3 fokuserade arbetspass à 60–90 min**. JSON-parsning av automations-filen är största okända — om vi behöver tolka alla 11 automationer fält-för-fält drar det iväg, men om vi bara extraherar "vad triggar vad → vilka fält rörs" går det snabbare.
 
 **Rekommenderad ordning:**
+
 1. Live MCP-pull av aktuellt schema (sanningskälla för fält idag) — 30 min
 2. Extrahera automations-flöde från JSON (A1–A11: trigger, action, fält) — 60 min
 3. Korsa edge-functions mot fält de skriver till — 30 min

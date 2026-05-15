@@ -58,6 +58,7 @@ Två skäl.
 **Conversion-plan säger:** Airtable är datakällan. Supabase nämns som "Fas 8 framtid".
 
 **Verkligheten:** Vi har nu:
+
 - `docs/research/datamodell-research/06a-airtable-redesign.md` — 12 Airtable hardening-åtgärder (A1–A12)
 - `docs/research/datamodell-research/06b-supabase-target.md` — 36 Supabase target-tabeller
 - `docs/research/datamodell-research/07-migration-plan.md` — strangler-fig-migrationssekvens i 10 steg, Future Code-prompt i Del H
@@ -182,6 +183,7 @@ Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren 
 **Output:** `docs/logs/byggplan-revision-inventory.md` med tabellen "Påstående → Källa → Korrigering".
 
 **Indata att gå igenom:**
+
 - `docs/conversion-plan.md` (~1 800 rader) — sektion för sektion
 - `docs/analysis/Codex-project-analysis-after-fas-1.md`
 - `docs/analysis/Code-verification-of-codex-analysis.md`
@@ -199,6 +201,7 @@ Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren 
 **Output:** Uppdaterat avsnitt 5 i detta direktiv + en kort design-not per ny fas (vad är scope, vad är inte scope, vilka beroenden, vilket estimat).
 
 **Beslut som måste fattas i P1:**
+
 - Är Fas 3.5 (a11y-baseline) en egen fas eller integrerad i Fas 3?
 - Är Fas 5.5 (vertikal slice) "list-anmälningar" eller något annat? **(Måste vara write-flow per §8.5.1)**
 - Sekvenseras Fas 6 enligt strangler-fig (Persons → Events → Registrations) eller enligt "Hem först"-prioritet?
@@ -210,6 +213,7 @@ Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren 
 **Mål:** Uppdatera de stödspecs som är direkta beroenden för byggplanens fasprompter.
 
 **Filer att uppdatera (preliminär lista):**
+
 - `docs/specs/SECURITY-SPEC.md` — införliva Code-verifieringens fynd, Fas A-resultat (klient-DSN, två-stegs auth-check, test-*-prefix-konvention, operations-baserad API, INVARIANT-mönster, structured JSON-loggning)
 - `docs/specs/ACCESSIBILITY-CHECKLIST.md` — skriv om för React Aria + WCAG 2.2 AA
 - `docs/specs/STATE-STRATEGY.md` — synk mot strangler-fig-ordningen i 07
@@ -217,6 +221,7 @@ Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren 
 - `docs/reference/data-model.md` — kontrollera att den fortfarande är källan för status-typer (den ska vara det per dm-110)
 
 **Filer som troligen INTE behöver uppdateras (kontrolleras kort):**
+
 - DESIGN-MANIFESTO, DESIGN-OPERATING-SYSTEM, DESIGN-SYSTEM-SPEC — designprinciper är oförändrade
 - KVALITETSDEFINITIONER-11.md — kvalitetsdefinitionerna är kärnstabila
 - PERFORMANCE-BUDGET, URL-STATE-SPEC, ARIA-UPGRADE — kontrolleras kort men förväntas oförändrade
@@ -227,6 +232,7 @@ Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren 
 **Mål:** `docs/byggplan.md` är klar, granskad och committad. Repo:t är "rent och 11/10" — alla artefakter på rätt plats, ingen drift mellan dokument och verklighet.
 
 **Output (byggplan):**
+
 - `docs/byggplan.md` (ny fil, ersätter conversion-plan som styrande dokument)
 - `docs/archive/conversion-plan-2026-04-14.md` (arkiverad conversion-plan)
 - ADR i `docs/decisions/` om varför conversion-plan ersattes av byggplan, inte uppdaterades till v2
@@ -234,6 +240,7 @@ Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren 
 **Output (städning) — DoD för "rent och 11/10":**
 
 *Repo-hygien:*
+
 - `tasks/byggplan-direktiv.md` markeras SLUTFÖRT
 - `docs/BUILD-LOG.md` får ny sektion för Fas A (alla 8 milstolpar med commit-hashar, planerat vs faktiskt, avvikelser)
 - ADR:er skrivna för alla beslut Fas A låst (operations-baserat API, corsHeadersFor, AuthContext|Response, klient-DSN, INVARIANT-mönster, structured logging)
@@ -242,11 +249,13 @@ Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren 
 - `docs/decisions/README.md` uppdaterad
 
 *Dokument-hygien:*
+
 - `CLAUDE.md` (projekt) uppdaterad med ny fasordning + alla referenser till conversion-plan
 - `CLAUDE.md` (global, marcus-system) uppdaterad om något UNIVERSAL kommer från revisionen
 - Stödspecs uppdaterade per P2
 
 *Verifierings-hygien (sanity-baseline innan UI-bygg startar):*
+
 - `npm run test:api` → grön (113 tester förväntas)
 - `npx tsc --noEmit` → 0 fel
 - `npx @biomejs/biome check .` → 0 fel
@@ -254,6 +263,7 @@ Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren 
 - Lighthouse-baseline tagen på en placeholder-route (för senare jämförelse)
 
 *Beslut värda att ta i P3 (men kan defer:as till första session de blir aktuella):*
+
 - 4 CSS-warnings i `src/styles/base.css:72-75` — behåll eller städa?
 - PostCSS audit-fix — kör nu eller vänta?
 - ADR för CSP-plugin-deferral till Fas 7
@@ -299,6 +309,7 @@ Tidsangivelser är illustrativa — verkliga sessionsfrekvensen styrs av Marcus.
 ### 8.5.1 M4 discovery-fyndet (2026-05-04)
 
 Discovery-fasen i M4 visade att Vue-versionen är **mestadels placeholder**, inte sanningskälla för UI-skrivflöden. Lottas skrivande idag sker via:
+
 - Airtable Interface direkt (Lotta klickar i Airtable-UI)
 - Zapier-ingest från externa formulär (per K6/G14/H7)
 
@@ -307,11 +318,13 @@ Edge Functions är byggda men har inga UI-callers. Hypotes-listan från Gate A1 
 **Beslut:** M4 implementerades som "infrastruktur + tom allowlist". Operations läggs till när faktiska write-flöden byggs.
 
 **Konsekvens för Fas 5.5 (vertikal slice):**
+
 - Sliceen måste vara en write-flow för att ha värde som mall
 - Sliceens DoD ska inkludera: lägg till första operation i `field-allowlists.ts` + skapa motsvarande Playwright deny/allow-test mot operation
 - Allowlist växer organiskt med UI:t, inte i förväg
 
 **Konsekvens för Fas 6:**
+
 - Varje vy som skriver lägger till sin operation i `field-allowlists.ts`
 - Fas 6:s per-vy-checklista måste innehålla: "operation registrerad? deny/allow-test grönt?"
 - Estimatet för Fas 6 är inte påverkat (5–15 min per operation)
@@ -333,6 +346,7 @@ Tre UNIVERSAL-lärdomar har lyfts till `tasks/lessons.md` under Fas A. De ska re
 Följande infrastruktur är på plats och ska inte återimplementeras i senare faser:
 
 **Staging:**
+
 - 2 Playwright API test-användare:
   - `playwright-test@miranon-admin.local` (icke-admin)
   - `playwright-admin@miranon-admin.local` (admin)
@@ -342,10 +356,12 @@ Följande infrastruktur är på plats och ska inte återimplementeras i senare f
 - Staging secrets: `ADMIN_EMAILS`, `CORS_ALLOWED_ORIGINS`, `VITE_SENTRY_DSN`
 
 **Produktion (förberett):**
+
 - Sentry-organisation + projekt `react-platform` skapat på sentry.io
 - Klient-DSN konfigurerad (publik per Gate A1-beslut, alternativ A)
 
 **Test-helpers:**
+
 - `classify401Body`-helper för dual-format auth-test (gateway + funktion)
 - Playwright-konfiguration med två projekt: `api` + `visual-*`
 - Fuzz-test-pattern (per-kategori + INVARIANT round-trip)
@@ -418,6 +434,7 @@ För att undvika scope-creep:
 Allt nedanstående är frusen indata för revisionen.
 
 **Styrande från conversion-plan:**
+
 - `~/Repon/miranon-media-admin/docs/conversion-plan.md` (frusen efter revisionen, arkiveras till `docs/archive/`)
 - `~/Repon/miranon-media-admin/docs/BUILD-LOG.md` (Fas 0 + Fas 1)
 - `~/Repon/miranon-media-admin/CLAUDE.md`
@@ -425,6 +442,7 @@ Allt nedanstående är frusen indata för revisionen.
 - `~/Repon/miranon-media-admin/tasks/lessons.md`
 
 **Stödspecs (kontrolleras, vissa uppdateras):**
+
 - `~/Repon/miranon-media-admin/docs/specs/SECURITY-SPEC.md`
 - `~/Repon/miranon-media-admin/docs/specs/ACCESSIBILITY-CHECKLIST.md`
 - `~/Repon/miranon-media-admin/docs/specs/STATE-STRATEGY.md`
@@ -440,10 +458,12 @@ Allt nedanstående är frusen indata för revisionen.
 - `~/Repon/miranon-media-admin/docs/logs/gap-analysis.md`
 
 **Externa analyser:**
+
 - `~/Repon/miranon-media-admin/docs/analysis/Codex-project-analysis-after-fas-1.md`
 - `~/Repon/miranon-media-admin/docs/analysis/Code-verification-of-codex-analysis.md`
 
 **Datamodell-leverans:**
+
 - `~/Repon/miranon-media-admin/docs/reference/data-model.md`
 - `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md`
 - `~/Repon/miranon-media-admin/docs/research/datamodell-research/01-extraction.md` → `08-odoo-validation.md` (åtta filer)
@@ -452,6 +472,7 @@ Allt nedanstående är frusen indata för revisionen.
 - `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-04/2026-04-28-datamodell-research-projekt.md` (FRUSEN)
 
 **Fas A-leverans:**
+
 - `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md` (frusen efter slutsummering)
 - `~/Repon/miranon-media-admin/supabase/functions/_shared/auth.ts`
 - `~/Repon/miranon-media-admin/supabase/functions/_shared/cors.ts`
@@ -462,6 +483,7 @@ Allt nedanstående är frusen indata för revisionen.
 - `~/Repon/miranon-media-admin/src/observability/sentry.ts`
 
 **Lärdomar:**
+
 - `~/Repon/marcus-system/tasks/lessons.md` (sektioner 2026-04-28 → 2026-05-04)
 - `~/Repon/miranon-media-admin/tasks/lessons.md`
 
@@ -488,6 +510,7 @@ Allt nedanstående är frusen indata för revisionen.
 ## 12. Slutnot
 
 P3 är klar och `docs/byggplan.md` är committad:
+
 - ✅ Detta direktiv markerades SLUTFÖRT i §11 (P3b K4 commit 7, 2026-05-05)
 - ✅ Conversion-plan flyttades till `docs/archive/conversion-plan-2026-04-14.md` (P3b K2 commit 1: `2075ab3`, 2026-05-05)
 - ✅ ADR skrevs i `docs/decisions/` om varför conversion-plan ersattes av byggplan (ADR-012, P3a commit `866b430`, 2026-05-05)

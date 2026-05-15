@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD041 -->  <!-- filen saknar h1 (data-doc utan toc-rubrik som default) -->
 > **Primär version. Senast uppdaterad 2026-04-28.**
 >
 > Kopia för psionautics-projektets Claude-chatt synkas separat till
@@ -45,7 +46,7 @@
 
 ## Systemöversikt
 
-```
+```text
    Formulär på webben          Admin-appen
           │                            │
           │ "Anna anmäler sig"         │ "Skicka mail"
@@ -88,6 +89,7 @@ Anna fyller i formuläret på psionautics.se.
 | 6 | Bekräftelsemail skickas (separat flöde) | Resend |
 
 **Efter några sekunder:**
+
 - Annas anmälan är komplett kopplad
 - Deltaganden-rader ligger och väntar på närvaromarkering
 - Personer-rollups uppdateras: +1 anmälning
@@ -121,7 +123,7 @@ Nu måste någon ändra Status på Annas Deltaganden-rader från "Ej avstämt" t
 
 ### Vad händer när Status ändras
 
-```
+```text
 Status = "Närvarande"
         ▼
 Närvaropoäng = 1

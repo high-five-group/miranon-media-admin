@@ -6,7 +6,7 @@ Denna mapp innehåller Architecture Decision Records (ADR) för Miranon Media Ad
 
 Varje ADR följer samma struktur:
 
-```
+```text
 # ADR-NNN: [Titel]
 - Status: Accepted | Superseded | Deprecated
 - Datum: YYYY-MM-DD
