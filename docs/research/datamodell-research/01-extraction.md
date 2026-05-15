@@ -1,5 +1,5 @@
 ---
-namn: Källextraktion — datamodell + automationer + edge functions + sessionsdelta
+namn: "Källextraktion — datamodell + automationer + Edge Functions + sessionsdelta"
 syfte: Extraherad och korrelerad data från alla källor i 00-file-manifest. Indata till Fas 3 (gapanalys)
 skapad: 2026-04-28
 hämtningstidpunkt: 2026-04-28 (alla MCP + git + JSON-extraktioner denna session)
@@ -7,6 +7,9 @@ bas-id: app8uGPrVCVOm6LfD ("Miranon Media OS")
 status: Checkpoint 2 — avvaktar godkännande
 korresponderar med: 02-live-state.md (live MCP), 00-file-manifest.md (källista)
 ---
+
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 # Källextraktion — Fas 1
 

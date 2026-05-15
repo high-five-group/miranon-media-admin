@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # ADR-029: CI-arkitektur — changed-files-baserat skip-mönster + third-party Actions-policy
 
 - Status: Accepted

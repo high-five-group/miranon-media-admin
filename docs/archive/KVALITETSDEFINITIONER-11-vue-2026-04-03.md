@@ -1,3 +1,13 @@
+<!-- vale Miranon.VueToReact = NO -->
+<!-- DEFERRED: Session 6.6.6 — Miranon.VueToReact Vue→React-drift fix -->
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
+<!-- vale Miranon.VueToReact = NO -->
+<!-- DEFERRED: Session 6.6.6 — Miranon.VueToReact Vue→React-drift fix -->
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Kvalitetsdefinitioner — 11/10
 
 > **ARKIVERAD 2026-05-11** — denna fil är Vue-projektets kvalitetsdefinitioner-spec från 2026-04-03. React-projektet använder `docs/specs/KVALITETSDEFINITIONER-11-REACT.md` som styrande spec sedan K0åf 2026-05-11. Per ADR-027 (KVALITETSDEFINITIONER-11.md stack-skifte Vue→React). Bevarad som arkivvärd referens — mönsterprinciperna (12 mönster från 5 bibliotek) är direkt input till React-versionen när Fas 3+ komponenter byggs. Använd inte denna fil som styrande för React-arbete.

@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Miranon Media Admin — Byggplan
 
 *Vad vi bygger, varför, och vad det innebär för dig.*

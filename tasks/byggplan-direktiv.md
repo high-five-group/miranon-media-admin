@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Byggplan — direktiv
 
 > **Status:** Direktiv skapat 2026-05-04. Revisionsarbete inte påbörjat. Sektion 8.5 uppdaterad löpande under Fas A. Fas A SLUTFÖRD 2026-05-04.
@@ -166,7 +169,9 @@ Allt annat är öppet för omprövning under revisionen.
 | 7 | Konsolidering | NY scope | 2,5 sessioner | Konsolidering — säkerhet redan i Fas A. **Ärver från B3:** View Transitions implementation, Speculation Rules, web-vitals rapportering, widget-error-boundary. **Plus existerande:** test-prefix-exkludering från prod-deploy, CSP-plugin (ADR), PostCSS-fix-bedömning (sidofix), DataTable villkorlig, 3 ADR:er från P0 (CSP-defer, conversion-plan→byggplan-skiftet, Fas 4-borttagning), vy-namn i design-audit-skriptet, chaos testing, deploy-prep. **Background Sync defer:ad till Fas 8** (separat ADR). **2,5 sessioner** (utökat från 2 pga B3-flyttar). |
 | **B** | **Airtable hardening (A1–A12)** | **EJ PÅB.** | **Parallell** | **Parallell-spår, drift**. Fotnot: Synk-gate 1 — A1–A12 inventerade före Fas 2.5. Synk-gate 2 — handshake mot `field-allowlists.ts` per Fas 5.5/6-operation. Ägs av Lotta + Roger med Code-stöd punktvis. Inte session-räknad. |
 | **E** | **Supabase migration (07 Del H)** | **DEFER** | **Senare** | Pekar på 07 Del H. **Fas E-fönster inkluderar omskrivning av sendEmail till outbox-pattern + ev. fetchEngagements-deploy beroende på Gate 4B fråga 4-resolution.** |
+<!-- vale Vale.Repetition = NO --> <!-- legitim repetition: svensk förkortning "m.m." (med mera) -->
 | **8** | **Background Sync m.m. (defer:ad)** | **FRAMTID** | **Framtid (post-Fas E)** | **Framtid (post-Fas E).** Background Sync API (offline-mutationskö, defer:ad från Fas 7 — se ADR). Övrigt scope (Passkeys, push) ej låst i denna revision. Estimat fastställs vid aktualisering. Ersätter conversion-plans 'Fas 8 — Passkeys, push, offline'. |
+<!-- vale Vale.Repetition = YES -->
 
 **Numreringsnot:** Byggplanen behåller conversion-plans siffror för Fas 0–8 för att undvika omdöpning av befintliga fas-prompter och lessons.md-poster. Det "saknas" en Fas 4 — den är medvetet borttagen i conversion-plan (DataTable flyttad till Fas 7). Nya faser får bokstavs- eller decimalsuffix (A, B, E, 2.5, 3.5, 5.5). **Fas 8** har omdefinierats: conversion-plans ursprungliga "Fas 8 — Passkeys, push, offline" ersätts av framtidsspår där Background Sync är primär leverans (defer:ad från Fas 7 — se sessionsdok 2026-05-04-byggplan-revision-p1.md Del 6 + ADR).
 

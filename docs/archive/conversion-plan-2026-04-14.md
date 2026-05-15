@@ -1,3 +1,8 @@
+<!-- vale Miranon.VueToReact = NO -->
+<!-- DEFERRED: Session 6.6.6 — Miranon.VueToReact Vue→React-drift fix -->
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Konverteringsplan — Miranon Media Admin (Vue 3 → React)
 
 > **Status:** ARKIVERAD 2026-05-05 — ersatt av [`docs/byggplan.md`](../byggplan.md) per [ADR-012](../decisions/ADR-012-conversion-plan-ersatt-av-byggplan.md).

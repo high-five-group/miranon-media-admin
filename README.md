@@ -1,3 +1,9 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # miranon-media-admin
 
 React-admin för Miranon Media — eventhantering, anmälningar och rapportering ovanpå Airtable + Supabase.

@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Gap-analys — Konverteringsplan vs. Beyond Best Practices Research
 
 *Kritisk granskning | 2026-04-06*

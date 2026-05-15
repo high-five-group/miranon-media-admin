@@ -1,0 +1,10 @@
+extends: existence
+message: "Undvik '%s' — försvinner när det inte är uppenbart för läsaren."
+level: suggestion
+ignorecase: true
+tokens:
+  - obviously
+  - uppenbarligen
+  - simply
+  - enkelt
+  - just (?:use|do|run)

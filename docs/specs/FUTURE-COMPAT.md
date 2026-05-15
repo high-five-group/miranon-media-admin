@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # FUTURE-COMPAT -- Framtidssakring mot Passionslyftet
 
 *Skapad: 2026-04-07 | Integrerad fran gap-analysis.md (Del 2, punkt 9-10 + Fas 6.5)*

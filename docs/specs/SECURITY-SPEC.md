@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # SECURITY-SPEC — Säkerhetsspecifikation
 
 *Skapad: 2026-04-07 | Integrerad från gap-analysis.md*

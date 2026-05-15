@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # PERFORMANCE-BUDGET -- Prestandabudget
 
 *Skapad: 2026-04-07 | Integrerad fran gap-analysis.md (Fas 0, punkt 3 + Del 2, punkt 2)*

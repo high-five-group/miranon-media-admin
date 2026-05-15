@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
@@ -21,6 +24,12 @@
 **Nästa:** Session 7 K0 — Fas 2 11/10-verification (7 gap-punkter committed i Session 6.5 pre-K1 som received-defer per K7; se [`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`](../docs/analysis/Fas-2-11-10-verification-2026-05-14.md)). Sedan Fas 2.5 — Schema-kontrakt-sync (per `docs/byggplan.md` §4).
 
 Sessionsdok-trail (arkiverad 2026-05-13 i K5.8): [`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`](sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md).
+
+### Mini-session 6.6.6 — Vale.Terms + Miranon.VueToReact-cleanup
+
+Mini-session 6.6.6 — Vale.Terms (425) + Miranon.VueToReact (114) manuell fix per förekomst. **Trigger:** post-Session 6.6 ✅ KLAR. **Prep-fil:** [`tasks/sessions/2026-05-14-session-6-6-6-prep.md`](sessions/2026-05-14-session-6-6-6-prep.md). **Klass:** kvalitets-fynd defererade via per-fil rad-1-disable (regression-skydd via Alt F per K1.13-utvidgning). **Estimat:** ~7-10h över 52 filer.
+
+Defer-bakgrund: K6.2 V4 bekräftade Vale 3.14.1 har INGEN `--fix`-flagga. Manuell sed-batch är osäker för 3/5 unika Vale.Terms-substitutioner (`aria`/`fk`/`vite` har hög kod-bryt-risk). Per-fil rad-1-disable valt för regression-skydd (naturlig disable-borttagning vid 6.6.6-fix).
 
 ### Mini-session 6.6.5 — Dependabot secrets-skuld + ADR-031
 

@@ -6,6 +6,12 @@ skapad: 2026-04-27
 status: Avvaktar godkännande
 ---
 
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Fil-manifest — datamodell-dokumentations-projekt
 
 Inventering av alla filer som kan tänkas ingå i nästa fas. Rapport är ren observation — inga ändringar gjorda i några källfiler.

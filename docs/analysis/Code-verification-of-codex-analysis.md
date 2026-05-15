@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Code's verifiering av Codex' projektanalys
 
 *Datum: 2026-04-29 | Verifierat mot HEAD `245422c` (main, clean)*

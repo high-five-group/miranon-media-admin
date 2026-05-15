@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # ARIA-UPGRADE — ARIA 1.3 och tillganglighetsuppgradering
 
 *Skapad: 2026-04-07 | Integrerad fran gap-analysis.md (Fas 3, punkt 3-4 + Fas 7, punkt 4)*

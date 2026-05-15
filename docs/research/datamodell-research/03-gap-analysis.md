@@ -1,11 +1,14 @@
 ---
-namn: Gapanalys — sektion-för-sektion åtgärdsplan för Fas 4
-syfte: Konkret instruktion till Code för Fas 4: vad som ska behållas, rättas, utökas, läggas till, omstruktureras
+namn: "Gapanalys — sektion-för-sektion åtgärdsplan för Fas 4"
+syfte: "Konkret instruktion till Code för Fas 4: vad som ska behållas, rättas, utökas, läggas till, omstruktureras"
 skapad: 2026-04-28
-indata: 01-extraction.md (964 r), 02-live-state.md (726 r), nuvarande data-model.md (642 r), nuvarande hur-systemet-funkar.md (282 r)
-status: Fas 3 — avvaktar godkännande
-operations: BEHÅLL / RÄTTA / UTÖKA / LÄGG TILL / OMSTRUKTURERA
+indata: "01-extraction.md (964 r), 02-live-state.md (726 r), nuvarande data-model.md (642 r), nuvarande hur-systemet-funkar.md (282 r)"
+status: "Fas 3 — avvaktar godkännande"
+operations: "BEHÅLL / RÄTTA / UTÖKA / LÄGG TILL / OMSTRUKTURERA"
 ---
+
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 # Gapanalys — Fas 3
 

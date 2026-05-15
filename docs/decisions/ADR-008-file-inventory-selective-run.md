@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # ADR-008: FILE-INVENTORY selektiv körning (skydda Fas 0-filer)
 
 - **Status:** Accepted

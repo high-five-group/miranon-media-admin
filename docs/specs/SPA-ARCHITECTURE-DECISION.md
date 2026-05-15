@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # SPA-ARCHITECTURE-DECISION -- Arkitekturbeslut: SPA vs SSR
 
 *Skapad: 2026-04-07 | Integrerad fran gap-analysis.md (Del 2, punkt 1)*

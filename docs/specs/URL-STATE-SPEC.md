@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # URL-STATE-SPEC — URL-state per vy
 
 *Skapad: 2026-04-07 | Integrerad fran gap-analysis.md (Fas 2, punkt 1 + Del 2, punkt 6)*

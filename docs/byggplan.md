@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Byggplan — Miranon Media Admin (React)
 
 > **Status:** AKTIV — ersätter `docs/conversion-plan.md` som styrande fas-för-fas-direktiv för React-bygget.

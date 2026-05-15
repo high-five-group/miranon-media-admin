@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Tillgänglighetschecklista — Miranon Media Admin
 
 > **Skapad:** 2026-04-01 (Vue/FKUI-version)

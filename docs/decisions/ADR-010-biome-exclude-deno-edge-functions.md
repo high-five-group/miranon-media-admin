@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # ADR-010: Biome-exkludering för Deno Edge Functions
 
 - **Status:** Accepted

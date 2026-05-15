@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # DESIGN-SYSTEM-SPEC.md — Teknisk specifikation
 
 *Operativ motpart till DESIGN-MANIFESTO.md*

@@ -1,0 +1,25 @@
+Airtable
+ARIA
+Biome
+CVA
+Dependabot
+Edge Functions
+FK
+GitHub
+JWT
+Lotta
+lychee
+markdownlint
+Miranon
+nuqs
+OAuth
+OWASP
+PKCE
+Playwright
+RLS
+Roger
+Supabase
+TanStack
+TypeScript
+Vite
+yamllint

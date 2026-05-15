@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Changelog
 
 Alla noterbara ändringar i detta projekt dokumenteras i denna fil.

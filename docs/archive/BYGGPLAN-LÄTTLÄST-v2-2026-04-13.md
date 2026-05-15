@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 > **ARKIVERAD 2026-05-09 — superceded av v3**
 >
 > Denna fil är **superceded** av [`../specs/BYGGPLAN-LÄTTLÄST-v3.md`](../specs/BYGGPLAN-LÄTTLÄST-v3.md).

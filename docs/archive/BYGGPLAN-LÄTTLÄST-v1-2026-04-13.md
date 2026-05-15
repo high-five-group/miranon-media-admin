@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 > **ARKIVERAD 2026-05-06 (Pre-Fas-2-verifiering, K3 åe)**
 >
 > Denna fil är **superceded** av [`./BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md`](./BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md) (i sin tur arkiverad 2026-05-09 — se [`../specs/BYGGPLAN-LÄTTLÄST-v3.md`](../specs/BYGGPLAN-LÄTTLÄST-v3.md) för aktuell version).

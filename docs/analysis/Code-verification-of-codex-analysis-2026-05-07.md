@@ -1,3 +1,8 @@
+<!-- vale Miranon.VueToReact = NO -->
+<!-- DEFERRED: Session 6.6.6 — Miranon.VueToReact Vue→React-drift fix -->
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Code's verifiering av Codex' projektanalys (post-Pre-Fas-2)
 
 *Datum: 2026-05-07 | Verifierat mot HEAD `e0ec446` (main, ren worktree förutom Codex-analysen + denna fil)*

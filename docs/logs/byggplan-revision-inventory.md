@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Byggplan-revision — P0 Inventering
 
 > **Status:** ✅ AVSLUTAD — P0-leveransen klar och godkänd 2026-05-04.

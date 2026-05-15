@@ -1,0 +1,15 @@
+extends: substitution
+message: "Vue→React stack-skifte per ADR-027: använd '%s' istället för '%s'."
+level: error
+ignorecase: false
+swap:
+  composable: hook
+  emit: callback
+  v-model: controlled component
+  '\.vue\b': '.tsx'
+  '<script setup>': function component
+  '\bref\(\)': 'useRef() / useState()'
+  '\bcomputed\(\)': 'useMemo()'
+  '\bwatchEffect\(\)': 'useEffect()'
+  Pinia: TanStack Store / Zustand
+  'Vue Router': TanStack Router

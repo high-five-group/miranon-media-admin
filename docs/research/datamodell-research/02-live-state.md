@@ -9,6 +9,9 @@ mcp-server: claude_ai_Airtable (Anthropic-Airtable)
 status: Checkpoint 1 — avvaktar godkännande
 ---
 
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Live-state — Airtable-bas `app8uGPrVCVOm6LfD`
 
 > **Verifieringsregel.** Varje tabellrad och fält i denna fil kommer från `list_tables_for_base` + `get_table_schema` mot bas `app8uGPrVCVOm6LfD` 2026-04-28. Automations-data kommer från `miranon-media-os/docs/miranon_automations_COMPLETE.json` (export 2026-03-16) eftersom Airtable-MCP inte kan läsa automationer (CLAUDE.md, "Kritiska lärdomar"). Stickprov är `list_records_for_table` med `pageSize` enligt anrop.
@@ -285,7 +288,9 @@ Verifiering Q5 — `tblVE3UKWl1CKrphV` = **Eventplanering**. Bekräftar att `get
 | fldL0YfWmdkOuxgsH | **RIM 3 eventkey** | formula | samma villkor med "Resor i medvetandet 3" — **finns** |
 | fldLLmr2QjcPNlBBm | Fjärrskådning eventkey | formula | samma villkor med "Fjärrskådning" |
 | fldGC2MziEfqIPeZP | Eventkey (lookup) | multipleLookupValues | från Event.EventKey |
+<!-- vale Vale.Repetition = NO --> <!-- legitim repetition: Airtable linked-field "Event.Event" (tabell.fält) -->
 | fldJyjymEoo514AgN | Kursnamn (lookup) | multipleLookupValues | från Event.Event (text) |
+<!-- vale Vale.Repetition = YES -->
 | fldfOkyENnKgQQos2 | Eventlabel | multipleLookupValues | från Event.Eventlabel |
 | fldExIP1zw5o6ib63 | Event startdatum | rollup | recordLinkFieldId=fldaj5mbpU3yPw2np, fieldIdInLinkedTable=fldBYhXEHLCd1o2Je |
 | fldhvFOFV7O0hNIaY | Event slutdatum | rollup | samma men slutdatum |

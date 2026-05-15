@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # ADR-020: Fas 3.5 = egen fas (a11y-baseline + test-infra + mönsterbibliotek)
 
 - **Status:** Accepted

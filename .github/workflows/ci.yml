@@ -271,6 +271,26 @@ jobs:
         # Ingen pre-commit-hook — CI-only-grindvakt per Marcus' direktiv K4.
         run: npx markdownlint-cli2
 
+      - name: Install Vale
+        # Per ADR-030 § Del 1.3: Vale-binary-install via curl + tar (analog
+        # till actionlint per ADR-029 § Utelämning #3). vale-action är
+        # underhåll-osäker (~17 mån gammal); binary minimerar Actions-
+        # supply-chain-yta.
+        run: |
+          VALE_VERSION="3.14.1"
+          curl -sL "https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz" -o /tmp/vale.tar.gz
+          tar -xzf /tmp/vale.tar.gz -C /tmp
+          sudo mv /tmp/vale /usr/local/bin/vale
+          vale --version
+
+      - name: Check prose with Vale
+        # Per ADR-030 § Del 1.3 (post-K6.1+K6.2): Vale.Spelling AV (F.1'
+        # engelsk-hunspell-mismatch), Vale.Repetition + Miranon-stilguide
+        # (VueToReact + Brand + Undvik) + Vocab-genererad Vale.Terms.
+        # Vale.Terms + Miranon.VueToReact deferade till Session 6.6.6 via
+        # per-fil rad-1-disable (Alt F per K6.2 Steg 7).
+        run: vale "docs" "tasks" "README.md" "CHANGELOG.md" "SECURITY.md" "CONTRIBUTING.md"
+
   # Job 5: Aggregator för branch-protection-readiness.
   # Per ADR-029 §1e. Grön status om alla föregående jobb antingen passerade
   # eller skippades. Required check vid framtida branch protection.

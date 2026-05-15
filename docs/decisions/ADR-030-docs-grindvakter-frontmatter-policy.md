@@ -1,3 +1,6 @@
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # ADR-030: Docs-grindvakter + frontmatter-policy
 
 - Status: Draft (bumpas till Accepted vid Session 6.6 K-sista bake-in)
@@ -53,15 +56,23 @@ Följande 4 grindvakter etableras, fördelade över `docs`-jobbet och `lint`-job
 
    Slot-numrering #2 bevaras för trail-spårbarhet per ADR-022 kategori-utvidgning-precedent.
 
-3. **Vale** (docs-jobb)
-   - Språk/ton/terminologi-konsistens **+ stavnings-validering** via projektspecifik stilguide i `.vale/`
-   - Vale-scope utvidgad post-K3-baseline (2026-05-14): inkluderar stavnings-validering utöver språk/ton/terminologi-konsistens. Custom-vocabulary från ursprunglig typos-design (prep-dok Del 3.3, 22 termer) migreras till Vale-styles (`Vocab/Miranon/accept.txt` eller motsvarande Vale-konvention)
-   - Four rule-grupper:
-     - **Vue→React-substitution** (error): `composable` → `hook`, `emit` → `callback`, `v-model` → `controlled component`, `.vue` → `.tsx`, `<script setup>` → `function component`, `ref()` → `useRef()/useState()`, `computed()` → `useMemo()`, `watchEffect()` → `useEffect()`, `Pinia` → `TanStack Store / Zustand`, `Vue Router` → `TanStack Router`
-     - **Brand-konsistens** (error): `Miranon` → `Miranon Media` (canonical brand). Undantag i `.vale.ini`: repo-namn (`miranon-media-admin`, `miranon-media-os`), tekniska identifiers (Airtable base-namn, Supabase projekt-slug om de innehåller "miranon"), sökvägar (`~/Repon/miranon-media-*`)
-     - **Stavning-canonical** (warning): `TypeScript` (inte `Typescript`), `GitHub` (inte `Github`), `Lotta`/`Roger`/`Claude` versaler
-     - **Stavnings-validering** (warning, ny post-K3): Vale's `spelling`-rule mot accept-list som inkluderar svensk-prosa-vokabulär + 22 brand/teknik-termer migrerade från typos-design. Migration sker i K6 implementation
-   - Scope: `docs/**/*.md` + `tasks/lessons.md` + `tasks/todo.md` + `./*.md` (sessionsdok-archive exkluderas, ADR-er semi-fryss men inkluderas för Vue→React-drift-fångning)
+3. **Vale** (docs-jobb) — implementerad K6 2026-05-14 (post-K6.1+K6.2-empirisk pivot)
+   - **Vale.Spelling AV (F.1' pivot per K6.1):** Engelsk-hunspell-default producerade 49 664 svenska false-positives på K6.1 baseline. Mönsterförstärkning av K3-typos-rejection. Stavnings-validering levereras INTE av Vale i K6 — flyttat till per-fall manuell granskning eller framtida F.1''-strategi (svensk hunspell-paket)
+   <!-- vale Vale.Repetition = NO --> <!-- legitim meta-referens: svensk förkortning "m.m." nämnd som data-domän -->
+   - **Vale.Repetition PÅ:** Verifierad fungera; 2 fynd hanterade inline-disable i K6.2 (Event.Event Airtable-notation + m.m. svensk förkortning)
+   <!-- vale Vale.Repetition = YES -->
+   - **Vocab/Miranon/accept.txt (25 termer):** Auto-genererad Vale.Terms via Vale 3.14.1 (case-folding canonical-substitution). Dubbel-funktion (spelling-bypass + canonical-cap) bekräftad empirisk i K6.2 V1-V3. Stavning.yml-fil borttagen — Vocab är single source via Vale.Terms (TypeScript/GitHub-canonical migrerade till Vocab i K6.2 Steg 6)
+   - **3 Miranon-stilguide-filer (post-K6.2 — Stavning.yml borttagen):**
+     - **VueToReact.yml** (substitution, error): 11 unika substitutions per ADR-027 stack-skifte
+     - **Brand.yml** (substitution, error): inline-lookbehind+lookahead `(?<!Miranon )Miranon(?! Media)(?![-a-zA-Z0-9_])`. K6.1 RE2-test bekräftade lookbehind/lookahead-stöd (mot pre-empirisk hypotes). Empirisk K6.2 baseline: 0 fynd — förebyggande-regel mot framtida drift per Marcus' Alt A
+     - **Undvik.yml** (existence, suggestion): `obviously`/`uppenbarligen`/`simply`/`enkelt`-domän
+   - **Frontmatter quote-fix (emergent K6.2):** `docs/research/datamodell-research/03-gap-analysis.md` + `01-extraction.md` YAML-frontmatter quote-fix:ad. Vale's YAML-parser stoppade på okvoterade kolonkonkretade värden. K1.16 success-signal — grindvakts-introduktion avslöjade pre-existing-skuld
+   - **K6.2 V4 empirisk fynd:** Vale 3.14.1 har INGEN `--fix`-flagga. Manuell sed-batch är osäker för 3/5 unika Vale.Terms-substitutioner (`aria`/`fk`/`vite` har hög kod-bryt-risk i HTML-attribut + CSS-klasser + filnamn)
+   - **Defer-strategi (K6.2 Steg 7 Alt F per Marcus):** 425 Vale.Terms + 114 Miranon.VueToReact fynd deferade till mini-session 6.6.6 via **per-fil rad-1-disable** (utan = YES, open-ended scoping till filslut). Regression-skydd: vid 6.6.6 K-sista tas disable-raderna bort → Vale återaktiveras automatiskt. K1.13-utvidgning: per-fil-spårbarhet är legitim defer-form när inline-per-occurrence inte robust (Vale wrap-around failade vid bulk pga nested-wrap-bug)
+   - **Empirisk K6.2 baseline:** 566 → 8 fynd (~98.6 % reduktion). 8 kvarstående är Miranon.Undvik suggestions (mild). Vale exit 0 (suggestions blockerar inte CI)
+   - **CI-integration:** Vale-binary download v3.14.1 per ADR-029 § Third-party Actions-policy (vale-action ~17 mån gammal; binary minimerar Actions-supply-chain-yta). Docs-jobb-step efter markdownlint-cli2
+   - Scope: `docs/` + `tasks/` + repo-root publika `.md` (sessionsdok-archive + docs/archive exkluderade via `.vale.ini`-fil-pattern)
+   - Ingen pre-commit-hook (CI-only-grindvakt)
 
 4. **yamllint** (lint-jobb — snabb)
    - YAML-syntax + indentering
@@ -235,8 +246,8 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13: varje utelämning dokumenteras exp
   - K2 ✅ KLAR 2026-05-14 — yamllint (uppvärmning, 17 fynd → 0, commit `16ee4ec`)
   - K3 ✅ STÄNGD 2026-05-14 — typos avvisat per empirisk baseline (6 490 fynd, tool-uppgift-mismatch; commit `e74eb2f`)
   - K4 ✅ KLAR 2026-05-14 — markdownlint-cli2 Strategi B+ (10 570 → 0 fynd, commit `dba0440`)
-  - K5 ✅ KLAR 2026-05-14 — scripted-checklist-check (0 pre-existing skuld utanför CONTRIBUTING-mallar, commit i denna K5-bunt)
-  - K6 — Vale + projektspecifik stilguide (utvidgad med stavnings-validering post-K3)
+  - K5 ✅ KLAR 2026-05-14 — scripted-checklist-check (0 pre-existing skuld utanför CONTRIBUTING-mallar, commit `5df97b8`+`f408469`)
+  - K6 ✅ KLAR 2026-05-14 — Vale + Miranon-stilguide (K6.1 empirisk + K6.2 V1-V5 + Alt F per-fil-disable; 566 → 8 suggestions; 539 deferade till 6.6.6 per per-fil rad-1-disable)
   - K7 — Frontmatter-policy + pre-commit hook + CI-validering (inkluderar "Senast uppdaterad"-prosa-borttagning)
   - K8 — Checklist-trimning av sessionsavslut-checklistan (konservativ; halv-mekaniska defer till Session 6.7 per Marcus' Block D #3)
   - K9 — Empirisk verifikation (full CI-run; tids-mätning per Strategi E-paradigm)

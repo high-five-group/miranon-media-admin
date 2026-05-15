@@ -1,3 +1,8 @@
+<!-- vale Miranon.VueToReact = NO -->
+<!-- DEFERRED: Session 6.6.6 — Miranon.VueToReact Vue→React-drift fix -->
+<!-- vale Vale.Terms = NO -->
+<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+
 # Kvalitetsdefinitioner — 11/10 (React)
 
 > **Levande dokument** — skapad 2026-05-11 (K0åf) | **Status just nu:** SKELETT — innehållsfyllning defereras till Fas 3 K0 när första React-komponenten byggs | **Föregångare:** [Vue-versionen 2026-04-03](../archive/KVALITETSDEFINITIONER-11-vue-2026-04-03.md) (arkiverad per ADR-027)
