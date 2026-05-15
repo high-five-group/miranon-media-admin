@@ -1,3 +1,10 @@
+---
+owner: marcus803
+updated: 2026-05-15
+review_by: 2026-11-15
+status: stable
+---
+
 <!-- vale Vale.Terms = NO -->
 <!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 

@@ -1,3 +1,10 @@
+---
+owner: marcus803
+updated: 2026-05-15
+review_by: 2026-11-15
+status: stable
+---
+
 <!-- vale Vale.Terms = NO -->
 <!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
@@ -7,7 +14,7 @@
 
 > **Levande dokument.** Den här planen uppdateras löpande när vi går vidare. När en fas är klar förvandlas den till "vad vi har gjort, och varför". När nästa fas planeras får den en plats här. Ingen behöver gissa var vi är — det står i det här dokumentet.
 >
-> **Senast uppdaterad:** 2026-05-13 — version 3 (Fas 2 KOMPLETT, Sessions 4+5+5b)
+> **Version 3** — Fas 2 KOMPLETT (Sessions 4+5+5b). Senast: Session 6.6 docs-grindvakter (2026-05-14).
 > **Status just nu:** Fas 0, Fas 1, Fas A och Fas 2 är klara. **Fas 2.5 (dubbelkoll på datan) startar nästa session.**
 > **Föregångare:** [v2](../archive/BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md) (april 2026, arkiverad 2026-05-09) och [v1](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md) (arkiverad 2026-05-06). v3 ersätter v2 och speglar byggplan-revisionen från maj 2026.
 

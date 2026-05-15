@@ -129,6 +129,14 @@ jobs:
         # Empirisk 4-test-suite verifierade vid K5-implementation 2026-05-14.
         run: bash scripts/check-public-checklists.sh
 
+      - name: Validate frontmatter on governing docs
+        # Per ADR-030 § Del 3: 5-check-validator för YAML-frontmatter på
+        # 9 styrande docs (existens, updated-match, review_by > today,
+        # status-enum, owner-enum). Config: .frontmatter-policy.conf.
+        # Empirisk 9-test-suite verifierad K7.B 2026-05-14.
+        # Hub-spoke-portabel design per K7 Lesson #6 (UNIVERSAL).
+        run: bash scripts/check-frontmatter.sh
+
   # Job 3: Heavy test-suite + build. Conditional på changed-detection.
   # Per ADR-029 §1c. Skippas helt på doc-only-commits (~70s spill eliminerat).
   test:

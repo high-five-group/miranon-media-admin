@@ -82,6 +82,7 @@ push:
 | yamllint | `brew install yamllint` *eller* `pipx install yamllint` | `yamllint .github/` |
 | markdownlint-cli2 | `npm install` (devDependency) *eller* `brew install markdownlint-cli2` | `npx markdownlint-cli2` |
 | scripted-checklist-check | (ingår i repo via `scripts/`) | `bash scripts/check-public-checklists.sh` |
+| frontmatter-validator | (ingår i repo via `scripts/` + `.frontmatter-policy.conf`) | `bash scripts/check-frontmatter.sh` |
 | Vale | `brew install vale` | `vale "docs/" "tasks/" "README.md" "CHANGELOG.md" "SECURITY.md" "CONTRIBUTING.md"` |
 
 typos övervägdes men avvisades per K3-baseline 2026-05-14

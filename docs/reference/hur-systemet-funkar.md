@@ -1,8 +1,15 @@
+---
+owner: marcus803
+updated: 2026-05-15
+review_by: 2026-11-15
+status: stable
+---
+
 <!-- vale Vale.Terms = NO -->
 <!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 <!-- markdownlint-disable MD041 -->  <!-- filen saknar h1 (data-doc utan toc-rubrik som default) -->
-> **Primär version. Senast uppdaterad 2026-04-28.**
+> **Primär version.**
 >
 > Kopia för psionautics-projektets Claude-chatt synkas separat till
 > `~/Repon/psionautics/docs/reference/hur-systemet-funkar.md` efter varje uppdatering här.

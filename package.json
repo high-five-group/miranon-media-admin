@@ -15,7 +15,8 @@
     "test:api": "playwright test --project=api-pure --project=api-staging",
     "test:api:pure": "playwright test --project=api-pure",
     "test:api:staging": "playwright test --project=api-staging",
-    "test:e2e:staging": "playwright test --project=chromium-authenticated"
+    "test:e2e:staging": "playwright test --project=chromium-authenticated",
+    "postinstall": "git config core.hooksPath .githooks"
   },
   "dependencies": {
     "@react-aria/focus": "^3.21.5",

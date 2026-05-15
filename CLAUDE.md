@@ -1,6 +1,13 @@
+---
+owner: marcus803
+updated: 2026-05-15
+review_by: 2026-11-15
+status: stable
+---
+
 # CLAUDE.md — Miranon Media Admin (React)
 
-*Senast uppdaterad: 2026-05-06 | v0.4 — Session 3 (Pre-Fas-2-verifiering): repo-strukturell polish + publika professionalitetssignaler. Fas 2 — Routing + Auth — startar nästa session mot `docs/byggplan.md`.*
+*v0.5 — Session 6.6 (2026-05-14): docs-grindvakter + frontmatter-policy (mellan Fas 2 och Fas 2.5). Fas 2 — Routing + Auth — ✅ KLAR Sessions 4+5+5b. Nästa session: Fas 2.5 schema-kontrakt-sync mot `docs/byggplan.md`.*
 
 ---
 

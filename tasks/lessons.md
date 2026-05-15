@@ -1,3 +1,10 @@
+---
+owner: marcus803
+updated: 2026-05-15
+review_by: 2026-11-15
+status: stable
+---
+
 <!-- vale Miranon.VueToReact = NO -->
 <!-- DEFERRED: Session 6.6.6 — Miranon.VueToReact Vue→React-drift fix -->
 <!-- vale Vale.Terms = NO -->
@@ -9,7 +16,7 @@
 > Varje korrigering, insikt och mönster fångas här.
 > Claude läser denna fil vid varje sessionsstart.
 > Lärdomar märkta [UNIVERSAL] bör lyftas till meta-repot.
-> Senast uppdaterad: 2026-05-04 (Fas A säkerhetshardening M2+M8+M4 — 3 [UNIVERSAL]: test-only-endpoints får aldrig nå produktion + Supabase två-stegs auth-check + hypotes om UI-flöden ska valideras empiriskt)
+> **Senaste lyft:** Session 6.5 (2026-05-14) — K2.1–K2.15, 13 [UNIVERSAL]-lyft (broken-links-batch + grindvakts-disciplin + Chat-output 4-zoner-mall + Gate 2-review)
 
 ---
 

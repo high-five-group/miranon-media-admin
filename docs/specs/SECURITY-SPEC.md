@@ -1,3 +1,10 @@
+---
+owner: marcus803
+updated: 2026-05-15
+review_by: 2026-11-15
+status: stable
+---
+
 <!-- vale Vale.Terms = NO -->
 <!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
@@ -899,6 +906,6 @@ Använd denna checklista i Fas 7 för att verifiera all säkerhetsinfrastruktur.
 
 ---
 
-*Senast uppdaterad: 2026-05-04 (P2 — Fas A-införlivande)*
+*Senaste uppdaterings-kontext: P2 — Fas A-införlivande (2026-05-04).*
 *Underlag: gap-analysis.md paragraf 3 + 5, byggplan-direktiv.md §8.5.4–§8.5.5, tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md*
 *Nästa review: efter Fas 5.5 (operations-baserade write-flow etablerade i UI)*

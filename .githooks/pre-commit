@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit
+#
+# Auto-bumpar `updated:`-fält i YAML-frontmatter på staged styrande
+# docs till dagens datum. Idempotent. Hanterar GNU + BSD sed.
+#
+# Config: .frontmatter-policy.conf (repo-root). Hooket failar säkert
+# (exit 0, ingen ändring) om config saknas — hookens uppgift är inte
+# att verifiera konfig (det är check-frontmatter.sh:s jobb i CI).
+#
+# Aktiveras via: git config core.hooksPath .githooks
+# (sätts i K7.C postinstall-script i package.json)
+#
+# Bypass: git commit --no-verify (git inbyggt)
+#
+# Källa: docs/decisions/ADR-030-docs-grindvakter-frontmatter-policy.md
+# Etablerad: Session 6.6 K7 (2026-05-14)
+
+set -euo pipefail
+
+# === Ladda projekt-config ===
+CONFIG_FILE=".frontmatter-policy.conf"
+if [ ! -f "$CONFIG_FILE" ]; then
+    # Tyst skip — hooket ska inte blockera commits om config saknas.
+    # CI-validator fångar config-saknad explicit.
+    exit 0
+fi
+# shellcheck source=/dev/null
+source "$CONFIG_FILE"
+
+# Verifiera att config har nödvändig variabel — om inte, tyst skip
+if [ -z "${FRONTMATTER_GOVERNING_DOCS:-}" ]; then
+    exit 0
+fi
+
+GOVERNING_DOCS=("${FRONTMATTER_GOVERNING_DOCS[@]}")
+TODAY="$(date +%F)"
+BUMPED_FILES=()
+
+# GNU vs BSD sed-detection (single-shot)
+if sed --version >/dev/null 2>&1; then
+    SED_INPLACE=(-i)
+else
+    SED_INPLACE=(-i "")
+fi
+
+# Iterera staged filer (added, copied, modified — INTE deleted/renamed)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+for staged in $STAGED_FILES; do
+    # Matcha mot governing-listan (exakt path)
+    is_governing=0
+    for gov in "${GOVERNING_DOCS[@]}"; do
+        if [ "$staged" = "$gov" ]; then is_governing=1; break; fi
+    done
+    [ "$is_governing" -eq 0 ] && continue
+
+    # Verifiera att fil har frontmatter med updated:
+    if ! head -10 "$staged" | grep -qE "^updated:"; then
+        # Ingen updated-rad — hooket bumpar inte filer utan
+        # frontmatter (K7.C ansvarar för bulk-add)
+        continue
+    fi
+
+    # Idempotent: skip om värdet redan är today
+    if head -10 "$staged" | grep -qE "^updated: ${TODAY}$"; then
+        continue
+    fi
+
+    # In-place bump (sed-variant per plattform)
+    sed "${SED_INPLACE[@]}" -E "s/^updated: [0-9]{4}-[0-9]{2}-[0-9]{2}$/updated: ${TODAY}/" "$staged"
+
+    # Re-staga bumpad fil
+    git add "$staged"
+
+    BUMPED_FILES+=("$staged")
+done
+
+# Rapport till stdout (K11.5 11/10-felmeddelande-design)
+if [ "${#BUMPED_FILES[@]}" -gt 0 ]; then
+    echo "pre-commit: auto-bumpade 'updated' → ${TODAY} på styrande docs:"
+    for f in "${BUMPED_FILES[@]}"; do
+        echo "  - $f"
+    done
+fi
+
+exit 0
