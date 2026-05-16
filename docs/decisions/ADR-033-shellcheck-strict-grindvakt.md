@@ -245,34 +245,34 @@ Empirisk shellcheck-utfall pre-implementation (K1 RAPPORTERA, 2026-05-16):
 
 | SC-kod | Antal | Severity | Klass | Fix-approach |
 |---|---|---|---|---|
-| SC2250 | 306 | style | mekanisk (brace-around-vars: `$file` → `${file}`) | A.1.b `--format=diff` + `git apply` |
-| SC2292 | 34 | style | mekanisk (prefer `[[ ]]` över `[ ]`) | A.1.b |
-| SC2248 | 23 | style | mekanisk (prefer double quoting `"$var"`) | A.1.b |
-| SC2148 | 2 | error | design-beslut (shell-directive på sourced configs) | A.1.a (föreslagen: `# shellcheck shell=bash` rad 1) |
-| SC2312 | 2 | info | design-beslut (subshell return masking via `$(pwd)`) | A.1.a (föreslagen: refactor till explicit variabel ELLER `\|\| true`-suffix) |
-| **Totalt** | **367** | — | — | — |
-
-> **Räkningsavvikelse:** Total 367 SC-kod-träffar mot 366 fynd-rader. Skillnaden förklaras av att shellcheck-output kan visa flera SC-koder per fynd-rad (typ "Did you mean:"-block med kombinerade fix-suggestions). Empirisk re-verifikation körs vid K3.1 A.1.a-pass.
+| SC2250 | 306 | style | mekanisk (brace-around-vars: `$file` → `${file}`) | A.1.b (auto via `--format=diff` + `git apply`) |
+| SC2292 | 34 | style | mekanisk (prefer `[[ ]]` över `[ ]`) | A.1.b (33 auto + 1 manuell rad 99 per L_E cross-syntax-fall) |
+| SC2248 | 22 | style | mekanisk (prefer double quoting `"$var"`) | A.1.b (auto) |
+| SC2148 | 2 | error | design-beslut (shell-directive på sourced configs) | A.1.a (`# shellcheck shell=bash` rad 1) |
+| SC2312 | 2 | info | design-beslut (subshell return masking via `$(pwd)`) | A.1.a (CURRENT_DIR refactor per L_C nivå 1) |
+| **Totalt** | **366** | — | — | — |
 
 ### Post-fix-state
 
-Ifylles vid K-sista bake-in efter A.1.a + A.1.b + K3.3 CI-step körts.
+Empirisk post-implementation (post-K3.3 CI-step aktivering, run `25962416481` commit `82a7793`):
 
 | Severity | Pre-fix | Post-fix | Δ |
 |---|---|---|---|
-| error | 2 | TBD | TBD |
-| warning | 0 | TBD | TBD |
-| info | 2 | TBD | TBD |
-| style | 362 | TBD | TBD |
-| **Totalt** | **366** | **TBD** | **TBD** |
+| error | 2 | **0** | **-2** |
+| warning | 0 | 0 | 0 |
+| info | 2 | **0** | **-2** |
+| style | 362 | **0** | **-362** |
+| **Totalt** | **366** | **0** | **-366** |
 
-Target: 0/0/0/0 (strict-mode-grön) för grindvakt-aktivering.
+Target: 0/0/0/0 (strict-mode-grön) för grindvakt-aktivering. **UPPNÅDD** per CI-run `25962416481` step 14 "Validate bash scripts with shellcheck-strict" exit 0.
 
 ### CI-verifikation
 
-Ifylles vid K-sista bake-in:
+Empirisk implementation (2026-05-16):
 
-- Pre-grindvakt-CI-run-id: TBD
-- Post-grindvakt-CI-run-id: TBD
-- Lint-jobb tid pre/post-shellcheck-step: TBD
-- Empirisk verifikation att shellcheck-step exit 0 på post-fix-state: TBD
+- **Pre-grindvakt-CI-run-id:** `25962395263` (sista run pre-K3.3, commit `ea40d63` ADR-033 SHA-pin-fallback-dokumentation)
+- **Post-grindvakt-CI-run-id:** `25962416481` (commit `82a7793` K3.3 shellcheck-step aktiverad)
+- **Lint-jobb tid pre/post-shellcheck-step:** 24s pre (`ea40d63`) / 24s post (`82a7793`) — shellcheck-domän overhead ~1-2s under jitter-spann ±5s
+- **Empirisk verifikation att shellcheck-step exit 0 på post-fix-state:** **PASS** (run `25962416481` step 14 "Validate bash scripts with shellcheck-strict" exit 0)
+- **SHA256-verifikation:** **PASS** (run `25962416481` step 13 "Install shellcheck (pinned v0.11.0)" `sha256sum -c` returnerade 0)
+- **shellcheck-version-grep:** **PASS** (run `25962416481` step 13 sista rad `shellcheck --version | grep -F "version: 0.11.0"` exit 0 — bekräftar att SHA-pinnad asset levererade förväntad version)
