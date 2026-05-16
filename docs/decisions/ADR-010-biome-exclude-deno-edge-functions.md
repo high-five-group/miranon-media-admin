@@ -37,7 +37,7 @@ Deno:s `env.get()` returnerar `string | undefined`. Deno-konventionen är att an
 
 `record.fields['Namn']` är idiomatiskt i Deno/Airtable-API-integration där fältnamnen kommer från user-space. Biomes `useLiteralKeys`-regel rekommenderar `record.fields.Namn` — som inte fungerar för dynamiska keys.
 
-Fas 1 kopierade 7 edge functions rakt av från Vue-repot (via `cp`). När Biome kördes producerade den **24+ fel och warnings** i `supabase/functions/` — alla falska positiva eftersom Biomes regeluppsättning inte känner till Deno-kontexten.
+Fas 1 kopierade 7 Edge Functions rakt av från Vue-repot (via `cp`). När Biome kördes producerade den **24+ fel och warnings** i `supabase/functions/` — alla falska positiva eftersom Biomes regeluppsättning inte känner till Deno-kontexten.
 
 ## Beslut
 

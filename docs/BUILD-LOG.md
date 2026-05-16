@@ -300,7 +300,7 @@ Samtliga verifierade via `scripts/verify-phase-1.ts` (runtime) + `tsc` + `biome`
 
 - **Zod refaktorering:** Schema blir sanningskälla via `z.infer<typeof ...>` i Fas 2/3 när vi ändå rör domain-filer för branded types + discriminated unions ([ADR-005](decisions/ADR-005-zod-parallell-definitions.md))
 - **Event-aliasering:** Lokal alias per `.tsx`-fil i Fas 2+. Global rename till `MiranonEvent` om 5+ filer behöver alias. ([ADR-007](decisions/ADR-007-event-name-collision-deferred-aliasing.md))
-- **Deno lint/format/check på edge functions:** Fas 7 ska lägga till `deno check supabase/functions/**/*.ts` i pre-commit-hook + CI. ([ADR-010](decisions/ADR-010-biome-exclude-deno-edge-functions.md))
+- **Deno lint/format/check på Edge Functions:** Fas 7 ska lägga till `deno check supabase/functions/**/*.ts` i pre-commit-hook + CI. ([ADR-010](decisions/ADR-010-biome-exclude-deno-edge-functions.md))
 - **Schema-validering i adapter-metoder:** Fas 1 har scheman men inga adapter-metoder använder `.parse()`-anrop ännu. Fas 2 ska wrappar `callEdgeFunction`-resultat med `EventSchema.array().parse(data.events)` etc.
 - **docs/specs/DESIGN-SYSTEM-SPEC.md stale-risk:** Kopierad till React-repot. Framtida uppdateringar i Vue-repot synkas inte automatiskt. Governance-beslut uppskjutet efter alla faser per Marcus beslut (Session 1 (React), = Session 31 i total historik).
 
@@ -657,7 +657,7 @@ Skikt 2 (AuthError throw-path) är inte regression-skyddad i isolation post-K3.4
 - ci.yml restrukturerad från 12-stegs verify-jobb (1 jobb) till 5 jobs (changed → lint → test → docs → ci-passed)
 - Empirisk verifikation: doc-only-commits ~34s vs ~95s baseline = **~64 % besparing**
 - Kod-commits ~96s = matchar baseline med marginalia parallellisering
-- Lychee broken-link-detection etablerad som NY kvalitetscheck (0 errors empiriskt verifierad post-K1.D)
+- lychee broken-link-detection etablerad som NY kvalitetscheck (0 errors empiriskt verifierad post-K1.D)
 - ADR-028 utvidgad till ADR-029 § Third-party Actions-policy (SHA-pin + veckogranskning för Actions)
 - K17 supply-chain-skydd bevarat (audit-ci kör på alla commits)
 - Branch-protection-readiness etablerad via `ci-passed`-aggregator (ej aktiverat)
@@ -697,7 +697,7 @@ Faktiskt: 54 broken refs fixade (6 + 23 + 1 + 24) + 1 disciplin-utvidgning (ADR-
 | Stop-test | Resultat |
 |---|---|
 | 6/6 DEFERRED-FIX-MARKER-rader eliminerade | ✅ (0 kvarstår i `.lycheeignore` Block 2; Block 2-header borttagen) |
-| Lychee mot full scope: 0 errors | ✅ CI 25856786950 |
+| lychee mot full scope: 0 errors | ✅ CI 25856786950 |
 | CI grön mot main efter sista commit | ✅ |
 | Lessons skördade och hub-synk schemalagd | ✅ 15 kandidater (13 [UNIVERSAL], 2 lokala) |
 
@@ -738,7 +738,7 @@ Faktiskt: 5 grindvakter etablerade (typos rejected → ersatt av check-frontmatt
 
 4. **K8 deferrad helt till Session 6.7** — Per Marcus' Block D #3-caveat: K1-K7 + K7.5 + K9 åt tiden. Konservativ defer per P3a "var beredd att splitta".
 
-5. **K-sista #1-hotfix 4e80647** — Lychee fångade forward-pekare i todo.md (sessionsdok-archive-path som inte existerade än). Skapade ny lesson-kandidat K-sista.2 (retroaktiv). Mitigation-mönster: arkiverings-pekare måste matcha HEAD-state vid commit-tid.
+5. **K-sista #1-hotfix 4e80647** — lychee fångade forward-pekare i todo.md (sessionsdok-archive-path som inte existerade än). Skapade ny lesson-kandidat K-sista.2 (retroaktiv). Mitigation-mönster: arkiverings-pekare måste matcha HEAD-state vid commit-tid.
 
 6. **Dependabot secrets-skuld upptäckt post-K2 merge** — 5 öppna PR:er failar på staging-secrets (pre-existing 5 dagar pre-K2). Defer till mini-session 6.6.5 + ADR-031.
 
@@ -751,7 +751,7 @@ Faktiskt: 5 grindvakter etablerade (typos rejected → ersatt av check-frontmatt
 | 5 docs-grindvakter aktiva i CI | ✅ K9-verifierat på run 25923521145 (yamllint + markdownlint-cli2 + scripted-checklist + Vale + check-frontmatter) |
 | Frontmatter-policy på 9 styrande docs | ✅ K7.C commit `866dd7c` (0 fel post-implementation) |
 | Pre-commit hook auto-bump aktiv | ✅ K7.C via `git config core.hooksPath .githooks` |
-| Lychee 0 errors mot full scope | ✅ Bevarat från Session 6.5-baseline (+ hotfix 4e80647 åtgärdade ny forward-pekare-drift) |
+| lychee 0 errors mot full scope | ✅ Bevarat från Session 6.5-baseline (+ hotfix 4e80647 åtgärdade ny forward-pekare-drift) |
 | ADR-030 Status Draft → Accepted | ✅ K-sista commit #1 `01f5cbb` |
 | 15 [UNIVERSAL] lessons skördade | ✅ K-sista commit #1 + retroaktiv K-sista.2 i commit #3 |
 | Hub-sync K6.6.1-K6.6.5 (5 konsoliderade rader) | ✅ Commit #2 hub `173e75b` |
@@ -806,7 +806,7 @@ ADR-räkning post-Session 6.6: 30 (ADR-001 till ADR-030).
 |---|---|---|---|
 | K1 | ✅ KLAR | `29bcef5` | Sessionsdok-skelett + ADR-031 Draft + README ADR-katalog (atomisk: ADR-030 + ADR-031) |
 | K2 | ✅ KLAR | `ce5c0a8` | dependabot.yml uppgradering (4 stack-grupper + 2 catch-all + 1 GHA-grupp + cooldown 7d/3d + reviewers + commit-prefix + limit 5/3) |
-| K2.1 | ✅ KLAR | `a67908d` | fetch-depth: 50 retrofit på lint+test+docs jobs (rotorsak-fix för L8) + Lychee URL-fix i ADR-031 |
+| K2.1 | ✅ KLAR | `a67908d` | fetch-depth: 50 retrofit på lint+test+docs jobs (rotorsak-fix för L8) + lychee URL-fix i ADR-031 |
 | K3 | ✅ KLAR | `06cbcc4` | ci.yml Alt D Hybrid (`if: github.actor != 'dependabot[bot]'` på staging + e2e steg) |
 | K4 | ✅ KLAR | `0eedc6a` | PR-backfill (6 Dependabot-PR:er stängda: #19, #21, #22, #23, #24, #25) |
 | K-sista #1 | ✅ KLAR | `16e4591` | ADR-031 Draft → Accepted + Baseline-fynd ifyllt per lager |
@@ -821,9 +821,9 @@ ADR-räkning post-Session 6.6: 30 (ADR-001 till ADR-030).
 ### Pre-existing-skuld upptäckt + fixad i denna session
 
 - **L8 — ADR-030 § Del 3 Check 2 latent shallow-clone-bug** triggades första gången 2026-05-16 pga dag-rollover-invarians-brott (sammanträffande invariant från K7.C atomisk bake-in 2026-05-15 bröts av selective README-bump i K1). Rotorsak-fix via K2.1 fetch-depth: 50 retrofit på lint + test + docs jobs (commit `a67908d`).
-- **Lychee broken link i ADR-031** (K1-introducerad URL-typo `travis.gosselin.com` → korrekt `travisgosselin.com`). Fixad i K2.1.
+- **lychee broken link i ADR-031** (K1-introducerad URL-typo `travis.gosselin.com` → korrekt `travisgosselin.com`). Fixad i K2.1.
 - **README ADR-katalog saknade ADR-030** (pre-existing från Session 6.6 K-sista). Atomisk bake-in i K1 stängde luckan tillsammans med ADR-031.
-- **opentelemetry.io CI-runner-flakiness** (instans #2 av tanstack-precedens från Session 6.6 K6) — Lychee fail mellan K-sista #1 (`16e4591`, grön) och K-sista #2 (`ca57753`, röd) trots fungerande URL (lokal curl: HTTP 200). Sannolik orsak: Cloudflare/CDN blockerar GitHub Actions IP-ranges intermittent. Fixad i K-sista #6.5 (`e53c720`) via `.lycheeignore` Block 1-add med kategori "CI-runner-flakiness" + lessons-flag för framtida re-utvärdering.
+- **opentelemetry.io CI-runner-flakiness** (instans #2 av tanstack-precedens från Session 6.6 K6) — lychee fail mellan K-sista #1 (`16e4591`, grön) och K-sista #2 (`ca57753`, röd) trots fungerande URL (lokal curl: HTTP 200). Sannolik orsak: Cloudflare/CDN blockerar GitHub Actions IP-ranges intermittent. Fixad i K-sista #6.5 (`e53c720`) via `.lycheeignore` Block 1-add med kategori "CI-runner-flakiness" + lessons-flag för framtida re-utvärdering.
 
 ### Avvikelser från ursprungsplan
 

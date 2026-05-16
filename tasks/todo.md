@@ -17,7 +17,7 @@
 
 **Fas 2 ✅ KLAR 2026-05-13** — Routing + Auth komplett. Alla 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression. Defense-in-depth tre-skikt-arkitektur levererad: skikt 1 (klient-guard K3.2/K3.3) + skikt 2 (AuthError throw K3.4) + skikt 3 (server requireUser Fas A M2). Sessions 4 + 5 + 5b (arkiveras till `tasks/sessions/archive/2026-05/` i K5.8). Hub-lyft-kandidater: 7 totalt (K17 + K18 + K19 + K34 + K36 + K37 + K38) för K5.7 hub-sync.
 
-**Session 6 ✅ KLAR 2026-05-14** — CI-optimering mellan Fas 2 och Fas 2.5. Strategi E (Vite-mönstret) etablerad per ADR-029. Empirisk verifikation: doc-only ~34s vs ~95s baseline = ~64 % besparing. Kod ~96s matchar baseline. Lychee broken-link-detection etablerad. ADR-028 utvidgad till ADR-029 § Third-party Actions-policy. 17 UNIVERSAL-lessons skördade (största enskilda session-skörd); 10 hub-lyfta. Sessionsdok-trail: [`tasks/sessions/2026-05-13-ci-optimering.md`](sessions/2026-05-13-ci-optimering.md).
+**Session 6 ✅ KLAR 2026-05-14** — CI-optimering mellan Fas 2 och Fas 2.5. Strategi E (Vite-mönstret) etablerad per ADR-029. Empirisk verifikation: doc-only ~34s vs ~95s baseline = ~64 % besparing. Kod ~96s matchar baseline. lychee broken-link-detection etablerad. ADR-028 utvidgad till ADR-029 § Third-party Actions-policy. 17 UNIVERSAL-lessons skördade (största enskilda session-skörd); 10 hub-lyfta. Sessionsdok-trail: [`tasks/sessions/2026-05-13-ci-optimering.md`](sessions/2026-05-13-ci-optimering.md).
 
 **Session 6.5 ✅ KLAR 2026-05-14** — Broken-links-batch-städning. 54 broken refs eliminerade (6 + 23 + 1 + 24) + 1 disciplin-utvidgning (ADR-022 kategori 4 "Frusen extern leverans"). 8 commits (6 fix + 1 revert + 1 disciplin). 15 lessons-kandidater skördade (13 [UNIVERSAL], 2 lokala). `.lycheeignore` 55 → 35 rader, 6 → 0 DEFERRED-FIX-MARKER. Sessionsdok-trail: [`tasks/sessions/archive/2026-05/2026-05-14-broken-links-cleanup.md`](sessions/archive/2026-05/2026-05-14-broken-links-cleanup.md) (arkiverad).
 
@@ -73,7 +73,7 @@ Fem lessons-kandidater fångade i Chat-context EFTER K-sista #2 lessons-bake-in 
 
 - **L16 [UNIVERSAL]** — Konceptuella refereringar i Chat-output måste verifieras mot faktisk rubrik-text/sökväg i mål-fil FÖRE prompt-design. Sökning på *koncept* ("Ristat i sten") ≠ sökning på *exakt sträng*. Generaliserbar regel: vid prompt-design som modifierar named-targets (sektioner, filer, identifiers), Code rapporterar faktisk-text via grep FÖRE Chat formulerar str_replace-mönster. Trigger: K-sista #4.A forensisk-pass 2026-05-16 — "Ristat i sten" är Chat-koncept, faktisk rubrik = "Instruktioner — Alltid gäller". Mönsterförstärkning av L1 + L11.
 
-- **L17 [UNIVERSAL]** — CI-runner-flakiness klass-pattern-konsolidering vid 3+ instanser av samma CDN-blockerings-mönster. Etablerings-tröskel: 3 empiriska instanser (tanstack/router Session 6.6 K6 + opentelemetry Session 6.6.5 K-sista #6.5 + tanstack/table K-sista #7.1). Konsolidera till klass-pattern (`^https://domain\.com/.*$`) istället för att stapla instans-patterns. Klass-fix > instans-fix per K7.5.3 (ifrågasätt ramen). Lessons-flag bevaras för re-utvärdering om CDN-blockering upphör. Tillämpas på Lychee `.lycheeignore` Block 1 Acceptable, CI-runner-flakiness-kategori. Trigger: K-sista #7.1 main CI-fix 2026-05-16. Partiell spårning i commit `df45f71` commit-meddelande + `.lycheeignore`-kommentar (klass-utvidgnings-motivering).
+- **L17 [UNIVERSAL]** — CI-runner-flakiness klass-pattern-konsolidering vid 3+ instanser av samma CDN-blockerings-mönster. Etablerings-tröskel: 3 empiriska instanser (tanstack/router Session 6.6 K6 + opentelemetry Session 6.6.5 K-sista #6.5 + tanstack/table K-sista #7.1). Konsolidera till klass-pattern (`^https://domain\.com/.*$`) istället för att stapla instans-patterns. Klass-fix > instans-fix per K7.5.3 (ifrågasätt ramen). Lessons-flag bevaras för re-utvärdering om CDN-blockering upphör. Tillämpas på lychee `.lycheeignore` Block 1 Acceptable, CI-runner-flakiness-kategori. Trigger: K-sista #7.1 main CI-fix 2026-05-16. Partiell spårning i commit `df45f71` commit-meddelande + `.lycheeignore`-kommentar (klass-utvidgnings-motivering).
 
 - **L18 [UNIVERSAL]** — Pre-Update projektkunskap är inte LIVE-STATE. Endast Code har LIVE-STATE av filsystem mellan session-pivot och Marcus' Update-klick. Chat:s projektkunskaps-sökning drifterar mot faktisk repo-HEAD. Generaliserbar regel: vid pre-pivot- eller post-Code-edit-verifikation, Chat ber Code rapportera empiriskt; projektkunskaps-sökning kan ge gammal state och leda till felklassning ("redan committed" när faktiskt bara i Chat). Mönsterförstärkning av L3 (empirisk verifikation FÖRE strategi) tillämpat på Chat:s eget sökmedel. Trigger: Marcus' pre-pivot fångst 2026-05-16 — Chat sökte projektkunskap för pre-pivot-verifikation utan att inse att Update inte klickats. Ingen filsystem-spårning utöver denna todo.md-rad.
 
@@ -105,7 +105,7 @@ ADR-029 § Konsekvenser planerar för manuell aktivering av branch-protection. A
 
 **Källa:** Session 6.5 K-sista.4 beslut 2026-05-14.
 
-### Session 6.5 ✅ KLAR 2026-05-14 — Lychee-baseline fix-arbete (deferred från Session 6 K1.D Commit 3)
+### Session 6.5 ✅ KLAR 2026-05-14 — lychee-baseline fix-arbete (deferred från Session 6 K1.D Commit 3)
 
 K1.D Commit 2 lychee-baseline (2026-05-14) fångade 81 broken/stale refs. Per K7 refactor/semantik-separation: CI-arkitektur ≠ content-korrekturläsning. `.lycheeignore` accepterar baseline med DEFERRED-FIX-MARKER-block; fix-arbete spåras här.
 
@@ -133,7 +133,7 @@ K1.D Commit 2 lychee-baseline (2026-05-14) fångade 81 broken/stale refs. Per K7
 
 **Pre-Session 6.5-not (2026-05-14, Session 6 K1.D Commit 4c):** K1.D Commit 4b empiriskt-verifierade fix av tanstack canonical-URLs i `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` (`/query` → `/query/latest`, `/table` → `/table/latest`). CI-verifikation fördröjdes av UTF-8-glob-bug i tj-actions/changed-files (svenska tecken i v3.md-filnamnet gav `should_skip_tests: false` + `docs_changed: false` — lychee kördes inte). Commit 4c (denna uppdatering) triggar ASCII-path docs-changed → lychee körs → 0 errors verifieras empiriskt. UTF-8-bugg flaggas som lessons-kandidat #17 för K-sista hub-lyft-överväganden + ev. ADR-029-appendix om mönstret är reproducerbart.
 
-**Lessons-kandidat #14 (skördas Session 6 K-sista):** Lychee + cross-doc-grep är komplementära kvalitetsverktyg — båda behövs vid fas-avslut. Lychee fångar **referensdrift**; K5.9c fångar **innehållsdrift**. Generaliserbar disciplin etablerad via ADR-029 § Baseline-fynd.
+**Lessons-kandidat #14 (skördas Session 6 K-sista):** lychee + cross-doc-grep är komplementära kvalitetsverktyg — båda behövs vid fas-avslut. lychee fångar **referensdrift**; K5.9c fångar **innehållsdrift**. Generaliserbar disciplin etablerad via ADR-029 § Baseline-fynd.
 
 ### Återkommande disciplin: K0åi-trigger för pin-luckring (post-K0åh resolution 2026-05-13)
 
@@ -298,7 +298,7 @@ Sessionsdok-trail (arkiverad 2026-05-13 i K5.8): [`tasks/sessions/archive/2026-0
 - **Fas 5: App-shell + Tab bar** — minimal, FK-inspirerad + [GA] error boundaries, service worker, View Transitions
 - **Fas 6: Hem + Event + Personer + Mer** — 4 flikar + [GA] optimistic UI, Realtime, stale-while-error
 - **Fas 6.5: Aktivitetslogg** — [GA] xAPI-schema, trace_id, GDPR retention
-- **Fas 7: Konsolidering** — [GA] CSP, Trusted Types, chaos testing, deploy-pipeline, Golden Master-test, Deno lint på edge functions
+- **Fas 7: Konsolidering** — [GA] CSP, Trusted Types, chaos testing, deploy-pipeline, Golden Master-test, Deno lint på Edge Functions
 - **Fas 8 (framtid):** Passkeys, push-notifieringar, avancerad offline
 
 ---

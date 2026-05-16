@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-16
+updated: 2026-05-17
 review_by: 2026-11-15
 status: stable
 ---
@@ -774,11 +774,11 @@ Datum: 2026-05-14 | Källa: Session 6 K1.D Commit 3 .lycheeignore design-beslut
 
 För Session 6.5-defer av ~71 broken links: alternativ A (blanket `fail: false` på lychee), alternativ B (`.lycheeignore`-patterns med DEFERRED-FIX-MARKER-kommentar). Alt A tystar lychee helt under defer-fönstret — 10/10. Alt B är **per-rad spårbar TODO med tydlig borttagnings-trigger** — 11/10. Varje DEFERRED-FIX-MARKER-rad är scope-explicit och blir obsolet när motsvarande fix landar. När alla rader borttagna = Session 6.5 ✅ KLAR. Generaliserbar regel: vid defer-paket av flera distinkta items, föredra per-item-spårbart-defer över blanket-suppression. Spårbarhet är 11/10-disciplinens kärna. Mönster-förstärkning av K7 (refactor/semantik-separation): defer ska kunna stå ensam med tydligt scope, inte vara bekvämlighet smyggömd som design.
 
-### K1.14 [UNIVERSAL, hub-lyft] — Lychee + cross-doc-grep är komplementära kvalitetsverktyg vid fas-avslut
+### K1.14 [UNIVERSAL, hub-lyft] — lychee + cross-doc-grep är komplementära kvalitetsverktyg vid fas-avslut
 
 Datum: 2026-05-14 | Källa: Session 6 K1.D Commit 2 ADR-027-stack-skifte-drift-fångst
 
-Bland kategori A-fynden i lychee-baseline: `KVALITETSDEFINITIONER-11.md` refererad istället för `KVALITETSDEFINITIONER-11-REACT.md`. Direkt drift från ADR-027 (Vue → React stack-skifte, Session 5b K3.5/K5) som K5.9c cross-doc-grep-rutinen inte fångade (rutinen sökte efter Vue-specifika strängar, inte länkmål-validering). Mönster: lychee fångar **referensdrift** (samma ord, fel länkmål); cross-doc-grep fångar **innehållsdrift** (samma faktum, olika ord). Båda missade automatiskt av varandra. Generaliserbar regel: fas-avsluts-disciplin ska köra båda check-typer parallellt. Lychee i CI på docs-touching commits; cross-doc-grep manuellt vid fas-avslut (eller automatiserat i Fas 7-konsolidering). Mönster-förstärkning av K5.9c-rutinen — utvidgning från content-domän till referens-domän.
+Bland kategori A-fynden i lychee-baseline: `KVALITETSDEFINITIONER-11.md` refererad istället för `KVALITETSDEFINITIONER-11-REACT.md`. Direkt drift från ADR-027 (Vue → React stack-skifte, Session 5b K3.5/K5) som K5.9c cross-doc-grep-rutinen inte fångade (rutinen sökte efter Vue-specifika strängar, inte länkmål-validering). Mönster: lychee fångar **referensdrift** (samma ord, fel länkmål); cross-doc-grep fångar **innehållsdrift** (samma faktum, olika ord). Båda missade automatiskt av varandra. Generaliserbar regel: fas-avsluts-disciplin ska köra båda check-typer parallellt. lychee i CI på docs-touching commits; cross-doc-grep manuellt vid fas-avslut (eller automatiserat i Fas 7-konsolidering). Mönster-förstärkning av K5.9c-rutinen — utvidgning från content-domän till referens-domän.
 
 ### K1.15 [lokalt] — Arkivzoner ska behandlas konsekvent över repo-domäner
 
@@ -790,7 +790,7 @@ K1.D Commit 3-baseline avslöjade scope-inkonsekvens: `tasks/sessions/archive/**
 
 Datum: 2026-05-14 | Källa: Session 6 K1.D Commit 2 + Commit 3 lychee-baseline
 
-K1.D-design förväntade content-drift-fynd (~30 stale refs efter ADR-021/K5.8b). Lychee-baseline avslöjade **också**: (a) ~46 path-konstruktion-fel i `docs/analysis/`-rapporter (relativ-path-bug, oförväntad kategori); (b) scope-policy-drift (`docs/archive/**` vs `tasks/sessions/archive/**`-inkonsekvens, oförväntad kategori). Inga av dessa sökta efter mänskligt — alla fångades av grindvakten. Generaliserbar regel: automatiserad kvalitets-grindvakt designad för X-kategori-fångst tenderar att avslöja Y-kategori-drift som mänsklig review missat. Det är **success-signal av investeringen**, inte scope-creep. Mönster-förstärkning av K1.12 ("grindvakt avslöjar dold skuld") — utvidgning från känt-okänt (förväntade kategorier) till okänt-okänt (oförväntade kategorier). Källa: Session 6 K1.D Commit 2 + Commit 3 lychee-baseline 2026-05-14.
+K1.D-design förväntade content-drift-fynd (~30 stale refs efter ADR-021/K5.8b). lychee-baseline avslöjade **också**: (a) ~46 path-konstruktion-fel i `docs/analysis/`-rapporter (relativ-path-bug, oförväntad kategori); (b) scope-policy-drift (`docs/archive/**` vs `tasks/sessions/archive/**`-inkonsekvens, oförväntad kategori). Inga av dessa sökta efter mänskligt — alla fångades av grindvakten. Generaliserbar regel: automatiserad kvalitets-grindvakt designad för X-kategori-fångst tenderar att avslöja Y-kategori-drift som mänsklig review missat. Det är **success-signal av investeringen**, inte scope-creep. Mönster-förstärkning av K1.12 ("grindvakt avslöjar dold skuld") — utvidgning från känt-okänt (förväntade kategorier) till okänt-okänt (oförväntade kategorier). Källa: Session 6 K1.D Commit 2 + Commit 3 lychee-baseline 2026-05-14.
 
 ### K1.17 [UNIVERSAL, hub-lyft] — tj-actions/changed-files@v47.0.6 UTF-8-glob-bug för non-ASCII-paths
 
@@ -838,7 +838,7 @@ Min K3-prompt skrev `Code-verification-of-codex-analysis-2026-05-07.md`, faktisk
 
 Datum: 2026-05-14 | Källa: Session 6.5 K2.3 STOPPA-OCH-FRÅGA (tasks/todo.md:92)
 
-K5.8 av Session 5b sessionsdok-arkivering uppdaterade visa-text i markdown-länk `[archive/2026-05/...](mål)` men missade länkmål. Klassisk markdown-drift: visa-text är vad läsaren ser i prosa, länkmål är "osynligt" tills någon klickar. Lychee fångar; cross-doc-grep missar (matchar visa-text och exkluderar raden). Generaliserbar regel: strukturell svaghet i markdown-formatet, inte mänsklig disciplin-svaghet. Mönsterförstärkning av K1.14 (lychee + cross-doc-grep är komplementära) — applicerat på samma-fil-divergens-fall.
+K5.8 av Session 5b sessionsdok-arkivering uppdaterade visa-text i markdown-länk `[archive/2026-05/...](mål)` men missade länkmål. Klassisk markdown-drift: visa-text är vad läsaren ser i prosa, länkmål är "osynligt" tills någon klickar. lychee fångar; cross-doc-grep missar (matchar visa-text och exkluderar raden). Generaliserbar regel: strukturell svaghet i markdown-formatet, inte mänsklig disciplin-svaghet. Mönsterförstärkning av K1.14 (lychee + cross-doc-grep är komplementära) — applicerat på samma-fil-divergens-fall.
 
 ### K2.4 [UNIVERSAL, hub-lyft] — Path-matematik i markdown-länkar: djup N kräver N ".."
 
@@ -976,7 +976,7 @@ Code fångade vid K7.5 Block A att handoff-fil refererade "ADR-030 § Del 1.5" s
 
 Datum: 2026-05-15 | Källa: Session 6.6 fortsättning #2 K7.5 Block A bonus-fynd
 
-ci.yml rad 124 har refererat icke-existerande "ADR-030 § Del 1.5" sedan K5-implementationen f408469 (2026-05-14) — ej fångat av någon av 5 grindvakter eftersom Lychee fångar URL/file-refs men inte text-referenser till ADR-sektionsrubriker. Mitigation-domän: ny grindvakt-kategori (CI-kommentar-referens-validator) eller manuell sessionsavslut-disciplin. Mönsterförstärkning av K1.16 (grindvakt avslöjar oväntade kategorier — här FRÅNVARO av grindvakt avslöjar drift-domän). Generaliserbar regel: CI-konfig-filer behöver egen "drift mot doc-referens"-validator om de innehåller doc-sektion-pekare.
+ci.yml rad 124 har refererat icke-existerande "ADR-030 § Del 1.5" sedan K5-implementationen f408469 (2026-05-14) — ej fångat av någon av 5 grindvakter eftersom lychee fångar URL/file-refs men inte text-referenser till ADR-sektionsrubriker. Mitigation-domän: ny grindvakt-kategori (CI-kommentar-referens-validator) eller manuell sessionsavslut-disciplin. Mönsterförstärkning av K1.16 (grindvakt avslöjar oväntade kategorier — här FRÅNVARO av grindvakt avslöjar drift-domän). Generaliserbar regel: CI-konfig-filer behöver egen "drift mot doc-referens"-validator om de innehåller doc-sektion-pekare.
 
 ### K7.5.3 [UNIVERSAL, hub-lyft] — Chat ska ifrågasätta ramen, inte bara rangordna inom den
 
@@ -1006,11 +1006,11 @@ Chat kritiserade Code:s "K17-policy"-referens som odefinierad (11/10 på Code) m
 
 Datum: 2026-05-15 | Källa: Session 6.6 fortsättning #2 K-sista commit #1-hotfix 4e80647
 
-K-sista commit #1 (01f5cbb) lade till todo.md-pekare med post-arkiv-path för Session 6.6 sessionsdok, men sessionsdok arkiveras INTE förrän commit #3. Lychee fångade broken link i CI (path existerade inte än). Hotfix 4e80647 fixade pekaren till pre-arkiv-path; denna commit #3 re-pointar till post-arkiv-path atomiskt med arkiveringen. Drift-domän: trail-link-pekare som "ser framåt" mot framtida arkiverings-state är broken vid pre-arkiv-commit. Mitigation: arkiverings-pekare i andra docs committas EFTER faktisk arkivering, eller två-fas-update (pre-arkiv path, post-arkiv re-point atomiskt med arkivering). Generaliserbar regel: vid multi-commit-arkiveringssekvenser, trail-links får inte peka mot framtida path-state. Mönsterförstärkning av K1.16 (grindvakt avslöjar oväntade kategorier — Lychee avslöjar tidsförskjuten-pekare-drift) + K7.5.1 (handoff-fil-strukturella-referenser empiriskt verifierade FÖRE bake-in). Mitigation-domän: K-sista-disciplin "ordna commits så att arkiverings-pekare alltid är post-arkiv inom samma commit som arkiveringen själv".
+K-sista commit #1 (01f5cbb) lade till todo.md-pekare med post-arkiv-path för Session 6.6 sessionsdok, men sessionsdok arkiveras INTE förrän commit #3. lychee fångade broken link i CI (path existerade inte än). Hotfix 4e80647 fixade pekaren till pre-arkiv-path; denna commit #3 re-pointar till post-arkiv-path atomiskt med arkiveringen. Drift-domän: trail-link-pekare som "ser framåt" mot framtida arkiverings-state är broken vid pre-arkiv-commit. Mitigation: arkiverings-pekare i andra docs committas EFTER faktisk arkivering, eller två-fas-update (pre-arkiv path, post-arkiv re-point atomiskt med arkivering). Generaliserbar regel: vid multi-commit-arkiveringssekvenser, trail-links får inte peka mot framtida path-state. Mönsterförstärkning av K1.16 (grindvakt avslöjar oväntade kategorier — lychee avslöjar tidsförskjuten-pekare-drift) + K7.5.1 (handoff-fil-strukturella-referenser empiriskt verifierade FÖRE bake-in). Mitigation-domän: K-sista-disciplin "ordna commits så att arkiverings-pekare alltid är post-arkiv inom samma commit som arkiveringen själv".
 
 ### Sammanfattning Session 6.6
 
-15 lessons-kandidater skördade (alla [UNIVERSAL] för hub-lyft). Domän-fördelning: K7-fasen 8 (handoff-fil-skördade vid K7.D), K7.5-fasen 4 (Code Gate 2 + Marcus 11/10-fångster), K9-fasen 1 (branch-protection ADR-029-status-verifikation), K-sista 2 (Chat meta-klass-blindhet + forward-pekare drift-domän). Mönsterförstärkning av K1.16 (grindvakt avslöjar oväntade kategorier) på meta-nivå: process-investering-session avslöjar både domän-lessons OCH meta-lessons om Chat/Code/Marcus-trippel-Gate 2-disciplin. 4 Gate 2-fångster av Marcus, 2 av Code, 1 av Chat self-review (efter Marcus' 11/10-påminnelse), 1 av Lychee-grindvakt (commit #1-hotfix → K-sista.2). Konsoliderad till 5 hub-rader vid K-sista commit #2 hub-sync (commit 173e75b). K-sista.2 är retroaktiv skapelse i commit #3 — hub-K6.6.4-rad refererar inte K-sista.2 explicit (framtida polish-flagga, ej blocker).
+15 lessons-kandidater skördade (alla [UNIVERSAL] för hub-lyft). Domän-fördelning: K7-fasen 8 (handoff-fil-skördade vid K7.D), K7.5-fasen 4 (Code Gate 2 + Marcus 11/10-fångster), K9-fasen 1 (branch-protection ADR-029-status-verifikation), K-sista 2 (Chat meta-klass-blindhet + forward-pekare drift-domän). Mönsterförstärkning av K1.16 (grindvakt avslöjar oväntade kategorier) på meta-nivå: process-investering-session avslöjar både domän-lessons OCH meta-lessons om Chat/Code/Marcus-trippel-Gate 2-disciplin. 4 Gate 2-fångster av Marcus, 2 av Code, 1 av Chat self-review (efter Marcus' 11/10-påminnelse), 1 av lychee-grindvakt (commit #1-hotfix → K-sista.2). Konsoliderad till 5 hub-rader vid K-sista commit #2 hub-sync (commit 173e75b). K-sista.2 är retroaktiv skapelse i commit #3 — hub-K6.6.4-rad refererar inte K-sista.2 explicit (framtida polish-flagga, ej blocker).
 
 ---
 

@@ -35,7 +35,7 @@ Strategi E är *renare* än Pure C på fyra dimensioner: en sanningskälla (en w
 
 2. **Lint separeras från test.** Tidigare verify-jobbet kombinerade lint-steg med test-steg i en sekvens. Strategi E delar dem så att lint kan köra parallellt med test (vid kod-commit) eller ensam (vid doc-only-commit). Parallellisering ger även ~15s tids-besparing på kod-commits.
 
-3. **Lychee markdown-link-check etableras som NY kvalitets-check** som inte fanns innan. Detta är "höjer kvaliten"-delen av Marcus' regel. Pre-Fas-2 K3 åe-arbetet hade broken-refs som manuellt arbete; nu fångas det automatiskt.
+3. **lychee markdown-link-check etableras som NY kvalitets-check** som inte fanns innan. Detta är "höjer kvaliten"-delen av Marcus' regel. Pre-Fas-2 K3 åe-arbetet hade broken-refs som manuellt arbete; nu fångas det automatiskt.
 
 4. **Concurrency-grupp** på workflow-nivå (`group: ${{ github.workflow }}-${{ github.event.number || github.sha }}`, `cancel-in-progress: true`) — auto-cancel av in-progress runs vid ny push på samma branch/PR.
 
@@ -63,7 +63,7 @@ Strategi E är *renare* än Pure C på fyra dimensioner: en sanningskälla (en w
 
 - ~74 % CI-tids-besparing per doc-only-commit (empiriskt verifieras i K1.D commit 2)
 - Branch-protection-readiness via `ci-passed`-aggregator (om Marcus aktiverar senare)
-- Lychee adderar broken-link-detection som inte fanns innan — kvalitetshöjning
+- lychee adderar broken-link-detection som inte fanns innan — kvalitetshöjning
 - En sanningskälla (ci.yml), inga synk-problem mellan två workflow-filer
 - Branschledar-mönster (Vite, argo-cd, qmk_firmware, aws-doc-sdk-examples) — minskar nyhets-risk
 - Lint parallelliseras med test — ~15s besparing på kod-commits också (sekundärt mål uppfyllt)
@@ -75,7 +75,7 @@ Strategi E är *renare* än Pure C på fyra dimensioner: en sanningskälla (en w
   - Mitigation: SHA-pinning + veckovis Actions-granskning (utvidgning av ADR-028-policy)
 - ci.yml växer från 12 steg (1 jobb) till 5 jobs / ~24 steps total — högre fil-komplexitet
   - Mitigation: jobs är konceptuellt separerade (changed/lint/test/docs/ci-passed), läsbarhet kompenserar
-- Lychee-baseline kan kräva justering om existing markdown har broken links
+- lychee-baseline kan kräva justering om existing markdown har broken links
   - Mitigation: rättad scope efter Gate 2-review (inkluderar `tasks/*.md`); broken links åtgärdas som drift, inte tystas via preventiv `.lycheeignore`
 - **Job-isolation kräver explicit cache för delade artefakter (Playwright-browsers).** Empiriskt bekräftat i K1.D commits 1/1.5/1.6: monolit-jobb-baseline hade ~95s (alla steg samma runner-instans, delad cache). Splittring till 5 jobs (Strategi E) isolerade test-jobbets `~/.cache/ms-playwright` → cold install 153s (commit 1). Lösning: `actions/cache@v4` med `hashFiles('package-lock.json')`-key + drop `--with-deps` (ubuntu-latest har Playwright OS-libs förinstallerade). Post-fix: 96s wall-clock med Playwright install 11s.
 
@@ -93,7 +93,7 @@ Strategi E är *renare* än Pure C på fyra dimensioner: en sanningskälla (en w
 
 Per Marcus' Gate 2-kvalitetsregel 2026-05-13 ("genväg = disciplin-brott"): varje utelämning dokumenteras explicit med motivering, senior-team-test och 11/10-test.
 
-1. **Lychee-scope utesluter `tasks/sessions/**`.** Arkiverade sessionsdok är frozen zoner per ADR-023 (lint-checkas inte). Aktiva sessionsdok är in-flight-state med TBD-poster och cross-fas-referenser under arbete. Senior-team-test: frozen + WIP-content lint-checkas inte. 11/10-test: utelämning refererar etablerad ADR. **Beslut:** låt stå.
+1. **lychee-scope utesluter `tasks/sessions/**`.** Arkiverade sessionsdok är frozen zoner per ADR-023 (lint-checkas inte). Aktiva sessionsdok är in-flight-state med TBD-poster och cross-fas-referenser under arbete. Senior-team-test: frozen + WIP-content lint-checkas inte. 11/10-test: utelämning refererar etablerad ADR. **Beslut:** låt stå.
 
 2. **`.lycheeignore` startar tom.** Empirisk add-only-policy: lägg endast till mönster när dokumenterad-flaky-behavior bevisats. Preventiv exklusion (typ "lägg till github.com som potentiellt-flaky") tystar K18-signal vi inte vet om är problem. Senior-team-test: ja, default-disciplin för ignorelist-management. 11/10-test: bevarar K18 ("output är signal, inte sanning"). **Beslut:** låt stå.
 
@@ -105,7 +105,7 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13 ("genväg = disciplin-brott"): varj
 
 6. **`fetch-depth: 50` i changed-jobb (inte unbounded eller mindre).** Marcus' single-author push-to-main-pattern har typiskt <15 commits per session; 50 = 3x säkerhetsmarginal. Senior-team-test: Vite använder samma värde med samma logik. 11/10-test: explicit antagande dokumenterat. **Beslut:** låt stå.
 
-**Anti-mönster-anteckning (initial genväg rättad i K1.D):** Lychee-scope utelämnade tidigare även `tasks/lessons.md`, `tasks/todo.md`, `tasks/byggplan-direktiv.md`, `tasks/datamodell-research-*.md` med motiveringen "risk för broken links vid baseline". Marcus' Gate 2-kvalitetscheck fångade att riskpåståendet var antagande, inte data (K11-anti-mönster). Rättning: scope inkluderar nu `tasks/*.md`. Eventuella broken links åtgärdas som drift, inte tystas via preventiv `.lycheeignore`. Anti-mönster skördas som lessons-kandidat i Session 6 K-sista ("Preventiv exklusion utan empirisk basis är genväg, inte försiktighet").
+**Anti-mönster-anteckning (initial genväg rättad i K1.D):** lychee-scope utelämnade tidigare även `tasks/lessons.md`, `tasks/todo.md`, `tasks/byggplan-direktiv.md`, `tasks/datamodell-research-*.md` med motiveringen "risk för broken links vid baseline". Marcus' Gate 2-kvalitetscheck fångade att riskpåståendet var antagande, inte data (K11-anti-mönster). Rättning: scope inkluderar nu `tasks/*.md`. Eventuella broken links åtgärdas som drift, inte tystas via preventiv `.lycheeignore`. Anti-mönster skördas som lessons-kandidat i Session 6 K-sista ("Preventiv exklusion utan empirisk basis är genväg, inte försiktighet").
 
 ## Konvention för framtida CI-utvidgningar
 
@@ -120,7 +120,7 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13 ("genväg = disciplin-brott"): varj
 - **Föregångare:** ADR-028 (supply-chain incident-respons-protokoll, 2026-05-12) — ADR-029 utvidgar policy till Actions-ekosystem.
 - **Drivande observation:** Session 5b K5-paketet 14 doc-only-commits, ~17-19 min spilld CI-tid (K1.B Block B.3).
 - **Research-källa:** Vite `ci.yml` main-branch verifierad 2026-05-13.
-- **Lychee-källa:** [lycheeverse/lychee-action](https://github.com/lycheeverse/lychee-action) maintained jan 2026.
+- **lychee-källa:** [lycheeverse/lychee-action](https://github.com/lycheeverse/lychee-action) maintained jan 2026.
 - **Implementation:** Session 6 K1.D commits — denna ADR (commit 2) + ci.yml-omstrukturering (commit 1 + 1.5 + 1.6 iterativt med cache-fix + drop --with-deps + ci-passed-fix).
 - **Verifikation:** empirisk via K1.D commit 1 + 1.5 + 1.6 CI-runs (kod-config-iteration) + commit 2 CI-run (doc-only — testar själva skip-mekaniken).
 
@@ -154,7 +154,7 @@ Bland kategori A-fynden: `KVALITETSDEFINITIONER-11.md` refererad istället för 
 Mönster: lychee + cross-doc-grep är komplementära kvalitetsverktyg.
 
 - Cross-doc-grep fångar **innehållsdrift** (samma faktum, olika ord)
-- Lychee fångar **referensdrift** (samma ord, fel länkmål)
+- lychee fångar **referensdrift** (samma ord, fel länkmål)
 
 Generaliserbar mönsterförstärkning av K5.9c-disciplinen: **fas-avsluts-rutinen ska inkludera båda check-typer**, inte bara cross-doc-grep. Lyfts som lessons-kandidat i Session 6 K-sista. Eventuellt Fas 7-konsolidering integrerar lychee-disciplin med K5.9c-grep-suite som unified "docs sanity check".
 

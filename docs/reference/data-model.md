@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-15
+updated: 2026-05-17
 review_by: 2026-11-15
 status: stable
 ---
@@ -666,7 +666,7 @@ För en "Ny/Återkommande"-badge i admin-tabellen som betyder "har gått kurs ti
 
 **Fälla:** Mail kan skickas men PATCH misslyckas (t.ex. Airtable rate-limit, fält-permission, eller fel record-ID). Edge Function loggar `console.error('Post-send PATCH failed: ...')` och returnerar **ändå ok-status** till frontend → user fick mail men UI visar inte timestamp och tror att mail misslyckades.
 
-**Diagnos:** Cloud → Edge functions → klicka på `send-email` → Logs → leta efter `Post-send PATCH failed`-rader.
+**Diagnos:** Cloud → Edge Functions → klicka på `send-email` → Logs → leta efter `Post-send PATCH failed`-rader.
 
 **Åtgärd:** Ej implementerad. Se §Kända fällor 29.
 
@@ -1221,7 +1221,7 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 
     **Åtgärd-rekommendation:** (1) Sök igenom alla konsumenter (`grep -r flddymQaYJGVCInzq`) och migrera till nya fältet, (2) radera gamla fältet efter MK. Verifiera ingen produktionskod pekar på gamla.
 
-29. **Mail-PATCH-misslyckande är osynligt.** `send-email` Edge Function returnerar **ok-status även om `patchAfterSend` failar** — mail går iväg via Resend, men UI visar inte timestamp och tror att mail misslyckades. Felet loggas (`console.error('Post-send PATCH failed: ...')`) men nås bara via Cloud → Edge functions → Logs.
+29. **Mail-PATCH-misslyckande är osynligt.** `send-email` Edge Function returnerar **ok-status även om `patchAfterSend` failar** — mail går iväg via Resend, men UI visar inte timestamp och tror att mail misslyckades. Felet loggas (`console.error('Post-send PATCH failed: ...')`) men nås bara via Cloud → Edge Functions → Logs.
 
     **Konsekvens:** Lotta kan skicka samma mail flera gånger i tron att första misslyckades. Mottagaren får dubbletter.
 

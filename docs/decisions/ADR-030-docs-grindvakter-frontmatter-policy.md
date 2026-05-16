@@ -9,9 +9,9 @@
 
 ## Kontext
 
-ADR-029 (2026-05-13) etablerade Strategi E (changed-files + needs-skip + aggregator) som kanonisk CI-arkitektur och lade till Lychee broken-link-validering som NY kvalitets-check i `docs`-jobbet. ADR-029 § "Konvention för framtida CI-utvidgningar" säger explicit: *"Nya docs-checkar (markdownlint, cross-doc-grep-automation, spell-check) — läggs som steg i `docs`-jobbet"*. ADR-030 är förstā exekvering av den konventionen.
+ADR-029 (2026-05-13) etablerade Strategi E (changed-files + needs-skip + aggregator) som kanonisk CI-arkitektur och lade till lychee broken-link-validering som NY kvalitets-check i `docs`-jobbet. ADR-029 § "Konvention för framtida CI-utvidgningar" säger explicit: *"Nya docs-checkar (markdownlint, cross-doc-grep-automation, spell-check) — läggs som steg i `docs`-jobbet"*. ADR-030 är förstā exekvering av den konventionen.
 
-Session 6.5 (2026-05-14) eliminerade 54 broken refs men exponerade att Lychee endast fångar **referensdrift** (samma ord, fel länkmål) — inte **innehållsdrift** (samma faktum, olika ord) eller **terminologi-drift** (Vue→React stack-skifte per ADR-027). Lessons från Session 6 (K1.14 lychee + cross-doc-grep komplementära) + Session 6.5 (K6.5.4 markdown-länk-divergens, K6.5.7 polish-inom-semantik-domän) bekräftade att en single-check-strategi inte fångar drift-domänen heltäckande.
+Session 6.5 (2026-05-14) eliminerade 54 broken refs men exponerade att lychee endast fångar **referensdrift** (samma ord, fel länkmål) — inte **innehållsdrift** (samma faktum, olika ord) eller **terminologi-drift** (Vue→React stack-skifte per ADR-027). Lessons från Session 6 (K1.14 lychee + cross-doc-grep komplementära) + Session 6.5 (K6.5.4 markdown-länk-divergens, K6.5.7 polish-inom-semantik-domän) bekräftade att en single-check-strategi inte fångar drift-domänen heltäckande.
 
 Två konkreta drift-kategorier saknar mekanisk grindvakt idag:
 
@@ -35,14 +35,14 @@ Följande 4 grindvakter etableras, fördelade över `docs`-jobbet och `lint`-job
      - **MD013 (line-length): disable** — svensk prosa har långa sammansatta ord; branschpraxis (Vite/Next.js/Astro) disable:ar MD013 i markdown
      - **MD060 (table-column-style): disable** — repo använder kompakt `|kol|`-stil konsekvent över ~250 tabeller; aktivt val, ej slapphet
      - **MD024 (no-duplicate-heading): siblings_only** — Keep-a-Changelog-konvention `### Changed` per `## [X.Y.Z]`-release; siblings_only flaggar duplicering inom samma parent (legitim hygien) utan TOC-störning
-   - Scope: `docs/**/*.md` + `tasks/*.md` + `./*.md` (matchar Lychee-scope; sessionsdok-archive + docs/archive exkluderade)
+   - Scope: `docs/**/*.md` + `tasks/*.md` + `./*.md` (matchar lychee-scope; sessionsdok-archive + docs/archive exkluderade)
    - **Empirisk baseline + fix-resa (K4):** 10 570 → 0 fynd (~99.86 % reduktion):
      - Config-disables (MD013/MD060/MD024 siblings): 9 668 → 0
      - Auto-fix `--fix` (MD032/22/31/58/34/50/29/26/7): 902 → 0 inkl. MD034 bare-URLs som auto-konverterades till `<url>`-format
      - Manuell MD040 (77 språk-tags): `text`-default på alla bare ``` -block; selektiv upgrade till bash/yaml/json deferras som polish till framtida session
      - Manuell MD036 (38 fynd, Strategi B+ hybrid): 14 strukturella → `### N. ...` (ADRs alternativ-listor + data-model.md trigger-sekvenser); 24 inline-emfas → `<!-- markdownlint-disable-next-line MD036 -->`-disable (gap-analysis Betyg-tags, BYGGPLAN-LÄTTLÄST estimat-tags, metadata-headers)
      - Sub-A inline DEFERRED-FIX-MARKER (15 fynd, per K1.13 per-item-spårbarhet): MD051 (7 broken-anchors i Vue-referens-doc), MD056 (4 tabell-cell-överskott i frusen Vue-referens), MD041 (2 first-line-heading), MD028 (1 BYGGPLAN-LÄTTLÄST blockquote), MD025 (1 multi-section analys-rapport)
-   - **Implementation:** npm devDependency (`markdownlint-cli2: ^0.22.1` i package.json), körs via `npx markdownlint-cli2` i docs-jobbet efter Lychee. Ingen pre-commit-hook (markdownlint är CI-only-grindvakt; pre-commit reserveras för biome + K7-frontmatter)
+   - **Implementation:** npm devDependency (`markdownlint-cli2: ^0.22.1` i package.json), körs via `npx markdownlint-cli2` i docs-jobbet efter lychee. Ingen pre-commit-hook (markdownlint är CI-only-grindvakt; pre-commit reserveras för biome + K7-frontmatter)
 
 2. **typos** — Considered + rejected per empirisk baseline 2026-05-14
 
@@ -181,14 +181,14 @@ Konsekvensen relateras explicit: ADR-030 § Spårbarhet pekar tillbaka till ADR-
 | C | Frontmatter på ALLA docs (inkl. sessionsdok + ADR:er) | ADR-023 immutability + ADR-egen-`Status:`-header-konvention bryts; sessionsdok är immutable vid arkivering så `updated:`-auto-bump är meningslös |
 | D | Externt metadata-register (`docs.json` eller liknande) | Otdetekterbart vid file-edit; två sanningskällor (fil + register) skapar synk-problem; bryter "läs filen och se metadata"-friktionsfrihet |
 | E | ESLint-style egen markdown-parser (single tool) | Ingen branschstandard; underhållsbörda; jämför med 5 specialiserade verktyg som har egen community |
-| **F** | **Markdownlint + typos + Vale + yamllint + scripted-check + frontmatter med pre-commit + CI-validering** | **Ursprunglig VAL — post-K3-baseline reviderad: typos avvisat per Alt G, övriga 4 grindvakter aktiva** |
+| **F** | **markdownlint + typos + Vale + yamllint + scripted-check + frontmatter med pre-commit + CI-validering** | **Ursprunglig VAL — post-K3-baseline reviderad: typos avvisat per Alt G, övriga 4 grindvakter aktiva** |
 | G | Behåll typos med svensk allow-list (~100+ ord) | Avvisad post-empirisk K3-baseline 2026-05-14: 6 490 fynd indikerar tool-uppgift-mismatch, inte tunable config-gap. Permanent underhållsbörda utan substantiell vinst. K11-disciplin (testa minimalt pre-implementation) tillämpad på ADR-design-tid. Stavnings-substans flyttad till Vale (#3) post-revision |
 
 ## Konsekvenser
 
 **Positivt:**
 
-- 4 grindvakter fångar drift FÖREBYGGANDE (vs reaktivt som K5.9c cross-doc-grep + Lychee), bygger ut docs-jobb-yta etablerad av ADR-029
+- 4 grindvakter fångar drift FÖREBYGGANDE (vs reaktivt som K5.9c cross-doc-grep + lychee), bygger ut docs-jobb-yta etablerad av ADR-029
 - K4 markdownlint-cli2 (Strategi B+) reducerade 10 570 pre-existing fynd till 0 i en enda session — bevisar att aggressiv config + auto-fix + manuell hybrid är 11/10-ergonomisk även för stora baselines. Mönsterförstärkning av K1.16 (grindvakt avslöjar emergent värde)
 - K5 scripted-checklist-check etablerade publika-docs-status-skydd med per-sektion-medveten awk-pattern (CONTRIBUTING.md `## Definition of Done`-mallar exkluderas korrekt). Felmeddelande-design per K11.5 11/10-disciplin: fil:rad + item-text + actionable fix-rekommendation
 - Vale specifikt fångar ADR-027-typ-stack-skifte-drift på rad-nivå — *före* den blir lessons-skuld. Vale-scope utvidgad post-K3 med stavnings-validering — en sammanhållen pipeline för språk/ton/terminologi/stavning
@@ -201,7 +201,7 @@ Konsekvensen relateras explicit: ADR-030 § Spårbarhet pekar tillbaka till ADR-
 
 **Negativt:**
 
-- 4 nya CI-steg → docs-jobb-tid ökar (~30s baseline → uppskattat ~35-50s med markdownlint + Vale; lint-jobb ~22s → ~25-30s med yamllint + scripted-checklist). Yamllint empiriskt verifierat 2s overhead i K2 (run 25860230593)
+- 4 nya CI-steg → docs-jobb-tid ökar (~30s baseline → uppskattat ~35-50s med markdownlint + Vale; lint-jobb ~22s → ~25-30s med yamllint + scripted-checklist). yamllint empiriskt verifierat 2s overhead i K2 (run 25860230593)
   - Mitigation: ADR-029 changed-files-skip-mönster betyder docs-only-commits ändå är ~3-4x snabbare än kod-commits; absolut tid-ökning är liten
 - 3 nya CI-verktyg (markdownlint-cli2, Vale, yamllint) + 1 scripted-shell (scripted-checklist-check) → utvecklingsmiljö-friktion (npm install + lokal-run-rekommendation för pre-commit-feedback)
   - Mitigation: dokumentation i `CONTRIBUTING.md` "Lokala dev-verktyg (frivilligt)"-sektion + brew/pipx-install-instruktioner per verktyg
@@ -214,7 +214,7 @@ Konsekvensen relateras explicit: ADR-030 § Spårbarhet pekar tillbaka till ADR-
 
 **Cross-ref till ADR-029:**
 
-ADR-030 bygger vidare på ADR-029:s CI-arkitektur med ett docs-hygien-lager. ADR-029 etablerade `docs`-jobbet som hemvist för markdown-link-validering (Lychee); ADR-030 utvidgar samma jobb med markdownlint-cli2 + Vale. typos + yamllint + scripted-checklist-check hänger på `lint`-jobbet (typos = stavning är universellt, yamllint = config-syntax är inte docs i strikt mening, scripted-checklist-check = snabb shell-script).
+ADR-030 bygger vidare på ADR-029:s CI-arkitektur med ett docs-hygien-lager. ADR-029 etablerade `docs`-jobbet som hemvist för markdown-link-validering (lychee); ADR-030 utvidgar samma jobb med markdownlint-cli2 + Vale. typos + yamllint + scripted-checklist-check hänger på `lint`-jobbet (typos = stavning är universellt, yamllint = config-syntax är inte docs i strikt mening, scripted-checklist-check = snabb shell-script).
 
 ADR-029 § Konvention sa: *"Nya docs-checkar — läggs som steg i `docs`-jobbet"*. ADR-030 följer den konventionen.
 
@@ -222,7 +222,7 @@ Strategi E changed-files-skip-mönster är intakt: kod-only-commits skippar fort
 
 **Säkerhet (Actions-supply-chain):**
 
-Nya CI-steg använder antingen npm-paket (markdownlint-cli2, typos, Vale, yamllint) som körs lokalt på runner via `npx`/Python — *inte* tredjeparts-Actions. Lägre supply-chain-yta jämfört med Lychee/changed-files-Actions. K17-disciplin gäller fortsatt: nya tunga Actions skulle kräva SHA-pin per ADR-028 + ADR-029 § Actions-policy.
+Nya CI-steg använder antingen npm-paket (markdownlint-cli2, typos, Vale, yamllint) som körs lokalt på runner via `npx`/Python — *inte* tredjeparts-Actions. Lägre supply-chain-yta jämfört med lychee/changed-files-Actions. K17-disciplin gäller fortsatt: nya tunga Actions skulle kräva SHA-pin per ADR-028 + ADR-029 § Actions-policy.
 
 Pre-commit-hook implementation (lefthook eller pure-shell) introducerar ev. nytt npm-paket — beslutas i K7 med pin-verifiering per ADR-028.
 
@@ -259,7 +259,7 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13: varje utelämning dokumenteras exp
 
 - **Föregångare:** [ADR-029](ADR-029-ci-architektur-changed-files-pattern.md) (CI-arkitektur — changed-files-pattern + Actions-policy, 2026-05-13). ADR-030 utvidgar `docs`-jobb-och-`lint`-jobb-yta med 5 nya grindvakter + frontmatter-validering.
 - **Drivande observationer:**
-  - Session 6 K1.14 — Lychee + cross-doc-grep komplementära (referensdrift vs innehållsdrift); behov av tredje typ (terminologi-drift) avslöjat
+  - Session 6 K1.14 — lychee + cross-doc-grep komplementära (referensdrift vs innehållsdrift); behov av tredje typ (terminologi-drift) avslöjat
   - Session 6 K1.16 — Grindvakt avslöjar oväntade kategorier (success-signal)
   - Session 6.5 K6.5.4 — Markdown-länk-divergens (visa-text vs länkmål) som klass av drift
   - Session 6.5 K6.5.7 — Polish-uppdatering inom samma semantik-domän är 11/10 (motiverar samtidig migration vid frontmatter-add)

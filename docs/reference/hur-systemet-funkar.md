@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-15
+updated: 2026-05-17
 review_by: 2026-11-15
 status: stable
 ---
@@ -233,7 +233,7 @@ En Person kan vara i olika tillstånd beroende på hur långt relationen gått. 
 | Beläggningsprocent stämmer inte | Status på anmälningar är fel | Kolla att aktiva har korrekt Status |
 | Mail gick inte ut till alla | Dublett-person orsakar fel | Kolla Error-log-tabellen |
 | Väntelista visar redan flyttade | Markering saknas | Kryssa i "Flyttad till anmälan" |
-| Mail skickades men UI visar inte timestamp | Bakomliggande sparning misslyckades efter mail-skick | Kolla Cloud → Edge functions → Logs i Lovable. Möjligen behöver fältet sättas manuellt i Airtable. |
+| Mail skickades men UI visar inte timestamp | Bakomliggande sparning misslyckades efter mail-skick | Kolla Cloud → Edge Functions → Logs i Lovable. Möjligen behöver fältet sättas manuellt i Airtable. |
 | Inställd anmälan visas som aktiv i rapporter | Datamodell-skuld i "Är aktiv"-formeln | Förvänta detta tills formeln uppdateras. Påverkar bara rapporter, inte själva flödet. |
 
 ---
