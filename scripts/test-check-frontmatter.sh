@@ -26,7 +26,13 @@ FAILED=0
 # shellcheck disable=SC2329  # invoked via trap
 cleanup() {
     cd / || true
-    rm -rf "${TEST_DIR}"
+    # K4.2 (Session 6.6.7): explicit suffix-lista för shallow-clone-fixturer.
+    # Per Chat-mediated 11/10 SKÄRPNING 2: explicit > wildcard (auditerbart,
+    # inga wildcard-överreach-risker).
+    rm -rf "${TEST_DIR}" \
+        "${TEST_DIR}-shallow" \
+        "${TEST_DIR}-shallow-override" \
+        "${TEST_DIR}-shallow-50"
 }
 trap cleanup EXIT
 
@@ -121,6 +127,21 @@ check_contains() {
     echo "${hay}" | sed 's/^/    /'
     echo "  ------------------"
     return 1
+}
+
+check_not_contains() {
+    local label=$1 needle=$2 hay=$3
+    # K4.2 (Session 6.6.7): NOT-match-assertion för shallow-detection-regressions-skydd
+    if echo "${hay}" | grep -qF -- "${needle}"; then
+        echo "  ❌ ${label} NOT-match failed: '${needle}' found unexpectedly"
+        echo "  ----- output -----"
+        # shellcheck disable=SC2001  # sed på multi-line är klarast här
+        echo "${hay}" | sed 's/^/    /'
+        echo "  ------------------"
+        return 1
+    fi
+    echo "  ✅ ${label} NOT-match: '${needle}' correctly absent"
+    return 0
 }
 
 mark() {
@@ -280,6 +301,142 @@ ok=0
 check_exit "T9" 1 "${ec}" || ok=1
 check_contains "T9" "Config saknas: .frontmatter-policy.conf" "${out}" || ok=1
 check_contains "T9 (actionable)" "Fix: skapa .frontmatter-policy.conf" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+# T10: unsafe-shallow hard-fail (depth=1, default threshold=50)
+# ============================================================
+# K4.2 (Session 6.6.7): testar K4.1.1 hybrid-detection count-check.
+# is-shallow=true, count=1, threshold=50 (default) → hard-fail.
+echo ""
+echo "═══ T10: unsafe-shallow hard-fail (depth=1, default threshold=50) ═══"
+setup_repo
+write_all_valid
+git add . >/dev/null 2>&1
+git commit -q -m "fixture-t10" >/dev/null 2>&1
+
+# Skapa shallow clone (depth=1) från fixture
+rm -rf "${TEST_DIR}-shallow"
+git clone --depth=1 "file://${TEST_DIR}" "${TEST_DIR}-shallow" >/dev/null 2>&1
+cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow/scripts/check-frontmatter.sh"
+cp "${CONFIG_SRC}" "${TEST_DIR}-shallow/.frontmatter-policy.conf"
+
+cd "${TEST_DIR}-shallow" || { echo "❌ T10 cd failed"; exit 1; }
+out=$(bash scripts/check-frontmatter.sh 2>&1); ec=$?
+cd "${TEST_DIR}" || exit 1
+
+ok=0
+check_exit "T10" 1 "${ec}" || ok=1
+check_contains "T10 (unsafe-msg)" "Unsafe-shallow clone detected (depth=1 < 50)" "${out}" || ok=1
+# SKÄRPNING 1: success-message ska INTE finnas (hard-fail före success-rad)
+check_not_contains "T10 (success-absent)" "Frontmatter-validering: alla 9 styrande docs passerar" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+# T11a: threshold-config-respekt (depth=1, override threshold=1)
+# ============================================================
+# K4.2 (Session 6.6.7): testar K4.1.1 hybrid-detection threshold-respekt.
+# is-shallow=true, count=1, threshold=1 (override) → NOT-unsafe (count NOT-lt threshold).
+echo ""
+echo "═══ T11a: threshold-config-respekt (depth=1, override threshold=1) ═══"
+setup_repo
+write_all_valid
+git add . >/dev/null 2>&1
+git commit -q -m "fixture-t11a" >/dev/null 2>&1
+
+rm -rf "${TEST_DIR}-shallow-override"
+git clone --depth=1 "file://${TEST_DIR}" "${TEST_DIR}-shallow-override" >/dev/null 2>&1
+cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow-override/scripts/check-frontmatter.sh"
+# Override-config: threshold=1 (count=1 NOT-lt 1 → INTE unsafe)
+cat > "${TEST_DIR}-shallow-override/.frontmatter-policy.conf" << 'EOF'
+# shellcheck shell=bash
+# shellcheck disable=SC2034
+FRONTMATTER_GOVERNING_DOCS=(
+    "CLAUDE.md"
+    "docs/byggplan.md"
+    "docs/specs/BYGGPLAN-LÄTTLÄST-v3.md"
+    "docs/specs/KVALITETSDEFINITIONER-11-REACT.md"
+    "docs/specs/SECURITY-SPEC.md"
+    "docs/reference/hur-systemet-funkar.md"
+    "docs/reference/data-model.md"
+    "tasks/lessons.md"
+    "docs/decisions/README.md"
+)
+FRONTMATTER_VALID_OWNER="marcus803"
+FRONTMATTER_VALID_STATUS=("draft" "stable" "deprecated")
+FRONTMATTER_MIN_HISTORY_DEPTH=1
+EOF
+
+cd "${TEST_DIR}-shallow-override" || { echo "❌ T11a cd failed"; exit 1; }
+out=$(bash scripts/check-frontmatter.sh 2>&1); ec=$?
+cd "${TEST_DIR}" || exit 1
+
+ok=0
+check_exit "T11a" 0 "${ec}" || ok=1
+check_not_contains "T11a (no-unsafe)" "Unsafe-shallow clone detected" "${out}" || ok=1
+check_contains "T11a (success)" "Frontmatter-validering: alla 9 styrande docs passerar" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+# T11b: safe-shallow ADR-030-konvention (depth=50, default threshold=50)
+# ============================================================
+# K4.2 (Session 6.6.7): testar K4.1.1 hybrid-detection safe-shallow-default.
+# is-shallow=true, count=50, threshold=50 (default) → NOT-unsafe (count NOT-lt 50).
+echo ""
+echo "═══ T11b: safe-shallow ADR-030-konvention (depth=50, default threshold=50) ═══"
+setup_repo
+write_all_valid
+git add . >/dev/null 2>&1
+git commit -q -m "fixture-t11b-base" >/dev/null 2>&1
+
+# Bygg 49 extra commits → total 50
+for i in $(seq 1 49); do
+    echo "commit-${i}" >> .commit-counter
+    git add .commit-counter >/dev/null 2>&1
+    git commit -q -m "extra-${i}" >/dev/null 2>&1
+done
+
+# Verifiera count = 50
+ACTUAL_COUNT=$(git rev-list --count HEAD)
+if [[ "${ACTUAL_COUNT}" -ne 50 ]]; then
+    echo "❌ T11b fixture-setup-fel: förvänta 50 commits, fick ${ACTUAL_COUNT}"
+    exit 1
+fi
+
+rm -rf "${TEST_DIR}-shallow-50"
+git clone --depth=50 "file://${TEST_DIR}" "${TEST_DIR}-shallow-50" >/dev/null 2>&1
+cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow-50/scripts/check-frontmatter.sh"
+cp "${CONFIG_SRC}" "${TEST_DIR}-shallow-50/.frontmatter-policy.conf"
+
+cd "${TEST_DIR}-shallow-50" || { echo "❌ T11b cd failed"; exit 1; }
+out=$(bash scripts/check-frontmatter.sh 2>&1); ec=$?
+cd "${TEST_DIR}" || exit 1
+
+ok=0
+check_exit "T11b" 0 "${ec}" || ok=1
+check_not_contains "T11b (no-unsafe)" "Unsafe-shallow clone detected" "${out}" || ok=1
+check_contains "T11b (success)" "Frontmatter-validering: alla 9 styrande docs passerar" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+# T12: full clone edge-case (count=1, is-shallow=false)
+# ============================================================
+# K4.2 (Session 6.6.7): testar K4.1.1 hybrid-detection is-shallow-check.
+# is-shallow=false (nytt repo), count=1, threshold=50 → NOT-unsafe.
+# Regressions-skydd för K4.1-bug-mönstret (is-shallow=false ska
+# ALDRIG trigga hard-fail oavsett count).
+echo ""
+echo "═══ T12: full clone edge-case (count=1, is-shallow=false) ═══"
+setup_repo
+write_all_valid
+git add . >/dev/null 2>&1
+git commit -q -m "fixture-t12" >/dev/null 2>&1
+
+out=$(run_validator); ec=$?
+ok=0
+check_exit "T12" 0 "${ec}" || ok=1
+check_not_contains "T12 (no-unsafe)" "Unsafe-shallow clone detected" "${out}" || ok=1
+check_contains "T12 (success)" "Frontmatter-validering: alla 9 styrande docs passerar" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
