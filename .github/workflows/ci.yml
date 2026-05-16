@@ -77,6 +77,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # K2.1a (Session 6.6.5): fetch-depth: 50 för shallow-clone-
+          # compatibility med scripts/check-frontmatter.sh Check 2
+          # (git log -1 --format=%cs -- <fil>). Konsistent med
+          # changed-jobbet per ADR-029 § Utelämning #6 motivering:
+          # single-author push-pattern <15 commits/session; 50 = 3x-marginal.
+          # Etablerad K2.1 efter K7.C latent shallow-clone-bug-upptäckt.
+          fetch-depth: 50
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -152,6 +160,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # K2.1a (Session 6.6.5): fetch-depth: 50 för shallow-clone-
+          # compatibility med scripts/check-frontmatter.sh Check 2
+          # (git log -1 --format=%cs -- <fil>). Konsistent med
+          # changed-jobbet per ADR-029 § Utelämning #6 motivering:
+          # single-author push-pattern <15 commits/session; 50 = 3x-marginal.
+          # Etablerad K2.1 efter K7.C latent shallow-clone-bug-upptäckt.
+          fetch-depth: 50
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -227,6 +243,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # K2.1a (Session 6.6.5): fetch-depth: 50 för shallow-clone-
+          # compatibility med scripts/check-frontmatter.sh Check 2
+          # (git log -1 --format=%cs -- <fil>). Konsistent med
+          # changed-jobbet per ADR-029 § Utelämning #6 motivering:
+          # single-author push-pattern <15 commits/session; 50 = 3x-marginal.
+          # Etablerad K2.1 efter K7.C latent shallow-clone-bug-upptäckt.
+          fetch-depth: 50
 
       - name: Restore lychee cache
         id: restore-cache

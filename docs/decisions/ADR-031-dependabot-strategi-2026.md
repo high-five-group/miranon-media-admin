@@ -238,7 +238,7 @@ ADR-031 utvidgar ADR-024 (ursprungs-dependabot-config) med 2026-policy-reviderin
 - **BoostSecurity 2025** — Dependabot Deputy Confusion uppföljning post-Axios
 - **dev.to nickytonline 2026-05** — "Why I'm pausing Dependabot auto-merge in 2026"
 - **GitHub Issue 14645 (pip-audit)** — cooldown referens-implementation (`default-days: 7`)
-- **Travis Gosselin** — [Catch-all Dependabot grouping for enterprise](https://travis.gosselin.com/) enterprise-readiness-analys
+- **Travis Gosselin** — [Catch-all Dependabot grouping for enterprise](https://travisgosselin.com/dependabot-with-grouped-updates/) enterprise-readiness-analys
 - **GitHub Blog 2023-08** — Dependabot grouped version updates GA-announcement (catch-all `"*"` med `exclude-patterns` + `update-types: ["minor", "patch"]`)
 
 ## Baseline-fynd 2026-05-16
