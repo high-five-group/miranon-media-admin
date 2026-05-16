@@ -1103,3 +1103,81 @@ K4-close-kommentar refererade ursprungligen "måndag 2026-05-18 06:00 Europe/Sto
 ### Sammanfattning Session 6.6.5
 
 14 lessons-kandidater skördade (alla [UNIVERSAL] för hub-lyft). Domän-fördelning: empirisk verifikation & forensisk-pass (L1, L3, L9, L10) + branschstandard & 11/10 GOLV-disciplin (L2, L5, L6, L13) + verifikations-design & policy-fångst (L4, L11, L12) + CI-grindvakts-design & trail-disciplin (L7, L8, L14). 4 Gate 2-fångster av Marcus (pre-K2.1 stopp + "tänk seniorproffs" + "vet du hur dependabot är konfigurerad?" + 11/10-GOLV-direktiv), 3 av Code (K1 PLANERA-policy-konflikter + K1.5 forensisk-pass + K3 Alt V1-rättning), 1 av Chat self-review (K3 säkerhets-analys efter web-research). L8 motiverar potentiell ADR-030-tillägg (beslutas K-sista #3). L6 + L1 förstärks som "Ristat i sten" i hub-CLAUDE.md K-sista #4. Alla 14 hub-lyfts till `~/Repon/marcus-system/tasks/lessons.md` vid K-sista #5.
+
+## 2026-05-16 — Session 6.6.7 (shellcheck-strict-grindvakt + shallow-clone-detection)
+
+### L_A [UNIVERSAL] — JSON-räkning över grep-räkning för shellcheck-output
+
+Datum: 2026-05-16 | Källa: K3.1 A.1.a-pass empirisk re-verifikation
+
+K1-grep miss-räknade SC2034 (var 0, grep:ade 2) + SC2148 (var 2, grep:ade 3) + SC2312 (var 2, grep:ade 3) + SC2248 (var 22, grep:ade 23) via cluster-info-footer-rader + kontext-grep:ar runt `# shellcheck disable=SC2034`-direktiv. Auktoritativ räkning via `shellcheck -f json | jq '...'`. Generaliserbar regel: vid räkning av strukturerad-output-verktyg (linter, test-runner, build-tool) — JSON-format > textual-format för exakt mätning. `grep`-mot-text är icke-tillförlitlig pga cluster-headers + multi-line-detalj-formatering. Tillämpning: alla shellcheck-räkningar, alla pytest-räkningar, alla Vitest-räkningar. Mönsterförstärkning av L3 (Session 6.6.5) tillämpat på output-tolknings-domänen.
+
+### L_B [UNIVERSAL] — Lesson-applicerings-scope: domän-specifik vs universell
+
+Datum: 2026-05-16 | Källa: K3.1 A.1.a-pass Codes feltolkning av K7.5.4
+
+K7.5.4 ("pre-existerande warning-profil ≠ normativ standard") är SC2034-domän-specifik (om en specifik SC-kod's "disable"-strategi vs "fix"-strategi), INTE universell minimal-edit-disciplin. Codes generalisering till "alla shellcheck-fix:ar ska vara minimal-edit" var feltolkning. Per-fynd-bedömning krävs — vilket är exakt vad A.1.a-pass-disciplinen gör (Marcus' refactor-över-`|| true`-val bevisar). Generaliserbar regel: vid lesson-applicering, först fråga "vad var lesson-scope när det skördades?" innan re-användning. Mönsterförstärkning av L4 (Session 6.6.5 — policy-konflikt-fångst FÖRE implementation) tillämpat på lessons-domänen själv.
+
+### L_C [UNIVERSAL] — Tre fix-kvalitets-nivåer för linter-fynd
+
+Datum: 2026-05-16 | Källa: K3.1 A.1.a-pass Marcus' refactor-val över `|| true`-suffix
+
+Linter-fynd har tre fix-kvalitets-nivåer:
+
+1. **Refactor som löser orsaken** (nivå 1, 11/10 GOLV) — adresserar varför verktyget flaggar; bevarar verktygets diagnostik-värde
+2. **Suffix-ignore som explicit ignorerar** (nivå 2, branschstandard-fix-syntax) — verktyget rekommenderar ofta detta som "second-best"; tystar diagnostik medvetet
+3. **Per-rad disable som gömmer från linter** (nivå 3, anti-pattern) — verktyget kan inte rapportera; risk för silent regression
+
+shellcheck-officiella fix-suggestions är ofta nivå 2 (`|| true`-suffix för SC2312) — branschstandard-fix-syntax, INTE branschstandard-best-practice. 11/10 GOLV pekar mot nivå 1. K3.1 A.1.a SC2312-fix: refactor till `CURRENT_DIR=$(pwd)`-variabel pre-echo (nivå 1) över `$(pwd || true)`-suffix (nivå 2). Bevarar `set -euo pipefail`-semantiken (om pwd failar exiterar scriptet). Mönsterförstärkning av L6 (11/10 är GOLV, inte tak) tillämpat på fix-strategi-domänen.
+
+### L_D [UNIVERSAL] — Empirisk fynd-räkning post-fix måste inkludera nya fynd introducerade av själva fix:en
+
+Datum: 2026-05-16 | Källa: K3.1 A.1.a-pass delta-rapport (Marcus-fångst post-K3.1-commit)
+
+K3.1 rapporterade 366 → 364 vs förväntat 362. Delta = 2 nya SC2250-fynd från `$CURRENT_DIR`-variabel-referens utan brace-wrap (förväntad konsekvens av A.1.a refactor; tillhör A.1.b mekanik-domän). Generaliserbar rapport-format: **"X fixade, Y nya, Z netto."** Aldrig bara "X fixade" — det maskerar fixarna som introducerar nya fynd (typ refactor som lägger till variabel-referens som triggar separat SC-kod). Tillämpning: alla fix-paket-rapporter (shellcheck, ESLint, mypy, etc.). Mönsterförstärkning av L_A (auktoritativ räkning via JSON) + L7 (Chat skördar lessons löpande) — räknings-rapport är fångst-domän, inte räknings-domän.
+
+### L_E [UNIVERSAL] — `shellcheck --format=diff` auto-fix är icke-fullständig för cross-syntax-fall
+
+Datum: 2026-05-16 | Källa: K3.2 SC2292 rad-99 `\<` → `<`-konvertering
+
+`shellcheck --format=diff` auto-fix är icke-fullständig för cross-syntax-fall. När en operator har olika syntax mellan `[ ]` (POSIX) och `[[ ]]` (bash) — t.ex. `\<` POSIX-escape vs `<` bash-direkt — spelar `--format=diff` säkert och konverterar inte. Sådana fall kräver manuell L_C nivå 1-fix post-auto-apply. Generaliserbar regel: efter auto-mekanisk fix-pass, verifiera 0-fynd-state empiriskt; en `git apply` som "lyckas" är inte bevis på fullständig fix-täckning. Trigger: K3.2 SC2292 rad-99 i `scripts/check-frontmatter.sh` — auto-fix konverterade andra `[ ]`-clausen i `||`-kedjan men hoppade första clausen med `\<`. Manuell fix: `[[ "${REVIEW_BY}" < "${TODAY}" ]]` (inom `[[ ]]` är `<` bash-direkt lexikografisk less-than per `man bash`). Mönsterförstärkning av L_A (auktoritativ räkning) + L_D (post-fix-räkning inkluderar nya fynd) + L_C (3 fix-kvalitets-nivåer).
+
+### L_F [UNIVERSAL] — Runner-image-version-mismatch är falsk-grön-risk-klass per L9
+
+Datum: 2026-05-16 | Källa: K3.3 VILLKOR A pre-flight ubuntu-latest shellcheck 0.9.0 vs lokal 0.11.0
+
+ubuntu-latest pre-installerade verktyg lagrar OS-paket-pinnade versioner som drift:ar bakom upstream-release-cadence (shellcheck 0.9.0-1 i Ubuntu 24.04 vs 0.11.0 upstream per maj 2026). Pre-installerade verktyg utan version-pinning är teknisk skuld disguised som convenience. Falsk-grön-risk: nyare optional checks (v0.10+: SC2310 m.fl.) finns lokalt men inte i CI — framtida code-edit som triggar v0.10+-check är röd lokalt + grön CI. Generaliserbar regel: vid CI-grindvakts-aktivering av verktyg X, empirisk pre-flight via runner-image-manifest FÖRE edit + version-pin till exakt upstream-release matching lokal dev-environment. Empirisk verifikations-källa: `https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md` (auktoritativ manifest). Mönsterförstärkning av L9 (CI-runner-flakiness) + L_E (auto-fix icke-fullständig).
+
+### L_G [UNIVERSAL] — Supply-chain-policy-täckning kräver fallback-strategi för upstream-utan-officiell-checksum
+
+Datum: 2026-05-16 | Källa: K3.3 STEG 1 Metod 2 failed för koalaman/shellcheck
+
+ADR-028 etablerade SHA-pin-policy; ADR-029 § Third-party Actions-policy förstärkte. Båda antog implicit att upstream publicerar officiella `.sha256sum`-filer per release-asset. Empirisk verifikation 2026-05-16 (koalaman/shellcheck v0.11.0): många populära upstream-projekt publicerar BARA binär-tarballs utan separata checksums. Fallback-strategi: Metod 1 SHA (downstream-beräknad mot GitHub-release-immutability-garanti) är teknisk-ekvivalent med Metod 2 så länge upstream-release är immutable. Trail-disciplin kräver explicit dokumentation att SHA är downstream-beräknad (CI-step-kommentar + ADR-033 § Säkerhet sub-bullet + § Medvetna utelämningar punkt). Mönsterförstärkning av L_F (runner-image-version-mismatch) + ADR-028 + ADR-029 § Medvetna utelämningar #3 actionlint-precedent.
+
+### L_H [UNIVERSAL] — Defense-in-depth lager N ska fela hårt när lager <N har failat
+
+Datum: 2026-05-16 | Källa: K4.1 shallow-clone-detection designval-analys (Codes initial B-rekommendation flippades till A per Chat-mediated 11/10-granskning)
+
+Warn-skip-by-default på defensive-programming-lager N är invertet defense-in-depth: lager N förlitar sig då på lager <N istället för att skydda mot lager <N-failure. Trigger-villkoret för lager N är "kompromettering av föregående skyddslager" — rätt-respons är hard-fail, inte gracefull degradering. Generaliserbar regel: vid design av defensive-programming-lager, fråga "vad är trigger-tillståndet?" — om svaret är "lager <N har failat", då är hard-fail rätt-respons. Gracefull degradering är rätt-respons när trigger-tillståndet är "operationell kontext är degraded (typ network down)" — INTE när det är "skyddslager har failat". Konkret K4.1-tillämpning: shallow-clone är inte "operationell-degradering" utan "lager 1 (fetch-depth: 50) har failat eller saknas" → hard-fail. Mönsterförstärkning av L_C (3 fix-kvalitets-nivåer) applicerat på defense-in-depth-domän.
+
+### L_I [UNIVERSAL] — Defense-in-depth lager N kräver empirisk-pre-flight-test av detection-semantik mot ALLA relevanta konfigurationer
+
+Datum: 2026-05-16 | Källa: K4.1 CI-röd-state (commit `b2970fd`) + K4.1.1 hot-fix
+
+K4.1 testade detection-logik (`git rev-parse --is-shallow-repository`) bara mot fetch-depth: 1 (worst-case) och missade fetch-depth: 50 (ADR-030-safe-state). `--is-shallow-repository` returnerar `true` för BÅDA — design-bug inte fångad utan empirisk truth-table-test över ALLA relevanta konfigurationer. Generaliserbar regel: vid design av detection-logik, lista ALLA scenarier (safe + unsafe + edge-case) + truth-table-test FÖRE implementation. Inte bara worst-case-test (vilket ger falskt-säkert "detection fungerar"); test också safe-cases och edge-cases (typ nytt-repo med <threshold commits men full clone). Mönsterförstärkning av L1 (pre-K-implementation forensisk-pass) tillämpat på detection-logik-design-domän. K4.1.1 hot-fix (commit `4dc55e5`) implementerade hybrid-check (IS_SHALLOW + COMMIT_DEPTH < threshold) efter empirisk 4-scenario truth-table-test.
+
+### L_J [UNIVERSAL] — Chat-side 11/10-argumentation kräver empirisk grund för tekniska antaganden
+
+Datum: 2026-05-16 | Källa: K4.1 designval-flipp (Codes B → Marcus A) utan empirisk verifikation av detection-semantik
+
+Att flippa Codes rekommendation med disciplin-baserade argument (L_C-nivå, defense-in-depth-paradigm) är retorik utan substans om det tekniska fundamentet inte är empiriskt verifierat. K4.1 Chat-flipp av Codes Alt B → Marcus' Alt A användte 4 starka discipline-argument (L_C nivå 1, defense-in-depth korrekt-logik, ADR-033-strict-paradigm, branschstandard "warn on degradation") — men ingen av dem ifrågasatte tekniska fundamentet "returnerar `is-shallow-repository` `false` på fetch-depth: 50?". Generaliserbar regel: när Chat applicerar 11/10-filter på tekniskt-detalj-rekommendation, första frågan ska vara "är detection/implementation/påstående empiriskt verifierat mot ALLA relevanta scenarier?" FÖRE argumentation. Disciplin-argument är multiplicerande, inte additiv: ×0 substans-verifikation = 0 värde av disciplin-argumentation oavsett antal. Mönsterförstärkning av L_B (lesson-applicerings-scope) + L1 (forensisk-pass) + L_I tillämpat på Chat-side-domän.
+
+### L_K [UNIVERSAL] — ADR-skapelse-tidsstämpel-konvention bevarar pre-implementations-state-referens
+
+Datum: 2026-05-16 | Källa: K4.3 ADR-033-referens-disciplin (Codes egen explicit-dokumentation av disciplinen i K4.3-rapport)
+
+När en ADR refererar en annan ADR:s defer-bullet ("X (defer)") och den senare implementeras (uppdaterad till "X (implementerad)"), ska källans referens INTE uppdateras retroaktivt. Annars skapas referens-paradox där båda ADR:erna pekar på "implementerad"-state utan att dokumentera tidslinjen (vid källans-ADR-skapelse var det defer). Generaliserbar regel: ADR-referenser är tidsstämplade observationer av state vid skapelse-tidpunkt; retroaktiv uppdatering bryter trail-disciplin. Konkret tillämpning K4.3: ADR-033 rad 26 säger fortfarande "ADR-030 § Del 3 'Defensive programming (defer)'-bullet pekar till denna implementation" — bevarat trots ADR-030 K4.3-uppdatering till "(implementerad)". Codes egen explicit-dokumentation av disciplinen i K4.3-commit-message var pre-flight-medvetenhet (förhindrade retroaktiv-uppdaterings-impuls). Skiljs från L_E (cross-syntax-fall i auto-fix-domän): L_K är cross-ADR-tidsstämpel-disciplin i dokumentations-domän. Mönsterförstärkning av L1 (forensisk-pass FÖRE förslag) + Kandidat 1 (atomic trail-link-disciplin) tillämpat på cross-ADR-referens-domän.
+
+### Sammanfattning Session 6.6.7
+
+11 lessons-kandidater skördade (alla [UNIVERSAL] för hub-lyft). Domän-fördelning: räknings-disciplin (L_A, L_D) + lessons-meta (L_B, L_J) + fix-strategi & defense-in-depth (L_C, L_H, L_I) + CI-grindvakts-aktivering (L_F, L_G) + cross-syntax & cross-ADR (L_E, L_K). 5 Code-fångster (K3.1 räknings-klargörande + K3.3 SHA-strategi + K4.1.1 truth-table + K4.3 ADR-disciplin + diff-pre-flight), 2 Chat-mediated-fångster (Marcus refactor-val + Marcus design-flipp), 1 CI-feedback-fångst (K4.1 design-bug → K4.1.1 hot-fix). L_I + L_J par-mönsterförstärker varandra (empirisk truth-table FÖRE implementation + Chat-argumentation kräver empirisk grund). L_K kompletterar L_E som distinkt cross-domän-disciplin (cross-syntax vs cross-ADR-tidsstämpel). Alla 11 hub-lyfts till `~/Repon/marcus-system/tasks/lessons.md` vid K-sista #6.

@@ -3,7 +3,7 @@
 
 # ADR-033: Shellcheck-strict-grindvakt för bash-scripts
 
-- Status: Draft (bumps Accepted vid Session 6.6.7 K-sista bake-in)
+- Status: Accepted (Session 6.6.7 K-sista 2026-05-16)
 - Datum: 2026-05-16
 - Fas: Session 6.6.7 — Shellcheck-strict-grindvakt + shallow-clone-detection-bonus (mellan Fas 2 och Fas 2.5)
 
