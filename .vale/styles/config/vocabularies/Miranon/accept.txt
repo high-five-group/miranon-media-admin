@@ -10,7 +10,7 @@ JWT
 Lotta
 lychee
 markdownlint
-Miranon
+Miranon Media
 nuqs
 OAuth
 OWASP

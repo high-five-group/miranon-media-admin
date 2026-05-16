@@ -1,6 +1,3 @@
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
-
 # ADR-033: Shellcheck-strict-grindvakt för bash-scripts
 
 - Status: Accepted (Session 6.6.7 K-sista 2026-05-16)

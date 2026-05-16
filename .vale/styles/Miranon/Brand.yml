@@ -1,10 +1,6 @@
-extends: substitution
-message: "Brand-konsistens: använd 'Miranon Media' istället för 'Miranon' (per Marcus 2026-05-14)."
+extends: existence
+message: "Använd 'Miranon Media' istället för standalone 'Miranon' (canonical-brand per ADR-032)."
 level: error
 ignorecase: false
-swap:
-  # Inline lookbehind + lookahead per K6.1 RE2-verifikation:
-  # - (?<!Miranon ) → matchar INTE om föregås av "Miranon " (undviker dubbel-match på "Miranon Media")
-  # - (?! Media) → matchar INTE om följs av " Media"
-  # - (?![-a-zA-Z0-9_]) → matchar INTE om följs av identifier-char (skyddar miranon-media-admin etc.; case-sensitive ändå pga "Miranon" lowercase = no match)
-  '(?<!Miranon )Miranon(?! Media)(?![-a-zA-Z0-9_])': 'Miranon Media'
+tokens:
+  - '(?<!Miranon )Miranon(?! Media)(?![-a-zA-Z0-9_])(?!\.)'
