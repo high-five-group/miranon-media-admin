@@ -181,7 +181,16 @@ jobs:
       - name: API tests (pure)
         run: npm run test:api:pure
 
+      # ADR-031 Lager 3 (Alt D Hybrid): staging-steg skippas för
+      # Dependabot-PR:er pga GitHub Actions secrets-isolation
+      # (Dependabot-workflows har endast access till Dependabot-secrets,
+      # inte Actions-secrets — by-design supply-chain-defense per
+      # GitHub Docs). Dep-bump-regression fångas via pure-tests +
+      # typecheck + biome + build + 6 lint-grindvakter. Marcus manuell
+      # pre-merge-verify för staging-coverage-gap per Lager 4.
+      # Etablerad Session 6.6.5 K3 (2026-05-16).
       - name: API tests (staging)
+        if: github.actor != 'dependabot[bot]'
         run: npm run test:api:staging
         env:
           STAGING_REQUIRED: '1'
@@ -217,7 +226,10 @@ jobs:
         # Vid cold cache: laddar browser-binärer (~30s vs 150s med --with-deps).
         run: npx playwright install chromium
 
+      # ADR-031 Lager 3 (Alt D Hybrid) — se kommentar ovan på API
+      # tests (staging) för fullständig motivation.
       - name: E2E tests (staging)
+        if: github.actor != 'dependabot[bot]'
         run: npm run test:e2e:staging
         env:
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
