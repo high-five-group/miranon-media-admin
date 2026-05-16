@@ -24,8 +24,9 @@ set -euo pipefail
 # universellt, värden är per-projekt. Retroaktiv refactor 2026-05-15
 # (Session 6.6 fortsättning #2 K7.5).
 CONFIG_FILE=".checklist-policy.conf"
+CURRENT_DIR=$(pwd)
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "ERROR: Config saknas: $CONFIG_FILE (sök i: $(pwd))"
+    echo "ERROR: Config saknas: $CONFIG_FILE (sök i: $CURRENT_DIR)"
     echo "   Fix: skapa .checklist-policy.conf i repo-root."
     echo "        Se ADR-030 § Del 1 (position #5) för spec."
     echo "        Om detta är ett nytt spoke: kopiera från miranon-media-admin"

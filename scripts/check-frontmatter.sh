@@ -23,8 +23,9 @@ set -euo pipefail
 
 # === Ladda projekt-config ===
 CONFIG_FILE=".frontmatter-policy.conf"
+CURRENT_DIR=$(pwd)
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "❌ Config saknas: $CONFIG_FILE (sök i: $(pwd))"
+    echo "❌ Config saknas: $CONFIG_FILE (sök i: $CURRENT_DIR)"
     echo "   Fix: skapa .frontmatter-policy.conf i repo-root."
     echo "        Se ADR-030 § Del 2 + Del 3 för spec."
     echo "        Om detta är ett nytt spoke: kopiera från miranon-media-admin"
