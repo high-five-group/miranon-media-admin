@@ -33,12 +33,23 @@
 # Etablerad: Session 6.5 K2.2 2026-05-14.
 ^file://.*/docs/specs/KVALITETSDEFINITIONER-11\.md(>|#.*)?$
 
-# tanstack.com CI-runner-specifik nätverks-flakiness (Session 6.6 K6).
-# Lokalt curl returnerar 307/200 men ubuntu-latest GitHub Actions-runner
-# får "Network error: Connection failed" → cached errors. Sannolik orsak:
-# Cloudflare/CDN blockerar GitHub Actions IP-ranges intermittent.
+# tanstack.com CI-runner-specifik nätverks-flakiness (klass-pattern
+# utvidgad i Session 6.6.5 K-sista #7.1 efter instans #3 — tanstack.com/
+# table/latest TIMEOUT i main-CI run 25959048283).
+#
+# Klass-syntes (3 instanser): tanstack/router (Session 6.6 K6) +
+# opentelemetry.io (Session 6.6.5 K-sista #6.5) + tanstack/table
+# (Session 6.6.5 K-sista #7.1). Systemisk Cloudflare/CDN-blockering
+# av GitHub Actions IP-ranges mot vissa CDN-värdar.
+#
+# Pattern utvidgad från /router/ till hela tanstack.com för klass-
+# täckning (router + table + query + framtida tanstack-paths).
+#
+# Lokalt curl: HTTP 200/307. CI Lychee: TIMEOUT eller "Error (cached)".
+# Sannolik orsak: Cloudflare/CDN blockerar GitHub Actions IP-ranges
+# intermittent.
 # Lessons-flag: re-utvärdera i framtida session — om transient, ta bort.
-^https://tanstack\.com/router/.*$
+^https://tanstack\.com/.*$
 
 # opentelemetry.io CI-runner-specifik nätverks-flakiness (Session 6.6.5
 # K-sista #6.5). Lokalt curl returnerar HTTP 200 men ubuntu-latest GitHub
