@@ -40,3 +40,13 @@
 # Lessons-flag: re-utvärdera i framtida session — om transient, ta bort.
 ^https://tanstack\.com/router/.*$
 
+# opentelemetry.io CI-runner-specifik nätverks-flakiness (Session 6.6.5
+# K-sista #6.5). Lokalt curl returnerar HTTP 200 men ubuntu-latest GitHub
+# Actions-runner får "Error (cached)" trots fungerande URL. CI gick röd
+# mellan K-sista #1 (16e4591, grön) och K-sista #2 (ca57753, fail) trots
+# att ingen URL ändrades. Sannolik orsak: samma mekanism som
+# tanstack.com — Cloudflare/CDN blockerar GitHub Actions IP-ranges
+# intermittent. Påverkar docs/research/datamodell-research/04-research.md.
+# Lessons-flag: re-utvärdera i framtida session — om transient, ta bort.
+^https://opentelemetry\.io/docs/.*$
+

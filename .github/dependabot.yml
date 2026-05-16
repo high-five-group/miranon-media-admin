@@ -1,34 +1,112 @@
 ---
+# Dependabot-config per ADR-031 (Session 6.6.5)
+# 4-lager-strategi: grouping (lager 1), cooldown (lager 2),
+# minimal CI-yta (lager 3, se ci.yml), manuell review (lager 4).
+#
+# Senior-pro-config baserad på web-research 2026-05-16:
+# - GitHub native cooldown sedan juli 2025
+# - Safeguard.sh 2026 4-lever-modell
+# - 2026-supply-chain-läge (Axios mars, CanisterWorm, Trivy-kompromettering)
+
 version: 2
+
 updates:
+  # ─────────────────────────────────────
+  # npm — weekly måndag 06:00 Europe/Stockholm
+  # ─────────────────────────────────────
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 10
+      time: "06:00"
+      timezone: "Europe/Stockholm"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "marcus803"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
     groups:
+      # Stack-grupper (bevarade från ADR-024-baseline) — paket som
+      # måste röra sig synkront för att stacken ska fungera
       tanstack:
         patterns:
           - "@tanstack/*"
+        update-types:
+          - "minor"
+          - "patch"
       react-aria:
         patterns:
           - "@react-aria/*"
           - "@react-stately/*"
           - "react-aria-components"
-      types:
-        patterns:
-          - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
       tailwind:
         patterns:
           - "tailwindcss"
           - "@tailwindcss/*"
+        update-types:
+          - "minor"
+          - "patch"
+      types:
+        patterns:
+          - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Catch-all-grupper (NYTT per ADR-031 Lager 1) — fångar alla
+      # paket som inte matchar stack-grupperna ovan, separerat per
+      # riskprofil (production = browser-runtime, development = lokal+CI)
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+        exclude-patterns:
+          - "@tanstack/*"
+          - "@react-aria/*"
+          - "@react-stately/*"
+          - "react-aria-components"
+          - "tailwindcss"
+          - "@tailwindcss/*"
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+        exclude-patterns:
+          - "@types/*"
     labels:
       - "dependencies"
 
+  # ─────────────────────────────────────
+  # github-actions — monthly catch-all
+  # ─────────────────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "monthly"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "marcus803"
+    commit-message:
+      prefix: "ci(deps)"
+      include: "scope"
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "ci"
