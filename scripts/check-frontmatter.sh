@@ -47,16 +47,33 @@ TODAY="$(date +%F)"
 
 EXIT_CODE=0
 
-# === Shallow-clone-detection (ADR-033 K4 — defense-in-depth lager 2 mot L8) ===
-# Per Session 6.6.5 L8: Check 2 (`git log -1 --format=%cs -- <fil>`) på
-# shallow clone returnerar HEAD-commit-datum istället för filens senaste
-# touch-datum → false-positive Check 2-fail. Lager 1 (fetch-depth: 50 i
-# ci.yml per K2.1 commit a67908d) är primärt skydd; denna detection är
-# lager 2 som hard-failar om lager 1 har failat eller saknas (typ spoke-
-# kopiering utan fetch-depth-config). Hard-fail-rationale per ADR-033 K4
-# Marcus' design-val 2026-05-16: L_C nivå 1-disciplin (lös orsaken vs
-# suffix-ignore); konsekvent med ADR-033-shellcheck-strict 0/0/0/0-paradigm.
+# === Detection: shallow clone med unsafe-historik-djup ===
+# Per ADR-033 K4 + ADR-030 § Del 3: defense-in-depth-lager 2 mot
+# shallow-clone-bug (L8 från Session 6.6.5). Hybrid-check fångar
+# unsafe-shallow (fetch-depth < threshold) men inte safe-shallow
+# (fetch-depth ≥ threshold) eller nya repos med <threshold commits
+# men full clone. Per L_I + L_J: empirisk truth-table verifierad
+# innan implementation.
+#
+# K4.1.1 (2026-05-16) fix av K4.1-bug: --is-shallow-repository ensamt
+# returnerar true för ALLA fetch-depth-värden (1, 50, 100) — false-
+# positive på safe-shallow per ADR-030 § Del 3. Hybrid-check kräver
+# ÄVEN att commit-count < threshold för att klassa unsafe.
+#
+# Truth-table (verifierad K4.1.1):
+#   depth=1   shallow=true,  count=1:   TRIGGAS (unsafe per L8)
+#   depth=50  shallow=true,  count=50:  IGNORERAS (safe-shallow)
+#   full      shallow=false, count>50:  IGNORERAS (full clone)
+#   nytt-repo shallow=false, count<50:  IGNORERAS (full clone, ny repo)
 IS_SHALLOW=$(git rev-parse --is-shallow-repository 2>/dev/null || echo "false")
+COMMIT_DEPTH=$(git rev-list --count HEAD 2>/dev/null || echo "0")
+MIN_DEPTH="${FRONTMATTER_MIN_HISTORY_DEPTH:-50}"
+
+if [[ "${IS_SHALLOW}" == "true" ]] && [[ "${COMMIT_DEPTH}" -lt "${MIN_DEPTH}" ]]; then
+    UNSAFE_SHALLOW=1
+else
+    UNSAFE_SHALLOW=0
+fi
 
 for file in "${GOVERNING_DOCS[@]}"; do
     # Check 1: existens — fil + frontmatter-block
@@ -113,10 +130,10 @@ for file in "${GOVERNING_DOCS[@]}"; do
         EXIT_CODE=1
     fi
 
-    # Check 2: updated-match mot git log (skippas om shallow per ADR-033 K4)
+    # Check 2: updated-match mot git log (skippas om unsafe-shallow per ADR-033 K4)
     # Hard-fail-rapport sker POST-loop så alla 9 docs' Check 1+3+4+5
     # rapporteras innan shallow-error visas (debug-experience-design).
-    if [[ "${IS_SHALLOW}" != "true" ]]; then
+    if [[ "${UNSAFE_SHALLOW}" -eq 0 ]]; then
         GIT_UPDATED=$(git log -1 --format=%cs -- "${file}" 2>/dev/null || echo "")
         if [[ -z "${UPDATED}" ]]; then
             echo "❌ ${file} — Check 2 (updated): fält saknas"
@@ -130,28 +147,30 @@ for file in "${GOVERNING_DOCS[@]}"; do
     fi
 done
 
-# === Shallow-clone-detection hard-fail (ADR-033 K4 lager 2) ===
+# === Unsafe-shallow hard-fail (ADR-033 K4 lager 2) ===
 # Placerad POST-loop så att alla 9 docs' Check 1+3+4+5-rapporter visas
 # FÖRE shallow-error (debug-experience). Hard-fail per Marcus' design-val
 # 2026-05-16 (L_C nivå 1 + defense-in-depth korrekt-logik: lager N
 # fail:ar hårt PRECIS när lager <N har failat).
-if [[ "${IS_SHALLOW}" == "true" ]]; then
+if [[ "${UNSAFE_SHALLOW}" -eq 1 ]]; then
     echo ""
-    echo "❌ Shallow clone detected. Check 2 (updated-match against git log)"
-    echo "   requires full git history."
+    echo "❌ Unsafe-shallow clone detected (depth=${COMMIT_DEPTH} < ${MIN_DEPTH})."
+    echo "   Check 2 (updated-match against git log) requires full git history."
     echo ""
-    echo "   Detection: \`git rev-parse --is-shallow-repository\` returned 'true'."
+    echo "   Detection: \`git rev-parse --is-shallow-repository\`=true AND"
+    echo "              \`git rev-list --count HEAD\`=${COMMIT_DEPTH} < ${MIN_DEPTH}."
     echo ""
     echo "   Per ADR-033 K4 + ADR-030 § Del 3 sub-§: defense-in-depth-lager 2"
     echo "   mot shallow-clone-bug (L8 från Session 6.6.5)."
     echo ""
     echo "   Fix beroende på kontext:"
-    echo "   - CI-jobb: lägg \`fetch-depth: 50\` (eller högre) på"
-    echo "     actions/checkout-step. Se ADR-030 § Del 3 \"Implementations-krav"
-    echo "     på CI-miljö\"."
-    echo "   - Lokal dev-clone: kör \`git fetch --unshallow\` för att hämta full"
-    echo "     historik."
+    echo "   - CI-jobb: lägg \`fetch-depth: ${MIN_DEPTH}\` (eller högre) på"
+    echo "     actions/checkout-step. Se ADR-030 § Del 3 'Implementations-"
+    echo "     krav på CI-miljö'."
+    echo "   - Lokal dev-clone: kör \`git fetch --unshallow\` för full historik."
     echo "   - Pre-commit hook: samma som lokal dev-clone."
+    echo "   - Per-spoke justering: ändra FRONTMATTER_MIN_HISTORY_DEPTH i"
+    echo "     .frontmatter-policy.conf."
     exit 1
 fi
 
