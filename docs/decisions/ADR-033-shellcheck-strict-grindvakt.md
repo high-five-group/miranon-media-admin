@@ -162,7 +162,8 @@ Detta är ADR-033-scope eftersom det är `scripts/`-domän + test-suite-utvidgni
 
 ### Säkerhet
 
-- **Inga supply-chain-implikationer** — shellcheck är pre-installerat på ubuntu-latest (K3.3 verifierar empiriskt; alternativ apt-install om saknas)
+- **Inga supply-chain-implikationer** — shellcheck installeras via SHA256-pinnad download från koalaman/shellcheck GitHub releases v0.11.0 (K3.3 empirisk pre-flight 2026-05-16 bekräftade falsk-grön-risk med ubuntu-latest pre-installerad v0.9.0-1)
+- **SHA-pin-strategi för shellcheck v0.11.0:** koalaman/shellcheck publicerar inte officiell `.sha256sum`-fil per release-asset (empirisk verifikation 2026-05-16: endast binär-tarballs publiceras). SHA256 (`8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198`) är downstream-beräknad 2026-05-16 mot fast nedladdad release-asset från GitHub releases. Integritets-skydd via GitHub-release-immutability (per [GitHub-docs about-releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)). Konsekvent med [ADR-029](ADR-029-ci-architektur-changed-files-pattern.md) § Medvetna utelämningar #3 actionlint-precedent (maintainer-distribuerat download-script med binär-checksum-verifikation = teknisk integrity-skydd motsvarande upstream-publicerad SHA). Re-verifikation: ladda ned samma URL + `sha256sum` lokalt; SHA-match bevisar release-asset oförändrad.
 - **Bash-script-säkerhet förbättras** via SC-katalog som strict-mode fångar:
   - SC2086 (unquoted vars → word-splitting)
   - SC2155 (declare-without-error-check → masked exit codes)
@@ -191,6 +192,8 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13 ("genväg = disciplin-brott"): varj
 4. **Strategi β-tillägget K4 inkluderas i ADR-033 trots olika problemdomän.** Defensive-programming för frontmatter-grindvakten är konceptuellt ADR-030-domän, men *implementations*-domänen är `scripts/` + test-suite + ADR-030-edit — alla inom shellcheck/script-hygien-yta. K4 i ADR-033 = bash-script-quality-disciplin tillämpad på defensiv-programmering. Senior-team-test: ja, defensive-programming i scripts är script-hygien. **Beslut:** låt stå.
 
 5. **Reservation av ADR-032 för 6.6.6 istället för att använda ADR-032 nu.** Per Block D-fråga 2 och Marcus' L19-mitigation 2026-05-16. Senior-team-test: numrerings-luckor är acceptabla; bättre än ADR-034-omnumrering om 6.6.6 körs efter. **Beslut:** låt stå; L19-mitigation-rad commitas vid K-sista.
+
+6. **Upstream-publicerad SHA256 saknas för koalaman/shellcheck.** Per empirisk verifikation 2026-05-16: koalaman publicerar endast binär-tarballs (`.tar.gz` + `.tar.xz` per OS/arch), inga separata checksum-filer. Fallback: downstream-beräknad SHA256 mot GitHub-release-immutability-garanti. Senior-team-test: ja, många populära upstream-projekt har samma policy; downstream-pin är teknisk-ekvivalent med upstream-pin för immutable releases (GitHub releases kan tas bort men inte modifieras byte-för-byte post-publish). 11/10-test: trail-disciplin bevarad via § Säkerhet-bullet + denna utelämnings-punkt + L_G [UNIVERSAL] lessons-flagga. **Beslut:** låt stå; revidera om koalaman framtida-publicerar officiella `.sha256sum`-filer.
 
 ## Spårbarhet
 
