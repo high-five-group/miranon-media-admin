@@ -25,8 +25,8 @@ set -euo pipefail
 # (Session 6.6 fortsättning #2 K7.5).
 CONFIG_FILE=".checklist-policy.conf"
 CURRENT_DIR=$(pwd)
-if [ ! -f "$CONFIG_FILE" ]; then
-    echo "ERROR: Config saknas: $CONFIG_FILE (sök i: $CURRENT_DIR)"
+if [[ ! -f "${CONFIG_FILE}" ]]; then
+    echo "ERROR: Config saknas: ${CONFIG_FILE} (sök i: ${CURRENT_DIR})"
     echo "   Fix: skapa .checklist-policy.conf i repo-root."
     echo "        Se ADR-030 § Del 1 (position #5) för spec."
     echo "        Om detta är ett nytt spoke: kopiera från miranon-media-admin"
@@ -34,49 +34,49 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 # shellcheck source=/dev/null
-source "$CONFIG_FILE"
+source "${CONFIG_FILE}"
 
 # Verifiera att config har nödvändiga variabler
 : "${CHECKLIST_FILES_PLAIN?Config saknar CHECKLIST_FILES_PLAIN}"
 : "${CHECKLIST_FILE_WITH_EXCLUSION?Config saknar CHECKLIST_FILE_WITH_EXCLUSION}"
 
 FILES_PLAIN=("${CHECKLIST_FILES_PLAIN[@]}")
-FILE_WITH_EXCLUSION="$CHECKLIST_FILE_WITH_EXCLUSION"
+FILE_WITH_EXCLUSION="${CHECKLIST_FILE_WITH_EXCLUSION}"
 
 errors_total=0
 output=""
 
 # Plain scan — filer utan sektion-exklusion
 for f in "${FILES_PLAIN[@]}"; do
-  if [[ ! -f "$f" ]]; then
+  if [[ ! -f "${f}" ]]; then
     continue
   fi
-  matches=$(grep -nE "^- \[ \]" "$f" || true)
-  if [[ -n "$matches" ]]; then
-    count=$(printf '%s\n' "$matches" | wc -l | tr -d ' ')
+  matches=$(grep -nE "^- \[ \]" "${f}" || true)
+  if [[ -n "${matches}" ]]; then
+    count=$(printf '%s\n' "${matches}" | wc -l | tr -d ' ')
     errors_total=$((errors_total + count))
-    output+="$(printf '%s\n' "$matches" | sed "s|^|$f:|")\n"
+    output+="$(printf '%s\n' "${matches}" | sed "s|^|${f}:|")\n"
   fi
 done
 
 # Sektion-medveten scan av CONTRIBUTING.md
-if [[ -f "$FILE_WITH_EXCLUSION" ]]; then
+if [[ -f "${FILE_WITH_EXCLUSION}" ]]; then
   matches=$(awk '
     /^## Definition of Done/ { skip=1; next }
     /^## / { skip=0 }
     !skip && /^- \[ \]/ { print NR": "$0 }
-  ' "$FILE_WITH_EXCLUSION")
-  if [[ -n "$matches" ]]; then
-    count=$(printf '%s\n' "$matches" | wc -l | tr -d ' ')
+  ' "${FILE_WITH_EXCLUSION}")
+  if [[ -n "${matches}" ]]; then
+    count=$(printf '%s\n' "${matches}" | wc -l | tr -d ' ')
     errors_total=$((errors_total + count))
-    output+="$(printf '%s\n' "$matches" | sed "s|^|$FILE_WITH_EXCLUSION:|")\n"
+    output+="$(printf '%s\n' "${matches}" | sed "s|^|${FILE_WITH_EXCLUSION}:|")\n"
   fi
 fi
 
-if [[ $errors_total -gt 0 ]]; then
+if [[ ${errors_total} -gt 0 ]]; then
   printf "ERROR: Unchecked items found in public docs:\n"
   printf "\n"
-  printf "%b" "$output" | sort
+  printf "%b" "${output}" | sort
   printf "\n"
   printf "Public docs should not contain unchecked items outside legitimate\n"
   printf "Definition of Done sections.\n"
@@ -86,7 +86,7 @@ if [[ $errors_total -gt 0 ]]; then
   printf "  - Move them to tasks/todo.md (defer-tracking), OR\n"
   printf "  - Move them to active sessionsdok (work-in-progress)\n"
   printf "\n"
-  printf "Total: %s unchecked item(s) in publika docs.\n" "$errors_total"
+  printf "Total: %s unchecked item(s) in publika docs.\n" "${errors_total}"
   exit 1
 fi
 

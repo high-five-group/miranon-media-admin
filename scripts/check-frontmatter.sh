@@ -24,8 +24,8 @@ set -euo pipefail
 # === Ladda projekt-config ===
 CONFIG_FILE=".frontmatter-policy.conf"
 CURRENT_DIR=$(pwd)
-if [ ! -f "$CONFIG_FILE" ]; then
-    echo "❌ Config saknas: $CONFIG_FILE (sök i: $CURRENT_DIR)"
+if [[ ! -f "${CONFIG_FILE}" ]]; then
+    echo "❌ Config saknas: ${CONFIG_FILE} (sök i: ${CURRENT_DIR})"
     echo "   Fix: skapa .frontmatter-policy.conf i repo-root."
     echo "        Se ADR-030 § Del 2 + Del 3 för spec."
     echo "        Om detta är ett nytt spoke: kopiera från miranon-media-admin"
@@ -33,7 +33,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 # shellcheck source=/dev/null
-source "$CONFIG_FILE"
+source "${CONFIG_FILE}"
 
 # Verifiera att config har nödvändiga variabler
 : "${FRONTMATTER_GOVERNING_DOCS?Config saknar FRONTMATTER_GOVERNING_DOCS}"
@@ -41,7 +41,7 @@ source "$CONFIG_FILE"
 : "${FRONTMATTER_VALID_STATUS?Config saknar FRONTMATTER_VALID_STATUS}"
 
 GOVERNING_DOCS=("${FRONTMATTER_GOVERNING_DOCS[@]}")
-VALID_OWNER="$FRONTMATTER_VALID_OWNER"
+VALID_OWNER="${FRONTMATTER_VALID_OWNER}"
 VALID_STATUS=("${FRONTMATTER_VALID_STATUS[@]}")
 TODAY="$(date +%F)"
 
@@ -49,74 +49,74 @@ EXIT_CODE=0
 
 for file in "${GOVERNING_DOCS[@]}"; do
     # Check 1: existens — fil + frontmatter-block
-    if [ ! -f "$file" ]; then
-        echo "❌ $file — Check 1 (existens): fil saknas i repo"
+    if [[ ! -f "${file}" ]]; then
+        echo "❌ ${file} — Check 1 (existens): fil saknas i repo"
         echo "   Fix: verifiera att FRONTMATTER_GOVERNING_DOCS i .frontmatter-policy.conf matchar HEAD"
         EXIT_CODE=1
         continue
     fi
 
-    if ! head -1 "$file" | grep -qE "^---$"; then
-        echo "❌ $file:1 — Check 1 (existens): frontmatter saknas"
+    if ! head -1 "${file}" | grep -qE "^---$"; then
+        echo "❌ ${file}:1 — Check 1 (existens): frontmatter saknas"
         echo "   Fix: lägg till YAML-frontmatter top-of-file per ADR-030 § Del 2"
         EXIT_CODE=1
         continue
     fi
 
     # Extrahera frontmatter-block (rader mellan första två ---)
-    FRONTMATTER=$(awk '/^---$/{c++; if(c==1)next; if(c==2)exit} c==1' "$file")
+    FRONTMATTER=$(awk '/^---$/{c++; if(c==1)next; if(c==2)exit} c==1' "${file}")
 
     # Extrahera fält
-    OWNER=$(echo "$FRONTMATTER" | grep -E "^owner:" | sed -E 's/^owner:[[:space:]]*//' || echo "")
-    UPDATED=$(echo "$FRONTMATTER" | grep -E "^updated:" | sed -E 's/^updated:[[:space:]]*//' || echo "")
-    REVIEW_BY=$(echo "$FRONTMATTER" | grep -E "^review_by:" | sed -E 's/^review_by:[[:space:]]*//' || echo "")
-    STATUS=$(echo "$FRONTMATTER" | grep -E "^status:" | sed -E 's/^status:[[:space:]]*([a-z]+).*/\1/' || echo "")
+    OWNER=$(echo "${FRONTMATTER}" | grep -E "^owner:" | sed -E 's/^owner:[[:space:]]*//' || echo "")
+    UPDATED=$(echo "${FRONTMATTER}" | grep -E "^updated:" | sed -E 's/^updated:[[:space:]]*//' || echo "")
+    REVIEW_BY=$(echo "${FRONTMATTER}" | grep -E "^review_by:" | sed -E 's/^review_by:[[:space:]]*//' || echo "")
+    STATUS=$(echo "${FRONTMATTER}" | grep -E "^status:" | sed -E 's/^status:[[:space:]]*([a-z]+).*/\1/' || echo "")
 
     # Check 5: owner-enum
-    if [ "$OWNER" != "$VALID_OWNER" ]; then
-        echo "❌ $file — Check 5 (owner): '$OWNER' (förväntat: '$VALID_OWNER')"
-        echo "   Fix: sätt owner: $VALID_OWNER i frontmatter"
+    if [[ "${OWNER}" != "${VALID_OWNER}" ]]; then
+        echo "❌ ${file} — Check 5 (owner): '${OWNER}' (förväntat: '${VALID_OWNER}')"
+        echo "   Fix: sätt owner: ${VALID_OWNER} i frontmatter"
         EXIT_CODE=1
     fi
 
     # Check 4: status-enum
     STATUS_OK=0
     for valid in "${VALID_STATUS[@]}"; do
-        if [ "$STATUS" = "$valid" ]; then STATUS_OK=1; break; fi
+        if [[ "${STATUS}" = "${valid}" ]]; then STATUS_OK=1; break; fi
     done
-    if [ "$STATUS_OK" -eq 0 ]; then
+    if [[ "${STATUS_OK}" -eq 0 ]]; then
         VALID_LIST=$(IFS='|'; echo "${VALID_STATUS[*]}")
-        echo "❌ $file — Check 4 (status): '$STATUS' (förväntat: $VALID_LIST)"
+        echo "❌ ${file} — Check 4 (status): '${STATUS}' (förväntat: ${VALID_LIST})"
         echo "   Fix: sätt status: stable (eller annat giltigt enum-värde) i frontmatter"
         EXIT_CODE=1
     fi
 
     # Check 3: review_by > today
-    if [ -z "$REVIEW_BY" ]; then
-        echo "❌ $file — Check 3 (review_by): fält saknas eller tomt"
+    if [[ -z "${REVIEW_BY}" ]]; then
+        echo "❌ ${file} — Check 3 (review_by): fält saknas eller tomt"
         echo "   Fix: sätt review_by: YYYY-MM-DD (typiskt today + 6 månader)"
         EXIT_CODE=1
-    elif [ "$REVIEW_BY" \< "$TODAY" ] || [ "$REVIEW_BY" = "$TODAY" ]; then
-        echo "❌ $file — Check 3 (review_by): '$REVIEW_BY' har passerat (today: $TODAY)"
+    elif [[ "${REVIEW_BY}" < "${TODAY}" ]] || [[ "${REVIEW_BY}" = "${TODAY}" ]]; then
+        echo "❌ ${file} — Check 3 (review_by): '${REVIEW_BY}' har passerat (today: ${TODAY})"
         echo "   Fix: granska dokumentet och bumpa review_by till framtida datum"
         EXIT_CODE=1
     fi
 
     # Check 2: updated-match mot git log
-    GIT_UPDATED=$(git log -1 --format=%cs -- "$file" 2>/dev/null || echo "")
-    if [ -z "$UPDATED" ]; then
-        echo "❌ $file — Check 2 (updated): fält saknas"
-        echo "   Fix: sätt updated: $TODAY (auto-bumpas av pre-commit hook)"
+    GIT_UPDATED=$(git log -1 --format=%cs -- "${file}" 2>/dev/null || echo "")
+    if [[ -z "${UPDATED}" ]]; then
+        echo "❌ ${file} — Check 2 (updated): fält saknas"
+        echo "   Fix: sätt updated: ${TODAY} (auto-bumpas av pre-commit hook)"
         EXIT_CODE=1
-    elif [ -n "$GIT_UPDATED" ] && [ "$UPDATED" != "$GIT_UPDATED" ] && [ "$UPDATED" != "$TODAY" ]; then
-        echo "❌ $file — Check 2 (updated): '$UPDATED' driftar från git log '$GIT_UPDATED'"
-        echo "   Fix: bumpa updated: $GIT_UPDATED eller commita ändring (pre-commit auto-bumpar)"
+    elif [[ -n "${GIT_UPDATED}" ]] && [[ "${UPDATED}" != "${GIT_UPDATED}" ]] && [[ "${UPDATED}" != "${TODAY}" ]]; then
+        echo "❌ ${file} — Check 2 (updated): '${UPDATED}' driftar från git log '${GIT_UPDATED}'"
+        echo "   Fix: bumpa updated: ${GIT_UPDATED} eller commita ändring (pre-commit auto-bumpar)"
         EXIT_CODE=1
     fi
 done
 
-if [ "$EXIT_CODE" -eq 0 ]; then
+if [[ "${EXIT_CODE}" -eq 0 ]]; then
     echo "✅ Frontmatter-validering: alla ${#GOVERNING_DOCS[@]} styrande docs passerar 5 checks"
 fi
 
-exit "$EXIT_CODE"
+exit "${EXIT_CODE}"
