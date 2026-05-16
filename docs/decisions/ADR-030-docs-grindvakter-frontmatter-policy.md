@@ -156,7 +156,7 @@ Check 2 anropar `git log -1 --format=%cs -- <fil>` som returnerar filens senaste
 
 **Hub-portabilitet:** Vid duplicering av frontmatter-grindvakten till annan spoke per K7.6, kopiera fetch-depth-config tillsammans med skript- och config-filer. Glömd fetch-depth-config triggar samma latent bug. Lessons-trail: `tasks/lessons.md` L8 (Session 6.6.5).
 
-**Defensive programming (defer):** `scripts/check-frontmatter.sh` kan utvidgas med shallow-clone-detection (`git rev-parse --is-shallow-repository`) som degraderar Check 2 gracefully om fetch-depth-config glöms. Flaggad i `tasks/todo.md` som Alt C-defer från Session 6.6.5 K-sista #3.
+**Defensive programming (implementerad i ADR-033 K4):** Shallow-clone-detection via hybrid-check (`git rev-parse --is-shallow-repository` + `git rev-list --count HEAD < threshold`) implementerad i `scripts/check-frontmatter.sh` (detection-block PRE-Check-2-loop) som defense-in-depth-lager 2 mot fetch-depth-config-glömma vid spoke-kopiering. Threshold konfigurerbar via `FRONTMATTER_MIN_HISTORY_DEPTH` i `.frontmatter-policy.conf` (default 50, matchar `fetch-depth: 50`-konvention). Hard-fail på unsafe-shallow (`is-shallow=true` AND `count<threshold`); safe-shallow (`count>=threshold`) + full-clone (`is-shallow=false`) passerar. Implementations-trail: K4.1 ([ADR-033](ADR-033-shellcheck-strict-grindvakt.md) commit `b2970fd`) → K4.1.1 hot-fix för fetch-depth: 50-false-positive (commit `4dc55e5`) → K4.2 test-suite T10-T12 (commit `47f8ed8`). Test-täckning: 4 truth-table-scenarier i `scripts/test-check-frontmatter.sh` (T10/T11a/T11b/T12).
 
 ### Del 4 — ADR-numrering vs ADR-029-utvidgning
 
