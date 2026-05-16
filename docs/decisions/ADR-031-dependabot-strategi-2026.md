@@ -3,7 +3,7 @@
 
 # ADR-031: Dependabot-strategi 2026 — grouping, cooldown, minimal CI-yta, manuell review
 
-- Status: Draft
+- Status: Accepted (Session 6.6.5 K-sista 2026-05-16)
 - Datum: 2026-05-16
 - Fas: Session 6.6.5 — Dependabot-strategi-uppgradering (mellan Fas 2 och Fas 2.5)
 
@@ -243,16 +243,22 @@ ADR-031 utvidgar ADR-024 (ursprungs-dependabot-config) med 2026-policy-reviderin
 
 ## Baseline-fynd 2026-05-16
 
-Empirisk data per lager, ifylls vid K-sista bake-in efter K2-K4 implementation har producerat post-state. Format analog till ADR-030 § Baseline-fynd.
+Empirisk data per lager, ifylld vid Session 6.6.5 K-sista #1 efter K2-K4 implementation har producerat post-state. Format analogt till ADR-030 § Baseline-fynd.
 
 | Lager | Pre-existing config | Post-implementation config | Verifierings-källa |
 |---|---|---|---|
-| 1 — Grouping | 4 npm-grupper (tanstack/react-aria/types/tailwind), inget github-actions, inget catch-all | [fylls K2] | [fylls K2] |
-| 2 — Cooldown | Saknas helt (pre-juli-2025-config) | [fylls K2] | [fylls K2] |
-| 3 — CI-yta | Staging+e2e körs på dependabot[bot] (5 PR:er failar) | [fylls K3] | [fylls K3] |
-| 4 — Manuell review + reviewers | Implicit (ingen ADR-spårning, inga reviewers i config) | Explicit (denna ADR + reviewers-config) | [fylls K2 + denna ADR Accepted] |
-| Schedule + limit | npm weekly måndag (UTC-default), github-actions monthly, limit npm=10 | [fylls K2] | [fylls K2] |
-| Commit-message | Default "Bump X from Y to Z" (bryter Conventional Commits) | [fylls K2] | [fylls K2] |
+| 1 — Grouping | 4 npm-grupper (tanstack/react-aria/tailwind/types) utan `update-types`-filter; inget github-actions-grouping; inget catch-all; alla stack-grupper bevarade | 4 stack-grupper med `update-types: [minor, patch]` + 2 catch-all (`production-dependencies` + `development-dependencies`) med `dependency-type` + `exclude-patterns` + `update-types`-filter; 1 github-actions catch-all-grupp | `.github/dependabot.yml` (K2 commit `ce5c0a8`, 112 rader); grep-verifierat 7 grupper post-implementation |
+| 2 — Cooldown | Saknas helt (feature ej använd; pre-juli-2025-config-baseline) | npm: `cooldown.default-days: 7` + `semver-patch-days: 3`; github-actions: `cooldown.default-days: 7`. Security-updates kringgår per GitHub design (gäller endast `version-updates`) | `.github/dependabot.yml` grep `cooldown:` (2 träffar rad 31 + 102), K2 commit `ce5c0a8` |
+| 3 — Minimal CI-yta | Staging + e2e körs på alla actors (inkl. Dependabot); pre-existing skuld från Session 4 K0åc.2 `STAGING_REQUIRED` hard-fail på shallow staging-env (5 PR:er #21-#25 failade pre-K3) | `API tests (staging)` + `E2E tests (staging)` har `if: github.actor != 'dependabot[bot]'`; pure-tests + typecheck + biome + build + 6 lint-grindvakter + Lychee körs fortsatt på Dependabot-PR:er | `.github/workflows/ci.yml` grep `github.actor != 'dependabot[bot]'` (2 träffar rad 193 + 232), K3 commit `06cbcc4`, CI run 25957075755 positiv-bekräftelse marcus803-push |
+| 4 — Manuell review + reviewers | Implicit (Marcus reviewar via vana, ingen config-deklaration, ingen ADR-spårning) | Explicit i ADR-031 § Beslut Lager 4 + `reviewers: [marcus803]` på båda ecosystems i `dependabot.yml` + non-auto-merge-position dokumenterad | `.github/dependabot.yml` grep `reviewers:` (2 träffar rad 25 + 97), denna ADR Accepted-bump |
+| Schedule + limit | npm weekly måndag (UTC-default; ingen explicit time + timezone), github-actions monthly, `open-pull-requests-limit: 10` (npm) / default-5 (github-actions) | npm: weekly måndag `time: "06:00"` + `timezone: "Europe/Stockholm"`, `open-pull-requests-limit: 5`; github-actions: monthly, `open-pull-requests-limit: 3` | `.github/dependabot.yml` rad 19-23 + 27 (npm) + rad 91 + 96 (github-actions), K2 commit `ce5c0a8` |
+| Commit-message | Default `Bump X from Y to Z`-format (bryter projektets Conventional Commits-disciplin) | `prefix: "chore(deps)"` + `prefix-development: "chore(deps-dev)"` (npm) + `prefix: "ci(deps)"` (github-actions) + `include: "scope"` på båda | `.github/dependabot.yml` grep `commit-message:` (2 träffar), K2 commit `ce5c0a8` |
+
+### Verifikations-noter
+
+- **K3 positiv-bekräftelse:** CI run 25957075755 (commit `06cbcc4`) bekräftade if-villkor-mekaniken för positive case (marcus803-actor → staging-steg körs som vanligt). Negativ verifikation (Dependabot-actor → staging-steg skippas) deferas till nästa Dependabot-cykel (weekly schedule per `.github/dependabot.yml`).
+- **K-sista-checkpoint flaggad:** Marcus reviewar första post-K4 Dependabot-PR och bekräftar (a) PR:er är grupperade enligt `production-dependencies`/`development-dependencies`-mönstret, (b) cooldown filtrerar versioner publicerade <7 dagar (default) eller <3 dagar (patch), (c) staging-steg visar "skipped"-status per K3. Checkpoint loggas i Session 6.7 K1-sessionsstart eller separat handoff-not.
+- **K2.1-skuld-spårbarhet (latent shallow-clone-bug):** ADR-030 § Del 3 Check 2-design hade latent shallow-clone-bug som triggades vid K1 (dag-rollover) — `git log -1 --format=%cs -- <fil>` returnerar HEAD-commit-datum istället för filens senaste touch-datum på shallow clone (default fetch-depth: 1). Triggades inte tidigare pga sammanträffande invariant (alla 9 styrande docs bumpades till samma datum i K7.C `866dd7c`). K2.1 commit `a67908d` fix:ade via `fetch-depth: 50` på lint + test + docs jobs (matchar `changed`-jobbet per ADR-029 § Utelämning #6). Detta är ADR-030-skuld upptäckt vid K2-implementation; trail dokumenterad här. Formell ADR-030-tillägg-form (ny ADR vs ADR-030-edit) beslutas vid K-sista #2 lessons-skörd-domän.
 
 ## Spårbarhet
 
@@ -265,9 +271,11 @@ Empirisk data per lager, ifylls vid K-sista bake-in efter K2-K4 implementation h
   - GitHub native cooldown-feature (juli 2025) — befintlig config pre-feature-datum
 - **Etablerad:** Session 6.6.5 K1 2026-05-16 (sessionsdok [`tasks/sessions/2026-05-14-session-6-6-5.md`](../../tasks/sessions/2026-05-14-session-6-6-5.md))
 - **Implementation:**
-  - K1 ✅ KLAR 2026-05-16 — sessionsdok + ADR Draft + README atomisk (denna commit)
-  - K2 EJ STARTAD — `.github/dependabot.yml`-uppgradering (Lager 1+2+4)
-  - K3 EJ STARTAD — `.github/workflows/ci.yml` Alt D Hybrid (Lager 3)
-  - K4 EJ STARTAD — PR-backfill (#19, #21-#25 close)
-  - K-sista EJ STARTAD — lessons-skörd + ADR Draft → Accepted med Baseline-fynd ifyllt
-- **Verifikation:** empirisk via K2 yamllint på `.github/dependabot.yml` + K3 actionlint på `.github/workflows/ci.yml` + K4 Dependabot rekonstruerar grupperade PR:er nästa måndag 06:00 Europe/Stockholm + K-sista CI-run mot main efter merge
+  - K1 ✅ KLAR 2026-05-16 — sessionsdok + ADR Draft + README atomisk (commit `29bcef5`)
+  - K2 ✅ KLAR 2026-05-16 — `.github/dependabot.yml`-uppgradering Lager 1+2 (commit `ce5c0a8`)
+  - K2.1 ✅ KLAR 2026-05-16 — fetch-depth retrofit på lint/test/docs jobs + Lychee URL-fix (commit `a67908d`)
+  - K3 ✅ KLAR 2026-05-16 — `.github/workflows/ci.yml` Alt D Hybrid Lager 3 (commit `06cbcc4`, CI run 25957075755 positiv-bekräftelse)
+  - K4 ✅ KLAR 2026-05-16 — PR-backfill (#19, #21-#25 close, commit `0eedc6a`)
+  - K-sista #1 ✅ KLAR 2026-05-16 — Status-bump Draft → Accepted + Baseline-fynd ifyllt (denna commit)
+  - K-sista #2-#8 EJ STARTAD — lessons-skörd, BUILD-LOG, hub-sync, sessionsdok-arkivering, todo + CLAUDE.md status, PR-merge
+- **Verifikation:** empirisk via K2 yamllint på `.github/dependabot.yml` (exit=0) + K3 CI run 25957075755 alla 5 jobs gröna inkl. positiv-bekräftelse av staging-steg-körning för marcus803-actor + K-sista #1 grep-sanity (7 grupper, 2 cooldown, 2 if-villkor, 2 reviewers). Negativ-verifikation av Dependabot-actor-skip + grouping-cykel-rekonstruktion deferas till nästa Dependabot-cykel per `.github/dependabot.yml` weekly schedule (K-sista-checkpoint flaggad i sessionsdok)
