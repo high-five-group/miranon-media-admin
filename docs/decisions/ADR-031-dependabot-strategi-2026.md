@@ -269,7 +269,7 @@ Empirisk data per lager, ifylld vid Session 6.6.5 K-sista #1 efter K2-K4 impleme
   - Session 6.6.5 K1 RAPPORTERA Block A.6 — `.github/dependabot.yml`-config-empiri: 4 stack-grupper, inget cooldown, ingen catch-all, inga reviewers
   - 2026-supply-chain-läget (Axios mars, CanisterWorm, Trivy + Checkmarx KICS-kompromettering)
   - GitHub native cooldown-feature (juli 2025) — befintlig config pre-feature-datum
-- **Etablerad:** Session 6.6.5 K1 2026-05-16 (sessionsdok [`tasks/sessions/2026-05-14-session-6-6-5.md`](../../tasks/sessions/2026-05-14-session-6-6-5.md))
+- **Etablerad:** Session 6.6.5 K1 2026-05-16 (sessionsdok [`tasks/sessions/archive/2026-05/2026-05-14-session-6-6-5.md`](../../tasks/sessions/archive/2026-05/2026-05-14-session-6-6-5.md))
 - **Implementation:**
   - K1 ✅ KLAR 2026-05-16 — sessionsdok + ADR Draft + README atomisk (commit `29bcef5`)
   - K2 ✅ KLAR 2026-05-16 — `.github/dependabot.yml`-uppgradering Lager 1+2 (commit `ce5c0a8`)
