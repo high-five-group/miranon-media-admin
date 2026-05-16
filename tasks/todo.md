@@ -37,6 +37,8 @@ Mini-session 6.6.6 — Vale.Terms (425) + Miranon.VueToReact (114) manuell fix p
 
 Defer-bakgrund: K6.2 V4 bekräftade Vale 3.14.1 har INGEN `--fix`-flagga. Manuell sed-batch är osäker för 3/5 unika Vale.Terms-substitutioner (`aria`/`fk`/`vite` har hög kod-bryt-risk). Per-fil rad-1-disable valt för regression-skydd (naturlig disable-borttagning vid 6.6.6-fix).
 
+**ADR-032-reservation (L19-mitigation, Session 6.6.7 K-sista 2026-05-16):** 6.6.7 K-sista bekräftar: ADR-032 är reserverad för Session 6.6.6 (Vale-cleanup-domän, defererad). Sekvens: ADR-031 (6.6.5 Dependabot) → ADR-032 (6.6.6 Vale, kommer) → ADR-033 (6.6.7 shellcheck, nu).
+
 ### Mini-session 6.6.7 — shellcheck-grindvakt för scripts/*.sh + .githooks/* (TOP-PRIORITY post-6.6.5 per Strategi β)
 
 **Effektiv ordning (Strategi β bekräftad 2026-05-16):** Startas FÖRE Session 6.6.6 — quick-win (~2-3h) + bygger momentum + konsoliderar Session 6.6.5 K2.1 fetch-depth-fix med defensive-programming-lager (shallow-clone-detection integrerat i K4-scope).
