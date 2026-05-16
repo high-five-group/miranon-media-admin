@@ -49,6 +49,24 @@ Defer från Session 6.6 K7.B + K7.5.4 (SC2034 klass-blindhet). Egen ADR-trail pe
 
 - **Shallow-clone-detection-tillägg (defensive programming, Alt C-defer från Session 6.6.5 K-sista #3):** `scripts/check-frontmatter.sh` utvidgning med `git rev-parse --is-shallow-repository`-detection som degraderar Check 2 gracefully om fetch-depth-config glöms. Test-suite (`scripts/test-check-frontmatter.sh`) utvidgad med shallow-scenarier. Kandidat: integrera i Session 6.6.6 K-sista eller egen mini-session. Inte akut — K2.1 fetch-depth: 50-retrofit löste rotorsaken (commit `a67908d`). Detta är defense-in-depth-lager 2 + hub-portabilitets-skydd. Spårbar via `tasks/lessons.md` L8 + ADR-030 § Del 3 sub-§ "Implementations-krav på CI-miljö".
 
+### Session 6.6.5 post-K-sista #2 lessons-skörd-kandidater (för 6.6.6 K-sista bake-in)
+
+Fyra lessons-kandidater fångade i Chat-context EFTER K-sista #2 lessons-bake-in (commit `ca57753`). Per L7-disciplin (Chat skördar lessons löpande, Marcus administrerar inte): flaggas här för bake-in i Session 6.6.6 K-sista lessons-skörd. Spårbarhet bevaras via denna todo.md-rad + ev. partial-trail (commit-meddelanden, BUILD-LOG-noter) listad nedan.
+
+- **L15 [UNIVERSAL]** — Code-prompts som beror på pågående Marcus-beslut MÅSTE hållas tillbaka tills beslutet är taget. Prompt + öppen STOPPA-OCH-FRÅGA i samma meddelande = race condition där Code kan starta innan beslut är taget. Generaliserbar regel: vid STOPPA-OCH-FRÅGA + Code-prompt-paket, leverera *bara* frågan först, vänta på svar, sedan leverera prompten med invävt beslut. Aldrig placeholders i prompt som beror på pågående diskussion. Trigger: K-sista #3 placeholder-misstag 2026-05-16. Mönsterförstärkning av L7 + K-sista.1. Ingen filsystem-spårning (Chat-only-fångst).
+
+- **L16 [UNIVERSAL]** — Konceptuella refereringar i Chat-output måste verifieras mot faktisk rubrik-text/sökväg i mål-fil FÖRE prompt-design. Sökning på *koncept* ("Ristat i sten") ≠ sökning på *exakt sträng*. Generaliserbar regel: vid prompt-design som modifierar named-targets (sektioner, filer, identifiers), Code rapporterar faktisk-text via grep FÖRE Chat formulerar str_replace-mönster. Trigger: K-sista #4.A forensisk-pass 2026-05-16 — "Ristat i sten" är Chat-koncept, faktisk rubrik = "Instruktioner — Alltid gäller". Mönsterförstärkning av L1 + L11.
+
+- **L17 [UNIVERSAL]** — CI-runner-flakiness klass-pattern-konsolidering vid 3+ instanser av samma CDN-blockerings-mönster. Etablerings-tröskel: 3 empiriska instanser (tanstack/router Session 6.6 K6 + opentelemetry Session 6.6.5 K-sista #6.5 + tanstack/table K-sista #7.1). Konsolidera till klass-pattern (`^https://domain\.com/.*$`) istället för att stapla instans-patterns. Klass-fix > instans-fix per K7.5.3 (ifrågasätt ramen). Lessons-flag bevaras för re-utvärdering om CDN-blockering upphör. Tillämpas på Lychee `.lycheeignore` Block 1 Acceptable, CI-runner-flakiness-kategori. Trigger: K-sista #7.1 main CI-fix 2026-05-16. Partiell spårning i commit `df45f71` commit-meddelande + `.lycheeignore`-kommentar (klass-utvidgnings-motivering).
+
+- **L18 [UNIVERSAL]** — Pre-Update projektkunskap är inte LIVE-STATE. Endast Code har LIVE-STATE av filsystem mellan session-pivot och Marcus' Update-klick. Chat:s projektkunskaps-sökning drifterar mot faktisk repo-HEAD. Generaliserbar regel: vid pre-pivot- eller post-Code-edit-verifikation, Chat ber Code rapportera empiriskt; projektkunskaps-sökning kan ge gammal state och leda till felklassning ("redan committed" när faktiskt bara i Chat). Mönsterförstärkning av L3 (empirisk verifikation FÖRE strategi) tillämpat på Chat:s eget sökmedel. Trigger: Marcus' pre-pivot fångst 2026-05-16 — Chat sökte projektkunskap för pre-pivot-verifikation utan att inse att Update inte klickats. Ingen filsystem-spårning utöver denna todo.md-rad.
+
+Bake-in-plan vid Session 6.6.6 K-sista:
+
+- L15-L18 läggs som `### L15 — ...` rubriker under H2 `## 2026-05-16 — Session 6.6.5 (post-K-sista #2 retroaktiva)` i `tasks/lessons.md` (analog till K1.18/K1.19 retroaktiv-skörd-mönster från Session 6 K-sista)
+- Hub-sync: alla 4 är [UNIVERSAL] → konsolideras med Session 6.6.6:s egna [UNIVERSAL]-skörd vid 6.6.6 hub-sync
+- Denna todo.md-rad tas bort efter bake-in (analog till DEFERRED-FIX-MARKER-pattern: skörd-flagga är obsolet när bake-in landar)
+
 ### Återkommande disciplin: Branch-protection-aktivering på main
 
 ADR-029 § Konsekvenser planerar för manuell aktivering av branch-protection. Aggregator `ci-passed` är ready (empiriskt verifierat Session 6.6 K9 2026-05-15: 5/5 senaste runs gröna med 3-4s aggregator-step).
