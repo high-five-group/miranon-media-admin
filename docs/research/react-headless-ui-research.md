@@ -206,7 +206,7 @@ I januari 2026 lade shadcn/ui till officielt stod for Base UI som alternativ til
 
 ### Implikationer for Miranon-kontexten
 
-shadcn/ui ar relevant som **startpunkt**, inte som slutlosning. For en 11/11/11-kvalitetsstandard behover man ga djupare an vad shadcn ger out of the box. Men konceptet "kopiera och ag" ar direkt jamforbart med hur Miranon redan bygger (egna komponenter som studerar FK-kallkod).
+shadcn/ui ar relevant som **startpunkt**, inte som slutlosning. For en 11/11/11-kvalitetsstandard behover man ga djupare an vad shadcn ger out of the box. Men konceptet "kopiera och ag" ar direkt jamforbart med hur Miranon Media redan bygger (egna komponenter som studerar FK-kallkod).
 
 ---
 
@@ -223,9 +223,9 @@ shadcn/ui ar relevant som **startpunkt**, inte som slutlosning. For en 11/11/11-
 | **Refs** | `ref()` = reaktivt varde, `template ref` = DOM-ref | `useRef` = mutabel container (inte reaktivt), `useState` for reaktivt |
 | **Watch** | `watch()`, `watchEffect()` for side effects | `useEffect` (kombinerar mount, update, watch) |
 
-### Specifika composable-mappningar (Miranon Mm Library -> React)
+### Specifika composable-mappningar (Miranon Media Mm Library -> React)
 
-| Vue Composable (Miranon) | React Hook-ekvivalent | Kommentar |
+| Vue Composable (Miranon Media) | React Hook-ekvivalent | Kommentar |
 |---|---|---|
 | `useControllable(props, key)` | `useControllableState` (Radix/Base UI har liknande) | Kontrollerat/okontrollerat dual-mode. React har inget inbyggt; biblioteken erbjuder detta. |
 | `usePresence(show)` | `useTransitionStatus` (Base UI), animeringsbibliotek | Vue har `<Transition>`, React behover extern losning. |
@@ -267,7 +267,7 @@ Vue composables och React hooks ar **konceptuellt lika** men **mekaniskt olika**
 Motivering:
 
 1. **Tillganglighet:** Ingen annan nar Adobes niva. Testat med riktiga skarmlasare, 30+ sprak, 13 kalendersystem. For ett projekt som har 11/11/11 som kvalitetsmal ar detta ovardepat.
-2. **Komplethet:** 40+ hooks + 50+ komponenter tacker allt Miranon behover: Dialog, Table, Calendar, DatePicker, DnD, Menu, Select, Combobox, Toast, etc.
+2. **Komplethet:** 40+ hooks + 50+ komponenter tacker allt Miranon Media behover: Dialog, Table, Calendar, DatePicker, DnD, Menu, Select, Combobox, Toast, etc.
 3. **Hook-lager:** Mojligheten att anvanda lagsta-niva-hooks ger samma kontroll som Vue composables -- man kan bygga exakt den komponent man vill utan att vara last vid ett komponent-API.
 4. **Langsiktighet:** Adobe ar en av varldens storsta mjukvaruforetag. React Aria ar grunden for deras eget designsystem (Spectrum 2). Det gar ingenstans.
 5. **Composable-mappning:** 9 av 12 Miranon-composables har direkta ekvivalenter i React Aria.

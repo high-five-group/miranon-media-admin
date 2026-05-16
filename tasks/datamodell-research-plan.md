@@ -281,7 +281,7 @@ SQL-normalisering.
 
 | Fråga | Beslut som behövs |
 |---|---|
-| Är principerna relevanta för Miranon/Psionautics, inte generiska? | Godkänn/revidera |
+| Är principerna relevanta för Miranon Media/Psionautics, inte generiska? | Godkänn/revidera |
 | Har vi separerat Airtable-excellence från Supabase-target? | Ja/nej |
 | Finns källor nog för att kalla detta research (>5 högkvalitativa per princip-kluster)? | Ja/komplettera |
 
@@ -710,7 +710,7 @@ Vad händer när en Gate underkänns. Definierat i förväg så vi inte ad hoc-o
 
 | Risk | Motåtgärd |
 |---|---|
-| Researchen blir generisk | Tvinga varje princip att mappa mot konkret Miranon/Psionautics-beslut (Gate 2) |
+| Researchen blir generisk | Tvinga varje princip att mappa mot konkret Miranon Media/Psionautics-beslut (Gate 2) |
 | Supabase-designen gör Airtable-steget slarvigt | A-track-gate måste passera innan S-track startar |
 | Airtable-förslag blir för invasiva före MK | MK-frys + post-MK sequencing i 06a |
 | DS/DQ tappas bort i designen | Spårbarhetsmatris (§9) + closure-test (Fas 6) |

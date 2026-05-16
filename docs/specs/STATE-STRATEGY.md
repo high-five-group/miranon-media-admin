@@ -12,7 +12,7 @@
 
 Varje bit state tilhor exakt en kategori. Ingen state far leva i "fel" lager.
 
-| Typ | Exempel i Miranon | Verktyg | Persistens |
+| Typ | Exempel i Miranon Media | Verktyg | Persistens |
 |-----|-------------------|---------|------------|
 | Server state | Event, anmalningar, personer | TanStack Query | Cache (staleTime 5 min) |
 | URL state | Filter, sokterm, aktiv flik | nuqs | URL (overlever reload) |

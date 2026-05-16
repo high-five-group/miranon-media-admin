@@ -16,7 +16,7 @@ DataSourceAdapter, komponentbiblioteket, token-systemet och hooks ska
 ateranvandas i **Passionslyftet** (Marcus livsverk: LMS/coaching-plattform
 med inre och yttre resa).
 
-Varje arkitekturbeslut i Miranon paverkar hur snabbt och smidigt
+Varje arkitekturbeslut i Miranon Media paverkar hur snabbt och smidigt
 Passionslyftet kan byggas. Fel beslut nu = refaktorering senare.
 Ratt beslut nu = plug-and-play. 27 sessioner, 12 composables,
 4 komponenter pa 11/11/11 -- det ar kapital som maste forrantas.
@@ -28,7 +28,7 @@ Ratt beslut nu = plug-and-play. 27 sessioner, 12 composables,
 ### DataSourceAdapter-monstret
 
 Adaptern ar den viktigaste bron. Samma interface, olika implementationer:
-Miranon anvander AirtableAdapter (2 anvandare, enkel rollhantering),
+Miranon Media anvander AirtableAdapter (2 anvandare, enkel rollhantering),
 Passionslyftet anvander SupabaseAdapter (hundratals, RBAC med coach/deltagare/gast).
 
 **Forberedelse nu:** Lagg till valfri `trackActivity()` i DataSourceAdapter.
@@ -95,7 +95,7 @@ Vid behov: refaktorera `--mm-` till `--ui-` for delade komponenter.
 xAPI (Experience API) ar standarden for att spara larande-aktiviteter.
 Formatet: Actor + Verb + Object + Result + Context + Timestamp.
 
-Miranon behover inte ett fullstandigt LRS. Men genom att anvanda
+Miranon Media behover inte ett fullstandigt LRS. Men genom att anvanda
 xAPI-*format* i aktivitetsloggen fran dag ett far Passionslyftet
 en migrerbar datagrund utan omdesign.
 
@@ -130,11 +130,11 @@ export interface ActivityStatement {
 
 | Fas | Lagringsplats | Format | Fraga |
 |-----|---------------|--------|-------|
-| Miranon (nu) | Airtable "Aktivitetslogg" | ActivityStatement (fororenklat) | "Vad hande senast?" |
+| Miranon Media (nu) | Airtable "Aktivitetslogg" | ActivityStatement (fororenklat) | "Vad hande senast?" |
 | Passionslyftet v1 | Supabase `activity_statements` | ActivityStatement (fullstandigt) | "Vad har denna deltagare gjort?" |
 | Passionslyftet v2 | Supabase + LRS (Learning Locker/TRAX) | xAPI 2.0 fullstandigt | "Hur later vi utfardda?" |
 
-Samma interface (`trackActivity()`), olika adapter. Miranon lagrar i
+Samma interface (`trackActivity()`), olika adapter. Miranon Media lagrar i
 Airtable. Passionslyftet lagrar i Supabase. Bada anvander samma
 TypeScript-typer. Ingen kod behover skrivas om.
 
@@ -142,9 +142,9 @@ TypeScript-typer. Ingen kod behover skrivas om.
 
 ## 4. Stripe Entitlements-kompatibilitet
 
-### Miranon vs. Passionslyftet
+### Miranon Media vs. Passionslyftet
 
-| Aspekt | Miranon | Passionslyftet |
+| Aspekt | Miranon Media | Passionslyftet |
 |--------|---------|----------------|
 | Betalning i appen | Nej (Airtable hanterar) | Ja (Stripe Checkout) |
 | Prenumerationer | Nej | Ja (manatlig/arsvis) |
@@ -157,11 +157,11 @@ TypeScript-typer. Ingen kod behover skrivas om.
 Designa datamodeller med `accessLevel` fran start. Inte som implementerad funktion -- utan som falt i typerna:
 
 ```typescript
-// domain/types/AccessLevel.ts (tom i Miranon, anvands i Passionslyftet)
+// domain/types/AccessLevel.ts (tom i Miranon Media, anvands i Passionslyftet)
 export type AccessLevel = 'public' | 'free' | 'basic' | 'premium' | 'coach' | 'admin';
 ```
 
-Miranon anvander aldrig `AccessLevel` direkt. Men interfacet existerar
+Miranon Media anvander aldrig `AccessLevel` direkt. Men interfacet existerar
 for att Passionslyftet ska kunna implementera Stripe Entitlements utan
 att redesigna datamodellen. Flodet: Stripe Checkout → Webhook → Edge Function
 → uppdatera `user.subscription_level` → RLS-policy justerar atkomst →
@@ -180,7 +180,7 @@ ActivityStatement-schemat stodjer redan badge-utfardande: `actor_id` (vem),
 `result.completion` (godkand), `result.score` (poang). Badge-utfardande
 triggas via Supabase Database Webhook nar `result.completion = true`.
 
-Ingen implementation i Miranon. Men schemat ar kompatibelt fran dag ett.
+Ingen implementation i Miranon Media. Men schemat ar kompatibelt fran dag ett.
 
 ---
 
@@ -196,7 +196,7 @@ Ingen implementation i Miranon. Men schemat ar kompatibelt fran dag ett.
 
 ### Forberedelse nu
 
-Miranons Event-modell har redan relevanta falt (`date`, `capacity`,
+Miranon Medias Event-modell har redan relevanta falt (`date`, `capacity`,
 `location`, `status`) som mappar direkt till Cal.com-koncept.
 Cal.com-webhooks floder genom samma adapter-monster som Airtable:
 webhooks → Edge Function → DataSourceAdapter → TanStack Query cache → UI.
@@ -209,7 +209,7 @@ eller managed -- beslutet tas vid Passionslyftet-planering.
 ## 7. LiveKit / Daily.co
 
 Passionslyftet behover live-sessioner (video, breakout rooms, inspelning).
-Ingen arkitekturell forberedelse behovs i Miranon -- videoinfrastruktur
+Ingen arkitekturell forberedelse behovs i Miranon Media -- videoinfrastruktur
 ar en fristdende concern.
 
 **Tva alternativ:** LiveKit (open source, self-hosted, full kontroll, hogre
@@ -225,7 +225,7 @@ kostnaden eller kontrollen kraver det. Beslutet tas vid Passionslyftet-planering
 
 | Kategori | Trigger | Frekvens | Kanal |
 |----------|---------|----------|-------|
-| Braddskande | Ny anmalan (Miranon), deadine imorrgon (PL) | Direkt | Push |
+| Braddskande | Ny anmalningsfynd, deadine imorrgon (PL) | Direkt | Push |
 | Handlingsbara | Obetald pakning, ny modul | Samlad (1x/dag max) | Push |
 | Informativa | Veckosammanfattning, framsteg | 1x/vecka | E-post |
 | Inspirerande | "Du har slutfort 3 moduler!" | Vid milstolpe | Push + e-post |
@@ -233,14 +233,14 @@ kostnaden eller kontrollen kraver det. Beslutet tas vid Passionslyftet-planering
 ### Event-baserat, aldrig broadcast
 
 Ratt: "3 nya anmalningar till Ronninge-eventet" (specifikt, handlingsbart).
-Fel: "Nyheter fran Miranon Media!" (generiskt, ignorerant).
+Fel: "Nyheter fran systemet!" (generiskt, ignorerant).
 
 Varje notifiering maste svara pa: **Vad ska mottagaren gora nar de laser detta?**
 Om svaret ar "inget" -- skicka inte.
 
 ### Digest-strategi
 
-Veckosammanfattning istallet for dagliga pings. Miranon: "12 anmalningar,
+Veckosammanfattning istallet for dagliga pings. Texten "12 anmalningar,
 3 betalningar, nasta event 14 april (8/12 platser)." Passionslyftet:
 "Du slutforde modul 3, coachen har lamnat feedback, modul 4 oppnar tisdag."
 
@@ -293,7 +293,9 @@ stacken, lagst troskkel). OneSignal for Passionslyftet om segmentering behovs.
 | xAPI-schemat ar for forenklat for riktigt LRS | Lag | Datatransformation behovs | ActivityStatement-typen utokbar via union types |
 | Cal.com self-hosted kraver mer underhall an vantat | Medel | Tid forsvinner till infra | Borda med Cal.com Cloud, migrera om noddvandigt |
 | Stripe Entitlements andrar API | Lag | Webhook-logik behover uppdateras | Abstrahera bakom adapter (redan gjort) |
-| Komponentbiblioteket ar for Miranon-specifikt | Medel | Passionslyftet behover wrappa komponenter | StatusBadge + TabBar behover generaliseras (se sektion 2) |
+<!-- vale Miranon.Brand = NO --> <!-- Vale-pattern-quirk L_X/L_Z: pattern (?! Media)-lookahead borde blockera men gör inte i full-fil-kontext (analog ADR-030:71 K2.3 Batch 2-mönster). -->
+| Komponentbiblioteket ar Miranon Media-specifikt | Medel | Passionslyftet behover wrappa komponenter | StatusBadge + TabBar behover generaliseras (se sektion 2) |
+<!-- vale Miranon.Brand = YES -->
 
 ---
 

@@ -166,7 +166,7 @@ For en admin-app bakom login ar det overhead utan vinst.
 Passionslyftet (framtida LMS/coaching-plattform) har fundamentalt
 annorlunda egenskaper:
 
-| Aspekt | Miranon Admin | Passionslyftet |
+| Aspekt | Miranon Media Admin | Passionslyftet |
 |--------|-------------|----------------|
 | Publika sidor | Nej | Ja (landningssida, kurskatalog, priser) |
 | SEO | Irrelevant | Kritiskt (Google ska hitta kurser) |
@@ -180,7 +180,7 @@ Content-tunga sidor (kursbeskrivningar, prisplaner) pre-renderas.
 Interaktiva delar (dashboard, kursplayer) renderas klientside.
 
 **Det beslutet ar SEPARAT.** Passionslyftet kan anvanda Next.js App Router
-medan Miranon Admin forblir SPA. Komponentbiblioteket (React Aria + CVA +
+medan Miranon Media Admin forblir SPA. Komponentbiblioteket (React Aria + CVA +
 Tailwind) fungerar i bada. Se FUTURE-COMPAT.md for detaljer.
 
 ### Vad som delas mellan projekten
