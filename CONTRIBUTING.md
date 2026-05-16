@@ -1,6 +1,3 @@
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
-
 # Bidrag
 
 Detta är ett privat projekt med en tydlig roll-fördelning mellan tre aktörer.
@@ -63,7 +60,7 @@ Detta är 11/10-disciplinens systemiska skydd mot drift mellan dokument (Kandida
 
 ## Pull Request-flöde
 
-PR till `main` triggar CI (`.github/workflows/ci.yml`) som kör biome + tsc + test:api + build.
+PR till `main` triggar CI (`.github/workflows/ci.yml`) som kör Biome + tsc + test:api + build.
 PR mergas först när:
 
 - CI är grön

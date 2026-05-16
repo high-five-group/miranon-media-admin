@@ -46,7 +46,9 @@ Följande 4 grindvakter etableras, fördelade över `docs`-jobbet och `lint`-job
 
 2. **typos** — Considered + rejected per empirisk baseline 2026-05-14
 
+   <!-- vale Miranon.Brand = NO -->
    **Pre-empirisk antagande:** typos listades som generic stavfels-detektor med custom-dictionary av 22 termer (prep-dok Del 3.3 — Airtable, Supabase, TanStack, nuqs, Biome, Vite, Playwright, FK, Lotta, Roger, Miranon, RLS, JWT, OWASP, ARIA, CVA, OAuth, PKCE, Edge Functions, Dependabot, lychee, markdownlint, yamllint).
+   <!-- vale Miranon.Brand = YES -->
 
    **Empirisk baseline (Session 6.6 K3, 2026-05-14):** `typos-cli 1.46.1` default-extends mot full repo producerade **6 490 fynd**. Topp-30 fel-ord sorterat efter frekvens: alla är svenska ord (2742 `som` → `some`, 244 `appen` → `append`, 183 `dokument` → `document`, 178 `separat` → `separated`, 125 `tre` → `tree`, 120 `ser` → `seer`, 99 `modell` → `model`, 95 `manuell` → `manual`, etc.). 22-term-dictionary skulle åtgärda ~0.3 % av faktiska problemet.
 
@@ -61,14 +63,15 @@ Följande 4 grindvakter etableras, fördelade över `docs`-jobbet och `lint`-job
    <!-- vale Vale.Repetition = NO --> <!-- legitim meta-referens: svensk förkortning "m.m." nämnd som data-domän -->
    - **Vale.Repetition PÅ:** Verifierad fungera; 2 fynd hanterade inline-disable i K6.2 (Event.Event Airtable-notation + m.m. svensk förkortning)
    <!-- vale Vale.Repetition = YES -->
-   - **Vocab/Miranon/accept.txt (25 termer):** Auto-genererad Vale.Terms via Vale 3.14.1 (case-folding canonical-substitution). Dubbel-funktion (spelling-bypass + canonical-cap) bekräftad empirisk i K6.2 V1-V3. Stavning.yml-fil borttagen — Vocab är single source via Vale.Terms (TypeScript/GitHub-canonical migrerade till Vocab i K6.2 Steg 6)
+   - **`Vocab/Miranon/accept.txt` (25 termer):** Auto-genererad Vale.Terms via Vale 3.14.1 (case-folding canonical-substitution). Dubbel-funktion (spelling-bypass + canonical-cap) bekräftad empirisk i K6.2 V1-V3. Stavning.yml-fil borttagen — Vocab är single source via Vale.Terms (TypeScript/GitHub-canonical migrerade till Vocab i K6.2 Steg 6)
    - **3 Miranon-stilguide-filer (post-K6.2 — Stavning.yml borttagen):**
      - **VueToReact.yml** (substitution, error): 11 unika substitutions per ADR-027 stack-skifte
      - **Brand.yml** (substitution, error): inline-lookbehind+lookahead `(?<!Miranon )Miranon(?! Media)(?![-a-zA-Z0-9_])`. K6.1 RE2-test bekräftade lookbehind/lookahead-stöd (mot pre-empirisk hypotes). Empirisk K6.2 baseline: 0 fynd — förebyggande-regel mot framtida drift per Marcus' Alt A
      - **Undvik.yml** (existence, suggestion): `obviously`/`uppenbarligen`/`simply`/`enkelt`-domän
    - **Frontmatter quote-fix (emergent K6.2):** `docs/research/datamodell-research/03-gap-analysis.md` + `01-extraction.md` YAML-frontmatter quote-fix:ad. Vale's YAML-parser stoppade på okvoterade kolonkonkretade värden. K1.16 success-signal — grindvakts-introduktion avslöjade pre-existing-skuld
    - **K6.2 V4 empirisk fynd:** Vale 3.14.1 har INGEN `--fix`-flagga. Manuell sed-batch är osäker för 3/5 unika Vale.Terms-substitutioner (`aria`/`fk`/`vite` har hög kod-bryt-risk i HTML-attribut + CSS-klasser + filnamn)
-   - **Defer-strategi (K6.2 Steg 7 Alt F per Marcus):** 425 Vale.Terms + 114 Miranon.VueToReact fynd deferade till mini-session 6.6.6 via **per-fil rad-1-disable** (utan = YES, open-ended scoping till filslut). Regression-skydd: vid 6.6.6 K-sista tas disable-raderna bort → Vale återaktiveras automatiskt. K1.13-utvidgning: per-fil-spårbarhet är legitim defer-form när inline-per-occurrence inte robust (Vale wrap-around failade vid bulk pga nested-wrap-bug)
+   - **Defer-strategi (K6.2 Steg 7 Alt F per Marcus):** 425 Vale.Terms + 114 VueToReact-regel-fynd deferade till mini-session 6.6.6 via **per-fil rad-1-disable** (utan = YES, open-ended scoping till filslut). Regression-skydd: vid 6.6.6 K-sista tas disable-raderna bort → Vale återaktiveras automatiskt. K1.13-utvidgning: per-fil-spårbarhet är legitim defer-form när inline-per-occurrence inte robust (Vale wrap-around failade vid bulk pga nested-wrap-bug)
+
    - **Empirisk K6.2 baseline:** 566 → 8 fynd (~98.6 % reduktion). 8 kvarstående är Miranon.Undvik suggestions (mild). Vale exit 0 (suggestions blockerar inte CI)
    - **CI-integration:** Vale-binary download v3.14.1 per ADR-029 § Third-party Actions-policy (vale-action ~17 mån gammal; binary minimerar Actions-supply-chain-yta). Docs-jobb-step efter markdownlint-cli2
    - Scope: `docs/` + `tasks/` + repo-root publika `.md` (sessionsdok-archive + docs/archive exkluderade via `.vale.ini`-fil-pattern)
