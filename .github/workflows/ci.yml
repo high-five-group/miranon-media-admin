@@ -147,6 +147,51 @@ jobs:
         # Hub-spoke-portabel design per K7 Lesson #6 (UNIVERSAL).
         run: bash scripts/check-frontmatter.sh
 
+      - name: Install shellcheck (pinned v0.11.0)
+        # Per ADR-033 § Säkerhet + ADR-029 § Third-party Actions-policy.
+        # ubuntu-latest har shellcheck 0.9.0-1 pre-installerat (Image
+        # 20260413 per actions/runner-images manifest) — under <0.10-
+        # tröskeln, saknar v0.10+ optional checks (SC2310 m.fl.).
+        # Falsk-grön-risk per L9 om framtida code-edit triggar
+        # v0.10+-check. CI alignas till lokal 0.11.0 via SHA-pinnad
+        # download från koalaman/shellcheck GitHub releases.
+        #
+        # SHA-pin-rationale: koalaman publicerar inte separat .sha256sum-
+        # fil per release-asset (empirisk verifikation 2026-05-16).
+        # SHA256 nedan är downstream-beräknad mot fast nedladdad
+        # release-asset från GitHub releases (immutability per
+        # https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases).
+        # För re-verifikation: ladda ned samma URL + sha256sum lokalt;
+        # SHA-match bevisar release-asset oförändrad. Konsekvent med
+        # ADR-029 § Medvetna utelämningar #3 actionlint-precedent.
+        run: |
+          SC_VERSION="v0.11.0"
+          SC_SHA256="8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
+          SC_URL="https://github.com/koalaman/shellcheck/releases/download/${SC_VERSION}/shellcheck-${SC_VERSION}.linux.x86_64.tar.xz"
+          curl -sL "${SC_URL}" -o /tmp/sc.tar.xz
+          echo "${SC_SHA256}  /tmp/sc.tar.xz" | sha256sum -c
+          tar -xJf /tmp/sc.tar.xz -C /tmp
+          sudo mv "/tmp/shellcheck-${SC_VERSION}/shellcheck" /usr/local/bin/shellcheck
+          shellcheck --version | grep -F "version: 0.11.0"
+
+      - name: Validate bash scripts with shellcheck-strict
+        # Per ADR-033 § Del 1: shellcheck-strict-grindvakt (0/0/0/0).
+        # --severity=style aktiverar style-domän (default skip:as);
+        # --enable=all aktiverar optional checks (SC2250, SC2312,
+        # SC2310, SC2311 m.fl. som är default-disabled).
+        # Scope per ADR-033 § Del 3: scripts/*.sh + .githooks/* +
+        # 2 sourced-config-filer (.checklist-policy.conf +
+        # .frontmatter-policy.conf).
+        # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
+        run: |
+          shellcheck \
+            --severity=style \
+            --enable=all \
+            scripts/*.sh \
+            .githooks/* \
+            .checklist-policy.conf \
+            .frontmatter-policy.conf
+
   # Job 3: Heavy test-suite + build. Conditional på changed-detection.
   # Per ADR-029 §1c. Skippas helt på doc-only-commits (~70s spill eliminerat).
   test:
