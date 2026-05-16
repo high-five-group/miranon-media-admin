@@ -140,6 +140,24 @@ status: stable  # draft | stable | deprecated
 4. Validera att `status ∈ {draft, stable, deprecated}` (enum-strikt)
 5. Validera att `owner` matchar `marcus803` (enum-strikt; utvidgas vid behov om andra ägare tillkommer)
 
+### Implementations-krav på CI-miljö
+
+> Sub-§ tillkommen Session 6.6.5 K-sista #3 (2026-05-16) efter L8-fyndet — latent shallow-clone-incompatibility upptäckt vid K1.5 forensisk-pass.
+
+Check 2 anropar `git log -1 --format=%cs -- <fil>` som returnerar filens senaste touch-datum. På GitHub Actions med default shallow clone (`fetch-depth: 1`) returnerar kommandot HEAD-commit-datum istället för filens senaste touch — vilket bryter Check 2-logiken för filer som inte rörts i HEAD.
+
+**Krav på CI-jobb som kör `scripts/check-frontmatter.sh`:**
+
+- `actions/checkout@vX` MÅSTE använda `fetch-depth: 50` (eller mer)
+- Motivering: konsistent med ADR-029 § Utelämning #6 (single-author push-pattern <15 commits/session; 50 = 3x-marginal)
+- Tillämpas på alla jobs som direkt eller indirekt anropar `check-frontmatter.sh` (lint, test, docs i denna repo-konfiguration)
+
+**Bug-historik:** Latent shallow-clone-incompatibility upptäckt 2026-05-16 (Session 6.6.5 K1.5 forensisk-pass) — triggades första gången efter dag-rollover som bröt sammanträffande invariant från K7.C atomisk bake-in (2026-05-15, alla 9 styrande docs samma `updated:`-datum som HEAD). Rotorsak-fix via K2.1 fetch-depth-retrofit på lint + test + docs jobs (commit `a67908d`).
+
+**Hub-portabilitet:** Vid duplicering av frontmatter-grindvakten till annan spoke per K7.6, kopiera fetch-depth-config tillsammans med skript- och config-filer. Glömd fetch-depth-config triggar samma latent bug. Lessons-trail: `tasks/lessons.md` L8 (Session 6.6.5).
+
+**Defensive programming (defer):** `scripts/check-frontmatter.sh` kan utvidgas med shallow-clone-detection (`git rev-parse --is-shallow-repository`) som degraderar Check 2 gracefully om fetch-depth-config glöms. Flaggad i `tasks/todo.md` som Alt C-defer från Session 6.6.5 K-sista #3.
+
 ### Del 4 — ADR-numrering vs ADR-029-utvidgning
 
 ADR-030 är **ny ADR**, inte utvidgning av ADR-029. Konceptuellt distinkta domäner:
@@ -254,6 +272,8 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13: varje utelämning dokumenteras exp
   - K7 — Frontmatter-policy + pre-commit hook + CI-validering (inkluderar "Senast uppdaterad"-prosa-borttagning)
   - K8 — Checklist-trimning av sessionsavslut-checklistan (konservativ; halv-mekaniska defer till Session 6.7 per Marcus' Block D #3)
   - K9 — Empirisk verifikation (full CI-run; tids-mätning per Strategi E-paradigm)
+  - K-sista — bake-in commits #1-#3 + lessons + ADR Draft → Accepted (Session 6.6 K-sista commits `01f5cbb` + `4e80647` + `9b5ea87`)
+  - **Post-K-sista — Session 6.6.5 K-sista #3 (2026-05-16):** Sub-§ "Implementations-krav på CI-miljö" tillkommen under Del 3 efter L8-fyndet (latent shallow-clone-incompatibility) — rotorsak-fix:ad via Session 6.6.5 K2.1 fetch-depth: 50 retrofit på lint + test + docs jobs (commit `a67908d`). Spårbar via Session 6.6.5 BUILD-LOG-block + `tasks/lessons.md` L8.
 - **Verifikation:** empirisk via K9 CI-run. Status bumpas från Draft till Accepted vid K-sista bake-in.
 - **Baseline-fynd 2026-05-14:** Lämnas tom i Draft-status; fylls i vid K-sista efter K2-K9 implementation har producerat empirisk data per grindvakt (analog till ADR-029 § Baseline-fynd 2026-05-14).
 

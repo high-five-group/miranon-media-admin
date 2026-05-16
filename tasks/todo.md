@@ -21,7 +21,7 @@
 
 **Session 6.5 ✅ KLAR 2026-05-14** — Broken-links-batch-städning. 54 broken refs eliminerade (6 + 23 + 1 + 24) + 1 disciplin-utvidgning (ADR-022 kategori 4 "Frusen extern leverans"). 8 commits (6 fix + 1 revert + 1 disciplin). 15 lessons-kandidater skördade (13 [UNIVERSAL], 2 lokala). `.lycheeignore` 55 → 35 rader, 6 → 0 DEFERRED-FIX-MARKER. Sessionsdok-trail: [`tasks/sessions/archive/2026-05/2026-05-14-broken-links-cleanup.md`](sessions/archive/2026-05/2026-05-14-broken-links-cleanup.md) (arkiverad).
 
-**Session 6.6 ✅ KLAR 2026-05-15** — Docs-grindvakter + frontmatter-policy + observations-pass. 5 CI-grindvakter etablerade (yamllint + markdownlint-cli2 + scripted-checklist-check + Vale + frontmatter-validator). Frontmatter-policy 4 fält på 9 styrande docs + pre-commit auto-bump + 5-check CI-validator (10 docs explicit lista i ADR-030 § Del 2 inkl. hub). ADR-030 etablerad och Accepted. K7.5 retroaktiv config-driven-refactor av K5 + SC2034 klass-fix polish. 15 lessons-kandidater skördade (alla [UNIVERSAL]). 3 defer-paket öppna (6.6.5 + 6.6.6 + 6.6.7). Strategi E job-skip empirisk på post-K7.5-baseline (docs-only 36s, full-CI 88s). Sessionsdok-trail: [`tasks/sessions/archive/2026-05/2026-05-14-session-6-6.md`](sessions/archive/2026-05/2026-05-14-session-6-6.md) (arkiverad K-sista commit #3).
+**Session 6.6 ✅ KLAR 2026-05-15** — Docs-grindvakter + frontmatter-policy + observations-pass. 5 CI-grindvakter etablerade (yamllint + markdownlint-cli2 + scripted-checklist-check + Vale + frontmatter-validator). Frontmatter-policy 4 fält på 9 styrande docs + pre-commit auto-bump + 5-check CI-validator (10 docs explicit lista i ADR-030 § Del 2 inkl. hub). ADR-030 etablerad och Accepted. K7.5 retroaktiv config-driven-refactor av K5 + SC2034 klass-fix polish. 15 lessons-kandidater skördade (alla [UNIVERSAL]). 2 defer-paket öppna (6.6.6 + 6.6.7; 6.6.5 ✅ KLAR 2026-05-16, se BUILD-LOG Session 6.6.5). Strategi E job-skip empirisk på post-K7.5-baseline (docs-only 36s, full-CI 88s). Sessionsdok-trail: [`tasks/sessions/archive/2026-05/2026-05-14-session-6-6.md`](sessions/archive/2026-05/2026-05-14-session-6-6.md) (arkiverad K-sista commit #3).
 
 **Nästa:** Session 7 K0 — Fas 2 11/10-verification (7 gap-punkter committed i Session 6.5 pre-K1 som received-defer per K7; se [`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`](../docs/analysis/Fas-2-11-10-verification-2026-05-14.md)). Sedan Fas 2.5 — Schema-kontrakt-sync (per `docs/byggplan.md` §4).
 
@@ -33,21 +33,21 @@ Mini-session 6.6.6 — Vale.Terms (425) + Miranon.VueToReact (114) manuell fix p
 
 Defer-bakgrund: K6.2 V4 bekräftade Vale 3.14.1 har INGEN `--fix`-flagga. Manuell sed-batch är osäker för 3/5 unika Vale.Terms-substitutioner (`aria`/`fk`/`vite` har hög kod-bryt-risk). Per-fil rad-1-disable valt för regression-skydd (naturlig disable-borttagning vid 6.6.6-fix).
 
-### Mini-session 6.6.5 — Dependabot secrets-skuld + ADR-031
-
-Mini-session 6.6.5 — Dependabot secrets-skuld + ADR-031 (CI-strategi för PR-CI). **Trigger:** post-Session 6.6 ✅ KLAR. **Prep-fil:** [`tasks/sessions/2026-05-14-session-6-6-5-prep.md`](sessions/2026-05-14-session-6-6-5-prep.md). **Klass (e)** pre-existing skuld, **K2-orsakad: NEJ** (bekräftat via PR #21 5-dagar pre-K2 fail-historik 2026-05-12 07:12 UTC). **Estimat:** ~1h. **Strategi-val A/B/C/D** (D > B > C > A per K2.5-rekommendation) beslutas vid sessionsstart.
-
-Skuld-källa: GitHub Actions secrets-isolation — repository `secrets.TEST_*` injiceras som tomma strängar i Dependabot-PR:er (separat "Dependabot secrets"-zon). 5 öppna PR:er (#21-#25) failar på `API tests (staging)`-steget. Funktionellt korrekt på main + push-events; fail-by-design på Dependabot-PR:er.
-
 ### Mini-session 6.6.7 — shellcheck-grindvakt för scripts/*.sh + .githooks/*
 
 Defer från Session 6.6 K7.B + K7.5.4 (SC2034 klass-blindhet). Egen ADR-trail per ADR-029 § Konvention för framtida CI-utvidgningar.
 
 **Scope:** shellcheck-strict-mode (0 warnings + 0 errors) som CI-grindvakt för alla bash-scripts i repot. Inkluderar `scripts/*.sh`, `.githooks/*`, `.checklist-policy.conf`, `.frontmatter-policy.conf`.
 
-**Trigger:** efter Session 6.6 ✅ KLAR. Valfritt parallellt med 6.6.5/6.6.6. **Estimat:** ~1-2h (scope inkluderar ev. retroaktiv fix av befintliga warnings utöver SC2034-klass-fix från K7.5 polish).
+**Trigger:** efter Session 6.6 ✅ KLAR. Valfritt parallellt med 6.6.6. **Estimat:** ~1-2h (scope inkluderar ev. retroaktiv fix av befintliga warnings utöver SC2034-klass-fix från K7.5 polish).
 
 **Prep-fil:** `tasks/sessions/2026-05-14-session-6-6-7-prep.md` (skapas vid session-start).
+
+### Session 6.6.5 K-sista-checkpoints
+
+- **Dependabot-side empirisk-verifikation (förväntat ~2026-05-18 per weekly schedule):** Marcus reviewar första post-K4 Dependabot-PR och bekräftar (a) grouping enligt production-deps/development-deps/stack-grupper-mönstret, (b) cooldown-filter (versioner <7d skippas, patch <3d), (c) staging-stegen visar "skipped"-status (om Dependabot-actor). Loggas i Session 6.7 K1-sessionsstart eller separat handoff-not.
+
+- **Shallow-clone-detection-tillägg (defensive programming, Alt C-defer från Session 6.6.5 K-sista #3):** `scripts/check-frontmatter.sh` utvidgning med `git rev-parse --is-shallow-repository`-detection som degraderar Check 2 gracefully om fetch-depth-config glöms. Test-suite (`scripts/test-check-frontmatter.sh`) utvidgad med shallow-scenarier. Kandidat: integrera i Session 6.6.6 K-sista eller egen mini-session. Inte akut — K2.1 fetch-depth: 50-retrofit löste rotorsaken (commit `a67908d`). Detta är defense-in-depth-lager 2 + hub-portabilitets-skydd. Spårbar via `tasks/lessons.md` L8 + ADR-030 § Del 3 sub-§ "Implementations-krav på CI-miljö".
 
 ### Återkommande disciplin: Branch-protection-aktivering på main
 
