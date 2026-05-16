@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-15
+updated: 2026-05-16
 review_by: 2026-11-15
 status: stable
 ---
@@ -1011,3 +1011,95 @@ K-sista commit #1 (01f5cbb) lade till todo.md-pekare med post-arkiv-path för Se
 ### Sammanfattning Session 6.6
 
 15 lessons-kandidater skördade (alla [UNIVERSAL] för hub-lyft). Domän-fördelning: K7-fasen 8 (handoff-fil-skördade vid K7.D), K7.5-fasen 4 (Code Gate 2 + Marcus 11/10-fångster), K9-fasen 1 (branch-protection ADR-029-status-verifikation), K-sista 2 (Chat meta-klass-blindhet + forward-pekare drift-domän). Mönsterförstärkning av K1.16 (grindvakt avslöjar oväntade kategorier) på meta-nivå: process-investering-session avslöjar både domän-lessons OCH meta-lessons om Chat/Code/Marcus-trippel-Gate 2-disciplin. 4 Gate 2-fångster av Marcus, 2 av Code, 1 av Chat self-review (efter Marcus' 11/10-påminnelse), 1 av Lychee-grindvakt (commit #1-hotfix → K-sista.2). Konsoliderad till 5 hub-rader vid K-sista commit #2 hub-sync (commit 173e75b). K-sista.2 är retroaktiv skapelse i commit #3 — hub-K6.6.4-rad refererar inte K-sista.2 explicit (framtida polish-flagga, ej blocker).
+
+---
+
+## 2026-05-16 — Session 6.6.5 (Dependabot-strategi 2026)
+
+### L1 [UNIVERSAL, hub-lyft] — Pre-K-implementation forensisk-pass GLOBAL regel
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 K1.5 Marcus' stopp-och-fångst pre-K2.1
+
+Vid varje förslag som modifierar filer eller config som rörts i senaste 1-2 sessioner: sök projektkunskap för relevant trail + Code rekonstruerar fil-historik FÖRE förslag-formulering. "Pre-existing"-klassning är inte ursäkt — den är signal att läsa varför state är som det är. Disciplinen tillämpas särskilt på CI-config, grindvakts-design, frontmatter-policy och liknande nyligt-etablerad infrastruktur där designval kan vara medvetna men ej dokumenterade i prosa. Anti-mönster: "Det här ser ut som en bugg, vi fixar det" → riskerar att riva ner medvetet designval från igår. Mönster: "Det här ser ut som en bugg → vad sa K-sista-trail om detta? Vad sa ADR? Vad sa lessons? FÖRST då formulera fix-förslag." Mönsterförstärkning av K-sista.1 (Chat:s self-review-disciplin) + Disciplin #6 (empirisk verifikation FÖRE klassificering).
+
+### L2 [UNIVERSAL, hub-lyft] — Web-research FÖRE strategi-resonemang vid tooling-frågor
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 K2 reframe efter Marcus' "tänk seniorproffs"-fångst
+
+Vid tooling-val / arkitektur-beslut / process-disciplin: web-research med fokus på branschstandard 2026 FÖRE strategi-presentation. Aldrig konstruera mot gissning. Branschstandard ÄR utgångsläge — våra A/B/C/D-utredningar är instans-rangordning inom gammal ram, inte klass-svar mot aktuell praxis. Vid Session 6.6.5 inverterade web-research hela strategi-ramen (instans: "Hur fixar vi secrets-skulden?" → klass: "Vad är 2026-mönstret för Dependabot för klient-app med solo-dev?"). Mönsterförstärkning av K2.14 (sök befintliga lösningar) tillämpat på extern branschstandard, inte bara intern regel-katalog.
+
+### L3 [UNIVERSAL, hub-lyft] — Empirisk config-verifikation FÖRE strategi-presentation
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 Marcus' "vet du hur dependabot är konfigurerad?"-fångst
+
+Chat:s strategi-spekulation utan att läsa faktisk config-fil är K-sista.1-mönster. Vid varje "lägg till X / ändra Y / konfigurera Z"-förslag: läs faktisk fil-state FÖRST via Code-rapport, sedan strategi-formulering. Antagande att "vi grupperade igår" är inte data — `.github/dependabot.yml` är data. Generaliserbar regel: aldrig påstå om aktuellt config-state utan empirisk verifiering. Mönsterförstärkning av Disciplin #6 + L1 (pre-K forensisk-pass).
+
+### L4 [UNIVERSAL, hub-lyft] — Policy-konflikt-fångst FÖRE implementation
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 K1 Code:s PLANERA-rapport (3 frontmatter-konflikter + 1 README-skuld)
+
+Code:s K1 PLANERA-rapport identifierade 3 policy-konflikter i Chat:s ursprungliga K1-prompt (status: active enum-violation + sessionsdok-frontmatter + ADR-frontmatter) + 1 pre-existing skuld (ADR-030 saknas i README). Gate 2-disciplin är aktör-agnostisk (K7.8) — Code agerar legitim Gate 2 vid filsystem-ground-truth-perspektiv. Generaliserbar regel: vid disciplin-arbete / policy-tillämpning / config-edit, designa för Gate 2 från alla aktörer (Chat hög-nivå, Code filsystem, Marcus intentions). Mönsterförstärkning av K2.15 + K7.8.
+
+### L5 [UNIVERSAL, hub-lyft] — Reframing från instans-tänkande till klass-tänkande
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 K2 Marcus' "tänk seniorproffs"-fångst + 11/10-pre-check
+
+Chat:s A/B/C/D-rangordning post-prep-dok var instans-tänkande inom gammal ram. Marcus' "tänk 11/10 seniorproffs" tvingade klass-reframe: "är A/B/C/D rätt klass av svar, finns alt utanför ramen?". Resultat: 4-lager-strategi (grouping + cooldown + CI-yta + manuell review) istället för secrets-frågans 4 alternativ. Generaliserbar regel: vid alternativ-presentation, default-pre-check är "är någon av dessa fel klass, finns 11/10-alt utanför ramen?". Mönsterförstärkning av K7.5.3.
+
+### L6 [UNIVERSAL, hub-lyft] — 11/10 som GOLV-disciplin, inte tak
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 Marcus' explicit krav 2026-05-16
+
+Branschstandard verifierad via web-research är vårt utgångsläge. 11/10 = beyond branschstandard, byggd på verifierbar fakta. Gäller samarbete, verifikationer, analyser, kod, dokumentation, ADR:er, sessionsdok — allt. Aldrig "good enough", aldrig "det funkar lokalt". Vid varje leverans-beslut: är detta beyond branschstandard? Om nej → fortsätt arbeta tills det är det. Förstärks i hub-CLAUDE.md "Ristat i sten"-rad vid K-sista #4. Mönsterförstärkning av Marcus' Gate 2-kvalitetsregel 2026-05-13 ("genväg = disciplin-brott") + K7.5.4 (pre-existerande warning-profil ≠ normativ standard).
+
+### L7 [UNIVERSAL, hub-lyft] — Chat skördar lessons löpande, Marcus administrerar inte
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 Marcus' rollfördelnings-direktiv 2026-05-16
+
+Vid lessons-flaggning under session: Chat bär löpande lista (L1, L2, ...) och bake:ar in vid K-sista. Marcus ska INTE behöva administrera lessons-skörd — det är Chat:s ansvar att disciplin-trail produceras. Mönsterförstärkning av rollfördelning: Chat ansvarar för disciplin-trail + sessions-dok-design, Code ansvarar för filsystem + git-state, Marcus ansvarar för beslut + cross-projekt-konsekvens.
+
+### L8 [UNIVERSAL, hub-lyft] — Frontmatter-validator shallow-clone-incompatibility (latent bug-klass)
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 K1.5 forensisk-pass + K2.1 rotorsak-fix
+
+scripts/check-frontmatter.sh Check 2 anropar `git log -1 --format=%cs -- <fil>` vilket på shallow clone (fetch-depth: 1) returnerar HEAD-commit-datum istället för filens senaste touch-datum. ADR-030 § Del 3-spec antog full git-history utan att kravställa fetch-depth eller verifiera mot CI:s shallow-clone-state. Test-suite (scripts/test-check-frontmatter.sh) testar inte shallow-clone-scenarier. K7.C 2026-05-15 etablerade falsk-grön baseline via sammanträffande invariant (alla 9 docs samma datum som HEAD). Dag-rollover 2026-05-16 bröt invariansen för första gången. Generaliserbar regel: vid CI-grindvakts-design som anropar `git log -- <fil>`: säkerställ tillräckligt stor fetch-depth på alla relevanta jobs ELLER detektera shallow-clone i skriptet och degradera Check gracefully. Empirisk test-suite måste inkludera shallow-clone-scenario. Mönsterförstärkning av K1.16 (grindvakt avslöjar oväntade kategorier) + Disciplin #6.
+
+### L9 [UNIVERSAL, hub-lyft] — Falsk-grön via sammanträffande invariant
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 K1.5 forensisk-pass-fynd
+
+Session 6.6 K9 empirisk verifikation (run 25923521145) passerade 2026-05-15 inte för att designen var korrekt utan för att alla 9 styrande docs hade samma datum som HEAD pga atomisk K7.C-bake-in. Sammanträffande invariant gömde shallow-clone-bugg i 24 timmar tills dag-rollover bröt invariansen. Generaliserbar regel: vid CI-grindvakts-K-sista-verifikation, identifiera invarianter som kan dölja bugs (t.ex. "alla bumpade samma dag" eller "kör endast på main"). Lägg in explicit test för invariansens motsats (dag-rollover, feature-branch med selective bumps). Mönsterförstärkning av K7.7 (verifiera vid exekverings-tid) + Disciplin #6.
+
+### L10 [UNIVERSAL, hub-lyft] — Pre-K forensisk-pass-disciplin bekräftad i praktiken (meta-lesson)
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 K1.5 → K2.1 R1 vs R3-beslut
+
+Utan K1.5 forensisk-pass hade K2.1 körts som R3 (manuell frontmatter-bump på 8 docs) = symptom-fix istället för R1 (fetch-depth: 50 på 3 jobs) = rotorsak-fix. Marcus' stopp-och-fångst pre-K2.1 ("vi satt 10h igår och fixade hela CI-setupen, det sista var frontmatter") var avgörande för att tvinga forensisk-pass. Generaliserbar regel: pre-K forensisk-pass (L1) producerar inte bara säkerhet utan helt annan klass av lösning. Mönsterförstärkning av L1 + Disciplin #6 + K-sista.1.
+
+### L11 [UNIVERSAL, hub-lyft] — Verifikations-design-fel via mekanism-missförstånd
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 K3 Code:s Alt V1-rättning
+
+Chat:s ursprungliga Alt V1-design för K3-verifiering antog att `git commit --author='dependabot[bot]'` populerar `github.actor`, men de är två olika kontexter: commit-author är git-metadata (synlig i `git log`), github.actor är workflow-trigger-metadata (vem pushade / öppnade PR). På privat repo blir github.actor = marcus803 oavsett commit-author. Falsk-grön-risk: spoofed-author-test skulle ge "alla checks körs som vanligt" utan att verifiera if-villkoret alls. Generaliserbar regel: vid empirisk verifikations-design, verifiera FÖRST att test-mekanismen faktiskt påverkar variabeln som testas. Commit-metadata ≠ workflow-trigger-metadata. Mönsterförstärkning av L9 (falsk-grön via sammanträffande invariant) tillämpat på test-design + K7.8 (Gate 2 från Code).
+
+### L12 [UNIVERSAL, hub-lyft] — github.actor-villkor: defensiv skip säker, offensiv aktivering är Deputy Confusion-attackyta
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 K3 Chat:s säkerhets-analys + Synacktiv 2024-research
+
+`github.actor`-baserade if-villkor är säkra för defensiv skip (privilege-DRAGS) men osäkra för offensiv aktivering (privilege-GES, t.ex. auto-merge via pull_request_target med GITHUB_TOKEN-write). Deputy Confusion-attack (Synacktiv 2024) utnyttjar `if: github.actor == 'dependabot[bot]'` på auto-merge-workflows. Vid varje `github.actor`-villkor: fråga "ger detta privilege till någon eller drar det privilege från någon?". Privilege-DRAGS (skip) är säkert. Privilege-GES (auto-merge med write-access) är Deputy Confusion-attackyta. Mönsterförstärkning av ADR-031 Lager 4 (explicit non-auto-merge per supply-chain-medvetenhet) + ADR-028 supply-chain-respons.
+
+### L13 [UNIVERSAL, hub-lyft] — Verifierad branschstandard är 11/10:s GOLV, inte tak
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 Marcus' explicit krav 2026-05-16 + Dependabot 4-lager-tillämpning
+
+Web-research returnerar "vad branschen gör 2026". 11/10 är beyond det. Generaliserbar regel: vid tooling-design / arkitektur-beslut / process-disciplin — branschstandard ÄR utgångsläge, inte slutmål. Vid varje förslag fråga "är detta beyond branschstandard?" Om nej → fortsätt arbeta tills det är det. Session 6.6.5:s tillämpning: Dependabot 4-lager-strategi (grouping + cooldown + minimal CI-yta + manuell review) > GitHub Docs basic-skip-mönster (1 lager). Mönsterförstärkning av L2 + L6.
+
+### L14 [UNIVERSAL, hub-lyft] — Scope-minimal kommentar-text med källa-referens > datum-specifik prognos
+
+Datum: 2026-05-16 | Källa: Session 6.6.5 K4 Chat-justering av PR-close-kommentar
+
+K4-close-kommentar refererade ursprungligen "måndag 2026-05-18 06:00 Europe/Stockholm" som specifik datum-prognos. Risk: om Dependabot kör annan dag av infra-skäl är kommentaren permanent fel (comments kan inte ändras silent post-close). Justerad: "weekly schedule per .github/dependabot.yml" — refererar källa istället för prognos. Generaliserbar regel: vid permanent-text (kommentarer, ADR-er, commit-meddelanden, README), aldrig påståenden som kan drifta. Refererera källa, inte snapshot. Mönsterförstärkning av Kandidat 1 (atomic trail-link-disciplin, Session 6.6 K-sista #1 hotfix) + K7.5.1 (handoff-fil med fil-strukturella referenser kräver empirisk verifikation).
+
+### Sammanfattning Session 6.6.5
+
+14 lessons-kandidater skördade (alla [UNIVERSAL] för hub-lyft). Domän-fördelning: empirisk verifikation & forensisk-pass (L1, L3, L9, L10) + branschstandard & 11/10 GOLV-disciplin (L2, L5, L6, L13) + verifikations-design & policy-fångst (L4, L11, L12) + CI-grindvakts-design & trail-disciplin (L7, L8, L14). 4 Gate 2-fångster av Marcus (pre-K2.1 stopp + "tänk seniorproffs" + "vet du hur dependabot är konfigurerad?" + 11/10-GOLV-direktiv), 3 av Code (K1 PLANERA-policy-konflikter + K1.5 forensisk-pass + K3 Alt V1-rättning), 1 av Chat self-review (K3 säkerhets-analys efter web-research). L8 motiverar potentiell ADR-030-tillägg (beslutas K-sista #3). L6 + L1 förstärks som "Ristat i sten" i hub-CLAUDE.md K-sista #4. Alla 14 hub-lyfts till `~/Repon/marcus-system/tasks/lessons.md` vid K-sista #5.
