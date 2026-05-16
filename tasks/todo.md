@@ -23,9 +23,11 @@
 
 **Session 6.6 ✅ KLAR 2026-05-15** — Docs-grindvakter + frontmatter-policy + observations-pass. 5 CI-grindvakter etablerade (yamllint + markdownlint-cli2 + scripted-checklist-check + Vale + frontmatter-validator). Frontmatter-policy 4 fält på 9 styrande docs + pre-commit auto-bump + 5-check CI-validator (10 docs explicit lista i ADR-030 § Del 2 inkl. hub). ADR-030 etablerad och Accepted. K7.5 retroaktiv config-driven-refactor av K5 + SC2034 klass-fix polish. 15 lessons-kandidater skördade (alla [UNIVERSAL]). 2 defer-paket öppna (6.6.6 + 6.6.7; 6.6.5 ✅ KLAR 2026-05-16, se BUILD-LOG Session 6.6.5). Strategi E job-skip empirisk på post-K7.5-baseline (docs-only 36s, full-CI 88s). Sessionsdok-trail: [`tasks/sessions/archive/2026-05/2026-05-14-session-6-6.md`](sessions/archive/2026-05/2026-05-14-session-6-6.md) (arkiverad K-sista commit #3).
 
-**Nästa (Strategi β bekräftad 2026-05-16):** Session 6.6.7 (shellcheck-grindvakt + shallow-clone-detection-bonus, ~2-3h) → Session 6.6.6 (Vale-cleanup + L15-L19 bake-in, ~7-10h) → Session 6.7 (CLAUDE.md-audit + skills + Vale-mönster-hub-extraktion) → Session 7 K0 — Fas 2 11/10-verification (7 gap-punkter committed i Session 6.5 pre-K1 som received-defer per K7; se [`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`](../docs/analysis/Fas-2-11-10-verification-2026-05-14.md)) → Fas 2.5 Schema-kontrakt-sync (per `docs/byggplan.md` §4).
+**Session 6.6.7 ✅ KLAR 2026-05-16** — Shellcheck-strict-grindvakt + shallow-clone-detection levererad. 17 commits (`3f025b9` → K-sista #5/#6 efter denna). ADR-033 Accepted. 12 [UNIVERSAL]-lessons (L_A-L_L). Se [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 6.6.7-block.
 
-**Strategi β-rationale:** quick-wins först (6.6.7) → tungt arbete (6.6.6) → process-mognad (6.7) → produkt-leverans (Session 7 K0 + Fas 2.5). 6.6.7 levererar momentum + säkerhetslager + defensive-programming-konsolidering av K2.1 fetch-depth-fix. 6.6.6 har bättre fokus när defer är stängt.
+**Nästa (Strategi β bekräftad 2026-05-16):** Session 6.6.6 (Vale-cleanup + L15-L19 bake-in, ~7-10h, ADR-032 reserverad) → Session 6.7 (CLAUDE.md-audit + skills + Vale-mönster-hub-extraktion) → Session 7 K0 — Fas 2 11/10-verification (7 gap-punkter committed i Session 6.5 pre-K1 som received-defer per K7; se [`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`](../docs/analysis/Fas-2-11-10-verification-2026-05-14.md)) → Fas 2.5 Schema-kontrakt-sync (per `docs/byggplan.md` §4).
+
+**Strategi β-rationale (post-6.6.7-leverans 2026-05-16):** quick-wins först (6.6.7 ✅ KLAR) → tungt arbete (6.6.6 nästa) → process-mognad (6.7) → produkt-leverans (Session 7 K0 + Fas 2.5). 6.6.7-momentum levererat: shellcheck-strict 0/0/0/0 + shallow-clone-detection defense-in-depth lager 2 + 12 [UNIVERSAL]-lessons hub-konsolideringskandidater.
 
 Sessionsdok-trail (arkiverad 2026-05-13 i K5.8): [`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`](sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md).
 
@@ -39,7 +41,7 @@ Defer-bakgrund: K6.2 V4 bekräftade Vale 3.14.1 har INGEN `--fix`-flagga. Manuel
 
 **ADR-032-reservation (L19-mitigation, Session 6.6.7 K-sista 2026-05-16):** 6.6.7 K-sista bekräftar: ADR-032 är reserverad för Session 6.6.6 (Vale-cleanup-domän, defererad). Sekvens: ADR-031 (6.6.5 Dependabot) → ADR-032 (6.6.6 Vale, kommer) → ADR-033 (6.6.7 shellcheck, nu).
 
-### Mini-session 6.6.7 — shellcheck-grindvakt för scripts/*.sh + .githooks/* (TOP-PRIORITY post-6.6.5 per Strategi β)
+### Mini-session 6.6.7 ✅ KLAR 2026-05-16 — shellcheck-grindvakt för scripts/*.sh + .githooks/* (TOP-PRIORITY post-6.6.5 per Strategi β)
 
 **Effektiv ordning (Strategi β bekräftad 2026-05-16):** Startas FÖRE Session 6.6.6 — quick-win (~2-3h) + bygger momentum + konsoliderar Session 6.6.5 K2.1 fetch-depth-fix med defensive-programming-lager (shallow-clone-detection integrerat i K4-scope).
 
@@ -82,6 +84,8 @@ Bake-in-plan vid Session 6.6.6 K-sista:
 - L15-L19 läggs som `### L15 — ...` rubriker under H2 `## 2026-05-16 — Session 6.6.5 (post-K-sista #2 retroaktiva)` i `tasks/lessons.md` (analog till K1.18/K1.19 retroaktiv-skörd-mönster från Session 6 K-sista)
 - Hub-sync: alla 4 är [UNIVERSAL] → konsolideras med Session 6.6.6:s egna [UNIVERSAL]-skörd vid 6.6.6 hub-sync
 - Denna todo.md-rad tas bort efter bake-in (analog till DEFERRED-FIX-MARKER-pattern: skörd-flagga är obsolet när bake-in landar)
+
+**L_A-L_L-not (Session 6.6.7 K-sista #1 + #3 commits `32e9405` + denna commit):** L_A-L_L (12 [UNIVERSAL]-lessons) är redan bake:ade i `tasks/lessons.md` H2 `## 2026-05-16 — Session 6.6.7`. Hub-sync till `~/Repon/marcus-system/tasks/lessons.md` schemalagd vid Session 6.6.7 K-sista #6 (separat operation). Ingen Session 6.6.6-bake-in krävs för L_A-L_L (skild skörd-domän från Session 6.6.5-retroaktiva L15-L19; parallell-skörd, inte överlappande).
 
 ### Återkommande disciplin: Branch-protection-aktivering på main
 

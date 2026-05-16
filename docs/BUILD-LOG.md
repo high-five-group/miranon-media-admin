@@ -861,6 +861,104 @@ ADR-räkning post-Session 6.6: 30 (ADR-001 till ADR-030).
 
 ---
 
+## Session 6.6.7 — Shellcheck-strict-grindvakt + shallow-clone-detection (2026-05-16)
+
+**Estimat:** ~2-3h Code-arbete
+**Faktiskt:** ~3-4h (utöver budget pga K4.1 design-bug-cykel; inom 2-3h-spann för övriga K-faser)
+**Branch:** main (mini-session, direkt-commit-flöde)
+**PR:** ingen (direct-to-main per mini-session-konvention)
+**ADR:** ADR-033 Draft → Accepted (shellcheck-strict-grindvakt + shallow-clone-detection defense-in-depth lager 2)
+**Parent:** Session 6.6 (K7.B miljö-disciplin-defer + K7.5.4 SC2034 klass-blindhet-lesson) + Session 6.6.5 (L8 latent shallow-clone-bug + Alt C-defer)
+
+Commit-range Session 6.6.7: lokal-trail från `3f025b9` (K2 sessionsdok + ADR-033 Draft) till K-sista #6 (hub-sync, schemalagd post-arkivering).
+
+### Leverans
+
+| K-fas | Status | Commit | Tema |
+|---|---|---|---|
+| K2 | ✅ KLAR | `3f025b9` | Sessionsdok-skelett + ADR-033 Draft + Strategi β-bekräftelse |
+| K3.1 | ✅ KLAR | `62b0afc` | A.1.a design-beslut-fix (4 fynd: 2 SC2148 errors + 2 SC2312 info) |
+| K3.2 | ✅ KLAR | `d86d846` | A.1.b mekanik-pass (364 fynd: 363 auto via `--format=diff` + 1 manuell SC2292 cross-syntax) |
+| K3.3 | ✅ KLAR | `82a7793` | shellcheck-strict-grindvakt v0.11.0 SHA-pinnad install + CI-step i lint-jobb |
+| K3.4 | ✅ KLAR | `be68026` | ADR-033 § Baseline-fynd bake-in (post-K3.3-state 0/0/0/0) |
+| K4.1 | ⚠️ design-bug | `b2970fd` | Shallow-clone-detection v1 — `--is-shallow-repository` false-positive på fetch-depth: 50 |
+| K4.1.1 | ✅ KLAR | `4dc55e5` | Hot-fix hybrid-check + `FRONTMATTER_MIN_HISTORY_DEPTH=50`-config |
+| K4.2 | ✅ KLAR | `47f8ed8` | Test-suite T10/T11a/T11b/T12 (truth-table-täckning) |
+| K4.3 | ✅ KLAR | `e83a4b1` | ADR-030 § Del 3 "Defensive programming"-bullet (defer) → (implementerad i ADR-033 K4) |
+| K-sista #1 | ✅ KLAR | `32e9405` | Lessons-skörd L_A-L_K (11 [UNIVERSAL]) + ADR-033 Status Draft → Accepted |
+| K-sista #2 | ✅ KLAR | `bba5dfa` | ADR-032-reservation-rad i todo.md (L19-mitigation 6.6.7) |
+| K-sista #3 | ✅ KLAR | denna commit | BUILD-LOG + todo.md + CLAUDE.md status (drift-stängning för Session 6.6 + 6.6.5) + L_L-skörd |
+| K-sista #4-#6 | EJ STARTAD | TBD | cross-doc-grep-sanity + arkivering + hub-sync |
+
+Lessons-flagga-commits (atomic per L_-flagga): `ad22585` L_D, `3dc7495` L_E, `15cb0dc` L_F+L_G, `24c44a6` L_H, `2ecb8df` L_I+L_J, `ea40d63` ADR-033 SHA-pin-fallback-dokumentation.
+
+### Pre-existing-skuld upptäckt + fixad i denna session
+
+- **K4.1 `--is-shallow-repository`-misstolkning** triggades på första CI-run post-K4.1 (commit `b2970fd`). `--is-shallow-repository` returnerar `true` för ALLA fetch-depth-värden (1, 50, 100), inte bara depth=1. CI:s safe-shallow-state (fetch-depth: 50 per K2.1) träffade detection-trip. Rotorsak-fix via K4.1.1 hybrid-check (commit `4dc55e5`).
+- **shellcheck-version-mismatch CI vs lokal** (K3.3 VILLKOR A pre-flight): ubuntu-latest har shellcheck 0.9.0-1 pre-installerat (Ubuntu 24.04 runner-image-manifest). v0.9.0 saknar v0.10+ optional checks (SC2310 m.fl.) — falsk-grön-risk per L9. Fixad via SHA-pinnad v0.11.0-download från koalaman GitHub releases.
+- **CLAUDE.md status-drift för Session 6.6 + 6.6.5** (K-sista #3 pre-flight A3-grep): Sessions 6.6 + 6.6.5 K-sista-pass uppdaterade BUILD-LOG men hoppade CLAUDE.md status-rad-bump. Drift = 12+ dagar utan upptäckt. Fixad atomic i K-sista #3-commit (3 nya bullets för Session 6.6 + 6.6.5 + 6.6.7). L_L skördad.
+
+### Avvikelser från ursprungsplan
+
+1. **K4.1 design-bug + hot-fix-cykel.** Detection-logik triggade falskt på CI:s safe-shallow-state. Fångad via CI-röd-state (grindvakts-feedback fungerar). L_I + L_J skördade.
+2. **shellcheck-baseline räknings-avvikelse** (K1 RAPPORTERA: 367 SC-kod-träffar vs 366 fynd-rader). Förklarad via K1-grep-artefakt; K3.1 JSON-räkning etablerade korrekt distribution. L_A skördad.
+3. **SHA-pin-strategi-fråga** (K3.3 STEG 1 Metod 2). koalaman/shellcheck publicerar inte separata .sha256sum-filer. Fallback till Metod 1 (downstream-beräknad SHA256 + GitHub-release-immutability). L_G skördad.
+4. **F3 + F4 SC2312-fix flippad** från Codes initial `|| true`-suggestion till refactor (CURRENT_DIR-variabel). Chat-mediated 11/10-granskning applicerade L_C-nivå-1-disciplin.
+5. **T11 splittades till T11a + T11b** post-Chat-mediated 11/10-granskning. Truth-table-täckning av 4 hybrid-detection-fall.
+6. **CLAUDE.md status-drift-stängning** scope-creep utöver K-sista #3 explicit-instruktion → Marcus' Alt B-beslut (atomic-state-propagation). L_L skördad.
+
+### Verifieringsoutput
+
+| Stop-test | Resultat |
+|---|---|
+| Shellcheck-strict 0/0/0/0 på K3-scope | ✅ post-K3.2 + post-K3.3 + post-K4.1.1 |
+| 13/13 test-suite PASS (T1-T9 + T10/T11a/T11b/T12) | ✅ runtime ~17s |
+| CI grön mot main efter sista commit | ✅ post-K3.3 + post-K4.1.1 + post-K-sista #1 + #2 + #3 |
+| Lessons skördade och hub-synk schemalagd | ✅ 12 [UNIVERSAL] (L_A-L_L), hub-sync K-sista #6 |
+| ADR-033 Status: Draft → Accepted | ✅ K-sista #1 (commit `32e9405`) |
+| ADR-032-reservation L19-mitigation committad | ✅ K-sista #2 (commit `bba5dfa`) |
+| CLAUDE.md status-drift stängd (Session 6.6 + 6.6.5 + 6.6.7) | ✅ K-sista #3 (denna commit) |
+
+### Lessons-skörd
+
+12 [UNIVERSAL] lessons (L_A-L_L) skördade. Domän-fördelning:
+
+- **Räknings-disciplin** (L_A, L_D) — auktoritativ output-tolkning + post-fix-räkning-fullständighet
+- **Lessons-meta** (L_B, L_J) — lesson-applicerings-scope + Chat-side empirisk-grund
+- **Fix-strategi & defense-in-depth** (L_C, L_H, L_I) — 3 fix-kvalitets-nivåer + lager-N-hard-fail + truth-table FÖRE detection
+- **CI-grindvakts-aktivering** (L_F, L_G) — runner-image-version-mismatch + supply-chain-fallback
+- **Cross-syntax & cross-ADR** (L_E, L_K) — auto-fix icke-fullständig + ADR-tidsstämpel-bevarande
+- **K-sista-process-disciplin** (L_L) — status-bump-checklista per-fil-coverage-verifikation
+
+Gate 2-fångst-fördelning: Code 5 (K3.1 räknings + K3.3 SHA + K4.1.1 truth-table + K4.3 ADR-disciplin + K-sista #3 drift-fynd) + Chat-mediated 2 (Marcus refactor-val + Marcus design-flipp) + CI-feedback 1 (K4.1 → K4.1.1 hot-fix). Se `tasks/lessons.md` H2 `## 2026-05-16 — Session 6.6.7` för fullständiga texter.
+
+### Hub-sync (K-sista #6 schemalagd)
+
+12 [UNIVERSAL] lessons konsolideras vid hub-sync till `~/Repon/marcus-system/tasks/lessons.md` under H2 `## 2026-05-16 — Session 6.6.7 (miranon-media-admin)`. Separat operation post-arkivering.
+
+### K-sista-checkpoints för framtida sessions
+
+- **shellcheck-grindvakt empirisk-verifikation över tid:** observera första post-merge non-shellcheck-edit-commit:s lint-jobb-tid; bekräfta att shellcheck-step inte adderar mätbar overhead över jitter-spann ±5s. K3.3 baseline: ~1-2s overhead.
+- **Shallow-clone-detection re-verifikation vid spoke-kopiering:** om frontmatter-grindvakten dupliceras till annan spoke, verifiera empiriskt att `FRONTMATTER_MIN_HISTORY_DEPTH`-default 50 är lämpligt + att fetch-depth-config kopieras tillsammans med scripts.
+- **Vale-cleanup defer (Session 6.6.6):** ADR-032 reserverad. L15-L19 bake:as in vid 6.6.6 K-sista. L_A-L_L är REDAN bake:ade i Session 6.6.7 K-sista #1 + #3.
+
+### Definition of Done uppfylld: Ja
+
+- [x] shellcheck-strict-grindvakt aktiverad i lint-jobb (CI-step `Validate bash scripts with shellcheck-strict`)
+- [x] 366 baseline-fynd fix:ade till 0/0/0/0 (363 auto + 1 manuell + 4 design-beslut)
+- [x] Shallow-clone-detection lager 2 implementerad (`scripts/check-frontmatter.sh`) + test-suite-utvidgning T10-T12
+- [x] ADR-033 Accepted med komplett § Baseline-fynd + § Säkerhet SHA-pin-bullet + § Medvetna utelämningar punkt 6
+- [x] ADR-030 § Del 3 "Defensive programming (implementerad i ADR-033 K4)"-bullet uppdaterad
+- [x] 12 [UNIVERSAL] lessons (L_A-L_L) skördade
+- [x] BUILD-LOG + todo.md + CLAUDE.md uppdaterade (K-sista #3 atomic)
+- [x] ADR-032-reservation committed (L19-mitigation)
+- [x] CI grön mot main efter K-sista #3
+- [ ] Cross-doc-grep-sanity (K-sista #4 — EJ STARTAD)
+- [ ] Sessionsdok-arkivering + trail-link-uppdateringar (K-sista #5 — EJ STARTAD)
+- [ ] Hub-sync till marcus-system (K-sista #6 — EJ STARTAD)
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
