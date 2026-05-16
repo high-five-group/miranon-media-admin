@@ -210,7 +210,7 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13 ("genväg = disciplin-brott"): varj
   - Session 6.6.5 L1 + L6 + L13 (Pre-K forensisk-pass + 11/10 GOLV-disciplin + branschstandard är GOLV)
   - Strategi β-bekräftelse 2026-05-16 (committed `9e46e48` i `tasks/todo.md`) — auktoriserar 6.6.7 FÖRE 6.6.6
 
-- **Etablerad:** Session 6.6.7 K2 2026-05-16 (sessionsdok [`../../tasks/sessions/2026-05-16-session-6-6-7.md`](../../tasks/sessions/2026-05-16-session-6-6-7.md))
+- **Etablerad:** Session 6.6.7 K2 2026-05-16 (sessionsdok [`../../tasks/sessions/archive/2026-05/2026-05-16-session-6-6-7.md`](../../tasks/sessions/archive/2026-05/2026-05-16-session-6-6-7.md))
 
 - **Implementation:**
   - K1 ✅ KLAR 2026-05-16 — Block A/B/C/D + Marcus' beslut 1A + 2A + 3A + sub-A.1.a/A.1.b
