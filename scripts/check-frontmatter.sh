@@ -47,6 +47,17 @@ TODAY="$(date +%F)"
 
 EXIT_CODE=0
 
+# === Shallow-clone-detection (ADR-033 K4 — defense-in-depth lager 2 mot L8) ===
+# Per Session 6.6.5 L8: Check 2 (`git log -1 --format=%cs -- <fil>`) på
+# shallow clone returnerar HEAD-commit-datum istället för filens senaste
+# touch-datum → false-positive Check 2-fail. Lager 1 (fetch-depth: 50 i
+# ci.yml per K2.1 commit a67908d) är primärt skydd; denna detection är
+# lager 2 som hard-failar om lager 1 har failat eller saknas (typ spoke-
+# kopiering utan fetch-depth-config). Hard-fail-rationale per ADR-033 K4
+# Marcus' design-val 2026-05-16: L_C nivå 1-disciplin (lös orsaken vs
+# suffix-ignore); konsekvent med ADR-033-shellcheck-strict 0/0/0/0-paradigm.
+IS_SHALLOW=$(git rev-parse --is-shallow-repository 2>/dev/null || echo "false")
+
 for file in "${GOVERNING_DOCS[@]}"; do
     # Check 1: existens — fil + frontmatter-block
     if [[ ! -f "${file}" ]]; then
@@ -102,18 +113,47 @@ for file in "${GOVERNING_DOCS[@]}"; do
         EXIT_CODE=1
     fi
 
-    # Check 2: updated-match mot git log
-    GIT_UPDATED=$(git log -1 --format=%cs -- "${file}" 2>/dev/null || echo "")
-    if [[ -z "${UPDATED}" ]]; then
-        echo "❌ ${file} — Check 2 (updated): fält saknas"
-        echo "   Fix: sätt updated: ${TODAY} (auto-bumpas av pre-commit hook)"
-        EXIT_CODE=1
-    elif [[ -n "${GIT_UPDATED}" ]] && [[ "${UPDATED}" != "${GIT_UPDATED}" ]] && [[ "${UPDATED}" != "${TODAY}" ]]; then
-        echo "❌ ${file} — Check 2 (updated): '${UPDATED}' driftar från git log '${GIT_UPDATED}'"
-        echo "   Fix: bumpa updated: ${GIT_UPDATED} eller commita ändring (pre-commit auto-bumpar)"
-        EXIT_CODE=1
+    # Check 2: updated-match mot git log (skippas om shallow per ADR-033 K4)
+    # Hard-fail-rapport sker POST-loop så alla 9 docs' Check 1+3+4+5
+    # rapporteras innan shallow-error visas (debug-experience-design).
+    if [[ "${IS_SHALLOW}" != "true" ]]; then
+        GIT_UPDATED=$(git log -1 --format=%cs -- "${file}" 2>/dev/null || echo "")
+        if [[ -z "${UPDATED}" ]]; then
+            echo "❌ ${file} — Check 2 (updated): fält saknas"
+            echo "   Fix: sätt updated: ${TODAY} (auto-bumpas av pre-commit hook)"
+            EXIT_CODE=1
+        elif [[ -n "${GIT_UPDATED}" ]] && [[ "${UPDATED}" != "${GIT_UPDATED}" ]] && [[ "${UPDATED}" != "${TODAY}" ]]; then
+            echo "❌ ${file} — Check 2 (updated): '${UPDATED}' driftar från git log '${GIT_UPDATED}'"
+            echo "   Fix: bumpa updated: ${GIT_UPDATED} eller commita ändring (pre-commit auto-bumpar)"
+            EXIT_CODE=1
+        fi
     fi
 done
+
+# === Shallow-clone-detection hard-fail (ADR-033 K4 lager 2) ===
+# Placerad POST-loop så att alla 9 docs' Check 1+3+4+5-rapporter visas
+# FÖRE shallow-error (debug-experience). Hard-fail per Marcus' design-val
+# 2026-05-16 (L_C nivå 1 + defense-in-depth korrekt-logik: lager N
+# fail:ar hårt PRECIS när lager <N har failat).
+if [[ "${IS_SHALLOW}" == "true" ]]; then
+    echo ""
+    echo "❌ Shallow clone detected. Check 2 (updated-match against git log)"
+    echo "   requires full git history."
+    echo ""
+    echo "   Detection: \`git rev-parse --is-shallow-repository\` returned 'true'."
+    echo ""
+    echo "   Per ADR-033 K4 + ADR-030 § Del 3 sub-§: defense-in-depth-lager 2"
+    echo "   mot shallow-clone-bug (L8 från Session 6.6.5)."
+    echo ""
+    echo "   Fix beroende på kontext:"
+    echo "   - CI-jobb: lägg \`fetch-depth: 50\` (eller högre) på"
+    echo "     actions/checkout-step. Se ADR-030 § Del 3 \"Implementations-krav"
+    echo "     på CI-miljö\"."
+    echo "   - Lokal dev-clone: kör \`git fetch --unshallow\` för att hämta full"
+    echo "     historik."
+    echo "   - Pre-commit hook: samma som lokal dev-clone."
+    exit 1
+fi
 
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
     echo "✅ Frontmatter-validering: alla ${#GOVERNING_DOCS[@]} styrande docs passerar 5 checks"
