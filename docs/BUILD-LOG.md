@@ -1,5 +1,5 @@
 <!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+<!-- K3-PENDING: L_X.2 bekräftad Vale 3.14.1 upstream-bugg — BUILD-LOG.md routad till K3/ADR-032. 7 Vale.Terms-baseline-fynd (3 supabase + 1 biome + 3 dependabot) + ≥1 maskerat `dependabot[bot]`-i-backticks (rad 808) som emergerar vid fix. L_X.2-cascade verifierad K3.2: single-IL Δ=-1 missade kluster-emergensen; canonical-fix-alla-3-dependabot Δ=-2 avslöjade maskerat. Defer till upstream-fix per ADR-032 helfil-disable-strategi. Trail: K3.1.b 3-mitigerings-familj-uttömning + K3.2 strukturell pre-screen. -->
 
 # BUILD-LOG — Miranon Media Admin (React)
 
