@@ -1,7 +1,5 @@
 <!-- vale Miranon.VueToReact = NO -->
 <!-- DEFERRED: Session 6.6.6 — Miranon.VueToReact Vue→React-drift fix -->
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 # React Stack Research — Miranon Media Admin
 
@@ -134,7 +132,7 @@ shadcn/ui är inte ett komponentbibliotek utan en **koddistributionsmodell**: du
 | **DevTools** | Dedikerade: route matches, loader-status, search params, historik | Tredjepartspaket |
 | **Nestade routes** | Fullt stöd | Fullt stöd (branschstandard sedan v4) |
 | **SSR** | Via TanStack Start | Förstklassigt via Framework-läge |
-| **Filbaserade routes** | Valfritt via @tanstack/router-plugin (Vite) | Framework-läge: konventionsbaserat |
+| **Filbaserade routes** | Valfritt via `@tanstack/router-plugin` (Vite) | Framework-läge: konventionsbaserat |
 | **Inlärningskurva** | Medel (kräver TS-vana) | Låg (de flesta känner React Router) |
 | **Ekosystem** | Mindre men +120% YoY tillväxt | Enormt (12 år, tusentals guider) |
 
@@ -423,7 +421,7 @@ Tailwind v4
 
 Tre kärnbibliotek från samma ekosystem (Router, Query, Table). Om TanStack-utvecklingen saktar ned påverkas hela stacken.
 
-**Mitigering:** TanStack är open source med stort community (49K+ stjärnor för Query). Tanner Linsley är heltid på TanStack. Varje del kan bytas oberoende — Router kan ersättas av React Router, Query av SWR, Table av @tanstack/react-table har inga alternativ ändå.
+**Mitigering:** TanStack är open source med stort community (49K+ stjärnor för Query). Tanner Linsley är heltid på TanStack. Varje del kan bytas oberoende — Router kan ersättas av React Router, Query av SWR, Table av `@tanstack/react-table` har inga alternativ ändå.
 
 ### React Aria: Inlärningskurva
 
