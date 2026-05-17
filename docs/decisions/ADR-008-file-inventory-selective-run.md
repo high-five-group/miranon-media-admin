@@ -1,5 +1,3 @@
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 # ADR-008: FILE-INVENTORY selektiv körning (skydda Fas 0-filer)
 
@@ -15,7 +13,9 @@ Fas 1-prompten specificerade:
 >    Kör bash-scriptet i sektion "Kopieringslista" i FILE-INVENTORY.md med DRY_RUN=0:
 >    `DRY_RUN=0 bash ~/Repon/miranon-media-os/docs/react-migration/FILE-INVENTORY.md`
 
+<!-- vale Vale.Terms = NO -->
 Scriptet är designat för ett **tomt React-repo**: det kopierar docs, tasks, settings, supabase och domain-filer från Vue-repot. Designen förutsatte att `miranon-media-admin/` inte hade några filer innan Fas 1.
+<!-- vale Vale.Terms = YES -->
 
 **Men Fas 0 hade redan körts** och skapat:
 

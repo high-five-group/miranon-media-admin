@@ -1,5 +1,3 @@
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 # Tillgänglighetschecklista — Miranon Media Admin
 
@@ -45,7 +43,9 @@ Använd checklistan vid varje ny vy, komponent eller leveranssteg.
 
 ## §1 — Innan du bygger
 
+<!-- vale Vale.Terms = NO -->
 - [ ] **React Aria först.** Finns en React Aria-komponent eller -hook för detta? Kolla `react-aria-components` + Aria-hooks innan du skriver eget. Branschledarens mönster är golvet (CLAUDE.md).
+<!-- vale Vale.Terms = YES -->
 - [ ] **TanStack Table för tabeller.** Inte egen sortering/paginering — TanStack Tables headless-modell + React Aria-keyboard-handling.
 - [ ] **Sidans struktur är skissad** med rätt rubriknivåer (h1 > h2 > h3, aldrig hoppa). En h1 per vy.
 - [ ] **Fokushantering är planerad** för dynamiska element (modaler, menyer, accordion). Vad händer vid open? Vid close? Vid Escape?
@@ -580,7 +580,9 @@ function PersonSearch({ persons, onSelect }) {
 | Uppdatera `react-aria-components` + relaterade paket | Vid relevanta releaser, alltid via PR med smoke-test |
 | Dokumentera React Aria-version i package.json | Alltid |
 
+<!-- vale Vale.Terms = NO -->
 Changelog: <https://github.com/adobe/react-spectrum/blob/main/packages/react-aria-components/CHANGELOG.md>
+<!-- vale Vale.Terms = YES -->
 
 ---
 

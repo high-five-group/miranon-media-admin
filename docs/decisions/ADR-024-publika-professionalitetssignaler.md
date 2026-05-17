@@ -1,7 +1,7 @@
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
+<!-- vale Vale.Terms = NO -->
 # ADR-024: Publika professionalitetssignaler — LICENSE, package.json, .github/, top-level docs
+<!-- vale Vale.Terms = YES -->
 
 - Status: Accepted
 - Datum: 2026-05-06
@@ -15,12 +15,16 @@ Code:s omdöme i K1.B Block 7.1: *"den ena halvan exceptionellt välbyggd — de
 
 ## Beslut
 
+<!-- vale Vale.Terms = NO -->
 Etablera publika professionalitetssignaler på senior-nivå även för privat-projekt. Implementeras i fyra sub-klungor (åa repo-root metadata, åb .github/-paketet, åc top-level professional docs, åd README-uppgradering). Alla fyra delar samma motivering — därför EN samlad ADR istället för splittade ADR-024a..d (per UNIVERSAL "Korsreferens > duplicering", lessons.md 2026-05-04).
+<!-- vale Vale.Terms = YES -->
 
 Konkret omfattning:
 
 - **Repo-root metadata** — LICENSE (proprietary, "UNLICENSED" i package.json), package.json kompletterad (description, author, license, repository, homepage, keywords, engines, "private": true), .editorconfig, .nvmrc, .vscode/extensions.json
+<!-- vale Vale.Terms = NO -->
 - **.github/-paketet** — workflows/ci.yml (Biome+tsc+test:api+build på PR till main), dependabot.yml (npm + github-actions), CODEOWNERS, ISSUE_TEMPLATE/{bug.md, feature.md}, PULL_REQUEST_TEMPLATE.md
+<!-- vale Vale.Terms = YES -->
 - **Top-level professional docs** — CHANGELOG.md (Keep-a-Changelog 1.1.0, retroaktiv), SECURITY.md (privat-rapportering, scope-definition), CONTRIBUTING.md (aktör-rollfördelning, sessions-disciplin, transcript-disciplin, DoD)
 - **README-uppgradering** — badges (CI, license, node, Biome, Vite, react, TypeScript), Documentation-map-sektion som pekar på CLAUDE/byggplan/decisions/CHANGELOG/SECURITY/CONTRIBUTING
 
@@ -43,7 +47,9 @@ Konkret omfattning:
 
 **Negativt:**
 
+<!-- vale Vale.Terms = NO -->
 - 5 nya filer i .github/ + 4 nya filer i repo-rot + 5 nya metadata-filer = 14 nya artefakter att hålla aktuella. Lindras av att de flesta är "set-and-forget" (LICENSE, .editorconfig, .nvmrc).
+<!-- vale Vale.Terms = YES -->
 - CHANGELOG kräver disciplin per release — defer:as till första taggade version (0.2.0 efter Fas 2).
 
 **Spårbarhet:**

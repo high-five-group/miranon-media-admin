@@ -1,5 +1,3 @@
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 # ADR-010: Biome-exkludering för Deno Edge Functions
 
@@ -66,7 +64,9 @@ Noteringar om syntax: Biome 2.2+ vill ha `!supabase/functions` utan trailing `/*
 
 ### 1. Disable specifika Biome-regler globalt
 
+<!-- vale Vale.Terms = NO -->
 - **Fördelar:** Behåller supabase-filer i lint-scope.
+<!-- vale Vale.Terms = YES -->
 - **Nackdelar:** Disable av `noNonNullAssertion` och `useLiteralKeys` skulle tillåta samma problem i React-koden (där vi **vill** ha dem aktiva). Regler är projekt-globala, inte per-directory i Biome 2.4.
 
 **2. `overrides` per path i `biome.json`**
@@ -100,7 +100,9 @@ Noteringar om syntax: Biome 2.2+ vill ha `!supabase/functions` utan trailing `/*
 
 **Negativt:**
 
+<!-- vale Vale.Terms = NO -->
 - Vi har ingen automatiserad lint av supabase-filer alls i Fas 1. Om en edge function har en syntax-bugg märks det först när den deploys till Supabase och kraschar runtime.
+<!-- vale Vale.Terms = YES -->
 - Fas 7 måste lägga på `deno lint`/`deno check` i deploy-pipelinen. Teknisk skuld tydligt uppskjuten men inte glömd.
 
 **Fas 7-åtagande:**

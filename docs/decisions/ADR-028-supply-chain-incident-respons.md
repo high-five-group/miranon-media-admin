@@ -1,5 +1,3 @@
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 # ADR-028: Supply chain incident-respons-protokoll (npm advisories)
 
@@ -9,11 +7,15 @@
 
 ## Kontext
 
+<!-- vale Vale.Terms = NO -->
 2026-05-12 morgon upptäcktes via `npm audit` att `@tanstack/history`, `@tanstack/react-router`, `@tanstack/router-plugin` och tre transitiva paket (`@tanstack/router-core`, `@tanstack/router-generator`, plus en transitiv flag på `nuqs`) hade GitHub Security Advisory [GHSA-rmmr-r34h-pfm5](https://github.com/advisories/GHSA-rmmr-r34h-pfm5) publicerad 2026-05-11 23:39 UTC ("Malware in @tanstack/history"). Sex critical severity vulnerabilities rapporterades.
+<!-- vale Vale.Terms = YES -->
 
 Block A-C-diagnostik i K0åg-prompten visade att Marcus' lokala maskin + CI-miljö var pre-malware:
 
+<!-- vale Vale.Terms = NO -->
 - @tanstack/history@1.161.6 (installerad 2026-04-13 i Fas 0) hade inga `preinstall`/`install`/`postinstall`-hooks och var publicerad 2026-03-15 — 8 veckor före malware-versioner 1.161.9 och 1.161.12 (publicerade 2026-05-11 19:20-19:26 UTC).
+<!-- vale Vale.Terms = YES -->
 - Marcus' senaste lokala `npm install` före malware-publicering var 2026-05-11 12:02 UTC (Session 4 K0åa nuqs install) — 7h+ före malware.
 - Senaste CI-run före malware: 2026-05-11 12:01 UTC (`bc9d6aa` K1.6) — inga CI-runs efter advisory publicerats.
 
@@ -70,12 +72,16 @@ När `npm audit` rapporterar new high/critical vulnerability:
 **Negativt:**
 
 - `npm audit` vid varje sessionsstart är ~2s extra. Men det är en del av RAPPORTERA Block B-baseline redan i alla sessionsstart-prompter — ingen ny kostnad.
+<!-- vale Vale.Terms = NO -->
 - Pin-disciplin betyder att Dependabot inte automatiskt uppgraderar pinned paket. Marcus måste manuellt övervaka när patched versioner publiceras (för dessa specifika paket — `@tanstack/react-router`, `@tanstack/router-plugin`, `@tanstack/history`-override). Lyfts som todo-pinpoint i `tasks/todo.md` med trigger "kontrollera npm view @tanstack/react-router time veckovis".
+<!-- vale Vale.Terms = YES -->
 - `npm audit` kommer fortsätta varna om GHSA-rmmr-r34h-pfm5 tills advisoryns `>=0`-range tas bort eller patched versioner publiceras. Lärdom: audit-output ska inte tolkas binärt — false positives möjliga när installerade artefakter är pre-malware.
 
 ## Spårbarhet
 
+<!-- vale Vale.Terms = NO -->
 - K0åg arbets-commit: `ea59787` (security(fas2): remediate GHSA-rmmr-r34h-pfm5 supply chain malware in @tanstack/* (K0åg))
+<!-- vale Vale.Terms = YES -->
 - Advisory: <https://github.com/advisories/GHSA-rmmr-r34h-pfm5>
 - Sessionsdok-trail: `tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md` Del 3.7
 - Diagnostik-data: K0åg-prompten Block A-E (RAPPORTERA-output, bevarad i Session 5-transcript när transcript-disciplin etableras)

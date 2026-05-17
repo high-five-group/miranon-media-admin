@@ -1,5 +1,3 @@
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 # ADR-030: Docs-grindvakter + frontmatter-policy
 
@@ -286,7 +284,9 @@ Empirisk data per grindvakt, ifylld vid Session 6.6 K-sista bake-in (commit #1, 
 
 | Grindvakt | Filer skannade | Träffar | Klassning | Hantering |
 |---|---|---|---|---|
+<!-- vale Vale.Terms = NO -->
 | yamllint | 2 (ci.yml + dependabot.yml) | 17 (12 line-length + 2 truthy + 2 doc-start + 2 comments-spacing + 1 truthy `on:`) | Pre-existing config-syntax-friktion | 2 config-disables (line-length + truthy check-keys) + 4 content-fixes |
+<!-- vale Vale.Terms = YES -->
 | typos | n/a (Considered + rejected) | 6 490 empirisk baseline; topp-30 ord svenska false-positives (`som`, `appen`, `dokument`) | Tool-uppgift-mismatch (engelsk-only-default mot svensk-dominant repo) | Inte aktiverad; slot-numrering bevarad per ADR-022 kategori-utvidgning-mönster |
 | markdownlint-cli2 | 83 (`docs/**/*.md` + `tasks/*.md` + `./*.md`) | 10 570 → 0 | Mix: 9 668 config-disable-domän (MD013/MD060/MD024) + 902 auto-fix + 38 MD036 hybrid + 77 MD040 manuell + 15 Sub-A defer | 3 config-disables + `--fix`-batch + 14 strukturella `### N. ...` + 24 inline-disable + DEFERRED-FIX-MARKER |
 | scripted-checklist-check | 6 publika docs (vita listan + CONTRIBUTING-exklusion) | 0 utanför `## Definition of Done`-mallar | 0 pre-existing skuld | Grön baseline från start; K7.5 retroaktivt config-driven (`.checklist-policy.conf`) |

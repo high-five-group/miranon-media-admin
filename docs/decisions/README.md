@@ -1,12 +1,10 @@
 ---
 owner: marcus803
-updated: 2026-05-16
+updated: 2026-05-17
 review_by: 2026-11-15
 status: stable
 ---
 
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 # Architecture Decision Records
 
@@ -56,7 +54,9 @@ En ADR är **oföränderlig** efter att den accepterats. Om ett beslut senare ä
 | [ADR-021](ADR-021-docs-omstrukturering.md) | docs/-omstrukturering till specs/analysis/reference/logs/ | Accepted | Pre-Fas-2 |
 | [ADR-022](ADR-022-analys-flyttat-till-docs-research.md) | analys/ flyttat till docs/research/datamodell-research/ | Accepted | Pre-Fas-2 |
 | [ADR-023](ADR-023-sessions-arkivering.md) | tasks/sessions/-arkivering med datum-baserad strategi | Accepted | Pre-Fas-2 |
+<!-- vale Vale.Terms = NO -->
 | [ADR-024](ADR-024-publika-professionalitetssignaler.md) | Publika professionalitetssignaler — LICENSE, package.json, .github/, top-level docs | Accepted | Pre-Fas-2 |
+<!-- vale Vale.Terms = YES -->
 | [ADR-025](ADR-025-byggplan-lattlast-v2-till-v3.md) | BYGGPLAN-LÄTTLÄST v2 → v3 (revision efter byggplan-revisionen) | Accepted | Pre-Fas-2 |
 | [ADR-026](ADR-026-runtime-validering-vid-datagrans.md) | Runtime-validering vid datagräns med Zod `.parse()` | Accepted | 2 |
 | [ADR-027](ADR-027-kvalitetsdefinitioner-stack-skifte.md) | KVALITETSDEFINITIONER-11.md stack-skifte (Vue → React) | Accepted | 2 |
