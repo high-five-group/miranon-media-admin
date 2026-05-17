@@ -17,7 +17,7 @@
 | INP | <200ms | <50ms | web-vitals | Varje knapptryck och filter ska kannas omedelbart |
 | CLS | <0.1 | <0.05 | web-vitals | Inget far hoppa runt nar data laddar |
 | TTI | <3.5s | <2.0s | Lighthouse | Appen ska vara interaktiv snabbt |
-| Total JS | <200KB gzip | <150KB gzip | vite-bundle-visualizer | Hal den latt |
+| Total JS | <200KB gzip | <150KB gzip | `vite-bundle-visualizer` | Hal den latt |
 
 **Budget** = blockerar deploy om den overskrids. **Mal** = dit vi optimerar over tid.
 
@@ -298,7 +298,7 @@ eller en Supabase Edge Function som aggregerar och skickar notifiering.
 |--------|---------|-----|
 | Lab-matning | Lighthouse CI | Varje PR |
 | Field-matning | web-vitals + sendBeacon | Varje sidvisning i produktion |
-| Bundle-kontroll | vite-bundle-visualizer + CI-check | Varje PR |
+| Bundle-kontroll | `vite-bundle-visualizer` + CI-check | Varje PR |
 | INP-optimering | useDeferredValue, scheduler.yield() | Vid interaktionsproblem |
 | Prefetching | preload="intent", Speculation Rules | Alla lankar fran start |
 | Debugging | LoAF observer | Vid rapporterade problem |

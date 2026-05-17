@@ -105,7 +105,7 @@ cooldown:
 **Stegen som körs FORTSATT på dependabot[bot]:**
 
 - `changed` (changed-files-detection)
-- `lint` jobb komplett: npm ci + audit-ci + biome check + tsc --noEmit + typecheck:tests + actionlint + yamllint + scripted-checklist + frontmatter-validator
+- `lint` jobb komplett: npm ci + audit-ci + `biome check` + tsc --noEmit + typecheck:tests + actionlint + yamllint + scripted-checklist + frontmatter-validator
 - `test` jobb: npm ci + Playwright install + `API tests (pure)` (`npm run test:api:pure`)
 - `build` step: `npm run build`
 - `docs` jobb (om docs ändrats): lychee + markdownlint-cli2 + Vale

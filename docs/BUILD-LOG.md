@@ -547,14 +547,14 @@ K2 — TanStack Router skelett + audit-ci-disciplin:
 - `b32ec51` — fix(fas2): sort imports + tailwind classes per Biome 2.4.15 strict mode (K2.2 follow-up)
 - `0194787` — fix(fas2): pre-generate routeTree before tsc -b in build script (K2.2 follow-up 2)
 - `34a3a33` — feat(fas2): main.tsx providers + React 19 createRoot Sentry-hooks (K2.3)
-- `02a35a0` — fix(fas2): sort imports in main.tsx per biome organizeImports (K2.3 follow-up)
+- `02a35a0` — fix(fas2): sort imports in main.tsx per `biome organizeImports` (K2.3 follow-up)
 
 K3 + K3.5 — AuthProvider + login/logout + skyddade routes + race-condition-fix:
 
-- `8e72a10` — docs(claude): activate Kandidat 25 biome check disciplin pre-commit (K3.0)
+- `8e72a10` — docs(claude): activate Kandidat 25 `biome check` disciplin pre-commit (K3.0)
 - `2bb5a21` — refactor(fas2): extract router + queryClient to src/router.ts (K3.1)
 - `4dc675c` — feat(fas2): AuthProvider full Supabase-integration + InnerApp-pattern (K3.2)
-- `e42f395` — fix(fas2): satisfy biome noNonNullAssertion + useExhaustiveDependencies (K3.2 follow-up)
+- `e42f395` — fix(fas2): satisfy `biome noNonNullAssertion` + `useExhaustiveDependencies` (K3.2 follow-up)
 - `9078d9f` — feat(fas2): login route + index redirect + _authenticated guard (K3.3)
 - `ea673f4` — fix(fas2): InnerApp useEffect deps inkluderar isLoading för guard re-eval (K3.5)
 

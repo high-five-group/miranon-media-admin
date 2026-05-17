@@ -25,7 +25,7 @@ Strategi E är *renare* än Pure C på fyra dimensioner: en sanningskälla (en w
 
    a. `changed` (ubuntu-latest, ~5s) — `tj-actions/changed-files@9426d409...` v47.0.6 detekterar om alla ändrade filer matchar doc-only-globs. Outputs: `should_skip_tests` + `docs_changed`.
 
-   b. `lint` (ubuntu-latest, ~15-20s, **kör ALLTID**) — npm ci + audit-ci + biome check + tsc --noEmit + typecheck:tests + actionlint. Säkerställer K17 supply-chain-skydd på varje commit + snabb kod-kvalitetsfeedback.
+   b. `lint` (ubuntu-latest, ~15-20s, **kör ALLTID**) — npm ci + audit-ci + `biome check` + tsc --noEmit + typecheck:tests + actionlint. Säkerställer K17 supply-chain-skydd på varje commit + snabb kod-kvalitetsfeedback.
 
    c. `test` (ubuntu-latest, conditional on `should_skip_tests != 'true'`, ~75s) — npm ci + test:api:pure + test:api:staging + Playwright install + test:e2e:staging + build. De tunga stegen som spillas på doc-only.
 
