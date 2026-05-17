@@ -815,7 +815,7 @@ ADR-räkning post-Session 6.6: 30 (ADR-001 till ADR-030).
 | K-sista #4 | ✅ KLAR | `04bc462` (hub) | hub-CLAUDE.md "Alltid gäller" L6 + L1-bullets (separat hub-repo-commit) |
 | K-sista #5 | ✅ KLAR | `f7dba69` (hub) | hub-lessons.md sync 8 konsoliderade rader K6.6.5.1-K6.6.5.8 (separat hub-repo-commit) |
 | K-sista #6 | ✅ KLAR | `a5e895b` | Sessionsdok-arkivering + ADR-031 trail-link-update (atomic per Kandidat 1; K-sista #7 trail-link-pass sammanslagen) |
-| K-sista #6.5 | ✅ KLAR | `e53c720` | `.lycheeignore` Block 1-add för opentelemetry CI-runner-flakiness (instans #2 av tanstack-precedens från Session 6.6 K6) |
+| K-sista #6.5 | ✅ KLAR | `e53c720` | `.lycheeignore` Block 1-add för opentelemetry CI-runner-flakiness (instans #2 av TanStack-precedens från Session 6.6 K6) |
 | K-sista #7 | ✅ KLAR | denna commit + squash-commit på main | BUILD-LOG-update + PR #26 Draft → Ready → Squash-merge till main |
 
 ### Pre-existing-skuld upptäckt + fixad i denna session
@@ -823,7 +823,7 @@ ADR-räkning post-Session 6.6: 30 (ADR-001 till ADR-030).
 - **L8 — ADR-030 § Del 3 Check 2 latent shallow-clone-bug** triggades första gången 2026-05-16 pga dag-rollover-invarians-brott (sammanträffande invariant från K7.C atomisk bake-in 2026-05-15 bröts av selective README-bump i K1). Rotorsak-fix via K2.1 fetch-depth: 50 retrofit på lint + test + docs jobs (commit `a67908d`).
 - **lychee broken link i ADR-031** (K1-introducerad URL-typo `travis.gosselin.com` → korrekt `travisgosselin.com`). Fixad i K2.1.
 - **README ADR-katalog saknade ADR-030** (pre-existing från Session 6.6 K-sista). Atomisk bake-in i K1 stängde luckan tillsammans med ADR-031.
-- **opentelemetry.io CI-runner-flakiness** (instans #2 av tanstack-precedens från Session 6.6 K6) — lychee fail mellan K-sista #1 (`16e4591`, grön) och K-sista #2 (`ca57753`, röd) trots fungerande URL (lokal curl: HTTP 200). Sannolik orsak: Cloudflare/CDN blockerar GitHub Actions IP-ranges intermittent. Fixad i K-sista #6.5 (`e53c720`) via `.lycheeignore` Block 1-add med kategori "CI-runner-flakiness" + lessons-flag för framtida re-utvärdering.
+- **opentelemetry.io CI-runner-flakiness** (instans #2 av TanStack-precedens från Session 6.6 K6) — lychee fail mellan K-sista #1 (`16e4591`, grön) och K-sista #2 (`ca57753`, röd) trots fungerande URL (lokal curl: HTTP 200). Sannolik orsak: Cloudflare/CDN blockerar GitHub Actions IP-ranges intermittent. Fixad i K-sista #6.5 (`e53c720`) via `.lycheeignore` Block 1-add med kategori "CI-runner-flakiness" + lessons-flag för framtida re-utvärdering.
 
 ### Avvikelser från ursprungsplan
 
