@@ -11,7 +11,7 @@
 
 Session 6.6 K2.5 (2026-05-14) identifierade pre-existing skuld: 5 öppna Dependabot-PR:er (#21-#25) failar på `API tests (staging)`-steget pga GitHub Actions secrets-isolation (repo secrets injiceras som tomma strängar i Dependabot-PR-context). K2.5 deferades till egen mini-session per Marcus' Alt H: "pre-existing skuld lyfts i egen session med egen ADR, inte tackled mid-fas". Session 6.6.5 är den sessionen.
 
-Vid K1 RAPPORTERA 2026-05-16 (Code Block A.6 dependabot-config-empiri) bekräftades att den faktiska skulden är bredare än "bara staging-secrets":
+Vid K1 RAPPORTERA 2026-05-16 (Code Block A.6 Dependabot-config-empiri) bekräftades att den faktiska skulden är bredare än "bara staging-secrets":
 
 - **Volym-skuld:** 6 öppna PR:er (#19, #21-#25), inte 5 som K2.5-prep angav. PR #19 (`tailwind-merge`) är dolt fall — passade pre-Strategi-E singel-jobb-CI men skulle faila mot nya 5-jobs-config
 - **Konfig-skuld:** `.github/dependabot.yml` etablerades Pre-Fas-2 (Session 3, commit `dca1591`, ADR-024) **före** GitHub:s native cooldown-feature (juli 2025) och **före** 2026-supply-chain-läget (Axios mars, CanisterWorm, Trivy + Checkmarx KICS-kompromettering). Configgen har 4 stack-grupper (`tanstack`, `react-aria`, `types`, `tailwind`) men saknar catch-all, cooldown, reviewers, commit-prefix, och GitHub-Actions-grouping
@@ -115,7 +115,7 @@ cooldown:
 - 2 av 3 övervägda alternativ (A manuell merge / B Dependabot-secrets / C skip-for-bot / D hybrid) etablerar antingen för mycket secrets-yta (B) eller för lite test-coverage (C). Hybrid är 11/10-balansen
 - Manuell pre-merge-verify mitigerar coverage-gap: Marcus kör staging+e2e lokalt mot bumped deps INNAN merge
 - Ingen secrets-utvidgning till Dependabot-zon (lager-isolation principen)
-- Lint-jobbet (audit-ci + biome + tsc + actionlint + yamllint + frontmatter) är **kvar** — full kod-kvalitets-feedback bevaras
+- Lint-jobbet (audit-ci + Biome + tsc + actionlint + yamllint + frontmatter) är **kvar** — full kod-kvalitets-feedback bevaras
 - Pure-tester (72 tester) körs fortsatt — täcker affärslogik som inte kräver external services
 
 ### Lager 4 — Manuell review-policy (explicit non-auto-merge)
@@ -160,7 +160,7 @@ open-pull-requests-limit: 5   # npm
 |---|---|---|
 | A | Status quo (4 stack-grupper, ingen catch-all, ingen cooldown) | Volym-skuld förvärras (6 PR:er accumulating); ingen supply-chain-buffer mot 2026-läget; auto-merge-policy implicit |
 | B | Alt B — Dependabot-secrets (sätta repo-secrets på Dependabot-PR-context) | Utvidgar secrets-yta till Dependabot-zon (BoostSecurity Deputy Confusion TTP-mitigation försvagas); kräver GitHub Enterprise eller eget secrets-management |
-| C | Alt C — skip alla tester för dependabot[bot] | För lite test-coverage; pure-tester och biome+tsc+build skulle missas — sänker kvalitet, inte höjer |
+| C | Alt C — skip alla tester för dependabot[bot] | För lite test-coverage; pure-tester och Biome+tsc+build skulle missas — sänker kvalitet, inte höjer |
 | D | Alt D — Alt D Hybrid (skip staging+e2e, kör pure+lint+build) | **VALD** — 11/10-balans mellan secrets-isolation och test-coverage |
 | E | Auto-merge för minor+patch i production-deps | 2026-branschens reträtt post-Axios (BoostSecurity Deputy Confusion TTPs, dev.to nickytonline 2026-05). Avvisad till framtida revidering om supply-chain-läget stabiliseras |
 
@@ -219,7 +219,7 @@ Analog till ADR-029 § Konvention för framtida CI-utvidgningar. Future-trigger-
 
 ### Cross-ref till ADR-024 + ADR-028 + ADR-029
 
-ADR-031 utvidgar ADR-024 (ursprungs-dependabot-config) med 2026-policy-revidering. ADR-028 (supply-chain-incident-respons) kompletteras med proaktiv buffer (cooldown) — `audit-ci` allowlist reaktiv, cooldown preventiv. ADR-029 (Strategi E) intakt; Alt D Hybrid använder `if:`-villkor på enskilda steg vilket är konsekvent med Strategi E:s "lint körs alltid, test conditional"-paradigm.
+ADR-031 utvidgar ADR-024 (ursprungs-Dependabot-config) med 2026-policy-revidering. ADR-028 (supply-chain-incident-respons) kompletteras med proaktiv buffer (cooldown) — `audit-ci` allowlist reaktiv, cooldown preventiv. ADR-029 (Strategi E) intakt; Alt D Hybrid använder `if:`-villkor på enskilda steg vilket är konsekvent med Strategi E:s "lint körs alltid, test conditional"-paradigm.
 
 ### Säkerhet (supply-chain)
 
@@ -262,7 +262,7 @@ Empirisk data per lager, ifylld vid Session 6.6.5 K-sista #1 efter K2-K4 impleme
 
 ## Spårbarhet
 
-- **Föregångare:** ADR-024 (publika professionalitetssignaler, ursprungs-dependabot-config 2026-05-06)
+- **Föregångare:** ADR-024 (publika professionalitetssignaler, ursprungs-Dependabot-config 2026-05-06)
 - **Drivande observationer:**
   - Session 6.6 K2.5 — pre-existing skuld (5 Dependabot-PR:er failar på staging-secrets-isolation) deferad till mini-session per Marcus' Alt H
   - Session 6.6.5 K1 RAPPORTERA Block A.5 — 6 öppna PR:er (inte 5), PR #19 dolt fall

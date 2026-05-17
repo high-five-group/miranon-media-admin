@@ -570,7 +570,7 @@ När en sanningskälla (specifikation/datamodell) speglas i implementation (kod/
   Symptom: Defer-listan sade "major-bumps på React/Tailwind/TypeScript/Vite/TanStack". Vid lucide-react 1.8.0→1.14.0 (6 minor-versioner) blev klassningen tvetydig — paketet var inte på defer-listan men hoppet var ovanligt stort. Verifiering: `grep -rln "from 'lucide-react'" src/` gav 0 träffar. Paketet var installerat men oanvänt. Generaliserbar regel: defer-logik gäller paket med aktiv användningsyta. Paket utan kod-yta (`grep -rln` = 0) har risk = 0 oavsett deras position på defer-listan eller storleken på version-hopp. Klassificeringen ska kolla användning, inte bara paketnamn. Källa: Pre-Fas-2 K3 åg lucide-beslut 2026-05-06.
 
 - [UNIVERSAL] **Dependabot-PR-merges i sekvens kräver `recreate` på CONFLICTING — inte rebase**
-  Symptom: Vid sekventiell merge av flera dependabot-PR:er som rör `package-lock.json` blir kvarvarande PR:er CONFLICTING efter första merge. `@dependabot rebase` försöker uppdatera den befintliga branchen mot ny `main` men fastnar ofta på conflicts i lock-filen. `@dependabot recreate` stänger PR:en och återskapar den med fresh lock-fil mot aktuell `main`. Generaliserbar regel: vid dependabot-inbox-cleanup, använd `gh pr comment <N> --body "@dependabot recreate"` på CONFLICTING-PR:er, inte rebase. Recreate är robustare för package-lock-conflicts. Källa: Pre-Fas-2 K3 åg vite #9 CONFLICTING-hicka 2026-05-06.
+  Symptom: Vid sekventiell merge av flera Dependabot-PR:er som rör `package-lock.json` blir kvarvarande PR:er CONFLICTING efter första merge. `@dependabot rebase` försöker uppdatera den befintliga branchen mot ny `main` men fastnar ofta på conflicts i lock-filen. `@dependabot recreate` stänger PR:en och återskapar den med fresh lock-fil mot aktuell `main`. Generaliserbar regel: vid Dependabot-inbox-cleanup, använd `gh pr comment <N> --body "@dependabot recreate"` på CONFLICTING-PR:er, inte rebase. Recreate är robustare för package-lock-conflicts. Källa: Pre-Fas-2 K3 åg vite #9 CONFLICTING-hicka 2026-05-06.
 
 ## 2026-05-11 — Fas 2 K0 startvillkoren (Session 4)
 
@@ -1030,7 +1030,7 @@ Vid tooling-val / arkitektur-beslut / process-disciplin: web-research med fokus 
 
 ### L3 [UNIVERSAL, hub-lyft] — Empirisk config-verifikation FÖRE strategi-presentation
 
-Datum: 2026-05-16 | Källa: Session 6.6.5 Marcus' "vet du hur dependabot är konfigurerad?"-fångst
+Datum: 2026-05-16 | Källa: Session 6.6.5 Marcus' "vet du hur Dependabot är konfigurerad?"-fångst
 
 Chat:s strategi-spekulation utan att läsa faktisk config-fil är K-sista.1-mönster. Vid varje "lägg till X / ändra Y / konfigurera Z"-förslag: läs faktisk fil-state FÖRST via Code-rapport, sedan strategi-formulering. Antagande att "vi grupperade igår" är inte data — `.github/dependabot.yml` är data. Generaliserbar regel: aldrig påstå om aktuellt config-state utan empirisk verifiering. Mönsterförstärkning av Disciplin #6 + L1 (pre-K forensisk-pass).
 
@@ -1102,7 +1102,7 @@ K4-close-kommentar refererade ursprungligen "måndag 2026-05-18 06:00 Europe/Sto
 
 ### Sammanfattning Session 6.6.5
 
-14 lessons-kandidater skördade (alla [UNIVERSAL] för hub-lyft). Domän-fördelning: empirisk verifikation & forensisk-pass (L1, L3, L9, L10) + branschstandard & 11/10 GOLV-disciplin (L2, L5, L6, L13) + verifikations-design & policy-fångst (L4, L11, L12) + CI-grindvakts-design & trail-disciplin (L7, L8, L14). 4 Gate 2-fångster av Marcus (pre-K2.1 stopp + "tänk seniorproffs" + "vet du hur dependabot är konfigurerad?" + 11/10-GOLV-direktiv), 3 av Code (K1 PLANERA-policy-konflikter + K1.5 forensisk-pass + K3 Alt V1-rättning), 1 av Chat self-review (K3 säkerhets-analys efter web-research). L8 motiverar potentiell ADR-030-tillägg (beslutas K-sista #3). L6 + L1 förstärks som "Ristat i sten" i hub-CLAUDE.md K-sista #4. Alla 14 hub-lyfts till `~/Repon/marcus-system/tasks/lessons.md` vid K-sista #5.
+14 lessons-kandidater skördade (alla [UNIVERSAL] för hub-lyft). Domän-fördelning: empirisk verifikation & forensisk-pass (L1, L3, L9, L10) + branschstandard & 11/10 GOLV-disciplin (L2, L5, L6, L13) + verifikations-design & policy-fångst (L4, L11, L12) + CI-grindvakts-design & trail-disciplin (L7, L8, L14). 4 Gate 2-fångster av Marcus (pre-K2.1 stopp + "tänk seniorproffs" + "vet du hur Dependabot är konfigurerad?" + 11/10-GOLV-direktiv), 3 av Code (K1 PLANERA-policy-konflikter + K1.5 forensisk-pass + K3 Alt V1-rättning), 1 av Chat self-review (K3 säkerhets-analys efter web-research). L8 motiverar potentiell ADR-030-tillägg (beslutas K-sista #3). L6 + L1 förstärks som "Ristat i sten" i hub-CLAUDE.md K-sista #4. Alla 14 hub-lyfts till `~/Repon/marcus-system/tasks/lessons.md` vid K-sista #5.
 
 ## 2026-05-16 — Session 6.6.7 (shellcheck-strict-grindvakt + shallow-clone-detection)
 

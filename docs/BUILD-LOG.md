@@ -20,7 +20,7 @@ Detta är **inte** en kravspec (den finns i `byggplan.md`) och **inte** en arkit
 | Tailwind CSS | 4.2.2 (`@tailwindcss/vite` 4.2.2) |
 | Biome | 2.4.11 |
 
-Uppdateras vid större versionsändringar. Mindre patch-uppdateringar (auto via `npm audit fix`, dependabot) noteras i `package-lock.json`-diff men inte här.
+Uppdateras vid större versionsändringar. Mindre patch-uppdateringar (auto via `npm audit fix`, Dependabot) noteras i `package-lock.json`-diff men inte här.
 
 ## Innehåll
 
@@ -530,7 +530,7 @@ Ja ✅ (godkänt av Marcus 2026-05-04 vid sessionsavslut för security-hardening
 
 ### Sammanfattning
 
-Samtliga commits från K0åg-respons + K2-K4 + K5.1-K5.3 (Session 5) + K3.4 + K5.4-K5.6 (Session 5b) — sammanlagd commit-räkning verifierbar via `git log --oneline ea59787..HEAD` post-K5.6b. **Fas 2 alla 8 DoD-rader stängda och empiriskt verifierade via K4.3 6-tests Playwright-regression.** Defense-in-depth tre-skikt-arkitektur levererad: skikt 1 (klient-guard K3.2/K3.3) + skikt 2 (AuthError throw K3.4) + skikt 3 (server requireUser Fas A M2). Kvalitetsklyfta för Fas 3.5: skikt 2:s throw-path är typkontrakt-bevisad via tsc + biome men inte regression-skyddad i isolation post-K3.4 (vitest-installation deferred per Gate 1-beslut 2026-05-13). Lyfts som todo.md Fas 3.5-underpunkt i K5.6b.
+Samtliga commits från K0åg-respons + K2-K4 + K5.1-K5.3 (Session 5) + K3.4 + K5.4-K5.6 (Session 5b) — sammanlagd commit-räkning verifierbar via `git log --oneline ea59787..HEAD` post-K5.6b. **Fas 2 alla 8 DoD-rader stängda och empiriskt verifierade via K4.3 6-tests Playwright-regression.** Defense-in-depth tre-skikt-arkitektur levererad: skikt 1 (klient-guard K3.2/K3.3) + skikt 2 (AuthError throw K3.4) + skikt 3 (server requireUser Fas A M2). Kvalitetsklyfta för Fas 3.5: skikt 2:s throw-path är typkontrakt-bevisad via tsc + Biome men inte regression-skyddad i isolation post-K3.4 (vitest-installation deferred per Gate 1-beslut 2026-05-13). Lyfts som todo.md Fas 3.5-underpunkt i K5.6b.
 
 ### Commits Session 5 (kronologisk ordning)
 
@@ -544,7 +544,7 @@ K2 — TanStack Router skelett + audit-ci-disciplin:
 
 - `5709f26` — build(fas2): introduce audit-ci with GHSA-rmmr-r34h-pfm5 allowlist (K2.1)
 - `135ff6a` — feat(fas2): TanStack Router file-based skelett + Sentry ErrorBoundary (K2.2)
-- `b32ec51` — fix(fas2): sort imports + tailwind classes per biome 2.4.15 strict mode (K2.2 follow-up)
+- `b32ec51` — fix(fas2): sort imports + tailwind classes per Biome 2.4.15 strict mode (K2.2 follow-up)
 - `0194787` — fix(fas2): pre-generate routeTree before tsc -b in build script (K2.2 follow-up 2)
 - `34a3a33` — feat(fas2): main.tsx providers + React 19 createRoot Sentry-hooks (K2.3)
 - `02a35a0` — fix(fas2): sort imports in main.tsx per biome organizeImports (K2.3 follow-up)

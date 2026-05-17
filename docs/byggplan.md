@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-15
+updated: 2026-05-17
 review_by: 2026-11-15
 status: stable
 ---
@@ -193,7 +193,7 @@ M4-principen från Fas A: deploya inte EF i förskott. Varje deploy ska följa e
 - Commits: `13cdf86`..K5.9-trail (samtliga K0+K2+K3+K3.4+K3.5+K4+K5-commits)
 - BUILD-LOG.md "Session 5+5b"-sektion för retrospektiv
 
-**Kvalitetsklyfta deferred till Fas 3.5:** Skikt 2 (AuthError throw-path) är typkontrakt-bevisad via tsc + biome men inte regression-skyddad i isolation. Auth-error-path unit-test-mönster lyfts vid Fas 3.5 test-infra-arbetet (vitest-installation hör hemma där per Gate 1-beslut 2026-05-13).
+**Kvalitetsklyfta deferred till Fas 3.5:** Skikt 2 (AuthError throw-path) är typkontrakt-bevisad via tsc + Biome men inte regression-skyddad i isolation. Auth-error-path unit-test-mönster lyfts vid Fas 3.5 test-infra-arbetet (vitest-installation hör hemma där per Gate 1-beslut 2026-05-13).
 
 ---
 

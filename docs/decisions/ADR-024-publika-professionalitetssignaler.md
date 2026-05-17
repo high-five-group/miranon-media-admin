@@ -9,7 +9,7 @@
 
 ## Kontext
 
-Pre-Fas-2-verifieringen 2026-05-06 visade en strukturell asymmetri: repot är 11/10 internt (20 ADR:er, byggplan.md 832 rader, BUILD-LOG retrospektivt komplett, datamodell-research-pipeline, 3-lagers token-system, pre-commit-hook), men 4/10 publikt (ingen CI, ingen LICENSE, default-fält i package.json, ingen CODEOWNERS/SECURITY/CONTRIBUTING/CHANGELOG, ingen issue/PR-template, ingen dependabot).
+Pre-Fas-2-verifieringen 2026-05-06 visade en strukturell asymmetri: repot är 11/10 internt (20 ADR:er, byggplan.md 832 rader, BUILD-LOG retrospektivt komplett, datamodell-research-pipeline, 3-lagers token-system, pre-commit-hook), men 4/10 publikt (ingen CI, ingen LICENSE, default-fält i package.json, ingen CODEOWNERS/SECURITY/CONTRIBUTING/CHANGELOG, ingen issue/PR-template, ingen Dependabot).
 
 Code:s omdöme i K1.B Block 7.1: *"den ena halvan exceptionellt välbyggd — den andra halvan finns inte. Det är inte en gradskillnad, det är en kategoriskillnad."* En tredjepartsverifierare (Codex) ser publika signaler först — repot klassas lägre än det förtjänar givet det interna arbetet.
 
@@ -20,9 +20,9 @@ Etablera publika professionalitetssignaler på senior-nivå även för privat-pr
 Konkret omfattning:
 
 - **Repo-root metadata** — LICENSE (proprietary, "UNLICENSED" i package.json), package.json kompletterad (description, author, license, repository, homepage, keywords, engines, "private": true), .editorconfig, .nvmrc, .vscode/extensions.json
-- **.github/-paketet** — workflows/ci.yml (biome+tsc+test:api+build på PR till main), dependabot.yml (npm + github-actions), CODEOWNERS, ISSUE_TEMPLATE/{bug.md, feature.md}, PULL_REQUEST_TEMPLATE.md
+- **.github/-paketet** — workflows/ci.yml (Biome+tsc+test:api+build på PR till main), dependabot.yml (npm + github-actions), CODEOWNERS, ISSUE_TEMPLATE/{bug.md, feature.md}, PULL_REQUEST_TEMPLATE.md
 - **Top-level professional docs** — CHANGELOG.md (Keep-a-Changelog 1.1.0, retroaktiv), SECURITY.md (privat-rapportering, scope-definition), CONTRIBUTING.md (aktör-rollfördelning, sessions-disciplin, transcript-disciplin, DoD)
-- **README-uppgradering** — badges (CI, license, node, biome, vite, react, TypeScript), Documentation-map-sektion som pekar på CLAUDE/byggplan/decisions/CHANGELOG/SECURITY/CONTRIBUTING
+- **README-uppgradering** — badges (CI, license, node, Biome, Vite, react, TypeScript), Documentation-map-sektion som pekar på CLAUDE/byggplan/decisions/CHANGELOG/SECURITY/CONTRIBUTING
 
 ## Alternativ som övervägdes
 
@@ -37,7 +37,7 @@ Konkret omfattning:
 
 - Kategori-asymmetrin elimineras innan Codex-verifiering — repot klassas på sin substans, inte på sin publika fasad.
 - CI ersätter pre-commit-hookens manuell-disciplin med automatiserad verifiering på PR.
-- dependabot fångar säkerhets-uppdateringar utan manuell övervakning (defer-poster H.2 PostCSS audit kan hanteras i automatiska PR:er).
+- Dependabot fångar säkerhets-uppdateringar utan manuell övervakning (defer-poster H.2 PostCSS audit kan hanteras i automatiska PR:er).
 - CHANGELOG ger versionshistorik utanför commit-historiken — läsbar för icke-tekniska intressenter.
 - CONTRIBUTING formaliserar aktör-rollfördelningen (Marcus + Chat + Code) som hittills levde implicit i CLAUDE.md.
 

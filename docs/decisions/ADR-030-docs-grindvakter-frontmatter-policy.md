@@ -42,7 +42,7 @@ Följande 4 grindvakter etableras, fördelade över `docs`-jobbet och `lint`-job
      - Manuell MD040 (77 språk-tags): `text`-default på alla bare ``` -block; selektiv upgrade till bash/yaml/json deferras som polish till framtida session
      - Manuell MD036 (38 fynd, Strategi B+ hybrid): 14 strukturella → `### N. ...` (ADRs alternativ-listor + data-model.md trigger-sekvenser); 24 inline-emfas → `<!-- markdownlint-disable-next-line MD036 -->`-disable (gap-analysis Betyg-tags, BYGGPLAN-LÄTTLÄST estimat-tags, metadata-headers)
      - Sub-A inline DEFERRED-FIX-MARKER (15 fynd, per K1.13 per-item-spårbarhet): MD051 (7 broken-anchors i Vue-referens-doc), MD056 (4 tabell-cell-överskott i frusen Vue-referens), MD041 (2 first-line-heading), MD028 (1 BYGGPLAN-LÄTTLÄST blockquote), MD025 (1 multi-section analys-rapport)
-   - **Implementation:** npm devDependency (`markdownlint-cli2: ^0.22.1` i package.json), körs via `npx markdownlint-cli2` i docs-jobbet efter lychee. Ingen pre-commit-hook (markdownlint är CI-only-grindvakt; pre-commit reserveras för biome + K7-frontmatter)
+   - **Implementation:** npm devDependency (`markdownlint-cli2: ^0.22.1` i package.json), körs via `npx markdownlint-cli2` i docs-jobbet efter lychee. Ingen pre-commit-hook (markdownlint är CI-only-grindvakt; pre-commit reserveras för Biome + K7-frontmatter)
 
 2. **typos** — Considered + rejected per empirisk baseline 2026-05-14
 
@@ -91,7 +91,7 @@ Följande 4 grindvakter etableras, fördelade över `docs`-jobbet och `lint`-job
    - **Empirisk 4-test-suite verifierad:** (1) clean state → exit 0, (2) README.md inject → exit 1 + actionable output, (3) CONTRIBUTING.md inject UNDER Definition of Done → exit 0 (exkluderad), (4) Marcus' caveat-test CONTRIBUTING.md inject EFTER Definition of Done-sektioner under annan H2-rubrik → exit 1 (per-sektion-skopa)
    - Implementation: [`scripts/check-public-checklists.sh`](../../scripts/check-public-checklists.sh) — bash + awk, inga deps, <1s exekvering
    - CI-integration: lint-jobb-step efter yamllint, kör alltid (även kod-only)
-   - Ingen pre-commit-hook (CI-only-grindvakt; pre-commit reserveras för biome + K7-frontmatter)
+   - Ingen pre-commit-hook (CI-only-grindvakt; pre-commit reserveras för Biome + K7-frontmatter)
    - *Refactored 2026-05-15 till config-driven (`.checklist-policy.conf`) per K7 Lesson #6 (UNIVERSAL) hub-spoke-portabilitet. Test-suite utvidgad till 5 testfall (T5 = saknad config → actionable error). Trail: Session 6.6 fortsättning #2 K7.5.*
 
 ### Del 2 — Frontmatter-policy (4 fält)
