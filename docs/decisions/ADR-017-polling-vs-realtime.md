@@ -1,5 +1,3 @@
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 # ADR-017: Hybrid polling 60s + pull-to-refresh, Realtime defer:as till Fas E
 

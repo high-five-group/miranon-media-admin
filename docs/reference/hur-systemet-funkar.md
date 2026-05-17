@@ -5,8 +5,6 @@ review_by: 2026-11-15
 status: stable
 ---
 
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 <!-- markdownlint-disable MD041 -->  <!-- filen saknar h1 (data-doc utan toc-rubrik som default) -->
 > **Primär version.**

@@ -1,5 +1,3 @@
-<!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
 # ARIA-UPGRADE — ARIA 1.3 och tillganglighetsuppgradering
 
