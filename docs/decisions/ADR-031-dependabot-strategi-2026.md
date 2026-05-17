@@ -1,5 +1,5 @@
 <!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+<!-- K3-PENDING: L_X.2 AT-RISK per K3.2 strukturell pre-screen — ADR-031.md har L_X.2-precondition (Vale.Terms-tokens i 9 backtick-spans inkl. .github/dependabot.yml, @supabase/supabase-js, biome check + plain-sibling-fynd av samma tokens). 15 Vale.Terms-fynd defererade till K3 helfil-disable-strategi per ADR-032. Single-IL-cascade-test motbevisat av L_UUU/L_WWW (K3.2-skanning). Trail: K3.1.b + K3.2. -->
 
 # ADR-031: Dependabot-strategi 2026 — grouping, cooldown, minimal CI-yta, manuell review
 
