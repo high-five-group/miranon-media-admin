@@ -1,5 +1,3 @@
-<!-- vale Miranon.VueToReact = NO -->
-<!-- DEFERRED: Session 6.6.6 — Miranon.VueToReact Vue→React-drift fix -->
 <!-- vale Vale.Terms = NO -->
 <!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
 
