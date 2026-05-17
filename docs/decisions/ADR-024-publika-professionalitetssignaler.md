@@ -22,7 +22,7 @@ Konkret omfattning:
 - **Repo-root metadata** — LICENSE (proprietary, "UNLICENSED" i package.json), package.json kompletterad (description, author, license, repository, homepage, keywords, engines, "private": true), .editorconfig, .nvmrc, .vscode/extensions.json
 - **.github/-paketet** — workflows/ci.yml (biome+tsc+test:api+build på PR till main), dependabot.yml (npm + github-actions), CODEOWNERS, ISSUE_TEMPLATE/{bug.md, feature.md}, PULL_REQUEST_TEMPLATE.md
 - **Top-level professional docs** — CHANGELOG.md (Keep-a-Changelog 1.1.0, retroaktiv), SECURITY.md (privat-rapportering, scope-definition), CONTRIBUTING.md (aktör-rollfördelning, sessions-disciplin, transcript-disciplin, DoD)
-- **README-uppgradering** — badges (CI, license, node, biome, vite, react, typescript), Documentation-map-sektion som pekar på CLAUDE/byggplan/decisions/CHANGELOG/SECURITY/CONTRIBUTING
+- **README-uppgradering** — badges (CI, license, node, biome, vite, react, TypeScript), Documentation-map-sektion som pekar på CLAUDE/byggplan/decisions/CHANGELOG/SECURITY/CONTRIBUTING
 
 ## Alternativ som övervägdes
 

@@ -17,7 +17,7 @@ För mutation-flödet i React-bygget krävs ett etablerat mönster för:
 2. **Rollback vid fel** — när server returnerar 4xx/5xx eller mutation tims out
 3. **Cache-invalidering** — TanStack Query måste veta vilka queries som påverkas
 4. **Idempotency-stöd** — vissa mutationer (t.ex. createRegistration, ADR-014) kräver client-genererad nyckel
-5. **Aria-live-annonsering** — status-flip måste annonseras till skärmläsare
+5. **ARIA-live-annonsering** — status-flip måste annonseras till skärmläsare
 6. **requestId-propagering** — fel-toast visar requestId från Fas A M7
 
 Per A2-beslutet (P1-sessionsdok Del 4): Fas 5.5 etablerar mönstret genom en minimal vertikal slice ("markera anmälan som betald" via befintlig `update-record` EF). Sliceen blir mall för Fas 6:s mutationer (sub-faserna 6a, 6b, 6c, 6e).
@@ -78,7 +78,7 @@ onSettled: (_data, _err, input) => {
 
 Invalidering körs alltid (success eller error) — säkerställer att UI synkar mot server-truth även om optimistic update gissade fel.
 
-### 5. Aria-live + komponent-API
+### 5. ARIA-live + komponent-API
 
 ```tsx
 <MarkPaidButton 
@@ -122,7 +122,7 @@ mutationFn: (input) => dataSource.executeOperation({
 - Mall för Fas 6:s ~6-10 mutationer (markPaid, markAttended, createRegistration, addNote, sendReminder, etc.) — varje mutation är 30-50 rader kod istället för att återuppfinna mönstret.
 - Operations-baserat API kvarhålls genomgående — ingen smyg-implementering av direct-method.
 - requestId-propagering fungerar automatiskt — ingen mutation kan glömma att visa requestId vid fel.
-- Aria-live-annonsering är en del av mallen — a11y inbyggt, inte adderat.
+- ARIA-live-annonsering är en del av mallen — a11y inbyggt, inte adderat.
 
 **Negativa:**
 
