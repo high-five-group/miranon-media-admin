@@ -1,3 +1,5 @@
+<!-- vale Miranon.VueToReact = NO -->
+<!-- DEFERRED: Session 6.6.6 — Miranon.VueToReact Vue→React-drift fix -->
 
 # ADR-027: KVALITETSDEFINITIONER-11.md stack-skifte (Vue → React)
 
