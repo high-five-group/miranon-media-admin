@@ -1,7 +1,7 @@
 <!-- vale Miranon.VueToReact = NO -->
 <!-- DEFERRED: Session 6.6.6 — Miranon.VueToReact Vue→React-drift fix -->
 <!-- vale Vale.Terms = NO -->
-<!-- DEFERRED: Session 6.6.6 — Vale.Terms canonical-cap fix -->
+<!-- K3-PENDING: L_X.2 AT-RISK per K3.2 strukturell pre-screen — react-headless-ui-research.md har L_X.2-precondition (2 backtick-spans med Vale.Terms-token: `react-aria` + `react-aria-components`). 5 Vale.Terms-fynd defererade till K3 helfil-disable-strategi per ADR-032. Strukturell pre-screen identifierade L_X.2-risk (L_WWW). Trail: K3.1.b + K3.2. -->
 
 # Research: React Headless UI-bibliotek for Admin Dashboard
 
