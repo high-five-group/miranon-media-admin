@@ -45,9 +45,25 @@ else
 fi
 
 # Iterera staged filer (added, copied, modified — INTE deleted/renamed)
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+# UTF-8-safe iteration via -z + NUL-terminated read.
+# Källa: Git officiell docs https://git-scm.com/docs/diff-options
+# Trigger: K0.1 (Session 6.6.6) v3.md systematic auto-bump-miss
+# pga core.quotepath=true default + exakt-match-fail på escape.
+# Klass-pattern: K1.17 (tj-actions UTF-8-glob, samma fil-domän,
+# annan tooling) + denna instans = 2 bekräftade. Hub-konsolidering
+# vid Session 6.6.6 K-sista-0.
+#
+# Implementation: temp-fil-pattern över process-substitution per
+# L_C nivå 1 + Session 6.6.7 K3.1 SC2312-precedent. Bevarar
+# set -euo pipefail-semantik (git-fail exiterar scriptet);
+# process-substitution `< <(...)` skulle maska git:s exit-status
+# (SC2312 info under shellcheck --enable=all).
 
-for staged in ${STAGED_FILES}; do
+STAGED_NUL=$(mktemp)
+trap 'rm -f "${STAGED_NUL}"' EXIT
+git diff --cached --name-only --diff-filter=ACM -z > "${STAGED_NUL}"
+
+while IFS= read -r -d '' staged; do
     # Matcha mot governing-listan (exakt path)
     is_governing=0
     for gov in "${GOVERNING_DOCS[@]}"; do
@@ -74,7 +90,7 @@ for staged in ${STAGED_FILES}; do
     git add "${staged}"
 
     BUMPED_FILES+=("${staged}")
-done
+done < "${STAGED_NUL}"
 
 # Rapport till stdout (K11.5 11/10-felmeddelande-design)
 if [[ "${#BUMPED_FILES[@]}" -gt 0 ]]; then

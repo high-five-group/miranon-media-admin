@@ -2,8 +2,9 @@
 # scripts/test-pre-commit-hook.sh
 #
 # Empirisk test-suite för .githooks/pre-commit.
-# 8 testfall: T1 idempotent, T2 bump, T3 non-styrande, T4 multi-fil,
-# T5 --amend, T6 --no-verify, T7 utan frontmatter, T8 config saknas.
+# 9 testfall: T1 idempotent, T2 bump, T3 non-styrande, T4 multi-fil,
+# T5 --amend, T6 --no-verify, T7 utan frontmatter, T8 config saknas,
+# T9 UTF-8-filnamn.
 #
 # Test-isolering: skapar /tmp/k7b-test-hook/ med git-repo + hook-fixture.
 # Sätter `git config core.hooksPath .githooks` LOKALT i test-repo,
@@ -269,6 +270,27 @@ ok=0
 check_exit "T8" 0 "${ec}" || ok=1
 check_not_contains "T8 (hook tyst)" "auto-bumpade" "${out}" || ok=1
 check_head_updated "T8 (gammalt datum bevarat)" "CLAUDE.md" "2026-04-01" || ok=1
+mark "${ok}"
+
+# ============================================================
+# T9: UTF-8-filnamn — BYGGPLAN-LÄTTLÄST-v3.md auto-bumpas
+# ============================================================
+# Regression-skydd för K0.1 (Session 6.6.6) latent UTF-8-bug-
+# klass. Mönster-instans #2 (K1.17 var instans #1, annan tooling-
+# domän). Klass-pattern: filename-iteration utan -z + exakt-
+# match-jämförelse failar på non-ASCII-paths.
+# ============================================================
+echo ""
+echo "═══ T9: UTF-8-filnamn — svensk-tecken-path bumpas korrekt ═══"
+setup_repo
+write_doc "docs/specs/BYGGPLAN-LÄTTLÄST-v3.md" "2026-04-01"
+git add "docs/specs/BYGGPLAN-LÄTTLÄST-v3.md" >/dev/null 2>&1
+out=$(git commit -m "t9" 2>&1); ec=$?
+ok=0
+check_exit "T9" 0 "${ec}" || ok=1
+check_contains "T9 (bump rapport)" "auto-bumpade 'updated' → ${TODAY}" "${out}" || ok=1
+check_contains "T9 (UTF-8 fil listad)" "BYGGPLAN-LÄTTLÄST-v3.md" "${out}" || ok=1
+check_head_updated "T9 (UTF-8 fil bumpad)" "docs/specs/BYGGPLAN-LÄTTLÄST-v3.md" "${TODAY}" || ok=1
 mark "${ok}"
 
 # ============================================================
