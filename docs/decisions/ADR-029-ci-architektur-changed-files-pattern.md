@@ -93,9 +93,9 @@ Per Marcus' Gate 2-kvalitetsregel 2026-05-13 ("genväg = disciplin-brott"): varj
 
 1. **lychee-scope utesluter `tasks/sessions/**`.** Arkiverade sessionsdok är frozen zoner per ADR-023 (lint-checkas inte). Aktiva sessionsdok är in-flight-state med TBD-poster och cross-fas-referenser under arbete. Senior-team-test: frozen + WIP-content lint-checkas inte. 11/10-test: utelämning refererar etablerad ADR. **Beslut:** låt stå.
 
-<!-- vale Vale.Terms = NO -->
+    <!-- vale Vale.Terms = NO -->
 2. **`.lycheeignore` startar tom.** Empirisk add-only-policy: lägg endast till mönster när dokumenterad-flaky-behavior bevisats. Preventiv exklusion (typ "lägg till github.com som potentiellt-flaky") tystar K18-signal vi inte vet om är problem. Senior-team-test: ja, default-disciplin för ignorelist-management. 11/10-test: bevarar K18 ("output är signal, inte sanning"). **Beslut:** låt stå.
-<!-- vale Vale.Terms = YES -->
+    <!-- vale Vale.Terms = YES -->
 
 3. **actionlint installeras via download-script, inte SHA-pinnad Action.** Maintainer (rhysd) distribuerar inte verktyget som GitHub Action; install-via-script ÄR upstream-mönstret (Vite gör det). Script:et verifierar släppta checksums — teknisk integrity-skydd motsvarande SHA-pin. Senior-team-test: ja, världsklass-projekt (Vite) använder samma metod. 11/10-test: konsekvent med upstream + migration-väg dokumenterad. **Beslut:** låt stå; migrera vid framtida actionlint-action-release.
 
