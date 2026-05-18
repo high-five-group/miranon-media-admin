@@ -2,7 +2,8 @@
 # scripts/test-check-frontmatter.sh
 #
 # Empirisk test-suite för scripts/check-frontmatter.sh.
-# 9 testfall: T1 all-pass, T2-T7 per-check-fel, T8 multi-fel, T9 config-saknas.
+# 14 testfall: T1 all-pass, T2-T7 per-check-fel, T8 multi-fel, T9
+# config-saknas, T10-T12 shallow-clone-detection, T13 UTF-8-filnamn.
 #
 # Test-isolering: skapar /tmp/k7b-test-validator/ med git-repo + fixtures.
 # Återställer (rm -rf) efter via trap. INGEN ändring av real-repo.
@@ -437,6 +438,32 @@ ok=0
 check_exit "T12" 0 "${ec}" || ok=1
 check_not_contains "T12 (no-unsafe)" "Unsafe-shallow clone detected" "${out}" || ok=1
 check_contains "T12 (success)" "Frontmatter-validering: alla 9 styrande docs passerar" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+# T13: UTF-8-filnamn — v3.md valideras (ej tyst skippad)
+# ============================================================
+# Regression-skydd för UTF-8-blind-spot-klass (Session 6.6.6 K0.3).
+# Bevisar att check-frontmatter.sh faktiskt validerar svensk-tecken-
+# paths — INTE bara att exit 0 nås. T1 täcker redan valid-v3.md →
+# exit 0, men kan ej skilja "validerad" från "tyst skippad" (en
+# skippad fil ger också "inget fel"). T13 introducerar ett deliberat
+# Check 5-fel i ENBART v3.md → felet MÅSTE flaggas med v3.md-specifik
+# path. Om UTF-8-iteration regresserar (fil tyst skippad) → inget
+# fel rapporteras → T13 fångar det.
+# ============================================================
+echo ""
+echo "═══ T13: UTF-8-filnamn — v3.md valideras (ej tyst skippad) ═══"
+setup_repo
+write_all_valid
+TODAY=$(date +%F)
+write_doc "docs/specs/BYGGPLAN-LÄTTLÄST-v3.md" "wrong-owner" "${TODAY}" "2027-12-31" "stable"
+git add . >/dev/null 2>&1
+git commit -q -m "fixture-t13" >/dev/null 2>&1
+out=$(run_validator); ec=$?
+ok=0
+check_exit "T13" 1 "${ec}" || ok=1
+check_contains "T13 (v3.md flaggad)" "docs/specs/BYGGPLAN-LÄTTLÄST-v3.md — Check 5 (owner): 'wrong-owner'" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
