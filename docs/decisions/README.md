@@ -55,6 +55,7 @@ En ADR är **oföränderlig** efter att den accepterats. Om ett beslut senare ä
 | [ADR-022](ADR-022-analys-flyttat-till-docs-research.md) | analys/ flyttat till docs/research/datamodell-research/ | Accepted | Pre-Fas-2 |
 | [ADR-023](ADR-023-sessions-arkivering.md) | tasks/sessions/-arkivering med datum-baserad strategi | Accepted | Pre-Fas-2 |
 <!-- vale Vale.Terms = NO -->
+<!-- L_X.1 IL-mitigation per ADR-032 § L_X.1 vs L_X.2-distinktion: Vale.Terms canonical-substitution (github → GitHub) skulle flagga `.github/`-token i ADR-024-titelraden om disable togs bort. IL-disable är tillförlitlig mitigation för L_X.1-klass (inline lookbehind/lookahead-pattern fungerar via IL), vs L_X.2 som kräver helfil-disable per ADR-032. Empiriskt verifierat i K3.6 Block I.2 Skuld 4: temp-fil utan disable → 1 Vale.Terms error rad 57. -->
 | [ADR-024](ADR-024-publika-professionalitetssignaler.md) | Publika professionalitetssignaler — LICENSE, package.json, .github/, top-level docs | Accepted | Pre-Fas-2 |
 <!-- vale Vale.Terms = YES -->
 | [ADR-025](ADR-025-byggplan-lattlast-v2-till-v3.md) | BYGGPLAN-LÄTTLÄST v2 → v3 (revision efter byggplan-revisionen) | Accepted | Pre-Fas-2 |
