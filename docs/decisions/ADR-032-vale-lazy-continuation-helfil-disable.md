@@ -85,7 +85,7 @@ Helfil-disable som mitigation för Vale-upstream-quirks är industri-norm för d
 | Källa | Position | Relevans för vår fall |
 |---|---|---|
 | Vale Markdown-docs | Code spans default-ignorerade | Vårt fall distinkt — L_X.2 är mis-scoping-inversion, inte standard-default |
-| [Vale CLI Issue #387](https://github.com/errata-ai/vale/issues/387) (jdkato 2021) | "this is not a bug" för Liquid-template-tags-fall | Vårt fall distinkt — vår trigger är CommonMark lazy-continuation, inte template-tags. jdkato (Vale-maintainer) kräver dock minimal-repro som första steg, vilket K3.4 levererat |
+| [Vale CLI Issue #387](https://github.com/vale-cli/vale/issues/387) (jdkato 2021) | "this is not a bug" för Liquid-template-tags-fall | Vårt fall distinkt — vår trigger är CommonMark lazy-continuation, inte template-tags. jdkato (Vale-maintainer) kräver dock minimal-repro som första steg, vilket K3.4 levererat |
 | [GitLab MR #88894](https://gitlab.com/gitlab-org/gitlab/-/merge_requests/88894) (2022) | `scope: raw`-fall | Vårt fall distinkt — Vale.Terms är auto-genererad utan scope: raw |
 | Vale 3.14.1 (senaste stabila per L_JJJ) | Ingen version-bump-väg | Bekräftar mitigation-strategi över version-bump-strategi |
 | Elastic Docs Vale-config | Helfil-disable för specifika filer | Branschledare-precedent |
@@ -147,7 +147,7 @@ Issue-text färdigställd 2026-05-17 (filartefakt `vale-upstream-issue-L_X2.md` 
 
 Publicering avvaktar Marcus' filande på GitHub vid lämplig tidpunkt. **Issue-URL fylls i denna ADR retroaktivt vid filande** (se placeholder nedan).
 
-**Upstream-issue-länk:** _[Issue-URL fylls i retroaktivt vid Marcus' filande på `errata-ai/vale`-GitHub. Pre-filande-placeholder per K3.5 Alt α.]_
+**Upstream-issue-länk:** _[Issue-URL fylls i retroaktivt vid Marcus' filande på `vale-cli/vale`-GitHub. Pre-filande-placeholder per K3.5 Alt α. (Repo flyttat från errata-ai/vale → vale-cli/vale; verifierat 2026-05-20 i K3.6-A CI-run 26175389427.)]_
 
 ## Spårbarhet
 

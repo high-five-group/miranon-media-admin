@@ -59,6 +59,6 @@ Se [ADR-032 § Lift-protokoll](../../docs/decisions/ADR-032-vale-lazy-continuati
 
 - [ADR-032](../../docs/decisions/ADR-032-vale-lazy-continuation-helfil-disable.md) § Regression-skydd — spec för T1-T3
 - [AssertFlip paper](https://arxiv.org/abs/2507.17542) — inverterad-assertion-mönster
-- [errata-ai/Google](https://github.com/errata-ai/Google) — branschstandard Vale-rule-testing
+- [vale-cli/Google](https://github.com/vale-cli/Google) — branschstandard Vale-rule-testing
 - Session 6.6.6 K3.4 — 11-case minimal-repro-trail
 - Session 6.6.6 K3.6 — denna test-suite etablering
