@@ -96,9 +96,11 @@ Bra exempel:
 
 Dåligt exempel:
 
+<!-- vale Miranon.Undvik = NO --> <!-- legitim meta-citat: "enkelt"/"användarvänligt"/"modernt" är del av "Dåligt exempel"-illustration; substitution skulle förstöra exemplets poäng -->
 - Det ska kännas enkelt.
 - Det ska vara användarvänligt.
 - Det ska vara modernt.
+<!-- vale Miranon.Undvik = YES -->
 
 **Leverabel:** 3–5 beteendeprinciper.
 

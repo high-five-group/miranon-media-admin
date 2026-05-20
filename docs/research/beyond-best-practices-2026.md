@@ -1060,7 +1060,7 @@ Flera mönster konvergerar mot samma principer:
 | **CMS** | Payload CMS (i samma Next.js-app) | Local API, block-editor, versioner, Supabase-kompatibel |
 | **Databas** | Supabase (PostgreSQL) | RLS, Realtime, Auth, Storage — redan i stacken |
 | **State** | TanStack Query + nuqs (URL-state) | Server-first, minimal klient-state |
-| **LRS** | Supabase-tabell (xAPI-format) | Börja enkelt, migrera till dedikerad LRS vid behov |
+| **LRS** | Supabase-tabell (xAPI-format) | Börja småskaligt, migrera till dedikerad LRS vid behov |
 | **Live/Event** | LiveKit (self-hosted) eller Daily.co (managed) | WebRTC, breakout rooms, inspelning |
 | **Betalning** | Stripe (subscriptions + Entitlements) | Drip content, tiered access |
 | **Bokning** | Cal.com | Open source, webhooks, tidszoner |
