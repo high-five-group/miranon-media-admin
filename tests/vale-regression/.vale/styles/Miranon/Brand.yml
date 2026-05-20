@@ -1,0 +1,6 @@
+extends: existence
+message: "Använd 'Miranon Media' istället för standalone 'Miranon' (canonical-brand per ADR-032)."
+level: error
+ignorecase: false
+tokens:
+  - '(?<!Miranon )Miranon(?! Media)(?![-a-zA-Z0-9_])(?!\.)'

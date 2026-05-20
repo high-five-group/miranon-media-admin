@@ -48,6 +48,8 @@ jobs:
             LICENSE
             docs/**
             tasks/**
+            tests/vale-regression/**
+            scripts/test-vale-regression.sh
             .github/ISSUE_TEMPLATE/**
             .github/PULL_REQUEST_TEMPLATE.md
             .github/CODEOWNERS
@@ -381,6 +383,15 @@ jobs:
         # Vale.Terms + Miranon.VueToReact deferade till Session 6.6.6 via
         # per-fil rad-1-disable (Alt F per K6.2 Steg 7).
         run: vale "docs" "tasks" "README.md" "CHANGELOG.md" "SECURITY.md" "CONTRIBUTING.md"
+
+      - name: Validate Vale L_X.2 regression-test-suite
+        # Per ADR-032 § Regression-skydd: 3-test AssertFlip-suite för
+        # L_X.2-upstream-bug lift-trigger. T1 inverterad assertion
+        # (PASS = bug bekräftad fortfarande); FAIL = lift-protokoll
+        # aktiveras. T2 helfil-disable suppression. T3 Brand-rule
+        # ej maskerad. Vale-binary redan installerad i föregående step.
+        # Etablerad: Session 6.6.6 K3.6 (2026-05-20).
+        run: bash scripts/test-vale-regression.sh
 
   # Job 5: Aggregator för branch-protection-readiness.
   # Per ADR-029 §1e. Grön status om alla föregående jobb antingen passerade
