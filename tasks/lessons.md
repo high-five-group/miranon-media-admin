@@ -8,7 +8,7 @@ status: stable
 <!-- vale Miranon.VueToReact = NO -->
 <!-- DEFERRED: Session 6.6.6 — Miranon.VueToReact Vue→React-drift fix -->
 <!-- vale Vale.Terms = NO -->
-<!-- K3-PENDING: L_X.2 Vale upstream-quirk (systemisk Vale-config/parser-egenskap) — lessons.md routad till K3/ADR-032. 10 rena fynd (9 L_HH + 1 D Biome rad 649) + 2 L_X.1 @biomejs/biome-quirk (rad 643/661) + ≥3 maskerade L_X.2-instanser (biome-kluster rad 642/643/649/660/661 entanglement). STEG 2 IL-test α + β båda bakslog (12 → 13 via emergent maskering på titel-rader). Trail: STEG 1+1.5-rapport + STEG 2-STOPPA-rapport (K2.6.2.D.4 v2). Precedent: todo.md 35aaf9a STEG F-mönster. -->
+<!-- Per ADR-032 (Session 6.6.6 K3.5 2026-05-20): helfil-disable mot L_X.2 Vale 3.14.1-upstream-quirk. Brand-text-fix tillämpad K3.5-A (Brand-drift-rader "Miranon" → "Miranon Media", empiriska positioner per Block I.4). Brand-rule-aktivering bevarad — endast Vale.Terms täcks av helfil-disable. Lift vid upstream-fix per ADR-032 § Lift-protokoll. -->
 
 # tasks/lessons.md
 

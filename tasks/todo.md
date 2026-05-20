@@ -1,5 +1,5 @@
 <!-- vale Vale.Terms = NO -->
-<!-- K3-PENDING: L_X.2 Vale upstream-quirk (intra-fil-state) — todo.md routad till K3/ADR-032 Vale-config-domän. 8 äkta Vale.Terms-fynd + 1 emergent rad-245 supabase-quirk. 7 mitigeringsförsök failade: IL α/β, vale off/on, accept.txt, TokenIgnores, dubbel-backtick ×2 (utan/med inre). Trail: mini-överlämning 2 + STEG E-rapport (K2.6.2.D.4 v2). -->
+<!-- Per ADR-032 (Session 6.6.6 K3.5 2026-05-20): helfil-disable mot L_X.2 Vale 3.14.1-upstream-quirk. 8 äkta Vale.Terms-fynd + 1 emergent rad-245-quirk dokumenterade i K2.6.2.D.4 v2-trail. Lift vid upstream-fix per ADR-032 § Lift-protokoll. -->
 
 # todo.md — Miranon Media Admin (React)
 

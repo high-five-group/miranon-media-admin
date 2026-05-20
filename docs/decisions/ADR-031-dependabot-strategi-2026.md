@@ -1,5 +1,5 @@
 <!-- vale Vale.Terms = NO -->
-<!-- K3-PENDING: L_X.2 AT-RISK per K3.2 strukturell pre-screen — ADR-031.md har L_X.2-precondition (Vale.Terms-tokens i 9 backtick-spans inkl. .github/dependabot.yml, @supabase/supabase-js, biome check + plain-sibling-fynd av samma tokens). 15 Vale.Terms-fynd defererade till K3 helfil-disable-strategi per ADR-032. Single-IL-cascade-test motbevisat av L_UUU/L_WWW (K3.2-skanning). Trail: K3.1.b + K3.2. -->
+<!-- Per ADR-032 (Session 6.6.6 K3.5 2026-05-20): helfil-disable mot L_X.2 Vale 3.14.1-upstream-quirk. L_WWW-precondition träffad (15 Vale.Terms-fynd i 9 backtick-spans + plain-siblings). Lift vid upstream-fix per ADR-032 § Lift-protokoll. -->
 
 # ADR-031: Dependabot-strategi 2026 — grouping, cooldown, minimal CI-yta, manuell review
 
