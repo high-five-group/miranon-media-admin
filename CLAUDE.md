@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-16
+updated: 2026-05-23
 review_by: 2026-11-15
 status: stable
 ---
@@ -45,6 +45,8 @@ Hela `docs/react-migration/`-mappen i Vue-repot var sanningskälla för Fas 0 + 
 - LÄS → RAPPORTERA → PLANERA → IMPLEMENTERA → VERIFIERA. Aldrig hoppa direkt till implementation.
 - Verifiera per komponent: 11/11/11 (bibliotek) eller 11/10/10 (vyer). Bevisa att det fungerar — "det funkar" ≠ "det är rätt".
 - Fånga lärdomar i `tasks/lessons.md` efter varje korrigering. Markera universella med `[UNIVERSAL]`.
+- **Web-research före strategi- och arkitektur-beslut:** före Vale-config-strategi, ADR-design, tool-version-bump, dependency-rekommendation eller branschstandard-claim — gör web-research och citera källan. Speglar hub-CLAUDE.md "Ristat i sten".
+- **Kontinuitet-arkitektur:** filartefakter (CLAUDE.md, lessons.md, sessionsdok, ADR:er) är enda sanningskällan — Chat-trail försvinner vid sessions-byte. Allt nytt (lessons, designval, insikter) bakas in i fil INNAN sessions-byte. Speglar hub-CLAUDE.md "Ristat i sten".
 
 ---
 
