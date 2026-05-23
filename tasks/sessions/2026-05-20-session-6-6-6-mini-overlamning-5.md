@@ -1108,6 +1108,65 @@ Empirisk data från mini-1-5:
 - Anti-bloat-konsensus web-research (mini-5 Del 3 — empirisk grund för CLAUDE.md-storlek-disciplin)
 ```
 
+### Pre-leverans-grind för sessions-handoff (NY — empirisk från V2-prompt-debaclet)
+
+Empirisk källa: En sessions-start-prompt ("V2") levererad mellan Chat-
+sessioner var felkonstruerad på tre sätt. Den nya Chat-sessionen fångade
+felen via STOPPA-OCH-FRÅGA innan något arbete utfördes. Felen är empirisk
+grund för en obligatorisk pre-leverans-grind.
+
+**Kärninsikt:** Lessons i en fil skyddar inte mot upprepning — samma chat
+dokumenterade cross-scope-blandning, efemär trail och state-drift, och
+byggde sedan en prompt som bröt alla tre. Externa grindar slår intern
+disciplin (jfr Code-fångst 96-100% vs Chat-self-fångst 0%). Skillen måste
+därför vara en GRIND som passeras före leverans, inte prosa som läses.
+
+**De tre felklasserna:**
+
+| Fel | Beskrivning | Hör hemma |
+|---|---|---|
+| A — Miljö-förväxling | Code-instruktioner (git, SHA-verifikation, repo-state) placerade i en Chat-prompt. Chat har project_knowledge + designtänk, inte git/repo-skrivning. | session-handoff.skill pre_delivery_gate |
+| B — Datum-hårdkodning | Prompt stämplade ett TODAY-datum som var sant vid skrivtid men fel vid körtid (3 dagars drift over-weekend). | session-handoff.skill pre_delivery_gate |
+| C — Lesson-namn utan kollisionskoll | Nya lesson-namn (L_AAAF/G/H) tilldelade utan katalog-sökning — kolliderade med kanoniska namn i reconciliation v2-final §3.7. | EJ handoff-skill — separat lessons-katalog-disciplin (lessons-hub-sync.skill eller CLAUDE.md-regel) |
+
+**pre_delivery_gate — obligatorisk checklista för session-handoff.skill
+(formaliseras Session 6.7 K4):**
+
+Varje handoff-prompt MÅSTE passera samtliga punkter före leverans:
+
+0. Målmiljö explicit deklarerad överst i prompten — Chat ELLER Code.
+1. Varje instruktion är utförbar i den deklarerade målmiljön. Code-
+   instruktioner (git, fil-läsning på disk, commits, push, repo-state-
+   verifikation) får ALDRIG ligga i en Chat-prompt, och vice versa.
+2. Noll hårdkodade datum. Handoffs instruerar mottagaren att verifiera
+   TODAY i sin egen miljö vid körtillfället.
+3. Noll nya lesson-namn tilldelade i prompten (se Fel C — namngivning
+   sker först efter full katalog-läsning).
+4. Varje refererad fil är åtkomlig i mottagarens miljö. En Chat-prompt
+   refererar bara projektkunskap; den får inte bero på filer i ~/Downloads
+   eller live-repo som Chat inte kan nå.
+5. Räkningar och SHA:n som prompten anger är antingen (a) verifierbara av
+   mottagaren själv, eller (b) explicit märkta som "overifierat — bekräfta
+   vid körtid". Aldrig presenterade som fakta mottagaren inte kan stå för.
+
+**Öppen fråga för Session 6.7 (utvärderas, ej avgjord):** Eftersom Chat-
+self-fångst empiriskt är 0%, kan en grind som Chat kör på sig själv vara
+otillräcklig. Starkare alternativ: handoff-prompter avsedda för en annan
+session passerar Code eller Marcus som extern granskare före leverans.
+Beslut tas i 6.7 K4 vid skill-formalisering.
+
+**Kandidat-observationer för K-sista-0 (UTAN bokstavsnamn — namngivning i
+K-sista-0 efter full katalog-läsning):**
+
+- Obs A: Chat-prompt-design måste explicit deklarera målmiljö och endast
+  innehålla instruktioner den miljön kan utföra.
+- Obs B: Datum-stämplar i prompter som levereras över tid måste instruera
+  mottagaren att verifiera TODAY själv, aldrig hårdkoda.
+- Obs C: Nya lesson-namn får aldrig tilldelas utan föregående sökning av
+  hela auktoritativa katalogen för kollision.
+- Obs D: Filer en prompt refererar måste vara åtkomliga i mottagarens
+  miljö (Chat når projektkunskap, ej Downloads eller live-repo).
+
 ### Bake-in-mekanism för Session 6.7-prep-fil (utvidgar K-sista-1-F)
 
 Mini-överlämning 5 Del 8 (Session 6.7-prep-fil-uppdatering K-sista-1-F) utökas med en ny sub-§:
