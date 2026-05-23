@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-20
+updated: 2026-05-23
 review_by: 2026-11-15
 status: stable
 ---
@@ -1182,8 +1182,93 @@ När en ADR refererar en annan ADR:s defer-bullet ("X (defer)") och den senare i
 
 Datum: 2026-05-16 | Källa: K-sista #3 pre-flight A3-grep-rapport (CLAUDE.md status-drift för Session 6.6 + 6.6.5)
 
-Sessions 6.6 + 6.6.5 K-sista-pass uppdaterade BUILD-LOG men hoppade CLAUDE.md status-rad-bump trots att det ingår i K-sista DoD per projekt-CLAUDE.md "Sessionsavslut"-checklistan rad 14. Fångad K-sista #3 pre-flight Session 6.6.7 via `grep "Session 6" CLAUDE.md` (visade endast Session 6 + 6.5 — Session 6.6 + 6.6.5 saknades). Drift = 12+ dagar utan upptäckt. Generaliserbar regel: K-sista-checklista-poster (BUILD-LOG + todo.md + lessons.md + CLAUDE.md + ADR-bumps + hub-sync + arkivering) ska verifieras per-fil empiriskt vid K-sista-start, inte antas baserat på "föregående K-sista var komplett". Driften från Session 6.6 + 6.6.5 visar att check-list-skip:ar är icke-uppenbara utan empirisk verifikation. Mönsterförstärkning av L1 (forensisk-pass FÖRE implementation) + L18 (projektkunskap ≠ live-state) tillämpat på K-sista-process-domänen.
+Sessions 6.6 + 6.6.5 K-sista-pass uppdaterade BUILD-LOG men hoppade CLAUDE.md status-rad-bump trots att det ingår i K-sista DoD per projekt-CLAUDE.md "Sessionsavslut"-checklistan rad 14. Fångad K-sista #3 pre-flight Session 6.6.7 via `grep "Session 6" CLAUDE.md` (visade endast Session 6 + 6.5 — Session 6.6 + 6.6.5 saknades). Drift = 12+ dagar utan upptäckt. Generaliserbar regel: K-sista-checklista-poster (BUILD-LOG + todo.md + lessons.md + CLAUDE.md + ADR-bumps + hub-sync + arkivering) ska verifieras per-fil empiriskt vid K-sista-start, inte antas baserat på "föregående K-sista var komplett". Driften från Session 6.6 + 6.6.5 visar att check-list-skip:ar är icke-uppenbara utan empirisk verifikation. Mönsterförstärkning av L1 (forensisk-pass FÖRE implementation) + principen att projektkunskaps-index inte är filsystem-live-state, tillämpat på K-sista-process-domänen.
 
 ### Sammanfattning Session 6.6.7
 
 12 lessons-kandidater skördade (alla [UNIVERSAL] för hub-lyft). Domän-fördelning: räknings-disciplin (L_A, L_D) + lessons-meta (L_B, L_J) + fix-strategi & defense-in-depth (L_C, L_H, L_I) + CI-grindvakts-aktivering (L_F, L_G) + cross-syntax & cross-ADR (L_E, L_K) + K-sista-process-disciplin (L_L). 5 Code-fångster (K3.1 räknings-klargörande + K3.3 SHA-strategi + K4.1.1 truth-table + K4.3 ADR-disciplin + K-sista #3 drift-fynd), 2 Chat-mediated-fångster (Marcus refactor-val + Marcus design-flipp), 1 CI-feedback-fångst (K4.1 design-bug → K4.1.1 hot-fix). L_I + L_J par-mönsterförstärker varandra (empirisk truth-table FÖRE implementation + Chat-argumentation kräver empirisk grund). L_K kompletterar L_E som distinkt cross-domän-disciplin (cross-syntax vs cross-ADR-tidsstämpel). L_L tillkom som K-sista #3-fynd (CLAUDE.md status-drift för Session 6.6 + 6.6.5). Alla 12 hub-lyfts till `~/Repon/marcus-system/tasks/lessons.md` vid K-sista #6.
+
+## 2026-05-23 — Session 6.6.6 (Vale-cleanup + K-sista-0 lessons-konsolidering)
+
+> Antal poster: 13 konsoliderade hub-lessons. Konsoliderade från 125 lessons-
+> kandidater (rå-katalog + fulltext-supplement 2026-05-23) via 13 klass-pattern.
+> Bas-not: 125 = korrigerad räkning; rå-katalogens "124" vilade på v2-finals
+> miscountade §3.6 (25 vs faktiskt 26). Fullständig kandidat-trail: rå-katalogen.
+
+### L15 [UNIVERSAL, hub-lyft] — Empirisk verifikation före påstående, klassning och commit
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Empirisk-disciplin)
+
+Namnge den empiriska källan innan du klassificerar, hävdar eller committar — källa före antagande. Körning och faktisk data är auktoritativa över skrivet protokoll och över projektkunskaps-index, som inte är filsystem-live-state.
+
+### L16 [UNIVERSAL, hub-lyft] — Linter- och grindvakts-quirks är en klass av latenta upstream-buggar
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Verktygs-quirk / latent bugg)
+
+Ett oväntat verktygsfynd behandlas som quirk-kandidat: bygg minimal-repro och klassa quirk-typ före "fix". En grindvakts-fix får inte regressera en annan — verifiera cross-grindvakt efter varje config-ändring.
+
+### L17 [UNIVERSAL, hub-lyft] — Upstream-bugg-klassning måste förtjänas
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Upstream-bugg-klassning)
+
+Att klassa något som upstream-bugg kräver minimal-repro + uttömd mitigerings-familj + branschstandard-precedent. Utan alla tre är "upstream-bugg" en overifierad gissning.
+
+### L18 [UNIVERSAL, hub-lyft] — En princip som inte operationaliserats är design-skuld
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Disciplin-meta (operationalisering))
+
+En lärdom som erkänts verbalt men inte omsatts till ett konkret procedursteg är inte operationell — bara dokumenterad. Varje ny prompt ska köra en explicit tillämpbarhets-check mot etablerade lessons.
+
+### L19 [UNIVERSAL, hub-lyft] — Extern fångst slår intern självkontroll
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Code-pair-programming-fångst)
+
+Strukturera roller så att Code och Marcus fångar fel pre-commit; ren självkontroll i Chat är empiriskt svag (~9 % fångst). Bygg externt verifierbar struktur — transparens-rapport, STOPPA-OCH-FRÅGA — framför intern disciplin.
+
+### L20 [UNIVERSAL, hub-lyft] — Verktygs- och kommando-korrekthet verifieras före användning
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Tooling-/kommando-disciplin)
+
+Mental dry-run av shell- och portabilitets-detaljer (BSD vs GNU, strict-mode) före leverans; CI-troget anrop framför approximation; UTF-8-medvetenhet vid filnamns-iteration.
+
+### L21 [UNIVERSAL, hub-lyft] — Namn och katalog-integritet är arkitektur
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Namn-/katalog-integritet)
+
+Grep alla föregående filartefakter för namnkollision FÖRE varje namntilldelning — namn är globalt namespace inom en sessions-serie. Klass-namn är designval, och cross-referenser propageras vid varje edit.
+
+### L22 [UNIVERSAL, hub-lyft] — Hub-spoke-portabilitet är default
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Hub-spoke-portabilitet)
+
+Bygg config-driven framför hårdkodat. Flagga universella lärdomar vid skörd och lyft dem till hubben; spoke-specifikt stannar i spoke. Hub-sync inom 7 dagar är acceptabelt för icke-akuta lärdomar.
+
+### L23 [UNIVERSAL, hub-lyft] — K-fas-strategi och atomic-commit-disciplin
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: K-fas-strategi)
+
+En commit per semantisk domän; en prompt levererar sina källor inline framför multi-del. Pre-existing skuld som upptäcks defereras till mini-session, inte in i pågående scope. Empirisk omprioritering vid >50 % systemisk-hit-rate.
+
+### L24 [UNIVERSAL, hub-lyft] — Rätt klassning beror på scope och kontext
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Klassificerings-kontext)
+
+Läs ADR, sessionsdok och frontmatter-scope före klassning. "CI grön" kan vara instabilt state under aktiv cleanup; governing vs non-governing fil avgör hook-beteende; upstream vs egen bugg beror på kontext.
+
+### L25 [UNIVERSAL, hub-lyft] — Web-research före strategi-, arkitektur- och tool-version-beslut
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Web-research-disciplin)
+
+Extern research är obligatorisk 11/10-disciplin före strategi-val, arkitektur-claim och tool-version-beslut — inte ett optional steg.
+
+### L26 [UNIVERSAL, hub-lyft] — Filartefakter är enda sanningskällan (kontinuitet-arkitektur)
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Kontinuitet-arkitektur)
+
+Chat-trail är efemär; endast filartefakter överlever sessions-byte. Allt nytt — lessons, designval, beslut — måste säkras i fil INNAN sessions-byte. Pre-byte-verifikation: "är allt nytt säkrat i fil?".
+
+### L27 [PROJEKT] — Vale-config-arkitektur och Brand-/domän-specifika fynd
+
+Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Vale-config-arkitektur (spoke-lokal))
+
+Vale-configens lager-arkitektur följer ADR-032; Brand-namn-quirks (t.ex. Aria/ARIA) och brand-pivot-narrativ är miranon-specifika. Spoke-lokal lärdom — lyfts inte till hub.
