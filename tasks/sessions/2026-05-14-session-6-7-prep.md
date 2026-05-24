@@ -80,6 +80,7 @@ Källa: sessionsdok Del 3 rader 142-221. Kandidater fördelade i 4 kategorier.
 | `lessons-harvest.skill` | Vid K-sista lessons-skörd | UNIVERSAL-flagging, hub-konsolidering, format-bridge |
 | `hub-sync.skill` | Vid hub-lyft | ADR-018 cross-repo, real-path för symlänkar, H2-format |
 | `chat-self-review.skill` | **NY från K-sista.1 lesson** — Innan klass-eskalering | Pre-prompt verifikation av ADR/spec, kandidat-klass-tabell, anti-meta-blindhet-disciplin |
+| `web-research-discipline.skill` | Före strategi-val, arkitektur-rekommendation, tool-val, branschstandard-claim, version-bump | Trigger-villkor + domän-checklista + output-format (källa-citation, datum, relevans) + anti-pattern-katalog. NY från Session 6.6.6 K-sista-1 (Marcus' Punkt 1 2026-05-20). |
 
 **Eventuellt fler** baserat på K1-detalj-audit av sessionsdok Del 3 + skills-arkitektur-ADR-utforskning.
 
@@ -115,6 +116,17 @@ Mänskliga omdömesfrågor bevaras: "är BUILD-LOG-formuleringen pedagogisk?", "
 - Skills i hub vs projekt (hub-skills = universella, projekt-skills = domän-specifika)
 - **NY från K-sista.1:** Skills för meta-disciplin (chat-self-review-pattern; klass-tänkande-checklist)
 
+**NY från Session 6.6.6 K-sista-1 (2026-05-20):** Skill-arkitektur ska distingera mellan:
+
+- **Hub-skills** (`~/Repon/marcus-system/skills/`) — Universella, alla spokes
+- **Projekt-skills** (`~/Repon/<spoke>/skills/`) — Domän-specifika
+- **Profile Preferences** (Claude.ai globala settings) — Universell Chat-disciplin (Marcus-personlig)
+- **Project Instructions** (Claude.ai projekt-settings per spoke) — Projekt-specifik Chat-disciplin
+
+Skill-format är samma för Hub-skills och Projekt-skills, men distinktionen mot Profile Preferences + Project Instructions är arkitektur-domän som ska adresseras i ADR-skill-arkitektur (ADR-034 sannolikt, numrering bekräftas vid skapelse).
+
+Project Instructions / Profile Preferences är **Chat-side persistent prompts** som inte är skill-filer — de bor i Claude.ai-settings, inte i repo. Men de SPEGLAR samma operativa innehåll som relevanta skills. K-sista-1 lyfter Profile Preferences + Project Instructions som distinktion i prep-filen för Session 6.7 K4 skill-design-arbete.
+
 ### 1.5 — Vale-mönster-hub-extraktion (NY scope-domän Session 6.7)
 
 3 Vale-mönster att extrahera till `~/Repon/marcus-system/templates/` eller `~/Repon/claude-skills/` (per K7.6 hub-spoke-portabilitet, skördad från Session 6.6 K6.2-arbete):
@@ -126,6 +138,33 @@ Mänskliga omdömesfrågor bevaras: "är BUILD-LOG-formuleringen pedagogisk?", "
 3. **`vale-vocab-dual-function.md`** — dokumentation av Vale Vocab dubbel-funktion (spelling-bypass + canonical-substitution via Vale.Terms case-folding). Emergent feature från K6.2 V2 empirisk verifikation — ej dokumenterat tydligt i Vale 3.14.1 docs.
 
 Flaggad från Session 6.6 K-sista. Schemalägs som K-sub i Session 6.7 K4 (Skill-design).
+
+### 1.6 — Anti-bloat-konsensus + distribuerad arkitektur (NY från Session 6.6.6 K-sista-1)
+
+Per Session 6.6.6 mini-överlämning 5 Del 3 — Web-research-syntes (2026-05-20):
+
+**Anti-bloat-konsensus är empiriskt entydig:**
+
+| Källa | Empirisk slutsats |
+|---|---|
+| Claude Code docs (Anthropic) | "150-200 instruction budget, system prompt ~50, kvarstår ~100-150 slots" |
+| HumanLayer (production) | "<60 rader CLAUDE.md" |
+| Anthropic/DataCamp | "CLAUDE.md instructions följs ~70%. Hooks 100%" |
+| Bijit Ghosh, TECHSY, BSWEN | "Past 80 rader rules dropping; past 200 rader large blocks ignored" |
+
+**Konsekvens för Session 6.7 K6 CLAUDE.md-refactor:**
+
+CLAUDE.md-mål post-K6 är < 100 rader (under 200, optimum 60-100). All operativ procedur extraheras till skills. CLAUDE.md innehåller endast:
+
+1. Projekt-status (current fas, Session-nummer)
+2. 6-10 testbara regler Code konsekvent missar utan dem
+3. Pekare till skills, lessons.md, ADRs
+4. Build/test/lint-kommandon
+5. "Ristat i sten"-bullets från hub (inkl. web-research-rule)
+
+**Web-research-rule etablerad i K-sista-1-D:**
+
+Hub-CLAUDE.md och spoke-CLAUDE.md har nya "Ristat i sten"-bullets för web-research-disciplin. Aktuell formulering bor i respektive CLAUDE.md — K-sista-1-D landade efter detta avsnitts ursprungliga utkast (2026-05-20), så CLAUDE.md är sanningskälla, inte ett citat här. Session 6.7 K2/K3 CLAUDE.md-audit ska behandla bullets som redan etablerade. Session 6.7 K4 ska designa `web-research-discipline.skill` som operationaliserar regeln.
 
 ---
 
