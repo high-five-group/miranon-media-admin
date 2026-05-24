@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-05-13 (Fas 2 KOMPLETT — Sessions 4 + 5 + 5b stängda, Fas 2.5 nästa)*
+*Senast uppdaterad: 2026-05-24 (Session 6.6.6 K-sista-1 pågår — delsteg A-E klara, F-H återstår)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -25,21 +25,25 @@
 
 **Session 6.6.7 ✅ KLAR 2026-05-16** — Shellcheck-strict-grindvakt + shallow-clone-detection levererad. 17 commits (`3f025b9` → K-sista #5/#6 efter denna). ADR-033 Accepted. 12 [UNIVERSAL]-lessons (L_A-L_L). Se [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 6.6.7-block.
 
-**Nästa (Strategi β bekräftad 2026-05-16):** Session 6.6.6 (Vale-cleanup + L15-L19 bake-in, ~7-10h, ADR-032 reserverad) → Session 6.7 (CLAUDE.md-audit + skills + Vale-mönster-hub-extraktion) → Session 7 K0 — Fas 2 11/10-verification (7 gap-punkter committed i Session 6.5 pre-K1 som received-defer per K7; se [`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`](../docs/analysis/Fas-2-11-10-verification-2026-05-14.md)) → Fas 2.5 Schema-kontrakt-sync (per `docs/byggplan.md` §4).
+**Session 6.6.6 (Vale-cleanup + lessons-konsolidering)** — K-sista-0 + K-sista-1-A–E ✅ KLAR; K-sista-1-F/G/H återstår. 125 lessons-kandidater konsoliderade till L15-L27; ADR-032 Accepted.
 
-**Strategi β-rationale (post-6.6.7-leverans 2026-05-16):** quick-wins först (6.6.7 ✅ KLAR) → tungt arbete (6.6.6 nästa) → process-mognad (6.7) → produkt-leverans (Session 7 K0 + Fas 2.5). 6.6.7-momentum levererat: shellcheck-strict 0/0/0/0 + shallow-clone-detection defense-in-depth lager 2 + 12 [UNIVERSAL]-lessons hub-konsolideringskandidater.
+**Nästa (Strategi β):** Session 6.7 (CLAUDE.md-audit + skills + Vale-mönster-hub-extraktion) → Session 7 K0 — Fas 2 11/10-verification (7 gap-punkter committed i Session 6.5 pre-K1 som received-defer per K7; se [`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`](../docs/analysis/Fas-2-11-10-verification-2026-05-14.md)) → Fas 2.5 Schema-kontrakt-sync (per `docs/byggplan.md` §4).
+
+**Strategi β-rationale (post-6.6.7-leverans 2026-05-16):** quick-wins först (6.6.7 ✅ KLAR) → tungt arbete (6.6.6 ✅ KLAR) → process-mognad (6.7) → produkt-leverans (Session 7 K0 + Fas 2.5). 6.6.7-momentum levererat: shellcheck-strict 0/0/0/0 + shallow-clone-detection defense-in-depth lager 2 + 12 [UNIVERSAL]-lessons hub-konsolideringskandidater.
 
 Sessionsdok-trail (arkiverad 2026-05-13 i K5.8): [`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`](sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md).
 
 ### Mini-session 6.6.6 — Vale.Terms + Miranon.VueToReact-cleanup
 
-Mini-session 6.6.6 — Vale.Terms (425) + Miranon.VueToReact (114) manuell fix per förekomst. **Trigger (uppdaterad 2026-05-16):** post-Session 6.6.7 ✅ KLAR (sekundärt per Strategi β). **Prep-fil:** [`tasks/sessions/2026-05-14-session-6-6-6-prep.md`](sessions/2026-05-14-session-6-6-6-prep.md). **Klass:** kvalitets-fynd defererade via per-fil rad-1-disable (regression-skydd via Alt F per K1.13-utvidgning). **Estimat:** ~7-10h över 52 filer.
+**Status (2026-05-24):** K-sista-0 + K-sista-1-A till -E levererade. Återstår K-sista-1-F (Session 6.7-prep), -G (arkivering), -H (final-verifikation + push).
+
+Vale.Terms (425) + Miranon.VueToReact (114) hanterades via Vale-config-cleanup + per-fil helfil-disable (ADR-032). **Prep-fil:** [`tasks/sessions/2026-05-14-session-6-6-6-prep.md`](sessions/2026-05-14-session-6-6-6-prep.md). **Klass:** kvalitets-fynd defererade via per-fil rad-1-disable (regression-skydd via Alt F per K1.13-utvidgning). Full trail: sessionsdok Del 8.
 
 **Effektiv ordning (Strategi β bekräftad 2026-05-16):** Startas EFTER Session 6.6.7 — tungt fokus-arbete (~7-10h över 52 filer); momentum från 6.6.7-leverans skyddar mot avstamps-friktion. L15-L18 + L19 + ev. nya lessons skördas + bake:as in vid K-sista i ny H2 `## 2026-05-16 — Session 6.6.5 (post-K-sista #2 retroaktiva)` i `tasks/lessons.md`. Hub-sync konsolideras med 6.6.6:s egna [UNIVERSAL]-skörd.
 
 Defer-bakgrund: K6.2 V4 bekräftade Vale 3.14.1 har INGEN `--fix`-flagga. Manuell sed-batch är osäker för 3/5 unika Vale.Terms-substitutioner (`aria`/`fk`/`vite` har hög kod-bryt-risk). Per-fil rad-1-disable valt för regression-skydd (naturlig disable-borttagning vid 6.6.6-fix).
 
-**ADR-032-reservation (L19-mitigation, Session 6.6.7 K-sista 2026-05-16):** 6.6.7 K-sista bekräftar: ADR-032 är reserverad för Session 6.6.6 (Vale-cleanup-domän, defererad). Sekvens: ADR-031 (6.6.5 Dependabot) → ADR-032 (6.6.6 Vale, kommer) → ADR-033 (6.6.7 shellcheck, nu).
+**ADR-032 (Vale L_X.2 helfil-disable):** Accepted (K3.5, commit `2d55ea0`). Sekvens: ADR-031 (6.6.5 Dependabot) → ADR-032 (6.6.6 Vale, Accepted) → ADR-033 (6.6.7 shellcheck).
 
 ### Mini-session 6.6.7 ✅ KLAR 2026-05-16 — shellcheck-grindvakt för scripts/*.sh + .githooks/* (TOP-PRIORITY post-6.6.5 per Strategi β)
 
@@ -64,28 +68,6 @@ Defer från Session 6.6 K7.B + K7.5.4 (SC2034 klass-blindhet). Egen ADR-trail pe
 - **Dependabot-side empirisk-verifikation (förväntat ~2026-05-18 per weekly schedule):** Marcus reviewar första post-K4 Dependabot-PR och bekräftar (a) grouping enligt production-deps/development-deps/stack-grupper-mönstret, (b) cooldown-filter (versioner <7d skippas, patch <3d), (c) staging-stegen visar "skipped"-status (om Dependabot-actor). Loggas i Session 6.7 K1-sessionsstart eller separat handoff-not.
 
 - **Shallow-clone-detection-tillägg (defensive programming, Alt C-defer från Session 6.6.5 K-sista #3):** `scripts/check-frontmatter.sh` utvidgning med `git rev-parse --is-shallow-repository`-detection som degraderar Check 2 gracefully om fetch-depth-config glöms. Test-suite (`scripts/test-check-frontmatter.sh`) utvidgad med shallow-scenarier. **Allokerad till Session 6.6.7 K4 per Strategi β 2026-05-16** (tematisk match: scripts/*.sh defensive-programming-domän). Inte akut — K2.1 fetch-depth: 50-retrofit löste rotorsaken (commit `a67908d`). Detta är defense-in-depth-lager 2 + hub-portabilitets-skydd. Spårbar via `tasks/lessons.md` L8 + ADR-030 § Del 3 sub-§ "Implementations-krav på CI-miljö".
-
-### Session 6.6.5 post-K-sista #2 lessons-skörd-kandidater (för 6.6.6 K-sista bake-in)
-
-Fem lessons-kandidater fångade i Chat-context EFTER K-sista #2 lessons-bake-in (commit `ca57753`). Per L7-disciplin (Chat skördar lessons löpande, Marcus administrerar inte): flaggas här för bake-in i Session 6.6.6 K-sista lessons-skörd. Spårbarhet bevaras via denna todo.md-rad + ev. partial-trail (commit-meddelanden, BUILD-LOG-noter) listad nedan.
-
-- **L15 [UNIVERSAL]** — Code-prompts som beror på pågående Marcus-beslut MÅSTE hållas tillbaka tills beslutet är taget. Prompt + öppen STOPPA-OCH-FRÅGA i samma meddelande = race condition där Code kan starta innan beslut är taget. Generaliserbar regel: vid STOPPA-OCH-FRÅGA + Code-prompt-paket, leverera *bara* frågan först, vänta på svar, sedan leverera prompten med invävt beslut. Aldrig placeholders i prompt som beror på pågående diskussion. Trigger: K-sista #3 placeholder-misstag 2026-05-16. Mönsterförstärkning av L7 + K-sista.1. Ingen filsystem-spårning (Chat-only-fångst).
-
-- **L16 [UNIVERSAL]** — Konceptuella refereringar i Chat-output måste verifieras mot faktisk rubrik-text/sökväg i mål-fil FÖRE prompt-design. Sökning på *koncept* ("Ristat i sten") ≠ sökning på *exakt sträng*. Generaliserbar regel: vid prompt-design som modifierar named-targets (sektioner, filer, identifiers), Code rapporterar faktisk-text via grep FÖRE Chat formulerar str_replace-mönster. Trigger: K-sista #4.A forensisk-pass 2026-05-16 — "Ristat i sten" är Chat-koncept, faktisk rubrik = "Instruktioner — Alltid gäller". Mönsterförstärkning av L1 + L11.
-
-- **L17 [UNIVERSAL]** — CI-runner-flakiness klass-pattern-konsolidering vid 3+ instanser av samma CDN-blockerings-mönster. Etablerings-tröskel: 3 empiriska instanser (tanstack/router Session 6.6 K6 + opentelemetry Session 6.6.5 K-sista #6.5 + tanstack/table K-sista #7.1). Konsolidera till klass-pattern (`^https://domain\.com/.*$`) istället för att stapla instans-patterns. Klass-fix > instans-fix per K7.5.3 (ifrågasätt ramen). Lessons-flag bevaras för re-utvärdering om CDN-blockering upphör. Tillämpas på lychee `.lycheeignore` Block 1 Acceptable, CI-runner-flakiness-kategori. Trigger: K-sista #7.1 main CI-fix 2026-05-16. Partiell spårning i commit `df45f71` commit-meddelande + `.lycheeignore`-kommentar (klass-utvidgnings-motivering).
-
-- **L18 [UNIVERSAL]** — Pre-Update projektkunskap är inte LIVE-STATE. Endast Code har LIVE-STATE av filsystem mellan session-pivot och Marcus' Update-klick. Chat:s projektkunskaps-sökning drifterar mot faktisk repo-HEAD. Generaliserbar regel: vid pre-pivot- eller post-Code-edit-verifikation, Chat ber Code rapportera empiriskt; projektkunskaps-sökning kan ge gammal state och leda till felklassning ("redan committed" när faktiskt bara i Chat). Mönsterförstärkning av L3 (empirisk verifikation FÖRE strategi) tillämpat på Chat:s eget sökmedel. Trigger: Marcus' pre-pivot fångst 2026-05-16 — Chat sökte projektkunskap för pre-pivot-verifikation utan att inse att Update inte klickats. Ingen filsystem-spårning utöver denna todo.md-rad.
-
-- **L19 [UNIVERSAL]** — Planerings-beslut + sessions-ordning + rationale är Chat-only om inte committed till filsystem. Vid pivot försvinner prioriterings-beslut + ordnings-rationale + scope-tillägg som diskuterats men inte bakats in. Generaliserbar regel: efter varje planerings-diskussion som påverkar nästa sessions-val eller framtida scope, fråga "är detta committed eller bara Chat?". Om bara Chat: pre-pivot commit krävs. Tillämpning av L7 (Chat skördar lessons löpande) på planerings-domän, inte bara lessons-domän. Trigger: Marcus' fångst 2026-05-16 — Strategi β-val + shallow-clone-detection-integration i 6.6.7 diskuterades men inte committed innan Marcus flaggade pivot-risk. Mönsterförstärkning av L7 + L18. Partiell spårning i denna pre-pivot-commit (todo.md sessions-ordnings-flagga + Strategi β-rationale-block i Aktuellt fokus).
-
-Bake-in-plan vid Session 6.6.6 K-sista:
-
-- L15-L19 läggs som `### L15 — ...` rubriker under H2 `## 2026-05-16 — Session 6.6.5 (post-K-sista #2 retroaktiva)` i `tasks/lessons.md` (analog till K1.18/K1.19 retroaktiv-skörd-mönster från Session 6 K-sista)
-- Hub-sync: alla 4 är [UNIVERSAL] → konsolideras med Session 6.6.6:s egna [UNIVERSAL]-skörd vid 6.6.6 hub-sync
-- Denna todo.md-rad tas bort efter bake-in (analog till DEFERRED-FIX-MARKER-pattern: skörd-flagga är obsolet när bake-in landar)
-
-**L_A-L_L-not (Session 6.6.7 K-sista #1 + #3 commits `32e9405` + denna commit):** L_A-L_L (12 [UNIVERSAL]-lessons) är redan bake:ade i `tasks/lessons.md` H2 `## 2026-05-16 — Session 6.6.7`. Hub-sync till `~/Repon/marcus-system/tasks/lessons.md` schemalagd vid Session 6.6.7 K-sista #6 (separat operation). Ingen Session 6.6.6-bake-in krävs för L_A-L_L (skild skörd-domän från Session 6.6.5-retroaktiva L15-L19; parallell-skörd, inte överlappande).
 
 ### Återkommande disciplin: Branch-protection-aktivering på main
 

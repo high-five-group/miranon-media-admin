@@ -888,7 +888,7 @@ Commit-range Session 6.6.7: lokal-trail från `3f025b9` (K2 sessionsdok + ADR-03
 | K-sista #1 | ✅ KLAR | `32e9405` | Lessons-skörd L_A-L_K (11 [UNIVERSAL]) + ADR-033 Status Draft → Accepted |
 | K-sista #2 | ✅ KLAR | `bba5dfa` | ADR-032-reservation-rad i todo.md (L19-mitigation 6.6.7) |
 | K-sista #3 | ✅ KLAR | denna commit | BUILD-LOG + todo.md + CLAUDE.md status (drift-stängning för Session 6.6 + 6.6.5) + L_L-skörd |
-| K-sista #4-#6 | EJ STARTAD | TBD | cross-doc-grep-sanity + arkivering + hub-sync |
+| K-sista #4-#6 | #5+#6 ✅ KLAR (arkiv-fil + hub-commit `98f1978`); #4 ej verifierad | `98f1978` | cross-doc-grep-sanity (#4) + arkivering (#5) + hub-sync (#6) |
 
 Lessons-flagga-commits (atomic per L_-flagga): `ad22585` L_D, `3dc7495` L_E, `15cb0dc` L_F+L_G, `24c44a6` L_H, `2ecb8df` L_I+L_J, `ea40d63` ADR-033 SHA-pin-fallback-dokumentation.
 
@@ -932,15 +932,15 @@ Lessons-flagga-commits (atomic per L_-flagga): `ad22585` L_D, `3dc7495` L_E, `15
 
 Gate 2-fångst-fördelning: Code 5 (K3.1 räknings + K3.3 SHA + K4.1.1 truth-table + K4.3 ADR-disciplin + K-sista #3 drift-fynd) + Chat-mediated 2 (Marcus refactor-val + Marcus design-flipp) + CI-feedback 1 (K4.1 → K4.1.1 hot-fix). Se `tasks/lessons.md` H2 `## 2026-05-16 — Session 6.6.7` för fullständiga texter.
 
-### Hub-sync (K-sista #6 schemalagd)
+### Hub-sync (K-sista #6 ✅ KLAR)
 
-12 [UNIVERSAL] lessons konsolideras vid hub-sync till `~/Repon/marcus-system/tasks/lessons.md` under H2 `## 2026-05-16 — Session 6.6.7 (miranon-media-admin)`. Separat operation post-arkivering.
+12 [UNIVERSAL] lessons konsolideras vid hub-sync till `~/Repon/marcus-system/tasks/lessons.md` under H2 `## 2026-05-16 — Session 6.6.7 (miranon-media-admin)`. Separat operation post-arkivering. ✅ Gjord: hub-commit `98f1978` (8 konsoliderade rader K6.6.7.1-8).
 
 ### K-sista-checkpoints för framtida sessions
 
 - **shellcheck-grindvakt empirisk-verifikation över tid:** observera första post-merge non-shellcheck-edit-commit:s lint-jobb-tid; bekräfta att shellcheck-step inte adderar mätbar overhead över jitter-spann ±5s. K3.3 baseline: ~1-2s overhead.
 - **Shallow-clone-detection re-verifikation vid spoke-kopiering:** om frontmatter-grindvakten dupliceras till annan spoke, verifiera empiriskt att `FRONTMATTER_MIN_HISTORY_DEPTH`-default 50 är lämpligt + att fetch-depth-config kopieras tillsammans med scripts.
-- **Vale-cleanup defer (Session 6.6.6):** ADR-032 reserverad. L15-L19 bake:as in vid 6.6.6 K-sista. L_A-L_L är REDAN bake:ade i Session 6.6.7 K-sista #1 + #3.
+- **Vale-cleanup (Session 6.6.6):** ✅ levererad. ADR-032 Accepted (K3.5). Lessons konsoliderade 125 → L15-L27, bakade i lessons.md (commit `950aa0f`). Se ## Session 6.6.6-block nedan. L_A-L_L var REDAN bake:ade i Session 6.6.7 K-sista #1 + #3.
 
 ### Definition of Done uppfylld: Ja
 
@@ -953,9 +953,37 @@ Gate 2-fångst-fördelning: Code 5 (K3.1 räknings + K3.3 SHA + K4.1.1 truth-tab
 - [x] BUILD-LOG + todo.md + CLAUDE.md uppdaterade (K-sista #3 atomic)
 - [x] ADR-032-reservation committed (L19-mitigation)
 - [x] CI grön mot main efter K-sista #3
-- [ ] Cross-doc-grep-sanity (K-sista #4 — EJ STARTAD)
-- [ ] Sessionsdok-arkivering + trail-link-uppdateringar (K-sista #5 — EJ STARTAD)
-- [ ] Hub-sync till marcus-system (K-sista #6 — EJ STARTAD)
+- [ ] Cross-doc-grep-sanity (K-sista #4 — ej verifierad)
+- [x] Sessionsdok-arkivering + trail-link-uppdateringar (K-sista #5 — arkiv-fil `tasks/sessions/archive/2026-05/2026-05-16-session-6-6-7.md`)
+- [x] Hub-sync till marcus-system (K-sista #6 — hub-commit `98f1978`)
+
+---
+
+## Session 6.6.6 — Vale-cleanup + lessons-konsolidering (2026-05-14–2026-05-24)
+
+### Leverans
+
+- Vale-config-cleanup K2.3-K3.4: baseline 0/0/0.
+- ADR-032 (Vale lazy-continuation helfil-disable) Accepted, K3.5.
+- K2.6.2.F Vale-regression-test-suite, K3.6.
+- Lessons-konsolidering K-sista-0: 125 kandidater → 13 konsoliderade (L15-L27, 12 UNIVERSAL + 1 PROJEKT).
+- K-sista-1-A: L15-L27 bakade i tasks/lessons.md (commit `950aa0f`).
+- K-sista-1-B: sessionsdok arc-retrospektiv (commit `50251cb`).
+- K-sista-1-C: hub-sync 12 UNIVERSAL → marcus-system (hub-commit `e2a09d8`).
+- K-sista-1-D: "Ristat i sten"-bullets i hub+spoke-CLAUDE.md (spoke `05d7bf4`, hub `b895609`).
+- K-sista-1-E: Lager 2-checklist v1.0 (hub `b810c18` + cleanup `366a45c`).
+
+### Återstår
+
+- K-sista-1-F: Session 6.7-prep-uppdatering.
+- K-sista-1-G: arkivering (reconciliation v1/v2 + mini-1-5 + sessionsdok).
+- K-sista-1-H: final-verifikation + push.
+
+### Spårbarhet
+
+Full retrospektiv: tasks/sessions/2026-05-14-session-6-6-6.md Del 8.
+Lessons: tasks/lessons.md H2 "## 2026-05-23 — Session 6.6.6".
+Konsoliderings-trail: tasks/sessions/2026-05-23-k-sista-0-lessons-rakatalog.md.
 
 ---
 
