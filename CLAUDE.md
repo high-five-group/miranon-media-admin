@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-23
+updated: 2026-05-24
 review_by: 2026-11-15
 status: stable
 ---
@@ -612,7 +612,7 @@ Etablerad 2026-05-13 i Session 5b K5.9c efter att K5.9a-driften av byggplan.md u
 - **Session 6.6.5** (Dependabot-strategi 2026, 2026-05-16): Pre-existing skuld från Session 6.6 K2.5 (5 öppna Dependabot-PR:er failande på staging-secrets) deferad och stängd i egen mini-session. ADR-031 (4-lager-strategi: grouping + cooldown 7d/3d + minimal CI-yta Alt D Hybrid + manuell review). Web-research mot 2026-supply-chain-läget (Axios mars, CanisterWorm, BoostSecurity Deputy Confusion TTPs). **14 UNIVERSAL-lessons** (L1-L14) skördade. Hub-sync 8 konsoliderade rader till marcus-system. Pre-existing L8 latent shallow-clone-bug fixad via K2.1 fetch-depth: 50-retrofit (commit `a67908d`). **Total ADR-räkning: 31.** Sessionsdok-trail: `tasks/sessions/archive/2026-05/2026-05-14-session-6-6-5.md`.
 - **Session 6.6.7** (Shellcheck-strict-grindvakt + shallow-clone-detection, 2026-05-16): shellcheck-strict CI-grindvakt etablerad mot `scripts/*.sh` + `.githooks/*` + 2 sourced configs (`--severity=style --enable=all`, 0/0/0/0 strict). v0.11.0 SHA-pinnad install (downstream-beräknad checksum per koalaman utan officiell .sha256sum-fil). 366 baseline-fynd auto-fix:ade (363) + manuella (4 design-beslut + 1 SC2292 cross-syntax). ADR-033 (shellcheck-strict-grindvakt + shallow-clone-detection defense-in-depth lager 2). K4.1 design-bug (`--is-shallow-repository` false-positive på fetch-depth: 50) hot-fix:ad via K4.1.1 hybrid-check (`is-shallow=true AND count < threshold`). 13/13 test-suite PASS (T1-T9 + T10/T11a/T11b/T12 truth-table-täckning). **12 UNIVERSAL-lessons** (L_A-L_L) skördade. ADR-032 reserverad för Session 6.6.6 Vale-cleanup (L19-mitigation committad). **Total ADR-räkning: 31 (ADR-033 senast etablerad; ADR-032 reserverad för 6.6.6).** Sessionsdok-trail: `tasks/sessions/archive/2026-05/2026-05-16-session-6-6-7.md` (arkiveras K-sista #5).
 
-**Aktuellt fokus:** Session 6.6.6 — Vale-cleanup + L15-L19 bake-in (~7-10h över 52 filer, ADR-032 reserverad) per Strategi β (committed `9e46e48` i [`tasks/todo.md`](tasks/todo.md)). Sedan Session 7 K0 — Fas 2 11/10-verification (7 gap-punkter; se [`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`](docs/analysis/Fas-2-11-10-verification-2026-05-14.md)), sedan Fas 2.5 — Schema-kontrakt-sync. Session 6.6.7 ✅ KLAR 2026-05-16.
+**Aktuellt fokus:** Session 6.6.6 ✅ KLAR 2026-05-24 — Vale-cleanup + lessons-konsolidering (L15-L27). Nästa: Session 6.7 (CLAUDE.md-audit + skills-extraktion). Sedan Session 7 K0 — Fas 2 11/10-verification (7 gap-punkter; se [`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`](docs/analysis/Fas-2-11-10-verification-2026-05-14.md)), sedan Fas 2.5 — Schema-kontrakt-sync. Session 6.6.7 ✅ KLAR 2026-05-16.
 
 För full retrospektiv historik: [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md).
 

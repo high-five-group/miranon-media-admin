@@ -973,17 +973,19 @@ Gate 2-fångst-fördelning: Code 5 (K3.1 räknings + K3.3 SHA + K4.1.1 truth-tab
 - K-sista-1-D: "Ristat i sten"-bullets i hub+spoke-CLAUDE.md (spoke `05d7bf4`, hub `b895609`).
 - K-sista-1-E: Lager 2-checklist v1.0 (hub `b810c18` + cleanup `366a45c`).
 
-### Återstår
+### Definition of Done uppfylld: Ja
 
-- K-sista-1-F: Session 6.7-prep-uppdatering.
-- K-sista-1-G: arkivering (reconciliation v1/v2 + mini-1-5 + sessionsdok).
-- K-sista-1-H: final-verifikation + push.
+- [x] K-sista-1-A till -E (lessons-bake + sessionsdok + hub-sync + Ristat-i-sten + Lager 2 v1.0) — se § Leverans ovan
+- [x] K-sista-1-F: Session 6.7-prep uppdaterad (1825b3e + 762706f)
+- [x] K-sista-1-G: 12 filer arkiverade till archive/2026-05/ + 4 frontmatter-superseded + 2 atomiska länkfixar (d4c3620)
+- [x] K-sista-1-H: cross-doc-grep-sanity + DoD-stängning + CLAUDE.md-bump verifierade i denna commit; push omedelbart efter
+- [x] CI grön mot main efter K-sista-1-H push
 
 ### Spårbarhet
 
-Full retrospektiv: tasks/sessions/2026-05-14-session-6-6-6.md Del 8.
+Full retrospektiv: tasks/sessions/archive/2026-05/2026-05-14-session-6-6-6.md Del 8.
 Lessons: tasks/lessons.md H2 "## 2026-05-23 — Session 6.6.6".
-Konsoliderings-trail: tasks/sessions/2026-05-23-k-sista-0-lessons-rakatalog.md.
+Konsoliderings-trail: tasks/sessions/archive/2026-05/2026-05-23-k-sista-0-lessons-rakatalog.md.
 
 ---
 
