@@ -285,6 +285,14 @@ universella delar.
    "verifiera mot ADR/spec FÖRE klass-eskalering". Mönsterförstärkning av
    K2.14 + K7.5.3.
 
+9. **Git-amend-stage-disciplin** — `git commit --amend` utan föregående
+   `git add` är en tyst no-op på working-tree-ändringar: committen
+   återanvänder det gamla trädet, endast hash/timestamp ändras. Verifiera
+   att en amend faktiskt fångade ändringen med `git show HEAD:<fil>`
+   (eller `git show --stat HEAD`), inte enbart `git diff`. Källa: Session
+   6.6.6 K-sista-1-F-korrigering 2026-05-24, Code-fångst (no-op-amend
+   86709ae → korrekt 1825b3e).
+
 ---
 
 ## Del 5 — Sessionsstart-prompt för Session 6.7 (mall, justera post-6.6)
