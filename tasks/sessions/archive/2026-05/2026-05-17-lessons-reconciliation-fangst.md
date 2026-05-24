@@ -1,7 +1,8 @@
 ---
-updated: 2026-05-17
+updated: 2026-05-24
 review_by: 2026-08-17
-status: draft
+status: superseded
+superseded_by: 'tasks/lessons.md — Session 6.6.6 konsoliderad H2 (2026-05-23, commit 950aa0f)'
 owner: marcus803
 ---
 

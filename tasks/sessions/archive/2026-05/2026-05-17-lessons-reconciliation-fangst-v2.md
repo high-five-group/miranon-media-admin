@@ -1,7 +1,8 @@
 ---
-updated: 2026-05-18
+updated: 2026-05-24
 review_by: 2026-08-17
-status: draft
+status: superseded
+superseded_by: 'tasks/lessons.md — Session 6.6.6 konsoliderad H2 (2026-05-23, commit 950aa0f)'
 owner: marcus803
 total_unique_lessons: 94
 revision: v2-final-post-K3.4-empiri

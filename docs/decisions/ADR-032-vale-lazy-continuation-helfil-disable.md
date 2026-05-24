@@ -160,7 +160,7 @@ Publicering avvaktar Marcus' filande på GitHub vid lämplig tidpunkt. **Issue-U
   - K3.2 strukturell pre-screen — L_WWW-precondition identifierad
   - K3.4 minimal-repro — 11 cases bevisade L_X.2-trigger reproducerar i 4-raders fil
   - K3.4.5 upstream-issue-text — färdigställd 2026-05-17, publicering avvaktar
-- **Etablerad:** Session 6.6.6 K3.5 2026-05-20 (sessionsdok [`tasks/sessions/2026-05-14-session-6-6-6.md`](../../tasks/sessions/2026-05-14-session-6-6-6.md))
+- **Etablerad:** Session 6.6.6 K3.5 2026-05-20 (sessionsdok [`tasks/sessions/archive/2026-05/2026-05-14-session-6-6-6.md`](../../tasks/sessions/archive/2026-05/2026-05-14-session-6-6-6.md))
 - **Implementation:**
   - K3.5 ✅ KLAR 2026-05-20 — ADR-032 Draft → Accepted (denna commit + Brand-text-fix commit per Alt A)
   - K3.6 EJ STARTAD — K2.6.2.F regression-test-suite

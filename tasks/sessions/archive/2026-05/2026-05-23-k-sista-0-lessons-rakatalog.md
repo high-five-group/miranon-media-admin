@@ -1,8 +1,9 @@
 ---
 owner: marcus803
-updated: 2026-05-23
+updated: 2026-05-24
 review_by: 2026-08-23
-status: draft
+status: superseded
+superseded_by: 'tasks/lessons.md — Session 6.6.6 konsoliderad H2 (2026-05-23, commit 950aa0f)'
 ---
 
 # K-sista-0 Steg 1 — Rå-katalog lessons-extraktion (RAPPORTERA-only)
