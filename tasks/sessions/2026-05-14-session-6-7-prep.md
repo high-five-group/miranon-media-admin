@@ -5,11 +5,16 @@
 > prep-fil skapande), committad separat för att inte blanda trail-
 > domäner.
 >
-> **Status:** Prep (Session 6.7 ej startad). Del 1 ✅ uppdaterad
+> **Status:** Prep — Session 6.7 K1 PÅGÅR (2026-05-24). Del 1 ✅ uppdaterad
 > 2026-05-15 vid Session 6.6 K-sista commit #1 (observations-pass-data
 > + Vale-mönster-hub-extraktion + chat-self-review-skill från K-sista.1).
 > **Skapad:** 2026-05-14, post-Session 6.5 ✅ KLAR + Session 6.6 prep.
 > **Del 1 uppdaterad:** 2026-05-15 (Session 6.6 K-sista commit #1).
+> **Del 1 K1-korrigerad:** 2026-05-24 (Session 6.7 K1 Commit III-C —
+> baslinje post-6.6.6 + skills-format mot Agent Skills-standard + K-struktur
+> reviderad; se "Var vi är" + §1.2 + §1.7 + Del 3-banner).
+> **updated:** 2026-05-24 (manuell — prep-filen är non-governing och saknar
+> YAML-frontmatter; prosa-datum-markör tjänar som updated-spår).
 > **Arkiveras:** Tillsammans med Session 6.7-sessionsdok vid dess
 > K-sista (`tasks/sessions/archive/2026-05/`).
 > **Parent-session:** Session 6.6 (Docs-grindvakter + frontmatter +
@@ -19,13 +24,30 @@
 
 ## Sessions-handoff (för kall sessionsstart Session 6.7)
 
-### Var vi är (förväntat post-Session 6.6)
+### Var vi är (faktiskt post-Session 6.6.6, verifierat 2026-05-24)
 
-Session 6.6 ✅ KLAR — 5 docs-grindvakter implementerade (markdownlint-cli2,
-typos, Vale, yamllint, scripted-checklist-check). Frontmatter-policy med
-4 fält etablerad på styrande dokument + CI-validering + pre-commit hook
-auto-bump av `updated:`. CLAUDE.md observations-pass-rapport levererad
-som K-sista-output (input för denna session).
+> **K1-korrigering 2026-05-24:** Detta avsnitt skrevs mot förväntat
+> post-6.6-tillstånd. Sedan dess har 6.6.5 + 6.6.6 + 6.6.7 tillkommit.
+> Nedan är faktiskt tillstånd, verifierat i Session 6.7 K1 Block I-forensik
+> (inte gissat).
+
+Trail sedan Session 6.6:
+
+- **Session 6.6 ✅ KLAR (2026-05-15)** — 5 docs-grindvakter (yamllint +
+  markdownlint-cli2 + scripted-checklist-check + Vale + frontmatter-validator)
+  + frontmatter-policy 4 fält på 9 styrande docs + pre-commit auto-bump av
+  `updated:`. ADR-030 Accepted. CLAUDE.md observations-pass-rapport levererad
+  som K-sista-output (input för denna session).
+- **Session 6.6.5 ✅ KLAR (2026-05-16)** — Dependabot-strategi 2026. ADR-031.
+- **Session 6.6.7 ✅ KLAR (2026-05-16)** — shellcheck-strict-grindvakt +
+  shallow-clone-detection. ADR-033.
+- **Session 6.6.6 ✅ KLAR (2026-05-24)** — Vale-cleanup + lessons-konsolidering
+  (L15-L27 i `tasks/lessons.md` H2 "## 2026-05-23 — Session 6.6.6"). ADR-032
+  Accepted.
+
+Repo-state vid Session 6.7-start: HEAD `62d661b`, branch `main`, tree clean,
+CI grön (run 26362719206). Högsta ADR på disk = ADR-033 → nästa lediga =
+**ADR-034**. CLAUDE.md "Aktuellt fokus" = "Session 6.6.6 ✅ KLAR 2026-05-24".
 
 ### Vad Session 6.7 ska göra
 
@@ -48,6 +70,11 @@ anropas vid relevant trigger.
 > Del 3 observations-pass-rapport (12 kandidater fördelade i 4 kategorier
 > A-D) + K8-defer + 2 NYA scope-domäner skördade vid K7.5/K9/K-sista
 > (Vale-mönster-hub-extraktion + Chat self-review-skill).
+>
+> **K1-korrigering 2026-05-24 (Session 6.7 K1):** Scope-innehållet nedan
+> står sig, men baslinjen är nu post-6.6.6 (se "Var vi är" ovan), inte
+> post-6.6. Skills-format i §1.2 + Del 3 är rättat mot Agent Skills-
+> standarden; K-struktur reviderad i §1.7 (Del 2 superseded).
 
 ### 1.1 — CLAUDE.md-audit (Session 6.6 observations-pass-baserat scope)
 
@@ -72,15 +99,28 @@ Källa: sessionsdok Del 3 rader 142-221. Kandidater fördelade i 4 kategorier.
 
 ### 1.2 — Skills att skapa (preliminär lista — bekräftas i K1)
 
-| Skill | Trigger | Innehåll |
+| Skill (katalog) | "Use when…" → in i `description` | Innehåll |
 |---|---|---|
-| `session-start.skill` | Vid varje sessionsstart | Läs-ordning, projektkunskaps-färskhet-check, RAPPORTERA-format |
-| `session-end.skill` | Vid sessionsavslut | 13-stegs-disciplinen + DoD-checklist-bockning |
-| `phase-end.skill` | Vid fas-avslut | Cross-doc-grep, byggplan.md, CHANGELOG, README, fas-avsluts-verifierings-rutin |
-| `lessons-harvest.skill` | Vid K-sista lessons-skörd | UNIVERSAL-flagging, hub-konsolidering, format-bridge |
-| `hub-sync.skill` | Vid hub-lyft | ADR-018 cross-repo, real-path för symlänkar, H2-format |
-| `chat-self-review.skill` | **NY från K-sista.1 lesson** — Innan klass-eskalering | Pre-prompt verifikation av ADR/spec, kandidat-klass-tabell, anti-meta-blindhet-disciplin |
-| `web-research-discipline.skill` | Före strategi-val, arkitektur-rekommendation, tool-val, branschstandard-claim, version-bump | Trigger-villkor + domän-checklista + output-format (källa-citation, datum, relevans) + anti-pattern-katalog. NY från Session 6.6.6 K-sista-1 (Marcus' Punkt 1 2026-05-20). |
+| `session-start/` | Vid varje sessionsstart | Läs-ordning, projektkunskaps-färskhet-check, RAPPORTERA-format |
+| `session-end/` | Vid sessionsavslut | 13-stegs-disciplinen + DoD-checklist-bockning |
+| `phase-end/` | Vid fas-avslut | Cross-doc-grep, byggplan.md, CHANGELOG, README, fas-avsluts-verifierings-rutin |
+| `lessons-harvest/` | Vid K-sista lessons-skörd | UNIVERSAL-flagging, hub-konsolidering, format-bridge |
+| `hub-sync/` | Vid hub-lyft | ADR-018 cross-repo, real-path för symlänkar, H2-format |
+| `chat-self-review/` | **NY från K-sista.1 lesson** — Innan klass-eskalering | Pre-prompt verifikation av ADR/spec, kandidat-klass-tabell, anti-meta-blindhet-disciplin |
+| `web-research-discipline/` | Före strategi-val, arkitektur-rekommendation, tool-val, branschstandard-claim, version-bump | Trigger-villkor + domän-checklista + output-format (källa-citation, datum, relevans) + anti-pattern-katalog. NY från Session 6.6.6 K-sista-1 (Marcus' Punkt 1 2026-05-20). |
+
+> **K1-korrigering 2026-05-24 (Agent Skills-standard):** En skill är en
+> *katalog* med en `SKILL.md`-fil — inte en `.skill`-fil. Katalognamnet är
+> kebab-case (`^[a-z][a-z0-9-]*[a-z0-9]$`) och `name`-fältet i frontmatter
+> MÅSTE matcha katalognamnet. Obligatoriska frontmatter-fält är endast
+> `name` (≤64 tecken) + `description` (≤1024 tecken). "Use when…"-kolumnen
+> ovan är INTE ett eget frontmatter-fält — trigger-villkoren skrivs in i
+> `description` i tredje person ("Use when…"); det är enbart `description`
+> Claude matchar mot vid skill-val. Valfria standardfält som faktiskt finns:
+> `allowed-tools`, `version`, `license` m.fl. K4 tillämpar standarden.
+> Källa: agentskills.io (öppen standard sedan mars 2026) +
+> platform.claude.com/docs/en/agents-and-tools/agent-skills/ +
+> support.claude.com/articles/12512198 (web-research 2026-05-24).
 
 **Eventuellt fler** baserat på K1-detalj-audit av sessionsdok Del 3 + skills-arkitektur-ADR-utforskning.
 
@@ -164,11 +204,37 @@ CLAUDE.md-mål post-K6 är < 100 rader (under 200, optimum 60-100). All operativ
 
 **Web-research-rule etablerad i K-sista-1-D:**
 
-Hub-CLAUDE.md och spoke-CLAUDE.md har nya "Ristat i sten"-bullets för web-research-disciplin. Aktuell formulering bor i respektive CLAUDE.md — K-sista-1-D landade efter detta avsnitts ursprungliga utkast (2026-05-20), så CLAUDE.md är sanningskälla, inte ett citat här. Session 6.7 K2/K3 CLAUDE.md-audit ska behandla bullets som redan etablerade. Session 6.7 K4 ska designa `web-research-discipline.skill` som operationaliserar regeln.
+Hub-CLAUDE.md och spoke-CLAUDE.md har nya "Ristat i sten"-bullets för web-research-disciplin. Aktuell formulering bor i respektive CLAUDE.md — K-sista-1-D landade efter detta avsnitts ursprungliga utkast (2026-05-20), så CLAUDE.md är sanningskälla, inte ett citat här. Session 6.7 K2/K3 CLAUDE.md-audit ska behandla bullets som redan etablerade. Session 6.7 K4 ska designa skillen `web-research-discipline` (katalog + `SKILL.md`) som operationaliserar regeln.
+
+### 1.7 — K-struktur reviderad vid Session 6.7-start (K1-korrigering 2026-05-24)
+
+K-strukturen för Session 6.7 reviderades vid sessionsstart efter web-research
+mot Agent Skills-standarden (öppen standard sedan mars 2026, agentskills.io;
+Anthropic-dokumentation support.claude.com/articles/12512198 +
+platform.claude.com/docs/en/agents-and-tools/agent-skills/), 2026-05-24.
+
+**Del 2 (preliminär K-struktur) är superseded** av den reviderade
+K1-K8 + K-sista som lever i Session 6.7-sessionsdoket. Skillnaderna:
+
+- **K4** = tillämpa Agent Skills-standarden + description-formulering per
+  skill ("Use when…", tredje person — Claude triggar ENBART på `description`)
+  + nivå-arkitektur per skill (en `SKILL.md` < 500 rader vs länkade
+  referensfiler).
+- **K5** = villkorad extraktion (platt eller tre-nivåers per
+  §-under-500-rader-regeln).
+- **K8** = discovery-test (kall Chat-context får realistisk
+  uppgiftsformulering, ska själv hitta + ladda rätt skill via `description`
+  — inte "öppna skillen").
+
+**Global namn-not:** Alla ".skill"-referenser i denna prep-fil (§1.2, §1.6,
+Del 2, Del 3 — inkl. K8-test-strategin "öppnar `session-start.skill`") är
+superseded av katalog-+-`SKILL.md`-konventionen per ovan. Särskilt: K8 är ett
+discovery-test där kall Chat-context själv hittar + laddar rätt skill via
+`description` — INTE "öppnar" en namngiven skill-fil. K4 tillämpar standarden.
 
 ---
 
-## Del 2 — K-struktur för Session 6.7 (preliminär)
+## Del 2 — K-struktur för Session 6.7 (preliminär — SUPERSEDED, se §1.7)
 
 ```
 K1   — sessionsdok-skelett + ADR-skill-arkitektur-utkast + bekräftelse
@@ -196,7 +262,15 @@ matchar förväntat sessionsstart-output utan att läsa CLAUDE.md direkt.
 
 ## Del 3 — Skill-format-utkast (preliminärt)
 
-Förslag på skill-fil-struktur (förfinas i K4):
+> **Skill-format-utkastet nedan är superseded av Agent Skills-standarden —
+> se K1-korrigering 2026-05-24 (§1.2 + §1.7). K4 tillämpar standarden.**
+> Konkret: en skill är en *katalog* med `SKILL.md` (inte `.skill`-fil);
+> frontmatter-fälten `trigger`/`input_required`/`output` nedan finns INTE
+> som standardfält — obligatoriskt är endast `name` (≤64 tecken) +
+> `description` (≤1024 tecken, "Use when…" i tredje person). YAML-exemplet
+> bevaras nedan som historiskt utkast, inte som mall att kopiera.
+
+Förslag på skill-fil-struktur (SUPERSEDED — se banner ovan):
 
 ```markdown
 ---
