@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-20
+updated: 2026-05-24
 review_by: 2026-11-15
 status: stable
 ---
@@ -67,6 +67,7 @@ En ADR är **oföränderlig** efter att den accepterats. Om ett beslut senare ä
 | [ADR-031](ADR-031-dependabot-strategi-2026.md) | Dependabot-strategi 2026 — grouping, cooldown, minimal CI-yta, manuell review | Accepted | Meta |
 | [ADR-032](ADR-032-vale-lazy-continuation-helfil-disable.md) | Vale L_X.2 lazy-continuation-quirk — helfil-disable som formaliserad mitigation | Accepted | Meta |
 | [ADR-033](ADR-033-shellcheck-strict-grindvakt.md) | Shellcheck-strict-grindvakt för bash-scripts | Accepted | Meta |
+| [ADR-034](ADR-034-skill-arkitektur.md) | Skill-arkitektur — hub/projekt-skills + Agent Skills-standard | Draft | Meta |
 
 ## Relaterade dokument
 
