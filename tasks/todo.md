@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-05-24 (Session 6.6.6 K-sista-1 pågår — delsteg A-E klara, F-H återstår)*
+*Senast uppdaterad: 2026-05-24 (Session 6.6.6 ✅ KLAR — K-sista-1-A–H landade; Session 6.7 K1 pågår)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -25,17 +25,19 @@
 
 **Session 6.6.7 ✅ KLAR 2026-05-16** — Shellcheck-strict-grindvakt + shallow-clone-detection levererad. 17 commits (`3f025b9` → K-sista #5/#6 efter denna). ADR-033 Accepted. 12 [UNIVERSAL]-lessons (L_A-L_L). Se [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 6.6.7-block.
 
-**Session 6.6.6 (Vale-cleanup + lessons-konsolidering)** — K-sista-0 + K-sista-1-A–E ✅ KLAR; K-sista-1-F/G/H återstår. 125 lessons-kandidater konsoliderade till L15-L27; ADR-032 Accepted.
+**Session 6.6.6 ✅ KLAR 2026-05-24** — Vale-cleanup + lessons-konsolidering. K-sista-0 + K-sista-1-A–H landade (commit-trail `950aa0f` → `62d661b`). 125 lessons-kandidater konsoliderade till L15-L27 (`tasks/lessons.md` H2 "## 2026-05-23 — Session 6.6.6"); ADR-032 Accepted. Se [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 6.6.6-block.
 
-**Nästa (Strategi β):** Session 6.7 (CLAUDE.md-audit + skills + Vale-mönster-hub-extraktion) → Session 7 K0 — Fas 2 11/10-verification (7 gap-punkter committed i Session 6.5 pre-K1 som received-defer per K7; se [`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`](../docs/analysis/Fas-2-11-10-verification-2026-05-14.md)) → Fas 2.5 Schema-kontrakt-sync (per `docs/byggplan.md` §4).
+**Session 6.7 ← NU (K1 pågår 2026-05-24)** — CLAUDE.md-audit (hub + projekt) + skills-extraktion (Agent Skills-standard; hub-skills i `~/Repon/marcus-system/skills/` + tunn projekt-wrapper) + checklist-trimning. Mål: CLAUDE.md som "konstitution + pekare till skills" (< 100 rader per §1.6 anti-bloat-konsensus). K1 = sessionsdok-skelett + repo-state-verifikation + prep-Del-1-korrigering (commit `7e873ca`) + ADR-034-skelett. Sessionsdok-trail: `tasks/sessions/2026-05-24-session-6-7.md` (skapas i K1 STEG 3).
+
+**Nästa efter Session 6.7 (Strategi β):** Session 7 K0 — Fas 2 11/10-verification (7 gap-punkter committed i Session 6.5 pre-K1 som received-defer per K7; se [`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`](../docs/analysis/Fas-2-11-10-verification-2026-05-14.md)) → Fas 2.5 Schema-kontrakt-sync (per `docs/byggplan.md` §4).
 
 **Strategi β-rationale (post-6.6.7-leverans 2026-05-16):** quick-wins först (6.6.7 ✅ KLAR) → tungt arbete (6.6.6 ✅ KLAR) → process-mognad (6.7) → produkt-leverans (Session 7 K0 + Fas 2.5). 6.6.7-momentum levererat: shellcheck-strict 0/0/0/0 + shallow-clone-detection defense-in-depth lager 2 + 12 [UNIVERSAL]-lessons hub-konsolideringskandidater.
 
 Sessionsdok-trail (arkiverad 2026-05-13 i K5.8): [`tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md`](sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md).
 
-### Mini-session 6.6.6 — Vale.Terms + Miranon.VueToReact-cleanup
+### Mini-session 6.6.6 ✅ KLAR 2026-05-24 — Vale.Terms + Miranon.VueToReact-cleanup
 
-**Status (2026-05-24):** K-sista-0 + K-sista-1-A till -E levererade. Återstår K-sista-1-F (Session 6.7-prep), -G (arkivering), -H (final-verifikation + push).
+**Status (2026-05-24):** ✅ KLAR. K-sista-0 + K-sista-1-A till -H levererade (F = 6.7-prep-expand `1825b3e` + `762706f`, G = arkivering `d4c3620`, H = final-verifikation `62d661b`). CI grön (run 26362719206).
 
 Vale.Terms (425) + Miranon.VueToReact (114) hanterades via Vale-config-cleanup + per-fil helfil-disable (ADR-032). **Prep-fil:** [`tasks/sessions/archive/2026-05/2026-05-14-session-6-6-6-prep.md`](sessions/archive/2026-05/2026-05-14-session-6-6-6-prep.md). **Klass:** kvalitets-fynd defererade via per-fil rad-1-disable (regression-skydd via Alt F per K1.13-utvidgning). Full trail: sessionsdok Del 8.
 
