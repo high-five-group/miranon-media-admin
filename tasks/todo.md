@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-05-24 (Session 6.6.6 ✅ KLAR — K-sista-1-A–H landade; Session 6.7 K1 pågår)*
+*Senast uppdaterad: 2026-05-25 (Session 6.6.6 ✅ KLAR — K-sista-1-A–H landade; Session 6.7 K1–K5 ✅ KLAR, K6 nästa)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -27,7 +27,7 @@
 
 **Session 6.6.6 ✅ KLAR 2026-05-24** — Vale-cleanup + lessons-konsolidering. K-sista-0 + K-sista-1-A–H landade (commit-trail `950aa0f` → `62d661b`). 125 lessons-kandidater konsoliderade till L15-L27 (`tasks/lessons.md` H2 "## 2026-05-23 — Session 6.6.6"); ADR-032 Accepted. Se [`docs/BUILD-LOG.md`](../docs/BUILD-LOG.md) Session 6.6.6-block.
 
-**Session 6.7 ← NU (K1 pågår 2026-05-24)** — CLAUDE.md-audit (hub + projekt) + skills-extraktion (Agent Skills-standard; hub-skills i `~/Repon/marcus-system/skills/` + tunn projekt-wrapper) + checklist-trimning. Mål: CLAUDE.md som "konstitution + pekare till skills" (< 100 rader per §1.6 anti-bloat-konsensus). K1 = sessionsdok-skelett + repo-state-verifikation + prep-Del-1-korrigering (commit `7e873ca`) + ADR-034-skelett. Sessionsdok-trail: [`tasks/sessions/2026-05-24-session-6-7.md`](sessions/2026-05-24-session-6-7.md).
+**Session 6.7 ← NU (K5 ✅ KLAR, K6 nästa)** — CLAUDE.md-audit (hub + projekt) + skills-extraktion (Agent Skills-standard; hub-skills i `~/Repon/marcus-system/skills/` som Claude Code-plugin) + checklist-trimning. Mål: CLAUDE.md som "konstitution + pekare till skills" (< 100 rader per §1.6 anti-bloat-konsensus). K1 = sessionsdok-skelett + repo-state-verifikation + prep-Del-1-korrigering (commit `7e873ca`) + ADR-034-skelett. Sessionsdok-trail: [`tasks/sessions/2026-05-24-session-6-7.md`](sessions/2026-05-24-session-6-7.md).
 
 **Nästa efter Session 6.7 (Strategi β):** Session 7 K0 — Fas 2 11/10-verification (7 gap-punkter committed i Session 6.5 pre-K1 som received-defer per K7; se [`docs/analysis/Fas-2-11-10-verification-2026-05-14.md`](../docs/analysis/Fas-2-11-10-verification-2026-05-14.md)) → Fas 2.5 Schema-kontrakt-sync (per `docs/byggplan.md` §4).
 
