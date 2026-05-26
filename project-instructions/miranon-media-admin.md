@@ -15,10 +15,12 @@
 
 ## Grundregler — innan något annat
 
-1. **Läs CLAUDE.md-filerna FÖRST — innan något annat verktyg används.** Ordning:
-   (1) `~/Repon/marcus-system/CLAUDE.md` (hub-konstitution), (2) detta projekts
-   `CLAUDE.md`, (3) `tasks/lessons.md`. Först därefter får andra verktyg användas.
-   (Hub-före-spoke är projektets dokumenterade läs-ordning.)
+1. **Orientera dig i CLAUDE.md-lagret FÖRST — innan du designar en prompt eller
+   svarar.** Konsultera projektkunskapen i denna ordning: (1) hub-konstitutionen
+   `marcus-system/CLAUDE.md`, (2) projektets `CLAUDE.md`, (3) `tasks/lessons.md`.
+   Hub före projekt. Saknas något i projektkunskapen — be Marcus om innehållet.
+   (Chat har ingen filsystemsåtkomst; fil-läsning och -hantering hör Code-ytan
+   till — här orienterar du via projektkunskapen.)
 2. **Alla svar på svenska.**
 3. **Gissa aldrig — verifiera från faktisk data först.** Om verifiering kostar en
    tool-call är det värt det jämfört med en hypotes som skickas vidare som fakta.
