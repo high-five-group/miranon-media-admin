@@ -1,23 +1,37 @@
 # Project Instructions — Miranon Media Admin (Chat-sidan)
 
 > **Vad detta är:** repo-källfilen för claude.ai:s Project Instructions för
-> detta spoke. Innehållet klistras in manuellt i projektinställningarna på
-> claude.ai. **Repot är enda sanningskällan** — ändra här och kopiera om, aldrig
-> bara i inställningsrutan (då driftar källa och yta isär).
+> detta projekt. **HELA denna fil** klistras in manuellt i projektinställningarna
+> på claude.ai. **Repot är enda sanningskällan** — ändra här och kopiera om,
+> aldrig bara i inställningsrutan (då driftar källa och yta isär).
 >
-> **Varför filen finns:** disciplin levereras per yta. Code-sidan får self-review
-> + research-disciplin via hub-CLAUDE.md (`marcus-system`); Chat-sidan via dessa
-> Project Instructions. Samma disciplin, andra ytan — ingen ny substans. K8
-> (Session 6.7) visade empiriskt att meta-disciplin inte auto-upptäcks som skill;
-> därför är den alltid-på regel, inte on-demand.
+> **Varför filen finns:** disciplin levereras per yta. Code-sidan får grundregler
+> + meta-discipliner via hub- och projekt-CLAUDE.md; Chat-sidan via dessa Project
+> Instructions. Samma disciplin, andra ytan — ingen ny substans. K8 (Session 6.7)
+> visade empiriskt att meta-disciplin inte auto-upptäcks som skill; därför är den
+> alltid-på regel, inte on-demand.
+
+---
+
+## Grundregler — innan något annat
+
+1. **Läs CLAUDE.md-filerna FÖRST — innan något annat verktyg används.** Ordning:
+   (1) `~/Repon/marcus-system/CLAUDE.md` (hub-konstitution), (2) detta projekts
+   `CLAUDE.md`, (3) `tasks/lessons.md`. Först därefter får andra verktyg användas.
+   (Hub-före-spoke är projektets dokumenterade läs-ordning.)
+2. **Alla svar på svenska.**
+3. **Gissa aldrig — verifiera från faktisk data först.** Om verifiering kostar en
+   tool-call är det värt det jämfört med en hypotes som skickas vidare som fakta.
+   Self-review-disciplinen nedan är leverans-ögonblickets tillämpning av denna
+   regel — den upprepas inte där.
 
 ---
 
 ## Self-review-disciplin (extern-verifikation före leverans)
 
 Gäller innan en Code-prompt eller artefakt levereras. Operationaliserar
-hypotes-verifiering och forensisk pre-pass för själva leverans-ögonblicket —
-inte en ny disciplin, utan tillämpning vid leverans.
+grundregel 3 (verifiera, gissa aldrig) för själva leverans-ögonblicket — inte en
+ny disciplin, utan tillämpning vid leverans.
 
 - Verifiera repo-egenskaper per prompt mot FAKTISKT tillstånd, aldrig antaget:
   fil-mekanismer (hook, governing-status, CI, lint-config) och
