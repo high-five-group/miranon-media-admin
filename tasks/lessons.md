@@ -1339,3 +1339,38 @@ En verifikations-check kan tas bort ur en checklista endast om något ovillkorli
 Datum: 2026-05-26 | Källa: Session 6.7 K-sista (klass: Skill-discovery / leveransmekanism)
 
 Discovery levererar tillförlitligt för kommando-utlösta operativa rutiner men inte för meta-disciplin som modellen redan gör nativt från konstitutionen. Verifiera leveransmekanism mot beteende-klass. Empirisk grund: K8 4/6.
+
+## 2026-05-26 — Session 7 (plugin-scope-stängning + Fas 2-fynd-verifiering)
+
+> Antal poster: 5, alla [UNIVERSAL] (L38–L42). Skördade ur Session 7 K0.0
+> (plugin re-sync + scope-housekeeping). Hub-lyft sker vid K-sista lessons-skörd.
+
+### L38 [UNIVERSAL] — Claude Codes plugin-CLI kan tyst skriva om project settings.json
+
+Datum: 2026-05-26 | Källa: Session 7 K0.0 (klass: Plugin-CLI / config-säkerhet)
+
+`claude plugin`-kommandon kan omserialisera och kollateralt tömma orelaterade block i project `.claude/settings.json` (t.ex. pre-commit-hooks) — #38271 — och lämna stale cache. Vid plugin-CLI-operationer: snapshotta `settings.json` före, `git diff` efter varje kommando, och verifiera mot disk-tillstånd, inte mot exit-status.
+
+### L39 [UNIVERSAL] — "Repo rent" verifieras mot git status/git diff, inte mot "HEAD oförändrad"
+
+Datum: 2026-05-26 | Källa: Session 7 K0.0 (klass: Repo-state-verifiering)
+
+En unstaged working-tree-diff på en spårad fil är osynlig för en ren HEAD-jämförelse. "Rent" bevisas mot faktisk `git status`/`git diff`, inte mot att HEAD är oförändrad.
+
+### L40 [UNIVERSAL] — Deklarativ config-ändring redigeras kirurgiskt, inte via verktyg med granne-fil-sidoeffekt
+
+Datum: 2026-05-26 | Källa: Session 7 K0.0 (klass: Minsta-verktyg-för-operationen)
+
+När en plugin-operation i grunden är en deklarativ config-ändring (t.ex. ta bort registreringsnycklar ur `settings.json`), redigera config:en kirurgiskt — kör inte ett verktyg med känd sidoeffekt på en granne-fil. Minsta verktyg för operationen.
+
+### L41 [UNIVERSAL] — Plugin-state är spritt över flera filer; verifiera topologin före registry-resonemang
+
+Datum: 2026-05-26 | Källa: Session 7 K0.0 (klass: State-topologi)
+
+Plugin-state bor i flera filer: `installed_plugins.json` (auktoritativt install-register som `claude plugin list` läser scope ur), `known_marketplaces.json`, och `settings.json` (enable-deklaration). Anta inte en enfils-modell — verifiera den faktiska topologin mot disk innan registry-resonemang.
+
+### L42 [UNIVERSAL] — Hub-plugin-skill-set-ändring kräver version-bump; manuell ren ominstallation är pålitlig re-sync
+
+Datum: 2026-05-26 | Källa: Session 7 K0.0 (klass: Plugin-distribution / cache)
+
+En ändring av en hub-plugins skill-set måste åtföljas av en version-bump i `plugin.json`; Claude Codes auto-invalidering av lokal cache är opålitlig, så en manuell ren ominstallation är den pålitliga re-sync-mekanismen.
