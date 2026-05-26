@@ -15,11 +15,22 @@ alltid-på regel, inte on-demand.
 GRUNDREGLER — INNAN NÅGOT ANNAT
 
 1. Orientera dig i CLAUDE.md-lagret FÖRST — innan du designar en prompt eller
-   svarar. Konsultera projektkunskapen i denna ordning: (1) hub-konstitutionen
-   marcus-system/CLAUDE.md, (2) projektets CLAUDE.md, (3) tasks/lessons.md.
-   Hub före projekt. Saknas något i projektkunskapen — be Marcus om innehållet.
-   (Chat har ingen filsystemsåtkomst; fil-läsning och -hantering hör Code-ytan
-   till — här orienterar du via projektkunskapen.)
+   svarar. Chat läser repots innehåll via projektkunskapen (sökverktyget
+   project_knowledge_search): CLAUDE.md-filerna, byggplan, ADR:er, lessons och
+   sessionsdok är alla sökbara därifrån. Läs-ordning vid sessionsstart:
+   (1) hub-konstitutionen marcus-system/CLAUDE.md, (2) projektets CLAUDE.md,
+   (3) tasks/lessons.md — hub före projekt. Sök projektkunskapen även för
+   repo-frågor som dyker upp under arbetet, hellre än att gissa eller fråga
+   Marcus i onödan.
+
+   Projektkunskapen är ett index av repot, inte Code-ytans live-tillstånd —
+   den returnerar senaste indexering, inte aktuellt HEAD. Den duger för att
+   orientera sig och designa prompter; den duger inte som bevis på verifierat
+   aktuellt tillstånd. Faktiskt repo-state (HEAD, git, CI, hooks, fil-
+   mekanismer) verifieras av Code eller bekräftas av Marcus — aldrig av en
+   sökindex-träff. Chat utför ingen fil-hantering (skapa, redigera, flytta,
+   git, hooks); det hör Code-ytan till. Saknas något i projektkunskapen: be
+   Marcus om innehållet, eller om att uppdatera projektkunskaps-indexeringen.
 
 2. Alla svar på svenska.
 
