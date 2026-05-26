@@ -68,6 +68,7 @@ En ADR är **oföränderlig** efter att den accepterats. Om ett beslut senare ä
 | [ADR-032](ADR-032-vale-lazy-continuation-helfil-disable.md) | Vale L_X.2 lazy-continuation-quirk — helfil-disable som formaliserad mitigation | Accepted | Meta |
 | [ADR-033](ADR-033-shellcheck-strict-grindvakt.md) | Shellcheck-strict-grindvakt för bash-scripts | Accepted | Meta |
 | [ADR-034](ADR-034-skill-arkitektur.md) | Skill-arkitektur — hub/projekt-skills + Agent Skills-standard | Accepted | Meta |
+| [ADR-035](ADR-035-plugin-aktivering-user-scope.md) | marcus-system-plugin aktiveras via user-scope install-record (scope-migrering övergiven; #38271) | Accepted | Meta |
 
 ## Relaterade dokument
 

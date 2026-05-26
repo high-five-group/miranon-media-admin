@@ -120,8 +120,13 @@ Allt som byggs bedöms utifrån båda perspektiven:
 
 Operativa rutiner — sessionsstart, sessionsavslut, fas-avslut — bor i
 `marcus-system`-pluginets disciplin-skills och triggas automatiskt via sin
-`description`. Pluginet laddas via marketplacen `marcus-hub` (github-källa
-`marcus803/marcus-system`), konfigurerad i `.claude/settings.json`
-(`extraKnownMarketplaces` + `enabledPlugins`). Saknas den konfigurationen i en
-session — flagga det. Konstitutionen ovan slår fast PROJEKT-SPECIFIKA regler;
-generella sessions-HUR-steg bor i pluginet.
+`description`. Pluginet aktiveras via **user-scope install-record**
+(`~/.claude/plugins/installed_plugins.json`) som kanonisk mekanism och laddas
+därmed i varje Code-session oavsett repo — se
+[ADR-035](docs/decisions/ADR-035-plugin-aktivering-user-scope.md). Spoke
+`.claude/settings.json` (`extraKnownMarketplaces.marcus-hub` +
+`enabledPlugins`) behålls som sekundär portabilitets-deklaration, inte primär
+källa. Saknas pluginet (`claude plugin list` visar inte
+`marcus-system@marcus-hub`, eller färre än 4 skills aktiva) — flagga det;
+scope-migrering görs inte via plugin-CLI:t (#38271). Konstitutionen ovan slår
+fast PROJEKT-SPECIFIKA regler; generella sessions-HUR-steg bor i pluginet.
