@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-23
+updated: 2026-05-26
 review_by: 2026-11-15
 status: stable
 ---
@@ -1272,3 +1272,70 @@ Chat-trail är efemär; endast filartefakter överlever sessions-byte. Allt nytt
 Datum: 2026-05-23 | Källa: Session 6.6.6 K-sista-0-konsolidering (klass: Vale-config-arkitektur (spoke-lokal))
 
 Vale-configens lager-arkitektur följer ADR-032; Brand-namn-quirks (t.ex. Aria/ARIA) och brand-pivot-narrativ är miranon-specifika. Spoke-lokal lärdom — lyfts inte till hub.
+
+## 2026-05-26 — Session 6.7 (CLAUDE.md-audit + skills-extraktion)
+
+> Antal poster: 10, alla [UNIVERSAL] (L28–L37). Skördade ur sessionsdokets
+> Del 6 (15 flaggade kandidater) + 2 utanför Del 6. Not: git-amend-stage-
+> disciplin var flaggad (K1) men aldrig materialiserad — struken vid K-sista,
+> ej konsoliderad (ingen rekonstruerbar substans). Hub-lyft sker i steg 6.
+
+### L28 [UNIVERSAL] — Text-STOPPA-OCH-FRÅGA är default; popup är för preferensval.
+
+Datum: 2026-05-26 | Källa: Session 6.7 K-sista (klass: STOPPA-disciplin)
+
+En fråga som gäller en disciplin- eller verifikations-grind ställs i text som STOPPA-OCH-FRÅGA, inte via popup-verktyg. Popup/strukturerad elicitering reserveras för genuina preferens-/beslutsval — fel verktyg döljer en grind som ska vara synlig.
+
+### L29 [UNIVERSAL] — En regel bor på exakt ett ställe; placering avgörs av alltid-på vs ibland-relevant.
+
+Datum: 2026-05-26 | Källa: Session 6.7 K-sista (klass: Regel-placering / konstitution)
+
+Alltid-på → konstitution (CLAUDE.md); ibland-relevant → skill eller lessons.md. Extraktions-principen har en additions-spegel: när det som SKA finnas saknas, adderar man.
+
+### L30 [UNIVERSAL] — Ett låst beslut är inte immunt mot evidens.
+
+Datum: 2026-05-26 | Källa: Session 6.7 K-sista (klass: Locked-decision-override)
+
+Ett "BESLUTAT"-item kan falsifieras av research; när det sker rivs beslutet öppet med medveten kvittens, inte tyst.
+
+### L31 [UNIVERSAL] — Verifiera repo-egenskaper per prompt; en upprepad lärdom bevisar att flaggning inte räcker.
+
+Datum: 2026-05-26 | Källa: Session 6.7 K-sista (klass: Repo-egenskaps-verifiering)
+
+Varje Chat-prompt måste ha ett explicit verifikationssteg för repo-egenskaper — fil-mekanismer (hook/governing/CI/lint), flytt-destinationer — mot faktiskt tillstånd, inte antaget. En lärdom som återkommer är bevis att flaggning utan operativt procedursteg är design-skuld.
+
+### L32 [UNIVERSAL] — En prompts bokstavliga instruktioner approximerar intent; vid divergens styr rationale.
+
+Datum: 2026-05-26 | Källa: Session 6.7 K-sista (klass: Prompt-intent vs bokstav)
+
+Verifiera att grind-mål är nåbara av promptens egna operationer och att radintervall matchar sitt beslut. Divergerar bokstaven från sitt rationale, styr rationale.
+
+### L33 [UNIVERSAL] — Validera Chat-producerade artefakter före leverans.
+
+Datum: 2026-05-26 | Källa: Session 6.7 K-sista (klass: Artefakt-validering)
+
+Klassningstabeller korsläses för interna motsägelser; inlinat promptinnehåll valideras mot projektets egna grindvakter; shell/kod kontrolleras som faktiskt giltig — inte antas.
+
+### L34 [UNIVERSAL] — Arkitekturförslag kräver fullständiga inputs.
+
+Datum: 2026-05-26 | Källa: Session 6.7 K-sista (klass: Arkitektur-inputs)
+
+Innan en arkitektur föreslås: läs den styrande ADR:n i sin helhet och kartlägg hela options-/yt-rymden.
+
+### L35 [UNIVERSAL] — Research för arkitektur: förstapartskälla och mönster, inte bara mekanism.
+
+Datum: 2026-05-26 | Källa: Session 6.7 K-sista (klass: Research-disciplin)
+
+Använd auktoritativ förstapartskälla före tredjeparts-källor, och researcha det etablerade mönstret — hur fältet strukturerar problemet — inte bara den lokala mekanismen.
+
+### L36 [UNIVERSAL] — En check är trim-bar bara mot ovillkorlig enforcement.
+
+Datum: 2026-05-26 | Källa: Session 6.7 K-sista (klass: Checklist-trim / enforcement)
+
+En verifikations-check kan tas bort ur en checklista endast om något ovillkorligt enforce:ar den (CI/hook). Villkorlig enforcement — t.ex. ett skill-anropat skript — är inte täckning.
+
+### L37 [UNIVERSAL] — Skill-discovery matchar beteende-klass, inte trigger-ordval.
+
+Datum: 2026-05-26 | Källa: Session 6.7 K-sista (klass: Skill-discovery / leveransmekanism)
+
+Discovery levererar tillförlitligt för kommando-utlösta operativa rutiner men inte för meta-disciplin som modellen redan gör nativt från konstitutionen. Verifiera leveransmekanism mot beteende-klass. Empirisk grund: K8 4/6.
