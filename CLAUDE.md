@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-25
+updated: 2026-05-26
 review_by: 2026-11-15
 status: stable
 ---
@@ -119,8 +119,9 @@ Allt som byggs bedöms utifrån båda perspektiven:
 ## Operativ procedur
 
 Operativa rutiner — sessionsstart, sessionsavslut, fas-avslut — bor i
-marcus-system-pluginets disciplin-skills och triggas automatiskt via sin
-`description`. OBS: laddnings-konfigurationen (`--plugin-dir`) för hub-pluginet
-är ännu inte inwirad i detta spoke-repo; tills den är det är denna hänvisning
-aspirationell. Konstitutionen ovan slår fast PROJEKT-SPECIFIKA regler; generella
-sessions-HUR-steg bor i pluginet.
+`marcus-system`-pluginets disciplin-skills och triggas automatiskt via sin
+`description`. Pluginet laddas via marketplacen `marcus-hub` (github-källa
+`marcus803/marcus-system`), konfigurerad i `.claude/settings.json`
+(`extraKnownMarketplaces` + `enabledPlugins`). Saknas den konfigurationen i en
+session — flagga det. Konstitutionen ovan slår fast PROJEKT-SPECIFIKA regler;
+generella sessions-HUR-steg bor i pluginet.
