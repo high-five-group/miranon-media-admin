@@ -622,7 +622,7 @@ Alla 8 DoD-rader från byggplan §4 Fas 2:
 | 4 | nuqs useQueryState mot test-route | K4.1 |
 | 5 | Router Devtools dev-only | K2.2 |
 | 6 | Playwright authenticatedPage-fixture | K4.2 (verifierad K4.3) |
-| 7 | [GA] Suspense-fallback på root | K2.2 |
+| 7 | [GA] Laddningsindikator under auth-resolution — uppfylld via render-gate, ej Suspense (ADR-037) | K2.2 (Suspense, fel mekanism) + K0.2b (render-gate) |
 | 8 | [GA] Error boundary på root | K2.2 |
 
 **Defense-in-depth-arkitekturen empiriskt verifierad:**
@@ -994,6 +994,8 @@ Konsoliderings-trail: tasks/sessions/archive/2026-05/2026-05-23-k-sista-0-lesson
 Stänger Fynd-punkter ur `docs/analysis/Fas-2-11-10-verification-2026-05-14.md` före Fas 2.5. Trail i `tasks/sessions/2026-05-26-session-7.md`.
 
 **K0.1 — Fynd 1 (typecheck no-op):** `tsc --noEmit` utan `-b` ignorerade TypeScript project references (`tsconfig.json` = `files: []`), så Fas 2:s namngivna typecheck-signal var no-op för app-koden — `npm run build` (`tsc -b`) fångade typfel, men `typecheck`-scriptet + CI-steget `TypeScript check` gjorde det inte. Åtgärdat (commit `3c8c3f6`): `typecheck` → `tsr generate && tsc -b --noEmit`; CI `TypeScript check` → `npm run typecheck`. Negativ test bevisade kontrasten (TS2322 i app-fil: ny form exit 2, gammal exit 0). Typecheck-signalen är nu ärlig. Ingen ADR — bugg-fix av trasigt script, inget arkitekturbeslut.
+
+**K0.2 — Fynd 2 + 3 + index.tsx-vektorn (auth-resolution no-flash):** `_authenticated.tsx` `beforeLoad` blockerade inte render under `auth.isLoading` (synkron return = no-op) → flash av skyddat innehåll (Fynd 2); `__root.tsx` `<Suspense>` gateade aldrig auth (`AuthProvider` kastar ingen promise — Fynd 3); `index.tsx` saknade isLoading-hantering (egen flash-vektor). Åtgärdat (commit `e5346a5`): render-gate i `InnerApp` (`main.tsx`) — `<RouterProvider>` monteras först när auth löst + `router.invalidate()` guardad `if(!isLoading)` (ogardad → krasch mot router-modul-default `context.auth=undefined`); `beforeLoad` i `_authenticated`/`index`/`login` förenklade. No-flash strukturellt utesluten (RouterProvider monteras aldrig under loading); K4.3-sviten 7/7 grön. Deterministiskt regressionstest deferrat till Fas 3.5 (vitest), spec:at i `tasks/todo.md`. [ADR-037](decisions/ADR-037-auth-resolution-render-gate.md). DoD-rad 7-mekanismen omtolkad (render-gate-splash, ej Suspense).
 
 ---
 
