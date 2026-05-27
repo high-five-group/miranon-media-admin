@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-26
+updated: 2026-05-27
 review_by: 2026-11-15
 status: stable
 ---
@@ -1374,3 +1374,9 @@ Plugin-state bor i flera filer: `installed_plugins.json` (auktoritativt install-
 Datum: 2026-05-26 | Källa: Session 7 K0.0 (klass: Plugin-distribution / cache)
 
 En ändring av en hub-plugins skill-set måste åtföljas av en version-bump i `plugin.json`; Claude Codes auto-invalidering av lokal cache är opålitlig, så en manuell ren ominstallation är den pålitliga re-sync-mekanismen.
+
+### L43 [UNIVERSAL] — Ett config-block som ser ut som en grind är inte en grind förrän dess fyrning är empiriskt verifierad
+
+Datum: 2026-05-27 | Källa: Session 7 K0.1b–c (klass: Enforcement-verifiering)
+
+Ett enforcement-claim (hook, CI-steg, grind) ska bevisas, inte antas. `.claude/settings.json` `hooks.pre-commit` såg ut som en biome+tsc-grind men fyrade aldrig — dead config, eftersom Claude Codes hook-system inte har något `pre-commit`-event; ADR-001 + ADR-010 bar claimet overifierat sedan Fas 0. Verifiera fyrning empiriskt (injicera ett fel som grinden ska fånga → den måste blockera) innan ett config-block räknas som enforcement. Speglar L31 (verifiera repo-egenskaper mot faktiskt tillstånd) applicerat på grind-mekanik.
