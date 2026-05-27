@@ -617,7 +617,7 @@ Alla 8 DoD-rader från byggplan §4 Fas 2:
 | # | Krav | Stängd i |
 |---|---|---|
 | 1 | npm run dev → login → /hem | K3.3 (verifierad K4.3 Test 3) |
-| 2 | Logout → /login | K3.2 (verifierad K4.3 Test 6) |
+| 2 | Logout → /login | K3.2; router-reaktion på förlorad session verifierad (K4.3 Test 6, storage-clear). `auth.logout()`→`signOut()`-vägen typbevisad (tsc/Biome), **ej regressionstestad** → logout-test deferrat Fas 3.5/5 (todo.md, Fynd 5) |
 | 3 | Skyddad route utan session → /login | K3.3 + K3.5 (verifierad K4.3 Test 4) |
 | 4 | nuqs-infra: paket + NuqsAdapter wirad i `__root.tsx` (statiskt verifierbar); första useQueryState + regressionstest → Fas 6 | K4.1 (smoke via test-route, pensionerad K0.4) |
 | 5 | Router Devtools dev-only | K2.2 |
