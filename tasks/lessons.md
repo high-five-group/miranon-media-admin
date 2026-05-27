@@ -1398,3 +1398,9 @@ När en router skapas på modul-scope med en placeholder-context (`auth: undefin
 Datum: 2026-05-27 | Källa: Session 7 K0.2b (klass: Test-disciplin / defer)
 
 Det deterministiska no-flash-testet kräver komponent-test-infra (vitest, deferrad till Fas 3.5). En flakig E2E-ersättning som inte kan ge kontrast-bevis (falla mot pre-fix-koden) är en falsk-grön signal — samma klass som dead-config-grinden K0.1c rev ut. Rätt drag: defer:a testet ärligt med en spec detaljerad nog att framtida fas aktiverar utan att återuppfinna, och bevisa fixen idag med tillgängliga medel (strukturellt resonemang + befintlig svit). Verifiering = bevis, inte teater.
+
+### L47 [UNIVERSAL] — En verifieringsdok-hypotes är en hypotes; empiriskt fel-test smalnar fyndet före fix-design
+
+Datum: 2026-05-27 | Källa: Session 7 K0.3a–b (klass: Fynd-verifiering / empiri före design)
+
+Ett fynd i ett verifieringsdokument är en hypotes tills den prövats. K0.3a:s empiriska fel-test smalnade Fynd 4 från "router-fel ofångade och osynliga för Sentry" till den faktiska defekten: **enbart root-route-render-fel** föll till en obrandad default; loader-/komponent-fel hanterades redan, och alla nådde Sentry. En fix designad mot den breda hypotesen hade adresserat fel sak. Kör ett empiriskt fel-test (injicera felet på varje relevant plats, observera vad som fångar + var det rapporteras) **före** fel-hanterings-design — och rikta fixen mot den verifierade, smalnade defekten. Speglar L43 (bevisa fyrning, anta inte) på fynd-nivå.
