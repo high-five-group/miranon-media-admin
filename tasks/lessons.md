@@ -1410,3 +1410,9 @@ Ett fynd i ett verifieringsdokument är en hypotes tills den prövats. K0.3a:s e
 Datum: 2026-05-27 | Källa: Session 7 K0.4 (klass: Fixtur-livscykel / falsk signal)
 
 En fixtur skapad enbart för att bevisa något (test-route, probe, smoke-vy) ska tas bort när bevisningen är gjord och historiskt registrerad. En kvarlämnad fixtur i prod-route-tree/bundle är en falsk signal — den ser ut som funktionalitet men mäter inget (test-nuqs: inert dev-route + ~12.21 kB i prod-bundlen, "ej tillgänglig i produktion"-text men ändå närvarande). Knyt fixtur-borttagningen till den första riktiga användningen (här: nuqs-infra kvar, första `useQueryState` → Fas 6). Samma falsk-grön-signal-klass som dead-config-grinden (L43) och den deferrade-test-genvägen (L46), applicerad på verifierings-artefakter.
+
+### L49 [UNIVERSAL] — Ett deferrat fynd registreras med sann status + konkret schemaläggning; annars är det en dold lucka, inte ett beslut
+
+Datum: 2026-05-27 | Källa: Session 7 K0.5 (klass: Defer-disciplin / fas-status-ärlighet)
+
+Ett fynd man skjuter upp måste registreras med (a) den sanna nuvarande statusen — vad som ÄR verifierat vs inte, med klyftan namngiven och ägd — och (b) en konkret schemaläggning (vilken fas/mekanism aktiverar åtgärden). "Deferrat" utan ägd klyfta och plan är en dold lucka maskerad som beslut. Dessutom: ett enskilt deferrat fynd får inte hålla en fas kvalitets-status gisslan — reclassa ärligt (Fynd 5:s logout-väg + Fynd 7:s bundle var äkta defer:ar, inte öppna 11/10-blockers) så statusen varken är falskt grön eller falskt blockerad. Falsk-grön-familjen (L43/L46/L48) lyft till fas-status-nivå.

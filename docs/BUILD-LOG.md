@@ -1002,6 +1002,8 @@ Stänger Fynd-punkter ur `docs/analysis/Fas-2-11-10-verification-2026-05-14.md` 
 
 **K0.4 — Fynd 6 (test-nuqs i prod-bundle):** `test-nuqs` var en DEV-fixtur för K4.1:s DoD 4-verifiering (bevisa nuqs); en inert test-route kvar permanent i prod-route-tree + bundle (~12.21 kB chunk) var en grön signal utan rätt mätning. Borttagen (commit `c9c44b1`): `src/routes/_authenticated/test-nuqs.tsx` raderad, `routeTree.gen.ts` (gitignored) regenererad utan `/test-nuqs`. Ren build verifierad — test-nuqs-chunk borta ur `dist/assets`. **nuqs-infra intakt:** paketet + `NuqsAdapter` i `__root.tsx` orörda; första riktiga `useQueryState` + regressionstest sker i Fas 6 (första URL-state-feature). DoD-rad 4 omtextad till varaktigt tillstånd. Ingen ADR — fixtur-städning.
 
+**K0.5 — Fynd 5 + 7 (ärlig omklassning av deferrade fynd):** båda har etablerade defer-beslut → ingen kod-åtgärd; K0.5 registrerar dem sant så Fas 2:s 11/10-status inte hålls gisslan. **Fynd 5 (logout):** K4.3 Test 6 verifierar router-reaktion på förlorad session (storage-clear), men `auth.logout()`→`signOut()`-vägen är typbevisad, ej regressionstestad — DoD-rad 2 omtextad, logout-test deferrat (Fas 3.5/5, `tasks/todo.md`). **Fynd 7 (bundle):** main-chunk 640.49 kB raw / 188.97 kB gzip (~oförändrat vs baslinje 640.82/189.22; test-nuqs −12.21 kB ur total, main oförändrat → ingen regression) — medveten Fas 7 perf-budget-defer, ej 11/10-blocker (bundle-evolution-tabell + `tasks/todo.md` Fas 7-punkt). Ingen ADR. **Alla sju Fas 2-fynd därmed hanterade** (Fynd 1–4 + 6 åtgärdade K0.1–K0.4; Fynd 5 + 7 ärligt omklassade K0.5).
+
 ---
 
 ## Session-modellen
