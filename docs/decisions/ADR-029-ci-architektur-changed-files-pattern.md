@@ -5,6 +5,8 @@
 - Datum: 2026-05-13
 - Fas: Session 6 — CI-optimering (mellan Fas 2 och Fas 2.5)
 
+> **Korrigering (Session 8 K0b, 2026-05-27):** § Medvetna utelämningar #6 nedan anger `fetch-depth: 50` för `changed`-jobbet. Det faktiska värdet i `changed`-jobbet ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)) är sedan 2026-05-26 `fetch-depth: 100` (50 gav för smal marginal för commit-tunga sessioner — Session 6.7 ~25 commits). Den repo-vida invarianten att fetch-depth hålls enhetligt över samtliga CI-jobb + frontmatter-tröskeln ägs och CI-grindas av [ADR-039](ADR-039-konsistens-grindar-kadens.md); detta erratum korrigerar enbart `changed`-jobbets värde inom ADR-029:s jurisdiktion. Beslutstexten nedan bevaras oförändrad (immutabilitet) — 50→100 är en marginal-justering, inte ett designbyte.
+
 ## Kontext
 
 Fas 2 stängdes 2026-05-13 (Session 5b). K5-paketet körde 14 sekventiella doc-only-commits, alla CI-gröna men ~95s per körning = ~22 min spilld CI-tid på arbete som inte påverkar bygg/test-utfall (verifierat empiriskt i Session 6 K1.A Block A.2 + K1.B Block B.3). Sessionsavsluts-disciplinen (sessionsdok-bake-ins, lessons-skördar, README/CHANGELOG-fas-avslut, BUILD-LOG-uppdateringar, byggplan-versionsbumpning) producerar legitim doc-volym — det är inte ett anti-mönster, det är ett CI-mönster att anpassa sig till.

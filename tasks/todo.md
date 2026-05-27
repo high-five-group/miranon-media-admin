@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-05-26 (Session 6.7 ✅ KLAR — K1–K8 + plugin-wiring + K-sista landade; Session 7 nästa)*
+*Senast uppdaterad: 2026-05-27 (Session 8 K0b — konsistens-grindar + ADR-039; lesson→grind-uppföljning öppen)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -14,6 +14,12 @@
 ---
 
 ## Aktuellt fokus
+
+### Session 8 K0b — lesson→grind-uppföljning (ADR-039, öppen)
+
+Konkret första tillämpning av [ADR-039](../docs/decisions/ADR-039-konsistens-grindar-kadens.md) § lesson→grind-principen — punkten står öppen tills grinden finns (per L52):
+
+- [ ] **CI-wira `test-check-frontmatter.sh` + `test-check-public-checklists.sh`.** K0b DEL 2 avtäckte att dessa två test-suiter — till skillnad från `test-vale-regression.sh` och de nya K0b-suiterna (`test-check-adr-count.sh` / `test-check-fetch-depth-invariant.sh`) — inte körs i CI. Verifiering utan mekanisk enforcement = exakt ADR-039:s lesson→grind-målklass. Sluttillstånd: båda wirade i ci.yml `lint`-jobbet (kör-varje-push, formen K0b valde), grön CI. Pre-existing inkonsistens (ej skapad av K0b) → separat commit. Spårbar via `tasks/lessons.md` L52 + ADR-039.
 
 **Fas 2 ✅ KLAR 2026-05-13** — Routing + Auth komplett. Alla 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression. Defense-in-depth tre-skikt-arkitektur levererad: skikt 1 (klient-guard K3.2/K3.3) + skikt 2 (AuthError throw K3.4) + skikt 3 (server requireUser Fas A M2). Sessions 4 + 5 + 5b (arkiveras till `tasks/sessions/archive/2026-05/` i K5.8). Hub-lyft-kandidater: 7 totalt (K17 + K18 + K19 + K34 + K36 + K37 + K38) för K5.7 hub-sync.
 

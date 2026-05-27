@@ -1422,3 +1422,33 @@ Ett fynd man skjuter upp måste registreras med (a) den sanna nuvarande statusen
 Datum: 2026-05-27 | Källa: Session 7 K0.S2 (klass: Konventions-koppling / drift-prevention)
 
 `FRONTMATTER_MIN_HISTORY_DEPTH` skulle per konvention spegla ci.yml:s `fetch-depth`. När fetch-depth bumpades 50→100 (2026-05-26) följde tröskeln inte med — den låg kvar på 50 i tre filer (ADR-030-text, `.frontmatter-policy.conf`, skript-default) → ett falsk-negativt detektionsfönster på commit-djup 50–99. Två parametrar som MÅSTE följas åt ska antingen **kodkopplas** (läs den ena ur den andra) eller, när det inte går (skild fil/yta), bära en **explicit invariant-not** ("håll tröskeln == fetch-depth") **+ en test som bevakar relationen**. En tyst konventions-koppling driftar isär vid första ensidiga ändring. Speglar L31 (verifiera mot faktiskt tillstånd) på parameter-relations-nivå.
+
+## 2026-05-27 — Session 8 (K0b: process-retrospektivens åtgärdssteg)
+
+> Antal poster: 4, alla [UNIVERSAL] (L51–L54). Skördade ur Session 8 K0b
+> (konsistens-grindar + ADR-039). Hub-lyft sker INTE i K0b (ej fas-avslut) —
+> flaggat för Marcus. K0a (kartläggningen) registrerad i sessionsdoket.
+
+### L51 [UNIVERSAL] — Deterministiska konsistens-kontroller hör vid varje push, inte bara vid fas-avslut (kadens-principen)
+
+Datum: 2026-05-27 | Källa: Session 8 K0b (klass: CI-kadens / drift-prevention)
+
+En mekanisk drift-vakt vars körnings-kadens inte matchar artefaktens ändrings-kadens skapar ett tyst drift-fönster. K0a-roten: README:s ADR-räkning (28 vs faktiskt 38) vaktades enbart av `phase-end-verify.sh` som körs vid fas-avslut, medan ADR:er tillkommer varje session — tio ADR:er drev förbi den senaste fas-avslut-körningen oupptäckt. Regel: billiga, deterministiska, per-artefakt-ändring-konsistens-checks (antal, värde-invariant, token-unikhet) hör vid **varje push** (CI-grind med `set -euo pipefail`, exit≠0 vid drift); genuint fas-bundna checks (release-rubrik, arkivering, hub-sync, fas-status) stannar i fas-avsluts-rapporten. Frågan är inte "finns en grind?" utan "matchar grindens kadens artefaktens?". Formaliserad i [ADR-039](../docs/decisions/ADR-039-konsistens-grindar-kadens.md); utvidgar [ADR-036](../docs/decisions/ADR-036-kvalitetsgrind-ci-enda-mekaniska-enforcement.md) (CI = enda enforcement-yta) med kadens-dimensionen. Etablerat verify-*-mönster (Kubernetes/KubeEdge/GitLab/OpenShift) + shift-left-balansen.
+
+### L52 [UNIVERSAL] — En lesson som föreskriver en grind genererar en spårad todo, öppen tills grinden finns (lesson→grind-principen)
+
+Datum: 2026-05-27 | Källa: Session 8 K0b (klass: Lessons→enforcement-bro)
+
+Capture ≠ enforcement. En lesson lever som prosa i denna fil och appliceras bara om en agent minns den vid session-start — Chat-self-fångst är empiriskt ~9 % effektiv (hub-konstitutionen). L50 är precedensen: den föreskrev uttryckligen "invariant-not **+ en test**", men endast noten byggdes — den bevakande testen byggdes aldrig (upptäckt K0a). Regel: när en lesson föreskriver en mekanisk grind/test, skapa samtidigt en **spårad todo-punkt** (`tasks/todo.md`) med ett verifierbart sluttillstånd, och håll den öppen tills grinden faktiskt finns. Speglar postmortem-kulturen (Google SRE Workbook / Atlassian): en åtgärd utan formell spårning är oskiljbar från ingen åtgärd. Formaliserad i [ADR-039](../docs/decisions/ADR-039-konsistens-grindar-kadens.md); första tillämpningen är `tasks/todo.md`-punkten om CI-wiring av `test-check-frontmatter.sh` + `test-check-public-checklists.sh`.
+
+### L53 [UNIVERSAL] — När en invariant spänner över levande config OCH frusen text får testet inte hävda värde-likhet blint
+
+Datum: 2026-05-27 | Källa: Session 8 K0b (klass: Invariant-test-design / immutabilitet)
+
+En enkelvärde-invariant kan ha bärare av två klasser: **levande** (muterbar config — ska alla hålla samma aktuella värde) och **frusen** (immutabel ADR-beslutstext, arkiv, sessionsdok — innehåller legitimt det gamla värdet). En naiv "alla bärare säger samma siffra"-grind fyrar falskt på frusen text. Rätt design: grinden riktar sig mot de **namngivna levande** platserna (hävdar ömsesidig värde-likhet) och hävdar för **frusna** bärare i stället att en **erratum-not** pekar på aktuellt värde. Konkret i fetch-depth-invariant-grinden: 6 levande bärare (ci.yml ×4, policy.conf, skript-default) hävdas lika; ADR-029/030 hävdas bära erratum. Bevisat av test T5 (ci.yml-kommentar säger "50", config-rader 100 → grinden exkluderar kommentaren, exit 0). Speglar immutabilitets-disciplinen (ADR-001/010/030-errata) applicerad på grind-design.
+
+### L54 [UNIVERSAL] — Verifiera prompt-premisser mot faktiskt disk-tillstånd; ett projektkunskaps-index driftar
+
+Datum: 2026-05-27 | Källa: Session 8 K0b DEL 0 (klass: Forensisk pre-pass / premiss-verifiering)
+
+En prompts premisser om radnummer, värden och fil-mekanismer kan komma från ett stale index. K0b:s forensiska pre-pass (DEL 0, read-only, rapportera-verbatim före edit) fångade två fel-premisser före någon edit: (a) "3 ci.yml fetch-depth-värden" — faktiskt 4 (changed/lint/test/docs) → 6 levande bärare, ej 5; (b) "phase-end-verify matchar ingenting i README" — faktiskt matchade en stale `28` på en andra rad och hade larmat drift vid nästa fas-avslut. Regel: före edit mot nyligt-touchad config/infrastruktur, fastställ grundsanning mot disk (`grep`/`git`/läs källan) och STOPPA så fel-premisser korrigeras — propagera dem aldrig. Speglar L31 + L47 + Pre-K forensisk-pass (hub-konstitutionen) på prompt-premiss-nivå.

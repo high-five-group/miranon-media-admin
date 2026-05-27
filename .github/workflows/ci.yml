@@ -150,6 +150,31 @@ jobs:
         # Hub-spoke-portabel design per K7 Lesson #6 (UNIVERSAL).
         run: bash scripts/check-frontmatter.sh
 
+      - name: Check ADR count consistency (ADR-039 gate)
+        # Per ADR-039 § kadens-principen: deterministisk konsistens-check vid
+        # VARJE push (ej bara fas-avslut). ADR-fil-antal == README:s kanoniska
+        # levande räkning, nyckar mot samma "[0-9]+ arkitekturbeslut"-token som
+        # phase-end-verify.sh head -1:ar. Stänger K0a-driften (README 28 vs 38).
+        run: bash scripts/check-adr-count.sh
+
+      - name: Check fetch-depth invariant (ADR-039 gate)
+        # Per ADR-039 + L50: de 6 LEVANDE fetch-depth-bärarna (ci.yml ×4 jobb +
+        # .frontmatter-policy.conf + check-frontmatter.sh-default) hålls
+        # ömsesidigt identiska; ADR-029/030 (frusen text) bär erratum-not.
+        # Frusen ADR-text/arkiv/kommentarer ignoreras (läser bara namngivna
+        # bärar-platser). L50:s obyggda test-hälft.
+        run: bash scripts/check-fetch-depth-invariant.sh
+
+      - name: Test consistency gates (truth-table self-verification)
+        # Per ADR-039 § lesson→grind: en grind är inte en grind förrän dess
+        # fyrning FORTLÖPANDE verifieras (L43). Kontrast-testet bevisade dem
+        # vid bygg-tid; dessa suiter bevisar att de fortsätter fånga drift
+        # efter framtida edits. Kör varje push (snabba; changed-files-villkor
+        # icke-trivialt för scripts/-domänen). Form-val: Session 8 K0b.
+        run: |
+          bash scripts/test-check-adr-count.sh
+          bash scripts/test-check-fetch-depth-invariant.sh
+
       - name: Install shellcheck (pinned v0.11.0)
         # Per ADR-033 § Säkerhet + ADR-029 § Third-party Actions-policy.
         # ubuntu-latest har shellcheck 0.9.0-1 pre-installerat (Image

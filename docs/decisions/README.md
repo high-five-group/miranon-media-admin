@@ -81,6 +81,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-036](ADR-036-kvalitetsgrind-ci-enda-mekaniska-enforcement.md) | Kvalitetsgrind — CI enda mekaniska enforcement (pre-commit-grind var dead config; korrigerar ADR-001 + ADR-010) | Accepted | Meta |
 | [ADR-037](ADR-037-auth-resolution-render-gate.md) | Auth-resolution render-gate (mount-gate + guardad invalidate; stänger Fynd 2 + 3 + index.tsx-vektorn) | Accepted | 2 |
 | [ADR-038](ADR-038-router-fel-defaultErrorComponent.md) | Router-fel-fångst via defaultErrorComponent (branded fallback inkl. root-route; stänger Fynd 4) | Accepted | 2 |
+| [ADR-039](ADR-039-konsistens-grindar-kadens.md) | Konsistens-grindar i CI — kadens-principen + lesson→grind-principen (per-push ADR-count + fetch-depth-invariant) | Accepted | Meta |
 
 ## Relaterade dokument
 

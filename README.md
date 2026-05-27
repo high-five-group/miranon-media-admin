@@ -19,7 +19,7 @@ React-admin för Miranon Media — eventhantering, anmälningar och rapportering
 
 - [`CLAUDE.md`](CLAUDE.md) — projekt-konstitution
 - [`docs/byggplan.md`](docs/byggplan.md) — styrande fas-plan (Fas 2 → Fas 8)
-- [`docs/decisions/README.md`](docs/decisions/README.md) — ADR-katalog (28 arkitekturbeslut)
+- [`docs/decisions/README.md`](docs/decisions/README.md) — ADR-katalog (samtliga arkitekturbeslut + statusindex)
 - [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md) — kronologisk sessions-journal
 
 ### Specs och referens
@@ -101,9 +101,10 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression-suite
   - 3 nya ADR:er (ADR-026, ADR-027, ADR-028)
 
-**Statistik (post-Fas 2):**
+**Arkitekturbeslut:** 39 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
 
-- 28 ADR:er totalt
+**Statistik (post-Fas 2, historisk ögonblicksbild):**
+
 - ~18 nya UNIVERSAL-lessons i Sessions 4+5+5b (K17-K38)
 - CI grön första försöket genomgående (Kandidat 31 pre-commit-disciplin från K3.2)
 
