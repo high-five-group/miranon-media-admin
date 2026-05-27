@@ -40,6 +40,6 @@ Utanför scope:
 
 ## Säker utveckling
 
-CI (`.github/workflows/ci.yml`) kör `npx @biomejs/biome check .`, `npx tsc --noEmit`,
+CI (`.github/workflows/ci.yml`) kör `npx @biomejs/biome check .`, `npm run typecheck`,
 `npm run test:api` och `npm run build` på varje pull request mot `main`.
 Dependabot (`.github/dependabot.yml`) övervakar dependencies veckovis.

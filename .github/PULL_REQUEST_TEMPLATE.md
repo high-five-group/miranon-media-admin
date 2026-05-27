@@ -7,7 +7,7 @@ Vad gör denna PR?
 
 ## DoD-checklista
 - [ ] `npm run test:api` grön
-- [ ] `npx tsc --noEmit` 0 fel
+- [ ] `npm run typecheck` 0 fel
 - [ ] `npx @biomejs/biome check .` 0 fel
 - [ ] `npm run build` grön
 - [ ] `docs/BUILD-LOG.md` uppdaterad

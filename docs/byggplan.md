@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-17
+updated: 2026-05-27
 review_by: 2026-11-15
 status: stable
 ---
@@ -295,7 +295,7 @@ Synka kodens domäntyper mot `data-model.md` (källa) + införa Zod-validering v
 #### DoD
 
 1. `Status.ts` har 6 värden för RegistrationStatus matchande `docs/reference/data-model.md:121-130` (verbatim svenska Airtable-värden, pre-A-track-läget per `docs/analysis/Code-verification-of-codex-analysis.md` Tillägg Fråga 1)
-2. `tsc --noEmit` 0 fel — alla konsumenter av Status uppdaterade
+2. `npm run typecheck` 0 fel — alla konsumenter av Status uppdaterade
 3. Zod-scheman validerar runtime vid varje read i AirtableAdapter — fångar shape-drift
 4. 9 adapter-metoder har JSDoc-klassning per A5-tabellen (defer-fas + 06b-impact)
 5. Eventuella död-kod-stubs borttagna med spårbarhet i commit

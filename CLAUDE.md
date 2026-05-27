@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-26
+updated: 2026-05-27
 review_by: 2026-11-15
 status: stable
 ---
@@ -41,7 +41,7 @@ Kanoniska kommandon (per `CONTRIBUTING.md` Definition of Done):
 
 ```bash
 npm run test:api            # API-tester gröna
-npx tsc --noEmit            # 0 typfel
+npm run typecheck           # 0 typfel (tsc -b, äkta över project references)
 npx @biomejs/biome check .  # 0 lint-fel
 npm run build               # bygg grön
 ```

@@ -260,7 +260,7 @@ Fyra fokussessioner Chat-arbete. Fas A är klar — revisionen kan starta i ren 
 *Verifierings-hygien (sanity-baseline innan UI-bygg startar):*
 
 - `npm run test:api` → grön (113 tester förväntas)
-- `npx tsc --noEmit` → 0 fel
+- `npm run typecheck` → 0 fel
 - `npx @biomejs/biome check .` → 0 fel
 - `npm run build` → grön
 - Lighthouse-baseline tagen på en placeholder-route (för senare jämförelse)

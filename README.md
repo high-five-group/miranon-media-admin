@@ -57,7 +57,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 | `npm run dev` | Vite dev-server med HMR |
 | `npm run build` | Produktionsbygge (`tsc -b && vite build`) |
 | `npm run preview` | Preview av produktionsbygge |
-| `npm run typecheck` | `tsc --noEmit` |
+| `npm run typecheck` | `tsr generate && tsc -b --noEmit` |
 | `npm run lint` | `biome check .` |
 | `npm run format` | `biome format --write .` |
 | `npm run test:visual` | Playwright visuella regressionstester |
