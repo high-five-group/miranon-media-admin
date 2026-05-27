@@ -587,6 +587,7 @@ K3.4 + K5 final (Session 5b — Fas 2-stängning):
 | Post-K3.2 (AuthProvider full) | 637.97 kB | 188.86 kB | **+311 kB raw / +85.7 kB gzip** |
 | Post-K4.1 (nuqs) | 640.80 kB | 189.22 kB | **+313.5 kB raw / +86.1 kB gzip** |
 | Post-K3.4 (Session 5b) | 640.82 kB | 189.22 kB | Oförändrat — AuthError-klass (~12 rader) tree-shakes om okatchad |
+| Post-Session 7 K0 (2026-05-27) | 640.49 kB | 188.97 kB | ~oförändrat; test-nuqs-chunk (−12.21 kB) ut ur total (separat chunk, ej main). Main-chunk oförändrat → Fynd 7 Fas 7-defer står (ej regression) |
 
 **Total Fas 2 bumpa: +313 kB raw / +86 kB gzip.** Hög andel från `@supabase/supabase-js` runtime-stack (~197 kB raw, Kandidat 32). Defer till Fas 7 perf-budget: `lazyRouteComponent` på `_authenticated`-trädet + tree-shake-verifikation av Realtime + `chunkSizeWarningLimit: 600`.
 
