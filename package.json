@@ -10,6 +10,7 @@
     "typecheck": "tsr generate && tsc -b --noEmit",
     "typecheck:tests": "tsc --noEmit -p tsconfig.tests.json",
     "lint": "biome check .",
+    "lint:prose": "vale docs tasks README.md CHANGELOG.md SECURITY.md CONTRIBUTING.md",
     "format": "biome format --write .",
     "test:visual": "playwright test --project=visual-desktop --project=visual-mobile",
     "test:api": "playwright test --project=api-pure --project=api-staging",

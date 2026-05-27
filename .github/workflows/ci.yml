@@ -383,7 +383,10 @@ jobs:
         # (VueToReact + Brand + Undvik) + Vocab-genererad Vale.Terms.
         # Vale.Terms + Miranon.VueToReact deferade till Session 6.6.6 via
         # per-fil rad-1-disable (Alt F per K6.2 Steg 7).
-        run: vale "docs" "tasks" "README.md" "CHANGELOG.md" "SECURITY.md" "CONTRIBUTING.md"
+        # Single-source: samma definition som lokalt `npm run lint:prose`
+        # (package.json). Vale-binary installerad i föregående step; npm finns
+        # via setup-node ovan. Session 7 K0.S2.
+        run: npm run lint:prose
 
       - name: Validate Vale L_X.2 regression-test-suite
         # Per ADR-032 § Regression-skydd: 3-test AssertFlip-suite för
