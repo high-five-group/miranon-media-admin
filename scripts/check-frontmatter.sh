@@ -60,14 +60,14 @@ EXIT_CODE=0
 # positive på safe-shallow per ADR-030 § Del 3. Hybrid-check kräver
 # ÄVEN att commit-count < threshold för att klassa unsafe.
 #
-# Truth-table (verifierad K4.1.1):
-#   depth=1   shallow=true,  count=1:   TRIGGAS (unsafe per L8)
-#   depth=50  shallow=true,  count=50:  IGNORERAS (safe-shallow)
-#   full      shallow=false, count>50:  IGNORERAS (full clone)
-#   nytt-repo shallow=false, count<50:  IGNORERAS (full clone, ny repo)
+# Truth-table (verifierad K4.1.1; tröskel 100 per K0.S2 — spårar fetch-depth: 100):
+#   depth=1    shallow=true,  count=1:    TRIGGAS (unsafe per L8)
+#   depth=100  shallow=true,  count=100:  IGNORERAS (safe-shallow)
+#   full       shallow=false, count>100:  IGNORERAS (full clone)
+#   nytt-repo  shallow=false, count<100:  IGNORERAS (full clone, ny repo)
 IS_SHALLOW=$(git rev-parse --is-shallow-repository 2>/dev/null || echo "false")
 COMMIT_DEPTH=$(git rev-list --count HEAD 2>/dev/null || echo "0")
-MIN_DEPTH="${FRONTMATTER_MIN_HISTORY_DEPTH:-50}"
+MIN_DEPTH="${FRONTMATTER_MIN_HISTORY_DEPTH:-100}"
 
 if [[ "${IS_SHALLOW}" == "true" ]] && [[ "${COMMIT_DEPTH}" -lt "${MIN_DEPTH}" ]]; then
     UNSAFE_SHALLOW=1

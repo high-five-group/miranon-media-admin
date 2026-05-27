@@ -33,7 +33,7 @@ cleanup() {
     rm -rf "${TEST_DIR}" \
         "${TEST_DIR}-shallow" \
         "${TEST_DIR}-shallow-override" \
-        "${TEST_DIR}-shallow-50"
+        "${TEST_DIR}-shallow-100"
 }
 trap cleanup EXIT
 
@@ -305,12 +305,12 @@ check_contains "T9 (actionable)" "Fix: skapa .frontmatter-policy.conf" "${out}" 
 mark "${ok}"
 
 # ============================================================
-# T10: unsafe-shallow hard-fail (depth=1, default threshold=50)
+# T10: unsafe-shallow hard-fail (depth=1, default threshold=100)
 # ============================================================
 # K4.2 (Session 6.6.7): testar K4.1.1 hybrid-detection count-check.
-# is-shallow=true, count=1, threshold=50 (default) → hard-fail.
+# is-shallow=true, count=1, threshold=100 (default per K0.S2) → hard-fail.
 echo ""
-echo "═══ T10: unsafe-shallow hard-fail (depth=1, default threshold=50) ═══"
+echo "═══ T10: unsafe-shallow hard-fail (depth=1, default threshold=100) ═══"
 setup_repo
 write_all_valid
 git add . >/dev/null 2>&1
@@ -328,7 +328,7 @@ cd "${TEST_DIR}" || exit 1
 
 ok=0
 check_exit "T10" 1 "${ec}" || ok=1
-check_contains "T10 (unsafe-msg)" "Unsafe-shallow clone detected (depth=1 < 50)" "${out}" || ok=1
+check_contains "T10 (unsafe-msg)" "Unsafe-shallow clone detected (depth=1 < 100)" "${out}" || ok=1
 # SKÄRPNING 1: success-message ska INTE finnas (hard-fail före success-rad)
 check_not_contains "T10 (success-absent)" "Frontmatter-validering: alla 9 styrande docs passerar" "${out}" || ok=1
 mark "${ok}"
@@ -379,37 +379,37 @@ check_contains "T11a (success)" "Frontmatter-validering: alla 9 styrande docs pa
 mark "${ok}"
 
 # ============================================================
-# T11b: safe-shallow ADR-030-konvention (depth=50, default threshold=50)
+# T11b: safe-shallow ADR-030-konvention (depth=100, default threshold=100)
 # ============================================================
-# K4.2 (Session 6.6.7): testar K4.1.1 hybrid-detection safe-shallow-default.
-# is-shallow=true, count=50, threshold=50 (default) → NOT-unsafe (count NOT-lt 50).
+# K4.2 (Session 6.6.7) + K0.S2: testar K4.1.1 hybrid-detection safe-shallow-default.
+# is-shallow=true, count=100, threshold=100 (default per K0.S2) → NOT-unsafe (count NOT-lt 100).
 echo ""
-echo "═══ T11b: safe-shallow ADR-030-konvention (depth=50, default threshold=50) ═══"
+echo "═══ T11b: safe-shallow ADR-030-konvention (depth=100, default threshold=100) ═══"
 setup_repo
 write_all_valid
 git add . >/dev/null 2>&1
 git commit -q -m "fixture-t11b-base" >/dev/null 2>&1
 
-# Bygg 49 extra commits → total 50
-for i in $(seq 1 49); do
+# Bygg 99 extra commits → total 100 (safe-shallow vid tröskel 100, K0.S2)
+for i in $(seq 1 99); do
     echo "commit-${i}" >> .commit-counter
     git add .commit-counter >/dev/null 2>&1
     git commit -q -m "extra-${i}" >/dev/null 2>&1
 done
 
-# Verifiera count = 50
+# Verifiera count = 100
 ACTUAL_COUNT=$(git rev-list --count HEAD)
-if [[ "${ACTUAL_COUNT}" -ne 50 ]]; then
-    echo "❌ T11b fixture-setup-fel: förvänta 50 commits, fick ${ACTUAL_COUNT}"
+if [[ "${ACTUAL_COUNT}" -ne 100 ]]; then
+    echo "❌ T11b fixture-setup-fel: förvänta 100 commits, fick ${ACTUAL_COUNT}"
     exit 1
 fi
 
-rm -rf "${TEST_DIR}-shallow-50"
-git clone --depth=50 "file://${TEST_DIR}" "${TEST_DIR}-shallow-50" >/dev/null 2>&1
-cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow-50/scripts/check-frontmatter.sh"
-cp "${CONFIG_SRC}" "${TEST_DIR}-shallow-50/.frontmatter-policy.conf"
+rm -rf "${TEST_DIR}-shallow-100"
+git clone --depth=100 "file://${TEST_DIR}" "${TEST_DIR}-shallow-100" >/dev/null 2>&1
+cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow-100/scripts/check-frontmatter.sh"
+cp "${CONFIG_SRC}" "${TEST_DIR}-shallow-100/.frontmatter-policy.conf"
 
-cd "${TEST_DIR}-shallow-50" || { echo "❌ T11b cd failed"; exit 1; }
+cd "${TEST_DIR}-shallow-100" || { echo "❌ T11b cd failed"; exit 1; }
 out=$(bash scripts/check-frontmatter.sh 2>&1); ec=$?
 cd "${TEST_DIR}" || exit 1
 
@@ -423,7 +423,7 @@ mark "${ok}"
 # T12: full clone edge-case (count=1, is-shallow=false)
 # ============================================================
 # K4.2 (Session 6.6.7): testar K4.1.1 hybrid-detection is-shallow-check.
-# is-shallow=false (nytt repo), count=1, threshold=50 → NOT-unsafe.
+# is-shallow=false (nytt repo), count=1, threshold=100 → NOT-unsafe.
 # Regressions-skydd för K4.1-bug-mönstret (is-shallow=false ska
 # ALDRIG trigga hard-fail oavsett count).
 echo ""

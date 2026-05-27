@@ -5,6 +5,8 @@
 - Datum: 2026-05-14
 - Fas: Session 6.6 — Docs-grindvakter + frontmatter-policy + observations-pass (mellan Fas 2 och Fas 2.5)
 
+> **Korrigering (Session 7 K0.S2, 2026-05-27):** Texten anger genomgående `fetch-depth: 50` som CI-krav och detektions-tröskel (§ Del 3 "Implementations-krav på CI-miljö" + § Defensive programming). Faktiskt CI-värde är sedan 2026-05-26 `fetch-depth: 100` i alla tre jobb (commit-tunga sessioner — Session 6.7 ~25 commits, Session 7 fler; 50 gav för smal marginal). I K0.S2 återkopplades `FRONTMATTER_MIN_HISTORY_DEPTH` + `check-frontmatter.sh`-default + test-truth-table (T10/T11b) till 100 så detektionströskeln spårar fetch-depth (annars falsk-negativt fönster på commit-djup 50–99). Beslutstexten nedan bevaras oförändrad (immutabilitet) — 50→100 är en marginal-justering, inte ett designbyte.
+
 ## Kontext
 
 ADR-029 (2026-05-13) etablerade Strategi E (changed-files + needs-skip + aggregator) som kanonisk CI-arkitektur och lade till lychee broken-link-validering som NY kvalitets-check i `docs`-jobbet. ADR-029 § "Konvention för framtida CI-utvidgningar" säger explicit: *"Nya docs-checkar (markdownlint, cross-doc-grep-automation, spell-check) — läggs som steg i `docs`-jobbet"*. ADR-030 är förstā exekvering av den konventionen.
