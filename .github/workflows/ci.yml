@@ -107,7 +107,7 @@ jobs:
         run: npx @biomejs/biome check .
 
       - name: TypeScript check
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: TypeScript check (tests)
         run: npm run typecheck:tests

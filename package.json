@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsr generate && tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsr generate && tsc --noEmit",
+    "typecheck": "tsr generate && tsc -b --noEmit",
     "typecheck:tests": "tsc --noEmit -p tsconfig.tests.json",
     "lint": "biome check .",
     "format": "biome format --write .",
