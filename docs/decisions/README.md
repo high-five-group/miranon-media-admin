@@ -27,6 +27,15 @@ Varje ADR följer samma struktur:
 
 En ADR är **oföränderlig** efter att den accepterats. Om ett beslut senare ändras skrivs en ny ADR som `Supersedes ADR-NNN`, och den gamla markeras `Superseded by ADR-MMM`.
 
+### Korrigering vs supersedering
+
+Oföränderligheten justeras via en av två mekanismer beroende på omfattning:
+
+- **Additiv korrigerings-not** — när ADR:ns kärnbeslut STÅR men en avgränsad punkt visat sig felaktig eller inaktuell. En blockquote läggs direkt efter header-blocket (efter `- Fas: …`-raden): `> **Korrigering (<källa>, <datum>):** <vad som korrigeras>. Se <pekare>. Beslutstexten nedan bevaras oförändrad (immutabilitet).` Källan/pekaren är den korrigerande ADR:n (ADR-MMM) eller — för errata utan ny ADR — sessionen/committen som gjorde rättelsen. Ursprungstexten rörs ALDRIG. Precedens: ADR-001 + ADR-010 (korrigerade av ADR-036, Session 7 K0.1c); ADR-030 (fetch-depth-erratum, Session 7 K0.S2).
+- **Superseded by** — när beslutet i grunden ersätts eller ogiltigförklaras. En ny ADR skrivs som `Supersedes ADR-NNN`; den gamla markeras `Superseded by ADR-MMM`.
+
+Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv not; beslutet ersätts i grunden → supersedering.
+
 ## Index
 
 | Nr | Titel | Status | Fas |
