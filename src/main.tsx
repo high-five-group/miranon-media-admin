@@ -46,8 +46,28 @@ function InnerApp() {
   // Effekten KÖR vid state-ändring — router är modul-singleton, refereras inte i body.
   // biome-ignore lint/correctness/useExhaustiveDependencies: medveten TRIGGER på auth-state-byte
   useEffect(() => {
-    router.invalidate();
+    // Invalidate ENDAST när auth är löst. Under isLoading är <RouterProvider> render-gate:ad
+    // (mountas ej, se nedan) → routerns context.auth är fortfarande modul-defaulten (undefined).
+    // En invalidate då skulle köra beforeLoad mot undefined auth → krasch. Gaten + invalidate
+    // är komplementära: gaten sköter initial resolution, invalidate sköter login/logout
+    // (auth-byten EFTER mount, då isLoading redan är false).
+    if (!auth.isLoading) {
+      router.invalidate();
+    }
   }, [auth.isAuthenticated, auth.isLoading]);
+
+  // Render-gate (ADR-037): montera <RouterProvider> först när auth är löst. Invariant:
+  // context.auth är definitiv (isLoading=false) när VARJE beforeLoad körs → ingen flash
+  // av skyddat innehåll under auth-resolution (Fynd 2+3 + index.tsx-vektorn, K0.2b).
+  // Komplementär till invalidate-effekten ovan (initial resolution vs senare auth-byten).
+  // Laddningsindikatorn matchar __root.tsx Suspense-fallbacken (role=status, aria-live).
+  if (auth.isLoading) {
+    return (
+      <div role="status" aria-live="polite" className="p-4">
+        Laddar…
+      </div>
+    );
+  }
 
   return <RouterProvider router={router} context={{ auth }} />;
 }
