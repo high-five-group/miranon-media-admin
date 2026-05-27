@@ -1380,3 +1380,21 @@ En ändring av en hub-plugins skill-set måste åtföljas av en version-bump i `
 Datum: 2026-05-27 | Källa: Session 7 K0.1b–c (klass: Enforcement-verifiering)
 
 Ett enforcement-claim (hook, CI-steg, grind) ska bevisas, inte antas. `.claude/settings.json` `hooks.pre-commit` såg ut som en biome+tsc-grind men fyrade aldrig — dead config, eftersom Claude Codes hook-system inte har något `pre-commit`-event; ADR-001 + ADR-010 bar claimet overifierat sedan Fas 0. Verifiera fyrning empiriskt (injicera ett fel som grinden ska fånga → den måste blockera) innan ett config-block räknas som enforcement. Speglar L31 (verifiera repo-egenskaper mot faktiskt tillstånd) applicerat på grind-mekanik.
+
+### L44 [UNIVERSAL] — En route-guards beforeLoad blockerar render endast via throw/await; auth-resolution gate:as strukturellt, ej per route
+
+Datum: 2026-05-27 | Källa: Session 7 K0.2b (klass: Router-guard / auth-livscykel)
+
+I TanStack Router blockerar `beforeLoad` barn-render endast genom att `throw`:a (redirect/error) eller `await`:a en promise — en synkron `return` är en no-op och tillåter skyddat innehåll att rendera (flash). Den robusta lösningen är inte en bättre per-route-guard utan en **strukturell render-gate**: montera `<RouterProvider>` först när auth är löst, så invarianten "context.auth är definitiv när varje beforeLoad körs" gäller globalt. Klass-invariant slår per-route-kontroll (speglar L29: en regel på exakt ett ställe).
+
+### L45 [UNIVERSAL] — En render-gate framför en modul-scope-router kräver att inget fyrar mot routern förrän context är löst
+
+Datum: 2026-05-27 | Källa: Session 7 K0.2b DEL 4b (klass: Monterings-ordning / router-context)
+
+När en router skapas på modul-scope med en placeholder-context (`auth: undefined`) som fylls via `<RouterProvider context={…}>`, måste en render-gate som fördröjer mount också säkra att inget annat triggar router-bearbetning mot placeholdern. `router.invalidate()` i en `useEffect` fyrade på första rendern och körde `beforeLoad` mot `context.auth=undefined` → krasch. Att ändra monterings-ordningen tvingar en omprövning av **allt** som fyrar mot routern (invalidate, preload, navigering). Empiriskt funnet — antogs ej.
+
+### L46 [UNIVERSAL] — Kräver det robusta regressionstestet deferrad infra, defer:a ärligt med konkret spec — inte en falsk-grön ersättning
+
+Datum: 2026-05-27 | Källa: Session 7 K0.2b (klass: Test-disciplin / defer)
+
+Det deterministiska no-flash-testet kräver komponent-test-infra (vitest, deferrad till Fas 3.5). En flakig E2E-ersättning som inte kan ge kontrast-bevis (falla mot pre-fix-koden) är en falsk-grön signal — samma klass som dead-config-grinden K0.1c rev ut. Rätt drag: defer:a testet ärligt med en spec detaljerad nog att framtida fas aktiverar utan att återuppfinna, och bevisa fixen idag med tillgängliga medel (strukturellt resonemang + befintlig svit). Verifiering = bevis, inte teater.
