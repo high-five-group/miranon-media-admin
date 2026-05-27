@@ -5,6 +5,8 @@
 - **Datum:** 2026-04-14
 - **Fas:** 1
 
+> **Korrigering (ADR-036, 2026-05-27):** Påståendena nedan att pre-commit-hooken kör `biome check . && tsc --noEmit` och skulle blockera commits (Alternativ #5, Konsekvenser "Pre-commit-hooken är snabbare …") är felaktiga. `hooks.pre-commit` i `.claude/settings.json` var dead config och kördes aldrig — empiriskt bevisat Session 7 K0.1b. CI är den mekaniska kvalitetsgrinden. Se [ADR-036](ADR-036-kvalitetsgrind-ci-enda-mekaniska-enforcement.md). Beslutstexten nedan bevaras oförändrad (immutabilitet).
+
 ## Kontext
 
 `supabase/functions/*/index.ts` är Supabase Edge Functions som körs i **Deno**, inte Node. Deno-kod har några fundamentala skillnader från Node/Vite-kod:

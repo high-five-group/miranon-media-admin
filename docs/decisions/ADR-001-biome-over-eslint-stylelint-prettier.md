@@ -4,6 +4,8 @@
 - **Datum:** 2026-04-14
 - **Fas:** 0
 
+> **Korrigering (ADR-036, 2026-05-27):** Påståendena nedan att en pre-commit-hook kör `biome check . && tsc --noEmit` (Beslut, Konsekvenser "Pre-commit kör …", Följdbeslut) är felaktiga. `hooks.pre-commit` i `.claude/settings.json` var dead config och kördes aldrig vid commit — empiriskt bevisat Session 7 K0.1b (en fil med `debugger;` committades rent). CI är den mekaniska kvalitetsgrinden; lokal kvalitet vilar på DoD-disciplin. Se [ADR-036](ADR-036-kvalitetsgrind-ci-enda-mekaniska-enforcement.md). Beslutstexten nedan bevaras oförändrad (immutabilitet).
+
 ## Kontext
 
 Fas 0 behövde etablera lint- och formateringsverktyg för ett React 19 + TypeScript + Tailwind v4-projekt. Det klassiska valet i React-världen är en kombination av tre separata verktyg:
