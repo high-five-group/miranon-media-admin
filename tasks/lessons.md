@@ -1404,3 +1404,9 @@ Det deterministiska no-flash-testet kräver komponent-test-infra (vitest, deferr
 Datum: 2026-05-27 | Källa: Session 7 K0.3a–b (klass: Fynd-verifiering / empiri före design)
 
 Ett fynd i ett verifieringsdokument är en hypotes tills den prövats. K0.3a:s empiriska fel-test smalnade Fynd 4 från "router-fel ofångade och osynliga för Sentry" till den faktiska defekten: **enbart root-route-render-fel** föll till en obrandad default; loader-/komponent-fel hanterades redan, och alla nådde Sentry. En fix designad mot den breda hypotesen hade adresserat fel sak. Kör ett empiriskt fel-test (injicera felet på varje relevant plats, observera vad som fångar + var det rapporteras) **före** fel-hanterings-design — och rikta fixen mot den verifierade, smalnade defekten. Speglar L43 (bevisa fyrning, anta inte) på fynd-nivå.
+
+### L48 [UNIVERSAL] — Verifierings-fixturer pensioneras när deras verifiering är gjord och registrerad
+
+Datum: 2026-05-27 | Källa: Session 7 K0.4 (klass: Fixtur-livscykel / falsk signal)
+
+En fixtur skapad enbart för att bevisa något (test-route, probe, smoke-vy) ska tas bort när bevisningen är gjord och historiskt registrerad. En kvarlämnad fixtur i prod-route-tree/bundle är en falsk signal — den ser ut som funktionalitet men mäter inget (test-nuqs: inert dev-route + ~12.21 kB i prod-bundlen, "ej tillgänglig i produktion"-text men ändå närvarande). Knyt fixtur-borttagningen till den första riktiga användningen (här: nuqs-infra kvar, första `useQueryState` → Fas 6). Samma falsk-grön-signal-klass som dead-config-grinden (L43) och den deferrade-test-genvägen (L46), applicerad på verifierings-artefakter.
