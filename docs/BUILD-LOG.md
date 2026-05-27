@@ -623,7 +623,7 @@ Alla 8 DoD-rader från byggplan §4 Fas 2:
 | 5 | Router Devtools dev-only | K2.2 |
 | 6 | Playwright authenticatedPage-fixture | K4.2 (verifierad K4.3) |
 | 7 | [GA] Laddningsindikator under auth-resolution — uppfylld via render-gate, ej Suspense (ADR-037) | K2.2 (Suspense, fel mekanism) + K0.2b (render-gate) |
-| 8 | [GA] Error boundary på root | K2.2 |
+| 8 | [GA] Error boundary på root — router-fel inkl. root-route → branded fallback (ADR-038) | K2.2 (Sentry.EB) + K0.3b (defaultErrorComponent) |
 
 **Defense-in-depth-arkitekturen empiriskt verifierad:**
 
@@ -996,6 +996,8 @@ Stänger Fynd-punkter ur `docs/analysis/Fas-2-11-10-verification-2026-05-14.md` 
 **K0.1 — Fynd 1 (typecheck no-op):** `tsc --noEmit` utan `-b` ignorerade TypeScript project references (`tsconfig.json` = `files: []`), så Fas 2:s namngivna typecheck-signal var no-op för app-koden — `npm run build` (`tsc -b`) fångade typfel, men `typecheck`-scriptet + CI-steget `TypeScript check` gjorde det inte. Åtgärdat (commit `3c8c3f6`): `typecheck` → `tsr generate && tsc -b --noEmit`; CI `TypeScript check` → `npm run typecheck`. Negativ test bevisade kontrasten (TS2322 i app-fil: ny form exit 2, gammal exit 0). Typecheck-signalen är nu ärlig. Ingen ADR — bugg-fix av trasigt script, inget arkitekturbeslut.
 
 **K0.2 — Fynd 2 + 3 + index.tsx-vektorn (auth-resolution no-flash):** `_authenticated.tsx` `beforeLoad` blockerade inte render under `auth.isLoading` (synkron return = no-op) → flash av skyddat innehåll (Fynd 2); `__root.tsx` `<Suspense>` gateade aldrig auth (`AuthProvider` kastar ingen promise — Fynd 3); `index.tsx` saknade isLoading-hantering (egen flash-vektor). Åtgärdat (commit `e5346a5`): render-gate i `InnerApp` (`main.tsx`) — `<RouterProvider>` monteras först när auth löst + `router.invalidate()` guardad `if(!isLoading)` (ogardad → krasch mot router-modul-default `context.auth=undefined`); `beforeLoad` i `_authenticated`/`index`/`login` förenklade. No-flash strukturellt utesluten (RouterProvider monteras aldrig under loading); K4.3-sviten 7/7 grön. Deterministiskt regressionstest deferrat till Fas 3.5 (vitest), spec:at i `tasks/todo.md`. [ADR-037](decisions/ADR-037-auth-resolution-render-gate.md). DoD-rad 7-mekanismen omtolkad (render-gate-splash, ej Suspense).
+
+**K0.3 — Fynd 4 (root error boundary):** empiriskt fel-test (K0.3a) smalnade fyndet — loader-/route-komponent-fel fångades redan av `Sentry.ErrorBoundary` (app-fallback), men **root-route-render-fel** föll till TanStacks obrandade default ("Something went wrong!"); DoD-rad 8:s "ladda om"-fallback levererades inte för dem. Alla router-fel nådde Sentry via `createRoot` `onCaughtError`. Åtgärdat (commit `6bd756d`): `defaultErrorComponent` (`src/components/RouteErrorFallback.tsx`) i `createRouter` — branded fallback för alla router-fel inkl. root-route. K0.3b kontrast-test: (c) root-route-fel ger nu branded fallback (TanStack-varningen borta); `onCaughtError` 1× per fel (Sentry-capture intakt, ingen dubbel-rapport). Ingen `onError` (undviker dubbel-rapport); `Sentry.ErrorBoundary` orörd. [ADR-038](decisions/ADR-038-router-fel-defaultErrorComponent.md). Öppna frågor (Sentry.ErrorBoundary-roll, render-gate-yta, capture-konsolidering) → fel-hanterings-arkitektur-konsolidering i `tasks/todo.md`.
 
 ---
 

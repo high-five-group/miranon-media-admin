@@ -71,6 +71,7 @@ En ADR är **oföränderlig** efter att den accepterats. Om ett beslut senare ä
 | [ADR-035](ADR-035-plugin-aktivering-user-scope.md) | marcus-system-plugin aktiveras via user-scope install-record (scope-migrering övergiven; #38271) | Accepted | Meta |
 | [ADR-036](ADR-036-kvalitetsgrind-ci-enda-mekaniska-enforcement.md) | Kvalitetsgrind — CI enda mekaniska enforcement (pre-commit-grind var dead config; korrigerar ADR-001 + ADR-010) | Accepted | Meta |
 | [ADR-037](ADR-037-auth-resolution-render-gate.md) | Auth-resolution render-gate (mount-gate + guardad invalidate; stänger Fynd 2 + 3 + index.tsx-vektorn) | Accepted | 2 |
+| [ADR-038](ADR-038-router-fel-defaultErrorComponent.md) | Router-fel-fångst via defaultErrorComponent (branded fallback inkl. root-route; stänger Fynd 4) | Accepted | 2 |
 
 ## Relaterade dokument
 
