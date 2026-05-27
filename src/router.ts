@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { createRouter } from '@tanstack/react-router';
 import type { AuthContextValue } from './auth/AuthProvider';
+import { RouteErrorFallback } from './components/RouteErrorFallback';
 import { routeTree } from './routeTree.gen';
 
 // QueryClient defaults per docs/specs/STATE-STRATEGY.md §3.
@@ -31,6 +32,10 @@ export const queryClient = new QueryClient({
  */
 export const router = createRouter({
   routeTree,
+  // Branded fallback för alla router-livscykelfel inkl. root-route-fel (ADR-038).
+  // Ersätter TanStacks obrandade default ("Something went wrong!"). Sentry-capture
+  // sker via createRoot onCaughtError (main.tsx) — ingen onError här (undviker dubbel-rapport).
+  defaultErrorComponent: RouteErrorFallback,
   context: {
     queryClient,
     auth: undefined as unknown as AuthContextValue,
