@@ -16,7 +16,7 @@ status: stable
 > Varje korrigering, insikt och mönster fångas här.
 > Claude läser denna fil vid varje sessionsstart.
 > Lärdomar märkta [UNIVERSAL] bör lyftas till meta-repot.
-> **Senaste lyft:** Session 6.5 (2026-05-14) — K2.1–K2.15, 13 [UNIVERSAL]-lyft (broken-links-batch + grindvakts-disciplin + Chat-output 4-zoner-mall + Gate 2-review)
+> **Senaste lyft:** Session 7 (2026-05-27) — L38–L50, 13 [UNIVERSAL]-lyft → hub K7.1–K7.13 (Fas 2 11/10-verification: plugin-scope, grind-arkitektur, auth-render-gate, router-fel, fixtur-pensionering, defer-omklassning, konventions-koppling)
 
 ---
 
