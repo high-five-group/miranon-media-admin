@@ -1416,3 +1416,9 @@ En fixtur skapad enbart för att bevisa något (test-route, probe, smoke-vy) ska
 Datum: 2026-05-27 | Källa: Session 7 K0.5 (klass: Defer-disciplin / fas-status-ärlighet)
 
 Ett fynd man skjuter upp måste registreras med (a) den sanna nuvarande statusen — vad som ÄR verifierat vs inte, med klyftan namngiven och ägd — och (b) en konkret schemaläggning (vilken fas/mekanism aktiverar åtgärden). "Deferrat" utan ägd klyfta och plan är en dold lucka maskerad som beslut. Dessutom: ett enskilt deferrat fynd får inte hålla en fas kvalitets-status gisslan — reclassa ärligt (Fynd 5:s logout-väg + Fynd 7:s bundle var äkta defer:ar, inte öppna 11/10-blockers) så statusen varken är falskt grön eller falskt blockerad. Falsk-grön-familjen (L43/L46/L48) lyft till fas-status-nivå.
+
+### L50 [UNIVERSAL] — En parameter som via konvention ska spegla en annan kodkopplas eller får en invariant-not + test; annars driftar de tyst
+
+Datum: 2026-05-27 | Källa: Session 7 K0.S2 (klass: Konventions-koppling / drift-prevention)
+
+`FRONTMATTER_MIN_HISTORY_DEPTH` skulle per konvention spegla ci.yml:s `fetch-depth`. När fetch-depth bumpades 50→100 (2026-05-26) följde tröskeln inte med — den låg kvar på 50 i tre filer (ADR-030-text, `.frontmatter-policy.conf`, skript-default) → ett falsk-negativt detektionsfönster på commit-djup 50–99. Två parametrar som MÅSTE följas åt ska antingen **kodkopplas** (läs den ena ur den andra) eller, när det inte går (skild fil/yta), bära en **explicit invariant-not** ("håll tröskeln == fetch-depth") **+ en test som bevakar relationen**. En tyst konventions-koppling driftar isär vid första ensidiga ändring. Speglar L31 (verifiera mot faktiskt tillstånd) på parameter-relations-nivå.
