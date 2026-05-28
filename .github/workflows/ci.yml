@@ -171,9 +171,14 @@ jobs:
         # vid bygg-tid; dessa suiter bevisar att de fortsätter fånga drift
         # efter framtida edits. Kör varje push (snabba; changed-files-villkor
         # icke-trivialt för scripts/-domänen). Form-val: Session 8 K0b.
+        # Frontmatter + public-checklists wirade Session 9 DEL 2 (stänger
+        # L52/ADR-039:s öppna lesson→grind-loop — alla 4 grindar har nu
+        # fortlöpande regression-skydd).
         run: |
           bash scripts/test-check-adr-count.sh
           bash scripts/test-check-fetch-depth-invariant.sh
+          bash scripts/test-check-frontmatter.sh
+          bash scripts/test-check-public-checklists.sh
 
       - name: Install shellcheck (pinned v0.11.0)
         # Per ADR-033 § Säkerhet + ADR-029 § Third-party Actions-policy.
