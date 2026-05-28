@@ -316,13 +316,24 @@ write_all_valid
 git add . >/dev/null 2>&1
 git commit -q -m "fixture-t10" >/dev/null 2>&1
 
-# Skapa shallow clone (depth=1) från fixture
+# Skapa shallow clone (depth=1) från fixture.
+# Härdning per Session 9 DEL 2 STEG 2a: explicit clone-exit-check + stderr-
+# fångst. Stderr får ALDRIG sväljas; ett test vars felmeddelande pekar på
+# fel steg (t.ex. "cd failed" när orsaken är clone-fail) döljer sin egen
+# defekt och är icke-deterministiskt för CI-grindar (ADR-039).
 rm -rf "${TEST_DIR}-shallow"
-git clone --depth=1 "file://${TEST_DIR}" "${TEST_DIR}-shallow" >/dev/null 2>&1
+T10_CLONE_ERR=$(mktemp)
+if ! git clone --depth=1 "file://${TEST_DIR}" "${TEST_DIR}-shallow" >/dev/null 2>"${T10_CLONE_ERR}"; then
+    echo "❌ T10 clone failed:"
+    sed 's/^/    /' "${T10_CLONE_ERR}"
+    rm -f "${T10_CLONE_ERR}"
+    exit 1
+fi
+rm -f "${T10_CLONE_ERR}"
 cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow/scripts/check-frontmatter.sh"
 cp "${CONFIG_SRC}" "${TEST_DIR}-shallow/.frontmatter-policy.conf"
 
-cd "${TEST_DIR}-shallow" || { echo "❌ T10 cd failed"; exit 1; }
+cd "${TEST_DIR}-shallow" || { echo "❌ T10 cd failed (post-clone — clone returnerade 0 men dest saknas)"; exit 1; }
 out=$(bash scripts/check-frontmatter.sh 2>&1); ec=$?
 cd "${TEST_DIR}" || exit 1
 
@@ -346,7 +357,15 @@ git add . >/dev/null 2>&1
 git commit -q -m "fixture-t11a" >/dev/null 2>&1
 
 rm -rf "${TEST_DIR}-shallow-override"
-git clone --depth=1 "file://${TEST_DIR}" "${TEST_DIR}-shallow-override" >/dev/null 2>&1
+# Härdning per Session 9 DEL 2 STEG 2a (se T10-block för rationale).
+T11A_CLONE_ERR=$(mktemp)
+if ! git clone --depth=1 "file://${TEST_DIR}" "${TEST_DIR}-shallow-override" >/dev/null 2>"${T11A_CLONE_ERR}"; then
+    echo "❌ T11a clone failed:"
+    sed 's/^/    /' "${T11A_CLONE_ERR}"
+    rm -f "${T11A_CLONE_ERR}"
+    exit 1
+fi
+rm -f "${T11A_CLONE_ERR}"
 cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow-override/scripts/check-frontmatter.sh"
 # Override-config: threshold=1 (count=1 NOT-lt 1 → INTE unsafe)
 cat > "${TEST_DIR}-shallow-override/.frontmatter-policy.conf" << 'EOF'
@@ -405,13 +424,21 @@ if [[ "${ACTUAL_COUNT}" -ne 100 ]]; then
 fi
 
 rm -rf "${TEST_DIR}-shallow-100"
-# Stderr får ALDRIG sväljas på clone-anrop — ett test som döljer sin egen
-# felorsak är i sig en defekt (Session 9 DEL 2, väg A diagnos-först).
-git clone --depth=100 "file://${TEST_DIR}" "${TEST_DIR}-shallow-100" >/dev/null
+# Härdning per Session 9 DEL 2 STEG 2a (se T10-block för rationale).
+# Stderr får ALDRIG sväljas; "cd failed" får inte vara förklädnad för
+# clone-fail. Detta var bug:en som flappade i run 26573059441.
+T11B_CLONE_ERR=$(mktemp)
+if ! git clone --depth=100 "file://${TEST_DIR}" "${TEST_DIR}-shallow-100" >/dev/null 2>"${T11B_CLONE_ERR}"; then
+    echo "❌ T11b clone failed:"
+    sed 's/^/    /' "${T11B_CLONE_ERR}"
+    rm -f "${T11B_CLONE_ERR}"
+    exit 1
+fi
+rm -f "${T11B_CLONE_ERR}"
 cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow-100/scripts/check-frontmatter.sh"
 cp "${CONFIG_SRC}" "${TEST_DIR}-shallow-100/.frontmatter-policy.conf"
 
-cd "${TEST_DIR}-shallow-100" || { echo "❌ T11b cd failed"; exit 1; }
+cd "${TEST_DIR}-shallow-100" || { echo "❌ T11b cd failed (post-clone — clone returnerade 0 men dest saknas)"; exit 1; }
 out=$(bash scripts/check-frontmatter.sh 2>&1); ec=$?
 cd "${TEST_DIR}" || exit 1
 
