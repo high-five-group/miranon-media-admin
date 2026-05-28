@@ -405,7 +405,9 @@ if [[ "${ACTUAL_COUNT}" -ne 100 ]]; then
 fi
 
 rm -rf "${TEST_DIR}-shallow-100"
-git clone --depth=100 "file://${TEST_DIR}" "${TEST_DIR}-shallow-100" >/dev/null 2>&1
+# Stderr får ALDRIG sväljas på clone-anrop — ett test som döljer sin egen
+# felorsak är i sig en defekt (Session 9 DEL 2, väg A diagnos-först).
+git clone --depth=100 "file://${TEST_DIR}" "${TEST_DIR}-shallow-100" >/dev/null
 cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow-100/scripts/check-frontmatter.sh"
 cp "${CONFIG_SRC}" "${TEST_DIR}-shallow-100/.frontmatter-policy.conf"
 
