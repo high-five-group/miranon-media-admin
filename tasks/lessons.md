@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-27
+updated: 2026-05-28
 review_by: 2026-11-15
 status: stable
 ---
@@ -16,7 +16,7 @@ status: stable
 > Varje korrigering, insikt och mönster fångas här.
 > Claude läser denna fil vid varje sessionsstart.
 > Lärdomar märkta [UNIVERSAL] bör lyftas till meta-repot.
-> **Senaste lyft:** Session 7 (2026-05-27) — L38–L50, 13 [UNIVERSAL]-lyft → hub K7.1–K7.13 (Fas 2 11/10-verification: plugin-scope, grind-arkitektur, auth-render-gate, router-fel, fixtur-pensionering, defer-omklassning, konventions-koppling)
+> **Senaste lyft:** Session 8 (2026-05-28) — L51–L55, 5 [UNIVERSAL]-lyft → hub K8.1–K8.5 (process-retrospektiv: kadens-principen, lesson→grind-principen, immutabel-vs-invariant-test-nyans, premiss-verifiering, plugin-skill-edit-aktivering) — hub-commit `3c611bd`
 
 ---
 
@@ -1452,3 +1452,13 @@ En enkelvärde-invariant kan ha bärare av två klasser: **levande** (muterbar c
 Datum: 2026-05-27 | Källa: Session 8 K0b DEL 0 (klass: Forensisk pre-pass / premiss-verifiering)
 
 En prompts premisser om radnummer, värden och fil-mekanismer kan komma från ett stale index. K0b:s forensiska pre-pass (DEL 0, read-only, rapportera-verbatim före edit) fångade två fel-premisser före någon edit: (a) "3 ci.yml fetch-depth-värden" — faktiskt 4 (changed/lint/test/docs) → 6 levande bärare, ej 5; (b) "phase-end-verify matchar ingenting i README" — faktiskt matchade en stale `28` på en andra rad och hade larmat drift vid nästa fas-avslut. Regel: före edit mot nyligt-touchad config/infrastruktur, fastställ grundsanning mot disk (`grep`/`git`/läs källan) och STOPPA så fel-premisser korrigeras — propagera dem aldrig. Speglar L31 + L47 + Pre-K forensisk-pass (hub-konstitutionen) på prompt-premiss-nivå.
+
+### L55 [UNIVERSAL] — Plugin-skill-body-edit kräver version-bump + re-install för cache-aktivering
+
+Datum: 2026-05-28 | Källa: Session 8 K0c (klass: Plugin-distribution / cache-aktivering)
+
+En body-edit av en hub-skill (utan ändring av skill-set-antalet) aktiveras inte automatiskt på spoke-sidan via en hub-commit ensam. Cachen är path-keyed by version (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`) och materialiseras vid install-tillfället. Aktivering kräver i sin helhet: (a) hub-commit av skill-edit, (b) version-bump i `plugin.json`, (c) push, (d) `claude plugin marketplace update <name>`, (e) `claude plugin update <plugin>@<marketplace>`. K0c bevisade det empiriskt: pre-bump `grep -c "<ny rad>"` på cachad version = 0; post-re-install grep på ny versionsdir = 1; gamla versionsdir bevaras frusen.
+
+Version-stegs-precedens: PATCH för body-enrichment (utan API-/skill-set-ändring); MINOR för skill-set-count-ändring (enda tidigare bump var `marcus-system e8aadf0` 1.0.0→1.1.0 vid skill-set 6→4). Etablerat Session 8 K0c som första precedens för body-edit-bump.
+
+`installed_plugins.json.gitCommitSha` kan bli stale efter update (K0c-fynd: `1.1.1/` materialiserades från hub-commit `a2bd96b` men `gitCommitSha`-fältet stannade på den tidigare `e8aadf06`). De tillförlitliga fälten är `installPath` + `version` + cache-innehåll; CC läser från `installPath`. Andra empiriska datapunkten på L41/L42-fenomenet att CC:s plugin-state-fält är opålitliga — felsök inte från noll nästa gång. Hub-konsolidering: K8.5.
