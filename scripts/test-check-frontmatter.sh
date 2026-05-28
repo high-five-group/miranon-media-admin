@@ -423,6 +423,22 @@ if [[ "${ACTUAL_COUNT}" -ne 100 ]]; then
     exit 1
 fi
 
+# Race-mitigering före clone (Session 9 DEL 2 STEG 3, rotorsak verifierad).
+# Tight commit-loop ovan skapar ~300 loose objects. file://-URL-form (vi
+# använder URL specifikt för att UNDVIKA --local-optimering och simulera
+# transport-semantik per T11b:s testsyfte) får git-clone att spawna
+# git-upload-pack som SUBPROCESS på src-repot. Race-fönster: upload-pack
+# kan försöka läsa ett loose object som ännu inte är fs-synkat → "fatal:
+# unable to read <SHA>" → fetch-pack early EOF → invalid index-pack.
+# Empiriskt fångat run 26573910841 attempt 3 (1/6 = ~17% failure rate).
+# Mitigering: packa alla loose objects till en single pack-fil atomiskt
+# FÖRE clone — upload-pack läser då deterministiskt från pack-fil istället
+# för 100+ loose objects.
+# Källa: git-clone(1), --local-sektionen verbatim: "this operation can race
+# with concurrent modification to the source repository, similar to running
+# cp -r <src> <dst> while modifying <src>" (git-scm.com/docs/git-clone).
+git repack -ad >/dev/null
+
 rm -rf "${TEST_DIR}-shallow-100"
 # Härdning per Session 9 DEL 2 STEG 2a (se T10-block för rationale).
 # Stderr får ALDRIG sväljas; "cd failed" får inte vara förklädnad för
