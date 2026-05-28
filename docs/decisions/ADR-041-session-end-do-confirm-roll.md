@@ -95,7 +95,7 @@ Research gav frågan ett etablerat namn och ett svar (källor nedan).
 
 - session-end krymper från 15-stegs read-do till en kort do-confirm av
   Lager 3.
-- Flödet blir sömlöst: varje lager gör det det empiriskt är bäst på; inget
+- Flödet blir sömlöst: varje lager gör det som empiriskt är bäst; inget
   lager låtsas göra ett annats jobb.
 - Project Instructions växer med en governing-rad (källfil + manuell paste i
   claude.ai → Marcus).
