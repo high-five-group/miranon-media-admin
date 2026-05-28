@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-05-27 (Session 8 K0b — konsistens-grindar + ADR-039; lesson→grind-uppföljning öppen)*
+*Senast uppdaterad: 2026-05-28 (Session 8 K0c — alla cross-repo-trådar stängda: hub-skill-pekare aktiverad, hub-lessons K8.1–K8.5 + spoke L55 committade; lesson→grind-uppföljning kvar öppen som backlog)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
