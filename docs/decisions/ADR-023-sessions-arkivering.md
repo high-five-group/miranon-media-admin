@@ -4,6 +4,8 @@
 - Datum: 2026-05-06
 - Fas: Pre-Fas-2
 
+> **Korrigering (ADR-041, 2026-05-28):** Punkt 2 i "Konvention för framtida sessions" nedan säger generiskt "sessionsavslut". [ADR-041](ADR-041-session-end-do-confirm-roll.md) fastställer att sessionsdok-**arkivering** är **fas-avslut-bunden** (ej varje sessionsavslut) — vilket är praktiken sedan Session 7. Den generiska formuleringen nedan bevaras oförändrad för spårbarhet (immutabilitet); denna not styr tolkningen.
+
 ## Kontext
 
 `tasks/sessions/` innehöll 16 filer i platt struktur — 8 sessionslogg-filer (P0/P1/P2/P3a/P3b, security-hardening, datamodell-110, datamodell-research) + 7 fas-N-prompts (datamodell-research) + 1 aktiv (pre-Fas-2-verifiering, K1.A). Code:s K1.B Block 4.3: "16 filer är över den gräns där platt blir läsbar. Tröskelregel jag rekommenderar: arkivera vid ≥8 filer, behåll platt vid <8."
