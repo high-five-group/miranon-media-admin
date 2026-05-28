@@ -80,7 +80,7 @@ Research gav frågan ett etablerat namn och ett svar (källor nedan).
 ## Alternativ som övervägdes
 
 - **Do-confirm-verifiering (VALT).** Branschpraxis: Gawande / WHO Safe Surgery
-  + flyg-checklistor (do-confirm valt för erfaren utförare, flexibilitet,
+  och flyg-checklistor (do-confirm valt för erfaren utförare, flexibilitet,
   paus-bekräftelse); deployment/runbook-praxis (checklistan = sista manuella
   grinden, "automatisera det du kan", autonom exekvering medvetet undantag ej
   default); SRE postmortem-action-spårning (redan L52).
