@@ -37,6 +37,28 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# ==============================================================================
+# DORMANCY-NOTE (Session 9 DEL 2 arkiverad 2026-05-29)
+# ==============================================================================
+# Race-fixen i setup_repo() nedan (git config gc.auto 0 + maintenance.auto 0)
+# och T11b-blockets `git repack -ad` är verifierade 10/10 grön i CI på commit
+# 32c953f mot ett reellt git upload-pack/pack-objects race på Ubuntu-24.04 +
+# git 2.54.0. Förstapartskälla för mekanismen: git-gc(1)
+# (https://git-scm.com/docs/git-gc).
+#
+# Testsviten själv är OWIRAD från CI sedan revert fba2624 (Session 9 DEL 2 →
+# egen session). Orsak: separat CI-state-drift upptäckt 2026-05-29 — main-CI
+# rapporterade deterministisk frontmatter-drift (4 filer, '2026-05-17 driftar
+# från git log 2026-05-18') som inte reproducerades lokalt (5/5 CI-röd vs
+# konstant lokalt grön). Bedöms som samma mönsterklass som T11b-racet:
+# CI-grindar interagerar med environment-state utanför vår kontroll →
+# kandidat-ADR-042-territorium för framtida session.
+#
+# Lesson→grind-wiring återupptas i egen session med full uppmärksamhet.
+# Race-fixen vilar i scriptet — körs ej på CI efter revert, men representerar
+# verifierad mekanism + förstapartskälla mot reellt race. Disciplin L53:
+# öppen falsifierings/paus-trail, INTE tyst rivning.
+# ==============================================================================
 setup_repo() {
     rm -rf "${TEST_DIR}"
     mkdir -p "${TEST_DIR}"
