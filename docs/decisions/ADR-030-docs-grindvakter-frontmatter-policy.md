@@ -6,6 +6,8 @@
 - Fas: Session 6.6 — Docs-grindvakter + frontmatter-policy + observations-pass (mellan Fas 2 och Fas 2.5)
 
 > **Korrigering (Session 7 K0.S2, 2026-05-27):** Texten anger genomgående `fetch-depth: 50` som CI-krav och detektions-tröskel (§ Del 3 "Implementations-krav på CI-miljö" + § Defensive programming). Faktiskt CI-värde är sedan 2026-05-26 `fetch-depth: 100` i alla tre jobb (commit-tunga sessioner — Session 6.7 ~25 commits, Session 7 fler; 50 gav för smal marginal). I K0.S2 återkopplades `FRONTMATTER_MIN_HISTORY_DEPTH` + `check-frontmatter.sh`-default + test-truth-table (T10/T11b) till 100 så detektionströskeln spårar fetch-depth (annars falsk-negativt fönster på commit-djup 50–99). Beslutstexten nedan bevaras oförändrad (immutabilitet) — 50→100 är en marginal-justering, inte ett designbyte.
+>
+> **Korrigering (Session 9, 2026-05-29 — se [ADR-039](ADR-039-konsistens-grindar-kadens.md)-erratum):** Live-värdet för `fetch-depth` + `FRONTMATTER_MIN_HISTORY_DEPTH` + `check-frontmatter.sh`-default är vidarebumpat `100 → 250`. Empirisk grund: 5 av 9 styrande docs ackumulerade > 100 commits från senast-rörande commit till HEAD vid Session 9 (värsta avstånd 115 commits; BYGGPLAN-LÄTTLÄST exakt på 100 = en commit till hade tippat över). Mönsterförstärkning av Session 7 K0.S2-bumpen ovan. Beslutstexten + truth-table-kommentarer i `.frontmatter-policy.conf` bevaras oförändrade; detta erratum spårar enbart de levande värdena.
 
 ## Kontext
 

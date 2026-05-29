@@ -33,7 +33,7 @@ cleanup() {
     rm -rf "${TEST_DIR}" \
         "${TEST_DIR}-shallow" \
         "${TEST_DIR}-shallow-override" \
-        "${TEST_DIR}-shallow-100"
+        "${TEST_DIR}-shallow-250"
 }
 trap cleanup EXIT
 
@@ -365,12 +365,13 @@ check_contains "T9 (actionable)" "Fix: skapa .frontmatter-policy.conf" "${out}" 
 mark "${ok}"
 
 # ============================================================
-# T10: unsafe-shallow hard-fail (depth=1, default threshold=100)
+# T10: unsafe-shallow hard-fail (depth=1, default threshold=250)
 # ============================================================
 # K4.2 (Session 6.6.7): testar K4.1.1 hybrid-detection count-check.
-# is-shallow=true, count=1, threshold=100 (default per K0.S2) → hard-fail.
+# is-shallow=true, count=1, threshold=250 (default per Session 9 bump 100→250)
+# → hard-fail.
 echo ""
-echo "═══ T10: unsafe-shallow hard-fail (depth=1, default threshold=100) ═══"
+echo "═══ T10: unsafe-shallow hard-fail (depth=1, default threshold=250) ═══"
 setup_repo
 write_all_valid
 git add . >/dev/null 2>&1
@@ -399,7 +400,7 @@ cd "${TEST_DIR}" || exit 1
 
 ok=0
 check_exit "T10" 1 "${ec}" || ok=1
-check_contains "T10 (unsafe-msg)" "Unsafe-shallow clone detected (depth=1 < 100)" "${out}" || ok=1
+check_contains "T10 (unsafe-msg)" "Unsafe-shallow clone detected (depth=1 < 250)" "${out}" || ok=1
 # SKÄRPNING 1: success-message ska INTE finnas (hard-fail före success-rad)
 check_not_contains "T10 (success-absent)" "Frontmatter-validering: alla 9 styrande docs passerar" "${out}" || ok=1
 mark "${ok}"
@@ -458,63 +459,72 @@ check_contains "T11a (success)" "Frontmatter-validering: alla 9 styrande docs pa
 mark "${ok}"
 
 # ============================================================
-# T11b: safe-shallow ADR-030-konvention (depth=100, default threshold=100)
+# T11b: safe-shallow ADR-030-konvention (depth=250, default threshold=250)
 # ============================================================
-# K4.2 (Session 6.6.7) + K0.S2: testar K4.1.1 hybrid-detection safe-shallow-default.
-# is-shallow=true, count=100, threshold=100 (default per K0.S2) → NOT-unsafe (count NOT-lt 100).
+# K4.2 (Session 6.6.7) + K0.S2 + Session 9 DEL 2.5: testar K4.1.1 hybrid-
+# detection safe-shallow-default. is-shallow=true, count=250, threshold=250
+# (default per Session 9 bump 100→250) → NOT-unsafe (count NOT-lt 250).
+#
+# count == MIN_DEPTH för att testa edge-case "safe-shallow vid exakt tröskel".
+# Värdet (250) bumpas tillsammans med invariant-värdet i ADR-039-erratums —
+# alla yttringar av tröskeln (live-bärare + ADR-erratums + denna test-suite)
+# måste hållas i synk så testet INTE ljuger om sin testperson.
+# Senast bumpad Session 9, 2026-05-29 (100 → 250).
 echo ""
-echo "═══ T11b: safe-shallow ADR-030-konvention (depth=100, default threshold=100) ═══"
+echo "═══ T11b: safe-shallow ADR-030-konvention (depth=250, default threshold=250) ═══"
 setup_repo
 write_all_valid
 git add . >/dev/null 2>&1
 git commit -q -m "fixture-t11b-base" >/dev/null 2>&1
 
-# Bygg 99 extra commits → total 100 (safe-shallow vid tröskel 100, K0.S2)
-for i in $(seq 1 99); do
+# Bygg 249 extra commits → total 250 (safe-shallow vid tröskel 250, Session 9)
+for i in $(seq 1 249); do
     echo "commit-${i}" >> .commit-counter
     git add .commit-counter >/dev/null 2>&1
     git commit -q -m "extra-${i}" >/dev/null 2>&1
 done
 
-# Verifiera count = 100
+# Verifiera count = 250
 ACTUAL_COUNT=$(git rev-list --count HEAD)
-if [[ "${ACTUAL_COUNT}" -ne 100 ]]; then
-    echo "❌ T11b fixture-setup-fel: förvänta 100 commits, fick ${ACTUAL_COUNT}"
+if [[ "${ACTUAL_COUNT}" -ne 250 ]]; then
+    echo "❌ T11b fixture-setup-fel: förvänta 250 commits, fick ${ACTUAL_COUNT}"
     exit 1
 fi
 
 # Race-mitigering före clone (Session 9 DEL 2 STEG 3, rotorsak verifierad).
-# Tight commit-loop ovan skapar ~300 loose objects. file://-URL-form (vi
-# använder URL specifikt för att UNDVIKA --local-optimering och simulera
-# transport-semantik per T11b:s testsyfte) får git-clone att spawna
-# git-upload-pack som SUBPROCESS på src-repot. Race-fönster: upload-pack
-# kan försöka läsa ett loose object som ännu inte är fs-synkat → "fatal:
-# unable to read <SHA>" → fetch-pack early EOF → invalid index-pack.
-# Empiriskt fångat run 26573910841 attempt 3 (1/6 = ~17% failure rate).
+# Tight commit-loop ovan skapar ~750 loose objects (3 per commit × 250).
+# file://-URL-form (vi använder URL specifikt för att UNDVIKA --local-
+# optimering och simulera transport-semantik per T11b:s testsyfte) får
+# git-clone att spawna git-upload-pack som SUBPROCESS på src-repot. Race-
+# fönster: upload-pack kan försöka läsa ett loose object som ännu inte är
+# fs-synkat → "fatal: unable to read <SHA>" → fetch-pack early EOF →
+# invalid index-pack.
+# Empiriskt fångat run 26573910841 attempt 3 (1/6 = ~17% failure rate vid
+# 100-commit-loop; samma race-mekanism gäller vid 250-commit-loop).
 # Mitigering: packa alla loose objects till en single pack-fil atomiskt
 # FÖRE clone — upload-pack läser då deterministiskt från pack-fil istället
-# för 100+ loose objects.
+# för 750+ loose objects.
 # Källa: git-clone(1), --local-sektionen verbatim: "this operation can race
 # with concurrent modification to the source repository, similar to running
 # cp -r <src> <dst> while modifying <src>" (git-scm.com/docs/git-clone).
 git repack -ad >/dev/null
 
-rm -rf "${TEST_DIR}-shallow-100"
+rm -rf "${TEST_DIR}-shallow-250"
 # Härdning per Session 9 DEL 2 STEG 2a (se T10-block för rationale).
 # Stderr får ALDRIG sväljas; "cd failed" får inte vara förklädnad för
 # clone-fail. Detta var bug:en som flappade i run 26573059441.
 T11B_CLONE_ERR=$(mktemp)
-if ! git clone --depth=100 "file://${TEST_DIR}" "${TEST_DIR}-shallow-100" >/dev/null 2>"${T11B_CLONE_ERR}"; then
+if ! git clone --depth=250 "file://${TEST_DIR}" "${TEST_DIR}-shallow-250" >/dev/null 2>"${T11B_CLONE_ERR}"; then
     echo "❌ T11b clone failed:"
     sed 's/^/    /' "${T11B_CLONE_ERR}"
     rm -f "${T11B_CLONE_ERR}"
     exit 1
 fi
 rm -f "${T11B_CLONE_ERR}"
-cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow-100/scripts/check-frontmatter.sh"
-cp "${CONFIG_SRC}" "${TEST_DIR}-shallow-100/.frontmatter-policy.conf"
+cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow-250/scripts/check-frontmatter.sh"
+cp "${CONFIG_SRC}" "${TEST_DIR}-shallow-250/.frontmatter-policy.conf"
 
-cd "${TEST_DIR}-shallow-100" || { echo "❌ T11b cd failed (post-clone — clone returnerade 0 men dest saknas)"; exit 1; }
+cd "${TEST_DIR}-shallow-250" || { echo "❌ T11b cd failed (post-clone — clone returnerade 0 men dest saknas)"; exit 1; }
 out=$(bash scripts/check-frontmatter.sh 2>&1); ec=$?
 cd "${TEST_DIR}" || exit 1
 
@@ -528,7 +538,7 @@ mark "${ok}"
 # T12: full clone edge-case (count=1, is-shallow=false)
 # ============================================================
 # K4.2 (Session 6.6.7): testar K4.1.1 hybrid-detection is-shallow-check.
-# is-shallow=false (nytt repo), count=1, threshold=100 → NOT-unsafe.
+# is-shallow=false (nytt repo), count=1, threshold=250 → NOT-unsafe.
 # Regressions-skydd för K4.1-bug-mönstret (is-shallow=false ska
 # ALDRIG trigga hard-fail oavsett count).
 echo ""

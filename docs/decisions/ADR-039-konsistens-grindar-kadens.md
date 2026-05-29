@@ -4,6 +4,8 @@
 - Datum: 2026-05-27
 - Fas: Meta (Session 8 K0b — process-retrospektivens åtgärdssteg)
 
+> **Korrigering (Session 9, 2026-05-29):** fetch-depth-invariantens levande värde bumpas `100 → 250` i samtliga 6 bärare ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) × 4 jobb + [`.frontmatter-policy.conf`](../../.frontmatter-policy.conf) + [`scripts/check-frontmatter.sh`](../../scripts/check-frontmatter.sh)-default). Empirisk grund: 5 av 9 styrande docs ackumulerade > 100 commits från senast-rörande commit till HEAD vid Session 9 (värsta avstånd 115 commits; BYGGPLAN-LÄTTLÄST exakt på 100). Rationale: commits-per-session-takt ~55/session på commit-tunga sessioner × marginal-i-sessioner (~2–3) ≈ 250. Mönsterförstärkning av Session 7 K0.S2 (50→100). Tredje upprepning av detta mönster ska lyftas till egen ADR om periodisk invariant-värde-översyn som princip — inte denna gång. ADR-029 + ADR-030 har additiva korrigerings-noter som spårar samma bump inom sina respektive jurisdiktioner.
+
 ## Kontext
 
 Session 8 K0a (process-retrospektivens kartläggning, registrerad i

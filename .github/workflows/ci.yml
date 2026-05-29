@@ -35,7 +35,7 @@ jobs:
           # Djup 100: commit-tunga sessioner kan skjuta orörda governing-docs
           # förbi djup 50 (Session 6.7 ~25 commits → frontmatter-falskpositiv);
           # 100 ger reell marginal. Per K1.D §0 utelämning #6.
-          fetch-depth: 100
+          fetch-depth: 250
 
       - name: Get changed files
         id: changed-files
@@ -87,7 +87,7 @@ jobs:
           # changed-jobbet per ADR-029 § Utelämning #6 motivering:
           # depth 100: 50 bröt marginalen för commit-tunga sessioner (6.7 ~25).
           # Etablerad K2.1 efter K7.C latent shallow-clone-bug-upptäckt.
-          fetch-depth: 100
+          fetch-depth: 250
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -240,7 +240,7 @@ jobs:
           # changed-jobbet per ADR-029 § Utelämning #6 motivering:
           # depth 100: 50 bröt marginalen för commit-tunga sessioner (6.7 ~25).
           # Etablerad K2.1 efter K7.C latent shallow-clone-bug-upptäckt.
-          fetch-depth: 100
+          fetch-depth: 250
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -335,7 +335,7 @@ jobs:
           # changed-jobbet per ADR-029 § Utelämning #6 motivering:
           # depth 100: 50 bröt marginalen för commit-tunga sessioner (6.7 ~25).
           # Etablerad K2.1 efter K7.C latent shallow-clone-bug-upptäckt.
-          fetch-depth: 100
+          fetch-depth: 250
 
       - name: Restore lychee cache
         id: restore-cache

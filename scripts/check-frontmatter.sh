@@ -67,7 +67,7 @@ EXIT_CODE=0
 #   nytt-repo  shallow=false, count<100:  IGNORERAS (full clone, ny repo)
 IS_SHALLOW=$(git rev-parse --is-shallow-repository 2>/dev/null || echo "false")
 COMMIT_DEPTH=$(git rev-list --count HEAD 2>/dev/null || echo "0")
-MIN_DEPTH="${FRONTMATTER_MIN_HISTORY_DEPTH:-100}"
+MIN_DEPTH="${FRONTMATTER_MIN_HISTORY_DEPTH:-250}"
 
 if [[ "${IS_SHALLOW}" == "true" ]] && [[ "${COMMIT_DEPTH}" -lt "${MIN_DEPTH}" ]]; then
     UNSAFE_SHALLOW=1

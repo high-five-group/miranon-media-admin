@@ -6,6 +6,8 @@
 - Fas: Session 6 — CI-optimering (mellan Fas 2 och Fas 2.5)
 
 > **Korrigering (Session 8 K0b, 2026-05-27):** § Medvetna utelämningar #6 nedan anger `fetch-depth: 50` för `changed`-jobbet. Det faktiska värdet i `changed`-jobbet ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)) är sedan 2026-05-26 `fetch-depth: 100` (50 gav för smal marginal för commit-tunga sessioner — Session 6.7 ~25 commits). Den repo-vida invarianten att fetch-depth hålls enhetligt över samtliga CI-jobb + frontmatter-tröskeln ägs och CI-grindas av [ADR-039](ADR-039-konsistens-grindar-kadens.md); detta erratum korrigerar enbart `changed`-jobbets värde inom ADR-029:s jurisdiktion. Beslutstexten nedan bevaras oförändrad (immutabilitet) — 50→100 är en marginal-justering, inte ett designbyte.
+>
+> **Korrigering (Session 9, 2026-05-29 — se [ADR-039](ADR-039-konsistens-grindar-kadens.md)-erratum):** Live-värdet för `changed`-jobbets `fetch-depth` är vidarebumpat `100 → 250`. Empirisk grund: 5 av 9 styrande docs ackumulerade > 100 commits från senast-rörande commit till HEAD vid Session 9 (värsta avstånd 115 commits; BYGGPLAN-LÄTTLÄST exakt på 100). Mönsterförstärkning av Session 8 K0b-bumpen ovan. Beslutstexten nedan bevaras oförändrad; detta erratum spårar enbart `changed`-jobbets levande värde.
 
 ## Kontext
 
