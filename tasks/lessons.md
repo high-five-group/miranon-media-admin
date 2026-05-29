@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-28
+updated: 2026-05-29
 review_by: 2026-11-15
 status: stable
 ---
@@ -1462,3 +1462,93 @@ En body-edit av en hub-skill (utan ändring av skill-set-antalet) aktiveras inte
 Version-stegs-precedens: PATCH för body-enrichment (utan API-/skill-set-ändring); MINOR för skill-set-count-ändring (enda tidigare bump var `marcus-system e8aadf0` 1.0.0→1.1.0 vid skill-set 6→4). Etablerat Session 8 K0c som första precedens för body-edit-bump.
 
 `installed_plugins.json.gitCommitSha` kan bli stale efter update (K0c-fynd: `1.1.1/` materialiserades från hub-commit `a2bd96b` men `gitCommitSha`-fältet stannade på den tidigare `e8aadf06`). De tillförlitliga fälten är `installPath` + `version` + cache-innehåll; CC läser från `installPath`. Andra empiriska datapunkten på L41/L42-fenomenet att CC:s plugin-state-fält är opålitliga — felsök inte från noll nästa gång. Hub-konsolidering: K8.5.
+
+## 2026-05-29 — Session 9 (Roll-arkitektur + ADR-041 do-confirm-reframe + fetch-depth-invariant 100→250)
+
+> Antal poster: 10, alla [UNIVERSAL] (L56–L65). Skördade ur Session 9 — process-tung session som spände 5 DEL:ar inkl. [ADR-041](../docs/decisions/ADR-041-session-end-do-confirm-roll.md) (do-confirm-roll), fetch-depth-invariant-bump (100→250 via [ADR-039](../docs/decisions/ADR-039-konsistens-grindar-kadens.md)-erratum), Chat-side roll-arkitektur i Project Instructions, hub-konstitutions-utvidgning, plus DEL 2-sidotråd som avslöjade pre-existing CI-only-defekt i T11b. Hub-lyft pending — nästa K-sista.
+
+### L56 [UNIVERSAL] — Lokal CI-paritet före docs-push: kör exakta CI-kommandon, inte approximation
+
+Datum: 2026-05-29 | Källa: Session 9 DEL 1 (klass: CI-disciplin / paritets-verifikation)
+
+Två studsar på samma docs-push (ADR-041 MD004 + Vale.Repetition) hade fångats lokalt om de exakta CI-kommandona kört före push — inte approximation. Generaliserbar regel: innan en docs-commit pushas, kör `npm run lint:prose` + `npx markdownlint-cli2` (inga args, CI-identiska invocations). Mental-dry-run räcker inte; "lokalt grönt på filen" via ad-hoc-kommandon räcker inte heller — det måste vara CI:s exakta anrop. Speglar L20: CI-troget anrop framför approximation. Bonus-effekt: regimen fångar pre-existing violations i filer du rör, så du kan flagga dem som spårdata istället för att smyglaga in dem.
+
+Empirisk grund: DEL 1 commit 23e8254 failade på MD004 (radstarts-`+` tolkat som listmarker), cleanup-commit 6e0c175 failade på Vale.Repetition ("det det"). Båda fångats av lokal CI-paritet om regimen körts. Etablerad som permanent disciplin från DEL 1-cleanup framåt.
+
+### L57 [UNIVERSAL] — Lesson→grind-wiring kan exponera latenta CI-only-defekter som ändrar arbetsbörda radikalt; planera för det
+
+Datum: 2026-05-29 | Källa: Session 9 DEL 2 (klass: CI-arkitektur / wiring-effekt)
+
+När en pre-existing testsvit CI-wiras för första gången per L52-principen, kan det exponera latenta CI-only-defekter som varit dormanta. Generaliserbar regel: behandla första-gångs-wiring som *upptäcktsoperation* med osäker scope, inte som mekanisk dependency. Förvillkor "passerar grönt lokalt" är otillräckligt — det måste även verifieras att invariantskydd (t.ex. `check-fetch-depth-invariant`) inte trippas av wiring-formen, och att sviten inte har platform-känsligt beteende (macOS lokalt ≠ Ubuntu CI).
+
+Empirisk grund: DEL 2 wiring av `test-check-frontmatter.sh` + `test-check-public-checklists.sh` exponerade flapping i T11b (git upload-pack-race mellan pack-objects-child och auto-gc/maintenance). 1/6 fail på samma commit i CI, lokalt 14/14 grönt på macOS. Hypotes (a) repack-mitigering empiriskt falsifierad; hypotes (b) auto-gc/maintenance.auto-fix verifierad 10/10 grönt. Familj med L20 (CI-troget anrop) + L54 (verifiera prompt-premisser mot disk).
+
+Diagnostisk legibilitet är icke-förhandlingsbar: ett test som sväljer sitt fel (`2>/dev/null`) döljer sin egen defekt. När ett test failar med "cd failed" istället för "clone failed: `<git-stderr>`", pekar felmeddelandet på fel steg — det är aktiv felinformation. Härdning genom explicit `if ! git clone ...; then echo "<stderr>"; exit 1` är universell shell-disciplin, oavsett om felet är reproducerbart.
+
+### L58 [UNIVERSAL] — Web-research ska peka ut vilken mekanism-familj som matchar, inte bekräfta den mest tilltalande hypotesen
+
+Datum: 2026-05-29 | Källa: Session 9 DEL 2 STEG 3a (klass: Web-research / hypotes-disciplin)
+
+När empirin matchar flera möjliga mekanism-familjer, ska web-research *falsifiera* den mest tilltalande hypotesen lika gärna som bekräfta den. Generaliserbar regel: en signatur som "unable to read `<SHA>`" har minst tre kända familjer (loose→pack-race, fsync/sync-window, fil-deskriptor-state). Fel hypotes → fel fix. Research:en pekar ut *vilken* familj är aktiv, baserat på empiri + förstapartskälla — inte vilken som först kändes rätt. Speglar L35: research för arkitektur kräver förstapartskälla + mönster, inte bara mekanism.
+
+Empirisk grund: DEL 2 STEG 3 hypotes (a) loose→pack-race (Atlassian KB-tolkning) föreslog `git repack -ad` som mitigering. Implementerad i commit 50b91e6 → 2/10 failure → hypotesen falsifierad. Hypotes (b) auto-gc/maintenance.auto-race verifierades mot git-gc(1) (förstapartskälla, verbatim citat om gc:s race med samtidig pack-objects-läsning) → 10/10 grönt efter `git config gc.auto 0` + `maintenance.auto 0` (commit 32c953f).
+
+### L59 [UNIVERSAL] — Verifierad fix utan attribuering ≠ begripen determinism; erkänn obegripenhet öppet
+
+Datum: 2026-05-29 | Källa: Session 9 DEL 2 STEG 3a-isolering (klass: Verifikation / determinism-epistemologi)
+
+När en fix består av flera konfigurations-rader och bara den kombinerade effekten är empiriskt bevisad (inte vilken rad som faktiskt löste racet), är det *verifierad fix utan attribuering* — inte *begripen determinism*. Generaliserbar regel: två rader i en commit där en kan vara redundant är inte automatiskt "belt-and-suspenders". Markdown-kommentar ovanför fixen ska *erkänna* obegripenheten ("attribuering blockerad av PR-checkout-artefakt; båda raderna behållna utan att hävda att redundansen är förstådd"), inte hävda begripenhet. Speglar L15 om empirisk verifikation före påstående.
+
+Empirisk grund: DEL 2 STEG 3a-isolering pushade `gc.auto 0` + `maintenance.auto 0` som kombinerad fix → 10/10 grönt. Försök att isolera (PR-branch med en rad åt gången) blockerades av separat artefakt: PR-mode checkout använder `refs/pull/N/merge` som har annan committer-datum än branch-tip, vilket failade `check-frontmatter`-validatorn innan T11b ens kördes. Konfigurations-attribuering återstår obegripen — dokumenterad öppet i scripts/test-check-frontmatter.sh setup_repo() per L53.
+
+### L60 [UNIVERSAL] — CI-grindar som läser git-metadata kan vara mode-känsliga (push vs PR-merge); validera mot båda om mode-portabilitet förväntas
+
+Datum: 2026-05-29 | Källa: Session 9 DEL 2 STEG 3a-isolering (klass: CI-mekanik / mode-portabilitet)
+
+`actions/checkout` på `pull_request`-trigger checkar ut `refs/pull/N/merge` (simulated merge commit) som har **annan committer-datum** än branch-tip. Generaliserbar regel: CI-grindar som läser git-metadata (t.ex. `git log -1 --format=%cs`) kan ge olika svar på push-mode vs PR-merge-mode för samma kod. Det är inte flapping — det är deterministisk drift mellan modes. Om mode-portabilitet förväntas av grinden, måste den valideras mot båda modes; annars är den mode-bunden by design och det måste dokumenteras.
+
+Empirisk grund: DEL 2 STEG 3a-isoleringsförsök via draft-PR. `check-frontmatter` failade deterministiskt på alla 4 testade filer (`'2026-05-17' driftar från git log '2026-05-18'`) eftersom merge-mode-checkouten gav annan committer-datum. Pre-existerande sedan Session 6.6 K7.B men aldrig manifesterat eftersom Marcus inte använder PR-flöde rutinmässigt. Flaggad som "om PR-flödet aktiveras i framtiden, denna grind behöver ses över" — inte fix nu, spårdata.
+
+### L61 [UNIVERSAL] — Lokalt försvarbart beslut + lokalt försvarbart beslut = aggregat scope-eskalering om man inte stannar och frågar meta-frågan
+
+Datum: 2026-05-29 | Källa: Session 9 DEL 2 meta-fråga (klass: Process-disciplin / scope-meta)
+
+Varje beslut i en sidotråd kan vara lokalt försvarbart (rotorsaka istället för maska, falsifiera hypotes, attribuera empiriskt) och ändå tillsammans utgöra scope-eskalering som tar hela sessionen ifrån sitt huvudtema. Generaliserbar regel: vid var tredje beslut i en sidotråd, ställ meta-frågan explicit — "är detta fortfarande sessionens huvudtema, eller har vi glidit?". Inte vid första; inte vid femte (då är det för sent). Vid tredje. Beslutsdiscipliner är lokala; scope-discipliner är meta. Speglar L15 på meta-nivå: empirisk verifikation gäller även sessionens egen process, inte bara dess innehåll.
+
+Empirisk grund: DEL 2-sidotråden eskalerade i fyra rundor (T11b-discovery → repack-fix-falsifiering → research-runda → auto-gc-fix → attribuerings-block → CI-state-skifte). Varje runda lokalt försvarbar; aggregatet stal momentum från huvudtemat (session-end-reframe). Stängdes till slut av meta-fråga från Code: "rulla tillbaka wiring-commiten + flytta lesson→grind till egen session" — vilket Marcus kvitterade. Lesson lever vidare för dedikerad session.
+
+Mönsterförstärkning: detta är *parallell process-disciplin* till Chat-self-review-luckan (~9%-effektivitet). När Chat designar sidotrådar i flödet kan trötthet eller momentum bädda in glidning utan att Chat självt fångar det. Code:s STOPPA-OCH-FRÅGA-disciplin + Marcus' pushback fångade meta-frågan; Chat-self hade inte gjort det utan extern fångst.
+
+### L62 [UNIVERSAL] — Invariant-värde-översyn är periodisk; en grön invariant-grind säger att invarianten håller, inte att värdet är rätt
+
+Datum: 2026-05-29 | Källa: Session 9 DEL 2.5 (klass: Konstitutions-underhåll / invariant-empiri)
+
+En CI-grind som verifierar att en invariant (t.ex. alla 6 fetch-depth-bärare matchar samma värde) är grön, säger att invarianten är *intern konsistent* — inte att det aktuella värdet är *empiriskt rätt*. Generaliserbar regel: invariant-värden ska prövas mot empirisk användning periodiskt. Bump-värdet väljs mot commits-per-session-takt × marginal-i-sessioner, inte mot X × värsta nuvarande fil. Det är den begripna principen som gör nästa bump (om den kommer) mekanisk. Speglar [ADR-039](../docs/decisions/ADR-039-konsistens-grindar-kadens.md) + L50 (kodkopplade invariant-spegelvärden).
+
+Empirisk grund: DEL 2.5 fastställde att fetch-depth 100 var överskriden — 5 av 9 styrande docs utanför djupet, värsta avstånd 115 commits, BYGGPLAN-LÄTTLÄST exakt på gränsen. Bump till 250 ger marginal ~135 commits ≈ 2-3 sessioner vid ~55 commits/session-takt. 230 vore snävare än Session 7 K0.S2-marginalen (50→100); 345 vore overshooting baserat på empiriskt obekräftad commit-takts-stabilitet. Mönsterförstärkning av Session 7 K0.S2 (50→100). Tredje upprepning aktiverar ADR om periodisk invariant-värde-översyn som princip.
+
+### L63 [UNIVERSAL] — Konstitutionellt invariant-värde har flera yttringar; alla bumpas atomiskt eller någon ljuger om världen
+
+Datum: 2026-05-29 | Källa: Session 9 DEL 2.5 secondary impact (klass: Konstitutions-underhåll / konsistens)
+
+Ett invariant-värde manifesteras typiskt i flera fil-yttringar: levande CI-bärare, ADR-erratums (frusen besluts-text), default-konstanter i scripts, och test-sviter som verifierar invariantens kontrakt. Generaliserbar regel: alla yttringar bumpas i samma atomiska commit — annars är någon av dem inkonsistent med världen. Test-suiter som lokalt failar utan att köras i CI är inte "inaktiva", de är *aktiv felinformation* om sin testperson: ett test som säger "scripts/X.sh är trasigt" när scriptet är korrekt och testet är ur synk är värre än ett test som inte finns. Speglar L53 (invariant spänner över levande config + frusen text).
+
+Empirisk grund: DEL 2.5 bump 100→250 spände 9 yttringar i en atomisk commit: 4 ci.yml-jobb, .frontmatter-policy.conf, scripts/check-frontmatter.sh default, ADR-029 + ADR-030 additiva erratums, ADR-039 ny erratum. Plus secondary impact: test-check-frontmatter T10 + T11b krävde edge-case-värden bumpade till 250 för att inte ljuga om sin testperson. Total 11 ändringar i samma logiska enhet.
+
+### L64 [UNIVERSAL] — Disciplin är scope-bunden: "0 violations"-krav hör i CI-grindade filer, inte källfiler utanför CI-scope
+
+Datum: 2026-05-29 | Källa: Session 9 DEL 3 (klass: Disciplin-applicering / scope-matchning)
+
+Att importera fel disciplin till fel fil är pre-leverans-validerings-defekt. Generaliserbar regel: "0 markdown-violations"-krav är meningsfullt för filer som CI grindar (ADR:er, docs/, README, m.fl.) där pre-existing violations blockerar push. För källfiler utanför CI-scope (t.ex. `project-instructions/`-källfiler som klistras i claude.ai-inställningsruta) styrs disciplinen av läsbarhet i den ytan, inte av markdown-renderingsregler från CI. Pre-existing violations i icke-grindade filer är spårdata för medveten cleanup-runda, inte att smyglagas i andra commits.
+
+Empirisk grund: DEL 3 Code-prompt krävde "markdownlint-cli2 + Vale — 0 violations" på project-instructions/miranon-media-admin.md som *inte är i CI-scope* (markdownlint-cli2 utan args söker docs/**/*.md tasks/*.md ./*.md; lint:prose söker liknande set). 4 pre-existing violations + 3 nya MD012 från additivt tillägg = 7 totalt, push säker pga icke-scope. Disciplin omformulerades vid leverans efter Code:s pre-edit-fångst.
+
+### L65 [UNIVERSAL] — "Verbatim"/"orörd" som edit-spec är underspecificerat vid edit av närliggande mekanik; specificera strukturellt vs värde-fruset
+
+Datum: 2026-05-29 | Källa: Session 9 DEL 4 (skill-edit H3→H2) + DEL 3.5a (frontmatter `updated:`-bump) (klass: Edit-spec / semantik-disambiguation)
+
+Att specificera "verbatim bevarat" eller "orörd" vid en edit som rör närliggande mekanik (containerstruktur, frontmatter-fält) skapar tolkningsutrymme som upptäcks först post-edit. Generaliserbar regel: vid edit-spec, distinguera *strukturellt verbatim* (textinnehåll bit-för-bit identiskt; hierarki följer ny container) från *värde-fruset* (varje rad inklusive metadata orörd inklusive datum-fält). Markdown-headers är strukturella markörer som följer containerstrukturen, inte källtexten; frontmatter-fält är värde-bundna metadata. När en edit ändrar container (containerization), promote:as child-headers korrekt — det är inte avvikelse från verbatim. När en edit sker, ska `updated:` reflektera det — strikt "orörd"-tolkning bevarar fel datum.
+
+Empirisk grund: två instanser i samma session. **Instans 1 (DEL 4):** session-end-skillens transcript-disciplin + P3a-block bevarades innehållsligt verbatim (21/22 + 7/8 rader identiska) men header-nivå H3→H2 promoterades när ## Procedur-containern legitimt försvann. Code:s STOPPA-OCH-FRÅGA klarlade tolknings-tvetydigheten. **Instans 2 (DEL 3.5a):** hub-CLAUDE.md edit lämnade `updated: 2026-05-26` trots edit-dag 2026-05-29 eftersom prompten sa "frontmatter ORÖRD". Follow-up-commit krävdes för att bumpa.
+
+Mönsterklass: när samma underspecifikation manifesteras två gånger inom samma session, är det inte två isolerade fall — det är en specifikations-disciplin som behöver explicit formulering i framtida edit-prompts. Speglar L15 (empirisk verifikation) tillämpat på edit-instruktioner.
