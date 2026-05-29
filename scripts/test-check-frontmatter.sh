@@ -44,6 +44,22 @@ setup_repo() {
     git init -q
     git config user.email "test@example.com"
     git config user.name "K7B Test"
+    # Race-mitigering (Session 9 DEL 2 STEG 3a, mot verifierad mekanism).
+    # Auto-gc/maintenance kan triggas i bakgrund av porcelain-kommandon
+    # (gc.autoDetach=true + maintenance.autoDetach=true är default sedan
+    # git 2.0/2.30); en bakgrunds-gc kan deleta ett object som upload-pack/
+    # pack-objects-subprocess refererar under clone → "fatal: unable to
+    # read <SHA>" → fetch-pack early EOF.
+    # Källa (förstapart): git-gc(1) verbatim:
+    #   "when git gc runs concurrently with another process, there is a
+    #    risk of it deleting an object that the other process is using
+    #    but hasn't created a reference to. This may just cause the other
+    #    process to fail." (https://git-scm.com/docs/git-gc)
+    # Två rader = belt-and-suspenders (klassisk gc + modern maintenance,
+    # båda kör på Ubuntu-24.04 CI runner med git 2.54.0). Attribuering
+    # följer i STEG 3a-isolering (separat branch, ej main-commits).
+    git config gc.auto 0
+    git config maintenance.auto 0
     mkdir -p scripts
     cp "${VALIDATOR_SRC}" scripts/check-frontmatter.sh
     chmod +x scripts/check-frontmatter.sh
