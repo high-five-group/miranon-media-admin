@@ -55,11 +55,9 @@ setup_repo() {
     #    risk of it deleting an object that the other process is using
     #    but hasn't created a reference to. This may just cause the other
     #    process to fail." (https://git-scm.com/docs/git-gc)
-    # Två rader = belt-and-suspenders (klassisk gc + modern maintenance,
-    # båda kör på Ubuntu-24.04 CI runner med git 2.54.0). Attribuering
-    # följer i STEG 3a-isolering (separat branch, ej main-commits).
+    # ISOLATION VARIANT A — bara gc.auto 0 (maintenance.auto-raden borttagen).
+    # Branch isolation-3a-gc-only, DO NOT MERGE. Session 9 STEG 3a-isolering.
     git config gc.auto 0
-    git config maintenance.auto 0
     mkdir -p scripts
     cp "${VALIDATOR_SRC}" scripts/check-frontmatter.sh
     chmod +x scripts/check-frontmatter.sh
