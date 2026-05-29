@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-05-28 (Session 8 K0c stängd + efterhands-tillägg: BUILD-LOG-entry rättad, Session 9-backlog för session-end-rolldefinition tillagd; lesson→grind-uppföljning kvar öppen)*
+*Senast uppdaterad: 2026-05-29 (Session 9 stängd — ADR-041 do-confirm-roll + fetch-depth-invariant 100→250 + roll-arkitektur Chat/Code/Marcus etablerad i båda ytor + 10 nya lessons L56-L65; DEL 2 lesson→grind-wiring arkiverad till dedikerad framtida session)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -15,15 +15,17 @@
 
 ## Aktuellt fokus
 
-### Session 8 K0b — lesson→grind-uppföljning (ADR-039, öppen)
+### Session 8 K0b — lesson→grind-uppföljning (ADR-039, öppen — pending dedikerad session)
 
 Konkret första tillämpning av [ADR-039](../docs/decisions/ADR-039-konsistens-grindar-kadens.md) § lesson→grind-principen — punkten står öppen tills grinden finns (per L52):
 
 - [ ] **CI-wira `test-check-frontmatter.sh` + `test-check-public-checklists.sh`.** K0b DEL 2 avtäckte att dessa två test-suiter — till skillnad från `test-vale-regression.sh` och de nya K0b-suiterna (`test-check-adr-count.sh` / `test-check-fetch-depth-invariant.sh`) — inte körs i CI. Verifiering utan mekanisk enforcement = exakt ADR-039:s lesson→grind-målklass. Sluttillstånd: båda wirade i ci.yml `lint`-jobbet (kör-varje-push, formen K0b valde), grön CI. Pre-existing inkonsistens (ej skapad av K0b) → separat commit. Spårbar via `tasks/lessons.md` L52 + ADR-039.
 
-### Session 9 — backlog från Session 8 K0c efterhands-verifiering
+> **Efterhands-not (Session 9, 2026-05-29):** DEL 2 försökte CI-wira test-suiterna (commit `e25f2fe`) men reverterad (commit `fba2624`) efter att T11b exponerade pre-existing CI-only-race. T11b-fixen (`gc.auto 0` + `maintenance.auto 0` i `setup_repo()`, commit `32c953f`) ligger dormant i scriptet — verifierad mekanism + förstapartskälla mot reellt race, behållen som evidens-trail. Uppföljning ompositionerad: öppen för dedikerad lesson→grind-session där wiring + dormant-fix får full uppmärksamhet (ej Session 10-scope per L57: första-gångs-wiring är upptäcktsoperation som ändrar arbetsbörda radikalt).
 
-- [ ] **Omdefiniera session-end-skillens roll: autonom avslutsmotor → verifierings-checklista (kandidat-ADR).**
+### Session 9 — backlog från Session 8 K0c efterhands-verifiering ✅ KLAR (2026-05-29)
+
+- [x] **Omdefiniera session-end-skillens roll: autonom avslutsmotor → verifierings-checklista (kandidat-ADR).**
 
     *Observation (Session 8 K0c efterhands-verifiering):* session-end-skillen korslästes mot Session 8:s faktiska avslut. Utfall: 13 av 15 spoke-steg var TÄCKT eller EJ TILLÄMPLIGT UTAN att Chat medvetet kört skillen — avslutsstegen utfördes för att de är internaliserade i Chat-dirigeringen, inte för att Code laddade skillen och körde den. Ett standardsteg föll (BUILD-LOG-entry, rättat efter efterhands-fyndet). En hub-checklist-item föll (Marcus-Update-påminnelse).
 
@@ -36,6 +38,16 @@ Konkret första tillämpning av [ADR-039](../docs/decisions/ADR-039-konsistens-g
     *Scope för Session 9:* research mot (a) skillens faktiska formulering, (b) ADR-034:s klassningslogik (konstitution vs skill vs alltid-på), (c) K8-utfallet. Överlappar den redan loggade ADR-023-vs-session-end-tvetydigheten (arkivering: [ADR-023](../docs/decisions/ADR-023-sessions-arkivering.md) säger "sessionsavslut" generiskt, skillen säger "fas-avslut endast" — Session 8 K0c bekräftade att skillen vinner i praktiken, men ADR-023:s ospecifika formulering kvarstår). Harmonisera dessa samtidigt. Trolig output: en ADR som fastställer session-end:s roll + harmoniserar ADR-023.
 
     *Inte i scope:* att bygga om skillen på stående fot. Detta är ett arkitekturbeslut som kräver egen session-omsorg.
+
+> **Stängning (Session 9, 2026-05-29):** ADR-041 etablerad (commit `23e8254`) + ADR-023 additiv erratum (samma commit). Session-end-skillen reframed read-do → do-confirm i hub-pluginet (commits `9725a78` skill-edit + `56684fe` plugin 1.1.1→1.2.0). Roll-arkitektur Chat/Code/Marcus etablerad i båda ytor (DEL 3 spoke `5523278` + DEL 3.5a hub `5866f68`/`1845ca9`). Full retrospektiv: `tasks/sessions/2026-05-29-session-9.md`.
+
+### Session 10 — code-roll-disciplin-skill + Fas 2.5 Schema-kontrakt-sync (kommande)
+
+- [ ] **code-roll-disciplin-skill** — full HUR-procedur för Code-rollens handover-protokoll, transparens-rapport-format, STOPPA-grindar som procedursteg. Designats grundläggande i Session 9 research-pass (Anthropic Agent Skills + multi-agent LLM-litteratur + Google SRE konvergerade mot explicit roll-arkitektur). Pekare finns i hub-CLAUDE.md `## Roll-arkitektur` (commit `5866f68`) och spoke `project-instructions/miranon-media-admin.md` (commit `5523278`). Session 10:s FÖRSTA arbetspunkt — fundament för sömlös Fas 2.5.
+
+- [ ] **Sessionsdok-skapande-skill** (Session 10+ kandidat efter code-roll-disciplin-skill) — kodifiera Session 8 + 9-mallens stabiliserade format (frontmatter + H1 + status-blockquote + `## Del N`-sektioner). K8-discovery-trigger: "skriv sessionsdok", "skapa sessionsretrospektiv". Värdet ligger i att skillen föreslår dokumentet vid FÖRSTA leverans-bit per lessons-katalogens "första klunga"-regel — inte i sessions slut (då är trötthetsdrift för stor). Inte konkurrerande med Fas 2.5; egen designsession.
+
+- [ ] **Fas 2.5 — Schema-kontrakt-sync** (huvudtema efter code-roll-disciplin-skill landat) — per `docs/byggplan.md` §4.5. Förutsätter att skill-fundamenten är på plats så fas-arbetet får rätt mekanik från start.
 
 **Fas 2 ✅ KLAR 2026-05-13** — Routing + Auth komplett. Alla 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression. Defense-in-depth tre-skikt-arkitektur levererad: skikt 1 (klient-guard K3.2/K3.3) + skikt 2 (AuthError throw K3.4) + skikt 3 (server requireUser Fas A M2). Sessions 4 + 5 + 5b (arkiveras till `tasks/sessions/archive/2026-05/` i K5.8). Hub-lyft-kandidater: 7 totalt (K17 + K18 + K19 + K34 + K36 + K37 + K38) för K5.7 hub-sync.
 
