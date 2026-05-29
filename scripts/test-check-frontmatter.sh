@@ -44,20 +44,42 @@ setup_repo() {
     git init -q
     git config user.email "test@example.com"
     git config user.name "K7B Test"
-    # Race-mitigering (Session 9 DEL 2 STEG 3a, mot verifierad mekanism).
-    # Auto-gc/maintenance kan triggas i bakgrund av porcelain-kommandon
-    # (gc.autoDetach=true + maintenance.autoDetach=true är default sedan
-    # git 2.0/2.30); en bakgrunds-gc kan deleta ett object som upload-pack/
-    # pack-objects-subprocess refererar under clone → "fatal: unable to
-    # read <SHA>" → fetch-pack early EOF.
-    # Källa (förstapart): git-gc(1) verbatim:
+    # Race-mitigering (Session 9 DEL 2 STEG 3a, VERIFIERAD MEN OATTRIBUERAD fix).
+    #
+    # MEKANISM (förstapartskälla, git-gc(1) verbatim):
     #   "when git gc runs concurrently with another process, there is a
     #    risk of it deleting an object that the other process is using
     #    but hasn't created a reference to. This may just cause the other
-    #    process to fail." (https://git-scm.com/docs/git-gc)
-    # Två rader = belt-and-suspenders (klassisk gc + modern maintenance,
-    # båda kör på Ubuntu-24.04 CI runner med git 2.54.0). Attribuering
-    # följer i STEG 3a-isolering (separat branch, ej main-commits).
+    #    process to fail."  (https://git-scm.com/docs/git-gc)
+    # Matchar exakt felmodet ("remote: fatal: unable to read <SHA>" mid
+    # pack-objects-streaming, olika SHA per körning). Modern git (≥2.30;
+    # Ubuntu-24.04 CI runner kör 2.54.0) har TVÅ separata gc-mekanismer:
+    # klassisk gc.auto + modern maintenance.auto, båda med autoDetach=true
+    # som default. Båda kan triggas i bakgrund av porcelain-kommandon
+    # (tight git-commit-loop) och race:a med upload-pack/pack-objects-
+    # subprocess under clone.
+    #
+    # EMPIRI (CI-runs, samma kod, olika runner-instanser):
+    #   - Före fix (commit 50b91e6, endast repack-mitigering): 8/10 grön
+    #     över 10 reruns; 2/10 failure med "unable to read <SHA>"-mod.
+    #   - Efter fix (commit 32c953f, båda config-raderna): 10/10 grön över
+    #     10 reruns. Bortom statistisk slump.
+    #
+    # ÖPPEN OBEGRIPENHET (erkänd, EJ omformulerad som begripenhet):
+    # Attribuering mellan gc.auto och maintenance.auto är OBESVARAD. Försök
+    # till isolering på separat branch via draft-PR (DEL 2 STEG 3a-isolering,
+    # variant A: bara gc.auto 0) blockerades av pull_request-mode-checkout-
+    # artefakt: actions/checkout@v6 på pull_request-trigger checkar ut
+    # refs/pull/N/merge (simulated merge commit) → git log -1 --format=%cs
+    # ger committer-datum för simulated-merge istället för fil-edit-datum
+    # → check-frontmatter-validatorn failade tidigt i lint-jobbet → T11b
+    # kördes aldrig → inga attribuerings-datapunkter. PR-mekanismen för
+    # isolering är operativt blockerad.
+    #
+    # Båda raderna behålls utan att hävda att redundansen är förstådd:
+    # verifierad fix utan attribuering ≠ begripen determinism. Vi vet att
+    # KOMBINATIONEN eliminerar racet (10/10); vi vet INTE vilken av de två
+    # som är dominant eller om båda krävs. Detta erkänns öppet.
     git config gc.auto 0
     git config maintenance.auto 0
     mkdir -p scripts
