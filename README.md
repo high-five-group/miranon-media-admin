@@ -101,7 +101,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression-suite
   - 3 nya ADR:er (ADR-026, ADR-027, ADR-028)
 
-**Arkitekturbeslut:** 41 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
+**Arkitekturbeslut:** 42 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
 
 **Statistik (post-Fas 2, historisk ögonblicksbild):**
 
