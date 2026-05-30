@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-05-29 (Session 9 stängd — ADR-041 do-confirm-roll + fetch-depth-invariant 100→250 + roll-arkitektur Chat/Code/Marcus etablerad i båda ytor + 10 nya lessons L56-L65; DEL 2 lesson→grind-wiring arkiverad till dedikerad framtida session)*
+*Senast uppdaterad: 2026-05-30 (Session 10 — code-roll-disciplin landad som alltid-på template + konstitution-pekare (ADR-042, spoke `c4af8bf` + hub `f9d59f5`), inte skill; Fas 2.5 Schema-kontrakt-sync satt som aktiv huvudpunkt)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -41,13 +41,15 @@ Konkret första tillämpning av [ADR-039](../docs/decisions/ADR-039-konsistens-g
 
 > **Stängning (Session 9, 2026-05-29):** ADR-041 etablerad (commit `23e8254`) + ADR-023 additiv erratum (samma commit). Session-end-skillen reframed read-do → do-confirm i hub-pluginet (commits `9725a78` skill-edit + `56684fe` plugin 1.1.1→1.2.0). Roll-arkitektur Chat/Code/Marcus etablerad i båda ytor (DEL 3 spoke `5523278` + DEL 3.5a hub `5866f68`/`1845ca9`). Full retrospektiv: `tasks/sessions/2026-05-29-session-9.md`.
 
-### Session 10 — code-roll-disciplin-skill + Fas 2.5 Schema-kontrakt-sync (kommande)
+### Session 10 — code-roll-disciplin + Fas 2.5 Schema-kontrakt-sync (pågående)
 
-- [ ] **code-roll-disciplin-skill** — full HUR-procedur för Code-rollens handover-protokoll, transparens-rapport-format, STOPPA-grindar som procedursteg. Designats grundläggande i Session 9 research-pass (Anthropic Agent Skills + multi-agent LLM-litteratur + Google SRE konvergerade mot explicit roll-arkitektur). Pekare finns i hub-CLAUDE.md `## Roll-arkitektur` (commit `5866f68`) och spoke `project-instructions/miranon-media-admin.md` (commit `5523278`). Session 10:s FÖRSTA arbetspunkt — fundament för sömlös Fas 2.5.
+- [x] **code-roll-disciplin** ✅ KLAR (2026-05-30) — full HUR-procedur för Code-rollens handover-protokoll, transparens-rapport-format, STOPPA-grindar som procedursteg. Designats grundläggande i Session 9 research-pass (Anthropic Agent Skills + multi-agent LLM-litteratur + Google SRE konvergerade mot explicit roll-arkitektur). Pekare finns i hub-CLAUDE.md `## Roll-arkitektur` (commit `5866f68`) och spoke `project-instructions/miranon-media-admin.md` (commit `5523278`). Levererad som **alltid-på template + konstitution-pekare (ADR-042), inte som skill**. Session 10:s FÖRSTA arbetspunkt — fundament för sömlös Fas 2.5.
+
+> **Stängning (Session 10, 2026-05-30):** Levererad som alltid-på regel, inte skill — skill-mekanismen falsifierad för denna beteende-klass (ADR-034 p.8 + K8). Princip i hub-CLAUDE.md `## Roll-arkitektur`; full HUR i `marcus-system/templates/code-role-discipline.md`. ADR-042 (spoke `c4af8bf`) + hub-pekare (`f9d59f5`). Pluginet förblir 4 skills.
 
 - [ ] **Sessionsdok-skapande-skill** (Session 10+ kandidat efter code-roll-disciplin-skill) — kodifiera Session 8 + 9-mallens stabiliserade format (frontmatter + H1 + status-blockquote + `## Del N`-sektioner). K8-discovery-trigger: "skriv sessionsdok", "skapa sessionsretrospektiv". Värdet ligger i att skillen föreslår dokumentet vid FÖRSTA leverans-bit per lessons-katalogens "första klunga"-regel — inte i sessions slut (då är trötthetsdrift för stor). Inte konkurrerande med Fas 2.5; egen designsession.
 
-- [ ] **Fas 2.5 — Schema-kontrakt-sync** (huvudtema efter code-roll-disciplin-skill landat) — per `docs/byggplan.md` §4.5. Förutsätter att skill-fundamenten är på plats så fas-arbetet får rätt mekanik från start.
+- [ ] **Fas 2.5 — Schema-kontrakt-sync** (**Session 10:s AKTIVA huvudpunkt** — code-roll-disciplin-fundamentet landat 2026-05-30) — per `docs/byggplan.md` §4.5. Roll-arkitektur-fundamentet är på plats; fas-arbetet får rätt mekanik från start.
 
 **Fas 2 ✅ KLAR 2026-05-13** — Routing + Auth komplett. Alla 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression. Defense-in-depth tre-skikt-arkitektur levererad: skikt 1 (klient-guard K3.2/K3.3) + skikt 2 (AuthError throw K3.4) + skikt 3 (server requireUser Fas A M2). Sessions 4 + 5 + 5b (arkiveras till `tasks/sessions/archive/2026-05/` i K5.8). Hub-lyft-kandidater: 7 totalt (K17 + K18 + K19 + K34 + K36 + K37 + K38) för K5.7 hub-sync.
 
