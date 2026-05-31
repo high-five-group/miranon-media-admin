@@ -1044,6 +1044,20 @@ Process-tung session med fyra parallella tematiska tyngdpunkter — startade som
 
 ---
 
+## Session 10 — code-roll-disciplin (ADR-042) + session-lifecycle-arkitektur (ADR-043 Proposed) + recovery-backfill (2026-05-30)
+
+Session öppnade på Session 9-handoffens "code-roll-disciplin-skill" men avtäckte tre process-haverier: sessionsdoket föddes aldrig vid sessionsstart, `todo.md` uppdaterades inte vid landning, och verifierings-disciplinen feltillämpades på Chats eget icke-utförda arbete. Sessionsdoket backfillades från git-trail. Full trail i `tasks/sessions/2026-05-30-session-10.md`.
+
+**ADR-042 — code-roll-disciplin alltid-på, inte skill (spoke commit `c4af8bf` + hub commit `f9d59f5`, 2026-05-30):** Session 9-handoffen föreslog en egen skill; falsifiering mot [ADR-034](decisions/ADR-034-skill-arkitektur.md) p.8 + K8 (meta-disciplin auto-upptäcks ej tillförlitligt) visade att disciplinen hör hemma som alltid-på, template-buren regel. Hub-template `templates/code-role-discipline.md` (162 rader) bär HUR-stegen (handover-protokoll, transparens-rapport-format, STOPPA-grindar som procedursteg); hub-CLAUDE.md + spoke-konstitutionen pekar mot den (PRINCIP inline, HUR delegerat). Spoke-konsekvenser: README + decisions/README + Session 9 BUILD-LOG-backfill (commits `c4af8bf` + `6b476c5` + `33d1cbd`). L66 (handoff-formulering är mekanism-förslag, inte mekanismbeslut).
+
+**ADR-043 — session-lifecycle som två-ytors skill-par, Proposed (commit `80f87aa`, 2026-05-30):** lifecycle modelleras som Chat-halva (claude.ai `/`-anrop) + Code-halva (plugin-skill) bundna av ett handoff-kontrakt, plus Project Instructions bas/delta-mall och `create-session-doc` i session-starts Code-halva — ger Chat-ytan en lifecycle-mekanism utan discovery-beroende. Ratificerad av Marcus i direktion men hålls **Proposed**; flippas till Accepted vid första inkrementets landning. Bygge (inkrement 1–5) defererat till Session 11. Atomisk commit: ADR-fil + katalog-rad (Proposed) + README-räkning 42→43 ([ADR-039](decisions/ADR-039-konsistens-grindar-kadens.md)-grind 43==43 grön). Pre-commit-hooken auto-bumpade `decisions/README.md` `updated:` → 2026-05-31 (dag-rollover; governing-doc stämplas med faktiskt klock-datum medan sessionsdok + ADR behåller arbetsdatumet 2026-05-30 — L67).
+
+**Recovery-backfill — sessionsdok + lessons + todo + denna entry (commits `38ca605` → `80f87aa`, 2026-05-30):** sessionsdoket (138 rader) backfillat från git-trail eftersom det aldrig föddes vid start (process-haveri 1). Lessons L66–L69 skördade ([UNIVERSAL], hub-lyft pending nästa K-sista). De tre process-haverierna kodifierade: L67 (levande artefakter har landnings-kadens, inte avsluts-kadens), L68 (regel-finns-men-oanvänd — att läsa lessons vid start ≠ operationalisera dem), L69 (verifierings-disciplin gäller externt state, inte eget agerande). Todo uppdaterad till landnings-status. Hela passet kördes mot code-roll-disciplinens transparens-rapport-format med STOPPA-grindar (overifierbara cross-referenser i L66/L68 flaggade för kvittens i stället för gissade).
+
+**Uppskjutet (Session 11 + framtida):** ADR-043-bygge inkrement 1–5 (Session 11); Fas 2.5 Schema-kontrakt-sync (Session 11+); hub-lyft av L66–L69 → nästa K-sista; DEL 2 lesson→grind-wiring + hub-governance-lyft → fortsatt egna framtida sessioner (oförändrat sedan Session 9).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

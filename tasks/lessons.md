@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-29
+updated: 2026-05-31
 review_by: 2026-11-15
 status: stable
 ---
@@ -1552,3 +1552,35 @@ Att specificera "verbatim bevarat" eller "orörd" vid en edit som rör närligga
 Empirisk grund: två instanser i samma session. **Instans 1 (DEL 4):** session-end-skillens transcript-disciplin + P3a-block bevarades innehållsligt verbatim (21/22 + 7/8 rader identiska) men header-nivå H3→H2 promoterades när ## Procedur-containern legitimt försvann. Code:s STOPPA-OCH-FRÅGA klarlade tolknings-tvetydigheten. **Instans 2 (DEL 3.5a):** hub-CLAUDE.md edit lämnade `updated: 2026-05-26` trots edit-dag 2026-05-29 eftersom prompten sa "frontmatter ORÖRD". Follow-up-commit krävdes för att bumpa.
 
 Mönsterklass: när samma underspecifikation manifesteras två gånger inom samma session, är det inte två isolerade fall — det är en specifikations-disciplin som behöver explicit formulering i framtida edit-prompts. Speglar L15 (empirisk verifikation) tillämpat på edit-instruktioner.
+
+### L66 [UNIVERSAL] — Handoff-formulering ("egen skill") är ett mekanism-förslag, inte ett mekanismbeslut; beteende-klassen avgör och valet falsifieras mot kriteriet före bygge
+
+Datum: 2026-05-30 | Källa: Session 10 ADR-042 (klass: Handoff-disciplin / mekanismval-falsifiering)
+
+En föregående sessions handoff kan namnge en *mekanism* ("detta ska bli en egen skill") som om den vore beslutad. Generaliserbar regel: en handoff-formulering är ett förslag om mekanism, inte ett mekanismbeslut — det bindande kriteriet är beteende-klassen (ADR-034 p.8: skill = read-do-procedur som auto-upptäcks via `description`; alltid-på regel = meta-disciplin som empiriskt inte auto-upptäcks tillförlitligt). Mekanismvalet ska falsifieras mot klass-kriteriet FÖRE bygge — det verkställs inte för att handoffen skrev så. Mönsterförstärkning av L_AAA-klassen (slutsats utan empirisk grund).
+
+Empirisk grund: Session 9-handoffen sa "Session 10:s första punkt: code-roll-disciplin-skill". Falsifiering mot ADR-034 p.8 + K8 (meta-disciplin auto-upptäcks ej tillförlitligt) visade att disciplinen hör hemma som alltid-på, template-buren regel → ADR-042, inte som skill.
+
+### L67 [UNIVERSAL] — Levande artefakter har landnings-kadens, inte avsluts-kadens; doc-födelse vid start och todo-uppdatering vid landning kodas in i sekvensen
+
+Datum: 2026-05-30 | Källa: Session 10 process-haveri (klass: Artefakt-kadens / operationalisering)
+
+Levande statusartefakter (sessionsdok, `tasks/todo.md`) ska uppdateras i takt med förändring, inte vid sessionsavslut. Generaliserbar regel: sessionsdokets *födelse* hör till sessionsstart; en todo-rads statusbyte hör till landnings-ögonblicket (committad + pushad + CI-grön), inte till K-sista. Kadensen måste kodas in i den operativa sekvensen — hänger den på konvention/minne lever den i ~9 %-zonen (Chat-self-fångst). Dag-rollover gör en datum-divergens mellan governing- och non-governing-docs synlig men inte felaktig: en governing-doc:s `updated:` betyder "rördes när" (hook-stämplat faktiskt klock-datum), medan ett sessionsdoks `updated:` betyder "dokumenterar vilken sessions arbete" (arbetsdatum). De svarar på olika frågor och ska inte tvångs-harmoniseras.
+
+Empirisk grund: Session 10 — sessionsdoket föddes inte vid start (backfillat från git-trail); `todo.md` stod kvar "pending" efter att ADR-042 landat, pushats och blivit CI-grön. Vid stängnings-passet bumpade pre-commit-hooken `docs/decisions/README.md` `updated:` → 2026-05-31 medan sessionsdok + ADR-043 behöll arbetsdatumet 2026-05-30.
+
+### L68 [UNIVERSAL] — Regel-finns-men-oanvänd: att läsa lessons vid sessionsstart är inte att operationalisera dem i sekvensen
+
+Datum: 2026-05-30 | Källa: Session 10 (klass: Operationalisering / regel-aktivering)
+
+En universell lesson kan existera i `lessons.md` och ändå vara overksam om den inte är inkodad i en operativ sekvens som tvingar fram den. Generaliserbar regel: skillnaden mellan "regeln finns" och "regeln gäller" är operationaliseringen — en lesson som bara läses vid start, utan att vara ett tvingande steg i en procedur, förblir passiv kunskap. Mönsterförstärkning av K2.14 (en lösning/mall fanns redan men förbisågs i handling).
+
+Empirisk grund: doc-födelse-regeln var känd sedan tidigare men var inte ett steg i session-start-sekvensen → inget sessionsdok föddes vid Session 10:s start. Att läsa lessons vid start räckte inte; regeln behövde bli ett tvingande procedursteg för att vara verksam.
+
+### L69 [UNIVERSAL] — Frånvaron av en handling man själv utförde är inte disk-state som kräver verifiering; "tror" om eget icke-utfört arbete gömmer ansvar bakom en regel
+
+Datum: 2026-05-30 | Källa: Session 10 (klass: Verifierings-disciplin / scope-gränsning)
+
+Verifierings-disciplinen ("gissa aldrig, verifiera mot data/disk") gäller externt tillstånd — repo-state, dokumentation, system-beteende. Generaliserbar regel: den gäller INTE den egna aktörens kännedom om vad den själv gjorde eller inte gjorde i en kontext man var närvarande i. Att hedga med "jag tror jag inte skapade doket" om eget icke-utfört arbete är feltillämpning — det är inte verifierbart externt disk-state utan känt eget agerande, och hedgen gömmer ansvar bakom verifierings-regeln i stället för att ta det. Skilj externt-tillstånd-verifiering (legitim) från eget-agerande-hedging (ansvarsflykt).
+
+Empirisk grund: Session 10 — Chat hedgade med "tror" om huruvida sessionsdoket hade skapats, trots att det rörde Chats eget (icke-)agerande i sessionen, inte externt state som krävde en tool-call att verifiera.

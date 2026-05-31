@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-05-30 (Session 10 — code-roll-disciplin landad som alltid-på template + konstitution-pekare (ADR-042, spoke `c4af8bf` + hub `f9d59f5`), inte skill; Fas 2.5 Schema-kontrakt-sync satt som aktiv huvudpunkt)*
+*Senast uppdaterad: 2026-05-30 (Session 10 ✅ KLAR — code-roll-disciplin landad som alltid-på template + konstitution-pekare (ADR-042, spoke `c4af8bf` + hub `f9d59f5`), inte skill; session-lifecycle-arkitektur designad + committad som ADR-043 (Proposed, commit `80f87aa`); lessons L66–L69 skördade; sessionsdok backfillat (`38ca605`). Fas 2.5 + ADR-043-bygge ompositionerade till Session 11)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -41,15 +41,21 @@ Konkret första tillämpning av [ADR-039](../docs/decisions/ADR-039-konsistens-g
 
 > **Stängning (Session 9, 2026-05-29):** ADR-041 etablerad (commit `23e8254`) + ADR-023 additiv erratum (samma commit). Session-end-skillen reframed read-do → do-confirm i hub-pluginet (commits `9725a78` skill-edit + `56684fe` plugin 1.1.1→1.2.0). Roll-arkitektur Chat/Code/Marcus etablerad i båda ytor (DEL 3 spoke `5523278` + DEL 3.5a hub `5866f68`/`1845ca9`). Full retrospektiv: `tasks/sessions/2026-05-29-session-9.md`.
 
-### Session 10 — code-roll-disciplin + Fas 2.5 Schema-kontrakt-sync (pågående)
+### Session 10 — code-roll-disciplin (ADR-042) + session-lifecycle-arkitektur (ADR-043, Proposed) ✅ KLAR (2026-05-30)
 
 - [x] **code-roll-disciplin** ✅ KLAR (2026-05-30) — full HUR-procedur för Code-rollens handover-protokoll, transparens-rapport-format, STOPPA-grindar som procedursteg. Designats grundläggande i Session 9 research-pass (Anthropic Agent Skills + multi-agent LLM-litteratur + Google SRE konvergerade mot explicit roll-arkitektur). Pekare finns i hub-CLAUDE.md `## Roll-arkitektur` (commit `5866f68`) och spoke `project-instructions/miranon-media-admin.md` (commit `5523278`). Levererad som **alltid-på template + konstitution-pekare (ADR-042), inte som skill**. Session 10:s FÖRSTA arbetspunkt — fundament för sömlös Fas 2.5.
 
 > **Stängning (Session 10, 2026-05-30):** Levererad som alltid-på regel, inte skill — skill-mekanismen falsifierad för denna beteende-klass (ADR-034 p.8 + K8). Princip i hub-CLAUDE.md `## Roll-arkitektur`; full HUR i `marcus-system/templates/code-role-discipline.md`. ADR-042 (spoke `c4af8bf`) + hub-pekare (`f9d59f5`). Pluginet förblir 4 skills.
 
+- [x] **session-lifecycle-arkitektur (ADR-043)** ✅ DESIGNAD + COMMITTAD (Proposed, 2026-05-30) — lifecycle som två-ytors skill-par: Chat-halva (claude.ai `/`-anrop) + Code-halva (plugin) bundna av handoff-kontrakt, plus Project Instructions bas/delta-mall och `create-session-doc` i session-starts Code-halva. Ger Chat-ytan lifecycle-mekanism utan discovery-beroende. Avtäckt av Session 10:s tre process-haverier (sessionsdok föddes ej vid start; todo ej landnings-uppdaterat; verifierings-disciplin feltillämpad på eget agerande). ADR-043 (commit `80f87aa`) hålls **Proposed** — ratificerad i direktion, flippas till Accepted vid första inkrementets landning. **Bygge (inkrement 1–5) → Session 11.** Lessons L66–L69 skördade ([UNIVERSAL], hub-lyft pending nästa K-sista). Sessionsdok (138 rader) backfillat från git-trail: `tasks/sessions/2026-05-30-session-10.md`.
+
 - [ ] **Sessionsdok-skapande-skill** (Session 10+ kandidat efter code-roll-disciplin-skill) — kodifiera Session 8 + 9-mallens stabiliserade format (frontmatter + H1 + status-blockquote + `## Del N`-sektioner). K8-discovery-trigger: "skriv sessionsdok", "skapa sessionsretrospektiv". Värdet ligger i att skillen föreslår dokumentet vid FÖRSTA leverans-bit per lessons-katalogens "första klunga"-regel — inte i sessions slut (då är trötthetsdrift för stor). Inte konkurrerande med Fas 2.5; egen designsession.
 
-- [ ] **Fas 2.5 — Schema-kontrakt-sync** (**Session 10:s AKTIVA huvudpunkt** — code-roll-disciplin-fundamentet landat 2026-05-30) — per `docs/byggplan.md` §4.5. Roll-arkitektur-fundamentet är på plats; fas-arbetet får rätt mekanik från start.
+### Session 11 — scope (nästa)
+
+- [ ] **ADR-043-bygge — inkrement 1–5** (**Session 11:s FÖRSTA arbetspunkt**) — implementera session-lifecycle-skill-paret per [ADR-043](../docs/decisions/ADR-043-session-lifecycle-skills-arkitektur.md) Implementationsplan: Chat-halva + Code-halva (`create-session-doc` m.fl.) + Project Instructions bas/delta-mall + handoff-kontrakt. Vid första inkrementets landning flippas ADR-043 Proposed → Accepted. Fundament som gör Fas 2.5 sömlös (samma logik som code-roll-disciplin var för Session 10).
+
+- [ ] **Fas 2.5 — Schema-kontrakt-sync** (**Session 11:s huvudtema efter ADR-043-bygget**) — per `docs/byggplan.md` §4.5. Förutsätter att lifecycle-skill-paret är aktivt så fas-arbetet får rätt mekanik från start.
 
 **Fas 2 ✅ KLAR 2026-05-13** — Routing + Auth komplett. Alla 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression. Defense-in-depth tre-skikt-arkitektur levererad: skikt 1 (klient-guard K3.2/K3.3) + skikt 2 (AuthError throw K3.4) + skikt 3 (server requireUser Fas A M2). Sessions 4 + 5 + 5b (arkiveras till `tasks/sessions/archive/2026-05/` i K5.8). Hub-lyft-kandidater: 7 totalt (K17 + K18 + K19 + K34 + K36 + K37 + K38) för K5.7 hub-sync.
 
