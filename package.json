@@ -20,10 +20,10 @@
     "postinstall": "git config core.hooksPath .githooks"
   },
   "dependencies": {
-    "@react-aria/focus": "^3.21.5",
-    "@react-aria/overlays": "^3.31.2",
-    "@react-aria/utils": "^3.33.1",
-    "@react-stately/collections": "^3.12.10",
+    "@react-aria/focus": "^3.22.1",
+    "@react-aria/overlays": "^3.32.1",
+    "@react-aria/utils": "^3.34.1",
+    "@react-stately/collections": "^3.13.1",
     "@sentry/react": "^10.48.0",
     "@supabase/supabase-js": "^2.105.3",
     "@t3-oss/env-core": "^0.13.11",
