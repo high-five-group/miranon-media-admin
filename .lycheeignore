@@ -61,3 +61,10 @@
 # Lessons-flag: re-utvärdera i framtida session — om transient, ta bort.
 ^https://opentelemetry\.io/docs/.*$
 
+# digg.se CI-runner-specifik timeout (Session 11, 2026-06-03). Persistent
+# [TIMEOUT] på två färska tom-cache-fetch; lokalt nåbar. Connection-block-klass
+# (≠ airtable/travisgosselin som är UA/WAF-406/415, fixade via --header User-Agent).
+# Samma klass som tanstack/opentelemetry — GHA-IP strypt av sajt. 2-instans-beslut.
+# Lessons-flag: re-utvärdera i framtida session — om transient, ta bort.
+^https://www\.digg\.se/webbriktlinjer$
+
