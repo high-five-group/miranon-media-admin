@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-31
+updated: 2026-06-03
 review_by: 2026-11-15
 status: stable
 ---
@@ -1584,3 +1584,65 @@ Datum: 2026-05-30 | Källa: Session 10 (klass: Verifierings-disciplin / scope-gr
 Verifierings-disciplinen ("gissa aldrig, verifiera mot data/disk") gäller externt tillstånd — repo-state, dokumentation, system-beteende. Generaliserbar regel: den gäller INTE den egna aktörens kännedom om vad den själv gjorde eller inte gjorde i en kontext man var närvarande i. Att hedga med "jag tror jag inte skapade doket" om eget icke-utfört arbete är feltillämpning — det är inte verifierbart externt disk-state utan känt eget agerande, och hedgen gömmer ansvar bakom verifierings-regeln i stället för att ta det. Skilj externt-tillstånd-verifiering (legitim) från eget-agerande-hedging (ansvarsflykt).
 
 Empirisk grund: Session 10 — Chat hedgade med "tror" om huruvida sessionsdoket hade skapats, trots att det rörde Chats eget (icke-)agerande i sessionen, inte externt state som krävde en tool-call att verifiera.
+
+## 2026-06-03 — Session 11 (ADR-043 inkrement 1 + CI-länk-drift)
+
+> Skördade vid sessionsavslut ur sessionsdok Del 8. L70–L76, alla [UNIVERSAL]. Hub-lyft pending nästa K-sista (tillsammans med carry L56–L65 + L66–L69). Meta-tråden L71–L74 + L76 är primär hub-lyft-kandidat.
+
+### L70 [UNIVERSAL] — Hårdkodad förväntad-HEAD i en prompt blir inaktuell när mellanliggande commits landar inom samma session
+
+Datum: 2026-06-03 | Källa: Session 11 1B (klass: Prompt-design / re-ankring)
+
+En prompt som hårdkodar ett förväntat HEAD-SHA blir falsk så snart en tidigare arbetspunkt i samma session committat ovanpå referensen. Ankra mot "senast rapporterade commit" eller mot innehåll (radankare), inte mot ett fruset SHA. Code:s extern-fångst ska behandla SHA-mismatch som en STOPPA-grind men diagnostisera orsaken (är det drift eller en inaktuell förväntan?) före kvittens — inte själv-klarera.
+
+Empirisk grund: Session 11 1B förväntade `0ffe56b`; faktiskt HEAD var `9ba7a58` (sessionsdok-födelsen ovanpå `0ffe56b`). Benign inaktuell förväntan, ej drift — kvitterad OPTION A.
+
+### L71 [UNIVERSAL] — Ett verifierings-filter snävare än felrymden maskerar fel
+
+Datum: 2026-06-03 | Källa: Session 11 (klass: Verifierings-disciplin)
+
+Att assertera/grepa mot en delmängd av möjliga fel-signaturer rapporterar "rent" medan fel utanför filtret passerar osedda. Assertera mot HELA felmängden (eller mot den auktoritativa summeringen, t.ex. "Errors: N"), inte mot en handplockad lista koder. Ett snävt filter ger falsk trygghet i exakt proportion till sin snävhet.
+
+Empirisk grund: Session 11 attempt-1-rapporten grep:ade `[404]/[400]/[500]` och missade ett `[415]`-fel → rapporterade "enda felet" felaktigt; korrigerades vid attempt-2-läsning.
+
+### L72 [UNIVERSAL] — "Grön" kan vara grön-av-cache, inte grön-av-verklighet
+
+Datum: 2026-06-03 | Källa: Session 11 (klass: CI-integritet)
+
+En cachad extern-resurs-koll (länkar, beroenden, API-status) kan servera gamla OK-resultat långt efter att resursen ruttnat. En grön körning bevisar då bara att cachen var grön, inte att verkligheten är det. För att veta sant tillstånd: busta cachen och tvinga färsk hämtning. Designa kollar så att cache-maskering inte kan dölja röta tyst (kortare max-age på huvudgrenen, eller periodisk cache-fri körning).
+
+Empirisk grund: Session 11 — lychee-cachen (`cache-lychee-${github.sha}` + restore-keys-prefix + `--max-cache-age 1d`) serverade tre airtable [406] som OK; main var grön-av-cache tills cachen bustades och tre+ pre-existing länkfel ytade.
+
+### L73 [UNIVERSAL] — Att sluta sig till en statuskods ORSAK ur dess BETYDELSE är en gissning förklädd som slutsats
+
+Datum: 2026-06-03 | Källa: Session 11 (klass: Verifierings-disciplin / hypotes)
+
+En HTTP-kods semantik (406 "Not Acceptable", 415 "Unsupported Media Type") säger vad koden BETYDER, inte varför den uppstod HÄR. Att anta orsaken ur betydelsen ("406 → content-negotiation-problem") är en hypotes maskerad som fakta. Verifiera orsaken empiriskt (reproducera lokalt, variera en faktor i taget). Ett låst orsaks-antagande som falsifieras rivs öppet med kvittens.
+
+Empirisk grund: Session 11 — Chats `--accept 406/415`-väg byggde på premissen "406/415 nät-oberoende, lokalt bevisbart". Code:s lokala test gav 200 för samma URL:er → orsaken var UA-WAF + miljö, inte content-negotiation; premissen revs öppet och fixen blev browser-`User-Agent` via `--header`.
+
+### L74 [UNIVERSAL] — Ett hoppat eller cachat CI-jobb kan rapportera success utan att validera något
+
+Datum: 2026-06-03 | Källa: Session 11 (klass: CI-integritet)
+
+`conclusion: success` på run-nivå garanterar inte att det validerande jobbet faktiskt kördes — changed-files-grindar kan skippa det, och cache kan replaya gammalt utfall. Assertera EXPLICIT per-jobb att den validerande körningen kördes (status `success`, ej `skipped`) innan "grönt" får betyda "validerat". En config-/regel-ändring som påverkar en koll bör dessutom re-trigga den kollen (annars committas en fix som aldrig körs — "ihåligt grönt").
+
+Empirisk grund: Session 11 — `--header`-fixen committades i en ci.yml-only-commit; docs-jobbets changed-files-grind skippade Docs link check → fixen kördes aldrig trots grön run. Lagades via decouplad `docs_changed` (eget steg inkl. `ci.yml` + `.lycheeignore`).
+
+### L75 [UNIVERSAL] (Code-sido) — Pipe-exit-kod är inte det auktoritativa resultatet
+
+Datum: 2026-06-03 | Källa: Session 11 (klass: Verktygs-disciplin)
+
+`cmd | tee/tail; echo $?` fångar sista pipeline-stegets exit, inte `cmd`:s. För CI-utfall: använd en auktoritativ struktur-fråga (`gh run view --json conclusion`), inte exit-koden från en bevaknings-pipe. Gäller generellt — pipefail och PIPESTATUS finns av en anledning.
+
+Empirisk grund: Session 11 — `gh run watch ... | tail; echo $?` gav "0" (tail:s exit) medan körningen faktiskt var `failure`; korrigerades via `gh run view --json`.
+
+### L76 [UNIVERSAL] — En leverans-path/form återanvänd ur fel kontext fungerar i ursprungskontexten men bryter i målkontexten
+
+Datum: 2026-06-03 | Källa: Session 11 1C (klass: Leverans-disciplin / Chat-self-review-lucka)
+
+En relativ länk, path eller mall som är korrekt i sin ursprungsfil blir bruten när den klistras in i en fil på annan plats i trädet. Forms återanvändning måste re-valideras mot MÅLkontexten, inte antas korrekt för att den var det i källan. Detta är en Chat-self-review-lucka-klass (empiriskt ~9 % self-fångst); Code:s extern fångst (~64 %) mot faktisk disk/CI tar den.
+
+Empirisk grund: Session 11 1C — Chats BUILD-LOG-text bar `](sessions/…)` (korrekt från `tasks/todo.md`, brutet från `docs/BUILD-LOG.md` → `docs/sessions/…` finns ej). Chat-self-review fångade ej; Code:s path-upplösning + CI Docs link check fångade; korrigerat till `](../tasks/sessions/…)`.
+
+> **Meta-tråd (hub-lyft-kandidat):** L71–L74 + L76 klustrar som *"verifiering/leverans snävare, inaktuellare, grundare, maskerad eller fel-kontext än verkligheten"*. Samtliga är instanser av samma rot: en koll/leverans som ser rätt ut utan att spegla sant tillstånd. Förstärker det empiriska Chat-self-review ~9 % vs extern fångst ~64 %/~27 % — disciplinen är att bygga för extern fångst, inte intern självkontroll.
