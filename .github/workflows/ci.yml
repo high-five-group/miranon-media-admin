@@ -27,7 +27,7 @@ jobs:
       contents: read
     outputs:
       should_skip_tests: ${{ steps.changed-files.outputs.only_changed == 'true' }}
-      docs_changed: ${{ steps.changed-files.outputs.any_changed == 'true' }}
+      docs_changed: ${{ steps.changed-docs.outputs.any_changed == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -68,6 +68,20 @@ jobs:
             !tsr.config.json
             !.nvmrc
             !.gitignore
+
+      - name: Get changed docs files
+        id: changed-docs
+        # Separat docs-härledning (väg ii-a, Session 11): docs_changed ska bli true
+        # även vid .lycheeignore-/ci.yml-ändring (lychee-config/ignore re-validerar
+        # docs-link-check — stänger skip-gapet). Hålls ISÄR från should_skip_tests-
+        # steget så det medvetna !.github/workflows/**-valet bevaras (en ci.yml-only-
+        # commit kör fortfarande Test+Build via det orörda only_changed-filtret).
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
+        with:
+          files: |
+            **/*.md
+            .lycheeignore
+            .github/workflows/ci.yml
 
   # Job 2: Always-on lint + audit + typecheck.
   # Kör på ALLA commits oavsett doc-only-detection. Per ADR-029 §1b + K17.
