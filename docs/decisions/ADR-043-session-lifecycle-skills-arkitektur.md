@@ -1,6 +1,6 @@
 # ADR-043: Session-lifecycle som två-ytors skill-par + Project Instructions bas/delta-mall
 
-- Status: Proposed (Session 10 — 2026-05-30). Arkitekturen är ratificerad av Marcus i direktion; flippas till Accepted vid första inkrementets landning (se Implementationsplan).
+- Status: Accepted (Session 11 — 2026-06-03; flippad från Proposed vid inkrement 1:s landning). Ratificerad av Marcus i direktion Session 10 (2026-05-30); flippades till Accepted när inkrement 1 (PI bas/delta-mall) landade, per villkoret i Implementationsplanen.
 - Datum: 2026-05-30
 - Fas: Session 10 — process-fundament (efter ADR-042, före Fas 2.5)
 

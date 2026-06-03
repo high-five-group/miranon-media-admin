@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-31
+updated: 2026-06-03
 review_by: 2026-11-15
 status: stable
 ---
@@ -85,7 +85,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-040](ADR-040-sessions-numreringskonvention.md) | Sessions-numreringskonvention — sekventiella heltal (inga decimaler; faser separat axel; historik grandfathrad) | Accepted | Meta |
 | [ADR-041](ADR-041-session-end-do-confirm-roll.md) | session-end:s roll — do-confirm-verifiering, inte read-do-motor (omdefinierar ADR-034:s skill-mekanik; tre-lagers-kadens med ADR-039) | Accepted | Meta |
 | [ADR-042](ADR-042-code-roll-disciplin-alltid-pa.md) | Code-roll-disciplin alltid-på via template, inte skill — falsifierar Session 9-handoffens "egen skill" mot ADR-034 p.8 + K8 | Accepted | Meta |
-| [ADR-043](ADR-043-session-lifecycle-skills-arkitektur.md) | Session-lifecycle som två-ytors skill-par (Chat + Code) + Project Instructions bas/delta-mall; ger Chat-ytan lifecycle-mekanism utan discovery-beroende | Proposed | Meta |
+| [ADR-043](ADR-043-session-lifecycle-skills-arkitektur.md) | Session-lifecycle som två-ytors skill-par (Chat + Code) + Project Instructions bas/delta-mall; ger Chat-ytan lifecycle-mekanism utan discovery-beroende | Accepted | Meta |
 
 ## Relaterade dokument
 
