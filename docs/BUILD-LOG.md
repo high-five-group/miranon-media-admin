@@ -1056,6 +1056,10 @@ Session öppnade på Session 9-handoffens "code-roll-disciplin-skill" men avtäc
 
 **Uppskjutet (Session 11 + framtida):** ADR-043-bygge inkrement 1–5 (Session 11); Fas 2.5 Schema-kontrakt-sync (Session 11+); hub-lyft av L66–L69 → nästa K-sista; DEL 2 lesson→grind-wiring + hub-governance-lyft → fortsatt egna framtida sessioner (oförändrat sedan Session 9).
 
+## Session 11 — ADR-043 inkrement 1 (PI bas/delta) + drift-fix/CI-integritet (pågående 2026-06-03)
+
+ADR-043 inkrement 1 (PI bas/delta) landat + ADR-043 Accepted. Hub-bas `templates/project-instructions-base.md` (`16a4e9f`); spoke-delta + ADR-flip + README (`393ec9c`); beslut T1′ (lifecycle-prosa parkerad i delta, ej pekare i bas) + T2 (två-fils-paste); no-loss-diff grön. Drift-fix för fem pre-existing externa länkfel (ej inkrement-1-orsakade): browser-UA via `--header` för UA-WAF 406/415 + digg.se timeout-ignore (`6274918`); skip/config-revaliderings-gap lagat via decouplad `docs_changed` (`6a0ab9c`). Tre CI-integritetshål ytade (cache-maskering öppen → ADR-044-kandidat; skip- + config-utan-revalidering lagade). CI-validerat grön run `26907015576`. Inkrement 2–5 + Fas 2.5 carry → Session 12. Sessionsdok-trail: [`tasks/sessions/2026-06-02-session-11.md`](../tasks/sessions/2026-06-02-session-11.md).
+
 ---
 
 ## Session-modellen

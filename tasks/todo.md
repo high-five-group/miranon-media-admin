@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-05-30 (Session 10 ✅ KLAR — code-roll-disciplin landad som alltid-på template + konstitution-pekare (ADR-042, spoke `c4af8bf` + hub `f9d59f5`), inte skill; session-lifecycle-arkitektur designad + committad som ADR-043 (Proposed, commit `80f87aa`); lessons L66–L69 skördade; sessionsdok backfillat (`38ca605`). Fas 2.5 + ADR-043-bygge ompositionerade till Session 11)*
+*Senast uppdaterad: 2026-06-03 (Session 11 pågående — ADR-043 inkrement 1 (PI bas/delta) landat + ADR-043 Proposed → Accepted bekräftad (run `26907015576`, commit `6a0ab9c`); drift-/skip-gap-fixar landade (`6274918` + `6a0ab9c`). Inkrement 2–5 + Fas 2.5 carry → Session 12. — Session 10 ✅ KLAR — code-roll-disciplin landad som alltid-på template + konstitution-pekare (ADR-042, spoke `c4af8bf` + hub `f9d59f5`), inte skill; session-lifecycle-arkitektur designad + committad som ADR-043 (Proposed, commit `80f87aa`); lessons L66–L69 skördade; sessionsdok backfillat (`38ca605`). Fas 2.5 + ADR-043-bygge ompositionerade till Session 11)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -53,9 +53,17 @@ Konkret första tillämpning av [ADR-039](../docs/decisions/ADR-039-konsistens-g
 
 ### Session 11 — scope (nästa)
 
-- [ ] **ADR-043-bygge — inkrement 1–5** (**Session 11:s FÖRSTA arbetspunkt**) — implementera session-lifecycle-skill-paret per [ADR-043](../docs/decisions/ADR-043-session-lifecycle-skills-arkitektur.md) Implementationsplan: Chat-halva + Code-halva (`create-session-doc` m.fl.) + Project Instructions bas/delta-mall + handoff-kontrakt. Vid första inkrementets landning flippas ADR-043 Proposed → Accepted. Fundament som gör Fas 2.5 sömlös (samma logik som code-roll-disciplin var för Session 10).
+- [x] **ADR-043-bygge — inkrement 1 (PI bas/delta-mall)** ✅ LANDAT 2026-06-03 — hub-bas `marcus-system/templates/project-instructions-base.md` (`16a4e9f`) + spoke-delta/ADR-flip/README (`393ec9c`) per [ADR-043](../docs/decisions/ADR-043-session-lifecycle-skills-arkitektur.md) beslut 6. T1′ (lifecycle-prosa parkerad i delta, ej pekare i bas) + T2 (två-fils-paste); no-loss-diff grön. **ADR-043 Proposed → Accepted bekräftad** (run `26907015576`, commit `6a0ab9c`). Drift-/skip-gap-fixar landade separat. Se [`tasks/sessions/2026-06-02-session-11.md`](sessions/2026-06-02-session-11.md) Del 2.
 
-- [ ] **Fas 2.5 — Schema-kontrakt-sync** (**Session 11:s huvudtema efter ADR-043-bygget**) — per `docs/byggplan.md` §4.5. Förutsätter att lifecycle-skill-paret är aktivt så fas-arbetet får rätt mekanik från start.
+- [ ] **ADR-043-bygge — inkrement 2–5** (carry → Session 12) — per [ADR-043](../docs/decisions/ADR-043-session-lifecycle-skills-arkitektur.md) Implementationsplan: Code-halva (`create-session-doc` m.fl.) + Chat-halvor (session-start/end/resume) + handoff-kontrakt + discovery-/dogfood-test.
+
+- [ ] **Fas 2.5 — Schema-kontrakt-sync** (carry → Session 12; **huvudtema efter ADR-043-bygget**) — per `docs/byggplan.md` §4.5. Förutsätter att lifecycle-skill-paret är aktivt så fas-arbetet får rätt mekanik från start.
+
+- [ ] **ADR-044-kandidat — CI-länk-integritet** — täcker cache-maskering (ÖPPEN) + skip-/config-utan-revalidering (LAGADE Session 11 via `6a0ab9c`). Cache-maskering: lychee `cache-lychee-${github.sha}` + restore-keys-prefix + `--max-cache-age 1d` döljer extern länk-röta → "grön-av-cache" i stället för grön-av-verklighet. Vid författande: full options-rymd + 3+ branschledar-research (per konstitution).
+
+- [ ] **lychee-action version-bump (v0.23.0 → v0.24+)** — i veckovis Actions-supply-chain-granskning (ADR-029), ej reaktivt. Signal: lokal lychee 0.24.2 gav 200 för airtable/travisgosselin där CI 0.23.0 gav 406/415 — version kan vara medverkande till UA-WAF-beteendet.
+
+- [ ] **digg.se `.lycheeignore`-re-utvärdering** — i veckovis ignore-granskning. 2-instans-beslut Session 11 (persistent [TIMEOUT] på två färska fetch); ta bort om transient.
 
 **Fas 2 ✅ KLAR 2026-05-13** — Routing + Auth komplett. Alla 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression. Defense-in-depth tre-skikt-arkitektur levererad: skikt 1 (klient-guard K3.2/K3.3) + skikt 2 (AuthError throw K3.4) + skikt 3 (server requireUser Fas A M2). Sessions 4 + 5 + 5b (arkiveras till `tasks/sessions/archive/2026-05/` i K5.8). Hub-lyft-kandidater: 7 totalt (K17 + K18 + K19 + K34 + K36 + K37 + K38) för K5.7 hub-sync.
 
