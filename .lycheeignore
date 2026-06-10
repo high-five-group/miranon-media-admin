@@ -68,3 +68,12 @@
 # Lessons-flag: re-utvärdera i framtida session — om transient, ta bort.
 ^https://www\.digg\.se/webbriktlinjer$
 
+# travisgosselin.com CI-runner-specifik fail (Session 12, 2026-06-10). Tidigare
+# UA/WAF-406/415 (fixad via --header User-Agent, Session 11) men har nu degraderat
+# till persistent [TIMEOUT] → [ERROR] (cached); re-run klarade inte den. Samma
+# känd-flaky-klass som tanstack/opentelemetry/digg.se (GHA-IP strypt/blockerad av
+# sajt). Påverkar docs/decisions/ADR-031-dependabot-strategi-2026.md. Trackad i
+# ADR-044-kandidat-tråden (CI-länk-integritet). Lessons-flag: re-utvärdera vid
+# ADR-044/lychee-bump — om transient eller header-fixbar igen, ta bort.
+^https://travisgosselin\.com/dependabot-with-grouped-updates/$
+
