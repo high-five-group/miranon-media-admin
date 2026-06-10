@@ -66,7 +66,7 @@ Lästa i denna ordning vid sessionsstart:
 |---|---|
 | Branch | main |
 | HEAD pre-Session-6.5 | `adb5f09` (post-Session-6-K-sista) |
-| Aktiva sessionsdok | `tasks/sessions/2026-05-13-ci-optimering.md` (Session 6, arkiveras vid Session 7-start) |
+| Aktiva sessionsdok | `tasks/sessions/archive/2026-05/2026-05-13-ci-optimering.md` (Session 6, arkiveras vid Session 7-start) |
 
 Uncommitted fil vid sessionsstart: `docs/analysis/Fas-2-11-10-verification-2026-05-14.md` — committad i pre-K1 per K7-disciplin (defer till Session 7 K0).
 

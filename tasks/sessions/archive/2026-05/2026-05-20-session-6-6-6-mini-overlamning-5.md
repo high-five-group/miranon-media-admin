@@ -548,7 +548,7 @@ Konsolidera 121 → 10-15 hub-lessons via klass-pattern (per mini-3 Del 4):
 | K-sista-1-C | Hub-sync UNIVERSAL-lessons | ~/Repon/marcus-system/tasks/lessons.md (H2-tillägg) — SEPARAT REPO-COMMIT |
 | K-sista-1-D | Web-research-rule + Kontinuitet-arkitektur-rule (hub + spoke) | ~/Repon/marcus-system/CLAUDE.md + ~/Repon/miranon-media-admin/CLAUDE.md (2 "Ristat i sten"-bullets add: web-research + L_AAAE kontinuitet-arkitektur, Alt α-paketering per Del 14) |
 | K-sista-1-E | Lager 2-checklist v0.1 → v1.0 | ~/Repon/marcus-system/templates/chat-prompt-design-checklist.md (frontmatter bump + 8 utvidgningar bake-in inkl. NY web-research + NY kontinuitet-arkitektur) — SEPARAT REPO-COMMIT |
-| K-sista-1-F | Session 6.7-prep-fil-uppdatering | tasks/sessions/2026-05-14-session-6-7-prep.md (utvidga med anti-bloat-research + Project Instructions/Profile Preferences-distinktion + web-research-discipline.skill) |
+| K-sista-1-F | Session 6.7-prep-fil-uppdatering | tasks/sessions/archive/2026-05/2026-05-14-session-6-7-prep.md (utvidga med anti-bloat-research + Project Instructions/Profile Preferences-distinktion + web-research-discipline.skill) |
 | K-sista-1-G | Reconciliation + mini-överlämningar arkivering | git mv reconciliation v1+v2-final + mini-1-5 → archive/2026-05/ |
 | K-sista-1-H | Final-verifikation + push | CI-verifikation grön + push alla pending commits |
 
@@ -579,7 +579,7 @@ Lager 2 v1.0 bumpas med ALLA 8 utvidgningar internaliserade som procedural-steg,
 
 ### Bakgrund
 
-`tasks/sessions/2026-05-14-session-6-7-prep.md` existerar med scope etablerat 2026-05-14 (post-Session 6.6 K-sista). K-sista-1 ska UPPDATERA den med ny empirisk kontext från Session 6.6.6 + denna Chat-iterations web-research.
+`tasks/sessions/archive/2026-05/2026-05-14-session-6-7-prep.md` existerar med scope etablerat 2026-05-14 (post-Session 6.6 K-sista). K-sista-1 ska UPPDATERA den med ny empirisk kontext från Session 6.6.6 + denna Chat-iterations web-research.
 
 ### Tillägg till Del 1.2 Skills att skapa-tabell
 
@@ -748,7 +748,7 @@ Explicit krav på Lager 2 §6.2-transparens-rapport. Code's pair-programming-pat
 4. **`tasks/sessions/2026-05-18-session-6-6-6-mini-overlamning-4.md`** — mini-4 (K0-trail + K3.5-prep + 6 v1.0-utvidgningar)
 5. **`tasks/sessions/2026-05-17-lessons-reconciliation-fangst-v2.md`** — auktoritativ lessons-katalog 94 kandidater
 6. **`~/Repon/marcus-system/templates/chat-prompt-design-checklist.md`** — Lager 2 v0.1 (bumpas till v1.0 i K-sista-1-E)
-7. **`tasks/sessions/2026-05-14-session-6-7-prep.md`** — Session 6.7-prep (uppdateras i K-sista-1-F)
+7. **`tasks/sessions/archive/2026-05/2026-05-14-session-6-7-prep.md`** — Session 6.7-prep (uppdateras i K-sista-1-F)
 8. **`tasks/lessons.md`** — bakad L1-L19 (bakas in med konsoliderade L20-LNN i K-sista-1-A)
 9. **`tasks/todo.md`** — projekt-plan
 

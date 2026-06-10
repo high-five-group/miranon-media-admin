@@ -275,7 +275,7 @@ LÄS (i denna ordning):
    — Kategori 4 + Strategi E-baseline för CI-arkitektur
 7. ~/Repon/miranon-media-admin/docs/decisions/README.md — ADR-katalog
    (vilka ADR:er finns, vad är nästa nummer för ADR-030)
-8. ~/Repon/miranon-media-admin/tasks/sessions/2026-05-14-session-6-6-prep.md
+8. ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-14-session-6-6-prep.md
    — PREP-DOKUMENT (denna fil). Innehåller komplett scope, K-struktur,
    Vale-vokabulär-utkast, frontmatter-design, observations-pass-
    instruktioner, förväntade lessons-kandidater.
@@ -398,7 +398,7 @@ Vid Session 6.7:
 - Observations-pass-rapporten från Session 6.6 K-sista är input.
   Skills-extraktion + CLAUDE.md-refactor + checklist-trimning hanteras
   där.
-- Prep-fil finns redan: `tasks/sessions/2026-05-14-session-6-7-prep.md`
+- Prep-fil finns redan: `tasks/sessions/archive/2026-05/2026-05-14-session-6-7-prep.md`
   (skapad samtidigt som denna prep-fil, Del 1 placeholder uppdateras
   post-6.6 K-sista).
 - Beroende av denna sessions K-sista observations-pass-rapport för att

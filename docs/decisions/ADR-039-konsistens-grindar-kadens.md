@@ -9,7 +9,7 @@
 ## Kontext
 
 Session 8 K0a (process-retrospektivens kartläggning, registrerad i
-[sessionsdoket](../../tasks/sessions/2026-05-27-session-8.md)) diagnosticerade
+[sessionsdoket](../../tasks/sessions/archive/2026-05/2026-05-27-session-8.md)) diagnosticerade
 en återkommande klass av tyst dokument-drift och spårade dess rot. Två aktiva
 driftar hade ackumulerats mellan fas-avslut:
 

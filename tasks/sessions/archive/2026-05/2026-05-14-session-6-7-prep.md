@@ -390,7 +390,7 @@ LÄS (i denna ordning):
 4. ~/Repon/miranon-media-admin/tasks/lessons.md — Session 6.6 H2
 5. ~/Repon/miranon-media-admin/docs/decisions/ADR-030 (eller motsvarande
    numrering från 6.6) — docs-grindvakter-arkitektur
-6. ~/Repon/miranon-media-admin/tasks/sessions/2026-05-14-session-6-7-prep.md
+6. ~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-14-session-6-7-prep.md
    — PREP-DOKUMENT (denna fil). Innehåller komplett scope, K-struktur,
    skill-format-utkast, förväntade lessons-kandidater.
 7. Session 6.6 K-sista observations-pass-rapport (lokaliseras i

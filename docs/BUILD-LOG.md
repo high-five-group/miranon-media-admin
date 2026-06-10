@@ -992,7 +992,7 @@ Konsoliderings-trail: tasks/sessions/archive/2026-05/2026-05-23-k-sista-0-lesson
 
 ## Session 7 — Fas 2-fynd-verifiering (K0, 2026-05-27)
 
-Stänger Fynd-punkter ur `docs/analysis/Fas-2-11-10-verification-2026-05-14.md` före Fas 2.5. Trail i `tasks/sessions/2026-05-26-session-7.md`.
+Stänger Fynd-punkter ur `docs/analysis/Fas-2-11-10-verification-2026-05-14.md` före Fas 2.5. Trail i `tasks/sessions/archive/2026-05/2026-05-26-session-7.md`.
 
 **K0.1 — Fynd 1 (typecheck no-op):** `tsc --noEmit` utan `-b` ignorerade TypeScript project references (`tsconfig.json` = `files: []`), så Fas 2:s namngivna typecheck-signal var no-op för app-koden — `npm run build` (`tsc -b`) fångade typfel, men `typecheck`-scriptet + CI-steget `TypeScript check` gjorde det inte. Åtgärdat (commit `3c8c3f6`): `typecheck` → `tsr generate && tsc -b --noEmit`; CI `TypeScript check` → `npm run typecheck`. Negativ test bevisade kontrasten (TS2322 i app-fil: ny form exit 2, gammal exit 0). Typecheck-signalen är nu ärlig. Ingen ADR — bugg-fix av trasigt script, inget arkitekturbeslut.
 
@@ -1008,7 +1008,7 @@ Stänger Fynd-punkter ur `docs/analysis/Fas-2-11-10-verification-2026-05-14.md` 
 
 ## Session 8 — Process-retrospektiv (K0a + K0b + K0c, 2026-05-27 → 2026-05-28)
 
-Process-retrospektiv mellan Fas 2 och Fas 2.5 — diagnos av en tyst doc-drift-klass (kadens-missmatch), åtgärd med 2 deterministiska per-push-grindar, och cross-repo-stängning av två hub-trådar. Full trail i `tasks/sessions/2026-05-27-session-8.md`. Session 8 spände två kalenderdagar utan att split:as — empirisk bekräftelse av [ADR-040](decisions/ADR-040-sessions-numreringskonvention.md) Beslut 2 (en session = en logisk arbetsenhet; en paus renumreras inte).
+Process-retrospektiv mellan Fas 2 och Fas 2.5 — diagnos av en tyst doc-drift-klass (kadens-missmatch), åtgärd med 2 deterministiska per-push-grindar, och cross-repo-stängning av två hub-trådar. Full trail i `tasks/sessions/archive/2026-05/2026-05-27-session-8.md`. Session 8 spände två kalenderdagar utan att split:as — empirisk bekräftelse av [ADR-040](decisions/ADR-040-sessions-numreringskonvention.md) Beslut 2 (en session = en logisk arbetsenhet; en paus renumreras inte).
 
 **K0a — kartläggning (förrättad i en tidigare Code-session, retroaktivt registrerad i sessionsdoket):** inventerade skydds-mekanismerna (4 skills + ~11 CI-grindar + den enda fas-bundna doc-drift-vakten `phase-end-verify.sh`), klassade Session 7:s 8 fix-steg (Klass A CC-tooling: 2; Klass B ogrindad artefakt-drift: 4; Klass C self-review-fångad: 2), och hittade 2 aktiva driftar: README ADR-räkning `28` vs faktiskt `38` filer + ADR-029 § Utelämning #6 `fetch-depth: 50` vs ci.yml `100`. Roten diagnoserad som **kadens-missmatch**: enda mekaniska doc-drift-vakten körs vid fas-avslut medan artefakter ändras varje session — drift osynlig (inga failande tester) tills någon läser fel värde. K0b avtäckte dessutom att `phase-end-verify`:s ADR-check redan var trasig (greppade stale `28` på en andra README-rad — `head -1`-icke-determinism). Ingen kod-åtgärd här; K0a är diagnos.
 
@@ -1022,7 +1022,7 @@ Process-retrospektiv mellan Fas 2 och Fas 2.5 — diagnos av en tyst doc-drift-k
 
 ## Session 9 — Roll-arkitektur + ADR-041 do-confirm-reframe + fetch-depth-invariant 100→250 (DEL 1 + DEL 2 + DEL 2.5 + DEL 3 + DEL 4 + DEL 3.5a + DEL 5, 2026-05-29)
 
-Process-tung session med fyra parallella tematiska tyngdpunkter — startade som prepfas inför Fas 2.5 men kristalliserades till fundament-arbete för roll-arkitektur Chat/Code/Marcus. Full trail i `tasks/sessions/2026-05-29-session-9.md`.
+Process-tung session med fyra parallella tematiska tyngdpunkter — startade som prepfas inför Fas 2.5 men kristalliserades till fundament-arbete för roll-arkitektur Chat/Code/Marcus. Full trail i `tasks/sessions/archive/2026-05/2026-05-29-session-9.md`.
 
 **DEL 1 — ADR-041 do-confirm-roll (commits `23e8254` + `6e0c175` + `3682ef3`, 2026-05-29):** session-end-skillens roll omdefinieras från read-do autonom motor till do-confirm-verifiering körd av Code mot Chat-dirigerat avslut. Etablerar tre-lagers-kadens: Lager 1 per-push CI-grindar ([ADR-039](decisions/ADR-039-konsistens-grindar-kadens.md)), Lager 2 phase-end-verify, Lager 3 denna skill. Killer items (BUILD-LOG, Marcus-Update) i förgrunden per Gawandes 5-9-postersregel. Additiv erratum på [ADR-023](decisions/ADR-023-sessions-arkivering.md) harmoniserar arkiverings-formulering. Två cleanup-runder (MD004 + Vale.Repetition) etablerade [L56](../tasks/lessons.md#L56) som permanent disciplin.
 
@@ -1046,7 +1046,7 @@ Process-tung session med fyra parallella tematiska tyngdpunkter — startade som
 
 ## Session 10 — code-roll-disciplin (ADR-042) + session-lifecycle-arkitektur (ADR-043 Proposed) + recovery-backfill (2026-05-30)
 
-Session öppnade på Session 9-handoffens "code-roll-disciplin-skill" men avtäckte tre process-haverier: sessionsdoket föddes aldrig vid sessionsstart, `todo.md` uppdaterades inte vid landning, och verifierings-disciplinen feltillämpades på Chats eget icke-utförda arbete. Sessionsdoket backfillades från git-trail. Full trail i `tasks/sessions/2026-05-30-session-10.md`.
+Session öppnade på Session 9-handoffens "code-roll-disciplin-skill" men avtäckte tre process-haverier: sessionsdoket föddes aldrig vid sessionsstart, `todo.md` uppdaterades inte vid landning, och verifierings-disciplinen feltillämpades på Chats eget icke-utförda arbete. Sessionsdoket backfillades från git-trail. Full trail i `tasks/sessions/archive/2026-05/2026-05-30-session-10.md`.
 
 **ADR-042 — code-roll-disciplin alltid-på, inte skill (spoke commit `c4af8bf` + hub commit `f9d59f5`, 2026-05-30):** Session 9-handoffen föreslog en egen skill; falsifiering mot [ADR-034](decisions/ADR-034-skill-arkitektur.md) p.8 + K8 (meta-disciplin auto-upptäcks ej tillförlitligt) visade att disciplinen hör hemma som alltid-på, template-buren regel. Hub-template `templates/code-role-discipline.md` (162 rader) bär HUR-stegen (handover-protokoll, transparens-rapport-format, STOPPA-grindar som procedursteg); hub-CLAUDE.md + spoke-konstitutionen pekar mot den (PRINCIP inline, HUR delegerat). Spoke-konsekvenser: README + decisions/README + Session 9 BUILD-LOG-backfill (commits `c4af8bf` + `6b476c5` + `33d1cbd`). L66 (handoff-formulering är mekanism-förslag, inte mekanismbeslut).
 
@@ -1058,7 +1058,7 @@ Session öppnade på Session 9-handoffens "code-roll-disciplin-skill" men avtäc
 
 ## Session 11 — ADR-043 inkrement 1 (PI bas/delta) + drift-fix/CI-integritet (pågående 2026-06-03)
 
-ADR-043 inkrement 1 (PI bas/delta) landat + ADR-043 Accepted. Hub-bas `templates/project-instructions-base.md` (`16a4e9f`); spoke-delta + ADR-flip + README (`393ec9c`); beslut T1′ (lifecycle-prosa parkerad i delta, ej pekare i bas) + T2 (två-fils-paste); no-loss-diff grön. Drift-fix för fem pre-existing externa länkfel (ej inkrement-1-orsakade): browser-UA via `--header` för UA-WAF 406/415 + digg.se timeout-ignore (`6274918`); skip/config-revaliderings-gap lagat via decouplad `docs_changed` (`6a0ab9c`). Tre CI-integritetshål ytade (cache-maskering öppen → ADR-044-kandidat; skip- + config-utan-revalidering lagade). CI-validerat grön run `26907015576`. Inkrement 2–5 + Fas 2.5 carry → Session 12. Sessionsdok-trail: [`tasks/sessions/2026-06-02-session-11.md`](../tasks/sessions/2026-06-02-session-11.md).
+ADR-043 inkrement 1 (PI bas/delta) landat + ADR-043 Accepted. Hub-bas `templates/project-instructions-base.md` (`16a4e9f`); spoke-delta + ADR-flip + README (`393ec9c`); beslut T1′ (lifecycle-prosa parkerad i delta, ej pekare i bas) + T2 (två-fils-paste); no-loss-diff grön. Drift-fix för fem pre-existing externa länkfel (ej inkrement-1-orsakade): browser-UA via `--header` för UA-WAF 406/415 + digg.se timeout-ignore (`6274918`); skip/config-revaliderings-gap lagat via decouplad `docs_changed` (`6a0ab9c`). Tre CI-integritetshål ytade (cache-maskering öppen → ADR-044-kandidat; skip- + config-utan-revalidering lagade). CI-validerat grön run `26907015576`. Inkrement 2–5 + Fas 2.5 carry → Session 12. Sessionsdok-trail: [`tasks/sessions/archive/2026-06/2026-06-02-session-11.md`](../tasks/sessions/archive/2026-06/2026-06-02-session-11.md).
 
 ## Session 12 — ADR-043-bygge komplett (inkrement 2–5) + lifecycle-dogfood (2026-06-05 → 2026-06-10)
 
@@ -1073,7 +1073,7 @@ denna stängning, 5c (`/session-start`) restmoment → Session 13-öppning. Extr
 `c1486fc` (travisgosselin.com cachad-timeout → anchored `.lycheeignore`, L82; ADR-044-tråd).
 Lessons L77–L82 skördade ([UNIVERSAL], hub-lyft pending nästa K-sista). **Fas 2.5
 (Schema-kontrakt-sync) öppnar Session 13 på dogfood-verifierat lifecycle-fundament.**
-Sessionsdok-trail: [`tasks/sessions/2026-06-05-session-12.md`](../tasks/sessions/2026-06-05-session-12.md).
+Sessionsdok-trail: [`tasks/sessions/archive/2026-06/2026-06-05-session-12.md`](../tasks/sessions/archive/2026-06/2026-06-05-session-12.md).
 
 ---
 

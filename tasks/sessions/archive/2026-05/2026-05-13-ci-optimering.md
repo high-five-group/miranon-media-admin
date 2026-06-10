@@ -4,7 +4,7 @@
 > **Skapat:** 2026-05-13 (K1)
 > **Slutgiltig version:** 2026-05-14 (K-sista, post-Commit 4c empirisk verifikation)
 > **Ägare:** Marcus + Claude Chat (planering) + Claude Code (implementation)
-> **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/2026-05-13-ci-optimering.md` (arkiveras till `archive/2026-05/` vid Session 7-start per ADR-023)
+> **Avsedd plats:** `~/Repon/miranon-media-admin/tasks/sessions/archive/2026-05/2026-05-13-ci-optimering.md` (arkiveras till `archive/2026-05/` vid Session 7-start per ADR-023)
 > **Styrande:**
 > - `~/Repon/marcus-system/CLAUDE.md` — hub-konstitution (P-fas-mönster, sessionsdok-disciplin, transcript-disciplin)
 > - `~/Repon/miranon-media-admin/CLAUDE.md` — projekt-konstitution + Sessionsstart-/Sessionsavsluts-checklistor + Fas-avsluts-verifierings-rutin
@@ -352,7 +352,7 @@ Strategi E (Vite-mönstret med changed-files + needs-skip + aggregator) etablera
 
 ### Var den auktoritativa Session-6-trailen finns
 
-- **Denna fil:** `tasks/sessions/2026-05-13-ci-optimering.md` (arkiveras till `archive/2026-05/` när Session 7 startar per ADR-023)
+- **Denna fil:** `tasks/sessions/archive/2026-05/2026-05-13-ci-optimering.md` (arkiveras till `archive/2026-05/` när Session 7 startar per ADR-023)
 - **K1-commit (sessionsdok-skelett):** `120ef50` (2026-05-13)
 - **K0åh commits (allowlist-rensning):** `0d19ede` + `9a4d8d5` (2026-05-13)
 - **K1.D commits (8):** `12b3942` → `5f3f148` → `94577c1` → `a5411e1` → `f0dc697` → `071ef39` → `ee0a045` → `16e212b`

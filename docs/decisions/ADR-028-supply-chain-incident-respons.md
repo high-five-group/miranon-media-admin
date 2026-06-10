@@ -122,5 +122,5 @@ K17-disciplin (live security-state-verifikation vid sessionsstart, [`tasks/lesso
 **Spårbarhet:**
 
 - Advisory-snäv-uppdatering (live-data): <https://github.com/advisories/GHSA-rmmr-r34h-pfm5> — kontrollera `updated_at`-fält + `vulnerable_version_range` per `vulnerabilities[]`-objekt
-- K0åh sessionsdok-trail: `tasks/sessions/2026-05-13-ci-optimering.md` (K-sista bake-in)
+- K0åh sessionsdok-trail: `tasks/sessions/archive/2026-05/2026-05-13-ci-optimering.md` (K-sista bake-in)
 - K0åh commit-trail: `0d19ede` (audit-ci.jsonc) + denna commit (docs)
