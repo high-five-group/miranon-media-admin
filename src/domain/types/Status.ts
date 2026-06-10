@@ -34,6 +34,18 @@ export const PaymentStatus = {
 
 export type PaymentStatusValue = (typeof PaymentStatus)[keyof typeof PaymentStatus];
 
+// Eventplanering.Status (fld2nXlS1UG0aOHLt) — 4 options, MCP-verifierade
+// mot live-basen 2026-06-10 (matchar data-model.md inkl. option-ID:n;
+// 0 records utanför listan vid data-svep). Fas 2.5 klunga 4.
+export const EventStatus = {
+  PLANERAT: 'Planerat',
+  GENOMFORT: 'Genomfört',
+  INSTALLT: 'Inställt',
+  FLYTTAT: 'Flyttat',
+} as const;
+
+export type EventStatusValue = (typeof EventStatus)[keyof typeof EventStatus];
+
 export const AttendanceSession = {
   DAG_1: 'Dag 1',
   DAG_2: 'Dag 2',

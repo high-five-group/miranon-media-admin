@@ -1,3 +1,5 @@
+import type { EventStatusValue } from '../types/Status';
+
 export interface Event {
   id: string;
   eventlabel: string | null;
@@ -16,5 +18,5 @@ export interface Event {
   antalAnmalningsavgifter: number;
   antalSlutbetalningar: number;
   antalSlutbetalningFelande: number;
-  status: string | null;
+  status: EventStatusValue | null;
 }

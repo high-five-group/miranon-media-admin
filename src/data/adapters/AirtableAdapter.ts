@@ -67,32 +67,32 @@ export class AirtableAdapter implements DataSourceAdapter {
     await postEdgeFunction('update-record', { operationKey, recordId, fields });
   }
 
-  // === Nya metoder ===
+  // === Debt-klassade stub-metoder (Fas 2.5 klunga 4, A5-tabellen i
+  // P1-sessionsdok Del 3). EF deployas per strangler-fig-sub-fas i Fas 6;
+  // .parse()-aktivering sker vid deploy (ADR-026 beslut 5). ===
 
   /**
    * Hämta enskilt event via ID.
    *
+   * @deferTo: Fas-6b (Events-domän) — A5 #1, 06b-impact: liten (events-lookup,
+   * snarlik fetchEvents).
    * @todo Apply Zod .parse() runtime validation when get-event Edge Function deploys.
    * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
    */
-  async fetchEvent(id: string): Promise<Event> {
-    // TODO: Edge Function 'get-event' behöver deployas
-    const data = await callEdgeFunction<{ event: Event }>('get-event', { id });
-    return data.event;
+  async fetchEvent(_id: string): Promise<Event> {
+    throw new Error('Not deployed yet — see Fas 6b');
   }
 
   /**
    * Hämta enskild person via ID.
    *
+   * @deferTo: Fas-6a (Persons-domän, FÖRST i strangler-fig-sekvensen) — A5 #2,
+   * 06b-impact: medel (target joinar persons + person_identifiers + lead_profiles).
    * @todo Apply Zod .parse() runtime validation when get-person Edge Function deploys.
    * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
    */
-  async fetchPerson(id: string): Promise<Person> {
-    // TODO: Edge Function 'get-person' behöver deployas
-    const data = await callEdgeFunction<{ person: Person }>('get-person', {
-      id,
-    });
-    return data.person;
+  async fetchPerson(_id: string): Promise<Person> {
+    throw new Error('Not deployed yet — see Fas 6a');
   }
 
   /** Uppdatera anmälan — kräver explicit operationKey (M4). */
@@ -107,36 +107,27 @@ export class AirtableAdapter implements DataSourceAdapter {
   /**
    * Skapa ny anmälan.
    *
+   * @deferTo: Fas-6c (Registrations-domän) — A5 #3, 06b-impact: STOR
+   * (idempotency_key, registration_attendees, transaktionsdesign).
+   * EF-implementationen MÅSTE inkludera idempotency-mekanismen per ADR-014
+   * (create-registration-idempotency) — annars reproduceras F.4-dubblettbuggen.
    * @todo Apply Zod .parse() runtime validation when create-registration Edge Function deploys.
    * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
    */
-  async createRegistration(data: Omit<Registration, 'id'>): Promise<Registration> {
-    // TODO: Edge Function 'create-registration' behöver deployas
-    const result = await postEdgeFunction<{ registration: Registration }>(
-      'create-registration',
-      data as Record<string, unknown>,
-    );
-    return result.registration;
+  async createRegistration(_data: Omit<Registration, 'id'>): Promise<Registration> {
+    throw new Error('Not deployed yet — see Fas 6c');
   }
 
   /**
    * Hämta deltaganden (närvaro).
    *
+   * @deferTo: Fas-6b (Events-domän, Närvaro-flik) — A5 #4, 06b-impact: medel
+   * (target använder FK-kedja event → event_session → attendances; ren läsning).
    * @todo Apply Zod .parse() runtime validation when get-attendance Edge Function deploys.
    * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
    */
-  async fetchAttendance(filters?: AttendanceFilters): Promise<Attendance[]> {
-    // TODO: Edge Function 'get-attendance' behöver deployas
-    const params: Record<string, string> = {};
-    if (filters?.eventId) params.eventId = filters.eventId;
-    if (filters?.session) params.session = filters.session;
-    if (filters?.status) params.status = filters.status;
-
-    const data = await callEdgeFunction<{ attendance: Attendance[] }>(
-      'get-attendance',
-      Object.keys(params).length > 0 ? params : undefined,
-    );
-    return data.attendance;
+  async fetchAttendance(_filters?: AttendanceFilters): Promise<Attendance[]> {
+    throw new Error('Not deployed yet — see Fas 6b');
   }
 
   /** Uppdatera deltagandes status — kräver explicit operationKey (M4). */
@@ -147,80 +138,63 @@ export class AirtableAdapter implements DataSourceAdapter {
   /**
    * Hämta väntelistan.
    *
+   * @deferTo: Fas-6c (väntelista-konvertering tillsammans med Registrations) —
+   * A5 #5, 06b-impact: liten (waitlist_entries-läsning, samma form post-Fas E).
    * @todo Apply Zod .parse() runtime validation when get-waitlist Edge Function deploys.
    * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
    */
-  async fetchWaitlist(filters?: WaitlistFilters): Promise<WaitlistEntry[]> {
-    // TODO: Edge Function 'get-waitlist' behöver deployas
-    const params: Record<string, string> = {};
-    if (filters?.event) params.event = filters.event;
-
-    const data = await callEdgeFunction<{ waitlist: WaitlistEntry[] }>(
-      'get-waitlist',
-      Object.keys(params).length > 0 ? params : undefined,
-    );
-    return data.waitlist;
+  async fetchWaitlist(_filters?: WaitlistFilters): Promise<WaitlistEntry[]> {
+    throw new Error('Not deployed yet — see Fas 6c');
   }
 
   /**
    * Hämta leads (hämtade erbjudanden).
    *
+   * @deferTo: Fas-6e (Mer-fliken, VILLKORLIG) — A5 #6, 06b-impact: medel.
+   * Död-kod-kandidat: omvärderas vid Fas 6:s sub-fas-planering (Mer-flikens
+   * scope-beslut). Behålls tills dess per A5.
    * @todo Apply Zod .parse() runtime validation when get-leads Edge Function deploys.
    * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
    */
-  async fetchLeads(filters?: LeadFilters): Promise<Lead[]> {
-    // TODO: Edge Function 'get-leads' behöver deployas
-    const params: Record<string, string> = {};
-    if (filters?.erbjudande) params.erbjudande = filters.erbjudande;
-    if (filters?.harAnmalan !== undefined) params.harAnmalan = String(filters.harAnmalan);
-
-    const data = await callEdgeFunction<{ leads: Lead[] }>(
-      'get-leads',
-      Object.keys(params).length > 0 ? params : undefined,
-    );
-    return data.leads;
+  async fetchLeads(_filters?: LeadFilters): Promise<Lead[]> {
+    throw new Error('Not deployed yet — see Fas 6e');
   }
 
   /**
    * Hämta engagemang.
    *
+   * @deferTo: post-Gate-4B (utanför Fas 6, post-Fas E-fönster) — A5 #7,
+   * 06b-impact: STOR + osäker (Gate 4B fråga 4 öppen: interactions-tabell
+   * vs separata). Svagaste deploy-kandidaten av alla 9 per A5.
    * @todo Apply Zod .parse() runtime validation when get-engagements Edge Function deploys.
    * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
    */
-  async fetchEngagements(personId?: string): Promise<Engagement[]> {
-    // TODO: Edge Function 'get-engagements' behöver deployas
-    const params: Record<string, string> = {};
-    if (personId) params.personId = personId;
-
-    const data = await callEdgeFunction<{ engagements: Engagement[] }>(
-      'get-engagements',
-      Object.keys(params).length > 0 ? params : undefined,
-    );
-    return data.engagements;
+  async fetchEngagements(_personId?: string): Promise<Engagement[]> {
+    throw new Error('Not deployed yet — see Gate 4B-resolution (post-Fas E)');
   }
 
-  /** Skicka mailutskick */
-  async sendEmail(payload: MailPayload): Promise<void> {
-    // TODO: Edge Function 'send-email' behöver deployas
-    await postEdgeFunction('send-email', payload as unknown as Record<string, unknown>);
+  /**
+   * Skicka mailutskick.
+   *
+   * @deferTo: Fas-6e (Mer-fliken Mail eller per-anmälan actions) — A5 #8,
+   * 06b-impact: ENORM (target är communication_outbox-arkitektur).
+   * Direct-Resend-implementationen är medveten skuld per ADR-015
+   * (send-email-direct-resend); migreras till outbox post-Fas E.
+   */
+  async sendEmail(_payload: MailPayload): Promise<void> {
+    throw new Error('Not deployed yet — see Fas 6e');
   }
 
   /**
    * Hämta mailloggen.
    *
+   * @deferTo: Fas-6e (Mer-fliken, VILLKORLIG) — A5 #9, 06b-impact: medel.
+   * Död-kod-kandidat: omvärderas vid Fas 6:s sub-fas-planering (Mer-flikens
+   * scope-beslut). Behålls tills dess per A5.
    * @todo Apply Zod .parse() runtime validation when get-mail-log Edge Function deploys.
    * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
    */
-  async fetchMailLog(filters?: MailLogFilters): Promise<MailLogEntry[]> {
-    // TODO: Edge Function 'get-mail-log' behöver deployas
-    const params: Record<string, string> = {};
-    if (filters?.status) params.status = filters.status;
-    if (filters?.efter) params.efter = filters.efter;
-
-    const data = await callEdgeFunction<{ mailLog: MailLogEntry[] }>(
-      'get-mail-log',
-      Object.keys(params).length > 0 ? params : undefined,
-    );
-    return data.mailLog;
+  async fetchMailLog(_filters?: MailLogFilters): Promise<MailLogEntry[]> {
+    throw new Error('Not deployed yet — see Fas 6e');
   }
 }
