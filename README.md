@@ -11,7 +11,7 @@ React-admin för Miranon Media — eventhantering, anmälningar och rapportering
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
 [![TanStack](https://img.shields.io/badge/TanStack-Router%20%2B%20Query%20%2B%20Table-FF4154)](package.json)
 
-> **Status:** Fas 2 — Routing + Auth ✅ KLAR 2026-05-13 (Sessions 4+5+5b). Defense-in-depth tre-skikt-arkitektur levererad. **Nästa:** Fas 2.5 — Schema-kontrakt-sync (per [`docs/byggplan.md`](docs/byggplan.md) §4).
+> **Status:** Fas 2.5 — Schema-kontrakt-sync ✅ KLAR 2026-06-10 (Session 13). Domäntyper synkade mot `data-model.md`, z.enum-värdevalidering på live-läsvägar, 9 adapter-metoder debt-klassade per A5. **Nästa:** Fas 3 — UI-primitiver (per [`docs/byggplan.md`](docs/byggplan.md) §4).
 
 ## Dokumentation
 
@@ -59,6 +59,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 | `npm run preview` | Preview av produktionsbygge |
 | `npm run typecheck` | `tsr generate && tsc -b --noEmit` |
 | `npm run lint` | `biome check .` |
+| `npm run lint:prose` | Vale prosa-lint (`docs` + `tasks` + publika root-md-filer) |
 | `npm run format` | `biome format --write .` |
 | `npm run test:visual` | Playwright visuella regressionstester |
 | `npm run typecheck:tests` | TypeScript-validering av tests/-mappen (separat config) |
@@ -88,7 +89,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 
 ## Projektstatus
 
-**Aktuellt fokus:** Fas 2.5 — Schema-kontrakt-sync (per `docs/byggplan.md` §4).
+**Aktuellt fokus:** Fas 3 — UI-primitiver (per `docs/byggplan.md` §4).
 
 **Klara faser:**
 
@@ -100,6 +101,11 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - Defense-in-depth tre-skikt-arkitektur (klient-guard + AuthError + server requireUser)
   - 8 DoD-rader stängda och empiriskt verifierade via 6-tests Playwright-regression-suite
   - 3 nya ADR:er (ADR-026, ADR-027, ADR-028)
+- ✅ **Fas 2.5** — Schema-kontrakt-sync (Session 13, 2026-06-10)
+  - Status.ts 4→6 RegistrationStatus-värden + EventStatus-enum, verbatim mot `data-model.md` och MCP-verifierade mot live-basen
+  - z.enum-värdevalidering ur Status.ts-konstanterna på live-läsvägarna (ADR-026-mönstret), modeller smalnade i parallell (ADR-005)
+  - 9 adapter-metoder debt-klassade per A5-tabellen (`@deferTo`-JSDoc + throw); 0 EF deployade by design
+  - Synk-gate 1 stängd före fasstart — A1–A12-inventering MCP-verifierad mot live
 
 **Arkitekturbeslut:** 43 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
 

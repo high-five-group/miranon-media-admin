@@ -33,6 +33,8 @@ Kategoriseringen "Efter Fas 2.5" för A1–A8 följer av det mekaniska utfallet:
 
 **Schema-frys (gatens framåtriktade villkor):** inga fält-, options- eller automation-ändringar i basen tills Fas 2.5 är stängd. Kommuniceras till Lotta/Roger. Frysen är det som gör att inventeringen ovan förblir giltig under hela fas-fönstret.
 
+**Frys-hävning (2026-06-10, Fas 2.5-fas-avslut Session 13):** schema-frysen hävs i och med fas-stängningen — Marcus kommunicerar hävningen till Lotta/Roger. A1–A8 är därmed öppna för Fas B-arbete (kategorin "Efter Fas 2.5" är nådd). Synk-gate 2 (handshake mot `field-allowlists.ts` per Fas 5.5/6-operation) är nästa aktiva gate.
+
 ## Spårbarhet
 
 - Gate-definition: `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` (A4 Design-not); `docs/byggplan.md` §2 rad B + §4 Fas B (drift-korrigerade i Session 13); `tasks/byggplan-direktiv.md` §5 rad B.

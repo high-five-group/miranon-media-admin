@@ -73,7 +73,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **1** | ✅ KLAR | Domäntransplant (13 filer + Zod + fetchWithRetry). Session 1, commits `e3d8e8a` → `c91bfa0`. Skuld → Fas 2.5. | (avslutad) |
 | **A** | ✅ KLAR | Säkerhetshardening M1–M8. Slutförd 2026-05-04, 14 commits, 113 tester. | (avslutad) |
 | **2** | ✅ KLAR | Routing + Auth — Sessions 4+5+5b 2026-05-13. ADR-026, ADR-027, ADR-028. Defense-in-depth tre-skikt-arkitektur. | 3 sessioner (faktiskt) |
-| **2.5** | NY | Schema-kontrakt-sync — `Status.ts` mot `data-model.md`, Zod vid externa datagränser, **adapter-debt klassad (deployar 0 EF — se A5-klassningstabell i P1-sessionsdok Del 3)**, ev. borttagning av död-kod-stubs. | 1 session |
+| **2.5** | ✅ KLAR | Schema-kontrakt-sync — Session 13 2026-06-10. Status.ts 4→6, enum-granskning noll divergens, z.enum-hårdning + modell-smalning, 9 adapter-metoder A5-klassade (0 EF deployade — by design), inga död-kod-stubs (A5-utfall). Synk-gate 1 stängd före fasen. | 1 session (faktiskt) |
 | **3** | NY scope | UI-primitiver (React Aria + CVA + ARIA 1.3). | 2 sessioner |
 | **3.5** | NY | **A11y-baseline EGEN FAS** per P2 A1-utfall. Test-infrastruktur (axe + Playwright a11y) + 5 React Aria-mönster. ACCESSIBILITY-CHECKLIST omskriven i P2. | 1 session |
 | **5** | NY scope | **Förenklat** — minimal app-shell + tab bar + skip-to-content + route announcer + responsivt 375/768/1024 + `prefers-reduced-motion`/`prefers-contrast:more` + error boundaries app/sektion-nivå + Workbox SW + TanStack offline-config. **View Transitions, Speculation Rules, web-vitals, widget-error-boundary flyttade till Fas 7.** ADR krävs. | 1 session |
@@ -87,7 +87,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 
 **Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR-013 (Fas 4-borttagningen).
 
-**Total estimat (Fas 2.5 → Fas 7, exkl. klara Fas 0/1/A/2 och defer:ade Fas 8/B/E):** 14,5 sessioner — uppdaterad 2026-05-13 efter Fas 2 levererad i 3 sessioner (4+5+5b). Beräkning: 1 + 2 + 1 + 1 + 2 + 3,5 + 1 + 3 = 14,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
+**Total estimat (Fas 3 → Fas 7, exkl. klara Fas 0/1/A/2/2.5 och defer:ade Fas 8/B/E):** 13,5 sessioner — uppdaterad 2026-06-10 efter Fas 2.5 levererad på 1 session (Session 13, estimat hållet). Beräkning: 2 + 1 + 1 + 2 + 3,5 + 1 + 3 = 13,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
 
 ---
 
@@ -257,6 +257,8 @@ Inget nytt ADR krävs. URL-state-strategin följer befintlig `URL-STATE-SPEC.md`
 ---
 
 ### Fas 2.5 — Schema-kontrakt-sync
+
+✅ Slutförd 2026-06-10, Session 13 (klunga 1–4). Alla 7 DoD-rader stängda; 0 EF deployade (by design); Synk-gate 1 stängd före fasstart med MCP-verifierad A1–A12-inventering (`docs/research/datamodell-research/09-a1-a12-synk-gate-1-inventering.md`). Korsreferens: `tasks/sessions/2026-06-10-session-13.md` Del 2–4.
 
 #### Mål
 
@@ -965,6 +967,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 | 1.0 | 2026-05-05 | Initial (P3a K2) — ersätter `docs/conversion-plan.md`. Baserad på P0-inventory + P1 fas-sekvens-revision + P2 stödspec-synk. 13 fas-prompter + 10 ADR:er identifierade som ADR (#1)–ADR (#10). |
 | 1.1 | 2026-05-05 | P3a K3 — 10 ADR:er skrivna och numrerade som ADR-011 till ADR-020 i `docs/decisions/`. ADR-referenser i fas-prompter + §5 ADR-index uppdaterade till slutgiltiga ADR-NNN-format. |
 | **1.2** | **2026-05-13** | **Fas 2 markerad KLAR** efter Sessions 4+5+5b. Defense-in-depth tre-skikt-arkitektur levererad. ADR-026 (Runtime-validering), ADR-027 (KVALITETSDEFINITIONER stack-skifte), ADR-028 (Supply chain incident-respons-protokoll) tillkomna under K0åe/K0åf/K0åg. §2 fas-tabell uppdaterad (Fas 2 ✅ KLAR + estimat-summa Fas 2.5 → Fas 7 = 14,5 sessioner). §4 Fas 2-prompt utökad med "✅ Slutförd"-paragraf per Fas A-mallen. K5.9a drift-stängning av sanningskälla mot BUILD-LOG/todo/v3/CLAUDE.md (Kandidat 12-disciplin). |
+| **1.4** | **2026-06-10** | **Fas 2.5 markerad KLAR** efter Session 13 (klunga 1–4). §2 fas-tabell uppdaterad (Fas 2.5 ✅ KLAR + estimat-summa Fas 3 → Fas 7 = 13,5 sessioner). §4 Fas 2.5-prompt utökad med "✅ Slutförd"-paragraf per Fas A-mallen. Schema-path-typo i §4.5 Filer rättad (`src/data/schemas` → `src/domain/schemas`, K2 DEL B). DoD-trail: Status.ts 4→6, noll enum-divergens, z.enum-hårdning, A5-debt-klassning, 0 EF-deploys, 113 tester gröna via CI. |
 | **1.3** | **2026-06-10** | **Drift-korrigering av Fas B-synk-gates mot beslutat A4-innehåll.** Session 13-forensik fann inget beslutsspår för "Gate B1 (innan Fas 6c)"/"Gate B2 (innan Fas E)"-formuleringarna (införda vid dokumentets födelse `2ffede0`, P3a K2) — transkriptions-drift från A4-beslutet. Återställt per A4: Synk-gate 1 (hard) före Fas 2.5 + Synk-gate 2 (handshake per Fas 5.5/6-operation). §2 fas-tabell rad B, §4 Fas B Scope/Beroenden korrigerade; §4 Fas 2.5 Beroenden utökad med Synk-gate 1 som hård gate. Trail: `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` (A4) + `tasks/sessions/2026-06-10-session-13.md` (forensik). |
 
 ---

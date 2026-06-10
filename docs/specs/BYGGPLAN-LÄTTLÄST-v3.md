@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-18
+updated: 2026-06-10
 review_by: 2026-11-15
 status: stable
 ---
@@ -12,8 +12,8 @@ status: stable
 
 > **Levande dokument.** Den här planen uppdateras löpande när vi går vidare. När en fas är klar förvandlas den till "vad vi har gjort, och varför". När nästa fas planeras får den en plats här. Ingen behöver gissa var vi är — det står i det här dokumentet.
 >
-> **Version 3** — Fas 2 KOMPLETT (Sessions 4+5+5b). Senast: Session 6.6 docs-grindvakter (2026-05-14).
-> **Status just nu:** Fas 0, Fas 1, Fas A och Fas 2 är klara. **Fas 2.5 (dubbelkoll på datan) startar nästa session.**
+> **Version 3** — Fas 2.5 KLAR (Session 13). Senast uppdaterad: 2026-06-10.
+> **Status just nu:** Fas 0, Fas 1, Fas A, Fas 2 och Fas 2.5 är klara. **Fas 3 (byggklossarna — knappar, fält, dialoger) är nästa.**
 > **Föregångare:** [v2](../archive/BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md) (april 2026, arkiverad 2026-05-09) och [v1](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md) (arkiverad 2026-05-06). v3 ersätter v2 och speglar byggplan-revisionen från maj 2026.
 
 <!-- markdownlint-disable-next-line MD028 -->  <!-- BYGGPLAN-LÄTTLÄST formatering (pedagogisk struktur per ADR-025) -->
@@ -96,9 +96,9 @@ Det är inget löfte och ingen deadline — det är en realistisk gissning baser
 | **Fas 0** | Grunden — projekt och designspråk | ✅ Klar (april) | 1 arbetspass |
 | **Fas 1** | Flytta in det vi redan har | ✅ Klar (april) | 0,5 pass |
 | **Fas A** | Säkerhetsvakten — låsa serverdörrarna | ✅ Klar (4 maj) | ~3 pass |
-| **Fas 2** | Dörrar och lås — navigering + inloggning | 🟡 Nästa | 2 pass |
-| **Fas 2.5** | Dubbelkoll på datan | ⏳ | 1 pass |
-| **Fas 3** | Byggklossar — knappar, fält, dialoger | ⏳ | 2 pass |
+| **Fas 2** | Dörrar och lås — navigering + inloggning | ✅ Klar (13 maj) | 3 pass (faktiskt) |
+| **Fas 2.5** | Dubbelkoll på datan | ✅ Klar (10 juni) | 1 pass |
+| **Fas 3** | Byggklossar — knappar, fält, dialoger | 🟡 Nästa | 2 pass |
 | **Fas 3.5** | Tillgänglighetstest — för alla som ska använda appen | ⏳ | 1 pass |
 | **Fas 5** | Skalet — det du ser först | ⏳ | 1 pass |
 | **Fas 5.5** | Första riktiga interaktionen — markera betalning | ⏳ | 2 pass |
@@ -216,7 +216,9 @@ Allt verifieras automatiskt via 6 Playwright-tester som körs vid varje kodändr
 ### Fas 2.5: Dubbelkoll på datan
 
 <!-- markdownlint-disable-next-line MD036 -->
-*1 arbetspass · startar nästa session*
+*1 arbetspass · ✅ klar 10 juni 2026 (Session 13)*
+
+**Så gick det:** Allt i listan nedan blev klart på ett pass, precis som planerat. Vi hittade och rättade dessutom ett fel i själva byggplanen (en hänvisning som hade glidit iväg från det ursprungliga beslutet), och vi dubbelkollade alla statusvärden direkt mot den riktiga Airtable-basen — inte bara mot dokumentationen. Inga av Airtable-städåtgärderna (A1–A12) var gjorda ännu, så koden synkades mot verkligheten som den faktiskt ser ut.
 
 **Vad händer?**
 
@@ -558,7 +560,7 @@ Det här är de externa verktyg och tjänster appen står på. Du behöver inte 
 
 | Version | Datum | Ändring |
 |---------|-------|---------|
-| **v3** | **2026-05-09** (initial), **2026-05-13** (Fas 2 KLAR) | **Aktuell.** Speglar byggplan-revisionen från maj 2026 (P0–P3a). Lagt till: Fas A (säkerhetsvakten), Fas 2.5 (dubbelkoll på datan), Fas 3.5 (tillgänglighetstest), Fas 5.5 (första riktiga interaktionen), Fas 6 uppdelad i 6a–6e (strangler-fig), Fas 8 (framtid), Fas B (Airtable-städning som parallellspår), Fas E (databasbyte). Fas 5 förenklad — fyra polish-funktioner flyttade till Fas 7. Skriven i du-form. Senast uppdaterad-stämpel + status-rad i header. **Uppdaterad 2026-05-13:** Fas 2 — Routing + Auth markerad KLAR efter Sessions 4 + 5 + 5b. Defense-in-depth tre-skikt-arkitektur levererad. Fas 2.5 (schema-kontrakt-sync) flyttad till "Det här bygger vi nu". Status-rad och "Senast uppdaterad"-stämpel uppdaterade per ADR-025 levande dokument-disciplin. |
+| **v3** | **2026-05-09** (initial), **2026-05-13** (Fas 2 KLAR) | **Aktuell.** Speglar byggplan-revisionen från maj 2026 (P0–P3a). Lagt till: Fas A (säkerhetsvakten), Fas 2.5 (dubbelkoll på datan), Fas 3.5 (tillgänglighetstest), Fas 5.5 (första riktiga interaktionen), Fas 6 uppdelad i 6a–6e (strangler-fig), Fas 8 (framtid), Fas B (Airtable-städning som parallellspår), Fas E (databasbyte). Fas 5 förenklad — fyra polish-funktioner flyttade till Fas 7. Skriven i du-form. Senast uppdaterad-stämpel + status-rad i header. **Uppdaterad 2026-05-13:** Fas 2 — Routing + Auth markerad KLAR efter Sessions 4 + 5 + 5b. Defense-in-depth tre-skikt-arkitektur levererad. Fas 2.5 (schema-kontrakt-sync) flyttad till "Det här bygger vi nu". Status-rad och "Senast uppdaterad"-stämpel uppdaterade per ADR-025 levande dokument-disciplin. **Uppdaterad 2026-06-10:** Fas 2.5 — Dubbelkoll på datan markerad KLAR efter Session 13 (1 pass, estimat hållet). "Så gick det"-stycke tillagt. Fas-tabellen rättad: Fas 2-raden stod kvar som "🟡 Nästa" sedan 2026-05-13 (drift, nu ✅ Klar) och Fas 3 är nu 🟡 Nästa. |
 | v2 | 2026-04-13 | Tonomställning från "om Lotta" till "till dig". Strukturmedling. **Frusen** efter v3 — beskrev planen innan byggplan-revisionen. |
 | v1 | 2026-04-13 | Första versionen. Skriven om Lotta i tredje person. **[Arkiverad](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md)** 2026-05-06 i Pre-Fas-2-städningen. |
 

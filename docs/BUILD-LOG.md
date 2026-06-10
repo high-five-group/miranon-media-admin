@@ -1077,6 +1077,26 @@ Sessionsdok-trail: [`tasks/sessions/2026-06-05-session-12.md`](../tasks/sessions
 
 ---
 
+## Session 13 — Synk-gate 1-forensik + Fas 2.5 Schema-kontrakt-sync KOMPLETT + fas-avslut (2026-06-10)
+
+**Planerat:** Fas 2.5 per byggplan §4.5 (1 session, estimat hållet). **Faktiskt:** gate-forensik
+tillkom som arbetspunkt 0 — orienterings-passet fann gate-divergens utan beslutsspår.
+Sessionsdok fött via create-session-doc-grenen (`3801046`; ADR-043 restmoment 5c PASS).
+Synk-gate 1: forensik (transkriptions-drift bevisad, ingen beslutstrail) → byggplan-
+korrigering mot A4 (`121785b`) → A1–A12-inventering MCP-verifierad mot live (`ba7f288`;
+A1–A8 EJ APPLICERADE, A10–A11 preserve, A12 ej MCP-verifierbar) → gate STÄNGD efter
+Marcus-kvittens (`1f8eb8e`) med schema-frys till fas-stängning. Fas 2.5 i fyra klungor:
+K1 Status.ts 4→6 (`fa712a6`), K2 enum-granskning noll divergens + path-fix (`9f5e7a9`),
+K3 z.enum-hårdning + modell-smalning efter outlier-svep 0 träffar (`c50280a`+`edf6e2e`),
+K4 adapter-debt-klassning 9 metoder per A5 + EventStatus (`6b7ca56`). DoD 1–7 uppfyllda;
+Test+Build körd grön på varje kod-commit (separerade pushar). **Avvikelser:** inga EF-deploys
+(by design); död-kod-utfall: ingen metod A5-klassad som död — fetchLeads/fetchMailLog
+omvärderas Fas 6; bifynd Deadline slutbetalning-formeldrift → todo (Fas B-sfär).
+Lessons L83–L87. Fas-avslut körd denna session (phase-end-verify + hub-sync + CHANGELOG 0.4.0).
+Sessionsdok-trail: [`tasks/sessions/2026-06-10-session-13.md`](../tasks/sessions/2026-06-10-session-13.md).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

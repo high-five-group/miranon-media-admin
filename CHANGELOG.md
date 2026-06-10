@@ -7,6 +7,27 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-10
+
+### Added — Fas 2.5: Schema-kontrakt-sync (Session 13)
+
+- `RegistrationStatus` utökad 4 → 6 värden (`Flytta till väntelista`, `Inställt`) verbatim mot `docs/reference/data-model.md`, MCP-verifierade mot live-basen
+- Ny `EventStatus`-enum (4 värden, Eventplanering.Status) + `Event`-modell/schema smalnade
+- A1–A12 Synk-gate 1-inventering (`docs/research/datamodell-research/09-a1-a12-synk-gate-1-inventering.md`) — MCP-verifierad mot live-basen, gate stängd med Marcus-kvittens + schema-frys under fas-fönstret
+- Adapter-debt-klassning: alla 9 TODO-stubs JSDoc-klassade per A5-tabellen (`@deferTo` + konsekvent `Not deployed yet`-throw; ADR-014/ADR-015 refererade)
+- Lessons L83–L87 (`[UNIVERSAL]`) i `tasks/lessons.md`
+
+### Changed
+
+- Zod-scheman: status-/select-fält i `Registration`/`Attendance`/`Event` → `z.enum` härledda ur Status.ts-konstanterna (single source) — live-läsvägarnas `.parse()` (ADR-026) validerar nu värden, inte bara shape; modeller smalnade i parallell (ADR-005-assignability)
+- Spekulativa EF-anrop borttagna ur throw-klassade stub-kroppar (skisser kvar i git-historik)
+- `docs/byggplan.md` §2/§4: Fas 2.5 ✅ KLAR, estimat-summa 14,5 → 13,5 sessioner (versionshistorik 1.3 + 1.4)
+
+### Fixed
+
+- `docs/byggplan.md` Fas B-synk-gates återställda till beslutat A4-innehåll — "Gate B1 (innan Fas 6c)"/"Gate B2 (innan Fas E)" var transkriptions-drift utan beslutsspår (Session 13-forensik); Synk-gate 1 (hard, före Fas 2.5) + Synk-gate 2 (handshake per Fas 5.5/6-operation) + ny Beroenden-rad i §4.5
+- Schema-path-typo i byggplan §4.5: `src/data/schemas/*.ts` → `src/domain/schemas/*.ts`
+
 ## [0.3.0] - 2026-05-13
 
 ### Added — Fas 2: Routing + Auth (Sessions 4+5+5b)
@@ -73,7 +94,8 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 
 - `docs/conversion-plan.md` → `docs/archive/conversion-plan-2026-04-14.md` (ADR-012)
 
-[Unreleased]: https://github.com/marcus803/miranon-media-admin/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/marcus803/miranon-media-admin/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/marcus803/miranon-media-admin/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/marcus803/miranon-media-admin/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/marcus803/miranon-media-admin/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/marcus803/miranon-media-admin/releases/tag/v0.1.0

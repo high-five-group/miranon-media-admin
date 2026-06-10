@@ -1716,3 +1716,65 @@ värden, och förblev röd. Dessutom degraderade en tidigare "header-fixad" dom�
 extern-länk-fail, läs FELKLASSEN (transient? cachad? degraderad?) innan åtgärd väljs;
 re-run hjälper bara o-cachade transienter. Minimal anchored ignore med
 re-utvärderingsflagga är rätt nivå tills policy-ADR:n (ADR-044) tar helheten.
+
+## 2026-06-10 — Session 13 (Fas 2.5)
+
+### L83 [UNIVERSAL] — Gate-/konventionsdrift utan beslutsspår avgörs med forensisk blame-pass; rationale styr över bokstaven
+
+Datum: 2026-06-10 | Källa: Session 13 arbetspunkt 1, Synk-gate 1 "Gate B1"-driften (klass: styrande-dokument-disciplin)
+
+När två styrande dokument säger olika saker om samma beslut: avgör medvetet
+beslut vs transkriptions-drift med en forensisk evidenskedja — (1) läs
+ursprungsbeslutet i sin helhet, (2) git blame på de divergerande raderna,
+(3) läs sessionsdoket/ADR:n som commiten refererar, (4) sök ADR-katalogen.
+Finns inget beslutsspår är det drift: återställ till ursprungsbeslutet med
+korrigerings-not + trail. Empiri: byggplanens "Gate B1 (innan Fas 6c)" kom in
+vid dokumentets födelse-commit utan spår — A4-beslutet (hård gate före
+Fas 2.5) styrde. Bonus-signal: defer-fasers prompter skrivs medvetet med
+lägre noggrannhet ("preliminärt — låses vid aktualisering") — det är exakt
+där transkriptions-drift smyger in.
+
+### L84 [UNIVERSAL] — Outlier-svep av alla live-records FÖRE hård z.enum på live-läsväg; Airtable !=BLANK() ger falska positiver
+
+Datum: 2026-06-10 | Källa: Session 13 K3 + K4 DEL B (klass: datagräns-validering)
+
+Hård enum-validering (`z.enum` + `.parse()`) på en live-läsväg knäcker hela
+list-svaret om EN record bär ett legacy-värde utanför optionslistan (Airtable
+behåller borttagna options-värden på records). Därför: data-verifiera ALLA
+records med outlier-filter (`filterByFormula` som exkluderar varje giltigt
+värde) innan enum-hårdning aktiveras. Metodnot: `{Fält}!=BLANK()` ger falska
+positiver på blanka fält — robust mönster är `{Fält}&""!=""`. Quirken kan
+bara addera rader, aldrig dölja — tomma resultat är därför säkra bevis även
+med det naiva mönstret.
+
+### L85 [UNIVERSAL] — Noll-divergens-utfall levereras som rapport, inte tom commit
+
+Datum: 2026-06-10 | Källa: Session 13 K2 DEL A, enum-granskningen (klass: leverans-disciplin)
+
+När en granskningsklunga finner noll divergens är leveransen
+verifierings-rapporten (vad som jämfördes, mot vilket facit, med vilket
+utfall) — inte en tom eller konstlad commit. En commit utan substansändring
+för att "visa att klungan kördes" är fejk-leverans som förorenar historiken.
+Bevisbördan bärs av transparens-rapporten + sessionsdok-trailen.
+
+### L86 [UNIVERSAL] — Throw-stubs: spekulativ kod tas bort, skissen lever i git-historik, commit-meddelandet dokumenterar
+
+Datum: 2026-06-10 | Källa: Session 13 K4, adapter-debt-klassningen (klass: kod-hygien)
+
+När en stub-metod klassas med `throw new Error('Not deployed yet — see X')`
+ska spekulativ implementation (anrop mot odeployade endpoints) tas bort, inte
+behållas under throw:en — kod efter throw är oåtkomlig (lint-fel) och ljuger
+om vad som körs. Param-mappnings-skisser går inte förlorade: de lever i
+git-historiken, och commit-meddelandet dokumenterar var. Oanvända parametrar
+prefixas `_` så signaturen förblir interface-kompatibel.
+
+### L87 [UNIVERSAL] — Pusha kod- och docs-commits separat när CI har changed-files-gating
+
+Datum: 2026-06-10 | Källa: Session 13 K3 push-sekvensering (klass: CI-disciplin)
+
+När CI skippar jobb baserat på ändrade filer (Test+Build skippas för
+docs-only): pusha kod-committen separat före docs-committen, så att
+CI-beviset blir entydigt per commit-typ — kod-pushens run bevisar Test+Build
+grön, docs-pushens run bevisar länk-grinden. En kombinerad push ger ETT run
+vars jobb-uppsättning beror på diff-detektionens scope, och verifierings-
+beviset per ändringstyp blir tvetydigt.
