@@ -16,7 +16,7 @@ status: stable
 > Varje korrigering, insikt och mönster fångas här.
 > Claude läser denna fil vid varje sessionsstart.
 > Lärdomar märkta [UNIVERSAL] bör lyftas till meta-repot.
-> **Senaste lyft:** Session 8 (2026-05-28) — L51–L55, 5 [UNIVERSAL]-lyft → hub K8.1–K8.5 (process-retrospektiv: kadens-principen, lesson→grind-principen, immutabel-vs-invariant-test-nyans, premiss-verifiering, plugin-skill-edit-aktivering) — hub-commit `3c611bd`
+> **Senaste lyft:** Session 13 K-sista (2026-06-10) — L56–L87, 32 [UNIVERSAL]-lyft → hub K9.1–K13.5 i fem H2-grupper (Sessions 9–13; inkl. strukturrättelse av L66–L69-felplaceringen) — hub-commit `477de29`
 
 ---
 
@@ -1552,6 +1552,12 @@ Att specificera "verbatim bevarat" eller "orörd" vid en edit som rör närligga
 Empirisk grund: två instanser i samma session. **Instans 1 (DEL 4):** session-end-skillens transcript-disciplin + P3a-block bevarades innehållsligt verbatim (21/22 + 7/8 rader identiska) men header-nivå H3→H2 promoterades när ## Procedur-containern legitimt försvann. Code:s STOPPA-OCH-FRÅGA klarlade tolknings-tvetydigheten. **Instans 2 (DEL 3.5a):** hub-CLAUDE.md edit lämnade `updated: 2026-05-26` trots edit-dag 2026-05-29 eftersom prompten sa "frontmatter ORÖRD". Follow-up-commit krävdes för att bumpa.
 
 Mönsterklass: när samma underspecifikation manifesteras två gånger inom samma session, är det inte två isolerade fall — det är en specifikations-disciplin som behöver explicit formulering i framtida edit-prompts. Speglar L15 (empirisk verifikation) tillämpat på edit-instruktioner.
+
+## 2026-05-30 — Session 10 (code-roll-disciplin ADR-042 + ADR-043-design)
+
+> Strukturrättelse 2026-06-10 (Session 13 K-sista, hub-sync): L66–L69 låg
+> felplacerade under Session 9:s H2 sedan Session 10-stängningen (`0ffe56b`)
+> — pre-existing fynd från Session 12, rättat här utan textändring i posterna.
 
 ### L66 [UNIVERSAL] — Handoff-formulering ("egen skill") är ett mekanism-förslag, inte ett mekanismbeslut; beteende-klassen avgör och valet falsifieras mot kriteriet före bygge
 
