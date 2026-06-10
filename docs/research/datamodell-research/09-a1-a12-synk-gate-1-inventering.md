@@ -1,10 +1,10 @@
 # 09 - A1–A12 Synk-gate 1-inventering
 
-> **Status:** Synk-gate 1-underlag (hård gate per A4, `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md`) — mekanisk halva klar, inväntar Marcus-kvittens för slutlig kategorisering.
+> **Status:** Synk-gate 1 STÄNGD 2026-06-10 efter Marcus-kvittens (hård gate per A4, `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md`). Kategorierna fastställda per förslag: A1–A8 "Efter Fas 2.5"; A9–A11 preserve per tabell; A12 defer kvarstår, verifierad via Marcus-bekräftelse 2026-06-10 (inga automation- eller schemaändringar gjorda; endast nya data-rader sedan 06a — data-rader påverkar inte schema-synken).
 > **Datum:** 2026-06-10 (Session 13, arbetspunkt 2 DEL B)
 > **Metod:** Åtgärdslistan extraherad ur `06a-airtable-redesign.md` Del A–C; mekaniskt verifierbara signaler kontrollerade live via Airtable MCP (`get/describe_table` mot bas `app8uGPrVCVOm6LfD`, samtliga sex berörda tabeller: Anmälningar, Personer, Väntelista, Touchpoints, Hämtade erbjudanden, Error-log).
 > **Metodgräns:** Airtable MCP ser INTE automationer, vy-filter, formulär, Zapier-konfiguration eller Edge Function-kod — endast schema (fältnamn, typer, formler, options, vy-namn). Åtgärdsdelar utanför schemat är markerade "EJ MEKANISKT VERIFIERBAR" och kräver mänsklig verifiering (HAR-export/screenshot/Zapier-inlogg).
-> **Beslutsstatus:** Kategori-kolumnen är FÖRSLAG. Slutlig kategorisering (redan applicerade / före Fas 2.5 / efter Fas 2.5) är Marcus-beslut.
+> **Beslutsstatus:** FASTSTÄLLD (Marcus-kvittens, Session 13). Kategori-kolumnen var FÖRSLAG i mekaniska halvan; kategoriseringen (redan applicerade / före Fas 2.5 / efter Fas 2.5) är nu beslutad.
 
 ## Sammanfattande utfall
 
@@ -12,7 +12,7 @@ Ingen av åtgärderna A1–A8 är applicerad i live-basen per 2026-06-10. Preser
 
 ## Inventeringstabell
 
-| ID | Åtgärd (ur 06a) | Mekaniskt utfall (live-bevis 2026-06-10) | Kategori-förslag | Kräver Marcus/Lotta-kvittens |
+| ID | Åtgärd (ur 06a) | Mekaniskt utfall (live-bevis 2026-06-10) | Kategori (fastställd, Marcus-kvittens 2026-06-10) | Kräver Marcus/Lotta-kvittens |
 |---|---|---|---|---|
 | A1 | Aktiv-semantik exkluderar `Inställt`: formeln i `Anmälningar.Är aktiv (1/0)` (`fld4j7PeckDViTdIB`) utökas med `Inställt` | **EJ APPLICERAD.** Live-formeln är fortfarande `IF({Status}="Avbokad/Ombokad", 0, 1)` — `Inställt` ingår inte. (Status-fältet har option `Inställt`, `selebP2V3qmFRTtdP` — pre-existerande, ej del av A1.) | Efter Fas 2.5 | JA |
 | A2 | Mail partial-success synlig/retrybar: EF-kontrakt + Error-log-fält (recordId, mailtyp, tabell, felmeddelande, timestamp) | **EJ APPLICERAD** (Airtable-delen). Error-log har endast 4 fält: `Felmeddelande`, `Datum`, `E-post`, `Relaterar till` — inga recordId-/mailtyp-/tabell-fält. EF-kontraktsdelen EJ MEKANISKT VERIFIERBAR via schema. | Efter Fas 2.5 | JA |
@@ -27,9 +27,11 @@ Ingen av åtgärderna A1–A8 är applicerad i live-basen per 2026-06-10. Preser
 | A11 | Preserve: `Personer.RIM 3 ×` (`fld93OrTArvdkkYmk`) behålls som Airtable-native rollup | **PRESERVE EFTERLEVD.** Fältet finns kvar som rollup från `Deltaganden.RIM 3 eventkey` (`fldL0YfWmdkOuxgsH`). | Preserve gäller | NEJ |
 | A12 | Defer: A2-automationens grenordning ändras inte; endast sandbox-verifieringsinstruktion | **EJ MEKANISKT VERIFIERBAR.** Automationer är inte synliga via Airtable MCP (kräver HAR-export eller screenshots). Ingen schemaförändring förväntas heller — defer-beslutet lämnar inga schema-spår. | Defer kvarstår (verifiering = Lotta/Roger-moment) | JA |
 
-## Not om kategori-förslaget
+## Not om kategoriseringen (fastställd)
 
-Förslaget "Efter Fas 2.5" för A1–A8 följer av det mekaniska utfallet: inget är applicerat, och Fas 2.5 synkar mot nuvarande live-schema (Status-optionens 6 värden finns redan live och matchar Fas 2.5 DoD punkt 1). Appliceras A-åtgärder senare fångas schema-drift av Zod-runtime-valideringen (Fas 2.5 leverans) + Synk-gate 2 (handshake per Fas 5.5/6-operation). Alternativ kategorisering "före Fas 2.5" för någon åtgärd är ett rent Marcus/Lotta-beslut — inget i live-state tvingar den ordningen.
+Kategoriseringen "Efter Fas 2.5" för A1–A8 följer av det mekaniska utfallet: inget är applicerat, och Fas 2.5 synkar mot nuvarande live-schema (Status-optionens 6 värden finns redan live och matchar Fas 2.5 DoD punkt 1). Appliceras A-åtgärder senare fångas schema-drift av Zod-runtime-valideringen (Fas 2.5 leverans) + Synk-gate 2 (handshake per Fas 5.5/6-operation). Alternativet "före Fas 2.5" valdes bort vid Marcus-kvittensen — inget i live-state tvingade den ordningen.
+
+**Schema-frys (gatens framåtriktade villkor):** inga fält-, options- eller automation-ändringar i basen tills Fas 2.5 är stängd. Kommuniceras till Lotta/Roger. Frysen är det som gör att inventeringen ovan förblir giltig under hela fas-fönstret.
 
 ## Spårbarhet
 
