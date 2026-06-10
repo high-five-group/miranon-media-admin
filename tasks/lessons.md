@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-03
+updated: 2026-06-10
 review_by: 2026-11-15
 status: stable
 ---
@@ -1646,3 +1646,73 @@ En relativ länk, path eller mall som är korrekt i sin ursprungsfil blir bruten
 Empirisk grund: Session 11 1C — Chats BUILD-LOG-text bar `](sessions/…)` (korrekt från `tasks/todo.md`, brutet från `docs/BUILD-LOG.md` → `docs/sessions/…` finns ej). Chat-self-review fångade ej; Code:s path-upplösning + CI Docs link check fångade; korrigerat till `](../tasks/sessions/…)`.
 
 > **Meta-tråd (hub-lyft-kandidat):** L71–L74 + L76 klustrar som *"verifiering/leverans snävare, inaktuellare, grundare, maskerad eller fel-kontext än verkligheten"*. Samtliga är instanser av samma rot: en koll/leverans som ser rätt ut utan att spegla sant tillstånd. Förstärker det empiriska Chat-self-review ~9 % vs extern fångst ~64 %/~27 % — disciplinen är att bygga för extern fångst, inte intern självkontroll.
+
+## 2026-06-10 — Session 12
+
+Session 12 byggde ADR-043 inkrement 2–5 klart (Code-halva + Chat-halvor + T1′-swap +
+handoff-kontrakt + skarp dogfood). Skörd: 6 lessons, alla [UNIVERSAL], hub-lyft
+pending nästa K-sista.
+
+### L77 [UNIVERSAL] — Re-install från git-baserad marketplace kräver cache-refresh FÖRE plugin-update + marketplace-kvalificerat namn
+
+Datum: 2026-06-10 | Källa: Session 12 inkrement 2 (klass: plugin-/marketplace-mekanik)
+
+`claude plugin update <namn>` mot en git-baserad marketplace misslyckas ("not found")
+tills (1) `claude plugin marketplace update <hub>` refreshat marketplace-cachen från
+remoten och (2) plugin-namnet kvalificeras `<plugin>@<marketplace>`. Generaliserbar
+regel: vid varje plugin-bump är sekvensen push → marketplace update → plugin update
+(kvalificerat namn) → disk-verifiera ny versions-keyad cache-katalog. Bart namn eller
+o-refreshad cache ger "not found" trots korrekt pushat innehåll.
+
+### L78 [UNIVERSAL] — Inbäddad shell i prompter får inte anta GNU coreutils på darwin
+
+Datum: 2026-06-10 | Källa: Session 12 inkrement 0 (klass: plattforms-portabilitet)
+
+`date -d "+3 months"` (GNU) saknas på darwin/BSD (`illegal option -- d`); BSD-formen är
+`date -v+3m`. Generaliserbar regel: prompter med inbäddad shell anger antingen båda
+formerna (försök GNU, fall tillbaka BSD) eller deklarerar plattformsantagandet
+explicit. Utföraren adapterar öppet och rapporterar avvikelsen — tyst översättning
+döljer portabilitetsfällan för nästa prompt.
+
+### L79 [UNIVERSAL] — Version-bump-ytan inkluderar marketplace-manifestet, inte bara plugin-manifestet
+
+Datum: 2026-06-10 | Källa: Session 12 inkrement 2 väg A (klass: version-/manifest-konsistens)
+
+En bump som uppdaterar `plugin.json` men lämnar marketplace-entryt
+(`marketplace.json` `plugins[].version` + ev. `metadata.version`) är ofullständig —
+driften ackumuleras obemärkt (här 1.1.0→1.2.0) tills en mekanism som förväntar
+överensstämmelse (t.ex. `claude plugin tag`) felar. Generaliserbar regel: kartlägg
+ALLA version-deklarationer i bump-ytan (git-historiken för förra bumpen visar
+lockstep-mängden) och bumpa dem atomiskt. Saknad sync-mekanism är ett
+governance-fynd, inte en engångsfix.
+
+### L80 [UNIVERSAL] — claude.ai skill-upload kräver ZIP med skill-MAPPEN som rot
+
+Datum: 2026-06-10 | Källa: Session 12 inkrement 3a (klass: skill-distribution)
+
+ZIP:en ska innehålla skill-mappen själv i roten (`session-start/SKILL.md`) — inte bara
+SKILL.md löst, inte en parent-katalog. Fel rot ger lyckad upload men en skill som
+aldrig triggar (tyst fel). Generaliserbar regel: verifiera med `unzip -l` att roten är
+`<skill-namn>/SKILL.md` före upload; mappnamn == skill-namn.
+
+### L81 [UNIVERSAL] — Forensisk pre-pass före governing-doc-swap: verbatim-läs + no-loss-diff före radering
+
+Datum: 2026-06-10 | Källa: Session 12 inkrement 3d / T1′ (klass: styrande-dokument-disciplin)
+
+Vid flytt av HUR-innehåll mellan ytor (prosa → skill; fil → fil): (1) läs den exakta
+disk-texten forensiskt (gränser, grannar, separatorer) före edit-design, (2) kör en
+explicit no-loss-kontroll — varje raderad utfästelse ska ha verifierad hemvist i
+målet — innan raderingen auktoriseras. Generaliserbar regel: radering i styrande
+dokument är en grind (no-loss bevisad), inte en följd av att ersättaren "finns".
+Blast-radius avgör: ju fler arvtagare (delad bas), desto hårdare grind.
+
+### L82 [UNIVERSAL] — Länk-checkers kan cacha timeout som error; re-run botar inte, och flaky-klassning degraderar
+
+Datum: 2026-06-10 | Källa: Session 12 CI-grönfix `c1486fc` (klass: CI-länk-integritet, ADR-044-tråd)
+
+lychee cachade en extern timeout som `Error (cached)` — re-run träffade cachen, inte
+värden, och förblev röd. Dessutom degraderade en tidigare "header-fixad" domän
+(415→persistent timeout): flaky-klassningar är färskvara. Generaliserbar regel: vid
+extern-länk-fail, läs FELKLASSEN (transient? cachad? degraderad?) innan åtgärd väljs;
+re-run hjälper bara o-cachade transienter. Minimal anchored ignore med
+re-utvärderingsflagga är rätt nivå tills policy-ADR:n (ADR-044) tar helheten.

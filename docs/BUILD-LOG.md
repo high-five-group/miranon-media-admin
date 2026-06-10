@@ -1060,6 +1060,21 @@ Session öppnade på Session 9-handoffens "code-roll-disciplin-skill" men avtäc
 
 ADR-043 inkrement 1 (PI bas/delta) landat + ADR-043 Accepted. Hub-bas `templates/project-instructions-base.md` (`16a4e9f`); spoke-delta + ADR-flip + README (`393ec9c`); beslut T1′ (lifecycle-prosa parkerad i delta, ej pekare i bas) + T2 (två-fils-paste); no-loss-diff grön. Drift-fix för fem pre-existing externa länkfel (ej inkrement-1-orsakade): browser-UA via `--header` för UA-WAF 406/415 + digg.se timeout-ignore (`6274918`); skip/config-revaliderings-gap lagat via decouplad `docs_changed` (`6a0ab9c`). Tre CI-integritetshål ytade (cache-maskering öppen → ADR-044-kandidat; skip- + config-utan-revalidering lagade). CI-validerat grön run `26907015576`. Inkrement 2–5 + Fas 2.5 carry → Session 12. Sessionsdok-trail: [`tasks/sessions/2026-06-02-session-11.md`](../tasks/sessions/2026-06-02-session-11.md).
 
+## Session 12 — ADR-043-bygge komplett (inkrement 2–5) + lifecycle-dogfood (2026-06-05 → 2026-06-10)
+
+ADR-043-bygget slutfört, commit-range `9c1d3f5` → sessionsavsluts-commiten (spoke) +
+`8db2b5a` → `9b19558` (hub). Inkrement 2: session-start Code-halva + create-session-doc-
+referensfil, plugin 1.2.0→1.3.0 inkl. marketplace-drift-heal (`8db2b5a`+`3f11ed2`; L77/L79).
+Inkrement 3: Chat-halvorna session-{start,end,resume} som claude.ai-skills (`332eb04`) +
+T1′-swap (pekare i PI-bas `d7eb1e1`, parkerad prosa raderad `7c72f78`, no-loss-verifierad).
+Inkrement 4: handoff-kontrakt `templates/chat-code-handoff-contract.md` v1.0 (`9b19558`).
+Inkrement 5: skarp dogfood — `/session-resume` PASS båda halvor, `/session-end` körd som
+denna stängning, 5c (`/session-start`) restmoment → Session 13-öppning. Extra: CI-grönfix
+`c1486fc` (travisgosselin.com cachad-timeout → anchored `.lycheeignore`, L82; ADR-044-tråd).
+Lessons L77–L82 skördade ([UNIVERSAL], hub-lyft pending nästa K-sista). **Fas 2.5
+(Schema-kontrakt-sync) öppnar Session 13 på dogfood-verifierat lifecycle-fundament.**
+Sessionsdok-trail: [`tasks/sessions/2026-06-05-session-12.md`](../tasks/sessions/2026-06-05-session-12.md).
+
 ---
 
 ## Session-modellen
