@@ -291,7 +291,7 @@ Synka kodens domäntyper mot `data-model.md` (källa) + införa Zod-validering v
 - `src/domain/types/Status.ts` (omskrivs)
 - `src/domain/types/*.ts` (granskas, ev. uppdateras)
 - `src/data/adapters/AirtableAdapter.ts` (Zod aktiveras, 9 metoder klassade i JSDoc)
-- `src/data/schemas/*.ts` (Zod-scheman, ev. justering)
+- `src/domain/schemas/*.ts` (Zod-scheman, ev. justering)
 
 #### DoD
 
