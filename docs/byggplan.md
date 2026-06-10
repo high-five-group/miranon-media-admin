@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-27
+updated: 2026-06-10
 review_by: 2026-11-15
 status: stable
 ---
@@ -82,7 +82,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **6.5** | EJ ÄNDRAD | Aktivitetslogg (xAPI). `requestId`-mönstret från Fas A M7 ärvs. | 1 session |
 | **7** | NY scope | Konsolidering — CSP-plugin (med ADR), web-vitals, Speculation Rules, View Transitions, widget-error-boundary, chaos testing, deploy-pipeline, Background Sync defer-not (se Fas 8 + ADR). | 3 sessioner |
 | **8** | NY (framtid) | Background Sync API (offline-mutationskö, defer:ad från Fas 7 — se ADR). Övrigt scope (Passkeys, push) ej låst i denna revision. Estimat fastställs vid aktualisering. Ersätter conversion-plans "Fas 8 — Passkeys, push, offline". | TBD |
-| **B** | PARALLELL | Airtable-hardening — parallell-spår med 2 synk-gates mot React-bygget (innan Fas 6c + innan Fas E). Roger/Lotta-arbete. | (parallell, separat estimat) |
+| **B** | PARALLELL | Airtable-hardening — parallell-spår med 2 synk-gates mot React-bygget per A4: Synk-gate 1 — A1–A12 inventerade och kategoriserade (redan applicerade / före Fas 2.5 / efter Fas 2.5) innan Fas 2.5 startar; Synk-gate 2 — handshake mot `field-allowlists.ts` per Fas 5.5/6-operation. Roger/Lotta-arbete. | (parallell, separat estimat) |
 | **E** | DEFER | Supabase-migration enligt 07 §A2. Aktualiseras post-Fas 7. Inkluderar Realtime-omläggning per B1. | (defer, separat planering) |
 
 **Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR-013 (Fas 4-borttagningen).
@@ -280,6 +280,7 @@ Synka kodens domäntyper mot `data-model.md` (källa) + införa Zod-validering v
 
 - Fas 1 (Status.ts + Zod-scheman finns)
 - Fas A (operations-API + INVARIANT-mönster låsta)
+- Synk-gate 1 — A1–A12-inventering genomförd (hård gate per A4, `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md`)
 
 #### Estimat
 
@@ -872,11 +873,11 @@ Säkra Airtable-basen som single source of truth för Miranon Media Admin tills 
 - Drift-rensning per `docs/research/datamodell-research/06a-airtable-redesign.md` Del A–C
 - Schema-kontrakt mellan Airtable-fält och `data-model.md`
 - 11 automationer granskade (live-state per `docs/research/datamodell-research/02-live-state.md` §A)
-- Synk-gates mot React-bygget: Gate B1 (innan Fas 6c — Registrations) + Gate B2 (innan Fas E — migration)
+- Synk-gates mot React-bygget per A4 (`tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Design-not): Synk-gate 1 (hard) — A1–A12-schemaändringar inventerade och kategoriserade som "redan applicerade" / "kommer appliceras före Fas 2.5" / "appliceras efter Fas 2.5" *innan* Fas 2.5 startar; Synk-gate 2 (handshake per operation) — vid varje Fas 5.5/6-leverans som registrerar ny operation i `field-allowlists.ts` kontrolleras fältnamn mot 06a-status
 
 #### Beroenden
 
-**Parallell-spår — inga beroenden mot Fas A.** Synk-gates mot Fas 6c och Fas E.
+**Parallell-spår — inga beroenden mot Fas A.** Synk-gate 1 mot Fas 2.5-start + Synk-gate 2 mot Fas 5.5/6-operationerna (per A4).
 
 #### Estimat
 
@@ -964,6 +965,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 | 1.0 | 2026-05-05 | Initial (P3a K2) — ersätter `docs/conversion-plan.md`. Baserad på P0-inventory + P1 fas-sekvens-revision + P2 stödspec-synk. 13 fas-prompter + 10 ADR:er identifierade som ADR (#1)–ADR (#10). |
 | 1.1 | 2026-05-05 | P3a K3 — 10 ADR:er skrivna och numrerade som ADR-011 till ADR-020 i `docs/decisions/`. ADR-referenser i fas-prompter + §5 ADR-index uppdaterade till slutgiltiga ADR-NNN-format. |
 | **1.2** | **2026-05-13** | **Fas 2 markerad KLAR** efter Sessions 4+5+5b. Defense-in-depth tre-skikt-arkitektur levererad. ADR-026 (Runtime-validering), ADR-027 (KVALITETSDEFINITIONER stack-skifte), ADR-028 (Supply chain incident-respons-protokoll) tillkomna under K0åe/K0åf/K0åg. §2 fas-tabell uppdaterad (Fas 2 ✅ KLAR + estimat-summa Fas 2.5 → Fas 7 = 14,5 sessioner). §4 Fas 2-prompt utökad med "✅ Slutförd"-paragraf per Fas A-mallen. K5.9a drift-stängning av sanningskälla mot BUILD-LOG/todo/v3/CLAUDE.md (Kandidat 12-disciplin). |
+| **1.3** | **2026-06-10** | **Drift-korrigering av Fas B-synk-gates mot beslutat A4-innehåll.** Session 13-forensik fann inget beslutsspår för "Gate B1 (innan Fas 6c)"/"Gate B2 (innan Fas E)"-formuleringarna (införda vid dokumentets födelse `2ffede0`, P3a K2) — transkriptions-drift från A4-beslutet. Återställt per A4: Synk-gate 1 (hard) före Fas 2.5 + Synk-gate 2 (handshake per Fas 5.5/6-operation). §2 fas-tabell rad B, §4 Fas B Scope/Beroenden korrigerade; §4 Fas 2.5 Beroenden utökad med Synk-gate 1 som hård gate. Trail: `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` (A4) + `tasks/sessions/2026-06-10-session-13.md` (forensik). |
 
 ---
 
