@@ -1,3 +1,5 @@
+import type { FlagStatusValue, PaymentStatusValue, RegistrationStatusValue } from '../types/Status';
+
 export interface Registration {
   id: string;
   namn: string | null;
@@ -7,10 +9,10 @@ export interface Registration {
   telefon: string | null;
   eventNamn: string | null;
   ort: string | null;
-  status: string | null;
-  flagga: string | null;
-  anmalningsavgift: string | null;
-  slutbetalning: string | null;
+  status: RegistrationStatusValue | null;
+  flagga: FlagStatusValue | null;
+  anmalningsavgift: PaymentStatusValue | null;
+  slutbetalning: PaymentStatusValue | null;
   betalningspaminnelseSkickad: string | null;
   inskickad: string | null;
   motivering: string | null;
