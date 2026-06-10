@@ -15,6 +15,12 @@
 
 ## Aktuellt fokus
 
+**Fas 3 — UI-primitiver (nästa session).** Fas 2.5 stängd av Marcus 2026-06-10.
+
+### Session 14 — ingång (Fas 3-start)
+
+- [ ] **Fas 3 — UI-primitiver** — 6 primitiver (Button, Input, Select, MessageBox, Modal, Dialog) med React Aria-bas + CVA-variantsystem + ARIA 1.3, 11/11/11-verifiering per komponent. Styrande prompt: `docs/byggplan.md` §4 "Fas 3 — UI-primitiver" (Mål/Scope/Inte scope/DoD). Ingångsläge: spoke `main` @ `6d26f6f` (Fas 2.5 stängd, arkivering klar, schema-frysen hävd — Marcus kommunicerar Lotta/Roger).
+
 ### Session 8 K0b — lesson→grind-uppföljning (ADR-039, öppen — pending dedikerad session)
 
 Konkret första tillämpning av [ADR-039](../docs/decisions/ADR-039-konsistens-grindar-kadens.md) § lesson→grind-principen — punkten står öppen tills grinden finns (per L52):
