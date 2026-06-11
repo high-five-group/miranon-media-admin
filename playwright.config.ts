@@ -3,11 +3,14 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Playwright — visuella regressionstester + API-säkerhetstester + e2e auth-flow.
  *
- * Sex projekt:
+ * Sju projekt:
  *   - setup       → tests/e2e/*.setup.ts (auth-fixture, kör en gång per testrun)
  *   - api-pure    → tests/api/*.test.ts (pure-logik, ingen staging-koppling)
  *   - api-staging → tests/api/*.staging.test.ts (HTTP mot deployad Supabase)
  *   - chromium-authenticated → tests/e2e/*.staging.test.ts (e2e via storageState från setup)
+ *   - a11y        → tests/a11y/ (axe-core mot /dev/primitives; kräver dev-server
+ *                   via webServer-blocket — PLAYWRIGHT_TEST_BASE_URL lämnas osatt
+ *                   även i CI per ADR-045 beslut 1, routen är DEV-guardad ADR-044)
  *   - visual-*    → tests/visual/ (skärmdumpar, Fas 3+)
  *
  * api-staging-projektet kräver TEST_SUPABASE_URL satt. Saknas den →
@@ -86,6 +89,14 @@ export default defineConfig({
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',
+      },
+    },
+    {
+      name: 'a11y',
+      testDir: './tests/a11y',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173',
       },
     },
     {

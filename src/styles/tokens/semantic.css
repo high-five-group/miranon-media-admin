@@ -14,7 +14,7 @@
   /* ── Text ── */
   --mm-text: var(--p-neutral-900);
   --mm-text-secondary: var(--p-neutral-600);
-  --mm-text-muted: var(--p-neutral-400);
+  --mm-text-muted: var(--p-neutral-500);
   --mm-text-inverse: var(--p-neutral-0);
 
   /* ── Ytor ── */
