@@ -8,3 +8,44 @@
  * Se DESIGN-SYSTEM-SPEC §1 "Komponent-tokens" för exempel
  * (StatCard, DataTable, AppMenu).
  */
+
+:root {
+  /* ── Button (Fas 3 K2 — stänger K1:s token-gap) ──
+     Alias mot semantiska lagret. Pressed-nyanser via color-mix
+     eftersom semantiskt mörkare värde saknas för resp. roll. */
+  --mm-button-primary-bg: var(--mm-btn-primary-bg);
+  --mm-button-primary-text: var(--mm-btn-primary-text);
+  --mm-button-primary-bg-hover: var(--mm-btn-primary-hover);
+  --mm-button-primary-bg-pressed: color-mix(in srgb, var(--mm-btn-primary-hover), black 10%);
+  --mm-button-secondary-bg: var(--mm-btn-secondary-bg);
+  --mm-button-secondary-text: var(--mm-btn-secondary-text);
+  --mm-button-secondary-border: var(--mm-btn-secondary-border);
+  --mm-button-secondary-bg-hover: var(--mm-bg-muted);
+  --mm-button-secondary-bg-pressed: color-mix(in srgb, var(--mm-bg-muted), black 8%);
+  --mm-button-danger-bg: var(--mm-error);
+  --mm-button-danger-text: var(--mm-text-inverse);
+  --mm-button-danger-bg-hover: color-mix(in srgb, var(--mm-error), black 12%);
+  --mm-button-danger-bg-pressed: color-mix(in srgb, var(--mm-error), black 15%);
+  --mm-button-ghost-bg: transparent;
+  --mm-button-ghost-text: var(--mm-text);
+  --mm-button-ghost-bg-hover: var(--mm-bg-muted);
+  --mm-button-ghost-bg-pressed: color-mix(in srgb, var(--mm-bg-muted), black 8%);
+
+  /* ── Input (Fas 3 K2) ── */
+  --mm-input-bg: var(--mm-bg);
+  --mm-input-bg-disabled: var(--mm-bg-muted);
+  --mm-input-text: var(--mm-text);
+  --mm-input-text-placeholder: var(--mm-text-muted);
+  --mm-input-border: var(--mm-border-strong);
+  --mm-input-border-invalid: var(--mm-error);
+  --mm-input-label-text: var(--mm-text);
+  --mm-input-description-text: var(--mm-text-secondary);
+  --mm-input-error-text: var(--mm-error);
+
+  /* ── Select (Fas 3 K2) — trigger återanvänder Input-fält-tokens ── */
+  --mm-select-popover-bg: var(--mm-surface-overlay);
+  --mm-select-popover-border: var(--mm-border);
+  --mm-select-item-text: var(--mm-text);
+  --mm-select-item-bg-focused: var(--mm-primary-tint);
+  --mm-select-item-bg-selected: var(--mm-primary-pale);
+}

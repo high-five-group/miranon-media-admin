@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button } from '@/components/primitives';
+import { Button, Input, Select, SelectItem } from '@/components/primitives';
 
 const INTENTS = ['primary', 'secondary', 'danger', 'ghost'] as const;
 const SIZES = ['sm', 'md', 'lg'] as const;
@@ -55,6 +55,58 @@ function PrimitivesPage() {
           </div>
         </section>
       ))}
+      <section aria-labelledby="rubrik-input" className="mt-8 max-w-md">
+        <h2 id="rubrik-input" className="text-xl">
+          Input
+        </h2>
+        <div className="mt-4 flex flex-col gap-4">
+          {SIZES.map((size) => (
+            <Input key={size} size={size} label={`Namn (${size})`} placeholder="Anna Andersson" />
+          ))}
+          <Input
+            label="E-post"
+            description="Används för bekräftelsemail"
+            placeholder="anna@exempel.se"
+          />
+          <Input
+            label="Namn (obligatorisk)"
+            errorMessage="Namn får inte vara tomt"
+            isInvalid
+            isRequired
+          />
+          <Input label="Låst fält" isDisabled placeholder="Kan inte redigeras" />
+        </div>
+      </section>
+      <section aria-labelledby="rubrik-select" className="mt-8 max-w-md">
+        <h2 id="rubrik-select" className="text-xl">
+          Select
+        </h2>
+        <div className="mt-4 flex flex-col gap-4">
+          <Select
+            label="Status"
+            placeholder="Välj status"
+            onSelectionChange={(key) => setSenastTryckt(`select: ${String(key)}`)}
+          >
+            <SelectItem id="anmald">Anmäld</SelectItem>
+            <SelectItem id="betald">Betald</SelectItem>
+            <SelectItem id="avbokad">Avbokad</SelectItem>
+            <SelectItem id="vantelista">Väntelista</SelectItem>
+          </Select>
+          <Select
+            label="Status (fel)"
+            placeholder="Välj status"
+            isInvalid
+            errorMessage="Välj en status"
+          >
+            <SelectItem id="anmald">Anmäld</SelectItem>
+            <SelectItem id="betald">Betald</SelectItem>
+          </Select>
+          <Select label="Status (låst)" placeholder="Kan inte väljas" isDisabled>
+            <SelectItem id="anmald">Anmäld</SelectItem>
+            <SelectItem id="betald">Betald</SelectItem>
+          </Select>
+        </div>
+      </section>
     </main>
   );
 }

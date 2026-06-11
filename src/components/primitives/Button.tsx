@@ -14,11 +14,13 @@ const buttonVariants = cva(
     variants: {
       intent: {
         primary:
-          'bg-(--mm-btn-primary-bg) text-(color:--mm-btn-primary-text) data-[hovered]:bg-(--mm-btn-primary-hover) data-[pressed]:bg-(--mm-btn-primary-hover)',
+          'bg-(--mm-button-primary-bg) text-(color:--mm-button-primary-text) data-[hovered]:bg-(--mm-button-primary-bg-hover) data-[pressed]:bg-(--mm-button-primary-bg-pressed)',
         secondary:
-          'border border-(--mm-btn-secondary-border) bg-(--mm-btn-secondary-bg) text-(color:--mm-btn-secondary-text) data-[hovered]:bg-bg-muted data-[pressed]:bg-bg-muted',
-        danger: 'bg-error text-text-inverse data-[hovered]:opacity-90 data-[pressed]:opacity-90',
-        ghost: 'bg-transparent text-text data-[hovered]:bg-bg-muted data-[pressed]:bg-bg-muted',
+          'border border-(--mm-button-secondary-border) bg-(--mm-button-secondary-bg) text-(color:--mm-button-secondary-text) data-[hovered]:bg-(--mm-button-secondary-bg-hover) data-[pressed]:bg-(--mm-button-secondary-bg-pressed)',
+        danger:
+          'bg-(--mm-button-danger-bg) text-(color:--mm-button-danger-text) data-[hovered]:bg-(--mm-button-danger-bg-hover) data-[pressed]:bg-(--mm-button-danger-bg-pressed)',
+        ghost:
+          'bg-(--mm-button-ghost-bg) text-(color:--mm-button-ghost-text) data-[hovered]:bg-(--mm-button-ghost-bg-hover) data-[pressed]:bg-(--mm-button-ghost-bg-pressed)',
       },
       size: {
         sm: 'min-h-8 gap-1.5 px-3 text-small',
