@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-10
+updated: 2026-06-11
 review_by: 2026-11-15
 status: stable
 ---
@@ -1784,3 +1784,49 @@ CI-beviset blir entydigt per commit-typ — kod-pushens run bevisar Test+Build
 grön, docs-pushens run bevisar länk-grinden. En kombinerad push ger ETT run
 vars jobb-uppsättning beror på diff-detektionens scope, och verifierings-
 beviset per ändringstyp blir tvetydigt.
+
+## 2026-06-11 — Session 14 (Fas 3: UI-primitiver)
+
+### L88 [UNIVERSAL] — Custom @theme-skala kräver tailwind-merge-konfiguration — annars äts klasser tyst
+
+Datum: 2026-06-11 | Källa: Session 14 K1 (klass: lib-konfiguration)
+
+Symptom: text-(--mm-btn-primary-text) försvann ur className för sm/md men
+inte lg. Rotorsak: tailwind-merge känner endast default-skalan — custom
+font-size-namn (text-small/text-body) klassades som textFÄRG och slog ut
+den riktiga färgklassen; text-lg är default-känd → opåverkad, därav det
+förrädiska delmönstret. Fix på lib-nivå: extendTailwindMerge registrerar
+custom-skalan i font-size-gruppen (skyddar varje framtida cn()-merge) +
+typ-hintad text-(color:--var)-syntax för variabel-färgklasser.
+Generaliserbar regel: varje Tailwind v4-projekt med custom @theme-skala +
+cn()/tailwind-merge MÅSTE registrera skalan vid setup — felet är tyst,
+visuellt och variant-selektivt. Källa: Session 14 K1.
+
+### L89 [UNIVERSAL] — Verifierings-ekonomi: dyr browser-verifiering läggs per mönster och per aktör — inte per komponent
+
+Datum: 2026-06-11 | Källa: Session 14 K1→K2 protokoll-justering (klass: verifierings-disciplin)
+
+Symptom: Codes Playwright-styrda manuella browser-pass i K1 var långsamt;
+Marcus flaggade tempot. Beslut (K2+): Code kör endast programmatiska
+grindar (typecheck/Biome/build/test); människo-verifiering görs av Marcus
+mot dedikerad demo-yta med Chat-levererad checklista; automatisering
+(axe/a11y-runner) ersätter den manuella klassen så snart infran finns.
+Generaliserbar regel: bevisa interaktions-pipelinen EN gång per mönster
+(mönster-sättaren), lägg därefter dyr verifiering hos den aktör som gör
+den billigast — och bygg demo-ytor som gör människo-verifiering till
+minuter, inte processer. Källa: Session 14 K1→K2 protokoll-justering.
+
+### L90 [UNIVERSAL] — Användarsymptom är inte rotorsak — Chat verifierar mekanismen mot disk innan fix dirigeras
+
+Datum: 2026-06-11 | Källa: Session 14 K4-stoppet (klass: felrapports-disciplin)
+
+Symptom: Marcus mötte login-sidan på väg till /dev/primitives; Chat
+designade K4 som "flytta routen utanför auth-trädet" direkt på symptomet.
+Codes LÄS-forensik falsifierade premissen: routen låg redan utanför
+auth-trädet (root-monterad, samma klass som /login, noll auth-beroenden);
+symptomet kom från fel ingångs-URL. Utan STOPPA hade en noll-ändring
+committats som fejk-leverans (L85-klass). Generaliserbar regel: ett
+rapporterat symptom dirigeras som FORENSIK-uppgift (LÄS→RAPPORTERA) eller
+verifieras mot disk-fakta FÖRE fix-design — aldrig som fix-uppgift på
+symptombeskrivningen ensam. Specialisering av grundregel 3 på
+felrapports-domänen. Källa: Session 14 K4-stoppet.

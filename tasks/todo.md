@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-06-03 (Session 11 pågående — ADR-043 inkrement 1 (PI bas/delta) landat + ADR-043 Proposed → Accepted bekräftad (run `26907015576`, commit `6a0ab9c`); drift-/skip-gap-fixar landade (`6274918` + `6a0ab9c`). Inkrement 2–5 + Fas 2.5 carry → Session 12. — Session 10 ✅ KLAR — code-roll-disciplin landad som alltid-på template + konstitution-pekare (ADR-042, spoke `c4af8bf` + hub `f9d59f5`), inte skill; session-lifecycle-arkitektur designad + committad som ADR-043 (Proposed, commit `80f87aa`); lessons L66–L69 skördade; sessionsdok backfillat (`38ca605`). Fas 2.5 + ADR-043-bygge ompositionerade till Session 11)*
+*Senast uppdaterad: 2026-06-11 (Session 14 ✅ KLAR — alla 6 Fas 3-primitiver levererade + ADR-044 + KVALITETSDEF §1/§2 + L88–L90; Fas 3 ÖPPEN tills Fas 3.5 per ADR-020. Session 15-ingång: Fas 3.5 A11y-baseline. Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -15,11 +15,23 @@
 
 ## Aktuellt fokus
 
-**Fas 3 — UI-primitiver (nästa session).** Fas 2.5 stängd av Marcus 2026-06-10.
+**Session 15 — Fas 3.5 A11y-baseline (nästa session).** Fas 3 ÖPPEN — DoD 1 (axe/skärmläsardel) + DoD 4 väntar Fas 3.5 per ADR-020.
 
-### Session 14 — ingång (Fas 3-start)
+### Session 15 — ingång (Fas 3.5-start)
 
-- [ ] **Fas 3 — UI-primitiver** — 6 primitiver (Button, Input, Select, MessageBox, Modal, Dialog) med React Aria-bas + CVA-variantsystem + ARIA 1.3, 11/11/11-verifiering per komponent. Styrande prompt: `docs/byggplan.md` §4 "Fas 3 — UI-primitiver" (Mål/Scope/Inte scope/DoD). Ingångsläge: spoke `main` @ `6d26f6f` (Fas 2.5 stängd, arkivering klar, schema-frysen hävd — Marcus kommunicerar Lotta/Roger).
+- [ ] **Fas 3.5 — A11y-baseline** per `docs/byggplan.md` §4 (axe-core + @axe-core/playwright + a11y-runner + fixture-mönster + 5 React Aria-mönster i `docs/aria-patterns/`). Därefter Fas 3-DoD-stämpling (DoD 1 + DoD 4 mot nya infran) + fas-avslut för båda faserna. Ingångsläge: spoke `main` @ Session 14-stängning, alla 6 primitiver levererade och Marcus-verifierade via /dev/primitives.
+
+### Session 14 ✅ KLAR (2026-06-11) — Fas 3 UI-primitiver byggda
+
+- [x] **Fas 3 — UI-primitiver, bygget** ✅ Alla 6 primitiver levererade på 1 session (estimat 2): Button (`7e063ac`), Input + Select + components.css-knapptokens (`f19a262`), MessageBox + Modal + Dialog + --mm-border-field-kontrastfix (`0a70103`). ADR-044 etablerad (react-aria-components som bas + /dev/primitives-demo, `950d6b0`); KVALITETSDEF §1/§2 fyllda (`deb5538`). DoD 2/3/5 uppfyllda; **DoD 1/4 → Fas 3.5 per ADR-020 — Fas 3 stämplas KLAR först då.** K4 stängd som rapport-leverans utan commit (L85/L90). Lessons L88–L90 ([UNIVERSAL], hub-lyft pending nästa K-sista). Trail: [`tasks/sessions/2026-06-10-session-14.md`](sessions/2026-06-10-session-14.md).
+
+### Öppna trådar från Session 14
+
+- [ ] **DESIGN-SYSTEM-SPEC §1 intern spänning** — komponent-token-exemplen refererar primitiver (`--p-radius-lg` m.fl.) medan components.css-headern förbjuder det; kanonisk-regel-beslut behövs (K2-fynd).
+- [ ] **KVALITETSDEFINITIONER-11-REACT status-blockquote** — säger "SKELETT", inaktuell efter §1/§2-fyllningen; §3–§5 kvarstår TBD (K3-fynd).
+- [ ] **Fas 3.5-flagga: aria-errormessage dubbel-annonsering** — React Arias inbyggda aria-describedby-wiring är additiv till vår aria-errormessage; granskas i axe/manuella passet (K2-fynd).
+- [ ] **Lesson→grind-kandidat (ADR-039-klass): markdownlint-CI-globben täcker inte `tasks/sessions/**`** — lokal körning är enda grinden för sessionsdok (K-födelse-fynd Session 14).
+- [ ] **/dev/primitives prod-räckvidd** — nås ej i prod-build (DEV-guard by design, ADR-044); om prod-demo någonsin behövs → env-flagga + ADR-korrigering (K4-analys, alternativ B — vilande).
 
 ### Session 8 K0b — lesson→grind-uppföljning (ADR-039, öppen — pending dedikerad session)
 

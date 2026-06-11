@@ -1097,6 +1097,26 @@ Sessionsdok-trail: [`tasks/sessions/2026-06-10-session-13.md`](../tasks/sessions
 
 ---
 
+## Session 14 — Fas 3 UI-primitiver: alla 6 byggda + ADR-044 + kontrastfix (2026-06-10 → 2026-06-11)
+
+**Planerat:** Fas 3-start per byggplan §4 (estimat 2 sessioner). **Faktiskt:** alla 6
+primitiver plus ADR-044, kontrastfix och KVALITETSDEF §1/§2 i EN session; DoD 1 (axe/skärmläsardel) + DoD 4
+→ Fas 3.5 per ADR-020 — **Fas 3 ÖPPEN tills dess.** Sessionsdok fött via create-session-doc-
+grenen (`c826629`). K1: ADR-044 (react-aria-components som bas + /dev/primitives i st f
+Storybook; byggplan §4-scope-korrigering, `950d6b0`) + Button + demo-route (`7e063ac`);
+tailwind-merge-fyndet rotorsaks-fixat i cn.ts (L88); enda browser-passet — mönster-sättaren
+bevisad en gång (L89). K2: Input + Select + --mm-button-*-tokens i components.css (`f19a262`);
+verifierings-protokoll justerat (Code endast programmatiska grindar). K3: KVALITETSDEF §1/§2
+React-mappning (`deb5538`) + MessageBox/Modal/Dialog + --mm-border-field ← --p-neutral-400
+(3,50:1 mot WCAG 1.4.11) (`0a70103`). Test+Build körd grön på varje kod-commit; docs/kod i
+separerade pushar (L87). **Avvikelser:** K4-direktivets premiss ("/dev/primitives bakom auth")
+falsifierad av LÄS-forensik — stängd som rapport-leverans utan commit (L85/L90);
+namnrymds-divergens K2 (--mm-btn-* → --mm-button-*) löst med beslutsspår per L83.
+Marcus interaktiva checklista mot /dev/primitives: GRÖN. Lessons L88–L90.
+Sessionsdok-trail: [`tasks/sessions/2026-06-10-session-14.md`](../tasks/sessions/2026-06-10-session-14.md).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
