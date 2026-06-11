@@ -1,5 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// A11y-runnern kör mot en ALLTID-FÄRSK dev-server på dedikerad port
+// (Session 15 K2-fynd: främmande server på 5173 återanvändes tyst av
+// reuseExistingServer, och stale server-state gav falsk-grön).
+// --strictPort failar högt vid upptagen port i stället för tyst port-byte;
+// reuseExistingServer: false vägrar återanvända. Aktiveras via
+// test:a11y-scriptets env-flagga så övriga projekts webServer-beteende
+// är orört.
+const A11Y_DEV_PORT = 5199;
+const isA11yRun = process.env.PLAYWRIGHT_A11Y_DEV_SERVER === '1';
+
 /**
  * Playwright — visuella regressionstester + API-säkerhetstester + e2e auth-flow.
  *
@@ -8,9 +18,10 @@ import { defineConfig, devices } from '@playwright/test';
  *   - api-pure    → tests/api/*.test.ts (pure-logik, ingen staging-koppling)
  *   - api-staging → tests/api/*.staging.test.ts (HTTP mot deployad Supabase)
  *   - chromium-authenticated → tests/e2e/*.staging.test.ts (e2e via storageState från setup)
- *   - a11y        → tests/a11y/ (axe-core mot /dev/primitives; kräver dev-server
- *                   via webServer-blocket — PLAYWRIGHT_TEST_BASE_URL lämnas osatt
- *                   även i CI per ADR-045 beslut 1, routen är DEV-guardad ADR-044)
+ *   - a11y        → tests/a11y/ (axe-core mot /dev/primitives + /dev/patterns;
+ *                   alltid-färsk dev-server på dedikerad port via test:a11y-
+ *                   scriptets env-flagga — PLAYWRIGHT_TEST_BASE_URL lämnas osatt
+ *                   även i CI per ADR-045 beslut 1, routerna är DEV-guardade ADR-044)
  *   - visual-*    → tests/visual/ (skärmdumpar, Fas 3+)
  *
  * api-staging-projektet kräver TEST_SUPABASE_URL satt. Saknas den →
@@ -43,12 +54,19 @@ export default defineConfig({
   // På CI med staging-deployment sätts PLAYWRIGHT_TEST_BASE_URL och webServer hoppas över.
   webServer: process.env.PLAYWRIGHT_TEST_BASE_URL
     ? undefined
-    : {
-        command: 'npm run dev',
-        url: 'http://localhost:5173',
-        reuseExistingServer: !process.env.CI,
-        timeout: 60_000,
-      },
+    : isA11yRun
+      ? {
+          command: `npm run dev -- --port ${A11Y_DEV_PORT} --strictPort`,
+          url: `http://localhost:${A11Y_DEV_PORT}`,
+          reuseExistingServer: false,
+          timeout: 60_000,
+        }
+      : {
+          command: 'npm run dev',
+          url: 'http://localhost:5173',
+          reuseExistingServer: !process.env.CI,
+          timeout: 60_000,
+        },
   projects: [
     {
       name: 'setup',
@@ -96,7 +114,9 @@ export default defineConfig({
       testDir: './tests/a11y',
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173',
+        baseURL:
+          process.env.PLAYWRIGHT_TEST_BASE_URL ||
+          (isA11yRun ? `http://localhost:${A11Y_DEV_PORT}` : 'http://localhost:5173'),
       },
     },
     {
