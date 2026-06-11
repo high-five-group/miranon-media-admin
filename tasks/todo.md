@@ -27,6 +27,14 @@
 - [ ] **ACCESSIBILITY-CHECKLIST saknar frontmatter** — möjligt ADR-030-10-docs-list-gap (frontmatter-hooken rör inte filen); Marcus-beslut om listan ska utökas.
 - [ ] **react-spectrum#7425-omprövningsvillkoret (ADR-046)** — när AT-stödet för aria-errormessage är komplett och/eller React Aria byter mekanism: ompröva wiringen uppströms i primitiverna.
 
+### Skript-underhåll — hub-pluginets phase-end-verify (fynd från Session 15 fas-avslutet; ej blockerare)
+
+Åtgärds-ytan är `marcus-system`-pluginets `skills/phase-end-verify/scripts/phase-end-verify.sh`; trådarna spåras här där fynden gjordes tills hub-backloggen tar över.
+
+- [ ] **`rg` saknas på bash-PATH i Code-miljön** — skriptet kräver ripgrep men `rg` är en zsh-funktion i harness-snapshotten, inte en binär; körning krävde shim mot Claude Codes vendorerade ripgrep (`/usr/local/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/`). Härdningskandidat: skriptet faller tillbaka på grep eller detekterar/pekar ut binären.
+- [ ] **Fel argumentform gav falsk-grön arkiv-check** — sessionsdok-argumentet ska anges UTAN `.md`; med `.md` letar skriptet efter `<namn>.md.md`, hittar inget och rapporterar "✅ arkiverad" för ett o-arkiverat dok. Robusthetskandidat: arg-validering (strippa/avvisa `.md`-suffix) eller fail-högt-usage. Fångades vid omkörning med korrekta argument; L95-kandidat föreslagen till Chat.
+- [ ] **Skriptets CLAUDE.md-check speglar äldre layout** — kommentaren "min 1 (Status)" antar fas-status i CLAUDE.md, men projekt-CLAUDE.md bär medvetet ingen fas-status sedan Session 6.7-refaktorn (byggplan §2 är sanningskällan). Underhållspost: uppdatera check/kommentar eller dokumentera kontextuellt-OK-klassningen i skillen.
+
 ### Session 14 ✅ KLAR (2026-06-11) — Fas 3 UI-primitiver byggda
 
 - [x] **Fas 3 — UI-primitiver, bygget** ✅ Alla 6 primitiver levererade på 1 session (estimat 2): Button (`7e063ac`), Input + Select + components.css-knapptokens (`f19a262`), MessageBox + Modal + Dialog + --mm-border-field-kontrastfix (`0a70103`). ADR-044 etablerad (react-aria-components som bas + /dev/primitives-demo, `950d6b0`); KVALITETSDEF §1/§2 fyllda (`deb5538`). DoD 2/3/5 uppfyllda; **DoD 1/4 → Fas 3.5 per ADR-020 — Fas 3 stämplas KLAR först då.** K4 stängd som rapport-leverans utan commit (L85/L90). Lessons L88–L90 ([UNIVERSAL], hub-lyft pending nästa K-sista). Trail: [`tasks/sessions/archive/2026-06/2026-06-10-session-14.md`](sessions/archive/2026-06/2026-06-10-session-14.md).
