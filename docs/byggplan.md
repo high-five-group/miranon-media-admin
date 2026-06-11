@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-10
+updated: 2026-06-11
 review_by: 2026-11-15
 status: stable
 ---
@@ -326,8 +326,8 @@ Bygga den minimala uppsättning UI-primitiver som Fas 5 + 5.5 + 6 behöver: Butt
 
 - 6 primitiver enligt ovan, med varianter (size: sm/md/lg, intent: primary/secondary/danger/ghost)
 - CVA-konfiguration per primitiv
-- React Aria-hooks som bas (`useButton`, `useTextField`, etc.) — ingen native-element-baserad implementation
-- Storybook eller minimal demo-route för visuell verifiering (välj Storybook om det inte introducerar för stor build-time-kostnad — annars `/dev/primitives`-route)
+- react-aria-components som bas (per ADR-044) — komponenterna bygger på React Aria-hooks internt; hooks är per-komponent-reservutgång vid behov av extra flexibilitet, inte default
+- Demo-route `/dev/primitives` (render-guardad till dev-läge) för visuell verifiering — Storybook avvisad per ADR-044, omprövas vid ev. framtida Mm Component Library-paketering
 - 11/11/11-verifiering per komponent (Tillgänglighet alltid 11)
 
 #### Inte scope
@@ -969,6 +969,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 | **1.2** | **2026-05-13** | **Fas 2 markerad KLAR** efter Sessions 4+5+5b. Defense-in-depth tre-skikt-arkitektur levererad. ADR-026 (Runtime-validering), ADR-027 (KVALITETSDEFINITIONER stack-skifte), ADR-028 (Supply chain incident-respons-protokoll) tillkomna under K0åe/K0åf/K0åg. §2 fas-tabell uppdaterad (Fas 2 ✅ KLAR + estimat-summa Fas 2.5 → Fas 7 = 14,5 sessioner). §4 Fas 2-prompt utökad med "✅ Slutförd"-paragraf per Fas A-mallen. K5.9a drift-stängning av sanningskälla mot BUILD-LOG/todo/v3/CLAUDE.md (Kandidat 12-disciplin). |
 | **1.4** | **2026-06-10** | **Fas 2.5 markerad KLAR** efter Session 13 (klunga 1–4). §2 fas-tabell uppdaterad (Fas 2.5 ✅ KLAR + estimat-summa Fas 3 → Fas 7 = 13,5 sessioner). §4 Fas 2.5-prompt utökad med "✅ Slutförd"-paragraf per Fas A-mallen. Schema-path-typo i §4.5 Filer rättad (`src/data/schemas` → `src/domain/schemas`, K2 DEL B). DoD-trail: Status.ts 4→6, noll enum-divergens, z.enum-hårdning, A5-debt-klassning, 0 EF-deploys, 113 tester gröna via CI. |
 | **1.3** | **2026-06-10** | **Drift-korrigering av Fas B-synk-gates mot beslutat A4-innehåll.** Session 13-forensik fann inget beslutsspår för "Gate B1 (innan Fas 6c)"/"Gate B2 (innan Fas E)"-formuleringarna (införda vid dokumentets födelse `2ffede0`, P3a K2) — transkriptions-drift från A4-beslutet. Återställt per A4: Synk-gate 1 (hard) före Fas 2.5 + Synk-gate 2 (handshake per Fas 5.5/6-operation). §2 fas-tabell rad B, §4 Fas B Scope/Beroenden korrigerade; §4 Fas 2.5 Beroenden utökad med Synk-gate 1 som hård gate. Trail: `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` (A4) + `tasks/sessions/2026-06-10-session-13.md` (forensik). |
+| 1.5 | 2026-06-11 | §4 Fas 3 scope-korrigering per [ADR-044](decisions/ADR-044-react-aria-components-demo-route.md) (Session 14 K1): react-aria-components som primitiv-bas (ersätter "React Aria-hooks som bas (`useButton`, `useTextField`, etc.)") + demo-route `/dev/primitives` vald över Storybook på byggplanens eget kostnadsvillkor. Beslutsspår i ADR:n; scope-texten och faktiskt bygge åter konsistenta. |
 
 ---
 

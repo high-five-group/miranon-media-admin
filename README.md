@@ -107,7 +107,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - 9 adapter-metoder debt-klassade per A5-tabellen (`@deferTo`-JSDoc + throw); 0 EF deployade by design
   - Synk-gate 1 stängd före fasstart — A1–A12-inventering MCP-verifierad mot live
 
-**Arkitekturbeslut:** 43 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
+**Arkitekturbeslut:** 44 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
 
 **Statistik (post-Fas 2, historisk ögonblicksbild):**
 
