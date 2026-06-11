@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-17
+updated: 2026-06-11
 review_by: 2026-11-15
 status: stable
 ---
@@ -44,30 +44,31 @@ Tills dess: använd Vue-arkivet + ACCESSIBILITY-CHECKLIST.md + ARIA-UPGRADE.md +
 
 ## 1. Teknisk kvalitet — 11/10
 
-**TBD** — fylls i Fas 3 K0. Mappning från Vue-eran:
+Etablerad: Session 14 K3 (Fas 3), per ADR-044 (react-aria-components som bas).
+Mappning från Vue-eran:
 
-| Vue-mönster (arkiv) | React-motsvarighet (TBD) |
+| Vue-mönster (arkiv) | React-motsvarighet (etablerad) |
 |---|---|
-| Composables (useDismissable, useFocusScope, useCollection, usePresence) | React Aria hooks + framer-motion AnimatePresence — exakt namn etableras i Fas 3 K0 |
-| Fokusstack (pushFocus/popFocus från FKUI) | React Aria `<FocusScope contain restoreFocus>` — stackhantering inbyggd |
-| data-attribut för state | Bevaras direkt — stack-agnostiskt mönster |
-| alertScreenReader() | `@react-aria/live-announcer` `announce()` — direkt motsvarighet |
-| Defensiva gränser (props-validering) | Zod runtime + TypeScript compile-time (jfr ADR-026 datagräns-validering) |
+| Composables (useDismissable, useFocusScope, useCollection, usePresence) | react-aria-components inbyggt: Modal/Dialog/Popover bär dismiss, fokushantering och collections internt. Animation vid mount/unmount: React Arias `data-entering`/`data-exiting`-attribut + CSS-transitions — inga animationsbibliotek (framer-motion EJ installerat, EJ infört; omprövas endast vid behov Fas 3.5+ med eget beslut). Hook-nedstigning per komponent är reservutgång (ADR-044), inte default. |
+| Fokusstack (pushFocus/popFocus från FKUI) | Inbyggt i `<Modal>`/`<Dialog>`: fokus-trap, inert bakgrund och fokus-retur till trigger sköts av react-aria-components. Ingen egen stackhantering. |
+| data-attribut för state | Bevaras direkt och förstärks: all state-styling sker via React Arias `data-hovered`/`data-pressed`/`data-focus-visible`/`data-selected`/`data-invalid` — aldrig `:hover`/`:active` (K1-etablerat Button-mönster). |
+| alertScreenReader() | `announce()` ur `@react-aria/live-announcer` för imperativa annonseringar; deklarativa fall via `aria-live`-regioner (demo-routens statusrad är referens). Paketet verifieras/installeras först när första konsumenten byggs (Fas 5/6) — ingen förtida dependency. |
+| Defensiva gränser (props-validering) | TypeScript strikt compile-time + Zod vid datagränser (ADR-026). Primitiver är props-drivna utan runtime-validering — de tar typade props, inte rå extern data. |
 
 ---
 
 ## 2. Återanvändbarhet — 11/10
 
-**TBD** — fylls i Fas 3 K0. Mappning från Vue-eran:
+Etablerad: Session 14 K3 (Fas 3). Mappning från Vue-eran:
 
-| Vue-mönster (arkiv) | React-motsvarighet (TBD) |
+| Vue-mönster (arkiv) | React-motsvarighet (etablerad) |
 |---|---|
-| Controlled/uncontrolled (v-model dual-mode) | `value`/`defaultValue` + `onChange`-mönstret (Radix-stil) — etableras i Fas 3 K0 |
-| Scoped slots (`<template #item="{ active }">`) | Render props eller `<Slot>` (Radix-stil) eller `children as function` — designval per komponent i Fas 3 K0 |
-| State interception (onOpenChange curr/next) | Bevaras konceptuellt — implementation via callback-props i React |
-| i18n-ready (svenska defaults via props) | Bevaras direkt — stack-agnostiskt mönster |
-| Anatomy-dokumentation | Bevaras direkt — README-konvention per komponent |
-| Shared composables-tabellen | Översätts till `src/hooks/`-tabell i Fas 3 K0 |
+| Controlled/uncontrolled (v-model dual-mode) | `value`/`defaultValue` + `onChange`-paret — inbyggt i react-aria-components för alla fältkomponenter; egna primitiver exponerar samma dubbla läge rakt igenom. |
+| Scoped slots (`<template #item="{ active }">`) | Render props per react-aria-components-konvention: `children`/`className` som funktion med render-states (t.ex. `({ isSelected }) => ...`). Inget Radix-`<Slot>` — en konvention, bibliotekets egen. |
+| State interception (onOpenChange curr/next) | Callback-props: `onOpenChange`, `onSelectionChange`, `onChange` — interception sker i konsumentens callback före egen state-uppdatering. |
+| i18n-ready (svenska defaults via props) | Bevaras direkt: svenska default-strängar som props med override-möjlighet (jfr Input/Select label-krav). |
+| Anatomy-dokumentation | JSDoc med usage-exempel per primitiv (K1-etablerad konvention) + /dev/primitives-routen som levande anatomi-referens. Ingen README per komponent — JSDoc är kanonisk plats. |
+| Shared composables-tabellen | `src/hooks/`-tabell etableras VID FÖRSTA BEHOV (Fas 5/6) — Fas 3-primitiverna har hittills inte krävt någon delad hook; tom katalog skapas inte i förväg. |
 
 ---
 
@@ -94,6 +95,7 @@ Tills dess: använd Vue-arkivet + ACCESSIBILITY-CHECKLIST.md + ARIA-UPGRADE.md +
 | Version | Datum | Förändring |
 |---|---|---|
 | 1.0 (skelett) | 2026-05-11 | Initial — skapad i K0åf per ADR-027 stack-skifte. Vue-versionen (2026-04-03) arkiverad till `docs/archive/KVALITETSDEFINITIONER-11-vue-2026-04-03.md`. |
+| 1.1 | 2026-06-11 | §1 Teknisk kvalitet + §2 Återanvändbarhet fyllda — React-mappning etablerad mot react-aria-components-bas per ADR-044 (Session 14 K3). §3–§5 kvarstår TBD (Fas 3.5 resp. Fas 6 per status-sektionen). |
 
 ---
 
