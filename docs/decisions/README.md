@@ -88,6 +88,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-043](ADR-043-session-lifecycle-skills-arkitektur.md) | Session-lifecycle som två-ytors skill-par (Chat + Code) + Project Instructions bas/delta-mall; ger Chat-ytan lifecycle-mekanism utan discovery-beroende | Accepted | Meta |
 | [ADR-044](ADR-044-react-aria-components-demo-route.md) | react-aria-components som primitiv-bas (hooks = per-komponent-reservutgång) + demo-route `/dev/primitives` i stället för Storybook | Accepted | 3 |
 | [ADR-045](ADR-045-a11y-runner-arkitektur.md) | A11y-runner-arkitektur — CI-måltavla `/dev/primitives` via webServer-dev-server, 0 violations kanonisk tolerans, `test:a11y` i Test+Build-sfären | Accepted | 3.5 |
+| [ADR-046](ADR-046-felmeddelande-wiring-describedby.md) | Felmeddelande-wiring via aria-describedby (React Arias FieldError) — explicit aria-errormessage rivs; ARIA-UPGRADE §1-erratum | Accepted | 3.5 |
 
 ## Relaterade dokument
 
