@@ -1,5 +1,4 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import { useId } from 'react';
 import {
   Input as AriaInput,
   type TextFieldProps as AriaTextFieldProps,
@@ -44,10 +43,10 @@ export interface InputProps
 /**
  * Textfält-primitiv på react-aria-components TextField (ADR-044).
  *
- * Tillgänglighet: Label/description/fel id-wiras av React Aria;
- * `aria-errormessage` sätts dessutom explicit på input-elementet när
- * `isInvalid` (ARIA-UPGRADE §1 Formulärfält — errormessage läses bara vid
- * `aria-invalid="true"`, describedby läses alltid; de är inte utbytbara).
+ * Tillgänglighet: Label/description/fel id-wiras av React Aria —
+ * felmeddelandet associeras via FieldError/`aria-describedby` och
+ * `aria-invalid` sätts automatiskt vid `isInvalid` (ADR-046; explicit
+ * aria-errormessage-wiring riven efter DOM-forensik + skärmläsarpass).
  * Använd `lg` (48 px) för sökfält/primärflöden per ARIA-UPGRADE §2.5.8.
  *
  * @example
@@ -71,7 +70,6 @@ export function Input({
   className,
   ...props
 }: InputProps) {
-  const errorId = useId();
   return (
     <TextField
       {...props}
@@ -81,17 +79,13 @@ export function Input({
       {!hideLabel && (
         <Label className="text-(color:--mm-input-label-text) text-small">{label}</Label>
       )}
-      <AriaInput
-        placeholder={placeholder}
-        aria-errormessage={props.isInvalid ? errorId : undefined}
-        className={inputVariants({ size })}
-      />
+      <AriaInput placeholder={placeholder} className={inputVariants({ size })} />
       {description && (
         <Text slot="description" className="text-(color:--mm-input-description-text) text-caption">
           {description}
         </Text>
       )}
-      <FieldError id={errorId} className="text-(color:--mm-input-error-text) text-caption">
+      <FieldError className="text-(color:--mm-input-error-text) text-caption">
         {errorMessage}
       </FieldError>
     </TextField>

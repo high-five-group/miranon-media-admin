@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import { ChevronDown } from 'lucide-react';
-import { type ReactNode, useId } from 'react';
+import type { ReactNode } from 'react';
 import {
   Button as AriaButton,
   Select as AriaSelect,
@@ -48,8 +48,10 @@ export interface SelectProps<T extends object>
 /**
  * Select-primitiv på react-aria-components Select (ADR-044): trigger-knapp +
  * Popover/ListBox med full tangentbordsnavigation (piltangenter, type-ahead,
- * Escape) och `aria-errormessage` på triggern vid `isInvalid`
- * (ARIA-UPGRADE §1 Formulärfält). Använd `<SelectItem>` för alternativen.
+ * Escape). Felmeddelandet associeras via FieldError/`aria-describedby` på
+ * triggern (ADR-046; explicit aria-errormessage-wiring riven — attributet
+ * droppades av trigger-kontexten och nådde aldrig DOM). Använd
+ * `<SelectItem>` för alternativen.
  *
  * @example
  * ```tsx
@@ -69,7 +71,6 @@ export function Select<T extends object>({
   className,
   ...props
 }: SelectProps<T>) {
-  const errorId = useId();
   return (
     <AriaSelect
       {...props}
@@ -79,14 +80,11 @@ export function Select<T extends object>({
       {!hideLabel && (
         <Label className="text-(color:--mm-input-label-text) text-small">{label}</Label>
       )}
-      <AriaButton
-        aria-errormessage={props.isInvalid ? errorId : undefined}
-        className={triggerVariants({ size })}
-      >
+      <AriaButton className={triggerVariants({ size })}>
         <SelectValue className="data-[placeholder]:text-(color:--mm-input-text-placeholder) truncate" />
         <ChevronDown aria-hidden className="size-4 shrink-0" />
       </AriaButton>
-      <FieldError id={errorId} className="text-(color:--mm-input-error-text) text-caption">
+      <FieldError className="text-(color:--mm-input-error-text) text-caption">
         {errorMessage}
       </FieldError>
       <Popover className="min-w-(--trigger-width) rounded border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-1 shadow-lg">
