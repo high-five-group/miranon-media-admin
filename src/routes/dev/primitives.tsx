@@ -40,6 +40,9 @@ function PrimitivesPage() {
       <p aria-live="polite" className="mt-2 text-small">
         Senast tryckt: <span data-testid="senast-tryckt">{senastTryckt}</span>
       </p>
+      {/* MEDVETET BRYTANDE (a11y-gate-proof, ADR-020 Fas 3.5 DoD 2): knapp utan
+          tillgängligt namn → axe button-name. Branchen mergas ALDRIG. */}
+      <button type="button" className="mt-2" />
       {INTENTS.map((intent) => (
         <section key={intent} aria-labelledby={`rubrik-${intent}`} className="mt-8">
           <h2 id={`rubrik-${intent}`} className="text-xl">
