@@ -21,10 +21,12 @@ test.use({ devPagePath: '/dev/patterns' });
 test('ComboBox — vilande + expanderad listbox: 0 violations', async ({ page, checkA11y }) => {
   await checkA11y({ include: ['[aria-labelledby="rubrik-combobox"]'] });
 
+  // Riktiga tangenttryck (inte fill) — React Aria öppnar förslagslistan på
+  // key-events; fill():s programmatiska input-event öppnade inte i CI.
+  // getByRole('listbox') undviks: tvetydig mot sidans statiska Listbox-sektion.
   const falt = page.getByRole('combobox', { name: 'Sök person' });
-  await falt.fill('An');
-  const listbox = page.getByRole('listbox');
-  await expect(listbox).toBeVisible();
+  await falt.click();
+  await falt.pressSequentially('An');
   await expect(falt).toHaveAttribute('aria-expanded', 'true');
   await expect(page.getByRole('option', { name: 'Anna Andersson' })).toBeVisible();
   await checkA11y({ include: ['[aria-labelledby="rubrik-combobox"]', '[role="listbox"]'] });
