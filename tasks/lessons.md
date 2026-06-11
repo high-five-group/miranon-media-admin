@@ -1830,3 +1830,53 @@ rapporterat symptom dirigeras som FORENSIK-uppgift (LÄS→RAPPORTERA) eller
 verifieras mot disk-fakta FÖRE fix-design — aldrig som fix-uppgift på
 symptombeskrivningen ensam. Specialisering av grundregel 3 på
 felrapports-domänen. Källa: Session 14 K4-stoppet.
+
+## 2026-06-11 — Session 15 (Fas 3.5: A11y-baseline + Fas 3/3.5 fas-avslut)
+
+### L91 [UNIVERSAL] — Verifiera en CI-grind genom att köra grind-skriptet självt; läs exit-utfallet direkt
+
+Datum: 2026-06-11 | Källa: Session 15 K1 ADR-räkningsmissen (171e366→bdee8f8) + K2 MD033-slippen (d8e0ab3→1f42325) (klass: verifierings-disciplin)
+
+Verifiera en CI-grind genom att köra grind-SKRIPTET självt lokalt, aldrig
+en re-implementation av dess förmodade invariant — K1-direktivets
+"filer == katalog-rader" var inte grindens faktiska nyckel
+(rot-READMEs kanoniska token). Och läs grindens exit-utfall direkt:
+pipe-kedjor (`| tail`) maskerar exit-koden så att en röd grind passerar
+tyst (K2: MD033-fel committat och pushat trots körd lint). En grind som
+körs men inte läses är inte körd. Samma klass som L83 — bokstaven vs
+mekanismen.
+
+### L92 [UNIVERSAL] — Lokal server-verifiering kräver ägd, färsk server
+
+Datum: 2026-06-11 | Källa: Session 15 K2 port-kollisionen (5173 ägd av annat projekt) + stale-server-falskgrönen; härdad i K3 (klass: verifierings-miljö)
+
+`reuseExistingServer` kan tyst återanvända FEL projekts dev-server på en
+delad port (testerna körde mot en främmande app med förvirrande symptom),
+och en stale server serverar gammal kod — båda ger falsk-grön/falsk-röd.
+Härdning: dedikerad testport + `--strictPort` (failar högt i stället för
+tyst port-byte) + `reuseExistingServer: false` (alltid-färsk). Dyr
+verifiering mot dev-server kräver ägd, färsk server-state.
+
+### L93 [UNIVERSAL] — Tangentbordsdrivna ARIA-widgets testas med riktiga key-events, inte fill()
+
+Datum: 2026-06-11 | Källa: Session 15 K4b push 2 (run 27343016830 röd → 4914955) (klass: test-design)
+
+Interaktionstester av tangentbordsdrivna ARIA-widgets ska använda riktiga
+key-events (`pressSequentially`), inte programmatiska `fill()`-events som
+inte triggar widget-beteendet — React Arias ComboBox öppnade inte
+förslagslistan på fill():s input-event i CI trots lokalt grönt. Lokalt-grön
+är inte CI-bevis för interaktionsflöden; gör testet deterministiskt med
+den interaktion användaren faktiskt gör.
+
+### L94 [UNIVERSAL] — Axe, DOM-forensik och skärmläsarpass är tre olika evidenslinjer; ARIA-wiring-beslut kräver korsning av minst två
+
+Datum: 2026-06-11 | Källa: Session 15 K2 beslut A-fyndet + K4a-forensiken + Marcus SR-pass + ADR-046 (klass: a11y-verifiering)
+
+Automatisk skanning, DOM-forensik och mänskligt skärmläsarpass fångar
+OLIKA fel-klasser: axe missade både Input-dubbelreferensen (describedby +
+errormessage mot samma element), Selects döda attribut (droppat av
+trigger-kontexten, nådde aldrig DOM) och ::placeholder-underkontrasten
+(pseudo-element utvärderas inte). DOM-forensiken fångade strukturen;
+skärmläsarpasset fångade den upplevda dubbel-uppläsningen. Ett
+ARIA-wiring-beslut ska därför korsas mot minst två av linjerna innan det
+landar (ADR-046 byggde på alla tre).
