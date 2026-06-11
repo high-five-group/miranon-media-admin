@@ -29,6 +29,9 @@
   --mm-border: var(--p-neutral-200);
   --mm-border-light: var(--p-neutral-100);
   --mm-border-strong: var(--p-neutral-300);
+  --mm-border-field: var(
+    --p-neutral-400
+  ); /* Fältkanter — ≥3:1 mot vit yta (WCAG 1.4.11); neutral-300 ger bara 1,55:1 */
   --mm-border-focus: var(--p-gold-500);
 
   /* ── Feedback ── */

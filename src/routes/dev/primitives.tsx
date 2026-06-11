@@ -1,6 +1,17 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button, Input, Select, SelectItem } from '@/components/primitives';
+import {
+  Button,
+  Dialog,
+  DialogTrigger,
+  Input,
+  MessageBox,
+  Modal,
+  Select,
+  SelectItem,
+} from '@/components/primitives';
+
+const MESSAGE_INTENTS = ['info', 'success', 'warning', 'error'] as const;
 
 const INTENTS = ['primary', 'secondary', 'danger', 'ghost'] as const;
 const SIZES = ['sm', 'md', 'lg'] as const;
@@ -105,6 +116,58 @@ function PrimitivesPage() {
             <SelectItem id="anmald">Anmäld</SelectItem>
             <SelectItem id="betald">Betald</SelectItem>
           </Select>
+        </div>
+      </section>
+      <section aria-labelledby="rubrik-messagebox" className="mt-8 max-w-md">
+        <h2 id="rubrik-messagebox" className="text-xl">
+          MessageBox
+        </h2>
+        <div className="mt-4 flex flex-col gap-4">
+          {MESSAGE_INTENTS.map((intent) => (
+            <MessageBox key={intent} intent={intent} title={`Rubrik (${intent})`}>
+              Brödtext för {intent}-meddelandet — alltid i neutral textfärg.
+            </MessageBox>
+          ))}
+          <MessageBox
+            intent="info"
+            title="Avvisningsbar"
+            onDismiss={() => setSenastTryckt('messagebox: avvisad')}
+          >
+            Stäng-knappen wirar till statusraden ovan.
+          </MessageBox>
+        </div>
+      </section>
+      <section aria-labelledby="rubrik-dialog" className="mt-8 max-w-md">
+        <h2 id="rubrik-dialog" className="text-xl">
+          Modal + Dialog
+        </h2>
+        <div className="mt-4">
+          <DialogTrigger>
+            <Button intent="secondary">Öppna bekräftelse-dialog</Button>
+            <Modal isDismissable>
+              <Dialog
+                title="Ta bort anmälan?"
+                actions={({ close }) => (
+                  <>
+                    <Button intent="ghost" onPress={close}>
+                      Avbryt
+                    </Button>
+                    <Button
+                      intent="danger"
+                      onPress={() => {
+                        setSenastTryckt('dialog: bekräftad');
+                        close();
+                      }}
+                    >
+                      Ta bort
+                    </Button>
+                  </>
+                )}
+              >
+                Åtgärden kan inte ångras. Anmälan tas bort permanent.
+              </Dialog>
+            </Modal>
+          </DialogTrigger>
         </div>
       </section>
     </main>

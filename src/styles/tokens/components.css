@@ -36,7 +36,7 @@
   --mm-input-bg-disabled: var(--mm-bg-muted);
   --mm-input-text: var(--mm-text);
   --mm-input-text-placeholder: var(--mm-text-muted);
-  --mm-input-border: var(--mm-border-strong);
+  --mm-input-border: var(--mm-border-field);
   --mm-input-border-invalid: var(--mm-error);
   --mm-input-label-text: var(--mm-text);
   --mm-input-description-text: var(--mm-text-secondary);
@@ -48,4 +48,26 @@
   --mm-select-item-text: var(--mm-text);
   --mm-select-item-bg-focused: var(--mm-primary-tint);
   --mm-select-item-bg-selected: var(--mm-primary-pale);
+
+  /* ── MessageBox (Fas 3 K3) — bg/border/text per intent mot status-rollerna ── */
+  --mm-messagebox-info-bg: var(--mm-info-bg);
+  --mm-messagebox-info-border: var(--mm-info);
+  --mm-messagebox-info-text: var(--mm-info);
+  --mm-messagebox-success-bg: var(--mm-success-bg);
+  --mm-messagebox-success-border: var(--mm-success);
+  --mm-messagebox-success-text: var(--mm-success);
+  --mm-messagebox-warning-bg: var(--mm-warning-bg);
+  --mm-messagebox-warning-border: var(--mm-warning);
+  --mm-messagebox-warning-text: var(--mm-warning);
+  --mm-messagebox-error-bg: var(--mm-error-bg);
+  --mm-messagebox-error-border: var(--mm-error);
+  --mm-messagebox-error-text: var(--mm-error);
+  --mm-messagebox-body-text: var(--mm-text);
+
+  /* ── Modal/Dialog (Fas 3 K3) ── */
+  --mm-dialog-overlay-bg: color-mix(in srgb, var(--mm-text) 50%, transparent);
+  --mm-dialog-bg: var(--mm-surface-overlay);
+  --mm-dialog-width-sm: 20rem;
+  --mm-dialog-width-md: 28rem;
+  --mm-dialog-width-lg: 36rem;
 }
