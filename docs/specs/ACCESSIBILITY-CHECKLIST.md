@@ -180,7 +180,7 @@ Använd checklistan vid varje ny vy, komponent eller leveranssteg.
 
 ## §5 — Test-infrastruktur (Fas 3.5-leverabel)
 
-> **Status:** Detta är en av Fas 3.5:s tre leveranser. Inte aktiverad i produktion förrän Fas 3.5 implementerats. P2-trigger-rapporten i `tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md` Del 5 markerade behovet som JA.
+> **Status: ✅ levererad i Fas 3.5** (Session 15, 2026-06-11) — axe-runner + fixturer i `tests/a11y/` per [ADR-045](../decisions/ADR-045-a11y-runner-arkitektur.md) (0 violations kanonisk tolerans; CI-steget "A11y tests" i Test+Build-jobbet, gate-proof-bevisat). Historik: P2-trigger-rapporten i `tasks/sessions/archive/2026-05/2026-05-04-stodspec-synk-p2.md` Del 5 markerade behovet som JA.
 
 ### Installation
 
@@ -313,7 +313,7 @@ Varje a11y-violation som inte fixas direkt → todo-post med:
 
 ## §6 — React Aria-mönsterbibliotek (Fas 3.5-leverabel)
 
-> **Status:** Detta är en av Fas 3.5:s tre leveranser. Inte aktiverad i produktion förrän Fas 3.5 implementerats. P2-trigger-rapporten markerade behovet som JA.
+> **Status: ✅ levererad i Fas 3.5** (Session 15, 2026-06-11) — fem mönster-filer i [`docs/aria-patterns/`](../aria-patterns/overlay.md) med referens-implementationer på `/dev/patterns` och test-mallar i `tests/a11y/patterns/`. Historik: P2-trigger-rapporten markerade behovet som JA.
 
 Fem mönster täcker admin-appens interaktiva komponenter. Varje mönster har: kodexempel + a11y-acceptance-criteria + test-mall.
 

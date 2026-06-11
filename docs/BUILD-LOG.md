@@ -1117,6 +1117,31 @@ Sessionsdok-trail: [`tasks/sessions/2026-06-10-session-14.md`](../tasks/sessions
 
 ---
 
+## Session 15 — Fas 3.5 A11y-baseline: runner + mönsterbibliotek + ADR-045/046 (2026-06-11)
+
+**Planerat:** Fas 3.5 per byggplan §4 (estimat 1 session). **Faktiskt:** hela infran +
+mönsterbiblioteket + wiring-beslutet i en session. K1: ADR-045 (CI-måltavla /dev/primitives
+via webServer-dev-server; 0 violations kanonisk; test:a11y i Test+Build-sfären, `171e366`) +
+byggplan §4 Fas 3.5 i components-termer + checklist §5-korrigeringar; ADR-039-grinden fångade
+räknings-miss (`bdee8f8`). K2: axe-runner (7 tester, 6 primitiver) + STOPPA på verkligt
+kontrastfynd → Marcus-beslut A: --mm-text-muted → --p-neutral-500 (`de33f99`); DoD 2-bevis:
+medvetet brytande branch → run 27337333679 RÖD exakt på a11y-steget, PR #41 stängd utan merge.
+K3: /dev/patterns med 5 referens-implementationer + 5 pattern-specar + port-härdad alltid-färsk
+a11y-server (`3f66dfb`) + docs/aria-patterns/ 5 filer (`85b1052`). K4: aria-errormessage-forensik
+(DOM-dubbel-referens på Input; död wiring på Select) korsad med Marcus skärmläsarpass
+(VoiceOver/Safari) → ADR-046: explicit errormessage-wiring riven, describedby/FieldError enda
+vägen (`8c4a2da` + `8403040`); ComboBox-spec-flakighet fixad med riktiga tangenttryck (`4914955`).
+
+**Gate "A11y-baseline godkänd": PASSERAD 2026-06-11 — FÖRE Fas 6-start** (Fas 3.5 DoD 6).
+Bevis: runner 12/12 i CI (run 27343206661); CI failar vid violation (gate-proof-run
+27337333679 röd på a11y-steget, button-name critical); Marcus skärmläsarpass grönt
+(Modal/Dialog: annonsering, fokus-fångst, fokus-retur; /dev/patterns-genomgång grön);
+[ADR-045](decisions/ADR-045-a11y-runner-arkitektur.md) +
+[ADR-046](decisions/ADR-046-felmeddelande-wiring-describedby.md).
+Sessionsdok-trail: [`tasks/sessions/2026-06-11-session-15.md`](../tasks/sessions/2026-06-11-session-15.md).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
