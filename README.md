@@ -11,7 +11,7 @@ React-admin för Miranon Media — eventhantering, anmälningar och rapportering
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
 [![TanStack](https://img.shields.io/badge/TanStack-Router%20%2B%20Query%20%2B%20Table-FF4154)](package.json)
 
-> **Status:** Fas 2.5 — Schema-kontrakt-sync ✅ KLAR 2026-06-10 (Session 13). Domäntyper synkade mot `data-model.md`, z.enum-värdevalidering på live-läsvägar, 9 adapter-metoder debt-klassade per A5. **Nästa:** Fas 3 — UI-primitiver (per [`docs/byggplan.md`](docs/byggplan.md) §4).
+> **Status:** Fas 3 — UI-primitiver + Fas 3.5 — A11y-baseline ✅ KLARA 2026-06-11 (Sessions 14–15). 6 primitiver på react-aria-components + CVA, axe-runner 12/12 med gate-proof-bevisad CI-grind, 5 React Aria-mönster i `docs/aria-patterns/`, "A11y-baseline godkänd"-gate passerad före Fas 6. **Nästa:** Fas 5 — App-shell (per [`docs/byggplan.md`](docs/byggplan.md) §4).
 
 ## Dokumentation
 
@@ -67,6 +67,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 | `npm run test:api:pure` | Pure unit-tester (ingen staging-env krävs) |
 | `npm run test:api:staging` | Staging-integration-tester (kräver TEST_*-secrets) |
 | `npm run test:e2e:staging` | Playwright e2e mot staging (auth-fixture) |
+| `npm run test:a11y` | Axe-runner mot `/dev/primitives` + `/dev/patterns` (alltid-färsk dev-server, ADR-045) |
 
 ## Stack
 
@@ -89,7 +90,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 
 ## Projektstatus
 
-**Aktuellt fokus:** Fas 3 — UI-primitiver (per `docs/byggplan.md` §4).
+**Aktuellt fokus:** Fas 5 — App-shell (per `docs/byggplan.md` §4).
 
 **Klara faser:**
 
@@ -106,6 +107,15 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - z.enum-värdevalidering ur Status.ts-konstanterna på live-läsvägarna (ADR-026-mönstret), modeller smalnade i parallell (ADR-005)
   - 9 adapter-metoder debt-klassade per A5-tabellen (`@deferTo`-JSDoc + throw); 0 EF deployade by design
   - Synk-gate 1 stängd före fasstart — A1–A12-inventering MCP-verifierad mot live
+- ✅ **Fas 3** — UI-primitiver (Sessions 14–15, 2026-06-11)
+  - 6 primitiver (Button, Input, Select, MessageBox, Modal, Dialog) på react-aria-components + CVA-varianter (ADR-044), demo-route `/dev/primitives`
+  - Felmeddelande-wiring via React Arias FieldError/`aria-describedby` (ADR-046, trippel-evidens: DOM-forensik + förstapartskälla + skärmläsarpass)
+  - 11/11/11-stämplade mot Fas 3.5-infran: axe 0 violations, tangentbords- + skärmläsarpass
+- ✅ **Fas 3.5** — A11y-baseline (Session 15, 2026-06-11)
+  - Axe-runner (axe-core + @axe-core/playwright) med 0-violations-tolerans (ADR-045), 12 tester, port-härdad alltid-färsk dev-server
+  - CI-grinden gate-proof-bevisad (medvetet brytande branch → rött run på a11y-steget)
+  - 5 React Aria-mönster: referens-implementationer på `/dev/patterns` + test-mallar + `docs/aria-patterns/`
+  - "A11y-baseline godkänd"-gate dokumenterad i BUILD-LOG före Fas 6
 
 **Arkitekturbeslut:** 46 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
 

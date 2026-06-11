@@ -7,6 +7,34 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-11
+
+### Added — Fas 3: UI-primitiver + Fas 3.5: A11y-baseline (Sessions 14–15)
+
+- 6 UI-primitiver i `src/components/primitives/` — Button, Input, Select, MessageBox, Modal, Dialog — på react-aria-components + CVA-varianter (size sm/md/lg, intent primary/secondary/danger/ghost) med JSDoc-usage-exempel (ADR-044)
+- Demo-route `/dev/primitives` (DEV-guardad, root-monterad utanför auth-trädet) för visuell + interaktiv verifiering
+- Komponent-tokens `--mm-button-*`, `--mm-input-*`, `--mm-select-*` i `components.css` + ny semantisk roll `--mm-border-field` (WCAG 1.4.11-kontrastfix)
+- A11y-runner: `axe-core` + `@axe-core/playwright`, Playwright-projekt `a11y`, fixtures med 0-violations-tolerans (ADR-045), 12 tester (7 primitiv + 5 mönster), `test:a11y`-script, CI-steg i Test+Build-jobbet — gate-proof-bevisad (medvetet brytande branch → rött run exakt på a11y-steget)
+- Port-härdad a11y-server: dedikerad port + `--strictPort` + `reuseExistingServer: false` (alltid-färsk; eliminerar tyst-återanvänd-främmande-server- och stale-server-klasserna)
+- Referens-route `/dev/patterns` (DEV-guardad) med 5 React Aria-mönster: Overlay, Listbox, Disclosure, MenuTrigger, ComboBox
+- `docs/aria-patterns/` — 5 mönster-filer med kodexempel + test-mall + a11y-acceptance-criteria (Fas 6-konsumtionsunderlag)
+- ADR-044 (react-aria-components som primitiv-bas + demo-route), ADR-045 (a11y-runner-arkitektur), ADR-046 (felmeddelande-wiring via describedby)
+- Lessons L88–L94 (`[UNIVERSAL]`) i `tasks/lessons.md`
+
+### Changed
+
+- `--mm-text-muted`: `--p-neutral-400` → `--p-neutral-500` — Select-placeholdern mätte 3,49:1 mot WCAG 1.4.3-kravet 4,5:1 (axe-fynd, semantisk rotorsaks-fix som även botar den axe-osynliga Input-placeholdern)
+- Explicit `aria-errormessage`-wiring riven ur Input/Select — React Arias FieldError/`aria-describedby` är enda felmeddelande-associationen (ADR-046; ARIA-UPGRADE §1-erratum)
+- `cn.ts`: `extendTailwindMerge` registrerar custom font-size-skalan — tailwind-merge åt annars färgklasser tyst (L88)
+- `docs/byggplan.md` §4: Fas 3-scope i components-termer per ADR-044 + Fas 3.5-mönsterlistan dito; §2 fas-tabell Fas 3 + 3.5 ✅ KLARA, estimat-summa 13,5 → 10,5 sessioner (versionshistorik 1.5–1.7)
+- `ACCESSIBILITY-CHECKLIST.md` §5: 0 violations kanonisk fail-regel (ADR-045) + ci.yml-referens + additiv-not; §5/§6 stämplade "✅ levererad i Fas 3.5"
+- Biome `$schema` 2.4.11 → 2.4.15 (lockfile-re-resolve + `biome migrate`)
+
+### Fixed
+
+- ComboBox-pattern-specen öppnar förslagslistan med riktiga tangenttryck (`pressSequentially`) — `fill()`-events öppnade inte React Arias listbox i CI (L93)
+- Kanonisk ADR-räkning i rot-README höll inte jämna steg med katalogen (ADR-039-grinden fångade; L91)
+
 ## [0.4.0] - 2026-06-10
 
 ### Added — Fas 2.5: Schema-kontrakt-sync (Session 13)
@@ -94,7 +122,8 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 
 - `docs/conversion-plan.md` → `docs/archive/conversion-plan-2026-04-14.md` (ADR-012)
 
-[Unreleased]: https://github.com/marcus803/miranon-media-admin/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/marcus803/miranon-media-admin/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/marcus803/miranon-media-admin/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/marcus803/miranon-media-admin/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/marcus803/miranon-media-admin/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/marcus803/miranon-media-admin/compare/v0.1.0...v0.2.0

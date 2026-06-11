@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-06-11 (Session 14 ✅ KLAR — alla 6 Fas 3-primitiver levererade + ADR-044 + KVALITETSDEF §1/§2 + L88–L90; Fas 3 ÖPPEN tills Fas 3.5 per ADR-020. Session 15-ingång: Fas 3.5 A11y-baseline. Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
+*Senast uppdaterad: 2026-06-11 (Session 15 ✅ KLAR — Fas 3 + Fas 3.5 ✅ KLARA med fas-avslut: axe-runner 12/12, gate-proof, mönsterbibliotek, ADR-045/046, L91–L94. Session 16-ingång: Fas 5 App-shell. Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -15,11 +15,17 @@
 
 ## Aktuellt fokus
 
-**Session 15 — Fas 3.5 A11y-baseline (nästa session).** Fas 3 ÖPPEN — DoD 1 (axe/skärmläsardel) + DoD 4 väntar Fas 3.5 per ADR-020.
+**Session 16 — Fas 5 App-shell (nästa session).** Per `docs/byggplan.md` §4: minimal app-shell + tab bar + skip-to-content + route announcer + responsivt 375/768/1024 + `prefers-reduced-motion`/`prefers-contrast:more` + error boundaries + Workbox SW + TanStack offline-config. ADR krävs. Ingångsläge: Fas 3 + 3.5 ✅ KLARA med fas-avslut; "A11y-baseline godkänd"-gate passerad; a11y-runner + mönsterbibliotek redo att konsumeras.
 
-### Session 15 — ingång (Fas 3.5-start)
+### Session 15 ✅ KLAR (2026-06-11) — Fas 3.5 A11y-baseline + Fas 3/3.5 fas-avslut
 
-- [ ] **Fas 3.5 — A11y-baseline** per `docs/byggplan.md` §4 (axe-core + @axe-core/playwright + a11y-runner + fixture-mönster + 5 React Aria-mönster i `docs/aria-patterns/`). Därefter Fas 3-DoD-stämpling (DoD 1 + DoD 4 mot nya infran) + fas-avslut för båda faserna. Ingångsläge: spoke `main` @ Session 14-stängning, alla 6 primitiver levererade och Marcus-verifierade via /dev/primitives.
+- [x] **Fas 3.5 — A11y-baseline** ✅ + **Fas 3 DoD-stämpling + fas-avslut för båda faserna** ✅. K1: ADR-045 (a11y-runner-arkitektur: webServer-CI-måltavla, 0 violations kanonisk, Test+Build-sfären) + byggplan/checklist components-korrigeringar (`171e366` + `bdee8f8`). K2: axe-runner 7 primitiv-tester + STOPPA→beslut A (--mm-text-muted-kontrastfix, `de33f99`) + DoD 2-gate-proof (run 27337333679 RÖD på a11y-steget, PR #41 stängd utan merge). K3: /dev/patterns 5 referens-implementationer + 5 pattern-specar + port-härdad alltid-färsk a11y-server (`3f66dfb`) + docs/aria-patterns/ (`85b1052`). K4: aria-errormessage-forensik + Marcus VoiceOver-pass → ADR-046 wiring-rivning (`8c4a2da`+`8403040`+`4914955`) + checklist §5/§6-stämplar + BUILD-LOG-gate (`a5ab9a1`). Lessons L91–L94 ([UNIVERSAL], hub-synkade). Trail: [`tasks/sessions/2026-06-11-session-15.md`](sessions/2026-06-11-session-15.md).
+
+### Öppna trådar från Session 15
+
+- [ ] **Post-fix VoiceOver-omlyssning Input/Select** (Marcus, ej blockerande) — klassar VoiceOver/Safari-beteendet på describedby-defaulten efter ADR-046-rivningen; pre-fix-passet hörde dubbel-uppläsning, post-fix-DOM är en-vägs-verifierad. Skärmläsar-defer-beslut 2026-06-11.
+- [ ] **ACCESSIBILITY-CHECKLIST saknar frontmatter** — möjligt ADR-030-10-docs-list-gap (frontmatter-hooken rör inte filen); Marcus-beslut om listan ska utökas.
+- [ ] **react-spectrum#7425-omprövningsvillkoret (ADR-046)** — när AT-stödet för aria-errormessage är komplett och/eller React Aria byter mekanism: ompröva wiringen uppströms i primitiverna.
 
 ### Session 14 ✅ KLAR (2026-06-11) — Fas 3 UI-primitiver byggda
 
@@ -29,9 +35,9 @@
 
 - [ ] **DESIGN-SYSTEM-SPEC §1 intern spänning** — komponent-token-exemplen refererar primitiver (`--p-radius-lg` m.fl.) medan components.css-headern förbjuder det; kanonisk-regel-beslut behövs (K2-fynd).
 - [ ] **KVALITETSDEFINITIONER-11-REACT status-blockquote** — säger "SKELETT", inaktuell efter §1/§2-fyllningen; §3–§5 kvarstår TBD (K3-fynd).
-- [ ] **Fas 3.5-flagga: aria-errormessage dubbel-annonsering** — React Arias inbyggda aria-describedby-wiring är additiv till vår aria-errormessage; granskas i axe/manuella passet (K2-fynd).
-- [ ] **Lesson→grind-kandidat (ADR-039-klass): markdownlint-CI-globben täcker inte `tasks/sessions/**`** — lokal körning är enda grinden för sessionsdok (K-födelse-fynd Session 14).
-- [ ] **/dev/primitives prod-räckvidd** — nås ej i prod-build (DEV-guard by design, ADR-044); om prod-demo någonsin behövs → env-flagga + ADR-korrigering (K4-analys, alternativ B — vilande).
+- [x] **Fas 3.5-flagga: aria-errormessage dubbel-annonsering** ✅ STÄNGD Session 15 K4 — forensik + Marcus VoiceOver-pass → ADR-046: explicit wiring riven, describedby/FieldError enda vägen. Uppföljning: post-fix-omlyssningstråden under Session 15 ovan.
+- [ ] **Lesson→grind-kandidat (ADR-039-klass): markdownlint-CI-globben täcker inte `tasks/sessions/**`** — lokal körning är enda grinden för sessionsdok (K-födelse-fynd Session 14; empiriskt bekräftad Session 15 K2 MD033-slippen, L91).
+- [ ] **/dev/primitives prod-räckvidd** — nås ej i prod-build (DEV-guard by design, ADR-044); om prod-demo någonsin behövs → env-flagga + ADR-korrigering (K4-analys, alternativ B — vilande). Gäller även /dev/patterns (Session 15 K3).
 
 ### Session 8 K0b — lesson→grind-uppföljning (ADR-039, öppen — pending dedikerad session)
 

@@ -74,8 +74,8 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **A** | ✅ KLAR | Säkerhetshardening M1–M8. Slutförd 2026-05-04, 14 commits, 113 tester. | (avslutad) |
 | **2** | ✅ KLAR | Routing + Auth — Sessions 4+5+5b 2026-05-13. ADR-026, ADR-027, ADR-028. Defense-in-depth tre-skikt-arkitektur. | 3 sessioner (faktiskt) |
 | **2.5** | ✅ KLAR | Schema-kontrakt-sync — Session 13 2026-06-10. Status.ts 4→6, enum-granskning noll divergens, z.enum-hårdning + modell-smalning, 9 adapter-metoder A5-klassade (0 EF deployade — by design), inga död-kod-stubs (A5-utfall). Synk-gate 1 stängd före fasen. | 1 session (faktiskt) |
-| **3** | NY scope | UI-primitiver (React Aria + CVA + ARIA 1.3). | 2 sessioner |
-| **3.5** | NY | **A11y-baseline EGEN FAS** per P2 A1-utfall. Test-infrastruktur (axe + Playwright a11y) + 5 React Aria-mönster. ACCESSIBILITY-CHECKLIST omskriven i P2. | 1 session |
+| **3** | ✅ KLAR | UI-primitiver — Sessions 14–15, 2026-06-11. Alla 6 primitiver på react-aria-components + CVA (ADR-044) + /dev/primitives. DoD 1+4 stängda mot Fas 3.5-infran per ADR-020 sekvens-noten; felmeddelande-wiring per ADR-046. | 1 session bygge + DoD-stängning i Session 15 (estimat 2) |
+| **3.5** | ✅ KLAR | **A11y-baseline EGEN FAS** per P2 A1-utfall — Session 15, 2026-06-11. Axe-runner 12/12 (ADR-045), gate-proof-bevisad CI-grind, 5 mönster i `docs/aria-patterns/` + /dev/patterns, "A11y-baseline godkänd"-gate passerad före Fas 6. | 1 session (faktiskt) |
 | **5** | NY scope | **Förenklat** — minimal app-shell + tab bar + skip-to-content + route announcer + responsivt 375/768/1024 + `prefers-reduced-motion`/`prefers-contrast:more` + error boundaries app/sektion-nivå + Workbox SW + TanStack offline-config. **View Transitions, Speculation Rules, web-vitals, widget-error-boundary flyttade till Fas 7.** ADR krävs. | 1 session |
 | **5.5** | NY | Vertikal write-slice: "markera anmälan som betald" via befintlig `update-record` EF med ny `operationKey`. **Inga nya EF-deploys.** Etablerar TanStack optimistic mutation-mönster + operations-allowlist-utvidgning + 3 Playwright-tester (2 deny, 1 allow). ADR-krav. | 2 sessioner |
 | **6** | NY scope | **Strangler-fig-sekvens i fem sub-faser:** 6a Persons (0,75) → 6b Events (0,75) → 6c Registrations + Väntelista (1) → 6d Hem-aggregering (0,5) → 6e Mer villkorlig (0,5). Per-sub-fas: registrera operation i `field-allowlists.ts` + deny/allow-test grönt + vy-Playwright baseline. | 3,5 sessioner |
@@ -87,7 +87,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 
 **Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR-013 (Fas 4-borttagningen).
 
-**Total estimat (Fas 3 → Fas 7, exkl. klara Fas 0/1/A/2/2.5 och defer:ade Fas 8/B/E):** 13,5 sessioner — uppdaterad 2026-06-10 efter Fas 2.5 levererad på 1 session (Session 13, estimat hållet). Beräkning: 2 + 1 + 1 + 2 + 3,5 + 1 + 3 = 13,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
+**Total estimat (Fas 5 → Fas 7, exkl. klara Fas 0/1/A/2/2.5/3/3.5 och defer:ade Fas 8/B/E):** 10,5 sessioner — uppdaterad 2026-06-11 efter Fas 3 (1 session bygge mot estimat 2) + Fas 3.5 (1 session, estimat hållet). Beräkning: 1 + 2 + 3,5 + 1 + 3 = 10,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
 
 ---
 
@@ -318,6 +318,8 @@ Inget nytt ADR. A5-beslutet är dokumenterat i P1-sessionsdok Del 3 — kan refe
 
 ### Fas 3 — UI-primitiver
 
+✅ Slutförd 2026-06-11 över Sessions 14–15. Bygget levererat på 1 session (Session 14, estimat 2): alla 6 primitiver på react-aria-components + CVA (ADR-044) + demo-route `/dev/primitives`. DoD 1 (axe-/skärmläsardel) + DoD 4 stängda i Session 15 mot Fas 3.5-infran per ADR-020 sekvens-noten: runner 0 violations på alla 6 (run 27343206661), Marcus tangentbords-checklista (Session 14) + VoiceOver-pass (Session 15; feltext-dubbelreferens åtgärdad per ADR-046 — post-fix-omlyssning av Input/Select defererad till öppen todo-tråd, ej blockerande; DOM-verifierad en-vägs-referens via describedby). Korsreferens: `tasks/sessions/2026-06-11-session-15.md` Del 4–5.
+
 #### Mål
 
 Bygga den minimala uppsättning UI-primitiver som Fas 5 + 5.5 + 6 behöver: Button, Input, Select, MessageBox, Modal, Dialog. Alla med React Aria-bas + CVA-variantsystem + ARIA 1.3-attribut.
@@ -380,6 +382,8 @@ Inget nytt ADR.
 ---
 
 ### Fas 3.5 — A11y-baseline (NY EGEN FAS)
+
+✅ Slutförd 2026-06-11, Session 15 (estimat hållet). Alla 6 DoD-rader stängda: axe-runner 12/12 (7 primitiv- + 5 mönster-tester, 0-tolerans per ADR-045), CI-grinden gate-proof-bevisad (medvetet brytande branch → run 27337333679 röd exakt på a11y-steget), fixture-mönstret återanvänt i primitiv-testerna, 5 mönster-filer i `docs/aria-patterns/` + referens-implementationer på `/dev/patterns`, checklist §5/§6 stämplade, "A11y-baseline godkänd"-gate dokumenterad i BUILD-LOG före Fas 6. ADR-045 + ADR-046. Korsreferens: `tasks/sessions/2026-06-11-session-15.md`.
 
 #### Mål
 
@@ -971,6 +975,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 | **1.3** | **2026-06-10** | **Drift-korrigering av Fas B-synk-gates mot beslutat A4-innehåll.** Session 13-forensik fann inget beslutsspår för "Gate B1 (innan Fas 6c)"/"Gate B2 (innan Fas E)"-formuleringarna (införda vid dokumentets födelse `2ffede0`, P3a K2) — transkriptions-drift från A4-beslutet. Återställt per A4: Synk-gate 1 (hard) före Fas 2.5 + Synk-gate 2 (handshake per Fas 5.5/6-operation). §2 fas-tabell rad B, §4 Fas B Scope/Beroenden korrigerade; §4 Fas 2.5 Beroenden utökad med Synk-gate 1 som hård gate. Trail: `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` (A4) + `tasks/sessions/2026-06-10-session-13.md` (forensik). |
 | 1.5 | 2026-06-11 | §4 Fas 3 scope-korrigering per [ADR-044](decisions/ADR-044-react-aria-components-demo-route.md) (Session 14 K1): react-aria-components som primitiv-bas (ersätter "React Aria-hooks som bas (`useButton`, `useTextField`, etc.)") + demo-route `/dev/primitives` vald över Storybook på byggplanens eget kostnadsvillkor. Beslutsspår i ADR:n; scope-texten och faktiskt bygge åter konsistenta. |
 | 1.6 | 2026-06-11 | §4 Fas 3.5 mönsterlista omskriven i components-termer per [ADR-044](decisions/ADR-044-react-aria-components-demo-route.md) (Session 15 K1): komponentnamn ur react-aria-components ersätter hooks-parenteserna (`useOverlay` etc.); användningsfallen per rad oförändrade. A11y-runner-arkitektur etablerad i [ADR-045](decisions/ADR-045-a11y-runner-arkitektur.md): CI-måltavla `/dev/primitives` via webServer-dev-server, 0 violations kanonisk tolerans, `test:a11y` i Test+Build-sfären. ADR-020:s hooks-formulering i §Scope är historiskt beslutsdokument och redigeras inte — API-stil styrs av ADR-044. |
+| **1.7** | **2026-06-11** | **Fas 3 + Fas 3.5 markerade KLARA** efter Session 15. §2 fas-tabell uppdaterad (båda ✅ KLAR + estimat-summa Fas 5 → Fas 7 = 10,5 sessioner). §4 Fas 3- och Fas 3.5-prompterna utökade med "✅ Slutförd"-paragrafer per Fas A-mallen — Fas 3-paragrafen noterar DoD 1+4 stängda mot 3.5-infran (ADR-020 sekvens-noten) + felmeddelande-wiring per [ADR-046](decisions/ADR-046-felmeddelande-wiring-describedby.md) + skärmläsar-defer (post-fix-omlyssning som öppen todo-tråd, ej blockerande). DoD-trail: runner 12/12 run 27343206661, gate-proof run 27337333679, "A11y-baseline godkänd"-gate i BUILD-LOG. |
 
 ---
 
