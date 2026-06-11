@@ -1093,7 +1093,7 @@ Test+Build körd grön på varje kod-commit (separerade pushar). **Avvikelser:**
 (by design); död-kod-utfall: ingen metod A5-klassad som död — fetchLeads/fetchMailLog
 omvärderas Fas 6; bifynd Deadline slutbetalning-formeldrift → todo (Fas B-sfär).
 Lessons L83–L87. Fas-avslut körd denna session (phase-end-verify + hub-sync + CHANGELOG 0.4.0).
-Sessionsdok-trail: [`tasks/sessions/2026-06-10-session-13.md`](../tasks/sessions/2026-06-10-session-13.md).
+Sessionsdok-trail: [`tasks/sessions/archive/2026-06/2026-06-10-session-13.md`](../tasks/sessions/archive/2026-06/2026-06-10-session-13.md).
 
 ---
 
@@ -1113,7 +1113,7 @@ separerade pushar (L87). **Avvikelser:** K4-direktivets premiss ("/dev/primitive
 falsifierad av LÄS-forensik — stängd som rapport-leverans utan commit (L85/L90);
 namnrymds-divergens K2 (--mm-btn-* → --mm-button-*) löst med beslutsspår per L83.
 Marcus interaktiva checklista mot /dev/primitives: GRÖN. Lessons L88–L90.
-Sessionsdok-trail: [`tasks/sessions/2026-06-10-session-14.md`](../tasks/sessions/2026-06-10-session-14.md).
+Sessionsdok-trail: [`tasks/sessions/archive/2026-06/2026-06-10-session-14.md`](../tasks/sessions/archive/2026-06/2026-06-10-session-14.md).
 
 ---
 

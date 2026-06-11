@@ -39,4 +39,4 @@ Kategoriseringen "Efter Fas 2.5" för A1–A8 följer av det mekaniska utfallet:
 
 - Gate-definition: `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` (A4 Design-not); `docs/byggplan.md` §2 rad B + §4 Fas B (drift-korrigerade i Session 13); `tasks/byggplan-direktiv.md` §5 rad B.
 - Åtgärdskatalog: `docs/research/datamodell-research/06a-airtable-redesign.md` Del A–C.
-- Forensik + sessionstrail: `tasks/sessions/2026-06-10-session-13.md`.
+- Forensik + sessionstrail: `tasks/sessions/archive/2026-06/2026-06-10-session-13.md`.
