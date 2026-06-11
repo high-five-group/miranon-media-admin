@@ -392,11 +392,11 @@ Etablera test-infrastruktur (axe + Playwright a11y) + 5 React Aria-mönster som 
 - Fixture-mönster: `renderWithA11y(component)` eller motsvarande
 - CI-integration: axe-violations failar bygget
 - 5 React Aria-mönster med kodexempel + test-mall:
-  1. **Overlay** (`useOverlay` + `useDialog` + `useModal`) — modaler, confirm-dialoger, slide-in
-  2. **Listbox** (`useListBox` + `useOption`) — dropdowns, filter, sortering
-  3. **Disclosure** (`useDisclosure` + `useDisclosureGroup`) — accordion, expanderbara rader
-  4. **MenuTrigger** (`useMenuTrigger` + `useMenu`) — kontextmeny, åtgärdsmeny
-  5. **ComboBox** (`useComboBox` + `useFilter`) — sökfält med autocomplete
+  1. **Overlay** (`Modal` + `Dialog`) — modaler, confirm-dialoger, slide-in
+  2. **Listbox** (`ListBox`) — dropdowns, filter, sortering
+  3. **Disclosure** (`Disclosure` + `DisclosureGroup`) — accordion, expanderbara rader
+  4. **MenuTrigger** (`MenuTrigger` + `Menu`) — kontextmeny, åtgärdsmeny
+  5. **ComboBox** (`ComboBox`) — sökfält med autocomplete
 - Per pattern: kodexempel + test-mall + a11y-acceptance-criteria
 
 #### Inte scope
@@ -970,6 +970,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 | **1.4** | **2026-06-10** | **Fas 2.5 markerad KLAR** efter Session 13 (klunga 1–4). §2 fas-tabell uppdaterad (Fas 2.5 ✅ KLAR + estimat-summa Fas 3 → Fas 7 = 13,5 sessioner). §4 Fas 2.5-prompt utökad med "✅ Slutförd"-paragraf per Fas A-mallen. Schema-path-typo i §4.5 Filer rättad (`src/data/schemas` → `src/domain/schemas`, K2 DEL B). DoD-trail: Status.ts 4→6, noll enum-divergens, z.enum-hårdning, A5-debt-klassning, 0 EF-deploys, 113 tester gröna via CI. |
 | **1.3** | **2026-06-10** | **Drift-korrigering av Fas B-synk-gates mot beslutat A4-innehåll.** Session 13-forensik fann inget beslutsspår för "Gate B1 (innan Fas 6c)"/"Gate B2 (innan Fas E)"-formuleringarna (införda vid dokumentets födelse `2ffede0`, P3a K2) — transkriptions-drift från A4-beslutet. Återställt per A4: Synk-gate 1 (hard) före Fas 2.5 + Synk-gate 2 (handshake per Fas 5.5/6-operation). §2 fas-tabell rad B, §4 Fas B Scope/Beroenden korrigerade; §4 Fas 2.5 Beroenden utökad med Synk-gate 1 som hård gate. Trail: `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` (A4) + `tasks/sessions/2026-06-10-session-13.md` (forensik). |
 | 1.5 | 2026-06-11 | §4 Fas 3 scope-korrigering per [ADR-044](decisions/ADR-044-react-aria-components-demo-route.md) (Session 14 K1): react-aria-components som primitiv-bas (ersätter "React Aria-hooks som bas (`useButton`, `useTextField`, etc.)") + demo-route `/dev/primitives` vald över Storybook på byggplanens eget kostnadsvillkor. Beslutsspår i ADR:n; scope-texten och faktiskt bygge åter konsistenta. |
+| 1.6 | 2026-06-11 | §4 Fas 3.5 mönsterlista omskriven i components-termer per [ADR-044](decisions/ADR-044-react-aria-components-demo-route.md) (Session 15 K1): komponentnamn ur react-aria-components ersätter hooks-parenteserna (`useOverlay` etc.); användningsfallen per rad oförändrade. A11y-runner-arkitektur etablerad i [ADR-045](decisions/ADR-045-a11y-runner-arkitektur.md): CI-måltavla `/dev/primitives` via webServer-dev-server, 0 violations kanonisk tolerans, `test:a11y` i Test+Build-sfären. ADR-020:s hooks-formulering i §Scope är historiskt beslutsdokument och redigeras inte — API-stil styrs av ADR-044. |
 
 ---
 

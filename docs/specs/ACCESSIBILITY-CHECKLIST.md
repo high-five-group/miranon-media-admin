@@ -191,6 +191,12 @@ npm install --save-dev @axe-core/playwright
 
 ### Playwright-config-tillägg
 
+> **Not (Session 15 K1, [ADR-045](../decisions/ADR-045-a11y-runner-arkitektur.md)):**
+> exemplet nedan är förenklat. Faktisk `playwright.config.ts` har 6 projekt
+> (setup, api-pure, api-staging, chromium-authenticated, visual-desktop,
+> visual-mobile) — a11y-projektet läggs till additivt mot den verkliga
+> configen, inte genom exempel-kopiering.
+
 ```typescript
 // playwright.config.ts — befintlig config + a11y-projekt
 import { defineConfig, devices } from '@playwright/test';
@@ -234,14 +240,14 @@ export const test = base.extend<A11yFixtures>({
 
       const results = await builder.analyze();
 
-      // Atomär verifiering: 0 critical OCH 0 serious. Övriga loggas som warning.
-      const blocking = results.violations.filter((v) =>
-        v.impact === 'critical' || v.impact === 'serious'
-      );
-
-      if (blocking.length > 0) {
-        const summary = blocking.map((v) => `${v.impact}: ${v.id} (${v.help})`).join('\n');
-        throw new Error(`${blocking.length} accessibility violation(s):\n${summary}`);
+      // 0 violations = fail (ADR-045 beslut 2). Impact-filtrering
+      // (critical+serious) är i Deque-ekosystemet en legacy-onboarding-
+      // mekanism för befintlig skuld — denna baseline-yta är greenfield.
+      if (results.violations.length > 0) {
+        const summary = results.violations
+          .map((v) => `${v.impact}: ${v.id} (${v.help})`)
+          .join('\n');
+        throw new Error(`${results.violations.length} accessibility violation(s):\n${summary}`);
       }
     });
   },
@@ -286,7 +292,8 @@ test.describe('EventList — a11y', () => {
 ### CI-integration
 
 ```yaml
-# .github/workflows/test.yml — utdrag
+# .github/workflows/ci.yml — utdrag. A11y-steget hör till Test+Build-jobbets
+# sfär, kod-grindat via changed-files-gating (ADR-029) — se ADR-045 beslut 3.
 - name: Playwright a11y tests
   run: npx playwright test --project=a11y
   # failar bygget om någon test kastar (= a11y violation hittad)
