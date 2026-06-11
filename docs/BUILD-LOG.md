@@ -1132,6 +1132,8 @@ a11y-server (`3f66dfb`) + docs/aria-patterns/ 5 filer (`85b1052`). K4: aria-erro
 (VoiceOver/Safari) → ADR-046: explicit errormessage-wiring riven, describedby/FieldError enda
 vägen (`8c4a2da` + `8403040`); ComboBox-spec-flakighet fixad med riktiga tangenttryck (`4914955`).
 
+**Fas 3 ✅ KLAR + Fas 3.5 ✅ KLAR 2026-06-11** — båda med fullt fas-avslut
+(phase-end-verify, hub-sync L88–L94, CHANGELOG 0.5.0, arkiveringspass).
 **Gate "A11y-baseline godkänd": PASSERAD 2026-06-11 — FÖRE Fas 6-start** (Fas 3.5 DoD 6).
 Bevis: runner 12/12 i CI (run 27343206661); CI failar vid violation (gate-proof-run
 27337333679 röd på a11y-steget, button-name critical); Marcus skärmläsarpass grönt
