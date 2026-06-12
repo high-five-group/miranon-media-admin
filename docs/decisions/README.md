@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-12
+updated: 2026-06-13
 review_by: 2026-11-15
 status: stable
 ---
@@ -95,5 +95,5 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 
 - [BUILD-LOG.md](../BUILD-LOG.md) — kronologisk implementation journal som refererar dessa ADR:er
 - [conversion-plan.md](../archive/conversion-plan-2026-04-14.md) — fas-för-fas-planen
-- [gap-analysis.md](../logs/gap-analysis.md) — gap-analys mellan conversion-plan och research
+- [gap-analysis.md](../archive/gap-analysis.md) — gap-analys mellan conversion-plan och research
 - [../tasks/lessons.md](../../tasks/lessons.md) — universella lärdomar som uppstått under implementation

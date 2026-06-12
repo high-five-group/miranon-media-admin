@@ -36,8 +36,7 @@ React-admin för Miranon Media — eventhantering, anmälningar och rapportering
 
 ### Logs
 
-- [`docs/logs/`](docs/logs/) — historiska arbetsmaterial (gap-analysis, byggplan-revision-inventory)
-- [`docs/archive/`](docs/archive/) — superceded artefakter
+- [`docs/archive/`](docs/archive/) — superceded artefakter + historiska arbetsmaterial (gap-analysis, byggplan-revision-inventory)
 - [`tasks/sessions/`](tasks/sessions/) — sessions-trail (aktiv + arkiv)
 
 ---

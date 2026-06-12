@@ -479,7 +479,7 @@ Ja ✅ (godkänt av Marcus 2026-05-04 vid sessionsavslut för security-hardening
 ### P0 — Byggplan-revision inventering
 
 **Commit:** `f3e4426 p0: byggplan-revision inventory — alla 9 §D-faser klassade`
-**Trail:** Inventeringen är sin egen output — se [`byggplan-revision-inventory.md`](logs/byggplan-revision-inventory.md).
+**Trail:** Inventeringen är sin egen output — se [`byggplan-revision-inventory.md`](archive/byggplan-revision-inventory.md).
 **Mål:** Klassa varje påstående i conversion-plan §D som *oförändrad / behöver justering / behöver omformuleras / försvinner*.
 **Resultat:** 9 fas-rader klassade. P0 stop-test passerat 2026-05-04.
 
@@ -1186,6 +1186,6 @@ Syftet är att en ny läsare ska kunna läsa sista sessionen och förstå var vi
 - [`decisions/`](decisions/) — Architecture Decision Records (20 ADR:er totalt — ADR-001..ADR-010 från Session 1 (React) Fas 0+1, ADR-011..ADR-020 från Session 2 (React) P3a)
 - [`byggplan.md`](byggplan.md) — fas-för-fas-planen (styrande)
 - [`archive/conversion-plan-2026-04-14.md`](archive/conversion-plan-2026-04-14.md) — historisk fas-för-fas-plan, ersatt av `byggplan.md` per [ADR-012](decisions/ADR-012-conversion-plan-ersatt-av-byggplan.md)
-- [`gap-analysis.md`](logs/gap-analysis.md) — gap-analys som motiverade `[GA]`-tilläggen
+- [`gap-analysis.md`](archive/gap-analysis.md) — gap-analys som motiverade `[GA]`-tilläggen
 - [`../tasks/lessons.md`](../tasks/lessons.md) — universella lärdomar
 - [`../tasks/todo.md`](../tasks/todo.md) — aktuell todo-status
