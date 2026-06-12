@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-12
+updated: 2026-06-13
 review_by: 2026-11-15
 status: stable
 ---
@@ -913,7 +913,7 @@ Inget nytt ADR i React-byggets katalog. Airtable-side-beslut dokumenteras i Roge
 #### Korsreferens
 
 - `docs/research/datamodell-research/06a-airtable-redesign.md` Del A–C
-- `tasks/sessions/archive/datamodell-research-2026-04-30/fas-4a-prompt.md` §3.4
+- `tasks/sessions/archive/2026-04/datamodell-research/fas-4a-prompt.md` §3.4
 - `tasks/sessions/archive/2026-05/2026-05-04-byggplan-revision-p1.md` Del 2 (A4-beslutet)
 
 ---
