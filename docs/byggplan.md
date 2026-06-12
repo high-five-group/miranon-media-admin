@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-11
+updated: 2026-06-12
 review_by: 2026-11-15
 status: stable
 ---
@@ -501,7 +501,7 @@ Minimal app-shell som tål mobil-först-användning (Lotta på telefon i mötet)
 1. `/hem` placeholder visar shell + tab bar med 4 flikar (Hem/Event/Personer/Mer)
 2. Skip-to-content fungerar (Tab → Enter hoppar till `<main>`)
 3. Route-changes annonseras till skärmläsare (verifierat med VoiceOver eller NVDA)
-4. Lighthouse PWA-score ≥ 90
+4. PWA-verifiering (per [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md)): (a) manifest uppfyller Chromes installability-kriterier — DevTools Application-panel visar installerbar, 0 manifest-fel; (b) offline-beteende verifieras maskinellt via Playwright (`context.setOffline(true)` → reload → cachat skal eller offline.html); (c) kvarvarande Lighthouse-kategorier (Performance/Accessibility/Best Practices) håller trösklar mot Fas 0-baselinen
 5. Offline-läge: ladda om sidan utan nät → offline.html visas eller cachat innehåll renderas
 6. Sektions-error: medvetet fel i en route → error boundary visar fallback utan att krascha shell
 7. App-error: medvetet fel i shell → app-error visar fallback med "ladda om"-knapp
@@ -976,6 +976,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 | 1.5 | 2026-06-11 | §4 Fas 3 scope-korrigering per [ADR-044](decisions/ADR-044-react-aria-components-demo-route.md) (Session 14 K1): react-aria-components som primitiv-bas (ersätter "React Aria-hooks som bas (`useButton`, `useTextField`, etc.)") + demo-route `/dev/primitives` vald över Storybook på byggplanens eget kostnadsvillkor. Beslutsspår i ADR:n; scope-texten och faktiskt bygge åter konsistenta. |
 | 1.6 | 2026-06-11 | §4 Fas 3.5 mönsterlista omskriven i components-termer per [ADR-044](decisions/ADR-044-react-aria-components-demo-route.md) (Session 15 K1): komponentnamn ur react-aria-components ersätter hooks-parenteserna (`useOverlay` etc.); användningsfallen per rad oförändrade. A11y-runner-arkitektur etablerad i [ADR-045](decisions/ADR-045-a11y-runner-arkitektur.md): CI-måltavla `/dev/primitives` via webServer-dev-server, 0 violations kanonisk tolerans, `test:a11y` i Test+Build-sfären. ADR-020:s hooks-formulering i §Scope är historiskt beslutsdokument och redigeras inte — API-stil styrs av ADR-044. |
 | **1.7** | **2026-06-11** | **Fas 3 + Fas 3.5 markerade KLARA** efter Session 15. §2 fas-tabell uppdaterad (båda ✅ KLAR + estimat-summa Fas 5 → Fas 7 = 10,5 sessioner). §4 Fas 3- och Fas 3.5-prompterna utökade med "✅ Slutförd"-paragrafer per Fas A-mallen — Fas 3-paragrafen noterar DoD 1+4 stängda mot 3.5-infran (ADR-020 sekvens-noten) + felmeddelande-wiring per [ADR-046](decisions/ADR-046-felmeddelande-wiring-describedby.md) + skärmläsar-defer (post-fix-omlyssning som öppen todo-tråd, ej blockerande). DoD-trail: runner 12/12 run 27343206661, gate-proof run 27337333679, "A11y-baseline godkänd"-gate i BUILD-LOG. |
+| 1.8 | 2026-06-12 | §4 Fas 5 DoD 4-modernisering per [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md) (Session 16 K1): "Lighthouse PWA-score ≥ 90" ersatt — Lighthouse tog bort PWA-kategorin i v12 (april 2024, per Chromes uppdaterade installability-kriterier); ny lydelse = installability-kriterier (DevTools, 0 manifest-fel) + maskinell offline-verifiering via Playwright + kvarvarande Lighthouse-kategorier mot Fas 0-baselinen. ADR:n kodifierar även Fas 5:s PWA-arkitektur: `vite-plugin-pwa` `injectManifest` (sw.js → src/sw.ts), Workbox offline-fallback-mönster, plugin-genererat manifest + ikoner, TanStack `networkMode: 'online'` + persistQueryClient-defer till Fas 6/8. |
 
 ---
 

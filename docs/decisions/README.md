@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-11
+updated: 2026-06-12
 review_by: 2026-11-15
 status: stable
 ---
@@ -89,6 +89,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-044](ADR-044-react-aria-components-demo-route.md) | react-aria-components som primitiv-bas (hooks = per-komponent-reservutgång) + demo-route `/dev/primitives` i stället för Storybook | Accepted | 3 |
 | [ADR-045](ADR-045-a11y-runner-arkitektur.md) | A11y-runner-arkitektur — CI-måltavla `/dev/primitives` via webServer-dev-server, 0 violations kanonisk tolerans, `test:a11y` i Test+Build-sfären | Accepted | 3.5 |
 | [ADR-046](ADR-046-felmeddelande-wiring-describedby.md) | Felmeddelande-wiring via aria-describedby (React Arias FieldError) — explicit aria-errormessage rivs; ARIA-UPGRADE §1-erratum | Accepted | 3.5 |
+| [ADR-047](ADR-047-pwa-arkitektur-fas-5.md) | PWA-arkitektur Fas 5 — `vite-plugin-pwa` `injectManifest` + Workbox offline-fallback + DoD 4-modernisering (Lighthouse v12 tog bort PWA-kategorin) | Accepted | 5 |
 
 ## Relaterade dokument
 

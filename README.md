@@ -117,7 +117,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - 5 React Aria-mönster: referens-implementationer på `/dev/patterns` + test-mallar + `docs/aria-patterns/`
   - "A11y-baseline godkänd"-gate dokumenterad i BUILD-LOG före Fas 6
 
-**Arkitekturbeslut:** 46 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
+**Arkitekturbeslut:** 47 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
 
 **Statistik (post-Fas 2, historisk ögonblicksbild):**
 
