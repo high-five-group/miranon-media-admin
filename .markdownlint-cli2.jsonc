@@ -35,7 +35,7 @@
     }
   },
 
-  "globs": ["docs/**/*.md", "tasks/*.md", "./*.md"],
+  "globs": ["docs/**/*.md", "tasks/*.md", "tasks/sessions/*.md", "./*.md"],
 
   "ignores": [
     "tasks/sessions/archive/**",
