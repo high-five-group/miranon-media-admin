@@ -189,6 +189,22 @@ jobs:
           bash scripts/test-check-adr-count.sh
           bash scripts/test-check-fetch-depth-invariant.sh
 
+      - name: Test gatekeeper script suites (frontmatter / checklists / hook)
+        # Per K6-auditen (Session 17): 3 av 6 grindvakts-testsviter körs
+        # tidigare endast manuellt — samma kadens-missmatch-felklass som
+        # ADR-039 stänger. Kör varje push; snabba (~31 s summa, Grind B-mätt);
+        # sandboxade i egna /tmp-kataloger med trap-cleanup (rör aldrig
+        # repots .git — test-pre-commit-hook fixture-git-init:ar i /tmp).
+        # Changed-files-villkor för scripts-domänen avfärdat som icke-
+        # trivialt — samma motivering som consistency-gates-steget ovan.
+        # STOPPA-beslut B (Session 17 K7): eget steg med ärligt namn i
+        # stället för att utöka ADR-039-stegets — stegnamn ska inte ljuga
+        # om sitt innehåll.
+        run: |
+          bash scripts/test-check-frontmatter.sh
+          bash scripts/test-check-public-checklists.sh
+          bash scripts/test-pre-commit-hook.sh
+
       - name: Install shellcheck (pinned v0.11.0)
         # Per ADR-033 § Säkerhet + ADR-029 § Third-party Actions-policy.
         # ubuntu-latest har shellcheck 0.9.0-1 pre-installerat (Image

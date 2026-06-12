@@ -49,3 +49,6 @@ supabase/.temp/
 # Odoo migration workbench — separat test-migrationsexperiment, ej del av app-bygget
 odoo-migration-workbench/
 package-lock.json.pre-k0åg
+
+# Lychee — lokal länk-cache vid --cache-körning (CI cachar via actions/cache)
+.lycheecache
