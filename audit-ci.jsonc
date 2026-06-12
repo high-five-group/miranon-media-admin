@@ -6,12 +6,25 @@
   // Moderate/low rapporteras men failar inte CI.
   "high": true,
 
-  // Allowlist är tom (K0åh, 2026-05-13). GHSA-rmmr-r34h-pfm5 togs bort efter att
+  // Allowlist-historik: GHSA-rmmr-r34h-pfm5 togs bort (K0åh, 2026-05-13) efter att
   // GitHub Security Advisory uppdaterade vulnerable_version_range från ">=0" till
   // "= 1.161.9" + "= 1.161.12" 2026-05-12 — vår installerade @tanstack/history@1.161.6
   // är pre-malware och inte längre i vulnerable range. audit-ci varnade explicit
   // "Consider not allowlisting advisory: GHSA-rmmr-r34h-pfm5". Se ADR-028 ## Updates.
   // Vid framtida incident-respons: fyll på allowlist + dokumentera per ADR-028
   // 5-stegs Konvention-flöde.
-  "allowlist": []
+  //
+  // GHSA-gv7w-rqvm-qjhr (esbuild >= 0.17.0 < 0.28.1, high, publicerad 2026-06-12):
+  // "Missing binary integrity verification in Deno module enables RCE via
+  // NPM_CONFIG_REGISTRY". Allowlistad 2026-06-13 per ADR-028 Konvention-flöde,
+  // Marcus-beslut alternativ C (Session 17 STOPPA-svar; beslutstrail
+  // tasks/sessions/2026-06-13-session-17.md). Motivering, disk-verifierad i
+  // C1-kontrollgrind: (1) dev-only — esbuild@0.27.7 nås enbart transitivt via
+  // vite@8 (devDependency) + tsx, ingår inte i produktions-bundlen; (2) vektorn
+  // gäller esbuilds Deno-modul med manipulerad NPM_CONFIG_REGISTRY vid
+  // binär-nedladdning — repots Deno-sida (supabase/functions) använder inte
+  // esbuild och npm-installen är lockfil-pinnad; (3) tidsbegränsad:
+  // EXPIRY 2026-07-13 — posten RIVS när vite/tsx bumpar esbuild >= 0.28.1
+  // (riv-todo i tasks/todo.md; bevaka dependabot-PR:ar för vite/tsx).
+  "allowlist": ["GHSA-gv7w-rqvm-qjhr"]
 }
