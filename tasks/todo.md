@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-06-11 (Session 15 ✅ KLAR — Fas 3 + Fas 3.5 ✅ KLARA med fas-avslut: axe-runner 12/12, gate-proof, mönsterbibliotek, ADR-045/046, L91–L94. Session 16-ingång: Fas 5 App-shell. Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
+*Senast uppdaterad: 2026-06-12 (Session 16 ✅ KLAR — Fas 5 App-shell ✅ KLAR med fas-avslut: PWA-grund ADR-047, app-skal på _authenticated, error-boundary-konsolidering, varaktiga DoD-tester, ikonrundor K5b–d, L96–L102. Nästa: Fas 5.5 Vertikal write-slice. Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -15,7 +15,16 @@
 
 ## Aktuellt fokus
 
-**Session 16 — Fas 5 App-shell (nästa session).** Per `docs/byggplan.md` §4: minimal app-shell + tab bar + skip-to-content + route announcer + responsivt 375/768/1024 + `prefers-reduced-motion`/`prefers-contrast:more` + error boundaries + Workbox SW + TanStack offline-config. ADR krävs. Ingångsläge: Fas 3 + 3.5 ✅ KLARA med fas-avslut; "A11y-baseline godkänd"-gate passerad; a11y-runner + mönsterbibliotek redo att konsumeras.
+**Fas 5.5 — Vertikal write-slice (nästa session).** Per `docs/byggplan.md` §4: "markera anmälan som betald" via befintlig `update-record` EF med ny `operationKey`; etablerar TanStack optimistic mutation-mönstret (ADR-016) + operations-allowlist-utvidgning + 3 Playwright-tester (2 deny, 1 allow). Inga nya EF-deploys. ADR-krav. Synk-gate 2-handshake mot `field-allowlists.ts` per operation (Fas B). Ingångsläge: Fas 5 ✅ KLAR med fas-avslut — skal, PWA-grund, error boundaries och offline-config på plats; estimat-summa Fas 5.5 → Fas 7 = 9,5 sessioner.
+
+### Session 16 ✅ KLAR (2026-06-12) — Fas 5 App-shell + fas-avslut
+
+- [x] **Fas 5 — App-shell** ✅ med fas-avslut. K1: ADR-047 + byggplan-DoD 4-modernisering (`6c47754`). K2: PWA-fundament — deps (`9a642c3`) + sw.ts/offline.html/manifest/ikoner/registrering (`cdbfe0e`). K3: API-caching-defer (`8137938`) + app-skal på `_authenticated` per STOPPA-utfall A (`f0d392c`). K4: två-lagers error boundaries + offline-config/indikator, Sentry.ErrorBoundary + RouteErrorFallback rivna (`7e558a3`). K5: varaktiga DoD-tester + Lighthouse-mätning (`ae049a5`+`3422e90`). K5b–d: ikon-kvalitet/maskable-geometri/rund favicon efter Marcus-omkollar (`4fea8f4`, `80a93ab`, `750be7e`). Alla Marcus-moment PASS; perf 81 accepterad mot Fynd 7-defern (ADR-047-not). Lessons L96–L102. Trail: [`tasks/sessions/2026-06-12-session-16.md`](sessions/2026-06-12-session-16.md).
+
+### Öppna trådar från Session 16
+
+- [ ] **Varaktigt app-boundary-test (DoD 7-noten)** — app-nivå-fallbacken är K4-ad-hoc-bevisad (temp-grepp, reverterade); ett varaktigt test kräver kontrollerat provider-fel utan skeppad trigger. Kandidat: komponent-test när vitest-infran landar (samma Gate 1-defer som no-flash-/logout-trådarna ovan).
+- [ ] **Favicon-/PWA-ikon-källkonsolidering (vid behov)** — två käll-SVG:er (`miranon-logo.svg` för PWA-ikoner via `pwa-assets.config.ts`; `favicon/favicon.svg` för flik-setet via `scripts/generate-favicons.mjs`) med logotyp-skala definierad på två ställen. Konsolidera om en tredje konsument dyker upp.
 
 ### Session 15 ✅ KLAR (2026-06-11) — Fas 3.5 A11y-baseline + Fas 3/3.5 fas-avslut
 
@@ -23,7 +32,7 @@
 
 ### Öppna trådar från Session 15
 
-- [ ] **Post-fix VoiceOver-omlyssning Input/Select** (Marcus, ej blockerande) — klassar VoiceOver/Safari-beteendet på describedby-defaulten efter ADR-046-rivningen; pre-fix-passet hörde dubbel-uppläsning, post-fix-DOM är en-vägs-verifierad. Skärmläsar-defer-beslut 2026-06-11.
+- [ ] **Post-fix VoiceOver-omlyssning Input/Select** (Marcus, ej blockerande) — klassar VoiceOver/Safari-beteendet på describedby-defaulten efter ADR-046-rivningen; pre-fix-passet hörde dubbel-uppläsning, post-fix-DOM är en-vägs-verifierad. Skärmläsar-defer-beslut 2026-06-11. *Kvarstår efter Session 16: Marcus VoiceOver-pass där täckte route-announcern, inte formulärfälten — momentet hoppades.*
 - [ ] **ACCESSIBILITY-CHECKLIST saknar frontmatter** — möjligt ADR-030-10-docs-list-gap (frontmatter-hooken rör inte filen); Marcus-beslut om listan ska utökas.
 - [ ] **react-spectrum#7425-omprövningsvillkoret (ADR-046)** — när AT-stödet för aria-errormessage är komplett och/eller React Aria byter mekanism: ompröva wiringen uppströms i primitiverna.
 

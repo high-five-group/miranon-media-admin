@@ -11,7 +11,7 @@ React-admin för Miranon Media — eventhantering, anmälningar och rapportering
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
 [![TanStack](https://img.shields.io/badge/TanStack-Router%20%2B%20Query%20%2B%20Table-FF4154)](package.json)
 
-> **Status:** Fas 3 — UI-primitiver + Fas 3.5 — A11y-baseline ✅ KLARA 2026-06-11 (Sessions 14–15). 6 primitiver på react-aria-components + CVA, axe-runner 12/12 med gate-proof-bevisad CI-grind, 5 React Aria-mönster i `docs/aria-patterns/`, "A11y-baseline godkänd"-gate passerad före Fas 6. **Nästa:** Fas 5 — App-shell (per [`docs/byggplan.md`](docs/byggplan.md) §4).
+> **Status:** Fas 5 — App-shell ✅ KLAR 2026-06-12 (Session 16). PWA-grund via `vite-plugin-pwa` injectManifest (ADR-047): offline-fallback, manifest + ikoner, installerbar. App-skal med tab bar, skip-länk och route announcer på `_authenticated`-layouten; error boundaries i två lager; TanStack offline-config. Varaktiga DoD-tester (shell + pwa-offline). **Nästa:** Fas 5.5 — Vertikal write-slice (per [`docs/byggplan.md`](docs/byggplan.md) §4).
 
 ## Dokumentation
 
@@ -90,7 +90,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 
 ## Projektstatus
 
-**Aktuellt fokus:** Fas 5 — App-shell (per `docs/byggplan.md` §4).
+**Aktuellt fokus:** Fas 5.5 — Vertikal write-slice: "markera anmälan som betald" (per `docs/byggplan.md` §4).
 
 **Klara faser:**
 
@@ -116,6 +116,11 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - CI-grinden gate-proof-bevisad (medvetet brytande branch → rött run på a11y-steget)
   - 5 React Aria-mönster: referens-implementationer på `/dev/patterns` + test-mallar + `docs/aria-patterns/`
   - "A11y-baseline godkänd"-gate dokumenterad i BUILD-LOG före Fas 6
+- ✅ **Fas 5** — App-shell (Session 16, 2026-06-12)
+  - PWA-grund: `vite-plugin-pwa` injectManifest porterar Fas 0-SW-skelettet till Workbox (ADR-047) — precache, offline.html-fallback, manifest + ikoner (lossless-genererade via `pwa-assets.config.ts`), installerbar (Marcus DevTools-kvitterad)
+  - App-skal på `_authenticated`: tab bar (4 flikar, 44px targets), skip-länk, route announcer (VoiceOver-kvitterad), offline-indikator; rund favicon ur `public/favicon/favicon.svg`
+  - Error boundaries konsoliderade till två lager: `SectionError` (defaultErrorComponent) + `AppErrorBoundary` (main.tsx)
+  - Varaktiga DoD-tester: `tests/e2e/shell.staging.test.ts` + `tests/e2e/pwa-offline.staging.test.ts` (miljö-självguardande dev/preview)
 
 **Arkitekturbeslut:** 47 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
 

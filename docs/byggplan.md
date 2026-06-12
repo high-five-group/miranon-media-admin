@@ -76,7 +76,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **2.5** | ✅ KLAR | Schema-kontrakt-sync — Session 13 2026-06-10. Status.ts 4→6, enum-granskning noll divergens, z.enum-hårdning + modell-smalning, 9 adapter-metoder A5-klassade (0 EF deployade — by design), inga död-kod-stubs (A5-utfall). Synk-gate 1 stängd före fasen. | 1 session (faktiskt) |
 | **3** | ✅ KLAR | UI-primitiver — Sessions 14–15, 2026-06-11. Alla 6 primitiver på react-aria-components + CVA (ADR-044) + /dev/primitives. DoD 1+4 stängda mot Fas 3.5-infran per ADR-020 sekvens-noten; felmeddelande-wiring per ADR-046. | 1 session bygge + DoD-stängning i Session 15 (estimat 2) |
 | **3.5** | ✅ KLAR | **A11y-baseline EGEN FAS** per P2 A1-utfall — Session 15, 2026-06-11. Axe-runner 12/12 (ADR-045), gate-proof-bevisad CI-grind, 5 mönster i `docs/aria-patterns/` + /dev/patterns, "A11y-baseline godkänd"-gate passerad före Fas 6. | 1 session (faktiskt) |
-| **5** | NY scope | **Förenklat** — minimal app-shell + tab bar + skip-to-content + route announcer + responsivt 375/768/1024 + `prefers-reduced-motion`/`prefers-contrast:more` + error boundaries app/sektion-nivå + Workbox SW + TanStack offline-config. **View Transitions, Speculation Rules, web-vitals, widget-error-boundary flyttade till Fas 7.** ADR krävs. | 1 session |
+| **5** | ✅ KLAR | App-shell — Session 16, 2026-06-12. Skal på `_authenticated` (STOPPA-utfall A) + tab bar + skip-länk + route announcer + Workbox SW via `vite-plugin-pwa` injectManifest (ADR-047) + offline.html + manifest/ikoner + error boundaries två lager (SectionError + AppErrorBoundary, ADR-038-tråden stängd) + TanStack `networkMode: 'online'` + offline-indikator. DoD 4 moderniserad per ADR-047 (Lighthouse v12 tog bort PWA-kategorin); Performance ärver Fynd 7-defern (ADR-047-noten). API-runtime-caching defer till Fas 6 (versionsrad 1.9). | 1 session (faktiskt) |
 | **5.5** | NY | Vertikal write-slice: "markera anmälan som betald" via befintlig `update-record` EF med ny `operationKey`. **Inga nya EF-deploys.** Etablerar TanStack optimistic mutation-mönster + operations-allowlist-utvidgning + 3 Playwright-tester (2 deny, 1 allow). ADR-krav. | 2 sessioner |
 | **6** | NY scope | **Strangler-fig-sekvens i fem sub-faser:** 6a Persons (0,75) → 6b Events (0,75) → 6c Registrations + Väntelista (1) → 6d Hem-aggregering (0,5) → 6e Mer villkorlig (0,5). Per-sub-fas: registrera operation i `field-allowlists.ts` + deny/allow-test grönt + vy-Playwright baseline. | 3,5 sessioner |
 | **6.5** | EJ ÄNDRAD | Aktivitetslogg (xAPI). `requestId`-mönstret från Fas A M7 ärvs. | 1 session |
@@ -87,7 +87,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 
 **Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR-013 (Fas 4-borttagningen).
 
-**Total estimat (Fas 5 → Fas 7, exkl. klara Fas 0/1/A/2/2.5/3/3.5 och defer:ade Fas 8/B/E):** 10,5 sessioner — uppdaterad 2026-06-11 efter Fas 3 (1 session bygge mot estimat 2) + Fas 3.5 (1 session, estimat hållet). Beräkning: 1 + 2 + 3,5 + 1 + 3 = 10,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
+**Total estimat (Fas 5.5 → Fas 7, exkl. klara Fas 0/1/A/2/2.5/3/3.5/5 och defer:ade Fas 8/B/E):** 9,5 sessioner — uppdaterad 2026-06-12 efter Fas 5 (1 session, estimat hållet). Beräkning: 2 + 3,5 + 1 + 3 = 9,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
 
 ---
 
@@ -449,7 +449,18 @@ Ingen mot tidigare faser. Blockerar Fas 3:s DoD (Fas 3 kan inte kvalitetsgranska
 
 ---
 
-### Fas 5 — App-shell (förenklad)
+### Fas 5 — App-shell (förenklad) (KLAR)
+
+✅ Slutförd 2026-06-12, Session 16 (1 session, estimat hållet). Alla 10 DoD-rader stängda — varav DoD 4 i moderniserad ADR-047-form och DoD 4c via Fynd 7-arvet (ADR-047-korrigeringsnoten). Leverans-noter:
+
+- **Skalet bor på `_authenticated`-layouten, inte `__root`** (STOPPA-utfall A via Chat): login/dev-ytorna bär egna `<main>`-landmarks och tab bar utanför inloggat läge vore död navigation — Filer-listans `__root.tsx`-rad nedan ersattes i praktiken av `src/routes/_authenticated.tsx` + `src/components/AppShell/`. RouteAnnouncer ligger globalt i `__root` (landmark-fri).
+- **Error-boundary-konsolidering till exakt två lager** (Session 16 K4, STOPPA-utfall A): `Sentry.ErrorBoundary` (__root) + `RouteErrorFallback` rivna → `SectionError` som `defaultErrorComponent` + `AppErrorBoundary` (main.tsx, täcker även provider-fel). ADR-038-tråden i todo stängd; boundaries renderar, createRoot-hooks rapporterar.
+- **DoD-trail:** varaktiga tester `tests/e2e/shell.staging.test.ts` (DoD 1/2/3-mekanisk/6/8/9/10 + offline-banner) + `tests/e2e/pwa-offline.staging.test.ts` (DoD 5/B3b, manifest-B3a-stöd); gröna runs 27410118400 (K5) → 27412742687 (K5d). Marcus-moment PASS: VoiceOver-annonsering, DevTools-installerbarhet, maskable safe zone (efter K5c-paddingfix), rund favicon (K5d). Lighthouse 81/100/100 mot baseline 86/100/96 — Perf per ADR-047-noten.
+- **DoD 5-not:** offline.html-grenen är ej naturligt testbar — `NavigationRoute` serverar precachat skal för alla navigationer; grenen nås bara vid skadad cache (konstlat grepp undveks). Kärnkravet (cachat skal offline) maskinellt bevisat.
+- **DoD 7-not:** app-boundaryn verifierad via K4:s ad hoc-pass (temp-grepp, exakt reverterade); varaktigt app-boundary-test → backlogg i todo.
+- **Ikon-rundorna K5b–K5d:** assets-generatorns palett-kvantisering fixad (lossless-PNG via `pwa-assets.config.ts`), maskable-padding 0.45 (hörn-radie-geometri, kvot 0,868), rund favicon med vit platta ur `public/favicon/favicon.svg` (`scripts/generate-favicons.mjs`).
+
+Korsreferens: `tasks/sessions/2026-06-12-session-16.md` Del 2.
 
 #### Mål
 
@@ -984,6 +995,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 | **1.7** | **2026-06-11** | **Fas 3 + Fas 3.5 markerade KLARA** efter Session 15. §2 fas-tabell uppdaterad (båda ✅ KLAR + estimat-summa Fas 5 → Fas 7 = 10,5 sessioner). §4 Fas 3- och Fas 3.5-prompterna utökade med "✅ Slutförd"-paragrafer per Fas A-mallen — Fas 3-paragrafen noterar DoD 1+4 stängda mot 3.5-infran (ADR-020 sekvens-noten) + felmeddelande-wiring per [ADR-046](decisions/ADR-046-felmeddelande-wiring-describedby.md) + skärmläsar-defer (post-fix-omlyssning som öppen todo-tråd, ej blockerande). DoD-trail: runner 12/12 run 27343206661, gate-proof run 27337333679, "A11y-baseline godkänd"-gate i BUILD-LOG. |
 | 1.8 | 2026-06-12 | §4 Fas 5 DoD 4-modernisering per [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md) (Session 16 K1): "Lighthouse PWA-score ≥ 90" ersatt — Lighthouse tog bort PWA-kategorin i v12 (april 2024, per Chromes uppdaterade installability-kriterier); ny lydelse = installability-kriterier (DevTools, 0 manifest-fel) + maskinell offline-verifiering via Playwright + kvarvarande Lighthouse-kategorier mot Fas 0-baselinen. ADR:n kodifierar även Fas 5:s PWA-arkitektur: `vite-plugin-pwa` `injectManifest` (sw.js → src/sw.ts), Workbox offline-fallback-mönster, plugin-genererat manifest + ikoner, TanStack `networkMode: 'online'` + persistQueryClient-defer till Fas 6/8. |
 | 1.9 | 2026-06-12 | §4 Fas 5 Scope/Inte scope-justering (Session 16 K3, Marcus-kvitterat via Chat): runtime-caching av API-anrop (network-first, `networkTimeoutSeconds`) flyttad från Scope till Inte scope med defer till Fas 6 där API-konsumtionsmönstren byggs (ADR-017-polling) — autentiserade svar med persondata i Cache Storage kräver säkerhetsgenomgång, samma rationale som [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md) B5:s persistQueryClient-defer. Scope-raden för Workbox SW preciserad till "cache-first för statiska assets (precache), offline.html-fallback"; Inte scope-sektionen omstrukturerad med käll-markering per post (Fas 7 per B3 vs Session 16 K3-defer). K2-flaggan från transparens-rapporten stängd med detta beslutsspår. |
+| **1.10** | **2026-06-12** | **Fas 5 markerad KLAR** efter Session 16. §2 fas-tabell uppdaterad (Fas 5 ✅ KLAR + estimat-summa Fas 5.5 → Fas 7 = 9,5 sessioner). §4 Fas 5-prompten utökad med "✅ Slutförd"-paragraf per Fas A-mallen — inkl. skal-på-`_authenticated`-avvikelsen från Filer-listan (STOPPA-utfall A), error-boundary-konsolideringen, DoD 4c-omklassningen per [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md)-korrigeringsnoten, DoD 5-/DoD 7-noterna och K5b–d-ikonrundorna. DoD-trail: shell-/pwa-testsviter + runs 27410118400→27412742687 + Marcus-momentens PASS-kvittens. |
 
 ---
 

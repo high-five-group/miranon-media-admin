@@ -7,6 +7,38 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-12
+
+### Added — Fas 5: App-shell (Session 16)
+
+- PWA-grund per ADR-047: `vite-plugin-pwa` med `injectManifest` — Fas 0-SW-skelettet porterat till `src/sw.ts` (Workbox precache + `NavigationRoute` + offline-fallback), `public/offline.html` (fristående, prefers-color-scheme), manifest med namn/standalone/`lang: sv` + ikoner 192/512/maskable, registrering via `virtual:pwa-register`
+- App-skal på `_authenticated`-layouten: `AppShell` (header + `main#main` + botten-fäst tab bar med 4 flikar, 44 px touch-targets, `aria-current`), `SkipLink` (programmatisk fokus till `#main`), `RouteAnnouncer` (globalt i `__root`; `staticData.title`-konvention + `document.title`-synk), `OfflineIndicator` (TanStack `onlineManager`, alltid-monterad live-region)
+- Placeholder-routes `/event`, `/personer`, `/mer` + DEV-guardad feltrigger `/dev-fel`
+- Error boundaries i två lager: `SectionError` (MessageBox-baserad `defaultErrorComponent`; reset + invalidate) + `AppErrorBoundary` (beroende-snål klasskomponent i `main.tsx`, täcker provider-fel)
+- TanStack offline-config: explicit `networkMode: 'online'` på queries + mutations (ADR-047 B5; persistQueryClient defer till Fas 6/8)
+- Varaktiga DoD-tester: `tests/e2e/shell.staging.test.ts` (skal, skip-länk, announcer, sektions-fel, offline-banner, reduced-motion, responsivt, axe) + `tests/e2e/pwa-offline.staging.test.ts` (SW-precache → cachat skal offline; manifest-check) — miljö-självguardande dev/preview
+- Ikon-pipeline: `pwa-assets.config.ts` (lossless-PNG — generatorns quality-60-kvantisering bortvald; maskable padding 0.45 per hörn-radie-geometri) + `scripts/generate-favicons.mjs` (rund favicon med vit platta ur `public/favicon/favicon.svg`, dependency-fri PNG-ICO)
+- ADR-047 (PWA-arkitektur + DoD 4-modernisering — Lighthouse v12 tog bort PWA-kategorin) med K-sista-korrigeringsnot (Performance ärver Fynd 7-defern; Fas 5-ingångsvärde 81)
+- Lessons L96–L102 i `tasks/lessons.md`
+
+### Changed
+
+- Fel-hanterings-arkitekturen konsoliderad (Session 16 K4, stänger Session 7-todo-tråden): `Sentry.ErrorBoundary` riven ur `__root.tsx`, `RouteErrorFallback` ersatt av `SectionError` — boundaries renderar, createRoot-hooks rapporterar (ADR-038-korrigeringsnot)
+- `src/main.tsx`: manuell SW-registrering ersatt av plugin-mekanismen; devtools-knapparna till topp-positioner (tab baren äger botten-ytan)
+- `docs/byggplan.md`: Fas 5 ✅ KLAR (§2 + §4 Slutförd-paragraf, versionshistorik 1.8–1.10); API-runtime-caching defer till Fas 6 (K3-beslutsspår)
+- Browser-favicon: rund vit platta (`favicon.svg` cirkel + omgenererat ICO/PNG/apple-touch-set) wirad explicit i `index.html`
+- `tsconfig.tests.json`: DOM-lib (page.evaluate-callbacks typecheckas i tests-projektet)
+
+### Removed
+
+- `public/sw.js` (Fas 0-skelettet — porterat till `src/sw.ts`), `RouteErrorFallback.tsx`, K2:s rot-`favicon.ico` + `pwa-64x64.png` + full-bleed `apple-touch-icon-180x180.png`, Fas 0-favicon-resterna `site.webmanifest` + `web-app-manifest-192/512.png`
+
+### Fixed
+
+- Maskable-ikonen höll sig inte inom maskens safe-cirkel (kantmått ≠ hörn-radie) — padding 0.45, uppmätt kvot 0,868 (K5c)
+- PWA-ikonernas palett-kvantisering (13 distinkta färger i 192:an → 432 efter lossless-fix, K5b)
+- Latenta docs-fillänkar brutna av K2-/K4-raderingar (`public/sw.js`, `RouteErrorFallback.tsx`) — exponerade av changed-files-skippade länk-jobb, lagade med code-spans + ADR-038-korrigeringsnot
+
 ## [0.5.0] - 2026-06-11
 
 ### Added — Fas 3: UI-primitiver + Fas 3.5: A11y-baseline (Sessions 14–15)

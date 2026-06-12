@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-11
+updated: 2026-06-12
 review_by: 2026-11-15
 status: stable
 ---
@@ -12,8 +12,8 @@ status: stable
 
 > **Levande dokument.** Den här planen uppdateras löpande när vi går vidare. När en fas är klar förvandlas den till "vad vi har gjort, och varför". När nästa fas planeras får den en plats här. Ingen behöver gissa var vi är — det står i det här dokumentet.
 >
-> **Version 3** — Fas 3 + Fas 3.5 KLARA (Sessions 14–15). Senast uppdaterad: 2026-06-11.
-> **Status just nu:** Fas 0, Fas 1, Fas A, Fas 2, Fas 2.5, Fas 3 och Fas 3.5 är klara. **Fas 5 (skalet — det du ser först) är nästa.**
+> **Version 3** — Fas 5 KLAR (Session 16). Senast uppdaterad: 2026-06-12.
+> **Status just nu:** Fas 0, Fas 1, Fas A, Fas 2, Fas 2.5, Fas 3, Fas 3.5 och Fas 5 är klara. **Fas 5.5 (första riktiga interaktionen — markera betalning) är nästa.**
 > **Föregångare:** [v2](../archive/BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md) (april 2026, arkiverad 2026-05-09) och [v1](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md) (arkiverad 2026-05-06). v3 ersätter v2 och speglar byggplan-revisionen från maj 2026.
 
 <!-- markdownlint-disable-next-line MD028 -->  <!-- BYGGPLAN-LÄTTLÄST formatering (pedagogisk struktur per ADR-025) -->
@@ -100,8 +100,8 @@ Det är inget löfte och ingen deadline — det är en realistisk gissning baser
 | **Fas 2.5** | Dubbelkoll på datan | ✅ Klar (10 juni) | 1 pass |
 | **Fas 3** | Byggklossar — knappar, fält, dialoger | ✅ Klar (11 juni) | 1 pass (faktiskt, planerat 2) |
 | **Fas 3.5** | Tillgänglighetstest — för alla som ska använda appen | ✅ Klar (11 juni) | 1 pass |
-| **Fas 5** | Skalet — det du ser först | 🟡 Nästa | 1 pass |
-| **Fas 5.5** | Första riktiga interaktionen — markera betalning | ⏳ | 2 pass |
+| **Fas 5** | Skalet — det du ser först | ✅ Klar (12 juni) | 1 pass |
+| **Fas 5.5** | Första riktiga interaktionen — markera betalning | 🟡 Nästa | 2 pass |
 | **Fas 6** | Alla rum — Hem, Event, Personer, Mer (i fem delar) | ⏳ | 3,5 pass |
 | **Fas 6.5** | "Vad har hänt?" — automatisk historik | ⏳ | 1 pass |
 | **Fas 7** | Slutbesiktning — gör appen redo att publiceras | ⏳ | 3 pass |
@@ -286,7 +286,9 @@ Det här är en specialfas som tillkom efter att vi noggrant gick igenom vad det
 ### Fas 5: Skalet — det du ser först
 
 <!-- markdownlint-disable-next-line MD036 -->
-*1 arbetspass*
+*1 arbetspass · ✅ klar 12 juni 2026 (Session 16)*
+
+**Så gick det:** Klart på ett pass, precis som planerat. Appen har nu sitt skal: fyra flikar längst ner, ett sidhuvud, och en "Hoppa till innehåll"-länk för den som navigerar med tangentbord. Skärmläsare får sidans namn uppläst vid varje sidbyte, och hela skalet klarade tillgänglighetstesterna utan en enda anmärkning. Appen går nu att installera på telefonens hemskärm som en riktig app, och öppnar du den utan internet visas den ändå — med en liten banner som berättar att du är offline och ser senast hämtade data. Går något sönder i en del av appen visas ett vänligt felmeddelande bara där; resten fortsätter fungera. Marcus provlyssnade själv med skärmläsaren VoiceOver, kontrollerade att appen går att installera och godkände ikonerna — appikonen justerades i ett par omgångar så att logotypen håller sig säkert innanför den runda ytan, och webbläsarflikens ikon är nu den runda med vit bakgrund, samma som på miranon.se. Två små skillnader mot planen nedan: flikarna är än så länge text utan ikoner, och offline-bannern visar texten "Du är offline — visar senast hämtade data" (tidsstämpeln kommer när det finns riktig data att stämpla).
 
 > **Hopp i numreringen från 3.5 till 5:** Den ursprungliga Fas 4 (DataTable) togs bort när vi insåg att listor räcker. Numreringen lämnades orörd för att undvika förvirring i arkivet.
 
@@ -554,7 +556,7 @@ Det här är de externa verktyg och tjänster appen står på. Du behöver inte 
 
 | Version | Datum | Ändring |
 |---------|-------|---------|
-| **v3** | **2026-05-09** (initial), **2026-05-13** (Fas 2 KLAR) | **Aktuell.** Speglar byggplan-revisionen från maj 2026 (P0–P3a). Lagt till: Fas A (säkerhetsvakten), Fas 2.5 (dubbelkoll på datan), Fas 3.5 (tillgänglighetstest), Fas 5.5 (första riktiga interaktionen), Fas 6 uppdelad i 6a–6e (strangler-fig), Fas 8 (framtid), Fas B (Airtable-städning som parallellspår), Fas E (databasbyte). Fas 5 förenklad — fyra polish-funktioner flyttade till Fas 7. Skriven i du-form. Senast uppdaterad-stämpel + status-rad i header. **Uppdaterad 2026-05-13:** Fas 2 — Routing + Auth markerad KLAR efter Sessions 4 + 5 + 5b. Defense-in-depth tre-skikt-arkitektur levererad. Fas 2.5 (schema-kontrakt-sync) flyttad till "Det här bygger vi nu". Status-rad och "Senast uppdaterad"-stämpel uppdaterade per ADR-025 levande dokument-disciplin. **Uppdaterad 2026-06-10:** Fas 2.5 — Dubbelkoll på datan markerad KLAR efter Session 13 (1 pass, estimat hållet). "Så gick det"-stycke tillagt. Fas-tabellen rättad: Fas 2-raden stod kvar som "🟡 Nästa" sedan 2026-05-13 (drift, nu ✅ Klar) och Fas 3 är nu 🟡 Nästa. **Uppdaterad 2026-06-11:** Fas 3 (Byggklossar) + Fas 3.5 (Tillgänglighetstest) markerade KLARA efter Sessions 14–15 — byggklossarna på 1 pass i stället för planerade 2. "Så gick det"-stycken tillagda för båda. Fas-tabell + status-rad uppdaterade (Fas 5 är nu 🟡 Nästa). Kvarlämnad övergångstext under en dubblerad "Fas 3: UI-primitiver"-rubrik i sektion 7 städad (rest från 2026-05-13-flytten). |
+| **v3** | **2026-05-09** (initial), **2026-05-13** (Fas 2 KLAR) | **Aktuell.** Speglar byggplan-revisionen från maj 2026 (P0–P3a). Lagt till: Fas A (säkerhetsvakten), Fas 2.5 (dubbelkoll på datan), Fas 3.5 (tillgänglighetstest), Fas 5.5 (första riktiga interaktionen), Fas 6 uppdelad i 6a–6e (strangler-fig), Fas 8 (framtid), Fas B (Airtable-städning som parallellspår), Fas E (databasbyte). Fas 5 förenklad — fyra polish-funktioner flyttade till Fas 7. Skriven i du-form. Senast uppdaterad-stämpel + status-rad i header. **Uppdaterad 2026-05-13:** Fas 2 — Routing + Auth markerad KLAR efter Sessions 4 + 5 + 5b. Defense-in-depth tre-skikt-arkitektur levererad. Fas 2.5 (schema-kontrakt-sync) flyttad till "Det här bygger vi nu". Status-rad och "Senast uppdaterad"-stämpel uppdaterade per ADR-025 levande dokument-disciplin. **Uppdaterad 2026-06-10:** Fas 2.5 — Dubbelkoll på datan markerad KLAR efter Session 13 (1 pass, estimat hållet). "Så gick det"-stycke tillagt. Fas-tabellen rättad: Fas 2-raden stod kvar som "🟡 Nästa" sedan 2026-05-13 (drift, nu ✅ Klar) och Fas 3 är nu 🟡 Nästa. **Uppdaterad 2026-06-11:** Fas 3 (Byggklossar) + Fas 3.5 (Tillgänglighetstest) markerade KLARA efter Sessions 14–15 — byggklossarna på 1 pass i stället för planerade 2. "Så gick det"-stycken tillagda för båda. Fas-tabell + status-rad uppdaterade (Fas 5 är nu 🟡 Nästa). Kvarlämnad övergångstext under en dubblerad "Fas 3: UI-primitiver"-rubrik i sektion 7 städad (rest från 2026-05-13-flytten). **Uppdaterad 2026-06-12:** Fas 5 (Skalet) markerad KLAR efter Session 16 (1 pass, estimat hållet). "Så gick det"-stycke tillagt — appen är nu installerbar, fungerar offline och har navigationsskal med fullt godkända tillgänglighetstester. Fas-tabell + status-rad uppdaterade (Fas 5.5 är nu 🟡 Nästa). |
 | v2 | 2026-04-13 | Tonomställning från "om Lotta" till "till dig". Strukturmedling. **Frusen** efter v3 — beskrev planen innan byggplan-revisionen. |
 | v1 | 2026-04-13 | Första versionen. Skriven om Lotta i tredje person. **[Arkiverad](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md)** 2026-05-06 i Pre-Fas-2-städningen. |
 
