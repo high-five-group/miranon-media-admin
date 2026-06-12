@@ -17,6 +17,17 @@
 
 **Fas 5.5 — Vertikal write-slice (nästa session).** Per `docs/byggplan.md` §4: "markera anmälan som betald" via befintlig `update-record` EF med ny `operationKey`; etablerar TanStack optimistic mutation-mönstret (ADR-016) + operations-allowlist-utvidgning + 3 Playwright-tester (2 deny, 1 allow). Inga nya EF-deploys. ADR-krav. Synk-gate 2-handshake mot `field-allowlists.ts` per operation (Fas B). Ingångsläge: Fas 5 ✅ KLAR med fas-avslut — skal, PWA-grund, error boundaries och offline-config på plats; estimat-summa Fas 5.5 → Fas 7 = 9,5 sessioner.
 
+### Session 17 (pågående) — repo-hygien: öppna trådar
+
+- [ ] **Riv allowlist-posten GHSA-gv7w-rqvm-qjhr** när esbuild ≥ 0.28.1 nås via
+  vite/tsx-bump. Verifierbart sluttillstånd: `npm ls esbuild` visar ≥ 0.28.1
+  OCH posten borttagen ur `audit-ci.jsonc` + CI grön. Expiry i posten:
+  2026-07-13 — bevaka dependabot-PR:ar för vite/tsx.
+- [ ] **Hub-ärende (Marcus STOPPA-val A, Session 17):** marcus-system har två
+  ospårade kataloger (`odoo-events-transcripts-openai/`,
+  `youtube-transcripts/`) — granska + besluta committa/flytta/ignorera i en
+  hub-session.
+
 ### Session 16 ✅ KLAR (2026-06-12) — Fas 5 App-shell + fas-avslut
 
 - [x] **Fas 5 — App-shell** ✅ med fas-avslut. K1: ADR-047 + byggplan-DoD 4-modernisering (`6c47754`). K2: PWA-fundament — deps (`9a642c3`) + sw.ts/offline.html/manifest/ikoner/registrering (`cdbfe0e`). K3: API-caching-defer (`8137938`) + app-skal på `_authenticated` per STOPPA-utfall A (`f0d392c`). K4: två-lagers error boundaries + offline-config/indikator, Sentry.ErrorBoundary + RouteErrorFallback rivna (`7e558a3`). K5: varaktiga DoD-tester + Lighthouse-mätning (`ae049a5`+`3422e90`). K5b–d: ikon-kvalitet/maskable-geometri/rund favicon efter Marcus-omkollar (`4fea8f4`, `80a93ab`, `750be7e`). Alla Marcus-moment PASS; perf 81 accepterad mot Fynd 7-defern (ADR-047-not). Lessons L96–L102. Trail: [`tasks/sessions/2026-06-12-session-16.md`](sessions/2026-06-12-session-16.md).
