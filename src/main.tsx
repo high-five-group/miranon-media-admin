@@ -1,3 +1,4 @@
+import { registerSW } from 'virtual:pwa-register';
 import * as Sentry from '@sentry/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
@@ -96,14 +97,10 @@ createRoot(rootEl, {
   </StrictMode>,
 );
 
-// [GA] Registrera service worker (tom skelett i Fas 0, Workbox i Fas 5)
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      // Tyst fallback — service workern utökas med Workbox i Fas 5
-    });
-  });
-}
+// Registrera Workbox-SW:n (Fas 5, ADR-047) via vite-plugin-pwa.
+// registerSW är no-op i dev (devOptions.enabled: false) och guardar själv
+// mot miljöer utan serviceWorker-stöd.
+registerSW();
 
 // [GA] Rapportera Core Web Vitals
 reportWebVitals();
