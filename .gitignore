@@ -21,6 +21,9 @@ dist-ssr
 # TanStack Router — genererad
 src/routeTree.gen.ts
 
+# TanStack devtools/plugin — lokal cache
+.tanstack/
+
 # Playwright
 /playwright-report
 /blob-report
