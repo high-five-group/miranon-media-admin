@@ -135,8 +135,8 @@ test.describe('App-skal (Fas 5 DoD)', () => {
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .analyze();
-    expect(
-      results.violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.length} noder`),
-    ).toEqual([]);
+    expect(results.violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.length} noder`)).toEqual(
+      [],
+    );
   });
 });

@@ -32,7 +32,10 @@ test.describe('PWA offline (ADR-047 B3b)', () => {
     request,
   }) => {
     const res = await request.get('/manifest.webmanifest');
-    test.skip(!res.ok(), 'manifest.webmanifest saknas — kräver byggd preview');
+    // Dev-server svarar 200 med SPA-fallback-HTML (manifestet genereras
+    // bara vid build) — guarda på content-type, inte enbart status.
+    const isManifest = res.ok() && (res.headers()['content-type'] ?? '').includes('manifest+json');
+    test.skip(!isManifest, 'manifest.webmanifest serveras ej — kräver byggd preview');
     const manifest = await res.json();
     expect(manifest.name).toBe('Miranon Media Admin');
     expect(manifest.display).toBe('standalone');
