@@ -1153,9 +1153,9 @@ K3: API-runtime-caching-defer till Fas 6 (`8137938`) + app-skal på `_authentica
 STOPPA-utfall A: tab bar, skip-länk, RouteAnnouncer i `__root`, staticData.title-konvention
 (`f0d392c`). K4: error-boundary-konsolidering till två lager — `Sentry.ErrorBoundary` +
 `RouteErrorFallback` rivna, `SectionError` + `AppErrorBoundary` in; `networkMode: 'online'` +
-OfflineIndicator (`7e558a3`). K5: varaktiga DoD-tester (shell + pwa-offline, miljö-självguardande)
-+ Lighthouse 81/100/100 mot baseline 86/100/96 — Perf accepterad mot Fynd 7-defern
-(`ae049a5` + `3422e90`). K5b–d: ikon-kvalitet (lossless, `pwa-assets.config.ts`),
+OfflineIndicator (`7e558a3`). K5: varaktiga DoD-tester (shell + pwa-offline,
+miljö-självguardande) samt Lighthouse 81/100/100 mot baseline 86/100/96 — Perf accepterad mot
+Fynd 7-defern (`ae049a5` + `3422e90`). K5b–d: ikon-kvalitet (lossless, `pwa-assets.config.ts`),
 maskable-geometri (padding 0.45, hörn-radie-kvot 0,868), rund favicon
 (`4fea8f4`, `80a93ab`, `750be7e`).
 
