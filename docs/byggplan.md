@@ -463,15 +463,21 @@ Minimal app-shell som tål mobil-först-användning (Lotta på telefon i mötet)
 - Responsivt: 375 / 768 / 1024 px breakpoints
 - `prefers-reduced-motion` + `prefers-contrast: more` respekt
 - Error boundaries: app-nivå + sektion-nivå (per route)
-- Workbox SW: cache-first för statiska assets, network-first för API, offline.html-fallback
+- Workbox SW: cache-first för statiska assets (precache), offline.html-fallback
 - TanStack Query offline-config (`networkMode: 'offlineFirst'` för läs, `'online'` för skriv)
 
-#### Inte scope (flyttat till Fas 7 per B3)
+#### Inte scope
+
+Flyttat till Fas 7 per B3 (ADR-018):
 
 - View Transitions API
 - Speculation Rules
 - web-vitals-mätning
 - Widget-error-boundary (mer granulär än sektion-nivå)
+
+Defer per Session 16 K3:
+
+- Runtime-caching av API-anrop (network-first, `networkTimeoutSeconds`) — defer till Fas 6 där API-konsumtionsmönstren byggs (ADR-017-polling): autentiserade svar med persondata i Cache Storage kräver säkerhetsgenomgång, samma rationale som ADR-047 B5:s persistQueryClient-defer. Beslut Session 16 K3.
 
 #### Beroenden
 
@@ -977,6 +983,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 | 1.6 | 2026-06-11 | §4 Fas 3.5 mönsterlista omskriven i components-termer per [ADR-044](decisions/ADR-044-react-aria-components-demo-route.md) (Session 15 K1): komponentnamn ur react-aria-components ersätter hooks-parenteserna (`useOverlay` etc.); användningsfallen per rad oförändrade. A11y-runner-arkitektur etablerad i [ADR-045](decisions/ADR-045-a11y-runner-arkitektur.md): CI-måltavla `/dev/primitives` via webServer-dev-server, 0 violations kanonisk tolerans, `test:a11y` i Test+Build-sfären. ADR-020:s hooks-formulering i §Scope är historiskt beslutsdokument och redigeras inte — API-stil styrs av ADR-044. |
 | **1.7** | **2026-06-11** | **Fas 3 + Fas 3.5 markerade KLARA** efter Session 15. §2 fas-tabell uppdaterad (båda ✅ KLAR + estimat-summa Fas 5 → Fas 7 = 10,5 sessioner). §4 Fas 3- och Fas 3.5-prompterna utökade med "✅ Slutförd"-paragrafer per Fas A-mallen — Fas 3-paragrafen noterar DoD 1+4 stängda mot 3.5-infran (ADR-020 sekvens-noten) + felmeddelande-wiring per [ADR-046](decisions/ADR-046-felmeddelande-wiring-describedby.md) + skärmläsar-defer (post-fix-omlyssning som öppen todo-tråd, ej blockerande). DoD-trail: runner 12/12 run 27343206661, gate-proof run 27337333679, "A11y-baseline godkänd"-gate i BUILD-LOG. |
 | 1.8 | 2026-06-12 | §4 Fas 5 DoD 4-modernisering per [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md) (Session 16 K1): "Lighthouse PWA-score ≥ 90" ersatt — Lighthouse tog bort PWA-kategorin i v12 (april 2024, per Chromes uppdaterade installability-kriterier); ny lydelse = installability-kriterier (DevTools, 0 manifest-fel) + maskinell offline-verifiering via Playwright + kvarvarande Lighthouse-kategorier mot Fas 0-baselinen. ADR:n kodifierar även Fas 5:s PWA-arkitektur: `vite-plugin-pwa` `injectManifest` (sw.js → src/sw.ts), Workbox offline-fallback-mönster, plugin-genererat manifest + ikoner, TanStack `networkMode: 'online'` + persistQueryClient-defer till Fas 6/8. |
+| 1.9 | 2026-06-12 | §4 Fas 5 Scope/Inte scope-justering (Session 16 K3, Marcus-kvitterat via Chat): runtime-caching av API-anrop (network-first, `networkTimeoutSeconds`) flyttad från Scope till Inte scope med defer till Fas 6 där API-konsumtionsmönstren byggs (ADR-017-polling) — autentiserade svar med persondata i Cache Storage kräver säkerhetsgenomgång, samma rationale som [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md) B5:s persistQueryClient-defer. Scope-raden för Workbox SW preciserad till "cache-first för statiska assets (precache), offline.html-fallback"; Inte scope-sektionen omstrukturerad med käll-markering per post (Fas 7 per B3 vs Session 16 K3-defer). K2-flaggan från transparens-rapporten stängd med detta beslutsspår. |
 
 ---
 
