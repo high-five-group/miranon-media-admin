@@ -4,6 +4,16 @@
 - Datum: 2026-06-12
 - Fas: 5
 
+> **Korrigering (Session 16 K-sista, 2026-06-12):** B3c-precisering per
+> Marcus-kvitterat beslut vid fas-avslutet. (i) Accessibility + Best
+> Practices håller trösklar mot Fas 0-baselinen — uppfyllt (100/100 mot
+> 100/96). (ii) Performance-jämförelsen mot Fas 0 mäter ackumulerad, redan
+> deferrad bundle-skuld (todo Fynd 7: Fas 2+3-kod, 324 → 865 kB raw), inte
+> någon Fas 5-regression — Performance ärver därför Fynd 7-defern och mäts
+> mot perf-budgeten i Fas 7; Fas 5-mätningen 81 dokumenteras som
+> ingångsvärde. Trail: Session 16 K5 STOPPA-rapport + Marcus-kvittens.
+> Beslutstexten nedan bevaras oförändrad (immutabilitet).
+
 ## Kontext
 
 Fas 5 bygger ut Fas 0:s SW-skelett (`public/sw.js`, no-op fetch, kommentar
