@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-27
+updated: 2026-06-13
 review_by: 2026-11-15
 status: stable
 ---
@@ -51,6 +51,23 @@ npm run build               # bygg grön
 ## Filstruktur
 
 För aktuell struktur, kör `tree -L 3 -I 'node_modules|dist|.git|coverage|test-results|playwright/.auth'`.
+
+---
+
+## Synk-horisont och arkiv-åtkomst
+
+claude.ai-projektkunskapen synkar INTE: `tasks/sessions/archive/`,
+`docs/archive/` (+ `package-lock.json` om fil-urval stöds). Allt finns
+kvar i git — exkluderingen gäller endast Chat-ytans synk (ADR-048).
+
+Regel för Chat: noll träffar i projektkunskapen på historiskt material
+(arkiverade sessionsdok, superceded specs, frusna analyser) betyder INTE
+att det saknas. Historik utanför synk-horisonten hämtas VIA CODE
+(LÄS→RAPPORTERA mot lokal disk/git) eller genom att Marcus klistrar
+innehållet — anta aldrig att materialet inte existerar.
+
+`docs/research/` ligger kvar i synken tills Fas 6 är avslutad
+(konsumeras aktivt av Fas 6) och exkluderas därefter (ADR-048 punkt 3).
 
 ---
 

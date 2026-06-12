@@ -34,7 +34,7 @@ React-admin för Miranon Media — eventhantering, anmälningar och rapportering
 - [`SECURITY.md`](SECURITY.md) — säkerhetspolicy
 - [`CHANGELOG.md`](CHANGELOG.md) — versionshistorik
 
-### Logs
+### Arkiv & historik
 
 - [`docs/archive/`](docs/archive/) — superceded artefakter + historiska arbetsmaterial (gap-analysis, byggplan-revision-inventory)
 - [`tasks/sessions/`](tasks/sessions/) — sessions-trail (aktiv + arkiv)
