@@ -27,6 +27,9 @@
   ospårade kataloger (`odoo-events-transcripts-openai/`,
   `youtube-transcripts/`) — granska + besluta committa/flytta/ignorera i en
   hub-session.
+- [ ] **Vid A-track/status-unifiering:** pröva om "Tillägg Fråga 1"-substansen
+  i `docs/archive/Code-verification-of-codex-analysis.md` ska lyftas till
+  spec/ADR så att byggplan-DoD-guardens pekare kan pensioneras.
 
 ### Session 16 ✅ KLAR (2026-06-12) — Fas 5 App-shell + fas-avslut
 

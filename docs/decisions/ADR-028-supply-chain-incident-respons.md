@@ -124,3 +124,48 @@ K17-disciplin (live security-state-verifikation vid sessionsstart, [`tasks/lesso
 - Advisory-snäv-uppdatering (live-data): <https://github.com/advisories/GHSA-rmmr-r34h-pfm5> — kontrollera `updated_at`-fält + `vulnerable_version_range` per `vulnerabilities[]`-objekt
 - K0åh sessionsdok-trail: `tasks/sessions/archive/2026-05/2026-05-13-ci-optimering.md` (K-sista bake-in)
 - K0åh commit-trail: `0d19ede` (audit-ci.jsonc) + denna commit (docs)
+
+### 2026-06-13 — GHSA-gv7w-rqvm-qjhr allowlistad (esbuild Deno-vektor, ej tillämplig)
+
+GitHub Security Advisory Database publicerade GHSA-gv7w-rqvm-qjhr
+("esbuild: Missing binary integrity verification in Deno module enables
+RCE via NPM_CONFIG_REGISTRY", severity high, sårbart intervall >=0.17.0
+<0.28.1) 2026-06-12 20:08 UTC — ~2 h före Session 17:s första CI-run,
+vilket gjorde audit-jobbet rött på alla pushar.
+
+**Triggerande observation (källa + datum):**
+
+- CI run 27445663233 (2026-06-13): "Audit dependencies" FAIL på
+  GHSA-gv7w-rqvm-qjhr; gårdagens runs gröna (advisory nypublicerad).
+
+**Åtgärder (Session 17, 2026-06-13):**
+
+<!-- vale Vale.Terms = NO -->
+1. Empirisk kontrollgrind: ingen Deno-sida av repot använder esbuild
+   (rg över supabase/ = 0 träffar; ingen deno.json/import_map);
+   esbuild 0.27.7 nås enbart som transitiv dev-dependency via
+   vite@8.0.12 + tsx; ej direkt dependency; ingår ej i prod-bundle.
+2. Allowlist-post i audit-ci.jsonc med motivering + datering +
+   expiry 2026-07-13 i JSONC-kommentar (K0åh-mönstret) — commit 9429336.
+3. Spårad riv-todo i tasks/todo.md med verifierbart sluttillstånd
+   (npm ls esbuild ≥ 0.28.1 via vite/tsx-bump + post borttagen + CI grön).
+<!-- vale Vale.Terms = YES -->
+
+**Bevarat per Konvention-flödet:**
+
+- Steg 1–4 följda (STOPPA → diagnostik → åtgärdsmatris A/B/C →
+  Marcus/Chat-val C → implementation). Steg 5 ej utlöst — ingen
+  processlucka; vägen var exakt den audit-ci.jsonc-kommentaren anvisar.
+
+**Resterande osäkerheter:**
+
+<!-- vale Vale.Terms = NO -->
+- Tidshorisont för vite/tsx-bump till esbuild ≥ 0.28.1 (bevakas via
+  dependabot-PR:ar; expiry 2026-07-13 tvingar omprövning).
+<!-- vale Vale.Terms = YES -->
+
+**Spårbarhet:**
+
+- Advisory: <https://github.com/advisories/GHSA-gv7w-rqvm-qjhr>
+- Sessionsdok: `tasks/sessions/2026-06-13-session-17.md`
+- Commits: 9429336 (allowlist), b86482d (todo), denna commit (denna post).
