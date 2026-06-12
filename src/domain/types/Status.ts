@@ -5,7 +5,7 @@
 // Bridge mot Airtable-shape (pre-A-track-läget). A1 ändrar formeln
 // "Är aktiv (1/0)", inte statusvärdena — enum:en håller över A-track.
 // Ersätts inte av target-enum:en (06b §B3) förrän S-track byggs; separata
-// kontrakt, unifiera inte. Se Code-verification-of-codex-analysis.md
+// kontrakt, unifiera inte. Se docs/archive/Code-verification-of-codex-analysis.md
 // Tillägg Fråga 1.
 export const RegistrationStatus = {
   OBEKRAFTAD: 'Obekräftad',
