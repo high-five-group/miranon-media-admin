@@ -30,6 +30,14 @@
 - [ ] **Vid A-track/status-unifiering:** pröva om "Tillägg Fråga 1"-substansen
   i `docs/archive/Code-verification-of-codex-analysis.md` ska lyftas till
   spec/ADR så att byggplan-DoD-guardens pekare kan pensioneras.
+- [ ] **Vid Fas 6-avslut (ADR-048 p.3 + K6 Del 2):** exkludera
+  `docs/research/` ur projektkunskaps-synken (Marcus-moment) + arkivera
+  `vue-project-analysis.md` och `react-*-research` till `docs/archive/`
+  med levande-pekar-svep. Verifierbart sluttillstånd: kataloger
+  exkluderade i claude.ai + filerna under `docs/archive/` + CI grön.
+- [ ] **Vid nästa innehållsrevision av `docs/specs/SPA-ARCHITECTURE-DECISION.md`:**
+  överväg ADR-konvertering med Supersedes-not (K6 Del 2 gränsfall 1).
+  Ingen åtgärd dessförinnan.
 
 ### Session 16 ✅ KLAR (2026-06-12) — Fas 5 App-shell + fas-avslut
 
