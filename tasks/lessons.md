@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-11
+updated: 2026-06-12
 review_by: 2026-11-15
 status: stable
 ---
@@ -1880,3 +1880,15 @@ trigger-kontexten, nådde aldrig DOM) och ::placeholder-underkontrasten
 skärmläsarpasset fångade den upplevda dubbel-uppläsningen. Ett
 ARIA-wiring-beslut ska därför korsas mot minst två av linjerna innan det
 landar (ADR-046 byggde på alla tre).
+
+### L95 [UNIVERSAL] — Rapport-skript med positionella argument kan ge falsk-grön på fel argumentform; argumenten är del av grindens kontrakt
+
+Datum: 2026-06-11 | Källa: Session 15 fas-avslutet, phase-end-verify-körningen + todo-posten "Fel argumentform gav falsk-grön arkiv-check" (klass: verifierings-disciplin)
+
+phase-end-verify tar sessionsdok-namn UTAN `.md`; med suffixet söker
+existens-checken `<namn>.md.md`, hittar inget och rapporterar "✅ arkiverad"
+för ett o-arkiverat dok — en inverterad existens-check vars fel-läge
+renderas som grönt. Specialisering av L91: att köra rätt skript räcker
+inte — verifiera arg-kontraktet mot usage före tolkning, och läs checks
+vars negativa utfall renderas som ✅ extra skeptiskt. Härdning uppströms:
+arg-validering/fail-högt.
