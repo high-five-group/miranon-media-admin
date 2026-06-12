@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-12
+updated: 2026-06-13
 review_by: 2026-11-15
 status: stable
 ---
@@ -1979,3 +1979,33 @@ allt). Självguarda på äkta miljö-signaler — content-type, serviceWorker.
 ready med timeout, redirect-utfall på guardade routes — och skippa med
 tydligt meddelande i stället för att anta. Dokumentera per-miljö-
 körkommandon i testfilens header.
+
+## 2026-06-13 — Session 17 (repo-hygien + synk-horisont)
+
+Mellanfas-session utan byggfas: projektkunskaps-synkens 91 %-tak drev
+struktur-flyttar, ADR-048-synk-horisonten och en struktur-audit. Två grindar
+betalade sig per design under sessionen: ADR-039-räknaren fångade
+README-driften vid ADR-048-registreringen, och ADR-028-flödet hanterade en
+färsk esbuild-advisory friktionsfritt (STOPPA → diagnostik → Marcus-val →
+allowlist med expiry).
+
+- [UNIVERSAL] **L103 — Chat-prompts åtgärdslistor ska korsläsas mot den egna beställda kartläggningen före leverans.**
+  Symptom: K3-rapporten flaggade explicit att Fas-2-verifierings-flytten krävde todo.md-länkuppdatering i samma commit; K4-promptens pekar-lista tog ändå bara byggplan.md + Status.ts → lychee röd i fyra runs tills rättning. Generaliserbar regel: när en exekverings-prompt bygger på en tidigare LÄS-rapport ska promptens åtgärdslista diffas mot rapportens SAMTLIGA flaggor som explicit self-review-steg före leverans; Code korsläser å sin sida exekveringslistan mot sina egna tidigare fynd — dubbel fångst, ingen ensam felkälla. Källa: 2026-06-13 Session 17 K4 (rotorsak 1), sessionsdok Del 2.
+
+- [UNIVERSAL] **L104 — Pipe-/kedje-exit äter grind-exit-koder även lokalt.**
+  Symptom: `| tail` åt markdownlints exit-kod i en lokal grind-körning, och en `&&`-kedja gateade inte på lint-steget — två lint-fel committades före fångst, båda i samma session. Generaliserbar regel: lokala grind-kommandon körs ENSAMMA och exit-koden läses direkt; aldrig pipe eller kommando-kedja runt det kommando vars exit-kod ÄR grinden. CI-sidan av felklassen var redan etablerad (ADR-043-disciplinen); nu empiriskt demonstrerad lokalt. Källa: 2026-06-13 Session 17 K4 (oväntade fynd), sessionsdok Del 2.
+
+- [UNIVERSAL] **L105 — Arkivmoget material som ligger kvar i grind-scope kostar löpande underhåll.**
+  Symptom: frusna analys-leveranser (vars trail-disciplin är att INTE redigeras) krävde länk-lagning så sent som Session 16 enbart för att de låg kvar i lychee-/markdownlint-scope. Generaliserbar regel: när ett dokument klassas fruset/konsumerat ska det flyttas till scope-exkluderad arkivkatalog — annars tvingar framtida grind- och path-ändringar redigering av material vars disciplin är immutabilitet, en inbyggd motsägelse. Källa: 2026-06-13 Session 17 K3 (oväntat fynd 1) + K4 commit 1.
+
+- [UNIVERSAL] **L106 — Index-/synk-exkludering utan pekare i det synkade materialet är tyst minnesförlust.**
+  Symptom/lösning: Session 17 exkluderade arkivkataloger ur claude.ai-projektkunskapen (91 % → 64 % av synk-kapaciteten); utan motåtgärd hade framtida Chat-sessioner tolkat noll sökträffar som "finns inte". Pekar-arkitektur lades därför på tre SYNKADE ytor (spoke-CLAUDE.md § Synk-horisont, PI-deltat, ADR-048) + README:er i arkivrötterna, med åtkomstregeln: noll träffar ≠ saknas — hämta via Code mot lokal disk/git. Generaliserbar regel: varje medveten exkludering ur ett agent-index ska bära en pekare i det material som FÖRBLIR indexerat, placerad där agenten orienterar sig. Källa: 2026-06-13 Session 17 K4–K5, ADR-048.
+
+- [UNIVERSAL] **L107 — Grindvakternas egna testsviter behöver samma körnings-kadens som grindarna de vaktar.**
+  Symptom: 3 av 6 grindvakts-testsviter kördes inte i CI (endast doc-refererade) — regression i själva grind-skripten skulle ha upptäckts först vid manuell körning. Detta är ADR-039-felklassen (kadens-missmatch) återfunnen i grind-infrastrukturens eget lager. Generaliserbar regel: när en grind får en testsvit ska sviten wiras in i CI i samma beslut — en svit utan CI-kadens är capture utan enforcement (K8.2-mönstret). Källa: 2026-06-13 Session 17 K6 Del 3 + K7 commit 2 (run 27449167933).
+
+- **L108 — markdownlint-cli2:s ignores vinner över explicita CLI-filargument.**
+  Symptom: ignored paths kan inte lintas ens med direkta filargument; arkiv-skuldmätningen krävde temp-config utanför trädet, och K4:s arkiv-README:er hamnade "automatiskt" utanför scope av samma mekanism. Regel: för scope-experiment mot ignored kataloger, använd temp-config — inte CLI-args; och vid grind-design, kom ihåg att ignores är absolut. Källa: 2026-06-13 Session 17 K6 (oväntat fynd 2) + transparens-rapport.
+
+- [UNIVERSAL] **L109 — Steg-namn och scope-kommentarer får inte ljuga om sitt innehåll.**
+  Symptom: två instanser samma session — ci.yml-scope-kommentaren påstod att hela tasks/sessions/** var utelämnat (blev osant vid glob-utvidgningen; omskreven), och STOPPA-valet B motiverades av att det befintliga CI-stegets namn beskriver en annan svit-familj än de nya sviterna. Generaliserbar regel: när innehåll ändras, uppdatera namn/kommentar i samma commit; vid inplacering av nytt innehåll, välj strukturen som håller namnen sanna — kosmetik som ljuger är drift-frö. Källa: 2026-06-13 Session 17 K7 commit 1 + STOPPA-beslut B.

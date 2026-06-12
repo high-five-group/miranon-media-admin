@@ -1169,6 +1169,37 @@ Sessionsdok-trail: [`tasks/sessions/2026-06-12-session-16.md`](../tasks/sessions
 
 ---
 
+## Session 17 — Repo-hygien + synk-horisont (mellanfas, ingen byggfas) (2026-06-13)
+
+Commit-range `85990b1` → `0108ffe` + K-sista bake-in. Drivkraft: K0-inventeringen
+(orienterings-pass 2026-06-12) visade projektkunskaps-synken på 91 % av kapaciteten
+med 37 % av spårad textvolym i rena arkiv-/historikkataloger.
+
+Advisory-incident direkt efter dok-födelsen: GHSA-gv7w-rqvm-qjhr (esbuild < 0.28.1,
+high, Deno-vektor) gjorde audit-jobbet rött — hanterad per ADR-028-flödet:
+diagnostik (transitiv dev-only via vite/tsx; Deno-sidan oberörd) → Marcus-val C →
+allowlist med expiry 2026-07-13 (`9429336`) + riv-todo; trail i ADR-028 Updates.
+Flyttar: tre direktivfiler tasks/ → docs/archive/ (`f343db3`); docs/logs/ avvecklad
+(`39fe4ba`); datamodell-research in under archive/2026-04/ (`43648af`);
+docs/analysis/ avvecklad — 5 konsumerade analyser → docs/archive/ med levande
+pekare uppdaterade (`4550886`). Lokal hygien: odoo-workbench (409 MB) ut ur
+arbetsträdet, git gc 31 MB → 3,6 MB. [ADR-048](decisions/ADR-048-synk-horisont-arkiv-atkomst.md)
+med pekar-paketet: CLAUDE.md § Synk-horisont, PI-delta, arkiv-README:er (`bd3957d`,
+`5dc43e5`, `89b2d4e`); CI-eftersläp rättat `3dd0fad` (todo-länk + ADR-räknare 47→48).
+K6 struktur-audit: rot/docs/kod friska (30 rotfiler alla verktygsmotiverade, noll
+felplaceringar, alla skript refererade); config-gap funnet: 3 av 6
+grindvakts-testsviter utanför CI. K7 stängde gapet: aktiva sessionsdok in i
+markdownlint-/lychee-scope med 0-mätt skuld (`cced32d`) + testsviterna in i
+Lint-jobbet som eget steg, STOPPA-val B, run-bevisade 14/14 + 5/5 + 9/9
+(`49ebbdb`, run 27449167933) + todo-rader och Del 3 (`0108ffe`).
+
+**K5-utfall:** Marcus exkluderade `tasks/sessions/archive/` + `docs/archive/` ur
+claude.ai-synken och omklistrade PI (bas + nytt delta): **91 % → 64 %**.
+Lessons L103–L109 skördade (6 UNIVERSAL; hub-lyft pending nästa K-sista).
+Sessionsdok-trail: [`tasks/sessions/2026-06-13-session-17.md`](../tasks/sessions/2026-06-13-session-17.md).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
