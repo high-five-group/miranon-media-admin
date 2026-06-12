@@ -4,6 +4,15 @@
 - Datum: 2026-05-27
 - Fas: Session 7 K0 (Fas 2 11/10-verification — Fynd 4)
 
+> **Korrigering (Session 16 K4, 2026-06-12):** Kärnbeslutet
+> (`defaultErrorComponent` som fångst-väg) STÅR. Fallback-komponenten
+> `RouteErrorFallback.tsx` är ersatt av `SectionError`
+> (`src/components/ErrorBoundary/SectionError.tsx`) och `Sentry.ErrorBoundary`
+> i `__root.tsx` är riven i K4-konsolideringen till två fel-lager
+> (sektion + app) — se commit `7e558a3` + todo-trådens stängning.
+> Beslutstexten nedan bevaras oförändrad (immutabilitet); fil-länken i
+> § Beslut är avlänkad eftersom filen är raderad.
+
 ## Kontext
 
 Fas 2:s DoD-rad 8 (`[GA]`): "Error boundary på root fångar router-fel och visar fallback med 'ladda om'-knapp". Fynd 4 (Fas 2 11/10-verification) ifrågasatte om detta var uppfyllt. K0.3a:s empiriska fel-test (tre injicerade fel, observerat vad som renderas + om felet når Sentry-capture-vägen) gav en nyanserad bild:
@@ -20,7 +29,7 @@ Verklig lucka: **root-route-fel** kan `Sentry.ErrorBoundary` inte fånga (den re
 
 ## Beslut
 
-`createRouter` får en **`defaultErrorComponent`** ([`src/components/RouteErrorFallback.tsx`](../../src/components/RouteErrorFallback.tsx)) — en branded fallback ("Något gick fel" + "Ladda om"-knapp, `window.location.reload()`) som ersätter TanStacks obrandade default för **alla** router-livscykelfel, inklusive root-route-fel. Fallbacken är visuellt identisk med `Sentry.ErrorBoundary`-fallbacken i `__root.tsx` så att användaren ser samma fallback oavsett fångst-väg.
+`createRouter` får en **`defaultErrorComponent`** (`src/components/RouteErrorFallback.tsx`, raderad Session 16 K4 — se korrigerings-noten ovan) — en branded fallback ("Något gick fel" + "Ladda om"-knapp, `window.location.reload()`) som ersätter TanStacks obrandade default för **alla** router-livscykelfel, inklusive root-route-fel. Fallbacken är visuellt identisk med `Sentry.ErrorBoundary`-fallbacken i `__root.tsx` så att användaren ser samma fallback oavsett fångst-väg.
 
 **Sentry-capture sker via den befintliga `createRoot` `onCaughtError`-hooken** ([`main.tsx`](../../src/main.tsx)) — **ingen `onError`/`onCatch` läggs på routern**, eftersom det skulle riskera dubbel-rapportering (samma fel via både `onError` och `onCaughtError`).
 
