@@ -44,6 +44,7 @@ export const Route = createFileRoute('/dev/patterns')({
       throw redirect({ to: '/' });
     }
   },
+  staticData: { title: 'Mönsterbibliotek — referens' },
   component: PatternsPage,
 });
 

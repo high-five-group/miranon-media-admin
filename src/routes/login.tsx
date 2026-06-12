@@ -12,6 +12,7 @@ const loginSearchSchema = z.object({
 });
 
 export const Route = createFileRoute('/login')({
+  staticData: { title: 'Logga in' },
   validateSearch: loginSearchSchema,
   beforeLoad: ({ context, search }) => {
     // Redan inloggad? Hoppa direkt till redirect-target. Skyddar mot "stuck on /login"

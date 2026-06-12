@@ -24,6 +24,7 @@ export const Route = createFileRoute('/dev/primitives')({
       throw redirect({ to: '/' });
     }
   },
+  staticData: { title: 'Primitiver — demo' },
   component: PrimitivesPage,
 });
 

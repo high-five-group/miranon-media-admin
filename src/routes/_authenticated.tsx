@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import { AppShell } from '@/components/AppShell';
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context, location }) => {
@@ -16,6 +17,13 @@ export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
 });
 
+// App-skalet (header + main + tab bar + skip-länk) bor på denna layout, inte
+// __root: login/dev-ytorna bär egna <main>-landmarks och tab bar utanför
+// inloggat läge vore död navigation (Session 16 K3 STOPPA-utfall A).
 function AuthenticatedLayout() {
-  return <Outlet />;
+  return (
+    <AppShell>
+      <Outlet />
+    </AppShell>
+  );
 }

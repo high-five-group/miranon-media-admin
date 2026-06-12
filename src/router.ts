@@ -47,4 +47,10 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
   }
+  // Title-konvention (Fas 5, Session 16 K3): varje route deklarerar sin
+  // sidtitel via staticData. RouteAnnouncer (__root) annonserar den till
+  // skärmläsare och sätter document.title vid klient-navigationer.
+  interface StaticDataRouteOption {
+    title?: string;
+  }
 }

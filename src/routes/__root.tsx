@@ -6,6 +6,7 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { Suspense } from 'react';
 import type { AuthContextValue } from '@/auth/AuthProvider';
+import { RouteAnnouncer } from '@/components/AppShell';
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -49,10 +50,17 @@ function RootLayout() {
           <Outlet />
         </NuqsAdapter>
       </Suspense>
+      {/* Global, landmark-fri annonsering av route-byten — gäller alla
+          grenar (login/dev/inloggat), därför här och inte i AppShell
+          (Session 16 K3 STOPPA-utfall A, beslut 2). */}
+      <RouteAnnouncer />
       {import.meta.env.DEV && (
         <>
-          <TanStackRouterDevtools position="bottom-right" />
-          <ReactQueryDevtools initialIsOpen={false} />
+          {/* Topp-positioner sedan Fas 5: tab baren äger botten-ytan — en
+              botten-fäst devtools-knapp skymmer flikarna (axe target-size,
+              K3-verifieringsfynd). */}
+          <TanStackRouterDevtools position="top-right" />
+          <ReactQueryDevtools initialIsOpen={false} buttonPosition="top-left" />
         </>
       )}
     </Sentry.ErrorBoundary>
