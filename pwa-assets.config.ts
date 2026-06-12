@@ -11,9 +11,12 @@ import { defineConfig } from '@vite-pwa/assets-generator/config';
  *   (`quality: 60`) aktiverar sharps palett-kvantisering → 13 distinkta
  *   färger i 192:an i stället för ~450 (uppmätt K5b-diagnos) — taggiga
  *   diagonaler. Utan quality blir PNG:n lossless RGBA med full antialias.
- * - `maskable.padding: 0.35` (default 0.3): logotypen är hög och smal —
- *   extra marginal håller den tydligt inom maskens inre 80 %-cirkel
- *   (Marcus' DevTools-safe-area-fynd).
+ * - `maskable.padding: 0.45` (default 0.3): safe zone är en CIRKEL —
+ *   kantvisa extents räcker inte, hörn-radien styr. Logotypens bbox i
+ *   SVG:n (334×380 kring centrum) ger käll-hörnradie √(167²+190²) ≈ 253;
+ *   kravet hörn-radie ≤ 0,9 × safe-zone-radien (0,4 × 512 = 204,8 px)
+ *   kräver padding ≥ 0,431. 0.45 ger kvot ≈ 0,87 — synlig marginal.
+ *   (Session 16 K5c efter Marcus-underkänd 0.35: tangerade cirkeln.)
  * - `transparent.sizes` utan 64 + utan favicons-generering: browser-
  *   favicon wiras i index.html från public/favicon/ (den runda
  *   vit-bakgrunds-varianten, Marcus-beslut K5b) — generatorns
@@ -27,7 +30,7 @@ export default defineConfig({
     transparent: { sizes: [192, 512], padding: 0.05 },
     maskable: {
       sizes: [512],
-      padding: 0.35,
+      padding: 0.45,
       resizeOptions: { fit: 'contain', background: '#ffffff' },
     },
     apple: { sizes: [] },
