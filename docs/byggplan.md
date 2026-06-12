@@ -318,7 +318,7 @@ Inget nytt ADR. A5-beslutet är dokumenterat i P1-sessionsdok Del 3 — kan refe
 
 ### Fas 3 — UI-primitiver
 
-✅ Slutförd 2026-06-11 över Sessions 14–15. Bygget levererat på 1 session (Session 14, estimat 2): alla 6 primitiver på react-aria-components + CVA (ADR-044) + demo-route `/dev/primitives`. DoD 1 (axe-/skärmläsardel) + DoD 4 stängda i Session 15 mot Fas 3.5-infran per ADR-020 sekvens-noten: runner 0 violations på alla 6 (run 27343206661), Marcus tangentbords-checklista (Session 14) + VoiceOver-pass (Session 15; feltext-dubbelreferens åtgärdad per ADR-046 — post-fix-omlyssning av Input/Select defererad till öppen todo-tråd, ej blockerande; DOM-verifierad en-vägs-referens via describedby). Korsreferens: `tasks/sessions/2026-06-11-session-15.md` Del 4–5.
+✅ Slutförd 2026-06-11 över Sessions 14–15. Bygget levererat på 1 session (Session 14, estimat 2): alla 6 primitiver på react-aria-components + CVA (ADR-044) + demo-route `/dev/primitives`. DoD 1 (axe-/skärmläsardel) + DoD 4 stängda i Session 15 mot Fas 3.5-infran per ADR-020 sekvens-noten: runner 0 violations på alla 6 (run 27343206661), Marcus tangentbords-checklista (Session 14) + VoiceOver-pass (Session 15; feltext-dubbelreferens åtgärdad per ADR-046 — post-fix-omlyssning av Input/Select defererad till öppen todo-tråd, ej blockerande; DOM-verifierad en-vägs-referens via describedby). Korsreferens: `tasks/sessions/archive/2026-06/2026-06-11-session-15.md` Del 4–5.
 
 #### Mål
 
@@ -383,7 +383,7 @@ Inget nytt ADR.
 
 ### Fas 3.5 — A11y-baseline (NY EGEN FAS)
 
-✅ Slutförd 2026-06-11, Session 15 (estimat hållet). Alla 6 DoD-rader stängda: axe-runner 12/12 (7 primitiv- + 5 mönster-tester, 0-tolerans per ADR-045), CI-grinden gate-proof-bevisad (medvetet brytande branch → run 27337333679 röd exakt på a11y-steget), fixture-mönstret återanvänt i primitiv-testerna, 5 mönster-filer i `docs/aria-patterns/` + referens-implementationer på `/dev/patterns`, checklist §5/§6 stämplade, "A11y-baseline godkänd"-gate dokumenterad i BUILD-LOG före Fas 6. ADR-045 + ADR-046. Korsreferens: `tasks/sessions/2026-06-11-session-15.md`.
+✅ Slutförd 2026-06-11, Session 15 (estimat hållet). Alla 6 DoD-rader stängda: axe-runner 12/12 (7 primitiv- + 5 mönster-tester, 0-tolerans per ADR-045), CI-grinden gate-proof-bevisad (medvetet brytande branch → run 27337333679 röd exakt på a11y-steget), fixture-mönstret återanvänt i primitiv-testerna, 5 mönster-filer i `docs/aria-patterns/` + referens-implementationer på `/dev/patterns`, checklist §5/§6 stämplade, "A11y-baseline godkänd"-gate dokumenterad i BUILD-LOG före Fas 6. ADR-045 + ADR-046. Korsreferens: `tasks/sessions/archive/2026-06/2026-06-11-session-15.md`.
 
 #### Mål
 

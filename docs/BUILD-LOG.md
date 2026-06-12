@@ -1140,7 +1140,7 @@ Bevis: runner 12/12 i CI (run 27343206661); CI failar vid violation (gate-proof-
 (Modal/Dialog: annonsering, fokus-fångst, fokus-retur; /dev/patterns-genomgång grön);
 [ADR-045](decisions/ADR-045-a11y-runner-arkitektur.md) +
 [ADR-046](decisions/ADR-046-felmeddelande-wiring-describedby.md).
-Sessionsdok-trail: [`tasks/sessions/2026-06-11-session-15.md`](../tasks/sessions/2026-06-11-session-15.md).
+Sessionsdok-trail: [`tasks/sessions/archive/2026-06/2026-06-11-session-15.md`](../tasks/sessions/archive/2026-06/2026-06-11-session-15.md).
 
 ---
 

@@ -41,7 +41,7 @@ React Aria Dialog hanterar fokus-trapping, Escape och `role="dialog"` automatisk
 
 ### Formularfalt (TextField, NumberField, Select, Checkbox)
 
-> **Erratum ([ADR-046](../decisions/ADR-046-felmeddelande-wiring-describedby.md), 2026-06-11):** kravet pa explicit `aria-errormessage`-wiring ar rivet — felmeddelanden associeras via React Arias FieldError/`aria-describedby`. Grund: DOM-forensik + skarmlasarpass, se `tasks/sessions/2026-06-11-session-15.md` Del 4. Texten nedan bevaras oforandrad (historik).
+> **Erratum ([ADR-046](../decisions/ADR-046-felmeddelande-wiring-describedby.md), 2026-06-11):** kravet pa explicit `aria-errormessage`-wiring ar rivet — felmeddelanden associeras via React Arias FieldError/`aria-describedby`. Grund: DOM-forensik + skarmlasarpass, se `tasks/sessions/archive/2026-06/2026-06-11-session-15.md` Del 4. Texten nedan bevaras oforandrad (historik).
 
 **`aria-errormessage`** lankar felmeddelandet via ID. Annonseras BARA nar `aria-invalid="true"`.
 
