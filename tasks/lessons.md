@@ -1892,3 +1892,90 @@ renderas som grönt. Specialisering av L91: att köra rätt skript räcker
 inte — verifiera arg-kontraktet mot usage före tolkning, och läs checks
 vars negativa utfall renderas som ✅ extra skeptiskt. Härdning uppströms:
 arg-validering/fail-högt.
+
+## 2026-06-12 — Session 16 (Fas 5: App-shell + fas-avslut)
+
+### L96 [UNIVERSAL] — Changed-files-skippade CI-jobb har latens-klass: fil-radering verifieras mot docs-ytan i samma pass
+
+Datum: 2026-06-12 | Källa: Session 16 K3 (run 27407205044 röd) + K4 (run 27408928684 röd) (klass: CI-arkitektur / verifierings-disciplin)
+
+Ett länk-jobb som bara körs vid docs-ändringar ser inte att en kod-commit
+raderat en fil som docs länkar till — felet exponeras först vid NÄSTA
+docs-commit, hos någon annan, i annat ärende. Två instanser samma session:
+`public/sw.js` (K2-radering → K3-detonation) och `RouteErrorFallback.tsx`
+(K4-radering → samma commits docs-del fällde den). Disciplin: grep:a
+docs-ytan för fil-länkar vid VARJE radering/flytt, före commit — den som
+raderar äger länkbrottet, oavsett vilket jobb som råkar upptäcka det.
+
+### L97 [UNIVERSAL] — Grind-exit asserteras programmatiskt, ögnas inte
+
+Datum: 2026-06-12 | Källa: Session 16 K5 (Biome-formatfel nådde CI trots "kontrollerad" lokal körning) (klass: verifierings-disciplin)
+
+En grindkörning fel-kedjad genom `| tail -1` (eller annat som konsumerar
+output/exit) kan se grön ut i ögat medan exit-koden aldrig lästes — felet
+upptäcks först i CI. Grind-utfall är data, inte läsintryck: kedja på
+exit-koden (`&&`, explicit `$?`-assertion eller räkna fel-rader
+programmatiskt). Syskon till L91/L95: kör rätt skript, med rätt argument,
+OCH läs utfallet maskinellt.
+
+### L98 [UNIVERSAL] — Verktygs-defaults är inte kvalitetsneutrala; artefakt-kvalitet verifieras mätbart mot källan
+
+Datum: 2026-06-12 | Källa: Session 16 K5b (assets-generator `quality: 60` → palett-kvantisering; 13 vs 449 distinkta färger) (klass: verktygs-disciplin)
+
+En generators default-inställningar optimerar ofta för något annat än ditt
+kvalitetskrav (här: filstorlek före antialias). "Verktyget körde grönt"
+säger inget om artefaktens kvalitet — jämför artefakten mätbart mot en
+referens-rendering ur källan (här: distinkta-färger-räkning avslöjade
+kvantiseringen som ögat tolkade som "blurr"). Läs verktygets faktiska
+defaults i dess källkod/typer när utfallet ser fel ut; fixa orsaken i
+config, inte symptomen i artefakten.
+
+### L99 [UNIVERSAL] — Mask-/geometri-verifiering görs mot målets faktiska geometri, inte proxy-mått
+
+Datum: 2026-06-12 | Källa: Session 16 K5c (maskable-padding underkänd trots kantvis "PASS") + direkt återanvänd i K5d (favicon-cirkeln) (klass: verifierings-disciplin)
+
+Kantvisa extents (höjd/bredd ≤ tröskel) bevisar ingenting om en CIRKULÄR
+safe zone — hörn-radien från centrum styr, och en hög+smal form kan klara
+båda kantmåtten men sticka ut diagonalt. Verifiera mot målets riktiga
+geometri: räkna max-radie över faktiska pixlar och sätt kvotkrav med
+marginal (≤ 0,9 × zonradien), prediktera ur källans bounding box och
+bekräfta mätningen mot prediktionen. Mönstret återanvändes oförändrat i
+nästa runda (K5d) — geometrikalkylen är återanvändbar, proxy-måttet var det
+inte.
+
+### L100 [UNIVERSAL] — Manuell visuell verifiering är en egen grind-klass som programmatisk mätning inte ersätter
+
+Datum: 2026-06-12 | Källa: Session 16 K5→K5b-kedjan (programmatiska pass, Marcus-ögat fångade kapning + kvantisering) (klass: verifierings-disciplin)
+
+Programmatisk mätning passerade (curl 200, manifest-checkar gröna, tester
+gröna) där människoögat direkt fångade att ikonen kapades och såg
+kvalitetsförlusten. Visuella artefakter behöver en visuell grind — i
+människoform (Marcus-moment) eller åtminstone renderad-bild-inspektion i
+måltillstånd (mot mörk bakgrund, i målstorlek, under mask). Planera in
+visuella moment som egna DoD-punkter; "alla mätningar gröna" är inte
+"ser rätt ut". Komplement till L94 (flera evidenslinjer korsas).
+
+### L101 [UNIVERSAL] — DoD-kriterier mot tredjeparts-mätare verifieras mot mätarens NULÄGE vid fas-start
+
+Datum: 2026-06-12 | Källa: Session 16 K1 (byggplanens "Lighthouse PWA-score ≥ 90" skriven 2026-05-05 — kategorin borttagen i Lighthouse v12, april 2024) (klass: planerings-disciplin)
+
+Externa mätverktyg ändrar sig oberoende av planen: en DoD-rad som pekar på
+en tredjeparts-mätare kan referera något som inte längre existerar redan
+när den skrivs. Vid fas-start: verifiera att varje extern mätare i DoD:n
+fortfarande finns och mäter det avsedda — annars moderniseras kriteriet
+med beslutsspår (här: ADR-047 B3 ersatte poäng-proxyn med installability-
+kriterier + maskinell offline-verifiering). Att pinna ett föråldrat verktyg
+som proxy strider mot verifiera-mot-verklighet-disciplinen.
+
+### L102 [UNIVERSAL] — Tester som körs i flera miljöer självguardar på miljö-signaler, inte antaganden om målet
+
+Datum: 2026-06-12 | Källa: Session 16 K5 (manifest-checken kraschade i CI: dev-server svarar 200 SPA-fallback-HTML på vad som helst) (klass: test-design)
+
+Samma testfil kan träffa dev-server, byggd preview eller deployad staging —
+och målen skiljer sig i vad som existerar (SW, manifest, DEV-guardade
+routes). Ett test som antar målets tillstånd kraschar eller falsk-grönar i
+fel miljö; HTTP 200 är ingen signal (SPA-fallback svarar 200 med HTML på
+allt). Självguarda på äkta miljö-signaler — content-type, serviceWorker.
+ready med timeout, redirect-utfall på guardade routes — och skippa med
+tydligt meddelande i stället för att anta. Dokumentera per-miljö-
+körkommandon i testfilens header.
