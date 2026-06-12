@@ -358,7 +358,7 @@ SECURITY-SPEC.md §1 (rad 18 i tabellen) säger: *"Fas 0 | CSP-header-definition
 
 ### G. Service worker registreras tyst utan `sw.js` som faktiskt gör något
 
-[src/main.tsx:33–39](../../src/main.tsx#L33-L39) registrerar `/sw.js` om browsern stödjer det, men [public/sw.js](../../public/sw.js) är ett "skelett" enligt CLAUDE.md. Att registrera en tom service worker gör inget skadligt, men det är ett produktdetalj som kan förvirra: appen kommer att visa att den har SW i DevTools, men SW gör ingenting. Det syns aldrig i SECURITY-SPEC eller PERFORMANCE-BUDGET. Liten sak, men hör hemma i avvikelselistan.
+[src/main.tsx:33–39](../../src/main.tsx#L33-L39) registrerar `/sw.js` om browsern stödjer det, men `public/sw.js` (raderad Session 16 K2, numera [`src/sw.ts`](../../src/sw.ts) per ADR-047) är ett "skelett" enligt CLAUDE.md. Att registrera en tom service worker gör inget skadligt, men det är ett produktdetalj som kan förvirra: appen kommer att visa att den har SW i DevTools, men SW gör ingenting. Det syns aldrig i SECURITY-SPEC eller PERFORMANCE-BUDGET. Liten sak, men hör hemma i avvikelselistan.
 
 ---
 

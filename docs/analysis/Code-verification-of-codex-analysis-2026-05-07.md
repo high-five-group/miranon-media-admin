@@ -443,7 +443,7 @@ Codex' poäng: testet som är *huvudbeviset* för Fas A:s säkerhetsfixar är os
 **6.C — Workbox är inte dependency:**
 
 [`README.md:81`](../../README.md#L81) — `| Offline | Workbox (service worker) |` ✓
-[`public/sw.js:1-21`](../../public/sw.js#L1-L21) — Skelett: `install` → `skipWaiting`, `activate` → `clients.claim`, `fetch` → no-op. Kommentar: `Workbox läggs på i Fas 5`. ✓
+`public/sw.js:1-21` (raderad Session 16 K2 — porterad till [`src/sw.ts`](../../src/sw.ts) per ADR-047; skelettet finns i git-historiken) — Skelett: `install` → `skipWaiting`, `activate` → `clients.claim`, `fetch` → no-op. Kommentar: `Workbox läggs på i Fas 5`. ✓
 [`package.json:16-40`](../../package.json#L16-L40) — Workbox finns inte i `dependencies` eller `devDependencies`. ✓
 
 Codex' formulering "Offline | Workbox" i README antyder att det är aktiv stack idag, men det är planerat. Inte fel formellt — tabellen heter "Stack", och Workbox är planerad stack — men det signalerar mer mognad än som finns.
