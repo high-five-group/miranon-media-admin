@@ -1144,6 +1144,31 @@ Sessionsdok-trail: [`tasks/sessions/archive/2026-06/2026-06-11-session-15.md`](.
 
 ---
 
+## Session 16 — Fas 5 App-shell KOMPLETT + fas-avslut (2026-06-12)
+
+K1: [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md) + byggplan-DoD 4-modernisering — Lighthouse
+v12 tog bort PWA-kategorin (`6c47754`). K2: PWA-fundament — `vite-plugin-pwa` injectManifest,
+Fas 0-skelettet porterat till `src/sw.ts`, offline.html, manifest + ikoner (`9a642c3` + `cdbfe0e`).
+K3: API-runtime-caching-defer till Fas 6 (`8137938`) + app-skal på `_authenticated` per
+STOPPA-utfall A: tab bar, skip-länk, RouteAnnouncer i `__root`, staticData.title-konvention
+(`f0d392c`). K4: error-boundary-konsolidering till två lager — `Sentry.ErrorBoundary` +
+`RouteErrorFallback` rivna, `SectionError` + `AppErrorBoundary` in; `networkMode: 'online'` +
+OfflineIndicator (`7e558a3`). K5: varaktiga DoD-tester (shell + pwa-offline, miljö-självguardande)
++ Lighthouse 81/100/100 mot baseline 86/100/96 — Perf accepterad mot Fynd 7-defern
+(`ae049a5` + `3422e90`). K5b–d: ikon-kvalitet (lossless, `pwa-assets.config.ts`),
+maskable-geometri (padding 0.45, hörn-radie-kvot 0,868), rund favicon
+(`4fea8f4`, `80a93ab`, `750be7e`).
+
+**Fas 5 ✅ KLAR (KOMPLETT) 2026-06-12** — fullt fas-avslut (phase-end-verify, hub-sync
+L96–L102 → K16.1–K16.7, CHANGELOG 0.6.0, arkiveringspass). Alla 10 DoD-rader stängda
+(DoD 4 i ADR-047-form; DoD 4c via Fynd 7-arvet per ADR-047-korrigeringsnoten). Marcus-moment
+PASS: installerbarhet, VoiceOver-annonsering, maskable safe zone, rund favicon.
+Bevis: shell-sviten + pwa-offline-sviten gröna (runs 27410118400 → 27412742687); ad hoc-pass
+19/19 (K3) + 13/13 (K4); axe 0 violations på inloggat skal.
+Sessionsdok-trail: [`tasks/sessions/2026-06-12-session-16.md`](../tasks/sessions/2026-06-12-session-16.md).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
