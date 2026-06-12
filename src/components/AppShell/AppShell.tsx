@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { OfflineIndicator } from './OfflineIndicator';
 import { SkipLink } from './SkipLink';
 import { TabBar } from './TabBar';
 
@@ -33,6 +34,7 @@ export function AppShell({ children }: AppShellProps) {
           <span className="font-semibold">Miranon Media Admin</span>
         </div>
       </header>
+      <OfflineIndicator />
       <main id="main" tabIndex={-1} className="mx-auto w-full max-w-[600px] px-4 py-4 pb-24">
         {children}
       </main>

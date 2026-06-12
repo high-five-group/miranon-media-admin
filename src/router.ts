@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { createRouter } from '@tanstack/react-router';
 import type { AuthContextValue } from './auth/AuthProvider';
-import { RouteErrorFallback } from './components/RouteErrorFallback';
+import { SectionError } from './components/ErrorBoundary';
 import { routeTree } from './routeTree.gen';
 
 // QueryClient defaults per docs/specs/STATE-STRATEGY.md §3.
@@ -14,6 +14,14 @@ export const queryClient = new QueryClient({
       retryDelay: (attempt) => Math.min(200 * 2 ** attempt, 2000),
       refetchOnWindowFocus: true, // Uppdatera när Lotta återvänder
       refetchOnReconnect: 'always', // Uppdatera när internet återgår
+      // Explicit per ADR-047 B5 — pausar offline, visar cachad data;
+      // persistQueryClient defer till Fas 6/8.
+      networkMode: 'online',
+    },
+    mutations: {
+      // Explicit per ADR-047 B5 — mutationer pausar offline (köas inte;
+      // Background Sync är Fas 8 per ADR-019).
+      networkMode: 'online',
     },
   },
 });
@@ -32,10 +40,11 @@ export const queryClient = new QueryClient({
  */
 export const router = createRouter({
   routeTree,
-  // Branded fallback för alla router-livscykelfel inkl. root-route-fel (ADR-038).
-  // Ersätter TanStacks obrandade default ("Something went wrong!"). Sentry-capture
-  // sker via createRoot onCaughtError (main.tsx) — ingen onError här (undviker dubbel-rapport).
-  defaultErrorComponent: RouteErrorFallback,
+  // Branded sektions-fallback för alla router-livscykelfel inkl. root-route-fel
+  // (ADR-038; uppgraderad till SectionError i Session 16 K4-konsolideringen).
+  // Sentry-capture sker via createRoot onCaughtError (main.tsx) — ingen onError
+  // här (undviker dubbel-rapport).
+  defaultErrorComponent: SectionError,
   context: {
     queryClient,
     auth: undefined as unknown as AuthContextValue,

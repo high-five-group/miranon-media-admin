@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/react';
 import type { QueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
@@ -17,28 +16,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
 });
 
-// JSDoc-not: Suspense + ErrorBoundary-fallbacks är tillfälliga inline-komponenter.
-// Ersätts av Mm-Spinner + Mm-ErrorState från Fas 3 (designsystem).
+// Fel-hantering bor INTE här sedan Session 16 K4-konsolideringen: sektions-
+// fel tas av defaultErrorComponent (SectionError, src/router.ts) och allt
+// ovanför av AppErrorBoundary (src/main.tsx). Sentry.ErrorBoundary:n som
+// tidigare wrappade trädet är riven — dess unika täckning var near-zero
+// (todo-trådens K0.3b-empiri) och rapporteringen sker via createRoot-hooks.
 function RootLayout() {
   return (
-    <Sentry.ErrorBoundary
-      fallback={({ resetError }) => (
-        <div role="alert" className="p-4">
-          <h1 className="font-bold text-2xl">Något gick fel</h1>
-          <p className="mt-2">Vi kunde inte ladda sidan. Försök ladda om.</p>
-          <button
-            type="button"
-            onClick={() => {
-              resetError();
-              window.location.reload();
-            }}
-            className="mt-4 rounded bg-primary px-4 py-2 text-white"
-          >
-            Ladda om
-          </button>
-        </div>
-      )}
-    >
+    <>
       <Suspense
         fallback={
           <div role="status" aria-live="polite" className="p-4">
@@ -63,6 +48,6 @@ function RootLayout() {
           <ReactQueryDevtools initialIsOpen={false} buttonPosition="top-left" />
         </>
       )}
-    </Sentry.ErrorBoundary>
+    </>
   );
 }

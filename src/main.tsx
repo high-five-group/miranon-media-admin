@@ -13,6 +13,7 @@ import './styles/tailwind.css';
 
 import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './auth/useAuth';
+import { AppErrorBoundary } from './components/ErrorBoundary';
 import { reportWebVitals } from './lib/report-web-vitals';
 import { initSentry } from './observability/sentry';
 import { queryClient, router } from './router';
@@ -78,9 +79,10 @@ if (!rootEl) {
   throw new Error('Root-elementet #root saknas i index.html');
 }
 
-// React 19 createRoot-hooks integrerar Sentry för root-level error-capture.
-// Sentry.ErrorBoundary i __root.tsx fångar UI-render-fel; createRoot-hooks fångar
-// allt som passerar förbi (event handlers, async, recoverable errors).
+// React 19 createRoot-hooks integrerar Sentry för ALL error-capture (Session 16
+// K4-konsolideringen): boundaries (AppErrorBoundary + SectionError) renderar
+// fallbacks, hooks rapporterar — onCaughtError täcker boundary-fångade fel,
+// onUncaughtError resten (event handlers, async, recoverable errors).
 createRoot(rootEl, {
   onUncaughtError: Sentry.reactErrorHandler((error, errorInfo) => {
     console.error('Uncaught error:', error, errorInfo);
@@ -89,11 +91,16 @@ createRoot(rootEl, {
   onRecoverableError: Sentry.reactErrorHandler(),
 }).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <InnerApp />
-      </AuthProvider>
-    </QueryClientProvider>
+    {/* App-boundary (DoD 7, Session 16 K4): yttersta fel-lagret — täcker
+        providers + render-gate + router (sektions-fel tas av SectionError
+        via defaultErrorComponent innan de når hit). */}
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <InnerApp />
+        </AuthProvider>
+      </QueryClientProvider>
+    </AppErrorBoundary>
   </StrictMode>,
 );
 
