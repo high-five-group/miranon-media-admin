@@ -17,7 +17,19 @@
 
 **Fas 5.5 — Vertikal write-slice (nästa session).** Per `docs/byggplan.md` §4: "markera anmälan som betald" via befintlig `update-record` EF med ny `operationKey`; etablerar TanStack optimistic mutation-mönstret (ADR-016) + operations-allowlist-utvidgning + 3 Playwright-tester (2 deny, 1 allow). Inga nya EF-deploys. ADR-krav. Synk-gate 2-handshake mot `field-allowlists.ts` per operation (Fas B). Ingångsläge: Fas 5 ✅ KLAR med fas-avslut — skal, PWA-grund, error boundaries och offline-config på plats; estimat-summa Fas 5.5 → Fas 7 = 9,5 sessioner.
 
-### Session 17 (pågående) — repo-hygien: öppna trådar
+### Session 17 ✅ KLAR (2026-06-13) — repo-hygien + synk-horisont
+
+- [x] **Repo-hygien + synk-horisont** ✅ (mellanfas, ingen byggfas).
+  Advisory-incident GHSA-gv7w hanterad per ADR-028 (allowlist + expiry,
+  `9429336`); flyttar tasks-direktiv/logs/datamodell-research/analysis →
+  arkivrötterna (`f343db3`/`39fe4ba`/`43648af`/`4550886`); ADR-048
+  synk-horisont + pekar-paket (`bd3957d`/`5dc43e5`/`89b2d4e`); K6-audit
+  → K7: sessionsdok in i lint-scope + grindvakts-testsviter in i CI
+  (`cced32d`/`49ebbdb`, run 27449167933). K5: synken 91 % → 64 %.
+  Lessons L103–L109. Trail:
+  [`tasks/sessions/2026-06-13-session-17.md`](sessions/2026-06-13-session-17.md).
+
+### Öppna trådar från Session 17
 
 - [ ] **Riv allowlist-posten GHSA-gv7w-rqvm-qjhr** när esbuild ≥ 0.28.1 nås via
   vite/tsx-bump. Verifierbart sluttillstånd: `npm ls esbuild` visar ≥ 0.28.1
