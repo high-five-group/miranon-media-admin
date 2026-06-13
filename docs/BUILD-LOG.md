@@ -1236,6 +1236,51 @@ Lessons L110–L113 skördade (4 UNIVERSAL). Sessionsdok-trail:
 
 ---
 
+## Session 19 — Staging-miljö designsession: ADR-050 + förarbete steg 1+2 (ingen fas-status-ändring) (2026-06-13)
+
+Commit-range `3a3269a` → `009a8d1`. Research-gated: empirisk miljö-verifiering →
+ADR-050 → förarbete → Marcus miljö-moment. Avblockerar (efter Session 20-bygget)
+Fas 5.5:s deny/allow-tester. Fas 5.5 förblir **PÅGÅENDE** (ej fas-avslut).
+
+**Miljö-forensik:** `supabase projects list` bekräftade ett enda projekt
+(L110 håller). Schema-introspektion via fyra oberoende read-only-kanaler
+(`supabase inspect db` table/index/vacuum-stats + PostgREST OpenAPI-rot) visade
+**noll app-tabeller** — all data i Airtable, Postgres bär bara managed Auth →
+`db pull`/migrations deprioriterat (L115).
+
+**[ADR-050](decisions/ADR-050-isolerad-staging-miljo.md):** isolerad staging —
+separat Supabase-projekt (Pro) + dedikerad Airtable-bas utan records +
+env-driven `AIRTABLE_BASE_ID`. Avvisar Free+keep-alive och branching som primär.
+Commits `1f9d5b4` + `8445f75` (grindfix: README count 49→50, katalog-rad, Vale
+code-span). Status `Accepted` (engelsk konvention, L114). README-räkning via
+`check-adr-count`-grinden.
+
+**Förarbete steg 1 (`49267b4`):** `AIRTABLE_BASE_ID` env-drivet med fail-fast
+(ingen prod-fallback); tabell-adressering i 4 EF:er bytt från bas-unika
+`tbl`-id:n till tabell-NAMN (Eventplanering/Personer/Anmälningar, live-verifierade
+och Airtable-docs-bekräftad namn-i-path). `.env.test.example`/`ci.yml` medvetet
+ej rörda — ingen testväg läser secreten (L117).
+
+**Förarbete steg 2 (`009a8d1`):** fail-closed prod-deploy-allowlist mot Fas
+7-skulden — `.prod-functions-allowlist.conf` (5 prod; test-auth utanför) +
+`scripts/deploy-prod-functions.sh` + `scripts/test-deploy-prod-functions.sh`
+(4 testfall, CI-kört eget steg). Allowlist-över-blocklista: ny funktion =
+prod-exkluderad by default.
+
+**Marcus miljö-moment:** Supabase uppgraderad till Pro; staging-projekt skapat
+(`miranon-media-admin-staging`, AWS eu-west-1, Micro, Data API på,
+auto-expose/auto-RLS av); Airtable staging-bas skapad ("Miranon Media OS -
+staging", utan records, samma workspace som prod — isolering via bas-ID, ej
+workspace, L118).
+
+**Bär vidare (kritiskt):** (1) `AIRTABLE_BASE_ID` måste sättas som prod-secret
+FÖRE nästa prod-redeploy (annars fail-fast). (2) Prod-deploy endast via
+allowlist-skriptet. Lessons L114–L118 skördade (3 UNIVERSAL). Nästa: Session 20
+bygg-steg 3–8. Sessionsdok-trail:
+[`tasks/sessions/2026-06-13-session-19.md`](../tasks/sessions/2026-06-13-session-19.md).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

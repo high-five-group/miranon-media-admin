@@ -2029,3 +2029,26 @@ pausades för att bygga riktig staging först (Session 19, research-gated).
 
 - [UNIVERSAL] **L113 — Kringgående vs grundorsaks-fix: fixa orsaken när kostnaden att göra rätt är låg; kringgå bara när den är prohibitivt hög.**
   Symptom: allow-testet behövde ett muterbart record utan att skada live-data. Två vägar fanns — kringgå (self-create/delete-record i testet) eller fixa orsaken (riktig isolerad staging). Eftersom Airtable-bas-duplicering är "ett knapptryck" (låg kostnad), valdes grundorsaks-fixen (bygg staging) framför self-create/delete-kringgåendet. Generaliserbar regel: när ett test/flow tvingar fram en workaround, värdera kostnaden att i stället eliminera grundorsaken; är den låg är workarounden teknisk skuld utan motivering. Endast prohibitiv åtgärds-kostnad rättfärdigar kringgående. Källa: 2026-06-13 Session 18, ADR-049 Öppen tråd 1+2 → staging-beslut.
+
+## 2026-06-13 — Session 19 (Staging-miljö designsession — ADR-050 + förarbete steg 1+2)
+
+Research-gated designsession: empirisk miljö-verifiering bekräftade L110
+(ett Supabase-projekt, Postgres nära tomt), ADR-050 beslutade isolerad staging
+(Pro + dedikerad Airtable-bas), förarbete steg 1 (env-driven `AIRTABLE_BASE_ID` +
+tabell per namn) + steg 2 (fail-closed prod-deploy-allowlist) landades. Marcus
+skapade båda miljöerna. Fas 5.5 förblir PÅGÅENDE.
+
+- **L114 — ADR-katalog-/frontmatter-fält är ENGELSKA i detta repo även med svensk brödtext.**
+  Symptom: ADR-050:s prompt-värde var `Status: Accepterad`, men alla 49 befintliga ADR:er + katalogen använder `Accepted`. Code överred prompten och skrev `Accepted` för konvention-konsistens. Generaliserbar regel: en etablerad konvention i ett stort bestånd (49 ADR:er) slår en enskild prompts bokstav på format-fält (Status, fält-namn) — skriv konventionsvärdet direkt och flagga override:n. Källa: 2026-06-13 Session 19, ADR-050-landning (commit `8445f75`).
+
+- [UNIVERSAL] **L115 — Generisk plattforms-research kan vilseleda i en arkitektur där datan bor någon annanstans; verifiera lokalt arkitektur-tillstånd empiriskt INNAN ett steg sekvenseras runt en generisk mekanism.**
+  Symptom: `db pull`/migrations-steget antog ett Postgres-app-schema värt att fånga; empirisk introspektion via fyra oberoende kanaler (`supabase inspect db` table/index/vacuum-stats + PostgREST OpenAPI-rot) visade NOLL app-tabeller — all data bor i Airtable, Postgres bär bara managed Auth. Steget hade sekvenserats runt en generisk "staging-DB sås från migrations"-mekanism som inte gäller denna arkitektur. Marcus "varför?" på det sekvenserade steget tvingade fram introspektionen. Generaliserbar regel: innan ett förarbets-steg byggs runt en bransch-generisk mekanism (migrations, schema-dump, ORM-sync), verifiera empiriskt att den lokala arkitekturen faktiskt har det tillstånd mekanismen förutsätter — annars löser steget ett problem som inte finns. Reinforcerar L110. Källa: 2026-06-13 Session 19, schema-introspektions-pass.
+
+- [UNIVERSAL] **L116 — Installera verktyg när en uppgift kräver dem, inte preventivt; välj det lättaste verktyget som stänger det faktiska gapet.**
+  Symptom: schema-introspektionens residual (funktioner/triggers cross-schema) kunde inte SQL-enumereras lokalt — Docker (för `db dump`) och psql saknades. Den billigaste boten var inte att installera en Docker-daemon utan en Supabase-PAT mot Management-API:t (information_schema-SELECT). Fyra read-only-kanaler räckte ändå för slutsatsen. Generaliserbar regel: när ett verktyg saknas, fråga "vad är det lättaste som stänger DETTA gap?" före tung infra-installation — ofta finns en API-/CLI-väg som undviker daemon/runtime helt. Källa: 2026-06-13 Session 19, schema-introspektions-pass.
+
+- **L117 [Chat-self-review] — Verifiera att en föreslagen secret/config-punkt faktiskt LÄSES innan den läggs till; oläst CI-secret = vilseledande konsistens-teater.**
+  Symptom: Chat-prompten antog att `AIRTABLE_BASE_ID` skulle in i `.env.test.example` + `ci.yml`, men steg-4-research visade att testerna kör EF-koden över HTTP (deployade EF:er), aldrig lokalt — ingen testväg läser secreten, och `AIRTABLE_TOKEN` (samma klass) finns inte heller där. Att lägga till den hade skapat en GitHub-secret som CI aldrig läser. Generaliserbar regel: innan en secret/env/config-punkt läggs till en pipeline, spåra att någon kod-väg faktiskt LÄSER den i den kontexten; annars är tillägget konsistens-teater som vilseleder framtida läsare. Code:s steg-4-research fångade det (extern fångst > self-review). Källa: 2026-06-13 Session 19, förarbete steg 1.
+
+- [UNIVERSAL] **L118 — Airtable-miljö-isolering kommer från distinkt bas-ID + env-driven config, INTE från workspace-separation.**
+  Symptom: ett alternativ var en separat staging-workspace, men Airtable Team-plan prissätts per-workspace → separat staging-workspace = onödig andra prenumeration. Olika bas-ID i samma workspace ger den isolering som faktiskt spelar roll (skilda data, skild access via PAT-scope), styrt av env-driven `AIRTABLE_BASE_ID`. Generaliserbar regel: isolera på den axel som bär den faktiska gränsen (bas-ID + credential-scope), inte på en dyrare organisatorisk axel (workspace/org) som inte tillför isolering men dubblerar kostnad. Källa: 2026-06-13 Session 19, Marcus miljö-moment + ADR-050.

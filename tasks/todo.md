@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-06-13 (Session 18 — Fas 5.5 PAUSAD mitt i: server-kontraktet levererat (operation `mark-registration-fee-paid`, ADR-049, L110–L113) men test-aktivering + K2-UI gated på riktig staging-miljö (staging==produktion-fynd). Nästa: Session 19 staging-miljö designsession (research → ADR → bygge). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
+*Senast uppdaterad: 2026-06-13 (Session 19 — staging-miljö designsession: ADR-050 + förarbete steg 1 (env-driven `AIRTABLE_BASE_ID` + tabell per namn) + steg 2 (fail-closed prod-deploy-allowlist) landade; Marcus skapade båda miljöerna (Supabase Pro staging-projekt + Airtable staging-bas utan records). Nästa: Session 20 = bygg-steg 3 (läs staging-ID:n → SECRET-KARTA → bygg-steg 4–8). Fas 5.5 fortsatt PÅGÅENDE. Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -17,7 +17,22 @@
 
 **Fas 5.5 — Vertikal write-slice ⏸ PAUSAD (pending staging-miljö).** Server-kontraktet är levererat och CI-grönt (operation `mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049). Klient-UI (K2) + test-aktiveringen är gated på en `update-record`-redeploy som avslöjade att ingen isolerad staging-miljö finns (orgen har **ett enda** Supabase-projekt; "staging" == den levande miljön + samma Airtable-bas). Pausat tills riktig staging byggs. Återupptas efter Session 19.
 
-**Nästa: Session 19 — staging-miljö designsession.** Web-research (staging-arkitektur för Supabase + Airtable-isolering) → utförande-ADR (ADR-050) → bygge (eget Supabase-projekt + duplicerad Airtable-bas). Research FÖRE arkitektur — ingen ADR-stub skriven i förväg. Avblockerar Fas 5.5:s deny/allow-tester + K2.
+**Nästa: Session 20 — staging-bygge (bygg-steg 3–8 per ADR-050 bygg-sekvens).** Förarbetet (steg 1+2) + ADR-050 är landade och båda miljöerna skapade. Bygg-steg 3 (ingång): Code läser staging-projektets ref + api-keys (`supabase projects api-keys --project-ref <staging-ref>`) + nya Airtable-basens bas-/tabell-ID:n via MCP → producera **SECRET-KARTA** (vilka secrets, vilket projekt, vilka värden) FÖRE något sätts. Sedan steg 4 (sätt staging-secrets) → 5 (deploy 6 EF:er till staging via allowlist-skriptet) → 6 (peka om CI:s `TEST_SUPABASE_*` mot staging) → 7/8 (aktivera de 3 skippade testerna + allow-test mot seedad record). Avblockerar Fas 5.5:s deny/allow-tester + K2.
+
+### Session 19 ✅ (2026-06-13) — staging-miljö design + förarbete
+
+- [x] **ADR-050** isolerad staging-miljö (Pro Supabase + dedikerad Airtable-bas) — `1f9d5b4` + grindfix `8445f75`.
+- [x] **Förarbete steg 1** env-driven `AIRTABLE_BASE_ID` (fail-fast) + tabell per namn i 4 EF:er — `49267b4`.
+- [x] **Förarbete steg 2** fail-closed prod-deploy-allowlist (`.prod-functions-allowlist.conf` + `scripts/deploy-prod-functions.sh` + test-svit + CI-steg) — `009a8d1`. Lessons L114–L118.
+- [x] **Marcus miljö-moment:** Supabase Pro + staging-projekt (`miranon-media-admin-staging`, AWS eu-west-1, Micro) + Airtable staging-bas ("Miranon Media OS - staging", utan records, samma workspace).
+
+#### Öppna trådar från Session 19 (bär in i Session 20)
+
+- [ ] **KRITISK post-merge (1):** `AIRTABLE_BASE_ID` måste sättas som **prod-secret** (`=app8uGPrVCVOm6LfD`) FÖRE nästa manuella prod-redeploy — annars fail-fast:ar prod-EF:erna. Steg 1 gjorde källan env-beroende.
+- [ ] **KRITISK post-merge (2):** prod-deploy hädanefter ENDAST via `scripts/deploy-prod-functions.sh --project-ref <ref>` — aldrig bare `supabase functions deploy`.
+- [ ] **ADR-050 öppna trådar:** T1 LÖST (Pro). T2 staging-bas skapad — nya bas-/tabell-ID:n återstår att läsas empiriskt (bygg-steg 3). T3 LÖST (namn-i-path bekräftat + implementerat). T4 (schema-sync staging↔prod) ÖPPEN men deferrad — Postgres nära tom, primärt en Airtable-fråga.
+- [ ] **Airtable-PAT mot staging-basen:** skapas av Marcus i bygg-steg 3 (guidas då); ej skapad än.
+- [ ] **De 3 skippade testerna** (`update-record.staging.test.ts` rad 56/83/110) orörda — aktiveras i bygg-steg 8 efter staging-deploy + seedad record.
 
 ### Session 18 ⏸ PAUSAD (2026-06-13) — Fas 5.5 server-kontrakt (K1)
 
@@ -483,7 +498,7 @@ Meta-arbete parallellt med byggfaserna. Reviderade conversion-plan till byggplan
 - **docs/specs/DESIGN-SYSTEM-SPEC.md stale-risk:** Governance-beslut uppskjutet efter alla faser
 - **DEFER → Fas 3:** 4 CSS-warnings i `src/styles/base.css:72-75` (`!important` i `prefers-reduced-motion`). Fas 3 omarbetar `base.css` när primitiver landas — städning sker som biprodukt. Trigger: första Fas 3-session. Källa: P3b sessionsdok Del 3.4 H.1.
 - **DEFER → passiv (bevakas):** PostCSS audit-fix. `npm audit` rapporterar PostCSS-relaterade transitive dependencies, inga high/critical. PostCSS uppdateras naturligt via Tailwind v4-uppgradering eller Dependabot. Trigger: om `npm audit --audit-level=high` blir röd, ELLER vid Tailwind v5-migration. Källa: P3b sessionsdok Del 3.4 H.2.
-- **DEFER → Fas 7:** `supabase/functions/test-auth/` borttagning från produktion. Lever idag med `verify_jwt = false` i `config.toml` — Playwright-helper för deny-paths-tester. Fas 7 (Konsolidering: CSP, chaos testing, deploy) ska exkludera `test-*`-funktioner från produktions-deploy via CI-pipeline. Källa: P3b sessionsdok Del 3.4 H.4.
+- **DEFER → Fas 7 (SPÄRR finns sedan Session 19):** `supabase/functions/test-auth/` får aldrig nå produktion. Lever idag med `verify_jwt = false` i `config.toml` — Playwright-helper för deny-paths-tester. **Mekanismen finns nu (ADR-050 steg 2):** `scripts/deploy-prod-functions.sh` + `.prod-functions-allowlist.conf` (fail-closed; test-auth prod-exkluderad by default). Återstår till Fas 7: integrera allowlisten i en CI-deploy-pipeline (idag manuell deploy-väg). Källa: P3b sessionsdok Del 3.4 H.4 + Session 19.
 - **K3.4-kvalitetsklyfta (2026-05-13, deferred till Fas 3.5):** auth-error-path unit-test-mönster för `getAuthHeader()` AuthError-kontraktet. Test-fall: `callEdgeFunction` + `postEdgeFunction` med session=null → AuthError + fetchWithRetry never called. Vitest-installation hör hemma där per Gate 1-beslut 2026-05-13 (scope-creep att göra i K3.4 utan ADR — projektet är Playwright-only). Sessionsdok-trail: `tasks/sessions/archive/2026-05/2026-05-11-fas2-routing-auth.md` Del 5.9. Lyfts till Fas 3.5-prompten när Session 6+ påbörjar Fas 2.5 → 3 → 3.5-sekvensen.
 - **No-flash render-gate-regressionstest (2026-05-27, Session 7 K0.2b, deferred till Fas 3.5):** deterministiskt komponent-test (vitest + @testing-library/react) för render-gaten i `src/main.tsx` `InnerApp` ([ADR-037](../docs/decisions/ADR-037-auth-resolution-render-gate.md)). Test-fall: (1) montera `InnerApp` med `useAuth()` mockad `{ isLoading: true, isAuthenticated: false }` → assertera att `<RouterProvider>` / skyddat innehåll INTE renderas, endast laddnings-UI:t (`role="status"`); (2) flippa mock till `{ isLoading: false, isAuthenticated: true }` → assertera att routern monteras. **Kontrast-krav:** testet ska FALLA mot pre-ADR-037-koden (där `<RouterProvider>` monterades omedelbart oavsett isLoading). Mock: `vi.mock('../auth/useAuth')`. Kräver vitest-infra (samma Gate 1-defer som K3.4-posten ovan). Idag bevisad strukturellt + K4.3-sviten 7/7 — E2E kan inte ge deterministiskt kontrast-bevis (sub-frame `getSession`-fönster, ingen interceptbar request för giltig stored session). Detaljerad nog att Fas 3.5 aktiverar, ej återuppfinner.
 - ~~**Fel-hanterings-arkitektur-konsolidering**~~ ✅ STÄNGD Session 16 K4 (2026-06-12) — alla tre frågorna lösta i konsolideringen till exakt två fel-lager (STOPPA-utfall A via Chat): (1) `Sentry.ErrorBoundary` riven ur `__root.tsx` (near-zero unik täckning per K0.3b-empirin); (2) render-gate-ytan täcks nu av `AppErrorBoundary` (`src/main.tsx`, runt providers + router) med branded fallback; (3) capture-vägen konsoliderad till enbart createRoot-hooks (`onCaughtError`/`onUncaughtError` → Sentry) — boundaries renderar, hooks rapporterar. Sektions-lagret = `SectionError` (MessageBox-baserad) som `defaultErrorComponent`; `RouteErrorFallback` raderad. Ursprungstext bevarad nedan för spårbarhet.
