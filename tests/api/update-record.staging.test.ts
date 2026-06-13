@@ -2,15 +2,18 @@
 //
 // Fas 5.5 (Session 18) registrerade första operationen
 // mark-registration-fee-paid → { tableId Anmälningar,
-// allowedFields ['Anmälningsavgift'] } i field-allowlists.ts. Status:
-//   - deny: okänd operation → 400 (aktiv sedan tidigare).
-//   - deny: recordId utan rec-prefix → 400 (aktiverad Fas 5.5).
-//   - deny: fält utanför allowlist → 400 (aktiverad Fas 5.5).
-//   - allow: registrerad operation → 200 — fortfarande test.skip().
-//     Allow-vägen muterar ett riktigt record och kräver mutations-säkert
-//     staging-record + restore-teardown + TEST_REGISTRATION_RECORD_ID.
-//     Deferrad per ADR-049 öppen tråd (staging-Airtable-isolering ej
-//     beslutad).
+// allowedFields ['Anmälningsavgift'] } i field-allowlists.ts. VIKTIGT:
+// källändringen påverkar inte staging förrän update-record OMDEPLOYAS —
+// CI har inget deploy-steg (CI-fynd run 27463508240, ADR-049 Öppen
+// tråd 1). Teststatus:
+//   - deny: okänd operation → 400 (aktiv; korrekt oavsett deploy).
+//   - deny: recordId utan rec-prefix → 400 — test.skip tills redeploy
+//     (annars 400 via "Unknown operation", fel väg).
+//   - deny: fält utanför allowlist → 400 — test.skip tills redeploy
+//     (annars "Unknown operation" istället för "not allowed").
+//   - allow: registrerad operation → 200 — test.skip. Kräver redeploy +
+//     mutations-säkert staging-record + restore-teardown +
+//     TEST_REGISTRATION_RECORD_ID (ADR-049 Öppen tråd 1 + 2).
 //
 // Auth-/anonym-deny (401) testas inte här utan i require-user-sviten via
 // den delade requireUser-gatewayen (täcker alla Edge Functions).
@@ -43,10 +46,18 @@ test.describe('update-record — operations-allowlist (M4)', () => {
     const config = getApiConfig();
     const userJwt = await getValidUserJWT(request, config);
 
-    // Operations-check körs först (steg 2), sedan recordId-format
-    // (steg 3). Med känd operation (mark-registration-fee-paid) passerar
-    // steg 2 och recordId-prefix-checken i steg 3 fäller → 400. Når
-    // aldrig Airtable (ingen mutation). Aktiverad i Fas 5.5 (Session 18).
+    // Med känd operation passerar steg 2 och recordId-prefix-checken i
+    // steg 3 fäller → 400. MEN tills update-record omdeployats till
+    // staging med mark-registration-fee-paid i allowlisten svarar
+    // deployad EF "Unknown operation" (400) — testet blir då grönt för
+    // FEL anledning (når aldrig steg 3). Skippad tills redeploy så den
+    // verkligen prövar prefix-vägen. CI-fynd run 27463508240, ADR-049
+    // Öppen tråd 1.
+    test.skip(
+      true,
+      'Aktiveras när update-record omdeployats till staging med mark-registration-fee-paid i allowlisten (annars 400 via "Unknown operation", fel väg). ADR-049 Öppen tråd 1.',
+    );
+
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
       headers: { Authorization: `Bearer ${userJwt}` },
       data: {
@@ -65,9 +76,15 @@ test.describe('update-record — operations-allowlist (M4)', () => {
 
     // mark-registration-fee-paid har allowedFields ['Anmälningsavgift'].
     // Slutbetalning ligger UTANFÖR listan → findDisallowedField (steg 4)
-    // fäller före Airtable-anropet. recAAAAAAAAAAAAA passerar prefix-
-    // checken men records existens prövas aldrig (deny innan mutation).
-    // Aktiverad i Fas 5.5 (Session 18).
+    // fäller före Airtable-anropet med "...not allowed for operation".
+    // MEN tills update-record omdeployats svarar deployad EF "Unknown
+    // operation" → body-matchen faller (CI-fynd run 27463508240). Skippad
+    // tills redeploy. ADR-049 Öppen tråd 1.
+    test.skip(
+      true,
+      'Aktiveras när update-record omdeployats till staging med mark-registration-fee-paid i allowlisten (annars "Unknown operation", inte "not allowed"). ADR-049 Öppen tråd 1.',
+    );
+
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
       headers: { Authorization: `Bearer ${userJwt}` },
       data: {

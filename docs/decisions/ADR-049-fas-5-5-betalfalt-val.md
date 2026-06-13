@@ -30,9 +30,9 @@ Status-värde. Marcus låste fält-valet vid K1-start.
 
 Synk-gate 2 (handshake per Fas 5.5/6-operation, per A4) kördes före
 skrivning: fältnamnet `Anmälningsavgift` bekräftades mot 06a-status
-([06a-airtable-redesign.md](../research/datamodell-research/06a-airtable-redesign.md)
+([`06a-airtable-redesign.md`](../research/datamodell-research/06a-airtable-redesign.md)
 rör `Status`/aktiv-formel/mailfält, inte avgiftsfältet) och
-[06b-supabase-target.md](../research/datamodell-research/06b-supabase-target.md)
+[`06b-supabase-target.md`](../research/datamodell-research/06b-supabase-target.md)
 (noll träffar på avgiftsfältet → ingen target-rename). Ingen divergens.
 
 ## Beslut
@@ -46,16 +46,19 @@ operationKey-namnet (`-fee-paid`, inte `-paid`) lämnar medvetet rum åt en
 framtida slutbetalnings-operation: betalning är i praktiken tvåstegs
 (avgift först, slutbetalning sedan), och Fas 5.5-slicen täcker steg ett.
 
-Test-uppsättningen som faktiskt levereras i K1:
+Test-uppsättningen som faktiskt levereras i K1 (justerad efter CI-fyndet,
+Öppen tråd 1):
 
-- **Två operations-specifika deny-tester aktiva:** `deny: recordId utan
-  rec-prefix → 400` och `deny: fält utanför allowlist → 400` (skickar
-  `Slutbetalning`, utanför listan). Båda fäller i EF:ens valideringssteg
-  **före** Airtable-anropet → inget record behövs, ingen mutation sker.
-- **Ett allow-test deferrat** med exakt aktiverings-villkor: muterbart
-  staging-record + read-restore-teardown + `TEST_REGISTRATION_RECORD_ID`-
-  secret. Allow-vägen muterar ett riktigt record och kan inte bli grönt
-  förrän den infran finns (se Öppen tråd).
+- **`deny: okänd operation → 400` aktiv** — korrekt oavsett EF-deploy.
+- **`deny: fält utanför allowlist` + `deny: recordId-prefix`** är skrivna
+  med `operationKey: mark-registration-fee-paid` + `Slutbetalning` som
+  förbjudet fält, men `test.skip` tills `update-record` omdeployats till
+  staging (annars svarar deployad EF "Unknown operation", inte de
+  operations-specifika 400-vägarna). Båda fäller i EF:ens valideringssteg
+  **före** Airtable-anropet → inget record behövs, ingen mutation.
+- **Allow-testet deferrat** med exakt aktiverings-villkor: redeploy +
+  muterbart staging-record + read-restore-teardown +
+  `TEST_REGISTRATION_RECORD_ID`-secret.
 - **Auth-/anonym-deny (401) dupliceras inte här** — den täcks av den
   delade `requireUser`-gatewayen och bevisas i require-user-sviten
   ([tests/api/require-user.staging.test.ts](../../tests/api/require-user.staging.test.ts)),
@@ -82,7 +85,32 @@ Test-uppsättningen som faktiskt levereras i K1:
   i fält-detaljen — flaggad som öppen tråd, ändras inte i denna klunga
   (styrande-dok-ändring, eget beslut).
 
-## Öppen tråd — allow-test-provisionering (blockerande för DoD "1 allow-test")
+## Öppen tråd 1 — EF-redeploy krävs för operations-specifika tester
+
+**Empiriskt fynd (CI-run 27463508240):** att registrera operationen i
+`field-allowlists.ts` påverkar INTE staging förrän `update-record`-EF:en
+**omdeployas** — den delade filen bundlas in i funktionen vid deploy, och
+CI har inget deploy-steg (staging-testerna kör mot senast manuellt
+deployade version). Före redeploy returnerar den deployade EF:en
+`"Unknown operation: mark-registration-fee-paid"` (registret tomt).
+
+Konsekvens för testerna ([update-record.staging.test.ts](../../tests/api/update-record.staging.test.ts)):
+
+- `deny: okänd operation → 400` — korrekt oavsett deploy (aktiv).
+- `deny: fält utanför allowlist` — kräver deployad operation (annars
+  "Unknown operation" istället för "not allowed"). `test.skip` tills
+  redeploy.
+- `deny: recordId-prefix` — pre-redeploy passerar den för FEL anledning
+  (får 400 via "Unknown operation", når aldrig prefix-checken i steg 3).
+  `test.skip` tills redeploy så den verkligen prövar sin namngivna väg.
+- `allow` — kräver både redeploy OCH muterbart record (Öppen tråd 2).
+
+**Unblock:** redeploy `update-record` till staging (separat manuellt
+steg, ej i CI-pipelinen — kräver Supabase-deploy-access). Byggplanens
+"Inga nya EF-deploys" gäller NYA funktioner; en redeploy av befintlig
+`update-record` är nödvändig och inte i konflikt med den raden.
+
+## Öppen tråd 2 — allow-test-provisionering (blockerande för DoD "1 allow-test")
 
 Allow-testet ([update-record.staging.test.ts](../../tests/api/update-record.staging.test.ts))
 är `test.skip` tills allow-vägen kan bevisas utan att lämna live-data
