@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-06-13 (Session 19 — staging-miljö designsession: ADR-050 + förarbete steg 1 (env-driven `AIRTABLE_BASE_ID` + tabell per namn) + steg 2 (fail-closed prod-deploy-allowlist) landade; Marcus skapade båda miljöerna (Supabase Pro staging-projekt + Airtable staging-bas utan records). Nästa: Session 20 = bygg-steg 3 (läs staging-ID:n → SECRET-KARTA → bygg-steg 4–8). Fas 5.5 fortsatt PÅGÅENDE. Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
+*Senast uppdaterad: 2026-06-14 (Session 19 PAUSAD via `/session-paus` (ADR-051 dogfood) — staging-miljö designsession: ADR-050 + förarbete steg 1 (env-driven `AIRTABLE_BASE_ID` + tabell per namn) + steg 2 (fail-closed prod-deploy-allowlist) landade; Marcus skapade båda miljöerna (Supabase Pro staging-projekt + Airtable staging-bas utan records). Ny ordning: Session 20 = lifecycle-fält-fix (ADR-052 + dedikerat `lifecycle:`-fält); staging bygg-steg 3–8 = resume av session 19 EFTER session 20. Fas 5.5 fortsatt PÅGÅENDE. Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -17,7 +17,7 @@
 
 **Fas 5.5 — Vertikal write-slice ⏸ PAUSAD (pending staging-miljö).** Server-kontraktet är levererat och CI-grönt (operation `mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049). Klient-UI (K2) + test-aktiveringen är gated på en `update-record`-redeploy som avslöjade att ingen isolerad staging-miljö finns (orgen har **ett enda** Supabase-projekt; "staging" == den levande miljön + samma Airtable-bas). Pausat tills riktig staging byggs. Återupptas efter Session 19.
 
-**Nästa: Session 20 — staging-bygge (bygg-steg 3–8 per ADR-050 bygg-sekvens).** Förarbetet (steg 1+2) + ADR-050 är landade och båda miljöerna skapade. Bygg-steg 3 (ingång): Code läser staging-projektets ref + api-keys (`supabase projects api-keys --project-ref <staging-ref>`) + nya Airtable-basens bas-/tabell-ID:n via MCP → producera **SECRET-KARTA** (vilka secrets, vilket projekt, vilka värden) FÖRE något sätts. Sedan steg 4 (sätt staging-secrets) → 5 (deploy 6 EF:er till staging via allowlist-skriptet) → 6 (peka om CI:s `TEST_SUPABASE_*` mot staging) → 7/8 (aktivera de 3 skippade testerna + allow-test mot seedad record). Avblockerar Fas 5.5:s deny/allow-tester + K2.
+**Nästa: Session 20 — lifecycle-fält-fix (ADR-052 + dedikerat `lifecycle:`-fält); staging bygg-steg 3–8 = RESUME av session 19 EFTER session 20** (Marcus-sekvens: fixa systemet först, sedan slutför arbetet). Staging-arbetet (vid resume-19): Förarbetet (steg 1+2) + ADR-050 är landade och båda miljöerna skapade. Bygg-steg 3 (ingång): Code läser staging-projektets ref + api-keys (`supabase projects api-keys --project-ref <staging-ref>`) + nya Airtable-basens bas-/tabell-ID:n via MCP → producera **SECRET-KARTA** (vilka secrets, vilket projekt, vilka värden) FÖRE något sätts. Sedan steg 4 (sätt staging-secrets) → 5 (deploy 6 EF:er till staging via allowlist-skriptet) → 6 (peka om CI:s `TEST_SUPABASE_*` mot staging) → 7/8 (aktivera de 3 skippade testerna + allow-test mot seedad record). Avblockerar Fas 5.5:s deny/allow-tester + K2.
 
 ### Session 19 ✅ (2026-06-13) — staging-miljö design + förarbete
 
@@ -26,7 +26,7 @@
 - [x] **Förarbete steg 2** fail-closed prod-deploy-allowlist (`.prod-functions-allowlist.conf` + `scripts/deploy-prod-functions.sh` + test-svit + CI-steg) — `009a8d1`. Lessons L114–L118.
 - [x] **Marcus miljö-moment:** Supabase Pro + staging-projekt (`miranon-media-admin-staging`, AWS eu-west-1, Micro) + Airtable staging-bas ("Miranon Media OS - staging", utan records, samma workspace).
 
-#### Öppna trådar från Session 19 (bär in i Session 20)
+#### Öppna trådar från Session 19 (bär in i resume av session 19, efter session 20)
 
 - [ ] **KRITISK post-merge (1):** `AIRTABLE_BASE_ID` måste sättas som **prod-secret** (`=app8uGPrVCVOm6LfD`) FÖRE nästa manuella prod-redeploy — annars fail-fast:ar prod-EF:erna. Steg 1 gjorde källan env-beroende.
 - [ ] **KRITISK post-merge (2):** prod-deploy hädanefter ENDAST via `scripts/deploy-prod-functions.sh --project-ref <ref>` — aldrig bare `supabase functions deploy`.
