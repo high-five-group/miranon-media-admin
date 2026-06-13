@@ -5,9 +5,13 @@
 # requireUser-helpern OVANPÅ för defense-in-depth (anon-key fångas
 # där eftersom anon-key ÄR ett valid JWT som passerar gateway).
 #
-# TODO Fas 7 — test-*-funktioner får ALDRIG nå produktion. När
-# prod-deploy-pipelinen byggs måste den filtrera bort dem explicit.
-# Se tasks/sessions/2026-05-04-security-hardening.md §F.
+# test-*-funktioner får ALDRIG nå produktion (Fas 7-skuld, lessons.md L115).
+# SPÄRR (ADR-050 steg 2, Session 19): prod-deploy går via
+# scripts/deploy-prod-functions.sh som läser .prod-functions-allowlist.conf
+# (fail-closed allowlist) — test-auth + nya funktioner är prod-exkluderade by
+# default. Använd ALDRIG bare `supabase functions deploy` (deployar alla).
+# När en CI-deploy-pipeline byggs ska den respektera samma allowlist.
+# Ursprung: tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md §F.
 
 project_id = "miranon-media-admin"
 

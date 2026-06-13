@@ -205,6 +205,15 @@ jobs:
           bash scripts/test-check-public-checklists.sh
           bash scripts/test-pre-commit-hook.sh
 
+      - name: Test prod-deploy allowlist (fail-closed)
+        # Bevisar fail-closed-egenskapen i scripts/deploy-prod-functions.sh
+        # (ADR-050 steg 2 / Fas 7-skuld L115): test-* + nya funktioner
+        # exkluderas från prod-deploy by default. Eget steg med ärligt namn
+        # (Session 17 K7-disciplin: stegnamn ska inte ljuga om sitt innehåll).
+        # Kör endast --list/felvägar — INGEN faktisk deploy.
+        run: |
+          bash scripts/test-deploy-prod-functions.sh
+
       - name: Install shellcheck (pinned v0.11.0)
         # Per ADR-033 § Säkerhet + ADR-029 § Third-party Actions-policy.
         # ubuntu-latest har shellcheck 0.9.0-1 pre-installerat (Image
