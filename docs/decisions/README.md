@@ -93,6 +93,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-048](ADR-048-synk-horisont-arkiv-atkomst.md) | Synk-horisont — arkivmaterial exkluderas ur projektkunskapen men förblir i git; via-Code-åtkomstregel | Accepted | Meta |
 | [ADR-049](ADR-049-fas-5-5-betalfalt-val.md) | Fas 5.5 write-slice skriver Anmälningsavgift, inte Status (Status saknar betald-värde); superseder ADR-016:s Status-kodexempel; allow-test deferrad pending staging-isolering | Accepted | 5.5 |
 | [ADR-050](ADR-050-isolerad-staging-miljo.md) | Isolerad staging-miljö — separat Supabase-projekt (Pro) + dedikerad Airtable-bas utan records + env-driven `AIRTABLE_BASE_ID`; avvisar Free+keep-alive och branching som primär; öppna trådar T1–T4 | Accepted | Meta |
+| [ADR-051](ADR-051-session-paus-lifecycle-verb.md) | session-paus — fjärde lifecycle-verbet (skriv-motpart till resume): parkera oavslutad session durabelt utan completion; asymmetrisk Chat-skill, bevarar sessionsnummer; utökar ADR-043 beslut 3 additivt | Accepted | Meta |
 
 ## Relaterade dokument
 
