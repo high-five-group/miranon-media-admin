@@ -1,5 +1,17 @@
-const AIRTABLE_BASE_ID = 'app8uGPrVCVOm6LfD';
+// Airtable REST-API-host (samma för alla baser/miljöer — ej prod-bindning).
 const AIRTABLE_API_URL = 'https://api.airtable.com/v0';
+
+// Bas-ID läses från env (fail-fast, INGEN hårdkodad prod-fallback) så att samma
+// Edge Function kan peka mot prod- eller staging-Airtable-bas via Supabase-secret
+// utan kod-ändring — ADR-050:s primära isolerings-spak. En fallback skulle låta
+// staging tyst skriva till prod om secreten saknas, exakt det ADR-050 eliminerar.
+function getAirtableBaseId(): string {
+  const baseId = Deno.env.get('AIRTABLE_BASE_ID');
+  if (!baseId) {
+    throw new Error('AIRTABLE_BASE_ID not set');
+  }
+  return baseId;
+}
 
 interface AirtableOptions {
   fields?: string[];
@@ -21,19 +33,22 @@ interface AirtableResponse {
 }
 
 export async function fetchFromAirtable(
-  tableId: string,
+  tableIdOrName: string,
   options: AirtableOptions = {},
 ): Promise<AirtableRecord[]> {
   const token = Deno.env.get('AIRTABLE_TOKEN');
   if (!token) {
     throw new Error('AIRTABLE_TOKEN not set');
   }
+  const baseId = getAirtableBaseId();
 
   const allRecords: AirtableRecord[] = [];
   let offset: string | undefined;
 
   do {
-    const url = new URL(`${AIRTABLE_API_URL}/${AIRTABLE_BASE_ID}/${tableId}`);
+    // tableIdOrName url-encodas — Airtable accepterar tabell-namn i path
+    // (namn och id utbytbara), och namn kan innehålla icke-ASCII (t.ex. "Anmälningar").
+    const url = new URL(`${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}`);
 
     if (options.fields) {
       for (const field of options.fields) {
@@ -86,7 +101,7 @@ export async function fetchFromAirtable(
 }
 
 export async function updateAirtableRecord(
-  tableId: string,
+  tableIdOrName: string,
   recordId: string,
   fields: Record<string, unknown>,
 ): Promise<AirtableRecord> {
@@ -94,8 +109,9 @@ export async function updateAirtableRecord(
   if (!token) {
     throw new Error('AIRTABLE_TOKEN not set');
   }
+  const baseId = getAirtableBaseId();
 
-  const url = `${AIRTABLE_API_URL}/${AIRTABLE_BASE_ID}/${tableId}/${recordId}`;
+  const url = `${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}/${recordId}`;
 
   const res = await fetch(url, {
     method: 'PATCH',

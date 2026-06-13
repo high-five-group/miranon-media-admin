@@ -7,7 +7,9 @@ import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 
-const TABLE_ID = 'tbl6ZyCm3V026iFTU'; // Personer
+// Tabell adresseras per NAMN (ej tbl-id) så samma kod fungerar mot prod- och
+// staging-bas — tbl-id:n är bas-unika och skiljer sig i en duplicerad bas (ADR-050).
+const TABLE_NAME = 'Personer';
 
 function mapPerson(record: { id: string; fields: Record<string, unknown> }) {
   const f = record.fields;
@@ -87,7 +89,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const records = await fetchFromAirtable(TABLE_ID, {
+    const records = await fetchFromAirtable(TABLE_NAME, {
       filterByFormula,
       sort: [{ field: 'Namn', direction: 'asc' }],
       maxRecords: limit,

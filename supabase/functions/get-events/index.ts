@@ -3,7 +3,9 @@ import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 
-const TABLE_ID = 'tblVE3UKWl1CKrphV'; // Eventplanering
+// Tabell adresseras per NAMN (ej tbl-id) så samma kod fungerar mot prod- och
+// staging-bas — tbl-id:n är bas-unika och skiljer sig i en duplicerad bas (ADR-050).
+const TABLE_NAME = 'Eventplanering';
 
 // Fältnamn från Airtable → ren API-respons
 function mapEvent(record: { id: string; fields: Record<string, unknown> }) {
@@ -50,7 +52,7 @@ Deno.serve(async (req) => {
   if (auth instanceof Response) return auth;
 
   try {
-    const records = await fetchFromAirtable(TABLE_ID);
+    const records = await fetchFromAirtable(TABLE_NAME);
     const events = records.map(mapEvent);
 
     return new Response(JSON.stringify({ events }), {

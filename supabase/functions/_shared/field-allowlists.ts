@@ -16,7 +16,8 @@
 // allowedFields }` matchar target-schemat så migration blir mekanisk.
 
 export interface OperationDef {
-  // Airtable table-ID som operationen får skriva till.
+  // Airtable-tabell operationen får skriva till — tabell-NAMN eller tbl-id
+  // (utbytbara i API:t). Namn föredras för bas-portabilitet prod↔staging (ADR-050).
   tableId: string;
   // Lista över fältnamn som operationen får sätta.
   // Tomt eller saknad → ingen field skrivbar (deny-by-default).
@@ -32,7 +33,8 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // 2-handshakad mot 06a-status 2026-06-13 (inget rename i target-shapen).
   // Namnet lämnar rum åt en framtida slutbetalnings-operation.
   'mark-registration-fee-paid': {
-    tableId: 'tbloOcrppVoyrHbrq', // Anmälningar
+    // Tabell per NAMN (ej tbl-id) — bas-portabelt prod↔staging (ADR-050).
+    tableId: 'Anmälningar',
     allowedFields: ['Anmälningsavgift'],
   },
 };
