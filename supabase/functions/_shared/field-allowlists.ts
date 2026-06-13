@@ -23,14 +23,18 @@ export interface OperationDef {
   allowedFields: readonly string[];
 }
 
-// Operations-registret. Tomt tills första UI-flow byggs i Fas 5.5+.
+// Operations-registret. Första operation registrerad i Fas 5.5
+// (vertikal write-slice, Session 18 K1).
 const OPERATIONS: Readonly<Record<string, OperationDef>> = {
-  // Format när första operation läggs till:
-  //
-  // 'registration.set-status': {
-  //   tableId: 'tbloOcrppVoyrHbrq', // Anmälningar
-  //   allowedFields: ['Status'],
-  // },
+  // Markera anmälningsavgiften som mottagen. Target-fält valt per
+  // ADR-049 (Anmälningsavgift, INTE Status — Status saknar betald-värde;
+  // ADR-016:s Status-kodexempel var pre-Fas-2.5-drift). Synk-gate
+  // 2-handshakad mot 06a-status 2026-06-13 (inget rename i target-shapen).
+  // Namnet lämnar rum åt en framtida slutbetalnings-operation.
+  'mark-registration-fee-paid': {
+    tableId: 'tbloOcrppVoyrHbrq', // Anmälningar
+    allowedFields: ['Anmälningsavgift'],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.

@@ -1,17 +1,19 @@
 // M4 deny-path-tester för update-record (operations-allowlist).
 //
-// Idag är OPERATIONS-listan i supabase/functions/_shared/field-allowlists.ts
-// TOM (Discovery 2026-05-04). Det betyder:
-//   - Alla operationKeys ger 400 ("Unknown operation").
-//   - Field-allowlist-test (fält utanför allowlist) kan inte köras
-//     förrän första operation finns — markerad som test.skip().
-//   - Allow-test (registered operation → 200) kan inte köras heller
-//     — markerad som test.skip().
+// Fas 5.5 (Session 18) registrerade första operationen
+// mark-registration-fee-paid → { tableId Anmälningar,
+// allowedFields ['Anmälningsavgift'] } i field-allowlists.ts. Status:
+//   - deny: okänd operation → 400 (aktiv sedan tidigare).
+//   - deny: recordId utan rec-prefix → 400 (aktiverad Fas 5.5).
+//   - deny: fält utanför allowlist → 400 (aktiverad Fas 5.5).
+//   - allow: registrerad operation → 200 — fortfarande test.skip().
+//     Allow-vägen muterar ett riktigt record och kräver mutations-säkert
+//     staging-record + restore-teardown + TEST_REGISTRATION_RECORD_ID.
+//     Deferrad per ADR-049 öppen tråd (staging-Airtable-isolering ej
+//     beslutad).
 //
-// När Fas 5.5+ produktionsslicen lägger till första operation:
-//   1. Aktivera test.skip → test
-//   2. Lägg till specifik operationKey i payload
-//   3. Lägg till specifik allowed-field och disallowed-field i tester
+// Auth-/anonym-deny (401) testas inte här utan i require-user-sviten via
+// den delade requireUser-gatewayen (täcker alla Edge Functions).
 
 import { expect, test } from '@playwright/test';
 import { getApiConfig, getValidUserJWT } from './helpers';
@@ -41,19 +43,14 @@ test.describe('update-record — operations-allowlist (M4)', () => {
     const config = getApiConfig();
     const userJwt = await getValidUserJWT(request, config);
 
-    // Använder okänd operation, men recordId-format-checken körs
-    // BEFORE operations-checken? Faktiskt: operations-check körs
-    // först (steg 2), sedan recordId-format (steg 3). Så vi behöver
-    // en känd operation för att nå recordId-checken. Tills första
-    // operation finns testar vi det indirekt via 400-Unknown
-    // operation först. Markeras därför som .skip nu och aktiveras
-    // när första operation finns.
-    test.skip(true, 'Aktiveras när Fas 5.5 lägger till första operation');
-
+    // Operations-check körs först (steg 2), sedan recordId-format
+    // (steg 3). Med känd operation (mark-registration-fee-paid) passerar
+    // steg 2 och recordId-prefix-checken i steg 3 fäller → 400. Når
+    // aldrig Airtable (ingen mutation). Aktiverad i Fas 5.5 (Session 18).
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
       headers: { Authorization: `Bearer ${userJwt}` },
       data: {
-        operationKey: 'TODO_REPLACE_WITH_REGISTERED_OPERATION',
+        operationKey: 'mark-registration-fee-paid',
         recordId: 'invalidNoRecPrefix',
         fields: {},
       },
@@ -66,17 +63,17 @@ test.describe('update-record — operations-allowlist (M4)', () => {
     const config = getApiConfig();
     const userJwt = await getValidUserJWT(request, config);
 
-    // Kräver en känd operation med specifik allowedFields-lista för
-    // att kunna skicka ett fält UTANFÖR den listan. Aktiveras när
-    // Fas 5.5 lägger till första operation.
-    test.skip(true, 'Aktiveras när Fas 5.5 lägger till första operation');
-
+    // mark-registration-fee-paid har allowedFields ['Anmälningsavgift'].
+    // Slutbetalning ligger UTANFÖR listan → findDisallowedField (steg 4)
+    // fäller före Airtable-anropet. recAAAAAAAAAAAAA passerar prefix-
+    // checken men records existens prövas aldrig (deny innan mutation).
+    // Aktiverad i Fas 5.5 (Session 18).
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
       headers: { Authorization: `Bearer ${userJwt}` },
       data: {
-        operationKey: 'TODO_REPLACE_WITH_REGISTERED_OPERATION',
+        operationKey: 'mark-registration-fee-paid',
         recordId: 'recAAAAAAAAAAAAA',
-        fields: { TodoUnknownField: 'x' },
+        fields: { Slutbetalning: 'Mottagen' },
       },
     });
 
@@ -89,19 +86,23 @@ test.describe('update-record — operations-allowlist (M4)', () => {
     const config = getApiConfig();
     const userJwt = await getValidUserJWT(request, config);
 
-    // Aktiveras när Fas 5.5 lägger till första operation. Då kan
-    // testet skicka känd operationKey + känt recordId + tillåtna
-    // fält och förvänta 200.
-    test.skip(true, 'Aktiveras när Fas 5.5 lägger till första operation');
+    // Allow-vägen muterar ett riktigt Anmälningar-record
+    // (Anmälningsavgift='Mottagen'). Kräver ett mutations-säkert
+    // staging-record + restore-teardown så live-data inte lämnas ändrad.
+    // Ingen sådan infra finns ännu — deferrad per ADR-049 öppen tråd.
+    test.skip(
+      true,
+      'Aktiveras när designerat mutations-säkert staging-record + read-restore-teardown + TEST_REGISTRATION_RECORD_ID-secret finns (allow-vägen kräver muterbart record; deferrad per ADR-049 öppen tråd).',
+    );
+
+    const recordId = process.env.TEST_REGISTRATION_RECORD_ID ?? '';
 
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
       headers: { Authorization: `Bearer ${userJwt}` },
       data: {
-        operationKey: 'TODO_REPLACE_WITH_REGISTERED_OPERATION',
-        recordId: 'recRealRecordIdHere',
-        fields: {
-          /* allowed fields */
-        },
+        operationKey: 'mark-registration-fee-paid',
+        recordId,
+        fields: { Anmälningsavgift: 'Mottagen' },
       },
     });
 
