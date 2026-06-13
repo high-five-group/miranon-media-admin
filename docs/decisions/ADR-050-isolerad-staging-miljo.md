@@ -1,6 +1,6 @@
 # ADR-050: Isolerad staging-miljö (separat Supabase-projekt + dedikerad Airtable-bas)
 
-- **Status:** Accepterad (öppna trådar markerade)
+- **Status:** Accepted (öppna trådar markerade)
 - **Datum:** 2026-06-13
 - **Fas:** Session 19 — staging-miljö (designsession, ingen byggfas-status-ändring)
 - **Relaterad:** [ADR-048](ADR-048-synk-horisont-arkiv-atkomst.md) (synk-horisont), [ADR-049](ADR-049-fas-5-5-betalfalt-val.md) (server-kontrakt `mark-registration-fee-paid`), Fas 5.5, L110
@@ -21,7 +21,7 @@ Forensiska fynd (Session 19 förarbets-pass):
 - Inget migrations-infra: `supabase/migrations/` saknas; schemat lever bara på
   prod-projektet.
 - `AIRTABLE_BASE_ID = 'app8uGPrVCVOm6LfD'` HÅRDKODAT i
-  [airtable-client.ts:1](../../supabase/functions/_shared/airtable-client.ts)
+  [`airtable-client.ts:1`](../../supabase/functions/_shared/airtable-client.ts)
   (ej env-drivet) → en staging-EF skulle skriva till prod-basen.
 - Tabell-ID hårdkodat i
   [field-allowlists.ts](../../supabase/functions/_shared/field-allowlists.ts);
