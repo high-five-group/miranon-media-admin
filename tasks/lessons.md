@@ -2009,3 +2009,23 @@ allowlist med expiry).
 
 - [UNIVERSAL] **L109 — Steg-namn och scope-kommentarer får inte ljuga om sitt innehåll.**
   Symptom: två instanser samma session — ci.yml-scope-kommentaren påstod att hela tasks/sessions/** var utelämnat (blev osant vid glob-utvidgningen; omskreven), och STOPPA-valet B motiverades av att det befintliga CI-stegets namn beskriver en annan svit-familj än de nya sviterna. Generaliserbar regel: när innehåll ändras, uppdatera namn/kommentar i samma commit; vid inplacering av nytt innehåll, välj strukturen som håller namnen sanna — kosmetik som ljuger är drift-frö. Källa: 2026-06-13 Session 17 K7 commit 1 + STOPPA-beslut B.
+
+## 2026-06-13 — Session 18 (Fas 5.5 vertikal write-slice — PAUSAD)
+
+Server-kontraktet för "markera anmälningsavgift som betald" levererades
+(operation registrerad, ADR-049, ADR-016-erratum), men test-aktiveringen
+avslöjade två lager av falska antaganden: källändring påverkar inte staging
+utan EF-redeploy, och det finns ingen isolerad staging-miljö alls. Fas 5.5
+pausades för att bygga riktig staging först (Session 19, research-gated).
+
+- [UNIVERSAL] **L110 — Test-infra som antar en miljö måste verifiera att miljön existerar; dokumentation om infra-tillstånd ≠ bevis på infra-tillstånd.**
+  Symptom: `helpers.ts`, `.env.test.example` och 6 CI-secrets var skrivna som om ett separat staging-Supabase-projekt fanns; en `supabase projects list` vid deploy-kapacitets-verifieringen visade **ett enda** projekt — "staging" testerna träffar är den levande miljön + samma Airtable-bas. Infra-defekten hade legat dold bakom dokumentation som beskrev ett önskat, inte faktiskt, tillstånd. Generaliserbar regel: innan kod/tester förlitar sig på en miljös existens eller isolering, verifiera den empiriskt mot källan (CLI/API), inte mot konfig-filer eller dokumentation som BESKRIVER den — beskrivning är intention, inte bevis. Källa: 2026-06-13 Session 18 deploy-kapacitets-verifiering, sessionsdok Del 2 Öppen tråd 3.
+
+- [UNIVERSAL] **L111 — Källändring ≠ körtidstillstånd: en registrerad operation är inte live utan deploy.**
+  Symptom: att lägga `mark-registration-fee-paid` i `field-allowlists.ts` och pusha gjorde inte operationen känd i staging — den deployade EF:en svarade fortfarande `"Unknown operation"` (CI-run 27463508240), eftersom CI saknar deploy-steg och staging-testerna kör mot senast manuellt deployade version. Fält-deny-testet föll och `recordId-prefix`-testet passerade för fel anledning. Generaliserbar regel: när en testbar effekt bor i deployad artefakt (EF, lambda, container), gäller en push av källan ingenting förrän artefakten omdeployas; verifiera deploy-kadensen mot test-kadensen innan tester aktiveras, annars testar gröna körningar gammal kod. Källa: 2026-06-13 Session 18 STEG 2 + CI-run 27463508240, ADR-049 Öppen tråd 1.
+
+- [UNIVERSAL] **L112 — Pre-fas-ADR kan bära ett falsifierat antagande som tyst ärvs; korsverifiera gammal ADR:s konkreta antaganden mot aktuell datamodell vid implementation.**
+  Symptom: ADR-016:s kodexempel skrev fältet `Status` för "markera som betald", men `RegistrationStatus` saknar betald-värde — betalstatus bor i `Anmälningsavgift`/`Slutbetalning`/psionautics-fältet. Antagandet var pre-Fas-2.5-drift och hade följt med till byggplanens DoD. Fångades i sessionsstartens datamodell-korsläsning, inte av ADR:n själv. Generaliserbar regel: ett låst beslut är inte immunt mot evidens — vid implementation av en gammal ADR, korsläs dess KONKRETA antaganden (fältnamn, värden, ID:n) mot aktuell datamodell/källa, och riv falsifierat öppet med erratum (ej tyst patch). Källa: 2026-06-13 Session 18 STEG 0/STEG 3, ADR-049 + ADR-016-erratum.
+
+- [UNIVERSAL] **L113 — Kringgående vs grundorsaks-fix: fixa orsaken när kostnaden att göra rätt är låg; kringgå bara när den är prohibitivt hög.**
+  Symptom: allow-testet behövde ett muterbart record utan att skada live-data. Två vägar fanns — kringgå (self-create/delete-record i testet) eller fixa orsaken (riktig isolerad staging). Eftersom Airtable-bas-duplicering är "ett knapptryck" (låg kostnad), valdes grundorsaks-fixen (bygg staging) framför self-create/delete-kringgåendet. Generaliserbar regel: när ett test/flow tvingar fram en workaround, värdera kostnaden att i stället eliminera grundorsaken; är den låg är workarounden teknisk skuld utan motivering. Endast prohibitiv åtgärds-kostnad rättfärdigar kringgående. Källa: 2026-06-13 Session 18, ADR-049 Öppen tråd 1+2 → staging-beslut.

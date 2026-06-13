@@ -1200,6 +1200,42 @@ Sessionsdok-trail: [`tasks/sessions/2026-06-13-session-17.md`](../tasks/sessions
 
 ---
 
+## Session 18 — Fas 5.5 server-kontrakt (K1) + PAUS (ingen fas-status-ändring) (2026-06-13)
+
+Commit-range `fae1343` → `2108dd6`. Drivkraft: Fas 5.5:s vertikala write-slice
+"markera anmälningsavgift som betald" — server-sidan (operations-registrering +
+deny/allow-tester + ADR); klient-UI deferrat till K2.
+
+**Levererat:** Synk-gate 2-handshake bekräftade `Anmälningsavgift`
+(`fldJtKQ3qLxRKOvR6`) mot 06a/06b (ingen target-rename). Operationen
+`mark-registration-fee-paid → { tableId 'tbloOcrppVoyrHbrq', allowedFields
+['Anmälningsavgift'] }` registrerad i `field-allowlists.ts` (`59a5281`).
+[ADR-049](decisions/ADR-049-fas-5-5-betalfalt-val.md): fält-val
+Anmälningsavgift INTE Status (Status saknar betald-värde; ADR-016:s
+Status-kodexempel var pre-Fas-2.5-drift) — ADR-016 fick dubbel-erratum
+(kanonisk korrigerings-not efter header-blocket per decisions/README §34 +
+inline vid kodexemplet); README-räkning rättad 48→49 via
+`check-adr-count`-grinden (`1c7e469`).
+
+**CI-fynd → forward-fix:** run `27463508240` blev rött på två jobb — (a)
+fält-deny-testet föll med `"Unknown operation: mark-registration-fee-paid"`
+(den deployade EF:en känner inte operationen; CI har inget deploy-steg), (b)
+Vale-länktext-gemener i ADR-049. Forward-fix (`2108dd6`): de två
+operations-beroende deny-testerna re-skippade tills redeploy (`recordId-prefix`
+passerade dessförinnan för fel anledning) + backtick-wrap av länktext →
+run **`27463660822` grön**. Endast `deny: okänd operation` aktiv; övriga tre
+`test.skip` gated på redeploy.
+
+**Pausorsak (ej fas-avslut):** deploy-kapacitets-verifieringen visade att orgen
+har **ett enda** Supabase-projekt — "staging" testerna träffar är den levande
+miljön + samma Airtable-bas. Att deploya mot/mutera den enda miljön avvisades;
+rätt åtgärd är att bygga riktig staging först (Session 19, research-gated,
+ADR-050). Fas 5.5 förblir pågående (ej KLAR); byggplanens fas-tabell orörd.
+Lessons L110–L113 skördade (4 UNIVERSAL). Sessionsdok-trail:
+[`tasks/sessions/2026-06-13-session-18.md`](../tasks/sessions/2026-06-13-session-18.md).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

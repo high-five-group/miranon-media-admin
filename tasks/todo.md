@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-06-12 (Session 16 ✅ KLAR — Fas 5 App-shell ✅ KLAR med fas-avslut: PWA-grund ADR-047, app-skal på _authenticated, error-boundary-konsolidering, varaktiga DoD-tester, ikonrundor K5b–d, L96–L102. Nästa: Fas 5.5 Vertikal write-slice. Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
+*Senast uppdaterad: 2026-06-13 (Session 18 — Fas 5.5 PAUSAD mitt i: server-kontraktet levererat (operation `mark-registration-fee-paid`, ADR-049, L110–L113) men test-aktivering + K2-UI gated på riktig staging-miljö (staging==produktion-fynd). Nästa: Session 19 staging-miljö designsession (research → ADR → bygge). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -15,7 +15,38 @@
 
 ## Aktuellt fokus
 
-**Fas 5.5 — Vertikal write-slice (nästa session).** Per `docs/byggplan.md` §4: "markera anmälan som betald" via befintlig `update-record` EF med ny `operationKey`; etablerar TanStack optimistic mutation-mönstret (ADR-016) + operations-allowlist-utvidgning + 3 Playwright-tester (2 deny, 1 allow). Inga nya EF-deploys. ADR-krav. Synk-gate 2-handshake mot `field-allowlists.ts` per operation (Fas B). Ingångsläge: Fas 5 ✅ KLAR med fas-avslut — skal, PWA-grund, error boundaries och offline-config på plats; estimat-summa Fas 5.5 → Fas 7 = 9,5 sessioner.
+**Fas 5.5 — Vertikal write-slice ⏸ PAUSAD (pending staging-miljö).** Server-kontraktet är levererat och CI-grönt (operation `mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049). Klient-UI (K2) + test-aktiveringen är gated på en `update-record`-redeploy som avslöjade att ingen isolerad staging-miljö finns (orgen har **ett enda** Supabase-projekt; "staging" == den levande miljön + samma Airtable-bas). Pausat tills riktig staging byggs. Återupptas efter Session 19.
+
+**Nästa: Session 19 — staging-miljö designsession.** Web-research (staging-arkitektur för Supabase + Airtable-isolering) → utförande-ADR (ADR-050) → bygge (eget Supabase-projekt + duplicerad Airtable-bas). Research FÖRE arkitektur — ingen ADR-stub skriven i förväg. Avblockerar Fas 5.5:s deny/allow-tester + K2.
+
+### Session 18 ⏸ PAUSAD (2026-06-13) — Fas 5.5 server-kontrakt (K1)
+
+- [x] **Operation registrerad + ADR** ✅ committat: `mark-registration-fee-paid`
+  → `{ tableId 'tbloOcrppVoyrHbrq', allowedFields ['Anmälningsavgift'] }`
+  (`59a5281`); ADR-049 fält-val (`1c7e469`); ADR-016 dubbel-erratum;
+  README-räkning 48→49; forward-fix efter rött CI (`2108dd6`); CI grön
+  run 27463660822. Lessons L110–L113. Trail:
+  [`tasks/sessions/2026-06-13-session-18.md`](sessions/2026-06-13-session-18.md).
+
+#### Öppna trådar från Session 18
+
+- [ ] **(1) Fas 5.5 PAUSAD mitt i** — återupptas efter att staging-miljön finns.
+- [ ] **(2) EF `update-record` EJ deployad** → deny-skippen (rad 56/83) +
+  allow-skippen (rad 110) i `update-record.staging.test.ts` väntar deploy.
+  Deploy mot nuvarande miljö avbröts medvetet (ska ske mot staging, ej
+  produktion). Flippas direkt efter lyckad deploy mot riktig staging.
+- [ ] **(3) STAGING==PRODUKTION-defekt:** orgen har ett enda Supabase-projekt;
+  test-infran (`helpers.ts`, `.env.test.example`, 6 CI-secrets) antar separat
+  staging-projekt som inte finns. Stängs av staging-bygget (Session 19).
+- [ ] **(4) Allow-test nu SKARPT** (ADR-049 Öppen tråd 2): får aldrig röra
+  riktiga records pga (3). Löses av riktig staging.
+- [ ] **(5) BESLUT: bygg riktig staging-miljö** — Session 19 (research → ADR-050
+  → bygge). Se "Nästa" ovan.
+- [ ] **(6) Byggplan-DoD-flaggor** (byggplan ej ändrad): "1 allow-test" deferrad;
+  "förbjuden roll" bör preciseras till "anonym → 401". Åtgärdas vid nästa
+  byggplan-revision.
+- [ ] **(7) Supabase CLI-uppgradering** 2.75.0 → 2.106.0 (mindre; deploy-steget
+  kördes aldrig).
 
 ### Session 17 ✅ KLAR (2026-06-13) — repo-hygien + synk-horisont
 
