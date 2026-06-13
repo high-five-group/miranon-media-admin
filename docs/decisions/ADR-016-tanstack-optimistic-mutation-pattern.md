@@ -5,6 +5,8 @@
 - **Datum:** 2026-05-05 (skrivs i P3a, implementeras som mall i Fas 5.5)
 - **Fas:** 5.5 (Vertikal write-slice)
 
+> **Korrigering (ADR-049, 2026-06-13):** kodexemplets fält-nivå är inaktuell — Fas 5.5:s write-slice skriver `Anmälningsavgift` (operationKey `mark-registration-fee-paid`, värde `'Mottagen'`), INTE `Status`. `Status` (`RegistrationStatus`) saknar betald-värde, så `fields: { Status: ... }`-exemplet var pre-Fas-2.5-drift. Mönstret (fem-komponents optimistic + operations-API) STÅR; endast fält-exemplet rättas. Se [ADR-049](ADR-049-fas-5-5-betalfalt-val.md). Beslutstexten nedan bevaras oförändrad (immutabilitet).
+
 ## Kontext
 
 Per Fas A M4 är klient → server-API:et **operations-baserat**: klienten skickar `{operationKey, recordId, fields}` (inte `{tableId, ...}`). Server äger operations-registret + fält-allowlist per operation. Källa: `SECURITY-SPEC.md §6.1`, `STATE-STRATEGY.md §8`.
@@ -39,6 +41,8 @@ mutationFn: async (input: MarkPaidInput) => {
 ```
 
 Klienten skickar **aldrig** `tableId` eller `airtableFieldName` direkt. Operations-nyckeln är hela kontraktet — server-side allowlist avgör tillåtna fält.
+
+> **Erratum (2026-06-13, ADR-049):** Fält-exemplet ovan (`operationKey: 'mark-registration-paid'`, `fields: { Status: ... }`) är **superseder av [ADR-049](ADR-049-fas-5-5-betalfalt-val.md)**. Fas 5.5:s faktiska write-slice registrerar `operationKey: 'mark-registration-fee-paid'` som skriver fältet **`Anmälningsavgift`** (värde `'Mottagen'`), inte `Status` — `Status` (`RegistrationStatus`) saknar ett betald-värde, så `Status`-exemplet var pre-Fas-2.5-drift. Mönstret (fem-komponents optimistic + operations-API) står kvar; endast fält-exemplet rättas. Historisk text bevarad (öppen rättelse, ej tyst patch).
 
 ### 2. `onMutate` — optimistic update + rollback-context
 

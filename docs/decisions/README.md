@@ -91,6 +91,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-046](ADR-046-felmeddelande-wiring-describedby.md) | Felmeddelande-wiring via aria-describedby (React Arias FieldError) — explicit aria-errormessage rivs; ARIA-UPGRADE §1-erratum | Accepted | 3.5 |
 | [ADR-047](ADR-047-pwa-arkitektur-fas-5.md) | PWA-arkitektur Fas 5 — `vite-plugin-pwa` `injectManifest` + Workbox offline-fallback + DoD 4-modernisering (Lighthouse v12 tog bort PWA-kategorin) | Accepted | 5 |
 | [ADR-048](ADR-048-synk-horisont-arkiv-atkomst.md) | Synk-horisont — arkivmaterial exkluderas ur projektkunskapen men förblir i git; via-Code-åtkomstregel | Accepted | Meta |
+| [ADR-049](ADR-049-fas-5-5-betalfalt-val.md) | Fas 5.5 write-slice skriver Anmälningsavgift, inte Status (Status saknar betald-värde); superseder ADR-016:s Status-kodexempel; allow-test deferrad pending staging-isolering | Accepted | 5.5 |
 
 ## Relaterade dokument
 
