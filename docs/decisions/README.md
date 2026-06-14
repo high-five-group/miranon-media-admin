@@ -95,6 +95,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-050](ADR-050-isolerad-staging-miljo.md) | Isolerad staging-miljö — separat Supabase-projekt (Pro) + dedikerad Airtable-bas utan records + env-driven `AIRTABLE_BASE_ID`; avvisar Free+keep-alive och branching som primär; öppna trådar T1–T4 | Accepted | Meta |
 | [ADR-051](ADR-051-session-paus-lifecycle-verb.md) | session-paus — fjärde lifecycle-verbet (skriv-motpart till resume): parkera oavslutad session durabelt utan completion; asymmetrisk Chat-skill, bevarar sessionsnummer; utökar ADR-043 beslut 3 additivt | Accepted | Meta |
 | [ADR-052](ADR-052-lifecycle-frontmatter-falt.md) | `lifecycle:` — dedikerat livscykel-fält (enum active/paused/closed) ortogonalt mot `status:`; skill-ägt; validerat av separat lätt grind (ej governing-regimen, immutabilitets-skäl); applicering sessionsdok nu, schema-on-read för övriga | Accepted | Meta |
+| [ADR-053](ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md) | Tråd-arkitektur — tråden som förstaklass-organisationsenhet (register tasks/threads/ + tråd-ID `T<NN>` + commit-tagg `[T<NN>]`); forensiskt navigerbar tidslinje + inkodad triage av det oväntade; återanvänder lifecycle-fältet; MEDIUM-på-MINIMAL (event-sourcad ombyggnad förkastad) | Accepted | Meta |
 
 ## Relaterade dokument
 
