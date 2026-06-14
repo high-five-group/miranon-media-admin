@@ -17,7 +17,22 @@
 
 **Fas 5.5 — Vertikal write-slice ⏸ PAUSAD (pending staging-miljö).** Server-kontraktet är levererat och CI-grönt (operation `mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049). Klient-UI (K2) + test-aktiveringen är gated på en `update-record`-redeploy som avslöjade att ingen isolerad staging-miljö finns (orgen har **ett enda** Supabase-projekt; "staging" == den levande miljön + samma Airtable-bas). Pausat tills riktig staging byggs. Återupptas efter Session 19.
 
-**Nästa: Session 20 — lifecycle-fält-fix (ADR-052 + dedikerat `lifecycle:`-fält); staging bygg-steg 3–8 = RESUME av session 19 EFTER session 20** (Marcus-sekvens: fixa systemet först, sedan slutför arbetet). Staging-arbetet (vid resume-19): Förarbetet (steg 1+2) + ADR-050 är landade och båda miljöerna skapade. Bygg-steg 3 (ingång): Code läser staging-projektets ref + api-keys (`supabase projects api-keys --project-ref <staging-ref>`) + nya Airtable-basens bas-/tabell-ID:n via MCP → producera **SECRET-KARTA** (vilka secrets, vilket projekt, vilka värden) FÖRE något sätts. Sedan steg 4 (sätt staging-secrets) → 5 (deploy 6 EF:er till staging via allowlist-skriptet) → 6 (peka om CI:s `TEST_SUPABASE_*` mot staging) → 7/8 (aktivera de 3 skippade testerna + allow-test mot seedad record). Avblockerar Fas 5.5:s deny/allow-tester + K2.
+**Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. Nästa: RESUME av session 19 — staging bygg-steg 3–8** (Marcus-sekvens: fixa systemet först, sedan slutför arbetet). Staging-arbetet (vid resume-19): Förarbetet (steg 1+2) + ADR-050 är landade och båda miljöerna skapade. Bygg-steg 3 (ingång): Code läser staging-projektets ref + api-keys (`supabase projects api-keys --project-ref <staging-ref>`) + nya Airtable-basens bas-/tabell-ID:n via MCP → producera **SECRET-KARTA** (vilka secrets, vilket projekt, vilka värden) FÖRE något sätts. Sedan steg 4 (sätt staging-secrets) → 5 (deploy 6 EF:er till staging via allowlist-skriptet) → 6 (peka om CI:s `TEST_SUPABASE_*` mot staging) → 7/8 (aktivera de 3 skippade testerna + allow-test mot seedad record). Avblockerar Fas 5.5:s deny/allow-tester + K2.
+
+### Session 21 ✅ KLAR (2026-06-14) — tråd-arkitektur (ADR-053, process-fundament)
+
+- [x] **K1 ADR-053** tråd-arkitektur (forensisk läsbarhet + inkodad triage); MEDIUM-på-MINIMAL — `c811a2c`.
+- [x] **K2** tråd-register `tasks/threads/` + T01-dogfood-migration (tvåstegs-commit, historik bevarad) — `3e035f5` + `2fba5f6`.
+- [x] **K3** lifecycle-grind utvidgad till tråd-kort + CI-täckning (`tasks/threads/`), 16/16 test — `4a0e419`.
+- [x] **K4** alltid-på triage-mikroregel (CLAUDE.md + PI-delta) — `ccde82b`.
+- [x] **K5** tråd-konventioner formaliserade (`[T<NN>]`-tagg + `Tråd:`-header + `tråd:`-fält) — `e434bc8`.
+- [x] **K-sista** lessons L126–L131 + BUILD-LOG + denna todo + sessionsdok Del 2+.
+- [ ] **/session-end** ej körd än — Session 21 förblir `lifecycle: active` tills dess (ADR-041).
+
+#### Öppna trådar från Session 21 (i registret — se [`tasks/threads/README.md`](threads/README.md))
+
+- [ ] **T02** project-instructions/ CI-täckningsgap (`paused`) — registret äger beskrivningen.
+- [ ] **T03** Session 20 BUILD-LOG-backfill (`paused`, do-confirm-glapp) — registret äger beskrivningen.
 
 ### Session 19 ✅ (2026-06-13) — staging-miljö design + förarbete
 

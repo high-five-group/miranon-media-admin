@@ -2142,3 +2142,87 @@ fix-prompten krävde disk-verifiering (återge föregångare + file-mixedness + 
 STOPPA) FÖRE edit. Syskon till L31/L123: dessa verifierar edit-INPUTS mot disk; L125 utökar
 plikten till den DIAGNOS som motiverar åtgärden. Ground-truth-status gör en aktörs
 karaktäriseringar mer trovärdiga, inte immuna.
+
+## 2026-06-14 — Session 21 (tråd-arkitektur: forensisk läsbarhet + triage)
+
+Process-fundament-session (ingen byggfas): byggde tråd-arkitekturen (ADR-053) i fem
+inkrement — ADR-053 → tråd-register `tasks/threads/` + T01-dogfood-migration →
+lifecycle-grind-utvidgning till tråd-kort + CI-täckning → alltid-på triage-mikroregel
+(två ytor) → konventions-formalisering (`[T<NN>]`-tagg + Tråd:-rad + tråd:-fält).
+Tråden blir förstaklass-organisationsenhet parallell med sessionen; det oväntade får
+ett inkodat hem. L126–L129 är hub-lyft-kandidater (lyfts via lessons-hub-sync senare).
+
+### L126 [UNIVERSAL] — git rename-bevarande och fullständigt innehållsbyte är oförenliga i samma commit
+
+Datum: 2026-06-14 | Källa: Session 21 K2 (klass: git-mekanik/historik-bevarande)
+
+Git lagrar inte renames — de DETEKTERAS vid diff-tid via innehålls-similarity. En
+`git mv` följd av fullständigt innehållsbyte i SAMMA commit sjunker under
+similarity-tröskeln (empiriskt D+A även vid `-M10%`) → `git log --follow` tappar
+historiken. Migrera-och-transformera måste därför delas i TVÅ commits: ren rename
+(R100, original-blob) → transform. Förfining: en IDE-linter kan mutera filen vid
+skrivning, så en byte-exakt rename kräver `git mv` (inte `git show > fil` + `git add`,
+vars staged blob blir linter-muterad) och commit FÖRE working-tree re-stageas. Verifiera
+historiken med `git log --follow` mot födelse-committen, anta den inte.
+
+### L127 [UNIVERSAL] — CI-täckning är per-glob; en ny dok-katalog är osynlig för varje grind vars glob ej uppdaterats
+
+Datum: 2026-06-14 | Källa: Session 21 K3+K4 (klass: grind-täckning/glob-disciplin)
+
+När en ny dok-katalog tillkommer är den osynlig för varje grind vars glob/scope inte
+explicit utvidgas — och grindar delar inte glob, så en katalog kräver att ALLA relevanta
+globbar utvidgas samtidigt, inte bara en. Disciplin: vid ny katalog, inventera SAMTLIGA
+grindar (lint, länk, prosa, konsistens, frontmatter, trigger) och avgör täckning per
+grind mot faktisk config — gissa inte. Empiriskt bevisad två gånger samma session:
+`tasks/threads/` (K3 — markdownlint + lychee + check-lifecycle behövde edit; Vale +
+docs_changed-trigger täckte redan via rekursion/`**`) och `project-instructions/`
+(K4 → deferrad som T02). Att samma felklass dök upp två gånger är stark generalisering.
+
+### L128 [UNIVERSAL] — olika dok-typer har olika drift-ytor; porta inte konsistens-mekanismen — identifiera typens egen drift-dimension
+
+Datum: 2026-06-14 | Källa: Session 21 K3 (klass: konsistens-modellering)
+
+En konsistens-grind nycklar mot en dok-typs specifika drift-yta. När grinden utvidgas
+till en NY dok-typ, porta inte den gamla mekanismen rakt av — identifiera den nya typens
+egen drift-dimension. Empiri: sessioner driftar fält↔KROPP (lifecycle vs förankrad
+PAUSLÄGE-rubrik), så sessions-vakten nycklar mot den rubriken. Tråd-kort har ingen
+prosa-tillståndsmarkör; deras drift-yta är fält↔INDEX (kortets lifecycle vs dess
+index-rad). Sessions-ankaret portades därför MEDVETET INTE till trådar (dokumenterat i
+koden som kategori-skillnad, ej glömd kontroll); tråd-vakten fick en egen fält↔index-check.
+
+### L129 [UNIVERSAL] — en konsistens-grind ska vara passiv (detektera + fäll), aldrig aktiv (auto-rätta) på verbatim-dok
+
+Datum: 2026-06-14 | Källa: Session 21 K3 (klass: grind-design)
+
+En konsistens-grind som upptäcker drift ska FÄLLA (STOPPA-signal för människa), aldrig
+auto-rätta. På verbatim-/människo-ägda dok är auto-rättning farlig: grinden kan inte veta
+vilken sida av driften som är sann (kortets fält eller index-raden), och en tyst
+"rättning" mot fel sida inför ett fel i stället för att flagga det. Passiv detektering
+bevarar människans/Marcus beslut om vilken sida som korrigeras. Empiri: tråd-vaktens
+fält↔index-check fäller med actionable fix-text men ändrar aldrig dok.
+
+### L130 — dogfood: triage-regeln fångade ett oväntat utanför-scope-fynd och defererade det durabelt på sitt första skarpa prov
+
+Datum: 2026-06-14 | Källa: Session 21 K5 (klass: process-validering)
+
+K4:s alltid-på triage-mikroregel fick sitt första skarpa test omedelbart: ett oväntat
+utanför-scope-fynd (project-instructions/ ligger utanför alla CI-grind-globbar) uppstod
+mitt i bygget. I stället för att hanteras ad-hoc i fel tråd klassades det (blockerar ej +
+värdefullt) och defererades till tråd-registret som T02 (paused index-rad utan kort).
+Process-validering att det oväntade nu får ett durabelt, navigerbart hem — det andra
+dogfood-beviset (det första: T01-frö-migrationen som föder registret med sin egen
+skapelse-tråd). Tråden bevisar sin egen tes.
+
+### L131 — dogfood #3 + evidens för gap-tesen: triage fångade Session 20:s BUILD-LOG-glapp
+
+Datum: 2026-06-14 | Källa: Session 21 K-sista (klass: process-validering/disk-forensik)
+
+K-sista-skörden avtäckte ett tredje oväntat fynd: Session 20 saknar post i `docs/BUILD-LOG.md`
+trots att den stängdes (`lifecycle: closed`, do-confirm) — BUILD-LOG är en session-end killer
+item (ADR-051 beslut 3), så avslutet har ett glapp. Triage-regeln (K4) klassade det (blockerar
+ej + värdefullt) och defererade det till registret som **T03** (Session 20 BUILD-LOG-backfill)
+i stället för ad-hoc-backfill mitt i en annan sessions K-sista. Tre dogfood-bevis samma session
+(T01-födelse, T02-defer, T03-defer). Fyndet är dessutom EVIDENS för seed:ets gap-2-tes: paus/end-
+BUILD-LOG-disciplinen har ett verkligt glapp — vilket stärker att tråd-indexet, som svarar "var i
+tidslinjen är vi nu, inklusive hål", var rätt lösning. Hålet görs synligt där det finns (not i
+Session 21:s BUILD-LOG-post med pekare till T03), ej tyst.

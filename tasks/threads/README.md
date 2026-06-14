@@ -26,6 +26,7 @@ status: stable
 |---|---|---|---|
 | `T01` | System-läsbarhet + triage av det oväntade | `active` | [T01-system-legibility.md](T01-system-legibility.md) · ADR-053 |
 | `T02` | project-instructions/ CI-täckningsgap | `paused` | _(ingen kort än — endast registrerad)_ |
+| `T03` | Session 20 BUILD-LOG-backfill | `paused` | _(ingen kort än — endast registrerad)_ |
 
 ## Avslutade trådar
 

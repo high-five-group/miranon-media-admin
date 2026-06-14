@@ -1281,6 +1281,39 @@ bygg-steg 3–8. Sessionsdok-trail:
 
 ---
 
+## Session 21 — Tråd-arkitektur: ADR-053 + register + triage (process-fundament, ingen byggfas) (2026-06-14)
+
+Commit-kedja `f7404d5` → `c811a2c` → `2fba5f6` → `4a0e419` → `ccde82b` → `e434bc8` → K-sista. Process-fundament-session (Fas 5.5 förblir **PÅGÅENDE**, orörd). Stänger seed:ets gap-tes: tråden blir förstaklass-organisationsenhet parallell med sessionen, och det oväntade får ett inkodat hem. Denna post skrivs eftersom vi landar mot avslut (ej pausar) — själva paus-lucke-ironin seed:et pekade på.
+
+**Planerat vs faktiskt (K1→K5, alla CI-gröna):**
+
+- **K0 (`f7404d5`):** Session 21-dok fött vid start (ADR-043 + L67/L68), `lifecycle: active`.
+- **K1 (`c811a2c`):** [ADR-053](decisions/ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md) Accepted + ADR-räknare 52→53 + katalograd. MEDIUM-på-MINIMAL (event-sourcad ombyggnad förkastad — git ÄR redan append-only-loggen).
+- **K2 (`3e035f5` rename + `2fba5f6` transform):** tråd-register `tasks/threads/` (index-README + T01-kort) + seed→T01-migration via **tvåstegs-commit** (historik bevarad, `git log --follow` når seed-födelsen `f83b195`).
+- **K3 (`4a0e419`):** `check-lifecycle.sh` utvidgad till tråd-kort (enum + fält↔index-konsistens, passiv drift-vakt) + 16/16 test + markdownlint/lychee-glob för `tasks/threads/`. Vale/trigger täckte redan.
+- **K4 (`ccde82b`):** alltid-på triage-mikroregel på två ytor (CLAUDE.md + PI-delta, `[UNIVERSAL]`), brödtext byte-identisk.
+- **K5 (`e434bc8`):** tråd-konventioner formaliserade — `[T<NN>]`-commit-tagg + `Tråd:`-header i ADR-053 + `tråd:`-fält i sessionsdok. Första commit med `[T01]`-tagg.
+
+**Tre STOPPA-grindar under bygget (Code reste, löstes öppet):**
+
+1. **Ratificering (K1):** ADR-053 levererades `Proposed` med villkorad flip; Code stannade för Marcus Gate-2-kvittens → landade `Accepted`.
+2. **Historik vs en commit (K2):** `git mv` + fullständigt innehållsbyte i samma commit → git ser Delete+Add (similarity <10%) → `--follow` tappar historik. Löst med tvåstegs-commit (ren rename → transform). Se L126.
+3. **Verbatim-text vs grindar (K1):** `<NN>`/`<slug>`-placeholders triggade MD033; reell domän `adr.github.io` triggade Vale.Terms. Löst per repots mönster (backtick-kodspann; IL Vale-disable, ADR-032) utan att ändra sak-innehållet.
+
+**Tre dogfood-bevis (tråden bevisar sin egen tes):**
+
+- **T01-födelse:** registret föds genom att registrera sin egen skapelse-tråd (seed-migrationen).
+- **T02-defer:** `project-instructions/` CI-täckningsgap (oväntat fynd i K4) defererat till registret via triage-regeln.
+- **T03-defer:** Session 20:s BUILD-LOG-glapp (se nedan) defererat via triage-regeln.
+
+**Lessons:** L126–L131 skördade under `## 2026-06-14 — Session 21`-H2 i [`tasks/lessons.md`](../tasks/lessons.md) (L126–L129 hub-lyft-kandidater). Detaljer där; dubbleras ej här.
+
+**Not — Session 20 saknar post i denna logg:** ett do-confirm-glapp vid Session 20:s avslut (BUILD-LOG är killer item per ADR-051 beslut 3). Luckan är **registrerad som T03** i [`tasks/threads/README.md`](../tasks/threads/README.md) för backfill i egen session — den backfillas medvetet INTE här (ADR-023-immutabilitets-klass, annan sessions arbete). Hålet görs synligt där det finns, ej tyst.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-14-session-21.md`](../tasks/sessions/2026-06-14-session-21.md). Sessionen är ej formellt avslutad — `/session-end` (ADR-041) är ett separat steg efter denna landnings-klunga; `lifecycle` förblir `active` tills dess.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
