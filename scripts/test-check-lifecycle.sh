@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
 # scripts/test-check-lifecycle.sh
 #
-# Empirisk test-suite för scripts/check-lifecycle.sh (ADR-052 beslut 4-grind).
-# 9 testfall: enum + biimplikation paus-markör⟺paused + frånvaro=skip +
-# falskpositiv-regression (session-18-mönstret) + UTF-8-härdning.
+# Empirisk test-suite för scripts/check-lifecycle.sh (ADR-052 + ADR-053-grind).
+# 16 testfall:
+#   T1–T9 (sessioner): enum + biimplikation paus-markör⟺paused + frånvaro=skip +
+#     falskpositiv-regression (session-18-mönstret) + UTF-8-härdning.
+#   TT10–TT16 (tråd-kort, ADR-053 K3): enum + frånvaro=skip + fält↔index-konsistens
+#     (match / tillstånds-drift / föräldralöst kort / bruten ryggrad).
 #
-# Test-isolering: skapar /tmp/s20-test-lifecycle/ med tasks/sessions/-fixturer.
-# Återställer (rm -rf) via trap. INGEN ändring av real-repo.
+# Test-isolering: skapar /tmp/s20-test-lifecycle/ med tasks/sessions/- och
+# tasks/threads/-fixturer. Återställer (rm -rf) via trap. INGEN ändring av real-repo.
 #
 # Användning: bash scripts/test-check-lifecycle.sh
 # Exit 0 om alla testfall passerar. Exit 1 om någon failar.
 #
-# Källa: docs/decisions/ADR-052-lifecycle-frontmatter-falt.md
-# Etablerad: Session 20 inkrement 2b
+# Källa: docs/decisions/ADR-052-lifecycle-frontmatter-falt.md (sessioner)
+#        docs/decisions/ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md (trådar)
+# Etablerad: Session 20 inkrement 2b (sessioner); Session 21 K3 (trådar)
 
 set -uo pipefail
 
@@ -40,6 +44,25 @@ setup() {
 # doc <filename> — skriver stdin till ${TEST_DIR}/tasks/sessions/<filename>
 doc() {
     cat > "${TEST_DIR}/tasks/sessions/$1"
+}
+
+# === Tråd-fixtur-helpers (ADR-053 K3) ===
+# setup_threads — som setup() men skapar även tasks/threads/.
+setup_threads() {
+    rm -rf "${TEST_DIR}"
+    mkdir -p "${TEST_DIR}/tasks/sessions" "${TEST_DIR}/tasks/threads" "${TEST_DIR}/scripts"
+    cp "${GATE_SRC}" "${TEST_DIR}/scripts/check-lifecycle.sh"
+    chmod +x "${TEST_DIR}/scripts/check-lifecycle.sh"
+}
+
+# card <filename> — skriver stdin till ${TEST_DIR}/tasks/threads/<filename>
+card() {
+    cat > "${TEST_DIR}/tasks/threads/$1"
+}
+
+# index — skriver stdin till ${TEST_DIR}/tasks/threads/README.md
+index() {
+    cat > "${TEST_DIR}/tasks/threads/README.md"
 }
 
 run_gate() {
@@ -271,6 +294,148 @@ out=$(run_gate); ec=$?
 ok=0
 check_exit "T9" 0 "${ec}" || ok=1
 check_contains "T9" "lifecycle-validering OK" "${out}" || ok=1
+mark "${ok}"
+
+# ════════════════════ TRÅD-KORT (ADR-053 K3) ════════════════════
+
+# ============================================================
+echo "═══ TT10: tråd-kort active + matchande index-rad → exit 0 ═══"
+setup_threads
+card T01-x.md <<'EOF'
+---
+owner: marcus803
+status: stable
+lifecycle: active
+---
+
+# T01 — testtråd
+
+Body pekar på frontmatter-fältet.
+EOF
+index <<'EOF'
+# Tråd-register
+
+| Tråd | Titel | Tillstånd | Ingång |
+|---|---|---|---|
+| `T01` | Testtråd | `active` | [T01-x.md](T01-x.md) |
+EOF
+out=$(run_gate); ec=$?
+ok=0
+check_exit "TT10" 0 "${ec}" || ok=1
+check_contains "TT10" "lifecycle-validering OK" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+echo "═══ TT11: tråd-kort ogiltigt enum → exit 1, token 'ogiltigt' ═══"
+setup_threads
+card T01-x.md <<'EOF'
+---
+lifecycle: bogus
+---
+
+# T01 — ogiltigt enum
+EOF
+index <<'EOF'
+| `T01` | Testtråd | `active` | [T01-x.md](T01-x.md) |
+EOF
+out=$(run_gate); ec=$?
+ok=0
+check_exit "TT11" 1 "${ec}" || ok=1
+check_contains "TT11" "ogiltigt" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+echo "═══ TT12: tråd-kort UTAN lifecycle-fält → skip → exit 0 (schema-on-read) ═══"
+setup_threads
+card T01-x.md <<'EOF'
+---
+owner: marcus803
+status: stable
+---
+
+# T01 — ej livscykel-spårad
+EOF
+index <<'EOF'
+| `T01` | Testtråd | `active` | [T01-x.md](T01-x.md) |
+EOF
+out=$(run_gate); ec=$?
+ok=0
+check_exit "TT12" 0 "${ec}" || ok=1
+check_contains "TT12" "lifecycle-validering OK" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+echo "═══ TT13: tråd-kort paused + matchande index-rad (paused) → exit 0 ═══"
+setup_threads
+card T02-y.md <<'EOF'
+---
+lifecycle: paused
+---
+
+# T02 — pausad tråd
+EOF
+index <<'EOF'
+| `T02` | Pausad tråd | `paused` | [T02-y.md](T02-y.md) |
+EOF
+out=$(run_gate); ec=$?
+ok=0
+check_exit "TT13" 0 "${ec}" || ok=1
+check_contains "TT13" "lifecycle-validering OK" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+echo "═══ TT14: [DRIFT] kort active men index-rad paused → exit 1, token 'tillstånds-drift' ═══"
+setup_threads
+card T03-z.md <<'EOF'
+---
+lifecycle: active
+---
+
+# T03 — drift-fall
+EOF
+index <<'EOF'
+| `T03` | Drift-tråd | `paused` | [T03-z.md](T03-z.md) |
+EOF
+out=$(run_gate); ec=$?
+ok=0
+check_exit "TT14" 1 "${ec}" || ok=1
+check_contains "TT14" "tillstånds-drift" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+echo "═══ TT15: [FÖRÄLDRALÖST] kort T05 saknas i index → exit 1, token 'föräldralöst kort' ═══"
+setup_threads
+card T05-orphan.md <<'EOF'
+---
+lifecycle: active
+---
+
+# T05 — föräldralöst kort
+EOF
+index <<'EOF'
+| `T01` | Annan tråd | `active` | [T01-x.md](T01-x.md) |
+EOF
+out=$(run_gate); ec=$?
+ok=0
+check_exit "TT15" 1 "${ec}" || ok=1
+check_contains "TT15" "föräldralöst kort" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+echo "═══ TT16: kort finns men index-fil saknas → exit 1, token 'bruten ryggrad' ═══"
+setup_threads
+card T06-noindex.md <<'EOF'
+---
+lifecycle: active
+---
+
+# T06 — inget index
+EOF
+# medvetet INGEN index-fil skrivs
+out=$(run_gate); ec=$?
+ok=0
+check_exit "TT16" 1 "${ec}" || ok=1
+check_contains "TT16" "bruten ryggrad" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================

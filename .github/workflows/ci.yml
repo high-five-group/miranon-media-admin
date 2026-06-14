@@ -425,6 +425,7 @@ jobs:
             './docs/**/*.md'
             './tasks/*.md'
             './tasks/sessions/*.md'
+            './tasks/threads/*.md'
             './*.md'
           fail: true
           token: ${{ secrets.GITHUB_TOKEN }}
