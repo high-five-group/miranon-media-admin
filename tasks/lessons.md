@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-13
+updated: 2026-06-14
 review_by: 2026-11-15
 status: stable
 ---
@@ -2054,3 +2054,70 @@ skapade båda miljöerna. Fas 5.5 förblir PÅGÅENDE.
   Symptom: ett alternativ var en separat staging-workspace, men Airtable Team-plan prissätts per-workspace → separat staging-workspace = onödig andra prenumeration. Olika bas-ID i samma workspace ger den isolering som faktiskt spelar roll (skilda data, skild access via PAT-scope), styrt av env-driven `AIRTABLE_BASE_ID`. Generaliserbar regel: isolera på den axel som bär den faktiska gränsen (bas-ID + credential-scope), inte på en dyrare organisatorisk axel (workspace/org) som inte tillför isolering men dubblerar kostnad. Källa: 2026-06-13 Session 19, Marcus miljö-moment + ADR-050.
 
 - [UNIVERSAL] **L119 — En lifecycle-verb-uppsättning med en asymmetrisk axel (läs utan skriv, eller tvärtom) är en latent drift-källa: den saknade riktningen tvingas uttryckas via fel verb.** session-resume fanns som LÄS-sidan av kontinuitets-axeln men saknade sin SKRIV-motpart (paus). Utan paus ramades oavslutade sessioner in mot nästa-session-N+1-fortsättning via session-end — ett completion-verb för en icke-completion — vilket gav premature-close-drift och tvetydig återupptagning (fortsätter N eller startar N+1?). Generaliserbart: när du designar ett verb-par (start/end, resume/paus), verifiera att BÅDA riktningarna av varje axel är inkodade; en halv axel fylls annars av närmaste grannverb och bär dess semantik som b-effekt. Research namnger haveriet (premature completion) och mönstret (context reset + strukturerad handoff, skilt från completion). Fix: ADR-051 (paus som fjärde verb, skriv-motpart till resume).
+
+## 2026-06-14 — Session 20 (lifecycle-fält + systemkonsolidering)
+
+Process-fundament-session (ingen byggfas): byggde `lifecycle:`-fältet (enum
+active/paused/closed) ortogonalt mot `status:`, i sex inkrement — ADR-052 →
+lifecycle-grind + 9-test-svit → skill-ägarskap (paus/resume/end) →
+create-session-doc-födelse → applicering på dok 18/19/20 → PI-bas-pekare. Fältet
+gör sessions-/fas-tillstånd O(1)-läsbart i frontmatter i stället för ad-hoc-prosa.
+
+### L120 [UNIVERSAL] — Single-source rubrik-lås: grind-regex ↔ producerande skill ↔ testsvit-fixtur
+
+Datum: 2026-06-14 | Källa: Session 20 inkr 3a→3b (klass: grind/skill-konsistens)
+
+När en grind validerar genom att nyckla på en sträng-form (regex mot en rubrik/markör),
+måste den skill som PRODUCERAR strängen och testsvitens fixtur låsas mot exakt samma
+form. Tre ytor, en sanning. Driftar de isär uppstår en latent grind-fälla (skillen
+skriver en form grinden inte känner igen → falsk röd, eller tvärtom). Disciplin: när du
+bygger en sträng-nycklande grind, gör samma sträng till single source som skillen citerar
+och testet fixturerar. Empiri: lifecycle-grindens ^## PAUSLÄGE — Session N pausad var
+ad-hoc i session-19-doket, oprescriberad i paus-skillen — driften fångad och stängd (inkr 3a→3b).
+
+### L121 [UNIVERSAL] — En prefix-förankrad tillstånds-markör BRYTS vid övergång, appendas inte
+
+Datum: 2026-06-14 | Källa: Session 20 inkr 3b (klass: tillstånds-modellering)
+
+En rubrik/markör som signalerar tillstånd ("är pausat nu") och valideras av en
+prefix-förankrad regex kan inte neutraliseras genom att APPENDA text — prefixet matchar
+ändå. Tillstånds-övergången måste BRYTA prefixet (omvandla formen), inte lägga till efter
+den. Empiri: resume omvandlar ## PAUSLÄGE — Session N pausad → ## Paushistorik — Session N
+(pausad…, återupptagen…); ett appenderat "(återupptagen)" hade lämnat prefixet matchande
+→ grinden hade fällt det återupptagna doket (T6). En tillstånds-markör muteras vid
+övergång; händelsen bevaras separat i prosa (öppen historik, ej tyst radering).
+
+### L122 [UNIVERSAL] — Pasted-instruktion vs disk-instruktion är en latent drift-källa; designa mot disk
+
+Datum: 2026-06-14 | Källa: Session 20 inkr 6 (klass: projektion ≠ live-HEAD)
+
+När en instruktions-yta projiceras manuellt (claude.ai Project Instructions klistras in
+från en repo-fil) och re-paste är ett deferrat moment, är den synliga instruktionen ≠
+disk-sanningen tills projektionen uppdateras. Edits mot den ytan måste designas mot
+DISK-versionen (verifierad av Code), aldrig mot den potentiellt stale projektionen Chat
+råkar se. Speglar L18/projektkunskap-färskhet, tillämpad på instruktions-ytan själv.
+Empiri: PI-basen i projektrutan saknade /session-paus; disk-basen (post-87acfdd) hade den
+— editsen designades mot disk-rapporten (inkr 6).
+
+### L123 [UNIVERSAL] — Verifiera-sedan-edit mot fler-versioner-i-spel: återge OLD från disk, formulera ej ur minnet
+
+Datum: 2026-06-14 | Källa: Session 20 inkr 6 (klass: edit-disciplin)
+
+En str_replace-OLD formulerad ur minnet/projektion kan missa disk-realiteter (t.ex. en
+radbrytning där minnet antog blanksteg). När en mall existerar i flera former (radbruten
+vs enradig, olika whitespace), MÅSTE OLD återges från faktisk disk före edit. Code:s
+vägran-att-gissa + STOPPA är rätt respons, inte en reflow på eget bevåg. Empiri: inkr
+6:s enradiga OLD missade disk-radbrytningen start⏎och end; Code stoppade, väg A löste det.
+Specialisering av L31 (verifiera repo-egenskaper per prompt) på edit-OLD-matchning.
+
+### L124 [UNIVERSAL] — Ett ortogonalt tillstånds-fält avslöjar implicit axel-sammanblandning i sin egen styr-dokumentation
+
+Datum: 2026-06-14 | Källa: Session 20 inkr 5 + avslut (klass: tillstånds-modellering / system-läsbarhet)
+
+När ett fält tvingar isär två tidigare implicita axlar (här: sessions-axeln closed/paused
+vs fas-axeln pågående/klar), exponerar det sammanblandningar som tidigare gömdes i lös
+prosa. "Resume session 18" var fas-återupptagning förklädd till sessions-resume — synlig
+som fel först när 18 fick lifecycle: closed (en closed session resume:as inte; fasen
+fortsätter via en NY session/start). Ett ortogonalitets-fält fångar sin egen styr-dok:s
+axel-fel första gången det möter ett skarpt fall. Empiri: scope-fröet var internt
+motsägande (klassade 18 closed MEN sa "resume 18") — fältet gjorde motsägelsen läsbar.
