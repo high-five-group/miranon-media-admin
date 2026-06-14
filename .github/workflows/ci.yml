@@ -164,6 +164,11 @@ jobs:
         # Hub-spoke-portabel design per K7 Lesson #6 (UNIVERSAL).
         run: bash scripts/check-frontmatter.sh
 
+      - name: Validate lifecycle field on session docs (ADR-052 gate)
+        # ADR-052 beslut 4: dedikerad lätt grind (enum + konsistens fält↔kropp),
+        # skild från frontmatter-governing-regimen (immutabilitets-skäl, ADR-023).
+        run: bash scripts/check-lifecycle.sh
+
       - name: Check ADR count consistency (ADR-039 gate)
         # Per ADR-039 § kadens-principen: deterministisk konsistens-check vid
         # VARJE push (ej bara fas-avslut). ADR-fil-antal == README:s kanoniska
@@ -204,6 +209,7 @@ jobs:
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
           bash scripts/test-pre-commit-hook.sh
+          bash scripts/test-check-lifecycle.sh
 
       - name: Test prod-deploy allowlist (fail-closed)
         # Bevisar fail-closed-egenskapen i scripts/deploy-prod-functions.sh
