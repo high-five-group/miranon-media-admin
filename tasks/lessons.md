@@ -2121,3 +2121,24 @@ som fel först när 18 fick lifecycle: closed (en closed session resume:as inte;
 fortsätter via en NY session/start). Ett ortogonalitets-fält fångar sin egen styr-dok:s
 axel-fel första gången det möter ett skarpt fall. Empiri: scope-fröet var internt
 motsägande (klassade 18 closed MEN sa "resume 18") — fältet gjorde motsägelsen läsbar.
+
+### L125 [UNIVERSAL] — En karaktärisering av disk-tillstånd ärver verifieringsplikten; en fix på en overifierad flagg kan vara värre än ingen fix
+
+Datum: 2026-06-14 | Källa: Session 20 konsistensfix-STOPPA (klass: verifierings-disciplin / flagg-arv)
+
+När en aktör — Code-transparens, Chat-flagg, Marcus-observation — karaktäriserar
+disk-tillstånd ("filen är bullet-formaterad", "X saknas", "Y är konventionen") är den
+karaktäriseringen ett PÅSTÅENDE, inte verifierad sanning — även när den kommer från den
+aktör som normalt är ground-truth för domänen (Code för disk). Att ärva en sådan flagg
+som PREMISS för en åtgärd utan att verifiera flaggen mot disk riskerar en fix som inför
+ett fel: är flaggen fel riktar fixen mot fel mål. En flagg som ska MOTIVERA en edit måste
+disk-verifieras med samma stränghet som edit:en själv — bygg verifiering i flaggen, inte
+bara i edit:en. Empiri: en avslutsflagg ("lessons-filen är bullet-konvention, L1–L119")
+byggde på svans-inspektion (L112–L119, lokalt bullets) generaliserad till hela filen;
+helfils-verifiering visade 107 ### : 17 bullets — ### är dominerande/ursprunglig, bullets
+(L103–L119) är driften. Flaggen ärvdes och en "miss" ägdes som inte fanns; den föreslagna
+fixen hade bulletat redan-konventionsenliga lessons och tappat klass-fältet. Fångad av att
+fix-prompten krävde disk-verifiering (återge föregångare + file-mixedness + content-loss-
+STOPPA) FÖRE edit. Syskon till L31/L123: dessa verifierar edit-INPUTS mot disk; L125 utökar
+plikten till den DIAGNOS som motiverar åtgärden. Ground-truth-status gör en aktörs
+karaktäriseringar mer trovärdiga, inte immuna.
