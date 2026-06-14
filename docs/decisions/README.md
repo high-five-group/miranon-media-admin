@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-13
+updated: 2026-06-14
 review_by: 2026-11-15
 status: stable
 ---
@@ -94,6 +94,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-049](ADR-049-fas-5-5-betalfalt-val.md) | Fas 5.5 write-slice skriver Anmälningsavgift, inte Status (Status saknar betald-värde); superseder ADR-016:s Status-kodexempel; allow-test deferrad pending staging-isolering | Accepted | 5.5 |
 | [ADR-050](ADR-050-isolerad-staging-miljo.md) | Isolerad staging-miljö — separat Supabase-projekt (Pro) + dedikerad Airtable-bas utan records + env-driven `AIRTABLE_BASE_ID`; avvisar Free+keep-alive och branching som primär; öppna trådar T1–T4 | Accepted | Meta |
 | [ADR-051](ADR-051-session-paus-lifecycle-verb.md) | session-paus — fjärde lifecycle-verbet (skriv-motpart till resume): parkera oavslutad session durabelt utan completion; asymmetrisk Chat-skill, bevarar sessionsnummer; utökar ADR-043 beslut 3 additivt | Accepted | Meta |
+| [ADR-052](ADR-052-lifecycle-frontmatter-falt.md) | `lifecycle:` — dedikerat livscykel-fält (enum active/paused/closed) ortogonalt mot `status:`; skill-ägt; validerat av separat lätt grind (ej governing-regimen, immutabilitets-skäl); applicering sessionsdok nu, schema-on-read för övriga | Accepted | Meta |
 
 ## Relaterade dokument
 
