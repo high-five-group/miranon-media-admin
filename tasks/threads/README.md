@@ -29,8 +29,11 @@ status: stable
 | `T03` | Session 20 BUILD-LOG-backfill | `paused` | _(ingen kort än — endast registrerad)_ |
 | `T04` | Mekaniserad sessions-/BUILD-LOG-fullständighetsgrind (mekanisera ADR-041 killer item) | `paused` | _(ingen kort än — endast registrerad)_ |
 | `T05` | Grind-täcknings-meta-grind (manifest: alla dok-kataloger × alla relevanta grind-globbar) — L127 | `paused` | _(ingen kort än — endast registrerad)_ |
+| `T06` | Hub-sync-backlogg sessioner 17–20 (L103–L125 aldrig hub-lyfta) | `paused` | _(ingen kort än — endast registrerad)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
+>
+> _T04-not: T04:s scope bör omfatta HELA klassen tyst-drivande do-confirm-killer-items (BUILD-LOG + hub-sync + ev. fler), bevisat av T03 + T06._
 
 ## Avslutade trådar
 
