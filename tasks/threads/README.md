@@ -25,6 +25,7 @@ status: stable
 | Tråd | Titel | Tillstånd | Ingång |
 |---|---|---|---|
 | `T01` | System-läsbarhet + triage av det oväntade | `active` | [T01-system-legibility.md](T01-system-legibility.md) · ADR-053 |
+| `T02` | project-instructions/ CI-täckningsgap | `paused` | _(ingen kort än — endast registrerad)_ |
 
 ## Avslutade trådar
 
@@ -46,3 +47,13 @@ Instructions + CLAUDE.md). Faller det ut som "defer till registret":
 
 Progressiv disclosure: rad först, kort när den växer. Överbygg inte — en tråd som
 förblir en rad är helt i sin ordning (ADR-053, MEDIUM-på-MINIMAL).
+
+## Commit-tagg-konvention
+
+Beslutet bor i ADR-053 beslut 3; här bor mekaniken.
+
+- Commits som tillhör en tråd taggas med `[T<NN>]` i commit-meddelandet (t.ex. `[T01]`).
+- Trådens commit-historik hämtas med `git log --grep "\[T<NN>\]"` — så tidslinjen blir
+  git-härledbar, inte handhållen.
+- En commit kan tillhöra en tråd även om den landar i en annan sessions arbete: tråden är
+  ortogonal mot sessionen (tråd ⊥ session).

@@ -3,6 +3,7 @@
 - Status: Accepted (Session 21 — 2026-06-14; ratificerad av Marcus i direktion samma session, byggs omedelbart)
 - Datum: 2026-06-14
 - Fas: Session 21 — tråd-arkitektur (process-fundament, ingen byggfas)
+- Tråd: T01-system-legibility
 
 ## Kontext
 
