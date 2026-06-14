@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-13
+updated: 2026-06-14
 review_by: 2026-11-15
 status: stable
 ---
@@ -26,6 +26,31 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 - Testa nytt bibliotek/approach med minimalt test (1 komponent, 1 hook) innan full implementation
 - Verifiera per komponent: 11/11/11 (bibliotek) eller 11/10/10 (vyer). Bevisa att det fungerar — "det funkar" ≠ "det är rätt".
 - Fånga lärdomar i `tasks/lessons.md` efter varje korrigering. Markera universella med `[UNIVERSAL]`.
+
+---
+
+## Triage av det oväntade — alltid-på (ADR-053)
+
+När något OVÄNTAT uppstår (utanför nuvarande scope — nära eller långt ifrån, men alltid
+oväntat), kör denna triage innan du fortsätter. Lita inte på omdöme i stunden — det är den
+empiriskt svagaste mekanismen (~9%), samma svaghetsklass ADR-043 kodade bort för lifecycle.
+Klassa mot två axlar: närhet till nuvarande scope, och om det BLOCKERAR nuvarande arbete.
+
+- Blockerar + i scope → hantera nu (enabling-detour, egen landning).
+- Blockerar + utanför scope → STOPPA, eskalera till Marcus (väg-beslut).
+- Blockerar ej + värdefullt → defer till tråd-registret (durabelt, för senare).
+- Blockerar ej + lågvärde → förkasta EXPLICIT (noteras kort, aldrig tyst).
+
+Ledstjärna: registrera — förkasta aldrig tyst. Ett oväntat värde som inte fångas dör med
+sessionen. Baren för "blockerar" hålls hög: bara det som genuint stoppar nuvarande arbete
+eskaleras eller hanteras nu; allt annat defereras eller förkastas, så inte varje småsak blir
+en tråd.
+
+Kriteriet ny session vs detour = sessions-paus-distinktionen (ADR-051): fortsätter samma
+scope → detour; distinkt scope → egen session.
+
+HUR (ge tråden ett ID, lägg en rad i indexet, skapa ev. tråd-kort): se
+tasks/threads/README.md § "Så här registrerar du en ny tråd". Princip här, mekanik där.
 
 ---
 

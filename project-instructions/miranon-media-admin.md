@@ -10,3 +10,26 @@ git). Noll sökträffar på historiskt material betyder inte att det
 saknas — hämta det via Code (LÄS→RAPPORTERA mot lokal disk) eller be
 Marcus klistra innehållet. Se spoke-CLAUDE.md § Synk-horisont och
 arkiv-åtkomst.
+
+## Triage av det oväntade — alltid-på (ADR-053) [UNIVERSAL]
+
+När något OVÄNTAT uppstår (utanför nuvarande scope — nära eller långt ifrån, men alltid
+oväntat), kör denna triage innan du fortsätter. Lita inte på omdöme i stunden — det är den
+empiriskt svagaste mekanismen (~9%), samma svaghetsklass ADR-043 kodade bort för lifecycle.
+Klassa mot två axlar: närhet till nuvarande scope, och om det BLOCKERAR nuvarande arbete.
+
+- Blockerar + i scope → hantera nu (enabling-detour, egen landning).
+- Blockerar + utanför scope → STOPPA, eskalera till Marcus (väg-beslut).
+- Blockerar ej + värdefullt → defer till tråd-registret (durabelt, för senare).
+- Blockerar ej + lågvärde → förkasta EXPLICIT (noteras kort, aldrig tyst).
+
+Ledstjärna: registrera — förkasta aldrig tyst. Ett oväntat värde som inte fångas dör med
+sessionen. Baren för "blockerar" hålls hög: bara det som genuint stoppar nuvarande arbete
+eskaleras eller hanteras nu; allt annat defereras eller förkastas, så inte varje småsak blir
+en tråd.
+
+Kriteriet ny session vs detour = sessions-paus-distinktionen (ADR-051): fortsätter samma
+scope → detour; distinkt scope → egen session.
+
+HUR (ge tråden ett ID, lägg en rad i indexet, skapa ev. tråd-kort): se
+tasks/threads/README.md § "Så här registrerar du en ny tråd". Princip här, mekanik där.
