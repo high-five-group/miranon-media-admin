@@ -1281,6 +1281,47 @@ bygg-steg 3–8. Sessionsdok-trail:
 
 ---
 
+## Session 19 (resume 2026-06-15) — staging-migration steg 3–7 KOMPLETT (ingen fas-status-ändring)
+
+Commit-range `060c1dc` → `45c02a9` (resume-work-burst; session-end-commits förlänger).
+Återupptog session 19 via `/session-resume` (lifecycle paused→active). ADR-050:s
+bygg-sekvens slutförd mot en riktig isolerad staging. Fas 5.5 förblir **PÅGÅENDE**
+(deny/allow-grinden avblockerad; K2 klient-UI återstår, ej fas-avslut).
+
+**Staging-migration (ADR-050 bygg-sekvens 1–7 KOMPLETT):**
+
+- **Steg 3** — empirisk ID-läsning: staging-bas `apphjj8Q7lkXCMsL4` (exakt 1 bas,
+  scope ren), 18 tabeller; schema-check (T4) CLEAN (Eventplanering/Personer/
+  Anmälningar finns, namn-portabelt).
+- **Steg 4** — staging-secrets satta: `AIRTABLE_TOKEN`/`ADMIN_EMAILS` via
+  `--env-file` samt `AIRTABLE_BASE_ID` inline; throwaway-fil raderad.
+- **Steg 5** — 6 EF:er deployade via **bare CLI** mot staging-ref `pqtshyierkdgwdnxuirz`
+  (ADR-050 steg 5 GOVERNING: alla 6 inkl `test-auth`; prod-allowlist-skriptet är
+  PROD-spärr, ej använt). PROD orört. Migrations ej tillämpligt (L115).
+- **Steg 6** — 6 CI-test-secrets repointade mot staging (väg b: Marcus skapade 2
+  staging-auth-users); `ADMIN_EMAILS`=test-admin. Live-verifierat: CI 40 passed/1
+  skipped, inga 401 → users↔secrets bekräftade.
+- **Steg 7a** — `CORS_ALLOWED_ORIGINS=http://localhost:5173`; deny-tester (rad 56/83)
+  av-skippade (`ac9f842`).
+- **Steg 7b** — staging-access-gap löst (Airtable-token-scope utökat → Code når
+  staging direkt); syntetisk Anmälningar-rad seedad (`recynkk5KWpWirv7k`,
+  `Anmälningsavgift='Ej mottagen'`); `TEST_REGISTRATION_RECORD_ID` wired; allow-test
+  (rad 110) aktivt med try/finally-restore + läs-tillbaka-assert (`a63dda2`).
+  Staging-svit: **41 passed / 0 skipped**; determinism bekräftad (post restaurerad).
+
+**Supply-chain-detour:** GHSA-fx2h-pf6j-xcff (vite high, dev-server-only, icke-malware)
+fixad via **kirurgisk** vite-bump 8.0.12→8.0.16 (`dfb895e`) — §2-avvikelse (full-regen
+är malware-purge, ej tillämplig) kvitterad + loggad i ADR-028 ## Updates; defer av
+§2-amendering registrerat som **T07**.
+
+**Status:** ADR-050 KOMPLETT; `staging==prod`-defekten (L110) strukturellt stängd.
+Öppet: ADR-050 **T4** (löpande schema-sync-disciplin staging↔prod). Lessons L132–L136
+(5 UNIVERSAL). Sessionsdok-trail:
+[`tasks/sessions/2026-06-13-session-19.md`](../tasks/sessions/2026-06-13-session-19.md)
+Del 2.
+
+---
+
 ## Session 21 — Tråd-arkitektur: ADR-053 + register + triage (process-fundament, ingen byggfas) (2026-06-14)
 
 Commit-kedja `f7404d5` → `c811a2c` → `2fba5f6` → `4a0e419` → `ccde82b` → `e434bc8` → K-sista. Process-fundament-session (Fas 5.5 förblir **PÅGÅENDE**, orörd). Stänger seed:ets gap-tes: tråden blir förstaklass-organisationsenhet parallell med sessionen, och det oväntade får ett inkodat hem. Denna post skrivs eftersom vi landar mot avslut (ej pausar) — själva paus-lucke-ironin seed:et pekade på.

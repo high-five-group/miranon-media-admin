@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-14
+updated: 2026-06-15
 review_by: 2026-11-15
 status: stable
 ---
@@ -2226,3 +2226,25 @@ i stället för ad-hoc-backfill mitt i en annan sessions K-sista. Tre dogfood-be
 BUILD-LOG-disciplinen har ett verkligt glapp — vilket stärker att tråd-indexet, som svarar "var i
 tidslinjen är vi nu, inklusive hål", var rätt lösning. Hålet görs synligt där det finns (not i
 Session 21:s BUILD-LOG-post med pekare till T03), ej tyst.
+
+## 2026-06-15 — Session 19 (resume — staging-färdigställande)
+
+### L132 [UNIVERSAL] — Ett förkravs-/verifieringssteg byggt runt ett redan-etablerat faktum löser ett icke-existerande problem
+
+Symptom: Resume-19 reste två läs-/STOPP-pass mot redan fastställda fakta — (a) migrations re-litigerades trots L115:s fyra-kanals-introspektion (noll app-tabeller); (b) ett Airtable-schema-mini-läspass mot ett schema redan känt via prod-duplicering (ADR-050 beslut 2) + bygg-steg 3:s T4-schemacheck. Varje förbrukade en runda på att verifiera det disk/lessons redan bevisat. Regel: innan ett verifierings-/förkravssteg läggs in, kontrollera om det som steget verifierar redan är etablerat (tidigare lesson, dokumenterat beslut, arkitektur-faktum) — annars löser steget ett icke-problem. Generaliserar [[L115]]. Källa: 2026-06-15 Session 19 (resume).
+
+### L133 [UNIVERSAL] — "Stängt i Chat-analys" ≠ "stängt i externminnet"; bara committad artefakt är durabel
+
+Symptom: Chat deklarerade prod-secret-carryn (AIRTABLE_BASE_ID) "stängd" i resonemang flera pass innan värdet nådde todo:n; Code fångade en känt-falsk "ej satt"-rad mot disk. Stängningen levde bara i efemär Chat-trail. Regel: ett tillstånds-byte som bara uttrycks i Chat-analys finns inte förrän skrivet till durabel artefakt (todo/sessionsdok/BUILD-LOG); behandla Chat-"klart/löst" som ogiltigt tills committat. Reinforcerar [[L67]]/[[L69]]. Källa: 2026-06-15 Session 19 (resume).
+
+### L134 [UNIVERSAL] — Skilj konto-nivå-åtgärder (endast människan) från API-nivå-åtgärder (agenten med token); default:a ej människan till arbete agenten bemyndigats för
+
+Symptom: Chat default:ade upprepat "Marcus gör Airtable-grejer" (seed) från att TIDIGARE uppgifter (skapa bas, skapa PAT) krävde människan — men de var konto-nivå. En record-insert med befintlig token är API-nivå, görs av Code. Marcus fångade det. Regel: klassa varje åtgärd konto-nivå (skapa konto/bas/token/dashboard-config) vs API-nivå (skapa/läs/skriv records med befintlig token); överför ej ett människo-steg till ett API-steg agenten kan göra. Källa: 2026-06-15 Session 19 (resume).
+
+### L135 [UNIVERSAL] — En isolerad miljö agentens tooling ej når direkt (bara via app-lagret) är halv-provisionerad; verifiera tooling-access symmetriskt med prod
+
+Symptom: Staging-Airtable nåddes av deployade EF:er (secret-token) men EJ av Code:s Airtable-MCP (prod-scopead) → blockerade direkt schema-läsning/seed/felsökning. Marcus fångade "en staging-bas Code ej når = halv staging-miljö". Löst via utökat token-scope (symmetrisk access). Regel: vid miljö-provisionering, verifiera att agentens DIREKTA tooling (MCP/token-scope) når miljön symmetriskt med prod — ej bara app-lagret. Källa: 2026-06-15 Session 19 (resume).
+
+### L136 [UNIVERSAL] — En regel kalibrerad för en feltyp över-applicerar på en annan om bokstaven följs; följ rationalen, riv bokstaven öppet
+
+Symptom: ADR-028 §2 (full lock-regen) är en MALWARE-PURGE-mekanism; på en icke-malware dev-server-advisory (fx2h) gav den noll säkerhetsvärde + drog in 140 orelaterade bumpar (biome 2.5.0 bröt CI). Kirurgisk bump (trogen §2:s intent) löste det. Regel: när en regels bokstav importerar kostnad utan nytta i ett fall den ej kalibrerades för, följ rationalen och avvik öppet/kvitterat (ej tyst) + kodifiera distinktionen. Captured: T07 + ADR-028 ## Updates 2026-06-15. Källa: 2026-06-15 Session 19 (resume).
