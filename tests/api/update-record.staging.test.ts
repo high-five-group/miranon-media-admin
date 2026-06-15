@@ -10,9 +10,10 @@
 //   - deny: recordId utan rec-prefix → 400 — AKTIV (resume-19 bygg-steg 7a;
 //     update-record omdeployat med mark-registration-fee-paid i allowlisten).
 //   - deny: fält utanför allowlist → 400 — AKTIV (resume-19 bygg-steg 7a).
-//   - allow: registrerad operation → 200 — test.skip. Kräver redeploy +
-//     mutations-säkert staging-record + restore-teardown +
-//     TEST_REGISTRATION_RECORD_ID (ADR-049 Öppen tråd 1 + 2).
+//   - allow: registrerad operation → 200 — AKTIV (resume-19 bygg-steg 7b).
+//     Muterar seedad staging-post (TEST_REGISTRATION_RECORD_ID) →
+//     'Mottagen' + läs-tillbaka-assert; try/finally restaurerar
+//     ursprungsvärdet så live-data aldrig lämnas ändrad (ADR-049 Öppen tråd 1 + 2).
 //
 // Auth-/anonym-deny (401) testas inte här utan i require-user-sviten via
 // den delade requireUser-gatewayen (täcker alla Edge Functions).
@@ -87,30 +88,60 @@ test.describe('update-record — operations-allowlist (M4)', () => {
     expect(body.error).toMatch(/not allowed for operation/);
   });
 
-  test('allow: registrerad operation + tillåtna fält → 200', async ({ request }) => {
+  test('allow: registrerad operation + tillåtna fält → 200 (muterar + restaurerar)', async ({
+    request,
+  }) => {
     const config = getApiConfig();
     const userJwt = await getValidUserJWT(request, config);
-
-    // Allow-vägen muterar ett riktigt Anmälningar-record
-    // (Anmälningsavgift='Mottagen'). Kräver ett mutations-säkert
-    // staging-record + restore-teardown så live-data inte lämnas ändrad.
-    // Ingen sådan infra finns ännu — deferrad per ADR-049 öppen tråd.
-    test.skip(
-      true,
-      'Aktiveras när designerat mutations-säkert staging-record + read-restore-teardown + TEST_REGISTRATION_RECORD_ID-secret finns (allow-vägen kräver muterbart record; deferrad per ADR-049 öppen tråd).',
-    );
+    const authHeaders = { Authorization: `Bearer ${userJwt}` };
 
     const recordId = process.env.TEST_REGISTRATION_RECORD_ID ?? '';
+    expect(recordId, 'TEST_REGISTRATION_RECORD_ID måste vara satt i staging-env').not.toBe('');
 
-    const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
-      headers: { Authorization: `Bearer ${userJwt}` },
-      data: {
-        operationKey: 'mark-registration-fee-paid',
-        recordId,
-        fields: { Anmälningsavgift: 'Mottagen' },
-      },
-    });
+    // Läs ett registrerings-fälts nuvarande värde via get-registrations
+    // (ingen filter → alla; matcha på record-id). Befintlig EF, ingen
+    // Airtable-direktåtkomst i testet.
+    const readAnmalningsavgift = async (): Promise<string | null> => {
+      const r = await request.get(`${config.baseUrl}/functions/v1/get-registrations`, {
+        headers: authHeaders,
+      });
+      expect(r.status()).toBe(200);
+      const body = (await r.json()) as {
+        registrations: { id: string; anmalningsavgift: string | null }[];
+      };
+      const rec = body.registrations.find((x) => x.id === recordId);
+      expect(rec, `seedad post ${recordId} hittades inte via get-registrations`).toBeTruthy();
+      return rec?.anmalningsavgift ?? null;
+    };
 
-    expect(res.status()).toBe(200);
+    // Ursprungsvärde FÖRE mutation (restaureras i finally oavsett utfall).
+    const original = await readAnmalningsavgift();
+
+    try {
+      const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'mark-registration-fee-paid',
+          recordId,
+          fields: { Anmälningsavgift: 'Mottagen' },
+        },
+      });
+      expect(res.status()).toBe(200);
+
+      // Läs-tillbaka: bevisar att mutationen faktiskt satte fältet (ej bara 200).
+      expect(await readAnmalningsavgift()).toBe('Mottagen');
+    } finally {
+      // Restore: skriv tillbaka ursprungsvärdet (samma operation — allowlisten
+      // gatar fältet, inte värdet) så staging-data aldrig lämnas muterad. Körs
+      // även om assertionen ovan kastar.
+      await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'mark-registration-fee-paid',
+          recordId,
+          fields: { Anmälningsavgift: original ?? 'Ej mottagen' },
+        },
+      });
+    }
   });
 });

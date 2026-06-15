@@ -318,6 +318,7 @@ jobs:
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          TEST_REGISTRATION_RECORD_ID: ${{ secrets.TEST_REGISTRATION_RECORD_ID }}
 
       # Cache Playwright browsers (~150MB) per ADR-029 §1c.
       # Job-isolation från lint-jobbet kräver explicit cache för delade artefakter.
