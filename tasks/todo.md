@@ -17,7 +17,7 @@
 
 **Fas 5.5 — Vertikal write-slice ⏸ PAUSAD (pending staging-miljö).** Server-kontraktet är levererat och CI-grönt (operation `mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049). Klient-UI (K2) + test-aktiveringen är gated på en `update-record`-redeploy som avslöjade att ingen isolerad staging-miljö finns (orgen har **ett enda** Supabase-projekt; "staging" == den levande miljön + samma Airtable-bas). Pausat tills riktig staging byggs. Återupptas efter Session 19.
 
-**Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. Nästa: RESUME av session 19 — staging bygg-steg 3–8** (Marcus-sekvens: fixa systemet först, sedan slutför arbetet). Staging-arbetet (vid resume-19): Förarbetet (steg 1+2) + ADR-050 är landade och båda miljöerna skapade. Bygg-steg 3 (ingång): Code läser staging-projektets ref + api-keys (`supabase projects api-keys --project-ref <staging-ref>`) + nya Airtable-basens bas-/tabell-ID:n via MCP → producera **SECRET-KARTA** (vilka secrets, vilket projekt, vilka värden) FÖRE något sätts. Sedan steg 4 (sätt staging-secrets) → 5 (deploy 6 EF:er till staging via allowlist-skriptet) → 6 (peka om CI:s `TEST_SUPABASE_*` mot staging) → 7/8 (aktivera de 3 skippade testerna + allow-test mot seedad record). Avblockerar Fas 5.5:s deny/allow-tester + K2.
+**Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19 pågår — bygg-steg 3+4 KLARA (2026-06-14), nästa: bygg-steg 5 (deploy).** Staging-arbetet (resume-19): Förarbetet (steg 1+2) + ADR-050 landade, båda miljöerna skapade. Bygg-steg 3 (empirisk läsning + schema-check CLEAN) + bygg-steg 4 (staging-secrets `AIRTABLE_TOKEN`/`ADMIN_EMAILS`/`AIRTABLE_BASE_ID` satta + verifierade) klara. Kvar: steg 5 (deploy EF:er till staging via allowlist-skriptet mot ref `pqtshyierkdgwdnxuirz`) → 6 (peka om CI:s `TEST_SUPABASE_*` mot staging) → 7/8 (aktivera de 3 skippade testerna + allow-test mot seedad record). Avblockerar Fas 5.5:s deny/allow-tester + K2.
 
 ### Session 21 ✅ KLAR (2026-06-14) — tråd-arkitektur (ADR-053, process-fundament)
 
@@ -40,14 +40,23 @@
 - [x] **Förarbete steg 1** env-driven `AIRTABLE_BASE_ID` (fail-fast) + tabell per namn i 4 EF:er — `49267b4`.
 - [x] **Förarbete steg 2** fail-closed prod-deploy-allowlist (`.prod-functions-allowlist.conf` + `scripts/deploy-prod-functions.sh` + test-svit + CI-steg) — `009a8d1`. Lessons L114–L118.
 - [x] **Marcus miljö-moment:** Supabase Pro + staging-projekt (`miranon-media-admin-staging`, AWS eu-west-1, Micro) + Airtable staging-bas ("Miranon Media OS - staging", utan records, samma workspace).
+- [x] **Bygg-steg 3 (resume-19, 2026-06-14)** empirisk läsning + schema-check (ADR-050 T4) **CLEAN**: staging-bas `apphjj8Q7lkXCMsL4` ("miranon-media-admin-staging"), 18 tabeller, scope ren (exakt 1 bas). EF-tabellerna Eventplanering/Personer/Anmälningar finns alla i staging (namn-portabelt per `49267b4`). Landnings-post: sessionsdok-19 Del 2.
+- [x] **Bygg-steg 4 (resume-19, 2026-06-14)** staging-secrets satta mot ref `pqtshyierkdgwdnxuirz` (Supabase-dokumenterad `--env-file`): `AIRTABLE_TOKEN` + `ADMIN_EMAILS` (via fil) + `AIRTABLE_BASE_ID=apphjj8Q7lkXCMsL4` (inline). Verifierade via `secrets list` (digest). Throwaway-fil raderad. (Secret-set ej committbart → sessionsdok-19 Del 2 ÄR landnings-posten, L67.)
 
 #### Öppna trådar från Session 19 (bär in i resume av session 19, efter session 20)
 
-- [ ] **KRITISK post-merge (1):** `AIRTABLE_BASE_ID` måste sättas som **prod-secret** (`=app8uGPrVCVOm6LfD`) FÖRE nästa manuella prod-redeploy — annars fail-fast:ar prod-EF:erna. Steg 1 gjorde källan env-beroende.
+- [x] **KRITISK post-merge (1) LÖST (resume-19 ÅTGÄRD 2, 2026-06-14):** `AIRTABLE_BASE_ID` satt som **prod-secret** mot ref `lvjsfnphlauldxqlncpl` (verifierad digest `a0652ca6…`). Prod-EF:erna fail-fast:ar inte längre på saknat fält vid nästa redeploy. (Secret-set ej committbart → denna rad + resume-rapporten är spåret; prod-secret-landningen har ingen egen sessionsdok-post.)
 - [ ] **KRITISK post-merge (2):** prod-deploy hädanefter ENDAST via `scripts/deploy-prod-functions.sh --project-ref <ref>` — aldrig bare `supabase functions deploy`.
-- [ ] **ADR-050 öppna trådar:** T1 LÖST (Pro). T2 staging-bas skapad — nya bas-/tabell-ID:n återstår att läsas empiriskt (bygg-steg 3). T3 LÖST (namn-i-path bekräftat + implementerat). T4 (schema-sync staging↔prod) ÖPPEN men deferrad — Postgres nära tom, primärt en Airtable-fråga.
-- [ ] **Airtable-PAT mot staging-basen:** skapas av Marcus i bygg-steg 3 (guidas då); ej skapad än.
+- [x] **ADR-050 öppna trådar — ALLA LÖSTA (resume-19):** T1 LÖST (Pro). T2 LÖST (bas-ID `apphjj8Q7lkXCMsL4` läst empiriskt, bygg-steg 3). T3 LÖST (namn-i-path bekräftat + implementerat). T4 LÖST (schema-sync: Eventplanering/Personer/Anmälningar finns i staging-basen — schema matchar EF-koden).
+- [x] **Airtable-PAT mot staging-basen:** skapad av Marcus + satt som staging-secret `AIRTABLE_TOKEN` (ref `pqtshyierkdgwdnxuirz`, digest `9e7d54ee…`) i bygg-steg 4.
 - [ ] **De 3 skippade testerna** (`update-record.staging.test.ts` rad 56/83/110) orörda — aktiveras i bygg-steg 8 efter staging-deploy + seedad record.
+
+#### Resume av Session 19 — carry till bygg-steg 5 (deploy)
+
+- [ ] **Bygg-steg 5 (nästa): deploy EF:er till staging** via `scripts/deploy-prod-functions.sh`-mönstret mot staging-ref `pqtshyierkdgwdnxuirz`. Sedan steg 6 (peka om CI:s `TEST_SUPABASE_*` mot staging) → 7/8 (aktivera de 3 skippade testerna + allow-test mot seedad record).
+- [ ] **`CORS_ALLOWED_ORIGINS` — äkta steg-5-förkrav (app-secret):** finns på prod men ej staging. Verifiera fail-fast vs default i EF-koden inför deploy; sätt på staging-ref om EF:erna kräver den.
+- [ ] **`SUPABASE_*`-familjen — INGEN åtgärd:** reserverat prefix, plattforms-auto-injicerat per ref (Supabase-doc verifierad). Staging auto-får egna; bekräftas via `Deno.env` i deployad funktion. Ej manuellt satta. (Prod-listans `SUPABASE_URL/ANON_KEY/SERVICE_ROLE_KEY/DB_URL/JWKS/PUBLISHABLE_KEYS/SECRET_KEYS` är denna klass.)
+- [ ] **`VITE_SENTRY_DSN` — optional (frontend):** sätt endast om staging-Sentry önskas.
 
 ### Session 18 ⏸ PAUSAD (2026-06-13) — Fas 5.5 server-kontrakt (K1)
 
