@@ -15,9 +15,9 @@
 
 ## Aktuellt fokus
 
-**Fas 5.5 — Vertikal write-slice ⏸ PAUSAD (pending staging-miljö).** Server-kontraktet är levererat och CI-grönt (operation `mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049). Klient-UI (K2) + test-aktiveringen är gated på en `update-record`-redeploy som avslöjade att ingen isolerad staging-miljö finns (orgen har **ett enda** Supabase-projekt; "staging" == den levande miljön + samma Airtable-bas). Pausat tills riktig staging byggs. Återupptas efter Session 19.
+**Fas 5.5 — Vertikal write-slice: staging-miljön KLAR ✅; deny/allow-grinden avblockerad.** Server-kontraktet levererat och CI-grönt (operation `mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049). Den isolerade staging-miljön är byggd (ADR-050 bygg-sekvens 1–7 komplett) och hela staging-testsviten grön (41 passed/0 skipped). **Nästa: Fas 5.5 klient-UI (K2) i ny session** (peka bakåt på session 18; en stängd session resume:as ej — ny sessions-yta, ADR-052/L124).
 
-**Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19 pågår — bygg-steg 3+4+5 KLARA (2026-06-14), nästa: bygg-steg 6 (peka om CI mot staging).** Staging-arbetet (resume-19): Förarbetet + ADR-050 landade, båda miljöerna skapade. Bygg-steg 3 (empirisk läsning + schema-check CLEAN) + 4 (staging-secrets satta) + 5 (6 EF:er deployade till staging) klara. Bygg-steg 5 kördes via **bare CLI mot staging-ref** (`supabase functions deploy --project-ref pqtshyierkdgwdnxuirz`) — allowlist-skriptet är PROD-spärr som exkluderar test-auth; ADR-050 steg 5 vill ha alla 6 inkl test-auth på staging. Kvar: steg 6 (peka om CI:s `TEST_SUPABASE_*` mot staging) → 7/8 (aktivera de skippade testerna + allow-test mot seedad record). Förkrav till test-aktivering: `CORS_ALLOWED_ORIGINS` staging-secret + test-users i staging-auth. Avblockerar Fas 5.5:s deny/allow-tester + K2.
+**Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
 ### Session 21 ✅ KLAR (2026-06-14) — tråd-arkitektur (ADR-053, process-fundament)
 
@@ -43,21 +43,25 @@
 - [x] **Bygg-steg 3 (resume-19, 2026-06-14)** empirisk läsning + schema-check (ADR-050 T4) **CLEAN**: staging-bas `apphjj8Q7lkXCMsL4` ("miranon-media-admin-staging"), 18 tabeller, scope ren (exakt 1 bas). EF-tabellerna Eventplanering/Personer/Anmälningar finns alla i staging (namn-portabelt per `49267b4`). Landnings-post: sessionsdok-19 Del 2.
 - [x] **Bygg-steg 4 (resume-19, 2026-06-14)** staging-secrets satta mot ref `pqtshyierkdgwdnxuirz` (Supabase-dokumenterad `--env-file`): `AIRTABLE_TOKEN` + `ADMIN_EMAILS` (via fil) + `AIRTABLE_BASE_ID=apphjj8Q7lkXCMsL4` (inline). Verifierade via `secrets list` (digest). Throwaway-fil raderad. (Secret-set ej committbart → sessionsdok-19 Del 2 ÄR landnings-posten, L67.)
 - [x] **Bygg-steg 5 (resume-19, 2026-06-14)** 6 EF:er deployade till staging-ref `pqtshyierkdgwdnxuirz` via **bare CLI** (`supabase functions deploy`) — ADR-050 steg 5 GOVERNING (alla 6 inkl `test-auth`). Prod-allowlist-skriptet EJ använt (PROD-spärr, exkluderar test-auth). Alla `ACTIVE` v1; test-auth nåbar (401 från egen requireUser-logik, ej 404). PROD orört. Migrations ej tillämpligt (L115). Landnings-post: sessionsdok-19 Del 2.
+- [x] **Bygg-steg 6 (resume-19, 2026-06-15)** 6 CI-test-secrets repointade mot staging via `gh secret set --env-file` (väg b — Marcus skapade 2 staging-auth-users); `ADMIN_EMAILS` = test-admin. Live-verifierat CI: 40 passed/1 skipped, inga 401 → users↔secrets bekräftade. Landnings-post: sessionsdok-19 Del 2.
+- [x] **Bygg-steg 7a (resume-19, 2026-06-15)** `CORS_ALLOWED_ORIGINS=http://localhost:5173` satt på staging; deny-tester (rad 56/83) av-skippade — `ac9f842`. CI: cors.staging + 4 redo-filer gröna.
+- [x] **Bygg-steg 7b (resume-19, 2026-06-15)** staging-access-gap löst (Airtable-token-scope utökat); syntetisk Anmälningar-rad seedad (`recynkk5KWpWirv7k`, `Anmälningsavgift='Ej mottagen'`); `TEST_REGISTRATION_RECORD_ID` wired; allow-test (rad 110) aktivt med try/finally-restore + läs-tillbaka-assert — `a63dda2`. CI: **41 passed/0 skipped**; determinism bekräftad. **ADR-050 staging-migration KOMPLETT (steg 1–7).**
 
 #### Öppna trådar från Session 19 (bär in i resume av session 19, efter session 20)
 
 - [x] **KRITISK post-merge (1) LÖST (resume-19 ÅTGÄRD 2, 2026-06-14):** `AIRTABLE_BASE_ID` satt som **prod-secret** mot ref `lvjsfnphlauldxqlncpl` (verifierad digest `a0652ca6…`). Prod-EF:erna fail-fast:ar inte längre på saknat fält vid nästa redeploy. (Secret-set ej committbart → denna rad + resume-rapporten är spåret; prod-secret-landningen har ingen egen sessionsdok-post.)
 - [ ] **KRITISK post-merge (2):** prod-deploy hädanefter ENDAST via `scripts/deploy-prod-functions.sh --project-ref <ref>` — aldrig bare `supabase functions deploy`.
-- [x] **ADR-050 öppna trådar — ALLA LÖSTA (resume-19):** T1 LÖST (Pro). T2 LÖST (bas-ID `apphjj8Q7lkXCMsL4` läst empiriskt, bygg-steg 3). T3 LÖST (namn-i-path bekräftat + implementerat). T4 LÖST (schema-sync: Eventplanering/Personer/Anmälningar finns i staging-basen — schema matchar EF-koden).
+- [x] **ADR-050 öppna trådar — T1–T3 LÖSTA:** T1 LÖST (Pro). T2 LÖST (bas-ID `apphjj8Q7lkXCMsL4` läst empiriskt, bygg-steg 3). T3 LÖST (namn-i-path bekräftat + implementerat).
+- [ ] **ADR-050 T4 — schema-sync-disciplin staging↔prod (kadens + mekanism) FORTSATT ÖPPEN:** point-in-time-matchen verifierad (bygg-steg 3 schema-check CLEAN), men den **löpande** sync-disciplinen kvarstår — staging saknar migrations, Airtable saknar schema-migration, så kadens/mekanism för att hålla baserna i synk över tid behöver detaljeras (ADR-050 T4). Kandidat för tråd-registret om den växer.
 - [x] **Airtable-PAT mot staging-basen:** skapad av Marcus + satt som staging-secret `AIRTABLE_TOKEN` (ref `pqtshyierkdgwdnxuirz`, digest `9e7d54ee…`) i bygg-steg 4.
-- [ ] **De 3 skippade testerna** (`update-record.staging.test.ts` rad 56/83/110) orörda — aktiveras i bygg-steg 8 efter staging-deploy + seedad record.
+- [x] **De 3 skippade testerna** (`update-record.staging.test.ts` rad 56/83/110) **AKTIVERADE** (bygg-steg 7a deny 56/83, 7b allow 110) — staging-svit 41 passed/0 skipped.
 
-#### Resume av Session 19 — carry till bygg-steg 5 (deploy)
+#### Resume av Session 19 — bygg-steg 5–7 (KLARA)
 
-- [ ] **Bygg-steg 5 (nästa): deploy EF:er till staging** via `scripts/deploy-prod-functions.sh`-mönstret mot staging-ref `pqtshyierkdgwdnxuirz`. Sedan steg 6 (peka om CI:s `TEST_SUPABASE_*` mot staging) → 7/8 (aktivera de 3 skippade testerna + allow-test mot seedad record).
-- [ ] **`CORS_ALLOWED_ORIGINS` — äkta steg-5-förkrav (app-secret):** finns på prod men ej staging. Verifiera fail-fast vs default i EF-koden inför deploy; sätt på staging-ref om EF:erna kräver den.
-- [ ] **`SUPABASE_*`-familjen — INGEN åtgärd:** reserverat prefix, plattforms-auto-injicerat per ref (Supabase-doc verifierad). Staging auto-får egna; bekräftas via `Deno.env` i deployad funktion. Ej manuellt satta. (Prod-listans `SUPABASE_URL/ANON_KEY/SERVICE_ROLE_KEY/DB_URL/JWKS/PUBLISHABLE_KEYS/SECRET_KEYS` är denna klass.)
-- [ ] **`VITE_SENTRY_DSN` — optional (frontend):** sätt endast om staging-Sentry önskas.
+- [x] **Bygg-steg 5–7 KLARA** (se KLAR-raderna ovan): deploy → secrets-repoint → CORS + deny → seed + allow. ADR-050 staging-migration komplett.
+- [x] **`CORS_ALLOWED_ORIGINS`** satt på staging (`http://localhost:5173`, bygg-steg 7a) — cors.staging grön.
+- [x] **`SUPABASE_*`-familjen — bekräftad plattforms-auto:** staging-projektet auto-fick egna (syns i `secrets list` efter deploy). Ingen manuell åtgärd, som förutsett.
+- [ ] **`VITE_SENTRY_DSN` — optional (frontend):** ej satt på staging; sätt endast om staging-Sentry önskas (ej blockerande).
 
 ### Session 18 ⏸ PAUSAD (2026-06-13) — Fas 5.5 server-kontrakt (K1)
 
@@ -70,18 +74,11 @@
 
 #### Öppna trådar från Session 18
 
-- [ ] **(1) Fas 5.5 PAUSAD mitt i** — återupptas efter att staging-miljön finns.
-- [ ] **(2) EF `update-record` EJ deployad** → deny-skippen (rad 56/83) +
-  allow-skippen (rad 110) i `update-record.staging.test.ts` väntar deploy.
-  Deploy mot nuvarande miljö avbröts medvetet (ska ske mot staging, ej
-  produktion). Flippas direkt efter lyckad deploy mot riktig staging.
-- [ ] **(3) STAGING==PRODUKTION-defekt:** orgen har ett enda Supabase-projekt;
-  test-infran (`helpers.ts`, `.env.test.example`, 6 CI-secrets) antar separat
-  staging-projekt som inte finns. Stängs av staging-bygget (Session 19).
-- [ ] **(4) Allow-test nu SKARPT** (ADR-049 Öppen tråd 2): får aldrig röra
-  riktiga records pga (3). Löses av riktig staging.
-- [ ] **(5) BESLUT: bygg riktig staging-miljö** — Session 19 (research → ADR-050
-  → bygge). Se "Nästa" ovan.
+- [x] **(1) Fas 5.5 staging-blockeraren LÖST** — isolerad staging byggd (ADR-050 komplett, resume-19). Kvar är bara K2 klient-UI, som återupptas i ny session (ej längre staging-blockerad).
+- [x] **(2) EF `update-record` deployad till staging** (bygg-steg 5) → deny-skippen (rad 56/83, 7a) + allow-skippen (rad 110, 7b) aktiverade. Staging-svit 41 passed/0 skipped.
+- [x] **(3) STAGING==PRODUKTION-defekten STRUKTURELLT STÄNGD** — separat staging-Supabase-projekt + dedikerad Airtable-bas byggda; test-infran pekar nu på riktig isolerad staging (bygg-steg 6). L110-klassen stängd.
+- [x] **(4) Allow-testet kör nu säkert** (ADR-049 Öppen tråd 2): mot seedad syntetisk staging-post med try/finally-restore — rör aldrig prod-records (löst av riktig staging + teardown).
+- [x] **(5) BESLUT byggt:** riktig staging-miljö (ADR-050) levererad och verifierad.
 - [ ] **(6) Byggplan-DoD-flaggor** (byggplan ej ändrad): "1 allow-test" deferrad;
   "förbjuden roll" bör preciseras till "anonym → 401". Åtgärdas vid nästa
   byggplan-revision.
