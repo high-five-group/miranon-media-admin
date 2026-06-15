@@ -7,10 +7,9 @@
 // CI har inget deploy-steg (CI-fynd run 27463508240, ADR-049 Öppen
 // tråd 1). Teststatus:
 //   - deny: okänd operation → 400 (aktiv; korrekt oavsett deploy).
-//   - deny: recordId utan rec-prefix → 400 — test.skip tills redeploy
-//     (annars 400 via "Unknown operation", fel väg).
-//   - deny: fält utanför allowlist → 400 — test.skip tills redeploy
-//     (annars "Unknown operation" istället för "not allowed").
+//   - deny: recordId utan rec-prefix → 400 — AKTIV (resume-19 bygg-steg 7a;
+//     update-record omdeployat med mark-registration-fee-paid i allowlisten).
+//   - deny: fält utanför allowlist → 400 — AKTIV (resume-19 bygg-steg 7a).
 //   - allow: registrerad operation → 200 — test.skip. Kräver redeploy +
 //     mutations-säkert staging-record + restore-teardown +
 //     TEST_REGISTRATION_RECORD_ID (ADR-049 Öppen tråd 1 + 2).
@@ -47,17 +46,11 @@ test.describe('update-record — operations-allowlist (M4)', () => {
     const userJwt = await getValidUserJWT(request, config);
 
     // Med känd operation passerar steg 2 och recordId-prefix-checken i
-    // steg 3 fäller → 400. MEN tills update-record omdeployats till
-    // staging med mark-registration-fee-paid i allowlisten svarar
-    // deployad EF "Unknown operation" (400) — testet blir då grönt för
-    // FEL anledning (når aldrig steg 3). Skippad tills redeploy så den
-    // verkligen prövar prefix-vägen. CI-fynd run 27463508240, ADR-049
-    // Öppen tråd 1.
-    test.skip(
-      true,
-      'Aktiveras när update-record omdeployats till staging med mark-registration-fee-paid i allowlisten (annars 400 via "Unknown operation", fel väg). ADR-049 Öppen tråd 1.',
-    );
-
+    // steg 3 fäller → 400. Aktiv sedan update-record omdeployats till
+    // staging med mark-registration-fee-paid i allowlisten (resume-19
+    // bygg-steg 5/7a) — prövar nu verkligen prefix-vägen (tidigare svarade
+    // EF "Unknown operation" före redeploy). CI-fynd run 27463508240,
+    // ADR-049 Öppen tråd 1.
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
       headers: { Authorization: `Bearer ${userJwt}` },
       data: {
@@ -77,14 +70,9 @@ test.describe('update-record — operations-allowlist (M4)', () => {
     // mark-registration-fee-paid har allowedFields ['Anmälningsavgift'].
     // Slutbetalning ligger UTANFÖR listan → findDisallowedField (steg 4)
     // fäller före Airtable-anropet med "...not allowed for operation".
-    // MEN tills update-record omdeployats svarar deployad EF "Unknown
-    // operation" → body-matchen faller (CI-fynd run 27463508240). Skippad
-    // tills redeploy. ADR-049 Öppen tråd 1.
-    test.skip(
-      true,
-      'Aktiveras när update-record omdeployats till staging med mark-registration-fee-paid i allowlisten (annars "Unknown operation", inte "not allowed"). ADR-049 Öppen tråd 1.',
-    );
-
+    // Aktiv sedan update-record omdeployats till staging (resume-19
+    // bygg-steg 5/7a) — tidigare svarade EF "Unknown operation" före
+    // redeploy. CI-fynd run 27463508240, ADR-049 Öppen tråd 1.
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
       headers: { Authorization: `Bearer ${userJwt}` },
       data: {
