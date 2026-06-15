@@ -30,6 +30,7 @@ status: stable
 | `T04` | Mekaniserad sessions-/BUILD-LOG-fullständighetsgrind (mekanisera ADR-041 killer item) | `paused` | _(ingen kort än — endast registrerad)_ |
 | `T05` | Grind-täcknings-meta-grind (manifest: alla dok-kataloger × alla relevanta grind-globbar) — L127 | `paused` | _(ingen kort än — endast registrerad)_ |
 | `T06` | Hub-sync-backlogg sessioner 17–20 (L103–L125 aldrig hub-lyfta) | `paused` | _(ingen kort än — endast registrerad)_ |
+| `T07` | ADR-028 §2-amendering — skilj malware (full-regen) från icke-malware-advisory (kirurgisk bump räcker) | `paused` | _(ingen kort än — endast registrerad); ADR-028 ## Updates 2026-06-15 (fx2h-avvikelsen) bär kontexten_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
