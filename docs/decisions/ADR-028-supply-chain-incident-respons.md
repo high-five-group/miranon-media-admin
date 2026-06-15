@@ -169,3 +169,59 @@ vilket gjorde audit-jobbet rött på alla pushar.
 - Advisory: <https://github.com/advisories/GHSA-gv7w-rqvm-qjhr>
 - Sessionsdok: `tasks/sessions/2026-06-13-session-17.md`
 - Commits: 9429336 (allowlist), b86482d (todo), denna commit (denna post).
+
+### 2026-06-15 — GHSA-fx2h-pf6j-xcff fixad (kirurgisk Vite-bump; §2-avvikelse)
+
+<!-- vale Vale.Terms = NO -->
+
+GitHub Security Advisory Database publicerade GHSA-fx2h-pf6j-xcff (vite,
+severity high, sårbart intervall `>=8.0.0 <=8.0.15`) — nypublicerad i
+fönstret mellan två gröna CI-runs under resume-19, vilket gjorde
+audit-jobbet rött på nästa push (CI run 27564917307, 2026-06-15).
+Advisoryn är dev-server-only och icke-malware (vites egen dev-server-vektor),
+ingår ej i prod-bundlen. `vite` är en direkt dev-dependency.
+
+**Triggerande observation (källa + datum):**
+
+- CI run 27564917307 (2026-06-15): "Audit dependencies" FAIL på
+  GHSA-fx2h-pf6j-xcff (vite); föregående run 27563078712 grön (advisory
+  nypublicerad i mellanrummet, time-of-check mot live advisory-DB).
+
+**Åtgärder (resume-19, 2026-06-15):**
+
+1. STOPPA → diagnostik → åtgärdsmatris A/B/C → Marcus-val A (uppgradera),
+   därefter REVIDERAD mekanism efter empiriskt fynd (se §2-avvikelse nedan).
+2. Kirurgisk bump: `vite` range `^8.0.10` → `^8.0.16`; riktad `npm install`
+   med pre-fix-locken som bas → enbart vite-subträdet uppdaterades.
+3. Lock-diff verifierad enkelspårig: 21 noder rörda, alla under vite@8.0.16
+   (vite, rolldown, @oxc-project/types, postcss, tinyglobby). Vakt-paket
+   oförändrade: @biomejs/biome 2.4.15, @playwright/test 1.60.0, typescript 6.0.3.
+4. Verifiering: audit-ci grön (fx2h ej flaggad), regression grön
+   (biome/typecheck/test:api/build).
+
+**§2-avvikelse (kvitterad av Marcus, öppen rivning):**
+
+ADR-028 §2 föreskriver FULL lock-regenerering. Den regeln är en
+MALWARE-PURGE-mekanism — dess rationale är att rensa tainted träd-rester
+efter ett komprometterat paket. GHSA-fx2h-pf6j-xcff är ICKE-malware (vites
+egen dev-server-path-traversal) → det finns inget tainted träd att purgea →
+full-regen ger noll säkerhetsvärde och drog empiriskt in orelaterad churn
+(@biomejs/biome 2.4.15 → 2.5.0, som bröt `biome check` på orelaterade filer).
+En riktad `npm install vite@<ver>` ger en npm-KONSISTENT subträds-lock (ej
+den partiella hand-edit §2 förbjuder) och är därmed trogen §2:s INTENT medan
+den håller säkerhets-committen enkelspårig. Avvikelsen gäller denna icke-malware-klass;
+§2:s full-regen står kvar för malware-incidenter.
+
+**Resterande osäkerheter:**
+
+- esbuild förblev 0.27.7 (kirurgisk bump tvingade ej upp den) → gv7w-riv-villkoret
+  (esbuild ≥ 0.28.1) är fortsatt EJ uppfyllt; gv7w-allowlisten står kvar oförändrad
+  (separat följdsteg, bevakas via dependabot enligt 2026-06-13-posten).
+
+**Spårbarhet:**
+
+- Advisory: <https://github.com/advisories/GHSA-fx2h-pf6j-xcff>
+- Sessionsdok: `tasks/sessions/2026-06-13-session-19.md` (resume-19)
+- Commit: denna commit (vite-bump + denna post).
+
+<!-- vale Vale.Terms = YES -->
