@@ -1355,6 +1355,24 @@ Commit-kedja `f7404d5` → `c811a2c` → `2fba5f6` → `4a0e419` → `ccde82b` �
 
 ---
 
+## Session 22 — Fas 5.5 K2 (klient-UI); enabling-detour Landning 1: CI-rotorsak-fix (2026-06-17)
+
+**Mål:** Fas 5.5 K2 — klient-UI för "markera anmälningsavgift som betald" (byggplan.md §4). Bygget kommer i efterföljande prompt; denna landning är en enabling-detour som avblockerade CI.
+
+**Commit-range:** `b5ff420` (sessionsdok fött) → `6610d6d` (Landning 1).
+
+### Landning 1 — CI-rotorsak-fix: `fetch-depth: 0` (full historik), ADR-054 (`6610d6d`)
+
+Sessionsdok-födelsen (`b5ff420`) gjorde CI röd — inte av dok-innehållet, utan genom att ytterst-exponera en latent CI-infra-bugg: dok-committen sköt shallow-fönstret `263 → 264`, varpå tre **orörda** governing-docs (SECURITY-SPEC, hur-systemet-funkar, data-model) fälldes på falsk drift. Deras sanna ändrings-commit (`91b6337`, committer-datum 05-17) hamnade på position 264 — utanför `fetch-depth: 250` — så shallow-boundaryns commit (05-18) blev datum-proxy.
+
+Rotorsak-fix (inte en femte bump): finit djup **är** anti-mönstret (1→50→100→250 brast 4 ggr). `fetch-depth: 250 → 0` = hela historiken, atomiskt över ADR-039:s 6 levande bärare (L63). [ADR-054](decisions/ADR-054-fetch-depth-full-historik.md) (Accepted) bär beslutet med web-citat + öppen rivning av ADR-030:s finit-djup-rationale; ADR-029/030/039 fick additiva daterade errata (uppfyller ADR-039:s Session 9-not + L62). Shallow-detektionen blir no-op vid tröskel 0 (acceptabelt — full-clone-kanon); T10/T11b frikopplade till explicit override-tröskel; invariant-test-svit oförändrad. Deferrad tråd **T08** registrerad (avveckla apparaten via changed-files-Check 2).
+
+Verifiering: 9 grindar lokalt gröna (invariant 6==0 / frontmatter 9/9 / adr-count 54 / test-sviter 7+14 / markdownlint / Vale / lifecycle / shellcheck-strict). CI-run `27699101873`: **alla jobb success** — inkl. Lint+Audit+TypeCheck (det tidigare röda) + Test+Build (kördes pga ci.yml-ändring).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-17-session-22.md`](../tasks/sessions/2026-06-17-session-22.md). Sessionen ej formellt avslutad; `lifecycle: active` tills `/session-end`. Nästa: K2 klient-UI.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
