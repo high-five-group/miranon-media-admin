@@ -6,9 +6,13 @@ import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { Suspense } from 'react';
 import type { AuthContextValue } from '@/auth/AuthProvider';
 import { RouteAnnouncer } from '@/components/AppShell';
+import type { DataSourceAdapter } from '@/data/adapters/DataSourceAdapter';
 
 interface RouterContext {
   queryClient: QueryClient;
+  // Datakälla injicerad via router-context (ADR-055) — DI-kärlet för alla
+  // UI→data-anrop; läses route-agnostiskt via useDataSource().
+  dataSource: DataSourceAdapter;
   auth: AuthContextValue;
 }
 

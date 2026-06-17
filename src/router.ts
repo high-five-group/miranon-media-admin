@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { createRouter } from '@tanstack/react-router';
 import type { AuthContextValue } from './auth/AuthProvider';
 import { SectionError } from './components/ErrorBoundary';
+import { dataSource } from './data/dataSource';
 import { routeTree } from './routeTree.gen';
 
 // QueryClient defaults per docs/specs/STATE-STRATEGY.md §3.
@@ -45,8 +46,13 @@ export const router = createRouter({
   // Sentry-capture sker via createRoot onCaughtError (main.tsx) — ingen onError
   // här (undviker dubbel-rapport).
   defaultErrorComponent: SectionError,
+  // `dataSource` injiceras som statisk modul-instans (som `queryClient`) — DI via
+  // router-context, ADR-055. `auth` är det enda per-render-bootstrappade värdet
+  // (fylls av InnerApp i main.tsx). Hela route-trädets `context.dataSource` typas
+  // härifrån via Register-interfacet nedan.
   context: {
     queryClient,
+    dataSource,
     auth: undefined as unknown as AuthContextValue,
   },
 });
