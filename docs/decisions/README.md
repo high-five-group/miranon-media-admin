@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-14
+updated: 2026-06-17
 review_by: 2026-11-15
 status: stable
 ---
@@ -96,6 +96,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-051](ADR-051-session-paus-lifecycle-verb.md) | session-paus — fjärde lifecycle-verbet (skriv-motpart till resume): parkera oavslutad session durabelt utan completion; asymmetrisk Chat-skill, bevarar sessionsnummer; utökar ADR-043 beslut 3 additivt | Accepted | Meta |
 | [ADR-052](ADR-052-lifecycle-frontmatter-falt.md) | `lifecycle:` — dedikerat livscykel-fält (enum active/paused/closed) ortogonalt mot `status:`; skill-ägt; validerat av separat lätt grind (ej governing-regimen, immutabilitets-skäl); applicering sessionsdok nu, schema-on-read för övriga | Accepted | Meta |
 | [ADR-053](ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md) | Tråd-arkitektur — tråden som förstaklass-organisationsenhet (register tasks/threads/ + tråd-ID `T<NN>` + commit-tagg `[T<NN>]`); forensiskt navigerbar tidslinje + inkodad triage av det oväntade; återanvänder lifecycle-fältet; MEDIUM-på-MINIMAL (event-sourcad ombyggnad förkastad) | Accepted | Meta |
+| [ADR-054](ADR-054-fetch-depth-full-historik.md) | `fetch-depth: 0` (full historik) — finit djup var anti-mönstret (1→50→100→250 brast 4 ggr); falsifierar ADR-030:s finit-djup-rationale; shallow-detektion blir no-op (acceptabelt); apparatens avveckling deferrad till tråd T08 | Accepted | Meta |
 
 ## Relaterade dokument
 

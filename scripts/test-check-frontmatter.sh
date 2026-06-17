@@ -365,13 +365,16 @@ check_contains "T9 (actionable)" "Fix: skapa .frontmatter-policy.conf" "${out}" 
 mark "${ok}"
 
 # ============================================================
-# T10: unsafe-shallow hard-fail (depth=1, default threshold=250)
+# T10: unsafe-shallow hard-fail (depth=1, explicit override threshold=250)
 # ============================================================
 # K4.2 (Session 6.6.7): testar K4.1.1 hybrid-detection count-check.
-# is-shallow=true, count=1, threshold=250 (default per Session 9 bump 100→250)
-# → hard-fail.
+# is-shallow=true, count=1, threshold=250 → hard-fail.
+# Session 22 (ADR-054): live-default är nu 0 (no-op shallow-detektion). Testet
+# självförsörjer en explicit positiv tröskel (250) så hard-fail-LOGIKEN — som
+# står kvar i koden tills tråd T08 avvecklar apparaten — förblir regression-
+# testad oberoende av live-värdet, utan att ljuga om sin testperson.
 echo ""
-echo "═══ T10: unsafe-shallow hard-fail (depth=1, default threshold=250) ═══"
+echo "═══ T10: unsafe-shallow hard-fail (depth=1, explicit override threshold=250) ═══"
 setup_repo
 write_all_valid
 git add . >/dev/null 2>&1
@@ -392,7 +395,26 @@ if ! git clone --depth=1 "file://${TEST_DIR}" "${TEST_DIR}-shallow" >/dev/null 2
 fi
 rm -f "${T10_CLONE_ERR}"
 cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow/scripts/check-frontmatter.sh"
-cp "${CONFIG_SRC}" "${TEST_DIR}-shallow/.frontmatter-policy.conf"
+# Explicit override-tröskel 250 (frikopplad från live-default, som är 0 sedan
+# ADR-054). Behåller testpersonen för hard-fail-logiken vid värde-skiftet.
+cat > "${TEST_DIR}-shallow/.frontmatter-policy.conf" << 'EOF'
+# shellcheck shell=bash
+# shellcheck disable=SC2034
+FRONTMATTER_GOVERNING_DOCS=(
+    "CLAUDE.md"
+    "docs/byggplan.md"
+    "docs/specs/BYGGPLAN-LÄTTLÄST-v3.md"
+    "docs/specs/KVALITETSDEFINITIONER-11-REACT.md"
+    "docs/specs/SECURITY-SPEC.md"
+    "docs/reference/hur-systemet-funkar.md"
+    "docs/reference/data-model.md"
+    "tasks/lessons.md"
+    "docs/decisions/README.md"
+)
+FRONTMATTER_VALID_OWNER="marcus803"
+FRONTMATTER_VALID_STATUS=("draft" "stable" "deprecated")
+FRONTMATTER_MIN_HISTORY_DEPTH=250
+EOF
 
 cd "${TEST_DIR}-shallow" || { echo "❌ T10 cd failed (post-clone — clone returnerade 0 men dest saknas)"; exit 1; }
 out=$(bash scripts/check-frontmatter.sh 2>&1); ec=$?
@@ -459,19 +481,19 @@ check_contains "T11a (success)" "Frontmatter-validering: alla 9 styrande docs pa
 mark "${ok}"
 
 # ============================================================
-# T11b: safe-shallow ADR-030-konvention (depth=250, default threshold=250)
+# T11b: safe-shallow edge-case (depth=250, explicit override threshold=250)
 # ============================================================
 # K4.2 (Session 6.6.7) + K0.S2 + Session 9 DEL 2.5: testar K4.1.1 hybrid-
-# detection safe-shallow-default. is-shallow=true, count=250, threshold=250
-# (default per Session 9 bump 100→250) → NOT-unsafe (count NOT-lt 250).
+# detection safe-shallow. is-shallow=true, count=250, threshold=250
+# → NOT-unsafe (count NOT-lt 250). count == MIN_DEPTH testar edge-case
+# "safe-shallow vid exakt tröskel".
 #
-# count == MIN_DEPTH för att testa edge-case "safe-shallow vid exakt tröskel".
-# Värdet (250) bumpas tillsammans med invariant-värdet i ADR-039-erratums —
-# alla yttringar av tröskeln (live-bärare + ADR-erratums + denna test-suite)
-# måste hållas i synk så testet INTE ljuger om sin testperson.
-# Senast bumpad Session 9, 2026-05-29 (100 → 250).
+# Session 22 (ADR-054): live-default är nu 0 (no-op shallow-detektion). Testet
+# självförsörjer en explicit tröskel (250) som matchar dess 250-commit-fixtur,
+# så edge-case-logiken förblir testad oberoende av live-värdet — testet ljuger
+# inte om sin testperson efter värde-skiftet (250 → 0).
 echo ""
-echo "═══ T11b: safe-shallow ADR-030-konvention (depth=250, default threshold=250) ═══"
+echo "═══ T11b: safe-shallow edge-case (depth=250, explicit override threshold=250) ═══"
 setup_repo
 write_all_valid
 git add . >/dev/null 2>&1
@@ -522,7 +544,26 @@ if ! git clone --depth=250 "file://${TEST_DIR}" "${TEST_DIR}-shallow-250" >/dev/
 fi
 rm -f "${T11B_CLONE_ERR}"
 cp "${VALIDATOR_SRC}" "${TEST_DIR}-shallow-250/scripts/check-frontmatter.sh"
-cp "${CONFIG_SRC}" "${TEST_DIR}-shallow-250/.frontmatter-policy.conf"
+# Explicit override-tröskel 250 (frikopplad från live-default, som är 0 sedan
+# ADR-054) — matchar 250-commit-fixturen så edge-caset "count == tröskel" består.
+cat > "${TEST_DIR}-shallow-250/.frontmatter-policy.conf" << 'EOF'
+# shellcheck shell=bash
+# shellcheck disable=SC2034
+FRONTMATTER_GOVERNING_DOCS=(
+    "CLAUDE.md"
+    "docs/byggplan.md"
+    "docs/specs/BYGGPLAN-LÄTTLÄST-v3.md"
+    "docs/specs/KVALITETSDEFINITIONER-11-REACT.md"
+    "docs/specs/SECURITY-SPEC.md"
+    "docs/reference/hur-systemet-funkar.md"
+    "docs/reference/data-model.md"
+    "tasks/lessons.md"
+    "docs/decisions/README.md"
+)
+FRONTMATTER_VALID_OWNER="marcus803"
+FRONTMATTER_VALID_STATUS=("draft" "stable" "deprecated")
+FRONTMATTER_MIN_HISTORY_DEPTH=250
+EOF
 
 cd "${TEST_DIR}-shallow-250" || { echo "❌ T11b cd failed (post-clone — clone returnerade 0 men dest saknas)"; exit 1; }
 out=$(bash scripts/check-frontmatter.sh 2>&1); ec=$?

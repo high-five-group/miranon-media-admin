@@ -121,7 +121,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - Error boundaries konsoliderade till två lager: `SectionError` (defaultErrorComponent) + `AppErrorBoundary` (main.tsx)
   - Varaktiga DoD-tester: `tests/e2e/shell.staging.test.ts` + `tests/e2e/pwa-offline.staging.test.ts` (miljö-självguardande dev/preview)
 
-**Arkitekturbeslut:** 53 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
+**Arkitekturbeslut:** 54 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
 
 **Statistik (post-Fas 2, historisk ögonblicksbild):**
 

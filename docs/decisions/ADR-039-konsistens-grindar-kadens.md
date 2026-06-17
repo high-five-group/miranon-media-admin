@@ -5,6 +5,8 @@
 - Fas: Meta (Session 8 K0b — process-retrospektivens åtgärdssteg)
 
 > **Korrigering (Session 9, 2026-05-29):** fetch-depth-invariantens levande värde bumpas `100 → 250` i samtliga 6 bärare ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) × 4 jobb + [`.frontmatter-policy.conf`](../../.frontmatter-policy.conf) + [`scripts/check-frontmatter.sh`](../../scripts/check-frontmatter.sh)-default). Empirisk grund: 5 av 9 styrande docs ackumulerade > 100 commits från senast-rörande commit till HEAD vid Session 9 (värsta avstånd 115 commits; BYGGPLAN-LÄTTLÄST exakt på 100). Rationale: commits-per-session-takt ~55/session på commit-tunga sessioner × marginal-i-sessioner (~2–3) ≈ 250. Mönsterförstärkning av Session 7 K0.S2 (50→100). Tredje upprepning av detta mönster ska lyftas till egen ADR om periodisk invariant-värde-översyn som princip — inte denna gång. ADR-029 + ADR-030 har additiva korrigerings-noter som spårar samma bump inom sina respektive jurisdiktioner.
+>
+> **Korrigering (Session 22, 2026-06-17 — uppfyller noten ovan, se [ADR-054](ADR-054-fetch-depth-full-historik.md)):** fetch-depth-invariantens levande värde ändras `250 → 0` (full historik) i samtliga 6 bärare. Detta ÄR den egna ADR som noten ovan (och L62) förutsåg vid upprepning: finit djup brast en fjärde gång (Session 22 — en dok-commit sköt fönstret `263 → 264` och fällde tre orörda governing-docs på falsk drift). Slutsatsen är inte "bump till ett större finit tal" utan att finit djup var anti-mönstret; `0` = hela historiken eliminerar boundary-proxy-klassen. Invarianten (denna ADR:s ägarskap) består — alla 6 bärare hålls enhetligt på `0`. Beslutstexten + tidigare erratum nedan bevaras oförändrade.
 
 ## Kontext
 
