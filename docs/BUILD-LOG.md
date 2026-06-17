@@ -1384,6 +1384,10 @@ Klientsidan av Fas 5.5:s write-slice (server-kontraktet + staging-svit redan gr�
 
 Verifiering: typecheck + biome (exit 0) + build + api-pure (72) + adr-count (55==55) + frontmatter (9/9) + lifecycle + fetch-depth-invariant + public-checklists + lychee (67) + vale (0) + markdownlint lokalt gröna. Foundation-CI `27706634831` fälldes på markdownlint MD028 (gate jag missade köra lokalt → fix `bfc6cf1`); feature-CI **`27706856446`: alla jobb success** inkl. Test+Build (kör `test:e2e:staging` — de 3 nya e2e gröna).
 
+### Landning 3 — legibility-fix: namnkrock `useDataSource` i ADR-055
+
+ADR-055:s avvisade alternativ 2 var formulerat med namnet "useDataSource" — kunde läsas som att det avvisade alternativet byggdes. Förtydligande (ej beslutsändring): alternativ 2 beskrivs nu per mekanism (dedikerad React Context-provider, skild från router-context) + kontrast-mening att den levererade `useDataSource()`-hooken (`src/data/useDataSource.ts`) läser router-context. Kort klargörande kommentar i hook-filen.
+
 **Sessionsdok-trail:** [`tasks/sessions/2026-06-17-session-22.md`](../tasks/sessions/2026-06-17-session-22.md). Sessionen ej formellt avslutad; `lifecycle: active` tills `/session-end`. Nästa: `/session-end` (lessons-skörd L137+ deferrad dit).
 
 ---

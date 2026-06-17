@@ -2,7 +2,9 @@ import { useRouteContext } from '@tanstack/react-router';
 import type { DataSourceAdapter } from './adapters/DataSourceAdapter';
 
 /**
- * Läser den injicerade datakällan ur router-context (ADR-055).
+ * Läser den injicerade datakällan ur **router-context** (ADR-055) — INTE ur en
+ * separat React Context-provider (det avvisade alternativ 2 i ADR-055; namnlikheten
+ * är ytlig, mekanismen är router-context-läsning).
  *
  * `strict: false` gör hooken **route-agnostisk** — den kan anropas från vilken
  * komponent/mutation-hook som helst utan att binda mot ett specifikt route-id.

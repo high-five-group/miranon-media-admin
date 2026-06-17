@@ -38,9 +38,13 @@ av det slag `auth` kräver.
   per-test-mock-friktion (modul-mock i stället för `createRouter({ context })`). Acceptabel
   rent tekniskt eftersom adaptern är tillståndslös — men inkonsekvent med repots etablerade
   mönster.
-- **`useDataSource` React-context-provider.** Avvisad: redundant — router-context är redan
-  det DI-kärl repot använder för render-skild infrastruktur. En andra context-provider för
-  samma sorts beroende vore dubblerad apparat.
+- **Dedikerad React Context-provider** (`createContext` + `<DataSourceProvider>` runt
+  komponentträdet — SKILD från router-context-läsning). Avvisad: redundant — router-context är
+  redan det DI-kärl repot använder för render-skild infrastruktur. En andra, separat
+  context-apparat för samma sorts beroende vore dubblerad apparat. *Kontrast:* den LEVERERADE
+  `useDataSource()`-hooken (`src/data/useDataSource.ts`) läser **router-context** (det valda
+  mönstret per detta beslut) via `useRouteContext` — den är INTE en sådan separat React
+  Context-provider. Namnlikheten är ytlig; mekanismen skiljer sig.
 - **Env-driven factory (Airtable/Supabase-växel).** Avvisad: YAGNI. `SupabaseAdapter` kastar
   överallt; Fas E-bytet är en enradsändring vid instansieringen i `src/data/dataSource.ts`.
   En växel-apparat idag löser ett problem som inte finns.
