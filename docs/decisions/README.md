@@ -97,6 +97,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-052](ADR-052-lifecycle-frontmatter-falt.md) | `lifecycle:` — dedikerat livscykel-fält (enum active/paused/closed) ortogonalt mot `status:`; skill-ägt; validerat av separat lätt grind (ej governing-regimen, immutabilitets-skäl); applicering sessionsdok nu, schema-on-read för övriga | Accepted | Meta |
 | [ADR-053](ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md) | Tråd-arkitektur — tråden som förstaklass-organisationsenhet (register tasks/threads/ + tråd-ID `T<NN>` + commit-tagg `[T<NN>]`); forensiskt navigerbar tidslinje + inkodad triage av det oväntade; återanvänder lifecycle-fältet; MEDIUM-på-MINIMAL (event-sourcad ombyggnad förkastad) | Accepted | Meta |
 | [ADR-054](ADR-054-fetch-depth-full-historik.md) | `fetch-depth: 0` (full historik) — finit djup var anti-mönstret (1→50→100→250 brast 4 ggr); falsifierar ADR-030:s finit-djup-rationale; shallow-detektion blir no-op (acceptabelt); apparatens avveckling deferrad till tråd T08 | Accepted | Meta |
+| [ADR-055](ADR-055-datakalla-atkomst-router-context-di.md) | Datakälla-åtkomst via TanStack Router-context-DI — adapter injiceras i router-context bredvid queryClient + auth (ej direkt-importerad modul-singleton); första UI→data-wiringen, precedens för Fas 6; superseder STATE-STRATEGY:152-singletonskissen; avvisar useDataSource-provider (redundant) + env-factory (YAGNI) | Accepted | 5.5 |
 
 ## Relaterade dokument
 

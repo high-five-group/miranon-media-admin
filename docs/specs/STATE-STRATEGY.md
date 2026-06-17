@@ -142,6 +142,14 @@ Hover-prefetch via `preload="intent"` pa `<Link>` startar loadern
 Nar Lotta markerar en betalning som betald syns det *direkt*. Om servern
 misslyckas rullas det tillbaka med felmeddelande.
 
+> **Errata-not (2026-06-17, ADR-055):** Den bara `dataSource`-referensen i exemplet nedan
+> var en illustration — den fastställde aldrig hur datakällan *nås*. **Superseder av
+> [ADR-055](../decisions/ADR-055-datakalla-atkomst-router-context-di.md):** `dataSource`
+> injiceras via TanStack Router-context (bredvid `queryClient`/`auth`), inte som
+> direkt-importerad modul-singleton; den faktiska adapter-metoden är
+> `dataSource.updateRecord(operationKey, recordId, fields)` (ej `executeOperation`).
+> Historisk text bevarad (additiv not, ej tyst patch).
+
 ```typescript
 // src/hooks/use-mark-payment.ts
 export function useMarkPayment(eventId: string) {

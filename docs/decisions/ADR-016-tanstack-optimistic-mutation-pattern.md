@@ -44,6 +44,8 @@ Klienten skickar **aldrig** `tableId` eller `airtableFieldName` direkt. Operatio
 
 > **Erratum (2026-06-13, ADR-049):** Fält-exemplet ovan (`operationKey: 'mark-registration-paid'`, `fields: { Status: ... }`) är **superseder av [ADR-049](ADR-049-fas-5-5-betalfalt-val.md)**. Fas 5.5:s faktiska write-slice registrerar `operationKey: 'mark-registration-fee-paid'` som skriver fältet **`Anmälningsavgift`** (värde `'Mottagen'`), inte `Status` — `Status` (`RegistrationStatus`) saknar ett betald-värde, så `Status`-exemplet var pre-Fas-2.5-drift. Mönstret (fem-komponents optimistic + operations-API) står kvar; endast fält-exemplet rättas. Historisk text bevarad (öppen rättelse, ej tyst patch).
 
+> **Not (2026-06-17, ADR-055):** `dataSource`-referensen i exemplen avgör inte hur datakällan *nås*. ADR-016 beslutar mönstret (fem komponenter + operations-API); **åtkomst-mekanismen** beslutas av [ADR-055](ADR-055-datakalla-atkomst-router-context-di.md): `dataSource` injiceras via TanStack Router-context (bredvid `queryClient`/`auth`), inte som direkt-importerad modul-singleton. `dataSource.updateRecord(operationKey, recordId, fields)` är den faktiska adapter-metoden (interface-verifierad K2); `executeOperation(...)` i exemplen var en illustrativ skiss. Historisk text bevarad (additiv not).
+
 ### 2. `onMutate` — optimistic update + rollback-context
 
 ```ts
