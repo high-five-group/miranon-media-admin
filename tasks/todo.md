@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-06-17 (Session 22 ▶ AKTIV — Fas 5.5 K2 klient-UI. Landning 1 (CI-rotorsak-fix `fetch-depth: 0` + ADR-054 + tråd T08, `6610d6d`) + Landning 2 (K2 klient-UI: ADR-055 router-context-DI + optimistic mark-paid + 3 e2e, `5006e7b`→`bfc6cf1`, CI-grön run `27706856446`) landade. `/session-end` ej körd — lessons-skörd L137+ deferrad dit. Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
+*Senast uppdaterad: 2026-06-17 (Session 22 ✅ KLAR → **Fas 5.5 KLAR**. Landning 1 (CI-rotorsak-fix `fetch-depth: 0` + ADR-054 + tråd T08, `6610d6d`) + Landning 2 (K2 klient-UI: ADR-055 router-context-DI + optimistic mark-paid + 3 e2e, `5006e7b`→`bfc6cf1`, run `27706856446`) + Landning 3 (legibility-fix ADR-055, `31b2846`). `/session-end` + phase-end-verify körd: Fas 5.5 ✅ KLAR (byggplan v1.11, CHANGELOG 0.7.0), lessons L137–L139, `lifecycle: closed`. Öppet Marcus-beslut: arkivering av sessionsdok-backlog 16–22. Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)* Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -19,16 +19,18 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 22 ▶ AKTIV (2026-06-17) — Fas 5.5 K2 klient-UI (Landning 1 + 2 landade)
+### Session 22 ✅ KLAR (2026-06-17) — Fas 5.5 K2 klient-UI → **Fas 5.5 KLAR** (Landning 1 + 2 + 3)
 
-> Resume:ad via `/session-resume` efter paus; `lifecycle: active`. K2-bygget landat (Landning 2).
-> `/session-end` ej körd — lessons-skörd (L137+) deferrad dit. Behåller sessionsnummer 22.
-> Trail: [`tasks/sessions/2026-06-17-session-22.md`](sessions/2026-06-17-session-22.md).
+> `/session-end` + phase-end-verify körd; `lifecycle: closed`. **Fas 5.5 markerad KLAR** (byggplan
+> §2/§4 v1.11, CHANGELOG 0.7.0, README). Lessons L137–L139 skördade (hub-lyft pending nästa K-sista).
+> Arkivering av sessionsdok 16–22 = öppen Marcus-beslut (oarkiverad backlog, ej fas-avslut-arkiverad
+> historiskt). Trail: [`tasks/sessions/2026-06-17-session-22.md`](sessions/2026-06-17-session-22.md).
 
 - [x] **Sessionsdok fött** (`b5ff420`), `lifecycle: active`.
 - [x] **Enabling-detour Landning 1 — CI-rotorsak-fix** (`6610d6d`, CI-grön run `27699101873`): `fetch-depth: 250 → 0` (full historik) atomiskt över ADR-039:s 6 bärare; **ADR-054** (Accepted); ADR-029/030/039-errata; T10/T11b frikopplade; **tråd T08** registrerad (avveckla apparaten). Rotorsak: finit djup var anti-mönstret (brast 4 ggr); dok-commit sköt shallow-fönstret 263→264 → 3 orörda governing-docs föll på falsk drift.
 - [x] **Landning 2 — K2 klient-UI** (`5006e7b`→`bfc6cf1`, CI-grön run `27706856446`): **ADR-055** (datakälla-åtkomst via router-context-DI, README 54→55); DI-wiring (`dataSource.ts` + `useDataSource()`); typad `EdgeFunctionError` (requestId); `queryKeys`; `markRegistrationPaid` (ADR-016 A–F optimistic); `RegistrationsList` + `MarkPaidButton`; route `event/$eventId`; 3 e2e (`page.route`-gate, DoD 1/5/6/7/8). Foundation-push rött på markdownlint MD028 → fix `bfc6cf1`.
-- [ ] **/session-end** ej körd än — `lifecycle: active` tills dess (ADR-041). Lessons-skörd L137+ + ev. fas-avslut-bedömning för Fas 5.5 görs där.
+- [x] **Landning 3 — legibility-fix** (`31b2846`, CI-grön run `27708305559`): förtydligat ADR-055:s avvisade alternativ 2 (namnkrock `useDataSource`) + hook-kommentar; ej beslutsändring.
+- [x] **/session-end + phase-end-verify** körd — Fas 5.5 ✅ KLAR (byggplan §2/§4 v1.11, CHANGELOG 0.7.0, README, decisions/README ADR-55); lessons L137–L139; `lifecycle: closed`. Trådar T08/T03 registrerade (T10/T11b = tester, ej trådar). **Öppet (Marcus-beslut):** arkivering av oarkiverad sessionsdok-backlog 16–22.
 
 ### Session 21 ✅ KLAR (2026-06-14) — tråd-arkitektur (ADR-053, process-fundament)
 
