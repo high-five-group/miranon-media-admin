@@ -1355,11 +1355,11 @@ Commit-kedja `f7404d5` → `c811a2c` → `2fba5f6` → `4a0e419` → `ccde82b` �
 
 ---
 
-## Session 22 — Fas 5.5 K2 (klient-UI); enabling-detour Landning 1: CI-rotorsak-fix (2026-06-17)
+## Session 22 — Fas 5.5 K2 (klient-UI); Landning 1: CI-rotorsak-fix + Landning 2: K2 klient-UI (2026-06-17)
 
-**Mål:** Fas 5.5 K2 — klient-UI för "markera anmälningsavgift som betald" (byggplan.md §4). Bygget kommer i efterföljande prompt; denna landning är en enabling-detour som avblockerade CI.
+**Mål:** Fas 5.5 K2 — klient-UI för "markera anmälningsavgift som betald" (byggplan.md §4). Landning 1 = enabling-detour som avblockerade CI; Landning 2 = själva K2-bygget (klientsidan av write-slicen).
 
-**Commit-range:** `b5ff420` (sessionsdok fött) → `6610d6d` (Landning 1).
+**Commit-range:** `b5ff420` (sessionsdok fött) → `bfc6cf1` (Landning 2 + markdownlint-fix).
 
 ### Landning 1 — CI-rotorsak-fix: `fetch-depth: 0` (full historik), ADR-054 (`6610d6d`)
 
@@ -1369,7 +1369,22 @@ Rotorsak-fix (inte en femte bump): finit djup **är** anti-mönstret (1→50→1
 
 Verifiering: 9 grindar lokalt gröna (invariant 6==0 / frontmatter 9/9 / adr-count 54 / test-sviter 7+14 / markdownlint / Vale / lifecycle / shellcheck-strict). CI-run `27699101873`: **alla jobb success** — inkl. Lint+Audit+TypeCheck (det tidigare röda) + Test+Build (kördes pga ci.yml-ändring).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-17-session-22.md`](../tasks/sessions/2026-06-17-session-22.md). Sessionen ej formellt avslutad; `lifecycle: active` tills `/session-end`. Nästa: K2 klient-UI.
+### Landning 2 — K2 klient-UI: optimistisk mark-paid via router-context-DI (`5006e7b`→`bfc6cf1`)
+
+Klientsidan av Fas 5.5:s write-slice (server-kontraktet + staging-svit redan grönt sedan Session 18/19). Landad i atomiska commits, foundation-push + feature-push:
+
+- **DI-arkitektur — [ADR-055](decisions/ADR-055-datakalla-atkomst-router-context-di.md)** (`5006e7b`). Första UI→data-wiringen; precedensbärande för Fas 6. Datakällan nås via **TanStack Router-context-DI** (adaptern injiceras bredvid `queryClient`/`auth`), inte direkt-importerad modul-singleton. Avvisade: modul-singleton (DI-idiom-blandning), `useDataSource`-provider (redundant), env-factory (YAGNI). README-räknare 54→55; additiva errata-noter vid STATE-STRATEGY:152 + ADR-016 (åtkomst-mekanismen var aldrig ADR-beslutad förrän nu).
+- **DI-wiring** (`63a3f08`). `src/data/dataSource.ts` (namngivet hem, `new AirtableAdapter()` — enda körbara adaptern; Fas E-byte = en rad) injiceras i router-context; `useDataSource()` route-agnostisk access-hook (`useRouteContext strict:false` + invariant-guard).
+- **EdgeFunctionError** (`c2d37ae`). Enabling-fix: `callEdgeFunction`/`postEdgeFunction` kastar typad `EdgeFunctionError` (status + strukturerad `requestId` ur EF-fel-kroppen) i stället för plain Error — UI kan surfa requestId. Additiv + bakåtkompatibel.
+- **Feature** (`8206446`). `queryKeys`-factory (STATE-STRATEGY §3); `markRegistrationPaid` (ADR-016 fem komponenter A–F: `updateRecord('mark-registration-fee-paid', …, { Anmälningsavgift: 'Mottagen' })`, optimistisk flip + rollback-context + invalidate + aria-live success); `RegistrationsList` + `MarkPaidButton` (status som text, knapp dold när Mottagen, MessageBox `role=alert` med requestId); route `event.tsx → event/index.tsx` + `event/$eventId.tsx` (syskon-leaf). 3 e2e (`mark-paid.staging.test.ts`) via deterministisk `page.route`-interception (svars-gate bevisar flip före nätverkssvar).
+
+**Avvikelser (medvetna, dokumenterade):** (1) a11y — fel surfas via MessageBox `role=alert` (assertiv), EJ även `alertScreenReader` (undviker dubbel annonsering); success via `alertScreenReader` (ingen visuell success-indikator). (2) e2e mockar EF-svar i stället för faktisk staging-mutation — server-write-kontraktet bevisas redan av `update-record.staging.test.ts`; klient-optimistic testas renast deterministiskt utan att mutera staging-data.
+
+**DoD-täckning (byggplan Fas 5.5):** DoD 1 (flip→rollback) + 5 (flip utan network-wait) + 6 (5xx → rollback + MessageBox/requestId) + 7 (invalidate) + 8 (axe 0 + aria-live) via de 3 e2e; server-DoD 2/3/4 + ADR-016/DoD 11 redan klara. DoD 9/10 (aktiveringsguide + "mall för Fas 6") noterade i sessionsdoket.
+
+Verifiering: typecheck + biome (exit 0) + build + api-pure (72) + adr-count (55==55) + frontmatter (9/9) + lifecycle + fetch-depth-invariant + public-checklists + lychee (67) + vale (0) + markdownlint lokalt gröna. Foundation-CI `27706634831` fälldes på markdownlint MD028 (gate jag missade köra lokalt → fix `bfc6cf1`); feature-CI **`27706856446`: alla jobb success** inkl. Test+Build (kör `test:e2e:staging` — de 3 nya e2e gröna).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-17-session-22.md`](../tasks/sessions/2026-06-17-session-22.md). Sessionen ej formellt avslutad; `lifecycle: active` tills `/session-end`. Nästa: `/session-end` (lessons-skörd L137+ deferrad dit).
 
 ---
 
