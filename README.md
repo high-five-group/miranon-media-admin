@@ -11,7 +11,7 @@ React-admin för Miranon Media — eventhantering, anmälningar och rapportering
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
 [![TanStack](https://img.shields.io/badge/TanStack-Router%20%2B%20Query%20%2B%20Table-FF4154)](package.json)
 
-> **Status:** Fas 5 — App-shell ✅ KLAR 2026-06-12 (Session 16). PWA-grund via `vite-plugin-pwa` injectManifest (ADR-047): offline-fallback, manifest + ikoner, installerbar. App-skal med tab bar, skip-länk och route announcer på `_authenticated`-layouten; error boundaries i två lager; TanStack offline-config. Varaktiga DoD-tester (shell + pwa-offline). **Nästa:** Fas 5.5 — Vertikal write-slice (per [`docs/byggplan.md`](docs/byggplan.md) §4).
+> **Status:** Fas 5.5 — Vertikal write-slice ✅ KLAR 2026-06-17 (Sessions 18/19 + 22). "Markera anmälningsavgift som betald": optimistic mutation via TanStack Router-context-DI (ADR-055, första UI→data-wiringen), operations-baserat write-API (`mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049) mot isolerad staging (ADR-050), typad `EdgeFunctionError` med requestId, MessageBox-fel-yta + aria-live. Mall för Fas 6:s mutationer. Server deny/allow-svit + 3 klient-e2e gröna. **Nästa:** Fas 6 — Hem + Event + Personer + Mer (strangler-fig, per [`docs/byggplan.md`](docs/byggplan.md) §4).
 
 ## Dokumentation
 
@@ -89,7 +89,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 
 ## Projektstatus
 
-**Aktuellt fokus:** Fas 5.5 — Vertikal write-slice: "markera anmälan som betald" (per `docs/byggplan.md` §4).
+**Aktuellt fokus:** Fas 6 — Hem + Event + Personer + Mer (strangler-fig-sekvens i fem sub-faser, per `docs/byggplan.md` §4). Fas 5.5 (write-slice-mönstret) klar och utgör mall för Fas 6:s mutationer.
 
 **Klara faser:**
 
@@ -120,6 +120,10 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - App-skal på `_authenticated`: tab bar (4 flikar, 44px targets), skip-länk, route announcer (VoiceOver-kvitterad), offline-indikator; rund favicon ur `public/favicon/favicon.svg`
   - Error boundaries konsoliderade till två lager: `SectionError` (defaultErrorComponent) + `AppErrorBoundary` (main.tsx)
   - Varaktiga DoD-tester: `tests/e2e/shell.staging.test.ts` + `tests/e2e/pwa-offline.staging.test.ts` (miljö-självguardande dev/preview)
+- ✅ **Fas 5.5** — Vertikal write-slice (Sessions 18/19 + 22, 2026-06-17)
+  - Optimistic mutation-mönster (ADR-016 fem komponenter): "markera anmälningsavgift som betald" via operations-baserat write-API (`mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049) mot isolerad staging (ADR-050)
+  - Datakälla-åtkomst via TanStack Router-context-DI (ADR-055) — första UI→data-wiringen, precedens för Fas 6; typad `EdgeFunctionError` med strukturerad `requestId`; fel-yta via MessageBox `role="alert"` + aria-live för lyckad flip
+  - Server deny/allow + restore-teardown (`update-record.staging.test.ts`) + 3 klient-e2e (`mark-paid.staging.test.ts`, DoD 1/5/6/7/8 via `page.route`-gate); mall för Fas 6:s mutationer
 
 **Arkitekturbeslut:** 55 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
 

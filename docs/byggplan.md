@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-13
+updated: 2026-06-17
 review_by: 2026-11-15
 status: stable
 ---
@@ -77,7 +77,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **3** | ✅ KLAR | UI-primitiver — Sessions 14–15, 2026-06-11. Alla 6 primitiver på react-aria-components + CVA (ADR-044) + /dev/primitives. DoD 1+4 stängda mot Fas 3.5-infran per ADR-020 sekvens-noten; felmeddelande-wiring per ADR-046. | 1 session bygge + DoD-stängning i Session 15 (estimat 2) |
 | **3.5** | ✅ KLAR | **A11y-baseline EGEN FAS** per P2 A1-utfall — Session 15, 2026-06-11. Axe-runner 12/12 (ADR-045), gate-proof-bevisad CI-grind, 5 mönster i `docs/aria-patterns/` + /dev/patterns, "A11y-baseline godkänd"-gate passerad före Fas 6. | 1 session (faktiskt) |
 | **5** | ✅ KLAR | App-shell — Session 16, 2026-06-12. Skal på `_authenticated` (STOPPA-utfall A) + tab bar + skip-länk + route announcer + Workbox SW via `vite-plugin-pwa` injectManifest (ADR-047) + offline.html + manifest/ikoner + error boundaries två lager (SectionError + AppErrorBoundary, ADR-038-tråden stängd) + TanStack `networkMode: 'online'` + offline-indikator. DoD 4 moderniserad per ADR-047 (Lighthouse v12 tog bort PWA-kategorin); Performance ärver Fynd 7-defern (ADR-047-noten). API-runtime-caching defer till Fas 6 (versionsrad 1.9). | 1 session (faktiskt) |
-| **5.5** | NY | Vertikal write-slice: "markera anmälan som betald" via befintlig `update-record` EF med ny `operationKey`. **Inga nya EF-deploys.** Etablerar TanStack optimistic mutation-mönster + operations-allowlist-utvidgning + 3 Playwright-tester (2 deny, 1 allow). ADR-krav. | 2 sessioner |
+| **5.5** | ✅ KLAR | Vertikal write-slice "markera anmälningsavgift som betald" — Sessions 18/19 (server-kontrakt K1 + staging) + Session 22 (klient-UI K2), 2026-06-17. Server: operation `mark-registration-fee-paid` → `Anmälningsavgift` (ADR-049) + isolerad staging (ADR-050) + deny/allow-svit grön. Klient: optimistic mutation via router-context-DI (ADR-055) + `EdgeFunctionError`-requestId + MessageBox-fel-yta + 3 e2e. ADR-016 (mönster) + ADR-049 + ADR-050 + ADR-055. | 2 sessioner (faktiskt: 18/19 + 22) |
 | **6** | NY scope | **Strangler-fig-sekvens i fem sub-faser:** 6a Persons (0,75) → 6b Events (0,75) → 6c Registrations + Väntelista (1) → 6d Hem-aggregering (0,5) → 6e Mer villkorlig (0,5). Per-sub-fas: registrera operation i `field-allowlists.ts` + deny/allow-test grönt + vy-Playwright baseline. | 3,5 sessioner |
 | **6.5** | EJ ÄNDRAD | Aktivitetslogg (xAPI). `requestId`-mönstret från Fas A M7 ärvs. | 1 session |
 | **7** | NY scope | Konsolidering — CSP-plugin (med ADR), web-vitals, Speculation Rules, View Transitions, widget-error-boundary, chaos testing, deploy-pipeline, Background Sync defer-not (se Fas 8 + ADR). | 3 sessioner |
@@ -87,7 +87,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 
 **Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR-013 (Fas 4-borttagningen).
 
-**Total estimat (Fas 5.5 → Fas 7, exkl. klara Fas 0/1/A/2/2.5/3/3.5/5 och defer:ade Fas 8/B/E):** 9,5 sessioner — uppdaterad 2026-06-12 efter Fas 5 (1 session, estimat hållet). Beräkning: 2 + 3,5 + 1 + 3 = 9,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
+**Total estimat (Fas 6 → Fas 7, exkl. klara Fas 0/1/A/2/2.5/3/3.5/5/5.5 och defer:ade Fas 8/B/E):** 7,5 sessioner — uppdaterad 2026-06-17 efter Fas 5.5 (2 sessioner: 18/19 + 22, estimat hållet). Beräkning: 3,5 + 1 + 3 = 7,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
 
 ---
 
@@ -537,6 +537,8 @@ Defer per Session 16 K3:
 ---
 
 ### Fas 5.5 — Vertikal write-slice
+
+✅ Slutförd 2026-06-17 över Sessions 18/19 (server-kontrakt K1 + isolerad staging) + Session 22 (klient-UI K2). Server-sidan: operation `mark-registration-fee-paid` skriver `Anmälningsavgift` (INTE `Status` — ADR-049 supersederar DoD-radens fält-exempel), isolerad staging-miljö byggd (ADR-050), deny/allow-svit grön (`tests/api/update-record.staging.test.ts`, 401-anon via delad `requireUser`-gateway). Klient-sidan: datakälla-åtkomst via TanStack Router-context-DI ([ADR-055](decisions/ADR-055-datakalla-atkomst-router-context-di.md) — första UI→data-wiringen, precedens för Fas 6), optimistic mutation per ADR-016:s fem komponenter (`src/data/mutations/markRegistrationPaid.ts`), typad `EdgeFunctionError` med strukturerad `requestId`, fel-yta via MessageBox `role="alert"` (avvikelse från DoD 6:s "toast"-ord — ingen toast-infra finns; medveten, dokumenterad), aria-live för lyckad flip via `alertScreenReader`. 3 e2e (`tests/e2e/mark-paid.staging.test.ts`) via deterministisk `page.route`-gate täcker DoD 1/5/6/7/8 (mockad e2e — server-write-kontraktet bevisas separat av staging-sviten). Slicen är **mall för Fas 6:s mutationer** (DoD 10). Faktiska fil-/testsökvägar avviker från Filer-listan nedan (drift mot byggd struktur, dokumenterad): `event/$eventId.tsx` (ej `betalning.tsx`), `mark-paid.staging.test.ts` (ej `markPaid.spec.ts`), `field-allowlists.ts` i `supabase/functions/_shared/`. DoD-trail: feature-CI run `27706856446` (alla jobb success inkl. `test:e2e:staging`). Korsreferens: `tasks/sessions/2026-06-17-session-22.md` Del 2.
 
 #### Mål
 
@@ -996,6 +998,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 | 1.8 | 2026-06-12 | §4 Fas 5 DoD 4-modernisering per [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md) (Session 16 K1): "Lighthouse PWA-score ≥ 90" ersatt — Lighthouse tog bort PWA-kategorin i v12 (april 2024, per Chromes uppdaterade installability-kriterier); ny lydelse = installability-kriterier (DevTools, 0 manifest-fel) + maskinell offline-verifiering via Playwright + kvarvarande Lighthouse-kategorier mot Fas 0-baselinen. ADR:n kodifierar även Fas 5:s PWA-arkitektur: `vite-plugin-pwa` `injectManifest` (sw.js → src/sw.ts), Workbox offline-fallback-mönster, plugin-genererat manifest + ikoner, TanStack `networkMode: 'online'` + persistQueryClient-defer till Fas 6/8. |
 | 1.9 | 2026-06-12 | §4 Fas 5 Scope/Inte scope-justering (Session 16 K3, Marcus-kvitterat via Chat): runtime-caching av API-anrop (network-first, `networkTimeoutSeconds`) flyttad från Scope till Inte scope med defer till Fas 6 där API-konsumtionsmönstren byggs (ADR-017-polling) — autentiserade svar med persondata i Cache Storage kräver säkerhetsgenomgång, samma rationale som [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md) B5:s persistQueryClient-defer. Scope-raden för Workbox SW preciserad till "cache-first för statiska assets (precache), offline.html-fallback"; Inte scope-sektionen omstrukturerad med käll-markering per post (Fas 7 per B3 vs Session 16 K3-defer). K2-flaggan från transparens-rapporten stängd med detta beslutsspår. |
 | **1.10** | **2026-06-12** | **Fas 5 markerad KLAR** efter Session 16. §2 fas-tabell uppdaterad (Fas 5 ✅ KLAR + estimat-summa Fas 5.5 → Fas 7 = 9,5 sessioner). §4 Fas 5-prompten utökad med "✅ Slutförd"-paragraf per Fas A-mallen — inkl. skal-på-`_authenticated`-avvikelsen från Filer-listan (STOPPA-utfall A), error-boundary-konsolideringen, DoD 4c-omklassningen per [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md)-korrigeringsnoten, DoD 5-/DoD 7-noterna och K5b–d-ikonrundorna. DoD-trail: shell-/pwa-testsviter + runs 27410118400→27412742687 + Marcus-momentens PASS-kvittens. |
+| **1.11** | **2026-06-17** | **Fas 5.5 markerad KLAR** efter Session 22 (klient-UI K2; server-kontrakt + staging i Sessions 18/19). §2 fas-tabell uppdaterad (Fas 5.5 ✅ KLAR + estimat-summa Fas 6 → Fas 7 = 7,5 sessioner). §4 Fas 5.5-prompten utökad med "✅ Slutförd"-paragraf per Fas A-mallen — inkl. fält-valet `Anmälningsavgift` (ADR-049 supersederar DoD-radens exempel), router-context-DI ([ADR-055](decisions/ADR-055-datakalla-atkomst-router-context-di.md), första UI→data-wiringen), toast→MessageBox-avvikelsen (DoD 6) och mockad-e2e-noten (DoD 1/5/6/7/8 via `page.route`-gate). ADR-055 tillkommen (router-context-DI, README-räknare 54→55). DoD-trail: feature-CI run 27706856446. |
 
 ---
 

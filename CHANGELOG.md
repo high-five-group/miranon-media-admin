@@ -7,6 +7,30 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-17
+
+### Added — Fas 5.5: Vertikal write-slice "markera anmälningsavgift som betald" (Sessions 18/19 + 22)
+
+- Datakälla-åtkomst via TanStack Router-context-DI (ADR-055): adaptern injiceras i router-context bredvid `queryClient` + `auth`; `src/data/dataSource.ts` (namngivet hem, `new AirtableAdapter()`) + `src/data/useDataSource.ts` (route-agnostisk access-hook). Första UI→data-wiringen — precedens för Fas 6:s mutationer
+- Optimistic mutation `src/data/mutations/markRegistrationPaid.ts` per ADR-016:s fem komponenter: `dataSource.updateRecord('mark-registration-fee-paid', id, { Anmälningsavgift: 'Mottagen' })` + `onMutate`-rollback-context + optimistisk `setQueryData` + `onError`-rollback + `onSettled`-invalidate + aria-live för lyckad flip (`alertScreenReader`)
+- `src/components/registrations/`: `RegistrationsList` (betalnings-status som text — färg aldrig ensam bärare) + `MarkPaidButton` (dold när redan Mottagen; MessageBox `role="alert"` med `requestId` vid fel)
+- `src/queries/keys.ts`: query-key-factory (STATE-STRATEGY §3) — `queryKeys.registrations.byEvent`
+- Route `src/routes/_authenticated/event/$eventId.tsx` (Betalnings-vy); `event.tsx` → `event/index.tsx` (placeholder bevarad, syskon-leaf)
+- Typad `EdgeFunctionError` (`src/data/config/EdgeFunctionError.ts`): `callEdgeFunction`/`postEdgeFunction` kastar fel med strukturerad `status` + `requestId` (ur EF-fel-kroppen) i stället för plain Error
+- 3 e2e `tests/e2e/mark-paid.staging.test.ts` (DoD 1/5/6/7/8 via deterministisk `page.route`-gate); server deny/allow + restore-teardown i `tests/api/update-record.staging.test.ts` (Sessions 18/19)
+- ADR-055 (datakälla-åtkomst via router-context-DI) med additiva errata-noter vid STATE-STRATEGY:152 + ADR-016
+- Lessons L137–L139 i `tasks/lessons.md`
+
+### Changed
+
+- `src/routes/__root.tsx`: `RouterContext` utökad med `dataSource`
+- `docs/byggplan.md`: Fas 5.5 ✅ KLAR (§2 + §4 Slutförd-paragraf, versionshistorik 1.11); estimat-summa Fas 6 → Fas 7 = 7,5 sessioner
+- README ADR-räkning 54 → 55
+
+### Fixed
+
+- markdownlint MD028 (blank-rad i blockquote) i ADR-016:s ADR-055-not
+
 ## [0.6.0] - 2026-06-12
 
 ### Added — Fas 5: App-shell (Session 16)
