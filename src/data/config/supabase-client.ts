@@ -2,6 +2,29 @@ import { createClient } from '@supabase/supabase-js';
 import { AuthError } from '@/auth/AuthError';
 import { env } from '@/env';
 import { fetchWithRetry } from '../utils';
+import { EdgeFunctionError } from './EdgeFunctionError';
+
+/**
+ * Bygger en `EdgeFunctionError` ur ett non-2xx-svar. Extraherar `requestId` ur
+ * EF-fel-kroppen `{ error, requestId }` (errors.ts) till ett strukturerat fält;
+ * faller tillbaka på rå body-text om kroppen inte är JSON. requestId vävs även
+ * in i `message` så loggrader/Sentry-breadcrumbs förblir självförklarande.
+ */
+function edgeFunctionError(endpoint: string, status: number, bodyText: string): EdgeFunctionError {
+  let message = `Edge Function "${endpoint}" ${status}: ${bodyText}`;
+  let requestId: string | undefined;
+  try {
+    const parsed = JSON.parse(bodyText) as { error?: unknown; requestId?: unknown };
+    if (typeof parsed.requestId === 'string') requestId = parsed.requestId;
+    if (typeof parsed.error === 'string') {
+      const suffix = requestId ? ` (requestId: ${requestId})` : '';
+      message = `Edge Function "${endpoint}" ${status}: ${parsed.error}${suffix}`;
+    }
+  } catch {
+    // Icke-JSON-kropp (t.ex. proxy-fel) — behåll rå message.
+  }
+  return new EdgeFunctionError({ endpoint, status, message, requestId });
+}
 
 // Env-variabler valideras i src/env.ts (via @t3-oss/env-core) vid uppstart.
 // Ingen defensiv if-check här — uppstarten kraschar redan om något saknas.
@@ -57,7 +80,7 @@ export async function callEdgeFunction<T>(
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Edge Function "${name}" ${res.status}: ${body}`);
+    throw edgeFunctionError(name, res.status, body);
   }
 
   return (await res.json()) as T;
@@ -86,7 +109,7 @@ export async function postEdgeFunction<T>(name: string, body: Record<string, unk
 
   if (!res.ok) {
     const bodyText = await res.text();
-    throw new Error(`Edge Function "${name}" ${res.status}: ${bodyText}`);
+    throw edgeFunctionError(name, res.status, bodyText);
   }
 
   return (await res.json()) as T;
