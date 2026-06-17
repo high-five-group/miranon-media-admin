@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-15
+updated: 2026-06-17
 review_by: 2026-11-15
 status: stable
 ---
@@ -2248,3 +2248,17 @@ Symptom: Staging-Airtable nåddes av deployade EF:er (secret-token) men EJ av Co
 ### L136 [UNIVERSAL] — En regel kalibrerad för en feltyp över-applicerar på en annan om bokstaven följs; följ rationalen, riv bokstaven öppet
 
 Symptom: ADR-028 §2 (full lock-regen) är en MALWARE-PURGE-mekanism; på en icke-malware dev-server-advisory (fx2h) gav den noll säkerhetsvärde + drog in 140 orelaterade bumpar (biome 2.5.0 bröt CI). Kirurgisk bump (trogen §2:s intent) löste det. Regel: när en regels bokstav importerar kostnad utan nytta i ett fall den ej kalibrerades för, följ rationalen och avvik öppet/kvitterat (ej tyst) + kodifiera distinktionen. Captured: T07 + ADR-028 ## Updates 2026-06-15. Källa: 2026-06-15 Session 19 (resume).
+
+## 2026-06-17 — Session 22 (Fas 5.5 K2 — klient-UI write-slice + landningar)
+
+### L137 — markdownlint-cli2 hör till pre-push-grindsviten vid docs-ändringar
+
+Symptom: Landning 2:s foundation-push gick rött i CI på markdownlint MD028 (blank-rad inuti blockquote — två intilliggande blockquotes i ADR-016) — en grind som en lokal körning hade fångat, men som inte ingick i den lokala pre-push-sviten. En andra CI-cykel + fix-commit krävdes. Regel: vid docs-ändringar (`.md`) ingår `npx markdownlint-cli2 <filer>` i den lokala pre-push-sviten bredvid tsc/biome/vale/lychee/frontmatter — CI:s "Docs link check"-jobb kör både lychee OCH markdownlint, så lokal lychee-grön är inte tillräckligt. [Arbetsflöde]. Källa: 2026-06-17 Session 22 Landning 2 (CI-run 27706634831 röd → fix `bfc6cf1`).
+
+### L138 [UNIVERSAL] — `role="alert"` är redan implicit `aria-live="assertive"`; stapla aldrig en separat assertiv announcer ovanpå samma fel-text
+
+Symptom: K2-prompten specificerade BÅDE MessageBox `role="alert"` (prompt D) OCH `alertScreenReader(feltext, { assertive: true })` (prompt F) för samma fel — vilket ger dubbel assertiv uppläsning (role=alert ÄR en implicit aria-live=assertive-region). Löst: fel surfas via MessageBox `role="alert"` enbart (en assertiv yta räcker); `alertScreenReader` reserveras för den lyckade status-flippen, som saknar visuell indikator och därför behöver en announcer. Regel: en fel-yta med `role="alert"` (eller `aria-live="assertive"`) ska aldrig dubbleras med en separat assertiv announcer av samma innehåll; ett utfall utan egen visuell yta (t.ex. en lyckad optimistisk flip) är däremot just var en explicit announcer behövs. Kategori: A11y. Källa: 2026-06-17 Session 22 K2.
+
+### L139 [UNIVERSAL] — Chat-prompter ska be Code verifiera exakta fil-sökvägar mot disk (index ≠ byggd struktur; ADR-kodexempel kan vara drift)
+
+Symptom: Tre gånger under Session 22 pekade prompten/dokumenten på en sökväg/symbol som inte matchade disken: `field-allowlists.ts` antogs i `src/` men låg i `supabase/functions/_shared/`; hook-kommentaren pekades till `dataSource.ts` men hooken bor i `useDataSource.ts`; ADR-016:s kodexempel använde `executeOperation(...)` men det faktiska adapter-API:t är `updateRecord(...)`. Varje fångades av att Code verifierade mot disk i LÄS-passet i stället för att bygga på det antagna. Regel: Chat-prompter ska kräva att Code VERIFIERAR exakta fil-sökvägar, symbolnamn och API-signaturer mot faktisk disk (grep/läs) före användning — ett index, en byggplan-fillista eller ett ADR-kodexempel kan vara drift mot den byggda strukturen. Kategori: Arbetsflöde. Källa: 2026-06-17 Session 22 (LÄS-passets fångster).
