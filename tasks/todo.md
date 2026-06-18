@@ -19,12 +19,12 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 23 ⏸️ PAUSAD (2026-06-18) — Fas 6a Persons-domän (cursor-port) — Landning 1–3
+### Session 23 🔄 ÅTERUPPTAGEN (2026-06-18) — Fas 6a Persons-domän (cursor-port) — Landning 1–3
 
-> Session-PAUS (ADR-051/052), **inte** avslut: `lifecycle: paused`, nummer 23 behålls,
-> återupptas via `/session-resume`. Ingen finalisering (ingen arkivering/hub-sync/CHANGELOG/
-> nummer-increment). Trail: [`tasks/sessions/2026-06-18-session-23.md`](sessions/2026-06-18-session-23.md)
-> § PAUSLÄGE (handoff + carry + nästa steg).
+> Pausades 2026-06-18 (ADR-051/052, **inte** avslut: nummer 23 behölls, ingen finalisering)
+> och återupptogs 2026-06-18 via `/session-resume` (`lifecycle: paused → active`). Trail:
+> [`tasks/sessions/2026-06-18-session-23.md`](sessions/2026-06-18-session-23.md) § Paushistorik
+> (handoff + carry + nästa steg). Nästa: Landning 4 (deploy cursor-`get-persons` + port-conformance).
 
 - [x] **K0 sessionsdok fött** (`623116a`), `lifecycle: active`.
 - [x] **Landning 1 — BYGGPLAN-LÄTTLÄST-v3-driftfix** (`b29ace9`, CI-grön run `27769296754`):
