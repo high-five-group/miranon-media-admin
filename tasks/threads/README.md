@@ -34,6 +34,7 @@ status: stable
 | `T08` | Skala Check 2 (frontmatter updated-match) till ÄNDRADE governing-docs (changed-files-mönstret) → avveckla fetch-depth-apparaten (shallow-detektion + ADR-039-invariant + 6-bärare + errata) | `paused` | _(ingen kort än — endast registrerad); [ADR-054](../../docs/decisions/ADR-054-fetch-depth-full-historik.md) § Deferrad tråd bär kontexten_ |
 | `T09` | BYGGPLAN-LÄTTLÄST-v3 strukturell + stale-drift (legibility-svep) | `paused` | _(ingen kort än — endast registrerad)_ |
 | `T10` | Flip-of-a-switch dubbel-källa-conformance + paritets-grind (Fas E) | `paused` | _(ingen kort än — endast registrerad); ADR-056 bär kontexten_ |
+| `T11` | Lägg "Proposed" i decisions/README §Format status-enum (format↔praktik-drift; använt ADR-043/053/056) | `paused` | _(ingen kort än — endast registrerad)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
