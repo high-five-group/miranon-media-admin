@@ -20,5 +20,8 @@ export const queryKeys = {
     // alla sidor för en given `q` ackumuleras under samma cache-entry. (Ersätter
     // STATE-STRATEGY §3:s `search({ q, page })` — opak cursor, inga numeriska sidor.)
     search: (params: { q: string }) => ['persons', params] as const,
+    // Persondetalj (Fas 6a L5a): aggregerande get-person per record-ID. Egen
+    // gren under 'persons' så detalj-cachen kan invalideras oberoende av listan.
+    detail: (id: string) => ['persons', 'detail', id] as const,
   },
 } as const;

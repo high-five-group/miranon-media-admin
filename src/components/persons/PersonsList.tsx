@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/primitives/Button';
@@ -171,7 +172,13 @@ export function PersonsList() {
             const contact = contactLine(person);
             return (
               <li key={person.id} className="flex flex-col gap-1 border-b pb-3">
-                <span className="font-medium">{displayName(person)}</span>
+                <Link
+                  to="/personer/$personId"
+                  params={{ personId: person.id }}
+                  className="font-medium underline"
+                >
+                  {displayName(person)}
+                </Link>
                 {contact && <span className="text-small">{contact}</span>}
                 <span className="text-small text-text-muted">
                   {[

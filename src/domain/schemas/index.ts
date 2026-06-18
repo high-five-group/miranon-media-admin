@@ -14,5 +14,11 @@ export {
   MailPayloadSchema,
 } from './MailPayload.schema';
 export { PersonSchema } from './Person.schema';
+export {
+  type PersonDetail,
+  PersonDetailSchema,
+  type PersonHistoryEntry,
+  PersonHistoryEntrySchema,
+} from './PersonDetail.schema';
 export { RegistrationSchema } from './Registration.schema';
 export { WaitlistEntrySchema } from './WaitlistEntry.schema';

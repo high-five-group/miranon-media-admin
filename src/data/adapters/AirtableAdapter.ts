@@ -4,10 +4,15 @@ import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { Lead } from '../../domain/models/Lead';
 import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload';
-import type { Person } from '../../domain/models/Person';
 import type { Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
-import { EventSchema, PersonSchema, RegistrationSchema } from '../../domain/schemas';
+import {
+  EventSchema,
+  type PersonDetail,
+  PersonDetailSchema,
+  PersonSchema,
+  RegistrationSchema,
+} from '../../domain/schemas';
 import type {
   AttendanceFilters,
   LeadFilters,
@@ -88,15 +93,20 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
-   * Hämta enskild person via ID.
+   * Hämta enskild person via ID — aggregerar full historik (Fas 6a L5a).
    *
-   * @deferTo: Fas-6a (Persons-domän, FÖRST i strangler-fig-sekvensen) — A5 #2,
-   * 06b-impact: medel (target joinar persons + person_identifiers + lead_profiles).
-   * @todo Apply Zod .parse() runtime validation when get-person Edge Function deploys.
-   * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
+   * get-person-EF:en hämtar person-raden (ett anrop) + batch-hämtar
+   * kurshistorik ur Deltaganden (ett anrop) och returnerar PersonDetail-form.
+   * `.parse()` validerar vid datagränsen (ADR-026; single, ej z.array). 404 från
+   * EF:en (okänt ID) propagerar som `EdgeFunctionError` med `status: 404` —
+   * UI:t skiljer ej-funnen från övriga fel på den.
+   *
+   * 4:e aktiva callsite för PersonDetailSchema/PersonSchema — under ADR-026:s
+   * ≥5-tröskel för helper-extraktion, så inline `.parse()` består.
    */
-  async fetchPerson(_id: string): Promise<Person> {
-    throw new Error('Not deployed yet — see Fas 6a');
+  async fetchPerson(id: string): Promise<PersonDetail> {
+    const data = await callEdgeFunction<{ person: unknown }>('get-person', { id });
+    return PersonDetailSchema.parse(data.person);
   }
 
   /** Uppdatera anmälan — kräver explicit operationKey (M4). */

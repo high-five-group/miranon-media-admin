@@ -175,6 +175,54 @@ export async function fetchAirtablePage(
   }
 }
 
+/**
+ * Hämtar EN record via dess record-ID (Airtable GET /{table}/{recordId}) —
+ * single-get-mallen för detalj-EF:er (get-person nu; 6b get-event ärver).
+ *
+ * Till skillnad mot list-endpointen (som returnerar tom array för ett
+ * icke-existerande ID) ger record-endpointen HTTP 404 → vi returnerar `null`
+ * så att callern kan mappa det till sitt eget 404-kontrakt (ej 500/tomt 200).
+ * 429 → vänta 1s och försök igen (samma backoff som list-varianterna).
+ */
+export async function fetchAirtableRecord(
+  tableIdOrName: string,
+  recordId: string,
+): Promise<AirtableRecord | null> {
+  const token = Deno.env.get('AIRTABLE_TOKEN');
+  if (!token) {
+    throw new Error('AIRTABLE_TOKEN not set');
+  }
+  const baseId = getAirtableBaseId();
+
+  const url = `${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}/${recordId}`;
+
+  for (;;) {
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (res.status === 429) {
+      console.warn('Airtable rate limit hit — waiting 1s');
+      await new Promise((r) => setTimeout(r, 1000));
+      continue;
+    }
+
+    if (res.status === 404) {
+      return null;
+    }
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Airtable ${res.status}: ${body}`);
+    }
+
+    return (await res.json()) as AirtableRecord;
+  }
+}
+
 export async function updateAirtableRecord(
   tableIdOrName: string,
   recordId: string,

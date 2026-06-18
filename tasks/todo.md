@@ -45,6 +45,7 @@
   - steg 3: 5 permanenta syntetiska fixtur-records seedade (väg A, käll-fält, ingen PII; bas-nivå write bekräftad); återanvändbar `cursor-conformance.ts`-harness + skarp `get-persons.staging.test.ts` → **API staging 42 passed** (+1 conformance, skarpt mot live-EF). Sid-sekvens [2,2,1], opak cursor verifierad.
 - [ ] **Landning 5–6 (Fas 6a återstår)** — detaljvy `/personer/$personId` + `get-person`-EF
   (single-get-mall); write-operation (`Personer.Anteckningar` via field-allowlists + deny/allow).
+  - L5a (2026-06-18): aggregerande get-person (single-get-mall + 404-kontrakt, batch-historik ur Deltaganden) + full-historik-detaljvy (a11y 11/10) + PersonDetailSchema + person-detail-e2e (mock) **byggd & CI-grön**. get-person **conformance-overifierad tills L5b** (staging-deploy + skarp conformance, ej körd än).
 
 #### Öppna trådar från Session 23 (i registret — se [`tasks/threads/README.md`](threads/README.md))
 
