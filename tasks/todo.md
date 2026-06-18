@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-06-17 (Session 22 ✅ KLAR → **Fas 5.5 KLAR**. Landning 1 (CI-rotorsak-fix `fetch-depth: 0` + ADR-054 + tråd T08, `6610d6d`) + Landning 2 (K2 klient-UI: ADR-055 router-context-DI + optimistic mark-paid + 3 e2e, `5006e7b`→`bfc6cf1`, run `27706856446`) + Landning 3 (legibility-fix ADR-055, `31b2846`). `/session-end` + phase-end-verify körd: Fas 5.5 ✅ KLAR (byggplan v1.11, CHANGELOG 0.7.0), lessons L137–L139, `lifecycle: closed`. Öppet Marcus-beslut: arkivering av sessionsdok-backlog 16–22. Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)* Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
+*Senast uppdaterad: 2026-06-18 (Session 23 ⏸️ PAUSAD efter Fas 6a Landning 3 — cursor-port; `lifecycle: paused`, återupptas via `/session-resume`, nummer 23 behålls. Landning 1 (lättläst-driftfix `b29ace9`) + 2 (Personer-lista `de210ba`) + 3 (cursor-port end-to-end `83f55f9`, run `27775247396`) KLARA, alla CI-gröna; ADR-056 (cursor-port) Accepted; T09/T10/T11 registrerade. Nästa: Landning 4 (staging-deploy cursor-EF, kräver Marcus miljö-moment). Tidigare: Session 22 ✅ KLAR → **Fas 5.5 KLAR**. Landning 1 (CI-rotorsak-fix `fetch-depth: 0` + ADR-054 + tråd T08, `6610d6d`) + Landning 2 (K2 klient-UI: ADR-055 router-context-DI + optimistic mark-paid + 3 e2e, `5006e7b`→`bfc6cf1`, run `27706856446`) + Landning 3 (legibility-fix ADR-055, `31b2846`). `/session-end` + phase-end-verify körd: Fas 5.5 ✅ KLAR (byggplan v1.11, CHANGELOG 0.7.0), lessons L137–L139, `lifecycle: closed`. Öppet Marcus-beslut: arkivering av sessionsdok-backlog 16–22. Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)* Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -18,6 +18,37 @@
 **Fas 5.5 — Vertikal write-slice: staging-miljön KLAR ✅; deny/allow-grinden avblockerad.** Server-kontraktet levererat och CI-grönt (operation `mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049). Den isolerade staging-miljön är byggd (ADR-050 bygg-sekvens 1–7 komplett) och hela staging-testsviten grön (41 passed/0 skipped). **Nästa: Fas 5.5 klient-UI (K2) i ny session** (peka bakåt på session 18; en stängd session resume:as ej — ny sessions-yta, ADR-052/L124).
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
+
+### Session 23 ⏸️ PAUSAD (2026-06-18) — Fas 6a Persons-domän (cursor-port) — Landning 1–3
+
+> Session-PAUS (ADR-051/052), **inte** avslut: `lifecycle: paused`, nummer 23 behålls,
+> återupptas via `/session-resume`. Ingen finalisering (ingen arkivering/hub-sync/CHANGELOG/
+> nummer-increment). Trail: [`tasks/sessions/2026-06-18-session-23.md`](sessions/2026-06-18-session-23.md)
+> § PAUSLÄGE (handoff + carry + nästa steg).
+
+- [x] **K0 sessionsdok fött** (`623116a`), `lifecycle: active`.
+- [x] **Landning 1 — BYGGPLAN-LÄTTLÄST-v3-driftfix** (`b29ace9`, CI-grön run `27769296754`):
+  Gunilla-dokumentet låg ett fas-steg efter byggplan.md; speglade Fas 5-avslutets mönster.
+  §5/§6/§7-strukturdrift flaggad → **T09**.
+- [x] **Steg 0 + Landning 2 — Personer-lista** (T09 `3db9a07`; feature `de210ba`, CI-grön run
+  `27771672331`): `/personer` wirad till `fetchPersons` via router-context-DI (ADR-055);
+  kolumnval mot faktisk PersonSchema; nuqs `?q`/`?page` + klient-slice (defekt flaggad); 4 e2e + axe 0.
+- [x] **ADR-056 — list-paginerings-port (cursor, dubbel-källa)** (`9868326`, CI-grön run
+  `27773817942`): skriven **Proposed** → Marcus Gate-2. README 55→56.
+- [x] **Steg 0 + Landning 3 — cursor-port end-to-end** (ADR-flip `e2e026c`; T10 `d1dfdd7`;
+  T11 `d77a111`; cursor-port `83f55f9`, CI-grön run `27775247396`): ADR-056 **Accepted**;
+  opak cursor-codec, `fetchAirtablePage` (ETT anrop/sida), `listPersons`-port, `useInfiniteQuery`
+  med "Ladda fler" (a11y 11/10); STATE-STRATEGY §2/§3 reconcilierad; T10/T11 registrerade.
+- [ ] **Landning 4 (NÄSTA)** — staging-deploy av cursor-EF (`get-persons`) + port-conformance-
+  batteri mot riktig staging-data. **KRÄVER Marcus miljö-moment** (deploy + `AIRTABLE_BASE_ID`-koll).
+- [ ] **Landning 5–6 (Fas 6a återstår)** — detaljvy `/personer/$personId` + `get-person`-EF
+  (single-get-mall); write-operation (`Personer.Anteckningar` via field-allowlists + deny/allow).
+
+#### Öppna trådar från Session 23 (i registret — se [`tasks/threads/README.md`](threads/README.md))
+
+- [ ] **T09** BYGGPLAN-LÄTTLÄST-v3 legibility-svep + klarspråks-paginerings-förklaring (`paused`).
+- [ ] **T10** dubbel-källa-conformance + paritets-grind, Fas E (`paused`).
+- [ ] **T11** Proposed i `decisions/README` §Format status-enum (`paused`).
 
 ### Session 22 ✅ KLAR (2026-06-17) — Fas 5.5 K2 klient-UI → **Fas 5.5 KLAR** (Landning 1 + 2 + 3)
 
