@@ -41,6 +41,7 @@
   med "Ladda fler" (a11y 11/10); STATE-STRATEGY §2/§3 reconcilierad; T10/T11 registrerade.
 - [ ] **Landning 4 (NÄSTA)** — staging-deploy av cursor-EF (`get-persons`) + port-conformance-
   batteri mot riktig staging-data. **KRÄVER Marcus miljö-moment** (deploy + `AIRTABLE_BASE_ID`-koll).
+  - steg 1: deploy landad till staging (v4, ACTIVE) via bare CLI; carry-secrets verifierade satta. **port-conformance pending steg 2.**
 - [ ] **Landning 5–6 (Fas 6a återstår)** — detaljvy `/personer/$personId` + `get-person`-EF
   (single-get-mall); write-operation (`Personer.Anteckningar` via field-allowlists + deny/allow).
 
