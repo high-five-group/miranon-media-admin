@@ -6,8 +6,8 @@ export const Route = createFileRoute('/_authenticated/personer')({
   component: PersonerPage,
 });
 
-// Personer-listan (Fas 6a, Landning 2) — sökbar + paginerad vy mot befintlig
-// fetchPersons via router-context-DI (ADR-055). Logiken bor i PersonsList;
+// Personer-listan (Fas 6a) — sökbar, cursor-paginerad vy (ADR-056) via
+// listPersons + router-context-DI (ADR-055). Logiken bor i PersonsList;
 // routen håller bara rubrik + montering (jfr event/$eventId.tsx).
 function PersonerPage() {
   return (

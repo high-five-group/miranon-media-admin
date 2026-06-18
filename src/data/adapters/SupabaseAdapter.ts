@@ -10,10 +10,10 @@ import type {
   AttendanceFilters,
   LeadFilters,
   MailLogFilters,
-  PersonFilters,
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
+import type { ListParams, PersonsPage } from '../../domain/types/Pagination';
 import type { DataSourceAdapter } from './DataSourceAdapter';
 
 const NOT_IMPLEMENTED = 'SupabaseAdapter: Not implemented — migrate Edge Functions first';
@@ -27,7 +27,7 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
-  async fetchPersons(_filters?: PersonFilters): Promise<Person[]> {
+  async listPersons(_params?: ListParams): Promise<PersonsPage> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

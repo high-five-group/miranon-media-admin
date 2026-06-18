@@ -12,10 +12,10 @@ import type {
   AttendanceFilters,
   LeadFilters,
   MailLogFilters,
-  PersonFilters,
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
+import type { ListParams, PersonsPage } from '../../domain/types/Pagination';
 import { callEdgeFunction, postEdgeFunction } from '../config/supabase-client';
 import type { DataSourceAdapter } from './DataSourceAdapter';
 
@@ -47,16 +47,20 @@ export class AirtableAdapter implements DataSourceAdapter {
     return z.array(RegistrationSchema).parse(data.registrations);
   }
 
-  async fetchPersons(filters?: PersonFilters): Promise<Person[]> {
-    const params: Record<string, string> = {};
-    if (filters?.search) params.search = filters.search;
-    if (filters?.limit) params.limit = String(filters.limit);
+  async listPersons(params?: ListParams): Promise<PersonsPage> {
+    const query: Record<string, string> = {};
+    if (params?.search) query.search = params.search;
+    if (params?.cursor) query.cursor = params.cursor;
+    if (params?.pageSize) query.pageSize = String(params.pageSize);
 
-    const data = await callEdgeFunction<{ persons: unknown }>(
+    const data = await callEdgeFunction<{ persons: unknown; nextCursor: string | null }>(
       'get-persons',
-      Object.keys(params).length > 0 ? params : undefined,
+      Object.keys(query).length > 0 ? query : undefined,
     );
-    return z.array(PersonSchema).parse(data.persons);
+    return {
+      persons: z.array(PersonSchema).parse(data.persons),
+      nextCursor: data.nextCursor ?? null,
+    };
   }
 
   async updateRecord(

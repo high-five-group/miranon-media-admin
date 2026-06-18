@@ -10,16 +10,21 @@ import type {
   AttendanceFilters,
   LeadFilters,
   MailLogFilters,
-  PersonFilters,
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
+import type { ListParams, PersonsPage } from '../../domain/types/Pagination';
 
 export interface DataSourceAdapter {
   // === Befintliga (oförändrade) ===
   fetchEvents(): Promise<Event[]>;
   fetchRegistrations(filters?: RegistrationFilters): Promise<Registration[]>;
-  fetchPersons(filters?: PersonFilters): Promise<Person[]>;
+
+  /**
+   * Cursor-paginerad personlista (ADR-056). Migrations-stabil port: Supabase-
+   * adaptern (Fas E) implementerar identisk shape. `cursor`/`nextCursor` är opaka.
+   */
+  listPersons(params?: ListParams): Promise<PersonsPage>;
 
   /**
    * Operations-baserad write-API (M4).

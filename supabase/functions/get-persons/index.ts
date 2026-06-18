@@ -2,10 +2,15 @@ import {
   buildSearchAcrossFieldsFilter,
   type SearchField,
 } from '../_shared/airtable-filter.ts';
-import { fetchFromAirtable } from '../_shared/airtable-client.ts';
+import { fetchAirtablePage } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
+import { decodeCursor, encodeCursor } from '../_shared/cursor.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
+
+// Cursor-paginering (ADR-056): default sidstorlek + Airtables tak (pageSize ≤ 100).
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 100;
 
 // Tabell adresseras per NAMN (ej tbl-id) så samma kod fungerar mot prod- och
 // staging-bas — tbl-id:n är bas-unika och skiljer sig i en duplicerad bas (ADR-050).
@@ -61,7 +66,26 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const search = url.searchParams.get('search');
-  const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
+
+  // pageSize: default 50, klamp till Airtables tak (≤100), ignorera skräp.
+  const rawPageSize = parseInt(url.searchParams.get('pageSize') ?? '', 10);
+  const pageSize = Number.isFinite(rawPageSize)
+    ? Math.min(Math.max(rawPageSize, 1), MAX_PAGE_SIZE)
+    : DEFAULT_PAGE_SIZE;
+
+  // cursor: opak klient-token → Airtable offset. Felformad → 400 (klient-fel).
+  const rawCursor = url.searchParams.get('cursor');
+  let offset: string | undefined;
+  if (rawCursor) {
+    try {
+      offset = decodeCursor(rawCursor);
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid cursor' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
 
   // Bygg filterByFormula via parameteriserade builders (M5).
   // Builders kastar vid kontrolltecken / för långa strängar /
@@ -89,15 +113,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const records = await fetchFromAirtable(TABLE_NAME, {
+    // ETT Airtable-listanrop per sida (ingen full-walk) — cursor-port (ADR-056).
+    const { records, nextOffset } = await fetchAirtablePage(TABLE_NAME, {
       filterByFormula,
       sort: [{ field: 'Namn', direction: 'asc' }],
-      maxRecords: limit,
+      pageSize,
+      offset,
     });
 
     const persons = records.map(mapPerson);
+    // Wrappa Airtables offset opakt; null på sista sidan.
+    const nextCursor = nextOffset ? encodeCursor(nextOffset) : null;
 
-    return new Response(JSON.stringify({ persons }), {
+    return new Response(JSON.stringify({ persons, nextCursor }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

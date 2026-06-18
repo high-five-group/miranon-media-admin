@@ -56,9 +56,15 @@ Ingen URL state, inga filter. Ingen UI state, inga expanderbara sektioner.
 
 | State | Typ | Verktyg |
 |-------|-----|---------|
-| Personlista | Server | `useQuery(queryKeys.persons.search({ q, page }))` |
+| Personlista | Server | `useInfiniteQuery(queryKeys.persons.search({ q }))` (cursor, ADR-056) |
 | Sokterm | URL | `nuqs: ?q=sokterm` |
-| Paginering | URL | `nuqs: ?page=2` |
+| Paginering | — | Cursor/"Ladda fler" via `useInfiniteQuery` — INGEN URL-param (opak cursor) |
+
+> **Reviderad (ADR-056, 2026-06-18):** ursprungsraderna angav numerisk `?page` +
+> `search({ q, page })`. [ADR-056](../decisions/ADR-056-list-paginerings-port-cursor-dubbel-kalla.md)
+> ersatte det med en cursor-baserad paginerings-port (`useInfiniteQuery` + opak
+> cursor): `?page` finns inte längre i URL:en (numeriska sidor passar inte
+> cursor-modellen), nyckeln bär bara `q`. `?q` består. Se även §3.
 
 ### Mer (/mer)
 
@@ -102,8 +108,9 @@ export const queryKeys = {
   },
   persons: {
     all: ['persons'] as const,
-    search: (params: { q: string; page: number }) =>
-      ['persons', params] as const,
+    // ADR-056: cursor-paginering via useInfiniteQuery → nyckeln bär bara `q`;
+    // cursorn skickas som pageParam, aldrig i nyckeln (ingen `page` längre).
+    search: (params: { q: string }) => ['persons', params] as const,
   },
   payments: {
     byEvent: (eventId: string) => ['payments', eventId] as const,

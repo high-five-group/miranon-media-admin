@@ -15,13 +15,10 @@ export const queryKeys = {
   },
   persons: {
     all: ['persons'] as const,
-    // STATE-STRATEGY §3 specificerar `search({ q, page })` — den signaturen
-    // antog server-side paginering. `get-persons` exponerar bara `search`
-    // (filterByFormula) + `limit` (maxRecords), INGEN offset/cursor. Därför
-    // paginerar Fas 6a klient-sida och `page` ingår INTE i fetch-nyckeln:
-    // vore den med, skulle hela q-setet (568 records) refetchas per sidklick.
-    // Nyckeln bär `q`; `page` är ren URL→klient-slice (nuqs). En framtida
-    // offset-kapabel EF återinför `{ q, page }` — defererat (Session 23 L2-flagg).
+    // Cursor-paginering via `useInfiniteQuery` (ADR-056): nyckeln bär ENBART
+    // sökterm `q`. Cursorn skickas som `pageParam` och ingår ALDRIG i nyckeln —
+    // alla sidor för en given `q` ackumuleras under samma cache-entry. (Ersätter
+    // STATE-STRATEGY §3:s `search({ q, page })` — opak cursor, inga numeriska sidor.)
     search: (params: { q: string }) => ['persons', params] as const,
   },
 } as const;
