@@ -15,7 +15,10 @@ import { queryKeys } from '@/queries/keys';
 function displayName(person: PersonDetailType): string {
   if (person.namn) return person.namn;
   const composed = [person.fornamn, person.efternamn].filter(Boolean).join(' ');
-  return composed || 'Namnlös person';
+  if (composed) return composed;
+  // Namnlös lead → e-post särskiljer (unika h1/flik-titlar för skärmläsare);
+  // utan e-post faller vi tillbaka på den generiska etiketten.
+  return person.email ? `Namnlös person — ${person.email}` : 'Namnlös person';
 }
 
 /** En rad i fält/värde-listan; hoppar tomma värden (renderar inte null). */

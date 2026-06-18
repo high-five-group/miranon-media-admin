@@ -22,7 +22,25 @@ const HISTORY_FIELDS = [
   'Event typ',
 ];
 
+// Max record-ID:n per Deltaganden-batch-anrop. En person kan ha hundratals
+// deltaganden (en/session; ~924 backfillade rader förekommer) — en enda
+// `OR(RECORD_ID()=…)`-formel över alla skulle spränga Airtables formel-/
+// URL-längd. Vi chunkar ID-listan: varje chunk ger en kort formel (≤50 IDs ≈
+// ~1.5 kB, väl under gränsen) och matchar ≤50 unika records = ETT listanrop per
+// chunk (ej per record → ej N+1). Övre gräns: obegränsat antal deltaganden
+// (ceil(N/50) anrop), NOLL trunkering. Sort sker i JS efter sammanslagning
+// (per-chunk-sort räcker inte över chunk-gränser).
+const HISTORY_BATCH_SIZE = 50;
+
 type Fields = Record<string, unknown>;
+
+function chunk<T>(items: readonly T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(items.slice(i, i + size));
+  }
+  return out;
+}
 
 /** singleSelect → namnet; sträng → strängen; annars null. */
 function selectName(val: unknown): string | null {
@@ -116,6 +134,22 @@ function mapPersonDetail(
   };
 }
 
+/**
+ * get-person — aggregerande detalj-EF (single-get-mall; 6b get-event ärver).
+ *
+ * FEL-KONTRAKT: `{ error: <message> }` (klient-fel) — matchar den ETABLERADE
+ * konventionen i get-persons/auth.ts/errors.ts (400/401/404 → `{ error }`,
+ * 500 → `{ error, requestId }`). Medvetet INTE RFC 9457 problem+json: hela
+ * EF-sviten är redan konsistent på `{ error }`, och Google-konsistens väger
+ * tyngre än att införa en avvikande standard i en enda EF. Detta är fel-formen
+ * 6b ärver. (Migrering av hela sviten till problem+json är en separat
+ * tråd-kandidat, ej denna landning.)
+ *
+ * ATOMICITET: aggregeringen (person-fetch + Deltaganden-batch) är ICKE-atomär —
+ * records kan ändras mellan anropen. Det är acceptabelt för en admin-läsvy och
+ * byggs MEDVETET utan snapshot-isolering (undviker över-engineering; ingen
+ * transaktions-semantik finns i Airtable-REST ändå).
+ */
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -147,23 +181,35 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2) Event-för-event-historik — ETT batch-anrop mot Deltaganden på de
-    //    länkade record-ID:na (filterByFormula OR(RECORD_ID()=…)), ALDRIG
-    //    ett-anrop-per-rad (N+1-undvikande, världsklass-rationale). Hoppas
-    //    helt om personen saknar deltaganden (inget onödigt anrop).
+    // 2) Event-för-event-historik — batch-hämtad ur Deltaganden på de länkade
+    //    record-ID:na. KOMPLETT oavsett antal (kärnkrav: historik trunkeras
+    //    ALDRIG tyst — "appen ska minnas bättre än Lotta"): ID-listan chunkas
+    //    (HISTORY_BATCH_SIZE) → ETT listanrop per chunk (`fetchFromAirtable`
+    //    offset-vandrar dessutom om en chunk någonsin gav >100). Det är
+    //    paginering (ett anrop per ≤50 rader), INTE N+1 (ett per record).
+    //    Hoppas helt om personen saknar deltaganden (inget onödigt anrop).
     const deltagandeIds: string[] = Array.isArray(personRecord.fields['Deltaganden'])
       ? (personRecord.fields['Deltaganden'] as string[])
       : [];
 
-    let historik: ReturnType<typeof mapHistoryEntry>[] = [];
+    const historik: ReturnType<typeof mapHistoryEntry>[] = [];
     if (deltagandeIds.length > 0) {
-      const filterByFormula = `OR(${deltagandeIds.map((rid) => `RECORD_ID()='${rid}'`).join(',')})`;
-      const records = await fetchFromAirtable(DELTAGANDEN_TABLE, {
-        filterByFormula,
-        fields: HISTORY_FIELDS,
-        sort: [{ field: 'Event startdatum', direction: 'desc' }],
+      for (const ids of chunk(deltagandeIds, HISTORY_BATCH_SIZE)) {
+        const filterByFormula = `OR(${ids.map((rid) => `RECORD_ID()='${rid}'`).join(',')})`;
+        const records = await fetchFromAirtable(DELTAGANDEN_TABLE, {
+          filterByFormula,
+          fields: HISTORY_FIELDS,
+        });
+        historik.push(...records.map(mapHistoryEntry));
+      }
+      // Sortera datum desc över ALLA chunks (per-chunk-sort räcker inte). Saknat
+      // datum sist; ISO YYYY-MM-DD sorterar korrekt som sträng.
+      historik.sort((a, b) => {
+        if (a.datum === b.datum) return 0;
+        if (a.datum === null) return 1;
+        if (b.datum === null) return -1;
+        return a.datum < b.datum ? 1 : -1;
       });
-      historik = records.map(mapHistoryEntry);
     }
 
     const person = mapPersonDetail(personRecord, historik);

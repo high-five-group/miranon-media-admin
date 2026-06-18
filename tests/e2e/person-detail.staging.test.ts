@@ -127,8 +127,20 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
     await expect(page.getByText('Viktig kontakt — ring före nästa event.')).toBeVisible();
   });
 
-  test('namnlös person → fallback, ingen krasch', async ({ page }) => {
+  test('namnlös person → e-post-särskiljd fallback, ingen krasch', async ({ page }) => {
     await mockPerson(page, personDetail({ namn: null, fornamn: null, efternamn: null }));
+    await page.goto(`/personer/${PERSON_ID}`);
+    // P4: e-post särskiljer namnlösa leads → unik h1/flik-titel.
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Namnlös person — anna@example.test' }),
+    ).toBeVisible();
+  });
+
+  test('namnlös person UTAN e-post → generisk fallback', async ({ page }) => {
+    await mockPerson(
+      page,
+      personDetail({ namn: null, fornamn: null, efternamn: null, email: null }),
+    );
     await page.goto(`/personer/${PERSON_ID}`);
     await expect(page.getByRole('heading', { level: 1, name: 'Namnlös person' })).toBeVisible();
   });
