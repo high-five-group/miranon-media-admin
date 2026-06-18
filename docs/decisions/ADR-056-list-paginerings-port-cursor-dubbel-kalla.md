@@ -1,6 +1,6 @@
 # ADR-056: List-paginerings-port — cursor-baserad, dubbel-källa
 
-- Status: Proposed (Session 23 — 2026-06-18; villkorad flip → Marcus Gate-2 → Accepted, ADR-053-mönstret). Ingen implementation förrän ratificerad.
+- Status: Accepted (Session 23 — 2026-06-18; flippad från Proposed vid Marcus Gate-2-ratificering; implementeras i Landning 3 för Personer, mönster för 6b/6c)
 - Datum: 2026-06-18
 - Fas: 6a (Persons-domän) — kanonisk för alla Fas 6-list-endpoints (6b Event, 6c Registrations …)
 
