@@ -32,10 +32,13 @@ status: stable
 | `T06` | Hub-sync-backlogg sessioner 17–20 (L103–L125 aldrig hub-lyfta) | `paused` | _(ingen kort än — endast registrerad)_ |
 | `T07` | ADR-028 §2-amendering — skilj malware (full-regen) från icke-malware-advisory (kirurgisk bump räcker) | `paused` | _(ingen kort än — endast registrerad); ADR-028 ## Updates 2026-06-15 (fx2h-avvikelsen) bär kontexten_ |
 | `T08` | Skala Check 2 (frontmatter updated-match) till ÄNDRADE governing-docs (changed-files-mönstret) → avveckla fetch-depth-apparaten (shallow-detektion + ADR-039-invariant + 6-bärare + errata) | `paused` | _(ingen kort än — endast registrerad); [ADR-054](../../docs/decisions/ADR-054-fetch-depth-full-historik.md) § Deferrad tråd bär kontexten_ |
+| `T09` | BYGGPLAN-LÄTTLÄST-v3 strukturell + stale-drift (legibility-svep) | `paused` | _(ingen kort än — endast registrerad)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
 > _T04-not: T04:s scope bör omfatta HELA klassen tyst-drivande do-confirm-killer-items (BUILD-LOG + hub-sync + ev. fler), bevisat av T03 + T06._
+>
+> _T09-not: §5 "Det här är redan klart" slutar vid Fas 2 fast Fas 2.5/3/3.5/5/5.5 är ✅ in-place-stämplade i §6/§7 (sektionsstruktur ↔ verklighet driftar); rad-58 stale skärmbild-not ("när Fas 5 är klar" — Fas 5 klar sedan 2026-06-12); Fas 5.5-body "ett enda fält (Betald: ja/nej)" mot faktiska Anmälningsavgift→Mottagen (ADR-049). Legibility-svep, ej brådskande (Session 23 L1-flagg)._
 
 ## Avslutade trådar
 
