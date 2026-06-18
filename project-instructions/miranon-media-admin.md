@@ -11,6 +11,15 @@ saknas — hämta det via Code (LÄS→RAPPORTERA mot lokal disk) eller be
 Marcus klistra innehållet. Se spoke-CLAUDE.md § Synk-horisont och
 arkiv-åtkomst.
 
+## AIRTABLE-DATAMODELL — KONSULTERA REFERENSEN FÖRE FÄLT-OPERATIONER
+
+Innan du designar någon Airtable-fält-operation (seed, write, fält-mappning,
+schema-antagande) för detta projekt: konsultera docs/reference/data-model.md — basens
+schema-referens (fält-skrivbarhet, formel/rollup-fält, §Kända fällor, write-fält-IDs).
+Detta är grundregel 3 (verifiera, gissa aldrig) tillämpad på Airtable-schemat — anta
+aldrig en fält-form, verifiera mot referensen eller live via Code. (Empiriskt: formel/
+rollup-fält har upprepat antagits skrivbara.)
+
 ## Triage av det oväntade — alltid-på (ADR-053) [UNIVERSAL]
 
 När något OVÄNTAT uppstår (utanför nuvarande scope — nära eller långt ifrån, men alltid
