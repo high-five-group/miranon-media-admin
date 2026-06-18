@@ -39,9 +39,10 @@
   T11 `d77a111`; cursor-port `83f55f9`, CI-grön run `27775247396`): ADR-056 **Accepted**;
   opak cursor-codec, `fetchAirtablePage` (ETT anrop/sida), `listPersons`-port, `useInfiniteQuery`
   med "Ladda fler" (a11y 11/10); STATE-STRATEGY §2/§3 reconcilierad; T10/T11 registrerade.
-- [ ] **Landning 4 (NÄSTA)** — staging-deploy av cursor-EF (`get-persons`) + port-conformance-
-  batteri mot riktig staging-data. **KRÄVER Marcus miljö-moment** (deploy + `AIRTABLE_BASE_ID`-koll).
-  - steg 1: deploy landad till staging (v4, ACTIVE) via bare CLI; carry-secrets verifierade satta. **port-conformance pending steg 2.**
+- [x] **Landning 4** — staging-deploy av cursor-EF (`get-persons` v4 ACTIVE) + port-conformance-
+  batteri mot riktig staging-data. **KLAR** (CI run `27783202181` grön).
+  - steg 1: deploy via bare CLI (v3→v4 ACTIVE), carry-secrets verifierade satta.
+  - steg 3: 5 permanenta syntetiska fixtur-records seedade (väg A, käll-fält, ingen PII; bas-nivå write bekräftad); återanvändbar `cursor-conformance.ts`-harness + skarp `get-persons.staging.test.ts` → **API staging 42 passed** (+1 conformance, skarpt mot live-EF). Sid-sekvens [2,2,1], opak cursor verifierad.
 - [ ] **Landning 5–6 (Fas 6a återstår)** — detaljvy `/personer/$personId` + `get-person`-EF
   (single-get-mall); write-operation (`Personer.Anteckningar` via field-allowlists + deny/allow).
 

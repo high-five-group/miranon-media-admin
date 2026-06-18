@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-17
+updated: 2026-06-18
 review_by: 2026-11-15
 status: stable
 ---
@@ -2262,3 +2262,11 @@ Symptom: K2-prompten specificerade BÅDE MessageBox `role="alert"` (prompt D) OC
 ### L139 [UNIVERSAL] — Chat-prompter ska be Code verifiera exakta fil-sökvägar mot disk (index ≠ byggd struktur; ADR-kodexempel kan vara drift)
 
 Symptom: Tre gånger under Session 22 pekade prompten/dokumenten på en sökväg/symbol som inte matchade disken: `field-allowlists.ts` antogs i `src/` men låg i `supabase/functions/_shared/`; hook-kommentaren pekades till `dataSource.ts` men hooken bor i `useDataSource.ts`; ADR-016:s kodexempel använde `executeOperation(...)` men det faktiska adapter-API:t är `updateRecord(...)`. Varje fångades av att Code verifierade mot disk i LÄS-passet i stället för att bygga på det antagna. Regel: Chat-prompter ska kräva att Code VERIFIERAR exakta fil-sökvägar, symbolnamn och API-signaturer mot faktisk disk (grep/läs) före användning — ett index, en byggplan-fillista eller ett ADR-kodexempel kan vara drift mot den byggda strukturen. Kategori: Arbetsflöde. Källa: 2026-06-17 Session 22 (LÄS-passets fångster).
+
+## 2026-06-18 — Session 23 (Fas 6a Persons-domän — cursor-port)
+
+### L140 — Permanent syntetisk conformance-fixtur seedas via skrivbara käll-fält, inte härledda formelfält; verifiera fält-skrivbarhet mot data-model FÖRE fixtur-design
+
+Symptom: Landning 4 steg 3:s seed-prompt instruerade `create_record` med `Namn` satt direkt — men Personer-tabellens `Namn` är ett **formelfält** (`TRIM(Förnamn & " " & Efternamn)`), ej skrivbart; ett direkt write hade 422:at. FAS A:s de-risk-pass (schema-läsning före write) fångade det → väg A: seeda via de skrivbara käll-fälten `Förnamn`/`Efternamn`, låt basen beräkna `Namn`. Identiskt observerbart utfall, isolering + sort-ordning intakt. Regel: innan en conformance-/test-fixtur designas mot en datakälla, verifiera varje måls-fälts skrivbarhet (formel/rollup/lookup = ej skrivbart) mot schema/data-model FÖRST; seeda derivat-värden via deras käll-fält. En permanent syntetisk fixtur (namngiven, ingen PII) är en operativ följd av ADR-056:s kanoniska kontrakts-harness — den bor durabelt i staging och städas ej. Kategori: Test/Data. Källa: 2026-06-18 Session 23 Landning 4 (FAS A de-risk-fångst).
+
+Tråd-kandidat (ej registrerad än): pageSize-klamp-boundary `>100` (EF klampar till `MAX_PAGE_SIZE=100`) kan inte bevisas av den lilla 5-records-fixturen — verifieras lämpligen av en isolerad Deno-enhetstest i CI snarare än ännu fler staging-records.
