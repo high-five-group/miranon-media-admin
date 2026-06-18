@@ -1,11 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { PersonsList } from '@/components/persons';
 
 export const Route = createFileRoute('/_authenticated/personer')({
   staticData: { title: 'Personer' },
   component: PersonerPage,
 });
 
-// Placeholder (Fas 5) — domän-vyn byggs i Fas 6a.
+// Personer-listan (Fas 6a, Landning 2) — sökbar + paginerad vy mot befintlig
+// fetchPersons via router-context-DI (ADR-055). Logiken bor i PersonsList;
+// routen håller bara rubrik + montering (jfr event/$eventId.tsx).
 function PersonerPage() {
-  return <h1>Personer</h1>;
+  return (
+    <section className="flex flex-col gap-4 p-4">
+      <h1>Personer</h1>
+      <PersonsList />
+    </section>
+  );
 }
