@@ -5,7 +5,7 @@ export interface Person {
   efternamn: string | null;
   email: string | null;
   telefon: string | null;
-  ort: string | null;
+  ort: string[];
   manuellFlagga: string | null;
   aiFlagga: string | null;
   anteckningar: string | null;

@@ -4,6 +4,7 @@ import {
 } from '../_shared/airtable-filter.ts';
 import { fetchAirtablePage } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
+import { selectName, stringArray } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { decodeCursor, encodeCursor } from '../_shared/cursor.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
@@ -19,13 +20,6 @@ const TABLE_NAME = 'Personer';
 function mapPerson(record: { id: string; fields: Record<string, unknown> }) {
   const f = record.fields;
 
-  const selectName = (val: unknown): string | null => {
-    if (val && typeof val === 'object' && 'name' in (val as Record<string, unknown>)) {
-      return (val as Record<string, string>).name;
-    }
-    return typeof val === 'string' ? val : null;
-  };
-
   return {
     id: record.id,
     namn: f['Namn'] ?? null, // formula (primary)
@@ -33,7 +27,10 @@ function mapPerson(record: { id: string; fields: Record<string, unknown> }) {
     efternamn: f['Efternamn'] ?? null, // text
     email: f['E-post'] ?? null, // text
     telefon: f['Telefon'] ?? null, // text
-    ort: f['Ort'] ?? null, // rollup
+    // `Ort` är en ROLLUP över Anmälningar (1→MÅNGA) → FLER-VÄRT. stringArray
+    // bevarar alla orter (rå array hade kraschat PersonSchema; firstString hade
+    // tappat data). Listan renderar inte ort, men domän-objektet bär den korrekt.
+    ort: stringArray(f['Ort']), // rollup (multi-värt)
     manuellFlagga: selectName(f['Manuella flagga']), // singleSelect
     aiFlagga: selectName(f['AI-flagga']), // singleSelect
     anteckningar: f['Anteckningar'] ?? null, // text

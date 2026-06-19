@@ -181,8 +181,9 @@ export function PersonsList() {
                 </Link>
                 {contact && <span className="text-small">{contact}</span>}
                 <span className="text-small text-text-muted">
+                  {/* Ort visas INTE i scan-listan (hör till detaljvyn); `person.ort`
+                      finns korrekt i domän-objektet (string[]) men renderas ej här. */}
                   {[
-                    person.ort,
                     `Anmälningar (totalt): ${person.antalAnmalningar}`,
                     person.erfarenhetsbadge,
                     person.harAktivAnmalan ? `Aktiv anmälan: ${person.harAktivAnmalan}` : null,

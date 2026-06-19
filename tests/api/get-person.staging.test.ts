@@ -15,7 +15,8 @@
 // inte L4:s "ZZ-Conformance"-list-fixtur). STÄDA INTE bort den.
 
 import { type APIRequestContext, expect, test } from '@playwright/test';
-import { PersonDetailSchema } from '../../src/domain/schemas';
+import { z } from 'zod';
+import { PersonDetailSchema, PersonSchema } from '../../src/domain/schemas';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 // Permanent historik-fixtur (staging-Personer). 3 Deltaganden, distinkta datum.
@@ -105,5 +106,45 @@ test.describe('get-person — skarp conformance (ADR-056 detalj, Fas 6a L5b)', (
     expect(res.status()).toBe(400);
     const body = (await res.json()) as { error?: unknown };
     expect(body.error).toBe('Missing id');
+  });
+});
+
+// Multi-värd "Ort"-klass: ZZ-History Person 01 har 2 Anmälningar i olika orter →
+// Personer.Ort-rollup = ['ZZ-Skövde','ZZ-Göteborg']. Detta är fixturen L5b SAKNADE.
+// Bevisar att data-förlust-regressionen (firstString) är stängd mot SKARP data:
+// båda orterna måste komma tillbaka (gammal kod gav 1 / kraschade parse).
+const EXPECTED_ORTER = ['ZZ-Skövde', 'ZZ-Göteborg'];
+
+test.describe('get-person/get-persons — multi-värd ort (data-förlust-fixens skarp-bevis)', () => {
+  test('get-person → ort = string[] med BÅDA orterna (ingen tyst drop)', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await callGetPerson(request, config, jwt, HISTORY_PERSON_ID);
+    expect(res.status()).toBe(200);
+
+    const body = (await res.json()) as { person: unknown };
+    const person = PersonDetailSchema.parse(body.person);
+
+    expect(person.ort).toHaveLength(2);
+    expect([...person.ort].sort()).toEqual([...EXPECTED_ORTER].sort());
+  });
+
+  test('get-persons (search) → samma person, ort string[] båda, PersonSchema-parse OK', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const url = new URL(`${config.baseUrl}/functions/v1/get-persons`);
+    url.searchParams.set('search', 'ZZ-History Person 01');
+    const res = await request.get(url.toString(), {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    expect(res.status()).toBe(200);
+
+    const body = (await res.json()) as { persons: unknown };
+    const persons = z.array(PersonSchema).parse(body.persons); // SAKNAD-fix: rå array kraschar ej
+    const person = persons.find((p) => p.id === HISTORY_PERSON_ID);
+    expect(person, 'ZZ-History-personen ska finnas i sökträffen').toBeTruthy();
+    expect([...(person?.ort ?? [])].sort()).toEqual([...EXPECTED_ORTER].sort());
   });
 });

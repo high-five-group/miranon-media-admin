@@ -29,7 +29,7 @@ function person(i: number) {
     efternamn: String(i).padStart(2, '0'),
     email: `person.${String(i).padStart(2, '0')}@example.test`,
     telefon: null,
-    ort: 'Skövde',
+    ort: ['Skövde'],
     manuellFlagga: null,
     aiFlagga: null,
     anteckningar: null,

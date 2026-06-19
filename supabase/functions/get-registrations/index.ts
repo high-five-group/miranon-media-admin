@@ -5,6 +5,7 @@ import {
 } from '../_shared/airtable-filter.ts';
 import { fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
+import { scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 
@@ -15,13 +16,6 @@ const TABLE_NAME = 'Anmälningar';
 function mapRegistration(record: { id: string; fields: Record<string, unknown> }) {
   const f = record.fields;
 
-  const selectName = (val: unknown): string | null => {
-    if (val && typeof val === 'object' && 'name' in (val as Record<string, unknown>)) {
-      return (val as Record<string, string>).name;
-    }
-    return typeof val === 'string' ? val : null;
-  };
-
   return {
     id: record.id,
     namn: f['Namn'] ?? null, // formula
@@ -30,7 +24,7 @@ function mapRegistration(record: { id: string; fields: Record<string, unknown> }
     email: f['E-post'] ?? null, // text
     telefon: f['Mobilnummer'] ?? null, // text
     eventNamn: f['Event (namn)'] ?? null, // formula
-    ort: f['Ort'] ?? null, // text
+    ort: scalarString(f['Ort']), // text (eget fält, skalärt)
     status: selectName(f['Status']), // singleSelect
     flagga: selectName(f['Flagga']), // singleSelect
     anmalningsavgift: selectName(f['Anmälningsavgift']), // singleSelect

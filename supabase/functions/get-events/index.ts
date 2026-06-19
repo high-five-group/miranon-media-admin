@@ -1,5 +1,6 @@
 import { fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
+import { scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 
@@ -7,24 +8,16 @@ import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 // staging-bas — tbl-id:n är bas-unika och skiljer sig i en duplicerad bas (ADR-050).
 const TABLE_NAME = 'Eventplanering';
 
-// Fältnamn från Airtable → ren API-respons
+// Fältnamn från Airtable → ren API-respons (kanonisk coercion ur _shared/coerce).
 function mapEvent(record: { id: string; fields: Record<string, unknown> }) {
   const f = record.fields;
-
-  // Select-fält kan komma som { id, name, color } eller string
-  const selectName = (val: unknown): string | null => {
-    if (val && typeof val === 'object' && 'name' in (val as Record<string, unknown>)) {
-      return (val as Record<string, string>).name;
-    }
-    return typeof val === 'string' ? val : null;
-  };
 
   return {
     id: record.id,
     eventlabel: f['Eventlabel'] ?? null, // formula (primary)
     eventNamn: selectName(f['Event (source)']), // singleSelect
     typ: selectName(f['Typ']), // singleSelect
-    ort: f['Ort'] ?? null, // text
+    ort: scalarString(f['Ort']), // text (eget fält, skalärt)
     startdatum: f['Startdatum'] ?? null, // date
     slutdatum: f['Slutdatum'] ?? null, // date
     tidKvarTillEvent: f['Tid kvar till event'] ?? null, // formula → text

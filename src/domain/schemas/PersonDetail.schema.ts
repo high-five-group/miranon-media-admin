@@ -38,7 +38,9 @@ export const PersonDetailSchema = PersonSchema.extend({
   antalGenomfordaEvent: z.number(),
   senasteDeltagandeDatum: z.string().nullable(),
   antalHamtningar: z.number(),
-  allaHamtningar: z.string().nullable(),
+  // "Alla hämtningar" = rollup över Touchpoints (1→många) → FLER-VÄRT; namnet
+  // säger "alla" → string[] bevarar samtliga (en reduktion till en vore data-förlust).
+  allaHamtningar: z.array(z.string()),
   motivering: z.string().nullable(),
   inbjudenCommunity: z.boolean(),
   skapatKontoCommunity: z.boolean(),

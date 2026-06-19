@@ -171,8 +171,9 @@ export function PersonDetail({ personId }: { personId: string }) {
         <dl className="flex flex-col gap-1">
           <DescRow term="E-post">{person.email}</DescRow>
           <DescRow term="Telefon">{person.telefon}</DescRow>
-          <DescRow term="Ort">{person.ort}</DescRow>
-          {contact.length === 0 && !person.ort && (
+          {/* ort är string[] (fler-värt) → alla orter visas, ingen tappas. */}
+          <DescRow term="Ort">{person.ort.length > 0 ? person.ort.join(' · ') : null}</DescRow>
+          {contact.length === 0 && person.ort.length === 0 && (
             <p className="text-small text-text-muted">Inga kontaktuppgifter registrerade.</p>
           )}
         </dl>
@@ -216,11 +217,18 @@ export function PersonDetail({ personId }: { personId: string }) {
         </h2>
         <dl className="flex flex-col gap-1">
           <DescRow term="Antal hämtningar">{person.antalHamtningar}</DescRow>
-          <DescRow term="Hämtade erbjudanden">{person.allaHamtningar}</DescRow>
+          {/* allaHamtningar är string[] (fler-värt) → alla värden visas. */}
+          <DescRow term="Hämtade erbjudanden">
+            {person.allaHamtningar.length > 0 ? person.allaHamtningar.join(' · ') : null}
+          </DescRow>
           <DescRow term="Motivering">{person.motivering}</DescRow>
-          {person.antalHamtningar === 0 && !person.allaHamtningar && !person.motivering && (
-            <p className="text-small text-text-muted">Inga lead-magnet-hämtningar registrerade.</p>
-          )}
+          {person.antalHamtningar === 0 &&
+            person.allaHamtningar.length === 0 &&
+            !person.motivering && (
+              <p className="text-small text-text-muted">
+                Inga lead-magnet-hämtningar registrerade.
+              </p>
+            )}
         </dl>
       </section>
 

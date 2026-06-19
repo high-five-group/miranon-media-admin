@@ -1,5 +1,6 @@
 import { fetchAirtableRecord, fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
+import { scalarString, selectName, stringArray } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 
@@ -50,27 +51,6 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
   return out;
 }
 
-/** singleSelect → namnet; sträng → strängen; annars null. */
-function selectName(val: unknown): string | null {
-  if (val && typeof val === 'object' && 'name' in (val as Record<string, unknown>)) {
-    return (val as Record<string, string>).name;
-  }
-  return typeof val === 'string' ? val : null;
-}
-
-/** Lookup-fält levereras ofta som array → ta första värdet (sträng eller {name}). */
-function firstString(val: unknown): string | null {
-  if (Array.isArray(val)) {
-    const first = val[0];
-    return selectName(first);
-  }
-  return selectName(val);
-}
-
-function asString(val: unknown): string | null {
-  return typeof val === 'string' && val.length > 0 ? val : null;
-}
-
 function asNumber(val: unknown): number {
   return typeof val === 'number' ? val : 0;
 }
@@ -80,16 +60,18 @@ function mapHistoryEntry(record: { id: string; fields: Fields }) {
   const f = record.fields;
   return {
     id: record.id,
-    kursnamn: firstString(f['Kursnamn (lookup)']),
-    eventLabel: asString(f['Eventlabel (text)']),
-    // `Event startdatum` är en rollup → coerce array→sträng (robust mot
-    // list-endpointens rollup-form); kritiskt för datum-desc-ordningen.
-    datum: firstString(f['Event startdatum']),
-    session: asString(f['Session']),
-    status: asString(f['Status']),
+    // Alla historik-fält är 1→1 per Deltagande-rad (lookup/rollup av ETT event,
+    // eller egen singleSelect/formel) → explicit SKALÄR coercion (scalarString),
+    // aldrig array-droppande. `Event startdatum` (rollup) → kritiskt för
+    // datum-desc-ordningen.
+    kursnamn: scalarString(f['Kursnamn (lookup)']),
+    eventLabel: scalarString(f['Eventlabel (text)']),
+    datum: scalarString(f['Event startdatum']),
+    session: scalarString(f['Session']),
+    status: scalarString(f['Status']),
     narvaro: f['Närvaropoäng'] === 1,
-    ort: firstString(f['Event ort']),
-    typ: firstString(f['Event typ']),
+    ort: scalarString(f['Event ort']),
+    typ: scalarString(f['Event typ']),
   };
 }
 
@@ -110,11 +92,10 @@ function mapPersonDetail(
     efternamn: f['Efternamn'] ?? null,
     email: f['E-post'] ?? null,
     telefon: f['Telefon'] ?? null,
-    // `Ort` är en ROLLUP → levereras som array (ev. tom) av record-endpointen,
-    // till skillnad mot list-endpointen som utelämnar tomma fält. Coerce till
-    // sträng/null så PersonDetailSchema (string|null) håller. Samma gäller
-    // övriga rollup-strängfält nedan (allaHamtningar, senasteDeltagandeDatum).
-    ort: firstString(f['Ort']),
+    // `Ort` är en ROLLUP över personens Anmälningar (1→MÅNGA) → genuint
+    // FLER-VÄRT. stringArray bevarar ALLA orter (en person kan vara anmäld i
+    // flera orter); tyst reduktion till en vore data-förlust (Lottas kärnkrav).
+    ort: stringArray(f['Ort']),
     manuellFlagga: selectName(f['Manuella flagga']),
     aiFlagga: selectName(f['AI-flagga']),
     anteckningar: f['Anteckningar'] ?? null,
@@ -138,9 +119,12 @@ function mapPersonDetail(
     aterkommande: f['Återkommande?'] ?? null,
     nastaEvent: f['Nästa event (text)'] ?? null,
     antalGenomfordaEvent: asNumber(f['Antal genomförda event']),
-    senasteDeltagandeDatum: firstString(f['Senaste deltagande datum']),
+    // "Senaste deltagande datum" = MAX-rollup → ett värde → explicit skalär.
+    senasteDeltagandeDatum: scalarString(f['Senaste deltagande datum']),
     antalHamtningar: asNumber(f['Antal hämtningar']),
-    allaHamtningar: firstString(f['Alla hämtningar']),
+    // "Alla hämtningar" = rollup över Touchpoints (1→MÅNGA) → FLER-VÄRT; namnet
+    // säger "alla" → stringArray bevarar samtliga (firstString vore data-förlust).
+    allaHamtningar: stringArray(f['Alla hämtningar']),
     motivering: f['Motivering (text)'] ?? null,
     inbjudenCommunity: f['Inbjuden till community'] ?? false,
     skapatKontoCommunity: f['Skapat konto i community'] ?? false,
