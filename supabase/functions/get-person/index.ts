@@ -30,7 +30,15 @@ const HISTORY_FIELDS = [
 // chunk (ej per record → ej N+1). Övre gräns: obegränsat antal deltaganden
 // (ceil(N/50) anrop), NOLL trunkering. Sort sker i JS efter sammanslagning
 // (per-chunk-sort räcker inte över chunk-gränser).
-const HISTORY_BATCH_SIZE = 50;
+//
+// Env-override (`HISTORY_BATCH_SIZE`) finns ENBART för conformance-testbarhet:
+// staging sätter den lågt (=2) så att chunk-merge-vägen exerceras med en liten
+// fixtur (bevisar noll-trunkering vid chunk-gräns). Prod sätter inte secreten →
+// default 50 (oförändrat beteende). Ogiltigt/saknat värde → default.
+function historyBatchSize(): number {
+  const raw = Number.parseInt(Deno.env.get('HISTORY_BATCH_SIZE') ?? '', 10);
+  return Number.isInteger(raw) && raw > 0 ? raw : 50;
+}
 
 type Fields = Record<string, unknown>;
 
@@ -194,7 +202,7 @@ Deno.serve(async (req) => {
 
     const historik: ReturnType<typeof mapHistoryEntry>[] = [];
     if (deltagandeIds.length > 0) {
-      for (const ids of chunk(deltagandeIds, HISTORY_BATCH_SIZE)) {
+      for (const ids of chunk(deltagandeIds, historyBatchSize())) {
         const filterByFormula = `OR(${ids.map((rid) => `RECORD_ID()='${rid}'`).join(',')})`;
         const records = await fetchFromAirtable(DELTAGANDEN_TABLE, {
           filterByFormula,
