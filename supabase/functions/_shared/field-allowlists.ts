@@ -37,6 +37,14 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Anmälningar',
     allowedFields: ['Anmälningsavgift'],
   },
+  // Spara fri-text-anteckning på en Person (Fas 6a L6, Session 23). Skrivbart
+  // multilineText-fält (fldWGlNr3ujRHo85w, data-model.md § Personer — write-fält);
+  // Synk-gate 2 beviljad av Marcus. Tabell per NAMN (ADR-050 bas-portabilitet);
+  // Airtable-fält-NAMN 'Anteckningar' (versal A).
+  'update-person-note': {
+    tableId: 'Personer',
+    allowedFields: ['Anteckningar'],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.
