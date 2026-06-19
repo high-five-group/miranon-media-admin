@@ -46,7 +46,8 @@
 - [x] **Landning 5 (detaljvy + get-person)** — KLAR & körnings-bevisad (CI run `27810425110`).
   - L5a (2026-06-18): aggregerande get-person (single-get-mall + 404-kontrakt, batch-historik ur Deltaganden) + full-historik-detaljvy (a11y 11/10) + PersonDetailSchema + person-detail-e2e (mock); P1–P4-förfining (chunkad historik, fel-kontrakt, concurrency, namnlös-titel).
   - L5b (2026-06-19): get-person deployad staging (ACTIVE v4) + skarp conformance (5 fall, **noll-trunkering bevisad** mot historik-fixtur över chunk-gräns, HISTORY_BATCH_SIZE=2). Skarp data avslöjade + fixade 2 buggar (403→null, rollup-array-coercion). **API staging 47 passed.**
-- [ ] **Landning 6 (Fas 6a sista)** — write-operation `Personer.Anteckningar` (via field-allowlists + deny/allow, M4-mönstret). Latent tråd-kandidat: get-persons list-mappnings `Ort`-array-risk (samma klass som L5b-bugg 2) före prod-cutover.
+- [x] **Gräns-coercion-klassen ("Ort")** (2026-06-19) — KLAR & skarp-bevisad (CI `27812371727`). Kanonisk `_shared/coerce` (scalarString/stringArray/selectName, namngiven efter aritet; selectName 4→1); ort+allaHamtningar → string[] (data-förlust-regression stängd); klass-regressionstest + multi-värd fixtur (2 orter); get-person v5 + get-persons v6. **Tråd-kandidaten (get-persons Ort-array-risk) STÄNGD.**
+- [ ] **Landning 6 (Fas 6a sista)** — write-operation `Personer.Anteckningar` (via field-allowlists + deny/allow, M4-mönstret).
 
 #### Öppna trådar från Session 23 (i registret — se [`tasks/threads/README.md`](threads/README.md))
 
