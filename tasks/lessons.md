@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-18
+updated: 2026-06-19
 review_by: 2026-11-15
 status: stable
 ---
@@ -2270,3 +2270,7 @@ Symptom: Tre gånger under Session 22 pekade prompten/dokumenten på en sökväg
 Symptom: Landning 4 steg 3:s seed-prompt instruerade `create_record` med `Namn` satt direkt — men Personer-tabellens `Namn` är ett **formelfält** (`TRIM(Förnamn & " " & Efternamn)`), ej skrivbart; ett direkt write hade 422:at. FAS A:s de-risk-pass (schema-läsning före write) fångade det → väg A: seeda via de skrivbara käll-fälten `Förnamn`/`Efternamn`, låt basen beräkna `Namn`. Identiskt observerbart utfall, isolering + sort-ordning intakt. Regel: innan en conformance-/test-fixtur designas mot en datakälla, verifiera varje måls-fälts skrivbarhet (formel/rollup/lookup = ej skrivbart) mot schema/data-model FÖRST; seeda derivat-värden via deras käll-fält. En permanent syntetisk fixtur (namngiven, ingen PII) är en operativ följd av ADR-056:s kanoniska kontrakts-harness — den bor durabelt i staging och städas ej. Kategori: Test/Data. Källa: 2026-06-18 Session 23 Landning 4 (FAS A de-risk-fångst).
 
 Tråd-kandidat (ej registrerad än): pageSize-klamp-boundary `>100` (EF klampar till `MAX_PAGE_SIZE=100`) kan inte bevisas av den lilla 5-records-fixturen — verifieras lämpligen av en isolerad Deno-enhetstest i CI snarare än ännu fler staging-records.
+
+### L141 — Env-överridbar gräns-parameter = testbarhets-mönster för att bevisa chunk-/sid-gräns med liten fixtur; skarp conformance avslöjar det mock inte kan
+
+Symptom: get-person:s noll-trunkering (chunk-merge över Deltaganden-batchen) kunde inte bevisas av en liten fixtur så länge `HISTORY_BATCH_SIZE` var hårdkodad 50 — 3 records ryms i en chunk och chunk-gräns-vägen exerceras aldrig. Lösning: gör gräns-parametern env-överridbar (default = prod-beteende; staging-secret `=2`), så en 3-records-fixtur tvingar fram merge (2+1) och bevisar att den 3:e aldrig tappas. Dessutom: den SKARPA conformance-körningen (ej mock) avslöjade två buggar mock dolde — Airtable returnerar `403 INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND` (ej 404) för okänt record-ID, och record-endpointen levererar tomma rollups som `[]` (list-endpointen utelämnar dem). Regel: (a) för att bevisa en gräns-/paginerings-väg med liten fixtur, gör gränsen env-överridbar (testbarhet utan prod-påverkan; 6b/6c-arv); (b) kör conformance mot SKARP datakälla, inte bara mock — mock speglar dina antaganden, skarp data speglar verkligheten (403≠404, rollup-array-form). Kategori: Test/EF. Källa: 2026-06-19 Session 23 Landning 5b (3 conformance-fall rött → fix → grönt).

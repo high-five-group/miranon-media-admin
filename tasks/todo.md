@@ -43,9 +43,10 @@
   batteri mot riktig staging-data. **KLAR** (CI run `27783202181` grön).
   - steg 1: deploy via bare CLI (v3→v4 ACTIVE), carry-secrets verifierade satta.
   - steg 3: 5 permanenta syntetiska fixtur-records seedade (väg A, käll-fält, ingen PII; bas-nivå write bekräftad); återanvändbar `cursor-conformance.ts`-harness + skarp `get-persons.staging.test.ts` → **API staging 42 passed** (+1 conformance, skarpt mot live-EF). Sid-sekvens [2,2,1], opak cursor verifierad.
-- [ ] **Landning 5–6 (Fas 6a återstår)** — detaljvy `/personer/$personId` + `get-person`-EF
-  (single-get-mall); write-operation (`Personer.Anteckningar` via field-allowlists + deny/allow).
-  - L5a (2026-06-18): aggregerande get-person (single-get-mall + 404-kontrakt, batch-historik ur Deltaganden) + full-historik-detaljvy (a11y 11/10) + PersonDetailSchema + person-detail-e2e (mock) **byggd & CI-grön**. get-person **conformance-overifierad tills L5b** (staging-deploy + skarp conformance, ej körd än).
+- [x] **Landning 5 (detaljvy + get-person)** — KLAR & körnings-bevisad (CI run `27810425110`).
+  - L5a (2026-06-18): aggregerande get-person (single-get-mall + 404-kontrakt, batch-historik ur Deltaganden) + full-historik-detaljvy (a11y 11/10) + PersonDetailSchema + person-detail-e2e (mock); P1–P4-förfining (chunkad historik, fel-kontrakt, concurrency, namnlös-titel).
+  - L5b (2026-06-19): get-person deployad staging (ACTIVE v4) + skarp conformance (5 fall, **noll-trunkering bevisad** mot historik-fixtur över chunk-gräns, HISTORY_BATCH_SIZE=2). Skarp data avslöjade + fixade 2 buggar (403→null, rollup-array-coercion). **API staging 47 passed.**
+- [ ] **Landning 6 (Fas 6a sista)** — write-operation `Personer.Anteckningar` (via field-allowlists + deny/allow, M4-mönstret). Latent tråd-kandidat: get-persons list-mappnings `Ort`-array-risk (samma klass som L5b-bugg 2) före prod-cutover.
 
 #### Öppna trådar från Session 23 (i registret — se [`tasks/threads/README.md`](threads/README.md))
 
