@@ -168,15 +168,19 @@ export function PersonDetail({ personId }: { personId: string }) {
         <h2 id="sektion-kontakt" className="font-semibold text-lg">
           Kontakt
         </h2>
-        <dl className="flex flex-col gap-1">
-          <DescRow term="E-post">{person.email}</DescRow>
-          <DescRow term="Telefon">{person.telefon}</DescRow>
-          {/* ort är string[] (fler-värt) → alla orter visas, ingen tappas. */}
-          <DescRow term="Ort">{person.ort.length > 0 ? person.ort.join(' · ') : null}</DescRow>
-          {contact.length === 0 && person.ort.length === 0 && (
-            <p className="text-small text-text-muted">Inga kontaktuppgifter registrerade.</p>
-          )}
-        </dl>
+        {/* <dl> renderas ENBART när minst en rad finns — ett tomt <dl>, eller en
+            empty-state-<p> som direkt dl-barn, bryter definition-list-strukturen
+            (axe `only-dlitems`). Empty-state blir syskon utanför <dl>. */}
+        {contact.length > 0 || person.ort.length > 0 ? (
+          <dl className="flex flex-col gap-1">
+            <DescRow term="E-post">{person.email}</DescRow>
+            <DescRow term="Telefon">{person.telefon}</DescRow>
+            {/* ort är string[] (fler-värt) → alla orter visas, ingen tappas. */}
+            <DescRow term="Ort">{person.ort.length > 0 ? person.ort.join(' · ') : null}</DescRow>
+          </dl>
+        ) : (
+          <p className="text-small text-text-muted">Inga kontaktuppgifter registrerade.</p>
+        )}
       </section>
 
       <section aria-labelledby="sektion-engagemang" className="flex flex-col gap-2">
@@ -222,14 +226,14 @@ export function PersonDetail({ personId }: { personId: string }) {
             {person.allaHamtningar.length > 0 ? person.allaHamtningar.join(' · ') : null}
           </DescRow>
           <DescRow term="Motivering">{person.motivering}</DescRow>
-          {person.antalHamtningar === 0 &&
-            person.allaHamtningar.length === 0 &&
-            !person.motivering && (
-              <p className="text-small text-text-muted">
-                Inga lead-magnet-hämtningar registrerade.
-              </p>
-            )}
         </dl>
+        {/* empty-state som syskon UTANFÖR <dl> (a11y: dl får bara dt/dd/div).
+            dl:n är aldrig tom — "Antal hämtningar" (number) renderar alltid. */}
+        {person.antalHamtningar === 0 &&
+          person.allaHamtningar.length === 0 &&
+          !person.motivering && (
+            <p className="text-small text-text-muted">Inga lead-magnet-hämtningar registrerade.</p>
+          )}
       </section>
 
       <section aria-labelledby="sektion-flaggor" className="flex flex-col gap-2">

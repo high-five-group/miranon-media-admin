@@ -180,4 +180,35 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
 
     expect(results.violations).toEqual([]);
   });
+
+  test('GLES data (tom kontakt + inga leads) → axe 0 (empty-state UTANFÖR <dl>)', async ({
+    page,
+  }) => {
+    // Glest mock exercerar empty-state-vägarna i Kontakt + Leads. Tidigare låg
+    // dessa <p> som direkta barn i <dl> → axe `definition-list`/`only-dlitems`
+    // (dl får bara dt/dd/div). Rikt mock (ovan) dolde buggen; detta glesa
+    // mock bevisar fixen i sin egen svit. Invers-komplement till L142.
+    await mockPerson(
+      page,
+      personDetail({
+        email: null,
+        telefon: null,
+        ort: [],
+        antalHamtningar: 0,
+        allaHamtningar: [],
+        motivering: null,
+      }),
+    );
+    await page.goto(`/personer/${PERSON_ID}`);
+    await expect(page.getByRole('heading', { level: 1, name: 'Anna Andersson' })).toBeVisible();
+
+    // Empty-states renderas (som syskon till <dl>, inte dl-barn).
+    await expect(page.getByText('Inga kontaktuppgifter registrerade.')).toBeVisible();
+    await expect(page.getByText('Inga lead-magnet-hämtningar registrerade.')).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
 });
