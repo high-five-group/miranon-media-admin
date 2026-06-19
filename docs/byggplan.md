@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-17
+updated: 2026-06-19
 review_by: 2026-11-15
 status: stable
 ---
@@ -78,7 +78,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **3.5** | ✅ KLAR | **A11y-baseline EGEN FAS** per P2 A1-utfall — Session 15, 2026-06-11. Axe-runner 12/12 (ADR-045), gate-proof-bevisad CI-grind, 5 mönster i `docs/aria-patterns/` + /dev/patterns, "A11y-baseline godkänd"-gate passerad före Fas 6. | 1 session (faktiskt) |
 | **5** | ✅ KLAR | App-shell — Session 16, 2026-06-12. Skal på `_authenticated` (STOPPA-utfall A) + tab bar + skip-länk + route announcer + Workbox SW via `vite-plugin-pwa` injectManifest (ADR-047) + offline.html + manifest/ikoner + error boundaries två lager (SectionError + AppErrorBoundary, ADR-038-tråden stängd) + TanStack `networkMode: 'online'` + offline-indikator. DoD 4 moderniserad per ADR-047 (Lighthouse v12 tog bort PWA-kategorin); Performance ärver Fynd 7-defern (ADR-047-noten). API-runtime-caching defer till Fas 6 (versionsrad 1.9). | 1 session (faktiskt) |
 | **5.5** | ✅ KLAR | Vertikal write-slice "markera anmälningsavgift som betald" — Sessions 18/19 (server-kontrakt K1 + staging) + Session 22 (klient-UI K2), 2026-06-17. Server: operation `mark-registration-fee-paid` → `Anmälningsavgift` (ADR-049) + isolerad staging (ADR-050) + deny/allow-svit grön. Klient: optimistic mutation via router-context-DI (ADR-055) + `EdgeFunctionError`-requestId + MessageBox-fel-yta + 3 e2e. ADR-016 (mönster) + ADR-049 + ADR-050 + ADR-055. | 2 sessioner (faktiskt: 18/19 + 22) |
-| **6** | NY scope | **Strangler-fig-sekvens i fem sub-faser:** 6a Persons (0,75) → 6b Events (0,75) → 6c Registrations + Väntelista (1) → 6d Hem-aggregering (0,5) → 6e Mer villkorlig (0,5). Per-sub-fas: registrera operation i `field-allowlists.ts` + deny/allow-test grönt + vy-Playwright baseline. | 3,5 sessioner |
+| **6** | 🟡 PÅGÅR | **Strangler-fig-sekvens i fem sub-faser:** **6a Persons ✅ KLAR** (Session 23, 2026-06-19 — lista + cursor-port ADR-056 + detaljvy + write `Personer.Anteckningar` via `update-person-note`; commits `b29ace9`→`e1034ee`) → 6b Events (0,75) → 6c Registrations + Väntelista (1) → 6d Hem-aggregering (0,5) → 6e Mer villkorlig (0,5). Per-sub-fas: registrera operation i `field-allowlists.ts` + deny/allow-test grönt + vy-Playwright baseline. | 3,5 sessioner |
 | **6.5** | EJ ÄNDRAD | Aktivitetslogg (xAPI). `requestId`-mönstret från Fas A M7 ärvs. | 1 session |
 | **7** | NY scope | Konsolidering — CSP-plugin (med ADR), web-vitals, Speculation Rules, View Transitions, widget-error-boundary, chaos testing, deploy-pipeline, Background Sync defer-not (se Fas 8 + ADR). | 3 sessioner |
 | **8** | NY (framtid) | Background Sync API (offline-mutationskö, defer:ad från Fas 7 — se ADR). Övrigt scope (Passkeys, push) ej låst i denna revision. Estimat fastställs vid aktualisering. Ersätter conversion-plans "Fas 8 — Passkeys, push, offline". | TBD |

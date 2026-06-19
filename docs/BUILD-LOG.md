@@ -1392,6 +1392,38 @@ ADR-055:s avvisade alternativ 2 var formulerat med namnet "useDataSource" — ku
 
 ---
 
+## Session 23 — Fas 6a Persons-domän: cursor-port → Anteckningar-write (Fas 6a KLAR) (2026-06-18 → 2026-06-19)
+
+**Mål:** Fas 6a (strangler-fig första domän, byggplan.md §4 rad 81). Persons-lista + detaljvy + cursor-paginering + write `Personer.Anteckningar` — sista sub-fas-landningen. Pausad efter Landning 3, återupptagen 2026-06-19 (resume #1 + #2).
+
+**Commit-range:** `b29ace9` (Landning 1) → `e1034ee` (L6c-kadens markdown-fix). Strangler-fig-vertikal i sex landningar; nummer 23 behållet över paus.
+
+### Landning 1–5b + gräns-coercion (pre-/tidig-resume, CI-gröna)
+
+- **L1** lättläst-driftfix (`b29ace9`); **L2** Personer-lista (`de210ba`); **L3** cursor-port end-to-end + **[ADR-056](decisions/ADR-056-list-paginerings-port-cursor-dubbel-kalla.md)** (Accepted) (`83f55f9`); **L4** staging-deploy cursor-EF + seed/conformance-harness; **L5a** aggregerande `get-person` + full-historik-detaljvy (a11y 11/10); **L5b** get-person staging-deploy + skarp conformance (noll-trunkering bevisad över chunk-gräns). Detaljer i sessionsdok Del 1–6.
+- **Gräns-coercion-klassen ("Ort")** (`bc155cb`+`f2aebde`, CI `27812371727`): kanonisk `_shared/coerce` (scalarString/stringArray/selectName, namngiven efter aritet); `ort`+`allaHamtningar` → `string[]` (data-förlust-regression stängd, skarp-bevisad mot multi-värd fixtur). Lessons L140–L143. Sessionsdok Del 7.
+
+### Landning 6 — write `Personer.Anteckningar` (Fas 6a SISTA): server → staging-bevis → klient
+
+Bruten i tre commit-säkra steg över deploy-grinden (L145):
+
+- **L6a server-op** (`15efaec`, CI `27844743043`). `update-person-note` → `{ tableId: 'Personer', allowedFields: ['Anteckningar'] }` i `field-allowlists.ts` (registret = enda registrerings-ytan; ingen EF-kodändring). Vilande tills redeploy.
+- **GRIND — staging-redeploy.** `update-record` **v4→v5** ACTIVE (staging `pqtshyierkdgwdnxuirz`, bare CLI). PROD (`lvjsfnphlauldxqlncpl`) orört. Säkerhetsfynd: CLI lokalt länkat till PROD-ref → bare deploy utan `--project-ref` hade träffat prod; explicit staging-ref varje gång (**T12** registrerad).
+- **L6b staging deny/allow** (`c80dbb8`; T12-tråd `8e3a31f`, CI `27845520247`). deny (Förnamn utanför allowlist → 400 `/not allowed for operation/`) + allow (Anteckningar → 200, mutera→läs→restore mot ZZ-History Person 01) — **körda mot staging-v5 i CI = S5-beviset** (väg B: lokalt staging-bevis omöjligt utan prod-risk pga `.env.test`→prod, L148/T12). `HISTORY_PERSON_ID` single-source (`tests/api/fixtures.ts`). API staging 49→**51 passed**.
+- **L6c klient edit-in-place** (`4f89cbb` återland, CI `27846933085`). `useUpdatePersonNote` (optimistic, ADR-016-mall, enskilt-record-cache) + `PersonNoteEditor` (read-by-default, Spara=knapp/Esc=avbryt, rollback→åter till edit, fokus-retur WCAG, MessageBox `role=alert` via aria-describedby + aria-invalid). 4 e2e (optimistic-flip, rollback, avbryt, axe read+edit). E2E 30→**34 passed**.
+
+**Avvikelse (egen oversight denna session, ej design):** L6c:s glesa axe-mock avslöjade en pre-existerande L5a-bugg — empty-state-`<p>` som direkt barn i `<dl>` (Kontakt + Leads), axe `only-dlitems`. Hanterat per direktiv: revert ren (`b9b473c`, K27) → grön main → **fix** (`6ceda61`: `<p>` ut ur `<dl>`, villkorad dl-rendering, + gles-mock axe-test, noll beteendeändring) → **återland L6c** (`4f89cbb`, cherry-pick ren auto-merge). Grep-verifierat: `<dl>` finns ENBART i PersonDetail.
+
+**Lessons:** L144 (rika mocks döljer empty-state-buggar), L145 (deploy-grind → källa-först commit-ordning), L146 (beteendemässig test-isolation slår schema-isolation), L147 (CI-grindar > DoD-kommandolistan; kör docs-grindar lokalt), L148 (direktivs miljö-presumtion = latent defekt fångad av STOPPA; [[L19]]).
+
+**T12 registrerad:** `.env.test`→prod (latent staging-mutations-risk), `paused`. Durabel fix: repo-nivå fail-fast-grind (mål-URL ≠ staging-ref → vägra mutations-svit).
+
+**Verifiering (slutlig, CI `e1034ee`):** typecheck + biome (4 pre-existerande CSS-varningar) + build + API pure 80 + API staging 51 + E2E 34 + A11y 12 + docs-grindar (frontmatter 9/9, lifecycle, vale 0, markdownlint 0). Alla jobb success. **Fas 6a KLAR** — Fas 6b (Events) nästa session.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-18-session-23.md`](../tasks/sessions/2026-06-18-session-23.md) (Del 1–8). Fas-avslut EJ tillämpligt (Fas 6 fortsätter 6b–6e; ingen fas stängd, sessionsdok ej arkiverat).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-18
+updated: 2026-06-19
 review_by: 2026-11-15
 status: stable
 ---
@@ -12,8 +12,8 @@ status: stable
 
 > **Levande dokument.** Den här planen uppdateras löpande när vi går vidare. När en fas är klar förvandlas den till "vad vi har gjort, och varför". När nästa fas planeras får den en plats här. Ingen behöver gissa var vi är — det står i det här dokumentet.
 >
-> **Version 3** — Fas 5.5 KLAR (Session 22). Senast uppdaterad: 2026-06-18.
-> **Status just nu:** Fas 0, Fas 1, Fas A, Fas 2, Fas 2.5, Fas 3, Fas 3.5, Fas 5 och Fas 5.5 är klara. **Fas 6 (alla rum — Hem, Event, Personer, Mer, i fem delar) är nästa.**
+> **Version 3** — Fas 6a KLAR (Session 23). Senast uppdaterad: 2026-06-19.
+> **Status just nu:** Fas 0, Fas 1, Fas A, Fas 2, Fas 2.5, Fas 3, Fas 3.5, Fas 5 och Fas 5.5 är klara. **Fas 6 pågår — del 6a (Personer) är klar; del 6b (Event) är nästa.**
 > **Föregångare:** [v2](../archive/BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md) (april 2026, arkiverad 2026-05-09) och [v1](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md) (arkiverad 2026-05-06). v3 ersätter v2 och speglar byggplan-revisionen från maj 2026.
 
 <!-- markdownlint-disable-next-line MD028 -->  <!-- BYGGPLAN-LÄTTLÄST formatering (pedagogisk struktur per ADR-025) -->
@@ -102,7 +102,7 @@ Det är inget löfte och ingen deadline — det är en realistisk gissning baser
 | **Fas 3.5** | Tillgänglighetstest — för alla som ska använda appen | ✅ Klar (11 juni) | 1 pass |
 | **Fas 5** | Skalet — det du ser först | ✅ Klar (12 juni) | 1 pass |
 | **Fas 5.5** | Första riktiga interaktionen — markera betalning | ✅ Klar (17 juni) | 2 pass |
-| **Fas 6** | Alla rum — Hem, Event, Personer, Mer (i fem delar) | 🟡 Nästa | 3,5 pass |
+| **Fas 6** | Alla rum — Hem, Event, Personer, Mer (i fem delar) | 🟡 Pågår (6a Personer ✅ klar) | 3,5 pass |
 | **Fas 6.5** | "Vad har hänt?" — automatisk historik | ⏳ | 1 pass |
 | **Fas 7** | Slutbesiktning — gör appen redo att publiceras | ⏳ | 3 pass |
 | **Fas 8** | Framtid — passkeys, push-notiser, offline-kö | 🔮 Framtid | Senare |
