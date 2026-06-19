@@ -6,7 +6,6 @@ import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { PersonDetail as PersonDetailType, PersonHistoryEntry } from '@/domain/schemas';
 import { queryKeys } from '@/queries/keys';
-import { PersonNoteEditor } from './PersonNoteEditor';
 
 /**
  * Sammansatt visningsnamn. Namnlös person (lead utan ifyllt namn) → tydlig
@@ -254,10 +253,13 @@ export function PersonDetail({ personId }: { personId: string }) {
         <h2 id="sektion-anteckningar" className="font-semibold text-lg">
           Anteckningar
         </h2>
-        {/* Edit-in-place (Fas 6a L6c) — read-by-default, optimistisk write av
-            `Personer.Anteckningar`. Mutation + fel-yta inkapslas i komponenten
-            (MarkPaidButton-precedensen); detaljvyn renderar bara affordansen. */}
-        <PersonNoteEditor personId={personId} note={person.anteckningar} />
+        {/* READ-ONLY i L5a — L6 lägger till edit (write `Personer.Anteckningar`).
+            Strukturerad som egen sektion så edit-affordansen kan adderas in-place. */}
+        {person.anteckningar ? (
+          <p className="whitespace-pre-wrap text-small">{person.anteckningar}</p>
+        ) : (
+          <p className="text-small text-text-muted">Inga anteckningar.</p>
+        )}
       </section>
     </section>
   );
