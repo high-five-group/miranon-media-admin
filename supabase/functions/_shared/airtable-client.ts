@@ -180,9 +180,13 @@ export async function fetchAirtablePage(
  * single-get-mallen för detalj-EF:er (get-person nu; 6b get-event ärver).
  *
  * Till skillnad mot list-endpointen (som returnerar tom array för ett
- * icke-existerande ID) ger record-endpointen HTTP 404 → vi returnerar `null`
- * så att callern kan mappa det till sitt eget 404-kontrakt (ej 500/tomt 200).
- * 429 → vänta 1s och försök igen (samma backoff som list-varianterna).
+ * icke-existerande ID) signalerar record-endpointen "finns inte" → vi
+ * returnerar `null` så callern kan mappa det till sitt eget 404-kontrakt (ej
+ * 500/tomt 200). Airtable använder TVÅ statusar för det: 404 (NOT_FOUND) OCH
+ * 403 `INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND` — record-GET konflerar medvetet
+ * "saknas" och "ingen behörighet" till 403 (läcker inte existens). Eftersom
+ * token-scopet redan ger bas-access (verifierat L4/L5b) betyder en 403 med den
+ * typen i praktiken "record saknas" → null. Andra fel kastas. 429 → vänta 1s.
  */
 export async function fetchAirtableRecord(
   tableIdOrName: string,
@@ -216,6 +220,10 @@ export async function fetchAirtableRecord(
 
     if (!res.ok) {
       const body = await res.text();
+      // 403 med model-not-found-typen = record saknas (se doc ovan) → null.
+      if (res.status === 403 && body.includes('INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND')) {
+        return null;
+      }
       throw new Error(`Airtable ${res.status}: ${body}`);
     }
 

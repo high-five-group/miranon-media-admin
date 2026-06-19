@@ -82,7 +82,9 @@ function mapHistoryEntry(record: { id: string; fields: Fields }) {
     id: record.id,
     kursnamn: firstString(f['Kursnamn (lookup)']),
     eventLabel: asString(f['Eventlabel (text)']),
-    datum: asString(f['Event startdatum']),
+    // `Event startdatum` är en rollup → coerce array→sträng (robust mot
+    // list-endpointens rollup-form); kritiskt för datum-desc-ordningen.
+    datum: firstString(f['Event startdatum']),
     session: asString(f['Session']),
     status: asString(f['Status']),
     narvaro: f['Närvaropoäng'] === 1,
@@ -108,7 +110,11 @@ function mapPersonDetail(
     efternamn: f['Efternamn'] ?? null,
     email: f['E-post'] ?? null,
     telefon: f['Telefon'] ?? null,
-    ort: f['Ort'] ?? null,
+    // `Ort` är en ROLLUP → levereras som array (ev. tom) av record-endpointen,
+    // till skillnad mot list-endpointen som utelämnar tomma fält. Coerce till
+    // sträng/null så PersonDetailSchema (string|null) håller. Samma gäller
+    // övriga rollup-strängfält nedan (allaHamtningar, senasteDeltagandeDatum).
+    ort: firstString(f['Ort']),
     manuellFlagga: selectName(f['Manuella flagga']),
     aiFlagga: selectName(f['AI-flagga']),
     anteckningar: f['Anteckningar'] ?? null,
@@ -132,9 +138,9 @@ function mapPersonDetail(
     aterkommande: f['Återkommande?'] ?? null,
     nastaEvent: f['Nästa event (text)'] ?? null,
     antalGenomfordaEvent: asNumber(f['Antal genomförda event']),
-    senasteDeltagandeDatum: f['Senaste deltagande datum'] ?? null,
+    senasteDeltagandeDatum: firstString(f['Senaste deltagande datum']),
     antalHamtningar: asNumber(f['Antal hämtningar']),
-    allaHamtningar: f['Alla hämtningar'] ?? null,
+    allaHamtningar: firstString(f['Alla hämtningar']),
     motivering: f['Motivering (text)'] ?? null,
     inbjudenCommunity: f['Inbjuden till community'] ?? false,
     skapatKontoCommunity: f['Skapat konto i community'] ?? false,
