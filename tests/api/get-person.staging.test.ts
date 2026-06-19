@@ -17,10 +17,8 @@
 import { type APIRequestContext, expect, test } from '@playwright/test';
 import { z } from 'zod';
 import { PersonDetailSchema, PersonSchema } from '../../src/domain/schemas';
+import { HISTORY_PERSON_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
-
-// Permanent historik-fixtur (staging-Personer). 3 Deltaganden, distinkta datum.
-const HISTORY_PERSON_ID = 'recqxaFNwHAdQlAqb';
 
 // Förväntad historik i datum-desc-ordning (get-person sorterar nyast först).
 const EXPECTED_HISTORY = [

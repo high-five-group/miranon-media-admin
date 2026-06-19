@@ -19,6 +19,7 @@
 // den delade requireUser-gatewayen (täcker alla Edge Functions).
 
 import { expect, test } from '@playwright/test';
+import { HISTORY_PERSON_ID } from './fixtures';
 import { getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/update-record';
@@ -140,6 +141,86 @@ test.describe('update-record — operations-allowlist (M4)', () => {
           operationKey: 'mark-registration-fee-paid',
           recordId,
           fields: { Anmälningsavgift: original ?? 'Ej mottagen' },
+        },
+      });
+    }
+  });
+});
+
+// Andra registrerade operationen: update-person-note → { tableId Personer,
+// allowedFields ['Anteckningar'] } (Fas 6a L6, Session 23). Aktiv sedan
+// update-record omdeployats till staging med op:en i allowlisten (L6a-grind,
+// v4→v5). Field-isolering: ingen *.staging.test asserterar på `anteckningar`
+// (grep-bekräftat) → write/restore mot ZZ-History-fixturen stör inte
+// get-person:s parallella conformance-läsning.
+test.describe('update-record — update-person-note (Personer.Anteckningar)', () => {
+  test('deny: fält utanför allowlist → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+
+    // update-person-note har allowedFields ['Anteckningar']. `Förnamn` är ett
+    // äkta Personer-fält men UTANFÖR listan → findDisallowedField (steg 4) fäller
+    // före Airtable-anropet. Samma format-giltiga fake-ID som deny-testet ovan
+    // (passerar rec-prefix-checken i steg 3 → prövar verkligen fält-grinden).
+    const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${userJwt}` },
+      data: {
+        operationKey: 'update-person-note',
+        recordId: 'recAAAAAAAAAAAAA',
+        fields: { Förnamn: 'x' },
+      },
+    });
+
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/not allowed for operation/);
+  });
+
+  test('allow: Anteckningar → 200 (muterar + restaurerar)', async ({ request }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+    const authHeaders = { Authorization: `Bearer ${userJwt}` };
+
+    // Läs personens nuvarande Anteckningar via get-person (befintlig EF, ingen
+    // Airtable-direktåtkomst). Returnerar string | null (fältet är nullable).
+    const readAnteckningar = async (): Promise<string | null> => {
+      const r = await request.get(
+        `${config.baseUrl}/functions/v1/get-person?id=${encodeURIComponent(HISTORY_PERSON_ID)}`,
+        { headers: authHeaders },
+      );
+      expect(r.status()).toBe(200);
+      const body = (await r.json()) as { person: { anteckningar: string | null } };
+      return body.person.anteckningar;
+    };
+
+    // Ursprungsvärde FÖRE mutation (restaureras i finally oavsett utfall).
+    const original = await readAnteckningar();
+    const SENTINEL = 'ZZ-L6b-sentinel';
+
+    try {
+      const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'update-person-note',
+          recordId: HISTORY_PERSON_ID,
+          fields: { Anteckningar: SENTINEL },
+        },
+      });
+      expect(res.status()).toBe(200);
+
+      // Läs-tillbaka: bevisar att mutationen faktiskt satte fältet (ej bara 200).
+      expect(await readAnteckningar()).toBe(SENTINEL);
+    } finally {
+      // Restore: skriv tillbaka ursprungsvärdet (samma operation — allowlisten
+      // gatar fältet, inte värdet). Var det null → '' (tom multilineText
+      // round-trippar till null vid läsning; driftar inte fixturen). Körs även
+      // om assertionen ovan kastar.
+      await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'update-person-note',
+          recordId: HISTORY_PERSON_ID,
+          fields: { Anteckningar: original ?? '' },
         },
       });
     }
