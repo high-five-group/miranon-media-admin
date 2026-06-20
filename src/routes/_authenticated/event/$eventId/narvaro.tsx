@@ -1,19 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { EventAttendance } from '@/components/events';
 
 export const Route = createFileRoute('/_authenticated/event/$eventId/narvaro')({
   staticData: { title: 'Närvaro' },
   component: EventAttendancePage,
 });
 
-// Event-detalj — Närvaro-vy (Fas 6b, C1 nested routes): /event/$eventId/narvaro.
-// Minimal platshållare i L1; den riktiga närvaro-vyn (fetchAttendance + a11y
-// 11/10) byggs i Fas 6b L3 (kräver get-attendance-deploy). fetchAttendance är
-// stubbad tills dess. Syskon-leaf: index.tsx (info) + betalning.tsx.
+// Event-detalj — Närvaro-vy (Fas 6b L3, C1 nested routes): /event/$eventId/narvaro.
+// Sessions-grupperad LÄS-vy via fetchAttendance (get-attendance-EF, ADR-055).
+// Logiken bor i EventAttendance; routen håller bara montering. Syskon-leaf:
+// index.tsx (info) + betalning.tsx, <Outlet/> bärs av _authenticated via AppShell.
 function EventAttendancePage() {
-  return (
-    <section className="flex flex-col gap-4 p-4">
-      <h1>Närvaro</h1>
-      <p className="text-small text-text-muted">Närvaro-vyn byggs i Fas 6b L3.</p>
-    </section>
-  );
+  const { eventId } = Route.useParams();
+  return <EventAttendance eventId={eventId} />;
 }

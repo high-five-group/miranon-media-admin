@@ -23,6 +23,9 @@ export const queryKeys = {
     list: ['events', 'list'] as const,
     // Event-detalj (Fas 6b L2): aggregerande get-event per record-ID.
     detail: (id: string) => ['events', 'detail', id] as const,
+    // Närvaro per event (Fas 6b L3): get-attendance (Deltaganden filtrerade på
+    // eventId). Egen gren så närvaro-cachen kan invalideras oberoende av detaljen.
+    attendance: (eventId: string) => ['events', 'attendance', eventId] as const,
   },
   persons: {
     all: ['persons'] as const,
