@@ -8,8 +8,10 @@
 // array-droppande `firstString` som maskerade exakt den buggen; den är borttagen
 // till förmån för dessa.
 //
-// Endast dessa tre smala hjälpare delas — ingen generisk fält-mapper-framework
-// (warranted DRY på en verklig invariant: Airtable-array ↔ domän).
+// Endast dessa smala hjälpare delas — ingen generisk fält-mapper-framework
+// (warranted DRY på en verklig invariant: Airtable-array ↔ domän). scalarNumber
+// sällar sig till familjen för en andra verklig invariant: Airtable returnerar
+// formel-/procent-fält som blir NaN/Infinity som OBJEKT, inte som tal.
 
 /** En råform → en sträng: rå sträng, eller singleSelect/lookup-objekt {name}. */
 function oneString(value: unknown): string | null {
@@ -46,6 +48,30 @@ export function scalarString(value: unknown): string | null {
     return value.length > 0 ? oneString(value[0]) : null;
   }
   return oneString(value);
+}
+
+/**
+ * Genuint SKALÄRT number-fält → number|null. Airtable returnerar formel-/
+ * procent-fält som beräknas till NaN/Infinity (0/0, osatt operand) som OBJEKT
+ * `{ specialValue: "NaN" | "Infinity" | "-Infinity" }` — INTE som tal. Det
+ * objektet (och varje annat icke-ändligt värde: sträng, undefined, null, objekt)
+ * coercas till null så domänens `number().nullable()` håller; ENDAST ändliga tal
+ * passerar. 1-element-array (lookup-form) coercas till sitt värde; >1 loggas
+ * (data-form-avvikelse, aldrig tyst — samma disciplin som scalarString).
+ *
+ * För icke-nullable fält (schema `z.number()`): använd `scalarNumber(v) ?? 0` så
+ * specialValue-objektet aldrig läcker genom till ett `z.number()`-parse.
+ */
+export function scalarNumber(value: unknown): number | null {
+  if (Array.isArray(value)) {
+    if (value.length > 1) {
+      console.warn(
+        `scalarNumber: förväntade skalärt fält men fick ${value.length} värden — tar första (data-form-avvikelse)`,
+      );
+    }
+    return value.length > 0 ? scalarNumber(value[0]) : null;
+  }
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 /**

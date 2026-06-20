@@ -76,21 +76,21 @@ export class AirtableAdapter implements DataSourceAdapter {
     await postEdgeFunction('update-record', { operationKey, recordId, fields });
   }
 
+  /**
+   * Hämta enskilt event via ID (Fas 6b L2). Speglar get-events-mappningen för
+   * EN rad via get-event-EF (single-get, ingen aggregering). `.parse()` validerar
+   * vid datagränsen (ADR-026; single EventSchema, INTE z.array). 404 från EF:en
+   * (okänt ID) propagerar som `EdgeFunctionError` med `status: 404` — info-vyn
+   * skiljer ej-funnen från övriga fel på den (samma mönster som fetchPerson).
+   */
+  async fetchEvent(id: string): Promise<Event> {
+    const data = await callEdgeFunction<{ event: unknown }>('get-event', { id });
+    return EventSchema.parse(data.event);
+  }
+
   // === Debt-klassade stub-metoder (Fas 2.5 klunga 4, A5-tabellen i
   // P1-sessionsdok Del 3). EF deployas per strangler-fig-sub-fas i Fas 6;
   // .parse()-aktivering sker vid deploy (ADR-026 beslut 5). ===
-
-  /**
-   * Hämta enskilt event via ID.
-   *
-   * @deferTo: Fas-6b (Events-domän) — A5 #1, 06b-impact: liten (events-lookup,
-   * snarlik fetchEvents).
-   * @todo Apply Zod .parse() runtime validation when get-event Edge Function deploys.
-   * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
-   */
-  async fetchEvent(_id: string): Promise<Event> {
-    throw new Error('Not deployed yet — see Fas 6b');
-  }
 
   /**
    * Hämta enskild person via ID — aggregerar full historik (Fas 6a L5a).

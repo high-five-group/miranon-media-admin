@@ -7,9 +7,15 @@
 // replikeras dess gamla beteende inline för att bevisa att testet fångar klassen.
 
 import { expect, test } from '@playwright/test';
+import { EventSchema } from '../../src/domain/schemas/Event.schema';
 import { PersonSchema } from '../../src/domain/schemas/Person.schema';
 import { PersonDetailSchema } from '../../src/domain/schemas/PersonDetail.schema';
-import { scalarString, selectName, stringArray } from '../../supabase/functions/_shared/coerce';
+import {
+  scalarNumber,
+  scalarString,
+  selectName,
+  stringArray,
+} from '../../supabase/functions/_shared/coerce';
 
 // Den BORTTAGNA logiken (L5b-regressionen) — replikerad för att visa gammalt utfall.
 function oldFirstString(val: unknown): string | null {
@@ -59,6 +65,80 @@ test.describe('gräns-coercion — "Ort"-klassen (fler-värt får aldrig tappas)
     expect(selectName({ name: 'Erfaren' })).toBe('Erfaren');
     expect(selectName('Skövde')).toBe('Skövde');
     expect(selectName(undefined)).toBeNull();
+  });
+});
+
+test.describe('gräns-coercion — NaN-specialValue-klassen (event-beläggning)', () => {
+  test('scalarNumber: ändligt tal passerar, specialValue-OBJEKT → null', () => {
+    expect(scalarNumber(42)).toBe(42);
+    expect(scalarNumber(0)).toBe(0);
+    // Airtable formel-NaN/Infinity levereras som OBJEKT — buggen som sänkte parse.
+    expect(scalarNumber({ specialValue: 'NaN' })).toBeNull();
+    expect(scalarNumber({ specialValue: 'Infinity' })).toBeNull();
+    expect(scalarNumber({ specialValue: '-Infinity' })).toBeNull();
+  });
+
+  test('scalarNumber: icke-ändliga/icke-tal → null (sträng, undefined, null, NaN, Inf)', () => {
+    expect(scalarNumber('42')).toBeNull();
+    expect(scalarNumber(undefined)).toBeNull();
+    expect(scalarNumber(null)).toBeNull();
+    expect(scalarNumber(Number.NaN)).toBeNull();
+    expect(scalarNumber(Number.POSITIVE_INFINITY)).toBeNull();
+  });
+
+  test('scalarNumber: 1-elem-array coercas, MULTI loggar (ej tyst — scalar-disciplin)', () => {
+    expect(scalarNumber([7])).toBe(7);
+    expect(scalarNumber([])).toBeNull();
+
+    const warnings: string[] = [];
+    const original = console.warn;
+    console.warn = (msg?: unknown) => warnings.push(String(msg));
+    try {
+      expect(scalarNumber([7, 8])).toBe(7);
+      expect(warnings.length).toBe(1);
+      expect(warnings[0]).toContain('data-form-avvikelse');
+    } finally {
+      console.warn = original;
+    }
+  });
+});
+
+test.describe('schema-parity — EventSchema beläggning (NaN-specialValue stängd)', () => {
+  function validEvent(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 'recE',
+      eventlabel: 'Label',
+      eventNamn: 'Event',
+      typ: 'Utbildning',
+      ort: 'Skövde',
+      startdatum: '2026-01-15',
+      slutdatum: '2026-01-15',
+      tidKvarTillEvent: 'Avslutat',
+      maxPlatser: null,
+      antalAnmalda: 0,
+      platserKvar: 0,
+      anmaldBelaggning: null,
+      bekraftadBelaggning: 0,
+      antalNyaAnmalningar: 0,
+      antalAnmalningsavgifter: 0,
+      antalSlutbetalningar: 0,
+      antalSlutbetalningFelande: 0,
+      status: null,
+      ...overrides,
+    };
+  }
+
+  test('EventSchema accepterar anmaldBelaggning=null (NaN-fallet efter scalarNumber)', () => {
+    const parsed = EventSchema.parse(validEvent());
+    expect(parsed.anmaldBelaggning).toBeNull(); // NaN→null-vägen är giltig domänform
+  });
+
+  test('EventSchema AVVISAR rå specialValue-objekt (regressionsvakt: coercion krävs)', () => {
+    // Utan scalarNumber skulle EF:n släppa objektet rakt igenom — schemat
+    // (z.number().nullable()) MÅSTE avvisa det, annars är klass-buggen öppen.
+    expect(() =>
+      EventSchema.parse(validEvent({ anmaldBelaggning: { specialValue: 'NaN' } })),
+    ).toThrow();
   });
 });
 

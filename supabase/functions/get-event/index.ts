@@ -1,6 +1,6 @@
 import { fetchAirtableRecord } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
-import { scalarString, selectName } from '../_shared/coerce.ts';
+import { scalarNumber, scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 
@@ -25,15 +25,18 @@ function mapEvent(record: { id: string; fields: Record<string, unknown> }) {
     startdatum: f['Startdatum'] ?? null, // date
     slutdatum: f['Slutdatum'] ?? null, // date
     tidKvarTillEvent: f['Tid kvar till event'] ?? null, // formula → text
-    maxPlatser: f['Max antal platser'] ?? null, // number
-    antalAnmalda: f['Antal anmälda'] ?? 0, // formula → number
-    platserKvar: f['Platser kvar'] ?? null, // formula → number
-    anmaldBelaggning: f['Anmäld beläggning (%)'] ?? null, // formula
-    bekraftadBelaggning: f['Bekräftad beläggning (%)'] ?? null, // formula
-    antalNyaAnmalningar: f['Antal nya anmälningar'] ?? 0, // rollup → number
-    antalAnmalningsavgifter: f['Antal mottagna anmälningsavgifter'] ?? 0, // rollup
-    antalSlutbetalningar: f['Antal mottagna slutbetalningar'] ?? 0, // rollup
-    antalSlutbetalningFelande: f['Antal slutbetalning saknas'] ?? 0, // formula
+    // Number-fält via scalarNumber: Airtable ger formel-/procent-fält som blir
+    // NaN/Infinity (0/0, osatt maxPlatser) som OBJEKT {specialValue} — scalarNumber
+    // coercar det till null så .parse() håller (konsekvent över get-event/get-events).
+    maxPlatser: scalarNumber(f['Max antal platser']), // number (osatt → null)
+    antalAnmalda: scalarNumber(f['Antal anmälda']) ?? 0, // formel → number
+    platserKvar: scalarNumber(f['Platser kvar']), // formel → number|null
+    anmaldBelaggning: scalarNumber(f['Anmäld beläggning (%)']), // formel-% (NaN→null)
+    bekraftadBelaggning: scalarNumber(f['Bekräftad beläggning (%)']), // formel-% (NaN→null)
+    antalNyaAnmalningar: scalarNumber(f['Antal nya anmälningar']) ?? 0, // rollup → number
+    antalAnmalningsavgifter: scalarNumber(f['Antal mottagna anmälningsavgifter']) ?? 0, // rollup
+    antalSlutbetalningar: scalarNumber(f['Antal mottagna slutbetalningar']) ?? 0, // rollup
+    antalSlutbetalningFelande: scalarNumber(f['Antal slutbetalning saknas']) ?? 0, // formel
     status: selectName(f['Status'] ?? null), // singleSelect (om det finns)
   };
 }
