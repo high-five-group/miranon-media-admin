@@ -1,7 +1,7 @@
 
 # ADR-059: Idempotens-lagring defer:as till Fas E — interim klient-skydd, server-side UNIQUE när Postgres blir datahem
 
-- **Status:** Proposed (Session 26 — 2026-06-20; Marcus kvitterar efter läsning)
+- **Status:** Accepted (Session 26 — 2026-06-21; ratificerad av Marcus i direktion efter läsning)
 - **Datum:** 2026-06-20
 - **Fas:** 6c (Registrations + Väntelista)
 
