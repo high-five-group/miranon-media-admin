@@ -75,7 +75,7 @@ test.describe('Markera anmälningsavgift som betald (Fas 5.5 K2 — klient-optim
       await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     });
 
-    await page.goto(`/event/${EVENT_ID}`);
+    await page.goto(`/event/${EVENT_ID}/betalning`);
     const row = page.getByRole('listitem').filter({ hasText: 'Test Testsson' });
     await expect(row).toContainText('Anmälningsavgift: Ej mottagen');
 
@@ -122,7 +122,7 @@ test.describe('Markera anmälningsavgift som betald (Fas 5.5 K2 — klient-optim
       });
     });
 
-    await page.goto(`/event/${EVENT_ID}`);
+    await page.goto(`/event/${EVENT_ID}/betalning`);
     const row = page.getByRole('listitem').filter({ hasText: 'Test Testsson' });
     await row.getByRole('button', { name: 'Markera som betald' }).click();
 
@@ -149,7 +149,7 @@ test.describe('Markera anmälningsavgift som betald (Fas 5.5 K2 — klient-optim
       });
     });
 
-    await page.goto(`/event/${EVENT_ID}`);
+    await page.goto(`/event/${EVENT_ID}/betalning`);
     await expect(page.getByRole('listitem').filter({ hasText: 'Test Testsson' })).toBeVisible();
 
     const results = await new AxeBuilder({ page })
