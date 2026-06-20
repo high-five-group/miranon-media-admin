@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-17
+updated: 2026-06-20
 review_by: 2026-11-15
 status: stable
 ---
@@ -548,6 +548,25 @@ Tillämpat i:
 | M8 | `config.toml` saknades | Per-funktion `verify_jwt`-kontroll |
 
 Hela exponeringen från Code-verifieringen 2026-04-29 stängd. 113 tester (110 + 3 skipped för Fas 5.5-aktivering). Bundle 244 → 324 kB (+80 kB Sentry SDK).
+
+### 6.10 Per-EF leverans-checklista (auditens mätsticka)
+
+De facto-ribban från M1–M8 destillerad till ett **checkbart per-EF-kontrakt**.
+Detta river inte §6.1–§6.9 — det refererar dem som ursprung och gör dem till en
+deklarerad leverans-gate. Varje deployad Edge Function MÅSTE uppfylla samtliga:
+
+| # | Krav | Ursprung |
+|---|------|----------|
+| EF1 | **Auth-gate:** `requireUser(req, corsHeaders)` först; 401 på anonym / ogiltig / `anon`-key-token (`AuthContext \| Response`-mönstret). | §6.3 (M1/M2) |
+| EF2 | **CORS per-request:** `corsHeadersFor(req)` mot env-allowlist — aldrig wildcard; preflight 403 på otillåten origin. | §6.2 (M3) |
+| EF3 | **Deny-by-default:** okänd `operationKey` / fält utanför allowlist / tom config → nekas. | §6.1 + §6.4 (M4) |
+| EF4 | **Korrekt status-semantik:** 401/403/400/405 för operationella fel; 5xx endast för genuina serverfel. | §6.5/§6.6 |
+| EF5 | **Generisk extern fel-kropp:** 5xx returnerar `{error, requestId}` (ingen rå stack/intern detalj); specifika 4xx-meddelanden OK. | §6.5 (M7) |
+| EF6 | **Strukturerad JSON-loggning:** `{level, requestId, errorName, stack, function, method, callerUserId}` — sökbart, ej fri text. | §6.7 (M7) |
+
+> Detta är Inc 3:s post-implementations-audit per-EF-mätsticka — en EF som inte
+> håller EF1–EF6 är ett ribb-brott, inte en stilavvikelse. Säkerhetskritiska
+> transformationer omfattas dessutom av round-trip-invarianten (§6.8).
 
 ---
 

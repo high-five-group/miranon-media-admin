@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-11
+updated: 2026-06-20
 review_by: 2026-11-15
 status: stable
 ---
@@ -10,7 +10,7 @@ status: stable
 
 # Kvalitetsdefinitioner — 11/10 (React)
 
-> **Levande dokument** — skapad 2026-05-11 (K0åf) | **Status just nu:** SKELETT — innehållsfyllning defereras till Fas 3 K0 när första React-komponenten byggs | **Föregångare:** [Vue-versionen 2026-04-03](../archive/KVALITETSDEFINITIONER-11-vue-2026-04-03.md) (arkiverad per ADR-027)
+> **Levande dokument** — skapad 2026-05-11 (K0åf) | **Status just nu:** §1 Teknisk kvalitet + §2 Återanvändbarhet ifyllda (Session 14 K3); §3–§5 deferrade (se ## Status nedan) | **Föregångare:** [Vue-versionen 2026-04-03](../archive/KVALITETSDEFINITIONER-11-vue-2026-04-03.md) (arkiverad per ADR-027)
 
 *Baserad på källkodsanalys av Radix UI, Headless UI, Ark UI, Melt UI och FK Designsystem (Vue-eran) + React Aria + shadcn/ui (kommer från Fas 3+).*
 

@@ -87,8 +87,10 @@ typos övervägdes men avvisades per K3-baseline 2026-05-14
 
 ## Kvalitetsribba
 
-Detta projekt arbetar mot **11/11/11**: 11/10 på data quality, design quality
-och code quality. Definitionerna finns i [`docs/specs/KVALITETSDEFINITIONER-11-REACT.md`](docs/specs/KVALITETSDEFINITIONER-11-REACT.md).
+Detta projekt arbetar mot **11/11/11**: 11/10 på de tre kanoniska axlarna
+**Tillgänglighet**, **Teknik** (teknisk kvalitet) och **Återanvändbarhet**.
+Axlarna och deras definitioner ägs av [`docs/specs/KVALITETSDEFINITIONER-11-REACT.md`](docs/specs/KVALITETSDEFINITIONER-11-REACT.md)
+(kanonisk källa), konsistent med `CLAUDE.md` Kvalitetsribba-tabellen.
 
 ## Resurser
 
