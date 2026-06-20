@@ -25,7 +25,7 @@ React-admin för Miranon Media — eventhantering, anmälningar och rapportering
 ### Specs och referens
 
 - [`docs/specs/`](docs/specs/) — säkerhet, design, prestanda, accessibility, state, URL, ARIA, kvalitet, framtidskompabilitet
-- [`docs/reference/`](docs/reference/) — datamodell, hur-systemet-funkar
+- [`docs/reference/`](docs/reference/) — datamodell, hur-systemet-funkar, Airtable-begränsningar
 - [`docs/research/`](docs/research/) — Fas 0-research + datamodell-research-pipeline
 
 ### Process

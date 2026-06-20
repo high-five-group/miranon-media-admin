@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-17
+updated: 2026-06-21
 review_by: 2026-11-15
 status: stable
 ---
@@ -1102,6 +1102,11 @@ Lila-pricken existerar bara på Väntelista-tabellen i admin (inte på Anmälnin
 ## Kända fällor
 
 Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
+
+> För **strukturella** Airtable-begränsningar (plattform — migreras bort med Postgres i Fas E), se
+> [`airtable-constraints.md`](./airtable-constraints.md). Denna sektion = **data-instans**-fällor i
+> denna bas (städas bort vid bas-sanering). Vissa poster har en rot där och en instans här —
+> korsrefererade explicit.
 
 1. **Anmälan ≠ Deltagande.** Att någon är anmäld betyder inte att de har gått kursen. Kurshistorik-rollups är nollade tills `Deltaganden.Status = "Närvarande"` har satts via A9/A10.
 

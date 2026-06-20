@@ -1,0 +1,408 @@
+---
+owner: marcus803
+updated: 2026-06-21
+review_by: 2026-12-21
+status: stable
+---
+
+# Airtable — strukturella begränsningar (plattform)
+
+Auktoritativ katalog över Airtables **strukturella** begränsningar i detta projekt.
+Airtable-basen (`app8uGPrVCVOm6LfD`) är ett **medvetet valt v1-prototyp-datalager**
+bakom `DataSourceAdapter`-kontraktet ([ADR-057](../decisions/ADR-057-lager-oberoende-fitness-invariant.md))
+— noll arkitektonisk inlåsning. Dokumentet är **levande**: nya väggar läggs till när de
+upptäcks, det är inte en engångsinventering. Källa: Session 26 Pass 1-skörd (45 verifierade,
+fil:rad-belagda poster).
+
+Dubbla syftet: (1) stenkoll på exakt vad vi medvetet betalar i v1; (2) **migrations-kravspec**
+för Supabase-adaptern — varje plattform-posts *Fas E-krav* är ett krav på Postgres-vägen, inte
+ett löst hopp. **Avgränsning mot [`data-model.md`](./data-model.md) §Kända fällor:** detta dokument
+= plattform-begränsningar (strukturella, migreras bort med Postgres). §Kända fällor = data-instans-
+fällor (smutsig data i denna bas, städas bort vid bas-sanering). En post kan ha en motsvarighet i
+bägge — *rot* här, *instans* där; sådana korsrefereras explicit.
+
+Varje plattform-post har fyra delar: **Begränsning** (vad Airtable strukturellt inte kan) ·
+**Kostnad/manifestation** (hur den bitit oss, med fil:rad-källor) · **v1-kompensation** (hur vi
+hanterar den i Airtable-eran — det Supabase-adaptern ska *ersätta*, inte återimplementera) ·
+**Fas E-krav** (hur Postgres löser det skarpt, skrivet som krav på adaptern).
+
+---
+
+## Plattform-begränsningar (migreras bort med Postgres)
+
+### A. Integritet och constraints
+
+#### P1 · Ingen unique-constraint på skrivbart fält
+
+- **Begränsning.** Airtable kan inte påtvinga en unik-constraint på ett skrivbart fält. Endast det
+  auto-genererade record-ID:t är garanterat unikt — och det är inte skrivbart.
+- **Kostnad/manifestation.** ADR-014:s race-skydd vilade på en unique-constraint på idempotens-
+  nyckelfältet → strukturellt oförmöget att ge race-säkerheten ADR-014:s egen DoD krävde. Källor:
+  [ADR-059](../decisions/ADR-059-idempotens-lagring-defer-fas-e.md) (Kontext, rad ~16);
+  ADR-014 §Erratum (rad ~38, ~42); [Session 26](../../tasks/sessions/2026-06-20-session-26.md) Del 2
+  (falsifiering); 04-research DQ1.
+- **v1-kompensation.** Klient-skydd: TanStack `mutationKey`-dedup + disabled submit under `isPending`;
+  klient-UUIDv7-nyckel bevaras i request-kontraktet och loggas. Smalt multi-session-race-fönster
+  accepterat öppet (single-admin-golv).
+- **Fas E-krav.** Supabase-adaptern MÅSTE lägga en `UNIQUE`-constraint på idempotens-nyckeln i
+  Postgres; reservation blir då atomär och race-fönstret stängs. Den bevarade klient-nyckeln gör
+  aktiveringen additiv (ingen kontraktsändring).
+
+#### P2 · Inga transaktioner / ingen atomär multi-record-skrivning ⚠️ TYST KORRUPTION
+
+- **Begränsning.** Airtable saknar transaktioner. Det finns inget sätt att skriva flera records
+  allt-eller-inget; varje record-operation lyckas eller misslyckas oberoende.
+- **Kostnad/manifestation.** Väntelista→Anmälningar-flytt är POST `create-registration` följt av
+  PATCH på Väntelista-raden, utan rollback: lyckas steg 1 men inte steg 2 → personen finns i BÅDA
+  tabellerna (dubblett, tyst). Källor: [`data-model.md`](./data-model.md) §Kända fällor 30 +
+  §Reverse-flow F.4; ADR-059 (distribuerad-transaktions-felmod); 04-research C13;
+  byggplan-revision-p1 rad 181 (F.4-dubblettbugg aktiv i psionautics). **Relaterad tyst manifestation:**
+  `send-email` returnerar ok-status även när post-send-PATCH failar → mail går iväg via Resend men
+  UI:t visar ingen timestamp → Lotta skickar om → mottagaren får dubbletter (§Kända fällor 29).
+- **v1-kompensation.** Kompenserande logik per flöde (idempotens-nyckel, manuell PATCH-ordning i
+  backfill-script, fel loggas till Cloud-loggar). Ingen verklig atomicitet — risken accepteras öppet.
+- **Fas E-krav.** Supabase-adaptern MÅSTE wrappa multi-tabell-skrivningar (flytt, mail+statusskrivning)
+  i en Postgres-transaktion. Partiell skrivning rullas tillbaka allt-eller-inget; den föräldralösa-
+  record-klassen försvinner.
+
+#### P3 · Server-side idempotens är omöjlig i Airtable
+
+- **Begränsning.** Kombinationen P1 (ingen unique-constraint) + P2 (inga transaktioner) + P25
+  (inget schema-as-code) gör en race-säker idempotens-nyckel-tabell strukturellt omöjlig att bygga
+  i Airtable.
+- **Kostnad/manifestation.** Hela ADR-014:s lagrings-mekanism superseded. Källor: ADR-014 §Erratum;
+  ADR-059 (huvudbeslut, Alt Y).
+- **v1-kompensation.** Idempotens-*kravet* hålls giltigt men *lagringen* defereras; interimt
+  klient-skydd (se P1).
+- **Fas E-krav.** Supabase-adaptern MÅSTE bära idempotens-lagringen i Postgres (UNIQUE-reservation +
+  transaktion, P1+P2 lösta tillsammans). Detta är den enskilt starkaste drivaren bakom Fas E-flytten.
+
+### B. Frågekraft och paginering
+
+#### P4 · Rate-limit 5 requests/sekund/bas
+
+- **Begränsning.** Airtable tillåter 5 API-anrop per sekund per bas; översvämning → HTTP 429 + 30s
+  lockout. Ingen förhandling, fast straff.
+- **Kostnad/manifestation.** Polling-kadens och full-walk-hämtningar måste hålla sig under taket.
+  Källor: [ADR-056](../decisions/ADR-056-list-paginerings-port-cursor-dubbel-kalla.md) (rad ~26);
+  gap-analysis rad 72; byggplan-revision-p1 rad 349 (60s-polling = 75× marginal);
+  [`airtable-client.ts:84`](../../supabase/functions/_shared/airtable-client.ts#L84).
+- **v1-kompensation.** Synkron backoff: 429 → vänta 1s → försök igen
+  ([`airtable-client.ts:84`](../../supabase/functions/_shared/airtable-client.ts#L84),
+  `:162`, `:211`); polling-kadens 60s.
+- **Fas E-krav.** Postgres har ingen jämförbar per-bas-throttle; Supabase-adaptern MÅSTE inte
+  längre kadens-budgetera mot 5 req/s. Connection-pool-gränser ersätter rate-limit-disciplinen.
+
+#### P5 · pageSize ≤ 100 records per svar
+
+- **Begränsning.** Ett list-anrop kan inte returnera mer än 100 records, oavsett bas-storlek.
+- **Kostnad/manifestation.** Tvingar minst 6 sekventiella anrop för dagens ~568 records.
+  Källor: ADR-056 (rad ~27); [`get-persons/index.ts`](../../supabase/functions/get-persons/index.ts)
+  (`MAX_PAGE_SIZE = 100`, "Airtables tak").
+- **v1-kompensation.** Full-walk loopar tills `offset` tar slut; cursor-EF gör ett anrop per sida.
+- **Fas E-krav.** Supabase-adaptern MÅSTE använda Postgres keyset-paginering med valfri sidstorlek;
+  100-record-taket försvinner.
+
+#### P6 · Offset-only paginering — opak token, inget sid-hopp, instabil under skrivning
+
+- **Begränsning.** Pagineringen är en opak `offset`-token (ingen numerisk offset, ingen totalräkning).
+  Sid-hopp till N finns inte i API:t; offset blir instabil om records ändras mellan anrop.
+- **Kostnad/manifestation.** Klient-slice-paginering trunkerar tyst bortom fetch-taket; numeriskt
+  sid-hopp måste emuleras genom walk 1→N (anti-mönster mot Airtables design). Källor: ADR-056
+  (rad ~28–37, ~68–71); [`cursor.ts`](../../supabase/functions/_shared/cursor.ts) (opak `{o}`-wrapper);
+  [`airtable-client.ts:32`](../../supabase/functions/_shared/airtable-client.ts#L32);
+  [STATE-STRATEGY.md](../specs/STATE-STRATEGY.md) (rad ~72).
+- **v1-kompensation.** Airtables `offset` wrappas i en opak `nextCursor` (base64 `{o}`); klienten ser
+  aldrig en Airtable-formad token → backend-swap fri.
+- **Fas E-krav.** Supabase-adaptern MÅSTE byta cursor-interna till Postgres keyset/seek (stabil under
+  samtidiga skrivningar) bakom samma opaka `nextCursor`-kontrakt. Klient och frontend är oförändrade.
+
+#### P7 · Länkfält-filter: `ARRAYJOIN` exponerar primär-display, inte record-ID
+
+- **Begränsning.** `FIND(recordId, ARRAYJOIN({Länkfält}))` matchar aldrig på ID: `ARRAYJOIN` av ett
+  länkfält exponerar länkens PRIMÄR-DISPLAY (eventlabel-strängen), inte record-ID. Klass-bugg, inte
+  instans — trasigt var helst ett länk-ID-filter byggs.
+- **Kostnad/manifestation.** Conformance mot skarp data returnerade noll rader; latent även i
+  deployade `get-registrations` (smäller i 6c "Anmälda per event"). Enhetstesterna verifierar formel-
+  SYNTAX, aldrig match-SEMANTIK mot riktig data. Källor:
+  [`lessons.md`](../../tasks/lessons.md) L153; [`airtable-filter.ts:125`](../../supabase/functions/_shared/airtable-filter.ts#L125);
+  [`get-attendance/index.ts:99`](../../supabase/functions/get-attendance/index.ts#L99) ("ANVÄNDER MEDVETET INTE");
+  [threads T15](../../tasks/threads/README.md) (rad 41, 57); session-25 rad ~256.
+- **v1-kompensation.** Väg D: record-ID-batch från relationens motsatta länkfält (`Närvaro (records)` /
+  `Anmälningar (länkat fält)`) → chunkad `OR(RECORD_ID()=…)`. Record-ID = enda tillförlitliga
+  matchnyckeln mot Airtable-länkar (display/label/formel/lookup är alla sköra).
+- **Fas E-krav.** Supabase-adaptern MÅSTE filtrera på äkta foreign-keys med `WHERE event_id = $1`;
+  länk-display-skörheten och record-ID-batch-omvägen försvinner helt.
+
+#### P8 · `RECORD_ID({länk})` ignorerar argumentet — inget ID-exakt formelfält på länk
+
+- **Begränsning.** `RECORD_ID()` accepterar inga argument enligt formula-specen — den returnerar
+  alltid current record's ID. `RECORD_ID({Event})` ger Deltaganden-radens EGNA id, inte eventets.
+- **Kostnad/manifestation.** Det finns inget ID-exakt formelfält att filtrera Deltaganden på per event
+  (förvärrar P7). Verifierat: Deltagande #1683 → båda formelfälten returnerar radens eget ID. Källor:
+  [`data-model.md`](./data-model.md) §Kända fällor 23; lessons.md L153 (sido-fynd); arkiv
+  datamodell-research-plan rad 324, 581, 588 (DS6/DQ7/H4 "RECORD_ID-bug").
+- **v1-kompensation.** Ignorera formelfälten som sanning; använd record-ID-batch (P7 väg D).
+  Konkreta städnings-objekt: se data-instans-raden för Deltaganden-formelfälten.
+- **Fas E-krav.** Postgres ger äkta foreign-keys; inga `RECORD_ID()`-surrogat behövs. Supabase-adaptern
+  MÅSTE exponera relationen via FK, inte via formel-härledda ID-fält.
+
+#### P9 · `lookup` över ett länkfält ger record-ID:n, inte primärvärdet
+
+- **Begränsning.** En lookup på ett länkfält returnerar de länkade radernas record-ID:n, inte deras
+  primärvärde (t.ex. namn).
+- **Kostnad/manifestation.** Deltaganden-vyns person-namn kräver en separat batch-hämtning +
+  `Map<personId, namn>`. Källa: session-23 rad ~242–245.
+- **v1-kompensation.** Andra record-ID-batchen mot Personer berikar med läsbara namn (Gunilla-princip:
+  rå record-ID:n exponeras aldrig i vyn).
+- **Fas E-krav.** Supabase-adaptern MÅSTE `JOIN` mot persontabellen och projicera namnet direkt;
+  ID→namn-berikningssteget försvinner.
+
+#### P19 · `filterByFormula` kräver applikations-side escaping
+
+- **Begränsning.** Airtable filtrerar via en formelsträng i query-strängen; user-supplied värden måste
+  escapas på applikationssidan (ordning `\\` före `\"`), annars bryter de ut ur formeln (injektionsyta).
+- **Kostnad/manifestation.** Drev fram säkerhets-härdning M5: alla user-supplied filtervärden går genom
+  en escaping-wrapper; ogiltig input → 400 (klient-fel). Källor:
+  [`airtable-filter.ts:40`](../../supabase/functions/_shared/airtable-filter.ts#L40) (`escapeFormulaValue`,
+  FORBIDDEN_CHARS-regex); [SECURITY-SPEC.md](../specs/SECURITY-SPEC.md) §6.4 (deny-by-default).
+- **v1-kompensation.** `escapeFormulaValue` + round-trip-validerad `parseAirtableString`; control/zero-
+  width/bidi-tecken blockeras.
+- **Fas E-krav.** Supabase-adaptern MÅSTE använda parametriserade queries (Postgres bind-parametrar) —
+  värdet når aldrig query-språket som text, så hela escaping-apparaten försvinner.
+
+#### P20 · Formel-/URL-längdgräns på `filterByFormula`
+
+- **Begränsning.** En `filterByFormula` (och därmed URL:en) har en längdgräns; en
+  `OR(RECORD_ID()=…)` över godtyckligt många ID:n spränger den.
+- **Kostnad/manifestation.** Tvingar chunkning av ID-listor i batchar (≤50 IDs ≈ ~1.5 kB). Källor:
+  [`get-person/index.ts:28`](../../supabase/functions/get-person/index.ts#L28);
+  [`get-attendance/index.ts:26`](../../supabase/functions/get-attendance/index.ts#L26).
+- **v1-kompensation.** `HISTORY_BATCH_SIZE` / `ATTENDANCE_BATCH_SIZE` = 50, ceil(N/50) anrop, noll
+  trunkering; post-merge-sort i JS (per-chunk-sort räcker inte över chunk-gränser).
+- **Fas E-krav.** Supabase-adaptern MÅSTE använda `WHERE id = ANY($1::uuid[])` (array-bind) eller en
+  JOIN; chunkningen och post-merge-sorten försvinner.
+
+#### P21 · Rollup med IF-filter inuti aggregeringen är opålitlig
+
+- **Begränsning.** En rollup som filtrerar via IF inuti aggregerings-formeln
+  (`COUNTALL(IF(...))`) är opålitlig; man måste använda Airtables inbyggda "conditions"-filter +
+  COUNTA istället.
+- **Kostnad/manifestation.** Felaktig rollup-data om mönstret används. Källor:
+  [`lessons.md`](../../tasks/lessons.md) L107; [`data-model.md`](./data-model.md) rad ~107.
+- **v1-kompensation.** Använd inbyggt linked-record-conditions-filter + COUNTA.
+- **Fas E-krav.** Supabase-adaptern MÅSTE räkna aggregat via `COUNT(...) FILTER (WHERE ...)` /
+  materialiserade vyer; formel-rollup-skörheten försvinner.
+
+#### P22 · Hård `z.enum` på live-läsväg knäcker på legacy-/raderade option-värden
+
+- **Begränsning.** Airtable behåller raderade option-värden på befintliga records; en hård enum-
+  validering (`z.enum` + `.parse()`) på live-läsvägen knäcker hela listan om EN record bär ett värde
+  utanför den nuvarande option-listan. `{Fält}!=BLANK()` ger dessutom false-positives på tomma fält.
+- **Kostnad/manifestation.** En enda avvikande record sänker `z.array(...).parse()` → list-laddningen
+  kraschar. Källa: [`lessons.md`](../../tasks/lessons.md) L84.
+- **v1-kompensation.** Outlier-svep mot ALL data före enum-härdning; robust blank-check `{Fält}&""!=""`.
+- **Fas E-krav.** Postgres `CHECK`-constraints / enum-typer hindrar att otillåtna värden ens skrivs;
+  Supabase-adaptern läser från en källa där option-driften inte kan uppstå.
+
+### C. Typning och coercion
+
+#### P10 · lookup/rollup/multipleSelect returneras alltid som ARRAY — även 1→1
+
+- **Begränsning.** Airtable levererar lookup/rollup/multipleSelect som arrayer; ett 1→1-lookup ger en
+  1-element-array, ett 1→många-rollup ger N element.
+- **Kostnad/manifestation.** Rå `firstString` på ett flervärt fält (Ort) gav tyst dataförlust
+  (L5b-regression i deployad get-person). Källor:
+  [`coerce.ts:3`](../../supabase/functions/_shared/coerce.ts#L3); lessons.md L140 / L5b / L7 (session-23);
+  alla get-*-EF:er.
+- **v1-kompensation.** Aritets-namngiven coerce-familj: `scalarString` / `scalarNumber` (1-element →
+  värde; >1 loggas som data-form-avvikelse, aldrig tyst) + `stringArray` (bevarar ALLA värden).
+- **Fas E-krav.** Postgres ger skalärer som skalärer och arrayer som arrayer (typade kolumner);
+  Supabase-adaptern MÅSTE inte längre coerca array↔skalär — domäntypen är källans typ.
+
+#### P11 · Formel-/procentfält som blir NaN/Infinity returneras som OBJEKT
+
+- **Begränsning.** Ett formel-/procentfält som beräknas till NaN/Infinity (0/0, osatt operand)
+  returneras som OBJEKT `{ specialValue: "NaN" | "Infinity" | "-Infinity" }`, inte som tal.
+- **Kostnad/manifestation.** Rå `f[...] ?? null`/`?? 0` släppte objektet rakt genom → `z.number()`-parse
+  avvisade det → ETT event sänkte hela list-`.parse()` → list-laddningen kraschade. Latent i deployad
+  get-events (smoke-test som aldrig `.parse()`:ade skarp data). Källor:
+  [`lessons.md`](../../tasks/lessons.md) L152; [`coerce.ts:55`](../../supabase/functions/_shared/coerce.ts#L55);
+  get-event / get-events.
+- **v1-kompensation.** `scalarNumber` (specialValue/icke-ändligt → null; non-nullable-fält:
+  `scalarNumber(v) ?? 0`), applicerad i båda mappningarna.
+- **Fas E-krav.** Postgres returnerar `NULL` eller äkta numeriska värden, aldrig ett specialValue-objekt;
+  Supabase-adaptern MÅSTE inte längre detektera NaN-objekt.
+
+#### P12 · Formelfält går inte att skriva till
+
+- **Begränsning.** Formelfält (`Namn`, `Normaliserad e-post`, `Erfarenhetsnivå` m.fl.) är computed och
+  kan inte skrivas direkt.
+- **Kostnad/manifestation.** Skrivning måste gå till källfälten; härlett tillstånd kan inte korrigeras
+  in-place. Källa: [`data-model.md`](./data-model.md) §Kända fällor 2.
+- **v1-kompensation.** Skriv alltid till källfälten (Förnamn, Efternamn, E-post …) och låt formeln räkna.
+- **Fas E-krav.** Supabase-adaptern kan välja: behåll härlett som generated columns/vyer (read-only,
+  avsiktligt) eller materialisera där skrivning krävs. Begränsningen blir ett designval, inte en vägg.
+
+#### P13 · Spegelfält / inverse-länk är read-only
+
+- **Begränsning.** Auto-skapade inverse-/spegelfält (`From field: Medföljande till`,
+  `Eventplanering.Anmälningar (länkat fält)`) är read-only och skapar inga relationer — de speglar
+  länkar skapade från ägar-sidan.
+- **Kostnad/manifestation.** Skrivning måste alltid ske från ägar-sidan. Källor:
+  [`data-model.md`](./data-model.md) §Kända fällor 3; data-model rad ~104.
+- **v1-kompensation.** Skriv alltid från ägar-sidans länkfält.
+- **Fas E-krav.** Postgres FK är riktningslös på läs-sidan (JOIN åt båda håll); Supabase-adaptern MÅSTE
+  inte längre hålla reda på en "ägar-sida" för läsning.
+
+#### P18 · `403` är tvetydigt — både "ingen behörighet" och "record finns inte"
+
+- **Begränsning.** Airtable returnerar `403 INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND` för BÅDE saknad
+  behörighet OCH icke-existerande record (avsiktlig obfuskering — läcker inte existens).
+- **Kostnad/manifestation.** `fetchAirtableRecord` kan inte skilja "finns inte" från "ingen behörighet".
+  Källor: session-23 rad ~264–268; [`airtable-client.ts:189`](../../supabase/functions/_shared/airtable-client.ts#L189).
+- **v1-kompensation.** Mappa både 403 och 404 → null (accepterat för read-only admin-vyer).
+- **Fas E-krav.** Postgres/PostgREST ger distinkta felkoder (RLS-deny vs 0-rader); Supabase-adaptern
+  MÅSTE skilja "saknas" från "nekad" och kan ge precisa felmeddelanden.
+
+### D. Automationer och timing
+
+#### P14 · Formel-beräkningsfördröjning (~30s) efter automation-create
+
+- **Begränsning.** Just-skapade rader (av automation) kan returnera tomt eller fel värde från formelfält
+  i upp till ~30s innan Airtable hunnit beräkna.
+- **Kostnad/manifestation.** Läs ALDRIG formel-värden omedelbart efter automation-triggad create.
+  Källa: [`data-model.md`](./data-model.md) §Kända fällor 17.
+- **v1-kompensation.** Poll-med-timeout, eller läs länkfältet direkt istället för formelfältet.
+- **Fas E-krav.** Postgres beräknar generated columns synkront i samma transaktion; Supabase-adaptern
+  MÅSTE inte längre poll-vänta på eventuell konsistens.
+
+#### P15 · Lookup-fält uppdateras snabbare än formelfält
+
+- **Begränsning.** Lookup-fält har en egen, snabbare uppdateringskedja än formelfält.
+- **Kostnad/manifestation.** Vid programmatisk matchning på länkad data är formelfältet opålitligt först.
+  Källa: [`data-model.md`](./data-model.md) §Kända fällor 18.
+- **v1-kompensation.** Föredra lookup framför formula vid matchning på länkad data.
+- **Fas E-krav.** Postgres har ingen sådan flerhastighets-beräkningskedja; Supabase-adaptern MÅSTE inte
+  längre välja fälttyp efter uppdateringslatens.
+
+#### P16 · Automation-run-status opålitlig — "Ran successfully" trots saknade delresultat ⚠️ TYST KORRUPTION
+
+- **Begränsning.** A1–A11 är async och rapporterar "Ran successfully" även när action-steg inte
+  slutförde sidoeffekter. Run-history bekräftar att triggern kördes, inte att alla steg lyckades.
+- **Kostnad/manifestation.** En automation kan se grön ut medan en länk/skrivning tyst saknas →
+  nedströms-kaskaden bryts utan synligt fel. Källa: [`data-model.md`](./data-model.md) §Kända fällor 19.
+- **v1-kompensation.** Verifiera sidoeffekter DIREKT (t.ex. länkfältet på mål-recordet), aldrig via
+  run-status.
+- **Fas E-krav.** Supabase-adaptern MÅSTE ersätta automation-kedjorna med transaktionell server-logik
+  där ett fel är ett fel (kastas, rullas tillbaka) — inte en grön körning med tyst lucka.
+
+#### P23 · Trigger-granularitet — går ej att begränsa till en specifik fält-ändring
+
+- **Begränsning.** En automation-trigger kan inte skopas till en enskild fält-ändring: A7 triggas vid
+  VARJE Anmälningar-uppdatering (inte bara betalningsfält); A1 triggas vid varje create.
+- **Kostnad/manifestation.** Kostsamt vid massuppdateringar (A7); A1 kan nollställa en redan-satt
+  Event-länk. Källor: [`data-model.md`](./data-model.md) §Kända fällor 10 + 9. **Korsreferens:** den
+  konkreta manifestationen i denna bas (A2:s grenordning som bryter reverse-flow) bor som data-instans-
+  fälla — se D-sektionens A2-rad. P23 = roten (varför möjligt; försvinner med Postgres); A2-wiringen =
+  instansen (hur det bet här; försvinner med omkonfiguration). Olika klass, olika försvinnande-tillfälle.
+- **v1-kompensation.** Idempotenta skrivningar (sätt EventKey OCH Event direkt = A1 matchar samma värde);
+  verifiera sidoeffekter direkt.
+- **Fas E-krav.** Postgres-triggers/server-logik kan villkoras på exakt kolumn (`WHEN (OLD.x IS DISTINCT
+  FROM NEW.x)`); Supabase-adaptern MÅSTE styra exakt vad som körs och när.
+
+### E. Schema och operationellt
+
+#### P17 · Restore skapar en KOPIA, ersätter inte in-place
+
+- **Begränsning.** Airtable Restore skapar en kopia av basen, ersätter inte in-place. Original-basen är
+  oförändrad.
+- **Kostnad/manifestation.** Rollback av en delvis skrivning kräver manuell radering i original-basen.
+  Källa: [`data-model.md`](./data-model.md) §Kända fällor 20.
+- **v1-kompensation.** Disaster recovery-rutin förutsätter manuell städning i originalet.
+- **Fas E-krav.** Postgres ger point-in-time recovery och transaktionell rollback; Supabase-adaptern
+  MÅSTE inte längre förlita sig på kopia-baserad restore.
+
+#### P24 · MCP/API-blindhet för automationer, vyer, formulär, extensions, webhooks
+
+- **Begränsning.** Airtable-MCP (och REST-API:t) exponerar bara baser, tabeller, fält, records.
+  Automationer, sparade vyer, formulär, extensions och webhooks är osynliga.
+- **Kostnad/manifestation.** A1–A11 kan inte queryas, testas eller versioneras via API; ändringar i
+  Airtable-UI:t är osynliga för CI. Tvingade fram extern HAR-export
+  (`miranon_automations_COMPLETE.json`) + manuell UI-audit. Källor: global CLAUDE.md §Kritiska guards
+  ("Airtable MCP kan INTE se automationer, interfaces, vyer, formulär eller extensions");
+  datamodell-research-projekt rad ~52 (NO-GO på MCP);
+  [`field-allowlists.ts:12`](../../supabase/functions/_shared/field-allowlists.ts#L12); BUILD-LOG
+  (backfill-verifiering kräver manuell audit).
+- **v1-kompensation.** Extern automation-export + manuell verifiering; `field-allowlists.ts` underhålls
+  för hand i synk med automationerna.
+- **Fas E-krav.** Postgres-logik (triggers, funktioner, RLS) lever som schema-as-code i git och CI-testas;
+  Supabase-adaptern MÅSTE inte längre lita på osynlig, oversionerad UI-logik.
+
+#### P25 · Airtable saknar schema-as-code / migrations
+
+- **Begränsning.** Bas-strukturen lever bara i Airtable-UI:t. Det finns inget versionerat schema-as-code,
+  ingen diff, ingen automatiserad schema-deploy.
+- **Kostnad/manifestation.** Schema-ändringar kan inte spåras i git eller granskas i PR. Källor:
+  [ADR-050](../decisions/ADR-050-isolerad-staging-miljo.md) (rad ~84); session-23 rad ~223–226 (L115).
+  - **O2 (underrad — konsekvens):** staging↔prod schema-sync saknar en pågående disciplin. Staging-basen
+    (`apphjj8Q7lkXCMsL4`) verifierades point-in-time mot prod (L115 CLEAN), men det finns ingen löpande
+    kadens/mekanism — prod-schema-ändringar riskerar drift. Transitionellt: försvinner när Postgres är
+    primär.
+- **v1-kompensation.** Manuell point-in-time schema-verifiering vid behov (L115-metoden).
+- **Fas E-krav.** Supabase-adaptern MÅSTE backas av `supabase/migrations/` (versionerat schema-as-code);
+  staging-sync blir en migration-apply, inte manuell replikering. Schemat hamnar i git — en länge saknad grund.
+
+---
+
+## Allvarlighets-axel — synliga fel vs tyst korruption
+
+De flesta plattform-begränsningarna ger **synliga** fel: en krasch, en tom lista, ett 400/403. De är
+besvärliga men självavslöjande — testet rödmarkerar, vyn visar inget, någon märker det.
+
+Tre poster är i en farligare klass: **⚠️ tyst korruption** — data blir tyst fel utan att något larmar.
+De är de starkaste Fas E-argumenten, eftersom ingen synlig signal fångar dem i v1:
+
+| Post | Tyst fel | Varför inget larmar |
+|---|---|---|
+| **P2** — inga transaktioner | Partiell flytt → personen i BÅDA tabellerna (dubblett) | Båda anropen "lyckas" var för sig; ingen ser inkonsistensen |
+| **P16** — automation-run-status | "Ran successfully" trots saknad länk/skrivning | Run-history är grön; sidoeffekten saknas tyst |
+| **send-email / §Kända fällor 29** | Mail skickat men status-PATCH failar → mottagaren får dubbletter | EF returnerar ok; felet bara i Cloud-loggar (manifestation av P2) |
+
+Synliga fel kan man jaga med tester och röda vyer. Tyst korruption kräver att man *vet att leta* — och
+det är precis vad transaktioner och server-logik i Fas E gör onödigt. Prioritera dessa tre i Fas E-planen.
+
+---
+
+## Data-instans-fällor (städas bort med bas-sanering)
+
+Dessa är **inte** plattform-begränsningar — de är smutsig data eller konfigurations-artefakter i DENNA
+bas som försvinner när basen städas (de migreras inte bort, de *saneras* bort). De bor primärt i
+[`data-model.md`](./data-model.md) §Kända fällor; här bara en pekande sammanfattning. Läs data-model för
+detalj, åtgärds-rekommendation och live-stickprov.
+
+| Fälla | Källa (detalj i data-model) |
+|---|---|
+| EventKey-format-bug ("11" vs "Event-11"), 5 records sanerade, källa öppen | §Reverse-flow F.2 + §Luckor 10 |
+| Case-dubletter i `Vill anmäla sig till` ("…medvetandet 1" vs "…Medvetandet 1") | §Kända fällor 24 |
+| Tomma singleSelect `choices=[]` (Manuella flagga, Systemkälla) — kan ej sättas | §Kända fällor 25 |
+| SHA256-hashar som option-namn i `Källa (formulärkälla)` | §Kända fällor 26 + §Luckor 11 |
+| `Är aktiv (1/0)` exkluderar Avbokad/Ombokad men inte Inställt | §Kända fällor 27 |
+| Två parallella `Antal genomförda event`-fält (gammal rollup utan RIM 3) | §Kända fällor 28 |
+| E-post lagrad som `multilineText` (typ-skuld, borde vara `email`) | data-model write-fält-tabeller (rad ~189, ~259) |
+| Namnlösa Person-records (legitim lead-state) | §Kända fällor 21–22 |
+| Döda SWITCH-grenar i Erfarenhetsbadge ("Genomfört alla" nås aldrig) | §Kända fällor 6 + 8 |
+| `Källa` saknar "Arrangör"-option → dead frontend-filter | §Kända fällor 15 |
+| Psionautics-event räknas ej in i RIM/FS-rollups (namn ≠ formel-filter) | §Kända fällor 4 |
+| `Återkommande?` — missvisande namn | §Kända fällor 5 |
+| RECORD_ID-formelfälten i Deltaganden (`Anmälan (ID)`, `Event (ID)`) ger fel data — **instans av P8** | §Kända fällor 23 |
+| Manuella rader (Deltaganden/Anmälningar) auto-länkas inte utan Sessionsmall/EventKey | §Kända fällor 11 + 16 |
+| A2:s grenordning bryter reverse-flow (Gren 1 uppdaterar namn men länkar ej Anmälan) — **instans av P23**. Den fördjupande mekanismen är `[HYPOTES — EJ VERIFIERAD]` (Marcus markerade aldrig-verifierad) | §Reverse-flow F.1 + §Kända fällor 12 + §Luckor 9 |
+
+---
+
+## Ändringslogg
+
+| Datum | Ändring |
+|---|---|
+| 2026-06-21 | **Session 26 — initial skörd.** Dokumentet skapat ur Pass 1-råskörden (45 verifierade, fil:rad-belagda poster): 25 plattform-poster (grupperade A–E) + 15 data-instans-fällor (sammanfattade, pekar till data-model) + allvarlighets-axel (3 tyst-korruption-poster märkta). Klassningsbeslut applicerade: O1 + O3 utelämnade, O2 → underrad P25, O4 → data-instans (hypotes-flagga bevarad), O5 → P19 ("kräver escaping"). |
