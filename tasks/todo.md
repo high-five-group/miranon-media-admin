@@ -38,9 +38,9 @@
   KVALITETSDEFINITIONER. Verifierare + betygsättare, fixar ej kod.
 - [x] **Inc 3b** (2026-06-20) — Chat-yt-skill `arch-audit` (hub `claude-app-skills/`,
   `d482493`); par till Code-halvan komplett. Befintligt handoff-kontrakt räcker (inget nytt).
-- [ ] **Inc 4 (deferbar → Session 25)** — valideringskörning av `/arch-audit` mot Fas 6a
-  KALLT: reproducera + korrigera 6a-driften (14-vs-15), bevisa ADR-058-kontraktet, dogfood
-  discovery + flow. Kräver installerad + aktiv skill (egen session).
+- [x] **Inc 4 (2026-06-20, Session 25)** — kall `/arch-audit` mot Fas 6a: fem områden rena
+  (i–v GODKÄNDA, noll avvikelse), betyg 11/10/10 på vy-ribban, dogfood-validerad
+  (14=fritext-räknefel / disk=15), ADR-058-kontraktet bekräftat. Inget ADR-059 påkallat.
 
 #### Öppna trådar / uppföljning från Session 24
 
