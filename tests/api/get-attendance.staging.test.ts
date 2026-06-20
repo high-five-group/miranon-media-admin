@@ -1,21 +1,22 @@
 // get-attendance — skarp conformance mot deployad staging-EF (Fas 6b L3).
 //
-// get-attendance LÄSER bara (ingen write → ingen mutation/restore). Bevisar tre
-// saker mot SKARP staging-data:
-//   1. eventId-filter-mallen (ärvd från get-registrations) returnerar rätt events
-//      Deltaganden, AttendanceSchema-parse passerar (sessioner/status syns).
+// get-attendance LÄSER bara (ingen write → ingen mutation/restore). VÄG D
+// (record-ID-batch från event-hållet via `Närvaro (records)`-länken — speglar
+// get-person; använder MEDVETET INTE buildLinkedRecordFilter, T15-klass-buggen).
+// Bevisar mot SKARP staging-data:
+//   1. Eventets Deltaganden hämtas via record-ID-batch, AttendanceSchema-parse
+//      passerar (sessioner/status syns) — record-ID = enda tillförlitliga nyckeln.
 //   2. NAMN-BERIKNINGEN end-to-end: personNamn är LÄSBART (Personer.Namn, ej ett
 //      record-ID) — det vyn behöver (Gunilla-princip). Deltaganden bär bara
 //      person-record-ID:n; namn-batchen mot Personer måste ha löst dem.
-//   3. Tomt/okänt event → tom lista (ej fel) — kommande-event utan deltaganden är
-//      ett förväntat tillstånd, inte ett fel.
+//   3. Okänt eventId → 404 (ärver get-event-kontraktet); saknat eventId → 400.
 //
 // INGEN ny fixtur seedas: ett RIKTIGT event-ID med deltaganden härleds dynamiskt
 // ur den PERMANENTA ZZ-History-fixturen (Person 01 + 3 Deltaganden, Session 23 L5b)
 // — robustare än ett hårdkodat staging-event-ID (duplicerad bas, ADR-050) och
-// binder beviset till ett känt namn. Staging-secret ATTENDANCE_NAME_BATCH_SIZE=2
-// gör att namn-batchens chunk-merge-väg tas så snart ett event har >2 unika
-// personer (mekanismen speglar get-person:s redan bevisade chunk-merge).
+// binder beviset till ett känt namn. Staging-secret ATTENDANCE_BATCH_SIZE=2 gör att
+// chunk-merge-vägen tas så snart ett event har >2 Deltaganden/unika personer
+// (mekanismen speglar get-person:s redan bevisade chunk-merge).
 //
 // Auth via getValidUserJWT → password-grant (samma mönster som get-event/get-person).
 // Lokalt skip:as utan TEST_USER-creds; skarpa beviset körs i CI (STAGING_REQUIRED=1).
@@ -113,17 +114,24 @@ test.describe('get-attendance — skarp conformance (Fas 6b L3)', () => {
     expect(rows.map((r) => r.personNamn)).toContain(HISTORY_PERSON_NAME);
   });
 
-  test('okänt event → tom lista (ej fel) — kommande-event utan deltaganden är förväntat', async ({
-    request,
-  }) => {
+  test('okänt eventId → 404 + body { error } (ärver get-event-kontraktet)', async ({ request }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
     const res = await callGetAttendance(request, config, jwt, 'recZZZZZZZZZZZZZZ');
 
-    expect(res.status()).toBe(200);
-    const body = (await res.json()) as { attendance: unknown };
-    const rows = z.array(AttendanceSchema).parse(body.attendance);
-    expect(rows).toEqual([]); // tom lista, ALDRIG 404/500/fel
+    expect(res.status()).toBe(404);
+    const body = (await res.json()) as { error?: unknown };
+    expect(typeof body.error).toBe('string');
+  });
+
+  test('saknat eventId-param → 400 { error: "Missing eventId" }', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await callGetAttendance(request, config, jwt, undefined);
+
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: unknown };
+    expect(body.error).toBe('Missing eventId');
   });
 
   test('anon (ingen JWT) → 401', async ({ request }) => {
