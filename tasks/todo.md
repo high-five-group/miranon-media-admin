@@ -19,6 +19,21 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 24 🟡 PÅGÅR (2026-06-20) — Institutionalisera kvalitetsstandard + arkitektur-audit (hub-nivå)
+
+> Tema ratificerat (Marcus); inkrement-plan under ratificering. Trail:
+> [`tasks/sessions/2026-06-20-session-24.md`](sessions/2026-06-20-session-24.md).
+
+- [x] **Inc 1** (2026-06-20) — kvalitetshållning → alltid-på-lagret. base-PI ny sektion
+  `KVALITETSHÅLLNING — ALLTID-PÅ` + hub-CLAUDE +2 punkter (över-engineering-vakt + lager-
+  oberoende). Hub-commit `ac72925`. (Hub saknar CI — se **T13**.)
+- [x] **Inc 2** (2026-06-20) — fitness-kontrakt + drift-fixar. **ADR-057** lager-oberoende-
+  invariant (`4811410`, räkning 56→57); CONTRIBUTING-axel, SECURITY §6.10 per-EF-checklista
+  och KVALITETSDEFINITIONER status-not (`2f69013`); **T13** registrerad (`578db2b`). CI-grönt.
+- [ ] **Inc 3** — audit-skill-par (Code-SKILL + Chat-`/audit` + handoff-contract) + ADR
+  (rapport-kontrakt + governance-placering). Designas av Chat efter ratificering.
+- [ ] **Inc 4 (deferbar)** — valideringskörning av `/audit` mot Fas 6a.
+
 ### Session 23 ✅ AVSLUTAD (2026-06-19) — Fas 6a Persons-domän KLAR — Landning 1–6 (cursor-port → write Anteckningar)
 
 > Pausad 2026-06-19 via `/session-paus` (ADR-051/052, **inte** avslut: nummer 23 behålls, ingen
