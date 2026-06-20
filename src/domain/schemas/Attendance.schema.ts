@@ -17,6 +17,14 @@ export const AttendanceSchema = z.object({
   anmalanId: z.string().nullable(),
   eventId: z.string().nullable(),
   personId: z.string().nullable(),
+  // `personNamn` är INTE ett Deltaganden-fält. Deltaganden bär bara person-
+  // record-ID:n (`Person (länk)` / `Person`-lookup → IDs, live-verifierat
+  // 2026-06-20). Läsbara namn (Gunilla-princip: vyn visar aldrig rec-ID:n)
+  // BATCH-hämtas av get-attendance ur Personer.Namn (primärfält-formel → alltid
+  // sträng, "Ej tillgängligt" för namnlös) — samma aggregerings-disciplin som
+  // PersonDetailSchema:s `historik` (Fas 6b L3, VÄGVAL A). null = person-ID utan
+  // träff i namn-batchen (bör ej hända, null-säkert).
+  personNamn: z.string().nullable(),
   session: z.enum(AttendanceSession).nullable(),
   status: z.enum(AttendanceStatus).nullable(),
   noteringar: z.string().nullable(),
