@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-19
+updated: 2026-06-20
 review_by: 2026-11-15
 status: stable
 ---
@@ -2302,3 +2302,13 @@ Symptom: en docs-only-commit passerade alla DoD-kommandon (typecheck/biome/build
 ### L148 [UNIVERSAL] — Chat-direktiv som presumerar en exekverings-miljö Code saknar är en latent defekt; STOPPA fångar den vid gränsen
 
 Symptom: ett direktiv förutsatte att L6b kunde "bevisas lokalt mot staging" — men de enda lokala staging-test-credsen (`.env.test`) pekade på PROD, så en lokal körning hade muterat prod. Direktivets miljö-antagande (lokal staging-åtkomst finns) höll inte mot disk-verkligheten. Detta är en distinkt defekt-klass från L19 (extern fångst slår intern självkontroll, [[L19]] — VEM som fångar): här handlar det om VAD som brister — ett direktiv kodar ett antagande om exekverings-miljön som mottagaren måste verifiera, inte anta. Lösning: STOPPA-OCH-FRÅGA är den fångande mekanismen — verifiera miljö-antaganden (cred-mål, deploy-ref, åtkomst) mot faktiskt tillstånd FÖRE exekvering; vid avvikelse, eskalera väg-beslut (väg B: CI:s isolerade secrets blev bevis-harnesset i stället). Registrera den latenta foot-gunen durabelt (T12). Regel: behandla varje miljö-presumtion i ett direktiv som en hypotes att verifiera mot disk, aldrig som ett faktum. Kategori: Process/Säkerhet. Källa: 2026-06-19 Session 23 (`.env.test`→prod-fyndet vid L6b-grinden; väg B + T12). Föreslagen som eget nummer (distinkt axel mot L19) — Marcus kan folda till L19 om han föredrar.
+
+## 2026-06-20 — Session 24 (Institutionalisera kvalitetsstandard + arkitektur-fitness-audit, hub-nivå)
+
+### L149 [UNIVERSAL] — Docs-grind måste vara ett SEPARAT gate-steg före commit/push, inte batchat i samma kedja
+
+Symptom: ett MD004-fel (radstart-`+` tolkat som list-item) slank förbi till CI och gjorde main kort röd (Inc 3b, `21601a8`→forward-fix `86e16be`) — TROTS att markdownlint kördes. Orsaken var inte att grinden saknades (jfr [[L147]]) utan att grind + commit + push låg i EN `&&`-kedja där grind-utfallet (`| tail`) blev INFORMATIVT, inte STOPPANDE: `git commit` beror inte på grindens exit, så kedjan committade och pushade trots "1 error". Samma MD004-klass fångades däremot i Inc 2 — skillnaden var att grinden där kördes som ett separat steg FÖRE commit. Lösning: kör docs-grind som ett eget gate-steg, läs utfallet (0 errors) och committa/pusha FÖRST därefter — aldrig batcha grind+commit+push så att lint-utfallet inte kan stoppa pushen. Pre-commit-hooken gatar bara frontmatter, ej markdownlint, så markdownlint måste gatas manuellt. Regel: en verifiering som inte kan STOPPA nästa steg är ingen grind, bara en utskrift; separera gate från handling. Kategori: Process/CI. Relaterad: [[L147]] (kör rätt grindar) + [[L137]] (markdownlint hör till pre-push) — L149 adresserar HUR de körs (gate, ej batch). Källa: 2026-06-20 Session 24 Inc 3b.
+
+### L150 [UNIVERSAL] — En arkitektur-fitness-/lint-check måste koda arkitekturens FAKTISKA distinktioner, inte substräng-matcha; falska positiv eroderar checkens värde
+
+Symptom: `arch-fitness-check.sh` (Inc 3a) flaggade först `AuthProvider`:s import av `supabase`-auth-klienten + `create-admin-user` som lager-oberoende-kringgångar — falska positiv. Orsaken var bred substräng-match (`config/supabase-client`) som inte skilde legitim åtkomst (auth-klienten är en SEPARAT axel, auth ≠ domän-data per ADR-037) från faktisk överträdelse (UI som kallar `callEdgeFunction` förbi datalagret). Lösning: kalibrera checken mot arkitekturens verkliga gränser — matcha `callEdgeFunction`-import-rader specifikt; behandla auth-klienten som tillåten. Regel: en fitness-/lint-check som tjuter varg (falska positiv) är värre än ingen — den lär mottagaren att ignorera den; koda distinktionen mellan legitim och överträdande mönster, inte den bekväma substrängen. Kategori: Arkitektur/Verktyg. Relaterad: [[L136]] (följ rationalen, inte bokstaven). Källa: 2026-06-20 Session 24 Inc 3a (arch-audit fitness-skript-kalibrering).

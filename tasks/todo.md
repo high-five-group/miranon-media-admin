@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-06-19 (Session 23 ✅ AVSLUTAD — **Fas 6a KLAR**; `lifecycle: closed`, nummer 23 behållet över paus→resume. Alla 6 landningar CI-gröna: L1 lättläst-driftfix `b29ace9` + L2 Personer-lista `de210ba` + L3 cursor-port `83f55f9` (ADR-056 Accepted) + L4 staging-deploy cursor-EF + L5a/5b get-person + detaljvy + gräns-coercion `bc155cb` + **L6 write `Personer.Anteckningar`** (`15efaec`→`e1034ee`: server-op + staging deny/allow + klient edit-in-place). T09–T12 registrerade (paused). Lessons L140–L148 (hub-lyfta). **Nästa: Session 24 → Fas 6b (Events).** Tidigare: Session 22 ✅ KLAR → **Fas 5.5 KLAR**. Landning 1 (CI-rotorsak-fix `fetch-depth: 0` + ADR-054 + tråd T08, `6610d6d`) + Landning 2 (K2 klient-UI: ADR-055 router-context-DI + optimistic mark-paid + 3 e2e, `5006e7b`→`bfc6cf1`, run `27706856446`) + Landning 3 (legibility-fix ADR-055, `31b2846`). `/session-end` + phase-end-verify körd: Fas 5.5 ✅ KLAR (byggplan v1.11, CHANGELOG 0.7.0), lessons L137–L139, `lifecycle: closed`. Öppet Marcus-beslut: arkivering av sessionsdok-backlog 16–22. Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)* Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
+*Senast uppdaterad: 2026-06-20 (Session 24 ✅ AVSLUTAD — kvalitetsstandard + arkitektur-fitness-audit institutionaliserad på hub-nivå: Inc 1 hållning→alltid-på-lagret, Inc 2 ADR-057 lager-invariant + drift-fixar (§6.10, 11/11/11-axel), Inc 3a/3b `arch-audit` skill-par + ADR-058 (plugin 4→5 v1.4.0), Inc 4 deferrad→Session 25. SESSIONSGRÄNS ej fas-avslut; lessons L149–L150; `lifecycle: closed`. **Nästa: Session 25 → Inc 4 (`/arch-audit` mot Fas 6a kallt) + Fas 6b.** Tidigare: Session 23 ✅ AVSLUTAD — **Fas 6a KLAR**; `lifecycle: closed`, nummer 23 behållet över paus→resume. Alla 6 landningar CI-gröna: L1 lättläst-driftfix `b29ace9` + L2 Personer-lista `de210ba` + L3 cursor-port `83f55f9` (ADR-056 Accepted) + L4 staging-deploy cursor-EF + L5a/5b get-person + detaljvy + gräns-coercion `bc155cb` + **L6 write `Personer.Anteckningar`** (`15efaec`→`e1034ee`: server-op + staging deny/allow + klient edit-in-place). T09–T12 registrerade (paused). Lessons L140–L148 (hub-lyfta). **Nästa: Session 24 → Fas 6b (Events).** Tidigare: Session 22 ✅ KLAR → **Fas 5.5 KLAR**. Landning 1 (CI-rotorsak-fix `fetch-depth: 0` + ADR-054 + tråd T08, `6610d6d`) + Landning 2 (K2 klient-UI: ADR-055 router-context-DI + optimistic mark-paid + 3 e2e, `5006e7b`→`bfc6cf1`, run `27706856446`) + Landning 3 (legibility-fix ADR-055, `31b2846`). `/session-end` + phase-end-verify körd: Fas 5.5 ✅ KLAR (byggplan v1.11, CHANGELOG 0.7.0), lessons L137–L139, `lifecycle: closed`. Öppet Marcus-beslut: arkivering av sessionsdok-backlog 16–22. Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)* Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -19,10 +19,12 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 24 🟡 PÅGÅR (2026-06-20) — Institutionalisera kvalitetsstandard + arkitektur-audit (hub-nivå)
+### Session 24 ✅ AVSLUTAD (2026-06-20) — Institutionalisera kvalitetsstandard + arkitektur-fitness-audit (hub-nivå)
 
-> Tema ratificerat (Marcus); inkrement-plan under ratificering. Trail:
-> [`tasks/sessions/2026-06-20-session-24.md`](sessions/2026-06-20-session-24.md).
+> Inc 1–3b landade (kvalitetshållning→hub, ADR-057 fitness-invariant + drift-fixar,
+> arch-audit skill-par + ADR-058, plugin 4→5 v1.4.0). Inc 4 deferrad till Session 25.
+> SESSIONSGRÄNS, ej fas-avslut (Fas 6 fortsätter 6b). Trail:
+> [`tasks/sessions/2026-06-20-session-24.md`](sessions/2026-06-20-session-24.md). Lessons L149–L150.
 
 - [x] **Inc 1** (2026-06-20) — kvalitetshållning → alltid-på-lagret. base-PI ny sektion
   `KVALITETSHÅLLNING — ALLTID-PÅ` + hub-CLAUDE +2 punkter (över-engineering-vakt + lager-
@@ -36,7 +38,18 @@
   KVALITETSDEFINITIONER. Verifierare + betygsättare, fixar ej kod.
 - [x] **Inc 3b** (2026-06-20) — Chat-yt-skill `arch-audit` (hub `claude-app-skills/`,
   `d482493`); par till Code-halvan komplett. Befintligt handoff-kontrakt räcker (inget nytt).
-- [ ] **Inc 4 (deferbar)** — valideringskörning av `/audit` mot Fas 6a.
+- [ ] **Inc 4 (deferbar → Session 25)** — valideringskörning av `/arch-audit` mot Fas 6a
+  KALLT: reproducera + korrigera 6a-driften (14-vs-15), bevisa ADR-058-kontraktet, dogfood
+  discovery + flow. Kräver installerad + aktiv skill (egen session).
+
+#### Öppna trådar / uppföljning från Session 24
+
+- [ ] **Lesson→grind (ADR-039, L149):** gör markdownlint till mekanisk pre-commit-grind i
+  spoken så MD004-klassen blir omöjlig att committa (radstart-`+` slank förbi till CI två
+  ggr: `e2b4a3b`/`21601a8`). DISTINKT scope, egen omsorg — verifiera att den ej bryter
+  befintliga frontmatter-pre-commit-hooken (samverkan, ej ersättning). Ej denna session.
+- **T13** (register): hub-repot saknar CI/docs-grindar — öppen fråga CI-värde vs över-
+  engineering → Marcus.
 
 ### Session 23 ✅ AVSLUTAD (2026-06-19) — Fas 6a Persons-domän KLAR — Landning 1–6 (cursor-port → write Anteckningar)
 

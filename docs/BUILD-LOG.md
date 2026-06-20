@@ -1424,6 +1424,38 @@ Bruten i tre commit-säkra steg över deploy-grinden (L145):
 
 ---
 
+## Session 24 — Institutionalisera kvalitetsstandard + arkitektur-fitness-audit (hub-nivå) (2026-06-20)
+
+Process-/governance-session (spänner spoke + hub-repot). Ingen produktkod rörd; ingen fas stängd (Fas 6 fortsätter 6b). Fyra inkrement landade, alla CI/disk-verifierade.
+
+### Inc 1 — Kvalitetshållning → alltid-på-lagret (hub `ac72925`)
+
+base-PI ny sektion `KVALITETSHÅLLNING — ALLTID-PÅ` (11/10-golv, dubbelriktad över-engineering-vakt, lager-oberoende-princip) + hub-CLAUDE.md `## Instruktioner` +2 punkter (över-engineering-vakt + bygg i oberoende lager; rad 84/117 orörda). `~/.claude/CLAUDE.md` = symlink → repo-filen. Universell hållning, ett ställe per yta (ADR-034). Fynd: hub-repot saknar CI/docs-grindar (**T13**).
+
+### Inc 2 — Fitness-kontrakt + drift-fixar (spoke `4811410` + `2f69013` + `578db2b`)
+
+**ADR-057** lager-oberoende-fitness-invariant (fyra checkbara klausuler; grundad i fitness functions Ford/Parsons/Kua; räkning 56→57). Drift-fixar: CONTRIBUTING 11/11/11-axel data/design/code → Tillgänglighet/Teknik/Återanvändbarhet; SECURITY-SPEC **§6.10** per-EF-checklista (EF1–EF6 ur M1–M8); KVALITETSDEFINITIONER SKELETT-not → §1–2 ifyllda. **T13** registrerad. (Forward-fix `e2b4a3b`: MD004 radstart-`+` i todo, amendad före push.)
+
+### Inc 3a — Audit-mekanism + Code-side verifierare (spoke `ae5c627` + hub `e17438b`)
+
+**ADR-058** arkitektur-fitness-audit (fem områden, fast rapport-kontrakt, governance-nisch ADR-039↔ADR-041; räkning 57→58). Code-side `arch-audit`-skill i pluginet (SKILL.md 116 rader + buntat `arch-fitness-check.sh`); **plugin 4→5 skills, v1.3.0→1.4.0** (plugin.json + marketplace.json atomiskt; re-install disk-verifierad). Fitness-skript kört mot live-spoke: DI-switch OK, 0 kringgångar, paritet 15==15==15, EF-ribba i alla 5 data-EF:er. Två falska positiv kalibrerade bort (L150).
+
+### Inc 3b — Audit-skill-parets Chat-halva (hub `d482493`)
+
+Chat-side `arch-audit`-skill i `claude-app-skills/` (67 rader; par till Code-halvan). Befintligt handoff-kontrakt räckte (inget nytt byggt). (Forward-fix `86e16be`: MD004 radstart-`+` i Del 5 — main kort röd på `21601a8`, L149.)
+
+**Lessons:** L149 (docs-grind = separat gate, ej batchat — annars slinker lint-fel förbi; [[L147]]/[[L137]]), L150 (fitness-check måste koda faktiska distinktioner, ej substräng-matcha; [[L136]]). Båda [UNIVERSAL], hub-lyft pending nästa K-sista.
+
+### Inc 4 — Deferrad till Session 25
+
+Valideringskörning av `/arch-audit` mot Fas 6a KALLT (reproducera+korrigera 14-vs-15-driften, bevisa ADR-058-kontraktet, dogfood discovery+flow). Kräver installerad+aktiv skill — egen session.
+
+**Verifiering:** spoke per-commit docs-grindar (markdownlint 0, Vale 0, frontmatter 9/9, ADR-count 58==58), per-jobb-CI auktoritativt grön (slutlig HEAD `86e16be`); hub shellcheck-ren skript + plugin disk-verifierad v1.4.0/5 skills (hub saknar CI, T13). Inga produktkod-grindar tillämpliga (ingen kod rörd).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-20-session-24.md`](../tasks/sessions/2026-06-20-session-24.md) (Del 1–5). SESSIONSGRÄNS, ej fas-avslut: ingen phase-end-verify, ingen arkivering, ingen CHANGELOG-release (ADR-023). Nästa: **Session 25** (Inc 4 + Fas 6b).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
