@@ -42,14 +42,26 @@ Ingen URL state, inga filter. Ingen UI state, inga expanderbara sektioner.
 |-------|-----|---------|
 | Event-lista | Server | `useQuery(queryKeys.events.list({ status, sort }))` |
 | Status-filter | URL | `nuqs: ?status=upcoming\|past\|all` |
-| Sortering | URL | `nuqs: ?sort=date\|name` |
+| Sortering | URL | `nuqs: ?sort=date\|name\|capacity` |
+
+> **capacity-sort tillagd (2026-06-20 Fas 6b L1):** `anmaldBelaggning` (andel),
+> fallande (fullast först), null sist — Lotta behöver se vilka event som fylls;
+> datan finns redan i get-events. Konvergerar med URL-STATE-SPEC (som redan bar
+> capacity). Filtreringen/sorteringen sker klient-side i L1 (get-events tar inga
+> params än → stabil query-nyckel; server-params post-Fas E).
 
 ### Event-detalj (/event/$eventId)
 
+Event-detaljens ytor är **separata routes** (C1, Fas 6b L1) — inte en flik-param.
+Data laddas per route (info→`fetchEvent`, närvaro→`fetchAttendance`,
+betalning→`fetchRegistrations`), inte via en tab-villkorad query.
+
 | State | Typ | Verktyg |
 |-------|-----|---------|
-| Event + registreringar | Server | `useQuery(queryKeys.events.detail(id))` |
-| Aktiv flik | URL | `nuqs: ?tab=registrations\|payments\|attendance` |
+| Info-yta (default) | Server | `useQuery(queryKeys.events.detail(id))` på `/event/$eventId` |
+| Närvaro-yta | Server | `useQuery` på `/event/$eventId/narvaro` (`fetchAttendance`) |
+| Betalnings-yta | Server | `useQuery` på `/event/$eventId/betalning` (`fetchRegistrations`) |
+| Aktiv yta | Route | route-segment (ersätter `?tab=` — C1, 2026-06-20) |
 | Expanderade rader | UI | `useState<Set<string>>` |
 
 ### Personer (/personer)
@@ -356,7 +368,7 @@ ar detta tillrackligt -- ordningen spelar ingen roll.
 |------------------|-----|---------|
 | Se event-listan | Server | `useQuery(queryKeys.events.list(...))` |
 | Filtrera pa status | URL | `nuqs: ?status=upcoming` |
-| Vaxla flik i event-detalj | URL | `nuqs: ?tab=payments` |
+| Ga till betalnings-ytan i event-detalj | Route | `/event/$eventId/betalning` (C1) |
 | Expandera en rad | UI | `useState<Set<string>>` |
 | Markera som betald | Mutation | `useMutation` + optimistisk UI |
 | Soka bland personer | URL | `nuqs: ?q=sokterm` |

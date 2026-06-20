@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-19
+updated: 2026-06-20
 review_by: 2026-11-15
 status: stable
 ---
@@ -620,7 +620,7 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamo
 | Sub-fas | Domän/grupp | Estimat | Innehåll | EF som deployas |
 |---|---|---|---|---|
 | **6a** | Persons | 0,75 sess | `/personer` lista (befintlig fetchPersons) + `/personer/[id]` detaljvy + minimal write (uppdatera notering) | `fetchPerson` |
-| **6b** | Events | 0,75 sess | `/event` lista (befintlig fetchEvents) + `/event/[id]` info-vy + Närvaro-flik | `fetchEvent`, `fetchAttendance` |
+| **6b** | Events | 0,75 sess | `/event` lista (befintlig fetchEvents) + `/event/$eventId` info-route + `/event/$eventId/narvaro`-route (C1 nested, ej flik) | `fetchEvent`, `fetchAttendance` |
 | **6c** | Registrations + Väntelista | 1 sess | Anmälda-flik på Event-detalj, väntelista-konvertering på Mer, idempotent registrering | `createRegistration`, `fetchWaitlist` |
 | **6d** | Hem-aggregering | 0,5 sess | `/hem` med greeting + nya anmälningar + info-cards + CTA. Polling 60s + pull-to-refresh + visibility-trigger (B1) | (inga nya — använder befintliga read-EF) |
 | **6e** | Mer-fliken (villkorlig) | 0,5 sess | Mail-vy om behållen, Leads-vy om behållen | `sendEmail` (med ADR), ev. `fetchLeads`, ev. `fetchMailLog` |

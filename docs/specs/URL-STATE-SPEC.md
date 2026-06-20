@@ -70,17 +70,26 @@ const { data: events } = useSuspenseQuery({
 
 ### Event-detalj (`/event/$eventId`)
 
-| Param | Typ | Default | Parsning |
-|-------|-----|---------|----------|
-| `tab` | `'registrations' \| 'payments' \| 'attendance'` | `'registrations'` | `parseAsStringEnum` |
+Event-detaljens ytor är **separata routes** (C1, Fas 6b L1), inte flikar i en
+URL-param. Var yta har sin egen data-källa → sin egen route-gräns för parallell
+data-laddning:
 
-```typescript
-const [tab, setTab] = useQueryState(
-  'tab',
-  parseAsStringEnum(['registrations', 'payments', 'attendance']).withDefault('registrations')
-);
-// /event/rec123?tab=payments → Roger skickar Lotta direkt till betalningsfliken
-```
+| Yta | Route | Data-källa |
+|-----|-------|------------|
+| Info (default) | `/event/$eventId` | `fetchEvent` |
+| Närvaro | `/event/$eventId/narvaro` | `fetchAttendance` |
+| Betalning | `/event/$eventId/betalning` | `fetchRegistrations` |
+
+Ingen `?tab=`-param — ytan bärs av route-segmentet, så varje yta är direkt
+länk-/bokmärkbar (`/event/rec123/betalning`) och Back rör sig mellan ytor naturligt.
+
+> **Reconcilierad (C1, 2026-06-20 Fas 6b L1):** ersätter den tidigare
+> `?tab=registrations|payments|attendance`-modellen. Skäl: de tre ytorna har var
+> sin data-källa (`fetchEvent`/`fetchAttendance`/`fetchRegistrations`) → var sin
+> route-gräns ger parallell laddning + äkta länkbarhet per yta (Ryan Florence,
+> "When To Fetch"; react.wiki: nested routes när olika innehållsvägar ska ha olika
+> URL:er). Flik-modellen (en route, tab-villkorad query) deferrades till förmån
+> för routes. Listans `?status` + `?sort` är oförändrade (äkta filter-state).
 
 ### Personer (`/personer`)
 
@@ -157,7 +166,7 @@ Varje filtrerad vy ar en unik URL:
 |----------|-----|
 | Kommande event (default) | `/event` |
 | Tidigare event | `/event?status=past` |
-| Betalningsflik | `/event/rec123?tab=payments` |
+| Event-betalning (route, C1) | `/event/rec123/betalning` |
 | Personsokning | `/personer?q=andersson` |
 
 Roger skickar Lotta en lank → hon ser exakt det han ser. Lotta bokmarker → sokningen finns kvar nasta gang.
