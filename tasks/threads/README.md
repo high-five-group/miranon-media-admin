@@ -36,6 +36,7 @@ status: stable
 | `T10` | Flip-of-a-switch dubbel-källa-conformance + paritets-grind (Fas E) | `paused` | _(ingen kort än — endast registrerad); ADR-056 bär kontexten_ |
 | `T11` | Lägg "Proposed" i decisions/README §Format status-enum (format↔praktik-drift; använt ADR-043/053/056) | `paused` | _(ingen kort än — endast registrerad)_ |
 | `T12` | `.env.test` pekar på PROD (`lvjsfnphlauldxqlncpl`) → `test:api:staging` = latent prod-mutations-risk | `paused` | _(ingen kort än — endast registrerad)_ |
+| `T13` | Hub-repot (`marcus-system`) saknar CI/docs-grindar — konstitution/plugin/templates omekaniskt grindade (besläktad med T02 men bredare: hela repot, ej bara `project-instructions/`) | `paused` | _(ingen kort än — endast registrerad)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
@@ -46,8 +47,8 @@ status: stable
 > _T10-not: ADR-056:s dubbel-källa-port (Airtable + Postgres) kräver att BETEENDE-paritet (ej bara typ-paritet) mellan adaptrarna bevisas före källa-flip i Fas E: en delad port-nivå-conformance-svit som båda adaptrarna körs mot + en paritets-grind (shadow-läs båda källor, jämför resultat) som villkorar flippen. Säkrar "flip-of-a-switch" mot tyst beteende-divergens._
 >
 > _T12-not: Upptäckt Session 23 L6b-grinden — lokala `.env.test` `TEST_SUPABASE_URL` pekar på prod-ref `lvjsfnphlauldxqlncpl`, så `source .env.test && npm run test:api:staging` skulle köra mutations-sviten (update-record allow-test) mot PROD. Lokalt skip:as sviten utan creds (ofarligt), men sourcing aktiverar foot-gunen. Durabel fix att överväga vid 6a-end/mini-session: repo-nivå fail-fast-grind som vägrar staging-mutations-sviten om mål-URL ≠ staging-ref (strukturell, à la L110). Marcus lokala `.env.test`-rättning till staging-ref = andra (ej committbara) halvan. Blockerar ej L6 — CI:s staging-secrets är korrekt isolerade (väg B)._
-
-## Avslutade trådar
+>
+> _T13-not: Upptäckt Session 24 Inc 1 — `marcus-system` (hub) har ingen markdownlint-config, ingen `.vale.ini`, inget frontmatter-skript och inga `.github/workflows/` (`gh run list` = `[]`). Den governance-kritiska repon (konstitution, plugin-skills, templates) är alltså omekaniskt grindad medan spoken är tätt grindad. Triage: blockerar ej (låg churn, människo-granskad), deferrad. ÖPPEN FRÅGA: genuin kvalitetsrisk vs över-engineering att lägga CI på en låg-churn människo-granskad docs/config-repo — den dubbelriktade över-engineering-vakten (base-PI/CLAUDE Inc 1) talar emot reflexmässig CI. Beslut: Marcus, senare._
 
 | Tråd | Titel | Tillstånd | Ingång |
 |---|---|---|---|
