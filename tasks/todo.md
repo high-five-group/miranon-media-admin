@@ -30,8 +30,11 @@
 - [x] **Inc 2** (2026-06-20) — fitness-kontrakt + drift-fixar. **ADR-057** lager-oberoende-
   invariant (`4811410`, räkning 56→57); CONTRIBUTING-axel, SECURITY §6.10 per-EF-checklista
   och KVALITETSDEFINITIONER status-not (`2f69013`); **T13** registrerad (`578db2b`). CI-grönt.
-- [ ] **Inc 3** — audit-skill-par (Code-SKILL + Chat-`/audit` + handoff-contract) + ADR
-  (rapport-kontrakt + governance-placering). Designas av Chat efter ratificering.
+- [x] **Inc 3a** (2026-06-20) — audit-mekanism + Code-side verifierare. **ADR-058**
+  (`ae5c627`, räkning 57→58); `arch-audit`-skill i hub-pluginet (`e17438b`, plugin 4→5,
+  v1.3.0→1.4.0, re-install disk-verifierad). Fem fitness-områden mot ADR-057+§6.10+
+  KVALITETSDEFINITIONER. Verifierare + betygsättare, fixar ej kod.
+- [ ] **Inc 3b** — Chat-yt-skill `/audit` + handoff-kontrakt (paret till arch-audit).
 - [ ] **Inc 4 (deferbar)** — valideringskörning av `/audit` mot Fas 6a.
 
 ### Session 23 ✅ AVSLUTAD (2026-06-19) — Fas 6a Persons-domän KLAR — Landning 1–6 (cursor-port → write Anteckningar)
