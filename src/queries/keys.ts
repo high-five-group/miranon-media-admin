@@ -13,6 +13,17 @@ export const queryKeys = {
     all: ['registrations'] as const,
     byEvent: (eventId: string) => ['registrations', eventId] as const,
   },
+  events: {
+    all: ['events'] as const,
+    // Fas 6b L1: STABIL nyckel — `fetchEvents()` hämtar HELA listan (inga
+    // params), status-filter + sort sker klient-side via useMemo. Nyckeln bär
+    // därför INTE status/sort (de skulle annars refetcha samma data per ändring).
+    // Skiljer sig medvetet från STATE-STRATEGY §3:s `list({ status, sort })` som
+    // beskriver target-server-shapen (post-Fas E, när get-events tar params).
+    list: ['events', 'list'] as const,
+    // Event-detalj (Fas 6b L2): aggregerande get-event per record-ID.
+    detail: (id: string) => ['events', 'detail', id] as const,
+  },
   persons: {
     all: ['persons'] as const,
     // Cursor-paginering via `useInfiniteQuery` (ADR-056): nyckeln bär ENBART

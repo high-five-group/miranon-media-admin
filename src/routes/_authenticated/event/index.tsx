@@ -1,13 +1,20 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { EventsList } from '@/components/events';
 
 export const Route = createFileRoute('/_authenticated/event/')({
   staticData: { title: 'Event' },
   component: EventPage,
 });
 
-// Placeholder (Fas 5) — domän-vyn (event-lista) byggs i Fas 6b. Flyttad från
-// event.tsx till event/index.tsx i Fas 5.5 K2 så att event/$eventId kan bo som
-// syskon-leaf (ADR-055-wiringens första domän-vy).
+// Event-listan (Fas 6b L1) — filtrerbar + sorterbar vy via fetchEvents (LIVE)
+// + router-context-DI (ADR-055). Logiken bor i EventsList; routen håller bara
+// rubrik + montering (jfr personer/index.tsx). Syskon: event/$eventId/ (detalj-
+// routes info/betalning/narvaro), <Outlet/> bärs av _authenticated via AppShell.
 function EventPage() {
-  return <h1>Event</h1>;
+  return (
+    <section className="flex flex-col gap-4 p-4">
+      <h1>Event</h1>
+      <EventsList />
+    </section>
+  );
 }
