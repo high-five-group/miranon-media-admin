@@ -34,7 +34,8 @@
   (`ae5c627`, räkning 57→58); `arch-audit`-skill i hub-pluginet (`e17438b`, plugin 4→5,
   v1.3.0→1.4.0, re-install disk-verifierad). Fem fitness-områden mot ADR-057+§6.10+
   KVALITETSDEFINITIONER. Verifierare + betygsättare, fixar ej kod.
-- [ ] **Inc 3b** — Chat-yt-skill `/audit` + handoff-kontrakt (paret till arch-audit).
+- [x] **Inc 3b** (2026-06-20) — Chat-yt-skill `arch-audit` (hub `claude-app-skills/`,
+  `d482493`); par till Code-halvan komplett. Befintligt handoff-kontrakt räcker (inget nytt).
 - [ ] **Inc 4 (deferbar)** — valideringskörning av `/audit` mot Fas 6a.
 
 ### Session 23 ✅ AVSLUTAD (2026-06-19) — Fas 6a Persons-domän KLAR — Landning 1–6 (cursor-port → write Anteckningar)
