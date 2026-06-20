@@ -7,6 +7,7 @@ import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload'
 import type { Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
+  AttendanceSchema,
   EventSchema,
   type PersonDetail,
   PersonDetailSchema,
@@ -133,15 +134,26 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
-   * Hämta deltaganden (närvaro).
+   * Hämta deltaganden (närvaro) per event (Fas 6b L3). get-attendance-EF:en
+   * filtrerar Deltaganden på eventId (ärver get-registrations länkfält-filter) och
+   * BERIKAR varje rad med läsbart `personNamn` (batch-hämtat ur Personer.Namn —
+   * Deltaganden bär bara record-ID:n). `.parse()` validerar vid datagränsen
+   * (ADR-026; z.array — en LISTA, till skillnad från single get-event/get-person).
    *
-   * @deferTo: Fas-6b (Events-domän, Närvaro-flik) — A5 #4, 06b-impact: medel
-   * (target använder FK-kedja event → event_session → attendances; ren läsning).
-   * @todo Apply Zod .parse() runtime validation when get-attendance Edge Function deploys.
-   * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
+   * Endast `eventId` skickas: EF:en filtrerar serverside på event, närvaro-vyn
+   * grupperar per session klientside (samma list-hämtar-allt + filtrera-lokalt-
+   * mönster som fetchEvents/EventsList; session/status i AttendanceFilters reserveras
+   * för framtida serverside-filter, skickas ej idag).
    */
-  async fetchAttendance(_filters?: AttendanceFilters): Promise<Attendance[]> {
-    throw new Error('Not deployed yet — see Fas 6b');
+  async fetchAttendance(filters?: AttendanceFilters): Promise<Attendance[]> {
+    const params: Record<string, string> = {};
+    if (filters?.eventId) params.eventId = filters.eventId;
+
+    const data = await callEdgeFunction<{ attendance: unknown }>(
+      'get-attendance',
+      Object.keys(params).length > 0 ? params : undefined,
+    );
+    return z.array(AttendanceSchema).parse(data.attendance);
   }
 
   /** Uppdatera deltagandes status — kräver explicit operationKey (M4). */
