@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-06-20 (Session 24 ✅ AVSLUTAD — kvalitetsstandard + arkitektur-fitness-audit institutionaliserad på hub-nivå: Inc 1 hållning→alltid-på-lagret, Inc 2 ADR-057 lager-invariant + drift-fixar (§6.10, 11/11/11-axel), Inc 3a/3b `arch-audit` skill-par + ADR-058 (plugin 4→5 v1.4.0), Inc 4 deferrad→Session 25. SESSIONSGRÄNS ej fas-avslut; lessons L149–L150; `lifecycle: closed`. **Nästa: Session 25 → Inc 4 (`/arch-audit` mot Fas 6a kallt) + Fas 6b.** Tidigare: Session 23 ✅ AVSLUTAD — **Fas 6a KLAR**; `lifecycle: closed`, nummer 23 behållet över paus→resume. Alla 6 landningar CI-gröna: L1 lättläst-driftfix `b29ace9` + L2 Personer-lista `de210ba` + L3 cursor-port `83f55f9` (ADR-056 Accepted) + L4 staging-deploy cursor-EF + L5a/5b get-person + detaljvy + gräns-coercion `bc155cb` + **L6 write `Personer.Anteckningar`** (`15efaec`→`e1034ee`: server-op + staging deny/allow + klient edit-in-place). T09–T12 registrerade (paused). Lessons L140–L148 (hub-lyfta). **Nästa: Session 24 → Fas 6b (Events).** Tidigare: Session 22 ✅ KLAR → **Fas 5.5 KLAR**. Landning 1 (CI-rotorsak-fix `fetch-depth: 0` + ADR-054 + tråd T08, `6610d6d`) + Landning 2 (K2 klient-UI: ADR-055 router-context-DI + optimistic mark-paid + 3 e2e, `5006e7b`→`bfc6cf1`, run `27706856446`) + Landning 3 (legibility-fix ADR-055, `31b2846`). `/session-end` + phase-end-verify körd: Fas 5.5 ✅ KLAR (byggplan v1.11, CHANGELOG 0.7.0), lessons L137–L139, `lifecycle: closed`. Öppet Marcus-beslut: arkivering av sessionsdok-backlog 16–22. Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)* Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
+*Senast uppdaterad: 2026-06-20 (Session 25 ✅ AVSLUTAD — Inc 4 (kall `/arch-audit` mot Fas 6a, dogfood-validerad: 14=fritext-räknefel/disk=15) + **Fas 6b KLAR** (L1 route-struktur C1 + /event-lista, L2 get-event + info-vy + NaN-klassfix L152, L3 get-attendance + närvaro-vy + record-ID-batch-fix väg D); arch-audit 6b ren 5/5 (11/10/10); 3 nya/ändrade EF (get-event/get-attendance/get-events); lessons L151–L154 `[UNIVERSAL]` (hub-lyft pending); T14+T15 paused; inget nytt ADR; SESSIONSGRÄNS ej fas-avslut; `lifecycle: closed`. **Nästa: Session 26 → Fas 6c (Registrations + Väntelista).** Tidigare: Session 24 ✅ AVSLUTAD — kvalitetsstandard + arkitektur-fitness-audit institutionaliserad på hub-nivå: Inc 1 hållning→alltid-på-lagret, Inc 2 ADR-057 lager-invariant + drift-fixar (§6.10, 11/11/11-axel), Inc 3a/3b `arch-audit` skill-par + ADR-058 (plugin 4→5 v1.4.0), Inc 4 deferrad→Session 25; lessons L149–L150; `lifecycle: closed`. Tidigare: Session 23 ✅ AVSLUTAD — **Fas 6a KLAR**; `lifecycle: closed`, nummer 23 behållet över paus→resume. Alla 6 landningar CI-gröna: L1 lättläst-driftfix `b29ace9` + L2 Personer-lista `de210ba` + L3 cursor-port `83f55f9` (ADR-056 Accepted) + L4 staging-deploy cursor-EF + L5a/5b get-person + detaljvy + gräns-coercion `bc155cb` + **L6 write `Personer.Anteckningar`** (`15efaec`→`e1034ee`: server-op + staging deny/allow + klient edit-in-place). T09–T12 registrerade (paused). Lessons L140–L148 (hub-lyfta). **Nästa: Session 24 → Fas 6b (Events).** Tidigare: Session 22 ✅ KLAR → **Fas 5.5 KLAR**. Landning 1 (CI-rotorsak-fix `fetch-depth: 0` + ADR-054 + tråd T08, `6610d6d`) + Landning 2 (K2 klient-UI: ADR-055 router-context-DI + optimistic mark-paid + 3 e2e, `5006e7b`→`bfc6cf1`, run `27706856446`) + Landning 3 (legibility-fix ADR-055, `31b2846`). `/session-end` + phase-end-verify körd: Fas 5.5 ✅ KLAR (byggplan v1.11, CHANGELOG 0.7.0), lessons L137–L139, `lifecycle: closed`. Öppet Marcus-beslut: arkivering av sessionsdok-backlog 16–22. Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)* Tidigare: Session 19 PAUSAD→resume KOMPLETT (ADR-050 staging), Session 20 (ADR-052 lifecycle), Session 21 (ADR-053 tråd-arkitektur). Tidigare sessionshistorik: se sektionerna nedan + arkiverade sessionsdok.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -18,6 +18,32 @@
 **Fas 5.5 — Vertikal write-slice: staging-miljön KLAR ✅; deny/allow-grinden avblockerad.** Server-kontraktet levererat och CI-grönt (operation `mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049). Den isolerade staging-miljön är byggd (ADR-050 bygg-sekvens 1–7 komplett) och hela staging-testsviten grön (41 passed/0 skipped). **Nästa: Fas 5.5 klient-UI (K2) i ny session** (peka bakåt på session 18; en stängd session resume:as ej — ny sessions-yta, ADR-052/L124).
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
+
+### Session 25 ✅ AVSLUTAD (2026-06-20) — Inc 4 (kall arch-audit mot Fas 6a) + Fas 6b Events-domän KLAR
+
+> Inc 4 + tre 6b-landningar + arch-audit, allt CI-grönt. SESSIONSGRÄNS, ej fas-avslut
+> (Fas 6 fortsätter 6c–6e). Trail:
+> [`tasks/sessions/2026-06-20-session-25.md`](sessions/2026-06-20-session-25.md).
+> Lessons L151–L154 `[UNIVERSAL]` (hub-lyft pending, samma kö som L149–L150).
+
+- [x] **Inc 4** (2026-06-20) — kall `/arch-audit` mot Fas 6a: fem områden rena, 11/10/10,
+  dogfood-validerad (14=fritext-räknefel/disk=15), ADR-058-kontraktet bekräftat. (Bockad i
+  Session 24-sektionen där raden föddes.)
+- [x] **Fas 6b L1** — route-struktur C1 (nested `/event/$eventId/` info+betalning+narvaro) +
+  /event-lista (beläggning-text, sort-a11y, aria-live) + spec-reconciliering. T14 registrerad.
+- [x] **Fas 6b L2** — get-event-EF (single-get-mall, 404-kontrakt) + staging-deploy + info-vy
+  (EventDetail, a11y 11/10) + **NaN-coercion-klassfix** (`scalarNumber` i get-event+get-events,
+  L152). Commits `8fadfac`/`6d4220a`/`6b379df`.
+- [x] **Fas 6b L3** — get-attendance-EF + närvaro-vy (sessions-grupperad LÄS-vy, a11y 11/10) +
+  namn-batch (VÄGVAL A, Personer.Namn) + AttendanceSchema `personNamn`. **Filter-fix väg D**
+  (record-ID-batch från event-hållet via `Närvaro (records)`; kringgår T15-klassbugg). Commits
+  `0e688a4`/`e8ff852`/`c3fa0d5`/`2ee7a7d`/`c09a67f` + fix `ffbe3e0`/`5f10c9a`/`4642482`.
+- [x] **Fas 6b arch-audit** (kall, ADR-058) — fem områden GODKÄNDA, 0 avvikelse, 11/10/10;
+  T15-inhägnad + NaN-fix mekaniskt verifierade; `chunk()`-duplicering noterad som framtida
+  DRY-trigger (ej avvikelse). **Fas 6b KLAR.**
+- **T14 + T15** registrerade (paused) — adresseras i Fas 6c (T15 get-registrations-fix; T14
+  temporal-terminologi).
+- **Nästa: Session 26 → Fas 6c** (Registrations + Väntelista).
 
 ### Session 24 ✅ AVSLUTAD (2026-06-20) — Institutionalisera kvalitetsstandard + arkitektur-fitness-audit (hub-nivå)
 

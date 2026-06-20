@@ -1456,6 +1456,38 @@ Valideringskörning av `/arch-audit` mot Fas 6a KALLT (reproducera+korrigera 14-
 
 ---
 
+## Session 25 — Inc 4 (kall arch-audit mot Fas 6a) + Fas 6b Events-domän KLAR (2026-06-20)
+
+Inc 4 + tre 6b-landningar + kall arch-audit, allt CI-grönt. SESSIONSGRÄNS, ej fas-avslut (Fas 6 fortsätter 6c–6e). Inget nytt ADR.
+
+### Inc 4 — kall `/arch-audit` mot Fas 6a (validering av ADR-058-mekanismen)
+
+Kall körning av arch-audit-skillen mot Fas 6a: fem fitness-områden rena, betyg 11/10/10 på vy-ribban, dogfood-validerad — "14 metoder" i Session 23:s fritext-audit avslöjat som räknefel (disk bar 15: iface + båda adaptrar mekaniskt räknade). ADR-058-kontraktet bekräftat. Inget ADR-059 påkallat. **Inc 4 KLAR.** Lesson L151.
+
+### Fas 6b L1 — route-struktur C1 + /event-lista
+
+Nested routes `/event/$eventId/` (info/betalning/narvaro-leaves) + /event-lista (beläggning som text, sort-a11y, aria-live). Spec-reconciliering. **T14** registrerad (temporal-filter vs Airtable Status-fält — begreppskrock, paused).
+
+### Fas 6b L2 — get-event-EF + info-vy + NaN-klassfix
+
+get-event (single-get-mall, 404-kontrakt ärvt från get-person) + staging-deploy + EventDetail (berikad operations-översikt, a11y 11/10). **Coerce-klassfix (L152):** Airtable levererar formel-NaN som OBJEKT `{specialValue}` → `scalarNumber` i BÅDE get-event och get-events (latent i deployade get-events; skarp `.parse()`-conformance fångade). Commits `8fadfac`/`6d4220a`/`6b379df`.
+
+### Fas 6b L3 — get-attendance-EF + närvaro-vy + filter-fix (väg D)
+
+get-attendance + EventAttendance (sessions-grupperad LÄS-vy, a11y 11/10) + namn-batch ur Personer.Namn (VÄGVAL A; AttendanceSchema additivt `personNamn`). **CI-conformance fällde det ärvda länk-filtret:** `buildLinkedRecordFilter` → `FIND(recId, ARRAYJOIN({Event}))` matchar länkens primär-display, ej record-ID (verifierat prod+staging; latent även i get-registrations → **T15**). **Fix väg D:** record-ID-batch från event-hållet via Eventplanering `Närvaro (records)`-länk (speglar get-person; kringgår klass-buggen helt). Commits `0e688a4`/`e8ff852`/`c3fa0d5`/`2ee7a7d`/`c09a67f` + fix `ffbe3e0`/`5f10c9a`/`4642482`.
+
+### Fas 6b arch-audit (kall, ADR-058) + Fas 6b KLAR
+
+Fem områden GODKÄNDA, 0 avvikelse, 11/10/10: port-paritet 15==15==15 intakt efter fetchEvent/fetchAttendance-aktivering, EF-ribba 2/2/2/2 på tre nya/ändrade EF, T15-inhägnad + NaN-fix mekaniskt verifierade, ingen spekulation över golvet (`chunk()`-duplicering noterad som framtida DRY-trigger, ej avvikelse). **Fas 6b KLAR.**
+
+**Lessons:** L151 (fast audit-kontrakt eliminerar fritext-drift), L152 (Airtable NaN-objekt; smoke-test ej `.parse()` döljer latent coercion-klass), L153 (länk-display≠record-ID; formel-syntax-test bevisar ej match-semantik), L154 (record-ID-batch från relationens båda håll kringgår klassen). Alla [UNIVERSAL], hub-lyft pending nästa K-sista.
+
+**Verifiering:** CI-run `27883557439` (HEAD `4642482`) alla 5 jobb gröna — api-staging 61 passed (inkl. 4 get-attendance väg-D-conformance, S-bevis mot staging), Test+Build + Docs-link-check gröna. ADR-count 58==58 (inget nytt ADR).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-20-session-25.md`](../tasks/sessions/2026-06-20-session-25.md) (Del 1–6). SESSIONSGRÄNS, ej fas-avslut: ingen arkivering, ingen CHANGELOG-release (ADR-023). Nästa: **Session 26** (Fas 6c — Registrations + Väntelista).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
