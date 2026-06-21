@@ -19,6 +19,19 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 26 ⏸ ÅTER-PAUSAD (2026-06-22) — RESUME-omgång: Fas 6c Leverabel 1 (get-registrations T15 väg-D-fix) KLAR + CI-bevisad
+
+> /session-resume Session 26 → /session-paus (nr 26 BEVARAS; ADR-051). Durabel paus, ingen
+> finalisering (ingen arkivering, ingen lessons-hub-sync, ingen CHANGELOG-release, inget
+> nummer-increment). Full handoff i sessionsdokets `### HANDOFF`-block.
+> Trail: [`tasks/sessions/2026-06-20-session-26.md`](sessions/2026-06-20-session-26.md).
+
+- [x] **Tillstånds-återställning** (`2f139c7`) — `lifecycle` paused→active + `Väntelista.Event`-supersession (T16/T19-karta: `singleLineText`-konstant, ingen T15-klass) inskriven.
+- [x] **Leverabel 1 — get-registrations T15 väg-D-fix** (`29e55ed`) — record-ID-batch via `Anmälningar (länkat fält)` ersätter `buildLinkedRecordFilter`; eventId-grenen + helper-trio (get-attendance-spegel) + `byInskickadDesc`; okänt event → 404; event-lösa grenen oförändrad. Staging-fixtur seedad (event `reci2UQEPBMl3ebNl` = 3 länkade anmälningar, batch=2 multi-chunk) + EF deployad staging v9. **CI staging-conformance GRÖN (65 passed).**
+- [x] **MD028-städning** (`67ca624`) — slutförde resume-landningen; CI grön-bekräftad (lärdom: deklarera ej landad på in_progress-CI; `2f139c7` var röd på markdownlint).
+- **Carry:** T15 väg-D-fixen landad (kortet stängs när create-registration ej berör det); T19 `active` (§9 fylls av 6c); T12 (`.env.test`↔CI-secret-drift) akut-stängd, systemisk mekanism kvar som tråd. Lessons (EJ hub-lyfta): värd-identitet-mot-data + ej-landad-på-in_progress-CI.
+- **Nästa-omgång (read-först):** **Leverabel 2 — anmalda-vyn** (`/event/$eventId/anmalda`, konsumerar CI-bevisad get-registrations eventId-gren; Playwright-baseline + axe 0) → get-waitlist EF → vantelista-vy → SIST create-registration (write).
+
 ### Session 29 ✅ AVSLUTAD (2026-06-21) — T17 system-dok `systemet.md` LEVERERAD (kartläggning → författning → granskning → wiring)
 
 > Ren dok-/process-session (ingen produktkod; en test-fixtur-touch). Föregår pausad
