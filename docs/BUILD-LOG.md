@@ -1537,6 +1537,29 @@ Föregår den pausade Session 26 (6c-bygget, ej återupptaget). Ren dok-/process
 
 ---
 
+## Session 29 — T17 system-dok `systemet.md` LEVERERAD (kartläggning → författning → granskning → wiring) (2026-06-21)
+
+Föregår den pausade Session 26 (6c-bygget, ej återupptaget). Ren dok-/process-session: ingen produktkod (en test-fixtur-touch), inget nytt ADR, SESSIONSGRÄNS ej fas-avslut → ingen arkivering, ingen CHANGELOG-release (ADR-023).
+
+**Planerat vs faktiskt:** planerat = T17 (författa ett världsklass-dok över det körande Chat/Code/Marcus-samarbets-systemet — meta-systemet appen byggs *med*). Faktiskt = doket levererat OCH governing-wirat (12/12) OCH DoD-bundet (mekanism-triggad) OCH extern-granskat (kall Pass 2) OCH rättat i två rundor OCH upptäckbart i båda orienterings-ytor. Ingen avvikelse nedåt; granskningen fångade 7 fynd (F1–F7) som self-review missade — inkl. F5: doket märkte SJÄLVT ett tillstånd (fångst-raterna) som mekanik, i färskhets-dokumentet vars hela tes är den distinktionen (L167).
+
+**Landningar (kronologisk, commit-hashar):**
+
+- **Dok-födelse + tråd-flip** (`39abd35`) — Session 29-dok fött via create-session-doc-grenen; T17 `paused`→`active`.
+- **Kartläggning Pass 0 / 1a / 1b** (read-only, ej committad → RAPPORTERAD till Chat) — Pass 0 navigerings-karta (båda träd, plugin, skills, governing/distribution); Pass 1a konstitutions-/identitets-kärnan (de fyra hub-rot-doken + hub-CLAUDE.md + hub↔spoke-instantiering); Pass 1b mekanik-kroppen (4 in-drift-templates + 5 disciplin-skills + governing/distributions-detalj). Tre Chat-premisser falsifierade mot disk (L168).
+- **Pass 2 — författning** (`1462a12`) — [`docs/reference/systemet.md`](reference/systemet.md), 10 sektioner + öppnings-ruta, färskhets-kontrakt (STABIL MEKANIK vs `[AKTUELLT TILLSTÅND]`), fil:rad-evidens inline (hub-refs som inline kod — L165: relativa länkar utanför CI-checkout hade brutit lychee). T22 (hub-reconciliation) registrerad.
+- **Rättelse #1** (`3d8292a`) — kall granskning (F1–F7): §0 ordlista (Lager 3/do-confirm/BUILD-LOG/governing/K-sista), fångst-rater omklassade [STABIL MEKANIK]→[AKTUELLT TILLSTÅND] (F5), skill-medlemskap likaså, ADR-041/058 länkade; + §4.5 arbetscykel-vinjett; + governing-wiring (`.frontmatter-policy.conf` 11→12 + test-fixtur-bump, 14/14 PASS — **config↔test-fixtur-lockstep igen, jfr Session 28 cd46bee, L166**) + per-session-DoD-rad (CONTRIBUTING, mekanism-triggad).
+- **Rättelse #2** (`afac99b`) — två precisions-fixar: färskhets-kontraktets exempel siffer-löst (fick ej självt drifta); §6 kapabilitets-skill-ägare disk-belagt korrekt ("Claude Code-skills" i `~/.claude/skills/`, ej "Chat/Code").
+- **Pekar-wiring** (`2f0ae23`) — on-demand-pekare till systemet.md i spoke-CLAUDE.md (`## Instruktioner`, inline-kod-form) + PI-delta (ny H2). Hook auto-bumpade CLAUDE.md `updated:`. Chat-ytan kräver Marcus PI-omklistring (distributions-asymmetri, §9).
+
+**Lessons:** L165 (hub-referenser som inline kod — relativa länkar utanför CI-checkout bryter lychee), L166 (governing-tillägg kräver samtidig test-fixtur-bump — config↔fixtur-koppling, två sessioner i rad → tråd T23), L167 (disciplin-byggaren är ej immun mot att bryta den; extern granskning krävs även då — farliga färskhets-riktningen), L168 (återkommande premiss-falsifiering = strukturell fångst-arkitektur i drift, ej slarv). Alla fyra `[UNIVERSAL]`, hub-lyft pending.
+
+**Verifiering:** alla landningars CI gröna per-jobb (Docs link check körd+grön; Test+Build körd+grön på `3d8292a` (.conf+scripts), skipped by-design på rena docs-commits). ADR-count oförändrat (inget nytt ADR). systemet.md governing (12/12), real check-frontmatter "alla 12 styrande docs passerar".
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-21-session-29.md`](../tasks/sessions/2026-06-21-session-29.md). Trådar: T17 (denna leverans), T22 (hub-reconciliation), T23 (mekanisera fixtur-koppling). Nästa-session-ordning (Marcus-beslutad): **/session-resume Session 26 → 6c-bygget** (T17 var FÖRE 6c — nu klar).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
