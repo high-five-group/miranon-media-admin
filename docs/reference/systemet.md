@@ -40,6 +40,23 @@ status: stable
 
 ---
 
+## §0 — Ordlista (insider-termer, definierade en gång)
+
+Återkommande termer i doket. Definieras här en gång; resten av texten refererar dem fritt
+(samma kanonisk-plats-princip som evidens-ryggen).
+
+- **governing** — ett dok under frontmatter-policy-grind: dess `owner`/`updated`/`status`/`review_by`
+  enforce:as automatiskt (mekaniken i §8).
+- **do-confirm** — Code bekräftar mot disk att ett Chat-dirigerat avslut faktiskt täckte varje
+  punkt, och rapporterar TÄCKT / EJ TILLÄMPLIGT / SAKNAS per post.
+- **Lager 3** — den tredje av session-end:s tre avsluts-kontroller (det manuella do-confirm-passet);
+  Lager 1 = per-push-CI-grindar, Lager 2 = fas-avslut.
+- **BUILD-LOG** — `docs/BUILD-LOG.md`, en kronologisk landnings-logg per session/landning (planerat
+  vs faktiskt, avvikelser, verifierings-output).
+- **K-sista** — sessionens sista arbetsmoment (lessons-skörd + session-end-passet).
+
+---
+
 ## §1 — Översikt: ett system, tre aktörer
 
 Systemet finns för att lösa ett enda problem: **låta EN person bygga det som annars
@@ -57,10 +74,11 @@ en arbetsdelning mellan tre aktörer med var sin styrka:
 etablerad Session 9.]
 
 Den till synes godtyckliga rollfördelningen är i själva verket en **upptäckt om var fel
-fångas**. Empiriskt (mätt över systemets sessioner) fångas designfel så här: Chat-self-review
-**~9 %**, Code:s transparens-rapport **~64 %**, Marcus pushback **~27 %**
-[STABIL MEKANIK — `hub-CLAUDE.md:49`]. Det är dokets
-poäng, så den sätts tidigt: **varje aktör gör det den mätbart är bäst på.** Chat är svag
+fångas** — arbetsdelningen följer av mätningar av vem som faktiskt fångar designfel, inte av
+en ritning på förhand [STABIL MEKANIK — principen; `hub-CLAUDE.md:49`]. Vid mätningen fångades
+fel så här: Chat-self-review **~9 %**, Code:s transparens-rapport **~64 %**, Marcus pushback
+**~27 %** [AKTUELLT TILLSTÅND — uppmätt Session 8; siffrorna kan ändras vid ommätning, principen
+inte]. Det är dokets poäng, så den sätts tidigt: **varje aktör gör det den mätbart är bäst på.** Chat är svag
 på att granska sig själv, så systemet förlitar sig inte på det — det bygger i stället
 synliga verifikationssteg som Code och Marcus *kan* fånga fel genom. "Sömlöst flöde" betyder
 inte friktionsfritt; det betyder att ingen aktör låtsas vara en annan.
@@ -155,6 +173,22 @@ käll-vägledning, gränser, verifiering, STOPPA-villkor, rapport-krav)
 Marcus är **inte** review-loop för triviala detaljer — en fråga vars svar data kunde avgjort är
 själva defekten. [STABIL MEKANIK — `hub-CLAUDE.md:45`.]
 
+### §4.5 — En arbetscykel, från start till nästa steg
+
+Så här ser grundcykeln ut i rörelse [STABIL MEKANIK — loopen är systemets grundtakt]:
+
+1. **Chat designar** en prompt och levererar den i sin 4-zoners output (zon 2 = "TILL CODE").
+2. **Marcus förmedlar** prompten till Code — Chat och Code har ingen direktkanal, så Marcus är
+   ledningen (och kan pushbacka innan han skickar).
+3. **Code utför mot disk** efter LÄS → RAPPORTERA → PLANERA → IMPLEMENTERA → VERIFIERA, och
+   STOPPAR i stället för att gissa om något är tvetydigt.
+4. **Code rapporterar** tillbaka en transparens-rapport (faktiska värden, `AVVIKELSE:`-flaggor).
+5. **Marcus förmedlar** rapporten till Chat.
+6. **Chat designar nästa steg** mot rapporten — inte mot sitt eget antagande.
+
+Detta dok skrevs genom exakt den loopen: Chat-ritning → Code-kartläggning och författning mot
+disk → granskning → denna rättelse. Systemet beskriver alltså sig självt i rörelse.
+
 ---
 
 ## §5 — Disciplin-skillsen (de fem)
@@ -166,18 +200,20 @@ De fem (`plugins/marcus-system/skills/`):
 | Skill | Gör | Nyckel-mekanik | Chat-halva? |
 |---|---|---|---|
 | **session-start** | Orientera + RAPPORTERA repo-state före arbete | Läs-ordning hub→spoke→lessons; skapande-gren → `create-session-doc` (13 steg) | **Ja** |
-| **session-end** | Do-confirm av Chat-dirigerat avslut (ADR-041, Lager 3) | 11-posters do-confirm, killers #4 BUILD-LOG + #11 Marcus-Update; rapport TÄCKT/EJ TILLÄMPLIGT/SAKNAS | **Ja** |
+| **session-end** | Do-confirm av Chat-dirigerat avslut ([ADR-041](../decisions/ADR-041-session-end-do-confirm-roll.md), Lager 3) | 11-posters do-confirm, killers #4 BUILD-LOG + #11 Marcus-Update; rapport TÄCKT/EJ TILLÄMPLIGT/SAKNAS | **Ja** |
 | **phase-end-verify** | Stäng en BYGGFAS (ej en session) | Kör `phase-end-verify.sh <N> <datum>` → cross-doc-grep 5 styrande + 3 publika docs | **Nej (Code-only)** |
 | **lessons-hub-sync** | Skörda lessons + lyfta `[UNIVERSAL]` till hub | Spegla UNIVERSAL-poster till hub `tasks/lessons.md` + cross-repo-commit | **Nej (Code-only)** |
-| **arch-audit** | Arkitektur-fitness-betyg mot fast kontrakt (ADR-058) | Mekaniska checkar i–iii via script + omdömes-områden iv–v; **fixar aldrig kod** | **Ja** |
+| **arch-audit** | Arkitektur-fitness-betyg mot fast kontrakt ([ADR-058](../decisions/ADR-058-arkitektur-fitness-audit-mekanism.md)) | Mekaniska checkar i–iii via script + omdömes-områden iv–v; **fixar aldrig kod** | **Ja** |
 
 Källa: respektive `SKILL.md` i katalogen ovan. [AKTUELLT TILLSTÅND → via Code: att det är exakt
 dessa fem verifieras med `ls` av skills-katalogen; vid 2026-06-21 var de fem.]
 
 **Code↔Chat-halv-asymmetrin** (en lucka detta dok fyller — ingen yta korsade detta tidigare).
-Varje skill kan ha en Code-halva (plugin) och/eller en Chat-halva
-(`claude-app-skills/`, uppladdad till claude.ai):
-[STABIL MEKANIK — verifierat mot båda kataloger.]
+Att asymmetrin *finns* är en strukturell egenskap: varje skill kan ha en Code-halva (plugin)
+och/eller en Chat-halva (`claude-app-skills/`, uppladdad till claude.ai), och vissa har bara den
+ena [STABIL MEKANIK]. *Vilka* fem som sitter var är däremot tillstånd — det ändras om en skill
+får eller tappar en halva [AKTUELLT TILLSTÅND → via Code: jämför plugin-katalogen mot
+`claude-app-skills/`; vid 2026-06-21 gällde]:
 
 - **Delade** (båda ytor): `session-start`, `session-end`, `arch-audit`.
 - **Code-only** (ingen Chat-halva): `lessons-hub-sync`, `phase-end-verify` — rent
@@ -237,8 +273,8 @@ Hur kvalitet enforce:as mot disk, i tre lager:
 Den bär listan `FRONTMATTER_GOVERNING_DOCS`, owner/status-enum och `FRONTMATTER_MIN_HISTORY_DEPTH=0`
 (full clone sedan [ADR-054](../decisions/ADR-054-fetch-depth-full-historik.md)). Logiken är universell
 (kan dupliceras till andra spokes), värdena är per-projekt. [STABIL MEKANIK — config-driven.]
-[AKTUELLT TILLSTÅND → via Code: vid 2026-06-21 innehöll listan **11 exakt-path docs** (bl.a. de tre
-reference-doken + denna kandidat ännu EJ inlagd — wiring sker senare). Verifiera listan live.]
+[AKTUELLT TILLSTÅND → via Code: vid 2026-06-21 innehöll listan **12 exakt-path docs** (inkl. detta
+dok, som blev governing i T17-wiringen). Verifiera listan live.]
 
 **Pre-commit-hook.** [`.githooks/pre-commit`](../../.githooks/pre-commit) auto-bumpar `updated:`
 till dagens datum för staged docs som **exakt-path-matchar** governing-listan: `set -euo pipefail`,
@@ -325,6 +361,15 @@ Detta dok beskriver det körande systemet; några hub-ytor har drift som inte h�
 
 **Alla dessa hör till hub-dokumentations-reconciliationstråden (T22) — inte till detta dok.** Att doket
 namnger sina egna gränser är vad som gör det ärligt.
+
+---
+
+## §11 — Ändringslogg
+
+- **2026-06-21 (Session 29, T17):** Doket fött (Pass 2) + rättat efter kall granskning (Pass 2-rev):
+  §0 ordlista tillagd, fångst-rater omklassade till [AKTUELLT TILLSTÅND], skill-medlemskap likaså,
+  ADR-länkar kompletterade, §4.5 arbetscykel-vinjett tillagd. Wirat governing
+  (`.frontmatter-policy.conf` 11→12) + per-session-DoD-rad i `CONTRIBUTING.md`.
 
 ---
 
