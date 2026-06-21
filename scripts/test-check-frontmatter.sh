@@ -157,6 +157,7 @@ write_all_valid() {
     write_doc "docs/specs/SECURITY-SPEC.md" "marcus803" "${today}" "2027-12-31" "stable"
     write_doc "docs/reference/hur-systemet-funkar.md" "marcus803" "${today}" "2027-12-31" "stable"
     write_doc "docs/reference/data-model.md" "marcus803" "${today}" "2027-12-31" "stable"
+    write_doc "docs/reference/airtable-constraints.md" "marcus803" "${today}" "2027-12-31" "stable"
     write_doc "tasks/lessons.md" "marcus803" "${today}" "2027-12-31" "stable"
     write_doc "docs/decisions/README.md" "marcus803" "${today}" "2027-12-31" "stable"
 }
@@ -216,10 +217,10 @@ mark() {
 }
 
 # ============================================================
-# T1: all-pass — alla 9 styrande docs valid
+# T1: all-pass — alla 10 styrande docs valid
 # ============================================================
 echo ""
-echo "═══ T1: all-pass — alla 9 styrande docs har valid frontmatter ═══"
+echo "═══ T1: all-pass — alla 10 styrande docs har valid frontmatter ═══"
 setup_repo
 write_all_valid
 git add . >/dev/null 2>&1
@@ -227,7 +228,7 @@ git commit -q -m "fixture-t1" >/dev/null 2>&1
 out=$(run_validator); ec=$?
 ok=0
 check_exit "T1" 0 "${ec}" || ok=1
-check_contains "T1" "Frontmatter-validering: alla 9 styrande docs passerar" "${out}" || ok=1
+check_contains "T1" "Frontmatter-validering: alla 10 styrande docs passerar" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
@@ -593,7 +594,7 @@ out=$(run_validator); ec=$?
 ok=0
 check_exit "T12" 0 "${ec}" || ok=1
 check_not_contains "T12 (no-unsafe)" "Unsafe-shallow clone detected" "${out}" || ok=1
-check_contains "T12 (success)" "Frontmatter-validering: alla 9 styrande docs passerar" "${out}" || ok=1
+check_contains "T12 (success)" "Frontmatter-validering: alla 10 styrande docs passerar" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
