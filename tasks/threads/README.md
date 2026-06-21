@@ -42,7 +42,7 @@ status: stable
 | `T16` | data-model.md reconciliation (live-schema-diff) + avsluts-rutin-wiring — (a) forensisk fält-diff mot live Airtable FÖRE (b) DoD-rad | `paused` | _(ingen kort än — endast registrerad); uppstod Session 26_ |
 | `T17` | System-/arbetssätts-dokument (Chat/Code/Marcus · hub/spoke · skills · plugin-distribution · governing-mekanik) — utöka `hur-systemet-funkar.md` eller nytt dok | `paused` | _(ingen kort än — endast registrerad); uppstod Session 26_ |
 | `T18` | Hub-plugin distributions-gap (källa-vs-installerad) — session-end tråd-synk-steg inaktivt tills v1.4.0→1.5.0-bump + ominstallation | `paused` | _(ingen kort än — endast registrerad); uppstod Session 26 (rest av register-synk-passet A3)_ |
-| `T19` | App↔Airtable-interaktions-dok (saknad yta: hur appen frågar/skriver mot basen + fällorna i interaktionen) | `paused` | _(ingen kort än — endast registrerad); uppstod Session 27 (T16-orientering)_ |
+| `T19` | App↔Airtable-interaktions-dok (saknad yta: hur appen frågar/skriver mot basen + fällorna i interaktionen) | `active` | [`airtable-interaction.md`](../../docs/reference/airtable-interaction.md) · governing sedan Session 28; Pass 2-granskning + §9-fyllnad av 6c återstår |
 | `T20` | Levande styrdok utanför frontmatter-hook-scope (sessionsdok + tråd-register: updated: speglar ej verklig touch) | `paused` | _(ingen kort än — endast registrerad); uppstod Session 27 (Code STEG A-fynd)_ |
 | `T21` | data-model.md psionautics-synk-drift + T19-pekarens repo-agnosticitet (Commit B-rest) | `paused` | _(ingen kort än — endast registrerad); uppstod Session 27 (T16 Pass 2 Commit B)_ |
 

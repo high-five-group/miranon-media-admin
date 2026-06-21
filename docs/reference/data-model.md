@@ -835,14 +835,13 @@ När A9/A10 kört färdigt fylls alla Deltaganden-baserade rollups på Personer 
 
 > **Flyttad yta.** App↔Airtable-interaktionen (Edge Functions: vilka fält varje
 > funktion läser/skriver, mappningar, hårdkodade värden, länkfält-filter-mönster)
-> dokumenteras i ett dedikerat interaktions-dok — se tråd T19 (`tasks/threads/README.md`).
-> Det doket är pending och byggs efter Fas 6c (6c genererar färsk interaktions-kunskap
-> det ska fånga).
+> dokumenteras i ett dedikerat interaktions-dok:
+> [`docs/reference/airtable-interaction.md`](airtable-interaction.md) (T19).
 >
 > Denna sektion beskrev tidigare Psionautics-repots Edge Functions (pre-Fas-6, april-
 > commits) och har tagits bort 2026-06-21 (Session 27, T16) för att inte stå kvar som
-> en stale duplikat i fel dokument. data-model.md äger schema + datakvalitet; T19-doket
-> äger interaktions-kontraktet.
+> en stale duplikat i fel dokument. data-model.md äger schema + datakvalitet;
+> interaktions-doket äger interaktions-kontraktet.
 
 ---
 
