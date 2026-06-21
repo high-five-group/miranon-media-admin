@@ -10,14 +10,14 @@ status: stable
 > **Primär version.**
 >
 > Detta är källsanningen för datamodellen. Kopia för psionautics-projektets
-> Claude-chatt synkas separat till `~/Repon/psionautics/docs/reference/data-model.md`
+> Claude-chatt synkas separat till `~/Repon/psionautics/docs/data-model.md`
 > efter varje uppdatering här. Vid arbete: redigera ALLTID denna fil först.
 
 ---
 
 # Datamodell — Miranon Media & Psionautics
 
-*Levande referens. Version 2. Skapad 2026-04-16. Senast verifierad 2026-04-28.*
+*Levande referens. Version 2. Skapad 2026-04-16. Senast verifierad 2026-04-28. Reconcilierad mot live + repo 2026-06-21 (Session 27, T16).*
 
 ---
 
@@ -107,6 +107,7 @@ app8uGPrVCVOm6LfD
 | Deltaganden | Anmälan | Anmälningar | `fldwQdDpRK8vByNhb` | |
 | Deltaganden | Event | Eventplanering | `fldaj5mbpU3yPw2np` | |
 | Deltaganden | Person (länk) | Personer | `fldiU06kbTxSafkm4` | Sätts av A11 |
+| Deltaganden | Person (lookup) | Personer | `fldF9DORzkIBcRT7F` | multipleLookupValues från Anmälan.Person. **Returnerar record-ID, INTE namn** — kräver separat Personer.Namn-batch för läsbart namn (S25-fynd, get-attendance väg D). |
 
 ### Nyckelformula — "lynchpin"-fält
 
@@ -341,7 +342,7 @@ Konsoliderad lista över schema-ändringar i basen sedan 2026-04-15. Alla bekrä
 |---|---|---|---|---|
 | RIM 3 × | `fld93OrTArvdkkYmk` | rollup | 2026-04-26 | Räknar närvaroposter på "Resor i medvetandet 3"-event. Rollar `fldL0YfWmdkOuxgsH` (RIM 3 eventkey) från Deltaganden. Tidigare saknades — symmetri mot RIM 1 ×, RIM 2 ×, Fjärrskådning ×. |
 | Antal genomförda event | `flddy8JND3YnlgZxe` | formula | 2026-04-26 | Konverterad från rollup till formula: `{RIM 1 ×} + {RIM 2 ×} + {RIM 3 ×} + {Fjärrskådning ×}`. Konsoliderad efter formelfilter-divergens upptäckt 2026-04-24 (verifiering errata Fynd 3). |
-| Antal genomförda event (gammal) | `flddymQaYJGVCInzq` | rollup | (befintligt) | Markerad för borttagning efter MK 2026-05-03. Bevarad för fall där konsumenter pekar på gamla fält-IDt. |
+| Antal genomförda event (gammal) | `flddymQaYJGVCInzq` | rollup | (befintligt) | Markerad för borttagning (deadline 2026-05-03 passerad utan åtgärd; fältet finns kvar i basen — borttagning ej utförd). Bevarad för fall där konsumenter pekar på gamla fält-IDt. |
 
 ### Eventplanering (`tblVE3UKWl1CKrphV`)
 
@@ -383,7 +384,7 @@ Dessa fylls i så fort en Anmälan skapas och får sin Person-länk (via A2).
 | `RIM 3 ×` (`fld93OrTArvdkkYmk`) | COUNTA på `Deltaganden.RIM 3 eventkey`. **Tillagt 2026-04-26** för symmetri. |
 | `Fjärrskådning ×` (`fldlczklhguSg02H6`) | COUNTA på `Deltaganden.Fjärrskådning eventkey` |
 | `Antal genomförda event` (`flddy8JND3YnlgZxe`) | **Formula** sedan 2026-04-26: `{RIM 1 ×} + {RIM 2 ×} + {RIM 3 ×} + {Fjärrskådning ×}`. Tidigare en rollup på `Genomfört event (1 rad per event)` — men formelfilter-divergens (Dag 1 OR Föreläsning) ledde till inkonsistens med RIM-räknarna (som saknar Session-filter). Konvertering till formula fixar konsistens. |
-| `Antal genomförda event (gammal)` (`flddymQaYJGVCInzq`) | **Parallellt fält**, gammal rollup. Markerad för borttagning efter MK 2026-05-03. Risk: konsumenter som pekar på gamla får data utan RIM 3. Se §Kända fällor 28. |
+| `Antal genomförda event (gammal)` (`flddymQaYJGVCInzq`) | **Parallellt fält**, gammal rollup. Markerad för borttagning (deadline 2026-05-03 passerad utan åtgärd; fältet finns kvar i basen — borttagning ej utförd). Risk: konsumenter som pekar på gamla får data utan RIM 3. Se §Kända fällor 28. |
 | `Erfarenhetsnivå` (`fldWSkxHJS2xWav4t`) | Formula utifrån RIM 1/2-antal. **Tar inte hänsyn till RIM 3** — se §Kända buggar i insiktskedjan. |
 | `Erfarenhetsbadge` (`fld04qqDQLgbJbBef`) | SWITCH av Erfarenhetsnivå |
 | `Genomförda event (lista)` (`fldfopt6vl3ZdOT5W`) | ARRAYJOIN av `Genomfört event` |
@@ -509,6 +510,8 @@ Klassificerar personen utifrån RIM 1 × och RIM 2 × (full formel via MCP get_t
 | Genomfört RIM steg 1–2 | RIM 1 × > 0 AND RIM 2 × > 0, totalt < 3 |
 | Genomfört RIM steg 1–2 (upprepat) | RIM 1 × > 0 AND RIM 2 × > 0, totalt ≥ 3 |
 | Avvikelse: RIM 2 utan RIM 1 | RIM 2 × > 0 AND RIM 1 × = 0 — fångar felordning |
+
+> **Not — "Totala deltaganden":** villkoret ovan avser fältet `Totala deltaganden (gammal)` (`fldBP7xdEmpXDwUpz`), formel `{RIM 1 ×} + {RIM 2 ×} + {Fjärrskådning ×}` — **exkluderar RIM 3** (verifierat mot `02-live-state.md` §3). Erfarenhetsnivå ärver därmed RIM 3-blindheten (se §Kända buggar i insiktskedjan). Den nyare `Antal genomförda event` (`flddy8JND3YnlgZxe`) summerar däremot RIM 1 × + RIM 2 × + RIM 3 × + Fjärrskådning × (inkl. RIM 3).
 
 **6. Personer.Erfarenhetsbadge**
 Översätter teknisk nivå till human-readable badge:
@@ -1176,7 +1179,7 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 
     **Verifiering 2026-04-28:** För Deltagande #1683 (rec0gBwp1ItzlgBtH): faktisk Anmälan-länk = recFaXedi3YB14m0F, faktisk Event-länk = rec6YyJSnP5V8IEaV, men båda formelfälten returnerar rec0gBwp1ItzlgBtH (Deltagandets ID). Verifierat via direkt MCP-jämförelse av länkfält vs formelfält.
 
-    **Påverkan:** Konsumenter som läser dessa fält som "ID för länkat Anmälan/Event" får fel data. Andra konsumenter (Eventkey-formler) använder rätt mekanism (`fldGC2MziEfqIPeZP Eventkey (lookup)`).
+    **Påverkan:** Konsumenter som läser dessa fält som "ID för länkat Anmälan/Event" får fel data. Andra konsumenter (Eventkey-formler) använder rätt mekanism (`fldGC2MziEfqIPeZP Eventkey (lookup)`). **Konkret konsument:** `Närvaro (nyckel)` (`fldra8QclmAyG4dKU`, formel `Anmälan-ID | Event-ID | Session`) bygger på dessa fält → nyckeln innehåller radens EGNA ID upprepat, inte Anmälan|Event-ID som namnet antyder. (Verifierat MCP 2026-06-21.)
 
     **Åtgärd-rekommendation:** Antingen ta bort fälten eller ersätt formlerna med `ARRAYJOIN(Anmälan-länk)` / `ARRAYJOIN(Event-länk)`. Inget akut, men flagga vid framtida revision.
 
@@ -1218,7 +1221,7 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
     - `flddymQaYJGVCInzq` ("Antal genomförda event (gammal)") — gammal **rollup** på Deltaganden.Genomfört event
     - `flddy8JND3YnlgZxe` ("Antal genomförda event") — ny **formula** sedan 2026-04-26: summan av RIM 1 × + RIM 2 × + RIM 3 × + Fjärrskådning ×
 
-    Den gamla är **markerad för borttagning** efter MK 2026-05-03 (per backlog i `psionautics-session-2026-04-26-fortsattning.md`).
+    Den gamla är **markerad för borttagning** (deadline 2026-05-03 passerad utan åtgärd; fältet finns kvar i basen — borttagning ej utförd; per backlog i `psionautics-session-2026-04-26-fortsattning.md`).
 
     **Risk:** Konsumenter (CSV-export, rapporter, admin-vyer) som fortfarande pekar på det gamla fält-IDt får data **utan RIM 3** (gamla formeln räknade bara via Genomfört event-rollup, som har Session-filter Dag 1 OR Föreläsning).
 
@@ -1352,9 +1355,9 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 
 5. **Instagram Posts-tabellens syfte.** Samma som ovan. Kan vara tom.
 
-6. **Miranon Media Admin — utbytbar datakälla.** React-projektet har `DataSourceAdapter`-mönstret förberett för Airtable → Supabase-migration. Exakt migrationsplan och trigger bor i `miranon-media-admin/docs/byggplan.md`.
+6. **Miranon Media Admin — utbytbar datakälla.** React-projektet har `DataSourceAdapter`-mönstret förberett för Airtable → Supabase-migration. Exakt migrationsplan och trigger bor i `miranon-media-admin/docs/byggplan.md` + [ADR-056](../decisions/ADR-056-list-paginerings-port-cursor-dubbel-kalla.md), [ADR-057](../decisions/ADR-057-lager-oberoende-fitness-invariant.md), `docs/research/datamodell-research/07-migration-plan.md`.
 
-7. **Datamodell-research för världsklass.** Separat uppdrag som ska köras i miranon-media-admin: identifiera principer för toppklass-datamodeller → gapanalys mot nuvarande modell → migrationsplan. Se `miranon-media-admin/tasks/todo.md`.
+7. **Datamodell-research för världsklass — STÄNGD 2026-06-21.** Research genomförd: se `docs/research/datamodell-research/` (`05-gap-vs-worldclass.md`, `06a-airtable-redesign.md`, `06b-supabase-target.md`, `07-migration-plan.md`). Ursprungligt uppdrag: identifiera principer för toppklass-datamodeller → gapanalys → migrationsplan.
 
 8. **Webhooks i Airtable-basen.** Airtable-MCP kan inte läsa automationer, interfaces, vyer, formulär, extensions eller webhooks (per CLAUDE.md "Kritiska lärdomar"). Om webhooks finns konfigurerade utöver de Edge Functions vi ser i `psionautics/supabase/functions/` är de osynliga från denna dokumentation. Verifieringsväg: HAR-export från Airtable UI eller Airtable Web API direkt.
 
