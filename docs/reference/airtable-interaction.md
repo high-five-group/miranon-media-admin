@@ -269,9 +269,16 @@ ett `singleLineText`-KONSTANTFÄLT, INTE ett länkfält (live-verifierat MCP-pul
 2026-06-21 mot prod `app8uGPrVCVOm6LfD`: typ `singleLineText`, samma värde
 "Psionautics" på alla rader). Ett text-konstantfält bär varken T15-länk-display-
 klassen eller kan fungera som per-event-diskriminator — det är alltid samma värde.
-**Event-filtreringen är en ÖPPEN design-fråga** (Session 26 §B1, `:223-224`): behöver
-get-waitlist event-filtrering alls, eller är väntelistan global (Mer-flik-konvertering,
-ej per-event)? Avgörs i 6c-bygget — föreskrivs INTE här.
+**Verifierat nuläge:** väntelistan är de facto GLOBAL idag — ett brand ("Psionautics"),
+ett event, `singleLineText`-konstant i `Event`-fältet → ingen per-event-distinktion
+finns i datan. Strukturen är byggd att kunna växa (fler Psionautics-event; en
+Miranon Media-väntelista är planerad men EJ använd ännu), men behovet av
+per-event-filtrering existerar INTE i basen idag.
+**Event-filtreringen förblir därför en ÖPPEN design-fråga** (Session 26 §B1, `:223-224`):
+behöver get-waitlist event-filtrering alls, eller är väntelistan global
+(Mer-flik-konvertering, ej per-event)? Den som bygger get-waitlist i 6c avgör mot
+DÅ-aktuell datamodell, inte mot en antagen distinktion — inget filter-kontrakt
+föreskrivs här.
 
 > Forensisk not: en tidigare sido-hypotes (Session 26 `:96-97`) antog `Väntelista.Event`
 > vara ett länkfält → "samma T15-klass". Live-verifiering 2026-06-21 visar `singleLineText`
@@ -311,3 +318,4 @@ bas-ID som är inkopplat är runtime-tillstånd, inte kod.
 |---|---|
 | 2026-06-21 | **Skapad** (Session 28, T19). Initial/föreskrivande version, belägg-bas commit `346c386`. Fyller interaktions-nischen vid sidan av de tre befintliga reference-ytorna; byggd FÖRE Fas 6c som karta för första write-flödet. 6c validerar och fyller §9 när EF:erna landar. |
 | 2026-06-21 | **Pass 2-rättelse** (Session 28, T19). §9 get-waitlist: `Väntelista.Event` (`fldC01Nf3lVWrOgdw`) live-verifierat `singleLineText`-konstant (ej länkfält; MCP-pull mot prod) → ingen T15-exponering, event-filtrering återställd till ÖPPEN design-fråga (Session 26 `:223-224`) i stället för föreskrivet kontrakt. §5/§6 get-person: rättat över-attribuering — `get-person` är mekaniskt icke-T15-exponerad men citerar inte klassen; explicit T15-citat tillhör `get-attendance:100-101`. §6: skilde källkods-mekanik (`:67`) från deploy-tillstånd. |
+| 2026-06-21 | **§9-berikning** (Session 28, T19). get-waitlist: verifierat nuläge inlagt — väntelistan de facto global idag (ett brand "Psionautics", ett event, `singleLineText`-konstant); per-event-behov finns ej i basen; öppna design-frågan intakt. Samordnad med `data-model.md:221`-fix (brand-värde "Psionautics", ej event-namn). |

@@ -218,7 +218,7 @@ För Edge Functions, scripts, manuella PATCH-ops. Listar fält som ofta skrivs t
 | Efternamn | `fldWKbMYRKlwOmg89` | singleLineText | – |
 | E-post | `fldbn9SyKemmI31H3` | singleLineText | – |
 | Telefonnummer | `fldysS1swV4xpUsH5` | singleLineText | – |
-| Event | `fldC01Nf3lVWrOgdw` | singleLineText | Hårdkodat "Medveten Kontakt" av `create-waitlist-entry` |
+| Event | `fldC01Nf3lVWrOgdw` | singleLineText | Bär BRAND-värdet, hårdkodat `"Psionautics"` av `create-waitlist-entry` (live-verifierat MCP-pull 2026-06-21, prod `app8uGPrVCVOm6LfD`, 5/5 stickprov). EJ event-namnet — väntelistan har hittills använts för ETT event ("Medveten Kontakt") under brandet Psionautics. Tidigare noterat "Medveten Kontakt" var en event/brand-förväxling. |
 | Eventdatum-start | `fld86BydfvliidRBX` | singleLineText | Hårdkodat "2026-05-01" |
 | Eventdatum-slut | `fldNSwatG61UaemCt` | singleLineText | Hårdkodat "2026-05-03" |
 | utm_source / utm_medium / utm_campaign / utm_content | `fldouEa5AKkfjm7vf`, `fld2Mqil2Tm4N0SwS`, `fldac61BD71mK16nJ`, `fldBBGz0UT815UaQT` | singleLineText | Spårning från landningssidan |
