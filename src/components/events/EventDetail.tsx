@@ -210,8 +210,11 @@ export function EventDetail({ eventId }: { eventId: string }) {
         <h2 id="sektion-anmalda" className="font-semibold text-lg">
           Anmälda
         </h2>
-        {/* 6c ej byggd → ingen död länk; kort not (utelämnad ingång). */}
-        <p className="text-small text-text-muted">Anmälda-listan kommer i Fas 6c.</p>
+        {/* Ingen anmälda-siffra i get-event-shapen — gissa inte fält; länka bara
+            (speglar närvaro-sektionens form). Fas 6c L2: anmälda-vyn byggd. */}
+        <Link to="/event/$eventId/anmalda" params={{ eventId }} className="text-small underline">
+          Öppna anmälda-vyn →
+        </Link>
       </section>
     </section>
   );
