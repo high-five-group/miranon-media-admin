@@ -1,17 +1,55 @@
-import {
-  buildEqualsFilter,
-  buildLinkedRecordFilter,
-  combineWithAnd,
-} from '../_shared/airtable-filter.ts';
-import { fetchFromAirtable } from '../_shared/airtable-client.ts';
+import { fetchAirtableRecord, fetchFromAirtable } from '../_shared/airtable-client.ts';
+import { buildEqualsFilter, combineWithAnd } from '../_shared/airtable-filter.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 
-// Tabell adresseras per NAMN (ej tbl-id) så samma kod fungerar mot prod- och
+// Tabeller adresseras per NAMN (ej tbl-id) så samma kod fungerar mot prod- och
 // staging-bas — tbl-id:n är bas-unika och skiljer sig i en duplicerad bas (ADR-050).
 const TABLE_NAME = 'Anmälningar';
+const EVENTPLANERING_TABLE = 'Eventplanering';
+
+// Max record-ID:n per batch-anrop (Anmälningar-ID:n). En chunk = en kort
+// `OR(RECORD_ID()=…)`-formel (≤50 IDs ≈ ~1.5 kB, väl under Airtables formel-/URL-
+// längd) → ETT listanrop per chunk (ej N+1). ceil(N/50) anrop, NOLL trunkering.
+// Spegel av get-attendance:s attendanceBatchSize.
+//
+// Env-override (`REGISTRATIONS_BATCH_SIZE`) finns ENBART för conformance-testbarhet:
+// staging sätter den lågt (=2) så chunk-merge-vägen exerceras med en liten fixtur
+// (bevisar noll-trunkering vid chunk-gräns). Prod sätter inte secreten → default 50.
+function registrationsBatchSize(): number {
+  const raw = Number.parseInt(Deno.env.get('REGISTRATIONS_BATCH_SIZE') ?? '', 10);
+  return Number.isInteger(raw) && raw > 0 ? raw : 50;
+}
+
+type Fields = Record<string, unknown>;
+
+function chunk<T>(items: readonly T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(items.slice(i, i + size));
+  }
+  return out;
+}
+
+/** Batch-hämta record-ID:n ur en tabell via chunkad `OR(RECORD_ID()=…)` (get-attendance-mall). */
+async function fetchByRecordIds(
+  table: string,
+  ids: readonly string[],
+  fields: readonly string[] | undefined,
+): Promise<{ id: string; fields: Fields }[]> {
+  const out: { id: string; fields: Fields }[] = [];
+  for (const idChunk of chunk(ids, registrationsBatchSize())) {
+    const filterByFormula = `OR(${idChunk.map((rid) => `RECORD_ID()='${rid}'`).join(',')})`;
+    const records = await fetchFromAirtable(
+      table,
+      fields ? { filterByFormula, fields: [...fields] } : { filterByFormula },
+    );
+    out.push(...records);
+  }
+  return out;
+}
 
 function mapRegistration(record: { id: string; fields: Record<string, unknown> }) {
   const f = record.fields;
@@ -40,6 +78,37 @@ function mapRegistration(record: { id: string; fields: Record<string, unknown> }
   };
 }
 
+type Registration = ReturnType<typeof mapRegistration>;
+
+/** Inskickad desc, nulls sist (dateTime ISO → Date.parse; båda null → 0; en null → sist). */
+function byInskickadDesc(a: Registration, b: Registration): number {
+  const ta = a.inskickad ? Date.parse(a.inskickad as string) : null;
+  const tb = b.inskickad ? Date.parse(b.inskickad as string) : null;
+  if (ta === null && tb === null) return 0;
+  if (ta === null) return 1; // a (null) sist
+  if (tb === null) return -1; // b (null) sist
+  return tb - ta; // desc
+}
+
+/**
+ * get-registrations — anmälningar (Anmälningar) per event/status/flagga (Fas 6c).
+ *
+ * EVENTID-GRENEN: RECORD-ID-BATCH FRÅN EVENT-HÅLLET (speglar get-attendance/get-person):
+ * hämtar eventraden, läser dess `Anmälningar (länkat fält)`-länk (read-only spegel av
+ * `Anmälningar.Event`, fldUAjTutSM0fziMT → Anmälningar-record-ID:n) och batch-hämtar dem
+ * via chunkad `OR(RECORD_ID()=…)`. ANVÄNDER MEDVETET INTE `buildLinkedRecordFilter` — den
+ * matchar länkens primär-display (eventlabel), inte record-ID (T15-klass-bugg). Record-ID =
+ * enda tillförlitliga nyckeln. Status/flagga filtreras klientside (JS, mot selectName-utdata,
+ * ekvivalent med `{Status}='x'`), Inskickad-desc-sortering klientside (nulls sist). LÄSER bara.
+ * 404 = okänt eventId (ärver get-event/get-attendance-kontraktet); event utan
+ * `Anmälningar (länkat fält)` → tom lista (ej fel).
+ *
+ * EVENT-LÖSA GRENEN (eventId saknas): OFÖRÄNDRAD — serverside filterByFormula via
+ * buildEqualsFilter (status/flagga) + fetchFromAirtable med Inskickad-desc-sort. 404:ar INTE.
+ *
+ * ATOMICITET: event-fetch + Anmälningar-batch är ICKE-atomär — acceptabelt för en admin-
+ * läsvy, medvetet utan snapshot-isolering (samma disciplin som get-attendance/get-person).
+ */
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -55,6 +124,52 @@ Deno.serve(async (req) => {
   const status = url.searchParams.get('status');
   const flagga = url.searchParams.get('flagga');
 
+  // EVENTID-GRENEN — väg D (record-ID-batch från event-hållet, T15-fix).
+  if (eventId) {
+    try {
+      // 1) Eventraden — ETT single-get. null = 404 (ärver get-event/get-attendance-kontraktet).
+      const eventRecord = await fetchAirtableRecord(EVENTPLANERING_TABLE, eventId);
+      if (!eventRecord) {
+        return new Response(JSON.stringify({ error: 'Event not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // 2) Eventets Anmälningar-record-ID:n ur `Anmälningar (länkat fält)`-länken (read-only
+      //    spegel av Anmälningar.Event). Tom/saknad → tom lista (event utan anmälningar är
+      //    ett giltigt tillstånd; conformance-grind G1 bevakar att spegeln populeras skarpt).
+      const anmIds: string[] = Array.isArray(eventRecord.fields['Anmälningar (länkat fält)'])
+        ? (eventRecord.fields['Anmälningar (länkat fält)'] as string[])
+        : [];
+
+      // 3) Batch-hämta anmälningarna (fields=undefined → ALLA fält; mapRegistration läser
+      //    ~19 fält, en projektion vore brittle).
+      let registrations =
+        anmIds.length > 0
+          ? (await fetchByRecordIds(TABLE_NAME, anmIds, undefined)).map(mapRegistration)
+          : [];
+
+      // 4) JS-filter (status/flagga = selectName-utdata, ekvivalent med {Status}='x').
+      if (status) registrations = registrations.filter((r) => r.status === status);
+      if (flagga) registrations = registrations.filter((r) => r.flagga === flagga);
+
+      // 5) JS-sort: Inskickad desc, nulls sist.
+      registrations.sort(byInskickadDesc);
+
+      return new Response(JSON.stringify({ registrations }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      return mapErrorToResponse(error, requestId, corsHeaders, {
+        function: 'get-registrations',
+        method: req.method,
+        callerUserId: auth.user.id,
+      });
+    }
+  }
+
+  // EVENT-LÖSA GRENEN — OFÖRÄNDRAD (serverside filter + sort, 404:ar inte).
   // Bygg filterByFormula via parameteriserade builders (M5).
   // Builders kastar vid kontrolltecken / ogiltigt recordId-format /
   // för långa strängar / Unicode-bidi-overrides → 400 (klient-fel,
@@ -63,9 +178,6 @@ Deno.serve(async (req) => {
   let filterByFormula: string | undefined;
   try {
     const filters: string[] = [];
-    if (eventId) {
-      filters.push(buildLinkedRecordFilter('Event', eventId));
-    }
     if (status) {
       filters.push(buildEqualsFilter('Status', status));
     }
