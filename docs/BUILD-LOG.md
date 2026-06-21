@@ -1512,6 +1512,31 @@ Föregår den pausade Session 26 (6c-bygget, ej återupptaget). Ren dok-/process
 
 ---
 
+## Session 28 — T19 app↔Airtable-interaktions-dok LEVERERAD (författning → granskning → rättelse) (2026-06-21)
+
+Föregår den pausade Session 26 (6c-bygget, ej återupptaget). Ren dok-/process-session: ingen produktkod (en test-fixtur-touch), inget nytt ADR, SESSIONSGRÄNS ej fas-avslut → ingen arkivering, ingen CHANGELOG-release (ADR-023).
+
+**Planerat vs faktiskt:** planerat = T19 (författa den saknade fjärde reference-ytan, app↔Airtable-interaktions-doket). Faktiskt = doket levererat OCH wirat (governing + DoD-rad) OCH extern-granskat (Pass 2) OCH rättat — plus två satellit-touchar (T21-vidgning, data-model:221-fix). Ingen avvikelse nedåt; en Pass-2-rättelse fångade fyra fynd som self-review missade (L163).
+
+**Landningar (kronologisk, commit-hashar):**
+
+- **Pass 0 + dok-födelse** (`346c386`) — komplett interaktions-inventering (9 EF + `_shared`); Session 28-dok fött via create-session-doc-grenen.
+- **Landning A — författning** (`f2a7118`) — [`docs/reference/airtable-interaction.md`](../docs/reference/airtable-interaction.md), 11 sektioner, fil:rad-belagt mot `346c386`, färskhets-kontrakt (STABIL MEKANIK vs `[AKTUELLT TILLSTÅND]`).
+- **Landning B — wiring** (`e3e50dd` + fix `cd46bee`) — governing-registrering i `.frontmatter-policy.conf` (10→11 docs), data-model EF-pekare "pending" → live, T19-tråd `paused`→`active`; B fällde först på en test-fixtur-koppling (T1/T12 hårdkodade 10 docs + saknad fixtur-rad) → `cd46bee` (14/14 PASS). **Grundorsak: config↔test-fixtur-lockstep.**
+- **Landning C — T21-vidgning** (`84561ad`) — T21 utökad till båda synkade reference-doken + färsk C1-drift-siffra (hur-systemet-funkar.md-kopia ~19 dagar/24 rader stale; master = miranon; två path-drifter i synk-pekarna, L159-klass).
+- **Pass 2 — kall extern granskning** — alla ~44 fil:rad-belägg rad-exakta; 4 fynd: (1+2) §9 get-waitlist motsade schema-auktoriteten (`Väntelista.Event` länkfält-påstående) + stängde en öppen design-fråga; (3) get-person över-attribuerat T15-citat; (4) §6 "deployade sviten" blandade källkod/tillstånd.
+- **Rättelse-landning B** (`d866347`) — live-MCP bekräftade `Väntelista.Event` = `singleLineText`-konstant "Psionautics" (ej länkfält → ingen T15; data-model:221 korrekt, Session 26:96-97 sido-watch falsifierad); §9 öppen design-fråga återställd; get-person/§6-rättelser. **Rättelse-landning C** (`ab75169`) — CONTRIBUTING DoD-rad för T19-doket (paritet med constraints/data-model-raderna).
+- **Sista dok-touch** (`d645745`) — `data-model:221` brand-värde-fix ("Medveten Kontakt" → live-verifierat "Psionautics", event/brand-förväxling klargjord) + T19 §9-berikning (väntelista de facto global) + T21-not brand/event-kontext.
+- **Lessons-skörd** (`5cbc3d7`) — L162–L164. **Todo** (`d019b1e`) — Session 28-sektion + stämpel.
+
+**Lessons:** L162 (overifierad sido-watch får ej hårdna till kontrakt utan korsläsning mot reconcilerad auktoritet + live), L163 (kod-/schema-härledda dok kräver externt VERIFIERA-pass, ej self-review), L164 (reconciliation = daterad ögonblicksbild; live slår daterad reconciliation). Alla tre `[UNIVERSAL]`, hub-lyft pending.
+
+**Verifiering:** alla landningars CI gröna per-jobb (Docs link check körd+grön på dok-commits; Test+Build körd+grön på `cd46bee` (test-fixtur), skipped by-design på rena docs-commits). ADR-count oförändrat (inget nytt ADR). `Väntelista.Event`-typ live-verifierad MCP-pull 2026-06-21 mot prod `app8uGPrVCVOm6LfD`.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-21-session-28.md`](../tasks/sessions/2026-06-21-session-28.md) (Del 1–3). T19-tråd kvar `active` (§9 fylls av 6c). Nästa-session-ordning (Marcus-beslutad): **T17 → /session-resume Session 26 6c-bygget.**
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
