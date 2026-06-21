@@ -115,8 +115,10 @@ ingen länk-ID-match → ingen T15-exponering. `Ort` (rollup) bevaras som array 
 **`get-person`** — en person + kurshistorik (aggregerande). Tabeller `Personer` +
 `Deltaganden` (`get-person/index.ts:9-10`). Person via `fetchAirtableRecord` (`:172`,
 null→404); historik via **record-ID-batch** `OR(RECORD_ID()='…')` chunkad över
-`personRecord.fields['Deltaganden']` (`:196`). **Kringgår T15 medvetet** — citerar
-klassen i sin kommentar; record-ID är enda tillförlitliga nyckeln.
+`personRecord.fields['Deltaganden']` (`:196`). **Ej T15-exponerad** — record-ID-batch
+matchar exakt record-ID, inte länk-display. (Kommentaren motiverar batchen med
+formel-/URL-längd + historik-fullständighet, `:26-38`/`:182-188`, INTE explicit T15;
+mönstret kringgår klassen oavsett motiv.)
 
 **`get-attendance`** — närvaro per event (aggregerande). Tabeller
 `Eventplanering`, `Deltaganden`, `Personer` (`get-attendance/index.ts:9-11`). Event via
@@ -180,16 +182,20 @@ data ([[L153]]). Roten är en plattform-vägg, inte en bugg i vår kod —
 `#### P8` rad 137: `RECORD_ID({länk})` ignorerar argumentet; `#### P9` rad 150:
 lookup ger ID-array, inte primärvärde). Förklaringen bor där — duplicera den inte.
 
-**Asymmetrin i den deployade sviten:**
+**Asymmetrin i källkoden:**
 
-- **`get-registrations` bär fortfarande buggen** (`:67`) — den enda kvarvarande
-  `buildLinkedRecordFilter`-mot-länkfält-callern. Latent tills den körs mot skarp
-  länk-data (smäller i 6c:s "Anmälda per event").
-- **`get-person` + `get-attendance` kringgår medvetet** via record-ID-batch från
-  relationens andra håll, och citerar T15 i sina kommentarer. Det är den
-  certifierade fix-mallen ([[L154]] — "väg D"): record-ID-batch från BÅDA hållen av
-  en relation återanvänder en bevisad mall i stället för det display-matchande
-  länkfiltret.
+- **`get-registrations` har buggen i källan** (`get-registrations/index.ts:67`) — den
+  enda kvarvarande `buildLinkedRecordFilter`-mot-länkfält-callern. Latent tills filtret
+  körs mot skarp länk-data (smäller i 6c:s "Anmälda per event"). Huruvida denna källa är
+  deployad är `[AKTUELLT TILLSTÅND — VERIFIERAS VIA CODE]` (se §10).
+- **`get-attendance` kringgår T15 medvetet** — dess kommentar citerar klassen
+  explicit (`get-attendance/index.ts:100-101`: *"ANVÄNDER MEDVETET INTE
+  buildLinkedRecordFilter — den matchar länkens primär-display (eventlabel), inte
+  record-ID (T15-klass-bugg). Record-ID = enda tillförlitliga nyckeln"*).
+  **`get-person` är mekaniskt icke-exponerad** via samma record-ID-batch-mönster
+  (motiverat av längd/fullständighet, ej explicit T15). Det är den certifierade
+  fix-mallen ([[L154]] — "väg D"): record-ID-batch från BÅDA hållen av en relation
+  återanvänder en bevisad mall i stället för det display-matchande länkfiltret.
 
 Fixen av `get-registrations` (väg D via `Anmälningar (länkat fält)`) är planerad,
 inte byggd → §9.
@@ -256,9 +262,21 @@ faktiska event-värdet då. Idempotens-lagringen är defererad till **Fas E**
 `Idempotency Keys`-tabell finns i prod/staging (Session 26 §C1).
 
 **`get-waitlist` (läs)** — `[AKTUELLT TILLSTÅND — VERIFIERAS VIA CODE]` (ej på
-disk). Läser egna `Väntelista`-tabellen (`tbl2VxMx7JMkIxD4Q`) filtrerad per event +
-aktiv. **Bär samma T15-klass** — `Väntelista.Event` (`fldC01Nf3lVWrOgdw`) är ett
-länkfält → event-filtret måste byggas via väg D, inte `buildLinkedRecordFilter`.
+disk). Läser egna `Väntelista`-tabellen (`tbl2VxMx7JMkIxD4Q`), aktiv-filtrerad via
+`Flyttad till anmälan` (checkbox, `fldqMpSW5UJIhNdgm`).
+**Ingen T15-exponering på event-fältet:** `Väntelista.Event` (`fldC01Nf3lVWrOgdw`) är
+ett `singleLineText`-KONSTANTFÄLT, INTE ett länkfält (live-verifierat MCP-pull
+2026-06-21 mot prod `app8uGPrVCVOm6LfD`: typ `singleLineText`, samma värde
+"Psionautics" på alla rader). Ett text-konstantfält bär varken T15-länk-display-
+klassen eller kan fungera som per-event-diskriminator — det är alltid samma värde.
+**Event-filtreringen är en ÖPPEN design-fråga** (Session 26 §B1, `:223-224`): behöver
+get-waitlist event-filtrering alls, eller är väntelistan global (Mer-flik-konvertering,
+ej per-event)? Avgörs i 6c-bygget — föreskrivs INTE här.
+
+> Forensisk not: en tidigare sido-hypotes (Session 26 `:96-97`) antog `Väntelista.Event`
+> vara ett länkfält → "samma T15-klass". Live-verifiering 2026-06-21 visar `singleLineText`
+> (konstant), i linje med `data-model.md:221`. Denna karta är auktoritativ över den
+> pausade sessionsdokens sido-watch på den punkten.
 
 **`get-registrations` T15-fix (väg D)** — `[AKTUELLT TILLSTÅND — VERIFIERAS VIA
 CODE]` (ej applicerad; `:67` bär ännu buggen). Fix-vägen är verifierad: record-ID-
@@ -292,3 +310,4 @@ bas-ID som är inkopplat är runtime-tillstånd, inte kod.
 | Datum | Ändring |
 |---|---|
 | 2026-06-21 | **Skapad** (Session 28, T19). Initial/föreskrivande version, belägg-bas commit `346c386`. Fyller interaktions-nischen vid sidan av de tre befintliga reference-ytorna; byggd FÖRE Fas 6c som karta för första write-flödet. 6c validerar och fyller §9 när EF:erna landar. |
+| 2026-06-21 | **Pass 2-rättelse** (Session 28, T19). §9 get-waitlist: `Väntelista.Event` (`fldC01Nf3lVWrOgdw`) live-verifierat `singleLineText`-konstant (ej länkfält; MCP-pull mot prod) → ingen T15-exponering, event-filtrering återställd till ÖPPEN design-fråga (Session 26 `:223-224`) i stället för föreskrivet kontrakt. §5/§6 get-person: rättat över-attribuering — `get-person` är mekaniskt icke-T15-exponerad men citerar inte klassen; explicit T15-citat tillhör `get-attendance:100-101`. §6: skilde källkods-mekanik (`:67`) från deploy-tillstånd. |
