@@ -20,6 +20,12 @@ Detta är grundregel 3 (verifiera, gissa aldrig) tillämpad på Airtable-schemat
 aldrig en fält-form, verifiera mot referensen eller live via Code. (Empiriskt: formel/
 rollup-fält har upprepat antagits skrivbara.)
 
+## SAMARBETSSYSTEMETS MEKANIK — UPPSLAGSVERK, EJ FÖRHANDSKONTEXT
+
+Vårt samarbetssystems mekanik (roller, hub/spoke-instantiering, disciplin-skills,
+governing/distribution) bor i docs/reference/systemet.md — sök projektkunskapen efter den
+vid behov; den är uppslagsverk, inte förhandskontext.
+
 ## Triage av det oväntade — alltid-på (ADR-053) [UNIVERSAL]
 
 När något OVÄNTAT uppstår (utanför nuvarande scope — nära eller långt ifrån, men alltid
