@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-17
+updated: 2026-06-21
 review_by: 2026-09-17
 status: stable
 ---
@@ -39,6 +39,9 @@ status: stable
 | `T13` | Hub-repot (`marcus-system`) saknar CI/docs-grindar — konstitution/plugin/templates omekaniskt grindade (besläktad med T02 men bredare: hela repot, ej bara `project-instructions/`) | `paused` | _(ingen kort än — endast registrerad)_ |
 | `T14` | Event-listans temporal-filter (kommande/tidigare) vs Airtable `Status`-fält (planeringstillstånd) — begreppskrock | `paused` | _(ingen kort än — endast registrerad); uppstod i 6b L1_ |
 | `T15` | `buildLinkedRecordFilter` matchar länk-display ej record-ID — klass-bugg (latent i get-registrations; get-attendance kringgår via record-ID-batch) | `paused` | _(ingen kort än — endast registrerad); uppstod i 6b L3_ |
+| `T16` | data-model.md reconciliation (live-schema-diff) + avsluts-rutin-wiring — (a) forensisk fält-diff mot live Airtable FÖRE (b) DoD-rad | `paused` | _(ingen kort än — endast registrerad); uppstod Session 26_ |
+| `T17` | System-/arbetssätts-dokument (Chat/Code/Marcus · hub/spoke · skills · plugin-distribution · governing-mekanik) — utöka `hur-systemet-funkar.md` eller nytt dok | `paused` | _(ingen kort än — endast registrerad); uppstod Session 26_ |
+| `T18` | Hub-plugin distributions-gap (källa-vs-installerad) — session-end tråd-synk-steg inaktivt tills v1.4.0→1.5.0-bump + ominstallation | `paused` | _(ingen kort än — endast registrerad); uppstod Session 26 (rest av register-synk-passet A3)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
@@ -55,6 +58,12 @@ status: stable
 > _T14-not: Upptäckt Fas 6b L1 — /event-listans `?status=upcoming|past|all` härleds från `startdatum` (TEMPORALT), men Airtable-fältet `Status` är ett PLANERINGSTILLSTÅND (Planerat/Genomfört/Inställt/Flyttat). Namn-krocken ger rätt resultat nu (datum-härledningen är korrekt) men är begreppsligt grumlig och Lotta-synlig (hon ser "kommande/tidigare", inte "Status"). Tråden: reconciliera den användar-synliga terminologin mot Status-fältets planerings-semantik innan Fas 6b deklareras klar. Blockerar ej; defer per ADR-053-triage._
 >
 > _T15-not: KLASS, ej instans. `buildLinkedRecordFilter('Fält', recordId)` ger `FIND(recordId, ARRAYJOIN({Fält}))` — men `ARRAYJOIN` av ett länkfält exponerar länkens PRIMÄR-DISPLAY (t.ex. eventlabel), inte record-ID → `FIND(recordId, …)` matchar ALDRIG. Trasigt var helst ett länk-ID-filter byggs (verifierat tomt i prod OCH staging, BÅDE Deltaganden.Event och Anmälningar.Event). Latent i deployade get-registrations (dess `eventId`-filter saknar staging-test → aldrig kört mot skarp länk-data; smäller i 6c "Anmälda per event"). Enhetstesterna (`airtable-filter.test.ts`) verifierar formel-SYNTAX, aldrig match-SEMANTIK mot riktig data — det är luckan. Sido-fynd: Deltaganden `Event (ID)`-formeln (`RECORD_ID({Event})`) ger radens EGNA id, ej eventets (data-model §3.4 fel) → inget ID-exakt formelfält att filtrera på. get-attendance KRINGGÅR klassen helt (6b L3 väg D: record-ID-batch från event-hållet via `Närvaro (records)`-länken, speglar get-person; använder ej helpern) → get-attendance EJ drabbad. FIX-MALL för get-registrations (6c): record-ID-batch om event→Anmälningar har symmetriskt länkfält, annars en faktiskt fungerande ID-filter-helper. Uppstod 6b L3 conformance (första test som körde filtret mot skarp länk-data; jfr L152 NaN-klass, L5b 403≠404)._
+>
+> _T16-not: Uppstod Session 26. `data-model.md` är governing (auto-bump på `updated:`) men governing garanterar bara STÄMPEL-färskhet, inte INNEHÅLLS-korrekthet — 6a (Persons, Session 23) + 6b (Events, Session 25) schema-/fält-ändringar är ev. ej införda, och tidigare faser kan ha drivit odokumenterad drift. Två-delat, ordning kritisk: (a) RECONCILIATION — forensisk fält-för-fält-diff av data-model-påståenden vs LIVE Airtable-schema (Code/MCP, prod + ev. staging): vad driftat, vad saknas, vad är fel; SEDAN (b) AVSLUTS-RUTIN — wira en data-model-uppdaterings-rad i CONTRIBUTING per-session-DoD i villkorsform ("om sessionen ändrade datamodellen", parallellt med constraints-radens form). (b) utan (a) wirar bara en rutin som håller ett felaktigt dok felaktigt → (a) FÖRST. Substantiellt: (a) är en egen utrednings-pass-kedja (skörd → diff → uppdatering), egen session._
+>
+> _T17-not: Uppstod Session 26. Ingen sammanhängande yta beskriver hela samarbets-arkitekturen (Chat-halva/Code-halva, hub vs spoke, två git-träd, skills, plugin-distribution, governing-mekanik, installerad-vs-källa). Lucka som biter varje ny chatt-start. FÖRSTA frågan i tråden: `docs/reference/hur-systemet-funkar.md` FINNS redan — täcker den detta + är den aktuell? → UTÖKA den, eller skapa nytt dok. Avgör mot disk, anta ej. Kräver bred Code-kartläggning över BÅDA träd (hub `~/Repon/marcus-system/` + spoke) + plugin-struktur + skills-inventering, sedan detaljerad författning med korrekta refs. Flerpass-projekt (kartläggnings-skörd → författande → ev. granskning), à la Airtable-dokets Pass 1/2. Blir governing när det finns. Större än T16 — egen session, möjligen flera._
+>
+> _T18-not: Uppstod Session 26 (rest av register-synk-passet, A3). Hub session-end-skillens nya tråd-synk-steg ligger i KÄLLREPOT (`~/Repon/marcus-system/`, commit `df978d2`) men installerad plugin är cache-snapshot `marcus-system@marcus-hub` v1.4.0 (sha `e17438b`). Källediten propagerar INTE → de nya stegen är INAKTIVA i körande Code-sessioner tills version-bump (1.4.0→1.5.0) + ominstallation; Chat-halvan (`claude-app-skills/`) kräver separat claude.ai-uppladdning. Tills dess gäller register-synk-wiringen INTE i praktiken. Beslut (Marcus): bump + ominstallation + Chat-halva-uppladdning — lågt arbete men distributions-/release-beslut; fristående eller buntat med nästa hub-ändring. Egen liten utredning inom tråden: verifiera om källa och installerad v1.4.0 divergerat på MER än detta steg (andra odistribuerade hub-ändringar)._
 
 | Tråd | Titel | Tillstånd | Ingång |
 |---|---|---|---|
