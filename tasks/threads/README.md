@@ -45,6 +45,7 @@ status: stable
 | `T19` | App↔Airtable-interaktions-dok (saknad yta: hur appen frågar/skriver mot basen + fällorna i interaktionen) | `active` | [`airtable-interaction.md`](../../docs/reference/airtable-interaction.md) · governing sedan Session 28; Pass 2-granskning + §9-fyllnad av 6c återstår |
 | `T20` | Levande styrdok utanför frontmatter-hook-scope (sessionsdok + tråd-register: updated: speglar ej verklig touch) | `paused` | _(ingen kort än — endast registrerad); uppstod Session 27 (Code STEG A-fynd)_ |
 | `T21` | Delade reference-dok (`data-model.md` + `hur-systemet-funkar.md`) psionautics-synk-drift + synk-pekarnas repo-agnosticitet (Commit B-rest + Session 28 C1-mätning) | `paused` | _(ingen kort än — endast registrerad); uppstod Session 27 (T16 Pass 2 Commit B), vidgad Session 28 (T19 C1)_ |
+| `T22` | Hub-dokumentations-reconciliation post-T17 — omdirigera hub-konstitutionens pekare (`ARKITEKTUR.md`/`SKILLS-INVENTORY.md` stale granularitet) + `chat-prompt-design-checklist.md` terminologi-drift (draft-stub-vs-v1.0, gammalt `L_AAA`-schema) + ev. `WORKFLOW.md`-supersession → mot `systemet.md` som auktoritativ yta | `paused` | _(ingen kort än — endast registrerad); uppstod Session 29 (T17)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
