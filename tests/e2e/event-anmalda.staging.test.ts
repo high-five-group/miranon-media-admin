@@ -69,8 +69,19 @@ async function mockRegistrations(
 test.describe('Anmälda-vy (Fas 6c L2 — LÄS-vy via get-registrations)', () => {
   test('roster renderas (namn + fält) + antal-summa; fokus → <h1>', async ({ page }) => {
     await mockRegistrations(page, [
-      row({ namn: 'Anna Andersson', ort: 'Skövde', status: 'Bekräftad (mail skickat)' }),
-      row({ namn: 'Bo Bengtsson', ort: 'Skara', status: 'Obekräftad', antalPlatser: 2 }),
+      row({
+        namn: 'Anna Andersson',
+        ort: 'Skövde',
+        status: 'Bekräftad (mail skickat)',
+        email: 'anna@example.se',
+      }),
+      row({
+        namn: 'Bo Bengtsson',
+        ort: 'Skara',
+        status: 'Obekräftad',
+        antalPlatser: 2,
+        email: 'bo@example.se',
+      }),
     ]);
     await page.goto(`/event/${EVENT_ID}/anmalda`);
 
@@ -92,6 +103,7 @@ test.describe('Anmälda-vy (Fas 6c L2 — LÄS-vy via get-registrations)', () =>
     await expect(page.getByText('Obekräftad')).toBeVisible();
     await expect(page.getByText('Skövde')).toBeVisible();
     await expect(page.getByText('anna@example.se')).toBeVisible();
+    await expect(page.getByText('bo@example.se')).toBeVisible();
     // Inskickad formaterat sv-SE (aldrig rå ISO).
     await expect(page.getByText('2026-05-02').first()).toBeVisible();
 
