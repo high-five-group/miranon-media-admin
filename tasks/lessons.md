@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-20
+updated: 2026-06-21
 review_by: 2026-11-15
 status: stable
 ---
@@ -2330,3 +2330,33 @@ Symptom: Fas 6b L3:s get-attendance-conformance mot skarp staging-data returnera
 ### L154 [UNIVERSAL] — Record-ID-batch från BÅDA hållen av en relation kringgår länk-display-filter-klassen och återanvänder en certifierad mall
 
 Symptom: med [[L153]] bekräftad behövde get-attendance filtrera Deltaganden per event UTAN den trasiga länk-display-helpern. Lösning: spegla get-person:s record-ID-batch men FRÅN EVENT-HÅLLET — `fetchAirtableRecord('Eventplanering', eventId)` → eventradens `Närvaro (records)`-länk (Deltaganden-record-ID:n, live-verifierat populerat + symmetriskt med `Deltaganden.Event`) → chunkad `OR(RECORD_ID()=…)`-batch (env-styrd storlek, ceil(N/50), noll N+1/trunkering). Samma mall som get-person bär ÅT ANDRA HÅLLET (person → dess Deltaganden); en relation har två symmetriska länkfält och record-ID-batchen fungerar från vilket håll som helst. Två batch-steg i get-attendance (event→Deltaganden-ID→rader, sedan Person-ID→namn) är båda samma get-person-mönster. Regel: när ett display/formel-filter är skört (L153), hämta via record-ID:n från relationens motsatta länkfält — det är den tillförlitliga, lättviktiga (bara relationens rader, ej hela tabellen) och redan certifierade vägen; uppfinn inte ett nytt filter. Kategori: Arkitektur/Airtable-hämtning. Relaterad: [[L153]] (klass-buggen detta kringgår) + get-person record-ID-batch-mallen. Källa: 2026-06-20 Session 25 Fas 6b L3 (väg D).
+
+## 2026-06-21 — Session 27 (T16 data-model reconciliation + dok-synk-rutin)
+
+### L155 [UNIVERSAL] — Ny chatt mot en PAUSAD session ⇒ /session-resume, inte /session-start; Chat ska flagga lifecycle-tillståndet FÖRE arbete
+
+Symptom: Session 27 öppnades genom att Chat orienterade och drev vidare utan att formellt köra `/session-start` eller `/session-resume`. Föregående session (26) var `lifecycle: paused` (ADR-051, nr bevarat). Tvetydigheten "är detta Session 26-resume eller en ny Session 27?" avgjordes inte vid start — den exploderade mitt i ett tråd-bygge (T19-registreringens STOPPA-grind på sessionsnummer) och tvingade fram en separat Session 27-dok-födelse flera turer in. Regel: vid orientering MÅSTE Chat läsa föregående sessionsdoks `lifecycle:`-fält (ADR-052) och avgöra start vs resume FÖRE något arbete — en pausad session resume:as, en stängd ger ny session. Tillståndet är O(1)-läsbart i fält, inte i prosa. Kategori: Process/sessionslivscykel. Relaterad: [[L67]] + [[L68]] (landnings-kadens) + ADR-051/052. Källa: 2026-06-21 Session 27-öppning.
+
+### L156 [UNIVERSAL] — Chat ska leverera create-session-doc-födelseprompten som FÖRSTA Code-handling vid ny session, inte orientera och driva vidare
+
+Symptom: Session 27-doket föddes sent — Chat orienterade, levererade en PI-fix och en tråd-registrering FÖRST, och födde sessionsdoket flera turer in. Doket är externminnet (kontinuitet-arkitektur): det ska födas vid start så att allt efterföljande arbete har en durabel landningsyta från första landningen. Regel: när en ny session deklareras är Chats FÖRSTA Code-prompt create-session-doc-födelsen (session-start-skillens skapande-gren), inte orientering följt av drift. Kategori: Process/sessionslivscykel. Relaterad: [[L155]] + [[L67]]/[[L68]]. Källa: 2026-06-21 Session 27 (doket föddes sent; PI-fix kom emellan).
+
+### L157 [UNIVERSAL] — "Verbatim" skyddar INNEHÅLL, inte MARKUP; Code får markup-normalisera men ska rapportera det som sådant
+
+Symptom: en Chat-levererad "verbatim" not (T19-not) failade Vale.Terms eftersom källtexten bar gemena filsökvägar utanför backticks. Code:s rätta drag: backtick:a sökvägarna (markup-normalisering mot grind-konvention) UTAN att röra ord/ordning/betydelse, och rapportera det explicit som markup-normalisering — inte innehållsändring. Regel: "verbatim" skyddar tecken-INNEHÅLLET (orden, analysen), inte markup-FORMEN; Code får normalisera markup för att passera en grind men ska (a) inte ändra innehåll och (b) rapportera normaliseringen transparent. Korollarium: Chat ska leverera grind-grön text från början så normaliseringen aldrig behövs. Kategori: Process/roll-disciplin. Relaterad: [[L158]] (den konkreta Vale-fällan) + [[L139]]. Källa: 2026-06-21 Session 27 (T19-not Vale.Terms-fångst).
+
+### L158 [UNIVERSAL] — Chat-levererad not-/dok-text måste backtick:a filsökvägar i källan — gemena airtable-*/supabase-*-filnamn triggar annars Vale.Terms
+
+Symptom: bara-skrivna (icke-backtick:ade) sökvägar som `airtable-constraints.md`, `supabase/functions/`, `06b-supabase-target.md` triggar Vale.Terms-regeln som kräver versal `Airtable`/`Supabase` — men filnamnen MÅSTE vara gemena (de är riktiga paths). Lösningen är inte att versalisera (bryter pathen) utan att backtick:a (inline-kod → Vale hoppar över). Regel: all Chat-levererad text som ska in i ett Vale-grindat dok måste backtick:a sina filsökvägar/-namn i källan; den som skriver kontrollerar mot grinden FÖRE leverans. Syskon till [[L139]] (verifiera mot faktiskt grind-beteende, gissa inte). Kategori: Process/grind-disciplin. Relaterad: [[L157]] (verbatim↔markup) + [[L139]]. Källa: 2026-06-21 Session 27 (T19-not; återkom i Pass 2-paths).
+
+### L159 [UNIVERSAL] — Chat-prompter ska aldrig anta fil-mekanismer; Code verifierar mot disk (förstärker L139)
+
+Symptom: tre prompt-antaganden föll mot disk i Session 27 — (1) "frontmatter-hooken auto-bumpar threads/sessionsdok" (FALSKT: exakt-path-match, dessa står ej i FRONTMATTER_GOVERNING_DOCS → T20); (2) "psionautics-synk-kopian finns ej / stryk synk-claimen" (FALSKT: kopian fanns på annan path, `~/Repon/psionautics/docs/data-model.md`, ej `.../reference/...` → path-fix, ej strykning); (3) "stryk §Luckor 7" (skulle ha renumrerat §Luckor 8–11 och brutit fälla 26/F.2:s korsrefs → STÄNGD inline istället). Regel: Chat-prompter ska aldrig anta fil-mekanismer (hook-scope, fält-skrivbarhet, fil-existens/path, list-renumrerings-konsekvenser) — Code verifierar varje mot disk FÖRE edit och korrigerar mot faktiskt tillstånd utan att gissa. Detta är extern fångst i rätt roll (instruktion byggd på antagande → Code fångar mot disk). Kategori: Process/verifiering. Relaterad: [[L139]] (samma klass, fler instanser) + [[L157]]. Källa: 2026-06-21 Session 27 (T16 Pass 2 A8/hook/Lucka 7).
+
+### L160 [UNIVERSAL] — Senior-rollen är en MOTIVERAD DOM, inte en meny av vägar
+
+Symptom: vid EF-sektions-beslutet bollade Chat tre alternativ förklädda till "din riktning" i stället för att döma; Marcus: "va SENIOR". Senior-rollen (PI: Claude är seniorutvecklare/arkitekt, Marcus vilar på rekommendationen) innebär att när Marcus ber om en rekommendation ska Chat LEVERERA EN DOM — belagd med web-research för arkitektur-/strategi-beslut (PI research-före-arkitektur) — inte returnera en options-meny som tvingar Marcus att själv väga. Att presentera optionsrymden är förarbete; domen är leveransen. Kategori: Process/roll-disciplin. Relaterad: [[L161]] (research belägger domen) + PI Roll-arkitektur. Källa: 2026-06-21 Session 27 (EF-sektions-beslut).
+
+### L161 — Web-research kan VÄNDA en Chat-rekommendation; belägg FÖRE rekommendation, inte efter
+
+Symptom: Chat rekommenderade från magkänsla "reconcilera hela doket" + "bygg T19 efter 6c"; web-research mot SSOT-/dok-arkitektur-praxis vände BÅDA — till "kritisk väg / kontrakts-djup först" respektive "T19 FÖRE 6c" (kartan behövs av det första write-flödet). Regel: för arkitektur-/strategi-/ordnings-beslut ska web-belägg komma FÖRE rekommendationen formuleras (PI research-före-arkitektur), inte som efterhandsbekräftelse — ett orefererat magkänslo-råd är inte leveransklart och kan vara rakt fel. Kategori: Process/research-disciplin. Relaterad: [[L160]] (domen ska vara belagd) + PI research-sektionen. Källa: 2026-06-21 Session 27 (reconciliation-bredd + T19-ordning).

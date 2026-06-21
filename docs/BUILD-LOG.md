@@ -1488,6 +1488,30 @@ Fem områden GODKÄNDA, 0 avvikelse, 11/10/10: port-paritet 15==15==15 intakt ef
 
 ---
 
+## Session 27 — T16 data-model.md reconciliation (a) + dok-synk-rutin (b); T16 STÄNGT (2026-06-21)
+
+Föregår den pausade Session 26 (6c-bygget, ej återupptaget). Ren dok-/process-session: ingen kod, inget nytt ADR, SESSIONSGRÄNS ej fas-avslut → ingen arkivering, ingen CHANGELOG-release (ADR-023). (Session 26:s egen BUILD-LOG-entry är pending dess resume/stängning.)
+
+**Planerat vs faktiskt:** planerat = T16 (a reconciliation + b avsluts-rutin). Faktiskt = T16 helt stängt PLUS fem kringliggande landningar (PI-regel i hub, dok-födelse, tre tråd-registreringar). Ingen avvikelse nedåt; scope växte med fångade cross-repo-rester (registrerade, ej svällda in i sessionen).
+
+**Landningar (kronologisk, commit-hashar):**
+
+- **PI-interaktionsregel i hub** (`0212282`, hub-repot `marcus-system`) — "inga klick-formulär" som alltid-på meta-disciplin i `project-instructions-base.md`. Hub saknar frontmatter-hook → `updated:` manuellt. Källa-vs-yta: kräver omklistring i varje spokes claude.ai-PI-ruta.
+- **Session 27-dok fött** (`03e269b`) — create-session-doc-grenen; sent fött (L156).
+- **T19 + T20 registrerade** (`d652bdf`) — T19 (app↔Airtable-interaktions-dok) + T20 (levande styrdok utanför hook-scope).
+- **T16 Pass 1 reconciliation** — LÄS-pass, 1 MCP-anrop. **Hink 1 (faktafel) tom:** doket ljög inte om schemat; det "kända" Event(ID)-felet bor i research-doket `02-live-state.md` §3.4, ej i data-model.md (#23 korrekt, MCP-bekräftad). Problem: tids-stale + EF-sektion fel-repo (psionautics) + luckor. Struktur motsade ej frusna-besked → ingen STOPPA.
+- **T16 Pass 2** — Commit A (`41345e9`, kirurgiska fixar: stämpel, deadline-omramning ×3, Lucka 7 STÄNGD inline, Lucka 6-refs, Person-lookup-rad, Totala deltaganden-not, Närvaro (nyckel)-konsument i #23, död synk-pekare path-fix) + Commit B (`40431c4`, EF-sektion −200 rader psionautics-EF → T19-pekare, avduplicering).
+- **T21 registrerad** (`4cc9fb9`) — cross-repo-rest: psionautics-synk-drift (kopian bär ännu stale EF-sektion) + T19-pekarens repo-agnosticitet. **Känd cross-repo-drift tills Marcus psionautics-synk-moment.**
+- **T16 (b) avsluts-rutin** (`0dd1aa1`) — villkorad data-model-uppdaterings-rad i CONTRIBUTING per-session-DoD, parallell med constraints-raden. **T16 STÄNGT** (a+b).
+
+**Lessons:** L155 (paused session ⇒ resume ej start), L156 (create-session-doc först), L157 (verbatim skyddar innehåll ej markup), L158 (backtick:a paths mot Vale.Terms), L159 (anta aldrig fil-mekanismer — förstärker L139), L160 (senior = dom ej meny), L161 (web-research kan vända en rekommendation). L155–L160 `[UNIVERSAL]`, hub-lyft pending.
+
+**Verifiering:** alla sju landningars CI gröna (utom hub-PI som saknar CI) — sista spoke-run per commit: `41345e9`/`40431c4`/`4cc9fb9`/`0dd1aa1` alla Docs-link-check körd+grön, Test+Build skipped by-design (docs-only). ADR-count oförändrat (inget nytt ADR).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-21-session-27.md`](../tasks/sessions/2026-06-21-session-27.md) (Del 1–3). Nästa-session-ordning (Marcus-beslutad): **T19 (FÖRE 6c) → T17 → /session-resume Session 26 6c-bygget.**
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
