@@ -30,8 +30,8 @@ status: stable
 > - **[STABIL MEKANIK]** — dokumenterbart sann; strukturen/mekaniken ändras sällan.
 >   *Exempel:* "governing-listan är config-driven." Lita på den.
 > - **[AKTUELLT TILLSTÅND → via Code]** — HEAD, CI-utfall, exakta listinnehåll, exakta
->   radnummer. ALDRIG fryst som evig sanning. *Exempel:* "listan innehåller 11 docs"
->   var sant vid kartläggning **2026-06-21** — verifiera via Code innan du litar på siffran.
+>   radnummer. ALDRIG fryst som evig sanning. *Exempel:* hur många docs governing-listan
+>   innehåller vid en given tidpunkt — verifiera antalet via Code, frys det inte i minnet.
 >
 > **Radnummer i detta dok är korrekta vid 2026-06-21.** De är tillstånd, inte mekanik:
 > verifiera via Code om de rört sig. Att fil X bär mekanism Y är stabilt; att Y står på
@@ -230,9 +230,9 @@ Det finns en **andra skill-familj**, och att hålla isär den från §5 är en d
 yta gjorde tidigare:
 
 - **Disciplin-skills (§5)** — *processen*: hur sessioner körs. Bor i plugin.
-- **Kapabilitets-skills (§6)** — *förmågor*: vad Chat/Code kan göra. Bor i
+- **Kapabilitets-skills (§6)** — *förmågor*: vad Code kan göra (Claude Code-skills). Bor i
   `~/.claude/skills/` (symlänkade), inventerade i
-  `SKILLS-INVENTORY.md`.
+  `SKILLS-INVENTORY.md`. (Chat har egna, separata claude.ai-inbyggda skills — en annan uppsättning.)
 
 [AKTUELLT TILLSTÅND → via Code: vid 2026-06-21 listar inventariet bl.a. `web-research`,
 `yt-research`, `notebooklm`, `guide-builder`, `ui-ux-pro-max`, `motion`, `grill-me`,
