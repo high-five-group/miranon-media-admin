@@ -6,6 +6,7 @@ import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Registration } from '@/domain/models/Registration';
 import { queryKeys } from '@/queries/keys';
+import { AddRegistrationModal } from './AddRegistrationModal';
 
 /** Visningsnamn ur de namnfält Airtable kan leverera — aldrig record-ID, aldrig tomt (Gunilla). */
 function displayName(reg: Registration): string {
@@ -146,12 +147,17 @@ export function EventRegistrations({ eventId }: { eventId: string }) {
         Anmälda laddade.
       </p>
 
-      <header className="flex flex-col gap-1">
-        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-2xl">
-          Anmälda
-        </h1>
-        {/* Antal som TEXT — översikt, aldrig enbart färg. */}
-        <p className="text-small text-text-muted">{`${registrations.length} anmälda`}</p>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-2xl">
+            Anmälda
+          </h1>
+          {/* Antal som TEXT — översikt, aldrig enbart färg. */}
+          <p className="text-small text-text-muted">{`${registrations.length} anmälda`}</p>
+        </div>
+        {/* ADDITIV write-affordans (Fas 6c L4) — rostern ovan förblir read-only;
+            modalen skapar via create-registration-EF och invaliderar denna query. */}
+        <AddRegistrationModal eventId={eventId} />
       </header>
 
       {registrations.length === 0 ? (

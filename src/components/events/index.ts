@@ -1,3 +1,4 @@
+export { AddRegistrationModal } from './AddRegistrationModal';
 export { EventAttendance } from './EventAttendance';
 export { EventDetail } from './EventDetail';
 export { EventRegistrations } from './EventRegistrations';
