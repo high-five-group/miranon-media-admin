@@ -1488,6 +1488,40 @@ Fem områden GODKÄNDA, 0 avvikelse, 11/10/10: port-paritet 15==15==15 intakt ef
 
 ---
 
+## Session 26 — Fas 6c Registrations + Väntelista: fyra leverabler + ADR-059/060 + T24-b harness-fix (2026-06-20 → 2026-06-22)
+
+Fas 6c byggd över flera resumes: fyra leverabler (get-registrations T15-fix → anmälda-vy → väntelista → create-registration), ADR-059 (idempotens-defer) + ADR-060 (sentinel-conformance), och en CI-harness-fix (T24-b). Allt CI-grönt per-jobb. SESSIONSGRÄNS, ej fas-avslut (6c funktionellt + dokumentärt KLART; /arch-audit + phase-end-verify är nästa session). 6c-skrivande (create) är första write-domänen efter Fas 5.5-mallen.
+
+### Beslut före bygge — ADR-059 (idempotens-lagring → Fas E)
+
+ADR-014:s Airtable-lagrings-mekanism falsifierad (Airtable kan ej påtvinga unik-constraint på skrivbart fält) → **ADR-059** (Accepted, `24070eb`/`9ba9ca7`): defer äkta server-side idempotens till Fas E; interim klient-skydd (mutationKey-dedup + disabled-submit) + klient-UUID-nyckel bevarad i kontraktet (loggas, lagras ej). Superseder ADR-014:s lagrings-mekanism + timing-beslut (kravet står).
+
+### Leverabel 1 — get-registrations T15-fix (väg D)
+
+eventId-grenen: record-ID-batch från event-hållet via `Eventplanering.Anmälningar (länkat fält)` (speglar get-attendance/get-person), ersätter den trasiga `buildLinkedRecordFilter` (T15-klassen). Skarp staging-conformance (G1-grind: spegeln måste vara populerad; NOLL trunkering över chunk-gräns vid `REGISTRATIONS_BATCH_SIZE=2`). Commit `29e55ed`.
+
+### Leverabel 2 — anmälda-vyn + T24-b CI-harness-fix
+
+`/event/$eventId/anmalda` LÄS-vy via get-registrations (a11y 11/10, status-text-väg A, T15 väg D). Commits `0c84497`/`2f3884e`/`46fc2ca`. **T24-b:** api-staging kollapsad till EN login per credential via setup-projekt + token-återanvändning (44 logins → 2) — eliminerar GoTrue-rate-limit-429-burst. **T24 stängd** (`c9174be`/`2f4443c`).
+
+### Leverabel 3 — väntelista (get-waitlist global läs-EF + vy)
+
+get-waitlist: egen `Väntelista`-tabell, aktiv-filtrerad `NOT({Flyttad till anmälan})`, GLOBAL (event-fältet är `singleLineText`-konstant, ej länk → ingen T15-exponering, ingen per-event-distinktion i datan). `/mer/vantelista` + Mer-landning. Commits `66f8770`/`b8057a8`/`5c89d10`.
+
+### Leverabel 4 — create-registration (write-kärnan) + formulär + ADR-060
+
+**L1 (write-EF, `49671c4`):** ny `createAirtableRecord`-POST-helper + create-registration-EF som speglar update-record:s säkerhet (POST→405, requireUser→401, allowlist-SSOT, deny→400). Skriver Källa="Manuell"/Status="Obekräftad"/Inskickad/EventKey/Event-länk; EventKey härleds via Eventplanering-lookup (VÄG B, Chat-låst; historiska `'Event-17'`-värdet borta), 409 på Normaliserad e-post (`LOWER(TRIM)`) + EventKey-STRÄNG (ej länk, T15), INVARIANT idempotency-nyckel→400+logg, Person-länk delegeras A2. Port-redesign: `CreateRegistrationInput` (write-shape) över alla tre adaptrar (ADR-057-paritet). VÄG B + Normaliserad e-post-formeln live-verifierade staging↔prod-paritet FÖRE bygge (MCP). EF-only conformance: allow→201+skriv-bevis/409/INVARIANT/deny/404/401/CORS. **L2 (formulär, `3c40c06`/`96af589`):** AddRegistrationModal (Overlay-mönstret, React Aria Form, kontrollerad validering, fokus-hantering, klient-UUID per öppning), useCreateRegistration (ADR-016-struktur, MEDVETET ej optimistic-insert — create kan 409). ADDITIV knapp i anmälda-headern. Vy-test (mockad EF): submit 201/409 inline/required-validering/fokus-retur/axe 0. **L3 (`09ee57e`):** **ADR-060** (sentinel-markerade test-records + setup-purge, EF-only, prod-delete + test-cred avvisade). **L4:** denna 6c-completion-dok-landning. Staging-deploy explicit `--project-ref pqtshyierkdgwdnxuirz` (PROD orörd).
+
+### 6c-completion (dokumentärt)
+
+§9 i `airtable-interaction.md` (T19): de tre `[AKTUELLT TILLSTÅND]`-markörerna (create-registration, get-waitlist, get-registrations väg D) ersatta med fil:rad-belagda STABIL MEKANIK-kontrakt. **T15 STÄNGD** (`buildLinkedRecordFilter` noll live-callers). ADR-räkning 59→60 (ADR-060).
+
+**Verifiering:** alla fyra L4-landningar CI-gröna per-jobb (`49671c4`/`3c40c06`+`96af589`/`09ee57e` + denna). api-staging create-registration-conformance grön mot deployad staging; e2e create-modal 5/5 grön; markdownlint 0 + docs-link-check grön; ADR-count 60==60.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-20-session-26.md`](../tasks/sessions/2026-06-20-session-26.md). SESSIONSGRÄNS, ej fas-avslut: ingen audit, ingen arkivering, ingen CHANGELOG-release. **Nästa:** 6c /arch-audit + phase-end-verify (egen session).
+
+---
+
 ## Session 27 — T16 data-model.md reconciliation (a) + dok-synk-rutin (b); T16 STÄNGT (2026-06-21)
 
 Föregår den pausade Session 26 (6c-bygget, ej återupptaget). Ren dok-/process-session: ingen kod, inget nytt ADR, SESSIONSGRÄNS ej fas-avslut → ingen arkivering, ingen CHANGELOG-release (ADR-023). (Session 26:s egen BUILD-LOG-entry är pending dess resume/stängning.)

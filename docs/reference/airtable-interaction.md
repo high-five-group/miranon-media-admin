@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-21
+updated: 2026-06-22
 review_by: 2026-12-21
 status: stable
 ---
@@ -247,52 +247,56 @@ Coercion-reglerna (varför `scalarNumber` finns, NaN-objekt etc.) är plattform-
 
 ---
 
-## 9. Planerade-men-ej-byggda kontrakt (föreskrivande)
+## 9. Write-/läs-kontrakt landade i Fas 6c (STABIL MEKANIK)
 
-Följande interaktions-kontrakt är PLANERADE för Fas 6c men finns INTE på disk i denna commit. De beskrivs här föreskrivande så 6c bygger mot en karta — varje post markeras `[AKTUELLT TILLSTÅND — VERIFIERAS VIA CODE]` (ej byggt) och blir STABIL MEKANIK först när EF:en finns och beläggs fil:rad.
+Dessa tre kontrakt var PLANERADE-men-ej-byggda när detta dok skapades (Session 28).
+Fas 6c byggde alla tre — de är nu **STABIL MEKANIK**, belagda fil:rad mot disk
+(Session 26-fortsättning, 2026-06-22).
 
-**`create-registration` (write, idempotent)** — `[AKTUELLT TILLSTÅND — VERIFIERAS
-VIA CODE]` (ej på disk; bekräftat tom grep i `supabase/`). Skapar en anmälan
-idempotent. **Det hårdkodade event-värdet `'Event-17'` / `recQ2TPsY69fQXA8a` bor
-i forsknings-extraktionen mot det HISTORISKA systemet, INTE i detta repos kod** —
-data-model.md nämner `create-registration` som källa för `Källa`-fältet
-(`data-model.md:323`), men ingen sådan EF finns ännu. När den byggs avgörs det
-faktiska event-värdet då. Idempotens-lagringen är defererad till **Fas E**
-([ADR-059](../decisions/ADR-059-idempotens-lagring-defer-fas-e.md)); ingen
-`Idempotency Keys`-tabell finns i prod/staging (Session 26 §C1).
+**`create-registration` (write, manuell anmälan)** — **STABIL MEKANIK**
+([`supabase/functions/create-registration/index.ts`](../../supabase/functions/create-registration/index.ts)).
+Skapar en manuell anmälan (`Källa="Manuell"`, `selBgWo8mevep0W3j`) via den nya
+POST-helpern `createAirtableRecord` ([`_shared/airtable-client.ts`](../../supabase/functions/_shared/airtable-client.ts),
+spegel av `updateAirtableRecord`). Speglar update-record:s säkerhet (POST→405,
+`requireUser`→401, allowlist-SSOT, deny→400, `{error}`+requestId). Skriver ENDAST
+skrivbara create-fält (`Förnamn`/`Efternamn`/`E-post`/`Mobilnummer`/`Källa`/`Status="Obekräftad"`/
+`Inskickad`/`EventKey`/`Event`-länk) per `create-registration`-OperationDef i
+[`_shared/field-allowlists.ts`](../../supabase/functions/_shared/field-allowlists.ts);
+formel/rollup (`Namn`/`Normaliserad e-post`/`Är aktiv`) ALDRIG. **Det historiska
+`'Event-17'`/`recQ2TPsY69fQXA8a`-värdet är BORTA** — `EventKey` ("Event-N") härleds
+nu via en Eventplanering-lookup på ROUTE-eventId (`EventKey`-formelfältet
+`fldhmhaz3ZnouAzDm` = `"Event-" & {Event-nr}`, live-verifierat staging↔prod-paritet),
+och både `EventKey` OCH `Event`-länken (`fldi3enUaMdbuGSlm`) sätts direkt (Känd fälla 9:
+gör A1 idempotent). Person-länken (`fldQekqRlLfup8x5K`) sätts INTE — den delegeras
+till A2 (`Registration.personId` är nullable; anmälan är giltig utan den). 409 vid
+dubblett matchar `Normaliserad e-post` (`LOWER(TRIM)`, replikerad i EF) + `EventKey`-
+STRÄNGEN via `buildEqualsFilter` — ALDRIG på `Event`-länken (T15-lärdom). Idempotens-
+nyckel (`Idempotency-Key` header/body) är INVARIANT (saknas→400) och LOGGAS men
+lagras EJ i 6c ([ADR-059](../decisions/ADR-059-idempotens-lagring-defer-fas-e.md);
+server-storage additivt i Fas E). Sentinel-test-konvention: [ADR-060](../decisions/ADR-060-sentinel-setup-purge-create-conformance.md).
 
-**`get-waitlist` (läs)** — `[AKTUELLT TILLSTÅND — VERIFIERAS VIA CODE]` (ej på
-disk). Läser egna `Väntelista`-tabellen (`tbl2VxMx7JMkIxD4Q`), aktiv-filtrerad via
-`Flyttad till anmälan` (checkbox, `fldqMpSW5UJIhNdgm`).
-**Ingen T15-exponering på event-fältet:** `Väntelista.Event` (`fldC01Nf3lVWrOgdw`) är
-ett `singleLineText`-KONSTANTFÄLT, INTE ett länkfält (live-verifierat MCP-pull
-2026-06-21 mot prod `app8uGPrVCVOm6LfD`: typ `singleLineText`, samma värde
-"Psionautics" på alla rader). Ett text-konstantfält bär varken T15-länk-display-
-klassen eller kan fungera som per-event-diskriminator — det är alltid samma värde.
-**Verifierat nuläge:** väntelistan är de facto GLOBAL idag — ett brand ("Psionautics"),
-ett event, `singleLineText`-konstant i `Event`-fältet → ingen per-event-distinktion
-finns i datan. Strukturen är byggd att kunna växa (fler Psionautics-event; en
-Miranon Media-väntelista är planerad men EJ använd ännu), men behovet av
-per-event-filtrering existerar INTE i basen idag.
-**Event-filtreringen förblir därför en ÖPPEN design-fråga** (Session 26 §B1, `:223-224`):
-behöver get-waitlist event-filtrering alls, eller är väntelistan global
-(Mer-flik-konvertering, ej per-event)? Den som bygger get-waitlist i 6c avgör mot
-DÅ-aktuell datamodell, inte mot en antagen distinktion — inget filter-kontrakt
-föreskrivs här.
+**`get-waitlist` (läs, global)** — **STABIL MEKANIK**
+([`supabase/functions/get-waitlist/index.ts`](../../supabase/functions/get-waitlist/index.ts)).
+Läser egna `Väntelista`-tabellen (`tbl2VxMx7JMkIxD4Q`), aktiv-filtrerad via
+`Flyttad till anmälan` (checkbox, `fldqMpSW5UJIhNdgm`). GLOBAL läs-lista (inget
+event-filter-kontrakt): `Väntelista.Event` (`fldC01Nf3lVWrOgdw`) är ett
+`singleLineText`-KONSTANTFÄLT (brand-värde "Psionautics"), INTE ett länkfält
+(live-verifierat MCP-pull 2026-06-21 mot prod `app8uGPrVCVOm6LfD`) → varken
+T15-exponering eller per-event-diskriminator. Den valfria `event`-by-name-parametern
+finns i adaptern men vy-konsumenten passar inga filters → de facto global hämtning
+(speglar events.list/waitlist.all-nyckelmönstret). Den bredare "behöver väntelistan
+event-filtrering alls?"-frågan förblir ÖPPEN design-fråga (Mer-flik-konvertering),
+men är inte ett interaktions-kontrakt.
 
-> Forensisk not: en tidigare sido-hypotes (Session 26 `:96-97`) antog `Väntelista.Event`
-> vara ett länkfält → "samma T15-klass". Live-verifiering 2026-06-21 visar `singleLineText`
-> (konstant), i linje med `data-model.md:221`. Denna karta är auktoritativ över den
-> pausade sessionsdokens sido-watch på den punkten.
-
-**`get-registrations` T15-fix (väg D)** — `[AKTUELLT TILLSTÅND — VERIFIERAS VIA
-CODE]` (ej applicerad; `:67` bär ännu buggen). Fix-vägen är verifierad: record-ID-
-batch från event-hållet via `Eventplanering.Anmälningar (länkat fält)`
-(`fldUAjTutSM0fziMT`, read-only spegel av `Anmälningar.Event`), exakt analogt med
-`Närvaro (records)` som get-attendance redan använder.
-
-Detaljerna (fält-IDs, idempotens-strategi, fix-mall) bor i **Session 26-doket §B1**
-samt ADR-059 — duplicera dem inte hit.
+**`get-registrations` T15-fix (väg D)** — **STABIL MEKANIK** (applicerad,
+[`supabase/functions/get-registrations/index.ts:127-170`](../../supabase/functions/get-registrations/index.ts)).
+eventId-grenen använder record-ID-batch från event-hållet via
+`Eventplanering.Anmälningar (länkat fält)` (`fldUAjTutSM0fziMT`, read-only spegel av
+`Anmälningar.Event`), chunkad `OR(RECORD_ID()=…)` — exakt analogt med `Närvaro (records)`
+i get-attendance. ANVÄNDER MEDVETET INTE `buildLinkedRecordFilter` (T15-klass-buggen).
+**T15 stängd:** den trasiga helpern har noll live-callers (get-registrations + get-attendance
+kringgår båda via väg D; create-registration filtrerar på EventKey-sträng), helpern kvarstår
+som dormant kod. Skarp conformance-grind (G1) bevakar att spegeln är populerad.
 
 ---
 
@@ -319,3 +323,4 @@ bas-ID som är inkopplat är runtime-tillstånd, inte kod.
 | 2026-06-21 | **Skapad** (Session 28, T19). Initial/föreskrivande version, belägg-bas commit `346c386`. Fyller interaktions-nischen vid sidan av de tre befintliga reference-ytorna; byggd FÖRE Fas 6c som karta för första write-flödet. 6c validerar och fyller §9 när EF:erna landar. |
 | 2026-06-21 | **Pass 2-rättelse** (Session 28, T19). §9 get-waitlist: `Väntelista.Event` (`fldC01Nf3lVWrOgdw`) live-verifierat `singleLineText`-konstant (ej länkfält; MCP-pull mot prod) → ingen T15-exponering, event-filtrering återställd till ÖPPEN design-fråga (Session 26 `:223-224`) i stället för föreskrivet kontrakt. §5/§6 get-person: rättat över-attribuering — `get-person` är mekaniskt icke-T15-exponerad men citerar inte klassen; explicit T15-citat tillhör `get-attendance:100-101`. §6: skilde källkods-mekanik (`:67`) från deploy-tillstånd. |
 | 2026-06-21 | **§9-berikning** (Session 28, T19). get-waitlist: verifierat nuläge inlagt — väntelistan de facto global idag (ett brand "Psionautics", ett event, `singleLineText`-konstant); per-event-behov finns ej i basen; öppna design-frågan intakt. Samordnad med `data-model.md:221`-fix (brand-värde "Psionautics", ej event-namn). |
+| 2026-06-22 | **§9 → STABIL MEKANIK** (Session 26-fortsättning, 6c-completion). Alla tre §9-kontrakt (`create-registration`, `get-waitlist`, `get-registrations` T15-fix) byggda i Fas 6c → `[AKTUELLT TILLSTÅND — VERIFIERAS VIA CODE]`-markörerna ersatta med fil:rad-belagda kontrakt. create-registration: historiska `'Event-17'`-värdet borta, EventKey härleds via Eventplanering-lookup (`fldhmhaz3ZnouAzDm`), 409 på Normaliserad e-post + EventKey-sträng, idempotens-nyckel loggas ej lagras (ADR-059), sentinel-konvention (ADR-060). get-registrations väg D applicerad (`:127-170`); **T15 stängd** (`buildLinkedRecordFilter` noll live-callers). |
