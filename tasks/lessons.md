@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-21
+updated: 2026-06-22
 review_by: 2026-11-15
 status: stable
 ---
@@ -2392,3 +2392,37 @@ Symptom: T17-doket, vars HELA tes är att skilja [STABIL MEKANIK] från [AKTUELL
 ### L168 [UNIVERSAL] — Återkommande premiss-falsifiering bevisar att Chat-self-review-svagheten är strukturell, inte slarv
 
 Symptom: tre antaganden Chat förde vidare i Session 29 falsifierades alla av Code mot disk: (a) "`hur-systemet-funkar.md` är arbetssätt" → var domän/affärslogik (Scenario-sektioner, à la data-model); (b) "de fyra hub-rot-doken är ej i drift, teoretisk kvarleva" → alla fyra I DRIFT (hub-konstitutionen + den körande session-start-skillen pekar på dem som auktoritativa); (c) "kapabilitets-skills är Chat-sidans" → disk: `SKILLS-INVENTORY.md` titulerar dem "Claude Code-skills" (`~/.claude/skills/`, Code-reachable). Var och en korrigerad mot disk innan den hårdnade i fil. Regel: premiss-falsifiering är inte slarv att skämmas för utan den strukturella fångst-arkitekturen i drift (Chat-self ~9 %, extern fångst ~91 %) — den validerar EMPIRISKT själva modellen systemet.md beskriver. Bygg prompter så Code KAN fånga premissen mot disk; lita inte på att Chat fångar sin egen. Kategori: Process/roll-arkitektur-validering. Relaterad: [[L159]] (anta ej fil-mekanismer) + [[L160]] (extern fångst > intern). Källa: 2026-06-21 Session 29 (T17 kartläggning Pass 0/1a/1b + rättelse #2).
+
+## 2026-06-22 — Session 26 (Fas 6c build-complete-cykeln — skörd vid SESSIONSGRÄNS-session-end; hub-lyft PENDING efter 6d)
+
+> Lessons L169–L175 skördade vid 6c:s SESSIONSGRÄNS-session-end (ADR-051). HUB-LYFT PENDING:
+> de `[UNIVERSAL]`-flaggade lyfts vid FULLT Fas 6 fas-avslut EFTER 6d, ej här. Kandidaterna
+> capturades löpande i sessionsdokets paushistorik-block (7 st) och numreras nu disk-verifierat.
+
+### L169 [UNIVERSAL] — En Chat-prompt får aldrig bära en intern fil-/jobb-destinations-motsägelse
+
+Symptom: under Fas 6c-bygget bar en Code-prompt motstridiga destinationer för samma artefakt (var en fil/ett jobb skulle landa angavs på två sätt som inte kunde vara sanna samtidigt). Motsägelsen var INTERN i prompten — den kunde fångas av promptförfattaren mot promptens egen text, utan disk-åtkomst. Regel: en prompt är en specifikation; en intern destinations-motsägelse gör specifikationen osatisfierbar och tvingar utföraren att gissa (~9 %-zonen). Korsläs varje prompt för att varje fil-/jobb-destination är entydig och inbördes konsistent FÖRE leverans — self-review-disciplinens "verifiera flytt-destinationer mot faktiskt tillstånd" gäller även prompten mot sig själv. Kategori: Process/prompt-intern-konsistens. Relaterad: [[L159]] (anta ej fil-mekanismer) + [[L168]] (bygg så extern fångst KAN ske). Källa: 2026-06-22 Session 26 (Fas 6c, build-complete-cykeln).
+
+### L170 [UNIVERSAL] — Väntan är ingen spak när en rate-limit är strukturell, inte transient
+
+Symptom: T24:s CI-429-burst behandlades först som transient (vänta ut cooldown-fönstret, rerun:a). En enda tyst rerun efter 40 min cooldown nådde ändå inte grön — gaten var icke-passerbar för VILKEN commit som helst vid svitens login-volym (44 logins/körning mättade GoTrue-fönstret), och reruns FÖRVÄRRADE genom att pumpa in fler logins. Problemet var strukturellt (burst-ORSAKEN), inte tidsmässigt. Regel: skilj transient (självläker med tid) från strukturell (återkommer deterministiskt oavsett väntan) FÖRE du väljer väntan som åtgärd. Om samma gate fäller obesläktade commits är orsaken strukturell → fixa orsaken, vänta inte. "EJ nu"-deferralen revs öppet mot blockad-evidensen (fixen blev enabling, ej spekulativ). Kategori: Process/transient-vs-strukturell-diagnos. Relaterad: [[L171]] (den strukturella fixen) + [[L110]] (staging==prod strukturell-klass). Källa: 2026-06-22 Session 26 (T24, Fas 6c Leverabel 2).
+
+### L171 [UNIVERSAL] — CI-auth-burst löses vid orsaken: en delad token, inte höjt tak
+
+Symptom: CI:s `Test + Build`-jobb loggade in mot staging-GoTrue på TVÅ ställen per körning (e2e `auth.setup.ts` + api-staging-svitens egen login-helper), 44 logins/körning → 429-burst. Lösningsrymden hade tre kandidater: (a) CI-side token-återanvändning, (b) serialiserad/strypt login, (c) höjd GoTrue rate-limit. Vald: (a) — ett `api-setup`-projekt loggar in user+admin EN gång var, persisterar tokens (`playwright/.auth/api-tokens.json`), svit-testerna läser dem (44→2 logins, 66 passed/0 429). (c) valdes medvetet BORT: höjt tak är säkerhets-adjacent (sänker skyddet mot credential-stuffing) och behandlar symptomet, inte burst-orsaken. Regel: när en delad resurs strypts av egen burst, eliminera burst-ORSAKEN (dela/återanvänd auth-artefakten, idiomatiskt setup+dependency) framför att höja taket; säkerhets-adjacenta tak-höjningar är sista utväg, ej första. Kategori: Process/rate-limit-rotorsaks-fix. Relaterad: [[L170]] (strukturell-diagnosen som ledde hit) + [[L160]] (eliminera orsak > maskera symptom). Källa: 2026-06-22 Session 26 (T24-b, `2f4443c`).
+
+### L172 — Airtables `createdTime` är metadata, inte ett sorterbart fält → sortera klient-/JS-side
+
+Symptom: get-waitlist skulle returnera väntelistan i `createdTime desc`, men Airtables `createdTime` är post-METADATA, inte ett vanligt fält → det går inte att `sort`:a på via list-API:ts `sort`-parameter som ett fält. Lösning: hämta posterna och sortera på `createdTime` JS-side i EF:en. Regel (Airtable-flavored): verifiera att ett fält FAKTISKT är sorterbart via API:t innan du designar en server-sort på det — Airtable-metadata (`createdTime`, `RECORD_ID()`) exponeras inte alltid som sort-bara fält; faller det utanför, gör en deterministisk JS-sort efter hämtning. Kategori: Airtable/sort-mekanik. Relaterad: [[L152]] (Airtable-formel/fält-fällor mot skarp data). Källa: 2026-06-22 Session 26 (Fas 6c Leverabel 3, get-waitlist).
+
+### L173 [UNIVERSAL] — Verifiera värd-identiteten före deploy: ett repo länkat mot PROD kräver explicit `--project-ref`
+
+Symptom: staging-deploy av 6c-EF:erna kördes från ett repo vars Supabase-länk pekar på PROD — en bare `supabase functions deploy` hade träffat PROD. Fixen: explicit `--project-ref pqtshyierkdgwdnxuirz` (staging) vid varje deploy; PROD förblev orörd. Regel: anta aldrig att den länkade/default-värden är den avsedda — verifiera mål-projektets identitet explicit FÖRE en mutations-/deploy-operation, särskilt när repot är länkat mot PROD och staging är det avsedda målet. Gör värd-valet explicit i kommandot, inte beroende på ambient länk-state. Kategori: Process/deploy-värd-verifiering. Relaterad: [[L110]] (staging==prod-klass) + [[L159]] (anta ej; verifiera mot faktiskt tillstånd) + tråd T12 (`.env.test`→PROD-yta). Källa: 2026-06-22 Session 26 (Fas 6c Leverabel 4, staging-deploy).
+
+### L174 [UNIVERSAL] — En "planerad→byggd"-doksektions-övergång är en koherent multi-sektions-operation, inte en ensam-edit
+
+Symptom: när create-registration/get-waitlist/get-registrations väg-D gick från planerade till byggda redigerades §9 i `airtable-interaction.md` ensamt (de tre `[AKTUELLT TILLSTÅND]`-markörerna → STABIL MEKANIK), men §5 sa fortfarande "get-registrations bär T15-buggen" → §5↔§9-koherensen bröts. Self-review fångade det; full väg-X-fix re-belade ALLA berörda sektioner (§5 EF-katalog 9→11, §6 bug→väg-D, §7 allowlist 2→3, §8 helper-API, §9 tömd) mot HEAD. Regel: en status-övergång i ett dok som beskriver samma sak från flera vinklar (katalog, bug-status, allowlist, helper, planerat-vs-byggt) är EN operation över alla de sektionerna — identifiera först git-exakt vad som ändrades, re-belägg sedan varje berörd sektion mot samma HEAD. Ensam-edit av en vy lämnar de andra vyerna lögnaktiga. Kategori: Process/dok-koherens-multi-sektion. Relaterad: [[L175]] (stämpel-sanning är holistisk) + [[L167]] (färskhets-integritet fångas externt). Källa: 2026-06-22 Session 26 (6c-completion, airtable-interaction väg X).
+
+### L175 [UNIVERSAL] — En commit-stämpels "sann vid HEAD" är HOLISTISK, inte per-rad
+
+Symptom: §9-ensam-editen (L174) var per-rad korrekt men gjorde dokumentets stämpel ("sant vid HEAD `e499a89`") som HELHET falsk — §5 motsade §9. En stämpel som påstår dok-färskhet vid en commit garanterar inte att enskilda rader är färska, utan att HELA dokumentets påståenden är inbördes konsistenta och belagda mot den commiten. Regel: innan du stämplar ett dok "sant vid HEAD X", verifiera holistiskt — git-diffa vad X faktiskt ändrade och korsläs ALLA sektioner som rör de ändringarna mot varandra, inte bara den du nyss rörde. En holistiskt osann stämpel är värre än ingen stämpel (falsk trygghet). Kategori: Process/stämpel-sanning-holism. Relaterad: [[L174]] (multi-sektions-operationen) + [[L164]] (sann-per-datum ej för-alltid) + [[L163]] (kod-/schema-härlett kräver VERIFIERA-pass). Källa: 2026-06-22 Session 26 (6c-completion, stamp-honest reconciliation `9063f0c`).

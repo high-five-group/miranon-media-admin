@@ -1522,6 +1522,12 @@ get-waitlist: egen `Väntelista`-tabell, aktiv-filtrerad `NOT({Flyttad till anm�
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-06-20-session-26.md`](../tasks/sessions/2026-06-20-session-26.md). SESSIONSGRÄNS, ej fas-avslut: ingen audit, ingen arkivering, ingen CHANGELOG-release. **Nästa:** 6c /arch-audit + phase-end-verify (egen session).
 
+### 6c arch-audit + Fas 6c KLAR (resume-finalisering 2026-06-22)
+
+Resume i färsk chatt (`815701e`: `lifecycle` paused→active + paus-rubrik→öppen historik-form). Kall `/arch-audit` mot Fas 6c per ADR-058 (READ-ONLY, ej committad): fem fitness-områden GODKÄNDA — **i** lager-oberoende (port-paritet 15==15==15 inkl. nya `createRegistration`/`fetchWaitlist`, 0 UI-adapter-import, 0 `callEdgeFunction` utanför `src/data/`, DI-switch en rad); **ii** swappbarhet (`dataSource` direkt-importerad endast av kompositions-roten `src/router.ts`, dubbel-källa); **iii** EF-ribba 3/3 (get-registrations väg-D / get-waitlist / create-registration bär requireUser+corsHeadersFor+generateRequestId+mapErrorToResponse) + create-registration server-side write-allowlist (`field-allowlists.ts:57`, `findDisallowedField`→deny 400) + deny/allow-conformance CI-grön (T24-b); **iv** golv hållet i båda riktningar (ingen spekulation över golvet — Supabase-stubbar = port-paritets-krav, ej "ifall"; 6b chunk()-DRY EJ återupprepad); **v** axel-betyg 11/10/10 × 3 ytor (anmälda-vyn, väntelista-vyn, Lägg-till-modalen), inga oförtjänta 11:or. **AVVIKELSE TOTALT: ingen → Fas 6c KLAR** (arkitektoniskt förstklassigt klar mot kontraktet).
+
+SESSIONSGRÄNS, ej fas-avslut: ingen phase-end-verify, ingen arkivering, ingen CHANGELOG-release; lessons-HUB-lyft PENDING (vid FULLT Fas 6 fas-avslut efter 6d). chunk()-DRY (rule-of-three, 3 call-sites) registrerad som tråd **T25** (`paused`). Lessons L169–L175. Trail: sessionsdok-26 (Del 7). **Nästa:** NY session → Fas 6d (Hem-aggregering, egen arch-audit).
+
 ---
 
 ## Session 27 — T16 data-model.md reconciliation (a) + dok-synk-rutin (b); T16 STÄNGT (2026-06-21)
