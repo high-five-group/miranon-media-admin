@@ -1516,6 +1516,8 @@ get-waitlist: egen `Väntelista`-tabell, aktiv-filtrerad `NOT({Flyttad till anm�
 
 §9 i `airtable-interaction.md` (T19): de tre `[AKTUELLT TILLSTÅND]`-markörerna (create-registration, get-waitlist, get-registrations väg D) ersatta med fil:rad-belagda STABIL MEKANIK-kontrakt. **T15 STÄNGD** (`buildLinkedRecordFilter` noll live-callers). ADR-räkning 59→60 (ADR-060).
 
+**Landning 5 — full stamp-honest reconciliation (`airtable-interaction.md`).** L4:s §9-ensam edit bröt §5↔§9-koherensen (§5 sa ännu "get-registrations bär T15-buggen") — self-review fångade. Komplett fix (väg X): git-verifierat att 6c ändrade exakt 5 filer (3 EF + 2 `_shared`) sedan stämpel `346c386`, sedan re-belägg av varje berörd sektion mot HEAD `e499a89` — §5 (EF-katalog 9→11: get-registrations väg D + NYA get-waitlist/create-registration), §6 (T15-bug→väg D, helper dormant), §7 (write-allowlist 2→3 operationer), §8 (createAirtableRecord-export + getOperation/findDisallowedField rad-skift), §9 (tömd på 6c-poster → §5, åter "planerade"). Stämpeln nu HOLISTISKT sann. Residual: T19 Pass 2 bredare prosa-granskning (registrerad under T19, egen omgång).
+
 **Verifiering:** alla fyra L4-landningar CI-gröna per-jobb (`49671c4`/`3c40c06`+`96af589`/`09ee57e` + denna). api-staging create-registration-conformance grön mot deployad staging; e2e create-modal 5/5 grön; markdownlint 0 + docs-link-check grön; ADR-count 60==60.
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-06-20-session-26.md`](../tasks/sessions/2026-06-20-session-26.md). SESSIONSGRÄNS, ej fas-avslut: ingen audit, ingen arkivering, ingen CHANGELOG-release. **Nästa:** 6c /arch-audit + phase-end-verify (egen session).
