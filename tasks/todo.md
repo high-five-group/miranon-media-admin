@@ -19,11 +19,12 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 26 ▶ AKTIV (återupptagen 2026-06-22) — RESUME-omgång 2: Fas 6c Leverabel 2 (anmälda-vyn) LANDAD + CI-bevisad
+### Session 26 ⏸ PAUSAD (2026-06-22, nr 26 BEVARAT) — Fas 6c BYGGT + audit-klart (L1–L4 CI-gröna per-jobb)
 
-> /session-resume Session 26 (nr 26 BEVARAS; ADR-051). Omgång 1 (Leverabel 1) pausades och
-> återupptogs; omgång 2 landade Leverabel 2 + rotorsaks-fix för CI-flaky-auth (T24-b).
-> Full handoff i sessionsdokets `### HANDOFF`-block + Del 5-landnings-posten.
+> /session-resume Session 26 (nr 26 BEVARAS; ADR-051). Durabel paus vid build-complete/
+> audit-pending-gränsen — INGET bygg-arbete kvar, endast 6c:s per-sub-fas-arkitektur-
+> certifiering (`/arch-audit`) återstår. INGEN finalisering (ingen arkivering/CHANGELOG/
+> hub-sync/nr-increment). Full handoff i sessionsdokets `## PAUSLÄGE`/`### HANDOFF`-block + Del 6.
 > Trail: [`tasks/sessions/2026-06-20-session-26.md`](sessions/2026-06-20-session-26.md).
 
 - [x] **Tillstånds-återställning** (`2f139c7`) — `lifecycle` paused→active + `Väntelista.Event`-supersession (T16/T19-karta: `singleLineText`-konstant, ingen T15-klass) inskriven.
@@ -32,8 +33,10 @@
 - [x] **Tillstånds-återställning omgång 2** (`c283ddc`) — `lifecycle` paused→active + paus-rubrik → öppen historik-form (prefix bruten så ADR-052-grinden ej fäller active-doket).
 - [x] **Leverabel 2 — anmälda-vyn** (`/event/$eventId/anmalda`; kod `2f3884e`, CI-grön via `2f4443c`) — `EventRegistrations` speglar EventAttendance 11/10-a11y (väg A: status ren text, ingen primitiv); roster namn/status/ort/antal/inskickad/kontakt; print-läsbar; ingen mark-paid. Route + EventDetail-länk + `event-anmalda.staging.test.ts`. DoD: 11/10/10, **axe 0**, e2e **60 passed**.
 - [x] **T24-b — CI auth-rate-limit rotorsaks-fix** (`2f4443c`, tråd `c9174be`) — api-staging-sviten loggade in 44 ggr/körning → GoTrue-429-burst (flaky CI). Nytt `api-setup`-projekt: EN login/credential + token-återanvändning (44→2). api-staging **66 passed, 0 failed** (noll 429). Idiomatisk Playwright setup+dependency.
-- **Carry:** T15 väg-D-fixen landad (kortet stängs när create-registration ej berör det); T19 `active` (§9 fylls av 6c); T24 `paused` (lösningsrymd öppen — höjd GoTrue-limit ej självklart rätt; T24-b var CI-side-fixen). Lessons (EJ hub-lyfta): värd-identitet-mot-data + ej-landad-på-in_progress-CI + burst-login-mot-rate-limit (T24-b auth-återanvändnings-idiom).
-- **Nästa-omgång (read-först):** get-waitlist EF (mot T16/T19-kartan: `Väntelista.Event` = `singleLineText`-konstant, väntelistan de facto global) → vantelista-vy → SIST create-registration (write: allowlist + deny/allow-svit).
+- [x] **Leverabel 3 — väntelista** (`66f8770`/`b8057a8`/`5c89d10`) — get-waitlist global läs-EF (`NOT({Flyttad till anmälan})`, `singleLineText`-konstant event-fält → ingen T15, de facto global, createdTime desc JS-side) + adapter/schema/queryKey + staging-conformance; `/mer/vantelista`-vy + Mer-landning.
+- [x] **Leverabel 4 — create-registration** (4 atomiska landningar, var CI-grön per-jobb): write-EF (`49671c4`, EventKey-lookup + Event-länk, 409 e-post+EventKey, INVARIANT idempotencyKey, Källa=Manuell, Person→A2, ADR-059) + `CreateRegistrationInput`-port + Lägg-till-modal + `useCreateRegistration` (`3c40c06`/`96af589`, axe 0, e2e 5/5) + ADR-060 sentinel-cleanup (`09ee57e`) + 6c-completion-docs (`e499a89`) + airtable-interaction.md full stamp-honest reconciliation (`9063f0c`, sant vid HEAD, elva EF:er, T15 stängd).
+- **Carry:** **T15 STÄNGT** (väg-D landad + create-registration filtrerar på EventKey-sträng, ej länk); **T19 `active`** (§5–§9 6c-reconcilerade + stämpel-sanna vid HEAD; Pass 2 bredare prosa återstår); T24 `paused` (lösningsrymd öppen). ADR-060 sentinel-purge manuell (ingen CI-Airtable-seed-fas). Lessons (EJ hub-lyfta, hub-lyfts vid FULLT Fas 6 fas-avslut EFTER 6d): se sessionsdokets PAUSLÄGE-block (7 kandidater).
+- **Nästa (vid resume) — KORREKT KADENS:** (1) `/arch-audit` mot Fas 6c (PER-SUB-FAS, ADR-058) → "Fas 6c KLAR"; (2) SESSIONSGRÄNS `/session-end` (`lifecycle: closed`, EJ fas-avslut — ingen phase-end-verify/CHANGELOG; lessons-hub-lyft PENDING); (3) NY session → Fas 6d (Hem-aggregering, egen arch-audit). FULLT Fas 6 fas-avslut (phase-end-verify + CHANGELOG + hub-sync + arkivering) EFTER 6d.
 
 ### Session 29 ✅ AVSLUTAD (2026-06-21) — T17 system-dok `systemet.md` LEVERERAD (kartläggning → författning → granskning → wiring)
 
