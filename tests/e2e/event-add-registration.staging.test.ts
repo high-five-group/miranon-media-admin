@@ -114,9 +114,11 @@ test.describe('Lägg till anmälan-modal (Fas 6c L4)', () => {
     await page.getByLabel('E-post').fill('ny@example.se');
     await page.getByRole('button', { name: 'Skapa anmälan' }).click();
 
-    // Modalen stänger och rostern refetchar → nya raden syns.
+    // Modalen stänger och rostern refetchar → nya raden syns. `exact: true` på
+    // namnet: aria-live-annonsen ("Anmälan skapad för Ny Person") innehåller också
+    // delsträngen → exakt-match isolerar roster-radens span. E-posten är unik för rostern.
     await expect(dialog).toBeHidden();
-    await expect(page.getByText('Ny Person')).toBeVisible();
+    await expect(page.getByText('Ny Person', { exact: true })).toBeVisible();
     await expect(page.getByText('ny@example.se')).toBeVisible();
     await expect(page.getByText('2 anmälda')).toBeVisible();
   });
