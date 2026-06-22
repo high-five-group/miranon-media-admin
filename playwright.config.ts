@@ -79,12 +79,22 @@ export default defineConfig({
     {
       name: 'api-pure',
       testDir: './tests/api',
-      testIgnore: '**/*.staging.test.ts',
+      // Ignorera även setup-filen — api-pure är creds-fria enhetstester (T24-b).
+      testIgnore: ['**/*.staging.test.ts', '**/*.setup.ts'],
+    },
+    {
+      // T24-b: loggar in user + admin EN gång och persisterar tokens; api-staging
+      // beror på detta projekt → svit-testerna återanvänder tokens (44 logins → 2),
+      // eliminerar GoTrue-429-burst. Idiomatisk Playwright setup-projekt + dependency.
+      name: 'api-setup',
+      testDir: './tests/api',
+      testMatch: /.*\.setup\.ts$/,
     },
     {
       name: 'api-staging',
       testDir: './tests/api',
       testMatch: '**/*.staging.test.ts',
+      dependencies: ['api-setup'],
       use: {
         baseURL: process.env.TEST_SUPABASE_URL,
         extraHTTPHeaders: {

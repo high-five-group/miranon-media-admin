@@ -15,7 +15,20 @@
 // Båda test-users måste finnas i staging-projektet. Skapa med
 // supabase CLI eller via dashboard innan testerna körs.
 
+import { readFile } from 'node:fs/promises';
 import { type APIRequestContext, type APIResponse, test } from '@playwright/test';
+
+// Persisterad api-token-artefakt (T24-b). api-setup-projektet loggar in EN gång
+// per credential och skriver hit; api-staging-sviten läser härifrån i stället för
+// att logga in per test (44 logins → 2) — eliminerar GoTrue-rate-limit-429-burst
+// (T24). Idiomatisk Playwright "authenticate once in setup, reuse" (auth-doc).
+// Samma gitignored .auth-katalog som e2e-storageState.
+export const API_TOKENS_PATH = 'playwright/.auth/api-tokens.json';
+
+interface ApiTokens {
+  userJwt: string;
+  adminJwt: string;
+}
 
 export interface ApiConfig {
   baseUrl: string;
@@ -73,8 +86,10 @@ export function getApiConfig(): ApiConfig {
 }
 
 // Generell login-helper. Loggar in via Supabase Auth REST API och
-// returnerar access_token (= en giltig user-JWT).
-async function loginUser(
+// returnerar access_token (= en giltig user-JWT). Exporterad så api-setup-
+// projektet (tests/api/auth.setup.ts) kan göra de TVÅ enda login-anropen per
+// körning (user + admin); svit-testerna loggar INTE in själva längre (T24-b).
+export async function loginUser(
   request: APIRequestContext,
   baseUrl: string,
   anonKey: string,
@@ -100,27 +115,38 @@ async function loginUser(
   return body.access_token;
 }
 
-// Loggar in non-admin test-user (TEST_USER_*).
-export async function getValidUserJWT(
-  request: APIRequestContext,
-  config: ApiConfig,
-): Promise<string> {
-  return loginUser(request, config.baseUrl, config.anonKey, config.userEmail, config.userPassword);
+// Cachad token-läsning (per worker): läser den persisterade artefakten EN gång
+// per process och återanvänder. INGA login-anrop här — api-setup-projektet har
+// redan gjort dem (T24-b). Cross-worker-säkert: filen skrevs av setup-projektet
+// före api-staging kör (dependency), varje worker läser samma fil.
+let cachedTokens: ApiTokens | null = null;
+
+async function readApiTokens(): Promise<ApiTokens> {
+  if (!cachedTokens) {
+    const raw = await readFile(API_TOKENS_PATH, 'utf-8');
+    cachedTokens = JSON.parse(raw) as ApiTokens;
+  }
+  return cachedTokens;
 }
 
-// Loggar in admin test-user (TEST_ADMIN_*) — måste finnas i staging
-// ADMIN_EMAILS-secret för att create-admin-user ska godkänna calleren.
-export async function getValidAdminUserJWT(
-  request: APIRequestContext,
-  config: ApiConfig,
+// Returnerar non-admin test-user-JWT (TEST_USER_*) ur den persisterade artefakten.
+// Signaturen `(request, config)` bevaras så de ~43 call-sites är orörda; params
+// används ej längre (login skedde i api-setup) → `_`-prefix.
+export async function getValidUserJWT(
+  _request: APIRequestContext,
+  _config: ApiConfig,
 ): Promise<string> {
-  return loginUser(
-    request,
-    config.baseUrl,
-    config.anonKey,
-    config.adminEmail,
-    config.adminPassword,
-  );
+  return (await readApiTokens()).userJwt;
+}
+
+// Returnerar admin test-user-JWT (TEST_ADMIN_*) ur den persisterade artefakten.
+// Admin måste finnas i staging ADMIN_EMAILS-secret för att create-admin-user ska
+// godkänna calleren. Signatur bevarad (se getValidUserJWT).
+export async function getValidAdminUserJWT(
+  _request: APIRequestContext,
+  _config: ApiConfig,
+): Promise<string> {
+  return (await readApiTokens()).adminJwt;
 }
 
 // En klart ogiltig JWT — 3 segment med base64url, men signaturen är
