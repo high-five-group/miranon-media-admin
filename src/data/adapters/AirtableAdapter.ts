@@ -13,6 +13,7 @@ import {
   PersonDetailSchema,
   PersonSchema,
   RegistrationSchema,
+  WaitlistEntrySchema,
 } from '../../domain/schemas';
 import type {
   AttendanceFilters,
@@ -162,15 +163,21 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
-   * Hämta väntelistan.
-   *
-   * @deferTo: Fas-6c (väntelista-konvertering tillsammans med Registrations) —
-   * A5 #5, 06b-impact: liten (waitlist_entries-läsning, samma form post-Fas E).
-   * @todo Apply Zod .parse() runtime validation when get-waitlist Edge Function deploys.
-   * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
+   * Hämta väntelistan (Fas 6c Leverabel 3). GLOBAL läs-lista: get-waitlist
+   * filtrerar serverside på NOT({Flyttad till anmälan}) och sorterar createdTime
+   * desc. Valfritt `event`-filter (by-name) skickas vidare om satt; vy-konsumenten
+   * passar inga filters → global hämtning. `.parse()` validerar vid datagränsen
+   * (ADR-026; z.array — en LISTA).
    */
-  async fetchWaitlist(_filters?: WaitlistFilters): Promise<WaitlistEntry[]> {
-    throw new Error('Not deployed yet — see Fas 6c');
+  async fetchWaitlist(filters?: WaitlistFilters): Promise<WaitlistEntry[]> {
+    const params: Record<string, string> = {};
+    if (filters?.event) params.event = filters.event;
+
+    const data = await callEdgeFunction<{ waitlist: unknown }>(
+      'get-waitlist',
+      Object.keys(params).length > 0 ? params : undefined,
+    );
+    return z.array(WaitlistEntrySchema).parse(data.waitlist);
   }
 
   /**

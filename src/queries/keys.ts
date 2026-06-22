@@ -38,4 +38,11 @@ export const queryKeys = {
     // gren under 'persons' så detalj-cachen kan invalideras oberoende av listan.
     detail: (id: string) => ['persons', 'detail', id] as const,
   },
+  waitlist: {
+    // Väntelista (Fas 6c Leverabel 3): GLOBAL läs-lista (get-waitlist). STABIL
+    // nyckel — `fetchWaitlist()` hämtar HELA den aktiva listan (NOT Flyttad),
+    // vy-konsumenten passar inga filters. Nyckeln bär därför inget eventId-arg
+    // (speglar events.list-mönstret: global hämtning, ingen param i nyckeln).
+    all: ['waitlist'] as const,
+  },
 } as const;

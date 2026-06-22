@@ -30,6 +30,7 @@ const ENDPOINTS: EndpointSpec[] = [
   { name: 'get-events', method: 'GET', path: '/functions/v1/get-events' },
   { name: 'get-persons', method: 'GET', path: '/functions/v1/get-persons' },
   { name: 'get-registrations', method: 'GET', path: '/functions/v1/get-registrations' },
+  { name: 'get-waitlist', method: 'GET', path: '/functions/v1/get-waitlist' },
   {
     name: 'update-record',
     method: 'POST',
