@@ -130,8 +130,11 @@ test.describe('Väntelista-vy (Fas 6c L3 — LÄS-vy via get-waitlist)', () => {
     await expect(page.getByText('Namn saknas')).toBeVisible();
   });
 
-  test('fel (icke-2xx) → fel-UI via role=alert', async ({ page }) => {
-    await mockWaitlist(page, [], { status: 500 });
+  test('fel (4xx, klient-fel) → fel-UI via role=alert (ingen retry)', async ({ page }) => {
+    // 4xx → no-retry-grenen (speglar event-anmalda 404): isError direkt, ingen
+    // backoff. 5xx vore fel testval — då retryar react-query korrekt och alerten
+    // dröjer förbi timeouten.
+    await mockWaitlist(page, [], { status: 404 });
     await page.goto('/mer/vantelista');
     await expect(page.getByRole('alert')).toContainText('Kunde inte hämta väntelistan');
   });
