@@ -4,7 +4,7 @@ import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { Lead } from '../../domain/models/Lead';
 import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload';
-import type { Registration } from '../../domain/models/Registration';
+import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
   AttendanceSchema,
@@ -121,17 +121,24 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
-   * Skapa ny anmälan.
-   *
-   * @deferTo: Fas-6c (Registrations-domän) — A5 #3, 06b-impact: STOR
-   * (idempotency_key, registration_attendees, transaktionsdesign).
-   * EF-implementationen MÅSTE inkludera idempotency-mekanismen per ADR-014
-   * (create-registration-idempotency) — annars reproduceras F.4-dubblettbuggen.
-   * @todo Apply Zod .parse() runtime validation when create-registration Edge Function deploys.
-   * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
+   * Skapa ny manuell anmälan (Fas 6c Leverabel 4). POST mot create-registration-EF,
+   * som bygger write-shapen server-side (EventKey via Eventplanering-lookup,
+   * Källa="Manuell"/Status="Obekräftad"/Inskickad som konstanter, Person-länk via A2),
+   * idempotens-nyckel + 409-dubblett-grind. `idempotencyKey` skickas i body (EF:en
+   * läser header ELLER body). EF-svaret bär `registration` (ren domän-shape) — `.parse()`
+   * validerar vid datagränsen (ADR-026); det parallella råa `record`-fältet är skriv-bevis
+   * för conformance och konsumeras inte här.
    */
-  async createRegistration(_data: Omit<Registration, 'id'>): Promise<Registration> {
-    throw new Error('Not deployed yet — see Fas 6c');
+  async createRegistration(input: CreateRegistrationInput): Promise<Registration> {
+    const data = await postEdgeFunction<{ registration: unknown }>('create-registration', {
+      fornamn: input.fornamn,
+      efternamn: input.efternamn,
+      email: input.email,
+      telefon: input.telefon,
+      eventId: input.eventId,
+      idempotencyKey: input.idempotencyKey,
+    });
+    return RegistrationSchema.parse(data.registration);
   }
 
   /**

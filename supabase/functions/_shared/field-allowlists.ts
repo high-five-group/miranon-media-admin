@@ -45,6 +45,30 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Personer',
     allowedFields: ['Anteckningar'],
   },
+  // Skapa en manuell anmälan (Fas 6c Leverabel 4, create-registration-EF).
+  // Till skillnad mot update-operationerna ovan bygger EF:en `fields` SERVER-SIDE
+  // ur typade inputs (fornamn/efternamn/e-post/telefon/eventId) — listan är därför
+  // en SSOT-grind mot framtida kod-drift (om EF:en någon gång skulle försöka skriva
+  // ett fält utanför listan → findDisallowedField fäller före Airtable-anropet), ej
+  // en klient-nåbar deny-yta. Endast skrivbara create-fält (data-model.md § Anmälningar
+  // write-fält); formel/rollup (Namn/Normaliserad e-post/Är aktiv) ALDRIG. Länk-fältets
+  // NAMN är 'Event' (live-schema fldi3enUaMdbuGSlm, ej "Event-länk"). Person-länk EJ med
+  // — den delegeras till A2 (data-model.md rad 204). Tabell per NAMN (ADR-050).
+  'create-registration': {
+    tableId: 'Anmälningar',
+    allowedFields: [
+      'Förnamn',
+      'Efternamn',
+      'E-post',
+      'Mobilnummer',
+      'Källa',
+      'Status',
+      'Antal platser',
+      'Inskickad',
+      'EventKey',
+      'Event',
+    ],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.

@@ -3,7 +3,7 @@ import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { Lead } from '../../domain/models/Lead';
 import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload';
-import type { Registration } from '../../domain/models/Registration';
+import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type { PersonDetail } from '../../domain/schemas';
 import type {
@@ -58,8 +58,12 @@ export interface DataSourceAdapter {
     fields: Partial<Registration>,
   ): Promise<void>;
 
-  /** Skapa ny anmälan */
-  createRegistration(data: Omit<Registration, 'id'>): Promise<Registration>;
+  /**
+   * Skapa ny manuell anmälan. Tar write-shapen `CreateRegistrationInput`
+   * (ej läs-shapen `Omit<Registration, 'id'>`) — EF:en härleder resten
+   * server-side. Returnerar den skapade anmälan i domän-shape (Fas 6c).
+   */
+  createRegistration(input: CreateRegistrationInput): Promise<Registration>;
 
   /** Hämta deltaganden (närvaro) för ett event */
   fetchAttendance(filters?: AttendanceFilters): Promise<Attendance[]>;

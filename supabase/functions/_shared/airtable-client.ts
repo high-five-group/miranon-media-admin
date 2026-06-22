@@ -260,3 +260,44 @@ export async function updateAirtableRecord(
 
   return await res.json();
 }
+
+/**
+ * Skapar EN ny record i en tabell (Airtable POST /{table} med `{ fields }`) —
+ * write-mallens create-motsvarighet till `updateAirtableRecord` (PATCH). Speglar
+ * dess form exakt: injektions-säker (callern bygger `fields` med fält-NAMN, ingen
+ * user-styrd path/query interpoleras), bas-ID ur env (fail-fast, ingen prod-fallback,
+ * ADR-050), table-namn url-encodas (icke-ASCII-säkert, t.ex. "Anmälningar").
+ *
+ * Airtables single-create-form `{ fields }` returnerar den skapade raden direkt
+ * (`{ id, fields, createdTime }`) inkl. beräknade formel-/lookup-fält. INGEN
+ * `typecast` — callern skickar exakta singleSelect-NAMN som redan finns i schemat
+ * (verifierat mot data-model.md), så Airtable behöver inte coerce:a.
+ */
+export async function createAirtableRecord(
+  tableIdOrName: string,
+  fields: Record<string, unknown>,
+): Promise<AirtableRecord> {
+  const token = Deno.env.get('AIRTABLE_TOKEN');
+  if (!token) {
+    throw new Error('AIRTABLE_TOKEN not set');
+  }
+  const baseId = getAirtableBaseId();
+
+  const url = `${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ fields }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Airtable POST ${res.status}: ${body}`);
+  }
+
+  return await res.json();
+}

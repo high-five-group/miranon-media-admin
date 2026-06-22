@@ -3,7 +3,7 @@ import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { Lead } from '../../domain/models/Lead';
 import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload';
-import type { Registration } from '../../domain/models/Registration';
+import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type { PersonDetail } from '../../domain/schemas';
 import type {
@@ -55,7 +55,7 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
-  async createRegistration(_data: Omit<Registration, 'id'>): Promise<Registration> {
+  async createRegistration(_input: CreateRegistrationInput): Promise<Registration> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

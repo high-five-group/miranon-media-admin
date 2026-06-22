@@ -1,5 +1,23 @@
 import type { FlagStatusValue, PaymentStatusValue, RegistrationStatusValue } from '../types/Status';
 
+/**
+ * Input för att skapa en manuell anmälan (create-registration-EF, Fas 6c).
+ *
+ * MEDVETET en egen write-shape, INTE `Omit<Registration, 'id'>` (läs-shapen):
+ * en create tar bara de fält admin faktiskt fyller i + idempotensnyckeln —
+ * EF:en härleder resten server-side (EventKey via lookup, Källa/Status/Inskickad
+ * som konstanter, Person-länk via A2). `idempotencyKey` är en klient-genererad
+ * UUID (crypto.randomUUID) per submit (ADR-059).
+ */
+export interface CreateRegistrationInput {
+  fornamn: string;
+  efternamn: string;
+  email: string;
+  telefon: string | null;
+  eventId: string;
+  idempotencyKey: string;
+}
+
 export interface Registration {
   id: string;
   namn: string | null;
