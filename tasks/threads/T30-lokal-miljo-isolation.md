@@ -3,7 +3,7 @@ owner: marcus803
 updated: 2026-06-23
 review_by: 2026-09-23
 status: stable
-lifecycle: paused
+lifecycle: closed
 ---
 
 # T30 — Lokal miljö-isolation (kluster-parent för T12 / T28 / T29)
@@ -15,7 +15,7 @@ lifecycle: paused
 > BESLUTAR inte — lösnings-beslutet + ADR:n är nästa session.
 
 - **Tråd-ID:** `T30-lokal-miljo-isolation`
-- **Tillstånd:** se frontmatter `lifecycle` (paused — diagnostiserat, väntar lösnings-session)
+- **Tillstånd:** se frontmatter `lifecycle` (closed — löst av ADR-061, se Lösning nedan)
 - **Symptom-trådar:** [`T12`](README.md) · [`T28`](README.md) · [`T29`](README.md) (förblir separata, pekar hit)
 - **Uppstod:** Session 31 (T26 Landning B — prod-pekaren blockerade staging-repron, forensiken följde)
 
@@ -117,3 +117,18 @@ Detta kort DIAGNOSTISERAR — det beslutar inte lösningen. Vilka pelare, i vilk
 ordning, exakt mekanism (mode-namn, validerings-bibliotek, artefakt-fix) → nästa
 sessions ADR. T12/T28/T29 förblir öppna symptom-trådar tills den ADR:n landar; T30
 är deras kluster-parent och auktoritativa ingång.
+
+## Lösning (Session 32 — ADR-061)
+
+Klustret löst. ADR-061 (lokal miljö-isolation — självverifierande miljö-bindning) beslutade
+och implementerade fixen i fyra landningar (verifierade SHA mot git log):
+
+- Pelare 1 — `Vite` mode-separation + dev→staging (commit `dde6d41`)
+- Pelare 2 — fail-fast mode-medveten grind, klient-runtime + api-test-yta (commit `8315d5a`)
+- Pelare 2.5 — build-tids-vägran via `vite.config.ts`, tredje grind-ytan (commit `eb7ae4c`)
+- Pelare 3 — T29 `error-context`-maskering (commit `445b46f`) + T12 cred-synk
+  (Marcus, staging-användarnas lösenord satta i dashboarden; `.env.test` + GitHub-secrets synkade)
+
+Symptom-stängning: T28 strukturellt (pekare ut ur `.env.local` + grind), T29 bevisad
+artefakt-fix, T12 funktionellt verifierad (auth mot staging grön, Session 32). Säkerhets-
+klassen är icke-återuppståndlig via grinden på tre ytor — "för all framtid" uppfyllt.
