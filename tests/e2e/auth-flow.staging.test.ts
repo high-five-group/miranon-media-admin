@@ -5,14 +5,15 @@ import { expect, type Request, test } from '@playwright/test';
  *
  * Sex tester verifierar K3.2/K3.3 + K3.5-arkitekturen end-to-end:
  *
- * Utloggat tillstånd (3 tester, override storageState till empty):
+ * Utloggat tillstånd (4 tester, override storageState till empty):
  * - Test 1: initial redirect / → /login
  * - Test 2: /login renderar form med a11y-attribut
  * - Test 4: direkt-nav till /hem (pathless _authenticated route) → /login?redirect=%2Fhem
+ * - Test 5: **INGA functions/v1/*-anrop läcker före /login-redirect** (defense-in-depth —
+ *   sessionsdok Del 5.0; pinne flyttad från inloggat /hem i Fas 6d, se testet)
  *
- * Autentiserat tillstånd (3 tester, använder storageState från auth.setup.ts):
+ * Autentiserat tillstånd (2 tester, använder storageState från auth.setup.ts):
  * - Test 3: /hem nås direkt
- * - Test 5: **INGA functions/v1/*-anrop sker** (defense-in-depth — sessionsdok Del 5.0)
  * - Test 6: router.invalidate fungerar vid auth-state-byte (storage-clear → reload)
  *
  * **Disciplin (Kandidat 34 aldrig-läcka, K0åc.2-förlängning):**
@@ -95,6 +96,43 @@ test.describe('Utloggat tillstånd', () => {
     await expect(page).toHaveURL(/\/login\?redirect=%2Fhem/);
     await expect(page.locator('h1#login-heading')).toHaveText(/Logga in/i);
   });
+
+  test('Test 5: oinloggad nav till /hem läcker INGA functions/v1/*-anrop före /login-redirect', async ({
+    page,
+  }) => {
+    // **Arkitektur-kritiskt test.** Invariant (sessionsdok Del 5.0): UI faller
+    // ALDRIG tillbaka på anon-key — `_authenticated.tsx` beforeLoad-guarden
+    // redirectar en oautentiserad användare till /login FÖRE någon datafetch (Edge
+    // Function-anrop) hinner ske. Brister guarden skulle EF-anrop läcka med
+    // anon-key → detta test fångar den regressionen.
+    //
+    // **PINNE FLYTTAD (Fas 6d L1).** Assertionen låg tidigare på INLOGGAT /hem och
+    // krävde noll EF-anrop — men det byggde på att /hem var en inert placeholder
+    // ("K3-state: /hem utan datafetch"). Fas 6d gör inloggat /hem till en
+    // datafetchande aggregeringsvy (get-registrations + get-events), så den
+    // premissen är obsolet. Själva invarianten (anon-key-fallback-förbudet,
+    // Del 5.0) står ORÖRD — bara regressions-testets kontext flyttar till sin sanna
+    // plats: den OINLOGGADE vägen, där "guard FÖRE datafetch" är vad som faktiskt
+    // skyddas. Knyter ihop med Test 4 (samma oinloggade redirect-väg).
+    //
+    // Defense-in-depth (klient-guard + server requireUser) är arkitekturellt
+    // identiskt i dev/prod — testet körs mot npm run dev (webServer-config) utan att
+    // förlora regression-värdet. Fas 7 kompletterar mot Vercel preview-URL.
+    const functionsRequests: Request[] = [];
+
+    page.on('request', (request) => {
+      if (request.url().includes('/functions/v1/')) {
+        functionsRequests.push(request);
+      }
+    });
+
+    await page.goto('/hem');
+
+    // Guarden redirectar till /login FÖRE datafetch …
+    await expect(page).toHaveURL(/\/login\?redirect=%2Fhem/);
+    // … och INGET Edge Function-anrop fick ske på vägen (anon-key-fallback-förbudet).
+    expect(functionsRequests).toHaveLength(0);
+  });
 });
 
 // ===================================================================
@@ -107,35 +145,6 @@ test.describe('Autentiserat tillstånd', () => {
     await page.goto('/hem');
     await expect(page).toHaveURL(/\/hem$/);
     await expect(page.locator('h1')).toHaveText('Hem');
-  });
-
-  test('Test 5: INGA functions/v1/*-anrop sker (defense-in-depth verifiering)', async ({
-    page,
-  }) => {
-    // **Arkitektur-kritiskt test.** Sessionsdok Del 5.0 förbjuder anon-key-fallback
-    // i UI-flow. AuthProvider faller INTE tillbaka på anon-key — guard redirectar
-    // FÖRE Edge Function-anrop. Detta test fångar regression om något brister.
-    //
-    // Defense-in-depth-skyddet (klient-guard + server requireUser) är arkitekturellt
-    // identiskt i dev/prod — testet körs mot npm run dev (via webServer-config) i K4.3
-    // utan att förlora regression-värdet. Fas 7 kompletterar med samma test mot Vercel
-    // preview-URL för full production-parity.
-
-    const functionsRequests: Request[] = [];
-
-    page.on('request', (request) => {
-      if (request.url().includes('/functions/v1/')) {
-        functionsRequests.push(request);
-      }
-    });
-
-    // Navigera genom hela inloggat-flödet.
-    await page.goto('/hem');
-    await expect(page.locator('h1')).toHaveText('Hem');
-
-    // K3-state: /hem är placeholder utan datafetch. Inga functions/v1-anrop förväntat.
-    // Om någon framtida route lägger till functions/v1-anrop som inte borde ske, fångas det här.
-    expect(functionsRequests).toHaveLength(0);
   });
 
   test('Test 6: router.invalidate triggas vid auth-state-byte (logout via storage-clear)', async ({
