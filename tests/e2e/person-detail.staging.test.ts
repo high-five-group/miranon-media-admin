@@ -107,10 +107,13 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
     // <h1> = namn, fokuserad efter async-laddning.
     const heading = page.getByRole('heading', { level: 1, name: 'Anna Andersson' });
     await expect(heading).toBeVisible();
-    await expect(heading).toBeFocused();
 
-    // aria-live bekräftar att detaljerna anlänt.
+    // Stabil data-gate FÖRE fokus-assertionen: aria-live-annonsen renderas bara i
+    // det laddade tillståndet (PersonDetail.tsx:154-155) → fokus-useEffect
+    // (PersonDetail.tsx:98-104) har då körts. Gör toBeFocused-väntan deterministisk
+    // i stället för att racea loading→loaded-monteringen under parallell last (T26).
     await expect(page.getByText('Persondetaljer för Anna Andersson laddade.')).toHaveCount(1);
+    await expect(heading).toBeFocused();
 
     // Kurshistorik: event-för-event (båda raderna syns, senaste först).
     const history = page.getByRole('list', { name: /Kurshistorik/ });

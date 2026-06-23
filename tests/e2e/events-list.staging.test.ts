@@ -168,6 +168,9 @@ test.describe('Event-listan (Fas 6b L1)', () => {
   test('axe 0 violations på den renderade listan', async ({ page }) => {
     await page.goto('/event');
     await expect(page.getByText('3 event (kommande)')).toBeVisible();
+    // Gate axe på FULLT renderad lista: alla 3 listitem-subträd committade innan
+    // analysen, annars racear axe en delvis-målad lista (T26 STEG 1 DEL 2, rot c).
+    await expect(page.getByRole('list', { name: 'Event' }).getByRole('listitem')).toHaveCount(3);
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
