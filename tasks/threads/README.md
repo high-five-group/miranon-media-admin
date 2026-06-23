@@ -51,6 +51,7 @@ status: stable
 | `T25` | DRY-konsolidering av `chunk<T>`-helper (rule-of-three nådd, 3 call-sites: get-person / get-attendance / get-registrations) | `paused` | _(ingen kort än — endast registrerad); 6b-flaggad, tröskel nådd Session 26 (6c arch-audit); blockerar ej_ |
 | `T26` | e2e-svit-flakiness under parallell last (timing-klass: focus→h1 / loading-state / axe-pre-render) + `retries: 0` i `playwright.config` → latent CI-röd-risk på obesläktade commits | `paused` | _(ingen kort än — endast registrerad); uppstod Session 30 (Fas 6d L2); blockerar ej (CI grön, alla gröna isolerat)_ |
 | `T27` | E2E kör mot CI-lokal Vite-dev-server (PLAYWRIGHT_TEST_BASE_URL osatt i ci.yml E2E-steget) ej deployad frontend — delad dev-server + parallella workers är T26:s flake-substrat; överväg dedikerad preview/server-per-worker | `paused` | _(ingen kort än — endast registrerad); uppstod Session 31 (T26 Landning A STEG 1)_ |
+| `T28` | `.env.local` (dev-serverns `VITE`-källa) pekar på PROD-ref (`lvjsfnphlauldxqlncpl`) → lokala e2e-/dev-körningar kör de facto mot produktion (bevisat: dagens `user.json` bär prod-auth-token). Distinkt från T12 (`.env.test`/mutations-sviten, redan staging-rättad). Durabel fix: repo-nivå fail-fast som vägrar dev-server/e2e mot prod-ref (strukturell, à la L110/T12) | `paused` | _(ingen kort än — endast registrerad); uppstod Session 31 (T26 Landning B STEG 1, prod-pekare blockerade repron)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
