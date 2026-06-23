@@ -50,6 +50,7 @@ status: stable
 | `T24` | CI auth-rate-limit-flaky — burst-login (e2e-setup + api-staging per svit) mot staging-Supabase GoTrue rate-limit ger transient `429` på obesläktade commits | `closed` | _Löst via T24-b (auth-token-återanvändning, `2f4443c`); uppstod + stängd Session 26 (Fas 6c Leverabel 2)_ |
 | `T25` | DRY-konsolidering av `chunk<T>`-helper (rule-of-three nådd, 3 call-sites: get-person / get-attendance / get-registrations) | `paused` | _(ingen kort än — endast registrerad); 6b-flaggad, tröskel nådd Session 26 (6c arch-audit); blockerar ej_ |
 | `T26` | e2e-svit-flakiness under parallell last (timing-klass: focus→h1 / loading-state / axe-pre-render) + `retries: 0` i `playwright.config` → latent CI-röd-risk på obesläktade commits | `paused` | _(ingen kort än — endast registrerad); uppstod Session 30 (Fas 6d L2); blockerar ej (CI grön, alla gröna isolerat)_ |
+| `T27` | E2E kör mot CI-lokal Vite-dev-server (PLAYWRIGHT_TEST_BASE_URL osatt i ci.yml E2E-steget) ej deployad frontend — delad dev-server + parallella workers är T26:s flake-substrat; överväg dedikerad preview/server-per-worker | `paused` | _(ingen kort än — endast registrerad); uppstod Session 31 (T26 Landning A STEG 1)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >

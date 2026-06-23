@@ -13,9 +13,10 @@ const isA11yRun = process.env.PLAYWRIGHT_A11Y_DEV_SERVER === '1';
 /**
  * Playwright — visuella regressionstester + API-säkerhetstester + e2e auth-flow.
  *
- * Sju projekt:
+ * Åtta projekt:
  *   - setup       → tests/e2e/*.setup.ts (auth-fixture, kör en gång per testrun)
  *   - api-pure    → tests/api/*.test.ts (pure-logik, ingen staging-koppling)
+ *   - api-setup   → tests/api/*.setup.ts (T24-b: loggar in user+admin en gång; api-staging beror på det)
  *   - api-staging → tests/api/*.staging.test.ts (HTTP mot deployad Supabase)
  *   - chromium-authenticated → tests/e2e/*.staging.test.ts (e2e via storageState från setup)
  *   - a11y        → tests/a11y/ (axe-core mot /dev/primitives + /dev/patterns;
@@ -39,6 +40,9 @@ const isA11yRun = process.env.PLAYWRIGHT_A11Y_DEV_SERVER === '1';
 export default defineConfig({
   testDir: './tests',
   snapshotPathTemplate: '{testDir}/visual/__screenshots__/{testFilePath}/{arg}{ext}',
+  // T26: 0 lokalt (se flakes direkt) / 2 i CI (absorbera infra-brus utan
+  // att maskera äkta fel — Playwright rapporterar flaky ≠ failed).
+  retries: process.env.CI ? 2 : 0,
   expect: {
     toHaveScreenshot: {
       maxDiffPixelRatio: 0.01,
@@ -112,9 +116,11 @@ export default defineConfig({
         baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173',
         storageState: 'playwright/.auth/user.json',
         // Kandidat 34 aldrig-läcka: maskera password-inputs i screenshots/videos/traces.
-        // Playwright maskerar input[type=password] som standard, retain-on-failure
-        // säkrar att även debug-artefakter är credentials-fria.
-        trace: 'retain-on-failure',
+        // Playwright maskerar input[type=password] som standard → även debug-
+        // artefakter (trace, screenshot, video) är credentials-fria.
+        // T26: trace on-first-retry fångar trace exakt när en retry triggas →
+        // diagnostik för Landning B (flaky-repro) utan att spara på varje run.
+        trace: 'on-first-retry',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',
       },
