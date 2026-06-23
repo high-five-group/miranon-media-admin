@@ -1622,6 +1622,28 @@ Föregår den pausade Session 26 (6c-bygget, ej återupptaget). Ren dok-/process
 
 ---
 
+## Session 31 — T26 e2e-flakiness STÄNGT (2 landningar) + miljö-kluster-dok T30 (2026-06-23)
+
+Egen session (ADR-051): tog upp + stängde tråd T26 (e2e-svit-flakiness under parallell worker-last + `retries: 0` → latent CI-röd-risk). **Inga nya Edge Functions, ingen deploy, ingen write, ingen app-kod** — test- + config- + dok-ändringar. SESSIONSGRÄNS, ej fas-avslut: Fas 6 öppen mot 6e → ingen arkivering, ingen CHANGELOG-release, ingen byggplan-flip, ingen hub-lyft (ADR-023).
+
+**Planerat vs faktiskt:** planerat = stäng T26 via 2 landningar (A config, B test-härdning). Faktiskt = båda landade + scope växte KONTROLLERAT (registrerat, ej svällt) med 3 triage-deferrade trådar (T27/T28/T29) + ett forensik-pass + ett kluster-tråd-kort (T30). Avvikelse: repro-path blockerad av en prod-pekare (`.env.local`) → forensiken som följde avtäckte miljö-isolations-rotorsaken.
+
+**Landningar (commit-hashar + CI per-jobb):**
+
+- **T26 Landning A — config-grind** (`910ebb9`, CI-run `28048711187` grön) — `playwright.config.ts`: top-level `retries: process.env.CI ? 2 : 0` (flaky ≠ failed; stänger latent CI-röd-risk) + chromium-authenticated `trace` `retain-on-failure`→`on-first-retry` (Landning B-diagnostik) + stale doc-projekt-räkning 7→8 (api-setup saknades). CI-base-URL-observation (E2E mot CI-lokal Vite, ej deployad frontend) → tråd **T27** (`paused`). E2E-jobbet grönt: 78 passed.
+- **T26 Landning B — preventiv test-härdning** (`69a89f4`, CI-run `28050682542` grön) — repro mot staging blockerad: `.env.local`→PROD-ref → STOPPA per prod-guard; staging-override-repro failade på `auth.setup` (lokala `TEST_USER`-creds = de facto prod-creds). Måltesterna `page.route`-mockade → racerna **miljö-oberoende** → statisk-analys-härdning: (a) `event-anmalda` loading-state → opt-in `manualRelease` (deterministiskt fönster, bakåtkompatibel helper); (b) `person-detail` → stabil `aria-live`-data-gate FÖRE `toBeFocused`; (c) `events-list` → `toHaveCount(3)` listitem FÖRE axe. **Komponentkod orörd. PREVENTIV, ej trace-belagd.** E2E 78 passed, **noll flaky** (härdningen höll). `error-context`-aria-snapshot-klartext-cred → tråd **T29** (`paused`).
+- **T30 kluster-tråd-kort** (`5e5914b`, CI-run `28051877515` grön) — forensik (disk-belagd: `conversion-plan-2026-04-14.md:1157-1159` instruerade `.env.local`→prod från dag ett; lokal e2e-auth `fca8bfd` 2026-05-12 föddes före staging-bygget `45c02a9` 2026-06-15; ADR-050 noll lokal-yt-förekomster → blind fläck; `.env.test` halv-migrerad session-26 ~rad 320) visade att T12/T28/T29 = tre symptom på EN rotorsak (miljö-isolation stannade vid CI-/deploy-gränsen, nådde aldrig lokal disk). `tasks/threads/T30-lokal-miljo-isolation.md`: rotorsak + tre symptom + branschledar-lösningsrymd (`Vite` mode-separation / fail-fast uppstarts-validering / cred-hygien). **Diagnostiserar, beslutar ej** — lösnings-ADR = nästa session.
+
+**Lessons:** L177 `[UNIVERSAL]` (preventiv härdning utan repro, miljö-oberoende mock), L178 `[UNIVERSAL]` (citat-verifiering mot disk före auktoritativt dok), L179 (sent fött sessionsdok fångat av do-confirm POST 0). Hub-lyft pending (vid FULLT Fas 6 fas-avslut efter 6e).
+
+**Trådar:** T26 `paused`→`closed` (stängd via A+B). T27 (CI-lokal Vite), T28 (`.env.local` prod-pekare), T29 (`error-context` klartext-cred) registrerade `paused`. **T30** registrerad `paused` — kluster-parent för T12/T28/T29 (kluster-not i registret).
+
+**Verifiering:** alla landningars CI gröna per-jobb (E2E 78 passed × 3 körningar, noll flaky efter härdning; docs-grindar markdownlint/Vale/lifecycle gröna på dok-commits). ADR-count oförändrat (inget nytt ADR). Inga EF/deploy/write/app-kod.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-23-session-31.md`](../tasks/sessions/2026-06-23-session-31.md) (sent fött, POST 0-åtgärd; Del 1 scope + Del 2 landningar + Del 3 lessons + Del 4 tråd-bokföring + Del 5 nästa). Nästa: NY session → miljö-isolations-lösnings-session (T30 → ADR) ELLER Fas 6e / FULLT Fas 6 fas-avslut. `lifecycle: closed`.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
