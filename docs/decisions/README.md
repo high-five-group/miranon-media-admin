@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-22
+updated: 2026-06-23
 review_by: 2026-11-15
 status: stable
 ---
@@ -103,6 +103,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-058](ADR-058-arkitektur-fitness-audit-mekanism.md) | Arkitektur-fitness-audit — mekanism + fast rapport-kontrakt + governance-placering: verifierar fem fitness-områden (lager-oberoende/swappbarhet/EF-ribba mekaniskt; över-engineering-vakt/ärliga betyg via omdöme) mot ADR-057 + §6.10 + KVALITETSDEFINITIONER; Code-side `arch-audit`-skill (plugin 4→5), Chat-`/audit` deferras till 3b; rekommenderad vid fas-gränser, ej per-push-grind; fyller nischen ADR-039↔ADR-041 | Accepted | Meta |
 | [ADR-059](ADR-059-idempotens-lagring-defer-fas-e.md) | Idempotens-lagring defer:as till Fas E — superseder ADR-014:s lagrings-mekanism (Airtable unik-constraint på skrivbart fält är omöjlig) + timing-beslut; interim klient-skydd (mutationKey-dedup + disabled-knapp under in-flight, klient-UUID-nyckel bevarad i kontraktet), server-side UNIQUE-reservation när Postgres blir datahem (Fas E); smalt multi-session-race-fönster accepterat öppet (single-admin-golv); Alt X Airtable-dedup noterad som fallback | Accepted | 6c |
 | [ADR-060](ADR-060-sentinel-setup-purge-create-conformance.md) | Sentinel-markerade test-records + setup-purge för create-write-conformance — per-körning-unik sentinel (ingen cross-run-kollision), conformance EF-only (ingen cred-breddning), purge vid SETUP ej teardown (Vlad Mihalcea), purge i Airtable-creddad tooling SKILD från testet; prod-delete-EF (Alt A) + test-Airtable-cred (Alt B) avvisade; interim manuell/schemalagd purge, bounded sentinel-ackumulering tolererad tills cred-skild seed-fas finns. Första create-write-conformance-konventionen | Accepted | 6c |
+| [ADR-061](ADR-061-lokal-miljo-isolation.md) | Lokal miljö-isolation — självverifierande miljö-bindning (Vite mode-separation + fail-fast mode-medveten grind + cred-hygien); löser T30-klustret (T12/T28/T29); Väg B, lokal-stack deferrad → T31 | Accepted | Meta |
 
 ## Relaterade dokument
 
