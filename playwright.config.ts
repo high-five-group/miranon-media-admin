@@ -39,6 +39,10 @@ const isA11yRun = process.env.PLAYWRIGHT_A11Y_DEV_SERVER === '1';
  */
 export default defineConfig({
   testDir: './tests',
+  // ADR-061 Pelare 3 (T29): purga klartext-lösenord ur error-context.md efter
+  // hela runnet (Playwrights page-snapshot listar input-värden, även för
+  // type=password). Ren artefakt-efterbearbetning — rör ej testbeteende/a11y.
+  globalTeardown: './tests/global-teardown.ts',
   snapshotPathTemplate: '{testDir}/visual/__screenshots__/{testFilePath}/{arg}{ext}',
   // T26: 0 lokalt (se flakes direkt) / 2 i CI (absorbera infra-brus utan
   // att maskera äkta fel — Playwright rapporterar flaky ≠ failed).
