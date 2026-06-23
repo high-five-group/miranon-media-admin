@@ -45,15 +45,4 @@ export const queryKeys = {
     // (speglar events.list-mönstret: global hämtning, ingen param i nyckeln).
     all: ['waitlist'] as const,
   },
-  dashboard: {
-    // Hem-aggregering (Fas 6d). EGNA nycklar, MEDVETET skilda från events.list /
-    // registrations.byEvent: Hem-vyns cards hämtar GLOBALA listor (alla event,
-    // alla anmälningar — inget eventId) och L2 lägger 60s-polling enbart på
-    // dashboard-grenen (ADR-017). Egna nycklar gör polling-scopet exakt — /event-
-    // listans cache ska inte tvingas polla för att Hem gör det. Två komponenter
-    // som delar `registrations`-nyckeln dedupas av React Query till EN fetch.
-    all: ['dashboard'] as const,
-    registrations: ['dashboard', 'registrations'] as const,
-    events: ['dashboard', 'events'] as const,
-  },
 } as const;
