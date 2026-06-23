@@ -3,13 +3,14 @@ import { Greeting } from './Greeting';
 import { NastaEventCard } from './NastaEventCard';
 import { NyaAnmalningarCard } from './NyaAnmalningarCard';
 import { ObetaldaCard } from './ObetaldaCard';
+import { RefreshButton } from './RefreshButton';
 
 /**
- * Hem-aggregering (Fas 6d L1) — översiktsvyn på `/hem`. STATISK hämtning: greeting
- * + tre översikts-cards (nya anmälningar / nästa event / obetalda avgifter) + CTA,
- * alla mot BEFINTLIGA read-EF via router-context-DI (ADR-055). Poll-lagret
- * (refetchInterval 60s + visibility-trigger + pull-to-refresh, ADR-017) är L2 —
- * byggs INTE här.
+ * Hem-aggregering (Fas 6d) — översiktsvyn på `/hem`: greeting + tre översikts-cards
+ * (nya anmälningar / nästa event / obetalda avgifter) + CTA, alla mot BEFINTLIGA
+ * read-EF via router-context-DI (ADR-055). L1 byggde den statiska vyn; L2 lade
+ * poll-lagret (60s-polling + stale-baserad window-focus-refetch + manuell
+ * `<RefreshButton>`, ADR-017 + erratum 2026-06-23) i `useDashboardData`/RefreshButton.
  *
  * Containern äger sid-identiteten (`<h1>Hem</h1>`) och komponerar delarna; varje
  * card bär sin egen data + pending/empty/error-yta (logiken bor i komponenten,
@@ -32,9 +33,14 @@ import { ObetaldaCard } from './ObetaldaCard';
 export function Hem() {
   return (
     <section className="flex flex-col gap-6 p-4">
-      <div className="flex flex-col gap-2">
-        <h1 className="font-semibold text-2xl">Hem</h1>
-        <Greeting />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-2">
+          <h1 className="font-semibold text-2xl">Hem</h1>
+          <Greeting />
+        </div>
+        {/* Manuell refresh (ADR-017 §2 per erratum) — poll-lagret håller datan
+            färsk automatiskt; knappen ger Lotta en explicit "hämta nu". */}
+        <RefreshButton />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

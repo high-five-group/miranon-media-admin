@@ -5,6 +5,38 @@
 - **Datum:** 2026-05-05 (skrivs i P3a, implementeras i Fas 6d)
 - **Fas:** 6d (Hem-aggregering)
 
+> **Erratum (Fas 6d L2, 2026-06-23 — implementations-avstämning mot aktuell TanStack
+> Query v5):** Beslutet förblir **Accepted** och rivs INTE i sin helhet; detta erratum
+> håller det sant mot v5-verkligheten + a11y-golvet. Det är ett erratum, inte en
+> supersede — inget nytt ADR-nummer, README-räknaren rörs ej. **§1** (refetchInterval
+> 60s + `refetchIntervalInBackground: false`) och **§5** (Realtime-migrationsväg, Fas E)
+> står **ORÖRDA**. Ändringar:
+>
+> - **§3 (egen `visibilitychange`-handler) RIVS — MEKANIKEN, inte intentionen.**
+>   v5:s inbyggda `focusManager` lyssnar själv på `visibilitychange` (focus-eventet
+>   togs bort som default i v5 pga fallgropar), och `refetchOnWindowFocus` refetchar
+>   vid fokus **endast om queryn är stale**. Global `refetchOnWindowFocus: true`
+>   (`src/router.ts`) + per-query `staleTime: 30_000` på dashboard-grenen ger därför
+>   IDENTISKT beteende som §3:s "refetch om data > 30s vid återkomst" — utan en rad
+>   egen kod. Att bygga egen handler vore att återimplementera bibliotekets kärna
+>   (dubbelriktad över-engineering-vakt). §3:s INTENTION (fresh data när Lotta växlar
+>   tillbaka) bevaras; bara mekaniken ändras. Källa: TanStack Query v5-doc,
+>   `reference/focusManager.md` + `framework/react/guides/window-focus-refetching.md`.
+> - **§2 (touch-gesture pull-to-refresh) NYANSERAS till `<RefreshButton>` →
+>   `invalidateQueries({ queryKey: dashboard.all })`.** Skäl: a11y-11 (en knapp är
+>   tangentbordsnåbar + skärmläsbar; touch-drag är svårt WCAG-konformt) + testbarhet
+>   utan touch-emulering + `STATE-STRATEGY.md §5b`-precedensen (senare, genomtänkta
+>   källan). `invalidateQueries` markerar stale (åsidosätter `staleTime`) + refetchar
+>   renderad query i bakgrunden = rätt semantik för manuell refresh. Touch-drag kan
+>   adderas som progressiv förbättring senare.
+> - **§4 `gcTime: 5_60_000` RÄTTAS till `300_000`.** Uppenbar typo: `5_60_000` =
+>   560 000 ms ≈ 9,3 min, inte de avsedda 5 × 60 000 = 300 000 ms (5 min).
+>
+> Implementation: `src/components/hem/useDashboardData.ts` (polling-options) +
+> `src/components/hem/RefreshButton.tsx`. Verifiering (Fas 6d DoD nedan) speglas mot
+> detta erratum: ingen egen `visibilitychange`-handler byggs; "visibility-trigger"
+> uppfylls av v5-focusManager + `staleTime: 30_000`.
+
 ## Kontext
 
 Conversion-plan §D Fas 6 nämnde Supabase Realtime som primär refresh-strategi för Hem-fliken (live-uppdatering av "nya anmälningar"-listan). Detta är pre-Fas-E-arkitektur — när conversion-plan skrevs (2026-04-14) var Supabase-target inte låst.

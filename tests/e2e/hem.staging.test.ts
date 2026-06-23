@@ -152,6 +152,9 @@ test.describe('Hem-aggregering (Fas 6d L1 — statisk översiktsvy)', () => {
       'href',
       '/event',
     );
+
+    // RefreshButton (L2) — manuell uppdatera-kontroll i headern.
+    await expect(page.getByRole('button', { name: 'Uppdatera översikt' })).toBeVisible();
   });
 
   test('tomma listor → vänliga tom-texter per card, inga fel', async ({ page }) => {
@@ -199,5 +202,73 @@ test.describe('Hem-aggregering (Fas 6d L1 — statisk översiktsvy)', () => {
       .analyze();
 
     expect(results.violations).toEqual([]);
+  });
+});
+
+test.describe('Hem polling + refresh (Fas 6d L2 — ADR-017 + erratum)', () => {
+  test('RefreshButton → invalidate(dashboard.all) → båda grenarna refetchar', async ({ page }) => {
+    let regCalls = 0;
+    let evCalls = 0;
+    await page.route(GET_REGISTRATIONS, async (route) => {
+      regCalls += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ registrations: [reg()] }),
+      });
+    });
+    await page.route(GET_EVENTS, async (route) => {
+      evCalls += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ events: [ev()] }),
+      });
+    });
+    await page.goto('/hem');
+    await expect(page.getByRole('heading', { level: 1, name: 'Hem' })).toBeVisible();
+
+    // Initial last: registrerings-grenen hämtas EN gång trots TVÅ konsumenter
+    // (NyaAnmalningar + Obetalda delar queryKey → dedup); event-grenen en gång.
+    // staleTime: 30_000 gör att ev. window-focus-event inte blåser upp räkningen.
+    await expect.poll(() => regCalls).toBe(1);
+    await expect.poll(() => evCalls).toBe(1);
+
+    const refresh = page.getByRole('button', { name: 'Uppdatera översikt' });
+    await refresh.click();
+
+    // invalidateQueries({ queryKey: dashboard.all }) → båda grenarna refetchar.
+    await expect.poll(() => regCalls).toBeGreaterThan(1);
+    await expect.poll(() => evCalls).toBeGreaterThan(1);
+  });
+
+  test('refetchInterval (60s) triggar polling-refetch — falsk klocka', async ({ page }) => {
+    // page.clock fakar timers → vi kan avancera förbi 60s-intervallet deterministiskt
+    // utan att vänta i realtid. refetchIntervalInBackground:false pausar bara när
+    // fliken är dold; i testet är document synligt → intervallet är aktivt.
+    await page.clock.install();
+    let evCalls = 0;
+    await page.route(GET_REGISTRATIONS, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ registrations: [reg()] }),
+      });
+    });
+    await page.route(GET_EVENTS, async (route) => {
+      evCalls += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ events: [ev()] }),
+      });
+    });
+    await page.goto('/hem');
+    await expect(page.getByRole('heading', { level: 1, name: 'Hem' })).toBeVisible();
+    await expect.poll(() => evCalls).toBe(1); // initial hämtning
+
+    // Avancera förbi 60s → refetchInterval fyrar en polling-refetch.
+    await page.clock.fastForward(61_000);
+    await expect.poll(() => evCalls).toBeGreaterThan(1);
   });
 });
