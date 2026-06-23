@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-23
+updated: 2026-06-24
 review_by: 2026-11-15
 status: stable
 ---
@@ -2444,3 +2444,53 @@ Symptom: T30-kluster-kortet skulle författas ur en "forensisk rapport" vars cit
 ### L179 — Doc-födelse-hoppet fångas av do-confirm, inte av self-confirm (sent fött sessionsdok)
 
 Symptom: Session 31:s sessionsdok föddes aldrig vid `/session-start` (steget hoppades, samma L156-klass som tidigare doc-födelse-/stämpel-hopp). Self-confirm under sessionen märkte det aldrig (~9%-zonen); `/session-end` do-confirm-passets POST 0 fångade det explicit och födde doket sent (lifecycle: active vid födelse, Del 1 rekonstruerad ur faktisk scope, Del 2+ efter-hands-bakade). Regel: doc-födelse vid sessionsstart är en killer-item-klass som inte tillförlitligt auto-upptäcks i flow — do-confirm-passet måste ha en explicit FÖRSTA post som verifierar sessionsdokets existens mot disk före allt annat, så ett hoppat födelse-steg fångas och åtgärdas vid gränsen i stället för att tyst sakna doket. Kategori: Process/sessionsdok-födelse-do-confirm. Relaterad: [[L67]] (levande artefakter landnings-kadens) + [[L176]] (do-confirm fångar det self-confirm missar). Källa: Session 31, `/session-end` POST 0 (detta dok, sent fött).
+
+## 2026-06-23 — Session 32 (lokal miljö-isolation, ADR-061 / T30-klustret)
+
+### L180 [UNIVERSAL] — Enumerera ALLA filer en CI-grind läser, inte bara den uppenbara
+
+Datum: 2026-06-23 | Källa: Session 32 (ADR-061-landning, klass: grind-design)
+ADR-count-grinden (ADR-039) läser den kanoniska räkne-raden i rot-`README.md`, INTE index-tabellen i
+`docs/decisions/README.md`. En prompt som la till ADR-fil + index-rad men inte bumpade räkne-raden fällde
+CI tills Code fångade divergensen mot faktisk grind. Regel: när en prompt kräver att grind X är grön,
+enumerera VARJE fil grind X faktiskt läser (läs grind-skriptet), inte bara den semantiskt uppenbara.
+Chat-self-review missade det; Code-transparens mot faktisk disk fångade det. Relaterad: [[L159]] (anta ej; verifiera mot faktiskt tillstånd).
+
+### L181 [UNIVERSAL] — En runtime-grind validerar inte build-artefakten; build-tid är en egen yta
+
+Datum: 2026-06-23 | Källa: Session 32 (Pelare 2→2.5, klass: defense-in-depth)
+`src/env.ts`-grinden (`import.meta.env`) kör vid runtime — den exekveras inte under `vite build`, som bara
+buntar. En inkoherent build gick därför grön på runtime-grinden ensam; felet hade smällt först vid
+användarens load-tid. Build-tids-vägran (`loadEnv` + samma rena regel i `vite.config.ts`, Pelare 2.5) fångar
+felet vid tidigast möjliga punkt. Regel: en runtime-validering bevisar inte build-korrekthet — validera
+build-ytan separat. Verifieringssteget (visa att inkoherent tillstånd VÄGRAS, ej bara att koherent
+bootar) avslöjade gapet.
+
+### L182 [UNIVERSAL] — Vilken miljö creds autentiserar mot är inte fil-läsbart; bara en auth-körning bevisar det
+
+Datum: 2026-06-23 | Källa: Session 32 (T12, klass: verifierings-disciplin)
+En fil-läsning av `.env.test` visar att en e-post är satt och vilken URL den paras med — men INTE vilket
+projekt creds:en validerar mot. "URL=staging + cred satt" → "autar mot staging" är en inferens, ej ett
+faktum. Auth-körningen gav 400 invalid_credentials: e-posten var en prod-era-adress som inte finns i
+staging. Regel: cred↔miljö-koherens bevisas av en auth-körning, aldrig av att läsa konfigfilen.
+Förstärker husets "testa mot faktiska värden, ej spec".
+
+### L183 [UNIVERSAL] — Avvikelse triagas och rotorsaks-spåras FÖRE varje fix-förslag
+
+Datum: 2026-06-23 | Källa: Session 32 (`.env.test`-forensik, klass: metod — Chat-glidning fångad av Marcus)
+Chat föreslog en snabb e-post-fix på en avvikelse innan "varför uppstod den" var besvarat — och påstod
+adressens innehåll utan att ha läst filen. Marcus-pushback stoppade det två gånger; forensiken
+(disk-belagd) visade att adressen var en kvarlämnad prod-era-artefakt (2026-05-04) genom två
+halv-migreringar (S19 secrets-only, S26 URL-only), och att den blinda fixen hade gett fel resultat (även
+lösenordet var stale). Regel: en avvikelse triagas och rotorsaks-spåras mot faktisk data INNAN något
+fix-förslag formuleras; "rätta snabbt" är aldrig giltigt före "varför uppstod det". Samma klass som T30
+själv — skärper "rekommendation är inte beslut när gate är öppen" till Chats egna mellansteg.
+
+### L184 [UNIVERSAL] — Least-privilege gäller även "för att få jobbet gjort"
+
+Datum: 2026-06-23 | Källa: Session 32 (staging-admin-åtkomst, klass: säkerhets-arkitektur)
+När admin-API:t inte var nåbart lokalt erbjöds genvägen att lägga staging `service_role`-nyckeln på
+laptopen. Branschstandard (Supabase + least-privilege): den högst privilegierade nyckeln (kringgår RLS)
+hör endast hemma i betrodda backend-/CI-miljöer, aldrig på en utvecklar-laptop. Regel: sänk aldrig
+säkerhetsribban för att kringgå ett åtkomsthinder — routa via rätt yta (här: dashboard där admin-åtkomst
+redan finns). Avtäckte dessutom att CLI:t var länkat mot prod → registrerat som T34.

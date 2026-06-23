@@ -1644,6 +1644,32 @@ Egen session (ADR-051): tog upp + stängde tråd T26 (e2e-svit-flakiness under p
 
 ---
 
+## Session 32 — T30-klustret LÖST: ADR-061 lokal miljö-isolation (4 pelar-landningar + cred-synk + tråd-flipp) (2026-06-23)
+
+Egen session (ADR-051): tog upp + stängde T30-klustret (tre symptom T12/T28/T29, en rotorsak — miljö-isolation stannade vid CI-/deploy-gränsen, nådde aldrig dev-disken). **SESSIONSGRÄNS, ej fas-avslut**: Fas 6 öppen → ingen arkivering, ingen CHANGELOG-release, ingen byggplan-flip, ingen hub-lyft.
+
+**Planerat vs faktiskt:** planerat = diagnos→ADR+implementation. Faktiskt = ADR-061 + FYRA pelar-landningar (Pelare 2.5 tillkom mitt i som keystone-komplettering efter att verifieringen avtäckte build-ytans blinda fläck) + cred-synk (forensik-detour, UTFALL 2) + tråd-flipp.
+
+**Landningar (commit-hashar + CI per-jobb gröna):**
+
+- **ADR-061 beslut** (`632389d`) — lokal miljö-isolation, tre pelare, Väg B (dev→staging interim; lokal-stack deferrad → T31). README-index + räkne-rad-bump (L180) + T31/T32 registrerade.
+- **Pelare 1** (`dde6d41`) — `Vite` mode-separation: committade `.env.development`/`.staging`/`.production` (publika `VITE_`-vars), dev→staging, `.env.local`-pekaren ut. Steg 0-fynd: ingen frontend-deploy finns (CI Build = smoke-test utan env-injektion).
+- **Pelare 2** (`8315d5a`) — fail-fast mode-medveten grind (keystone): ren modul `src/lib/env-coherence.ts` + klient-runtime (`src/env.ts`) + api-test-yta (`tests/api/helpers.ts`) + hermetiskt bevis-test (api-pure).
+- **Pelare 2.5** (`eb7ae4c`) — build-tids-vägran via `vite.config.ts` (tredje grind-ytan; `loadEnv` fångar både fil-fel OCH process.env-injektion) + ADR-061-erratum. Avtäckt av L181 (runtime-grind validerar ej build-artefakt).
+- **Pelare 3** (`445b46f`) — T29 `error-context`-klartext-läcka stängd (`globalTeardown`-purge, reproducerad→bevisad noll träff); T12 → **UTFALL 2** (auth mot staging 400 → cred-split bekräftad).
+- **Cred-synk** (ingen commit) — forensik (L183): `@miranon-admin.local` = prod-era-testanvändare (2026-05-04), kvarlämnade genom S19 (secrets-only) + S26 (URL-only). Marcus satte nya lösenord på `staging-user@`/`staging-admin@miranon.test` (dashboard) + synkade `.env.test` + GitHub-secrets. Code-verifiering: auth mot staging grön (user+admin), noll prod-anrop. Least-privilege hölls (L184: nekade service_role på laptop → T34).
+- **Tråd-flipp** (`7012d89`) — T12/T28/T29/T30 → `closed`; T30-kortet pekar på ADR-061 (Lösning-sektion med pelar-SHA); T33/T34 registrerade `paused`.
+
+**Lessons:** L180 `[UNIVERSAL]` (enumerera alla filer en grind läser), L181 `[UNIVERSAL]` (runtime-grind ≠ build-validering), L182 `[UNIVERSAL]` (cred↔miljö bevisas av auth-körning, ej fil-läsning), L183 `[UNIVERSAL]` (avvikelse rotorsaks-spåras före fix-förslag), L184 `[UNIVERSAL]` (least-privilege även "för att få jobbet gjort"). **Hub-lyft pending** (vid FULLT Fas 6 fas-avslut).
+
+**Trådar:** T12 / T28 / T29 / T30 `paused`→`closed` (löst av ADR-061). T31/T32 registrerade `paused` (ADR-061-landningen). T33 (prod-era-cred-rensning) + T34 (CLI länkad mot prod) registrerade `paused` (flippen).
+
+**Verifiering:** alla landningars CI gröna per-jobb. Keystone-grinden bevisad av CI-kört test (api-pure, failar om grinden tas bort). Build-tids-vägran demonstrerad (`vite build --mode development` + prod-ref → kastar). Auth mot staging grön efter cred-synk (user+admin, noll 400). `check-lifecycle.sh` grön (T30 kort↔index `closed`-match). Inga EF/deploy/prod-touch.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-23-session-32.md`](../tasks/sessions/2026-06-23-session-32.md) (Del 1 scope + Del 2 landningar + Del 3 lessons L180–L184 + Del 4 tråd-bokföring + Del 5 nästa). Nästa: NY session (Fas 6 öppen). `lifecycle: closed`.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
