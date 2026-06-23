@@ -49,7 +49,7 @@ status: stable
 | `T23` | Mekanisera frontmatter-governing↔test-fixtur-kopplingen — `test-check-frontmatter.sh`-fixturen + count-assertions hårdkodar docs-antalet → varje governing-tillägg kräver manuell fixtur-bump (manifesterad T19 10→11 + T17 11→12). Designa fixtur/grind så antalet härleds ur `.frontmatter-policy.conf` i stället för att hårdkodas | `paused` | _(ingen kort än — endast registrerad); uppstod Session 29 (T17), L166_ |
 | `T24` | CI auth-rate-limit-flaky — burst-login (e2e-setup + api-staging per svit) mot staging-Supabase GoTrue rate-limit ger transient `429` på obesläktade commits | `closed` | _Löst via T24-b (auth-token-återanvändning, `2f4443c`); uppstod + stängd Session 26 (Fas 6c Leverabel 2)_ |
 | `T25` | DRY-konsolidering av `chunk<T>`-helper (rule-of-three nådd, 3 call-sites: get-person / get-attendance / get-registrations) | `paused` | _(ingen kort än — endast registrerad); 6b-flaggad, tröskel nådd Session 26 (6c arch-audit); blockerar ej_ |
-| `T26` | e2e-svit-flakiness under parallell last (timing-klass: focus→h1 / loading-state / axe-pre-render) + `retries: 0` i playwright.config → latent CI-röd-risk på obesläktade commits | `paused` | _(ingen kort än — endast registrerad); uppstod Session 30 (Fas 6d L2); blockerar ej (CI grön, alla gröna isolerat)_ |
+| `T26` | e2e-svit-flakiness under parallell last (timing-klass: focus→h1 / loading-state / axe-pre-render) + `retries: 0` i `playwright.config` → latent CI-röd-risk på obesläktade commits | `paused` | _(ingen kort än — endast registrerad); uppstod Session 30 (Fas 6d L2); blockerar ej (CI grön, alla gröna isolerat)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
