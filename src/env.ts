@@ -1,5 +1,6 @@
 import { createEnv } from '@t3-oss/env-core';
 import { z } from 'zod';
+import { assertModeCoherent } from './lib/env-coherence';
 
 /**
  * [GA] Validera env-variabler vid uppstart.
@@ -21,3 +22,9 @@ export const env = createEnv({
   runtimeEnv: import.meta.env,
   emptyStringAsUndefined: true,
 });
+
+// ADR-061 Pelare 2 (keystone): mode-medveten koherens-grind. Körs EFTER createEnv
+// validerat VITE_SUPABASE_URL (samma uppstarts-villkor — ingen separat test-slotting
+// behövs eftersom ingen vitest-/Playwright-test importerar denna modul). Kastar om
+// en icke-prod-mode pekar på prod-ref (stänger T28 strukturellt).
+assertModeCoherent(import.meta.env.MODE, env.VITE_SUPABASE_URL);

@@ -17,6 +17,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { type APIRequestContext, type APIResponse, test } from '@playwright/test';
+import { assertTestSurfaceNotProd } from '../../src/lib/env-coherence';
 
 // Persisterad api-token-artefakt (T24-b). api-setup-projektet loggar in EN gång
 // per credential och skriver hit; api-staging-sviten läser härifrån i stället för
@@ -41,6 +42,14 @@ export interface ApiConfig {
 
 export function getApiConfig(): ApiConfig {
   const baseUrl = process.env.TEST_SUPABASE_URL;
+
+  // ADR-061 Pelare 2 (keystone, yta B): kasta FÖRE någon Supabase-anslutning om
+  // test-ytan pekar på prod-ref (T12). getApiConfig är den delade chokepoint:en —
+  // auth.setup + varje staging-test anropar den för baseUrl före nätverk.
+  if (baseUrl) {
+    assertTestSurfaceNotProd(baseUrl);
+  }
+
   const anonKey = process.env.TEST_SUPABASE_ANON_KEY;
   const userEmail = process.env.TEST_USER_EMAIL;
   const userPassword = process.env.TEST_USER_PASSWORD;
