@@ -101,3 +101,12 @@ passerar; staging-deploy = staging + staging-ref passerar) INNAN Pelare 2 landar
 
 Uppföljning: T30 + T12/T28/T29 flippar closed först när Pelare 1–3-implementationen landar —
 inte vid denna ADR. ADR-061 är beslutet; implementationen stänger trådarna.
+
+## Erratum 2026-06-23 — Pelare 2 omfattar tre ytor
+
+Pelare 2:s grind wirades på tre ytor, inte två: klient-runtime (`src/env.ts`), node-api-test-runtime
+(`tests/api/helpers.ts`) och build-/serve-config-tid (`vite.config.ts`). Den tredje tillkom
+(Pelare 2.5) efter att verifieringen visade att en runtime-grind inte validerar build-artefakten —
+en inkoherent `vite build` gick grön. Build-tids-vägran fångar felet vid tidigast möjliga punkt och
+stänger build-ytan som annars vore en blind fläck (samma yt-blind-fläck-mönster som T30:s rotorsak).
+Alla tre ytor delar den rena regel-modulen `src/lib/env-coherence.ts` — ingen logik-duplicering.
