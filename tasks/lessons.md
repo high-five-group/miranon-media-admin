@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-22
+updated: 2026-06-23
 review_by: 2026-11-15
 status: stable
 ---
@@ -2426,3 +2426,7 @@ Symptom: när create-registration/get-waitlist/get-registrations väg-D gick fr�
 ### L175 [UNIVERSAL] — En commit-stämpels "sann vid HEAD" är HOLISTISK, inte per-rad
 
 Symptom: §9-ensam-editen (L174) var per-rad korrekt men gjorde dokumentets stämpel ("sant vid HEAD `e499a89`") som HELHET falsk — §5 motsade §9. En stämpel som påstår dok-färskhet vid en commit garanterar inte att enskilda rader är färska, utan att HELA dokumentets påståenden är inbördes konsistenta och belagda mot den commiten. Regel: innan du stämplar ett dok "sant vid HEAD X", verifiera holistiskt — git-diffa vad X faktiskt ändrade och korsläs ALLA sektioner som rör de ändringarna mot varandra, inte bara den du nyss rörde. En holistiskt osann stämpel är värre än ingen stämpel (falsk trygghet). Kategori: Process/stämpel-sanning-holism. Relaterad: [[L174]] (multi-sektions-operationen) + [[L164]] (sann-per-datum ej för-alltid) + [[L163]] (kod-/schema-härlett kräver VERIFIERA-pass). Källa: 2026-06-22 Session 26 (6c-completion, stamp-honest reconciliation `9063f0c`).
+
+### L176 [UNIVERSAL] — Ett test som pinnar en bestående invariant via ett tillfälligt sido-tillstånd är en tidsbomb
+
+Symptom: auth-flow Test 5 asserterade en BESTÅENDE arkitektur-invariant ("ingen anon-key-läcka — guard redirectar före datafetch", Del 5.0) genom att kräva noll functions/v1/*-anrop på inloggat /hem. Men den valde inloggat /hem enbart för att routen DÅ var en inert placeholder (K3-state) — ett TILLFÄLLIGT sido-tillstånd. När 6d gjorde /hem till en datafetchande aggregeringsvy brast testet by design, trots att invarianten var helt orörd. Rotorsak: assertionen var pinnad till sido-tillståndet (route råkar vara tom), inte till invariantens natur (oautentiserad → ingen läcka). Generaliserbar regel: när du skriver ett regression-test för en bestående invariant, assertera mot invariantens NATUR i dess SANNA KONTEXT (här: oautentiserad väg → noll EF-anrop före redirect), aldrig via ett sido-tillstånd som råkar gälla nu. Annars blir testet en tidsbomb som smäller när sido-tillståndet legitimt ändras — och den som rör sido-tillståndet tvingas felsöka en invariant som aldrig var i fara. Praktisk följd: en ny vy på en default-landningsyta måste korsläsa skal-/auth-svitens inert-antaganden FÖRE första push (L1:s röda första-push var precis detta). Kategori: Process/test-design-invariant-vs-sido-tillstånd. Relaterad: [[L175]] (stämpel-sanning) + [[L167]] (färskhets-integritet fångas externt). Källa: Session 30, Fas 6d L1 — Test 5-flytt (beslut A), se sessionsdok Del 2.

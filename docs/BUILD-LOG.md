@@ -1602,6 +1602,26 @@ Föregår den pausade Session 26 (6c-bygget, ej återupptaget). Ren dok-/process
 
 ---
 
+## Session 30 — Fas 6d Hem-aggregering: L1 statisk vy + L2 polling/refresh + arch-audit (2026-06-23)
+
+Återupptar Fas 6-sekvensen efter de pausade dok-sessionerna (27–29). Fas 6d byggd i två landningar + audit; **inga nya Edge Functions** (konsumerar 6a/6b/6c:s read-EF). SESSIONSGRÄNS, ej fas-avslut: Fas 6 hålls öppen mot 6e → ingen arkivering, ingen CHANGELOG-release, ingen byggplan-fas-status-flip, ingen hub-lyft (ADR-023).
+
+**Landningar (commit-hashar + CI per-jobb):**
+
+- **L1 — /hem-aggregeringsvy (statisk)** (`fbffa53`, CI-run `28043340092` grön per jobb) — `queryKeys.dashboard`-gren + Hem-container + Greeting + NyaAnmalningar/NastaEvent/Obetalda-cards + CTA + delat `DashboardCard`-skal + `useDashboardData`-hook. Data via router-context-DI (ADR-055) mot befintliga read-EF (get-registrations event-lösa gren + get-events). 11/10/10, axe 0, 5 Playwright-tester. **Avvikelse:** första push (`4a2d1e6`) blev CI-röd — skal-/auth-sviten pinnade /hem som inert; revertad (`2be52f1`, main grön) + STOPPA-OCH-FRÅGA på arkitektur-kritiskt Test 5 → Marcus-beslut **A** → åter-applicering med två buggfixar (`<header>`→`<div>`, h1-autofokus bort) + Test 5 flyttad till oinloggad väg + klass-korsläsning av alla /hem-tester.
+- **L2 — polling/refresh + ADR-017-erratum** (`788322c`, CI-run `28045067055` grön per jobb) — `DASHBOARD_POLLING` (refetchInterval 60s + refetchIntervalInBackground false + per-query staleTime 30_000 + gcTime 300_000) + `<RefreshButton>` → invalidateQueries(dashboard.all) (a11y-knapp, ej touch-drag) + 2 Playwright (RefreshButton-invalidate + refetchInterval via falsk klocka). **ADR-017-erratum** (additivt, Accepted orört): §3-mekanik riven (v5 focusManager + global refetchOnWindowFocus + staleTime; intention bevarad), §2→RefreshButton, §4 gcTime-typo rättad; §1/§5 orörda; v5-doc-citat (context7-grundat). Besluten B/C/D burna.
+- **Arch-audit (ADR-058)** (`028a014`, CI grön) — fem fitness-områden mot disk: i lager-oberoende (0 kringgång i 6d-kod, data endast via useDataSource), ii swappbarhet (port-paritet 15==15==15 oförändrad), iii EF-ribba (0 ny EF → ej tillämplig på ny yta), iv över-engineering-vakt (golv-JA: a11y 11/guard intakt; spekulation-NEJ: ingen egen visibilitychange-handler/död kod), v ärliga betyg 11/10/10. **AVVIKELSE: ingen.** 6d förstklassigt klar på audit-axeln.
+
+**Lessons:** L176 `[UNIVERSAL]` — test som pinnar bestående invariant via tillfälligt sido-tillstånd är en tidsbomb (Test 5-flytten). Hub-lyft pending (vid FULLT Fas 6 fas-avslut efter 6e).
+
+**Trådar:** **T26** registrerad (`paused`) — e2e-svit-flakiness under parallell last (focus/loading/axe-timing) + `retries: 0` → latent CI-risk; lösningsrymd a/b/c i tråd-noten. T25 (chunk-DRY) kvar `paused`.
+
+**Verifiering:** alla landningars CI gröna per-jobb (Docs link check körd+grön på docs-/erratum-commits; Test+Build körd+grön på kod-landningar). ADR-count oförändrat (inget nytt ADR — ADR-017-erratum är additivt). Inga EF/deploy/write.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-23-session-30.md`](../tasks/sessions/2026-06-23-session-30.md) (Del 1 scope + Del 2 L1 + Del 3 L2 + Del 4 audit). Nästa: NY session → Fas 6e (Mer, villkorlig) ELLER FULLT Fas 6 fas-avslut. `lifecycle: closed`.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
