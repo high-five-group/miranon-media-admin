@@ -10,6 +10,7 @@ import {
   EventSchema,
   type Intresserad,
   IntresseradSchema,
+  MailLogEntrySchema,
   type PersonDetail,
   PersonDetailSchema,
   PersonSchema,
@@ -228,15 +229,18 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
-   * Hämta mailloggen.
+   * Hämta mailloggen (Utskickslogg) — GLOBAL läs-lista (Fas 6e L2). get-mail-log
+   * hämtar HELA utskicksloggen (ingen filter/event-gren) och sorterar createdTime
+   * desc serverside. `.parse()` validerar vid datagränsen (ADR-026; z.array — en LISTA).
    *
-   * @deferTo: Fas-6e (Mer-fliken, VILLKORLIG) — A5 #9, 06b-impact: medel.
-   * Död-kod-kandidat: omvärderas vid Fas 6:s sub-fas-planering (Mer-flikens
-   * scope-beslut). Behålls tills dess per A5.
-   * @todo Apply Zod .parse() runtime validation when get-mail-log Edge Function deploys.
-   * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
+   * `MailLogFilters` ({ status?, efter? }) reserveras för en framtida serverside-
+   * filter-yta men passas EJ i v1 — get-mail-log har ingen filter-gren (samma sätt
+   * som fetchAttendance reserverar AttendanceFilters utan att skicka den). Inga
+   * params → global hämtning. (Utskickslogg är de facto tom tills L3 send-email
+   * skriver första raden; tom array parsar rent.)
    */
   async fetchMailLog(_filters?: MailLogFilters): Promise<MailLogEntry[]> {
-    throw new Error('Not deployed yet — see Fas 6e');
+    const data = await callEdgeFunction<{ maillog: unknown }>('get-mail-log');
+    return z.array(MailLogEntrySchema).parse(data.maillog);
   }
 }

@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-22
+updated: 2026-06-24
 review_by: 2026-12-21
 status: stable
 ---
@@ -153,6 +153,18 @@ buildLinkedRecordFilter"*) — exakt analogt med `get-attendance`/`get-person` (
 (ej länkfält) → ingen record-ID-batch, ingen T15-exponering, ingen per-event-distinktion;
 vy-konsumenten passar inga filters → de facto global. INGEN 404 (tom lista = giltigt
 tillstånd). LÄSER bara.
+
+**`get-mail-log`** — utskicksloggen som GLOBAL läs-lista (NY, Fas 6e L2). Tabell
+`Utskickslogg` (`get-mail-log/index.ts:8`). INGET serverside-filter (varje rad = ett
+verkligt mailutskick, ingen aktiv-/event-gren); full `fetchFromAirtable` utan options
+(`:71`); sort `createdTime` desc JS-side (`byCreatedTimeDesc` `:46`, createdTime är
+record-metadata). Mappning `mapMailLogEntry` (`:24`) — länkfält `Utskicks-ID`→Bulkutskick
+och `Skickat till`→Personer bevaras som record-ID-ARRAYER (aldrig skalär-reducerade),
+`Antal skickade` (formula COUNTA) via `scalarNumber ?? 0`, `Öppningsgrad (%)` (percent-
+formula) via `scalarNumber` → decimal 0–1 / null vid 0/0. **GLOBAL design:** ingen
+cursor (liten volym → get-waitlist-mönstret, ej get-leads), ingen länk-ID-filter → ingen
+T15-exponering, INGEN 404 (tom lista = giltigt tillstånd; Utskickslogg är de facto tom
+tills L3 send-email skriver första raden). LÄSER bara — inga formula-fält skrivs.
 
 ### 5.2 Skriv-EF (app → Airtable)
 
