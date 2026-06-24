@@ -1,0 +1,1 @@
+export { Intresserade } from './Intresserade';

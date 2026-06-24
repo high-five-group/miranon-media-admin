@@ -19,6 +19,11 @@ function MerPage() {
               Väntelista
             </Link>
           </li>
+          <li>
+            <Link to="/mer/intresserade" className="underline">
+              Intresserade
+            </Link>
+          </li>
         </ul>
       </nav>
       <p className="text-small text-text-muted">Fler vyer byggs i Fas 6e.</p>

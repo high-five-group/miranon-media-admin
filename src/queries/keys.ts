@@ -45,6 +45,13 @@ export const queryKeys = {
     // (speglar events.list-mönstret: global hämtning, ingen param i nyckeln).
     all: ['waitlist'] as const,
   },
+  intresserade: {
+    // Intresserade/leads (Fas 6e L1 Landning 3): GLOBAL läs-lista (get-leads).
+    // STABIL nyckel — `fetchIntresserade()` hämtar FÖRSTA sidan av den strikta
+    // lead-mängden (hämtat något, noll Anmälningar totalt), inga klient-filters.
+    // Speglar waitlist.all-formen: parameterlös global lista, ingen param i nyckeln.
+    all: ['intresserade'] as const,
+  },
   dashboard: {
     // Hem-aggregering (Fas 6d). EGNA nycklar, MEDVETET skilda från events.list /
     // registrations.byEvent: Hem-vyns cards hämtar GLOBALA listor (alla event,
