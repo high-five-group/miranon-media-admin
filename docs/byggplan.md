@@ -87,7 +87,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 
 **Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR-013 (Fas 4-borttagningen).
 
-**Total estimat (Fas 6 → Fas 7, exkl. klara Fas 0/1/A/2/2.5/3/3.5/5/5.5 och defer:ade Fas 8/B/E):** 7,5 sessioner — uppdaterad 2026-06-17 efter Fas 5.5 (2 sessioner: 18/19 + 22, estimat hållet). Beräkning: 3,5 + 1 + 3 = 7,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
+**Total estimat (Fas 6 → Fas 7, exkl. klara Fas 0/1/A/2/2.5/3/3.5/5/5.5 och defer:ade Fas 8/B/E):** 9,5 sessioner — uppdaterad 2026-06-17 efter Fas 5.5 (2 sessioner: 18/19 + 22, estimat hållet). Beräkning: 5,5 + 1 + 3 = 9,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
 
 ---
 

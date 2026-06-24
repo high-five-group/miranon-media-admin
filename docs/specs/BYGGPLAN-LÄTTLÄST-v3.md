@@ -81,7 +81,7 @@ Vi har redan byggt en fungerande version av appen. Den fungerar — men nu bygge
 
 Vi mäter inte i kalenderdagar utan i **arbetspass**. Ett arbetspass är ungefär ett par timmars fokuserad utvecklingstid med Marcus och Claude (AI-utvecklarverktyget). Mellan arbetspass kan det gå dagar eller veckor — det beror på Marcus tillgänglighet och vad som behöver verifieras.
 
-**Total uppskattning för hela bygget:** ungefär **16,5 arbetspass** från och med Fas 2.
+**Total uppskattning för hela bygget:** ungefär **18,5 arbetspass** från och med Fas 2.
 
 Det är inget löfte och ingen deadline — det är en realistisk gissning baserad på hur länge varje del brukar ta. Vissa delar kan gå snabbare när vi väl är inne i flytet. Andra kan ta längre om vi upptäcker något oväntat. Den här planen uppdateras när det händer.
 
