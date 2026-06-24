@@ -52,6 +52,12 @@ export const queryKeys = {
     // Speglar waitlist.all-formen: parameterlös global lista, ingen param i nyckeln.
     all: ['intresserade'] as const,
   },
+  maillog: {
+    // Maillogg/utskickslogg (Fas 6e L2 Landning 2): GLOBAL läs-lista (get-mail-log).
+    // STABIL nyckel — `fetchMailLog()` hämtar HELA utskicksloggen (ingen filter/event-
+    // gren), inga klient-filters. Speglar waitlist.all-formen: parameterlös global lista.
+    all: ['maillog'] as const,
+  },
   dashboard: {
     // Hem-aggregering (Fas 6d). EGNA nycklar, MEDVETET skilda från events.list /
     // registrations.byEvent: Hem-vyns cards hämtar GLOBALA listor (alla event,
