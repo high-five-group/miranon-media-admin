@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-19
+updated: 2026-06-24
 review_by: 2026-11-15
 status: stable
 ---
@@ -12,8 +12,8 @@ status: stable
 
 > **Levande dokument.** Den här planen uppdateras löpande när vi går vidare. När en fas är klar förvandlas den till "vad vi har gjort, och varför". När nästa fas planeras får den en plats här. Ingen behöver gissa var vi är — det står i det här dokumentet.
 >
-> **Version 3** — Fas 6a KLAR (Session 23). Senast uppdaterad: 2026-06-19.
-> **Status just nu:** Fas 0, Fas 1, Fas A, Fas 2, Fas 2.5, Fas 3, Fas 3.5, Fas 5 och Fas 5.5 är klara. **Fas 6 pågår — del 6a (Personer) är klar; del 6b (Event) är nästa.**
+> **Version 3** — Fas 6d klar (Session 30), Fas 6e pågår. Senast uppdaterad: 2026-06-24.
+> **Status just nu:** Fas 0, Fas 1, Fas A, Fas 2, Fas 2.5, Fas 3, Fas 3.5, Fas 5 och Fas 5.5 är klara. **Fas 6 pågår — delarna 6a (Personer), 6b (Event), 6c (Anmälningar + väntelista) och 6d (Hem) är klara. Del 6e (Mer-fliken) bygger vi nu; sist kommer del 6f (Skapa nytt event).**
 > **Föregångare:** [v2](../archive/BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md) (april 2026, arkiverad 2026-05-09) och [v1](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md) (arkiverad 2026-05-06). v3 ersätter v2 och speglar byggplan-revisionen från maj 2026.
 
 <!-- markdownlint-disable-next-line MD028 -->  <!-- BYGGPLAN-LÄTTLÄST formatering (pedagogisk struktur per ADR-025) -->
@@ -102,7 +102,7 @@ Det är inget löfte och ingen deadline — det är en realistisk gissning baser
 | **Fas 3.5** | Tillgänglighetstest — för alla som ska använda appen | ✅ Klar (11 juni) | 1 pass |
 | **Fas 5** | Skalet — det du ser först | ✅ Klar (12 juni) | 1 pass |
 | **Fas 5.5** | Första riktiga interaktionen — markera betalning | ✅ Klar (17 juni) | 2 pass |
-| **Fas 6** | Alla rum — Hem, Event, Personer, Mer (i fem delar) | 🟡 Pågår (6a Personer ✅ klar) | 3,5 pass |
+| **Fas 6** | Alla rum — Hem, Event, Personer, Mer (i sex delar) | 🟡 Pågår (6a Personer ✅ klar) | 5,5 pass |
 | **Fas 6.5** | "Vad har hänt?" — automatisk historik | ⏳ | 1 pass |
 | **Fas 7** | Slutbesiktning — gör appen redo att publiceras | ⏳ | 3 pass |
 | **Fas 8** | Framtid — passkeys, push-notiser, offline-kö | 🔮 Framtid | Senare |
@@ -335,11 +335,11 @@ Vi bygger också tre automatiserade tester som bevisar att servern blockerar oti
 
 ### Fas 6: Alla rum — Hem, Event, Personer, Mer
 
-*3,5 arbetspass · uppdelat i fem delar* *(ny i v3 — uppdelningen)*
+*5,5 arbetspass · uppdelat i sex delar* *(ny i v3 — uppdelningen)*
 
 **Vad händer?**
 
-Nu bygger vi själva innehållet i de fyra flikarna. I tidigare planversioner var det ett enda stort bygge, men vi har delat upp det i fem mindre delsteg som körs i en specifik ordning. Ordningen följer en princip som kallas *strangler-fig* (efter strypfikussynamn) — vi bygger den nya funktionaliteten parallellt med den gamla och låter den gradvis ta över. Det minimerar risk och låter oss byta databas senare utan att appen påverkas.
+Nu bygger vi själva innehållet i de fyra flikarna. I tidigare planversioner var det ett enda stort bygge, men vi har delat upp det i sex mindre delsteg som körs i en specifik ordning. Ordningen följer en princip som kallas *strangler-fig* (efter strypfikussynamn) — vi bygger den nya funktionaliteten parallellt med den gamla och låter den gradvis ta över. Det minimerar risk och låter oss byta databas senare utan att appen påverkas.
 
 #### Fas 6a: Personer (0,75 pass)
 
@@ -357,9 +357,18 @@ Det här är den känsligaste delen av systemet — själva anmälningsflödet. 
 
 Det här är den första sidan du ser efter inloggning. "Hej Lotta" + det viktigaste just nu — nya anmälningar, nästa event, obetalda. För att data ska vara aktuell hämtas den om automatiskt var 60:e sekund, och du kan dra ner uppifrån för att uppdatera direkt.
 
-#### Fas 6e: Mer-fliken (0,5 pass — kan justeras)
+#### Fas 6e: Mer-fliken (~1,5 pass)
 
-Leads, planera nytt event, skicka mail, inställningar, logga ut. Den här fliken har minst tryck och minst risk, så vi bygger den sist. Vissa av dess funktioner (som mail-utskick) kan eventuellt skjutas till senare beroende på prioritet.
+Mer-fliken samlar det som inte hör hemma under Hem, Event eller Personer:
+
+- **Intresserade** — personer som visat intresse (hämtat något gratismaterial) men ännu inte anmält sig till en kurs. Du ser vilka de är och vad de nappat på.
+- **Maillogg** — en lista över vilka mailutskick som gått ut, till hur många, och hur många som öppnat.
+- **Skicka mail** — härifrån skickar du mail direkt i appen. Råkar du skicka samma utskick två gånger går det ändå bara ut en gång — appen ser till det.
+- **Inställningar och logga ut.**
+
+#### Fas 6f: Skapa nytt event (~1 pass)
+
+Härifrån skapar du ett helt nytt event direkt i appen — utan att gå in i Airtable. Det är den första platsen där appen skapar ny grunddata åt dig, så vi bygger den sist och med extra omsorg. Den kan komma som ett eget arbetspass efter Mer-fliken.
 
 **Vad du märker:** **Appen är klar att använda.** Du kan göra allt du gör idag i den gamla appen — och en del till. Allt fungerar på telefon, surfplatta och dator.
 

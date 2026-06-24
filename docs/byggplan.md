@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-20
+updated: 2026-06-24
 review_by: 2026-11-15
 status: stable
 ---
@@ -78,7 +78,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **3.5** | ✅ KLAR | **A11y-baseline EGEN FAS** per P2 A1-utfall — Session 15, 2026-06-11. Axe-runner 12/12 (ADR-045), gate-proof-bevisad CI-grind, 5 mönster i `docs/aria-patterns/` + /dev/patterns, "A11y-baseline godkänd"-gate passerad före Fas 6. | 1 session (faktiskt) |
 | **5** | ✅ KLAR | App-shell — Session 16, 2026-06-12. Skal på `_authenticated` (STOPPA-utfall A) + tab bar + skip-länk + route announcer + Workbox SW via `vite-plugin-pwa` injectManifest (ADR-047) + offline.html + manifest/ikoner + error boundaries två lager (SectionError + AppErrorBoundary, ADR-038-tråden stängd) + TanStack `networkMode: 'online'` + offline-indikator. DoD 4 moderniserad per ADR-047 (Lighthouse v12 tog bort PWA-kategorin); Performance ärver Fynd 7-defern (ADR-047-noten). API-runtime-caching defer till Fas 6 (versionsrad 1.9). | 1 session (faktiskt) |
 | **5.5** | ✅ KLAR | Vertikal write-slice "markera anmälningsavgift som betald" — Sessions 18/19 (server-kontrakt K1 + staging) + Session 22 (klient-UI K2), 2026-06-17. Server: operation `mark-registration-fee-paid` → `Anmälningsavgift` (ADR-049) + isolerad staging (ADR-050) + deny/allow-svit grön. Klient: optimistic mutation via router-context-DI (ADR-055) + `EdgeFunctionError`-requestId + MessageBox-fel-yta + 3 e2e. ADR-016 (mönster) + ADR-049 + ADR-050 + ADR-055. | 2 sessioner (faktiskt: 18/19 + 22) |
-| **6** | 🟡 PÅGÅR | **Strangler-fig-sekvens i fem sub-faser:** **6a Persons ✅ KLAR** (Session 23, 2026-06-19 — lista + cursor-port ADR-056 + detaljvy + write `Personer.Anteckningar` via `update-person-note`; commits `b29ace9`→`e1034ee`) → **6b Events ✅ KLAR** (Session 25, 2026-06-20 — /event-lista + info-vy + närvaro-vy; EF get-event + get-attendance; arch-audit ren 5/5; commits `8fadfac`→`4642482`) → 6c Registrations + Väntelista (1) → 6d Hem-aggregering (0,5) → 6e Mer villkorlig (0,5). Per-sub-fas: registrera operation i `field-allowlists.ts` + deny/allow-test grönt + vy-Playwright baseline. | 3,5 sessioner |
+| **6** | 🟡 PÅGÅR | **Strangler-fig-sekvens i sex sub-faser:** **6a Persons ✅ KLAR** (Session 23, 2026-06-19 — lista + cursor-port ADR-056 + detaljvy + write `Personer.Anteckningar` via `update-person-note`; commits `b29ace9`→`e1034ee`) → **6b Events ✅ KLAR** (Session 25, 2026-06-20 — /event-lista + info-vy + närvaro-vy; EF get-event + get-attendance; arch-audit ren 5/5; commits `8fadfac`→`4642482`) → 6c Registrations + Väntelista (1) → 6d Hem-aggregering (0,5) → 6e Mer (1,5) → 6f Skapa nytt event (1,0). Per-sub-fas: registrera operation i `field-allowlists.ts` + deny/allow-test grönt + vy-Playwright baseline. | 5,5 sessioner |
 | **6.5** | EJ ÄNDRAD | Aktivitetslogg (xAPI). `requestId`-mönstret från Fas A M7 ärvs. | 1 session |
 | **7** | NY scope | Konsolidering — CSP-plugin (med ADR), web-vitals, Speculation Rules, View Transitions, widget-error-boundary, chaos testing, deploy-pipeline, Background Sync defer-not (se Fas 8 + ADR). | 3 sessioner |
 | **8** | NY (framtid) | Background Sync API (offline-mutationskö, defer:ad från Fas 7 — se ADR). Övrigt scope (Passkeys, push) ej låst i denna revision. Estimat fastställs vid aktualisering. Ersätter conversion-plans "Fas 8 — Passkeys, push, offline". | TBD |
@@ -613,7 +613,7 @@ Etablera mutation-mönstret (TanStack `useMutation` + optimistic UI + operations
 
 #### Mål
 
-Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamodell-research/07-migration-plan.md` §A2: Persons-domän → Events-domän → Registrations + Väntelista → Hem-aggregering → Mer (villkorlig). Hem byggs SIST eftersom den aggregerar de tre andra.
+Bygga de fyra produkt-flikarna i strangler-fig-ordning: Persons-domän → Events-domän → Registrations + Väntelista → Hem-aggregering → Mer-fliken → Skapa nytt event. Hem byggs efter de tre datadomänerna (Persons/Events/Registrations) eftersom den aggregerar dem; Mer och Skapa nytt event är fristående och byggs sist.
 
 #### Sub-fas-allokering
 
@@ -623,9 +623,10 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamo
 | **6b** | Events | 0,75 sess | `/event` lista (befintlig fetchEvents) + `/event/$eventId` info-route + `/event/$eventId/narvaro`-route (C1 nested, ej flik) | `fetchEvent`, `fetchAttendance` |
 | **6c** | Registrations + Väntelista | 1 sess | Anmälda-flik på Event-detalj, väntelista-konvertering på Mer, idempotent registrering | `createRegistration`, `fetchWaitlist` |
 | **6d** | Hem-aggregering | 0,5 sess | `/hem` med greeting + nya anmälningar + info-cards + CTA. Polling 60s + pull-to-refresh + visibility-trigger (B1) | (inga nya — använder befintliga read-EF) |
-| **6e** | Mer-fliken (villkorlig) | 0,5 sess | Mail-vy om behållen, Leads-vy om behållen | `sendEmail` (med ADR), ev. `fetchLeads`, ev. `fetchMailLog` |
+| **6e** | Mer-fliken | ~1,5 sess | Intresserade (leads-läsvy) + Maillogg (läsvy) + Skicka mail (write) + inställningar/logga ut | `get-leads`, `get-mail-log`, `send-email` (direct-Resend, ADR-015 + Idempotency-Key) |
+| **6f** | Skapa nytt event | ~1 sess | `/mer/skapa-event`-formulär + create-event write-vertikal mot Eventplanering (egen session) | `create-event` (write, egen ADR) |
 
-**Total: 3,5 sessioner.**
+**Total: 5,5 sessioner** (6a–6d klara: 3,0; 6e ~1,5; 6f ~1,0).
 
 #### Scope (per sub-fas)
 
@@ -651,7 +652,7 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamo
 
 #### Estimat
 
-3,5 sessioner totalt, sub-fördelat enligt tabell.
+5,5 sessioner totalt, sub-fördelat enligt tabell.
 
 #### Filer som skapas/uppdateras
 
@@ -687,10 +688,18 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamo
 
 **6e (Mer):**
 
-- `src/routes/mer/index.tsx`
-- Ev. `src/routes/mer/mail.tsx`, `src/routes/mer/leads.tsx`
-- Ev. `supabase/functions/send-email/index.ts` (deploy med direct-Resend-ADR)
+- `src/routes/_authenticated/mer/index.tsx` (skal: Intresserade/Maillogg/Skicka mail/inställningar/logga ut)
+- `src/routes/_authenticated/mer/intresserade.tsx`, `.../maillogg.tsx`, `.../skicka-mail.tsx` (route-konvention verifieras mot befintliga mer/-routes på disk)
+- `supabase/functions/get-leads/index.ts`, `.../get-mail-log/index.ts`, `.../send-email/index.ts` (deploy; send-email = direct-Resend + Idempotency-Key)
+- `field-allowlists.ts` (send-email post-send-PATCH-fält för mail-prick-timestamp)
 - `tests/e2e/mer.spec.ts`
+
+**6f (Skapa nytt event):**
+
+- `src/routes/_authenticated/mer/skapa-event.tsx`
+- `supabase/functions/create-event/index.ts` (write, deploy)
+- `field-allowlists.ts` (utvidgas)
+- `tests/e2e/skapa-event.spec.ts`
 
 #### DoD (per sub-fas)
 
@@ -705,8 +714,9 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning per `docs/research/datamo
 #### ADR-krav (Fas 6)
 
 - **ADR-014 — `createRegistration`-idempotency** (per A5, Fas 6c): dokumenterar idempotency-nyckel-strategin (mot dubbletter vid retry/dubbel-klick) — adresserar `data-model.md §F.4`-buggen.
-- **ADR-015 — `sendEmail` direct-Resend-skuld** (per A5, Fas 6e): om sendEmail deployas i 6e, dokumenterar varför direct-Resend-anrop används och planen för migration till mail-event-pattern.
+- **ADR-015 — `sendEmail` direct-Resend-skuld** (per A5, Fas 6e): om sendEmail deployas i 6e, dokumenterar varför direct-Resend-anrop används och planen för migration till mail-event-pattern (+ Idempotency-Key-header; ev. additiv ADR-015-uppdatering avgörs vid 6e:s send-email-bygge).
 - **ADR-017 — Polling-vs-Realtime + migrations-vägen post-Fas E** (per B1, Fas 6d): dokumenterar 60s + pull-to-refresh + visibility-trigger som interimslösning + Supabase Realtime-omläggning som Fas E-uppgift.
+- **ADR-krav 6f — `create-event` write-mall:** dokumenteras vid 6f-start (egen ADR, jfr ADR-014/016). TBD.
 
 #### Korsreferens
 
