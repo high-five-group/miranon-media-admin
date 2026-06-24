@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-05-17
+updated: 2026-06-24
 review_by: 2026-11-15
 status: stable
 ---
@@ -195,6 +195,7 @@ En Person kan vara i olika tillstånd beroende på hur långt relationen gått. 
 | Deltagare | Samma som ovan | + Deltaganden med Närvaropoäng = 1 | Närvaro markerad via A9/A10 |
 | Alumn | Samma + rollups (RIM 1 ×, RIM 2 × osv) | (räknas från Deltaganden-historiken) | Rollup-beräkning |
 | Återkommande | Samma + Har aktiv anmälan? = "Ja" | + ytterligare Anmälningar | Ny anmälan efter tidigare genomförd kurs |
+| Avhoppad (lapsed) | Anmäld någon gång men Status Avbokad/Ombokad; aldrig deltog | + Anmälningar (alla avbokade), ev. Touchpoints/Hämtade erbjudanden | Anmälde sig, avbokade, markerades aldrig Närvarande |
 
 ### Operationella konsekvenser
 
@@ -205,6 +206,8 @@ En Person kan vara i olika tillstånd beroende på hur långt relationen gått. 
 - **Fyll ALDRIG i placeholder-värden** som "Okänd" i Förnamn. Det bryter A2 Gren 1:s villkor `isEmpty(Förnamn)` och förhindrar att namnet senare fylls i automatiskt när personen anmäler sig till kurs.
 
 - **Vid normal drift** bör antal namnlösa Personer ungefär motsvara antal leads som ännu inte anmält sig till kurs.
+
+- **Avhoppade syns inte i Intresserade** (de har anmält sig) — de hör till en framtida winback/återaktiverings-vy. Radera dem aldrig; de är återaktiverbara kontakter.
 
 ---
 

@@ -361,7 +361,7 @@ Det här är den första sidan du ser efter inloggning. "Hej Lotta" + det viktig
 
 Mer-fliken samlar det som inte hör hemma under Hem, Event eller Personer:
 
-- **Intresserade** — personer som visat intresse (hämtat något gratismaterial) men ännu inte anmält sig till en kurs. Du ser vilka de är och vad de nappat på.
+- **Intresserade** — personer som visat intresse (hämtat något gratismaterial) men ännu inte anmält sig till en kurs. Du ser vilka de är och vad de nappat på. Den som anmält sig till en kurs men hoppat av syns inte här — sådana kontakter samlar vi i en egen vy längre fram, så du kan nå ut till dem särskilt.
 - **Maillogg** — en lista över vilka mailutskick som gått ut, till hur många, och hur många som öppnat.
 - **Skicka mail** — härifrån skickar du mail direkt i appen. Råkar du skicka samma utskick två gånger går det ändå bara ut en gång — appen ser till det.
 - **Inställningar och logga ut.**
