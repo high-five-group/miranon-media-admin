@@ -2,13 +2,14 @@ import { z } from 'zod';
 import type { Attendance } from '../../domain/models/Attendance';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
-import type { Lead } from '../../domain/models/Lead';
 import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
   AttendanceSchema,
   EventSchema,
+  type Intresserad,
+  IntresseradSchema,
   type PersonDetail,
   PersonDetailSchema,
   PersonSchema,
@@ -17,7 +18,6 @@ import {
 } from '../../domain/schemas';
 import type {
   AttendanceFilters,
-  LeadFilters,
   MailLogFilters,
   RegistrationFilters,
   WaitlistFilters,
@@ -188,16 +188,18 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
-   * Hämta leads (hämtade erbjudanden).
+   * Hämta Intresserade (Fas 6e L1). GLOBAL läs-lista: get-leads filtrerar
+   * serverside på den strikta lead-formeln (hämtat något, noll Anmälningar
+   * totalt — Läsning 2) och sorterar 'Senaste interaktion (datum)' desc.
+   * `.parse()` validerar vid datagränsen (ADR-026; z.array — en LISTA).
    *
-   * @deferTo: Fas-6e (Mer-fliken, VILLKORLIG) — A5 #6, 06b-impact: medel.
-   * Död-kod-kandidat: omvärderas vid Fas 6:s sub-fas-planering (Mer-flikens
-   * scope-beslut). Behålls tills dess per A5.
-   * @todo Apply Zod .parse() runtime validation when get-leads Edge Function deploys.
-   * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
+   * v1 visar FÖRSTA sidan (pageSize default 50 server-side). Lead-mängden är
+   * liten; full cursor-paginering (nextCursor finns i svaret) deferreras till
+   * en useInfiniteQuery-väg vid behov (jfr persons). Inga filters i v1.
    */
-  async fetchLeads(_filters?: LeadFilters): Promise<Lead[]> {
-    throw new Error('Not deployed yet — see Fas 6e');
+  async fetchIntresserade(): Promise<Intresserad[]> {
+    const data = await callEdgeFunction<{ intresserade: unknown }>('get-leads');
+    return z.array(IntresseradSchema).parse(data.intresserade);
   }
 
   /**

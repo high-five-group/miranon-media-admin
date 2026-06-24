@@ -16,12 +16,6 @@ export interface AttendanceFilters {
   status?: string;
 }
 
-/** Scenario 5: Leads — filtrera hämtade erbjudanden */
-export interface LeadFilters {
-  erbjudande?: string;
-  harAnmalan?: boolean;
-}
-
 /** Scenario 8: Väntelista */
 export interface WaitlistFilters {
   event?: string;

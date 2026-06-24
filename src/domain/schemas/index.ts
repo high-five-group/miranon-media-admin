@@ -8,7 +8,6 @@ export { AttendanceSchema } from './Attendance.schema';
 export { EngagementSchema } from './Engagement.schema';
 export { EventSchema } from './Event.schema';
 export { type Intresserad, IntresseradSchema } from './Intresserad.schema';
-export { LeadSchema } from './Lead.schema';
 export {
   BulkMailSchema,
   MailLogEntrySchema,
