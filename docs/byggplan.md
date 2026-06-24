@@ -694,7 +694,7 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning: Persons-domän → Event
 - `field-allowlists.ts` (send-email post-send-PATCH-fält för mail-prick-timestamp)
 - `tests/e2e/mer.spec.ts`
 
-**Not (6e Intresserade):** Intresserade är STRIKT — person som hämtat något men ALDRIG anmält sig (Antal anmälningar totalt = 0). Avbokade-som-aldrig-deltog exkluderas medvetet — de är ett identifierat framtida segment (winback/återaktivering), ej i 6e. Se registrerad tråd, tasks/threads/ (winback/återaktivering).
+**Not (6e Intresserade):** Intresserade är STRIKT — person som hämtat något men ALDRIG anmält sig (Antal anmälningar totalt = 0). Avbokade-som-aldrig-deltog exkluderas medvetet — de är ett identifierat framtida segment (winback/återaktivering), ej i 6e. Se tråd T35 (tasks/threads/README.md) — winback/återaktivering.
 
 **6f (Skapa nytt event):**
 

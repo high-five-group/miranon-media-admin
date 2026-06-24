@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-22
+updated: 2026-06-24
 review_by: 2026-09-17
 status: stable
 ---
@@ -58,6 +58,7 @@ status: stable
 | `T32` | Legacy anon-nyckel → publishable/secret-migration: projektet kör legacy anon-nyckeln som Supabase avvecklar slut-2026. Migrera `VITE_SUPABASE_ANON_KEY` → `sb_publishable` + EF-secret-nycklar. Standard-glidning, ej brådskande men hård deadline | `paused` | _(ingen kort än — endast registrerad); uppstod Session 32 (ADR-061-beslut)_ |
 | `T33` | Prod-era-cred-rensning: `@miranon-admin.local`-testanvändarna i PROD (`lvjsfnphlauldxqlncpl`) = kvarlämnade prod-era-creds (skapade 2026-05-04, ersatta av staging-users S19, lokalt utbytta S32). Inaktivera/radera i prod-dashboarden | `paused` | _(ingen kort än — endast registrerad); uppstod Session 32 (T12-cred-synk-forensik)_ |
 | `T34` | CLI länkad mot prod: `supabase` CLI lokalt länkad mot prod-ref (`supabase/.temp/project-ref` = `lvjsfnphlauldxqlncpl`) → `supabase db`/`functions`-kommandon default-träffar PROD. T30-klass lokal-yt-isolation på CLI-ytan (ej täckt av ADR-050/061). Durabel fix: re-länka/guarda + dokumentera | `paused` | _(ingen kort än — endast registrerad); uppstod Session 32 (T12-cred-provisionerings-STOPPA)_ |
+| `T35` | winback/återaktiverings-bucket (avbokade-aldrig-deltagit) — segmentering | `paused` | _(ingen kort än — endast registrerad); uppstod Session 33 (Fas 6e L1 Landning 3, Intresserade-vyns medvetna avgränsning); kopplar Scenario 4_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
