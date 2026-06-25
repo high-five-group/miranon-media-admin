@@ -4,6 +4,11 @@
 - **Datum:** 2026-06-25
 - **Fas:** 6g (Segment-yta) — ny sub-fas. Ersätter den tidigare 6e-L3-inramningen "Skicka mail".
 
+> **Erratum 2026-06-25 (ADR-063):** Maximerings-principen nedan ('route-around-but-register') bar
+> en felpremiss — att Airtable-basen var dödsdömd/ersättnings-mål. Korrigerad i ADR-063: Airtable-
+> basen är en förstklassig leverabel som maxas I BASEN; registret = kravspec; route-around = appen
+> läser källan medan basen ännu inte är maxad. Sak-besluten 1–7 nedan står oförändrade.
+
 ## Kontext
 
 Fas 6e L3 var inramad som "Skicka mail" (en `send-email` Edge Function, direct-Resend per ADR-015). En forensisk pre-pass mot live-data inför designen avtäckte att inramningen vilade på en halva som aldrig var app-nativ: själva segment-byggandet — att avgöra VEM ett utskick går till — låg i Make.com, inte i appen. Den verkliga funktionen Lotta behöver är en segment-yta: bygga, se, spara och exportera segment av personer utifrån deltagarhistorik. Mail är en av flera nedströms-handlingar man utför PÅ ett segment, inte kärnan.
@@ -30,7 +35,7 @@ Tre empiriska fynd grundar beslutet:
 
 **"Enbart X"-semantik (beslutad default):** "enbart föreläsning X" = personens hela närvaro-mängd ⊆ {(X, Föreläsning)} — deltog på den föreläsningen och inget annat alls. Revidérbar via exclude-mängdens config om en smalare betydelse önskas.
 
-**Maximerings-principen (route-around-but-register):** App-sidans korrekthet beräknas från källan och överlever Supabase-migrationen. MEN Airtable-basens avtäckta brister (Luckor A/B/C) registreras som data-modell-maximerings-kandidater — aldrig tyst förkastade (ADR-053 ledstjärna). Två parallella spår mot 11/10: app-side-korrekthet (migrations-överlevande) + Airtable-bas-maximering (registrerad, oberoende prioriterad).
+**Maximerings-principen (route-around-but-register):** [korrigerad — se Erratum ovan / ADR-063] App-sidans korrekthet beräknas från källan och överlever Supabase-migrationen. MEN Airtable-basens avtäckta brister (Luckor A/B/C) registreras som data-modell-maximerings-kandidater — aldrig tyst förkastade (ADR-053 ledstjärna). Två parallella spår mot 11/10: app-side-korrekthet (migrations-överlevande) + Airtable-bas-maximering (registrerad, oberoende prioriterad).
 
 ## Alternativ som övervägdes
 
