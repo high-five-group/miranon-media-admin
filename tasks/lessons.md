@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-24
+updated: 2026-06-25
 review_by: 2026-11-15
 status: stable
 ---
@@ -2494,3 +2494,84 @@ laptopen. Branschstandard (Supabase + least-privilege): den högst privilegierad
 hör endast hemma i betrodda backend-/CI-miljöer, aldrig på en utvecklar-laptop. Regel: sänk aldrig
 säkerhetsribban för att kringgå ett åtkomsthinder — routa via rätt yta (här: dashboard där admin-åtkomst
 redan finns). Avtäckte dessutom att CLI:t var länkat mot prod → registrerat som T34.
+
+## 2026-06-25 — Session 33 (Fas 6e Mer-flikens läs-ytor + L3-rescope → Segment-yta 6g/6h via ADR-062)
+
+> Skördade vid SESSIONSGRÄNS-`/session-end`. L185–L189 = paushandoff-kandidater (L1 paus 1 + L2 paus 2); L190–L192 = design-fas-lessons ur L3-rescopen. Hub-lyft pending efter Fas 6 (Session 26+-konvention).
+
+### L185 [UNIVERSAL] — Skarp filter-conformance kräver seedad fixtur; syntax-grön ≠ semantik-korrekt
+
+Datum: 2026-06-25 | Källa: Session 33 (L1 Intresserade / get-leads, klass: test-disciplin)
+En global läs-EF:s inklusions-/exklusions-filter kan inte bevisas mot en tom källa — en syntetisk lead
+(Person + länkad Engagemang) gör en annars-tom syntetisk staging-bas filter-bevisbar. `COUNTA(Engagemang)`
+uppdaterades rent 0→1 vid länk (ingen automation-kaskad). Regel: skarp conformance-bevisning kräver seedad
+data som faktiskt träffar OCH missar filtret; en grön parse mot `[]` bevisar wrapper/schema, inte
+filter-semantik. Samma klass som L154 (testa mot faktiska värden, ej spec).
+
+### L186 [UNIVERSAL] — En filterklausul kan bevisas redundant ur datamodellens kardinalitet i stället för att läggas till defensivt
+
+Datum: 2026-06-25 | Källa: Session 33 (L1 Intresserade-filter, klass: design-/modelleringsdisciplin)
+`{Antal anmälningar (totalt)} = 0 ⟹ Totala deltaganden = 0` eftersom ett Deltagande per definition är "en
+rad per Anmälan × Session" (A3 kräver `Anmälan.Person`). En andra klausul som filtrerar bort deltagare var
+därför redundant — kardinaliteten garanterar implikationen. Regel: innan en defensiv klausul läggs till,
+fråga om datamodellens kardinalitet redan garanterar den; en bevisat-redundant klausul är brus som döljer
+det verkliga villkoret. Bevisa ur relationen, lägg inte till "för säkerhets skull".
+
+### L187 [UNIVERSAL] — Vid låst domän-omtolkning som föräldralös-gör en typ: grep konsumenter FÖRST, radera rent — böj inte
+
+Datum: 2026-06-25 | Källa: Session 33 (L1 Lead→Intresserad-omtolkning, klass: refaktor-disciplin)
+När en låst domän-omtolkning (Lead → Intresserad) gjorde den befintliga `Lead`-typen föräldralös var
+frestelsen att böja den gamla typen till den nya betydelsen. Konsument-grep visade 0 referenser utanför
+adapter-trion → ren radering + egen `Intresserad`-typ var rätt, inte omtolkning av den gamla. Regel: när
+domänerna faktiskt skiljer sig slår en egen typ en böjd typ; verifiera föräldralöshet med konsument-grep
+FÖRST, radera sedan rent i stället för att låta en stale-namnad typ bära ny semantik.
+
+### L188 [UNIVERSAL] — När en läs-EF saknar conformance-egenskap att bevisa mot tom källa är kontrakt-mot-tom den ärliga gaten
+
+Datum: 2026-06-25 | Källa: Session 33 (L2 Maillogg / get-mail-log mot tom Utskickslogg, klass: test-disciplin)
+Maillogg-EF:en läste en tabell som var TOM i både prod och staging (fylls först av L3:s skrivare). En seedad
+fixtur här vore FALSK utskickshistorik. Den ärliga gaten är då kontrakt-mot-tom: auth + wrapper + schema-parse
+mot `[]`. Skarp conformance landar när skrivaren finns. Regel: matcha gatens ambition till vad källan ärligt
+kan bära — fabricera inte data bara för att få en "rikare" grön gate; en ärlig svag gate slår en falsk stark.
+Komplement till L185 (seedad fixtur när källan KAN bära den; kontrakt-mot-tom när den inte kan).
+
+### L189 [UNIVERSAL] — Ett förbyggt repo-schema är en hypotes, inte en källa, tills det korsats mot live
+
+Datum: 2026-06-25 | Källa: Session 33 (L2 `MailLogEntrySchema` live-rättning, klass: verifierings-disciplin)
+Det förbyggda `MailLogEntrySchema` bar 2 hårda typfel (skalär där fältet är länk-array; heltal-procent där
+Airtable-API ger percent-decimal 0–1) som BARA live-introspektion avslöjade — data-model.md var tyst om båda.
+Regel: ett schema skrivet före live-verifiering är ett antagande om formen, inte en sanning om den; kör en
+live-introspektion mot faktisk API-respons innan schemat aktiveras vid en datagräns. Generaliserar
+data-model-disciplinen (PI "gissa aldrig — verifiera") till repo-egna scheman.
+
+### L190 [UNIVERSAL] — En governing count-grind kan validera en token på en ANNAN yta än den du redigerar — pre-passen måste söka alla grindade räknartoken
+
+Datum: 2026-06-25 | Källa: Session 33 (L-doc ADR-062-landning, `423c440` fälld → `dc07a34`, klass: grind-/landnings-disciplin)
+ADR-landningen uppdaterade docs/decisions/README-tabellen men missade rotens README `<N> arkitekturbeslut`-token
+— en separat yta som `check-adr-count.sh` (ADR-039) grindar. Första pushen (`423c440`) föll på count-driften;
+fix i `dc07a34` (61→62). Regel: en governing count-grind kan nyckla mot en kanonisk token på en HELT annan fil
+än den ändringen rör — en ADR-FÖRBEREDELSE (och varje count-rörande landning) måste söka ALLA grindade
+räknartoken mot disk före commit, inte bara den uppenbara indexytan. (I detta repo är ADR-count enda grindade
+count-token; lessons/fällor/fas-antal grindas ej — men regeln gäller generellt.) Tidigare empiri samma session:
+samma lärdom återanvändes proaktivt i Landningar 2–4 ("count-token: ingen berörd" verifierat explicit).
+
+### L191 [UNIVERSAL] — Före bygge av en yta som ärver en inramning: kör forensisk pre-pass mot FAKTISK live-data, ej mot inramningens egna premisser
+
+Datum: 2026-06-25 | Källa: Session 33 (L3-rescope → Segment-yta, ADR-062, klass: metod / verify-don't-guess)
+Inramningen "L3 = Skicka mail" bar ett overifierat antagande som såg ut som sanning: att send-email var den
+app-nativa kärnan. En forensisk pre-pass mot live-data (MCP-taxonomi + läsning av Make-blueprinten) falsifierade
+det — segment-byggandet (VEM utskick går till) låg i Make, och ADR-015:s send-kontrakt motsade landad
+`MailPayloadSchema`. Det vände hela L3 till en Segment-yta (Fas 6g, ADR-062) FÖRE en rad app-kod skrevs. Regel:
+innan en yta byggs på en ärvd inramning, verifiera inramningens egna premisser mot FAKTISK live-data — inte mot
+inramningens utsaga om sig själv. Kopplar PI "gissa aldrig — verifiera" + "ett låst beslut är inte immunt mot
+evidens" till själva scope-inramningen, inte bara dess detaljer.
+
+### L192 [UNIVERSAL] — Route-around-but-register: kör runt den lossy projektionen OCH registrera dess brister som maximerings-kandidater
+
+Datum: 2026-06-25 | Källa: Session 33 (Segment-yta vs Personers rollups, ADR-062 + data-model §Kända fällor 31–33, klass: arkitektur-/skuld-disciplin)
+När datakällan är suboptimal finns två icke-krockande spår: (1) beräkna korrekthet app-side från källan-av-sanning
+(kör runt den lossy projektionen) → korrekt by construction + migrations-överlevande; (2) registrera projektionens
+brister som maximerings-kandidater (aldrig tyst förbi, ADR-053 ledstjärna). Enbart köra runt tappar förbättringen;
+enbart vänta på källfix blockerar leverans. Empiri: Personers förberäknade rollups är lossy (Luckor A/B/C) →
+segment-ytan läser källan (Deltaganden, ADR-062 Beslut 2) MEN bristerna registreras (§Kända fällor 31–33 + T16).
+Regel: route-around för leverans + korrekthet, register för att inte tappa källförbättringen — gör båda, inte ettdera.
