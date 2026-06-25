@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-24
+updated: 2026-06-25
 review_by: 2026-11-15
 status: stable
 ---
@@ -12,8 +12,8 @@ status: stable
 
 > **Levande dokument.** Den här planen uppdateras löpande när vi går vidare. När en fas är klar förvandlas den till "vad vi har gjort, och varför". När nästa fas planeras får den en plats här. Ingen behöver gissa var vi är — det står i det här dokumentet.
 >
-> **Version 3** — Fas 6d klar (Session 30), Fas 6e pågår. Senast uppdaterad: 2026-06-24.
-> **Status just nu:** Fas 0, Fas 1, Fas A, Fas 2, Fas 2.5, Fas 3, Fas 3.5, Fas 5 och Fas 5.5 är klara. **Fas 6 pågår — delarna 6a (Personer), 6b (Event), 6c (Anmälningar + väntelista) och 6d (Hem) är klara. Del 6e (Mer-fliken) bygger vi nu; sist kommer del 6f (Skapa nytt event).**
+> **Version 3** — Fas 6d klar (Session 30), Fas 6e pågår. Senast uppdaterad: 2026-06-25.
+> **Status just nu:** Fas 0, Fas 1, Fas A, Fas 2, Fas 2.5, Fas 3, Fas 3.5, Fas 5 och Fas 5.5 är klara. **Fas 6 pågår — delarna 6a (Personer), 6b (Event), 6c (Anmälningar + väntelista) och 6d (Hem) är klara. Del 6e (Mer-fliken) bygger vi nu; sedan kommer 6f (Skapa nytt event), 6g (Segment — bygga grupper av deltagare) och 6h (Skicka mail till ett segment).**
 > **Föregångare:** [v2](../archive/BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md) (april 2026, arkiverad 2026-05-09) och [v1](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md) (arkiverad 2026-05-06). v3 ersätter v2 och speglar byggplan-revisionen från maj 2026.
 
 <!-- markdownlint-disable-next-line MD028 -->  <!-- BYGGPLAN-LÄTTLÄST formatering (pedagogisk struktur per ADR-025) -->
@@ -81,7 +81,7 @@ Vi har redan byggt en fungerande version av appen. Den fungerar — men nu bygge
 
 Vi mäter inte i kalenderdagar utan i **arbetspass**. Ett arbetspass är ungefär ett par timmars fokuserad utvecklingstid med Marcus och Claude (AI-utvecklarverktyget). Mellan arbetspass kan det gå dagar eller veckor — det beror på Marcus tillgänglighet och vad som behöver verifieras.
 
-**Total uppskattning för hela bygget:** ungefär **18,5 arbetspass** från och med Fas 2.
+**Total uppskattning för hela bygget:** ungefär **20,5 arbetspass** från och med Fas 2.
 
 Det är inget löfte och ingen deadline — det är en realistisk gissning baserad på hur länge varje del brukar ta. Vissa delar kan gå snabbare när vi väl är inne i flytet. Andra kan ta längre om vi upptäcker något oväntat. Den här planen uppdateras när det händer.
 
@@ -102,7 +102,7 @@ Det är inget löfte och ingen deadline — det är en realistisk gissning baser
 | **Fas 3.5** | Tillgänglighetstest — för alla som ska använda appen | ✅ Klar (11 juni) | 1 pass |
 | **Fas 5** | Skalet — det du ser först | ✅ Klar (12 juni) | 1 pass |
 | **Fas 5.5** | Första riktiga interaktionen — markera betalning | ✅ Klar (17 juni) | 2 pass |
-| **Fas 6** | Alla rum — Hem, Event, Personer, Mer (i sex delar) | 🟡 Pågår (6a Personer ✅ klar) | 5,5 pass |
+| **Fas 6** | Alla rum — Hem, Event, Personer, Mer (i åtta delar) | 🟡 Pågår (6a–6d ✅ klara) | 7,5 pass |
 | **Fas 6.5** | "Vad har hänt?" — automatisk historik | ⏳ | 1 pass |
 | **Fas 7** | Slutbesiktning — gör appen redo att publiceras | ⏳ | 3 pass |
 | **Fas 8** | Framtid — passkeys, push-notiser, offline-kö | 🔮 Framtid | Senare |
@@ -335,7 +335,7 @@ Vi bygger också tre automatiserade tester som bevisar att servern blockerar oti
 
 ### Fas 6: Alla rum — Hem, Event, Personer, Mer
 
-*5,5 arbetspass · uppdelat i sex delar* *(ny i v3 — uppdelningen)*
+*7,5 arbetspass · uppdelat i åtta delar* *(ny i v3 — uppdelningen)*
 
 **Vad händer?**
 
@@ -357,20 +357,33 @@ Det här är den känsligaste delen av systemet — själva anmälningsflödet. 
 
 Det här är den första sidan du ser efter inloggning. "Hej Lotta" + det viktigaste just nu — nya anmälningar, nästa event, obetalda. För att data ska vara aktuell hämtas den om automatiskt var 60:e sekund, och du kan dra ner uppifrån för att uppdatera direkt.
 
-#### Fas 6e: Mer-fliken (~1,5 pass)
+#### Fas 6e: Mer-fliken (~1 pass)
 
 Mer-fliken samlar det som inte hör hemma under Hem, Event eller Personer:
 
 - **Intresserade** — personer som visat intresse (hämtat något gratismaterial) men ännu inte anmält sig till en kurs. Du ser vilka de är och vad de nappat på. Den som anmält sig till en kurs men hoppat av syns inte här — sådana kontakter samlar vi i en egen vy längre fram, så du kan nå ut till dem särskilt.
 - **Maillogg** — en lista över vilka mailutskick som gått ut, till hur många, och hur många som öppnat.
-- **Skicka mail** — härifrån skickar du mail direkt i appen. Råkar du skicka samma utskick två gånger går det ändå bara ut en gång — appen ser till det.
 - **Inställningar och logga ut.**
+
+(Själva mailutskicket flyttade vi till en egen del längre fram — Fas 6h — eftersom det hänger ihop med segment-grupperna i Fas 6g. Se nedan.)
 
 #### Fas 6f: Skapa nytt event (~1 pass)
 
 Härifrån skapar du ett helt nytt event direkt i appen — utan att gå in i Airtable. Det är den första platsen där appen skapar ny grunddata åt dig, så vi bygger den sist och med extra omsorg. Den kan komma som ett eget arbetspass efter Mer-fliken.
 
 **Vad du märker:** **Appen är klar att använda.** Du kan göra allt du gör idag i den gamla appen — och en del till. Allt fungerar på telefon, surfplatta och dator.
+
+#### Fas 6g: Segment — grupper av deltagare (~2 pass)
+
+Ett *segment* är en grupp av personer som hör ihop på något sätt — till exempel "alla som gått Resor i medvetandet 1" eller "alla som varit på en fjärrskådnings-utbildning". Här bygger du sådana grupper själv, ser vilka som ingår, sparar gruppen och kan exportera den som en lista.
+
+Det viktiga: appen räknar fram vem som ingår direkt ur den riktiga deltagar-historiken — inte ur färdiga siffror som kan vara fel. Samma person kan vara med i flera grupper samtidigt, och det är meningen. En grupp kan du "frysa" till en nedladdningsbar lista, till exempel för att bjuda in rätt personer till rätt modul i er nya community på SKOOL.
+
+**Varför just nu:** Ni har skapat Miranon Media Community på SKOOL och behöver få ut grupper av tidigare deltagare för att avgöra vem som ska ha tillgång till vad. Den här ytan löser det.
+
+#### Fas 6h: Skicka mail till ett segment (~0,5 pass)
+
+När du byggt en grupp (ett segment) vill du ofta skicka ett mail till just dem. Det gör du härifrån. Råkar du skicka samma utskick två gånger går det ändå bara ut en gång — appen ser till det. Vi bygger den här delen *efter* segment-ytan, eftersom mailet behöver veta vilka som ingår i gruppen först.
 
 ### Fas 6.5: "Vad har hänt?" — automatisk historik
 
@@ -567,7 +580,7 @@ Det här är de externa verktyg och tjänster appen står på. Du behöver inte 
 
 | Version | Datum | Ändring |
 |---------|-------|---------|
-| **v3** | **2026-05-09** (initial), **2026-05-13** (Fas 2 KLAR) | **Aktuell.** Speglar byggplan-revisionen från maj 2026 (P0–P3a). Lagt till: Fas A (säkerhetsvakten), Fas 2.5 (dubbelkoll på datan), Fas 3.5 (tillgänglighetstest), Fas 5.5 (första riktiga interaktionen), Fas 6 uppdelad i 6a–6e (strangler-fig), Fas 8 (framtid), Fas B (Airtable-städning som parallellspår), Fas E (databasbyte). Fas 5 förenklad — fyra polish-funktioner flyttade till Fas 7. Skriven i du-form. Senast uppdaterad-stämpel + status-rad i header. **Uppdaterad 2026-05-13:** Fas 2 — Routing + Auth markerad KLAR efter Sessions 4 + 5 + 5b. Defense-in-depth tre-skikt-arkitektur levererad. Fas 2.5 (schema-kontrakt-sync) flyttad till "Det här bygger vi nu". Status-rad och "Senast uppdaterad"-stämpel uppdaterade per ADR-025 levande dokument-disciplin. **Uppdaterad 2026-06-10:** Fas 2.5 — Dubbelkoll på datan markerad KLAR efter Session 13 (1 pass, estimat hållet). "Så gick det"-stycke tillagt. Fas-tabellen rättad: Fas 2-raden stod kvar som "🟡 Nästa" sedan 2026-05-13 (drift, nu ✅ Klar) och Fas 3 är nu 🟡 Nästa. **Uppdaterad 2026-06-11:** Fas 3 (Byggklossar) + Fas 3.5 (Tillgänglighetstest) markerade KLARA efter Sessions 14–15 — byggklossarna på 1 pass i stället för planerade 2. "Så gick det"-stycken tillagda för båda. Fas-tabell + status-rad uppdaterade (Fas 5 är nu 🟡 Nästa). Kvarlämnad övergångstext under en dubblerad "Fas 3: UI-primitiver"-rubrik i sektion 7 städad (rest från 2026-05-13-flytten). **Uppdaterad 2026-06-12:** Fas 5 (Skalet) markerad KLAR efter Session 16 (1 pass, estimat hållet). "Så gick det"-stycke tillagt — appen är nu installerbar, fungerar offline och har navigationsskal med fullt godkända tillgänglighetstester. Fas-tabell + status-rad uppdaterade (Fas 5.5 är nu 🟡 Nästa). **Uppdaterad 2026-06-18:** Fas 5.5 (Första riktiga interaktionen — markera betalning) markerad KLAR efter Sessions 18/19 + 22 (2 pass, estimat hållet). "Så gick det"-stycke tillagt — appen kan nu för första gången ändra riktig data (markera anmälningsavgift som betald) med optimistisk uppdatering och automatisk återställning vid fel, plus en separat övningsmiljö för säkra tester. Fas-tabell + status-rad uppdaterade (Fas 6 är nu 🟡 Nästa). Driftfix: doc:et låg ett fas-steg efter byggplan.md sedan 2026-06-12 — Session 22:s sessionsavslut uppdaterade inte detta dokument (ADR-025 levande dokument-disciplin). |
+| **v3** | **2026-05-09** (initial), **2026-05-13** (Fas 2 KLAR) | **Aktuell.** Speglar byggplan-revisionen från maj 2026 (P0–P3a). Lagt till: Fas A (säkerhetsvakten), Fas 2.5 (dubbelkoll på datan), Fas 3.5 (tillgänglighetstest), Fas 5.5 (första riktiga interaktionen), Fas 6 uppdelad i 6a–6e (strangler-fig), Fas 8 (framtid), Fas B (Airtable-städning som parallellspår), Fas E (databasbyte). Fas 5 förenklad — fyra polish-funktioner flyttade till Fas 7. Skriven i du-form. Senast uppdaterad-stämpel + status-rad i header. **Uppdaterad 2026-05-13:** Fas 2 — Routing + Auth markerad KLAR efter Sessions 4 + 5 + 5b. Defense-in-depth tre-skikt-arkitektur levererad. Fas 2.5 (schema-kontrakt-sync) flyttad till "Det här bygger vi nu". Status-rad och "Senast uppdaterad"-stämpel uppdaterade per ADR-025 levande dokument-disciplin. **Uppdaterad 2026-06-10:** Fas 2.5 — Dubbelkoll på datan markerad KLAR efter Session 13 (1 pass, estimat hållet). "Så gick det"-stycke tillagt. Fas-tabellen rättad: Fas 2-raden stod kvar som "🟡 Nästa" sedan 2026-05-13 (drift, nu ✅ Klar) och Fas 3 är nu 🟡 Nästa. **Uppdaterad 2026-06-11:** Fas 3 (Byggklossar) + Fas 3.5 (Tillgänglighetstest) markerade KLARA efter Sessions 14–15 — byggklossarna på 1 pass i stället för planerade 2. "Så gick det"-stycken tillagda för båda. Fas-tabell + status-rad uppdaterade (Fas 5 är nu 🟡 Nästa). Kvarlämnad övergångstext under en dubblerad "Fas 3: UI-primitiver"-rubrik i sektion 7 städad (rest från 2026-05-13-flytten). **Uppdaterad 2026-06-12:** Fas 5 (Skalet) markerad KLAR efter Session 16 (1 pass, estimat hållet). "Så gick det"-stycke tillagt — appen är nu installerbar, fungerar offline och har navigationsskal med fullt godkända tillgänglighetstester. Fas-tabell + status-rad uppdaterade (Fas 5.5 är nu 🟡 Nästa). **Uppdaterad 2026-06-18:** Fas 5.5 (Första riktiga interaktionen — markera betalning) markerad KLAR efter Sessions 18/19 + 22 (2 pass, estimat hållet). "Så gick det"-stycke tillagt — appen kan nu för första gången ändra riktig data (markera anmälningsavgift som betald) med optimistisk uppdatering och automatisk återställning vid fel, plus en separat övningsmiljö för säkra tester. Fas-tabell + status-rad uppdaterade (Fas 6 är nu 🟡 Nästa). Driftfix: doc:et låg ett fas-steg efter byggplan.md sedan 2026-06-12 — Session 22:s sessionsavslut uppdaterade inte detta dokument (ADR-025 levande dokument-disciplin). **Uppdaterad 2026-06-25:** Fas 6e omdefinierad — slutar nu vid Maillogg; "Skicka mail" flyttad ut till en egen del. Två nya delar tillagda: Fas 6g (Segment — bygga grupper av deltagare, för bl.a. SKOOL-community) och Fas 6h (skicka mail till ett segment). Mailet byggs efter segment-ytan eftersom utskicket behöver veta vilka som ingår. Fas 6 växte från sex till åtta delar (5,5 → 7,5 pass); totalen från Fas 2 från 18,5 till 20,5 pass. Speglar ADR-062 i byggplan.md. Fas-tabell + status-rad + estimat + "Hur lång tid tar det"-summa uppdaterade. |
 | v2 | 2026-04-13 | Tonomställning från "om Lotta" till "till dig". Strukturmedling. **Frusen** efter v3 — beskrev planen innan byggplan-revisionen. |
 | v1 | 2026-04-13 | Första versionen. Skriven om Lotta i tredje person. **[Arkiverad](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md)** 2026-05-06 i Pre-Fas-2-städningen. |
 

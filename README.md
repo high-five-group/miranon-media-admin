@@ -89,7 +89,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 
 ## Projektstatus
 
-**Aktuellt fokus:** Fas 6 — Hem + Event + Personer + Mer (strangler-fig-sekvens i fem sub-faser, per `docs/byggplan.md` §4). Fas 5.5 (write-slice-mönstret) klar och utgör mall för Fas 6:s mutationer.
+**Aktuellt fokus:** Fas 6 — Hem + Event + Personer + Mer (strangler-fig-sekvens i åtta sub-faser, per `docs/byggplan.md` §4). Fas 5.5 (write-slice-mönstret) klar och utgör mall för Fas 6:s mutationer.
 
 **Klara faser:**
 

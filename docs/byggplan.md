@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-24
+updated: 2026-06-25
 review_by: 2026-11-15
 status: stable
 ---
@@ -78,7 +78,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **3.5** | ✅ KLAR | **A11y-baseline EGEN FAS** per P2 A1-utfall — Session 15, 2026-06-11. Axe-runner 12/12 (ADR-045), gate-proof-bevisad CI-grind, 5 mönster i `docs/aria-patterns/` + /dev/patterns, "A11y-baseline godkänd"-gate passerad före Fas 6. | 1 session (faktiskt) |
 | **5** | ✅ KLAR | App-shell — Session 16, 2026-06-12. Skal på `_authenticated` (STOPPA-utfall A) + tab bar + skip-länk + route announcer + Workbox SW via `vite-plugin-pwa` injectManifest (ADR-047) + offline.html + manifest/ikoner + error boundaries två lager (SectionError + AppErrorBoundary, ADR-038-tråden stängd) + TanStack `networkMode: 'online'` + offline-indikator. DoD 4 moderniserad per ADR-047 (Lighthouse v12 tog bort PWA-kategorin); Performance ärver Fynd 7-defern (ADR-047-noten). API-runtime-caching defer till Fas 6 (versionsrad 1.9). | 1 session (faktiskt) |
 | **5.5** | ✅ KLAR | Vertikal write-slice "markera anmälningsavgift som betald" — Sessions 18/19 (server-kontrakt K1 + staging) + Session 22 (klient-UI K2), 2026-06-17. Server: operation `mark-registration-fee-paid` → `Anmälningsavgift` (ADR-049) + isolerad staging (ADR-050) + deny/allow-svit grön. Klient: optimistic mutation via router-context-DI (ADR-055) + `EdgeFunctionError`-requestId + MessageBox-fel-yta + 3 e2e. ADR-016 (mönster) + ADR-049 + ADR-050 + ADR-055. | 2 sessioner (faktiskt: 18/19 + 22) |
-| **6** | 🟡 PÅGÅR | **Strangler-fig-sekvens i sex sub-faser:** **6a Persons ✅ KLAR** (Session 23, 2026-06-19 — lista + cursor-port ADR-056 + detaljvy + write `Personer.Anteckningar` via `update-person-note`; commits `b29ace9`→`e1034ee`) → **6b Events ✅ KLAR** (Session 25, 2026-06-20 — /event-lista + info-vy + närvaro-vy; EF get-event + get-attendance; arch-audit ren 5/5; commits `8fadfac`→`4642482`) → 6c Registrations + Väntelista (1) → 6d Hem-aggregering (0,5) → 6e Mer (1,5) → 6f Skapa nytt event (1,0). Per-sub-fas: registrera operation i `field-allowlists.ts` + deny/allow-test grönt + vy-Playwright baseline. | 5,5 sessioner |
+| **6** | 🟡 PÅGÅR | **Strangler-fig-sekvens i åtta sub-faser:** **6a Persons ✅ KLAR** (Session 23, 2026-06-19 — lista + cursor-port ADR-056 + detaljvy + write `Personer.Anteckningar` via `update-person-note`; commits `b29ace9`→`e1034ee`) → **6b Events ✅ KLAR** (Session 25, 2026-06-20 — /event-lista + info-vy + närvaro-vy; EF get-event + get-attendance; arch-audit ren 5/5; commits `8fadfac`→`4642482`) → 6c Registrations + Väntelista (1) → 6d Hem-aggregering (0,5) → 6e Mer (1,0) → 6f Skapa nytt event (1,0) → 6g Segment-yta (2,0, ADR-062) → 6h Mail-handling (0,5). Per-sub-fas: registrera operation i `field-allowlists.ts` + deny/allow-test grönt + vy-Playwright baseline. | 7,5 sessioner |
 | **6.5** | EJ ÄNDRAD | Aktivitetslogg (xAPI). `requestId`-mönstret från Fas A M7 ärvs. | 1 session |
 | **7** | NY scope | Konsolidering — CSP-plugin (med ADR), web-vitals, Speculation Rules, View Transitions, widget-error-boundary, chaos testing, deploy-pipeline, Background Sync defer-not (se Fas 8 + ADR). | 3 sessioner |
 | **8** | NY (framtid) | Background Sync API (offline-mutationskö, defer:ad från Fas 7 — se ADR). Övrigt scope (Passkeys, push) ej låst i denna revision. Estimat fastställs vid aktualisering. Ersätter conversion-plans "Fas 8 — Passkeys, push, offline". | TBD |
@@ -87,7 +87,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 
 **Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR-013 (Fas 4-borttagningen).
 
-**Total estimat (Fas 6 → Fas 7, exkl. klara Fas 0/1/A/2/2.5/3/3.5/5/5.5 och defer:ade Fas 8/B/E):** 9,5 sessioner — uppdaterad 2026-06-24 efter Fas 6e/6f-scopelås (L0). Beräkning: 5,5 + 1 + 3 = 9,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
+**Total estimat (Fas 6 → Fas 7, exkl. klara Fas 0/1/A/2/2.5/3/3.5/5/5.5 och defer:ade Fas 8/B/E):** 11,5 sessioner — uppdaterad 2026-06-25 efter Fas 6e-omdefiniering + Fas 6g/6h-tillägg (ADR-062). Beräkning: 7,5 + 1 + 3 = 11,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
 
 ---
 
@@ -613,7 +613,7 @@ Etablera mutation-mönstret (TanStack `useMutation` + optimistic UI + operations
 
 #### Mål
 
-Bygga de fyra produkt-flikarna i strangler-fig-ordning: Persons-domän → Events-domän → Registrations + Väntelista → Hem-aggregering → Mer-fliken → Skapa nytt event. Hem byggs efter de tre datadomänerna (Persons/Events/Registrations) eftersom den aggregerar dem; Mer och Skapa nytt event är fristående och byggs sist.
+Bygga de fyra produkt-flikarna i strangler-fig-ordning: Persons-domän → Events-domän → Registrations + Väntelista → Hem-aggregering → Mer-fliken → Skapa nytt event → Segment-yta → Mail-handling. Hem byggs efter de tre datadomänerna (Persons/Events/Registrations) eftersom den aggregerar dem; Mer och Skapa nytt event är fristående och byggs sist. Segment-ytan (6g, ADR-062) och bulk-mail-handlingen (6h) bygger på person-/deltagardata och bär mail-vertikalen som flyttats ut ur 6e — mail byggs efter segment-motorn eftersom mottagar-upplösning kräver den.
 
 #### Sub-fas-allokering
 
@@ -623,10 +623,12 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning: Persons-domän → Event
 | **6b** | Events | 0,75 sess | `/event` lista (befintlig fetchEvents) + `/event/$eventId` info-route + `/event/$eventId/narvaro`-route (C1 nested, ej flik) | `fetchEvent`, `fetchAttendance` |
 | **6c** | Registrations + Väntelista | 1 sess | Anmälda-flik på Event-detalj, väntelista-konvertering på Mer, idempotent registrering | `createRegistration`, `fetchWaitlist` |
 | **6d** | Hem-aggregering | 0,5 sess | `/hem` med greeting + nya anmälningar + info-cards + CTA. Polling 60s + pull-to-refresh + visibility-trigger (B1) | (inga nya — använder befintliga read-EF) |
-| **6e** | Mer-fliken | ~1,5 sess | Intresserade (leads-läsvy) + Maillogg (läsvy) + Skicka mail (write) + inställningar/logga ut | `get-leads`, `get-mail-log`, `send-email` (direct-Resend, ADR-015 + Idempotency-Key) |
+| **6e** | Mer-fliken | ~1,0 sess | Intresserade (leads-läsvy) + Maillogg (läsvy) + inställningar/logga ut | `get-leads`, `get-mail-log` |
 | **6f** | Skapa nytt event | ~1 sess | `/mer/skapa-event`-formulär + create-event write-vertikal mot Eventplanering (egen session) | `create-event` (write, egen ADR) |
+| **6g** | Segment-yta | ~2,0 sess | Bygg/se/spara/exportera segment av personer ur deltagarhistorik; beräknat medlemskap från källan (Deltaganden); dynamisk regel + snapshot-export; SKOOL-modulbehörighet (union per kurs×modalitet). Egen session, multi-landning | beräknings-/segment-EF:er definieras vid 6g-design (ADR-062) |
+| **6h** | Mail-handling (bulk-utskick) | ~0,5 sess | `send-email` PÅ ett segment — byggs EFTER 6g eftersom bulk-mail behöver segment-motorn för att lösa mottagare | `send-email` (direct-Resend, ADR-015 + Idempotency-Key) |
 
-**Total: 5,5 sessioner** (6a–6d klara: 3,0; 6e ~1,5; 6f ~1,0).
+**Total: 7,5 sessioner** (6a–6d klara: 3,0; 6e ~1,0; 6f ~1,0; 6g ~2,0; 6h ~0,5).
 
 #### Scope (per sub-fas)
 
@@ -648,11 +650,11 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning: Persons-domän → Event
 - Fas 3 (UI-primitiver)
 - Fas 3.5 (a11y-baseline)
 - Fas 2.5 (adapter-debt klassad)
-- Inom Fas 6: 6a → 6b → 6c är hård kedja; 6d kräver att 6a + 6b + 6c levererat data-EF:er; 6e är fristående och kan defer:as
+- Inom Fas 6: 6a → 6b → 6c är hård kedja; 6d kräver att 6a + 6b + 6c levererat data-EF:er; 6e är fristående och kan defer:as; 6g (Segment-yta) bygger på 6a-domänens person-/deltagardata och beräknar medlemskap från källan (Deltaganden); 6h (mail-handling) kräver 6g — bulk-mail behöver segment-motorn för att lösa mottagare
 
 #### Estimat
 
-5,5 sessioner totalt, sub-fördelat enligt tabell.
+7,5 sessioner totalt, sub-fördelat enligt tabell.
 
 #### Filer som skapas/uppdateras
 
@@ -688,10 +690,9 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning: Persons-domän → Event
 
 **6e (Mer):**
 
-- `src/routes/_authenticated/mer/index.tsx` (skal: Intresserade/Maillogg/Skicka mail/inställningar/logga ut)
-- `src/routes/_authenticated/mer/intresserade.tsx`, `.../maillogg.tsx`, `.../skicka-mail.tsx` (route-konvention verifieras mot befintliga mer/-routes på disk)
-- `supabase/functions/get-leads/index.ts`, `.../get-mail-log/index.ts`, `.../send-email/index.ts` (deploy; send-email = direct-Resend + Idempotency-Key)
-- `field-allowlists.ts` (send-email post-send-PATCH-fält för mail-prick-timestamp)
+- `src/routes/_authenticated/mer/index.tsx` (skal: Intresserade/Maillogg/inställningar/logga ut)
+- `src/routes/_authenticated/mer/intresserade.tsx`, `.../maillogg.tsx` (route-konvention verifieras mot befintliga mer/-routes på disk)
+- `supabase/functions/get-leads/index.ts`, `.../get-mail-log/index.ts` (deploy)
 - `tests/e2e/mer.spec.ts`
 
 **Not (6e Intresserade):** Intresserade är STRIKT — person som hämtat något men ALDRIG anmält sig (Antal anmälningar totalt = 0). Avbokade-som-aldrig-deltog exkluderas medvetet — de är ett identifierat framtida segment (winback/återaktivering), ej i 6e. Se tråd T35 (tasks/threads/README.md) — winback/återaktivering.
@@ -702,6 +703,23 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning: Persons-domän → Event
 - `supabase/functions/create-event/index.ts` (write, deploy)
 - `field-allowlists.ts` (utvidgas)
 - `tests/e2e/skapa-event.spec.ts`
+
+**6g (Segment-yta):**
+
+- `src/routes/_authenticated/mer/segment/` (bygg/se/spara/exportera-vyer; route-konvention verifieras mot disk)
+- segment-motor (källfråga mot Deltaganden, beräknat medlemskap) + ev. beräknings-EF (definieras vid 6g-design)
+- snapshot/export-handling (nedladdningsbar e-postlista för SKOOL-import + ev. frusen utskickslista)
+- kurs→modul-config (SKOOL-modulbehörighet, union per kurs×modalitet)
+- `tests/e2e/segment.spec.ts`
+- Styrande: ADR-062
+
+**6h (Mail-handling — bulk-utskick):**
+
+- mail-handling PÅ ett segment (mottagare löses av 6g:s segment-motor)
+- `supabase/functions/send-email/index.ts` (deploy; direct-Resend + Idempotency-Key)
+- `field-allowlists.ts` (send-email post-send-PATCH-fält för mail-prick-timestamp)
+- `tests/e2e/mail-handling.spec.ts`
+- Styrande: ADR-015 + ADR-062
 
 #### DoD (per sub-fas)
 
@@ -716,9 +734,10 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning: Persons-domän → Event
 #### ADR-krav (Fas 6)
 
 - **ADR-014 — `createRegistration`-idempotency** (per A5, Fas 6c): dokumenterar idempotency-nyckel-strategin (mot dubbletter vid retry/dubbel-klick) — adresserar `data-model.md §F.4`-buggen.
-- **ADR-015 — `sendEmail` direct-Resend-skuld** (per A5, Fas 6e): om sendEmail deployas i 6e, dokumenterar varför direct-Resend-anrop används och planen för migration till mail-event-pattern (+ Idempotency-Key-header; ev. additiv ADR-015-uppdatering avgörs vid 6e:s send-email-bygge).
+- **ADR-015 — `sendEmail` direct-Resend-skuld** (per A5, Fas 6h — omsekvenserad ut ur 6e per ADR-062): när sendEmail deployas i 6h (bulk-mail PÅ ett segment), dokumenterar varför direct-Resend-anrop används och planen för migration till mail-event-pattern (+ Idempotency-Key-header; ev. additiv ADR-015-uppdatering avgörs vid 6h:s send-email-bygge).
 - **ADR-017 — Polling-vs-Realtime + migrations-vägen post-Fas E** (per B1, Fas 6d): dokumenterar 60s + pull-to-refresh + visibility-trigger som interimslösning + Supabase Realtime-omläggning som Fas E-uppgift.
 - **ADR-krav 6f — `create-event` write-mall:** dokumenteras vid 6f-start (egen ADR, jfr ADR-014/016). TBD.
+- **ADR-062 — Segment-ytans arkitektur** (Fas 6g): beräknat medlemskap från källan (Deltaganden), dynamisk regel + snapshot, strukturerad include/exclude-definition över taxonomin (kurs×modalitet). Skriven 2026-06-25; styr 6g-bygget.
 
 #### Korsreferens
 
@@ -984,7 +1003,7 @@ ADR:er per migrationsbeslut — skrivs vid aktualisering.
 | ADR-012 | Conversion-plan → byggplan-skiftet | Meta (skrivs i P3a) | Direktiv §12 ("ramen 'konvertering' var efterlöpare") |
 | ADR-013 | Fas 4-borttagningen (DataTable flyttad till Fas 7) | Meta (skrivs i P3a) | P0-inventory Fas 4.1 + direktiv §12 (Numreringsnot) |
 | ADR-014 | `createRegistration`-idempotency | Fas 6c | P1-sessionsdok Del 3 (A5) + `data-model.md §F.4` |
-| ADR-015 | `sendEmail` direct-Resend-skuld | Fas 6e | P1-sessionsdok Del 3 (A5) |
+| ADR-015 | `sendEmail` direct-Resend-skuld | Fas 6h (omsekv. ur 6e per ADR-062) | P1-sessionsdok Del 3 (A5) |
 | ADR-016 | TanStack optimistic mutation-mönster med operations-baserat API | Fas 5.5 | P1-sessionsdok Del 4 (A2) |
 | ADR-017 | Polling-vs-Realtime + migrations-vägen post-Fas E | Fas 6d | P1-sessionsdok Del 4 (B1) |
 | ADR-018 | Fas 5-förenklingen (vilka [GA] flyttas till Fas 7) | Fas 5 | P1-sessionsdok Del 5 (B3) |
@@ -1011,6 +1030,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 | 1.9 | 2026-06-12 | §4 Fas 5 Scope/Inte scope-justering (Session 16 K3, Marcus-kvitterat via Chat): runtime-caching av API-anrop (network-first, `networkTimeoutSeconds`) flyttad från Scope till Inte scope med defer till Fas 6 där API-konsumtionsmönstren byggs (ADR-017-polling) — autentiserade svar med persondata i Cache Storage kräver säkerhetsgenomgång, samma rationale som [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md) B5:s persistQueryClient-defer. Scope-raden för Workbox SW preciserad till "cache-first för statiska assets (precache), offline.html-fallback"; Inte scope-sektionen omstrukturerad med käll-markering per post (Fas 7 per B3 vs Session 16 K3-defer). K2-flaggan från transparens-rapporten stängd med detta beslutsspår. |
 | **1.10** | **2026-06-12** | **Fas 5 markerad KLAR** efter Session 16. §2 fas-tabell uppdaterad (Fas 5 ✅ KLAR + estimat-summa Fas 5.5 → Fas 7 = 9,5 sessioner). §4 Fas 5-prompten utökad med "✅ Slutförd"-paragraf per Fas A-mallen — inkl. skal-på-`_authenticated`-avvikelsen från Filer-listan (STOPPA-utfall A), error-boundary-konsolideringen, DoD 4c-omklassningen per [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md)-korrigeringsnoten, DoD 5-/DoD 7-noterna och K5b–d-ikonrundorna. DoD-trail: shell-/pwa-testsviter + runs 27410118400→27412742687 + Marcus-momentens PASS-kvittens. |
 | **1.11** | **2026-06-17** | **Fas 5.5 markerad KLAR** efter Session 22 (klient-UI K2; server-kontrakt + staging i Sessions 18/19). §2 fas-tabell uppdaterad (Fas 5.5 ✅ KLAR + estimat-summa Fas 6 → Fas 7 = 7,5 sessioner). §4 Fas 5.5-prompten utökad med "✅ Slutförd"-paragraf per Fas A-mallen — inkl. fält-valet `Anmälningsavgift` (ADR-049 supersederar DoD-radens exempel), router-context-DI ([ADR-055](decisions/ADR-055-datakalla-atkomst-router-context-di.md), första UI→data-wiringen), toast→MessageBox-avvikelsen (DoD 6) och mockad-e2e-noten (DoD 1/5/6/7/8 via `page.route`-gate). ADR-055 tillkommen (router-context-DI, README-räknare 54→55). DoD-trail: feature-CI run 27706856446. |
+| **1.12** | **2026-06-25** | **Fas 6e omdefinierad + ny Fas 6g (Segment-yta) + ny Fas 6h (Mail-handling) + mail omsekvenserad** per [ADR-062](decisions/ADR-062-segment-yta-berakn-medlemskap-fran-kalla.md). 6e slutar nu vid Maillogg — "Skicka mail (write)"-vertikalen + `send-email`-EF utflyttad. 6g = bygg/se/spara/exportera segment med beräknat medlemskap från källan (Deltaganden), dynamisk regel + snapshot-export, SKOOL-modulbehörighet (union per kurs×modalitet). 6h = bulk-mail PÅ ett segment (`send-email`, ADR-015), byggs efter 6g eftersom mottagar-upplösning kräver segment-motorn. §2 fas-tabell (Fas 6-raden: sex→åtta sub-faser) + §4 Mål + sub-fas-tabell + Beroenden + Estimat + Filer (6e nedbantad, 6g/6h tillagda) + ADR-krav + §5 ADR-index (ADR-015 Fas 6e→6h) uppdaterade. Estimat: 6e 1,5→1,0; +6g 2,0; +6h 0,5; Fas 6 5,5→7,5; grand-total Fas 6→7 9,5→11,5 (7,5+1+3). Lättläst-spegling v3 uppdaterad parallellt (sex→åtta delar, 5,5→7,5 pass, totalt-från-Fas-2 18,5→20,5). Estimat 6g/6h är Code-omdöme vid landningstillfället, revidérbart vid 6g-design. |
 
 ---
 
