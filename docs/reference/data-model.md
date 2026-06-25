@@ -905,10 +905,19 @@ Lila-pricken existerar bara på Väntelista-tabellen i admin (inte på Anmälnin
 
 Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 
+> **Denna sektion är inte enbart en varnings-lista — den är KRAVSPECEN för Airtable-bas-maximeringen**
+> (post-Fas-6-milstolpe, [ADR-063](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md)).
+> Varje post är en kandidat som ska LÖSAS UT när basen maxas till 11/10 / branschledarmässig (mall för
+> Passionslyftet) — inte ett permanent tillstånd att gå runt. App-sidan läser källan-av-sanning där en
+> projektion är lossy ([ADR-062](../decisions/ADR-062-segment-yta-berakn-medlemskap-fran-kalla.md)
+> Beslut 2) som leverans NU; resolution av posten sker I BASEN vid maximeringen.
+
+<!-- markdownlint-disable-next-line MD028 -->
+
 > För **strukturella** Airtable-begränsningar (plattform — migreras bort med Postgres i Fas E), se
 > [`airtable-constraints.md`](./airtable-constraints.md). Denna sektion = **data-instans**-fällor i
-> denna bas (städas bort vid bas-sanering). Vissa poster har en rot där och en instans här —
-> korsrefererade explicit.
+> denna bas (löses ut vid bas-maximeringen — se kravspec-ramen ovan, ej "städas bort som biprodukt").
+> Vissa poster har en rot där och en instans här — korsrefererade explicit.
 
 1. **Anmälan ≠ Deltagande.** Att någon är anmäld betyder inte att de har gått kursen. Kurshistorik-rollups är nollade tills `Deltaganden.Status = "Närvarande"` har satts via A9/A10.
 
@@ -1044,7 +1053,7 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 
 33. **LUCKA C — föreläsnings-genomförande + Psionautics surfar INTE per person.** (a) Ingen per-person-räknare för GENOMFÖRDA föreläsningar finns; `Anmäld till antal kommande föreläsningar` (`fldZvHFuVGwerfJrF`) räknar KOMMANDE anmälningar (rollup av `Anmälningar.Typ`), inte historisk närvaro. (b) Ingen Psionautics-signal i Personer — Psionautics exkluderas avsiktligt ur RIM/FS-rollupsen (se fälla 4). Båda är härledbara ENDAST via join Deltaganden→Event (Session / Event typ resp. `Event (text) = "Psionautics"`). **Verifierat MCP 2026-06-25 (Session 33).** → **Maximerings-kandidat (T16):** per-person (kurs × modalitet)-signaler som täcker HELA taxonomin — inkl. föreläsning och Psionautics — inte bara RIM 1/2 + FS.
 
-> **Luckor 31–33 — gemensam rot + segment-yta-relevans.** De tre är symptom på samma mönster: Personers förberäknade rollups projicerar en ren källa (Deltaganden, dimension (Event-namn × Typ) filtrerad på `Närvaropoäng = 1`) *lossy*. Maximerings-riktningen per [ADR-062](../decisions/ADR-062-segment-yta-berakn-medlemskap-fran-kalla.md) Beslut 2 är att läsa KÄLLAN i stället för projektionen — app-sidans segment-yta (Fas 6g) gör det och stänger Luckorna by construction. Posterna ovan är registrerade kandidater FÖR OM/NÄR Airtable-basen själv-maximeras (oberoende av app-sidans route-around — *route-around-but-register*, ADR-062:s maximerings-princip). Relaterat: Make-scenariot "Beräkna antal i segment" är trivialt (webhook → läs `Segment.Segmentformel` → kör som `filterByFormula` mot Personer → skriv tillbaka antalet; ingen logik i Make) → förenklings-/deprecierings-kandidat när appen beräknar medlemskap från källan. Spårat i tråd T16.
+> **Luckor 31–33 — gemensam rot + segment-yta-relevans.** De tre är symptom på samma mönster: Personers förberäknade rollups projicerar en ren källa (Deltaganden, dimension (Event-namn × Typ) filtrerad på `Närvaropoäng = 1`) *lossy*. Maximerings-riktningen per [ADR-062](../decisions/ADR-062-segment-yta-berakn-medlemskap-fran-kalla.md) Beslut 2 är att läsa KÄLLAN i stället för projektionen — app-sidans segment-yta (Fas 6g) gör det och stänger Luckorna by construction. Posterna ovan är registrerade kandidater FÖR OM/NÄR Airtable-basen själv-maximeras (oberoende av app-sidans route-around — *route-around-but-register*, ADR-062:s maximerings-princip [förfinad — ADR-063]). Relaterat: Make-scenariot "Beräkna antal i segment" är trivialt (webhook → läs `Segment.Segmentformel` → kör som `filterByFormula` mot Personer → skriv tillbaka antalet; ingen logik i Make) → förenklings-/deprecierings-kandidat när appen beräknar medlemskap från källan. Spårat i tråd T16. **Förfinat (ADR-063):** registret = committad maximerings-KRAVSPEC, ej deferra-och-glöm; posterna LÖSES UT i basen vid post-Fas-6-maximeringen (resolution I BASEN, ej "designa-bort" i en efterträdare). Airtable-basen är en förstklassig leverabel, ej dödsdömd — ADR-062:s antagande att basen var ett ersättnings-mål var en Chat-felpremiss, korrigerad (ADR-062-erratum).
 
 ---
 
