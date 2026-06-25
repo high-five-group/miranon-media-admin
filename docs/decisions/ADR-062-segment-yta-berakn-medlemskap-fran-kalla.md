@@ -9,6 +9,10 @@
 > basen är en förstklassig leverabel som maxas I BASEN; registret = kravspec; route-around = appen
 > läser källan medan basen ännu inte är maxad. Sak-besluten 1–7 nedan står oförändrade.
 
+> **Förfining 2026-06-25 (ADR-064):** Beslut 3:s taxonomi-uppräkning (fem kurser / '6×2')
+> förfinas av ADR-064 till den disk-/live-belagda sju-par-taxonomin över sex kursnamn.
+> Sak-besluten 1, 2, 4–7 oförändrade.
+
 ## Kontext
 
 Fas 6e L3 var inramad som "Skicka mail" (en `send-email` Edge Function, direct-Resend per ADR-015). En forensisk pre-pass mot live-data inför designen avtäckte att inramningen vilade på en halva som aldrig var app-nativ: själva segment-byggandet — att avgöra VEM ett utskick går till — låg i Make.com, inte i appen. Den verkliga funktionen Lotta behöver är en segment-yta: bygga, se, spara och exportera segment av personer utifrån deltagarhistorik. Mail är en av flera nedströms-handlingar man utför PÅ ett segment, inte kärnan.
