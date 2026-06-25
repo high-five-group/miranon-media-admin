@@ -52,10 +52,19 @@ test.describe('compute-segment — skarp conformance (Fas 6g L1)', () => {
     expect(count).toBe(members.length);
 
     // Strukturell assertion (ingen identitets-hårdkodning): varje member berikad.
+    // namn present BEVISAR att Personer-batchen körde (annars vore namn null).
+    // email + ejGodkandMail är NULLABLE/optional per kontraktet (ADR-064): en
+    // person utan E-post ger email=null, saknad consent-checkbox ger false —
+    // INTE EF-fel. (Staging-fixturen "ZZ-History Person 01" saknar E-post →
+    // email=null; live-verifierat 2026-06-26. Att kräva icke-tom email vore en
+    // fixtur-egenskap, ej ett kontrakts-krav.)
     for (const m of members) {
       expect(typeof m.id, 'member.id är record-ID-sträng').toBe('string');
-      expect(m.namn, `${m.id}: namn present (Personer.Namn-formel)`).toBeTruthy();
-      expect(m.email, `${m.id}: email present`).toBeTruthy();
+      expect(m.namn, `${m.id}: namn present (Personer.Namn-formel → batch körde)`).toBeTruthy();
+      expect(
+        m.email === null || (typeof m.email === 'string' && m.email.length > 0),
+        `${m.id}: email är ifylld sträng eller null (nullable)`,
+      ).toBe(true);
       expect(typeof m.ejGodkandMail, 'consent bärs som boolean (ej filtrerat)').toBe('boolean');
     }
   });
