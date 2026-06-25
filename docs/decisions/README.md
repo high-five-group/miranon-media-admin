@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-23
+updated: 2026-06-25
 review_by: 2026-11-15
 status: stable
 ---
@@ -104,6 +104,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-059](ADR-059-idempotens-lagring-defer-fas-e.md) | Idempotens-lagring defer:as till Fas E — superseder ADR-014:s lagrings-mekanism (Airtable unik-constraint på skrivbart fält är omöjlig) + timing-beslut; interim klient-skydd (mutationKey-dedup + disabled-knapp under in-flight, klient-UUID-nyckel bevarad i kontraktet), server-side UNIQUE-reservation när Postgres blir datahem (Fas E); smalt multi-session-race-fönster accepterat öppet (single-admin-golv); Alt X Airtable-dedup noterad som fallback | Accepted | 6c |
 | [ADR-060](ADR-060-sentinel-setup-purge-create-conformance.md) | Sentinel-markerade test-records + setup-purge för create-write-conformance — per-körning-unik sentinel (ingen cross-run-kollision), conformance EF-only (ingen cred-breddning), purge vid SETUP ej teardown (Vlad Mihalcea), purge i Airtable-creddad tooling SKILD från testet; prod-delete-EF (Alt A) + test-Airtable-cred (Alt B) avvisade; interim manuell/schemalagd purge, bounded sentinel-ackumulering tolererad tills cred-skild seed-fas finns. Första create-write-conformance-konventionen | Accepted | 6c |
 | [ADR-061](ADR-061-lokal-miljo-isolation.md) | Lokal miljö-isolation — självverifierande miljö-bindning (Vite mode-separation + fail-fast mode-medveten grind + cred-hygien); löser T30-klustret (T12/T28/T29); Väg B, lokal-stack deferrad → T31 | Accepted | Meta |
+| [ADR-062](ADR-062-segment-yta-berakn-medlemskap-fran-kalla.md) | Segment-yta — beräknat medlemskap från källan (Deltaganden), dynamisk regel med snapshot; ersätter 6e-L3 "Skicka mail"-inramningen med ny Fas 6g; medlemskap beräknas från källan ej Personer-rollupsen (stänger Luckor A/B/C by construction); strukturerad include/exclude-definition över taxonomin (kurs × modalitet), on-demand-eval, frys/export för SKOOL; Väg A (lappa rollups) + streaming-motor avvisade; Make deprecierbar, 9 legacy-segment migreras gradvis | Accepted | 6g |
 
 ## Relaterade dokument
 
