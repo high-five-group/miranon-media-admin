@@ -85,6 +85,8 @@ Vi mäter inte i kalenderdagar utan i **arbetspass**. Ett arbetspass är ungefä
 
 Det är inget löfte och ingen deadline — det är en realistisk gissning baserad på hur länge varje del brukar ta. Vissa delar kan gå snabbare när vi väl är inne i flytet. Andra kan ta längre om vi upptäcker något oväntat. Den här planen uppdateras när det händer.
 
+> **Ett pass till tillkommer — men storleken är inte satt än.** Efter de byggande faserna gör vi ett särskilt pass där vi maxar själva Airtable-databasen till toppklass (mer om det längre ner, "Databasen maxas"). Hur många arbetspass det blir bestämmer vi när vi planerar det passet i detalj — därför är det *inte* inräknat i de 20,5 ovan. Vi gissar hellre ingen siffra än en som blir fel.
+
 **Det som redan är klart** (Fas 0, Fas 1 och Fas A) tog totalt cirka 5 arbetspass under april och tidiga maj 2026.
 
 ---
@@ -104,6 +106,7 @@ Det är inget löfte och ingen deadline — det är en realistisk gissning baser
 | **Fas 5.5** | Första riktiga interaktionen — markera betalning | ✅ Klar (17 juni) | 2 pass |
 | **Fas 6** | Alla rum — Hem, Event, Personer, Mer (i åtta delar) | 🟡 Pågår (6a–6d ✅ klara) | 7,5 pass |
 | **Fas 6.5** | "Vad har hänt?" — automatisk historik | ⏳ | 1 pass |
+| **Databasen maxas** | Airtable-databasen lyfts till toppklass (egen milstolpe, inte en fas) | 🏔️ Milstolpe | Storlek sätts senare |
 | **Fas 7** | Slutbesiktning — gör appen redo att publiceras | ⏳ | 3 pass |
 | **Fas 8** | Framtid — passkeys, push-notiser, offline-kö | 🔮 Framtid | Senare |
 | **Fas B** | Städning av Airtable-databasen | 🅿️ Parallellt | Roger + Lotta |
@@ -400,6 +403,23 @@ Historiken sparas i 12 månader och hanteras enligt EU:s dataskyddsregler (GDPR)
 
 **Vad du märker:** En ny sektion under Mer-fliken där du kan se din historik. Allt du gjort, kronologiskt, sökbart.
 
+### Databasen maxas — Airtable lyfts till toppklass
+
+<!-- markdownlint-disable-next-line MD036 -->
+*Egen milstolpe (inte en fas) · storlek sätts senare*
+
+**Vad händer?**
+
+Hela tiden vi bygger appen lär vi oss vad en riktigt bra app *behöver* av sin databas. Varje gång vi upptäcker något i Airtable som kunde vara renare, tydligare eller mer komplett skriver vi ner det i en lista. När de byggande delarna är klara tar vi den listan och går igenom Airtable-databasen ordentligt: städar, rättar och förbättrar den tills den håller toppklass.
+
+Det viktiga att förstå: **Airtable är inte ett tillfälligt provisorium som vi tänker slänga.** Tvärtom — databasen är en av sakerna vi *levererar*. Den ska bli så bra att den också kan användas som mall och övningsexempel i Passionslyftet (det större utbildningsprojektet längre fram). Därför nöjer vi oss inte med "duger" — vi maxar den.
+
+Vi gör det här som ett eget pass, *efter* att appen är färdigbyggd mot databasen, så att vi vet exakt vad appen behöver innan vi finputsar. Och vi rör det med varsamhet: samma Airtable-bas används skarpt varje dag och kör automationerna i bakgrunden, så förbättringarna görs försiktigt och kontrolleras noga.
+
+> **Och bytet till Supabase då?** Det är ett *separat, senare* spår (Fas E längre ner) — inte ett skäl att lägga mindre krut på Airtable. Airtable maxas för sin egen skull, oavsett om eller när ett databasbyte sker.
+
+**Vad du märker:** Direkt i Airtable — renare, tydligare, färre felkällor. Och en databas du kan vara stolt över att visa upp.
+
 ### Fas 7: Slutbesiktning
 
 <!-- markdownlint-disable-next-line MD036 -->
@@ -482,6 +502,8 @@ Konkret innehåller det:
 **Vad händer?**
 
 På sikt vill vi byta databas från Airtable till [Supabase](https://supabase.com/) (samma företag som hanterar inloggning idag). Skälen är tekniska — Supabase är snabbare på stora datamängder, har bättre stöd för komplexa rapporter, och tillåter live-uppdateringar (om Roger ändrar något ser Lotta det direkt utan att ladda om).
+
+> **Viktigt — Airtable överges inte.** Det här bytet betyder *inte* att Airtable är ett tillfälligt provisorium. Airtable-databasen är något vi maxar och levererar i egen rätt (se "Databasen maxas" i sektion 7), och den lever vidare som mall och övningsexempel i Passionslyftet. Supabase-bytet är ett separat, senare spår — inte en ersättning vi skyndar oss till. Båda kan finnas, var och en för sitt syfte.
 
 Bytet är planerat sist av en anledning: tack vare adapter-mönstret från Fas 1 är 90 % av appen redan förberedd. Det är bara *adaptern* (universalladdaren från Fas 1-metaforen) som behöver bytas. Resten av appen vet inte ens att databasen byttes.
 

@@ -20,7 +20,7 @@ status: stable
 ## Innehåll
 
 1. Prolog — Syfte, läsanvisning, dokumentstruktur
-2. Fas-tabell (post-P1, 15 rader)
+2. Fas-tabell (post-P1, 16 rader)
 3. Övergripande arkitektur — etablerade mönster post-Fas A
 4. Per-fas-prompter
 5. ADR-index
@@ -35,6 +35,8 @@ status: stable
 `docs/byggplan.md` är den styrande planen för Miranon Media Admin (React). Den ersätter `docs/conversion-plan.md` (arkiverad) och `tasks/byggplan-direktiv.md` (markeras SLUTFÖRT när P3 är klar).
 
 Skillnaden mot conversion-plan: byggplan utgår från **etablerad arkitektur post-Fas A** (operations-baserat API, AuthContext|Response, klient-DSN, structured logging) och **låst datamodell post-Fas E target-research** (06b Supabase-target + 07 migrationsplan + 08 Odoo-validering). Conversion-plan utgick från en pre-research-arkitektur och har därför drift som hade krävt patch-på-patch.
+
+> **Airtable-basen är en förstklassig LEVERABEL, inte ett provisorium:** den maxas till 11/10 / branschledarmässig och blir mall + övningsprojekt i Passionslyftet. Den är datakälla nu för att bygget ska avtäcka vad appen behöver av sin datakälla; defekt-registret är kravspecen för bas-maximeringen. Supabase-migration är ett separat senare spår, ej en ersättning ([ADR-063](decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md)).
 
 ### Läsanvisning
 
@@ -65,7 +67,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 
 ## 2. Fas-tabell (post-P1)
 
-15 rader. Sekvens följer §5 i direktivet efter P1-applicering 2026-05-04. Estimat anges per fas; sub-fas-allokering under Fas 6 listas i Fas 6-prompten.
+16 rader. Sekvens följer §5 i direktivet efter P1-applicering 2026-05-04. Estimat anges per fas; sub-fas-allokering under Fas 6 listas i Fas 6-prompten. Rad 16 (AT‑Max) är en MILSTOLPE, inte en fas — se ADR-063 + §4-milstolpe-blocket.
 
 | Fas | Status | Anmärkning | Estimat |
 |---|---|---|---|
@@ -80,6 +82,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **5.5** | ✅ KLAR | Vertikal write-slice "markera anmälningsavgift som betald" — Sessions 18/19 (server-kontrakt K1 + staging) + Session 22 (klient-UI K2), 2026-06-17. Server: operation `mark-registration-fee-paid` → `Anmälningsavgift` (ADR-049) + isolerad staging (ADR-050) + deny/allow-svit grön. Klient: optimistic mutation via router-context-DI (ADR-055) + `EdgeFunctionError`-requestId + MessageBox-fel-yta + 3 e2e. ADR-016 (mönster) + ADR-049 + ADR-050 + ADR-055. | 2 sessioner (faktiskt: 18/19 + 22) |
 | **6** | 🟡 PÅGÅR | **Strangler-fig-sekvens i åtta sub-faser:** **6a Persons ✅ KLAR** (Session 23, 2026-06-19 — lista + cursor-port ADR-056 + detaljvy + write `Personer.Anteckningar` via `update-person-note`; commits `b29ace9`→`e1034ee`) → **6b Events ✅ KLAR** (Session 25, 2026-06-20 — /event-lista + info-vy + närvaro-vy; EF get-event + get-attendance; arch-audit ren 5/5; commits `8fadfac`→`4642482`) → 6c Registrations + Väntelista (1) → 6d Hem-aggregering (0,5) → 6e Mer (1,0) → 6f Skapa nytt event (1,0) → 6g Segment-yta (2,0, ADR-062) → 6h Mail-handling (0,5). Per-sub-fas: registrera operation i `field-allowlists.ts` + deny/allow-test grönt + vy-Playwright baseline. | 7,5 sessioner |
 | **6.5** | EJ ÄNDRAD | Aktivitetslogg (xAPI). `requestId`-mönstret från Fas A M7 ärvs. | 1 session |
+| **AT‑Max** | 🏔️ MILSTOLPE (ej fas) | **Airtable-bas-maximering** (post-Fas-6-milstolpe, [ADR-063](decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md)) — placerad EFTER Fas 6.5 (då hela app↔Airtable-interaktions-ytan är byggd: Fas 6:s EF + Fas 6.5:s `Activity Log`-write; Fas 7 tillför inga nya Airtable-interaktioner). (a) audita att ALLA app↔Airtable-interaktioner är registrerade KORREKT (`docs/reference/airtable-interaction.md` + interaktions-registret); (b) audita att HELA Airtable-skatten (`data-model.md` §Kända fällor) är registrerad KORREKT + KOMPLETT; (c) lösa ut allt — städa/fixa/optimera basen till 11/10 / branschledarmässig / mall-redo (Passionslyft-övningsprojekt). Resolution sker I BASEN (ej lappa, ej designa-bort). Egen kommande pass-kedja. Se §4-milstolpe-blocket. | (estimat sätts vid milstolpens dekomponering, ADR-063) |
 | **7** | NY scope | Konsolidering — CSP-plugin (med ADR), web-vitals, Speculation Rules, View Transitions, widget-error-boundary, chaos testing, deploy-pipeline, Background Sync defer-not (se Fas 8 + ADR). | 3 sessioner |
 | **8** | NY (framtid) | Background Sync API (offline-mutationskö, defer:ad från Fas 7 — se ADR). Övrigt scope (Passkeys, push) ej låst i denna revision. Estimat fastställs vid aktualisering. Ersätter conversion-plans "Fas 8 — Passkeys, push, offline". | TBD |
 | **B** | PARALLELL | Airtable-hardening — parallell-spår med 2 synk-gates mot React-bygget per A4: Synk-gate 1 — A1–A12 inventerade och kategoriserade (redan applicerade / före Fas 2.5 / efter Fas 2.5) innan Fas 2.5 startar; Synk-gate 2 — handshake mot `field-allowlists.ts` per Fas 5.5/6-operation. Roger/Lotta-arbete. | (parallell, separat estimat) |
@@ -88,6 +91,8 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 **Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR-013 (Fas 4-borttagningen).
 
 **Total estimat (Fas 6 → Fas 7, exkl. klara Fas 0/1/A/2/2.5/3/3.5/5/5.5 och defer:ade Fas 8/B/E):** 11,5 sessioner — uppdaterad 2026-06-25 efter Fas 6e-omdefiniering + Fas 6g/6h-tillägg (ADR-062). Beräkning: 7,5 + 1 + 3 = 11,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
+
+> **Milstolpe AT‑Max (Airtable-bas-maximering, ADR-063) är OSATT** och därför **ej inräknad** i 11,5 ovan — storleken sätts vid milstolpens dekomponering (egen pass-kedja efter Fas 6.5). Ingen provisorisk siffra injiceras (L1: provisoriska estimat märks som sådana).
 
 ---
 
@@ -801,6 +806,45 @@ Implementera xAPI-baserad aktivitetslogg för spårning av Lottas operativa åtg
 
 - `FEATURE-ACTIVITY-LOG.md` (uppdateras i Fas 6.5 efter ADR-beslut)
 - `data-model.md` (Activity Log-tabell-shape)
+
+---
+
+### Milstolpe — Airtable-bas-maximering (post-Fas-6, ADR-063)
+
+> **Detta är en MILSTOLPE, inte en fas.** Egen kommande pass-kedja, placerad EFTER Fas 6.5 — då hela app↔Airtable-interaktions-ytan är byggd (Fas 6:s EF + Fas 6.5:s `Activity Log`-write). Fas 7 tillför inga nya Airtable-interaktioner, så interaktions-registret är moget vid denna slot.
+
+#### Mål
+
+Maxa Airtable-basen till 11/10 / branschledarmässig / mall-redo — som förstklassig leverabel, ej ersättas (ADR-063). Resolution sker I BASEN.
+
+#### Scope
+
+- **(a)** Audita att ALLA app↔Airtable-interaktioner är registrerade KORREKT — mot `docs/reference/airtable-interaction.md` + app↔Airtable-interaktions-registret.
+- **(b)** Audita att HELA Airtable-skatten (`data-model.md` §Kända fällor) är registrerad KORREKT + KOMPLETT.
+- **(c)** Lösa ut allt: städa, fixa, optimera Airtable-basen själv till 11/10 / branschledarmässig / mall-redo (Passionslyft-övningsprojekt) — ej lappa provisoriskt, ej designa-bort i en efterträdare.
+
+#### Inte scope
+
+- Supabase-migration (Fas E) — separat senare spår, ej ersättning av Airtable (ADR-063).
+- Att FIXA basen i denna React-bygg-session — milstolpen är en egen pass-kedja.
+
+#### Beroenden
+
+- Fas 6 (alla app↔Airtable-interaktioner byggda).
+- Fas 6.5 (`Activity Log`-write — sista interaktionen som ska in i registret).
+
+#### Estimat
+
+(estimat sätts vid milstolpens dekomponering, ADR-063) — **osatt, ej inräknad i grand-totalen** (§2).
+
+#### Styrande
+
+- [ADR-063](decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md) — Airtable-basen som förstklassig leverabel.
+- Defekt-registret (`data-model.md` §Kända fällor + T16 + app↔Airtable-interaktions-registret) = KRAVSPEC för bas-maximeringen.
+
+#### Blast-radius-not
+
+Airtable-basen är delad prod (Psionautics gäst) och bär automationer A1–A11. Bas-maximeringen sker med samma försiktighet — eget pass med egen verifiering, ej sidoeffekt.
 
 ---
 
