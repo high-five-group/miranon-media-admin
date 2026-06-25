@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-21
+updated: 2026-06-25
 review_by: 2026-11-15
 status: stable
 ---
@@ -916,7 +916,7 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 
 3. **Spegelfält skapar inga relationer.** `Eventplanering.Anmälningar (länkat fält)` är read-only — det speglar länkar som skapats från Anmälningar-sidan. Skriv alltid från "ägar-sidan".
 
-4. **Psionautics-event räknas inte in i RIM/FS-rollupsen.** Rollup-formlerna filtrerar på `Kursnamn = "Resor i medvetandet 1" | "Resor i medvetandet 2" | "Fjärrskådning"`. Psionautics-eventet heter "Psionautics" → ingen träff. Avsiktligt.
+4. **Psionautics-event räknas inte in i RIM/FS-rollupsen.** Rollup-formlerna filtrerar på `Kursnamn = "Resor i medvetandet 1" | "Resor i medvetandet 2" | "Fjärrskådning"`. Psionautics-eventet heter "Psionautics" → ingen träff. Avsiktligt. **Konsekvens för segment:** Psionautics-deltagande surfar därför inte per person — se fälla 33 (Lucka C) + maximerings-kandidat T16.
 
 5. **`Återkommande?` är missvisande.** Se avsnittet *Anmälningskedjan*.
 
@@ -1037,6 +1037,14 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
     **[HYPOTES — EJ VERIFIERAD]:** Det finns ingen rollback eller retry idag. Verifieringsplan: granska `psionautics/src/pages/Admin.tsx` "Lägg till som anmäld"-handlern.
 
     **Åtgärd-rekommendation:** Antingen (a) flytta båda operationer till en transactional Edge Function `move-from-waitlist` som rollback:ar Anmälan-create om PATCH failar, eller (b) lägg till retry-logik på frontend med tydlig feedback om dubblett-risk. Se §F.4.
+
+31. **LUCKA A — `Totala deltaganden` (`fldBP7xdEmpXDwUpz`) saknar RIM 3.** Formeln = `{RIM 1 ×} + {RIM 2 ×} + {Fjärrskådning ×}` — RIM 3 (`fld93OrTArvdkkYmk`) ingår INTE. Segment och vyer som filtrerar på `Totala deltaganden` (t.ex. "Tidigare deltagare", "Superdeltagare ≥ 2") är därför RIM 3-blinda. Den korrekta totalen är `Antal genomförda event` (`flddy8JND3YnlgZxe` = RIM 1 + RIM 2 + RIM 3 + FS — se fälla 28). `Erfarenhetsnivå (Miranon Media)` (`fldWSkxHJS2xWav4t`) bygger på `Totala deltaganden` + RIM 1/RIM 2 och ärver blindheten (jfr fälla 8:s döda RIM 3-/"Genomfört alla"-grenar). **Verifierat MCP 2026-06-25 (Session 33).** → **Maximerings-kandidat (T16):** konsolidera/deprecera den lossy totalen; låt segment läsa `Antal genomförda event` eller källan (Deltaganden) i stället.
+
+32. **LUCKA B — `Fjärrskådning ×` (`fldlczklhguSg02H6`) blandar utbildning + föreläsning.** Räknaren rollar upp `Fjärrskådning eventkey` (`fldLLmr2QjcPNlBBm`), vars formel matchar `Kursnamn (lookup) = "Fjärrskådning"` AND `Närvaropoäng = 1` — `Session` refereras ALDRIG. FS-FÖRELÄSNINGAR har `Event (text) = "Fjärrskådning"` (Typ = Föreläsning) → räknas in som FS-kurs. RIM-axeln slipper detta av namn-slump: RIM-föreläsningar har `Event (text) = "Resor i medvetandet"` (utan siffra) som inte matchar "...1/2/3". **Konsekvens:** "har gått FS-KURS" (utbildning) kan INTE byggas på `Fjärrskådning ×` ensamt — utbildning och föreläsning är hopslagna i samma räknare. **Nytt fynd, verifierat MCP 2026-06-25 (Session 33).** → **Maximerings-kandidat (T16):** modalitets-distinkt FS-signal (skilj `Fjärrskådning-utbildning ×` från `Fjärrskådning-föreläsning ×`), alternativt läs (kurs × Typ) från källan.
+
+33. **LUCKA C — föreläsnings-genomförande + Psionautics surfar INTE per person.** (a) Ingen per-person-räknare för GENOMFÖRDA föreläsningar finns; `Anmäld till antal kommande föreläsningar` (`fldZvHFuVGwerfJrF`) räknar KOMMANDE anmälningar (rollup av `Anmälningar.Typ`), inte historisk närvaro. (b) Ingen Psionautics-signal i Personer — Psionautics exkluderas avsiktligt ur RIM/FS-rollupsen (se fälla 4). Båda är härledbara ENDAST via join Deltaganden→Event (Session / Event typ resp. `Event (text) = "Psionautics"`). **Verifierat MCP 2026-06-25 (Session 33).** → **Maximerings-kandidat (T16):** per-person (kurs × modalitet)-signaler som täcker HELA taxonomin — inkl. föreläsning och Psionautics — inte bara RIM 1/2 + FS.
+
+> **Luckor 31–33 — gemensam rot + segment-yta-relevans.** De tre är symptom på samma mönster: Personers förberäknade rollups projicerar en ren källa (Deltaganden, dimension (Event-namn × Typ) filtrerad på `Närvaropoäng = 1`) *lossy*. Maximerings-riktningen per [ADR-062](../decisions/ADR-062-segment-yta-berakn-medlemskap-fran-kalla.md) Beslut 2 är att läsa KÄLLAN i stället för projektionen — app-sidans segment-yta (Fas 6g) gör det och stänger Luckorna by construction. Posterna ovan är registrerade kandidater FÖR OM/NÄR Airtable-basen själv-maximeras (oberoende av app-sidans route-around — *route-around-but-register*, ADR-062:s maximerings-princip). Relaterat: Make-scenariot "Beräkna antal i segment" är trivialt (webhook → läs `Segment.Segmentformel` → kör som `filterByFormula` mot Personer → skriv tillbaka antalet; ingen logik i Make) → förenklings-/deprecierings-kandidat när appen beräknar medlemskap från källan. Spårat i tråd T16.
 
 ---
 
