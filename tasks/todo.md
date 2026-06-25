@@ -19,6 +19,18 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 33 ⏸ PAUSAD (2026-06-24, ADR-051 — nr 33 BEVARAS) — Fas 6e Mer-fliken mitt i (L0+L1+L2 landade, L3+avslut kvar)
+
+> Durabel paus 2 (paus→resume→paus, ren tidslinje i sessionsdoket). SESSIONSGRÄNS ej fas-avslut: Fas 6 öppen mot 6f. Återupptas via `/session-resume` vid L3. INGEN finalisering (arkivering/lessons-hub/CHANGELOG/nummer-increment).
+
+- [x] **L0 — doc-grund** (`32bcaaa`+`2f39a48`+`4ed6790`) — 6e-scope-lås (a–d) + 6f-formalisering + T09-fix + estimat-revidering.
+- [x] **L1 — Intresserade** (get-leads): Landning 1 `bf82911` (EF + IntresseradSchema + proof-gate) + L1.5 `78ad1c6` (winback-docs) + Landning 2 `16e328f` (föräldralös Lead-domän raderad + `fetchIntresserade`) + Landning 3 `19b8f95` (vy `/mer/intresserade` + e2e) + housekeeping `8b2d276` (T35 winback-tråd + byggplan-platshållare→T35). CI-gröna.
+- [x] **L2 — Maillogg** (get-mail-log): Landning 1 `473fcaf` (EF + `MailLogEntrySchema` live-rättad + `fetchMailLog` + proof-gate-mot-tom) + Landning 2 `d1ff5f6` (vy `/mer/maillogg` + e2e). CI-gröna. ← HEAD vid paus.
+- [ ] **L3 — Skicka mail** (send-email write-EF direct-Resend per ADR-015 + Idempotency-Key + partial-failure-synlighet Fälla 29 + formulär) — ÅTERSTÅR.
+- [ ] **Avslut** — `/arch-audit` (ADR-058) + `/session-end` (SESSIONSGRÄNS, ej fas-avslut — Fas 6 öppen mot 6f). ÅTERSTÅR.
+- **Carry:** **T16 UTÖKAD** (data-model mail-domän-backfill konkretiserad: 3 tabeller + länk-relationer + 2 fält-fällor + get-leads §5.1-lucka + §5-header-count-drift); **T34** `paused` (CLI prod-länkning → explicit-ref-disciplin skarp i L3); **T35** `paused` (winback). Lessons-kandidater (proof-gate-mot-tom; schema-är-hypotes-tills-live-verifierat) EJ hub-lyfta — fångas vid `/session-end`.
+- **Nästa:** `/session-resume` Session 33 → **L3 (Skicka mail)**.
+
 ### Session 32 ✅ AVSLUTAD (2026-06-23) — T30-klustret LÖST: ADR-061 lokal miljö-isolation (4 pelar-landningar + cred-synk + tråd-flipp)
 
 > SESSIONSGRÄNS, ej fas-avslut: Fas 6 öppen. Egen session (ADR-051). T30-klustret (T12/T28/T29, en rotorsak) strukturellt stängt via ADR-061.
