@@ -2566,12 +2566,22 @@ innan en yta byggs på en ärvd inramning, verifiera inramningens egna premisser
 inramningens utsaga om sig själv. Kopplar PI "gissa aldrig — verifiera" + "ett låst beslut är inte immunt mot
 evidens" till själva scope-inramningen, inte bara dess detaljer.
 
-### L192 [UNIVERSAL] — Route-around-but-register: kör runt den lossy projektionen OCH registrera dess brister som maximerings-kandidater
+### L192 [UNIVERSAL] — Beräkna-från-källan + registret som committad förbättrings-kravspec (ej deferra-och-glöm)
 
-Datum: 2026-06-25 | Källa: Session 33 (Segment-yta vs Personers rollups, ADR-062 + data-model §Kända fällor 31–33, klass: arkitektur-/skuld-disciplin)
-När datakällan är suboptimal finns två icke-krockande spår: (1) beräkna korrekthet app-side från källan-av-sanning
-(kör runt den lossy projektionen) → korrekt by construction + migrations-överlevande; (2) registrera projektionens
-brister som maximerings-kandidater (aldrig tyst förbi, ADR-053 ledstjärna). Enbart köra runt tappar förbättringen;
-enbart vänta på källfix blockerar leverans. Empiri: Personers förberäknade rollups är lossy (Luckor A/B/C) →
-segment-ytan läser källan (Deltaganden, ADR-062 Beslut 2) MEN bristerna registreras (§Kända fällor 31–33 + T16).
-Regel: route-around för leverans + korrekthet, register för att inte tappa källförbättringen — gör båda, inte ettdera.
+Datum: 2026-06-25 (Session 33) | förfinad Session 34 (ADR-063) | Källa: Session 33 (Segment-yta vs Personers rollups, ADR-062 + data-model §Kända fällor 31–33, klass: arkitektur-/skuld-disciplin)
+När datakällan är en lossy/inkonsistent projektion finns två icke-krockande spår: (1) beräkna korrekthet från
+källan-av-sanning → leverans + korrekthet NU, migrations-överlevande; (2) registrera projektionens brister (aldrig
+tyst förbi, ADR-053 ledstjärna). AVGÖRANDE FÖRFINING: "registrera" är INTE notera-och-gå-vidare — det är ett
+COMMITTAT åtagande att lösa, med ägare och konkret resolutions-väg. Registret blir KRAVSPECEN för källans
+förbättring/maximering, inte en deferra-och-glöm-lista. Enbart beräkna-runt utan committad resolution tappar
+förbättringen; enbart vänta på källfix blockerar leverans. Registret-med-resolutions-väg är det som gör spår (1) till
+leverans-NU i stället för permanent kringgående.
+Projekt-applikation (exempel, ej avsmalning): källan är Airtable-basen — en FÖRSTKLASSIG LEVERABEL som maxas I BASEN
+([ADR-063](../docs/decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md)); registret (data-model §Kända
+fällor + T16) är kravspecen för den post-Fas-6-maximeringen. App-sidan beräknar från Deltaganden (ADR-062 Beslut 2)
+som leverans nu; resolution sker i basen vid maximeringen.
+Empiri: Personers förberäknade rollups är lossy (Luckor A/B/C) → segment-ytan läser källan (Deltaganden, ADR-062
+Beslut 2) MEN bristerna registreras (§Kända fällor 31–33 + T16).
+Kvitto (öppen revidering): L192:s ursprungs-rubrik "route-around-but-register" bar en felpremiss-ton — register som
+undvikande/uppskjutning, källan som dödsdömd. Förfinad per ADR-063: register = committad kravspec; källan maxas, ej
+överges. Regeln är universell — exemplet (Airtable) är bara dess instans.
