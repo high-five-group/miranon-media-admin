@@ -21,4 +21,10 @@ export {
   PersonHistoryEntrySchema,
 } from './PersonDetail.schema';
 export { RegistrationSchema } from './Registration.schema';
+export {
+  type SegmentMember,
+  SegmentMemberSchema,
+  type SegmentResult,
+  SegmentResultSchema,
+} from './Segment.schema';
 export { WaitlistEntrySchema } from './WaitlistEntry.schema';
