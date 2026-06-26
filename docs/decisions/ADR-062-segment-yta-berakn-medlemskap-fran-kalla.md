@@ -8,7 +8,7 @@
 > en felpremiss — att Airtable-basen var dödsdömd/ersättnings-mål. Korrigerad i ADR-063: Airtable-
 > basen är en förstklassig leverabel som maxas I BASEN; registret = kravspec; route-around = appen
 > läser källan medan basen ännu inte är maxad. Sak-besluten 1–7 nedan står oförändrade.
-
+>
 > **Förfining 2026-06-25 (ADR-064):** Beslut 3:s taxonomi-uppräkning (fem kurser / '6×2')
 > förfinas av ADR-064 till den disk-/live-belagda sju-par-taxonomin över sex kursnamn.
 > Sak-besluten 1, 2, 4–7 oförändrade.

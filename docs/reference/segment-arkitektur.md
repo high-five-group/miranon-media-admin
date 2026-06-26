@@ -40,6 +40,7 @@ RIM 3/Psionautics noll-närvaro är INTE en defekt — ännu-ej-genomförda even
 ## 4 — Var detaljen lever (frys-disciplin)
 
 Sak-besluten fryses inte här; de lever i:
+
 - **ADR-062** — segment-arkitekturen + branschledar-research + avvisade vägar (Väg A, streaming).
 - **ADR-063** — Airtable-basen som förstklassig leverabel; register = kravspec; resolution I BASEN.
 - **ADR-064** — taxonomi från event-domänen + strikt närvaro-golv + förfining av ADR-062:s taxonomi.
