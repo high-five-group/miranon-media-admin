@@ -69,6 +69,21 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Event',
     ],
   },
+  // Spara en namngiven segment-regel som en NY rad i Segment-tabellen (Fas 6g L3,
+  // ADR-065 — repots första 6g-write). save-segment-EF:en bygger `fields` SERVER-SIDE
+  // ur typade inputs (namn/rule/definition) — listan är därför en SSOT-grind mot
+  // framtida kod-drift (om EF:en någon gång skulle försöka skriva ett fält utanför
+  // listan → findDisallowedField fäller före Airtable-anropet), ej en klient-nåbar
+  // deny-yta. Endast de TRE app-skrivbara fälten (live-verifierade skrivbara Session 36
+  // pass 3 STEG 0: singleLineText/multilineText — ej formel/rollup/lookup/button/
+  // lastModified). Make-LEGACY-fälten (Segmentformel / Antal i segment / Beräkna antal
+  // i segment / Mailutskick / Används för utskick) sätts ALDRIG — de ligger MEDVETET
+  // utanför listan (Make-vägen, rivs ej mitt-i-flykt; ADR-065 beslut 3). 'App-segmentregel'
+  // bär JSON.stringify(rule). Tabell per NAMN (ADR-050 bas-portabilitet).
+  'save-segment': {
+    tableId: 'Segment',
+    allowedFields: ['Namn på segment', 'App-segmentregel', 'Segmentdefinition'],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.

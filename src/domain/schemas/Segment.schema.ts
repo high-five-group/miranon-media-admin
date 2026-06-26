@@ -45,3 +45,28 @@ export const SegmentResultSchema = z.object({
 
 export type SegmentMember = z.infer<typeof SegmentMemberSchema>;
 export type SegmentResult = z.infer<typeof SegmentResultSchema>;
+
+/**
+ * [GA] En SPARAD segment-rad (Fas 6g L3, ADR-065). `rule` = den typade regeln som
+ * persisterades i `App-segmentregel`-fältet (`JSON.stringify` ↔ `JSON.parse`-rundtur);
+ * `namn`/`definition` speglar `Namn på segment` / `Segmentdefinition`. Båda nullbara:
+ * get-segments läser via `scalarString` (tomt fält → null), och kontraktet (L193)
+ * tillåter en rad utan namn/definition. `rule` är ALLTID närvarande — get-segments
+ * filtrerar bort rader utan giltig `App-segmentregel` (de 9 legacy-Make-segmenten),
+ * så en SavedSegment bär per definition en regel.
+ */
+export const SavedSegmentSchema = z.object({
+  id: z.string(),
+  namn: z.string().nullable(),
+  rule: SegmentRuleSchema,
+  definition: z.string().nullable(),
+});
+
+export type SavedSegment = z.infer<typeof SavedSegmentSchema>;
+
+/** Write-input till save-segment (Fas 6g L3): namn + typad regel + klartext-spegling. */
+export type SaveSegmentInput = {
+  namn: string;
+  rule: SegmentRule;
+  definition: string;
+};
