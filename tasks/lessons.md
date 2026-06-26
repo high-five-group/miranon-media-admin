@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-25
+updated: 2026-06-26
 review_by: 2026-11-15
 status: stable
 ---
@@ -2585,3 +2585,45 @@ Beslut 2) MEN bristerna registreras (§Kända fällor 31–33 + T16).
 Kvitto (öppen revidering): L192:s ursprungs-rubrik "route-around-but-register" bar en felpremiss-ton — register som
 undvikande/uppskjutning, källan som dödsdömd. Förfinad per ADR-063: register = committad kravspec; källan maxas, ej
 överges. Regeln är universell — exemplet (Airtable) är bara dess instans.
+
+## 2026-06-25 — Session 35 (Fas 6g L1+L2 — segment-beräknings-motor + byggar-yta)
+
+### L193 [UNIVERSAL] — Assertera mot kontraktet, aldrig mot fixturens incidentella rikedom
+
+Datum: 2026-06-25 | Källa: Session 35 (L1 api-staging email-assertion, klass: test-disciplin)
+En integration-assertion krävde icke-tom email; staging-personen saknade email → EF returnerade korrekt null
+(nullable per ADR-064) → testet föll fast EF:n var kontrakts-korrekt. Felet: assertionen kodade en EGENSKAP HOS
+FIXTUREN (denna person råkar ha email) som ett KONTRAKTS-KRAV. Regel: assertera mot kontraktets form (här:
+nullbarhet), aldrig mot vad en specifik fixtur råkar bära — en ifylld fält-instans är ingen kontrakts-garanti.
+Namn-present bevisar att berikningen körde; email-present är fixtur-tur. Samma klass som L154/L185.
+
+### L194 [UNIVERSAL] — Join-nyckel-alignment mellan byggar-yta och nedströms exakt-match verifieras som STOPPA-grind, ej hoppas i runtime
+
+Datum: 2026-06-25 | Källa: Session 35 (L2 STEG-0 Event(source)↔Kursnamn(lookup), klass: integritets-/verify-disciplin)
+Byggar-ytans valbara nyckel (Event source) matas till compute-segments exakta sträng-match (Kursnamn lookup); en
+stavnings-/värde-divergens ger TYST TOTAL-FAIL (inga segment matchar, inget fel kastas). Regel: innan en yta byggs
+vars val matar en nedströms exakt-sträng-match, verifiera by-construction-alignment som STOPPA-grind FÖRE bygget
+(varje konsumerat värde har exakt producent-match). Superset-riktningen (fler producent- än konsument-värden) är
+väntad/OK; STOPP-villkoret är ett konsument-värde UTAN producent-match. Tyst total-fail mot en korrekthets-yta är
+värsta klassen — gör den omöjlig by construction, övervaka den ej.
+
+### L195 [UNIVERSAL] — En lossy datakällas brister kan TVINGA FRAM den bättre arkitekturen; läs källan, lappa inte projektionen
+
+Datum: 2026-06-25 | Källa: Session 35 (segment-motorn vs Personers rollups, klass: arkitektur-disciplin) | companion till L192
+När datakällan är en lossy projektion med strukturella luckor finns två vägar: lappa projektionen (fler fält,
+fördubblad lossiness, korrekthet på sträng-match) eller läsa källan-av-sanning (stänger luckorna by construction).
+Den senare är branschledar-svaret OCH enklare att bevisa. AVGÖRANDE INSIKT (Marcus surfade): basens brister tvingade
+fram den BÄTTRE arkitekturen, inte en sämre — "kompromissade vi p.g.a. dålig datamodell?" → "nej, datamodellens
+brister pekade på rätt väg". Regel: behandla en lossy projektions luckor som SIGNAL att routa till källan, inte som
+skäl att kompromissa/lappa. Companion till L192 (beräkna-från-källan + register som kravspec); ny vinkel = framing:en,
+constraint som forcing-function mot kvalitet.
+
+### L196 [UNIVERSAL] — Tvetydig default på en outward-facing-operation görs säker via explicit mål + maskin-grind, ej operatörens minne
+
+Datum: 2026-06-25 | Källa: Session 35 (L1 staging-deploy mot prod-länkad CLI, T34, klass: deploy-/säkerhets-disciplin)
+CLI:t var länkat mot PROD (T34) → `supabase functions deploy` default-träffar prod. I stället för att förlita sig på
+att operatören minns rätt flagga: explicit `--project-ref <staging>` + STOPPA-grind som LÄSER TILLBAKA målrefen och
+asserterar == staging ≠ prod-ankaret FÖRE körning. Regel: när en irreversibel/outward-facing operation har en
+tvetydig/farlig default, gör den säkra vägen (a) explicit i kommandot OCH (b) maskin-verifierad (läs tillbaka målet,
+jämför mot disk-ankare) — flytta grinden från mänskligt minnessteg till disk-verifierad assertion. Outward-facing-
+grind = "gör handlingen oåterkalleligt säker", ej "undvik den". (Durabla CLI-re-länk-fixen kvarstår som T34.)
