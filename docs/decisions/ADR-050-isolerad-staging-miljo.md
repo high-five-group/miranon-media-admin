@@ -5,6 +5,8 @@
 - **Fas:** Session 19 — staging-miljö (designsession, ingen byggfas-status-ändring)
 - **Relaterad:** [ADR-048](ADR-048-synk-horisont-arkiv-atkomst.md) (synk-horisont), [ADR-049](ADR-049-fas-5-5-betalfalt-val.md) (server-kontrakt `mark-registration-fee-paid`), Fas 5.5, L110
 
+> **Korrigering (Session 36, 2026-06-26):** Tråd T2 (Öppna trådar nedan) antog att staging-kopian skulle få NYA tabell-/fält-ID:n (Code skulle "läsa nya bas-/tabell-ID:n empiriskt"). Live-verifiering (Session 36 pass 2) visar i stället IDENTISKA tabell- och fält-ID:n staging↔prod (Segment-tabellen = `tbll2N6JKCj4u6y9o` på BÅDA baser) — duplicerings-metoden bevarade ID:na. Sak-beslutet (separat staging-miljö med distinkt datalager) STÅR oförändrat: `list_records` på staging är distinkt från prod, och `baseId`-routningen är empiriskt bevisad även för WRITE (`create_field` landade staging-only, prod orört). Praktisk konsekvens: adressera dessa baser per id (`describe_table`-by-namn är opålitlig mot dem). Se Session 36 + [`data-model.md`](../reference/data-model.md) § Segment — write-fält (fyndet registrerat där). Beslutstexten nedan bevaras oförändrad (immutabilitet).
+
 ## Kontext
 
 Session 18 pausade Fas 5.5 när deploy-verifieringen visade att orgen kör EN
