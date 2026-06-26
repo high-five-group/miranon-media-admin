@@ -80,7 +80,7 @@ app8uGPrVCVOm6LfD
 | Kontaktlogg (rådata) | `tblzg4DsRzCCXH8Vy` | 20 | |
 | Error-log | `tblnnmWswnRp9gFws` | 4 | Skrivs av A2 vid dubblett-fall. |
 | Bulkutskick | `tblWarzSse85NI1Zx` | 12 | |
-| Segment | `tbll2N6JKCj4u6y9o` | 12 | |
+| Segment | `tbll2N6JKCj4u6y9o` | 13 | App-skrivet fält `App-segmentregel` tillagt Fas 6g (se Schema cheat sheet § Segment — write-fält). |
 | Utskickslogg | `tblIesjbuSWNp6oxK` | 9 | |
 | Email Opens | `tblXFJyGRahQDhhqc` | 2 | |
 | Path to Conversion | `tblor5TK8HeryGXIj` | 1 | **Tom strukturell behållare** — bara `Name` (singleLineText). |
@@ -266,6 +266,18 @@ För Edge Functions, scripts, manuella PATCH-ops. Listar fält som ofta skrivs t
 | Ej godkänd för mailutskick | `fldbQB9BGJgB1HCg7` | checkbox | Filterflagga för bulkutskick |
 | Inbjuden till community | `flduQ4Luh7XVp61R0` | checkbox | – |
 | Skapat konto i community | `fldJzysWhaMGUo16B` | checkbox | – |
+
+#### Segment — write-fält
+
+App-skrivet fält (Fas 6g L3, [ADR-065](../decisions/ADR-065-segment-regel-persistens.md)). Schema-tillägg landat på staging + prod 2026-06-26 (Session 36 pass 2), additivt — inget befintligt fält ändrat. Segment-tabellen adresseras per NAMN (ADR-050 bas-portabilitet); fält-ID:t nedan är prod (`app8uGPrVCVOm6LfD`, den bas EF:erna kör mot).
+
+| Syfte | Fält-ID (prod) | Typ | Skrivbar | Kommentar |
+|---|---|---|---|---|
+| Appens strukturerade segment-regel | `fldhN1wH6sXODdfb7` | multilineText | ✅ | Typad JSON `{include[], exclude[]}` (formen från `_shared/segment-membership.ts`); skrivs av app-write-vägen (senare pass). Migrations-mål för de 9 legacy-formelsträng-segmenten. Roll/format/migrations-väg: se [ADR-065](../decisions/ADR-065-segment-regel-persistens.md) (+ ADR-062 beslut 7 + T16). |
+
+**Make-legacy-vägen (ORÖRD):** `Segmentformel` (`fld3jcCTY2FQ4vUTk`, Make-läst `filterByFormula`), `Antal i segment` (`fldn02khOce58O3oQ`, Make skriver), `Beräkna antal i segment` (`fldfng79bMW42UOiV`, Make-webhook-knapp) tillhör den gamla Make-vägen och lämnas orörda tills migrationen (ADR-065). App-radens form: `Namn på segment` ← namn; `App-segmentregel` ← `JSON.stringify(rule)`; `Segmentdefinition` ← klartext-spegling.
+
+**ID-topologi staging↔prod (verifierat live 2026-06-26, Session 36 pass 2):** staging-basen (`apphjj8Q7lkXCMsL4`) och prod (`app8uGPrVCVOm6LfD`) delar IDENTISKA tabell- och fält-ID:n för de DUPLICERADE fälten (Segment-tabell-id `tbll2N6JKCj4u6y9o` på BÅDA) — motsäger [ADR-050](../decisions/ADR-050-isolerad-staging-miljo.md) T2:s antagande om "nya tabell-ID:n" på kopian. Data-isolationen håller ändå: `list_records` på staging-Segment = tomt, prod bär de 9 legacy-raderna, och `create_field` är empiriskt baseId-respekterande (staging-skrivning landade staging-only, prod orört — verifierat denna landning). NYA fält får dock DISTINKTA ID:n per bas: `App-segmentregel` = prod `fldhN1wH6sXODdfb7` ≠ staging `flduG7pKaHb9tTzBY`. `describe_table`-by-namn är opålitlig mot dessa baser → adressera Segment per id. **TODO:** en additiv [ADR-050](../decisions/ADR-050-isolerad-staging-miljo.md)-korrigerings-not (README § Korrigering vs supersedering) bör landas separat — denna data-model-not registrerar fyndet durabelt tills dess.
 
 Källa för Schema cheat sheet: `02-live-state.md` §3 + `01-extraction.md` §A.4 + `01-extraction.md` §I (Edge Function-kontrakt).
 
