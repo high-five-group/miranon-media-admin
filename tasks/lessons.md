@@ -2627,3 +2627,27 @@ asserterar == staging ≠ prod-ankaret FÖRE körning. Regel: när en irreversib
 tvetydig/farlig default, gör den säkra vägen (a) explicit i kommandot OCH (b) maskin-verifierad (läs tillbaka målet,
 jämför mot disk-ankare) — flytta grinden från mänskligt minnessteg till disk-verifierad assertion. Outward-facing-
 grind = "gör handlingen oåterkalleligt säker", ej "undvik den". (Durabla CLI-re-länk-fixen kvarstår som T34.)
+
+## 2026-06-26 — Session 36 (Fas 6g L3 — segment-regel-persistens + write-vertikal)
+
+### L197 [UNIVERSAL] — CI-conclusion hör till BÅDE orienterings-passet och avsluts-verifieringen; git-tillstånd (HEAD/clean/branch) räcker inte
+
+Datum: 2026-06-26 | Källa: Session 36 (orientering missade rött main; Session 35 stängd ovanpå rött CI, klass: arbetsflöde / orientering + avslut)
+Session 36:s orienterings-pass verifierade HEAD + ren tree + gren men INTE CI-conclusion. main hade varit rött sedan
+Session 35 (4 markdownlint-fel — MD028/MD029/MD032 — fällda av docs-jobbet) och Session 35 stängdes (`lifecycle: closed`)
+ovanpå rött CI; skulden ärvdes TYST till Session 36 och ytade först när första dok-commit skulle landa grönt. git-
+tillstånd (commit/tree/branch) och CI-tillstånd (conclusion) är ORTOGONALA axlar — den ena läst grön implicerar inte den
+andra. Regel: ett orienterings-pass inkluderar `gh run`-conclusion ("är main grönt NU?"), inte bara HEAD/clean/branch; och
+session-end do-confirm verifierar CI grön mot faktisk `gh run` FÖRE lifecycle-flipp. Annars kan en session stängas ovanpå
+rött CI och blockera nästa sessions första landning.
+
+### L198 [UNIVERSAL] — En obeprövad write-kodväg ärver INTE en bevisad läs-vägs isolations-/routnings-egenskap; bevisa write-isolation empiriskt + reverserbart FÖRE prod-mutation
+
+Datum: 2026-06-26 | Källa: Session 36 (pass 2 — staging/prod delade ID:n + create_field-routning, klass: verifiering / prod-säkerhet)
+Session 36 pass 2: staging- och prod-baserna delar IDENTISKA tabell/fält-ID:n (falsifierar ADR-050 T2:s "nya ID:n"-
+antagande) + `describe_table`-by-namn quirky i Airtable-MCP:n. Läs-routningen (list/describe/list_records) respekterade
+`baseId` empiriskt — MEN `create_field`:s write-routning är en DISTINKT kodväg utan eget bevis, så en "staging"-skrivning
+kunde ha landat i prod. Lösning: skapa fältet riktat mot staging, verifiera OMEDELBART på BÅDA baser att det landade
+staging-only (auto-reversering vid fel-landning) FÖRE prod-touch. Regel: när en prod-närliggande operation går via en
+kodväg vars isolations-/routnings-egenskap inte är empiriskt bevisad — även om en NÄRLIGGANDE väg (läs) är det — bevisa
+DEN vägens egenskap reverserbart mot live FÖRE prod-mutation. Read-bevis täcker inte write.
