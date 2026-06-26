@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-25
+updated: 2026-06-26
 review_by: 2026-11-15
 status: stable
 ---
@@ -107,6 +107,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-062](ADR-062-segment-yta-berakn-medlemskap-fran-kalla.md) | Segment-yta — beräknat medlemskap från källan (Deltaganden), dynamisk regel med snapshot; ersätter 6e-L3 "Skicka mail"-inramningen med ny Fas 6g; medlemskap beräknas från källan ej Personer-rollupsen (stänger Luckor A/B/C by construction); strukturerad include/exclude-definition över taxonomin (kurs × modalitet), on-demand-eval, frys/export för SKOOL; Väg A (lappa rollups) + streaming-motor avvisade; Make deprecierbar, 9 legacy-segment migreras gradvis | Accepted | 6g |
 | [ADR-063](ADR-063-airtable-bas-som-forstklassig-leverabel.md) | Airtable-basen som förstklassig leverabel — maxas till 11/10 / branschledarmässig / mall-redo, ej ersätts; resolution sker I BASEN (städa/fixa/optimera), inte lappa eller designa bort i efterträdare; defekt-registret (data-model §Kända fällor + T16 + app↔Airtable-interaktions-registret) = KRAVSPEC för bas-maximeringen; namngiven post-Fas-6-maximerings-milstolpe; Supabase-migration = separat SENARE spår, ej ersättning; öppen rivning av ADR-062:s "route-around"-felpremiss (Chats premiss, korrigerad) | Accepted | Projekt-grundande |
 | [ADR-064](ADR-064-segment-taxonomi-fran-domanen-strikt-narvaro.md) | Segment-taxonomin härleds från event-domänen; medlemskap förblir strikt närvaro; basens ofullständighet är ärlig signal — förfinar ADR-062 beslut 3 (idealiserat "6×2" → disk-/live-belagd sju-par-taxonomi över sex kursnamn); medlemskaps-filtret förblir strikt `Närvaropoäng=1` (golvet lättas ej); include/exclude-rymden härleds från event-domänen (självväxande, ej hårdkodad); tomma segment är ärlig utdata som DRIVER bas-arbetet; oavstämda Föreläsningar + "Resor i medvetandet"-namnkollision registreras (ADR-063/T16), böjs ej in i kontraktet | Accepted | 6g |
+| [ADR-065](ADR-065-segment-regel-persistens.md) | Segment-regel-persistens — en sparad app-segment-regel lagras som TYPAD JSON (`{include, exclude}` från segment-membership.ts) i ett NYTT dedikerat fält `App-segmentregel` (multilineText) i den BEFINTLIGA Segment-tabellen; namnet skiljer appens regel från `Segmentformel` (Make-läst) + `Segmentdefinition` (klartext); fältet är migrations-mål för de 9 legacy-formelsträng-segmenten (Make deprecieras post-Fas-6, pekar ADR-062 beslut 7 + T16); separat tabell / återanvänt Segmentformel / Segmentdefinition / Supabase-nu avvisade; speglar Supabase `definition jsonb`; schema-tillägg additivt staging→prod (senare pass) | Accepted | 6g |
 
 ## Relaterade dokument
 
