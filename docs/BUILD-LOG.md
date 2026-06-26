@@ -1693,6 +1693,32 @@ Byggde Fas 6g:s två första lager — segment-beräknings-motorn (L1) + segment
 
 ---
 
+## Session 36 — Fas 6g L3 (Spara segment — repots första 6g-WRITE) LEVERERAD (2026-06-26)
+
+Levererade Fas 6g L3 (spara en segment-regel som en rad i Segment-tabellen + lista över sparade segment) — repots FÖRSTA WRITE i 6g. **SESSIONSGRÄNS, ej fas-avslut**: L4 (frys/export) + 6h (mail) återstår → ingen arkivering, ingen CHANGELOG-release, ingen phase-end-verify, ingen hub-lyft.
+
+**Planerat vs faktiskt:** planerat = Fas 6g L3. Faktiskt = (oplanerad) CI-grön-återställning + ADR-065 + schema-mutation (staging+prod) + write-vertikal (2 lager). **Avvikelse uppåt (2 st):** (1) en oplanerad **enabling-detour** — main hade varit rött sedan Session 35 (4 markdownlint-fel fällda av docs-jobbet; sessionen stängd ovanpå rött), åtgärdat före L3 (ADR-053-triage); (2) en **ID-topologi-upptäckt** — staging+prod delar identiska tabell/fält-ID:n, vilket falsifierar ADR-050 T2:s "nya ID:n"-antagande (additiv erratum landad; sak-beslutet står).
+
+**Landningar (commit-hashar + CI gröna):**
+
+- **Landning 0 — CI-grön-återställning** (`61fdc4e`) — Session 35-skuld: 4 markdownlint-fel (MD028 ADR-062 errata-separator / MD029 data-model fällor 34-35 semantiska ID:n → disable / MD032 segment-arkitektur). ADR-062:s besluts-text orörd (immutabilitet).
+- **Dok-födelse** (`4a47032`) — Session 36-doket fött (create-session-doc), `lifecycle: active`.
+- **L0 ADR-065** (`771297b`) — segment-regel-persistens: typad JSON i nytt `App-segmentregel`-fält i befintliga Segment-tabellen; fältnamn LÅST (Chat-väg-beslut efter STOPPA); migrations-mål för de 9 legacy-segmenten; PEKAR ADR-062 b7 + T16. Count 64→65 lockstep (rot-README + decisions/README).
+- **Schema-mutation** (`2ed356d`) — `App-segmentregel` (multilineText) tillagt på STAGING först, sedan PROD, additivt. **Write-isolation empiriskt bevisad** (`create_field` landade staging-only, prod orört) FÖRE prod-touch, efter STOPPA på ID-topologi-anomalin. data-model § Segment — write-fält + ID-topologi-not. INGEN record-write.
+- **Write-vertikal Lager 1** (`227c6a4`) — `save-segment`-EF (fields SERVER-SIDE ur typad input, allowlist-SSOT-grind, create-registration-mallen) + `get-segments`-EF (global läs-lista; FILTRERAR legacy-rader utan `App-segmentregel`, L193) + field-allowlists-post (`save-segment`; Make-fält MEDVETET utanför) + `SavedSegmentSchema` + api-staging-test (allow/deny/anon/get-smoke, sentinel ADR-060). Deployad STAGING (`--use-api`, `--project-ref pqtshyierkdgwdnxuirz`); smoke-verifierad live.
+- **Write-vertikal Lager 2** (`a4ef566`) — adapter `saveSegment`/`listSegments` (Zod-parse vid datagräns) + Supabase-stub + `queryKeys.segment.saved` + `SavedSegmentsList` (egen query, legacy server-filtrerad, a11y) + SegmentBuilder spara-UI (namn-Input + spara-Button + MessageBox + aria-live; definition byggd ur regeln; onSuccess invaliderar+rensar) + e2e spara-happy-path (stateful mock, axe oförändrat). "Session 36"-mislabel städad → "Session 35 pre-pass".
+- **Securing-landning** (denna) — ADR-050 ID-topologi-erratum + lessons L197–L198 + Del 2 + denna BUILD-LOG-post + todo.
+
+**Lessons:** L197 `[UNIVERSAL]` (CI-conclusion hör till BÅDE orientering och avslut; git-tillstånd räcker ej), L198 `[UNIVERSAL]` (obeprövad write-kodväg ärver ej en bevisad läs-vägs isolation — bevisa write-isolation reverserbart FÖRE prod-mutation). **Hub-lyft pending** (efter Fas 6).
+
+**Verifiering:** Lager 1 api-staging (save-segment allow/deny/anon + get-segments smoke mot deployad staging-EF) grön; Lager 2 e2e (spara-happy-path + befintliga L2-tester + axe 0) grön; alla CI-grindar gröna (typecheck, biome, check-frontmatter/adr-count). Skrivbarhets-grind (STEG 0) live-godkänd för de tre måls-fälten. ADR-count 64→65 (ADR-065). Hashar: `61fdc4e`, `4a47032`, `771297b`, `2ed356d`, `227c6a4`, `a4ef566` (+ securing).
+
+**STATUS — deploy-tillstånd:** 6g-EF:erna (`compute-segment`, `save-segment`, `get-segments`) är **STAGING-deployade, EJ prod**. Prod-deploy är en medveten SEPARAT handling (ej L3-scope) — Lotta kan ej spara segment i prod-appen förrän dess. Schema-fältet `App-segmentregel` finns dock på BÅDA baser (staging+prod).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-26-session-36.md`](../tasks/sessions/2026-06-26-session-36.md) (Del 1 scope + Del 2 landningar). Nästa: NY session → Fas 6g L4 (frys/export — SKOOL-lista, ADR-062 beslut 4). `lifecycle: active` tills do-confirm-passet.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
