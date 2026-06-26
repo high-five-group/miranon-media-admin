@@ -1670,6 +1670,29 @@ Egen session (ADR-051): tog upp + stängde T30-klustret (tre symptom T12/T28/T29
 
 ---
 
+## Session 35 — Fas 6g L1+L2 (segment-motor + byggar-yta) LEVERERAD (2026-06-25)
+
+Byggde Fas 6g:s två första lager — segment-beräknings-motorn (L1) + segment-byggar-ytan (L2) — efter en forensisk pre-pass som låste kontraktet mot LIVE-data. **SESSIONSGRÄNS, ej fas-avslut**: L3 (spara) + L4 (frys/export) + 6h (mail) återstår → ingen arkivering, ingen CHANGELOG-release, ingen phase-end-verify, ingen hub-lyft.
+
+**Planerat vs faktiskt:** planerat = Fas 6g L1+L2. Faktiskt = pre-pass + ADR-064 + defekt-register + L1 (motor+EF+deploy+integration) + L2 (vy+primitiv+adapter+a11y), alla verifierade. **Avvikelse uppåt:** pre-passet ytade en taxonomi-förfining (ADR-064) som inte var planerad men korrekt — närvaro-snapshoten (3 par) ⊊ event-domänens taxonomi (sju par / sex kursnamn); tre Chat-premisser falsifierade mot live.
+
+**Landningar (commit-hashar + CI gröna):**
+
+- **ADR-064 + ADR-062-förfining + index** (`7d0e895`) — taxonomi från event-domänen (självväxande), medlemskap strikt `Närvaropoäng=1`, basens ofullständighet = ärlig signal. Count-grind grön före commit (L190).
+- **Defekt-register** (`10bf75a`) — data-model §Kända fällor 34 (16 oavstämda Föreläsnings-Deltaganden) + 35 (naket "Resor i medvetandet"-namnkollision) som kravspec för post-Fas-6-bas-maximering (ADR-063); T16-vidgning.
+- **L1 beräknings-motorn** (`6f94583`) — `compute-segment`-EF (repots första POST-läs-EF) + ren `computeMembership` i `_shared` (noll Airtable-import) + svars-Zod + 24 enhetstester. Grupperingsfält disk-verifierat (0 tomma / 1012). Consent buren, ej filtrerad.
+- **L1 deploy + integration** (`704cc56`) — `compute-segment` deployad till STAGING via explicit `--project-ref` (prod-pekande CLI-länk neutraliserad, T34); api-staging HIT/MISS/AUTH grön. Assertion-fix: email-krav striktare än kontraktets nullbarhet (Chat-fel, Code-fångat live).
+- **L2 byggar-ytan** (`7afc7e9`) — RadioGroup-primitiv + `deriveTaxonomy` (domän-härledd) + request-Zod + Status.ts `Modalitet` + `computeSegment`-adapter + vy/route/nav + e2e a11y (AxeBuilder 0). JOIN-nyckel-cross-check teckenexakt (STOPPA-grind passerad).
+- **Securing-landning** (denna) — Del 2 + denna BUILD-LOG-post + lessons L193–L196 + `docs/reference/segment-arkitektur.md` (governing) + todo.
+
+**Lessons:** L193 `[UNIVERSAL]` (assertera mot kontraktet, ej fixturens incidentella rikedom), L194 `[UNIVERSAL]` (join-nyckel-alignment som STOPPA-grind, ej runtime-hopp), L195 `[UNIVERSAL]` (lossy källa tvingar fram bättre arkitektur — läs källan, lappa ej projektionen), L196 `[UNIVERSAL]` (tvetydig outward-facing-default → explicit mål + maskin-grind, ej operatörens minne). **Hub-lyft pending** (efter Fas 6).
+
+**Verifiering:** L1 24 enhetstester + api-staging HIT/MISS/AUTH (mot deployad staging-EF); L2 9 taxonomi-enhetstester + e2e a11y AxeBuilder 0 violations; alla CI-grindar gröna (typecheck, biome, check-frontmatter/lifecycle/adr-count); JOIN-nyckel teckenexakt (STEG-0 STOPPA-grind). ADR-count 64 oförändrad denna fas. Hashar: `7d0e895`, `10bf75a`, `6f94583`, `704cc56`, `7afc7e9` (+ securing-landningen).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-25-session-35.md`](../tasks/sessions/2026-06-25-session-35.md) (Del 1 scope + Del 2 landningar). Nästa: NY session → Fas 6g L3 (Spara segment). `lifecycle: active` tills do-confirm-passet.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
