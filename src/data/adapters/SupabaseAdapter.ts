@@ -4,7 +4,14 @@ import type { Event } from '../../domain/models/Event';
 import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
-import type { Intresserad, PersonDetail, SegmentResult, SegmentRule } from '../../domain/schemas';
+import type {
+  Intresserad,
+  PersonDetail,
+  SavedSegment,
+  SaveSegmentInput,
+  SegmentResult,
+  SegmentRule,
+} from '../../domain/schemas';
 import type {
   AttendanceFilters,
   MailLogFilters,
@@ -86,6 +93,14 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async computeSegment(_rule: SegmentRule): Promise<SegmentResult> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async saveSegment(_input: SaveSegmentInput): Promise<SavedSegment> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async listSegments(): Promise<SavedSegment[]> {
     throw new Error(NOT_IMPLEMENTED);
   }
 }

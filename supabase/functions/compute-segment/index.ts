@@ -22,7 +22,7 @@ import {
 const DELTAGANDEN_TABLE = 'Deltaganden';
 const PERSONER_TABLE = 'Personer';
 
-// Källfråga-fält — STEG-0 live-bekräftade NAMN (Session 36). 'Person (länk)'
+// Källfråga-fält — STEG-0 live-bekräftade NAMN (Session 35 pre-pass). 'Person (länk)'
 // (fldiU06kbTxSafkm4): 0 tomma bland Närvaropoäng=1 (verifierat live), samma
 // gruppfält som get-attendance. 'Kursnamn (lookup)' (fldJyjymEoo514AgN) +
 // 'Event typ' (fldiDF6PWfYa8afMr, lookup→singleSelect {Utbildning, Föreläsning}).

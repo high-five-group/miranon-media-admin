@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, type Route, test } from '@playwright/test';
 
 /**
  * Fas 6g L2 — Segment-byggar-yta (/mer/segment). Bygger include/exclude-regel
@@ -23,6 +23,8 @@ import { expect, test } from '@playwright/test';
 
 const GET_EVENTS = /\/functions\/v1\/get-events/;
 const COMPUTE_SEGMENT = /\/functions\/v1\/compute-segment/;
+const GET_SEGMENTS = /\/functions\/v1\/get-segments/;
+const SAVE_SEGMENT = /\/functions\/v1\/save-segment/;
 
 type EventRow = Record<string, unknown>;
 
@@ -114,6 +116,20 @@ function choosePar(page: any, groupName: string, choice: 'Inkludera' | 'Exkluder
 }
 
 test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
+  // SavedSegmentsList (L3) hämtar get-segments vid varje /mer/segment-load → mocka
+  // default tom så de count-fokuserade L2-testerna förblir deterministiska. Spara-testet
+  // registrerar sin egen (stateful) get-segments-route i test-kroppen (vinner: senast
+  // registrerad matchas först).
+  test.beforeEach(async ({ page }) => {
+    await page.route(GET_SEGMENTS, async (route: Route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ segments: [] }),
+      });
+    });
+  });
+
   test('taxonomi renderas (inkl. fälla-35-etikett distinkt) + fokus → <h1>', async ({ page }) => {
     await mockEvents(page, TAXONOMY_EVENTS);
     await page.goto('/mer/segment');
@@ -206,5 +222,50 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
       .analyze();
 
     expect(results.violations).toEqual([]);
+  });
+
+  test('spara (L3): bygg regel → namnge → spara → syns i sparade-listan', async ({ page }) => {
+    await mockEvents(page, TAXONOMY_EVENTS);
+
+    const savedSeg = {
+      id: 'recSAVED1',
+      namn: 'FS-utbildningsdeltagare',
+      rule: { include: [{ kurs: 'Fjärrskådning', modalitet: 'Utbildning' }], exclude: [] },
+      definition: 'Med: deltog i Fjärrskådning (utbildning).',
+    };
+    // Stateful get-segments: tomt tills save POST observerats, sedan listan med det sparade
+    // (speglar invalidate→refetch-flödet). Registrerad EFTER beforeEach → vinner.
+    let saved = false;
+    await page.route(GET_SEGMENTS, async (route: Route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ segments: saved ? [savedSeg] : [] }),
+      });
+    });
+    await page.route(SAVE_SEGMENT, async (route: Route) => {
+      saved = true;
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({ segment: savedSeg, record: { id: savedSeg.id, fields: {} } }),
+      });
+    });
+
+    await page.goto('/mer/segment');
+    await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
+
+    // Tom lista initialt.
+    await expect(page.getByText('Inga sparade segment än.')).toBeVisible();
+
+    // Bygg regel → namnge → spara.
+    await choosePar(page, 'Fjärrskådning (utbildning)', 'Inkludera');
+    await page.getByRole('textbox', { name: 'Namn på segmentet' }).fill('FS-utbildningsdeltagare');
+    await page.getByRole('button', { name: 'Spara segment' }).click();
+
+    // Bekräftelse + segmentet dyker upp i listan (query invalideras → refetch).
+    await expect(page.getByText('Segmentet sparades.')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Sparade segment' })).toBeVisible();
+    await expect(page.getByText('FS-utbildningsdeltagare')).toBeVisible();
   });
 });

@@ -1,14 +1,16 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/primitives/Button';
+import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
-import type { Par, SegmentRule } from '@/domain/schemas';
+import type { Par, SaveSegmentInput, SegmentRule } from '@/domain/schemas';
 import { deriveTaxonomy, labelForPar, parKey } from '@/lib/segment-taxonomy';
 import { queryKeys } from '@/queries/keys';
+import { SavedSegmentsList } from './SavedSegmentsList';
 
 type Choice = 'include' | 'exclude' | 'ignorera';
 
@@ -74,8 +76,21 @@ export function SegmentBuilder() {
   });
   const [countedSig, setCountedSig] = useState<string | null>(null);
 
+  // Spara segment (L3): namn-input + mutation mot save-segment. onSuccess invaliderar
+  // den sparade-listans query (SavedSegmentsList) → listan refetchar, och namnet rensas.
+  const queryClient = useQueryClient();
+  const [namn, setNamn] = useState('');
+  const saveMutation = useMutation({
+    mutationFn: (input: SaveSegmentInput) => dataSource.saveSegment(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.segment.saved });
+      setNamn('');
+    },
+  });
+
   const hasInclude = rule.include.length > 0;
   const isStale = countedSig !== null && countedSig !== ruleSignature(rule);
+  const canSave = hasInclude && namn.trim().length > 0;
 
   // Fokus → <h1> + document.title när events anlänt (en gång per laddning).
   useEffect(() => {
@@ -89,6 +104,21 @@ export function SegmentBuilder() {
   function handleCount() {
     const sig = ruleSignature(rule);
     mutation.mutate(rule, { onSuccess: () => setCountedSig(sig) });
+  }
+
+  // Klartext-spegling (svenska) av regeln — samma form som visas i "Det här segmentet".
+  // Sparas i Segmentdefinition så både app-listan och Make-vyn är Gunilla-läsbara.
+  function buildDefinition(): string {
+    const inc = rule.include.map(labelForPar).join(' ELLER ');
+    const exc = rule.exclude.map(labelForPar).join(' ELLER ');
+    return rule.exclude.length > 0
+      ? `Med: deltog i ${inc}. Utan: deltog i ${exc}.`
+      : `Med: deltog i ${inc}.`;
+  }
+
+  function handleSave() {
+    if (!canSave) return;
+    saveMutation.mutate({ namn: namn.trim(), rule, definition: buildDefinition() });
   }
 
   const backLink = (
@@ -214,6 +244,49 @@ export function SegmentBuilder() {
           )}
         </div>
       </div>
+
+      {/* Spara segment (L3, ADR-065) — namn + spara-knapp; bygger ovanpå den
+          härledda regeln. Skriver via save-segment-EF (allowlist-grindad). */}
+      <div className="flex flex-col gap-2 border-text-muted/20 border-t pt-4">
+        <h2 className="font-medium text-lg">Spara det här segmentet</h2>
+        <Input
+          label="Namn på segmentet"
+          value={namn}
+          onChange={setNamn}
+          placeholder="t.ex. Fjärrskådning-deltagare"
+          isRequired
+          isDisabled={saveMutation.isPending}
+        />
+        <Button
+          intent="primary"
+          onPress={handleSave}
+          isDisabled={!canSave || saveMutation.isPending}
+        >
+          Spara segment
+        </Button>
+        {!hasInclude && (
+          <p className="text-small text-text-muted">Välj minst en kurs att inkludera först.</p>
+        )}
+
+        {/* Spara-utfall — annonseras för skärmläsare. */}
+        <div aria-live="polite" aria-busy={saveMutation.isPending}>
+          {saveMutation.isPending && <p className="text-small text-text-muted">Sparar…</p>}
+
+          {saveMutation.isError && !saveMutation.isPending && (
+            <MessageBox intent="error" title="Kunde inte spara segmentet">
+              {saveMutation.error instanceof Error ? saveMutation.error.message : 'Okänt fel.'}
+            </MessageBox>
+          )}
+
+          {saveMutation.isSuccess && !saveMutation.isPending && (
+            <MessageBox intent="success" title="Sparat">
+              Segmentet sparades.
+            </MessageBox>
+          )}
+        </div>
+      </div>
+
+      <SavedSegmentsList />
     </section>
   );
 }

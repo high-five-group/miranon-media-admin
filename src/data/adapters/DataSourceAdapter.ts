@@ -4,7 +4,14 @@ import type { Event } from '../../domain/models/Event';
 import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
-import type { Intresserad, PersonDetail, SegmentResult, SegmentRule } from '../../domain/schemas';
+import type {
+  Intresserad,
+  PersonDetail,
+  SavedSegment,
+  SaveSegmentInput,
+  SegmentResult,
+  SegmentRule,
+} from '../../domain/schemas';
 import type {
   AttendanceFilters,
   MailLogFilters,
@@ -90,4 +97,13 @@ export interface DataSourceAdapter {
 
   /** Beräkna segment-medlemskap från källan (Deltaganden, strikt Närvaropoäng=1) givet en regel */
   computeSegment(rule: SegmentRule): Promise<SegmentResult>;
+
+  /** Spara en namngiven segment-regel som en rad i Segment-tabellen (Fas 6g L3, ADR-065) */
+  saveSegment(input: SaveSegmentInput): Promise<SavedSegment>;
+
+  /**
+   * Lista app-sparade segment (Fas 6g L3). Legacy Make-rader utan App-segmentregel
+   * exkluderas server-side (get-segments) — varje SavedSegment bär en typad regel.
+   */
+  listSegments(): Promise<SavedSegment[]>;
 }

@@ -58,6 +58,13 @@ export const queryKeys = {
     // gren), inga klient-filters. Speglar waitlist.all-formen: parameterlös global lista.
     all: ['maillog'] as const,
   },
+  segment: {
+    // App-sparade segment (Fas 6g L3, ADR-065): GLOBAL läs-lista (get-segments). STABIL
+    // nyckel — `listSegments()` hämtar alla app-sparade segment (legacy Make-rader
+    // exkluderas server-side), inga klient-filters. Speglar waitlist.all-formen.
+    // `saveSegment`-mutationen invaliderar denna nyckel → listan refetchar.
+    saved: ['segment', 'saved'] as const,
+  },
   dashboard: {
     // Hem-aggregering (Fas 6d). EGNA nycklar, MEDVETET skilda från events.list /
     // registrations.byEvent: Hem-vyns cards hämtar GLOBALA listor (alla event,

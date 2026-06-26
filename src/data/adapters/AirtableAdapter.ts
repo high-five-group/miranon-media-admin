@@ -15,6 +15,9 @@ import {
   PersonDetailSchema,
   PersonSchema,
   RegistrationSchema,
+  type SavedSegment,
+  SavedSegmentSchema,
+  type SaveSegmentInput,
   type SegmentResult,
   SegmentResultSchema,
   type SegmentRule,
@@ -256,5 +259,31 @@ export class AirtableAdapter implements DataSourceAdapter {
   async computeSegment(rule: SegmentRule): Promise<SegmentResult> {
     const data = await postEdgeFunction<unknown>('compute-segment', rule);
     return SegmentResultSchema.parse(data);
+  }
+
+  /**
+   * Spara en namngiven segment-regel (Fas 6g L3, ADR-065). POST mot save-segment-EF,
+   * som bygger write-shapen server-side (tre app-skrivbara Segment-fält) ur typad
+   * input. EF-svaret bär `segment` (ren domän-shape) — `.parse()` validerar vid
+   * datagränsen (ADR-026); det parallella råa `record`-fältet är skriv-bevis för
+   * conformance och konsumeras inte här.
+   */
+  async saveSegment(input: SaveSegmentInput): Promise<SavedSegment> {
+    const data = await postEdgeFunction<{ segment: unknown }>('save-segment', {
+      namn: input.namn,
+      rule: input.rule,
+      definition: input.definition,
+    });
+    return SavedSegmentSchema.parse(data.segment);
+  }
+
+  /**
+   * Lista app-sparade segment (Fas 6g L3). GLOBAL läs-lista (get-segments) — legacy
+   * Make-rader utan App-segmentregel exkluderas server-side, så varje rad bär en
+   * typad regel. `.parse()` validerar vid datagränsen (ADR-026; z.array — en LISTA).
+   */
+  async listSegments(): Promise<SavedSegment[]> {
+    const data = await callEdgeFunction<{ segments: unknown }>('get-segments');
+    return z.array(SavedSegmentSchema).parse(data.segments);
   }
 }

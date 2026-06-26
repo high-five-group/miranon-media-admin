@@ -5,7 +5,7 @@ import { type Modalitet, ModalitetSchema, type Par } from '../domain/schemas';
 // Eventplanering), inte från närvaro-snapshoten och inte hårdkodad (ADR-064
 // beslut 2) — rymden växer självmant när basen får nya event/kurser. JOIN-
 // nyckeln (kurs = Event(source)) är teckenexakt = compute-segments Kursnamn
-// (lookup) (live-cross-checkad Session 36).
+// (lookup) (live-cross-checkad Session 35 pre-pass).
 
 /** Stabil identitetsnyckel för ett par (kurs × modalitet) — för urvals-state. */
 export function parKey(par: Par): string {
