@@ -22,9 +22,15 @@ export {
 } from './PersonDetail.schema';
 export { RegistrationSchema } from './Registration.schema';
 export {
+  type Modalitet,
+  ModalitetSchema,
+  type Par,
+  ParSchema,
   type SegmentMember,
   SegmentMemberSchema,
   type SegmentResult,
   SegmentResultSchema,
+  type SegmentRule,
+  SegmentRuleSchema,
 } from './Segment.schema';
 export { WaitlistEntrySchema } from './WaitlistEntry.schema';

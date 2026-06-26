@@ -29,9 +29,13 @@ function MerPage() {
               Maillogg
             </Link>
           </li>
+          <li>
+            <Link to="/mer/segment" className="underline">
+              Bygg segment
+            </Link>
+          </li>
         </ul>
       </nav>
-      <p className="text-small text-text-muted">Fler vyer byggs i Fas 6e.</p>
     </section>
   );
 }

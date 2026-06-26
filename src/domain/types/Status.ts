@@ -64,3 +64,14 @@ export const AttendanceStatus = {
 } as const;
 
 export type AttendanceStatusValue = (typeof AttendanceStatus)[keyof typeof AttendanceStatus];
+
+// Modalitet = Eventplanering "Typ" (singleSelect) = segment-taxonomins andra axel
+// (kurs × modalitet, ADR-064). MÅSTE spegla `_shared/segment-membership.ts`
+// Modalitet-typen exakt (samma två värden) — runtime-gränsen Deno↔Vite tvingar
+// spegling; ModalitetSchema (Segment.schema.ts, z.enum) är alignment-ankaret.
+export const Modalitet = {
+  UTBILDNING: 'Utbildning',
+  FORELASNING: 'Föreläsning',
+} as const;
+
+export type ModalitetValue = (typeof Modalitet)[keyof typeof Modalitet];

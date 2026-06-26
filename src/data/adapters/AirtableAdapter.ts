@@ -15,6 +15,9 @@ import {
   PersonDetailSchema,
   PersonSchema,
   RegistrationSchema,
+  type SegmentResult,
+  SegmentResultSchema,
+  type SegmentRule,
   WaitlistEntrySchema,
 } from '../../domain/schemas';
 import type {
@@ -242,5 +245,16 @@ export class AirtableAdapter implements DataSourceAdapter {
   async fetchMailLog(_filters?: MailLogFilters): Promise<MailLogEntry[]> {
     const data = await callEdgeFunction<{ maillog: unknown }>('get-mail-log');
     return z.array(MailLogEntrySchema).parse(data.maillog);
+  }
+
+  /**
+   * Beräkna segment-medlemskap från KÄLLAN (Deltaganden, strikt Närvaropoäng=1)
+   * givet en regel (Fas 6g L2). POST mot compute-segment-EF (regeln ryms ej i
+   * query-params) via postEdgeFunction. `.parse()` validerar svaret vid
+   * datagränsen (ADR-026). Consent (ejGodkandMail) bärs med, filtreras ej (L4).
+   */
+  async computeSegment(rule: SegmentRule): Promise<SegmentResult> {
+    const data = await postEdgeFunction<unknown>('compute-segment', rule);
+    return SegmentResultSchema.parse(data);
   }
 }

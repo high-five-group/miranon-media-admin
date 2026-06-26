@@ -4,7 +4,7 @@ import type { Event } from '../../domain/models/Event';
 import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
-import type { Intresserad, PersonDetail } from '../../domain/schemas';
+import type { Intresserad, PersonDetail, SegmentResult, SegmentRule } from '../../domain/schemas';
 import type {
   AttendanceFilters,
   MailLogFilters,
@@ -87,4 +87,7 @@ export interface DataSourceAdapter {
 
   /** Hämta mailloggen */
   fetchMailLog(filters?: MailLogFilters): Promise<MailLogEntry[]>;
+
+  /** Beräkna segment-medlemskap från källan (Deltaganden, strikt Närvaropoäng=1) givet en regel */
+  computeSegment(rule: SegmentRule): Promise<SegmentResult>;
 }
