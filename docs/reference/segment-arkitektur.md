@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-26
+updated: 2026-06-27
 review_by: 2026-09-25
 status: stable
 ---
@@ -36,6 +36,28 @@ Slutsatsen är den viktiga: basens brister tvingade fram den BÄTTRE arkitekture
 (b) **16 oavstämda Föreläsnings-Deltaganden** (4 historiska event) + **naket "Resor i medvetandet"-namnkollision** — registrerade (data-model §Kända fällor 34/35, tråd T16) som KRAVSPEC för post-Fas-6-bas-maximeringen (ADR-063), inte som app-fixar.
 
 RIM 3/Psionautics noll-närvaro är INTE en defekt — ännu-ej-genomförda event är förväntat och täcks av kontraktet (ADR-064 beslut 2/3).
+
+## Consent-allokering vid export (Fas 6g L4 + framåt mot 6h)
+
+Segment-medlemmar bär flaggan `Ej godkänd för mailutskick` (buren av compute-segment, ej
+filtrerad i medlemskaps-beräkningen — medlemskap = strikt närvaro per ADR-064). Golvet
+(ADR-062 beslut 7) kräver consent-baslinje PÅ UTSKICK. Var golvet upprätthålls:
+
+- SKOOL-export (L4): filtreras INTE på mail-consent. En SKOOL-inbjudan är community-ÅTKOMST
+  (ADR-062 beslut 5 — åtkomst = union av per-(kurs,modalitet)-rättigheter), en transaktionell
+  access-grant, ej ett marknadsutskick. Mail-opt-out gäller marknadsströmmen, inte access-
+  strömmen (branschkanon skiljer dem: separata strömmar, separat suppression). Att utesluta en
+  deltagande person från sin kursåtkomst för att de tackat nej till MAIL vore fel. SKOOL-export
+  = alla kvalificerade medlemmar med giltig e-post, deduplicerade.
+- Mail-utskick (6h): consent-golvet upprätthålls vid send-gaten. `Ej godkänd för mailutskick`
+  === true exkluderas vid 6h:s utskick (suppression vid leverans). 6h löser mottagare on-demand
+  ur segment-motorn (per byggplan) och applicerar consent-filtret där.
+- Dedup-vid-handling (golv): sker i exporten/handlingen — normaliserad e-post (lowercase/trim,
+  p.g.a. kända e-post-quirks) + unik. Poster utan giltig e-post exkluderas och räknas synligt.
+
+Källa: ADR-062 beslut 5/7 + branschledar-research (HubSpot static-list-snapshot för event-
+attendees; marknad/transaktionellt = separata suppression-strömmar; SKOOL bulk-invite =
+e-post-CSV som grant access). Framåtpekare: 6h implementerar mail-consent-filtret vid send.
 
 ## 4 — Var detaljen lever (frys-disciplin)
 
