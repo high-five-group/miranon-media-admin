@@ -1736,6 +1736,21 @@ Levererade Fas 6g L4 (SKOOL-export, ren READ + klient-export, ingen EF/WRITE) + 
 
 ---
 
+## Session 38 — Fas 6f Skapa nytt event (create-event write-vertikal): L0 doc-grund (2026-06-27)
+
+**Mål:** lägg doc-grunden för appens nästa write-vertikal — skapa nytt event i Eventplanering ([byggplan §4 Fas 6f](byggplan.md)). L0 = ADR + referens-uppdatering; EF/allowlist/schema-fält/deploy = L1.
+
+- **Doc-födelse** (`a72a032`) — Session 38-dok fött vid `/session-start` (ADR-043, `lifecycle: active`). Provisorisk Fas 6f-scope, låst av forensiskt pre-pass.
+- **Forensiskt pre-pass** (READ-only, ingen commit) — create-event-kontraktet låst mot live STAGING-schema (`tblVE3UKWl1CKrphV`) + write-vertikal-mönstret (create-registration 6c L4 / save-segment 6g L3). Två fynd styr: (1) `EventKey`/`Event-nr` system-genererade (formel-på-autoNumber) → sätts aldrig; (2) **AVVIKELSE A** — `data-model.md`:s Eventplanering write-fält-tabell var UPDATE-orienterad, saknade create-essentiella identitets-/datum-fält.
+- **STEG 0' — READ-only prod-introspektion** (auktoriserad; PROD `app8uGPrVCVOm6LfD`, noll mutation) — grundade beslut 5 mot RIKTIG event-population: **N=50 event, 0 test-rader exkluderade**; Utbildning 46/46 + Föreläsning 4/4 bär sessionsmall (**100 % båda klasser**) → **GREN A** (Eventtyp KRÄVS vid create rakt av, ingen carve-out). Ersatte den föregående staging-baserade STEG 0 som STOPPADE (staging bar bara 3 syntetiska event, 0 Föreläsning → otillräckligt underlag).
+- **Landning 0 (COMMIT A, `1bf4ad4`)** — [ADR-066](decisions/ADR-066-skapa-event-write-vertikal-idempotens.md) (create-event write-vertikal + idempotens). Sex beslut: ett rad-write/ingen kaskad; server-side-byggt create-set + allowlist-SSOT; idempotens via **Airtable-nativ upsert** (`performUpsert.fieldsToMergeOn: ['Idempotensnyckel']`, nytt dedikerat fält — affärsnyckel-merge/ingen-idempotens/check-then-create-TOCTOU avvisade); pessimistisk create (TanStack-grundad) + disabled-knapp; Eventtyp required (GREN A); Månad/år härleds ur Startdatum. Web-research-grundad (Stripe/IETF/TanStack/Airtable, citerade). **count 65→66** (`check-adr-count.sh` grön, L190-token-svep). Index-rad + README-bump i samma commit.
+- **Landning 0 (COMMIT B, `ae2e974`)** — `data-model.md`: nytt **Eventplanering — create-fält**-avsnitt (live STAGING-belagt, skilt från UPDATE-tabellen → AVVIKELSE A durabelt fångad, L189). §Kända fällor **36** (Månad/år manuell-singleSelect-drift → maximerings-kandidat T16, **AVVIKELSE B**) + **37** (Idempotensnyckel L1-schema-tillägg). T16-not vidgad Session 38.
+- **INGEN EF / allowlist-kod / schema-mutation / deploy i L0** — allt LÅST i ADR, IMPLEMENTERAS L1. 6g-EF:er-carry (staging-only) oförändrad.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-27-session-38.md`](../tasks/sessions/2026-06-27-session-38.md) (Del 1 scope + Del 2 L0-landning). Nästa: L1 (schema-mutation `Idempotensnyckel` staging→prod + create-event-EF + allowlist + staging-tester) — merge-fältets live-skrivbarhet = explicit STOPPA-grind.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
