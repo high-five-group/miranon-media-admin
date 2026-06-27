@@ -74,7 +74,7 @@ Mailet skickas som **multipart** (html + text). `html` härleds ur `mailtext`; d
 
 ### Deferrade (spekulation ovanför golvet — registrerade, ej byggda)
 
-Per [ADR-053](ADR-053-triage-av-det-ovantade.md)-ledstjärnan (registrera, förkasta ej tyst) — registrerade som trådar:
+Per [ADR-053](ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md)-ledstjärnan (registrera, förkasta ej tyst) — registrerade som trådar:
 
 - **Durabel kö / workpool** (ADR-015:s mail-event-pattern). Nuvarande volym (tiotal–hundratal mail/utskick, ~5–20/dag per ADR-015) → synkron EF med sekventiella batch-anrop räcker. Bygg när empirisk trigger nås. → tråd.
 - **Webhook-leverans/öppning-ingestion.** Fyller `Antal öppnade mail` + `Öppningsgrad (%)` (idag formel-tomma utan opens-data). Kräver Resend-webhook-mottagare + Email Opens-skrivning. → tråd.
