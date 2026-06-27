@@ -301,3 +301,61 @@ export async function createAirtableRecord(
 
   return await res.json();
 }
+
+/**
+ * Upsert via Airtable PATCH /{table} med `performUpsert.fieldsToMergeOn` — match-or-create
+ * i ETT atomiskt server-anrop (ADR-066:s idempotens-mekanism). Till skillnad mot en klient-
+ * eller EF-intern check-then-create flyttas atomiciteten till Airtable: noll merge-träffar →
+ * ny rad SKAPAS; en träff → den raden patchas (last-write-wins); flera träffar → Airtable
+ * felar (kastas). Returnerar raden + `created` (true = createdRecords, false = updatedRecords)
+ * så callern kan skilja ett nytt event från en idempotent replay (retry av samma nyckel).
+ *
+ * `typecast: false` EXPLICIT — ett ogiltigt singleSelect-värde ska FELA (→ kastas → 500),
+ * ALDRIG tyst skapa en ny option i schemat. Speglar `createAirtableRecord`:s injektions-
+ * säkerhet (callern bygger `fields` med fält-NAMN, ingen user-styrd path/query interpoleras),
+ * env-fail-fast (ingen prod-fallback, ADR-050) och icke-ASCII-säkra table-encoding.
+ *
+ * Merge-fält får per Airtable-API:t inte vara beräknade (formel/lookup/rollup) — det är
+ * callerns ansvar att `fieldsToMergeOn` pekar på ett skrivbart fält (ADR-066: `Idempotensnyckel`).
+ */
+export async function upsertAirtableRecord(
+  tableIdOrName: string,
+  fields: Record<string, unknown>,
+  fieldsToMergeOn: string[],
+): Promise<{ record: AirtableRecord; created: boolean }> {
+  const token = Deno.env.get('AIRTABLE_TOKEN');
+  if (!token) {
+    throw new Error('AIRTABLE_TOKEN not set');
+  }
+  const baseId = getAirtableBaseId();
+
+  const url = `${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}`;
+
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      performUpsert: { fieldsToMergeOn },
+      records: [{ fields }],
+      typecast: false,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Airtable upsert ${res.status}: ${body}`);
+  }
+
+  const data = (await res.json()) as {
+    records: AirtableRecord[];
+    createdRecords?: string[];
+    updatedRecords?: string[];
+  };
+  const record = data.records[0];
+  // createdRecords listar de record-ID:n som SKAPADES (vs updatedRecords som patchades).
+  const created = Array.isArray(data.createdRecords) && data.createdRecords.includes(record.id);
+  return { record, created };
+}

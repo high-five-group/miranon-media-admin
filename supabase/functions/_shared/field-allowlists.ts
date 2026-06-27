@@ -84,6 +84,31 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Segment',
     allowedFields: ['Namn på segment', 'App-segmentregel', 'Segmentdefinition'],
   },
+  // Skapa ett nytt event i Eventplanering (Fas 6f, ADR-066 — repots tredje write-vertikal).
+  // create-event-EF:en bygger `fields` SERVER-SIDE ur typade inputs (event/typ/ort/datum/
+  // platser/status/eventtyp/idempotensnyckel) — listan är därför en SSOT-grind mot framtida
+  // kod-drift (om EF:en någon gång skulle försöka skriva ett fält utanför listan →
+  // findDisallowedField fäller före Airtable-anropet), ej en klient-nåbar deny-yta.
+  // Endast live-belagda skrivbara create-fält (data-model.md § Eventplanering create-fält);
+  // system-genererade (EventKey/Event-nr), formel/rollup/lookup och spegel/länk-fält som sätts
+  // från motsatt sida (Anmälningar/Närvaro) sätts ALDRIG. 'Idempotensnyckel' MÅSTE vara med —
+  // EF:en skriver det server-side som merge-nyckel för upserten (ADR-066 b3); annars fäller
+  // findDisallowedField vår egen skrivning. Tabell per NAMN (ADR-050 bas-portabilitet).
+  'create-event': {
+    tableId: 'Eventplanering',
+    allowedFields: [
+      'Event (source)',
+      'Typ',
+      'Ort',
+      'Startdatum',
+      'Slutdatum',
+      'Månad/år',
+      'Max antal platser',
+      'Status',
+      'Eventtyp',
+      'Idempotensnyckel',
+    ],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.
