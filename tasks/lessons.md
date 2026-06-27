@@ -2700,3 +2700,18 @@ till skillnad mot env-only-vägen som hård-failar tills secreten sätts). Anta 
 staging — staging-isolation tömmer ofta länk-tabeller som prod fyller. Bonus-fynd: staging-test-EF:er kan inte själva
 skapa fixturer i en annan tabell (ingen Airtable-cred i test-kontexten, ADR-060) → fixtur-seeding är ett Code/MCP-
 moment, inte ett test-moment. Hub-lyft pending — synkas vid FULLT Fas 6 fas-avslut, konsekvent med L149–L201.
+
+### L203 [UNIVERSAL] — Substring-kollision i e2e-selektorer + route-mock-regexar när EF-/fält-namn delar prefix/affix — ankra alltid
+
+Datum: 2026-06-27 | Källa: Session 38 (Fas 6f create-event L2 STEG 3, klass: test-craft / determinism)
+Två separata e2e-fel i samma bygge, BÅDA samma rot — default-substring/icke-ankrad matchning kolliderar när namn delar
+text: (1) `getByRole('button', { name: 'Typ' })` matchade BÅDE Typ-selecten OCH Eventformat-selecten (vars label bar
+"Event**typ**") — Playwrights name-matchning är default substring + case-insensitiv; (2) `page.route(/get-event/)`
+för detalj-mocken klobbade `get-events` + `get-event-formats` (delad prefix `get-event`) → beforeEach-mockarna
+överskuggades, queries felade, fokus-effekten uteblev. Regel: i e2e/mock-lager där namn delar prefix/affix, ANTA
+substring-matchning och ankra explicit — `getByRole(..., { exact: true })` eller en label utan den delade biten;
+`page.route`-regexar med `(?![s-])`/`($|\?)`-ankare så `/get-event/` inte fångar `get-event*`. Sido-regel (samma bygge):
+react-aria `<Button type="submit">` submittar inte ett vanligt `<form>` tillförlitligt (usePress äter default) → använd
+`onPress` (kodbas-idiom, jfr SegmentBuilder), behåll `<form onSubmit>` enbart för Enter-tangenten. Hub-lyft pending —
+synkas vid FULLT Fas 6 fas-avslut, konsekvent med L149–L202.
+moment, inte ett test-moment. Hub-lyft pending — synkas vid FULLT Fas 6 fas-avslut, konsekvent med L149–L201.
