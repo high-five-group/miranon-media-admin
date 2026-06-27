@@ -105,7 +105,7 @@ O(1)-läsbar audit-status per Fas 6-subfas (L200: spridd-över-sessioner-status 
 | 6c Anmälningar + Väntelista | KLAR | ✅ ren — Session 26 |
 | 6d Hem | KLAR | ✅ ren — Session 30 |
 | 6e Mer (Intresserade + Maillogg) | byggd L1+L2 (S33) | ❌ EJ körd — S33 stängde utan; "ingen app-kod"-justifiering felaktig (get-leads/get-mail-log + vyer landade) → tråd T38 |
-| 6f Skapa nytt event | EJ byggd (leapfroggad) | — |
+| 6f Skapa nytt event | byggd L0–L2 (S38, staging) | ✅ ren — Session 38 (fem områden GODKÄNDA, AVVIKELSE ingen; bibliotek 11/11/11, vy 11/10/10). Prod-deploy (fält + EF) bundlad separat-auktoriserad handling kvarstår |
 | 6g Segment-yta | KLAR (L1–L4) | ✅ ren — Session 37 (fem områden GODKÄNDA, AVVIKELSE ingen, 11/10/10) |
 | 6h Mail-handling | EJ byggd | — |
 
