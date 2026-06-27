@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-25
+updated: 2026-06-27
 review_by: 2026-11-15
 status: stable
 ---
@@ -93,6 +93,23 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 **Total estimat (Fas 6 → Fas 7, exkl. klara Fas 0/1/A/2/2.5/3/3.5/5/5.5 och defer:ade Fas 8/B/E):** 11,5 sessioner — uppdaterad 2026-06-25 efter Fas 6e-omdefiniering + Fas 6g/6h-tillägg (ADR-062). Beräkning: 7,5 + 1 + 3 = 11,5. En session ≈ 3–4 timmars Code-tid vid normal sessionsfrekvens.
 
 > **Milstolpe AT‑Max (Airtable-bas-maximering, ADR-063) är OSATT** och därför **ej inräknad** i 11,5 ovan — storleken sätts vid milstolpens dekomponering (egen pass-kedja efter Fas 6.5). Ingen provisorisk siffra injiceras (L1: provisoriska estimat märks som sådana).
+
+### Per-subfas arkitektur-fitness-audit (ADR-058) — status
+
+O(1)-läsbar audit-status per Fas 6-subfas (L200: spridd-över-sessioner-status gömmer luckor):
+
+| Subfas | Bygg-status | Per-subfas arch-audit |
+|---|---|---|
+| 6a Personer | KLAR | ✅ ren — Inc 4 / Session 25 (fem områden GODKÄNDA) |
+| 6b Event | KLAR | ✅ ren — Session 25 |
+| 6c Anmälningar + Väntelista | KLAR | ✅ ren — Session 26 |
+| 6d Hem | KLAR | ✅ ren — Session 30 |
+| 6e Mer (Intresserade + Maillogg) | byggd L1+L2 (S33) | ❌ EJ körd — S33 stängde utan; "ingen app-kod"-justifiering felaktig (get-leads/get-mail-log + vyer landade) → tråd T38 |
+| 6f Skapa nytt event | EJ byggd (leapfroggad) | — |
+| 6g Segment-yta | KLAR (L1–L4) | ✅ ren — Session 37 (fem områden GODKÄNDA, AVVIKELSE ingen, 11/10/10) |
+| 6h Mail-handling | EJ byggd | — |
+
+> **Closeout-förkrav:** FULLT Fas 6 fas-avslut kan ske först när: 6e retro-auditerad, 6f byggd + auditerad, 6h byggd + auditerad (6g klar + auditerad ✓). Avslutet inkluderar phase-end-verify, byggplan 6→KLAR, FAS-NIVÅ fitness-svep (full port-paritet + komplett EF-ribba-inventering tvärs ALLA subfaser — ej bara ackumulerade per-slice-audits), CHANGELOG, lessons-hub-lyft L149–L201, arkivering.
 
 ---
 

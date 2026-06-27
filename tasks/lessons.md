@@ -2652,6 +2652,8 @@ staging-only (auto-reversering vid fel-landning) FÖRE prod-touch. Regel: när e
 kodväg vars isolations-/routnings-egenskap inte är empiriskt bevisad — även om en NÄRLIGGANDE väg (läs) är det — bevisa
 DEN vägens egenskap reverserbart mot live FÖRE prod-mutation. Read-bevis täcker inte write.
 
+## 2026-06-27 — Session 37 (Fas 6g L4 SKOOL-export + 6g arch-audit ren; hub-lyft PENDING efter Fas 6)
+
 ### L199 [UNIVERSAL] — Doc-commits måste köra `npm run lint:prose` (Vale) lokalt FÖRE push — markdownlint + frontmatter är en DELMÄNGD av prose-grindarna
 
 Datum: 2026-06-27 | Källa: Session 37 (housekeeping-landning — T37-tabellrad föll på Vale i CI efter lokalt grön markdownlint, klass: verifiering / grind-täckning)
@@ -2663,3 +2665,24 @@ DELMÄNGD av de lokala grindarna gav falskt grön-förtroende. Regel: en doc-com
 grön helhet; varje CI-grind har en lokal motsvarighet som måste köras, annars fäller skillnaden i CI. (Samma ortogonala-
 axlar-klass som L197: en axel läst grön implicerar inte en annan.) Hub-lyft pending — synkas vid FULLT Fas 6 fas-avslut,
 konsekvent med L193–L198.
+
+### L200 [UNIVERSAL] — Per-subfas-audit-status måste vara O(1)-läsbar i byggplanen (en matris) — annars deklareras en slice klar utan sin audit och luckan göms spridd över sessionsposter
+
+Datum: 2026-06-27 | Källa: Session 37 (6g fas-avslut-bedömning — upptäckte att 6e aldrig auditerades, klass: legibility / process)
+Session 37: inför en "Fas 6g KLAR"-bedömning behövdes en bild av per-subfas arch-audit-status (ADR-058). Den fanns INTE
+samlad någonstans — statusen låg spridd över enskilda sessionsdok, och det krävde tre sökningar att upptäcka att 6e
+(Mer) byggts men aldrig auditerats. Regel: status som grindar ett fas-avslut (per-subfas-audit, per-subfas-DoD) ska vara
+O(1)-läsbar på ETT ställe (en matris i byggplanen), inte rekonstruerbar ur N sessionsposter. Spridd status är en
+gömställe-yta: en slice kan deklareras klar utan sin audit och ingen ser luckan förrän någon råkar leta. Hub-lyft pending
+— synkas vid FULLT Fas 6 fas-avslut, konsekvent med L149–L199.
+
+### L201 [UNIVERSAL] — En sessions-close-justifiering måste korsläsas mot vad som FAKTISKT landade — en felaktig justifiering hoppar tyst över en grind
+
+Datum: 2026-06-27 | Källa: Session 37 (S33-retrospektiv — 6e:s arch-audit uteblev på felaktig grund, klass: verifiering / do-confirm)
+Session 33 stängde 6e med justifieringen "/arch-audit EJ körd (ingen app-kod)" — men 6e L1+L2 hade landat RIKTIG app-kod
+(`get-leads`- + `get-mail-log`-EF:er + Intresserade- + Maillogg-vyer). Den felaktiga justifieringen lät en grind
+(per-subfas arch-audit, ADR-058) tyst utebli; luckan upptäcktes först två sessioner senare. Regel: en close-/skip-
+justifiering ("ingen app-kod", "inga schema-ändringar", "docs-only") är en HYPOTES som måste korsläsas mot vad som
+faktiskt landade (commits/diff) FÖRE den får motivera att en grind hoppas över. En grind som uteblir på fel grund är
+osynlig tills någon rekonstruerar historiken. (Knyter L200: O(1)-läsbar status hade fångat det direkt.) Hub-lyft pending
+— synkas vid FULLT Fas 6 fas-avslut, konsekvent med L149–L199.
