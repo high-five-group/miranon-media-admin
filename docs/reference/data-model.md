@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-26
+updated: 2026-06-27
 review_by: 2026-11-15
 status: stable
 ---
@@ -240,6 +240,30 @@ För Edge Functions, scripts, manuella PATCH-ops. Listar fält som ofta skrivs t
 | Check-in session | `fldjX1YN7DOhoKvt1` | singleSelect | Dag 1, Dag 2, Föreläsning — läses av A9 |
 | Närvarostatus att sätta | `flddzMrhu30cXoaEf` | singleLineText | Default "Närvarande" — läses av A9/A10 |
 | Eventtyp (länk) | `fldCAGA9NPnd9kEmi` | multipleRecordLinks → Eventformat | Avgör Sessionsmall-lookup |
+
+> **Not (Session 38):** tabellen ovan är UPDATE-orienterad — den listar de fält automationerna (A9/A10) och update-vägarna rör på ett BEFINTLIGT event, inte de fält som krävs för att SKAPA ett event. Create-orienterade identitets-/datum-fält står i nästa avsnitt.
+
+#### Eventplanering — create-fält (skapa nytt event)
+
+De skrivbara fält som [ADR-066](../decisions/ADR-066-skapa-event-write-vertikal-idempotens.md):s create-event-vertikal sätter vid skapande av en NY Eventplanering-rad. Skilt från UPDATE-tabellen ovan: dessa bär eventets identitet + datum. **Live-belagt mot STAGING-schema (`tblVE3UKWl1CKrphV`) 2026-06-27 (Session 38 pre-pass).**
+
+| Syfte | Fält (NAMN) | Fält-ID | Typ | Kommentar |
+|---|---|---|---|---|
+| Kursnamn | Event (source) | `flddlv4JA5C5CeH5R` | singleSelect | Fjärrskådning / Resor i medvetandet (+1/2/3) / Psionautics. `Event (text)` (`fldNIc8I2ynUoLkNn`) är en formel-spegel av detta — sätts ALDRIG. |
+| Eventtyp-klass | Typ | `fldkiFRVYG0xTAhJ4` | singleSelect | Utbildning / Föreläsning |
+| Ort | Ort | `fldRvwXnDsgjwva2L` | singleLineText | – |
+| Start | Startdatum | `fldBYhXEHLCd1o2Je` | date (ISO) | Källa för härledd `Månad/år` (se §Kända fällor 36). |
+| Slut | Slutdatum | `fldUMB4x3OyGQ31aL` | date (ISO) | – |
+| Period | Månad/år | `fld2BjFdBd964TzVb` | singleSelect | **Manuellt** — sätts HÄRLETT ur `Startdatum` (ADR-066 b6); designbrist registrerad §Kända fällor 36. |
+| Kapacitet | Max antal platser | `fldbyEz8djcxCBO5r` | number | – |
+| Tillstånd | Status | `fld2nXlS1UG0aOHLt` | singleSelect | Default `Planerat`. |
+| Sessionsstruktur | Eventtyp | `fldCAGA9NPnd9kEmi` | multipleRecordLinks → Eventformat | **KRÄVS vid create** (ADR-066 b5, prod-belagt) — driver `Sessionsmall`-lookupen. Pekar på BEFINTLIG Eventformat-rad (ingen ny post). |
+| Dokument | PDF (URL) | `fldXIbT08897kV1Oa` | url | Valfritt. |
+| Spårning | Touchpoints | `fldeRc98Xs7XJRCn8` | singleLineText | Valfritt. |
+| Backfill | Backfill-ID | `fld2M7EdjCcocls0u` | singleLineText | Valfritt (historik-import). |
+| Idempotens | Idempotensnyckel | *(L1 — ej i basen än)* | singleLineText | Merge-nyckel för upsert (ADR-066 b3); schema-tillägg = L1, se §Kända fällor 37. |
+
+**Sätts ALDRIG vid create** (system-genererat eller härlett från motsatt sida): `EventKey` (`fldhmhaz3ZnouAzDm`, formel `"Event-" & {Event-nr}`) + `Event-nr` (`fldl5By2a7jGBPpxF`, autoNumber) föds vid skapande; `Eventlabel` (primärfält, formel) + alla rollup/count/formel/lookup-fält beräknas; spegelfältet `Anmälningar (länkat fält)` (`fldUAjTutSM0fziMT`) + `Närvaro (records)` sätts från Anmälningar/Deltaganden-sidan (A1/A3) — ett nyfött event har noll.
 
 #### Deltaganden — write-fält
 
@@ -1071,6 +1095,10 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 34. **Oavstämda Föreläsnings-Deltaganden — modaliteten har aldrig avstämts.** Det finns 16 Deltaganden-rader i Föreläsning-modaliteten (`Event typ = "Föreläsning"`), spridda över 4 historiska event (98–140 dagar bakåt relativt 2026-06-25), men SAMTLIGA har `Status = "Ej avstämt"` → `Närvaropoäng = 0`. **Konsekvens för segment:** Föreläsnings-segment är TOMMA under strikt `Närvaropoäng=1` tills raderna avstäms — orsaken är inte att Föreläsning saknar deltagardata, utan att närvaron aldrig registrerats. **Verifierat MCP 2026-06-25 (Session 35).** → **Maximerings-kandidat (T16):** stäm av Föreläsnings-närvaron i basen — kravspec för post-Fas-6-bas-maximeringen ([ADR-063](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md)), ej app-fix. Böjs INTE in i segment-kontraktet (golvet lättas ej): [ADR-064](../decisions/ADR-064-segment-taxonomi-fran-domanen-strikt-narvaro.md) beslut 4(a). RIM 3 + Psionautics noll-närvaro registreras INTE som defekt — ännu-ej-genomförda event är förväntat (ADR-064 beslut 2/3).
 
 35. **Naket "Resor i medvetandet" (utan siffra) = distinkt kursnamn — namnkollisions-fälla.** Event-domänen (Eventplanering) har ett kursnamn "Resor i medvetandet" UTAN siffra (2 event, `Typ = Föreläsning`), distinkt från RIM 1/2/3-serien. **Konsekvens:** sammanblandningsrisk i `include[]/exclude[]`-design och i den svenska klartext-speglingen — kräver en tydlig klartext-etikett som skiljer det nakna namnet från RIM-serien. (Jfr fälla 32:s observation att RIM-axeln slipper Lucka B:s modalitets-blandning just av denna namn-slump.) **Verifierat MCP 2026-06-25 (Session 35).** → **Maximerings-kandidat (T16):** entydig kursnamns-etikettering i basen; [ADR-064](../decisions/ADR-064-segment-taxonomi-fran-domanen-strikt-narvaro.md) beslut 4(b).
+
+36. **`Månad/år` (`fld2BjFdBd964TzVb`) är ett MANUELLT singleSelect som duplicerar `Startdatum`-härledbar information.** Fältet bär ett valslag per månad (November 2025 … December 2026) och sätts för hand, trots att månad+år är entydigt härledbart ur `Startdatum` (`fldBYhXEHLCd1o2Je`) — samma datum som `Säsong`/`Datum (visas i länk)` redan beräknar via formel. **Konsekvens:** drift-risk — en create- eller update-väg som sätter `Startdatum` men glömmer (eller felsätter) `Månad/år` ger osamstämmig data. create-event ([ADR-066](../decisions/ADR-066-skapa-event-write-vertikal-idempotens.md) beslut 6) härleder därför `Månad/år` ur `Startdatum` server-side som route-around. **Verifierat live STAGING-schema 2026-06-27 (Session 38, pre-pass).** → **Maximerings-kandidat (T16):** konvertera `Månad/år` till ett formelfält (eller ta bort det till förmån för `Startdatum`-härledning) i basen — kravspec för post-Fas-6-bas-maximeringen ([ADR-063](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md)), ej app-fix.
+
+37. **`Idempotensnyckel` — planerat L1-schema-tillägg på Eventplanering (finns ÄNNU EJ i basen).** [ADR-066](../decisions/ADR-066-skapa-event-write-vertikal-idempotens.md) beslut 3 låser ett NYTT dedikerat skrivbart fält `Idempotensnyckel` (singleLineText) som merge-nyckel för create-event:s Airtable-nativa upsert (`performUpsert.fieldsToMergeOn: ['Idempotensnyckel']`). Merge-fält får per Airtable-API:t INTE vara beräknat (formel/lookup/rollup) → singleLineText valt. **Status:** doc-grund (L0) klar; själva schema-mutationen (staging FÖRST, sedan prod, additivt — [ADR-065](../decisions/ADR-065-segment-regel-persistens.md)-mönstret) är **L1**, ej landad. Fält-ID tilldelas vid skapande. Tills dess: dokumenterat beslut, inte live-fält — verifiera fält-existens + skrivbarhet mot live-schema FÖRE write (L1 STOPPA-grind).
 
 <!-- markdownlint-enable MD029 -->
 
