@@ -5,6 +5,9 @@ import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload'
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type {
+  CreatedEvent,
+  CreateEventInput,
+  EventFormat,
   Intresserad,
   PersonDetail,
   SavedSegment,
@@ -101,6 +104,14 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async listSegments(): Promise<SavedSegment[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async getEventFormats(): Promise<EventFormat[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async createEvent(_input: CreateEventInput): Promise<CreatedEvent> {
     throw new Error(NOT_IMPLEMENTED);
   }
 }

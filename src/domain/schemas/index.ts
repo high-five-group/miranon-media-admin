@@ -5,6 +5,13 @@
  * vid systemgränsen. Interface-typerna ligger i `../models/`.
  */
 export { AttendanceSchema } from './Attendance.schema';
+export {
+  type CreatedEvent,
+  CreatedEventSchema,
+  type CreateEventInput,
+  type EventFormat,
+  EventFormatSchema,
+} from './CreateEvent.schema';
 export { EngagementSchema } from './Engagement.schema';
 export { EventSchema } from './Event.schema';
 export { type Intresserad, IntresseradSchema } from './Intresserad.schema';

@@ -5,6 +5,9 @@ import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload'
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type {
+  CreatedEvent,
+  CreateEventInput,
+  EventFormat,
   Intresserad,
   PersonDetail,
   SavedSegment,
@@ -106,4 +109,15 @@ export interface DataSourceAdapter {
    * exkluderas server-side (get-segments) — varje SavedSegment bär en typad regel.
    */
   listSegments(): Promise<SavedSegment[]>;
+
+  /** Lista Eventformat-poster (record-ID + namn) för create-event:s Eventtyp-dropdown (Fas 6f) */
+  getEventFormats(): Promise<EventFormat[]>;
+
+  /**
+   * Skapa ett nytt event (Fas 6f, ADR-066). Tar write-shapen `CreateEventInput`
+   * (typade fält + idempotensnyckel); EF:en bygger Airtable-fälten server-side, härleder
+   * Månad/år ur Startdatum, sätter Eventtyp-länken och kör en idempotent upsert. Svaret
+   * (`CreatedEvent`) bär de system-genererade EventKey/Event-nr.
+   */
+  createEvent(input: CreateEventInput): Promise<CreatedEvent>;
 }

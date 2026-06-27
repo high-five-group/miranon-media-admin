@@ -7,6 +7,11 @@ import type { CreateRegistrationInput, Registration } from '../../domain/models/
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
   AttendanceSchema,
+  type CreatedEvent,
+  CreatedEventSchema,
+  type CreateEventInput,
+  type EventFormat,
+  EventFormatSchema,
   EventSchema,
   type Intresserad,
   IntresseradSchema,
@@ -285,5 +290,38 @@ export class AirtableAdapter implements DataSourceAdapter {
   async listSegments(): Promise<SavedSegment[]> {
     const data = await callEdgeFunction<{ segments: unknown }>('get-segments');
     return z.array(SavedSegmentSchema).parse(data.segments);
+  }
+
+  /**
+   * Lista Eventformat-poster för create-event:s Eventtyp-dropdown (Fas 6f L2). GLOBAL
+   * läs-lista (get-event-formats) — record-ID + visningsnamn. `.parse()` validerar vid
+   * datagränsen (ADR-026; z.array — en LISTA).
+   */
+  async getEventFormats(): Promise<EventFormat[]> {
+    const data = await callEdgeFunction<{ eventFormats: unknown }>('get-event-formats');
+    return z.array(EventFormatSchema).parse(data.eventFormats);
+  }
+
+  /**
+   * Skapa ett nytt event (Fas 6f, ADR-066). POST mot create-event-EF, som bygger write-
+   * shapen server-side (Månad/år härlett ur Startdatum, Eventtyp-länk, system-genererade
+   * EventKey/Event-nr orörda) och kör en idempotent upsert på Idempotensnyckel.
+   * `idempotencyKey` skickas i body (EF:en läser header ELLER body — mirror av
+   * createRegistration). BÅDE 201 (created) OCH 200 (idempotent replay) är framgång och
+   * returnerar samma `event`-shape — adaptern skiljer dem INTE (en replay är inte ett fel).
+   * `.parse()` validerar vid datagränsen (ADR-026); råa `record`-fältet konsumeras ej här.
+   */
+  async createEvent(input: CreateEventInput): Promise<CreatedEvent> {
+    const data = await postEdgeFunction<{ event: unknown }>('create-event', {
+      event: input.event,
+      typ: input.typ,
+      ort: input.ort,
+      startdatum: input.startdatum,
+      slutdatum: input.slutdatum,
+      maxPlatser: input.maxPlatser,
+      eventtyp: input.eventtyp,
+      idempotencyKey: input.idempotencyKey,
+    });
+    return CreatedEventSchema.parse(data.event);
   }
 }

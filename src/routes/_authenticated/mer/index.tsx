@@ -34,6 +34,11 @@ function MerPage() {
               Bygg segment
             </Link>
           </li>
+          <li>
+            <Link to="/mer/skapa-event" className="underline">
+              Skapa nytt event
+            </Link>
+          </li>
         </ul>
       </nav>
     </section>
