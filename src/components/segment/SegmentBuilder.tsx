@@ -8,6 +8,7 @@ import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Par, SaveSegmentInput, SegmentRule } from '@/domain/schemas';
+import { buildSkoolExport, downloadCsv, skoolExportFilename } from '@/lib/segment-export';
 import { deriveTaxonomy, labelForPar, parKey } from '@/lib/segment-taxonomy';
 import { queryKeys } from '@/queries/keys';
 import { SavedSegmentsList } from './SavedSegmentsList';
@@ -75,6 +76,12 @@ export function SegmentBuilder() {
     mutationFn: (r: SegmentRule) => dataSource.computeSegment(r),
   });
   const [countedSig, setCountedSig] = useState<string | null>(null);
+  // Export-utfall (L4) — null tills man exporterat; rensas vid ny räkning så
+  // bekräftelsen aldrig speglar ett gammalt urval.
+  const [exportResult, setExportResult] = useState<{
+    exported: number;
+    excluded: number;
+  } | null>(null);
 
   // Spara segment (L3): namn-input + mutation mot save-segment. onSuccess invaliderar
   // den sparade-listans query (SavedSegmentsList) → listan refetchar, och namnet rensas.
@@ -103,7 +110,23 @@ export function SegmentBuilder() {
 
   function handleCount() {
     const sig = ruleSignature(rule);
+    setExportResult(null); // nytt antal → gammal export-bekräftelse är inaktuell
     mutation.mutate(rule, { onSuccess: () => setCountedSig(sig) });
+  }
+
+  // Exportera segmentets NUVARANDE medlemmar (det redan beräknade compute-
+  // resultatet — ingen parallell compute-väg) till en SKOOL-import-CSV. Filen
+  // ÄR frysningen (ingen lagrad lista, b6). Knappen är aktiv först när ett
+  // FÄRSKT (ej inaktuellt) antal > 0 finns, så members matchar visad regel.
+  const canExport =
+    mutation.data !== undefined && !isStale && mutation.data.count > 0 && !mutation.isPending;
+
+  function handleExport() {
+    const members = mutation.data?.members ?? [];
+    const { csv, exportedCount, excludedCount } = buildSkoolExport(members);
+    setExportResult({ exported: exportedCount, excluded: excludedCount });
+    if (exportedCount === 0) return; // ladda inte ner en tom fil — meddelande i UI
+    downloadCsv(csv, skoolExportFilename(namn.trim() || null, new Date()));
   }
 
   // Klartext-spegling (svenska) av regeln — samma form som visas i "Det här segmentet".
@@ -243,6 +266,57 @@ export function SegmentBuilder() {
             </p>
           )}
         </div>
+      </div>
+
+      {/* Exportera till SKOOL-lista (L4, ADR-062 b4/6) — fryser segmentets
+          NUVARANDE medlemmar (det redan beräknade compute-resultatet) till en
+          nedladdningsbar e-post-CSV. Filen ÄR frysningen (ingen lagrad lista).
+          SKOOL = access-ström → consent filtreras EJ (låst i segment-arkitektur.md). */}
+      <div className="flex flex-col gap-2 border-text-muted/20 border-t pt-4">
+        <h2 className="font-medium text-lg">Exportera till SKOOL-lista</h2>
+        <p className="text-small text-text-muted">
+          Laddar ner personerna i det här segmentet som en fil du kan importera i SKOOL. Räkna
+          antalet först, så ser du vilka som kommer med.
+        </p>
+        <Button intent="primary" onPress={handleExport} isDisabled={!canExport}>
+          Exportera till SKOOL-lista
+        </Button>
+
+        {!mutation.data && <p className="text-small text-text-muted">Räkna antalet först.</p>}
+        {isStale && (
+          <p className="text-small text-text-muted">Räkna antalet igen innan du exporterar.</p>
+        )}
+        {mutation.data && !isStale && mutation.data.count === 0 && (
+          <p className="text-small text-text-muted">Det här segmentet har inga personer än.</p>
+        )}
+
+        {/* Export-bekräftelse (Gunilla-läsbar). MessageBox bär role="status" → annonseras artigt. */}
+        {exportResult && exportResult.exported > 0 && (
+          <MessageBox intent="success" title="Listan laddades ner">
+            <p>
+              En fil med <strong>{exportResult.exported}</strong>{' '}
+              {exportResult.exported === 1 ? 'person' : 'personer'} med e-post laddades ner.
+            </p>
+            {exportResult.excluded > 0 && (
+              <p>
+                {exportResult.excluded}{' '}
+                {exportResult.excluded === 1
+                  ? 'person saknar e-post och kom inte med'
+                  : 'personer saknar e-post och kom inte med'}
+                .
+              </p>
+            )}
+            <p>Bjud in i grupper om max 500 åt gången i SKOOL.</p>
+            <p className="text-small text-text-muted">
+              Kontrollera vid första importen att kolumnerna stämmer med SKOOL:s format.
+            </p>
+          </MessageBox>
+        )}
+        {exportResult && exportResult.exported === 0 && (
+          <MessageBox intent="info" title="Ingen lista att ladda ner">
+            Alla i det här segmentet saknar e-post, så det finns ingen lista att importera i SKOOL.
+          </MessageBox>
+        )}
       </div>
 
       {/* Spara segment (L3, ADR-065) — namn + spara-knapp; bygger ovanpå den

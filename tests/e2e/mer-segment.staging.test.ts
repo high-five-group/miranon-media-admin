@@ -102,6 +102,21 @@ async function mockCompute(
   });
 }
 
+/** Som mockCompute men med EXPLICITA members (L4-export: e-post/namn-form styr CSV:n). */
+async function mockComputeMembers(
+  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
+  page: any,
+  members: Array<{ id: string; namn: string | null; email: string | null; ejGodkandMail: boolean }>,
+): Promise<void> {
+  await page.route(COMPUTE_SEGMENT, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ members, count: members.length }),
+    });
+  });
+}
+
 /**
  * Scopar till en pars radiogroup (aria-label = labelForPar) och väljer ett val.
  * react-aria Radio lägger `role="radio"` på en visuellt dold input → klick går
@@ -222,6 +237,84 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
       .analyze();
 
     expect(results.violations).toEqual([]);
+  });
+
+  test('export (L4): räkna → exportera till SKOOL → nedladdning + bekräftelse + axe 0', async ({
+    page,
+  }) => {
+    await mockEvents(page, TAXONOMY_EVENTS);
+    await mockComputeMembers(page, [
+      { id: 'recM0', namn: 'Anna A', email: 'anna@example.se', ejGodkandMail: false },
+      { id: 'recM1', namn: 'Bo B', email: 'bo@example.se', ejGodkandMail: true }, // consent-false → MED
+      { id: 'recM2', namn: 'Cia C', email: 'cia@example.se', ejGodkandMail: false },
+    ]);
+    await page.goto('/mer/segment');
+    await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
+
+    // Export-knappen kräver ett FÄRSKT antal — disabled tills man räknat.
+    const exportBtn = page.getByRole('button', { name: 'Exportera till SKOOL-lista' });
+    await expect(exportBtn).toBeDisabled();
+
+    await choosePar(page, 'Resor i medvetandet 1 (utbildning)', 'Inkludera');
+    await page.getByRole('button', { name: 'Räkna antal' }).click();
+    await expect(page.getByText(/3 personer matchar den här regeln\./)).toBeVisible();
+
+    // Exportera → webbläsar-nedladdning triggas (Blob + anchor).
+    await expect(exportBtn).toBeEnabled();
+    const downloadPromise = page.waitForEvent('download');
+    await exportBtn.click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/^skool-.*-\d{4}-\d{2}-\d{2}\.csv$/);
+
+    // Gunilla-läsbar bekräftelse (consent-opt-out Bo INKLUDERAD → 3 med e-post).
+    await expect(page.getByText(/3\s+personer med e-post laddades ner/)).toBeVisible();
+    await expect(page.getByText('Bjud in i grupper om max 500 åt gången i SKOOL.')).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test('export (L4): vissa saknar e-post → räknas synligt; tomt segment → ingen tyst fil', async ({
+    page,
+  }) => {
+    await mockEvents(page, TAXONOMY_EVENTS);
+    await mockComputeMembers(page, [
+      { id: 'recM0', namn: 'Anna A', email: 'anna@example.se', ejGodkandMail: false },
+      { id: 'recM1', namn: 'Utan Epost', email: null, ejGodkandMail: false }, // exkluderas
+    ]);
+    await page.goto('/mer/segment');
+    await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
+
+    await choosePar(page, 'Resor i medvetandet 1 (utbildning)', 'Inkludera');
+    await page.getByRole('button', { name: 'Räkna antal' }).click();
+    await expect(page.getByText(/2 personer matchar den här regeln\./)).toBeVisible();
+
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Exportera till SKOOL-lista' }).click();
+    await downloadPromise;
+
+    await expect(page.getByText(/1 person med e-post laddades ner/)).toBeVisible();
+    await expect(page.getByText('1 person saknar e-post och kom inte med.')).toBeVisible();
+  });
+
+  test('export (L4): tomt segment → export disabled + "inga personer än", ingen fil', async ({
+    page,
+  }) => {
+    await mockEvents(page, TAXONOMY_EVENTS);
+    await mockCompute(page, 0);
+    await page.goto('/mer/segment');
+    await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
+
+    await choosePar(page, 'Psionautics (utbildning)', 'Inkludera');
+    await page.getByRole('button', { name: 'Räkna antal' }).click();
+    await expect(
+      page.getByText('0 personer matchar — inga med genomförd närvaro ännu.'),
+    ).toBeVisible();
+
+    await expect(page.getByRole('button', { name: 'Exportera till SKOOL-lista' })).toBeDisabled();
+    await expect(page.getByText('Det här segmentet har inga personer än.')).toBeVisible();
   });
 
   test('spara (L3): bygg regel → namnge → spara → syns i sparade-listan', async ({ page }) => {
