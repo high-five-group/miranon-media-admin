@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-26
+updated: 2026-06-27
 review_by: 2026-11-15
 status: stable
 ---
@@ -2651,3 +2651,15 @@ kunde ha landat i prod. Lösning: skapa fältet riktat mot staging, verifiera OM
 staging-only (auto-reversering vid fel-landning) FÖRE prod-touch. Regel: när en prod-närliggande operation går via en
 kodväg vars isolations-/routnings-egenskap inte är empiriskt bevisad — även om en NÄRLIGGANDE väg (läs) är det — bevisa
 DEN vägens egenskap reverserbart mot live FÖRE prod-mutation. Read-bevis täcker inte write.
+
+### L199 [UNIVERSAL] — Doc-commits måste köra `npm run lint:prose` (Vale) lokalt FÖRE push — markdownlint + frontmatter är en DELMÄNGD av prose-grindarna
+
+Datum: 2026-06-27 | Källa: Session 37 (housekeeping-landning — T37-tabellrad föll på Vale i CI efter lokalt grön markdownlint, klass: verifiering / grind-täckning)
+Session 37: en tråd-registrerings-commit verifierades lokalt med markdownlint + frontmatter-grind (båda gröna) och
+pushades — men föll i CI på en SEPARAT grind, `Docs link check` → Vale prose (`Vale.Terms`: okapitaliserad compound
+"dependabot" i stället för "Dependabot"). Vale körs aldrig av markdownlint eller frontmatter-grinden; att köra en
+DELMÄNGD av de lokala grindarna gav falskt grön-förtroende. Regel: en doc-commit kör ALLA prose-/docs-grindar som CI kör
+— minst `npm run lint:prose` (Vale) + markdownlint + frontmatter — lokalt FÖRE push. En grön delmängd implicerar inte en
+grön helhet; varje CI-grind har en lokal motsvarighet som måste köras, annars fäller skillnaden i CI. (Samma ortogonala-
+axlar-klass som L197: en axel läst grön implicerar inte en annan.) Hub-lyft pending — synkas vid FULLT Fas 6 fas-avslut,
+konsekvent med L193–L198.

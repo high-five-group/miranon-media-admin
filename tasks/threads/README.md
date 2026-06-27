@@ -60,7 +60,7 @@ status: stable
 | `T34` | CLI länkad mot prod: `supabase` CLI lokalt länkad mot prod-ref (`supabase/.temp/project-ref` = `lvjsfnphlauldxqlncpl`) → `supabase db`/`functions`-kommandon default-träffar PROD. T30-klass lokal-yt-isolation på CLI-ytan (ej täckt av ADR-050/061). Durabel fix: re-länka/guarda + dokumentera | `paused` | _(ingen kort än — endast registrerad); uppstod Session 32 (T12-cred-provisionerings-STOPPA)_ |
 | `T35` | winback/återaktiverings-bucket (avbokade-aldrig-deltagit) — segmentering | `paused` | _(ingen kort än — endast registrerad); uppstod Session 33 (Fas 6e L1 Landning 3, Intresserade-vyns medvetna avgränsning); kopplar Scenario 4_ |
 | `T36` | `BYGGPLAN-LÄTTLÄST-v3.md`-footern bär stale räknare — "(24 ADR:er)" (faktiskt 63) + "(14 stödspecs)" (verifiera aktuellt antal vid fix) — pre-existerande staleness, ej införd av Session 34-visions-synken. Städnings-kandidat, blockerar ej | `paused` | _(ingen kort än — endast registrerad); uppstod Session 34 (L2-deferring, ADR-053-triage: blockerar ej + lågvärde→registrera)_ |
-| `T37` | Dependabot private-registry-config saknas (`npm.pkg.github.com`) — "Dependabot Updates"-workflow röd; gatar ej CI men dependabot-uppdaterings-PR:er körs ej | `paused` | _(ingen kort än — endast registrerad); uppstod Session 37 (enabling-detour-push, run 28283682307)_ |
+| `T37` | Dependabot private-registry-config saknas (`npm.pkg.github.com`) — "Dependabot Updates"-workflow röd; gatar ej CI men Dependabot-uppdaterings-PR:er körs ej | `paused` | _(ingen kort än — endast registrerad); uppstod Session 37 (enabling-detour-push, run 28283682307)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
