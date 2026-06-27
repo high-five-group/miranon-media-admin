@@ -109,6 +109,28 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Idempotensnyckel',
     ],
   },
+  // Bulk-mail på segment → revisionsrad i Utskickslogg (Fas 6h, ADR-067 D7 — repots
+  // fjärde write-vertikal). send-email-EF:en bygger `fields` SERVER-SIDE ur typade inputs
+  // (amne/mailtext/accepterade Personers record-ID/filter-snapshot/jobId) — listan är en
+  // SSOT-grind mot framtida kod-drift, ej en klient-nåbar deny-yta. Endast live-introspekterade
+  // skrivbara fält (data-model.md § Utskickslogg, L0): 'Namn på utskick' (singleLineText),
+  // 'Skickat till' (multipleRecordLinks → Personer), 'Filter snapshot' (multilineText),
+  // 'Mailutskick copy' (singleLineText), 'Utskicks-ID' (valfri länk → Bulkutskick; ej satt i
+  // 6h-scope men allowlistad). 'Idempotensnyckel' (fldgB4EWDIksNCvN2, L2a-skapad) MÅSTE vara
+  // med — EF:en skriver det server-side som merge-nyckel för upserten (ADR-067 D4b); annars
+  // fäller findDisallowedField vår egen skrivning. Formel/auto (Antal skickade/Datum/Antal
+  // öppnade mail/Öppningsgrad) ALDRIG. Tabell per NAMN (ADR-050 bas-portabilitet).
+  'send-email': {
+    tableId: 'Utskickslogg',
+    allowedFields: [
+      'Namn på utskick',
+      'Skickat till',
+      'Filter snapshot',
+      'Mailutskick copy',
+      'Utskicks-ID',
+      'Idempotensnyckel',
+    ],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.
