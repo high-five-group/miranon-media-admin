@@ -2715,3 +2715,36 @@ react-aria `<Button type="submit">` submittar inte ett vanligt `<form>` tillför
 `onPress` (kodbas-idiom, jfr SegmentBuilder), behåll `<form onSubmit>` enbart för Enter-tangenten. Hub-lyft pending —
 synkas vid FULLT Fas 6 fas-avslut, konsekvent med L149–L202.
 moment, inte ett test-moment. Hub-lyft pending — synkas vid FULLT Fas 6 fas-avslut, konsekvent med L149–L201.
+
+### L204 [UNIVERSAL] — Prod-deploy-prompt-design måste verifiera deploy-vägens FAKTISKA beteende mot repots kanoniska procedur, ej anta
+
+Datum: 2026-06-27 | Källa: Session 38 (Fas 6f create-event prod-deploy, klass: deploy-disciplin / prompt-design)
+TVÅ instanser samma klass i EN session, båda upptäckta av Code-STOPPA mot disk, ingen i prompten: **(1)** prompten antog
+att prod-deploy gick "via explicit `--project-ref`" (bare CLI-mental modell), men repots kanoniska väg var
+`scripts/deploy-prod-functions.sh` + fail-closed `.prod-functions-allowlist.conf` (todo.md:319 KRITISK, L115) — de 2 nya
+EF:erna fanns inte i allowlisten → deployen vägrades tills ett medvetet allowlist-tillägg gjordes (enabling-detour, egen
+commit FÖRE prod-mutation). **(2)** prompten antog att skriptet träffade "de 2", men skriptet deployar HELA allowlist-setet
+(7) per design — en rak körning hade redeployat 5 redan-live funktioner från drivet disk-tillstånd (16 `_shared`-commits
+sedan deploy-datumet), oscopead prod-mutation. Lösning: `ALLOWLIST_FILE`-env-override (legitim skript-feature) med en
+temporär 2-rads-fil → smalna KÖRNINGEN utan att röra den committade DEKLARATIONEN (de 5 hör hemma i prod, bara ej
+redeployade nu). REGEL: före en prod-deploy-prompt skrivs/körs — verifiera mot disk (a) VILKEN väg som är kanonisk
+(skript vs bare CLI vs CI), (b) VILKET set den vägen faktiskt träffar (delmängd vs hela allowlisten), (c) om de nya
+artefakterna är registrerade i den vägens grind. "Deploya X" är inte en atomär operation förrän deploy-vägens mekanik är
+disk-belagd. Generaliserbart till varje fail-closed-grindad operation (deploy, release, publish). Hub-lyft pending —
+synkas vid FULLT Fas 6 fas-avslut.
+
+### L205 [UNIVERSAL] — Prod-smoke-design måste planera AUTH-credential-tillgången mot prod FÖRE den antar en autentiserad prod-write kan köras
+
+Datum: 2026-06-27 | Källa: Session 38 (Fas 6f create-event prod-deploy STEG 4, klass: smoke-strategi / prod-auth)
+En prod-smoke av en auth-skyddad write-EF (`requireUser`) kräver en äkta prod-user-JWT — och det är INTE samma sak som
+att ha staging-testinfrastruktur: prod-GoTrue är en SEPARAT auth-databas → staging-test-usrarna (`.env.test`) existerar
+inte i prod, och test-harnessens prod-skydd (`assertTestSurfaceNotProd`, ADR-061) vägrar dessutom peka sviten mot prod.
+Vid grinden återstod bara improviserade vägar — alla avvisade som ej tillåtna: programmatisk prod-auth-kontoskapelse via
+GoTrue admin-API (skapar prod-auth-state) och prod-lösenord-i-chatt-kanalen (cred-exponering). Beslut: deferra den
+autentiserade smoken till en tråd med precondition "prod-test-user via rätt kanal", och bevisa i stället deploy-hälsa +
+auth-grind READ-only (anon→401, fel metod→405, anon-Bearer→401; write-mål-existens via direkt Airtable-läsning) — vilket
+bevisar att EF:en lever, är rätt artefakt (exakt 405-sträng) och att grinden inte läcker, UTAN en write. REGEL: när en
+plan innehåller en autentiserad prod-mutation, lös credential-FRÅGAN i planeringen (finns en sanktionerad prod-test-
+identitet? via vilken kanal etableras den?) — improvisera den inte vid grinden, där enda kvarvarande vägar ofta är just de
+otillåtna (kontoskapelse / lösenord-i-kanal). Ärlig landning: "deployad + grind-bevisad" ≠ "full-prod-smoke-bevisad";
+skriv skillnaden synligt (§Kända fällor + tråd), maskera den inte. Hub-lyft pending — synkas vid FULLT Fas 6 fas-avslut.
