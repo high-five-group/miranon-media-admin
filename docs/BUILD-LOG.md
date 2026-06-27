@@ -1717,6 +1717,17 @@ Levererade Fas 6g L3 (spara en segment-regel som en rad i Segment-tabellen + lis
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-06-26-session-36.md`](../tasks/sessions/2026-06-26-session-36.md) (Del 1 scope + Del 2 landningar). Nästa: NY session → Fas 6g L4 (frys/export — SKOOL-lista, ADR-062 beslut 4). `lifecycle: active` tills do-confirm-passet.
 
+## Session 37 — Fas 6g L4 (frys/export) — PÅGÅR (2026-06-27)
+
+Pågående session (Fas 6g L4: frys/export). Öppnade med dok-födelse + en oplanerad **enabling-detour** (CI-grön-återställning) före L4-design. L4-leveransen landar i kommande pass. `lifecycle: active`.
+
+**Landningar (commit-hashar):**
+
+- **Landning 0a — Dok-födelse** (`a552488`) — Session 37-doket fött (create-session-doc), `lifecycle: active`. Pushens CI föll på audit-ci (ej doc-relaterat) → utlöste detouren.
+- **Landning 0b — CI-grön-återställning** (`9b97dad`) — **enabling-detour** (ADR-053-triage: blockerande + enabling → hantera nu). `audit-ci` high-gate fälldes av **GHSA-22p9-wv53-3rq4** (`linkify-it@5.0.0`, kvadratisk scan-loop / ReDoS, high). Dev-only path (`markdownlint-cli2` → `markdown-it@14.1.1` → `linkify-it`), ej i prod-bundle. **Ren fix:** avgränsad `overrides`-pin → `5.0.1` (patch, i `^5.0.0`-range, ingen major, lock-churn = endast linkify-it). Övriga audit-fynd moderate/low → fäller ej high-gaten; `GHSA-gv7w-rqvm-qjhr` redan tidsboxat allowlistad. DoD-svit grön lokalt (typecheck/biome/build/test:api/markdownlint).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-27-session-37.md`](../tasks/sessions/2026-06-27-session-37.md). Nästa: L4 frys/export-design (Chat-dirigerad efter Marcus design-kvittens).
+
 ---
 
 ## Session-modellen
