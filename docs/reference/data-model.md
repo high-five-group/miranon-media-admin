@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-27
+updated: 2026-06-28
 review_by: 2026-11-15
 status: stable
 ---
@@ -304,6 +304,27 @@ App-skrivet fält (Fas 6g L3, [ADR-065](../decisions/ADR-065-segment-regel-persi
 **ID-topologi staging↔prod (verifierat live 2026-06-26, Session 36 pass 2):** staging-basen (`apphjj8Q7lkXCMsL4`) och prod (`app8uGPrVCVOm6LfD`) delar IDENTISKA tabell- och fält-ID:n för de DUPLICERADE fälten (Segment-tabell-id `tbll2N6JKCj4u6y9o` på BÅDA) — motsäger [ADR-050](../decisions/ADR-050-isolerad-staging-miljo.md) T2:s antagande om "nya tabell-ID:n" på kopian. Data-isolationen håller ändå: `list_records` på staging-Segment = tomt, prod bär de 9 legacy-raderna, och `create_field` är empiriskt baseId-respekterande (staging-skrivning landade staging-only, prod orört — verifierat denna landning). NYA fält får dock DISTINKTA ID:n per bas: `App-segmentregel` = prod `fldhN1wH6sXODdfb7` ≠ staging `flduG7pKaHb9tTzBY`. `describe_table`-by-namn är opålitlig mot dessa baser → adressera Segment per id. **TODO:** en additiv [ADR-050](../decisions/ADR-050-isolerad-staging-miljo.md)-korrigerings-not (README § Korrigering vs supersedering) bör landas separat — denna data-model-not registrerar fyndet durabelt tills dess.
 
 Källa för Schema cheat sheet: `02-live-state.md` §3 + `01-extraction.md` §A.4 + `01-extraction.md` §I (Edge Function-kontrakt).
+
+### Utskickslogg — fält + write-fält (Fas 6h)
+
+Revisionslogg för bulk-mailutskick. **6h:s write-mål** ([ADR-067](../decisions/ADR-067-bulk-mail-segment-send-kontrakt.md)) — fylls av `send-email`-EF:en; läses av 6e:s `get-mail-log` (tom sedan S33, L188). Live-introspekterat 2026-06-28 (Session 39 L0, staging-bas `apphjj8Q7lkXCMsL4`, tabell `tblIesjbuSWNp6oxK`, 9 fält). Existerande tabell → fält-ID:n identiska staging↔prod (ID-topologi-noten ovan).
+
+| Fält | Fält-ID | Typ | Skrivbar | Roll |
+|---|---|---|---|---|
+| Namn på utskick | `fldWRz9ap7fxHAMkW` | singleLineText | ✅ | Utskickets namn |
+| Skickat till | `fldnNRJHfhEQLrQkp` | multipleRecordLinks → Personer (`tbl6ZyCm3V026iFTU`) | ✅ | Accepterade mottagar-record-ID:n |
+| Filter snapshot | `fldM7DTUDljK3POWP` | multilineText | ✅ | Segment-/filter-ögonblicksbild |
+| Mailutskick copy | `fldPCrRxwjuUa7J2R` | singleLineText | ✅ | Mailtext-kopia |
+| Utskicks-ID | `fldqK5kGeVjVtJcS0` | multipleRecordLinks → Bulkutskick (`tblWarzSse85NI1Zx`) | ✅ (valfri) | **Valfri** länk — Bulkutskick är Make-legacy-kampanjbordet, EJ obligatorisk förälder; sätts ej av 6h L0 |
+| `Idempotensnyckel` | *(saknas — additiv, skapas L1)* | singleLineText | ✅ | Merge-nyckel för upsert (ADR-067 D4b); jfr Eventplanering.`Idempotensnyckel` |
+| Antal skickade | `fldqJBTOwErzMdCAO` | formula `COUNTA({Skickat till})` | ❌ | Härleds ur `Skickat till` — skrivs ALDRIG |
+| Datum | `fldBQjiy2KhuEFIfi` | createdTime | ❌ | Auto |
+| Antal öppnade mail | `fldmDGQsMv8BbPWok` | multipleRecordLinks → Email Opens (`tblXFJyGRahQDhhqc`) | ❌ (opens-ingestion) | Fylls av webhook-leverans/öppning-ingestion (deferrad, T42) — EJ 6h-send-skrivning |
+| Öppningsgrad (%) | `fldmrf9SaBcXLNJUl` | formula `{Antal öppnade mail}/{Antal skickade}` | ❌ | Percent-decimal 0–1; null vid 0 skickade |
+
+**Send-skrivbara fält 6h:** 5 (Namn på utskick, Skickat till, Filter snapshot, Mailutskick copy, Utskicks-ID-valfri) + den additiva `Idempotensnyckel`-kolumnen (L1). **Bulkutskick** (`tblWarzSse85NI1Zx`) är en full Make-legacy-kampanjtabell (Status singleSelect, Segment-länk, Ämne/Mailtext, `Skicka`-button → Make-webhook, Förhandsgranskning-formula) — coexistens lämnas orörd; 6h skapar ingen Bulkutskick-rad i L0-scope.
+
+> **Schema-projektion vs live (L189-not):** den landade `MailLogEntrySchema` (read-projektion, S33) modellerar 8 av tabellens 9 fält — den **utelämnar** `Antal öppnade mail` (`fldmDGQsMv8BbPWok`, link → Email Opens). Ingen motsägelse (alla projicerade fält stämmer mot live till namn/typ/formelform); det utelämnade fältet hör till opens-ingestion (deferrad). Live är auktoritativ.
 
 ---
 
@@ -1099,6 +1120,8 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 36. **`Månad/år` (`fld2BjFdBd964TzVb`) är ett MANUELLT singleSelect som duplicerar `Startdatum`-härledbar information.** Fältet bär ett valslag per månad (November 2025 … December 2026) och sätts för hand, trots att månad+år är entydigt härledbart ur `Startdatum` (`fldBYhXEHLCd1o2Je`) — samma datum som `Säsong`/`Datum (visas i länk)` redan beräknar via formel. **Konsekvens:** drift-risk — en create- eller update-väg som sätter `Startdatum` men glömmer (eller felsätter) `Månad/år` ger osamstämmig data. create-event ([ADR-066](../decisions/ADR-066-skapa-event-write-vertikal-idempotens.md) beslut 6) härleder därför `Månad/år` ur `Startdatum` server-side som route-around. **Verifierat live STAGING-schema 2026-06-27 (Session 38, pre-pass).** → **Maximerings-kandidat (T16):** konvertera `Månad/år` till ett formelfält (eller ta bort det till förmån för `Startdatum`-härledning) i basen — kravspec för post-Fas-6-bas-maximeringen ([ADR-063](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md)), ej app-fix.
 
 37. **`Idempotensnyckel` på Eventplanering — STAGING-LIVE + PROD-LIVE (prerekvisit uppfyllt Session 38; se RESOLUTION).** [ADR-066](../decisions/ADR-066-skapa-event-write-vertikal-idempotens.md) beslut 3:s dedikerade skrivbara fält `Idempotensnyckel` (singleLineText) — merge-nyckel för create-event:s Airtable-nativa upsert (`performUpsert.fieldsToMergeOn: ['Idempotensnyckel']`). Merge-fält får per Airtable-API:t INTE vara beräknat → singleLineText. **Status (Session 38 L1):** skapat + live-verifierat i **STAGING** (`apphjj8Q7lkXCMsL4`, fält-ID `fldOWoh4WR5zG6XgQ`, singleLineText, tomt på alla befintliga rader). **PROD-fältet (`app8uGPrVCVOm6LfD`) är INTE skapat — medvetet prod-deferral.** ⚠️ **HÅRD FÖRUTSÄTTNING:** create-event-EF:en skriver `Idempotensnyckel` server-side → prod-EF-deployen FÅR INTE ske utan att prod-fältet `Idempotensnyckel` skapats först (annars fäller Airtable skrivningen). Prod-fält + prod-EF-deploy = EN atomisk separat-auktoriserad prod-handling (samma bundel; ADR-066-carry). Får ej glömmas — registrerat L192, ej deferra-och-glöm. **RESOLUTION (Session 38, prod-deploy):** prerekvisit UPPFYLLT — prod-fältet `Idempotensnyckel` (`fldkc33LVnbnz2ZmW`, singleLineText, tomt på alla 50 prod-rader) skapat FÖRE EF-deployen (hård ordning hållen); create-event + get-event-formats prod-deployade (ACTIVE v1) via kanoniskt `scripts/deploy-prod-functions.sh` + `ALLOWLIST_FILE`-override (endast de 2; de 5 redan-live oberörda); auth-grind prod-bevisad READ-only (anon→401, fel metod→405, anon-Bearer→401 — inget 200 utan äkta user). Ärligt: deployad + grind-bevisad + write-mål-bekräftad, men FULL idempotens-prod-create-smoke (autentiserad ZZ-create→replay→teardown mot prod-basen) DEFERRAD → tråd **T40** (precondition: prod-test-user via rätt kanal; mekanismen redan staging-live-bevisad).
+
+38. **`Utskickslogg` saknar idempotens-kolumn — bulk-send-loggraden kan ej merge:as utan ett additivt fält.** Live-introspektion 2026-06-28 (Session 39 L0, staging `apphjj8Q7lkXCMsL4`, `tblIesjbuSWNp6oxK`, 9 fält) bekräftar: Utskickslogg har INGET fält för en idempotens-/merge-nyckel (jfr Eventplanering.`Idempotensnyckel`). **Konsekvens:** 6h:s revisionslogg-write ([ADR-067](../decisions/ADR-067-bulk-mail-segment-send-kontrakt.md) D4b) behöver Airtable-nativ upsert (`performUpsert.fieldsToMergeOn`) för exakt-en-gång-loggning vid batch-retry — utan merge-nyckel ger en retry dubbel loggrad. **Åtgärd (adresseras, ej app-route-around):** en NY additiv `Idempotensnyckel`-kolumn (singleLineText) skapas på Utskickslogg i nästa landning (L1), staging→prod, additivt — inget befintligt fält ändrat; merge-fält får per Airtable-API:t ej vara beräknat → singleLineText. ⚠️ **HÅRD FÖRUTSÄTTNING (ADR-066-carry):** EF:en som skriver `Idempotensnyckel` får ej deployas mot en bas där kolumnen saknas (annars fäller Airtable skrivningen) → kolumn FÖRE EF, per miljö. Detta är en ADR-063-klass kravspec-anteckning (resolution I BASEN, ej app-lapp), ej en defekt i befintlig data. Jfr fälla 37 (samma mönster för Eventplanering).
 
 <!-- markdownlint-enable MD029 -->
 

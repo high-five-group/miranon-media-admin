@@ -1,8 +1,10 @@
 # ADR-015: `send-email` direkt Resend-anrop — medveten skuld med dokumenterad migrationsväg
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-067](ADR-067-bulk-mail-segment-send-kontrakt.md)
 - **Datum:** 2026-05-05 (skrivs i P3a, refereras i Fas 6e om sendEmail deployas)
 - **Fas:** 6e (Mer-fliken, villkorlig)
+
+> **Superseded by [ADR-067](ADR-067-bulk-mail-segment-send-kontrakt.md) (Session 39, 2026-06-28):** send-kontraktet ersätts i grunden. Detta beslut (enkel-mottagar, transaktionell direct-Resend) blev ALDRIG implementerat — `sendEmail` förblev no-op-stub. Fas 6h behövde bulk-på-segment, vilket den landade `MailPayloadSchema` redan modellerade; ADR-067 är det första riktiga send-kontraktet (Resend `/emails/batch`, två-lagers idempotens, consent-gate, partial-failure-status). Migrationsväg-resonemanget nedan (direct-Resend → mail-event-pattern vid empirisk trigger) lever vidare som deferrad durabel-kö-tråd. Beslutstexten nedan bevaras oförändrad (immutabilitet).
 
 ## Kontext
 

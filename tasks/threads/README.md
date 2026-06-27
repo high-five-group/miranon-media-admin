@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-27
+updated: 2026-06-28
 review_by: 2026-09-17
 status: stable
 ---
@@ -64,6 +64,9 @@ status: stable
 | `T38` | 6e (Mer) arch-audit aldrig körd — oauditerad slice | `paused` | _(ingen kort än — endast registrerad); uppstod Session 37 (audit-historik-rekonstruktion)_ |
 | `T39` | Prod-funktions-drift-sync — de 5 prod-live EF:erna ligger efter staging-testad HEAD | `paused` | _(ingen kort än — endast registrerad); uppstod Session 38 (6f prod-deploy STEG 3)_ |
 | `T40` | Full idempotens-prod-create-smoke (create-event) — autentiserad prod-bas-write-verifiering | `paused` | _(ingen kort än — endast registrerad); uppstod Session 38 (6f prod-deploy STEG 4, beslut C)_ |
+| `T41` | Durabel kö / workpool för mailutskick (ADR-015:s mail-event-pattern) — bygg vid empirisk volym/incident-trigger | `paused` | _(ingen kort än — endast registrerad); uppstod Session 39 (Fas 6h L0, [ADR-067](../../docs/decisions/ADR-067-bulk-mail-segment-send-kontrakt.md) deferrad)_ |
+| `T42` | Webhook-leverans/öppning-ingestion — fyller `Antal öppnade mail` + `Öppningsgrad (%)` (idag formel-tomma) via Resend-webhook → Email Opens-write | `paused` | _(ingen kort än — endast registrerad); uppstod Session 39 (Fas 6h L0, [ADR-067](../../docs/decisions/ADR-067-bulk-mail-segment-send-kontrakt.md) deferrad)_ |
+| `T43` | Schemalagd send (mailutskick vid framtida tidpunkt) | `paused` | _(ingen kort än — endast registrerad); uppstod Session 39 (Fas 6h L0, [ADR-067](../../docs/decisions/ADR-067-bulk-mail-segment-send-kontrakt.md) deferrad)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >

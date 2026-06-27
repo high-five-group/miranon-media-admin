@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-27
+updated: 2026-06-28
 review_by: 2026-11-15
 status: stable
 ---
@@ -54,7 +54,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-012](ADR-012-conversion-plan-ersatt-av-byggplan.md) | `conversion-plan.md` ersatt av `byggplan.md` | Accepted | Meta |
 | [ADR-013](ADR-013-fas-4-borttagningen.md) | Fas 4 borttagen — DataTable till Fas 7 | Accepted | Meta |
 | [ADR-014](ADR-014-create-registration-idempotency.md) | `create-registration` måste vara idempotent (idempotens-kravet står; lagrings-mekanism + timing superseder delvis av [ADR-059](ADR-059-idempotens-lagring-defer-fas-e.md)) | Accepted | 6c |
-| [ADR-015](ADR-015-send-email-direct-resend.md) | `send-email` direkt Resend-anrop — medveten skuld | Accepted | 6e |
+| [ADR-015](ADR-015-send-email-direct-resend.md) | `send-email` direkt Resend-anrop — medveten skuld | Superseded by ADR-067 | 6e |
 | [ADR-016](ADR-016-tanstack-optimistic-mutation-pattern.md) | TanStack optimistic mutation-mönster | Accepted | 5.5 |
 | [ADR-017](ADR-017-polling-vs-realtime.md) | Hybrid polling 60s, Realtime till Fas E | Accepted | 6d |
 | [ADR-018](ADR-018-fas-5-forenkling.md) | Fas 5 selektivt förenklad — 4 [GA] till Fas 7 | Accepted | 5 |
@@ -109,6 +109,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-064](ADR-064-segment-taxonomi-fran-domanen-strikt-narvaro.md) | Segment-taxonomin härleds från event-domänen; medlemskap förblir strikt närvaro; basens ofullständighet är ärlig signal — förfinar ADR-062 beslut 3 (idealiserat "6×2" → disk-/live-belagd sju-par-taxonomi över sex kursnamn); medlemskaps-filtret förblir strikt `Närvaropoäng=1` (golvet lättas ej); include/exclude-rymden härleds från event-domänen (självväxande, ej hårdkodad); tomma segment är ärlig utdata som DRIVER bas-arbetet; oavstämda Föreläsningar + "Resor i medvetandet"-namnkollision registreras (ADR-063/T16), böjs ej in i kontraktet | Accepted | 6g |
 | [ADR-065](ADR-065-segment-regel-persistens.md) | Segment-regel-persistens — en sparad app-segment-regel lagras som TYPAD JSON (`{include, exclude}` från segment-membership.ts) i ett NYTT dedikerat fält `App-segmentregel` (multilineText) i den BEFINTLIGA Segment-tabellen; namnet skiljer appens regel från `Segmentformel` (Make-läst) + `Segmentdefinition` (klartext); fältet är migrations-mål för de 9 legacy-formelsträng-segmenten (Make deprecieras post-Fas-6, pekar ADR-062 beslut 7 + T16); separat tabell / återanvänt Segmentformel / Segmentdefinition / Supabase-nu avvisade; speglar Supabase `definition jsonb`; schema-tillägg additivt staging→prod (senare pass) | Accepted | 6g |
 | [ADR-066](ADR-066-skapa-event-write-vertikal-idempotens.md) | Skapa nytt event — create-event write-vertikal mot Eventplanering; ETT rad-write, ingen kaskad, system-genererade fält (EventKey/Event-nr) sätts aldrig; server-side-byggt create-set ur typade inputs + allowlist-SSOT; idempotens via Airtable-nativ upsert (`performUpsert.fieldsToMergeOn`) på nytt dedikerat `Idempotensnyckel`-fält (UUID v4, Stripe/IETF-semantik); affärsnyckel-merge / ingen-idempotens / check-then-create-TOCTOU avvisade; pessimistisk create (TanStack-grundad) + disabled-knapp; Eventtyp KRÄVS vid create (prod-introspektion N=50, 100 % sessionsmall båda klasser → ingen carve-out); Månad/år härleds ur Startdatum (bas-maximerings-post T16); EF/allowlist/schema-fält = L1 | Accepted | 6f |
+| [ADR-067](ADR-067-bulk-mail-segment-send-kontrakt.md) | Bulk-mail på segment — send-email-kontraktet; **supersederar ADR-015** (aldrig-byggt enkel-sänd); Resend `/emails/batch` (≤100/anrop, sekventiella + 429-toleranta), ej loop-/emails / ej Broadcasts; partial-failure = permissive-mode + distinkt räknande status-objekt (requested/suppressedConsent/suppressedNoEmail/deduped/attempted/accepted/rejected[]), acceptans ≠ leverans; två-lagers idempotens (MAIL: Resend 24h, deterministisk `<jobId>/b<index>`, jobId=UUIDv4 header+body create-event-mönstret, 409 distinkt; LOGG: ny additiv `Idempotensnyckel`-kolumn på Utskickslogg, merge-upsert); consent-gate vid send (`ejGodkandMail===false`, GOLV/GDPR, exkludera-och-räkna); e-post-hygien dedup+exkludera-tomma (GOLV); revisionslogg en-tabells write-vertikal (Bulkutskick-länk valfri, ej obligatorisk förälder); multipart html+text; durabel-kö/webhook-opens/schemalagd-send deferrade (T41/T42/T43); EF/allowlist/schema-kolumn/render-källa = L1+ | Accepted | 6h |
 
 ## Relaterade dokument
 
