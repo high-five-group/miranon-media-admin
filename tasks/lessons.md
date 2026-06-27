@@ -2686,3 +2686,17 @@ justifiering ("ingen app-kod", "inga schema-ändringar", "docs-only") är en HYP
 faktiskt landade (commits/diff) FÖRE den får motivera att en grind hoppas över. En grind som uteblir på fel grund är
 osynlig tills någon rekonstruerar historiken. (Knyter L200: O(1)-läsbar status hade fångat det direkt.) Hub-lyft pending
 — synkas vid FULLT Fas 6 fas-avslut, konsekvent med L149–L199.
+
+### L202 [UNIVERSAL] — En write-vertikal vars KRÄVDA länk-mål saknar fixtur-data i staging blockerar sitt eget conformance-test — seeda fixturen, anta inte att ett "riktigt ID finns"
+
+Datum: 2026-06-27 | Källa: Session 38 (Fas 6f create-event L1 STEG 3, klass: test-infrastruktur / staging-isolation)
+create-event KRÄVER en `Eventtyp`-länk (→ Eventformat, GREN A) vid skapande. Staging-tasken antog att ett "RIKTIGT
+staging Eventformat-record-ID" fanns att referera — men staging Eventformat var TOMT (prod har 3, staging 0; data-
+isolationen, ADR-050, gäller records ej bara schema). En länk-skrivning med `typecast:false` mot ett icke-existerande
+rec-ID hade felat → ALLOW-/idempotens-testet kunde inte köras. Regel: innan ett conformance-test för en write-vertikal
+med ett KRÄVT länk-mål skrivs, verifiera att länk-målet HAR data i staging; om inte, SEEDA en dokumenterad sentinel-
+fixtur (ZZ-prefix, ADR-060-tolerans) och referera den via env-override + hårdkodad fallback (ingen ny CI-secret krävs,
+till skillnad mot env-only-vägen som hård-failar tills secreten sätts). Anta aldrig att prod:s data-form finns i
+staging — staging-isolation tömmer ofta länk-tabeller som prod fyller. Bonus-fynd: staging-test-EF:er kan inte själva
+skapa fixturer i en annan tabell (ingen Airtable-cred i test-kontexten, ADR-060) → fixtur-seeding är ett Code/MCP-
+moment, inte ett test-moment. Hub-lyft pending — synkas vid FULLT Fas 6 fas-avslut, konsekvent med L149–L201.
