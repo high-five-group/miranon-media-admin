@@ -67,6 +67,7 @@ status: stable
 | `T41` | Durabel kö / workpool för mailutskick (ADR-015:s mail-event-pattern) — bygg vid empirisk volym/incident-trigger | `paused` | _(ingen kort än — endast registrerad); uppstod Session 39 (Fas 6h L0, [ADR-067](../../docs/decisions/ADR-067-bulk-mail-segment-send-kontrakt.md) deferrad)_ |
 | `T42` | Webhook-leverans/öppning-ingestion — fyller `Antal öppnade mail` + `Öppningsgrad (%)` (idag formel-tomma) via Resend-webhook → Email Opens-write | `paused` | _(ingen kort än — endast registrerad); uppstod Session 39 (Fas 6h L0, [ADR-067](../../docs/decisions/ADR-067-bulk-mail-segment-send-kontrakt.md) deferrad)_ |
 | `T43` | Schemalagd send (mailutskick vid framtida tidpunkt) | `paused` | _(ingen kort än — endast registrerad); uppstod Session 39 (Fas 6h L0, [ADR-067](../../docs/decisions/ADR-067-bulk-mail-segment-send-kontrakt.md) deferrad)_ |
+| `T44` | Fas 6h externa provisionerings-förkrav (Marcus-ägda) | `paused` | [T44-fas-6h-externa-provisionerings-forkrav.md](T44-fas-6h-externa-provisionerings-forkrav.md) — ⚠️ GRINDAR 6h: M1 Resend-konto / M2 staging-test-nyckel→L2d / M3 prod-nyckel+verifierad-domän→prod-real-send (Marcus-ägda, secure-channel); Code-at-prod-deploy separat |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
