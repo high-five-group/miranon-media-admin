@@ -30,6 +30,10 @@ hela förkravs-mängden till standard.
   handling; jfr T40:s prod-lösenord-i-kanal = ej tillåten väg). **GRINDAR:**
   Fas 6h **L2d** (riktiga Resend-gränsen mot test-adresser `delivered@`/
   `bounced@`/`complained@`/`suppressed@resend.dev`).
+  - **STATUS: PROVISIONERAD 2026-06-28.** `RESEND_API_KEY` + `RESEND_FROM=onboarding@resend.dev`
+    satta på Supabase **staging** (värde-fritt bekräftade Session 40). **Grindar ej längre**
+    Fas 6h **L2d** (L2d KLAR staging — riktig Resend-gräns + Utskickslogg-merge + idempotens +
+    422/503 verifierade). Nyckelvärdet gick aldrig genom chatten.
 - **M3 — Prod-nyckel + VERIFIERAD domän.** Marcus provisionerar en
   prod-Resend-nyckel **och** verifierar avsändardomänen via DNS
   (resend.com/domains). **GRINDAR:** 6h **prod-real-send** — Resend hård-spärrar

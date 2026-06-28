@@ -2786,6 +2786,10 @@ Hub-lyft pending — Fas 6.
 > target-verifiering före varje deploy höll (L115). Mönstret upprepar sig → T34 förblir levande tråd tills CLI-länk-vanan
 > ersätts strukturellt.
 
+## 2026-06-28 — Session 40 (Fas 6h L2d — riktig Resend-gräns: svar-parsning + staging-live-verifiering)
+
+> Hub-lyft EJ nu — L193–L210 lyfts samlat efter FULLT Fas 6 (pending).
+
 ### L208 [UNIVERSAL] — Permissive-batch-svar: `errors` är FRÅNVARANDE (ej tom array) vid noll rad-fel, och accepted härleds via index-KOMPLEMENT (ej via de giltigas ordning)
 
 Datum: 2026-06-28 | Källa: Session 40 (Fas 6h L2d, Resend permissive-parsning + STEG-0 strukturobservation)

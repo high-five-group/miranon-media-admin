@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-27
+updated: 2026-06-28
 review_by: 2026-11-15
 status: stable
 ---
@@ -107,7 +107,7 @@ O(1)-läsbar audit-status per Fas 6-subfas (L200: spridd-över-sessioner-status 
 | 6e Mer (Intresserade + Maillogg) | byggd L1+L2 (S33) | ❌ EJ körd — S33 stängde utan; "ingen app-kod"-justifiering felaktig (get-leads/get-mail-log + vyer landade) → tråd T38 |
 | 6f Skapa nytt event | byggd L0–L2 (S38, staging) | ✅ ren — Session 38 (fem områden GODKÄNDA, AVVIKELSE ingen; bibliotek 11/11/11, vy 11/10/10). Prod-deploy (fält + EF) bundlad separat-auktoriserad handling kvarstår |
 | 6g Segment-yta | KLAR (L1–L4) | ✅ ren — Session 37 (fem områden GODKÄNDA, AVVIKELSE ingen, 11/10/10) |
-| 6h Mail-handling | EJ byggd | — |
+| 6h Mail-handling | byggd L0–L2d (S39–S40, staging); L3 kvar | ⏳ förfaller vid 6h-completion (efter L3) — nästa: Session 41 → L3 |
 
 > **Closeout-förkrav:** FULLT Fas 6 fas-avslut kan ske först när: 6e retro-auditerad, 6f byggd + auditerad, 6h byggd + auditerad (6g klar + auditerad ✓). Avslutet inkluderar phase-end-verify, byggplan 6→KLAR, FAS-NIVÅ fitness-svep (full port-paritet + komplett EF-ribba-inventering tvärs ALLA subfaser — ej bara ackumulerade per-slice-audits), CHANGELOG, lessons-hub-lyft L149–L201, arkivering.
 
