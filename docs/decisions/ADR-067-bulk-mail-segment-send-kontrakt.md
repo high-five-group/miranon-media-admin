@@ -115,3 +115,25 @@ Per [ADR-053](ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md)-ledstjärna
 - `_shared/field-allowlists.ts` får en `send-email`-operation med Utskickslogg-tableId + send-skrivbara fält (D7-listan inkl. `Idempotensnyckel`).
 - Deny/allow-svit (fält utanför allowlist → 400) + idempotens-svit (replay → samma loggrad, ändrad payload → 409) + consent/e-post-suppression-svit (räknarna stämmer).
 - `Idempotensnyckel`-kolumnen skapad på staging FÖRE EF-deploy (hård ordning).
+
+## Tillägg (additivt) — 2026-06-28 (Session 41, 6h arch-audit)
+
+> Additiv förtydligande-not. Besluts-texten (D1–D8) är **oförändrad/immutabel**; detta
+> tillägg utökar status-taxonomin med ett noll-leverans-utfall och hedrar D3:s
+> "partial-failure aldrig binär / ärligt utfall"-intention. Ingen ny ADR-fil
+> (`check-adr-count` orörd, 67 == 67). Grund: 6h arch-audit-fynd (noll-leverans
+> rapporterades som grön `sent` + skrev en fantom-Utskickslogg-rad).
+
+- **`status`-taxonomin utökas med `'skipped'`** (utöver `sent`/`partial`/`failed`):
+  `attempted === 0` (tomt segment, ELLER alla undertryckta efter consent/e-post-grinden)
+  → `status: 'skipped'`, **aldrig `sent`**. Ett noll-leverans-utfall får inte maskeras
+  som framgång. `sent` kvarstår = alla attempted accepterade (kräver `attempted ≥ 1`).
+- **Noll-leverans skriver INGEN Utskickslogg-rad** (`logRecordId = null`). Ingen
+  fantom-revisionsrad för ett utskick som inte nådde någon. Idempotens-konsistent:
+  tomt → ingen rad → re-run → fortfarande ingen rad.
+- **Klient-gate:** ett sparat segment som just nu beräknar 0 medlemmar blockeras
+  client-side (Skicka disabled + "inga mottagare"-notis) → ingen onödig round-trip.
+  Vid `accepted === 0` (noll-leverans eller allt-avvisat) renderar klienten ett
+  ärligt icke-success-utfall + suppression-breakdown (aldrig grön "skickades").
+- Invarianten (D3) `requested == suppressedConsent + suppressedNoEmail + deduped + attempted`
+  är **oförändrad** och fortsatt api-pure-bevisad.
