@@ -1846,6 +1846,64 @@ tasks/lessons.md                     (L208–L210, Session 40-H2)
 
 ---
 
+## Session 41 — Fas 6h slutförande: L3 (klient) + 6h arch-audit + avvikelse-fix (2026-06-28)
+
+**Mål:** slutför Fas 6h-bygget — klient-lagret (compose-UI + adapter-aktivering + e2e), 6h arch-audit, och rot-resolvera dess avvikelse ([byggplan §4 Fas 6h](byggplan.md), [ADR-067](decisions/ADR-067-bulk-mail-segment-send-kontrakt.md), [ADR-058](decisions/ADR-058-arkitektur-fitness-audit-mekanism.md)). Commit-range `1ed5c48`→`ac0d902` (+ denna BUILD-LOG-entry + lifecycle-flip). SESSIONSGRÄNS (Fas 6h staging-klar; prod = T44 M3 + Code-at-prod-deploy. Fas 6 öppen: T38/T39/T40), EJ fas-avslut.
+
+### Fas 6h L3 — klient (planerat vs faktiskt)
+
+- **Doc-birth** `1ed5c48` + hygien-fix `4816b21` (verbatim-scopens `-`-bullets föll MD004/MD022/MD032 → skördade **L211**: verbatim-text i en lint-governad fil ärver fil-governance; handoff normaliserar + lokal lint FÖRE commit). **Commit 0 (L211)** `fccdb09`.
+- **Commit A** `d580bae` — `sendEmail` aktiverad i BÅDA adaptrarna (Airtable: riktig `postEdgeFunction('send-email')` + `MailSendResultSchema.parse` vid datagränsen; Supabase: ärlig `NOT_IMPLEMENTED`-stub = rätt ADR-056-paritetsmönster). `MailPayload.idempotencyKey` + `MailSendResult(Schema)` + assignable-test. Ny **`TextArea`-primitiv** (flerradig mailtext, speglar `Input`:s a11y-kontrakt). Ny **`SegmentMailCompose`** monterad i SegmentBuilder: floors a–h (pessimistisk, stabil UUIDv4-idempotens per send-avsikt, mottagar-antal FÖRE send via compute-segment på sparat segments regel, bekräftelse-modal, consent-utfall server-SSOT-visat, 5xx-fel-väg, klient-validering deny-by-default, a11y axe 0). **STOPPA-grind avklarad:** segment→segmentIds-upplösningen är kontrakt-determinerad (ADR-067: sparade record-ID), ej ett oavgjort beslut → ingen ny ADR.
+- **Commit B** `1dd50f9` — Playwright vy-baseline (mockad send): happy path + body-kontrakt (`segmentIds`/`amne`/`mailtext`/UUID-nyckel) + axe 0.
+- **Commit B-fix** `0635b24` — regression Code SJÄLV fångade i CI: compose-Selectens dolda native-`<option>` delade segmentnamn med SavedSegmentsList → strict-mode-kollision i 6g spara-testet → scopad till `region "Sparade segment"`. (HEAD `1dd50f9` röd → `0635b24` grön.)
+
+### 6h arch-audit (ADR-058) + avvikelse
+
+- **i–iii mekaniskt GODKÄNDA** (arch-fitness-check.sh): lager-oberoende (0 kringgång, route tunn), swappbarhet (port-paritet 20==20==20), EF-ribba (send-email bär EF1–EF6). **iv golv HÅLLET** (consent-GDPR, idempotens, pessimistisk, partial aldrig binär, a11y, deny-by-default). **v ärliga betyg:** bibliotek 11/11/11 utom `send-bulk` teknik **10**; vy `SegmentMailCompose` **11/10/10**.
+- **EN AVVIKELSE (audit område iv, edge-case-honesty):** noll-leverans-send (0-mottagare ELLER alla-undertryckta, `attempted===0`) rapporterades som grön `sent` + skrev fantom-Utskickslogg-rad. Chat omklassade audit-försiktiga "ovanför golvet" → **golv** (falsk framgång + fantom-rad på oåterkallelig handling). Skördad som **L212**.
+
+### Avvikelse-fix (rot-resolverad, CI-grön per commit)
+
+- **Commit 1** `28a625a` — server [`_shared/send-bulk.ts`](../supabase/functions/_shared/send-bulk.ts): `attempted===0 → status 'skipped'` (ej 'sent') + **INGEN Utskickslogg-rad** (`logRecordId=null`, idempotens-konsistent). Schema/model-enum vidgat (`'skipped'`). 2 nya api-pure noll-leverans-grenar (D3-invariant grön).
+- **Commit 2** `1ae3249` — klient: 0-mottagar-send blockerad client-side (`count>0`-gate + "inga mottagare"-notis) + `accepted===0` renderas ALDRIG som grön framgång (neutral varning + suppression-breakdown). e2e (0-block + accepted=0).
+- **Commit 3** `4db9d96` — `TextArea` i dedikerade primitiv-a11y-sviten (stänger audit-omdömes-not; axe 0).
+- **Commit 4** `53b81bd` — [ADR-067](decisions/ADR-067-bulk-mail-segment-send-kontrakt.md) additiv not ('skipped' ⊥ sent/partial/failed + ingen loggrad); `check-adr-count` orörd **67==67**.
+- **Konsekvens:** `send-bulk` → förtjänat **11** efter fix.
+
+### Verifiering
+
+CI grön per commit (runs per HEAD: `0635b24`/`28a625a`/`1ae3249`/`4db9d96` Test+Build success; `53b81bd` doc-only Docs-link-check success). **api-pure** send-bulk 15 (2 nya noll-leverans). **e2e** mer-segment-send 4 (happy + 0-block + accepted=0) + 6g mer-segment 12 (regression-fixad). **a11y** primitiver 13 (ny TextArea-sektion). typecheck 0 · biome 0 · build grön. **Staging-redeploy** send-email **v5 ACTIVE** (explicit `--project-ref pqtshyierkdgwdnxuirz`, T34 — CLI länkad mot PROD `lvjsf…`; prod ORÖRT) + live-sanity 6/6 HTTP-kontrakt mot redeployad EF.
+
+### Teknisk skuld
+
+6h **STAGING-only**. Prod kvarstår (T44 M3 prod-Resend-nyckel + verifierad `miranon.dev` + Code-at-prod-deploy). 6g-EF:er (compute/save/get-segments) STAGING-only. Fas 6 closeout-förkrav: 6e retro-audit (T38) / T39 / T40 → därefter FULLT Fas 6-avslut (phase-end-verify, 6→KLAR, fas-nivå fitness-svep, CHANGELOG, hub-lyft, arkivering). Lessons **L211–L212** `[UNIVERSAL]` (L193–L212 EJ hub-lyfta — pending efter FULLT Fas 6). Ny tråd **T46** (go-live-karta). Auditen flippade EJ Fas 6.
+
+### Filstruktur-snapshot (nytt/ändrat i Session 41)
+
+```text
+src/domain/models/MailPayload.ts          (idempotencyKey + MailSendResult)
+src/domain/schemas/MailPayload.schema.ts  (MailSendResultSchema, 'skipped'-enum)
+src/data/adapters/*                        (sendEmail aktiverad/paritet × 3 + interface)
+src/components/primitives/TextArea.tsx     (ny — flerradig fält-primitiv)
+src/components/segment/SegmentMailCompose.tsx (ny — compose-UI, floors a–h)
+src/components/segment/SegmentBuilder.tsx  (monterar SegmentMailCompose)
+src/routes/dev/primitives.tsx              (TextArea demo-sektion)
+src/queries/keys.ts                        (segment.sendRecipients)
+supabase/functions/_shared/send-bulk.ts    (noll-leverans 'skipped' + no-log)
+tests/api/send-bulk.test.ts                (2 nya noll-leverans-grenar)
+tests/e2e/mer-segment-send.staging.test.ts (ny — 3 vy-tester)
+tests/e2e/mer-segment.staging.test.ts      (6g spara-assertion region-scopad)
+tests/a11y/primitives.spec.ts              (TextArea-sektion)
+docs/decisions/ADR-067-*.md                (additiv noll-leverans-not)
+docs/byggplan.md                           (6h audit-rad ✅ ren, STAGING)
+tasks/lessons.md                           (L211–L212)
+tasks/threads/README.md + T46-*.md         (T46 go-live-karta)
+```
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-28-session-41.md`](../tasks/sessions/2026-06-28-session-41.md) (Del 1 scope + Del 2 landnings-kadens). **Sessionsavslut:** session-end do-confirm-pass + `lifecycle: closed`. Nästa: **prod-deploy-sessioner** — (1) Skool-export (prod-deploy 6g-EF:er, närmast, inga externa deps); (2) Mail 6h (T44 M3 + Code-at-prod-deploy) → Fas 6 closeout-förkrav (T38/T39/T40) → FULLT Fas 6-avslut. Go-live-karta (T46) ritas vid prod-deploy-design.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
