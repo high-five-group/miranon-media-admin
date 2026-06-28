@@ -2785,3 +2785,38 @@ Hub-lyft pending — Fas 6.
 > **Not (reinforce T34):** CLI:t var prod-länkat igen i L2c (`projects list` ● = prod); explicit `--project-ref` +
 > target-verifiering före varje deploy höll (L115). Mönstret upprepar sig → T34 förblir levande tråd tills CLI-länk-vanan
 > ersätts strukturellt.
+
+### L208 [UNIVERSAL] — Permissive-batch-svar: `errors` är FRÅNVARANDE (ej tom array) vid noll rad-fel, och accepted härleds via index-KOMPLEMENT (ej via de giltigas ordning)
+
+Datum: 2026-06-28 | Källa: Session 40 (Fas 6h L2d, Resend permissive-parsning + STEG-0 strukturobservation)
+Resends permissive-batch-svar (`CreateBatchSuccessResponse`) är `{ data: { id }[], errors?: { index, message }[] }`: `data.data`
+bär de GILTIGA raderna KOMPAKTERAT (bara id, ingen e-post), `errors` bär de ogiltiga med NOLLBASERAT index + skäl. Två fällor
+STEG-0-observationen avtäckte mot resolverad `resend@4`: (1) `errors` är **FRÅNVARANDE (undefined)**, inte en tom array, när inget
+rad-fel finns — naiv `data.errors.forEach` kraschar → måste `Array.isArray`-grindas; (2) eftersom `data.data` är kompakterat och
+id-only kan accepted INTE mappas via dess ordning till e-post — accepted måste härledas som **index-komplementet** till
+`errors[].index` över originalbatchen (rejected = `batch[index].email`, accepted = resten). En `data.data.length`-cross-check
+fångar struktur-drift men index-komplementet är auktoritativt. REGEL: vid partial-svar från en extern batch-gräns, härled utfallet
+ur FEL-indexen mot din egen kända input — lita aldrig på att framgångs-listan är ordnings-parallell med requesten, och behandla ett
+frånvarande fel-fält som "noll fel", inte som en bugg. Hub-lyft pending — Fas 6.
+
+### L209 [UNIVERSAL] — Live-isolera ett resolutions-baserat write-vertikal-test genom ett TOMT nyckel-par + EF:ens egen räkning som bekräftelse — inte genom schema-mutation eller unik testdata
+
+Datum: 2026-06-28 | Källa: Session 40 (Fas 6h L2d, staging-fixtur för segment→send)
+send-emails happy-path-test krävde ett segment som löser upp till exakt seedade test-adresser. Resolutionsnyckeln (Deltagandens
+`Kursnamn`) är en LOOKUP av ett CONSTRAINED singleSelect (`Event (source)`) → en unik "testkurs" kunde inte fabriceras, och
+schema-mutation (ny option) var utanför L2d:s gränser. Lösning: välj ett `(kurs × modalitet)`-par som live har NOLL kvalificerade
+medlemmar (staging hade bara 3 RIM/Utbildning-rader → `Psionautics/Utbildning` + `Fjärrskådning/Utbildning` var tomma), seeda ENBART
+test-personerna i det paret, och låt EF:ens egna `requested`-räkning i svaret bekräfta att segmentet löste upp till EXAKT seed-mängden
+(requested=2 = de två seedade → inget annat matchade). REGEL: när du inte kan göra testdatan unik, gör KONTEXTEN tom och verifiera
+isoleringen via systemets egen räkning, inte via antagande; och riv den efemära fixturen efter (basen är leverabel). Hub-lyft pending — Fas 6.
+
+### L210 [UNIVERSAL] — När en svarsform bara kan observeras där en server-only secret lever (deployad EF) och CLI saknar logg-läsning: en engångs throwaway-probe (struktur-only, no-verify-jwt, raderas direkt) är den rena observations-kanalen
+
+Datum: 2026-06-28 | Källa: Session 40 (Fas 6h L2d STEG 0, Resend-svarsform mot resolverad version)
+L2d behövde observera den FAKTISKA `resend@4`-svarsformen FÖRE parsningen designades hårt — men staging-`RESEND_API_KEY` finns BARA i
+en deployad EF (aldrig lokalt, läses/echo:as aldrig) och den installerade Supabase-CLI:n saknade `functions logs`. Lösningen var en
+engångs throwaway-funktion (`--no-verify-jwt`, skickar bara till `@resend.dev`-test-adresser, returnerar ENBART struktur — `Object.keys`,
+`Array.isArray`, längder, `typeof id`, errors-närvaro — aldrig content/id-värden/nyckel), deployad mot staging, anropad en gång, sedan
+raderad (staging + disk) och ALDRIG committad. Den bekräftade `{data:{data:[{id}]}}` + frånvarande `errors` → grön STOPPA-grind innan
+STEG 1. REGEL: en empirisk observation som kräver en server-only-hemlighet görs där hemligheten redan lever, via en minimal struktur-only
+sond som inte exponerar något och inte överlever observationen — inte genom att flytta hemligheten eller bygga parsningen blint. Hub-lyft pending — Fas 6.

@@ -7,13 +7,18 @@
 // (400 SegmentNotResolvable mot ett okänt segment-id → resolution kördes, fann ingen
 // giltig app-regel, kastade — utan att skriva något).
 //
-// DEFERRAT L2d (kräver Resend-nyckel + seedade @resend.dev/riktig-formad-fixturer):
-//   - GATE-LIVENESS 422 (segment som löser upp en RIKTIG-formad adress → spärr-vägran).
-//     Inget BEFINTLIGT staging-segment löser upp en riktig-formad adress (de sparade
-//     test-segmenten har regel Fjärrskådning/Utbildning som ger 0 medlemmar i staging,
-//     verifierat L2c); fabricering är förbjuden → L2d seedar fixturen.
-//   - 503 ResendNotConfigured (gate-passerande @resend.dev-medlemmar + ingen nyckel).
-//   - happy-path riktig Utskickslogg-merge + idempotens-rerun-samma-rad.
+// L2d VERIFIERAT LIVE (Session 40) — mot M2-provisionerad staging (RESEND_API_KEY + RESEND_FROM)
+// via en EFEMÄR seedad fixtur (Personer + Deltaganden + Segment i ett TOMT kurs×modalitet-par,
+// L209), körd som kontrollerade HTTP-anrop + Airtable-introspektion, EJ som committade CI-tester
+// (api-staging-runnern saknar Airtable-seed-kapabilitet → fixturen kan inte self-seedas/teardownas
+// här; fixturen raderades efter verifieringen, basen är leverabel). Belagt i sessionsdok-40 Del 2:
+//   - happy-path: HTTP 200 status 'sent', requested=2 accepted=2 (segment→delivered@/bounced@resend.dev),
+//     riktig Utskickslogg-merge (0→1 rad, 5 fält + Idempotensnyckel=jobId, Skickat till=2 person-ID).
+//   - idempotens-rerun (samma jobId): radantal OFÖRÄNDRAT, samma logRecordId (app-merge); Resend
+//     24h-idempotens via deterministisk <jobId>/b<index>-nyckel.
+//   - 503 ResendNotConfigured: OMVÄNT bevisad död i happy-path (200, ej 503, med nyckel satt).
+//   - GATE-LIVENESS 422: segment→blocked@example.com → 422 non_prod_address_refused, noll send, 0 rader.
+// Den committade regressionsgrinden för svar-parsningen är api-pure tests/api/resend-batch.test.ts (L208).
 //
 // Auth via getValidUserJWT (T24-b). Lokalt skip:as utan staging-creds; skarpt i CI.
 
