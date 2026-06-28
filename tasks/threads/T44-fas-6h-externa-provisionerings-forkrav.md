@@ -35,6 +35,16 @@ hela förkravs-mängden till standard.
   (resend.com/domains). **GRINDAR:** 6h **prod-real-send** — Resend hård-spärrar
   riktiga mottagare utan verifierad domän (ADR-067-research). En prod-nyckel utan
   verifierad domän räcker INTE för riktiga utskick.
+  - **Domän (konkret, 2026-06-28):** `miranon.dev`, registrerad hos GoDaddy
+    (Marcus). Avsedd som verifierad avsändardomän för prod-Resend — `RESEND_FROM`
+    byter från `onboarding@resend.dev` (staging/läge-1) till en `miranon.dev`-adress
+    **vid prod-deploy, EJ före** (staging fortsätter på `onboarding@resend.dev`).
+  - **ÖPPEN FRÅGA (avgörs FÖRE DNS-setup):** skicka från root (`miranon.dev`) eller
+    subdomän (t.ex. `mail.miranon.dev` / `send.miranon.dev`)? Avgörs mot
+    psionautics-repots fungerande Resend-setup (korsjämför: from-konvention + de
+    exakta SPF/DKIM/DMARC-records den använder).
+  - **TIMING:** åtgärd vid M3 / prod-deploy efter L3 + 6h arch-audit; faktumet
+    registreras NU (durabilitet — Chat-minne efemärt), inte väntande på avslut.
 
 ## CODE-AT-PROD-DEPLOY (under Marcus-auktorisation — EJ Marcus-only)
 
