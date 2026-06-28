@@ -80,8 +80,12 @@ export function SegmentMailCompose() {
   const amneValid = amne.trim() !== '';
   const mailtextValid = mailtext.trim() !== '';
   const segmentValid = selectedId !== '';
-  const canSend = segmentValid && amneValid && mailtextValid;
   const countReady = recipients.data !== undefined && !recipients.isPending;
+  const recipientCount = recipients.data?.count;
+  // Ett sparat segment vars regel just nu beräknar 0 medlemmar → ingen att skicka till.
+  // Blockeras client-side (slipper round-trip; servern hade ändå svarat 'skipped').
+  const noRecipients = countReady && (recipientCount ?? 0) === 0;
+  const canSend = segmentValid && amneValid && mailtextValid && (recipientCount ?? 0) > 0;
 
   function handleOpenConfirm() {
     setSubmitted(true);
@@ -101,7 +105,6 @@ export function SegmentMailCompose() {
   }
 
   const result: MailSendResult | undefined = sendMutation.data;
-  const recipientCount = recipients.data?.count;
 
   return (
     <div className="flex flex-col gap-3 border-text-muted/20 border-t pt-4">
@@ -146,7 +149,12 @@ export function SegmentMailCompose() {
               {recipients.error instanceof Error ? recipients.error.message : 'Okänt fel.'}
             </MessageBox>
           )}
-          {countReady && (
+          {noRecipients && (
+            <MessageBox intent="warning" title="Inga mottagare">
+              Det här segmentet har inga mottagare just nu — det går inte att skicka ett utskick.
+            </MessageBox>
+          )}
+          {countReady && !noRecipients && (
             <p className="text-body">
               Det här segmentet har <strong>{recipientCount}</strong>{' '}
               {recipientCount === 1 ? 'person' : 'personer'}. En del kan undertryckas av servern
@@ -180,7 +188,9 @@ export function SegmentMailCompose() {
       <Button
         intent="primary"
         onPress={handleOpenConfirm}
-        isDisabled={sendMutation.isPending || (submitted && (!canSend || !countReady))}
+        isDisabled={
+          sendMutation.isPending || noRecipients || (submitted && (!canSend || !countReady))
+        }
       >
         {sendMutation.isPending ? 'Skickar…' : 'Skicka utskick…'}
       </Button>
@@ -231,22 +241,26 @@ export function SegmentMailCompose() {
         )}
 
         {result && !sendMutation.isPending && !sendMutation.isError && (
+          // accepted===0 (noll-leverans: 'skipped' tomt/allt-undertryckt ELLER 'failed'
+          // allt-avvisat) renderas ALDRIG som grön framgång — neutral varning + breakdown
+          // som visar VARFÖR. accepted>0 behåller sent→success / partial→info oförändrat.
           <MessageBox
             intent={
-              result.status === 'sent' ? 'success' : result.status === 'partial' ? 'info' : 'error'
+              result.accepted === 0 ? 'warning' : result.status === 'partial' ? 'info' : 'success'
             }
             title={
-              result.status === 'sent'
-                ? 'Utskicket skickades'
+              result.accepted === 0
+                ? 'Inga mottagare fick mailet'
                 : result.status === 'partial'
                   ? 'Utskicket skickades delvis'
-                  : 'Inget skickades'
+                  : 'Utskicket skickades'
             }
           >
-            <p>
-              <strong>{result.accepted}</strong>{' '}
-              {result.accepted === 1 ? 'mottagare fick' : 'mottagare fick'} mailet.
-            </p>
+            {result.accepted > 0 && (
+              <p>
+                <strong>{result.accepted}</strong> mottagare fick mailet.
+              </p>
+            )}
             {result.suppressedConsent > 0 && (
               <p>{result.suppressedConsent} togs bort (har tackat nej till utskick).</p>
             )}

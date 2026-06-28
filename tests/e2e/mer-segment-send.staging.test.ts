@@ -159,4 +159,80 @@ test.describe('Skicka mail på segment (Fas 6h L3)', () => {
       .analyze();
     expect(results.violations).toEqual([]);
   });
+
+  test('0-mottagar-segment → Skicka client-blockerad + "Inga mottagare"-notis', async ({
+    page,
+  }) => {
+    // 6h arch-audit-fix Del A: ett segment vars regel beräknar 0 medlemmar → ingen
+    // round-trip. Override compute-segment till count=0 (sist registrerad vinner).
+    await page.route(COMPUTE_SEGMENT, async (route: Route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ members: [], count: 0 }),
+      });
+    });
+    // send-email MÅSTE aldrig anropas — fångar en ev. läckande sändning.
+    let sendCalled = false;
+    await page.route(SEND_EMAIL, async (route: Route) => {
+      sendCalled = true;
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    });
+
+    await page.goto('/mer/segment');
+    await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
+
+    await page.getByRole('button', { name: 'Segment att skicka till' }).click();
+    await page.getByRole('option', { name: 'FS-utbildningsdeltagare' }).click();
+
+    // Tydlig notis + Skicka-knappen disabled (även ifyllt ämne/meddelande).
+    await expect(page.getByText(/Det här segmentet har inga mottagare just nu/)).toBeVisible();
+    await page.getByLabel('Ämne').fill('Test');
+    await page.getByLabel('Meddelande').fill('Test');
+    await expect(page.getByRole('button', { name: 'Skicka utskick…' })).toBeDisabled();
+    expect(sendCalled, 'send-email får ej anropas vid 0 mottagare').toBe(false);
+  });
+
+  test('accepted===0 (alla undertryckta) → ärlig icke-success-rendering + breakdown', async ({
+    page,
+  }) => {
+    // compute=3 (beforeEach) → användaren ser "3 personer" och kan skicka; servern
+    // undertrycker alla (consent/e-post) → status 'skipped', accepted=0. UI:t får ALDRIG
+    // visa grön "Utskicket skickades" — neutral "Inga mottagare fick mailet" + breakdown.
+    await page.route(SEND_EMAIL, async (route: Route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'skipped',
+          requested: 3,
+          suppressedConsent: 2,
+          suppressedNoEmail: 1,
+          deduped: 0,
+          attempted: 0,
+          accepted: 0,
+          rejected: 0,
+          rejections: [],
+          logRecordId: null,
+        }),
+      });
+    });
+
+    await page.goto('/mer/segment');
+    await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
+
+    await page.getByRole('button', { name: 'Segment att skicka till' }).click();
+    await page.getByRole('option', { name: 'FS-utbildningsdeltagare' }).click();
+    await expect(page.getByText(/Det här segmentet har\s*3\s*personer/)).toBeVisible();
+    await page.getByLabel('Ämne').fill('Höstens kurser');
+    await page.getByLabel('Meddelande').fill('Hej!');
+    await page.getByRole('button', { name: 'Skicka utskick…' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Skicka till 3 mottagare' }).click();
+
+    // Ärlig rendering: INGEN grön framgång; breakdown visar varför.
+    await expect(page.getByText('Inga mottagare fick mailet')).toBeVisible();
+    await expect(page.getByText(/2 togs bort \(har tackat nej/)).toBeVisible();
+    await expect(page.getByText(/1 togs bort \(saknar e-post\)/)).toBeVisible();
+    await expect(page.getByText('Utskicket skickades', { exact: true })).toHaveCount(0);
+  });
 });
