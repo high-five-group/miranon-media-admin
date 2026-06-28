@@ -359,6 +359,11 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     // Bekräftelse + segmentet dyker upp i listan (query invalideras → refetch).
     await expect(page.getByText('Segmentet sparades.')).toBeVisible();
     await expect(page.getByRole('heading', { level: 2, name: 'Sparade segment' })).toBeVisible();
-    await expect(page.getByText('FS-utbildningsdeltagare')).toBeVisible();
+    // Scopa till "Sparade segment"-regionen: namnet förekommer även som dolt
+    // <option> i send-mail-Selecten (Fas 6h L3 SegmentMailCompose) → annars
+    // strict-mode-kollision på två element.
+    await expect(
+      page.getByRole('region', { name: 'Sparade segment' }).getByText('FS-utbildningsdeltagare'),
+    ).toBeVisible();
   });
 });
