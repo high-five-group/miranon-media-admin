@@ -69,6 +69,7 @@ status: stable
 | `T43` | Schemalagd send (mailutskick vid framtida tidpunkt) | `paused` | _(ingen kort än — endast registrerad); uppstod Session 39 (Fas 6h L0, [ADR-067](../../docs/decisions/ADR-067-bulk-mail-segment-send-kontrakt.md) deferrad)_ |
 | `T44` | Fas 6h externa provisionerings-förkrav (Marcus-ägda) | `paused` | [T44-fas-6h-externa-provisionerings-forkrav.md](T44-fas-6h-externa-provisionerings-forkrav.md) — ⚠️ GRINDAR 6h: M1 Resend-konto / M2 staging-test-nyckel→L2d / M3 prod-nyckel+verifierad-domän→prod-real-send (Marcus-ägda, secure-channel); Code-at-prod-deploy separat |
 | `T45` | api-staging-runnern saknar Airtable-seed-kapabilitet → live-vertikal-vägar (Utskickslogg-merge / idempotens-rerun / 422 gate-liveness) bevisas en gång mot efemär fixtur men saknar committad CI-regressionsgrind | `paused` | _(ingen kort än — endast registrerad); uppstod Session 40 (Fas 6h L2d STEG 3–5)_ |
+| `T46` | Go-live-karta: konsoliderad avstånd-till-live per leverans-väg (Skool-export = access-grant / mail = consent-gatead) — idag spridd över ≥5 ytor | `paused` | [T46-go-live-karta.md](T46-go-live-karta.md) — uppstod Session 41 (Fas 6h closeout); ritas vid prod-deploy-session-designen |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
