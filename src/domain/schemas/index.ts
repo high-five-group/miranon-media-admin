@@ -19,6 +19,7 @@ export {
   BulkMailSchema,
   MailLogEntrySchema,
   MailPayloadSchema,
+  MailSendResultSchema,
 } from './MailPayload.schema';
 export { PersonSchema } from './Person.schema';
 export {

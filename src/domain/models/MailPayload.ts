@@ -3,7 +3,27 @@ export interface MailPayload {
   amne: string;
   mailtext: string;
   segmentIds: string[];
+  /** Stabil idempotens-nyckel (UUID v4) per send-avsikt — återanvänds vid retry (ADR-067 D4). */
+  idempotencyKey: string;
   antalMottagare?: number;
+}
+
+/**
+ * Send-email-EF:ens svar (200) — 1:1 mot BulkSendStatus (send-bulk.ts) /
+ * MailSendResultSchema. Aldrig binärt: `status` + server-side consent-/no-email-
+ * räkning (ADR-067 D3/D5). Klienten visar utfallet, filtrerar aldrig consent själv.
+ */
+export interface MailSendResult {
+  status: 'sent' | 'partial' | 'failed';
+  requested: number;
+  suppressedConsent: number;
+  suppressedNoEmail: number;
+  deduped: number;
+  attempted: number;
+  accepted: number;
+  rejected: number;
+  rejections: { email: string; reason: string }[];
+  logRecordId: string | null;
 }
 
 /** En rad i utskicksloggen (Utskickslogg). 1:1 mot MailLogEntrySchema (live-verifierad). */

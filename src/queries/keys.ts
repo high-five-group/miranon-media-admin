@@ -68,6 +68,10 @@ export const queryKeys = {
     // exkluderas server-side), inga klient-filters. Speglar waitlist.all-formen.
     // `saveSegment`-mutationen invaliderar denna nyckel → listan refetchar.
     saved: ['segment', 'saved'] as const,
+    // Mottagar-antal för ETT sparat segment inför send (Fas 6h L3): compute-segment
+    // på segmentets egen regel. PER-SEGMENT-nyckel (record-ID) → cachas så att om-val
+    // av samma segment inte re-walkar källan; ett annat segment → egen fetch.
+    sendRecipients: (segmentId: string) => ['segment', 'sendRecipients', segmentId] as const,
   },
   dashboard: {
     // Hem-aggregering (Fas 6d). EGNA nycklar, MEDVETET skilda från events.list /

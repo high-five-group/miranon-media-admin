@@ -1,7 +1,7 @@
 import type { Attendance } from '../../domain/models/Attendance';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
-import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload';
+import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/models/MailPayload';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type {
@@ -87,7 +87,7 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
-  async sendEmail(_payload: MailPayload): Promise<void> {
+  async sendEmail(_payload: MailPayload): Promise<MailSendResult> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

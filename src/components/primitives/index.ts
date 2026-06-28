@@ -5,3 +5,4 @@ export { MessageBox, type MessageBoxProps } from './MessageBox';
 export { Modal, type ModalProps } from './Modal';
 export { Radio, RadioGroup, type RadioGroupProps } from './RadioGroup';
 export { Select, SelectItem, type SelectProps } from './Select';
+export { TextArea, type TextAreaProps } from './TextArea';

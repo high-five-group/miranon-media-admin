@@ -1,7 +1,7 @@
 import type { Attendance } from '../../domain/models/Attendance';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
-import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload';
+import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/models/MailPayload';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type {
@@ -92,8 +92,8 @@ export interface DataSourceAdapter {
   /** Hämta engagemang, valfritt filtrerat per person */
   fetchEngagements(personId?: string): Promise<Engagement[]>;
 
-  /** Skicka mailutskick */
-  sendEmail(payload: MailPayload): Promise<void>;
+  /** Skicka mailutskick (bulk på segment) — returnerar serverns sänd-utfall (ADR-067 D3) */
+  sendEmail(payload: MailPayload): Promise<MailSendResult>;
 
   /** Hämta mailloggen */
   fetchMailLog(filters?: MailLogFilters): Promise<MailLogEntry[]>;

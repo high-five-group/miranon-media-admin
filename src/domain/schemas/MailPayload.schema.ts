@@ -5,7 +5,42 @@ export const MailPayloadSchema = z.object({
   amne: z.string(),
   mailtext: z.string(),
   segmentIds: z.array(z.string()),
+  /**
+   * Stabil idempotens-nyckel (UUID v4) — klienten genererar EN per send-avsikt och
+   * återanvänder vid retry/dubbelklick (ADR-067 D4). EF:en accepterar den i body
+   * (eller `Idempotency-Key`-header) och härleder per-batch-nycklar `<key>/b<i>`.
+   */
+  idempotencyKey: z.string(),
   antalMottagare: z.number().optional(),
+});
+
+/**
+ * Svaret från send-email-EF:en (200) — 1:1 mot `BulkSendStatus` i
+ * `supabase/functions/_shared/send-bulk.ts`. Aldrig binärt utfall (ADR-067 D3):
+ * `status` skiljer sent/partial/failed, och consent-/no-email-undertryckning
+ * räknas server-side (SSOT, D5) — klienten VISAR utfallet, filtrerar aldrig själv.
+ * `.parse()`:as vid datagränsen (ADR-026).
+ */
+export const MailSendResultSchema = z.object({
+  status: z.enum(['sent', 'partial', 'failed']),
+  /** Antal upplösta segment-medlemmar (före undertryckning/dedup). */
+  requested: z.number(),
+  /** Undertryckta p.g.a. consent (Ej godkänd för mailutskick). */
+  suppressedConsent: z.number(),
+  /** Undertryckta p.g.a. saknad e-post. */
+  suppressedNoEmail: z.number(),
+  /** Bortdedupade (samma e-post flera segment). */
+  deduped: z.number(),
+  /** Antal faktiskt försökta sändningar (efter undertryckning/dedup). */
+  attempted: z.number(),
+  /** Antal accepterade av Resend (= "sänt"). */
+  accepted: z.number(),
+  /** Antal avvisade av Resend. */
+  rejected: z.number(),
+  /** Avvisnings-detalj (e-post + skäl) — visas som ANTAL i UI, ej per rad. */
+  rejections: z.array(z.object({ email: z.string(), reason: z.string() })),
+  /** Utskickslogg-radens record-ID (merge-upsert på jobId); null om ingen skrevs. */
+  logRecordId: z.string().nullable(),
 });
 
 /**

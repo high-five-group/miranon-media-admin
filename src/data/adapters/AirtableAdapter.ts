@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { Attendance } from '../../domain/models/Attendance';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
-import type { MailLogEntry, MailPayload } from '../../domain/models/MailPayload';
+import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/models/MailPayload';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
@@ -16,6 +16,7 @@ import {
   type Intresserad,
   IntresseradSchema,
   MailLogEntrySchema,
+  MailSendResultSchema,
   type PersonDetail,
   PersonDetailSchema,
   PersonSchema,
@@ -235,8 +236,23 @@ export class AirtableAdapter implements DataSourceAdapter {
    * Direct-Resend-implementationen är medveten skuld per ADR-015
    * (send-email-direct-resend); migreras till outbox post-Fas E.
    */
-  async sendEmail(_payload: MailPayload): Promise<void> {
-    throw new Error('Not deployed yet — see Fas 6e');
+  /**
+   * Skicka ett bulk-mailutskick på ett (eller flera) sparade segment (Fas 6h L3,
+   * ADR-067). POST mot send-email-EF via postEdgeFunction — kroppen är EF:ens
+   * deny-by-default-kontrakt: `segmentIds` (sparade Segment-record-ID, upplöses
+   * SERVER-SIDE till mottagare — aldrig en klient-byggd lista), `amne`, `mailtext`
+   * och den stabila `idempotencyKey` (UUID v4, body-fallback för Idempotency-Key-
+   * headern). `antalMottagare` skickas EJ — EF:en räknar server-side. Svaret
+   * (`BulkSendStatus`) `.parse()`:as vid datagränsen (ADR-026); aldrig binärt utfall.
+   */
+  async sendEmail(payload: MailPayload): Promise<MailSendResult> {
+    const data = await postEdgeFunction<unknown>('send-email', {
+      amne: payload.amne,
+      mailtext: payload.mailtext,
+      segmentIds: payload.segmentIds,
+      idempotencyKey: payload.idempotencyKey,
+    });
+    return MailSendResultSchema.parse(data);
   }
 
   /**

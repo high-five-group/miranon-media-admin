@@ -12,6 +12,7 @@ import { buildSkoolExport, downloadCsv, skoolExportFilename } from '@/lib/segmen
 import { deriveTaxonomy, labelForPar, parKey } from '@/lib/segment-taxonomy';
 import { queryKeys } from '@/queries/keys';
 import { SavedSegmentsList } from './SavedSegmentsList';
+import { SegmentMailCompose } from './SegmentMailCompose';
 
 type Choice = 'include' | 'exclude' | 'ignorera';
 
@@ -361,6 +362,10 @@ export function SegmentBuilder() {
       </div>
 
       <SavedSegmentsList />
+
+      {/* Skicka mail på ett sparat segment (Fas 6h L3, ADR-067) — oåterkallelig
+          bulk-handling, pessimistisk + bekräftad + idempotent. */}
+      <SegmentMailCompose />
     </section>
   );
 }
