@@ -2840,3 +2840,17 @@ linter:n), inte hos Chat: doc-birth-/transkriptions-handoffen ska EXPLICIT kräv
 konventionen + kör linter:n lokalt FÖRE commit (skill steg 10 som HÅRD handoff-grind, ej valfritt skill-steg). Annars fångar CI det
 efteråt — icke-blockerande men en extra fix-commit. Generaliserar: när Chat:s output blir Code:s commit-artefakt i en governad fil,
 bär handoffen normaliserings-kravet — anta aldrig att ad-hoc-formatering passerar grinden. Hub-lyft pending — Fas 6.
+
+### L212 [UNIVERSAL] — En framgångs-status på en noll-effekt-operation är en ärlighetslucka; en operation som kan no-op:a behöver ett distinkt utfall och får aldrig skriva en fantom-rad
+
+Datum: 2026-06-28 | Källa: Session 41 (Fas 6h L3 + arch-audit, klass: korrekthet / utfalls-ärlighet)
+
+En operation vars normala svar är "lyckades" kan ha ett gräns-fall där den inte gjorde någonting — tomt indata, alla mottagare
+bortfiltrerade av en grind (consent/e-post), belopp noll. Att klumpa det fallet med framgång ger två defekter: (1) UI:t visar grön
+framgång för en handling som aldrig hände — aktivt vilseledande, särskilt för en icke-teknisk användare på en oåterkallelig handling;
+(2) operationen skriver en logg-/historik-rad för något som aldrig skedde (fantom-rad som förorenar nedströms-läsvyer). Regel: en
+operation som KAN no-op:a behöver ett DISTINKT utfall i sin status-taxonomi (t.ex. 'skipped' ⊥ 'sent'/'partial'/'failed'), klienten
+renderar det icke-som-framgång, och noll-effekt skriver INGEN biverknings-rad. Generaliserar "partial-failure aldrig binär" (ADR-067
+D3) nedåt: "inget hände" är ett tredje utfall, inte en undertyp av framgång. Process-not: fångades av arch-auditens edge-case-honesty-
+check (område iv, omdöme), inte av de mekaniska områdena — och Chat omklassade avvikelsen från auditens försiktiga "ovanför golvet"
+till golv (falsk framgång + fantom-rad på oåterkallelig handling = golv, ej finish). Hub-lyft pending — Fas 6.
