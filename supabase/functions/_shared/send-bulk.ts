@@ -58,7 +58,13 @@ export type LogWriter = (entry: {
 }) => Promise<string>;
 
 export type BulkSendStatus = {
-  status: 'sent' | 'partial' | 'failed';
+  /**
+   * D3-utfall, aldrig binärt. `skipped` = NOLL-LEVERANS (`attempted === 0`): tomt
+   * segment eller alla undertryckta (consent/e-post) → ingen sändning skedde och
+   * INGEN Utskickslogg-rad skrevs. Skiljs ärligt från `sent` (minst en accepterad)
+   * så ett noll-utfall aldrig maskeras som framgång (6h arch-audit-fynd, ADR-067-not).
+   */
+  status: 'sent' | 'partial' | 'failed' | 'skipped';
   requested: number;
   suppressedConsent: number;
   suppressedNoEmail: number;
@@ -160,23 +166,28 @@ export async function runBulkSend(
     rejections.push(...outcome.rejected);
   }
 
-  // 4) Status (D3).
+  // 4) Status (D3, aldrig binär). attempted===0 → NOLL-LEVERANS ('skipped'), aldrig
+  //    'sent' — ett tomt/allt-undertryckt utskick maskeras inte som framgång.
   const rejectedCount = rejections.length;
-  const status: BulkSendStatus['status'] =
-    counts.attempted > 0 && acceptedCount === 0
-      ? 'failed'
-      : rejectedCount > 0
-        ? 'partial'
-        : 'sent';
+  let status: BulkSendStatus['status'];
+  if (counts.attempted === 0) status = 'skipped';
+  else if (acceptedCount === 0) status = 'failed';
+  else if (rejectedCount > 0) status = 'partial';
+  else status = 'sent';
 
-  // 5) Revisionslogg (merge på jobId → exakt-en-gång-loggrad vid retry).
-  const logRecordId = await deps.writeLog({
-    jobId: input.jobId,
-    amne: input.amne,
-    mailtext: input.mailtext,
-    acceptedPersonIds,
-    filterSnapshot: input.filterSnapshot,
-  });
+  // 5) Revisionslogg (merge på jobId → exakt-en-gång-loggrad vid retry). NOLL-LEVERANS
+  //    (attempted===0) skriver INGEN rad — ingen fantom-Utskickslogg för ett tomt utskick.
+  //    Idempotens-konsistent: tomt → ingen rad → re-run → fortfarande ingen rad.
+  const logRecordId =
+    counts.attempted === 0
+      ? null
+      : await deps.writeLog({
+          jobId: input.jobId,
+          amne: input.amne,
+          mailtext: input.mailtext,
+          acceptedPersonIds,
+          filterSnapshot: input.filterSnapshot,
+        });
 
   return {
     status,

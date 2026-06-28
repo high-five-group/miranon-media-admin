@@ -196,18 +196,42 @@ test.describe('runBulkSend — räknar-pass-through + logg (D3/D7)', () => {
     expect(log.entries[0].jobId).toBe(JOB_ID);
   });
 
-  test('tom/allt-suppressad input → attempted 0, sent, noll sänt, logg ändå skriven (audit)', async () => {
+  test('allt-suppressad input → attempted 0, NOLL-LEVERANS skipped, noll sänt, INGEN loggrad', async () => {
+    // 6h arch-audit-fix: attempted===0 → 'skipped' (ej 'sent') + ingen Utskickslogg-rad
+    // (ingen fantom-rad för ett tomt utskick). p1 har consent men saknar e-post → suppressedNoEmail.
     const sender = mockSender();
     const log = mockLogWriter();
-    const res = await runBulkSend(baseInput([member('p1', null, true)], false), {
+    const res = await runBulkSend(baseInput([member('p1', null, false)], false), {
       batchSender: sender,
       writeLog: log,
     });
     expect(res.attempted).toBe(0);
-    expect(res.status).toBe('sent');
-    expect(sender.calls).toHaveLength(0);
-    expect(log.entries).toHaveLength(1);
-    expect(log.entries[0].acceptedPersonIds).toEqual([]);
+    expect(res.status).toBe('skipped');
+    expect(res.accepted).toBe(0);
+    expect(res.logRecordId).toBeNull();
+    expect(sender.calls, 'noll Resend-anrop').toHaveLength(0);
+    expect(log.entries, 'INGEN Utskickslogg-rad vid noll-leverans').toHaveLength(0);
+    // Invarianten håller fortfarande (ADR-067 D3).
+    expect(res.suppressedConsent + res.suppressedNoEmail + res.deduped + res.attempted).toBe(
+      res.requested,
+    );
+  });
+
+  test('tomt segment (0 medlemmar) → skipped, ingen loggrad, invariant 0==0', async () => {
+    const sender = mockSender();
+    const log = mockLogWriter();
+    const res = await runBulkSend(baseInput([], false), {
+      batchSender: sender,
+      writeLog: log,
+    });
+    expect(res.requested).toBe(0);
+    expect(res.attempted).toBe(0);
+    expect(res.status).toBe('skipped');
+    expect(res.logRecordId).toBeNull();
+    expect(log.entries).toHaveLength(0);
+    expect(res.suppressedConsent + res.suppressedNoEmail + res.deduped + res.attempted).toBe(
+      res.requested,
+    );
   });
 });
 

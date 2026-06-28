@@ -22,7 +22,8 @@ export const MailPayloadSchema = z.object({
  * `.parse()`:as vid datagränsen (ADR-026).
  */
 export const MailSendResultSchema = z.object({
-  status: z.enum(['sent', 'partial', 'failed']),
+  /** `skipped` = noll-leverans (attempted===0: tomt segment / alla undertryckta) — ingen loggrad. */
+  status: z.enum(['sent', 'partial', 'failed', 'skipped']),
   /** Antal upplösta segment-medlemmar (före undertryckning/dedup). */
   requested: z.number(),
   /** Undertryckta p.g.a. consent (Ej godkänd för mailutskick). */

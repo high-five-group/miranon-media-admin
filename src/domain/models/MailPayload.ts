@@ -14,7 +14,8 @@ export interface MailPayload {
  * räkning (ADR-067 D3/D5). Klienten visar utfallet, filtrerar aldrig consent själv.
  */
 export interface MailSendResult {
-  status: 'sent' | 'partial' | 'failed';
+  /** `skipped` = noll-leverans (attempted===0: tomt segment / alla undertryckta) — ingen loggrad. */
+  status: 'sent' | 'partial' | 'failed' | 'skipped';
   requested: number;
   suppressedConsent: number;
   suppressedNoEmail: number;
