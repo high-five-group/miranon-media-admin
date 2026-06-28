@@ -1804,6 +1804,48 @@ tasks/threads/README.md              (L0, T41/T42/T43)
 
 ---
 
+## Session 40 — Fas 6h Bulk-mail på segment (send-email): L2d riktig Resend-gräns (staging) (2026-06-28)
+
+**Mål:** byt L2c-platshållaren mot den RIKTIGA Resend-gränsen och bevisa send-vertikalen mot deployad staging-EF nu när M2 (staging-test-nyckel) är provisionerad ([byggplan §4 Fas 6h](byggplan.md), [ADR-067](decisions/ADR-067-bulk-mail-segment-send-kontrakt.md)). Commit-range `a27ba2d`→`bcda7ff` (+ denna BUILD-LOG-entry, killer-item-#4-komplettering post-close — historik, ej återöppning; sessionsdok-40 `lifecycle: closed` orört). SESSIONSGRÄNS (Fas 6h öppen: L3 + 6h-audit + prod-deploy; Fas 6 öppen: T38/T39/T40), EJ fas-avslut.
+
+### Fas 6h L2d (planerat vs faktiskt)
+
+- **STEG 0 strukturobservation** (throwaway-probe, ej committad) — engångs staging-EF (`l2d-resend-probe`, `--no-verify-jwt`, raderad direkt + aldrig committad) gjorde riktig `batch.send` mot test-adresser och returnerade ENBART struktur. Observerat mot resolverad `resend@4`: `{ data: { id }[] }`, **`errors` FRÅNVARANDE (undefined)** vid 2/2 giltiga → bekräftar formen, ingen STOPPA (L210). Kanal-val: CLI saknar `functions logs` + staging-nyckel bara server-side.
+- **STEG 1–2 svar-parsning + tester** (`b4677e8`) — ny Node-importerbar [`_shared/resend-batch.ts`](../supabase/functions/_shared/resend-batch.ts) `parseBatchOutcome`: rejected ur `errors[].index → batch[index].email + message`; accepted = **index-KOMPLEMENT** (rad-exakt, ej beroende av kompakterade id-only `data.data`); defensiv `data.data.length`-cross-check; fabricerar aldrig e-post vid index utanför intervall. Ersatte L2c-platshållaren i `makeRealBatchSender`. **L2c-PIN UPPLÖST** (STEG 0 + förstaparts-SDK-typ `CreateBatchSuccessResponse`). **8 api-pure enhetstester** (full-accept/partial/defensiva kanter); partial-grenen schema-bekräftad mot Resend-doc, EJ live-framkallbar (icke-prod-spärren) (L208).
+- **STEG 3–5 live mot deployad staging-EF** (`603a60f` doc-trail; deploy explicit `--project-ref pqtshyierkdgwdnxuirz`, prod orört) — via EFEMÄR fixtur (L209): seedade i ett TOMT `kurs×modalitet`-par (staging hade bara 3 RIM/Utbildning-rader) — HAPPY (`Psionautics/Utbildning` → delivered@/bounced@resend.dev) + GATE (`Fjärrskådning/Utbildning` → `blocked@example.com`); allt raderat efter (basen leverabel). **(3)** happy-path **HTTP 200 `sent`**, `requested=2 accepted=2` (isolering bekräftad via EF:ens egen räkning), Utskickslogg-merge **0→1** (5 skrivbara fält + `Idempotensnyckel=jobId` + Skickat till=2 person-ID). **(4)** idempotens-rerun (samma jobId): **radantal oförändrat + samma `logRecordId`** (app-merge) + Resend 24h via `<jobId>/b<index>`. **(5a)** 503-grenen **död i happy-path** (200, ej 503, med nyckel). **(5b)** 422 gate-liveness → **`non_prod_address_refused`**, noll send, 0 Utskickslogg-rader. **Alla 6 L2d-DoD KLAR (staging).**
+
+### Avvikelser
+
+`Antal skickade` (COUNTA på länkfält) visade 1 vid 2 mottagare → **§Kända fällor 39** (hypotes-märkt rot, bas-formel-quirk, utanför app-skrivkontraktet → AT-Max/[ADR-063](decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md), ej L2d-defekt). Live-checkarna EJ committade som CI-tester (api-staging-runnern saknar Airtable-seed) → **tråd T45** (paused); regressionsgrind för parsningen = api-pure `resend-batch.test.ts`.
+
+### Verifiering
+
+8 api-pure L2d-tester (parseBatchOutcome) + live 5/5 STEG mot deployad staging-EF (happy-path / merge / idempotens-rerun / 503-omvänt / 422). Ackumulerat Fas 6h: 18 (L1) + 14 (L2b) + 6 (L2c) + 8 (L2d). Alla CI-gröna.
+
+### Teknisk skuld
+
+L2d **STAGING-only**. Prod kvarstår (M3 prod-nyckel + verifierad domän + Code-at-prod-deploy, [T44](../tasks/threads/T44-fas-6h-externa-provisionerings-forkrav.md)). **T44 M2 PROVISIONERAD** (grindar ej längre L2d). **T44 M3 konkretiserad:** avsändardomän `miranon.dev` (GoDaddy, 2026-06-28) + öppen root-vs-subdomän-fråga (mot psionautics SPF/DKIM/DMARC). 6h arch-audit förfaller efter L3 (ej mid-build). Lessons **L208–L210** `[UNIVERSAL]` (L193–L210 EJ hub-lyfta — pending efter FULLT Fas 6).
+
+### Filstruktur-snapshot (nytt/ändrat i Session 40)
+
+```text
+supabase/functions/
+  _shared/resend-batch.ts           (L2d, ny — parseBatchOutcome, Node-importerbar)
+  send-email/index.ts               (L2d, makeRealBatchSender → riktig parsning)
+tests/api/
+  resend-batch.test.ts              (L2d, ny — 8 api-pure enhetstester)
+  send-email.staging.test.ts        (L2d, DEFERRAT→VERIFIERAT-LIVE-not)
+docs/reference/data-model.md         (§Kända fällor 39 — Antal skickade-quirk)
+tasks/threads/README.md              (T45 — api-staging-seed-lucka)
+tasks/threads/T44-*.md               (M2 PROVISIONERAD + M3 konkretiserad)
+docs/byggplan.md                     (6h audit-matris-rad → byggd L0–L2d staging)
+tasks/lessons.md                     (L208–L210, Session 40-H2)
+```
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-28-session-40.md`](../tasks/sessions/2026-06-28-session-40.md) (Del 1 scope + Del 2 STEG 0–5 + durabilitets-registreringar + handoff). **Sessionsavslut:** do-confirm-pass (POST 1–6, 5 åtgärdade) + `lifecycle: closed` (`bcda7ff`). Nästa: **NY Session 41 → Fas 6h L3 (klient)** — compose-UI + adapter (operationKey `send-email`, klient-side Idempotency-Key) + e2e; obligatoriskt forensiskt pre-pass mot create-event (6f)/save-segment (6g) klient→EF-mönstret → 6h arch-audit → prod-deploy (M3 + Code-at-prod-deploy, T44) → Fas 6 closeout (T38/T39/T40).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
