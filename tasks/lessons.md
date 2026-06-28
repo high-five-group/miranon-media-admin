@@ -2824,3 +2824,19 @@ engångs throwaway-funktion (`--no-verify-jwt`, skickar bara till `@resend.dev`-
 raderad (staging + disk) och ALDRIG committad. Den bekräftade `{data:{data:[{id}]}}` + frånvarande `errors` → grön STOPPA-grind innan
 STEG 1. REGEL: en empirisk observation som kräver en server-only-hemlighet görs där hemligheten redan lever, via en minimal struktur-only
 sond som inte exponerar något och inte överlever observationen — inte genom att flytta hemligheten eller bygga parsningen blint. Hub-lyft pending — Fas 6.
+
+## 2026-06-28 — Session 41 (Fas 6h L3 — klient: compose-UI + adapter + e2e)
+
+> Hub-lyft EJ nu — L193–L211 lyfts samlat efter FULLT Fas 6 (pending).
+
+### L211 [UNIVERSAL] — Verbatim Chat-text i en lint-governad fil ärver filens lint-governance; handoffen delegerar normalisering + lokal lint till Code
+
+Datum: 2026-06-28 | Källa: Session 41 (Fas 6h sessionsstart, doc-birth markdownlint-miss, klass: handoff-disciplin / governed-file)
+
+När Chat lämnar verbatim text (sessionsdok-scope, ADR-utkast) som Code transkriberar in i en markdownlint-governad fil, blir Chat:s
+formatering det som grindas. Chat:s naturliga formatering (t.ex. `-`-bullets, lös blankrads-disciplin) matchar inte nödvändigtvis
+repo-konventionen (här: MD004 `+`-bullets, MD022/MD032 blankrads-omgärdade headings/listor). Fixen hör hemma hos Code (som äger
+linter:n), inte hos Chat: doc-birth-/transkriptions-handoffen ska EXPLICIT kräva att Code normaliserar till repo-markdownlint-
+konventionen + kör linter:n lokalt FÖRE commit (skill steg 10 som HÅRD handoff-grind, ej valfritt skill-steg). Annars fångar CI det
+efteråt — icke-blockerande men en extra fix-commit. Generaliserar: när Chat:s output blir Code:s commit-artefakt i en governad fil,
+bär handoffen normaliserings-kravet — anta aldrig att ad-hoc-formatering passerar grinden. Hub-lyft pending — Fas 6.
