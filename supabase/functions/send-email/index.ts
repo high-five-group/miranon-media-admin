@@ -6,6 +6,7 @@ import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
+import { parseBatchOutcome } from '../_shared/resend-batch.ts';
 import { resolveSegmentMembers, SegmentNotResolvableError } from '../_shared/segment-resolution.ts';
 import {
   type BatchOutcome,
@@ -41,9 +42,23 @@ function badRequest(message: string, corsHeaders: Record<string, string>): Respo
 /**
  * SKARP Resend-sender (lazy). Konstruerar `new Resend(key)` ENDAST när RESEND_API_KEY
  * finns — annars distinkt 503-väg (läge 1: ingen nyckel). batch.send([...], { idempotencyKey,
- * batchValidation: 'permissive' }). ⚠️ L2c-PIN: exakt SDK-option-namn för permissive samt
- * permissive-partial-svarsform bekräftas mot den resolverade resend-versionen vid deploy +
- * test-adress-integration (denna sender körs ALDRIG i L2b — orkestratorn testas via mock).
+ * batchValidation: 'permissive' }).
+ *
+ * L2c-PIN UPPLÖST (L2d, STEG 0 strukturobservation mot resolverad resend@4 + förstaparts-
+ * SDK-typ CreateBatchSuccessResponse):
+ *   permissive-svaret = { data: { id }[]  (de GILTIGA, kompakterade)
+ *                         errors?: { index: number; message: string }[]  (de OGILTIGA, med
+ *                                  NOLLBASERAT index i originalpayloaden + skäl) }
+ *   — `errors` är FRÅNVARANDE (undefined), ej tom array, när inget rad-fel finns
+ *   (STEG 0-observerat: dataKeys=["data"], errorsValue=undefined vid 2/2 giltiga).
+ *   errors-fel = VALIDERINGSfel (ej leverans-utfall); de är ej live-framkallbara i icke-prod
+ *   (spärren blockerar utlösande input) → branschen låses med fixtur (L2d STEG 2), schema-
+ *   bekräftad mot Resend-doc.
+ *
+ * Parsning är RAD-EXAKT via index (ej via data.data-ordningen — den är kompakterad och bär
+ * bara id, ej e-post): rejected härleds ur errors[].index → batch[index].email; accepted är
+ * index-komplementet. Cross-check: |accepted| måste == data.data.length (annars struktur-drift
+ * → varna, men lita på index-komplementet som auktoritativt).
  */
 function makeRealBatchSender(): BatchSender {
   return async (batch, ctx): Promise<BatchOutcome> => {
@@ -72,14 +87,10 @@ function makeRealBatchSender(): BatchSender {
       batchValidation: 'permissive',
     });
     if (error) {
-      // Top-level batch-fel → hela batchen avvisad (no-throw inspektion).
+      // Top-level batch-fel (hela anropet) → hela batchen avvisad (no-throw inspektion).
       return { accepted: [], rejected: batch.map((s) => ({ email: s.email, reason: error.message })) };
     }
-    // L2c-PIN: permissive-partial-svarets per-rad-form bekräftas vid deploy; tills dess
-    // tolkas en icke-fel-batch som accepterad (mock-vägen i L2b ger exakt accepted/rejected).
-    const accepted = batch.map((s) => ({ email: s.email }));
-    void data;
-    return { accepted, rejected: [] };
+    return parseBatchOutcome(batch, data);
   };
 }
 
