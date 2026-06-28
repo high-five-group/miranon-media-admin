@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-27
+updated: 2026-06-28
 review_by: 2026-11-15
 status: stable
 ---
@@ -2748,3 +2748,40 @@ plan innehåller en autentiserad prod-mutation, lös credential-FRÅGAN i planer
 identitet? via vilken kanal etableras den?) — improvisera den inte vid grinden, där enda kvarvarande vägar ofta är just de
 otillåtna (kontoskapelse / lösenord-i-kanal). Ärlig landning: "deployad + grind-bevisad" ≠ "full-prod-smoke-bevisad";
 skriv skillnaden synligt (§Kända fällor + tråd), maskera den inte. Hub-lyft pending — synkas vid FULLT Fas 6 fas-avslut.
+
+## 2026-06-28 — Session 39 (Fas 6h L0–L2c — bulk-mail send-email + segment-resolution-extraktion)
+
+### L206 [UNIVERSAL] — En strukturell säkerhets-spärr för en oåterkallelig handling ska vara OBEROENDE av data-källans identitet och fail-closed på en explicit positiv-flagga
+
+Datum: 2026-06-28 | Källa: Session 39 (Fas 6h L2b, icke-prod-mail-spärren, ADR-067 D5)
+Bulk-mail är en oåterkallelig extern sidoeffekt; i icke-prod får den bara nå Resend-test-adresser. Den naturliga
+gissningen — härled prod-vs-icke-prod ur `AIRTABLE_BASE_ID` — avvisades: projektets DOKUMENTERADE felläge ÄR
+bas-förväxling (T34 = CLI prod-länkad; ADR-050 T2 = staging/prod delar tabell-ID:n). En spärr bunden till samma signal som
+redan kan vara förväxlad är ingen spärr. Lösningen: en ORTOGONAL `ENVIRONMENT`-flagga, **fail-closed** — `isProd` är sant
+ENBART vid explicit `ENVIRONMENT==='production'`; frånvarande, feltypad eller okänd → icke-prod → vägra riktiga mottagare.
+Den enda vägen till den farliga handlingen är ett explicit, medvetet positivt värde; en glömd/felaktig flagga failar mot
+TYSTNAD (ingen riktig sändning), aldrig mot fel-utförande. REGEL: bind aldrig en irreversibel-handlings-grind till en signal
+som delar felläge med det den ska skydda mot; använd en oberoende positiv-flagga, fail-closed. Hub-lyft pending — Fas 6.
+
+### L207 [UNIVERSAL] — Vid oåterkallelig extern sidoeffekt: bevisa kärnan med NOLL I/O först, mocka den oåterkalleliga gränsen tills sist, låt första-riktiga-utförandet stå ensamt
+
+Datum: 2026-06-28 | Källa: Session 39 (Fas 6h L1→L2d-splitten, risk-isolation)
+send-email-bygget delades så att risken steg monotont och sent: **L1** ren `prepareBulkSend` (consent/dedup/chunk/status,
+NOLL I/O, 18 enhetstester) → **L2b** EF + orkestrator med Resend MOCKAD via injicerad `BatchSender` (14 kontraktstester,
+noll riktiga anrop) → **L2c** deploy + nyckel-OBEROENDE HTTP-kontrakt (401/405/400, gate live, ingen send) → **L2d** den
+RIKTIGA gränsen (Resend mot test-adresser) ensam, grindad på nyckel. Varje lager bevisade mesta möjliga med minsta möjliga
+oåterkallelighet; den oåterkalleliga gränsen mockades tills allt RUNT den var bevisat, och dess första skarpa körning
+isolerades till en egen landning. REGEL: för irreversibla effekter (mail/betalning/extern-write), strukturera bygget som
+en risk-trappa — pur kärna → mockad gräns → deploy utan effekt → ensam skarp gräns — så att en bugg fångas i ett lager utan
+oåterkallelig effekt. Generaliserar EF-bygge-vs-deploy-splitten (create-event L1/L2/deploy) till en risk-ordnings-disciplin.
+Hub-lyft pending — Fas 6.
+
+> **Not (ej ny lesson — re-applicering av L189/L_J):** ett säkerhets-relevant "vi kan inte"-antagande verifieras mot
+> faktisk data och görs aldrig lastbärande overifierat. "Inget Resend-konto" separerades i VERIFIERAT (ingen send-kod på
+> disk / L1 noll-I/O / Resend-domän-spärr) vs ANTAGET (ingen nyckel); antagandet vägrades som garanti (spärren byggdes
+> nyckel-oberoende, L206), sedan verifierat empiriskt (L2a `secrets list` → läge 1). Samma princip som L189 (förbyggt
+> schema = hypotes tills korsat mot live), applicerat på en kapabilitets-/state-frånvaro i stället för ett schema.
+>
+> **Not (reinforce T34):** CLI:t var prod-länkat igen i L2c (`projects list` ● = prod); explicit `--project-ref` +
+> target-verifiering före varje deploy höll (L115). Mönstret upprepar sig → T34 förblir levande tråd tills CLI-länk-vanan
+> ersätts strukturellt.

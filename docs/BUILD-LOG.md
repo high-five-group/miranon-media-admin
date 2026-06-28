@@ -1757,6 +1757,53 @@ Levererade Fas 6g L4 (SKOOL-export, ren READ + klient-export, ingen EF/WRITE) + 
 
 ---
 
+## Session 39 — Fas 6h Bulk-mail på segment (send-email write-vertikal): L0–L2c (2026-06-28)
+
+**Mål:** bygg appens sista obyggda write-vertikal — bulk-mail PÅ ett segment via Resend ([byggplan §4 Fas 6h](byggplan.md)). Commit-range `2911d2c`→`d2831dd`. SESSIONSGRÄNS (Fas 6 + 6h öppna; L2d/L3 återstår), EJ fas-avslut.
+
+### Fas 6h (planerat vs faktiskt)
+
+- **L0 doc-grund** (`2911d2c`, länk-fix `42efd51`) — forensiskt pre-pass avtäckte 3 forks (ADR-015-enkel-sänd-aldrig-byggd vs landad bulk-`MailPayloadSchema`; Resend-yta; Utskickslogg-fält-IDs ej på disk, L189) + live-introspektion (Utskickslogg `tblIesjbuSWNp6oxK` 9 fält; Bulkutskick = valfri länk → en-tabells; `Idempotensnyckel` additiv-OK). [ADR-067](decisions/ADR-067-bulk-mail-segment-send-kontrakt.md) (D1–D8 + 3 deferrade): **supersederar ADR-015** (send-delen, immutabel besluts-text bevarad); Resend `/emails/batch`; två-lagers idempotens (Resend 24h + Utskickslogg-merge); consent-gate GOLV; partial-failure aldrig binär; multipart. **count 66→67** (L190). data-model Utskickslogg-sektion + §Kända fällor 38. Trådar **T41/T42/T43** (durabel-kö / webhook-opens-ingestion / schemalagd-send, paused).
+- **L1 ren `prepareBulkSend`** (`df4c684`) — [`_shared/prepare-bulk-send.ts`](../supabase/functions/_shared/prepare-bulk-send.ts): consent/dedup/e-post-lös/chunk/status, NOLL I/O. `normalizeEmail` speglar `src/lib/segment-export.ts` exakt (runtime-gräns Deno/Vite). **18 api-pure enhetstester**, invariant verifierad.
+- **L2a Resend-sanningskoll + schema** (`51ee330` doc-drift) — **Resend läge (1):** ingen `RESEND_API_KEY` på staging/prod → kan ej sända. `Idempotensnyckel` (singleLineText, **`fldgB4EWDIksNCvN2`**) tillagt på Utskickslogg STAGING, rent additivt (9→10). Prod orört.
+- **L2b EF + orkestrator (Resend MOCKAD)** — forkar A/A (Marcus). `c22f934`: [`_shared/segment-resolution.ts`](../supabase/functions/_shared/segment-resolution.ts) extraherad ur compute-segment (compute-segment → tunn wrapper, beteende-bevarande); `0b617ee`: [`_shared/send-bulk.ts`](../supabase/functions/_shared/send-bulk.ts) (dependency-injicerad orkestrator: lastbärande icke-prod-spärr, batch-nyckel `<jobId>/b<index>`, partial-status, injicerad logg-writer) + [`send-email/index.ts`](../supabase/functions/send-email/index.ts) (Deno EF, create-event-kontrakt; `isProd=ENVIRONMENT==='production'` fail-closed; 400/422/503-vägar); **`ENVIRONMENT=staging`** satt; `b19cee0`: allowlist `send-email` + **14 api-pure kontraktstester** (noll riktig Resend/Airtable, injicerade mockar). Avvikelse: api-staging-modellen = HTTP-mot-deployad → HTTP/real-Airtable deferrat L2c/L2d.
+- **L2c staging-deploy + nyckel-oberoende HTTP-kontrakt** (`d2831dd`) — T34: länkad=PROD → båda deploys explicit `--project-ref pqtshyierkdgwdnxuirz`. compute-segment redeployad → **beteende-bevarande-grind GRÖN i drift** (HIT/MISS/AUTH 3/3, COMMIT 1-grind fullbordad). send-email **ACTIVE** (`resend@4` bundlade rent). [`send-email.staging.test.ts`](../tests/api/send-email.staging.test.ts) **6/6** mot deployad EF: 401/405/400(UUID)/400(tom segmentIds)/**400 SegmentNotResolvable** (cross-check: extraherad resolution live i deploy, skriver inget). Utskickslogg **tomt** efter pass.
+
+### Avvikelser
+
+ADR-067 + **ADR-015-supersession**; trådar **T41/T42/T43**; **gate-liveness-422 deferrad till L2d** (inget befintligt segment löser upp riktig-formad adress); **test-form-divergens** (api-staging = HTTP-mot-deployad → HTTP/real-Airtable-kontrakt deferrat L2c/L2d, ej tyst mockat som staging).
+
+### Verifiering
+
+L1 18 api-pure enhetstester · L2b 14 api-pure kontraktstester · L2c 6/6 HTTP-kontrakt mot deployad EF + compute-segment beteende-grind 3/3 grön i drift. Alla CI-gröna.
+
+### Teknisk skuld
+
+6g + 6h-EF:er **STAGING-only** (ej prod). Deferrat **L2d** (grindat på staging-Resend-test-nyckel = Marcus-handling): riktig Resend mot @resend.dev + permissive-pin (`batchValidation:'permissive'` mot resolverad `resend@4`), riktig Utskickslogg-merge happy-path, idempotens-rerun-samma-rad, 503-väg, gate-liveness-422. **T39 VIDGAD** (compute-segment prod-drift). 6h arch-audit förfaller vid 6h-completion (efter L3).
+
+### Filstruktur-snapshot (nytt/ändrat i Session 39)
+
+```text
+supabase/functions/
+  _shared/prepare-bulk-send.ts      (L1, ny — ren modul)
+  _shared/segment-resolution.ts     (L2b, ny — extraherad ur compute-segment)
+  _shared/send-bulk.ts              (L2b, ny — orkestrator)
+  _shared/field-allowlists.ts       (L2b, +send-email-operation)
+  compute-segment/index.ts          (L2b, refaktorerad → tunn wrapper)
+  send-email/index.ts               (L2b, ny — Deno EF)
+tests/api/
+  prepare-bulk-send.test.ts         (L1, 18 enhetstester)
+  send-bulk.test.ts                 (L2b, 14 kontraktstester)
+  send-email.staging.test.ts        (L2c, 6 HTTP-kontrakt)
+docs/decisions/ADR-067-*.md          (L0, ny) + ADR-015 (superseded-not)
+docs/reference/data-model.md         (L0/L2a, Utskickslogg-sektion + fälla 38)
+tasks/threads/README.md              (L0, T41/T42/T43)
+```
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-28-session-39.md`](../tasks/sessions/2026-06-28-session-39.md) (Del 1 scope + Del 2 L0–L2c). Nästa: **NY Session 40 → Fas 6h L2d** (riktig Resend-integration, grindad på staging-Resend-test-nyckel) → L3 (klient) → 6h arch-audit → prod-deploy → Fas 6 closeout-förkrav (T38/T39/T40) → FULLT Fas 6-avslut.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
