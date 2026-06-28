@@ -9,6 +9,7 @@ import {
   Modal,
   Select,
   SelectItem,
+  TextArea,
 } from '@/components/primitives';
 
 const MESSAGE_INTENTS = ['info', 'success', 'warning', 'error'] as const;
@@ -87,6 +88,29 @@ function PrimitivesPage() {
             isRequired
           />
           <Input label="Låst fält" isDisabled placeholder="Kan inte redigeras" />
+        </div>
+      </section>
+      <section aria-labelledby="rubrik-textarea" className="mt-8 max-w-md">
+        <h2 id="rubrik-textarea" className="text-xl">
+          TextArea
+        </h2>
+        <div className="mt-4 flex flex-col gap-4">
+          {SIZES.map((size) => (
+            <TextArea key={size} size={size} label={`Meddelande (${size})`} placeholder="Skriv…" />
+          ))}
+          <TextArea
+            label="Meddelande"
+            description="Texten som skickas till mottagarna"
+            placeholder="Hej!"
+            rows={6}
+          />
+          <TextArea
+            label="Meddelande (obligatorisk)"
+            errorMessage="Meddelande får inte vara tomt"
+            isInvalid
+            isRequired
+          />
+          <TextArea label="Låst fält" isDisabled placeholder="Kan inte redigeras" />
         </div>
       </section>
       <section aria-labelledby="rubrik-select" className="mt-8 max-w-md">

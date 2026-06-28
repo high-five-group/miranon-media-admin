@@ -30,6 +30,10 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
     await checkA11y({ include: ['[aria-labelledby="rubrik-select"]'] });
   });
 
+  test('TextArea — sektion', async ({ checkA11y }) => {
+    await checkA11y({ include: ['[aria-labelledby="rubrik-textarea"]'] });
+  });
+
   test('MessageBox — sektion', async ({ checkA11y }) => {
     await checkA11y({ include: ['[aria-labelledby="rubrik-messagebox"]'] });
   });
