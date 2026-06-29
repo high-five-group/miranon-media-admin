@@ -26,13 +26,19 @@ Grundat i branschmönster (Nielsen Norman Group — destruktiv-handling-bekräft
 Mailchimps lista-sänd-bekräftelse):
 
 - **Granska-steg:** ruta som återger exakt vad som händer — mottagarantal ("skickas
-  till 87 personer"), segmentnamn, ämnesrad, avsändare + Reply-To, helst med
-  förhandsvisning av mailet.
+  till 87 personer"), segmentnamn, ämnesrad, med förhandsvisning av mailtexten.
+  **REVIDERAD Session 45:** avsändar-/Reply-To-visning UTELÄMNAD ur T50 —
+  `RESEND_FROM`/`RESEND_REPLY_TO` är server-only secrets (ej i `src/`, ej i
+  EF-svar); människo-synlig verifiering av de faktiska värdena sker via Marcus
+  självtest (T51), ej i granska-rutan.
 - **Skriv-för-att-bekräfta:** Skicka-knappen låst tills användaren skriver något
   medvetet (mottagarantalet eller ordet `SKICKA`) — går inte att trigga av misstag.
 - **Faro-färgad slutknapp** ("Skicka till 87 personer"); Avbryt som tryggt förval.
-- **Test-till-sig-själv-knapp:** skicka test-mail till egen adress före skarpt
-  utskick (inbyggd förhandsgranskning). **BESLUTAT: med.**
+- **Test-till-sig-själv-knapp:** ~~BESLUTAT: med.~~ **REVIDERAD Session 45 →
+  DEFERRAD till [T53](README.md).** Disk bevisar `send-email` är segmentIds-only
+  (server-resolverad, ADR-067 consent-GOLV); explicit enkel-mottagare kräver
+  net-new EF-kontrakt + ADR eller funkar bara icke-prod. Falsifierat beslut rivs
+  öppet, ej tyst (se T53 options A/B/C).
 
 ## Förkrav — forensiskt pre-pass FÖRE bygge
 
