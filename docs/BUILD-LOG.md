@@ -1955,6 +1955,52 @@ tasks/threads/README.md + T47-*.md         (T47 + T48; T38→closed)
 
 ---
 
+## Session 43 — Fas 6g Skool-export PROD-DEPLOY (de 3 segment-EF:erna ACTIVE v1) (2026-06-29)
+
+**Mål:** prod-deploya 6g-vertikalens tre Edge Functions (compute-segment/save-segment/get-segments) så Skool-export-vägen blir live ([byggplan §4 Fas 6g](byggplan.md)). Commit-range `fbca88f`→(denna landning). Risk-trappa STEG 0–4'; själva deployen är en out-of-CI prod-handling (committade inget). SESSIONSGRÄNS, EJ fas-avslut (Fas 6 öppen: 6h via T44 M3 + T39/T40).
+
+### STEG 0 — forensisk pre-pass (read-only)
+
+- **Deploy-set fastställt = exakt 3:** klient-adaptern anropar `compute-segment` (POST), `save-segment` (POST), `get-segments` (GET); Skool-exporten är klient-side ([`src/lib/segment-export.ts`](../src/lib/segment-export.ts)), ingen export-EF. Alla tre staging-only (ej i allowlisten).
+- **`.temp`-divergens löst (T34):** live `supabase projects list` ● = `lvjsfnphlauldxqlncpl` (PROD); den stale `linked-project.json` (sa staging) är ej auktoritativ — live-källan i handlings-ögonblicket gäller (→ L215).
+- **Inget prod-schema-gap:** live read-only `describe_table` mot prod-basen `app8uGPrVCVOm6LfD` — Segment-tabellens 3 skriv-/läs-fält (`Namn på segment` `flduvXn5oW00Z5TBk`, `App-segmentregel` `fldhN1wH6sXODdfb7`, `Segmentdefinition` `fldED0CiIINac9DRB`) finns alla (landade S36). **STEG 2 (fält-skapelse) utgick.**
+
+### STEG 1 — allowlist-deklaration (config-commit)
+
+- `dd97807` — `compute-segment`/`save-segment`/`get-segments` lagda i [`.prod-functions-allowlist.conf`](../.prod-functions-allowlist.conf) (alfabetiskt; 7→10). Fail-closed-test **4/4 PASS**; `--list` = 10. Committad **deklaration** att de 3 får prod-deployas; faktisk körning separat (STEG 3). CI grön per jobb (run `28384820694`, HEAD `dd97807`).
+
+### STEG 3 — prod-deploy (Marcus-auktoriserad mutation)
+
+- **OP 1–2 (pre-state):** de 3 FRÅNVARANDE på prod → first-deploy. Baslinje: de 8 pre-existerande EF:erna (5 stale @ 2026-05-04 + create-event/get-event-formats @ 2026-06-27 + test-auth). Prod-secrets närvarande (op 2b namn-set: `AIRTABLE_BASE_ID`/`AIRTABLE_TOKEN`/`SUPABASE_URL`/`SUPABASE_ANON_KEY` m.fl.). Back-out = `functions delete` (first-deploy → ingen tidigare version).
+- **OP 3 (mutation):** engångs `ALLOWLIST_FILE`-override (ej committad) med endast de 3 + explicit `--project-ref lvjsfnphlauldxqlncpl` → de 3 deployade ACTIVE v1, `_shared` bundlat per funktion, temp-fil raderad. Committad `.conf` förblir 10 — override smalnade körningen (annars hade de 5 stale re-deployats blint, T39 → L216).
+- **OP 4 (untouched-proof):** de 3 ACTIVE v1 (16:15:0X); de 8 pre-existerande **oförändrade** (version + updated_at = baslinjen). **Blast-radius = exakt 3.**
+- **OP 5 (deny-grind, read-only):** compute-segment 401/405/401 · save-segment 401/405/401 · get-segments 401/401. **Inget 200, ingen Segment-rad skapad** (save-segment autentiserad happy-path EJ körd = T40 → L217).
+
+### Verifiering
+
+Pre/post untouched-proof (de 8 baslinje-identiska, blast-radius 3) · prod-secret-närvaro (op 2b namn-set) · deny-grind per EF (401/405) live mot prod. **Inga CI-tester för prod-deny-grinden** — out-of-CI live-pass (T45-klassen: api-staging-runnern saknar prod-/Airtable-seed-grind). STEG 1 CI grön per jobb (run `28384820694`).
+
+### Teknisk skuld
+
+**6g prod-deployad + auth-grind-bevisad** men EJ full-smoke-verifierad. **T40** vidgad: save-segment autentiserad happy-path mot prod ej körd (kräver prod-test-user via rätt kanal). **T39** skärpt: committad allowlist nu 10 → blind kanonisk `deploy-prod-functions.sh` skulle föra de 5 stale förbi verifierad version (override-smalt KRAV tills synk, L216). **6h** kvarstår (T44 M3: prod-Resend-nyckel + verifierad `miranon.dev`). **T46** go-live-karta materialiserad (6g-grenen LEVERERAD). Lessons **L215–L217** `[UNIVERSAL]` (hub-lyft pending — Fas 6). Deployen flippade EJ Fas 6.
+
+### Filstruktur-snapshot (nytt/ändrat i Session 43)
+
+```text
+.prod-functions-allowlist.conf             (7→10: compute-segment/save-segment/get-segments)
+docs/BUILD-LOG.md                          (Session 43-sektion)
+docs/byggplan.md                           (§4 audit-status: 6g prod-deployad, additivt)
+tasks/threads/T46-go-live-karta.md         (go-live-karta materialiserad)
+tasks/threads/README.md                    (T39/T40 S43-noter + T46-not)
+tasks/lessons.md                           (L215–L217)
+```
+
+PROD-EF:er deployade (ej i git — out-of-CI prod-handling): `supabase/functions/{compute-segment,save-segment,get-segments}` → ACTIVE v1 på `lvjsfnphlauldxqlncpl`.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-29-session-43.md`](../tasks/sessions/2026-06-29-session-43.md). **EJ fas-avslut; ingen lifecycle-flip** (session-end separat). Nästa: 6h prod-deploy (T44 M3) → T39/T40 → FULLT Fas 6-avslut.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

@@ -2883,3 +2883,41 @@ listor; ingen fortsättningsrad som börjar med en listmarkör) + fil-path/namn 
 `*.spec.ts`). Bygg fortsatt för extern fångst (Code/Marcus), men skär driftfrekvensen vid källan — en drift som aldrig levereras
 kostar noll fix-cykler. Speglar L211 (verbatim-text ärver fil-governance) en nivå upp: inte bara linta efter transkription, utan
 validera specifikan FÖRE den lämnar Chat. Hub-lyft pending — Fas 6.
+
+## 2026-06-29 — Session 43 (Fas 6g Skool-export prod-deploy — risk-trappa STEG 0–4')
+
+### L215 [UNIVERSAL] — För irreversibel mål-bindning: verifiera mot live-källan i handlings-ögonblicket, inte mot en lokal state-fils timestamp
+
+Datum: 2026-06-29 | Källa: Session 43 (STEG 0, prod-deploy-ref-bindning; förfining av T34/L115)
+
+STEG 0 fann en divergens: `supabase/.temp/linked-project.json` (timestamp 28 jun, nyare) sa CLI länkad mot STAGING, men live
+`supabase projects list` ● = PROD (`lvjsfnphlauldxqlncpl`). En nyare cache-/state-fils timestamp bevisar INTE aktuell länkning —
+state-filer kan skrivas av sido-operationer och driva isär från den auktoritativa live-källan. Regel: för en IRREVERSIBEL
+mål-bindning (deploy-ref, env-target, prod-vs-staging) verifiera mot LIVE-källan (`projects list` ●, ej `.temp`-fil) i samma
+handlings-ögonblick som mutationen — och passa målet EXPLICIT (`--project-ref <ref>`) så ingen ambient länk-state avgör vart
+mutationen går. En lokal recency är ett svagt indicium, aldrig ett bevis. Förfining av T34 (CLI prod-länkad foot-gun) + L115:
+verifiera mot live, anta aldrig från lokal fil. Hub-lyft pending — Fas 6.
+
+### L216 [UNIVERSAL] — När en deklarativ allowlist växer men medlemmars deployade aktualitet divergerar är smal override ett KRAV, inte en optimering
+
+Datum: 2026-06-29 | Källa: Session 43 (STEG 1+3, allowlist 7→10 mot 5 stale prod-EF:er; skärper T39)
+
+6g lade 3 EF:er i `.prod-functions-allowlist.conf` (7→10). Allowlisten deklarerar nu 10 prod-AVSEDDA funktioner — men 5 av dem
+(T39) ligger på prod i versioner äldre än staging-testad HEAD. En blind kanonisk `deploy-prod-functions.sh --project-ref <prod>`
+deployar HELA allowlisten → skulle föra de 5 stale förbi sin verifierade version i en oscopead svep. 6g-deployen höll genom
+`ALLOWLIST_FILE`-engångsoverride (endast de 3) + untouched-proof (de 8 pre-existerande oförändrade, live-verifierat). Regel: när
+en deklarativ allowlist (deploy/feature-flagg/release-manifest) växer men medlemmarnas deployade AKTUALITET divergerar från
+deklarationen, är smal override per-handling ett KRAV tills aktualiteten synkats — och divergensen måste spåras durabelt (T39),
+inte bäras i minne. "Deklarerad-avsedd" ≠ "säker-att-blint-redeploya". Hub-lyft pending — Fas 6.
+
+### L217 [UNIVERSAL] — Deploy-tids deny-grind bevisar nekan, inte korrekthet; deklarera vilken nivå ett grind-bevis når
+
+Datum: 2026-06-29 | Källa: Session 43 (STEG 4', 6g deny-grind vs deferrad happy-path-smoke = T40)
+
+STEG 3 bevisade de 3 prod-EF:ernas NEKA-vägar (anon→401, fel metod→405, anon-Bearer→401) read-only — noll oautentiserad åtkomst,
+utan att smutsa prod-data. Men deny-grinden bevisar INTE att save-segment SKRIVER rätt mot prod-basen: den autentiserade
+201-happy-path kördes aldrig (skulle skapa en riktig Segment-rad → kräver prod-test-user via rätt kanal = T40). Regel: skilj
+"grinden nekar" (read-only, vid deploy, säkert utan prod-data-mutation) från "featuren fungerar" (autentiserad körning mot prod,
+separat verifiering) — och deklarera EXPLICIT vilken nivå ett deploy-grind-bevis når, så `ACTIVE`-status + grön deny-grind ej
+förväxlas med verifierad skriv-korrekthet. En prod-deployad write-EF med grön deny-grind är säkrad mot obehörig åtkomst men
+overifierad på sin write-väg tills happy-path-smoken körs. Hub-lyft pending — Fas 6. Speglar T40-vidgningen (6g-instansen).

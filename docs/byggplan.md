@@ -106,7 +106,7 @@ O(1)-läsbar audit-status per Fas 6-subfas (L200: spridd-över-sessioner-status 
 | 6d Hem | KLAR | ✅ ren — Session 30 |
 | 6e Mer (Intresserade + Maillogg) | byggd L1+L2 (S33) | ❌ EJ körd — S33 stängde utan; "ingen app-kod"-justifiering felaktig (get-leads/get-mail-log + vyer landade) → tråd T38 |
 | 6f Skapa nytt event | byggd L0–L2 (S38, staging) | ✅ ren — Session 38 (fem områden GODKÄNDA, AVVIKELSE ingen; bibliotek 11/11/11, vy 11/10/10). Prod-deploy (fält + EF) bundlad separat-auktoriserad handling kvarstår |
-| 6g Segment-yta | KLAR (L1–L4) | ✅ ren — Session 37 (fem områden GODKÄNDA, AVVIKELSE ingen, 11/10/10) |
+| 6g Segment-yta | KLAR (L1–L4) + **PROD-DEPLOYAD (S43)** | ✅ ren — Session 37 (fem områden GODKÄNDA, AVVIKELSE ingen, 11/10/10). **Prod-deploy S43:** compute-segment/save-segment/get-segments ACTIVE v1 på prod (`lvjsfnphlauldxqlncpl`), auth-grind-bevisad (401/405), override-smal (de 5 stale orörda); full autentiserad prod-smoke deferrad → T40 |
 | 6h Mail-handling | byggd L0–L3 (S39–S41, staging) | ✅ ren — Session 41 (fem områden GODKÄNDA; EN avvikelse noll-leverans-send ROT-RESOLVERAD samma session; bibliotek 11/11/11, vy 11/10/10). Prod-deploy = T44 M3 + Code-at-prod-deploy kvarstår |
 
 > **Closeout-förkrav:** FULLT Fas 6 fas-avslut kan ske först när: 6e retro-auditerad, 6f byggd + auditerad, 6h byggd + auditerad (6g klar + auditerad ✓). Avslutet inkluderar phase-end-verify, byggplan 6→KLAR, FAS-NIVÅ fitness-svep (full port-paritet + komplett EF-ribba-inventering tvärs ALLA subfaser — ej bara ackumulerade per-slice-audits), CHANGELOG, lessons-hub-lyft L149–L201, arkivering.
