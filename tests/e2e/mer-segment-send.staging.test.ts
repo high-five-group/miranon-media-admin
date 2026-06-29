@@ -131,14 +131,32 @@ test.describe('Skicka mail på segment (Fas 6h L3)', () => {
     await page.getByLabel('Ämne').fill('Höstens kurser');
     await page.getByLabel('Meddelande').fill('Hej! Här kommer höstens program.');
 
-    // Skicka → bekräftelse-modal (oåterkalleligt) öppnas.
-    await page.getByRole('button', { name: 'Skicka utskick…' }).click();
+    // Granska och skicka → härdad bekräftelse-modal (oåterkalleligt) öppnas.
+    await page.getByRole('button', { name: 'Granska och skicka…' }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('heading', { name: 'Skicka utskick?' })).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Granska och skicka utskick' })).toBeVisible();
 
-    // Bekräfta → send-email anropas → resultat renderas.
-    await dialog.getByRole('button', { name: 'Skicka till 3 mottagare' }).click();
+    // GRANSKA: antal (fokalt) + segment + ämne + förhandsvisning av meddelandet.
+    await expect(dialog.getByText(/Det här skickas till\s*3\s*personer/)).toBeVisible();
+    await expect(dialog.getByText('FS-utbildningsdeltagare')).toBeVisible();
+    await expect(dialog.getByText('Höstens kurser')).toBeVisible();
+    await expect(dialog.getByText('Hej! Här kommer höstens program.')).toBeVisible();
+
+    // SKRIV-FÖR-ATT-BEKRÄFTA: faro-knappen är LÅST tills mottagar-antalet skrivs.
+    const sendBtn = dialog.getByRole('button', { name: 'Skicka till 3 personer' });
+    await expect(sendBtn).toBeDisabled();
+
+    // Fel antal → fortfarande låst.
+    const confirmField = dialog.getByRole('textbox', { name: /Skriv antalet mottagare/ });
+    await confirmField.fill('99');
+    await expect(sendBtn).toBeDisabled();
+
+    // Rätt antal → upplåst (aviseras i aria-live) → klick skickar (MOCKAT send).
+    await confirmField.fill('3');
+    await expect(dialog.getByText(/är nu upplåst/)).toBeVisible();
+    await expect(sendBtn).toBeEnabled();
+    await sendBtn.click();
 
     await expect(page.getByText('Utskicket skickades')).toBeVisible();
     await expect(page.getByText(/3 mottagare fick mailet/)).toBeVisible();
@@ -189,7 +207,7 @@ test.describe('Skicka mail på segment (Fas 6h L3)', () => {
     await expect(page.getByText(/Det här segmentet har inga mottagare just nu/)).toBeVisible();
     await page.getByLabel('Ämne').fill('Test');
     await page.getByLabel('Meddelande').fill('Test');
-    await expect(page.getByRole('button', { name: 'Skicka utskick…' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Granska och skicka…' })).toBeDisabled();
     expect(sendCalled, 'send-email får ej anropas vid 0 mottagare').toBe(false);
   });
 
@@ -226,8 +244,10 @@ test.describe('Skicka mail på segment (Fas 6h L3)', () => {
     await expect(page.getByText(/Det här segmentet har\s*3\s*personer/)).toBeVisible();
     await page.getByLabel('Ämne').fill('Höstens kurser');
     await page.getByLabel('Meddelande').fill('Hej!');
-    await page.getByRole('button', { name: 'Skicka utskick…' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Skicka till 3 mottagare' }).click();
+    await page.getByRole('button', { name: 'Granska och skicka…' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('textbox', { name: /Skriv antalet mottagare/ }).fill('3');
+    await dialog.getByRole('button', { name: 'Skicka till 3 personer' }).click();
 
     // Ärlig rendering: INGEN grön framgång; breakdown visar varför.
     await expect(page.getByText('Inga mottagare fick mailet')).toBeVisible();

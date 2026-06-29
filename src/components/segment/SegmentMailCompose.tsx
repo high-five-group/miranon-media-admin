@@ -40,6 +40,10 @@ export function SegmentMailCompose() {
   const [mailtext, setMailtext] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Skriv-för-att-bekräfta: användaren måste skriva mottagar-antalet för att låsa upp
+  // faro-knappen (GitHub type-to-confirm). Nollställs vid varje modal-öppning/-stängning
+  // → inget läckage mellan försök. Rör ALDRIG idempotens-nyckeln.
+  const [confirmText, setConfirmText] = useState('');
 
   // Stabil idempotens-nyckel: en per send-avsikt, återanvänd över retries (dubbelklick,
   // 5xx-retry). Byts FÖRST vid en ny avsikt (efter lyckad sändning), aldrig per klick.
@@ -86,12 +90,17 @@ export function SegmentMailCompose() {
   // Blockeras client-side (slipper round-trip; servern hade ändå svarat 'skipped').
   const noRecipients = countReady && (recipientCount ?? 0) === 0;
   const canSend = segmentValid && amneValid && mailtextValid && (recipientCount ?? 0) > 0;
+  // Upplåsnings-villkor: skriven text === mottagar-antalet (exakt). recipientCount är
+  // känt när modalen öppnas (gate:at av countReady) → String-jämförelse är säker.
+  const confirmMatch =
+    recipientCount !== undefined && confirmText.trim() === String(recipientCount);
 
   function handleOpenConfirm() {
     setSubmitted(true);
     // Klient-validering före send (servern förblir SSOT) + antalet måste vara känt
     // så bekräftelsen kan visa "skicka till N".
     if (!canSend || !countReady || sendMutation.isPending) return;
+    setConfirmText(''); // färskt skriv-fält per ny öppning (inget läckage)
     setConfirmOpen(true);
   }
 
@@ -192,40 +201,101 @@ export function SegmentMailCompose() {
           sendMutation.isPending || noRecipients || (submitted && (!canSend || !countReady))
         }
       >
-        {sendMutation.isPending ? 'Skickar…' : 'Skicka utskick…'}
+        {sendMutation.isPending ? 'Skickar…' : 'Granska och skicka…'}
       </Button>
 
-      {/* Bekräftelse-modal (oåterkallelig handling). Kontrollerad open-state så
-          validering körs FÖRE öppning; react-aria bär fokus-trap/Escape/fokus-retur. */}
-      <Modal isOpen={confirmOpen} onOpenChange={setConfirmOpen} isDismissable>
+      {/* Härdad bekräftelse-modal (oåterkallelig handling) — ETT steg, vertikalt:
+          granska överst → skriv-för-att-bekräfta → knappar nederst. Kontrollerad
+          open-state så validering körs FÖRE öppning; react-aria bär fokus-trap/
+          Escape/fokus-retur. Stängning nollställer skriv-fältet (inget läckage). */}
+      <Modal
+        isOpen={confirmOpen}
+        onOpenChange={(open) => {
+          setConfirmOpen(open);
+          if (!open) setConfirmText('');
+        }}
+        isDismissable
+      >
         <Dialog
-          title="Skicka utskick?"
-          aria-description="Bekräfta att mailet ska skickas till segmentets mottagare. Handlingen kan inte ångras."
+          title="Granska och skicka utskick"
+          aria-description="Granska mottagarantal, segment, ämne och förhandsvisning. Skriv mottagarantalet för att låsa upp sändningen. Handlingen kan inte ångras."
           actions={({ close }) => (
             <>
-              <Button intent="ghost" onPress={close}>
+              {/* Avbryt = tryggt förval, spatialt separerat (mr-auto → motsatt ände
+                  från faro-knappen, NN/g destruktiv↔benign). Nås först via Tab. */}
+              <Button intent="ghost" onPress={close} className="mr-auto">
                 Avbryt
               </Button>
+              {/* Faro-knapp: LÅST tills confirmMatch. Native isDisabled (Button-
+                  primitiven bär ej ren aria-disabled); upptäckbarhet bärs av den
+                  synliga knappen + fält-instruktionen + aria-live-aviseringen nedan. */}
               <Button
-                intent="primary"
+                intent="danger"
+                isDisabled={!confirmMatch || !canSend || sendMutation.isPending}
                 onPress={() => {
                   handleConfirmSend();
                   close();
                 }}
               >
-                Skicka till {recipientCount} mottagare
+                Skicka till {recipientCount} {recipientCount === 1 ? 'person' : 'personer'}
               </Button>
             </>
           )}
         >
-          <p>
-            Du skickar <strong>{amne.trim()}</strong> till{' '}
-            <strong>
-              {recipientCount} {recipientCount === 1 ? 'person' : 'personer'}
-            </strong>{' '}
-            i segmentet <strong>{selectedSegment?.namn ?? '(namnlöst segment)'}</strong>. Det går
-            inte att ångra. Mottagare som saknar e-post eller har tackat nej tas bort av servern.
-          </p>
+          <div className="flex flex-col gap-4">
+            {/* GRANSKA — mottagar-antalet är den konsekvensbärande variabeln (störst
+                visuell vikt, NN/g). */}
+            <p className="text-lg">
+              Det här skickas till{' '}
+              <strong className="text-xl">
+                {recipientCount} {recipientCount === 1 ? 'person' : 'personer'}
+              </strong>
+              .
+            </p>
+            <dl className="flex flex-col gap-1 text-body">
+              <div className="flex gap-2">
+                <dt className="text-text-muted">Segment:</dt>
+                <dd className="font-medium">{selectedSegment?.namn ?? '(namnlöst segment)'}</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="text-text-muted">Ämne:</dt>
+                <dd className="font-medium">{amne.trim()}</dd>
+              </div>
+            </dl>
+
+            {/* FÖRHANDSVISNING — plain text (aldrig HTML-render), pre-wrap, bounded +
+                scrollbar. "Se exakt vad som går ut." */}
+            <div className="flex flex-col gap-1">
+              <span className="text-small text-text-muted">Förhandsvisning av meddelandet</span>
+              <div className="max-h-40 overflow-auto whitespace-pre-wrap rounded border border-text-muted/20 bg-(--mm-input-bg-disabled) p-3 text-body">
+                {mailtext}
+              </div>
+            </div>
+
+            <p className="text-small text-text-muted">
+              Ett skickat utskick går inte att ångra. Mottagare som saknar e-post eller har tackat
+              nej tas bort av servern.
+            </p>
+
+            {/* SKRIV-FÖR-ATT-BEKRÄFTA — exakta strängen synlig vid fältet (GitHub-mönstret). */}
+            <Input
+              label={`Skriv antalet mottagare (${recipientCount}) för att låsa upp utskicket.`}
+              value={confirmText}
+              onChange={setConfirmText}
+              autoComplete="off"
+              inputMode="numeric"
+              isInvalid={confirmText.trim() !== '' && !confirmMatch}
+              errorMessage={`Det matchar inte. Skriv ${recipientCount} för att låsa upp.`}
+            />
+
+            {/* Upplåsning aviseras artigt för skärmläsare (region alltid i DOM → ändring
+                annonseras). Komplement till den synliga faro-knappens tillståndsbyte. */}
+            <p aria-live="polite" className="text-small text-text-muted">
+              {confirmMatch
+                ? `Rätt antal angivet — knappen "Skicka till ${recipientCount} ${recipientCount === 1 ? 'person' : 'personer'}" är nu upplåst.`
+                : ''}
+            </p>
+          </div>
         </Dialog>
       </Modal>
 
