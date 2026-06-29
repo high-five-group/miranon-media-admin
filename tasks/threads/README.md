@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-28
+updated: 2026-06-29
 review_by: 2026-09-17
 status: stable
 ---
@@ -73,6 +73,9 @@ status: stable
 | `T47` | Inställningar-yta för Mer-fliken — 6e-de-scopad (ingen specificerad funktion vid 6e; tom "ifall"-sida vore spekulation över golvet, ADR-058 iv-1/Väg 1). Byggs när konkret inställnings-behov uppstår | `paused` | [T47-installningar-yta-mer-flik.md](T47-installningar-yta-mer-flik.md) — uppstod Session 42 (6e arch-audit iv-1/Väg 1 de-scope) |
 | `T48` | `AttendanceFilters` — möjlig oanvänd-param-lukt (samma mönster som `_filters`/iv-2); verifiera konsumenter vid nästa audit/närliggande arbete. Låg prio, blockerar ej | `paused` | _(ingen kort än — endast registrerad); uppstod Session 42 (6e audit iv-2-städning, ADR-053-triage)_ |
 | `T49` | L214-breddning — inkludera doc-sektion/format-konventioner som distinkt drift-kategori (vid sidan av markdown-lint + testMatch-glob) vid L214:s hub-lyft. Tredje empiriska instans (S42 todo-format: direktivets `### Session N`-block vs disk-konventionens rad-7 summary). Förfining av L214:s scope, ej ny lesson. Låg prio, blockerar ej | `paused` | [T49-l214-breddning-doc-format-konventioner.md](T49-l214-breddning-doc-format-konventioner.md) — uppstod Session 42 (ADR-053-capture) |
+| `T50` | UI-härdning: fler-stegs accident-proof sänd-grind (massutskick) — gör oavsiktligt bulk-utskick fysiskt omöjligt för icke-teknisk användare (Lotta) | `active` | [T50-ui-hardning-sand-grind.md](T50-ui-hardning-sand-grind.md) — **NÄSTA SESSIONS FOKUS** (Marcus-direktiv); MÅSTE på plats FÖRE Lotta sänder skarpt; uppstod Session 44 |
+| `T51` | Reply-To gold-standard-verifiering — mottaget mail visar avsändare "Lotta Gotthardsson - Miranon Media" + Reply-To `lotta@outsidereality.se` | `paused` | _(ingen kort än — endast registrerad); uppstod Session 44; sker vid Marcus självtest i appen (fas 2 sista steget), EJ Code-initierat (säkerhets-invarianten); fas 1 bevisade emittering api-pure men ej end-to-end (efemär-fixtur ej self-seedbar, jfr T45); pekare: [session-44](../sessions/2026-06-29-session-44.md) § Del 1 "Reply-To gold-standard-verifiering"_ |
+| `T52` | Session 43-dok-avvikelse (dok-hygien-backfill) — doket bär endast Del 1; dess NÄSTA-handoff-block lever i `todo.md`, ej i själva doket | `paused` | _(ingen kort än — endast registrerad); uppstod Session 44 (orienterings-pass); backfill-kandidat, samma klass som T03 (Session 20 BUILD-LOG-glapp)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
