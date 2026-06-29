@@ -2935,3 +2935,17 @@ defense-in-depth som gör ytan ofarlig oavsett (JWT-barriär: `requireUser`→40
 EXPLICIT vilket lager som bär vilken del; anta aldrig att en stale-bunden källa är uttömmande som-av-nu. Generaliserar bortom
 Airtable: gäller varje verifiering där verktyget har en blind fläck (interfaces/vyer/extensions, externa konton, manuell config).
 Hub-lyft pending — Fas 6. Besläktad L215 (live-källa vid handlingsögonblick) + L217 (deklarera grind-bevisets nivå).
+
+## 2026-06-29 — Session 45 (T50 UI-härdning — accident-proof sänd-grind)
+
+### L219 [UNIVERSAL] — Ett stale "BESLUTAT" i en active tråds bygg-ingång rättas FÖRE bygg-substansen, ej efter
+
+Datum: 2026-06-29 | Källa: Session 45 (T50, Commit 0 före bygg-commit; klass: handoff-/ingångs-disciplin)
+
+En "BESLUTAT"-rad i en `active` tråds bygg-ingång är inte bara dok-hygien: tråd-kortet ÄR bygg-promptens ingång, så ett stale
+beslut där är aktivt vilseledande för bygget (bygget läser ingången som sann). När nästa sessions forensik reviderar beslutet,
+rätta tråd-ingången (en egen Commit 0) FÖRE bygg-substansen — så ingången är sann i samma ögonblick bygget läser den, inte
+städad i efterhand. Empiri: Code flaggade T50-kortets stale "BESLUTAT: med" (test-till-sig-själv) mot reviderat scope; rättat
+som Commit 0 `e62c695` FÖRE bygg-commit `86835f9`. Generaliserar L211 (verbatim-text ärver fil-governance) + L214 (validera
+inlinade specifika mot disk FÖRE leverans) till tråd-ingångens SANNINGSHALT: en ingång som en framtida läsare/bygge förlitar
+sig på rättas före, inte efter, den handling som läser den. Hub-lyft pending — Fas 6 (L193–L219 ej hub-lyfta).

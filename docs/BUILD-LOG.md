@@ -2050,6 +2050,56 @@ PROD-handlingar (ej i git — out-of-CI prod-mutationer): Airtable-kolumn `Idemp
 
 ---
 
+## Session 45 — Fas 6h T50: härdad accident-proof sänd-grind (UI) (2026-06-29)
+
+**Mål:** bygg UI-härdningen (**T50**) som gör ett oavsiktligt massutskick fysiskt omöjligt för en icke-teknisk användare (Lotta) — det TREDJE oberoende skyddslagret (UI-bekräftelse) utöver idempotensnyckeln + fail-closed-spärren, på plats FÖRE spärren öppnas ([byggplan §4 Fas 6h](byggplan.md)). Ren vy-ändring i `SegmentMailCompose` (ingen adapter/port/EF rörd). SESSIONSGRÄNS, EJ fas-avslut (Fas 6h öppen: Grind F + Marcus självtest; Fas 6 öppen: T39/T40).
+
+### Commit 0 — hygien: T50-kortets stale beslut rättat (`e62c695`)
+
+`[T50][T53]` — T50-kortet (`active` tråds bygg-ingång) bar stale "BESLUTAT: med" (test-till-sig-själv) som motsade Session 45:s reviderade scope. Rättat ÖPPET med kvittens FÖRE bygg-substansen (L219): "BESLUTAT: med" → DEFERRAD till **T53** (send-email segmentIds-only, ADR-067 consent-GOLV); avsändar-/Reply-To-visning utelämnad ur T50 (server-only secrets → Marcus självtest T51). Markdownlint 0.
+
+### Commit 1 — bygget: härdad sänd-grind (`86835f9`)
+
+`[T50][S45]` — den befintliga enkla bekräftelse-modalen UPPGRADERAD (ej parallellt flöde) till en härdad enstegs-modal (vertikalt: granska → skriv → knappar):
+
+- **Granska-steg:** mottagar-ANTAL fokalt (störst visuell vikt, NN/g) + segment + ämne + plain-text mailförhandsvisning (`whitespace-pre-wrap`, bounded scroll, ALDRIG HTML-render) + oåterkallelighets-not.
+- **Skriv-för-att-bekräfta:** Skicka låst tills `confirmText.trim() === String(recipientCount)` (GitHub type-to-confirm); exakta strängen synlig vid fältet; `confirmText` nollställs vid öppning/stängning (inget läckage); upplåsning aviseras i `aria-live`.
+- **Faro-knapp** `intent="danger"` (fixar forensik-AVVIKELSEN `primary`→`danger`; label "Skicka till N personer", aldrig "OK") + **Avbryt** `ghost` spatialt separerad (`mr-auto` → motsatt ände, nås först via Tab; tryggt förval).
+- **Bevarade golv** (kod-verifierat): pessimistisk UI, stabil idempotens orörd (confirmMatch rör aldrig nyckeln), auto-trigger-invariant (send endast från explicit `onPress`, ingen `useEffect`), server-side consent/resolve segmentIds-only, partial aldrig binär / accepted===0 aldrig grön.
+- **Tester:** e2e (mockat send, ALDRIG live) — happy-path utökad med låst→fel→rätt→upplåst; 0-mottagar-block + accepted===0-gren locator-justerade.
+
+### Verifiering
+
+Lokalt: typecheck **0** · biome **0** · build grön · `test:api` **185 passed / 0 failed**. e2e lokalt EJ körbart (ADR-061 STAGING_REQUIRED — `TEST_USER`-creds saknas; Code provisionerade ej creds, isolations-/säkerhets-disciplin + T34) → **CI-verifierat**: push `ab474ba..86835f9`, **CI run `28400500605` ✅ success**; **e2e 114 passed / 0 failed** (de 3 härdade-modal-specerna gröna); **axe-0 på den härdade modalen** bekräftad (AxeBuilder wcag2a/aa+21/22 → 0 violations); 13 a11y passed. **Ingen deploy triggad** (workflow "CI" = enbart tester).
+
+### arch-audit (ADR-058)
+
+Ren — i ✅ (lager-oberoende; vyn når data endast via `useDataSource`, 0 kringgång) · ii ✅ (port-paritet 20/20/20 orörd — vy-only) · iii ✅ (`send-email` full EF1–EF6, oförändrad; noll EF rörd) · iv ✅ (golv hållet: NN/g-bekräftelse + säkerhets-invariant + axe-0; ingen spekulation: ingen för-tidig modal-extraktion) · v ✅ **11/10/10** (vy-ribban, ärligt satt). Inga AVVIKELSER.
+
+### Avvikelser / teknisk skuld
+
+- **Residual (ej AVVIKELSE):** Button-primitiven saknar ren `aria-disabled`-soft-disable → faro-knappen faller tillbaka på native `isDisabled` (tar låst knapp ur tab-ordningen). Beyond-golv-förfining (axe-0 redan mött via synlig knapp + fält-instruktion + aria-live) → registrerad **T54** `paused`.
+- **Grind F + Marcus självtest kvar** → efter T50 (nästa session, T51).
+- **T39/T40** oförändrat `paused` (Fas 6 closeout-förkrav). Lessons L193–L219 EJ hub-lyfta (pending efter FULLT Fas 6).
+
+### Filstruktur-snapshot (nytt/ändrat i Session 45)
+
+```text
+src/components/segment/SegmentMailCompose.tsx   (härdad bekräftelse-modal: granska + type-to-confirm + danger + aria-live)
+tests/e2e/mer-segment-send.staging.test.ts      (happy-path utökad: låst→fel→rätt→upplåst; locator-justeringar)
+tasks/sessions/2026-06-29-session-45.md          (Del 1 scope; Del 2 landnings-kadens)
+tasks/threads/T50-ui-hardning-sand-grind.md     (stale beslut rättat; active→closed)
+tasks/threads/T53-test-till-sig-sjalv-skicka.md (nytt tråd-kort, paused)
+tasks/threads/T54-button-aria-disabled-soft-disable.md  (nytt tråd-kort, paused)
+tasks/threads/README.md                          (T53 + T54 indexrader; T50→closed)
+docs/BUILD-LOG.md                                (Session 45-sektion)
+tasks/lessons.md                                 (L219)
+```
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-29-session-45.md`](../tasks/sessions/2026-06-29-session-45.md) (Del 1 + Del 2). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session** → Fas 6h closeout (Grind F öppnar spärren → Marcus självtest mot egen adress = första/enda skarpa utskick, verifierar Reply-To live T51) → redo för Lotta; därefter Fas 6 closeout (T39/T40) → FULLT Fas 6-avslut.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

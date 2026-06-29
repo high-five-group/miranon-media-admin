@@ -1,6 +1,6 @@
 # T50 — UI-härdning: fler-stegs accident-proof sänd-grind (massutskick)
 
-- **Tillstånd:** `active` — **NÄSTA SESSIONS FOKUS** (Marcus-direktiv)
+- **Tillstånd:** `closed` — **STÄNGD Session 45** (härdad grind byggd + CI-verifierad [e2e 114 passed, axe-0] + arch-audit ren; stängande landning `86835f9`)
 - **Uppstod:** Session 44 (Fas 6h prod-deploy-planering)
 - **Commit-tagg:** `git log --grep "\[T50\]"`
 
