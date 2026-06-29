@@ -13,6 +13,7 @@
 
 import { expect, test } from '@playwright/test';
 import {
+  buildBatchPayload,
   parseBatchOutcome,
   type ResendBatchData,
 } from '../../supabase/functions/_shared/resend-batch';
@@ -103,5 +104,65 @@ test.describe('parseBatchOutcome — defensiva kanter (struktur-drift, fabricera
     const out = parseBatchOutcome(batchOf('a@resend.dev', 'b@resend.dev'), { data: [] });
     expect(out.accepted).toEqual([{ email: 'a@resend.dev' }, { email: 'b@resend.dev' }]);
     expect(out.rejected).toEqual([]);
+  });
+});
+
+const sendCtx = { subject: 'Ämne', html: '<p>hej</p>', text: 'hej' };
+
+test.describe('buildBatchPayload — reply_to närvaro (Fas 1, secret-drivet)', () => {
+  test('RESEND_REPLY_TO satt → replyTo (camelCase) NÄRVARANDE på varje rad', () => {
+    const payload = buildBatchPayload(
+      batchOf('delivered@resend.dev', 'bounced@resend.dev'),
+      sendCtx,
+      {
+        from: 'onboarding@resend.dev',
+        replyTo: 'lotta@outsidereality.se',
+      },
+    );
+    expect(payload).toEqual([
+      {
+        from: 'onboarding@resend.dev',
+        to: ['delivered@resend.dev'],
+        subject: 'Ämne',
+        html: '<p>hej</p>',
+        text: 'hej',
+        replyTo: 'lotta@outsidereality.se',
+      },
+      {
+        from: 'onboarding@resend.dev',
+        to: ['bounced@resend.dev'],
+        subject: 'Ämne',
+        html: '<p>hej</p>',
+        text: 'hej',
+        replyTo: 'lotta@outsidereality.se',
+      },
+    ]);
+  });
+
+  test('RESEND_REPLY_TO ej satt (undefined) → replyTo UTELÄMNAS (nuvarande beteende bevaras)', () => {
+    const payload = buildBatchPayload(batchOf('delivered@resend.dev'), sendCtx, {
+      from: 'onboarding@resend.dev',
+      replyTo: undefined,
+    });
+    expect(payload).toEqual([
+      {
+        from: 'onboarding@resend.dev',
+        to: ['delivered@resend.dev'],
+        subject: 'Ämne',
+        html: '<p>hej</p>',
+        text: 'hej',
+      },
+    ]);
+    expect('replyTo' in payload[0]).toBe(false);
+  });
+
+  test('RESEND_REPLY_TO tom/whitespace → replyTo UTELÄMNAS (graceful, ej tomt fält)', () => {
+    for (const empty of ['', '   ', null]) {
+      const payload = buildBatchPayload(batchOf('delivered@resend.dev'), sendCtx, {
+        from: 'onboarding@resend.dev',
+        replyTo: empty,
+      });
+      expect('replyTo' in payload[0]).toBe(false);
+    }
   });
 });

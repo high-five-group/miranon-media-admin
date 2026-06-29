@@ -6,7 +6,7 @@ import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
-import { parseBatchOutcome } from '../_shared/resend-batch.ts';
+import { buildBatchPayload, parseBatchOutcome } from '../_shared/resend-batch.ts';
 import { resolveSegmentMembers, SegmentNotResolvableError } from '../_shared/segment-resolution.ts';
 import {
   type BatchOutcome,
@@ -74,14 +74,15 @@ function makeRealBatchSender(): BatchSender {
       err.name = 'ResendNotConfiguredError';
       throw err;
     }
+    // Reply-To är OPTIONAL (speglar RESEND_FROM-läsningen men kastar ej): satt → inkluderas
+    // i varje payload-rad; saknas → utelämnas (nuvarande beteende bevaras).
+    const replyTo = Deno.env.get('RESEND_REPLY_TO');
     const resend = new Resend(apiKey);
-    const payload = batch.map((spec) => ({
-      from,
-      to: [spec.email],
-      subject: ctx.subject,
-      html: ctx.html,
-      text: ctx.text,
-    }));
+    const payload = buildBatchPayload(
+      batch,
+      { subject: ctx.subject, html: ctx.html, text: ctx.text },
+      { from, replyTo },
+    );
     const { data, error } = await resend.batch.send(payload, {
       idempotencyKey: ctx.idempotencyKey,
       batchValidation: 'permissive',

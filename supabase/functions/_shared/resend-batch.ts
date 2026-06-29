@@ -20,6 +20,43 @@ export type ResendBatchData = {
 };
 
 /**
+ * En utgående Resend-email-spec (en CreateEmailOptions per mottagare). Bärs som struktur,
+ * ej SDK-klass. `replyTo` (resend-node camelCase, ej REST `reply_to`) är optional.
+ */
+export type ResendEmailSpec = {
+  from: string;
+  to: string[];
+  subject: string;
+  html: string;
+  text: string;
+  replyTo?: string;
+};
+
+/**
+ * Bygg Resend batch-payloaden — en email-spec per mottagare. REN/Node-importerbar (ingen
+ * Deno-global, inget I/O), så den enda payload-formen kan api-pure-testas; EF:ens sender
+ * läser secrets och gör nätverksanropet. `replyTo` inkluderas ENDAST när en icke-tom sträng
+ * ges (secret satt) — saknas/tom → fältet UTELÄMNAS, vilket bevarar nuvarande beteende
+ * (Reply-To är optional; endast `from` är obligatorisk, EF:ens 503-väg).
+ */
+export function buildBatchPayload(
+  batch: readonly { email: string }[],
+  ctx: { subject: string; html: string; text: string },
+  opts: { from: string; replyTo?: string | null },
+): ResendEmailSpec[] {
+  const replyTo =
+    typeof opts.replyTo === 'string' && opts.replyTo.trim().length > 0 ? opts.replyTo : undefined;
+  return batch.map((spec) => ({
+    from: opts.from,
+    to: [spec.email],
+    subject: ctx.subject,
+    html: ctx.html,
+    text: ctx.text,
+    ...(replyTo ? { replyTo } : {}),
+  }));
+}
+
+/**
  * Permissive-svar → rad-exakt BatchOutcome. rejected härleds ur `errors[].index`
  * (→ batch[index].email); accepted är index-KOMPLEMENTET — rad-exakt och OBEROENDE av
  * data.data-ordningen (den är kompakterad och bär bara id, ej e-post). Defensiv invariant:
