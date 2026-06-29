@@ -17,7 +17,6 @@ import type {
 } from '../../domain/schemas';
 import type {
   AttendanceFilters,
-  MailLogFilters,
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
@@ -95,8 +94,8 @@ export interface DataSourceAdapter {
   /** Skicka mailutskick (bulk på segment) — returnerar serverns sänd-utfall (ADR-067 D3) */
   sendEmail(payload: MailPayload): Promise<MailSendResult>;
 
-  /** Hämta mailloggen */
-  fetchMailLog(filters?: MailLogFilters): Promise<MailLogEntry[]>;
+  /** Hämta mailloggen (GLOBAL lista — hela utskicksloggen, ingen filter-gren) */
+  fetchMailLog(): Promise<MailLogEntry[]>;
 
   /** Beräkna segment-medlemskap från källan (Deltaganden, strikt Närvaropoäng=1) givet en regel */
   computeSegment(rule: SegmentRule): Promise<SegmentResult>;

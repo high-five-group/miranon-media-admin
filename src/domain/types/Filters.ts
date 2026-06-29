@@ -20,9 +20,3 @@ export interface AttendanceFilters {
 export interface WaitlistFilters {
   event?: string;
 }
-
-/** Scenario 7: Mailutskick — filtrera utskickslogg */
-export interface MailLogFilters {
-  status?: string;
-  efter?: string;
-}

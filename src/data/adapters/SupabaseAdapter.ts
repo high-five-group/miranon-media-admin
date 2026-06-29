@@ -17,7 +17,6 @@ import type {
 } from '../../domain/schemas';
 import type {
   AttendanceFilters,
-  MailLogFilters,
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
@@ -91,7 +90,7 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
-  async fetchMailLog(_filters?: MailLogFilters): Promise<MailLogEntry[]> {
+  async fetchMailLog(): Promise<MailLogEntry[]> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

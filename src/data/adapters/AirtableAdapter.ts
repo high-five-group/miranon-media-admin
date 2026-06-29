@@ -31,7 +31,6 @@ import {
 } from '../../domain/schemas';
 import type {
   AttendanceFilters,
-  MailLogFilters,
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
@@ -259,14 +258,10 @@ export class AirtableAdapter implements DataSourceAdapter {
    * Hämta mailloggen (Utskickslogg) — GLOBAL läs-lista (Fas 6e L2). get-mail-log
    * hämtar HELA utskicksloggen (ingen filter/event-gren) och sorterar createdTime
    * desc serverside. `.parse()` validerar vid datagränsen (ADR-026; z.array — en LISTA).
-   *
-   * `MailLogFilters` ({ status?, efter? }) reserveras för en framtida serverside-
-   * filter-yta men passas EJ i v1 — get-mail-log har ingen filter-gren (samma sätt
-   * som fetchAttendance reserverar AttendanceFilters utan att skicka den). Inga
-   * params → global hämtning. (Utskickslogg är de facto tom tills L3 send-email
+   * Inga params → global hämtning. (Utskickslogg är de facto tom tills L3 send-email
    * skriver första raden; tom array parsar rent.)
    */
-  async fetchMailLog(_filters?: MailLogFilters): Promise<MailLogEntry[]> {
+  async fetchMailLog(): Promise<MailLogEntry[]> {
     const data = await callEdgeFunction<{ maillog: unknown }>('get-mail-log');
     return z.array(MailLogEntrySchema).parse(data.maillog);
   }
