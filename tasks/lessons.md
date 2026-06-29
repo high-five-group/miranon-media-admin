@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-28
+updated: 2026-06-29
 review_by: 2026-11-15
 status: stable
 ---
@@ -2854,3 +2854,32 @@ renderar det icke-som-framgång, och noll-effekt skriver INGEN biverknings-rad. 
 D3) nedåt: "inget hände" är ett tredje utfall, inte en undertyp av framgång. Process-not: fångades av arch-auditens edge-case-honesty-
 check (område iv, omdöme), inte av de mekaniska områdena — och Chat omklassade avvikelsen från auditens försiktiga "ovanför golvet"
 till golv (falsk framgång + fantom-rad på oåterkallelig handling = golv, ej finish). Hub-lyft pending — Fas 6.
+
+## 2026-06-29 — Session 42 (Fas 6e retro-audit T38 — golv-gap stängt, 6e förstklassigt klar)
+
+> Hub-lyft EJ nu — L193–L214 lyfts samlat efter FULLT Fas 6 (pending).
+
+### L213 [UNIVERSAL] — Session-end do-confirm bör korsläsa deklarerad-vs-levererad scope vid mid-session-rescope
+
+Datum: 2026-06-29 | Källa: Session 42 (Fas 6e retro-audit, klass: avslut-disciplin / scope-kontinuitet)
+
+När en sub-landning rescopas mitt i en session kan en syskon-scope-post tyst föräldralös-göras. Empiri: Session 33 stängde
+"6e levererad" men 6e:s deklarerade skal-post (d) "Inställningar + logga ut" byggdes aldrig — den föll mellan stolarna när L3
+("Skicka mail") rescopades till 6g/6h och sessionen stängdes. Luckan fångades först av 6e:s arch-audit (Session 42), nio sessioner
+senare. Regel: session-end do-confirm bör EXPLICIT korsläsa fasens/sessionens deklarerade scope-poster mot levererade artefakter,
+särskilt när en landning rescopats mid-session — en rescope flyttar fokus och kan lämna en deklarerad post obyggd utan att någon
+markerar den som de-scopad eller deferred. Generaliserar do-confirm-passets killer-item-logik: "levererade vi det vi sa att vi
+skulle?" är inte samma fråga som "är det vi byggde korrekt?". Hub-lyft pending — Fas 6.
+
+### L214 [UNIVERSAL] — Chats forensiska pre-pass bör validera inlinade specifika mot disk-konventioner FÖRE leverans
+
+Datum: 2026-06-29 | Källa: Session 42 (doc-birth markdownlint-miss + testfilnamns-miss, klass: handoff-disciplin / drift-vid-källan)
+
+Chat-self-fångst är empiriskt ~9 %; två drifter i Session 42 nådde Code (fångade där, ~64 %): (i) inlinat Del-1-innehåll bröt
+markdownlint (MD032 tomrad-runt-listor ×2 + MD004 listmarkör-fortsättningsrad); (ii) inlinat testfilnamn `mer.spec.ts` matchade ej
+projektets testMatch `**/*.staging.test.ts` → ett dött test som aldrig körts. Regel: före leverans av en Code-prompt med inlinade
+specifika (verbatim filinnehåll, fil-paths/namn), validera mot projektets faktiska disk-konventioner — markdown-lint (tomrad runt
+listor; ingen fortsättningsrad som börjar med en listmarkör) + fil-path/namn mot projektets test-match-glob (`*.staging.test.ts`, ej
+`*.spec.ts`). Bygg fortsatt för extern fångst (Code/Marcus), men skär driftfrekvensen vid källan — en drift som aldrig levereras
+kostar noll fix-cykler. Speglar L211 (verbatim-text ärver fil-governance) en nivå upp: inte bara linta efter transkription, utan
+validera specifikan FÖRE den lämnar Chat. Hub-lyft pending — Fas 6.

@@ -1904,6 +1904,57 @@ tasks/threads/README.md + T46-*.md         (T46 go-live-karta)
 
 ---
 
+## Session 42 — Fas 6e retro-audit (T38): golv-gap stängt, 6e förstklassigt klar (2026-06-29)
+
+**Mål:** kör 6e arch-audit (T38 — oauditerad slice sedan S33-bygget), remediera fynd, reconciliera docs ([byggplan §4 Fas 6e](byggplan.md), [ADR-058](decisions/ADR-058-arkitektur-fitness-audit-mekanism.md)). Commit-range `d24d95e`→`ccea505` (+ denna BUILD-LOG-entry + lifecycle-flip). SESSIONSGRÄNS (Fas 6 öppen: prod-deploys 6f+6h via T44 M3 + phase-end-verify), EJ fas-avslut.
+
+### L1 — arch-audit (ADR-058, read-only)
+
+- Mekaniska områdena i–iii via `arch-fitness-check.sh`: **i** lager-oberoende (0 kringgång, DI-switch närvarande, `dataSource` direkt-importerad endast av `router.ts`), **ii** swappbarhet (port-paritet **20==20==20**), **iii** EF-ribba — get-leads + get-mail-log bär EF1 (requireUser+tidig retur)/EF2 (corsHeadersFor)/EF4 (generateRequestId)/EF5–EF6 (mapErrorToResponse strukturerad); **EF3 N/A** för rena LÄS-EF utan operationKey.
+- Omdömes-områdena iv–v: **iv** golv hållet för EF + vyer (säkerhet, axe-0, Gunilla-namn) MEN **AVVIKELSE iv-1** (skal-golv-lucka: Mer-skalet saknade logout OCH Inställningar; `logout()` fanns i `AuthProvider` men anropades bara från `login.tsx`) + **AVVIKELSE iv-2** (oanvänd `_filters?: MailLogFilters`, 0 konsumenter). **v** vyer intresserade/maillogg **11/10/10** (Tillgänglighet 11 belagt av axe-0-tester); skal-betyg **uppskjutet** pga golv-luckan.
+- Marcus-beslut: **Väg 1** — bygg logout (golv), de-scopa Inställningar (ingen specificerad funktion; tom "ifall"-sida = spekulation över golvet).
+
+### L2 — skal-closeout (Väg 1-resolution)
+
+- **Commit A** `d24d95e` — logout-affordans i [`mer/index.tsx`](../src/routes/_authenticated/mer/index.tsx): `Button`-primitiv (react-aria 11/11/11) i egen `<div>` UTANFÖR nav-landmärket (handling ≠ navigering), anropar befintlig `logout()`; redirect till `/login` via `_authenticated`-guarden (logout → `onAuthStateChange` → `router.invalidate()` → beforeLoad). Ingen bekräftelse-dialog, ingen Inställningar. E2E [`tests/e2e/mer-index.staging.test.ts`](../tests/e2e/mer-index.staging.test.ts) (affordans utanför nav + tangentbords-nåbar + ingen Inställningar + axe-0 + logout→redirect).
+- **Commit B** `4a49b35` — port-hygien: skar `_filters?: MailLogFilters` ur `fetchMailLog` (interface + båda adaptrarna) + `MailLogFilters`-typdefen (0 konsumenter). `AttendanceFilters` (samma mönster, utanför scope) → T48.
+- **Verifiering:** typecheck 0 · biome 0 · port-paritet **20==20==20** bevarad · api-tester 182 passed. **CI grön per jobb** (run `28379206225`, HEAD `4a49b35`): **E2E (staging) körde MED secrets** — `mer-index.staging.test.ts` 6 assertioner inkl. logout→redirect + axe-0; A11y axe-runner ✅; Build ✅.
+- **Konsekvens:** skalet nu betygsättbart → **11/10/10** (axe-0 färskt CI-verifierad med logout-knappen). Område v:s uppskjutna skal-betyg **STÄNGT**.
+
+### L3 — doc-reconciliation + audit-record
+
+- **Inställningar de-scopad ur 6e** (deliberat): `byggplan.md` §4 (6e-rad + Filer-lista), `BYGGPLAN-LÄTTLÄST-v3.md` (Fas 6e-sektion + Mer-flik-tabell). "Logga ut" behållet.
+- **T47** registrerad (kort + rad — Inställningar-yta, byggs vid konkret behov); **T48** registrerad (rad — AttendanceFilters-triage, ADR-053); **T38 → closed** (verdikt-konsistens).
+- **Audit-record:** sessionsdok Del 2 (L1-verdikt) / Del 3 (L2-closeout) / Del 4 (L3-reconciliation) + verdikt-rad + lessons-kandidater (`ccea505`). De-scope-edits + trådar (`8adc540`).
+
+### Verifiering
+
+CI grön per jobb (run `28379206225` kod / `28380227654` docs — Test+Build success, Docs link check success, Lint+Audit+TypeCheck success). markdownlint 0 på alla rörda .md · lychee 15 OK/0 errors (T47-länkar). typecheck 0 · biome 0 · build grön · api 182 passed · e2e (staging, CI-secrets) grön inkl. nya `mer-index`-sviten.
+
+### Teknisk skuld
+
+**6e FÖRSTKLASSIGT KLAR mot ADR-058** (alla fem områden passerar; golv återställt; vyer + skal 11/10/10). **T38 fullt löst.** Fas 6 closeout-förkrav kvarstår: prod-deploys 6f+6h (T44 M3 prod-Resend-nyckel + verifierad domän + Code-at-prod-deploy) + T39 + T40 → därefter FULLT Fas 6-avslut (phase-end-verify, 6→KLAR, fas-nivå fitness-svep, CHANGELOG, hub-lyft, arkivering). Lessons **L213–L214** `[UNIVERSAL]` (L193–L214 EJ hub-lyfta — pending efter FULLT Fas 6). Nya trådar **T47** (Inställningar-de-scope) + **T48** (AttendanceFilters-triage). Auditen flippade EJ Fas 6.
+
+### Filstruktur-snapshot (nytt/ändrat i Session 42)
+
+```text
+src/routes/_authenticated/mer/index.tsx    (logout-affordans, Button utanför nav)
+src/data/adapters/DataSourceAdapter.ts     (fetchMailLog: filters-param borttagen)
+src/data/adapters/AirtableAdapter.ts       (_filters borttagen + stale-kommentar)
+src/data/adapters/SupabaseAdapter.ts       (_filters borttagen)
+src/domain/types/Filters.ts                (MailLogFilters-typdef borttagen)
+tests/e2e/mer-index.staging.test.ts        (ny — logout-affordans + axe-0 + redirect)
+docs/byggplan.md                           (§4 6e: Inställningar de-scopad → T47)
+docs/specs/BYGGPLAN-LÄTTLÄST-v3.md         (Fas 6e-bullet + Mer-flik-tabell)
+tasks/sessions/2026-06-29-session-42.md    (Del 2/3/4 + verdikt + lessons-kandidater)
+tasks/lessons.md                           (L213–L214)
+tasks/threads/README.md + T47-*.md         (T47 + T48; T38→closed)
+```
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-29-session-42.md`](../tasks/sessions/2026-06-29-session-42.md) (Del 1 scope + Del 2/3/4 audit-record + verdikt). **Sessionsavslut:** session-end do-confirm-pass + `lifecycle: closed`. Nästa: **NY Session 43** → Fas 6 prod-deploys (Skool-export 6g + Mail 6h via T44 M3) → Fas 6 closeout-förkrav (T39/T40) → FULLT Fas 6-avslut.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
