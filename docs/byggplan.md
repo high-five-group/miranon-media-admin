@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-28
+updated: 2026-06-29
 review_by: 2026-11-15
 status: stable
 ---
@@ -645,7 +645,7 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning: Persons-domän → Event
 | **6b** | Events | 0,75 sess | `/event` lista (befintlig fetchEvents) + `/event/$eventId` info-route + `/event/$eventId/narvaro`-route (C1 nested, ej flik) | `fetchEvent`, `fetchAttendance` |
 | **6c** | Registrations + Väntelista | 1 sess | Anmälda-flik på Event-detalj, väntelista-konvertering på Mer, idempotent registrering | `createRegistration`, `fetchWaitlist` |
 | **6d** | Hem-aggregering | 0,5 sess | `/hem` med greeting + nya anmälningar + info-cards + CTA. Polling 60s + pull-to-refresh + visibility-trigger (B1) | (inga nya — använder befintliga read-EF) |
-| **6e** | Mer-fliken | ~1,0 sess | Intresserade (leads-läsvy) + Maillogg (läsvy) + inställningar/logga ut | `get-leads`, `get-mail-log` |
+| **6e** | Mer-fliken | ~1,0 sess | Intresserade (leads-läsvy) + Maillogg (läsvy) + logga ut (Inställningar de-scopad 6e → T47, ADR-058-audit iv-1/Väg 1) | `get-leads`, `get-mail-log` |
 | **6f** | Skapa nytt event | ~1 sess | `/mer/skapa-event`-formulär + create-event write-vertikal mot Eventplanering (egen session) | `create-event` (write, egen ADR) |
 | **6g** | Segment-yta | ~2,0 sess | Bygg/se/spara/exportera segment av personer ur deltagarhistorik; beräknat medlemskap från källan (Deltaganden); dynamisk regel + snapshot-export; SKOOL-modulbehörighet (union per kurs×modalitet). Egen session, multi-landning | beräknings-/segment-EF:er definieras vid 6g-design (ADR-062) |
 | **6h** | Mail-handling (bulk-utskick) | ~0,5 sess | `send-email` PÅ ett segment — byggs EFTER 6g eftersom bulk-mail behöver segment-motorn för att lösa mottagare | `send-email` (direct-Resend, ADR-015 + Idempotency-Key) |
@@ -712,7 +712,7 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning: Persons-domän → Event
 
 **6e (Mer):**
 
-- `src/routes/_authenticated/mer/index.tsx` (skal: Intresserade/Maillogg/inställningar/logga ut)
+- `src/routes/_authenticated/mer/index.tsx` (skal: Intresserade/Maillogg/logga ut; Inställningar de-scopad 6e → tråd T47, ADR-058-audit iv-1/Väg 1)
 - `src/routes/_authenticated/mer/intresserade.tsx`, `.../maillogg.tsx` (route-konvention verifieras mot befintliga mer/-routes på disk)
 - `supabase/functions/get-leads/index.ts`, `.../get-mail-log/index.ts` (deploy)
 - `tests/e2e/mer.spec.ts`

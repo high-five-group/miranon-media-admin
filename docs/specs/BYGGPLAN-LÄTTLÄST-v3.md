@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-25
+updated: 2026-06-29
 review_by: 2026-11-15
 status: stable
 ---
@@ -53,7 +53,7 @@ Du öppnar appen i en webbläsare (Chrome, Safari eller liknande) på dator, sur
 | **Hem** | Din överblick. Nya anmälningar, nästa event, obetalda. Du ser direkt hur läget ser ut — svaret på frågan "brinner det?". |
 | **Event** | Alla event i en lista. Klicka på ett för att se anmälda, betalningar och föra närvaro. |
 | **Personer** | Sök bland alla som haft kontakt med Miranon Media. Se en persons hela historik. |
-| **Mer** | Intresserade personer (leads), planera nytt event, skicka mail, inställningar, logga ut. |
+| **Mer** | Intresserade personer (leads), planera nytt event, skicka mail, logga ut. |
 
 > 📸 *Här kommer en skärmbild av appen att läggas in när Fas 5 är klar.*
 
@@ -366,7 +366,7 @@ Mer-fliken samlar det som inte hör hemma under Hem, Event eller Personer:
 
 - **Intresserade** — personer som visat intresse (hämtat något gratismaterial) men ännu inte anmält sig till en kurs. Du ser vilka de är och vad de nappat på. Den som anmält sig till en kurs men hoppat av syns inte här — sådana kontakter samlar vi i en egen vy längre fram, så du kan nå ut till dem särskilt.
 - **Maillogg** — en lista över vilka mailutskick som gått ut, till hur många, och hur många som öppnat.
-- **Inställningar och logga ut.**
+- **Logga ut.**
 
 (Själva mailutskicket flyttade vi till en egen del längre fram — Fas 6h — eftersom det hänger ihop med segment-grupperna i Fas 6g. Se nedan.)
 
