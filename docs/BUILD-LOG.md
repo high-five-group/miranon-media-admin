@@ -2001,6 +2001,55 @@ PROD-EF:er deployade (ej i git — out-of-CI prod-handling): `supabase/functions
 
 ---
 
+## Session 44 — Fas 6h Mail PROD-DEPLOY: Reply-To (fas 1) + send-email skarp men sövd på prod (fas 2 A–E) (2026-06-29)
+
+**Mål:** prod-deploya 6h-vertikalens `send-email`-EF så bulk-mail-vägen blir live ([byggplan §4 Fas 6h](byggplan.md)), efter att T44 M3:s Marcus-förkrav uppfylldes (prod-Resend-nyckel satt; `miranon.dev` verifierad i Resend som root, h5gruppen-kontot). Grindad sekvens (A–F) med STOPPA + rapport per grind. SESSIONSGRÄNS, EJ fas-avslut (Fas 6h öppen: T50 UI + Grind F + självtest; Fas 6 öppen: T39/T40).
+
+### Fas 1 — Reply-To-stöd (secret-drivet) + staging-bevis
+
+- **Kodändring (`346ffad`):** Reply-To saknades helt i `send-email`-payloaden. Lagt secret-drivet — ny `RESEND_REPLY_TO` läses precis som `RESEND_FROM`, men OPTIONAL (satt → `replyTo` (resend-node camelCase, context7-bekräftad) inkluderas; saknas/tom → utelämnas, nuvarande beteende bevarat). Payload-bygget extraherat till ren Node-importerbar `buildBatchPayload` i [`_shared/resend-batch.ts`](../supabase/functions/_shared/resend-batch.ts) (samma mönster som `parseBatchOutcome`) → api-pure testbar; `index.ts` är Deno-only.
+- **Bevis:** 3 api-pure enhetstester (replyTo närvarande/utelämnad) + staging-deploy (`--project-ref pqtshyierkdgwdnxuirz`, `RESEND_REPLY_TO` staging-satt) + **17/17 live HTTP-kontrakt** mot deployad staging-EF (401/405/400 + SegmentNotResolvable). Fullt riktigt happy-path-utskick (200 + `emails.get` reply_to-värde) EJ kört — kräver efemär fixtur ej self-seedbar (**T45**); enhetstest = durabel emittering-bevisning, **T51** = människo-synlig end-to-end (Marcus självtest).
+
+### Fas 2 — prod-deploy (grindad A–E; F flyttad)
+
+- **Grind A (read-only):** live prod-tillstånd re-verifierat — prod-länk `●` = `lvjsfnphlauldxqlncpl`; Utskickslogg utan Idempotensnyckel; `RESEND_API_KEY` finns, `RESEND_FROM`/`RESEND_REPLY_TO`/`ENVIRONMENT` saknas; `send-email` ej i prod; ej i allowlist. Inga avvikelser.
+- **Grind B (Airtable-skrivning #1):** prod-kolumn `Idempotensnyckel` (singleLineText, additivt) skapad på Utskickslogg `tblIesjbuSWNp6oxK` = **`fldXnfsdYxTB7PALv`** (9→10 fält, de 9 orörda, ingen data). Hård ordning kolumn FÖRE EF (§Kända fällor 37/38).
+- **Grind C (secrets #2 — EJ ENVIRONMENT):** `RESEND_FROM` (= `Display Name <mail@miranon.dev>`) + `RESEND_REPLY_TO` satta på prod (`--project-ref` prod). Värde-fritt verifierat; `ENVIRONMENT` lämnad frånvarande.
+- **Grind D (auto-trigger-verifiering, read-only):** ingen kod-väg avfyrar `send-email` automatiskt — enda anroparen `AirtableAdapter.sendEmail` → `SegmentMailCompose` `useMutation`, `.mutate()` endast i två uttryckliga `onPress`-handlers (bekräftelsedialog), ingen `useEffect`/cron/pg_cron/DB-trigger. Mot `data-model.md`: A1–A11 + dokumenterade Make-vägar når INTE vår EF (A6 = Airtable-native mail; transaktionella `send-email`-referenser = psionautics annat repo). Post-export-slivern (automationer efter JSON-export 2026-03-16) **bekräftad tom av Marcus direkt**. JWT-barriär (`requireUser`→401) = strukturell defense-in-depth.
+- **Grind E (deploy #3 + read-only smoke):** `send-email` deployad **ACTIVE v1** på prod (ID `a47a8f5c…`, 19:10:46 UTC) via committad allowlist-deklaration 10→11 (`9c4bc38`) + smal `ALLOWLIST_FILE`-override (endast send-email; `--list`-dry-run bekräftade deploy-set = exakt 1). `_shared/resend-batch.ts` (fas 1) uppladdad. compute-segment EJ redeployad (synkad S43). READ-only smoke: anon GET→**401**, anon POST→**401** (auth-grind live; prod-gateway `verify_jwt` aktiv → 401 före 405; metod-grind staging-bevisad). Inget mail skickat.
+- **Grind F — FLYTTAD (Marcus-beslut 2026-06-29):** `ENVIRONMENT=production` sätts FÖRST efter UI-härdningen (**T50**), så alla tre skyddslagren (idempotens + fail-closed-spärr + UI-bekräftelse) finns före första riktiga mottagare. Grind F + Marcus självtest (verifierar Reply-To live, **T51**) körs efter T50, EJ i Session 44.
+
+### Verifiering
+
+Fas 1: 3 api-pure + 17/17 live staging-kontrakt (CI run grön per jobb, `346ffad`). Fas 2: kolumn-skapelse schema-verifierad (10 fält); secrets värde-fritt verifierade; deploy dry-run + untouched-proof; READ-only smoke 401/401. **send-email skarp men SÖVD** (ENVIRONMENT frånvarande → fail-closed, vägrar varje riktig mottagare).
+
+### Avvikelser / teknisk skuld
+
+- **VERSION-kolumn-+1 (plattforms-artefakt):** `functions list` visade alla 11 pre-existerande EF:ers VERSION +1 medan UPDATED_AT stod stilla → Supabase version-räknare vid deploy-operation, EJ kod-redeploy. **UPDATED_AT (oförändrad) = kod-sanningen** (de 5 stale T39 kvar @ 2026-05-04). Samma mönster sågs S38→S43. Blast-radie kod = +1 (send-email).
+- **Reply-To end-to-end ej körd** (fas 1) → **T51** (Marcus självtest).
+- **Grind F + självtest kvar** → efter **T50** (UI-härdning, NÄSTA SESSIONS FOKUS).
+- **T39/T40** oförändrat `paused` (Fas 6 closeout-förkrav). Lessons-backlogg L193–L218 EJ hub-lyft (pending efter FULLT Fas 6).
+
+### Filstruktur-snapshot (nytt/ändrat i Session 44)
+
+```text
+supabase/functions/_shared/resend-batch.ts   (buildBatchPayload + ResendEmailSpec, fas 1)
+supabase/functions/send-email/index.ts        (läser RESEND_REPLY_TO, anropar buildBatchPayload)
+tests/api/resend-batch.test.ts                (3 buildBatchPayload-tester)
+.prod-functions-allowlist.conf                (10→11: send-email)
+tasks/sessions/2026-06-29-session-44.md        (Del 1 fas-plan + Fas 2-utfall; Del 2 landnings-kadens)
+tasks/threads/README.md                        (T50–T52)
+tasks/threads/T50-ui-hardning-sand-grind.md   (nytt tråd-kort)
+docs/BUILD-LOG.md                              (Session 44-sektion)
+tasks/lessons.md                               (L218)
+```
+
+PROD-handlingar (ej i git — out-of-CI prod-mutationer): Airtable-kolumn `Idempotensnyckel` (`fldXnfsdYxTB7PALv`) på prod-basen; prod-secrets `RESEND_FROM`+`RESEND_REPLY_TO`; `send-email` → ACTIVE v1 på `lvjsfnphlauldxqlncpl` (SÖVD, `ENVIRONMENT` ej satt).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-29-session-44.md`](../tasks/sessions/2026-06-29-session-44.md) (Del 1 + Del 2). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **T50** UI-härdning → Grind F (öppna spärren) → Marcus självtest (T51) → redo för Lotta; därefter Fas 6 closeout (T39/T40) → FULLT Fas 6-avslut.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

@@ -2921,3 +2921,17 @@ utan att smutsa prod-data. Men deny-grinden bevisar INTE att save-segment SKRIVE
 separat verifiering) — och deklarera EXPLICIT vilken nivå ett deploy-grind-bevis når, så `ACTIVE`-status + grön deny-grind ej
 förväxlas med verifierad skriv-korrekthet. En prod-deployad write-EF med grön deny-grind är säkrad mot obehörig åtkomst men
 overifierad på sin write-väg tills happy-path-smoken körs. Hub-lyft pending — Fas 6. Speglar T40-vidgningen (6g-instansen).
+
+### L218 [UNIVERSAL] — En yta som tillgängliga verktyg ej kan enumerera är OVERIFIERAD tills den stängs av auktoritativ källa (bunden av sitt datum) + människo-bekräftelse för resten
+
+Datum: 2026-06-29 | Källa: Session 44 (Grind D, auto-trigger-verifiering före skarp prod-deploy)
+
+Före att en oåterkallelig spärr öppnas (här: send-email mot riktiga mottagare) måste varje väg-in uteslutas. Kod-vägar är
+verktygs-verifierbara (grep/läs); Airtable-automationer är det INTE (MCP kan ej enumerera dem — projekt-guard). Fällan: läsa
+"MCP visar inga" som "inga finns". Regel: behandla en verktygs-overifierbar yta som OVERIFIERAD och stäng den i tre lager —
+(1) auktoritativ doc-källa (`data-model.md` A1–A11) som UTESLUTER, ej bara listar, MEN bunden av sitt export-datum (2026-03-16 →
+kan ej täcka senare tillägg); (2) explicit människo-bekräftelse för post-datum-slivern (Marcus bekräftade tom); (3) strukturell
+defense-in-depth som gör ytan ofarlig oavsett (JWT-barriär: `requireUser`→401 → en automation kan ändå inte autentisera). Deklarera
+EXPLICIT vilket lager som bär vilken del; anta aldrig att en stale-bunden källa är uttömmande som-av-nu. Generaliserar bortom
+Airtable: gäller varje verifiering där verktyget har en blind fläck (interfaces/vyer/extensions, externa konton, manuell config).
+Hub-lyft pending — Fas 6. Besläktad L215 (live-källa vid handlingsögonblick) + L217 (deklarera grind-bevisets nivå).
