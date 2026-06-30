@@ -15,7 +15,7 @@ byggt, vad gatear prod, vem äger grinden, hur nära är användaren.
 | Väg | Byggt + auditerat | Prod-deployad | Återstående gate till live | Ägare av gaten |
 |---|---|---|---|---|
 | **Skool-export (6g)** — access-grant, ej consent-gatead | ✅ L1–L4 (S35–S37, arch-audit ren) | ✅ **LEVERERAD S43** — compute-segment/save-segment/get-segments ACTIVE v1 på prod (`lvjsfnphlauldxqlncpl`), auth-grind-bevisad (401/405) | full autentiserad prod-smoke (save-segment happy-path) = **T40**; prod-frontend serverar segment-ytan = overifierat | Code (T40, prod-test-user-förkrav) |
-| **Mail (6h)** — consent-gatead | ✅ L0–L3 (S39–S41, arch-audit ren, avvikelse-fix) | ❌ **KVARSTÅR** — send-email ej i prod-allowlisten, ej deployad | **T44 M3** (prod-Resend-nyckel + verifierad `miranon.dev`, psionautics-DNS-korsjämförelse) + Code-at-prod-deploy (`ENVIRONMENT=production` + prod-`Idempotensnyckel`-kolumn + deploy) | Marcus (M3-provisionering) + Code (deploy) |
+| **Mail (6h)** — consent-gatead | ✅ L0–L3 (S39–S41, arch-audit ren, avvikelse-fix) + T50 UI-härdning (S45, arch-audit ren) | ⚠️ **DEPLOYAD MEN SÖVD (S44)** — send-email i allowlist (11) + prod-deployad, prod-`Idempotensnyckel`-kolumn satt, MEN `ENVIRONMENT` ej satt → fail-closed (`!== 'production'` → 422), noll skickat | **Grind F** (`ENVIRONMENT=production`, sista flippen) + **T51** Marcus-självtest (Reply-To live, första skarpa utskicket) → spårat som **T55** | Marcus/Code i prod-panelen (Chat rör ALDRIG secret) |
 
 ### 6g-grenens leverans-bevis (S43)
 

@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-29
+updated: 2026-06-30
 review_by: 2026-09-17
 status: stable
 ---
@@ -78,6 +78,7 @@ status: stable
 | `T52` | Session 43-dok-avvikelse (dok-hygien-backfill) — doket bär endast Del 1; dess NÄSTA-handoff-block lever i `todo.md`, ej i själva doket | `paused` | _(ingen kort än — endast registrerad); uppstod Session 44 (orienterings-pass); backfill-kandidat, samma klass som T03 (Session 20 BUILD-LOG-glapp)_ |
 | `T53` | Test-till-sig-själv (skicka test-mail till egen adress före skarpt utskick — inbyggd förhandsgranskning) | `paused` | [T53-test-till-sig-sjalv-skicka.md](T53-test-till-sig-sjalv-skicka.md) — uppstod Session 45 (T50-scope-precisering); REVIDERAR Session 44:s "BESLUTAT: med" mot disk-evidens (send-email segmentIds-only, ADR-067 consent-GOLV); options-rymd (A) ingen test-väg · (B) test-segment med Resend-test-adresser (ingen EF-ändring, endast icke-prod) · (C) net-new EF-kontrakt + ADR |
 | `T54` | Button-primitiven saknar ren aria-disabled-soft-disable — villkorligt-låsta knappar faller tillbaka på native isDisabled (tar låst knapp ur tab-ordningen) | `paused` | [T54-button-aria-disabled-soft-disable.md](T54-button-aria-disabled-soft-disable.md) — uppstod Session 45 (T50 arch-audit, ADR-058 område v residual); beyond-golv-förfining (axe-0 redan mött via synlig knapp + fält-instruktion + aria-live); tvärsnitt: alla villkorligt-disablade knappar; options (A) lämna · (B) utöka Button med softDisabled · (C) annat |
+| `T55` | Mail-go-live: Grind F — öppna prod-ENVIRONMENT-spärren (`ENVIRONMENT=production`) så send-email blir skarp + prod-smoke | `paused` | [T55-mail-go-live-grind-f.md](T55-mail-go-live-grind-f.md) — uppstod Session 46 (pivot till UI-spår); send-email prod-deployad men SÖVD (S44), fail-closed tills `ENVIRONMENT=production` sätts; ~90% klart, inga prod-ändringar i S46; plockas i "redo för Lotta"-passet EFTER UI (om ingen extern drivare). Tvilling: T51 (Reply-To-självtest = första skarpa utskicket) · T53 (test-till-sig-själv). Ägare: Marcus/Code i prod-panelen (Chat rör ALDRIG secret) |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >

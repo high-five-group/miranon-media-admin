@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-29
+updated: 2026-06-30
 review_by: 2026-11-15
 status: stable
 ---
@@ -2949,3 +2949,18 @@ städad i efterhand. Empiri: Code flaggade T50-kortets stale "BESLUTAT: med" (te
 som Commit 0 `e62c695` FÖRE bygg-commit `86835f9`. Generaliserar L211 (verbatim-text ärver fil-governance) + L214 (validera
 inlinade specifika mot disk FÖRE leverans) till tråd-ingångens SANNINGSHALT: en ingång som en framtida läsare/bygge förlitar
 sig på rättas före, inte efter, den handling som läser den. Hub-lyft pending — Fas 6 (L193–L219 ej hub-lyfta).
+
+## 2026-06-30 — Session 46 (Fas 6h Mail skarpt — pivot till UI-spår)
+
+### L220 [UNIVERSAL] — Korrekthets-grindar fångar inte presentationslager-skuld; ett byggflöde behöver en design-/UX-review-loop som förstklassig disciplin
+
+Datum: 2026-06-30 | Källa: Session 46 (Steg 1, första UI-granskningen på 40+ sessioner; klass: process-gap)
+
+Backend-korrekthets-disciplinerna (ADR:er, grindar, tester, a11y-baseline) var rigorösa, men ingen UI-/design-review-loop
+fanns → presentationslager-skuld ackumulerades osynligt över 40+ sessioner och syntes först vid första UI-granskningen.
+"Tillgängligt + funktionellt korrekt" ≠ "användbart/presentabelt": a11y-baseline (axe-0) och funktionell korrekthet bevisar
+att en yta FUNGERAR, inte att den ser bra ut eller känns proffsig — de är ortogonala axlar, och bara den första var grindad.
+Ett byggflöde behöver en design-/UX-review-disciplin som förstklassig loop, inte bara korrekthets-grindar. Backend-först-
+sekvensen var sund (datakällan måste avtäckas före ytan) — luckan var avsaknaden av yt-review, INTE ordningen; en sund
+sekvens utan en review-loop för det sist-byggda lagret ackumulerar tyst skuld i det lagret. Korrigerande arbetssätt definieras
+i Session 47. Hub-lyft pending — Fas 6 (L193–L220 ej hub-lyfta).
