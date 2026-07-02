@@ -414,6 +414,8 @@ jobs:
           #             felklassen; grind A-mätt 0-skuld) + repo-root .md
           # UTELÄMNAR: tasks/sessions/archive/** (frozen ADR-023) — K1.D §0 utelämning #1
           #            docs/archive/** (frozen ADR-023-mall, normaliserad i Commit 4a 2026-05-14)
+          #            docs/reference/pocock/** (vendorerat externt Pocock-material, S47 Steg 0 —
+          #            samma rationale som archive/: extern korpus, ej vår prosa)
           args: >-
             --cache
             --max-cache-age 1d
@@ -421,6 +423,7 @@ jobs:
             --verbose
             --header "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
             --exclude-path docs/archive
+            --exclude-path docs/reference/pocock
             './docs/**/*.md'
             './tasks/*.md'
             './tasks/sessions/*.md'
