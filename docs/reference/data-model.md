@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-28
+updated: 2026-07-02
 review_by: 2026-11-15
 status: stable
 ---
@@ -42,6 +42,7 @@ Detta dokument är **AUKTORITATIV** för datamodellen. `~/Repon/miranon-media-os
 
 | Behöver du... | Läs... |
 |---|---|
+| Kanoniskt domänspråk (begreppen, sv↔en-mappningen) | `~/Repon/miranon-media-admin/ORDLISTA.md` (repo-rot) — begreppen bor där; mekaniken här. |
 | Fält-för-fält-referens med typer, formler, relationer | **Detta dokument §Snabbreferens / Schema cheat sheet.** Live-pull i `~/Repon/miranon-media-admin/docs/research/datamodell-research/02-live-state.md` (2026-04-28, 18 tabeller × 358 fält). |
 | Källextraktion + datamodell-skuldlista (under detta projekts gång) | `~/Repon/miranon-media-admin/docs/research/datamodell-research/` (manifest, extraktion, live-state, gap-analys) |
 | Maskinläsbar fält-ID → namn-mapping | `~/Repon/miranon-media-os/docs/field_lookup.json` (genererad 2026-03, verifiera aktualitet vid behov) |
