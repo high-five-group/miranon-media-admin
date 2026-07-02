@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-30
+updated: 2026-07-02
 review_by: 2026-11-15
 status: stable
 ---
@@ -2964,3 +2964,32 @@ Ett byggflöde behöver en design-/UX-review-disciplin som förstklassig loop, i
 sekvensen var sund (datakällan måste avtäckas före ytan) — luckan var avsaknaden av yt-review, INTE ordningen; en sund
 sekvens utan en review-loop för det sist-byggda lagret ackumulerar tyst skuld i det lagret. Korrigerande arbetssätt definieras
 i Session 47. Hub-lyft pending — Fas 6 (L193–L220 ej hub-lyfta).
+
+## 2026-07-02 — Session 47 (Arbetssätt-spår: Pocock-integration — Del 6-landningen)
+
+### L221 [UNIVERSAL] — Frontmatter-hooken bumpar INTE sessionsdok; updated: sätts manuellt
+
+Datum: 2026-07-02 | Källa: Session 47 Del 6-landningen (manuell bump `5c125f8`; klass: prompt-premiss)
+
+Pre-commit-hooken (`.githooks/pre-commit`) auto-bumpar `updated:` ENDAST på filer i exakt-path-allowlistan
+`FRONTMATTER_GOVERNING_DOCS` (`.frontmatter-policy.conf`) — sessionsdok står medvetet utanför (bekräftat i
+check-lifecycle-kommentaren: sessionsdok dras EJ in i frontmatter-checkarna). En prompt som förväntar hook-bump
+på ett sessionsdok bär alltså en falsk premiss: bumpen sker inte, och `updated:` blir tyst stale. Regel:
+framtida prompts SPECAR manuell `updated:`-bump för sessionsdok (och andra icke-listade filer), förväntar
+aldrig hook. Detta är en instans av prompt-premiss-klassen [[L54]] (verifiera prompt-premisser mot faktiskt
+disk-tillstånd — här: hookens faktiska allowlist, inte dess antagna räckvidd). Empiri: Del 6-landningen
+förväntade hook-bump per prompt; `updated:` stod kvar på 2026-07-01 efter commit och rättades manuellt i
+`5c125f8`.
+
+### L222 [UNIVERSAL] — Radstarta aldrig wrapped markdown-prosa med listmarkör (+/-/*) — MD004 tolkar den som lista
+
+Datum: 2026-07-02 | Källa: Session 47 Del 6-landningen (`ac606d7` röd → om-radbrytning `161d43a`; klass: docs-grind)
+
+När löpande prosa radbryts så att en fortsättningsrad börjar med `+`, `-` eller `*` (t.ex. "grilling-kärna
+[radbrytning] + tunn ingång") parsar markdownlint raden som ett list-item och fäller MD004/ul-style (repo-stil:
+dash). Tredje bekräftade förekomsten i repo-historiken: todo (`e2b4a3b`), Del 5-eran (`86e16be`, Inc 3b) och
+Del 6 (`ac606d7` → fix `161d43a`) — en etablerad felklass, inte en engångare. Regel vid radbrytning av prosa:
+lägg tecknet sist på föregående rad, aldrig först på nästa. Chat-sidans motsvarighet: inlinat promptinnehåll
+(verbatim-text som ska committas) valideras mot kända docs-grindar FÖRE leverans — verbatim-status skyddar inte
+mot repo-grindar ([[L149]]: docs-grind som separat gate-steg fångar den lokalt; denna lesson adresserar att inte
+INTRODUCERA klassen alls).
