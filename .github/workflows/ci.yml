@@ -400,8 +400,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .lycheecache
-          key: cache-lychee-${{ github.sha }}
-          restore-keys: cache-lychee-
+          key: cache-lychee-v2-${{ github.sha }}
+          restore-keys: cache-lychee-v2-
 
       - name: Run lychee link check
         # SHA-pin per ADR-029 §6.
@@ -416,9 +416,13 @@ jobs:
           #            docs/archive/** (frozen ADR-023-mall, normaliserad i Commit 4a 2026-05-14)
           #            docs/reference/pocock/** (vendorerat externt Pocock-material, S47 Steg 0 —
           #            samma rationale som archive/: extern korpus, ej vår prosa)
+          # --cache-exclude-status '429': transient rate-limit ska ALDRIG cachas som fel
+          #   (klass-fix efter förgiftad cache på gitlab-429, röd run 28601497591). Cache-
+          #   nyckel bumpad cache-lychee- → cache-lychee-v2- nedan = deterministisk kallstart.
           args: >-
             --cache
             --max-cache-age 1d
+            --cache-exclude-status '429'
             --no-progress
             --verbose
             --header "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
@@ -437,7 +441,7 @@ jobs:
         if: always()
         with:
           path: .lycheecache
-          key: cache-lychee-${{ github.sha }}
+          key: cache-lychee-v2-${{ github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v6
