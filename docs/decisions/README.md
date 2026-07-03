@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-28
+updated: 2026-07-03
 review_by: 2026-11-15
 status: stable
 ---
@@ -35,6 +35,14 @@ Oföränderligheten justeras via en av två mekanismer beroende på omfattning:
 - **Superseded by** — när beslutet i grunden ersätts eller ogiltigförklaras. En ny ADR skrivs som `Supersedes ADR-NNN`; den gamla markeras `Superseded by ADR-MMM`.
 
 Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv not; beslutet ersätts i grunden → supersedering.
+
+### ADR-baren (innan du mintar)
+
+> ADR-baren (innan du mintar): verifiera beslutet mot 3-villkors-baren —
+> kortform i hub-CLAUDE.md § "Instruktioner — Alltid gäller", kanonisk
+> fulltext i grilling-kärnan (marcus-system-pluginet). Under baren
+> används befintligt maskineri; under-bar-ADR endast på explicit
+> Marcus-beslut. (Session 47 Del 10; graderas till ADR-068 vid Accepted.)
 
 ## Index
 
