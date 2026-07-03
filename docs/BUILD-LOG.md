@@ -2100,6 +2100,51 @@ tasks/lessons.md                                 (L219)
 
 ---
 
+## Session 47 — Arbetssätt-spår: Pocock-integration (grillnings-mekanism i drift + konkordans stängd) (2026-06-30 → 2026-07-03)
+
+**Mål:** integrera Matt Pococks AI-kodnings-arbetssätt i Chat/Code/Marcus-systemet utan att bryta det som fungerar (Del 1). Design-/process-session — ingen produktkod, ingen byggplan-fas berörd (SESSIONSGRÄNS, EJ fas-avslut). Kärnbeslutet (två-aktörs, ADR-068) förblir WIP under prövotid; count-tokens 67/67/67 orörda hela sessionen.
+
+### Byggd substans (git-trail per Del)
+
+- **Pocock-korpus vendorerad** (Del 4 `151817c`; plan-doket Del 8 `b610bf5`): `docs/reference/pocock/` — sammanfattnings-dok + kursnoteringar + 15 skill-kataloger + plan-djupa-moduler. Lint-exkluderingar i tre suiter (markdownlint `ignores` · lychee `--exclude-path` · Vale-sektion med komplett två-nyckels-mönster), CI-bevisade efter Del 5-detouren (`d1cc931` — lychee-cacheförgiftning avgiftad via `--cache-exclude-status '429'` + nyckel-bump).
+- **ORDLISTA.md född governad** (Del 9, `4047605` + grind-svit-fix `19db2a5`): 16 poster (10 kärnobjekt + 6 flöden/distinktioner), frontmatter-allowlist 13→14, korsref i data-model.md, prose-grind-täckning.
+- **Hub-plugin 1.4.0→1.6.0** (hub `9538572` Del 9 · `2ee63f7` Del 11 · legacy-arkivering `094f018`): nya skills grilling + grill-me (fork 1) och grill-with-docs (kompositionspunkt fork 2+3); ADR-barens kanoniska fulltext i grilling-kärnan; GRILLNING/ORDLISTA/ADR-BAR-NÄR-rader i hub-CLAUDE.md; spoke-pekare i `docs/decisions/README.md`; legacy-kursskills arkiverade (val A).
+- **systemet.md §0-posten** (Del 15): kanonisk tracer-bullet-definition — fork 7:s enda bygge.
+- **Trådar T56–T59 registrerade** (`8fcdd30` + Del 16 `e9eee5a`): plan-djupa-moduler (T56), issues-verktygsval (T57), hub-ADR-hemvist (T58), L149-mekanisering (T59).
+
+### Design låst (dok-buren — bärs av sessionsdokets Delar tills ADR-068 Accepted)
+
+Fork 1–7 färdiggrillade (grillnings-mekanismen · ordlistan · ADR-baren · PRD↔byggplan · prototype · diagnosing-bugs · tracer bullet som ledord) + bredd-svepet (Del 16: konkordans-statuskartan KOMPLETT — varje korpus-element KLAR eller explicit mottagare). Prövotid 7/7 defektfria körningar; /grill-with-docs 5/5.
+
+### Verifiering
+
+Alla landningar CI-gröna per commit (senast run `28682731539`, Del 16 `e9eee5a`). Docs-grindar per landning: markdownlint 0 · Vale 0 errors · check-lifecycle OK · frontmatter-sviten 14/14 (efter `19db2a5`). Hub-cache byte-identisk mot källa vid båda plugin-bumparna (L55-ritualen); omstarts-verifiering grön (8 skill-kataloger).
+
+### Avvikelser / teknisk skuld
+
+- **Fixtur-incidenten** (Del 9-addendum): två röda CI-runs innan grind-svitens fixtur bar ORDLISTA-raden → skördad som L225 ([[L147]]-datapunkt).
+- **lychee-cacheförgiftning** (Del 5): transient 429 cachad som fel — enabling-detour med klass-fix, väg A.
+- **Lessons L221–L225** skördade i spoke; hub-lyft PENDING nästa K-sista (L193–L225-backloggen).
+- **Kvarstående bärare:** byggen på triggers (fork 4→T57-landningen; fork 5+6→UI-spårets start; invokerings-UX-mikrolandning, 4 datapunkter); migrerings-exekveringen (Del 3-kartan) = egna hub-sessioner; ADR-068-gradering = drift-metriken (p.8).
+
+### Filstruktur-snapshot (nytt/ändrat i Session 47)
+
+```text
+docs/reference/pocock/**                         (vendorerad korpus: 34 filer Del 4 + plan-doket Del 8)
+ORDLISTA.md                                      (född governad, 16 poster)
+tasks/sessions/2026-06-30-session-47.md          (Del 1–16 + sessionsavslut)
+tasks/threads/README.md                          (T56/T57/T58/T59-rader)
+tasks/todo.md                                    (kadens-poster per landning/paus)
+tasks/lessons.md                                 (L221–L225)
+docs/decisions/README.md                         (ADR-bar-pekare, Del 11)
+.markdownlint-cli2.jsonc / .vale.ini / .github/workflows/ci.yml  (pocock-exkluderingar + lychee-klassfix)
+~/Repon/marcus-system (hub)                      (plugin 1.4.0→1.6.0: grilling/grill-me/grill-with-docs + NÄR-rader; 9538572 · 2ee63f7 · 094f018)
+```
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-06-30-session-47.md`](../tasks/sessions/2026-06-30-session-47.md) (Del 1–16). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 48** via /session-start — kandidater per Del 16-kartan: T57-landningen (verktygsval → fork 4-bygge → do-work → TDD) / migrerings-hub-session 1 (Del 3 steg 1 + mät-apparat + handoff-klassning + invokerings-UX) / T56 (djupa moduler).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

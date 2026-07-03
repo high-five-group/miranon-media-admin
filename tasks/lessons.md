@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-02
+updated: 2026-07-03
 review_by: 2026-11-15
 status: stable
 ---
@@ -2993,3 +2993,35 @@ lägg tecknet sist på föregående rad, aldrig först på nästa. Chat-sidans m
 (verbatim-text som ska committas) valideras mot kända docs-grindar FÖRE leverans — verbatim-status skyddar inte
 mot repo-grindar ([[L149]]: docs-grind som separat gate-steg fångar den lokalt; denna lesson adresserar att inte
 INTRODUCERA klassen alls).
+
+## 2026-07-03 — Session 47 (session-end-skörd: paus-kadens + intervju-fångstytor + L147-datapunkt)
+
+### L223 [UNIVERSAL] — Paus-skrivningen ÄR en landning — todo-kadensen (L67) gäller även vid paus
+
+Datum: 2026-07-03 | Källa: Session 47 paus 1–3 (todo-kadens-reparationen vid paus 3; klass: landnings-kadens)
+
+S47 paus 1+2 pausade sessionsdoket men lämnade todo-huvudet oaktuellt; resume-rekonstruktionen korsläser
+båda ytorna, så en osynkad todo ljuger för nästa session om aktuellt läge. Reparerad vid paus 3 och
+mekaniserad i session-paus-skillen; klassen kvarstår: varje durabel tillståndsskrivning synkar ALLA
+tillståndsytor den berör. Relaterad: [[L67]].
+
+### L224 [UNIVERSAL] — Agent-ledda designintervjuer ska bära DESIGNADE fångstytor — extern fångst uppstår inte av sig själv
+
+Datum: 2026-07-03 | Källa: Session 47 prövotids-datapunkterna 5–7 (Del 14/15/16; klass: intervju-mekanism)
+
+Tre mekanismer, alla empiriskt utlösta i S47:s prövotid: disk-pass FÖRE första frågan prövar uppdragets
+egna antaganden (dp7: avfyrningens kandidatlista korrigerad före intervjun; brasklappen "index-grundad,
+inte facit" är en fångstyta, inte artighet), utforska-hellre-än-fråga kan riva EGNA tidigare hypoteser
+(dp6: Del 12 vii riven med disk-evidens), och summerings-steget vid slutkvittens är människans fångstyta
+(dp5: DECLINE→DEFER-korrigering i sista turen). Bygg alla tre in i intervju-avfyrningar.
+
+### L225 [UNIVERSAL] — Fil-klassen "grind-config" inkluderar grindens TESTSVIT — en governing-set-ändring bär sin fixtur i samma commit
+
+Datum: 2026-07-03 | Källa: Session 47 Del 9-addendum (fixtur-incidenten, fix `19db2a5`; daterad förstärkande datapunkt till [[L147]])
+
+Symptom: ORDLISTA.md lades i `FRONTMATTER_GOVERNING_DOCS` (Del 9, `4047605`) med lokal verifiering av
+`check-frontmatter.sh` (grön) — men grind-SVITEN `test-check-frontmatter.sh` speglar allowlistan i egen
+fixtur och hårdkodar räkningen, och föll i CI (två röda runs) tills fixtur-raden + räkningen 13→14
+landade (`19db2a5`). [[L147]]:s regel (kör den rörda fil-klassens FAKTISKA grinduppsättning lokalt)
+förstärks med klass-precisering: när den rörda filen är grind-config ingår grindens testsvit i
+fil-klassen — verifiera sviten, inte bara skriptet, före push.
