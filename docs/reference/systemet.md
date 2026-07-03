@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-21
+updated: 2026-07-03
 review_by: 2026-09-21
 status: stable
 ---
@@ -54,6 +54,15 @@ status: stable
 - **BUILD-LOG** — `docs/BUILD-LOG.md`, en kronologisk landnings-logg per session/landning (planerat
   vs faktiskt, avvikelser, verifierings-output).
 - **K-sista** — sessionens sista arbetsmoment (lessons-skörd + session-end-passet).
+- **tracer bullet** (svensk vardagsform: "skiva") — ledord för arbetsenhetens FORM: en tunn,
+  komplett, vertikal väg genom alla berörda lager, demonstrerbar ensam. Formen är spec-sidan;
+  Landningen är säkrings-ögonblicket (L67-kadensen) — ortogonala begrepp: en tracer bullet
+  LANDAR. Beteendeinnehåll: skiv-form; acceptanskriterier/blockerare; prefaktorering som egen
+  skiva; strålkastarljus (ADR-051-mekaniken); samt bygg-ordningen inom skivan — kritiska vägen
+  genom lagren först, körs direkt, arkitekturen valideras innan bredd. Gräns mot prototype: se
+  sessionsdok S47 Del 13 beslut 5 (fråga-vs-förmåga, före-vs-efter-spec, aldrig befordran,
+  grind-asymmetri). Ledord, inte skill — det är vad skills och fasprompter tänker med. Källa:
+  Session 47 Del 15 (fork 7, ADOPT); Pocock-korpusen är proveniens, ej runtime-beroende.
 
 ---
 
