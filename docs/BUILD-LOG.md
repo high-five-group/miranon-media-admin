@@ -2181,6 +2181,47 @@ tasks/lessons.md                                 (L226–L227)
 
 ---
 
+## Session 49 — Fork 4-bygget: PRD-/skiv-mekaniken levererad end-to-end (hub 1.7.0 + spoke-substrat) (2026-07-04)
+
+**Mål:** materialisera fork 4:s låsta design (S47 Del 12 + S48 Del 2 DEFER-karta) ovanpå T57-substratet — PRD-kort-/skiv-mekaniken som hub-mekanik (/to-prd + /to-issues + delad referens + NÄR-rad; plugin 1.6.0→1.7.0) + spoke-instans-konfiguration (DoD-defaults, etikettvokabulär, demo-städning, §0-terminologi, grind-legibility). Ingen produktkod, ingen byggplan-fas berörd (EJ fas-avslut). Count 67/67/67 orörda; ADR-068 WIP.
+
+### Byggd substans (git-trail per landning)
+
+- **Session 49-dok fött** (`b7b6a89`, ADR-043 skapande-gren) + **todo-kadens** (`3f5af42`).
+- **Del 2 — preciseringen + hub-landningen** (spoke-dok `6da6463`; hub `e16add2`): delegerad kvittens VAL 1–3 + småbeslutsklumpen; round-trip-grinden GRÖN (sandbox 49b, städad); hub-plugin **1.7.0**: `skills/to-prd/` + `skills/to-issues/` (båda slash-only) + `references/issue-substrat.md` (femrolls-tabell med VILANDE-markering, kö-prioritering, QA-/uppföljningsmönster) + ISSUE-SUBSTRAT-NÄR-rad i hub-CLAUDE.md + **manifest-paret ATOMISKT** (plugin.json + marketplace.json, 8→10 skills); L55-ritualen körd, cache byte-identisk.
+- **Substrat-instansen konfigurerad** (`28bc365`): `definition_of_done` 4 poster (VAL 1) + `labels` 3 roller (VAL 2, minimal aktivering) via CLI-sanktionerad direktredigering (sandbox-probe 49c); demo-korten task-1/task-1.1 arkiverade via `backlog task archive` (tavlan tom; `backlog/archive/tasks/`); systemet.md §0-post **Issue-substrat/PRD-kort/Skiva** (S48 terminologi-noten levererad; hook-bump `updated:`).
+- **Grind-legibility-klustret** (`ca4482d`): EN kommentarrad per yta — markdownlint-globs · lint:prose-scopet (raden i .vale.ini, pekare till package.json) · frontmatter-allowlistan · lifecycle-scopet · lychee-args — "backlog/ medvetet utanför — verktygsägd yta (L226)"; L225-grinden helgrön, INGEN fixtur-spegling knäckt (tomt utfall).
+- **Del 3-dok + todo** (`e8c8d93`): fork 4 design LÖST (S47 Del 12) → **BYGGD**; DEFER-kartans fork 4-poster levererade, rest = INGEN.
+
+### Verifiering
+
+CI-gröna PER JOBB: run 28716759005 (dok-födelse + todo) · 28717976844 (Del 2) · 28718721162 (p.3 — **Test + Build KÖRDA och gröna**: pushen bar icke-md-filer → full pipeline). Omstarts-verifieringen (trail-metoden): aktiv **1.7.0** (install-record + `claude plugin list`, gitCommitSha e16add2), **10 skill-kataloger** i cachen, **6 modell-synliga**, /to-prd + /to-issues slash-only (`disable-model-invocation: true`). L225-passet lokalt: frontmatter 14 docs + svit 14/14 · lifecycle + svit 16/16 · markdownlint 167/0 · Vale 0 fel/267 + regression 3/3 · yamllint 0 · shellcheck-strict 0.11.0/0 fynd · Biome 0 errors.
+
+### Avvikelser / teknisk skuld
+
+- **Marketplace-utökningen** = Chat-promptlucka (manifest-parets andra halva utanför promptens fil-lista) fångad av Codes trail-planering FÖRE utförandet (code-role-discipline §1.3) → skördad som **L228**.
+- **Vale-legibility-radens hemvist:** scopet bor operativt i `package.json` `lint:prose` (JSON bär inte kommentarer) — raden lagd i `.vale.ini` med pekare dit (öppet redovisad form-anpassning).
+- **actionlint saknas lokalt** — ci.yml-kommentaren täckt av CI-ledet (grönt); yamllint körd lokalt.
+- **Hub-lyft:** L228–L229 LYFTA (hub `f0e62f2`: K49.1–2); **L193–L222-backloggen kvarstår PENDING** (utanför denna ends direktiv-scope; noterad i todo-huvudet).
+
+### Filstruktur-snapshot (nytt/ändrat i Session 49)
+
+```text
+backlog/config.yml                               (definition_of_done 4 p + labels 3 roller)
+backlog/archive/tasks/                           (task-1 + task-1.1 arkiverade; tavlan tom)
+docs/reference/systemet.md                       (§0-post Issue-substrat/PRD-kort/Skiva)
+.markdownlint-cli2.jsonc · .vale.ini · .frontmatter-policy.conf ·
+scripts/check-lifecycle.sh · .github/workflows/ci.yml   (legibility-rader, L226)
+tasks/sessions/2026-07-04-session-49.md          (Del 1–3 + sessionsavslut)
+tasks/threads/README.md                          (T60-not: buntas med migrerings-hub-session 1)
+tasks/todo.md · tasks/lessons.md                 (kadens + L228–L229)
+~/Repon/marcus-system (hub)                      (plugin 1.7.0: e16add2; lessons-lyft K49.1–2: f0e62f2)
+```
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-04-session-49.md`](../tasks/sessions/2026-07-04-session-49.md) (Del 1–3 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 50** via /session-start — kandidater: **UI-spårets start ÖVERST** (första skarpa PRD-kortet: /to-prd + /to-issues på UI-arbetsenheten, arbetsenhets-avgränsning mot byggplan §4/Fas 6-status/S46-carry vid session-start; buntat: fork 5+6-byggena [prototype + diagnosing-bugs → hub, dokumenterad trigger]; första drift-metrik-matningen ADR-068 p.8) / do-work-landningen (Del 16 F1 — minimal-test vinner på riktiga kort → helst EFTER UI-start) / migrerings-hub-session 1 (Del 3 steg 1 + mät-apparat + handoff-klassning + invokerings-UX + T60) / T56 (djupa moduler).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

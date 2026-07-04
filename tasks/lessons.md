@@ -3052,3 +3052,28 @@ konverterar FÖRE bokfört lås — via konkretisering på Gunilla-nivå (dp3) e
 trade-off-redovisning åt BÅDA håll inklusive vad rekommendationen KOSTAR + förstaparts-bevis (dp8) — och
 ställer sedan lås-checken igen. Båda instanserna konverterade utan defekt efteråt; [[L224]]:s tre
 fångstytor täcker avfyrning/utforskning/slutkvittens, denna täcker lås-ögonblicket.
+
+## 2026-07-04 — Session 49 (fork 4-bygget: PRD-/skiv-mekaniken levererad hub + spoke)
+
+### L228 [UNIVERSAL] — Mekaniskt atomiska fil-kluster enumereras som KLUSTER i prompter, aldrig som fil-lista
+
+Datum: 2026-07-04 | Källa: S49 p.2 (marketplace.json utanför promptens C5-lista; Code-utökning per trail,
+code-role-discipline §1.3) (klass: prompt-design/handoff; syskonklass till [[L225]] på grind-sidan)
+
+Chat-promptens fil-enumeration bar plugin.json solo trots att version-bumpen mekaniskt kräver BÅDA
+manifesten atomiskt (S47-trail + L55-ritualen — utan marketplace-bumpen hittar ritualen ingen ny
+version). Code planerade mot rapporten/trailen, inte bokstaven, och utökade ÖPPET — extern fångst i
+Code-riktningen. Regeln: när en prompt räknar upp filer i en mekaniskt sammanhängande operation
+(manifest-par, grind+fixtur, config+testsvit) anges KLUSTRET och dess invariant — fil-listan är
+re-deriverbar ur trail, invarianten är det som bär.
+
+### L229 [UNIVERSAL] — Form som ska överleva ett externt verktygs round-trip bevisas i sandbox FÖRE bygget
+
+Datum: 2026-07-04 | Källa: S49 p.2 sandbox-grind B (###-mallformen genom Backlog.md create→fil→edit)
+(klass: designad fångstyta; [[L224]]-släkt, [[L226]]-granne)
+
+PRD-mallens ###-form var en hypotes om ett externt verktygs round-trip-beteende. Grinden lades som
+FÖRKRAV före första repo-skrivningen: engångs-sandbox med tre kriterier (agent-vyn läsbar;
+fil-sektionen tecken-intakt; efterföljande edit förstör inte), FAIL ⇒ STOPPA för omdesign. Utfallet
+var grönt — men regeln är ordningen: verktygsberoende form-antaganden bevisas empiriskt innan de
+hårdkodas i mekanik (skills, mallar, configar).
