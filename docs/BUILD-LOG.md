@@ -2145,6 +2145,42 @@ docs/decisions/README.md                         (ADR-bar-pekare, Del 11)
 
 ---
 
+## Session 48 — T57-landningen: issues-substrat valt, testat och live (Backlog.md) (2026-07-04)
+
+**Mål:** leverera T57 end-to-end — git-nativt issues-substrat för PRD-kort/skivor/do-work-kedjan (ADR-068 p.7): research-gated verktygsval via /grill-with-docs + minimal-test mot spoke-repot (Del 1 ordnad scope p.1–3; p.4 fork 4-bygget → NY session per Marcus-vägval väg 2). Ingen produktkod, ingen byggplan-fas berörd (EJ fas-avslut). Count 67/67/67 orörda; ADR-068 WIP.
+
+### Byggd substans (git-trail per landning)
+
+- **Session 48-dok fött** (`a6b602b`, ADR-043 skapande-gren) + **T60 registrerad** (`db3e9eb` — hub-ospårade transkript-kataloger, ADR-053-triage väg A).
+- **Del 2 — grillningen** (`da5b176`): **Backlog.md LÅST som issues-substrat** (ADAPT; prövotids-dp8, /grill-with-docs körning 6, 8/8 defektfria körningar). Grenarna A–F låsta; DECLINE L30-durabla (GitHub Issues-molnspåret med 5 namngivna offer + återväckningsvillkor; noll-optionen per mattpocock/skills #203; steviee/taskmd/git-bug/beads/git-issue/veggiemonk på K1/K6); DEFER-karta → fork 4-bygget + do-work-landningen.
+- **Substrat-instansen född** (`e106e7f`): `backlog/` toppnivå, backlog.md v1.47.1, integration none, `auto_commit`/`bypass_git_hooks`/`remote_operations` = false; K2-demo-kort task-1/task-1.1 (demo-tavla, städas vid fork 4-bygget).
+- **Del 3 — minimal-testet 8/8 grönt + T57 STÄNGD** (`11c4783`): kriterie-tabell i Del 3; empiriska fynd (hierarkiska barn-ID:n `task-1.1` → matar fork 4:s mall-design; DoD-mekanismen annonserar sig live; export-path-quirken fångad + städad); T57 → `closed` i tråd-registret (levererad).
+
+### Verifiering
+
+Alla landningar CI-gröna PER JOBB: run 28698267109 (dok-födelse + T60) · 28714857004 (Del 2) · 28715068775 (Del 3 — **Test + Build KÖRDES och blev grönt**: pushen bar `config.yml` [icke-md] → full pipeline, starkare bevis än docs-only-skip). Docs link check körd + grön i samtliga. Lokala grindar per landning: markdownlint 0 fel (166 filer oförändrat = `backlog/` osedd), Vale 0 fel, check-lifecycle OK, check-frontmatter 14/14.
+
+### Avvikelser / teknisk skuld
+
+- **Export-path-quirken** (`board export` tolkar absolut sökväg projekt-relativt → skrev katalog i repot) — fångad av porcelain-disciplinen, städad omedelbart; ev. uppströms-rapport vid fork 4-bygget.
+- **Hub-lyft:** L223–L227 LYFTA (hub `f573efd`: K47.1–3 + K48.1–2); **L193–L222-backloggen kvarstår PENDING** (utanför denna ends direktiv-scope; noterad i todo-huvudet).
+- **Desktop-kopian av konkordans-statuskartan** förkastad som repo-artefakt (ADR-053 explicit; S47 Del 16 kanonisk; kopian stale — F4/F5 öppna där, låsta i Del 16).
+
+### Filstruktur-snapshot (nytt/ändrat i Session 48)
+
+```text
+backlog/                                         (substrat-instansen: config.yml + task-1 + task-1.1)
+tasks/sessions/2026-07-04-session-48.md          (Del 1–3 + sessionsavslut)
+tasks/threads/README.md                          (T60 registrerad; T57 → closed)
+tasks/todo.md                                    (kadens per landning + end)
+tasks/lessons.md                                 (L226–L227)
+~/Repon/marcus-system (hub)                      (lessons-lyft K47.1–3 + K48.1–2: f573efd)
+```
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-04-session-48.md`](../tasks/sessions/2026-07-04-session-48.md) (Del 1–3 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 49** via /session-start — kandidater: **fork 4-bygget ÖVERST** (hub-plugin: to-prd/to-issues-adaptioner · PRD-kort-/issue-mallar [hierarkiska barn-ID-fyndet] · DoD-defaults + etikettvokabulär i config · agent-instruktionsrad · L225-grindfråga) / migrerings-hub-session 1 / T56 (djupa moduler).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

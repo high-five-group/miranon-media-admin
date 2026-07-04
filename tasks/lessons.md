@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-03
+updated: 2026-07-04
 review_by: 2026-11-15
 status: stable
 ---
@@ -3025,3 +3025,30 @@ fixtur och hårdkodar räkningen, och föll i CI (två röda runs) tills fixtur-
 landade (`19db2a5`). [[L147]]:s regel (kör den rörda fil-klassens FAKTISKA grinduppsättning lokalt)
 förstärks med klass-precisering: när den rörda filen är grind-config ingår grindens testsvit i
 fil-klassen — verifiera sviten, inte bara skriptet, före push.
+
+## 2026-07-04 — Session 48 (T57-landningen: issues-substrat — grillning dp8 + minimal-test)
+
+### L226 [UNIVERSAL] — Grind-klassen "verktygsägd yta": medvetet exkluderad ≠ ogovernad
+
+Datum: 2026-07-04 | Källa: Session 48 Del 2 gren C + Del 3 kriterium iv (klass: grind-arkitektur; generaliserar pocock-korpus-precedensen till namngiven klass)
+
+Filer som ägs och muteras av ett externt verktyg (Backlog.md-korten: verktygsägt frontmatter-schema,
+CLI-muterad metadata, agent-redigerbar kropp) ska inte prosa-lintas — att köra markdownlint/Vale på dem
+vore att grinda ett annat verktygs output, med lint-rött mitt i arbetsloopen som pris. Klassens riktiga
+grindar: verktygets egen validering (frontmatter-schemat), git-historik per commit genom repots hooks,
+CI-klassning av commits, och mall-/DoD-nivåns semantiska grind. Skiljelinjen är MEDVETENHET: dokumenterad
+exkludering med rationale där beslutet bor (L30-durabelt) är governance — en tyst lucka är det inte.
+Prövning vid varje ny fil-yta: vilken klass tillhör ytan (vår prosa / extern korpus / verktygsägd yta),
+och är exkluderingen BESLUTAD eller bara ohanterad? Relaterad: [[L225]] (grind-config-klassen).
+
+### L227 [UNIVERSAL] — Ett förtroende-formulerat lås ("jag litar på dig") är inte samsyn — konvertera till genuin förståelse FÖRE låset bokförs
+
+Datum: 2026-07-04 | Källa: Session 48 gren A (dp8) + Session 47 Del 12 gren B (dp3) — andra instansen mintar klassen (klass: intervju-mekanism; komplement till [[L224]] — fångstytan vid själva LÅSET)
+
+Två gånger i prövotiden har ett gren-lås formulerats som förtroende i stället för förståelse ("jag litar
+på att du har koll", dp3; "litar ändå på det du säger", dp8). Ett sådant svar är en
+FÖRSTÅELSE-LUCKA-SIGNAL, inte en kvittens: låset ser ut som samsyn men bär ingen. Regeln: agenten
+konverterar FÖRE bokfört lås — via konkretisering på Gunilla-nivå (dp3) eller fullständig
+trade-off-redovisning åt BÅDA håll inklusive vad rekommendationen KOSTAR + förstaparts-bevis (dp8) — och
+ställer sedan lås-checken igen. Båda instanserna konverterade utan defekt efteråt; [[L224]]:s tre
+fångstytor täcker avfyrning/utforskning/slutkvittens, denna täcker lås-ögonblicket.
