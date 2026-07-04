@@ -83,6 +83,7 @@ status: stable
 | `T57` | Issues-verktygsval (Backlog.md / git-issues / git-bug) — egen utvärderings-/minimal-test-landning för git-native arbets-spec-substrat (ADR-068 p.7) | `paused` | _(ingen kort än — endast registrerad); uppstod S47 Del 2 (ADR-068 p.7, WIP), backfillad S47 fork 4-förberedelse (Steg 0)_ |
 | `T58` | Hub-ADR-hemvist — universella ADR:er (041/042/043/034) bor i spoke `docs/decisions/` trots att de styr hub-artefakter; hubben har noll ADR:er (pre-existing smell) | `paused` | _(ingen kort än — endast registrerad); registrering instruerad S47 Del 3 §Deferrad tråd, backfillad S47 fork 4-förberedelse (Steg 0)_ |
 | `T59` | L149-mekanisering: docs-grind från disciplin till hook-mekanism (residual ur svepets setup-pre-commit-DECLINE) | `paused` | _(ingen kort än — endast registrerad); uppstod S47 Del 16 (svep-grillningens setup-pre-commit-klassning, ADR-053-defer)_ |
+| `T60` | Hub-ospårade transkript-kataloger (`odoo-events-transcripts-openai/`, `youtube-transcripts/`) — research-material utan git-skydd; triage (commit/flytt/gitignore) i hub-kontext | `paused` | _(ingen kort än — endast registrerad); uppstod Session 48 läs-pass (hub-STOPPA, väg A kvitterad; ADR-053: blockerar ej + värdefullt → defer, aldrig tyst)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
