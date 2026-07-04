@@ -3077,3 +3077,17 @@ FÖRKRAV före första repo-skrivningen: engångs-sandbox med tre kriterier (age
 fil-sektionen tecken-intakt; efterföljande edit förstör inte), FAIL ⇒ STOPPA för omdesign. Utfallet
 var grönt — men regeln är ordningen: verktygsberoende form-antaganden bevisas empiriskt innan de
 hårdkodas i mekanik (skills, mallar, configar).
+
+### L230 [UNIVERSAL] — Ett rivet vägval korrigerar PÅGÅENDE durabla skrivpass före landning — NÄSTA-rader och kandidatordningar är tillståndsytor
+
+Datum: 2026-07-04 | Källa: S49 end-passet (UI-först riven av Marcus-pushback medan end-blocket
+exekverade; landade ändå i todo/BUILD-LOG/sessionsdok → rättelse-landning samma dag) (klass:
+landnings-kadens; [[L223]]-syskon, [[L30]]-granne)
+
+När ett vägval rivs medan ett durabelt skrivpass som bär det redan exekverar, korrigeras passets
+text FÖRE landning — intercept, eller omedelbar följd-rättelse i samma flöde. Rationalet "det är
+bara en kandidatlista, verkligt val sker vid nästa start" är exakt den deferred-sync-lögn [[L223]]
+förbjuder: nästa session orienterar på NÄSTA-raden, så en superseded ordning där ÄR
+feldokumentation. Rot-regeln för själva ordningsfelet: dokumenterad beroendekedja slår
+värde-argument när de kolliderar — sekvensbeslut mellan sessioner härleds ur kedjan, inte ur
+närmsta värde-case.
