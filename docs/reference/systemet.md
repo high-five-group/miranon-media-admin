@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-03
+updated: 2026-07-04
 review_by: 2026-09-21
 status: stable
 ---
@@ -63,6 +63,15 @@ status: stable
   sessionsdok S47 Del 13 beslut 5 (fråga-vs-förmåga, före-vs-efter-spec, aldrig befordran,
   grind-asymmetri). Ledord, inte skill — det är vad skills och fasprompter tänker med. Källa:
   Session 47 Del 15 (fork 7, ADOPT); Pocock-korpusen är proveniens, ej runtime-beroende.
+- **Issue-substrat** (issue tracker) — repots Backlog.md-instans i `backlog/` (toppnivå):
+  hemvisten för framåtriktade arbets-specar som kort. "Backlog.md" är produktnamnet, `backlog/`
+  instansens plats; ordet "backlog" används inte som domänterm (tool-vs-arbetsmängd-ambiguiteten,
+  S48 Del 2). Kort läses/ändras ENDAST via backlog-CLI:t. **PRD-kort** — överordnat spec-issue på
+  arbetsenhets-nivå (titel `PRD: <arbetsenhet>`; mall i hub-skillen /to-prd). **Skiva** —
+  vertikalt barn-kort (hierarkiskt ID `task-N.M`) under PRD-kortet, publiceras via /to-issues med
+  AFK/HITL-etikett; formen är tracer bullet (se den posten). Roller orörda: `tasks/todo.md` =
+  dagslogg, tråd-registret = trådar, sessionsdok = samtal/beslut — substratet bär enbart
+  framåtriktade arbets-specar (S48 gren F).
 
 ---
 

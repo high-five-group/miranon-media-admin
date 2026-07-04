@@ -1,7 +1,7 @@
 project_name: "miranon-media-admin"
 default_status: "To Do"
 statuses: ["To Do", "In Progress", "Done"]
-labels: []
+labels: ["ready-for-agent", "ready-for-human", "wontfix"]
 date_format: yyyy-mm-dd
 max_column_width: 20
 auto_open_browser: false
@@ -13,3 +13,8 @@ bypass_git_hooks: false
 check_active_branches: false
 active_branch_days: 30
 task_prefix: "task"
+definition_of_done:
+  - Alla acceptanskriterier avbockade (task edit --check-ac)
+  - Rörd fil-klass lokala grindar gröna (L147)
+  - CI grön per jobb på pushad commit
+  - Inga orelaterade filer i diffen (path-scopad add)
