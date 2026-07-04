@@ -33,6 +33,7 @@ set -euo pipefail
 VALID_LIFECYCLE=("active" "paused" "closed")
 EXIT_CODE=0
 
+# backlog/ medvetet utanför scopet — verktygsägd yta (L226; S48 Del 2 gren C)
 for file in tasks/sessions/*.md; do
     [[ -e "${file}" ]] || continue
 

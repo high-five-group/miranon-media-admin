@@ -35,6 +35,7 @@
     }
   },
 
+  // backlog/ medvetet utanför globs — verktygsägd yta (L226; S48 Del 2 gren C)
   "globs": ["docs/**/*.md", "tasks/*.md", "tasks/sessions/*.md", "tasks/threads/*.md", "./*.md"],
 
   "ignores": [

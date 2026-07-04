@@ -416,6 +416,7 @@ jobs:
           #            docs/archive/** (frozen ADR-023-mall, normaliserad i Commit 4a 2026-05-14)
           #            docs/reference/pocock/** (vendorerat externt Pocock-material, S47 Steg 0 —
           #            samma rationale som archive/: extern korpus, ej vår prosa)
+          #            backlog/** (medvetet utanför — verktygsägd yta, L226; S48 Del 2 gren C)
           # --cache-exclude-status '429': transient rate-limit ska ALDRIG cachas som fel
           #   (klass-fix efter förgiftad cache på gitlab-429, röd run 28601497591). Cache-
           #   nyckel bumpad cache-lychee- → cache-lychee-v2- nedan = deterministisk kallstart.
