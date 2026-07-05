@@ -25,6 +25,17 @@ allowlist-deklaration 7→10 (`dd97807`, fail-closed-test 4/4) → override-smal
 Commit-trail: `fbca88f` (doc-födelse) → `dd97807` (allowlist) → BUILD-LOG Session 43.
 Deployen committade inget (out-of-CI prod-handling).
 
+## UI-vägens prod-moment (registrerade vid TASK-1-skivningen, S52)
+
+- **Display-namn i prod-kontots metadata** — skiva TASK-1.1 (namnkällan)
+  sätter display-namn i STAGING-kontonas user_metadata; prod-kontots
+  (Lottas) metadata sätts först vid frontend-go-live (ingen frontend-deploy
+  finns ännu; värdet saknar konsument dessförinnan). Utan namn hälsar Hem
+  neutralt — aldrig e-post (fail-safe, Gunilla-principen). Ägare:
+  Marcus/Code i prod-panelen. Registrerad 2026-07-05 (S52 /to-issues,
+  skiv-godkännandets beslut C: description-rad på kortet + denna durabla
+  bärare — ett stängt kort är en död yta).
+
 ## Closeout-förkrav (gatear FULLT Fas 6-avslut)
 
 - **T39** — prod-funktions-drift-sync: de 5 stale prod-EF:erna ligger efter staging-HEAD;

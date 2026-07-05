@@ -76,11 +76,9 @@
 > re-verifierad
 > mot disk: nästa ADR = 070, nästa lesson = L235, nästa tråd = T64
 > (S53 förbrukade handoffens paus-tida värden — förväntad divergens,
-> inga oväntade). Kedjan står vid /to-issues-ingången — TASK-1
-> publicerat (ad44051, CI grön per jobb). **NÄSTA: /to-issues på
-> TASK-1** (skivning 4 skivor S/M/M/M + QA-kort sist;
-> Marcus-godkännande före publicering) → /do-work + första
-> drift-metrik-matningen → end-prövning.
+> inga oväntade). Kedjan står vid /do-work-ingången — TASK-1 skivat
+> (task-1.1–1.5 publicerade; plockbara: task-1.1 + task-1.2).
+> **NÄSTA: /do-work** + första drift-metrik-matningen → end-prövning.
 
 - [x] **AKT 0 LEVERERAD** (2026-07-05): fork 5+6-byggena per S47 Del
   13/14 LÅSTA designer → hub `9a747a1` (plugin 1.8.0→1.9.0, 11→13
@@ -147,6 +145,18 @@
   design-review-grinden (L220) som #5. **NÄSTA: /to-issues**
   (skivorna task-1.1–1.4 + QA-kort) → /do-work + första
   drift-metrik-matningen.
+- [x] **RESUME-ÖPPNINGEN + SKIVNINGEN LEVERERADE** (2026-07-05,
+  återupptagen session): tillstånds-återställningen (`045cb11`, run
+  28754735768 grön per jobb; resume-Code-halvans FÖRSTA-BRUK grönt,
+  ADR-069 b7) → /to-issues på TASK-1: skiv-godkännandet A/B/C kvitterat
+  (snittet 4 skivor + QA; `ready-for-agent` 1–4 — design-review är
+  stängningsgrind, inte mitt-i-fråga [lesson-kandidat till skörden];
+  prod-namnet → T46-rad) → **task-1.1–1.5 publicerade i
+  beroendeordning** (1.3←1.1, 1.4←1.3, QA←samtliga, `ready-for-human`;
+  DoD-arv design-review på UI-skivorna 1.1–1.4) + T46-sektionen
+  "UI-vägens prod-moment". Kanonisk plats: sessionsdok Del 6.
+  **NÄSTA: /do-work** (plockbara: task-1.1, task-1.2) + första
+  drift-metrik-matningen → end-prövning.
 
 ### Session 51 ✅ AVSLUTAD (2026-07-05) — Övnings-ramverket: inramnings-landningen
 
