@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-29
+updated: 2026-07-05
 review_by: 2026-11-15
 status: stable
 ---
@@ -37,6 +37,8 @@ status: stable
 Skillnaden mot conversion-plan: byggplan utgår från **etablerad arkitektur post-Fas A** (operations-baserat API, AuthContext|Response, klient-DSN, structured logging) och **låst datamodell post-Fas E target-research** (06b Supabase-target + 07 migrationsplan + 08 Odoo-validering). Conversion-plan utgick från en pre-research-arkitektur och har därför drift som hade krävt patch-på-patch.
 
 > **Airtable-basen är en förstklassig LEVERABEL, inte ett provisorium:** den maxas till 11/10 / branschledarmässig och blir mall + övningsprojekt i Passionslyftet. Den är datakälla nu för att bygget ska avtäcka vad appen behöver av sin datakälla; defekt-registret är kravspecen för bas-maximeringen. Supabase-migration är ett separat senare spår, ej en ersättning ([ADR-063](decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md)).
+>
+> **Byggplanen är Övning 2:s karta** ([ADR-068](decisions/ADR-068-ovnings-ramverket.md)): Övning 1 (session 1–50) byggde grunden och metoden; Övning 2 (session 51 →) exekverar UI + backend med det uppdaterade arbetssättet, fram till och med den namngivna slutfasen Fas E (Supabase-migration). Epok-ramen + lins-noten för historiskt material: ADR-068.
 
 ### Läsanvisning
 
@@ -86,7 +88,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **7** | NY scope | Konsolidering — CSP-plugin (med ADR), web-vitals, Speculation Rules, View Transitions, widget-error-boundary, chaos testing, deploy-pipeline, Background Sync defer-not (se Fas 8 + ADR). | 3 sessioner |
 | **8** | NY (framtid) | Background Sync API (offline-mutationskö, defer:ad från Fas 7 — se ADR). Övrigt scope (Passkeys, push) ej låst i denna revision. Estimat fastställs vid aktualisering. Ersätter conversion-plans "Fas 8 — Passkeys, push, offline". | TBD |
 | **B** | PARALLELL | Airtable-hardening — parallell-spår med 2 synk-gates mot React-bygget per A4: Synk-gate 1 — A1–A12 inventerade och kategoriserade (redan applicerade / före Fas 2.5 / efter Fas 2.5) innan Fas 2.5 startar; Synk-gate 2 — handshake mot `field-allowlists.ts` per Fas 5.5/6-operation. Roger/Lotta-arbete. | (parallell, separat estimat) |
-| **E** | DEFER | Supabase-migration enligt 07 §A2. Aktualiseras post-Fas 7. Inkluderar Realtime-omläggning per B1. | (defer, separat planering) |
+| **E** | DEFER | Supabase-migration enligt 07 §A2. **Övning 2:s namngivna SLUTFAS ([ADR-068](decisions/ADR-068-ovnings-ramverket.md)) — designas i egen ADR när fasen närmar sig.** Aktualiseras post-Fas 7. Inkluderar Realtime-omläggning per B1. | (defer, separat planering) |
 
 **Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR-013 (Fas 4-borttagningen).
 
@@ -1014,6 +1016,8 @@ Inget nytt ADR i React-byggets katalog. Airtable-side-beslut dokumenteras i Roge
 
 ### Fas E — Supabase-migration (DEFER)
 
+> **Övning 2:s namngivna SLUTFAS** ([ADR-068](decisions/ADR-068-ovnings-ramverket.md)) — sist av alla byggplans-delar; designas i egen ADR när fasen närmar sig (ADR-krav nedan).
+
 #### Mål
 
 Migrera Miranon Media Admin från Airtable som primär datakälla till Supabase (Postgres + RLS + Realtime), enligt strangler-fig-ordningen i `docs/research/datamodell-research/07-migration-plan.md` §A2.
@@ -1092,6 +1096,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 | **1.10** | **2026-06-12** | **Fas 5 markerad KLAR** efter Session 16. §2 fas-tabell uppdaterad (Fas 5 ✅ KLAR + estimat-summa Fas 5.5 → Fas 7 = 9,5 sessioner). §4 Fas 5-prompten utökad med "✅ Slutförd"-paragraf per Fas A-mallen — inkl. skal-på-`_authenticated`-avvikelsen från Filer-listan (STOPPA-utfall A), error-boundary-konsolideringen, DoD 4c-omklassningen per [ADR-047](decisions/ADR-047-pwa-arkitektur-fas-5.md)-korrigeringsnoten, DoD 5-/DoD 7-noterna och K5b–d-ikonrundorna. DoD-trail: shell-/pwa-testsviter + runs 27410118400→27412742687 + Marcus-momentens PASS-kvittens. |
 | **1.11** | **2026-06-17** | **Fas 5.5 markerad KLAR** efter Session 22 (klient-UI K2; server-kontrakt + staging i Sessions 18/19). §2 fas-tabell uppdaterad (Fas 5.5 ✅ KLAR + estimat-summa Fas 6 → Fas 7 = 7,5 sessioner). §4 Fas 5.5-prompten utökad med "✅ Slutförd"-paragraf per Fas A-mallen — inkl. fält-valet `Anmälningsavgift` (ADR-049 supersederar DoD-radens exempel), router-context-DI ([ADR-055](decisions/ADR-055-datakalla-atkomst-router-context-di.md), första UI→data-wiringen), toast→MessageBox-avvikelsen (DoD 6) och mockad-e2e-noten (DoD 1/5/6/7/8 via `page.route`-gate). ADR-055 tillkommen (router-context-DI, README-räknare 54→55). DoD-trail: feature-CI run 27706856446. |
 | **1.12** | **2026-06-25** | **Fas 6e omdefinierad + ny Fas 6g (Segment-yta) + ny Fas 6h (Mail-handling) + mail omsekvenserad** per [ADR-062](decisions/ADR-062-segment-yta-berakn-medlemskap-fran-kalla.md). 6e slutar nu vid Maillogg — "Skicka mail (write)"-vertikalen + `send-email`-EF utflyttad. 6g = bygg/se/spara/exportera segment med beräknat medlemskap från källan (Deltaganden), dynamisk regel + snapshot-export, SKOOL-modulbehörighet (union per kurs×modalitet). 6h = bulk-mail PÅ ett segment (`send-email`, ADR-015), byggs efter 6g eftersom mottagar-upplösning kräver segment-motorn. §2 fas-tabell (Fas 6-raden: sex→åtta sub-faser) + §4 Mål + sub-fas-tabell + Beroenden + Estimat + Filer (6e nedbantad, 6g/6h tillagda) + ADR-krav + §5 ADR-index (ADR-015 Fas 6e→6h) uppdaterade. Estimat: 6e 1,5→1,0; +6g 2,0; +6h 0,5; Fas 6 5,5→7,5; grand-total Fas 6→7 9,5→11,5 (7,5+1+3). Lättläst-spegling v3 uppdaterad parallellt (sex→åtta delar, 5,5→7,5 pass, totalt-från-Fas-2 18,5→20,5). Estimat 6g/6h är Code-omdöme vid landningstillfället, revidérbart vid 6g-design. |
+| 1.13 | 2026-07-05 | **Övnings-ramverket applicerat** per [ADR-068](decisions/ADR-068-ovnings-ramverket.md) (Session 51): prolog-ramrubrik "byggplanen är Övning 2:s karta" + Fas E märkt som Övning 2:s namngivna slutfas (§2-raden + §4-promptens gränsnot, additivt). Inga scope-/estimat-/sekvens-ändringar. |
 
 ---
 

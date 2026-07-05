@@ -42,7 +42,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 > kortform i hub-CLAUDE.md § "Instruktioner — Alltid gäller", kanonisk
 > fulltext i grilling-kärnan (marcus-system-pluginet). Under baren
 > används befintligt maskineri; under-bar-ADR endast på explicit
-> Marcus-beslut. (Session 47 Del 10; graderas till ADR-068 vid Accepted.)
+> Marcus-beslut. (Session 47 Del 10; graderas in i två-aktörs-ADR:n vid dess Accepted.)
 
 ## Index
 

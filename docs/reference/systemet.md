@@ -83,6 +83,15 @@ status: stable
   orörda). ETT kort per avfyrning; `ready-for-human`/oetiketterat plockas aldrig;
   fynd → nytt oetiketterat kort. AFK-loopen är T57+ (yttre iterator, utanför
   skillen). Källa: S50 Del 2 (grillning dp9); byggd i plugin 1.8.0.
+- **Övnings-ramverket** (Experimentet → Övningar → faser → sessioner) — projektets
+  epok-nivå OVANFÖR fas/session: **Experimentet (Vue)** = allt före detta repo
+  (Vue-appen `~/Repon/miranon-media-os` + datamodell-researchen +
+  conversion-plan-eran); **Övning 1** = React-repots session 1–50 (appen byggdes
+  OCH metoden byggdes); **Övning 2** = session 51 → framåt (UI + backend med det
+  uppdaterade arbetssättet; byggplanens Fas E = namngiven slutfas). Sessionsnummer
+  och fas-beteckningar löper obrutna över epok-gränsen (ADR-040 + fas-axeln
+  orörda). Historiska dokument (t.o.m. S50) nämner inte övningarna — läses genom
+  lins-noten. Källa: ADR-068 (kanoniskt beslut + rationale + lins-not).
 
 ---
 
@@ -399,6 +408,9 @@ namnger sina egna gränser är vad som gör det ärligt.
   §0 ordlista tillagd, fångst-rater omklassade till [AKTUELLT TILLSTÅND], skill-medlemskap likaså,
   ADR-länkar kompletterade, §4.5 arbetscykel-vinjett tillagd. Wirat governing
   (`.frontmatter-policy.conf` 11→12) + per-session-DoD-rad i `CONTRIBUTING.md`.
+- **2026-07-05 (Session 51, ADR-068):** §0-post "Övnings-ramverket" tillagd (epok-termerna
+  Experimentet (Vue) / Övning 1 / Övning 2 + nivå-hierarkin; drift-hemvisten per
+  dp10-grillningens G1 — kanonisk-plats-par med ADR-068).
 
 ---
 

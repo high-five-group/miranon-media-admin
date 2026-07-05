@@ -11,7 +11,19 @@ React-admin för Miranon Media — eventhantering, anmälningar och rapportering
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
 [![TanStack](https://img.shields.io/badge/TanStack-Router%20%2B%20Query%20%2B%20Table-FF4154)](package.json)
 
-> **Status:** Fas 5.5 — Vertikal write-slice ✅ KLAR 2026-06-17 (Sessions 18/19 + 22). "Markera anmälningsavgift som betald": optimistic mutation via TanStack Router-context-DI (ADR-055, första UI→data-wiringen), operations-baserat write-API (`mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049) mot isolerad staging (ADR-050), typad `EdgeFunctionError` med requestId, MessageBox-fel-yta + aria-live. Mall för Fas 6:s mutationer. Server deny/allow-svit + 3 klient-e2e gröna. **Nästa:** Fas 6 — Hem + Event + Personer + Mer (strangler-fig, per [`docs/byggplan.md`](docs/byggplan.md) §4).
+> **Status:** Övning 2 pågår — Fas 6 (strangler-fig). Aktuellt fas- och sub-fas-läge ägs av [`docs/byggplan.md`](docs/byggplan.md) §2 (kanonisk plats — status dupliceras inte hit).
+
+## Berättelsen — Experimentet och övningarna
+
+Projektet byggs som en serie **övningar** ovanpå ett avslutat experiment ([ADR-068](docs/decisions/ADR-068-ovnings-ramverket.md)):
+
+| Epok | Vad | Var |
+|---|---|---|
+| **Experimentet (Vue)** | Första bygget: Vue-appen + datamodell-researchen + conversion-plan-eran (session 1–30) | `~/Repon/miranon-media-os` — fryst referens, röres ej |
+| **Övning 1** | React-repots session 1–50: appen byggdes OCH metoden byggdes — projektet började naket och byggde sitt eget arbetssätt (sessionsdok-disciplinen, lifecycle-mekaniken, ADR-/lesson-maskineriet, Pocock-arbetssättet) | Detta repo, historiken t.o.m. Session 50 |
+| **Övning 2** | Session 51 och framåt: UI + backend exekveras med det uppdaterade arbetssättet, fram till och med den namngivna slutfasen Fas E (Supabase-migration) | Detta repo, pågående — byggplanen är Övning 2:s karta |
+
+Nivå-hierarkin: **Experiment → Övningar → byggplanens faser → sessioner.** Historiska dokument (sessionsdok 1–50, ADR-001–067, arkiv) nämner inte övningarna — de skrevs före ramen och läses genom [ADR-068](docs/decisions/ADR-068-ovnings-ramverket.md):s lins-not. Termernas drift-definition: [`docs/reference/systemet.md`](docs/reference/systemet.md) §0.
 
 ## Dokumentation
 
@@ -89,7 +101,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 
 ## Projektstatus
 
-**Aktuellt fokus:** Fas 6 — Hem + Event + Personer + Mer (strangler-fig-sekvens i åtta sub-faser, per `docs/byggplan.md` §4). Fas 5.5 (write-slice-mönstret) klar och utgör mall för Fas 6:s mutationer.
+**Aktuellt fokus:** ägs av [`docs/byggplan.md`](docs/byggplan.md) §2 (fas-tabellen + per-subfas-audit-status) — kanonisk plats, dupliceras inte hit.
 
 **Klara faser:**
 
