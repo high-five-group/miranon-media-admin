@@ -21,6 +21,23 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 52 (PÅGÅR) — UI-spårets start
+
+> Scope: sessionsdok `2026-07-05-session-52.md` Del 1 (kanonisk plats).
+> Kadensrad per L67 — uppdateras vid varje landning.
+
+- [x] **AKT 0 LEVERERAD** (2026-07-05): fork 5+6-byggena per S47 Del
+  13/14 LÅSTA designer → hub `9a747a1` (plugin 1.8.0→1.9.0, 11→13
+  skills; manifest-klustret atomiskt per L228; prototype slash-only per
+  korpusform, diagnosing-bugs modell-triggad; HITL-mallen i
+  references/; DECLINE ej inbyggda; inga NÄR-rader — ej designkrav;
+  L55-ritualen (a)–(e) gröna: 13 kataloger i 1.9.0-cachen,
+  nyckelfras-grep 1 träff-fil vardera, byte-identitet, install-record
+  1.9.0 med gitCommitSha `9a747a1`). **OMSTART PENDING
+  (Marcus-moment)** — omstarts-verifiering + första /to-prd-körningen
+  dirigeras EFTER omstart. Två-aktörs-ADR:n (WIP) orörd; första
+  drift-metrik-matningen kommer i hel-kedje-körningen.
+
 ### Session 51 ✅ AVSLUTAD (2026-07-05) — Övnings-ramverket: inramnings-landningen
 
 > SCOPE LEVERERAT i sin helhet (sessionsdok Del 1–4 + BUILD-LOG S51-posten
