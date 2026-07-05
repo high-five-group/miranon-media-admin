@@ -21,10 +21,19 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 52 (PÅGÅR) — UI-spårets start
+### Session 52 ⏸️ PAUSAD (2026-07-05) — UI-spårets start
 
 > Scope: sessionsdok `2026-07-05-session-52.md` Del 1 (kanonisk plats).
 > Kadensrad per L67 — uppdateras vid varje landning.
+> **PAUSAD per ADR-051** (numret 52 BEVARAS; handoff i sessionsdokets
+> `## PAUSLÄGE`-block): kedjan står vid /to-issues-ingången — TASK-1
+> publicerat (ad44051, CI grön per jobb), Del 1–5 födda, T62
+> registrerad. **MARCUS-SEKVENS (samma ordning som handoff, L230):**
+> (1) NY session (antagen 53) = Code-halvor för session-paus/
+> session-resume (T62) → (2) /session-resume på SESSION 52 i färsk
+> kontext (första-bruk-test av Code-halvan) → (3) i resumed 52:
+> /to-issues på TASK-1 → /do-work + första drift-metrik-matningen →
+> end-prövning.
 
 - [x] **AKT 0 LEVERERAD** (2026-07-05): fork 5+6-byggena per S47 Del
   13/14 LÅSTA designer → hub `9a747a1` (plugin 1.8.0→1.9.0, 11→13
