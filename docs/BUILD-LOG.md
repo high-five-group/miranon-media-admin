@@ -2256,6 +2256,11 @@ tasks/todo.md · tasks/lessons.md                 (kadens + L231)
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-07-05-session-50.md`](../tasks/sessions/2026-07-05-session-50.md) (Del 1–3 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 51 via /session-start = UI-spårets start.** Ordning inom S51: (i) omstarts-verifiering i A2-passet (förväntat plugin 1.8.0, 11 skill-kataloger, 5 slash-only inkl. do-work), (ii) fork 5+6-byggena som AKT 0 före första /to-prd-körningen (prototype + diagnosing-bugs per låsta designer S47 Del 13/14; plugin-bump antagen 1.8.0→1.9.0, låses vid bygget), (iii) första skarpa hel-kedje-körningen /to-prd → /to-issues → /do-work på riktig arbetsenhet (UI-spåret registrerad kandidat för första PRD-kortet, beslutas där), (iv) första drift-metrik-matningen per gren F-minimiformen (ADR-068 p.8). Därefter städ-/mognadsskikt: migrerings-hub-session 1 (inkl. T60 + invokerings-UX) / T56 / L193–L222-lyftet. Mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare.
 
+> **Korrigeringsnot (2026-07-05, post-close):** NÄSTA-ordningen supersederad av
+> Marcus-direktiv + kvittens efter stängning — S51 = övnings-ramverkets
+> inramnings-landning, S52 = UI-spårets start (oförändrat innehåll). Beslut +
+> scope: tasks/todo.md § Session 51 — scope. Säkringspass-commit: denna.
+
 ---
 
 ## Session-modellen

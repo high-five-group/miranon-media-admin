@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-07-05 (**Session 50 ✅ AVSLUTAD** (lifecycle: closed; session 51 öppnas via /session-start) — **DO-WORK-LANDNINGEN LEVERERAD: integrationens sista kritiska station stängd.** Grillning /grill-with-docs dp9 till samsyn ("Kvitterar helheten."; 9/9 defektfria datapunkter; beslut 1–7: kvitto-sömmen [ready-for-agent-etikett + explicit avfyrning = durabelt förhandskvitto för commit/push inom kortets scope, §3.3 uppfylld uppströms], hub-hemvist utan ny spoke-artefakt, slash-only + oetiketterade uppföljnings-kort, mekaniskt plock-filter + ETT kort per invokering, TDD-härdning med obligatorisk rött-först-bevisrad [senior-mandat], samma-commit-leverans med kort-token + p.8-minimiform i final-summary, loop-redo gränser + ingen ADR under baren) → bygge: hub-plugin **1.8.0** (/do-work 11:e skillen, slash-only nu 5; hub bf384e8, 5 filer atomiskt per L228-klustret; L55-ritual körd med grep-bevis i 1.8.0-cachen) + spoke systemet.md §0-post do-work. Lessons **L231** skördad + hub-lyft K50.1 (hub `0fef62f`); kandidaterna b/c explicit förkastade (avslutssektionen). Spoke-trail: 6e24e72 · db04809 · fc17d0c + avslutscommit; CI-runs 28731063449 / 28731796559 / 28731913830 gröna per jobb. **NÄSTA: NY session 51 via /session-start = UI-spårets start.** Ordning inom S51: (i) omstarts-verifiering i A2-passet (förväntat plugin 1.8.0, 11 skill-kataloger, 5 slash-only inkl. do-work), (ii) fork 5+6-byggena som AKT 0 före första /to-prd-körningen (prototype + diagnosing-bugs per låsta designer S47 Del 13/14; plugin-bump antagen 1.8.0→1.9.0, låses vid bygget), (iii) första skarpa hel-kedje-körningen /to-prd → /to-issues → /do-work på riktig arbetsenhet (UI-spåret registrerad kandidat för första PRD-kortet, beslutas där), (iv) första drift-metrik-matningen per gren F-minimiformen (ADR-068 p.8). Därefter städ-/mognadsskikt: migrerings-hub-session 1 (inkl. T60 + invokerings-UX) / T56 / L193–L222-lyftet. Mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare. Count 67/67/67; ADR-068 WIP; L193–L222-lyft PENDING.)*
+*Senast uppdaterad: 2026-07-05 (**Session 50 ✅ AVSLUTAD** (lifecycle: closed; session 51 öppnas via /session-start) — **DO-WORK-LANDNINGEN LEVERERAD: integrationens sista kritiska station stängd.** Grillning /grill-with-docs dp9 till samsyn ("Kvitterar helheten."; 9/9 defektfria datapunkter; beslut 1–7: kvitto-sömmen [ready-for-agent-etikett + explicit avfyrning = durabelt förhandskvitto för commit/push inom kortets scope, §3.3 uppfylld uppströms], hub-hemvist utan ny spoke-artefakt, slash-only + oetiketterade uppföljnings-kort, mekaniskt plock-filter + ETT kort per invokering, TDD-härdning med obligatorisk rött-först-bevisrad [senior-mandat], samma-commit-leverans med kort-token + p.8-minimiform i final-summary, loop-redo gränser + ingen ADR under baren) → bygge: hub-plugin **1.8.0** (/do-work 11:e skillen, slash-only nu 5; hub bf384e8, 5 filer atomiskt per L228-klustret; L55-ritual körd med grep-bevis i 1.8.0-cachen) + spoke systemet.md §0-post do-work. Lessons **L231** skördad + hub-lyft K50.1 (hub `0fef62f`); kandidaterna b/c explicit förkastade (avslutssektionen). Spoke-trail: 6e24e72 · db04809 · fc17d0c + avslutscommit; CI-runs 28731063449 / 28731796559 / 28731913830 gröna per jobb. **NÄSTA: NY session 51 via /session-start = ÖVNINGS-RAMVERKETS inramnings-landning** (dp10-grillning + bygge; scope-sektion nedan). **DÄREFTER S52 = UI-spårets start:** (i) fork 5+6-byggena som AKT 0 före första /to-prd-körningen (bump antagen 1.8.0→1.9.0), (ii) första skarpa hel-kedje-körningen /to-prd → /to-issues → /do-work på riktig arbetsenhet, (iii) första drift-metrik-matningen per gren F-minimiformen. Omstarts-verifieringen av plugin 1.8.0 (11 kataloger, 5 slash-only) ligger kvar i NÄSTA sessionsstarts A2-pass = S51. Därefter städ-/mognadsskikt: migrerings-hub-session 1 (inkl. T60 + invokerings-UX) / T56 / L193–L222-lyftet. [Rättelse 2026-07-05 post-S50-close: Marcus-direktiv + kvittens i Chat; supersederar S50-avslutets NÄSTA-ordning öppet — L230-disciplinen. Trail: BUILD-LOG S50-korrigeringsnot + S50-dokets korrigeringsnot.] Mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare. Count 67/67/67; ADR-068 WIP; L193–L222-lyft PENDING.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -18,6 +18,79 @@
 **Fas 5.5 — Vertikal write-slice: staging-miljön KLAR ✅; deny/allow-grinden avblockerad.** Server-kontraktet levererat och CI-grönt (operation `mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049). Den isolerade staging-miljön är byggd (ADR-050 bygg-sekvens 1–7 komplett) och hela staging-testsviten grön (41 passed/0 skipped). **Nästa: Fas 5.5 klient-UI (K2) i ny session** (peka bakåt på session 18; en stängd session resume:as ej — ny sessions-yta, ADR-052/L124).
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
+
+### Session 51 — scope (nästa): Övnings-ramverket — inramnings-landningen
+
+Källa: Marcus-direktiv + kvittens 2026-07-05 (post-S50-close;
+Chat-trail → säkrat via detta pass). Idé: projektets historia ramas
+som övningar — dokumenteras via kanonisk källa + pekare i levande
+ytor; historiska artefakter röres ALDRIG retroaktivt (ADR-023-
+immutabilitet; ADR-012-precedens: provenance bevaras).
+
+Kvitterade beslut (8):
+
+1. Gränsen (repo-linjalen): Experimentfasen = allt före detta repo
+   (Vue-appen ~/Repon/miranon-media-os + datamodell-researchen +
+   conversion-plan-eran). Övning 1 = hela React-repots historia,
+   session 1→50 — inkl. metodbygget (sessionsdok ~S6–9, lifecycle-
+   mekaniken S10–12, Pocock-arbetssättet S47–50) som del av övningens
+   berättelse: "började naken, byggde sin egen metod". Övning 2 =
+   session 51 och framåt: UI + backend med det uppdaterade arbets-
+   sättet; ingen app-kod ändras vid gränsen — Övning 2 tar vid där
+   Övning 1 slutade.
+2. Sekvens: S51 = inramnings-landningen (dp10 + bygge). S52 =
+   UI-spårets start (fork 5+6 akt 0 + första hel-kedje-körningen +
+   första drift-metrik-matningen).
+3. ADR-numret: inramnings-ADR:n tar nästa lediga nummer (068 per
+   S50-slutläge — disk-verifieras vid minting). Två-aktörs-ADR:n
+   (Pocock-integrationen, WIP) är EJ hårdlåst till 068 (S47:
+   "re-verifiera nästa lediga vid gradering") — tar nästa lediga vid
+   sin gradering. Levande "ADR-068"-referenser döps om nummer-
+   neutralt ("två-aktörs-ADR:n (WIP)") i S51-svepet.
+4. Vue-repot: namnges + refereras härifrån (README-historiken,
+   terminologi-posterna, ADR:n); miranon-media-os-repot självt
+   röres ej.
+5. Supabase-migreringen: skrivs in i byggplanen som namngiven
+   SLUTFAS i Övning 2 (efter alla befintliga byggplans-delar), en
+   rads beskrivning + pekare "designas i egen ADR när fasen närmar
+   sig". Airtable förblir datakällan fram till dess (adapter-gränsen
+   är möjliggöraren; ADR-050-staging = befintligt Supabase-fotfäste).
+6. Nivå-hierarkin explicit: Experiment → Övningar → byggplanens
+   faser → sessioner ("Övning" = epok-nivån ovanför fas/session).
+   Bor i ADR:n + README + terminologi-posterna.
+7. Lins-noten i ADR:n: ramverket infört 2026-07-05; historiska
+   dokument (sessionsdok 1–50, ADR-001–067, arkiv) nämner INTE
+   övningarna och läses genom linsen — frånvaron är förväntad,
+   inte ett hål.
+8. Terminologi-låsning: kanoniska termer "Experimentet (Vue)",
+   "Övning 1", "Övning 2" — definieras på ETT ställe (exakt hemvist
+   = dp10-gren: ORDLISTA.md är idag Lottas domänvärld; projekttermer
+   kan behöva egen sektion/annan yta) och används konsekvent i alla
+   nya dokument (BUILD-LOG:s S51-post inleder "Övning 2 börjar här").
+
+Målytor för dok-svepet (preciseras i dp10): inramnings-ADR (kanonisk
+definition + rationale + lins-not + hierarki), README (berättelsen
+överst — det första en ny läsare möter), byggplan (ramrubrik
+"byggplanen = Övning 2:s karta" + Supabase-slutfasen), systemet.md
+§0, terminologi-hemvisten, BUILD-LOG additiv gränsnot, todo-/tråd-
+huvuden. EJ: retroaktiva ändringar i stängda sessionsdok/ADR:er/arkiv.
+
+dp10-grenar utöver besluten: Supabase-fasens fas-beteckning mot
+faktisk byggplan; referens-omdöpningens exakta träffyta (grep mot
+levande ytor); ev. framåt-pekare i mallar (over-engineering-vaktas).
+
+Utfasnings-kartan (Chat-pensioneringen) BEKRÄFTAD oförändrad efter
+dagens beslut: hybridläge S51–S52 → drift-metriken = evidensgrind →
+migrerings-hub-sessionerna (rigor migreras först; systemet.md skrivs
+om sist; arkivera-inte-radera) → två-aktörs-ADR:n Accepted →
+apparat-radering. Takten ägs av Marcus; tidigareläggning möjlig vid
+ren drift. Kartan bor i S47-trailen + migrerings-bunten — dupliceras
+ej här.
+
+Skörd-kandidat till S51: "post-close-beslutsfönstret" — beslut
+fattade i chatt efter session-close men före nästa session-start
+saknar naturlig durabilitets-kadens (datapunkt 2 efter S49-
+korrigeringsnoten; prövas mot L26/L230 i S51:s skörd).
 
 ### Session 36 ✅ AVSLUTAD (2026-06-26) — Fas 6g L3 (Spara segment — repots första 6g-WRITE)
 
