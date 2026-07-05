@@ -78,6 +78,19 @@
   (lesson-kandidat till S52-skörden). Grillfrågor G1+G2 låsta på
   första rekommendationen. **NÄSTA: /to-prd (Marcus-moment)** →
   /to-issues → /do-work + första drift-metrik-matningen.
+- [x] **REPOTS FÖRSTA SKARPA PRD-KORT PUBLICERAT** (2026-07-05):
+  /to-prd → **TASK-1 "PRD: UI-uppgradering Hem-vyn"** i
+  backlog-substratet (syntes ur Del 3-samsynen + Del 4-svaret; ingen
+  ny intervju). Skarv-kvittensen (skillens enda avstämning) låst av
+  Marcus: EN skarv — befintliga e2e-/axe-sviten (förebilder hem-,
+  event-anmälda-, mer-väntelista- + shell-e2e; ingen api-/unit-skarv
+  — read-only mot befintliga EF:er). Kropp: 17 användarberättelser,
+  10 implementationsbeslut, 4 skivor S/M/M/M, ADR-koppling
+  055/057/061/045/017/058, mörk-utforskningen + brödsmulor
+  registrerade i Utanför omfattningen. DoD: 4 config-defaults +
+  design-review-grinden (L220) som #5. **NÄSTA: /to-issues**
+  (skivorna task-1.1–1.4 + QA-kort) → /do-work + första
+  drift-metrik-matningen.
 
 ### Session 51 ✅ AVSLUTAD (2026-07-05) — Övnings-ramverket: inramnings-landningen
 
