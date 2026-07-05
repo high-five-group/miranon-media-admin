@@ -128,3 +128,18 @@ att kontinuitets-axeln var komplett med enbart resume falsifierades av Session
 - ADR-041 (session-end do-confirm) — innehållsgränsen i beslut 4 avgränsar paus mot
   end; end oförändrad.
 - ADR-040 (numreringskonvention) — beslut 4: paus bevarar N, end öppnar N+1.
+
+## Updates
+
+### 2026-07-05 — Beslut 2 superseded av ADR-069 (Session 53, T62)
+
+Beslut 2:s asymmetri ("`session-paus` är Chat-skill enbart — ingen ny
+Code-skill") föll med samma premiss-skifte som ADR-043 beslut 5: sessioner
+körs numera även i sin helhet på Code-ytan (S52-precedentet), där
+paus-verbet inte kunde avfyras.
+[ADR-069](ADR-069-lifecycle-verbens-code-korbarhet.md) superseder
+asymmetri-delen: `session-paus` får en Code-halva i hub-pluginet, med denna
+ADR:s beslut 1, 3 och 4 (verbet, intentions-gränsen, innehållsgränsen paus
+vs end) orörda som dess kontrakt. Ironiskt nog är detta L119-klassen igen —
+en axel som är körbar på en yta men inte den andra är samma halva-axel-drift
+denna ADR rev på verb-nivån. Besluts-texten ovan är fryst (L53).

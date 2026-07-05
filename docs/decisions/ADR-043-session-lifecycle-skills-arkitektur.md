@@ -129,3 +129,18 @@ Det omedelbara: detta ADR + recovery av Session 10-doket (separat, oberoende av 
 - **ADR-041** (session-end do-confirm-roll) — session-ends Code-halva är do-confirm-verifieraren; oförändrad.
 - **ADR-042** (code-roll-disciplin alltid-på) — samma alltid-på-vs-skill-skiljelinje, här tillämpad på lifecycle vs meta-disciplin.
 - **ADR-040** (sessions-numreringskonvention) — session-resume och create-session-doc refererar konventionen vid numrerings-verifiering.
+
+## Updates
+
+### 2026-07-05 — Beslut 5 superseded av ADR-069 (Session 53, T62)
+
+Beslut 5:s asymmetri ("session-resume är asymmetrisk: Chat-skill, ingen ny
+Code-skill") byggde på premissen att sessioner dirigeras från Chat-ytan.
+Premissen falsifierades empiriskt av Session 52/53 (sessioner körda i sin
+helhet på Code-ytan). [ADR-069](ADR-069-lifecycle-verbens-code-korbarhet.md)
+superseder asymmetri-delen: `session-resume` (och `session-paus`, ADR-051)
+får Code-halvor i hub-pluginet; DRY-invändningen löses med referens till
+session-startens LÄS-fas i stället för duplicering. Besluts-texten ovan är
+fryst (L53) och skrivs inte om. Beslut 2 (två-ytors-modellen), 4
+(create-session-doc start-exklusiv), 7 (kontraktet) och 8 (sessionsdoket =
+externminne) står orörda.

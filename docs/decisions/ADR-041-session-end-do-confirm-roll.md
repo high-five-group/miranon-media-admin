@@ -116,3 +116,18 @@ Research gav frågan ett etablerat namn och ett svar (källor nedan).
   grind; automatisera det automatiserbara; human-in-loop vs autonomt som
   medvetet val; objektiv automatiserad grind vs subjektiv
   projektnivå-checklista.
+
+## Updates
+
+### 2026-07-05 — Beslut 2 amenderat för Code-körda sessioner (ADR-069, Session 53, T62)
+
+Beslut 2:s oberoende ("Confirmen körs av Code mot ett **Chat-dirigerat**
+avslut") förutsätter dirigent ≠ utförare. På Code-körda sessioner
+(S52/S53-precedentet) är Code båda, och oberoende-axeln kollapsar.
+[ADR-069](ADR-069-lifecycle-verbens-code-korbarhet.md) beslut 6 amenderar:
+där presenterar Code coverage-rapporten och STOPPAR — `lifecycle: closed`
+flippas först efter Marcus-kvittens (de disk-verifierbara posterna behåller
+rapport-mot-disk-fångsten ~64 %; de omdömes-tunga posterna grindas av
+Marcus-ytan ~27 % i stället för self-confirm ~9 %). Chat-orkestrerade
+sessioner oförändrade — där håller beslut 2 som skrivet. Besluts-texten
+ovan är fryst (L53).
