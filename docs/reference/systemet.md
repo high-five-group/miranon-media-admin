@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-04
+updated: 2026-07-05
 review_by: 2026-09-21
 status: stable
 ---
@@ -72,6 +72,17 @@ status: stable
   AFK/HITL-etikett; formen är tracer bullet (se den posten). Roller orörda: `tasks/todo.md` =
   dagslogg, tråd-registret = trådar, sessionsdok = samtal/beslut — substratet bär enbart
   framåtriktade arbets-specar (S48 gren F).
+- **do-work** — exekverings-skillen för issue-substratet (hub-pluginet, slash-only):
+  plockar nästa plockbara skiva — status To Do + `ready-for-agent` + alla beroenden
+  Done, kö-ordning per substrat-kontraktet — eller tar ett utpekat kort, och driver
+  den till validerad, pushad commit. Kortets leverans (AC-/DoD-bockning,
+  final-summary-metrikraden, status Done) stängs i SAMMA commit som koden, med
+  kort-token i meddelandet. Kvitto-sömmen: `ready-for-agent`-etiketten + den
+  explicita avfyrningen = durabelt förhandskvitto för commit/push inom kortets
+  scope (code-role-discipline §3.3 uppfylld uppströms; övriga STOPPA-grindar
+  orörda). ETT kort per avfyrning; `ready-for-human`/oetiketterat plockas aldrig;
+  fynd → nytt oetiketterat kort. AFK-loopen är T57+ (yttre iterator, utanför
+  skillen). Källa: S50 Del 2 (grillning dp9); byggd i plugin 1.8.0.
 
 ---
 
