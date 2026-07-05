@@ -21,6 +21,29 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 53 🔄 AKTIV (2026-07-05) — T62: lifecycle-verbens Code-körbarhet
+
+> Scope: sessionsdok `2026-07-05-session-53.md` Del 1 (kanonisk plats);
+> grillad samsyn = Del 2 (7 beslut). Kadensrad per L67 — uppdateras
+> vid varje landning. Marcus-sekvensens steg 1 (FÖRE resume av S52).
+
+- [x] **Dok-födelse + T62-flipp** (2026-07-05): sessionsdok fött
+  (`9f2edec`, run 28752512900 grön per jobb) + T62 `paused`→`active`
+  med ingång → Del 1 (`bf18b61`, run 28752540221 grön per jobb).
+- [x] **Grillningen till samsyn** (2026-07-05): /grill-with-docs
+  (Marcus-avfyrad, CHAT-SEED (d)–(i) + forkarna (a)–(c)) → 7 beslut
+  kvitterade, Del 2 (kanonisk plats): samexistens/Code kanonisk; två
+  nya kataloger 13→15; description-triggade; hela
+  kompletteringspaketet 2–6; coverage-Marcus-kvittens-grind före
+  `closed` + designprincip (f); EN ADR-069 + Updates-noter i
+  041/043/051; S53 stänger före omstarten. STEG 0-fynd: seed (d)
+  delvis falsifierad (lessons-läsning TÄCKT); transcript-fyndet
+  (`/mnt/transcripts/` är Chat-yta-antagande). **NÄSTA:** hub-bygget
+  (session-paus + session-resume + start/end-kompletteringar) →
+  manifest-bump 1.10.0 + L55 → ADR-069 + noter + count 68→69 →
+  Del 3 → session-end (dogfoodad coverage-grind) → omstart →
+  /session-resume S52.
+
 ### Session 52 ⏸️ PAUSAD (2026-07-05) — UI-spårets start
 
 > Scope: sessionsdok `2026-07-05-session-52.md` Del 1 (kanonisk plats).
