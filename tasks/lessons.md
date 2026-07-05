@@ -3110,3 +3110,34 @@ brasklapp-disciplinen. Regeln: exekverings-tids-värden anges som derivations-re
 värde — [[L228]]:s invariant-princip generaliserad från fil-kluster till tids-/tillståndsaxeln.
 Fångsten var MEKANISK (create-session-doc steg 5, byggd på Session 12-empirin), inte omdöme i
 stunden — lesson→mekanism-kedjan betalade sig vid första verkliga midnatts-driften.
+
+## 2026-07-05 — Session 51 (övnings-ramverkets inramnings-landning: dp10 + ADR-068 + restlista-reparationen)
+
+### L232 [UNIVERSAL] — "Dokumenterad" bevisas med orienterings-test, inte existens-test — en klumprad bär bara namngivna poster
+
+Datum: 2026-07-05 | Källa: S51 restlista-passet (AFK/Ralph-loopen: routad S47, trigger armerad
+S50, dokumenterad i fyra stängda ytor — och OSYNLIG från alla levande ingångar;
+klumprad-degraderingen S49→todo tappade 3 av 5 migrerings-bunts-poster) (klass:
+kontinuitet/orienterbarhet; [[L26]]-förfining, [[L223]]-granne)
+
+Existens-testet ("finns X i någon fil?") och orienterings-testet ("hittar nästa session X från
+levande ingångar — todo-huvud, tråd-register, README?") ger olika svar så fort bäraren är ett
+stängt dok — stängda sessionsdok är inte bärare. Svaret på "är X dokumenterat?" ska därför ange
+vilket test som körts. Operativ regel för samlingsrader: en klumprad ("bunt X (inkl. A + B)")
+bär ENDAST de poster som är NAMNGIVNA i radtexten — osynliga medlemmar dör vid nästa omskrivning
+(S49→todo: fem poster blev två; tre dog med sessionsstängningen och återfanns först av ett
+riktat orienterings-test).
+
+### L233 [UNIVERSAL] — Post-close-beslutsfönstret säkras med omedelbart säkringspass — beslut mellan close och nästa start har ingen egen kadens
+
+Datum: 2026-07-05 | Källa: S49-korrigeringsnoten + S50→S51-säkringspasset (två datapunkter:
+NÄSTA-ordning riven/supersederad i chatt EFTER session-close; båda krävde ad hoc-commit före
+nästa session-start) (klass: landnings-kadens; [[L26]]-komplement på tidsaxeln,
+[[L230]]-syskon)
+
+Session-end har redan kört och nästa session-start har inte börjat — beslut fattade i det
+fönstret ägs av INGET pass och dör med chatten om de inte säkras aktivt. Mönstret (nu 2/2):
+omedelbart säkringspass i spoken — levande bärare (todo-huvud/scope-sektion) uppdateras + öppna
+korrigeringsnoter på de stängda dokens NÄSTA-ytor ([[L230]]-disciplinen, öppen supersedering,
+aldrig tyst) — INNAN nästa session-start orienterar. Vänta-till-nästa-start är exakt den
+deferred-sync-lögn [[L223]] förbjuder: starten orienterar på NÄSTA-raderna, som då ljuger.

@@ -2261,6 +2261,50 @@ tasks/todo.md · tasks/lessons.md                 (kadens + L231)
 > inramnings-landning, S52 = UI-spårets start (oförändrat innehåll). Beslut +
 > scope: tasks/todo.md § Session 51 — scope. Säkringspass-commit: denna.
 
+## Session 51 — Övning 2 börjar här: övnings-ramverkets inramnings-landning (ADR-068) (2026-07-05)
+
+> **Övning 2 börjar här** ([ADR-068](decisions/ADR-068-ovnings-ramverket.md),
+> gränsnoten — medvetet flyttad hit från dp10-svepet till S51-posten):
+> posterna ovanför är Övning 1 (session 1–50); denna och kommande poster är
+> Övning 2. Historiska poster nämner inte övningarna — de läses genom
+> ADR-068:s lins-not.
+
+**Mål:** rama projektets historia som övningar (Marcus-direktiv + kvittens 2026-07-05 post-S50-close, kanoniskt säkrat i todo § Session 51 — scope): grilla de öppna grenarna till samsyn (dp10) och applicera ramen — inramnings-ADR + dok-svep över levande målytor + restlista-reparation. Ingen produktkod, ingen byggplan-fas berörd (EJ fas-avslut). Count 67→68 (ADR-068 mintad).
+
+### Byggd substans (git-trail per landning)
+
+- **Session 51-dok fött** (`00468d9`, ADR-043 skapande-gren; drift-säkert datum per L231; A-passet grönt inkl. A2-omstartsverifieringen av plugin 1.8.0: 11 skill-kataloger, 5 slash-only).
+- **Del 2 — dp10-grillningen till samsyn** (`8978180`): /grill-with-docs körning 8, prövotids-dp10; STEG 0 löste huvuddelen via disk; 4 frågor, 2 senior-mandat (G1, F1), 2 egna val (T57 orörd, helheten); samsyn "Jag kvitterar.". Beslut: G1 terminologi-drifthem = systemet.md §0 (kanonisk-plats-par med ADR:n); G2 Fas E ÄR Övning 2:s namngivna slutfas (additiv märkning, ingen ny fas); G3 träffyta klassad (T57-raden orörd; hub noll träffar); G4 inga mall-pekare; F1 README-staleness → klass-lösning A+B+C (avduplicering — byggplan §2 enda status-ägare; under ADR-baren).
+- **ADR-068 mintad** (`21142b1`): övnings-ramverket (Accepted, Projekt-grundande) — epok-linjalen (Experimentet (Vue) → Övning 1 S1–50 → Övning 2 S51→), nivå-hierarkin, terminologin + hemvisterna, Vue-repot referens-only, Fas E-slutfasen, lins-noten i två skikt. Count 67→68 ATOMISKT på tre bärare; check-adr-count grön.
+- **Dok-svepet + G3-omdöpningen** (`bd5cd90`): README-berättelsen överst + F1-avdupliceringen (status/fokus → byggplan §2-pekare); byggplan-ramrubrik + Fas E-märkning + v1.13; systemet.md §0-post "Övnings-ramverket" + §11-rad; todo-/tråd-huvuden; nummer-neutral omdöpning ("två-aktörs-ADR:n (WIP)"; T57-raden + citat-klass orörda).
+- **L4 — restlista-reparationen** (`5d88e6f`): integrations-restlistans 3 bärarlösa element + graderings-triggern fick levande bärare (migrerings-buntens 5 poster namngivna i todo; AFK/Ralph-loop + sandbox som egen post med ARMERAD trigger; WIP-markören bär graderings-triggern; tråd **T61** registrerad rad-först). Rotorsak durabel i sessionsdokets Del 4: klumprad-degraderingen S49→todo.
+
+### Verifiering
+
+CI-gröna PER JOBB (docs-only → Test + Build by-design-skippade; Docs link check KÖRD + grön i samtliga): run 28734895802 (dok-födelse) · 28741201590 (Del 2) · 28741321827 (ADR-068) · 28741469055 (dok-svepet) · 28742115061 (L4); avslutscommitens run-id redovisas i S51-avslutsrapporten. Lokala grindar före varje push: markdownlint 0 fel · Vale 0 fel · lifecycle OK · frontmatter 14/14 · check-adr-count 68==68. Post-svep-grep: "ADR-068" i levande ytor = endast övnings-ramverks-betydelsen + två beslutade undantag (todo-scope-citatet + T57-radens historik, per lins-notens skikt ii).
+
+### Avvikelser / teknisk skuld
+
+- **Två lint-fångster FÖRE push** (aldrig i CI): MD004 (radbrytning gjorde fortsättningsrad till plus-lista i ADR-texten) + MD028 (två intilliggande blockquotes i byggplan-prologen → sammanslagna till en). Båda fixade lokalt.
+- **Restlista-fyndet** (read-only-läspass mellan dok-svepet och L4): 3 bärarlösa integrationselement + 1 halv-saknad graderings-trigger — reparerade i L4; rotorsaken (klumprad-degradering) skördad som L232, post-close-fönstret som L233.
+- **Hub-lyft:** L232–L233 LYFTA (hub `f665e1f`: K51.1–2, samma kadens-fönster; manuell updated:-bump per L221); **L193–L222-backloggen kvarstår PENDING** (utanför denna ends direktiv-scope; noterad i todo-huvudet).
+
+### Filstruktur-snapshot (nytt/ändrat i Session 51)
+
+```text
+docs/decisions/ADR-068-ovnings-ramverket.md   (NY — epok-ramen, Accepted)
+docs/decisions/README.md                      (katalograd 068 + bar-blockquoten nummer-neutral)
+README.md                                     (berättelsen överst; status/fokus → §2-pekare; räknerad 68)
+docs/byggplan.md                              (ramrubrik + Fas E-märkning + v1.13)
+docs/reference/systemet.md                    (§0-post Övnings-ramverket + §11-rad)
+tasks/todo.md · tasks/threads/README.md       (huvuden + G3 + restlista-reparationen + T61)
+tasks/sessions/2026-07-05-session-51.md       (Del 1–4 + sessionsavslut)
+tasks/lessons.md                              (L232–L233)
+~/Repon/marcus-system (hub)                   (lessons-lyft K51.1–2: f665e1f)
+```
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-05-session-51.md`](../tasks/sessions/2026-07-05-session-51.md) (Del 1–4 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 52 via /session-start = UI-SPÅRETS START.** Ordning inom S52: (i) fork 5+6-byggena som AKT 0 före första /to-prd-körningen (bump antagen 1.8.0→1.9.0), (ii) första skarpa hel-kedje-körningen /to-prd → /to-issues → /do-work på riktig arbetsenhet (UI-spåret registrerad kandidat som FÖRSTA PRD-kort, beslutas vid start), (iii) första drift-metrik-matningen (gren F-minimiformen). Därefter städ-/mognadsskikt: migrerings-hub-session 1 (S47 Del 3 steg 1 [rigor-migreringen] + mät-apparaten + handoff-klassningen [migrerings-Decision A] + invokerings-UX + T60) / AFK/Ralph-loop + sandbox (T61, trigger armerad; egen landning, Marcus-takt — naturlig evidensgrind: S52:s hel-kedje-körning + drift-metriken) / T56 / L193–L222-lyftet. Mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare.
+
 ---
 
 ## Session-modellen
