@@ -64,19 +64,23 @@
   TASK-1 → /do-work + första drift-metrik-matningen → S52
   end-prövning.**
 
-### Session 52 ⏸️ PAUSAD (2026-07-05) — UI-spårets start
+### Session 52 🔄 ÅTERUPPTAGEN (2026-07-05) — UI-spårets start
 
 > Scope: sessionsdok `2026-07-05-session-52.md` Del 1 (kanonisk plats).
 > Kadensrad per L67 — uppdateras vid varje landning.
-> **PAUSAD per ADR-051** (numret 52 BEVARAS; handoff i sessionsdokets
-> `## PAUSLÄGE`-block): kedjan står vid /to-issues-ingången — TASK-1
-> publicerat (ad44051, CI grön per jobb), Del 1–5 födda, T62
-> registrerad. **MARCUS-SEKVENS (samma ordning som handoff, L230):**
-> (1) NY session (antagen 53) = Code-halvor för session-paus/
-> session-resume (T62) → (2) /session-resume på SESSION 52 i färsk
-> kontext (första-bruk-test av Code-halvan) → (3) i resumed 52:
-> /to-issues på TASK-1 → /do-work + första drift-metrik-matningen →
-> end-prövning.
+> **ÅTERUPPTAGEN 2026-07-05 via /session-resume** (resume-Code-halvans
+> FÖRSTA-BRUK, ADR-069 b7, 1.10.0-cachen; pausad samma dag per ADR-051,
+> numret 52 BEVARAT; paushistorik i sessionsdokets
+> `## Paushistorik`-block). Marcus-sekvensens steg 1 (S53/T62 →
+> ADR-069 och plugin 1.10.0) och steg 2 (resume) KLARA; numrering
+> re-verifierad
+> mot disk: nästa ADR = 070, nästa lesson = L235, nästa tråd = T64
+> (S53 förbrukade handoffens paus-tida värden — förväntad divergens,
+> inga oväntade). Kedjan står vid /to-issues-ingången — TASK-1
+> publicerat (ad44051, CI grön per jobb). **NÄSTA: /to-issues på
+> TASK-1** (skivning 4 skivor S/M/M/M + QA-kort sist;
+> Marcus-godkännande före publicering) → /do-work + första
+> drift-metrik-matningen → end-prövning.
 
 - [x] **AKT 0 LEVERERAD** (2026-07-05): fork 5+6-byggena per S47 Del
   13/14 LÅSTA designer → hub `9a747a1` (plugin 1.8.0→1.9.0, 11→13
