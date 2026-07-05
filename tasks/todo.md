@@ -37,6 +37,20 @@
   (Marcus-moment)** — omstarts-verifiering + första /to-prd-körningen
   dirigeras EFTER omstart. Två-aktörs-ADR:n (WIP) orörd; första
   drift-metrik-matningen kommer i hel-kedje-körningen.
+- [x] **Grillningen Hem-piloten LEVERERAD** (2026-07-05, omstartad
+  session — 1.9.0-skills synliga): /grill-with-docs på UI-spåret →
+  samsyn kvitterad ("Jag kvitterar"; datapunkt 11; 5 frågor + 2
+  senior-mandat; första bild-grundade grillningen). Beslut: snitt A
+  (första PRD-kortet = Hem-piloten); prototyp-pass FÖRE /to-prd
+  (underform A på /hem, 3 varianter, skärpt fråga "Hur arrangeras
+  Hem-innehållet inom FK-linjen?"); FK-linjen målbild (referensbilder
+  `~/Desktop/fk-referens/`); fasta beslut Hej+namn / vertikal
+  stapling / FK-meny; ljus bas (mörk registrerad senare-utforskning);
+  grund-låset (b) kvitterat; tabbar IN + brödsmulor DEFER; L220 →
+  DoD-grind "Marcus-granskning godkänd" på kortet; 3 skivor S/M/M;
+  ingen ADR (under baren), ingen ORDLISTA-post. Kanonisk plats:
+  sessionsdok Del 3. **NÄSTA:** referensbild-läsning (`! ls`-vägen) +
+  prototyp-pass → /to-prd → /to-issues → /do-work.
 
 ### Session 51 ✅ AVSLUTAD (2026-07-05) — Övnings-ramverket: inramnings-landningen
 
