@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 53 🔄 AKTIV (2026-07-05) — T62: lifecycle-verbens Code-körbarhet
+### Session 53 ✅ AVSLUTAD (2026-07-05) — T62: lifecycle-verbens Code-körbarhet
 
 > Scope: sessionsdok `2026-07-05-session-53.md` Del 1 (kanonisk plats);
 > grillad samsyn = Del 2 (7 beslut). Kadensrad per L67 — uppdateras
@@ -54,11 +54,15 @@
   aktiverings-förbehåll); transcript-referens yt-beroende
   (session-JSONL, ingen export). Intentions-grinden N-vs-N+1
   PASSERAD (end är rätt verb; nästa nya session = 54).
-  **`lifecycle: closed` + ✅ AVSLUTAD väntar på Marcus-kvittens av
-  coverage-rapporten (ADR-069-grinden, dogfoodad).** **NÄSTA (efter
-  kvittens + stängning):** omstart (Marcus, aktiverar 1.10.0) →
-  /session-resume S52 (första-bruk) → /to-issues TASK-1 → /do-work +
-  drift-metrik.
+- [x] **STÄNGD efter Marcus-kvittens** (2026-07-05): coverage-
+  rapporten kvitterad; post 3-grinden FÅNGADE verkligt Chat-material
+  vid första skarpa körningen → **T63** registrerad (frontend-design-
+  plugin vid nästa greenfield; `e5b5ad6`, run 28754091245 grön per
+  jobb) — dogfood-evidens för ADR-069. `lifecycle: closed` satt i
+  stängnings-commiten. **NÄSTA: omstart (Marcus, aktiverar 1.10.0) →
+  /session-resume S52 (resume-Code-halvans första-bruk) → /to-issues
+  TASK-1 → /do-work + första drift-metrik-matningen → S52
+  end-prövning.**
 
 ### Session 52 ⏸️ PAUSAD (2026-07-05) — UI-spårets start
 
