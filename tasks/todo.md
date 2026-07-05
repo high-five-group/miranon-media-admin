@@ -51,6 +51,19 @@
   ingen ADR (under baren), ingen ORDLISTA-post. Kanonisk plats:
   sessionsdok Del 3. **NÄSTA:** referensbild-läsning (`! ls`-vägen) +
   prototyp-pass → /to-prd → /to-issues → /do-work.
+- [x] **Prototyp-passet LEVERERAT** (2026-07-05): FK-referensbilderna
+  flyttade in i repot (`docs/reference/fk-referens/`, 8 st + README,
+  commit `0e3ed14`; Desktop-läsvägen TCC-blockerad → repo-hemvist) +
+  UI-prototypen byggd per skill-kontraktet (commit `bf705f2`,
+  [PROTOTYPE]-märkt): tre strukturellt olika Hem-arrangemang på
+  `/hem?variant=a|b|c` (A FK-hemmet · B Siffror först · C Agenda
+  först), underform A (befintlig datahämtning, read-only), flytande
+  växlare ←/→, devtools gömda i granskningsläge, prod tree-shakad.
+  Körbarhets-golvet grönt + alla tre browser-verifierade mot
+  staging-data; CI-run 28747035719 grön per jobb (inkl. Test + Build
+  — e2e-baselines opåverkade). **NÄSTA: Marcus-granskning i
+  webbläsaren** (svar-fångst → Del 4) → /to-prd → /to-issues →
+  /do-work.
 
 ### Session 51 ✅ AVSLUTAD (2026-07-05) — Övnings-ramverket: inramnings-landningen
 
