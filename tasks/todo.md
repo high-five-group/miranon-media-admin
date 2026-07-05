@@ -64,6 +64,20 @@
   — e2e-baselines opåverkade). **NÄSTA: Marcus-granskning i
   webbläsaren** (svar-fångst → Del 4) → /to-prd → /to-issues →
   /do-work.
+- [x] **Svar-fångsten LEVERERAD, prototypen RADERAD** (2026-07-05):
+  Marcus-granskning i browsern → svaret låst (Del 4, kanonisk plats):
+  **A-skelettet vann** + C:s primär-tint på event-kortet; byggkrav:
+  event-kortet helt klickbart, anmälningsrader → eventets anmälda-vy
+  (G1 beslut a; eventId disk-verifierat, "Utan event"-fallback), CTA
+  → "Visa alla anmälningar" mot NY global lista `/mer/anmalningar`
+  (G2 beslut i — ny skiva). **Estimat 3→4 skivor (S/M/M/M).**
+  Prototypen raderad per klausul (iv); route + __root återställda
+  byte-identiskt (0 diff mot `8dafc9b`); vinnar-koden refererbar i
+  git-historiken (`bf705f2`). Processmönster etablerat: svar-fångsten
+  ÄR grillningen; justeringar = byggkrav, aldrig prototyp-iterering
+  (lesson-kandidat till S52-skörden). Grillfrågor G1+G2 låsta på
+  första rekommendationen. **NÄSTA: /to-prd (Marcus-moment)** →
+  /to-issues → /do-work + första drift-metrik-matningen.
 
 ### Session 51 ✅ AVSLUTAD (2026-07-05) — Övnings-ramverket: inramnings-landningen
 
