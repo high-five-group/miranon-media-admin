@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-04
+updated: 2026-07-05
 review_by: 2026-11-15
 status: stable
 ---
@@ -3091,3 +3091,22 @@ förbjuder: nästa session orienterar på NÄSTA-raden, så en superseded ordnin
 feldokumentation. Rot-regeln för själva ordningsfelet: dokumenterad beroendekedja slår
 värde-argument när de kolliderar — sekvensbeslut mellan sessioner härleds ur kedjan, inte ur
 närmsta värde-case.
+
+## 2026-07-05 — Session 50 (do-work-landningen: grillning dp9 + hub-plugin 1.8.0)
+
+### L231 [UNIVERSAL] — Exekverings-tids-värden i prompter bär derivations-regel, inte förhandsvärde — även i direktiv-delen
+
+Datum: 2026-07-05 | Källa: S50 dok-födelse (Chat-promptens filnamn `2026-07-04-session-50.md`
+författat pre-midnatt, exekverat post-midnatt; create-session-doc steg 5:s `date +%F`-mekanism
+styrde → 2026-07-05-namnet, öppet flaggat i rapporten) (klass: prompt-design/handoff;
+[[L228]]-syskon på värde-axeln tid; fångst-topologi: Chat-lucka → Code-MEKANISM, ej Code-omdöme)
+
+En prompt författas FÖRE sin exekvering — varje inbakat värde som är en funktion av
+exekverings-tillstånd (klocka/datum, HEAD, counts, aktiv version) kan stalea i gapet.
+S50-promptens FÖRVÄNTNINGAR bar korrekt brasklapp ("index-antagna, DISK ÄR FACIT") men filnamnet
+stod i DIREKTIV-delen och gick stale över midnatt — direktiv-klädd tillståndsdata undgår
+brasklapp-disciplinen. Regeln: exekverings-tids-värden anges som derivations-regel (`date +%F`;
+"nästa efter sista på disk"; "aktiv version per install-record"), aldrig som förhandsberäknat
+värde — [[L228]]:s invariant-princip generaliserad från fil-kluster till tids-/tillståndsaxeln.
+Fångsten var MEKANISK (create-session-doc steg 5, byggd på Session 12-empirin), inte omdöme i
+stunden — lesson→mekanism-kedjan betalade sig vid första verkliga midnatts-driften.

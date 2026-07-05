@@ -2222,6 +2222,42 @@ tasks/todo.md · tasks/lessons.md                 (kadens + L228–L229)
 
 ---
 
+## Session 50 — do-work-landningen: /do-work levererad (grillning dp9 + hub 1.8.0) (2026-07-05)
+
+**Mål:** integrationens sista kritiska station (Marcus-direktiv 2026-07-04, beroendekedjan T57 → fork 4 → do-work per S47 Del 16 F1 + S48 DEFER-karta): grilla do-work-mekaniken till samsyn mot code-role-disciplinen + issue-substrat-kontraktet + Backlog.md-CLI:t, och bygga den som hub-mekanik. Ingen produktkod, ingen byggplan-fas berörd (EJ fas-avslut). Count 67/67/67 orörda; ADR-068 WIP.
+
+### Byggd substans (git-trail per landning)
+
+- **Session 50-dok fött** (`6e24e72`, ADR-043 skapande-gren; drift-säkert datum styrde filnamnet → `2026-07-05-session-50.md`, skörd L231).
+- **Del 2 — grillningen till samsyn** (`db04809`): /grill-with-docs körning 7, prövotids-dp9; STEG 0 besvarade 10 frågor via disk före första frågan; 7 grenar (C→A→B→D→E→F→G), sex låsta på första rekommendationen, gren E delegerad (senior-mandat) → härdning: obligatorisk rött-först-bevisrad. Beslut 1–7: kvitto-sömmen (§3.3 uppfylld uppströms av etikett + avfyrning), hub-hemvist utan ny spoke-artefakt, slash-only + oetiketterade uppföljnings-kort, mekaniskt plock-filter + ETT kort per invokering, TDD-delta + bevisrad, samma-commit-leverans + p.8-minimiform i final-summary, loop-redo gränser + INGEN ADR (baren öppet prövad: villkor 1 föll).
+- **Hub-landningen** (hub `bf384e8`): `skills/do-work/SKILL.md` (11:e skillen, slash-only) + kontraktsraden i issue-substrat.md ("Konsumeras av /to-prd, /to-issues och /do-work") + **manifest-paret ATOMISKT** 1.7.0→**1.8.0** (L228-klustret) + NÄR-rads-utökning ISSUE-SUBSTRAT (exekverings-meningen); L55-ritualen (a)–(e) körd med grep-bevis (1.8.0-cachen: 11 skill-kataloger, "Kvitto-sömmen"=1, kontraktsraden=1, slash-only=5; install-record + plugin list → 1.8.0; äldre versionskataloger frusna).
+- **Del 3 — spoke-landningen** (`fc17d0c`): systemet.md §0-post **do-work** (hook-bump `updated:` → 2026-07-05) + todo-kadens (L67).
+
+### Verifiering
+
+CI-gröna PER JOBB (docs-only → Test + Build by-design-skippade; Docs link check KÖRD + grön i samtliga): run 28731063449 (dok-födelse) · 28731796559 (Del 2) · 28731913830 (Del 3); avslutscommitens run-id redovisas i S50-avslutsrapporten. Lokala L56-paritetsgrindar före varje push: markdownlint 0/168 · Vale 0 fel · lifecycle OK · frontmatter 14/14. Omstarts-verifieringen av /do-work = nästa sessionsstarts A2-pass (förväntat: 1.8.0, 11 skill-kataloger, 5 slash-only inkl. do-work).
+
+### Avvikelser / teknisk skuld
+
+- **Filnamns-datumet** i start-direktivet (2026-07-04-...) stale över midnatt — fångat MEKANISKT av create-session-doc steg 5 (`date +%F`) → skördad som **L231** (direktiv-klädd tillståndsdata bär derivations-regel; L228-syskon på tidsaxeln).
+- **Cache-vs-källa-editförsöket** (issue-substrat.md) fångat av Read-före-Edit-grinden före effekt — förkastad som lesson (verktygsmekanik utan beteenderegel), durabel i S50-trailen.
+- **Hub-lyft:** L231 LYFT (hub `0fef62f`: K50.1, samma kadens-fönster); **L193–L222-backloggen kvarstår PENDING** (utanför denna ends direktiv-scope; noterad i todo-huvudet).
+
+### Filstruktur-snapshot (nytt/ändrat i Session 50)
+
+```text
+docs/reference/systemet.md                       (§0-post do-work; hook-bump updated:)
+tasks/sessions/2026-07-05-session-50.md          (Del 1–3 + sessionsavslut)
+tasks/todo.md · tasks/lessons.md                 (kadens + L231)
+~/Repon/marcus-system (hub)                      (plugin 1.8.0: bf384e8 — skills/do-work/SKILL.md,
+                                                  issue-substrat.md, manifest-paret, CLAUDE.md NÄR-rad;
+                                                  lessons-lyft K50.1: 0fef62f)
+```
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-05-session-50.md`](../tasks/sessions/2026-07-05-session-50.md) (Del 1–3 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 51 via /session-start = UI-spårets start.** Ordning inom S51: (i) omstarts-verifiering i A2-passet (förväntat plugin 1.8.0, 11 skill-kataloger, 5 slash-only inkl. do-work), (ii) fork 5+6-byggena som AKT 0 före första /to-prd-körningen (prototype + diagnosing-bugs per låsta designer S47 Del 13/14; plugin-bump antagen 1.8.0→1.9.0, låses vid bygget), (iii) första skarpa hel-kedje-körningen /to-prd → /to-issues → /do-work på riktig arbetsenhet (UI-spåret registrerad kandidat för första PRD-kortet, beslutas där), (iv) första drift-metrik-matningen per gren F-minimiformen (ADR-068 p.8). Därefter städ-/mognadsskikt: migrerings-hub-session 1 (inkl. T60 + invokerings-UX) / T56 / L193–L222-lyftet. Mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
