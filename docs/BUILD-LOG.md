@@ -2305,6 +2305,52 @@ tasks/lessons.md                              (L232–L233)
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-07-05-session-51.md`](../tasks/sessions/2026-07-05-session-51.md) (Del 1–4 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 52 via /session-start = UI-SPÅRETS START.** Ordning inom S52: (i) fork 5+6-byggena som AKT 0 före första /to-prd-körningen (bump antagen 1.8.0→1.9.0), (ii) första skarpa hel-kedje-körningen /to-prd → /to-issues → /do-work på riktig arbetsenhet (UI-spåret registrerad kandidat som FÖRSTA PRD-kort, beslutas vid start), (iii) första drift-metrik-matningen (gren F-minimiformen). Därefter städ-/mognadsskikt: migrerings-hub-session 1 (S47 Del 3 steg 1 [rigor-migreringen] + mät-apparaten + handoff-klassningen [migrerings-Decision A] + invokerings-UX + T60) / AFK/Ralph-loop + sandbox (T61, trigger armerad; egen landning, Marcus-takt — naturlig evidensgrind: S52:s hel-kedje-körning + drift-metriken) / T56 / L193–L222-lyftet. Mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare.
 
+## Session 53 — T62: lifecycle-verbens Code-körbarhet (ADR-069 + plugin 1.10.0) (2026-07-05)
+
+> Ren process-/hub-session (ingen produktkod, ingen byggplan-fas berörd — EJ
+> fas-avslut). Marcus-sekvensens steg 1, körd MELLAN paus och resume av
+> session 52 (S52:s BUILD-LOG-post skrivs vid dess end). Count 68→69.
+
+**Mål:** lifecycle-verben paus/resume avfyrbara från Code-ytan (T62; premiss-skifte: sessioner körs i sin helhet på Code-ytan, S52/S53-precedenten) — öppen rivning av ADR-043 b5 + ADR-051 b2 och amendering av ADR-041 b2, grillad till samsyn före bygge (sessionsdok Del 2 = kanonisk plats, 7 beslut).
+
+### Byggd substans (git-trail per landning)
+
+- **Session 53-dok fött + T62-flipp** (`9f2edec` + `bf18b61`): skapande-grenen körd med Marcus-kvittens direkt i Code-terminalen (T62-premissdatapunkt, bokförd i dokets blockquote); T62 `paused`→`active`.
+- **Del 2 — grillningen till samsyn** (`37b1e21`): /grill-with-docs (Marcus-avfyrad; CHAT-SEED (d)–(i) + Code-ytans forkar (a)–(c)); STEG 0-diskpass prövade varje seed-punkt mot faktisk skill-text FÖRE intervjun (seed d delvis falsifierad — lessons-läsningen redan täckt; transcript-fyndet nytt). 7 frågor, 7 kvittenser.
+- **Hub-bygget** (hub `35a6233`): session-paus + session-resume Code-halvor (egna kataloger; resume refererar start-LÄS-fasen; vägvals-/intentions-STOPPA-grindar per designprincip f) + start/end-kompletteringspaketet 2–6 + manifest-PARET atomiskt 1.9.0→1.10.0 (13→15 skills, MINOR per L55-precedensen; L228).
+- **L55-ritualen grön**: (a)–(e) kompletta; 15 kataloger i 1.10.0-cachen, nyckelfras-grep träffar rätt filer, hub==cache byte-identisk, install-record 1.10.0. **Omstart = Marcus-moment EFTER denna sessions end** (beslut 7); aktiverings-verifiering sker i S52-resume-öppningen.
+- **ADR-069 mintad + Updates-noter** (`e9013f7`): "Lifecycle-verbens Code-körbarhet" (Accepted; 7 beslut + designprincip f + operativ sekvens + öppna förkastanden inkl. subagent-verifieraren) + additiva Updates-noter i ADR-041/043/051 (frysta texter orörda, L53) + count 68→69 atomiskt (fil + katalograd + rot-README).
+- **Del 3 + avslutspasset** (`0fb3368` + denna landning): byggets bokföring, L234-skörd, BUILD-LOG-posten, T62 `active`→`closed`.
+
+### Verifiering
+
+CI-gröna PER JOBB (docs-only → Test + Build by-design-skippade; Docs link check KÖRD + grön i samtliga): run 28752512900 (dok-födelse) · 28752540221 (T62-flipp) · 28753298477 (Del 2) · 28753598738 (ADR-klustret) · 28753635781 (Del 3); avslutscommitens run-id redovisas i avslutsrapporten. Lokala grindar före varje push med OPIPAD exit: markdownlint 0 fel · Vale 0 fel · check-adr-count 69==69 · audit-ci grön vid start. Hub saknar CI-grind; de 3 default-lint-fynden i create-session-doc.md verifierades pre-existerande vid HEAD (0 nya).
+
+### Avvikelser / teknisk skuld
+
+- **Skill-verktygs-vägran på slash-only-skill** (grillnings-avfyrningen): hanterad via manuell cache-läsning med öppen notering, skördad som L234 `[UNIVERSAL]`.
+- **Pipe-maskerad grind-exit-instans** (hub-lintpasset, fångad och omkörd med bevarad exit): datapunkt till S52:s skörd-kandidat "grind-exit får aldrig pipe-maskeras" (skördas vid S52:s end — kandidaten ägs där).
+- **Lesson-kandidat förkastad EXPLICIT:** designprincip f:s generativa fråga som egen lesson — buren i sin helhet av ADR-069 beslut 5; lesson vore duplicering (decline-rationale i sessionsdok Del 4).
+- **Hub-lyft:** L234 EJ hub-lyft (pending nästa hub-sync-moment; L193–L222-backloggen kvarstår).
+
+### Filstruktur-snapshot (nytt/ändrat i Session 53)
+
+```text
+docs/decisions/ADR-069-lifecycle-verbens-code-korbarhet.md   (NY — Accepted)
+docs/decisions/ADR-041-/043-/051-*.md         (+Updates-noter, frysta texter orörda)
+docs/decisions/README.md                      (katalograd 069 + Updates-hänvisningar 041/043/051)
+README.md                                     (räknerad 69)
+tasks/sessions/2026-07-05-session-53.md       (NY — Del 1–4)
+tasks/todo.md · tasks/threads/README.md       (S53-sektion + T62-flipp ×2)
+tasks/lessons.md                              (L234)
+~/Repon/marcus-system (hub 35a6233)           (skills/session-paus + session-resume NYA;
+                                               session-start + create-session-doc +
+                                               session-end kompletterade;
+                                               plugin.json + marketplace.json 1.10.0)
+```
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-05-session-53.md`](../tasks/sessions/2026-07-05-session-53.md) (Del 1–4). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden, dogfoodad).** Nästa: **omstart (Marcus, aktiverar 1.10.0) → /session-resume SESSION 52** (resume-Code-halvans skarpa första-bruk) → /to-issues på TASK-1 → /do-work + första drift-metrik-matningen → S52 end-prövning.
+
 ---
 
 ## Session-modellen

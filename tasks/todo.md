@@ -47,9 +47,18 @@
   byte-identitet, install-record 1.10.0; **OMSTART PENDING,
   Marcus-moment EFTER S53-end**). Spoke `e9013f7` — ADR-069 mintad +
   Updates-noter i ADR-041/043/051 + count 68→69 atomiskt
-  (check-adr-count grön). **NÄSTA:** Del 3-commit → session-end med
-  dogfoodad coverage-kvittens-grind → omstart → /session-resume S52
-  (första-bruk) → /to-issues TASK-1 → /do-work + drift-metrik.
+  (check-adr-count grön).
+- [x] **Avslutspasset FÖRBERETT** (2026-07-05, Del 4 kanonisk plats):
+  L234 skördad (+ kandidat 2 explicit förkastad — buren av ADR-069
+  b5); BUILD-LOG S53-post; T62 `active`→`closed` (ADR-069-pekare +
+  aktiverings-förbehåll); transcript-referens yt-beroende
+  (session-JSONL, ingen export). Intentions-grinden N-vs-N+1
+  PASSERAD (end är rätt verb; nästa nya session = 54).
+  **`lifecycle: closed` + ✅ AVSLUTAD väntar på Marcus-kvittens av
+  coverage-rapporten (ADR-069-grinden, dogfoodad).** **NÄSTA (efter
+  kvittens + stängning):** omstart (Marcus, aktiverar 1.10.0) →
+  /session-resume S52 (första-bruk) → /to-issues TASK-1 → /do-work +
+  drift-metrik.
 
 ### Session 52 ⏸️ PAUSAD (2026-07-05) — UI-spårets start
 

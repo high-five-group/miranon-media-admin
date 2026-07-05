@@ -3141,3 +3141,19 @@ omedelbart säkringspass i spoken — levande bärare (todo-huvud/scope-sektion)
 korrigeringsnoter på de stängda dokens NÄSTA-ytor ([[L230]]-disciplinen, öppen supersedering,
 aldrig tyst) — INNAN nästa session-start orienterar. Vänta-till-nästa-start är exakt den
 deferred-sync-lögn [[L223]] förbjuder: starten orienterar på NÄSTA-raderna, som då ljuger.
+
+## 2026-07-05 — Session 53 (T62: lifecycle-verbens Code-körbarhet — ADR-069 + plugin 1.10.0)
+
+### L234 [UNIVERSAL] — slash-only-skills avfyras via manuell cache-läsning när användaren klistrar slash-prompten som meddelande-text
+
+Datum: 2026-07-05 | Källa: S53 grillnings-avfyrningen (/grill-with-docs klistrad som text →
+Skill-verktyget vägrade: "cannot be used with Skill tool due to disable-model-invocation")
+(klass: skill-mekanik/invokering; [[L55]]-granne)
+
+`disable-model-invocation: true` blockerar Skill-VERKTYGET oavsett vem som initierade — även
+när användaren själv skrivit slash-kommandot i sitt meddelande (i stället för att CLI:t fångat
+det som äkta slash-anrop). Rätt hantering: läs SKILL.md direkt ur den AKTIVA versionens
+plugin-cache-katalog och exekvera proceduren manuellt — flaggans SYFTE (agenten auto-startar
+aldrig) är inte hotat när initiativet bevisligen är användarens; notera avvikelsen öppet i
+trailen. Fel hantering: be användaren skriva om kommandot (friktion utan vinst) eller tolka
+verktygs-vägran som att skillen är otillgänglig (den ligger läsbar på disk).
