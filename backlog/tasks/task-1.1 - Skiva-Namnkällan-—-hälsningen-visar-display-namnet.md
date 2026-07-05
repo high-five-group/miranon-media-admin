@@ -1,9 +1,10 @@
 ---
 id: TASK-1.1
 title: 'Skiva: Namnkällan — hälsningen visar display-namnet'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-05 21:08'
+updated_date: '2026-07-05 21:31'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,16 +21,22 @@ Täcker användarberättelser: 1
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Inloggad med konto vars metadata bär display-namn visar Hem 'Hej {namn}!'
-- [ ] #2 Konto utan display-namn ger neutral hälsning — e-postadressen visas aldrig
-- [ ] #3 Hem-e2e:n asserterar hälsningen med namn och Hems axe-baseline är fortsatt 0
+- [x] #1 Inloggad med konto vars metadata bär display-namn visar Hem 'Hej {namn}!'
+- [x] #2 Konto utan display-namn ger neutral hälsning — e-postadressen visas aldrig
+- [x] #3 Hem-e2e:n asserterar hälsningen med namn och Hems axe-baseline är fortsatt 0
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Staging-TEST_USER: user_metadata.display_name='Lotta' satt via kontots EGEN session (auth.updateUser med anon-key + login — ingen service-role; prod-guard mot lvjsfnph…-ref höll, staging-ref pqtshyie…). TEST_ADMIN lämnad UTAN display-namn MEDVETET: levande fallback-exemplar i staging. E2e-hermetik: hälsningstesterna patchar den lagrade sessionens user_metadata via addInitScript (T26-klassen) — oberoende av staging-värdet; patch-värdet 'Lotta' speglar staging så en token-refresh inte kan flippa texten. TDD: test A RÖTT bevisat före implementation (1 failed/9 passed) → GRÖNT 10/10; fallback-testet trivialt grönt pre-impl (dåvarande beteende var neutral hälsning).
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd
 <!-- DOD:END -->

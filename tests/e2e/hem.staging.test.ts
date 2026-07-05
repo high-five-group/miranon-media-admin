@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
 /**
  * Fas 6d L1 — Hem-aggregering (/hem, STATISK hämtning). Greeting + tre översikts-
@@ -128,8 +128,9 @@ test.describe('Hem-aggregering (Fas 6d L1 — statisk översiktsvy)', () => {
     // <h1> = "Hem" (ingen fokus-assertion — landningsytan stjäl inte fokus).
     await expect(page.getByRole('heading', { level: 1, name: 'Hem' })).toBeVisible();
 
-    // Greeting (statisk — inget namnfält i auth-context).
-    await expect(page.getByText('Hej! Här är din översikt.')).toBeVisible();
+    // Greeting — miljö-neutral assertion: namn-prefixet styrs av sessionens
+    // display-namn och testas hermetiskt i egen describe nedan (task-1.1).
+    await expect(page.getByText(/Här är din översikt\./)).toBeVisible();
 
     // Nya anmälningar: senaste namn (recency via Inskickad) + formaterat datum.
     await expect(page.getByText('Carl Carlsson')).toBeVisible();
@@ -202,6 +203,55 @@ test.describe('Hem-aggregering (Fas 6d L1 — statisk översiktsvy)', () => {
       .analyze();
 
     expect(results.violations).toEqual([]);
+  });
+});
+
+/**
+ * Hälsningen (task-1.1 — namnkällan): display-namnet läses ur inloggnings-
+ * kontots user_metadata (Supabase-sessionen i localStorage, seedad av
+ * auth.setup via storageState). Hermetiskt via addInitScript-patch av den
+ * lagrade sessionen — assertionerna är oberoende av staging-kontots faktiska
+ * metadata (T26-klassen: miljö-beroende assertions är sköra). Patchen körs
+ * FÖRE app-boot, så getSession() läser det patchade värdet.
+ */
+function patchStoredDisplayName(page: Page, displayName: string | null) {
+  return page.addInitScript((name) => {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith('sb-') || !key.endsWith('-auth-token')) continue;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const session = JSON.parse(raw);
+      if (!session?.user) continue;
+      session.user.user_metadata = { ...session.user.user_metadata };
+      if (name === null) delete session.user.user_metadata.display_name;
+      else session.user.user_metadata.display_name = name;
+      localStorage.setItem(key, JSON.stringify(session));
+    }
+  }, displayName);
+}
+
+test.describe('Hälsningen (task-1.1 — namnkällan ur kontots metadata)', () => {
+  test('display-namn i sessionen → "Hej {namn}!"', async ({ page }) => {
+    // 'Lotta' speglar staging-kontots faktiska display-namn — en (osannolik)
+    // mitt-i-testet token-refresh, där server-sanningen ersätter patchen, kan
+    // då inte flippa texten.
+    await patchStoredDisplayName(page, 'Lotta');
+    await mock(page);
+    await page.goto('/hem');
+    await expect(page.getByText('Hej Lotta! Här är din översikt.')).toBeVisible();
+  });
+
+  test('utan display-namn → neutral hälsning, aldrig e-postadressen', async ({ page }) => {
+    await patchStoredDisplayName(page, null);
+    await mock(page);
+    await page.goto('/hem');
+    await expect(page.getByText('Hej! Här är din översikt.')).toBeVisible();
+    // E-posten är ALDRIG fallback (AC 2, Gunilla-principen). auth.setup
+    // hard-failar utan TEST_USER_EMAIL → tom sträng här är ett riggfel.
+    const email = process.env.TEST_USER_EMAIL ?? '';
+    expect(email).not.toBe('');
+    await expect(page.getByText(email)).toHaveCount(0);
   });
 });
 

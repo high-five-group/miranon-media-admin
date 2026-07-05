@@ -6,6 +6,12 @@ import { supabase } from '../data/config/supabase-client';
 export interface AuthUser {
   id: string;
   email: string;
+  /**
+   * Display-namn ur kontots `user_metadata.display_name` (task-1.1 namnkällan);
+   * `null` när fältet saknas eller är tomt. Konsumenter får ALDRIG falla
+   * tillbaka på e-postadressen (Gunilla-principen, TASK-1 beslut 5).
+   */
+  displayName: string | null;
 }
 
 export interface AuthContextValue {
@@ -33,7 +39,11 @@ interface AuthProviderProps {
  */
 function sessionToUser(session: Session | null): AuthUser | null {
   if (!session?.user?.id || !session?.user?.email) return null;
-  return { id: session.user.id, email: session.user.email };
+  // user_metadata är otypad (Record<string, any>) — endast en icke-tom sträng
+  // accepteras som namn; allt annat (saknas, fel typ, whitespace) → null.
+  const rawName: unknown = session.user.user_metadata?.display_name;
+  const displayName = typeof rawName === 'string' && rawName.trim() !== '' ? rawName.trim() : null;
+  return { id: session.user.id, email: session.user.email, displayName };
 }
 
 /**
