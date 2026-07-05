@@ -38,11 +38,18 @@
   `closed` + designprincip (f); EN ADR-069 + Updates-noter i
   041/043/051; S53 stänger före omstarten. STEG 0-fynd: seed (d)
   delvis falsifierad (lessons-läsning TÄCKT); transcript-fyndet
-  (`/mnt/transcripts/` är Chat-yta-antagande). **NÄSTA:** hub-bygget
-  (session-paus + session-resume + start/end-kompletteringar) →
-  manifest-bump 1.10.0 + L55 → ADR-069 + noter + count 68→69 →
-  Del 3 → session-end (dogfoodad coverage-grind) → omstart →
-  /session-resume S52.
+  (`/mnt/transcripts/` är Chat-yta-antagande).
+- [x] **Bygget LEVERERAT** (2026-07-05, Del 3 kanonisk plats): hub
+  `35a6233` — paus/resume-Code-halvorna (egna kataloger, STOPPA-
+  grindar per designprincip f) + start/end-kompletteringspaketet +
+  manifest-paret atomiskt 1.9.0→1.10.0 (13→15 skills, L228/L55);
+  L55-ritualen grön (15 kataloger i 1.10.0-cachen, nyckelfras-grep,
+  byte-identitet, install-record 1.10.0; **OMSTART PENDING,
+  Marcus-moment EFTER S53-end**). Spoke `e9013f7` — ADR-069 mintad +
+  Updates-noter i ADR-041/043/051 + count 68→69 atomiskt
+  (check-adr-count grön). **NÄSTA:** Del 3-commit → session-end med
+  dogfoodad coverage-kvittens-grind → omstart → /session-resume S52
+  (första-bruk) → /to-issues TASK-1 → /do-work + drift-metrik.
 
 ### Session 52 ⏸️ PAUSAD (2026-07-05) — UI-spårets start
 
