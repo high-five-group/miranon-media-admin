@@ -164,10 +164,11 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
     await expect(obetalda.getByText('1', { exact: true })).toBeVisible();
     await expect(obetalda.getByText('Disa Dahl')).toBeVisible();
 
-    // CTA → eventlistan (helbredds-form; chevronen är aria-hidden → rent namn).
-    await expect(page.getByRole('link', { name: 'Visa alla event' })).toHaveAttribute(
+    // CTA → samlade anmälningslistan (task-1.4 AC #2; chevronen är
+    // aria-hidden → rent namn). Eventlistan nås via tabbaren (beslut 7).
+    await expect(page.getByRole('link', { name: 'Visa alla anmälningar' })).toHaveAttribute(
       'href',
-      '/event',
+      '/mer/anmalningar',
     );
 
     // RefreshButton — manuell uppdatera-kontroll i hälsningskortet.
@@ -207,6 +208,16 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
 
     await page.getByRole('link', { name: /Carl Carlsson/ }).click();
     await expect(page).toHaveURL(/\/event\/recEvent1\/anmalda/);
+  });
+
+  test('task-1.4 AC 2 — Hem-CTA:n landar på samlade anmälningslistan', async ({ page }) => {
+    await mock(page, { registrations: [reg()], events: [ev()] });
+    await page.goto('/hem');
+
+    await page.getByRole('link', { name: 'Visa alla anmälningar' }).click();
+    await expect(page).toHaveURL(/\/mer\/anmalningar$/);
+    // Listan renderar mot samma get-registrations-mock (delad event-lös gren).
+    await expect(page.getByRole('heading', { level: 1, name: 'Anmälningar' })).toBeVisible();
   });
 
   test('AC 3 — rad utan event-koppling är olänkad och visar "Utan event"', async ({ page }) => {

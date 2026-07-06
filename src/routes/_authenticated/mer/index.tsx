@@ -18,6 +18,12 @@ function MerPage() {
       <h1 className="font-semibold text-2xl">Mer</h1>
       <nav aria-label="Mer-sidor">
         <ul className="flex flex-col gap-2">
+          {/* Anmälningar först — operativ kärnyta (task-1.4; Hems CTA pekar hit). */}
+          <li>
+            <Link to="/mer/anmalningar" className="underline">
+              Anmälningar
+            </Link>
+          </li>
           <li>
             <Link to="/mer/vantelista" className="underline">
               Väntelista

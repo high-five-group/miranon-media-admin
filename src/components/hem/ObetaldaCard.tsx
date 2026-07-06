@@ -1,18 +1,11 @@
 import { useMemo } from 'react';
-import type { Registration } from '@/domain/models/Registration';
+import { displayName } from '@/components/registrations/registration-display';
 import { PaymentStatus } from '@/domain/types/Status';
 import { DashboardCard } from './DashboardCard';
 import { useDashboardRegistrations } from './useDashboardData';
 
 /** Hur många obetalda som namnges under antalet (resten sammanfattas med "…"). */
 const MAX_NAMN = 2;
-
-/** Visningsnamn ur de namnfält Airtable kan leverera — aldrig record-ID/tomt (Gunilla). */
-function displayName(reg: Registration): string {
-  if (reg.namn) return reg.namn;
-  const composed = [reg.fornamn, reg.efternamn].filter(Boolean).join(' ');
-  return composed || 'Namn saknas';
-}
 
 /**
  * "Obetalda avgifter"-card — A-skelettets etikett-över-värde-form (task-1.3,
