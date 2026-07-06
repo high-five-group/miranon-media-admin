@@ -4,6 +4,7 @@ title: 'Skiva: Hem-omskrivningen till A-skelettet'
 status: To Do
 assignee: []
 created_date: '2026-07-05 21:09'
+updated_date: '2026-07-06 06:39'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,7 +27,16 @@ Täcker användarberättelser: 2, 3, 4, 5, 6, 7, 11 (Hems tomma lägen), 16, 17 
 - [ ] #3 Klick på en anmälningsrad landar på det eventets anmälda-vy; rad utan event-koppling visas olänkad med texten 'Utan event'
 - [ ] #4 Tomma lägen visar vänlig begriplig text; manuell uppdatering och polling fungerar som före omskrivningen
 - [ ] #5 Hem är tangentbordsnavigerbar, har axe-baseline 0, klarar prefers-contrast: more och prefers-reduced-motion samt skrivs ut läsbart
+- [ ] #6 Hem-vyn matchar prototyp A-skelettet visuellt (referens bf705f2, granskas sida-vid-sida): ingen separat 'Hem'-rubrik — hälsningen 'Hej {namn}' ÄR sidans h1
 <!-- AC:END -->
+
+
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BYGGKRAV ur Marcus-granskning 2026-07-06 (skiva 1-review): A-skelettet har INGEN separat 'Hem'-rubrik — hälsningen ('Hej {namn}') ÄR sidans rubrik (h1), exakt som prototyp-variant A (referens: bf705f2). Brödsmulor kommer senare (PRD Utanför omfattningen). A11y-not till byggaren: h1-rollen flyttar till hälsningskortet; rubrik-hierarkin h1→h2-cards bevaras, och RouteAnnouncer/staticData.title fortsätter bära vy-namnet 'Hem' för skärmläsare/flik-titel.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
