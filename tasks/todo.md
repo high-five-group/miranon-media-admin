@@ -38,8 +38,16 @@
   med ärlighetsklausul i hub-CLAUDE.md:s web-research-rad (levande ytan
   = symlink, mekanik-fynd bokfört i Del 2). Marcus-pushback rev
   avstå-klassningen öppet (skörd-kandidat). Steg 1-beviset för kartans
-  steg 3 (retirera) är därmed på plats. **NÄSTA: lessons-hub-lyftet
-  (L193–L242-klassen, lessons-hub-sync-skillen).**
+  steg 3 (retirera) är därmed på plats.
+- [x] **Lessons-hub-lyftet LEVERERAT** (2026-07-06, Del 3 kanonisk
+  plats): backloggen S35–S53 → hub `faf6806` — 38 [UNIVERSAL]-poster
+  (L193–L222 + L234–L241) som K35.1–K53.1 under ETT samlings-H2
+  (avvikelse öppet deklarerad); fidelitets-verifiering skript-buren
+  (verbatim-substräng alla 38) FÖRE append; 22 stale pending-svansar
+  strippade i hub-kopian; spoke-L203:s dubblettfragment rättat i
+  spoke; L242 ej UNIVERSAL → kvar. Hub-lyft-skulden från S35→ är
+  därmed NOLL. **NÄSTA: hub-skill-bunten (T66 prototyp-tvåfas +
+  invokerings-UX) mot EN plugin-bump.**
 
 ### Session 53 ✅ AVSLUTAD (2026-07-05) — T62: lifecycle-verbens Code-körbarhet
 

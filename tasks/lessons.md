@@ -2714,7 +2714,6 @@ substring-matchning och ankra explicit — `getByRole(..., { exact: true })` ell
 react-aria `<Button type="submit">` submittar inte ett vanligt `<form>` tillförlitligt (usePress äter default) → använd
 `onPress` (kodbas-idiom, jfr SegmentBuilder), behåll `<form onSubmit>` enbart för Enter-tangenten. Hub-lyft pending —
 synkas vid FULLT Fas 6 fas-avslut, konsekvent med L149–L202.
-moment, inte ett test-moment. Hub-lyft pending — synkas vid FULLT Fas 6 fas-avslut, konsekvent med L149–L201.
 
 ### L204 [UNIVERSAL] — Prod-deploy-prompt-design måste verifiera deploy-vägens FAKTISKA beteende mot repots kanoniska procedur, ej anta
 
