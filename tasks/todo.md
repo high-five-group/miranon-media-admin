@@ -120,6 +120,13 @@
   menybaren box-assertad EXAKT K1 + kolumnbredden till K1:s 600
   (K6:s 640 var den reella skillnaden). **NÄSTA: Marcus granskar K7**
   (`localhost:5173/hem?variant=k7`) → nästa varv eller designlåsning.
+- [x] **K7-feedbacken → K8 LEVERERAD** (2026-07-07, Del 9 kanonisk
+  plats; kod `a8fac47`, run 28829281156 grön per jobb inkl.
+  Test+Build): eventnamnet ner i metagruppen (14==14, pillen
+  topp-höger), historikrubriken bort + "Se all aktivitetshistorik
+  ›"-länk, anmälningsrubriken inflyttad pl-2 (text-linjering 461==461
+  assertat). **NÄSTA: Marcus granskar K8**
+  (`localhost:5173/hem?variant=k8`) → nästa varv eller designlåsning.
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
