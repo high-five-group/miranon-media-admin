@@ -1,3 +1,4 @@
+import { useRouterState } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { OfflineIndicator } from './OfflineIndicator';
 import { SkipLink } from './SkipLink';
@@ -26,6 +27,28 @@ export interface AppShellProps {
  * - `pb-24` på main ger frihöjd ovanför den fixerade tab baren.
  */
 export function AppShell({ children }: AppShellProps) {
+  // [PROTOTYPE] Design-granskningsläge (T65-konvergensen, S55): för
+  // prototyp-varianter BORTOM baslinjen K1 avstår skalet sitt chrome
+  // (header + tabbar) och 600px-breddlåset — varianten bär eget adaptivt
+  // chrome (K2:s vänstermeny/mock-tabbar). K1 behåller skarpa skalet
+  // (exakt-kopia-baslinjen). Tas bort med prototypen.
+  const bareVariant = useRouterState({
+    select: (s) => {
+      const v = new URLSearchParams(s.location.searchStr).get('variant');
+      return v !== null && v !== 'k1';
+    },
+  });
+  if (import.meta.env.DEV && bareVariant) {
+    return (
+      <>
+        <SkipLink />
+        <OfflineIndicator />
+        <main id="main" tabIndex={-1} className="w-full">
+          {children}
+        </main>
+      </>
+    );
+  }
   return (
     <>
       <SkipLink />
