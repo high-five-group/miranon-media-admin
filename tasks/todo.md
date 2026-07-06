@@ -56,9 +56,18 @@
   L55-ritualen grön (15 kataloger + README i 1.11.0-cachen;
   hub==cache; install-record 1.11.0, gitCommitSha == HEAD). T66 →
   `closed` med aktiverings-förbehåll. **OMSTART PENDING
-  (Marcus-moment).** **NÄSTA: p.5 mät-apparaten + handoff-klassningen
-  (trail-grävning FÖRE exekvering) → p.6 T60 (Marcus-triage) →
-  end-passet.**
+  (Marcus-moment).**
+- [x] **p.5 + p.6 LEVERERADE** (2026-07-06, Del 5 kanonisk plats,
+  Marcus-kvittens på trippelförslaget): mät-apparaten — "full
+  apparat" klassad ÖVERSPELAD av drift-beviset (minimiformen ÄR
+  apparaten; beskrivningen → två-aktörs-ADR:n vid minting) ·
+  handoff-klassningen (Decision A) bokförd LEVERERAD via T62/ADR-069,
+  residualerna klassade för kartans steg 3 · T60 väg (b) exekverad
+  (hub `d052ebd`: bearbetningen → research/ [54 filer], rådatan
+  gitignorerad; hub-trädet HELT RENT) → T60 `closed`; minnesposten
+  rensad. **HELA S54-scopet p.1–p.6 LEVERERAT. NÄSTA: end-passet
+  (p.7) — /session-end (Marcus avfyrar) + omstarten (aktiverar
+  1.11.0).**
 
 ### Session 53 ✅ AVSLUTAD (2026-07-05) — T62: lifecycle-verbens Code-körbarhet
 
