@@ -46,8 +46,19 @@
   (verbatim-substräng alla 38) FÖRE append; 22 stale pending-svansar
   strippade i hub-kopian; spoke-L203:s dubblettfragment rättat i
   spoke; L242 ej UNIVERSAL → kvar. Hub-lyft-skulden från S35→ är
-  därmed NOLL. **NÄSTA: hub-skill-bunten (T66 prototyp-tvåfas +
-  invokerings-UX) mot EN plugin-bump.**
+  därmed NOLL.
+- [x] **Hub-skill-bunten LEVERERAD** (2026-07-06, Del 4 kanonisk
+  plats): plugin 1.10.0→1.11.0 (hub `6272336`, manifest-paret
+  atomiskt per L228) — T66 prototyp-tvåfasen i prototype-skillen
+  (punkterna a–c; web-förankrad Double Diamond + NN/g
+  parallel+iterative) + invokerings-UX-mikrolandningen (NY
+  plugin-README = laddningsvägarnas kanoniska hemvist, 5 regler).
+  L55-ritualen grön (15 kataloger + README i 1.11.0-cachen;
+  hub==cache; install-record 1.11.0, gitCommitSha == HEAD). T66 →
+  `closed` med aktiverings-förbehåll. **OMSTART PENDING
+  (Marcus-moment).** **NÄSTA: p.5 mät-apparaten + handoff-klassningen
+  (trail-grävning FÖRE exekvering) → p.6 T60 (Marcus-triage) →
+  end-passet.**
 
 ### Session 53 ✅ AVSLUTAD (2026-07-05) — T62: lifecycle-verbens Code-körbarhet
 
