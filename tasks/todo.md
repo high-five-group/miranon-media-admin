@@ -63,6 +63,19 @@
   (Mina sidor-ytan, xAPI→Fas 6.5) registrerade. K1-regressionen GRÖN
   (baslinjen intakt). **NÄSTA: Marcus jämför K1↔K2 i webbläsaren**
   (`localhost:5173/hem?variant=k2`, ←/→) → nästa iterationsvarv.
+- [x] **K2 UNDERKÄND → K3 LEVERERAD** (2026-07-06, Del 4 kanonisk
+  plats): Marcus 10-punkts-feedback åtgärdad punkt för punkt (kod
+  `e3a68a3`): en innehållskolumn (640==640 mät-assertat), tabbar-
+  kapseln flippad vertikalt (ej sidebar), app-namnet bort (bara
+  v0.1.0), aktivitetsrutan långt höger + ENDAST ≥xl (dold 390/1024
+  browser-assertat; Fas 6.5-typerna i innehållet), rubriker
+  text-secondary (neutral-600 ur systemet), centrerad scrollmarkör,
+  pillen ersatt av event-identitet kurs·ort·datum (exempeldata öppet
+  märkt), Nästa event uppstramat inom tokens, växlaren flyttad
+  vänster. Processnot Del 4: 2 K2-missar mot dumpen ägda +
+  arbetsregeln punkt-för-punkt-verifiering mot rå-dump före leverans
+  (skörd-kandidat). **NÄSTA: Marcus granskar K3**
+  (`localhost:5173/hem?variant=k3`) → nästa varv eller designlåsning.
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
