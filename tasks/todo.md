@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-07-06 (**Session 52 ✅ AVSLUTAD** (lifecycle: closed efter coverage-kvittens, ADR-069-grinden) — **UI-SPÅRETS START LEVERERAD: repots FÖRSTA skarpa PRD-kort (TASK-1 Hem-uppgraderingen) komplett via hel-kedjan /grill-with-docs → prototyp-pass → /to-prd → /to-issues → /do-work.** Två paus/resume-cykler (numret 52 bevarat; resume-Code-halvans första-bruk, ADR-069 b7; mellansession S53). Levererat: hub 1.8.0→1.9.0 (AKT 0) · Hem-pilotens grillning + prototyp A/B/C (`bf705f2`, raderad per kontrakt) · TASK-1 skivat 1.1–1.5 · task-1.1 namnkällan (TDD; Fjärrskådnings-incidenten → väg A + TASK-2) · TASK-2 O(1)-fixtursökningen · task-1.3 Hem på A-skelettet (AC #6 prototyp-facit; T65 designiterationen + TASK-3 loading-flake-fyndet) · task-1.4 samlade anmälningslistan + CTA (`/mer/anmalningar`; DRY-lyft registration-display) · task-1.2 tabbaren FK-mönstret (flytande kapsel; L220:s första flervarvs-granskning, 3 varv; nya semantiska token `--mm-bg-emphasized`) · QA 11/11 (Marcus, 0 fynd) → TASK-1 Done (`7e64bd9`). **DRIFT-METRIK-MATNINGARNA 1–5 avgivna → graderings-prövningen PASSERAD (Del 11): migrerings-hub-sessionerna ÖPPNADE; INGEN ADR mintad** (Accepted efter apparat-migreringen per utfasningskartan + beslut 8; count 69 orörd). Lessons **L235–L242** skördade (6 UNIVERSAL; 5 kandidater explicit förkastade med bärare); T64/T65/T66 registrerade/vilande; hub-lyft PENDING. **NÄSTA: NY session (antagen 54) = MIGRERINGS-HUB-SESSION 1 (Marcus-kvitterad):** rigor-migreringen + T66 (prototyp-tvåfas-skillen) + lessons-hub-lyftet + mät-apparaten + handoff-klassningen + invokerings-UX + T60; därefter produktspåret (T65 / nästa vy-PRD / TASK-3 / T64 / T61).)*
+*Senast uppdaterad: 2026-07-06 (**Session 54 ✅ AVSLUTAD** (lifecycle: closed efter coverage-kvittens, ADR-069-grinden; post 3 inget anmält) — **MIGRERINGS-HUB-SESSION 1 LEVERERAD: utfasningskartans steg 1 + hela migrerings-bunten (p.1–p.6).** Levererat: rigor-migreringen (täcknings-matrisen: hela Migrera-klassen disk-prövad, 8 TÄCKT + lifecycle-delen klar via ADR-069; gap-stängningen code-role-discipline v1.1 [datum-invarianten §1.4 + governing-verifieringen §1.5] + 3+-branschledar-kvantifieraren med ärlighetsklausul i konstitutionen [Marcus-pushback rev avstå-klassningen → L243]; hub `731aa9f`; steg 1-beviset för retirera-steget på plats) · lessons-hub-lyftet S35–S53 (38 [UNIVERSAL]-poster → K35.1–K53.1, agent-transformerat + skript-verifierat verbatim; hub-lyft-skulden NOLL; hub `faf6806`) · plugin 1.10.0→1.11.0 (T66 prototyp-tvåfasen divergens/konvergens [punkterna a–c, web-förankrad Double Diamond + NN/g] + invokerings-UX-README:n [5 laddningsvägs-regler]; hub `6272336`; L55-ritualen grön) · mät-apparaten klassad ÖVERSPELAD av drift-beviset + handoff-klassningen (Decision A) bokförd LEVERERAD (Del 5) · T60 väg b (bearbetningen → research/, rådatan gitignorerad; hub-trädet HELT RENT; hub `d052ebd`) · skörden L243–L244 hub-lyft samma session (K54.1–2, hub `fb52a0c`). Trådflippar: T60 + T66 → closed. INGEN ADR mintad (Accepted efter apparat-migreringen, L241; count 69 orörd). Mekanik-fynd: `~/.claude/CLAUDE.md` = symlink till hub-CLAUDE.md. **OMSTART PENDING (aktiverar 1.11.0).** **NÄSTA: NY session (antagen 55), Marcus väljer spår:** produktspåret (T65 Hem-konvergensen [första T66-konvergens-passet] / nästa vy-PRD / TASK-3-klassning / T64-vägval / T61) eller migrerings-hub-session 2 (kartans steg 2+3: Decision B + retirera relä-apparaten; systemet.md-omskrivningen SIST).)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 54 PÅGÅENDE (2026-07-06) — MIGRERINGS-HUB-SESSION 1
+### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
 > Scope: sessionsdok `2026-07-06-session-54.md` Del 1 (kanonisk plats):
 > rigor-migreringen + lessons-hub-lyftet + hub-skill-bunten (T66 +
@@ -71,9 +71,11 @@
   (K54.1–2, hub `fb52a0c`; 3 kandidater explicit förkastade med
   bärare) + BUILD-LOG S54-posten + transcript-referens Code-JSONL.
   Intentions-grinden N vs N+1 PASSERAD (nästa arbete = NY session
-  55). **Coverage-rapporten i STOPPA — lifecycle-flip väntar på
-  Marcus-kvittens (ADR-069-grinden). Omstarten (aktiverar 1.11.0) =
-  Marcus-moment.**
+  55).
+- [x] **STÄNGD efter Marcus-kvittens** (2026-07-06): coverage-rapporten
+  kvitterad (A); post 3 inget anmält. `lifecycle: closed` i
+  stängnings-commiten. **Kvar efter stängning (Marcus-moment):
+  omstarten (aktiverar 1.11.0) + Update-klicket i claude.ai.**
 
 ### Session 53 ✅ AVSLUTAD (2026-07-05) — T62: lifecycle-verbens Code-körbarhet
 
