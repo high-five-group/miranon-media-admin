@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-06
+updated: 2026-07-07
 review_by: 2026-11-15
 status: stable
 ---
@@ -3292,3 +3292,42 @@ mängd-/räknekontroller och ankar-jämförelser är skriptbara på minuter och 
 stället för stickprovshopp. Kräv att agenten själv-rapporterar avvikelser/oklarheter i sitt
 slutsvar och triagea VARJE flagga explicit — flaggorna är där besluten bor (transform vs
 korruption vs medveten trim).
+
+### L245 [UNIVERSAL] — Punktvis feedback är en checklista — varje rad avprickas mot åtgärd före leverans
+
+Datum: 2026-07-07 | Källa: S55 Del 4 (K2-missarna: aktivitetsrutans mobil-krav stod ordagrant
+i dumpen men föll bort; "menyn vertikal till vänster" tolkades tyst som konventionell sidebar
+när Marcus menade egna tabbaren flippad) (klass: leverans-disciplin; [[L67]]-släkt
+[do-confirm], Gunilla-principens leverantörssida)
+
+Rå-dumpar och punktvis feedback är KRAV-listor, inte prosa: behandla varje rad som ett eget
+verifierbart krav och kör ett do-confirm-pass rad-för-rad mot leveransen INNAN den presenteras
+— en klassad-men-obyggd punkt är fortfarande en miss. Tvetydig designtolkning ställs som
+FRÅGA i stället för att väljas tyst; mottagarens egen formulering ("flippad vertikalt") slår
+närmaste konventionella mönster.
+
+### L246 [UNIVERSAL] — Visuell egenskap verifieras mot det RENDERADE, aldrig mot källkoden
+
+Datum: 2026-07-07 | Källa: S55 Del 6 (tre varv "ingen färgskillnad": kortrubrikernas
+färgklasser besegrades tyst av en OLAGRAD base.css h1–h6-regel — utilities-lagret förlorar mot
+olagrad author-CSS; upptäckt först när computed-style asserterades) + Del 9/Del 11-mätnoterna
+(klass: verifierings-disciplin; [[L239]]-klass [läs-tillbaka för UI], [[L189]]-släkt
+[hypotes tills belagt])
+
+"Ändrad i koden" är en HYPOTES tills den renderade ytan bevisar den: vid feedback på visuella
+egenskaper asserteras computed-style/skärmdump — aldrig enbart klassnamn i källan (CSS-kaskadens
+lager, specificitet och olagrade regler kan tyst nollställa ändringen). Mätfällor i samma klass:
+jämför TEXT-kanter, inte border-boxar (padding ger falsk diff); neutralisera muspekaren före
+skärmdumps-jämförelser (hover-tillstånd ger falsk diff).
+
+### L247 [UNIVERSAL] — Beteende-krav i designinput är prototyp-materia — "byggkrav"-klassning får inte gömma granskningsbar känsla
+
+Datum: 2026-07-07 | Källa: S55 Del 10 (dumpens omladdnings-krav klassades "byggkrav, ej
+design" och demonstrerades aldrig — Marcus-fångst två varv senare; laddnings-/
+uppdaterings-känslan visade sig vara ett designbeslut som itererades i två varv [blur →
+helt osynlig]) (klass: prototyp-disciplin; T66-processens scope-sida)
+
+Interaktions- och tillståndskänsla (laddning, uppdatering, övergångar) ÄR design och hör
+hemma i prototypens granskningsyta när designinputen nämner den — klassningen "byggkrav till
+kortet" är rätt för DATAVÄGAR men fel för BETEENDEN som mottagaren kan bedöma visuellt. Testet:
+kan personen framför skärmen ha en åsikt om det? Då ska prototypen visa det.

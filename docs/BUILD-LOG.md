@@ -2422,6 +2422,36 @@ Samtliga spoke-pushar CI-gröna per jobb FÖRSTA passet (runs 28803186379 / 2880
 
 ---
 
+## Session 55 — T65 Hem-konvergensen: K10 låst som FACIT efter 10 iterationssteg (2026-07-06 → 2026-07-07)
+
+> Produktspårets designsession (EJ fas-avslut; byggplans-faserna orörda). Första
+> T66-konvergens-passet — prototype-skillens (1.11.0) konvergens-form i skarpt första-bruk.
+> Ingen ADR mintad (allt under baren: designbeslut bor i facit-specen/kortet; count 69 orörd).
+
+**Mål:** T65 Hem-designiterationen — konvergens-prototyp från EXAKT kopia av faktiska Hem-vyn, Marcus-iteration till HELT nöjd, designlåsning.
+
+### Byggd substans (git-trail per landning)
+
+- **S55-öppningen** (`7b292be` + `c1dce4b`): dok-födelse + T65-flipp + T66-aktiverings-förbehållet INFRIAT (plugin 1.11.0 verifierad: install-record == hub-HEAD, tvåfas-sektionen live).
+- **K1 exakt-kopia-baslinjen** (`4d48f84`): BEVISAD byte-identisk (cmp på main-element-skärmdumpar) mot skarpa vyn; bf705f2-mekaniken återupplivad (växlare, DEV-grind, devtools-gömning).
+- **Iterationsvarven K2–K10** (`d0001bd` → `bb31a12`, Del 3–11): designdumpen (18 punkter, klassad A–D) + åtta feedback-varv — slutformen i Del 12. Nyckelfynd på vägen: olagrad base.css h1–h6-regel besegrar färg-utilities (3 varv "ingen färgskillnad"; @layer-byggkrav); omladdnings-kravet dumprevideraret blur→HELT osynlig (stale-while-revalidate, byte-identiska före/under/efter-bevis); FK-referenserna IMG_1538/1539 som designfacit.
+- **SVAR-FÅNGSTEN + designlåsningen** (`08548c9`, Del 12): K10 = FACIT (Marcus-kvittens: "prod-vyn ska se EXAKT likadan ut"); facit-spec + byggkravs-slutlista (B1–B7 + 2 nya) som kort-input; skärmdumps-bilagor (`tasks/sessions/bilagor/s55-hem-konvergens/`) säkrade FÖRE radering.
+- **Prototyp-raderingen** (`8c0537f`, klausul iv): K1–K10 + växlaren + shell-granskningsläget bort; hem.tsx/__root.tsx/AppShell.tsx återställda BYTE-IDENTISKT (0 diff mot `c1dce4b`); återupplivningsväg `bb31a12` (worktree, S52-precedentet).
+
+### Verifiering
+
+Samtliga pushar CI-gröna per jobb (kod-commits inkl. Test + Build; docs-only by-design-skippade Test+Build med Docs link check körd). EN CI-incident (runs på `a348816`/`6178ba7` röda): osorterade klasser — rotorsak pipe-maskerad lokal Biome-exit (L235-egen-instans); fix `60c9fd2` grön. Iterationerna computed-style-/boundingbox-asserterade i browsern mot staging (Del 6-metodfyndet), inte okulärt bedömda.
+
+### Avvikelser / kvarvarande
+
+- Skörden L245–L247 (alla [UNIVERSAL]: dump-som-checklista, renderad-verifiering, beteende-är-prototyp-materia) + hub-lyft K55.1–3.
+- T65 `active`: design LÅST — kortet föds vid /to-prd (facit-specen Del 12 som input) → skarpt NYSKRIVET bygge genom leverans-grindarna (NY session).
+- Klass C-spåren (Del 3/12): scrollbar-gutter-kortkandidaten, headerns öde app-brett, devtools-gaten, versionskällan; klass D: Mina sidor-ytan, xAPI → Fas 6.5.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-06-session-55.md`](../tasks/sessions/2026-07-06-session-55.md) (Del 1–13 + bilagor). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **NY session (56)** — /to-prd på T65-facit → skivning → skarpt Hem-bygge.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

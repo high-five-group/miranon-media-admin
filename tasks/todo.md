@@ -158,6 +158,15 @@
   klausul iv stängd. **NÄSTA: Marcus avfyrar /session-end → därefter
   /to-prd (kortet föds ur T65, facit-specen Del 12 som input) →
   skarpt NYSKRIVET bygge genom leverans-grindarna.**
+- [x] **End-passet FÖRBERETT** (2026-07-07, Del 13 kanonisk plats):
+  skörden L245–L247 (alla [UNIVERSAL]: dump-som-checklista,
+  renderad-verifiering, beteende-är-prototyp-materia) + hub-lyft
+  K55.1–3 samma session; 4 kandidater explicit förkastade med
+  bärare; BUILD-LOG S55-posten; transcript-referens Code-JSONL
+  (6 717 486 byte vid end-passet); INGEN ADR (under baren, count 69).
+  Intentions-grinden N vs N+1 PASSERAD (nästa arbete = NY session,
+  antagen 56). **Lifecycle-flip väntar på Marcus coverage-kvittens
+  (ADR-069-grinden).**
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
