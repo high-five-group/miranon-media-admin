@@ -1,9 +1,10 @@
 ---
 id: TASK-1
 title: 'PRD: UI-uppgradering Hem-vyn'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-05 18:58'
+updated_date: '2026-07-06 14:57'
 labels: []
 dependencies: []
 ordinal: 1000
@@ -90,3 +91,9 @@ Styrande i området: ADR-055 (data via router-context-DI), ADR-057 (lager-oberoe
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd (per skiva med UI-yta)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · repots FÖRSTA skarpa PRD-kort stängt komplett: 5/5 barn Done (task-1.1 namnkällan · 1.2 tabbaren FK-mönstret · 1.3 Hem A-skelettet · 1.4 samlade anmälningslistan + CTA · 1.5 QA-planen 11/11 av Marcus, 0 fynd). Kod-commits 6ef4ea8/a8afcf9/7f629f2/32776d2/c0016a4 — samtliga CI-gröna per jobb. Design-reviews godkända per UI-skiva (L220-loopen; 1.2 första flervarvs-granskningen, 3 varv). Drift-metrik-matningar 1–5 avgivna. Efterspel: T65 (Hem-designiterationen) + T66 (prototyp-tvåfas-generaliseringen) registrerade; fynd-kort TASK-2 (Done) + TASK-3 (öppet).
+<!-- SECTION:FINAL_SUMMARY:END -->

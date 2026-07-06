@@ -1,9 +1,10 @@
 ---
 id: TASK-1.5
 title: 'QA: Manuell browser-testplan Hem-uppgraderingen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-05 21:09'
+updated_date: '2026-07-06 14:55'
 labels:
   - ready-for-human
 dependencies:
@@ -35,13 +36,13 @@ Fynd → NYTT kort (backloggen växer som en graf) — denna plan retuscheras al
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Samtliga 11 testplan-punkter genomgångna i webbläsaren; varje fynd registrerat som NYTT kort med exakt symptom + förväntat beteende
+- [x] #1 Samtliga 11 testplan-punkter genomgångna i webbläsaren; varje fynd registrerat som NYTT kort med exakt symptom + förväntat beteende
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
