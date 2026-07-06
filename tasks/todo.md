@@ -21,6 +21,26 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 54 PÅGÅENDE (2026-07-06) — MIGRERINGS-HUB-SESSION 1
+
+> Scope: sessionsdok `2026-07-06-session-54.md` Del 1 (kanonisk plats):
+> rigor-migreringen + lessons-hub-lyftet + hub-skill-bunten (T66 +
+> invokerings-UX) + mät-apparaten/handoff-klassningen + T60.
+> Kadensrad per L67 — uppdateras vid varje landning.
+
+- [x] **Dok-födelse** (2026-07-06): sessionsdok fött (`415a360`, run
+  28803186379 grön per jobb; Test+Build by-design-skippad).
+- [x] **Rigor-migreringen LEVERERAD** (2026-07-06, Del 2 kanonisk
+  plats): täcknings-matrisen (kartans hela Migrera-klass disk-prövad:
+  8 TÄCKT + lifecycle-delen redan klar via ADR-069) + gap-stängningen
+  hub `731aa9f` — code-role-discipline v1.0→v1.1 (datum-invarianten
+  §1.4 + governing-verifieringen §1.5) + 3+-branschledar-kvantifieraren
+  med ärlighetsklausul i hub-CLAUDE.md:s web-research-rad (levande ytan
+  = symlink, mekanik-fynd bokfört i Del 2). Marcus-pushback rev
+  avstå-klassningen öppet (skörd-kandidat). Steg 1-beviset för kartans
+  steg 3 (retirera) är därmed på plats. **NÄSTA: lessons-hub-lyftet
+  (L193–L242-klassen, lessons-hub-sync-skillen).**
+
 ### Session 53 ✅ AVSLUTAD (2026-07-05) — T62: lifecycle-verbens Code-körbarhet
 
 > Scope: sessionsdok `2026-07-05-session-53.md` Del 1 (kanonisk plats);
