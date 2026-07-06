@@ -3262,3 +3262,33 @@ hjälpsamma ERBJUDANDEN — erbjudandet är glidningen, oavsett kvalitet. Hanter
 mekanisk: pröva erbjudandet mot roll-arkitekturen/migrerings-bärarna, och förkasta i så fall
 EXPLICIT med routing till rätt yta ("det steget bor nu i X") — tyst accept återetablerar
 reläet som migreringen just avvecklade.
+
+## 2026-07-06 — Session 54 (MIGRERINGS-HUB-SESSION 1: rigor-migreringen + backlogg-lyftet + plugin 1.11.0 + T60)
+
+### L243 [UNIVERSAL] — Över-engineering-vakten skär spekulation, aldrig beprövade ribbor — särskilt i migreringsfönster
+
+Datum: 2026-07-06 | Källa: S54 Del 2 prövnings-trail (3+-branschledar-kvantifieraren föreslogs
+"avstå" med vakten som skäl; Marcus-pushback rev klassningen före kvittens — ~27 %-mekanismen)
+(klass: kvalitetshållning/klassning; dubbelriktade vaktens golv-sida)
+
+Vaktens skärsida gäller SPEKULATIV komplexitet — abstraktioner utan nuvarande användare,
+"ifall"-byggen. En beprövad ribba med empirisk grund (L_JJ: bevisvärdet BOR i antalet oberoende
+källor) och faktiska framtida användare (varje kommande ADR) är GOLV, inte spekulation — och
+golvet skärs aldrig i enkelhetens namn. Skärpning i migreringsfönster: när en artefakt ska
+arkiveras är "principen finns redan, detaljen är överflödig" exakt mekanismen som stryker rigor
+på köpet — operationaliseringen (kvantifierare, checkbar ribba) ÄR ofta lärdomen, inte en detalj.
+
+### L244 [UNIVERSAL] — Agent-delegerad masstransformation appenderas aldrig utan skript-buren fidelitets-verifiering mot källan
+
+Datum: 2026-07-06 | Källa: S54 Del 3 (backlogg-lyftet: 38 poster agent-transformerade;
+verifieringsskript verbatim-substräng + titel-/mängd-/svans-ankare FÖRE append — 0 innehållsfel;
+agentens 5 själv-rapporterade avvikelser triageade explicit, varav 2 krävde beslut
+[pending-svansarna + L203-fragmentet]) (klass: delegerings-disciplin; [[L239]]-släkt
+[läs-tillbaka], [[L191]]-klass)
+
+Delegera gärna mekanisk masstransformation till en agent — men behandla utdatat som HYPOTES
+tills mekanisk verifiering mot källan passerat: verbatim-substräng-kontroll,
+mängd-/räknekontroller och ankar-jämförelser är skriptbara på minuter och ger fidelitetsbevis i
+stället för stickprovshopp. Kräv att agenten själv-rapporterar avvikelser/oklarheter i sitt
+slutsvar och triagea VARJE flagga explicit — flaggorna är där besluten bor (transform vs
+korruption vs medveten trim).

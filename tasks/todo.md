@@ -65,9 +65,15 @@
   residualerna klassade för kartans steg 3 · T60 väg (b) exekverad
   (hub `d052ebd`: bearbetningen → research/ [54 filer], rådatan
   gitignorerad; hub-trädet HELT RENT) → T60 `closed`; minnesposten
-  rensad. **HELA S54-scopet p.1–p.6 LEVERERAT. NÄSTA: end-passet
-  (p.7) — /session-end (Marcus avfyrar) + omstarten (aktiverar
-  1.11.0).**
+  rensad. **HELA S54-scopet p.1–p.6 LEVERERAT.**
+- [x] **End-passet FÖRBERETT** (2026-07-06, Del 6 kanonisk plats):
+  L243–L244 skördade (båda [UNIVERSAL]) + hub-lyfta SAMMA session
+  (K54.1–2, hub `fb52a0c`; 3 kandidater explicit förkastade med
+  bärare) + BUILD-LOG S54-posten + transcript-referens Code-JSONL.
+  Intentions-grinden N vs N+1 PASSERAD (nästa arbete = NY session
+  55). **Coverage-rapporten i STOPPA — lifecycle-flip väntar på
+  Marcus-kvittens (ADR-069-grinden). Omstarten (aktiverar 1.11.0) =
+  Marcus-moment.**
 
 ### Session 53 ✅ AVSLUTAD (2026-07-05) — T62: lifecycle-verbens Code-körbarhet
 

@@ -2390,6 +2390,36 @@ Samtliga pushar CI-gröna per jobb (produktkods-commits inkl. Test + Build; enda
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-07-05-session-52.md`](../tasks/sessions/2026-07-05-session-52.md) (Del 1–11 + två Paushistorik-block). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **NY session (nästa lediga nummer per disk, antagen 54) = migrerings-hub-session 1** (rigor-migreringen + mät-apparaten + handoff-klassningen + invokerings-UX + T60 + lessons-hub-lyftet; T66-skill-uppdateringen kan buntas) — alternativt Marcus-vald: T65 (efter brödsmulor/shell), T61 (AFK-loop), TASK-3, T64-vägvalet.
 
+## Session 54 — MIGRERINGS-HUB-SESSION 1: rigor-migreringen + backlogg-lyftet + plugin 1.11.0 + T60 (2026-07-06)
+
+> Migrerings-/hub-session (EJ fas-avslut; byggplans-faserna orörda — utfasningskartans
+> exekvering, öppnad av S52:s graderings-prövning). Mestadels hub-skrivningar; ingen app-kod.
+> Ingen ADR mintad (Accepted-graderingen av två-aktörs-ADR:n [WIP] ligger efter
+> apparat-migreringen; count 69 orörd, L241).
+
+**Mål:** första exekverings-sessionen av migrerings-kartan (S47 Del 3): steg 1 rigor-migreringen + migrerings-buntens poster (lessons-hub-lyftet, T66-skillen, invokerings-UX, mät-apparaten, handoff-klassningen, T60).
+
+### Byggd substans (git-trail per landning)
+
+- **Dok-födelse** (spoke `415a360`): S54-doket fött, run 28803186379 grön per jobb.
+- **Rigor-migreringen** (hub `731aa9f` + spoke `3ed2bda`; Del 2): täcknings-matrisen (hela Migrera-klassen disk-prövad — 8 TÄCKT, lifecycle-delen redan klar via ADR-069) + gap-stängningen: code-role-discipline v1.0→v1.1 (datum-invarianten §1.4 + governing/non-governing-verifieringen §1.5) + 3+-branschledar-kvantifieraren med ärlighetsklausul i konstitutionens web-research-rad (Marcus-pushback rev Code-förslagets avstå-klassning → L243). Steg 1-beviset för kartans steg 3 (retirera) på plats. Mekanik-fynd: `~/.claude/CLAUDE.md` är symlink till hub-CLAUDE.md — konstitutions-synken strukturell.
+- **Lessons-hub-lyftet** (hub `faf6806` + spoke `2b9b066`; Del 3): backloggen S35–S53 → 38 [UNIVERSAL]-poster som K35.1–K53.1 under samlings-H2 (agent-delegerad transformation + skript-buren verbatim-verifiering FÖRE append — 0 innehållsfel; 22 stale pending-svansar strippade öppet; spoke-L203-dubblettkorruptionen rättad). **Hub-lyft-skulden NOLL.**
+- **Hub-skill-bunten** (hub `6272336` + spoke `2fe342b`; Del 4): plugin 1.10.0→1.11.0 (manifest-paret atomiskt, L228) — T66 prototyp-tvåfasen (divergens → konvergens från EXAKT kopia → skarpt NYSKRIVET; punkterna a–c; web-förankrad: Double Diamond + NN/g parallel+iterative) + invokerings-UX-README:n (5 laddningsvägs-regler, laddningsvägarnas kanoniska hemvist). L55-ritualen grön (install-record 1.11.0, gitCommitSha == hub-HEAD). T66 → `closed` med aktiverings-förbehåll.
+- **p.5 + p.6** (hub `d052ebd` + spoke `c165bdd`; Del 5): mät-apparaten — "full apparat" klassad ÖVERSPELAD av drift-beviset (S50-minimiformen ÄR apparaten; beskrivningen → två-aktörs-ADR:n vid minting); handoff-klassningen (migrerings-Decision A) bokförd LEVERERAD via T62/ADR-069 med steg 3-residualerna klassade; T60 väg (b): Odoo Events-bearbetningen → `research/` (54 filer git-skyddade), rådatan gitignorerad — **hub-trädet HELT RENT** → T60 `closed`.
+- **End-passet** (denna landning): L243–L244 skördade + hub-lyfta samma session (K54.1–2, hub `fb52a0c`); sessionsdok Del 6; denna post.
+
+### Verifiering
+
+Samtliga spoke-pushar CI-gröna per jobb FÖRSTA passet (runs 28803186379 / 28804212250 / 28805689248 / 28806455314 / 28806885209 + end-commitens run; docs-only → Test+Build by-design-skippad, Docs link check körd + grön per run). Hubben saknar CI (T13) — varje hub-commit läs-tillbaka-verifierad mot HEAD-blob (L239) + L55-ritualen vid bumpen + skript-buren fidelitets-verifiering vid lyftet. Lokala grindar per landning: markdownlint 0 fel + Vale 0 fel, nakna exits (L235).
+
+### Avvikelser / kvarvarande
+
+- **OMSTART PENDING** (Marcus-moment) — aktiverar plugin 1.11.0; aktiverings-verifiering vid nästa sessionsstart.
+- Kartans steg 2 (Decision B: code-role-discipline §4.1/§5), steg 3 (retirera relä-apparaten — steg 1-beviset klart i Del 2), steg 4 (omskriv, systemet.md SIST) + Accepted-graderingen av två-aktörs-ADR:n = senare migrerings-sessioner.
+- T64 (Marcus-vägval) / T65 (Hem-konvergensen — blir första T66-konvergens-passet) / TASK-3 (oetiketterat) oförändrade; mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-06-session-54.md`](../tasks/sessions/2026-07-06-session-54.md) (Del 1–6). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **NY session (55)** — produktspåret (T65 / nästa vy-PRD / TASK-3-klassning / T64-vägval / T61) eller migrerings-hub-session 2 (kartans steg 2+3) — Marcus väljer.
+
 ---
 
 ## Session-modellen
