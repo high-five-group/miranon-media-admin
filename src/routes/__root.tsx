@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { createRootRouteWithContext, Outlet, useRouterState } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { Suspense } from 'react';
@@ -26,14 +26,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 // tidigare wrappade trädet är riven — dess unika täckning var near-zero
 // (todo-trådens K0.3b-empiri) och rapporteringen sker via createRoot-hooks.
 function RootLayout() {
-  // [PROTOTYPE] Design-granskningsläge (T65-konvergensen, S55): när en prototyp-
-  // variant är aktiv i URL:en göms devtools-knapparna så granskningsytan är
-  // ren. Router-state (inte window.location vid mount) så gömningen följer
-  // klient-navigering — login-redirecten till ?variant= täcks. Tas bort med
-  // prototypen.
-  const designReview = useRouterState({
-    select: (s) => new URLSearchParams(s.location.searchStr).has('variant'),
-  });
   return (
     <>
       <Suspense
@@ -51,7 +43,7 @@ function RootLayout() {
           grenar (login/dev/inloggat), därför här och inte i AppShell
           (Session 16 K3 STOPPA-utfall A, beslut 2). */}
       <RouteAnnouncer />
-      {import.meta.env.DEV && !designReview && (
+      {import.meta.env.DEV && (
         <>
           {/* Topp-positioner sedan Fas 5: tab baren äger botten-ytan — en
               botten-fäst devtools-knapp skymmer flikarna (axe target-size,
