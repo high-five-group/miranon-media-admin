@@ -155,8 +155,23 @@
   beroendeordning** (1.3←1.1, 1.4←1.3, QA←samtliga, `ready-for-human`;
   DoD-arv design-review på UI-skivorna 1.1–1.4) + T46-sektionen
   "UI-vägens prod-moment". Kanonisk plats: sessionsdok Del 6.
-  **NÄSTA: /do-work** (plockbara: task-1.1, task-1.2) + första
-  drift-metrik-matningen → end-prövning.
+- [x] **FÖRSTA /do-work-KÖRNINGEN LEVERERAD: task-1.1 Done** (2026-07-06,
+  Del 7 kanonisk plats): namnkällan TDD-byggd (rött→grönt bevisat;
+  hermetiska hälsningstester via session-patch; staging-TEST_USER bär
+  'Lotta', prod-guard höll; kod `6ef4ea8`) + FÖRSTA
+  DRIFT-METRIK-MATNINGEN via --final-summary (CI-grön-första-pass: nej —
+  orelaterad miljö-incident; TDD: 1 cykel; 0 defekter i kort-scope).
+  **Fjärrskådnings-incidenten** hanterad per Marcus väg A: 60
+  ZZ-sentinel-event markör-raderade ur staging (sviten 47 s→7,9 s;
+  CI-rerun grön per jobb) + rik dokumentation (TASK-2 fynd-kort +
+  ADR-060 Updates-not, `9b221d2`). Design-review-loopen fångade
+  rubrik-fyndet → **AC #6 på task-1.3** (prototyp A-matchning, ingen
+  'Hem'-rubrik); prototypen återupplivad ur `bf705f2` (worktree,
+  localhost:5175). Skörd-kandidater: pipe-maskering 3:e punkten,
+  själv-referentiell final-summary, prototyp-skärmdumpar före radering.
+  **NÄSTA: /do-work** (plockbara: task-1.2 tabbaren, task-1.3
+  Hem-omskrivningen) → resterande skivor → QA-kortet (Marcus) →
+  end-prövning.
 
 ### Session 51 ✅ AVSLUTAD (2026-07-05) — Övnings-ramverket: inramnings-landningen
 
