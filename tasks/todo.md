@@ -85,7 +85,10 @@
   accent-KOPPAR (annan färg, ~5,9:1), anmälningslistan per FK
   IMG_1539 (tre-radiga rader + "Anmäld 6 juli" + chevron), eventkortet
   oförändrat (godkänt). Checklista-regeln tillämpad: varje punkt
-  avprickad mot assertion. **NÄSTA: Marcus granskar K4**
+  avprickad mot assertion. CI-incidenten på K4-pushen (osorterade
+  klasser; lokal grind pipe-maskerad — L235-egen-instans,
+  skörd-datapunkt) rättad samma varv: fix `60c9fd2`, run 28825318696
+  grön per jobb inkl. Test+Build. **NÄSTA: Marcus granskar K4**
   (`localhost:5173/hem?variant=k4`) → nästa varv eller designlåsning.
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
