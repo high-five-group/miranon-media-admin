@@ -112,6 +112,14 @@
   bg-subtle (vit förkastad), koppar-konturen kvar (godkänd). Allt
   computed-assertat. **NÄSTA: Marcus granskar K6**
   (`localhost:5173/hem?variant=k6`) → nästa varv eller designlåsning.
+- [x] **K6-feedbacken → K7 LEVERERAD** (2026-07-07, Del 8 kanonisk
+  plats; kod `464702f`, run 28828658849 grön per jobb inkl.
+  Test+Build): rubrikerna IN i korten, STORA (assertat identisk stil
+  med Fjärrskådning-titeln 20px/600/mörk), radstorlekarna tillbaka
+  till K5 (16/14, tiden kvar 12), exempeldata-noterna bort,
+  menybaren box-assertad EXAKT K1 + kolumnbredden till K1:s 600
+  (K6:s 640 var den reella skillnaden). **NÄSTA: Marcus granskar K7**
+  (`localhost:5173/hem?variant=k7`) → nästa varv eller designlåsning.
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
