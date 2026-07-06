@@ -77,10 +77,14 @@
 > plockbar (AC #6 prototyp A-grinden), task-1.2 plockbar, task-1.4
 > blockad (←1.3), task-1.5 QA blockad (←alla, Marcus). Del 7 + efterspel
 > bokförda i checklistan nedan. Marcus-sekvensens steg 1 (resume) KLART.
-> **NÄSTA: QA-kortet task-1.5 (Marcus — manuell browser-testplan,
-> `ready-for-human`; ALLA UI-SKIVOR DONE)** → (5) end-prövning
-> (graderings-triggern mot drift-metrikens 5 matningar +
-> lessons-skörden, kandidater 1–5+ i handoffen samt Del 8–10:s).
+> **QA 11/11 (0 fynd) + TASK-1 STÄNGT (`7e64bd9`) + END-PASSET UTFÖRT**
+> (Del 11: graderings-prövningen PASSERAD — migrerings-hub-sessionerna
+> öppnade, INGEN ADR mintad [Accepted efter apparat-migreringen, L241];
+> lessons L235–L242 skördade + 5 kandidater explicit förkastade;
+> BUILD-LOG S52-posten). **NÄSTA: coverage-kvittens (Marcus) →
+> `lifecycle: closed` → NY session (antagen 54) = migrerings-hub-
+> session 1** (rigor + mät-apparaten + handoff-klassningen +
+> invokerings-UX + T60 + lessons-hub-lyftet; T66 kan buntas).
 
 - [x] **AKT 0 LEVERERAD** (2026-07-05): fork 5+6-byggena per S47 Del
   13/14 LÅSTA designer → hub `9a747a1` (plugin 1.8.0→1.9.0, 11→13

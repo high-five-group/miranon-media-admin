@@ -2353,6 +2353,45 @@ tasks/lessons.md                              (L234)
 
 ---
 
+## Session 52 — UI-spårets start: första skarpa hel-kedje-körningen — TASK-1 komplett (Hem-uppgraderingen) + drift-metrik-matning 1–5 (2026-07-05 → 2026-07-06)
+
+> UI-/produktkod-session (EJ fas-avslut; byggplans-faserna orörda — UI-spåret
+> är Övning 2-arbete ovanpå levererade vyer). TVÅ pauser + resume-cykler per
+> ADR-051 (numret 52 bevarat; resume-Code-halvans FÖRSTA-BRUK, ADR-069 b7).
+> Mellansessionen S53 (T62/ADR-069/plugin 1.10.0) kördes mellan paus 1 och 2.
+> Count 69 orörd (ingen ny ADR — graderings-prövningen mintade medvetet inget).
+
+**Mål:** UI-spårets start (scope Del 1): AKT 0 (fork 5+6 → plugin 1.9.0) → första skarpa hel-kedje-körningen /grill-with-docs → prototyp-pass → /to-prd → /to-issues → /do-work per kort → drift-metrik-matningarna (två-aktörs-ADR:ns evidensgrind) → end-prövning.
+
+### Byggd substans (git-trail per landning)
+
+- **AKT 0 + grillning + prototyp + PRD + skivning** (Del 2–6; paus-/resume-cykel 1): hub 1.8.0→1.9.0 (`9a747a1`); Hem-pilotens grillning till samsyn; prototyp A/B/C på /hem (`bf705f2`, [PROTOTYPE]-märkt, raderad per kontrakt — A-skelettet vann); TASK-1 publicerat via /to-prd (`ad44051`) + skivat 1.1–1.5 via /to-issues.
+- **task-1.1 — namnkällan** (`6ef4ea8` + `0c96f4c`): TDD; `AuthUser.displayName` ur user_metadata; e-post ALDRIG fallback. Fjärrskådnings-incidenten (60 ZZ-sentinel-event → sviten 47 s) → väg A-städning + TASK-2 + ADR-060-not (`9b221d2`). Drift-metrik-matning 1.
+- **TASK-2 — O(1)-fixtursökningen** (`13bb905` + `c0aa615`): get-attendance-conformance immun mot event-ackumulering; test:api 290 passed. Matning 2.
+- **task-1.3 — Hem till A-skelettet** (`a8afcf9` + `bcf0db1`): 7 hem-komponenter NYSKRIVNA mot bf705f2-facit; hälsningen = h1 (AC #6); helkorts-stretched-link; "Utan event"-fallback; NOLL nya tokens; e2e-TDD 10 röda → 13/13. Design-review godkänd; Marcus helhets-designiteration → **T65**; fynd → **TASK-3** (`b3fa9b7`). Matning 3. **T66** (prototyp-tvåfas-generaliseringen, `455b7ca`).
+- **task-1.4 — samlade anmälningslistan + CTA** (`7f629f2` + `aa3434a`/`76785b5`): AnmalningarList på /mer/anmalningar (registrations.all utanför polling-scopet; DRY-lyft registration-display.ts); Hem-CTA → "Visa alla anmälningar". TDD 7 röda → 24/24; full svit 125. Matning 4.
+- **task-1.2 — tabbaren till FK-mönstret** (`32776d2` + `c0016a4` + `0abe67b`): ikon + etikett (lucide, domänbegrepps-val) + FLYTANDE kapsel + bred aktiv-pill i NY semantisk token `--mm-bg-emphasized` — L220-loopens första FLERVARVS-granskning (3 varv). Matning 5.
+- **QA task-1.5 + TASK-1-stängningen** (`7e64bd9`): Marcus 11/11 punkter i browsern, 0 fynd; PRD-föräldern Done — repots FÖRSTA skarpa PRD-kort komplett.
+- **End-passet** (denna landning): graderings-prövningen + lessons L235–L242 + BUILD-LOG + Del 11.
+
+### Graderings-prövningen (scope p.5 — öppet utfall)
+
+Två-aktörs-ADR:ns evidensgrind (beslut 8: CI-grön-första-pass/defekt-rate) prövad mot drift-metrikens 5 matningar: första-pass 4/5 ja (enda nej = orelaterad miljö-incident, dokumenterad); defekter i kort-scope 0/5; TDD-cykler bevisade rött→grönt per produktkort; L220-loopen fungerade i drift (inkl. flervarvs); QA 11/11 utan fynd. Marcus-utlåtande i sessionen: "arbetssättet har funkat bra". **Utfall: evidensgrinden PASSERAD → migrerings-hub-sessionerna öppnade** (utfasningskartan S51: rigor-migreringen först, systemet.md sist, arkivera-inte-radera). **Ingen ADR mintad i dag** — Accepted-graderingen ligger per kartan + beslut 8 EFTER apparat-migreringen (numret tas då, nummer-neutralt tills dess; L241).
+
+### Verifiering
+
+Samtliga pushar CI-gröna per jobb (produktkods-commits inkl. Test + Build; enda röda passet = MD032-fallet `aa3434a`, fixat `76785b5` inom minuter — rotorsaken pipe-maskerad lokal grind, skördad som L235). Lokala grindar per landning: typecheck (src + tests), Biome 0 fel, build, e2e-sviten (full svit 124–125 passed per kort), axe-baselines 0 på samtliga vyer. Staging-data verifierad i QA-passet.
+
+### Avvikelser / teknisk skuld
+
+- Loading-state-testens delayMs-fönster lastkänsligt (3 filer) — pre-existing, stash-belagt, härdnings-spec på **TASK-3** (oetiketterat, Marcus klassar).
+- T64 (purge-cred-vägvalet) vilar på Marcus-beslut; T65 (Hem-designiterationen) + T66 (prototyp-skill-uppdateringen, hub-materia) registrerade `paused`.
+- Lessons-hub-lyftet (L193–L242-klassen) PENDING till hub-/migrerings-session (lessons-hub-sync).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-05-session-52.md`](../tasks/sessions/2026-07-05-session-52.md) (Del 1–11 + två Paushistorik-block). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **NY session (nästa lediga nummer per disk, antagen 54) = migrerings-hub-session 1** (rigor-migreringen + mät-apparaten + handoff-klassningen + invokerings-UX + T60 + lessons-hub-lyftet; T66-skill-uppdateringen kan buntas) — alternativt Marcus-vald: T65 (efter brödsmulor/shell), T61 (AFK-loop), TASK-3, T64-vägvalet.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-05
+updated: 2026-07-06
 review_by: 2026-11-15
 status: stable
 ---
@@ -3157,3 +3157,109 @@ plugin-cache-katalog och exekvera proceduren manuellt — flaggans SYFTE (agente
 aldrig) är inte hotat när initiativet bevisligen är användarens; notera avvikelsen öppet i
 trailen. Fel hantering: be användaren skriva om kommandot (friktion utan vinst) eller tolka
 verktygs-vägran som att skillen är otillgänglig (den ligger läsbar på disk).
+
+## 2026-07-06 — Session 52 (UI-spårets start: första skarpa hel-kedje-körningen /to-prd → /to-issues → /do-work)
+
+### L235 [UNIVERSAL] — Grind-exit får aldrig pipe-maskeras — separera körning från presentation
+
+Datum: 2026-07-06 | Källa: 4 empiripunkter S51–S52 (S51-trailen; S52 Del 3-grindpasset
+[motexemplet: OPIPAD exit fångade MD004 före commit]; Del 7 CI-watchen [`gh run watch | tail`
+åt röd run-exit — run:en var röd trots "exit 0"]; Del 10-stängningen [`markdownlint | tail -1`
+åt MD032-felet → grön-maskerad lokal grind → CI-röd push `aa3434a`, fix `76785b5`])
+(klass: grind-disciplin/shell; [[L147]]-granne)
+
+`<grindkommando> | tail/grep/head` returnerar PIPENS exit-kod, inte grindens — rött blir tyst
+grönt och upptäcks först i CI (symptomklass: "lokalt grönt, CI rött på samma check"). Regeln:
+kör grinden NAKEN så dess exit äger raden; presentera utdata i ett SEPARAT kommando/steg.
+`set -o pipefail` är golv i skript, men separationen är regeln — presentation och verdikt är
+olika ansvar.
+
+### L236 [UNIVERSAL] — Final-summaryns commit-SHA/CI-run är själv-referentiella — kort med efter-grindar stängs i uppföljnings-commit
+
+Datum: 2026-07-06 | Källa: Del 7 first-run-processfyndet (task-1.1); mönstret bekräftat på
+samtliga S52-kort (task-1.1/1.3/1.4/1.2 + TASK-2: kod-commit → CI per jobb/design-review →
+stängnings-commit) (klass: issue-substrat/leverans-kadens)
+
+"Stäng kortet i SAMMA commit som koden" är onåbar när final-summary ska bära kodens SHA +
+CI-run-ID (kända först EFTER push) och DoD bär efter-commit-grindar (CI grön per jobb,
+design-review i browsern). Normen för sådana kort: kod-commit (kort-token i meddelandet) →
+grindar/review → stängnings-commit med kort + final-summary + dok-kadens. Avvikelsen från
+EN-commit-normen deklareras öppet — den är strukturell, inte slarv.
+
+### L237 [UNIVERSAL] — Prototyp-svaret är grillningen; justeringar = byggkrav; helhets-missnöje = nytt konvergens-pass
+
+Datum: 2026-07-06 | Källa: Del 4 (svar-fångsten: A-vinnaren + byggkrav, prototypen raderad —
+aldrig itererad i valet); Del 8 (T65: kvitterad AC-match MEN helhets-missnöje → klassad NY
+designinput, inte granskningsfailure); T66 (Marcus-kvitterad stående tvåfas-form: divergens
+3 varianter → val → konvergens-iteration till nöjdhet [befintlig yta startar som EXAKT kopia
+av faktiska vyn] → skarpt genom leverans-grindarna; återkommande vid senare ändringsbehov)
+(klass: design-process; HUR:et migreras till prototype-skillen via [[T66]])
+
+Små justeringar vid svar-fångsten blir BYGGKRAV på kort — prototypen itereras inte i
+valfasen. Men helhets-missnöje med det VALDA är en annan signal: det öppnar ett
+KONVERGENS-pass (iterera prototypen tills nöjd, sedan skarpt bygge). Granskningsgrinden
+prövar leverans-mot-beslut; beslutet självt omprövas i prototyp-passet — två olika loopar,
+båda legitima, aldrig sammanblandade.
+
+### L238 [UNIVERSAL] — Klassnings-praxis: kort = kan bli en commit; tråd = behöver bli ett beslut först
+
+Datum: 2026-07-06 | Källa: Del 7-efterspel 2 (Marcus-kvitterad, Pocock-grundad; TASK-2
+omscopad till byggbar spec + purge-cred-vägvalet utbrutet → T64); tillämpad på T65
+(designbeslut → tråd) + T66 (skill-design → tråd) + TASK-3 (byggbar härdning → kort)
+(klass: issue-substrat/triage; ADR-053-komplement)
+
+Fynd med byggbar spec (exakt symptom + förväntat beteende) → KORT, fött oetiketterat
+("Fynd:"-titelprefix; oplockbart tills människan klassar). Allt som kräver ett väg-, design-
+eller arkitekturbeslut först → TRÅD; kortet föds ur tråden när beslutet är taget. Testet är
+en fråga: "kan detta bli en commit utan att någon först beslutar något?"
+
+### L239 [UNIVERSAL] — CLI-write-flaggor: aldrig oavsiktliga värden; läs-tillbaka direkt efter skrivning
+
+Datum: 2026-07-06 | Källa: Del 8 (kortstängningen task-1.3: slarvig command-substitution gav
+`--notes "keep"` → Implementation Notes TYST ÖVERSKRIVNA; direkt `task view` efter skrivningen
+fångade förlusten → reparation ur sessions-kontextens originalläsning) (klass:
+verktygs-disciplin; [[L191]]-släkt [skriv-verifiering])
+
+Fält-flaggor i verktygs-CLI:er skriver destruktivt utan diff-preview — en flagga med
+icke-avsett värde är tyst dataförlust. Två regler: (1) bygg aldrig write-anrop med "smarta"
+substitutioner/uttryck i flagg-värden — skriv värdet explicit eller utelämna flaggan; (2) läs
+tillbaka det skrivna objektet OMEDELBART efter varje CLI-skrivning — läs-tillbaka-passet är
+fångstnätet som bevisligen fungerade.
+
+### L240 [UNIVERSAL] — Stash-forensik avgör pre-existing vs diff-orsakad testfailure före åtgärd
+
+Datum: 2026-07-06 | Källa: Del 8 (narvaro/vantelista-loading 3/6 röda på STASHAD main →
+TASK-3 född med bevis) + Del 10 (person-detail-loading 3/3 röd på main under last → tredje
+fil-instansen bokförd, tabbar-diffen friad) (klass: test-forensik; [[L176]]/T26-släkt)
+
+När ett till synes orelaterat test faller under kort-arbete: klassa INNAN åtgärd via
+`git stash push` → kör testet `--repeat-each` mot oförändrad main → `git stash pop`.
+Pre-existing → fynd-kort med beviset inbakat; diff-orsakad → egen defekt, fixa i skivan.
+"Det är nog en flake" utan motbevis är gissning — forensiken tar två minuter och ger
+klassningen evidens i stället för hopp.
+
+### L241 [UNIVERSAL] — Vilande/WIP-beslut refereras nummer-neutralt — ADR-nummer binds vid minting
+
+Datum: 2026-07-06 | Källa: Del 1 G3-noten (scope-punktens verbatim "ADR-068 p.8" pekade på
+disk mot FEL beslut — 068 hade förbrukats av övnings-ramverket; referenten var två-aktörs-ADR:n
+[WIP]); S51 beslut 3 hade redan låst nummer-neutral benämning — glidningen kom ändå via
+direktiv-verbatim (klass: doc-integritet; [[L230]]-släkt)
+
+Ett onumrerat beslut (WIP/vilande) refereras med NAMN ("två-aktörs-ADR:n"), aldrig med
+antaget nummer — nummer binds först vid minting mot disk (nästa lediga re-verifieras då).
+Verbatim-nummer i inkommande direktiv/scope-texter disk-verifieras vid ingång och noteras
+öppet vid divergens (G3-klassen) i stället för att propagera.
+
+### L242 — Migrerad akter återinför sig via erbjudanden — förkasta explicit med routing
+
+Datum: 2026-07-06 | Källa: Chat-trail-kandidaten (paus 1-handoffen, förmedlad 2026-07-05):
+två S52-instanser samma riktning (Chat föreslog UI-berättelse före grillningen; Chat erbjöd
+avfyrnings-prompt för /grill-with-docs trots S47-migreringen) — båda fångade av
+Marcus-pushback (klass: aktör-modell/migreringsperioden; prövas igen vid migrerings-hub-
+sessionerna)
+
+Under en yt-migrering glider den lämnande ytan tillbaka in i redan-migrerade steg via
+hjälpsamma ERBJUDANDEN — erbjudandet är glidningen, oavsett kvalitet. Hanteringen är
+mekanisk: pröva erbjudandet mot roll-arkitekturen/migrerings-bärarna, och förkasta i så fall
+EXPLICIT med routing till rätt yta ("det steget bor nu i X") — tyst accept återetablerar
+reläet som migreringen just avvecklade.
