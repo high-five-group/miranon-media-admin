@@ -126,3 +126,21 @@ nödvändigtvis en ny rad.
 - [ADR-059](ADR-059-idempotens-lagring-defer-fas-e.md) — idempotens-nyckel-kontraktet som testet utövar (INVARIANT)
 - [tests/api/create-registration.staging.test.ts](../../tests/api/create-registration.staging.test.ts) — konventionens första konsument
 - [BUILD-LOG.md](../BUILD-LOG.md) — implementation-journal
+
+## Updates
+
+### 2026-07-06 — Tröskeln nådd: sentinel-ackumulering fällde get-attendance-conformance (Session 52)
+
+Den öppna tråden "bounded sentinel-ackumulering i staging tills purge
+wiras" visade sig ha en CROSS-TEST-blastradius beslutet inte förutsåg:
+60 ackumulerade create-event-sentineller (`Ort='ZZ-create-event-test'`)
+gjorde get-attendance-conformances linjära fixtur-sökning (~750–1 300 ms
+per event × 63 event ≈ 47 s) större än test-timeouten (30 s) → CI-rött
+på orörd kod (run 28755566920, 2026-07-06) med tröskeleffekt: grönt på
+förmiddagen, deterministiskt rött på kvällen. Interim-åtgärd
+(Marcus-beslut väg A): markör-matchad radering av samtliga 60 via MCP —
+0 länkade anmälningar verifierat före delete, ZZ-History-fixturerna
+orörda; sviten därefter grön på 7,9 s. Strukturell fix spåras som
+backlog-kort `task-2` (O(1)-isering av fixtur-sökningen + purge-wiring
+per detta besluts § Lösning, vidgad till create-event-sentinellerna).
+Beslutstexten ovan står orörd (L53).
