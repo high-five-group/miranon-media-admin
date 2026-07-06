@@ -32,7 +32,11 @@ test.describe('App-skal (Fas 5 DoD)', () => {
     const nav = page.getByRole('navigation', { name: 'Huvudnavigation' });
     await expect(nav).toBeVisible();
     for (const label of ['Hem', 'Event', 'Personer', 'Mer']) {
-      await expect(nav.getByRole('link', { name: label })).toBeVisible();
+      const link = nav.getByRole('link', { name: label });
+      await expect(link).toBeVisible();
+      // FK-mönstret (task-1.2 AC #1): varje flik bär ikon + etikett; ikonen
+      // är dekorativ (aria-hidden) — etiketten ensam bär länknamnet.
+      await expect(link.locator('svg[aria-hidden="true"]')).toHaveCount(1);
     }
   });
 
