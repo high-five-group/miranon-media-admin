@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { PrototypeSwitcher } from '@/components/prototype/PrototypeSwitcher';
 import { K1 } from './K1';
 import { K2 } from './K2';
+import { K3 } from './K3';
 
 /**
  * [PROTOTYPE — kastbar kod, throwaway-kontraktet gäller (T65, S55 Del 1)]
@@ -28,13 +29,14 @@ import { K2 } from './K2';
  * (klausul v).
  */
 
-export type HemKonvergensVariant = 'k1' | 'k2';
+export type HemKonvergensVariant = 'k1' | 'k2' | 'k3';
 
-export const HEM_KONVERGENS_VARIANTS: readonly HemKonvergensVariant[] = ['k1', 'k2'];
+export const HEM_KONVERGENS_VARIANTS: readonly HemKonvergensVariant[] = ['k1', 'k2', 'k3'];
 
 const LABELS: Record<HemKonvergensVariant, string> = {
   k1: 'K1 — Exakt kopia (baslinje)',
   k2: 'K2 — Designdumpen applicerad',
+  k3: 'K3 — K2-feedbacken åtgärdad',
 };
 
 export function HemKonvergens({ variant }: { variant: HemKonvergensVariant }) {
@@ -51,6 +53,7 @@ export function HemKonvergens({ variant }: { variant: HemKonvergensVariant }) {
     <>
       {variant === 'k1' && <K1 />}
       {variant === 'k2' && <K2 />}
+      {variant === 'k3' && <K3 />}
       <PrototypeSwitcher
         variants={HEM_KONVERGENS_VARIANTS}
         current={variant}

@@ -46,7 +46,7 @@ export function PrototypeSwitcher({
   if (!import.meta.env.DEV) return null;
 
   return (
-    <div className="text-(color:--mm-btn-primary-text) fixed right-4 bottom-20 z-50 flex items-center gap-1 rounded-full bg-(--mm-btn-primary-bg) py-1 pr-4 pl-1 shadow-xl">
+    <div className="text-(color:--mm-btn-primary-text) fixed bottom-20 left-4 z-50 flex items-center gap-1 rounded-full bg-(--mm-btn-primary-bg) py-1 pr-4 pl-1 shadow-xl">
       <button
         type="button"
         aria-label="Föregående variant"
