@@ -43,8 +43,10 @@
   main-element-skärmdumpar) mot staging-data; växlare +
   devtools-gömning + DEV-grind återställda ur `bf705f2`
   (återupplivningsvägen); e2e-baselines opåverkade (utan `?variant=`
-  renderas Hem oförändrat). Körbarhets-golvet grönt (typecheck +
-  Biome 0 fel). **NÄSTA: Marcus-iterationen i webbläsaren**
+  renderas Hem oförändrat — CI-BEVISAT: run 28810028150 grön per jobb
+  FÖRSTA passet inkl. Test + Build; Del 2-commiten run 28810089671
+  grön per jobb). Körbarhets-golvet grönt (typecheck + Biome 0 fel).
+  **NÄSTA: Marcus-iterationen i webbläsaren**
   (`localhost:5173/hem?variant=k1`) — feedback → K2/K3 … tills HELT
   nöjd → svar-fångst → kort ur T65 → skarpt bygge.
 
