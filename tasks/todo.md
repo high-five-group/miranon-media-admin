@@ -21,6 +21,23 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 55 🔄 PÅGÅR (2026-07-06) — T65 Hem-konvergensen: första T66-konvergens-passet
+
+> Scope: sessionsdok `2026-07-06-session-55.md` Del 1 (kanonisk plats):
+> konvergens-prototypen (EXAKT kopia av faktiska Hem-vyn) →
+> Marcus-iteration till designlåsning → kort + skarpt utförande i
+> Marcus-takt. Kadensrad per L67 — uppdateras vid varje landning.
+
+- [x] **Dok-födelse + S55-öppningen** (2026-07-06): sessionsdok fött
+  (`7b292be`, run 28809048743 grön per jobb; Test+Build by-design-
+  skippad, Docs link check körd + grön) + T65-flipp `paused`→`active`
+  med ingång → Del 1 + **T66:s aktiverings-förbehåll INFRIAT**
+  (omstarten utförd: install-record 1.11.0 == hub-HEAD `6272336`;
+  tvåfas-sektionen live; 15 skill-kataloger) bokfört i Del 1 +
+  tråd-registret. **NÄSTA: konvergens-prototypen** (exakt kopia av
+  Hem på prototyp-route per prototype-skillen) → Marcus-iteration i
+  webbläsaren.
+
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
 > Scope: sessionsdok `2026-07-06-session-54.md` Del 1 (kanonisk plats):
