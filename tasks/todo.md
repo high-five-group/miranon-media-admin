@@ -64,21 +64,23 @@
   TASK-1 → /do-work + första drift-metrik-matningen → S52
   end-prövning.**
 
-### Session 52 🔄 ÅTERUPPTAGEN (2026-07-05) — UI-spårets start
+### Session 52 ⏸️ PAUSAD IGEN (2026-07-06) — UI-spårets start
 
 > Scope: sessionsdok `2026-07-05-session-52.md` Del 1 (kanonisk plats).
 > Kadensrad per L67 — uppdateras vid varje landning.
-> **ÅTERUPPTAGEN 2026-07-05 via /session-resume** (resume-Code-halvans
-> FÖRSTA-BRUK, ADR-069 b7, 1.10.0-cachen; pausad samma dag per ADR-051,
-> numret 52 BEVARAT; paushistorik i sessionsdokets
-> `## Paushistorik`-block). Marcus-sekvensens steg 1 (S53/T62 →
-> ADR-069 och plugin 1.10.0) och steg 2 (resume) KLARA; numrering
-> re-verifierad
-> mot disk: nästa ADR = 070, nästa lesson = L235, nästa tråd = T64
-> (S53 förbrukade handoffens paus-tida värden — förväntad divergens,
-> inga oväntade). Kedjan står vid /do-work-ingången — TASK-1 skivat
-> (task-1.1–1.5 publicerade; plockbara: task-1.1 + task-1.2).
-> **NÄSTA: /do-work** + första drift-metrik-matningen → end-prövning.
+> **PAUSAD ANDRA GÅNGEN 2026-07-06 per ADR-051** (numret 52 BEVARAS;
+> handoff i sessionsdokets NYA `## PAUSLÄGE`-block; första paus/resume-
+> cykelns historik under `## Paushistorik`). Resume 1 (2026-07-05) var
+> resume-Code-halvans FÖRSTA-BRUK (ADR-069 b7). Denna del levererade:
+> TASK-1 skivat (task-1.1–1.5) → task-1.1 Done (namnkällan, TDD) →
+> Fjärrskådnings-incidenten (väg A + TASK-2 + ADR-060-not) → task-1.3
+> fick AC #6 (prototyp A-facit) → klassnings-praxis kort-vs-tråd +
+> T64 → TASK-2 Done (O(1)-fixtursökning). Drift-metrik-matning 1+2
+> gjorda. **MARCUS-SEKVENS (2026-07-06): (1) /session-resume på
+> SESSION 52 i färsk kontext → (2) /do-work task-1.3 (AC #6 prototyp
+> A-grinden) → (3) task-1.4 → task-1.2 → (4) QA task-1.5 +
+> design-reviews → (5) end-prövning** (graderings-triggern +
+> lessons-skörden, kandidater 1–5+ i handoffen).
 
 - [x] **AKT 0 LEVERERAD** (2026-07-05): fork 5+6-byggena per S47 Del
   13/14 LÅSTA designer → hub `9a747a1` (plugin 1.8.0→1.9.0, 11→13
