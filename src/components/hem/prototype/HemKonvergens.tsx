@@ -6,6 +6,7 @@ import { K3 } from './K3';
 import { K4 } from './K4';
 import { K5 } from './K5';
 import { K6 } from './K6';
+import { K7 } from './K7';
 
 /**
  * [PROTOTYPE — kastbar kod, throwaway-kontraktet gäller (T65, S55 Del 1)]
@@ -32,7 +33,7 @@ import { K6 } from './K6';
  * (klausul v).
  */
 
-export type HemKonvergensVariant = 'k1' | 'k2' | 'k3' | 'k4' | 'k5' | 'k6';
+export type HemKonvergensVariant = 'k1' | 'k2' | 'k3' | 'k4' | 'k5' | 'k6' | 'k7';
 
 export const HEM_KONVERGENS_VARIANTS: readonly HemKonvergensVariant[] = [
   'k1',
@@ -49,6 +50,7 @@ const LABELS: Record<HemKonvergensVariant, string> = {
   k4: 'K4 — K3-feedbacken åtgärdad',
   k5: 'K5 — K4-feedbacken åtgärdad (FK-linjen)',
   k6: 'K6 — K5-feedbacken åtgärdad',
+  k7: 'K7 — K6-feedbacken åtgärdad',
 };
 
 export function HemKonvergens({ variant }: { variant: HemKonvergensVariant }) {
@@ -69,6 +71,7 @@ export function HemKonvergens({ variant }: { variant: HemKonvergensVariant }) {
       {variant === 'k4' && <K4 />}
       {variant === 'k5' && <K5 />}
       {variant === 'k6' && <K6 />}
+      {variant === 'k7' && <K7 />}
       <PrototypeSwitcher
         variants={HEM_KONVERGENS_VARIANTS}
         current={variant}
