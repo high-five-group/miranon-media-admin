@@ -34,9 +34,19 @@
   med ingång → Del 1 + **T66:s aktiverings-förbehåll INFRIAT**
   (omstarten utförd: install-record 1.11.0 == hub-HEAD `6272336`;
   tvåfas-sektionen live; 15 skill-kataloger) bokfört i Del 1 +
-  tråd-registret. **NÄSTA: konvergens-prototypen** (exakt kopia av
-  Hem på prototyp-route per prototype-skillen) → Marcus-iteration i
-  webbläsaren.
+  tråd-registret.
+- [x] **Konvergens-prototypen K1 LEVERERAD** (2026-07-06, Del 2
+  kanonisk plats; prototype-skillen Marcus-avfyrad — första skarpa
+  1.11.0-konvergens-bruket): K1 = EXAKT kopia av faktiska Hem-vyn
+  live på `/hem?variant=k1` (kod `4d48f84`, [PROTOTYPE]-märkt);
+  exakt-kopian **BEVISAD byte-identisk** (cmp på
+  main-element-skärmdumpar) mot staging-data; växlare +
+  devtools-gömning + DEV-grind återställda ur `bf705f2`
+  (återupplivningsvägen); e2e-baselines opåverkade (utan `?variant=`
+  renderas Hem oförändrat). Körbarhets-golvet grönt (typecheck +
+  Biome 0 fel). **NÄSTA: Marcus-iterationen i webbläsaren**
+  (`localhost:5173/hem?variant=k1`) — feedback → K2/K3 … tills HELT
+  nöjd → svar-fångst → kort ur T65 → skarpt bygge.
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
