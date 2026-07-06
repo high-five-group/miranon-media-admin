@@ -169,9 +169,20 @@
   'Hem'-rubrik); prototypen återupplivad ur `bf705f2` (worktree,
   localhost:5175). Skörd-kandidater: pipe-maskering 3:e punkten,
   själv-referentiell final-summary, prototyp-skärmdumpar före radering.
-  **NÄSTA: /do-work** (plockbara: task-1.2 tabbaren, task-1.3
-  Hem-omskrivningen) → resterande skivor → QA-kortet (Marcus) →
-  end-prövning.
+- [x] **EFTERSPELEN + TASK-2 LEVERERAD** (2026-07-06, Del 7-efterspel
+  1–2 kanonisk plats): global-signOut-incidenten (401 på alla EF —
+  skript-signOut revokerade delade testkontots sessioner; åtgärd
+  logga ut/in; skörd-kandidat 4) → klassnings-praxis kvitterad (**kort
+  = kan bli en commit; tråd = behöver bli ett beslut först**;
+  Pocock-grundad; "Fynd:"-titel-prefix; skörd-kandidat 5 needs-triage)
+  → TASK-2 omscopad + **T64 registrerad** (purge-cred-vägvalet,
+  Marcus-beslut) → /do-work-körning 2: **TASK-2 Done** (`13bb905`, CI
+  grön per jobb FÖRSTA passet; O(1)-fixtursökning, test:api 290 passed
+  16,7 s; drift-metrik-matning 2). **NÄSTA: /do-work på task-1.3
+  Hem-omskrivningen i FRISK invokering** (skill-kontraktet: ett kort
+  per invokering — störst skiva, färsk kontext; AC #6
+  prototyp A-grinden, referens localhost:5175) → task-1.4 → task-1.2 →
+  QA-kortet (Marcus) → end-prövning.
 
 ### Session 51 ✅ AVSLUTAD (2026-07-05) — Övnings-ramverket: inramnings-landningen
 

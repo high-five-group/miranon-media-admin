@@ -3,10 +3,10 @@ id: TASK-2
 title: >-
   Fynd: get-attendance-conformance immun mot event-ackumulering —
   O(1)-fixtursökning
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-06 06:45'
-updated_date: '2026-07-06 07:31'
+updated_date: '2026-07-06 07:35'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,7 +31,7 @@ UTBRUTET → T64 (tråd-registret): sentinel-purge-wiringen + cred-vägvalet (va
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -47,3 +47,9 @@ UTBRUTET → T64 (tråd-registret): sentinel-purge-wiringen + cred-vägvalet (va
 <!-- SECTION:NOTES:BEGIN -->
 Implementation: kandidat-filter på HISTORY_FIXTURE_ORT='ZZ-History Ort' (fixtur-signaturen, Session 23 L5b) före get-attendance-anropen — max 3 anrop oavsett event-mängd (strukturell immunitet, AC 3); svepets per-event-shape-validering medvetet offrad (var O(n)-drivaren; EF-kontraktet bevisas av kandidaternas parse + 400/401/404-testerna). Sviten 6/6 grön 10,7 s; hela test:api 290 passed 16,7 s. TDD: undantag (test-infra-kort per do-work-regeln — ingen produktkod).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 13bb905 · CI-run 28775248475 grön per jobb · CI-grön-första-pass: ja · defekter under körning: 0 · TDD: undantag (test-infra-kort, ingen produktkod) · Kandidat-filter på fixtur-signaturen ersätter O(n)-svepet — max 3 EF-anrop oavsett event-mängd; sviten 47 s (röd) → 10,7 s (grön); purge-vägvalet utbrutet → T64
+<!-- SECTION:FINAL_SUMMARY:END -->
