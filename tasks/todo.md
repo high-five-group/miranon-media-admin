@@ -103,6 +103,15 @@
   (fokus-test). Metodfynd-skörd-kandidat: renderad computed-style
   asserteras vid visuell feedback. **NÄSTA: Marcus granskar K5**
   (`localhost:5173/hem?variant=k5`) → nästa varv eller designlåsning.
+- [x] **K5-feedbacken → K6 LEVERERAD** (2026-07-07, Del 7 kanonisk
+  plats; kod `9cc898e`, run 28827805603 grön per jobb inkl.
+  Test+Build): rubrikerna UT ur korten + färgen tillbaka
+  (neutral-500; ljusgrå förkastad), K1-MENYN TILLBAKA (botten-
+  tabbaren; vertikala förkastad), raderna i historik-teckenstorlek
+  (12px==12px) + zebra-test (linjerna borta), loggen svag fyllton
+  bg-subtle (vit förkastad), koppar-konturen kvar (godkänd). Allt
+  computed-assertat. **NÄSTA: Marcus granskar K6**
+  (`localhost:5173/hem?variant=k6`) → nästa varv eller designlåsning.
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
