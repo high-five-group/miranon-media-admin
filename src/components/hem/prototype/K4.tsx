@@ -38,7 +38,7 @@ function VertikalTabbarK4() {
   return (
     <nav
       aria-label="Huvudnavigation"
-      className="-translate-y-1/2 fixed top-1/2 right-[calc(50%+340px)] hidden h-[568px] rounded-full border border-border bg-surface contrast-more:border-border-strong lg:block"
+      className="fixed top-1/2 right-[calc(50%+340px)] hidden h-[568px] -translate-y-1/2 rounded-full border border-border bg-surface contrast-more:border-border-strong lg:block"
     >
       <ul className="my-0 flex h-full list-none flex-col items-stretch gap-1 p-1">
         {NAV.map((item) => {
