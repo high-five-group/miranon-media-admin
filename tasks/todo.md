@@ -77,10 +77,10 @@
 > plockbar (AC #6 prototyp A-grinden), task-1.2 plockbar, task-1.4
 > blockad (←1.3), task-1.5 QA blockad (←alla, Marcus). Del 7 + efterspel
 > bokförda i checklistan nedan. Marcus-sekvensens steg 1 (resume) KLART.
-> **NÄSTA: /do-work task-1.2 (tabbaren — sista UI-skivan)** → QA
-> task-1.5 oblockas (`ready-for-human`, Marcus) → (5) end-prövning
-> (graderings-triggern + lessons-skörden, kandidater 1–5+ i handoffen
-> samt Del 8–9:s).
+> **NÄSTA: QA-kortet task-1.5 (Marcus — manuell browser-testplan,
+> `ready-for-human`; ALLA UI-SKIVOR DONE)** → (5) end-prövning
+> (graderings-triggern mot drift-metrikens 5 matningar +
+> lessons-skörden, kandidater 1–5+ i handoffen samt Del 8–10:s).
 
 - [x] **AKT 0 LEVERERAD** (2026-07-05): fork 5+6-byggena per S47 Del
   13/14 LÅSTA designer → hub `9a747a1` (plugin 1.8.0→1.9.0, 11→13
@@ -210,6 +210,18 @@
   grön per jobb FÖRSTA passet; design-review godkänd; stängning +
   final-summary = **drift-metrik-matning 4**. Kvar: task-1.2
   (tabbaren) → QA-kortet oblockas.
+- [x] **task-1.2 LEVERERAD: tabbaren till FK-mönstret** (2026-07-06,
+  Del 10 kanonisk plats): ikon + etikett per flik (lucide,
+  domänbegrepps-val; Mer = FK:s '•••') + FLYTANDE kapsel + aktiv
+  bred pill i grå betonings-yta — L220-loopens FÖRSTA flervarvs-
+  granskning (3 varv: kapsel → skugga bort/bred pill → NY semantisk
+  token `--mm-bg-emphasized` [skivans enda; primär-tint-kollisionen
+  med event-kortet]). TDD ikon-assertionen RÖTT→GRÖNT; shell 9/9;
+  full svit 124 passed, alla axe-baselines 0. Kod `32776d2` +
+  loop-commit `c0016a4`, CI grön per jobb båda; stängning +
+  final-summary = **drift-metrik-matning 5**. Fynd: person-detail-
+  loading pre-existing → TASK-3 tredje fil-instansen.
+  **ALLA UI-SKIVOR DONE → QA task-1.5 OBLOCKAT (Marcus).**
 
 ### Session 51 ✅ AVSLUTAD (2026-07-05) — Övnings-ramverket: inramnings-landningen
 

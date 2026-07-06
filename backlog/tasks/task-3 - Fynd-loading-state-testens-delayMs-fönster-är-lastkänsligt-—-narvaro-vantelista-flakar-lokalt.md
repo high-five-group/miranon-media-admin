@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-06 10:42'
+updated_date: '2026-07-06 12:43'
 labels: []
 dependencies: []
 ordinal: 8000
@@ -24,3 +25,9 @@ EXAKT SYMPTOM (S52, task-1.3-körningen 2026-07-06): 'loading-state är tillgän
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TREDJE FIL-INSTANSEN (S52, task-1.2-körningen 2026-07-06): person-detail.staging.test.ts:166 samma delayMs-loading-klass — stash-belagd pre-existing på oförändrad main (repeat-each=3: 3/3 röd under maskinlast; task-1.2-diffen [TabBar] orörd av ytan). Härdnings-scopet bör täcka alla tre filerna + grep-svepet.
+<!-- SECTION:NOTES:END -->
