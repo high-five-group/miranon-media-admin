@@ -151,10 +151,13 @@
   (B1–B7 + 2 nya) i Del 12; skärmdumps-bilagor säkrade FÖRE radering
   (`sessions/bilagor/s55-hem-konvergens/`: facit desktop+mobil +
   steg-k1–k10); T65-raden → design låst med /to-prd som nästa;
-  återupplivningsväg `bb31a12`. Prototypen raderas i nästa landning
-  (klausul iv). **NÄSTA: prototyp-raderingen → Marcus avfyrar
-  /session-end → därefter /to-prd (kortet föds ur T65) → skarpt
-  bygge.**
+  återupplivningsväg `bb31a12`. **Prototypen RADERAD** (`8c0537f`,
+  run 28830857658 grön per jobb inkl. Test+Build): K1–K10 samt
+  växlaren och shell-granskningsläget bort; hem.tsx/__root.tsx/AppShell.tsx
+  återställda BYTE-IDENTISKT (0 diff mot `c1dce4b` verifierat) —
+  klausul iv stängd. **NÄSTA: Marcus avfyrar /session-end → därefter
+  /to-prd (kortet föds ur T65, facit-specen Del 12 som input) →
+  skarpt NYSKRIVET bygge genom leverans-grindarna.**
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
