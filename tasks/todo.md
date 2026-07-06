@@ -136,6 +136,15 @@
   ut igen + koppar-utropstecken (assertade). **NÄSTA: Marcus granskar
   K9** (`localhost:5173/hem?variant=k9`, klicka "Ladda om datat") →
   nästa varv eller designlåsning.
+- [x] **K9-feedbacken → K10: OSYNLIG uppdatering** (2026-07-07, Del 11
+  kanonisk plats; kod `bb31a12`, run 28830229793 grön per jobb inkl.
+  Test+Build): Marcus REVIDERAR dumpens blur öppet → helt osynlig
+  bakgrundsuppdatering (stale-while-revalidate); all fetch-indikation
+  bort; BEVIS: main-skärmdumpar FÖRE==UNDER==EFTER byte-identiska
+  (cmp) med fetch-flaggan aktiv; kalla första-laddningens undantag +
+  persist-cache-optionen bokförda (B3 ersatt). **NÄSTA: Marcus
+  granskar K10** (`localhost:5173/hem?variant=k10`) → designlåsning
+  närmar sig ("bra grund").
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
