@@ -76,6 +76,17 @@
   arbetsregeln punkt-för-punkt-verifiering mot rå-dump före leverans
   (skörd-kandidat). **NÄSTA: Marcus granskar K3**
   (`localhost:5173/hem?variant=k3`) → nästa varv eller designlåsning.
+- [x] **K3-feedbacken (6 p) → K4 LEVERERAD** (2026-07-06, Del 5
+  kanonisk plats; kod `a348816`): kolumnen ALLTID skärm-centrerad
+  (720==720 assertat), menyn = tabbarens exakta mått flippade (568 px
+  assertat; pill fyller cellen; NÄRA innehållet), aktivitetsloggen →
+  subtil live-logg med AKTÖR (Lotta/Roger/Marcus; inga ikoner;
+  bottenlinjerad diff 0 assertat; dold <xl), kortrubriker
+  accent-KOPPAR (annan färg, ~5,9:1), anmälningslistan per FK
+  IMG_1539 (tre-radiga rader + "Anmäld 6 juli" + chevron), eventkortet
+  oförändrat (godkänt). Checklista-regeln tillämpad: varje punkt
+  avprickad mot assertion. **NÄSTA: Marcus granskar K4**
+  (`localhost:5173/hem?variant=k4`) → nästa varv eller designlåsning.
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
