@@ -21,6 +21,9 @@
   --mm-bg: var(--p-neutral-0);
   --mm-bg-subtle: var(--p-neutral-25);
   --mm-bg-muted: var(--p-neutral-50);
+  --mm-bg-emphasized: var(
+    --p-neutral-100
+  ); /* tonal betonings-yta (aktiv-markering) — tydligare än muted */
   --mm-surface: var(--p-neutral-0);
   --mm-surface-raised: var(--p-neutral-0); /* + shadow */
   --mm-surface-overlay: var(--p-neutral-0); /* + shadow-xl */

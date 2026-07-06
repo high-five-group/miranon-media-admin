@@ -41,6 +41,7 @@
   --color-bg: var(--mm-bg);
   --color-bg-subtle: var(--mm-bg-subtle);
   --color-bg-muted: var(--mm-bg-muted);
+  --color-bg-emphasized: var(--mm-bg-emphasized);
 
   /* Ytor */
   --color-surface: var(--mm-surface);

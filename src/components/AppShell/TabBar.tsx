@@ -19,8 +19,9 @@ const TABS = [
  * Botten-fäst tab bar — huvudnavigationens fyra flikar, FK-mönstret
  * (task-1.2; referens `docs/reference/fk-referens/IMG_1538.PNG`): ikon ÖVER
  * etikett per flik, aktiv flik markerad med pill-formad tonal bakgrund
- * (primär-tinten — Miranon-identiteten på FK:s struktur) + fetstil — FORM
- * och vikt, aldrig enbart färg (WCAG 1.4.1, AC #1).
+ * (grå betonings-ytan `--mm-bg-emphasized`; loop 3: primär-tinten avvisad —
+ * kolliderade med Nästa event-kortets ton) + fetstil — FORM och vikt,
+ * aldrig enbart färg (WCAG 1.4.1, AC #1).
  *
  * Tillgänglighet: navigation är `<nav aria-label>` + länk-lista med
  * `aria-current="page"` på aktiv flik — INTE ARIA-tabs-rollerna, som är
@@ -33,26 +34,32 @@ const TABS = [
  * `prefers-contrast: more` ger starkare gränser + kantlinje på aktiva pillen
  * via `contrast-more:`-varianterna.
  *
- * Layout: botten-fäst på alla breakpoints (mobil-först per byggplanens
- * "Lotta på telefon i mötet"); på bred vy centreras flikraden mot samma
- * 600 px-maxbredd som innehållsytan. Inga hårdkodade färger — allt via
- * semantiska tokens (noll nya tokens; beslut 2).
+ * Layout: FLYTANDE kapsel (design-review-loopens iterationer, Marcus
+ * 2026-07-06 — FK:s tabbar svävar med luft mot skärmens kanter och botten,
+ * IMG_1538): rundad container med kantlinje UTAN skugga (loop 2: nedåtriktad
+ * shadow-lg avvisad), fäst `bottom-4` med sidomarginaler, centrerad mot
+ * innehållsytans maxbredd på bred vy. Aktiv-pillen fyller flikcellens
+ * bredd (loop 2: bred stadium-form som FK, inte smal oval).
+ * Botten-fäst på alla breakpoints (mobil-först per byggplanens "Lotta på
+ * telefon i mötet"); skalets `pb-24` på main ger fortsatt frihöjd. Inga
+ * hårdkodade färger — allt via semantiska tokens (noll nya tokens;
+ * beslut 2).
  */
 export function TabBar() {
   return (
     <nav
       aria-label="Huvudnavigation"
-      className="fixed inset-x-0 bottom-0 border-border border-t bg-surface contrast-more:border-border-strong"
+      className="fixed inset-x-4 bottom-4 mx-auto max-w-[568px] rounded-full border border-border bg-surface contrast-more:border-border-strong"
     >
-      <ul className="mx-auto my-0 flex w-full max-w-[600px] list-none p-0">
+      <ul className="my-0 flex w-full list-none items-center gap-1 p-1">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           return (
-            <li key={tab.to} className="flex flex-1 justify-center py-1.5">
+            <li key={tab.to} className="flex flex-1">
               <Link
                 to={tab.to}
                 activeProps={{ 'aria-current': 'page' }}
-                className="flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-full border border-transparent px-4 py-1 text-caption text-text-secondary transition-colors data-[status=active]:bg-primary-tint data-[status=active]:font-semibold data-[status=active]:text-text contrast-more:text-text contrast-more:data-[status=active]:border-border-strong"
+                className="flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-full border border-transparent px-2 py-1 text-caption text-text-secondary transition-colors data-[status=active]:bg-bg-emphasized data-[status=active]:font-semibold data-[status=active]:text-text contrast-more:text-text contrast-more:data-[status=active]:border-border-strong"
               >
                 <Icon aria-hidden="true" size={20} />
                 {tab.label}
