@@ -3,10 +3,10 @@ id: TASK-2
 title: >-
   Fynd: get-attendance-conformance immun mot event-ackumulering —
   O(1)-fixtursökning
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-06 06:45'
-updated_date: '2026-07-06 07:28'
+updated_date: '2026-07-06 07:31'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,15 +29,21 @@ UTBRUTET → T64 (tråd-registret): sentinel-purge-wiringen + cred-vägvalet (va
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 findHistoryAttendanceEvent anropar get-attendance ENDAST på fixtur-kandidater filtrerade ur get-events-svaret på fixtur-signaturen — aldrig ett svep över alla event
-- [ ] #2 Saknas fixturen ges samma tydliga diagnos-fel som idag ('ZZ-History-deltagande saknas?')
-- [ ] #3 get-attendance-sviten grön och dess körtid är opåverkad av antalet icke-fixtur-event i staging
+- [x] #1 findHistoryAttendanceEvent anropar get-attendance ENDAST på fixtur-kandidater filtrerade ur get-events-svaret på fixtur-signaturen — aldrig ett svep över alla event
+- [x] #2 Saknas fixturen ges samma tydliga diagnos-fel som idag ('ZZ-History-deltagande saknas?')
+- [x] #3 get-attendance-sviten grön och dess körtid är opåverkad av antalet icke-fixtur-event i staging
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implementation: kandidat-filter på HISTORY_FIXTURE_ORT='ZZ-History Ort' (fixtur-signaturen, Session 23 L5b) före get-attendance-anropen — max 3 anrop oavsett event-mängd (strukturell immunitet, AC 3); svepets per-event-shape-validering medvetet offrad (var O(n)-drivaren; EF-kontraktet bevisas av kandidaternas parse + 400/401/404-testerna). Sviten 6/6 grön 10,7 s; hela test:api 290 passed 16,7 s. TDD: undantag (test-infra-kort per do-work-regeln — ingen produktkod).
+<!-- SECTION:NOTES:END -->

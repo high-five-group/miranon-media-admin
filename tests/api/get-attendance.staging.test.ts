@@ -46,7 +46,15 @@ async function callGetAttendance(
   return request.get(`${config.baseUrl}/functions/v1/get-attendance${query}`, { headers });
 }
 
-/** Härled ett riktigt event som har ZZ-History-deltagande (ingen seedad fixtur). */
+// Fixtur-eventens signatur (Session 23 L5b): de 3 syntetiska RIM-eventen bär
+// Ort='ZZ-History Ort'. Sökningen filtrerar på signaturen i stället för att
+// svepa alla event — 60 ackumulerade create-event-sentineller × ~750 ms/anrop
+// sprängde 30 s-timeouten 2026-07-06 (TASK-2; ADR-060 Updates-not). Svepets
+// per-event-shape-validering offrades medvetet: den var O(n)-drivaren, och
+// EF-kontraktet bevisas redan av kandidaternas parse + 400/401/404-testerna.
+const HISTORY_FIXTURE_ORT = 'ZZ-History Ort';
+
+/** Härled fixtur-eventet med ZZ-History-deltagande via signaturen (ingen seedad fixtur). */
 async function findHistoryAttendanceEvent(
   request: APIRequestContext,
   config: ApiConfig,
@@ -59,10 +67,15 @@ async function findHistoryAttendanceEvent(
   const events = z.array(EventSchema).parse(((await res.json()) as { events: unknown }).events);
   expect(events.length, 'staging-basen måste ha minst ETT event').toBeGreaterThan(0);
 
-  for (const ev of events) {
+  const candidates = events.filter((ev) => ev.ort === HISTORY_FIXTURE_ORT);
+  expect(
+    candidates.length,
+    `inget event med Ort='${HISTORY_FIXTURE_ORT}' — fixturen (Person 01 + 3 Deltaganden) saknas?`,
+  ).toBeGreaterThan(0);
+
+  for (const ev of candidates) {
     const ar = await callGetAttendance(request, config, jwt, ev.id);
     expect(ar.status()).toBe(200);
-    // Skarp validering: varje events Deltaganden-lista måste parse:a (shape-kontrakt).
     const rows = z
       .array(AttendanceSchema)
       .parse(((await ar.json()) as { attendance: unknown }).attendance);
