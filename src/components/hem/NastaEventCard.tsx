@@ -23,17 +23,24 @@ function belaggningText(e: Event): string {
 }
 
 /**
- * "Nästa event"-card (Fas 6d L1) — det närmast kommande eventet.
+ * "Nästa event"-card — det närmast kommande eventet, i A-skelettets
+ * primär-tint (variant C-mixen, TASK-1 beslut 3) och klickbart i sin HELHET
+ * till eventets detaljsida (AC #2): länken är eventnamnet, klick-ytan
+ * sträcks över hela kortet via `after:inset-0` mot DashboardCards
+ * `relative` — EN länk-yta, inga nästlade länkar, och skärmläsare får ett
+ * rent länknamn (eventnamnet) i stället för hela kortets text. I pending-/
+ * fel-/tom-läge finns ingen länk → kortet är då inte klickbart (korrekt:
+ * det finns inget mål).
  *
- * "Nästa kommande" avgörs TEMPORALT: tidigaste `startdatum` ≥ idag (dagsstart),
- * INTE via `status`-enumet (Planerat/Genomfört/Inställt/Flyttat är
- * planeringstillstånd, inte temporalt). Detta speglar EXAKT 6b:s dokumenterade
- * filter-beslut (EventsList: "upcoming härleds ur startdatum vs idag — INTE ur
- * status-enumet") → ingen NY T14-krock införs; samma medvetna temporal-renhet.
- * Event utan startdatum räknas aldrig som "nästa" (startTid → Infinity, sist).
+ * "Nästa kommande" avgörs TEMPORALT: tidigaste `startdatum` ≥ idag
+ * (dagsstart), INTE via `status`-enumet (Planerat/Genomfört/Inställt/Flyttat
+ * är planeringstillstånd, inte temporalt). Detta speglar EXAKT 6b:s
+ * dokumenterade filter-beslut (EventsList: "upcoming härleds ur startdatum
+ * vs idag — INTE ur status-enumet") → ingen NY T14-krock införs. Event utan
+ * startdatum räknas aldrig som "nästa" (startTid → Infinity, sist).
  *
  * Läser: namn, `startdatum`, `ort`, beläggning (`antalAnmalda`/`maxPlatser`).
- * Tom-säkert: inga kommande event → vänlig tom-text. Länk till eventets info-vy.
+ * Tom-säkert: inga kommande event → vänlig tom-text.
  */
 export function NastaEventCard() {
   const { data, isPending, isError, error } = useDashboardEvents();
@@ -52,6 +59,7 @@ export function NastaEventCard() {
   return (
     <DashboardCard
       title="Nästa event"
+      tone="primary"
       isPending={isPending}
       isError={isError}
       error={error}
@@ -65,14 +73,14 @@ export function NastaEventCard() {
           <Link
             to="/event/$eventId"
             params={{ eventId: nasta.id }}
-            className="font-medium underline"
+            className="font-semibold text-lg underline-offset-2 after:absolute after:inset-0 hover:underline"
           >
             {eventName(nasta)}
           </Link>
-          <span className="text-small text-text-muted">
+          <span className="text-small">
             {[nasta.startdatum, nasta.ort].filter(Boolean).join(' · ') || 'Datum ej satt'}
           </span>
-          <span className="text-small">{belaggningText(nasta)}</span>
+          <span className="text-small text-text-muted">{belaggningText(nasta)}</span>
         </div>
       )}
     </DashboardCard>

@@ -2,28 +2,40 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 
 /**
- * Fas 6d L1 — Hem-aggregering (/hem, STATISK hämtning). Greeting + tre översikts-
- * cards (nya anmälningar / nästa event / obetalda) + CTA, mot befintliga read-EF
- * (get-registrations event-lösa gren + get-events). INGEN polling i L1 (det är L2).
+ * Hem-vyn (task-1.3 — A-skelettet, prototypvinnaren ur S52 Del 4). Uppifrån
+ * och ned: hälsningskort (h1 "Hej {namn}!" + uppdatera-kontroll) → Nästa event
+ * (primär-tint, HELA kortet klickbart till eventets detaljsida) bredvid
+ * Obetalda avgifter (antalet stort, första namnen under) → helbredds-listkortet
+ * Nya anmälningar (rad klickbar → eventets anmälda-vy; rad utan event olänkad
+ * med "Utan event") → stor helbredds-CTA sist. INGEN separat "Hem"-rubrik
+ * (AC #6): hälsningen ÄR sidans h1 → h1-assertions matchar /^Hej/
+ * (miljö-neutralt: namn-delen styrs av sessionens display-namn, task-1.1).
  *
  * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
  * testMatch-kontrakt, inte staging-exklusivt; jfr mer-vantelista.staging.test.ts).
  *
- * **Deterministisk via `page.route`-mock** av BÅDA EF:erna. Regex-matchare som inte
- * kolliderar: `get-registrations` och `get-events` är unika delsträngar (get-events
- * matchar inte get-event, get-registrations matchar inte create-registration).
+ * **Deterministisk via `page.route`-mock** av EF:erna. Regex-matchare som inte
+ * kolliderar: `get-registrations` och `get-events` är unika delsträngar
+ * (get-events matchar inte get-event, get-registrations matchar inte
+ * create-registration); `get-event\?` (klick-testet) matchar inte get-events.
  * Mockarna speglar EF-svaren `{ registrations: [...] }` / `{ events: [...] }`
  * (Registration.schema / Event.schema-rader → adapterns `.parse()` passerar).
  *
- * Täckning: cards-rendering (senaste anmälningar recency-sorterat, nästa event
- * temporalt, obetalda-antal), greeting, CTA→/event, tom-state per card, fel
- * (4xx role=alert, no-retry), axe 0. INGEN h1-auto-fokus-assertion: /hem är
- * default-landningsytan → containern flyttar INTE fokus (skip-link-först-tab-
- * ordning, speglar EventsList; se Hem.tsx + shell DoD 2).
+ * Täckning: A-skelettets rendering (senaste anmälningar recency-sorterat,
+ * nästa event temporalt, obetalda-antal stort), hälsnings-h1, klick-ytorna
+ * (helkorts-klick AC #2, rad-klick + "Utan event" AC #3), CTA→/event,
+ * tom-state per card, fel (4xx role=alert, no-retry), axe 0. INGEN
+ * h1-auto-fokus-assertion: /hem är default-landningsytan → containern flyttar
+ * INTE fokus (skip-link-först-tab-ordning, speglar EventsList; se Hem.tsx +
+ * shell DoD 2).
  */
 
 const GET_REGISTRATIONS = /\/functions\/v1\/get-registrations/;
 const GET_EVENTS = /\/functions\/v1\/get-events/;
+const GET_EVENT = /\/functions\/v1\/get-event\?/;
+
+/** Sidrubriken = hälsningen (AC #6) — namn-delen är miljöberoende → prefix-match. */
+const H1_HALSNING = /^Hej/;
 
 type Row = Record<string, unknown>;
 
@@ -105,8 +117,8 @@ async function mock(
   });
 }
 
-test.describe('Hem-aggregering (Fas 6d L1 — statisk översiktsvy)', () => {
-  test('cards renderas med data + greeting + CTA', async ({ page }) => {
+test.describe('Hem — A-skelettet (task-1.3)', () => {
+  test('A-skelettet renderas: hälsnings-h1, kort med data, CTA', async ({ page }) => {
     await mock(page, {
       registrations: [
         reg({ fornamn: 'Carl', efternamn: 'Carlsson', inskickad: '2026-06-22T10:00:00.000Z' }),
@@ -125,44 +137,96 @@ test.describe('Hem-aggregering (Fas 6d L1 — statisk översiktsvy)', () => {
     });
     await page.goto('/hem');
 
-    // <h1> = "Hem" (ingen fokus-assertion — landningsytan stjäl inte fokus).
-    await expect(page.getByRole('heading', { level: 1, name: 'Hem' })).toBeVisible();
+    // <h1> = hälsningen (AC #6 — ingen separat "Hem"-rubrik). Ingen
+    // fokus-assertion: landningsytan stjäl inte fokus.
+    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Hem' })).toHaveCount(0);
 
-    // Greeting — miljö-neutral assertion: namn-prefixet styrs av sessionens
-    // display-namn och testas hermetiskt i egen describe nedan (task-1.1).
-    await expect(page.getByText(/Här är din översikt\./)).toBeVisible();
-
-    // Nya anmälningar: senaste namn (recency via Inskickad) + formaterat datum.
-    await expect(page.getByText('Carl Carlsson')).toBeVisible();
+    // Nya anmälningar: senaste namn (recency via Inskickad) + formaterat datum;
+    // raden är en LÄNK till eventets anmälda-vy (AC #3).
+    await expect(page.getByRole('link', { name: /Carl Carlsson/ })).toBeVisible();
     await expect(page.getByText('2026-06-22')).toBeVisible();
 
     // Nästa event: temporalt valt (kommande, ej dåtids-eventet); namn-länk.
-    await expect(page.getByRole('link', { name: 'Resor i medvetandet 1' })).toBeVisible();
+    // exact: true — rad-länkarnas accessible name INNEHÅLLER eventnamnet
+    // (substräng-default hade gett strict-mode-dubbelträff mot raderna).
+    await expect(
+      page.getByRole('link', { name: 'Resor i medvetandet 1', exact: true }),
+    ).toBeVisible();
     await expect(page.getByText('Förbi-event')).toHaveCount(0);
 
-    // Obetalda: en rad har "Ej mottagen" → antal som text + namn. Scopat till
-    // cardets region-landmark: namnet kan även synas i "Nya anmälningar" (samma
-    // person), så region-scope undviker strict-mode-dubbelträff och bevisar att
-    // raden ligger i RÄTT card.
+    // Obetalda: en rad har "Ej mottagen" → antalet STORT (A-skelettet:
+    // etikett-över-värde) + de första namnen under. Scopat till cardets
+    // region-landmark: namnet kan även synas i "Nya anmälningar" (samma
+    // person), så region-scope undviker strict-mode-dubbelträff och bevisar
+    // att raden ligger i RÄTT card.
     const obetalda = page.getByRole('region', { name: 'Obetalda avgifter' });
-    await expect(obetalda.getByText('1 obetald avgift')).toBeVisible();
+    await expect(obetalda.getByText('1', { exact: true })).toBeVisible();
     await expect(obetalda.getByText('Disa Dahl')).toBeVisible();
 
-    // CTA → eventlistan.
-    await expect(page.getByRole('link', { name: 'Visa alla event →' })).toHaveAttribute(
+    // CTA → eventlistan (helbredds-form; chevronen är aria-hidden → rent namn).
+    await expect(page.getByRole('link', { name: 'Visa alla event' })).toHaveAttribute(
       'href',
       '/event',
     );
 
-    // RefreshButton (L2) — manuell uppdatera-kontroll i headern.
+    // RefreshButton — manuell uppdatera-kontroll i hälsningskortet.
     await expect(page.getByRole('button', { name: 'Uppdatera översikt' })).toBeVisible();
+  });
+
+  test('AC 2 — klick var som helst på Nästa event-kortet → eventets detaljsida', async ({
+    page,
+  }) => {
+    await mock(page, {
+      registrations: [reg()],
+      events: [ev({ id: 'recEventNasta', eventNamn: 'Resor i medvetandet 1' })],
+    });
+    // Detaljsidan hämtar get-event vid landning → mocka för deterministisk render.
+    await page.route(GET_EVENT, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ event: ev({ id: 'recEventNasta' }) }),
+      });
+    });
+    await page.goto('/hem');
+
+    const kort = page.getByRole('region', { name: 'Nästa event' });
+    // Klicka i kortets övre vänstra hörn — INTE på länktexten — för att bevisa
+    // att HELA kort-ytan är länk-yta (stretched link, AC #2).
+    await kort.click({ position: { x: 12, y: 12 } });
+    await expect(page).toHaveURL(/\/event\/recEventNasta/);
+  });
+
+  test('AC 3 — klick på anmälningsrad → eventets anmälda-vy', async ({ page }) => {
+    await mock(page, {
+      registrations: [reg({ fornamn: 'Carl', efternamn: 'Carlsson', eventId: 'recEvent1' })],
+      events: [ev()],
+    });
+    await page.goto('/hem');
+
+    await page.getByRole('link', { name: /Carl Carlsson/ }).click();
+    await expect(page).toHaveURL(/\/event\/recEvent1\/anmalda/);
+  });
+
+  test('AC 3 — rad utan event-koppling är olänkad och visar "Utan event"', async ({ page }) => {
+    await mock(page, {
+      registrations: [reg({ fornamn: 'Eva', efternamn: 'Ek', eventId: null, eventNamn: null })],
+      events: [ev()],
+    });
+    await page.goto('/hem');
+
+    const lista = page.getByRole('region', { name: 'Nya anmälningar' });
+    await expect(lista.getByText('Eva Ek')).toBeVisible();
+    await expect(lista.getByText(/Utan event/)).toBeVisible();
+    await expect(lista.getByRole('link')).toHaveCount(0);
   });
 
   test('tomma listor → vänliga tom-texter per card, inga fel', async ({ page }) => {
     await mock(page, { registrations: [], events: [] });
     await page.goto('/hem');
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Hem' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
     await expect(page.getByText('Inga anmälningar än.')).toBeVisible();
     await expect(page.getByText('Inga kommande event.')).toBeVisible();
     await expect(page.getByText('Inga obetalda avgifter.')).toBeVisible();
@@ -196,7 +260,7 @@ test.describe('Hem-aggregering (Fas 6d L1 — statisk översiktsvy)', () => {
       events: [ev()],
     });
     await page.goto('/hem');
-    await expect(page.getByRole('heading', { level: 1, name: 'Hem' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
@@ -232,21 +296,21 @@ function patchStoredDisplayName(page: Page, displayName: string | null) {
 }
 
 test.describe('Hälsningen (task-1.1 — namnkällan ur kontots metadata)', () => {
-  test('display-namn i sessionen → "Hej {namn}!"', async ({ page }) => {
+  test('display-namn i sessionen → h1 "Hej {namn}!"', async ({ page }) => {
     // 'Lotta' speglar staging-kontots faktiska display-namn — en (osannolik)
     // mitt-i-testet token-refresh, där server-sanningen ersätter patchen, kan
-    // då inte flippa texten.
+    // då inte flippa texten. Hälsningen är sidans h1 (task-1.3 AC #6).
     await patchStoredDisplayName(page, 'Lotta');
     await mock(page);
     await page.goto('/hem');
-    await expect(page.getByText('Hej Lotta! Här är din översikt.')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Hej Lotta!' })).toBeVisible();
   });
 
   test('utan display-namn → neutral hälsning, aldrig e-postadressen', async ({ page }) => {
     await patchStoredDisplayName(page, null);
     await mock(page);
     await page.goto('/hem');
-    await expect(page.getByText('Hej! Här är din översikt.')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Hej!' })).toBeVisible();
     // E-posten är ALDRIG fallback (AC 2, Gunilla-principen). auth.setup
     // hard-failar utan TEST_USER_EMAIL → tom sträng här är ett riggfel.
     const email = process.env.TEST_USER_EMAIL ?? '';
@@ -276,7 +340,7 @@ test.describe('Hem polling + refresh (Fas 6d L2 — ADR-017 + erratum)', () => {
       });
     });
     await page.goto('/hem');
-    await expect(page.getByRole('heading', { level: 1, name: 'Hem' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
 
     // Initial last: registrerings-grenen hämtas EN gång trots TVÅ konsumenter
     // (NyaAnmalningar + Obetalda delar queryKey → dedup); event-grenen en gång.
@@ -314,7 +378,7 @@ test.describe('Hem polling + refresh (Fas 6d L2 — ADR-017 + erratum)', () => {
       });
     });
     await page.goto('/hem');
-    await expect(page.getByRole('heading', { level: 1, name: 'Hem' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
     await expect.poll(() => evCalls).toBe(1); // initial hämtning
 
     // Avancera förbi 60s → refetchInterval fyrar en polling-refetch.

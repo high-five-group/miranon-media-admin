@@ -4,8 +4,8 @@ import { PaymentStatus } from '@/domain/types/Status';
 import { DashboardCard } from './DashboardCard';
 import { useDashboardRegistrations } from './useDashboardData';
 
-/** Hur många obetalda översikten listar med namn (resten sammanfattas i antalet). */
-const MAX_RADER = 5;
+/** Hur många obetalda som namnges under antalet (resten sammanfattas med "…"). */
+const MAX_NAMN = 2;
 
 /** Visningsnamn ur de namnfält Airtable kan leverera — aldrig record-ID/tomt (Gunilla). */
 function displayName(reg: Registration): string {
@@ -15,16 +15,19 @@ function displayName(reg: Registration): string {
 }
 
 /**
- * "Obetalda avgifter"-card (Fas 6d L1) — anmälningar med obetald anmälningsavgift.
+ * "Obetalda avgifter"-card — A-skelettets etikett-över-värde-form (task-1.3,
+ * berättelse 4): ANTALET stort och tydligt, de första namnen under (resten
+ * antyds med "…"). Antalet är TEXT-innehåll under kortets h2-etikett —
+ * översikt, aldrig enbart färg.
  *
  * Obetald-indikator: `anmalningsavgift === 'Ej mottagen'` (`PaymentStatus.EJ_MOTTAGEN`).
  * Fält-formen verifierad mot `docs/reference/data-model.md:193`: `Anmälningsavgift`
  * är en **singleSelect** (Mottagen / Ej mottagen) — INTE formel/rollup → läs/jämför
  * tryggt. "Ej relevant (för föreläsningar)" räknas EJ som obetald (ingen avgift tas
- * ut). Ingen status-blandning (Avbokad/Inställt filtreras inte bort i L1 — samma
+ * ut). Ingen status-blandning (Avbokad/Inställt filtreras inte bort — samma
  * temporal/status-renhet som övriga cards; en ev. snävning är ett medvetet senare val).
  *
- * Visar antal som TEXT (översikt, aldrig enbart färg) + topp 5 namn. Tom-säkert.
+ * Tom-säkert: 0 obetalda → stort "0" + vänlig text under.
  */
 export function ObetaldaCard() {
   const { data, isPending, isError, error } = useDashboardRegistrations();
@@ -43,25 +46,17 @@ export function ObetaldaCard() {
       loadingLabel="Laddar obetalda avgifter…"
       errorTitle="Kunde inte hämta anmälningar"
     >
-      {obetalda.length === 0 ? (
-        <p className="text-small text-text-muted">Inga obetalda avgifter.</p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          <p className="text-small text-text-muted">
-            {`${obetalda.length} ${obetalda.length === 1 ? 'obetald avgift' : 'obetalda avgifter'}`}
-          </p>
-          <ul className="flex flex-col gap-2">
-            {obetalda.slice(0, MAX_RADER).map((reg) => (
-              <li key={reg.id} className="flex flex-col gap-0.5 border-text-muted/20 border-b pb-2">
-                <span className="font-medium">{displayName(reg)}</span>
-                {reg.eventNamn ? (
-                  <span className="text-small text-text-muted">{reg.eventNamn}</span>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <div className="flex flex-col gap-1">
+        <p className="font-semibold text-3xl">{obetalda.length}</p>
+        <p className="text-small text-text-muted">
+          {obetalda.length === 0
+            ? 'Inga obetalda avgifter.'
+            : obetalda
+                .slice(0, MAX_NAMN)
+                .map((reg) => displayName(reg))
+                .join(', ') + (obetalda.length > MAX_NAMN ? ' …' : '')}
+        </p>
+      </div>
     </DashboardCard>
   );
 }

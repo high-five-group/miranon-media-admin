@@ -1,21 +1,26 @@
 import { Link } from '@tanstack/react-router';
 
 /**
- * Hem-CTA (Fas 6d L1) — primär åtgärd från översikten till eventlistan, där Lotta
- * gör merparten av sitt operativa arbete (öppna event → anmälda/närvaro/betalning).
+ * Hem-CTA — A-skelettets stora helbredds-knapp sist i stapeln (task-1.3;
+ * FK:s "Ansök om vab"-mönster): full bredd, generös hörnradie, chevron som
+ * riktnings-antydan (aria-hidden → länknamnet är ren text). Pekar på
+ * eventlistan tills task-1.4 pekar om den till den nya samlade
+ * anmälningslistan (TASK-1 beslut 7).
  *
- * En `<Link>` (navigation, inte en `onPress`-handling) stilad som primär knapp via
- * komponent-tokens — speglar Button-primitivens `primary`-variant (DESIGN-SYSTEM §1,
- * inga hårdkodade färger). Semantiskt korrekt som länk; fokusring ärvs från den
- * globala `*:focus-visible`-regeln (`--mm-focus-ring`). Ingen ny mekanik.
+ * En `<Link>` (navigation, inte en `onPress`-handling) stilad via
+ * CTA-tokens ur semantik-lagret (DESIGN-SYSTEM §1, inga hårdkodade färger).
+ * Semantiskt korrekt som länk; fokusring ärvs från den globala
+ * `*:focus-visible`-regeln (`--mm-focus-ring`); `transition-colors`
+ * neutraliseras globalt under `prefers-reduced-motion` (base.css).
  */
 export function CTA() {
   return (
     <Link
       to="/event"
-      className="text-(color:--mm-button-primary-text) inline-flex min-h-10 w-fit items-center gap-2 rounded bg-(--mm-button-primary-bg) px-4 font-medium transition-colors hover:bg-(--mm-button-primary-bg-hover)"
+      className="text-(color:--mm-btn-cta-text) flex min-h-14 items-center justify-between rounded-2xl bg-(--mm-btn-cta-bg) px-6 py-4 font-semibold text-lg transition-colors hover:bg-(--mm-btn-cta-hover)"
     >
-      Visa alla event →
+      Visa alla event
+      <span aria-hidden="true">›</span>
     </Link>
   );
 }

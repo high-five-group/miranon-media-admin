@@ -144,7 +144,8 @@ test.describe('Autentiserat tillstånd', () => {
     // storageState från setup → vi är inloggade redan.
     await page.goto('/hem');
     await expect(page).toHaveURL(/\/hem$/);
-    await expect(page.locator('h1')).toHaveText('Hem');
+    // /hem:s h1 är hälsningen (task-1.3 AC #6) — namn-delen miljöberoende.
+    await expect(page.locator('h1')).toHaveText(/^Hej/);
   });
 
   test('Test 6: router.invalidate triggas vid auth-state-byte (logout via storage-clear)', async ({

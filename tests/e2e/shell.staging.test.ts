@@ -22,7 +22,8 @@ import { expect, test } from '@playwright/test';
 test.describe('App-skal (Fas 5 DoD)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/hem');
-    await expect(page.getByRole('heading', { name: 'Hem', level: 1 })).toBeVisible();
+    // /hem:s h1 är hälsningen (task-1.3 AC #6) — namn-delen miljöberoende.
+    await expect(page.getByRole('heading', { name: /^Hej/, level: 1 })).toBeVisible();
   });
 
   test('DoD 1 — skal + tab bar med 4 flikar på /hem', async ({ page }) => {
@@ -102,7 +103,8 @@ test.describe('App-skal (Fas 5 DoD)', () => {
     await page.getByRole('button', { name: 'Kasta sektions-fel' }).click();
     await expect(alert).toBeVisible();
     await nav.getByRole('link', { name: 'Hem' }).click();
-    await expect(page.getByRole('heading', { name: 'Hem', level: 1 })).toBeVisible();
+    // /hem:s h1 är hälsningen (task-1.3 AC #6) — namn-delen miljöberoende.
+    await expect(page.getByRole('heading', { name: /^Hej/, level: 1 })).toBeVisible();
   });
 
   test('ADR-047 B5 — offline-banner visas och försvinner', async ({ context, page }) => {
