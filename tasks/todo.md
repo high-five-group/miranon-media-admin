@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-07-05 (**Session 51 ✅ AVSLUTAD** (lifecycle: closed; session 52 öppnas via /session-start) — **ÖVNINGS-RAMVERKETS INRAMNINGS-LANDNING LEVERERAD: Övning 2 börjar här.** dp10-grillning /grill-with-docs till samsyn ("Jag kvitterar."; 10/10 defektfria datapunkter; 4 frågor, 2 senior-mandat: G1 terminologi-drifthem = systemet.md §0-post [kanonisk-plats-par med ADR:n], G2 Fas E = Övning 2:s namngivna slutfas [additiv märkning, ingen ny fas], G3 träffyta låst [T57-raden orörd; hub noll], G4 inga mall-pekare, F1 README-avduplicering A+B+C [klass-lösning under baren: byggplan §2 enda status-ägare]) → bygge: **ADR-068 MINTAD** (övnings-ramverket — Experimentet (Vue) → Övning 1 (S1–50) → Övning 2 (S51→); Accepted, Projekt-grundande; count 67→68 atomiskt på tre bärare) + dok-svepet (README-berättelsen överst + status-/fokus-avduplicering; byggplan-ramrubrik + Fas E-märkning + v1.13; systemet.md §0-post + §11; todo-/tråd-huvuden; G3 nummer-neutral omdöpning) + **L4 restlista-reparationen** (3 bärarlösa element + graderings-triggern fick levande bärare; migrerings-buntens 5 poster namngivna; **T61** AFK/Ralph-loop + sandbox registrerad, trigger ARMERAD). Lessons **L232–L233** skördade + hub-lyft K51.1–2 (hub `f665e1f`); kandidaten mätinstrument-för-enrads-ytor explicit förkastad (verktygsmekanik-klassen); klumprad-kandidaten uppgick i L232. Spoke-trail: 00468d9 · 8978180 · 21142b1 · bd5cd90 · 5d88e6f + avslutscommit; CI-runs 28734895802 / 28741201590 / 28741321827 / 28741469055 / 28742115061 gröna per jobb. **NÄSTA: NY session 52 via /session-start = UI-SPÅRETS START:** (i) fork 5+6-byggena som AKT 0 före första /to-prd-körningen (bump antagen 1.8.0→1.9.0), (ii) första skarpa hel-kedje-körningen /to-prd → /to-issues → /do-work på riktig arbetsenhet (UI-spåret registrerad kandidat som FÖRSTA PRD-kort, beslutas vid start), (iii) första drift-metrik-matningen (gren F-minimiformen). Därefter städ-/mognadsskikt: migrerings-hub-session 1 (S47 Del 3 steg 1 [rigor-migreringen] + mät-apparaten + handoff-klassningen [migrerings-Decision A] + invokerings-UX + T60) / AFK/Ralph-loop + sandbox (T61, trigger armerad; egen landning, Marcus-takt — naturlig evidensgrind: S52:s hel-kedje-körning + drift-metriken) / T56 / L193–L222-lyftet. Mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare. Count 68/68/68 (ADR-068 = övnings-ramverket); två-aktörs-ADR:n (WIP — graderas till Accepted mot drift-metriken; första matningen = S52:s hel-kedje-körning); L193–L222-lyft PENDING.)*
+*Senast uppdaterad: 2026-07-06 (**Session 52 ✅ AVSLUTAD** (lifecycle: closed efter coverage-kvittens, ADR-069-grinden) — **UI-SPÅRETS START LEVERERAD: repots FÖRSTA skarpa PRD-kort (TASK-1 Hem-uppgraderingen) komplett via hel-kedjan /grill-with-docs → prototyp-pass → /to-prd → /to-issues → /do-work.** Två paus/resume-cykler (numret 52 bevarat; resume-Code-halvans första-bruk, ADR-069 b7; mellansession S53). Levererat: hub 1.8.0→1.9.0 (AKT 0) · Hem-pilotens grillning + prototyp A/B/C (`bf705f2`, raderad per kontrakt) · TASK-1 skivat 1.1–1.5 · task-1.1 namnkällan (TDD; Fjärrskådnings-incidenten → väg A + TASK-2) · TASK-2 O(1)-fixtursökningen · task-1.3 Hem på A-skelettet (AC #6 prototyp-facit; T65 designiterationen + TASK-3 loading-flake-fyndet) · task-1.4 samlade anmälningslistan + CTA (`/mer/anmalningar`; DRY-lyft registration-display) · task-1.2 tabbaren FK-mönstret (flytande kapsel; L220:s första flervarvs-granskning, 3 varv; nya semantiska token `--mm-bg-emphasized`) · QA 11/11 (Marcus, 0 fynd) → TASK-1 Done (`7e64bd9`). **DRIFT-METRIK-MATNINGARNA 1–5 avgivna → graderings-prövningen PASSERAD (Del 11): migrerings-hub-sessionerna ÖPPNADE; INGEN ADR mintad** (Accepted efter apparat-migreringen per utfasningskartan + beslut 8; count 69 orörd). Lessons **L235–L242** skördade (6 UNIVERSAL; 5 kandidater explicit förkastade med bärare); T64/T65/T66 registrerade/vilande; hub-lyft PENDING. **NÄSTA: NY session (antagen 54) = MIGRERINGS-HUB-SESSION 1 (Marcus-kvitterad):** rigor-migreringen + T66 (prototyp-tvåfas-skillen) + lessons-hub-lyftet + mät-apparaten + handoff-klassningen + invokerings-UX + T60; därefter produktspåret (T65 / nästa vy-PRD / TASK-3 / T64 / T61).)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -64,7 +64,7 @@
   TASK-1 → /do-work + första drift-metrik-matningen → S52
   end-prövning.**
 
-### Session 52 🔄 ÅTERUPPTAGEN (resume 2, 2026-07-06) — UI-spårets start
+### Session 52 ✅ AVSLUTAD (2026-07-06) — UI-spårets start: TASK-1 komplett + graderings-prövningen passerad
 
 > Scope: sessionsdok `2026-07-05-session-52.md` Del 1 (kanonisk plats).
 > Kadensrad per L67 — uppdateras vid varje landning.
@@ -77,14 +77,19 @@
 > plockbar (AC #6 prototyp A-grinden), task-1.2 plockbar, task-1.4
 > blockad (←1.3), task-1.5 QA blockad (←alla, Marcus). Del 7 + efterspel
 > bokförda i checklistan nedan. Marcus-sekvensens steg 1 (resume) KLART.
-> **QA 11/11 (0 fynd) + TASK-1 STÄNGT (`7e64bd9`) + END-PASSET UTFÖRT**
-> (Del 11: graderings-prövningen PASSERAD — migrerings-hub-sessionerna
-> öppnade, INGEN ADR mintad [Accepted efter apparat-migreringen, L241];
-> lessons L235–L242 skördade + 5 kandidater explicit förkastade;
-> BUILD-LOG S52-posten). **NÄSTA: coverage-kvittens (Marcus) →
-> `lifecycle: closed` → NY session (antagen 54) = migrerings-hub-
-> session 1** (rigor + mät-apparaten + handoff-klassningen +
-> invokerings-UX + T60 + lessons-hub-lyftet; T66 kan buntas).
+> **STÄNGD 2026-07-06 efter Marcus-kvittens av coverage-rapporten**
+> (ADR-069-grinden; post 3 inget anmält; `lifecycle: closed` i
+> stängnings-commiten). QA 11/11 (0 fynd) + TASK-1 STÄNGT (`7e64bd9`);
+> end-passet `967dc08` (Del 11: graderings-prövningen PASSERAD —
+> migrerings-hub-sessionerna öppnade, INGEN ADR mintad [Accepted efter
+> apparat-migreringen, L241]; lessons L235–L242 + 5 kandidater explicit
+> förkastade; BUILD-LOG S52-posten). **NÄSTA: NY session (nästa lediga
+> nummer per disk, antagen 54) = MIGRERINGS-HUB-SESSION 1
+> (Marcus-kvitterad 2026-07-06):** rigor-migreringen + T66-buntningen
+> (prototyp-tvåfas-skillen) + lessons-hub-lyftet (L193–L242-klassen) +
+> mät-apparaten + handoff-klassningen + invokerings-UX + T60. Därefter
+> produktspåret: T65 (Hem-konvergens-passet) / nästa vy-PRD /
+> TASK-3-klassning / T64-vägval / T61 (evidensgrinden uppfylld).
 
 - [x] **AKT 0 LEVERERAD** (2026-07-05): fork 5+6-byggena per S47 Del
   13/14 LÅSTA designer → hub `9a747a1` (plugin 1.8.0→1.9.0, 11→13
