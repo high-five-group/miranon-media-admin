@@ -1,9 +1,10 @@
 ---
 id: TASK-1.4
 title: 'Skiva: Samlade anmälningslistan + CTA-kopplingen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-05 21:09'
+updated_date: '2026-07-06 12:29'
 labels:
   - ready-for-agent
 dependencies:
@@ -21,17 +22,23 @@ Täcker användarberättelser: 8, 9, 10, 11 (listans tomma läge) (+ 13, 14, 15 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 /mer/anmalningar visar alla anmälningar med de senaste först, namn + event + datum per rad, och nås från Mer-landningens länklista
-- [ ] #2 Hem-CTA:n lyder 'Visa alla anmälningar' och landar på den nya listan
-- [ ] #3 Klick på en rad landar på det eventets anmälda-vy; rad utan event visas olänkad med 'Utan event'; tomt läge visar vänlig text
-- [ ] #4 Nya vyn är tangentbordsnavigerbar, har axe-baseline 0 via den befintliga baseline-runnern och dess e2e är grön
+- [x] #1 /mer/anmalningar visar alla anmälningar med de senaste först, namn + event + datum per rad, och nås från Mer-landningens länklista
+- [x] #2 Hem-CTA:n lyder 'Visa alla anmälningar' och landar på den nya listan
+- [x] #3 Klick på en rad landar på det eventets anmälda-vy; rad utan event visas olänkad med 'Utan event'; tomt läge visar vänlig text
+- [x] #4 Nya vyn är tangentbordsnavigerbar, har axe-baseline 0 via den befintliga baseline-runnern och dess e2e är grön
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 7f629f2 · CI-run 28789562204 grön per jobb · CI-grön-första-pass: ja · defekter under körning: 0 · TDD: 1 cykel (e2e-skarven: 7 röda beteenden → 24/24 gröna; full svit 125 passed). Design-review godkänd (Marcus i browsern 2026-07-06). Arkitekturval: queryKey registrations.all utanför dashboard-polling-scopet (ADR-017); DRY-lyft rule-of-three → registration-display.ts. DRIFT-METRIK-MATNING 4 (ADR-068 p.8-minimiformen).
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Design-review: Marcus-granskning i webbläsaren godkänd
 <!-- DOD:END -->

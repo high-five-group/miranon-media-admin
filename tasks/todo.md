@@ -77,11 +77,10 @@
 > plockbar (AC #6 prototyp A-grinden), task-1.2 plockbar, task-1.4
 > blockad (←1.3), task-1.5 QA blockad (←alla, Marcus). Del 7 + efterspel
 > bokförda i checklistan nedan. Marcus-sekvensens steg 1 (resume) KLART.
-> **NÄSTA: (3) /do-work task-1.4 i FRISK invokering** (samlade
-> anmälningslistan `/mer/anmalningar` + CTA-ompekningen; oblockad av
-> 1.3-stängningen) → task-1.2 (tabbaren) → (4) QA task-1.5 +
-> design-reviews (Marcus) → (5) end-prövning (graderings-triggern +
-> lessons-skörden, kandidater 1–5+ i handoffen + Del 8:s).
+> **NÄSTA: /do-work task-1.2 (tabbaren — sista UI-skivan)** → QA
+> task-1.5 oblockas (`ready-for-human`, Marcus) → (5) end-prövning
+> (graderings-triggern + lessons-skörden, kandidater 1–5+ i handoffen
+> + Del 8–9:s).
 
 - [x] **AKT 0 LEVERERAD** (2026-07-05): fork 5+6-byggena per S47 Del
   13/14 LÅSTA designer → hub `9a747a1` (plugin 1.8.0→1.9.0, 11→13
@@ -200,6 +199,17 @@
   **T65** (exakt-kopia-prototyp efter TASK-1, `paused`); fynd:
   **TASK-3** (loading-state-flake, stash-belagd pre-existing,
   `b3fa9b7`). task-1.4 OBLOCKAD.
+- [x] **task-1.4 LEVERERAD: samlade anmälningslistan + CTA-kopplingen**
+  (2026-07-06, Del 9 kanonisk plats; T65/T66 registrerade dessförinnan,
+  `455b7ca`): `AnmalningarList` på `/mer/anmalningar` (global läslista,
+  senaste först, FK-kort per rad, rad-länk → anmälda-vyn + 'Utan event'
+  olänkad; queryKey `registrations.all` utanför polling-scopet;
+  DRY-lyft rule-of-three → `registration-display.ts`) + Mer-posten
+  först + Hem-CTA → 'Visa alla anmälningar' (beslut 7). TDD RÖTT 7 →
+  GRÖNT 24/24, full svit 125 passed. Kod `7f629f2`, CI-run 28789562204
+  grön per jobb FÖRSTA passet; design-review godkänd; stängning +
+  final-summary = **drift-metrik-matning 4**. Kvar: task-1.2
+  (tabbaren) → QA-kortet oblockas.
 
 ### Session 51 ✅ AVSLUTAD (2026-07-05) — Övnings-ramverket: inramnings-landningen
 
