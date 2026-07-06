@@ -77,12 +77,11 @@
 > plockbar (AC #6 prototyp A-grinden), task-1.2 plockbar, task-1.4
 > blockad (←1.3), task-1.5 QA blockad (←alla, Marcus). Del 7 + efterspel
 > bokförda i checklistan nedan. Marcus-sekvensens steg 1 (resume) KLART.
-> **NÄSTA: (2) /do-work task-1.3 i FRISK invokering** (Hem-omskrivningen
-> till A-skelettet; prototyp-referens återskapas vid behov: worktree på
-> `bf705f2` + symlänkad `node_modules` + vite port 5175) → (3) task-1.4
-> → task-1.2 → (4) QA task-1.5 + design-reviews (Marcus) → (5)
-> end-prövning (graderings-triggern + lessons-skörden, kandidater 1–5+
-> i handoffen).
+> **NÄSTA: (3) /do-work task-1.4 i FRISK invokering** (samlade
+> anmälningslistan `/mer/anmalningar` + CTA-ompekningen; oblockad av
+> 1.3-stängningen) → task-1.2 (tabbaren) → (4) QA task-1.5 +
+> design-reviews (Marcus) → (5) end-prövning (graderings-triggern +
+> lessons-skörden, kandidater 1–5+ i handoffen + Del 8:s).
 
 - [x] **AKT 0 LEVERERAD** (2026-07-05): fork 5+6-byggena per S47 Del
   13/14 LÅSTA designer → hub `9a747a1` (plugin 1.8.0→1.9.0, 11→13
@@ -187,6 +186,20 @@
   per invokering — störst skiva, färsk kontext; AC #6
   prototyp A-grinden, referens localhost:5175) → task-1.4 → task-1.2 →
   QA-kortet (Marcus) → end-prövning.
+- [x] **task-1.3 LEVERERAD: Hem på A-skelettet** (2026-07-06, Del 8
+  kanonisk plats; resume 2-öppningen `27d4aea` först — numrering HÖLL):
+  7 hem-komponenter NYSKRIVNA mot `bf705f2`-facit (hälsningen = h1
+  [AC #6], Nästa event primär-tint + helkorts-stretched-link [AC #2],
+  Obetalda antal-stort, rad-länkar + 'Utan event' [AC #3],
+  helbredds-CTA; NOLL nya tokens, beslut 2) via TDD på e2e-skarven
+  (RÖTT 10/13 → GRÖNT 13/13 + shell 8/8; shell-/auth-flow-assertions
+  uppdaterade i samma skiva). Kod `a8afcf9`, CI-run 28785718115 grön
+  per jobb FÖRSTA passet; stängning + final-summary =
+  **drift-metrik-matning 3** (TDD 1 cykel, 0 defekter i kort-scope).
+  Design-review godkänd på AC #6-matchen; Marcus designiteration →
+  **T65** (exakt-kopia-prototyp efter TASK-1, `paused`); fynd:
+  **TASK-3** (loading-state-flake, stash-belagd pre-existing,
+  `b3fa9b7`). task-1.4 OBLOCKAD.
 
 ### Session 51 ✅ AVSLUTAD (2026-07-05) — Övnings-ramverket: inramnings-landningen
 
