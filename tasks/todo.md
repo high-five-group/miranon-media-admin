@@ -80,7 +80,7 @@
 > **NÄSTA: /do-work task-1.2 (tabbaren — sista UI-skivan)** → QA
 > task-1.5 oblockas (`ready-for-human`, Marcus) → (5) end-prövning
 > (graderings-triggern + lessons-skörden, kandidater 1–5+ i handoffen
-> + Del 8–9:s).
+> samt Del 8–9:s).
 
 - [x] **AKT 0 LEVERERAD** (2026-07-05): fork 5+6-byggena per S47 Del
   13/14 LÅSTA designer → hub `9a747a1` (plugin 1.8.0→1.9.0, 11→13
