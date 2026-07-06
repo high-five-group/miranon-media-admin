@@ -90,6 +90,19 @@
   skörd-datapunkt) rättad samma varv: fix `60c9fd2`, run 28825318696
   grön per jobb inkl. Test+Build. **NÄSTA: Marcus granskar K4**
   (`localhost:5173/hem?variant=k4`) → nästa varv eller designlåsning.
+- [x] **K4-feedbacken (8 p) → K5 + rubrikfärgs-ROTORSAKEN** (2026-07-07,
+  Del 6 kanonisk plats; kod `ab68b9f`, run 28826675421 grön per jobb
+  inkl. Test+Build): base.css h1–h6-regeln (OLAGRAD) slog alla
+  rubrikfärgs-klasser i K3/K4 — computed-assertat; prototyp-fix inline
+  token-style + NYTT byggkrav (@layer base-flytt). Rubriker per FK
+  IMG_1538 (sentence case, ljusgrå #898989 RENDERAT-assertat; koppar
+  förkastad mot referensen), menyn K1-måtten flippade (60×568,
+  topplinjerad 56==56), innehållet nedflyttat, appnamn+version
+  återställt, relativ tid + chevron bort på raderna, aktivitetsloggen
+  chromeless vit utan punkt, koppar-kontur på anmälningskortet
+  (fokus-test). Metodfynd-skörd-kandidat: renderad computed-style
+  asserteras vid visuell feedback. **NÄSTA: Marcus granskar K5**
+  (`localhost:5173/hem?variant=k5`) → nästa varv eller designlåsning.
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
