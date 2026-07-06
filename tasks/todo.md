@@ -49,6 +49,20 @@
   **NÄSTA: Marcus-iterationen i webbläsaren**
   (`localhost:5173/hem?variant=k1`) — feedback → K2/K3 … tills HELT
   nöjd → svar-fångst → kort ur T65 → skarpt bygge.
+- [x] **Designdumpen KLASSAD + K2 BYGGD** (2026-07-06, Del 3 kanonisk
+  plats): Marcus rå-dump (18 punkter) triagerad A/B/C/D — klass A
+  (design) → K2 på `/hem?variant=k2` (kod `d0001bd`): headern bort,
+  adaptiv nav (vänstermeny ≥lg per Material 3, verklig TabBar <lg —
+  web-förankrat svar på versions-frågan: EN responsiv app), "Hej
+  Lotta" utan !, Mina sidor-knapp, versal-etiketter, Nästa event
+  kursnamn/ort/långdatum/dagar-kvar/platser, Obetalda bara siffran,
+  scrollbar lista + event-pill, aktivitets-mock nedtill höger,
+  version i menybotten; klass B (7 byggkrav, inkl. ÖPPEN REVIDERING
+  av G1 beslut a: rad → eventsidan) bokförda för T65-kortet; klass C
+  (5 shell-spår, inkl. scrollbar-gutter-kortkandidaten) + klass D
+  (Mina sidor-ytan, xAPI→Fas 6.5) registrerade. K1-regressionen GRÖN
+  (baslinjen intakt). **NÄSTA: Marcus jämför K1↔K2 i webbläsaren**
+  (`localhost:5173/hem?variant=k2`, ←/→) → nästa iterationsvarv.
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
