@@ -127,6 +127,15 @@
   ›"-länk, anmälningsrubriken inflyttad pl-2 (text-linjering 461==461
   assertat). **NÄSTA: Marcus granskar K8**
   (`localhost:5173/hem?variant=k8`) → nästa varv eller designlåsning.
+- [x] **K8-feedbacken → K9: OMLADDNINGEN demonstrerad** (2026-07-07,
+  Del 10 kanonisk plats; kod `7437104`, run 28829787391 grön per
+  jobb inkl. Test+Build): dumpens uppdaterings-krav (B3 — bokfört men
+  aldrig demonstrerat, Marcus-fångst) byggt: placeholderData +
+  innehålls-blur vid omhämtning, containrar ASSERTAT stilla
+  (byte-identiska boxar före/efter) + demo-knapp; anmälningsrubriken
+  ut igen + koppar-utropstecken (assertade). **NÄSTA: Marcus granskar
+  K9** (`localhost:5173/hem?variant=k9`, klicka "Ladda om datat") →
+  nästa varv eller designlåsning.
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
