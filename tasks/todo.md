@@ -45,6 +45,12 @@
   #2 (todo.md ändrad av S56-agenten mitt under S57-turn — staleness-
   fångad, omläst, om-deriverad). Marcus-kvittens: senior-delegering →
   alternativ A.
+- [x] **Steg 2 LEVERERAT: Decision B** (2026-07-07, Del 3 kanonisk
+  plats): code-role-discipline v1.1→v1.2 (hub `ecbdd53`) — §4.1
+  Code→Marcus→Chat → Code→Marcus (relä-etappen borttagen) + §5
+  p.1/p.4-kirurgin; ytoberoende rigor-rader ORÖRDA; läs-tillbaka mot
+  HEAD-blob grön (L239: relä-markörer 0 träffar). Pilot-empiri #3
+  (delat git-index i delad checkout → pathspec-commit-praxis).
 
 ### Session 56 (2026-07-07, pågår) — T65-kortfödseln: /to-prd → skivning → skarpt Hem-bygge
 
