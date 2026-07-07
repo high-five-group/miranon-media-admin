@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-07-06 (**Session 54 ✅ AVSLUTAD** (lifecycle: closed efter coverage-kvittens, ADR-069-grinden; post 3 inget anmält) — **MIGRERINGS-HUB-SESSION 1 LEVERERAD: utfasningskartans steg 1 + hela migrerings-bunten (p.1–p.6).** Levererat: rigor-migreringen (täcknings-matrisen: hela Migrera-klassen disk-prövad, 8 TÄCKT + lifecycle-delen klar via ADR-069; gap-stängningen code-role-discipline v1.1 [datum-invarianten §1.4 + governing-verifieringen §1.5] + 3+-branschledar-kvantifieraren med ärlighetsklausul i konstitutionen [Marcus-pushback rev avstå-klassningen → L243]; hub `731aa9f`; steg 1-beviset för retirera-steget på plats) · lessons-hub-lyftet S35–S53 (38 [UNIVERSAL]-poster → K35.1–K53.1, agent-transformerat + skript-verifierat verbatim; hub-lyft-skulden NOLL; hub `faf6806`) · plugin 1.10.0→1.11.0 (T66 prototyp-tvåfasen divergens/konvergens [punkterna a–c, web-förankrad Double Diamond + NN/g] + invokerings-UX-README:n [5 laddningsvägs-regler]; hub `6272336`; L55-ritualen grön) · mät-apparaten klassad ÖVERSPELAD av drift-beviset + handoff-klassningen (Decision A) bokförd LEVERERAD (Del 5) · T60 väg b (bearbetningen → research/, rådatan gitignorerad; hub-trädet HELT RENT; hub `d052ebd`) · skörden L243–L244 hub-lyft samma session (K54.1–2, hub `fb52a0c`). Trådflippar: T60 + T66 → closed. INGEN ADR mintad (Accepted efter apparat-migreringen, L241; count 69 orörd). Mekanik-fynd: `~/.claude/CLAUDE.md` = symlink till hub-CLAUDE.md. **OMSTART PENDING (aktiverar 1.11.0).** **NÄSTA: NY session (antagen 55), Marcus väljer spår:** produktspåret (T65 Hem-konvergensen [första T66-konvergens-passet] / nästa vy-PRD / TASK-3-klassning / T64-vägval / T61) eller migrerings-hub-session 2 (kartans steg 2+3: Decision B + retirera relä-apparaten; systemet.md-omskrivningen SIST).)*
+*Senast uppdaterad: 2026-07-07 (**Session 55 ✅ AVSLUTAD** (lifecycle: closed efter coverage-kvittens, ADR-069-grinden; post 3 inget anmält) — **T65 HEM-KONVERGENSEN LEVERERAD: K10 LÅST SOM FACIT efter 10 iterationssteg.** Levererat: första T66-konvergens-passet i skarpt bruk (K1 exakt kopia BEVISAD byte-identisk mot skarpa Hem-vyn → designdumpen 18 punkter klassad A–D → feedback-varven K2–K10, allt computed-/boundingbox-asserterat i browsern) · SVAR-FÅNGSTEN Del 12 (facit-specen + byggkravs-slutlistan B1–B7+2 = kort-input) + skärmdumps-bilagor (`sessions/bilagor/s55-hem-konvergens/`) · prototypen RADERAD per klausul iv (skalet 0 diff mot pre-prototyp; återupplivningsväg `bb31a12`) · nyckelfynd: olagrad base.css h1–h6-regel slår färg-utilities (@layer-byggkrav) + osynlig uppdatering (stale-while-revalidate, byte-identiska före/under/efter-bevis) · T66-aktiverings-förbehållet INFRIAT (plugin 1.11.0 verifierad) · skörden L245–L247 hub-lyfta samma session (K55.1–3, hub `65d639c`; skulden NOLL). T65 kvar `active`: design låst, kortet återstår. INGEN ADR mintad (under baren; count 69 orörd). EN CI-incident (pipe-maskerad lokal grind-exit, L235-instans) rättad samma varv. **NÄSTA: NY session (antagen 56) = produktspåret:** /to-prd föder PRD-kortet ur T65 (Del 12-facit-specen som input, ingen ny intervju) → /to-issues skivning (inkl. B4-datavägen + design-review-grind mot K10-facit) → /do-work skarpt NYSKRIVET Hem-bygge genom leverans-grindarna (K10-referens via worktree på `bb31a12`) → QA-kort (Marcus). Alternativspår om Marcus omprioriterar: migrerings-hub-session 2 (kartans steg 2+3).)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 55 🔄 PÅGÅR (2026-07-06) — T65 Hem-konvergensen: första T66-konvergens-passet
+### Session 55 ✅ AVSLUTAD (2026-07-06 → 2026-07-07) — T65 Hem-konvergensen: K10 låst som FACIT
 
 > Scope: sessionsdok `2026-07-06-session-55.md` Del 1 (kanonisk plats):
 > konvergens-prototypen (EXAKT kopia av faktiska Hem-vyn) →
@@ -167,6 +167,10 @@
   Intentions-grinden N vs N+1 PASSERAD (nästa arbete = NY session,
   antagen 56). **Lifecycle-flip väntar på Marcus coverage-kvittens
   (ADR-069-grinden).**
+- [x] **STÄNGD efter Marcus-kvittens** (2026-07-07): coverage-rapporten
+  kvitterad; post 3 inget anmält. `lifecycle: closed` i
+  stängnings-commiten. **Kvar efter stängning (Marcus-moment):
+  Update-klicket i claude.ai.**
 
 ### Session 54 ✅ AVSLUTAD (2026-07-06) — MIGRERINGS-HUB-SESSION 1: kartans steg 1 + hela bunten levererade
 
