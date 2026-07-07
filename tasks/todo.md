@@ -21,6 +21,29 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 56 (2026-07-07, pågår) — T65-kortfödseln: /to-prd → skivning → skarpt Hem-bygge
+
+> Scope: sessionsdok `2026-07-07-session-56.md` Del 1 (kanonisk plats):
+> /to-prd på K10-facitet (S55 Del 12 som input, ingen ny intervju) →
+> /to-issues-skivning → /do-work skarpt NYSKRIVET Hem-bygge så långt
+> sessionen räcker. Kadensrad per L67 — uppdateras vid varje landning.
+
+- [x] **Dok-födelse** (2026-07-07): sessionsdok fött (`6724fe7`, run
+  28851427174 grön per jobb; Test+Build by-design-skippad, Docs link
+  check körd + grön); numrering disk-verifierad (nästa ADR = 070,
+  lesson = L248, tråd = T67); audit-ci PASSED.
+- [x] **PRD-KORTET FÖTT: TASK-4 "PRD: Hem-vyn till K10-facit"**
+  (2026-07-07, Del 2 kanonisk plats): skarv-kvittensen låst av Marcus
+  efter förklarings-varv (EN skarv — befintliga e2e-/axe-sviten; ingen
+  api-/unit-skarv) + två öppna deklarationer: B4-datavägen REVIDERAD
+  till klient-side-join (Del 12-notens EF-utökning falsifierad mot
+  disk; ej tyst rivning) + aktivitets-ytan bekräftad utanför (klass D
+  → Fas 6.5). Kropp: 20 användarberättelser, 13 implementationsbeslut,
+  EN skarv, estimat 5 skivor S/M/M/M/S + QA; DoD 4 defaults + 2
+  facit-grindar (L220 + L245/L246). Läs-tillbaka via CLI verifierad.
+  **NÄSTA: /to-issues** (skivningen; skiv-godkännandet är den skillens
+  avstämning) → /do-work skarpt NYSKRIVET Hem-bygge.
+
 ### Session 55 ✅ AVSLUTAD (2026-07-06 → 2026-07-07) — T65 Hem-konvergensen: K10 låst som FACIT
 
 > Scope: sessionsdok `2026-07-06-session-55.md` Del 1 (kanonisk plats):
