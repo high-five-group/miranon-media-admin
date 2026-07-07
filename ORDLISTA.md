@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-02
+updated: 2026-07-07
 review_by: 2027-01-02
 status: stable
 ---
@@ -92,3 +92,10 @@ person — omvänt mot designflödet (lead först, anmälan sedan).
 **Modalitet** — event-taxonomins andra axel: Utbildning eller Föreläsning
 (kurs × modalitet).
 *I koden:* `Modalitet`.
+
+**Mina sidor** — den inloggade användarens personliga yta i admin-appen;
+kanonisk ingång är Mer-vyns översta rad, Hem-vyns Mina sidor-knapp är genväg
+till samma mål (grillad samsyn 2026-07-07; hemvist-beslutet bokförs i
+Mer-PRD:n).
+*Undvik:* Mina uppgifter (FK-referensens term), profil, konto.
+*I koden:* `/mer/mina-sidor` (v1 byggs minimal i Mer-PRD:n).
