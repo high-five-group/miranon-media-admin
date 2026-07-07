@@ -43,6 +43,18 @@
   facit-grindar (L220 + L245/L246). Läs-tillbaka via CLI verifierad.
   **NÄSTA: /to-issues** (skivningen; skiv-godkännandet är den skillens
   avstämning) → /do-work skarpt NYSKRIVET Hem-bygge.
+- [x] **SKIVNINGEN PUBLICERAD: task-4.1–4.6** (2026-07-07, Del 3
+  kanonisk plats; skiv-godkännandet Marcus-delegerat till senior-
+  granskning — täcknings-pass: varje facit-punkt mappad mot en skiva;
+  EXAKT-garantin i fyra lager: mät-AC → facit-avprickningen →
+  design-review mot bilagorna → QA sida-vid-sida): 4.1 @layer-
+  prefaktoreringen (S, oblockad) → 4.2 Hem-strukturen (M, ←4.1;
+  versionskällan öppet flyttad hit från PRD-estimatets skiva 1) →
+  4.3 Nästa event + Obetalda (M, ←4.2) · 4.4 Anmälningslistan (M,
+  ←4.2) → 4.5 Osynliga uppdateringen (S, ←4.3+4.4) → 4.6 QA-planen
+  (ready-for-human, ←alla). DoD-arvet (2 facit-grindar) på varje
+  skiva; tavlan CLI-läs-tillbaka-verifierad. **NÄSTA: /do-work →
+  task-4.1.**
 
 ### Session 55 ✅ AVSLUTAD (2026-07-06 → 2026-07-07) — T65 Hem-konvergensen: K10 låst som FACIT
 
