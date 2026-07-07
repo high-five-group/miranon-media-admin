@@ -144,6 +144,16 @@
   **STÄNGD: design-review Marcus-GODKÄND 2026-07-07 (första varvet,
   skal-scopet) → DoD 6/6, final-summary, Done (stängningsnoten
   Del 5). NÄSTA: /do-work → task-4.3 eller 4.4 (BÅDA plockbara).**
+- [~] **SESSION 56 PAUSAD** (2026-07-07, PAUSLÄGE-blocket kanonisk
+  plats; Marcus-kvittens "kör paus", intentions-grinden passerad):
+  durabel parkering mitt i TASK-4 efter skiva 4.2 — numret 56 BEVARAS,
+  återupptas via `session-resume`. Levererat i S56: TASK-4 fött +
+  skivat (4.1–4.6) + skivorna 4.1 & 4.2 Done (2/5). KVAR: 4.3 + 4.4
+  (plockbara) → 4.5 → QA 4.6. Lesson-KANDIDATER antecknade i HANDOFF
+  (cascade-aktiverar-död-styling + CI-ärver-förälder-röd), EJ
+  hub-lyfta (skördas vid session-end). Session-end-materia (ej paus):
+  BUILD-LOG S56-post, T65-flipp, lessons-skörd. HEAD `<paus-commit>`,
+  CI grön per jobb.
 
 ### Session 55 ✅ AVSLUTAD (2026-07-06 → 2026-07-07) — T65 Hem-konvergensen: K10 låst som FACIT
 
