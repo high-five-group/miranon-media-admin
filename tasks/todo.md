@@ -51,6 +51,17 @@
   p.1/p.4-kirurgin; ytoberoende rigor-rader ORÖRDA; läs-tillbaka mot
   HEAD-blob grön (L239: relä-markörer 0 träffar). Pilot-empiri #3
   (delat git-index i delad checkout → pathspec-commit-praxis).
+- [x] **Steg 3 LEVERERAT: relä-apparaten ARKIVERAD** (2026-07-07,
+  Del 4 kanonisk plats): hub `4e751f8` —
+  `archive/tre-aktors-apparaten/` (9 filer: ARKIV-README + 2
+  templates-filer + 5 claude-app-skills-wrappers via git mv
+  [historiken bevarad] + full bas-PI-snapshot före klipp); levande
+  bas-PI kirurgiskt klippt 219→148 rader (4-ZONERS +
+  INTERAKTIONSMEKANIK + SELF-REVIEW-relä-formen; INGEN rigor struken
+  — bärarna verifierade: hub-CLAUDE STOPPA-raden +
+  code-role-discipline §3.1/§3.3); läs-tillbaka L239 grön; hub-trädet
+  HELT RENT. **KARTANS STEG 2+3 KOMPLETTA** — kvar: steg 4 (egen
+  session, systemet.md SIST + plugin-bunten) + steg 5/Accepted.
 
 ### Session 56 (2026-07-07, pågår) — T65-kortfödseln: /to-prd → skivning → skarpt Hem-bygge
 
