@@ -50,8 +50,8 @@ frågor).
   just Mer-landningen). Tre grupper: [Mina sidor] · [Anmälningar,
   Väntelista, Intresserade, Maillogg] · [Skapa nytt event, Bygg
   segment]. Handling före verktyg i sista gruppen. A11y: en `nav`, en
-  lista per grupp. Rubriker införs först när listan växer (T47 m.m.) —
-  additivt, inget rivs.
+  lista per grupp. Rubriker införs först när listan växer (T47 med
+  flera) — additivt, inget rivs.
 - **D — Radkomponenten `NavCard`:** bibliotekskod 11/11/11 i
   `src/components/primitives/`. API medvetet minimalt: `{ to, icon,
   label }`; `to` typad mot routerns routes (TabBar-mönstret); chevron
