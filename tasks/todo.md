@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-07-07 (**Session 58 ÖPPNAD** (`lifecycle: active`; dok fött `fa48591`, run 28865899722 grön per jobb — Docs link check körd + grön, Test+Build by-design-skippad) — **MIGRERINGS-HUB-SESSION 3: kartans steg 4a** (flytt-oberoende ytor + plugin-bunten) per S57 Del 5 beslut 6. **Seriell-villkoret UPPFYLLT utan rivning:** Marcus pausade S56 (`071b32a`, `lifecycle: paused`, HANDOFF-block — resume-vägen, numret 56 bevaras) FÖRE födelsen; ingen parallell aktiv session (S57 stängd sedan tidigare). Öppnings-empiri (T67-klass, S58 Del 1): main tillfälligt grind-röd (Vale.Repetition på T69-kortets förkortningsform, run 28862921833) — S56-agenten rättade själv (`12ca4b5`, run 28864350960 grön) medan S58-ytan triagerade samma fynd; S58-editen studsade på fil-modifierings-skyddet och omlästes per L248 → skriv-racet fångat mekaniskt, noll kollision på disk. Numrering disk-verifierad: nästa ADR = 070 (check-adr-count grön 69==69), lesson = L249, tråd = T70 (T68/T69 födda av Mer-vy-grillningen `cc6ec61` efter S57-slutläget). **NÄSTA i S58: kartans fulltext (S47 Del 3) + färsk 4a-yt-inventering mot HEAD → hub-ytorna → plugin-bunten (EN atomisk bump 1.11.0→1.12.0; OMSTART = Marcus-moment EFTER) → spoke-ytorna → end-pass.** Övriga öppna vägar: S56-resume (task-4.3/4.4 plockbara) · T67-grillningen (arbetssätts-designen) · T69 Mer-vyn (egen session).)*
+*Senast uppdaterad: 2026-07-07 (**Session 58 ✅ AVSLUTAD** (`lifecycle: closed` efter Marcus coverage-kvittens "Stäng", ADR-069-grinden; punkt 3 inget att säkra) — **MIGRERINGS-HUB-SESSION 3: kartans steg 4a KOMPLETT.** Chat-ytan avvecklad ur ALLA levande operativa artefakter — 9 commits (6 hub + 3 spoke): konstitution `0c54799` (§Roll-arkitektur 'Chat, Code, Marcus' → 'Code, Marcus'; IDENTITET 'Två läsare'; empirin yt-neutral; Marcus-kalibrerad ton via diff-STOPPA) · README+CLAUDE-engineering `331117a` · retrospektiv-mallen arkiverad `34804fd` (levande/död = död) · **bas-PI + spoke-delta-PI RETIRERADE** `21af7b2`/`1d000d1` (OMSKRIV→RETIRERA, över-engineering-vakten: ingen nuvarande användare → 'bygg-ifall' skärs; arkivera-inte-radera, substans dubblett av CLAUDE.md → NOLL rigor struken; T02 moot→closed) · plugin-bunten `505a781`+`1f45767` → **1.12.0** (8 filer av-dubblade + session-end Code-kört; transcript till referera-JSONL; **OMSTART PENDING**) · spoke-prosa `373ba66` · enabling-fix `74f29b4` (bruten systemet.md-länk → L249). Skörd L249–251 [UNIVERSAL] + hub-lyft samma session (K58.1–3). INGEN ADR (count 69; Accepted + konsoliderings-ADR i 4b). Läs-tillbaka L239 grön; spoke CI grön per jobb. **NÄSTA: steg 4b (SYSTEMET.md-bygget: research → divergens → konvergens → färsk-agent-test + konsolidering ARKITEKTUR/WORKFLOW + ADR) i NY session S59 (fräsch kontext).** Marcus-moment FÖRE S59: OMSTART (aktiverar 1.12.0) + Update-klick i claude.ai. Övriga öppna vägar: S56-resume (task-4.3/4.4 plockbara) · T67-grillningen · T69 Mer-vyn.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -67,6 +67,12 @@
   distinkt scope per S57 beslut 6). Coverage-kvittens-grinden: rapporten
   i STOPPA; `lifecycle: closed` flippas FÖRST efter Marcus-kvittens.
   OMSTART (1.12.0) = Marcus-moment efter stängning.
+- [x] **STÄNGD efter Marcus-kvittens** (2026-07-07): coverage-rapporten
+  kvitterad ("Stäng"); punkt 3 (osäkrat annan yta) inget att säkra.
+  `lifecycle: closed` i denna stängnings-commit + rad 7-slutsummeringen +
+  hub-lyft L249–251 (K58.1–3). Kvar Marcus-moment: OMSTART (aktiverar
+  plugin 1.12.0) + Update-klick i claude.ai. **NÄSTA: steg 4b som
+  S59 (fräsch chatt).**
 
 ### Session 57 ✅ AVSLUTAD (2026-07-07, PARALLELL med S56) — MIGRERINGS-HUB-SESSION 2: kartans steg 2+3 + steg 4-grillningen
 
