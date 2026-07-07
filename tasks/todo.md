@@ -62,6 +62,16 @@
   code-role-discipline §3.1/§3.3); läs-tillbaka L239 grön; hub-trädet
   HELT RENT. **KARTANS STEG 2+3 KOMPLETTA** — kvar: steg 4 (egen
   session, systemet.md SIST + plugin-bunten) + steg 5/Accepted.
+- [x] **Grillningen inför steg 4 LANDAD** (2026-07-07, Del 5 kanonisk
+  plats; Marcus-beordrat scope-tillägg, öppet bokfört): 6 beslut
+  kvitterade — scope = operativa systemet KOMPLETT (tredelningen
+  bevaras) · dubbelskiktade sektioner (Gunilla-lager + referens) ·
+  hub-hemvist `SYSTEMET.md` + konsolidering (ARKITEKTUR/WORKFLOW
+  absorberas, T22 konsumeras; sannolik ADR i 4b) · EN fil
+  C4-nedstigning · research→divergens 2–3→konvergens +
+  FÄRSK-AGENT-TESTET som mekanisk slutgrind · steg 4a
+  (flytt-oberoende + plugin-bunt, SERIELLT) → 4b (SYSTEMET.md-bygget,
+  egen session). Exekveringen KVAR utanför S57.
 
 ### Session 56 (2026-07-07, pågår) — T65-kortfödseln: /to-prd → skivning → skarpt Hem-bygge
 
