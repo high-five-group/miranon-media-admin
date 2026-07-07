@@ -21,6 +21,31 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 57 (2026-07-07, pågår — PARALLELL med S56) — MIGRERINGS-HUB-SESSION 2: kartans steg 2+3
+
+> Scope: sessionsdok `2026-07-07-session-57.md` Del 1 (kanonisk plats):
+> steg 0-inventering + T67 → steg 2 (kirurgiska §4.1/§5, Decision B) →
+> steg 3 (retirera relä-apparaten till hub-arkiv, arkivera-inte-radera).
+> PARALLELL-PILOT med S56 (annan agent, samma checkout) — guardrails
+> 1–6 + pilot-empiri i Del 1. Kadensrad per L67 — uppdateras vid varje
+> landning.
+
+- [x] **Dok-födelse** (2026-07-07): sessionsdok fött (`dee9e64`, run
+  28855350600 grön per jobb; Docs link check körd + grön, Test+Build
+  by-design-skippad); numrering disk-verifierad (nästa ADR = 070,
+  lesson = L248, tråd = T67); audit-ci PASSED; pilot-empiri #1
+  (förklarad dirty tree = S56-agentens aktiva task-4.1-kort) bokförd
+  i Del 1.
+- [x] **Steg 0-landningen** (2026-07-07, Del 2 kanonisk plats):
+  cross-repo-inventeringen KLASSAD (steg 2/3 exekveras i S57;
+  steg 4-kön bokförd inkl. plugin-restposten; RÖR EJ-klassen skyddar
+  historiken) + arkiv-beslutet (`archive/tre-aktors-apparaten/` i
+  hub-roten) + **T67 REGISTRERAD** (parallella aktiva sessioner —
+  arbetssätts-pilot; grillning + ev. ADR efter piloten) + pilot-empiri
+  #2 (todo.md ändrad av S56-agenten mitt under S57-turn — staleness-
+  fångad, omläst, om-deriverad). Marcus-kvittens: senior-delegering →
+  alternativ A.
+
 ### Session 56 (2026-07-07, pågår) — T65-kortfödseln: /to-prd → skivning → skarpt Hem-bygge
 
 > Scope: sessionsdok `2026-07-07-session-56.md` Del 1 (kanonisk plats):
