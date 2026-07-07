@@ -72,6 +72,14 @@
   FÄRSK-AGENT-TESTET som mekanisk slutgrind · steg 4a
   (flytt-oberoende + plugin-bunt, SERIELLT) → 4b (SYSTEMET.md-bygget,
   egen session). Exekveringen KVAR utanför S57.
+- [x] **End-passet FÖRBERETT** (2026-07-07, Del 6 kanonisk plats):
+  skörden L248 [UNIVERSAL] (delad-checkout-git-formerna, ur
+  pilot-empirin) + hub-lyft SAMMA session (K57.1) + 4 kandidater
+  explicit förkastade med bärare + BUILD-LOG S57-posten (6 CI-run-id:n
+  bokförda) + transcript-referens Code-JSONL (1 591 675 byte).
+  Intentions-grinden N vs N+1 PASSERAD (nästa = steg 4a, NY session).
+  Lifecycle-flip väntar på coverage-kvittens (ADR-069-grinden);
+  S56 stänger separat senare (guardrail 2).
 
 ### Session 56 (2026-07-07, pågår) — T65-kortfödseln: /to-prd → skivning → skarpt Hem-bygge
 

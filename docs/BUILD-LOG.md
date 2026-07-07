@@ -2452,6 +2452,37 @@ Samtliga pushar CI-gröna per jobb (kod-commits inkl. Test + Build; docs-only by
 
 ---
 
+## Session 57 — MIGRERINGS-HUB-SESSION 2: kartans steg 2+3 + steg 4-grillningen (2026-07-07)
+
+> Process-/hub-session (EJ fas-avslut; byggplans-faserna orörda). SYSTEMETS
+> FÖRSTA SAMTIDIGT-AKTIVA PARALLELLKÖRNING (S57 ∥ S56, samma checkout) —
+> piloten för parallell-arbetssättet (T67). Ingen ADR mintad (Accepted-
+> graderingen ligger efter kartans steg 4; count 69 orörd).
+
+**Mål:** exekvera migrerings-kartans steg 2 (Decision B) + steg 3 (retirera relä-apparaten) med steg 0-inventering; registrera parallell-arbetssättet som tråd; grilla steg 4-designen till samsyn (Marcus-beordrat scope-tillägg).
+
+**Levererat:**
+
+- **Steg 0:** färsk cross-repo-inventering — klassningstabellen (steg 2/3 exekveras; steg 4-kön bokförd inkl. plugin-restposten och drift-fynd utöver kartan [spoke-CLAUDE Arbetsflöde, CONTRIBUTING Aktörer, hub-WORKFLOW 13 träffar, 8 plugin-skill-filer]; RÖR EJ-klassen skyddar historik/falska positiv) + arkiv-beslutet + **T67 registrerad** (rad + kort).
+- **Steg 2 (hub `ecbdd53`):** code-role-discipline v1.1→v1.2 — §4.1 "Code → Marcus → Chat" → "Code → Marcus" (relä-etappen borttagen; rapporten = beslutsunderlag), §5 p.1 riktnings-ägarskap → Marcus, §5 p.4 vakuösa Chat-fil-halvan struken (trail-reflektions-regeln bevarad). Ytoberoende rigor-rader ORÖRDA. Läs-tillbaka L239: relä-markörer 0 träffar.
+- **Steg 3 (hub `4e751f8`):** relä-apparaten ARKIVERAD — `archive/tre-aktors-apparaten/` (9 filer: ARKIV-README med återaktiverings-väg [ADR-068 p.8], handoff-kontraktet + prompt-design-checklistan + 5 claude-app-skills-wrappers via git mv [historik bevarad] + full bas-PI-snapshot före klipp); levande bas-PI kirurgiskt klippt 219→148 rader (4-ZONERS + INTERAKTIONSMEKANIK + SELF-REVIEW-relä-formen; INGEN rigor struken — bärarna verifierade: hub-CLAUDE STOPPA-raden + code-role-discipline §3.1/§3.3). Hub-trädet HELT RENT. **KARTANS STEG 2+3 KOMPLETTA.**
+- **Steg 4-grillningen (Del 5):** 6 Marcus-kvitterade beslut — SYSTEMET.md = operativa systemet KOMPLETT (tredelning bevaras) · dubbelskiktade sektioner · hub-hemvist + konsolidering (ARKITEKTUR/WORKFLOW absorberas; T22 konsumeras; sannolik ADR i 4b) · EN fil C4-nedstigning · research→divergens 2–3→konvergens + FÄRSK-AGENT-TESTET som mekanisk slutgrind · steg 4a (flytt-oberoende, seriellt) → 4b (SYSTEMET.md-bygget).
+- **Parallell-pilotens empiri #1–#4** (Del 1–4; L248 [UNIVERSAL] skördad + hub-lyft K57.1): förklarad dirty tree; delade append-ytor/staleness; delat git-index → pathspec-commit; rebase-pull osäker → ff-only.
+
+### Verifiering
+
+Samtliga spoke-pushar CI-gröna per jobb (docs-only: Test+Build by-design-skippade, Docs link check körd + grön varje gång: runs 28855350600, 28856160543, 28856371831, 28856608564, 28856680189, 28858601809). Hub-commits (ingen CI, T13) läs-tillbaka-verifierade mot HEAD-blob per L239 med nakna räkningar. Noll kollisioner som nådde disk under parallellkörningen.
+
+### Avvikelser / kvarvarande
+
+- Två egna L235-instanser (pipe-maskade exits) — självfångade + rättade i-session; inga nya lessons (instanser av känd).
+- Öppen tidsbegränsad restpost: plugin-skillsens session-paus/resume-rader pekar på arkiverad claude-app-skills-plats — inaktuella till steg 4-bumpen (bokfört Del 2/Del 4).
+- Kvar av kartan: steg 4a+4b (grillad design, egna sessioner) + steg 5/Accepted-graderingen (ADR mintas som nästa lediga nummer då; Updates-noter 041/042/043/034; mät-apparat-beskrivningen).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-07-session-57.md`](../tasks/sessions/2026-07-07-session-57.md) (Del 1–6). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **steg 4a** (flytt-oberoende ytor + plugin-bunten, SERIELL session) → **steg 4b** (SYSTEMET.md-bygget); S56 stänger separat i Marcus ordning (guardrail 2).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

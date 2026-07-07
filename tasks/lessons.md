@@ -3331,3 +3331,21 @@ Interaktions- och tillståndskänsla (laddning, uppdatering, övergångar) ÄR d
 hemma i prototypens granskningsyta när designinputen nämner den — klassningen "byggkrav till
 kortet" är rätt för DATAVÄGAR men fel för BETEENDEN som mottagaren kan bedöma visuellt. Testet:
 kan personen framför skärmen ha en åsikt om det? Då ska prototypen visa det.
+
+### L248 [UNIVERSAL] — Parallella agenter i delad checkout: de säkra git-formerna
+
+Datum: 2026-07-07 | Källa: S57 parallell-piloten (S57 ∥ S56, systemets första
+samtidigt-aktiva parallellkörning; empiri #1–#4 i S57 Del 1–4; tråd T67 bär
+arbetssätts-designen) (klass: parallell-arbetssätt / git-disciplin;
+[[L239]]-släkt [verifiera mot faktiskt tillstånd])
+
+Två samtidiga agenter i SAMMA working tree delar branch-state, git-index och
+append-ytor — kollisionsskyddet är formval, inte tur: (i) committa via
+pathspec (`git commit <paths>`), aldrig index-commit — den andres samtidiga
+staging sveps annars med i din commit; (ii) `git pull --ff-only`, aldrig
+`--rebase` — rebase kräver rent träd och tvingar stash av den andres pågående
+arbete (stash-pop-race); (iii) dirty tree är FÖRVÄNTAT normaltillstånd —
+STOPPA-signal endast när smutsen INTE matchar parallell-sessionens aktiva
+kort (förklarad vs oförklarad smuts); (iv) delade filer (todo, register,
+lessons) omläses i skriv-ögonblicket och seriella räknare om-deriveras mot
+färsk disk per skrivning, aldrig ur minnesbild.
