@@ -51,7 +51,11 @@ export function DashboardCard({
         tone === 'primary' ? 'bg-primary-tint' : 'bg-bg-muted'
       }`}
     >
-      <h2 id={headingId} className="font-medium text-small text-text-muted">
+      {/* Medvetet UTAN färg-utility: rubriken ska rendera basfärgen (--mm-text)
+          — text-text-muted här var död kod tills @layer-flytten (task-4.1) och
+          hade annars aktiverats som synlig diff; facit-omstylningen av
+          kortrubrikerna kommer i task-4.3/4.4. */}
+      <h2 id={headingId} className="font-medium text-small">
         {title}
       </h2>
 

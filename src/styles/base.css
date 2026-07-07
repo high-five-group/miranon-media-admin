@@ -47,17 +47,23 @@ body {
 }
 
 /* Rubriker: aktivera Inter Display-variant via opsz-axel.
-   Se marcus-system DESIGN-FOUNDATION-v1. */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--p-font-sans);
-  font-variation-settings: "opsz" 32;
-  margin: 0;
-  color: var(--mm-text);
+   Se marcus-system DESIGN-FOUNDATION-v1.
+   I @layer base (task-4.1, B-NYTT): olagrad author-CSS besegrar ALLA
+   cascade-lager — utan lagringen förlorar komponent-/utility-färger på
+   rubriker tyst (S55-rotorsaken, L246). Lagerordningen etableras av
+   Tailwinds @layer-deklaration; utilities ligger sist och vinner. */
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--p-font-sans);
+    font-variation-settings: "opsz" 32;
+    margin: 0;
+    color: var(--mm-text);
+  }
 }
 
 p {
