@@ -4,7 +4,7 @@ title: 'Skiva: @layer base-flytten (prefaktorering)'
 status: Done
 assignee: []
 created_date: '2026-07-07 08:55'
-updated_date: '2026-07-07 09:23'
+updated_date: '2026-07-07 09:28'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,11 +33,17 @@ Täcker användarberättelser: inga egna (möjliggörare för 4, 8–10, 14 via 
 AC1: kaskad-invarianten bevisad RENDERAT — nytt permanent regressionstest css-cascade.staging.test.ts (TDD: rött före fixen [utility förlorade, rgb(36,36,36)] → grönt efter [rgb(107,107,107)]); båda sidorna asserterade (default kvar + utility vinner). AC2: e2e 125 passed/2 skipped (skippen by-design, pre-existerande) + a11y 13 passed, 0 baseline-ändringar. AC3: renderad stickprovs-mätning Hem + Event — alla 5 rubrikers computed styles (color/size/weight/family/variation/margin) BYTE-IDENTISKA före/efter. DoD5: bockad som EJ TILLÄMPLIG per grindens eget villkor (per skiva med UI-yta) — skivan har bevisat NOLL synlig UI-förändring (AC3), inget att granska visuellt. DoD6: facit-avprickning rad-för-rad utförd (B-NYTT enda berörda punkten). FYND under körning: DashboardCards h2 bar text-text-muted som tyst förlorade (S55-fyndets kärna) — neutraliserad i samma skiva (klassen borttagen; renderat läge bevarat exakt) för att uppfylla AC3; facit-omstylningen kommer i 4.3/4.4. API-sviten lokalt: 290 passed, 6 env-gap-fel (TEST_REGISTRATION_RECORD_ID = CI-secret, ej i lokala .env.test) — ej regression (ingen serverkod rörd); CI auktoritativ.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit c89a277 · CI-run 28855699515 grön per jobb · CI-grön-första-pass: ja · defekter under körning: 0 i kort-scope (fynd: DashboardCards latenta text-text-muted neutraliserad öppet i samma skiva [AC3-krav]; API-sviten lokalt 6 env-gap-fel = CI-secret TEST_REGISTRATION_RECORD_ID saknas lokalt, ej regression — CI grön; 1 e2e-flake enbart under parallell svit-last = TASK-3-klassen, grön ensam) · TDD: 1 cykel (css-cascade.staging.test.ts rött→grönt)
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)

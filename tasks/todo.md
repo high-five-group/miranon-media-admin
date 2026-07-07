@@ -55,6 +55,17 @@
   (ready-for-human, ←alla). DoD-arvet (2 facit-grindar) på varje
   skiva; tavlan CLI-läs-tillbaka-verifierad. **NÄSTA: /do-work →
   task-4.1.**
+- [x] **task-4.1 LEVERERAD: @layer base-flytten** (2026-07-07, Del 4
+  kanonisk plats; kod+kort `c89a277`, run 28855699515 grön per jobb
+  FÖRSTA passet inkl. Test+Build): TDD 1 cykel (permanent
+  kaskad-invariant-test rött→grönt); senior-fyndet DashboardCards
+  latenta text-text-muted neutraliserad öppet (renderat läge bevarat
+  EXAKT — 5 rubriker byte-identiska computed styles före/efter);
+  DoD 5 EJ TILLÄMPLIG per grindens villkor (noll synlig UI-yta);
+  API-lokal-luckan (TEST_REGISTRATION_RECORD_ID = CI-secret) och
+  parallell-lastens e2e-flake (TASK-3-klassen) öppet bokförda.
+  Parallell S57 (dee9e64) observerad — noll konflikt. **NÄSTA:
+  /do-work → task-4.2 Hem-strukturen (nu oblockad).**
 
 ### Session 55 ✅ AVSLUTAD (2026-07-06 → 2026-07-07) — T65 Hem-konvergensen: K10 låst som FACIT
 
