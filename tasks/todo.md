@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-07-07 (**Session 58 ✅ AVSLUTAD** (`lifecycle: closed` efter Marcus coverage-kvittens "Stäng", ADR-069-grinden; punkt 3 inget att säkra) — **MIGRERINGS-HUB-SESSION 3: kartans steg 4a KOMPLETT.** Chat-ytan avvecklad ur ALLA levande operativa artefakter — 9 commits (6 hub + 3 spoke): konstitution `0c54799` (§Roll-arkitektur 'Chat, Code, Marcus' → 'Code, Marcus'; IDENTITET 'Två läsare'; empirin yt-neutral; Marcus-kalibrerad ton via diff-STOPPA) · README+CLAUDE-engineering `331117a` · retrospektiv-mallen arkiverad `34804fd` (levande/död = död) · **bas-PI + spoke-delta-PI RETIRERADE** `21af7b2`/`1d000d1` (OMSKRIV→RETIRERA, över-engineering-vakten: ingen nuvarande användare → 'bygg-ifall' skärs; arkivera-inte-radera, substans dubblett av CLAUDE.md → NOLL rigor struken; T02 moot→closed) · plugin-bunten `505a781`+`1f45767` → **1.12.0** (8 filer av-dubblade + session-end Code-kört; transcript till referera-JSONL; **OMSTART PENDING**) · spoke-prosa `373ba66` · enabling-fix `74f29b4` (bruten systemet.md-länk → L249). Skörd L249–251 [UNIVERSAL] + hub-lyft samma session (K58.1–3). INGEN ADR (count 69; Accepted + konsoliderings-ADR i 4b). Läs-tillbaka L239 grön; spoke CI grön per jobb. **NÄSTA: steg 4b (SYSTEMET.md-bygget: research → divergens → konvergens → färsk-agent-test + konsolidering ARKITEKTUR/WORKFLOW + ADR) i NY session S59 (fräsch kontext).** Marcus-moment FÖRE S59: OMSTART (aktiverar 1.12.0) + Update-klick i claude.ai. Övriga öppna vägar: S56-resume (task-4.3/4.4 plockbara) · T67-grillningen · T69 Mer-vyn.)*
+*Senast uppdaterad: 2026-07-07 (**Session 59 ÖPPNAD** — MIGRERINGS-HUB-SESSION 4: kartans steg 4b (SYSTEMET.md-bygget + konsolidering), fräsch kontext efter S58-stängningen. Dok fött `4df45a2` (run 28896822094 grön per jobb: Lint+Audit+TypeCheck ✓, Docs link check ✓ körd, Test+Build skipped by-design; numrering disk-verifierad: nästa ADR 070 via check-adr-count 69==69 / lesson L252 / tråd T70; **T22 konsumeras**). Index-artefakten (frontmatter-tillbaka-datering, S58-rest, worktree==HEAD) rensad via `git restore --staged`. Scope = S57 Del 5 grillad samsyn (6 beslut) + Marcus-kvittens A/B/C ("utför 4b exemplariskt"). Research-passet: **A (Diátaxis/arc42/C4) + B (branschprecedent) klara** — C4-nedstigning som ryggrad, arc42 som checklista, Diátaxis-lägen typografiskt chunkade per sektion, färskhet som ägd markör (matklad/rust-analyzer/GitLab/runbook); **C (intern inventering) kör**. **NÄSTA: research-syntes → DIVERGENS 2–3 strukturkandidater → STOPPA för Marcus val.** Marcus-moment: OMSTART (aktiverar 1.12.0) + Update-klick i claude.ai. Öppna vägar: S56-resume (task-4.3/4.4 plockbara) · T67-grillningen · T69 Mer-vyn.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -20,6 +20,26 @@
 **Fas 5.5 — Vertikal write-slice: staging-miljön KLAR ✅; deny/allow-grinden avblockerad.** Server-kontraktet levererat och CI-grönt (operation `mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049). Den isolerade staging-miljön är byggd (ADR-050 bygg-sekvens 1–7 komplett) och hela staging-testsviten grön (41 passed/0 skipped). **Nästa: Fas 5.5 klient-UI (K2) i ny session** (peka bakåt på session 18; en stängd session resume:as ej — ny sessions-yta, ADR-052/L124).
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
+
+### Session 59 (2026-07-07, pågår) — MIGRERINGS-HUB-SESSION 4: kartans steg 4b (SYSTEMET.md-bygget + konsolidering)
+
+> Scope: sessionsdok `2026-07-07-session-59.md` Del 1 (kanonisk plats):
+> steg 4b per S57 Del 5 (6 grillade beslut). SYSTEMET.md byggs i hub-roten
+> (versal) → absorberar ARKITEKTUR.md + WORKFLOW.md (arkivera-inte-radera,
+> T22 konsumeras) → spoke-systemet.md arkiveras + flytt-beroende pekare →
+> konsoliderings-ADR (070). Arbetsform (beslut 5): research → DIVERGENS 2–3 →
+> Marcus väljer → KONVERGENS → acceptansgrindar (färsk-agent-test m.fl.).
+> Kadensrad per L67 — uppdateras vid varje landning.
+
+- [x] **Dok-födelse** (2026-07-07): sessionsdok fött (`4df45a2`, run
+  28896822094 grön per jobb: Lint+Audit+TypeCheck ✓, Docs link check ✓ körd,
+  Test+Build skipped by-design); numrering disk-verifierad (nästa ADR = 070 via
+  check-adr-count 69==69, lesson = L252, tråd = T70; T22 konsumeras); audit-ci
+  PASSED; index-artefakten (frontmatter-tillbaka-datering, S58-rest,
+  worktree==HEAD) rensad via `git restore --staged`. Research-passet startat
+  (3 spår som bakgrundsagenter; A-spårets första körning gav en anomali/0
+  tool-uses → omkört rent med injektions-hygien). **NÄSTA: research-syntes →
+  DIVERGENS.**
 
 ### Session 58 (2026-07-07, pågår) — MIGRERINGS-HUB-SESSION 3: kartans steg 4a (flytt-oberoende ytor + plugin-bunten)
 
