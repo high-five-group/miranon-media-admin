@@ -139,10 +139,11 @@
   Updates-not), versionsraden build-injicerad (B-NYTT2). TDD 5
   beteenden rött→grönt (24/24); geometri-probe mot facit EXAKT;
   fulla e2e 126/2 skip + a11y 13/13 (enda felet = TASK-3:s
-  pre-existing narvaro-flake, orörd yta). **Kortet KVAR In Progress —
-  DoD 5 design-review är Marcus-grinden (L220): granska
-  `localhost:5173/hem` mot facit-bilagorna → därefter Done +
-  /do-work task-4.3/4.4.**
+  pre-existing narvaro-flake, orörd yta). Kod `9189cb5`, run
+  28857988881 grön per jobb FÖRSTA passet inkl. Test+Build.
+  **STÄNGD: design-review Marcus-GODKÄND 2026-07-07 (första varvet,
+  skal-scopet) → DoD 6/6, final-summary, Done (stängningsnoten
+  Del 5). NÄSTA: /do-work → task-4.3 eller 4.4 (BÅDA plockbara).**
 
 ### Session 55 ✅ AVSLUTAD (2026-07-06 → 2026-07-07) — T65 Hem-konvergensen: K10 låst som FACIT
 
