@@ -3349,3 +3349,46 @@ STOPPA-signal endast när smutsen INTE matchar parallell-sessionens aktiva
 kort (förklarad vs oförklarad smuts); (iv) delade filer (todo, register,
 lessons) omläses i skriv-ögonblicket och seriella räknare om-deriveras mot
 färsk disk per skrivning, aldrig ur minnesbild.
+
+## 2026-07-07 — Session 58 (MIGRERINGS-HUB-SESSION 3: kartans steg 4a — Chat-ytan avvecklad ur operativa artefakter)
+
+### L249 [UNIVERSAL] — Arkivering/flytt kräver grep efter INKOMMANDE länkar, inte bara utgående referenser
+
+Datum: 2026-07-07 | Källa: S58 steg 4a C-passet (spoke-delta-arkiveringen bröt en markdown-länk
+i systemet.md r173 → Docs link check-röd, run 28893152630; enabling-fix `74f29b4`) (klass:
+git/länk-disciplin; [[L239]]-släkt [verifiera mot faktiskt tillstånd])
+
+När en fil `git mv`:as eller arkiveras: grep efter INKOMMANDE markdown-länkar `](...<filnamn>)`
+i hela repot FÖRE flytten, inte bara utgående referenser FRÅN filen. Utgående-referens-grep (vad
+filen pekar på) och inkommande-länk-grep (vad som pekar på filen) är två skilda sökningar —
+arkivering bryter den senare. En länk-CI-grind (lychee) fångar det, men grep-passet före flytten
+sparar en röd runda. Fixen på en inkommande länk till en retirerad yta är att spegla
+retireringen (markör + avlänka), inte att peka en "stabil mekanik"-referens på arkivet.
+
+### L250 [UNIVERSAL] — Yt-migration: retirera artefakter utan nuvarande användare, omskriv dem inte "ifall"
+
+Datum: 2026-07-07 | Källa: S58 steg 4a (bas-PI + spoke-delta-PI + retrospektiv-mallen RETIRERADE
+i stället för omskrivna — Chat-ytan avvecklad → ingen nuvarande användare; Marcus rev kartans
+"omskriv"-klassning öppet efter evidens) (klass: över-engineering-vakt / migreringsbeslut;
+[[L243]]-släkt [vakten skär spekulation, aldrig beprövad ribba])
+
+När en yt-migration möter en artefakt vars enda syfte var den avvecklade ytan: den har ingen
+nuvarande användare, så att skriva om den för en osäker framtida återkomst är "bygga ifall" —
+exakt vad dubbelriktade över-engineering-vakten skär. Retirera (arkivera-inte-radera): billigt,
+ärligt, reversibelt (återuppliva + skriv om DÅ, med facit om återkomstens form i stället för en
+gissning nu). GRIND före retirering: artefaktens substans måste vara verifierad dubblett av en
+levande bärare (ej antagen) — då stryks noll rigor. En kartas ursprungsklassning ("omskriv") är
+inte immun mot evidens; falsifieras den, rivs den öppet med kvittens.
+
+### L251 [UNIVERSAL] — Mass-omskrivning: kalibrera formuleringen på kärntexten EN gång, applicera sedan konsekvent
+
+Datum: 2026-07-07 | Källa: S58 steg 4a (två-aktörs-språket kalibrerat på §Roll-arkitektur +
+IDENTITET via diff-STOPPA innan det applicerades på 20+ ytor; Marcus justerade "relä-etapp till
+tredje agent" bort + omformade empiri-raden FÖRE bred applicering) (klass:
+mass-transformations-process; [[L245]]-släkt [punktvis feedback som checklista])
+
+Innan samma nya formulering appliceras på många ytor: kalibrera den på den mest konstitutionella
+kärntexten FÖRST — visa exakt diff, få kvittens på ordval OCH gränsfall — och applicera sedan
+konsekvent. Fel ton fångad på 2 kärntexter kostar 2 omskrivningar; fångad efter 20 ytor kostar
+20. Kalibrerings-ögonblicket är där mottagaren väger in nyanserna (vad som INTE ska sägas
+kategoriskt, hur empiri och härkomst bevaras) — inte efter att mönstret redan hårdnat brett.

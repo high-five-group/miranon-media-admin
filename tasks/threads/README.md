@@ -28,7 +28,7 @@ status: stable
 | Tråd | Titel | Tillstånd | Ingång |
 |---|---|---|---|
 | `T01` | System-läsbarhet + triage av det oväntade | `active` | [T01-system-legibility.md](T01-system-legibility.md) · ADR-053 |
-| `T02` | project-instructions/ CI-täckningsgap | `paused` | _(ingen kort än — endast registrerad)_ |
+| `T02` | project-instructions/ CI-täckningsgap | `closed` | _Moot S58: `project-instructions/` RETIRERAD (steg 4a — bas/delta-PI arkiverade, Chat-ytan avvecklad ur arbetsprocessen); katalogen finns inte längre, så CI-täckningsgapet för den är löst genom retirering. Den bredare hub-CI-luckan bärs vidare av `T13`_ |
 | `T03` | Session 20 BUILD-LOG-backfill | `paused` | _(ingen kort än — endast registrerad)_ |
 | `T04` | Mekaniserad sessions-/BUILD-LOG-fullständighetsgrind (mekanisera ADR-041 killer item) | `paused` | _(ingen kort än — endast registrerad)_ |
 | `T05` | Grind-täcknings-meta-grind (manifest: alla dok-kataloger × alla relevanta grind-globbar) — L127 | `paused` | _(ingen kort än — endast registrerad)_ |

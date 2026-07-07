@@ -41,6 +41,32 @@
   fångat mekaniskt av fil-modifierings-skydd + omläsning per L248;
   T67-klass) bokförd i Del 1. **NÄSTA: kartans fulltext (S47 Del 3) +
   färsk 4a-yt-inventering mot HEAD.**
+- [x] **Steg 4a LEVERERAT** (2026-07-07): Chat-ytan avvecklad ur alla
+  levande operativa artefakter — 9 commits (6 hub + 3 spoke). HUB (A+B):
+  konstitution `0c54799` (§Roll-arkitektur 'Chat, Code, Marcus' → 'Code,
+  Marcus'; IDENTITET 'Två läsare'; empirin yt-neutral; Marcus-kalibrerad
+  ton via diff-STOPPA) · README+CLAUDE-engineering `331117a` ·
+  retrospektiv-mallen arkiverad `34804fd` (levande/död = död) · bas-PI
+  RETIRERAD `21af7b2` (OMSKRIV→RETIRERA, över-engineering-vakten;
+  snapshot = fallback) · plugin-bunten `505a781`+`1f45767` → 1.12.0
+  (6 skills av-dubblade + session-end Code-kört; transcript →
+  referera-JSONL; OMSTART PENDING). SPOKE (C): prosa `373ba66`
+  (spoke-CLAUDE/CONTRIBUTING/3 docs) · spoke-delta RETIRERAD `1d000d1`
+  (→ docs/archive/, symmetrisk; T02 moot → closed) · enabling-fix
+  `74f29b4` (bruten systemet.md-länk). Läs-tillbaka L239 grön
+  (kvarvarande 'Chat' = historik/härkomst); spoke CI grön per jobb;
+  INGEN ADR (count 69). r76/r81 granskade + lämnade (agent-neutrala).
+  **NÄSTA: end-passet.**
+- [x] **End-passet FÖRBERETT** (2026-07-07, Del 2 kanonisk plats):
+  skörden L249–L251 (alla [UNIVERSAL]: inkommande-länkar-vid-arkivering,
+  retirera-vs-omskriv-vakten, kalibrera-formulering-en-gång; hub-lyft via
+  lessons-hub-sync pending) + T02 stängd (moot: `project-instructions/`
+  retirerad) + BUILD-LOG S58-posten + transcript-referens Code-JSONL
+  (`99062d28…`, 2 797 632 byte). Intentions-grinden N vs N+1 PASSERAD
+  (nästa = steg 4b, NY session S59; Marcus valde end över paus — 4b =
+  distinkt scope per S57 beslut 6). Coverage-kvittens-grinden: rapporten
+  i STOPPA; `lifecycle: closed` flippas FÖRST efter Marcus-kvittens.
+  OMSTART (1.12.0) = Marcus-moment efter stängning.
 
 ### Session 57 ✅ AVSLUTAD (2026-07-07, PARALLELL med S56) — MIGRERINGS-HUB-SESSION 2: kartans steg 2+3 + steg 4-grillningen
 

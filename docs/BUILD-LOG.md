@@ -2483,6 +2483,62 @@ Samtliga spoke-pushar CI-gröna per jobb (docs-only: Test+Build by-design-skippa
 
 ---
 
+## Session 58 — MIGRERINGS-HUB-SESSION 3: kartans steg 4a (Chat-ytan avvecklad ur operativa artefakter) (2026-07-07)
+
+> Process-/hub-session (EJ fas-avslut; byggplans-faserna orörda). Exekverar migrerings-kartans
+> steg 4a (S57 Del 5 beslut 6): flytt-oberoende ytor + plugin-bunten → två-aktörs (Code + Marcus).
+> Seriell (S56 pausad FÖRE födelsen). Ingen ADR mintad (Accepted-graderingen + konsoliderings-ADR
+> ligger i steg 4b; count 69 orörd).
+
+**Mål:** avveckla Chat-ytan ur systemets levande operativa artefakter — hub-konstitution/mallar/
+plugin-bunt + spoke-CLAUDE/CONTRIBUTING/referenser till två-aktörs-modellen; retirera PI-mekanismen.
+
+**Levererat (9 commits: 6 hub + 3 spoke):**
+
+- **Hub-konstitution (`0c54799`):** §Roll-arkitektur 'Chat, Code, Marcus' → 'Code, Marcus' (Code =
+  agent-ytan; Marcus enda mänskliga motpart, transparens-rapport = beslutsunderlag ej relä-etapp,
+  speglar code-role-discipline §4.1); empirin yt-neutral (self-review ~9 %/transparens ~64 %/pushback
+  ~27 %, härkomst bevarad i §Self-review); IDENTITET §7.1 'Tre läsare' → 'Två läsare' + r59; r70/r82/
+  kontinuitet yt-neutraliserade. Marcus-kalibrerad formulering (kalibrerings-STOPPA före bred applicering).
+- **Hub README + CLAUDE-engineering (`331117a`):** 'Tre läsare' → 'Två läsare'; spoke-mallens metod/verktyg.
+- **Retrospektiv-mallen arkiverad (`34804fd`):** levande/död-prövning gav DÖD → `archive/tre-aktors-apparaten/`.
+- **Bas-PI RETIRERAD (`21af7b2`):** omklassad OMSKRIV→RETIRERA (Marcus-kvitterat, över-engineering-vakten:
+  ingen nuvarande användare → bygg-ifall skärs); git rm, snapshot = permanent fallback. Ingen rigor
+  stryks (dubblett av hub-CLAUDE).
+- **Plugin-bunten → 1.12.0 (`505a781` + `1f45767`):** 6 skills av-dubblade (samexistens-restposten S57
+  stängd) + session-end till Code-kört (oberoende-premissen bärs av Marcus coverage-kvittens;
+  transcript-disciplinen till Code-era: referera JSONL, ingen repo-kopia). Manifest-paret + plugin-entry
+  1.11.0→1.12.0 atomiskt (L228). OMSTART PENDING.
+- **Spoke prosa (`373ba66`):** spoke-CLAUDE (Airtable/mekanik-pekare/ADR-048-synk/Arbetsflöde/Metod),
+  CONTRIBUTING (Aktörer 'tre'→'två', Sessions-disciplin, Transcript till Code-era), data-model/airtable/
+  byggplan läsar-/ägar-rader.
+- **Spoke-delta-PI RETIRERAD (`1d000d1`):** → `docs/archive/` symmetrisk med bas-PI; T02 (CI-täckningsgap)
+  moot → `closed`. Enabling-fix (`74f29b4`): bruten systemet.md-länk efter arkiveringen (→ L249).
+
+### Verifiering
+
+Hub-commits (ingen CI, T13): läs-tillbaka mot HEAD-blob per L239 med nakna räkningar (kvarvarande 'Chat'
+= avsiktlig härkomst + historiska ADR-referenser). Spoke-pushar CI-gröna per jobb (runs 28892800648,
+28893152630→28893446222: Docs link check röd på länk-brottet, grön efter enabling-fix). Plugin-källan
+1.12.0 konsistent (3 versionsfält); install-record + cache 1.11.0 (OMSTART PENDING, L55-full vid nästa
+start). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr-count 69==69.
+
+### Avvikelser / kvarvarande
+
+- **OMSTART PENDING** (Marcus-moment) — aktiverar plugin 1.12.0.
+- systemet.md är genomgående 4b-materia (tre-aktörs-språk); punkt 3 (PI-mekanismen) markerad RETIRERAD
+  som enabling-fix, resten skrivs om i 4b.
+- r76/r81 i hub-CLAUDE granskade + medvetet lämnade (agent-neutrala 'Code-prompts', korrekta i två-aktörs).
+- Skörd L249–L251 (alla [UNIVERSAL]: inkommande-länkar-vid-arkivering, retirera-vs-omskriv-vakten,
+  kalibrera-formulering-en-gång); hub-lyft via lessons-hub-sync (pending/nästa hub-sync-moment).
+- Kvar av kartan: **steg 4b** (SYSTEMET.md-bygget: research→divergens→konvergens→färsk-agent-test +
+  konsolidering ARKITEKTUR/WORKFLOW + ADR) — egen session S59. Steg 5 (radera-på-riktigt) + Accepted-
+  graderingen (Updates-noter 041/042/043/034; count-bump; mät-apparat-beskrivningen).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-07-session-58.md`](../tasks/sessions/2026-07-07-session-58.md) (Del 1 + end-passet). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **steg 4b** (SYSTEMET.md-bygget) i ny session S59 (fräsch kontext); OMSTART före start.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
