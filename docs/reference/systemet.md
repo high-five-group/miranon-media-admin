@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-05
+updated: 2026-07-07
 review_by: 2026-09-21
 status: stable
 ---
@@ -167,11 +167,12 @@ instantieras i en Code-session via **tre kanaler**, var och en disk-belagd:
    aktiveras via user-scope install-record, inte via spoke-config
    ([`spoke-CLAUDE.md:165-175`](../../CLAUDE.md) `## Operativ procedur`;
    [ADR-035](../decisions/ADR-035-plugin-aktivering-user-scope.md)). [STABIL MEKANIK; detaljer §9.]
-3. **Chat-sidans Project Instructions = bas + delta.** Den slutliga claude.ai-PI:n monteras som
-   hub-basen (`templates/project-instructions-base.md`)
-   klistrad FÖRST, följt av spokens egen delta-fil
-   ([`project-instructions/miranon-media-admin.md:3`](../../project-instructions/miranon-media-admin.md)).
-   [STABIL MEKANIK.]
+3. **Chat-sidans Project Instructions = RETIRERAD (Session 58).** PI-mekanismen (hub-bas +
+   spoke-delta) betjänade Chat-ytan, som avvecklades ur arbetsprocessen (migrerings-kartans
+   steg 4a). Bas + delta arkiverade (`marcus-system/archive/tre-aktors-apparaten/` respektive
+   `docs/archive/project-instructions-miranon-media-admin.md`). Detta doks fullständiga
+   två-aktörs-omskrivning sker i kartans steg 4b — hela dokumentet bär ännu tre-aktörs-språk
+   tills dess. [RETIRERAD.]
 
 **Slutsats: det är EN konstitution i TVÅ lager (hub-bas + spoke-delta), inte två parallella.**
 Spoken deklarerar själv att den är ett delta: *"Konstitutionen ovan slår fast PROJEKT-SPECIFIKA
