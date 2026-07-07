@@ -1,14 +1,13 @@
 # Bidrag
 
-Detta är ett privat projekt med en tydlig roll-fördelning mellan tre aktörer.
+Detta är ett privat projekt med en tydlig roll-fördelning mellan två aktörer.
 
 ## Aktörer
 
 | Aktör | Roll | Verktyg |
 |---|---|---|
-| **Marcus** | Projektägare, beslut, kvalitetsbärare | claude.ai (Chat) + terminal (Code) |
-| **Claude Chat** | Strategi, planering, dokumentation, sessions-trail | Web-baserad chat (claude.ai/projects/...) |
-| **Claude Code** | Implementation, git, filhantering, verifiering | Terminal (`claude` CLI) |
+| **Marcus** | Projektägare, beslut, kvalitetsbärare | terminal (Code) + claude.ai (läsyta) |
+| **Claude Code** | Planering, arkitektur, implementation, git, filhantering, verifiering | Terminal (`claude` CLI) |
 
 Hub-and-spoke-system: globala principer i `~/Repon/marcus-system/CLAUDE.md`,
 projekt-specifika i detta repos `CLAUDE.md`. Universella lärdomar märkta
@@ -21,17 +20,18 @@ LÄS → RAPPORTERA → PLANERA → IMPLEMENTERA → VERIFIERA → DOKUMENTERA +
 
 Varje session äger ett sessionsdokument i `tasks/sessions/`.
 
-- **Chat skapar skelett** vid sessionsstart (K1 i klunge-mönstret)
-- **Chat bakar in retrospektiv** vid sessionsavslut (sista K)
-- **Code rör inte sessionsdokumentet** under arbete (P3a-mönstret, etablerat 2026-05-05)
-- Mellan-klungor använder **inline-källor** i Code-prompter, aldrig "se sessionsdok Del N" som källa under körning
+- **Code skapar skelett** vid sessionsstart (dok-födelse, ADR-043)
+- **Code bakar in retrospektiv** vid sessionsavslut (sista K)
+- **Code rör inte sessionsdokumentet för full retrospektiv** mellan K (P3a-mönstret, etablerat 2026-05-05) — bara korta statusrader vid K-fas-avslut
+- Mellan-klungor använder **inline-källor**, aldrig "se sessionsdok Del N" som källa under körning
 
 ## Transcript-disciplin
 
-Transcripts från Chat-sessioner sparas till
-`tasks/sessions/transcripts/<datum>.txt` som originalkopia. Transcriptet är
-sanningskällan vid sessionsavslut, inte LLM-minne. Källa:
-`marcus-system/CLAUDE.md` "Transcript-disciplin"-sektion (commit `03897d7`).
+Transcriptet är sanningskällan vid sessionsavslut, inte LLM-minne. På Code-körda
+sessioner refereras sessionens transcript-JSONL in-place
+(`~/.claude/projects/<projekt-slug>/`) — ingen kopia till repot; sessionsdok,
+BUILD-LOG och lessons är de durabla artefakterna (ADR-069; Session 58). Källa:
+`marcus-system`-pluginets session-end-skill, "Transcript-disciplin".
 
 ## Definition of Done — per session
 

@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-24
+updated: 2026-07-07
 review_by: 2026-12-21
 status: stable
 ---
@@ -10,7 +10,7 @@ status: stable
 Detta dok äger **interaktionen** mellan admin-appen och Airtable-basen: hur appen
 **frågar** och **skriver** mot basen, fält-för-fält per Edge Function, plus de
 fällor som bor SPECIFIKT i interaktionen (T15-klassen: länk-display ≠ record-ID).
-Läsare är **Claude Chat/Code vid interaktions-bygge** (primärt Fas 6c och framåt) —
+Läsare är **Claude Code vid interaktions-bygge** (primärt Fas 6c och framåt) —
 en som ska röra ett Airtable-fält via en Edge Function ska kunna slå upp kontraktet
 här utan att läsa källkoden själv, och utan att gå i en känd fälla.
 

@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-05
+updated: 2026-07-07
 review_by: 2026-11-15
 status: stable
 ---
@@ -10,7 +10,7 @@ status: stable
 > **Status:** AKTIV — ersätter `docs/conversion-plan.md` som styrande fas-för-fas-direktiv för React-bygget.
 > **Skapat:** 2026-05-05
 > **Version:** 1.0
-> **Ägare:** Marcus + Claude Chat (planering) + Claude Code (implementation)
+> **Ägare:** Marcus + Claude Code (planering + implementation)
 > **Föregångare:** `docs/conversion-plan.md` (arkiveras till `docs/archive/conversion-plan-2026-04-14.md` i P3b)
 > **Auktoritativ källa för fas-sekvens:** `tasks/byggplan-direktiv.md` §5 (post-P1)
 > **ADR-katalog:** `docs/decisions/` (10 ADR:er listade i §5 — numrering tilldelas av Code mot befintlig katalog vid commit-tillfället; index i `docs/decisions/README.md`)

@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-02
+updated: 2026-07-07
 review_by: 2026-11-15
 status: stable
 ---
@@ -25,7 +25,7 @@ status: stable
 
 En **navigations- och förståelsekarta** över datamodellen. Det här dokumentet duplicerar inte befintlig dokumentation — det pekar på rätt ställen och förklarar det som är svårt att se när man tittar på fälten isolerat.
 
-Läses av Claude Chat (vid strategi och analys) och Claude Code (vid implementation). Människor — Marcus, Roger, Lotta — läser [`hur-systemet-funkar.md`](./hur-systemet-funkar.md) istället.
+Läses av Claude Code (vid strategi, analys och implementation). Människor — Marcus, Roger, Lotta — läser [`hur-systemet-funkar.md`](./hur-systemet-funkar.md) istället.
 
 Detta dokument är **AUKTORITATIV** för datamodellen. `~/Repon/miranon-media-os/docs/schema_reference.md` är arkiverad för historik (1 845 rader, senaste git-uppdatering 2026-04-03) — den saknar 5 fält som lagts till i april och är inte längre korrekt sanningskälla.
 

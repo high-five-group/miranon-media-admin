@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-25
+updated: 2026-07-07
 review_by: 2026-11-15
 status: stable
 ---
@@ -25,8 +25,8 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 
 - **Styrande dokument för byggandet:** `docs/byggplan.md`. Läs den innan varje fas. Avvik aldrig utan att uppdatera byggplanen först.
 - Research före implementation: kolla React Aria, TanStack, Radix, FK Designsystemet INNAN du designar en lösning. Branschledarnas mönster är golvet.
-- **Airtable-schema före write:** konsultera `docs/reference/data-model.md` (fält-skrivbarhet, formel/rollup-fält, §Kända fällor, write-fält-IDs) INNAN du designar någon Airtable-fält-operation. Anta aldrig fält-form — verifiera mot referensen eller live via Code. Gäller Chat (prompt-design) och Code (utförande).
-- **Samarbetssystemets mekanik:** hur vårt Chat/Code/Marcus-system fungerar och sitter ihop bor i `docs/reference/systemet.md` — den navigerbara mekanik-kartan (roller, hub/spoke-instantiering, disciplin-skills, governing- och distributions-mekanik). Slå upp on-demand när du behöver systemets mekanik; läs inte in den i förväg.
+- **Airtable-schema före write:** konsultera `docs/reference/data-model.md` (fält-skrivbarhet, formel/rollup-fält, §Kända fällor, write-fält-IDs) INNAN du designar någon Airtable-fält-operation. Anta aldrig fält-form — verifiera mot referensen eller live via Code. Gäller vid Code:s fält-operations-design och utförande.
+- **Samarbetssystemets mekanik:** hur vårt Code/Marcus-system fungerar och sitter ihop bor i `docs/reference/systemet.md` — den navigerbara mekanik-kartan (roller, hub/spoke-instantiering, disciplin-skills, governing- och distributions-mekanik). Slå upp on-demand när du behöver systemets mekanik; läs inte in den i förväg.
 - Testa nytt bibliotek/approach med minimalt test (1 komponent, 1 hook) innan full implementation
 - Verifiera per komponent: 11/11/11 (bibliotek) eller 11/10/10 (vyer). Bevisa att det fungerar — "det funkar" ≠ "det är rätt".
 - Fånga lärdomar i `tasks/lessons.md` efter varje korrigering. Markera universella med `[UNIVERSAL]`.
@@ -87,9 +87,9 @@ För aktuell struktur, kör `tree -L 3 -I 'node_modules|dist|.git|coverage|test-
 
 claude.ai-projektkunskapen synkar INTE: `tasks/sessions/archive/`,
 `docs/archive/` (+ `package-lock.json` om fil-urval stöds). Allt finns
-kvar i git — exkluderingen gäller endast Chat-ytans synk (ADR-048).
+kvar i git — exkluderingen gäller endast claude.ai-projektkunskapens synk (ADR-048).
 
-Regel för Chat: noll träffar i projektkunskapen på historiskt material
+Regel vid claude.ai-läsning: noll träffar i projektkunskapen på historiskt material
 (arkiverade sessionsdok, superceded specs, frusna analyser) betyder INTE
 att det saknas. Historik utanför synk-horisonten hämtas VIA CODE
 (LÄS→RAPPORTERA mot lokal disk/git) eller genom att Marcus klistrar
@@ -125,13 +125,12 @@ Fullständig spec: [`docs/specs/DESIGN-SYSTEM-SPEC.md`](docs/specs/DESIGN-SYSTEM
 
 | Verktyg | Används för |
 |---|---|
-| Claude Chat (projekt) | Planering, arkitektur, prompts, FK-research |
-| Claude Code (terminal) | Kodning, git, filhantering, verifiering |
+| Claude Code (terminal) | Planering, arkitektur, FK-research, kodning, git, filhantering, verifiering |
 | Vite dev-server | Lokal utveckling med hot reload |
 | Playwright | Visuell QA, screenshots, accessibility-tester |
 | Airtable MCP | Verifiera fält, records, relationer live |
 
-**Metod:** Marcus och Claude planerar i Chat → Claude Code bygger fas för fas → Marcus verifierar i browsern → feedback → nästa steg.
+**Metod:** Marcus och Code planerar → Code bygger fas för fas → Marcus verifierar i browsern → feedback → nästa steg.
 
 **Fasordning och fas-status:** se `docs/byggplan.md` §4 (styrande).
 
