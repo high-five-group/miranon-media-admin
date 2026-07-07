@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-07-07 (**Session 59 ÖPPNAD** — MIGRERINGS-HUB-SESSION 4: kartans steg 4b (SYSTEMET.md-bygget + konsolidering), fräsch kontext efter S58-stängningen. Dok fött `4df45a2` (run 28896822094 grön per jobb: Lint+Audit+TypeCheck ✓, Docs link check ✓ körd, Test+Build skipped by-design; numrering disk-verifierad: nästa ADR 070 via check-adr-count 69==69 / lesson L252 / tråd T70; **T22 konsumeras**). Index-artefakten (frontmatter-tillbaka-datering, S58-rest, worktree==HEAD) rensad via `git restore --staged`. Scope = S57 Del 5 grillad samsyn (6 beslut) + Marcus-kvittens A/B/C ("utför 4b exemplariskt"). Research-passet: **A (Diátaxis/arc42/C4) + B (branschprecedent) klara** — C4-nedstigning som ryggrad, arc42 som checklista, Diátaxis-lägen typografiskt chunkade per sektion, färskhet som ägd markör (matklad/rust-analyzer/GitLab/runbook); **C (intern inventering) kör**. **NÄSTA: research-syntes → DIVERGENS 2–3 strukturkandidater → STOPPA för Marcus val.** Marcus-moment: OMSTART (aktiverar 1.12.0) + Update-klick i claude.ai. Öppna vägar: S56-resume (task-4.3/4.4 plockbara) · T67-grillningen · T69 Mer-vyn.)*
+*Senast uppdaterad: 2026-07-07 (**Session 59 ÖPPNAD** — MIGRERINGS-HUB-SESSION 4: kartans steg 4b (SYSTEMET.md-bygget + konsolidering), fräsch kontext efter S58-stängningen. Dok fött `4df45a2` (run 28896822094 grön per jobb: Lint+Audit+TypeCheck ✓, Docs link check ✓ körd, Test+Build skipped by-design; numrering disk-verifierad: nästa ADR 070 via check-adr-count 69==69 / lesson L252 / tråd T70; **T22 konsumeras**). Index-artefakten (frontmatter-tillbaka-datering, S58-rest, worktree==HEAD) rensad via `git restore --staged`. Scope = S57 Del 5 grillad samsyn (6 beslut) + Marcus-kvittens A/B/C ("utför 4b exemplariskt"). Research-passet: **A (Diátaxis/arc42/C4) + B (branschprecedent) klara** — C4-nedstigning som ryggrad, arc42 som checklista, Diátaxis-lägen typografiskt chunkade per sektion, färskhet som ägd markör (matklad/rust-analyzer/GitLab/runbook); **C (intern inventering) kör**. **Struktur VALD (Marcus): kandidat C "Systemkartan" + B:s §4-vinjett; beslut 4 förfinat (C4 = nedstignings-disciplin inuti sektioner, ej ryggrad). NÄSTA: KONVERGENS — bygg SYSTEMET.md §0–13 i hub-roten mot acceptansgrindarna.** Marcus-moment: OMSTART (aktiverar 1.12.0) + Update-klick i claude.ai. Öppna vägar: S56-resume (task-4.3/4.4 plockbara) · T67-grillningen · T69 Mer-vyn.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -40,6 +40,13 @@
   (3 spår som bakgrundsagenter; A-spårets första körning gav en anomali/0
   tool-uses → omkört rent med injektions-hygien). **NÄSTA: research-syntes →
   DIVERGENS.**
+- [x] **Research + divergens + strukturval** (2026-07-07): 3 research-spår
+  klara (A Diátaxis/arc42/C4 · B branschprecedent · C intern inventering;
+  bilaga `2636ed1`). 3 strukturkandidater producerade (skelett + provsektion
+  var) → **Marcus valde kandidat C "Systemkartan" + B:s §4-vinjett utbyggd**.
+  Beslut 4 förfinat öppet (C4 = nedstignings-disciplin inuti sektioner, ej
+  dok-ryggrad). Del 2 = kanonisk trail. **NÄSTA: KONVERGENS — bygg SYSTEMET.md
+  §0–13 i hub-roten sektion-för-sektion mot acceptansgrindarna.**
 
 ### Session 58 (2026-07-07, pågår) — MIGRERINGS-HUB-SESSION 3: kartans steg 4a (flytt-oberoende ytor + plugin-bunten)
 
