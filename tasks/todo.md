@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-07-07 (**Session 55 ✅ AVSLUTAD** (lifecycle: closed efter coverage-kvittens, ADR-069-grinden; post 3 inget anmält) — **T65 HEM-KONVERGENSEN LEVERERAD: K10 LÅST SOM FACIT efter 10 iterationssteg.** Levererat: första T66-konvergens-passet i skarpt bruk (K1 exakt kopia BEVISAD byte-identisk mot skarpa Hem-vyn → designdumpen 18 punkter klassad A–D → feedback-varven K2–K10, allt computed-/boundingbox-asserterat i browsern) · SVAR-FÅNGSTEN Del 12 (facit-specen + byggkravs-slutlistan B1–B7+2 = kort-input) + skärmdumps-bilagor (`sessions/bilagor/s55-hem-konvergens/`) · prototypen RADERAD per klausul iv (skalet 0 diff mot pre-prototyp; återupplivningsväg `bb31a12`) · nyckelfynd: olagrad base.css h1–h6-regel slår färg-utilities (@layer-byggkrav) + osynlig uppdatering (stale-while-revalidate, byte-identiska före/under/efter-bevis) · T66-aktiverings-förbehållet INFRIAT (plugin 1.11.0 verifierad) · skörden L245–L247 hub-lyfta samma session (K55.1–3, hub `65d639c`; skulden NOLL). T65 kvar `active`: design låst, kortet återstår. INGEN ADR mintad (under baren; count 69 orörd). EN CI-incident (pipe-maskerad lokal grind-exit, L235-instans) rättad samma varv. **NÄSTA: NY session (antagen 56) = produktspåret:** /to-prd föder PRD-kortet ur T65 (Del 12-facit-specen som input, ingen ny intervju) → /to-issues skivning (inkl. B4-datavägen + design-review-grind mot K10-facit) → /do-work skarpt NYSKRIVET Hem-bygge genom leverans-grindarna (K10-referens via worktree på `bb31a12`) → QA-kort (Marcus). Alternativspår om Marcus omprioriterar: migrerings-hub-session 2 (kartans steg 2+3).)*
+*Senast uppdaterad: 2026-07-07 (**Session 57 ✅ AVSLUTAD** (lifecycle: closed efter coverage-kvittens, ADR-069-grinden; post 3 inget anmält; **OBS: S56 alltjämt `active`** — parallell-piloten S57 ∥ S56, S56 stänger separat per guardrail 2) — **MIGRERINGS-HUB-SESSION 2 LEVERERAD: kartans steg 2+3 KOMPLETTA + steg 4-designen grillad till samsyn.** Levererat: steg 0 färsk cross-repo-inventering (klassningstabellen Del 2; steg 4-kön bokförd inkl. plugin-restposten; drift-fynd utöver kartan klassade) · steg 2 Decision B (code-role-discipline v1.1→v1.2, hub `ecbdd53`: §4.1 Code→Marcus — relä-etappen borta, rigor-rader ORÖRDA, läs-tillbaka L239 relä-markörer 0) · steg 3 relä-apparaten ARKIVERAD (hub `4e751f8`: `archive/tre-aktors-apparaten/` 9 filer via git mv + full bas-PI-snapshot; levande bas-PI klippt 219→148 rader, INGEN rigor struken — bärarna verifierade; hub-trädet HELT RENT) · Del 5 grillad samsyn steg 4 (6 Marcus-kvitterade beslut: SYSTEMET.md = operativa systemet KOMPLETT [tredelningen bevaras], dubbelskiktade sektioner [Gunilla-lager + referens], hub-hemvist + konsolidering [ARKITEKTUR/WORKFLOW absorberas, T22 konsumeras, sannolik ADR i 4b], EN fil C4-nedstigning, research→divergens 2–3→konvergens + FÄRSK-AGENT-TESTET som mekanisk slutgrind, steg 4a seriell → 4b egen session) · parallell-pilotens empiri #1–#4 → L248 [UNIVERSAL] hub-lyft samma session (K57.1, hub `34778bf`; skulden NOLL) · **T67 registrerad** (parallella aktiva sessioner; arbetssätts-grillning på Marcus initiativ efter piloten). INGEN ADR mintad (Accepted-graderingen efter steg 4 per kartan; count 69 orörd). Samtliga spoke-pushar CI-gröna per jobb; hub läs-tillbaka-verifierad (T13/L239). **NÄSTA: steg 4a (flytt-oberoende ytor + plugin-bunten) i NY SERIELL session** — inget parallellt körande (levande regel-ytor); därefter steg 4b (SYSTEMET.md-bygget: research → divergens → konvergens → färsk-agent-test). Övriga öppna vägar: S56-fortsättningen (task-4.2+, Hem-bygget) · T67-grillningen (arbetssätts-designen).)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 57 (2026-07-07, pågår — PARALLELL med S56) — MIGRERINGS-HUB-SESSION 2: kartans steg 2+3
+### Session 57 ✅ AVSLUTAD (2026-07-07, PARALLELL med S56) — MIGRERINGS-HUB-SESSION 2: kartans steg 2+3 + steg 4-grillningen
 
 > Scope: sessionsdok `2026-07-07-session-57.md` Del 1 (kanonisk plats):
 > steg 0-inventering + T67 → steg 2 (kirurgiska §4.1/§5, Decision B) →
@@ -80,6 +80,11 @@
   Intentions-grinden N vs N+1 PASSERAD (nästa = steg 4a, NY session).
   Lifecycle-flip väntar på coverage-kvittens (ADR-069-grinden);
   S56 stänger separat senare (guardrail 2).
+- [x] **STÄNGD efter Marcus-kvittens** (2026-07-07): coverage-
+  rapporten kvitterad ("Kör"); post 3 inget anmält. `lifecycle:
+  closed` i stängnings-commiten + slutsummeringen (rad 7 = S57).
+  Kvar Marcus-moment: Update-klicket i claude.ai. **NÄSTA: steg 4a
+  i NY SERIELL session** (efter S56:s stängning i Marcus ordning).
 
 ### Session 56 (2026-07-07, pågår) — T65-kortfödseln: /to-prd → skivning → skarpt Hem-bygge
 
