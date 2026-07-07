@@ -152,7 +152,7 @@
   (plockbara) → 4.5 → QA 4.6. Lesson-KANDIDATER antecknade i HANDOFF
   (cascade-aktiverar-död-styling + CI-ärver-förälder-röd), EJ
   hub-lyfta (skördas vid session-end). Session-end-materia (ej paus):
-  BUILD-LOG S56-post, T65-flipp, lessons-skörd. HEAD `<paus-commit>`,
+  BUILD-LOG S56-post, T65-flipp, lessons-skörd. Paus-commit `071b32a`,
   CI grön per jobb.
 
 ### Session 55 ✅ AVSLUTAD (2026-07-06 → 2026-07-07) — T65 Hem-konvergensen: K10 låst som FACIT
