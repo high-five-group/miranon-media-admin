@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-07
+updated: 2026-07-08
 review_by: 2027-01-02
 status: stable
 ---
@@ -11,7 +11,7 @@ Kanoniskt domänspråk för produktdomänen — Lottas värld: event, anmälning
 personer, närvaro, mail. Ordlistan äger BEGREPPEN (vad något ÄR, på begreppsnivå);
 mekaniken — fält-ID:n, formler, statusvärde-enumereringar, kända fällor — bor i
 [docs/reference/data-model.md](docs/reference/data-model.md). Samarbetssystemets
-termer bor i [docs/reference/systemet.md](docs/reference/systemet.md) §0 och hör
+termer bor i hubbens `SYSTEMET.md` §0 och hör
 inte hemma här. Endast projektspecifika domänbegrepp får post — allmänna
 programmeringsbegrepp exkluderas, hur ofta de än används. Underhåll: uppdatera
 direkt när en term kristalliseras eller skärps — bunta aldrig. Vid flera ord för

@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-07
+updated: 2026-07-08
 review_by: 2026-11-15
 status: stable
 ---
@@ -26,7 +26,7 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 - **Styrande dokument för byggandet:** `docs/byggplan.md`. Läs den innan varje fas. Avvik aldrig utan att uppdatera byggplanen först.
 - Research före implementation: kolla React Aria, TanStack, Radix, FK Designsystemet INNAN du designar en lösning. Branschledarnas mönster är golvet.
 - **Airtable-schema före write:** konsultera `docs/reference/data-model.md` (fält-skrivbarhet, formel/rollup-fält, §Kända fällor, write-fält-IDs) INNAN du designar någon Airtable-fält-operation. Anta aldrig fält-form — verifiera mot referensen eller live via Code. Gäller vid Code:s fält-operations-design och utförande.
-- **Samarbetssystemets mekanik:** hur vårt Code/Marcus-system fungerar och sitter ihop bor i `docs/reference/systemet.md` — den navigerbara mekanik-kartan (roller, hub/spoke-instantiering, disciplin-skills, governing- och distributions-mekanik). Slå upp on-demand när du behöver systemets mekanik; läs inte in den i förväg.
+- **Samarbetssystemets mekanik:** hur vårt Code/Marcus-system fungerar och sitter ihop bor i hubbens `SYSTEMET.md` (`marcus-system/SYSTEMET.md`) — den navigerbara mekanik-kartan (roller, hub/spoke, plugin/skills, governing/CI, lifecycle, tråd/backlog-substrat, MCP, distribution). Spoke-pekare: [`docs/reference/systemet.md`](docs/reference/systemet.md). Slå upp on-demand när du behöver systemets mekanik; läs inte in den i förväg.
 - Testa nytt bibliotek/approach med minimalt test (1 komponent, 1 hook) innan full implementation
 - Verifiera per komponent: 11/11/11 (bibliotek) eller 11/10/10 (vyer). Bevisa att det fungerar — "det funkar" ≠ "det är rätt".
 - Fånga lärdomar i `tasks/lessons.md` efter varje korrigering. Markera universella med `[UNIVERSAL]`.

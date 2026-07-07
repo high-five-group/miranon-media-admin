@@ -4,7 +4,7 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-07-07 (**Session 59 ÖPPNAD** — MIGRERINGS-HUB-SESSION 4: kartans steg 4b (SYSTEMET.md-bygget + konsolidering), fräsch kontext efter S58-stängningen. Dok fött `4df45a2` (run 28896822094 grön per jobb: Lint+Audit+TypeCheck ✓, Docs link check ✓ körd, Test+Build skipped by-design; numrering disk-verifierad: nästa ADR 070 via check-adr-count 69==69 / lesson L252 / tråd T70; **T22 konsumeras**). Index-artefakten (frontmatter-tillbaka-datering, S58-rest, worktree==HEAD) rensad via `git restore --staged`. Scope = S57 Del 5 grillad samsyn (6 beslut) + Marcus-kvittens A/B/C ("utför 4b exemplariskt"). Research-passet: **A (Diátaxis/arc42/C4) + B (branschprecedent) klara** — C4-nedstigning som ryggrad, arc42 som checklista, Diátaxis-lägen typografiskt chunkade per sektion, färskhet som ägd markör (matklad/rust-analyzer/GitLab/runbook); **C (intern inventering) kör**. **Struktur VALD (Marcus): kandidat C "Systemkartan" + B:s §4-vinjett; beslut 4 förfinat (C4 = nedstignings-disciplin inuti sektioner, ej ryggrad). NÄSTA: KONVERGENS — bygg SYSTEMET.md §0–13 i hub-roten mot acceptansgrindarna.** Marcus-moment: OMSTART (aktiverar 1.12.0) + Update-klick i claude.ai. Öppna vägar: S56-resume (task-4.3/4.4 plockbara) · T67-grillningen · T69 Mer-vyn.)*
+*Senast uppdaterad: 2026-07-07 (**Session 59 ÖPPNAD** — MIGRERINGS-HUB-SESSION 4: kartans steg 4b (SYSTEMET.md-bygget + konsolidering), fräsch kontext efter S58-stängningen. Dok fött `4df45a2` (run 28896822094 grön per jobb: Lint+Audit+TypeCheck ✓, Docs link check ✓ körd, Test+Build skipped by-design; numrering disk-verifierad: nästa ADR 070 via check-adr-count 69==69 / lesson L252 / tråd T70; **T22 konsumeras**). Index-artefakten (frontmatter-tillbaka-datering, S58-rest, worktree==HEAD) rensad via `git restore --staged`. Scope = S57 Del 5 grillad samsyn (6 beslut) + Marcus-kvittens A/B/C ("utför 4b exemplariskt"). Research-passet: **A (Diátaxis/arc42/C4) + B (branschprecedent) klara** — C4-nedstigning som ryggrad, arc42 som checklista, Diátaxis-lägen typografiskt chunkade per sektion, färskhet som ägd markör (matklad/rust-analyzer/GitLab/runbook); **C (intern inventering) kör**. **Struktur VALD: kandidat C; SYSTEMET.md BYGGD (§0–13, hub-roten) + acceptansgrindar klara (färsk-agent-test PASSERAT; Marcus fångade empiri-fel → rättat). KONSOLIDERING LEVERERAD: hub `04fa792` (ARKITEKTUR+WORKFLOW arkiverade) + spoke (systemet.md → stub, 4 länkar omdirigerade) + T22 konsumerad + ADR-070 mintad (068 = Övnings-ramverket orört; två-aktörs-ADR WIP/Proposed). NÄSTA: spoke-grind + push + CI → session-end (skörd L252, BUILD-LOG).** Marcus-moment: OMSTART (aktiverar 1.12.0) + Update-klick i claude.ai. Öppna vägar: S56-resume (task-4.3/4.4 plockbara) · T67-grillningen · T69 Mer-vyn.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
@@ -47,6 +47,17 @@
   Beslut 4 förfinat öppet (C4 = nedstignings-disciplin inuti sektioner, ej
   dok-ryggrad). Del 2 = kanonisk trail. **NÄSTA: KONVERGENS — bygg SYSTEMET.md
   §0–13 i hub-roten sektion-för-sektion mot acceptansgrindarna.**
+- [x] **Konvergens + konsolidering LEVERERAD** (2026-07-08, Del 3 kanonisk plats):
+  SYSTEMET.md byggd i hub-roten (§0–13, drygt 520 r, kandidat C + dubbelskikt;
+  hub `307d1af`→`6837f3d`, läs-tillbaka L239). Acceptansgrindarna klara
+  (färsk-agent-test PASSERAT + 2 fynd åtgärdade; **Marcus fångade empiri-attributions-
+  fel** [self-review ~9 % mättes på Chat-ytan, ej Code] → rättat `6837f3d`; fel-klass-
+  kontroll bredare = rent). Konsolidering: **HUB `04fa792`** (ARKITEKTUR+WORKFLOW →
+  archive/absorberad-i-systemet/ + pekare omdirigerade; WORKFLOW:s projekt-livscykel-ops
+  → **T70**) · **SPOKE** (spoke-systemet.md arkiverad + pekare-stub [governing 14
+  oförändrad] + 4 länkar omdirigerade, L249) · **T22 konsumerad** · **ADR-070 mintad**
+  (nummer-not: 068 = Övnings-ramverket orört; två-aktörs-ADR WIP/Proposed, prövotid ej
+  bevisad). **NÄSTA: spoke-grind + commit + push + CI → session-end (skörd L252, BUILD-LOG).**
 
 ### Session 58 (2026-07-07, pågår) — MIGRERINGS-HUB-SESSION 3: kartans steg 4a (flytt-oberoende ytor + plugin-bunten)
 

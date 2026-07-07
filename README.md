@@ -23,7 +23,7 @@ Projektet byggs som en serie **övningar** ovanpå ett avslutat experiment ([ADR
 | **Övning 1** | React-repots session 1–50: appen byggdes OCH metoden byggdes — projektet började naket och byggde sitt eget arbetssätt (sessionsdok-disciplinen, lifecycle-mekaniken, ADR-/lesson-maskineriet, Pocock-arbetssättet) | Detta repo, historiken t.o.m. Session 50 |
 | **Övning 2** | Session 51 och framåt: UI + backend exekveras med det uppdaterade arbetssättet, fram till och med den namngivna slutfasen Fas E (Supabase-migration) | Detta repo, pågående — byggplanen är Övning 2:s karta |
 
-Nivå-hierarkin: **Experiment → Övningar → byggplanens faser → sessioner.** Historiska dokument (sessionsdok 1–50, ADR-001–067, arkiv) nämner inte övningarna — de skrevs före ramen och läses genom [ADR-068](docs/decisions/ADR-068-ovnings-ramverket.md):s lins-not. Termernas drift-definition: [`docs/reference/systemet.md`](docs/reference/systemet.md) §0.
+Nivå-hierarkin: **Experiment → Övningar → byggplanens faser → sessioner.** Historiska dokument (sessionsdok 1–50, ADR-001–067, arkiv) nämner inte övningarna — de skrevs före ramen och läses genom [ADR-068](docs/decisions/ADR-068-ovnings-ramverket.md):s lins-not. Termernas drift-definition: hubbens `SYSTEMET.md` §0.
 
 ## Dokumentation
 
@@ -137,7 +137,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - Datakälla-åtkomst via TanStack Router-context-DI (ADR-055) — första UI→data-wiringen, precedens för Fas 6; typad `EdgeFunctionError` med strukturerad `requestId`; fel-yta via MessageBox `role="alert"` + aria-live för lyckad flip
   - Server deny/allow + restore-teardown (`update-record.staging.test.ts`) + 3 klient-e2e (`mark-paid.staging.test.ts`, DoD 1/5/6/7/8 via `page.route`-gate); mall för Fas 6:s mutationer
 
-**Arkitekturbeslut:** 69 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
+**Arkitekturbeslut:** 70 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
 
 **Statistik (post-Fas 2, historisk ögonblicksbild):**
 
