@@ -1,3 +1,4 @@
+import { useMatches } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { OfflineIndicator } from './OfflineIndicator';
 import { SkipLink } from './SkipLink';
@@ -26,14 +27,21 @@ export interface AppShellProps {
  * - `pb-24` på main ger frihöjd ovanför den fixerade tab baren.
  */
 export function AppShell({ children }: AppShellProps) {
+  // Per-vy-header-avstängning (task-4.2, K10-facit): djupaste matchade route
+  // med `staticData.hideShellHeader` döljer header-landmarken för sin yta.
+  // App-övergripande header-öde avgörs i shell-spåret (klass C) — tills dess
+  // behåller alla andra vyer headern oförändrad.
+  const hideHeader = useMatches().some((m) => m.staticData.hideShellHeader);
   return (
     <>
       <SkipLink />
-      <header className="border-border border-b bg-surface contrast-more:border-border-strong">
-        <div className="mx-auto flex min-h-12 w-full max-w-[600px] items-center px-4">
-          <span className="font-semibold">Miranon Media Admin</span>
-        </div>
-      </header>
+      {!hideHeader && (
+        <header className="border-border border-b bg-surface contrast-more:border-border-strong">
+          <div className="mx-auto flex min-h-12 w-full max-w-[600px] items-center px-4">
+            <span className="font-semibold">Miranon Media Admin</span>
+          </div>
+        </header>
+      )}
       <OfflineIndicator />
       <main id="main" tabIndex={-1} className="mx-auto w-full max-w-[600px] px-4 py-4 pb-24">
         {children}

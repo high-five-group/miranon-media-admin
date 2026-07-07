@@ -1,19 +1,25 @@
+import { Button } from '@/components/primitives/Button';
 import { CTA } from './CTA';
 import { Greeting } from './Greeting';
 import { NastaEventCard } from './NastaEventCard';
 import { NyaAnmalningarCard } from './NyaAnmalningarCard';
 import { ObetaldaCard } from './ObetaldaCard';
-import { RefreshButton } from './RefreshButton';
 
 /**
- * Hem — A-skelettet (task-1.3; prototypvinnaren S52 Del 4, referens `bf705f2`):
- * hälsningskort (stort "Hej {namn}" + uppdatera-kontroll) → Nästa event
- * (primär-tint, helkorts-klickbart) bredvid Obetalda avgifter (antalet stort)
- * → helbredds-listkortet Nya anmälningar (rad-länkar till eventets anmälda-vy)
- * → stor helbredds-CTA sist. Vertikal stapling, max två kort i rad (FK-mixen),
- * tonala kortytor utan kantlinjer, generös hörnradie. Data mot BEFINTLIGA
- * read-EF via router-context-DI (ADR-055); poll-lagret (ADR-017 + erratum)
- * återanvänds oförändrat i `useDashboardData`/RefreshButton (TASK-1 beslut 9).
+ * Hem — K10-facit-strukturen (task-4.2; designen låst S55 Del 12, referens
+ * `bb31a12`): header-fri skärm-centrerad kolumn, hälsningskort ("Hej {namn}"
+ * utan utropstecken + Mina sidor-platshållare) → Nästa event (primär-tint,
+ * helkorts-klickbart) bredvid Obetalda avgifter (antalet stort) →
+ * helbredds-listkortet Nya anmälningar → stor helbredds-CTA sist. Vertikal
+ * stapling, max två kort i rad (FK-mixen), tonala kortytor utan kantlinjer,
+ * generös hörnradie. Data mot BEFINTLIGA read-EF via router-context-DI
+ * (ADR-055); poll-lagret (ADR-017 + erratum) bär färskheten ENSAMT — den
+ * manuella uppdatera-kontrollen utgick med B5 (ADR-017 Updates-noten).
+ *
+ * Geometrin mot K10-facitets kolumn (`p-4 pt-6 pb-24 lg:pt-14` på 600-boxen):
+ * skalets main bär px-4 + pt-4 + pb-24 → sektionen adderar pt-2 (mobil,
+ * totalt pt-6) och lg:pt-10 (desktop, totalt pt-14) och bär ingen egen
+ * sidopadding (facitets inset = 16 px, inte A-skelettets dubblerade 32 px).
  *
  * A11y (vy-ribba 11/10/10, Tillgänglighet 11):
  * - `<h1>` = hälsningen (AC #6 — ingen "Hem"-rubrik). INGEN programmatisk
@@ -26,14 +32,27 @@ import { RefreshButton } from './RefreshButton';
  * - Tonala ytor utan kantlinjer får synlig gräns under `prefers-contrast: more`
  *   och vid utskrift (border-transparent-mönstret — layoutstabilt).
  */
+
+/**
+ * "Mina sidor" — VISUELL platshållare (K10-facit; ytan är klass D och byggs
+ * senare). Avsiktligt utan onPress tills ytan finns; platshållar-mönstrets
+ * a11y-form (soft-disable?) är T54:s öppna fråga och avgörs där.
+ */
+function MinaSidorButton() {
+  return (
+    <Button intent="secondary" size="sm">
+      Mina sidor
+    </Button>
+  );
+}
+
 export function Hem() {
   return (
-    <section className="flex flex-col gap-3 p-4">
-      {/* Hälsningskortet (A-skelettet: FK:s namnkort) — h1 + manuell refresh
-          (ADR-017 §2 per erratum; poll-lagret håller datan färsk automatiskt). */}
+    <section className="flex flex-col gap-3 pt-2 lg:pt-10">
+      {/* Hälsningskortet (K10: FK:s namnkort) — h1 + Mina sidor-platshållaren. */}
       <div className="flex items-center justify-between gap-3 rounded-2xl border border-transparent bg-bg-muted p-6 contrast-more:border-border-strong print:border-border-strong">
         <Greeting />
-        <RefreshButton />
+        <MinaSidorButton />
       </div>
 
       {/* Max två kort i rad (FK-mixen): Nästa event (primär-tint) | Obetalda. */}
@@ -45,6 +64,13 @@ export function Hem() {
       <NyaAnmalningarCard />
 
       <CTA />
+
+      {/* Versionsraden (B-NYTT2): diskret nere till vänster, ENDAST desktop
+          (mobilen behåller dagens form); versionen build-injicerad ur
+          paketmanifestet — aldrig hårdkodad. */}
+      <span className="fixed bottom-4 left-4 hidden text-caption text-text-muted lg:block">
+        Miranon Media Admin v{__APP_VERSION__}
+      </span>
     </section>
   );
 }

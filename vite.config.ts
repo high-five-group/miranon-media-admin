@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
@@ -20,7 +21,15 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   assertModeCoherent(mode, env.VITE_SUPABASE_URL ?? '');
 
+  // Appversionen ur paketmanifestet (task-4.2 B-NYTT2): en enda källa —
+  // versionsraden på Hem läser __APP_VERSION__, aldrig ett hårdkodat värde.
+  // fs-läsning i stället för json-import → oberoende av tsconfig-flaggor.
+  const { version } = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')) as {
+    version: string;
+  };
+
   return {
+    define: { __APP_VERSION__: JSON.stringify(version) },
     plugins: [
       tanstackRouter({ target: 'react', autoCodeSplitting: true }),
       react(),

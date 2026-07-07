@@ -1,9 +1,10 @@
 ---
 id: TASK-4.2
 title: 'Skiva: Hem-strukturen till facit'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-07 08:55'
+updated_date: '2026-07-07 10:00'
 labels:
   - ready-for-agent
 dependencies:
@@ -22,20 +23,26 @@ Täcker användarberättelser: 1, 2, 3, 17 (18–20 löpande).
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Hem saknar topp-header medan övriga vyer behåller sin (e2e)
-- [ ] #2 Innehållskolumnen mäter 600 px och är skärm-centrerad på desktop (renderad mätning); mobil behåller dagens form
-- [ ] #3 Hälsningen: 'Hej {namn}' utan utropstecken första gången per session, bara '{namn}' vid återbesök i sessionen (e2e)
-- [ ] #4 'Mina sidor'-knapp (secondary) på plats; uppdatera-knappen borta; borttagningen bokförd mot ADR-017 §2-noten
-- [ ] #5 Versionsraden nere till vänster endast desktop och matchar paketmanifestets version (asserterad mot manifestet, ej hårdkodat värde)
-- [ ] #6 Botten-tabbaren oförändrad; CTA:n kvar; axe-0 på Hem
+- [x] #1 Hem saknar topp-header medan övriga vyer behåller sin (e2e)
+- [x] #2 Innehållskolumnen mäter 600 px och är skärm-centrerad på desktop (renderad mätning); mobil behåller dagens form
+- [x] #3 Hälsningen: 'Hej {namn}' utan utropstecken första gången per session, bara '{namn}' vid återbesök i sessionen (e2e)
+- [x] #4 'Mina sidor'-knapp (secondary) på plats; uppdatera-knappen borta; borttagningen bokförd mot ADR-017 §2-noten
+- [x] #5 Versionsraden nere till vänster endast desktop och matchar paketmanifestets version (asserterad mot manifestet, ej hårdkodat värde)
+- [x] #6 Botten-tabbaren oförändrad; CTA:n kvar; axe-0 på Hem
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TDD: 5 beteenden rött→grönt i EN cykel (uppdaterade/nya e2e körd mot oförändrad kod: 5 failade exakt på nya assertions [header-count, utropstecknet, Mina sidor, kolumn/header, versionsraden], 19 övriga gröna → implementation → 24/24 gröna). AC1: shell-DoD1 (hem header 0, /event header 1) + hem-struktur-test. AC2: e2e-mätning main 600 px centrerad (x=340±1 @1280) + geometri-probe: pt-total 56 px desktop (=facit pt-14), 24 px mobil (=pt-6), inset 16 px (facitets p-4, inte A-skelettets 32). AC3: B2-testet (Hej {namn} → reload → bara namnet; sessionStorage). AC4: Mina sidor (Button secondary sm, K10-exakt; T54-noten för platshållar-a11y-formen) + Uppdatera count 0 + ADR-017 Updates-noten skriven (B5). AC5: versionsraden asserterad MOT paketmanifestet (readFileSync, ej hårdkodat); build-injektion via vite define __APP_VERSION__. AC6: tabbar-testet (4 flikar, FK-mönstret) + CTA-assertion + hem-axe 0. DoD6: facit-avprickning rad-för-rad utförd renderat (geometri-proben [DEBUG-task-4.2] + computed h1 'Hej Lotta'). ÅTERSTÅR: DoD3 (CI efter push) + DoD5 DESIGN-REVIEW (Marcus-grinden — kortet stängs EFTER granskning mot facit-bilagorna; task-1.3-precedenten). Lokala sviter: hem+shell 24/24; fulla e2e 126/2 by-design-skip; a11y 13/13; ENDA felet = event-narvaro loading-state = TASK-3:s stash-belagda pre-existing flake (ytan orörd av skivan).
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
-- [ ] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
+- [x] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->

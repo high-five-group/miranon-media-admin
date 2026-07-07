@@ -1,9 +1,12 @@
+import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 
 /**
- * Hem-vyn (task-1.3 — A-skelettet, prototypvinnaren ur S52 Del 4). Uppifrån
- * och ned: hälsningskort (h1 "Hej {namn}!" + uppdatera-kontroll) → Nästa event
+ * Hem-vyn (task-1.3 A-skelettet → task-4.2 K10-facit-strukturen). Uppifrån
+ * och ned: hälsningskort (h1 "Hej {namn}" utan utropstecken; återbesök i
+ * sessionen visar bara namnet [B2]; "Mina sidor"-platshållarknapp ersätter
+ * uppdatera-kontrollen [B5]) → Nästa event
  * (primär-tint, HELA kortet klickbart till eventets detaljsida) bredvid
  * Obetalda avgifter (antalet stort, första namnen under) → helbredds-listkortet
  * Nya anmälningar (rad klickbar → eventets anmälda-vy; rad utan event olänkad
@@ -171,8 +174,10 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
       '/mer/anmalningar',
     );
 
-    // RefreshButton — manuell uppdatera-kontroll i hälsningskortet.
-    await expect(page.getByRole('button', { name: 'Uppdatera översikt' })).toBeVisible();
+    // Mina sidor-platshållaren ersätter uppdatera-kontrollen (B5, task-4.2;
+    // poll-lagret bär färskheten ensamt — ADR-017 Updates-noten).
+    await expect(page.getByRole('button', { name: 'Mina sidor' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Uppdatera översikt' })).toHaveCount(0);
   });
 
   test('AC 2 — klick var som helst på Nästa event-kortet → eventets detaljsida', async ({
@@ -307,21 +312,24 @@ function patchStoredDisplayName(page: Page, displayName: string | null) {
 }
 
 test.describe('Hälsningen (task-1.1 — namnkällan ur kontots metadata)', () => {
-  test('display-namn i sessionen → h1 "Hej {namn}!"', async ({ page }) => {
+  test('display-namn i sessionen → h1 "Hej {namn}"', async ({ page }) => {
     // 'Lotta' speglar staging-kontots faktiska display-namn — en (osannolik)
     // mitt-i-testet token-refresh, där server-sanningen ersätter patchen, kan
-    // då inte flippa texten. Hälsningen är sidans h1 (task-1.3 AC #6).
+    // då inte flippa texten. Hälsningen är sidans h1 (task-1.3 AC #6);
+    // UTAN utropstecken sedan K10-facitet (task-4.2).
     await patchStoredDisplayName(page, 'Lotta');
     await mock(page);
     await page.goto('/hem');
-    await expect(page.getByRole('heading', { level: 1, name: 'Hej Lotta!' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Hej Lotta', exact: true }),
+    ).toBeVisible();
   });
 
   test('utan display-namn → neutral hälsning, aldrig e-postadressen', async ({ page }) => {
     await patchStoredDisplayName(page, null);
     await mock(page);
     await page.goto('/hem');
-    await expect(page.getByRole('heading', { level: 1, name: 'Hej!' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Hej', exact: true })).toBeVisible();
     // E-posten är ALDRIG fallback (AC 2, Gunilla-principen). auth.setup
     // hard-failar utan TEST_USER_EMAIL → tom sträng här är ett riggfel.
     const email = process.env.TEST_USER_EMAIL ?? '';
@@ -330,42 +338,10 @@ test.describe('Hälsningen (task-1.1 — namnkällan ur kontots metadata)', () =
   });
 });
 
-test.describe('Hem polling + refresh (Fas 6d L2 — ADR-017 + erratum)', () => {
-  test('RefreshButton → invalidate(dashboard.all) → båda grenarna refetchar', async ({ page }) => {
-    let regCalls = 0;
-    let evCalls = 0;
-    await page.route(GET_REGISTRATIONS, async (route) => {
-      regCalls += 1;
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ registrations: [reg()] }),
-      });
-    });
-    await page.route(GET_EVENTS, async (route) => {
-      evCalls += 1;
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ events: [ev()] }),
-      });
-    });
-    await page.goto('/hem');
-    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
-
-    // Initial last: registrerings-grenen hämtas EN gång trots TVÅ konsumenter
-    // (NyaAnmalningar + Obetalda delar queryKey → dedup); event-grenen en gång.
-    // staleTime: 30_000 gör att ev. window-focus-event inte blåser upp räkningen.
-    await expect.poll(() => regCalls).toBe(1);
-    await expect.poll(() => evCalls).toBe(1);
-
-    const refresh = page.getByRole('button', { name: 'Uppdatera översikt' });
-    await refresh.click();
-
-    // invalidateQueries({ queryKey: dashboard.all }) → båda grenarna refetchar.
-    await expect.poll(() => regCalls).toBeGreaterThan(1);
-    await expect.poll(() => evCalls).toBeGreaterThan(1);
-  });
+test.describe('Hem polling (Fas 6d L2 — ADR-017 + erratum)', () => {
+  // RefreshButton-invalidate-testet borttaget med kontrollen (B5, task-4.2):
+  // manuella uppdatera-vägen finns inte längre — poll-lagret (testet nedan)
+  // är färskhetens enda bärare (ADR-017 Updates-noten).
 
   test('refetchInterval (60s) triggar polling-refetch — falsk klocka', async ({ page }) => {
     // page.clock fakar timers → vi kan avancera förbi 60s-intervallet deterministiskt
@@ -395,5 +371,51 @@ test.describe('Hem polling + refresh (Fas 6d L2 — ADR-017 + erratum)', () => {
     // Avancera förbi 60s → refetchInterval fyrar en polling-refetch.
     await page.clock.fastForward(61_000);
     await expect.poll(() => evCalls).toBeGreaterThan(1);
+  });
+});
+
+test.describe('Hem-strukturen till K10-facit (task-4.2)', () => {
+  test('hälsningen utan utropstecken; återbesök i sessionen visar bara namnet (B2)', async ({
+    page,
+  }) => {
+    await mock(page);
+    await page.goto('/hem');
+    const h1 = page.getByRole('heading', { level: 1 });
+    // Första renderingen per session: "Hej {namn}" — UTAN utropstecken (facit).
+    await expect(h1).toHaveText(H1_HALSNING);
+    await expect(h1).not.toContainText('!');
+    // Återbesök (sessionStorage överlever reload i samma flik): bara namnet.
+    // Staging-TEST_USER bär display-namn (task-1.1) → h1 utan Hej-prefix.
+    await page.reload();
+    await expect(h1).toBeVisible();
+    await expect(h1).not.toHaveText(H1_HALSNING);
+    await expect(h1).not.toHaveText('');
+  });
+
+  test('kolumnen 600 px skärm-centrerad på desktop; headern borta (AC 1–2)', async ({ page }) => {
+    await mock(page);
+    await page.goto('/hem');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.locator('header')).toHaveCount(0);
+    const box = await page.locator('main#main').boundingBox();
+    if (!box) throw new Error('main saknar boundingBox');
+    // Renderad mätning (L246): 600-boxen + skärm-centrering (viewport 1280).
+    expect(box.width).toBe(600);
+    expect(Math.abs(box.x - (1280 - 600) / 2)).toBeLessThanOrEqual(1);
+  });
+
+  test('versionsraden nere till vänster endast desktop och matchar paketmanifestet (AC 5)', async ({
+    page,
+  }) => {
+    // Versionen läses ur paketmanifestet — ALDRIG hårdkodad i assertionen
+    // (kortets AC: asserterad mot manifestet).
+    const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
+    await mock(page);
+    await page.goto('/hem');
+    const rad = page.getByText(`Miranon Media Admin v${version}`, { exact: true });
+    await expect(rad).toBeVisible();
+    // Mobil (< lg): versionsraden dold — mobilen behåller dagens form.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(rad).toBeHidden();
   });
 });

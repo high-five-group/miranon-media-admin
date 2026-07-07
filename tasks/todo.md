@@ -108,6 +108,18 @@
   parallell-lastens e2e-flake (TASK-3-klassen) öppet bokförda.
   Parallell S57 (dee9e64) observerad — noll konflikt. **NÄSTA:
   /do-work → task-4.2 Hem-strukturen (nu oblockad).**
+- [x] **task-4.2 KOD LEVERERAD: Hem-strukturen till facit** (2026-07-07,
+  Del 5 kanonisk plats): header-avstängning per vy
+  (staticData.hideShellHeader), kolumn-geometrin till facitets
+  pt-6/pt-14 + 16 px-inset, "Hej {namn}" utan ! + B2-återbesöket,
+  Mina sidor-platshållaren (RefreshButton RADERAD; B5 = ADR-017
+  Updates-not), versionsraden build-injicerad (B-NYTT2). TDD 5
+  beteenden rött→grönt (24/24); geometri-probe mot facit EXAKT;
+  fulla e2e 126/2 skip + a11y 13/13 (enda felet = TASK-3:s
+  pre-existing narvaro-flake, orörd yta). **Kortet KVAR In Progress —
+  DoD 5 design-review är Marcus-grinden (L220): granska
+  `localhost:5173/hem` mot facit-bilagorna → därefter Done +
+  /do-work task-4.3/4.4.**
 
 ### Session 55 ✅ AVSLUTAD (2026-07-06 → 2026-07-07) — T65 Hem-konvergensen: K10 låst som FACIT
 

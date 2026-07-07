@@ -36,6 +36,16 @@
 > `src/components/hem/RefreshButton.tsx`. Verifiering (Fas 6d DoD nedan) speglas mot
 > detta erratum: ingen egen `visibilitychange`-handler byggs; "visibility-trigger"
 > uppfylls av v5-focusManager + `staleTime: 30_000`.
+>
+> **Updates (task-4.2, 2026-07-07 — K10-facitet, byggkrav B5):** §2:s manuella
+> uppdatera-kontroll (`<RefreshButton>`) **UTGÅR ur Hem-ytan** — designlåsningen
+> (S55 Del 12, Marcus-kvitterad) ersätter knappen med "Mina sidor"-platshållaren,
+> och §1:s poll-lager + focusManager-mekaniken (erratumets §3-rad) bär färskheten
+> ENSAMMA. Beslutet i övrigt orört: §1/§4/§5 står; §2:s intention (en manuell
+> refresh-väg) har inte längre någon bärare på Hem och återuppstår endast om ett
+> framtida behov visar sig (t.ex. offline-recovery-fallet under §5-migrationen —
+> prövas då, byggs inte "ifall"). Osynlighets-kravet på bakgrundsuppdateringar
+> (B3) hanteras i task-4.5. Komponentfilen är raderad; historiken bär koden.
 
 ## Kontext
 

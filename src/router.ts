@@ -65,7 +65,11 @@ declare module '@tanstack/react-router' {
   // Title-konvention (Fas 5, Session 16 K3): varje route deklarerar sin
   // sidtitel via staticData. RouteAnnouncer (__root) annonserar den till
   // skärmläsare och sätter document.title vid klient-navigationer.
+  // hideShellHeader (task-4.2, K10-facit): en vy kan stänga av skalets
+  // header-landmark för sin yta — appövergripande header-öde är shell-
+  // spårets beslut (klass C), denna flagga är per-vy-mekanismen.
   interface StaticDataRouteOption {
     title?: string;
+    hideShellHeader?: boolean;
   }
 }
