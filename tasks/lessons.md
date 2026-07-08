@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-07
+updated: 2026-07-08
 review_by: 2026-11-15
 status: stable
 ---
@@ -3392,3 +3392,38 @@ kärntexten FÖRST — visa exakt diff, få kvittens på ordval OCH gränsfall �
 konsekvent. Fel ton fångad på 2 kärntexter kostar 2 omskrivningar; fångad efter 20 ytor kostar
 20. Kalibrerings-ögonblicket är där mottagaren väger in nyanserna (vad som INTE ska sägas
 kategoriskt, hur empiri och härkomst bevaras) — inte efter att mönstret redan hårdnat brett.
+
+## 2026-07-08 — Session 59 (MIGRERINGS-HUB-SESSION 4: kartans steg 4b — SYSTEMET.md-bygget + konsolidering)
+
+### L252 [UNIVERSAL] — Färsk-agent-testet: en kontextlös agent som mekaniskt självtillräcklighets-bevis för navigerbara dok
+
+Datum: 2026-07-08 | Källa: S59 steg 4b (SYSTEMET.md byggd; en kontextlös subagent fick
+ENBART doket + besvarade 8 kontrollfrågor + Gunilla-frågan → PASSERAT; fångade 2 äkta
+luckor [§3 regeltyp-pekare, §11 Gunilla-liknelse] som dokets interna konsistens-koll
+missade; designat S57 Del 5 beslut 5, "skördas efter 4b om det håller" S57 Del 6) (klass:
+dokumentations-kvalitetsgrind; [[L239]]-släkt [självverifierande dok])
+
+När ett dok ska vara självtillräckligt navigerbart (en läsare orienterar sig enbart via
+det): bevisa det MEKANISKT, inte via tyckande. Ge en kontextlös agent enbart doket +
+kontrollfrågor som spänner nyckelmekaniken; svarar den korrekt utan förkunskap → doket
+räcker. Testet fångar det intern konsistens-granskning inte kan: ett dok kan vara internt
+motsägelsefritt OCH ofullständigt/otydligt mot en förstagångsläsare. Instruera agenten att
+flagga luckor + säga "framgår ej" hellre än att fylla i från egen kunskap. Gräns mot L253:
+färsk-agent-testet mäter självtillräcklighet MOT DOKET, inte korrekthet mot världen — den
+senare kräver extern källkännedom.
+
+### L253 [UNIVERSAL] — Empiri med medvetet formulerad härkomst citeras från kanonisk källa, aldrig ur minnet
+
+Datum: 2026-07-08 | Källa: S59 steg 4b (SYSTEMET.md §1 skrev "Code:s egen self-review
+~9 %"; ~9 % mättes på den då separata Chat-ytan [yt-neutral per L243, härkomst i hub-CLAUDE
+§Self-review-disciplin] — Marcus fångade felet; färsk-agent-testet kunde inte, doket var
+internt konsistent) (klass: verifiera-mot-källan vid leverans; [[L243]]-släkt [empiri
+förvrängs ej])
+
+Empiriska siffror med medvetet formulerad härkomst (t.ex. yt-neutraliserad per L243) citeras
+verbatim från sin kanoniska källa — dras aldrig ur minnet. Risken toppar när dokumentets
+kontext har skiftat: ett dok OM Code drar lätt felslutet att en yt-neutral "self-review
+~9 %" är "Code:s self-review", vilket både förvränger empirin OCH undergräver poängen
+(self-review är svag OAVSETT vem — därför extern fångst). Att felet passerade dokets egen
+konsistens-koll men fångades av Marcus är L-tesen self-review ~9 % / extern fångst ~27 % i
+praktiken: bygg för extern fångst, inte intern självkontroll.

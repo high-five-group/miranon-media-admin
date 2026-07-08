@@ -2539,6 +2539,57 @@ start). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr-count 69==69
 
 ---
 
+## Session 59 — MIGRERINGS-HUB-SESSION 4: kartans steg 4b (SYSTEMET.md-bygget + konsolidering) (2026-07-08)
+
+> Process-/hub-session (EJ fas-avslut; byggplans-faserna orörda). Exekverar migrerings-kartans
+> **sista aktiva steg** (4b, S57 Del 5): konsolidera systemets mekanik-dok till EN kanonisk
+> två-aktörs-källa. Ingen byggfas-status-ändring. ADR-070 mintad (count 69→70).
+
+**Mål:** samla systemets operativa mekanik i EN källa — `SYSTEMET.md` i hub-roten (två-aktörs,
+dubbelskiktad) — genom att bygga doket, absorbera de stale hub-filerna och ersätta spoke-doket.
+
+**Levererat:**
+
+- **SYSTEMET.md byggd (hub, `307d1af`→`6837f3d`):** §0–13, drygt 520 rader, kandidat C
+  "Systemkartan" (komponent-katalog + dubbelskikt "I klartext"/"Mekaniken"), färskhets-kontrakt,
+  C4-disciplin inuti sektioner (beslut-4-förfining). Alla 13 drift-punkter från inventeringen
+  fixade (5→15 skills, paus/resume som Code-skills, MCP + Code-konfig + backlog som egna sektioner).
+  Struktur vald via research (Diátaxis/arc42/C4 + branschprecedent, 3 spår) → divergens 3
+  kandidater → Marcus valde C.
+- **Hub-konsolidering (`04fa792`):** ARKITEKTUR.md + WORKFLOW.md → `archive/absorberad-i-systemet/`
+  (git mv + ARKIV-README); hub-CLAUDE/README-pekare omdirigerade. WORKFLOW:s projekt-livscykel-ops
+  bevarade → **T70** (L250).
+- **Spoke-konsolidering (`bf3671e`):** spoke-`systemet.md` → arkiv (tre-aktörs) + pekare-stub
+  (governing, count 14 oförändrad); 4 spoke-länkar omdirigerade (L249); **T22 konsumerad**,
+  **T70 registrerad**, **ADR-070 mintad**.
+- **Acceptansgrindarna:** färsk-agent-test PASSERAT (+ 2 fynd åtgärdade); Marcus fångade
+  empiri-attributions-fel (self-review ~9 % = Chat-ytan, ej Code) → rättat `6837f3d`; fel-klassen
+  bredare kontrollerad (§2/§6 rena).
+
+### Verifiering
+
+Hub-commits (ingen CI, T13): läs-tillbaka mot HEAD-blob per L239 med nakna räkningar. Spoke-pushar
+CI-gröna per jobb (runs: dok-födelse 28896822094, todo 28897124893, bilaga 28898233435, Del 2
+28898977524, konsolidering 28903021575 — Docs link check körd + grön varje gång; Test+Build
+docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr-count 70==70.
+
+### Avvikelser / kvarvarande
+
+- **OMSTART PENDING** (Marcus-moment) — aktiverar plugin 1.12.0 (S58-restpost).
+- Radbrytnings-fällan (rad 1474-lessonen: radstarts-`+` → MD004) återkom 2× (divergens-bilaga +
+  sessionsdok) — självfångad lokalt via CI-identiska anrop; ingen ny lesson (känd, lessonen höll).
+  Grind-mot-fel-cwd (164 falska MD013 från hub-cwd utan config) självfångad (instans av
+  CI-troget-anrop). Vale-suggestion (threads rad 125 "enkelt") pre-existing (T20-not), EXIT=0.
+- **Kvar av kartan:** steg 5 (radera-på-riktigt tre-aktörs-fallbacken) + två-aktörs-ADR:n →
+  Accepted — **BÅDA medvetet vilande** (två-aktörs-prövotiden ej bevisad, Marcus-kvittens S59).
+  Nummer-not: ADR-068 = Övnings-ramverket (Accepted, orört); två-aktörs-ADR:n WIP/onumrerad (L241).
+- Skörd L252–L253 (båda [UNIVERSAL]: färsk-agent-testet, empiri-citera-från-källa); hub-lyft via
+  lessons-hub-sync (pending/nästa hub-sync-moment).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-07-session-59.md`](../tasks/sessions/2026-07-07-session-59.md) (Del 1–3). Transcript (Code-körd, ADR-069): `991542f4-…jsonl` (~2,47 MB vid referens; refererad, ej kopierad). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Migreringskartans exekvering är därmed KLAR; kvar är endast de prövotids-gatade steg 5 + Accepted.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
