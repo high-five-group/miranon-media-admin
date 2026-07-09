@@ -2588,6 +2588,20 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-07-07-session-59.md`](../tasks/sessions/2026-07-07-session-59.md) (Del 1–3). Transcript (Code-körd, ADR-069): `991542f4-…jsonl` (~2,47 MB vid referens; refererad, ej kopierad). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Migreringskartans exekvering är därmed KLAR; kvar är endast de prövotids-gatade steg 5 + Accepted.
 
+## Session 60 — Airtable-avstämning maj-eventen (FJS + RIM1 + Psionautics) → Genomfört + korrekt närvaro (2026-07-08)
+
+**Commit-range:** `26597df` (sessionsdok-födelse) → HEAD. **Mål:** stämma av tre genomförda maj-2026-event mot faktiska deltagarlistor i prod-basen (`app8uGPrVCVOm6LfD`) inför Skool-segment-export. Ingen app-kod rörd — detta är en bas-avstämning (data-spår), ej en byggplan-fas. Full prod-ändringslogg: [`docs/backfill/execute-log.md`](backfill/execute-log.md) (ny fil).
+
+- **Återupptagen** ur paus (session-resume, ADR-069): `lifecycle paused→active`, paus-rubrik → historik-form, todo-kadens ▶️.
+- **FJS (Event-18) + RIM1 (Event-19)** (pre-paus): 20 walk-in-anmälningar (Marcus, Scripting), 2 kantfall fixade via MCP (Jasmin reverse-flow; Lene case-e-post-dubblett), **80 Deltaganden → Närvarande**, verifierat cross-event (Andreas 4/4).
+- **Psionautics (Event-17)** (denna session): A10-bulk markerade alla 220 Deltaganden Närvarande → **källavstämning mot Lottas anmälnings-CSV avslöjade över-markering** (10 icke-Bekräftade + 44 orphan/test-Deltaganden). Korrigerat icke-destruktivt (path A, Marcus-kvitterad): **64 Deltaganden → `Ej avstämt`**. Slutstate verifierat: **156 Närvarande + 64 Ej avstämt = 220** (0 avvikelser). Bas speglar CSV:n (78 Bekräftade).
+- **Status-flip** Event-17/18/19 `Planerat → Genomfört` (verifierat inert mot automations-källan).
+- **STOPPA-OCH-FRÅGA + identitets-säker avstämning** fångade ett namn-kollisionsfel (två "Stefan Martinsson", nr 843 Bekräftad vs 844 Avbokad) INNAN en felaktig revert → L255.
+- **Dok:** execute-log (ny); data-model fälla **40** (case-e-post-dubbletter) + **41** (orphan-Deltaganden), fälla 21 + §A2-decision-hypotesen [HYPOTES]→BEKRÄFTAD (Jasmin), Medveten-Kontakt=Psionautics-namnnot; **L254–L255** [UNIVERSAL] (blanket-mark-varning; identitets-säker matchning). Bas-defekt-hemvist → **T16** (radering av orphans/testpersoner + fällor + Jessica-Anteckningar köade).
+- **Numrering:** ingen ADR mintad (count 70); nästa lesson efter L255 = L256; ingen ny tråd (bas-defekter → befintlig T16).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-08-session-60.md`](../tasks/sessions/2026-07-08-session-60.md) (Del 1–3). **EJ fas-avslut** (data-spår, ej byggplan-fas). Segment-export (Steg 4) + session-end återstår — föreslagna i färsk session (kontext-djup efter avstämningen).
+
 ---
 
 ## Session-modellen

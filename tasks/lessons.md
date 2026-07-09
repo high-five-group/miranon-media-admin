@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-08
+updated: 2026-07-09
 review_by: 2026-11-15
 status: stable
 ---
@@ -3427,3 +3427,35 @@ kontext har skiftat: ett dok OM Code drar lätt felslutet att en yt-neutral "sel
 (self-review är svag OAVSETT vem — därför extern fångst). Att felet passerade dokets egen
 konsistens-koll men fångades av Marcus är L-tesen self-review ~9 % / extern fångst ~27 % i
 praktiken: bygg för extern fångst, inte intern självkontroll.
+
+### L254 [UNIVERSAL] — Blanket-markera aldrig ett källkonsumerat sanningsfält på ett antagande — stäm av mot den auktoritativa listan FÖRST
+
+Datum: 2026-07-08 | Källa: S60 Psionautics-avstämning (tidigt beslut "markera alla närvarande"
+→ A10-bulk satte alla 220 Deltaganden Närvarande; den faktiska anmälningslistan visade sedan
+10 icke-deltagare + 44 orphan/test-poster → 64 fel-markerade; korrigerat via revert) (klass:
+data-integritet vid write; [[L189]]-släkt [schema/data är hypotes tills verifierad])
+
+Ett fält vars värde KONSUMERAS nedströms (här: Deltagande-`Status`, källäst av segment) får
+aldrig sättas i klump från ett antagande om verkligheten — en blanket-operation
+över-inkluderar tyst allt bruset i mängden (avbokade, dubbletter, testdata). Skaffa den
+auktoritativa källistan (faktisk närvaro, faktisk roster) och stäm av FÖRE skrivning; klumpen
+är bekväm men gör källan osann. När ägaren säger "markera alla" är det en hypotes om listan,
+inte listan — be om listan. STOPPA-OCH-FRÅGA innan den korrigerande skrivningen bekräftades
+här dubbelt värdefull: den fångade även ett matchningsfel (se [[L255]]) innan det blev en
+felaktig revert.
+
+### L255 [UNIVERSAL] — Stäm av på identitets-stabila nycklar, aldrig på visningsnamn — dubblettnamn mis-mappar tyst
+
+Datum: 2026-07-08 | Källa: S60 Psionautics-avstämning (namn-baserad Deltagande-ID-extraktion
+kopplade "Stefan Martinsson" till fel anmälan — det fanns TVÅ [nr 843 Bekräftad, nr 844
+Avbokad]; en namn-dict skrev över så fel Deltaganden-IDs plockades; fångat genom att korsläsa
+CSV-status mot bas-status per person) (klass: reconciliation/dedup-korrekthet; [[L254]]-släkt)
+
+När två datamängder stäms av: matcha på en identitets-stabil nyckel (record-ID, normaliserad
+e-post) eller på postens EGNA barn-länkar — aldrig på visningsnamn. Dubblettnamn (två personer
+med samma namn) och poster utan unik nyckel (medföljande utan e-post) mis-mappar tyst: en
+namn→post-dict behåller bara den sist itererade, så en efterföljande uppslagning kan returnera
+FEL posts barn (här: fel persons Deltaganden). Detekteringssignal: när en per-post-jämförelse
+plötsligt visar en avvikelse som en tidigare aggregat-jämförelse sa var noll, misstänk
+namn-kollision — och byt till identitets-säker extraktion (iterera källposterna direkt, läs
+varje posts egna länkar) innan någon skrivning byggs på matchningen.

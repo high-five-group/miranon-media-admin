@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-07
+updated: 2026-07-09
 review_by: 2026-11-15
 status: stable
 ---
@@ -645,7 +645,7 @@ A2 söker Person via två separata FIND_RECORDS, sedan väljs gren baserat på r
 
 Källa: `01-extraction.md` §B.A2 (10 actions explicit listade) + `miranon_automations_COMPLETE.json` workflow_id `wflRPMp5QNGEa7wH1` decision-noden `wdezdzNWaL1MYcrkE`.
 
-**[HYPOTES — EJ VERIFIERAD]:** Om en namnlös Person finns för trigger-mailen kan Gren 1 matcha och Gren 2 hoppas över → Anmälan-Person-länken förblir tom, bara Personens namn uppdateras. Konsekvenser i reverse-flow är dokumenterade i §Kända fällor 21–22 och §Reverse-flow-scenarier / F.1.
+**[BEKRÄFTAD 2026-07-08 — Session 60]:** Om en namnlös Person finns för trigger-mailen matchar Gren 1 och Gren 2 hoppas över → Anmälan-Person-länken förblir tom, bara Personens namn uppdateras. **Live-belagt** via Jasmin Haghighi (namnlös lead `recdea3cmbLQ3kTE8` → anmälan `recvl22JvgJVyd6TQ` okopplad, 0 Deltaganden tills manuell Person-PATCH; se §Kända fällor 21). Tidigare [HYPOTES — EJ VERIFIERAD]; konsekvenser i reverse-flow dokumenterade i §Kända fällor 21–22 och §Reverse-flow-scenarier / F.1.
 
 **Verifieringsplan:** skapa testanmälan med email-adress som matchar en känd namnlös Person (t.ex. en lead-Person utan Förnamn/Efternamn skapad av A4). Kör automation. Kontrollera Anmälan.Person efter A2 — om tom = hypotesen bekräftad. Marcus markerade explicit i `psionautics/tasks/lessons.md` (Psionautics-specifikt-sektionen) att hypotesen aldrig verifierats.
 
@@ -1025,6 +1025,8 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 
     **Live-stickprov 2026-04-28:** 2 namnlösa Personer (`receoF3BY3ZCMEJ0U` <tonetider@protonmail.com>, `rec0uNum3YVL1tb1L` <miranon.prominent654@passmail.net>) skapade 2026-04-26 21:47–48 av A4 från lead-process. Båda har formel-värdet "Ej tillgängligt" på Namn-fältet eftersom Förnamn+Efternamn är tomma. Bekräftar att leads fortsätter strömma in i normalt tillstånd.
 
+    **Live-BEKRÄFTELSE av reverse-flow-buggen 2026-07-08 (Session 60):** Jasmin Haghighi (namnlös lead `recdea3cmbLQ3kTE8`) fick vid en historisk kursanmälan sitt namn ifyllt av A2 Gren 1, men Anmälan `recvl22JvgJVyd6TQ` förblev okopplad (0 Deltaganden) — exakt hypotesens utfall. Kompenserat: `Anmälan.Person` PATCH:ad → A3 triggade → 2 Deltaganden skapade. **Detta uppgraderar §A2-decision-hypotesen (nedan) från [HYPOTES] till bekräftad i det skarpa flödet** (tidigare endast härlett från backfill-script-scenariot).
+
 22. **Namnlösa Personer är ett normalt tillstånd, inte ett fel.** Rader i Lead-tabellen (se Scenario 5 i hur-systemet-funkar.md) skapas ofta med endast e-post från miranon.se. A4 skapar då Person med Förnamn/Efternamn tomma. Personen förblir namnlös tills hen anmäler sig till en kurs, då A2 Gren 1 fyller i namnet från Anmälan.
 
     Operationella regler:
@@ -1126,6 +1128,10 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 
 39. **`Utskickslogg.Antal skickade` (`fldqJBTOwErzMdCAO`) felräknar — `COUNTA` på länkfältet `Skickat till` ger 1 oavsett antal mottagare.** **Symptom (verifierat observerat Session 40, Fas 6h L2d STEG 3, live staging):** vid ett bulk-utskick med 2 accepterade mottagare visade `Antal skickade` värdet **1**, trots att `Skickat till` korrekt bar **2** länkade Personer-records. **Fält-form:** formel `COUNTA({Skickat till})` där `Skickat till` (`fldnNRJHfhEQLrQkp`) = multipleRecordLinks → Personer. **Hypotes om rot (EJ verifierad — utreds vid bas-maximering):** `COUNTA` räknar inte ett länkfälts element separat utan behandlar cellen som ETT värde (Airtables länkfält-i-formel-beteende) → alltid 1 så länge minst en länk finns. **Affärspåverkan:** missvisande utskicks-statistik för Roger/Lotta; `Öppningsgrad (%)` (`fldmrf9SaBcXLNJUl` = `{Antal öppnade mail}/{Antal skickade}`) ärver fel nämnare. **Utanför app-skrivkontraktet:** `Antal skickade` är ett ❌-fält (härlett, skrivs ALDRIG av send-email — EF:en skriver de 5 skrivbara + `Idempotensnyckel` korrekt; raden `Skickat till` bar rätt 2 record-ID). **Resolution I BASEN (ej app-lapp nu):** ersätt `COUNTA` med en korrekt antals-mätning (rollup / `ARRAYJOIN`-baserad räkning, eller ett separat skrivet antal) vid bas-maximeringen. → **Maximerings-kandidat (T16 / [ADR-063](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md)).**
 
+40. **`Personer.E-post` matchas CASE-KÄNSLIGT av A2 → versal-/whitespace-varianter ger DUBBLETT-Personer.** A2:s person-matchning slår på det råa fältet `E-post` (`fldcd5HnYooVZY4Ts`, multilineText) case-känsligt; Personer-tabellen har INGET normaliserat e-post-fält (till skillnad från Anmälningar, som har `Normaliserad e-post` `fld0CIF2qC7ufa8UD`). **Konsekvens:** en Person vars `E-post` bär versaler eller whitespace (t.ex. `Lenehay@gmail.com`) matchas INTE av en senare anmälan med gemen adress → A2 skapar en DUBBLETT-Person. **Live-bekräftat 2026-07-08 (Session 60):** Lene Hay bar `Lenehay@gmail.com` (versal L); walk-in med `lenehay@…` matchade inte → dubblett `reclqYPq7sd4isEN2` skapad. Manuellt konsoliderad (anmälan + 2 Deltaganden + touchpoint re-pekade → original `rec5Edyvkfo7hHQ8n`; e-post normaliserad till gemener; dubbletten raderad). **Bredare än backfill:** träffar ALLA befintliga Person-`E-post` med versal/whitespace, inte bara backfill-flödet. → **Maximerings-kandidat (T16):** normalisera alla Person-`E-post` (gemener/trim) OCH inför ett normaliserat fält som A2 matchar på — annars återkommer dubbletten vid varje case-avvikande adress.
+
+41. **Orphan-Deltaganden utan anmälan-länk — A9/A10-bulk markerar dem felaktigt som Närvarande.** Deltaganden vars `Anmälan`-länk är tom (t.ex. anmälan raderad efter att A3 skapat Deltagandet) hänger kvar med giltig `Eventkey (lookup)` men saknar koppling till någon aktuell anmälan. En A9/A10-närvarobulk (som itererar eventets Deltaganden) markerar dem ändå → de blåser upp källästa segment med icke-existerande/dubblett-deltagare. **Live-bekräftat 2026-07-08 (Session 60), Event-17 (Psionautics):** 220 Deltaganden totalt, varav **44 orphans** (utan anmälan-länk) — 18 dubbletter hos 7 riktiga personer (som ÄVEN har korrekt anmälan-länkade Delt) + 26 hos **3 testpersoner** (`marcus@h5gruppen.se` "Marcus (test)" med 22 st, `test-kalla-delete@example.com`, `highfive.epost@gmail.com`). En initial "markera alla"-bulk gav "Marcus (test)" 22/22 (100 %) närvaro. Åtgärdat icke-destruktivt (Status → `Ej avstämt`; se [`../backfill/execute-log.md`](../backfill/execute-log.md)). → **Maximerings-kandidat (T16):** radera orphan-/dubblett-Deltaganden + testpersoner; framtida närvaro-bulk bör exkludera Deltaganden utan anmälan-länk. Jfr fälla 11 (manuella Deltaganden utan Event-länk).
+
 <!-- markdownlint-enable MD029 -->
 
 ---
@@ -1149,6 +1155,12 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 **94.2% saknade närvaromarkering pre-backfill.** Detta var huvudanledningen till att kurshistorik-rapporter var nästan tomma. **Lösningen:** Backfill 2026-04-19 (se §Backfill — historik nedan).
 
 ### Medveten Kontakt (`recQ2TPsY69fQXA8a`) — pre-backfill snapshot
+
+> **Namn-not (Session 60):** detta record är samma event som appen live labelar
+> **"Psionautics"** (`Event (text)` / `Event (source)` = "Psionautics", EventKey
+> **Event-17**, `Typ = Utbildning`, 1–3 maj 2026 Ödeshög). "Medveten Kontakt" är ett
+> historiskt/alternativt namn i detta snapshot (2026-04-16). Avstämd 2026-07-08 →
+> Genomfört, 156 Deltaganden Närvarande (se [`../backfill/execute-log.md`](../backfill/execute-log.md)).
 
 | Mått | Värde 2026-04-16 |
 |---|---|
