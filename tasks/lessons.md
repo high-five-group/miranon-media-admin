@@ -3459,3 +3459,36 @@ FEL posts barn (här: fel persons Deltaganden). Detekteringssignal: när en per-
 plötsligt visar en avvikelse som en tidigare aggregat-jämförelse sa var noll, misstänk
 namn-kollision — och byt till identitets-säker extraktion (iterera källposterna direkt, läs
 varje posts egna länkar) innan någon skrivning byggs på matchningen.
+
+### L256 [UNIVERSAL] — En entitets identitet kan bo på dess barn, inte på entiteten — sök båda, annars är "inga träffar" ett falskt negativt
+
+Datum: 2026-07-09 | Källa: S60 segment-export (testkonto-kontroll mot `Personer.E-post` gav
+"✓ inga testpersoner"; två testidentiteter låg i exportlistorna — deras adress bodde på
+`Anmälningar.E-post`, medan Person-recorden var namnlös och e-postlös) (klass:
+identitet/uppslagnings-täckning; [[L255]]-syskon)
+
+Ett uppslag på huvudtabellens identitets-fält är inte en identitets-kontroll — det är en
+kontroll av att fältet är ifyllt. När skapande-vägen kan producera en förälder utan
+identitets-fält (här: A2 Gren 4 kopierar en e-postlös anmälans tomma fält → Person utan
+e-post, [[data-model fälla 42]]), måste kontrollen även gå via barnen: slå nyckeln mot
+barn-tabellen och följ länken tillbaka. Regel: innan ett negativt svar ("finns inte",
+"inga dubbletter", "inga testkonton") får bäras vidare — fråga *var identiteten kan bo*,
+inte bara *var den borde bo*. Falskt negativt är farligare än falskt positivt här: det
+passerar tyst hela vägen till utskicket. Skärpning av [[L255]]: den sa "matcha på stabil
+nyckel"; denna säger "sök nyckeln på alla ytor där den kan finnas".
+
+### L257 [UNIVERSAL] — Korrelera defekt-antalet mot importkällans råa null-antal innan något kallas bugg
+
+Datum: 2026-07-09 | Källa: S60 (186 namnlösa personer med genomförd utbildning antogs vara en
+"allvarlig bugg"; 365 namnlösa anmälningar i basen ↔ exakt 365 `firstname: null` i
+backfill-källans mapping-fil ↔ källfilens äldre flikar innehöll enbart e-postadresser)
+(klass: rotorsaks-diagnos/dataförlust-vs-kodbugg)
+
+När en datamängd saknar ett fält i oroväckande omfattning: räkna fältets null-antal i
+IMPORTKÄLLAN innan kodvägarna misstänks. Exakt korrelation (365 ↔ 365) är en signatur —
+den säger att importen troget överförde en förlust som redan fanns. Verifiera sedan mot en
+ANDRA oberoende källa (här: den ursprungliga xlsx:en, där namn-kolumner saknas helt före ett
+visst datum) och mät återvinningsgraden explicit innan en reparation planeras — 0 av 187
+betyder att ingen kod kan laga det. Skillnaden är dyr: en kodbugg jagas, en dataförlust vid
+källan dokumenteras och bärs. Motsatt riktning gäller också: en kodväg som *kräver* fältet
+(`create-registration` kräver Förnamn/Efternamn) är ett bevis för att den vägen INTE är roten.

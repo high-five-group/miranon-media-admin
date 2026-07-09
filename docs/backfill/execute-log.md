@@ -100,6 +100,36 @@ anmälan-länkade Delt) + 26 hos **3 testpersoner** (`marcus@h5gruppen.se` "Marc
 vid varje status-ändring) fast de är `Ej avstämt` — kosmetiskt; städas vid
 orphan-raderingen (T16).
 
+### Steg 4 — Efterkorrektion 2026-07-09: 78 → 77, 156 → 154
+
+Segment-exporten (S60 Steg 4) avtäckte att **en av de "78 Bekräftade" var en
+testidentitet**: Person `rectU34rbPfo6VD10` (namnlös dubblett; dess anmälan
+`recbW1xZBot0MXumQ` bär `highfive.epost@gmail.com` + "Marcus Johansson").
+
+Varför Steg 3 missade den: orphan-passet letade Deltaganden **utan anmälan-länk**.
+Denna record bar en Bekräftad, korrekt länkad anmälan och var därför osynlig för det
+urvalet — dessutom är dess `Personer.E-post` tom (fälla 42), så en kontroll mot
+Person-tabellens e-postfält gav falskt negativt. Identiteten bodde på anmälan.
+
+**Åtgärd 2026-07-09 (Marcus-kvitterad):** dess 2 Deltaganden (`rec5dXdn1wRt1n28E`,
+`recYykKvJFZAZqtyh`) → `Ej avstämt`.
+
+**Korrigerat slutstate för Event-17, live-verifierat:**
+
+| | Före | Efter |
+|---|--:|--:|
+| Bekräftade personer (riktiga) | 78 | **77** |
+| Närvarande Deltaganden | 156 | **154** |
+| Ej avstämt | 64 | **66** |
+| Totalt | 220 | 220 |
+
+Av de 77 saknar **Ann-Marie Martinsson** (`recsqD7ZxM6c13KbC`) e-post helt → **76
+mottagare** i Psionautics-materiallistan. Hon var medföljande till Stefan Martinsson;
+hennes `Medföljande till` pekade felaktigt på hans **avbokade** anmälan och pekades
+2026-07-09 om till den bekräftade (`recoihpXidEHFry74`).
+
+Kanonisk testkonto-lista: [`../reference/testkonton.md`](../reference/testkonton.md).
+
 ## Fas 6 — Status-flip → Genomfört, 2026-07-08
 
 Verifierat inert mot automations-källan (`miranon_automations_COMPLETE.json`): endast
@@ -113,7 +143,9 @@ update). Verifierat i svaret.
 |---|---|---|---|
 | Event-18 (FJS) | Genomfört | 44 (22 pers × 2) | 3 no-show `Ej avstämt` |
 | Event-19 (RIM1) | Genomfört | 36 (18 pers × 2) | 6 no-show `Ej avstämt` |
-| Event-17 (Psionautics) | Genomfört | 156 (78 pers × 2) | 10 icke-bekr + 44 orphan `Ej avstämt` |
+| Event-17 (Psionautics) | Genomfört | **154** (77 pers × 2) | 10 icke-bekr + 44 orphan + 2 testperson `Ej avstämt` (66 totalt) |
+
+> Event-17-raden korrigerad 2026-07-09 (78→77 / 156→154) — se §Steg 4 ovan.
 
 ## Uppföljning → T16 (bas-maximering, [ADR-063](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md))
 
