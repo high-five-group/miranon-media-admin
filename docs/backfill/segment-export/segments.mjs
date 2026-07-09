@@ -25,7 +25,8 @@ async function fetchAll(table, { filterByFormula, fields }) {
     url.searchParams.set('pageSize', '100');
     if (offset) url.searchParams.set('offset', offset);
     const res = await fetch(url, { headers: { Authorization: `Bearer ${KEY}` } });
-    if (!res.ok) throw new Error(`${table} HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    if (!res.ok)
+      throw new Error(`${table} HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
     const json = await res.json();
     out.push(...json.records);
     offset = json.offset;
@@ -40,7 +41,10 @@ function scalar(value, label, recId) {
   return value.length > 0 && typeof value[0] === 'string' ? value[0] : null;
 }
 
-const raw = await fetchAll('Deltaganden', { filterByFormula: '{Närvaropoäng}=1', fields: SOURCE_FIELDS });
+const raw = await fetchAll('Deltaganden', {
+  filterByFormula: '{Närvaropoäng}=1',
+  fields: SOURCE_FIELDS,
+});
 
 let skipped = 0;
 const rows = [];
@@ -48,7 +52,10 @@ for (const r of raw) {
   const personId = scalar(r.fields['Person (länk)'], 'Person (länk)', r.id);
   const kurs = scalar(r.fields['Kursnamn (lookup)'], 'Kursnamn (lookup)', r.id);
   const modalitet = scalar(r.fields['Event typ'], 'Event typ', r.id);
-  if (!personId || !kurs || !MODALITETER.includes(modalitet)) { skipped++; continue; }
+  if (!personId || !kurs || !MODALITETER.includes(modalitet)) {
+    skipped++;
+    continue;
+  }
   rows.push({ personId, kurs, modalitet });
 }
 
@@ -61,7 +68,8 @@ for (const { personId, kurs, modalitet } of rows) {
 
 // Enumerera distinkta par ur DATAN (öppen taxonomi, ADR-064 beslut 2).
 const parCount = new Map();
-for (const set of byPerson.values()) for (const k of set) parCount.set(k, (parCount.get(k) ?? 0) + 1);
+for (const set of byPerson.values())
+  for (const k of set) parCount.set(k, (parCount.get(k) ?? 0) + 1);
 
 // Material-listor = ett per Utbildnings-par. Föreläsning ger inget material.
 const utbildningsPar = [...parCount.keys()].filter((k) => k.endsWith('|Utbildning')).sort();
@@ -105,7 +113,9 @@ console.log(`Distinkta personer med närvaro: ${byPerson.size}`);
 console.log(`\nAlla distinkta par i närvaro-datan (personer per par):`);
 for (const [par, n] of [...parCount.entries()].sort((a, b) => b[1] - a[1])) {
   const mod = par.split('|')[1];
-  console.log(`  ${n.toString().padStart(4)}  ${par}${mod === 'Föreläsning' ? '   ← inget material' : ''}`);
+  console.log(
+    `  ${n.toString().padStart(4)}  ${par}${mod === 'Föreläsning' ? '   ← inget material' : ''}`,
+  );
 }
 
 console.log(`\n── ${listor.length} MATERIAL-LISTOR (utbildnings-gated, deduplicerade) ──`);
@@ -113,14 +123,20 @@ for (const l of listor) {
   const ppl = l.personIds.map(person);
   const utanMail = ppl.filter((p) => !p.email).length;
   const ejGodkand = ppl.filter((p) => p.ejGodkandMail).length;
-  console.log(`  ${l.kurs.padEnd(24)} ${ppl.length.toString().padStart(4)} personer` +
-    `  (utan e-post: ${utanMail}, "ej godkänd för mailutskick": ${ejGodkand})`);
+  console.log(
+    `  ${l.kurs.padEnd(24)} ${ppl.length.toString().padStart(4)} personer` +
+      `  (utan e-post: ${utanMail}, "ej godkänd för mailutskick": ${ejGodkand})`,
+  );
 }
 
 const unionPpl = unionIds.map(person);
-const unikaMail = new Set(unionPpl.map((p) => (p.email ?? '').trim().toLowerCase()).filter(Boolean));
-console.log(`\nSkool-union (≥1 utbildnings-par): ${unionIds.length} personer, ` +
-  `${unikaMail.size} unika normaliserade e-postadresser, ${unionPpl.filter((p) => !p.email).length} utan e-post`);
+const unikaMail = new Set(
+  unionPpl.map((p) => (p.email ?? '').trim().toLowerCase()).filter(Boolean),
+);
+console.log(
+  `\nSkool-union (≥1 utbildnings-par): ${unionIds.length} personer, ` +
+    `${unikaMail.size} unika normaliserade e-postadresser, ${unionPpl.filter((p) => !p.email).length} utan e-post`,
+);
 
 // Överlapp: hur många par per person
 const fordelning = new Map();
@@ -129,7 +145,8 @@ for (const id of unionIds) {
   fordelning.set(n, (fordelning.get(n) ?? 0) + 1);
 }
 console.log(`Överlapp (antal material per person):`);
-for (const [n, c] of [...fordelning.entries()].sort()) console.log(`  ${n} material: ${c} personer`);
+for (const [n, c] of [...fordelning.entries()].sort())
+  console.log(`  ${n} material: ${c} personer`);
 
 if (warnings.length) {
   console.log(`\n⚠️  ${warnings.length} data-form-varningar:`);
@@ -147,7 +164,8 @@ for (const p of unionPpl) {
 const dubbletter = [...mailToIds.entries()].filter(([, v]) => v.length > 1);
 if (dubbletter.length) {
   console.log(`\n⚠️  ${dubbletter.length} normaliserade e-postadresser bärs av >1 Person-record:`);
-  for (const [mail, ppl] of dubbletter) console.log(`  ${mail} → ${ppl.map((p) => `${p.namn} (${p.id})`).join(' | ')}`);
+  for (const [mail, ppl] of dubbletter)
+    console.log(`  ${mail} → ${ppl.map((p) => `${p.namn} (${p.id})`).join(' | ')}`);
 } else {
   console.log(`\n✓ Inga dubblett-e-poster bland union-personerna.`);
 }
@@ -155,11 +173,15 @@ if (dubbletter.length) {
 const fs = await import('node:fs');
 fs.writeFileSync(
   new URL('./segment-export.json', import.meta.url),
-  JSON.stringify({
-    genereratFran: 'Deltaganden {Närvaropoäng}=1 (källäst, ej rollup)',
-    parIDatan: Object.fromEntries(parCount),
-    listor: listor.map((l) => ({ kurs: l.kurs, par: l.par, personer: l.personIds.map(person) })),
-    skoolUnion: unionPpl,
-  }, null, 2),
+  JSON.stringify(
+    {
+      genereratFran: 'Deltaganden {Närvaropoäng}=1 (källäst, ej rollup)',
+      parIDatan: Object.fromEntries(parCount),
+      listor: listor.map((l) => ({ kurs: l.kurs, par: l.par, personer: l.personIds.map(person) })),
+      skoolUnion: unionPpl,
+    },
+    null,
+    2,
+  ),
 );
 console.log(`\n→ Full data: scratchpad/segment-export.json`);

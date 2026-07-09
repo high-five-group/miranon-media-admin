@@ -39,15 +39,23 @@ function dedupa(personer) {
 }
 
 const csv = (rader) =>
-  ['email,namn,person_id', ...rader.map((p) => {
-    const namn = (p.namn ?? '').trim();
-    const rent = /^ej tillgängligt$/i.test(namn) ? '' : namn;
-    return `${nyckel(p)},"${rent.replaceAll('"', '""')}",${p.id}`;
-  })].join('\n') + '\n';
+  [
+    'email,namn,person_id',
+    ...rader.map((p) => {
+      const namn = (p.namn ?? '').trim();
+      const rent = /^ej tillgängligt$/i.test(namn) ? '' : namn;
+      return `${nyckel(p)},"${rent.replaceAll('"', '""')}",${p.id}`;
+    }),
+  ].join('\n') + '\n';
 
 const slug = (s) =>
-  s.toLowerCase().replaceAll('å', 'a').replaceAll('ä', 'a').replaceAll('ö', 'o')
-    .replaceAll(' ', '-').replace(/[^a-z0-9-]/g, '');
+  s
+    .toLowerCase()
+    .replaceAll('å', 'a')
+    .replaceAll('ä', 'a')
+    .replaceAll('ö', 'o')
+    .replaceAll(' ', '-')
+    .replace(/[^a-z0-9-]/g, '');
 
 console.log('── MATERIAL-LISTOR (test exkluderade, e-post-krav) ──\n');
 const utanEpost = [];
@@ -62,9 +70,11 @@ for (const lista of data.listor) {
   fs.writeFileSync(new URL(`./${fil}`, import.meta.url), csv(mottagare));
 
   console.log(`${lista.kurs}`);
-  console.log(`  ${lista.personer.length} i källan → ${mottagare.length} mottagare` +
-    `  (test: -${lista.personer.length - kvar.length}, utan e-post: -${kvar.length - mailbara.length}` +
-    `, dedup: -${mailbara.length - mottagare.length})`);
+  console.log(
+    `  ${lista.personer.length} i källan → ${mottagare.length} mottagare` +
+      `  (test: -${lista.personer.length - kvar.length}, utan e-post: -${kvar.length - mailbara.length}` +
+      `, dedup: -${mailbara.length - mottagare.length})`,
+  );
   console.log(`  utan namn i basen: ${namnlosa}/${mottagare.length}   → ${fil}\n`);
 }
 
@@ -77,14 +87,21 @@ fs.writeFileSync(new URL('./lista-skool-union.csv', import.meta.url), csv(unionM
 const unika = new Set(unionMottagare.map(nyckel));
 
 console.log('── SKOOL-UNION (access-grant) ──');
-console.log(`  ${data.skoolUnion.length} i källan → ${unionMottagare.length} mottagare` +
-  `  (test: -${data.skoolUnion.length - unionKvar.length}, utan e-post: -${unionKvar.length - unionMail.length}` +
-  `, dedup: -${unionMail.length - unionMottagare.length})`);
-console.log(`  unika normaliserade adresser: ${unika.size}  ${unika.size === unionMottagare.length ? '✓ 1:1, inga dubbletter' : '⚠️  DUBBLETTER KVAR'}`);
-console.log(`  utan namn i basen: ${unionMottagare.filter((p) => /^ej tillgängligt$/i.test((p.namn ?? '').trim())).length}/${unionMottagare.length}`);
+console.log(
+  `  ${data.skoolUnion.length} i källan → ${unionMottagare.length} mottagare` +
+    `  (test: -${data.skoolUnion.length - unionKvar.length}, utan e-post: -${unionKvar.length - unionMail.length}` +
+    `, dedup: -${unionMail.length - unionMottagare.length})`,
+);
+console.log(
+  `  unika normaliserade adresser: ${unika.size}  ${unika.size === unionMottagare.length ? '✓ 1:1, inga dubbletter' : '⚠️  DUBBLETTER KVAR'}`,
+);
+console.log(
+  `  utan namn i basen: ${unionMottagare.filter((p) => /^ej tillgängligt$/i.test((p.namn ?? '').trim())).length}/${unionMottagare.length}`,
+);
 console.log('  → lista-skool-union.csv\n');
 
 console.log('── EXKLUDERADE ──');
 for (const [id, vad] of TESTKONTON) console.log(`  test:        ${id}  ${vad}`);
 for (const p of utanEpost) console.log(`  ingen e-post: ${p.id}  ${p.namn} (${p.kurs})`);
-if (EPOST_OVERRIDE.size) for (const [id, e] of EPOST_OVERRIDE) console.log(`\n  e-post-override: ${id} → ${e}`);
+if (EPOST_OVERRIDE.size)
+  for (const [id, e] of EPOST_OVERRIDE) console.log(`\n  e-post-override: ${id} → ${e}`);

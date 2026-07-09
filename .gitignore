@@ -57,3 +57,7 @@ package-lock.json.pre-k0åg
 
 # Lychee — lokal länk-cache vid --cache-körning (CI cachar via actions/cache)
 .lycheecache
+
+# Segment-export: utdata bär deltagares e-postadresser — committas ALDRIG (T73)
+docs/backfill/segment-export/segment-export.json
+docs/backfill/segment-export/lista-*.csv
