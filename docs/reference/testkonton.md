@@ -20,12 +20,18 @@ status: stable
 
 | E-post | Person-record | Riktig deltagare? | Testbruk? |
 |---|---|---|---|
-| `highfive.epost@gmail.com` | `rec8sFNULpjfe0Lw9` + `rectU34rbPfo6VD10` | **JA** — betalande Psionautics-deltagare (Event-17) | Ja, ibland |
-| `inbox@marcusemails.com` | `reczBItiZhCLlE2Cs` | **JA** — Fjärrskådning, RIM 1, RIM 2 (Event-36/42/50) | Ja, ibland |
+| `highfive.epost@gmail.com` | `rec8sFNULpjfe0Lw9` "Marcus Johansson" | **JA** — betalande Psionautics-deltagare (Event-17) | Ja, ibland |
+| `inbox@marcusemails.com` | `reczBItiZhCLlE2Cs` "Marcus Johansson" | **JA** — Fjärrskådning, RIM 1, RIM 2 (Event-36/42/50) | Ja, ibland |
 | `marcus@h5gruppen.se` | `recIynU41be2DcYup` "Marcus (test) Johansson" | Nej — 0 anmälningar | Ja. ⚠️ Se dubbelroll nedan |
 | `test-kalla-delete@example.com` | `rec3iFLEHuRHl1QZH` "Test Källa" | Nej | Ren testrad |
 | `roger@gral.se` | Roger | Verksamhetens egen | Nej |
 | `lotta@outsidereality.se` | Lotta | Verksamhetens egen | Nej |
+
+**Marcus har två legitima deltagar-identiteter** (`highfive@` → Psionautics; `inbox@`
+→ FS/RIM 1/RIM 2) och får därför två Skool-inbjudningar med olika material. Det är
+avsiktligt: Airtable matchar personer på e-postadress, så en sammanslagning vore
+kosmetisk och skulle återuppstå vid nästa anmälan från den andra adressen. Basen
+speglar hur anmälningarna faktiskt gjordes.
 
 ⚠️ **`marcus@h5gruppen.se` har en ANNAN dubbelroll:** den är Airtable-testpersona
 *och* Marcus riktiga admin-mejl i `ADMIN_EMAILS`. Radera aldrig adressen ur auth-
@@ -38,12 +44,17 @@ i Airtable som är en testpersona.
 om den saknar `Anmälan`-länk (fälla 41). Den är verklig om den hänger på en
 Bekräftad, anmälan-länkad rad — oavsett vems adress det är.
 
-Konkret för `highfive.epost@gmail.com`, som bär **båda** sorterna:
+Konkret för `rec8sFNULpjfe0Lw9` (`highfive.epost@gmail.com`), som efter
+konsolideringen 2026-07-09 bär **båda** sorterna på samma post:
 
-| Record | Anmälningar | Deltaganden | Vad det är |
-|---|---|---|---|
-| `rectU34rbPfo6VD10` | 1 Bekräftad, via `Anmälan-Psionautics.se` | 2, anmälan-länkade | **Marcus riktiga deltagande** |
-| `rec8sFNULpjfe0Lw9` | 0 | 2, **orphan** | Skräp (del av de 44) |
+| Deltaganden | Anmälan-länk | Vad det är |
+|---|---|---|
+| `rec5dXdn1wRt1n28E`, `recYykKvJFZAZqtyh` (`Närvarande`) | **JA** — Bekräftad, via `Anmälan-Psionautics.se` | **Marcus riktiga deltagande** |
+| `recYBNTKwqEUviXqL`, `recJVMnc1xJ9yqQsO` (`Ej avstämt`) | **ORPHAN** | Skräp (del av de 44) → T16 |
+
+Samma person, samma post, två sorters rader. Det är därför `Närvaro (text)` visar
+`2/4 (50 %)` — orphan-raderna drar ner den tills T16 raderar dem. **Adressen kan inte
+avgöra saken; anmälan-länken kan.**
 
 **Facit vid varje tveksamhet: Lottas anmälnings-CSV**
 (`~/Downloads/alla-anmalda-medveten-kontakt-<datum>.csv`). Den bär `Status`,
