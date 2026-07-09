@@ -3518,3 +3518,25 @@ för tester") snarare än ur ett fält i datan. Fråga då: *kan samma sträng b
 Kostsam bikostnad: felet passerade en godkänd plan, eftersom planen presenterade den felaktiga
 premissen som verifierad fakta. Ett godkännande legitimerar inte premissen — den som skriver
 underlaget äger dess sanning.
+
+### L259 [UNIVERSAL] — En konserveringskontroll är invariant under felklassificering — summan går ihop även när kategorin är fel
+
+Datum: 2026-07-09 | Källa: S60 (Event-17-avstämningen `156 + 64 = 220` användes som bevis för att
+närvaro-korrektionen var riktig; när 2 rader felaktigt flyttades från `Närvarande` till
+`Ej avstämt` blev det `154 + 66 = 220` — summan stämde fortfarande, och kontrollen tuggade grönt
+medan en betalande deltagare tyst förvandlades till no-show) (klass: verifieringsdesign;
+[[L258]]-följeslagare)
+
+En kontroll som verifierar att en TOTAL bevaras (`Σ kategorier = N`) mäter att inga poster
+tappats, dubblerats eller fått tom status. Den säger **ingenting** om huruvida en post ligger i
+rätt kategori: varje felflyttning mellan två kategorier bevarar summan exakt. Konserverings-
+kontroller är därför starka mot *luck*-fel och blinda för *klassificerings*-fel — och den blindheten
+är farlig just för att kontrollen ser ut att bekräfta arbetet.
+
+Regel: en förflyttning mellan kategorier måste verifieras mot en EXTERN auktoritativ källa som
+bär kategorin (här: Lottas anmälnings-CSV med `Status`/`Betalning` per person), inte mot en
+intern summa. Fråga vid varje "det stämmer": *vilken felklass skulle den här kontrollen inte
+kunna se?* Om svaret är "fel i den dimension jag just ändrade" — då är kontrollen fel verktyg.
+Praktiskt komplement: räkna även per-post-diff mot källan (vem bytte kategori, och står det i
+källan?), inte bara aggregat. [[L255]] pekade på samma sak från ett annat håll: en aggregat-
+jämförelse som säger noll avvikelser kan dölja per-post-fel.

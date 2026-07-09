@@ -127,6 +127,16 @@ reverteringen. Klassificeringen byggde på adress-match, inte på anmälnings-st
 Diskriminanten som faktiskt skiljer skräp från verklighet är **orphan-egenskapen**
 (saknad `Anmälan`-länk), och `rectU34rbPfo6VD10`:s Deltaganden var korrekt länkade.
 
+**Varför avstämningen inte fångade det (viktigt för framtida pass):** kontrollen
+`Närvarande + Ej avstämt = 220` är en **konserveringskontroll**. Den bevaras exakt när
+en rad flyttas mellan de två kategorierna — `156 + 64` och `154 + 66` summerar båda
+till 220. Den fångar rader som tappats, dubblerats eller saknar status; den är per
+konstruktion **blind för att en rad hamnat i fel kategori**, alltså för precis den
+felklass en omklassificering kan införa. Kategori-korrekthet kan bara verifieras mot
+en extern källa som bär kategorin — här CSV:ns `Status` och `Betalning` per person,
+med per-post-diff (vem bytte kategori, och står det i källan?), inte mot aggregatet.
+Se [L259](../../tasks/lessons.md).
+
 Kodifierat som [fälla 44](../reference/data-model.md) + [L258](../../tasks/lessons.md).
 Roll-listan över interna identiteter: [`../reference/testkonton.md`](../reference/testkonton.md).
 
