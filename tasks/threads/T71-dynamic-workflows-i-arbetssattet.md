@@ -252,6 +252,32 @@ reservera "arbetsflöde" för (2). Hemvist: `SYSTEMET.md` (hubben), ej ORDLISTA.
 - **Ingenting ovan är erfarenhetsbaserat.** Noll workflows kördes. Regeln "testa nytt
   approach med minimalt test före full implementation" är **inte** uppfylld ännu.
 
+## Säkerhets-fynd: fan-out mot prod-basen kräver read-only-regim
+
+Uppstod vid registreringen (S60), efter briefingen — bevaras här så det inte dör med
+sessionen.
+
+AT-Max-svepet (steg **B** nedan) skulle låta upp till **16 samtidiga** subagenter
+arbeta mot Airtable-basen. Men basen är **prod** (`app8uGPrVCVOm6LfD`), och
+Airtable-MCP:n exponerar `create_record`, `update_records`, `delete_records`,
+`update_field`, `create_field`. Workflow-subagenter kör enligt dokumentationen alltid
+i `acceptEdits` och **ärver sessionens tool-allowlist**, oavsett huvudsessionens
+permission mode — och file edits auto-godkänns.
+
+Ett "audit"-svep är per definition **read-only**, men ingenting i workflow-runtimen
+framtvingar det. Sexton agenter med skrivverktyg mot prod-basen är en oacceptabel
+riskyta för ett svep vars enda syfte är att LÄSA och rapportera.
+
+**Förkrav innan B körs** (ej löst — designfråga för steg C):
+
+1. Begränsa agenternas verktyg till läs-operationerna (`list_records`,
+   `describe_table`, `search_records`, `get_record`, `list_tables`), eller
+2. kör svepet mot en **kopia** av basen, eller
+3. båda.
+
+Detta knyter an till `T12`/`T40`-klassen (test-/skriv-ytor som råkar peka mot prod) och
+till ADR-061:s miljö-isolationsregim. Samma klass av fel, ny yta.
+
 ## Beslutsstatus
 
 Beslutet är **ADR-bart** enligt baren: (1) svårt att återställa i koherens,
