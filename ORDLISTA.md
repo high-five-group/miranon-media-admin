@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-08
+updated: 2026-07-09
 review_by: 2027-01-02
 status: stable
 ---
@@ -67,6 +67,13 @@ Deltaganden — aldrig en lagrad mottagarlista (ADR-062).
 loggas i Utskicksloggen.
 *Undvik:* kampanj.
 *I koden:* `MailPayload` (send-payload), `BulkMail`; logg-raden är `MailLogEntry`.
+
+**Mentalt ankare** — ett låst kursmaterial i Skool-communityt, åtkomligt endast
+för dem som gått motsvarande utbildning. Roger & Lottas egen term; Skool kallar
+dem `courses` och märker dem `Private: Specific members have access`. Tre finns
+(Fjärrskådning, RIM1, RIM2); Psionautics saknar ännu ett. Skiljs från de öppna
+Skool-kurserna, som alla medlemmar når.
+*Undvik:* material, kurs (tvetydigt mot event-domänens kurs), klassrum.
 
 ## Flöden och distinktioner
 
