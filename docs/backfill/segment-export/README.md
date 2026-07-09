@@ -14,9 +14,25 @@ committas ALDRIG** (bär 416 deltagares e-postadresser).
 ## Kör
 
 ```bash
-AIRTABLE_API_KEY=<pat> node segments.mjs   # → segment-export.json
-node export.mjs                            # → lista-*.csv
+AIRTABLE_API_KEY=<pat> node segments.mjs   # läser basen → segment-export.json
+node export.mjs                            # → lista-*.csv (materiallistor + union)
+SKOOL_OUT=~/Downloads/skool-export node skool-partition.mjs
 ```
+
+`skool-partition.mjs` producerar den faktiska leveransen: **8 partitionerade
+Skool-filer** (varje person i exakt en) + **2 disjunkta Resend-listor**. Den
+**fäller med exit 1** om någon person hamnar i två filer eller om partitionen inte
+är exakt lika med unionen.
+
+**Varför partition:** Marcus laddade upp samma adress tre gånger i Skool och fick
+tre inbjudningsmail — Skool dedupar inte och sätter åtkomst per uppladdning. Med
+överlappande listor hade de 126 personer som gått flera kurser fått flera
+inbjudningar var. Segment-modellen i basen är oförändrad (överlappande); det är
+*leveransen* som partitioneras.
+
+**Skool-filformatet** matchar Skools egen mall: ingen rubrikrad, en adress per rad,
+ingen avslutande radbrytning. Följd: `cat skool/*.csv` klistrar ihop filgränserna —
+läs en fil i taget om du vill räkna.
 
 ## Vad som är kanoniskt här
 
