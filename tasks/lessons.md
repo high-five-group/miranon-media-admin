@@ -3492,3 +3492,29 @@ visst datum) och mät återvinningsgraden explicit innan en reparation planeras 
 betyder att ingen kod kan laga det. Skillnaden är dyr: en kodbugg jagas, en dataförlust vid
 källan dokumenteras och bärs. Motsatt riktning gäller också: en kodväg som *kräver* fältet
 (`create-registration` kräver Förnamn/Efternamn) är ett bevis för att den vägen INTE är roten.
+
+### L258 [UNIVERSAL] — En klassificering som ska leda till skrivning måste verifieras mot den auktoritativa källan — attribut-match är ingen klassificering
+
+Datum: 2026-07-09 | Källa: S60 segment-export (Person-record klassad som "testkonto" enbart för
+att dess anmälan bar en adress användaren kallat testadress; dess 2 `Närvarande`-Deltaganden
+reverterades → riktig, betald deltagares närvaro raderades. Adressen hade DUBBELROLL. Den
+auktoritativa anmälnings-CSV:n — samma fil som varit facit i ett tidigare steg, liggande i
+`~/Downloads/` — lästes aldrig före skrivningen) (klass: klassificering/destruktiv skrivning;
+[[L256]]-spegelbild)
+
+[[L256]] varnade för falskt NEGATIVT (identitet gömd på barnet → "hittar inget"). Detta är
+dess spegelbild: falskt POSITIVT — ett attribut ("adressen ser ut som test") togs för en
+identitet ("detta ÄR test") och motiverade en destruktiv skrivning mot verklig data. Båda har
+samma rot: en proxy förväxlades med det den ska mäta.
+
+Regel: innan en klassificering får driva en skrivning måste den (a) ha en **diskriminant som
+faktiskt bär semantiken** — här: `Anmälan`-länkens existens skiljer skräp från verklighet,
+adressen gör det inte — och (b) stämmas av mot den auktoritativa källan. Skärpning: när en
+entitet kan ha DUBBELROLL (en människas adress som både är riktig identitet och testverktyg),
+kan ingen attribut-match ensam avgöra saken; rollen måste slås upp, inte härledas. Signal att
+stanna: klassificeringen härrör från något en människa *sagt i förbifarten* ("den använder jag
+för tester") snarare än ur ett fält i datan. Fråga då: *kan samma sträng betyda två saker?*
+
+Kostsam bikostnad: felet passerade en godkänd plan, eftersom planen presenterade den felaktiga
+premissen som verifierad fakta. Ett godkännande legitimerar inte premissen — den som skriver
+underlaget äger dess sanning.
