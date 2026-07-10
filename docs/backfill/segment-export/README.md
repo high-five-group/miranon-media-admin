@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-09
+updated: 2026-07-10
 review_by: 2026-10-09
 status: stable
 ---
@@ -19,10 +19,12 @@ node export.mjs                            # → lista-*.csv (materiallistor + u
 SKOOL_OUT=~/Downloads/skool-export node skool-partition.mjs
 ```
 
-`skool-partition.mjs` producerar den faktiska leveransen: **8 partitionerade
-Skool-filer** (varje person i exakt en) + **2 disjunkta Resend-listor**. Den
-**fäller med exit 1** om någon person hamnar i två filer eller om partitionen inte
-är exakt lika med unionen.
+`skool-partition.mjs` producerar den faktiska leveransen: **14 partitionerade
+Skool-filer** (varje person i exakt en; 4 ankare sedan 2026-07-10 — Psionautics
+tillagd i S60 Del 6 när R&L:s material aviserades) + **2 disjunkta Resend-listor**.
+Den **fäller med exit 1** om någon person hamnar i två filer eller om partitionen
+inte är exakt lika med unionen. Förutsättning vid uppladdning: `Mentala ankare
+Psionautics` måste existera i Skool (7 av 14 grupper kryssar det).
 
 **Varför partition:** Marcus laddade upp samma adress tre gånger i Skool och fick
 tre inbjudningsmail — Skool dedupar inte och sätter åtkomst per uppladdning. Med
@@ -54,7 +56,7 @@ läs en fil i taget om du vill räkna.
 
 Referera personer med `recXXX`, aldrig med e-postadress — även i kommentarer (tråd **T73**).
 
-## Utdata 2026-07-09
+## Utdata 2026-07-10 (omräkning: Psionautics som 4:e ankare)
 
 | Lista | Mottagare |
 |---|--:|
@@ -64,5 +66,11 @@ Referera personer med `recXXX`, aldrig med e-postadress — även i kommentarer 
 | Psionautics | 77 |
 | Skool-union (access-grant) | 416 |
 
-Enda exkluderade: två äkta testartefakter (`recIynU41be2DcYup`, `rec3iFLEHuRHl1QZH`) och
-en person utan e-postadress (`recsqD7ZxM6c13KbC`). 186 av 416 saknar namn i basen (fälla 43).
+Materiallistorna identiska med 2026-07-09-körningen (basen oförändrad; källfrågan
+deterministisk). Partitionen: **14 grupper** (188+59+39+34+30+24+14+9+8+3+3+3+1+1 =
+416; invarianter gröna, exit 0) → `~/Downloads/skool-export-2026-07-10/` +
+`INSTRUKTION.md`. Konservering mot 8-grupps-körningen verifierad grupp för grupp
+(t.ex. gamla `RIM1 197` = nya `188 + 9 RIM1+Psio`; gamla `inga-ankare 39` = nya rena
+Psio-gruppen). Enda exkluderade: två äkta testartefakter (`recIynU41be2DcYup`,
+`rec3iFLEHuRHl1QZH`) och en person utan e-postadress (`recsqD7ZxM6c13KbC`).
+186 av 416 saknar namn i basen (fälla 43).

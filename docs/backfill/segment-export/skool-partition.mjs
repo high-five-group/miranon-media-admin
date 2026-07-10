@@ -19,12 +19,14 @@ import path from 'node:path';
 const IN = process.cwd();
 const OUT = process.env.SKOOL_OUT ?? path.join(process.env.HOME, 'Downloads', 'skool-export');
 
-// Skools tre LÅSTA ankare. Psionautics saknar ännu ett (Marcus 2026-07-09) → dess
-// deltagare hamnar i gruppen utan privat åtkomst om de inte gått något annat.
+// Skools LÅSTA ankare. Psionautics tillagd som 4:e ankare 2026-07-10 (S60 Del 6:
+// R&L:s material är på väg) — 'Mentala ankare Psionautics' MÅSTE existera i Skool
+// innan uppladdning; sänddagen ligger därför efter ankar-skapandet (INSTRUKTION.md).
 const ANKARE = [
   { nyckel: 'FS', fil: 'lista-fjarrskadning.csv', skool: 'Mentala ankare Fjärrskådning' },
   { nyckel: 'RIM1', fil: 'lista-resor-i-medvetandet-1.csv', skool: 'Mentala ankare RIM1' },
   { nyckel: 'RIM2', fil: 'lista-resor-i-medvetandet-2.csv', skool: 'Mentala ankare RIM2' },
+  { nyckel: 'PSIO', fil: 'lista-psionautics.csv', skool: 'Mentala ankare Psionautics' },
 ];
 
 const las = (f) =>
@@ -66,7 +68,7 @@ const rader = ordnade.map(([id, g], i) => {
   fs.writeFileSync(path.join(OUT, 'skool', fil), skoolCsv(g.personer));
   const kryss = g.nycklar.length
     ? g.nycklar.map((k) => ANKARE.find((a) => a.nyckel === k).skool).join(' + ')
-    : '— inga privata ankare (lämna alla tre okryssade)';
+    : '— inga privata ankare (lämna samtliga okryssade)';
   return { fil, antal: g.personer.length, kryss };
 });
 
