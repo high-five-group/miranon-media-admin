@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-27
+updated: 2026-07-11
 review_by: 2026-09-25
 status: stable
 ---
@@ -31,7 +31,7 @@ Slutsatsen är den viktiga: basens brister tvingade fram den BÄTTRE arkitekture
 
 > Detta avsnitt ändras när basen maxas (ADR-063, post-Fas-6) — det beskriver basens tillstånd, inte arkitekturen.
 
-(a) **Tomma segment för noll-närvaro-kurser** (RIM 3, Psionautics, alla Föreläsningar). Inte en app-kompromiss — basen saknar avstämd närvaro ännu, och ytan SURFAR det korrekt. Golvet (strikt `Närvaropoäng=1`, identiskt med rollup-kedjans lynchpin) lättas aldrig för att fylla tomma segment (ADR-064 beslut 1/3) — det vore att korrumpera korrektheten och maskera basens tillstånd. Ett tomt segment = ärlig signal om var bas-arbetet återstår; det fylls självt när närvaron stäms av (dynamisk regel, on-demand-eval).
+(a) **Tomma segment för noll-närvaro-kurser** (RIM 3, alla Föreläsningar; *Psionautics avstämdes i S60 2026-07-08/09 — Event-17: 156 Närvarande — och är inte längre tom, precis som kontraktet förutsade*). Inte en app-kompromiss — basen saknar avstämd närvaro ännu, och ytan SURFAR det korrekt. Golvet (strikt `Närvaropoäng=1`, identiskt med rollup-kedjans lynchpin) lättas aldrig för att fylla tomma segment (ADR-064 beslut 1/3) — det vore att korrumpera korrektheten och maskera basens tillstånd. Ett tomt segment = ärlig signal om var bas-arbetet återstår; det fylls självt när närvaron stäms av (dynamisk regel, on-demand-eval).
 
 (b) **16 oavstämda Föreläsnings-Deltaganden** (4 historiska event) + **naket "Resor i medvetandet"-namnkollision** — registrerade (data-model §Kända fällor 34/35, tråd T16) som KRAVSPEC för post-Fas-6-bas-maximeringen (ADR-063), inte som app-fixar.
 
@@ -58,6 +58,37 @@ filtrerad i medlemskaps-beräkningen — medlemskap = strikt närvaro per ADR-06
 Källa: ADR-062 beslut 5/7 + branschledar-research (HubSpot static-list-snapshot för event-
 attendees; marknad/transaktionellt = separata suppression-strömmar; SKOOL bulk-invite =
 e-post-CSV som grant access). Framåtpekare: 6h implementerar mail-consent-filtret vid send.
+
+## Material-mappningen (Skool): utbildnings-gated per kurs [AFFÄRSREGEL, S60]
+
+> Kanonisk hemvist sedan S60 session-end (2026-07-11); föddes i S60 Del 1 §Samsyn
+> (Marcus 2026-07-08). ADR-bar-prövad → **under baren** (reversibel affärsregel som
+> följer Skool-tillståndet; avvägningarna bakom är redan ADR-062/064). Fulltext-
+> historik + grillnings-resonemang: S60-sessionsdoket Del 1 §Samsyn + Del 5–6.
+
+**Regeln:** Skool-material är **utbildnings-gated per kurs**. En kurs gått som
+*Utbildning* ger kursens material ("Mentala ankare <kurs>" i Skool); **alla
+föreläsningar ger inget material**. Skool-inbjudan = **unionen av all
+utbildningsnärvaro** (access-grant, ej consent-filtrerad — se §Consent-allokering
+ovan); föreläsning-only-deltagare får därmed ingen Skool-inbjudan alls.
+
+| Kurs (gått som Utbildning) | Skool-material |
+|---|---|
+| RIM 1 / RIM 2 / RIM 3 | Mentala ankare RIM1 / RIM2 / (RIM3 när event genomförts) |
+| Fjärrskådning | Mentala ankare Fjärrskådning |
+| Psionautics | Mentala ankare Psionautics (skapas när R&L:s material är klart) |
+| **Alla föreläsningar** | **inget** |
+
+**Källäsnings-kravet:** regeln kräver käll-läsning (kurs × modalitet ur Deltaganden,
+`compute-segment`-mönstret) — rollupen `Fjärrskådning ×` blandar Utbildning och
+Föreläsning (fälla 32) och skulle ge FS-material felaktigt till föreläsnings-deltagare.
+"Mentala ankare" är **plural även för ett enskilt material** (ORDLISTA.md).
+
+**Leverans-partition till Skool (empiri 2026-07-09):** Skool dedupar INTE (samma
+adress ×3 = 3 inbjudningsmail) och sätter åtkomst per uppladdning → *leveransen*
+partitioneras (varje person i exakt EN fil = sin exakta ankar-kombination), medan
+segment-modellen i basen förblir överlappande (ADR-062 beslut 1). Generator med
+fällande invarianter + reproducerbar pipeline: `docs/backfill/segment-export/`.
 
 ## 4 — Var detaljen lever (frys-disciplin)
 
