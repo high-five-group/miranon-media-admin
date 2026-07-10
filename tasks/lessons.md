@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-09
+updated: 2026-07-11
 review_by: 2026-11-15
 status: stable
 ---
@@ -3540,3 +3540,53 @@ kunna se?* Om svaret är "fel i den dimension jag just ändrade" — då är kon
 Praktiskt komplement: räkna även per-post-diff mot källan (vem bytte kategori, och står det i
 källan?), inte bara aggregat. [[L255]] pekade på samma sak från ett annat håll: en aggregat-
 jämförelse som säger noll avvikelser kan dölja per-post-fel.
+
+### L260 [UNIVERSAL] — En extern tjänsts UI-bindning utan skriftlig dokumentation: triangulera källorna och bevisa med ett minimalt SKARPT test
+
+Datum: 2026-07-10 | Källa: S60 Del 6 (Resend broadcast-editorns variabel-chip: egenskapade
+`contact_first_name` matchade ingen kontakt-egenskap → fallback åt alla 416; mekaniken visas
+endast i video; `FIRST_NAME` vägrades som "reserved for internal use" — ledtråden att
+bindningen redan var inbyggd; rätt namn = egenskapsnyckeln `first_name`; bevisat via skarpt
+mini-utskick till 2-kontakters testsegment) (klass: extern-tjänst-integration/
+verifieringsdesign; [[L189]]-släkt [beteende är hypotes tills verifierat])
+
+När en tjänsts UI-mekanik inte står i text: (a) triangulera det skriftliga som finns —
+API-referens, feature-sida, blogg; legacy-token-former avslöjar ofta modellen; (b) läs
+spärrar som LEDTRÅDAR — "reserverat namn" betyder att bindningen redan existerar: leta
+systemets nyckelnamn i stället för att skapa egna; (c) BEVISA med ett minimalt skarpt test
+mot riktiga poster. Test-knappar utan riktig kontext (Test Email utan kontakt-koppling)
+bevisar layout, aldrig bindning. Felklassen är tyst: allt ser felfritt ut i editorn och
+avslöjas först i mottagarens inkorg — efter utskicket.
+
+### L261 [UNIVERSAL] — Certifikatfel eller evigt hängande uppladdning mot EN domän: diffa DNS mot en öppen resolver FÖRE all app-/browser-felsökning
+
+Datum: 2026-07-10 | Källa: S60 Del 6 (Resend-bilduppladdningen pulserade för evigt;
+DevTools: `net::ERR_CERT_AUTHORITY_INVALID` på uppladdnings-CDN:et; `dig` → 146.112.61.108 =
+`hit-phish.opendns.com` med Cisco Umbrella-utfärdat cert — operatörsledets OpenDNS hade
+felstämplat domänen som nätfiske; via `@1.1.1.1` → äkta CloudFront/Amazon-cert) (klass:
+nätverks-triage/rotorsak)
+
+"Allt annat fungerar" kombinerat med fel på EXAKT en domän är signaturen för en
+kategori-/filterspärr i DNS-ledet — inte en lokal bugg. Triage före all annan felsökning:
+`dig <domän>` mot `dig <domän> @1.1.1.1` — divergens = interceptor i kedjan; svar i
+`146.112.0.0/16` = OpenDNS/Umbrella; certutfärdaren i felmeddelandet NAMNGER interceptorn.
+Filen, webbläsaren och appen felsöks först EFTER att DNS-svaret verifierats äkta — annars
+jagas spöken i fel lager. Fixen är DNS-val eller filter-konfiguration, aldrig kod. Bikostnad
+värd att bära vidare: mottagare bakom samma filterklass ser resurser på den stämplade
+domänen trasiga (mailbilder) — alt-text är därför funktion, inte kosmetika.
+
+### L262 [UNIVERSAL] — Strukturer överlever tyst sina motiv — när ett senare beslut tar bort skälet för en struktur, ompröva strukturen explicit
+
+Datum: 2026-07-11 | Källa: S60 Del 6 (två Resend-segment [personlig/namnlös] skapades för
+planens TVÅ mailtexter; när utkastet blev EN text med fallback-variabel försvann skälet —
+men strukturen red vidare genom import, riggning och bevis tills Marcus ifrågasatte den;
+konsoliderad till ETT segment + nytt minitest) (klass: design-hygien/fossil-detektering)
+
+En struktur motiveras av ett beslut; när ett SENARE beslut tar bort motivet försvinner
+strukturen inte av sig själv — den blir en fossil som ser avsiktlig ut. Disciplin: vid varje
+beslut som ändrar en premiss, fråga explicit "vilka befintliga strukturer motiverades av den
+gamla premissen?" och ompröva dem i samma andetag. Granskningsfråga åt andra hållet: "varför
+har vi X?" — kan motivet inte längre pekas ut är X en fossil, inte ett val. Extra vikt när
+fossilen bär drift-lägen den nya världen saknar (två disjunkta listor kan divergera vid
+re-import; en lista kan inte). Fossilen här överlevde dessutom ett bevispass — verifiering
+bevisar att något FUNGERAR, aldrig att det BEHÖVS.
