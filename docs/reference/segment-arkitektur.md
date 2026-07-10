@@ -67,7 +67,7 @@ e-post-CSV som grant access). Framåtpekare: 6h implementerar mail-consent-filtr
 > historik + grillnings-resonemang: S60-sessionsdoket Del 1 §Samsyn + Del 5–6.
 
 **Regeln:** Skool-material är **utbildnings-gated per kurs**. En kurs gått som
-*Utbildning* ger kursens material ("Mentala ankare <kurs>" i Skool); **alla
+*Utbildning* ger kursens material (`Mentala ankare <kurs>` i Skool); **alla
 föreläsningar ger inget material**. Skool-inbjudan = **unionen av all
 utbildningsnärvaro** (access-grant, ej consent-filtrerad — se §Consent-allokering
 ovan); föreläsning-only-deltagare får därmed ingen Skool-inbjudan alls.
