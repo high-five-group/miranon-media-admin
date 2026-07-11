@@ -1,10 +1,10 @@
 ---
 id: TASK-4.5
 title: 'Skiva: Osynliga uppdateringen (B3)'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-07 08:56'
-updated_date: '2026-07-11 19:09'
+updated_date: '2026-07-11 21:05'
 labels:
   - ready-for-agent
 dependencies:
@@ -46,7 +46,15 @@ FACIT-AVPRICKNINGEN (DoD #6, L245/L246) — varje berörd facit-/byggkravspunkt,
 TDD-BEVIS/AVVIKELSE: bevis-skiva — alla tre testerna skrevs FÖRST och observerades GRÖNA direkt mot oförändrad produktkod (beteendet bars redan av SWR-defaulten; ingen rött→grönt-cykel möjlig för AC1–AC3). RÖD-KAPABILITET därför bevisad via inducerade defekter: (probe A) isFetching kopplad till laddläget → AC1 RÖTT (role=status 1 ≠ 0 under omhämtning); (probe B) laddläget bortkopplat → AC3 RÖTT (2 ≠ 3 status). Båda proberna återställda; sluttillstånd grönt.
 
 Väntar design-review (S62 batch 3) · leverans c1aa713 · CI-run 29164601255 grön per jobb (Detect changed files ✓, Lint + Audit + TypeCheck ✓, Test + Build ✓, Docs link check ✓, CI Passed or Skipped ✓; attempt 1 = första passet) · facit-avprickningen i notes ovan. DoD #5 (design-review mot K10-facit) ÖPPEN — Marcus-grinden; final-summary + Done-flip sker där. Granskningsanvisning: osynligheten är GRANSKNINGSBAR DESIGN (L247) — beteendet demonstreras enklast live på /hem: låt vyn stå (60 s-pollen ska inte synas som blink/hopp/snurra), jämför mot Del 11-kvittensen; kallstartens lugna laddläge syns vid hård omladdning.
+
+DESIGN-REVIEW GODKÄND (DoD #5, Marcus 2026-07-11): osynligheten kvitterad live — 60+ s utan synbar poll-uppdatering ('ser ingen omladdning längre, så det är ju bra'). I samma granskning underkändes KALLSTARTENS laddläges-DESIGN (kollapsade kort + 'Laddar…'-textrader = layout-skift vid hård omladdning) — utanför 4.5:s scope (laddlägets utseende aldrig facit-specat; pre-existerande design, 4.5 asserterade endast att laddläget visas per AC #3). Marcus väg-beslut A: 4.5 stängs för sitt scope; kallstarts-designen → eget design-kort task-7 (skeleton + persist-cache till branschstandard).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit c1aa713 · CI-run 29164601255 grön per jobb (attempt 1) · CI-grön-första-pass: ja · defekter under körning: 0 · TDD: undantag (bevis-skiva — testerna gröna direkt mot oförändrad produktkod; röd-kapabilitet bevisad via 2 inducerade defekt-prober, AC1+AC3 fällda och återställda) · AFK-proveniens: batch 3 via /work-batch (run wf_72a786e1-c30, ADR-071), frisk do-work-subagent; granskningsfärdig-commit cdfd4ee (run 29164777660) · Done-flip på Marcus design-review-kvittens 2026-07-11 (S62 Del 4); kallstartens laddläges-design → task-7
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
@@ -54,6 +62,6 @@ Väntar design-review (S62 batch 3) · leverans c1aa713 · CI-run 29164601255 gr
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->
