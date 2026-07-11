@@ -1,17 +1,14 @@
 import { useMemo } from 'react';
-import { displayName } from '@/components/registrations/registration-display';
 import { PaymentStatus } from '@/domain/types/Status';
 import { DashboardCard } from './DashboardCard';
 import { useDashboardRegistrations } from './useDashboardData';
 
-/** Hur många obetalda som namnges under antalet (resten sammanfattas med "…"). */
-const MAX_NAMN = 2;
-
 /**
- * "Obetalda avgifter"-card — A-skelettets etikett-över-värde-form (task-1.3,
- * berättelse 4): ANTALET stort och tydligt, de första namnen under (resten
- * antyds med "…"). Antalet är TEXT-innehåll under kortets h2-etikett —
- * översikt, aldrig enbart färg.
+ * "Obetalda anmälningsavgifter"-card till K10-facitet (task-4.3 AC #5;
+ * designen låst S55 Del 12): BARA antalet, text-3xl semibold, under
+ * kortrubriken — namnraden från A-skelettet utgick med facitet (vem som är
+ * obetald hör till handläggningsvyerna, översikten svarar bara "hur många").
+ * Antalet är TEXT-innehåll under kortets h2-etikett — aldrig enbart färg.
  *
  * Obetald-indikator: `anmalningsavgift === 'Ej mottagen'` (`PaymentStatus.EJ_MOTTAGEN`).
  * Fält-formen verifierad mot `docs/reference/data-model.md:193`: `Anmälningsavgift`
@@ -20,36 +17,26 @@ const MAX_NAMN = 2;
  * ut). Ingen status-blandning (Avbokad/Inställt filtreras inte bort — samma
  * temporal/status-renhet som övriga cards; en ev. snävning är ett medvetet senare val).
  *
- * Tom-säkert: 0 obetalda → stort "0" + vänlig text under.
+ * Tom-säkert: 0 obetalda → antalet "0" (facit-formen är siffran ensam).
  */
 export function ObetaldaCard() {
   const { data, isPending, isError, error } = useDashboardRegistrations();
 
-  const obetalda = useMemo(() => {
-    if (!data) return [];
-    return data.filter((reg) => reg.anmalningsavgift === PaymentStatus.EJ_MOTTAGEN);
+  const antal = useMemo(() => {
+    if (!data) return 0;
+    return data.filter((reg) => reg.anmalningsavgift === PaymentStatus.EJ_MOTTAGEN).length;
   }, [data]);
 
   return (
     <DashboardCard
-      title="Obetalda avgifter"
+      title="Obetalda anmälningsavgifter"
       isPending={isPending}
       isError={isError}
       error={error}
       loadingLabel="Laddar obetalda avgifter…"
       errorTitle="Kunde inte hämta anmälningar"
     >
-      <div className="flex flex-col gap-1">
-        <p className="font-semibold text-3xl">{obetalda.length}</p>
-        <p className="text-small text-text-muted">
-          {obetalda.length === 0
-            ? 'Inga obetalda avgifter.'
-            : obetalda
-                .slice(0, MAX_NAMN)
-                .map((reg) => displayName(reg))
-                .join(', ') + (obetalda.length > MAX_NAMN ? ' …' : '')}
-        </p>
-      </div>
+      <p className="font-semibold text-3xl">{antal}</p>
     </DashboardCard>
   );
 }

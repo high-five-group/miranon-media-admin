@@ -47,15 +47,19 @@ export function DashboardCard({
   return (
     <section
       aria-labelledby={headingId}
-      className={`relative flex break-inside-avoid flex-col gap-1 rounded-2xl border border-transparent p-4 contrast-more:border-border-strong print:border-border-strong ${
+      className={`relative flex min-w-0 break-inside-avoid flex-col gap-2 rounded-2xl border border-transparent p-4 contrast-more:border-border-strong print:border-border-strong ${
         tone === 'primary' ? 'bg-primary-tint' : 'bg-bg-muted'
       }`}
     >
-      {/* Medvetet UTAN färg-utility: rubriken ska rendera basfärgen (--mm-text)
-          — text-text-muted här var död kod tills @layer-flytten (task-4.1) och
-          hade annars aktiverats som synlig diff; facit-omstylningen av
-          kortrubrikerna kommer i task-4.3/4.4. */}
-      <h2 id={headingId} className="font-medium text-small">
+      {/* Kortrubriken per K10-facit (task-4.3): INNE i kortet, text-xl
+          semibold, sentence case. Medvetet UTAN färg-utility: facit-färgen ÄR
+          @layer-basregelns mörka default (--mm-text, renderat #242424) —
+          task-4.1-flytten gjorde utilities vinnande, men här vill vi basen.
+          min-w-0 (sektionen) + break-words (rubriken): långa enskilda ord
+          ("anmälningsavgifter") får inte spränga grid-spåret på smal skärm —
+          WCAG 1.4.10-reflow (ingen h-scroll, shell DoD 9) är golv; ordet
+          radbryts inom kortet i stället. */}
+      <h2 id={headingId} className="break-words font-semibold text-xl">
         {title}
       </h2>
 

@@ -3,12 +3,13 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 
 /**
- * Hem-vyn (task-1.3 A-skelettet → task-4.2 K10-facit-strukturen). Uppifrån
- * och ned: hälsningskort (h1 "Hej {namn}" utan utropstecken; återbesök i
- * sessionen visar bara namnet [B2]; "Mina sidor"-platshållarknapp ersätter
- * uppdatera-kontrollen [B5]) → Nästa event
- * (primär-tint, HELA kortet klickbart till eventets detaljsida) bredvid
- * Obetalda avgifter (antalet stort, första namnen under) → helbredds-listkortet
+ * Hem-vyn (task-1.3 A-skelettet → task-4.2 K10-facit-strukturen → task-4.3
+ * facit-korten). Uppifrån och ned: hälsningskort (h1 "Hej {namn}" utan
+ * utropstecken; återbesök i sessionen visar bara namnet [B2]; "Mina sidor"-
+ * platshållarknapp ersätter uppdatera-kontrollen [B5]) → Nästa event
+ * (primär-tint, HELA kortet klickbart till eventets detaljsida; dagar-kvar-
+ * pill, metagrupp med ikoner, beläggningsstapel) bredvid Obetalda
+ * anmälningsavgifter (BARA antalet, task-4.3) → helbredds-listkortet
  * Nya anmälningar (rad klickbar → eventets anmälda-vy; rad utan event olänkad
  * med "Utan event") → stor helbredds-CTA sist. INGEN separat "Hem"-rubrik
  * (AC #6): hälsningen ÄR sidans h1 → h1-assertions matchar /^Hej/
@@ -158,14 +159,11 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
     ).toBeVisible();
     await expect(page.getByText('Förbi-event')).toHaveCount(0);
 
-    // Obetalda: en rad har "Ej mottagen" → antalet STORT (A-skelettet:
-    // etikett-över-värde) + de första namnen under. Scopat till cardets
-    // region-landmark: namnet kan även synas i "Nya anmälningar" (samma
-    // person), så region-scope undviker strict-mode-dubbelträff och bevisar
-    // att raden ligger i RÄTT card.
-    const obetalda = page.getByRole('region', { name: 'Obetalda avgifter' });
+    // Obetalda: en rad har "Ej mottagen" → antalet stort och ENSAMT
+    // (K10-facit, task-4.3 — namnraden utgick). Region-scope bevisar att
+    // siffran ligger i RÄTT card (strict-mode-säkert mot andra siffror).
+    const obetalda = page.getByRole('region', { name: 'Obetalda anmälningsavgifter' });
     await expect(obetalda.getByText('1', { exact: true })).toBeVisible();
-    await expect(obetalda.getByText('Disa Dahl')).toBeVisible();
 
     // CTA → samlade anmälningslistan (task-1.4 AC #2; chevronen är
     // aria-hidden → rent namn). Eventlistan nås via tabbaren (beslut 7).
@@ -245,7 +243,12 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
     await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
     await expect(page.getByText('Inga anmälningar än.')).toBeVisible();
     await expect(page.getByText('Inga kommande event.')).toBeVisible();
-    await expect(page.getByText('Inga obetalda avgifter.')).toBeVisible();
+    // Obetalda-facitet (task-4.3): tomt = antalet "0" ensamt — ingen undertext.
+    await expect(
+      page.getByRole('region', { name: 'Obetalda anmälningsavgifter' }).getByText('0', {
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
@@ -371,6 +374,196 @@ test.describe('Hem polling (Fas 6d L2 — ADR-017 + erratum)', () => {
     // Avancera förbi 60s → refetchInterval fyrar en polling-refetch.
     await page.clock.fastForward(61_000);
     await expect.poll(() => evCalls).toBeGreaterThan(1);
+  });
+});
+
+/**
+ * task-4.3 — Nästa event + Obetalda till K10-facit (S55 Del 12). Renderad
+ * verifiering per L246: computed-style/boxmätning, aldrig enbart klass-närvaro.
+ * Facit-formerna: dagar-kvar som VIT pill topp-höger med tre EXAKTA former;
+ * metagrupp text-small med kartnåls-/kalenderikon och långdatum; kortrubrik
+ * text-xl semibold mörk; beläggningsstapel (vit track, primär-dämpad fyllnad)
+ * vars andel matchar X/Y; Obetalda anmälningsavgifter BARA antalet text-3xl.
+ */
+test.describe('Nästa event + Obetalda till facit (task-4.3)', () => {
+  test('AC 1 — dagar-kvar-pillen: tre exakta former, vit pill topp-höger', async ({ page }) => {
+    // Fast klocka (setFixedTime): "idag" pinnas → datum-aritmetiken kan inte
+    // glida över midnatt mitt i testet (TASK-3-klassen: inga lastkänsliga
+    // tidsfönster). Timers löper vidare — bara Date.now/new Date() pinnas.
+    const nu = new Date();
+    await page.clock.setFixedTime(nu);
+    const datumOmDagar = (dagar: number): string => {
+      const d = new Date(nu);
+      d.setDate(d.getDate() + dagar);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${d.getFullYear()}-${mm}-${dd}`;
+    };
+
+    const fall = [
+      { dagar: 71, text: '71 dagar kvar' },
+      { dagar: 1, text: '1 dag kvar' },
+      { dagar: 0, text: 'Idag' },
+    ] as const;
+
+    for (const { dagar, text } of fall) {
+      // Senast registrerade route vinner → varje varv styr sitt eget EF-svar.
+      await mock(page, { registrations: [], events: [ev({ startdatum: datumOmDagar(dagar) })] });
+      await page.goto('/hem');
+      const kort = page.getByRole('region', { name: 'Nästa event' });
+      const pill = kort.getByText(text, { exact: true });
+      await expect(pill).toBeVisible();
+
+      // Renderad facit-verifiering (L246): VIT pill (--mm-surface), rundad,
+      // i kortets övre högra hörn (top-4/right-4 = 16 px inset).
+      const stil = await pill.evaluate((el) => {
+        const s = getComputedStyle(el);
+        return { bg: s.backgroundColor, radie: s.borderRadius };
+      });
+      expect(stil.bg).toBe('rgb(255, 255, 255)');
+      expect(stil.radie).not.toBe('0px');
+      const kortBox = await kort.boundingBox();
+      const pillBox = await pill.boundingBox();
+      if (!kortBox || !pillBox) throw new Error('boundingBox saknas för pill-mätningen');
+      expect(Math.abs(pillBox.y - (kortBox.y + 16))).toBeLessThanOrEqual(1.5);
+      const kortHogerInner = kortBox.x + kortBox.width - 16;
+      expect(Math.abs(kortHogerInner - (pillBox.x + pillBox.width))).toBeLessThanOrEqual(1.5);
+    }
+  });
+
+  test('AC 2+3 — metagrupp med ikoner + långdatum; EN länk-yta; kortrubriken text-xl semibold mörk RENDERAT', async ({
+    page,
+  }) => {
+    await mock(page, {
+      registrations: [],
+      events: [
+        ev({
+          eventNamn: 'Fjärrskådning',
+          ort: 'Skövde',
+          startdatum: '2099-09-15',
+          antalAnmalda: 5,
+          maxPlatser: 20,
+        }),
+      ],
+    });
+    await page.goto('/hem');
+    const kort = page.getByRole('region', { name: 'Nästa event' });
+
+    // Kortrubriken RENDERAT (computed-style, AC #3): text-xl (20px) semibold
+    // (600), mörk (--mm-text #242424), sentence case utan text-transform.
+    const rubrik = kort.getByRole('heading', { level: 2, name: 'Nästa event' });
+    const rubrikStil = await rubrik.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { storlek: s.fontSize, vikt: s.fontWeight, farg: s.color, transform: s.textTransform };
+    });
+    expect(rubrikStil).toEqual({
+      storlek: '20px',
+      vikt: '600',
+      farg: 'rgb(36, 36, 36)',
+      transform: 'none',
+    });
+
+    // Metagruppen (text-small): eventnamnet är länken i medium — 14px/500.
+    const namn = kort.getByRole('link', { name: 'Fjärrskådning', exact: true });
+    await expect(namn).toBeVisible();
+    const namnStil = await namn.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { storlek: s.fontSize, vikt: s.fontWeight };
+    });
+    expect(namnStil).toEqual({ storlek: '14px', vikt: '500' });
+
+    // Orten med kartnålsikon och långdatumet ("15 september 2099") med
+    // kalenderikon — renderade svg-ikoner, aria-dolda (texten bär infon).
+    const ort = kort.getByText('Skövde', { exact: true });
+    await expect(ort).toBeVisible();
+    await expect(ort.locator('svg[aria-hidden="true"]')).toHaveCount(1);
+    const datum = kort.getByText('15 september 2099', { exact: true });
+    await expect(datum).toBeVisible();
+    await expect(datum.locator('svg[aria-hidden="true"]')).toHaveCount(1);
+
+    // Korrekt länksemantik (AC #2): EN länk-yta — inga nästlade länkar.
+    await expect(kort.getByRole('link')).toHaveCount(1);
+  });
+
+  test('AC 4 — "X av Y platser bokade" + beläggningsstapelns fyllnadsandel matchar X/Y (renderad mätning)', async ({
+    page,
+  }) => {
+    await mock(page, {
+      registrations: [],
+      events: [
+        ev({
+          eventNamn: 'Fjärrskådning',
+          startdatum: '2099-09-15',
+          antalAnmalda: 5,
+          maxPlatser: 20,
+        }),
+      ],
+    });
+    await page.goto('/hem');
+    const kort = page.getByRole('region', { name: 'Nästa event' });
+
+    // Caption-texten är informationsbäraren (stapeln aldrig ensam): 12px
+    // (text-caption) i secondary (--mm-text-secondary #525151).
+    const caption = kort.getByText('5 av 20 platser bokade', { exact: true });
+    await expect(caption).toBeVisible();
+    const captionStil = await caption.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { storlek: s.fontSize, farg: s.color };
+    });
+    expect(captionStil).toEqual({ storlek: '12px', farg: 'rgb(82, 81, 81)' });
+
+    // Stapeln RENDERAD (L246-boxmätning): fyllnadsbredd / trackbredd == 5/20.
+    // Track = kortets enda aria-dolda div (ikonerna är svg, pillen span).
+    const track = kort.locator('div[aria-hidden="true"]');
+    await expect(track).toHaveCount(1);
+    const fyllnad = track.locator('div');
+    const trackBox = await track.boundingBox();
+    const fyllnadBox = await fyllnad.boundingBox();
+    if (!trackBox || !fyllnadBox) throw new Error('boundingBox saknas för stapel-mätningen');
+    expect(fyllnadBox.width / trackBox.width).toBeGreaterThan(0.23);
+    expect(fyllnadBox.width / trackBox.width).toBeLessThan(0.27);
+
+    // Färgerna renderade: vit track (--mm-surface), primär-dämpad fyllnad
+    // (--mm-primary-muted #c4a840) — tokensystemet, inga hårdkodade färger.
+    const farger = await track.evaluate((el) => {
+      const fill = el.firstElementChild;
+      if (!fill) throw new Error('fyllnadselementet saknas');
+      return {
+        track: getComputedStyle(el).backgroundColor,
+        fyllnad: getComputedStyle(fill).backgroundColor,
+      };
+    });
+    expect(farger).toEqual({ track: 'rgb(255, 255, 255)', fyllnad: 'rgb(196, 168, 64)' });
+  });
+
+  test('AC 5 — Obetalda anmälningsavgifter visar ENDAST antalet, text-3xl semibold', async ({
+    page,
+  }) => {
+    await mock(page, {
+      registrations: [
+        reg({ fornamn: 'Disa', efternamn: 'Dahl', anmalningsavgift: 'Ej mottagen' }),
+        reg({ fornamn: 'Egon', efternamn: 'Ek', anmalningsavgift: 'Ej mottagen' }),
+        reg(), // Mottagen → räknas inte
+      ],
+      events: [ev()],
+    });
+    await page.goto('/hem');
+
+    // Facit-rubriken "Obetalda anmälningsavgifter" (region via aria-labelledby).
+    const region = page.getByRole('region', { name: 'Obetalda anmälningsavgifter' });
+    const antal = region.getByText('2', { exact: true });
+    await expect(antal).toBeVisible();
+
+    // RENDERAT (computed-style): text-3xl (30px) semibold (600).
+    const stil = await antal.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { storlek: s.fontSize, vikt: s.fontWeight };
+    });
+    expect(stil).toEqual({ storlek: '30px', vikt: '600' });
+
+    // ENDAST antalet under rubriken — inga namn/undertexter (facit; \s* täcker
+    // normaliserings-varianter mellan blockelementen).
+    await expect(region).toHaveText(/^Obetalda anmälningsavgifter\s*2$/);
   });
 });
 
