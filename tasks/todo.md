@@ -92,6 +92,16 @@
   K10-facit-bilagorna → per kvittens: DoD #5 + final-summary + Done
   (Code) → 4.5 plockbar. Därefter S62: /work-batch-skill + ADR-071 +
   T75 + TASK-5/6-klassning.**
+- [x] **GRANSKNINGSVÅGEN STÄNGD: 4.3 + 4.4 Marcus-GODKÄNDA → Done**
+  (2026-07-11, Del 5 kanonisk plats): båda första varvet ("Det ser
+  jättebra ut"), reflow-avvikelsen godkänd; DoD #5 + final-summary
+  (AFK-proveniens) + Done-flip per kort på Marcus-kvittens (`c9dca68`).
+  **4.5 PLOCKBAR** — vågmekaniken bevisad hela kedjan (kod →
+  review-ready → mänsklig grind → flip → nästa våg). TASK-4: 4/5 skivor
+  Done, design-review 2/2 första varvet. **NÄSTA (förslag lagt till
+  Marcus): session-end S61 → S62: bygget (/work-batch-skill + ADR-071 +
+  T75, EN hub-landning) → batch 3 (4.5) som skillens första bruk →
+  QA 4.6 (Marcus) → TASK-5/6-klassning + webbtavle-kollen.**
 
 ### Session 59 (2026-07-07, pågår) — MIGRERINGS-HUB-SESSION 4: kartans steg 4b (SYSTEMET.md-bygget + konsolidering)
 
