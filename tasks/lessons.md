@@ -3661,3 +3661,22 @@ använde i din körning — inte som en anteckning till dig själv. Då blir
 fyndet exekverbart av vem som helst, människa eller agent, oavsett
 kontextfönster. Detta är också beviset för att sekventiell AFK-drift inte
 kräver delad session-kontext: substratet bär kontinuiteten.
+
+### L267 [UNIVERSAL] — Plugin-omstart laddar cachen, inte hubben — en hub-landning når sessionen först efter `claude plugin update`
+
+Datum: 2026-07-11 | Källa: S62 (omstartsverifieringen efter hub-landningen
+`3174a1e` [1.13.0] visade 1.12.0: marketplace-cachen [GitHub-hämtad, stale
+sedan 2026-07-08] laddades om av omstarten; remedierad via `claude plugin
+update marcus-system@marcus-hub` → install-record 1.13.0 @ hub-HEAD;
+skill-invokering i pågående session gav ändå "Unknown skill" → NY omstart
+krävdes) (klass: plugin-distribution/verifieringskedja)
+
+Distributionskedjan har TRE länkar, inte två: hub-repo → GitHub →
+marketplace-cache (`~/.claude/plugins/cache/`) → session. En pushad
+hub-landning + omstart hoppar över länk tre — omstarten läser
+install-recordets frysta installPath och uppdaterar ingenting. Regeln för
+varje hub-landning som ska brukas direkt: (1) push, (2) `claude plugin
+update <plugin>@<marketplace>`, (3) omstart, (4) verifiera att
+install-recordets gitCommitSha == hub-HEAD (inte bara versionssträngen).
+Skill-registryn i en körande session låses vid sessionsstart —
+plugin-update mitt i en session gör INTE nya skills nåbara där.

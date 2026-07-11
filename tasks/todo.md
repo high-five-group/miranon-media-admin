@@ -44,6 +44,13 @@
   uppdaterade; T75 → closed). Nästa ADR 072. **NÄSTA: omstart
   (plugin-reload, verifiera 1.13.0 + 16 skills) → batch 3 (4.5) på
   Marcus batch-order.**
+- [x] **Omstartsverifiering RÖD → remedierad** (2026-07-11): första
+  omstarten laddade 1.12.0 — plugin-cachen uppdateras inte av omstart;
+  `claude plugin update marcus-system@marcus-hub` → install-record
+  1.13.0 @ `3174a1e` (== hub-HEAD); skillen onåbar i pågående session
+  (registry låst vid sessionsstart) → lärdom **L267** [UNIVERSAL]
+  (nästa L268). **NÄSTA: NY omstart → verifiera 1.13.0 → batch 3 (4.5)
+  på Marcus batch-order (villkorad "vid grönt").**
 
 ### Session 61 ✅ AVSLUTAD (2026-07-11) — T71/T61-upptag: autonom AFK-batch över ready-for-agent-skivor
 
