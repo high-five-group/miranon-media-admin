@@ -4,7 +4,7 @@ title: 'Skiva: Nästa event + Obetalda till facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-07 08:56'
-updated_date: '2026-07-11 09:36'
+updated_date: '2026-07-11 09:42'
 labels:
   - ready-for-agent
 dependencies:
@@ -50,13 +50,15 @@ Skärmdumps-probe (scratchpad, facit-lik mockdata): desktop matchar k10-facit-de
 
 AVVIKELSE (öppen, för design-review): facit-mobilbilden visar Obetalda-rubrikens långa ord oklippt rinnande över kortkanten (prototypen saknade overflow-hantering; shell-invarianten ingen-h-scroll vid 375 px — WCAG 1.4.10 reflow, shell DoD 9 — föll i första fulla svit-körningen på exakt detta). Löst inom kortets scope: min-w-0 på kort-sektionen + break-words på rubriken → ordet radbryts INOM kortet på smal skärm ('anmälningsavg/ifter'); desktop opåverkad. Reflow-golvet är icke förhandlingsbart; radbrytningen är minsta avsteg från facit-bilden. Marcus dömer formen i granskningen.
 Även noterat: kort-chromets gap 4→8 px (gap-2) per K10-referensens kortform — följdändring synlig i alla tre Hem-kort inkl. Nya anmälningar (task-4.4:s yta omstylas vidare där).
+
+Väntar design-review (S61 batch 2) · leverans dc099b3 · CI-run 29148028260 grön per jobb (Detect changed files ✓, Lint+Audit+TypeCheck ✓, Test+Build ✓ körd, Docs link check skipped by design, CI Passed or Skipped ✓; attempt 1 = första passet) · facit-avprickningen i notes ovan
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
