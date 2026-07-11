@@ -648,9 +648,9 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
   test('AC 1 — raden: namn 16/600, joinad "kurs · ort · kortdatum" 14, relativ tid 12 muted (renderat, fast klocka)', async ({
     page,
   }) => {
-    // Fast klocka på ETT kontrollerat klockslag (idag 15:00 lokal): "för 2 tim
-    // sedan" kan inte glida över en dagsgräns oavsett när testet körs
-    // (TASK-3-klassen: inga lastkänsliga/kalenderkänsliga tidsfönster).
+    // Fast klocka på ETT kontrollerat klockslag (idag 15:00 i RUNNERNS zon):
+    // "för 2 tim sedan" kan inte glida över en dagsgräns oavsett när testet
+    // körs (TASK-3-klassen: inga lastkänsliga/kalenderkänsliga tidsfönster).
     const nu = new Date();
     nu.setHours(15, 0, 0, 0);
     await page.clock.setFixedTime(nu);
@@ -658,6 +658,18 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
     const igar1402 = new Date(nu);
     igar1402.setDate(igar1402.getDate() - 1);
     igar1402.setHours(14, 2, 0, 0);
+    // Igår-formens FÖRVÄNTADE klockslag formateras i BROWSERNS konfigurerade
+    // zon (playwright.config use.timezoneId), inte runnerns: lokalt är
+    // zonerna samma men CI-runnern kör UTC → Node-konstruerade "14:02"
+    // renderas där som 16:02 av appen (CI-run 29149331316-fyndet).
+    // Kalenderdags-etiketten "igår" håller för runner-zoner UTC…Stockholm
+    // (våra två körmiljöerna); klockslags-delen härleds alltid ur samma
+    // absoluta ögonblick som mocken skickar.
+    const igarKlockslag = new Intl.DateTimeFormat('sv-SE', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Stockholm',
+    }).format(igar1402);
 
     // Join-beviset (B4): radens EGNA lookup-fält (eventNamn) divergerar
     // medvetet från eventlistans post — renderas eventlistans identitet är
@@ -725,7 +737,7 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
     // Relativa tidens fyra facit-former mot den fasta klockan.
     await expect(lista.getByText('för 2 tim sedan', { exact: true })).toBeVisible();
     await expect(lista.getByText('för 10 min sedan', { exact: true })).toBeVisible();
-    await expect(lista.getByText('igår 14:02', { exact: true })).toBeVisible();
+    await expect(lista.getByText(`igår ${igarKlockslag}`, { exact: true })).toBeVisible();
     await expect(lista.getByText('för 3 dagar sedan', { exact: true })).toBeVisible();
 
     // Relativ tid: 12 px i muted (--mm-text-muted #6b6b6b) RENDERAT.
