@@ -4,7 +4,7 @@ title: 'Skiva: Anmälningslistan till facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-07 08:56'
-updated_date: '2026-07-11 10:25'
+updated_date: '2026-07-11 10:39'
 labels:
   - ready-for-agent
 dependencies:
@@ -49,13 +49,17 @@ FACIT-AVPRICKNINGEN (DoD #6, L245/L246) — varje berörd facit-/byggkravspunkt,
 Skärmdumps-probe (scratchpad, facit-lik K10-exempeldata, fast klocka): desktop 1440 matchar k10-facit-desktop.png på skivans yta (kontur/ikon/rubrik/rader/zebra/radformerna/relativa tider); mobil 390 matchar k10-facit-mobil.png (samma yta, ingen h-scroll). Nästa event-kortets INNEHÅLL skiljer (probens mockdata vs facit-bildens S55-stagingdata) — task-4.3:s yta, utanför denna skiva.
 
 Validering (lokala grindar, L147): hem-e2e 25/25 · fulla e2e:staging 137 passed + 2 by-design-skip · a11y 13/13 · test:api 290 passed + 6 failed i KÄND secrets-klass (TEST_REGISTRATION_RECORD_ID saknas lokalt — 0 träffar i .env.test, bärs av CI-secret ci.yml:320; create-registration 89/129/160, get-registrations väg D 86/132, update-record 92 — samma sex som task-6-fyndets lista, här med explicit env-felmeddelande) · typecheck 0 fel · biome exit 0 · build grön. TDD: 5 cykler rött→grönt (AC1+B1-länkmålet, AC4, AC3, AC5, AC6) — observerade röda utfall före varje grön implementation.
+
+CI-DEFEKT UNDER KÖRNING (bokförd, fixad): leverans-commitens CI-run 29149331316 föll deterministiskt (3/3 attempts) på AC1-testets igår-klockslag — TESTDEFEKT, inte produktkod: runnerns Node byggde tidpunkten i värdzonen (UTC på CI) medan appen formaterar i playwright-configens timezoneId Europe/Stockholm → renderat 'igår 16:02' ≠ förväntade 'igår 14:02'. Fix e2fdea4: förväntningen härleds ur samma absoluta ögonblick med explicit timeZone = browserns config-zon; lokal körning opåverkad (zonerna sammanfaller där). Övriga 136 e2e passerade i den fallna runnen — diffens produktyta var grön hela vägen.
+
+Väntar design-review (S61 batch 2) · leverans 25c63a9 + testfix e2fdea4 · CI-run 29149562570 grön per jobb (Detect changed files ✓, Lint+Audit+TypeCheck ✓, Test+Build ✓ KÖRD, Docs link check skipped by design, CI Passed or Skipped ✓; attempt 1 för fix-commiten — leverans-commitens första pass föll på testdefekten ovan) · facit-avprickningen i notes ovan
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
