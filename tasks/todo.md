@@ -49,6 +49,20 @@
   mintas i PRD-steget, principen under baren → PRD/spec. ORDLISTA-post
   "Lugnt laddläge" landad obuntad vid kristallisering (`e7a70ac`).
   **NÄSTA: /to-prd på samsynen → /to-issues.**
+- [x] **/to-prd VERKSTÄLLD + CI-röd-detour remedierad** (2026-07-12,
+  Del 3 kanonisk plats; skarv-kvittensen "Kvitterar" — två befintliga
+  skarvar: e2e/axe + a11y-primitiv): **ADR-072 mintad** (klient-persist
+  med skyddsräcken; 72==72) · **TASK-8 publicerad** (PRD: Lugnt
+  laddläge; 16 UB, 11 implementationsbeslut, estimat 5 skivor
+  S/M/M/M/S, DoD 4 defaults + design-review- + layout-skift-grind) ·
+  **task-7 → Done** (final summary; research→grillning→/to-prd
+  fullföljd) · T76-nummer-noten (pilot-ADR:n ≠ 072). DETOUREN: Del 2-
+  run 29170540541 RÖD på pill-testet (4.3 AC 1) — datumsträngar i
+  runnerns UTC vs browserns Stockholm i 22–24Z-fönstret (L264-klassen
+  för datumsträngar, latent utanför fönstret); TZ=UTC-repro RÖD →
+  fix per rad-669-förebilden → RÖD→GRÖN båda zonerna → `c4c52b2` →
+  CI grönt per jobb I FÖNSTRET (run 29170841109, Test+Build ✓).
+  Lesson-kandidat: L264-skärpningen. **NÄSTA: /to-issues på TASK-8.**
 
 ### Session 62 ✅ AVSLUTAD (2026-07-11) — Bygget /work-batch + ADR-071 → batch 3 skarpt → granskningsvåg 4.5 + task-7
 

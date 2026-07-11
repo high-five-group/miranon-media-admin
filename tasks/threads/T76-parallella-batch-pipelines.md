@@ -23,9 +23,13 @@ lifecycle: paused
 - **Sessioner:** 62-parallell (grillad samsyn 2026-07-11 i tredje-stols-
   chatt bredvid S62; kvitterad "Kvitterar" på hela kontraktet)
 - **Styrande:** [ADR-071](../../docs/decisions/ADR-071-afk-batch-kontraktet.md)
-  (sekventiell form, gäller tills vidare) — **ADR-072 mintas vid bygget
+  (sekventiell form, gäller tills vidare) — **pilot-ADR:n mintas vid bygget
   efter bevisad pilot** (baren 3/3 prövad i grillningen; ADR-071-precedent:
-  pilot före skill/ADR)
+  pilot före skill/ADR). *Nummer-not (S63): kortets "ADR-072"-referenser
+  skrevs när 072 var nästa lediga; numret konsumerades av
+  [ADR-072](../../docs/decisions/ADR-072-klient-persist-av-query-cachen.md)
+  (klient-persist, task-7-designen) — pilot-ADR:n får nästa lediga nummer
+  vid mint, kortets övriga "ADR-072" läses som "pilot-ADR:n".*
 - **Besläktad:** `T61` (AFK-loopen; sandbox-delen bor där) · `T67`
   (parallella SESSIONER — människo-drivna; denna tråd = parallella
   AGENTER, syskonbeslut) · `T46` (go-live-kartan; B-switch-posten) ·
