@@ -6,8 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-06 10:42'
-updated_date: '2026-07-06 12:43'
-labels: []
+updated_date: '2026-07-11 08:16'
+labels:
+  - ready-for-agent
 dependencies: []
 ordinal: 8000
 ---
@@ -31,3 +32,11 @@ EXAKT SYMPTOM (S52, task-1.3-körningen 2026-07-06): 'loading-state är tillgän
 <!-- SECTION:NOTES:BEGIN -->
 TREDJE FIL-INSTANSEN (S52, task-1.2-körningen 2026-07-06): person-detail.staging.test.ts:166 samma delayMs-loading-klass — stash-belagd pre-existing på oförändrad main (repeat-each=3: 3/3 röd under maskinlast; task-1.2-diffen [TabBar] orörd av ytan). Härdnings-scopet bör täcka alla tre filerna + grep-svepet.
 <!-- SECTION:NOTES:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 De tre kända loading-testen (event-narvaro.staging.test.ts, mer-vantelista.staging.test.ts, person-detail.staging.test.ts) härdade med route-release-mönstret ur event-anmalda.staging.test.ts — ingen delayMs-tidsfönster-assertion kvar i loading-flödena
+- [ ] #2 Grep-svep över test-sviten redovisat: samtliga ytterligare delayMs-loading-instanser funna och härdade i samma mönster (noll kvarvarande)
+- [ ] #3 Determinism bevisad: --repeat-each=5 lokalt grönt på samtliga härdade testfiler (baseline-repro per kortet: repeat-each=3 → 2/3, 1/3 resp. 3/3 röda under last)
+- [ ] #4 Diffen rör endast testfiler (ingen produktkod)
+<!-- AC:END -->
