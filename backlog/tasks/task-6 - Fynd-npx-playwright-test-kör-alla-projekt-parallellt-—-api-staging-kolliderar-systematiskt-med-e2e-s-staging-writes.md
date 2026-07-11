@@ -6,7 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-11 09:43'
-labels: []
+updated_date: '2026-07-11 21:23'
+labels:
+  - ready-for-agent
 dependencies: []
 ordinal: 17000
 ---
@@ -26,3 +28,10 @@ FÖRVÄNTAT BETEENDE: den blandade full-parallella körformen är antingen (a) k
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 Vägvalet fattat och bokfört i kortets notes med motivering: (a) blandad full-parallell körning görs korrekt via projekt-dependencies/workers-partitionering ELLER (b) körformen deklareras explicit icke-stödd i dok-bäraren
+- [ ] #2 Vid (a): plain 'npx playwright test' grön utan de 6 api-staging-kollisionerna; vid (b): CONTRIBUTING/test-dok bär varningsrad + de kanoniska sekventiella kommandona
+- [ ] #3 CI:s sekventiella Test+Build-form orörd och fortsatt grön
+<!-- AC:END -->

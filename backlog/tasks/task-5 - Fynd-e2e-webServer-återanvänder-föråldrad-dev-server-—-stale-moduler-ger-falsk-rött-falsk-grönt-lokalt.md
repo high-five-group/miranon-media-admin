@@ -6,7 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-11 09:42'
-labels: []
+updated_date: '2026-07-11 21:23'
+labels:
+  - ready-for-agent
 dependencies: []
 ordinal: 16000
 ---
@@ -26,3 +28,10 @@ FÖRVÄNTAT BETEENDE: e2e-körningar möter aldrig en server vars modulgraf kan 
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 e2e-webServer kan inte tyst servera föråldrad modulgraf: antingen startas alltid färsk server (a11y-mönstret: dedikerad port + reuseExistingServer: false + --strictPort) eller vägras återanvändning med hårt fel — mekanismvalet + dev-ergonomi-trade-offen öppet bokförd i kortets notes
+- [ ] #2 Symptom-repron belagd stängd: med en avsiktligt föråldrad server igång på porten möter e2e-körningen aldrig gammal kod (bevisas i körning, inte antas)
+- [ ] #3 Berörda kanoniska kommandon gröna efter ändringen; dok-bäraren (CONTRIBUTING/test-dok) uppdaterad om körform eller port ändras
+<!-- AC:END -->
