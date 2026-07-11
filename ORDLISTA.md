@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-09
+updated: 2026-07-12
 review_by: 2027-01-02
 status: stable
 ---
@@ -109,3 +109,13 @@ till samma mål (grillad samsyn 2026-07-07; hemvist-beslutet bokförs i
 Mer-PRD:n).
 *Undvik:* Mina uppgifter (FK-referensens term), profil, konto.
 *I koden:* `/mer/mina-sidor` (v1 byggs minimal i Mer-PRD:n).
+
+**Lugnt laddläge** — appens app-breda laddprincip: skärmen har sin slutliga
+geometri från första bildrutan — inget växer, hoppar eller byter plats när
+data landar. I första hand syns ingen laddning alls (senast kända data visas
+direkt ur persist-cachen); måste laddning ändå synas är den dimensionsstabila
+skeleton-block i datakropparna medan riktigt kort-chrome och rubriker
+renderas direkt, och under 1 sekund visas ingen indikation alls. Termen var
+odefinierad i UB 16 (granskningsfyndet L269); definierad i task-7-grillningen
+(S63, grillad samsyn); mekaniken bor i task-7:s PRD.
+*Undvik:* "Laddar…"-textrader (mönstret som underkändes i S62), spinner.
