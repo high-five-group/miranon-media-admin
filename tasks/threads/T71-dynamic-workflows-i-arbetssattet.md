@@ -1,9 +1,9 @@
 ---
 owner: marcus803
-updated: 2026-07-09
+updated: 2026-07-11
 review_by: 2026-10-09
 status: stable
-lifecycle: paused
+lifecycle: active
 ---
 
 # T71 — Dynamic workflows / ultracode i Pocock-arbetssättet
@@ -16,7 +16,9 @@ lifecycle: paused
 
 - **Tråd-ID:** `T71-dynamic-workflows-i-arbetssattet`
 - **Tillstånd:** se frontmatter `lifecycle`
-- **Sessioner:** 60 (född; utforskningen genomförd, beslut ej taget)
+- **Sessioner:** 60 (född; utforskningen genomförd, beslut ej taget) ·
+  61 (upptagen med `T61`: grillad samsyn — AFK-batch-kontraktet, 5 beslut —
+  och pilot körd grön; ADR-071 mintas vid /work-batch-bygget)
 - **Styrande:** ingen ännu — beslutet är ADR-bart (se § Beslutsstatus)
 - **Besläktad:** `T67` (parallella aktiva sessioner — samma terräng: samtidighet,
   worktree-isolation, räknar-kollisioner). `T56` (djupa moduler + arkitektur-
@@ -284,6 +286,26 @@ Beslutet är **ADR-bart** enligt baren: (1) svårt att återställa i koherens,
 (2) överraskande utan kontext, (3) resultat av en verklig avvägning. Ingen ADR
 mintad — beslutet är inte taget. Tas tråden upp är grillning normalstarten
 (options-rymden är bred, beslutet permanent).
+
+**S61-uppdatering (2026-07-11):** Tråden upptagen tillsammans med `T61`.
+Grillning körd till samsyn ([S61 Del 2](../sessions/2026-07-11-session-61.md)
+— AFK-batch-kontraktet, 5 beslut: granskningsfärdig-läget · halt-first +
+hårda gränser · trunk-push + omprövningströskel · orkestrerings-skript i
+session med `/work-batch`-skill + ADR-071 vid bevis · pilot TASK-3).
+**Piloten KÖRD GRÖN samma dag** (S61 Del 3): task-3 autonomt `To Do`→`Done`
+via sekventiell workflow-iterator kring OFÖRÄNDRAD do-work-skill —
+first-pass-CI, 0 defekter, 0 ingripanden. Minimal-test-regeln därmed
+uppfylld; § Osäkerheter-raden "ingenting ovan är erfarenhetsbaserat" gäller
+inte längre. Kortets rekommendationer höll vid docs-omverifiering med
+citat-krav (S61 orienterings-pass); två tillägg BORTOM kortet, båda
+doc-verifierade: (a) `claude -p "/do-work"` fungerar dokumenterat (headless-
+spåret öppet som framtida CI/cron-form), (b) subagent-verktygsrestriktion
+via `.claude/agents`-frontmatter `tools`-fält är dokumenterad —
+säkerhets-fyndets förkrav 1 (read-only-regim för AT-Max-svepet) är därmed
+byggbart. Permission-osäkerheten löst med granskningsbar
+`permissions.allow` i spoke-settings (Marcus-kvitterad diff, `71c9143`).
+ADR-071 mintas vid /work-batch-bygget; steg A/B (AT-Max-spåret) står kvar
+oförändrade.
 
 ## Nästa steg (när tråden tas upp)
 

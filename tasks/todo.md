@@ -55,6 +55,22 @@
   ensam max 1 kort (AC-komplettering → klassning → allowlist → körning);
   TASK-4-resten = batch 2 med öppet S56-övertagande. **NÄSTA:
   AC-förslag TASK-3 + allowlist-diff → Marcus-kvittens → pilot.**
+- [x] **PILOT KÖRD GRÖN: task-3 autonomt To Do→Done** (2026-07-11, Del 3
+  kanonisk plats): systemets FÖRSTA AFK-batch — förberedelse `71c9143`
+  (AC ×4 + etikett Marcus-kvitterade + allowlist; CI grön per jobb inkl.
+  Test+Build) → orkestrerings-skript (maxCards=1, halt-first) → frisk
+  do-work-agent → leverans `dae3f1f` (4 testfiler: 3 kända + grep-fyndet
+  event-detail; route-release ersätter delayMs — 0 call-sites kvar,
+  oberoende verifierat) + stängning `871c804` (DoD #3 + final-summary +
+  Done); CI grön per jobb attempt 1 på båda (run 29146238378/29146379537);
+  first-pass-CI ja · 0 defekter · ~24 min · 0 mänskliga ingripanden ·
+  0 permission-stopp. TDD = flake-repro röd (repeat-each=3: 5/12) →
+  härdning → 151/151 grönt (repeat-each=5). Avvikelse öppet bokförd:
+  final-summary-självreferensen → tvåstegs-stängning per task-2-precedent
+  → **T75 registrerad** (skill-text-förtydligande). T61 + T71 → `active`
+  med pilot-not. Orkestratorns oberoende disk-verifiering: kortet 4/4 AC +
+  4/4 DoD, path-scope exakt, träd rent. **NÄSTA: Marcus vägval — batch 2
+  (4.3+4.4 granskningsvåg) nu, eller /work-batch-skill + ADR-071 först.**
 
 ### Session 59 (2026-07-07, pågår) — MIGRERINGS-HUB-SESSION 4: kartans steg 4b (SYSTEMET.md-bygget + konsolidering)
 
