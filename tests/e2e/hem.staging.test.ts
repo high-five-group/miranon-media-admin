@@ -409,12 +409,22 @@ test.describe('Nästa event + Obetalda till facit (task-4.3)', () => {
     // tidsfönster). Timers löper vidare — bara Date.now/new Date() pinnas.
     const nu = new Date();
     await page.clock.setFixedTime(nu);
+    // Datumsträngarna härleds i BROWSERNS zon (playwright.config
+    // use.timezoneId), inte runnerns: CI-runnern kör UTC → mellan 22:00Z
+    // och midnatt är runner-datumet en dag BAKOM Stockholm-datumet, så
+    // runner-härledda strängar ger "Idag"-eventet i browserns GÅRDAG
+    // (filtreras bort som förflutet) och 71-fallet "70 dagar kvar"
+    // (run 29170540541-fyndet; samma klass som run 29149331316/L264 men
+    // för datumsträngar — latent utanför 22–24Z-fönstret). sv-SE:s
+    // Intl-form är ISO (YYYY-MM-DD); dygns-aritmetiken görs vid UTC-middag
+    // så DST-övergångar aldrig kan flytta dagen.
+    const idagIBrowsernsZon = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'Europe/Stockholm',
+    }).format(nu);
     const datumOmDagar = (dagar: number): string => {
-      const d = new Date(nu);
-      d.setDate(d.getDate() + dagar);
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      return `${d.getFullYear()}-${mm}-${dd}`;
+      const d = new Date(`${idagIBrowsernsZon}T12:00:00Z`);
+      d.setUTCDate(d.getUTCDate() + dagar);
+      return d.toISOString().slice(0, 10);
     };
 
     const fall = [
