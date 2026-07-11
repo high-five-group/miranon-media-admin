@@ -1,9 +1,10 @@
 ---
 id: TASK-4.4
 title: 'Skiva: Anmälningslistan till facit'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-07 08:56'
+updated_date: '2026-07-11 10:25'
 labels:
   - ready-for-agent
 dependencies:
@@ -22,20 +23,40 @@ Täcker användarberättelser: 9, 10, 11, 12, 13, 14, 18.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Raden visar namn / kursnamn · ort · kortdatum / relativ tid med typografin 16/14/12 RENDERAT (computed-style; route-mock)
-- [ ] #2 Radklick landar på eventets sida; rad utan event-koppling olänkad med 'Utan event' (e2e)
-- [ ] #3 Zebra varannan rad utan skiljelinjer, rundade rader (renderad verifiering)
-- [ ] #4 Koppar-kontur + koppar-varningsikon vid rubriken (renderad verifiering)
-- [ ] #5 ~25 rader i rullbar lista med maxhöjd och centrerad rundad scrollmarkör
-- [ ] #6 Rullningsområdet tangentbordsfokuserbart med begripligt tillgängligt namn; axe-0 på Hem (e2e + axe)
+- [x] #1 Raden visar namn / kursnamn · ort · kortdatum / relativ tid med typografin 16/14/12 RENDERAT (computed-style; route-mock)
+- [x] #2 Radklick landar på eventets sida; rad utan event-koppling olänkad med 'Utan event' (e2e)
+- [x] #3 Zebra varannan rad utan skiljelinjer, rundade rader (renderad verifiering)
+- [x] #4 Koppar-kontur + koppar-varningsikon vid rubriken (renderad verifiering)
+- [x] #5 ~25 rader i rullbar lista med maxhöjd och centrerad rundad scrollmarkör
+- [x] #6 Rullningsområdet tangentbordsfokuserbart med begripligt tillgängligt namn; axe-0 på Hem (e2e + axe)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FACIT-AVPRICKNINGEN (DoD #6, L245/L246) — varje berörd facit-/byggkravspunkt, RENDERAD verifiering (permanenta e2e-assertions i tests/e2e/hem.staging.test.ts, describe 'task-4.4', + skärmdumps-probe desktop 1440/mobil 390 mot facit-bilagorna):
+1. KOPPAR-kontur (--mm-accent) runt kortet — computed border-color rgb(163,73,28) på ALLA fyra sidor, 1px, kortytan kvar i bg-muted rgb(245,245,243) (AC4-testet, grönt).
+2. Koppar-CircleAlert (20) VID rubriken — renderad svg[aria-hidden] inne i h2:n, boxmätt exakt 20×20 px, computed color rgb(163,73,28) (AC4, grönt).
+3. Rubriken 'Nya anmälningar att hantera' i kortrubriks-formen (text-xl semibold mörk, task-4.3-mönstret via DashboardCard) — regionens accessible name + task-4.3:s befintliga rubrik-assertions gröna i fulla sviten (DashboardCard-utökningen ändrar inte neutral/primary-renderingen).
+4. Inline-rullbar lista ~25 rader med maxhöjd — 30 mockade → EXAKT 25 renderade med recency-cappen bevisad (Person00 synlig, Person25 borta); computed max-height 320px (max-h-80), scrollHeight > clientHeight, overflow-y auto (AC5, grönt).
+5. Centrerad rundad scrollmarkör med luft mot innehållet — computed scrollbar-width 'thin', scrollbar-color rgb(196,196,194) transparent (= --mm-border-strong på genomskinlig track), scrollbar-gutter 'stable', padding-right 12px (pr-3-luften) (AC5, grönt). Webkit-fallback (rundad 999px-tumme + 3px kant-luft) i @utility scrollbar-inline; macOS overlay-scrollbars visar markören vid rullning — synligheten i vila är OS-styrd, stylingen är computed-verifierad.
+6. ZEBRA varannan rad utan skiljelinjer — computed per rad: index 1/3 bg rgb(237,238,233) (--mm-bg-emphasized) + border-radius ≠ 0 (rounded-lg); jämna rader genomskinliga; border-width 0 runt om SAMTLIGA rader (avdelar-mönstret från task-1.3 utgick) (AC3, grönt).
+7. Radens typografi namn/meta/tid = 16/14/12 — computed fontSize 16px + fontWeight 600 (namn), 14px (metaraden), 12px + color rgb(107,107,107) = --mm-text-muted (relativ tid) (AC1, grönt).
+8. B4 klient-side-joinen är identitetskällan — divergens-mock (radens lookup-eventNamn ≠ eventlistans namn) renderar EVENTLISTANS 'Fjärrskådning 2 · Skövde · 15 sep'; lookup-strängen förekommer aldrig i kortet; kortdatum sv-SE utan punkt ('15 sep', facit-formen) (AC1, grönt). Join-miss degraderar ärligt till radens lookup-namn; events-fel fäller aldrig kortet (fel-ytan följer anmälnings-hämtningen ensam).
+9. B1 radklick → EVENTETS sida — klick på raden landar /event/recEvent1 (uppdaterat befintligt test; anmälda-undervyn utgick som mål per öppna G1a-revideringen); rad utan event-koppling OLÄNKAD med 'Utan event' (uppdaterat test, grönt).
+10. Relativa tidens facit-former — fast klocka (setFixedTime 15:00, midnattssäkert per TASK-3-klassen): 'för 10 min sedan', 'för 2 tim sedan', 'igår 14:02', 'för 3 dagar sedan' alla renderade exakt (AC1, grönt).
+11. B6 rullningsytans a11y — tabindex 0 (riktigt tab-stopp; olänkade rader nås annars aldrig med tangentbord), aria-label 'Senaste anmälningarna' (begripligt namn, list-rollen stödjer author-naming), ArrowDown rullar fokuserat område (scrollTop > 0 renderat), axe-0 på Hem med FULL rullbar lista så scrollable-region-focusable prövas på riktigt (AC6, grönt).
+Skärmdumps-probe (scratchpad, facit-lik K10-exempeldata, fast klocka): desktop 1440 matchar k10-facit-desktop.png på skivans yta (kontur/ikon/rubrik/rader/zebra/radformerna/relativa tider); mobil 390 matchar k10-facit-mobil.png (samma yta, ingen h-scroll). Nästa event-kortets INNEHÅLL skiljer (probens mockdata vs facit-bildens S55-stagingdata) — task-4.3:s yta, utanför denna skiva.
+
+Validering (lokala grindar, L147): hem-e2e 25/25 · fulla e2e:staging 137 passed + 2 by-design-skip · a11y 13/13 · test:api 290 passed + 6 failed i KÄND secrets-klass (TEST_REGISTRATION_RECORD_ID saknas lokalt — 0 träffar i .env.test, bärs av CI-secret ci.yml:320; create-registration 89/129/160, get-registrations väg D 86/132, update-record 92 — samma sex som task-6-fyndets lista, här med explicit env-felmeddelande) · typecheck 0 fel · biome exit 0 · build grön. TDD: 5 cykler rött→grönt (AC1+B1-länkmålet, AC4, AC3, AC5, AC6) — observerade röda utfall före varje grön implementation.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
-- [ ] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
+- [x] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->

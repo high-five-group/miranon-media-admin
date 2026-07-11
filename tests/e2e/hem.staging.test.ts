@@ -4,16 +4,18 @@ import { expect, type Page, test } from '@playwright/test';
 
 /**
  * Hem-vyn (task-1.3 A-skelettet → task-4.2 K10-facit-strukturen → task-4.3
- * facit-korten). Uppifrån och ned: hälsningskort (h1 "Hej {namn}" utan
- * utropstecken; återbesök i sessionen visar bara namnet [B2]; "Mina sidor"-
- * platshållarknapp ersätter uppdatera-kontrollen [B5]) → Nästa event
- * (primär-tint, HELA kortet klickbart till eventets detaljsida; dagar-kvar-
- * pill, metagrupp med ikoner, beläggningsstapel) bredvid Obetalda
- * anmälningsavgifter (BARA antalet, task-4.3) → helbredds-listkortet
- * Nya anmälningar (rad klickbar → eventets anmälda-vy; rad utan event olänkad
- * med "Utan event") → stor helbredds-CTA sist. INGEN separat "Hem"-rubrik
- * (AC #6): hälsningen ÄR sidans h1 → h1-assertions matchar /^Hej/
- * (miljö-neutralt: namn-delen styrs av sessionens display-namn, task-1.1).
+ * facit-korten → task-4.4 anmälningslistan). Uppifrån och ned: hälsningskort
+ * (h1 "Hej {namn}" utan utropstecken; återbesök i sessionen visar bara namnet
+ * [B2]; "Mina sidor"-platshållarknapp ersätter uppdatera-kontrollen [B5]) →
+ * Nästa event (primär-tint, HELA kortet klickbart till eventets detaljsida;
+ * dagar-kvar-pill, metagrupp med ikoner, beläggningsstapel) bredvid Obetalda
+ * anmälningsavgifter (BARA antalet, task-4.3) → helbredds-listkortet "Nya
+ * anmälningar att hantera" (koppar-kontur + varningsikon; ~25 senaste i
+ * rullbar zebra-lista; raden bär namn / joinad event-identitet / relativ tid;
+ * rad-klick → EVENTETS sida [B1]; rad utan event olänkad med "Utan event") →
+ * stor helbredds-CTA sist. INGEN separat "Hem"-rubrik (AC #6): hälsningen ÄR
+ * sidans h1 → h1-assertions matchar /^Hej/ (miljö-neutralt: namn-delen styrs
+ * av sessionens display-namn, task-1.1).
  *
  * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
  * testMatch-kontrakt, inte staging-exklusivt; jfr mer-vantelista.staging.test.ts).
@@ -136,7 +138,7 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
       ],
       events: [
         ev({ eventNamn: 'Förbi-event', startdatum: '2020-01-01' }), // dåtid → ej "nästa"
-        ev({ eventNamn: 'Resor i medvetandet 1', startdatum: '2099-06-01' }),
+        ev({ id: 'recEvent1', eventNamn: 'Resor i medvetandet 1', startdatum: '2099-06-01' }),
       ],
     });
     await page.goto('/hem');
@@ -146,10 +148,12 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
     await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Hem' })).toHaveCount(0);
 
-    // Nya anmälningar: senaste namn (recency via Inskickad) + formaterat datum;
-    // raden är en LÄNK till eventets anmälda-vy (AC #3).
+    // Nya anmälningar: senaste namn (recency via Inskickad); raden är en LÄNK
+    // till EVENTETS sida (B1, task-4.4) och metaraden bär den JOINADE
+    // event-identiteten "kurs · ort · kortdatum" ur eventlistan (B4) — inte
+    // längre radens råa Inskickad-datum.
     await expect(page.getByRole('link', { name: /Carl Carlsson/ })).toBeVisible();
-    await expect(page.getByText('2026-06-22')).toBeVisible();
+    await expect(page.getByText('Resor i medvetandet 1 · Skövde · 1 jun').first()).toBeVisible();
 
     // Nästa event: temporalt valt (kommande, ej dåtids-eventet); namn-länk.
     // exact: true — rad-länkarnas accessible name INNEHÅLLER eventnamnet
@@ -202,15 +206,25 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
     await expect(page).toHaveURL(/\/event\/recEventNasta/);
   });
 
-  test('AC 3 — klick på anmälningsrad → eventets anmälda-vy', async ({ page }) => {
+  test('task-4.4 AC 2 — klick på anmälningsrad → EVENTETS sida (B1)', async ({ page }) => {
+    // B1 (öppen revidering av TASK-1 beslut 4/G1a): radklicket landar på
+    // eventets DETALJSIDA — inte anmälda-undervyn.
     await mock(page, {
       registrations: [reg({ fornamn: 'Carl', efternamn: 'Carlsson', eventId: 'recEvent1' })],
-      events: [ev()],
+      events: [ev({ id: 'recEvent1' })],
+    });
+    // Detaljsidan hämtar get-event vid landning → mocka för deterministisk render.
+    await page.route(GET_EVENT, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ event: ev({ id: 'recEvent1' }) }),
+      });
     });
     await page.goto('/hem');
 
     await page.getByRole('link', { name: /Carl Carlsson/ }).click();
-    await expect(page).toHaveURL(/\/event\/recEvent1\/anmalda/);
+    await expect(page).toHaveURL(/\/event\/recEvent1$/);
   });
 
   test('task-1.4 AC 2 — Hem-CTA:n landar på samlade anmälningslistan', async ({ page }) => {
@@ -223,14 +237,16 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Anmälningar' })).toBeVisible();
   });
 
-  test('AC 3 — rad utan event-koppling är olänkad och visar "Utan event"', async ({ page }) => {
+  test('task-4.4 AC 2 — rad utan event-koppling är olänkad och visar "Utan event"', async ({
+    page,
+  }) => {
     await mock(page, {
       registrations: [reg({ fornamn: 'Eva', efternamn: 'Ek', eventId: null, eventNamn: null })],
       events: [ev()],
     });
     await page.goto('/hem');
 
-    const lista = page.getByRole('region', { name: 'Nya anmälningar' });
+    const lista = page.getByRole('region', { name: 'Nya anmälningar att hantera' });
     await expect(lista.getByText('Eva Ek')).toBeVisible();
     await expect(lista.getByText(/Utan event/)).toBeVisible();
     await expect(lista.getByRole('link')).toHaveCount(0);
@@ -610,5 +626,284 @@ test.describe('Hem-strukturen till K10-facit (task-4.2)', () => {
     // Mobil (< lg): versionsraden dold — mobilen behåller dagens form.
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(rad).toBeHidden();
+  });
+});
+
+/**
+ * task-4.4 — Anmälningslistan till K10-facit (S55 Del 12). Renderad
+ * verifiering per L246: computed-style/boxmätning, aldrig enbart klass-närvaro.
+ * Facit-formerna: koppar-kontur runt kortet + koppar-varningsikon (20) vid
+ * rubriken "Nya anmälningar att hantera"; ~25 senaste i inline-rullbar lista
+ * (maxhöjd, tunn centrerad rundad scrollmarkör, luft mot innehållet); zebra
+ * varannan rad (rundad, INGA avdelare); rad = namn (16 semibold) / JOINAD
+ * event-identitet "kurs · ort · kortdatum" (14, B4 — ur eventlistan, inte
+ * radens lookups) / relativ tid (12 muted); rullningsområdet
+ * tangentbordsfokuserbart med begripligt tillgängligt namn (B6).
+ */
+test.describe('Anmälningslistan till facit (task-4.4)', () => {
+  /** ISO-tidpunkt `offsetMs` före `nu` — mockarnas Inskickad-värden. */
+  const isoFore = (nu: Date, offsetMs: number): string =>
+    new Date(nu.getTime() - offsetMs).toISOString();
+
+  test('AC 1 — raden: namn 16/600, joinad "kurs · ort · kortdatum" 14, relativ tid 12 muted (renderat, fast klocka)', async ({
+    page,
+  }) => {
+    // Fast klocka på ETT kontrollerat klockslag (idag 15:00 lokal): "för 2 tim
+    // sedan" kan inte glida över en dagsgräns oavsett när testet körs
+    // (TASK-3-klassen: inga lastkänsliga/kalenderkänsliga tidsfönster).
+    const nu = new Date();
+    nu.setHours(15, 0, 0, 0);
+    await page.clock.setFixedTime(nu);
+
+    const igar1402 = new Date(nu);
+    igar1402.setDate(igar1402.getDate() - 1);
+    igar1402.setHours(14, 2, 0, 0);
+
+    // Join-beviset (B4): radens EGNA lookup-fält (eventNamn) divergerar
+    // medvetet från eventlistans post — renderas eventlistans identitet är
+    // joinen dataflödets källa, inte lookupen.
+    await mock(page, {
+      registrations: [
+        reg({
+          fornamn: 'Anna',
+          efternamn: 'Andersson',
+          eventId: 'recEventJoin',
+          eventNamn: 'Lookup-namnet (fel källa)',
+          inskickad: isoFore(nu, 2 * 3_600_000),
+        }),
+        reg({
+          fornamn: 'Erik',
+          efternamn: 'Lindqvist',
+          eventId: 'recEventJoin',
+          eventNamn: null,
+          inskickad: isoFore(nu, 10 * 60_000),
+        }),
+        reg({
+          fornamn: 'Johan',
+          efternamn: 'Berg',
+          eventId: 'recEventJoin',
+          eventNamn: null,
+          inskickad: igar1402.toISOString(),
+        }),
+        reg({
+          fornamn: 'Karin',
+          efternamn: 'Ek',
+          eventId: 'recEventJoin',
+          eventNamn: null,
+          inskickad: isoFore(nu, 3 * 86_400_000),
+        }),
+      ],
+      events: [
+        ev({
+          id: 'recEventJoin',
+          eventNamn: 'Fjärrskådning 2',
+          ort: 'Skövde',
+          startdatum: '2026-09-15',
+        }),
+      ],
+    });
+    await page.goto('/hem');
+    const lista = page.getByRole('region', { name: 'Nya anmälningar att hantera' });
+
+    // Namnet: 16 px semibold (600) RENDERAT.
+    const namn = lista.getByText('Anna Andersson', { exact: true });
+    await expect(namn).toBeVisible();
+    const namnStil = await namn.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { storlek: s.fontSize, vikt: s.fontWeight };
+    });
+    expect(namnStil).toEqual({ storlek: '16px', vikt: '600' });
+
+    // Metaraden: JOINAD identitet "kurs · ort · kortdatum" ur EVENTLISTAN —
+    // kortdatum i facit-formen "15 sep" (sv-SE, utan punkt); 14 px RENDERAT.
+    const meta = lista.getByText('Fjärrskådning 2 · Skövde · 15 sep', { exact: true }).first();
+    await expect(meta).toBeVisible();
+    expect(await meta.evaluate((el) => getComputedStyle(el).fontSize)).toBe('14px');
+    // Lookup-fältet renderas ALDRIG som identitet (join-beviset).
+    await expect(lista.getByText(/Lookup-namnet/)).toHaveCount(0);
+
+    // Relativa tidens fyra facit-former mot den fasta klockan.
+    await expect(lista.getByText('för 2 tim sedan', { exact: true })).toBeVisible();
+    await expect(lista.getByText('för 10 min sedan', { exact: true })).toBeVisible();
+    await expect(lista.getByText('igår 14:02', { exact: true })).toBeVisible();
+    await expect(lista.getByText('för 3 dagar sedan', { exact: true })).toBeVisible();
+
+    // Relativ tid: 12 px i muted (--mm-text-muted #6b6b6b) RENDERAT.
+    const tid = lista.getByText('för 2 tim sedan', { exact: true });
+    const tidStil = await tid.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { storlek: s.fontSize, farg: s.color };
+    });
+    expect(tidStil).toEqual({ storlek: '12px', farg: 'rgb(107, 107, 107)' });
+  });
+
+  test('AC 4 — koppar-kontur runt kortet + koppar-varningsikon (20) vid rubriken (renderat)', async ({
+    page,
+  }) => {
+    await mock(page, { registrations: [reg()], events: [ev()] });
+    await page.goto('/hem');
+    const kort = page.getByRole('region', { name: 'Nya anmälningar att hantera' });
+    await expect(kort).toBeVisible();
+
+    // Konturens renderade färg = --mm-accent (koppar #a3491c) runt HELA
+    // kortet — och kortytan är fortfarande den tonala (bg-muted #f5f5f3).
+    const kontur = await kort.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return {
+        topp: s.borderTopColor,
+        hoger: s.borderRightColor,
+        botten: s.borderBottomColor,
+        vanster: s.borderLeftColor,
+        bredd: s.borderTopWidth,
+        bg: s.backgroundColor,
+      };
+    });
+    expect(kontur).toEqual({
+      topp: 'rgb(163, 73, 28)',
+      hoger: 'rgb(163, 73, 28)',
+      botten: 'rgb(163, 73, 28)',
+      vanster: 'rgb(163, 73, 28)',
+      bredd: '1px',
+      bg: 'rgb(245, 245, 243)',
+    });
+
+    // Varningsikonen: renderad svg VID rubriken (inne i h2:n), aria-dold
+    // (texten bär informationen), 20×20, i koppar.
+    const rubrik = kort.getByRole('heading', { level: 2, name: 'Nya anmälningar att hantera' });
+    const ikon = rubrik.locator('svg[aria-hidden="true"]');
+    await expect(ikon).toHaveCount(1);
+    const ikonBox = await ikon.boundingBox();
+    if (!ikonBox) throw new Error('boundingBox saknas för ikon-mätningen');
+    expect(ikonBox.width).toBe(20);
+    expect(ikonBox.height).toBe(20);
+    const ikonFarg = await ikon.evaluate((el) => getComputedStyle(el).color);
+    expect(ikonFarg).toBe('rgb(163, 73, 28)');
+  });
+
+  test('AC 3 — zebra varannan rad utan skiljelinjer, rundade rader (renderat)', async ({
+    page,
+  }) => {
+    await mock(page, {
+      registrations: [
+        reg({ fornamn: 'Anna', efternamn: 'Andersson', inskickad: '2026-06-23T10:00:00.000Z' }),
+        reg({ fornamn: 'Bo', efternamn: 'Bengtsson', inskickad: '2026-06-22T10:00:00.000Z' }),
+        reg({ fornamn: 'Carl', efternamn: 'Carlsson', inskickad: '2026-06-21T10:00:00.000Z' }),
+        reg({ fornamn: 'Disa', efternamn: 'Dahl', inskickad: '2026-06-20T10:00:00.000Z' }),
+      ],
+      events: [ev({ id: 'recEvent1' })],
+    });
+    await page.goto('/hem');
+    const lista = page.getByRole('region', { name: 'Nya anmälningar att hantera' });
+    const rader = lista.getByRole('listitem');
+    await expect(rader).toHaveCount(4);
+
+    // Zebra RENDERAT: varannan rad (index 1, 3) tonad i --mm-bg-emphasized
+    // (#edeee9) med rundade hörn; övriga genomskinliga; INGEN rad bär en
+    // skiljelinje (border 0 runt om — avdelar-mönstret från task-1.3 utgick).
+    const stilar = await rader.evaluateAll((els) =>
+      els.map((el) => {
+        const s = getComputedStyle(el);
+        return {
+          bg: s.backgroundColor,
+          radie: s.borderRadius,
+          border: [s.borderTopWidth, s.borderRightWidth, s.borderBottomWidth, s.borderLeftWidth],
+        };
+      }),
+    );
+    for (const [i, stil] of stilar.entries()) {
+      expect(stil.border, `rad ${i} ska sakna skiljelinjer`).toEqual(['0px', '0px', '0px', '0px']);
+      if (i % 2 === 1) {
+        expect(stil.bg, `rad ${i} ska vara zebra-tonad`).toBe('rgb(237, 238, 233)');
+        expect(stil.radie, `rad ${i} ska vara rundad`).not.toBe('0px');
+      } else {
+        expect(stil.bg, `rad ${i} ska vara genomskinlig`).toBe('rgba(0, 0, 0, 0)');
+      }
+    }
+  });
+
+  test('AC 5 — ~25 rader i rullbar lista: maxhöjd, tunn centrerad rundad scrollmarkör, luft mot innehållet (renderat)', async ({
+    page,
+  }) => {
+    // 30 mockade anmälningar → listan cappas till de 25 SENASTE.
+    const manga = Array.from({ length: 30 }, (_, i) =>
+      reg({
+        fornamn: `Person${String(i).padStart(2, '0')}`,
+        efternamn: 'Testsson',
+        inskickad: new Date(Date.UTC(2026, 5, 1, 12, 0, 0) - i * 3_600_000).toISOString(),
+      }),
+    );
+    await mock(page, { registrations: manga, events: [ev({ id: 'recEvent1' })] });
+    await page.goto('/hem');
+    const lista = page.getByRole('region', { name: 'Nya anmälningar att hantera' });
+    await expect(lista.getByRole('listitem')).toHaveCount(25);
+    // Recency-cappen: de 25 senaste (Person00–24) — äldst (Person25–29) föll.
+    await expect(lista.getByText('Person00 Testsson')).toBeVisible();
+    await expect(lista.getByText('Person25 Testsson')).toHaveCount(0);
+
+    // Rullningsområdet RENDERAT: maxhöjd 320 px (max-h-80) och faktiskt
+    // rullbart (innehållet överstiger höjden); markören tunn (thin) och
+    // token-färgad (--mm-border-strong på genomskinlig track = centrerad
+    // fri markör), gutter stabil; pr-3 = 12 px luft markör ↔ innehåll.
+    const scroll = lista.getByRole('list');
+    const stil = await scroll.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return {
+        maxHojd: s.maxHeight,
+        klientHojd: el.clientHeight,
+        scrollHojd: el.scrollHeight,
+        bredd: s.scrollbarWidth,
+        farg: s.scrollbarColor,
+        gutter: s.scrollbarGutter,
+        luft: s.paddingRight,
+        overflowY: s.overflowY,
+      };
+    });
+    expect(stil.maxHojd).toBe('320px');
+    expect(stil.klientHojd).toBeLessThanOrEqual(320);
+    expect(stil.scrollHojd).toBeGreaterThan(stil.klientHojd);
+    expect(stil.overflowY).toBe('auto');
+    expect(stil.bredd).toBe('thin');
+    expect(stil.farg).toBe('rgb(196, 196, 194) rgba(0, 0, 0, 0)');
+    expect(stil.gutter).toBe('stable');
+    expect(stil.luft).toBe('12px');
+  });
+
+  test('AC 6 — rullningsområdet tangentbordsfokuserbart med begripligt namn; piltangent rullar; axe 0 med full lista', async ({
+    page,
+  }) => {
+    // Full lista (> maxhöjden) så axe:s scrollable-region-focusable-regel
+    // prövas på riktigt OCH kb-rullningen har något att rulla.
+    const manga = Array.from({ length: 30 }, (_, i) =>
+      reg({
+        fornamn: `Person${String(i).padStart(2, '0')}`,
+        efternamn: 'Testsson',
+        inskickad: new Date(Date.UTC(2026, 5, 1, 12, 0, 0) - i * 3_600_000).toISOString(),
+        // Varannan rad utan event-koppling: olänkade rader nås INTE med Tab —
+        // regionens egen fokuserbarhet är enda tangentbordsvägen till dem (B6).
+        eventId: i % 2 === 0 ? 'recEvent1' : null,
+      }),
+    );
+    await mock(page, { registrations: manga, events: [ev({ id: 'recEvent1' })] });
+    await page.goto('/hem');
+    const lista = page.getByRole('region', { name: 'Nya anmälningar att hantera' });
+    const scroll = lista.getByRole('list', { name: 'Senaste anmälningarna' });
+
+    // Begripligt tillgängligt namn + fokuserbarhet (B6): tabindex 0 gör
+    // rullningsytan till ett riktigt tab-stopp (axe scrollable-region-
+    // focusable); namnet säger vad stoppet är.
+    await expect(scroll).toHaveAttribute('tabindex', '0');
+    await scroll.focus();
+    await expect(scroll).toBeFocused();
+
+    // Tangentbordsmanövrerbart RENDERAT: ArrowDown rullar området.
+    expect(await scroll.evaluate((el) => el.scrollTop)).toBe(0);
+    await page.keyboard.press('ArrowDown');
+    await expect.poll(async () => await scroll.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+
+    // Axe-0 på Hem med fullt rullbar lista (AC #6).
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
   });
 });

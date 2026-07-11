@@ -108,3 +108,30 @@
   --text-5xl--line-height: 1.2;
   --text-5xl--letter-spacing: -0.02em;
 }
+
+/* ── Inline-rullningsytans scrollmarkör (K10-facit, task-4.4) ──
+   Tunn centrerad rundad markör på genomskinlig track — luften mot
+   innehållet bär elementet självt (pr-3). Standard-egenskaperna
+   (scrollbar-width/color, Chromium ≥ 121 + Firefox) vinner där de stöds
+   och stänger då av ::-webkit-scrollbar-vägen; webkit-blocket är
+   fallback för äldre WebKit (rundningen + kant-luften ger den centrerade
+   fria markören där). Endast token-färger — inga hårdkodade värden. */
+@utility scrollbar-inline {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mm-border-strong) transparent;
+  scrollbar-gutter: stable;
+
+  &::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--mm-border-strong);
+    border: 3px solid var(--mm-bg-muted);
+    border-radius: 999px;
+  }
+}
