@@ -4,7 +4,7 @@ title: 'Skiva: Osynliga uppdateringen (B3)'
 status: In Progress
 assignee: []
 created_date: '2026-07-07 08:56'
-updated_date: '2026-07-11 19:03'
+updated_date: '2026-07-11 19:09'
 labels:
   - ready-for-agent
 dependencies:
@@ -44,13 +44,15 @@ FACIT-AVPRICKNINGEN (DoD #6, L245/L246) — varje berörd facit-/byggkravspunkt,
 8. Hela e2e-/axe-sviten grön (AC #4): kanoniska sviterna SEKVENTIELLT per TASK-6-mitigationen (aldrig blandad full-parallell): test:api 290/290, test:e2e:staging 140 passed + 2 pre-existerande villkors-skips, test:a11y 13/13; typecheck + typecheck:tests + biome (exit 0) + build gröna. TASK-5-mitigationen tillämpad: föråldrad dev-server (PID 92138, startad tidigare idag) dödad före e2e → Playwright startade färsk.
 
 TDD-BEVIS/AVVIKELSE: bevis-skiva — alla tre testerna skrevs FÖRST och observerades GRÖNA direkt mot oförändrad produktkod (beteendet bars redan av SWR-defaulten; ingen rött→grönt-cykel möjlig för AC1–AC3). RÖD-KAPABILITET därför bevisad via inducerade defekter: (probe A) isFetching kopplad till laddläget → AC1 RÖTT (role=status 1 ≠ 0 under omhämtning); (probe B) laddläget bortkopplat → AC3 RÖTT (2 ≠ 3 status). Båda proberna återställda; sluttillstånd grönt.
+
+Väntar design-review (S62 batch 3) · leverans c1aa713 · CI-run 29164601255 grön per jobb (Detect changed files ✓, Lint + Audit + TypeCheck ✓, Test + Build ✓, Docs link check ✓, CI Passed or Skipped ✓; attempt 1 = första passet) · facit-avprickningen i notes ovan. DoD #5 (design-review mot K10-facit) ÖPPEN — Marcus-grinden; final-summary + Done-flip sker där. Granskningsanvisning: osynligheten är GRANSKNINGSBAR DESIGN (L247) — beteendet demonstreras enklast live på /hem: låt vyn stå (60 s-pollen ska inte synas som blink/hopp/snurra), jämför mot Del 11-kvittensen; kallstartens lugna laddläge syns vid hård omladdning.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
