@@ -42,16 +42,28 @@ async function mockWaitlist(
   // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
   page: any,
   rows: Row[],
-  { status = 200, delayMs = 0 }: { status?: number; delayMs?: number } = {},
-) {
+  {
+    status = 200,
+    delayMs = 0,
+    manualRelease = false,
+  }: { status?: number; delayMs?: number; manualRelease?: boolean } = {},
+): Promise<() => void> {
+  // manualRelease (opt-in): håll EF-svaret öppet tills testet kallar release().
+  // Gör loading-fönstret DETERMINISTISKT i stället för att racea en fast delayMs
+  // mot realtid under parallell worker-last (T26 Landning B). Befintliga callers
+  // (utan flaggan) är orörda — release() är då en no-op de ignorerar.
+  let release = () => {};
+  const gate = manualRelease ? new Promise<void>((resolve) => (release = resolve)) : null;
   await page.route(GET_WAITLIST, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
+    if (gate) await gate;
+    else if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
     await route.fulfill({
       status,
       contentType: 'application/json',
       body: status === 200 ? JSON.stringify({ waitlist: rows }) : JSON.stringify({ error: 'x' }),
     });
   });
+  return release;
 }
 
 test.describe('Väntelista-vy (Fas 6c L3 — LÄS-vy via get-waitlist)', () => {
@@ -140,9 +152,13 @@ test.describe('Väntelista-vy (Fas 6c L3 — LÄS-vy via get-waitlist)', () => {
   });
 
   test('loading-state är tillgängligt (aria-busy + status)', async ({ page }) => {
-    await mockWaitlist(page, [row()], { delayMs: 500 });
+    // Håll EF-svaret öppet → loading-tillståndet är deterministiskt synligt medan
+    // route:n hålls (ingen realtids-race mot en fast delayMs under parallell last).
+    const release = await mockWaitlist(page, [row()], { manualRelease: true });
     await page.goto('/mer/vantelista');
     await expect(page.getByText('Laddar väntelistan…')).toBeVisible();
+    // Släpp svaret → laddat tillstånd renderas.
+    release();
     await expect(page.getByRole('heading', { level: 1, name: 'Väntelista' })).toBeVisible();
   });
 

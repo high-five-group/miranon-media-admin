@@ -50,16 +50,28 @@ async function mockEvent(
   // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
   page: any,
   body: EventMock,
-  { status = 200, delayMs = 0 }: { status?: number; delayMs?: number } = {},
-) {
+  {
+    status = 200,
+    delayMs = 0,
+    manualRelease = false,
+  }: { status?: number; delayMs?: number; manualRelease?: boolean } = {},
+): Promise<() => void> {
+  // manualRelease (opt-in): håll EF-svaret öppet tills testet kallar release().
+  // Gör loading-fönstret DETERMINISTISKT i stället för att racea en fast delayMs
+  // mot realtid under parallell worker-last (T26 Landning B). Befintliga callers
+  // (utan flaggan) är orörda — release() är då en no-op de ignorerar.
+  let release = () => {};
+  const gate = manualRelease ? new Promise<void>((resolve) => (release = resolve)) : null;
   await page.route(GET_EVENT, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
+    if (gate) await gate;
+    else if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
     await route.fulfill({
       status,
       contentType: 'application/json',
       body: status === 200 ? JSON.stringify({ event: body }) : JSON.stringify({ error: 'x' }),
     });
   });
+  return release;
 }
 
 test.describe('Event-detalj (Fas 6b L2 — info-vy)', () => {
@@ -133,9 +145,13 @@ test.describe('Event-detalj (Fas 6b L2 — info-vy)', () => {
   });
 
   test('loading-state är tillgängligt (aria-busy + status)', async ({ page }) => {
-    await mockEvent(page, eventDetail(), { delayMs: 500 });
+    // Håll EF-svaret öppet → loading-tillståndet är deterministiskt synligt medan
+    // route:n hålls (ingen realtids-race mot en fast delayMs under parallell last).
+    const release = await mockEvent(page, eventDetail(), { manualRelease: true });
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByText('Laddar event…')).toBeVisible();
+    // Släpp svaret → laddat tillstånd renderas.
+    release();
     await expect(
       page.getByRole('heading', { level: 1, name: 'Resor i medvetandet 2' }),
     ).toBeVisible();
