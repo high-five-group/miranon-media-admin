@@ -71,6 +71,27 @@
   med pilot-not. Orkestratorns oberoende disk-verifiering: kortet 4/4 AC +
   4/4 DoD, path-scope exakt, träd rent. **NÄSTA: Marcus vägval — batch 2
   (4.3+4.4 granskningsvåg) nu, eller /work-batch-skill + ADR-071 först.**
+- [x] **BATCH 2 KLAR: 4.3 + 4.4 GRANSKNINGSFÄRDIGA** (2026-07-11, Del 4
+  kanonisk plats; Marcus valde väg A): sekventiell 2-korts-batch, frisk
+  agent-kontext per kort, båda `review-ready` — In Progress med EXAKT
+  DoD #5 (design-review) öppen, alla mekaniska DoD bockade inkl.
+  facit-avprickning 11+11 punkter renderat. 4.3: `dc099b3`+`3065a38`,
+  CI grön attempt 1 (run 29148028260); h-scroll-defekt fångad+rättad
+  före leverans; öppen design-avvikelse: Obetalda-rubrikens
+  mobil-radbrytning (reflow-golvet vann). 4.4: `25c63a9` → CI RÖD
+  attempt 1 (tidszons-TESTDEFEKT UTC vs Europe/Stockholm, run
+  29149331316) → **autonomt remedierad** `e2fdea4` → grön per jobb (run
+  29149562570) → stängning `0f20ce6`. **TASK-5 + TASK-6** fynd-kort
+  registrerade oetiketterade (stale dev-server falsk-rött; parallell
+  staging-contention) — agent 2 TILLÄMPADE agent 1:s mitigations
+  (substrat-buren kunskapsöverföring). S56-övertagandet öppet bokfört
+  (Del 4). Metrik: 2 agenter · ~109 min · first-pass-CI 1/2 · 0
+  ingripanden. S61 totalt: 3 kort autonomt (1 Done + 2 review-ready).
+  Webbtavle-avvikelsen (Marcus-observation) bokförd, kollas
+  post-session. **NÄSTA: Marcus design-review av /hem mot
+  K10-facit-bilagorna → per kvittens: DoD #5 + final-summary + Done
+  (Code) → 4.5 plockbar. Därefter S62: /work-batch-skill + ADR-071 +
+  T75 + TASK-5/6-klassning.**
 
 ### Session 59 (2026-07-07, pågår) — MIGRERINGS-HUB-SESSION 4: kartans steg 4b (SYSTEMET.md-bygget + konsolidering)
 
