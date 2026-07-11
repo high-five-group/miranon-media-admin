@@ -21,6 +21,41 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 61 (2026-07-11, pågår) — T71/T61-upptag: autonom AFK-batch över ready-for-agent-skivor
+
+> Scope: sessionsdok `2026-07-11-session-61.md` Del 1 (kanonisk plats):
+> T71 (utforskning KLAR S60) + T61 (ARMERAD S50) till beslut — grillning
+> med 5-punkts-agenda → samsyn → ev. minimal pilot (TASK-3).
+> Kadensrad per L67 — uppdateras vid varje landning.
+
+- [x] **Dok-födelse** (2026-07-11): sessionsdok fött (`ed5d2f0`, run
+  29145123124 grön per jobb: Lint+Audit+TypeCheck ✓, Docs link check
+  körd+grön, Test+Build by-design-skippad); numrering disk-verifierad
+  (nästa ADR 071 via check-adr-count 70==70, lesson L263, tråd T75);
+  audit-ci PASSED. Orienterings-passet före födelsen: senior second
+  opinion på T71 — tekniska påståenden verifierade 100 % mot färsk
+  Anthropic-dok (docs-agent med citat-krav) + branschprecedent-
+  kartläggning (Copilot coding agent, Ralph, Backlog.md, Anthropic
+  harness/best practices, Codex/Cursor → 8 konvergenspunkter, systemet
+  uppfyller 6–7; luckan = hårda stop-villkor + review-yte-valet); fynd:
+  AFK-etikett↔DoD #5-kollisionen på UI-skivor, TASK-3 oetiketterad
+  (fynd-karantän per design), allowlist-gapet (2 WebFetch-rader).
+  **NÄSTA: grillningen (5-punkts-agendan).**
+- [x] **Grillad samsyn LANDAD: AFK-batch-kontraktet** (2026-07-11, Del 2
+  kanonisk plats): 5/5 beslut på Code-rekommendation — (1)
+  granskningsfärdig-läget (UI-skivor: DoD #5 öppen, kort `In Progress` +
+  not, Done-flip=Marcus; icke-UI hela vägen Done; granskningsvågor) ·
+  (2) halt-first + hårda gränser (max-kort per avfyrning ~3, aldrig
+  samma kort ×2, valfritt budget-tak, kill-switch, idempotent omstart) ·
+  (3) trunk-push per skiva bevaras + omprövningströskel (skarp
+  Lotta-drift ELLER >~5 kort/batch → branch/draft-PR som egen landning) ·
+  (4) orkestrerings-skript i session som substrat; pilot på
+  klartext-order; `/work-batch`-skill i hubben + ADR-071 vid bevisad
+  pilot; allowlist-förkrav i spoke settings.json · (5) pilot = TASK-3
+  ensam max 1 kort (AC-komplettering → klassning → allowlist → körning);
+  TASK-4-resten = batch 2 med öppet S56-övertagande. **NÄSTA:
+  AC-förslag TASK-3 + allowlist-diff → Marcus-kvittens → pilot.**
+
 ### Session 59 (2026-07-07, pågår) — MIGRERINGS-HUB-SESSION 4: kartans steg 4b (SYSTEMET.md-bygget + konsolidering)
 
 > Scope: sessionsdok `2026-07-07-session-59.md` Del 1 (kanonisk plats):
