@@ -21,6 +21,35 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 63 (2026-07-12, pågår) — Task-7-grillningen: kallstartens laddläge (research → grillning → /to-prd → /to-issues)
+
+> Scope: sessionsdok `2026-07-12-session-63.md` Del 1 (kanonisk plats):
+> research-pass → grillning till samsyn → /to-prd → /to-issues på task-7;
+> i Marcus-takt QA 4.6 + batch 4 (TASK-5/6). Kadensrad per L67 —
+> uppdateras vid varje landning.
+
+- [x] **Dok-födelse** (2026-07-12): sessionsdok fött (`c8ad628`, run
+  29169824003 grön per jobb: Lint+Audit+TypeCheck ✓, Docs link check
+  körd+grön, Test+Build by-design-skippad); numrering disk-verifierad
+  (nästa ADR 072 via check-adr-count 71==71, lesson L271, fälla 45,
+  tråd **T77** — T76 registrerades post-S62-stängning, disk vann över
+  slutsummeringens "nästa T76"); audit-ci PASSED; midnatts-datum-driften
+  fångad (fil-datum 2026-07-12 per `date +%F`). **NÄSTA: grillningen.**
+- [x] **Grillad samsyn LANDAD: lugnt laddläge-designen** (2026-07-12,
+  Del 2 kanonisk plats): 5/5 beslut på Code-rekommendation A —
+  (1) app-bred princip + Skeleton-primitiv (11/11/11), Hem första
+  implementationsyta · (2) persist-cache med skyddsräcken
+  (logout-rensning via queryClient.clear(), gcTime ≥ maxAge-fällan
+  hanterad, buster = app-version; hotmodell: Supabase-tokenen ligger
+  redan i localStorage) · (3) riktigt chrome + förenklade datablock,
+  långsam shimmer V→H, reduced-motion → statisk, 3:1-kontrast,
+  Roselli-markup · (4) mät-först: kallstartsfönstret mäts innan formen
+  låses (1 s-tröskeln käll-verifierad; kortets "0,5 s" öppet riven +
+  CLI-korrigerad) · (5) ADR-bar-prövning: ADR-072 för persist-beslutet
+  mintas i PRD-steget, principen under baren → PRD/spec. ORDLISTA-post
+  "Lugnt laddläge" landad obuntad vid kristallisering (`e7a70ac`).
+  **NÄSTA: /to-prd på samsynen → /to-issues.**
+
 ### Session 62 ✅ AVSLUTAD (2026-07-11) — Bygget /work-batch + ADR-071 → batch 3 skarpt → granskningsvåg 4.5 + task-7
 
 > Scope: sessionsdok `2026-07-11-session-62.md` Del 1 (kanonisk plats):
