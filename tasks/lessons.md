@@ -3590,3 +3590,74 @@ har vi X?" — kan motivet inte längre pekas ut är X en fossil, inte ett val. 
 fossilen bär drift-lägen den nya världen saknar (två disjunkta listor kan divergera vid
 re-import; en lista kan inte). Fossilen här överlevde dessutom ett bevispass — verifiering
 bevisar att något FUNGERAR, aldrig att det BEHÖVS.
+
+### L263 [UNIVERSAL] — Avslutsartefakt som refererar sin egen commit kräver tvåstegs-stängning — självreferensen är fysik, inte slarv
+
+Datum: 2026-07-11 | Källa: S61 AFK-batch (batch-kontraktets "EN commit med
+final-summary [leverans-SHA + CI-run-id]" visade sig fysiskt omöjlig — SHA:n
+existerar inte förrän commiten är gjord, och "CI grön på pushad commit" kan
+inte bockas före CI kört; pilot-agenten hittade task-2-precedenten
+självständigt, följde den och bokförde avvikelsen öppet; T75 bär
+skill-text-förtydligandet) (klass: process-design/leverans-mekanik)
+
+En leveransartefakt som ska BÄRA referensen till sin egen commit (SHA,
+CI-run-id) kan inte bo i den commiten, och en grind som kräver
+post-push-utfall (CI grön per jobb) kan inte bockas pre-push. Design-regeln:
+separera LEVERANS (kod + allt som är känt före push) från STÄNGNING
+(referenser + post-push-utfall) som två commits — och skriv specen så.
+Annars tvingas varje utförare (människa eller agent) härleda undantaget
+själv, och specens bokstav ("EN commit") ljuger mot sin egen mekanik.
+Generellt spec-test: "kan detta steg känna till värdet det ska skriva vid
+den tidpunkt det ska skriva det?"
+
+### L264 [UNIVERSAL] — Tidsformaterande tester byggs i SUT:ens tidszon, inte i runnerns — lokalt-grönt/CI-rött på klockslag är tidszons-signaturen
+
+Datum: 2026-07-11 | Källa: S61 batch 2 (AC1-testets "igår HH:MM"-förväntning
+byggdes i runnerns värdzon [UTC på CI] medan appen renderar i
+Playwright-configens timezoneId Europe/Stockholm → deterministiskt 3/3-fel
+"igår 14:02" vs "igår 16:02"; lokalt osynligt eftersom zonerna sammanfaller
+där; agenten klassade korrekt TESTDEFEKT ej produktkod och fixade genom att
+härleda förväntningen ur samma absoluta ögonblick med explicit timeZone)
+(klass: test-determinism/miljöparitet)
+
+Ett test som formaterar tid för sin förväntning använder implicit
+processens värdzon — men SUT:en renderar i browserns/configens zon.
+Sammanfaller zonerna lokalt är felet osynligt; CI:s UTC avslöjar det
+deterministiskt. Regeln: härled förväntade tidssträngar ur samma absoluta
+ögonblick med EXPLICIT tidszon (samma som SUT-configens), aldrig via
+värd-default. Signaturen att känna igen: klockslags-diffen i felet är exakt
+zonskillnaden, på ett test som är grönt lokalt.
+
+### L265 [UNIVERSAL] — `gh run list --commit <sha>` kan returnera tomt fast run:et finns — headSha-matchning på plain list är den pålitliga uppslagsvägen
+
+Datum: 2026-07-11 | Källa: S61 (tre oberoende tillfällen samma dag:
+dok-födelsens run fanns + var grönt men `--commit` gav tomt även efter
+minuter och med retry-loop; workflow-agenterna instruerades om quirken och
+verifierade via headSha-match utan problem) (klass:
+verktygs-quirk/CI-verifiering)
+
+`gh run list --commit <sha>` kan ge tomt svar trots existerande run
+(indexerings-/filterglapp i gh/API-ledet). Pålitlig form:
+`gh run list -L N --json databaseId,headSha` + match på headSha-prefix.
+Följdregel för skript och agent-instruktioner: bygg aldrig en vänta-loop på
+`--commit`-filtret — "run ej funnet" den vägen är INTE bevis för att run
+saknas. Observerad konsekvent i detta repo; verifiera per repo innan
+beroende, men anta aldrig att filtret är tillförlitligt.
+
+### L266 [UNIVERSAL] — Substrat-buren kunskapsöverföring: durabla fynd-artefakter fungerar agent-till-agent — skriv fynd för NÄSTA utförare, inte för minnet
+
+Datum: 2026-07-11 | Källa: S61 batch 2 (agent 1 registrerade TASK-5 [stale
+dev-server → falsk-rött] + TASK-6 [parallell-contention] som oetiketterade
+fynd-kort med symptom + mitigering; agent 2 — helt frisk kontext utan delat
+minne — läste korten och TILLÄMPADE mitigations [färsk dev-server-kontroll,
+sekventiella kanoniska sviter] och undvek därmed båda fällorna i sin egen
+körning) (klass: kontinuitets-arkitektur/multi-agent)
+
+Kontinuitets-principen (filartefakter är enda sanningskällan) höll i sin
+skarpaste form: två agenter utan gemensamt minne, och kunskapen gick via
+substratet. Designkonsekvensen: skriv varje fynd som en INSTRUKTION till en
+okänd nästa utförare — exakt symptom + rotorsak + vilken mitigering DU
+använde i din körning — inte som en anteckning till dig själv. Då blir
+fyndet exekverbart av vem som helst, människa eller agent, oavsett
+kontextfönster. Detta är också beviset för att sekventiell AFK-drift inte
+kräver delad session-kontext: substratet bär kontinuiteten.

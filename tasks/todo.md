@@ -102,6 +102,16 @@
   Marcus): session-end S61 → S62: bygget (/work-batch-skill + ADR-071 +
   T75, EN hub-landning) → batch 3 (4.5) som skillens första bruk →
   QA 4.6 (Marcus) → TASK-5/6-klassning + webbtavle-kollen.**
+- [x] **End-passet FÖRBERETT** (2026-07-11, Del 6 kanonisk plats; trappan
+  Marcus-kvitterad): skörd **L263–L266** (alla [UNIVERSAL]:
+  självreferens-tvåstegs-stängning · tidszons-pinnade test-förväntningar ·
+  gh-run-list-commit-quirken · substrat-buren kunskapsöverföring;
+  hub-lyft deferrad → buntas med S62:s hub-landning) + **BUILD-LOG
+  S61-post** + transcript-ref (Code-JSONL 1 784 156 byte) + trådar
+  synkade (T75 ny, T61/T71 uppdaterade). Intentions-grinden PASSERAD
+  (nästa = bygget i NY session S62). Coverage-rapporten i STOPPA;
+  lifecycle-flip + rad 7-slutsummeringen väntar Marcus-kvittens. Kvar
+  efter stängning: Update-klicket i claude.ai.
 
 ### Session 59 (2026-07-07, pågår) — MIGRERINGS-HUB-SESSION 4: kartans steg 4b (SYSTEMET.md-bygget + konsolidering)
 

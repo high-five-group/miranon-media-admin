@@ -2607,6 +2607,22 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 61 — T71/T61-upptaget: AFK-batch-arbetssättet grillat, piloterat och bevisat (2026-07-11)
+
+**Commit-range:** `ed5d2f0` (sessionsdok-födelse) → HEAD. **Mål:** ta T71 (dynamic workflows, utforskning S60) + T61 (AFK/Ralph-loopen, armerad S50) till beslut och pröva autonomt kö-utförande. Inte en byggplan-fas — ett arbetssätts-/exekverings-spår som LEVERERADE produktkod via backlog-korten (TASK-3, task-4.3, task-4.4).
+
+- **Orienterings-pass (före dok-födelsen):** senior second opinion på T71 — samtliga tekniska påståenden omverifierade mot färsk Anthropic-dokumentation (docs-agent med citat-krav; 100 % höll) + branschprecedent-kartläggning (Copilot coding agent, Ralph-loopen, Backlog.md:s agent-riktlinjer, Anthropic harness/best practices, Codex/Cursor → 8 konvergenspunkter; systemet uppfyllde 6–7, luckan = hårda stop-villkor + review-yte-valet). Nyckelfynd: AFK-etiketten ↔ design-review-DoD:n kolliderar på UI-skivor; `claude -p "/do-work"` + subagent-verktygsrestriktion nu doc-verifierade dörrar.
+- **Grillning → samsyn (Del 2):** AFK-batch-kontraktet, 5 beslut, samtliga på Code-rekommendation — (1) granskningsfärdig-läget (UI-skivor stannar på öppen design-review-DoD; Done-flip = Marcus; granskningsvågor), (2) halt-first + hårda gränser (max-kort, aldrig samma kort ×2, budget-tak, kill-switch), (3) trunk-push per skiva bevaras + omprövningströskel (skarp Lotta-drift ELLER >~5 kort/batch → branch/PR-fråga som egen landning), (4) orkestrerings-skript i session som substrat; `/work-batch`-skill + ADR-071 vid bevisad pilot; allowlist-förkrav, (5) pilot = TASK-3 ensam.
+- **Pilot (Del 3):** TASK-3 (delayMs-flake-härdningen) autonomt `To Do`→`Done` — leverans `dae3f1f` (4 testfiler: 3 kända + grep-fyndet `event-detail`; route-release ersätter tidsfönstret; `delayMs:`-call-sites i tests/ = 0, oberoende verifierat) + stängning `871c804`; CI grön per jobb attempt 1 på båda; first-pass ja; 0 defekter; ~24 min; 0 ingripanden. Avvikelse öppet bokförd → **T75** (final-summary-självreferensen; tvåstegs-stängning per task-2-precedent).
+- **Batch 2 (Del 4):** task-4.3 + task-4.4 sekventiellt till GRANSKNINGSFÄRDIGA (frisk agent-kontext per kort). 4.3: `dc099b3`+`3065a38`, first-pass ja; h-scroll-defekt fångad+rättad före leverans; facit-avprickning 11 punkter renderat. 4.4: `25c63a9` → CI RÖD attempt 1 (tidszons-TESTDEFEKT: UTC-byggd förväntning vs appens Europe/Stockholm) → **autonomt remedierad** `e2fdea4` → grön per jobb → `0f20ce6`; facit 11 punkter. **TASK-5 + TASK-6** fynd-kort registrerade oetiketterade (stale dev-server falsk-rött; parallell staging-contention) — **agent 2 tillämpade agent 1:s mitigations via korten** (substrat-buren kunskapsöverföring, L266). S56-övertagandet öppet bokfört (4.3/4.4 var pausade S56:s KVAR).
+- **Granskningsvågen (Del 5):** Marcus godkände BÅDA första varvet (inkl. reflow-avvikelsen på Obetalda-rubriken) → Code flippade DoD 5 + final-summary (AFK-proveniens) + Done (`c9dca68`) → **4.5 plockbar**. TASK-4: 4/5 skivor Done, design-review 2/2 första varvet.
+- **Drift-metrik S61:** 3 kort autonomt levererade (1 direkt-Done + 2 via granskningsvåg) · first-pass-CI 2/3 · alla defekter fångade av grindarna före/vid CI, inga ogrindat till main · 0 mänskliga ingripanden i körningarna · 0 permission-stopp (allowlisten `71c9143` räckte exakt).
+- **Numrering:** ingen ADR mintad (count 70; **ADR-071 deferrad till S62-bygget** per grillad samsyn beslut 4 — beslutet durabelt i Del 2 + T61/T71-korten); lessons **L263–L266** [UNIVERSAL] (nästa L267; hub-lyft deferrad → buntas med S62:s hub-landning); tråd **T75** registrerad (nästa T76); nästa fälla 45 (oförändrad).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-11-session-61.md`](../tasks/sessions/2026-07-11-session-61.md) (Del 1–6). **EJ fas-avslut.** Kvar till S62: bygget (`/work-batch`-skill + ADR-071 + T75-buntning + hub-lyft L263–L266, EN hub-landning) → batch 3 (4.5) som skillens första bruk → QA 4.6 (Marcus) → TASK-5/6-klassning + webbtavle-kollen.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
