@@ -3,10 +3,10 @@ id: TASK-3
 title: >-
   Fynd: loading-state-testens delayMs-fönster är lastkänsligt — narvaro +
   vantelista flakar lokalt
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-06 10:42'
-updated_date: '2026-07-11 08:30'
+updated_date: '2026-07-11 08:36'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,7 +23,7 @@ EXAKT SYMPTOM (S52, task-1.3-körningen 2026-07-06): 'loading-state är tillgän
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -42,3 +42,9 @@ TREDJE FIL-INSTANSEN (S52, task-1.2-körningen 2026-07-06): person-detail.stagin
 
 LEVERANS (S61 AFK-batch, do-work): TDD-bevis — flaket ÄR röda slingan, repro FRAMKALLAD lokalt före härdning: repeat-each=3 på loading-testen gav 5 failed/8 passed (narvaro 2/3 röd, vantelista 1/3 röd, person-detail 2/3 röd, event-detail 0/3 — kortets baseline-klass bekräftad). Härdning: route-release-mönstret ur event-anmalda.staging.test.ts speglat exakt i alla fyra filerna (opt-in manualRelease-gate som håller EF-svaret öppet tills loading-assertionen sett ytan; delayMs-optionen kvar i mock-signaturerna per referensen, noll callers). Grep-svep (AC#2): 1 ytterligare instans avtäckt — event-detail.staging.test.ts:136 — härdad i samma mönster; 'delayMs: '-call-sites i tests/ = 0 kvarvarande. Determinism (AC#3): repeat-each=5 på HELA de fyra filerna = 151/151 grönt (1,3 min; retries=0 lokalt). Grindar (DoD#2): typecheck 0 fel · biome exit 0 (4 pre-existing warnings, ingen i rörda filer) · test:api 290 passed + 6 fel av EXAKT kända CI-secrets-klassen (TEST_REGISTRATION_RECORD_ID saknas lokalt — bärs av CI per DoD#3) · build grön. Diffen test-only (AC#4). CI-bock + final-summary i stängningen per task-2-precedenten (13bb905/c0aa615).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit dae3f1f · CI-run 29146238378 grön per jobb (Lint+Audit+TypeCheck success · Detect changed files success · Test+Build success · Docs link check skipped by design · CI Passed or Skipped success) · CI-grön-första-pass: ja (attempt 1, inga re-runs) · defekter under körning: 0 (de 6 lokala test:api-felen = förhandsdeklarerade CI-secrets-klassen TEST_REGISTRATION_RECORD_ID, gröna i CI:s Test+Build) · TDD: flaket var röda slingan — repro framkallad lokalt (repeat-each=3: 5/12 röda; narvaro 2/3, vantelista 1/3, person-detail 2/3, event-detail 0/3) → route-release-härdning i 4 filer (3 kända + grep-fyndet event-detail.staging.test.ts:136) → repeat-each=5: 151/151 grönt; 'delayMs: '-call-sites i tests/ = 0
+<!-- SECTION:FINAL_SUMMARY:END -->
