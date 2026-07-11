@@ -2623,6 +2623,21 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 62 — Bygget /work-batch + ADR-071, batch 3 skarpt, granskningsvåg 4.5 + design-fyndet task-7 (2026-07-11)
+
+**Commit-range:** `7c23edb` (sessionsdok-födelse) → HEAD. **Mål:** verkställa S61:s deferrade bygge (`/work-batch`-skill + ADR-071 + T75-buntning + hub-lyft, EN hub-landning) och bruka skillen skarpt på batch 3 (skiva 4.5). Ej byggplan-fas — arbetssätts-spår som levererade produktkod via backlog-kortet.
+
+- **Bygget (Del 2):** hub-landning `3174a1e` (plugin 1.12.0 → 1.13.0, 7 filer): `/work-batch`-skill född (Marcus-avfyrad, kontraktet kodat) · do-work steg 5 → tvåstegs-stängningen (T75/L263) · hub-lyft K61.1–K61.4 (L263–L266) · SYSTEMET.md §0/§5/§7 · konstitutionens ISSUE-SUBSTRAT-rad konsekvens-synkad. Spoke: **ADR-071** mintad (AFK-batch-kontraktet) · T61/T71 synkade · **T75 → closed**.
+- **Omstartskedjan (Del 2-NÄSTA + Del 3):** omstart 1 RÖD — plugin-cachen uppdateras INTE av omstart (marketplace-hämtning stale sedan 2026-07-08) → `claude plugin update` → **L267** [UNIVERSAL] (tre-länkars distributionskedja; skill-registryn låses vid sessionsstart) → omstart 2 GRÖN (1.13.0 @ hub-HEAD, gitCommitSha-match).
+- **Batch 3 (Del 3) — `/work-batch` FÖRSTA SKARPA BRUK** (run `wf_72a786e1-c30`, maxCards=1, halt-first): task-4.5 (Osynliga uppdateringen B3) → GRANSKNINGSFÄRDIG. Leverans `c1aa713` (produktkods-delta EN rad: `placeholderData: keepPreviousData`, ärligt bokförd inert; bevisen = permanenta e2e-tester per S55 Del 11-mönstret i prod-form: byte-identiska FÖRE==UNDER==EFTER-skärmdumpar med nätverksnivå-bevisad aktiv omhämtning, 5 containrar boundingBox-mät-stilla, kallstart utan delay-fönster) → CI grön per jobb attempt 1 (run `29164601255`, inkl. Test+Build) → `cdfd4ee`. TDD-avvikelse öppet bokförd (bevis-skiva; röd-kapabilitet via 2 inducerade prober). 0 defekter · 0 fynd · 0 ingripanden · ~28 min · first-pass JA. Avfyrningsmekanik-fynd → L268.
+- **Granskningsvåg 4.5 (Del 4):** Marcus godkände osynligheten live (60+ s) men UNDERKÄNDE kallstartens laddläges-design (kollapsade kort + "Laddar…"-textrader = layout-skift; ospecat designutrymme — "lugnt laddläge" odefinierat, K10-facit täcker laddat läge) → väg-beslut A: 4.5 **Done** (`e113890`, final-summary med AFK-proveniens) + **task-7 fött** (Design: kallstartens laddläge — skeleton + persist-cache till branschstandard; web-research-grundat NN/g + repo-specarna; väg research → grillning → /to-prd → /to-issues) → **QA 4.6 OBLOCKAD**. **TASK-4: 5/5 skivor Done** — PRD-stängning väntar på QA 4.6. → L269.
+- **Post-batch (Del 5):** TASK-5/6 klassade `ready-for-agent` på Marcus kvittens (AC ×3 per kort ur FÖRVÄNTAT-styckena, `b517d79`) = batch 4-kandidater · webbtavle-kollen UTFÖRD empiriskt (tavlan visar ocommittade ändringar vid serverstart 17/17; `/api/tasks` = uppstarts-snapshot; websocket-UI-kanalen separat) — S61-observationen är display-quirk i backlog.md 1.47.1, inte substrat-egenskap; EXPLICIT förkastad som vidare spår · QA 4.6 framskjuten (Marcus-takt) · docs-lint-defekten `588e29b`→`d8d5e4f` öppet bokförd → L270.
+- **Numrering:** **ADR-071 mintad** (count 71, nästa 072) · lessons **L267–L270** [UNIVERSAL] (nästa L271; hub-lyft L267–L270 vid nästa hub-sync-moment) · tråd T75 closed, ingen ny (nästa T76) · fälla 45 oförändrad.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-11-session-62.md`](../tasks/sessions/2026-07-11-session-62.md) (Del 1–5). **EJ fas-avslut.** Kvar till S63 (HANDOFF): **task-7-grillningen** (/grill-me) → design → /to-prd → /to-issues; i Marcus-takt: QA 4.6 (sista grinden för TASK-4-PRD:n) · batch 4-kandidater TASK-5/6 plockbara för `/work-batch`.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

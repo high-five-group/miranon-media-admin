@@ -3680,3 +3680,50 @@ update <plugin>@<marketplace>`, (3) omstart, (4) verifiera att
 install-recordets gitCommitSha == hub-HEAD (inte bara versionssträngen).
 Skill-registryn i en körande session låses vid sessionsstart —
 plugin-update mitt i en session gör INTE nya skills nåbara där.
+
+### L268 [UNIVERSAL] — Marcus-avfyrade skills har EN nåbar väg in: slash-kommandot FÖRST i meddelandet
+
+Datum: 2026-07-11 | Källa: S62 batch 3-avfyrningen ("Lets go. /work-batch" →
+ingen harness-expansion; Skill-verktyget → hårt tool-fel "cannot be used
+with Skill tool due to disable-model-invocation") (klass:
+plugin-mekanik/harness)
+
+En skill med `disable-model-invocation: true` kan bara laddas av harnessen
+när användarens meddelande BÖRJAR med /kommandot — inledande text gör
+ordern till vanlig text, och Skill-verktygsvägen är hårt stängd av flaggan
+oavsett att användaren uttryckligen bad om skillen. Kontraktsenlig fallback
+när ordern är otvetydig: ordern är det durabla kvittot (ADR-071-klassen)
+och skill-filen läses verbatim från plugin-cachen och följs — samma
+innehåll, samma kontrakt, öppet bokfört i trailen. Ren avfyrning framåt:
+kommandot först i meddelandet, inget före.
+
+### L269 [UNIVERSAL] — Mänsklig granskningsgrind fångar OSPECAT designutrymme — mekaniska grindar vaktar bara det specade
+
+Datum: 2026-07-11 | Källa: S62 granskningsvåg 4.5 (Marcus underkände
+kallstartens laddläges-design; "lugnt laddläge" [UB 16] var odefinierat och
+K10-facit täcker bara laddat läge; samtliga tekniska grindar var gröna →
+design-kort task-7) (klass: kvalitetsgrindar/extern fångst)
+
+AC, DoD och CI vaktar bara det som är specat — ett ospecat designutrymme
+passerar varje mekanisk grind obesett (first-pass-CI och 8-punkters
+facit-avprickning sa ingenting om laddlägets utseende). Den mänskliga
+design-review-grinden prövar HELHETEN den ser, inte diffen: "pre-existerande
+design" skyddar inte mot underkännande, och det är grindens styrka
+(extern-fångst-klassen). Designkonsekvens: ett värdeladdat men odefinierat
+ord i en spec ("lugnt", "diskret", "snabbt") är en granskningsyta i väntan —
+definiera det, eller förvänta fyndet vid människo-grinden och planera för
+det som eget kort.
+
+### L270 [UNIVERSAL] — Pipe:ad grind-output maskerar exit-koden — grinda på grindens exit, inte på dess text
+
+Datum: 2026-07-11 | Källa: S62 Del 3-landningen (`markdownlint | tail` →
+exit 0 trots "Summary: 1 error(s)"; `&&`-kedjan släppte igenom commit+push
+av `588e29b` → CI RÖD; rättad `d8d5e4f`) (klass:
+shell-disciplin/lokal-CI-paritet)
+
+`grind | filter && commit` committar på FILTRETS exit-kod, inte grindens —
+en lokal grind är bara en grind om dess exit-kod styr beslutet. Kör grinden
+ogrindat och läs utfallet, eller villkora direkt på grind-kommandots exit
+(if/&& utan pipe, alternativt pipefail). Lokala grindkörningar ska ha
+CI-paritet även i exit-semantiken — CI:s jobb fälls av exit-koden, inte av
+att någon läser texten.
