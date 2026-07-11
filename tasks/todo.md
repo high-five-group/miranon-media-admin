@@ -63,6 +63,19 @@
   fix per rad-669-förebilden → RÖD→GRÖN båda zonerna → `c4c52b2` →
   CI grönt per jobb I FÖNSTRET (run 29170841109, Test+Build ✓).
   Lesson-kandidat: L264-skärpningen. **NÄSTA: /to-issues på TASK-8.**
+- [x] **/to-issues VERKSTÄLLD: task-8.1–8.5 publicerade** (2026-07-12,
+  Del 4 kanonisk plats; skiv-godkännandet Marcus-delegerat till
+  senior-avgörande, S56-precedenten — täcknings-pass: 16 UB + 11
+  implementationsbeslut mappade, inga föräldralösa): 8.1 Mätprotokollet
+  (S, oblockad) · 8.2 Skeleton-primitiven + demo + spec (M, oblockad)
+  · 8.3 Persist-lagret ADR-072 (M, oblockad, icke-UI → hela vägen
+  Done) · 8.4 Hem till Lugnt laddläge (M, ←8.1+8.2, granskningsfärdig-
+  läge) · 8.5 QA-planen (S, ←alla, ready-for-human, 8-punkters
+  testplan). DoD-arvet (2 spec-grindar) på varje skiva; tavlan
+  CLI-läs-tillbaka-verifierad; 8.1/8.2/8.3 klassade `ready-for-agent`
+  = plockbara. **NÄSTA: Marcus väljer — batch på 8.1–8.3
+  (/work-batch) · QA 4.6 · batch 4 (TASK-5/6); vid avslut: skörd +
+  BUILD-LOG.**
 
 ### Session 62 ✅ AVSLUTAD (2026-07-11) — Bygget /work-batch + ADR-071 → batch 3 skarpt → granskningsvåg 4.5 + task-7
 
