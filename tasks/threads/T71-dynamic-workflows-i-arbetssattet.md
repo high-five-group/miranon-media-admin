@@ -18,8 +18,11 @@ lifecycle: active
 - **Tillstånd:** se frontmatter `lifecycle`
 - **Sessioner:** 60 (född; utforskningen genomförd, beslut ej taget) ·
   61 (upptagen med `T61`: grillad samsyn — AFK-batch-kontraktet, 5 beslut —
-  och pilot körd grön; ADR-071 mintas vid /work-batch-bygget)
-- **Styrande:** ingen ännu — beslutet är ADR-bart (se § Beslutsstatus)
+  och pilot körd grön) · 62 (ADR-071 mintad + `/work-batch` byggd,
+  hub `3174a1e` plugin 1.13.0 — beslutet verkställt)
+- **Styrande:**
+  [ADR-071](../../docs/decisions/ADR-071-afk-batch-kontraktet.md)
+  (AFK-batch-kontraktet, Accepted S62)
 - **Besläktad:** `T67` (parallella aktiva sessioner — samma terräng: samtidighet,
   worktree-isolation, räknar-kollisioner). `T56` (djupa moduler + arkitektur-
   granskning, Pocock-planen). `T01` (system-läsbarhet).
@@ -306,6 +309,16 @@ byggbart. Permission-osäkerheten löst med granskningsbar
 `permissions.allow` i spoke-settings (Marcus-kvitterad diff, `71c9143`).
 ADR-071 mintas vid /work-batch-bygget; steg A/B (AT-Max-spåret) står kvar
 oförändrade.
+
+**S62-uppdatering (2026-07-11): beslutet TAGET och verkställt.**
+[ADR-071](../../docs/decisions/ADR-071-afk-batch-kontraktet.md) mintad
+(batch-kvittot · orkestrerings-skript-substratet · granskningsfärdig-läget ·
+halt-first + hårda gränser · trunk-push + omprövningströskel ·
+headless-spåret som framtida form) och `/work-batch`-skillen byggd i hubben
+(`3174a1e`, plugin 1.13.0; SYSTEMET.md §0 bär orkestrerings-skript-begreppet
+— begreppskrocken i § Beslutsstatus C-punkten löst). Tvåstegs-stängningen
+(T75) skill-normerad i samma landning. Kvar i tråden: steg A/B
+(AT-Max-spåret) + review-fasens `/code-review ultra`-form — oförändrade.
 
 ## Nästa steg (när tråden tas upp)
 

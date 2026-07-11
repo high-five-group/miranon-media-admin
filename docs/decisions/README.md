@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-08
+updated: 2026-07-11
 review_by: 2026-11-15
 status: stable
 ---
@@ -121,6 +121,7 @@ Kriterium: en avgränsad punkt korrigeras medan beslutet kvarstår → additiv n
 | [ADR-068](ADR-068-ovnings-ramverket.md) | Övnings-ramverket — Experimentet (Vue) → Övning 1 (session 1–50) → Övning 2 (session 51→); epok-nivån ovanför fas/session (ADR-040 + fas-axeln orörda); terminologi-drifthem = systemet.md §0-post (kanonisk-plats-par med ADR:n); Fas E = Övning 2:s namngivna slutfas (ingen ny fas); lins-not i två skikt (historiskt material orört + historiska "ADR-068"-referenser avser två-aktörs-ADR:n [WIP], numret aldrig reserverat); levande referenser omdöpta nummer-neutralt i S51-svepet | Accepted | Projekt-grundande |
 | [ADR-069](ADR-069-lifecycle-verbens-code-korbarhet.md) | Lifecycle-verbens Code-körbarhet (T62) — session-paus + session-resume Code-halvor i pluginet (13→15, 1.10.0; egna kataloger, resume refererar start-LÄS-fasen; description-triggade); superseder ADR-043 b5 + ADR-051 b2 (asymmetrierna), amenderar ADR-041 b2 (coverage-Marcus-kvittens-grind före `lifecycle: closed` på Code-körda sessioner); start/end-kompletteringen (yta-neutral scope-kvittens, föreslagen ingång, trail-säkring som explicit Marcus-fråga, N-vs-N+1-grind, yt-beroende transcript-källa); designprincip (f): Marcus-kvittenspunkter = explicita STOPPA-grindar i Code-körda flöden; Chat-halvor samexisterar tills migrerings-spåret pensionerar dem | Accepted | Session 53 (process) |
 | [ADR-070](ADR-070-systemet-konsolidering.md) | SYSTEMET.md — konsoliderad system-dokumentation i hub-roten (steg 4b): EN källa för hela operativa systemet (kandidat C, komponent-katalog + dubbelskikt "I klartext"/"Mekaniken"); absorberar + arkiverar ARKITEKTUR.md + WORKFLOW.md (WORKFLOW:s projekt-livscykel-ops → T70); ersätter spoke-`systemet.md` (arkiverad tre-aktörs-version + pekare-stub kvar, governing); beslut-4-förfining (C4 = nedstignings-disciplin inuti sektioner, ej dok-ryggrad; öppen rivning); acceptansgrindar (färsk-agent-test m.fl.); nummer-not: ADR-068 = Övnings-ramverket (orört), två-aktörs-ADR:n WIP/onumrerad (prövotid ej bevisad, Proposed) | Accepted | Session 59 (steg 4b) |
+| [ADR-071](ADR-071-afk-batch-kontraktet.md) | AFK-batch-kontraktet — `/work-batch` (hub-skill, plugin 1.13.0; Marcus-beordrad, ordern = batch-kvittot, konsent-sömmen vidgad öppet) som orkestrerings-skript kring OFÖRÄNDRAD do-work: halt-first + hårda gränser (max-kort ~3 default, aldrig samma kort ×2, budget-tak, kill-switch, idempotent omstart, inget tids-tak), granskningsfärdig-läge för UI-skivor (Done-flip=Marcus, granskningsvågor), trunk-push per skiva + omprövningströskel (skarp Lotta-drift eller >~5 kort → branch/PR-fråga som egen landning); headless `claude -p` = dokumenterad framtida CI/cron-form; orkestrerings-skript-begreppets hemvist SYSTEMET.md §0; tvåstegs-stängningen (T75/L263) i do-work steg 5; grillad samsyn S61 Del 2 + pilot Del 3 + batch 2 Del 4; stop-vägen öppet obevisad | Accepted | Session 62 (process) |
 
 ## Relaterade dokument
 

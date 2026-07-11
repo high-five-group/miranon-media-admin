@@ -21,6 +21,30 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 62 🔄 PÅGÅR (2026-07-11) — Bygget: /work-batch-skill + ADR-071 + hub-lyft → batch 3 (4.5)
+
+> Scope: sessionsdok `2026-07-11-session-62.md` Del 1 (kanonisk plats):
+> S61:s deferrade bygge som EN hub-landning → batch 3 (4.5) som skillens
+> första skarpa bruk → ev. QA 4.6 + TASK-5/6-klassning + webbtavle-kollen.
+> Kadensrad per L67 — uppdateras vid varje landning.
+
+- [x] **Dok-födelse** (2026-07-11): sessionsdok fött (`7c23edb`, run
+  29162686873 grön per jobb: Lint+Audit+TypeCheck ✓, Docs link check
+  körd+grön, Test+Build by-design-skippad); numrering disk-verifierad
+  (nästa ADR 071 via check-adr-count 70==70, lesson L267, fälla 45, tråd
+  T76); audit-ci PASSED. **NÄSTA: bygget (LÄS-fas hubben → plan →
+  Marcus-kvittens).**
+- [x] **Bygget LANDAT: /work-batch + ADR-071 + T75 + hub-lyft**
+  (2026-07-11, Del 2 kanonisk plats; Marcus-kvittens "Kör! A."):
+  hub-commit `3174a1e` (plugin 1.12.0→1.13.0 — ny skill work-batch;
+  do-work steg 5 → tvåstegs-stängning [T75]; hub-lyft K61.1–K61.4
+  [L263–L266]; SYSTEMET.md §0 orkestrerings-skript + §5 16 skills + §7
+  AFK-formen; konstitutionens ISSUE-SUBSTRAT-rad konsekvens-synkad) +
+  spoke: ADR-071 mintad + README-rad (71==71) + tråd-synk (T61/T71
+  uppdaterade; T75 → closed). Nästa ADR 072. **NÄSTA: omstart
+  (plugin-reload, verifiera 1.13.0 + 16 skills) → batch 3 (4.5) på
+  Marcus batch-order.**
+
 ### Session 61 ✅ AVSLUTAD (2026-07-11) — T71/T61-upptag: autonom AFK-batch över ready-for-agent-skivor
 
 > Scope: sessionsdok `2026-07-11-session-61.md` Del 1 (kanonisk plats):
