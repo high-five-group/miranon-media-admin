@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page, type Route, test } from '@playwright/test';
 
 /**
  * Hem-vyn (task-1.3 A-skelettet → task-4.2 K10-facit-strukturen → task-4.3
- * facit-korten → task-4.4 anmälningslistan). Uppifrån och ned: hälsningskort
+ * facit-korten → task-4.4 anmälningslistan → task-4.5 osynliga uppdateringen
+ * [B3]). Uppifrån och ned: hälsningskort
  * (h1 "Hej {namn}" utan utropstecken; återbesök i sessionen visar bara namnet
  * [B2]; "Mina sidor"-platshållarknapp ersätter uppdatera-kontrollen [B5]) →
  * Nästa event (primär-tint, HELA kortet klickbart till eventets detaljsida;
@@ -917,5 +918,242 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .analyze();
     expect(results.violations).toEqual([]);
+  });
+});
+
+/**
+ * task-4.5 — Osynliga uppdateringen (B3; S55 Del 11-beviset). Alla Hem-
+ * hämtningars bakgrundsuppdateringar är HELT osynliga (stale-while-
+ * revalidate): tidigare data renderas orörd under tyst omhämtning; innehåll
+ * ändras ENDAST när datat faktiskt ändrats. Ärligt undantag: kall första-
+ * laddning visar ett lugnt laddläge.
+ *
+ * Bevisformen per Del 11 (hårdast möjliga): main-element-skärmdumpar FÖRE ==
+ * UNDER == EFTER triggad omhämtning är BYTE-IDENTISKA (Buffer.equals = cmp),
+ * med omhämtningen BEVISAT aktiv i UNDER-läget. Prototypens
+ * `data-proto-fetching`-krok finns inte i prod — aktivitetsbeviset är i
+ * stället nätverksnivå: EF-svaren PARKERAS ofulfillade (håll-bar mock), så
+ * UNDER-fasen har mottagna men obesvarade anrop i luften. L246-mätfällorna
+ * respekteras: muspekaren neutraliseras före jämförelsen (hover ger falsk
+ * diff) och AC 2 mäter containrarnas boxar (layout-stillhet), inte
+ * border-boxar som diff-kanter.
+ */
+test.describe('Osynliga uppdateringen (task-4.5)', () => {
+  /** Håll-bar mock: `hall = true` parkerar EF-anropen ofulfillade (bevisat
+      aktiv omhämtning); `slappAlla` besvarar dem med AKTUELL `data` (som kan
+      bytas mellan pollarna — AC 2:s ändrat-data-väg). */
+  function hallbarMock(page: Page, data: { registrations: Row[]; events: Row[] }) {
+    const st = {
+      data,
+      hall: false,
+      parkerade: [] as Route[],
+      async slappAlla() {
+        const rutter = this.parkerade.splice(0);
+        for (const rutt of rutter) await uppfyll(rutt);
+      },
+    };
+    const uppfyll = async (rutt: Route) => {
+      const arEvents = /get-events/.test(rutt.request().url());
+      await rutt.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: arEvents
+          ? JSON.stringify({ events: st.data.events })
+          : JSON.stringify({ registrations: st.data.registrations }),
+      });
+    };
+    const hanterare = async (rutt: Route) => {
+      if (st.hall) {
+        st.parkerade.push(rutt);
+        return;
+      }
+      await uppfyll(rutt);
+    };
+    return Promise.all([
+      page.route(GET_REGISTRATIONS, hanterare),
+      page.route(GET_EVENTS, hanterare),
+    ]).then(() => st);
+  }
+
+  /** Stabil grunddata: fasta id:n + dagsgamla inskickad-tider (relativa
+      tider i "för N dagar sedan"-formen glider inte inom testets sekunder). */
+  function grunddata() {
+    return {
+      registrations: [
+        reg({
+          id: 'recRegA',
+          fornamn: 'Anna',
+          efternamn: 'Andersson',
+          eventId: 'recEvent1',
+          anmalningsavgift: 'Ej mottagen',
+          inskickad: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+        }),
+        reg({
+          id: 'recRegB',
+          fornamn: 'Bo',
+          efternamn: 'Bengtsson',
+          eventId: 'recEvent1',
+          inskickad: new Date(Date.now() - 4 * 86_400_000).toISOString(),
+        }),
+        reg({
+          id: 'recRegC',
+          fornamn: 'Carl',
+          efternamn: 'Carlsson',
+          eventId: null,
+          eventNamn: null,
+          inskickad: new Date(Date.now() - 5 * 86_400_000).toISOString(),
+        }),
+      ],
+      events: [
+        ev({
+          id: 'recEvent1',
+          eventNamn: 'Fjärrskådning',
+          ort: 'Skövde',
+          startdatum: '2099-09-15',
+          antalAnmalda: 5,
+          maxPlatser: 20,
+        }),
+      ],
+    };
+  }
+
+  test('AC 1 — identitetsbeviset: FÖRE == UNDER == EFTER byte-identiska under bevisat aktiv omhämtning', async ({
+    page,
+  }) => {
+    // Falsk klocka → poll-intervallet (60 s, ADR-017) triggas deterministiskt.
+    await page.clock.install();
+    const mocken = await hallbarMock(page, grunddata());
+    await page.goto('/hem');
+
+    // Färdig-renderat utgångsläge: innehåll synligt, inga laddlägen kvar.
+    const main = page.locator('main#main');
+    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Anna Andersson/ })).toBeVisible();
+    await expect(page.getByText('5 av 20 platser bokade')).toBeVisible();
+    await expect(main.getByRole('status')).toHaveCount(0);
+
+    // L246-mätfällan: neutralisera muspekaren — hover-tillstånd ger falsk diff.
+    await page.mouse.move(0, 0);
+    const fore = await main.screenshot({ animations: 'disabled' });
+
+    // UNDER: parkera EF-svaren och avancera förbi poll-intervallet →
+    // omhämtningen är BEVISAT aktiv (två mottagna, obesvarade anrop:
+    // get-registrations + get-events — registrations-queryn dedupas av
+    // React Query över sina två konsumenter).
+    mocken.hall = true;
+    await page.clock.fastForward(61_000);
+    await expect.poll(() => mocken.parkerade.length).toBe(2);
+
+    // Ingen visuell indikation under aktiv omhämtning: inget laddläge,
+    // ingen blur/dimning (computed per Del 11: filter none, opacity 1).
+    await expect(main.getByRole('status')).toHaveCount(0);
+    for (const yta of [
+      main,
+      page.getByRole('region', { name: 'Nästa event' }),
+      page.getByRole('region', { name: 'Obetalda anmälningsavgifter' }),
+      page.getByRole('region', { name: 'Nya anmälningar att hantera' }),
+    ]) {
+      const stil = await yta.evaluate((el) => {
+        const s = getComputedStyle(el);
+        return { filter: s.filter, opacity: s.opacity };
+      });
+      expect(stil).toEqual({ filter: 'none', opacity: '1' });
+    }
+
+    const under = await main.screenshot({ animations: 'disabled' });
+    expect(under.equals(fore), 'UNDER == FÖRE (byte-identisk skärmdump)').toBe(true);
+
+    // EFTER: släpp svaren (SAMMA data) och låt omhämtningen fullbordas.
+    const svaren = Promise.all([
+      page.waitForResponse(GET_REGISTRATIONS),
+      page.waitForResponse(GET_EVENTS),
+    ]);
+    mocken.hall = false;
+    await mocken.slappAlla();
+    await svaren;
+    // Deterministisk måla-klart-vänta (dubbel-rAF) — ingen fast delay.
+    await page.evaluate(
+      () => new Promise((klar) => requestAnimationFrame(() => requestAnimationFrame(klar))),
+    );
+
+    const efter = await main.screenshot({ animations: 'disabled' });
+    expect(efter.equals(fore), 'EFTER == FÖRE (byte-identisk skärmdump)').toBe(true);
+  });
+
+  test('AC 2 — ändrat data byter endast berörda värden; containrarna mät-stilla', async ({
+    page,
+  }) => {
+    await page.clock.install();
+    const mocken = await hallbarMock(page, grunddata());
+    await page.goto('/hem');
+
+    const obetalda = page.getByRole('region', { name: 'Obetalda anmälningsavgifter' });
+    await expect(obetalda.getByText('1', { exact: true })).toBeVisible();
+    await expect(page.getByText('5 av 20 platser bokade')).toBeVisible();
+
+    // Mät containrarna FÖRE (layout-stillhetens referens).
+    const ytor = {
+      main: page.locator('main#main'),
+      nastaEvent: page.getByRole('region', { name: 'Nästa event' }),
+      obetalda,
+      anmalningar: page.getByRole('region', { name: 'Nya anmälningar att hantera' }),
+      cta: page.getByRole('link', { name: 'Visa alla anmälningar' }),
+    };
+    const foreBoxar: Record<string, Awaited<ReturnType<typeof ytor.main.boundingBox>>> = {};
+    for (const [namn, yta] of Object.entries(ytor)) foreBoxar[namn] = await yta.boundingBox();
+
+    // Ändra datat mellan pollarna: Bos avgift flippar till Ej mottagen
+    // (Obetalda 1 → 2; samma radantal) och beläggningen 5 → 6. Nästa poll
+    // hämtar det ändrade — bara de berörda värdena får byta.
+    const nytt = grunddata();
+    const bo = nytt.registrations[1];
+    if (!bo) throw new Error('grunddatan saknar Bo-raden');
+    bo.anmalningsavgift = 'Ej mottagen';
+    const eventet = nytt.events[0];
+    if (!eventet) throw new Error('grunddatan saknar eventet');
+    eventet.antalAnmalda = 6;
+    mocken.data = nytt;
+    await page.clock.fastForward(61_000);
+
+    // Berörda värden bytta …
+    await expect(obetalda.getByText('2', { exact: true })).toBeVisible();
+    await expect(page.getByText('6 av 20 platser bokade')).toBeVisible();
+    // … oberörda orörda …
+    await expect(page.getByRole('link', { name: /Anna Andersson/ })).toBeVisible();
+    await expect(page.getByText('Utan event')).toBeVisible();
+    // … och ingen laddindikation någonstans under bytet.
+    await expect(ytor.main.getByRole('status')).toHaveCount(0);
+
+    // Containrarna mät-stilla: exakt samma boxar som före bytet.
+    for (const [namn, yta] of Object.entries(ytor)) {
+      expect(await yta.boundingBox(), `${namn} ska stå mät-still`).toEqual(foreBoxar[namn]);
+    }
+  });
+
+  test('AC 3 — kall första-laddning visar lugnt laddläge (robust vänte-strategi, ingen fast delay)', async ({
+    page,
+  }) => {
+    // TASK-3-fyndet: inget lastkänsligt delay-fönster — EF-svaren PARKERAS
+    // från start, så laddläget står stabilt tills testet självt släpper dem.
+    const mocken = await hallbarMock(page, grunddata());
+    mocken.hall = true;
+    await page.goto('/hem');
+
+    // Kallstartens laddläge: tre kort annonserar via role=status + aria-busy.
+    const main = page.locator('main#main');
+    const laddlagen = main.getByRole('status');
+    await expect(laddlagen).toHaveCount(3);
+    await expect(page.getByText('Laddar nästa event…')).toBeVisible();
+    await expect(page.getByText('Laddar obetalda avgifter…')).toBeVisible();
+    await expect(page.getByText('Laddar nya anmälningar…')).toBeVisible();
+    for (const laddlage of await laddlagen.all()) {
+      await expect(laddlage).toHaveAttribute('aria-busy', 'true');
+    }
+
+    // Släpp svaren → innehållet ersätter laddläget; ingen status-yta kvar.
+    mocken.hall = false;
+    await mocken.slappAlla();
+    await expect(page.getByRole('link', { name: /Anna Andersson/ })).toBeVisible();
+    await expect(main.getByRole('status')).toHaveCount(0);
   });
 });
