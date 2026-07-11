@@ -1,10 +1,10 @@
 ---
 id: TASK-4.3
 title: 'Skiva: Nästa event + Obetalda till facit'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-07 08:56'
-updated_date: '2026-07-11 09:42'
+updated_date: '2026-07-11 17:38'
 labels:
   - ready-for-agent
 dependencies:
@@ -52,7 +52,15 @@ AVVIKELSE (öppen, för design-review): facit-mobilbilden visar Obetalda-rubrike
 Även noterat: kort-chromets gap 4→8 px (gap-2) per K10-referensens kortform — följdändring synlig i alla tre Hem-kort inkl. Nya anmälningar (task-4.4:s yta omstylas vidare där).
 
 Väntar design-review (S61 batch 2) · leverans dc099b3 · CI-run 29148028260 grön per jobb (Detect changed files ✓, Lint+Audit+TypeCheck ✓, Test+Build ✓ körd, Docs link check skipped by design, CI Passed or Skipped ✓; attempt 1 = första passet) · facit-avprickningen i notes ovan
+
+Design-review Marcus-GODKÄND 2026-07-11 (första varvet, hela batch 2-leveransen): 'Det ser jättebra ut'. Reflow-avvikelsen (Obetalda-rubrikens mobil-radbrytning, WCAG 1.4.10-golvet) godkänd i samma kvittens.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit dc099b3 · CI-run 29148028260 grön per jobb (attempt 1) · CI-grön-första-pass: ja · defekter under körning: 1 i kort-scope (h-scroll 375px — rotorsaksfix min-w-0 + break-words FÖRE leverans) + 2 infra-fynd → TASK-5/TASK-6 · TDD: 4 cykler rött→grönt · Design-review: Marcus-GODKÄND 2026-07-11 (första varvet; reflow-avvikelsen godkänd) · AFK: S61 batch 2, agent 1
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
@@ -60,6 +68,6 @@ Väntar design-review (S61 batch 2) · leverans dc099b3 · CI-run 29148028260 gr
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->

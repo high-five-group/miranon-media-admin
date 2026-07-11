@@ -1,10 +1,10 @@
 ---
 id: TASK-4.4
 title: 'Skiva: Anmälningslistan till facit'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-07 08:56'
-updated_date: '2026-07-11 10:39'
+updated_date: '2026-07-11 17:38'
 labels:
   - ready-for-agent
 dependencies:
@@ -53,7 +53,15 @@ Validering (lokala grindar, L147): hem-e2e 25/25 · fulla e2e:staging 137 passed
 CI-DEFEKT UNDER KÖRNING (bokförd, fixad): leverans-commitens CI-run 29149331316 föll deterministiskt (3/3 attempts) på AC1-testets igår-klockslag — TESTDEFEKT, inte produktkod: runnerns Node byggde tidpunkten i värdzonen (UTC på CI) medan appen formaterar i playwright-configens timezoneId Europe/Stockholm → renderat 'igår 16:02' ≠ förväntade 'igår 14:02'. Fix e2fdea4: förväntningen härleds ur samma absoluta ögonblick med explicit timeZone = browserns config-zon; lokal körning opåverkad (zonerna sammanfaller där). Övriga 136 e2e passerade i den fallna runnen — diffens produktyta var grön hela vägen.
 
 Väntar design-review (S61 batch 2) · leverans 25c63a9 + testfix e2fdea4 · CI-run 29149562570 grön per jobb (Detect changed files ✓, Lint+Audit+TypeCheck ✓, Test+Build ✓ KÖRD, Docs link check skipped by design, CI Passed or Skipped ✓; attempt 1 för fix-commiten — leverans-commitens första pass föll på testdefekten ovan) · facit-avprickningen i notes ovan
+
+Design-review Marcus-GODKÄND 2026-07-11 (första varvet, hela batch 2-leveransen): 'Det ser jättebra ut'.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 25c63a9 + testfix e2fdea4 · CI-run 29149562570 grön per jobb (attempt 1 på fixen; leveransens run 29149331316 röd på tidszons-testdefekten) · CI-grön-första-pass: nej · defekter under körning: 1 (AC1-testets igår-klockslag byggdes i runnerns UTC medan appen formaterar i Europe/Stockholm — testdefekt, ej produktkod; fixad e2fdea4 med explicit timeZone) · TDD: 5 cykler rött→grönt · Design-review: Marcus-GODKÄND 2026-07-11 (första varvet) · AFK: S61 batch 2, agent 2
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
@@ -61,6 +69,6 @@ Väntar design-review (S61 batch 2) · leverans 25c63a9 + testfix e2fdea4 · CI-
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->
