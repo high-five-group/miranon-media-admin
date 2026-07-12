@@ -969,10 +969,79 @@ Appen vet vad Lotta ska göra härnäst.
 
 ---
 
+## 14. NavCard — navigationsrads-primitiven
+
+Återanvändbar kort-rad för navigationslistor (Mer-vyn och framtida
+produkters landningsmenyer). Byggd på react-aria-components `Link`
+(ADR-044) wrappade i TanStack Routers `createLink` — `to` är typad mot
+routerns registrerade routes (obefintlig route = typfel). Facit-källa:
+M6-konvergenspasset, sessionsdok S64 Del 3 (task-9.1).
+
+### API (medvetet minimalt)
+
+```tsx
+<NavCard to="/mer/anmalningar" icon={ClipboardList} label="Anmälningar" />
+```
+
+| Prop | Typ | Roll |
+|---|---|---|
+| `to` | router-typad route | Länkmålet — hela radytan är EN länk |
+| `icon` | `NavCardIcon` (strukturell: `size`/`aria-hidden`/`className`) | Dekorativ radikon, 20 px i sekundärfärgen, `aria-hidden` |
+| `label` | `string` | Etiketten, 16/600 — bär länknamnet ENSAM |
+
+**INTE i API:t** (över-engineering-vakten — växer additivt vid verkligt
+behov): badge (T68), beskrivningsrad, disabled, knapp-variant, `className`.
+Formen är facit-låst; konsumenter komponerar inte om raden.
+
+### Anatomi
+
+NavCard är själva raden. List- och landmärkes-semantiken ägs av
+konsumenten: `<nav aria-label>` → `<ul>` → `<li><NavCard /></li>`.
+Radgap inom grupp: 10 px (`gap-2.5`); mellan grupper: 32 px (`gap-8`).
+
+### Form (M6-facitet, computed-låst)
+
+- Hela ytan `Link`; `rounded-2xl`; tonal kortyta `--mm-navcard-bg`
+  (= `--mm-bg-muted`); `border-transparent` i vila; `px-4 py-4`
+  ≈58 px radhöjd (≥44 px träffyta).
+- Ikon 20 px `--mm-navcard-icon` (= `--mm-text-secondary`) —
+  tabbar-paritet i storlek och familj; ett steg tystare än etiketten
+  (M3-listmönstrets research-belägg).
+- Etikett 16/600 (`text-body` + semibold), `--mm-navcard-text`.
+- **Ingen hover-bakgrundsändring** — transparent-i-vila + hover-grå
+  är PRÖVAD OCH FÖRKASTAD (M3, S64); återinförs inte utan nytt
+  facit-beslut.
+- Fokus: den globala `:focus-visible`-ringen (base.css) — ingen egen
+  fokus-styling.
+- `prefers-contrast: more`: synlig kantlinje `--mm-navcard-border-contrast`
+  (= `--mm-border-strong`). Statisk rad — reduced-motion/print utan
+  specialfall (globala neutraliseringen täcker).
+
+### App-bred regel: navigationsrader bär inte chevron
+
+Navigationsrader (NavCard och alla kommande rad-navigationsytor) bär
+**ingen chevron** — "desto mindre saker desto renare" (M4-varvet,
+D-reviderad; öppet bokförd revision av samsyn D). Dropdown-indikatorer
+(t.ex. `Select`:s `ChevronDown`) är en ANNAN mönsterklass och berörs
+inte av regeln.
+
+### Komponent-tokens (components.css)
+
+```css
+--mm-navcard-bg: var(--mm-bg-muted);
+--mm-navcard-text: var(--mm-text);
+--mm-navcard-icon: var(--mm-text-secondary);
+--mm-navcard-border: transparent;
+--mm-navcard-border-contrast: var(--mm-border-strong);
+```
+
+---
+
 ## Ändringslogg
 
 | Datum | Förändring |
 |-------|-----------|
 | 2026-04-05 | Initialt dokument. Token-arkitektur, typografiskala, spacing-system, lint-config, design-audit skill-spec, Playwright-config, Tailwind-mappning. |
 | 2026-04-07 | [GA] Integrerat gap-analys: View Transitions (§9), stale-data-indikatorer (§10), error boundary-meddelanden (§11), systemhälso-indikator (§12), fem kvaliteter (§13). Audit-prompt uppdaterad med performance/säkerhet/ARIA/EAA-kontroller. |
+| 2026-07-12 | §14 NavCard — navigationsrads-primitiven (M6-facitet, S64 Del 3): API, anatomi, form, komponent-tokens + app-breda regeln "navigationsrader bär inte chevron" (task-9.1). |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |

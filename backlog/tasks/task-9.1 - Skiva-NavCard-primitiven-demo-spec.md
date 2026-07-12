@@ -1,9 +1,10 @@
 ---
 id: TASK-9.1
 title: 'Skiva: NavCard-primitiven + demo + spec'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-12 10:16'
+updated_date: '2026-07-12 12:25'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,19 +20,25 @@ Bibliotekskod 11/11/11: den återanvändbara navigationsrads-primitiven som bär
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 NavCard finns i primitiv-biblioteket med API { to, icon, label } — to typad mot routerns routes (obefintlig route = typfel); ingen chevron; ingen hover-bakgrundsändring
-- [ ] #2 Raden renderas som hel klickbar kortyta (≥44 px) med dekorativ ikon (aria-hidden, 20 px, sekundärfärgen) och etikett 16/600 som ensam bär länknamnet
-- [ ] #3 Tangentbordsfokus ger synlig fokusring; hög-kontrast-läge ger synlig kantlinje; reduced-motion/print per kvalitetsribban
-- [ ] #4 Demo-sektion på primitiv-routen renderar NavCard-exempel och primitiv-axe-runnern är grön med 0 violations
-- [ ] #5 Design-system-specen har NavCard-sektion inkl. app-breda regeln 'navigationsrader bär inte chevron'
+- [x] #1 NavCard finns i primitiv-biblioteket med API { to, icon, label } — to typad mot routerns routes (obefintlig route = typfel); ingen chevron; ingen hover-bakgrundsändring
+- [x] #2 Raden renderas som hel klickbar kortyta (≥44 px) med dekorativ ikon (aria-hidden, 20 px, sekundärfärgen) och etikett 16/600 som ensam bär länknamnet
+- [x] #3 Tangentbordsfokus ger synlig fokusring; hög-kontrast-läge ger synlig kantlinje; reduced-motion/print per kvalitetsribban
+- [x] #4 Demo-sektion på primitiv-routen renderar NavCard-exempel och primitiv-axe-runnern är grön med 0 violations
+- [x] #5 Design-system-specen har NavCard-sektion inkl. app-breda regeln 'navigationsrader bär inte chevron'
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Leverans-commit (pipeline B1, T76-piloten): NavCard på createLink(RAC Link)-mönstret (TanStack custom-link-guide; RAC >=1.11-kompat verifierad mot docs). TDD: 9 beteende-tester + sektions-axe skrivna först, observerade RÖDA (10 failed/8 passed), sedan gröna (23/23 a11y). Negativt typ-bevis AC1: to='/finns-inte' gav TS2322 mot route-unionen. Lokala grindar gröna: biome 0 fel, typecheck, typecheck:tests, build, test:a11y 23/23, api-pure 185/185, markdownlint 0, vale 0. DoD 3/5/6 lämnas åt orkestratorn (CI + design-review + facit-paritet i prod-vyn).
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
 - [ ] #6 Facit-paritet: renderad vy computed-verifierad mot M6-måtten (sessionsdok S64 Del 3)
 <!-- DOD:END -->

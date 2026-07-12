@@ -47,4 +47,8 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
     await checkA11y();
   });
+
+  test('NavCard — sektion', async ({ checkA11y }) => {
+    await checkA11y({ include: ['[aria-labelledby="rubrik-navcard"]'] });
+  });
 });
