@@ -70,6 +70,15 @@
   `230f322`; tsr-split-stale = lesson-kandidat; prototypen raderad
   (klausul iv). **NÄSTA: /to-prd (ETT PRD: struktur + facit) →
   /to-issues.**
+- [x] **/to-prd VERKSTÄLLD: TASK-9 publicerad** (2026-07-12, Del 4
+  kanonisk plats; L268-fallbacken öppet bokförd — ordern är kvittot):
+  skarv-kvittensen Marcus "A" (två befintliga skarvar: primitiv-axe +
+  mer-e2e/axe, inga nya) → **TASK-9 "PRD: Mer-vyn till FK-mönstret"**
+  (14 UB, 10 implementationsbeslut, FK-avvikelser låsta, M3 bokförd
+  förkastad; 2 extra DoD-spec-grindar: design-review mot facitet +
+  computed facit-paritet). CLI-läs-tillbaka ✓. Raderings-CI:t grönt
+  per jobb (`a0e2536`, Test+Build ✓ — M1-vyn återställd ren).
+  **NÄSTA: /to-issues (4 skivor per estimatet).**
 
 ### Session 63 ✅ AVSLUTAD (2026-07-12) — Task-7-kedjan: grillning → ADR-072 → PRD TASK-8 → skivor 8.1–8.5
 
