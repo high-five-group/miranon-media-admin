@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-12 11:54'
+updated_date: '2026-07-12 13:59'
 labels: []
 dependencies: []
 ordinal: 30000
@@ -30,3 +31,12 @@ FÖRVÄNTAT BETEENDE (klassningsbeslut för människan): endera dokumenteras bå
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-12 13:59
+---
+Tredje fällan i samma arbetsyta (T76-pilot fas 3, agent B2, task-9.3): SYMPTOM: chromium-authenticated hard-failar i auth.setup med 'TEST_USER_EMAIL/TEST_USER_PASSWORD env vars required' TROTS att .env.test ligger i arbetskatalogen. ROTORSAK: playwright.config.ts har ingen dotenv-mekanism — CI får secrets via workflow-env, lokalt läses enbart process.env. MITIGERING SOM ANVÄNDES: prefixa lokala playwright-anrop med 'set -a; source .env.test; set +a;' i samma shell-anrop (source:a tyst — citera aldrig innehållet). Vite-sidan opåverkad (mode-filer per ADR-061). Klassnings-input: hör till samma runbook/skyddsräckes-beslut som kortets två första fällor.
+---
+<!-- COMMENTS:END -->

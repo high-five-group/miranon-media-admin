@@ -4,7 +4,7 @@ title: 'Skiva: Skeleton-primitiven + demo-sektion + spec-sektion'
 status: In Progress
 assignee: []
 created_date: '2026-07-11 22:54'
-updated_date: '2026-07-12 13:38'
+updated_date: '2026-07-12 13:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -53,11 +53,20 @@ Alla 8 tester skrivna först och körda RÖDA mot main-koden (sektion/primitiv s
 typecheck + typecheck:tests 0 fel · biome 0 errors (baseline 4 warnings/14 infos) · build grön · test:a11y 31/31 · markdownlint 0 errors · vale 0 errors. DoD 3/5/6 lämnas åt orkestrator/Marcus (CI per jobb; design-review i browsern; layout-skift-mätningen på Hem-nivå är task-8.4:s AC — primitiv-nivåns dimensionsbevis är lh-testet ovan).
 <!-- SECTION:NOTES:END -->
 
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-12 13:59
+---
+Granskningsfärdig (ADR-071): levererad cac0b16 → PR #51 → merge 221e5f9; CI grön per jobb first-pass (PR-run 29194848689 + main-run 29195013238). DoD 5 väntar din design-review i browsern (/dev/primitives, Skeleton-sektionen — Roselli-anatomin + shimmer under motion-safe); DoD 6 (Hem-nivåns layout-skift-mätning) hör till task-8.4; primitiv-nivåns dimensionsbevis är lh-boundingBox-testet. AFK-proveniens: T76-piloten S65 fas 3, pipeline A agent A3, orkestrerad bokföring.
+---
+<!-- COMMENTS:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review: Marcus-granskning i webbläsaren av laddläget godkänd (per skiva med UI-yta; L220/L269)
 - [ ] #6 Layout-skift ≈ 0 bevisad med renderad mätning före granskning (L245/L246; task-4.5-bevismönstret)
