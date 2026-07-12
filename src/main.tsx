@@ -1,6 +1,6 @@
 import { registerSW } from 'virtual:pwa-register';
 import * as Sentry from '@sentry/react';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { RouterProvider } from '@tanstack/react-router';
 import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -16,6 +16,7 @@ import { useAuth } from './auth/useAuth';
 import { AppErrorBoundary } from './components/ErrorBoundary';
 import { reportWebVitals } from './lib/report-web-vitals';
 import { initSentry } from './observability/sentry';
+import { persistOptions } from './queries/persist';
 import { queryClient, router } from './router';
 
 // M7: initiera Sentry FÖRE React mountas så att tidiga fel
@@ -95,11 +96,17 @@ createRoot(rootEl, {
         providers + render-gate + router (sektions-fel tas av SectionError
         via defaultErrorComponent innan de når hit). */}
     <AppErrorBoundary>
-      <QueryClientProvider client={queryClient}>
+      {/* Persist-lagret (ADR-072, task-8.3): ersätter QueryClientProvider —
+          samma QueryClient-context för hela appen, plus synkron
+          localStorage-restore vid boot (queries gate:as tills restore löst)
+          och throttlad synk av varje cache-ändring till lagringen.
+          Skyddsräckena (buster/maxAge/logout-clear) bor i queries/persist.ts
+          + AuthProvider.logout. */}
+      <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
         <AuthProvider>
           <InnerApp />
         </AuthProvider>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </AppErrorBoundary>
   </StrictMode>,
 );

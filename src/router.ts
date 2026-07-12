@@ -3,6 +3,7 @@ import { createRouter } from '@tanstack/react-router';
 import type { AuthContextValue } from './auth/AuthProvider';
 import { SectionError } from './components/ErrorBoundary';
 import { dataSource } from './data/dataSource';
+import { PERSIST_MAX_AGE_MS } from './queries/persist';
 import { routeTree } from './routeTree.gen';
 
 // QueryClient defaults per docs/specs/STATE-STRATEGY.md §3.
@@ -10,13 +11,16 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 min — data anses färsk
-      gcTime: 30 * 60 * 1000, // 30 min — cachad data lever kvar
+      // 24 h — hela cachen persistas (ADR-072); gcTime ≥ persistens maxAge
+      // (skyddsräcke 2 — lägre värde kasserar lagrad cache i förtid,
+      // dokumenterad GC-fälla). Var 30 min före persist-lagret (task-8.3).
+      gcTime: PERSIST_MAX_AGE_MS,
       retry: 3,
       retryDelay: (attempt) => Math.min(200 * 2 ** attempt, 2000),
       refetchOnWindowFocus: true, // Uppdatera när Lotta återvänder
       refetchOnReconnect: 'always', // Uppdatera när internet återgår
-      // Explicit per ADR-047 B5 — pausar offline, visar cachad data;
-      // persistQueryClient defer till Fas 6/8.
+      // Explicit per ADR-047 B5 — pausar offline, visar cachad data
+      // (numera även restaurerad över appstarter: persist-lagret ADR-072).
       networkMode: 'online',
     },
     mutations: {

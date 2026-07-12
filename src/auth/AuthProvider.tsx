@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react';
 import type { Session } from '@supabase/supabase-js';
+import { useQueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, useEffect, useState } from 'react';
 import { supabase } from '../data/config/supabase-client';
 
@@ -62,6 +63,9 @@ function sessionToUser(session: Session | null): AuthUser | null {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Query-cachen via context (providern ligger ovanför i main.tsx) — behövs
+  // för logout-rensningen (ADR-072 skyddsräcke 1, se logout nedan).
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     let mounted = true;
@@ -119,6 +123,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       Sentry.captureException(error, { tags: { auth: 'logout' } });
       throw error;
     }
+    // ADR-072 skyddsräcke 1: utloggning tömmer query-cachen (minne + persist)
+    // via clear() — maintainer-mönstret: den tömda minnescachen synkas till
+    // lagringen av persist-throttlen, så ingen tidigare inloggnings data
+    // ligger kvar på enheten (user story 8). Manuell radering av lagrings-
+    // nyckeln används ALDRIG — den racear mot throttle-synken (~1 s) och
+    // datat återuppstår. Körs EFTER lyckad signOut (misslyckad utloggning
+    // behåller cachen — användaren är kvar inloggad), och de aktiva vyernas
+    // observers hinner inte repopulera lagringen med persondata: error-/
+    // pending-queries dehydreras inte, och redirecten (ADR-037-kedjan)
+    // monterar av datavyerna.
+    queryClient.clear();
     // setUser uppdateras via onAuthStateChange-listener.
   };
 
