@@ -46,7 +46,8 @@
       "Bash(cp /Users/marcus/Repon/miranon-media-admin/.env.test:*)",
       "Bash(lsof:*)",
       "Bash(mkdir:*)",
-      "Bash(rmdir:*)"
+      "Bash(rmdir:*)",
+      "Bash(bash /private/tmp/claude-501/-Users-marcus-Repon-miranon-media-admin/0d2c629e-ae75-4c0c-a0cf-02c3012703af/scratchpad/t76-lock.sh:*)"
     ]
   }
 }
