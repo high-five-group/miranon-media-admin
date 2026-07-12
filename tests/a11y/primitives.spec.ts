@@ -51,4 +51,14 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
   test('NavCard — sektion', async ({ checkA11y }) => {
     await checkA11y({ include: ['[aria-labelledby="rubrik-navcard"]'] });
   });
+
+  test('Skeleton — sektion (Roselli-markupen i laddläge)', async ({ page, checkA11y }) => {
+    // Sektionen renderar laddläget statiskt (aria-busy-container med
+    // aria-hidden-block + sr-only-besked) — skannas i exakt det tillstånd
+    // task-8.2 AC 3 kräver 0 violations för.
+    await expect(
+      page.locator('[aria-labelledby="rubrik-skeleton"] [aria-busy="true"]'),
+    ).toBeVisible();
+    await checkA11y({ include: ['[aria-labelledby="rubrik-skeleton"]'] });
+  });
 });

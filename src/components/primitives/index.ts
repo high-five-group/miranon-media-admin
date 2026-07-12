@@ -6,4 +6,5 @@ export { Modal, type ModalProps } from './Modal';
 export { NavCard, type NavCardIcon } from './NavCard';
 export { Radio, RadioGroup, type RadioGroupProps } from './RadioGroup';
 export { Select, SelectItem, type SelectProps } from './Select';
+export { Skeleton, type SkeletonProps } from './Skeleton';
 export { TextArea, type TextAreaProps } from './TextArea';
