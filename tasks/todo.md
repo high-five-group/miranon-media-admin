@@ -89,6 +89,19 @@
   oblockade = T76-partitionens pipeline B-kandidater.** T69-kedjan
   KOMPLETT genom spec-ledet. **NÄSTA: session-end (skörd L272-kandidat
   tsr-split-stale + BUILD-LOG + tråd-synk + coverage).**
+- [x] **End-passet FÖRBERETT** (2026-07-12, Del 6 kanonisk plats):
+  skörd **L272** [UNIVERSAL] (tsr-split-stale — transformerad
+  dev-modul är egen cache-nyckel; computed-assertioner slår
+  pixel-titt; 2 kandidater explicit förkastade med motiv: L270-
+  återfallen ×2 [ingen ny klass] + auth-rotationen [Del 3 bär den];
+  hub-lyft L267–L272 buntas till nästa hub-sync) + **BUILD-LOG
+  S64-post** + tråd-synk (T76-partitionen KONKRET: 9.1+9.3, kollisions-
+  noten 9.1↔8.2) + transcript-ref (Code-JSONL 10 399 049 byte, 1 340
+  rader vid Del 6). CI-facit: 3bfa699 GRÖN · b9fdbf8 GRÖN · 73ddbdd
+  RÖD (remedierad, öppet bokförd). Intentions-grinden PASSERAD (nästa
+  = T76-pilot-bygget, NY session S65). Coverage-rapporten i STOPPA;
+  lifecycle-flip + rad 7-slutsummeringen väntar Marcus-kvittens. Kvar
+  efter stängning: Update-klicket.
 
 ### Session 63 ✅ AVSLUTAD (2026-07-12) — Task-7-kedjan: grillning → ADR-072 → PRD TASK-8 → skivor 8.1–8.5
 

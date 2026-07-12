@@ -3751,3 +3751,25 @@ repro finns alltid: forcera runner-zonen (`TZ=UTC`) lokalt — den simulerar
 fönstret oavsett klockan; (3) vid tidsrelaterade testfynd: grep:a filen
 efter FLER runner-zon-getters innan fixen deklareras klar (svepet är
 billigt, klassen återkommer).
+
+### L272 [UNIVERSAL] — Dev-serverns transformerade modulvariant kan serva GAMMAL komponent efter filändring — verifiera renderat läge med computed-assertioner, aldrig pixel-titt
+
+Datum: 2026-07-12 | Källa: S64 T69-konvergenspasset (vites
+`?tsr-split=component`-variant [TanStack Routers code-split-modul]
+invaliderades inte vid filändring — browsern renderade föregående stegs
+komponent efter tre olika edits medan PLAIN-modulen servade färsk kod;
+avslöjat av computed-assertioner [ikonbredd 22 ≠ förväntade 20], fix =
+dev-server-omstart) (klass: dev-miljö/stale-moduler; TASK-5-grannskapet)
+
+En transformerad dev-modul är en EGEN cache-nyckel: att plain-modulen
+serverar färsk kod bevisar inte att den transformerade varianten
+(code-split-suffix, virtuella moduler) gör det — HMR-kedjan kan
+invalidera den ena och missa den andra, och en pixel-titt ser "rätt
+form" men fel VERSION. Disciplinen: (1) verifiera renderat läge mot
+FÖRVÄNTADE värden med computed-assertioner (getComputedStyle,
+boundingBox) efter varje iterationssteg; (2) vid divergens: hämta BÅDA
+modul-URL:erna (plain + transformerad) direkt från dev-servern — pekar
+de olika är modulgrafen stale → omstart, jaga inte browserns cache;
+(3) roten är per-modul-invalidering, inte server-livslängd — klassen
+angränsar TASK-5 (stale dev-server) men fixas per omstart, inte per
+flagga.

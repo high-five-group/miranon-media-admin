@@ -2653,6 +2653,20 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 64 — T69-kedjan komplett: rubrik-research → Hem-identiteten → konvergens-facit M6 → PRD TASK-9 → skivor 9.1–9.4 (2026-07-12)
+
+**Commit-range:** `b54379d` (sessionsdok-födelse) → HEAD. **Mål:** driva T69 (Mer-vyn till FK-mönstret) från grillad struktur-samsyn till byggbar spec per S63-handoffen. Ej byggplan-fas — design-session med konvergens-prototyp + spec-artefakter.
+
+- **Upptaget:** T69-kortet `paused` → `active` (`69dda80`); rubrik-research-passet käll-verifierat i FEM konvergerande källklasser (FK:s åtta referens-skärmar avlästa + Apple HIG + Material 3 + GOV.UK-klassen inkl. GOV.UK-appens öppna källkod + WCAG/SPA-konsensus via tre web-agenter med citat-krav) → alla pekar på synlig h1 per vy UTOM hemytan.
+- **Hem-identiteten (Del 2):** FK login-flödesserien (5 nya referensbilder, Marcus-fotade — "Hej Marcus!" bor i FK:s login-loading) → **Marcus-realiseringen "HELA FK-appen ÄR Mina sidor"** → chat-samsyn 1–5 kvitterad: rubrikpolicyn (synlig h1 alla vyer utom Hem; Hem-K10 orörd) · T69 B/B2 RIVNA · task-4 beslut 4 RIVET (Hem-platshållaren) · **T77 notis-centret född** (ringklockan; aldrig död ikon) · ORDLISTA "Mina sidor" omskriven obuntat (`1a9e929` — termen = hela inloggade appen, aldrig en destination).
+- **Konvergens-passet (Del 3):** T66-formen på riktiga `/mer` (underform A), M1-baslinje → 5 Marcus-varv → **M6 LÅST SOM FACIT** ("Vi kör på detta. Vi låser."): FK-måtten computed-låsta (sidmarginal 16 [dubbelkants-fynd], radhöjd 58, gap 10/32, etikett 600), chevronen bort (D-revisionen: app-bred regel), M3:s hover-variant PRÖVAD+FÖRKASTAD, ikon-krocken Users→Filter löst, tabbar-ikonparitet research-belagd (M3-listspec: leading icon on-surface-variant). Bilagor 9 dumpar; återupplivningsväg `230f322`; prototypen raderad per klausul iv (`a0e2536`, CI grönt inkl. Test+Build på återställd vy).
+- **Spec-kedjan (Del 4–5):** **TASK-9 publicerad** (PRD: Mer-vyn till FK-mönstret — ETT kort bär struktur + facit per H-beslutet; 14 UB, 10 implementationsbeslut; skarv-kvittens A: primitiv-axe + mer-e2e/axe, inga nya; 2 extra DoD-spec-grindar) · **skivorna 9.1–9.4** (NavCard M oblockad · Mer-vyn M ←9.1 · Hem-platshållaren S oberoende · QA S ready-for-human; skiv-godkännande Marcus "A"; täcknings-pass utan föräldralösa). **9.1 + 9.3 oblockade = T76-partitionens pipeline B.** L268-fallbacken (skill-avfyrning) öppet bokförd ×2; L270-återfall ×2 fångade+remedierade (`47a9ec0`, `b9fdbf8`), öppet bokförda utan ny lesson.
+- **Numrering:** ingen ADR mintad (nästa 073) · lesson **L272** [UNIVERSAL] (tsr-split-stale — transformerad dev-modul är egen cache-nyckel; computed-assertioner slår pixel-titt) · fälla 45 oförändrad · **T77 född** (nästa T78).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-12-session-64.md`](../tasks/sessions/2026-07-12-session-64.md) (Del 1–6). **EJ fas-avslut.** Kvar till S65 (HANDOFF): **T76-pilot-bygget + piloten på partitionen task-8-skivorna ∥ task-9-skivorna (9.1/9.3)**; i Marcus-takt: QA 4.6 · batch 4 (TASK-5/6, sekventiellt) · 8.1–8.3 plockbara för /work-batch.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

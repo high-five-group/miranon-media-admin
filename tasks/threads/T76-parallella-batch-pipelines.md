@@ -155,6 +155,13 @@ Grillningen 2026-07-11 tog designen till samsyn; piloten återstår.
    Marcus-takt (S63-handoff bär den).
 2. När två disjunkta plockbara kort finns: **pilot** på Marcus
    klartext-order (2×1 kort, inline-skript, förberedelse-checklistan).
+   **PARTITIONEN FINNS (S64, 2026-07-12):** task-9.1
+   (NavCard-primitiven) + task-9.3 (Hem-platshållar-borttagningen) är
+   oblockade `ready-for-agent` — pipeline B mot task-8-skivorna
+   (8.1–8.3). Kollisionsytorna per §ovan gäller: 9.1 rör
+   design-system-specen (samma yta som 8.2 — partitionera ISÄR eller
+   sekvensera), lockfilen orörd (inga nya beroenden i 9.1/9.3),
+   routeTree orörd (inga nya routes).
 3. Vid bevisad pilot — EN landning: **ADR-072** (parallell-formen +
    B-switchen färdigspecad + drain + semafor; amenderar ADR-071) ·
    `/work-batch` 1.14.0 (parallel-läge + B-flagga) · T71-radens öppna
