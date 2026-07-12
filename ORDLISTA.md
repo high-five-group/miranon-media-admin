@@ -103,12 +103,16 @@ person — omvänt mot designflödet (lead först, anmälan sedan).
 (kurs × modalitet).
 *I koden:* `Modalitet`.
 
-**Mina sidor** — den inloggade användarens personliga yta i admin-appen;
-kanonisk ingång är Mer-vyns översta rad, Hem-vyns Mina sidor-knapp är genväg
-till samma mål (grillad samsyn 2026-07-07; hemvist-beslutet bokförs i
-Mer-PRD:n).
-*Undvik:* Mina uppgifter (FK-referensens term), profil, konto.
-*I koden:* `/mer/mina-sidor` (v1 byggs minimal i Mer-PRD:n).
+**Mina sidor** — HELA den inloggade admin-appen som begrepp: appens
+motsvarighet till "Mina sidor" på en myndighetswebb (FK-analogin —
+FK-appen ÄR webbens Mina sidor). Allt bakom inloggningen är användarens
+personliga yta; termen betecknar appen som helhet, aldrig en plats i den.
+Omskriven S64 2026-07-12 (Marcus-realisering, kvitterad): ersätter
+destinations-betydelsen från 2026-07-07-samsynen — T69 beslut B/B2 rivna
+öppet, se tråd-kortet.
+*Undvik:* som namn på en vy, rad eller knapp (destinationen finns inte);
+Mina uppgifter (FK-referensens term för data-undersidan), profil, konto.
+*I koden:* förekommer inte — ingen route eller komponent ska bära namnet.
 
 **Lugnt laddläge** — appens app-breda laddprincip: skärmen har sin slutliga
 geometri från första bildrutan — inget växer, hoppar eller byter plats när
