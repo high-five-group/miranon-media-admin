@@ -1,9 +1,9 @@
 ---
 owner: marcus803
-updated: 2026-07-11
+updated: 2026-07-12
 review_by: 2026-10-11
 status: stable
-lifecycle: paused
+lifecycle: active
 ---
 
 # T76 — Parallella batch-pipelines i samma repo (en orkestrator, worktrees, draft-PR)
@@ -18,7 +18,11 @@ lifecycle: paused
 > som tar upp tråden refererar hit.
 
 - **Tråd-ID:** `T76-parallella-batch-pipelines`
-- **Tillstånd:** se frontmatter `lifecycle` — parkerad ARMERAD; trigger =
+- **Tillstånd:** se frontmatter `lifecycle` — AKTIV i S65-piloten
+  (upptagen 2026-07-12: triggern avfyrad — partitionen konkret sedan S64 +
+  Marcus pilot-order/design-kvittens "A/A, max-kort 5" i delegerad
+  senior-form; pilot-designen kanonisk i S65-doket Del 2). Tidigare:
+  parkerad ARMERAD sedan 2026-07-11; trigger =
   två genuint disjunkta plockbara kort + Marcus explicita pilot-order.
   **Pilot-partition planerad (S63-vägval + Code-bedömning):** pipeline A
   = task-8-skivorna (Lugnt laddläge, 8.1→8.4 sekventiellt internt —
@@ -33,7 +37,8 @@ lifecycle: paused
   reservväg om T69 försenas: 8.2 ∥ 8.3 har disjunkta filfotavtryck
   inom samma PRD.
 - **Sessioner:** 62-parallell (grillad samsyn 2026-07-11 i tredje-stols-
-  chatt bredvid S62; kvitterad "Kvitterar" på hela kontraktet)
+  chatt bredvid S62; kvitterad "Kvitterar" på hela kontraktet) · 65
+  (pilot-bygget + skarp pilot på partitionen 8.1–8.3 ∥ 9.1/9.3)
 - **Styrande:** [ADR-071](../../docs/decisions/ADR-071-afk-batch-kontraktet.md)
   (sekventiell form, gäller tills vidare) — **pilot-ADR:n mintas vid bygget
   efter bevisad pilot** (baren 3/3 prövad i grillningen; ADR-071-precedent:

@@ -21,6 +21,34 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 65 🔄 PÅGÅENDE (2026-07-12) — T76-piloten: parallella batch-pipelines (bygge → skarp pilot 8.1–8.3 ∥ 9.1/9.3)
+
+> Scope: sessionsdok `2026-07-12-session-65.md` Del 1 (kanonisk plats):
+> T76-pilot-bygget + piloten på partitionen pipeline A = 8.1–8.3 ∥
+> pipeline B = 9.1/9.3; vid bevisad pilot EN bevis-landning (pilot-ADR +
+> /work-batch 1.14.0 + T71-revidering + T46-switch-post + termer).
+> Kadensrad per L67 — uppdateras vid varje landning.
+
+- [x] **Dok-födelse** (2026-07-12): sessionsdok fött (`5513c3d`, run
+  29189698288 grön per jobb: Lint+Audit+TypeCheck ✓, Docs link check
+  körd+grön, Test+Build docs-only-skippad by design); numrering
+  disk-verifierad (nästa ADR 073 via check-adr-count 72==72, lesson
+  L273, fälla 45, tråd T78); audit-ci PASSED; scope Marcus-kvitterat i
+  delegerad senior-form. **NÄSTA: förberedelse-läsning + pilot-design.**
+- [x] **Pilot-designen KVITTERAD (A/A, max-kort 5)** (2026-07-12, Del 2
+  kanonisk plats): förberedelse-läsningen komplett (ADR-071 +
+  /work-batch + /do-work + 5 skivkort i helhet) · worktree-mekaniken
+  EMPIRISKT verifierad (minimal-test 2 parallella agenter: distinkta
+  worktrees, egen branch, main-HEAD, backlog-CLI OK; npm ci +
+  .env-kopiering krävs per worktree) · CI-concurrency per PR verifierad
+  · Test+Build kör staging-stegen → **CI-staging-serialiseringen**
+  (PR→CI→merge-kedjan orkestrator-ägd, seriell per kort) · fasat schema
+  8.1-EXKLUSIV (mätvaliditet) → 8.3∥9.1 → 8.2∥9.3 (kollisionsytor
+  spec/demo hanteras av faserna; ordinal-avvikelsen 8.3 före 8.2 öppet
+  bokförd) · allowlist-diffen landad (16 poster, smala prefix) · T76
+  `paused → active` + index-synk. **NÄSTA: semafor-wrapper + fas 1
+  (8.1 exklusiv).**
+
 ### Session 64 ✅ AVSLUTAD (2026-07-12) — T69-kedjan: samsyn → facit M6 → PRD TASK-9 → skivor 9.1–9.4
 
 > Scope: sessionsdok `2026-07-12-session-64.md` Del 1 (kanonisk plats):
