@@ -7,6 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-12 18:09'
+updated_date: '2026-07-12 19:11'
 labels: []
 dependencies: []
 ordinal: 32000
@@ -25,3 +26,9 @@ EXAKT SYMPTOM (S66 batch 4, task-6-körningen): lokal 'npm run test:api' med enb
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Orkestrator-triage-not (S66 batch 4): syskon-dubblett till TASK-11 (task-5-agentens ursprungsfynd av samma rotorsak, med skipvakts-förslaget helpers.ts 6→7 nycklar). Detta kort adderar mall-luckan (.env.test.example). En åtgärd stänger båda — konsolidera vid triage.
+<!-- SECTION:NOTES:END -->

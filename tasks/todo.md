@@ -66,6 +66,26 @@
   med skript-nivå-grindarna claims-check + merge-tree +
   post-batch-install (pilot-före-skill). **NÄSTA: batch
   4-avfyrningen (TASK-5 → TASK-6 → TASK-10).**
+- [x] **BATCH 4 KOMPLETT: 3/3 Done first-pass** (2026-07-12, Del 3
+  kanonisk plats; run `wf_f6e2f463-866`, 6 agenter): **TASK-5**
+  webServer alltid-färsk på portlåst 5173 + test:api* serverfria
+  (`f8f48f7`→`a75af7b`; följddefekt fångad+fixad; RÖD→GRÖN med äkta
+  främmande server) · **TASK-6** vägval (b) icke-stödd plain-form
+  EFTER (a) RÖD-bevisad på fyra ben (`1f92f0a`→`babda68`;
+  148→259-transitiv-beviset; miljö-defekten rotorsakad env ≠
+  contention) · **TASK-10** fyra staging-scripts + permanent
+  preview-spec + dotenv (source-prefixet pensionerat) + runbooken
+  (`649374d`→`7963823`; L273-passet fångade äkta bundelgrind-defekt
+  [naken ref-grep vs env-coherence-konstanten]; AC 2 skarpt: login +
+  Hem-data på 4173, SW-scope 4173, 0 prod-försök). Facit: first-pass
+  6/6 runs · 0 permission-stopp · 0 ingripanden · 2 defekter
+  agent-fångade · fynden TASK-11∥TASK-12 syskonnoterade (samma
+  rotorsak: 7:e env-nyckeln) · Marcus dev-server ALDRIG rörd ·
+  falsk-röd-halten (grind mätte portens tomhet, inte agentens
+  processer) öppet bokförd + grind omskriven + cache-resume ·
+  L270-återfall ×3 fångade i stunden · post-batch-steget avklarat
+  (dotenv i huvud-ytan; ingen server-omstart krävs — utanför
+  Vite-grafen). **NÄSTA: parallell-batch 2 (8.4 ∥ 9.2).**
 
 ### Session 65 ✅ AVSLUTAD (2026-07-12) — T76-piloten bevisad: parallella batch-pipelines (design → 5/5 first-pass → ADR-073 → granskningsvåg)
 
