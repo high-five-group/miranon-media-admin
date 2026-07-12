@@ -114,6 +114,20 @@
   Marcus-signal (lessons L273+ inkl. dagens två kandidater →
   lifecycle-flip) → omstart → S66 (förbättringspasset
   parallell-formen + nästa batch).**
+- [x] **END-PASSET KÖRT — coverage i STOPPA** (2026-07-12, Del 8
+  kanonisk plats): lessons-skörd **L273–L276** [UNIVERSAL]
+  (falsifikations-passet · clock.fastForward-kedjor ·
+  manifest-merge/stale arbetsytor · byggd SW på dev-origin;
+  webServer-global + CI-staging-serialiseringen explicit förkastade —
+  kodifierade i ADR-073/skill 1.14.0; klient-side-nav → exempel i
+  L273) + BUILD-LOG S65-post + T76-synk (PILOT BEVISAD +
+  granskningsvåg kvitterad; kvar: första skarpa parallell-bruket +
+  förbättringspasset) + transcript-ref (TVÅ JSONL:er pga
+  VS Code-omstarten: 2 215 858 + 742 491 byte, wc-verifierade).
+  Numrering: nästa ADR 074 · L277 · fälla 45 · T78. Intentions-grind
+  PASSERAD (nästa = NY session S66). Coverage-rapporten i STOPPA;
+  lifecycle-flip + rad 7-slutsummeringen väntar Marcus-kvittens. Kvar
+  efter stängning: Update-klicket + omstarten (1.14.0).
 
 ### Session 64 ✅ AVSLUTAD (2026-07-12) — T69-kedjan: samsyn → facit M6 → PRD TASK-9 → skivor 9.1–9.4
 

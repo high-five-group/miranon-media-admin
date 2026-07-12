@@ -2667,6 +2667,20 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 65 — T76-piloten bevisad: parallella batch-pipelines 5/5 first-pass + ADR-073 + granskningsvåg (2026-07-12)
+
+**Commit-range:** `5513c3d` (sessionsdok-födelse) → HEAD. **Mål:** T76 från grillad samsyn till BEVISAD pilot på partitionen pipeline A = task-8-skivorna (8.1–8.3) ∥ pipeline B = task-9-skivorna (9.1/9.3), därefter bevis-landningen. Ej byggplan-fas — arbetssätts- + leverans-session.
+
+- **Pilot-designen (Del 2):** empiriska verifieringar FÖRE design (worktree-minimal-test 2 agenter · CI-concurrency per PR · Test+Build kör staging-stegen → CI-staging-serialiseringen) → kvitterad form A: fasat schema (8.1 exklusiv → 8.3∥9.1 → 8.2∥9.3), mkdir-semafor + port-pre-flight, orkestrator-ägd seriell PR→CI→merge-kedja per kort, drain-halt, max-kort 5, allowlist-diff.
+- **Batchen (Del 3–5): 5/5 kort first-pass** — 0 aborts · 0 ingripanden · 0 permission-stopp · 0 merge-konflikter · 7 defekter agent-fångade (0 till main) · parallell-vinst ≈35 % väggklocka · semafor totalt 220 s. Leveranser: 8.1 mätprotokollet (skeleton-från-första-bildrutan låst på empiri) · 8.3 persist-lagret ADR-072 (falsifikations-pass i TDD:n) · 9.1 NavCard · 8.2 Skeleton (spec-§15-kollisionen designad bort) · 9.3 Hem-platshållaren riven. Drain-vägen ALDRIG triggad (öppen gräns).
+- **Bevis-landningen (Del 6):** **ADR-073 mintad** (parallell-formen som 7 beslut inkl. B-switch färdigspecad; amenderar ADR-071) · T71-raden ÖPPET reviderad · T46-switch-posten · hub `38821c6`: /work-batch **1.14.0** + SYSTEMET.md §0-termerna (pipeline/fan-out fan-in/drain).
+- **Granskningsvågen + post-batch-fällorna (Del 7):** två fällor i människans verifieringsmiljö fångade + TASK-10-bokförda (fälla 4: stale node_modules på main efter manifest-merge + Vite-omstartskravet, `d0b17de` · fälla 5: byggd SW på dev-originet 5173 servar gammal bundle cache-first, verifierad kedja disk→transform→färsk kontext, `07b17e8`) → reparerad miljö → Marcus-kvittens alla 4 kort → **Done med final-summary** (tvåstegs-stängningen) → **8.4 + 9.2 oblockade**. Plugin 1.13.0→1.14.0 utförd (omstart = sessionsbytet, L267).
+- **Numrering:** ADR **073** mintad (nästa 074) · lessons **L273–L276** skördade [UNIVERSAL] (nästa L277) · fälla 45 oförändrad · tråd T78 nästa.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-12-session-65.md`](../tasks/sessions/2026-07-12-session-65.md) (Del 1–8). **EJ fas-avslut.** Kvar till S66 (HANDOFF): förbättringspasset parallell-formen (research-pass: merge queue-precedent, affected-graph-partitionering, SW-/dev-origin-hygien + skyddsräckes-skivor ur TASK-10-klassningen + TASK-5/6 som sekventiell batch 4) → parallell-batch 2 (8.4 ∥ 9.2); i Marcus-takt QA 4.6 · 8.5 · 9.4.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

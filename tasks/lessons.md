@@ -3773,3 +3773,84 @@ de olika är modulgrafen stale → omstart, jaga inte browserns cache;
 (3) roten är per-modul-invalidering, inte server-livslängd — klassen
 angränsar TASK-5 (stale dev-server) men fixas per omstart, inte per
 flagga.
+
+### L273 [UNIVERSAL] — Falsifikations-passet: varje skyddsräcke RÖD-bevisas två vägar — grön TDD bevisar inte att räcket kan fälla
+
+Datum: 2026-07-12 | Källa: S65 Del 4 (task-8.3 persist-lagret, T76-pilot
+agent A2: varje skyddsräcke RÖD-bevisat före implementation OCH via
+temporärt urkopplat räcke; passet fann en äkta test-svaghet — full
+omladdning omhydrerar query-cachen med DEFAULT-options, så
+override-prövning kräver klient-side-nav; rekommendationen kodifierad i
+/work-batch 1.14.0) (klass: test-disciplin/TDD; skärper rött-före-grönt)
+
+Rött-före-grönt bevisar att testet KAN bli rött — inte att det blir rött
+av RÄTT ORSAK, och inte att det förblir röd-kapabelt när implementationen
+är på plats. Falsifikations-passet: när räcket är byggt och sviten grön,
+koppla temporärt ur räcket (eller injicera exakt det fel räcket ska
+stoppa) och verifiera att EXAKT det testet fäller. Ett test som överlever
+urkopplat räcke är dekoration — passet hittar dem medan kontexten är
+färsk, till en kostnad av minuter per räcke. 8.3-beviset: test-vägen gick
+via full omladdning som återställer bootstrap-defaults — själva
+override-beteendet prövades aldrig, och bara urkopplings-varvet avslöjade
+det.
+
+### L274 [UNIVERSAL] — Playwright clock.fastForward fyrar inte timers som schemaläggs UNDER hoppet — timer-kedjor kräver flera klocksteg
+
+Datum: 2026-07-12 | Källa: S65 Del 4 (task-8.3:s persist-e2e, en av 5
+agent-fångade defekter i testbygget: ett enda fastForward-hopp missade
+timern som callbacken själv schemalade — två klocksteg krävdes) (klass:
+test-teknik/fake-timers)
+
+fastForward fyrar timers som var schemalagda när hoppet startade; en
+callback som i sin tur armerar en NY timer inom samma fönster får den
+planerad men inte avfyrad. Beteenden byggda på timer-kedjor
+(retry-backoff, poll-loopar som armerar om sig, throttle-synkar) når
+aldrig steg 2 på ett hopp — testet blir grönt utan att kedjan prövats.
+Disciplinen: stega klockan i lika många steg som kedjan har länkar och
+assertera mellanlägena; ett grönt en-hopps-test på en timer-kedja är ett
+icke-bevis.
+
+### L275 [UNIVERSAL] — Merge som ändrar dependency-manifestet lämnar andra levande arbetsytor stale — install per arbetsyta, omstart för processer med resolutions-cache
+
+Datum: 2026-07-12 | Källa: S65 Del 7 (TASK-10 fälla 4: batch-agenterna
+körde npm ci i sina worktrees men main:s node_modules fick aldrig 8.3:s
+två nya paket → dev-servern spydde Pre-transform error och browsern
+visade stale bundle; npm install i efterhand räckte INTE för den
+igångkörda Vite-processen — config-touch prövad utan effekt, hård omstart
+krävdes; `d0b17de`) (klass: dev-miljö/stale; TASK-5/L272-grannskapet)
+
+I varje flöde med flera arbetsytor (worktrees, parallella agenter,
+människans huvud-checkout) är dependency-installationen PER ARBETSYTA —
+en merge till main som ändrar package.json uppdaterar ingens
+node_modules. Disciplinen: (1) efter batch/merge med manifest-diff:
+install i varje levande arbetsyta som ska användas — orkestratorns
+post-batch-steg för människans huvud-yta (skyddsräckes-kandidat,
+TASK-10); (2) redan igångkörda processer med egen modul-resolutions-cache
+(Vite, TS-server, watchers) litar inte på disken — omstarta dem efter
+installen; (3) symptomet är lömskt: appen ser OFÖRÄNDRAD ut (gammal
+bundle renderar vidare), inte trasig.
+
+### L276 [UNIVERSAL] — En byggd service worker på ett dev-origin servar gammal bundle för evigt — dev-servern kan varken uppdatera eller avregistrera den
+
+Datum: 2026-07-12 | Källa: S65 Del 7 (TASK-10 fälla 5: preview-/QA-byggen
+på 5173 registrerade den byggda SW:n i browserprofilen; sw.ts
+NavigationRoute servar alla navigationer cache-first ur precachen →
+batchens leveranser osynliga trots frisk server och färsk kod;
+dev-serverns /sw.js = SPA-fallback 200 text/html → uppdatering
+misslyckas på MIME men avregistrering kräver 404; empiriskt
+kontrast-bevis: Playwright-MCP-profilen hade samma registrering men TOM
+precache → nätverket vann — precache-tillståndet avgör symptomet;
+`07b17e8`) (klass: dev-miljö/stale-servering; L272-klassen)
+
+Delar dev-servern origin med byggda appar (preview/QA på samma port)
+ligger SW-registreringen kvar i VARJE browserprofil som besökt bygget:
+precache-first-navigationer visar gamla appen även när servern är nere
+("appen funkar" utan server = rykande pistol), och dev-läget kan inte
+läka det — /sw.js-fallbacken svarar 200 HTML så registreringen varken
+uppdateras eller dör. Diagnos-kedjan när "ingen skillnad syns":
+(1) curl:a modulen ur dev-servern — färsk? (2) färsk browserkontext —
+renderar nytt? (3) ja+ja ⇒ SW/lagrat tillstånd i profilen: DevTools →
+Application → Clear site data. Skyddsräckes-kandidater
+(TASK-10-klassningen): byggd app på EGEN port/origin ·
+selfDestroying-SW i icke-prod-byggen · unregister-steg i QA-runbooken.
+Fällan åter-armeras vid varje nytt bygg-besök.

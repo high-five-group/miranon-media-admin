@@ -38,7 +38,13 @@ lifecycle: active
   inom samma PRD.
 - **Sessioner:** 62-parallell (grillad samsyn 2026-07-11 i tredje-stols-
   chatt bredvid S62; kvitterad "Kvitterar" på hela kontraktet) · 65
-  (pilot-bygget + skarp pilot på partitionen 8.1–8.3 ∥ 9.1/9.3)
+  (pilot-bygget + skarp pilot på partitionen 8.1–8.3 ∥ 9.1/9.3 —
+  **PILOT BEVISAD** 5/5 first-pass, ADR-073 mintad, granskningsvågen
+  Marcus-kvitterad 4 kort → Done; post-batch-fällorna 4/5 →
+  TASK-10 + L275/L276. **Kvar i tråden:** skillens första skarpa
+  parallell-bruk [kandidat: 8.4 ∥ 9.2] + förbättringspasset
+  [S65-handoffens S66-plan: merge queue-research,
+  affected-graph-partitionering, skyddsräcken ur TASK-10])
 - **Styrande:** [ADR-071](../../docs/decisions/ADR-071-afk-batch-kontraktet.md)
   (sekventiell form, gäller tills vidare) — **pilot-ADR:n mintas vid bygget
   efter bevisad pilot** (baren 3/3 prövad i grillningen; ADR-071-precedent:
