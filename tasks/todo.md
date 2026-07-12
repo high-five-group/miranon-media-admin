@@ -128,6 +128,23 @@
   (c) end-pass på signal — skörden L277+ (falsk-röd-grinden ·
   förgrenings-SHA-fyndet · L276-nyansen · lint-schema-släpet ·
   L270-frekvensen ×4) + BUILD-LOG + T76-synk + coverage.**
+- [x] **GRANSKNINGSVÅGEN KVITTERAD + END-PASSET KÖRT — coverage i
+  STOPPA** (2026-07-12, Del 5 kanonisk plats; Marcus "allt ser bra
+  ut", endast siduppdatering krävdes): **8.4 + 9.2 → Done** med
+  final-summary (`ac4ef57`; tvåstegs-stängningen, DoD 5 godkänd) →
+  **8.5 + 9.4 oblockade**. Skörd **L277–L280** [UNIVERSAL]
+  (grind-invarianten · förgrenings-SHA-regeln · CI:ns exakta
+  grind-form · exit-koden binder kedjan [skärper L270]) +
+  **L276-korrigeringen** (spec-verifierad: inte ens 404 avregistrerar;
+  W3C #204 wontfix) + 2 kandidater explicit förkastade med motiv;
+  hub-lyft L267–L280 buntas till nästa hub-sync. BUILD-LOG S66-post ·
+  **T76 STÄNGD** (kumulativ empiri 7 kort/2 batchar first-pass 100 %;
+  öppna gränser ärvs av ADR-073) · transcript-ref (2 258 589 byte/784
+  rader vid Del 5, wc-verifierade). Numrering: nästa ADR 074 · L281 ·
+  fälla 45 · tråd T78. Intentions-grind PASSERAD (nästa = NY session
+  S67). Coverage-rapporten i STOPPA; lifecycle-flip +
+  rad 7-slutsummeringen väntar Marcus-kvittens. Kvar efter stängning:
+  Update-klicket + plugin-updaten 1.15.0.
 
 ### Session 65 ✅ AVSLUTAD (2026-07-12) — T76-piloten bevisad: parallella batch-pipelines (design → 5/5 first-pass → ADR-073 → granskningsvåg)
 

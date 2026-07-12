@@ -2681,6 +2681,21 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 66 — Förbättringspasset parallell-formen: research → skyddsräcken → batch 4 (3/3) → parallell-batch 2 (2/2) → ADR-073-amendering + /work-batch 1.15.0 (2026-07-12)
+
+**Commit-range:** `208b2f7` (sessionsdok-födelse) → HEAD. **Mål:** härda parallell-formen efter bevisad pilot (S65) till branschförankrad form före andra skarpa bruket, lösa ut TASK-10-klassningen till skyddsräcken, leverera TASK-5/6, därefter parallell-batch 2 som första skarpa 1.14.0-bruket. Ej byggplan-fas — arbetssätts- + leverans-session.
+
+- **Research-passet (Del 2):** tre web-agenter med citat-krav — merge queue-klassen löser logisk integritet, inte resurs-mutex (orkestrator-serialiseringen BEKRÄFTAD; GitHub MQ dessutom otillgänglig för User-ägt repo) · manuell partitionering med worktree-isolering ÄR state of practice hos alla fyra agent-plattformarna; de mekaniska stegen är claims-check + `git merge-tree` · SW-/miljöhygien: Vites/Playwrights förstaparts-mönster täcker fälla 1–4; spec-fyndet "inte ens 404 avregistrerar en aktiv SW" (W3C #204 wontfix) korrigerar L276 och falsifierar ADR-073:s ursprungliga B-recept.
+- **Räckena (Del 2, kvittens A/A/A/A):** Test+Build-jobbet serialiserat mekaniskt (`staging-tests` + `queue: max` — komplement bakom orkestrator-kedjan; actionlint-schemat släpade → smal ignore med lift-villkor) · CORS-allowlisten utökad med preview-originet 4173 (digest-verifierad superset-skrivning mot staging-refen explicit; trippel preflight-bevis) · TASK-10 AC-formulerad.
+- **Batch 4 sekventiellt (Del 3): 3/3 Done first-pass 6/6 runs** — TASK-5 webServer alltid-färsk + serverfria test:api · TASK-6 plain-formen icke-stödd efter empiriskt RÖD-bevisad (a)-väg · TASK-10 staging-scripts + permanent preview-spec + dotenv (source-prefixet pensionerat) + runbooken. Falsk-röd-halten (grind mätte portens tomhet, inte agentens processer) öppet bokförd → grind omskriven → cache-resume. Fynden TASK-11∥12 (syskon-dubbletter, samma rotorsak) registrerade.
+- **Parallell-batch 2 (Del 4): 8.4 ∥ 9.2 first-pass 4/4 runs, 0 konflikter** — första skarpa 1.14.0-bruket; semaforen formaliserad som repo-artefakt (`scripts/staging-semaphore.sh`); S66-grindarna skarpbevisade (merge-tree 2/2 · claims-kvitton 2/2 · pr-ci-bevisformen bar båda korten). NYTT mekanik-fynd: worktree-familjens delade `origin/main`-ref → förgrenings-SHA-regeln (L278). Granskningsvågen Marcus-kvitterad ("allt ser bra ut") → 8.4 + 9.2 Done → 8.5 + 9.4 oblockade.
+- **Slutlandningen:** ADR-073 AMENDERAD (B-receptet → egen preview-port · F1-komplementet · beslut 2-skärpningen; immutabilitets-formen, 73==73) · hub `01eb164`: **/work-batch 1.15.0** (claims-check, förgrenings-SHA-regeln, semafor-artefakten, merge-tree-grinden, claims-kvittot, pr-ci-bevisformen, post-CI-bockar, reviderat B-recept, nytt delta 7 post-batch-miljösteget).
+- **Numrering:** ingen ny ADR (amendering; nästa 074) · lessons **L277–L280** skördade [UNIVERSAL] + **L276-korrigeringen** (nästa L281) · fälla 45 oförändrad · tråd T78 nästa.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-12-session-66.md`](../tasks/sessions/2026-07-12-session-66.md) (Del 1–5). **EJ fas-avslut.** Kvar efter S66: QA-korten 4.6 · 8.5 · 9.4 (`ready-for-human`, Marcus-takt) · TASK-11/12-konsolideringen (Marcus-triage) · PRD-stängningarna TASK-4/8/9 (väntar respektive QA) · hub-lyftet L267–L280 (nästa hub-sync) · plugin-update till 1.15.0 (Marcus Update-klick + omstart) · ADR-073:s öppna gränser ärvda (drain aldrig triggad · B-formen aldrig körd i drift · >2 pipelines kräver ny prövning).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

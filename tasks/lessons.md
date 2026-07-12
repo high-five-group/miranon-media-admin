@@ -3854,3 +3854,90 @@ Application → Clear site data. Skyddsräckes-kandidater
 (TASK-10-klassningen): byggd app på EGEN port/origin ·
 selfDestroying-SW i icke-prod-byggen · unregister-steg i QA-runbooken.
 Fällan åter-armeras vid varje nytt bygg-besök.
+
+[KORRIGERING S66 2026-07-12, spec-verifierad: käll-parentesens
+"avregistrering kräver 404" var FÖR MILD — enligt gällande spec
+avregistrerar INTE ENS en 404 en aktiv registrering (web.dev
+service-worker-lifecycle: non-ok status ⇒ "the new worker is thrown
+away, but the current one remains active"; W3C ServiceWorker #204 =
+wontfix). Ingen passiv självläkning existerar; sanering är alltid
+aktiv (Clear site data · getRegistrations→unregister ·
+no-op-/selfDestroying-SW på SAMMA URL). Runbooken
+docs/reference/staging-verifiering-runbook.md bär korrekt semantik;
+skyddsräckena levererade i task-10, S66.]
+
+### L277 [UNIVERSAL] — Verifierings-grindar ska mäta invarianten, inte proxyn — "tom port" är inte "agenten städade efter sig"
+
+Datum: 2026-07-12 | Källa: S66 batch 4 (falsk-röd-halten: orkestratorns
+verifierings-grind krävde tom port 5173; Marcus levande dev-server —
+startad före batchen, öppet bokförd av agenten som främmande/orörd —
+fällde batchen trots korrekt agent-beteende; grinden omskriven till
+starttids-korskoll mot agentens arbetsfönster, resume via
+workflow-cachen) (klass: orkestrering/grind-design)
+
+En mekanisk grind som mäter en PROXY (portens tillstånd, filens
+existens, processantal) i stället för INVARIANTEN (gjorde AGENTEN
+rätt: inga EGNA processer kvar) ger falsk-röd så fort omvärlden delar
+ytan — och falsk-röd i halt-first-system stoppar friskt arbete.
+Disciplinen: (1) formulera grinden som invariantens fråga INNAN du
+mekaniserar den; (2) ingår en delad yta: skilj agentens delta från
+världens tillstånd (starttider, ägar-filer, före/efter-jämförelse);
+(3) en verifierare som själv flaggar "hårda villkoret föll men
+evidensen talar emot" har rätt design — avgörandet är orkestratorns,
+öppet bokfört.
+
+### L278 [UNIVERSAL] — Worktree-familjen delar .git: origin/main-refen är delad rörlig yta — diffa mot förgrenings-SHA, aldrig mot refen
+
+Datum: 2026-07-12 | Källa: S66 parallell-batch 2 (orkestratorns
+9.2-merge flyttade origin/main mitt i 8.4-agentens körning →
+agentens claims-diff origin/main..HEAD förorenades med 9.2:s filer;
+agenten löste rätt själv: diff mot förgrenings-SHA:t) (klass:
+git/parallella worktrees; kodifierad i ADR-073-amenderingen +
+/work-batch 1.15.0)
+
+Git-worktrees delar EN .git — fetch/merge i en yta flyttar remote-refs
+för ALLA. I parallella flöden är origin/main-refen därför en rörlig
+delad yta: varje diff-, claims- eller bas-jämförelse en agent gör mot
+refen kan ändras under körningen av en annan aktörs merge.
+Disciplinen: förankra jämförelser i det SHA du förgrenade från (spara
+det vid branch-skapelsen); refen används bara för färskhets-check vid
+setup och av orkestratorns integrations-steg mot FÄRSK main.
+
+### L279 [UNIVERSAL] — Lokal grind-verifiering kräver CI:ns EXAKTA grind-form — verktygets default är ett icke-bevis, och lint-scheman släpar efter plattformsfeatures
+
+Datum: 2026-07-12 | Källa: S66 ×2 samma session (blank `shellcheck`
+lokalt grön → CI:s `--severity=style --enable=all` röd på
+SC2250/SC2292/SC2312 · actionlint 1.7.12 fäller `queue: max` som
+Actions-runtimen bevisligen accepterar — Test+Build körde grönt med
+nyckeln aktiv i samma run; schema-släp efter plattformsrelease
+2026-05-07; åtgärd: smal -ignore på exakt feltext + lift-villkor i
+kommentar) (klass: grind-disciplin; granne till L147)
+
+"Samma verktyg" är inte "samma grind": flaggor, severity, scope och
+schema-version ändrar utfallet. Disciplinen: (1) läs CI:ns exakta
+anrop (workflow-filen) och kör BYTE-SAMMA form lokalt — ladda CI:ns
+binär om versionen skiljer; (2) när en schema-baserad linter fäller
+en nyckel plattformen bevisligen kör (runtime-grönt är beviset): smal
+ignore på EXAKT feltext + daterat lift-villkor, aldrig bred
+avstängning och aldrig riven feature; (3) grind-form-avvikelser
+upptäcks billigast FÖRE push — en röd CI-cykel kostar mer än att
+öppna workflow-filen.
+
+### L280 [UNIVERSAL] — En läst exit-kod som inte BINDER kedjan är dekoration — grind-utfall är exekverings-villkor, inte trail-utskrift (skärper L270)
+
+Datum: 2026-07-12 | Källa: S66 (orkestratorns Del 3-commit gick ut
+trots markdownlint-exit=1: kommandot SKREV exit-koden med echo men
+fortsatte med `;` till git add && commit && push — grinden lästes,
+band inget; L270-klassens frekvens i sessionen ×4: därtill blank
+actionlint-form i en commit-trail + två agent-snubblingar
+[pipe/tail], alla fångade + rättade i stunden) (klass:
+grind-disciplin; skärper L270)
+
+L270 säger grinda på exit-kod, inte pipe-maskad utskrift.
+Skärpningen: att LÄSA exit-koden räcker inte — kedjans fortsättning
+måste VILLKORAS av den (`grind && nästa-steg`, aldrig
+`grind; echo $?; nästa-steg`). En trail som visar exit=1 följt av
+lyckad push är värre än ingen avläsning: den ser ut som disciplin men
+är teater. Formen: verifierings- och landnings-kedjor skrivs som
+&&-kedjor hela vägen från första grind till push; ska utfallet
+loggas, logga EFTER att kedjan brutit.

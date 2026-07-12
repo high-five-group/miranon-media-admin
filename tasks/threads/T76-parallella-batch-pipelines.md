@@ -3,7 +3,7 @@ owner: marcus803
 updated: 2026-07-12
 review_by: 2026-10-11
 status: stable
-lifecycle: active
+lifecycle: closed
 ---
 
 # T76 — Parallella batch-pipelines i samma repo (en orkestrator, worktrees, draft-PR)
@@ -187,3 +187,19 @@ Grillningen 2026-07-11 tog designen till samsyn; piloten återstår.
    fan-in* → SYSTEMET.md §0. Kvar i tråden: Marcus granskningsvåg
    (4 UI-kort) + skillens första skarpa parallell-bruk efter
    plugin-update (L267-kedjan).
+4. **TRÅDEN STÄNGD (S66, 2026-07-12) — båda kvarvarande momenten
+   levererade:** förbättringspasset (research-pass 3 web-agenter →
+   ADR-073-amenderingen: B-receptet reviderat till egen preview-port
+   [fälla 5-falsifieringen] + F1 CI-kö-komplementet + förgrenings-
+   SHA-regeln; TASK-10-skyddsräckena + runbooken; semaforen
+   formaliserad `scripts/staging-semaphore.sh`) + **första skarpa
+   parallell-bruket BEVISAT** (batch 2: 8.4 ∥ 9.2 first-pass 4/4
+   CI-runs, 0 konflikter; S66-grindarna claims-check + merge-tree +
+   claims-kvitto + pr-ci-bevisformen skarpbevisade) → `/work-batch`
+   **1.15.0** (hub `01eb164`). Kumulativ parallell-empiri S65+S66:
+   7 kort över 2 batchar, first-pass 100 %, 0 merge-konflikter,
+   0 ingripanden. ÖPPNA GRÄNSER ÄRVS AV ADR-073 (ärliga
+   gränser-sektionen + amenderingen), inte av tråden: drain aldrig
+   triggad · B-formen aldrig körd i drift · >2 pipelines kräver ny
+   prövning. Nya behov föder ny tråd; kanonisk trail S66-doket
+   Del 2–5.
