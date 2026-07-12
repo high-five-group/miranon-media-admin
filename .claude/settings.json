@@ -30,7 +30,23 @@
       "Bash(gh run view:*)",
       "Bash(gh run watch:*)",
       "Bash(npx markdownlint-cli2:*)",
-      "Bash(vale:*)"
+      "Bash(vale:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(git worktree:*)",
+      "Bash(git switch:*)",
+      "Bash(git branch:*)",
+      "Bash(npm ci)",
+      "Bash(npm install @tanstack/react-query-persist-client:*)",
+      "Bash(npm install @tanstack/query-sync-storage-persister:*)",
+      "Bash(npm run test:a11y)",
+      "Bash(cp /Users/marcus/Repon/miranon-media-admin/.env.local:*)",
+      "Bash(cp /Users/marcus/Repon/miranon-media-admin/.env.test:*)",
+      "Bash(lsof:*)",
+      "Bash(mkdir:*)",
+      "Bash(rmdir:*)"
     ]
   }
 }
