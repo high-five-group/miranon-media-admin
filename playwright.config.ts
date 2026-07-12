@@ -10,6 +10,27 @@ import { defineConfig, devices } from '@playwright/test';
 const A11Y_DEV_PORT = 5199;
 const isA11yRun = process.env.PLAYWRIGHT_A11Y_DEV_SERVER === '1';
 
+// E2E-dev-servern är PORTLÅST till 5173: staging-CORS_ALLOWED_ORIGINS tillåter
+// exakt origin http://localhost:5173 (jfr tests/api/cors.staging.test.ts) — en
+// dedikerad e2e-port à la a11y-mönstret hade CORS-blockerat appens staging-anrop
+// (samma vägg som TASK-10:s preview-port 4173). Stale-server-skyddet (task-5;
+// S61 batch 2: en 5 dagar gammal Vite-process med död fil-watcher serverade
+// GAMMAL komponentkod → falsk-rött/falsk-grönt) bärs därför av
+// reuseExistingServer: false + --strictPort på SAMMA port: ledig port → alltid
+// färsk server (modulgraf ≡ disk vid start), upptagen port → hård vägran
+// ("...is already used"), aldrig tyst återanvändning.
+const E2E_DEV_PORT = 5173;
+
+// Playwrights webServer är GLOBAL per config-fil — den startas/valideras för
+// VARJE körning oavsett projekt-urval. API-projekten (api-pure/api-setup/
+// api-staging) är serverfria: pure är rena enhetstester, setup+staging går via
+// HTTP direkt mot Supabase (inga page.goto). test:api*-scripten sätter därför
+// PLAYWRIGHT_NO_WEB_SERVER=1 (samma env-flagge-idiom som test:a11y) så
+// webServer-blocket stängs av helt — utan flaggan hade task-5:s hårda vägran
+// blockerat serverfria API-körningar varje gång 5173 bär en dev-server (och
+// före task-5 slösade de en tyst reuse/serverstart).
+const isServerFreeRun = process.env.PLAYWRIGHT_NO_WEB_SERVER === '1';
+
 /**
  * Playwright — visuella regressionstester + API-säkerhetstester + e2e auth-flow.
  *
@@ -35,7 +56,9 @@ const isA11yRun = process.env.PLAYWRIGHT_A11Y_DEV_SERVER === '1';
  * (aldrig-läcka): credentials läses från process.env, INTE hårdkodade.
  *
  * E2E-projektet använder PLAYWRIGHT_TEST_BASE_URL (CI/staging) eller default
- * localhost:5173 (dev). webServer-config startar `npm run dev` lokalt vid behov.
+ * localhost:5173 (dev; portlåst av staging-CORS — se E2E_DEV_PORT).
+ * webServer-config startar en ALLTID-FÄRSK `npm run dev` lokalt vid behov;
+ * upptagen port ⇒ hård vägran, aldrig tyst återanvändning (task-5).
  */
 export default defineConfig({
   testDir: './tests',
@@ -58,30 +81,35 @@ export default defineConfig({
     locale: 'sv-SE',
     timezoneId: 'Europe/Stockholm',
   },
-  // webServer startar `npm run dev` lokalt om PLAYWRIGHT_TEST_BASE_URL inte är satt.
-  // På CI med staging-deployment sätts PLAYWRIGHT_TEST_BASE_URL och webServer hoppas över.
-  webServer: process.env.PLAYWRIGHT_TEST_BASE_URL
-    ? undefined
-    : isA11yRun
-      ? {
-          command: `npm run dev -- --port ${A11Y_DEV_PORT} --strictPort`,
-          url: `http://localhost:${A11Y_DEV_PORT}`,
-          reuseExistingServer: false,
-          timeout: 60_000,
-        }
-      : {
-          command: 'npm run dev',
-          url: 'http://localhost:5173',
-          reuseExistingServer: !process.env.CI,
-          timeout: 60_000,
-        },
+  // webServer startar ALLTID-FÄRSK `npm run dev` lokalt om PLAYWRIGHT_TEST_BASE_URL
+  // inte är satt (task-5): reuseExistingServer: false → en upptagen 5173 ger hård
+  // vägran i stället för tyst återanvändning av potentiellt stale modulgraf —
+  // stäng egen dev-server före lokal e2e-körning (dev-ergonomi-trade-offen,
+  // öppet bokförd i task-5-kortets notes). Med PLAYWRIGHT_TEST_BASE_URL satt
+  // hoppas webServer över.
+  webServer:
+    process.env.PLAYWRIGHT_TEST_BASE_URL || isServerFreeRun
+      ? undefined
+      : isA11yRun
+        ? {
+            command: `npm run dev -- --port ${A11Y_DEV_PORT} --strictPort`,
+            url: `http://localhost:${A11Y_DEV_PORT}`,
+            reuseExistingServer: false,
+            timeout: 60_000,
+          }
+        : {
+            command: `npm run dev -- --port ${E2E_DEV_PORT} --strictPort`,
+            url: `http://localhost:${E2E_DEV_PORT}`,
+            reuseExistingServer: false,
+            timeout: 60_000,
+          },
   projects: [
     {
       name: 'setup',
       testDir: './tests/e2e',
       testMatch: /.*\.setup\.ts$/,
       use: {
-        baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173',
+        baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || `http://localhost:${E2E_DEV_PORT}`,
       },
     },
     {
@@ -117,7 +145,7 @@ export default defineConfig({
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173',
+        baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || `http://localhost:${E2E_DEV_PORT}`,
         storageState: 'playwright/.auth/user.json',
         // Kandidat 34 aldrig-läcka: maskera password-inputs i screenshots/videos/traces.
         // Playwright maskerar input[type=password] som standard → även debug-
@@ -136,7 +164,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL:
           process.env.PLAYWRIGHT_TEST_BASE_URL ||
-          (isA11yRun ? `http://localhost:${A11Y_DEV_PORT}` : 'http://localhost:5173'),
+          (isA11yRun ? `http://localhost:${A11Y_DEV_PORT}` : `http://localhost:${E2E_DEV_PORT}`),
       },
     },
     {

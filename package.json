@@ -13,9 +13,9 @@
     "lint:prose": "vale docs tasks README.md CHANGELOG.md SECURITY.md CONTRIBUTING.md ORDLISTA.md",
     "format": "biome format --write .",
     "test:visual": "playwright test --project=visual-desktop --project=visual-mobile",
-    "test:api": "playwright test --project=api-pure --project=api-staging",
-    "test:api:pure": "playwright test --project=api-pure",
-    "test:api:staging": "playwright test --project=api-staging",
+    "test:api": "PLAYWRIGHT_NO_WEB_SERVER=1 playwright test --project=api-pure --project=api-staging",
+    "test:api:pure": "PLAYWRIGHT_NO_WEB_SERVER=1 playwright test --project=api-pure",
+    "test:api:staging": "PLAYWRIGHT_NO_WEB_SERVER=1 playwright test --project=api-staging",
     "test:e2e:staging": "playwright test --project=chromium-authenticated",
     "test:a11y": "PLAYWRIGHT_A11Y_DEV_SERVER=1 playwright test --project=a11y",
     "postinstall": "git config core.hooksPath .githooks"

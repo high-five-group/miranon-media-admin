@@ -74,10 +74,10 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 | `npm run format` | `biome format --write .` |
 | `npm run test:visual` | Playwright visuella regressionstester |
 | `npm run typecheck:tests` | TypeScript-validering av tests/-mappen (separat config) |
-| `npm run test:api` | API-tester (alla — pure + staging) |
+| `npm run test:api` | API-tester (alla — pure + staging; serverfria, startar ingen dev-server) |
 | `npm run test:api:pure` | Pure unit-tester (ingen staging-env krävs) |
 | `npm run test:api:staging` | Staging-integration-tester (kräver TEST_*-secrets) |
-| `npm run test:e2e:staging` | Playwright e2e mot staging (auth-fixture) |
+| `npm run test:e2e:staging` | Playwright e2e mot staging (auth-fixture; alltid-färsk dev-server på 5173 — upptagen port ger hård vägran, stäng egen dev-server först; TASK-5) |
 | `npm run test:a11y` | Axe-runner mot `/dev/primitives` + `/dev/patterns` (alltid-färsk dev-server, ADR-045) |
 
 ## Stack

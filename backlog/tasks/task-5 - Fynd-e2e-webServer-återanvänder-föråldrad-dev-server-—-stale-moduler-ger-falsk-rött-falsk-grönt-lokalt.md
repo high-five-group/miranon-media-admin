@@ -3,10 +3,10 @@ id: TASK-5
 title: >-
   Fynd: e2e-webServer återanvänder föråldrad dev-server — stale moduler ger
   falsk-rött/falsk-grönt lokalt
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-11 09:42'
-updated_date: '2026-07-11 21:23'
+updated_date: '2026-07-12 17:30'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,15 +23,27 @@ FÖRVÄNTAT BETEENDE: e2e-körningar möter aldrig en server vars modulgraf kan 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 e2e-webServer kan inte tyst servera föråldrad modulgraf: antingen startas alltid färsk server (a11y-mönstret: dedikerad port + reuseExistingServer: false + --strictPort) eller vägras återanvändning med hårt fel — mekanismvalet + dev-ergonomi-trade-offen öppet bokförd i kortets notes
-- [ ] #2 Symptom-repron belagd stängd: med en avsiktligt föråldrad server igång på porten möter e2e-körningen aldrig gammal kod (bevisas i körning, inte antas)
-- [ ] #3 Berörda kanoniska kommandon gröna efter ändringen; dok-bäraren (CONTRIBUTING/test-dok) uppdaterad om körform eller port ändras
+- [x] #1 e2e-webServer kan inte tyst servera föråldrad modulgraf: antingen startas alltid färsk server (a11y-mönstret: dedikerad port + reuseExistingServer: false + --strictPort) eller vägras återanvändning med hårt fel — mekanismvalet + dev-ergonomi-trade-offen öppet bokförd i kortets notes
+- [x] #2 Symptom-repron belagd stängd: med en avsiktligt föråldrad server igång på porten möter e2e-körningen aldrig gammal kod (bevisas i körning, inte antas)
+- [x] #3 Berörda kanoniska kommandon gröna efter ändringen; dok-bäraren (CONTRIBUTING/test-dok) uppdaterad om körform eller port ändras
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MEKANISMVAL (AC 1): a11y-mönstrets skyddsmekanik — reuseExistingServer: false + --strictPort — men på BEFINTLIG port 5173, INTE dedikerad port: staging-CORS_ALLOWED_ORIGINS tillåter exakt origin http://localhost:5173 (tests/api/cors.staging.test.ts; samma vägg som TASK-10:s CORS-blockerade preview-port 4173), så en dedikerad e2e-port hade CORS-blockerat appens staging-anrop och krävt staging-secret-ändring utanför kortets yta. Effekten är AC-formens båda grenar i ett: ledig port → alltid färsk server (modulgraf ≡ disk vid start); upptagen port → hård vägran. Färskhets-vakt-alternativet förkastat: kräver plattformsspecifik process-introspektion (lsof/ps-etime) och har falsknegativ-yta (watchern kan dö EFTER färsk start) — svagare garanti än alltid-färsk.
+
+DEV-ERGONOMI-TRADE-OFF (AC 1): lokal e2e-körning kräver ledig 5173 — egen dev-server stängs först (annars hård vägran 'http://localhost:5173 is already used'); kostnad ~5-10 s serverstart per körning. Vinst: S61-klassen (stale modulgraf → falsk-rött/falsk-grönt) mekaniskt omöjlig. Bokförd även i playwright.config.ts-kommentaren + README Scripts-tabellen.
+
+FÖLJDÄNDRING fångad i körning: Playwrights webServer är GLOBAL per config-fil — den hårda vägran blockerade serverfria API-körningar (test:api exit 1 mot upptagen 5173, bevisat RÖTT i körning). test:api*-scripten sätter nu PLAYWRIGHT_NO_WEB_SERVER=1 (samma env-flagge-idiom som test:a11y) → webServer undefined för API-sviterna (serverfrihet verifierad: inga page.goto i tests/api; helpers-skipvakten env-baserad). Därefter GRÖNT: 290/290 körbara passerade mot upptagen 5173. CI-bieffekt: api-stegen slipper hittills onödig dev-server-boot.
+
+BEVIS I KÖRNING (AC 2): RÖD (gammal config; genuint främmande dev-server PID 10309 på 5173, startad 17:06, + därefter nyare disk via temporär src-markör): DEBUG=pw:webserver visar 'WebServer is already available' — TYST REUSE, 28 tester körde mot potentiellt stale modulgraf utan varning. GRÖN B (ny config, samma arrangemang): exit 1, 0 tester körda, 'is already used'-vägran — e2e-vägen möter ALDRIG den föråldrade servern. GRÖN A (ledig port → färsk server + full svit) bärs av CI-runnets e2e-steg (webServer-grenen körs på ren runner, PLAYWRIGHT_TEST_BASE_URL osatt där). Den främmande servern dödades ALDRIG (orörd PID/starttid efteråt); src-markören återställd byte-identiskt. Lokal full-svit-körning av test:e2e:staging var avsiktligt INTE möjlig utan att döda den främmande servern — utanför min befogenhet (endast egenstartade processer får dödas).
+<!-- SECTION:NOTES:END -->
