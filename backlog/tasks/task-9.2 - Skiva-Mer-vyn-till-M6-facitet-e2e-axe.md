@@ -1,10 +1,10 @@
 ---
 id: TASK-9.2
 title: 'Skiva: Mer-vyn till M6-facitet + e2e/axe'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-12 10:16'
-updated_date: '2026-07-12 20:12'
+updated_date: '2026-07-12 21:03'
 labels:
   - ready-for-agent
 dependencies:
@@ -36,12 +36,18 @@ Leverans (S66 parallell-batch 2, do-work): Mer-vyn NYSKRIVEN mot M6-facitet (S64
 GRANSKNINGSFÄRDIG (S66 parallell-batch 2): levererad f4a0288, PR #54, PR-CI 29206889666 + main-CI 29207092485 gröna per jobb. e2e-bevisform: pr-ci. Väntar design-review (DoD 5) — Done-flippen är Marcus. AFK-proveniens: batch 2 pipeline TASK-9.2.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · leverans c447fd2 → PR #54 → merge f4a0288 · PR-CI 29206889666 + main-CI 29207092485 gröna per jobb · CI-grön-första-pass: ja · defekter under körning: 0 · TDD: spec-först (5 facit-e2e-tester före vy-nyskrivningen; RÖD ej lokalt observerbar — 5173 upptagen, pr-ci-bevisformen; AC 5 bevarande-kontrakt utan RÖD-fas by design) · Design-review mot M6-facitet (DoD 5) GODKÄND av Marcus 2026-07-12 i granskningsvågen ('allt ser bra ut'). AFK-proveniens: S66 parallell-batch 2 pipeline B.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
+- [x] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
 - [x] #6 Facit-paritet: renderad vy computed-verifierad mot M6-måtten (sessionsdok S64 Del 3)
 <!-- DOD:END -->

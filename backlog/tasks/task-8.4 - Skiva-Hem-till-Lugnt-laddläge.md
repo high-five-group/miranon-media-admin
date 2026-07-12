@@ -1,10 +1,10 @@
 ---
 id: TASK-8.4
 title: 'Skiva: Hem till Lugnt laddläge'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-11 22:55'
-updated_date: '2026-07-12 20:29'
+updated_date: '2026-07-12 21:03'
 labels:
   - ready-for-agent
 dependencies:
@@ -42,7 +42,7 @@ GRANSKNINGSFÄRDIG (S66 parallell-batch 2): levererad 2946b29c3bdc1351064fa18f4a
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review: Marcus-granskning i webbläsaren av laddläget godkänd (per skiva med UI-yta; L220/L269)
+- [x] #5 Design-review: Marcus-granskning i webbläsaren av laddläget godkänd (per skiva med UI-yta; L220/L269)
 - [x] #6 Layout-skift ≈ 0 bevisad med renderad mätning före granskning (L245/L246; task-4.5-bevismönstret)
 <!-- DOD:END -->
 
@@ -60,3 +60,9 @@ Konsekvens för bygget (8.2/8.4): skeletonen renderas omedelbart vid isPending �
 Metod + råvärden: task-8.1 implementation notes.
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · leverans 9ffdd5dc → PR #55 → merge 2946b29c · PR-CI 29207342730 + main-CI 29207597879 gröna per jobb · CI-grön-första-pass: ja · defekter under körning: 0 · TDD: spec-först (7 e2e-tester skrivna före implementation; RÖD ej lokalt observerbar — 5173 upptagen, pr-ci-bevisformen; GRÖN delta-verifierad i PR-CI-jobbloggen +7) · Design-review (DoD 5) GODKÄND av Marcus 2026-07-12 i granskningsvågen ('allt ser bra ut'; endast siduppdatering krävdes — inga klient-deps i diffen). AFK-proveniens: S66 parallell-batch 2 pipeline A.
+<!-- SECTION:FINAL_SUMMARY:END -->
