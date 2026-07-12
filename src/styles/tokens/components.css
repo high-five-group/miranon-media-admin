@@ -70,4 +70,14 @@
   --mm-dialog-width-sm: 20rem;
   --mm-dialog-width-md: 28rem;
   --mm-dialog-width-lg: 36rem;
+
+  /* ── NavCard (task-9.1 — M6-facitet, S64 Del 3; spec §14) ──
+     Tonal kortyta; kanten är transparent i vila och blir synlig
+     först under prefers-contrast: more. Ikonen ett steg tystare
+     än etiketten (M3-listmönstret). */
+  --mm-navcard-bg: var(--mm-bg-muted);
+  --mm-navcard-text: var(--mm-text);
+  --mm-navcard-icon: var(--mm-text-secondary);
+  --mm-navcard-border: transparent;
+  --mm-navcard-border-contrast: var(--mm-border-strong);
 }

@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
+import { ClipboardList, Hourglass, Star } from 'lucide-react';
 import { useState } from 'react';
 import {
   Button,
@@ -7,6 +8,7 @@ import {
   Input,
   MessageBox,
   Modal,
+  NavCard,
   Select,
   SelectItem,
   TextArea,
@@ -194,6 +196,26 @@ function PrimitivesPage() {
             </Modal>
           </DialogTrigger>
         </div>
+      </section>
+      <section aria-labelledby="rubrik-navcard" className="mt-8 max-w-md">
+        <h2 id="rubrik-navcard" className="text-xl">
+          NavCard
+        </h2>
+        {/* Anatomin ägs av konsumenten: nav > ul > li > NavCard
+            (M6-facitet: 10 px radgap inom grupp = gap-2.5). */}
+        <nav aria-label="NavCard-demo" className="mt-4">
+          <ul className="flex flex-col gap-2.5">
+            <li>
+              <NavCard to="/mer/anmalningar" icon={ClipboardList} label="Anmälningar" />
+            </li>
+            <li>
+              <NavCard to="/mer/vantelista" icon={Hourglass} label="Väntelista" />
+            </li>
+            <li>
+              <NavCard to="/mer/intresserade" icon={Star} label="Intresserade" />
+            </li>
+          </ul>
+        </nav>
       </section>
     </main>
   );
