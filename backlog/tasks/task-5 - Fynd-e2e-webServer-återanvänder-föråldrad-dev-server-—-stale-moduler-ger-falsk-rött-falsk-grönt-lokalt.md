@@ -3,10 +3,10 @@ id: TASK-5
 title: >-
   Fynd: e2e-webServer återanvänder föråldrad dev-server — stale moduler ger
   falsk-rött/falsk-grönt lokalt
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-11 09:42'
-updated_date: '2026-07-12 17:30'
+updated_date: '2026-07-12 17:37'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,7 +25,7 @@ FÖRVÄNTAT BETEENDE: e2e-körningar möter aldrig en server vars modulgraf kan 
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -47,3 +47,9 @@ FÖLJDÄNDRING fångad i körning: Playwrights webServer är GLOBAL per config-f
 
 BEVIS I KÖRNING (AC 2): RÖD (gammal config; genuint främmande dev-server PID 10309 på 5173, startad 17:06, + därefter nyare disk via temporär src-markör): DEBUG=pw:webserver visar 'WebServer is already available' — TYST REUSE, 28 tester körde mot potentiellt stale modulgraf utan varning. GRÖN B (ny config, samma arrangemang): exit 1, 0 tester körda, 'is already used'-vägran — e2e-vägen möter ALDRIG den föråldrade servern. GRÖN A (ledig port → färsk server + full svit) bärs av CI-runnets e2e-steg (webServer-grenen körs på ren runner, PLAYWRIGHT_TEST_BASE_URL osatt där). Den främmande servern dödades ALDRIG (orörd PID/starttid efteråt); src-markören återställd byte-identiskt. Lokal full-svit-körning av test:e2e:staging var avsiktligt INTE möjlig utan att döda den främmande servern — utanför min befogenhet (endast egenstartade processer får dödas).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit f8f48f7906c9ce4df4b8d2016ff4783a5b1afa1f · CI-run 29202151402 grön per jobb (Detect changed files / Lint+Audit+TypeCheck / Docs link check / Test+Build / CI Passed or Skipped — Test+Build skarp, ej skipped) · CI-grön-första-pass: ja · defekter under körning: 1 (Playwrights GLOBALA webServer blockerade serverfria test:api-körningar vid upptagen 5173 — min hårda vägran exponerade den; fixad i samma leverans via PLAYWRIGHT_NO_WEB_SERVER-flaggan på test:api*-scripten, RÖD exit 1 → GRÖN 290/290 körbara; de 6 kvarvarande api-staging-felen = pre-existerande env-nyckel-gap, fynd-kort task-11) · TDD: config-kort utan enhetstest-yta — undantaget täckt av AC 2-beviset RÖD→GRÖN i skarp körning (RÖD gammal config: DEBUG=pw:webserver 'WebServer is already available' = tyst reuse av genuint främmande server PID 10309 med nyare disk, 28 tester utan varning; GRÖN ny config samma arrangemang: exit 1 '...is already used', 0 tester, servern orörd; färsk-start-grenen bevisad av CI-runnets e2e-steg)
+<!-- SECTION:FINAL_SUMMARY:END -->
