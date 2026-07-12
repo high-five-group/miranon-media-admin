@@ -58,7 +58,9 @@ function ProtoNavCard({ to, icon: Icon, label }: ProtoRow) {
         to={to}
         className="flex min-h-14 items-center gap-4 rounded-2xl border border-transparent bg-bg-muted p-5 contrast-more:border-border-strong"
       >
-        <Icon size={22} aria-hidden className="shrink-0" />
+        {/* [PROTOTYPE] M5: exakt tabbar-paritet — size 20 + inaktiva
+            flikens ikonfärg (text-secondary), Marcus-varv 4. */}
+        <Icon size={20} aria-hidden className="shrink-0 text-text-secondary" />
         <span className="grow font-medium">{label}</span>
       </Link>
     </li>
