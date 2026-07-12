@@ -1,4 +1,3 @@
-import { Button } from '@/components/primitives/Button';
 import { CTA } from './CTA';
 import { Greeting } from './Greeting';
 import { NastaEventCard } from './NastaEventCard';
@@ -8,7 +7,7 @@ import { ObetaldaCard } from './ObetaldaCard';
 /**
  * Hem — K10-facit-strukturen (task-4.2; designen låst S55 Del 12, referens
  * `bb31a12`): header-fri skärm-centrerad kolumn, hälsningskort ("Hej {namn}"
- * utan utropstecken + Mina sidor-platshållare) → Nästa event (primär-tint,
+ * utan utropstecken) → Nästa event (primär-tint,
  * helkorts-klickbart) bredvid Obetalda avgifter (antalet stort) →
  * helbredds-listkortet Nya anmälningar → stor helbredds-CTA sist. Vertikal
  * stapling, max två kort i rad (FK-mixen), tonala kortytor utan kantlinjer,
@@ -31,28 +30,21 @@ import { ObetaldaCard } from './ObetaldaCard';
  *   inifrån DashboardCard.
  * - Tonala ytor utan kantlinjer får synlig gräns under `prefers-contrast: more`
  *   och vid utskrift (border-transparent-mönstret — layoutstabilt).
+ *
+ * K10-facit-avvikelse (ÖPPET bokförd, task-9.3): facitet visar en
+ * "Mina sidor"-platshållarknapp i hälsningskortet (task-4 beslut 4), men den
+ * är RIVEN — Marcus-kvitterat per T69 Revision S64 punkt 3, sedan
+ * "Mina sidor" omdefinierades till hela appen (ORDLISTA) och destinationen
+ * upplöstes. Platsen är konceptuellt reserverad för notis-klockan (T77);
+ * INGEN ersättare byggs här.
  */
-
-/**
- * "Mina sidor" — VISUELL platshållare (K10-facit; ytan är klass D och byggs
- * senare). Avsiktligt utan onPress tills ytan finns; platshållar-mönstrets
- * a11y-form (soft-disable?) är T54:s öppna fråga och avgörs där.
- */
-function MinaSidorButton() {
-  return (
-    <Button intent="secondary" size="sm">
-      Mina sidor
-    </Button>
-  );
-}
 
 export function Hem() {
   return (
     <section className="flex flex-col gap-3 pt-2 lg:pt-10">
-      {/* Hälsningskortet (K10: FK:s namnkort) — h1 + Mina sidor-platshållaren. */}
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-transparent bg-bg-muted p-6 contrast-more:border-border-strong print:border-border-strong">
+      {/* Hälsningskortet (K10: FK:s namnkort) — h1; platshållar-ytan riven (task-9.3). */}
+      <div className="rounded-2xl border border-transparent bg-bg-muted p-6 contrast-more:border-border-strong print:border-border-strong">
         <Greeting />
-        <MinaSidorButton />
       </div>
 
       {/* Max två kort i rad (FK-mixen): Nästa event (primär-tint) | Obetalda. */}
