@@ -23,38 +23,40 @@ LOCK_DIR="${MM_STAGING_LOCK_DIR:-/tmp/mm-staging-semaphore.lock}"
 CMD="${1:?bruk: acquire|release|status}"
 OWNER="${2:-}"
 
-case "$CMD" in
+case "${CMD}" in
     acquire)
-        [ -n "$OWNER" ] || { echo "acquire kräver <ägare>" >&2; exit 64; }
+        [[ -n "${OWNER}" ]] || { echo "acquire kräver <ägare>" >&2; exit 64; }
         TIMEOUT="${3:-1800}"
         WAITED=0
-        while ! mkdir "$LOCK_DIR" 2>/dev/null; do
-            HOLDER="$(cat "$LOCK_DIR/owner" 2>/dev/null || echo 'okänd')"
-            if [ "$WAITED" -ge "$TIMEOUT" ]; then
+        while ! mkdir "${LOCK_DIR}" 2>/dev/null; do
+            HOLDER="$(cat "${LOCK_DIR}/owner" 2>/dev/null || echo 'okänd')"
+            if [[ "${WAITED}" -ge "${TIMEOUT}" ]]; then
                 echo "TIMEOUT efter ${WAITED}s — låset hålls av: ${HOLDER}" >&2
                 exit 75
             fi
             sleep 10
             WAITED=$((WAITED + 10))
         done
-        echo "$OWNER" > "$LOCK_DIR/owner"
-        date +%s > "$LOCK_DIR/acquired_at"
+        echo "${OWNER}" > "${LOCK_DIR}/owner"
+        date +%s > "${LOCK_DIR}/acquired_at"
         echo "ACQUIRED av ${OWNER} (väntade ${WAITED}s)"
         ;;
     release)
-        [ -n "$OWNER" ] || { echo "release kräver <ägare>" >&2; exit 64; }
-        HOLDER="$(cat "$LOCK_DIR/owner" 2>/dev/null || echo '')"
-        if [ "$HOLDER" != "$OWNER" ]; then
+        [[ -n "${OWNER}" ]] || { echo "release kräver <ägare>" >&2; exit 64; }
+        HOLDER="$(cat "${LOCK_DIR}/owner" 2>/dev/null || echo '')"
+        if [[ "${HOLDER}" != "${OWNER}" ]]; then
             echo "VÄGRAR release: låset hålls av '${HOLDER}', inte '${OWNER}'" >&2
             exit 74
         fi
-        rm -f "$LOCK_DIR/owner" "$LOCK_DIR/acquired_at"
-        rmdir "$LOCK_DIR"
+        rm -f "${LOCK_DIR}/owner" "${LOCK_DIR}/acquired_at"
+        rmdir "${LOCK_DIR}"
         echo "RELEASED av ${OWNER}"
         ;;
     status)
-        if [ -d "$LOCK_DIR" ]; then
-            echo "LÅST av $(cat "$LOCK_DIR/owner" 2>/dev/null || echo 'okänd') sedan epoch $(cat "$LOCK_DIR/acquired_at" 2>/dev/null || echo '?')"
+        if [[ -d "${LOCK_DIR}" ]]; then
+            HOLDER="$(cat "${LOCK_DIR}/owner" 2>/dev/null || echo 'okänd')"
+            SINCE="$(cat "${LOCK_DIR}/acquired_at" 2>/dev/null || echo '?')"
+            echo "LÅST av ${HOLDER} sedan epoch ${SINCE}"
         else
             echo "LEDIGT"
         fi
