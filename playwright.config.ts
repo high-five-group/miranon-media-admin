@@ -46,6 +46,19 @@ const isServerFreeRun = process.env.PLAYWRIGHT_NO_WEB_SERVER === '1';
  *                   även i CI per ADR-045 beslut 1, routerna är DEV-guardade ADR-044)
  *   - visual-*    → tests/visual/ (skärmdumpar, Fas 3+)
  *
+ * KÖRFORM (TASK-6): plain `npx playwright test` (alla projekt i EN körning)
+ * är ICKE-STÖDD. api-staging och chromium-authenticated saknar inbördes
+ * dependency → de kör samtidigt, och e2e-flödena skriver mot samma
+ * staging-poster som api-testernas idempotens-/409-/ordnings-assertions
+ * läser → 6 deterministiska kollisioner (create-registration 89/129/160,
+ * get-registrations väg D 86/132, update-record 92). Felklassa dem inte
+ * som regressioner — kör de kanoniska sekventiella kommandona
+ * (CONTRIBUTING.md § Testkörning). Projekt-dependencies som fix
+ * förkastades: --project drar in dependencies transitivt → CI:s e2e-steg
+ * hade svällt 148→259 tester och fallit på saknade admin-secrets
+ * (beviskedjan i TASK-6-kortets notes; jfr ADR-073 beslut 3+4 som löser
+ * kollisionsklassen utanför config-filen).
+ *
  * api-staging-projektet kräver TEST_SUPABASE_URL satt. Saknas den →
  * testerna skippas i runtime (se tests/api/helpers.ts). api-pure körs
  * alltid utan staging-koppling.

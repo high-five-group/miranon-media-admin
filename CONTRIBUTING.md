@@ -33,6 +33,41 @@ sessioner refereras sessionens transcript-JSONL in-place
 BUILD-LOG och lessons är de durabla artefakterna (ADR-069; Session 58). Källa:
 `marcus-system`-pluginets session-end-skill, "Transcript-disciplin".
 
+## Testkörning — kanoniska former (Playwright)
+
+**VARNING: plain `npx playwright test` är en icke-stödd körform.** Den kör
+alla projekt parallellt: `api-staging` och `chromium-authenticated` saknar
+inbördes ordning och delar staging-data — e2e-flödena (`mark-paid`,
+`event-add-registration` m.fl.) skriver mot samma poster som api-testernas
+idempotens-/409-/ordnings-assertions läser. Utfallet är 6 deterministiska
+kollisioner (create-registration 89/129/160, get-registrations väg D 86/132,
+update-record 92) — felklassa dem INTE som regressioner (TASK-6). Kör de
+kanoniska kommandona separat:
+
+| Kommando | Svit |
+|---|---|
+| `npm run test:api` | API-tester pure + staging (serverfritt) |
+| `npm run test:api:pure` | Enbart pure-API |
+| `npm run test:api:staging` | Enbart staging-API (CI-formen) |
+| `npm run test:e2e:staging` | E2E mot staging (kräver ledig port 5173) |
+| `npm run test:a11y` | Axe-runner (egen dev-server på port 5199) |
+| `npm run test:visual` | Visuella regressionstester |
+
+Not: samma 6 fall blir röda även av en helt annan orsak — saknad
+`TEST_REGISTRATION_RECORD_ID` i den lokala miljön (felmeddelandet säger det
+explicit; seed-ankaret är dokumenterat i `docs/BUILD-LOG.md`, sök på
+variabelnamnet). Skilj symptomen åt innan felklassning.
+
+CI drabbas aldrig av kollisionen — den kör projekten som separata
+sekventiella steg (`.github/workflows/ci.yml` Test+Build); samma
+kollisionsklass hanteras mellan CI-runs av `concurrency: staging-tests` och
+mellan parallella lokala pipelines av staging-semaforen
+([ADR-073](docs/decisions/ADR-073-parallella-batch-pipelines.md) beslut 3+4).
+Serialisering via projekt-dependencies i `playwright.config.ts` förkastades:
+`--project`-anrop drar in dependencies transitivt, vilket hade svällt CI:s
+e2e-stegs testmängd (bevisat 148 → 259 tester) och fällt steget på saknade
+admin-secrets — TASK-6-kortets notes bär hela beviskedjan.
+
 ## Definition of Done — per session
 
 - [ ] `npm run test:api` grön (eller motsvarande relevant test-svit)
