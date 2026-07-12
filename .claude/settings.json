@@ -47,7 +47,12 @@
       "Bash(lsof:*)",
       "Bash(mkdir:*)",
       "Bash(rmdir:*)",
-      "Bash(bash /private/tmp/claude-501/-Users-marcus-Repon-miranon-media-admin/0d2c629e-ae75-4c0c-a0cf-02c3012703af/scratchpad/t76-lock.sh:*)"
+      "Bash(bash /private/tmp/claude-501/-Users-marcus-Repon-miranon-media-admin/0d2c629e-ae75-4c0c-a0cf-02c3012703af/scratchpad/t76-lock.sh:*)",
+      "Bash(npm install dotenv:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run preview:*)",
+      "Bash(npm run dev:*)",
+      "Bash(kill:*)"
     ]
   }
 }
