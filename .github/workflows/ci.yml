@@ -131,9 +131,14 @@ jobs:
         # Script verifierar binär-checksums; teknisk motsvarighet till SHA-pin.
         # Migration-väg: vid framtida rhysd/actionlint-action-release, byt
         # till SHA-pinnad action per ADR-029 §6.
+        # -ignore (smal, exakt feltext): actionlint 1.7.12:s schema släpar
+        # efter Actions-featuren `queue:` i concurrency (plattforms-release
+        # 2026-05-07; runtimen accepterar nyckeln — Test+Build grön i run
+        # 29200533939 med den aktiv). LIFT: ta bort flaggan när actionlint
+        # stödjer nyckeln (regexen blir då vestigial, matchar inget).
         run: |
           bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          ./actionlint -color
+          ./actionlint -color -ignore 'unexpected key "queue" for "concurrency" section'
 
       - name: Check YAML syntax (yamllint)
         # Per ADR-030 § Del 1.4: yamllint kompletterar actionlint (yamllint =
