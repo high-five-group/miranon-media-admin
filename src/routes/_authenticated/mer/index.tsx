@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { CalendarPlus, ClipboardList, Hourglass, LogOut, Mail, Star, Users } from 'lucide-react';
+import { CalendarPlus, ClipboardList, Filter, Hourglass, LogOut, Mail, Star } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/primitives/Button';
@@ -41,10 +41,12 @@ const listRows: ProtoRow[] = [
   { to: '/mer/maillogg', icon: Mail, label: 'Maillogg' },
 ];
 
-// Grupp 2: handling före verktyg (samsyn C).
+// Grupp 2: handling före verktyg (samsyn C). [PROTOTYPE] M6: Bygg
+// segment Users→Filter — Users är Personer-flikens ikon (krock funnen
+// i detalj-svepet); segment byggs med filter (domänbegrepps-mappning).
 const actionRows: ProtoRow[] = [
   { to: '/mer/skapa-event', icon: CalendarPlus, label: 'Skapa nytt event' },
-  { to: '/mer/segment', icon: Users, label: 'Bygg segment' },
+  { to: '/mer/segment', icon: Filter, label: 'Bygg segment' },
 ];
 
 // [PROTOTYPE] Kort-raden — FK IMG_1541-formen: hel radyta klickbar,
@@ -56,12 +58,14 @@ function ProtoNavCard({ to, icon: Icon, label }: ProtoRow) {
     <li>
       <Link
         to={to}
-        className="flex min-h-14 items-center gap-4 rounded-2xl border border-transparent bg-bg-muted p-5 contrast-more:border-border-strong"
+        className="flex min-h-12 items-center gap-4 rounded-2xl border border-transparent bg-bg-muted px-4 py-4 contrast-more:border-border-strong"
       >
         {/* [PROTOTYPE] M5: exakt tabbar-paritet — size 20 + inaktiva
             flikens ikonfärg (text-secondary), Marcus-varv 4. */}
         <Icon size={20} aria-hidden className="shrink-0 text-text-secondary" />
-        <span className="grow font-medium">{label}</span>
+        {/* [PROTOTYPE] M6: semibold per FK-vikten + anmälningsradernas
+            namn-precedent (16/600). */}
+        <span className="grow font-semibold">{label}</span>
       </Link>
     </li>
   );
@@ -70,17 +74,21 @@ function ProtoNavCard({ to, icon: Icon, label }: ProtoRow) {
 function MerPage() {
   const { logout } = useAuth();
 
+  // [PROTOTYPE] M6-måtten (FK IMG_1541 + Hem-paritet): ingen egen
+  // sidopadding (skalets 16 px = FK:s marginal; p-4 gav dubbel kant),
+  // pt-2 lg:pt-10 som Hem, gap-8 rubrik→innehåll (FK ~38 pt), gap-2.5
+  // inom grupp (FK ~10 pt), px-4 py-4 på raden (FK ~51 pt radhöjd).
   return (
-    <section className="flex flex-col gap-6 p-4">
+    <section className="flex flex-col gap-8 pt-2 lg:pt-10">
       {/* Synlig h1 per rubrikpolicyn (Revision S64 punkt 1) — FK large-title-läget. */}
       <h1 className="font-semibold text-3xl">Mer</h1>
       <nav aria-label="Mer-sidor" className="flex flex-col gap-8">
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-2.5">
           {listRows.map((row) => (
             <ProtoNavCard key={row.to} {...row} />
           ))}
         </ul>
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-2.5">
           {actionRows.map((row) => (
             <ProtoNavCard key={row.to} {...row} />
           ))}
