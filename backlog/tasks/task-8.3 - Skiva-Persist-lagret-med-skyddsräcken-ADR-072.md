@@ -1,10 +1,10 @@
 ---
 id: TASK-8.3
 title: 'Skiva: Persist-lagret med skyddsräcken (ADR-072)'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-11 22:55'
-updated_date: '2026-07-12 13:11'
+updated_date: '2026-07-12 15:31'
 labels:
   - ready-for-agent
 dependencies: []
@@ -65,12 +65,18 @@ Granskningsfärdig (ADR-071 granskningsfärdigt läge): levererad 3827d2f → PR
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Persist-lagret (ADR-072) levererat (3827d2f → PR #50 → merge 246bd8c; CI first-pass per jobb). DoD 5: Marcus browser-granskning godkänd 2026-07-12 (varm start visar senast kända data direkt; granskningsvågens kvittens). DoD 6 ÖPPEN TOLKNING: posten är UI-mätnings-formulerad via DoD-arv men skivan saknar egen UI-yta — beviset är e2e AC 1 (varm start renderar sentinel-data DIREKT med parkerade EF-svar; tests/e2e/persist-cache.staging.test.ts, 6 tester). Proveniens: T76-piloten fas 2 agent A2. Post-batch-incident bokförd separat: nya deps krävde npm install i huvud-arbetsytan (TASK-10 fälla 4).
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review: Marcus-granskning i webbläsaren av laddläget godkänd (per skiva med UI-yta; L220/L269)
-- [ ] #6 Layout-skift ≈ 0 bevisad med renderad mätning före granskning (L245/L246; task-4.5-bevismönstret)
+- [x] #5 Design-review: Marcus-granskning i webbläsaren av laddläget godkänd (per skiva med UI-yta; L220/L269)
+- [x] #6 Layout-skift ≈ 0 bevisad med renderad mätning före granskning (L245/L246; task-4.5-bevismönstret)
 <!-- DOD:END -->

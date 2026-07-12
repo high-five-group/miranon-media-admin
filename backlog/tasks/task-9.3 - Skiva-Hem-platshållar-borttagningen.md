@@ -1,10 +1,10 @@
 ---
 id: TASK-9.3
 title: 'Skiva: Hem-platshållar-borttagningen'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-12 10:16'
-updated_date: '2026-07-12 13:59'
+updated_date: '2026-07-12 15:31'
 labels:
   - ready-for-agent
 dependencies: []
@@ -40,12 +40,18 @@ Granskningsfärdig (ADR-071): levererad eddf928 → PR #52 → merge e747b85; CI
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Hem-platshållaren riven (eddf928 → PR #52 → merge e747b85; CI first-pass per jobb; diff exakt 3 filer). DoD 5: Marcus design-review godkänd 2026-07-12 (granskningsvågens kvittens; frånvaron även verifierad i färsk kontext under dagens SW-felsökning). DoD 6: måttidentiskt hälsningskort bokfört (h1 är höjdsättaren, 36 px > knappens 32 px) + frånvaro-assertionen tests/e2e/hem.staging.test.ts:186. K10-avvikelsen öppet bokförd i notes; platsen reserverad för notis-klockan (T77). Proveniens: T76-piloten fas 3 agent B2.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
-- [ ] #6 Facit-paritet: renderad vy computed-verifierad mot M6-måtten (sessionsdok S64 Del 3)
+- [x] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
+- [x] #6 Facit-paritet: renderad vy computed-verifierad mot M6-måtten (sessionsdok S64 Del 3)
 <!-- DOD:END -->

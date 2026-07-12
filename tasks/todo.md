@@ -97,6 +97,23 @@
   design-review). **KVAR: (a) Marcus granskningsvåg 4 kort → Done per
   kvittens · (b) Marcus plugin-update + omstart (L267) för 1.14.0 ·
   (c) end-pass med lessons-skörd på Marcus-signal.**
+- [x] **GRANSKNINGSVÅGEN KLAR: 4 kort Done** (2026-07-12, Del 7
+  kanonisk plats; Marcus-kvittens efter reparerad granskningsmiljö):
+  två post-batch-fällor i människans verifieringsmiljö fångade +
+  bokförda som TASK-10 fälla 4 (main:s node_modules stale efter
+  package.json-diff — npm install + hård Vite-omstart krävdes;
+  `d0b17de`) och fälla 5 (byggd SW på dev-originet 5173 servar gammal
+  bundle cache-first; /sw.js-HTML-200 blockerar avregistrering;
+  verifierad kedja disk→transform→färsk kontext; `07b17e8`) —
+  pilot-facitets mätvärden orörda, lärdomen är ett obligatoriskt
+  post-batch-steg (klassningsbeslut på TASK-10). Done-flippar med
+  final-summary per tvåstegs-stängningen: 8.2, 8.3 (DoD 6 öppen
+  tolkning: e2e-beviset, skivan saknar UI-yta), 9.1, 9.3 → **8.4 +
+  9.2 oblockade**. Plugin-updaten UTFÖRD (1.13.0→1.14.0, SHA 38821c6
+  verifierad) — omstarten = sessionsbytet. **KVAR: end-pass på
+  Marcus-signal (lessons L273+ inkl. dagens två kandidater →
+  lifecycle-flip) → omstart → S66 (förbättringspasset
+  parallell-formen + nästa batch).**
 
 ### Session 64 ✅ AVSLUTAD (2026-07-12) — T69-kedjan: samsyn → facit M6 → PRD TASK-9 → skivor 9.1–9.4
 

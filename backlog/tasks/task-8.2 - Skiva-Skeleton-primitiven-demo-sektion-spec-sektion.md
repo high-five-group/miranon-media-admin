@@ -1,10 +1,10 @@
 ---
 id: TASK-8.2
 title: 'Skiva: Skeleton-primitiven + demo-sektion + spec-sektion'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-11 22:54'
-updated_date: '2026-07-12 13:59'
+updated_date: '2026-07-12 15:31'
 labels:
   - ready-for-agent
 dependencies: []
@@ -62,12 +62,18 @@ Granskningsfärdig (ADR-071): levererad cac0b16 → PR #51 → merge 221e5f9; CI
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Skeleton-primitiven levererad (cac0b16 → PR #51 → merge 221e5f9; CI first-pass per jobb: PR-run 29194848689 + main-run 29195013238). DoD 5: Marcus design-review i browsern godkänd 2026-07-12 (granskningsvågens kvittens, alla 4 batch-korten). DoD 6: slutdimensioner computed-bevisade (24/36/72 px lh-baserade, se notes) + 15 computed-assertioner i tests/a11y/Skeleton.spec.ts. Proveniens: T76-piloten fas 3 agent A3; spec-paragraf-15-kollisionen designad bort enligt plan.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review: Marcus-granskning i webbläsaren av laddläget godkänd (per skiva med UI-yta; L220/L269)
-- [ ] #6 Layout-skift ≈ 0 bevisad med renderad mätning före granskning (L245/L246; task-4.5-bevismönstret)
+- [x] #5 Design-review: Marcus-granskning i webbläsaren av laddläget godkänd (per skiva med UI-yta; L220/L269)
+- [x] #6 Layout-skift ≈ 0 bevisad med renderad mätning före granskning (L245/L246; task-4.5-bevismönstret)
 <!-- DOD:END -->

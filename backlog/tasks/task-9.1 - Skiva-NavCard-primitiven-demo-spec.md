@@ -1,10 +1,10 @@
 ---
 id: TASK-9.1
 title: 'Skiva: NavCard-primitiven + demo + spec'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-12 10:16'
-updated_date: '2026-07-12 13:11'
+updated_date: '2026-07-12 15:31'
 labels:
   - ready-for-agent
 dependencies: []
@@ -42,12 +42,18 @@ Granskningsfärdig (ADR-071 granskningsfärdigt läge): levererad 698fb90 → PR
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+NavCard-primitiven (M6-facitet) levererad (698fb90 → PR #49 → merge 38ab3aa; CI first-pass per jobb). DoD 5: Marcus design-review mot M6-facitet godkänd 2026-07-12 (granskningsvågens kvittens). DoD 6: facit-paritet computed-verifierad i tests/a11y/NavCard.spec.ts (radhöjd 58 px, etikettvikt 600, token-färger via resolvedTokenColor-proben). Proveniens: T76-piloten fas 2 agent B1.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
-- [ ] #6 Facit-paritet: renderad vy computed-verifierad mot M6-måtten (sessionsdok S64 Del 3)
+- [x] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
+- [x] #6 Facit-paritet: renderad vy computed-verifierad mot M6-måtten (sessionsdok S64 Del 3)
 <!-- DOD:END -->
