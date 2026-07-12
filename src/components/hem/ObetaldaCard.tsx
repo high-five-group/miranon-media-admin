@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { PaymentStatus } from '@/domain/types/Status';
 import { DashboardCard } from './DashboardCard';
 import { useDashboardRegistrations } from './useDashboardData';
@@ -34,6 +35,14 @@ export function ObetaldaCard() {
       isError={isError}
       error={error}
       loadingLabel="Laddar obetalda avgifter…"
+      // Lugnt laddläge (task-8.4): talets skelett i EXAKT samma p-form som
+      // det laddade antalet — number-blocket ärver text-3xl-typografin
+      // (1lh = talets line-box, 36 px) → identisk slutgeometri.
+      pendingBody={
+        <p className="font-semibold text-3xl">
+          <Skeleton variant="number" />
+        </p>
+      }
       errorTitle="Kunde inte hämta anmälningar"
     >
       <p className="font-semibold text-3xl">{antal}</p>

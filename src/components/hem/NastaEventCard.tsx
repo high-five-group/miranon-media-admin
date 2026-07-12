@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { CalendarDays, MapPin } from 'lucide-react';
 import { useMemo } from 'react';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import type { Event } from '@/domain/models/Event';
 import { DashboardCard } from './DashboardCard';
 import { useDashboardEvents } from './useDashboardData';
@@ -98,6 +99,25 @@ export function NastaEventCard() {
       isError={isError}
       error={error}
       loadingLabel="Laddar nästa event…"
+      // Lugnt laddläge (task-8.4): skelettet speglar den laddade kroppens
+      // EXAKTA wrapper-anatomi (samma flex/gap/typografi-klasser) → identisk
+      // slutgeometri per lh-principen (layout-skift ≈ 0). Eventmeta-raderna
+      // (namn/ort/datum i text-small) + beläggningsraden (caption + stapelns
+      // 6 px-plats). Pillen är absolut-positionerad (utanför flödet) och
+      // speglas inte.
+      pendingBody={
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1 text-small">
+            <Skeleton variant="text" className="w-3/5" />
+            <Skeleton variant="text" className="w-2/5" />
+            <Skeleton variant="text" className="w-1/2" />
+          </div>
+          <div className="flex flex-col gap-1 text-caption">
+            <Skeleton variant="text" className="w-2/5" />
+            <Skeleton variant="text" className="h-1.5 rounded-full" />
+          </div>
+        </div>
+      }
       errorTitle="Kunde inte hämta event"
     >
       {nasta == null ? (

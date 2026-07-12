@@ -12,9 +12,22 @@ import { MessageBox } from '@/components/primitives/MessageBox';
  * `aria-labelledby` (h1 = hälsningen bärs av Greeting → ren rubrik-hierarki).
  * Skalet äger card-chrome + de tre data-tillstånds-ytorna så cards-innehållet
  * bara behöver beskriva den laddade vyn:
- * - `isPending` → `role=status` + `aria-busy` (tillgängligt laddningsbesked).
+ * - `isPending` → Lugnt laddläge (task-8.4; DESIGN-SYSTEM-SPEC §15): rubriken
+ *   och chromen står redan i slutgeometri — laddytan renderar kortets
+ *   `pendingBody` (skeleton-block som speglar kommande innehåll) inuti
+ *   Roselli-anatomin: `role=status` + `aria-busy` på containern och
+ *   `loadingLabel` som sr-only-besked (aria-busy kompletteras ALLTID med
+ *   textbeskedet — få skärmläsare honorerar busy ensam; PRD TASK-8 beslut 6).
+ *   Skeleton renderas från FÖRSTA bildrutan — ingen framträdande-fördröjning
+ *   (task-8.1:s mätlåsta formbeslut); 'Laddar…'-textraden och spinners utgick
+ *   (PRD-beslut 9, medvetet över FK-golvet).
  * - `isError`   → `role=alert` via MessageBox (samma fel-mönster som 6c-vyerna).
  * - laddat      → `children`.
+ *
+ * Laddcontainern är `flex flex-col` (ingen marginal-kollaps genom wrappern —
+ * pendingBodyns egna marginaler beter sig exakt som children-nodens i
+ * sektionens flex-flöde) så layout-skift ≈ 0 håller by construction när
+ * pendingBody speglar den laddade kroppens yttre geometri.
  *
  * `relative` är bärytan för helkorts-länkar (stretched link `after:inset-0`,
  * NastaEventCard AC #2). Kantlinje-lösa ytor får synlig gräns under
@@ -42,6 +55,7 @@ export function DashboardCard({
   isError,
   error,
   loadingLabel,
+  pendingBody,
   errorTitle,
   children,
 }: {
@@ -55,7 +69,11 @@ export function DashboardCard({
   isPending: boolean;
   isError: boolean;
   error: unknown;
+  /** Sr-only-laddbeskedet i laddcontainern (Roselli: busy + textbesked). */
   loadingLabel: string;
+  /** Kortets skeleton-kropp (Lugnt laddläge §15): block som speglar det
+      kommande innehållets slutgeometri — layout-skift ≈ 0 är grindkravet. */
+  pendingBody: ReactNode;
   errorTitle: string;
   children: ReactNode;
 }) {
@@ -80,9 +98,13 @@ export function DashboardCard({
       </h2>
 
       {isPending ? (
-        <p role="status" aria-live="polite" aria-busy="true" className="text-small text-text-muted">
-          {loadingLabel}
-        </p>
+        /* Lugnt laddläge (§15): status-live-regionen bär det tillgängliga
+           laddbeskedet (sr-only) och aria-busy; skeleton-blocken i
+           pendingBody är dekorativa (aria-hidden inuti primitiven). */
+        <div role="status" aria-busy="true" className="flex min-w-0 flex-col">
+          <span className="sr-only">{loadingLabel}</span>
+          {pendingBody}
+        </div>
       ) : isError ? (
         <MessageBox intent="error" title={errorTitle}>
           {error instanceof Error ? error.message : 'Okänt fel.'}
