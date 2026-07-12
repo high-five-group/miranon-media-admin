@@ -18,8 +18,8 @@ sessionsdok `tasks/sessions/2026-07-05-session-52.md` Del 3; kortet
 | IMG_1543 | Utbetalningar: månadsgrupprubriker + outlined statusbadge |
 | IMG_1544 | Wizard: Välj barn (tile-val) |
 | IMG_1545 | Wizard: Sysselsättning (chips + Fortsätt/Avbryt) |
-| fk-login | Login: helskärms-hero + FK-logga + "Logga in med" BankID + Om appen-länk |
-| fk-bankid-vaxlingen | App-växlingen FK → BankID (grön loading-skärm ∥ BankID-splash) |
-| fk-loading-hamtar | Inloggnings-loading steg 1: "Hämtar dina uppgifter…" (grön helskärm) |
-| fk-loading-halsningen | Inloggnings-loading steg 2: **"Hej Marcus!"** — hälsningen bor i login-flödet, inte som Hem-rubrik (underlag till T69 rubrik-grillningens Hem-identitets-fork) |
-| fk-om-appen | Om appen: undersida med centrerad titel + bakåt, versions-rad + Läs mer-rader med extern-länk-ikon |
+| `fk-login.jpeg` | Login: helskärms-hero + FK-logga + "Logga in med" BankID + Om appen-länk |
+| `fk-bankid-vaxlingen.jpeg` | App-växlingen FK → BankID (grön loading-skärm ∥ BankID-splash) |
+| `fk-loading-hamtar.jpeg` | Inloggnings-loading steg 1: "Hämtar dina uppgifter…" (grön helskärm) |
+| `fk-loading-halsningen.jpeg` | Inloggnings-loading steg 2: **"Hej Marcus!"** — hälsningen bor i login-flödet, inte som Hem-rubrik (underlag till T69 rubrik-grillningens Hem-identitets-fork) |
+| `fk-om-appen.jpeg` | Om appen: undersida med centrerad titel + bakåt, versions-rad + Läs mer-rader med extern-länk-ikon |
