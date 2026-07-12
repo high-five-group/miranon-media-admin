@@ -59,6 +59,19 @@
   bokförd; draft skippas fas 2/3) → main-CI grön (29191469255) →
   Done + final-summary. **TASK-10** fynd-kort registrerat
   (orkestrator-serialiserat). **NÄSTA: fas 2 — 8.3 ∥ 9.1.**
+- [x] **FAS 2 LEVERERAD: 8.3 ∥ 9.1 PARALLELLT, båda first-pass →
+  GRANSKNINGSFÄRDIGA** (2026-07-12, Del 4 kanonisk plats):
+  parallell-beviset levererat — A2 ~49 min ∥ B1 ~30 min (väggklocka =
+  längsta kortet), semafor höll (220 s total väntan, 0 kollisioner,
+  0 kvarlämnade servrar), diff-scope 0 överlapp. **8.3 persist**
+  (`3827d2f` → PR #50 → `246bd8c`; ADR-072 komplett; TDD med
+  falsifikations-pass — varje räcke RÖD-bevisat 2 vägar; 5 defekter
+  fångade internt) · **9.1 NavCard** (`698fb90` → PR #49 → `38ab3aa`;
+  10 RÖD → 23/23 GRÖN + TS2322-typbeviset; 0 defekter; spec-§14).
+  Mekanik-fynd: webServer GLOBAL (allt playwright i låset) ·
+  worktree-remove före branch-delete · 8.2 skrivs som spec-§15
+  (konflikt designad bort). DoD 3 + granskningsfärdig-kommentar på
+  båda (Done-flipp = Marcus). **NÄSTA: fas 3 — 8.2 ∥ 9.3.**
 
 ### Session 64 ✅ AVSLUTAD (2026-07-12) — T69-kedjan: samsyn → facit M6 → PRD TASK-9 → skivor 9.1–9.4
 
