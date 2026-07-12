@@ -52,6 +52,13 @@ kanoniska kommandona separat:
 | `npm run test:e2e:staging` | E2E mot staging (kräver ledig port 5173) |
 | `npm run test:a11y` | Axe-runner (egen dev-server på port 5199) |
 | `npm run test:visual` | Visuella regressionstester |
+| `npm run test:preview:staging` | Byggt staging-bygge på preview-porten 4173: bygge → bundelgrind → login/Hem-bevis (TASK-10) |
+
+Lokal browser-verifiering/QA mot staging via byggt bygge har fem kända
+fällor (fel-mode-bundle, CORS-blockerad port, saknade test-env-vars,
+stale node_modules efter merge, service worker på dev-originet) — recept
+och sanering i
+[`docs/reference/staging-verifiering-runbook.md`](docs/reference/staging-verifiering-runbook.md).
 
 Not: samma 6 fall blir röda även av en helt annan orsak — saknad
 `TEST_REGISTRATION_RECORD_ID` i den lokala miljön (felmeddelandet säger det

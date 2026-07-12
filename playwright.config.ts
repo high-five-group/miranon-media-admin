@@ -1,4 +1,21 @@
+import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+
+// Ladda .env.test för LOKALA körningar (task-10 AC 3, officiella Playwright-
+// mönstret playwright.dev/docs/test-parameterize). Tre verifierade egenskaper
+// (körningsbevisade 2026-07-12) gör detta CI-säkert:
+//   1. Saknad fil felar MJUKT (result.error = ENOENT, inget throw) — i CI
+//      finns ingen .env.test och config-laddningen fortsätter oförändrad.
+//   2. dotenv skriver ALDRIG över befintliga process.env-nycklar — CI:s
+//      workflow-env (secrets) vinner alltid över filen.
+//   3. Lokalt ersätter detta det gamla source-prefixet
+//      (`set -a; source .env.test; set +a;`) — playwright-anrop fungerar
+//      direkt. quiet: true håller testutdata ren (v17 loggar annars en
+//      injektions-rad per körning).
+// path förankras vid config-filen (import.meta.dirname, Node >= 20.11 —
+// .nvmrc-golvet uppfyller det) så cwd-varianter inte tyst missar filen.
+dotenv.config({ path: path.resolve(import.meta.dirname, '.env.test'), quiet: true });
 
 // A11y-runnern kör mot en ALLTID-FÄRSK dev-server på dedikerad port
 // (Session 15 K2-fynd: främmande server på 5173 återanvändes tyst av
@@ -30,6 +47,19 @@ const E2E_DEV_PORT = 5173;
 // blockerat serverfria API-körningar varje gång 5173 bär en dev-server (och
 // före task-5 slösade de en tyst reuse/serverstart).
 const isServerFreeRun = process.env.PLAYWRIGHT_NO_WEB_SERVER === '1';
+
+// Staging-preview-verifieringen (task-10): kör mot ett BYGGT staging-bygge
+// servat av `vite preview` på EGEN port/origin 4173 — aldrig dev-originet 5173
+// (fälla 5-klassen: en byggd app servad på dev-originet registrerar sin SW där
+// och servar gammal bundle cache-first för evigt; origin-separationen är
+// skyddet). 4173 är CORS-tillåten i staging-EF:ernas allowlist sedan
+// S66-enabling-steget. Samma env-flagge-idiom som a11y/serverfritt ovan; utan
+// flaggan existerar varken projektet eller webServer-grenen → plain-körningar
+// (redan icke-stödda, TASK-6) och CI är opåverkade. Kanonisk kedja:
+// `npm run test:preview:staging` (build:staging → bundelgrind → denna svit);
+// runbook: docs/reference/staging-verifiering-runbook.md.
+const PREVIEW_PORT = 4173;
+const isPreviewRun = process.env.PLAYWRIGHT_STAGING_PREVIEW === '1';
 
 /**
  * Playwright — visuella regressionstester + API-säkerhetstester + e2e auth-flow.
@@ -103,19 +133,30 @@ export default defineConfig({
   webServer:
     process.env.PLAYWRIGHT_TEST_BASE_URL || isServerFreeRun
       ? undefined
-      : isA11yRun
+      : isPreviewRun
         ? {
-            command: `npm run dev -- --port ${A11Y_DEV_PORT} --strictPort`,
-            url: `http://localhost:${A11Y_DEV_PORT}`,
+            // Servar befintlig dist/ statiskt — bygget + bundelgrinden körs
+            // FÖRE i test:preview:staging-kedjan (aldrig stale/fel-mode-
+            // bundle, L272-klassen). --strictPort i scriptet: upptagen 4173
+            // ⇒ hård vägran, aldrig tyst port-byte.
+            command: 'npm run preview:staging',
+            url: `http://localhost:${PREVIEW_PORT}`,
             reuseExistingServer: false,
             timeout: 60_000,
           }
-        : {
-            command: `npm run dev -- --port ${E2E_DEV_PORT} --strictPort`,
-            url: `http://localhost:${E2E_DEV_PORT}`,
-            reuseExistingServer: false,
-            timeout: 60_000,
-          },
+        : isA11yRun
+          ? {
+              command: `npm run dev -- --port ${A11Y_DEV_PORT} --strictPort`,
+              url: `http://localhost:${A11Y_DEV_PORT}`,
+              reuseExistingServer: false,
+              timeout: 60_000,
+            }
+          : {
+              command: `npm run dev -- --port ${E2E_DEV_PORT} --strictPort`,
+              url: `http://localhost:${E2E_DEV_PORT}`,
+              reuseExistingServer: false,
+              timeout: 60_000,
+            },
   projects: [
     {
       name: 'setup',
@@ -190,5 +231,21 @@ export default defineConfig({
       testDir: './tests/visual',
       use: { viewport: { width: 375, height: 812 }, colorScheme: 'light' },
     },
+    // Villkorat (task-10): existerar ENDAST under PLAYWRIGHT_STAGING_PREVIEW=1
+    // så att plain `npx playwright test` och CI aldrig drar igång preview-
+    // flödet — kanoniska anropet är `npm run test:preview:staging`. Ingen
+    // storageState: login-flödet i färsk kontext ÄR en del av beviset.
+    ...(isPreviewRun
+      ? [
+          {
+            name: 'staging-preview',
+            testDir: './tests/preview',
+            use: {
+              ...devices['Desktop Chrome'],
+              baseURL: `http://localhost:${PREVIEW_PORT}`,
+            },
+          },
+        ]
+      : []),
   ],
 });

@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsr generate && tsc -b && vite build",
+    "build:staging": "npm run build -- --mode staging",
     "preview": "vite preview",
+    "preview:staging": "vite preview --port 4173 --strictPort",
+    "verify:staging-bundle": "bash scripts/check-staging-bundle.sh",
     "typecheck": "tsr generate && tsc -b --noEmit",
     "typecheck:tests": "tsc --noEmit -p tsconfig.tests.json",
     "lint": "biome check .",
@@ -17,6 +20,7 @@
     "test:api:pure": "PLAYWRIGHT_NO_WEB_SERVER=1 playwright test --project=api-pure",
     "test:api:staging": "PLAYWRIGHT_NO_WEB_SERVER=1 playwright test --project=api-staging",
     "test:e2e:staging": "playwright test --project=chromium-authenticated",
+    "test:preview:staging": "npm run build:staging && npm run verify:staging-bundle && PLAYWRIGHT_STAGING_PREVIEW=1 playwright test --project=staging-preview",
     "test:a11y": "PLAYWRIGHT_A11Y_DEV_SERVER=1 playwright test --project=a11y",
     "postinstall": "git config core.hooksPath .githooks"
   },
@@ -37,6 +41,7 @@
     "@tanstack/router-plugin": "1.167.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
     "lucide-react": "^1.14.0",
     "motion": "^12.38.0",
     "nuqs": "^2.8.9",
