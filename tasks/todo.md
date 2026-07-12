@@ -21,6 +21,52 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 66 🟢 PÅGÅR (2026-07-12) — Förbättringspasset parallell-formen → batch 4 → parallell-batch 2 (8.4 ∥ 9.2)
+
+> Scope: sessionsdok `2026-07-12-session-66.md` Del 1 (kanonisk plats):
+> research-pass (merge queue · partitionering · SW-/miljöhygien) →
+> skyddsräcken ur TASK-10 → batch 4 (5→6→10 sekventiellt) →
+> parallell-batch 2 (8.4 ∥ 9.2, första skarpa 1.14.0-bruket);
+> i Marcus-takt QA 4.6 · 8.5 · 9.4. Kadensrad per L67 — uppdateras
+> vid varje landning.
+
+- [x] **Dok-födelse** (2026-07-12): sessionsdok fött (`208b2f7`, run
+  29199536253 grön per jobb: Lint+Audit+TypeCheck ✓, Docs link check
+  körd+grön, Test+Build docs-only-skippad by design); numrering
+  disk-verifierad (nästa ADR 074 via check-adr-count 73==73, lesson
+  L277, fälla 45, tråd T78); audit-ci PASSED; plugin **1.14.0 AKTIV**
+  verifierad (install-record + session-registry @ `38821c6` —
+  L267-omstarten = sessionsbytet); scope Marcus-kvitterat ("Låter
+  toppen! Kvitterar."). S56-paused-fyndet öppet korrigerat
+  (head-trunkerad grep i RAPPORTERA gav fel "inga pausade"-rad; S56
+  känd paused, KVAR övertogs av S61). **NÄSTA: research-passet.**
+- [x] **Research-syntesen kvitterad A/A/A/A + F1/F2-räckena LANDADE**
+  (2026-07-12, Del 2 kanonisk plats; Marcus delegerad senior-form
+  "Kör!" = batch-ordern): tre web-agenter med citat-krav →
+  orkestrator-serialiseringen + fasat schema BEKRÄFTADE som state of
+  practice (alla fyra agent-plattformarna); GitHub MQ otillgänglig
+  (User-ägt repo) + löser fel problem (pipelines kör parallellt i
+  köerna). **F1 UTFÖRD:** Test+Build-concurrency `staging-tests` +
+  `queue: max` (`b29168f` runtime-bevis run 29200533939 →
+  actionlint-schemat släpar efter plattformsfeaturen 2026-05-07 →
+  `a44321d` smal -ignore med lift-villkor, RÖD→GRÖN lokalt med CI:ns
+  binär → run **29200767918 GRÖN per jobb**). **F2 UTFÖRD:** TASK-10
+  AC 1–4 + `ready-for-agent` (CLI-läs-tillbaka ✓) +
+  CORS-enabling-steget av orkestratorn (digest-verifierad
+  superset-skrivning mot STAGING-ref:en explicit [CLI-länken är
+  prod — fällan undviken]; trippel preflight-bevis: 4173 **403→200**
+  m. origin-echo · 5173 200 · 9999 403; prod orörd). F3: batch
+  4-partitionen 5→6→10 sekventiellt max-kort 3. F4: förkastanden
+  bokförda (MQ · branch protection [bryter trunk-push; → T46/B-läge]
+  · ML-prediktion · beroendegraf · selfDestroying-default ·
+  staging-eliminering [tröskel ej nådd; framtida form = preview
+  branches]). Öppna revideringar till slutlandningen: ADR-073 b7
+  B-receptet (preview på EGEN port — falsifierat av fälla 5) +
+  L276-nyansen (404 avregistrerar EJ per spec/web.dev). Batch 2 kör
+  med skript-nivå-grindarna claims-check + merge-tree +
+  post-batch-install (pilot-före-skill). **NÄSTA: batch
+  4-avfyrningen (TASK-5 → TASK-6 → TASK-10).**
+
 ### Session 65 ✅ AVSLUTAD (2026-07-12) — T76-piloten bevisad: parallella batch-pipelines (design → 5/5 first-pass → ADR-073 → granskningsvåg)
 
 > Scope: sessionsdok `2026-07-12-session-65.md` Del 1 (kanonisk plats):

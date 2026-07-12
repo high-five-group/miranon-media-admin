@@ -6,8 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-12 11:54'
-updated_date: '2026-07-12 15:13'
-labels: []
+updated_date: '2026-07-12 16:53'
+labels:
+  - ready-for-agent
 dependencies: []
 ordinal: 30000
 ---
@@ -50,3 +51,11 @@ created: 2026-07-12 15:13
 Komplettering till kommentar #2 (samma incident, VERIFIERAD slutdiagnos för människo-symptomet): npm-install-fällan var reell men inte tillräcklig — knappen Marcus såg kom från en REGISTRERAD BYGGD SERVICE WORKER på dev-originet localhost:5173. Verifierad kedja: (1) sw.ts NavigationRoute(createHandlerBoundToURL('index.html')) servar ALLA SPA-navigationer cache-first ur precachen (Workbox by design) → gammal bundle för evigt oavsett vad servern servar; (2) dev-servern svarar 200 text/html på /sw.js (SPA-fallback, devOptions.enabled=false) → SW-uppdatering misslyckas på MIME men avregistreras ALDRIG (kräver 404); (3) skipWaiting + clients.claim tar alla klienter direkt. Infektionsväg: byggda preview-/QA-appar servade på 5173 (fälla 2:s mitigering ÄR infektionsvägen — dev och byggd app delar port/origin, och byggd app registrerar SW:n). Empiriskt verifierat: SW-registrering fanns även i Playwright-MCP-profilen (scope 5173, sw.js activated, controller=true) men med TOM precache → nätverket vann → nya appen; profil med intakt precache → gamla appen. Färsk kontext renderar nya Hem UTAN knappen (server + kod friska hela kedjan). MITIGERING per browser-profil: DevTools → Application → Storage → Clear site data → ladda om (loggar ut; persist-cachen töms). KLASSNINGS-INPUT: femte fällan i klassen — OBS åter-armeras vid varje besök på byggt preview på 5173; kandidat-skyddsräcken: preview/QA på egen port+origin (aldrig 5173 — men se fälla 2: CORS-allowlisten måste då utökas), selfDestroying-SW i staging-byggen, eller QA-runbook-steget 'unregister SW efter QA-pass'.
 ---
 <!-- COMMENTS:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 Dedikerade npm-scripts bär hela staging-verifieringsformen: build:staging (vite build --mode staging), preview:staging (vite preview --port 4173 --strictPort) samt bundelverifiering (staging-host förekommer i dist/assets, prod-host gör det INTE — script eller dokumenterad rad); exakta scriptnamn följer repots konvention och bokförs i notes. Stänger fälla 1+2 som handkommando-klass
+- [ ] #2 Preview-flödet bevisat i körning mot staging: staging-mode-bygge servat på preview-porten 4173 (CORS-tillåten sedan S66-enabling-steget, preflight 200 verifierad) → inloggning + Hem-datainläsning gröna med nätverksbevis (staging-EF-anrop, ingen prod-host-trafik); preview-byggets SW-registrering landar på 4173-originet och dev-originet 5173 verifieras opåverkat (fälla 5-separationen)
+- [ ] #3 playwright.config.ts laddar .env.test via dotenv per officiella Playwright-mönstret (playwright.dev/docs/test-parameterize): lokala körningar utan source-prefix; CI-formen (workflow-env) orörd och fortsatt grön; inga hemligheter i git-diffen. Stänger fälla 3
+- [ ] #4 Verifierings-runbooken finns som dok-bärare (docs/reference/ el. motsv., länkad från CONTRIBUTING eller test-dok) och bär: de fem fällornas prevention (scripten ovan), SW-saneringskedjan (diagnos: curl modul → färsk browserkontext → Clear site data; INGEN passiv självläkning finns — inte ens 404 avregistrerar en aktiv SW per spec/web.dev, W3C #204 wontfix), post-merge-manifest-steget (npm install per arbetsyta + hård Vite-omstart inkl node_modules/.vite, L275) samt selfDestroying-SW som dokumenterad saneringsberedskap (INTE stående staging-läge — sänker test-fidelitet; tunn precedent öppet deklarerad)
+<!-- AC:END -->
