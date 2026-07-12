@@ -9,6 +9,40 @@
 - Fas: Session 65 — arbetssätt/exekverings-process (ingen
   byggfas-status-ändring)
 
+> **Amendering (Session 66, 2026-07-12 — förbättringspasset + parallell-
+> batch 2, first-pass 4/4; kanonisk trail: S66-doket Del 2–4; Marcus-
+> kvittens A/A/A/A i delegerad senior-form):** tre poster; beslutstexten
+> nedan bevaras oförändrad (immutabilitet).
+>
+> 1. **Beslut 7:s gransknings-recept REVIDERAT:** "preview på 5173"
+>    skrevs före TASK-10 fälla 5 och falsifierades av den — byggd app
+>    på dev-originet ÄR infektionsvägen (byggd SW servar cache-first
+>    för evigt; L276). Reviderat recept: `npm run build:staging` +
+>    `npm run preview:staging` (4173 — CORS-tillåten sedan S66-
+>    enabling-steget; origin-separationen är SW-mekanisk per MDN).
+>    TASK-10-leveransen bär scripten + runbooken
+>    (`docs/reference/staging-verifiering-runbook.md`).
+> 2. **Beslut 4-komplement (defense-in-depth):** Test+Build-jobbet bär
+>    konstant concurrency-grupp `staging-tests` med `queue: max`
+>    (Actions-plattformskö 2026-05-07; default-beteendet avbryter
+>    pending). Options-radens förkastande av jobb-nivå-concurrency som
+>    ERSÄTTNING står oförändrat — detta är ett komplement BAKOM
+>    orkestratorns seriella kedja (skyddar PR-run ∥ main-push-klassen,
+>    t.ex. docs-pushar under batch). Research-grund (S66 Del 2): merge
+>    queue-klassen (GitHub/GitLab/Bors) ordnar landningen logiskt men
+>    kör pipelines parallellt → resurs-mutexen måste ägas separat;
+>    GitHub Merge Queue dessutom otillgänglig (User-ägt repo).
+> 3. **Beslut 2-skärpning (batch 2-empiri):** worktree-familjen delar
+>    `.git` → `origin/main`-refen är DELAD RÖRLIG YTA under parallell
+>    drift (orkestrator-merge flyttar den mitt i en agents körning) —
+>    claims-/diff-verifiering görs mot FÖRGRENINGS-SHA:t, aldrig mot
+>    refen. Semafor-wrappern är formaliserad som repo-artefakt
+>    (`scripts/staging-semaphore.sh`). Tre orkestrator-grindar
+>    skarpbevisade och kodifieras i /work-batch 1.15.0: merge-tree-
+>    grinden före PR · claims-kvittot (deklarerad yta ∩ faktisk diff) ·
+>    pr-ci-bevisformen för e2e när 5173 är upptagen (jobblogg-
+>    verifierad, test-count-delta).
+
 ## Kontext
 
 ADR-071:s v1 är medvetet sekventiell (max en skrivande agent per repo);
