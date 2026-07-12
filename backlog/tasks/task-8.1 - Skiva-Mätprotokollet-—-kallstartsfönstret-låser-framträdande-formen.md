@@ -1,10 +1,10 @@
 ---
 id: TASK-8.1
 title: 'Skiva: Mätprotokollet — kallstartsfönstret låser framträdande-formen'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-11 22:54'
-updated_date: '2026-07-12 11:36'
+updated_date: '2026-07-12 11:53'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,8 +24,6 @@ Mät det faktiska kallstartsfönstret och lås skelettets framträdande-form INN
 - [x] #2 Framträdande-formen låst per samsynens 1 s-regel och beslutet + motivering skrivet som kommentar på Hem-skivan (task-8.4)
 - [x] #3 Ingen produktkodsändring i diffen (mätskiva)
 <!-- AC:END -->
-
-
 
 ## Implementation Notes
 
@@ -68,12 +66,18 @@ Aggregat varm EF (n=7; min/median/max): fönster Nästa event 1311/1438/1524 · 
 Typiskt fönster är KLART över 1 s i BÅDA klasserna (varm: samtliga 21 kort-fönster 1311–1696 ms; kall dataväg: 7634–7942 ms) → framträdande-formen låses till SKELETON FRÅN FÖRSTA BILDRUTAN (ingen framträdande-fördröjning). Beslut + motivering: kommentar på task-8.4 (AC 2).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 8f4b7b1 (merge a50cce7, PR #48) · CI-run 29191268155 (PR) + 29191469255 (main) gröna per jobb · CI-grön-första-pass: ja · defekter under körning: 2 (ogiltiga mätserier — prod-mode-bygge resp. CORS-blockerad preview-port 4173; kasserade + omkörda av agenten, inget nådde diffen) · TDD: ej tillämplig (read-only mätskiva; ersatt med mätdata-kvalitetskontroller: 1 anrop/query/runda, alla HTTP 200) · DoD 5/6 EJ TILLÄMPLIGA (read-only mätskiva utan UI-yta/diff — Marcus-kvitterat A i S65 design-STOPPA, bockade med denna bokföring) · AFK-proveniens: T76-piloten S65 pipeline A agent A1, fas 1 exklusivt fönster, orkestrerad stängning
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review: Marcus-granskning i webbläsaren av laddläget godkänd (per skiva med UI-yta; L220/L269)
-- [ ] #6 Layout-skift ≈ 0 bevisad med renderad mätning före granskning (L245/L246; task-4.5-bevismönstret)
+- [x] #5 Design-review: Marcus-granskning i webbläsaren av laddläget godkänd (per skiva med UI-yta; L220/L269)
+- [x] #6 Layout-skift ≈ 0 bevisad med renderad mätning före granskning (L245/L246; task-4.5-bevismönstret)
 <!-- DOD:END -->
