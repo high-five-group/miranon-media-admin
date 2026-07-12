@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-12 11:54'
-updated_date: '2026-07-12 15:05'
+updated_date: '2026-07-12 15:13'
 labels: []
 dependencies: []
 ordinal: 30000
@@ -43,5 +43,10 @@ Tredje fällan i samma arbetsyta (T76-pilot fas 3, agent B2, task-9.3): SYMPTOM:
 created: 2026-07-12 15:05
 ---
 Fjärde fällan i samma arbetsyta (post-batch, HUVUD-arbetsytan; upptäckt vid Marcus browser-granskning 2026-07-12): SYMPTOM: dev-servern på main spyr Pre-transform error 'Failed to resolve import @tanstack/react-query-persist-client' (main.tsx) + query-sync-storage-persister (persist.ts) — nya appen kan inte rendera; webbläsaren visar stale bundle så appen ser OFÖRÄNDRAD ut (ingen synlig krasch för människan). ROTORSAK: batch-merge som lägger nya deps (8.3/ADR-072: två paket i package.json) landar på main utan att npm install körs i huvud-arbetsytan — agenterna kör npm ci i sina worktrees, main:s node_modules förblir stale. FÖRSTÄRKARE: redan igångkörd Vite cachar den misslyckade upplösningen — npm install i efterhand räcker INTE; touch vite.config.ts räckte INTE empiriskt; hård omstart av dev-servern krävs (node_modules/.vite rensades också). MITIGERING SOM ANVÄNDES: npm install i huvud-arbetsytan (paketen verifierade via npm ls) + rm -rf node_modules/.vite + omstart av dev-servern. Klassnings-input: samma runbook/skyddsräckes-beslut som fälla 1–3 (kandidat: orkestratorns post-batch-steg 'package.json-diff i batchen → npm install på main' eller runbook-rad).
+---
+
+created: 2026-07-12 15:13
+---
+Komplettering till kommentar #2 (samma incident, VERIFIERAD slutdiagnos för människo-symptomet): npm-install-fällan var reell men inte tillräcklig — knappen Marcus såg kom från en REGISTRERAD BYGGD SERVICE WORKER på dev-originet localhost:5173. Verifierad kedja: (1) sw.ts NavigationRoute(createHandlerBoundToURL('index.html')) servar ALLA SPA-navigationer cache-first ur precachen (Workbox by design) → gammal bundle för evigt oavsett vad servern servar; (2) dev-servern svarar 200 text/html på /sw.js (SPA-fallback, devOptions.enabled=false) → SW-uppdatering misslyckas på MIME men avregistreras ALDRIG (kräver 404); (3) skipWaiting + clients.claim tar alla klienter direkt. Infektionsväg: byggda preview-/QA-appar servade på 5173 (fälla 2:s mitigering ÄR infektionsvägen — dev och byggd app delar port/origin, och byggd app registrerar SW:n). Empiriskt verifierat: SW-registrering fanns även i Playwright-MCP-profilen (scope 5173, sw.js activated, controller=true) men med TOM precache → nätverket vann → nya appen; profil med intakt precache → gamla appen. Färsk kontext renderar nya Hem UTAN knappen (server + kod friska hela kedjan). MITIGERING per browser-profil: DevTools → Application → Storage → Clear site data → ladda om (loggar ut; persist-cachen töms). KLASSNINGS-INPUT: femte fällan i klassen — OBS åter-armeras vid varje besök på byggt preview på 5173; kandidat-skyddsräcken: preview/QA på egen port+origin (aldrig 5173 — men se fälla 2: CORS-allowlisten måste då utökas), selfDestroying-SW i staging-byggen, eller QA-runbook-steget 'unregister SW efter QA-pass'.
 ---
 <!-- COMMENTS:END -->
