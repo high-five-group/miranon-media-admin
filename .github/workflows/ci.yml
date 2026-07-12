@@ -275,6 +275,18 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+    # Staging-stegen (test:api:staging + e2e-staging) delar EN staging-
+    # miljö — samtidiga Test+Build-runs är TASK-6-kollisionen på CI-nivå
+    # (ADR-073 beslut 4). Konstant grupp serialiserar jobbet över ALLA
+    # runs (PR ∥ PR och PR ∥ main-push); queue: max (Actions-feature
+    # 2026-05-07) köar väntande FIFO i stället för default-beteendet att
+    # avbryta pending. cancel-in-progress medvetet OSATT (krav för
+    # queue: max; en startad staging-svit avbryts aldrig mitt i).
+    # Defense-in-depth BAKOM orkestratorns seriella PR→CI→merge-kedja,
+    # inte ersättning — komplement-beslutet S66 Del 2.
+    concurrency:
+      group: staging-tests
+      queue: max
     steps:
       - name: Checkout
         uses: actions/checkout@v6
