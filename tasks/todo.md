@@ -21,6 +21,22 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 64 (2026-07-12, pågår) — T69-upptaget: Mer-vyn till FK-mönstret
+
+> Scope: sessionsdok `2026-07-12-session-64.md` Del 1 (kanonisk plats):
+> T69-kedjan rubrik-grillningen (öppna frågan F) → konvergens-pass →
+> facit låst → /to-prd → /to-issues; i Marcus-takt QA 4.6 + batch 4
+> (TASK-5/6) + task-8.1–8.3 plockbara. Kadensrad per L67 — uppdateras
+> vid varje landning.
+
+- [x] **Dok-födelse + T69-upptaget** (2026-07-12): sessionsdok fött
+  (`b54379d`, run 29185041969 grön per jobb: Lint+Audit+TypeCheck ✓,
+  Docs link check körd+grön, Test+Build by-design-skippad); numrering
+  disk-verifierad (nästa ADR 073 via check-adr-count 72==72, lesson
+  L272, fälla 45, tråd T77); audit-ci PASSED; T69-kortet flippat till
+  `lifecycle: active` + index-raden synkad i upptags-landningen.
+  **NÄSTA: research-passet för rubrik-grillningen (öppna frågan F).**
+
 ### Session 63 ✅ AVSLUTAD (2026-07-12) — Task-7-kedjan: grillning → ADR-072 → PRD TASK-8 → skivor 8.1–8.5
 
 > Scope: sessionsdok `2026-07-12-session-63.md` Del 1 (kanonisk plats):

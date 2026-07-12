@@ -1,9 +1,9 @@
 ---
 owner: marcus803
-updated: 2026-07-07
+updated: 2026-07-12
 review_by: 2026-10-07
 status: stable
-lifecycle: paused
+lifecycle: active
 ---
 
 # T69 — Mer-vyn till FK-mönstret (grillad struktur-samsyn)
@@ -21,11 +21,12 @@ lifecycle: paused
 - **Tillstånd:** se frontmatter `lifecycle`
 - **Sessioner:** född utanför session (Code-chatt 2026-07-07, parallell
   med S56/S57); tas upp som EGEN session efter S56 + S57 (Marcus-ord:
-  "nästa grej efter session 56 och 57"). **Upptag planerat S64**
-  (Marcus-vägval vid S63-avslut): kedjan samsyn A–H → öppna frågor
-  (F preliminär) → /to-prd → /to-issues; skivorna är därefter
-  pipeline B-kandidater i T76-piloten (partitionen task-8-skivorna ∥
-  T69-skivorna — kollisionsytorna bokförda i T76-kortet).
+  "nästa grej efter session 56 och 57"). **UPPTAGEN som S64**
+  (2026-07-12, Marcus-vägval vid S63-avslut, kvitterat vid
+  S64-starten): kedjan samsyn A–H → öppna frågor (F preliminär) →
+  /to-prd → /to-issues; skivorna är därefter pipeline B-kandidater i
+  T76-piloten (partitionen task-8-skivorna ∥ T69-skivorna —
+  kollisionsytorna bokförda i T76-kortet).
 - **Styrande:** denna samsyn (A–H nedan); T66-processen (stående
   prototyp-arbetsform); ORDLISTA.md ("Mina sidor", kanoniserad i samma
   landning); T68 (badge-frågan, utskuren härifrån)
@@ -120,3 +121,8 @@ frågor).
   #3), taggat `[T68] [T69]`.
 - Upptag: Marcus initierar Mer-sessionen när S56 + S57 stängt →
   `lifecycle: active` + kedjan i H.
+- **UPPTAGEN 2026-07-12 som Session 64** (sessionsdok
+  `tasks/sessions/2026-07-12-session-64.md` Del 1 = kanonisk
+  scope-plats): `lifecycle: active`; kedjan börjar med
+  rubrik-grillningen (Öppna frågor 1). Beroendet i H uppfyllt —
+  task-4.2 (Hem-skelettmönstret) är Done.
