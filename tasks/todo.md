@@ -109,6 +109,25 @@
   **DoD 5 ÖPPEN på båda: Done-flipp = Marcus granskningsvåg (Hem-
   laddläget + /mer i browsern). NÄSTA: ADR-073-amenderingen +
   hub-deltat 1.15.0; end-pass på Marcus-signal.**
+- [x] **SLUTLANDNINGEN: ADR-073-amenderingen + hub-deltat 1.15.0**
+  (2026-07-12): **ADR-073 amenderad** (`e46331b`, run 29208022673
+  grön; immutabilitets-formen, 73==73 intakt): beslut 7-receptet
+  REVIDERAT till egen preview-port [falsifierat av fälla 5/L276] ·
+  beslut 4-komplementet `staging-tests` + `queue: max`
+  [ersättnings-förkastandet står] · beslut 2-skärpningen
+  förgrenings-SHA-regeln + semaforen som repo-artefakt + tre
+  skarpbevisade grindar. **Hub `01eb164`: /work-batch 1.15.0**
+  (claims-check i delta 1 · förgrenings-SHA-regeln i delta 2 ·
+  semaforen som repo-artefakt i delta 3 · merge-tree-grinden +
+  claims-kvittot + pr-ci-bevisformen + post-CI-bockar i delta 4 ·
+  B-receptet reviderat i delta 6 · NYTT delta 7 post-batch-
+  miljösteget; läs-tillbaka-verifierad, markdownlint 0 fel).
+  Del 4-runnet 29207984923 grönt. **KVAR (Marcus-moment):
+  (a) granskningsvågen 8.4 + 9.2 i browsern → Done-flippar ·
+  (b) `claude plugin update` + omstart för 1.15.0 (L267-kedjan) ·
+  (c) end-pass på signal — skörden L277+ (falsk-röd-grinden ·
+  förgrenings-SHA-fyndet · L276-nyansen · lint-schema-släpet ·
+  L270-frekvensen ×4) + BUILD-LOG + T76-synk + coverage.**
 
 ### Session 65 ✅ AVSLUTAD (2026-07-12) — T76-piloten bevisad: parallella batch-pipelines (design → 5/5 first-pass → ADR-073 → granskningsvåg)
 
