@@ -4,7 +4,7 @@ title: 'Skiva: Mer-vyn till M6-facitet + e2e/axe'
 status: In Progress
 assignee: []
 created_date: '2026-07-12 10:16'
-updated_date: '2026-07-12 19:21'
+updated_date: '2026-07-12 19:58'
 labels:
   - ready-for-agent
 dependencies:
@@ -28,12 +28,18 @@ Mer-landningen NYSKRIVEN mot M6-facitet (throwaway-kontraktet: prototypkod befor
 - [ ] #5 Sidtitel-annonseringen oförändrad ('Mer' i fönstertitel + route-annonsering)
 <!-- AC:END -->
 
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Leverans (S66 parallell-batch 2, do-work): Mer-vyn NYSKRIVEN mot M6-facitet (S64 Del 3; 230f322 = referens, ej källa) på NavCard-primitiven (task-9.1). hideShellHeader via BEFINTLIG per-vy-mekanik (staticData, task-4.2/K10) — ingen shell-ändring behövdes. Mer-e2e-sviten +5 facit-tester (computed-mått per L246/L272: h1 30/600, header-frånvaro, tvågruppsstruktur+ordning+ikoner 20px, ingen chevron, sidmarginal 16/section-padding 0, radhöjd 56-60, radgap 10, rytm 32, logout-block pt-4 16, Hem-paritet topp-luft 1280+390, ghost-logout centrerad m. ikon, titel+annonsering); befintligt kontrakt orört. shell-svitens DoD 1-kommentar synkad (Hem-scopad -> vy-scopad; testkod orörd). Lokala grindar: typecheck 0 fel, typecheck:tests 0, biome exit 0, build gron, test:api 296/296 (TEST_REGISTRATION_RECORD_ID ur BUILD-LOG-seed-ankaret; forsta korningen 290/296 = CONTRIBUTING:s dokumenterade env-symptom, EJ regression), test:a11y 31/31. E2E-STAGING EJ KORD LOKALT: 5173 upptagen av frammande dev-server hela passet (ADR-073-portlaget, servern rors aldrig) -> e2e-beviset = PR-CI:s test:e2e:staging-steg. TDD-avvikelse oppet bokford: facit-specsen skrivna FORE vy-nyskrivningen (permanenta tester) men ROD-observationen ej korbar lokalt; AC 5 ar bevarande-kontrakt (ej ROD-bar by design). AC 1-5 lamnas obockade for orkestratorns post-CI-bock.
+<!-- SECTION:NOTES:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
 - [ ] #6 Facit-paritet: renderad vy computed-verifierad mot M6-måtten (sessionsdok S64 Del 3)
 <!-- DOD:END -->

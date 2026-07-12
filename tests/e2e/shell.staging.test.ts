@@ -40,7 +40,8 @@ test.describe('App-skal (Fas 5 DoD)', () => {
       // är dekorativ (aria-hidden) — etiketten ensam bär länknamnet.
       await expect(link.locator('svg[aria-hidden="true"]')).toHaveCount(1);
     }
-    // Per-vy-avstängningen är Hem-scopad: headern kvar på övriga vyer.
+    // Per-vy-avstängningen är vy-scopad (Hem; /mer sedan task-9.2 — dess
+    // header-frånvaro assertas i mer-index-sviten): headern kvar på övriga.
     await page.goto('/event');
     await expect(page.locator('header')).toHaveCount(1);
   });

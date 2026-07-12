@@ -1,66 +1,81 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
+import { CalendarPlus, ClipboardList, Filter, Hourglass, LogOut, Mail, Star } from 'lucide-react';
 import { useAuth } from '@/auth/useAuth';
-import { Button } from '@/components/primitives/Button';
+import { Button, NavCard } from '@/components/primitives';
 
 export const Route = createFileRoute('/_authenticated/mer/')({
-  staticData: { title: 'Mer' },
+  // hideShellHeader: M6-facitet (task-9.2) via per-vy-mekanismen (task-4.2,
+  // K10) — Mer är andra header-fria vyn efter Hem; app-brett header-öde
+  // avgörs i shell-spåret (PRD TASK-9 beslut 1, INPUT bokförd).
+  staticData: { title: 'Mer', hideShellHeader: true },
   component: MerPage,
 });
 
-// Mer-landning (Fas 6c Leverabel 3): statisk länklista (spec bekräftar statisk
-// Mer-vy — ingen URL-state). Väntelistan är den första riktiga Mer-ytan; övriga
-// (leads, mailutskick m.m.) byggs i Fas 6e. <Outlet/> bärs av _authenticated.
+/*
+ * Mer-landningen till M6-FACITET (sessionsdok S64 Del 3 + bilagor
+ * s64-mer-konvergens; task-9.2). Statisk vy (ingen datahämtning, ingen EF —
+ * PRD beslut 9); raderna bärs av NavCard-primitiven (task-9.1, spec §14).
+ *
+ * Facit-formen: synlig "Mer"-h1 i appens h1-skala (30/600 = Hem-hälsningen)
+ * → ETT nav-landmärke "Mer-sidor" med TVÅ luftgrupper (listorna ·
+ * handlingarna, handling före verktyg) → centrerad Logga ut UTANFÖR nav.
+ * Måtten (computed-låsta, M6): skalets 16 px-sidmarginal — sektionen har
+ * INGEN egen sidopadding (dubbelkants-fyndet) · 32 px vertikal rytm (gap-8)
+ * · 10 px radgap inom grupp (gap-2.5) · topp-luft i Hem-paritet
+ * (pt-2 lg:pt-10) · Logga ut-blocket med extra topp-luft (pt-4).
+ *
+ * Ikonvalen är domänbegrepps-mappade och Marcus-kvitterade (PRD beslut 5) —
+ * Bygg segment bär Filter, INTE Users (Personer-flikens ikon; krocken funnen
+ * i M6-detaljsvepet): segment byggs med filter.
+ */
 function MerPage() {
   const { logout } = useAuth();
 
   return (
-    <section className="flex flex-col gap-6 p-4">
-      <h1 className="font-semibold text-2xl">Mer</h1>
-      <nav aria-label="Mer-sidor">
-        <ul className="flex flex-col gap-2">
-          {/* Anmälningar först — operativ kärnyta (task-1.4; Hems CTA pekar hit). */}
+    <section className="flex flex-col gap-8 pt-2 lg:pt-10">
+      {/* Rubrikpolicyn (PRD beslut 1): synlig h1 = vyns namn; 30/600 (iOS
+          large-title 34/700 medvetet avviken — intern typskala vinner). */}
+      <h1 className="font-semibold text-3xl">Mer</h1>
+
+      {/* Anatomin per spec §14: konsumenten äger nav > ul > li > NavCard.
+          Grupp 1 = listorna (Anmälningar först — operativ kärnyta, task-1.4);
+          grupp 2 = handling före verktyg (samsyn C, Revision S64). */}
+      <nav aria-label="Mer-sidor" className="flex flex-col gap-8">
+        <ul className="flex flex-col gap-2.5">
           <li>
-            <Link to="/mer/anmalningar" className="underline">
-              Anmälningar
-            </Link>
+            <NavCard to="/mer/anmalningar" icon={ClipboardList} label="Anmälningar" />
           </li>
           <li>
-            <Link to="/mer/vantelista" className="underline">
-              Väntelista
-            </Link>
+            <NavCard to="/mer/vantelista" icon={Hourglass} label="Väntelista" />
           </li>
           <li>
-            <Link to="/mer/intresserade" className="underline">
-              Intresserade
-            </Link>
+            <NavCard to="/mer/intresserade" icon={Star} label="Intresserade" />
           </li>
           <li>
-            <Link to="/mer/maillogg" className="underline">
-              Maillogg
-            </Link>
+            <NavCard to="/mer/maillogg" icon={Mail} label="Maillogg" />
+          </li>
+        </ul>
+        <ul className="flex flex-col gap-2.5">
+          <li>
+            <NavCard to="/mer/skapa-event" icon={CalendarPlus} label="Skapa nytt event" />
           </li>
           <li>
-            <Link to="/mer/segment" className="underline">
-              Bygg segment
-            </Link>
-          </li>
-          <li>
-            <Link to="/mer/skapa-event" className="underline">
-              Skapa nytt event
-            </Link>
+            <NavCard to="/mer/segment" icon={Filter} label="Bygg segment" />
           </li>
         </ul>
       </nav>
 
-      {/* Logout är en HANDLING, inte navigering → egen block UTANFÖR nav-landmärket
-          (får ej vara en nav-länk). Redirect till /login sköts av _authenticated-
-          guarden: logout() → onAuthStateChange → router.invalidate() (main.tsx) →
-          beforeLoad re-evaluerar → redirect (ADR-037-kedjan) — ingen manuell redirect
-          här. Ingen bekräftelse-dialog (avsiktligt, Fas 6e L2). Ingen Inställningar
-          (de-scopad till separat doc-landning). Button-primitiv = a11y-golv (riktig
-          <button>, focus-visible via global regel, kontrast-token, träffyta ≥40px). */}
-      <div>
-        <Button intent="secondary" onPress={() => void logout()}>
+      {/* Logout är en HANDLING, inte navigering → UTANFÖR nav-landmärket,
+          centrerad med extra topp-luft (facit punkt 6). Ghost-intent +
+          dekorativ LogOut-ikon; vikten är Button-primitivens standard (FK:s
+          fetstil medvetet avviken — systemkonsekvens). Redirect till /login
+          sköts av _authenticated-guarden: logout() → onAuthStateChange →
+          router.invalidate() (main.tsx) → beforeLoad re-evaluerar → redirect
+          (ADR-037-kedjan, oförändrad). Ingen bekräftelsedialog (Fas 6e-
+          beslutet står). Ingen Inställningar (de-scopad, T47). */}
+      <div className="flex justify-center pt-4">
+        <Button intent="ghost" onPress={() => void logout()}>
+          <LogOut size={20} aria-hidden />
           Logga ut
         </Button>
       </div>
