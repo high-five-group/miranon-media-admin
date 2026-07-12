@@ -3,10 +3,10 @@ id: TASK-6
 title: >-
   Fynd: npx playwright test kör alla projekt parallellt — api-staging kolliderar
   systematiskt med e2e:s staging-writes
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-11 09:43'
-updated_date: '2026-07-12 18:10'
+updated_date: '2026-07-12 18:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,25 +23,27 @@ FÖRVÄNTAT BETEENDE: den blandade full-parallella körformen är antingen (a) k
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
-
-
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Vägvalet fattat och bokfört i kortets notes med motivering: (a) blandad full-parallell körning görs korrekt via projekt-dependencies/workers-partitionering ELLER (b) körformen deklareras explicit icke-stödd i dok-bäraren
 - [x] #2 Vid (a): plain 'npx playwright test' grön utan de 6 api-staging-kollisionerna; vid (b): CONTRIBUTING/test-dok bär varningsrad + de kanoniska sekventiella kommandona
-- [ ] #3 CI:s sekventiella Test+Build-form orörd och fortsatt grön
+- [x] #3 CI:s sekventiella Test+Build-form orörd och fortsatt grön
 <!-- AC:END -->
-
-
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 VÄGVAL: (b) — plain 'npx playwright test' deklareras explicit icke-stödd i CONTRIBUTING.md § Testkörning — kanoniska former (Playwright) + varningsblock i playwright.config.ts-headern. (a) prövades EMPIRISKT först och föll på fyra ben: (1) RÖD-BEVIS, dependency-mekaniken: temporär dependencies ['setup','api-staging'] på chromium-authenticated svällde '--project=chromium-authenticated --list' från 148 tester/24 filer (147 chromium + 1 setup = CI:s e2e-stegs exakta form) till 259/45 (+1 api-setup, +110 api-staging) — Playwright drar in dependencies transitivt vid --project, och ci.yml:s e2e-steg saknar TEST_ADMIN_EMAIL/TEST_ADMIN_PASSWORD/TEST_REGISTRATION_RECORD_ID/STAGING_REQUIRED i env → api-setup:s admin-login hade failat → CI röd; att kompensera med --no-deps i test:e2e:staging ÄR att röra CI:s form → AC3-brott. Config-editen återställd byte-identiskt (git checkout, diff verifierad tom). (2) Workers-partitionering existerar (testProject.workers, node_modules/playwright/types/test.d.ts rad 744) men begränsar endast parallellism INOM ett projekt ('tests from this project') — kollisionen är MELLAN projekt; mekaniken löser fel problem. (3) ADR-073-prejudikat: beslut 3 löser TASK-5-/TASK-6-klassen utan att röra playwright.config.ts (staging-semafor över pipelines); beslut 4 serialiserar CI-runs (concurrency staging-tests, queue max) för samma kollisionsklass — arkitekturens riktning är contention-hantering UTANFÖR config-filen. (4) Portläget vid bevis-ögonblicket: (a):s AC2-bevis (full plain grön) kräver ledig 5173; porten bär Marcus levande dev-server (PID 10309, röres ej per batch-order) → task-5:s strictPort-vägran stoppar varje plain-körning — (b):s bevis är däremot komplett körbart idag. SKYDDET efter (b) är tvådelat: upptagen 5173 → task-5:s hårda vägran (ingen tyst korruption möjlig); ledig 5173 → dok-varningen i CONTRIBUTING + config-headern styr till de kanoniska sekventiella kommandona. TILL NÄSTA UTFÖRARE (L266): önskas (a) i framtiden krävs (i) --no-deps i test:e2e:staging-scriptet, (ii) komplett staging-env i CI:s e2e-steg, (iii) full plain-verifiering på ledig 5173 — dvs. en medveten CI-form-ändring; det är ett eget kort/beslut, inte detta.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 1f92f0a · CI-run 29203398314 per jobb (Detect changed files, Lint+Audit+TypeCheck, Test+Build, Docs link check, CI Passed — samtliga success; Test+Build KÖRDE på commiten = AC3-beviset) · CI-grön-första-pass: ja · defekter under körning: 1 + not (miljö-defekt, ej kortets kod: .env.test/.env.test.example saknar TEST_REGISTRATION_RECORD_ID → de 6 seed-beroende fallen röda med symptom identiskt med kollisionslistan; rotorsak belagd, värde ur BUILD-LOG verifierat 296/296, registrerat som TASK-12 + symptom-skiljenot i CONTRIBUTING) · TDD: undantag (docs-/config-kort utan produktkod-beteende) med falsifikationsbevis: (a)-mekaniken RÖD-bevisad via --list-indragning 148→259 tester + byte-identisk återställning; dok-varningen RÖD→GRÖN-bevisad via grep frånvarande→närvarande; test:api 296/296 + a11y 31/31 gröna
+<!-- SECTION:FINAL_SUMMARY:END -->
