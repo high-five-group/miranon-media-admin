@@ -5,9 +5,10 @@ import { expect, type Page, type Route, test } from '@playwright/test';
 /**
  * Hem-vyn (task-1.3 A-skelettet → task-4.2 K10-facit-strukturen → task-4.3
  * facit-korten → task-4.4 anmälningslistan → task-4.5 osynliga uppdateringen
- * [B3]). Uppifrån och ned: hälsningskort
+ * [B3] → task-9.3 platshållar-borttagningen). Uppifrån och ned: hälsningskort
  * (h1 "Hej {namn}" utan utropstecken; återbesök i sessionen visar bara namnet
- * [B2]; "Mina sidor"-platshållarknapp ersätter uppdatera-kontrollen [B5]) →
+ * [B2]; INGEN "Mina sidor"-platshållare — riven per T69 Revision S64 p3, och
+ * uppdatera-kontrollen borta sedan B5) →
  * Nästa event (primär-tint, HELA kortet klickbart till eventets detaljsida;
  * dagar-kvar-pill, metagrupp med ikoner, beläggningsstapel) bredvid Obetalda
  * anmälningsavgifter (BARA antalet, task-4.3) → helbredds-listkortet "Nya
@@ -177,9 +178,12 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
       '/mer/anmalningar',
     );
 
-    // Mina sidor-platshållaren ersätter uppdatera-kontrollen (B5, task-4.2;
-    // poll-lagret bär färskheten ensamt — ADR-017 Updates-noten).
-    await expect(page.getByRole('button', { name: 'Mina sidor' })).toBeVisible();
+    // Platshållar-frånvaron (task-9.3): "Mina sidor"-knappen är RIVEN —
+    // destinationen upplöstes när "Mina sidor" omdefinierades till hela appen
+    // (T69 Revision S64 p3); platsen är konceptuellt reserverad för
+    // notis-klockan (T77), ingen ersättare. Uppdatera-kontrollen är borta
+    // sedan B5 (poll-lagret bär färskheten ensamt — ADR-017 Updates-noten).
+    await expect(page.getByRole('button', { name: 'Mina sidor' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Uppdatera översikt' })).toHaveCount(0);
   });
 
