@@ -1,9 +1,10 @@
 ---
 id: TASK-9.2
 title: 'Skiva: Mer-vyn till M6-facitet + e2e/axe'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-12 10:16'
+updated_date: '2026-07-12 19:21'
 labels:
   - ready-for-agent
 dependencies:

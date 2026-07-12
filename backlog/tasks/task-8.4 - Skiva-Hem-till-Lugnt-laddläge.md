@@ -1,10 +1,10 @@
 ---
 id: TASK-8.4
 title: 'Skiva: Hem till Lugnt laddläge'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-11 22:55'
-updated_date: '2026-07-12 11:36'
+updated_date: '2026-07-12 19:21'
 labels:
   - ready-for-agent
 dependencies:
