@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import { queryKeys } from '@/queries/keys';
+import { PERSIST_MAX_AGE_MS } from '@/queries/persist';
 
 /**
  * Delade läs-queries för Hem-aggregeringen (Fas 6d) — med poll-lagret (L2).
@@ -28,7 +29,12 @@ const noRetryOn4xx = (failureCount: number, err: Error): boolean =>
  *   refetcha vid återkomst förrän efter 5 min. v5:s focusManager lyssnar själv på
  *   `visibilitychange` och refetchar vid fokus ENDAST om queryn är stale → 30s ger
  *   ADR-017 §3:s "refetch om data > 30s" UTAN egen handler.
- * - `gcTime: 300_000` (§4 per erratum: ADR-017:s `5_60_000` var en typo för 5×60_000).
+ * - `gcTime: PERSIST_MAX_AGE_MS` (24 h): ADR-072 skyddsräcke 2 ersätter öppet
+ *   erratum-§4-värdet (300_000) så länge hela cachen persistas — gcTime under
+ *   persistens maxAge kasserar lagrad cache i förtid (dokumenterad GC-fälla),
+ *   och Hem-datat ÄR persist-lagrets primära nytta. Poll-BETEENDET (§1 60s-
+ *   intervall, §3 staleTime/fokus-semantik) är orört — gcTime är cache-
+ *   retention, inte polling.
  * - `placeholderData: keepPreviousData` (B3, task-4.5 — facit-mekaniken per
  *   PRD-beslut 10/S55 Del 11): tidigare data renderas orörd under tyst
  *   omhämtning. Ärligt bokfört: med dagens STATISKA nycklar bär React Querys
@@ -42,7 +48,7 @@ const DASHBOARD_POLLING = {
   refetchInterval: 60_000,
   refetchIntervalInBackground: false,
   staleTime: 30_000,
-  gcTime: 300_000,
+  gcTime: PERSIST_MAX_AGE_MS,
   placeholderData: keepPreviousData,
 } as const;
 

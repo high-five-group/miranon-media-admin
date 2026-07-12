@@ -12,7 +12,7 @@ Varje bit state tilhor exakt en kategori. Ingen state far leva i "fel" lager.
 
 | Typ | Exempel i Miranon Media | Verktyg | Persistens |
 |-----|-------------------|---------|------------|
-| Server state | Event, anmalningar, personer | TanStack Query | Cache (staleTime 5 min) |
+| Server state | Event, anmalningar, personer | TanStack Query | Cache + localStorage-persist 24 h (ADR-072) |
 | URL state | Filter, sokterm, aktiv flik | nuqs | URL (overlever reload) |
 | UI state | Modal oppen, tab bar aktiv | useState | Minne |
 | Form state | Login-falt, sokfalt | React Aria | Minne |
@@ -89,12 +89,12 @@ Statisk lista. Ingen dynamisk state.
 ### Globala defaults
 
 ```typescript
-// src/providers/query-provider.tsx
+// src/router.ts (faktisk hemvist; persist-optionerna i src/queries/persist.ts)
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000,       // 5 min -- data anses farsk
-      gcTime: 30 * 60 * 1000,          // 30 min -- cachad data lever kvar
+      gcTime: PERSIST_MAX_AGE_MS,      // 24 h -- >= persistens maxAge (ADR-072)
       retry: 3,
       retryDelay: (attempt) => Math.min(200 * 2 ** attempt, 2000),
       refetchOnWindowFocus: true,       // Uppdatera nar Lotta atervander
@@ -103,6 +103,14 @@ const queryClient = new QueryClient({
   },
 });
 ```
+
+Query-cachen persistas till localStorage via PersistQueryClientProvider
+(ADR-072, task-8.3): varm appstart renderar senast kanda data direkt.
+Skyddsracken: logout tommer via `queryClient.clear()` (aldrig manuell
+nyckel-radering -- racear mot throttle-synken ~1 s), maxAge 24 h med
+gcTime >= maxAge (GC-fallan), buster = build-injicerade app-versionen.
+Poll-kontraktet (ADR-017) ar orort -- restaurerad data ar stale per
+gallande staleTime och bakgrundshamtas tyst.
 
 ### Query key factory
 
