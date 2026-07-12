@@ -201,3 +201,10 @@ Kvitterade beslut:
   prövad + förkastad; ikon-krocken Users→Filter löst.
   **NÄSTA: /to-prd (ETT PRD: struktur + facit) → /to-issues; skivorna
   = pipeline B i T76-piloten.**
+- **SPEC-LEDET KOMPLETT 2026-07-12:** TASK-9 (PRD: Mer-vyn till
+  FK-mönstret — ETT kort bär struktur + facit per H) + skivorna
+  9.1–9.4 publicerade (9.1 NavCard + 9.3 Hem-platshållaren OBLOCKADE
+  = T76-partitionens pipeline B; 9.2 ←9.1; 9.4 QA ready-for-human).
+  Kedjan tråd → samsyn → revision → konvergens → facit → PRD → skivor
+  är sluten; kvar är exekveringen + QA + design-review. Tråden vilar
+  tills skivorna körs (S65/T76-piloten).

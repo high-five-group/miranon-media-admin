@@ -79,6 +79,16 @@
   computed facit-paritet). CLI-läs-tillbaka ✓. Raderings-CI:t grönt
   per jobb (`a0e2536`, Test+Build ✓ — M1-vyn återställd ren).
   **NÄSTA: /to-issues (4 skivor per estimatet).**
+- [x] **/to-issues VERKSTÄLLD: task-9.1–9.4 publicerade** (2026-07-12,
+  Del 5 kanonisk plats; skiv-godkännandet Marcus "A. Låter bra."):
+  9.1 NavCard-primitiven M oblockad · 9.2 Mer-vyn till facitet M ←9.1
+  · 9.3 Hem-platshållar-borttagningen S OBEROENDE · 9.4 QA S
+  ready-for-human ←alla (9-punkters browser-testplan). DoD-arv 2
+  spec-grindar per skiva; täcknings-pass UB 1–14 + beslut 1–10 utan
+  föräldralösa; tavlan CLI-läs-tillbaka-verifierad. **9.1 + 9.3
+  oblockade = T76-partitionens pipeline B-kandidater.** T69-kedjan
+  KOMPLETT genom spec-ledet. **NÄSTA: session-end (skörd L272-kandidat
+  tsr-split-stale + BUILD-LOG + tråd-synk + coverage).**
 
 ### Session 63 ✅ AVSLUTAD (2026-07-12) — Task-7-kedjan: grillning → ADR-072 → PRD TASK-8 → skivor 8.1–8.5
 
