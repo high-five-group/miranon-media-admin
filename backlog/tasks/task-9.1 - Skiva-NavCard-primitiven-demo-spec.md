@@ -4,7 +4,7 @@ title: 'Skiva: NavCard-primitiven + demo + spec'
 status: In Progress
 assignee: []
 created_date: '2026-07-12 10:16'
-updated_date: '2026-07-12 12:25'
+updated_date: '2026-07-12 13:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,11 +33,20 @@ Bibliotekskod 11/11/11: den återanvändbara navigationsrads-primitiven som bär
 Leverans-commit (pipeline B1, T76-piloten): NavCard på createLink(RAC Link)-mönstret (TanStack custom-link-guide; RAC >=1.11-kompat verifierad mot docs). TDD: 9 beteende-tester + sektions-axe skrivna först, observerade RÖDA (10 failed/8 passed), sedan gröna (23/23 a11y). Negativt typ-bevis AC1: to='/finns-inte' gav TS2322 mot route-unionen. Lokala grindar gröna: biome 0 fel, typecheck, typecheck:tests, build, test:a11y 23/23, api-pure 185/185, markdownlint 0, vale 0. DoD 3/5/6 lämnas åt orkestratorn (CI + design-review + facit-paritet i prod-vyn).
 <!-- SECTION:NOTES:END -->
 
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-12 13:11
+---
+Granskningsfärdig (ADR-071 granskningsfärdigt läge): levererad 698fb90 → PR #49 → merge 38ab3aa; CI grön per jobb first-pass (PR-run 29193277922 + main-run 29193431921). DoD 5 väntar din design-review mot M6-facitet i browsern (/dev/primitives, NavCard-sektionen); DoD 6 (facit-paritet i prod-vyn) hör till task-9.2:s renderade vy. AFK-proveniens: T76-piloten S65 fas 2, pipeline B agent B1, orkestrerad bokföring.
+---
+<!-- COMMENTS:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
 - [ ] #6 Facit-paritet: renderad vy computed-verifierad mot M6-måtten (sessionsdok S64 Del 3)

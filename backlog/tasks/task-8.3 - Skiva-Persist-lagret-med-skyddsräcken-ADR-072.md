@@ -4,7 +4,7 @@ title: 'Skiva: Persist-lagret med skyddsräcken (ADR-072)'
 status: In Progress
 assignee: []
 created_date: '2026-07-11 22:55'
-updated_date: '2026-07-12 12:44'
+updated_date: '2026-07-12 13:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -56,11 +56,20 @@ Query-cachen persistas på enheten så att appen öppnar med senast kända data 
 3. SW-guarden är härdad: getRegistration()-först ger instant skip i dev/CI (inga 15 s-fönster där dev-server-omladdning förstör evaluate-kontexten).
 <!-- SECTION:NOTES:END -->
 
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-12 13:11
+---
+Granskningsfärdig (ADR-071 granskningsfärdigt läge): levererad 3827d2f → PR #50 → merge 246bd8c; CI grön per jobb first-pass (PR-run 29193591302 + main-run 29193771943). DoD 5 väntar din design-review av laddläget i browsern — persist ÄNDRAR upplevelsen: varm start ska öppna direkt med senast kända data (ingen spinner), logout ska tömma, offline ska visa restaurerad data. DoD 6 (layout-skift-mätning) väntar med granskningen. AFK-proveniens: T76-piloten S65 fas 2, pipeline A agent A2, orkestrerad bokföring.
+---
+<!-- COMMENTS:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review: Marcus-granskning i webbläsaren av laddläget godkänd (per skiva med UI-yta; L220/L269)
 - [ ] #6 Layout-skift ≈ 0 bevisad med renderad mätning före granskning (L245/L246; task-4.5-bevismönstret)
