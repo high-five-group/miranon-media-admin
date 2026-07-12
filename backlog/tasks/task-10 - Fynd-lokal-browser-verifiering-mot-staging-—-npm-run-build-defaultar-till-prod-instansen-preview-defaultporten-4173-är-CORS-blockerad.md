@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-12 11:54'
-updated_date: '2026-07-12 13:59'
+updated_date: '2026-07-12 15:05'
 labels: []
 dependencies: []
 ordinal: 30000
@@ -38,5 +38,10 @@ FÖRVÄNTAT BETEENDE (klassningsbeslut för människan): endera dokumenteras bå
 created: 2026-07-12 13:59
 ---
 Tredje fällan i samma arbetsyta (T76-pilot fas 3, agent B2, task-9.3): SYMPTOM: chromium-authenticated hard-failar i auth.setup med 'TEST_USER_EMAIL/TEST_USER_PASSWORD env vars required' TROTS att .env.test ligger i arbetskatalogen. ROTORSAK: playwright.config.ts har ingen dotenv-mekanism — CI får secrets via workflow-env, lokalt läses enbart process.env. MITIGERING SOM ANVÄNDES: prefixa lokala playwright-anrop med 'set -a; source .env.test; set +a;' i samma shell-anrop (source:a tyst — citera aldrig innehållet). Vite-sidan opåverkad (mode-filer per ADR-061). Klassnings-input: hör till samma runbook/skyddsräckes-beslut som kortets två första fällor.
+---
+
+created: 2026-07-12 15:05
+---
+Fjärde fällan i samma arbetsyta (post-batch, HUVUD-arbetsytan; upptäckt vid Marcus browser-granskning 2026-07-12): SYMPTOM: dev-servern på main spyr Pre-transform error 'Failed to resolve import @tanstack/react-query-persist-client' (main.tsx) + query-sync-storage-persister (persist.ts) — nya appen kan inte rendera; webbläsaren visar stale bundle så appen ser OFÖRÄNDRAD ut (ingen synlig krasch för människan). ROTORSAK: batch-merge som lägger nya deps (8.3/ADR-072: två paket i package.json) landar på main utan att npm install körs i huvud-arbetsytan — agenterna kör npm ci i sina worktrees, main:s node_modules förblir stale. FÖRSTÄRKARE: redan igångkörd Vite cachar den misslyckade upplösningen — npm install i efterhand räcker INTE; touch vite.config.ts räckte INTE empiriskt; hård omstart av dev-servern krävs (node_modules/.vite rensades också). MITIGERING SOM ANVÄNDES: npm install i huvud-arbetsytan (paketen verifierade via npm ls) + rm -rf node_modules/.vite + omstart av dev-servern. Klassnings-input: samma runbook/skyddsräckes-beslut som fälla 1–3 (kandidat: orkestratorns post-batch-steg 'package.json-diff i batchen → npm install på main' eller runbook-rad).
 ---
 <!-- COMMENTS:END -->
