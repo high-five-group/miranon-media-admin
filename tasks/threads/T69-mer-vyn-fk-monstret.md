@@ -192,3 +192,12 @@ Kvitterade beslut:
   sex rader i två luft-grupper + Logga ut (E står orörd) + NavCard
   per D. **NÄSTA: konvergens-passet (G) → facit låst → /to-prd →
   /to-issues.**
+- **FACIT LÅST 2026-07-12: M6** (Marcus-kvittens "Vi kör på detta. Vi
+  låser."): konvergens-passet M1→M6 i 5 varv — sessionsdok S64 Del 3
+  bär facit-specen + byggkravs-listan (kanonisk plats); bilagor
+  `sessions/bilagor/s64-mer-konvergens/`; återupplivningsväg
+  M6-koden = `230f322`. D-revisionen konsekvensprövad: ingen chevron
+  på navigationsrader (app-bred NavCard-regel); M3:s hover-variant
+  prövad + förkastad; ikon-krocken Users→Filter löst.
+  **NÄSTA: /to-prd (ETT PRD: struktur + facit) → /to-issues; skivorna
+  = pipeline B i T76-piloten.**

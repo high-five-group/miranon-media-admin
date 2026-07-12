@@ -54,6 +54,22 @@
   (`1a9e929`). Tråd-synk: T69 § Revision S64 + T77-kort + T47-defer +
   index. **NÄSTA: konvergens-passet (G) → facit låst → /to-prd →
   /to-issues.**
+- [x] **KONVERGENS-PASSET KLART: M6 LÅST SOM FACIT** (2026-07-12,
+  Del 3 kanonisk plats; Marcus-kvittens "Vi kör på detta. Vi låser."):
+  T66-formens konvergens på riktiga `/mer` (underform A, M1 = exakt
+  kopia) — 5 Marcus-varv M2→M6 (`e8bc088`→`230f322`, varje steg
+  [PROTOTYPE]-committat, CI grönt per jobb inkl. Test+Build):
+  FK-formen → hover-testet FÖRKASTAT (M3) → chevronen BORT (M4,
+  D-revisionen: app-bred "navigationsrader bär inte chevron") →
+  tabbar-ikonparitet (M5, research-verifierad färghierarki: M3-listor
+  `on-surface-variant` vs label `on-surface`; chrome-state ≠
+  content-färg) → detalj-svepet (M6: FK-måtten, DUBBELKANT-fyndet
+  16 px, ikon-krocken Users→Filter, fokus-ring verifierad).
+  Facit-spec + byggkravslista i Del 3; bilagor
+  `bilagor/s64-mer-konvergens/` (9 dumpar); återupplivningsväg
+  `230f322`; tsr-split-stale = lesson-kandidat; prototypen raderad
+  (klausul iv). **NÄSTA: /to-prd (ETT PRD: struktur + facit) →
+  /to-issues.**
 
 ### Session 63 ✅ AVSLUTAD (2026-07-12) — Task-7-kedjan: grillning → ADR-072 → PRD TASK-8 → skivor 8.1–8.5
 
