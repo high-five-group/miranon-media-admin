@@ -1,14 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import {
-  CalendarPlus,
-  ChevronRight,
-  ClipboardList,
-  Hourglass,
-  LogOut,
-  Mail,
-  Star,
-  Users,
-} from 'lucide-react';
+import { CalendarPlus, ClipboardList, Hourglass, LogOut, Mail, Star, Users } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/primitives/Button';
@@ -57,17 +48,18 @@ const actionRows: ProtoRow[] = [
 ];
 
 // [PROTOTYPE] Kort-raden — FK IMG_1541-formen: hel radyta klickbar,
-// ikon vänster (dekorativ), etikett bär länknamnet, chevron höger.
+// ikon vänster (dekorativ), etikett bär länknamnet. Chevronen borttagen
+// M4 (Marcus-varv 3 — öppen revision av samsyn D:s "alltid med",
+// bokförs vid facit-låsningen).
 function ProtoNavCard({ to, icon: Icon, label }: ProtoRow) {
   return (
     <li>
       <Link
         to={to}
-        className="flex min-h-14 items-center gap-4 rounded-2xl border border-transparent p-5 hover:bg-bg-muted contrast-more:border-border-strong"
+        className="flex min-h-14 items-center gap-4 rounded-2xl border border-transparent bg-bg-muted p-5 contrast-more:border-border-strong"
       >
         <Icon size={22} aria-hidden className="shrink-0" />
         <span className="grow font-medium">{label}</span>
-        <ChevronRight size={20} aria-hidden className="shrink-0 text-text-muted" />
       </Link>
     </li>
   );
