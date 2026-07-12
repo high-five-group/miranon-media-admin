@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { CircleAlert } from 'lucide-react';
 import { useMemo } from 'react';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { displayName, inskickadTid } from '@/components/registrations/registration-display';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
@@ -110,6 +111,20 @@ export function NyaAnmalningarCard() {
       isError={registrations.isError}
       error={registrations.error}
       loadingLabel="Laddar nya anmälningar…"
+      // Lugnt laddläge (task-8.4): listytan är DIMENSIONSRESERVERAD till den
+      // fulla listans klienthöjd (h-80 = max-h-80:s 320 px; Lottas 25-raders
+      // lista står alltid i maxhöjden) med samma mt-2/pr-3-rytm som ul:n →
+      // listan trycker aldrig ner CTA:n när den landar (användarberättelse 7).
+      // Fyra synliga listrads-block (à 3lh ≈ radhöjden) speglar de kommande
+      // raderna; overflow-hidden håller reservationen exakt.
+      pendingBody={
+        <div className="mt-2 flex h-80 flex-col gap-2 overflow-hidden pr-3">
+          <Skeleton variant="listRow" />
+          <Skeleton variant="listRow" />
+          <Skeleton variant="listRow" />
+          <Skeleton variant="listRow" />
+        </div>
+      }
       errorTitle="Kunde inte hämta anmälningar"
     >
       {senaste.length === 0 ? (
