@@ -21,7 +21,11 @@ lifecycle: paused
 - **Tillstånd:** se frontmatter `lifecycle`
 - **Sessioner:** född utanför session (Code-chatt 2026-07-07, parallell
   med S56/S57); tas upp som EGEN session efter S56 + S57 (Marcus-ord:
-  "nästa grej efter session 56 och 57")
+  "nästa grej efter session 56 och 57"). **Upptag planerat S64**
+  (Marcus-vägval vid S63-avslut): kedjan samsyn A–H → öppna frågor
+  (F preliminär) → /to-prd → /to-issues; skivorna är därefter
+  pipeline B-kandidater i T76-piloten (partitionen task-8-skivorna ∥
+  T69-skivorna — kollisionsytorna bokförda i T76-kortet).
 - **Styrande:** denna samsyn (A–H nedan); T66-processen (stående
   prototyp-arbetsform); ORDLISTA.md ("Mina sidor", kanoniserad i samma
   landning); T68 (badge-frågan, utskuren härifrån)

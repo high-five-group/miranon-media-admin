@@ -76,6 +76,17 @@
   = plockbara. **NÄSTA: Marcus väljer — batch på 8.1–8.3
   (/work-batch) · QA 4.6 · batch 4 (TASK-5/6); vid avslut: skörd +
   BUILD-LOG.**
+- [x] **End-passet FÖRBERETT** (2026-07-12, Del 5 kanonisk plats;
+  Marcus-vägval: S64 = T69-upptaget → S65 = T76-piloten på partitionen
+  task-8 ∥ T69, bedömningen säkrad i T76-kortet): skörd **L271**
+  [UNIVERSAL] (dygnsgräns-fönstret gör runner-zon-buggar latenta —
+  skärper L264; 2 kandidater explicit förkastade med motiv; hub-lyft
+  L267–L271 buntas till nästa hub-sync) + **BUILD-LOG S63-post** +
+  tråd-synk (T69 upptags-not, T76 partitions-bedömning) +
+  transcript-ref (Code-JSONL 1 442 151 byte, 615 rader).
+  Intentions-grinden PASSERAD (nästa = T69, NY session S64).
+  Coverage-rapporten i STOPPA; lifecycle-flip + rad 7-slutsummeringen
+  väntar Marcus-kvittens. Kvar efter stängning: Update-klicket.
 
 ### Session 62 ✅ AVSLUTAD (2026-07-11) — Bygget /work-batch + ADR-071 → batch 3 skarpt → granskningsvåg 4.5 + task-7
 

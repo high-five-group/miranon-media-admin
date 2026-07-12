@@ -19,7 +19,19 @@ lifecycle: paused
 
 - **Tråd-ID:** `T76-parallella-batch-pipelines`
 - **Tillstånd:** se frontmatter `lifecycle` — parkerad ARMERAD; trigger =
-  två genuint disjunkta plockbara kort + Marcus explicita pilot-order
+  två genuint disjunkta plockbara kort + Marcus explicita pilot-order.
+  **Pilot-partition planerad (S63-vägval + Code-bedömning):** pipeline A
+  = task-8-skivorna (Lugnt laddläge, 8.1→8.4 sekventiellt internt —
+  8.4:s beroende på 8.1+8.2 hålls inom pipelinen) ∥ pipeline B =
+  T69-skivorna (Mer-vyn; skivas S64). Disjunkt sånär som på TRE
+  kollisionsytor som checkas vid partitionen: (1) lockfilen —
+  task-8.3 lägger persist-beroenden; krock om T69-skiva också lägger
+  paket, (2) design-system-specen — task-8.2 skriver laddläges-
+  sektionen; sekvenseras mot ev. T69-spec-skrivning, (3) routeTree-
+  genereringen om T69 ändrar routes. TASK-5/6 hålls UTANFÖR piloten
+  (delar Playwright-konfigen → sekventiell batch 4). Snabbare
+  reservväg om T69 försenas: 8.2 ∥ 8.3 har disjunkta filfotavtryck
+  inom samma PRD.
 - **Sessioner:** 62-parallell (grillad samsyn 2026-07-11 i tredje-stols-
   chatt bredvid S62; kvitterad "Kvitterar" på hela kontraktet)
 - **Styrande:** [ADR-071](../../docs/decisions/ADR-071-afk-batch-kontraktet.md)

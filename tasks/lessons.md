@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-11
+updated: 2026-07-12
 review_by: 2026-11-15
 status: stable
 ---
@@ -3727,3 +3727,27 @@ ogrindat och läs utfallet, eller villkora direkt på grind-kommandots exit
 (if/&& utan pipe, alternativt pipefail). Lokala grindkörningar ska ha
 CI-paritet även i exit-semantiken — CI:s jobb fälls av exit-koden, inte av
 att någon läser texten.
+
+### L271 [UNIVERSAL] — Dygnsgräns-fönstret gör runner-zon-buggar latenta — first-pass-grön CI bevisar inte frånvaron av tidszons-fel
+
+Datum: 2026-07-12 | Källa: S63 Del 3 (pill-testet task-4.3 AC 1 föll i run
+29170540541 kl 22:27Z — datumsträngar räknade i runnerns UTC medan browsern
+kör Europe/Stockholm per playwright-konfigen; testet gick FIRST-PASS-GRÖNT
+i S61 kl ~20Z och i alla körningar däremellan; TZ=UTC-repro RÖD lokalt
+medan fönstret var öppet → fix `c4c52b2` → CI grön I fönstret, run
+29170841109) (klass: test-disciplin/tidszons-paritet; skärper L264)
+
+L264 täckte KLOCKSLAG (formatering); samma rot fäller DATUMSTRÄNGAR till
+mockar: en dagens-datum-sträng härledd med runnerns lokala getters hamnar en
+dag BAKOM SUT:ens zon i fönstret mellan UTC-midnatt-förskjutningen och
+midnatt (22:00Z–00:00Z för Stockholm sommartid) — "Idag"-data blir gårdag
+och filtreras bort, N-dagar-aritmetik blir N−1. Det lömska är latensen:
+felet existerar bara ~2 h/dygn, så varje grön körning utanför fönstret är
+ett icke-bevis — first-pass-grön CI kan inte skilja "rätt" från "latent
+fönster-fel". Disciplinen: (1) ALLA värden som korsar runner→SUT-gränsen
+(datumsträngar, klockslag, epoch-avrundningar) härleds i SUT:ens zon (Intl
+med explicit timeZone — sv-SE ger ISO-form för datum); (2) röd-kapabel
+repro finns alltid: forcera runner-zonen (`TZ=UTC`) lokalt — den simulerar
+fönstret oavsett klockan; (3) vid tidsrelaterade testfynd: grep:a filen
+efter FLER runner-zon-getters innan fixen deklareras klar (svepet är
+billigt, klassen återkommer).

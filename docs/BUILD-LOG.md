@@ -2638,6 +2638,21 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 63 — Task-7-kedjan komplett: grillning → ORDLISTA → ADR-072 → PRD TASK-8 → skivor 8.1–8.5 (2026-07-12)
+
+**Commit-range:** `c8ad628` (sessionsdok-födelse) → HEAD. **Mål:** driva design-kortet task-7 (kallstartens laddläge) från granskningsfynd till byggbar spec per S62-handoffen. Ej byggplan-fas — design-session som producerade spec-artefakter + en CI-remediering.
+
+- **Födelsen:** midnatts-datum-driften fångad av create-session-doc steg 5 (`date +%F` vid skapandet → fil-datum 2026-07-12); numrerings-avvikelse disk-vunnen (T76 registrerades post-S62-stängning → nästa tråd T77, inte T76).
+- **Grillad samsyn (Del 2):** 5/5 beslut på Code-rekommendation A — app-bred **Lugnt laddläge**-princip + Skeleton-primitiv med Hem först · persist-cache med skyddsräcken · riktigt chrome + förenklade datablock med långsam shimmer · mät-först-tröskeln · ADR för persist-beslutet. Research käll-verifierad FÖRE rekommendationerna (web-agent: NN/g, Chung, Viget, TanStack-dok + maintainers, OWASP, Roselli, FK): kortets "0,5 s"-tröskel gick inte att verifiera → öppet riven → 1 s (NN/g + FK samstämmiga); FK saknar skeleton → designen går ÖVER FK-golvet, öppet bokfört. ORDLISTA-posten "Lugnt laddläge" landad obuntad vid kristallisering (`e7a70ac`).
+- **CI-röd-detour (Del 3):** Del 2-landningens run föll på pill-testet (task-4.3) — datumsträngar i runnerns UTC vs browserns Stockholm; latent 22–24Z-fönsterbugg (L264-klassen för datumsträngar). Red-kapabel slinga: `TZ=UTC`-repro RÖD lokalt medan fönstret var öppet → fix per repots Intl-förebild → RÖD→GRÖN båda zonerna → `c4c52b2` → **CI grön per jobb I fönstret** (run 29170841109). → **L271**.
+- **Spec-kedjan (Del 3–4):** **ADR-072 mintad** (klient-persist av query-cachen med skyddsräcken; hotmodellen öppen, count 72==72) · **PRD TASK-8 publicerad** (16 användarberättelser, 11 implementationsbeslut, Marcus-kvitterad test-skarv: e2e/axe + a11y-primitiv, inga nya skarvar) · **task-7 → Done** (final summary) · **skivorna task-8.1–8.5 publicerade** (skiv-godkännandet Marcus-delegerat till senior-avgörande, S56-precedenten; täcknings-pass 16 UB + 11 beslut → 5 skivor: mätprotokollet S · Skeleton-primitiven M · persist-lagret M · Hem till Lugnt laddläge M ←8.1+8.2 · QA S ready-for-human; DoD-arv 2 spec-grindar per skiva) · T76-nummer-noten (pilot-ADR:n ≠ 072, öppet justerad).
+- **Vägvalet (Marcus):** S63 stängs; S64 = T69-upptaget (Mer-vyn: grillning → PRD → skivor) → S65 = T76-piloten på partitionen task-8-skivorna ∥ T69-skivorna (Code-bedömning: disjunkt sånär som på tre kollisionsytor bokförda i T76-kortet — lockfilen [8.3:s beroenden], design-system-specen [8.2:s sektion], routeTree vid route-ändringar; TASK-5/6 hålls utanför piloten).
+- **Numrering:** **ADR-072 mintad** (count 72, nästa 073) · lesson **L271** [UNIVERSAL] (nästa L272; hub-lyft L267–L271 vid nästa hub-sync-moment) · fälla 45 oförändrad · ingen ny tråd (nästa T77).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-12-session-63.md`](../tasks/sessions/2026-07-12-session-63.md) (Del 1–5). **EJ fas-avslut.** Kvar till S64 (HANDOFF): **T69-upptaget** (Mer-vyn FK-mönstret: design-kedjan) → S65: T76-pilot-bygget + pilot; i Marcus-takt: QA 4.6 (sista grinden för TASK-4-PRD:n) · batch 4 (TASK-5/6, sekventiellt) · task-8-skivorna 8.1–8.3 plockbara.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
