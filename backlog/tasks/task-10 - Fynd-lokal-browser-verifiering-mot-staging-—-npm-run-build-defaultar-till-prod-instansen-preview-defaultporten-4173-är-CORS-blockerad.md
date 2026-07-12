@@ -3,10 +3,10 @@ id: TASK-10
 title: >-
   Fynd: lokal browser-verifiering mot staging — npm run build defaultar till
   prod-instansen; preview-defaultporten 4173 är CORS-blockerad
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-12 11:54'
-updated_date: '2026-07-12 18:53'
+updated_date: '2026-07-12 19:00'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,11 +29,9 @@ FÖRVÄNTAT BETEENDE (klassningsbeslut för människan): endera dokumenteras bå
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
-
-
 
 ## Comments
 
@@ -53,6 +51,12 @@ created: 2026-07-12 15:13
 Komplettering till kommentar #2 (samma incident, VERIFIERAD slutdiagnos för människo-symptomet): npm-install-fällan var reell men inte tillräcklig — knappen Marcus såg kom från en REGISTRERAD BYGGD SERVICE WORKER på dev-originet localhost:5173. Verifierad kedja: (1) sw.ts NavigationRoute(createHandlerBoundToURL('index.html')) servar ALLA SPA-navigationer cache-first ur precachen (Workbox by design) → gammal bundle för evigt oavsett vad servern servar; (2) dev-servern svarar 200 text/html på /sw.js (SPA-fallback, devOptions.enabled=false) → SW-uppdatering misslyckas på MIME men avregistreras ALDRIG (kräver 404); (3) skipWaiting + clients.claim tar alla klienter direkt. Infektionsväg: byggda preview-/QA-appar servade på 5173 (fälla 2:s mitigering ÄR infektionsvägen — dev och byggd app delar port/origin, och byggd app registrerar SW:n). Empiriskt verifierat: SW-registrering fanns även i Playwright-MCP-profilen (scope 5173, sw.js activated, controller=true) men med TOM precache → nätverket vann → nya appen; profil med intakt precache → gamla appen. Färsk kontext renderar nya Hem UTAN knappen (server + kod friska hela kedjan). MITIGERING per browser-profil: DevTools → Application → Storage → Clear site data → ladda om (loggar ut; persist-cachen töms). KLASSNINGS-INPUT: femte fällan i klassen — OBS åter-armeras vid varje besök på byggt preview på 5173; kandidat-skyddsräcken: preview/QA på egen port+origin (aldrig 5173 — men se fälla 2: CORS-allowlisten måste då utökas), selfDestroying-SW i staging-byggen, eller QA-runbook-steget 'unregister SW efter QA-pass'.
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 649374dc9fed6216cd71d48fb02c8cfdeccb0477 · CI-run 29204763171 per jobb: Detect changed files / Lint+Audit+TypeCheck / Docs link check / Test+Build / CI Passed or Skipped — samtliga success · CI-grön-första-pass: ja · defekter under körning: 1 (egen: bundelgrindens första utkast greppade nakna projekt-refs — prod-refen förekommer LEGITIMT i varje bundle som env-coherence-jämförelsekonstant (ADR-061) och grinden fällde korrekta staging-byggen; fångad empiriskt i falsifikationspasset, fixad till full-host-grep före leverans) · TDD: 3 RÖD→GRÖN-cykler i körning (AC 1 bundelgrinden: prod-dist → exit 1 RÖD / staging-dist → exit 0 GRÖN, samtliga tre grind-grenar L273-falsifierade; AC 2 preview-specen: prod-dist → 1 failed RÖD (prod-guard aborterade login, noll riktig prod-trafik) / test:preview:staging-kedjan → 1 passed GRÖN; AC 3 dotenv: utan prefix före = 185 passed/111 skipped RÖD → utan prefix efter = 290 passed/6 failed GRÖN, identisk med source-prefix-baseline; de 6 = kända TASK-11-fallen) · AC 4 runbook = docs-undantag (grindad markdownlint+vale exit 0)
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
