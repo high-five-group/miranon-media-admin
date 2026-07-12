@@ -11,6 +11,7 @@ import {
   NavCard,
   Select,
   SelectItem,
+  Skeleton,
   TextArea,
 } from '@/components/primitives';
 
@@ -216,6 +217,37 @@ function PrimitivesPage() {
             </li>
           </ul>
         </nav>
+      </section>
+      <section aria-labelledby="rubrik-skeleton" className="mt-8 max-w-md">
+        <h2 id="rubrik-skeleton" className="text-xl">
+          Skeleton
+        </h2>
+        <p className="mt-2 text-small text-text-secondary">
+          Lugnt laddläge (spec §15): statiskt demo-kort i permanent laddläge. Roselli-anatomin ägs
+          av konsumenten — aria-busy på innehålls-containern + sr-only-besked; blocken är
+          aria-hidden.
+        </p>
+        <div
+          aria-busy="true"
+          className="mt-4 flex flex-col gap-4 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong print:border-border-strong"
+        >
+          <span className="sr-only">Laddar demo-innehållet…</span>
+          {/* Textrader — 1lh i brödtext-kontext; avtrappade bredder antyder löptext. */}
+          <div data-demo="skeleton-text" className="flex flex-col gap-2">
+            <Skeleton variant="text" />
+            <Skeleton variant="text" className="w-4/5" />
+            <Skeleton variant="text" className="w-3/5" />
+          </div>
+          {/* Talet — ärver talets slutna typografi (Obetalda-kortets 3xl-form). */}
+          <p data-demo="skeleton-number" className="font-semibold text-3xl">
+            <Skeleton variant="number" />
+          </p>
+          {/* Listrader — dimensionsreserverad list-yta (anmälningslistans klass). */}
+          <div data-demo="skeleton-list" className="flex flex-col gap-2">
+            <Skeleton variant="listRow" />
+            <Skeleton variant="listRow" />
+          </div>
+        </div>
       </section>
     </main>
   );

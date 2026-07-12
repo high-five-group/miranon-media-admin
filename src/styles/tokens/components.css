@@ -80,4 +80,14 @@
   --mm-navcard-icon: var(--mm-text-secondary);
   --mm-navcard-border: transparent;
   --mm-navcard-border-contrast: var(--mm-border-strong);
+
+  /* ── Skeleton (task-8.2 — Lugnt laddläge; spec §15) ──
+     Blocket ärver --mm-border-field:s dokumenterade ≥3:1-egenskap mot
+     appens ljusa ytor (WCAG 1.4.11, se semantic.css); contrast-more
+     mörknar blocket ett steg (text-secondary ≈ 7:1). Shimmer-glansen
+     är en genomskinlig ljusning som sveper över basfärgen — basfärgen
+     ensam bär kontrastkravet. */
+  --mm-skeleton-block: var(--mm-border-field);
+  --mm-skeleton-block-contrast: var(--mm-text-secondary);
+  --mm-skeleton-shimmer: color-mix(in srgb, var(--mm-bg) 45%, transparent);
 }

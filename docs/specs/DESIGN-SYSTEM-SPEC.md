@@ -1037,6 +1037,105 @@ inte av regeln.
 
 ---
 
+## 15. Lugnt laddläge — laddprincipen + Skeleton-primitiven
+
+App-bred laddprincip (ORDLISTA "Lugnt laddläge"; task-7-grillningen S63
+Del 2, käll-verifierad research: NN/g Skeleton Screens 101, Chung-empirin
+om shimmer-tempo, Adrian Rosellis skeleton-a11y-mönster). Mekaniken bor i
+PRD TASK-8; Hem är första implementationsyta — övriga vyer migreras via
+egna kort och ärver principen härifrån utan nya beslut.
+
+### Principen (gäller varje vy)
+
+- **Slutgeometri från första bildrutan.** Inget växer, hoppar eller byter
+  plats när data landar — layout-skift ≈ 0 är grindkravet och bevisas med
+  renderad mätning (boundingBox under/efter laddning).
+- **I första hand syns ingen laddning alls:** senast kända data visas
+  direkt ur persist-cachen (ADR-072) och byts tyst mot färsk.
+- **Måste laddning synas** renderas riktiga rubriker och riktig kort-chrome
+  direkt (de är statiskt kända); ENDAST datakropparna får förenklade
+  skeleton-block som speglar det innehåll som kommer (lika många rader,
+  samma proportioner).
+- **Under 1 sekund visas ingen indikation alls** (NN/g-tröskeln 0,1/1/10 s;
+  FK FLoader 1 s). Framträdande-formen är mätlåst per task-8.1: det
+  uppmätta kallstartsfönstret ligger klart över 1 s → skeleton från första
+  bildrutan, ingen framträdande-fördröjningsmekanism.
+- **"Laddar…"-textrader och spinners används inte.** Designen går medvetet
+  över FK-golvet (FK saknar skeleton; spinner efter 1 s är deras mönster) —
+  öppet bokfört med research-stöd i PRD TASK-8.
+
+### Skeleton — API (medvetet minimalt)
+
+```tsx
+<Skeleton variant="text" />
+<Skeleton variant="number" className="text-3xl" />
+<Skeleton variant="listRow" />
+```
+
+| Prop | Typ | Roll |
+|---|---|---|
+| `variant` | `'text' \| 'number' \| 'listRow'` | Block-formen: textrad (1 line-box, full bredd), tal (1 line-box, ~2ch), listrad (3 line-boxar, radie som zebra-raderna) |
+| `className` | `string` | Bredd/typografi-styrning (merge:as efter varianten) |
+
+Höjderna är **lh-baserade** och följer omgivande typografi — blocken
+reserverar det kommande innehållets slutdimensioner i varje textskala
+(ett `number`-block i `text-3xl`-kontext blir talets exakta line-box,
+36 px). Ingen framträdande-fördröjnings-prop och ingen animations-ratt
+(över-engineering-vakten; formbeslutet är mätlåst).
+
+### Anatomi — Roselli-mönstret
+
+Blocket är ALLTID `aria-hidden` (dekorativt, utan roll och text).
+Konsumenten äger innehålls-containern som laddar och sätter:
+
+- `aria-busy="true"` på containern under laddning, och
+- ett visuellt dolt textbesked (`sr-only`) i containern — `aria-busy`
+  kompletteras ALLTID med textbeskedet; få skärmläsare honorerar busy
+  ensam.
+
+```tsx
+<div aria-busy={isPending}>
+  {isPending ? (
+    <>
+      <span className="sr-only">Laddar nästa event…</span>
+      <Skeleton variant="text" />
+      <Skeleton variant="text" className="w-3/5" />
+    </>
+  ) : (
+    <EventMeta … />
+  )}
+</div>
+```
+
+### Form
+
+- Blockfärgen håller **≥3:1-kontrast** mot appens ljusa ytor
+  (WCAG 1.4.11) — komponent-tokenen ärver `--mm-border-field`:s
+  dokumenterade kontrast-egenskap. `prefers-contrast: more` mörknar
+  blocket ett steg (`--mm-text-secondary`, ≈7:1).
+- **Långsam shimmer vänster→höger** (2,5 s per svep — Chung-empirin:
+  långsam upplevs kortare än puls) som `::after`-svep. Animationen är
+  deklarerad ENDAST under `prefers-reduced-motion: no-preference`
+  (`motion-safe:`-varianten; WCAG 2.2.2-noten) — statiska block annars;
+  base.css-neutraliseringen står kvar som dubbelbälte. Keyframes:
+  `tailwind.css` `@theme` (`--animate-skeleton-shimmer`).
+- **Print:** bakgrundsfärger skrivs ofta inte ut — konturen i
+  `--mm-border-strong` bär urskiljbarheten (border-transparent-mönstret
+  håller dimensionen identisk i alla lägen).
+- Beteendekontraktet är computed-style-testat i `tests/a11y/Skeleton.spec.ts`
+  (token-paritet, kontrastkvot, emulateMedia-lägena, lh-dimensionerna);
+  axe-skanningen av demo-sektionen bor i `tests/a11y/primitives.spec.ts`.
+
+### Komponent-tokens (components.css)
+
+```css
+--mm-skeleton-block: var(--mm-border-field);
+--mm-skeleton-block-contrast: var(--mm-text-secondary);
+--mm-skeleton-shimmer: color-mix(in srgb, var(--mm-bg) 45%, transparent);
+```
+
+---
+
 ## Ändringslogg
 
 | Datum | Förändring |
@@ -1044,4 +1143,5 @@ inte av regeln.
 | 2026-04-05 | Initialt dokument. Token-arkitektur, typografiskala, spacing-system, lint-config, design-audit skill-spec, Playwright-config, Tailwind-mappning. |
 | 2026-04-07 | [GA] Integrerat gap-analys: View Transitions (§9), stale-data-indikatorer (§10), error boundary-meddelanden (§11), systemhälso-indikator (§12), fem kvaliteter (§13). Audit-prompt uppdaterad med performance/säkerhet/ARIA/EAA-kontroller. |
 | 2026-07-12 | §14 NavCard — navigationsrads-primitiven (M6-facitet, S64 Del 3): API, anatomi, form, komponent-tokens + app-breda regeln "navigationsrader bär inte chevron" (task-9.1). |
+| 2026-07-12 | §15 Lugnt laddläge — laddprincipen (app-bred, S63 Del 2-samsynen + task-8.1:s mätlåsta framträdande-form) + Skeleton-primitiven: API, Roselli-anatomin, form, komponent-tokens (task-8.2). |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |

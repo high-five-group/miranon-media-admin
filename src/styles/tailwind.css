@@ -107,6 +107,26 @@
   --text-5xl: 2.5rem;
   --text-5xl--line-height: 1.2;
   --text-5xl--letter-spacing: -0.02em;
+
+  /* ── Skeleton-shimmer (task-8.2, spec §15) ──
+     Långsam svepning vänster→höger (Chung-empirin: långsam shimmer
+     upplevs kortare än puls; långsam slår snabb — S63 Del 2).
+     Konsumeras ENDAST via motion-safe:-varianten så att deklarationen
+     är media-gated bakom prefers-reduced-motion: no-preference
+     (WCAG 2.2.2-noten) — base.css-neutraliseringen står kvar som
+     dubbelbälte. Durationen är medvetet inget token-värde: ingen
+     konsument justerar den (över-engineering-vakten). */
+  --animate-skeleton-shimmer: mm-skeleton-shimmer 2.5s ease-in-out infinite;
+
+  @keyframes mm-skeleton-shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(100%);
+    }
+  }
 }
 
 /* ── Inline-rullningsytans scrollmarkör (K10-facit, task-4.4) ──
