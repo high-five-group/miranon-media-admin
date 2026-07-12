@@ -63,7 +63,7 @@ function ProtoNavCard({ to, icon: Icon, label }: ProtoRow) {
     <li>
       <Link
         to={to}
-        className="flex min-h-14 items-center gap-4 rounded-2xl border border-transparent bg-bg-muted p-5 contrast-more:border-border-strong"
+        className="flex min-h-14 items-center gap-4 rounded-2xl border border-transparent p-5 hover:bg-bg-muted contrast-more:border-border-strong"
       >
         <Icon size={22} aria-hidden className="shrink-0" />
         <span className="grow font-medium">{label}</span>
