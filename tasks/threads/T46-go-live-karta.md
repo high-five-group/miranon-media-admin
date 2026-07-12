@@ -25,6 +25,18 @@ allowlist-deklaration 7→10 (`dd97807`, fail-closed-test 4/4) → override-smal
 Commit-trail: `fbca88f` (doc-födelse) → `dd97807` (allowlist) → BUILD-LOG Session 43.
 Deployen committade inget (out-of-CI prod-handling).
 
+## Switch-post vid skarp Lotta-drift: /work-batch B-läget (ADR-073 — INBYGGD grind, kan inte missas vid go-live)
+
+När appen går i skarp Lotta-drift SKA batch-drift byta till B-formen
+(pre-beslutad T76-samsyn, färdigspecad ADR-073 beslut 7): UI-korts PR
+öppnas som DRAFT och förblir öppen tills design-review; granskningen
+sker mot branch-preview (staging-mode-bygge + CORS-godkänd port per
+TASK-10-fällorna); merge PÅ Marcus kvittens — inget ogranskat UI når
+main. Aktiveras som explicit B-flagga i /work-batch-ordern (skill
+1.14.0). Icke-UI-kort behåller v1-flödet. Denna post är go-live-kartans
+PROCESS-grind: bocka den i samma moment som Grind F/motsvarande
+miljö-flippar.
+
 ## UI-vägens prod-moment (registrerade vid TASK-1-skivningen, S52)
 
 - **Display-namn i prod-kontots metadata** — skiva TASK-1.1 (namnkällan)

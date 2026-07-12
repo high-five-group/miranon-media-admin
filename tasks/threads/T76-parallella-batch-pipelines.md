@@ -158,17 +158,26 @@ Grillningen 2026-07-11 tog designen till samsyn; piloten återstår.
 
 1. Batch 4 (TASK-5+6, SEKVENTIELLT — överlapp) + task-7-grillningen i
    Marcus-takt (S63-handoff bär den).
-2. När två disjunkta plockbara kort finns: **pilot** på Marcus
-   klartext-order (2×1 kort, inline-skript, förberedelse-checklistan).
-   **PARTITIONEN FINNS (S64, 2026-07-12):** task-9.1
-   (NavCard-primitiven) + task-9.3 (Hem-platshållar-borttagningen) är
-   oblockade `ready-for-agent` — pipeline B mot task-8-skivorna
-   (8.1–8.3). Kollisionsytorna per §ovan gäller: 9.1 rör
-   design-system-specen (samma yta som 8.2 — partitionera ISÄR eller
-   sekvensera), lockfilen orörd (inga nya beroenden i 9.1/9.3),
-   routeTree orörd (inga nya routes).
-3. Vid bevisad pilot — EN landning: **ADR-072** (parallell-formen +
-   B-switchen färdigspecad + drain + semafor; amenderar ADR-071) ·
-   `/work-batch` 1.14.0 (parallel-läge + B-flagga) · T71-radens öppna
-   revidering · T46 go-live-kartans switch-post · parkerade termer →
-   SYSTEMET.md §0.
+2. ~~När två disjunkta plockbara kort finns: pilot~~ **PILOT BEVISAD
+   (S65, 2026-07-12, design-kvittens "A/A, max-kort 5"):** fasat
+   schema 8.1-EXKLUSIV (mätvaliditet) → 8.3∥9.1 → 8.2∥9.3 på
+   partitionen från S64 — **5/5 kort first-pass** (varje PR-run OCH
+   main-run grön per jobb första försöket), 0 aborts, 0 ingripanden,
+   0 permission-stopp, 0 merge-konflikter, parallell-vinst ≈ 35 %
+   väggklocka, semafor-väntan 220 s totalt, 7 agent-fångade defekter
+   varav 0 nådde main. Kollisionsytorna hanterades av schemat
+   (spec-§15-instruktionen gav ren merge). Drain-vägen ALDRIG triggad
+   (obeprövad, öppet). Pilot-formens 2×1-rad ersattes av 3∥2 på
+   Marcus-kvittens (S65 design-STOPPA fråga 1). Kanonisk trail:
+   S65-doket Del 2–5.
+3. ~~Vid bevisad pilot~~ **VERKSTÄLLD (S65, bevis-landningen):**
+   **[ADR-073](../../docs/decisions/ADR-073-parallella-batch-pipelines.md)**
+   mintad (parallell-formen + B-switchen färdigspecad + drain +
+   semafor + CI-kedjans serialisering; amenderar ADR-071) ·
+   `/work-batch` **1.14.0** (parallell form + B-flagga; hub-landning)
+   · T71-radens öppna revidering (premisserna rivna ben för ben,
+   bokförd kedja i T71-kortet) · T46 go-live-kartans switch-post
+   (inbyggd) · termerna *pipeline (batch)* / *drain* / *fan-out,
+   fan-in* → SYSTEMET.md §0. Kvar i tråden: Marcus granskningsvåg
+   (4 UI-kort) + skillens första skarpa parallell-bruk efter
+   plugin-update (L267-kedjan).

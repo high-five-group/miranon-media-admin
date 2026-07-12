@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-11
+updated: 2026-07-12
 review_by: 2026-10-09
 status: stable
 lifecycle: active
@@ -172,6 +172,24 @@ utöver det är extrapolation från hans principer, inte hans ord.
   per Lektion 47 en entropi-multiplikator. `isolation: worktree` löser
   filkonflikten men inte de andra två — och varje worktree måste köra hela
   DoD-sviten separat.
+
+  **REVIDERAD ÖPPET S65 (2026-07-12, ADR-073 — aldrig tyst rivning):**
+  avvisningen VAR korrekt för sin form (delat träd + trunk-push +
+  samma-commit-stängning + delad plock + delad staging). Premisserna revs
+  därefter ben för ben, varje ben med egen bokförd mekanism: *samma
+  commit som koden* → tvåstegs-stängningen (T75/L263, S62) gjorde
+  stängningen till en separat orkestrator-handling; *parallella commits
+  mot samma branch* → kort-branch + PR som serialiseringspunkt (T76
+  beslut 4); *delad plock* → Marcus-utpekad partition före spawn (T76
+  beslut 2); *entropi-multiplikatorn* → worktree-isolering + fasat
+  schema + staging-semafor (T76 beslut 1/3) — och "varje worktree måste
+  köra hela DoD-sviten" visade sig vara priset, inte hindret
+  (implementationsfasen dominerar väggklockan; semafor-väntan 220 s
+  totalt i piloten). **Bevis: S65-piloten** (2 pipelines × utpekade
+  kort, 5/5 first-pass, 0 konflikter, ≈35 % väggklocke-vinst).
+  Lektion 47:s kärna STÅR för oisolerad parallell kodproduktion —
+  det bevisade är den ISOLERADE formen med alla fyra mekanismerna
+  (ADR-073), inte fan-out i allmänhet.
 - **Uppströms-skillsen kan inte bli workflows.** Mid-run-spärren ovan.
   Dokumentationens egen instruktion (*"run each stage as its own workflow"*) hjälper
   inte, eftersom det är just våra stages som behöver Marcus mitt i. En

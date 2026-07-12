@@ -85,6 +85,18 @@
   granskningsfärdiga. Drain-vägen ALDRIG triggad (obeprövad, öppet).
   **NÄSTA: granskningsvågen (Marcus, 4 kort i browsern) →
   bevis-landningen på kvittens.**
+- [x] **BEVIS-LANDNINGEN VERKSTÄLLD** (2026-07-12, Del 6 kanonisk
+  plats; Marcus "Jag kvitterar. Du kan fortsätta med det som är
+  kvar."): **ADR-073 mintad** (73==73 efter räknings-rad-bump; 7
+  beslut inkl. B-switchen färdigspecad; ärliga gränser öppet) ·
+  T71-raden ÖPPET reviderad (premisserna rivna ben för ben) · T46
+  switch-posten inbyggd · T76-sekvensen synkad · **hub `38821c6`:
+  /work-batch 1.14.0** (Parallell form-sektionen + §0-termerna
+  pipeline/fan-out fan-in/drain; läs-tillbaka per L239).
+  Done-flipparna HÅLLS på browser-grinden (L269 — rapport-kvittens ≠
+  design-review). **KVAR: (a) Marcus granskningsvåg 4 kort → Done per
+  kvittens · (b) Marcus plugin-update + omstart (L267) för 1.14.0 ·
+  (c) end-pass med lessons-skörd på Marcus-signal.**
 
 ### Session 64 ✅ AVSLUTAD (2026-07-12) — T69-kedjan: samsyn → facit M6 → PRD TASK-9 → skivor 9.1–9.4
 
