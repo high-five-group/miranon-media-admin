@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-12 17:29'
-updated_date: '2026-07-12 19:11'
+updated_date: '2026-07-12 20:31'
 labels: []
 dependencies: []
 ordinal: 31000
@@ -34,4 +34,6 @@ FÖRVÄNTAT BETEENDE: lokal skarp api-staging-körning ger samma utfall som CI:s
 Registrerat under task-5-körningen (S66 batch 4). Pre-existerande lokalmiljö-gap, INTE orsakat av task-5-ändringen (verifierat: alla 6 fel är exakt samma env-precondition; task-5-diffen rör endast webServer-blocket + test:api*-scriptens PLAYWRIGHT_NO_WEB_SERVER-flagga). CI opåverkad (secreten finns där).
 
 Orkestrator-triage-not (S66 batch 4): TASK-12 är syskon-dubblett — task-6-agentens oberoende återfynd av SAMMA rotorsak (saknad 7:e nyckel TEST_REGISTRATION_RECORD_ID; värdet dokumenterat i BUILD-LOG steg 7b). TASK-12 adderar .env.test.example-mallens lucka. En åtgärd stänger båda — konsolidera vid triage.
+
+S66 batch 2-bekräftelse + diagnostik-nyans (båda pipeline-agenterna träffade klassen oberoende): get-registrations väg D (rad 86/132) kan dessutom timeouta på 30 s vid kall/långsam staging ÄVEN med nyckeln satt — kör riktad omkörning av filen före felklassning (grön omkörning = latens, ej regression). Kandidat vid åtgärd: wire:a nyckeln i .env.test-receptet + runbooken så first-run blir grön utan omkörning (värdet är repo-dokumenterat i BUILD-LOG steg 7b, ej hemligt).
 <!-- SECTION:NOTES:END -->

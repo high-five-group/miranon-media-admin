@@ -4,6 +4,7 @@ title: 'PRD: Lugnt laddläge — persist-cache + skeleton (app-bred princip, Hem
 status: To Do
 assignee: []
 created_date: '2026-07-11 22:42'
+updated_date: '2026-07-12 20:31'
 labels: []
 dependencies: []
 ordinal: 19000
@@ -91,3 +92,9 @@ ORDLISTA-posten 'Lugnt laddläge' är principens definition; S63 Del 2 är kanon
 - [ ] #9 Design-review: Marcus-granskning i webbläsaren av laddläget (kallstart tom cache + varm start + reduced-motion) godkänd (per skiva med UI-yta; L220/L269)
 - [ ] #10 Layout-skift ≈ 0 bevisad med renderad mätning (boundingBox under/efter laddning) före granskning (L245/L246; task-4.5-bevismönstret)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Vy-migrerings-instruktioner från task-8.4-leveransen (S66 batch 2) för NÄSTA vy till Lugnt laddläge: (1) återanvänd DashboardCard-mönstret — pendingBody speglar den laddade kroppens EXAKTA wrapper-anatomi (samma flex/gap/typografi-klasser, lh-block per textrad) så layout-skift ≈ 0 håller by construction; (2) dimensionsreservera listytor till sin max-h-klienthöjd; (3) sätt aldrig framträdande-fördröjning (mätlåst 8.1-beslut); (4) laddbesked-kontraktet: role=status behölls på laddcontainern och hem.staging.test.ts (4.5 AC 3) + persist-cache.staging.test.ts asserterar role=status-count och 'Laddar…'-texter — ändras beskeden i en vy måste båda sviterna uppdateras medvetet i samma commit.
+<!-- SECTION:NOTES:END -->

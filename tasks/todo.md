@@ -86,6 +86,29 @@
   L270-återfall ×3 fångade i stunden · post-batch-steget avklarat
   (dotenv i huvud-ytan; ingen server-omstart krävs — utanför
   Vite-grafen). **NÄSTA: parallell-batch 2 (8.4 ∥ 9.2).**
+- [x] **PARALLELL-BATCH 2 KOMPLETT: 8.4 ∥ 9.2 GRANSKNINGSFÄRDIGA —
+  första skarpa 1.14.0-bruket** (2026-07-12, Del 4 kanonisk plats; run
+  `wf_a429e729-0ad`; förberett av semafor-formaliseringen
+  `scripts/staging-semaphore.sh` [`9039790` efter
+  shellcheck-STRICT-remedieringen, öppet bokförd] + central utpekning
+  `c0528d2`): **8.4** DashboardCard/pendingBody-anatomin →
+  layout-skift ≈ 0 by construction, 7 nya e2e-tester delta-verifierade
+  i PR-CI (`9ffdd5dc` → PR #55 → `2946b29c`) ∥ **9.2** /mer nyskriven
+  på NavCard mot M6-facitet, computed-mått-assertioner,
+  befintlig hideShellHeader-mekanik återanvänd (`c447fd2` → PR #54 →
+  `f4a0288`). Facit: first-pass 4/4 CI-runs · 0 konflikter ·
+  0 permission-stopp · 0 ingripanden · semaforen höll · Marcus
+  dev-server aldrig rörd · drain fortsatt obeprövad (öppet).
+  S66-grindarna SKARPBEVISADE: merge-tree 2/2 · claims-kvitton 2/2 ·
+  pr-ci-bevisformen bar båda korten (5173 upptagen — e2e via PR-CI
+  med jobblogg-verifiering). NYTT MEKANIK-FYND: worktree-familjens
+  delade origin/main-ref flyttas av parallell merge → claims
+  verifieras mot FÖRGRENINGS-SHA (hub-delta-input + lesson-kandidat).
+  Fynd-triaget orkestrator-registrerat (TASK-11-nyansen +
+  TASK-8-instruktionerna; AppShell-synken explicit under kort-baren).
+  **DoD 5 ÖPPEN på båda: Done-flipp = Marcus granskningsvåg (Hem-
+  laddläget + /mer i browsern). NÄSTA: ADR-073-amenderingen +
+  hub-deltat 1.15.0; end-pass på Marcus-signal.**
 
 ### Session 65 ✅ AVSLUTAD (2026-07-12) — T76-piloten bevisad: parallella batch-pipelines (design → 5/5 first-pass → ADR-073 → granskningsvåg)
 
