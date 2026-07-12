@@ -48,6 +48,17 @@
   bokförd) · allowlist-diffen landad (16 poster, smala prefix) · T76
   `paused → active` + index-synk. **NÄSTA: semafor-wrapper + fas 1
   (8.1 exklusiv).**
+- [x] **FAS 1 LEVERERAD: task-8.1 → Done** (2026-07-12, Del 3 kanonisk
+  plats): A1 first-pass (`8f4b7b1`, diff = exakt 2 kortfiler,
+  oberoende verifierad) — mätutfall varm EF 1311–1696 ms / kall
+  dataväg 7,6–7,9 s → **skeleton från första bildrutan** (kommentar på
+  8.4 + metod/råvärden i 8.1-notes); 2 ogiltiga serier kasserade av
+  agent-forensik (prod-mode-bygget + CORS-4173). Orkestrator-kedjan:
+  PR #48 → CI grön per jobb (29191268155) → merge `a50cce7`
+  (draft-ready-mekaniken: lokal no-ff-merge inom allowlisten, öppet
+  bokförd; draft skippas fas 2/3) → main-CI grön (29191469255) →
+  Done + final-summary. **TASK-10** fynd-kort registrerat
+  (orkestrator-serialiserat). **NÄSTA: fas 2 — 8.3 ∥ 9.1.**
 
 ### Session 64 ✅ AVSLUTAD (2026-07-12) — T69-kedjan: samsyn → facit M6 → PRD TASK-9 → skivor 9.1–9.4
 
