@@ -72,6 +72,19 @@
   worktree-remove före branch-delete · 8.2 skrivs som spec-§15
   (konflikt designad bort). DoD 3 + granskningsfärdig-kommentar på
   båda (Done-flipp = Marcus). **NÄSTA: fas 3 — 8.2 ∥ 9.3.**
+- [x] **FAS 3 LEVERERAD → BATCHEN KOMPLETT: 5/5 first-pass**
+  (2026-07-12, Del 5 kanonisk plats): 8.2 Skeleton (`cac0b16` →
+  PR #51 → `221e5f9`; spec-§15 exakt efter §14 — konflikt-designen
+  fungerade; TDD 8 RÖD → 31/31; 0 defekter) ∥ 9.3 Hem-platshållaren
+  (`eddf928` → PR #52 → `e747b85`; diff 3 filer; K10-avvikelsen
+  bokförd; 28/28) — fas 3 ~26 min väggklocka, 0 s semafor-väntan.
+  **Batch-facit: 0 aborts · 0 ingripanden · 0 permission-stopp ·
+  0 merge-konflikter · 7 agent-fångade defekter, 0 till main ·
+  parallell-vinst ≈ 35 % · semafor totalt 220 s.** Env-source-fyndet
+  → kommentar på TASK-10. Kort-status: 8.1 Done; 8.3/9.1/8.2/9.3
+  granskningsfärdiga. Drain-vägen ALDRIG triggad (obeprövad, öppet).
+  **NÄSTA: granskningsvågen (Marcus, 4 kort i browsern) →
+  bevis-landningen på kvittens.**
 
 ### Session 64 ✅ AVSLUTAD (2026-07-12) — T69-kedjan: samsyn → facit M6 → PRD TASK-9 → skivor 9.1–9.4
 
