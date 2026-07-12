@@ -36,6 +36,24 @@
   L272, fälla 45, tråd T77); audit-ci PASSED; T69-kortet flippat till
   `lifecycle: active` + index-raden synkad i upptags-landningen.
   **NÄSTA: research-passet för rubrik-grillningen (öppna frågan F).**
+- [x] **Rubrik-frågan + Hem-identiteten LANDAD: chat-samsyn 1–5**
+  (2026-07-12, Del 2 kanonisk plats): research-passet käll-verifierat
+  (5 konvergerande källklasser: FK 8 skärmar + Apple HIG + Material
+  3 + GOV.UK-klassen inkl. GOV.UK-appens källkod + WCAG/SPA-konsensus;
+  lokal inventering: alla vyer utom Hem bär redan synlig h1) + **FK
+  login-flödesserien** committad (5 bilder; `15b9aea` CI RÖD på
+  L270-självfall [pipe-maskad Vale-exit, öppet bokfört, ingen ny
+  lesson] → `47a9ec0` GRÖN per jobb, run 29186091764) →
+  **Marcus-realiseringen "HELA appen ÄR Mina sidor"** → kvitterade
+  beslut ("Yes. Kvitterar!"): (1) rubrikpolicy synlig h1 alla vyer
+  utom Hem [Hem-K10 orörd, ingen kollision] · (2) T69 B/B2 RIVNA
+  [sex rader i två grupper; namn/e-post → T47] · (3) task-4 beslut 4
+  RIVET [Hem-platshållaren bort via PRD-skiva; platsen reserverad
+  för klockan] · (4) **T77 notis-centret FÖDD** [aldrig död ikon;
+  nästa tråd T78] · (5) ORDLISTA "Mina sidor" omskriven obuntat
+  (`1a9e929`). Tråd-synk: T69 § Revision S64 + T77-kort + T47-defer +
+  index. **NÄSTA: konvergens-passet (G) → facit låst → /to-prd →
+  /to-issues.**
 
 ### Session 63 ✅ AVSLUTAD (2026-07-12) — Task-7-kedjan: grillning → ADR-072 → PRD TASK-8 → skivor 8.1–8.5
 

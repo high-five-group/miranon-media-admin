@@ -22,6 +22,12 @@ fann att skalet saknade BÅDA (fynd iv-1, golv-lucka). Marcus beslutade **Väg 1
 Byggs när ett **konkret inställnings-behov** uppstår (t.ex. notis-preferenser,
 default-vyer, tema, konto-uppgifter). Då:
 
+> **Deferrerat hit från T69 (S64, 2026-07-12):** konto-uppgifts-visningen
+> (inloggat namn + e-post ur befintlig auth-state, key-value-rader per
+> IMG_1542-mönstret) — var T69-B2:s `/mer/mina-sidor`-v1-innehåll; B2 revs
+> när "Mina sidor"-destinationen upplöstes (T69 § Revision S64 punkt 2).
+> Notis-preferenser relaterar till `T77` (notis-centret).
+
 1. Specificera den faktiska funktionen (ingen tom container).
 2. Återinför posten i Mer-skalet (`src/routes/_authenticated/mer/index.tsx`) +
    byggplanen.
