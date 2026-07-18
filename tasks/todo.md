@@ -21,6 +21,32 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 69 — PÅGÅENDE (2026-07-18 →) — Fynd-korten: TASK-15 glob-fixen → TASK-14 kall-morgon-mätningen
+
+> Scope: sessionsdok `2026-07-18-session-69.md` Del 1 (kanonisk plats):
+> TASK-15 kvälls-ingång (ordningsbytet mot TASK-14:s kall-morgon-villkor
+> Marcus-kvitterat) → TASK-14-mätningen i morgon bitti → TASK-13 ·
+> Dependabot-passet i mån av scope. Kadensrad per L67.
+
+- [x] **Dok-födelse** (2026-07-18): `ed83495`, run 29662614656 grön per
+  jobb (docs-only: Test+Build by-design-skippad, Docs link check
+  körd+grön); numrering disk-verifierad (ADR 074 [73==73], L284, f45,
+  T78); audit-ci PASSED; plugin **1.16.0 AKTIV** (omstarts-momentet
+  avklarat — första sessionen med asynkrona CI-vakten skarp);
+  L265-avvikelse i födelse-vakten (`--commit`-filtret på kort SHA)
+  öppet bokförd + korrigerad till headSha-match. **NÄSTA: TASK-15.**
+- [x] **TASK-15 LANDAD + Done** (2026-07-19, Del 2 kanonisk plats):
+  `quotepath: false` på BÅDA changed-stegen (`378db8c`, run
+  29662884252 grön per jobb inkl. full Test+Build by design) —
+  K1.17-klassen käll-belagd trippel (jobbgraf + fil-lista +
+  quotepath-mekaniken); följdfyndet docs-steget (UTF-8-`.md`-ändring
+  skulle TYST skippa Docs link check) fixat i samma invariant;
+  **KONTRASTBEVISET** run 29663106983 (kortfils-only `7f36257`):
+  Test+Build SKIPPED + Docs link check körd grön — före-bilden
+  29657524469 full svit på samma fil-klass. Tvåstegs-stängning med
+  asynkron vakt ×2. **NÄSTA: TASK-14 kall-morgon-mätningen
+  (morgonen).**
+
 ### Session 68 ✅ AVSLUTAD (2026-07-18) — Arbetssätts-paketet: asynkron CI-vakt (R1) + dependabot ur staging-mutexen (R2) + TASK-14-prioriteringen (R3) + PR-parkeringen + hub-syncen L267–L283
 
 > Scope: sessionsdok `2026-07-18-session-68.md` Del 1 (kanonisk plats):
