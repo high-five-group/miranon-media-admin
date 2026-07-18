@@ -81,8 +81,19 @@ updates:
         update-types:
           - "minor"
           - "patch"
+        # Full stack-spegel av production-dependencies exkluderingarna
+        # (S67-fyndet, PR #53: @tanstack-dev-verktygen + tailwind-dev-
+        # paketen föll i dev-catch-all separerade från sina prod-syskon
+        # → ERESOLVE-korsberoende mellan grupp-PR:er. Invarianten:
+        # stack-grupperna äger sina paket OAVSETT dependency-type.)
         exclude-patterns:
           - "@types/*"
+          - "@tanstack/*"
+          - "@react-aria/*"
+          - "@react-stately/*"
+          - "react-aria-components"
+          - "tailwindcss"
+          - "@tailwindcss/*"
     labels:
       - "dependencies"
 
