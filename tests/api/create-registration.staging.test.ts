@@ -70,7 +70,10 @@ async function findSeededEventId(
   jwt: string,
 ): Promise<string> {
   const seededId = process.env.TEST_REGISTRATION_RECORD_ID ?? '';
-  expect(seededId, 'TEST_REGISTRATION_RECORD_ID måste vara satt i staging-env').not.toBe('');
+  expect(
+    seededId,
+    'TEST_REGISTRATION_RECORD_ID måste vara satt i staging-env (lokalt: raden finns i .env.test.example — seed-ankaret, docs/BUILD-LOG.md)',
+  ).not.toBe('');
 
   const res = await request.get(`${config.baseUrl}/functions/v1/get-registrations`, {
     headers: { Authorization: `Bearer ${jwt}` },

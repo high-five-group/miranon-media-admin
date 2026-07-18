@@ -97,7 +97,10 @@ test.describe('update-record — operations-allowlist (M4)', () => {
     const authHeaders = { Authorization: `Bearer ${userJwt}` };
 
     const recordId = process.env.TEST_REGISTRATION_RECORD_ID ?? '';
-    expect(recordId, 'TEST_REGISTRATION_RECORD_ID måste vara satt i staging-env').not.toBe('');
+    expect(
+      recordId,
+      'TEST_REGISTRATION_RECORD_ID måste vara satt i staging-env (lokalt: raden finns i .env.test.example — seed-ankaret, docs/BUILD-LOG.md)',
+    ).not.toBe('');
 
     // Läs ett registrerings-fälts nuvarande värde via get-registrations
     // (ingen filter → alla; matcha på record-id). Befintlig EF, ingen

@@ -12,6 +12,13 @@
 //   TEST_ADMIN_EMAIL           — admin login (på ADMIN_EMAILS-listan)
 //   TEST_ADMIN_PASSWORD        — lösenord för samma test-admin
 //
+// Därtill (utanför skipvakten nedan — medvetet, TASK-11):
+//   TEST_REGISTRATION_RECORD_ID — seed-ankaret för 6 write-slice-fall
+//   (create-registration ×3, get-registrations väg D ×2, update-record ×1).
+//   Vaktas av hårda expect:er i respektive fil, inte här: nyckeln är
+//   6-falls-lokal — i skipvakten hade saknad nyckel skippat hela sviten
+//   (290 friska tester). Raden finns i .env.test.example.
+//
 // Båda test-users måste finnas i staging-projektet. Skapa med
 // supabase CLI eller via dashboard innan testerna körs.
 

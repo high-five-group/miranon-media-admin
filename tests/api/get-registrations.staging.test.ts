@@ -63,7 +63,10 @@ async function findSeededRegistrationEvent(
   jwt: string,
 ): Promise<{ eventId: string; all: Registration[]; seededId: string }> {
   const seededId = process.env.TEST_REGISTRATION_RECORD_ID ?? '';
-  expect(seededId, 'TEST_REGISTRATION_RECORD_ID måste vara satt i staging-env').not.toBe('');
+  expect(
+    seededId,
+    'TEST_REGISTRATION_RECORD_ID måste vara satt i staging-env (lokalt: raden finns i .env.test.example — seed-ankaret, docs/BUILD-LOG.md)',
+  ).not.toBe('');
 
   // Event-lösa grenen (oförändrad) → HELA Anmälningar-mängden.
   const { status, registrations: all } = await callGetRegistrations(

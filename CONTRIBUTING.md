@@ -62,8 +62,9 @@ och sanering i
 
 Not: samma 6 fall blir röda även av en helt annan orsak — saknad
 `TEST_REGISTRATION_RECORD_ID` i den lokala miljön (felmeddelandet säger det
-explicit; seed-ankaret är dokumenterat i `docs/BUILD-LOG.md`, sök på
-variabelnamnet). Skilj symptomen åt innan felklassning.
+explicit och pekar på `.env.test.example`, som bär raden sedan TASK-11/12;
+seed-ankaret är dokumenterat i `docs/BUILD-LOG.md`, sök på variabelnamnet).
+Skilj symptomen åt innan felklassning.
 
 CI drabbas aldrig av kollisionen — den kör projekten som separata
 sekventiella steg (`.github/workflows/ci.yml` Test+Build); samma

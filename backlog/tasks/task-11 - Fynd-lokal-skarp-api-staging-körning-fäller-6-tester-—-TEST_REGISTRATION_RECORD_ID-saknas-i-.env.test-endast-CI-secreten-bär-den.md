@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-12 17:29'
-updated_date: '2026-07-12 20:31'
+updated_date: '2026-07-18 11:20'
 labels: []
 dependencies: []
 ordinal: 31000
@@ -36,4 +36,6 @@ Registrerat under task-5-körningen (S66 batch 4). Pre-existerande lokalmiljö-g
 Orkestrator-triage-not (S66 batch 4): TASK-12 är syskon-dubblett — task-6-agentens oberoende återfynd av SAMMA rotorsak (saknad 7:e nyckel TEST_REGISTRATION_RECORD_ID; värdet dokumenterat i BUILD-LOG steg 7b). TASK-12 adderar .env.test.example-mallens lucka. En åtgärd stänger båda — konsolidera vid triage.
 
 S66 batch 2-bekräftelse + diagnostik-nyans (båda pipeline-agenterna träffade klassen oberoende): get-registrations väg D (rad 86/132) kan dessutom timeouta på 30 s vid kall/långsam staging ÄVEN med nyckeln satt — kör riktad omkörning av filen före felklassning (grön omkörning = latens, ej regression). Kandidat vid åtgärd: wire:a nyckeln i .env.test-receptet + runbooken så first-run blir grön utan omkörning (värdet är repo-dokumenterat i BUILD-LOG steg 7b, ej hemligt).
+
+LEVERANS (S67, konsoliderad med TASK-12 — en åtgärd, båda korten): (1) Raden TEST_REGISTRATION_RECORD_ID=recynkk5KWpWirv7k tillagd i .env.test.example (kommentar: exakt vilka 6 fall + BUILD-LOG-referens; värdet är repo-dokumenterat record-ID, ingen credential) OCH i Marcus lokala .env.test (Marcus-kvitterad väg: S67-scope punkt 1 'nyckeln in i .env.test + .env.test.example'). (2) Skipvakts-utökningen 6→7 FÖRKASTAD med motiv: helpers-vakten är svit-global (skip/hård fail för HELA api-sviten) medan nyckeln är 6-falls-lokal — utökning hade skippat 290 friska tester lokalt och ändrat CI-hårdfelets semantik; i stället är nyckeln dokumenterad i helpers.ts-headern med förkastande-motivet inline (framtida läsare ser beslutet där vakten bor). (3) Nyckeluppsättningen dokumenterad på alla tre ytor där .env.test-formen beskrivs: mallen + helpers-headern + CONTRIBUTING § Testkörning-noten. BEVIS: RÖD — nyckeln tvingad tom via kanoniska test:api:staging (update-record): exit≠0, exakt 1 (nyckel-beroende) fall rött / 6 gröna, nya meddelandet renderat; GRÖN — full test:api 295 passed + väg D-fallet rött av LATENS-klassen (kall staging efter 6 dygns vila) → riktad omkörning av filen grön 5/5 per kortets egen diagnostik-nyans = funktionellt 296/296. Sido-observation: första RÖD-försöket via plain 'npx playwright test --project=api-staging' träffade webServer-vägran på upptagna 5173 — TASK-5/6-räckena fungerade exakt som designade (plain-formen är icke-stödd; kanoniska formen användes därefter).
 <!-- SECTION:NOTES:END -->

@@ -7,7 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-12 18:09'
-updated_date: '2026-07-12 19:11'
+updated_date: '2026-07-18 11:20'
 labels: []
 dependencies: []
 ordinal: 32000
@@ -31,4 +31,6 @@ EXAKT SYMPTOM (S66 batch 4, task-6-körningen): lokal 'npm run test:api' med enb
 
 <!-- SECTION:NOTES:BEGIN -->
 Orkestrator-triage-not (S66 batch 4): syskon-dubblett till TASK-11 (task-5-agentens ursprungsfynd av samma rotorsak, med skipvakts-förslaget helpers.ts 6→7 nycklar). Detta kort adderar mall-luckan (.env.test.example). En åtgärd stänger båda — konsolidera vid triage.
+
+LEVERANS (S67, konsoliderad med TASK-11 — se TASK-11-notes för helhet + bevis): kortets tre punkter utförda. (1) Mallraden i .env.test.example ✓ med kommentar om de 6 fallen + BUILD-LOG-referens. (2) .env.test (Marcus levande cred-fil) kompletterad EFTER explicit Marcus-kvittens (S67 Del 1 scope-punkt 1) — den agent-säkra ytan respekterad: append av en rad, inget annat rört, filen verifierat gitignorad före skrivning. (3) Felmeddelandena i de 3 hårda expect:en (create-registration/get-registrations/update-record) pekar nu på .env.test.example-raden — nästa agent ser miljö-orsaken direkt i stället för att jaga staging-kollision. Därtill: CONTRIBUTING § Testkörning-symptomnoten uppdaterad (pekar på mallen) + föråldrad gitignore-osäkerhets-kommentar i mallens header rättad (verifierad via git check-ignore).
 <!-- SECTION:NOTES:END -->
