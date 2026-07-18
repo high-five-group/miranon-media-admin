@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-07-18 19:27'
-updated_date: '2026-07-18 22:07'
+updated_date: '2026-07-18 22:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,6 +32,8 @@ EXAKT SYMPTOM (S68 kontrastpar samma kväll): run 29657524469 (commit ebc422c: s
 S68-stängningen: klassad ready-for-agent på Marcus villkorade order ('Sätt ready for agent om den är det') + Code-bedömning mot substrat-kontraktet: mekanisk verifiering med käll-recept (changed-jobbets logg run 29657524469), tydlig fix-gräns (ci.yml-changed-steget, aldrig backlog-filnamnen [L226]), kontrastpar-bevismetod given, inga design-/produktval, ingen mänsklig grind. Tas lämpligen som andra kort efter TASK-14 (high) i nästa session.
 
 S69 leverans: AC 1 VERIFIERAD käll-belagt — (i) run 29657524469: Test+Build KÖRDE (jobbgrafen) trots noll kod ⇒ should_skip_tests≠true ⇒ only_changed=false; (ii) fil-listan ebc422c = kortfil (å/ä/—/~) + session-68-dok + todo.md, där ASCII-paret bevisat matchar (6d8c71b: samma klass → skip) ⇒ utfallna filen = kortfilen; (iii) mekanismen trippel-belagd: git core.quotepath-oktalform lokalt (strängen slutar på citattecken, inte .md) + K1.17-precedenten (samma action @ samma version, bekräftad 2026-05-14) + jobbloggens input-dump 'quotepath: true' (default). FIX: quotepath:false på BÅDA changed-stegen — upstream-dokumenterad input i action.yml @ pinnade SHA:n 9426d40. Följdfynd: docs_changed-steget hade samma default ⇒ UTF-8-namngiven .md-ändring skulle TYST SKIPPA Docs link check — allvarligare granne, fixad i samma invariant. Riskkoll: fil-list-outputs konsumeras ej (endast only_changed/any_changed-boolerna; safe_output default true) — ingen ny injektion-yta. L279: actionlint via CI:ns exakta install-skript + -ignore-flagga = 0 fel · yamllint 0 fel · SHA-pin orörd · advisories live-kollade historiska. Kontrastpar-beviset (AC 2) tas efter merge: kortfils-only-commit ska skippa Test+Build OCH köra Docs link check.
+
+S69 kontrastbevis-commit: denna commit rör ENDAST denna kortfil (UTF-8-namnet är själva testfallet). Förutsägelse per fixen 378db8c: Test+Build SKIPPAS (only_changed=true) och Docs link check KÖRS (docs_changed=true) — utfallet bokförs käll-belagt i stängnings-commiten. Leverans-runnet 29662884252 grönt per jobb (full svit by design, ci.yml-ändring).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
