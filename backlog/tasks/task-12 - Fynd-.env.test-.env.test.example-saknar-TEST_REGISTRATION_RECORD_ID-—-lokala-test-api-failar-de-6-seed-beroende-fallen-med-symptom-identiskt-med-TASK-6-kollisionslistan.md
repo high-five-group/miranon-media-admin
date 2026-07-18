@@ -4,10 +4,10 @@ title: >-
   Fynd: .env.test + .env.test.example saknar TEST_REGISTRATION_RECORD_ID —
   lokala test:api failar de 6 seed-beroende fallen med symptom identiskt med
   TASK-6-kollisionslistan
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-12 18:09'
-updated_date: '2026-07-18 11:20'
+updated_date: '2026-07-18 11:27'
 labels: []
 dependencies: []
 ordinal: 32000
@@ -21,10 +21,10 @@ EXAKT SYMPTOM (S66 batch 4, task-6-körningen): lokal 'npm run test:api' med enb
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -34,3 +34,9 @@ Orkestrator-triage-not (S66 batch 4): syskon-dubblett till TASK-11 (task-5-agent
 
 LEVERANS (S67, konsoliderad med TASK-11 — se TASK-11-notes för helhet + bevis): kortets tre punkter utförda. (1) Mallraden i .env.test.example ✓ med kommentar om de 6 fallen + BUILD-LOG-referens. (2) .env.test (Marcus levande cred-fil) kompletterad EFTER explicit Marcus-kvittens (S67 Del 1 scope-punkt 1) — den agent-säkra ytan respekterad: append av en rad, inget annat rört, filen verifierat gitignorad före skrivning. (3) Felmeddelandena i de 3 hårda expect:en (create-registration/get-registrations/update-record) pekar nu på .env.test.example-raden — nästa agent ser miljö-orsaken direkt i stället för att jaga staging-kollision. Därtill: CONTRIBUTING § Testkörning-symptomnoten uppdaterad (pekar på mallen) + föråldrad gitignore-osäkerhets-kommentar i mallens header rättad (verifierad via git check-ignore).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad (S67, konsoliderad med TASK-11 — se TASK-11:s final-summary för fullständigt bevisläge) · commit bb65b7f · CI-run 29642391302 grön per jobb · CI-grön-första-pass: ja · Kortets tre punkter utförda: (1) mallraden TEST_REGISTRATION_RECORD_ID=recynkk5KWpWirv7k i .env.test.example med kommentar om de 6 fallen + BUILD-LOG-referens (2) .env.test kompletterad EFTER explicit Marcus-kvittens i S67-scope — agent-säkra ytan respekterad, gitignore-verifierad före skrivning (3) felmeddelandena i de 3 hårda expect:en pekar nu på mallraden — felklassningsrisken mot staging-kollisions-symptomet stängd · Därtill: CONTRIBUTING § Testkörning-symptomnoten pekar på mallen + mallens föråldrade gitignore-osäkerhetskommentar rättad (verifierad via git check-ignore).
+<!-- SECTION:FINAL_SUMMARY:END -->
