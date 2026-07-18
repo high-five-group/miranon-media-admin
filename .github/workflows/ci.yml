@@ -45,6 +45,15 @@ jobs:
         # Veckovis Actions-granskning per tasks/todo.md.
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
+          # quotepath: false — matcha non-ASCII-paths verbatim (upstream-
+          # dokumenterad input i action.yml @ pinnad SHA). Gits default
+          # core.quotepath=true oktal-escapar t.ex. backlog-kortfilers å/ä/—
+          # och citerar strängen → den slutar på '"', inte '.md' →
+          # **/*.md-globben missar → only_changed=false → onödig full
+          # Test+Build för varje commit som rör kortfiler utan kod
+          # (K1.17-klassen; TASK-15 S69, kontrastbevis run 29657524469
+          # [kortfil → full] vs 29657760975 [ren ASCII-docs → skip]).
+          quotepath: false
           files: |
             **/*.md
             LICENSE
@@ -79,6 +88,11 @@ jobs:
         # commit kör fortfarande Test+Build via det orörda only_changed-filtret).
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
+          # quotepath: false — samma invariant som changed-files-steget
+          # (TASK-15 S69): utan den ger en UTF-8-namngiven .md-ändring
+          # docs_changed=false → Docs link check TYST SKIPPAD på en äkta
+          # docs-ändring (allvarligare granne till only_changed-symptomet).
+          quotepath: false
           files: |
             **/*.md
             .lycheeignore
