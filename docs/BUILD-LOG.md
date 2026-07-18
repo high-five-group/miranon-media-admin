@@ -2711,6 +2711,20 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 68 — Arbetssätts-paketet: asynkron CI-vakt (R1) + dependabot ur staging-mutexen (R2) + TASK-14-prioriteringen (R3) + hub-syncen L267–L283 (2026-07-18)
+
+**Commit-range:** `fd37fec` (sessionsdok-födelse) → HEAD. **Mål:** exekvera rekommendationspaketet ur arbetssätts-utforskningen "väntan på CI" (samma konversation, före sessionsstart: uppmätt nuläge — staging-stegen 345 s av Test+Builds 409 s, 0 röda Test+Build på main i 50-fönstret, dependabot-FIFO-kön 44 s arbete/7m15s elapsed — + branschresearch Fowler/CircleCI-2026/Meta-stacking/DevEx/merge-queue-org-kravet/Pocock-korpusen). Marcus-order: "vi kör på dina rekommendationer". Ej byggplan-fas — arbetssätts-/infrastruktursession.
+
+- **R2 — dependabot ur staging-mutexen** (`62750f0` + fix `3ac7751`): Test+Build-jobbets concurrency-grupp villkorlig — Dependabot-actorn (skippar samtliga staging-/serversteg per ADR-031 Lager 3) får unik grupp `depbot-<run_id>`; övriga behåller konstant `staging-tests` + `queue: max`. Samma-predikat-argumentet (stegens skip och grupp-valet läser samma `github.actor`) gör staging-invarianten definitionell även vid re-run. ADR-073-amendering 2 (additiv). L279-verifiering: actionlint via CI:ns exakta install-skript + yamllint, 0 fel. **L280-återfall ×1 öppet bokfört:** pipe-maskade docs-grindar (`| tail -1`) push:ade `62750f0` med rött docs-jobb (MD028 + Vale.Terms ×3); fångat direkt, fixat `3ac7751`, kedje-formen därefter pipe-fri — och den bundna kedjan STOPPADE nästa fel (MD004) före commit, formens bevis. **R2-beviset:** run 29657134390 Test+Build SUCCESS genom hela staging-sviten; fixrun 29657198592 helgrön per jobb.
+- **R1 — asynkron CI-vakt kodifierad i hubben** (hub `dd15831`, plugin 1.15.0 → **1.16.0**): do-work steg 5 — vakten som BAKGRUNDSTASK (headSha-match L265), stängnings-commiten EXEKVERAS ENDAST på vaktens exit 0 (L280-bindning), halt-first vid rött, aldrig ny push före vaktens utfall; work-batch delta 4 — orkestratorns båda vakt-moment bakgrundade, kedjans serialisering per kort oförändrad. Tvåstegs-stängningen (L263) och alla grindar orörda — endast väntans placering flyttas. SYSTEMET.md medvetet orörd (rad 340 sann oavsett vänteform; mekaniken bor i skillsen). **Dogfoodad i S68:** fyra bakgrundsvakter körda skarpt; hela R1-editeringen + hub-lyftet utfördes i run-vakttid. Aktiveras vid Marcus Update-klick + omstart (L267-verifieringen mot hub-HEAD `6f881d3`).
+- **R3 + parkeringen:** TASK-14 → `ready-for-agent` + priority high + not via backlog-CLI:t (klassnings-akten = Marcus-ordern; kall-morgon-mätningen = nästa sessions ingång, inget av kortet utfört i S68). **PR #58–#63 PARKERADE** på Marcus-order — vågen född 17:49–17:51 ur gruppfix-omscannen, korsade S67:s inbox-0-bokföring i minutfönstret (ingen S67-miss); #58 röd (trolig #46-klass, overifierad) · #63 typescript 6→7 major · #59–#62 gröna; nästa dependabot-pass ärver vågen (+ kan pröva att avlista audit-ci-allowlist-posten GHSA-gv7w-rqvm-qjhr per verktygets egen rekommendation, observerad vid sessionsstart).
+- **Hub-syncen L267–L283** (hub `6f881d3`, 287 rader): sex sessions-sektioner K62.1–K67.3, 17 UNIVERSAL-poster med commit-trail-headerblock per S61-precedenten; S67-handoffens vid-nästa-hub-beröring-villkor löst i samma session som beröringen.
+- **Numrering:** ingen ny ADR (amendering 2 på ADR-073 ändrar inte antalet; 73==73, nästa 074) · inga nya lessons — 5 kandidater förkastade med motiv i Del 6 (nästa L284) · fälla 45 · tråd T78 (inga nya trådar; ADR-053-triagen i Del 6).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-18-session-68.md`](../tasks/sessions/2026-07-18-session-68.md) (Del 1–6). **EJ fas-avslut.** Kvar efter S68: TASK-14-mätningen kall morgon (prioriterad ingång) · TASK-13 · dependabot-passet #58–#63 · Marcus-moment: Update-klicket + omstarten (aktiverar 1.16.0).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
