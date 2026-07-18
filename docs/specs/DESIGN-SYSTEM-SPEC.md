@@ -1109,10 +1109,19 @@ Konsumenten äger innehålls-containern som laddar och sätter:
 
 ### Form
 
-- Blockfärgen håller **≥3:1-kontrast** mot appens ljusa ytor
-  (WCAG 1.4.11) — komponent-tokenen ärver `--mm-border-field`:s
-  dokumenterade kontrast-egenskap. `prefers-contrast: more` mörknar
-  blocket ett steg (`--mm-text-secondary`, ≈7:1).
+- Blockfärgen ligger i **branschens lugna band** (≈1,3:1 mot kortytan
+  via `--mm-bg-placeholder`/neutral-200; jämför MUI 11 %-alpha ≈1,3:1 ·
+  Carbon #e5e5e5 ≈1,25:1 · shadcn `bg-accent` ≈1,1:1). WCAG 1.4.11 är
+  INTE tillämplig på blocken — de är `aria-hidden`-dekorativa och
+  laddinformationen bärs av sr-only-beskedet (Understanding 1.4.11,
+  "aesthetic purposes"-undantaget). Ursprungsformens ≥3:1 via
+  `--mm-border-field`-arvet var en feltillämpning — korrigerad efter
+  design-review-fynd (task-8.6, S67); fältkantens 3:1-krav i
+  semantic.css står orört (rätt för fält, fel för platshållare).
+  `prefers-contrast: more` mörknar blocket till `--mm-text-secondary`
+  (≈7:1) — uttalat användarval om urskiljbarhet. Kontrast-kontraktet
+  testas dubbelriktat: normalläget INOM bandet (1,15–2:1),
+  contrast-more ≥4,5:1.
 - **Långsam shimmer vänster→höger** (2,5 s per svep — Chung-empirin:
   långsam upplevs kortare än puls) som `::after`-svep. Animationen är
   deklarerad ENDAST under `prefers-reduced-motion: no-preference`
@@ -1129,9 +1138,9 @@ Konsumenten äger innehålls-containern som laddar och sätter:
 ### Komponent-tokens (components.css)
 
 ```css
---mm-skeleton-block: var(--mm-border-field);
+--mm-skeleton-block: var(--mm-bg-placeholder);
 --mm-skeleton-block-contrast: var(--mm-text-secondary);
---mm-skeleton-shimmer: color-mix(in srgb, var(--mm-bg) 45%, transparent);
+--mm-skeleton-shimmer: color-mix(in srgb, var(--mm-bg) 75%, transparent);
 ```
 
 ---
@@ -1144,4 +1153,5 @@ Konsumenten äger innehålls-containern som laddar och sätter:
 | 2026-04-07 | [GA] Integrerat gap-analys: View Transitions (§9), stale-data-indikatorer (§10), error boundary-meddelanden (§11), systemhälso-indikator (§12), fem kvaliteter (§13). Audit-prompt uppdaterad med performance/säkerhet/ARIA/EAA-kontroller. |
 | 2026-07-12 | §14 NavCard — navigationsrads-primitiven (M6-facitet, S64 Del 3): API, anatomi, form, komponent-tokens + app-breda regeln "navigationsrader bär inte chevron" (task-9.1). |
 | 2026-07-12 | §15 Lugnt laddläge — laddprincipen (app-bred, S63 Del 2-samsynen + task-8.1:s mätlåsta framträdande-form) + Skeleton-primitiven: API, Roselli-anatomin, form, komponent-tokens (task-8.2). |
+| 2026-07-18 | §15 Form: skeleton-tonen till branschbandet — 1.4.11-feltillämpningen korrigerad (dekorativt undantag per Understanding 1.4.11; MUI/Carbon/shadcn-värden citerade), ny semantisk roll-token `--mm-bg-placeholder` (neutral-200), shimmer 45→75 %, kontrast-kontraktet dubbelriktat i Skeleton.spec (task-8.6; S67 QA-fynd, L269-klassen). |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |

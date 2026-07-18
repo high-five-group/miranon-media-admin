@@ -115,25 +115,29 @@ test.describe('Skeleton — Lugnt laddläge-primitivens beteendekontrakt', () =>
     expect(efter).toBe('none');
   });
 
-  test('kontrast: blocken håller ≥3:1 mot sin bakgrund (WCAG 1.4.11) via komponent-token', async ({
+  test('kontrast: blocken ligger i det lugna platshållar-bandet 1,15–2:1 — 1.4.11 gäller ej dekorativa block (task-8.6)', async ({
     page,
   }) => {
     const forstaBlock = page.locator(BLOCK).first();
     const blockBg = await forstaBlock.evaluate((el) => getComputedStyle(el).backgroundColor);
 
-    // Token-kedjan: komponent-token → semantisk token (L272-paritet).
-    // --mm-border-field bär den dokumenterade ≥3:1-egenskapen (semantic.css).
+    // Token-kedjan: komponent-token → semantisk platshållar-roll (L272-paritet).
+    // WCAG 1.4.11 undantar dekorativa ytor (Understanding 1.4.11) — bandet
+    // vaktar därför BÅDA hållen: blocket syns (≥1,15) men skriker inte
+    // (≤2; branschbandet MUI/Carbon/shadcn ≈1,1–2:1, spec §15 Form).
     expect(blockBg).toBe(await resolvedTokenColor(page, '--mm-skeleton-block'));
-    expect(blockBg).toBe(await resolvedTokenColor(page, '--mm-border-field'));
+    expect(blockBg).toBe(await resolvedTokenColor(page, '--mm-bg-placeholder'));
 
     // Computed-verifierad kvot mot ytan blocket ligger på.
     const containerBg = await page
       .locator(CONTAINER)
       .evaluate((el) => getComputedStyle(el).backgroundColor);
-    expect(kontrastKvot(blockBg, containerBg)).toBeGreaterThanOrEqual(3);
+    const kvot = kontrastKvot(blockBg, containerBg);
+    expect(kvot).toBeGreaterThanOrEqual(1.15);
+    expect(kvot).toBeLessThanOrEqual(2);
   });
 
-  test('prefers-contrast: more — blocken mörknar till kontrast-tokenen och behåller ≥3:1', async ({
+  test('prefers-contrast: more — blocken mörknar till kontrast-tokenen och håller stark kontrast (≥4,5:1)', async ({
     page,
   }) => {
     await page.emulateMedia({ contrast: 'more' });
@@ -143,10 +147,12 @@ test.describe('Skeleton — Lugnt laddläge-primitivens beteendekontrakt', () =>
     expect(blockBg).toBe(await resolvedTokenColor(page, '--mm-skeleton-block-contrast'));
     expect(blockBg).toBe(await resolvedTokenColor(page, '--mm-text-secondary'));
 
+    // Uttalat användarval om urskiljbarhet — här gäller STARK kontrast
+    // (text-secondary ≈7:1); 4,5 är golvet med marginal för token-drift.
     const containerBg = await page
       .locator(CONTAINER)
       .evaluate((el) => getComputedStyle(el).backgroundColor);
-    expect(kontrastKvot(blockBg, containerBg)).toBeGreaterThanOrEqual(3);
+    expect(kontrastKvot(blockBg, containerBg)).toBeGreaterThanOrEqual(4.5);
   });
 
   test('print: blocken förblir urskiljbara — synlig kontur i border-strong', async ({ page }) => {
