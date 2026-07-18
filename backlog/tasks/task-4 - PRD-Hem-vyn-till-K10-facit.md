@@ -1,9 +1,10 @@
 ---
 id: TASK-4
 title: 'PRD: Hem-vyn till K10-facit'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-07 08:30'
+updated_date: '2026-07-18 16:37'
 labels: []
 dependencies: []
 ordinal: 9000
@@ -91,10 +92,16 @@ Styrande i området: ADR-055 (data via router-context-DI), ADR-057 (lager-oberoe
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
-- [ ] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Design-review MOT K10-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #6 Facit-avprickningen: varje berörd facit-/byggkravspunkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PRD STÄNGD S67 efter QA-grinden 4.6 (sista beroendet) · Skiv-kedjan komplett: 4.1 @layer-flytten (kaskad-invarianten regressionstestad) → 4.2 Hem-strukturen → 4.3 Nästa event + Obetalda → 4.4 Anmälningslistan (zebra + rullningsytan) → 4.5 Osynliga uppdateringen (B3) → 4.6 QA-vågen (Marcus-godkänd S67) + 4.7 fokusring-klippet (S67 QA-fynd: inset-ring, åtgärdad + godkänd samma session) · DoD 5 design-review MOT K10-FACIT godkänd via 4.6-vågen i preview-formen · DoD 6 facit-avprickningen buren av skivornas renderade verifieringar (computed-assertions per skiva + css-cascade-regressionstestet; inga AC på PRD-nivån — AC-bevisen bor på skivorna) · Öppet bokförd revision: PRD-beslut 4 (Hem-platshållaren) REVS S64 (chat-samsyn 3) → borttagen via task-9.3; platsen reserverad för notis-klockan (T77-tråden bär framtiden).
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,10 +1,10 @@
 ---
 id: TASK-8
 title: 'PRD: Lugnt laddläge — persist-cache + skeleton (app-bred princip, Hem först)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-11 22:42'
-updated_date: '2026-07-12 20:31'
+updated_date: '2026-07-18 16:37'
 labels: []
 dependencies: []
 ordinal: 19000
@@ -81,16 +81,16 @@ ORDLISTA-posten 'Lugnt laddläge' är principens definition; S63 Del 2 är kanon
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #6 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #7 CI grön per jobb på pushad commit
-- [ ] #8 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #9 Design-review: Marcus-granskning i webbläsaren av laddläget (kallstart tom cache + varm start + reduced-motion) godkänd (per skiva med UI-yta; L220/L269)
-- [ ] #10 Layout-skift ≈ 0 bevisad med renderad mätning (boundingBox under/efter laddning) före granskning (L245/L246; task-4.5-bevismönstret)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #6 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #7 CI grön per jobb på pushad commit
+- [x] #8 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #9 Design-review: Marcus-granskning i webbläsaren av laddläget (kallstart tom cache + varm start + reduced-motion) godkänd (per skiva med UI-yta; L220/L269)
+- [x] #10 Layout-skift ≈ 0 bevisad med renderad mätning (boundingBox under/efter laddning) före granskning (L245/L246; task-4.5-bevismönstret)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -98,3 +98,9 @@ ORDLISTA-posten 'Lugnt laddläge' är principens definition; S63 Del 2 är kanon
 <!-- SECTION:NOTES:BEGIN -->
 Vy-migrerings-instruktioner från task-8.4-leveransen (S66 batch 2) för NÄSTA vy till Lugnt laddläge: (1) återanvänd DashboardCard-mönstret — pendingBody speglar den laddade kroppens EXAKTA wrapper-anatomi (samma flex/gap/typografi-klasser, lh-block per textrad) så layout-skift ≈ 0 håller by construction; (2) dimensionsreservera listytor till sin max-h-klienthöjd; (3) sätt aldrig framträdande-fördröjning (mätlåst 8.1-beslut); (4) laddbesked-kontraktet: role=status behölls på laddcontainern och hem.staging.test.ts (4.5 AC 3) + persist-cache.staging.test.ts asserterar role=status-count och 'Laddar…'-texter — ändras beskeden i en vy måste båda sviterna uppdateras medvetet i samma commit.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PRD STÄNGD S67 efter QA-grinden 8.5 (sista beroendet) · Skiv-kedjan komplett: 8.1 mätprotokollet (kallstartsfönstret mätlåst → skeleton från första bildrutan) → 8.2 Skeleton-primitiven (spec §15, Roselli-anatomin) → 8.3 persist-lagret (ADR-072, falsifikations-passet L273) → 8.4 Hem till Lugnt laddläge (pendingBody-anatomin, layout-skift ≈ 0 by construction) → 8.5 QA-vågen (Marcus-godkänd S67) + 8.6 skeleton-tonen (S67 QA-fynd: 1.4.11-feltillämpningen korrigerad till branschbandet via --mm-bg-placeholder; 'OK tillsvidare' — ev. finjustering är nytt kort) · DoD 9 design-review godkänd (kallstart tom cache + varm start i vågen) · DoD 10 layout-skift ≈ 0 CI-bevisad (8.4:s boundingBox-svit) · Den app-bredda principen etablerad i spec §15 — övriga vyer ärver via egna kort utan nya beslut (PRD:ns dubbla DoD-block 1–4/5–8 är skiv-arvs-artefakt; samtliga bockade mot skivornas leveranser).
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,9 +1,10 @@
 ---
 id: TASK-9.4
 title: 'Skiva: QA-planen — Mer-vyn till FK-mönstret'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-12 10:17'
+updated_date: '2026-07-18 16:37'
 labels:
   - ready-for-human
 dependencies:
@@ -34,15 +35,21 @@ Fynd hanteras som NYA kort med exakt symptom + förväntat beteende — planen r
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Samtliga nio testpunkter genomförda i browser och godkända av Marcus
+- [x] #1 Samtliga nio testpunkter genomförda i browser och godkända av Marcus
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+QA-planen genomförd S67 i preview-formen (4173) · Marcus-kvittens: helhetsgodkännandet 'Nu godkänner jag allt. Jag godkänner alla 3 QA-kort som ligger.' · 0 fynd på Mer-vyn — vågens båda fynd låg på Hem-ytan (task-8.6 skeleton-tonen · task-4.7 fokusring-klippet), registrerade + åtgärdade + godkända inom sessionen · DoD 6 facit-paritet: buren av 9.2:s computed-mått-assertioner mot M6-facitet (mer-e2e +5 facit-tester, CI-gröna PR #54 → main) — bevisad före granskningen · DoD 5 design-review mot M6-facitet godkänd · Punkt 8 (Hem utan platshållare) konsistent med 9.3-leveransen och 4.6:s kända-avvikelse-not.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
-- [ ] #6 Facit-paritet: renderad vy computed-verifierad mot M6-måtten (sessionsdok S64 Del 3)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
+- [x] #6 Facit-paritet: renderad vy computed-verifierad mot M6-måtten (sessionsdok S64 Del 3)
 <!-- DOD:END -->

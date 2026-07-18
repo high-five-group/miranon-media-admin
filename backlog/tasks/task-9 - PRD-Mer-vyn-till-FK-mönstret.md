@@ -1,9 +1,10 @@
 ---
 id: TASK-9
 title: 'PRD: Mer-vyn till FK-mönstret'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-12 10:11'
+updated_date: '2026-07-18 16:37'
 labels: []
 dependencies: []
 ordinal: 25000
@@ -73,10 +74,16 @@ Kedjan: T69 (tråd) → grillad samsyn A–H → Revision S64 (chat-samsyn 1–5
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
-- [ ] #6 Facit-paritet: renderad vy computed-verifierad mot M6-måtten (sessionsdok S64 Del 3)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Design-review mot M6-facitet godkänd av Marcus (granskningsfärdigt läge per ADR-071 för UI-skivor)
+- [x] #6 Facit-paritet: renderad vy computed-verifierad mot M6-måtten (sessionsdok S64 Del 3)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PRD STÄNGD S67 efter QA-grinden 9.4 (sista beroendet) · Skiv-kedjan komplett: 9.1 NavCard-primitiven (M6-facitet, spec §14, TS2322-typbeviset) → 9.2 Mer-vyn nyskriven på NavCard (computed facit-paritet, hideShellHeader via befintlig mekanik) → 9.3 Hem-platshållar-borttagningen (måttidentiskt kort) → 9.4 QA-vågen (Marcus-godkänd S67, 0 fynd på Mer-ytan) · DoD 5 design-review mot M6-facitet godkänd · DoD 6 facit-pariteten computed-CI-bevisad (mer-e2e +5 facit-tester) · T69-kedjan därmed LEVERERAD hela vägen: rubrik-researchen → Hem-identiteten → konvergens-facit M6 → PRD → skivor → QA-godkännande.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,9 +1,10 @@
 ---
 id: TASK-4.6
 title: 'QA: Manuell browser-testplan — Hem mot K10-facit'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-07 08:56'
+updated_date: '2026-07-18 16:37'
 labels:
   - ready-for-human
 dependencies:
@@ -37,13 +38,19 @@ Fynd hanteras som NYA kort med exakt symptom + förväntat beteende — planen r
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Samtliga 10 punkter genomgångna; fynd registrerade som egna kort eller 0 fynd noterat
+- [x] #1 Samtliga 10 punkter genomgångna; fynd registrerade som egna kort eller 0 fynd noterat
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+QA-vågen genomförd S67 i preview-formen (byggt staging-bygge på 4173 per runbooken — strängare miljö än planens dev-form; Clear site data-momenten gav skarpa kallstarter) · Marcus-kvittens: 'Nu godkänner jag allt. Jag godkänner alla 3 QA-kort som ligger.' — helhetsgodkännande efter vågen med två fynd åtgärdade inom sessionen · FYND registrerade som egna kort per planens regel (planen orörd): task-4.7 fokusring-klippet i anmälningslistans rullningsyta (registrerad → åtgärdad → CI-grön → Marcus-godkänd 'Mycket bra.' samma session; 3 bevisbilder i bilagor) · Kända-avvikelse-noten tillämpad vid facit-jämförelsen: Hem-platshållaren borta BY DESIGN (S64-beslut 3, task-9.3) — korrekt EJ klassad som fynd · Punkt 8:s kallstartsform bar 8.4:s levererade Lugnt laddläge (samverkan med 8.5-vågen; skeleton-tonen justerad via task-8.6) · Aktualitets-koll före vågen: tabbaren oförändrad sedan S52 (före facitbilderna) — punkt 2 höll utan förbehåll.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

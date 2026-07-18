@@ -3,9 +3,10 @@ id: TASK-4.7
 title: >-
   Skiva: Fokusring-klippet i anmälningslistans rullningsyta — inset-ring för
   fokuserbara barn
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-18 16:26'
+updated_date: '2026-07-18 16:36'
 labels: []
 dependencies: []
 parent_task_id: TASK-4
@@ -20,17 +21,23 @@ QA-FYND (S67, Marcus browser-QA under 4.6-vågen; tre bevisbilder i tasks/sessio
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Radlänkens fokusring i rullningsytan är inset (outline-offset -2px) — helt synlig, kan aldrig klippas; computed-verifierad
-- [ ] #2 Rullningsytans egen container-ring oförändrat utanpåliggande (offset 2px)
-- [ ] #3 Regressionstest i hem-sviten asserterar BÅDA offseten (rad -2px, container +2px) — röd-kapabel åt båda hållen
-- [ ] #4 Mekanismen dokumenterad (base.css-kommentar + spec-token-listan) och svepet över övriga interna rullningsytor bokfört med utfall
-- [ ] #5 Marcus omtitt i preview (4173) godkänd
+- [x] #1 Radlänkens fokusring i rullningsytan är inset (outline-offset -2px) — helt synlig, kan aldrig klippas; computed-verifierad
+- [x] #2 Rullningsytans egen container-ring oförändrat utanpåliggande (offset 2px)
+- [x] #3 Regressionstest i hem-sviten asserterar BÅDA offseten (rad -2px, container +2px) — röd-kapabel åt båda hållen
+- [x] #4 Mekanismen dokumenterad (base.css-kommentar + spec-token-listan) och svepet över övriga interna rullningsytor bokfört med utfall
+- [x] #5 Marcus omtitt i preview (4173) godkänd
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad + Marcus-granskad inom S67 QA-vågen (fyndets hela livscykel i sessionen) · commit 01b4031 · CI-run 29652045523 grön per jobb — Test+Build = e2e-beviset: nya regressionstestet (rad inset -2px, container +2px) körde grönt i CI:s e2e-steg (5173 bar Marcus dev-server; 8.4-prejudikatets bevisform, öppet bokförd i kortet) · CI-grön-första-pass: ja · Lokala grindar: typecheck 0 fel, biome 0 fel, a11y 31/31, bundelgrind OK + .focus-ring-inset verifierad i byggd CSS · Fix: ny token --mm-focus-ring-offset-inset + .focus-ring-inset på scrollcontainern (React Aria/Spectrum-mönstret för rader i rullningsytor); descendant-selektorn bevarar containerns utanpåliggande ring (bevisbild 1-formen) · Svepet bokfört i beskrivningen: Modal ryms via inner-padding · SegmentMailCompose inga fokuserbara barn · Select bg-fokus · 3 bevisbilder incheckade i tasks/sessions/bilagor/s67-fokusring-klipp/ · Marcus omtitt: 'Mycket bra.' följt av helhetsgodkännandet.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
