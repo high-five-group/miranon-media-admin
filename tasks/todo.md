@@ -21,6 +21,40 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 67 🟢 PÅGÅR (2026-07-18) — QA-vågen (4.6 · 8.5 · 9.4) + TASK-11/12-miljöfixen + dependabot-passet + plugin-updaten 1.15.0
+
+> Scope: sessionsdok `2026-07-18-session-67.md` Del 1 (kanonisk plats):
+> QA-vågen 4.6 → 8.5 → 9.4 → PRD-stängningarna TASK-4/8/9 ·
+> TASK-11/12-miljöfixen · dependabot-passet (7 PR:er, ADR-031 lager 4) ·
+> plugin-updaten 1.15.0 (omstarten = sessionsbytet). Kadensrad per L67 —
+> uppdateras vid varje landning.
+
+- [x] **Dok-födelse** (2026-07-18): sessionsdok fött (`22f44d0`, run
+  29642073834 grön per jobb: Lint+Audit+TypeCheck ✓, Docs link check
+  körd+grön, Test+Build docs-only-skippad by design); numrering
+  disk-verifierad (nästa ADR 074 via check-adr-count 73==73, lesson
+  L281, fälla 45, tråd T78); audit-ci PASSED; plugin vid start 1.14.0
+  @ `38821c6` (1.15.0-updaten ogjord — in i scope på Marcus-order);
+  scope Marcus-kvitterat ("Vi kör på din rekommendation, alla 5
+  punkter, inklusive dependabot" + plugin-updaten i sessionen).
+  **NÄSTA: TASK-11/12-miljöfixen.**
+- [x] **TASK-11/12 STÄNGDA + plugin-updaten 1.15.0 UTFÖRD**
+  (2026-07-18, Del 2 kanonisk plats): konsoliderad miljöfix
+  (`bb65b7f`, run 29642391302 grön per jobb inkl. Test+Build) —
+  seed-ankaret i `.env.test.example` + Marcus `.env.test`
+  (kvitterad väg), pekande felmeddelanden ×3, nyckeldok i
+  helpers-header + CONTRIBUTING; skipvakts-utökningen 6→7 förkastad
+  med motiv; bevis RÖD→GRÖN (funktionellt 296/296; väg D-latens
+  riktad-omkörd grön per kortets diagnostik-nyans). Plugin
+  1.14.0→**1.15.0** (gitCommitSha == hub-HEAD `01eb164` per
+  L267-formen; omstarten = sessionsbytet). QA-förberedelsen:
+  staging-bygge + bundelgrind gröna (preview 4173 redo),
+  aktualitets-koll 4.6 klar (platshållar-avvikelsen by design ·
+  tabbaren oförändrad sedan S52 · punkt 8 testbar via 8.4);
+  dependabot-grundtabell 7 PR:er (#53/#44 CI-röda → felanalys i
+  passet; lager 4 = Marcus manuell review). **NÄSTA:
+  browser-QA-vågen 4.6 → 8.5 → 9.4 (preview 4173, Marcus-takt).**
+
 ### Session 66 ✅ AVSLUTAD (2026-07-12) — Förbättringspasset parallell-formen → batch 4 (3/3) → parallell-batch 2 (2/2) → 1.15.0 + T76 stängd
 
 > Scope: sessionsdok `2026-07-12-session-66.md` Del 1 (kanonisk plats):
