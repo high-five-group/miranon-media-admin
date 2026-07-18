@@ -74,6 +74,27 @@
   bokförd). Sessionens skörd hittills: 9 kort Done (TASK-11/12 + 7 i
   vågen). **NÄSTA: dependabot-passet (7 PR:er; #53/#44-felanalysen
   först, sedan Marcus-review per ADR-031 lager 4).**
+- [x] **DEPENDABOT-PASSET KOMPLETT: 6 merges + #46 motiverat stängd —
+  inbox 0** (2026-07-18, Del 4 kanonisk plats; Marcus-delegerat "Lös
+  detta branschledarmässigt"): sekvensen #56→#57→#44→#45→#39→#53
+  squash-mergad med main-CI grön PER STEG; felanalyserna friade båda
+  röda från paketfel — #44 = L279-klassen (rebase räckte) · #53 =
+  ERESOLVE-korsberoendet (grupperings-luckan) + Biome 2.5:s nya
+  svg-lintning (semantisk felträff → smal override `4f90678`,
+  dubbelverifierad 2.4+2.5). Config-härdningen `fa03742`
+  (dev-gruppen speglar stack-exkluderingarna). L275-steget fullbordat
+  (install ×2 + playwright install [bump-sidoeffekten fällde a11y
+  brett innan — lesson-kandidat] + Marcus dev-server 5173 & preview
+  4173 omstartade, båda 200). Verifiering på nya versionerna:
+  yamllint ✓ · Biome 2.5.3 0 fel ✓ · typecheck ✓ · a11y 31/31 ✓ ·
+  build+bundelgrind ✓ · test:api 294/296 → NYTT STABILT FYND
+  **TASK-14** (väg D-filtrerade vägen ~30 s ×3 vs 1,7 s ofiltrerad;
+  ej deps-regression — CI grön på samma fall; mätserie + recept på
+  kortet). **TASK-13** född (CI kör EOL-Node 20 → runtime-lyftet till
+  24 LTS; #46 stängd som fel riktning). **NÄSTA: end-pass på
+  Marcus-signal (skörd: lessons-kandidaterna Playwright-binärsteget ·
+  grupperings-invarianten · ny-filklass-lintning · L269-fynden 8.6/
+  4.7 · foundation-drift-observationen).**
 
 ### Session 66 ✅ AVSLUTAD (2026-07-12) — Förbättringspasset parallell-formen → batch 4 (3/3) → parallell-batch 2 (2/2) → 1.15.0 + T76 stängd
 

@@ -86,6 +86,7 @@ Noteringar om syntax: Biome 2.2+ vill ha `!supabase/functions` utan trailing `/*
 - **Fördelar:** Clean separation.
 - **Nackdelar:** Kräver att vi kör tsc med två configs, vilket bryter vårt `tsc -b`-flöde. Och Biome skulle fortfarande klaga på style-reglerna.
 
+<!-- markdownlint-disable-next-line MD036 -- alternativ-rubrikformen är ADR-originaltext; flaggan uppstod först vid markdownlint-bumpen i S67 dependabot-passet (skärpt MD036-heuristik på orörd rad) -->
 **5. Ignorera lintfel och commit:a ändå**
 
 - **Fördelar:** Noll ändringar.
