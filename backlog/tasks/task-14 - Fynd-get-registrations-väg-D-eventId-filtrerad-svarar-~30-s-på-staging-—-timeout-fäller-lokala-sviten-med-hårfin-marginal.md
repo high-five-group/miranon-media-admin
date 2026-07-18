@@ -6,8 +6,11 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-18 17:48'
-labels: []
+updated_date: '2026-07-18 19:09'
+labels:
+  - ready-for-agent
 dependencies: []
+priority: high
 ordinal: 36000
 ---
 
@@ -22,6 +25,12 @@ EXAKT SYMPTOM (S67 post-deps-verifieringen, kväll efter en dags intensivt stagi
 - [ ] #1 Rotorsaken klassad med mätserie (transient Airtable-tillstånd / data-ackumulering / filtervägens anropsform) — käll-belagd
 - [ ] #2 Åtgärd eller dokumenterad accept per klassningen; lokala fulla sviten grön eller känd-form-noterad i CONTRIBUTING
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S68 R3 (Marcus-order 'vi kör på dina rekommendationer', arbetssätts-briefingen): prioriterad som NÄSTA SESSIONS INGÅNG — kall-morgon-mätningen per kortets diagnostik-recept kräver ohamrat staging-dygn, därför utförs INGET av kortet i S68. Etikett + priority är klassnings-akten på ordern. Kontext: väg D-latensen är CI-svansens dominant-granne (API-staging 96 s av Test+Build 409 s) — rotorsaksfixen har dubbel utdelning (CI-tid + lokal svit-stabilitet).
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

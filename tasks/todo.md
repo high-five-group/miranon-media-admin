@@ -21,6 +21,47 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 68 PÅGÅENDE (2026-07-18) — Arbetssätts-paketet: asynkron CI-vakt (R1) + dependabot ur staging-mutexen (R2) + TASK-14-prioriteringen (R3) + PR-parkeringen + hub-syncen L267–L283
+
+> Scope: sessionsdok `2026-07-18-session-68.md` Del 1 (kanonisk plats):
+> R2 villkorlig concurrency → R1 asynkron CI-vakt (hub 1.16.0) → R3
+> TASK-14-prioritering + PR-parkeringen #58–#63 → hub-syncen L267–L283 →
+> end-pass. Föddes ur arbetssätts-utforskningen "väntan på CI"
+> (branschresearch + uppmätt nuläge i Del 1). Kadensrad per L67.
+
+- [x] **Dok-födelse** (2026-07-18): `fd37fec`, run 29657035657 grön per
+  jobb (docs-only: Test+Build by-design-skippad, Docs link check
+  körd+grön); numrering disk-verifierad (ADR 074 [73==73], L284, f45,
+  T78); audit-ci PASSED; advisories historiska (tj-actions 47.0.6-pin >
+  patched 46.0.1 · lychee 2.8.0-pin > patched 2.0.2). **NÄSTA: R2.**
+- [x] **R2 LANDAD** (2026-07-18, Del 2 kanonisk plats): villkorlig
+  concurrency-grupp (`62750f0`) + ADR-073-amendering 2 —
+  Dependabot-runs (som skippar samtliga staging-steg) får unik grupp i
+  stället för FIFO-kön (S68-empirin: 44 s arbete/7m15s elapsed);
+  L279-verifiering actionlint+yamllint i CI:ns exakta form;
+  **L280-ÅTERFALL ×1 öppet bokfört** (pipe-maskade grindar push:ade
+  rött docs-jobb; fix `3ac7751`); R2-beviset run 29657134390
+  Test+Build SUCCESS genom hela staging-sviten + fixrun 29657198592
+  helgrön per jobb. **NÄSTA: R1.**
+- [x] **R1 LANDAD** (2026-07-18, Del 3): hub `dd15831` — do-work steg 5 +
+  work-batch delta 4 + plugin 1.15.0→**1.16.0**; asynkron
+  bakgrundsvakt (headSha-match L265; stängningssteget VILLKORAS av
+  vaktens exit 0, L280; halt-first vid rött); tvåstegs-stängningen och
+  kedjans serialisering orörda. Aktiveras vid Marcus Update-klick +
+  omstart. Dogfoodad ×3 vakter i S68. **NÄSTA: R3 + parkeringen.**
+- [x] **R3 + PARKERINGEN** (2026-07-18, Del 4): TASK-14 →
+  `ready-for-agent` + priority high + not via backlog-CLI:t
+  (klassnings-akten = Marcus-ordern; kall-morgon-mätningen = NÄSTA
+  SESSIONS INGÅNG, inget utfört i S68); **PR #58–#63 PARKERADE**
+  (Marcus-order; vågen född 17:49–17:51 ur gruppfix-omscannen — korsade
+  S67:s inbox-0-bokföring i minutfönstret, ingen S67-miss; #58 röd
+  [trolig #46-klass, overifierad] · #63 typescript 6→7 MAJOR ·
+  #59–#62 gröna; nästa dependabot-pass ärver). **NÄSTA: hub-syncen.**
+- [x] **HUB-SYNCEN L267–L283** (2026-07-18, Del 5): hub `6f881d3` — sex
+  sektioner K62.1–K67.3, 17 UNIVERSAL-poster med
+  commit-trail-headerblock per S61-precedenten; S67-handoffens
+  vid-nästa-hub-beröring-villkor löst. **NÄSTA: end-pass.**
+
 ### Session 67 ✅ AVSLUTAD (2026-07-18) — QA-vågen → PRD-stängningarna + TASK-11/12 + plugin 1.15.0 + dependabot-passet (10 kort Done · inbox 0 · L281–L283)
 
 > Scope: sessionsdok `2026-07-18-session-67.md` Del 1 (kanonisk plats):
