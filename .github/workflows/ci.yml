@@ -30,7 +30,7 @@ jobs:
       docs_changed: ${{ steps.changed-docs.outputs.any_changed == 'true' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # fetch-depth: 0 = FULL historik (ADR-054, 2026-06-17). Finit djup var
           # anti-mönstret: 1→50→100→250 brast 4 ggr när orörda governing-docs
@@ -94,7 +94,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # fetch-depth: 0 = FULL historik (ADR-054, 2026-06-17) för
           # scripts/check-frontmatter.sh Check 2 (git log -1 --format=%cs -- <fil>).
@@ -294,7 +294,7 @@ jobs:
       queue: max
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # fetch-depth: 0 = FULL historik (ADR-054, 2026-06-17) för
           # scripts/check-frontmatter.sh Check 2 (git log -1 --format=%cs -- <fil>).
@@ -403,7 +403,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # fetch-depth: 0 = FULL historik (ADR-054, 2026-06-17) för
           # scripts/check-frontmatter.sh Check 2 (git log -1 --format=%cs -- <fil>).
