@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-12
+updated: 2026-07-18
 review_by: 2026-11-15
 status: stable
 ---
@@ -3941,3 +3941,67 @@ lyckad push är värre än ingen avläsning: den ser ut som disciplin men
 är teater. Formen: verifierings- och landnings-kedjor skrivs som
 &&-kedjor hela vägen från första grind till push; ska utfallet
 loggas, logga EFTER att kedjan brutit.
+
+### L281 [UNIVERSAL] — En verktygsbump ändrar grind-utfall på ORÖRD kod — felträffar klassas semantiskt mot kravets källtext, aldrig lyds kosmetiskt
+
+Datum: 2026-07-18 | Källa: S67 dependabot-passet, två oberoende
+instanser samma pass (Biome 2.4→2.5 började linta STATISKA SVG-FILER →
+noSvgWithoutTitle [JSX-semantik] felträffade public/-assets — favicon
+läses av browser-chrome, logotypens a11y ägs av img-alt → smal
+path-scopad override, dubbelverifierad under BÅDA binärerna ·
+markdownlint-bumpen skärpte MD036-heuristiken → flaggade en orörd
+ADR-rad → rad-inline-disable per repo-mönstret, beslutstext orörd)
+(klass: grind-disciplin; granne till L279)
+
+L279 sa att samma verktyg inte är samma grind (flaggor/schema/binär).
+Utvidgningen: samma verktyg + samma kod är inte samma UTFALL över en
+versionsbump — nya versioner lintar nya filklasser och skärper
+heuristiker, och flaggorna landar på kod som inte ändrats på månader.
+Disciplinen: (1) klassa varje ny flagga SEMANTISKT — gäller regelns
+underliggande krav faktiskt denna yta? Verifiera mot kravets källtext
+(spec/standard), inte mot verktygets auktoritet. (2) Äkta träff →
+fixa koden; felträff → SMALASTE undantaget (path-scopad override
+eller rad-inline-disable) med motiv och källa i undantaget.
+(3) Aldrig bred avstängning, aldrig kosmetisk lydnad — en meningslös
+title i en favicon är lydnad, inte tillgänglighet. (4) När main ska
+vara grön före och efter bumpen: verifiera undantaget under båda
+versionerna.
+
+### L282 [UNIVERSAL] — Bumpar av binär-bärande verktyg kräver verktygets EGET install-steg per arbetsyta — npm install räcker inte (kompletterar L275)
+
+Datum: 2026-07-18 | Källa: S67 post-deps-verifieringen (Playwright
+1.59→1.61 via deps-PR: npm install kördes korrekt per L275 men
+a11y-sviten föll BRETT — 31/31 på 2–3 ms per test med "Executable
+doesn't exist … chromium_headless_shell-1228"; `npx playwright
+install` hämtade 1.61:s browser-binärer → 31/31 grön) (klass:
+dev-miljö/deps; kompletterar L275)
+
+L275 täcker node_modules-synken; denna klass är verktyg vars runtime
+bor UTANFÖR node_modules (Playwrights browser-cache i användarens
+cache-katalog; motsvarande för andra binär-hämtande verktyg).
+Signaturen: hela sviter faller på millisekunder med "executable
+doesn't exist"-klassens fel direkt efter en bump — det är inte
+testfel utan binär-glapp. Disciplinen: efter bump av binär-bärande
+verktyg körs verktygets eget install-steg i varje arbetsyta som ska
+köra det. CI gör det redan i sina steg — lokala ytor gör det inte av
+sig själva, och npm install rör inte den externa cachen.
+
+### L283 [UNIVERSAL] — Dependabot-gruppdesign: en stack-grupp måste äga sina paket OAVSETT dependency-type — annars föds korsberoende grupp-PR:er som inte kan bli gröna var för sig
+
+Datum: 2026-07-18 | Källa: S67 (PR #53 dev-deps ERESOLVE:
+router-devtools-bumpen krävde peer react-router ^1.170 som reste
+i PR #56 [tanstack-gruppen]; rotorsak: dev-catch-all-gruppen exkluderade
+bara @types/* — tanstack- OCH tailwind-DEV-paketen föll dit,
+separerade från sina prod-syskon; fix: dev-gruppen speglar hela
+stack-exkluderingslistan) (klass: deps-konfiguration/supply-chain)
+
+Catch-all-grupper per dependency-type (production/development) är
+rätt riskprofilsnitt — men stack-grupper (paket som versioneras i
+lås) skär TVÄRS över typerna: en stacks dev-verktyg (devtools, CLI,
+plugin) peer-beror på stackens prod-kärna. Exkluderar inte varje
+catch-all-grupp stackmönstren hamnar syskonen i olika PR:er, och den
+ena kan inte bli grön förrän den andra mergats. Invarianten vid
+gruppdesign: varje stack-mönster ligger i exclude-patterns på
+SAMTLIGA catch-all-grupper, oavsett dependency-type. Signaturen att
+känna igen: ERESOLVE i en grupp-PR där "Conflicting peer dependency"
+pekar på ett paket som ligger i en ANNAN öppen grupp-PR.

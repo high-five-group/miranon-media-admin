@@ -2696,6 +2696,21 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 67 — QA-vågen till PRD-stängningarna + TASK-11/12 + plugin 1.15.0 + dependabot-passet (2026-07-18)
+
+**Commit-range:** `22f44d0` (sessionsdok-födelse) → HEAD. **Mål:** S66-handoffens Marcus-takt-moment — QA-vågen 4.6/8.5/9.4 → PRD-stängningarna TASK-4/8/9, TASK-11/12-miljöfixen, dependabot-passet (7 PR:er) samt plugin-updaten 1.15.0 (Marcus-tillägg vid scope-kvittensen). Ej byggplan-fas — QA-/underhålls-session.
+
+- **TASK-11/12 (konsoliderade → Done):** seed-ankaret `TEST_REGISTRATION_RECORD_ID` i `.env.test.example` + Marcus `.env.test` (kvitterad väg) + pekande felmeddelanden i de 3 hårda expect:en + nyckeldok (helpers-headern, CONTRIBUTING); skipvakts-utökningen 6→7 förkastad med motiv (svit-global vakt vs 6-falls-lokal nyckel). Bevis RÖD→GRÖN (funktionellt 296/296); `bb65b7f`, run 29642391302 grön per jobb.
+- **Plugin-updaten 1.14.0 → 1.15.0:** utförd i sessionen; L267-verifieringen grön (install-recordets gitCommitSha == hub-HEAD `01eb164`, inte bara versionssträngen). Omstarten = sessionsbytet — 1.15.0-registryn aktiveras i nästa session.
+- **QA-vågen (preview-formen 4173 per runbooken):** två fynd med hela livscykeln inom vågen — **task-8.6** skeleton-tonen (L269-klassen: WCAG 1.4.11-feltillämpning på dekorativa block falsifierad mot W3C Understanding + MUI/Carbon/shadcn-branschbandet → neutral-200 via ny semantisk roll-token `--mm-bg-placeholder`, shimmer 45→75 %, dubbelriktat test-kontrakt; `49fbb76`) + **task-4.7** fokusring-klippet i anmälningslistans rullningsyta (utanpåliggande ring klipps av overflow → inset-formen per React Aria/Spectrum-mönstret, containerns egen ring bevarad; 3 bevisbilder i `tasks/sessions/bilagor/s67-fokusring-klipp/`; `01b4031`). Foundation-drift-observationen (fokusringens §6-form) öppet noterad UTAN åtgärd (Marcus: färgen ej problemet). Marcus helhetskvittens → 4.6/8.5/9.4 Done → **PRD:erna TASK-4/8/9 Done** (QA-grinden var sista beroendet; T69-kedjan levererad hela vägen).
+- **Dependabot-passet (ADR-031 lager 4, Marcus-delegerat):** 6 squash-merges med main-CI grön PER STEG (#56 → #57 → #44 → #45 → #39 → #53) + #46 stängd med motiv (types ska spegla runtime). Felanalyserna friade båda röda från paketfel: #44 = L279-klassen (rebase räckte) · #53 = ERESOLVE-grupperingsluckan + Biome 2.5:s nya svg-lintning (semantisk felträff → smal override `4f90678`, dubbelverifierad 2.4+2.5). Config-härdningen `fa03742` (dev-gruppen speglar stack-exkluderingarna). L275-steget fullbordat + `npx playwright install` (binär-sidoeffekten fällde a11y brett innan). Verifiering på nya versionerna: yamllint/Biome 2.5.3/typecheck/a11y 31/31/build+bundelgrind gröna; test:api 294/296 där väg D-paret är **TASK-14-fyndet** (filtrerade vägen stabilt ~30 s ×3 mätningar vs 1,7 s ofiltrerad — ej deps-regression, CI grön på samma fall; mätserie + recept på kortet). **TASK-13** född (CI kör EOL-Node 20 → runtime-lyftet 24 LTS som en medveten ändring).
+- **Kort-facit:** 10 kort Done (TASK-11, TASK-12, 8.6, 4.7, 4.6, 8.5, 9.4, TASK-4, TASK-8, TASK-9) + 2 födda (TASK-13, TASK-14) + PR #46 stängd med motiv. Tavlans To Do rymmer endast de två nya fynden.
+- **Numrering:** ingen ny ADR (73==73; nästa 074) · lessons **L281–L283** skördade [UNIVERSAL] (nästa L284) · fälla 45 oförändrad · tråd T78 nästa.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-18-session-67.md`](../tasks/sessions/2026-07-18-session-67.md) (Del 1–5). **EJ fas-avslut.** Kvar efter S67: TASK-13 + TASK-14 i Marcus-takt · hub-lyftet L267–L283 (nästa hub-sync) · omstarten aktiverar 1.15.0 · nästa PRD/batch med parallell form som default (kräver 1.15.0-registryn, ny session).
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

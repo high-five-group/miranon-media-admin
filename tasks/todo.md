@@ -95,6 +95,24 @@
   Marcus-signal (skörd: lessons-kandidaterna Playwright-binärsteget ·
   grupperings-invarianten · ny-filklass-lintning · L269-fynden 8.6/
   4.7 · foundation-drift-observationen).**
+- [x] **END-PASSET KÖRT — coverage i STOPPA** (2026-07-18, Del 5
+  kanonisk plats): skörd **L281–L283** [UNIVERSAL] (verktygsbump
+  ändrar grind-utfall på orörd kod [Biome-svg + markdownlint-MD036,
+  granne L279] · binär-bärande bumpar kräver eget install-steg
+  [Playwright-signaturen; kompletterar L275] · dependabot-
+  gruppinvarianten [stack-grupper äger sina paket oavsett
+  dependency-type]) + 5 kandidater explicit förkastade med motiv
+  (4.7-inset kodifierad · 8.6-scope bärs av L269+spec ·
+  TCC-maskeringen känd klass · foundation-driften observation ·
+  väg D-latensen → TASK-14); hub-lyft L267–L283 buntas till nästa
+  hub-sync. **BUILD-LOG S67-post** (10 kort Done + 2 födda;
+  sifferkorrigeringen mot chatt-rapportens "12" öppet bokförd) +
+  transcript-ref (Code-JSONL 3 291 347 byte / 1 057 rader,
+  wc-verifierad). Numrering: nästa ADR 074 (73==73) · L284 · fälla
+  45 · T78; inga trådar rörda. Intentions-grind PASSERAD (nästa = NY
+  session). Coverage-rapporten i STOPPA; lifecycle-flip +
+  rad 7-slutsummeringen väntar Marcus-kvittens. Kvar efter stängning:
+  Update-klicket + omstarten (aktiverar 1.15.0).
 
 ### Session 66 ✅ AVSLUTAD (2026-07-12) — Förbättringspasset parallell-formen → batch 4 (3/3) → parallell-batch 2 (2/2) → 1.15.0 + T76 stängd
 
