@@ -933,6 +933,45 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
       .analyze();
     expect(results.violations).toEqual([]);
   });
+
+  test('task-4.7 — radlänkens fokusring är inset i rullningsytan (klipps aldrig av overflow); containerns egen ring förblir utanpåliggande', async ({
+    page,
+  }) => {
+    // Samma fulla lista som AC 6 — klipprisken uppstår när raderna når
+    // rullningsytans kant (0 vänster-padding; en utanpåliggande ring
+    // ritas 4px utanför boxen och klipps av overflow-y: auto).
+    const manga = Array.from({ length: 30 }, (_, i) =>
+      reg({
+        fornamn: `Person${String(i).padStart(2, '0')}`,
+        efternamn: 'Testsson',
+        inskickad: new Date(Date.UTC(2026, 5, 1, 12, 0, 0) - i * 3_600_000).toISOString(),
+        eventId: i % 2 === 0 ? 'recEvent1' : null,
+      }),
+    );
+    await mock(page, { registrations: manga, events: [ev({ id: 'recEvent1' })] });
+    await page.goto('/hem');
+    const lista = page.getByRole('region', { name: 'Nya anmälningar att hantera' });
+    const scroll = lista.getByRole('list', { name: 'Senaste anmälningarna' });
+
+    // Radlänken: inset-ring (React Aria/Spectrum-mönstret för rader i
+    // rullningsytor) — ritas innanför kanten och kan inte klippas.
+    const radlank = scroll.getByRole('link').first();
+    await radlank.focus();
+    await expect(radlank).toBeFocused();
+    const lankStil = await radlank.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { offset: s.outlineOffset, bredd: s.outlineWidth, stil: s.outlineStyle };
+    });
+    expect(lankStil.stil).toBe('solid');
+    expect(lankStil.bredd).toBe('2px');
+    expect(lankStil.offset).toBe('-2px');
+
+    // Containern själv behåller den utanpåliggande formen — dess ring
+    // ligger utanför rullningsytan och klipps aldrig (bevisbild 1).
+    await scroll.focus();
+    const scrollOffset = await scroll.evaluate((el) => getComputedStyle(el).outlineOffset);
+    expect(scrollOffset).toBe('2px');
+  });
 });
 
 /**

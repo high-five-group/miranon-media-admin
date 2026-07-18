@@ -46,6 +46,17 @@ body {
   border-radius: 2px;
 }
 
+/* Fokuserbara element INUTI en intern rullningsyta: den utanpåliggande
+   ringen ritas 4px utanför elementets box (offset 2px + bredd 2px) och
+   klipps av containerns overflow — kvar blir lösa ring-fragment
+   (task-4.7, S67 QA-fynd). Inset-formen ritar ringen innanför kanten
+   (React Aria/Spectrum-mönstret för rader i rullningsytor) och kan
+   aldrig klippas. Klassen sätts på SCROLLCONTAINERN; descendant-
+   selektorn lämnar containerns egen ring utanpåliggande. */
+.focus-ring-inset :focus-visible {
+  outline-offset: var(--mm-focus-ring-offset-inset);
+}
+
 /* Rubriker: aktivera Inter Display-variant via opsz-axel.
    Se marcus-system DESIGN-FOUNDATION-v1.
    I @layer base (task-4.1, B-NYTT): olagrad author-CSS besegrar ALLA

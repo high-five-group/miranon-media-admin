@@ -139,7 +139,7 @@ export function NyaAnmalningarCard() {
           // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable).
           tabIndex={0}
           aria-label="Senaste anmälningarna"
-          className="scrollbar-inline mt-2 flex max-h-80 flex-col overflow-y-auto pr-3"
+          className="focus-ring-inset scrollbar-inline mt-2 flex max-h-80 flex-col overflow-y-auto pr-3"
         >
           {senaste.map((reg, i) => {
             const tidMs = inskickadTid(reg);

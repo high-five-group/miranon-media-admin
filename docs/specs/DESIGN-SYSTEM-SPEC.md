@@ -204,6 +204,7 @@ Du skriver `text-primary` som pekar på `--mm-primary` som pekar på `#D4960A`.
   --mm-focus-ring: var(--p-blue-700);  /* Exklusiv färg #1B4965 — aldrig använd till annat */
   --mm-focus-ring-width: 2px;
   --mm-focus-ring-offset: 2px;
+  --mm-focus-ring-offset-inset: -2px; /* barn i interna rullningsytor — .focus-ring-inset på scrollcontainern (task-4.7) */
 }
 ```
 

@@ -73,4 +73,7 @@
   --mm-focus-ring: var(--p-blue-700); /* Exklusiv färg #1B4965 — aldrig använd till annat */
   --mm-focus-ring-width: 2px;
   --mm-focus-ring-offset: 2px;
+  --mm-focus-ring-offset-inset: -2px; /* ring innanför kanten — fokuserbara
+       barn i interna rullningsytor (utanpåliggande form klipps av
+       overflow; task-4.7) */
 }
