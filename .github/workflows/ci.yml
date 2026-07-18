@@ -282,15 +282,26 @@ jobs:
       contents: read
     # Staging-stegen (test:api:staging + e2e-staging) delar EN staging-
     # miljö — samtidiga Test+Build-runs är TASK-6-kollisionen på CI-nivå
-    # (ADR-073 beslut 4). Konstant grupp serialiserar jobbet över ALLA
-    # runs (PR ∥ PR och PR ∥ main-push); queue: max (Actions-feature
-    # 2026-05-07) köar väntande FIFO i stället för default-beteendet att
-    # avbryta pending. cancel-in-progress medvetet OSATT (krav för
-    # queue: max; en startad staging-svit avbryts aldrig mitt i).
-    # Defense-in-depth BAKOM orkestratorns seriella PR→CI→merge-kedja,
-    # inte ersättning — komplement-beslutet S66 Del 2.
+    # (ADR-073 beslut 4). Gruppen serialiserar jobbet över alla
+    # staging-RÖRANDE runs (PR ∥ PR och PR ∥ main-push); queue: max
+    # (Actions-feature 2026-05-07) köar väntande FIFO i stället för
+    # default-beteendet att avbryta pending. cancel-in-progress medvetet
+    # OSATT (krav för queue: max; en startad staging-svit avbryts aldrig
+    # mitt i). Defense-in-depth BAKOM orkestratorns seriella
+    # PR→CI→merge-kedja, inte ersättning — komplement-beslutet S66 Del 2.
+    #
+    # VILLKORLIG grupp (ADR-073-amendering 2, S68): dependabot-runs
+    # skippar SAMTLIGA staging-/serversteg (ADR-031 Lager 3 — stegens
+    # if: github.actor != 'dependabot[bot]') och får därför UNIK grupp
+    # (depbot-<run_id>) i stället för att FIFO-köa bakom en mutex vars
+    # resurs de aldrig rör (S68-empiri: 44 s Test+Build-arbete, 7m15s
+    # elapsed; monoton kö-trappa över 6 samtidiga PR:er 2026-07-18).
+    # SAMMA predikat (github.actor) driver både stegens skip och
+    # grupp-valet → invarianten "aldrig två staging-rörande runs
+    # samtidigt" är definitionell, även vid re-run (re-run-actor ≠
+    # dependabot ⇒ staging-stegen körs OCH gruppen blir staging-tests).
     concurrency:
-      group: staging-tests
+      group: ${{ github.actor == 'dependabot[bot]' && format('depbot-{0}', github.run_id) || 'staging-tests' }}
       queue: max
     steps:
       - name: Checkout

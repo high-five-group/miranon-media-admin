@@ -43,6 +43,28 @@
 >    pr-ci-bevisformen för e2e när 5173 är upptagen (jobblogg-
 >    verifierad, test-count-delta).
 
+> **Amendering 2 (Session 68, 2026-07-18 — arbetssätts-paketet R2;
+> kanonisk trail: S68-doket Del 1–2; Marcus-kvittens "Kvitterar!" på
+> RAPPORTERA-scopet):** en post; beslutstexten bevaras oförändrad
+> (immutabilitet).
+>
+> 1. **Beslut 4-komplementets KONSTANTA concurrency-grupp förfinas
+>    till VILLKORLIG:** dependabot-actorn får unik grupp
+>    (`depbot-<run_id>`); alla övriga runs behåller konstant
+>    `staging-tests` + `queue: max`. Grund: dependabot-runs skippar
+>    SAMTLIGA staging-/serversteg (ADR-031 Lager 3) men FIFO-köade
+>    ändå bakom mutexen — S68-mätningen: 44 s Test+Build-arbete mot
+>    7m15s elapsed, monoton kö-trappa över 6 samtidiga PR:er
+>    (2026-07-18, run 29654725274 m.fl.). Invarianten "aldrig två
+>    samtidiga staging-rörande runs" bevaras ordagrant: SAMMA predikat
+>    (`github.actor`) driver både stegens skip och grupp-valet, så
+>    alignmenten är definitionell även vid re-run (re-run-actor ≠
+>    dependabot ⇒ staging-stegen körs OCH gruppen blir
+>    `staging-tests`). Options-radens förkastande av
+>    jobb-nivå-concurrency som ERSÄTTNING för orkestrator-kedjan står
+>    oförändrat — komplement-statusen ärvs (defense-in-depth BAKOM
+>    den seriella PR→CI→merge-kedjan).
+
 ## Kontext
 
 ADR-071:s v1 är medvetet sekventiell (max en skrivande agent per repo);
