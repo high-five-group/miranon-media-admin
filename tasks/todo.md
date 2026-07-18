@@ -54,6 +54,26 @@
   dependabot-grundtabell 7 PR:er (#53/#44 CI-röda → felanalys i
   passet; lager 4 = Marcus manuell review). **NÄSTA:
   browser-QA-vågen 4.6 → 8.5 → 9.4 (preview 4173, Marcus-takt).**
+- [x] **QA-VÅGEN KOMPLETT: 7 kort Done — To Do-kolumnen TOM**
+  (2026-07-18, Del 3 kanonisk plats): vågen i preview-formen (4173,
+  runbooken; Clear site data = skarpa kallstarter); två fynd med hela
+  livscykeln inom vågen — **task-8.6** skeleton-tonen
+  (1.4.11-feltillämpningen → branschbandet via ny semantisk roll-token
+  `--mm-bg-placeholder`; dubbelriktat test-kontrakt; `49fbb76`, run
+  29651370680 grön per jobb; "OK tillsvidare") + **task-4.7**
+  fokusring-klippet i anmälningslistans rullningsyta (inset-ring,
+  React Aria/Spectrum-mönstret; 3 bevisbilder i
+  `bilagor/s67-fokusring-klipp/`; `01b4031`, run 29652045523 grön per
+  jobb inkl. e2e-beviset i CI [5173-portläget, 8.4-prejudikatet];
+  "Mycket bra."); foundation-drift-observationen (fokusringens §6-form)
+  öppet noterad UTAN åtgärd (Marcus: färgen ej problemet); Marcus
+  helhetskvittens "Nu godkänner jag allt. Jag godkänner alla 3
+  QA-kort som ligger." → 4.6/8.5/9.4 Done med final-summary →
+  **PRD-STÄNGNINGARNA TASK-4/8/9 Done** (QA-grinden sista beroendet;
+  T69-kedjan levererad hela vägen; TASK-4:s platshållar-revision
+  bokförd). Sessionens skörd hittills: 9 kort Done (TASK-11/12 + 7 i
+  vågen). **NÄSTA: dependabot-passet (7 PR:er; #53/#44-felanalysen
+  först, sedan Marcus-review per ADR-031 lager 4).**
 
 ### Session 66 ✅ AVSLUTAD (2026-07-12) — Förbättringspasset parallell-formen → batch 4 (3/3) → parallell-batch 2 (2/2) → 1.15.0 + T76 stängd
 
