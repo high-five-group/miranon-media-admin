@@ -3,10 +3,10 @@ id: TASK-14
 title: >-
   Fynd: get-registrations väg D (eventId-filtrerad) svarar ~30 s på staging —
   timeout-fäller lokala sviten med hårfin marginal
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-18 17:48'
-updated_date: '2026-07-19 07:55'
+updated_date: '2026-07-19 07:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,10 +36,16 @@ S69 kall-morgon-mätningen (09:35 CEST, ~9 h staging-vila; sista staging-beröri
 S69 åtgärd (Marcus-beslut B: läck-forensik + städning): FORENSIKEN visade att 'läckan' är ADR-060 punkt 5:s MEDVETNA interim (bounded sentinel-ackumulering tolereras tills purge wiras; e2e mockar create — enda skrivaren är create-registration-conformancen by design). Prejudikat: S52-tröskeln (ADR-060 Updates 2026-07-06). ÅTGÄRDEN följde samma väg: markör-matchad MCP-radering av samtliga 354 create-test-sentineler ur staging-basen apphjj8Q7lkXCMsL4 (bas-identitet trippelverifierad: seed-ankaret hämtat + basnamn + prod saknar sentinel-träffar; seed + 4 icke-sentineler bevarade, efter-verifiering 0 sentinel-träffar). BEVIS: väg D 32,7/31,6/31,9 s → 1,30/1,39/1,31 s (180 anrop → 3); lokala fulla sviten 294/296 → 296/296 (20,1 s) — RÖD→GRÖN. Strukturella benet: TASK-16 fött (purge-wiring per ADR-060 punkt 3–4; ~6 veckors återackumuleringshorisont) + ADR-060 Updates-post. C-delens A-härdning (dedikerat väg D-event) öppet FÖRKASTAD med motiv: både väg D-testets och create-testets event-ankare härleds från seed-posten by design (ADR-060: robustare än hårdkodat event-ID) — en dedikerad-event-design vore omdesign av båda ankarna mot ADR:ns uttalade val; rätt strukturella ben är purge-wiringen.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 843fccd · CI-run 29678945234 per jobb · CI-grön-första-pass: ja · defekter under körning: 0 · TDD: ej tillämplig (mät-/datastädnings-kort; bevisform = kall-morgon-mätserien [transient falsifierad ×3] + RÖD→GRÖN: väg D 32,7/31,6/31,9 s → 1,30/1,39/1,31 s och lokala fulla sviten 294/296 → 296/296)
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
