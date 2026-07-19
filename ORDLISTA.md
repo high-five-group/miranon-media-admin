@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-12
+updated: 2026-07-19
 review_by: 2027-01-02
 status: stable
 ---
@@ -123,3 +123,14 @@ renderas direkt, och under 1 sekund visas ingen indikation alls. Termen var
 odefinierad i UB 16 (granskningsfyndet L269); definierad i task-7-grillningen
 (S63, grillad samsyn); mekaniken bor i task-7:s PRD.
 *Undvik:* "Laddar…"-textrader (mönstret som underkändes i S62), spinner.
+
+**Period** — event-listans tidsaxel: Kommande eller Tidigare, härledd ur
+eventets startdatum mot idag — ALDRIG ur Status-fältet. Skild från eventets
+**status** (planeringstillstånd: Planerat/Genomfört/Inställt/Flyttat), som i
+listan visas endast vid avvikelse (Inställt/Flyttat — badge på kortet).
+De två axlarna korsar fritt: ett inställt event i framtiden är Kommande +
+Inställt. Skärpningen reconcilierar T14:s begreppsgrumlighet (S72-grillningen,
+statusbadge-beslutet).
+*Undvik:* status som namn på tidsfiltret (T14-grumligheten; gäller även
+URL-parametern).
+*I koden:* `?period=upcoming|past` (event-listans URL-state).
