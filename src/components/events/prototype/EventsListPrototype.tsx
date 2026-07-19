@@ -506,23 +506,24 @@ function eventsByDay(events: ProtoEvent[]): Map<string, ProtoEvent[]> {
 }
 
 /**
- * Kursfärgerna (K11, Marcus-beslut: typen synlig via färg på dagarna,
- * prickarna bort). Fyra kurser + neutral "Övrigt" — inom branschriktvärdet
- * ≤5–7 kalenderfärger. Tile = 100-tinten (mörk text håller kontrasten),
- * legend-punkten = 500. Färg är ALDRIG ensam bärare: legenden bär orden och
- * dag-trycket visar korten.
+ * Kursfärgerna (K11; K12 solid per Marcus: "för svaga … matchar inte
+ * legenden"). Fyra kurser + neutral "Övrigt" — inom branschriktvärdet
+ * ≤5–7 kalenderfärger. SAMMA 500-kulör bär tile OCH legend-punkt (exakt
+ * matchning); vit text på 500-fyllnaden håller kontrasten (alla fem 500:or
+ * är mörka). FK-precedentet för solid fyllnad: IMG_1596:s bekräftade dagar.
+ * Färg är ALDRIG ensam bärare: legenden bär orden, dag-trycket visar korten.
  *
  * [PROTOTYPE]-not: NAMN-matchningen är demo-mekanik — skarpa skivan mappar
  * från taxonomin (ADR-064: kurs × modalitet), aldrig regex på visningsnamn
  * (fälla 35-klassen: nakna/tvetydiga kursnamn).
  */
 type KursTyp = 'fjarrskadning' | 'rim1' | 'rim2' | 'rim3' | 'ovrigt';
-const KURS_INFO: Record<KursTyp, { label: string; tile: string; dot: string }> = {
-  fjarrskadning: { label: 'Fjärrskådning', tile: 'bg-(--p-blue-100)', dot: 'bg-(--p-blue-500)' },
-  rim1: { label: 'RIM 1', tile: 'bg-(--p-green-100)', dot: 'bg-(--p-green-500)' },
-  rim2: { label: 'RIM 2', tile: 'bg-(--p-copper-100)', dot: 'bg-(--p-copper-500)' },
-  rim3: { label: 'RIM 3', tile: 'bg-(--p-red-100)', dot: 'bg-(--p-red-500)' },
-  ovrigt: { label: 'Övrigt', tile: 'bg-(--p-neutral-200)', dot: 'bg-(--p-neutral-500)' },
+const KURS_INFO: Record<KursTyp, { label: string; farg: string }> = {
+  fjarrskadning: { label: 'Fjärrskådning', farg: 'bg-(--p-blue-500)' },
+  rim1: { label: 'RIM 1', farg: 'bg-(--p-green-500)' },
+  rim2: { label: 'RIM 2', farg: 'bg-(--p-copper-500)' },
+  rim3: { label: 'RIM 3', farg: 'bg-(--p-red-500)' },
+  ovrigt: { label: 'Övrigt', farg: 'bg-(--p-neutral-500)' },
 };
 const KURS_ORDNING: KursTyp[] = ['fjarrskadning', 'rim1', 'rim2', 'rim3', 'ovrigt'];
 
@@ -554,10 +555,20 @@ function EventsCalendarPrototype({
   idagStart: number;
 }) {
   const [selected, setSelected] = useState<CalendarDate | null>(null);
+  // K12: fokus-månaden styr månadssummeringen (Marcus-idén: agendan under
+  // gridden — Apple-klassens månads+agenda-hybrid); månadsnav flyttar fokus.
+  const [focused, setFocused] = useState<CalendarDate>(() => today(getLocalTimeZone()));
   const byDay = eventsByDay(events);
   const dagensEvent = selected ? (byDay.get(selected.toString()) ?? []) : [];
   const selectedPeriod: Period =
     selected && selected.compare(today(getLocalTimeZone())) < 0 ? 'past' : 'upcoming';
+  const manadPrefix = `${focused.year}-${String(focused.month).padStart(2, '0')}`;
+  const manadensEvent = events
+    .filter((e) => dayKeys(e).some((k) => k.startsWith(manadPrefix)))
+    .sort((a, b) => dateValue(a) - dateValue(b));
+  const manadNamn = new Intl.DateTimeFormat('sv-SE', { month: 'long' }).format(
+    focused.toDate(getLocalTimeZone()),
+  );
   const navKnapp =
     'flex size-10 items-center justify-center rounded-full bg-bg shadow-sm text-text-secondary';
   return (
@@ -567,6 +578,8 @@ function EventsCalendarPrototype({
           aria-label="Eventkalender"
           value={selected}
           onChange={setSelected}
+          focusedValue={focused}
+          onFocusChange={setFocused}
           className="flex flex-col gap-3"
         >
           <header className="flex items-center justify-between rounded-full bg-bg-muted p-1">
@@ -588,8 +601,8 @@ function EventsCalendarPrototype({
             </CalendarGridHeader>
             <CalendarGridBody>
               {(date) => {
-                // K11: kursfärgade tiles (hela fre–lör-spannet färgas — samma
-                // kulör på varje dag eventet täcker); prickarna utgick.
+                // K12: SOLIDA kursfärgs-tiles (500-kulören, samma som
+                // legenden — exakt matchning); hela fre–lör-spannet färgas.
                 const dagens = byDay.get(date.toString());
                 const typ = dagens && dagens.length > 0 ? kursTyp(dagens[0]) : null;
                 return (
@@ -600,9 +613,9 @@ function EventsCalendarPrototype({
                         'relative flex h-11 items-center justify-center rounded-lg text-small tabular-nums',
                         isOutsideMonth ? 'invisible' : '',
                         isSelected
-                          ? 'bg-primary font-semibold text-text'
+                          ? 'bg-primary font-semibold text-text ring-2 ring-text ring-offset-1'
                           : typ
-                            ? `${KURS_INFO[typ].tile} font-semibold text-text`
+                            ? `${KURS_INFO[typ].farg} font-semibold text-text-inverse`
                             : 'bg-bg-muted text-text-secondary',
                       ].join(' ')
                     }
@@ -614,27 +627,72 @@ function EventsCalendarPrototype({
             </CalendarGridBody>
           </CalendarGrid>
         </Calendar>
-        {/* K11: kursfärg-legenden — orden bär det färgen förstärker. */}
+        {/* K11: kursfärg-legenden — orden bär det färgen förstärker.
+            K12: punkterna bär EXAKT samma 500-kulör som dagarna. */}
         <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1">
           {KURS_ORDNING.map((t) => (
             <li key={t} className="flex items-center gap-1.5 text-caption text-text-secondary">
-              <span aria-hidden="true" className={`size-2 rounded-full ${KURS_INFO[t].dot}`} />
+              <span aria-hidden="true" className={`size-2 rounded-full ${KURS_INFO[t].farg}`} />
               {KURS_INFO[t].label}
             </li>
           ))}
         </ul>
+        {/* K12: månadssummeringen (agenda-under-grid) — default-läget visar
+            fokus-månadens event som kompakta rader; dag-tryck smalnar till
+            dagens fulla kort. */}
         {selected == null ? (
-          <p className="py-4 text-center text-small text-text-muted">
-            Tryck på en färgad dag för att se dess event.
-          </p>
-        ) : dagensEvent.length === 0 ? (
-          <p className="py-4 text-center text-small text-text-muted">Inga event denna dag.</p>
+          manadensEvent.length === 0 ? (
+            <p className="py-4 text-center text-small text-text-muted">Inga event i {manadNamn}.</p>
+          ) : (
+            <section className="flex flex-col gap-2">
+              <h2 className="font-semibold text-small text-text-secondary capitalize">
+                {manadNamn}s event
+              </h2>
+              <ul aria-label={`Event i ${manadNamn}`} className="flex flex-col">
+                {manadensEvent.map((e) => (
+                  <li key={e.id} className="relative border-border-light border-b">
+                    <Link
+                      to="/event/$eventId"
+                      params={{ eventId: e.id }}
+                      className="flex items-center gap-2.5 py-2.5"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`size-2.5 shrink-0 rounded-full ${KURS_INFO[kursTyp(e)].farg}`}
+                      />
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-small">
+                          {eventName(e)}
+                        </span>
+                        <span className="block text-caption text-text-muted">
+                          {[dateText(e), e.ort].filter(Boolean).join(' · ')}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
         ) : (
-          <ul aria-label="Valda dagens event" className="flex flex-col gap-3">
-            {dagensEvent.map((e) => (
-              <VariantBCard key={e.id} e={e} period={selectedPeriod} idagStart={idagStart} />
-            ))}
-          </ul>
+          <div className="flex flex-col gap-3">
+            {dagensEvent.length === 0 ? (
+              <p className="py-4 text-center text-small text-text-muted">Inga event denna dag.</p>
+            ) : (
+              <ul aria-label="Valda dagens event" className="flex flex-col gap-3">
+                {dagensEvent.map((e) => (
+                  <VariantBCard key={e.id} e={e} period={selectedPeriod} idagStart={idagStart} />
+                ))}
+              </ul>
+            )}
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              className="self-center font-medium text-small text-text-secondary underline underline-offset-2"
+            >
+              Visa hela månaden
+            </button>
+          </div>
         )}
       </div>
     </I18nProvider>
