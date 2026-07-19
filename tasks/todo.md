@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 73 🟢 PÅGÅR (2026-07-19) — Eventsidan: direkt på konvergensen + S56-stängningen
+### Session 73 ⏸️ PAUSAD (2026-07-19 → 2026-07-20) — Eventsidan: konvergensen K1–K13 pågår + S56 stängd + header-regeln skarp
 
 > Scope: sessionsdok `2026-07-19-session-73.md` Del 1 (kanonisk plats):
 > eventsidan (detaljvyn `/event/$eventId`) genom konvergens till facit
@@ -48,6 +48,30 @@
   position S55↔S57, öppet S73-markerad) · T65-raden `closed` med
   leverans-not (TASK-4 helt Done: 4.1–4.2 S56 · 4.3+4.4 S61 · 4.5
   S62 · QA 4.6 S64/S67). **NÄSTA: konvergens-passet på eventsidan.**
+- [x] **KONVERGENS-PASSET K1–K13 + SKARPA APP-REGELN** (2026-07-19/20,
+  Del 3 kanonisk plats): K1-substratet (exakt kopia + **T78a-lyftet
+  GJORT**: delade PrototypeSwitcher + familje-flödets
+  search-genomslag) · **SKARP: headern RIVEN app-brett** (`ac3f198`,
+  APP-REGEL i AppShell + shell-e2e count 0; klass C-punkten från S55
+  stängd; full e2e/a11y/api-pure-förkontroll) · +3
+  Eventmanager-referensbilder i fk-referens-katalogen · sidformen
+  Marcus-driven K2→K13: grund-arvet → IMG_1542-formen (grupper
+  utanför kort, key-value-rader, Ändra-/Öppna-rader) → identiteten
+  som sidhuvud → eventnamnet = h1 + EventKey-pill → stor chevron
+  ensam → Ändra-läget (bibliotekets Select/Input/Button + RAC
+  DateRangePicker) → sömlös morf 0 px (DOM-mätt) → likbredda fält
+  4×240 px + "ändrar från"-mönstret · demo-datat Airtable-troget ·
+  1 CI-röd (K11, unsafe-fix-klassen) öppet bokförd + läkt K12
+  röd→grön. PRD-krav ackumulerade: eventKey + write-operationer
+  (Del 3/PAUSLÄGE). **INGET FACIT LÅST — mycket kvar på sidan.**
+- [x] **PAUSAD** (2026-07-20, Marcus-order "Kör /session-paus"):
+  `lifecycle: paused` + förankrad PAUSLÄGE-rubrik + fullt
+  HANDOFF-block (TILLSTÅND · CARRY/lesson-kandidater ×3 · numrering ·
+  resume-vägen) i sessionsdoket; dev-servern stoppad
+  (L275/L282-fällan); trädet rent + pushat, CI grön per jobb.
+  **NÄSTA: `session-resume` av S73 i färsk kontext — fortsätt
+  konvergensen (närmast: Beläggnings-Ändra + innehålls-frågan
+  [Eventmanager-referenserna]) till Marcus-låst facit.**
 
 ### Session 72 ✅ AVSLUTAD (2026-07-19) — Event-listan: grillad samsyn → konvergens till FACIT (variant B, K1–K14) + skarpa skal-fixar + T78
 
