@@ -895,7 +895,7 @@ export function EventsListPrototype() {
  */
 const PROTO_VARIANTS = {
   A: { steg: 1, stegLabel: 'grillade baslinjen · FK-raden' },
-  B: { steg: 2, stegLabel: 'slot-modellen (låst 2026-07-19)' },
+  B: { steg: 3, stegLabel: 'kalendervyn låst 2026-07-19' },
 } as const;
 
 /**

@@ -38,5 +38,24 @@ B:s håll.
   EJ växlingsbar (badge-formen är riven, jämförelsevärdet lågt — git
   och skärmdumparna bär historiken).
 
-Nästa öppna spår: kalendervy-frågan (vy-växling lista ↔ kalender,
-FK-kalenderns form IMG_1590-serien) — Marcus-väckt vid steg 2-låset.
+- **Steg 3 — KALENDERVYN LÅST 2026-07-19** (Marcus: "Toppen, vi låser
+  kalendervyn här"): `variant-B-steg3-kalendervyn-LAST.png`
+  (månadssummeringen) + `…-dagval.png` (vald dag). Commit-trail
+  `8e7f2d9` (K9 RAC-motorn + FK-skinnet) → `9e2b82d` (K10
+  vy-ikon-toggeln ÖVER period-toggeln, lista förvald, fast position =
+  sömlös växling) → `4dd3322` (K11 kursfärgade dagar + legend +
+  fre–lör-spann) → `bdd0cd0` (K12 SOLIDA 500-tiles == legend-kulören
+  exakt [FK-precedent IMG_1596] + månadssummeringen/agenda-hybriden) →
+  `c61a4b3` (K13 copy: "Annat" · "Juli" · korta kursnamn) → `90d1811`
+  (K14 vertikala kursfärgs-streck i raderna, prickarna legendens).
+  Formen: månadsnav ersätter period-toggeln i kalenderläget ·
+  kursfärgerna Fjärrskådning=blå, RIM 1=grön, RIM 2=koppar,
+  RIM 3=röd, Annat=grå (500-kulören; ≤5–7-riktvärdet) · dag-tryck →
+  dagens kort i B-formen + "Visa hela månaden"-retur · vald dag =
+  guld + mörk ring. ÖPPET BOKFÖRT till skarpa skivan: veckonummer-
+  kolumnen (FK har den) utelämnad — aldrig efterfrågad i konvergensen ·
+  namn-matchningen är demo-mekanik (skarp form = ADR-064-taxonomin) ·
+  kursfärgerna behöver semantiska tokens · RAC Calendar = ny
+  biblioteks-yta (minimaltest gjord i prototypen, bevisad).
+
+Facit-skärmdumpen för HELHETEN landar här när Marcus deklarerar facit.
