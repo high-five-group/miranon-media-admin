@@ -23,22 +23,33 @@ body {
 }
 
 /* Scrollbar-formen (S72-fyndet i två steg):
-   1. Rännstenen reserveras ALLTID och SYMMETRISKT (scrollbar-gutter stable
-      both-edges, Baseline 2024): sidor med och utan scrollbar får samma
-      innehållsbredd — inget sidbytes-hopp — och den centrerade 600-kolumnen
-      förblir OPTISKT skärm-centrerad oavsett rännstensbredd (enkel-sidig
-      stable flyttade kolumnen ~7 px vänster och fällde hem-e2e:ns
-      computed-låsta centrerings-assertion — CI-beviset för both-edges).
-   2. Tummen görs diskret (scrollbar-width thin + scrollbar-color): smal,
-      dämpad tumme på transparent spår i stället för default-blockets
-      visuella popp. Tumfärgen håller 1.4.11-golvet ≥3:1 (egen styling =
-      eget kontrast-ansvar; se --mm-scrollbar-thumb).
+   1. Rännstenen reserveras SYMMETRISKT på DESKTOP (scrollbar-gutter stable
+      both-edges, Baseline 2024, ≥ lg): sidor med och utan scrollbar får
+      samma innehållsbredd — inget sidbytes-hopp — och 600-kolumnen förblir
+      optiskt skärm-centrerad oavsett rännstensbredd (enkel-sidig stable
+      flyttade kolumnen ~7 px och fällde hem-e2e:ns centrerings-assertion —
+      CI-beviset för both-edges). MOBILT (< lg) reserveras INGEN rännsten:
+      M6-facitets FK-mått är absolut ("radkanten 16 px från skärmkanten",
+      mer-e2e:ns computed-lås fällde both-edges på 390 — CI-beviset åt andra
+      hållet), och riktiga mobila enheter har overlay-scrollbars där varken
+      hopp eller rännsten existerar. Öppen avvägning: klassisk-scrollbar-
+      fönster SMALARE än lg återfår sidbytes-hoppet — accepterat, formen är
+      mobil = enhets-verklighet, desktop = stabil rännsten.
+   2. Tummen görs diskret på alla bredder (scrollbar-width thin +
+      scrollbar-color): smal, dämpad tumme på transparent spår i stället
+      för default-blockets visuella popp. Tumfärgen håller 1.4.11-golvet
+      ≥3:1 (egen styling = eget kontrast-ansvar; se --mm-scrollbar-thumb).
    Overlay-scrollbars (macOS-default) tar ingen layoutplats och påverkas
    inte — där finns varken hoppet eller poppet. */
 html {
-  scrollbar-gutter: stable both-edges;
   scrollbar-width: thin;
   scrollbar-color: var(--mm-scrollbar-thumb) transparent;
+}
+
+@media (min-width: 1024px) {
+  html {
+    scrollbar-gutter: stable both-edges;
+  }
 }
 
 body {
