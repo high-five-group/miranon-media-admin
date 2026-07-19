@@ -69,7 +69,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K8 — eventnamnet är sidrubriken + liten tillbaka-länk',
+    stegLabel: 'K9 — toppraden + EventKey-pillen på titelraden',
   },
 ];
 
@@ -253,23 +253,27 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
 
   // K2: sid-chromen står ALLTID i slutgeometri — bara innehållsytan
   // växlar mellan ladd/fel/laddat (Lugnt laddläge §15).
-  // K8 (Marcus + branschmönstret): h1 "Eventdetaljer" + chevron-knappen
-  // RIVNA — generiska sidrubriker finns inte på branschledarnas
-  // detaljsidor; ENTITETENS NAMN är h1 (Polaris Page backAction + title;
-  // Stripe "← Payments" + beloppet som titel; GitHub brödsmula +
-  // issue-titeln). Kvar i ramen: liten understruken tillbaka-länk
-  // (search-genomslaget bevarat); h1 = eventnamnet bor i innehållet
-  // (sidhuvudet, K7-avdelaren kvar).
+  // K8: h1 "Eventdetaljer" riven — ENTITETENS NAMN är h1 (Polaris Page
+  // backAction + title; Stripe/GitHub-klassen).
+  // K9 (Marcus): toppradens text är KONTEXT-etiketten "Eventdetaljer"
+  // (muted, ej understruken, INTE en länk — den ljuger annars om målet)
+  // och chevronen är egen rund knappyta separerad från texten —
+  // IMG_1542:s egen topprad (rund back-knapp + liten sidtitel; iOS
+  // nav-bar-mönstret). Skärmläsaren får målet via aria-label
+  // ("Tillbaka till event"); search-genomslaget bevarat.
   const sidRam = (innehall: React.ReactNode) => (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      <Link
-        to="/event"
-        search={(prev) => prev}
-        className="flex items-center gap-1 self-start px-4 text-small underline underline-offset-2"
-      >
-        <ChevronLeft aria-hidden="true" size={14} className="shrink-0" />
-        Tillbaka till event
-      </Link>
+      <div className="flex items-center gap-3 px-4">
+        <Link
+          to="/event"
+          search={(prev) => prev}
+          aria-label="Tillbaka till event"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-muted"
+        >
+          <ChevronLeft aria-hidden="true" size={18} />
+        </Link>
+        <span className="text-small text-text-muted">Eventdetaljer</span>
+      </div>
       {innehall}
     </section>
   );
@@ -325,21 +329,23 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
           tunn avdelare under (Eventmanager-formen). */}
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
         {/* K8: eventnamnet ÄR sidrubriken (h1, 30/600 per rubrikpolicyn);
-            fokusmålet + document.title bär samma identitet. */}
-        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
-          {eventName(event)}
-        </h1>
-        {(event.eventKey || event.tidKvarTillEvent) && (
-          <div className="flex flex-wrap items-center gap-2">
-            {event.eventKey && (
-              <span className="rounded-full bg-bg-muted px-2.5 py-0.5 font-medium text-caption text-text-secondary">
-                {event.eventKey}
-              </span>
-            )}
-            {event.tidKvarTillEvent && (
-              <p className="text-small text-text-muted">{event.tidKvarTillEvent}</p>
-            )}
-          </div>
+            fokusmålet + document.title bär samma identitet.
+            K9 (Marcus): EventKey-pillen på TITELRADEN till höger —
+            Polaris titleMetadata/Stripe-ID-chippens plats; liten mot
+            titeln (text-small, inte titel-storlek — metadata ska inte
+            konkurrera med materian). */}
+        <div className="flex items-center justify-between gap-3">
+          <h1 ref={headingRef} tabIndex={-1} className="min-w-0 break-words font-semibold text-3xl">
+            {eventName(event)}
+          </h1>
+          {event.eventKey && (
+            <span className="shrink-0 rounded-full bg-bg-muted px-3 py-1 font-medium text-small text-text-secondary">
+              {event.eventKey}
+            </span>
+          )}
+        </div>
+        {event.tidKvarTillEvent && (
+          <p className="text-small text-text-muted">{event.tidKvarTillEvent}</p>
         )}
       </header>
 
