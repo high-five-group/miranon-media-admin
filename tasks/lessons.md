@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-18
+updated: 2026-07-19
 review_by: 2026-11-15
 status: stable
 ---
@@ -4005,3 +4005,43 @@ gruppdesign: varje stack-mönster ligger i exclude-patterns på
 SAMTLIGA catch-all-grupper, oavsett dependency-type. Signaturen att
 känna igen: ERESOLVE i en grupp-PR där "Conflicting peer dependency"
 pekar på ett paket som ligger i en ANNAN öppen grupp-PR.
+
+### L284 [UNIVERSAL] — Miljö-delad latens-anomali diagnostiseras som anropskedja × RTT × exekverings-region — CI-grön/lokal-röd kan vara geografi, inte kod
+
+Datum: 2026-07-19 | Källa: S69 TASK-14 (väg D stabilt ~32 s lokalt
+men grön i CI på SAMMA fall: 180 seriella Airtable-anrop × ~177 ms
+EU→Airtable-RTT; EF:n exekverar i ANROPARENS region
+[`x-sb-edge-region: eu-central-1` lokalt, US-region för CI-runnern]
+→ samma kod, samma data, olika väggklocka) (klass:
+diagnostik/prestanda)
+
+När samma operation är långsam i en miljö och snabb i en annan på
+identisk kod och data: räkna FÖRST anropskedjans längd (antal
+sekventiella nätverksanrop) och VAR exekveringen faktiskt sker —
+edge-runtimes (Deno Deploy/Supabase Edge m.fl.) följer anroparen,
+så "serverns" RTT till tredje part beror på VEM som frågar.
+Väggklocka = antal anrop × per-anrops-RTT; en kedja om N anrop
+förstorar varje geografisk millisekundskillnad N gånger. Mät med
+`curl -w '%{time_total}'` + läs region-headern innan hypoteser om
+throttling/last/regression får fäste — och notera att en
+tidsgräns (test-timeout) då kan falla på ren geografi.
+
+### L285 [UNIVERSAL] — Ett medvetet tolererat interim utan kvantifierad horisont falsifieras tyst — sätt gräns + trigger vid beslutet, inte vid incidenten
+
+Datum: 2026-07-19 | Källa: S69 TASK-14/TASK-15 dubbelinstans
+(ADR-060 "bounded sentinel-ackumulering tolereras" utan gräns →
+tröskel-incident ×2 [S52 get-attendance 47 s; S69 väg D 32 s,
+~250 rader/månad] · K1.17 UTF-8-glob-buggen dokumenterad 2026-05-14
+med "reproducerbarhet bör testas separat" utan kort/bevakning →
+träffade varje stängnings-commit i två månader) (klass:
+beslutsdisciplin/teknisk skuld)
+
+"Bounded", "tolereras tills vidare" och "bör testas separat" är
+obundna interim utan definierad gräns: ingen vet NÄR premissen
+brister, så den brister som incident i stället för som planerat
+arbete. Disciplinen: ett medvetet accepterat interim föds ALLTID med
+(1) en kvantifierad horisont (takt × tröskel → datum/volym, t.ex.
+"~250 rader/månad ⇒ ~6 veckor") och (2) en durabel trigger —
+backlog-kort med horisonten som deadline-signal, eller mekanisk
+vakt — aldrig bara en prosa-notering i beslutet. Ett interim vars
+enda bevakning är att någon minns det är en schemalagd incident.

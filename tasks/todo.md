@@ -81,6 +81,19 @@
   (pre-existerande, endast varning) noterad → `biome migrate` vid
   nästa Biome-beröring. **NÄSTA: end-pass på Marcus-signal
   (Dependabot-passet #58–#63 kvar som S70-ingång).**
+- [x] **END-PASSET KÖRT — coverage i STOPPA** (2026-07-19, Del 6
+  kanonisk plats): skörd **L284–L285** [UNIVERSAL] (miljö-delad
+  latens = kedja × RTT × exekverings-region [CI-grön/lokal-röd kan
+  vara geografi] · tolererat interim kräver kvantifierad horisont +
+  durabel trigger [ADR-060-bounded ×2 + K1.17-dubbelinstansen]) +
+  4 kandidater förkastade med motiv; inga nya trådar (TASK-16 =
+  kort-formen; observationerna öppet noterade under baren);
+  BUILD-LOG S69-post; transcript-ref wc-verifierad (2 115 561
+  byte/823 rader vid Del 6); numrering vid stängning: ADR 074
+  (73==73) · L286 · fälla 45 · T78; intentions-grind PASSERAD
+  (nästa = NY session S70). Hub-lyft L284–L285 buntas till nästa
+  hub-sync. Coverage-rapporten i STOPPA; lifecycle-flip +
+  rad 7-slutsummeringen väntar Marcus-kvittens.
 
 ### Session 68 ✅ AVSLUTAD (2026-07-18) — Arbetssätts-paketet: asynkron CI-vakt (R1) + dependabot ur staging-mutexen (R2) + TASK-14-prioriteringen (R3) + PR-parkeringen + hub-syncen L267–L283
 

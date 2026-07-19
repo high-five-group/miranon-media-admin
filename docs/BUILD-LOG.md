@@ -2725,6 +2725,20 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 69 — Fynd-korten: TASK-15 quotepath-fixen + TASK-14 kall-morgon-mätningen → ADR-060-städningen + TASK-13 Node-lyftet (3 kort Done · TASK-16 fött · L284–L285) (2026-07-18/19)
+
+**Commit-range:** `ed83495` (sessionsdok-födelse, 23:50 CEST 18/7) → HEAD. **Mål:** exekvera S68-handoffens fynd-kort med tidsvillkoret hanterat — ordningsbytet (TASK-15 i kväll, TASK-14 i morgon bitti) Marcus-kvitterat mot kall-morgon-receptet. Första sessionen på plugin 1.16.0 (asynkrona CI-vakten skarp — samtliga vakter bakgrundade, headSha-formen L265). Ej byggplan-fas — fynd-korts-/underhållssession.
+
+- **TASK-15 Done** (`378db8c` → kontrastbevis `7f36257`): `quotepath: false` på BÅDA changed-stegen i ci.yml — gits quotepath-escapning av UTF-8-filnamn (backlog-kortens å/ä/—) föll ur `**/*.md`-globben → `only_changed=false` → onödig full Test+Build per stängnings-commit (K1.17-klassen; käll-belagd trippel). Följdfynd fixat i samma invariant: docs-steget hade samma default ⇒ UTF-8-namngiven `.md`-ändring skulle TYST skippa Docs link check. Kontrastbeviset run 29663106983: kortfils-only-commit → Test+Build SKIPPED + Docs link check körd grön (före-bilden 29657524469 full svit ~7 min); därefter bevisat i drift på varje stängnings-commit i sessionen.
+- **TASK-14 Done** (mätningen + ADR-060-städningen): kall-morgon-serien (09:35, ~9 h staging-vila) 32,7/31,6/31,9 s vs ofiltrerad ~1,6 s → transient-hypotesen FALSIFIERAD; mekanismen belagd: staging-secreten `REGISTRATIONS_BATCH_SIZE=2` × 354 ackumulerade create-test-sentineler på seed-ankarets event ⇒ 180 seriella Airtable-anrop × ~177 ms EU-RTT (EF exekverar i anroparens region — förklarar CI-grön/lokal-röd deterministiskt, L284). Forensiken: ingen omedveten läcka — ADR-060 punkt 5:s MEDVETNA interim (S52-prejudikatet fanns). Åtgärd (Marcus-beslut väg B): markör-matchad MCP-radering av samtliga 354 ur staging-basen `apphjj8Q7lkXCMsL4` (bas-identitet trippelverifierad; seed + 4 icke-sentineler bevarade) → väg D 1,3 s ×3 · lokala sviten 294/296 → **296/296**. ADR-060 Updates-post (andra tröskeln); timeout-höjning + EF-parallellisering + A-härdning förkastade med motiv (`843fccd`).
+- **TASK-13 Done** (`0ef57f4`): runtime-lyftet Node 20 → 24 LTS i EN ändring — .nvmrc 24 · engines `>=24` · @types/node ^24.13.3 (spegel-principen: NED från 25) · README-badgen; CI:s setup-node följde `.nvmrc` automatiskt. Kompat käll-verifierad (nodejs/Release: v24 Active LTS, EOL 2028-04-30 · Playwright: Node 20 UTE ur stödlistan · Vite 22.12+ uppfylls · Biome binär). CI-run 29679590743 grön per jobb med full Test+Build på **v24.18.0** (jobblogg-verifierat).
+- **TASK-16 fött** (utan triage-etikett): ADR-060-purgens wiring — interim-premissen falsifierad ×2; återackumuleringstakten ~250 rader/månad ⇒ ~6 veckors horisont som deadline-signal på kortet (L285-mönstret).
+- **Numrering:** ingen ny ADR (ADR-060 fick Updates-post; 73==73, nästa 074) · lessons **L284–L285** [UNIVERSAL] (miljö-delad latens = kedja × RTT × exekverings-region · tolererat interim kräver horisont + trigger) + 4 kandidater förkastade med motiv i Del 6 (nästa L286) · fälla 45 · tråd T78 (inga nya trådar).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-18-session-69.md`](../tasks/sessions/2026-07-18-session-69.md) (Del 1–6). **EJ fas-avslut.** Kvar efter S69: Dependabot-passet #58–#63 (+ pröva allowlist-avlistningen GHSA-gv7w-rqvm-qjhr) som S70-ingång · TASK-16 väntar Marcus-klassning · nästa PRD/parallell batch på 1.16.0.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
