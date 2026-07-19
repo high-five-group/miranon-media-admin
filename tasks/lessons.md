@@ -4161,3 +4161,39 @@ HELA form i CI:ns exakta åkallan (jfr L279: verktygets default är ett
 icke-bevis), med kända lokala flakes klassade via isolation-körning
 innan de avfärdas. Instansierar L289:s princip på grind-nivån: sviten
 ÄR vaktens faktiska fråga; enskilda tester är handplockade delmängder.
+
+### L292 [UNIVERSAL] — En precedens-ändring aktiverar latent DÖD konfiguration — inventera vad som VINNER efteråt, inte bara det du ändrade
+
+Datum: 2026-07-19 (administrativ skörd i S73) | Källa: S56 task-4.1
+(@layer base-flytten aktiverade DashboardCards latenta
+`text-text-muted` — tyst förlorad styling före flytten — som oväntad
+synlig diff; fångad av exhaustiv rubrik-inventering; kandidaten
+antecknad i S56:s paus-block, skördad vid S73:s administrativa
+S56-stängning) (klass: verifikations-disciplin)
+
+En ändring av precedens-ordning (CSS-lager, import-ordning, MRO,
+config-lager) ändrar inte bara det avsedda målet — den kan väcka
+regler som varit tyst överskuggade och därmed DÖDA. Blast-radius-
+analysen efter en precedens-ändring är därför en inventering av vad
+som VINNER under den nya ordningen över hela ytan, inte en diff av
+det man rörde. Distinkt från L246 (verifieringsmetoden: renderad
+yta): detta är analys-OBJEKTET — den latenta regelmängd som byter
+utfall när precedensen flyttas.
+
+### L293 [UNIVERSAL] — "Min diff är grön" ≠ "min run är grön" — CI dömer HELA trädet vid din SHA, inklusive ärvd grind-rödhet
+
+Datum: 2026-07-19 (administrativ skörd i S73) | Källa: S56 (ren
+docs-commit `74366f4` blev CI-röd: den byggde PÅ en parallell sessions
+grind-röda push [`cc6ec61`, Vale.Repetition]; grinden lintar hela
+trädet vid commitens SHA, inte diffen; kandidaten antecknad i S56:s
+paus-block, skördad vid S73:s administrativa S56-stängning) (klass:
+verifikations-disciplin)
+
+En CI-run verifierar tillståndet vid din SHA — hela trädet, inte din
+diff. Rödhet i din run kan därför vara ÄRVD från förälder-commiten,
+och diagnosen börjar i trädet, inte i den egna ändringen. Följdregel
+för parallella ytor (T67-domänen): en stängd eller parallell sessions
+grind-röda är fair att rätta för att avblockera — trädet ska vara
+rent, och den sessionen svarar inte längre. Släkt med [[L248]]
+(git-formernas semantik) och [[L235]] (grind-maskering); distinkt
+axel: ärvd rödhet över commit-gränsen.

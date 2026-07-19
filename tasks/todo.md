@@ -21,7 +21,35 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 72 🟢 PÅGÅR (2026-07-19) — Event-vyn: grillning + hela kedjan (listan först)
+### Session 73 🟢 PÅGÅR (2026-07-19) — Eventsidan: direkt på konvergensen + S56-stängningen
+
+> Scope: sessionsdok `2026-07-19-session-73.md` Del 1 (kanonisk plats):
+> eventsidan (detaljvyn `/event/$eventId`) genom konvergens till facit
+> på prototyp-substratet — ingen grillning (Marcus-beslut vid start:
+> S72-samsynens grund-arv täcker designbesluten) — + administrativ
+> stängning av S56; därefter väg-beslutet list-PRD:ts födelsetidpunkt.
+> Kadensrad per L67. (Sektionen född vid Del 2-landningen —
+> S70-precedenten; S72-rubriken nedan reparerad PÅGÅR → AVSLUTAD i
+> samma landning, öppet bokförd.)
+
+- [x] **Dok-födelse** (2026-07-19): `fc9f2fb`, run 29702964992 grön
+  per jobb (docs-only-formen); numrering disk-verifierad (ADR 074
+  [73==73], L292, f45, T79); audit-ci PASSED; plugin 1.16.0 AKTIV
+  (femte sessionen med asynkrona vakten). S56-FYNDET (pausad 16
+  sessioner, KVAR levererat på andra ytor) rapporterat i RAPPORTERA;
+  Marcus-kvittens: S73 + scope + S56-stängning + ingen grillning.
+  **NÄSTA: S56-stängningen.**
+- [x] **S56 ADMINISTRATIVT STÄNGD** (2026-07-19, Del 2 kanonisk
+  plats): `lifecycle: paused → closed` + PAUSLÄGE-rubriken till
+  historik-form + stängnings-sektion · skörd **L292–L293**
+  [UNIVERSAL] (precedens-ändring aktiverar latent död konfiguration —
+  inventera vad som VINNER · "min diff grön" ≠ "min run grön" — CI
+  dömer hela trädet vid din SHA) · BUILD-LOG S56-post (kronologisk
+  position S55↔S57, öppet S73-markerad) · T65-raden `closed` med
+  leverans-not (TASK-4 helt Done: 4.1–4.2 S56 · 4.3+4.4 S61 · 4.5
+  S62 · QA 4.6 S64/S67). **NÄSTA: konvergens-passet på eventsidan.**
+
+### Session 72 ✅ AVSLUTAD (2026-07-19) — Event-listan: grillad samsyn → konvergens till FACIT (variant B, K1–K14) + skarpa skal-fixar + T78
 
 > Scope: sessionsdok `2026-07-19-session-72.md` Del 1 (kanonisk plats):
 > hela event-familjen som mål, EN sida i taget — listan först; kedjan

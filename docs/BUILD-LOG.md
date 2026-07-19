@@ -2452,6 +2452,22 @@ Samtliga pushar CI-gröna per jobb (kod-commits inkl. Test + Build; docs-only by
 
 ---
 
+## Session 56 — T65-kortfödseln: TASK-4 fött + skivorna 4.1–4.2 → PAUS; administrativt stängd i S73 (2026-07-07; stängd 2026-07-19)
+
+> ADMINISTRATIV POST skriven vid S73 Del 2 (2026-07-19) — S56 pausades
+> 2026-07-07 (Marcus: "kör paus") och nådde aldrig session-end; posten är
+> rekonstruerad ur paus-blocket + backloggen för kronologisk läsbarhet.
+
+**Commit-range:** dok-födelse → `12ca4b5` (paus-landningen). **Mål:** T65-kortfödseln — /to-prd på K10-facit → skivning → skarpt Hem-bygge (Fas 6d-ytan; ej fas-avslut).
+
+- **Levererat i S56:** TASK-4 "PRD: Hem-vyn till K10-facit" fött (/to-prd, S52-processmönstret: facit-specen S55 Del 12 som input, ingen ny intervju) + skivningen (/to-issues) + task-4.1 @layer base-flytten **Done** (`c89a277`) + task-4.2 Hem-strukturen till facit **Done** (`9189cb5`; design-review Marcus-godkänd första varvet, skal-scopet).
+- **PAUS efter 4.2** (ADR-051-formen, Marcus-kvittens "kör paus"; parallellkörningen S57 ∥ S56 pågick). KVAR (4.3–4.6) levererades senare på andra ytor: 4.3+4.4 S61 (AFK-batch-piloten) · 4.5 S62 (batch 3) · QA 4.6 S64/S67 (QA-vågen). TASK-4 helt **Done** (inkl. efterfödda 4.7).
+- **Administrativ stängning S73 Del 2 (2026-07-19):** `lifecycle: paused → closed` · skörd **L292–L293** [UNIVERSAL] ur paus-blockets kandidater (precedens-ändring aktiverar latent död konfiguration — inventera vad som VINNER · "min diff grön" ≠ "min run grön" — CI dömer hela trädet vid din SHA) · T65-registerraden `closed` med leverans-not · ingen full retrospektiv (öppet bokfört i dokets stängnings-sektion).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-07-session-56.md`](../tasks/sessions/2026-07-07-session-56.md) (Del 1–5 + PAUSLÄGE-historik + stängnings-sektion). **EJ fas-avslut.**
+
+---
+
 ## Session 57 — MIGRERINGS-HUB-SESSION 2: kartans steg 2+3 + steg 4-grillningen (2026-07-07)
 
 > Process-/hub-session (EJ fas-avslut; byggplans-faserna orörda). SYSTEMETS
