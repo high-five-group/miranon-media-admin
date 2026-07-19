@@ -399,16 +399,36 @@ export function EventsListPrototype() {
 }
 
 /**
+ * [PROTOTYPE] Konvergens-identiteten — två axlar (Marcus-modellen, skillens
+ * tvåfas-form):
+ * - VARIANT (divergens-axeln): strukturellt olika alternativ. Nu finns EN —
+ *   variant A = den grillade strukturen (S72 Del 2). Fler varianter föds
+ *   ENDAST vid uttalat divergens-beslut och får egna chips (B, C …).
+ * - STEG (konvergens-axeln): Marcus-låsta förfiningar av EN variant. Steg
+ *   räknas upp NÄR MARCUS LÅSER en ändring — då fryses föregående steg som
+ *   växlingsbar snapshot (`?steg=N`) för A/B-jämförelse i browsern, och
+ *   skärmdump + [PROTOTYPE]-commitens SHA landar i bilagan
+ *   (återupplivningsvägen — git bär alla äldre steg; växlaren håller bara
+ *   senaste jämförelseparet).
+ * Bygg-commits (K1–K3) är INTE steg — designen flyttar sig bara på
+ * Marcus-beslut.
+ */
+const PROTO_VARIANT = 'A';
+const PROTO_STEG = 1;
+const PROTO_STEG_LABEL = 'grillade baslinjen';
+
+/**
  * [PROTOTYPE] Flytande variant-växlare (skillens steg 4) — DEV-only via
  * routens grind; visuellt skild från designen som utvärderas (mörk panel).
  * K3-omgjord efter Marcus-feedback ("oklar och otydlig"): klartext-etiketter
  * i chip-form — aktivt val är FYLLT vitt chip, inaktivt är kantat och
- * klickbart; data-valet syns bara i prototyp-läget.
+ * klickbart; data-valet syns bara i prototyp-läget. K4: identitets-raden
+ * (variant + steg) alltid synlig i prototyp-läget.
  */
 export function EventsPrototypeSwitcher() {
   const [variant, setVariant] = useQueryState('variant');
   const [dataMode, setDataMode] = useQueryState('data');
-  const isProto = variant === 'K';
+  const isProto = variant === PROTO_VARIANT || variant === 'K'; // 'K' = legacy-URL:en, tolereras
   const chip = (active: boolean) =>
     active
       ? 'rounded-full bg-bg px-3 py-1.5 font-semibold text-small text-text'
@@ -416,6 +436,11 @@ export function EventsPrototypeSwitcher() {
   return (
     <div className="fixed bottom-24 left-1/2 z-50 flex w-max max-w-[92vw] -translate-x-1/2 flex-col items-center gap-2 rounded-2xl bg-text px-4 py-3 text-text-inverse shadow-lg">
       <span className="font-mono text-caption tracking-wide">PROTOTYP-VÄXLAREN · dev-verktyg</span>
+      {isProto && (
+        <span className="font-semibold text-small">
+          Variant {PROTO_VARIANT} · Steg {PROTO_STEG} — {PROTO_STEG_LABEL}
+        </span>
+      )}
       <div className="flex flex-wrap items-center justify-center gap-2">
         <button
           type="button"
@@ -427,7 +452,7 @@ export function EventsPrototypeSwitcher() {
         </button>
         <button
           type="button"
-          onClick={() => setVariant('K')}
+          onClick={() => setVariant(PROTO_VARIANT)}
           aria-pressed={isProto}
           className={chip(isProto)}
         >

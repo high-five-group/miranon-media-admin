@@ -22,7 +22,9 @@ export const Route = createFileRoute('/_authenticated/event/')({
 // Rivs vid svar-fångsten (throwaway-kontraktet klausul iv).
 function EventPage() {
   const [variant] = useQueryState('variant');
-  const showPrototype = import.meta.env.DEV && variant === 'K';
+  // Variant A = grillade strukturen (konvergens-axeln: steg bor i växlaren);
+  // 'K' tolereras som legacy-URL från K1–K3-passen.
+  const showPrototype = import.meta.env.DEV && (variant === 'A' || variant === 'K');
   // K2: prototypen bär sin EGEN sektion + h1 (Mer-formens grund-arv, utan
   // dubbel sidopadding) — skarpa vyn behåller dagens wrapper orörd.
   if (showPrototype) {
