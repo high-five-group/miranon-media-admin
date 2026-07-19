@@ -118,7 +118,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.4.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -329,7 +329,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.4.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -448,7 +448,7 @@ jobs:
       - name: Run lychee link check
         # SHA-pin per ADR-029 §6.
         # lychee-action v2.8.0 verifierad 2026-05-13 (K1.C Block 2), Rust-baserad.
-        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411  # v2.8.0
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8  # v2.9.0
         with:
           # Scope efter Marcus' Gate 2 anti-genväg-review + Commit 4a scope-konsistens:
           # INKLUDERAR: aktiva docs + aktiva tasks-dok + AKTIVA sessionsdok
@@ -487,7 +487,7 @@ jobs:
           key: cache-lychee-v2-${{ github.sha }}
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.4.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
