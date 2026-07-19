@@ -69,7 +69,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K4 — tillbaka-chevronen vid rubriken',
+    stegLabel: 'K5 — Airtable-namnen + EventKey-pillen',
   },
 ];
 
@@ -291,12 +291,23 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
       </p>
 
       {/* K3: IDENTITETSKORTET (IMG_1542:s namn+personnummer-kort) — eget
-          tonalt kort utan grupprubrik, först under h1: eventnamnet stort +
-          tidshorisonten som sekundärrad. */}
+          tonalt kort utan grupprubrik, först under h1. K5 (Marcus):
+          eventnamnet EXAKT som basens eventnamn-fält + unika nyckeln
+          som pill (basens EventKey "Event-N" — FK-referensens
+          personnummer-roll; prefix-löst, värdet bär sig självt). */}
       <section className="rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
         <h2 className="font-semibold text-2xl">{eventName(event)}</h2>
-        {event.tidKvarTillEvent && (
-          <p className="text-small text-text-muted">{event.tidKvarTillEvent}</p>
+        {(event.eventKey || event.tidKvarTillEvent) && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            {event.eventKey && (
+              <span className="rounded-full bg-surface px-2.5 py-0.5 font-medium text-caption text-text-secondary">
+                {event.eventKey}
+              </span>
+            )}
+            {event.tidKvarTillEvent && (
+              <p className="text-small text-text-muted">{event.tidKvarTillEvent}</p>
+            )}
+          </div>
         )}
       </section>
 

@@ -314,7 +314,11 @@ function VariantBCard({
  * PRD-post + additivt bas-fält (ADR-063-leverabeln) + EF-/modell-utökning.
  * Verklig data saknar fältet → raden döljs.
  */
-export type ProtoEvent = Event & { boverAntal?: number };
+/** eventKey: basens `EventKey` (formel `"Event-" & {Event-nr}`, data-model
+    rad 267) FINNS i basen men INTE i get-event-shapen — demo-fält här;
+    skarpa kravet = EF-/modell-utökning (PRD-post, ingen bas-ändring).
+    Verklig data saknar fältet → identitets-pillen döljs. */
+export type ProtoEvent = Event & { boverAntal?: number; eventKey?: string };
 
 function demoEvent(overrides: Partial<ProtoEvent> & Pick<Event, 'id'>): ProtoEvent {
   return {
@@ -361,7 +365,8 @@ function freLorOmVeckor(veckor: number): { start: string; end: string } {
 export const DEMO_EVENTS: ProtoEvent[] = [
   demoEvent({
     id: 'demo-1',
-    eventNamn: 'RIM 1 — Resor i medvetandet',
+    eventKey: 'Event-21',
+    eventNamn: 'Resor i medvetandet 1',
     typ: 'Utbildning',
     ort: 'Skövde',
     ...(() => {
@@ -377,7 +382,8 @@ export const DEMO_EVENTS: ProtoEvent[] = [
   }),
   demoEvent({
     id: 'demo-2',
-    eventNamn: 'Fjärrskådning grundkurs',
+    eventKey: 'Event-23',
+    eventNamn: 'Fjärrskådning',
     typ: 'Utbildning',
     ort: 'Stockholm',
     ...(() => {
@@ -393,7 +399,8 @@ export const DEMO_EVENTS: ProtoEvent[] = [
   }),
   demoEvent({
     id: 'demo-3',
-    eventNamn: 'RIM 2 — Fördjupning',
+    eventKey: 'Event-24',
+    eventNamn: 'Resor i medvetandet 2',
     typ: 'Utbildning',
     ort: 'Skövde',
     ...(() => {
@@ -409,7 +416,8 @@ export const DEMO_EVENTS: ProtoEvent[] = [
   }),
   demoEvent({
     id: 'demo-9',
-    eventNamn: 'RIM 3 — Mästarnivå',
+    eventKey: 'Event-26',
+    eventNamn: 'Resor i medvetandet 3',
     typ: 'Utbildning',
     ort: 'Skövde',
     ...(() => {
@@ -425,7 +433,8 @@ export const DEMO_EVENTS: ProtoEvent[] = [
   }),
   demoEvent({
     id: 'demo-4',
-    eventNamn: 'Föreläsning: Medveten kontakt',
+    eventKey: 'Event-27',
+    eventNamn: 'Medveten kontakt',
     typ: 'Föreläsning',
     ort: 'Göteborg',
     startdatum: isoDaysFromNow(70),
@@ -435,7 +444,8 @@ export const DEMO_EVENTS: ProtoEvent[] = [
   }),
   demoEvent({
     id: 'demo-5',
-    eventNamn: 'Psionautics intro',
+    eventKey: 'Event-17',
+    eventNamn: 'Psionautics',
     typ: 'Utbildning',
     ort: 'Skövde',
     startdatum: isoDaysFromNow(75),
@@ -448,7 +458,8 @@ export const DEMO_EVENTS: ProtoEvent[] = [
   }),
   demoEvent({
     id: 'demo-6',
-    eventNamn: 'RIM 1 — Resor i medvetandet',
+    eventKey: 'Event-14',
+    eventNamn: 'Resor i medvetandet 1',
     typ: 'Utbildning',
     ort: 'Skövde',
     ...(() => {
@@ -464,7 +475,8 @@ export const DEMO_EVENTS: ProtoEvent[] = [
   }),
   demoEvent({
     id: 'demo-7',
-    eventNamn: 'Föreläsning: Fjärrskådning',
+    eventKey: 'Event-9',
+    eventNamn: 'Fjärrskådning',
     typ: 'Föreläsning',
     ort: 'Stockholm',
     startdatum: isoDaysFromNow(-40),
@@ -474,7 +486,8 @@ export const DEMO_EVENTS: ProtoEvent[] = [
   }),
   demoEvent({
     id: 'demo-8',
-    eventNamn: 'RIM 2 — Fördjupning',
+    eventKey: 'Event-12',
+    eventNamn: 'Resor i medvetandet 2',
     typ: 'Utbildning',
     ort: 'Skövde',
     ...(() => {
@@ -546,12 +559,16 @@ const KURS_INFO: Record<KursTyp, { label: string; farg: string }> = {
 const KURS_ORDNING: KursTyp[] = ['fjarrskadning', 'rim1', 'rim2', 'rim3', 'ovrigt'];
 
 function kursTyp(e: ProtoEvent): KursTyp {
+  // K5-justerad efter Airtable-trogna demo-namnen ("Resor i medvetandet N",
+  // "Fjärrskådning" utan typ-prefix): föreläsnings-grenen bärs nu av
+  // typ-fältet (samma diskriminant som basen), kursgrenen av namnet.
+  if (e.typ === 'Föreläsning') return 'ovrigt';
   const namn = eventName(e);
-  if (/^föreläsning/i.test(namn)) return 'ovrigt';
   if (/fjärrskådning/i.test(namn)) return 'fjarrskadning';
-  if (/rim\s*1/i.test(namn)) return 'rim1';
-  if (/rim\s*2/i.test(namn)) return 'rim2';
-  if (/rim\s*3/i.test(namn)) return 'rim3';
+  const rim = namn.match(/resor i medvetandet\s*(\d)/i);
+  if (rim?.[1] === '1') return 'rim1';
+  if (rim?.[1] === '2') return 'rim2';
+  if (rim?.[1] === '3') return 'rim3';
   return 'ovrigt';
 }
 
