@@ -30,6 +30,17 @@
  * (dagar-kvar-pill, 3-raders form, stapel) ärvs INTE — det är
  * list-materia, Marcus-klargjort vid K2-ordern.
  *
+ * K3 (Marcus-referensen IMG_1542 "Mina uppgifter" + Eventmanager-
+ * interfacet, fk-referens-katalogens Airtable-sektion): identitetskort
+ * överst (namn + tidshorisont) · grupprubriker UTANFÖR korten ·
+ * key-value-RADER (etikett vänster, värde höger, divide-y-avdelare) ·
+ * fotnotsrad (beläggnings-sammanfattningen) · åtgärdsrad i kortbotten
+ * (FK:s "Ändra"-rad → "Öppna X-vyn"). Innehållsrader ur Eventmanager:
+ * Max antal platser / Anmälda / Platser kvar · Slutbetalning saknas
+ * (endast vid avvikelse). FORM-steget — inga nya datakrav; Eventmanagers
+ * innehålls-utökningar (anmälda-lista, betalningstabell, check-in) är
+ * konvergens-/PRD-materia.
+ *
  * Iterationssteg K1… bokförs i sessionsdok S73; skarpt bygge sker
  * NYSKRIVET genom leverans-grindarna (klausul iv — denna kod absorberas
  * aldrig).
@@ -53,7 +64,12 @@ import { DEMO_EVENTS, type ProtoEvent } from './EventsListPrototype';
  * routen aliasar därför A/B/K → 'K' (delade växlarens alias-kontrakt).
  */
 export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
-  { key: 'K', label: 'Prototypen', steg: 1, stegLabel: 'K2 — grund-arvet (app-reglerna)' },
+  {
+    key: 'K',
+    label: 'Prototypen',
+    steg: 1,
+    stegLabel: 'K3 — IMG_1542-formen (grupper + radlistor)',
+  },
 ];
 
 /* ── Hjälpare (kopierade ur EventDetail — medvetet odelade) ── */
@@ -80,14 +96,16 @@ function percentText(e: Event): string | null {
   return `${Math.round(e.anmaldBelaggning * 100)} %`;
 }
 
-/** En rad i en fält/värde-lista; hoppar tomma värden (renderar inte null).
-    K2: etikett-ÖVER-värde (FK-mönstret, grund-arvet) — alltid staplad. */
-function DescRow({ term, children }: { term: string; children: React.ReactNode }) {
+/** K3 (IMG_1542-formen): key-value-RAD — etikett vänster, värde höger
+    (secondary), avdelare bärs av kortets divide-y. Hoppar tomma värden.
+    (K2:s etikett-över-värde ersatt per Marcus-referensen IMG_1542 —
+    "Mina uppgifter"-radformen är detaljsidans grammatik.) */
+function FkRad({ term, children }: { term: string; children: React.ReactNode }) {
   if (children == null || children === '') return null;
   return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-small text-text-muted">{term}</dt>
-      <dd className="text-body">{children}</dd>
+    <div className="flex items-center justify-between gap-4 py-3">
+      <dt className="text-body">{term}</dt>
+      <dd className="text-right text-body text-text-secondary">{children}</dd>
     </div>
   );
 }
@@ -113,28 +131,51 @@ function datumSpannText(e: Event): string {
     : `${LANGDATUM.format(start)} – ${LANGDATUM.format(end)}`;
 }
 
-/** Tonal sektionsyta per DashboardCard-mönstret (grund-arvet: tonala ytor,
-    h2-etikett INNE i kortet, text-xl semibold) — kopierad form, ej delad
-    komponent (prototypen fri att kasta sin form). */
-function ProtoSektion({
+/** K3 (IMG_1542-formen): grupprubriken står UTANFÖR den tonala kortytan
+    (FK: "Adress"/"Kontakt" ovanför sina kort); kortet bär radlistan med
+    avdelare (divide-y). Kopierad form, ej delad komponent. */
+function ProtoGrupp({
   id,
-  etikett,
+  rubrik,
   children,
 }: {
   id: string;
-  etikett: string;
+  rubrik: string;
   children: React.ReactNode;
 }) {
   return (
-    <section
-      aria-labelledby={id}
-      className="flex min-w-0 flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
-    >
-      <h2 id={id} className="font-semibold text-xl">
-        {etikett}
+    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-2">
+      <h2 id={id} className="font-semibold text-lg">
+        {rubrik}
       </h2>
-      {children}
+      <div className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
+        {children}
+      </div>
     </section>
+  );
+}
+
+/** K3: åtgärdsrad i kortbotten (IMG_1542:s "Ändra"-rad) — centrerad
+    länkrad; avdelaren mot raderna ovanför bärs av kortets divide-y. */
+function AtgardsRad({
+  to,
+  eventId,
+  children,
+}: {
+  to: '/event/$eventId/betalning' | '/event/$eventId/narvaro' | '/event/$eventId/anmalda';
+  eventId: string;
+  children: string;
+}) {
+  return (
+    <div className="py-3">
+      <Link
+        to={to}
+        params={{ eventId }}
+        className="flex items-center justify-center font-medium text-body underline-offset-2 hover:underline"
+      >
+        {children}
+      </Link>
+    </div>
   );
 }
 
@@ -241,67 +282,75 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
         {`Event ${eventName(event)} laddat.`}
       </p>
 
-      {/* Identitetsblocket: eventnamnet är sidans dominanta innehåll under
-          h1 (Marcus K2: sidrubriken är "Eventdetaljer", namnet är materian). */}
-      <header className="flex flex-col gap-1">
+      {/* K3: IDENTITETSKORTET (IMG_1542:s namn+personnummer-kort) — eget
+          tonalt kort utan grupprubrik, först under h1: eventnamnet stort +
+          tidshorisonten som sekundärrad. */}
+      <section className="rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
         <h2 className="font-semibold text-2xl">{eventName(event)}</h2>
         {event.tidKvarTillEvent && (
           <p className="text-small text-text-muted">{event.tidKvarTillEvent}</p>
         )}
-      </header>
+      </section>
 
-      <ProtoSektion id="proto-sektion-identitet" etikett="Om eventet">
-        <dl className="flex flex-col gap-3">
-          <DescRow term="Typ">{event.typ}</DescRow>
-          <DescRow term="Ort">{event.ort}</DescRow>
-          <DescRow term="Datum">{datumSpannText(event)}</DescRow>
-          <DescRow term="Status">{event.status}</DescRow>
+      <ProtoGrupp id="proto-grupp-om" rubrik="Om eventet">
+        <dl className="contents">
+          <FkRad term="Typ">{event.typ}</FkRad>
+          <FkRad term="Ort">{event.ort}</FkRad>
+          <FkRad term="Datum">{datumSpannText(event)}</FkRad>
+          <FkRad term="Status">{event.status}</FkRad>
         </dl>
-      </ProtoSektion>
+      </ProtoGrupp>
 
-      <ProtoSektion id="proto-sektion-belaggning" etikett="Beläggning">
-        {/* Beläggning bärs av TEXT; "Fullt" + procent gör bilden begriplig. */}
-        <p className="text-small">
+      <ProtoGrupp id="proto-grupp-belaggning" rubrik="Beläggning">
+        <dl className="contents">
+          <FkRad term="Max antal platser">
+            {event.maxPlatser != null ? String(event.maxPlatser) : null}
+          </FkRad>
+          <FkRad term="Anmälda">{String(event.antalAnmalda)}</FkRad>
+          <FkRad term="Platser kvar">
+            {event.platserKvar != null ? String(event.platserKvar) : null}
+          </FkRad>
+        </dl>
+        {/* Fotnotsraden (IMG_1542:s "Din adress hämtas från Skatteverket"):
+            sammanfattningen som TEXT — färg aldrig ensam bärare. */}
+        <p className="py-3 text-small text-text-muted">
           {belaggningText(event)}
           {full ? ' · Fullt' : ''}
           {percent ? ` · ${percent} fullt` : ''}
         </p>
-        <dl className="flex flex-col gap-3">
-          <DescRow term="Platser kvar">
-            {event.platserKvar != null ? String(event.platserKvar) : null}
-          </DescRow>
+      </ProtoGrupp>
+
+      <ProtoGrupp id="proto-grupp-betalning" rubrik="Betalningar">
+        <dl className="contents">
+          <FkRad term="Anmälningsavgifter">
+            {`${event.antalAnmalningsavgifter} av ${event.antalAnmalda} mottagna`}
+          </FkRad>
+          <FkRad term="Slutbetalningar">{`${event.antalSlutbetalningar} mottagna`}</FkRad>
+          {/* Eventmanager-raden "Antal slutbetalning saknas" — visas endast
+              vid avvikelse (statusbadge-principens släkting: normalt är tyst). */}
+          {event.antalSlutbetalningFelande > 0 && (
+            <FkRad term="Slutbetalning saknas">{String(event.antalSlutbetalningFelande)}</FkRad>
+          )}
         </dl>
-      </ProtoSektion>
+        <AtgardsRad to="/event/$eventId/betalning" eventId={eventId}>
+          Öppna betalnings-vyn
+        </AtgardsRad>
+      </ProtoGrupp>
 
-      <ProtoSektion id="proto-sektion-betalning" etikett="Betalningar">
-        <p className="text-small">
-          {`${event.antalAnmalningsavgifter} av ${event.antalAnmalda} har betalat anmälningsavgift.`}
-        </p>
-        <p className="text-small">
-          {`Slutbetalningar: ${event.antalSlutbetalningar} mottagna` +
-            (event.antalSlutbetalningFelande > 0
-              ? `, ${event.antalSlutbetalningFelande} saknas.`
-              : '.')}
-        </p>
-        <Link to="/event/$eventId/betalning" params={{ eventId }} className="text-small underline">
-          Öppna betalnings-vyn →
-        </Link>
-      </ProtoSektion>
-
-      <ProtoSektion id="proto-sektion-narvaro" etikett="Närvaro">
+      <ProtoGrupp id="proto-grupp-narvaro" rubrik="Närvaro">
         {/* Ingen närvaro-siffra i get-event-shapen — gissa inte fält; länka bara. */}
-        <Link to="/event/$eventId/narvaro" params={{ eventId }} className="text-small underline">
-          Öppna närvaro-vyn →
-        </Link>
-      </ProtoSektion>
+        <AtgardsRad to="/event/$eventId/narvaro" eventId={eventId}>
+          Öppna närvaro-vyn
+        </AtgardsRad>
+      </ProtoGrupp>
 
-      <ProtoSektion id="proto-sektion-anmalda" etikett="Anmälda">
+      <ProtoGrupp id="proto-grupp-anmalda" rubrik="Anmälda">
         {/* Ingen anmälda-siffra i get-event-shapen — gissa inte fält; länka bara
-            (speglar närvaro-sektionens form). */}
-        <Link to="/event/$eventId/anmalda" params={{ eventId }} className="text-small underline">
-          Öppna anmälda-vyn →
-        </Link>
-      </ProtoSektion>
+            (speglar närvaro-gruppens form). */}
+        <AtgardsRad to="/event/$eventId/anmalda" eventId={eventId}>
+          Öppna anmälda-vyn
+        </AtgardsRad>
+      </ProtoGrupp>
     </>,
   );
 }
