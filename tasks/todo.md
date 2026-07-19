@@ -48,6 +48,21 @@
   skyddade)**. Kortet Done med final-summary (tvåstegs K61.1;
   CI-grön-första-pass: nej — öppet bokfört). Marcus-moment kvar:
   lokala `.env.seed`. **NÄSTA: end-pass på Marcus-signal.**
+- [x] **END-PASSET KÖRT — coverage i STOPPA** (2026-07-19, Del 3
+  kanonisk plats): lokala formen dry-run-bevisad efter
+  `.env.seed`-momentet (6+6 träffar, alla ålders-skyddade — basen ren;
+  båda konsumtionsvägarna bevisade) · `brew upgrade gh` 2.88.1→2.96.0
+  (3 advisories stängda) · skörd **L288–L289** [UNIVERSAL]
+  (fail-safe-vakt skiljer konstruktions-referens från data-koppling ·
+  förkontroll ställer vaktens faktiska fråga) + 4 kandidater
+  förkastade med motiv · inga nya trådar · ingen ny ADR (wiringen =
+  implementering av ADR-060 p3–4; Updates-posten bär landningen;
+  73==73) · BUILD-LOG S71-post · transcript-ref wc-verifierad
+  (1 830 041 byte/753 rader vid Del 3) · numrering: ADR 074 · L290 ·
+  fälla 45 · T78 · intentions-grind PASSERAD (nästa = NY session S72:
+  grillning + hela kedjan på event-vyn). Hub-lyft L284–L289 buntas
+  till nästa hub-beröring. Coverage-rapporten i STOPPA;
+  lifecycle-flip + rad 7-slutsummeringen väntar Marcus-kvittens.
 
 > Scope: sessionsdok `2026-07-19-session-70.md` Del 1 (kanonisk plats):
 > Dependabot-passet (felanalys #58 → spegel-prövningen #62 →

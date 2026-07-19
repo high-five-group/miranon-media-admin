@@ -4082,3 +4082,44 @@ format-nyanser, metadata-drift) fast inget manifest ändrats lokalt —
 en tyst mutation som blockerar ff-pulls och riskerar smyg-committas.
 `npm install` reserveras för avsiktliga manifest-ändringar där
 lockfil-skrivning är MÅLET.
+
+### L288 [UNIVERSAL] — En strukturell fail-safe-vakt måste skilja konstruktions-obligatoriska referenser från verkliga data-kopplingar — annars guardar den 100 % och mekanismen blir en no-op
+
+Datum: 2026-07-19 | Källa: S71 TASK-16 (länk-guarden [alla icke-tomma
+rec-ID-arrayer ⇒ hoppa över] trippade på SAMTLIGA 288 event-sentineler —
+fältet Eventtyp är create-EF:ns OBLIGATORISKA utgående typ-referens
+[ADR-066 b5] och sitter på varje rad by design; run 29685010681
+log-verifierad 288/288 EXAKT det fältet → smal config-driven
+exkludering `linkGuardExcludeFields` + test åt båda hållen → run
+29685680050 288/288 raderade) (klass: skyddsräckes-design)
+
+En vakt som klassar på strukturell form (länk-arrayer, foreign keys,
+icke-tomma relationer) träffar två semantiskt olika klasser: verkliga
+data-kopplingar (raden är refererad av/kopplad till riktig data — rör
+ej) och konstruktions-obligatoriska referenser (raden KAN inte existera
+utan dem — de bevisar inget). Skiljs de inte åt guardar vakten allt och
+mekanismen blir en tyst no-op — som upptäcks först i drift. Disciplinen:
+(1) fail-safe-riktningen (hellre skippa+rapportera än agera fel) gör
+felläget till en ofarlig no-op i stället för en skada — den designen
+bevisade sig; (2) undantaget görs SMALT (exakt fältnamn, aldrig klass),
+config-drivet och testat åt BÅDA hållen (undantaget släpper igenom +
+undantaget-är-smalt: verklig koppling bredvid referensen skippar
+fortfarande).
+
+### L289 [UNIVERSAL] — En förkontroll måste ställa vaktens FAKTISKA fråga — en smalare förkontroll ger falsk trygghet exakt där mekanismen avviker
+
+Datum: 2026-07-19 | Källa: S71 (MCP-förkollen före push testade två
+NAMNGIVNA länk-fält ["Anmälningar (länkat fält)", "Närvaro (records)"]
+⇒ "0 länkade, fritt fram" — men länk-guarden var NAMN-AGNOSTISK över
+ALLA fält och trippade på Eventtyp, som förkollen aldrig frågade om;
+first-pass-rött som förkollen var byggd att förhindra) (klass:
+verifikations-disciplin)
+
+När en mekanism ska förhandsbevisas mot verklig data måste förkontrollen
+exekvera SAMMA predikat som mekanismen — inte en handplockad delmängd av
+det. En förkontroll som frågar smalare än vakten godkänner exakt de fall
+vakten kommer fälla, och tryggheten den ger är omvänt proportionell mot
+avvikelsen. Bästa formen: kör mekanismens egen kod i dry-run-läge mot
+verklig data (planen utan verkan) i stället för att återimplementera
+frågan för hand — varje handbyggd spegling av ett predikat är en
+divergensyta.
