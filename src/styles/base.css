@@ -22,13 +22,23 @@ body {
   padding: 0;
 }
 
-/* Scrollbar-rännstenen reserveras ALLTID (scrollbar-gutter, Baseline 2024):
-   sidor med och utan scrollbar får samma innehållsbredd, så innehållet
-   hoppar inte vid sidbyte (S72-fyndet: Hem utan scrollbar ↔ listor med).
+/* Scrollbar-formen (S72-fyndet i två steg):
+   1. Rännstenen reserveras ALLTID och SYMMETRISKT (scrollbar-gutter stable
+      both-edges, Baseline 2024): sidor med och utan scrollbar får samma
+      innehållsbredd — inget sidbytes-hopp — och den centrerade 600-kolumnen
+      förblir OPTISKT skärm-centrerad oavsett rännstensbredd (enkel-sidig
+      stable flyttade kolumnen ~7 px vänster och fällde hem-e2e:ns
+      computed-låsta centrerings-assertion — CI-beviset för both-edges).
+   2. Tummen görs diskret (scrollbar-width thin + scrollbar-color): smal,
+      dämpad tumme på transparent spår i stället för default-blockets
+      visuella popp. Tumfärgen håller 1.4.11-golvet ≥3:1 (egen styling =
+      eget kontrast-ansvar; se --mm-scrollbar-thumb).
    Overlay-scrollbars (macOS-default) tar ingen layoutplats och påverkas
-   inte — regeln är verkningslös där hoppet ändå inte finns. */
+   inte — där finns varken hoppet eller poppet. */
 html {
-  scrollbar-gutter: stable;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mm-scrollbar-thumb) transparent;
 }
 
 body {

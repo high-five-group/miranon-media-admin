@@ -40,6 +40,9 @@
     --p-neutral-400
   ); /* Fältkanter — ≥3:1 mot vit yta (WCAG 1.4.11); neutral-300 ger bara 1,55:1 */
   --mm-border-focus: var(--p-gold-500);
+  --mm-scrollbar-thumb: var(
+    --p-neutral-400
+  ); /* Scrollbar-tummen (styling = vårt kontrast-ansvar, samma 1.4.11-golv som fältkanter) */
 
   /* ── Feedback ── */
   --mm-success: var(--p-green-500);
