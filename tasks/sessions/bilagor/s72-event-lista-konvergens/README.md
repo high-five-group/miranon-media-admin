@@ -36,7 +36,7 @@ B:s håll.
   över"-raden (BedDouble + antal; FÄLTET FINNS EJ I BASEN — PRD-krav:
   additivt bas-fält + EF-/modell-utökning). Steg 1-snapshotten hålls
   EJ växlingsbar (badge-formen är riven, jämförelsevärdet lågt — git
-  + skärmdumparna bär historiken).
+  och skärmdumparna bär historiken).
 
 Nästa öppna spår: kalendervy-frågan (vy-växling lista ↔ kalender,
 FK-kalenderns form IMG_1590-serien) — Marcus-väckt vid steg 2-låset.
