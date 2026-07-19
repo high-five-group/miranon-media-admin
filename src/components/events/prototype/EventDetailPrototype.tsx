@@ -48,7 +48,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Pencil } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { PrototypeVariant } from '@/components/dev/PrototypeSwitcher';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -69,7 +69,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K5 — Airtable-namnen + EventKey-pillen',
+    stegLabel: 'K6 — viktningen · avdelare · Ändra-raden',
   },
 ];
 
@@ -97,16 +97,21 @@ function percentText(e: Event): string | null {
   return `${Math.round(e.anmaldBelaggning * 100)} %`;
 }
 
-/** K3 (IMG_1542-formen): key-value-RAD — etikett vänster, värde höger
-    (secondary), avdelare bärs av kortets divide-y. Hoppar tomma värden.
-    (K2:s etikett-över-värde ersatt per Marcus-referensen IMG_1542 —
-    "Mina uppgifter"-radformen är detaljsidans grammatik.) */
+/** K3 (IMG_1542-formen): key-value-RAD — etikett vänster, värde höger.
+    Hoppar tomma värden. K6 (Marcus + branschmönstret): VIKTNINGEN
+    inverterad mot FK-referensen — etiketten muted, VÄRDET primärt.
+    Detta är data-display-konventionen (Ant Descriptions: label
+    secondary/content primary; Tailwind UI description lists: dt muted,
+    dd stark) — FK:s starka etiketter är settings-listans mönster, men
+    denna yta är en LÄSYTA där värdena är materian. Avdelarna bärs av
+    dl:ens divide-y (K6-fix: display:contents bröt selektorn — divide-y
+    opererar på DOM-barn, inte layoutträdet). */
 function FkRad({ term, children }: { term: string; children: React.ReactNode }) {
   if (children == null || children === '') return null;
   return (
     <div className="flex items-center justify-between gap-4 py-3">
-      <dt className="text-body">{term}</dt>
-      <dd className="text-right text-body text-text-secondary">{children}</dd>
+      <dt className="text-small text-text-muted">{term}</dt>
+      <dd className="text-right text-body">{children}</dd>
     </div>
   );
 }
@@ -146,13 +151,35 @@ function ProtoGrupp({
 }) {
   return (
     <section aria-labelledby={id} className="flex min-w-0 flex-col gap-2">
-      <h2 id={id} className="font-semibold text-lg">
+      {/* K6: rubriken indragen till kortens inner-inset (16 px = px-4,
+          "där rundningen slutar") — IMG_1542:s Adress/Kontakt-linjering. */}
+      <h2 id={id} className="px-4 font-semibold text-lg">
         {rubrik}
       </h2>
       <div className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
         {children}
       </div>
     </section>
+  );
+}
+
+/** K6 (IMG_1542:s "Ändra"-rad + Marcus: "det mesta här ska Lotta kunna
+    ändra"): penn-ikon + Ändra centrerad rad i kortbotten. Per-sektion-
+    redigering är branschmönstret på detaljsidor (Tailwind UI detail
+    screens; FK själva). PROTOTYP-NO-OP: read-only-regeln — prototypen
+    kopplar aldrig mutationer; skarpa kravet = write-operation(er) för
+    event-fälten (EF + allowlist-post finns inte idag → PRD-krav). */
+function AndraRad() {
+  return (
+    <div className="py-3">
+      <button
+        type="button"
+        className="flex w-full items-center justify-center gap-2 font-medium text-body"
+      >
+        <Pencil aria-hidden="true" size={16} />
+        Ändra
+      </button>
+    </div>
   );
 }
 
@@ -312,16 +339,17 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
       </section>
 
       <ProtoGrupp id="proto-grupp-om" rubrik="Om eventet">
-        <dl className="contents">
+        <dl className="divide-y divide-border">
           <FkRad term="Typ">{event.typ}</FkRad>
           <FkRad term="Ort">{event.ort}</FkRad>
           <FkRad term="Datum">{datumSpannText(event)}</FkRad>
           <FkRad term="Status">{event.status}</FkRad>
         </dl>
+        <AndraRad />
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-belaggning" rubrik="Beläggning">
-        <dl className="contents">
+        <dl className="divide-y divide-border">
           <FkRad term="Max antal platser">
             {event.maxPlatser != null ? String(event.maxPlatser) : null}
           </FkRad>
@@ -337,10 +365,11 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
           {full ? ' · Fullt' : ''}
           {percent ? ` · ${percent} fullt` : ''}
         </p>
+        <AndraRad />
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-betalning" rubrik="Betalningar">
-        <dl className="contents">
+        <dl className="divide-y divide-border">
           <FkRad term="Anmälningsavgifter">
             {`${event.antalAnmalningsavgifter} av ${event.antalAnmalda} mottagna`}
           </FkRad>
