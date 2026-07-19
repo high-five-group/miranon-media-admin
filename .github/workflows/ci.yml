@@ -286,10 +286,55 @@ jobs:
 
   # Job 3: Heavy test-suite + build. Conditional på changed-detection.
   # Per ADR-029 §1c. Skippas helt på doc-only-commits (~70s spill eliminerat).
+  purge:
+    name: Staging sentinel purge
+    needs: changed
+    # Samma grind som staging-stegen: hoppar docs-only (should_skip_tests)
+    # och Dependabot (ADR-031 Lager 3 — Dependabot-runs saknar Actions-
+    # secrets och rör aldrig staging; test-jobbet tolererar 'skipped').
+    if: needs.changed.outputs.should_skip_tests != 'true' && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        # Medvetet UTAN explicit fetch-depth-config: jobbet kör enbart
+        # purge-skriptet + policy-filen och behöver ingen git-historik.
+        # fetch-depth-invarianten (ADR-039/ADR-054,
+        # scripts/check-fetch-depth-invariant.sh) räknar EXAKT 4 config-rader
+        # (changed/lint/test/docs) — detta jobb står utanför bärar-mängden by
+        # design; lägg ALDRIG en sådan config-rad här utan att uppdatera
+        # EXPECTED_CI_CARRIERS + ADR-039.
+
+      - name: Setup Node
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+
+      # Setup-purge FÖRE test (ADR-060 punkt 3–4, wirad via TASK-16):
+      # sentinel-rader äldre än ålders-guarden raderas ur staging-basen INNAN
+      # Test + Build skapar nya. EGET jobb = egen runner-VM med EGEN secret —
+      # test-jobbet ser aldrig Airtable-token (EF-only-gränsen, ADR-060
+      # punkt 2+4). Ålders-guarden (60 min, .purge-staging-policy.json)
+      # skyddar in-flight-körningar — därför behöver jobbet INTE
+      # staging-tests-mutexen (den täcker ändå bara CI↔CI, inte CI↔lokal).
+      # STAGING_AIRTABLE_TOKEN = least-privilege-PAT scopad till ENBART
+      # staging-basen (data.records:read+write) — kan aldrig röra prod ens
+      # vid läcka.
+      - name: Purge staging sentinels
+        run: node scripts/purge-staging-sentinels.mjs
+        env:
+          STAGING_AIRTABLE_TOKEN: ${{ secrets.STAGING_AIRTABLE_TOKEN }}
+
   test:
     name: Test + Build
-    needs: changed
-    if: needs.changed.outputs.should_skip_tests != 'true'
+    # needs purge: setup-purgen (ADR-060 punkt 3–4) ska ha kört FÖRE
+    # staging-stegen. Villkoret tolererar 'skipped' (dependabot/docs-only)
+    # men INTE 'failure' — röd purge stoppar sviten synligt (halt-first).
+    needs: [changed, purge]
+    if: ${{ !cancelled() && needs.changed.outputs.should_skip_tests != 'true' && (needs.purge.result == 'success' || needs.purge.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -550,7 +595,7 @@ jobs:
   ci-passed:
     name: CI Passed or Skipped
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
-    needs: [changed, lint, test, docs]
+    needs: [changed, lint, test, docs, purge]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     permissions: {}

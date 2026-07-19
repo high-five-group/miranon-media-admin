@@ -163,3 +163,27 @@ sentineler/svitkörning ≈ 250/månad) ger ~6 veckors horisont till nästa
 tröskel — purge-wiringen per punkt 3–4 spåras nu som backlog-kort
 `task-16` (två tröskel-händelser skärper prioriteten över task-2-erans
 enskilda). Beslutstexten ovan står orörd (L53).
+
+### 2026-07-19 — Purge-wiringen landad: interimet i punkt 5 ERSATT av punkt 3–4-formen (Session 71, TASK-16)
+
+Setup-purgen är driftsatt exakt per beslutets punkt 3–4: separat CI-jobb
+**Staging sentinel purge** (egen runner-VM, egen secret
+`STAGING_AIRTABLE_TOKEN` = least-privilege-PAT scopad till ENBART
+staging-basen med `data.records:read+write`) kör
+`scripts/purge-staging-sentinels.mjs` FÖRE Test + Build; test-jobbet ser
+aldrig token (punkt 2+4 ordagrant). Lokal form: `npm run purge:staging`
+(token ur gitignorade `.env.seed`). Fyra skyddsräcken, samtliga
+guard-testade (`scripts/test-purge-staging-sentinels.mjs`, 23 fall):
+bas-guard (prod-basen hårt blockerad — kritiskt då staging/prod DELAR
+tabell-ID:n, data-model §ID-topologi) · ålders-guard 60 min i KOD på
+`createdTime` (skyddar in-flight-körningar; täcker CI↔lokal-hålet som
+staging-mutexen inte når) · exakt markör-match per klass
+(`create-test+<uuid>@staging.test` i Anmälningar ·
+`Ort='ZZ-create-event-test'` EXAKT i Eventplanering —
+ZZ-History-fixturerna [S52] och Eventformat-fixturen träffas aldrig) ·
+namn-agnostisk länk-guard (event med rec-ID-arrayer i något fält hoppas
+över + rapporteras; fältnamnet "Anmälningar (länkat fält)" live-verifierat
+S71). Värden config-drivna i `.purge-staging-policy.json`. Punkt 5:s
+interim ("bounded ackumulering tolereras") är därmed UTGÅNGET — L285-skulden
+(två tröskel-händelser) stängd vid källan. Beslutstexten ovan står orörd
+(L53).

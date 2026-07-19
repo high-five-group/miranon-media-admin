@@ -53,6 +53,7 @@ kanoniska kommandona separat:
 | `npm run test:a11y` | Axe-runner (egen dev-server på port 5199) |
 | `npm run test:visual` | Visuella regressionstester |
 | `npm run test:preview:staging` | Byggt staging-bygge på preview-porten 4173: bygge → bundelgrind → login/Hem-bevis (TASK-10) |
+| `npm run purge:staging` | Sentinel-purge av staging-basen (setup-purge, ADR-060) — kräver `.env.seed`; `-- --dry-run` för plan utan radering |
 
 Lokal browser-verifiering/QA mot staging via byggt bygge har fem kända
 fällor (fel-mode-bundle, CORS-blockerad port, saknade test-env-vars,
@@ -65,6 +66,18 @@ Not: samma 6 fall blir röda även av en helt annan orsak — saknad
 explicit och pekar på `.env.test.example`, som bär raden sedan TASK-11/12;
 seed-ankaret är dokumenterat i `docs/BUILD-LOG.md`, sök på variabelnamnet).
 Skilj symptomen åt innan felklassning.
+
+**Sentinel-städning (ADR-060, wirad via TASK-16):** create-conformance-
+testerna lämnar markör-märkta rader i staging-basen
+(`create-test+…@staging.test` i Anmälningar, `Ort='ZZ-create-event-test'` i
+Eventplanering). CI städar dem automatiskt i jobbet **Staging sentinel
+purge** FÖRE Test + Build (setup-purge, ADR-060 punkt 3–4; separat jobb med
+egen least-privilege-token scopad till enbart staging-basen — test-env bär
+ALDRIG Airtable-cred, EF-only-gränsen). Lokalt: `npm run purge:staging`
+(token i gitignorade `.env.seed`, se `.env.seed.example`). Endast sentineler
+äldre än 60 min rörs (skydd för pågående körningar); alla värden bor i
+`.purge-staging-policy.json`, guard-testerna i
+`scripts/test-purge-staging-sentinels.mjs`.
 
 CI drabbas aldrig av kollisionen — den kör projekten som separata
 sekventiella steg (`.github/workflows/ci.yml` Test+Build); samma

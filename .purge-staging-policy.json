@@ -1,0 +1,25 @@
+{
+  "expectedBaseId": "apphjj8Q7lkXCMsL4",
+  "forbiddenBaseIds": ["app8uGPrVCVOm6LfD"],
+  "minAgeMinutes": 60,
+  "requestThrottleMs": 250,
+  "deleteBatchSize": 10,
+  "targets": [
+    {
+      "name": "create-registration-sentineler",
+      "table": "Anmälningar",
+      "filterByFormula": "AND(FIND('create-test+', {E-post}) = 1, FIND('@staging.test', {E-post}) > 0)",
+      "exactMatchField": "E-post",
+      "exactMatchPattern": "^create-test\\+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}@staging\\.test$",
+      "linkGuard": false
+    },
+    {
+      "name": "create-event-sentineler",
+      "table": "Eventplanering",
+      "filterByFormula": "{Ort} = 'ZZ-create-event-test'",
+      "exactMatchField": "Ort",
+      "exactMatchPattern": "^ZZ-create-event-test$",
+      "linkGuard": true
+    }
+  ]
+}

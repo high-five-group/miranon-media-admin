@@ -8,6 +8,7 @@ dist-ssr
 .env.*
 !.env.example
 !.env.test.example
+!.env.seed.example
 # Committade mode-filer (ADR-061 Pelare 1): endast publika VITE_-vars (URL +
 # anon/publishable-key, RLS-grindade). Cred-bärande .env.local + .env.test FÖRBLIR ignorerade.
 !.env.development
