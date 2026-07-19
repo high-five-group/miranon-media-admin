@@ -25,11 +25,25 @@
  * NYSKRIVET genom leverans-grindarna (klausul iv — denna kod
  * absorberas aldrig).
  */
+
+import type { CalendarDate } from '@internationalized/date';
+import { getLocalTimeZone, today } from '@internationalized/date';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { BedDouble, CalendarDays, MapPin } from 'lucide-react';
+import { BedDouble, CalendarDays, ChevronLeft, ChevronRight, List, MapPin } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import {
+  Button as AriaButton,
+  Calendar,
+  CalendarCell,
+  CalendarGrid,
+  CalendarGridBody,
+  CalendarGridHeader,
+  CalendarHeaderCell,
+  Heading,
+  I18nProvider,
+} from 'react-aria-components';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { useDataSource } from '@/data/useDataSource';
@@ -419,6 +433,142 @@ const DEMO_EVENTS: ProtoEvent[] = [
   }),
 ];
 
+/* ── Kalendervyn (K9, Marcus-kvitterad form) ── */
+
+/** Alla dag-nycklar ett event täcker (flerdagars-spann expanderas). */
+function dayKeys(e: ProtoEvent): string[] {
+  if (!e.startdatum) return [];
+  const start = new Date(e.startdatum);
+  if (Number.isNaN(start.getTime())) return [];
+  const end = e.slutdatum ? new Date(e.slutdatum) : start;
+  if (Number.isNaN(end.getTime())) return [e.startdatum];
+  const keys: string[] = [];
+  const d = new Date(start);
+  while (d.getTime() <= end.getTime() && keys.length < 31) {
+    keys.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+  return keys;
+}
+
+function eventsByDay(events: ProtoEvent[]): Map<string, ProtoEvent[]> {
+  const map = new Map<string, ProtoEvent[]>();
+  for (const e of events) {
+    for (const k of dayKeys(e)) {
+      const arr = map.get(k);
+      if (arr) {
+        arr.push(e);
+      } else {
+        map.set(k, [e]);
+      }
+    }
+  }
+  return map;
+}
+
+/**
+ * Kalendervyn — RAC Calendar som a11y-MOTOR (grid-semantik, tangentbord,
+ * skärmläsare) + FK:s kalender-STRUKTUR som skin (IMG_1590-serien:
+ * månadsnav-kapseln, veckodagsrubriker, dag-tiles; ljus i vår identitet).
+ * Kalendern ERSÄTTER period-toggeln (månadsnavet är dess tidsnavigation —
+ * Marcus-kvitterad form). Event-dagar: tonad tile + prick; tryck på dag →
+ * dagens kort (B-formen, låsta steg 2). sv-SE via I18nProvider (måndags-
+ * start + svenska veckodagar). Veckonummer-kolumnen (FK har den) är
+ * MEDVETET utelämnad i K9 — RAC saknar den nativt; öppen konvergens-fråga.
+ */
+function EventsCalendarPrototype({
+  events,
+  idagStart,
+}: {
+  events: ProtoEvent[];
+  idagStart: number;
+}) {
+  const [selected, setSelected] = useState<CalendarDate | null>(null);
+  const byDay = eventsByDay(events);
+  const dagensEvent = selected ? (byDay.get(selected.toString()) ?? []) : [];
+  const selectedPeriod: Period =
+    selected && selected.compare(today(getLocalTimeZone())) < 0 ? 'past' : 'upcoming';
+  const navKnapp =
+    'flex size-10 items-center justify-center rounded-full bg-bg shadow-sm text-text-secondary';
+  return (
+    <I18nProvider locale="sv-SE">
+      <div className="flex flex-col gap-4">
+        <Calendar
+          aria-label="Eventkalender"
+          value={selected}
+          onChange={setSelected}
+          className="flex flex-col gap-3"
+        >
+          <header className="flex items-center justify-between rounded-full bg-bg-muted p-1">
+            <AriaButton slot="previous" className={navKnapp}>
+              <ChevronLeft aria-hidden="true" size={20} />
+            </AriaButton>
+            <Heading className="font-semibold text-body capitalize" />
+            <AriaButton slot="next" className={navKnapp}>
+              <ChevronRight aria-hidden="true" size={20} />
+            </AriaButton>
+          </header>
+          <CalendarGrid weekdayStyle="short" className="w-full border-separate border-spacing-1">
+            <CalendarGridHeader>
+              {(day) => (
+                <CalendarHeaderCell className="pb-1 font-medium text-caption text-text-secondary">
+                  {day}
+                </CalendarHeaderCell>
+              )}
+            </CalendarGridHeader>
+            <CalendarGridBody>
+              {(date) => {
+                const harEvent = byDay.has(date.toString());
+                return (
+                  <CalendarCell
+                    date={date}
+                    className={({ isSelected, isOutsideMonth }) =>
+                      [
+                        'relative flex h-11 items-center justify-center rounded-lg text-small tabular-nums',
+                        isOutsideMonth ? 'invisible' : '',
+                        isSelected
+                          ? 'bg-primary font-semibold text-text'
+                          : harEvent
+                            ? 'bg-primary-tint font-semibold text-text'
+                            : 'bg-bg-muted text-text-secondary',
+                      ].join(' ')
+                    }
+                  >
+                    {({ formattedDate }) => (
+                      <>
+                        {formattedDate}
+                        {harEvent ? (
+                          <span
+                            aria-hidden="true"
+                            className="absolute bottom-1.5 size-1 rounded-full bg-text"
+                          />
+                        ) : null}
+                      </>
+                    )}
+                  </CalendarCell>
+                );
+              }}
+            </CalendarGridBody>
+          </CalendarGrid>
+        </Calendar>
+        {selected == null ? (
+          <p className="py-4 text-center text-small text-text-muted">
+            Tryck på en dag för att se dess event — dagar med prick har event.
+          </p>
+        ) : dagensEvent.length === 0 ? (
+          <p className="py-4 text-center text-small text-text-muted">Inga event denna dag.</p>
+        ) : (
+          <ul aria-label="Valda dagens event" className="flex flex-col gap-3">
+            {dagensEvent.map((e) => (
+              <VariantBCard key={e.id} e={e} period={selectedPeriod} idagStart={idagStart} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </I18nProvider>
+  );
+}
+
 /* ── Prototypen ── */
 
 export function EventsListPrototype() {
@@ -438,6 +588,9 @@ export function EventsListPrototype() {
   // representativa bilden); verklig staging-data är opt-in via ?data=verklig.
   const [dataMode] = useQueryState('data');
   const useDemo = dataMode !== 'verklig';
+  // K9: vy-läget — lista (default) eller kalender (?vy=kalender).
+  const [vy, setVy] = useQueryState('vy');
+  const kalenderLage = vy === 'kalender';
 
   // [PROTOTYPE-hack] K2: prototypen visar MÅLET header-fritt (grund-arvet —
   // Hem/Mer-per-vy-mekanismen task-4.2). Skarpa vyn får det via
@@ -498,6 +651,25 @@ export function EventsListPrototype() {
     </div>
   );
 
+  // K9: vy-växlaren — Marcus-placeringen "till höger nedanför
+  // Kommande/Tidigare"; ikon + klartext (Gunilla: ikonen ensam är gissning).
+  const vyRad = (
+    <div className="flex justify-end">
+      <button
+        type="button"
+        onClick={() => setVy(kalenderLage ? null : 'kalender')}
+        className="flex items-center gap-1.5 rounded-full bg-bg-muted px-3 py-1.5 font-medium text-small text-text-secondary"
+      >
+        {kalenderLage ? (
+          <List aria-hidden="true" size={16} />
+        ) : (
+          <CalendarDays aria-hidden="true" size={16} />
+        )}
+        {kalenderLage ? 'Visa som lista' : 'Visa som kalender'}
+      </button>
+    </div>
+  );
+
   const body = (() => {
     if (!useDemo && isPending) return skeletonBody;
     if (!useDemo && isError) {
@@ -506,6 +678,10 @@ export function EventsListPrototype() {
           {error instanceof Error ? error.message : 'Okänt fel.'}
         </MessageBox>
       );
+    }
+    if (kalenderLage) {
+      // Kalendern äger tiden: HELA källan (ofiltrerad av period).
+      return <EventsCalendarPrototype events={source} idagStart={idagStart} />;
     }
     return (
       <>
@@ -546,7 +722,9 @@ export function EventsListPrototype() {
   return (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
       <h1 className="font-semibold text-3xl">Event</h1>
-      {toggle}
+      {/* K9: i kalenderläget ERSÄTTER månadsnavet period-toggeln. */}
+      {kalenderLage ? null : toggle}
+      {vyRad}
       {body}
     </section>
   );
