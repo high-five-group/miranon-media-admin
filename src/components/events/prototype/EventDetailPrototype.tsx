@@ -69,7 +69,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K7 — identiteten som sidhuvud (ur kortet)',
+    stegLabel: 'K8 — eventnamnet är sidrubriken + liten tillbaka-länk',
   },
 ];
 
@@ -251,28 +251,25 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
     }
   }, [event]);
 
-  // K2: sid-chromen (h1 + topp-luft) står ALLTID i slutgeometri — bara
-  // innehållsytan växlar mellan ladd/fel/laddat (Lugnt laddläge §15).
-  // K4 (IMG_1542, Marcus-order): tillbaka-CHEVRONEN bredvid rubriken
-  // ersätter topp-länken "Tillbaka till event-listan". Ikon-länk →
-  // aria-label bär namnet (ikonen dekor); search-genomslaget kvar så
-  // variant/data följer med tillbaka till list-prototypen. Ingen konflikt
-  // med M3-regeln (den gäller navigationsraders trailing-chevron).
+  // K2: sid-chromen står ALLTID i slutgeometri — bara innehållsytan
+  // växlar mellan ladd/fel/laddat (Lugnt laddläge §15).
+  // K8 (Marcus + branschmönstret): h1 "Eventdetaljer" + chevron-knappen
+  // RIVNA — generiska sidrubriker finns inte på branschledarnas
+  // detaljsidor; ENTITETENS NAMN är h1 (Polaris Page backAction + title;
+  // Stripe "← Payments" + beloppet som titel; GitHub brödsmula +
+  // issue-titeln). Kvar i ramen: liten understruken tillbaka-länk
+  // (search-genomslaget bevarat); h1 = eventnamnet bor i innehållet
+  // (sidhuvudet, K7-avdelaren kvar).
   const sidRam = (innehall: React.ReactNode) => (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      <div className="flex items-center gap-3">
-        <Link
-          to="/event"
-          search={(prev) => prev}
-          aria-label="Tillbaka till event-listan"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-muted"
-        >
-          <ChevronLeft aria-hidden="true" size={22} />
-        </Link>
-        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
-          Eventdetaljer
-        </h1>
-      </div>
+      <Link
+        to="/event"
+        search={(prev) => prev}
+        className="flex items-center gap-1 self-start px-4 text-small underline underline-offset-2"
+      >
+        <ChevronLeft aria-hidden="true" size={14} className="shrink-0" />
+        Tillbaka till event
+      </Link>
       {innehall}
     </section>
   );
@@ -283,7 +280,7 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
     return sidRam(
       <div role="status" aria-busy="true" className="flex flex-col gap-6">
         <span className="sr-only">Laddar event…</span>
-        <Skeleton variant="text" className="w-3/5 text-2xl" />
+        <Skeleton variant="text" className="w-3/5 text-3xl" />
         <Skeleton variant="listRow" className="h-44 rounded-2xl" />
         <Skeleton variant="listRow" className="h-32 rounded-2xl" />
         <Skeleton variant="listRow" className="h-36 rounded-2xl" />
@@ -327,7 +324,11 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
           titleMetadata; indraget px-4 = kortens inner-inset-linjering;
           tunn avdelare under (Eventmanager-formen). */}
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
-        <h2 className="font-semibold text-2xl">{eventName(event)}</h2>
+        {/* K8: eventnamnet ÄR sidrubriken (h1, 30/600 per rubrikpolicyn);
+            fokusmålet + document.title bär samma identitet. */}
+        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
+          {eventName(event)}
+        </h1>
         {(event.eventKey || event.tidKvarTillEvent) && (
           <div className="flex flex-wrap items-center gap-2">
             {event.eventKey && (
