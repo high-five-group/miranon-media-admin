@@ -68,6 +68,19 @@
   triage-etikett) + ADR-060 Updates-post (andra tröskeln); A-härdningen
   öppet förkastad med motiv. **NÄSTA: TASK-14-stängningen (tvåstegs)
   → TASK-13/Dependabot-passet i mån av scope.**
+- [x] **TASK-13 LANDAT + Done: Node-lyftet 20 → 24 LTS** (2026-07-19,
+  Del 5 kanonisk plats; efter Marcus förklarings-pass + "kör task
+  13"): EN sammanhållen ändring (`0ef57f4`) — .nvmrc 24 · engines
+  >=24 · @types/node ^24.13.3 (spegeln: types följer runtime, NED
+  från 25) · README-badgen; CI:s setup-node följde .nvmrc
+  automatiskt. AC 4 käll-verifierad (nodejs/Release: v24 Active LTS
+  EOL 2028-04-30 · Playwright: Node 20 UTE ur stödlistan · Vite
+  22.12+ uppfylls · Biome binär). Bevis: lokalt allt grönt inkl.
+  296/296; CI-run 29679590743 grön per jobb med FULL Test+Build på
+  **v24.18.0** (jobblogg-verifierat). biome.json-schema-driften
+  (pre-existerande, endast varning) noterad → `biome migrate` vid
+  nästa Biome-beröring. **NÄSTA: end-pass på Marcus-signal
+  (Dependabot-passet #58–#63 kvar som S70-ingång).**
 
 ### Session 68 ✅ AVSLUTAD (2026-07-18) — Arbetssätts-paketet: asynkron CI-vakt (R1) + dependabot ur staging-mutexen (R2) + TASK-14-prioriteringen (R3) + PR-parkeringen + hub-syncen L267–L283
 
