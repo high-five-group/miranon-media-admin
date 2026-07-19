@@ -523,7 +523,7 @@ const KURS_INFO: Record<KursTyp, { label: string; farg: string }> = {
   rim1: { label: 'RIM 1', farg: 'bg-(--p-green-500)' },
   rim2: { label: 'RIM 2', farg: 'bg-(--p-copper-500)' },
   rim3: { label: 'RIM 3', farg: 'bg-(--p-red-500)' },
-  ovrigt: { label: 'Övrigt', farg: 'bg-(--p-neutral-500)' },
+  ovrigt: { label: 'Annat', farg: 'bg-(--p-neutral-500)' },
 };
 const KURS_ORDNING: KursTyp[] = ['fjarrskadning', 'rim1', 'rim2', 'rim3', 'ovrigt'];
 
@@ -646,7 +646,7 @@ function EventsCalendarPrototype({
           ) : (
             <section className="flex flex-col gap-2">
               <h2 className="font-semibold text-small text-text-secondary capitalize">
-                {manadNamn}s event
+                {manadNamn}
               </h2>
               <ul aria-label={`Event i ${manadNamn}`} className="flex flex-col">
                 {manadensEvent.map((e) => (
@@ -662,7 +662,7 @@ function EventsCalendarPrototype({
                       />
                       <span className="min-w-0">
                         <span className="block truncate font-medium text-small">
-                          {eventName(e)}
+                          {kursTyp(e) === 'ovrigt' ? eventName(e) : KURS_INFO[kursTyp(e)].label}
                         </span>
                         <span className="block text-caption text-text-muted">
                           {[dateText(e), e.ort].filter(Boolean).join(' · ')}
