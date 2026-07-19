@@ -1,7 +1,8 @@
 # FK-referensbilder — målbild för UI-spåret
 
-13 skärmdumpar från Försäkringskassans mobilapp (Marcus egna; 8 st
-2026-07-05 + 5 st login-flödesserien 2026-07-12).
+22 skärmdumpar från Försäkringskassans mobilapp (Marcus egna; 8 st
+2026-07-05 + 5 st login-flödesserien 2026-07-12 + 9 st
+vab-ansöknings-wizardserien 2026-07-19, adderad inför event-sidorna).
 Målbilds-underlag för UI-spårets FK-linje: Hem-arrangemang, list-mönster,
 grupprubriker, badges, wizard-steg och pill-tabbaren. Beslutet (ljus bas i
 Miranon-identitet, FK:s STRUKTUR — inte dess mörka färgvärld) bor i
@@ -23,3 +24,12 @@ sessionsdok `tasks/sessions/2026-07-05-session-52.md` Del 3; kortet
 | `fk-loading-hamtar.jpeg` | Inloggnings-loading steg 1: "Hämtar dina uppgifter…" (grön helskärm) |
 | `fk-loading-halsningen.jpeg` | Inloggnings-loading steg 2: **"Hej Marcus!"** — hälsningen bor i login-flödet, inte som Hem-rubrik (underlag till T69 rubrik-grillningens Hem-identitets-fork) |
 | `fk-om-appen.jpeg` | Om appen: undersida med centrerad titel + bakåt, versions-rad + Läs mer-rader med extern-länk-ikon |
+| IMG_1590 | Wizard vab: kalender-dagväljare (månadsnav < juli >, veckonummer-kolumn, dag-tiles; framtida dagar överstrukna/ej valbara; idag ring-markerad) + CTA "Lägg till dag" |
+| IMG_1591 | Wizard vab: kalendern i flervals-läge (4 dagar streckat markerade); CTA:n räknar valet "Lägg till 4 dagar" + sekundär "Avmarkera valda dagar" |
+| IMG_1592 | Wizard vab-steg "Dag 1 av 4": fråga + key-value-rad (Arbetstid: 8 tim 6 min) + chips-par (Hela arbetsdagen/Del av dagen, ovalda) + CTA "Spara dag" |
+| IMG_1593 | Samma steg med valt chip: check-ikon + inverterad fyllnad (vald-tillståndet i chips-mönstret) |
+| IMG_1594 | Wizard vab: "Kopiera dag"-dialogen — apply-to-all-mönstret ("samma arbetstid och vabbtid för de 4 dagarna?" Nej, ändra / Ja, använd) |
+| IMG_1595 | Wizard vab: "Dagar i ansökan" — summeringslista med kort per dag (rubrik + key-value-rader + redigeringspenna) + CTA Fortsätt |
+| IMG_1596 | Wizard vab: kalendern med bekräftat val (4 dagar grönt fyllda) + CTA Fortsätt — tredje kalender-tillståndet (tomt → markerat → bekräftat) |
+| IMG_1597 | Wizard vab: "Anledning" — helbredds-valknappar i stapel (tre alternativ), Avbryt längst ned |
+| IMG_1598 | Wizard vab: "Välj barn" — tile-val med ikon + namn + personnummer (samma tile-mönster som IMG_1544) |
