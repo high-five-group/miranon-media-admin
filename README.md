@@ -5,10 +5,10 @@ React-admin för Miranon Media — eventhantering, anmälningar och rapportering
 [![CI](https://github.com/marcus803/miranon-media-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/marcus803/miranon-media-admin/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-UNLICENSED-red.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D24-brightgreen)](.nvmrc)
-[![Biome](https://img.shields.io/badge/lint-Biome%202.4-60a5fa)](biome.json)
+[![Biome](https://img.shields.io/badge/lint-Biome%202-60a5fa)](biome.json)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](vite.config.ts)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](package.json)
-[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
 [![TanStack](https://img.shields.io/badge/TanStack-Router%20%2B%20Query%20%2B%20Table-FF4154)](package.json)
 
 > **Status:** Övning 2 pågår — Fas 6 (strangler-fig). Aktuellt fas- och sub-fas-läge ägs av [`docs/byggplan.md`](docs/byggplan.md) §2 (kanonisk plats — status dupliceras inte hit).

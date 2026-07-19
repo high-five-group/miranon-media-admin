@@ -77,3 +77,14 @@
 # ADR-044/lychee-bump — om transient eller header-fixbar igen, ta bort.
 ^https://travisgosselin\.com/dependabot-with-grouped-updates/$
 
+# img.shields.io badge-tjänst-outage (Session 71, 2026-07-19). Bevisad dubbel:
+# [TIMEOUT] i main-CI run 29685010681 attempt 1 OCH 2 (rerun) + lokal curl
+# timeout 000/15 s från SEPARAT nät (Marcus' Mac) — äkta tjänst-outage, inte
+# GHA-IP-klassen. Badges är README-dekor (bilder), inte dokumentations-länkar;
+# grindens syfte är länk-integritet i prosan. Branschpraxis: shields.io är
+# rate-limitad/flaky och exkluderas brett ur link-checkers. Marcus-kvitterad
+# väg A 2026-07-19 ("Vi håller oss till branschledarpraxis").
+# Lessons-flag: ingen re-utvärdering behövs — dekor-klassen hör permanent
+# hemma utanför länk-grinden (jfr ADR-022 kategori 4).
+^https://img\.shields\.io/.*$
+
