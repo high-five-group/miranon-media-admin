@@ -21,6 +21,33 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 72 🟢 PÅGÅR (2026-07-19) — Event-vyn: grillning + hela kedjan (listan först)
+
+> Scope: sessionsdok `2026-07-19-session-72.md` Del 1 (kanonisk plats):
+> hela event-familjen som mål, EN sida i taget — listan först; kedjan
+> grillning → konvergens → facit → PRD → skivor → ADR-073-batch.
+> Kadensrad per L67. (Sektionen född vid Del 2-landningen, ej
+> dok-födelsen — S70-precedenten, öppet bokfört.)
+
+- [x] **Dok-födelse** (2026-07-19): `18fad51`, run 29687530526 grön
+  per jobb (docs-only-formen); numrering disk-verifierad (ADR 074
+  [73==73], L290, f45, T78); audit-ci PASSED; plugin 1.16.0 AKTIV
+  (fjärde sessionen med asynkrona vakten). **NÄSTA: grillningen.**
+- [x] **GRILLAD SAMSYN LÅST — event-listan till FK-mönstret**
+  (2026-07-19, Del 2 kanonisk plats): 8 beslut Marcus-kvitterade —
+  hela familjen som mål/listan först · grund-arvet (allt ärvbart
+  ärvs) · pill-toggle [Kommande|Tidigare] ersätter båda Selecterna
+  (väg A; prototyp-förbehåll) · månadsgrupprubriker båda lägena ·
+  kort-anatomin 3 rader (typ/betalräknare/tidKvar UTE) · statusbadge
+  endast avvikelse (Inställt/Flyttat; **T14 reconcilierad**, not
+  uppdaterad) · strukturerat text-tomläge (ingen illustration) ·
+  pill-toggle = primitiv (RAC ToggleButtonGroup) + EventCard/
+  gruppering vy-lokala + **`?period=upcoming|past`** ersätter
+  `?status`+`?sort`. FK-referensen +9 bilder (vab-wizardserien
+  IMG_1590–1598, `3a3887d`) · ORDLISTA **Period** (`f4b406a`) ·
+  ingen ny ADR (allt under baren; 73==73). **NÄSTA:
+  konvergens-passet i browsern → låst facit → PRD + skivor.**
+
 ### Session 71 ✅ AVSLUTAD (2026-07-19) — TASK-16: ADR-060-purgens wiring skarp i drift (22+288 raderade · kortet Done · L288–L289)
 
 > Scope: sessionsdok `2026-07-19-session-71.md` Del 1 (kanonisk plats):
