@@ -1,4 +1,3 @@
-import { useMatches } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { OfflineIndicator } from './OfflineIndicator';
 import { SkipLink } from './SkipLink';
@@ -11,8 +10,14 @@ export interface AppShellProps {
 
 /**
  * App-skal för de inloggade vyerna (Fas 5, byggplan §4): skip-länk →
- * header-landmark med app-titel → `<main id="main" tabIndex={-1}>`
- * (skip-länkens programmatiska fokusmål) → botten-fäst tab bar.
+ * `<main id="main" tabIndex={-1}>` (skip-länkens programmatiska fokusmål)
+ * → botten-fäst tab bar.
+ *
+ * APP-REGEL (Marcus-beslut S73, stängde klass C-punkten "headerns öde
+ * app-brett" från S55): appen har INGEN shell-header — ingen sida, någonsin.
+ * Varje sida äger sin synliga h1 (rubrikpolicyn S64); app-identiteten bär
+ * login-ytan/manifestet. Per-vy-flaggan `hideShellHeader` (task-4.2) är
+ * riven — regeln är global, inte per vy.
  *
  * Monteras på _authenticated-layouten, INTE __root — login/dev-ytorna bär
  * egna `<main>`-landmarks och tab bar för utloggad användare vore död
@@ -20,28 +25,15 @@ export interface AppShellProps {
  *
  * - Innehållsytan är max 600 px (byggplanens content-area) och centrerad;
  *   responsiv 375/768/1024 utan breakpoint-specialfall.
- * - App-titeln är medvetet INTE en rubrik — varje sida äger sin h1.
  * - Skalet har inga animationer/transitions (prefers-reduced-motion
  *   respekteras genom att inget rör sig); `prefers-contrast: more`
  *   förstärker gränserna via `contrast-more:`-varianterna.
  * - `pb-24` på main ger frihöjd ovanför den fixerade tab baren.
  */
 export function AppShell({ children }: AppShellProps) {
-  // Per-vy-header-avstängning (task-4.2, K10-facit): djupaste matchade route
-  // med `staticData.hideShellHeader` döljer header-landmarken för sin yta.
-  // App-övergripande header-öde avgörs i shell-spåret (klass C) — tills dess
-  // behåller alla andra vyer headern oförändrad.
-  const hideHeader = useMatches().some((m) => m.staticData.hideShellHeader);
   return (
     <>
       <SkipLink />
-      {!hideHeader && (
-        <header className="border-border border-b bg-surface contrast-more:border-border-strong">
-          <div className="mx-auto flex min-h-12 w-full max-w-[600px] items-center px-4">
-            <span className="font-semibold">Miranon Media Admin</span>
-          </div>
-        </header>
-      )}
       <OfflineIndicator />
       <main id="main" tabIndex={-1} className="mx-auto w-full max-w-[600px] px-4 py-4 pb-24">
         {children}

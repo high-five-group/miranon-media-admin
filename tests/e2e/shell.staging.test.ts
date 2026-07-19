@@ -40,10 +40,10 @@ test.describe('App-skal (Fas 5 DoD)', () => {
       // är dekorativ (aria-hidden) — etiketten ensam bär länknamnet.
       await expect(link.locator('svg[aria-hidden="true"]')).toHaveCount(1);
     }
-    // Per-vy-avstängningen är vy-scopad (Hem; /mer sedan task-9.2 — dess
-    // header-frånvaro assertas i mer-index-sviten): headern kvar på övriga.
+    // APP-REGELN (Marcus-beslut S73): ingen sida i appen har shell-header —
+    // per-vy-flaggan är riven, regeln är global. Beviset på en icke-Hem-yta:
     await page.goto('/event');
-    await expect(page.locator('header')).toHaveCount(1);
+    await expect(page.locator('header')).toHaveCount(0);
   });
 
   test('DoD 2 — skip-länk: Tab → synlig → Enter → fokus i #main', async ({ page }) => {
@@ -104,7 +104,8 @@ test.describe('App-skal (Fas 5 DoD)', () => {
     await page.getByRole('button', { name: 'Kasta sektions-fel' }).click();
     const alert = page.getByRole('alert').filter({ hasText: 'Något gick fel' });
     await expect(alert).toBeVisible();
-    await expect(page.locator('header')).toHaveCount(1);
+    // Skalet intakt i felläget: ingen header (app-regeln S73) och nav kvar.
+    await expect(page.locator('header')).toHaveCount(0);
     const nav = page.getByRole('navigation', { name: 'Huvudnavigation' });
     await expect(nav).toBeVisible();
     await page.getByRole('button', { name: 'Försök igen' }).click();

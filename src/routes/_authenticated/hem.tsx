@@ -2,9 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Hem } from '@/components/hem';
 
 export const Route = createFileRoute('/_authenticated/hem')({
-  // hideShellHeader: K10-facitet (task-4.2) — Hem är header-fri; övriga
-  // vyer behåller skalets header tills shell-spåret (klass C) avgör app-brett.
-  staticData: { title: 'Hem', hideShellHeader: true },
+  staticData: { title: 'Hem' },
   component: HemPage,
 });
 

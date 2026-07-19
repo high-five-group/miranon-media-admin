@@ -1,7 +1,7 @@
 /**
  * Skip-länk (WCAG 2.4.1 Bypass Blocks) — första fokuserbara elementet i det
  * inloggade skalet. Visuellt dold tills den får tangentbordsfokus; hoppar
- * förbi header + tab bar genom att flytta fokus programmatiskt till
+ * förbi tab bar-navigationen genom att flytta fokus programmatiskt till
  * `<main id="main" tabIndex={-1}>` (inte bara hash-navigation — Safari m.fl.
  * flyttar inte fokus på enbart fragment-hopp).
  *

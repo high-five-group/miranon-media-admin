@@ -4,10 +4,7 @@ import { useAuth } from '@/auth/useAuth';
 import { Button, NavCard } from '@/components/primitives';
 
 export const Route = createFileRoute('/_authenticated/mer/')({
-  // hideShellHeader: M6-facitet (task-9.2) via per-vy-mekanismen (task-4.2,
-  // K10) — Mer är andra header-fria vyn efter Hem; app-brett header-öde
-  // avgörs i shell-spåret (PRD TASK-9 beslut 1, INPUT bokförd).
-  staticData: { title: 'Mer', hideShellHeader: true },
+  staticData: { title: 'Mer' },
   component: MerPage,
 });
 
