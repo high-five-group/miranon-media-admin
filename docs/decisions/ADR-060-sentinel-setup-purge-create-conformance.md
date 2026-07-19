@@ -144,3 +144,22 @@ orörda; sviten därefter grön på 7,9 s. Strukturell fix spåras som
 backlog-kort `task-2` (O(1)-isering av fixtur-sökningen + purge-wiring
 per detta besluts § Lösning, vidgad till create-event-sentinellerna).
 Beslutstexten ovan står orörd (L53).
+
+### 2026-07-19 — Andra tröskeln: create-registration-sentineler fällde väg D lokalt (Session 69)
+
+Ackumuleringen nådde tröskeln igen, nu i beslutets EGEN konsument: 354
+create-registration-sentineler (`create-test+*@staging.test`, samtliga
+på seed-ankarets event) × stagings `REGISTRATIONS_BATCH_SIZE=2` ⇒ 180
+seriella Airtable-anrop i get-registrations väg D ⇒ ~32 s från EU
+(EF exekverar i anroparens region, `x-sb-edge-region: eu-central-1`;
+CI:s US-runners får kortare RTT och ligger under 30-s-timeouten →
+CI-grön/lokal-röd, TASK-14:s fynd). Interim-åtgärd (Marcus-beslut,
+samma väg som 2026-07-06-posten): markör-matchad radering av samtliga
+354 via MCP mot staging-basen `apphjj8Q7lkXCMsL4` — seed-ankaret
+`recynkk5KWpWirv7k` + 4 icke-sentineler bevarade, verifierat före OCH
+efter (sentinel-filter → 0 träffar) → väg D 32 s → 1,3 s, lokala
+sviten 294/296 → 296/296 (20,1 s). Återackumuleringstakten (~2–3
+sentineler/svitkörning ≈ 250/månad) ger ~6 veckors horisont till nästa
+tröskel — purge-wiringen per punkt 3–4 spåras nu som backlog-kort
+`task-16` (två tröskel-händelser skärper prioriteten över task-2-erans
+enskilda). Beslutstexten ovan står orörd (L53).

@@ -56,6 +56,18 @@
   Timeout-höjning + EF-parallellisering avförda med motiv.
   **Åtgärdsvalet eskalerat (STOPPA): A test-immunisering ·
   B städning med läck-forensik. Kortet In Progress tills vägval.**
+- [x] **TASK-14-ÅTGÄRDEN: ADR-060-städningen — väg D 32 s → 1,3 s,
+  sviten 296/296** (2026-07-19, Del 4 kanonisk plats; Marcus-beslut
+  "din rekommendation" = B): forensiken visade MEDVETET interim, inte
+  läcka (e2e mockar; ADR-060 punkt 5; S52-prejudikatet) →
+  markör-matchad MCP-radering av 354 sentineler ur staging-basen
+  (bas-identitet trippelverifierad; seed + 4 icke-sentineler bevarade;
+  efter-verifiering 0 träffar) → **väg D 1,3 s ×3 · lokala sviten
+  294/296 → 296/296 RÖD→GRÖN**; **TASK-16 fött** (purge-wiringen,
+  ADR-060 punkt 3–4; ~6 veckors återackumuleringshorisont; utan
+  triage-etikett) + ADR-060 Updates-post (andra tröskeln); A-härdningen
+  öppet förkastad med motiv. **NÄSTA: TASK-14-stängningen (tvåstegs)
+  → TASK-13/Dependabot-passet i mån av scope.**
 
 ### Session 68 ✅ AVSLUTAD (2026-07-18) — Arbetssätts-paketet: asynkron CI-vakt (R1) + dependabot ur staging-mutexen (R2) + TASK-14-prioriteringen (R3) + PR-parkeringen + hub-syncen L267–L283
 
