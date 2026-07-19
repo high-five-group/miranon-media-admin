@@ -338,12 +338,26 @@ function isoDaysFromNow(days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Kursernas verkliga rytm (Marcus): utbildningarna går fre–lör. */
+function freLorOmVeckor(veckor: number): { start: string; end: string } {
+  const d = new Date();
+  const tillFredag = (5 - d.getDay() + 7) % 7 || 7; // nästa fredag, aldrig idag
+  d.setDate(d.getDate() + tillFredag + veckor * 7);
+  const start = d.toISOString().slice(0, 10);
+  const lordag = new Date(d);
+  lordag.setDate(lordag.getDate() + 1);
+  return { start, end: lordag.toISOString().slice(0, 10) };
+}
+
 const DEMO_EVENTS: ProtoEvent[] = [
   demoEvent({
     id: 'demo-1',
     eventNamn: 'RIM 1 — Resor i medvetandet',
     ort: 'Skövde',
-    startdatum: isoDaysFromNow(12),
+    ...(() => {
+      const v = freLorOmVeckor(1);
+      return { startdatum: v.start, slutdatum: v.end };
+    })(),
     maxPlatser: 12,
     antalAnmalda: 8,
     platserKvar: 4,
@@ -355,8 +369,10 @@ const DEMO_EVENTS: ProtoEvent[] = [
     id: 'demo-2',
     eventNamn: 'Fjärrskådning grundkurs',
     ort: 'Stockholm',
-    startdatum: isoDaysFromNow(26),
-    slutdatum: isoDaysFromNow(28),
+    ...(() => {
+      const v = freLorOmVeckor(3);
+      return { startdatum: v.start, slutdatum: v.end };
+    })(),
     maxPlatser: 10,
     antalAnmalda: 10,
     platserKvar: 0,
@@ -368,13 +384,31 @@ const DEMO_EVENTS: ProtoEvent[] = [
     id: 'demo-3',
     eventNamn: 'RIM 2 — Fördjupning',
     ort: 'Skövde',
-    startdatum: isoDaysFromNow(45),
+    ...(() => {
+      const v = freLorOmVeckor(6);
+      return { startdatum: v.start, slutdatum: v.end };
+    })(),
     maxPlatser: 12,
     antalAnmalda: 3,
     platserKvar: 9,
     anmaldBelaggning: 3 / 12,
     status: 'Inställt',
     boverAntal: 1,
+  }),
+  demoEvent({
+    id: 'demo-9',
+    eventNamn: 'RIM 3 — Mästarnivå',
+    ort: 'Skövde',
+    ...(() => {
+      const v = freLorOmVeckor(8);
+      return { startdatum: v.start, slutdatum: v.end };
+    })(),
+    maxPlatser: 12,
+    antalAnmalda: 5,
+    platserKvar: 7,
+    anmaldBelaggning: 5 / 12,
+    status: 'Planerat',
+    boverAntal: 4,
   }),
   demoEvent({
     id: 'demo-4',
@@ -401,7 +435,10 @@ const DEMO_EVENTS: ProtoEvent[] = [
     id: 'demo-6',
     eventNamn: 'RIM 1 — Resor i medvetandet',
     ort: 'Skövde',
-    startdatum: isoDaysFromNow(-9),
+    ...(() => {
+      const v = freLorOmVeckor(-1);
+      return { startdatum: v.start, slutdatum: v.end };
+    })(),
     maxPlatser: 12,
     antalAnmalda: 12,
     platserKvar: 0,
@@ -422,8 +459,10 @@ const DEMO_EVENTS: ProtoEvent[] = [
     id: 'demo-8',
     eventNamn: 'RIM 2 — Fördjupning',
     ort: 'Skövde',
-    startdatum: isoDaysFromNow(-72),
-    slutdatum: isoDaysFromNow(-70),
+    ...(() => {
+      const v = freLorOmVeckor(-10);
+      return { startdatum: v.start, slutdatum: v.end };
+    })(),
     maxPlatser: 12,
     antalAnmalda: 9,
     platserKvar: 3,
@@ -464,6 +503,37 @@ function eventsByDay(events: ProtoEvent[]): Map<string, ProtoEvent[]> {
     }
   }
   return map;
+}
+
+/**
+ * Kursfärgerna (K11, Marcus-beslut: typen synlig via färg på dagarna,
+ * prickarna bort). Fyra kurser + neutral "Övrigt" — inom branschriktvärdet
+ * ≤5–7 kalenderfärger. Tile = 100-tinten (mörk text håller kontrasten),
+ * legend-punkten = 500. Färg är ALDRIG ensam bärare: legenden bär orden och
+ * dag-trycket visar korten.
+ *
+ * [PROTOTYPE]-not: NAMN-matchningen är demo-mekanik — skarpa skivan mappar
+ * från taxonomin (ADR-064: kurs × modalitet), aldrig regex på visningsnamn
+ * (fälla 35-klassen: nakna/tvetydiga kursnamn).
+ */
+type KursTyp = 'fjarrskadning' | 'rim1' | 'rim2' | 'rim3' | 'ovrigt';
+const KURS_INFO: Record<KursTyp, { label: string; tile: string; dot: string }> = {
+  fjarrskadning: { label: 'Fjärrskådning', tile: 'bg-(--p-blue-100)', dot: 'bg-(--p-blue-500)' },
+  rim1: { label: 'RIM 1', tile: 'bg-(--p-green-100)', dot: 'bg-(--p-green-500)' },
+  rim2: { label: 'RIM 2', tile: 'bg-(--p-copper-100)', dot: 'bg-(--p-copper-500)' },
+  rim3: { label: 'RIM 3', tile: 'bg-(--p-red-100)', dot: 'bg-(--p-red-500)' },
+  ovrigt: { label: 'Övrigt', tile: 'bg-(--p-neutral-200)', dot: 'bg-(--p-neutral-500)' },
+};
+const KURS_ORDNING: KursTyp[] = ['fjarrskadning', 'rim1', 'rim2', 'rim3', 'ovrigt'];
+
+function kursTyp(e: ProtoEvent): KursTyp {
+  const namn = eventName(e);
+  if (/^föreläsning/i.test(namn)) return 'ovrigt';
+  if (/fjärrskådning/i.test(namn)) return 'fjarrskadning';
+  if (/rim\s*1/i.test(namn)) return 'rim1';
+  if (/rim\s*2/i.test(namn)) return 'rim2';
+  if (/rim\s*3/i.test(namn)) return 'rim3';
+  return 'ovrigt';
 }
 
 /**
@@ -518,7 +588,10 @@ function EventsCalendarPrototype({
             </CalendarGridHeader>
             <CalendarGridBody>
               {(date) => {
-                const harEvent = byDay.has(date.toString());
+                // K11: kursfärgade tiles (hela fre–lör-spannet färgas — samma
+                // kulör på varje dag eventet täcker); prickarna utgick.
+                const dagens = byDay.get(date.toString());
+                const typ = dagens && dagens.length > 0 ? kursTyp(dagens[0]) : null;
                 return (
                   <CalendarCell
                     date={date}
@@ -528,32 +601,31 @@ function EventsCalendarPrototype({
                         isOutsideMonth ? 'invisible' : '',
                         isSelected
                           ? 'bg-primary font-semibold text-text'
-                          : harEvent
-                            ? 'bg-primary-tint font-semibold text-text'
+                          : typ
+                            ? `${KURS_INFO[typ].tile} font-semibold text-text`
                             : 'bg-bg-muted text-text-secondary',
                       ].join(' ')
                     }
                   >
-                    {({ formattedDate }) => (
-                      <>
-                        {formattedDate}
-                        {harEvent ? (
-                          <span
-                            aria-hidden="true"
-                            className="absolute bottom-1.5 size-1 rounded-full bg-text"
-                          />
-                        ) : null}
-                      </>
-                    )}
+                    {({ formattedDate }) => formattedDate}
                   </CalendarCell>
                 );
               }}
             </CalendarGridBody>
           </CalendarGrid>
         </Calendar>
+        {/* K11: kursfärg-legenden — orden bär det färgen förstärker. */}
+        <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+          {KURS_ORDNING.map((t) => (
+            <li key={t} className="flex items-center gap-1.5 text-caption text-text-secondary">
+              <span aria-hidden="true" className={`size-2 rounded-full ${KURS_INFO[t].dot}`} />
+              {KURS_INFO[t].label}
+            </li>
+          ))}
+        </ul>
         {selected == null ? (
           <p className="py-4 text-center text-small text-text-muted">
-            Tryck på en dag för att se dess event — dagar med prick har event.
+            Tryck på en färgad dag för att se dess event.
           </p>
         ) : dagensEvent.length === 0 ? (
           <p className="py-4 text-center text-small text-text-muted">Inga event denna dag.</p>
