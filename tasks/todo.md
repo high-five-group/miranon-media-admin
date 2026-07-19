@@ -21,7 +21,33 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 70 ✅ AVSLUTAD (2026-07-19) — Dependabot-passet #58–#63: inbox 0 (4 merges + 2 durabelt stängda + allowlist-rivningen + TS7)
+### Session 71 🟡 PÅGÅR (2026-07-19) — TASK-16: ADR-060-purgens wiring (sentinel-purge cred-skild från test-jobbet)
+
+> Scope: sessionsdok `2026-07-19-session-71.md` Del 1 (kanonisk plats):
+> TASK-16-exekvering via do-work-formen (Marcus-kvittens "Kvitterar A —
+> kör TASK-16." efter nu-vs-vänta-analysen; S72-riktningen deklarerad i
+> samma kvittens: grillning + hela kedjan på event-vyn). Kadensrad per
+> L67.
+
+- [x] **Dok-födelse** (2026-07-19): `cdac60c`, run 29684112704 grön
+  per jobb (docs-only-formen); numrering disk-verifierad (ADR 074
+  [73==73], L288, f45, T78); audit-ci PASSED; plugin 1.16.0 AKTIV
+  (tredje sessionen med asynkrona vakten). **NÄSTA: TASK-16 via
+  do-work.**
+- [x] **TASK-16 LEVERERAD + Done — purge-wiringen skarp i drift**
+  (2026-07-19, Del 2 kanonisk plats): `e57b2b2` (leverans: purge-motor
+  och policy och 23 guard-tester och CI-jobbet Staging sentinel purge
+  och npm run purge:staging; ADR-060 p3–4 ordagrant, EF-only-gränsen
+  intakt) → `55b0157` (grind-sidospår Marcus-kvitterad väg A:
+  shields.io → .lycheeignore [dubbel-bevisad outage] + badge-drift
+  Biome 2/TS 7) → `d599953` (S71-fyndet: linkGuardExcludeFields —
+  Eventtyp-referensen [ADR-066 b5] undantas, 288/288 bar exakt den;
+  +2 tester = 25). Skarp-kedjan: run 29685010681 Anmälningar 22/22 +
+  efter-verifiering 0 → run 29685680050 **288/288 raderade +
+  efter-verifiering 0 + ålders-guarden skarp-bevisad (4+4 färska
+  skyddade)**. Kortet Done med final-summary (tvåstegs K61.1;
+  CI-grön-första-pass: nej — öppet bokfört). Marcus-moment kvar:
+  lokala `.env.seed`. **NÄSTA: end-pass på Marcus-signal.**
 
 > Scope: sessionsdok `2026-07-19-session-70.md` Del 1 (kanonisk plats):
 > Dependabot-passet (felanalys #58 → spegel-prövningen #62 →

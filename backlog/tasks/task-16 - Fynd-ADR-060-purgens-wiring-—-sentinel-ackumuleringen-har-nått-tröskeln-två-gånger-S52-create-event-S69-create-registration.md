@@ -3,10 +3,10 @@ id: TASK-16
 title: >-
   Fynd: ADR-060-purgens wiring — sentinel-ackumuleringen har nått tröskeln två
   gånger (S52 create-event, S69 create-registration)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-19 07:54'
-updated_date: '2026-07-19 11:39'
+updated_date: '2026-07-19 11:51'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,7 +22,7 @@ EXAKT SYMPTOM: ADR-060 punkt 5:s interim ('bounded sentinel-ackumulering tolerer
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Purge-mekanismen implementerad per ADR-060 punkt 3–4 (setup-före-test, cred-skild från test-jobbet, markör-matchad) och skarp-bevisad mot staging
+- [x] #1 Purge-mekanismen implementerad per ADR-060 punkt 3–4 (setup-före-test, cred-skild från test-jobbet, markör-matchad) och skarp-bevisad mot staging
 - [x] #2 ADR-060 uppdaterad (Updates-post: interim punkt 5 ersatt av wiringen) + CONTRIBUTING/runbok-not om mekanismen
 <!-- AC:END -->
 
@@ -36,10 +36,16 @@ S71 leverans: purge-mekanismen implementerad per ADR-060 p3-4 — scripts/purge-
 S71-fynd vid första skarpa CI-körningen (run 29685010681): Anmälningar 22/22 raderade + efter-verifiering 0 kvar ✓, MEN alla 288 event-sentineler länk-guardades på fältet Eventtyp — create-EF:ns KONSTRUKTIONS-OBLIGATORISKA utgående typ-referens (ADR-066 b5) som sitter på varje sentinel by design (log-verifierat: 288/288 bar EXAKT Eventtyp och inget annat). Guarden gjorde rätt (fail-safe: 0 felraderingar) men var för bred. Fix: linkGuardExcludeFields per target i policyn (['Eventtyp'] för event-målet) — undantar kända utgående referenser, guarden trippar fortsatt på verkliga data-länkar; 2 nya tester (25 totalt, inkl. exkluderingen-är-smal-fallet). Sidospår utanför kortet: shields.io-outage fällde Docs link check 2× → .lycheeignore-post (Marcus-kvitterad väg A, egen commit 55b0157).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit e57b2b2 + fix d599953 (grind-sidospår 55b0157) · CI-run 29685680050 per jobb (6-jobbsformen) · CI-grön-första-pass: nej (shields.io-outage [extern, orörd av leveransen] + länk-guard-fyndet Eventtyp) · defekter under körning: 1 (länk-guarden för bred för konstruktions-referensen Eventtyp — fixad linkGuardExcludeFields, 288/288 raderade i run 29685680050; ålders-guarden skarp-bevisad 4+4 färska skyddade) · TDD: tooling-undantag; 25 guard-tester byggda (2 tillagda post-fynd)
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
