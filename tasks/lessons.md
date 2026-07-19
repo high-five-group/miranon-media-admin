@@ -4045,3 +4045,40 @@ arbete. Disciplinen: ett medvetet accepterat interim föds ALLTID med
 backlog-kort med horisonten som deadline-signal, eller mekanisk
 vakt — aldrig bara en prosa-notering i beslutet. Ett interim vars
 enda bevakning är att någon minns det är en schemalagd incident.
+
+### L286 [UNIVERSAL] — En CI-vakt identifierar sin run på commit-identitet OCH workflow-identitet — headSha ensam räcker inte när en push spawnar flera workflows
+
+Datum: 2026-07-19 | Källa: S70 (dependabot.yml-pushen `fd3b628`
+spawnade SJU runs på samma headSha — sex "Dependabot Updates" +
+en CI; headSha-vakten utan workflow-filter tog första träffen och
+rapporterade "TOPP: success" från fel workflow medan CI-runnen ännu
+var in_progress; upptäckt på en-jobbs-signaturen [1 jobb "Dependabot"
+≠ CI:ns förväntade 5]) (klass: CI-verifiering; skärper L265)
+
+L265 gav headSha-formen (aldrig `--commit` på kort SHA); denna klass
+är nästa förväxlingsyta: samma commit kan bära flera workflow-runs
+(config-re-parse, schedulerade workflows, tredjeparts-appar). En vakt
+matchar därför på (headSha OCH workflow-namn), och per-jobb-läsningen
+är kontrollen att RÄTT run lästs — en jobbuppsättning som inte
+matchar workflowens förväntade form (fel antal, främmande jobbnamn)
+betyder fel run, inte grönt. Topp-status utan jobbform-verifiering
+är otillräcklig som stängningsvillkor.
+
+### L287 [UNIVERSAL] — Post-merge-synk av node_modules görs med `npm ci` — `npm install` muterar lockfilen och förorenar arbetsytan (kompletterar L275)
+
+Datum: 2026-07-19 | Källa: S70 dependabot-merge-kedjan (tre
+`npm install` efter #59/#60/#64-mergarna skrev om lokala
+package-lock.json → nästa `git pull --ff-only` blockerades mitt i
+kedjan av odiffad lockfil; åtgärd: lockfilen återställdes med
+`git checkout` följt av `npm ci`) (klass: dev-miljö/deps;
+kompletterar L275/L282)
+
+L275 etablerade ATT node_modules synkas efter manifest-merge; denna
+lesson preciserar FORMEN: när lockfilen ägs av fjärr-commits
+(deps-PR-merges, pulls) är `npm ci` synk-verbet — det installerar
+exakt ur lockfilen och rör den aldrig. `npm install` LÖSER OM
+beroendegrafen och kan skriva lockfilen (npm-versionens
+format-nyanser, metadata-drift) fast inget manifest ändrats lokalt —
+en tyst mutation som blockerar ff-pulls och riskerar smyg-committas.
+`npm install` reserveras för avsiktliga manifest-ändringar där
+lockfil-skrivning är MÅLET.

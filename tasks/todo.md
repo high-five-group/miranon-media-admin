@@ -54,6 +54,22 @@
   dependencies+ci skapade · vakt-avvikelsen (workflow-filter) ×1
   korrigerad · npm ci-formen ersatte npm install. **NÄSTA:
   TASK-16-klassningen (Marcus) · end-pass på signal.**
+- [x] **TASK-16 KLASSAD + END-PASSET KÖRT — coverage i STOPPA**
+  (2026-07-19, Del 3 kanonisk plats): TASK-16 → ready-for-agent +
+  medium via CLI:t (`34f8ac8`, run 29683361009 grön per jobb;
+  Marcus-order + substrat-bedömning; deadline-signal ≈ 2026-08-30) ·
+  skörd **L286–L287** [UNIVERSAL] (vakt = headSha ×
+  workflow-identitet med jobbform-kontroll [skärper L265] · npm ci
+  som post-merge-synkverb [preciserar L275]) + 5 kandidater
+  förkastade med motiv ·
+  L280-återfall ×1 öppet bokfört (räkning, ej ny post) · inga nya
+  trådar; S17-riv-tråden stängd · ingen ny ADR (ignore-regeln under
+  baren) · BUILD-LOG S70-post · transcript-ref wc-verifierad
+  (1 302 607 byte/639 rader vid Del 3) · numrering: ADR 074 (73==73) ·
+  L288 · fälla 45 · T78 · intentions-grind PASSERAD (nästa = NY
+  session S71). Hub-lyft L284–L287 buntas till nästa hub-sync.
+  Coverage-rapporten i STOPPA; lifecycle-flip + rad 7-slutsummeringen
+  väntar Marcus-kvittens.
 
 ### Session 69 ✅ AVSLUTAD (2026-07-18/19) — Fynd-korten: TASK-15 quotepath-fixen → TASK-14 kall-morgon-mätningen + ADR-060-städningen → TASK-13 Node-lyftet (3 kort Done · TASK-16 fött · L284–L285)
 

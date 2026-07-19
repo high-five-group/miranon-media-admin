@@ -2739,6 +2739,23 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 70 — Dependabot-passet: inbox 0 (4 merges + 2 durabelt stängda + allowlist-rivningen + biome migrate + TS7) + TASK-16-klassningen (2026-07-19)
+
+**Commit-range:** `601cba3` (sessionsdok-födelse) → HEAD. **Mål:** exekvera S69-handoffens första ingång — Dependabot-passet över parkerade vågen #58–#63 med felanalys-först-disciplinen + allowlist-prövningen GHSA-gv7w-rqvm-qjhr; TASK-16-klassningen i Marcus-takt. Ej byggplan-fas — deps-/underhållssession. Main-CI grön PER STEG genom hela kedjan; samtliga vakter asynkrona bakgrundstasks (R1, andra skarpa sessionen).
+
+- **#58 (Actions ×2):** felanalysen friade paketen — rött var markdownlint-MD036 i Docs link check-jobbet (merge-ref äldre än S67:s ADR-010-fix, `d9b4ec1` 19:51 vs PR-CI 17:49) ⇒ ren L279-klass; parkeringens "trolig #46-klass"-hypotes falsifierad. Supply-chain FÖRE åtgärd: lychee-SHA == upstream v2.9.0-taggen exakt · advisory historisk (patched 2.0.2 < 2.9.0) · setup-node v6→v6.4.0 first-party pin-skärpning. Rebase → helgrön → `a39a388`.
+- **#62 (@types/node 24→26) ⇒ durabel regel:** spegel-principen kodifierad som dependabot-ignore `version-update:semver-major` för @types/node (`fd3b628`; syntax käll-verifierad mot GitHub-docs; lyft-villkor i regelkommentaren). Dependabot stängde själv PR:n 08:45:38 som direkt reaktion — regeln bevisad i drift på sekunder; motiv-kommentar lagd för spårbarheten. Sidoeffekt öppet bokförd: config-re-parsen omgrupperade inboxen (#61 Biome-solo → #64 dev-deps-gruppen Biome 2.5.4 + vite 8.1.5).
+- **Allowlist-rivningen (S17-tråden STÄNGD):** GHSA-gv7w-rqvm-qjhr riven ur audit-ci.jsonc (`606ffef`) — sluttillståndet STARKARE än riv-villkoret: esbuild HELT ute ur trädet (`npm ls` tomt; vite 8-erans bumpar drog beroendet), npm audit 0 träffar, audit-ci PASSED utan varningen; historik-kommentar per K0åh-formen; S17-riv-todon bockad i samma commit.
+- **Merge-kedjan:** #59 tanstack ×3 (`667b239`) → #60 supabase-js 2.110.6 (`32cf128`) → #64 (`aec61cf`, dependabot-auto-rebasad) → biome migrate (`c19fd79`: schema-driften 2.4.15→2.5.4 stängd [S69-villkoret "vid nästa Biome-beröring"] + verktygets nyckel-rename recommended→preset; check 0 fel före/efter). L275-synk per steg.
+- **#63 typescript 6.0.3→7.0.2 (nativa Go-kompilatorn) mergad på empiri** (`b3e3011`): registry-fakta (7.0.2 = latest sedan 2026-07-08; cooldown uppfylld) + upstream-annons (--build/--noEmit stödda; API-gapet berör ej repot) + **minimaltest i isolerad worktree FÖRE väg-val** (typecheck 2,0 s · build+PWA grön) + proveniens utan regression (attestations saknas ÄVEN på 6.0.3; signaturer intakta). Före/efter main-trädet: typecheck 7,85 → 2,5 s (~3×). Full Test+Build grön per jobb (run 29681765375). Rollback trivial; VS Code opåverkad by default.
+- **TASK-16 KLASSAD ready-for-agent + medium** (`34f8ac8`; klassnings-akten = Marcus-ordern + Code-bedömning mot substrat-kontraktet): symptom dubbel-belagt, form ADR-beslutad (060 p3–4), design-frågorna inom utförar-ramen; ~6-veckors-horisonten = deadline-signal (nästa tröskel ≈ 2026-08-30); EF-only-gränsen inskriven i klassnings-noten.
+- **Hygien + avvikelser (öppet bokförda):** labels `dependencies`+`ci` skapade (config-deklarerade men saknade — dependabots timeline-klagan) · **L280-återfall ×1** (tail-pipe maskade markdownlint-exit → `8c619e2` pushad röd [MD018]; fixad `976ec99`, grindar därefter på obruten exit-kod) · vakt-avvikelse ×1 → **L286** · npm install-lockfil-driften → **L287** · R2:s dependabot-gren skarpbevisad ×4 (parallella PR-runs under pågående main-run).
+- **Numrering:** ingen ny ADR (ignore-regeln under ADR-baren, inom ADR-031:s ram; 73==73, nästa 074) · lessons **L286–L287** [UNIVERSAL] (vakt-matchning = headSha × workflow-identitet + jobbform-kontroll · npm ci som post-merge-synkverb) + 5 kandidater förkastade med motiv i Del 3 (nästa L288) · fälla 45 · tråd T78 (inga nya trådar; S17-riv-tråden stängd).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-19-session-70.md`](../tasks/sessions/2026-07-19-session-70.md) (Del 1–3). **EJ fas-avslut.** Kvar efter S70: TASK-16 plockbar (ready-for-agent, deadline-signal ≈ 2026-08-30) · nästa PRD/parallell batch på 1.16.0 · hub-lyftet L284–L287 vid nästa hub-beröring · Marcus-moment: Update-klicket i claude.ai.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
