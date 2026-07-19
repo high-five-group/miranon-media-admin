@@ -60,7 +60,7 @@
     "@tailwindcss/vite": "^4.3.2",
     "@tanstack/react-router-devtools": "1.167.0",
     "@tanstack/router-cli": "1.167.18",
-    "@types/node": "^25.6.2",
+    "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vite-pwa/assets-generator": "^1.0.2",
@@ -101,6 +101,6 @@
     "admin"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   }
 }

@@ -3,9 +3,10 @@ id: TASK-13
 title: >-
   Fynd: CI kör EOL-Node — runtime-lyftet 20 → 24 LTS (.nvmrc + engines +
   @types/node i EN ändring)
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-18 17:23'
+updated_date: '2026-07-19 08:18'
 labels: []
 dependencies: []
 ordinal: 35000
@@ -19,16 +20,22 @@ FYND (S67 dependabot-passet): .nvmrc=20 och engines '>=20' — Node 20 'Iron' gi
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Node-versionen i .nvmrc är 24 LTS och CI:s samtliga setup-node-steg kör den
-- [ ] #2 engines + @types/node speglar 24 — typecheck 0 fel
+- [x] #1 Node-versionen i .nvmrc är 24 LTS och CI:s samtliga setup-node-steg kör den
+- [x] #2 engines + @types/node speglar 24 — typecheck 0 fel
 - [ ] #3 Full svit + bygge gröna lokalt och i CI per jobb
-- [ ] #4 Kompatibiliteten (Vite/Playwright/Biome mot Node 24) verifierad med källa vid utförandet
+- [x] #4 Kompatibiliteten (Vite/Playwright/Biome mot Node 24) verifierad med källa vid utförandet
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S69 leverans: .nvmrc 20→24 · engines >=20→>=24 · @types/node ^25.6.2→^24.13.3 (spegel-principen från #46-stängningen: types följer runtime — medvetet NED från 25) · README-badgen >=20→>=24. CI:s 3 setup-node-steg läser node-version-file .nvmrc → följer automatiskt. KOMPAT KÄLL-VERIFIERAD (AC 4): nodejs/Release schedule.json — v24 Active LTS (LTS 2025-10-28, maintenance 2026-10-20, EOL 2028-04-30), v20 EOL 2026-04-30 bekräftad · Playwright system requirements: 'latest 22.x, 24.x or 26.x' — Node 20 UTE ur stödlistan (skärper motivet) · Vite: 'requires Node 20.19+, 22.12+' → 24 uppfyller · Biome: fristående binär, wrapper-engines >=14.21.3 (installerade paketets manifest). EMPIRI: Marcus lokala node är v24.13.1 sedan veckor — hela dagens gröna svit (296/296 ×2) och alla lokala grindar har redan körts på 24; lyftet stänger CI/lokal-driften. Lokala grindar på nya konfigurationen: typecheck 0 fel · Biome 0 fel (schema-drift-varningen i biome.json är pre-existerande från 2.5-bumpen, orörd av diffen — noterad) · audit-ci PASSED · build+SW grönt · test:api 296/296 (19,9 s). CI-benen i AC 1/3 bockas efter vaktens per-jobb-verifiering.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
