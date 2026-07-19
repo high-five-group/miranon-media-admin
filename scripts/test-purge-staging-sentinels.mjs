@@ -39,6 +39,7 @@ const EVENT_TARGET = {
   exactMatchField: 'Ort',
   exactMatchPattern: '^ZZ-create-event-test$',
   linkGuard: true,
+  linkGuardExcludeFields: ['Eventtyp'],
 };
 
 const NOW = Date.parse('2026-07-19T12:00:00.000Z');
@@ -138,6 +139,35 @@ t('tomma fält och skalärer triggar inte guarden', () => {
 t('sträng-array som INTE är rec-ID:n (t.ex. multiselect) triggar inte guarden', () => {
   const rec = { id: 'recG', fields: { Format: ['Dag 1', 'Dag 2'] } };
   assert.deepEqual(linkGuardTrips(rec), []);
+});
+
+t(
+  'S71-fyndet: Eventtyp-länken (konstruktions-obligatorisk, ADR-066 b5) exkluderas — sentineln raderas',
+  () => {
+    const rec = {
+      id: 'recH',
+      createdTime: OLD,
+      fields: { Ort: 'ZZ-create-event-test', Eventtyp: ['recclDd7hUQsfxoVs'] },
+    };
+    assert.deepEqual(linkGuardTrips(rec, ['Eventtyp']), []);
+    const plan = planPurge([rec], EVENT_TARGET, 60, NOW);
+    assert.deepEqual(plan.toDelete, ['recH']);
+  },
+);
+
+t('Eventtyp-exkluderingen är SMAL: verklig data-länk bredvid Eventtyp skippar fortfarande', () => {
+  const rec = {
+    id: 'recI',
+    createdTime: OLD,
+    fields: {
+      Ort: 'ZZ-create-event-test',
+      Eventtyp: ['recclDd7hUQsfxoVs'],
+      'Anmälningar (länkat fält)': ['recAAAABBBBCCCCDD'],
+    },
+  };
+  const plan = planPurge([rec], EVENT_TARGET, 60, NOW);
+  assert.deepEqual(plan.skippedLinked, [{ id: 'recI', fields: ['Anmälningar (länkat fält)'] }]);
+  assert.deepEqual(plan.toDelete, []);
 });
 
 // --- planPurge (helheten) ---

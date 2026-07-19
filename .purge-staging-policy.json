@@ -19,7 +19,8 @@
       "filterByFormula": "{Ort} = 'ZZ-create-event-test'",
       "exactMatchField": "Ort",
       "exactMatchPattern": "^ZZ-create-event-test$",
-      "linkGuard": true
+      "linkGuard": true,
+      "linkGuardExcludeFields": ["Eventtyp"]
     }
   ]
 }

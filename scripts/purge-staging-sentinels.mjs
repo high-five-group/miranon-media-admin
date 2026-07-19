@@ -30,7 +30,9 @@
 //      rec-ID-arrayer hoppas över och rapporteras i stället för att raderas
 //      (namn-agnostiskt — immunt mot fältnamns-drift som
 //      "Anmälningar (länkat fält)", live-verifierat S71). Fail-safe-riktning:
-//      hellre lämna kvar + rapportera än radera fel.
+//      hellre lämna kvar + rapportera än radera fel. linkGuardExcludeFields
+//      undantar konstruktions-kända utgående referens-länkar som sitter på
+//      varje sentinel by design (Eventtyp, ADR-066 b5 — skarp-belagt S71).
 //
 // Flaggor: --dry-run (planera + rapportera, radera inget).
 // Exit: 0 = OK (även "inget att purga"), 1 = guard-/konfigurationsfel,
@@ -97,10 +99,18 @@ export function isOldEnough(record, minAgeMinutes, nowMs) {
   return nowMs - created > minAgeMinutes * 60_000;
 }
 
-/** Skyddsräcke 4: namn-agnostisk länk-detektion — icke-tom rec-ID-array i något fält. */
-export function linkGuardTrips(record) {
+/**
+ * Skyddsräcke 4: namn-agnostisk länk-detektion — icke-tom rec-ID-array i något
+ * fält. excludeFields (policy: linkGuardExcludeFields) undantar konstruktions-
+ * KÄNDA utgående referens-länkar som sitter på varje sentinel by design (t.ex.
+ * Eventtyp — create-EF:ns obligatoriska typ-länk per ADR-066 b5; skarp-belagt
+ * S71: 288/288 event-sentineler bar EXAKT den och inget annat). Guarden
+ * fortsätter trippa på verkliga data-länkar (Anmälningar/Närvaro/Touchpoints).
+ */
+export function linkGuardTrips(record, excludeFields = []) {
   const tripped = [];
   for (const [field, value] of Object.entries(record.fields ?? {})) {
+    if (excludeFields.includes(field)) continue;
     if (
       Array.isArray(value) &&
       value.length > 0 &&
@@ -125,7 +135,7 @@ export function planPurge(records, target, minAgeMinutes, nowMs) {
       continue;
     }
     if (target.linkGuard) {
-      const tripped = linkGuardTrips(record);
+      const tripped = linkGuardTrips(record, target.linkGuardExcludeFields ?? []);
       if (tripped.length > 0) {
         plan.skippedLinked.push({ id: record.id, fields: tripped });
         continue;

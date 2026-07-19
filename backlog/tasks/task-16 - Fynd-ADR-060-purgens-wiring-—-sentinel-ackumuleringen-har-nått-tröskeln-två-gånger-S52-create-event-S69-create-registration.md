@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-07-19 07:54'
-updated_date: '2026-07-19 11:22'
+updated_date: '2026-07-19 11:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,6 +32,8 @@ EXAKT SYMPTOM: ADR-060 punkt 5:s interim ('bounded sentinel-ackumulering tolerer
 KLASSAD ready-for-agent 2026-07-19 (S70; klassnings-akten = Marcus-ordern 'om den är redo för agent så klassar du den så' + Code-bedömning mot substrat-kontraktet: symptom dubbel-belagt med run-ids, förväntad form redan ADR-beslutad [060 p3–4], design-frågorna explicit inom utförar-ramen, AC verifierbara). Prioritet medium: blockerar ej idag (basen städad S69) — ~6-veckors-återackumuleringshorisonten (≈250 sentineler/månad) är deadline-signalen; nästa tröskel ≈ 2026-08-30. Vid utförande: EF-only-gränsen intakt (testet får ALDRIG token) — credential-placeringen är förstahands-designfrågan, STOPPA vid genuint arkitektur-val.
 
 S71 leverans: purge-mekanismen implementerad per ADR-060 p3-4 — scripts/purge-staging-sentinels.mjs (universell logik; 4 skyddsräcken: bas-guard m. hårt blockerad prod-bas, ålders-guard 60 min i kod på createdTime, exakt markör-match per klass, namn-agnostisk länk-guard) + .purge-staging-policy.json (config-driven) + CI-jobbet 'Staging sentinel purge' (egen runner, egen secret STAGING_AIRTABLE_TOKEN least-privilege scopad till staging-basen; Test+Build needs purge m. skipped-tolerans; ci-passed aggregerar) + npm run purge:staging (.env.seed) + 23 guard-tester (scripts/test-purge-staging-sentinels.mjs, inkl. S52-ZZ-History-skyddet). AC2: ADR-060 Updates-post (interim p5 ERSATT) + CONTRIBUTING §Testkörning. Formlerna live-verifierade via MCP mot staging före push (22 anmälnings- + 50+ event-sentineler träffade, 0 länkade). AC1 skarp-bevis = CI-purge-jobbets logg vid denna push; bockas vid stängning.
+
+S71-fynd vid första skarpa CI-körningen (run 29685010681): Anmälningar 22/22 raderade + efter-verifiering 0 kvar ✓, MEN alla 288 event-sentineler länk-guardades på fältet Eventtyp — create-EF:ns KONSTRUKTIONS-OBLIGATORISKA utgående typ-referens (ADR-066 b5) som sitter på varje sentinel by design (log-verifierat: 288/288 bar EXAKT Eventtyp och inget annat). Guarden gjorde rätt (fail-safe: 0 felraderingar) men var för bred. Fix: linkGuardExcludeFields per target i policyn (['Eventtyp'] för event-målet) — undantar kända utgående referenser, guarden trippar fortsatt på verkliga data-länkar; 2 nya tester (25 totalt, inkl. exkluderingen-är-smal-fallet). Sidospår utanför kortet: shields.io-outage fällde Docs link check 2× → .lycheeignore-post (Marcus-kvitterad väg A, egen commit 55b0157).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
