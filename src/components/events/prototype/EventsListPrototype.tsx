@@ -27,6 +27,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { CalendarDays, MapPin } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -134,6 +135,111 @@ function StatusBadge({ status }: { status: Event['status'] }) {
     >
       {status}
     </span>
+  );
+}
+
+/* ── Variant-korten (divergens-axeln, Marcus-beslut i konvergensen:
+      A = FK-radens tysta tre textrader · B = Hem-kortets grammatik
+      [NastaEventCard: ikonrader, dagar-kvar-pill, långdatum, stapel].
+      Hjälpare kopierade ur NastaEventCard — medvetet odelade. ── */
+
+/** Långdatum per K10-facit ("15 september 2026") — sv-SE, aldrig rå ISO. */
+const LANGDATUM = new Intl.DateTimeFormat('sv-SE', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+/** Dagar-kvar-pillens tre exakta former (K10-facit): Idag / 1 dag kvar / N dagar kvar. */
+function dagarKvarText(startMs: number, idagStartMs: number): string {
+  const dagar = Math.round((startMs - idagStartMs) / 86_400_000);
+  if (dagar <= 0) return 'Idag';
+  return dagar === 1 ? '1 dag kvar' : `${dagar} dagar kvar`;
+}
+
+/** Variant A — FK-raden (grillade baslinjen): tre textrader, badge vid avvikelse. */
+function VariantACard({ e }: { e: Event }) {
+  return (
+    <li className="relative flex flex-col gap-1 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
+      <div className="flex items-start justify-between gap-3">
+        <Link
+          to="/event/$eventId"
+          params={{ eventId: e.id }}
+          className="font-semibold text-body after:absolute after:inset-0"
+        >
+          {eventName(e)}
+        </Link>
+        <StatusBadge status={e.status} />
+      </div>
+      <span className="text-small text-text-secondary">
+        {[dateText(e), e.ort].filter(Boolean).join(' · ')}
+      </span>
+      <span className="text-small text-text-muted">
+        {belaggningText(e)}
+        {isFull(e) ? ' · Fullt' : ''}
+      </span>
+    </li>
+  );
+}
+
+/**
+ * Variant B — Hem-kortets grammatik: ikonrader (kartnål/kalender, dekor),
+ * dagar-kvar-pill topp-höger (ENDAST Kommande — bakåt saknar tidshorisont),
+ * långdatum, beläggningsstapel. Neutral ton (primär-tinten är Hem-hjältens
+ * roll — på varje listkort skulle den skrika).
+ */
+function VariantBCard({ e, period, idagStart }: { e: Event; period: Period; idagStart: number }) {
+  const startMs = dateValue(e);
+  const visaPill = period === 'upcoming' && e.startdatum && Number.isFinite(startMs);
+  const maxPlatser = e.maxPlatser;
+  const andel =
+    maxPlatser != null && maxPlatser > 0
+      ? Math.min(100, Math.round((e.antalAnmalda / maxPlatser) * 100))
+      : 0;
+  return (
+    <li className="relative flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
+      {visaPill ? (
+        <span className="absolute top-4 right-4 rounded-full bg-surface px-2.5 py-0.5 font-medium text-caption">
+          {dagarKvarText(startMs, idagStart)}
+        </span>
+      ) : null}
+      <div className="flex flex-col gap-1 text-small">
+        <div className="flex items-start gap-3">
+          <Link
+            to="/event/$eventId"
+            params={{ eventId: e.id }}
+            className="font-semibold text-body after:absolute after:inset-0"
+          >
+            {eventName(e)}
+          </Link>
+          <StatusBadge status={e.status} />
+        </div>
+        {e.ort ? (
+          <span className="flex items-center gap-1.5">
+            <MapPin aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
+            {e.ort}
+          </span>
+        ) : null}
+        <span className="flex items-center gap-1.5">
+          <CalendarDays aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
+          {e.startdatum ? LANGDATUM.format(new Date(e.startdatum)) : 'Datum ej satt'}
+        </span>
+      </div>
+      {maxPlatser != null ? (
+        <div className="flex flex-col gap-1">
+          <span className="text-caption text-text-secondary">
+            {e.antalAnmalda} av {maxPlatser} platser bokade{isFull(e) ? ' · Fullt' : ''}
+          </span>
+          <div aria-hidden="true" className="h-1.5 rounded-full bg-surface">
+            <div className="h-full rounded-full bg-primary-muted" style={{ width: `${andel}%` }} />
+          </div>
+        </div>
+      ) : (
+        <span className="text-caption text-text-secondary">
+          {e.antalAnmalda} anmälda (platser ej satt)
+        </span>
+      )}
+    </li>
   );
 }
 
@@ -259,10 +365,17 @@ const DEMO_EVENTS: Event[] = [
 
 export function EventsListPrototype() {
   const dataSource = useDataSource();
+  // Divergens-axeln: 'B' = Hem-kortets grammatik; allt annat proto-läge = 'A'.
+  const [variantParam] = useQueryState('variant');
+  const activeVariant: 'A' | 'B' = variantParam === 'B' ? 'B' : 'A';
   const [period, setPeriod] = useQueryState(
     'period',
     parseAsStringEnum(PERIOD_VALUES).withDefault('upcoming').withOptions({ history: 'push' }),
   );
+  // Dagsstarten för dagar-kvar-pillen (variant B) — samma referens som filtret.
+  const idagNow = new Date();
+  idagNow.setHours(0, 0, 0, 0);
+  const idagStart = idagNow.getTime();
   // K2: demo-data är DEFAULT i konvergensen (Marcus itererar på den
   // representativa bilden); verklig staging-data är opt-in via ?data=verklig.
   const [dataMode] = useQueryState('data');
@@ -355,30 +468,13 @@ export function EventsListPrototype() {
           <section key={group.label} className="flex flex-col gap-2">
             <h2 className="font-semibold text-small text-text-secondary">{group.label}</h2>
             <ul aria-label={`Event ${group.label}`} className="flex flex-col gap-3">
-              {group.events.map((e) => (
-                <li
-                  key={e.id}
-                  className="relative flex flex-col gap-1 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <Link
-                      to="/event/$eventId"
-                      params={{ eventId: e.id }}
-                      className="font-semibold text-body after:absolute after:inset-0"
-                    >
-                      {eventName(e)}
-                    </Link>
-                    <StatusBadge status={e.status} />
-                  </div>
-                  <span className="text-small text-text-secondary">
-                    {[dateText(e), e.ort].filter(Boolean).join(' · ')}
-                  </span>
-                  <span className="text-small text-text-muted">
-                    {belaggningText(e)}
-                    {isFull(e) ? ' · Fullt' : ''}
-                  </span>
-                </li>
-              ))}
+              {group.events.map((e) =>
+                activeVariant === 'B' ? (
+                  <VariantBCard key={e.id} e={e} period={period} idagStart={idagStart} />
+                ) : (
+                  <VariantACard key={e.id} e={e} />
+                ),
+              )}
             </ul>
           </section>
         ))}
@@ -401,21 +497,22 @@ export function EventsListPrototype() {
 /**
  * [PROTOTYPE] Konvergens-identiteten — två axlar (Marcus-modellen, skillens
  * tvåfas-form):
- * - VARIANT (divergens-axeln): strukturellt olika alternativ. Nu finns EN —
- *   variant A = den grillade strukturen (S72 Del 2). Fler varianter föds
- *   ENDAST vid uttalat divergens-beslut och får egna chips (B, C …).
+ * - VARIANT (divergens-axeln): strukturellt olika alternativ. A = grillade
+ *   strukturen/FK-raden (S72 Del 2) · B = Hem-kortets grammatik
+ *   (Marcus-beslutad divergens i konvergensen). Fler föds endast på beslut.
  * - STEG (konvergens-axeln): Marcus-låsta förfiningar av EN variant. Steg
  *   räknas upp NÄR MARCUS LÅSER en ändring — då fryses föregående steg som
  *   växlingsbar snapshot (`?steg=N`) för A/B-jämförelse i browsern, och
  *   skärmdump + [PROTOTYPE]-commitens SHA landar i bilagan
  *   (återupplivningsvägen — git bär alla äldre steg; växlaren håller bara
  *   senaste jämförelseparet).
- * Bygg-commits (K1–K3) är INTE steg — designen flyttar sig bara på
+ * Bygg-commits (K1–K4) är INTE steg — designen flyttar sig bara på
  * Marcus-beslut.
  */
-const PROTO_VARIANT = 'A';
-const PROTO_STEG = 1;
-const PROTO_STEG_LABEL = 'grillade baslinjen';
+const PROTO_VARIANTS = {
+  A: { steg: 1, stegLabel: 'grillade baslinjen · FK-raden' },
+  B: { steg: 1, stegLabel: 'Hem-kortets grammatik' },
+} as const;
 
 /**
  * [PROTOTYPE] Flytande variant-växlare (skillens steg 4) — DEV-only via
@@ -423,12 +520,15 @@ const PROTO_STEG_LABEL = 'grillade baslinjen';
  * K3-omgjord efter Marcus-feedback ("oklar och otydlig"): klartext-etiketter
  * i chip-form — aktivt val är FYLLT vitt chip, inaktivt är kantat och
  * klickbart; data-valet syns bara i prototyp-läget. K4: identitets-raden
- * (variant + steg) alltid synlig i prototyp-läget.
+ * (variant + steg) alltid synlig i prototyp-läget. K5: variant-chips A/B
+ * (divergens-beslutet).
  */
 export function EventsPrototypeSwitcher() {
   const [variant, setVariant] = useQueryState('variant');
   const [dataMode, setDataMode] = useQueryState('data');
-  const isProto = variant === PROTO_VARIANT || variant === 'K'; // 'K' = legacy-URL:en, tolereras
+  const activeVariant: 'A' | 'B' | null =
+    variant === 'B' ? 'B' : variant === 'A' || variant === 'K' ? 'A' : null; // 'K' = legacy-URL:en
+  const isProto = activeVariant != null;
   const chip = (active: boolean) =>
     active
       ? 'rounded-full bg-bg px-3 py-1.5 font-semibold text-small text-text'
@@ -436,9 +536,10 @@ export function EventsPrototypeSwitcher() {
   return (
     <div className="fixed bottom-24 left-1/2 z-50 flex w-max max-w-[92vw] -translate-x-1/2 flex-col items-center gap-2 rounded-2xl bg-text px-4 py-3 text-text-inverse shadow-lg">
       <span className="font-mono text-caption tracking-wide">PROTOTYP-VÄXLAREN · dev-verktyg</span>
-      {isProto && (
+      {activeVariant && (
         <span className="font-semibold text-small">
-          Variant {PROTO_VARIANT} · Steg {PROTO_STEG} — {PROTO_STEG_LABEL}
+          Variant {activeVariant} · Steg {PROTO_VARIANTS[activeVariant].steg} —{' '}
+          {PROTO_VARIANTS[activeVariant].stegLabel}
         </span>
       )}
       <div className="flex flex-wrap items-center justify-center gap-2">
@@ -452,11 +553,19 @@ export function EventsPrototypeSwitcher() {
         </button>
         <button
           type="button"
-          onClick={() => setVariant(PROTO_VARIANT)}
-          aria-pressed={isProto}
-          className={chip(isProto)}
+          onClick={() => setVariant('A')}
+          aria-pressed={activeVariant === 'A'}
+          className={chip(activeVariant === 'A')}
         >
-          Prototypen
+          Variant A
+        </button>
+        <button
+          type="button"
+          onClick={() => setVariant('B')}
+          aria-pressed={activeVariant === 'B'}
+          className={chip(activeVariant === 'B')}
+        >
+          Variant B
         </button>
       </div>
       {isProto && (
