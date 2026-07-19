@@ -94,6 +94,16 @@ updates:
           - "react-aria-components"
           - "tailwindcss"
           - "@tailwindcss/*"
+    ignore:
+      # Spegel-principen (#46-stängningen S67 + TASK-13 S69, dubbelinstans
+      # #62 S70): @types/node följer runtime-majorn (.nvmrc), springer
+      # aldrig före. Node-major-lyft görs som medveten runtime-ändring
+      # (TASK-13-klassen: .nvmrc + engines + types + CI i EN ändring) —
+      # aldrig som fristående types-PR. Utan regeln återkommer en
+      # stängd major-PR vid varje ny types-major (obundet interim, L285).
+      # Lyft: ta bort raden i samma commit som nästa runtime-major-lyft.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
 
