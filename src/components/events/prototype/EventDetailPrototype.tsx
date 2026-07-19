@@ -46,16 +46,39 @@
  * aldrig).
  */
 
+import { type CalendarDate, parseDate } from '@internationalized/date';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronLeft, Pencil } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { CalendarDays, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Button as AriaButton,
+  CalendarCell,
+  CalendarGrid,
+  CalendarGridBody,
+  CalendarGridHeader,
+  CalendarHeaderCell,
+  DateInput,
+  DateRangePicker,
+  DateSegment,
+  Dialog,
+  Group,
+  Heading,
+  I18nProvider,
+  Label,
+  Popover,
+  RangeCalendar,
+} from 'react-aria-components';
 import type { PrototypeVariant } from '@/components/dev/PrototypeSwitcher';
+import { Button } from '@/components/primitives/Button';
+import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
+import { EventStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
 import { DEMO_EVENTS, type ProtoEvent } from './EventsListPrototype';
 
@@ -69,7 +92,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K10 — stor chevron ensam; etiketten riven',
+    stegLabel: 'K11 — Ändra-läget: vita fält, dropdowns, datumväljaren',
   },
 ];
 
@@ -169,16 +192,182 @@ function ProtoGrupp({
     screens; FK själva). PROTOTYP-NO-OP: read-only-regeln — prototypen
     kopplar aldrig mutationer; skarpa kravet = write-operation(er) för
     event-fälten (EF + allowlist-post finns inte idag → PRD-krav). */
-function AndraRad() {
+function AndraRad({ onPress }: { onPress?: () => void }) {
   return (
     <div className="py-3">
       <button
         type="button"
+        onClick={onPress}
         className="flex w-full items-center justify-center gap-2 font-medium text-body"
       >
         <Pencil aria-hidden="true" size={16} />
         Ändra
       </button>
+    </div>
+  );
+}
+
+/* ── K11: Ändra-läget för Om eventet (Marcus-order, branschklass) ──
+   Inline per-sektion-redigering (FK:s Ändra; Polaris/Stripe-mönstret):
+   raderna byter till VITA fält (--mm-input-bg på tonala ytan) via
+   bibliotekets primitiver — Select (RAC, full tangentbords-/skärmläsar-
+   navigation) för basens singleSelects, Input för fritext, RAC
+   DateRangePicker för start–slut med förifyllt sv-SE-format + kalender-
+   popover (samma RAC-familj som listans kalendervy). Alternativen är
+   BASENS: Typ = Utbildning/Föreläsning (data-model rad 254), Status =
+   EventStatus-enumen (Fas 2.5, live-verifierad). Spara skriver ENDAST
+   prototypens minnes-state (read-only-regeln — inga writes; sidladdning
+   nollställer); skarpa kravet = write-operation(er) + allowlist-post
+   per fält (PRD-krav, bokfört sedan K6). */
+
+type OmEventetVarden = Pick<ProtoEvent, 'typ' | 'ort' | 'startdatum' | 'slutdatum' | 'status'>;
+
+/** Datumfältet: RAC DateRangePicker — segmenterad inmatning (förifyllt
+    bestämt format per locale) + RangeCalendar i popover för start/slut. */
+function DatumFalt({
+  value,
+  onChange,
+}: {
+  value: { start: CalendarDate; end: CalendarDate } | null;
+  onChange: (v: { start: CalendarDate; end: CalendarDate } | null) => void;
+}) {
+  const segKlass =
+    'rounded px-0.5 tabular-nums outline-none data-[focused]:bg-bg-emphasized data-[placeholder]:text-(color:--mm-input-text-placeholder)';
+  return (
+    <DateRangePicker value={value} onChange={onChange} className="flex w-full flex-col gap-1">
+      <Label className="text-(color:--mm-input-label-text) text-small">Datum</Label>
+      <Group className="flex min-h-10 w-full items-center justify-between gap-2 rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 text-body">
+        <div className="flex flex-wrap items-center gap-1">
+          <DateInput slot="start" className="flex">
+            {(seg) => <DateSegment segment={seg} className={segKlass} />}
+          </DateInput>
+          <span aria-hidden="true" className="text-text-muted">
+            –
+          </span>
+          <DateInput slot="end" className="flex">
+            {(seg) => <DateSegment segment={seg} className={segKlass} />}
+          </DateInput>
+        </div>
+        <AriaButton
+          aria-label="Öppna kalendern"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full"
+        >
+          <CalendarDays aria-hidden="true" size={18} />
+        </AriaButton>
+      </Group>
+      <Popover className="rounded-2xl border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-4 shadow-lg">
+        <Dialog className="outline-none">
+          <RangeCalendar className="flex flex-col gap-3">
+            <header className="flex items-center justify-between gap-2">
+              <AriaButton
+                slot="previous"
+                aria-label="Föregående månad"
+                className="flex size-9 items-center justify-center rounded-full bg-bg-muted"
+              >
+                <ChevronLeft aria-hidden="true" size={18} />
+              </AriaButton>
+              <Heading className="font-semibold text-body" />
+              <AriaButton
+                slot="next"
+                aria-label="Nästa månad"
+                className="flex size-9 items-center justify-center rounded-full bg-bg-muted"
+              >
+                <ChevronRight aria-hidden="true" size={18} />
+              </AriaButton>
+            </header>
+            <CalendarGrid weekdayStyle="short" className="border-separate border-spacing-0.5">
+              <CalendarGridHeader>
+                {(day) => (
+                  <CalendarHeaderCell className="text-caption text-text-secondary">
+                    {day}
+                  </CalendarHeaderCell>
+                )}
+              </CalendarGridHeader>
+              <CalendarGridBody>
+                {(date) => (
+                  <CalendarCell
+                    date={date}
+                    className="flex size-9 items-center justify-center rounded-full text-small tabular-nums outline-none data-[outside-month]:text-text-muted data-[selected]:bg-bg-emphasized data-[selection-end]:bg-text data-[selection-start]:bg-text data-[selection-end]:text-text-inverse data-[selection-start]:text-text-inverse data-[disabled]:opacity-40"
+                  />
+                )}
+              </CalendarGridBody>
+            </CalendarGrid>
+          </RangeCalendar>
+        </Dialog>
+      </Popover>
+    </DateRangePicker>
+  );
+}
+
+/** Säker parse av demo-datumen till kalender-range (ogiltigt → null). */
+function tillDatumRange(e: ProtoEvent): { start: CalendarDate; end: CalendarDate } | null {
+  if (!e.startdatum) return null;
+  try {
+    const start = parseDate(e.startdatum);
+    const end = e.slutdatum ? parseDate(e.slutdatum) : start;
+    return { start, end };
+  } catch {
+    return null;
+  }
+}
+
+function OmEventetForm({
+  event,
+  onSpara,
+  onAvbryt,
+}: {
+  event: ProtoEvent;
+  onSpara: (v: OmEventetVarden) => void;
+  onAvbryt: () => void;
+}) {
+  const [typ, setTyp] = useState<string | null>(event.typ);
+  const [ort, setOrt] = useState(event.ort ?? '');
+  const [status, setStatus] = useState<string | null>(event.status);
+  const [datum, setDatum] = useState(() => tillDatumRange(event));
+  return (
+    <div className="flex flex-col gap-4 py-4">
+      <Select
+        label="Typ"
+        placeholder="Välj typ"
+        selectedKey={typ}
+        onSelectionChange={(k) => setTyp(k == null ? null : String(k))}
+      >
+        <SelectItem id="Utbildning">Utbildning</SelectItem>
+        <SelectItem id="Föreläsning">Föreläsning</SelectItem>
+      </Select>
+      <Input label="Ort" placeholder="Ort" value={ort} onChange={setOrt} />
+      <DatumFalt value={datum} onChange={setDatum} />
+      <Select
+        label="Status"
+        placeholder="Välj status"
+        selectedKey={status}
+        onSelectionChange={(k) => setStatus(k == null ? null : String(k))}
+      >
+        {Object.values(EventStatus).map((s) => (
+          <SelectItem key={s} id={s}>
+            {s}
+          </SelectItem>
+        ))}
+      </Select>
+      <div className="flex items-center gap-2 pt-1">
+        <Button
+          intent="primary"
+          onPress={() =>
+            onSpara({
+              typ: typ as ProtoEvent['typ'],
+              ort: ort.trim() === '' ? null : ort.trim(),
+              startdatum: datum?.start.toString() ?? null,
+              slutdatum: datum?.end.toString() ?? null,
+              status: status as ProtoEvent['status'],
+            })
+          }
+        >
+          Spara
+        </Button>
+        <Button intent="secondary" onPress={onAvbryt}>
+          Avbryt
+        </Button>
+      </div>
     </div>
   );
 }
@@ -239,7 +428,13 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
       failureCount < 3,
   });
 
-  const event: ProtoEvent | undefined = useDemo ? demoEventById(eventId) : fetched;
+  // K11: Ändra-lägets minnes-state — override läggs ÖVER visnings-eventet
+  // (ren minnes-yta, inga writes; sidladdning nollställer — read-only-regeln).
+  const [redigerar, setRedigerar] = useState(false);
+  const [override, setOverride] = useState<Partial<ProtoEvent>>({});
+
+  const bas: ProtoEvent | undefined = useDemo ? demoEventById(eventId) : fetched;
+  const event: ProtoEvent | undefined = bas ? { ...bas, ...override } : undefined;
   const notFound = error instanceof EdgeFunctionError && error.status === 404;
 
   // Fokus → <h1> + document.title när data anlänt (en gång per laddning).
@@ -347,13 +542,28 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
       </header>
 
       <ProtoGrupp id="proto-grupp-om" rubrik="Om eventet">
-        <dl className="divide-y divide-border">
-          <FkRad term="Typ">{event.typ}</FkRad>
-          <FkRad term="Ort">{event.ort}</FkRad>
-          <FkRad term="Datum">{datumSpannText(event)}</FkRad>
-          <FkRad term="Status">{event.status}</FkRad>
-        </dl>
-        <AndraRad />
+        {redigerar ? (
+          <I18nProvider locale="sv-SE">
+            <OmEventetForm
+              event={event}
+              onSpara={(v) => {
+                setOverride((o) => ({ ...o, ...v }));
+                setRedigerar(false);
+              }}
+              onAvbryt={() => setRedigerar(false)}
+            />
+          </I18nProvider>
+        ) : (
+          <>
+            <dl className="divide-y divide-border">
+              <FkRad term="Typ">{event.typ}</FkRad>
+              <FkRad term="Ort">{event.ort}</FkRad>
+              <FkRad term="Datum">{datumSpannText(event)}</FkRad>
+              <FkRad term="Status">{event.status}</FkRad>
+            </dl>
+            <AndraRad onPress={() => setRedigerar(true)} />
+          </>
+        )}
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-belaggning" rubrik="Beläggning">
