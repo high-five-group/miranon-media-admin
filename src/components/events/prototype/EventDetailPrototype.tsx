@@ -69,7 +69,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K9 — toppraden + EventKey-pillen på titelraden',
+    stegLabel: 'K10 — stor chevron ensam; etiketten riven',
   },
 ];
 
@@ -255,25 +255,22 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
   // växlar mellan ladd/fel/laddat (Lugnt laddläge §15).
   // K8: h1 "Eventdetaljer" riven — ENTITETENS NAMN är h1 (Polaris Page
   // backAction + title; Stripe/GitHub-klassen).
-  // K9 (Marcus): toppradens text är KONTEXT-etiketten "Eventdetaljer"
-  // (muted, ej understruken, INTE en länk — den ljuger annars om målet)
-  // och chevronen är egen rund knappyta separerad från texten —
-  // IMG_1542:s egen topprad (rund back-knapp + liten sidtitel; iOS
-  // nav-bar-mönstret). Skärmläsaren får målet via aria-label
-  // ("Tillbaka till event"); search-genomslaget bevarat.
+  // K10 (Marcus): kontext-etiketten "Eventdetaljer" RIVEN — chevronen
+  // ensam bär "detta är en undersida", i RUBRIKSTORLEK (44 px-knapp,
+  // samma optiska vikt som list-flikens Event-h1; FK IMG_1542:s stora
+  // runda back-knapp). 44 px = touch-target-golvet på köpet.
+  // Skärmläsaren får målet via aria-label ("Tillbaka till event");
+  // search-genomslaget bevarat.
   const sidRam = (innehall: React.ReactNode) => (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      <div className="flex items-center gap-3 px-4">
-        <Link
-          to="/event"
-          search={(prev) => prev}
-          aria-label="Tillbaka till event"
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-muted"
-        >
-          <ChevronLeft aria-hidden="true" size={18} />
-        </Link>
-        <span className="text-small text-text-muted">Eventdetaljer</span>
-      </div>
+      <Link
+        to="/event"
+        search={(prev) => prev}
+        aria-label="Tillbaka till event"
+        className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
+      >
+        <ChevronLeft aria-hidden="true" size={26} />
+      </Link>
       {innehall}
     </section>
   );
