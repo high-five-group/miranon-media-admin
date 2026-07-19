@@ -21,6 +21,40 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 70 (pågår, 2026-07-19) — Dependabot-passet #58–#63: inbox 0 (4 merges + 2 durabelt stängda + allowlist-rivningen + TS7)
+
+> Scope: sessionsdok `2026-07-19-session-70.md` Del 1 (kanonisk plats):
+> Dependabot-passet (felanalys #58 → spegel-prövningen #62 →
+> major-review #63 → gröna gruppen → allowlist-prövningen) ·
+> TASK-16-klassningen i Marcus-takt · end-pass på signal. Kadensrad
+> per L67. (Sektionen född vid Del 2-landningen, ej dok-födelsen —
+> öppet bokfört i Del 2.)
+
+- [x] **Dok-födelse** (2026-07-19): `601cba3`, run 29680248553 grön
+  per jobb (docs-only: Test+Build by-design-skippad, Docs link check
+  körd+grön); numrering disk-verifierad (ADR 074 [73==73], L286, f45,
+  T78); audit-ci PASSED; plugin 1.16.0 AKTIV (andra sessionen med
+  asynkrona vakten). **NÄSTA: Dependabot-passet.**
+- [x] **DEPENDABOT-PASSET KOMPLETT — inbox 0** (2026-07-19, Del 2
+  kanonisk plats): `fd3b628`→`b3e3011` (8 commits, main-CI grön PER
+  STEG, alla vakter asynkrona). #58 felanalys friade paketen
+  (L279-klass: stale bas vs MD036-fixen; "#46-klass"-hypotesen
+  falsifierad; supply-chain-koll SHA==tagg + advisories historiska) →
+  rebase → `a39a388` · #62 ⇒ **durabel ignore-regel**
+  semver-major @types/node (`fd3b628`, L285-formen; dependabot
+  stängde själv PR:n på sekunder; sidoeffekt: #61→#64-omgruppering) ·
+  **allowlist-rivningen** GHSA-gv7w-rqvm-qjhr (`606ffef`; esbuild
+  HELT ute ur trädet — starkare än S17-villkoret; S17-riv-todon
+  bockad) · #59 tanstack (`667b239`) · #60 supabase (`32cf128`) ·
+  #64 Biome 2.5.4+vite 8.1.5 (`aec61cf`) + **biome migrate**
+  (`c19fd79`, schema-driften stängd) · **#63 TS 6→7 mergad på
+  empiri** (`b3e3011`: worktree-minimaltest grönt FÖRE väg-val;
+  typecheck 7,85→2,5 s ~3×; full Test+Build grön per jobb run
+  29681765375; proveniens utan regression). Hygien: labels
+  dependencies+ci skapade · vakt-avvikelsen (workflow-filter) ×1
+  korrigerad · npm ci-formen ersatte npm install. **NÄSTA:
+  TASK-16-klassningen (Marcus) · end-pass på signal.**
+
 ### Session 69 ✅ AVSLUTAD (2026-07-18/19) — Fynd-korten: TASK-15 quotepath-fixen → TASK-14 kall-morgon-mätningen + ADR-060-städningen → TASK-13 Node-lyftet (3 kort Done · TASK-16 fött · L284–L285)
 
 > Scope: sessionsdok `2026-07-18-session-69.md` Del 1 (kanonisk plats):
