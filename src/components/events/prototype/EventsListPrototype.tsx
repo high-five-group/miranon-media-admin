@@ -230,8 +230,10 @@ function VariantBCard({ e, period, idagStart }: { e: Event; period: Period; idag
           <span className="text-caption text-text-secondary">
             {e.antalAnmalda} av {maxPlatser} platser bokade{isFull(e) ? ' · Fullt' : ''}
           </span>
+          {/* Stapel-fyllnaden GRÅ (Marcus-iterationen efter B-valet: "inte den
+              guldiga färgen") — text-muted-tonen; stapeln är dekor, texten bär. */}
           <div aria-hidden="true" className="h-1.5 rounded-full bg-surface">
-            <div className="h-full rounded-full bg-primary-muted" style={{ width: `${andel}%` }} />
+            <div className="h-full rounded-full bg-text-muted" style={{ width: `${andel}%` }} />
           </div>
         </div>
       ) : (
