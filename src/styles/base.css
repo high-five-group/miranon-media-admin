@@ -22,6 +22,15 @@ body {
   padding: 0;
 }
 
+/* Scrollbar-rännstenen reserveras ALLTID (scrollbar-gutter, Baseline 2024):
+   sidor med och utan scrollbar får samma innehållsbredd, så innehållet
+   hoppar inte vid sidbyte (S72-fyndet: Hem utan scrollbar ↔ listor med).
+   Overlay-scrollbars (macOS-default) tar ingen layoutplats och påverkas
+   inte — regeln är verkningslös där hoppet ändå inte finns. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: var(--p-font-sans);
   font-size: var(--p-text-base);
