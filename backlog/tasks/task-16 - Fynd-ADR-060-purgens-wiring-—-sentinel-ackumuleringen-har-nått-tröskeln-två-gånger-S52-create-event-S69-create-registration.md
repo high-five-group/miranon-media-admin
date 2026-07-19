@@ -6,8 +6,11 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-19 07:54'
-labels: []
+updated_date: '2026-07-19 10:26'
+labels:
+  - ready-for-agent
 dependencies: []
+priority: medium
 ordinal: 38000
 ---
 
@@ -22,6 +25,12 @@ EXAKT SYMPTOM: ADR-060 punkt 5:s interim ('bounded sentinel-ackumulering tolerer
 - [ ] #1 Purge-mekanismen implementerad per ADR-060 punkt 3–4 (setup-före-test, cred-skild från test-jobbet, markör-matchad) och skarp-bevisad mot staging
 - [ ] #2 ADR-060 uppdaterad (Updates-post: interim punkt 5 ersatt av wiringen) + CONTRIBUTING/runbok-not om mekanismen
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+KLASSAD ready-for-agent 2026-07-19 (S70; klassnings-akten = Marcus-ordern 'om den är redo för agent så klassar du den så' + Code-bedömning mot substrat-kontraktet: symptom dubbel-belagt med run-ids, förväntad form redan ADR-beslutad [060 p3–4], design-frågorna explicit inom utförar-ramen, AC verifierbara). Prioritet medium: blockerar ej idag (basen städad S69) — ~6-veckors-återackumuleringshorisonten (≈250 sentineler/månad) är deadline-signalen; nästa tröskel ≈ 2026-08-30. Vid utförande: EF-only-gränsen intakt (testet får ALDRIG token) — credential-placeringen är förstahands-designfrågan, STOPPA vid genuint arkitektur-val.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
