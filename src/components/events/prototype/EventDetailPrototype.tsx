@@ -69,7 +69,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K6 — viktningen · avdelare · Ändra-raden',
+    stegLabel: 'K7 — identiteten som sidhuvud (ur kortet)',
   },
 ];
 
@@ -317,17 +317,21 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
         {`Event ${eventName(event)} laddat.`}
       </p>
 
-      {/* K3: IDENTITETSKORTET (IMG_1542:s namn+personnummer-kort) — eget
-          tonalt kort utan grupprubrik, först under h1. K5 (Marcus):
-          eventnamnet EXAKT som basens eventnamn-fält + unika nyckeln
-          som pill (basens EventKey "Event-N" — FK-referensens
-          personnummer-roll; prefix-löst, värdet bär sig självt). */}
-      <section className="rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
+      {/* K7 (Marcus: identiteten ska läsas som LÅST kontext, inte fält):
+          identiteten UR kortet → SIDHUVUD på ren bakgrund (Polaris
+          Resource details layout: page header + titleMetadata-badge;
+          Eventmanagers egen h1 + avdelare; Stripe/Linear-klassen).
+          Kort = arbetsbara grupper (Ändra-rader); det som INTE ligger i
+          ett kort läses som kontext — placeringen ÄR lås-signalen,
+          inga lås-ikoner. Pillen (K5, basens EventKey) blir
+          titleMetadata; indraget px-4 = kortens inner-inset-linjering;
+          tunn avdelare under (Eventmanager-formen). */}
+      <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
         <h2 className="font-semibold text-2xl">{eventName(event)}</h2>
         {(event.eventKey || event.tidKvarTillEvent) && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {event.eventKey && (
-              <span className="rounded-full bg-surface px-2.5 py-0.5 font-medium text-caption text-text-secondary">
+              <span className="rounded-full bg-bg-muted px-2.5 py-0.5 font-medium text-caption text-text-secondary">
                 {event.eventKey}
               </span>
             )}
@@ -336,7 +340,7 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
             )}
           </div>
         )}
-      </section>
+      </header>
 
       <ProtoGrupp id="proto-grupp-om" rubrik="Om eventet">
         <dl className="divide-y divide-border">
