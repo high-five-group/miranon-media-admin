@@ -65,7 +65,6 @@ import {
   Group,
   Heading,
   I18nProvider,
-  Label,
   Popover,
   RangeCalendar,
 } from 'react-aria-components';
@@ -92,7 +91,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K11 — Ändra-läget: vita fält, dropdowns, datumväljaren',
+    stegLabel: 'K12 — sömlös morf: samma radgeometri i båda lägena',
   },
 ];
 
@@ -223,7 +222,9 @@ function AndraRad({ onPress }: { onPress?: () => void }) {
 type OmEventetVarden = Pick<ProtoEvent, 'typ' | 'ort' | 'startdatum' | 'slutdatum' | 'status'>;
 
 /** Datumfältet: RAC DateRangePicker — segmenterad inmatning (förifyllt
-    bestämt format per locale) + RangeCalendar i popover för start/slut. */
+    bestämt format per locale) + RangeCalendar i popover för start/slut.
+    K12: kompakt rad-form (min-h-8 == radgeometrin); etiketten bärs av
+    raden utanför → aria-label här. */
 function DatumFalt({
   value,
   onChange,
@@ -234,10 +235,14 @@ function DatumFalt({
   const segKlass =
     'rounded px-0.5 tabular-nums outline-none data-[focused]:bg-bg-emphasized data-[placeholder]:text-(color:--mm-input-text-placeholder)';
   return (
-    <DateRangePicker value={value} onChange={onChange} className="flex w-full flex-col gap-1">
-      <Label className="text-(color:--mm-input-label-text) text-small">Datum</Label>
-      <Group className="flex min-h-10 w-full items-center justify-between gap-2 rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 text-body">
-        <div className="flex flex-wrap items-center gap-1">
+    <DateRangePicker
+      aria-label="Datum"
+      value={value}
+      onChange={onChange}
+      className="flex flex-col gap-1"
+    >
+      <Group className="flex min-h-8 items-center justify-between gap-2 rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-2.5 text-small">
+        <div className="flex items-center gap-1">
           <DateInput slot="start" className="flex">
             {(seg) => <DateSegment segment={seg} className={segKlass} />}
           </DateInput>
@@ -250,9 +255,9 @@ function DatumFalt({
         </div>
         <AriaButton
           aria-label="Öppna kalendern"
-          className="flex size-8 shrink-0 items-center justify-center rounded-full"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full"
         >
-          <CalendarDays aria-hidden="true" size={18} />
+          <CalendarDays aria-hidden="true" size={16} />
         </AriaButton>
       </Group>
       <Popover className="rounded-2xl border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-4 shadow-lg">
@@ -287,7 +292,7 @@ function DatumFalt({
                 {(date) => (
                   <CalendarCell
                     date={date}
-                    className="flex size-9 items-center justify-center rounded-full text-small tabular-nums outline-none data-[outside-month]:text-text-muted data-[selected]:bg-bg-emphasized data-[selection-end]:bg-text data-[selection-start]:bg-text data-[selection-end]:text-text-inverse data-[selection-start]:text-text-inverse data-[disabled]:opacity-40"
+                    className="flex size-9 items-center justify-center rounded-full text-small tabular-nums outline-none data-[selected]:bg-bg-emphasized data-[selection-end]:bg-text data-[selection-start]:bg-text data-[outside-month]:text-text-muted data-[selection-end]:text-text-inverse data-[selection-start]:text-text-inverse data-[disabled]:opacity-40"
                   />
                 )}
               </CalendarGridBody>
@@ -311,6 +316,22 @@ function tillDatumRange(e: ProtoEvent): { start: CalendarDate; end: CalendarDate
   }
 }
 
+/** K12: redigeringsRAD med EXAKT visningsradens geometri — py-2 + 32 px
+    fält == py-3 + 24 px textrad == 48 px. Etiketten står kvar på samma
+    plats (samma klass som FkRad); värde-slotten byter text → vitt fält
+    i samma låda (Stripe/Linear-klassens geometri-bevarade inline-morf). */
+function RedigeringsRad({ term, children }: { term: string; children: React.ReactNode }) {
+  // Bredds-taket bor på respektive fält (max-w-56), inte på slotten —
+  // datumfältet behöver full radbredd för att aldrig radbrytas (K12-mätningen:
+  // wrap gav 65 px-rad och 16 px-hopp).
+  return (
+    <div className="flex items-center justify-between gap-4 py-2">
+      <dt className="shrink-0 text-small text-text-muted">{term}</dt>
+      <dd className="flex flex-1 justify-end">{children}</dd>
+    </div>
+  );
+}
+
 function OmEventetForm({
   event,
   onSpara,
@@ -325,32 +346,59 @@ function OmEventetForm({
   const [status, setStatus] = useState<string | null>(event.status);
   const [datum, setDatum] = useState(() => tillDatumRange(event));
   return (
-    <div className="flex flex-col gap-4 py-4">
-      <Select
-        label="Typ"
-        placeholder="Välj typ"
-        selectedKey={typ}
-        onSelectionChange={(k) => setTyp(k == null ? null : String(k))}
-      >
-        <SelectItem id="Utbildning">Utbildning</SelectItem>
-        <SelectItem id="Föreläsning">Föreläsning</SelectItem>
-      </Select>
-      <Input label="Ort" placeholder="Ort" value={ort} onChange={setOrt} />
-      <DatumFalt value={datum} onChange={setDatum} />
-      <Select
-        label="Status"
-        placeholder="Välj status"
-        selectedKey={status}
-        onSelectionChange={(k) => setStatus(k == null ? null : String(k))}
-      >
-        {Object.values(EventStatus).map((s) => (
-          <SelectItem key={s} id={s}>
-            {s}
-          </SelectItem>
-        ))}
-      </Select>
-      <div className="flex items-center gap-2 pt-1">
+    <>
+      <dl className="divide-y divide-border">
+        <RedigeringsRad term="Typ">
+          <Select
+            label="Typ"
+            hideLabel
+            size="sm"
+            placeholder="Välj typ"
+            selectedKey={typ}
+            onSelectionChange={(k) => setTyp(k == null ? null : String(k))}
+            className="max-w-56"
+          >
+            <SelectItem id="Utbildning">Utbildning</SelectItem>
+            <SelectItem id="Föreläsning">Föreläsning</SelectItem>
+          </Select>
+        </RedigeringsRad>
+        <RedigeringsRad term="Ort">
+          <Input
+            label="Ort"
+            hideLabel
+            size="sm"
+            placeholder="Ort"
+            value={ort}
+            onChange={setOrt}
+            className="max-w-56"
+          />
+        </RedigeringsRad>
+        <RedigeringsRad term="Datum">
+          <DatumFalt value={datum} onChange={setDatum} />
+        </RedigeringsRad>
+        <RedigeringsRad term="Status">
+          <Select
+            label="Status"
+            hideLabel
+            size="sm"
+            placeholder="Välj status"
+            selectedKey={status}
+            onSelectionChange={(k) => setStatus(k == null ? null : String(k))}
+            className="max-w-56"
+          >
+            {Object.values(EventStatus).map((s) => (
+              <SelectItem key={s} id={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </Select>
+        </RedigeringsRad>
+      </dl>
+      {/* Spara/Avbryt ersätter Ändra-raden PÅ SAMMA PLATS och höjd
+          (py-2 + 32 px-knappar == Ändra-radens 48 px). */}
+      <div className="flex items-center justify-center gap-2 py-2">
         <Button
+          size="sm"
           intent="primary"
           onPress={() =>
             onSpara({
@@ -364,11 +412,11 @@ function OmEventetForm({
         >
           Spara
         </Button>
-        <Button intent="secondary" onPress={onAvbryt}>
+        <Button size="sm" intent="secondary" onPress={onAvbryt}>
           Avbryt
         </Button>
       </div>
-    </div>
+    </>
   );
 }
 
