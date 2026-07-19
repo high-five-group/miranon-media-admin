@@ -47,6 +47,23 @@
   IMG_1590–1598, `3a3887d`) · ORDLISTA **Period** (`f4b406a`) ·
   ingen ny ADR (allt under baren; 73==73). **NÄSTA:
   konvergens-passet i browsern → låst facit → PRD + skivor.**
+- [x] **KONVERGENSEN TILL FACIT — hela event-listans yta låst**
+  (2026-07-19, Del 3 kanonisk plats; bilagan
+  `s72-event-lista-konvergens/` = facit-kanon): T66-instans 3,
+  K1–K14. Variant B vann divergensen (Marcus-val) → **Steg 2**
+  slot-modellen (likformiga kort, badge-formen prövad-och-riven,
+  semantisk status-slot, Fullbokat-kontur, Inställt dimmat, bor
+  över-raden [FÄLTET FINNS EJ I BASEN — PRD-krav]) → **Steg 3**
+  kalendervyn (RAC-motorn + FK-skinnet, vy-ikon-toggeln, solida
+  kursfärgs-tiles == legenden, månadssummeringen) → **FACIT**
+  (Marcus: "vi låser hela event-listans yta"). SKARPT vid sidan:
+  scrollbar-formen `5f93c9a`→`efeb288` (lg-scopad stable
+  both-edges + thin-tumme; 2 CI-röda = facit-testernas förtjänst,
+  röd→grön + full svit före läkning) · **T78** född
+  (PrototypeSwitcher-standardiseringen) · 4 röda main-commits
+  öppet bokförda och läkta · lesson-kandidater i Del 3.
+  **NÄSTA: session-end → S73 tar EVENTSIDAN (detaljvyn,
+  Marcus-deklarerad); öppen punkt: list-PRD:ts födelsetidpunkt.**
 
 ### Session 71 ✅ AVSLUTAD (2026-07-19) — TASK-16: ADR-060-purgens wiring skarp i drift (22+288 raderade · kortet Done · L288–L289)
 

@@ -58,4 +58,22 @@ B:s håll.
   kursfärgerna behöver semantiska tokens · RAC Calendar = ny
   biblioteks-yta (minimaltest gjord i prototypen, bevisad).
 
-Facit-skärmdumpen för HELHETEN landar här när Marcus deklarerar facit.
+## FACIT — deklarerat 2026-07-19
+
+Marcus: **"Facit, vi låser hela event-listans yta."** Skärmdumpar:
+`FACIT-listvyn.png` + `FACIT-kalendervyn.png` (demo-data, 390×844).
+Helheten = vy-ikon-toggeln (lista förvald) · period-toggeln ·
+månadsgrupper · B-kortens slot-modell (Steg 2) · kalendervyn med
+kursfärger + månadssummering (Steg 3) · strukturerat text-tomläge ·
+`?period`-kontraktet. Skarpt byggda i sessionen (utanför prototypen):
+scrollbar-formen (`efeb288`: lg-scopad `stable both-edges` + diskret
+thin-tumme, `--mm-scrollbar-thumb`).
+
+Prototypens lifecycle (throwaway-kontraktets klausul v, öppet
+triageat): prototypen BEHÅLLS aktiv över sessionsgränsen som
+konvergens-substrat för resten av event-familjen — S73 tar
+EVENTSIDAN (detaljvyn, Marcus-deklarerad riktning) och ärver
+mönsterbesluten. List-PRD:ts födelsetidpunkt är ÖPPEN (S73-start
+eller efter familje-konvergensen — Marcus-val i S73). Riven blir
+prototypen först vid skarpa byggets start (klausul iv oförändrad:
+NYSKRIVEN implementation, koden absorberas aldrig).
