@@ -46,6 +46,16 @@
   29657524469 full svit på samma fil-klass. Tvåstegs-stängning med
   asynkron vakt ×2. **NÄSTA: TASK-14 kall-morgon-mätningen
   (morgonen).**
+- [x] **TASK-14-MÄTNINGEN + KLASSNINGEN** (2026-07-19, Del 3 kanonisk
+  plats): kall morgon (09:35, ~9 h vila) filtrerad 32,7/31,6/31,9 s
+  vs ofiltrerad ~1,6 s ⇒ **transient FALSIFIERAD**; mekanismen
+  belagd: batch=2-secreten (S26) × N=357 på fixtur-eventet
+  (juli-kohorten 250 = test-ackumulering, TASK-2-klassen) ×
+  sekventiell chunk-loop × EU-RTT (`x-sb-edge-region: eu-central-1`,
+  ~177 ms/anrop ×180) ≈ 32 s; CI-grön/lokal-röd = US-runner-RTT.
+  Timeout-höjning + EF-parallellisering avförda med motiv.
+  **Åtgärdsvalet eskalerat (STOPPA): A test-immunisering ·
+  B städning med läck-forensik. Kortet In Progress tills vägval.**
 
 ### Session 68 ✅ AVSLUTAD (2026-07-18) — Arbetssätts-paketet: asynkron CI-vakt (R1) + dependabot ur staging-mutexen (R2) + TASK-14-prioriteringen (R3) + PR-parkeringen + hub-syncen L267–L283
 
