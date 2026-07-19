@@ -651,22 +651,37 @@ export function EventsListPrototype() {
     </div>
   );
 
-  // K9: vy-växlaren — Marcus-placeringen "till höger nedanför
-  // Kommande/Tidigare"; ikon + klartext (Gunilla: ikonen ensam är gissning).
+  // K10 (Marcus-omstyrning av K9-knappen): vy-växlaren är en kompakt
+  // IKON-TOGGLE i samma kapsel-grammatik som period-toggeln, placerad ÖVER
+  // den, förvald på lista. Samma fasta position i båda lägena → sömlös
+  // växling (inget hoppar). Ikonerna bär synligt; aria-label bär semantiken.
+  const vyKnapp = (aktiv: boolean) =>
+    aktiv
+      ? 'flex items-center justify-center rounded-full bg-bg px-3.5 py-2 text-text shadow-sm'
+      : 'flex items-center justify-center rounded-full px-3.5 py-2 text-text-secondary';
   const vyRad = (
     <div className="flex justify-end">
-      <button
-        type="button"
-        onClick={() => setVy(kalenderLage ? null : 'kalender')}
-        className="flex items-center gap-1.5 rounded-full bg-bg-muted px-3 py-1.5 font-medium text-small text-text-secondary"
-      >
-        {kalenderLage ? (
-          <List aria-hidden="true" size={16} />
-        ) : (
-          <CalendarDays aria-hidden="true" size={16} />
-        )}
-        {kalenderLage ? 'Visa som lista' : 'Visa som kalender'}
-      </button>
+      <fieldset className="inline-flex rounded-full bg-bg-muted p-1">
+        <legend className="sr-only">Visningsläge</legend>
+        <button
+          type="button"
+          aria-pressed={!kalenderLage}
+          aria-label="Listvy"
+          onClick={() => setVy(null)}
+          className={vyKnapp(!kalenderLage)}
+        >
+          <List aria-hidden="true" size={18} />
+        </button>
+        <button
+          type="button"
+          aria-pressed={kalenderLage}
+          aria-label="Kalendervy"
+          onClick={() => setVy('kalender')}
+          className={vyKnapp(kalenderLage)}
+        >
+          <CalendarDays aria-hidden="true" size={18} />
+        </button>
+      </fieldset>
     </div>
   );
 
@@ -722,9 +737,10 @@ export function EventsListPrototype() {
   return (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
       <h1 className="font-semibold text-3xl">Event</h1>
-      {/* K9: i kalenderläget ERSÄTTER månadsnavet period-toggeln. */}
-      {kalenderLage ? null : toggle}
+      {/* K10: vy-toggeln ÖVER period-toggeln, fast position i båda lägena;
+          i kalenderläget ERSÄTTER månadsnavet period-toggeln. */}
       {vyRad}
+      {kalenderLage ? null : toggle}
       {body}
     </section>
   );
