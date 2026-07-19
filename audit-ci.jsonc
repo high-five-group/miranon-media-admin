@@ -18,13 +18,12 @@
   // "Missing binary integrity verification in Deno module enables RCE via
   // NPM_CONFIG_REGISTRY". Allowlistad 2026-06-13 per ADR-028 Konvention-flöde,
   // Marcus-beslut alternativ C (Session 17 STOPPA-svar; beslutstrail
-  // tasks/sessions/2026-06-13-session-17.md). Motivering, disk-verifierad i
-  // C1-kontrollgrind: (1) dev-only — esbuild@0.27.7 nås enbart transitivt via
-  // vite@8 (devDependency) + tsx, ingår inte i produktions-bundlen; (2) vektorn
-  // gäller esbuilds Deno-modul med manipulerad NPM_CONFIG_REGISTRY vid
-  // binär-nedladdning — repots Deno-sida (supabase/functions) använder inte
-  // esbuild och npm-installen är lockfil-pinnad; (3) tidsbegränsad:
-  // EXPIRY 2026-07-13 — posten RIVS när vite/tsx bumpar esbuild >= 0.28.1
-  // (riv-todo i tasks/todo.md; bevaka dependabot-PR:ar för vite/tsx).
-  "allowlist": ["GHSA-gv7w-rqvm-qjhr"]
+  // tasks/sessions/2026-06-13-session-17.md). RIVEN 2026-07-19 (S70
+  // dependabot-passet): sluttillståndet nått STARKARE än riv-villkoret
+  // "esbuild >= 0.28.1" — esbuild är HELT ute ur trädet (`npm ls esbuild`
+  // tomt; vite 8-erans deps-bumpar drog beroendet). Verifierat: npm audit
+  // 0 träffar på advisoryn; audit-ci:s egen varning "Consider not
+  // allowlisting" observerad sedan S68. Session 17-riv-todon bockad i
+  // tasks/todo.md i samma commit.
+  "allowlist": []
 }

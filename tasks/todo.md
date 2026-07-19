@@ -1927,10 +1927,12 @@ korrigeringsnoten; prövas mot L26/L230 i S51:s skörd).
 
 ### Öppna trådar från Session 17
 
-- [ ] **Riv allowlist-posten GHSA-gv7w-rqvm-qjhr** när esbuild ≥ 0.28.1 nås via
-  vite/tsx-bump. Verifierbart sluttillstånd: `npm ls esbuild` visar ≥ 0.28.1
-  OCH posten borttagen ur `audit-ci.jsonc` + CI grön. Expiry i posten:
-  2026-07-13 — bevaka dependabot-PR:ar för vite/tsx.
+- [x] **Riv allowlist-posten GHSA-gv7w-rqvm-qjhr** ✅ (2026-07-19, S70
+  dependabot-passet): sluttillståndet nått STARKARE än villkoret —
+  esbuild HELT ute ur trädet (`npm ls esbuild` tomt; vite 8-erans
+  deps-bumpar drog beroendet), npm audit 0 träffar; posten riven ur
+  `audit-ci.jsonc` (historik-kommentar kvar per K0åh-formen) + audit-ci
+  lokalt PASSED utan varning. [S70]
 - [ ] **Hub-ärende (Marcus STOPPA-val A, Session 17):** marcus-system har två
   ospårade kataloger (`odoo-events-transcripts-openai/`,
   `youtube-transcripts/`) — granska + besluta committa/flytta/ignorera i en
