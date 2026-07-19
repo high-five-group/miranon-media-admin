@@ -2768,6 +2768,20 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 72 — Event-listan: grillad samsyn → konvergens till FACIT (variant B, K1–K14) + skarpa skal-fixar + T78 (2026-07-19)
+
+**Commit-range:** `18fad51` (sessionsdok-födelse) → `84e1a6a` (FACIT-landningen), 26 commits, samtliga CI-gröna per jobb utom fyra öppet bokförda röda under scrollbar-sagan (läkta `efeb288`). **Mål:** hela kedjan på event-vyn, listan först (Marcus-kvitterad S71-riktning). Ej byggplan-fas — design-/konvergenssession; skarpt bygge sker via PRD + skivor (S73+).
+
+- **Grillningen (Del 2):** 8 Marcus-låsta beslut — hela familjen som mål/listan först · grund-arvet (allt ärvbart ärvs) · pill-toggle [Kommande|Tidigare] ersätter båda Selecterna · månadsgrupprubriker · 3-raders kort-anatomi · statusbadge endast vid avvikelse (**T14 reconcilierad**; ORDLISTA-posten **Period**, `f4b406a`) · strukturerat text-tomläge · arkitektursnittet (pill-toggle = primitiv; EventCard vy-lokal; `?period` ersätter `?status`+`?sort`). FK-referensen +9 bilder (vab-wizardserien IMG_1590–1598, `3a3887d`).
+- **Konvergensen (Del 3; T66-instans 3, prototype-skillen; facit-kanon = bilagan `s72-event-lista-konvergens/`):** K1 baslinje → Marcus-divergens A/B → **B vann** (Hem-kortets grammatik) → **Steg 2** slot-modellen (likformiga kort, badge-formen prövad-och-riven, semantisk status-slot, Fullbokat = grön kontur, Inställt = dimmat + genomstruket, "bor över"-raden) → **Steg 3** kalendervyn (RAC Calendar-motorn + FK-skinnet; vy-ikon-toggeln; solida kursfärgs-tiles == legenden; månadssummeringen) → **FACIT** ("vi låser hela event-listans yta"). Variant/steg-identitetsmodellen etablerad (Marcus-modellen, K4). Prototypen DEV-grindad på `/event?variant=…`, demo-data default; lifecycle över sessionsgränsen öppet triageat (klausul v: konvergens-substrat för familjen).
+- **Skarpa leveranser:** scrollbar-formen `5f93c9a`→`8cc25ea`→`efeb288` (lg-scopad `stable both-edges` + diskret thin-tumme, ny token `--mm-scrollbar-thumb`; 2 CI-röda = facit-testernas förtjänst, röd→grön + full e2e-svit [156 passed] före läkning) · **T78 född** (PrototypeSwitcher-standardiseringen; hub-delen egen landning per T66-precedentet, buntas med hub-lyftet).
+- **Avvikelser (öppet bokförda):** 4 röda main-commits (scrollbar-sagan) · L280-återfall ×2 · kort-SHA-vakten (evig tystnad, Marcus-knuff) · stale dev-server på 5173 (L275/L282-klassen bekräftad i drift). PRD-krav avtäckt: **"bor över"-antalet FINNS EJ i basen** (additivt fält per ADR-063 + EF-/modell-utökning).
+- **Numrering:** ingen ny ADR (allt under baren; 73==73, nästa 074) · lessons **L290–L291** [UNIVERSAL] (vaktens fråga bevisas besvarbar före armering [skärper L286/L289] · grind-förkontroll = grindens HELA form [instansierar L289 på svit-nivå]) · fälla 45 · tråd **T79** (T78 född S72) · nästa lesson L292.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-19-session-72.md`](../tasks/sessions/2026-07-19-session-72.md) (Del 1–4) + bilagan [`tasks/sessions/bilagor/s72-event-lista-konvergens/`](../tasks/sessions/bilagor/s72-event-lista-konvergens/). **EJ fas-avslut.** Kvar efter S72: **S73 = EVENTSIDAN (detaljvyn `/event/$eventId`)**, Marcus-deklarerad; öppen punkt list-PRD:ts födelsetidpunkt · hub-lyftet L284–L291 vid nästa hub-beröring · T78 · Marcus-moment: Update-klicket i claude.ai.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

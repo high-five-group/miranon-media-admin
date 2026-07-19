@@ -4123,3 +4123,41 @@ avvikelsen. Bästa formen: kör mekanismens egen kod i dry-run-läge mot
 verklig data (planen utan verkan) i stället för att återimplementera
 frågan för hand — varje handbyggd spegling av ett predikat är en
 divergensyta.
+
+### L290 [UNIVERSAL] — En vakts fråga måste BEVISAS besvarbar innan den armeras — en obesvarbar fråga ger evig tystnad, oskiljbar från "kör fortfarande"
+
+Datum: 2026-07-19 | Källa: S72 (bakgrundsvakten pollade `gh run list
+--commit <kort-SHA>` — GitHubs filter kräver FULL SHA och svarar tomt
+för evigt på kort form; until-loopen kunde aldrig fyra, runen var grön
+sedan länge, och Marcus fick knuffa: "Notisen borde ha kommit") (klass:
+verifikations-disciplin)
+
+En vakt är bara ett skal runt en fråga — kan frågan aldrig matcha sitt
+mål är vakten strukturellt blind, och dess tystnad ser identisk ut som
+"inget har hänt än". Innan en vakt armeras måste dess fråga bevisas
+kunna träffa: kör frågan EN gång förhand mot ett känt existerande mål
+(eller efter målets förväntade uppdykande) och kräv träff innan loopen
+får äga väntandet. Skärper L286 (vaktens identitet = commit ×
+workflow) med ett steg FÖRE: identiteten måste vara STÄLLBAR i
+API:ets faktiska frågespråk. Samma rot som L289 — frågan som ställs
+måste vara mekanismens verkliga fråga — här i vakt-skepnad: en fråga
+som aldrig KAN besvaras är den yttersta smalare-frågan.
+
+### L291 [UNIVERSAL] — Lokal förkontroll av en CI-grind måste köra grindens HELA form — det kända röda testet bevisar bara det kända
+
+Datum: 2026-07-19 | Källa: S72 (scrollbar-sagan: `stable` fällde
+hem-e2e:ns centrerings-lås i CI → fixen `both-edges` röd→grön-bevisades
+lokalt mot EXAKT det fällda testet → pushen föll på ETT ANNAT
+computed-lås [mer-e2e:ns absoluta 16 px-mobilmått] som both-edges bröt;
+först full svit-körning i CI:ns form — `npm run test:e2e:staging`, 156
+passed — avslöjade hela ytan och gav den hållbara formen [lg-scopad
+gutter]) (klass: verifikations-disciplin)
+
+Ett globalt ingrepp (skal-CSS, delad config, gemensam token) har en
+påverkans-yta som inte begränsas av det test som råkade fälla det
+först. Röd→grön på det KÄNDA testet bevisar den kända regressionen —
+inte frånvaron av okända. Förkontrollen före läknings-push är grindens
+HELA form i CI:ns exakta åkallan (jfr L279: verktygets default är ett
+icke-bevis), med kända lokala flakes klassade via isolation-körning
+innan de avfärdas. Instansierar L289:s princip på grind-nivån: sviten
+ÄR vaktens faktiska fråga; enskilda tester är handplockade delmängder.

@@ -64,6 +64,15 @@
   öppet bokförda och läkta · lesson-kandidater i Del 3.
   **NÄSTA: session-end → S73 tar EVENTSIDAN (detaljvyn,
   Marcus-deklarerad); öppen punkt: list-PRD:ts födelsetidpunkt.**
+- [x] **END-PASSET KÖRT — coverage i STOPPA** (2026-07-19, Del 4
+  kanonisk plats): skörd **L290–L291** [UNIVERSAL] (vaktens fråga
+  bevisas besvarbar före armering · grind-förkontroll = grindens HELA
+  form) + 4 kandidater förkastade med motiv · BUILD-LOG S72-post ·
+  transcript-ref wc-verifierad (20 185 034 byte/1 773 rader; 26
+  commits `18fad51`→`84e1a6a`) · numrering: ADR 074 · L292 · fälla
+  45 · T79 · intentions-grind PASSERAD (nästa = NY session S73:
+  eventsidan). Hub-lyftet L284–L291 buntas till nästa hub-beröring.
+  Coverage-rapporten i STOPPA; lifecycle-flip väntar Marcus-kvittens.
 
 ### Session 71 ✅ AVSLUTAD (2026-07-19) — TASK-16: ADR-060-purgens wiring skarp i drift (22+288 raderade · kortet Done · L288–L289)
 
