@@ -1,9 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useQueryState } from 'nuqs';
+import { PrototypeSwitcher } from '@/components/dev/PrototypeSwitcher';
 import { EventsList } from '@/components/events';
 import {
   EventsListPrototype,
-  EventsPrototypeSwitcher,
+  LIST_PROTO_VARIANTS,
 } from '@/components/events/prototype/EventsListPrototype';
 
 export const Route = createFileRoute('/_authenticated/event/')({
@@ -19,7 +20,11 @@ export const Route = createFileRoute('/_authenticated/event/')({
 // [PROTOTYPE] S72 konvergens-pass (T66 fas 2, underform A): `?variant=K`
 // renderar EventsListPrototype i stället — ENDAST i dev (ADR-044-mekaniken
 // på komponentnivå; produktionen ser aldrig växlaren eller prototypen).
-// Rivs vid svar-fångsten (throwaway-kontraktet klausul iv).
+// Rivs vid svar-fångsten (throwaway-kontraktet klausul iv; klausul v S72:
+// behålls som familje-substrat tills skarpt bygge). Växlaren är delade
+// dev-komponenten (T78a, S73); K→A är legacy-aliaset från K1–K3-passen.
+const switcher = <PrototypeSwitcher variants={LIST_PROTO_VARIANTS} aliases={{ K: 'A' }} />;
+
 function EventPage() {
   const [variant] = useQueryState('variant');
   // Variant A = grillade strukturen · B = Hem-kortets grammatik (divergens-
@@ -32,7 +37,7 @@ function EventPage() {
     return (
       <>
         <EventsListPrototype />
-        <EventsPrototypeSwitcher />
+        {switcher}
       </>
     );
   }
@@ -40,7 +45,7 @@ function EventPage() {
     <section className="flex flex-col gap-4 p-4">
       <h1>Event</h1>
       <EventsList />
-      {import.meta.env.DEV ? <EventsPrototypeSwitcher /> : null}
+      {import.meta.env.DEV ? switcher : null}
     </section>
   );
 }

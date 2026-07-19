@@ -44,6 +44,7 @@ import {
   Heading,
   I18nProvider,
 } from 'react-aria-components';
+import type { PrototypeVariant } from '@/components/dev/PrototypeSwitcher';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { useDataSource } from '@/data/useDataSource';
@@ -176,9 +177,12 @@ function VariantACard({ e }: { e: Event }) {
   return (
     <li className="relative flex flex-col gap-1 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
       <div className="flex items-start justify-between gap-3">
+        {/* search-genomslaget: variant/data följer med in i detalj-prototypen
+            (familje-flödet) — ren URL-plumbing, ytan oförändrad (facit intakt). */}
         <Link
           to="/event/$eventId"
           params={{ eventId: e.id }}
+          search={(prev) => prev}
           className="font-semibold text-body after:absolute after:inset-0"
         >
           {eventName(e)}
@@ -255,9 +259,12 @@ function VariantBCard({
       ) : null}
       <div className="flex flex-col gap-1 text-small">
         {/* Rubriken reserverar ALLTID 2 rader + pill-frizonen (likformighet). */}
+        {/* search-genomslaget: variant/data följer med in i detalj-prototypen
+            (familje-flödet) — ren URL-plumbing, ytan oförändrad (facit intakt). */}
         <Link
           to="/event/$eventId"
           params={{ eventId: e.id }}
+          search={(prev) => prev}
           className={`line-clamp-2 min-h-[2lh] pr-24 font-semibold text-body after:absolute after:inset-0 ${
             installt ? 'line-through' : ''
           }`}
@@ -307,7 +314,7 @@ function VariantBCard({
  * PRD-post + additivt bas-fält (ADR-063-leverabeln) + EF-/modell-utökning.
  * Verklig data saknar fältet → raden döljs.
  */
-type ProtoEvent = Event & { boverAntal?: number };
+export type ProtoEvent = Event & { boverAntal?: number };
 
 function demoEvent(overrides: Partial<ProtoEvent> & Pick<Event, 'id'>): ProtoEvent {
   return {
@@ -349,10 +356,13 @@ function freLorOmVeckor(veckor: number): { start: string; end: string } {
   return { start, end: lordag.toISOString().slice(0, 10) };
 }
 
-const DEMO_EVENTS: ProtoEvent[] = [
+// Exporterad: familje-substratets gemensamma demo-data — detalj-prototypen
+// (EventDetailPrototype) slår upp samma event per id (lista→detalj-flödet).
+export const DEMO_EVENTS: ProtoEvent[] = [
   demoEvent({
     id: 'demo-1',
     eventNamn: 'RIM 1 — Resor i medvetandet',
+    typ: 'Utbildning',
     ort: 'Skövde',
     ...(() => {
       const v = freLorOmVeckor(1);
@@ -368,6 +378,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
   demoEvent({
     id: 'demo-2',
     eventNamn: 'Fjärrskådning grundkurs',
+    typ: 'Utbildning',
     ort: 'Stockholm',
     ...(() => {
       const v = freLorOmVeckor(3);
@@ -383,6 +394,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
   demoEvent({
     id: 'demo-3',
     eventNamn: 'RIM 2 — Fördjupning',
+    typ: 'Utbildning',
     ort: 'Skövde',
     ...(() => {
       const v = freLorOmVeckor(6);
@@ -398,6 +410,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
   demoEvent({
     id: 'demo-9',
     eventNamn: 'RIM 3 — Mästarnivå',
+    typ: 'Utbildning',
     ort: 'Skövde',
     ...(() => {
       const v = freLorOmVeckor(8);
@@ -413,6 +426,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
   demoEvent({
     id: 'demo-4',
     eventNamn: 'Föreläsning: Medveten kontakt',
+    typ: 'Föreläsning',
     ort: 'Göteborg',
     startdatum: isoDaysFromNow(70),
     antalAnmalda: 34,
@@ -422,6 +436,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
   demoEvent({
     id: 'demo-5',
     eventNamn: 'Psionautics intro',
+    typ: 'Utbildning',
     ort: 'Skövde',
     startdatum: isoDaysFromNow(75),
     maxPlatser: 16,
@@ -434,6 +449,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
   demoEvent({
     id: 'demo-6',
     eventNamn: 'RIM 1 — Resor i medvetandet',
+    typ: 'Utbildning',
     ort: 'Skövde',
     ...(() => {
       const v = freLorOmVeckor(-1);
@@ -449,6 +465,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
   demoEvent({
     id: 'demo-7',
     eventNamn: 'Föreläsning: Fjärrskådning',
+    typ: 'Föreläsning',
     ort: 'Stockholm',
     startdatum: isoDaysFromNow(-40),
     antalAnmalda: 58,
@@ -458,6 +475,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
   demoEvent({
     id: 'demo-8',
     eventNamn: 'RIM 2 — Fördjupning',
+    typ: 'Utbildning',
     ort: 'Skövde',
     ...(() => {
       const v = freLorOmVeckor(-10);
@@ -893,85 +911,10 @@ export function EventsListPrototype() {
  * Bygg-commits (K1–K4) är INTE steg — designen flyttar sig bara på
  * Marcus-beslut.
  */
-const PROTO_VARIANTS = {
-  A: { steg: 1, stegLabel: 'grillade baslinjen · FK-raden' },
-  B: { steg: 3, stegLabel: 'FACIT — hela ytan låst 2026-07-19' },
-} as const;
-
-/**
- * [PROTOTYPE] Flytande variant-växlare (skillens steg 4) — DEV-only via
- * routens grind; visuellt skild från designen som utvärderas (mörk panel).
- * K3-omgjord efter Marcus-feedback ("oklar och otydlig"): klartext-etiketter
- * i chip-form — aktivt val är FYLLT vitt chip, inaktivt är kantat och
- * klickbart; data-valet syns bara i prototyp-läget. K4: identitets-raden
- * (variant + steg) alltid synlig i prototyp-läget. K5: variant-chips A/B
- * (divergens-beslutet).
- */
-export function EventsPrototypeSwitcher() {
-  const [variant, setVariant] = useQueryState('variant');
-  const [dataMode, setDataMode] = useQueryState('data');
-  const activeVariant: 'A' | 'B' | null =
-    variant === 'B' ? 'B' : variant === 'A' || variant === 'K' ? 'A' : null; // 'K' = legacy-URL:en
-  const isProto = activeVariant != null;
-  const chip = (active: boolean) =>
-    active
-      ? 'rounded-full bg-bg px-3 py-1.5 font-semibold text-small text-text'
-      : 'rounded-full border border-border-strong px-3 py-1.5 text-small text-text-inverse';
-  return (
-    <div className="fixed bottom-24 left-1/2 z-50 flex w-max max-w-[92vw] -translate-x-1/2 flex-col items-center gap-2 rounded-2xl bg-text px-4 py-3 text-text-inverse shadow-lg">
-      <span className="font-mono text-caption tracking-wide">PROTOTYP-VÄXLAREN · dev-verktyg</span>
-      {activeVariant && (
-        <span className="font-semibold text-small">
-          Variant {activeVariant} · Steg {PROTO_VARIANTS[activeVariant].steg} —{' '}
-          {PROTO_VARIANTS[activeVariant].stegLabel}
-        </span>
-      )}
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={() => setVariant(null)}
-          aria-pressed={!isProto}
-          className={chip(!isProto)}
-        >
-          Skarpa vyn
-        </button>
-        <button
-          type="button"
-          onClick={() => setVariant('A')}
-          aria-pressed={activeVariant === 'A'}
-          className={chip(activeVariant === 'A')}
-        >
-          Variant A
-        </button>
-        <button
-          type="button"
-          onClick={() => setVariant('B')}
-          aria-pressed={activeVariant === 'B'}
-          className={chip(activeVariant === 'B')}
-        >
-          Variant B
-        </button>
-      </div>
-      {isProto && (
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => setDataMode(null)}
-            aria-pressed={dataMode !== 'verklig'}
-            className={chip(dataMode !== 'verklig')}
-          >
-            Demo-data
-          </button>
-          <button
-            type="button"
-            onClick={() => setDataMode('verklig')}
-            aria-pressed={dataMode === 'verklig'}
-            className={chip(dataMode === 'verklig')}
-          >
-            Verklig data
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+export const LIST_PROTO_VARIANTS: PrototypeVariant[] = [
+  { key: 'A', label: 'Variant A', steg: 1, stegLabel: 'grillade baslinjen · FK-raden' },
+  { key: 'B', label: 'Variant B', steg: 3, stegLabel: 'FACIT — hela ytan låst 2026-07-19' },
+];
+// Växlaren själv är T78a-lyft till delade dev-komponenten
+// (`@/components/dev/PrototypeSwitcher`); routen monterar den med konfigen
+// ovan + legacy-aliaset K→A (K1–K3-URL:erna).
