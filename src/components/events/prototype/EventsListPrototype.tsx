@@ -656,9 +656,11 @@ function EventsCalendarPrototype({
                       params={{ eventId: e.id }}
                       className="flex items-center gap-2.5 py-2.5"
                     >
+                      {/* K14: vertikalt kursfärgs-streck (Google-agendans
+                          mönster) — prick i BÅDE rad och legend var dubbelt. */}
                       <span
                         aria-hidden="true"
-                        className={`size-2.5 shrink-0 rounded-full ${KURS_INFO[kursTyp(e)].farg}`}
+                        className={`w-1 shrink-0 self-stretch rounded-full ${KURS_INFO[kursTyp(e)].farg}`}
                       />
                       <span className="min-w-0">
                         <span className="block truncate font-medium text-small">
