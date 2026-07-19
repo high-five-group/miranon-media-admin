@@ -91,7 +91,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K12 — sömlös morf: samma radgeometri i båda lägena',
+    stegLabel: 'K13 — likbredda fält + nuvarande värde synligt',
   },
 ];
 
@@ -233,15 +233,15 @@ function DatumFalt({
   onChange: (v: { start: CalendarDate; end: CalendarDate } | null) => void;
 }) {
   const segKlass =
-    'rounded px-0.5 tabular-nums outline-none data-[focused]:bg-bg-emphasized data-[placeholder]:text-(color:--mm-input-text-placeholder)';
+    'rounded tabular-nums outline-none data-[focused]:bg-bg-emphasized data-[placeholder]:text-(color:--mm-input-text-placeholder)';
   return (
     <DateRangePicker
       aria-label="Datum"
       value={value}
       onChange={onChange}
-      className="flex flex-col gap-1"
+      className="flex w-full flex-col gap-1"
     >
-      <Group className="flex min-h-8 items-center justify-between gap-2 rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-2.5 text-small">
+      <Group className="flex min-h-8 w-full items-center justify-between gap-1 rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-2 text-small">
         <div className="flex items-center gap-1">
           <DateInput slot="start" className="flex">
             {(seg) => <DateSegment segment={seg} className={segKlass} />}
@@ -320,14 +320,27 @@ function tillDatumRange(e: ProtoEvent): { start: CalendarDate; end: CalendarDate
     fält == py-3 + 24 px textrad == 48 px. Etiketten står kvar på samma
     plats (samma klass som FkRad); värde-slotten byter text → vitt fält
     i samma låda (Stripe/Linear-klassens geometri-bevarade inline-morf). */
-function RedigeringsRad({ term, children }: { term: string; children: React.ReactNode }) {
-  // Bredds-taket bor på respektive fält (max-w-56), inte på slotten —
-  // datumfältet behöver full radbredd för att aldrig radbrytas (K12-mätningen:
-  // wrap gav 65 px-rad och 16 px-hopp).
+function RedigeringsRad({
+  term,
+  nuvarande,
+  children,
+}: {
+  term: string;
+  /** K13 (Marcus): nuvarande värdet synligt VÄNSTER om fältet genom hela
+      ändringen — "så man ser vad man ändrar från". */
+  nuvarande?: string | null;
+  children: React.ReactNode;
+}) {
+  // K13: ALLA fält exakt samma bredd — fasta w-60-lådan bor på slotten
+  // (fälten är w-full inuti); datumfältet åtstramat så det ryms i samma
+  // låda (K12-mätningen: wrap ger radhopp).
   return (
     <div className="flex items-center justify-between gap-4 py-2">
       <dt className="shrink-0 text-small text-text-muted">{term}</dt>
-      <dd className="flex flex-1 justify-end">{children}</dd>
+      <dd className="flex min-w-0 flex-1 items-center justify-end gap-3">
+        <span className="truncate text-small text-text-secondary">{nuvarande || '–'}</span>
+        <div className="w-60 shrink-0">{children}</div>
+      </dd>
     </div>
   );
 }
@@ -348,7 +361,7 @@ function OmEventetForm({
   return (
     <>
       <dl className="divide-y divide-border">
-        <RedigeringsRad term="Typ">
+        <RedigeringsRad term="Typ" nuvarande={event.typ}>
           <Select
             label="Typ"
             hideLabel
@@ -356,27 +369,18 @@ function OmEventetForm({
             placeholder="Välj typ"
             selectedKey={typ}
             onSelectionChange={(k) => setTyp(k == null ? null : String(k))}
-            className="max-w-56"
           >
             <SelectItem id="Utbildning">Utbildning</SelectItem>
             <SelectItem id="Föreläsning">Föreläsning</SelectItem>
           </Select>
         </RedigeringsRad>
-        <RedigeringsRad term="Ort">
-          <Input
-            label="Ort"
-            hideLabel
-            size="sm"
-            placeholder="Ort"
-            value={ort}
-            onChange={setOrt}
-            className="max-w-56"
-          />
+        <RedigeringsRad term="Ort" nuvarande={event.ort}>
+          <Input label="Ort" hideLabel size="sm" placeholder="Ort" value={ort} onChange={setOrt} />
         </RedigeringsRad>
-        <RedigeringsRad term="Datum">
+        <RedigeringsRad term="Datum" nuvarande={datumSpannText(event)}>
           <DatumFalt value={datum} onChange={setDatum} />
         </RedigeringsRad>
-        <RedigeringsRad term="Status">
+        <RedigeringsRad term="Status" nuvarande={event.status}>
           <Select
             label="Status"
             hideLabel
@@ -384,7 +388,6 @@ function OmEventetForm({
             placeholder="Välj status"
             selectedKey={status}
             onSelectionChange={(k) => setStatus(k == null ? null : String(k))}
-            className="max-w-56"
           >
             {Object.values(EventStatus).map((s) => (
               <SelectItem key={s} id={s}>
