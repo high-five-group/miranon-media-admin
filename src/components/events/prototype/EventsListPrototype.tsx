@@ -400,41 +400,59 @@ export function EventsListPrototype() {
 
 /**
  * [PROTOTYPE] Flytande variant-växlare (skillens steg 4) — DEV-only via
- * routens grind; visuellt skild från designen som utvärderas (mörk pill).
- * `skarp` = riktiga EventsList (baslinjen), `K` = konvergens-prototypen.
+ * routens grind; visuellt skild från designen som utvärderas (mörk panel).
+ * K3-omgjord efter Marcus-feedback ("oklar och otydlig"): klartext-etiketter
+ * i chip-form — aktivt val är FYLLT vitt chip, inaktivt är kantat och
+ * klickbart; data-valet syns bara i prototyp-läget.
  */
 export function EventsPrototypeSwitcher() {
   const [variant, setVariant] = useQueryState('variant');
   const [dataMode, setDataMode] = useQueryState('data');
   const isProto = variant === 'K';
+  const chip = (active: boolean) =>
+    active
+      ? 'rounded-full bg-bg px-3 py-1.5 font-semibold text-small text-text'
+      : 'rounded-full border border-border-strong px-3 py-1.5 text-small text-text-inverse';
   return (
-    <div className="fixed bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 whitespace-nowrap rounded-full bg-text px-4 py-2 text-small text-text-inverse shadow-lg">
-      <span className="font-mono text-caption">[PROTOTYP]</span>
-      <button
-        type="button"
-        onClick={() => setVariant(null)}
-        className={isProto ? 'underline' : 'font-bold'}
-      >
-        Skarp
-      </button>
-      <button
-        type="button"
-        onClick={() => setVariant('K')}
-        className={isProto ? 'font-bold' : 'underline'}
-      >
-        K
-      </button>
+    <div className="fixed bottom-24 left-1/2 z-50 flex w-max max-w-[92vw] -translate-x-1/2 flex-col items-center gap-2 rounded-2xl bg-text px-4 py-3 text-text-inverse shadow-lg">
+      <span className="font-mono text-caption tracking-wide">PROTOTYP-VÄXLAREN · dev-verktyg</span>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => setVariant(null)}
+          aria-pressed={!isProto}
+          className={chip(!isProto)}
+        >
+          Skarpa vyn
+        </button>
+        <button
+          type="button"
+          onClick={() => setVariant('K')}
+          aria-pressed={isProto}
+          className={chip(isProto)}
+        >
+          Prototypen
+        </button>
+      </div>
       {isProto && (
-        <>
-          <span aria-hidden>·</span>
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <button
             type="button"
-            onClick={() => setDataMode(dataMode === 'verklig' ? null : 'verklig')}
-            className="underline"
+            onClick={() => setDataMode(null)}
+            aria-pressed={dataMode !== 'verklig'}
+            className={chip(dataMode !== 'verklig')}
           >
-            {dataMode === 'verklig' ? 'Demo-data' : 'Verklig data'}
+            Demo-data
           </button>
-        </>
+          <button
+            type="button"
+            onClick={() => setDataMode('verklig')}
+            aria-pressed={dataMode === 'verklig'}
+            className={chip(dataMode === 'verklig')}
+          >
+            Verklig data
+          </button>
+        </div>
       )}
     </div>
   );
