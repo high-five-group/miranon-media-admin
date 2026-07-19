@@ -32,7 +32,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { BedDouble, CalendarDays, ChevronLeft, ChevronRight, List, MapPin } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Button as AriaButton,
   Calendar,
@@ -742,19 +742,8 @@ export function EventsListPrototype() {
   const [vy, setVy] = useQueryState('vy');
   const kalenderLage = vy === 'kalender';
 
-  // [PROTOTYPE-hack] K2: prototypen visar MÅLET header-fritt (grund-arvet —
-  // Hem/Mer-per-vy-mekanismen task-4.2). Skarpa vyn får det via
-  // `staticData.hideShellHeader` i list-skivan; att muta route-staticData går
-  // inte per sökparameter, därför DOM-döljning här — kastas med prototypen.
-  useEffect(() => {
-    const header = document.querySelector('header');
-    if (!header) return;
-    (header as HTMLElement).style.display = 'none';
-    return () => {
-      (header as HTMLElement).style.removeProperty('display');
-    };
-  }, []);
-
+  // (K2-hackets DOM-döljning av headern RIVEN i S73: appen har ingen
+  // shell-header alls — app-regeln bor i AppShell; hacket blev död kod.)
   const { data, isPending, isError, error } = useQuery({
     queryKey: queryKeys.events.list,
     queryFn: () => dataSource.fetchEvents(),

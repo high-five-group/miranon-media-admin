@@ -20,6 +20,16 @@
  * opt-in och ärver befintlig dataväg (router-context-DI → staging i dev
  * per ADR-061). Inga writes (read-only-regeln).
  *
+ * K2 (grund-arvet, Marcus-order): APP-REGLERNA appliceras — synlig h1
+ * "Eventdetaljer" 30/600 (rubrikpolicyn S64; Marcus-vald sidrubrik),
+ * eventnamnet = dominant innehåll under h1, Mer-rytmens topp-luft utan
+ * egen sidopadding (main bär 16 px-inset), tonala sektionsytor per
+ * DashboardCard-MÖNSTRET (etikett inne i kortet — kopierad form, ej delad
+ * komponent), etikett-över-värde, långdatum aldrig rå ISO (Gunilla),
+ * Lugnt laddläge-skeleton i slutgeometri. EVENT-KORTENS anatomi
+ * (dagar-kvar-pill, 3-raders form, stapel) ärvs INTE — det är
+ * list-materia, Marcus-klargjort vid K2-ordern.
+ *
  * Iterationssteg K1… bokförs i sessionsdok S73; skarpt bygge sker
  * NYSKRIVET genom leverans-grindarna (klausul iv — denna kod absorberas
  * aldrig).
@@ -30,6 +40,7 @@ import { Link } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import type { PrototypeVariant } from '@/components/dev/PrototypeSwitcher';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
@@ -42,7 +53,7 @@ import { DEMO_EVENTS, type ProtoEvent } from './EventsListPrototype';
  * routen aliasar därför A/B/K → 'K' (delade växlarens alias-kontrakt).
  */
 export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
-  { key: 'K', label: 'Prototypen', steg: 1, stegLabel: 'K1 — exakt kopia av skarpa vyn' },
+  { key: 'K', label: 'Prototypen', steg: 1, stegLabel: 'K2 — grund-arvet (app-reglerna)' },
 ];
 
 /* ── Hjälpare (kopierade ur EventDetail — medvetet odelade) ── */
@@ -69,14 +80,61 @@ function percentText(e: Event): string | null {
   return `${Math.round(e.anmaldBelaggning * 100)} %`;
 }
 
-/** En rad i en fält/värde-lista; hoppar tomma värden (renderar inte null). */
+/** En rad i en fält/värde-lista; hoppar tomma värden (renderar inte null).
+    K2: etikett-ÖVER-värde (FK-mönstret, grund-arvet) — alltid staplad. */
 function DescRow({ term, children }: { term: string; children: React.ReactNode }) {
   if (children == null || children === '') return null;
   return (
-    <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-      <dt className="text-small text-text-muted sm:min-w-48">{term}</dt>
-      <dd className="text-small">{children}</dd>
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-small text-text-muted">{term}</dt>
+      <dd className="text-body">{children}</dd>
     </div>
+  );
+}
+
+/** Långdatum-spann per K10-facit — sv-SE, aldrig rå ISO (Gunilla). En dag →
+    "31 juli 2026"; spann inom samma år → "31 juli – 2 augusti 2026"; över
+    årsskifte → båda med år. Ogiltigt/saknat → "Datum ej satt". */
+const LANGDATUM = new Intl.DateTimeFormat('sv-SE', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+const DAGMANAD = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
+function datumSpannText(e: Event): string {
+  if (!e.startdatum) return 'Datum ej satt';
+  const start = new Date(e.startdatum);
+  if (Number.isNaN(start.getTime())) return 'Datum ej satt';
+  if (!e.slutdatum || e.slutdatum === e.startdatum) return LANGDATUM.format(start);
+  const end = new Date(e.slutdatum);
+  if (Number.isNaN(end.getTime())) return LANGDATUM.format(start);
+  return start.getFullYear() === end.getFullYear()
+    ? `${DAGMANAD.format(start)} – ${LANGDATUM.format(end)}`
+    : `${LANGDATUM.format(start)} – ${LANGDATUM.format(end)}`;
+}
+
+/** Tonal sektionsyta per DashboardCard-mönstret (grund-arvet: tonala ytor,
+    h2-etikett INNE i kortet, text-xl semibold) — kopierad form, ej delad
+    komponent (prototypen fri att kasta sin form). */
+function ProtoSektion({
+  id,
+  etikett,
+  children,
+}: {
+  id: string;
+  etikett: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      aria-labelledby={id}
+      className="flex min-w-0 flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
+    >
+      <h2 id={id} className="font-semibold text-xl">
+        {etikett}
+      </h2>
+      {children}
+    </section>
   );
 }
 
@@ -131,94 +189,91 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
     </Link>
   );
 
+  // K2: sid-chromen (h1 + topp-luft) står ALLTID i slutgeometri — bara
+  // innehållsytan växlar mellan ladd/fel/laddat (Lugnt laddläge §15).
+  const sidRam = (innehall: React.ReactNode) => (
+    <section className="flex flex-col gap-6 pt-2 lg:pt-10">
+      {backLink}
+      <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
+        Eventdetaljer
+      </h1>
+      {innehall}
+    </section>
+  );
+
   if (!useDemo && isPending) {
-    return (
-      <section className="flex flex-col gap-4 p-4" aria-busy="true">
-        {backLink}
-        <p role="status" aria-live="polite">
-          Laddar event…
-        </p>
-      </section>
+    // Lugnt laddläge (grund-arvet, §15): skeleton i slutgeometri — identitets-
+    // blocket + tre tonala kortytor; Roselli-anatomin (status + busy + sr-besked).
+    return sidRam(
+      <div role="status" aria-busy="true" className="flex flex-col gap-6">
+        <span className="sr-only">Laddar event…</span>
+        <Skeleton variant="text" className="w-3/5 text-2xl" />
+        <Skeleton variant="listRow" className="h-44 rounded-2xl" />
+        <Skeleton variant="listRow" className="h-32 rounded-2xl" />
+        <Skeleton variant="listRow" className="h-36 rounded-2xl" />
+      </div>,
     );
   }
 
   if (!useDemo && isError) {
-    return (
-      <section className="flex flex-col gap-4 p-4">
-        {backLink}
-        {notFound ? (
-          <MessageBox intent="error" title="Eventet hittades inte">
-            Inget event med det ID:t finns. Det kan ha tagits bort, eller så är länken felaktig.
-          </MessageBox>
-        ) : (
-          <MessageBox intent="error" title="Kunde inte hämta eventet">
-            {error instanceof Error ? error.message : 'Okänt fel.'}
-          </MessageBox>
-        )}
-      </section>
+    return sidRam(
+      notFound ? (
+        <MessageBox intent="error" title="Eventet hittades inte">
+          Inget event med det ID:t finns. Det kan ha tagits bort, eller så är länken felaktig.
+        </MessageBox>
+      ) : (
+        <MessageBox intent="error" title="Kunde inte hämta eventet">
+          {error instanceof Error ? error.message : 'Okänt fel.'}
+        </MessageBox>
+      ),
     );
   }
 
   if (!event) return null; // nås ej: demo är synkron, verklig täcks ovan
 
-  const datumspann = [event.startdatum, event.slutdatum]
-    .filter(Boolean)
-    .filter((d, i, arr) => arr.indexOf(d) === i) // start === slut → visa en gång
-    .join(' – ');
   const percent = percentText(event);
   const full = isFull(event);
 
-  return (
-    <section className="flex flex-col gap-6 p-4">
-      {backLink}
-
+  return sidRam(
+    <>
       {/* aria-live: bekräftar för skärmläsare att eventet anlänt. */}
       <p className="sr-only" role="status" aria-live="polite">
         {`Event ${eventName(event)} laddat.`}
       </p>
 
+      {/* Identitetsblocket: eventnamnet är sidans dominanta innehåll under
+          h1 (Marcus K2: sidrubriken är "Eventdetaljer", namnet är materian). */}
       <header className="flex flex-col gap-1">
-        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-2xl">
-          {eventName(event)}
-        </h1>
+        <h2 className="font-semibold text-2xl">{eventName(event)}</h2>
         {event.tidKvarTillEvent && (
           <p className="text-small text-text-muted">{event.tidKvarTillEvent}</p>
         )}
       </header>
 
-      <section aria-labelledby="proto-sektion-identitet" className="flex flex-col gap-2">
-        <h2 id="proto-sektion-identitet" className="font-semibold text-lg">
-          Om eventet
-        </h2>
-        <dl className="flex flex-col gap-1">
+      <ProtoSektion id="proto-sektion-identitet" etikett="Om eventet">
+        <dl className="flex flex-col gap-3">
           <DescRow term="Typ">{event.typ}</DescRow>
           <DescRow term="Ort">{event.ort}</DescRow>
-          <DescRow term="Datum">{datumspann || null}</DescRow>
+          <DescRow term="Datum">{datumSpannText(event)}</DescRow>
           <DescRow term="Status">{event.status}</DescRow>
         </dl>
-      </section>
+      </ProtoSektion>
 
-      <section aria-labelledby="proto-sektion-belaggning" className="flex flex-col gap-2">
-        <h2 id="proto-sektion-belaggning" className="font-semibold text-lg">
-          Beläggning
-        </h2>
+      <ProtoSektion id="proto-sektion-belaggning" etikett="Beläggning">
         {/* Beläggning bärs av TEXT; "Fullt" + procent gör bilden begriplig. */}
         <p className="text-small">
           {belaggningText(event)}
           {full ? ' · Fullt' : ''}
           {percent ? ` · ${percent} fullt` : ''}
         </p>
-        <dl className="flex flex-col gap-1">
+        <dl className="flex flex-col gap-3">
           <DescRow term="Platser kvar">
             {event.platserKvar != null ? String(event.platserKvar) : null}
           </DescRow>
         </dl>
-      </section>
+      </ProtoSektion>
 
-      <section aria-labelledby="proto-sektion-betalning" className="flex flex-col gap-2">
-        <h2 id="proto-sektion-betalning" className="font-semibold text-lg">
-          Betalningar
-        </h2>
+      <ProtoSektion id="proto-sektion-betalning" etikett="Betalningar">
         <p className="text-small">
           {`${event.antalAnmalningsavgifter} av ${event.antalAnmalda} har betalat anmälningsavgift.`}
         </p>
@@ -231,28 +286,22 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
         <Link to="/event/$eventId/betalning" params={{ eventId }} className="text-small underline">
           Öppna betalnings-vyn →
         </Link>
-      </section>
+      </ProtoSektion>
 
-      <section aria-labelledby="proto-sektion-narvaro" className="flex flex-col gap-2">
-        <h2 id="proto-sektion-narvaro" className="font-semibold text-lg">
-          Närvaro
-        </h2>
+      <ProtoSektion id="proto-sektion-narvaro" etikett="Närvaro">
         {/* Ingen närvaro-siffra i get-event-shapen — gissa inte fält; länka bara. */}
         <Link to="/event/$eventId/narvaro" params={{ eventId }} className="text-small underline">
           Öppna närvaro-vyn →
         </Link>
-      </section>
+      </ProtoSektion>
 
-      <section aria-labelledby="proto-sektion-anmalda" className="flex flex-col gap-2">
-        <h2 id="proto-sektion-anmalda" className="font-semibold text-lg">
-          Anmälda
-        </h2>
+      <ProtoSektion id="proto-sektion-anmalda" etikett="Anmälda">
         {/* Ingen anmälda-siffra i get-event-shapen — gissa inte fält; länka bara
             (speglar närvaro-sektionens form). */}
         <Link to="/event/$eventId/anmalda" params={{ eventId }} className="text-small underline">
           Öppna anmälda-vyn →
         </Link>
-      </section>
-    </section>
+      </ProtoSektion>
+    </>,
   );
 }
