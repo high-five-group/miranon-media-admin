@@ -27,7 +27,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { CalendarDays, MapPin } from 'lucide-react';
+import { BedDouble, CalendarDays, MapPin } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -188,7 +188,15 @@ function VariantACard({ e }: { e: Event }) {
  * långdatum, beläggningsstapel. Neutral ton (primär-tinten är Hem-hjältens
  * roll — på varje listkort skulle den skrika).
  */
-function VariantBCard({ e, period, idagStart }: { e: Event; period: Period; idagStart: number }) {
+function VariantBCard({
+  e,
+  period,
+  idagStart,
+}: {
+  e: ProtoEvent;
+  period: Period;
+  idagStart: number;
+}) {
   const startMs = dateValue(e);
   const visaPill = period === 'upcoming' && e.startdatum && Number.isFinite(startMs);
   const maxPlatser = e.maxPlatser;
@@ -197,23 +205,39 @@ function VariantBCard({ e, period, idagStart }: { e: Event; period: Period; idag
       ? Math.min(100, Math.round((e.antalAnmalda / maxPlatser) * 100))
       : 0;
   return (
-    <li className="relative flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
+    // Hover-bakgrund (Marcus-iterationen): bg-muted → bg-emphasized — NYTT
+    // beslut för event-korten (NavCards M3-avslag gällde Mer-raderna, inte
+    // kort-klassen); färgtransitionen motion-safe-gated.
+    <li className="relative flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted p-4 hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-border-strong">
       {visaPill ? (
         <span className="absolute top-4 right-4 rounded-full bg-surface px-2.5 py-0.5 font-medium text-caption">
           {dagarKvarText(startMs, idagStart)}
         </span>
       ) : null}
       <div className="flex flex-col gap-1 text-small">
-        <div className="flex items-start gap-3">
-          <Link
-            to="/event/$eventId"
-            params={{ eventId: e.id }}
-            className="font-semibold text-body after:absolute after:inset-0"
-          >
-            {eventName(e)}
-          </Link>
-          <StatusBadge status={e.status} />
-        </div>
+        {/* Rubriken får pr-24 som frizon mot den absoluta dagar-kvar-pillen;
+            badgarna bor på EGEN rad under (K7-fixen: badge under pill-krocken
+            vid långa eventnamn). */}
+        <Link
+          to="/event/$eventId"
+          params={{ eventId: e.id }}
+          className={`font-semibold text-body after:absolute after:inset-0 ${visaPill ? 'pr-24' : ''}`}
+        >
+          {eventName(e)}
+        </Link>
+        {e.status === 'Inställt' || e.status === 'Flyttat' || isFull(e) ? (
+          <div className="flex flex-wrap gap-2">
+            <StatusBadge status={e.status} />
+            {/* Fullbokat som GRÖN outlined pill (Marcus-iterationen: "· Fullt"-
+                texten räckte inte) — samma badge-form som Inställt/Flyttat;
+                texten bär, färgen förstärker. */}
+            {isFull(e) ? (
+              <span className="shrink-0 self-start rounded-full border border-success px-2.5 py-0.5 font-semibold text-caption text-success">
+                Fullbokat
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         {e.ort ? (
           <span className="flex items-center gap-1.5">
             <MapPin aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
@@ -224,16 +248,29 @@ function VariantBCard({ e, period, idagStart }: { e: Event; period: Period; idag
           <CalendarDays aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
           {e.startdatum ? LANGDATUM.format(new Date(e.startdatum)) : 'Datum ej satt'}
         </span>
+        {/* "Bor över"-raden (Marcus: Lotta vill se övernattarna direkt på
+            kortet) — säng-ikon + antal. Fältet finns INTE i basen ännu
+            (demo-fält; skarpa kravet = PRD + additivt bas-fält). */}
+        {e.boverAntal != null ? (
+          <span className="flex items-center gap-1.5">
+            <BedDouble aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
+            {e.boverAntal} bor över
+          </span>
+        ) : null}
       </div>
       {maxPlatser != null ? (
         <div className="flex flex-col gap-1">
           <span className="text-caption text-text-secondary">
-            {e.antalAnmalda} av {maxPlatser} platser bokade{isFull(e) ? ' · Fullt' : ''}
+            {e.antalAnmalda} av {maxPlatser} platser bokade
           </span>
-          {/* Stapel-fyllnaden GRÅ (Marcus-iterationen efter B-valet: "inte den
-              guldiga färgen") — text-muted-tonen; stapeln är dekor, texten bär. */}
+          {/* Stapel-fyllnaden DÄMPAT grå (Marcus-iteration 2: ett snäpp under
+              text-muted) — neutral-400 direkt ur primitiv-lagret; skarpa
+              skivan mintar en semantisk stapel-token. Stapeln är dekor. */}
           <div aria-hidden="true" className="h-1.5 rounded-full bg-surface">
-            <div className="h-full rounded-full bg-text-muted" style={{ width: `${andel}%` }} />
+            <div
+              className="h-full rounded-full bg-(--p-neutral-400)"
+              style={{ width: `${andel}%` }}
+            />
           </div>
         </div>
       ) : (
@@ -247,7 +284,15 @@ function VariantBCard({ e, period, idagStart }: { e: Event; period: Period; idag
 
 /* ── Demo-data (in-memory, read-only; Lotta-realistiska namn) ── */
 
-function demoEvent(overrides: Partial<Event> & Pick<Event, 'id'>): Event {
+/**
+ * "Bor över"-antalet FINNS INTE i basen idag (verifierat mot data-model.md
+ * 2026-07-19) — prototypen visar FORMEN med demo-fältet; skarpa kravet =
+ * PRD-post + additivt bas-fält (ADR-063-leverabeln) + EF-/modell-utökning.
+ * Verklig data saknar fältet → raden döljs.
+ */
+type ProtoEvent = Event & { boverAntal?: number };
+
+function demoEvent(overrides: Partial<ProtoEvent> & Pick<Event, 'id'>): ProtoEvent {
   return {
     eventlabel: null,
     eventNamn: null,
@@ -276,7 +321,7 @@ function isoDaysFromNow(days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-const DEMO_EVENTS: Event[] = [
+const DEMO_EVENTS: ProtoEvent[] = [
   demoEvent({
     id: 'demo-1',
     eventNamn: 'RIM 1 — Resor i medvetandet',
@@ -287,6 +332,7 @@ const DEMO_EVENTS: Event[] = [
     platserKvar: 4,
     anmaldBelaggning: 8 / 12,
     status: 'Planerat',
+    boverAntal: 3,
   }),
   demoEvent({
     id: 'demo-2',
@@ -299,6 +345,7 @@ const DEMO_EVENTS: Event[] = [
     platserKvar: 0,
     anmaldBelaggning: 1,
     status: 'Planerat',
+    boverAntal: 5,
   }),
   demoEvent({
     id: 'demo-3',
@@ -329,6 +376,7 @@ const DEMO_EVENTS: Event[] = [
     platserKvar: 11,
     anmaldBelaggning: 5 / 16,
     status: 'Flyttat',
+    boverAntal: 2,
   }),
   demoEvent({
     id: 'demo-6',
