@@ -48,6 +48,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { ChevronLeft } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { PrototypeVariant } from '@/components/dev/PrototypeSwitcher';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -68,7 +69,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K3 — IMG_1542-formen (grupper + radlistor)',
+    stegLabel: 'K4 — tillbaka-chevronen vid rubriken',
   },
 ];
 
@@ -223,21 +224,28 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
     }
   }, [event]);
 
-  const backLink = (
-    // search-genomslaget: variant/data följer med tillbaka till list-prototypen.
-    <Link to="/event" search={(prev) => prev} className="text-small underline">
-      ← Tillbaka till event-listan
-    </Link>
-  );
-
   // K2: sid-chromen (h1 + topp-luft) står ALLTID i slutgeometri — bara
   // innehållsytan växlar mellan ladd/fel/laddat (Lugnt laddläge §15).
+  // K4 (IMG_1542, Marcus-order): tillbaka-CHEVRONEN bredvid rubriken
+  // ersätter topp-länken "Tillbaka till event-listan". Ikon-länk →
+  // aria-label bär namnet (ikonen dekor); search-genomslaget kvar så
+  // variant/data följer med tillbaka till list-prototypen. Ingen konflikt
+  // med M3-regeln (den gäller navigationsraders trailing-chevron).
   const sidRam = (innehall: React.ReactNode) => (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      {backLink}
-      <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
-        Eventdetaljer
-      </h1>
+      <div className="flex items-center gap-3">
+        <Link
+          to="/event"
+          search={(prev) => prev}
+          aria-label="Tillbaka till event-listan"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-muted"
+        >
+          <ChevronLeft aria-hidden="true" size={22} />
+        </Link>
+        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
+          Eventdetaljer
+        </h1>
+      </div>
       {innehall}
     </section>
   );
