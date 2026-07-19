@@ -569,7 +569,7 @@ export function EventsListPrototype() {
  */
 const PROTO_VARIANTS = {
   A: { steg: 1, stegLabel: 'grillade baslinjen · FK-raden' },
-  B: { steg: 1, stegLabel: 'Hem-kortets grammatik' },
+  B: { steg: 2, stegLabel: 'slot-modellen (låst 2026-07-19)' },
 } as const;
 
 /**
