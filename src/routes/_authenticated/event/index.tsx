@@ -23,10 +23,20 @@ export const Route = createFileRoute('/_authenticated/event/')({
 function EventPage() {
   const [variant] = useQueryState('variant');
   const showPrototype = import.meta.env.DEV && variant === 'K';
+  // K2: prototypen bär sin EGEN sektion + h1 (Mer-formens grund-arv, utan
+  // dubbel sidopadding) — skarpa vyn behåller dagens wrapper orörd.
+  if (showPrototype) {
+    return (
+      <>
+        <EventsListPrototype />
+        <EventsPrototypeSwitcher />
+      </>
+    );
+  }
   return (
     <section className="flex flex-col gap-4 p-4">
       <h1>Event</h1>
-      {showPrototype ? <EventsListPrototype /> : <EventsList />}
+      <EventsList />
       {import.meta.env.DEV ? <EventsPrototypeSwitcher /> : null}
     </section>
   );

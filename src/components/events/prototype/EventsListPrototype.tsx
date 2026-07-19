@@ -15,11 +15,11 @@
  * isFull/dateValue är kopierade därifrån, INTE delade — prototypen
  * ska vara fri att kasta sin form utan att röra skarp kod).
  *
- * `?data=demo` renderar representativ in-memory-data (Lotta-realistisk:
- * flera månader, Inställt, Flyttat, Fullt, flerdagars, platser-ej-satt)
- * — ingen persistens, inga writes (read-only-regeln). Verklig data
- * (default) ärver befintlig dataväg (router-context-DI → staging i
- * dev per ADR-061).
+ * Demo-data är DEFAULT (K2): representativ in-memory-data
+ * (Lotta-realistisk: flera månader, Inställt, Flyttat, Fullt,
+ * flerdagars, platser-ej-satt) — ingen persistens, inga writes
+ * (read-only-regeln). `?data=verklig` är opt-in och ärver befintlig
+ * dataväg (router-context-DI → staging i dev per ADR-061).
  *
  * Iterationssteg K1… bokförs i sessionsdok S72; skarpt bygge sker
  * NYSKRIVET genom leverans-grindarna (klausul iv — denna kod
@@ -28,7 +28,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
+import { useEffect } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
@@ -261,8 +263,23 @@ export function EventsListPrototype() {
     'period',
     parseAsStringEnum(PERIOD_VALUES).withDefault('upcoming').withOptions({ history: 'push' }),
   );
+  // K2: demo-data är DEFAULT i konvergensen (Marcus itererar på den
+  // representativa bilden); verklig staging-data är opt-in via ?data=verklig.
   const [dataMode] = useQueryState('data');
-  const useDemo = dataMode === 'demo';
+  const useDemo = dataMode !== 'verklig';
+
+  // [PROTOTYPE-hack] K2: prototypen visar MÅLET header-fritt (grund-arvet —
+  // Hem/Mer-per-vy-mekanismen task-4.2). Skarpa vyn får det via
+  // `staticData.hideShellHeader` i list-skivan; att muta route-staticData går
+  // inte per sökparameter, därför DOM-döljning här — kastas med prototypen.
+  useEffect(() => {
+    const header = document.querySelector('header');
+    if (!header) return;
+    (header as HTMLElement).style.display = 'none';
+    return () => {
+      (header as HTMLElement).style.removeProperty('display');
+    };
+  }, []);
 
   const { data, isPending, isError, error } = useQuery({
     queryKey: queryKeys.events.list,
@@ -295,77 +312,89 @@ export function EventsListPrototype() {
     </fieldset>
   );
 
-  if (!useDemo && isPending) {
-    return (
-      <div className="flex flex-col gap-4">
-        {toggle}
-        <p role="status" aria-live="polite">
-          Laddar event…
-        </p>
+  // K2: Lugnt laddläge-arvet (task-8-mönstret) — skeleton i slutgeometri i
+  // stället för "Laddar…"-text (ORDLISTA: Undvik); syns endast i
+  // verklig-data-läget (demo är synkron).
+  const skeletonBody = (
+    <div aria-busy="true" className="flex flex-col gap-2">
+      <span className="sr-only">Laddar event…</span>
+      <Skeleton variant="text" className="w-28 text-small" />
+      <div className="flex flex-col gap-3">
+        <Skeleton variant="listRow" className="h-28 rounded-2xl" />
+        <Skeleton variant="listRow" className="h-28 rounded-2xl" />
+        <Skeleton variant="listRow" className="h-28 rounded-2xl" />
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (!useDemo && isError) {
-    return (
-      <div className="flex flex-col gap-4">
-        {toggle}
+  const body = (() => {
+    if (!useDemo && isPending) return skeletonBody;
+    if (!useDemo && isError) {
+      return (
         <MessageBox intent="error" title="Kunde inte hämta event">
           {error instanceof Error ? error.message : 'Okänt fel.'}
         </MessageBox>
-      </div>
+      );
+    }
+    return (
+      <>
+        {events.length === 0 && (
+          <div className="flex flex-col items-center gap-1 py-12 text-center">
+            <p className="font-medium text-body">
+              {period === 'upcoming' ? 'Inga kommande event' : 'Inga tidigare event'}
+            </p>
+            <p className="text-small text-text-muted">
+              {period === 'upcoming'
+                ? 'Event du planerar dyker upp här.'
+                : 'Genomförda event dyker upp här.'}
+            </p>
+          </div>
+        )}
+
+        {groups.map((group) => (
+          <section key={group.label} className="flex flex-col gap-2">
+            <h2 className="font-semibold text-small text-text-secondary">{group.label}</h2>
+            <ul aria-label={`Event ${group.label}`} className="flex flex-col gap-3">
+              {group.events.map((e) => (
+                <li
+                  key={e.id}
+                  className="relative flex flex-col gap-1 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <Link
+                      to="/event/$eventId"
+                      params={{ eventId: e.id }}
+                      className="font-semibold text-body after:absolute after:inset-0"
+                    >
+                      {eventName(e)}
+                    </Link>
+                    <StatusBadge status={e.status} />
+                  </div>
+                  <span className="text-small text-text-secondary">
+                    {[dateText(e), e.ort].filter(Boolean).join(' · ')}
+                  </span>
+                  <span className="text-small text-text-muted">
+                    {belaggningText(e)}
+                    {isFull(e) ? ' · Fullt' : ''}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </>
     );
-  }
+  })();
 
+  // K2: egen sektion i Mer-formens grund-arv — synlig h1 30/600
+  // (rubrikpolicyn S64), Mer-rytmens topp-luft, INGEN egen sidopadding
+  // (skalets main bär 16 px — dubbelkants-fyndet M6).
   return (
-    <div className="flex flex-col gap-4">
+    <section className="flex flex-col gap-6 pt-2 lg:pt-10">
+      <h1 className="font-semibold text-3xl">Event</h1>
       {toggle}
-
-      {events.length === 0 && (
-        <div className="flex flex-col items-center gap-1 py-12 text-center">
-          <p className="font-medium text-body">
-            {period === 'upcoming' ? 'Inga kommande event' : 'Inga tidigare event'}
-          </p>
-          <p className="text-small text-text-muted">
-            {period === 'upcoming'
-              ? 'Event du planerar dyker upp här.'
-              : 'Genomförda event dyker upp här.'}
-          </p>
-        </div>
-      )}
-
-      {groups.map((group) => (
-        <section key={group.label} className="flex flex-col gap-2">
-          <h2 className="font-semibold text-small text-text-secondary">{group.label}</h2>
-          <ul aria-label={`Event ${group.label}`} className="flex flex-col gap-3">
-            {group.events.map((e) => (
-              <li
-                key={e.id}
-                className="relative flex flex-col gap-1 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <Link
-                    to="/event/$eventId"
-                    params={{ eventId: e.id }}
-                    className="font-semibold text-body after:absolute after:inset-0"
-                  >
-                    {eventName(e)}
-                  </Link>
-                  <StatusBadge status={e.status} />
-                </div>
-                <span className="text-small text-text-secondary">
-                  {[dateText(e), e.ort].filter(Boolean).join(' · ')}
-                </span>
-                <span className="text-small text-text-muted">
-                  {belaggningText(e)}
-                  {isFull(e) ? ' · Fullt' : ''}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
-    </div>
+      {body}
+    </section>
   );
 }
 
@@ -400,10 +429,10 @@ export function EventsPrototypeSwitcher() {
           <span aria-hidden>·</span>
           <button
             type="button"
-            onClick={() => setDataMode(dataMode === 'demo' ? null : 'demo')}
+            onClick={() => setDataMode(dataMode === 'verklig' ? null : 'verklig')}
             className="underline"
           >
-            {dataMode === 'demo' ? 'Verklig data' : 'Demo-data'}
+            {dataMode === 'verklig' ? 'Demo-data' : 'Verklig data'}
           </button>
         </>
       )}
