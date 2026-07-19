@@ -183,10 +183,19 @@ function VariantACard({ e }: { e: Event }) {
 }
 
 /**
- * Variant B — Hem-kortets grammatik: ikonrader (kartnål/kalender, dekor),
- * dagar-kvar-pill topp-höger (ENDAST Kommande — bakåt saknar tidshorisont),
- * långdatum, beläggningsstapel. Neutral ton (primär-tinten är Hem-hjältens
- * roll — på varje listkort skulle den skrika).
+ * Variant B — Hem-kortets grammatik, K8-omgjord till LIKFORMIGA kort med
+ * SLOT-modellen (Marcus-beslut: "korten måste alltid ha exakt samma storlek
+ * — reservera plats för allt"; badgarna RIVNA):
+ * - Alla rader renderas ALLTID (ort/datum/bor över får platshållare) och
+ *   rubriken reserverar exakt 2 rader (line-clamp + min-h) med pill-frizon.
+ * - Status-slotten topp-höger är SEMANTISK: "Inställt"/"Flyttat" ERSÄTTER
+ *   dagar-kvar (ett inställt event har ingen nedräkning) — branschmönstret
+ *   (Google Calendar-klassen: strikethrough/dimmat + text) + vårt snäpp:
+ *   ingen badge-stapling, kortet ljuger aldrig.
+ * - Inställt: dimmat kort + genomstruken rubrik + "Inställt" i slotten
+ *   (texten bär — dimning/färg är förstärkning, aldrig ensam bärare).
+ * - Fullbokat: GRÖN kontur + grön stapel-fyllnad; texten "X av X platser
+ *   bokade" bär redan tillståndet.
  */
 function VariantBCard({
   e,
@@ -198,86 +207,80 @@ function VariantBCard({
   idagStart: number;
 }) {
   const startMs = dateValue(e);
-  const visaPill = period === 'upcoming' && e.startdatum && Number.isFinite(startMs);
+  const installt = e.status === 'Inställt';
+  const flyttat = e.status === 'Flyttat';
+  const full = isFull(e);
   const maxPlatser = e.maxPlatser;
   const andel =
     maxPlatser != null && maxPlatser > 0
       ? Math.min(100, Math.round((e.antalAnmalda / maxPlatser) * 100))
       : 0;
+  // Status-slotten: avvikelse vinner alltid; dagar-kvar endast Kommande.
+  const slot = installt
+    ? { text: 'Inställt', cls: 'text-error' }
+    : flyttat
+      ? { text: 'Flyttat', cls: 'text-warning' }
+      : period === 'upcoming' && e.startdatum && Number.isFinite(startMs)
+        ? { text: dagarKvarText(startMs, idagStart), cls: '' }
+        : null;
+  const kontur = full ? 'border-success' : 'border-transparent contrast-more:border-border-strong';
   return (
     // Hover-bakgrund (Marcus-iterationen): bg-muted → bg-emphasized — NYTT
-    // beslut för event-korten (NavCards M3-avslag gällde Mer-raderna, inte
-    // kort-klassen); färgtransitionen motion-safe-gated.
-    <li className="relative flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted p-4 hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-border-strong">
-      {visaPill ? (
-        <span className="absolute top-4 right-4 rounded-full bg-surface px-2.5 py-0.5 font-medium text-caption">
-          {dagarKvarText(startMs, idagStart)}
+    // beslut för event-korten (NavCards M3-avslag gällde Mer-raderna).
+    <li
+      className={`relative flex flex-col gap-2 rounded-2xl border bg-bg-muted p-4 hover:bg-bg-emphasized motion-safe:transition-colors ${kontur} ${
+        installt ? 'opacity-60' : ''
+      }`}
+    >
+      {slot ? (
+        <span
+          className={`absolute top-4 right-4 rounded-full bg-surface px-2.5 py-0.5 font-medium text-caption ${slot.cls}`}
+        >
+          {slot.text}
         </span>
       ) : null}
       <div className="flex flex-col gap-1 text-small">
-        {/* Rubriken får pr-24 som frizon mot den absoluta dagar-kvar-pillen;
-            badgarna bor på EGEN rad under (K7-fixen: badge under pill-krocken
-            vid långa eventnamn). */}
+        {/* Rubriken reserverar ALLTID 2 rader + pill-frizonen (likformighet). */}
         <Link
           to="/event/$eventId"
           params={{ eventId: e.id }}
-          className={`font-semibold text-body after:absolute after:inset-0 ${visaPill ? 'pr-24' : ''}`}
+          className={`line-clamp-2 min-h-[2lh] pr-24 font-semibold text-body after:absolute after:inset-0 ${
+            installt ? 'line-through' : ''
+          }`}
         >
           {eventName(e)}
         </Link>
-        {e.status === 'Inställt' || e.status === 'Flyttat' || isFull(e) ? (
-          <div className="flex flex-wrap gap-2">
-            <StatusBadge status={e.status} />
-            {/* Fullbokat som GRÖN outlined pill (Marcus-iterationen: "· Fullt"-
-                texten räckte inte) — samma badge-form som Inställt/Flyttat;
-                texten bär, färgen förstärker. */}
-            {isFull(e) ? (
-              <span className="shrink-0 self-start rounded-full border border-success px-2.5 py-0.5 font-semibold text-caption text-success">
-                Fullbokat
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-        {e.ort ? (
-          <span className="flex items-center gap-1.5">
-            <MapPin aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
-            {e.ort}
-          </span>
-        ) : null}
+        <span className="flex items-center gap-1.5">
+          <MapPin aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
+          {e.ort ?? 'Ort ej satt'}
+        </span>
         <span className="flex items-center gap-1.5">
           <CalendarDays aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
           {e.startdatum ? LANGDATUM.format(new Date(e.startdatum)) : 'Datum ej satt'}
         </span>
-        {/* "Bor över"-raden (Marcus: Lotta vill se övernattarna direkt på
-            kortet) — säng-ikon + antal. Fältet finns INTE i basen ännu
-            (demo-fält; skarpa kravet = PRD + additivt bas-fält). */}
-        {e.boverAntal != null ? (
-          <span className="flex items-center gap-1.5">
-            <BedDouble aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
-            {e.boverAntal} bor över
-          </span>
-        ) : null}
-      </div>
-      {maxPlatser != null ? (
-        <div className="flex flex-col gap-1">
-          <span className="text-caption text-text-secondary">
-            {e.antalAnmalda} av {maxPlatser} platser bokade
-          </span>
-          {/* Stapel-fyllnaden DÄMPAT grå (Marcus-iteration 2: ett snäpp under
-              text-muted) — neutral-400 direkt ur primitiv-lagret; skarpa
-              skivan mintar en semantisk stapel-token. Stapeln är dekor. */}
-          <div aria-hidden="true" className="h-1.5 rounded-full bg-surface">
-            <div
-              className="h-full rounded-full bg-(--p-neutral-400)"
-              style={{ width: `${andel}%` }}
-            />
-          </div>
-        </div>
-      ) : (
-        <span className="text-caption text-text-secondary">
-          {e.antalAnmalda} anmälda (platser ej satt)
+        {/* "Bor över"-raden ALLTID (slot-modellen) — säng-ikon + antal.
+            Fältet finns INTE i basen ännu (demo-fält; skarpa kravet = PRD +
+            additivt bas-fält); okänt värde visas som "–". */}
+        <span className="flex items-center gap-1.5">
+          <BedDouble aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
+          {e.boverAntal ?? '–'} bor över
         </span>
-      )}
+      </div>
+      {/* Beläggningsblocket ALLTID (slot-modellen): text + stapel-spår även
+          när taket saknas (tom fyllnad). Grön fyllnad vid fullbokat. */}
+      <div className="flex flex-col gap-1">
+        <span className="text-caption text-text-secondary">
+          {maxPlatser != null
+            ? `${e.antalAnmalda} av ${maxPlatser} platser bokade`
+            : `${e.antalAnmalda} anmälda (platser ej satt)`}
+        </span>
+        <div aria-hidden="true" className="h-1.5 rounded-full bg-surface">
+          <div
+            className={`h-full rounded-full ${full ? 'bg-success' : 'bg-(--p-neutral-400)'}`}
+            style={{ width: `${andel}%` }}
+          />
+        </div>
+      </div>
     </li>
   );
 }
@@ -357,6 +360,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
     platserKvar: 9,
     anmaldBelaggning: 3 / 12,
     status: 'Inställt',
+    boverAntal: 1,
   }),
   demoEvent({
     id: 'demo-4',
@@ -365,6 +369,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
     startdatum: isoDaysFromNow(70),
     antalAnmalda: 34,
     status: 'Planerat',
+    boverAntal: 0,
   }),
   demoEvent({
     id: 'demo-5',
@@ -388,6 +393,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
     platserKvar: 0,
     anmaldBelaggning: 1,
     status: 'Genomfört',
+    boverAntal: 4,
   }),
   demoEvent({
     id: 'demo-7',
@@ -396,6 +402,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
     startdatum: isoDaysFromNow(-40),
     antalAnmalda: 58,
     status: 'Genomfört',
+    boverAntal: 0,
   }),
   demoEvent({
     id: 'demo-8',
@@ -408,6 +415,7 @@ const DEMO_EVENTS: ProtoEvent[] = [
     platserKvar: 3,
     anmaldBelaggning: 9 / 12,
     status: 'Genomfört',
+    boverAntal: 2,
   }),
 ];
 
