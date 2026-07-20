@@ -308,7 +308,11 @@ function PubliceraHandtag({
   onChange: (v: boolean) => void;
 }) {
   const sparRef = useRef<HTMLDivElement>(null);
+  const handtagRef = useRef<HTMLSpanElement>(null);
   const dragRef = useRef<number | null>(null);
+  // K79: grepp-offset — var i handtaget taget skedde, så cirkeln inte
+  // HOPPAR till pekarens position vid greppet (kant-grepp = kant-följ).
+  const greppOffsetRef = useRef(0);
   const [dragPos, setDragPos] = useState<number | null>(null);
   const pos = dragPos ?? (publicerad ? 1 : 0);
 
@@ -316,12 +320,21 @@ function PubliceraHandtag({
     const spar = sparRef.current;
     if (!spar) return 0;
     const r = spar.getBoundingClientRect();
-    return Math.min(1, Math.max(0, (clientX - r.left - 24) / (r.width - 48)));
+    return Math.min(
+      1,
+      Math.max(0, (clientX - greppOffsetRef.current - r.left - 24) / (r.width - 48)),
+    );
   };
 
   const satt = (v: boolean) => {
     if (v && !publicerad) plinga();
     onChange(v);
+  };
+
+  const slappDrag = (p: number | null) => {
+    if (p != null) satt(p >= 0.9 ? true : p <= 0.1 ? false : publicerad);
+    dragRef.current = null;
+    setDragPos(null);
   };
 
   return (
@@ -338,6 +351,20 @@ function PubliceraHandtag({
         }
       }}
       onPointerDown={(e) => {
+        // K79 (Marcus: "jag måste ju klicka och hålla inne"): draget
+        // startar ENDAST med primärknappen nedtryckt OCH greppet PÅ
+        // HANDTAGET — klick på rännan teleporterar inte cirkeln.
+        if (!e.isPrimary || e.button !== 0) return;
+        const h = handtagRef.current?.getBoundingClientRect();
+        if (
+          !h ||
+          e.clientX < h.left ||
+          e.clientX > h.right ||
+          e.clientY < h.top ||
+          e.clientY > h.bottom
+        )
+          return;
+        greppOffsetRef.current = e.clientX - (h.left + h.width / 2);
         // Capture kan kasta NotFoundError om pekaren redan släppts
         // (snabb tap) — draget funkar ändå via move/up på elementet.
         try {
@@ -347,17 +374,18 @@ function PubliceraHandtag({
         setDragPos(dragRef.current);
       }}
       onPointerMove={(e) => {
-        if (dragRef.current != null) {
-          dragRef.current = ratio(e.clientX);
-          setDragPos(dragRef.current);
+        if (dragRef.current == null) return;
+        // K79-vakten: har knappen släppts utan att up nådde oss (fångst
+        // misslyckad/släpp utanför fönstret) avslutas draget — annars
+        // följer handtaget ren HOVRING (Marcus-buggen).
+        if (e.buttons === 0) {
+          slappDrag(dragRef.current);
+          return;
         }
+        dragRef.current = ratio(e.clientX);
+        setDragPos(dragRef.current);
       }}
-      onPointerUp={() => {
-        const p = dragRef.current;
-        if (p != null) satt(p >= 0.9 ? true : p <= 0.1 ? false : publicerad);
-        dragRef.current = null;
-        setDragPos(null);
-      }}
+      onPointerUp={() => slappDrag(dragRef.current)}
       onPointerCancel={() => {
         dragRef.current = null;
         setDragPos(null);
@@ -382,11 +410,16 @@ function PubliceraHandtag({
       >
         {publicerad ? 'Publiceras på miranon.se' : 'Dra för att publicera på miranon.se'}
       </span>
+      {/* K79 (Marcus: "ser jättelågupplöst ut"): cirkelns kant bars
+          enbart av shadow-sm mot ljus botten — kantutjämningen läste
+          som pixlig. Riktig KANT (navcard-bordern) + shadow-md ger
+          definierad, skarp cirkel. */}
       <span
+        ref={handtagRef}
         aria-hidden="true"
         style={{ left: `calc(${pos * 100}% - ${pos * 48}px)` }}
-        className={`absolute top-0 flex size-12 items-center justify-center rounded-full bg-surface shadow-sm ${
-          dragPos == null ? 'motion-safe:transition-[left]' : ''
+        className={`absolute top-0 flex size-12 cursor-grab items-center justify-center rounded-full border border-(--mm-navcard-border) bg-surface shadow-md ${
+          dragPos == null ? 'motion-safe:transition-[left]' : 'cursor-grabbing'
         }`}
       >
         {publicerad && (
