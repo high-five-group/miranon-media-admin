@@ -988,7 +988,7 @@ export const LIST_PROTO_VARIANTS: PrototypeVariant[] = [
     label: 'Variant B',
     steg: 3,
     stegLabel:
-      'FACIT 2026-07-19 · K78 PÅGÅR — handtaget Resend-troget (fyllnad·pling·bock) + Event/Eventtyp',
+      'FACIT 2026-07-19 · K81 PÅGÅR — Skapa-sidan: handtaget slipat (K79–K80) + miranon.se i mono',
   },
 ];
 // Växlaren själv är T78a-lyft till delade dev-komponenten

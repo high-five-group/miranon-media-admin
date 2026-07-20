@@ -110,8 +110,12 @@ export function SkapaEventPrototype() {
         <div role="status" className="flex flex-col items-start gap-4 px-4">
           <MessageBox intent="success" title="Eventet skapat (prototyp)">
             I den skarpa versionen skapas eventet i basen
-            {publicera ? ', publiceras på miranon.se' : ''} och du landar direkt på dess detaljsida.
-            Prototypen sparar ingenting.
+            {publicera && (
+              <>
+                , publiceras på <MiranonSe />
+              </>
+            )}{' '}
+            och du landar direkt på dess detaljsida. Prototypen sparar ingenting.
           </MessageBox>
           <Button intent="primary" onPress={tillListan}>
             Tillbaka till eventlistan
@@ -261,6 +265,16 @@ export function SkapaEventPrototype() {
       )}
     </section>
   );
+}
+
+/** K81 (Marcus: "skriva ut miranon.se med en annan font?"): domänen i
+    MONO — adress-grammatiken (URL:er/koder i monospace är etablerad
+    klass, Resend/Linear-mönstret) bryter mot Inter i löptexten och
+    lyfter domänen som DESTINATION. 0.95em kompenserar monons optiska
+    överstorlek. Egen profil-font utanför Inter+mono = design-
+    foundation-fråga (bokförd, ej tagen här). */
+function MiranonSe() {
+  return <span className="font-mono text-[0.95em] tracking-tight">miranon.se</span>;
 }
 
 /** K78 — prototyp-plinget vid armad publicering (Marcus: "ett pling
@@ -414,11 +428,11 @@ function PubliceraHandtag({
       <span
         aria-hidden="true"
         style={publicerad ? undefined : { opacity: 1 - pos }}
-        className={`absolute inset-0 flex items-center justify-center text-small ${
+        className={`absolute inset-0 flex items-center justify-center gap-[0.4em] text-small ${
           publicerad ? 'font-medium text-text-inverse' : 'text-text-muted'
         }`}
       >
-        {publicerad ? 'Publiceras på miranon.se' : 'Dra för att publicera på miranon.se'}
+        {publicerad ? 'Publiceras på' : 'Dra för att publicera på'} <MiranonSe />
       </span>
       {/* K79 (Marcus: "ser jättelågupplöst ut"): cirkelns kant bars
           enbart av shadow-sm mot ljus botten — kantutjämningen läste
