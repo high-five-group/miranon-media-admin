@@ -87,6 +87,17 @@ body {
   outline-offset: var(--mm-focus-ring-offset-inset);
 }
 
+/* React Aria-ägda element (data-rac): vid popover-öppning AUTOFOKUSERAS
+   listboxen, och browserns :focus-visible-heuristik klassar skript-fokus
+   som tangentbord → ring runt hela dropdownen vid MUS-öppning
+   (S73 K85, Marcus-fångst). React Aria vet den faktiska modaliteten och
+   sätter data-focus-visible ENDAST vid tangentbord — native-synlig men
+   RAC-osynlig = mus → ingen ring. Tangentbordsringen (globalen ovan)
+   är orörd. Olagrad som grannarna (cascade-arkitekturen, L246). */
+[data-rac]:focus-visible:not([data-focus-visible]) {
+  outline: none;
+}
+
 /* Rubriker: aktivera Inter Display-variant via opsz-axel.
    Se marcus-system DESIGN-FOUNDATION-v1.
    I @layer base (task-4.1, B-NYTT): olagrad author-CSS besegrar ALLA
