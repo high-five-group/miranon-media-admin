@@ -49,7 +49,15 @@
 import { type CalendarDate, parseDate } from '@internationalized/date';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { CalendarDays, ChevronLeft, ChevronRight, Minus, Pencil, Plus } from 'lucide-react';
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Minus,
+  Pencil,
+  Plus,
+  Printer,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
   Button as AriaButton,
@@ -93,7 +101,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K16+K17 — beläggningsmodellen (kategorier + segment) + manuell anmälan-sidan',
+    stegLabel: 'K18 — pillen och förklaringstexterna rivna + Skriv ut-knappen',
   },
 ];
 
@@ -140,14 +148,11 @@ function belaggningsDelar(e: ProtoEvent) {
 function FkRad({
   term,
   prick,
-  pill,
   children,
 }: {
   term: string;
   /** K16: kategoriprick (dekorativ — siffran i raden är bäraren). */
   prick?: string;
-  /** K16 (Marcus: "via formulär som pill typ"): käll-etikett efter termen. */
-  pill?: string;
   children: React.ReactNode;
 }) {
   if (children == null || children === '') return null;
@@ -156,11 +161,6 @@ function FkRad({
       <dt className="flex items-center gap-2 text-small text-text-muted">
         {prick && <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${prick}`} />}
         {term}
-        {pill && (
-          <span className="rounded-full bg-surface px-2 py-0.5 text-caption text-text-secondary">
-            {pill}
-          </span>
-        )}
       </dt>
       <dd className="text-right text-body">{children}</dd>
     </div>
@@ -610,7 +610,7 @@ function BelaggningForm({
         >
           <AntalFalt label="Reserverade" value={reserverade} onChange={setReserverade} />
         </RedigeringsRad>
-        <FkRad term="Anmälda deltagare" prick={KATEGORI.formular} pill="via formulär">
+        <FkRad term="Anmälda deltagare" prick={KATEGORI.formular}>
           {String(event.antalAnmalda)}
         </FkRad>
         <RedigeringsRad
@@ -756,16 +756,26 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
   // runda back-knapp). 44 px = touch-target-golvet på köpet.
   // Skärmläsaren får målet via aria-label ("Tillbaka till event");
   // search-genomslaget bevarat.
+  // K18 (Marcus): toppraden = chevronen vänster + Skriv ut höger (Polaris
+  // page-header-mönstret: back till vänster, sidans åtgärder till höger).
+  // Tydlig text + ikon så Lotta SER att sidan går att skriva ut;
+  // utskriften är browserns egen (window.print).
   const sidRam = (innehall: React.ReactNode) => (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      <Link
-        to="/event"
-        search={(prev) => prev}
-        aria-label="Tillbaka till event"
-        className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
-      >
-        <ChevronLeft aria-hidden="true" size={26} />
-      </Link>
+      <div className="mx-4 flex items-center justify-between gap-3">
+        <Link
+          to="/event"
+          search={(prev) => prev}
+          aria-label="Tillbaka till event"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-bg-muted"
+        >
+          <ChevronLeft aria-hidden="true" size={26} />
+        </Link>
+        <Button intent="secondary" onPress={() => window.print()}>
+          <Printer aria-hidden="true" size={16} />
+          Skriv ut
+        </Button>
+      </div>
       {innehall}
     </section>
   );
@@ -888,7 +898,7 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
               <FkRad term="Reserverade" prick={KATEGORI.reserverad}>
                 {event.reserverade != null ? String(event.reserverade) : null}
               </FkRad>
-              <FkRad term="Anmälda deltagare" prick={KATEGORI.formular} pill="via formulär">
+              <FkRad term="Anmälda deltagare" prick={KATEGORI.formular}>
                 {String(event.antalAnmalda)}
               </FkRad>
               <FkRad term="Manuellt tillagda" prick={KATEGORI.manuell}>

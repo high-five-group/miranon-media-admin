@@ -16,8 +16,9 @@
  *
  * FK-formklassen: en kolumn · label-över-fält · obligatorisk-markering i
  * etiketten · grupprubriker utanför tonala kort (ProtoGrupp-arvet) ·
- * kontextrad under h1 (vilket event anmälan gäller) · Gunilla-klar
- * hjälptext · fel visas först vid Spara-försöket, inte medan man skriver.
+ * kontextrad under h1 (vilket event anmälan gäller) · fel visas först
+ * vid Spara-försöket, inte medan man skriver. Förklaringstexterna revs
+ * på Marcus-order (K18) — rubriken + kontextraden bär betydelsen.
  *
  * PROTOTYP-NO-OP (read-only-regeln): Spara validerar och visar
  * bekräftelse-läget — ingen write; sidladdning nollställer. Skarpa
@@ -95,10 +96,6 @@ export function ManuellAnmalanPrototype({ eventId }: { eventId: string }) {
         <p className="text-small text-text-secondary">
           {eventName(event)} · {datumSpannText(event)}
         </p>
-        <p className="text-small text-text-muted">
-          För anmälningar som kommer in utanför formuläret — till exempel via mail eller telefon.
-          Anmälan registreras som manuellt tillagd.
-        </p>
       </header>
 
       {sparad ? (
@@ -157,12 +154,7 @@ export function ManuellAnmalanPrototype({ eventId }: { eventId: string }) {
                   </div>
                 </I18nProvider>
               </div>
-              <TextArea
-                label="Notering"
-                description="Till exempel hur anmälan kom in."
-                value={notering}
-                onChange={setNotering}
-              />
+              <TextArea label="Notering" value={notering} onChange={setNotering} />
             </div>
           </ProtoGrupp>
 
