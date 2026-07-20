@@ -51,7 +51,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
   BadgeCheck,
-  BellRing,
   CalendarDays,
   Check,
   ChevronDown,
@@ -67,7 +66,6 @@ import {
   Pencil,
   Plus,
   Printer,
-  Send,
   TriangleAlert,
   UserCheck,
 } from 'lucide-react';
@@ -115,7 +113,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K46 — hantera-flödet: Skicka bekräftelse på ohanterat kort, kön kan tömmas',
+    stegLabel: 'K47 — Bekräfta alla-pillen på Ohanterade-raden + kuvert-ikonen överallt',
   },
 ];
 
@@ -1054,7 +1052,11 @@ function DeltagarKort({
           onClick={() => onSkickaBekraftelse(d.personId)}
           className="flex w-full items-center justify-center gap-2 rounded-b-xl border-border border-t px-4 py-2.5 font-medium text-small"
         >
-          <Send aria-hidden="true" size={14} className="shrink-0" />
+          {/* K47 (Marcus): kuvertet — samma ikon som betalningarnas
+              Påminn-handling och Åtgärds-gruppens utskicksrader;
+              grammatiken Mail = skicka-handling, MailCheck =
+              skickat-status. */}
+          <Mail aria-hidden="true" size={14} className="shrink-0" />
           Skicka bekräftelse
         </button>
       )}
@@ -1182,40 +1184,51 @@ function AutoKryss({
 
 /** K40: accordion-rubriken (Marcus: "dropdown-rubriker under tabbraden")
     — vänsterställd etikett + roterande chevron; ohanterade-rubriken i
-    varningston med ikon (texten bär, färgen förstärker). */
+    varningston med ikon (texten bär, färgen förstärker).
+    K47 (Marcus): valfri HANDLINGS-slot på raden (Bekräfta alla-pillen)
+    — visuellt på raden, strukturellt UTANFÖR toggle-knappen som syskon
+    i den tonala raden (K44-regeln: interaktivt-i-interaktivt
+    förbjudet); toggle-knappen blir flex-1, chevronen stannar vid dess
+    högerkant. */
 function GruppRubrik({
   oppen,
   varning,
   kontrollerarId,
   onToggle,
+  handling,
   children,
 }: {
   oppen: boolean;
   varning?: boolean;
   kontrollerarId: string;
   onToggle: () => void;
+  /** Interaktiv handling på rubrikraden — renderas utanför knappen. */
+  handling?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-expanded={oppen}
-      aria-controls={kontrollerarId}
-      onClick={onToggle}
-      className="flex w-full items-center justify-between gap-3 rounded-lg bg-bg-emphasized px-3 py-2.5 text-left"
-    >
-      <span
-        className={`flex items-center gap-1.5 font-semibold text-small ${varning ? 'text-error' : ''}`}
+    <div className="flex items-center rounded-lg bg-bg-emphasized">
+      <button
+        type="button"
+        aria-expanded={oppen}
+        aria-controls={kontrollerarId}
+        onClick={onToggle}
+        className="flex min-w-0 flex-1 items-center justify-between gap-3 px-3 py-2.5 text-left"
       >
-        {varning && <TriangleAlert aria-hidden="true" size={14} className="shrink-0" />}
-        {children}
-      </span>
-      <ChevronDown
-        aria-hidden="true"
-        size={16}
-        className={`shrink-0 text-text-secondary motion-safe:transition-transform ${oppen ? 'rotate-180' : ''}`}
-      />
-    </button>
+        <span
+          className={`flex items-center gap-1.5 font-semibold text-small ${varning ? 'text-error' : ''}`}
+        >
+          {varning && <TriangleAlert aria-hidden="true" size={14} className="shrink-0" />}
+          {children}
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          size={16}
+          className={`shrink-0 text-text-secondary motion-safe:transition-transform ${oppen ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {handling != null && <span className="flex shrink-0 items-center pr-2">{handling}</span>}
+    </div>
   );
 }
 
@@ -1257,6 +1270,14 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
   const hanterade = visade
     .filter((d) => arHanterad(d))
     .sort((a, b) => b.anmald.localeCompare(a.anmald));
+  /* K47 (Marcus): Bekräfta alla — tömmer den VISADE kön i ett svep.
+     Skarpa formen är PRD-bokförd sedan tidigare: bulk-operationer per
+     event + CONFIRM-GRIND på massmutationen; demot kör direkt. */
+  const bekraftaAlla = () =>
+    setSkickade((s) => {
+      const nu = new Date().toISOString();
+      return { ...s, ...Object.fromEntries(ohanterade.map((d) => [d.personId, nu])) };
+    });
   const deltagarinfoSkickade = antalSkickade('deltagarinfo');
   const statusTraffar =
     statusFilter == null ? null : visade.filter(STATUSFILTER[statusFilter].test);
@@ -1382,6 +1403,17 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
                   varning
                   kontrollerarId="deltagare-ohanterade"
                   onToggle={() => setOppna((o) => ({ ...o, ohanterade: !o.ohanterade }))}
+                  handling={
+                    <button
+                      type="button"
+                      aria-label="Skicka bekräftelse till alla ohanterade"
+                      onClick={bekraftaAlla}
+                      className="flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 font-medium text-small shadow-sm"
+                    >
+                      <Mail aria-hidden="true" size={14} className="shrink-0" />
+                      Bekräfta alla
+                    </button>
+                  }
                 >
                   Ohanterade ({ohanterade.length})
                 </GruppRubrik>
@@ -2030,10 +2062,15 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
           senare K-steg på Marcus-beslut. */}
       <ProtoGrupp id="proto-grupp-atgarder" rubrik="Åtgärder">
         <LaggTillRad eventId={eventId} />
-        <HandlingsRad ikon={MailCheck}>Skicka bekräftelsemail till obekräftade</HandlingsRad>
-        <HandlingsRad ikon={BellRing}>Skicka betalningspåminnelse till obetalda</HandlingsRad>
+        {/* K47 (Marcus — "samma överallt"): ikon-grammatiken sluten —
+            kuvertet (Mail) på VARJE skicka mail-handling (kort-knappen,
+            Bekräfta alla, Påminn i betalningsdetaljerna, utskicksraderna
+            här); MailCheck är reserverad för skickat-STATUS. Send +
+            BellRing utgår ur sidan. */}
+        <HandlingsRad ikon={Mail}>Skicka bekräftelsemail till obekräftade</HandlingsRad>
+        <HandlingsRad ikon={Mail}>Skicka betalningspåminnelse till obetalda</HandlingsRad>
         <HandlingsRad ikon={BadgeCheck}>Markera alla obetalda som betalda</HandlingsRad>
-        <HandlingsRad ikon={Send}>Skicka eventinfo till alla anmälda</HandlingsRad>
+        <HandlingsRad ikon={Mail}>Skicka eventinfo till alla anmälda</HandlingsRad>
         <HandlingsRad ikon={Printer} onPress={() => window.print()}>
           Skriv ut denna detaljsida
         </HandlingsRad>
