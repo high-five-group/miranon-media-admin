@@ -112,7 +112,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K32 — placeholdern riven + påminn-ikon per betalnings-linje',
+    stegLabel: 'K33 — likbredda notisrutor (ikon-slotten alltid renderad)',
   },
 ];
 
@@ -993,15 +993,19 @@ function BetalningsLinje({
         value={notering}
         onChange={onNotering}
       />
-      {!vald && (
-        <a
-          href={`mailto:${epost}?subject=${encodeURIComponent(`Påminnelse: ${label.toLowerCase()} för ${eventNamn}`)}`}
-          aria-label={`Påminn ${namn} om ${label.toLowerCase()} via mail`}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full text-text-secondary hover:text-text"
-        >
-          <Mail aria-hidden="true" size={16} />
-        </a>
-      )}
+      {/* K33 (Marcus): ikon-SLOTTEN alltid renderad (likbredds-läxan K13)
+          — alla notisrutor exakt samma bredd, med eller utan ikon. */}
+      <div className="size-8 shrink-0">
+        {!vald && (
+          <a
+            href={`mailto:${epost}?subject=${encodeURIComponent(`Påminnelse: ${label.toLowerCase()} för ${eventNamn}`)}`}
+            aria-label={`Påminn ${namn} om ${label.toLowerCase()} via mail`}
+            className="flex size-8 items-center justify-center rounded-full text-text-secondary hover:text-text"
+          >
+            <Mail aria-hidden="true" size={16} />
+          </a>
+        )}
+      </div>
     </div>
   );
 }
