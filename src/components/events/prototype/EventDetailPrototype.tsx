@@ -107,7 +107,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K24 — check-in i NavCard-formen (svarta baren riven)',
+    stegLabel: 'K25 — chevron-prövningen (alla åtgärdsrader + check-in)',
   },
 ];
 
@@ -682,6 +682,11 @@ function HandlingsRad({
   // rader (ojämna vänsterkanter läser rörigt); vänsterkant ger ikonerna
   // en gemensam kolumn (settings-listans skanlinje). Ändra-/Öppna-raderna
   // behåller centreringen (en rad per kort — annan situation).
+  // K25 (Marcus, PRÖVNING): chevron höger på ALLA åtgärdsrader —
+  // konsekvens-testet. OBS öppet flaggat: app-regeln (S64, M6-facitet)
+  // säger ingen chevron på navigationsrader, och bransch-semantiken är
+  // chevron = navigation, inte operation. Låses chevrons rivs regeln
+  // öppet + Mer-menyn följer med (koherens); annars rivs prövningen.
   return (
     <div className="py-3">
       <button
@@ -691,6 +696,11 @@ function HandlingsRad({
       >
         <Ikon aria-hidden="true" size={16} className="shrink-0" />
         {children}
+        <ChevronRight
+          aria-hidden="true"
+          size={18}
+          className="ml-auto shrink-0 text-text-secondary"
+        />
       </button>
     </div>
   );
@@ -714,6 +724,12 @@ function LaggTillRad({ eventId }: { eventId: string }) {
       >
         <Plus aria-hidden="true" size={16} className="shrink-0" />
         Lägg till manuell anmälan
+        {/* K25-prövningen: chevron även här (radens syskon-konsekvens). */}
+        <ChevronRight
+          aria-hidden="true"
+          size={18}
+          className="ml-auto shrink-0 text-text-secondary"
+        />
       </Link>
     </div>
   );
@@ -910,7 +926,11 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
           size={20}
           className="text-(color:--mm-navcard-icon) shrink-0"
         />
-        Gå till check-in
+        <span className="grow">Gå till check-in</span>
+        {/* K25-prövningen (Marcus): chevron höger — "mer tydligt att det är
+            en knapp". Bryter mot NavCard-facitets ingen-chevron-regel;
+            prövas öppet, låses eller rivs. */}
+        <ChevronRight aria-hidden="true" size={20} className="shrink-0 text-text-secondary" />
       </button>
 
       {/* K19 (Marcus): Åtgärds-gruppen ÖVERST — sidans operativa handlingar
