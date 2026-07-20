@@ -274,7 +274,7 @@ type OmEventetVarden = Pick<ProtoEvent, 'typ' | 'ort' | 'startdatum' | 'slutdatu
     bestämt format per locale) + RangeCalendar i popover för start/slut.
     K12: kompakt rad-form (min-h-8 == radgeometrin); etiketten bärs av
     raden utanför → aria-label här. */
-function DatumFalt({
+export function DatumFalt({
   value,
   onChange,
 }: {

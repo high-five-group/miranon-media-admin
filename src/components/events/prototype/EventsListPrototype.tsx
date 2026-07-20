@@ -863,15 +863,19 @@ export function EventsListPrototype() {
   // VY-RADEN, vänster (väljaren behåller höger), i väljarnas mjuka
   // kapselstil (rounded-full bg-bg-muted + ikon 18) — inte primär-
   // knappens svärta. Följer med i BÅDA vy-lägena (K10: raden har fast
-  // position). Målet är befintliga skarpa /mer/skapa-event
-  // (CreateEventForm mot create-event-EF:en, Fas 6f/ADR-066);
+  // position). K75: målet är FAMILJE-prototypsidan /event/skapa
+  // (SkapaEventPrototype — skapa-sidan i konvergens-grammatiken;
+  // search-genomslaget bär variant-axeln). Skarpa hemvisten
+  // (/mer/skapa-event flyttas/dubbleras?) = PRD-fråga; utanför
+  // prototypflödet faller routen till skarpa sidan.
   // CalendarPlus + etiketten == Mer-radens (K47 samma överallt);
   // Mer-ingången KVAR tills Marcus dömer flytt vs dubblering.
   // Facit-utökningen öppet bokförd (S72-facitet låst 2026-07-19).
   const vyRad = (
     <div className="flex items-center justify-between gap-3">
       <Link
-        to="/mer/skapa-event"
+        to="/event/skapa"
+        search={(prev) => prev}
         className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
       >
         <CalendarPlus aria-hidden="true" size={18} className="shrink-0" />
@@ -983,7 +987,7 @@ export const LIST_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'B',
     label: 'Variant B',
     steg: 3,
-    stegLabel: 'FACIT 2026-07-19 · K74 PÅGÅR — Skapa-ingången i vy-väljarraden (K73 riven)',
+    stegLabel: 'FACIT 2026-07-19 · K74-ingången LÅST · K75 PÅGÅR — Skapa-sidan i familjeformen',
   },
 ];
 // Växlaren själv är T78a-lyft till delade dev-komponenten
