@@ -115,7 +115,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K42 — Lottas mail-flöde speglat (bekräftelse-raden + Eventinfo-namnet)',
+    stegLabel: 'K43 — eventinfo 0 av 10 + dags-att-skicka-signalen',
   },
 ];
 
@@ -883,7 +883,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       anmald: '2026-06-26',
       bekraftelse: '2026-06-27',
       paminnelse: null,
-      deltagarinfo: '2026-07-18',
+      deltagarinfo: null,
       tidigareEvent: 4,
     },
     {
@@ -894,7 +894,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       anmald: '2026-06-26',
       bekraftelse: '2026-06-27',
       paminnelse: null,
-      deltagarinfo: '2026-07-18',
+      deltagarinfo: null,
       tidigareEvent: 2,
     },
     {
@@ -1047,11 +1047,15 @@ function SummeringsRad({
   term,
   aktiv,
   onClick,
+  signal,
   children,
 }: {
   term: string;
   aktiv: boolean;
   onClick: () => void;
+  /** K43: valfri signal-rad under räkningen (t.ex. dags-att-skicka-
+      badgen) — ingår i klickytan (hela raden är filtret). */
+  signal?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -1059,14 +1063,39 @@ function SummeringsRad({
       type="button"
       aria-pressed={aktiv}
       onClick={onClick}
-      className={`flex w-full items-center justify-between gap-4 py-3 text-left ${
+      className={`flex w-full flex-col gap-1.5 py-3 text-left ${
         aktiv ? '-mx-2 w-auto rounded-lg bg-bg-emphasized px-2' : ''
       }`}
     >
-      <span className="text-small text-text-muted">{term}</span>
-      <span className="text-right text-body">{children}</span>
+      <span className="flex w-full items-center justify-between gap-4">
+        <span className="text-small text-text-muted">{term}</span>
+        <span className="text-right text-body">{children}</span>
+      </span>
+      {signal}
     </button>
   );
+}
+
+/** K43 (Marcus): dags-att-skicka-signalen för eventinfo — mail 2 går ut
+    2 VECKOR före eventet (Lottas flöde, K42); när gränsen är nådd och
+    utskick saknas tänds badgen (betalnings-deadline-badgens grammatik:
+    bg-surface-pill + Clock + warning-ton). Tystnar när eventet passerat
+    eller alla fått. */
+function eventinfoSignal(e: ProtoEvent): string | null {
+  if (!e.startdatum) return null;
+  const start = new Date(e.startdatum);
+  if (Number.isNaN(start.getTime())) return null;
+  const grans = new Date(start);
+  grans.setDate(grans.getDate() - 14);
+  const idag = new Date();
+  idag.setHours(0, 0, 0, 0);
+  grans.setHours(0, 0, 0, 0);
+  start.setHours(0, 0, 0, 0);
+  if (idag < grans || idag > start) return null;
+  const dagarKvar = Math.round((start.getTime() - idag.getTime()) / 86_400_000);
+  if (dagarKvar === 0) return 'Dags att skicka — eventet är idag';
+  if (dagarKvar === 1) return 'Dags att skicka — eventet är imorgon';
+  return `Dags att skicka — eventet är om ${dagarKvar} dagar`;
 }
 
 /** K40: accordion-rubriken (Marcus: "dropdown-rubriker under tabbraden")
@@ -1116,7 +1145,7 @@ function GruppRubrik({
     standard, Hanterade STÄNGD (inbox-fokus: kön i ansiktet, arkivet
     ett klick bort; är kön tom öppnas Hanterade i stället och en
     positiv rad ersätter ohanterade-rubriken). */
-function DeltagarLista({ eventId }: { eventId: string }) {
+function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent }) {
   const deltagare = DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1'];
   const [filter, setFilter] = useState<'alla' | DeltagarKategori>('alla');
   const [statusFilter, setStatusFilter] = useState<StatusFilter | null>(null);
@@ -1186,6 +1215,15 @@ function DeltagarLista({ eventId }: { eventId: string }) {
           term="Eventinfo skickad"
           aktiv={statusFilter === 'saknarEventinfo'}
           onClick={() => vaxlaStatus('saknarEventinfo')}
+          signal={
+            totalt - deltagarinfoSkickade > 0 &&
+            eventinfoSignal(event) && (
+              <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 font-medium text-small text-warning">
+                <Clock aria-hidden="true" size={14} />
+                {eventinfoSignal(event)}
+              </span>
+            )
+          }
         >
           {`${deltagarinfoSkickade} av ${totalt}`}
           {totalt - deltagarinfoSkickade > 0 && (
@@ -1980,7 +2018,7 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
           Betalningars röda saknas-delta — "hur många") + kategori-
           FLIKARNA i familje-kapseln ("vilka"; filtrerar korten). */}
       <ProtoGrupp id="proto-grupp-deltagare" rubrik="Anmälda deltagare">
-        <DeltagarLista eventId={eventId} />
+        <DeltagarLista eventId={eventId} event={event} />
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-betalning" rubrik="Betalningar">
