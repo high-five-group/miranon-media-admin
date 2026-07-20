@@ -115,7 +115,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K45 — personkortens metayta avbrusad: anmäld + tid, endast utförda åtgärder',
+    stegLabel: 'K46 — hantera-flödet: Skicka bekräftelse på ohanterat kort, kön kan tömmas',
   },
 ];
 
@@ -993,49 +993,72 @@ function klockslag(iso: string): string {
     K45 (Marcus — metaytans AVBRUSNING): Anmäld dag + klockslag på EN
     rad (Inskickad är dateTime) · därunder ENDAST utförda åtgärder på
     var sin rad · sista raden historiken med HELA namnet
-    "Miranon Media". */
-function DeltagarKort({ d }: { d: DemoDeltagare }) {
+    "Miranon Media".
+    K46 (Marcus-ordern b): ohanterat kort bär HANTERA-handlingen —
+    Skicka bekräftelse-knappen i kortbotten, UTANFÖR person-länken
+    (interaktivt-i-interaktivt förbjudet, K44-regeln) — kortet blir
+    wrapper-div, länken + knappen syskon. */
+function DeltagarKort({
+  d,
+  onSkickaBekraftelse,
+}: {
+  d: DemoDeltagare;
+  onSkickaBekraftelse: (personId: string) => void;
+}) {
   return (
-    <Link
-      to="/personer/$personId"
-      params={{ personId: d.personId }}
-      className="flex flex-col gap-1 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
-    >
-      <span className="flex items-start justify-between gap-3 font-semibold text-body">
-        {d.namn}
-        <span className="flex shrink-0 items-center gap-1.5">
-          {/* K41 (Marcus): ohanterat-tonen RÖD (inte koppar) och K40:s
+    <div className="flex flex-col rounded-xl border border-(--mm-navcard-border) bg-surface contrast-more:border-(--mm-navcard-border-contrast)">
+      <Link
+        to="/personer/$personId"
+        params={{ personId: d.personId }}
+        className="flex flex-col gap-1 rounded-xl px-4 py-3"
+      >
+        <span className="flex items-start justify-between gap-3 font-semibold text-body">
+          {d.namn}
+          <span className="flex shrink-0 items-center gap-1.5">
+            {/* K41 (Marcus): ohanterat-tonen RÖD (inte koppar) och K40:s
               vänsterkant-markering riven — pillen bär ensam. */}
-          {!arHanterad(d) && (
-            <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
-              Ohanterad
-            </span>
-          )}
-          {KATEGORI_PILL[d.kategori] && (
-            <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
-              {KATEGORI_PILL[d.kategori]}
-            </span>
-          )}
+            {!arHanterad(d) && (
+              <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
+                Ohanterad
+              </span>
+            )}
+            {KATEGORI_PILL[d.kategori] && (
+              <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+                {KATEGORI_PILL[d.kategori]}
+              </span>
+            )}
+          </span>
         </span>
-      </span>
-      <span className="text-caption text-text-muted">E-post</span>
-      <span className="text-small">{d.epost}</span>
-      <span className="mt-1.5 flex flex-col gap-1 text-caption text-text-muted">
-        <span className="flex items-center gap-1">
-          <Inbox aria-hidden="true" size={12} className="shrink-0" />
-          Anmäld {kortDatum(d.anmald)} {klockslag(d.anmald)}
+        <span className="text-caption text-text-muted">E-post</span>
+        <span className="text-small">{d.epost}</span>
+        <span className="mt-1.5 flex flex-col gap-1 text-caption text-text-muted">
+          <span className="flex items-center gap-1">
+            <Inbox aria-hidden="true" size={12} className="shrink-0" />
+            Anmäld {kortDatum(d.anmald)} {klockslag(d.anmald)}
+          </span>
+          {d.bekraftelse != null && <MailStatus namn="Bekräftelse" skickad={d.bekraftelse} />}
+          {d.paminnelse != null && <MailStatus namn="Påminnelse" skickad={d.paminnelse} />}
+          {d.deltagarinfo != null && <MailStatus namn="Eventinfo" skickad={d.deltagarinfo} />}
         </span>
-        {d.bekraftelse != null && <MailStatus namn="Bekräftelse" skickad={d.bekraftelse} />}
-        {d.paminnelse != null && <MailStatus namn="Påminnelse" skickad={d.paminnelse} />}
-        {d.deltagarinfo != null && <MailStatus namn="Eventinfo" skickad={d.deltagarinfo} />}
-      </span>
-      <span className="flex items-center gap-1.5 text-caption text-text-muted">
-        <History aria-hidden="true" size={12} className="shrink-0" />
-        {d.tidigareEvent === 0
-          ? 'Första eventet hos Miranon Media'
-          : `${d.tidigareEvent} tidigare event hos Miranon Media`}
-      </span>
-    </Link>
+        <span className="flex items-center gap-1.5 text-caption text-text-muted">
+          <History aria-hidden="true" size={12} className="shrink-0" />
+          {d.tidigareEvent === 0
+            ? 'Första eventet hos Miranon Media'
+            : `${d.tidigareEvent} tidigare event hos Miranon Media`}
+        </span>
+      </Link>
+      {!arHanterad(d) && (
+        <button
+          type="button"
+          aria-label={`Skicka bekräftelse till ${d.namn}`}
+          onClick={() => onSkickaBekraftelse(d.personId)}
+          className="flex w-full items-center justify-center gap-2 rounded-b-xl border-border border-t px-4 py-2.5 font-medium text-small"
+        >
+          <Send aria-hidden="true" size={14} className="shrink-0" />
+          Skicka bekräftelse
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -1205,7 +1228,18 @@ function GruppRubrik({
     ett klick bort; är kön tom öppnas Hanterade i stället och en
     positiv rad ersätter ohanterade-rubriken). */
 function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent }) {
-  const deltagare = DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1'];
+  /* K46 (Marcus-ordern b): HANTERA-flödet — Lotta får en VÄG och kön
+     kan TÖMMAS. Demo-lokal overlay-state (read-only-regeln: inget
+     lämnar sidan); skarpa formen = send-email confirmation per anmälan
+     (mail 1, bär betalningsinstruktionerna) — PRD-krav: EF-operationen
+     + Status-flip till "Bekräftad (mail skickat)" server-side. */
+  const [skickade, setSkickade] = useState<Record<string, string>>({});
+  const bas = DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1'];
+  const deltagare = bas.map((d) =>
+    skickade[d.personId] ? { ...d, bekraftelse: skickade[d.personId] } : d,
+  );
+  const skickaBekraftelse = (personId: string) =>
+    setSkickade((s) => ({ ...s, [personId]: new Date().toISOString() }));
   const [filter, setFilter] = useState<'alla' | DeltagarKategori>('alla');
   const [statusFilter, setStatusFilter] = useState<StatusFilter | null>(null);
   // K44: auto-utskicks-valet (minnes-state; PRD = per-event-fält i basen).
@@ -1231,7 +1265,7 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
     <ul className="flex flex-col gap-2.5">
       {lista.map((d) => (
         <li key={d.personId}>
-          <DeltagarKort d={d} />
+          <DeltagarKort d={d} onSkickaBekraftelse={skickaBekraftelse} />
         </li>
       ))}
     </ul>
