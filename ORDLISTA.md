@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-19
+updated: 2026-07-20
 review_by: 2027-01-02
 status: stable
 ---
@@ -123,6 +123,14 @@ renderas direkt, och under 1 sekund visas ingen indikation alls. Termen var
 odefinierad i UB 16 (granskningsfyndet L269); definierad i task-7-grillningen
 (S63, grillad samsyn); mekaniken bor i task-7:s PRD.
 *Undvik:* "Laddar…"-textrader (mönstret som underkändes i S62), spinner.
+
+**Obekräftad/Bekräftad** — anmälans bekräftelsestatus: Bekräftad ⟺
+anmälningsbekräftelsen (mail 1, bär betalningsinstruktionerna) är skickad;
+Obekräftade är Lottas att-göra-kö på eventsidan. Språket ligger exakt på
+basens Status-ord ("Obekräftad"/"Bekräftad (mail skickat)") — Marcus-beslut
+S73 K53, som ersatte konvergensens arbetsord.
+*Undvik:* ohanterad, hanterad (S73 K39–K52-arbetsorden, rivna K53).
+*I koden:* `arBekraftad` (eventsidans prototyp); basens fält `Status`.
 
 **Period** — event-listans tidsaxel: Kommande eller Tidigare, härledd ur
 eventets startdatum mot idag — ALDRIG ur Status-fältet. Skild från eventets

@@ -114,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K52 — bor över-markeringen: kryss-läget i radens klick (en kolumn, säng-kryss)',
+    stegLabel: 'K53 — språket rättat: Obekräftade/Bekräftade (basens Status-ord) överallt',
   },
 ];
 
@@ -968,7 +968,7 @@ function KapselKnapp({
 /** K37: mailstatus-posten — MailCheck + datum (ikonen + datumet bär
     "skickad"). K45 (Marcus — avbrusningen): "ej skickad"-klartexten
     RIVEN från kortet — endast UTFÖRDA åtgärder renderas (kortet guards
-    på null); deltat/att-göra bär summeringsraderna + Ohanterade-kön,
+    på null); deltat/att-göra bär summeringsraderna + Obekräftade-kön,
     inte varje kort. */
 function MailStatus({ namn, skickad }: { namn: string; skickad: string }) {
   const datum = new Date(skickad);
@@ -980,10 +980,12 @@ function MailStatus({ namn, skickad }: { namn: string; skickad: string }) {
   );
 }
 
-/** K39 (Marcus-semantiken, bas-belagd): HANTERAD ⟺ bekräftelse skickad —
+/** K39 (Marcus-semantiken, bas-belagd): BEKRÄFTAD ⟺ bekräftelse skickad —
     basens Status har bokstavligen "Obekräftad"/"Bekräftad (mail
-    skickat)". Ohanterade är Lottas ATT GÖRA. */
-function arHanterad(d: DemoDeltagare): boolean {
+    skickat)". Obekräftade är Lottas ATT GÖRA.
+    K53 (Marcus): SPRÅKET lagt exakt på basens Status-ord — arbetsorden
+    ohanterad/hanterad (K39–K52) RIVNA överallt; ORDLISTA-post. */
+function arBekraftad(d: DemoDeltagare): boolean {
   return d.bekraftelse != null;
 }
 
@@ -1000,8 +1002,8 @@ function klockslag(iso: string): string {
   return Number.isNaN(datum.getTime()) ? '' : KLOCKSLAG.format(datum);
 }
 
-/** K37/K39: personkortet — namn + pillar (Ohanterad i varningston före
-    kategori-pillen; hanterad är OMÄRKT — tysta normen) · e-post ·
+/** K37/K39: personkortet — namn + pillar (Obekräftad i varningston före
+    kategori-pillen; bekräftad är OMÄRKT — tysta normen) · e-post ·
     tidslinjen som börjar med NÄR anmälan kom in (basens `Inskickad`) ·
     mail-överblicken · Miranon-historiken.
     K45 (Marcus — metaytans AVBRUSNING): Anmäld dag + klockslag på EN
@@ -1031,9 +1033,9 @@ function DeltagarKort({
           <span className="flex shrink-0 items-center gap-1.5">
             {/* K41 (Marcus): ohanterat-tonen RÖD (inte koppar) och K40:s
               vänsterkant-markering riven — pillen bär ensam. */}
-            {!arHanterad(d) && (
+            {!arBekraftad(d) && (
               <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
-                Ohanterad
+                Obekräftad
               </span>
             )}
             {KATEGORI_PILL[d.kategori] && (
@@ -1061,7 +1063,7 @@ function DeltagarKort({
             : `${d.tidigareEvent} tidigare event hos Miranon Media`}
         </span>
       </Link>
-      {!arHanterad(d) && (
+      {!arBekraftad(d) && (
         <button
           type="button"
           aria-label={`Skicka bekräftelse till ${d.namn}`}
@@ -1137,14 +1139,14 @@ function BorOverRad({
     betalnings-arbetsytans redan etablerade kryss-grammatik.
     K42 (Marcus — LOTTAS MAIL-FLÖDE, speglas i radordningen): mail 1 =
     ANMÄLNINGSBEKRÄFTELSEN (först av allt, bär betalningsinstruktionerna;
-    när den är skickad är anmälan HANTERAD) → ev. betalningspåminnelse
+    när den är skickad är anmälan BEKRÄFTAD) → ev. betalningspåminnelse
     emellan → mail 2 = EVENTINFO (2 veckor före eventet). UI-ordet är
     EVENTINFO (Marcus-språket; basens fält heter `Deltagarinfo skickad` —
     ORDLISTA-/PRD-not, ingen bas-ändring här). */
-type StatusFilter = 'ohanterade' | 'bekraftade' | 'paminda' | 'saknarEventinfo' | 'borOver';
+type StatusFilter = 'obekraftade' | 'bekraftade' | 'paminda' | 'saknarEventinfo' | 'borOver';
 const STATUSFILTER: Record<StatusFilter, { etikett: string; test: (d: DemoDeltagare) => boolean }> =
   {
-    ohanterade: { etikett: 'ohanterade anmälningar', test: (d) => !arHanterad(d) },
+    obekraftade: { etikett: 'obekräftade anmälningar', test: (d) => !arBekraftad(d) },
     bekraftade: { etikett: 'fått anmälningsbekräftelse', test: (d) => d.bekraftelse != null },
     paminda: { etikett: 'fått betalningspåminnelse', test: (d) => d.paminnelse != null },
     saknarEventinfo: { etikett: 'saknar eventinfo', test: (d) => d.deltagarinfo == null },
@@ -1257,7 +1259,7 @@ function AutoKryss({
 }
 
 /** K40: accordion-rubriken (Marcus: "dropdown-rubriker under tabbraden")
-    — vänsterställd etikett + roterande chevron; ohanterade-rubriken i
+    — vänsterställd etikett + roterande chevron; obekräftade-rubriken i
     varningston med ikon (texten bär, färgen förstärker).
     K47 (Marcus): valfri HANDLINGS-slot på raden (Bekräfta alla-pillen)
     — visuellt på raden, strukturellt UTANFÖR toggle-knappen som syskon
@@ -1308,12 +1310,12 @@ function GruppRubrik({
 
 /** K38: deltagar-kortets innehåll — sammanfattning ("hur många") +
     kategorifilter + personkorten ("vilka"); sammanfattningen räknar
-    ALLTID hela eventet. K39: arbetskö-mönstret (Ohanterade/Hanterade).
+    ALLTID hela eventet. K39: arbetskö-mönstret (Obekräftade/Bekräftade).
     K40: summeringsraderna är FILTER (klick → flat lista + rensa-rad),
-    grupperna är ACCORDIONS under tabbraden — Ohanterade ÖPPEN som
-    standard, Hanterade STÄNGD (inbox-fokus: kön i ansiktet, arkivet
-    ett klick bort; är kön tom öppnas Hanterade i stället och en
-    positiv rad ersätter ohanterade-rubriken). */
+    grupperna är ACCORDIONS under tabbraden — Obekräftade ÖPPEN som
+    standard, Bekräftade STÄNGD (inbox-fokus: kön i ansiktet, arkivet
+    ett klick bort; är kön tom öppnas Bekräftade i stället och en
+    positiv rad ersätter obekräftade-rubriken). */
 function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent }) {
   /* K46 (Marcus-ordern b): HANTERA-flödet — Lotta får en VÄG och kön
      kan TÖMMAS. Demo-lokal overlay-state (read-only-regeln: inget
@@ -1339,18 +1341,18 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
   const [statusFilter, setStatusFilter] = useState<StatusFilter | null>(null);
   // K44: auto-utskicks-valet (minnes-state; PRD = per-event-fält i basen).
   const [autoUtskick, setAutoUtskick] = useState(true);
-  const ohanteradeTotalt = deltagare.filter((d) => !arHanterad(d)).length;
-  const [oppna, setOppna] = useState({ ohanterade: true, hanterade: ohanteradeTotalt === 0 });
+  const obekraftadeTotalt = deltagare.filter((d) => !arBekraftad(d)).length;
+  const [oppna, setOppna] = useState({ obekraftade: true, bekraftade: obekraftadeTotalt === 0 });
   const visade = filter === 'alla' ? deltagare : deltagare.filter((d) => d.kategori === filter);
   const antalKategori = (k: DeltagarKategori) => deltagare.filter((d) => d.kategori === k).length;
   const antalSkickade = (falt: 'bekraftelse' | 'paminnelse' | 'deltagarinfo') =>
     deltagare.filter((d) => d[falt] != null).length;
   const totalt = deltagare.length;
-  const ohanterade = visade
-    .filter((d) => !arHanterad(d))
+  const obekraftade = visade
+    .filter((d) => !arBekraftad(d))
     .sort((a, b) => a.anmald.localeCompare(b.anmald));
-  const hanterade = visade
-    .filter((d) => arHanterad(d))
+  const bekraftade = visade
+    .filter((d) => arBekraftad(d))
     .sort((a, b) => b.anmald.localeCompare(a.anmald));
   /* K47 (Marcus): Bekräfta alla — tömmer den VISADE kön i ett svep.
      Skarpa formen är PRD-bokförd sedan tidigare: bulk-operationer per
@@ -1358,7 +1360,7 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
   const bekraftaAlla = () =>
     setSkickade((s) => {
       const nu = new Date().toISOString();
-      return { ...s, ...Object.fromEntries(ohanterade.map((d) => [d.personId, nu])) };
+      return { ...s, ...Object.fromEntries(obekraftade.map((d) => [d.personId, nu])) };
     });
   const deltagarinfoSkickade = antalSkickade('deltagarinfo');
   const statusTraffar =
@@ -1384,12 +1386,12 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
     <>
       <div className="divide-y divide-border">
         <SummeringsRad
-          term="Ohanterade anmälningar"
-          aktiv={statusFilter === 'ohanterade'}
-          onClick={() => vaxlaStatus('ohanterade')}
+          term="Obekräftade anmälningar"
+          aktiv={statusFilter === 'obekraftade'}
+          onClick={() => vaxlaStatus('obekraftade')}
         >
-          {ohanteradeTotalt > 0 ? (
-            <span className="font-medium text-error tabular-nums">{ohanteradeTotalt}</span>
+          {obekraftadeTotalt > 0 ? (
+            <span className="font-medium text-error tabular-nums">{obekraftadeTotalt}</span>
           ) : (
             '0'
           )}
@@ -1514,13 +1516,13 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
           <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>
         ) : (
           <>
-            {ohanterade.length > 0 ? (
+            {obekraftade.length > 0 ? (
               <div>
                 <GruppRubrik
-                  oppen={oppna.ohanterade}
+                  oppen={oppna.obekraftade}
                   varning
-                  kontrollerarId="deltagare-ohanterade"
-                  onToggle={() => setOppna((o) => ({ ...o, ohanterade: !o.ohanterade }))}
+                  kontrollerarId="deltagare-obekraftade"
+                  onToggle={() => setOppna((o) => ({ ...o, obekraftade: !o.obekraftade }))}
                   handling={
                     // K48 (Marcus): pillen i success-GRÖNT med vit text +
                     // ikon — sidans positiva massåtgärd bär success-rollen
@@ -1528,7 +1530,7 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
                     // --mm-success (#606B57 sage, K49) = 5,61:1, AA-ren.
                     <button
                       type="button"
-                      aria-label="Skicka bekräftelse till alla ohanterade"
+                      aria-label="Skicka bekräftelse till alla obekräftade"
                       onClick={bekraftaAlla}
                       className="flex items-center gap-1.5 rounded-full bg-success px-2.5 py-1 font-medium text-small text-text-inverse shadow-sm"
                     >
@@ -1537,26 +1539,28 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
                     </button>
                   }
                 >
-                  Ohanterade ({ohanterade.length})
+                  Obekräftade ({obekraftade.length})
                 </GruppRubrik>
-                <div id="deltagare-ohanterade" hidden={!oppna.ohanterade} className="pt-1.5">
-                  {kortLista(ohanterade)}
+                <div id="deltagare-obekraftade" hidden={!oppna.obekraftade} className="pt-1.5">
+                  {kortLista(obekraftade)}
                 </div>
               </div>
             ) : (
-              <p className="text-small text-text-secondary">Inga ohanterade — allt är hanterat.</p>
+              <p className="text-small text-text-secondary">
+                Inga obekräftade — alla är bekräftade.
+              </p>
             )}
-            {hanterade.length > 0 && (
+            {bekraftade.length > 0 && (
               <div>
                 <GruppRubrik
-                  oppen={oppna.hanterade}
-                  kontrollerarId="deltagare-hanterade"
-                  onToggle={() => setOppna((o) => ({ ...o, hanterade: !o.hanterade }))}
+                  oppen={oppna.bekraftade}
+                  kontrollerarId="deltagare-bekraftade"
+                  onToggle={() => setOppna((o) => ({ ...o, bekraftade: !o.bekraftade }))}
                 >
-                  Hanterade ({hanterade.length})
+                  Bekräftade ({bekraftade.length})
                 </GruppRubrik>
-                <div id="deltagare-hanterade" hidden={!oppna.hanterade} className="pt-1.5">
-                  {kortLista(hanterade)}
+                <div id="deltagare-bekraftade" hidden={!oppna.bekraftade} className="pt-1.5">
+                  {kortLista(bekraftade)}
                 </div>
               </div>
             )}
