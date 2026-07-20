@@ -116,7 +116,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     label: 'Prototypen',
     steg: 1,
     stegLabel:
-      'K68 — Anteckningar: resize-greppet rivet · kant-inset 16 px runt om · knappen i sektionens radie',
+      'K69 — Anteckningar: knappen åter i primitivens radie (K68-radien prövad-och-riven)',
   },
 ];
 
@@ -1624,10 +1624,10 @@ function AnteckningarSektion({ event }: { event: ProtoEvent }) {
           onChange={setText}
           className="[&_textarea]:resize-none [&_textarea]:rounded-xl"
         />
-        {/* K68 (Marcus): knappen i SEKTIONENS radie (rounded-xl == rutan
-            + korten; primitivens rounded är 4 px) — tailwind-merge:as
-            över variantklasserna. */}
-        <Button size="sm" onPress={laggTill} className="self-end rounded-xl">
+        {/* K69 (Marcus): knappen i PRIMITIVENS radie — K68:s rounded-xl
+            PRÖVAD-OCH-RIVEN (knappen är en handling, inte en yta;
+            biblioteksknappens form gäller). */}
+        <Button size="sm" onPress={laggTill} className="self-end">
           Lägg till anteckning
         </Button>
         <p className="sr-only" role="status" aria-live="polite">
