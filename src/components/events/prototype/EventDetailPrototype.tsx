@@ -115,8 +115,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel:
-      'K72 — Åtgärdsraderna får summeringsradernas hover-platta (K56-grammatiken; de är knappar)',
+    stegLabel: 'FACIT — hela eventsidan låst 2026-07-20 (K72)',
   },
 ];
 

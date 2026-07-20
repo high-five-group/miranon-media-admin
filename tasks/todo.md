@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 73 🟢 PÅGÅR (2026-07-19 →, tredje pausen 2026-07-20 återupptagen samma dag) — Eventsidan: konvergensen K1–K65 pågår + S56 stängd + header-regeln skarp + sage-gröna skarp
+### Session 73 🟢 PÅGÅR (2026-07-19 →, FACIT 2026-07-20) — Eventsidan: konvergensen K1–K72 → FACIT LÅST + S56 stängd + header-regeln skarp + sage-gröna skarp
 
 > Scope: sessionsdok `2026-07-19-session-73.md` Del 1 (kanonisk plats):
 > eventsidan (detaljvyn `/event/$eventId`) genom konvergens till facit
@@ -157,6 +157,29 @@
   öppna designfrågorna (chevron K25 · hover-affordans K56 · print-CSS ·
   tomlägen · tidKvarTillEvent-raden) — tills Marcus låser FACIT →
   list-PRD-vägbeslutet (Del 1 punkt 3).**
+- [x] **KONVERGENS-PASSET K66–K72 → FACIT LÅST** (2026-07-20, Del 6
+  kanonisk plats; `04e9b86`→`9826278`): Gruppdynamik + Närvaro-registret
+  Marcus-godkända · **ANTECKNINGAR** (K66: tidsstämplad ström, författare
+  + härledd Under/Efter-fas; bas-verifierat live — Notering-fältet bär ej
+  ström-modellen, record comments-API:t nåbart, PRD-vägvalet öppet) →
+  Marcus-finlir K67–K69 (Innan-etiketten riven [tysta normen] ·
+  kant-inset 16 px runt om · knapp-radien åter primitiv) → K70-greppet
+  "bedrövligt" → **AUTO-GROW** (K71, field-sizing; lösningsklassbytet) →
+  **hover-plattan på åtgärdsraderna** (K72; K56-följdfrågan besvarad för
+  åtgärdsklassen). **FACIT DEKLARERAT** (Marcus: "nöjd … efter 72
+  iterationer"): facit-SHA `9826278` · bilagan
+  `s73-eventsida-konvergens/` (8 skärmdumpar 390×844 + SHA-trail + öppna
+  bokföringar: chevron-konsekvensen [app-regeln rivs öppet ELLER
+  prövningen rivs — Marcus-kvittens krävs] · K56-resten Ändra/detalj-
+  rader · print-CSS · tomlägen · Firefox-fallbacks) · stegLabel →
+  FACIT-formen · HELA event-familjen låst (S72-listfacitet + detta).
+  Öppet bokfört: K69-grindincidenten (obunden förkontroll-kedja, läkt
+  `2cbcaed`) · CI-skulden f9c3fa3→facit-landningen (rate-limit 403;
+  f9c3fa3 väntat röd, läkt) · lesson-kandidater nu 14. **NÄSTA:
+  list-PRD-vägbeslutet är MOGET (familje-konvergensen klar, Del 1
+  punkt 3): PRD:er för listan + eventsidan (/to-prd) → skivor
+  (/to-issues) → ADR-073-parallell-batch; därefter end-pass med skörd
+  (14 kandidater) + BUILD-LOG + N+1.**
 
 ### Session 72 ✅ AVSLUTAD (2026-07-19) — Event-listan: grillad samsyn → konvergens till FACIT (variant B, K1–K14) + skarpa skal-fixar + T78
 
