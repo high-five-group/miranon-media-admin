@@ -139,11 +139,11 @@
   /session-paus"): `lifecycle: paused` + förankrad PAUSLÄGE-rubrik
   (tredje) + fullt HANDOFF (TILLSTÅND med CI-skulden · CARRY med 11
   lesson-kandidater · numrering 074/L294/T79/f45 · resume-vägen);
-  dev-servern stoppad; trädet rent + pushat. **NÄSTA:
-  `session-resume` av S73 i färsk kontext — steg 0: verifiera
-  K61–K65 + landningens CI-runs per jobb (rate-limit-skulden); sedan
-  Marcus dömer Gruppdynamik + Närvaro-registret och konvergensen
-  fortsätter mot facit → list-PRD-vägbeslutet.**
+  dev-servern stoppad; trädet rent + pushat; CI-skulden LÖST vid
+  läkningen (K61–K65 + landningen per-jobb-gröna — hela tredje passet
+  grönt, enda röda K56 läkt K57). **NÄSTA: `session-resume` av S73 i
+  färsk kontext — Marcus dömer Gruppdynamik + Närvaro-registret och
+  konvergensen fortsätter mot facit → list-PRD-vägbeslutet.**
 
 ### Session 72 ✅ AVSLUTAD (2026-07-19) — Event-listan: grillad samsyn → konvergens till FACIT (variant B, K1–K14) + skarpa skal-fixar + T78
 
