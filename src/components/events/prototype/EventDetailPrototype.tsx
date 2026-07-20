@@ -116,7 +116,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     label: 'Prototypen',
     steg: 1,
     stegLabel:
-      'K71 — Anteckningar: AUTO-GROW ersätter greppet (K70 prövad-och-riven) — rutan växer med texten',
+      'K72 — Åtgärdsraderna får summeringsradernas hover-platta (K56-grammatiken; de är knappar)',
   },
 ];
 
@@ -705,12 +705,22 @@ function HandlingsRad({
   // säger ingen chevron på navigationsrader, och bransch-semantiken är
   // chevron = navigation, inte operation. Låses chevrons rivs regeln
   // öppet + Mer-menyn följer med (koherens); annars rivs prövningen.
+  // K72 (Marcus: "åtgärdsraderna är ju också knappar"): summerings-
+  // radernas hover-PLATTA (K56-grammatiken: -mx-2 px-2 rounded-lg +
+  // bg-emphasized + motion-safe) — K56-följdfrågan besvarad för
+  // åtgärdsklassen. K54-vakten: w-auto (aldrig w-full ihop med -mx-2)
+  // + delaren kvar på WRAPPERN i standard-inset; radens totalhöjd
+  // konstant (wrapper py-3 → py-1.5 + knapp py-1.5 = samma 12 px).
+  // Check-in-raden ärver mekaniken via samma komponent (K26/K47:
+  // samma överallt). Wrappern är flex-col — knappar är shrink-to-fit
+  // med w-auto; flex-stretchen ger full bredd (SummeringsRad-formen,
+  // DOM-mätt: utan den stannade plattan 205 px från högerkanten).
   return (
-    <div className="py-3">
+    <div className="flex flex-col py-1.5">
       <button
         type="button"
         onClick={onPress}
-        className="flex w-full items-center gap-2 text-left font-medium text-body"
+        className="-mx-2 flex w-auto items-center gap-2 rounded-lg px-2 py-1.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors"
       >
         <Ikon aria-hidden="true" size={16} className="shrink-0" />
         {children}
@@ -733,12 +743,15 @@ function HandlingsRad({
     brus). Formen = HandlingsRadens vänsterställda (K20). */
 function LaggTillRad({ eventId }: { eventId: string }) {
   return (
-    <div className="py-3">
+    // K72: syskon-konsekvens med HandlingsRad — samma hover-platta
+    // (raden är gruppens första åtgärd; K54-vakten w-auto + flex-col-
+    // stretchen även här).
+    <div className="flex flex-col py-1.5">
       <Link
         to="/event/$eventId/ny-anmalan"
         params={{ eventId }}
         search={(prev) => prev}
-        className="flex w-full items-center gap-2 text-left font-medium text-body"
+        className="-mx-2 flex w-auto items-center gap-2 rounded-lg px-2 py-1.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors"
       >
         <Plus aria-hidden="true" size={16} className="shrink-0" />
         Lägg till manuell anmälan
