@@ -109,7 +109,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K27 — Betalningar: röda saknas-deltan + inline-detaljerna',
+    stegLabel: 'K28 — avdelaren under Öppna detaljer riven',
   },
 ];
 
@@ -1197,14 +1197,18 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
           </FkRad>
         </dl>
         {/* K27: navigationen till betalnings-vyn ERSATT av inline-detaljer
-            (Marcus: "stanna på samma sida"). */}
-        <DetaljRad
-          oppen={visaBetalningsdetaljer}
-          kontrollerarId="proto-betalningsdetaljer"
-          onToggle={() => setVisaBetalningsdetaljer((v) => !v)}
-        />
-        <div id="proto-betalningsdetaljer" hidden={!visaBetalningsdetaljer}>
-          <BetalningsDetaljer event={event} eventId={eventId} />
+            (Marcus: "stanna på samma sida"). K28: toggeln + regionen i EN
+            wrapper — detaljerna hör till toggeln och ska inte få kortets
+            divide-y-avdelare mellan sig (Marcus-fix). */}
+        <div>
+          <DetaljRad
+            oppen={visaBetalningsdetaljer}
+            kontrollerarId="proto-betalningsdetaljer"
+            onToggle={() => setVisaBetalningsdetaljer((v) => !v)}
+          />
+          <div id="proto-betalningsdetaljer" hidden={!visaBetalningsdetaljer}>
+            <BetalningsDetaljer event={event} eventId={eventId} />
+          </div>
         </div>
       </ProtoGrupp>
 
