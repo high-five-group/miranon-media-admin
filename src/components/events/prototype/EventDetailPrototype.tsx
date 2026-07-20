@@ -114,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K59 — prototypväxlaren minimerbar: Göm → hörn-pill, persistent över omladdning',
+    stegLabel: 'K60 — närvaro-registret: rader × sessions-bockar + total %, ej-genomfört-läge',
   },
 ];
 
@@ -1079,6 +1079,109 @@ function DeltagarKort({
         </button>
       )}
     </div>
+  );
+}
+
+/** K60: närvaro-demot — bock ⟺ basens Närvaropoäng = 1 (Närvarande/
+    Deltog online); index = sessions-position (Dag 1, Dag 2). Peter =
+    frånvarande hela eventet · Ulrika = endast dag 1. Delas av alla
+    genomförda demo-event (prototyp-förenkling). */
+const DEMO_NARVARO: Record<string, boolean[]> = {
+  'demo-p1': [true, true],
+  'demo-p2': [true, true],
+  'demo-p3': [true, true],
+  'demo-p4': [false, false],
+  'demo-p5': [true, true],
+  'demo-p6': [true, true],
+  'demo-p7': [true, true],
+  'demo-p8': [true, true],
+  'demo-p9': [true, false],
+  'demo-p10': [true, true],
+};
+
+/** K60: sessions-kolumnerna ur basens Session-enum (Dag 1/Dag 2/
+    Föreläsning — Deltaganden är EN rad per Anmälan × Session). */
+function narvaroSessioner(e: ProtoEvent): string[] {
+  if (e.typ === 'Föreläsning') return ['Föreläsning'];
+  return e.slutdatum && e.slutdatum !== e.startdatum ? ['Dag 1', 'Dag 2'] : ['Dag 1'];
+}
+
+/** K60 (Marcus + registermönstret hos LMS-branschledarna [Blackboard/
+    Canvas/Brightspace: rader = deltagare, kolumner = sessioner, symbol
+    per cell, närvaro-% summerad]): närvaro-registret visas när eventet
+    är GENOMFÖRT (basens Status-ord); innan dess ett lugnt
+    ej-genomfört-läge mitt i kortet. Bocken förenklar basens 6
+    Deltagande-statusar till Närvaropoäng-regeln (1 = Närvarande/Deltog
+    online) — nyanserna (Försenad/Avbröt …) hör hemma i check-in-sidan.
+    PRD: get-attendance-shapen per event (person × session; S25-fyndet:
+    Person-lookup ger record-ID → namn-batch) + poäng-mappningen. */
+function NarvaroLista({ eventId, event }: { eventId: string; event: ProtoEvent }) {
+  if (event.status !== 'Genomfört') {
+    return (
+      <p className="py-8 text-center text-small text-text-secondary">
+        Eventet är inte genomfört ännu — närvaron fylls i vid check-in.
+      </p>
+    );
+  }
+  const sessioner = narvaroSessioner(event);
+  const deltagare = DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1'];
+  const rader = deltagare.map((d) => ({
+    d,
+    narvaro: (DEMO_NARVARO[d.personId] ?? []).slice(0, sessioner.length),
+  }));
+  const poang = rader.reduce((sum, r) => sum + r.narvaro.filter(Boolean).length, 0);
+  const slots = rader.length * sessioner.length;
+  const procent = slots === 0 ? 0 : Math.round((100 * poang) / slots);
+  return (
+    <>
+      <div className="flex items-center justify-between gap-4 py-3">
+        <span className="text-small text-text-muted">Total närvaro</span>
+        <span className="font-semibold text-body">{procent} %</span>
+      </div>
+      <div className="py-3">
+        <table className="w-full">
+          <thead>
+            <tr>
+              <th scope="col" className="sr-only">
+                Deltagare
+              </th>
+              {sessioner.map((s) => (
+                <th
+                  key={s}
+                  scope="col"
+                  className="w-20 pb-2 text-right font-medium text-caption text-text-muted"
+                >
+                  {s}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {rader.map(({ d, narvaro }) => (
+              <tr key={d.personId}>
+                <th scope="row" className="py-2.5 text-left font-normal text-body">
+                  {d.namn}
+                </th>
+                {sessioner.map((s, i) => (
+                  <td key={s} className="w-20 py-2.5 text-right">
+                    {narvaro[i] ? (
+                      <>
+                        <Check aria-hidden="true" size={16} className="inline text-success" />
+                        <span className="sr-only">Närvarande</span>
+                      </>
+                    ) : (
+                      <span className="text-text-muted">
+                        –<span className="sr-only">Ej närvarande</span>
+                      </span>
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
@@ -2337,10 +2440,7 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-narvaro" rubrik="Närvaro">
-        {/* Ingen närvaro-siffra i get-event-shapen — gissa inte fält; länka bara. */}
-        <AtgardsRad to="/event/$eventId/narvaro" eventId={eventId}>
-          Öppna närvaro-vyn
-        </AtgardsRad>
+        <NarvaroLista eventId={eventId} event={event} />
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-anmalda" rubrik="Anmälda">
