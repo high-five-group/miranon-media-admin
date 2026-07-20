@@ -57,6 +57,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Clock,
   type LucideIcon,
   MailCheck,
   Minus,
@@ -110,7 +111,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K29 — betalningsarbetsytan (alla anmälda · kryss · notering · person-länk)',
+    stegLabel: 'K30 — flikar + deadline-badge i betalningsarbetsytan',
   },
 ];
 
@@ -876,11 +877,14 @@ function BetalKryss({
   );
 }
 
-/** Deadline-texten: betalningsdeadline = 14 dagar före eventstart
-    (demo-antagande; basens verkliga deadline-formel = PRD-fråga).
-    Formuleras på svenska EN gång — aldrig rå negativ siffra (Gunilla;
-    bättre än referensens "-106" per rad). */
-function deadlineText(e: ProtoEvent): string | null {
+/** K30 (Marcus: prosa-raden "ser så B ut"): deadline som STATUS-DATA —
+    text + statusklass för badge-formen (listkortens status-slot-grammatik;
+    Stripe "Past due"-badgen, docs.stripe.com/invoicing/dashboard).
+    DYNAMIK: värdet BERÄKNAS ur eventdatumet (demo-regeln start − 14 d;
+    basens verkliga deadline-fält/formel = PRD-fråga) och färgen följer
+    läget: lugnt → neutral · imorgon/idag → warning · passerad → error.
+    Aldrig rå negativ siffra (Gunilla; referensens "-106"). */
+function deadlineStatus(e: ProtoEvent): { text: string; cls: string } | null {
   if (!e.startdatum) return null;
   const start = new Date(e.startdatum);
   if (Number.isNaN(start.getTime())) return null;
@@ -889,11 +893,12 @@ function deadlineText(e: ProtoEvent): string | null {
   const idag = new Date();
   idag.setHours(0, 0, 0, 0);
   deadline.setHours(0, 0, 0, 0);
-  const diffDagar = Math.round((deadline.getTime() - idag.getTime()) / 86_400_000);
-  const datum = LANGDATUM.format(deadline);
-  if (diffDagar > 0) return `Betalningsdeadline ${datum} — om ${diffDagar} dagar`;
-  if (diffDagar === 0) return `Betalningsdeadline ${datum} — idag`;
-  return `Betalningsdeadline ${datum} — passerad för ${-diffDagar} dagar sedan`;
+  const diff = Math.round((deadline.getTime() - idag.getTime()) / 86_400_000);
+  const datum = DAGMANAD.format(deadline);
+  if (diff > 1) return { text: `Deadline ${datum} · om ${diff} dagar`, cls: 'text-text-secondary' };
+  if (diff === 1) return { text: `Deadline ${datum} · imorgon`, cls: 'font-medium text-warning' };
+  if (diff === 0) return { text: 'Deadline idag', cls: 'font-medium text-warning' };
+  return { text: `Deadline passerad · ${datum}`, cls: 'font-medium text-error' };
 }
 
 /** K27: disclosure-raden — "Öppna detaljer" ↔ "Stäng detaljer" på
@@ -973,9 +978,15 @@ function BetalningsPersonRad({
   );
 }
 
-/** K29: detalj-innehållet — betalningsarbetsytan. Grupperna sorterar
-    tydligheten: de som SAKNAR betalning först, klara sist; kryssen
-    flyttar personen mellan grupperna live. */
+/** K29: detalj-innehållet — betalningsarbetsytan. K30 (Marcus: toppen
+    saknade struktur — "behöver vi tabbar?"; web-research bekräftar:
+    Stripe Invoices filtrerar per status med tabbar/chips): grupp-
+    rubrikerna ersatta av FLIKAR i familje-kapseln (S72-facitets
+    period-toggle-form — samma aria-pressed-fieldset; spåret
+    bg-bg-emphasized på tonala kortet, vit knopp + skugga) + deadline
+    som STATUS-BADGE (listkortens status-slot-form: bg-surface-pill +
+    statusfärgad text). Kryssen flyttar personen mellan flikarna live —
+    räknarna i flik-etiketterna följer. */
 function BetalningsDetaljer({
   event,
   betalningar,
@@ -985,16 +996,43 @@ function BetalningsDetaljer({
   betalningar: BetalningsRad[];
   onUppdatera: (epost: string, patch: Partial<BetalningsRad>) => void;
 }) {
-  const deadline = deadlineText(event);
+  const [flik, setFlik] = useState<'saknar' | 'klara'>('saknar');
+  const deadline = deadlineStatus(event);
   const saknar = betalningar.filter((p) => !p.avgift || !p.slut);
   const klara = betalningar.filter((p) => p.avgift && p.slut);
+  const lista = flik === 'saknar' ? saknar : klara;
+  const flikKnapp = (denna: 'saknar' | 'klara', etikett: string) => (
+    <button
+      type="button"
+      aria-pressed={flik === denna}
+      onClick={() => setFlik(denna)}
+      className={
+        flik === denna
+          ? 'rounded-full bg-bg px-3 py-2 text-center font-semibold text-small shadow-sm'
+          : 'rounded-full px-3 py-2 text-center font-medium text-small text-text-secondary'
+      }
+    >
+      {etikett}
+    </button>
+  );
   return (
-    <div className="flex flex-col gap-1 py-3">
-      {deadline && <p className="text-small text-text-muted">{deadline}</p>}
-      <h3 className="mt-2 font-semibold text-small">Saknar betalning ({saknar.length})</h3>
-      {saknar.length > 0 ? (
+    <div className="flex flex-col gap-3 py-3">
+      <fieldset className="grid grid-cols-2 rounded-full bg-bg-emphasized p-1">
+        <legend className="sr-only">Visa betalningar</legend>
+        {flikKnapp('saknar', `Saknar betalning (${saknar.length})`)}
+        {flikKnapp('klara', `Klara (${klara.length})`)}
+      </fieldset>
+      {deadline && (
+        <p
+          className={`inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 text-small ${deadline.cls}`}
+        >
+          <Clock aria-hidden="true" size={14} />
+          {deadline.text}
+        </p>
+      )}
+      {lista.length > 0 ? (
         <ul className="divide-y divide-border">
-          {saknar.map((p) => (
+          {lista.map((p) => (
             <BetalningsPersonRad
               key={p.epost}
               person={p}
@@ -1003,21 +1041,11 @@ function BetalningsDetaljer({
           ))}
         </ul>
       ) : (
-        <p className="py-2 text-small text-text-secondary">Alla anmälda har betalat.</p>
-      )}
-      {klara.length > 0 && (
-        <>
-          <h3 className="mt-3 font-semibold text-small">Klara ({klara.length})</h3>
-          <ul className="divide-y divide-border">
-            {klara.map((p) => (
-              <BetalningsPersonRad
-                key={p.epost}
-                person={p}
-                onUppdatera={(patch) => onUppdatera(p.epost, patch)}
-              />
-            ))}
-          </ul>
-        </>
+        <p className="py-2 text-small text-text-secondary">
+          {flik === 'saknar'
+            ? 'Alla anmälda har betalat.'
+            : 'Ingen är klar med båda betalningarna ännu.'}
+        </p>
       )}
     </div>
   );
