@@ -68,6 +68,7 @@ import {
   Plus,
   Printer,
   Send,
+  TriangleAlert,
   UserCheck,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -114,7 +115,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K39 — arbetskön: Ohanterade/Hanterade + Anmäld-datumet',
+    stegLabel: 'K40 — klickbara summeringsrader + accordion-grupperna',
   },
 ];
 
@@ -983,13 +984,18 @@ function DeltagarKort({ d }: { d: DemoDeltagare }) {
     <Link
       to="/personer/$personId"
       params={{ personId: d.personId }}
-      className="flex flex-col gap-1 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
+      className={`flex flex-col gap-1 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast) ${
+        // K40 (Marcus: "tydligare med ohanterade"): varnings-vänsterkant
+        // på ohanterade kort (alert-kortets branschform) + pill i
+        // warning-bg — texten "Ohanterad" bär, färgen förstärker.
+        arHanterad(d) ? '' : 'border-l-(--mm-warning) border-l-4'
+      }`}
     >
       <span className="flex items-start justify-between gap-3 font-semibold text-body">
         {d.namn}
         <span className="flex shrink-0 items-center gap-1.5">
           {!arHanterad(d) && (
-            <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-warning">
+            <span className="rounded-full bg-(--mm-warning-bg) px-2 py-0.5 font-medium text-caption text-warning">
               Ohanterad
             </span>
           )}
@@ -1021,24 +1027,102 @@ function DeltagarKort({ d }: { d: DemoDeltagare }) {
   );
 }
 
+/** K40 (Marcus): summeringsraderna KLICKBARA — radens siffra ÄR urvalet
+    man ser vid klick (aktiv rad markeras, klick igen rensar; flat lista
+    + rensa-rad under filtret). Deltagarinfo-radens klick visar de som
+    SAKNAR (deltat är det åtgärdbara). */
+type StatusFilter = 'ohanterade' | 'paminda' | 'saknarDeltagarinfo';
+const STATUSFILTER: Record<StatusFilter, { etikett: string; test: (d: DemoDeltagare) => boolean }> =
+  {
+    ohanterade: { etikett: 'ohanterade anmälningar', test: (d) => !arHanterad(d) },
+    paminda: { etikett: 'fått betalningspåminnelse', test: (d) => d.paminnelse != null },
+    saknarDeltagarinfo: { etikett: 'saknar deltagarinfo', test: (d) => d.deltagarinfo == null },
+  };
+
+function SummeringsRad({
+  term,
+  aktiv,
+  onClick,
+  children,
+}: {
+  term: string;
+  aktiv: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={aktiv}
+      onClick={onClick}
+      className={`flex w-full items-center justify-between gap-4 py-3 text-left ${
+        aktiv ? '-mx-2 w-auto rounded-lg bg-bg-emphasized px-2' : ''
+      }`}
+    >
+      <span className="text-small text-text-muted">{term}</span>
+      <span className="text-right text-body">{children}</span>
+    </button>
+  );
+}
+
+/** K40: accordion-rubriken (Marcus: "dropdown-rubriker under tabbraden")
+    — vänsterställd etikett + roterande chevron; ohanterade-rubriken i
+    varningston med ikon (texten bär, färgen förstärker). */
+function GruppRubrik({
+  oppen,
+  varning,
+  kontrollerarId,
+  onToggle,
+  children,
+}: {
+  oppen: boolean;
+  varning?: boolean;
+  kontrollerarId: string;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-expanded={oppen}
+      aria-controls={kontrollerarId}
+      onClick={onToggle}
+      className="flex w-full items-center justify-between gap-3 py-1 text-left"
+    >
+      <span
+        className={`flex items-center gap-1.5 font-semibold text-small ${varning ? 'text-warning' : ''}`}
+      >
+        {varning && <TriangleAlert aria-hidden="true" size={14} className="shrink-0" />}
+        {children}
+      </span>
+      <ChevronDown
+        aria-hidden="true"
+        size={16}
+        className={`shrink-0 text-text-secondary motion-safe:transition-transform ${oppen ? 'rotate-180' : ''}`}
+      />
+    </button>
+  );
+}
+
 /** K38: deltagar-kortets innehåll — sammanfattning ("hur många") +
-    kategorifilter + personkorten ("vilka"). Sammanfattningen räknar
-    ALLTID hela eventet (filtret styr bara list-urvalet). Deltagarinfo
-    bär saknas-delta (alla SKA få den — norm); påminnelsen visar bara
-    antal (skickas endast till dem som behöver). K39: bekräftelse-raden
-    ERSATT av "Ohanterade anmälningar" (samma data, Marcus-semantiken) +
-    listan delad i ARBETSKÖ-mönstret: Ohanterade överst (äldst först —
-    kö), Hanterade under (senast anmäld först — journal); grupprubriker
-    endast när det finns ohanterade (tyst norm annars). */
+    kategorifilter + personkorten ("vilka"); sammanfattningen räknar
+    ALLTID hela eventet. K39: arbetskö-mönstret (Ohanterade/Hanterade).
+    K40: summeringsraderna är FILTER (klick → flat lista + rensa-rad),
+    grupperna är ACCORDIONS under tabbraden — Ohanterade ÖPPEN som
+    standard, Hanterade STÄNGD (inbox-fokus: kön i ansiktet, arkivet
+    ett klick bort; är kön tom öppnas Hanterade i stället och en
+    positiv rad ersätter ohanterade-rubriken). */
 function DeltagarLista({ eventId }: { eventId: string }) {
   const deltagare = DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1'];
   const [filter, setFilter] = useState<'alla' | DeltagarKategori>('alla');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter | null>(null);
+  const ohanteradeTotalt = deltagare.filter((d) => !arHanterad(d)).length;
+  const [oppna, setOppna] = useState({ ohanterade: true, hanterade: ohanteradeTotalt === 0 });
   const visade = filter === 'alla' ? deltagare : deltagare.filter((d) => d.kategori === filter);
   const antalKategori = (k: DeltagarKategori) => deltagare.filter((d) => d.kategori === k).length;
   const antalSkickade = (falt: 'paminnelse' | 'deltagarinfo') =>
     deltagare.filter((d) => d[falt] != null).length;
   const totalt = deltagare.length;
-  const ohanteradeTotalt = deltagare.filter((d) => !arHanterad(d)).length;
   const ohanterade = visade
     .filter((d) => !arHanterad(d))
     .sort((a, b) => a.anmald.localeCompare(b.anmald));
@@ -1046,6 +1130,9 @@ function DeltagarLista({ eventId }: { eventId: string }) {
     .filter((d) => arHanterad(d))
     .sort((a, b) => b.anmald.localeCompare(a.anmald));
   const deltagarinfoSkickade = antalSkickade('deltagarinfo');
+  const statusTraffar =
+    statusFilter == null ? null : visade.filter(STATUSFILTER[statusFilter].test);
+  const vaxlaStatus = (f: StatusFilter) => setStatusFilter((nu) => (nu === f ? null : f));
   const kortLista = (lista: DemoDeltagare[]) => (
     <ul className="flex flex-col gap-2.5">
       {lista.map((d) => (
@@ -1057,24 +1144,38 @@ function DeltagarLista({ eventId }: { eventId: string }) {
   );
   return (
     <>
-      <dl className="divide-y divide-border">
-        <FkRad term="Ohanterade anmälningar">
+      <div className="divide-y divide-border">
+        <SummeringsRad
+          term="Ohanterade anmälningar"
+          aktiv={statusFilter === 'ohanterade'}
+          onClick={() => vaxlaStatus('ohanterade')}
+        >
           {ohanteradeTotalt > 0 ? (
             <span className="font-medium text-warning tabular-nums">{ohanteradeTotalt}</span>
           ) : (
             '0'
           )}
-        </FkRad>
-        <FkRad term="Betalningspåminnelse skickad">{String(antalSkickade('paminnelse'))}</FkRad>
-        <FkRad term="Deltagarinfo skickad">
+        </SummeringsRad>
+        <SummeringsRad
+          term="Betalningspåminnelse skickad"
+          aktiv={statusFilter === 'paminda'}
+          onClick={() => vaxlaStatus('paminda')}
+        >
+          {String(antalSkickade('paminnelse'))}
+        </SummeringsRad>
+        <SummeringsRad
+          term="Deltagarinfo skickad"
+          aktiv={statusFilter === 'saknarDeltagarinfo'}
+          onClick={() => vaxlaStatus('saknarDeltagarinfo')}
+        >
           {`${deltagarinfoSkickade} av ${totalt}`}
           {totalt - deltagarinfoSkickade > 0 && (
             <span className="ml-2 font-medium text-error tabular-nums">
               −{totalt - deltagarinfoSkickade}
             </span>
           )}
-        </FkRad>
-      </dl>
+        </SummeringsRad>
+      </div>
       <div className="flex flex-col gap-2.5 py-3">
         <fieldset className="grid grid-cols-4 rounded-full bg-bg-emphasized p-1">
           <legend className="sr-only">Visa deltagare</legend>
@@ -1091,23 +1192,62 @@ function DeltagarLista({ eventId }: { eventId: string }) {
             +1 ({antalKategori('medfoljande')})
           </KapselKnapp>
         </fieldset>
-        {visade.length === 0 ? (
-          <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>
-        ) : ohanterade.length > 0 ? (
+        {statusTraffar != null ? (
           <>
-            <h3 className="font-semibold text-small text-warning">
-              Ohanterade ({ohanterade.length})
-            </h3>
-            {kortLista(ohanterade)}
-            {hanterade.length > 0 && (
-              <>
-                <h3 className="mt-1.5 font-semibold text-small">Hanterade ({hanterade.length})</h3>
-                {kortLista(hanterade)}
-              </>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-small text-text-secondary">
+                Visar: {STATUSFILTER[statusFilter as StatusFilter].etikett} ({statusTraffar.length})
+              </p>
+              <button
+                type="button"
+                onClick={() => setStatusFilter(null)}
+                className="font-medium text-small underline-offset-2 hover:underline"
+              >
+                Rensa filtret
+              </button>
+            </div>
+            {statusTraffar.length > 0 ? (
+              kortLista(statusTraffar)
+            ) : (
+              <p className="py-2 text-small text-text-secondary">Inga träffar i denna kategori.</p>
             )}
           </>
+        ) : visade.length === 0 ? (
+          <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>
         ) : (
-          kortLista(hanterade)
+          <>
+            {ohanterade.length > 0 ? (
+              <div>
+                <GruppRubrik
+                  oppen={oppna.ohanterade}
+                  varning
+                  kontrollerarId="deltagare-ohanterade"
+                  onToggle={() => setOppna((o) => ({ ...o, ohanterade: !o.ohanterade }))}
+                >
+                  Ohanterade ({ohanterade.length})
+                </GruppRubrik>
+                <div id="deltagare-ohanterade" hidden={!oppna.ohanterade} className="pt-1.5">
+                  {kortLista(ohanterade)}
+                </div>
+              </div>
+            ) : (
+              <p className="text-small text-text-secondary">Inga ohanterade — allt är hanterat.</p>
+            )}
+            {hanterade.length > 0 && (
+              <div>
+                <GruppRubrik
+                  oppen={oppna.hanterade}
+                  kontrollerarId="deltagare-hanterade"
+                  onToggle={() => setOppna((o) => ({ ...o, hanterade: !o.hanterade }))}
+                >
+                  Hanterade ({hanterade.length})
+                </GruppRubrik>
+                <div id="deltagare-hanterade" hidden={!oppna.hanterade} className="pt-1.5">
+                  {kortLista(hanterade)}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </>
