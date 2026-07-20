@@ -159,8 +159,9 @@
   list-PRD-vägbeslutet (Del 1 punkt 3).**
 - [x] **KONVERGENS-PASSET K66–K72 → FACIT LÅST** (2026-07-20, Del 6
   kanonisk plats; `04e9b86`→`9826278`): Gruppdynamik + Närvaro-registret
-  Marcus-godkända · **ANTECKNINGAR** (K66: tidsstämplad ström, författare
-  + härledd Under/Efter-fas; bas-verifierat live — Notering-fältet bär ej
+  Marcus-godkända · **ANTECKNINGAR** (K66: tidsstämplad ström,
+  författare + härledd Under/Efter-fas; bas-verifierat live —
+  Notering-fältet bär ej
   ström-modellen, record comments-API:t nåbart, PRD-vägvalet öppet) →
   Marcus-finlir K67–K69 (Innan-etiketten riven [tysta normen] ·
   kant-inset 16 px runt om · knapp-radien åter primitiv) → K70-greppet
