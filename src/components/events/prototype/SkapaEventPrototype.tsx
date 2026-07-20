@@ -392,15 +392,25 @@ function PubliceraHandtag({
       }}
       className="relative h-12 w-full touch-none select-none rounded-full bg-bg-emphasized"
     >
-      {/* Fyllnaden: grönt band från vänsterkanten fram till handtagets
-          högerkant — följer draget (Resend-formen). */}
-      <span
-        aria-hidden="true"
-        style={{ width: `calc(${pos * 100}% - ${pos * 48}px + 48px)` }}
-        className={`absolute inset-y-0 left-0 rounded-full bg-success ${
-          dragPos == null ? 'motion-safe:transition-[width]' : ''
-        }`}
-      />
+      {/* Fyllnaden: grönt band som SLÄPAR bakom handtaget (Resend-formen).
+          K80 (Marcus: "ser fortfarande lågupplöst ut" → 4x-zoom-diagnos):
+          fransen var FYLLNADEN — i vila låg den 48 px bakom 48 px-cirkeln
+          och dess kantutjämning stack ut runt randen som smutskant. Nu:
+          OSYNLIG i vila (opacity 0) · når bara till handtagets MITT under
+          drag (höger kant alltid gömd under cirkeln) · eget klipp-lager
+          (overflow-hidden rounded-full) så bandet aldrig läcker utanför
+          rännan — och handtagets skugga klipps INTE (syskon, ej barn). */}
+      <span aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-full">
+        <span
+          style={{
+            width: `calc(${pos * 100}% - ${pos * 48}px + 24px)`,
+            opacity: pos === 0 && !publicerad ? 0 : 1,
+          }}
+          className={`absolute inset-y-0 left-0 bg-success ${
+            dragPos == null ? 'motion-safe:transition-[width,opacity]' : ''
+          }`}
+        />
+      </span>
       <span
         aria-hidden="true"
         style={publicerad ? undefined : { opacity: 1 - pos }}
