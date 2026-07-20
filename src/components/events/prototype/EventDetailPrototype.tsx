@@ -114,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K62 — Anmäld-raden är länken till anmälan-sidan (understruken; PRD-route)',
+    stegLabel: 'K63 — Gruppdynamik ersätter Anmälda: erfarenhetsmix + motiveringarna ur anmälan',
   },
 ];
 
@@ -1208,6 +1208,105 @@ function NarvaroLista({ eventId, event }: { eventId: string; event: ProtoEvent }
   );
 }
 
+/** K63: motiverings-demot — svaren på formulärfrågan "Varför vill du gå
+    den här kursen?". FÄLTET FINNS EJ I BASEN (enda fritexten är
+    admin-Notering) — PRD-krav: additivt multilineText-fält +
+    formulärfrågan. Frågan är frivillig (Karin/Lars utan svar);
+    manuella/+1-anmälningar går utanför formuläret och saknar
+    naturligt svar (Ulrika/Elin). */
+const DEMO_MOTIVERING: Record<string, string> = {
+  'demo-p1': 'Jag har läst om fjärrskådning i flera år och vill äntligen prova på riktigt.',
+  'demo-p2': 'RIM 1 gav mig ett lugn jag inte haft på länge — jag vill ta nästa steg.',
+  'demo-p3': 'Vill utveckla min intuition vidare, och gärna tillsammans med andra.',
+  'demo-p4': 'Har länge velat utforska mitt inre — det här kändes som rätt plats att börja på.',
+  'demo-p5': 'En väninna rekommenderade er varmt efter förra kursen.',
+  'demo-p6': 'Varje kurs hos er har gett mig något nytt — vill fördjupa det ytterligare.',
+};
+
+/** K63: erfarenhetsmixens nivåer — demo bucketar på tidigareEvent;
+    sekventiell skala (mörkare blå = mer erfaren; neutral = ny) skild
+    från beläggningens kategorifärger. PRD: skarpa formen hämtar
+    kanoniska Erfarenhetsbadgen per deltagare (Personer-formeln är
+    RIM 3-BLIND — känd bas-bugg, bas-maximeringens bord/T16). */
+const ERFARENHETS_NIVAER = [
+  { etikett: 'Första eventet', klass: 'bg-(--p-neutral-400)', test: (n: number) => n === 0 },
+  {
+    etikett: '1–2 tidigare event',
+    klass: 'bg-(--p-blue-500)',
+    test: (n: number) => n >= 1 && n <= 2,
+  },
+  { etikett: '3+ tidigare event', klass: 'bg-(--p-blue-700)', test: (n: number) => n >= 3 },
+];
+
+/** K63 (Marcus + cohort-mönstret [Maven Reflections: deltagarnas mål
+    pre-course så instruktören kan anpassa innehållet; beginning-course-
+    survey-forskningen: erfarenhetsmixen styr aktivitetsnivån]):
+    GRUPPDYNAMIK — Lottas "vilka är i rummet?" i två sektioner:
+    kvantitativ erfarenhetsmix (beläggnings-grammatiken: summeringsrad +
+    mätare + streck-rader) + kvalitativa motiveringar (citatet FÖRST,
+    namnet under — Lotta läser rummet, inte registret). Ersätter gamla
+    Anmälda-gruppen (riven — redundant sedan K35; carry-frågan stängd). */
+function GruppdynamikLista({ eventId }: { eventId: string }) {
+  const deltagare = DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1'];
+  const totalt = deltagare.length;
+  const nivaer = ERFARENHETS_NIVAER.map((n) => ({
+    ...n,
+    antal: deltagare.filter((d) => n.test(d.tidigareEvent)).length,
+  }));
+  const aterkommande = deltagare.filter((d) => d.tidigareEvent > 0).length;
+  const roster = deltagare.flatMap((d) =>
+    DEMO_MOTIVERING[d.personId] ? [{ namn: d.namn, svar: DEMO_MOTIVERING[d.personId] }] : [],
+  );
+  return (
+    <>
+      <div className="flex flex-col gap-1.5 py-3">
+        <div className="flex items-baseline justify-between gap-4">
+          <span className="text-small text-text-muted">Varit hos Miranon Media förut</span>
+          <span className="font-medium text-small text-text-secondary tabular-nums">
+            {aterkommande} av {totalt}
+          </span>
+        </div>
+        <div
+          aria-hidden="true"
+          className="flex h-1.5 gap-px overflow-hidden rounded-full bg-surface"
+        >
+          {nivaer
+            .filter((n) => n.antal > 0)
+            .map((n) => (
+              <div
+                key={n.etikett}
+                className={n.klass}
+                style={{ width: `${(100 * n.antal) / totalt}%` }}
+              />
+            ))}
+        </div>
+      </div>
+      <dl className="divide-y divide-border">
+        {nivaer.map((n) => (
+          <FkRad key={n.etikett} term={n.etikett} streck={n.klass}>
+            {String(n.antal)}
+          </FkRad>
+        ))}
+      </dl>
+      <div className="flex flex-col py-3">
+        <p className="pb-1.5 text-caption text-text-muted">
+          ”Varför vill du gå den här kursen?” — ur anmälan
+        </p>
+        <ul className="flex flex-col divide-y divide-border">
+          {roster.map((r) => (
+            <li key={r.namn} className="py-3">
+              <figure className="flex flex-col gap-1">
+                <blockquote className="text-body">”{r.svar}”</blockquote>
+                <figcaption className="text-caption text-text-muted">{r.namn}</figcaption>
+              </figure>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  );
+}
+
 /** K52: bor över-raden i markerings-läget — RAC Checkbox i
     betalnings-kryssets ruta-grammatik (K29) + personkortens radform;
     sängen tänds när personen är ikryssad. Obockad är NEUTRAL (till
@@ -2117,29 +2216,8 @@ function BetalningsDetaljer({
   );
 }
 
-/** K3: åtgärdsrad i kortbotten (IMG_1542:s "Ändra"-rad) — centrerad
-    länkrad; avdelaren mot raderna ovanför bärs av kortets divide-y. */
-function AtgardsRad({
-  to,
-  eventId,
-  children,
-}: {
-  to: '/event/$eventId/betalning' | '/event/$eventId/narvaro' | '/event/$eventId/anmalda';
-  eventId: string;
-  children: string;
-}) {
-  return (
-    <div className="py-3">
-      <Link
-        to={to}
-        params={{ eventId }}
-        className="flex items-center justify-center font-medium text-body underline-offset-2 hover:underline"
-      >
-        {children}
-      </Link>
-    </div>
-  );
-}
+// K63: AtgardsRad RIVEN — sista konsumenten (Anmälda-gruppens Öppna-rad)
+// ersattes av Gruppdynamik; Närvaro blev register i K60.
 
 /**
  * Demo-uppslaget: samma event som list-prototypens kort (per id). Okänt id
@@ -2466,12 +2544,8 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
         <NarvaroLista eventId={eventId} event={event} />
       </ProtoGrupp>
 
-      <ProtoGrupp id="proto-grupp-anmalda" rubrik="Anmälda">
-        {/* Ingen anmälda-siffra i get-event-shapen — gissa inte fält; länka bara
-            (speglar närvaro-gruppens form). */}
-        <AtgardsRad to="/event/$eventId/anmalda" eventId={eventId}>
-          Öppna anmälda-vyn
-        </AtgardsRad>
+      <ProtoGrupp id="proto-grupp-gruppdynamik" rubrik="Gruppdynamik">
+        <GruppdynamikLista eventId={eventId} />
       </ProtoGrupp>
     </>,
   );
