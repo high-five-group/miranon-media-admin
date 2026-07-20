@@ -116,7 +116,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     label: 'Prototypen',
     steg: 1,
     stegLabel:
-      'K67 — Anteckningar: Innan-etiketten riven (tysta normen) + composer-rutan i inre kort-radien',
+      'K68 — Anteckningar: resize-greppet rivet · kant-inset 16 px runt om · knappen i sektionens radie',
   },
 ];
 
@@ -1597,15 +1597,23 @@ function AnteckningarSektion({ event }: { event: ProtoEvent }) {
   };
   return (
     <>
-      <div className="flex flex-col gap-2 py-3">
+      {/* K68 (Marcus): KANT-insetsen mot kortkanten lyfts till 16 px
+          (pt-4 här, pb-4 på listan) == sidornas px-4 — rutan får samma
+          avstånd till gråa kortet runt om (K67 mätte bara vänster/
+          höger; toppens py-3-radrytm gav 13 mot 17). Den INTERNA
+          12-rytmen mellan sektionerna (pb-3/pt-3 kring delaren) är
+          radgrammatikens och behålls. */}
+      <div className="flex flex-col gap-2 pt-4 pb-3">
         {/* K67 (Marcus: rutan ska sitta som korten): radien lyfts till
             INRE kort-radien rounded-xl == antecknings-korten under
             (yttre kortets 2xl hade gjort rutan rundare än korten i
-            samma kolumn); DOM-mätt 17/17 px inset — paddingen var
-            redan symmetrisk, upplevelsen kom av radie-krocken (4 px).
-            Descendant-variant: primitivens radie bor i cva:n på
+            samma kolumn). K68 (Marcus): resize-GREPPET rivet — grepp-
+            strecken krockar med rundningen i nedre högra hörnet;
+            composern är fast 3-radig (auto-grow/behållen resize =
+            facit-fråga, jfr primitivens resize-y-default).
+            Descendant-variant: primitivens radie/resize bor i cva:n på
             själva textarean — prototyp-lokal override, ej biblioteks-
-            ändring; ev. radie-variant i primitiven = facit-fråga. */}
+            ändring; ev. varianter i primitiven = facit-fråga. */}
         <TextArea
           label="Ny anteckning"
           hideLabel
@@ -1614,16 +1622,19 @@ function AnteckningarSektion({ event }: { event: ProtoEvent }) {
           placeholder="Skriv en anteckning …"
           value={text}
           onChange={setText}
-          className="[&_textarea]:rounded-xl"
+          className="[&_textarea]:resize-none [&_textarea]:rounded-xl"
         />
-        <Button size="sm" onPress={laggTill} className="self-end">
+        {/* K68 (Marcus): knappen i SEKTIONENS radie (rounded-xl == rutan
+            + korten; primitivens rounded är 4 px) — tailwind-merge:as
+            över variantklasserna. */}
+        <Button size="sm" onPress={laggTill} className="self-end rounded-xl">
           Lägg till anteckning
         </Button>
         <p className="sr-only" role="status" aria-live="polite">
           {annons}
         </p>
       </div>
-      <div className="py-3">
+      <div className="pt-3 pb-4">
         {alla.length > 0 ? (
           <ul className="flex flex-col gap-2.5">
             {alla.map((a) => (
