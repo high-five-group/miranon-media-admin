@@ -106,7 +106,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K19 — Åtgärds-gruppen överst (Skriv ut flyttad dit)',
+    stegLabel: 'K20 — åtgärdsraderna vänsterställda',
   },
 ];
 
@@ -673,14 +673,18 @@ function HandlingsRad({
   onPress?: () => void;
   children: string;
 }) {
+  // K20 (Marcus): VÄNSTERSTÄLLD — centrerat höll inte med 5 olikbreda
+  // rader (ojämna vänsterkanter läser rörigt); vänsterkant ger ikonerna
+  // en gemensam kolumn (settings-listans skanlinje). Ändra-/Öppna-raderna
+  // behåller centreringen (en rad per kort — annan situation).
   return (
     <div className="py-3">
       <button
         type="button"
         onClick={onPress}
-        className="flex w-full items-center justify-center gap-2 font-medium text-body"
+        className="flex w-full items-center gap-2 text-left font-medium text-body"
       >
-        <Ikon aria-hidden="true" size={16} />
+        <Ikon aria-hidden="true" size={16} className="shrink-0" />
         {children}
       </button>
     </div>
