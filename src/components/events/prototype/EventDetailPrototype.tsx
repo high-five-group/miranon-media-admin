@@ -111,7 +111,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K30 — flikar + deadline-badge i betalningsarbetsytan',
+    stegLabel: 'K31 — en linje per betalning med egen notering',
   },
 ];
 
@@ -759,13 +759,19 @@ function LaggTillRad({ eventId }: { eventId: string }) {
    write-operationer för betalstatus/notering (mark-registration-fee-paid
    [ADR-049] finns; slutbetalning + notering saknas). */
 
+/** K31 (Marcus): noteringen hör till EN betalning — per-betalnings-fält
+    (avgiftNotering/slutNotering) i stället för en per person. OBS
+    bas-gapet: basen har EN `Notering` per anmälan (fldPMsiRoLWcgUbsv) —
+    per-betalnings-notering = PRD-val (två additiva fält per ADR-063,
+    eller strukturerad konvention i ett). */
 type BetalningsRad = {
   personId: string;
   namn: string;
   epost: string;
   avgift: boolean;
   slut: boolean;
-  notering: string;
+  avgiftNotering: string;
+  slutNotering: string;
 };
 
 /** Fiktiva demo-personer (aldrig verkliga namn ur basen — PII). Koherent
@@ -778,7 +784,8 @@ const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
       epost: 'eva.lindqvist@example.com',
       avgift: false,
       slut: false,
-      notering: '',
+      avgiftNotering: '',
+      slutNotering: '',
     },
     {
       personId: 'demo-p2',
@@ -786,7 +793,8 @@ const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
       epost: 'johan.berg@example.com',
       avgift: false,
       slut: false,
-      notering: '',
+      avgiftNotering: '',
+      slutNotering: '',
     },
     {
       personId: 'demo-p3',
@@ -794,7 +802,8 @@ const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
       epost: 'sara.nystrom@example.com',
       avgift: false,
       slut: false,
-      notering: 'Lovade betala efter lönen',
+      avgiftNotering: 'Lovade betala efter lönen',
+      slutNotering: '',
     },
     {
       personId: 'demo-p4',
@@ -802,7 +811,8 @@ const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
       epost: 'peter.akesson@example.com',
       avgift: true,
       slut: false,
-      notering: '',
+      avgiftNotering: 'Swishade 30/6',
+      slutNotering: '',
     },
     {
       personId: 'demo-p5',
@@ -810,7 +820,8 @@ const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
       epost: 'maria.holm@example.com',
       avgift: true,
       slut: false,
-      notering: '',
+      avgiftNotering: '',
+      slutNotering: '',
     },
     {
       personId: 'demo-p6',
@@ -818,7 +829,8 @@ const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
       epost: 'anders.ek@example.com',
       avgift: true,
       slut: false,
-      notering: '',
+      avgiftNotering: '',
+      slutNotering: '',
     },
     {
       personId: 'demo-p7',
@@ -826,7 +838,8 @@ const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
       epost: 'karin.sjogren@example.com',
       avgift: true,
       slut: true,
-      notering: 'Swishade 12/7',
+      avgiftNotering: 'Swishade 12/6',
+      slutNotering: 'Swishade 12/7',
     },
     {
       personId: 'demo-p8',
@@ -834,7 +847,8 @@ const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
       epost: 'lars.ohman@example.com',
       avgift: true,
       slut: true,
-      notering: '',
+      avgiftNotering: '',
+      slutNotering: '',
     },
   ],
 };
@@ -934,10 +948,47 @@ function DetaljRad({
   );
 }
 
+/** K31 (Marcus: "notering för avgiften OCH slutbetalningen — en
+    notisruta håller inte"): EN LINJE PER BETALNING — kryss + etikett i
+    fast kolumn (w-40, likbredds-läxan K13: gemensam skanlinje) och
+    betalningens EGEN notering på samma linje. Statusen och dess
+    anteckning läses ihop (Stripe-klassen: per-betalnings-memo). */
+function BetalningsLinje({
+  label,
+  namn,
+  vald,
+  notering,
+  onVald,
+  onNotering,
+}: {
+  label: string;
+  namn: string;
+  vald: boolean;
+  notering: string;
+  onVald: (v: boolean) => void;
+  onNotering: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <div className="w-40 shrink-0">
+        <BetalKryss label={label} vald={vald} onChange={onVald} />
+      </div>
+      <Input
+        size="sm"
+        label={`Notering ${label.toLowerCase()} för ${namn}`}
+        hideLabel
+        placeholder="Notering, t.ex. Swishade 19/7"
+        className="min-w-44 flex-1"
+        value={notering}
+        onChange={onNotering}
+      />
+    </div>
+  );
+}
+
 /** K29: person-raden i arbetsytan — namnet länkar till person-detaljvyn
-    (demo-personId; skarpt bär shapen riktiga person-id — PRD), kryss per
-    betalning, notering direkt i raden (Lottas flöde: bocka + skriv
-    "Swishade 19/7" utan extra klick). */
+    (demo-personId; skarpt bär shapen riktiga person-id — PRD); K31: två
+    betalnings-linjer med egna noteringar. */
 function BetalningsPersonRad({
   person,
   onUppdatera,
@@ -946,7 +997,7 @@ function BetalningsPersonRad({
   onUppdatera: (patch: Partial<BetalningsRad>) => void;
 }) {
   return (
-    <li className="flex flex-col gap-2.5 py-3">
+    <li className="flex flex-col gap-2 py-3">
       <Link
         to="/personer/$personId"
         params={{ personId: person.personId }}
@@ -954,25 +1005,21 @@ function BetalningsPersonRad({
       >
         {person.namn}
       </Link>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-        <BetalKryss
-          label="Anmälningsavgift"
-          vald={person.avgift}
-          onChange={(v) => onUppdatera({ avgift: v })}
-        />
-        <BetalKryss
-          label="Slutbetalning"
-          vald={person.slut}
-          onChange={(v) => onUppdatera({ slut: v })}
-        />
-      </div>
-      <Input
-        size="sm"
-        label={`Notering för ${person.namn}`}
-        hideLabel
-        placeholder="Notering, t.ex. Swishade 19/7"
-        value={person.notering}
-        onChange={(v) => onUppdatera({ notering: v })}
+      <BetalningsLinje
+        label="Anmälningsavgift"
+        namn={person.namn}
+        vald={person.avgift}
+        notering={person.avgiftNotering}
+        onVald={(v) => onUppdatera({ avgift: v })}
+        onNotering={(v) => onUppdatera({ avgiftNotering: v })}
+      />
+      <BetalningsLinje
+        label="Slutbetalning"
+        namn={person.namn}
+        vald={person.slut}
+        notering={person.slutNotering}
+        onVald={(v) => onUppdatera({ slut: v })}
+        onNotering={(v) => onUppdatera({ slutNotering: v })}
       />
     </li>
   );
