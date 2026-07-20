@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 73 ⏸️ PAUSAD (2026-07-19 → 2026-07-20) — Eventsidan: konvergensen K1–K13 pågår + S56 stängd + header-regeln skarp
+### Session 73 🟢 PÅGÅR (2026-07-19 →, paus 2026-07-20 återupptagen samma dag) — Eventsidan: konvergensen K1–K13 pågår + S56 stängd + header-regeln skarp
 
 > Scope: sessionsdok `2026-07-19-session-73.md` Del 1 (kanonisk plats):
 > eventsidan (detaljvyn `/event/$eventId`) genom konvergens till facit
@@ -72,6 +72,16 @@
   **NÄSTA: `session-resume` av S73 i färsk kontext — fortsätt
   konvergensen (närmast: Beläggnings-Ändra + innehålls-frågan
   [Eventmanager-referenserna]) till Marcus-låst facit.**
+- [x] **ÅTERUPPTAGEN** (2026-07-20, Marcus-order `/session-resume på
+  S73`): `lifecycle: paused → active` + PAUSLÄGE-rubriken →
+  Paushistorik-form (grind-konsistensen, session-18-mönstret);
+  numrering re-verifierad mot färsk disk — ADR 074 (73==73, skriptet
+  grönt) · L294 · T79 · fälla 45, ingen mellansession förbrukade
+  nummer; audit-ci PASSED; enda pausade dok = S73; färsk dev-server
+  startad (L275/L282). **NÄSTA: fortsätt konvergens-passet på
+  eventsidan i Marcus-takt — närmast Beläggnings-Ändra (morfen) +
+  innehålls-frågan (Eventmanager-referenserna) — tills Marcus låser
+  FACIT; därefter list-PRD-vägbeslutet (Del 1 punkt 3).**
 
 ### Session 72 ✅ AVSLUTAD (2026-07-19) — Event-listan: grillad samsyn → konvergens till FACIT (variant B, K1–K14) + skarpa skal-fixar + T78
 
