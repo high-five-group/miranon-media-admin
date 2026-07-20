@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-09
+updated: 2026-07-20
 review_by: 2026-11-15
 status: stable
 ---
@@ -210,6 +210,23 @@ För Edge Functions, scripts, manuella PATCH-ops. Listar fält som ofta skrivs t
 | Plus-one förfrågan skickad | `fld9BkFY8K5pF0xJ2` | dateTime | Sätts av `send-email` (plus_one) |
 | Deltagarinfo skickad | `fld3WBS0QQrqLpYtK` | dateTime | Sätts av `send-email` (participant-info) |
 | Betalning mottagen (psionautics-event) | `fldQE6aPiFfwVmJQ3` | checkbox | – |
+
+#### Anmälningar — formulärfält (läs)
+
+Fanns i basen men saknades i denna referens t.o.m. 2026-07-20 (S73
+K65-fyndet: "fältet finns ej"-slutsatsen drogs ur referensen och föll
+mot live-basen — Marcus-fångst). Endast existens + fält-ID:n verifierade
+(identifiersOnly-läsning); typer ej verifierade. Verkliga svar spänner
+en rad → ~600 tecken med radbrytningar.
+
+| Fält | Fält-ID |
+|---|---|
+| Varför vill du gå den här utbildningen? | `fldAv80U5ssqOYguK` |
+| Vilka kurser från Roger och Lotta har du deltagit i tidigare? | `fldFFRpBJ3Dhs6eFw` |
+| Frågor eller funderingar? | `fldtaSHOvGjgu9v39` |
+| Motivering (sammanfattning) | `fldrMT8cWP3NmBc9T` |
+| Har du gått steg 1? | `fldE9RwOG42yX4oVA` |
+| Uppdatera mig om fler event i framtiden? | `fldeBejosU8PzDtQM` |
 
 #### Väntelista — write-fält
 

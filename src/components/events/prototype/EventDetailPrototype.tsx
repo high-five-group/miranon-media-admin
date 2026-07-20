@@ -114,8 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel:
-      'K64 — Gruppdynamik uppgraderad: nivåraderna expanderar till personer + kurshistorik',
+    stegLabel: 'K65 — motiveringarna live-trogna: rubrik + citattecken rivna, Läs mer, alla svar',
   },
 ];
 
@@ -1209,19 +1208,30 @@ function NarvaroLista({ eventId, event }: { eventId: string; event: ProtoEvent }
   );
 }
 
-/** K63: motiverings-demot — svaren på formulärfrågan "Varför vill du gå
-    den här kursen?". FÄLTET FINNS EJ I BASEN (enda fritexten är
-    admin-Notering) — PRD-krav: additivt multilineText-fält +
-    formulärfrågan. Frågan är frivillig (Karin/Lars utan svar);
-    manuella/+1-anmälningar går utanför formuläret och saknar
-    naturligt svar (Ulrika/Elin). */
+/** K63/K65: motiverings-demot — svaren på basens formulärfråga.
+    K65-RÄTTELSE (Marcus-fyndet, live-verifierat via MCP): K63:s
+    "fältet finns ej"-claim var FEL — jag läste bara data-model (som
+    saknar formulärfälten), inte live. Basen HAR fälten: `Varför vill
+    du gå den här utbildningen?` (fldAv80U5ssqOYguK) + `Vilka kurser
+    från Roger och Lotta har du deltagit i tidigare?`
+    (fldFFRpBJ3Dhs6eFw) + `Motivering (sammanfattning)`
+    (fldrMT8cWP3NmBc9T) + `Frågor eller funderingar?`
+    (fldtaSHOvGjgu9v39). PRD blir shape-utökning, INTE bas-fält.
+    Verkliga texter spänner en rad → ~600 tecken med radbrytningar —
+    demot speglar spridningen (fiktiva texter, PII-regeln); manuella/
+    +1-anmälningar går utanför formuläret (Ulrika/Elin utan svar). */
 const DEMO_MOTIVERING: Record<string, string> = {
-  'demo-p1': 'Jag har läst om fjärrskådning i flera år och vill äntligen prova på riktigt.',
-  'demo-p2': 'RIM 1 gav mig ett lugn jag inte haft på länge — jag vill ta nästa steg.',
-  'demo-p3': 'Vill utveckla min intuition vidare, och gärna tillsammans med andra.',
+  'demo-p1':
+    'Hej! Jag lyssnade på ett poddavsnitt med Roger för en tid sedan och kände direkt att det här vill jag utforska mer. Jag har alltid varit en sökande person och gått några olika kurser genom åren, men det är först nu som jag har tid och möjlighet att fördjupa mig på riktigt.\nDet är så givande att både lära sig nytt och utvecklas som människa, och samtidigt få träffa andra som är intresserade av samma saker. Era kurser låter verkligen intressanta!',
+  'demo-p2': 'Vill utvecklas mer andligt och få verktyg att jobba med medvetandet.',
+  'demo-p3':
+    'Jag gick RIM 2 i februari och vill utforska mitt medvetande djupare tillsammans med er.',
   'demo-p4': 'Har länge velat utforska mitt inre — det här kändes som rätt plats att börja på.',
   'demo-p5': 'En väninna rekommenderade er varmt efter förra kursen.',
   'demo-p6': 'Varje kurs hos er har gett mig något nytt — vill fördjupa det ytterligare.',
+  'demo-p7':
+    'Efter RIM 3 i våras har jag fortsatt öva hemma nästan varje dag, och jag märker hur mycket det ger mig i vardagen. Nu vill jag ta nästa steg och framför allt få öva tillsammans med andra igen — det ger en helt annan energi än att sitta själv.',
+  'demo-p8': 'Kunna använda förmågan i vardagslivet.',
 };
 
 /** K63: erfarenhetsmixens nivåer — demo bucketar på tidigareEvent;
@@ -1283,6 +1293,39 @@ const DEMO_HISTORIK: Record<string, KursPost[]> = {
   ],
   'demo-p9': [{ kurs: 'Fjärrskådning', datum: '2025-12-13' }],
 };
+
+/** K65 (Marcus + live-texterna): motiveringskortet — långa svar
+    (verkliga spänner en rad → ~600 tecken) klipps på 3 rader
+    (line-clamp) med Läs mer/Visa mindre; radbrytningar bevaras
+    (whitespace-pre-line). Tröskeln ~180 tecken ≈ 3 rader är
+    prototyp-heuristik — skarp form mäter faktisk overflow. */
+function MotiveringsKort({ namn, svar }: { namn: string; svar: string }) {
+  const [utfalld, setUtfalld] = useState(false);
+  const lang = svar.length > 180;
+  return (
+    <figure className="flex flex-col gap-1.5 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)">
+      <blockquote
+        className={`whitespace-pre-line text-body ${lang && !utfalld ? 'line-clamp-3' : ''}`}
+      >
+        {svar}
+      </blockquote>
+      <div className="flex items-center justify-between gap-3">
+        <figcaption className="text-caption text-text-muted">{namn}</figcaption>
+        {lang && (
+          <button
+            type="button"
+            aria-expanded={utfalld}
+            aria-label={`${utfalld ? 'Visa mindre av' : 'Läs hela'} motiveringen från ${namn}`}
+            onClick={() => setUtfalld((v) => !v)}
+            className="shrink-0 font-medium text-caption underline-offset-2 hover:underline"
+          >
+            {utfalld ? 'Visa mindre' : 'Läs mer'}
+          </button>
+        )}
+      </div>
+    </figure>
+  );
+}
 
 /** K63 (Marcus + cohort-mönstret [Maven Reflections: deltagarnas mål
     pre-course så instruktören kan anpassa innehållet; beginning-course-
@@ -1401,16 +1444,13 @@ function GruppdynamikLista({ eventId }: { eventId: string }) {
         </div>
       ))}
       <div className="flex flex-col py-3">
-        <p className="pb-2 text-caption text-text-muted">
-          ”Varför vill du gå den här kursen?” — ur anmälan
-        </p>
+        {/* K65 (Marcus): rubrikraden + citattecknen RIVNA — korten bär
+            själva; alla inkomna motiveringar listas (8 av 10; manuell/
+            +1 går utanför formuläret). */}
         <ul className="flex flex-col gap-2.5">
           {roster.map((r) => (
             <li key={r.namn}>
-              <figure className="flex flex-col gap-1.5 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)">
-                <blockquote className="text-body">”{r.svar}”</blockquote>
-                <figcaption className="text-caption text-text-muted">{r.namn}</figcaption>
-              </figure>
+              <MotiveringsKort namn={r.namn} svar={r.svar} />
             </li>
           ))}
         </ul>
