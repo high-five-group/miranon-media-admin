@@ -115,8 +115,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel:
-      'K69 — Anteckningar: knappen åter i primitivens radie (K68-radien prövad-och-riven)',
+    stegLabel: 'K69 — Anteckningar: knappen åter i primitivens radie (K68-radien prövad-och-riven)',
   },
 ];
 
