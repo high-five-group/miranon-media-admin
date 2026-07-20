@@ -988,7 +988,7 @@ export const LIST_PROTO_VARIANTS: PrototypeVariant[] = [
     label: 'Variant B',
     steg: 3,
     stegLabel:
-      'FACIT 2026-07-19 · K74-ingången LÅST · K76 PÅGÅR — Skapa-sidan: publicerings-avsnittet',
+      'FACIT 2026-07-19 · K74-ingången LÅST · K77 PÅGÅR — Skapa-sidan: publicerings-HANDTAGET',
   },
 ];
 // Växlaren själv är T78a-lyft till delade dev-komponenten

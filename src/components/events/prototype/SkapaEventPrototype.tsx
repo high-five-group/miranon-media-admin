@@ -31,16 +31,18 @@
 
 import type { CalendarDate } from '@internationalized/date';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Globe } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { I18nProvider, Switch } from 'react-aria-components';
+import { I18nProvider } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { AntalFalt, DatumFalt, ProtoGrupp } from './EventDetailPrototype';
 
-const KURS_OPTIONS = ['Fjärrskådning', 'RIM 1', 'RIM 2', 'RIM 3'];
+// K77 (Marcus): domänspråket är UTBILDNING — Roger & Lotta benämner
+// kurserna så (ORDLISTA-posten Utbildning; "Kurs" var min etikett).
+const UTBILDNING_OPTIONS = ['Fjärrskådning', 'RIM 1', 'RIM 2', 'RIM 3'];
 const TYP_OPTIONS = ['Utbildning', 'Föreläsning'];
 const FORMAT_OPTIONS = ['Tvådagars — Dag 1 + Dag 2', 'Endagars — Föreläsning'];
 
@@ -48,7 +50,7 @@ export function SkapaEventPrototype() {
   const navigate = useNavigate();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  const [kurs, setKurs] = useState('');
+  const [utbildning, setUtbildning] = useState('');
   const [typ, setTyp] = useState('');
   const [ort, setOrt] = useState('');
   const [datum, setDatum] = useState<{ start: CalendarDate; end: CalendarDate } | null>(null);
@@ -64,7 +66,7 @@ export function SkapaEventPrototype() {
   }, []);
 
   const fel = {
-    kurs: kurs === '',
+    utbildning: utbildning === '',
     typ: typ === '',
     ort: ort.trim() === '',
     datum: datum == null,
@@ -115,15 +117,15 @@ export function SkapaEventPrototype() {
           <ProtoGrupp id="skapa-event-om" rubrik="Om eventet">
             <div className="flex flex-col gap-4 py-4">
               <Select
-                label="Kurs (obligatorisk)"
-                placeholder="Välj kurs"
-                selectedKey={kurs || null}
-                onSelectionChange={(k) => setKurs(String(k))}
+                label="Utbildning (obligatorisk)"
+                placeholder="Välj utbildning"
+                selectedKey={utbildning || null}
+                onSelectionChange={(k) => setUtbildning(String(k))}
                 isRequired
-                isInvalid={visaFel && fel.kurs}
-                errorMessage="Välj en kurs"
+                isInvalid={visaFel && fel.utbildning}
+                errorMessage="Välj en utbildning"
               >
-                {KURS_OPTIONS.map((o) => (
+                {UTBILDNING_OPTIONS.map((o) => (
                   <SelectItem key={o} id={o}>
                     {o}
                   </SelectItem>
@@ -211,44 +213,34 @@ export function SkapaEventPrototype() {
             </div>
           </ProtoGrupp>
 
-          {/* K76 (Marcus-VISIONEN — T79: custom miranon.se ersätter
-              Shopify-mallen + Elfsight-widgetarna [kalender +
-              anmälningsformulär] så webbplats och app delar samma
-              källa och samarbetar direkt): publicerings-avsnittet.
-              Switchen i Resend-klassens glid-form — RAC Switch:
-              klick/tangentbord med animerad tumme; äkta DRAG-gest +
-              Switch-primitiv i biblioteket = facit-frågor.
-              PRD-krav: publiceringsflaggan FINNS EJ i basen
-              (live-fältlistan denna session — Eventplanering bär ingen
-              publish-flagga) → additivt bas-fält (ADR-063) +
-              create-event-EF:ens input utökas + publicerings-
-              KONTRAKTET (vad flaggan styr på webbplatsen) designas i
+          {/* K76→K77 (Marcus-VISIONEN — T79: custom miranon.se ersätter
+              Shopify + Elfsight så webbplats och app delar samma källa):
+              publicerings-avsnittet. K77 (Marcus: "det där är INTE en
+              Resend-grej … en vanlig radio-button" + research-order):
+              K76:s TOGGLE PRÖVAD-OCH-RIVEN → slide-to-confirm-HANDTAGET
+              (Resend Broadcasts: submit-knappen ersatt av slider —
+              DRAGET är bekräftelsen vid tunga handlingar;
+              resend.com/blog/send-marketing-emails-with-resend-broadcasts).
+              PRD-krav oförändrade: publiceringsflaggan FINNS EJ i basen
+              (live-fältlistan S73) → additivt bas-fält (ADR-063) +
+              create-event-input-utökning + publicerings-KONTRAKTET i
               T79-spåret. */}
           <ProtoGrupp id="skapa-event-publicering" rubrik="Publicering">
-            <Switch
-              isSelected={publicera}
-              onChange={setPublicera}
-              className="group flex items-center justify-between gap-4 py-4 data-[focus-visible]:outline data-[focus-visible]:outline-(--mm-color-focus-ring) data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2"
-            >
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="font-medium text-body">Publicera på miranon.se</span>
-                <span className="text-caption text-text-muted">
-                  Eventet visas i webbplatsens kalender och öppnar för anmälan.
-                </span>
-              </span>
-              <span
-                aria-hidden="true"
-                className="h-7 w-12 shrink-0 rounded-full bg-(--p-neutral-400) p-1 group-data-[selected]:bg-success motion-safe:transition-colors"
-              >
-                <span className="block size-5 rounded-full bg-surface shadow-sm group-data-[selected]:translate-x-5 motion-safe:transition-transform" />
-              </span>
-            </Switch>
+            <div className="py-4">
+              <PubliceraHandtag publicerad={publicera} onChange={setPublicera} />
+            </div>
           </ProtoGrupp>
 
-          {/* Knappraden: primär först (FK-formklassen); px-4 = kortens inner-inset. */}
+          {/* Knappraden: primär först (FK-formklassen); px-4 = kortens inner-inset.
+              K77 (Marcus: "gillar inte att knappen är mörkgrå"): Skapa
+              event i SAGE-GRÖNA (bg-success, K49) i stället för
+              primärknappens svärta — tailwind-merge:as över varianten;
+              vit text mot #606B57 ≈ 5,6:1 (AA ✓). Grön-primär som
+              biblioteks-intent = facit-fråga. */}
           <div className="flex items-center gap-2 px-4">
             <Button
               intent="primary"
+              className="bg-success data-[hovered]:bg-success/85 data-[pressed]:bg-success/75"
               onPress={() => {
                 setVisaFel(true);
                 if (!harFel) setSkapad(true);
@@ -263,5 +255,105 @@ export function SkapaEventPrototype() {
         </>
       )}
     </section>
+  );
+}
+
+/** K77 — publicerings-HANDTAGET (slide-to-confirm, Resend-klassen):
+    dra hela vägen HÖGER för att arma publiceringen; dra tillbaka
+    vänster för att ångra. Släpp mitt i → fjädrar till utgångsläget
+    (intentionalitets-trösklarna 90 %/10 %). Geometri: spår h-12,
+    handtag 44 px med 2 px inset; positionen som ratio 0–1 →
+    left-calc (ingen mätning i render).
+    A11y (11-ribban — drag får ALDRIG vara enda vägen): elementet är
+    fokuserbart med role="switch"; Space/Enter togglar samma val;
+    fokusring via base.css-globalen (:focus-visible på riktigt
+    fokuserbart element); motion-reduce: ingen fjäder. touch-none
+    krävs för pointer-drag på mobil. Skarp form + ev. SlideToConfirm-
+    primitiv i biblioteket = facit-frågor (RAC saknar mönstret —
+    ren pointer-events-yta). */
+function PubliceraHandtag({
+  publicerad,
+  onChange,
+}: {
+  publicerad: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  const sparRef = useRef<HTMLDivElement>(null);
+  // Drag-tillståndet bor i en REF (closure-säkert mellan högfrekventa
+  // pointermoves — event-handlers ser annars förra renderns state);
+  // dragPos-staten finns ENBART för rendern.
+  const dragRef = useRef<number | null>(null);
+  const [dragPos, setDragPos] = useState<number | null>(null);
+  const pos = dragPos ?? (publicerad ? 1 : 0);
+
+  const ratio = (clientX: number): number => {
+    const spar = sparRef.current;
+    if (!spar) return 0;
+    const r = spar.getBoundingClientRect();
+    return Math.min(1, Math.max(0, (clientX - r.left - 24) / (r.width - 48)));
+  };
+
+  return (
+    <div
+      ref={sparRef}
+      role="switch"
+      aria-checked={publicerad}
+      aria-label="Publicera på miranon.se"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          onChange(!publicerad);
+        }
+      }}
+      onPointerDown={(e) => {
+        // Capture kan kasta NotFoundError om pekaren redan släppts
+        // (snabb tap) — draget funkar ändå via move/up på elementet.
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {}
+        dragRef.current = ratio(e.clientX);
+        setDragPos(dragRef.current);
+      }}
+      onPointerMove={(e) => {
+        if (dragRef.current != null) {
+          dragRef.current = ratio(e.clientX);
+          setDragPos(dragRef.current);
+        }
+      }}
+      onPointerUp={() => {
+        const p = dragRef.current;
+        if (p != null) onChange(p >= 0.9 ? true : p <= 0.1 ? false : publicerad);
+        dragRef.current = null;
+        setDragPos(null);
+      }}
+      onPointerCancel={() => {
+        dragRef.current = null;
+        setDragPos(null);
+      }}
+      className={`relative h-12 w-full touch-none select-none rounded-full border motion-safe:transition-colors ${
+        publicerad
+          ? 'border-transparent bg-success'
+          : 'border-(--mm-input-border) bg-(--mm-input-bg)'
+      }`}
+    >
+      <span
+        aria-hidden="true"
+        className={`absolute inset-0 flex items-center justify-center text-small ${
+          publicerad ? 'font-medium text-text-inverse' : 'text-text-muted'
+        }`}
+      >
+        {publicerad ? 'Publiceras på miranon.se' : 'Dra för att publicera på miranon.se'}
+      </span>
+      <span
+        aria-hidden="true"
+        style={{ left: `calc(2px + ${pos * 100}% - ${pos * 48}px)` }}
+        className={`absolute top-0.5 flex size-11 items-center justify-center rounded-full bg-surface shadow-sm ${
+          dragPos == null ? 'motion-safe:transition-[left]' : ''
+        }`}
+      >
+        <Globe aria-hidden="true" size={18} className="text-text-secondary" />
+      </span>
+    </div>
   );
 }
