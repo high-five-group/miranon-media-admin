@@ -114,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K61 — beläggningskategoriernas prickar → vertikala streck (kalenderns K14-form)',
+    stegLabel: 'K62 — Anmäld-raden är länken till anmälan-sidan (understruken; PRD-route)',
   },
 ];
 
@@ -1034,7 +1034,7 @@ function DeltagarKort({
       <Link
         to="/personer/$personId"
         params={{ personId: d.personId }}
-        className="flex flex-col gap-1 rounded-xl px-4 py-3"
+        className="flex flex-col gap-1 rounded-t-xl px-4 pt-3"
       >
         <span className="flex items-start justify-between gap-3 font-semibold text-body">
           {d.namn}
@@ -1055,11 +1055,26 @@ function DeltagarKort({
         </span>
         <span className="text-caption text-text-muted">E-post</span>
         <span className="text-small">{d.epost}</span>
+      </Link>
+      {/* K62 (Marcus): metaytan UTLYFT ur person-länken — Anmäld-raden
+          är nu egen LÄNK till ANMÄLAN-SIDAN och interaktivt-i-
+          interaktivt är förbjudet (K44-regeln). Öppet bokfört:
+          person-klickytan koncentreras till identitetszonen (namn +
+          e-post; kort-med-titellänk-mönstret) — tidigare hela kortet. */}
+      <span className="flex flex-col gap-1 px-4 pb-3">
         <span className="mt-1.5 flex flex-col gap-1 text-caption text-text-muted">
-          <span className="flex items-center gap-1">
+          {/* K62: understruken = länk (Marcus-ordern). PROTOTYP-NO-OP:
+              anmälan-sidan (per-anmälan-detaljvyn) är EJ byggd —
+              PRD-krav: route + get-registration-shape; byts till Link
+              när routen föds (sidans no-op-grammatik, K26-klassen). */}
+          <button
+            type="button"
+            aria-label={`Öppna anmälan för ${d.namn}`}
+            className="flex items-center gap-1 self-start underline underline-offset-2"
+          >
             <Inbox aria-hidden="true" size={12} className="shrink-0" />
             Anmäld {kortDatum(d.anmald)} {klockslag(d.anmald)}
-          </span>
+          </button>
           {d.bekraftelse != null && <MailStatus namn="Bekräftelse" skickad={d.bekraftelse} />}
           {d.paminnelse != null && <MailStatus namn="Påminnelse" skickad={d.paminnelse} />}
           {d.deltagarinfo != null && <MailStatus namn="Eventinfo" skickad={d.deltagarinfo} />}
@@ -1070,7 +1085,7 @@ function DeltagarKort({
             ? 'Första eventet hos Miranon Media'
             : `${d.tidigareEvent} tidigare event hos Miranon Media`}
         </span>
-      </Link>
+      </span>
       {!arBekraftad(d) && (
         <button
           type="button"
