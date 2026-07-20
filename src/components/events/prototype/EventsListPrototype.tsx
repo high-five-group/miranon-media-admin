@@ -406,6 +406,11 @@ export const DEMO_EVENTS: ProtoEvent[] = [
     manuelltTillagda: 1,
     medfoljande: 1,
     vantelista: 0,
+    // K27: betalnings-demo — koherent med DEMO_BETALNINGAR (detalj-protot):
+    // 3 saknar avgift (5 av 8 mottagna), 6 saknar slutbetalning (2 mottagna).
+    antalAnmalningsavgifter: 5,
+    antalSlutbetalningar: 2,
+    antalSlutbetalningFelande: 6,
   }),
   demoEvent({
     id: 'demo-2',

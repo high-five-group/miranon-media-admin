@@ -53,9 +53,11 @@ import {
   BadgeCheck,
   BellRing,
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   type LucideIcon,
+  Mail,
   MailCheck,
   Minus,
   Pencil,
@@ -107,7 +109,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K26 — check-in-kortet i exakt åtgärdsradernas form',
+    stegLabel: 'K27 — Betalningar: röda saknas-deltan + inline-detaljerna',
   },
 ];
 
@@ -735,6 +737,162 @@ function LaggTillRad({ eventId }: { eventId: string }) {
   );
 }
 
+/* ── K27: Betalningar-kortets inline-detaljer (Marcus: "stanna på samma
+   sida") — disclosure-raden ersätter navigationen till betalnings-vyn.
+   Detalj-innehållet är Eventmanager-referensens "Ej skickat full
+   betalning" (airtable-eventmanager-02) GJORD BÄTTRE: avvikelse-lista
+   (endast de som saknar något — inte pill-brus per rad), deadline
+   formulerad på svenska EN gång (inte "-106" per rad), "Påminn" som ren
+   mailto-handling (inte rå mailto:-text som länktext), vertikala
+   person-rader (ingen horisontell scroll — mobilen först). Per-person-
+   datat är DEMO (fiktiva namn): skarpa kravet = betalningsdetalj-shape
+   per anmälan (Anmälningsavgift/Slutbetalning/deadline ur basen) — PRD.
+   mailto är Eventmanagers befintliga påminnelse-väg (read-only-säker);
+   skarpa flödet är send-email-EF:ns payment-typ. */
+
+type DemoBetalning = {
+  namn: string;
+  epost: string;
+  avgiftMottagen: boolean;
+  slutbetalningMottagen: boolean;
+};
+
+/** Fiktiva demo-personer (aldrig verkliga namn ur basen — PII). Koherent
+    med demo-1:s aggregat: 3 saknar avgift, 6 saknar slutbetalning. */
+const DEMO_BETALNINGAR: Record<string, DemoBetalning[]> = {
+  'demo-1': [
+    {
+      namn: 'Eva Lindqvist',
+      epost: 'eva.lindqvist@example.com',
+      avgiftMottagen: false,
+      slutbetalningMottagen: false,
+    },
+    {
+      namn: 'Johan Berg',
+      epost: 'johan.berg@example.com',
+      avgiftMottagen: false,
+      slutbetalningMottagen: false,
+    },
+    {
+      namn: 'Sara Nyström',
+      epost: 'sara.nystrom@example.com',
+      avgiftMottagen: false,
+      slutbetalningMottagen: false,
+    },
+    {
+      namn: 'Peter Åkesson',
+      epost: 'peter.akesson@example.com',
+      avgiftMottagen: true,
+      slutbetalningMottagen: false,
+    },
+    {
+      namn: 'Maria Holm',
+      epost: 'maria.holm@example.com',
+      avgiftMottagen: true,
+      slutbetalningMottagen: false,
+    },
+    {
+      namn: 'Anders Ek',
+      epost: 'anders.ek@example.com',
+      avgiftMottagen: true,
+      slutbetalningMottagen: false,
+    },
+  ],
+};
+
+/** Deadline-texten: betalningsdeadline = 14 dagar före eventstart
+    (demo-antagande; basens verkliga deadline-formel = PRD-fråga).
+    Formuleras på svenska EN gång — aldrig rå negativ siffra (Gunilla;
+    bättre än referensens "-106" per rad). */
+function deadlineText(e: ProtoEvent): string | null {
+  if (!e.startdatum) return null;
+  const start = new Date(e.startdatum);
+  if (Number.isNaN(start.getTime())) return null;
+  const deadline = new Date(start);
+  deadline.setDate(deadline.getDate() - 14);
+  const idag = new Date();
+  idag.setHours(0, 0, 0, 0);
+  deadline.setHours(0, 0, 0, 0);
+  const diffDagar = Math.round((deadline.getTime() - idag.getTime()) / 86_400_000);
+  const datum = LANGDATUM.format(deadline);
+  if (diffDagar > 0) return `Betalningsdeadline ${datum} — om ${diffDagar} dagar`;
+  if (diffDagar === 0) return `Betalningsdeadline ${datum} — idag`;
+  return `Betalningsdeadline ${datum} — passerad för ${-diffDagar} dagar sedan`;
+}
+
+/** K27: disclosure-raden — "Öppna detaljer" ↔ "Stäng detaljer" på
+    Öppna-radens plats (samma centrerade radform); chevron-down roterar
+    (disclosure-branschformen, skild från navigationsradernas
+    höger-chevron). */
+function DetaljRad({
+  oppen,
+  kontrollerarId,
+  onToggle,
+}: {
+  oppen: boolean;
+  kontrollerarId: string;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="py-3">
+      <button
+        type="button"
+        aria-expanded={oppen}
+        aria-controls={kontrollerarId}
+        onClick={onToggle}
+        className="flex w-full items-center justify-center gap-2 font-medium text-body"
+      >
+        {oppen ? 'Stäng detaljer' : 'Öppna detaljer'}
+        <ChevronDown
+          aria-hidden="true"
+          size={18}
+          className={`shrink-0 text-text-secondary motion-safe:transition-transform ${oppen ? 'rotate-180' : ''}`}
+        />
+      </button>
+    </div>
+  );
+}
+
+/** K27: detalj-innehållet — avvikelse-listan "saknar betalning". */
+function BetalningsDetaljer({ event, eventId }: { event: ProtoEvent; eventId: string }) {
+  const personer = DEMO_BETALNINGAR[eventId] ?? DEMO_BETALNINGAR['demo-1'] ?? [];
+  const deadline = deadlineText(event);
+  return (
+    <div className="flex flex-col py-3">
+      <h3 className="font-semibold text-small">Saknar betalning</h3>
+      {deadline && <p className="text-small text-text-muted">{deadline}</p>}
+      <ul className="mt-2 divide-y divide-border">
+        {personer
+          .filter((p) => !p.avgiftMottagen || !p.slutbetalningMottagen)
+          .map((p) => (
+            <li key={p.epost} className="flex items-center justify-between gap-4 py-2.5">
+              <div className="min-w-0">
+                <p className="truncate font-medium text-body">{p.namn}</p>
+                <p className="text-small text-text-muted">
+                  Saknar:{' '}
+                  {[
+                    !p.avgiftMottagen && 'anmälningsavgift',
+                    !p.slutbetalningMottagen && 'slutbetalning',
+                  ]
+                    .filter(Boolean)
+                    .join(' + ')}
+                </p>
+              </div>
+              <a
+                href={`mailto:${p.epost}?subject=${encodeURIComponent(`Påminnelse: betalning för ${eventName(event)}`)}`}
+                className="flex shrink-0 items-center gap-1.5 font-medium text-body underline-offset-2 hover:underline"
+              >
+                <Mail aria-hidden="true" size={14} />
+                Påminn
+                <span className="sr-only">{` ${p.namn} via mail`}</span>
+              </a>
+            </li>
+          ))}
+      </ul>
+    </div>
+  );
+}
+
 /** K3: åtgärdsrad i kortbotten (IMG_1542:s "Ändra"-rad) — centrerad
     länkrad; avdelaren mot raderna ovanför bärs av kortets divide-y. */
 function AtgardsRad({
@@ -797,6 +955,8 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
   // stänger den andra; per-sektion-redigeringens lugn, Stripe/Polaris-klassen).
   const [redigerar, setRedigerar] = useState<'om' | 'belaggning' | null>(null);
   const [override, setOverride] = useState<Partial<ProtoEvent>>({});
+  // K27 (Marcus: "stanna på samma sida"): betalningsdetaljerna inline.
+  const [visaBetalningsdetaljer, setVisaBetalningsdetaljer] = useState(false);
 
   const bas: ProtoEvent | undefined = useDemo ? demoEventById(eventId) : fetched;
   const event: ProtoEvent | undefined = bas ? { ...bas, ...override } : undefined;
@@ -1013,20 +1173,39 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-betalning" rubrik="Betalningar">
+        {/* K27 (Marcus): saknas-DELTAT i rött bredvid räkningen —
+            minustecknet är bäraren (text), rött förstärker (färg aldrig
+            ensam); visas endast vid avvikelse. Gamla "Slutbetalning
+            saknas"-avvikelseraden ERSATT av deltat på sin räknings-rad
+            (samma information, en rad mindre). */}
         <dl className="divide-y divide-border">
           <FkRad term="Anmälningsavgifter">
             {`${event.antalAnmalningsavgifter} av ${event.antalAnmalda} mottagna`}
+            {event.antalAnmalda - event.antalAnmalningsavgifter > 0 && (
+              <span className="ml-2 font-medium text-error tabular-nums">
+                −{event.antalAnmalda - event.antalAnmalningsavgifter}
+              </span>
+            )}
           </FkRad>
-          <FkRad term="Slutbetalningar">{`${event.antalSlutbetalningar} mottagna`}</FkRad>
-          {/* Eventmanager-raden "Antal slutbetalning saknas" — visas endast
-              vid avvikelse (statusbadge-principens släkting: normalt är tyst). */}
-          {event.antalSlutbetalningFelande > 0 && (
-            <FkRad term="Slutbetalning saknas">{String(event.antalSlutbetalningFelande)}</FkRad>
-          )}
+          <FkRad term="Slutbetalningar">
+            {`${event.antalSlutbetalningar} mottagna`}
+            {event.antalSlutbetalningFelande > 0 && (
+              <span className="ml-2 font-medium text-error tabular-nums">
+                −{event.antalSlutbetalningFelande}
+              </span>
+            )}
+          </FkRad>
         </dl>
-        <AtgardsRad to="/event/$eventId/betalning" eventId={eventId}>
-          Öppna betalnings-vyn
-        </AtgardsRad>
+        {/* K27: navigationen till betalnings-vyn ERSATT av inline-detaljer
+            (Marcus: "stanna på samma sida"). */}
+        <DetaljRad
+          oppen={visaBetalningsdetaljer}
+          kontrollerarId="proto-betalningsdetaljer"
+          onToggle={() => setVisaBetalningsdetaljer((v) => !v)}
+        />
+        <div id="proto-betalningsdetaljer" hidden={!visaBetalningsdetaljer}>
+          <BetalningsDetaljer event={event} eventId={eventId} />
+        </div>
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-narvaro" rubrik="Närvaro">
