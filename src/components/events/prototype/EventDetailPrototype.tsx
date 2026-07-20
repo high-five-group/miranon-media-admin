@@ -107,7 +107,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K23 — Gå till check-in som primärknapp över Åtgärder',
+    stegLabel: 'K24 — check-in i NavCard-formen (svarta baren riven)',
   },
 ];
 
@@ -890,18 +890,28 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
         )}
       </header>
 
-      {/* K23 (Marcus): check-in är EVENTDAGENS PRIMÄRHANDLING — Lotta står
-          i dörren med telefonen och ska hitta den på en sekund
-          (Eventbrite/Luma-klassen: Check in som framhävd primärknapp på
-          eventsidan). EN primärknapp per sida — ÖVER Åtgärds-listan
-          (sekundärhandlingarna), aldrig i den; lg = 48 px touch-golvet.
-          PROTOTYP-NO-OP: check-in-sidan (dörr-optimerad närvaro,
-          per-session mot Deltaganden) byggs INTE ännu — PRD-krav,
-          bokfört (Marcus-order: "knappen nu, sidan senare"). */}
-      <Button intent="primary" size="lg" className="w-full">
-        <UserCheck aria-hidden="true" size={20} />
+      {/* K23 (Marcus): check-in är EVENTDAGENS PRIMÄRHANDLING — egen
+          framhävd ingång ÖVER Åtgärds-listan (Eventbrite/Luma-klassen),
+          aldrig en rad i den. K24 (Marcus: "det blev inte snyggt"):
+          K23:s svarta primärknapp REVS — en tung fylld bar är främmande i
+          sidans grammatik (tonala kort + rader). Formen är i stället
+          NavCard-FACITETS (M6, S64): hel klickbar kort-rad, ikon 20 px +
+          etikett, navcard-tokens, ingen chevron (app-regeln) — KOPIERAD
+          form, ej delad komponent (throwaway-kontraktet; primitiven är
+          route-typad och check-in-sidan finns inte än). PROTOTYP-NO-OP:
+          sidan (dörr-optimerad närvaro, per-session mot Deltaganden) är
+          PRD-krav — knappen nu, sidan senare (Marcus-order). */}
+      <button
+        type="button"
+        className="text-(color:--mm-navcard-text) flex min-h-12 items-center gap-4 rounded-2xl border border-(--mm-navcard-border) bg-(--mm-navcard-bg) px-4 py-4 text-left font-semibold text-body contrast-more:border-(--mm-navcard-border-contrast)"
+      >
+        <UserCheck
+          aria-hidden="true"
+          size={20}
+          className="text-(color:--mm-navcard-icon) shrink-0"
+        />
         Gå till check-in
-      </Button>
+      </button>
 
       {/* K19 (Marcus): Åtgärds-gruppen ÖVERST — sidans operativa handlingar
           samlade före datagrupperna (Omedelbarhet: på eventdagar är
