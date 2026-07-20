@@ -93,7 +93,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K14 — Beläggnings-Ändra (morfen)',
+    stegLabel: 'K15 — smalare antal-fält + beläggnings-mätaren',
   },
 ];
 
@@ -102,12 +102,6 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
 /** Visat eventnamn ur de fält Airtable kan leverera — aldrig krasch/tomt. */
 function eventName(e: Event): string {
   return e.eventNamn ?? e.eventlabel ?? 'Namnlöst event';
-}
-
-/** Beläggning som TEXT (färg aldrig ensam bärare). Null-säker: osatt tak → ingen NaN. */
-function belaggningText(e: Event): string {
-  if (e.maxPlatser == null) return `${e.antalAnmalda} anmälda (platser ej satt)`;
-  return `${e.antalAnmalda} av ${e.maxPlatser} platser`;
 }
 
 /** Fullt = inga platser kvar. `platserKvar` null (okänt tak) → ej "fullt". */
@@ -325,12 +319,18 @@ function tillDatumRange(e: ProtoEvent): { start: CalendarDate; end: CalendarDate
 function RedigeringsRad({
   term,
   nuvarande,
+  slotKlass = 'w-60',
   children,
 }: {
   term: string;
   /** K13 (Marcus): nuvarande värdet synligt VÄNSTER om fältet genom hela
       ändringen — "så man ser vad man ändrar från". */
   nuvarande?: string | null;
+  /** K15 (Marcus): slot-bredden styrbar per fält — fältets bredd ska
+      spegla förväntat svar (GOV.UK-formregeln); antal-fältet behöver
+      inte textfältens 240 px. K13:s likbredd är per-FORMULÄR (Om
+      eventets fyra fält), inte global. */
+  slotKlass?: string;
   children: React.ReactNode;
 }) {
   // K13: ALLA fält exakt samma bredd — fasta w-60-lådan bor på slotten
@@ -341,7 +341,7 @@ function RedigeringsRad({
       <dt className="shrink-0 text-small text-text-muted">{term}</dt>
       <dd className="flex min-w-0 flex-1 items-center justify-end gap-3">
         <span className="truncate text-small text-text-secondary">{nuvarande || '–'}</span>
-        <div className="w-60 shrink-0">{children}</div>
+        <div className={`${slotKlass} shrink-0`}>{children}</div>
       </dd>
     </div>
   );
@@ -479,16 +479,43 @@ function AntalFalt({
   );
 }
 
-/** Fotnotsraden delad mellan visnings- och Ändra-läget — samma text och
-    geometri i båda lägena (morfen rör bara det redigerbara). */
-function BelaggningsFotnot({ event }: { event: ProtoEvent }) {
+/** K15 (Marcus: "sista raden ska vara en progressbar, men informationen
+    8 av 12 och 67 % ska få plats"): fotnoten → beläggnings-MÄTAREN.
+    Stapel-grammatiken ärvs RAKT AV från listkortens beläggningsblock
+    (S72-facitet: text över spår · bg-surface-spår h-1.5 · neutral
+    fyllnad · grön vid fullbokat · andel capad 100) + procenten på
+    textradens högerkant — branschformen för kapacitetsmätare (caption
+    vänster, värde höger, stapel under; GitHub-kvot/Polaris-klassen).
+    TEXTEN är bäraren (färg/stapel aldrig ensam — a11y); stapeln
+    dekorativ (aria-hidden). Utan satt tak: spåret står tomt (listans
+    slot-modell). Delad mellan visnings- och Ändra-läget (morf-pariteten). */
+function BelaggningsMatare({ event }: { event: ProtoEvent }) {
+  const full = isFull(event);
   const percent = percentText(event);
+  const andel =
+    event.maxPlatser != null && event.maxPlatser > 0
+      ? Math.min(100, Math.round((event.antalAnmalda / event.maxPlatser) * 100))
+      : 0;
   return (
-    <p className="py-3 text-small text-text-muted">
-      {belaggningText(event)}
-      {isFull(event) ? ' · Fullt' : ''}
-      {percent ? ` · ${percent} fullt` : ''}
-    </p>
+    <div className="flex flex-col gap-1.5 py-3">
+      <div className="flex items-baseline justify-between gap-4">
+        <span className="text-small text-text-muted">
+          {event.maxPlatser != null
+            ? `${event.antalAnmalda} av ${event.maxPlatser} platser bokade`
+            : `${event.antalAnmalda} anmälda (platser ej satt)`}
+          {full ? ' · Fullt' : ''}
+        </span>
+        {percent && (
+          <span className="font-medium text-small text-text-secondary tabular-nums">{percent}</span>
+        )}
+      </div>
+      <div aria-hidden="true" className="h-1.5 rounded-full bg-surface">
+        <div
+          className={`h-full rounded-full ${full ? 'bg-success' : 'bg-(--p-neutral-400)'}`}
+          style={{ width: `${andel}%` }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -510,6 +537,7 @@ function BelaggningForm({
         <RedigeringsRad
           term="Max antal platser"
           nuvarande={event.maxPlatser != null ? String(event.maxPlatser) : null}
+          slotKlass="w-32"
         >
           <AntalFalt value={maxPlatser} onChange={setMaxPlatser} />
         </RedigeringsRad>
@@ -518,7 +546,7 @@ function BelaggningForm({
           {event.platserKvar != null ? String(event.platserKvar) : null}
         </FkRad>
       </dl>
-      <BelaggningsFotnot event={event} />
+      <BelaggningsMatare event={event} />
       {/* Spara/Avbryt på Ändra-radens plats och höjd (K12-mönstret). */}
       <div className="flex items-center justify-center gap-2 py-2">
         <Button
@@ -759,9 +787,9 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
                 {event.platserKvar != null ? String(event.platserKvar) : null}
               </FkRad>
             </dl>
-            {/* Fotnotsraden (IMG_1542:s "Din adress hämtas från Skatteverket"):
-                sammanfattningen som TEXT — färg aldrig ensam bärare. */}
-            <BelaggningsFotnot event={event} />
+            {/* K15: fotnotsraden ersatt av mätaren (IMG_1542-fotnotens plats,
+                listans stapel-grammatik) — sammanfattningen fortsatt som TEXT. */}
+            <BelaggningsMatare event={event} />
             <AndraRad onPress={() => setRedigerar('belaggning')} />
           </>
         )}
