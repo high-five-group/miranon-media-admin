@@ -30,7 +30,15 @@ import type { CalendarDate } from '@internationalized/date';
 import { getLocalTimeZone, today } from '@internationalized/date';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { BedDouble, CalendarDays, ChevronLeft, ChevronRight, List, MapPin } from 'lucide-react';
+import {
+  BedDouble,
+  CalendarDays,
+  CalendarPlus,
+  ChevronLeft,
+  ChevronRight,
+  List,
+  MapPin,
+} from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { useState } from 'react';
 import {
@@ -926,7 +934,30 @@ export function EventsListPrototype() {
   // (skalets main bär 16 px — dubbelkants-fyndet M6).
   return (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      <h1 className="font-semibold text-3xl">Event</h1>
+      {/* K73 (Marcus: "jag vill nog ha in den på event-sidan" —
+          facit-UTÖKNING öppet bokförd, S72-facitet låst 2026-07-19,
+          utökningen Marcus-order 2026-07-20): Skapa nytt event-ingången
+          på TITELRADENS höger-slot (Polaris primaryAction-klassen;
+          detaljsidans EventKey-pill är samma rad-grammatik). Målet är
+          BEFINTLIGA skarpa sidan /mer/skapa-event (CreateEventForm mot
+          create-event-EF:en, Fas 6f/ADR-066) — ingen ny form byggs.
+          CalendarPlus == Mer-radens ikon + samma etikett (K47-regeln:
+          samma handling, samma grammatik överallt). Mer-ingången KVAR
+          tills Marcus dömer flytt vs dubblering (K21-precedenten rev
+          dubblett på SAMMA sida — detta är cross-yta). Link med
+          primärknappens komponent-tokens: navigations-SEMANTIK +
+          knapp-VISUAL (RAC-Buttonens data-attribut nås ej på Link;
+          ButtonLink-primitiv i biblioteket = facit-fråga). */}
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-semibold text-3xl">Event</h1>
+        <Link
+          to="/mer/skapa-event"
+          className="text-(color:--mm-button-primary-text) inline-flex min-h-8 shrink-0 select-none items-center gap-1.5 rounded bg-(--mm-button-primary-bg) px-3 font-sans text-small hover:bg-(--mm-button-primary-bg-hover) motion-safe:transition-colors"
+        >
+          <CalendarPlus aria-hidden="true" size={16} className="shrink-0" />
+          Skapa nytt event
+        </Link>
+      </div>
       {/* K10: vy-toggeln ÖVER period-toggeln, fast position i båda lägena;
           i kalenderläget ERSÄTTER månadsnavet period-toggeln. */}
       {vyRad}
@@ -953,7 +984,12 @@ export function EventsListPrototype() {
  */
 export const LIST_PROTO_VARIANTS: PrototypeVariant[] = [
   { key: 'A', label: 'Variant A', steg: 1, stegLabel: 'grillade baslinjen · FK-raden' },
-  { key: 'B', label: 'Variant B', steg: 3, stegLabel: 'FACIT — hela ytan låst 2026-07-19' },
+  {
+    key: 'B',
+    label: 'Variant B',
+    steg: 3,
+    stegLabel: 'FACIT 2026-07-19 · K73-utökning PÅGÅR — Skapa nytt event-ingången',
+  },
 ];
 // Växlaren själv är T78a-lyft till delade dev-komponenten
 // (`@/components/dev/PrototypeSwitcher`); routen monterar den med konfigen
