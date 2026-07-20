@@ -58,6 +58,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  History,
   type LucideIcon,
   Mail,
   MailCheck,
@@ -112,7 +113,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K36 — Anmälda deltagare i referensens form (vita personkort)',
+    stegLabel: 'K37 — personkorten: kategori-pill vid avvikelse + mail- och historik-överblick',
   },
 ];
 
@@ -772,18 +773,35 @@ function LaggTillRad({ eventId }: { eventId: string }) {
 
 type DeltagarKategori = 'formular' | 'manuell' | 'medfoljande';
 
+/** K37 (Marcus): kategori-LÖSNINGEN = familjens tysta norm (S72:
+    statusbadge endast vid AVVIKELSE) — via formulär är normen och får
+    inget märke; endast manuell/+1 får en diskret pill. */
+const KATEGORI_PILL: Partial<Record<DeltagarKategori, string>> = {
+  manuell: 'Manuellt tillagd',
+  medfoljande: 'Medföljande (+1)',
+};
+
+/** K37: mail- och historik-överblicken per deltagare — ALLT finns i
+    basen: `Bekräftelse skickad`/`Betalningspåminnelse skickad`/
+    `Deltagarinfo skickad` (dateTime per anmälan, send-email-EF:n) +
+    Personer.`Antal genomförda event` (formeln över kurs-räknarna).
+    PRD = shape-utökning, inga nya bas-fält. null = ej skickad.
+    (Påminnelse-datumen speglar betalningshistorikens — samma bas-fält
+    bär båda ytorna i skarpt läge.) */
 type DemoDeltagare = {
   personId: string;
   namn: string;
   epost: string;
-  /** K36: kategorin visas INTE längre i listan (Marcus rev prick +
-      etikett — "det löser vi på annat sätt"); behålls i datat för
-      kommande form. */
   kategori: DeltagarKategori;
+  bekraftelse: string | null;
+  paminnelse: string | null;
+  deltagarinfo: string | null;
+  tidigareEvent: number;
 };
 
 /** Fiktiva namn (PII-regeln). Samma 8 som betalningslistan + de två
-    utanför formuläret. */
+    utanför formuläret. Ulrika (manuell) saknar bekräftelse — manuella
+    anmälningar går utanför mail-flödet, precis det Lotta ska SE. */
 const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
   'demo-1': [
     {
@@ -791,63 +809,116 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Eva Lindqvist',
       epost: 'eva.lindqvist@example.com',
       kategori: 'formular',
+      bekraftelse: '2026-06-28',
+      paminnelse: '2026-07-18',
+      deltagarinfo: null,
+      tidigareEvent: 0,
     },
     {
       personId: 'demo-p2',
       namn: 'Johan Berg',
       epost: 'johan.berg@example.com',
       kategori: 'formular',
+      bekraftelse: '2026-06-30',
+      paminnelse: null,
+      deltagarinfo: null,
+      tidigareEvent: 1,
     },
     {
       personId: 'demo-p3',
       namn: 'Sara Nyström',
       epost: 'sara.nystrom@example.com',
       kategori: 'formular',
+      bekraftelse: '2026-07-01',
+      paminnelse: '2026-07-16',
+      deltagarinfo: null,
+      tidigareEvent: 3,
     },
     {
       personId: 'demo-p4',
       namn: 'Peter Åkesson',
       epost: 'peter.akesson@example.com',
       kategori: 'formular',
+      bekraftelse: '2026-06-29',
+      paminnelse: null,
+      deltagarinfo: null,
+      tidigareEvent: 0,
     },
     {
       personId: 'demo-p5',
       namn: 'Maria Holm',
       epost: 'maria.holm@example.com',
       kategori: 'formular',
+      bekraftelse: '2026-07-02',
+      paminnelse: null,
+      deltagarinfo: null,
+      tidigareEvent: 2,
     },
     {
       personId: 'demo-p6',
       namn: 'Anders Ek',
       epost: 'anders.ek@example.com',
       kategori: 'formular',
+      bekraftelse: '2026-07-03',
+      paminnelse: null,
+      deltagarinfo: null,
+      tidigareEvent: 5,
     },
     {
       personId: 'demo-p7',
       namn: 'Karin Sjögren',
       epost: 'karin.sjogren@example.com',
       kategori: 'formular',
+      bekraftelse: '2026-06-27',
+      paminnelse: null,
+      deltagarinfo: '2026-07-18',
+      tidigareEvent: 4,
     },
     {
       personId: 'demo-p8',
       namn: 'Lars Öhman',
       epost: 'lars.ohman@example.com',
       kategori: 'formular',
+      bekraftelse: '2026-06-27',
+      paminnelse: null,
+      deltagarinfo: '2026-07-18',
+      tidigareEvent: 2,
     },
     {
       personId: 'demo-p9',
       namn: 'Ulrika Dahl',
       epost: 'ulrika.dahl@example.com',
       kategori: 'manuell',
+      bekraftelse: null,
+      paminnelse: null,
+      deltagarinfo: null,
+      tidigareEvent: 1,
     },
     {
       personId: 'demo-p10',
       namn: 'Elin Öhman',
       epost: 'elin.ohman@example.com',
       kategori: 'medfoljande',
+      bekraftelse: null,
+      paminnelse: null,
+      deltagarinfo: null,
+      tidigareEvent: 0,
     },
   ],
 };
+
+/** K37: mailstatus-posten — skickad = MailCheck + datum (ikonen + datumet
+    bär "skickad"); ej skickad = klartext (Gunilla — aldrig bara "–"). */
+function MailStatus({ namn, skickad }: { namn: string; skickad: string | null }) {
+  if (skickad == null) return <span>{namn} ej skickad</span>;
+  const datum = new Date(skickad);
+  return (
+    <span className="flex items-center gap-1">
+      <MailCheck aria-hidden="true" size={12} className="shrink-0" />
+      {namn} {Number.isNaN(datum.getTime()) ? skickad : DAGMANAD.format(datum)}
+    </span>
+  );
+}
 
 /** K34 (Marcus): påminnelse-HISTORIK per person — skickade
     betalningspåminnelser skrivs ut under betalnings-linjerna. Bas-gapet
@@ -1577,9 +1648,33 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
                 params={{ personId: d.personId }}
                 className="flex flex-col gap-1 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
               >
-                <span className="font-semibold text-body">{d.namn}</span>
+                <span className="flex items-start justify-between gap-3 font-semibold text-body">
+                  {d.namn}
+                  {/* K37: kategori-pillen ENDAST vid avvikelse (tysta
+                      normen) — via formulär är omärkt. */}
+                  {KATEGORI_PILL[d.kategori] && (
+                    <span className="shrink-0 rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+                      {KATEGORI_PILL[d.kategori]}
+                    </span>
+                  )}
+                </span>
                 <span className="text-caption text-text-muted">E-post</span>
                 <span className="text-small">{d.epost}</span>
+                {/* K37: mail-överblicken (basens tre skickad-tidsstämplar)
+                    + Miranon-historiken (Antal genomförda event) — CRM-
+                    klassens kontaktkorts-sammanfattning; Lotta ser allt
+                    utan att öppna personen. */}
+                <span className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-caption text-text-muted">
+                  <MailStatus namn="Bekräftelse" skickad={d.bekraftelse} />
+                  <MailStatus namn="Påminnelse" skickad={d.paminnelse} />
+                  <MailStatus namn="Deltagarinfo" skickad={d.deltagarinfo} />
+                </span>
+                <span className="flex items-center gap-1.5 text-caption text-text-muted">
+                  <History aria-hidden="true" size={12} className="shrink-0" />
+                  {d.tidigareEvent === 0
+                    ? 'Första eventet hos Miranon'
+                    : `${d.tidigareEvent} tidigare event hos Miranon`}
+                </span>
               </Link>
             </li>
           ))}
