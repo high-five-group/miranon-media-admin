@@ -112,7 +112,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K34 — påminnelse-historiken under varje person',
+    stegLabel: 'K35 — Anmälda deltagare-kortet (kategoriprickarna) över Betalningar',
   },
 ];
 
@@ -759,6 +759,47 @@ function LaggTillRad({ eventId }: { eventId: string }) {
    Anmälningsavgift/Slutbetalning + Notering + deadline ur basen) +
    write-operationer för betalstatus/notering (mark-registration-fee-paid
    [ADR-049] finns; slutbetalning + notering saknas). */
+
+/* ── K35 (Marcus): "Anmälda deltagare"-kortet ÖVER Betalningar — alla
+   anmälda med sin BELÄGGNINGS-KATEGORI (prickarna == K16-grammatiken;
+   reserverade är platser, inte personer → ingår ej). Namnen länkar till
+   person-detaljvyn (samma Stripe-klass som betalningslistan). Demo-
+   koherens: 8 via formulär + 1 manuellt tillagd + 1 medföljande = 10.
+   PRD-frågor bokförda: per-källa-listan ur Anmälningar (Källa-fältet)
+   i shapen · ska manuella/+1 även ingå i BETALNINGS-listan (basens
+   Antal anmälda räknar troligen alla anmälningar)? · medföljandes
+   koppling (Medföljande till-länken) i shapen. */
+
+type DeltagarKategori = 'formular' | 'manuell' | 'medfoljande';
+
+const KATEGORI_ETIKETT: Record<DeltagarKategori, string> = {
+  formular: 'Via formulär',
+  manuell: 'Manuellt tillagd',
+  medfoljande: 'Medföljande (+1)',
+};
+
+type DemoDeltagare = {
+  personId: string;
+  namn: string;
+  kategori: DeltagarKategori;
+};
+
+/** Fiktiva namn (PII-regeln). Samma 8 som betalningslistan + de två
+    utanför formuläret. */
+const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
+  'demo-1': [
+    { personId: 'demo-p1', namn: 'Eva Lindqvist', kategori: 'formular' },
+    { personId: 'demo-p2', namn: 'Johan Berg', kategori: 'formular' },
+    { personId: 'demo-p3', namn: 'Sara Nyström', kategori: 'formular' },
+    { personId: 'demo-p4', namn: 'Peter Åkesson', kategori: 'formular' },
+    { personId: 'demo-p5', namn: 'Maria Holm', kategori: 'formular' },
+    { personId: 'demo-p6', namn: 'Anders Ek', kategori: 'formular' },
+    { personId: 'demo-p7', namn: 'Karin Sjögren', kategori: 'formular' },
+    { personId: 'demo-p8', namn: 'Lars Öhman', kategori: 'formular' },
+    { personId: 'demo-p9', namn: 'Ulrika Dahl', kategori: 'manuell' },
+    { personId: 'demo-p10', namn: 'Elin Öhman', kategori: 'medfoljande' },
+  ],
+};
 
 /** K34 (Marcus): påminnelse-HISTORIK per person — skickade
     betalningspåminnelser skrivs ut under betalnings-linjerna. Bas-gapet
@@ -1468,6 +1509,32 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
             <AndraRad onPress={() => setRedigerar('belaggning')} />
           </>
         )}
+      </ProtoGrupp>
+
+      {/* K35 (Marcus): Anmälda deltagare ÖVER Betalningar — vilka de ÄR
+          före hur de betalat; kategoripricken knyter raden till
+          beläggnings-kompositionen. */}
+      <ProtoGrupp id="proto-grupp-deltagare" rubrik="Anmälda deltagare">
+        <ul className="divide-y divide-border">
+          {(DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1']).map((d) => (
+            <li key={d.personId} className="flex items-center justify-between gap-4 py-3">
+              <Link
+                to="/personer/$personId"
+                params={{ personId: d.personId }}
+                className="min-w-0 truncate font-medium text-body underline-offset-2 hover:underline"
+              >
+                {d.namn}
+              </Link>
+              <span className="flex shrink-0 items-center gap-2 text-small text-text-muted">
+                <span
+                  aria-hidden="true"
+                  className={`size-2 rounded-full ${KATEGORI[d.kategori]}`}
+                />
+                {KATEGORI_ETIKETT[d.kategori]}
+              </span>
+            </li>
+          ))}
+        </ul>
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-betalning" rubrik="Betalningar">
