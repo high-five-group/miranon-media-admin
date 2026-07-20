@@ -97,6 +97,7 @@ import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
+import { TextArea } from '@/components/primitives/TextArea';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
@@ -114,7 +115,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K65 — motiveringarna live-trogna: rubrik + citattecken rivna, Läs mer, alla svar',
+    stegLabel: 'K66 — Anteckningar: tidsstämplad ström (författare + innan/under/efter) + composer',
   },
 ];
 
@@ -1459,6 +1460,175 @@ function GruppdynamikLista({ eventId }: { eventId: string }) {
   );
 }
 
+/* ── K66: Anteckningar (Marcus: anteckningar innan, under och efter
+   eventet, sparade "som kommentarer så man ser när den är gjord och av
+   vem") ──
+   Tidsstämplad antecknings-STRÖM, inte en fritext-yta: varje anteckning
+   bär författare + tidpunkt. CRM-notes-klassen (HubSpot/Pipedrive/
+   Attio): composer överst + nyast först — anteckningar är minnesstöd,
+   inte konversation (GitHub/Linear-ordningen äldst-först gäller dialog).
+   Fas-etiketten Innan/Under/Efter eventet HÄRLEDS ur tidpunkten mot
+   eventets datum — ingen manuell kategorisering; Marcus-framingen
+   kodas i data, inte i inmatningsval.
+   PROTOTYP: minnes-state (read-only-regeln; sidladdning nollställer);
+   nya anteckningar skrivs som "Lotta" — författare = INLOGGAD användare
+   är PRD-krav (appen bär ingen auth-identitet idag).
+   PRD-krav backend (vägval låses vid PRD:t; live-verifierat 2026-07-20):
+   Eventplanering.Notering (fld5Tb1opD3VCJMe7) är EN fritext-yta — bär
+   INTE ström-modellen. Väg (a) Airtable record comments på event-
+   recorden (nativ författare + createdTime; comments-API:t nåbart —
+   caveat: API-skrivningar attribueras till TOKEN-ägaren, äkta "av vem"
+   kräver per-användar-auth, annars app-buren författare i texten);
+   väg (b) additiv Anteckningar-tabell i basen (ADR-063-formen: text +
+   författare + createdTime + event-länk). */
+
+type Anteckning = { id: string; forfattare: string; tidpunkt: Date; text: string };
+
+/** Full precision Gunilla-läsbart: "12 maj 2026 14:30" — efter-anteckningar
+    på gamla event behöver årtalet. */
+const ANTECKNING_TID = new Intl.DateTimeFormat('sv-SE', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+/** sv-SE:s standardformat är ÅÅÅÅ-MM-DD i LOKAL tid → lexikografiskt
+    jämförbart med basens datumsträngar (toISOString hade gett UTC-dygnet,
+    fel runt midnatt). */
+const DAGSTAMPEL = new Intl.DateTimeFormat('sv-SE');
+
+/** Fasen på DAGS-granularitet: före startdagen = Innan, efter slutdagen
+    = Efter, annars Under (endagsevent: slut = start). */
+function anteckningsFas(tidpunkt: Date, e: ProtoEvent): string {
+  const start = e.startdatum;
+  if (!start) return '';
+  const slut = e.slutdatum ?? start;
+  const dag = DAGSTAMPEL.format(tidpunkt);
+  if (dag < start) return 'Innan eventet';
+  if (dag > slut) return 'Efter eventet';
+  return 'Under eventet';
+}
+
+/** Demo-anteckningar RELATIVT eventets datum, filtrerade till dåtid —
+    en anteckning kan inte postdatera nu, så ett kommande event visar
+    bara innan-anteckningar (sant läge) medan ett förflutet event visar
+    hela innan/under/efter-spannet via familje-flödet lista→detalj.
+    Texterna fiktiva per PII-regeln; Lotta/Roger är produktens verkliga
+    användare, inte deltagardata. */
+function demoAnteckningar(e: ProtoEvent): Anteckning[] {
+  if (!e.startdatum) return [];
+  const vid = (basIso: string, dagar: number, kl: string): Date => {
+    const d = new Date(`${basIso}T${kl}:00`);
+    d.setDate(d.getDate() + dagar);
+    return d;
+  };
+  const start = e.startdatum;
+  const slut = e.slutdatum ?? start;
+  const nu = new Date();
+  return [
+    {
+      id: 'demo-a1',
+      forfattare: 'Roger',
+      tidpunkt: vid(start, -21, '10:15'),
+      text: 'Lokalen bokad och betald — vi har tillgång från kl 08 båda dagarna. Projektorn finns på plats.',
+    },
+    {
+      id: 'demo-a2',
+      forfattare: 'Lotta',
+      tidpunkt: vid(start, -13, '14:30'),
+      text: 'Ringde runt till de obekräftade i dag — två svarade direkt och ville stå kvar.\nKom ihåg: en deltagare är glutenintolerant, beställ fikat därefter.',
+    },
+    {
+      id: 'demo-a3',
+      forfattare: 'Lotta',
+      tidpunkt: vid(start, 0, '12:40'),
+      text: 'Fin energi i gruppen efter förmiddagspasset! En deltagare fick åka hem tidigare — jag mailar materialet till henne i kväll.',
+    },
+    {
+      id: 'demo-a4',
+      forfattare: 'Roger',
+      tidpunkt: vid(slut, 2, '09:05'),
+      text: 'Uppföljningsmail skickat till alla deltagare. Flera frågade om nästa steg — värt att lägga upp höstens datum snart.',
+    },
+  ].filter((a) => a.tidpunkt <= nu);
+}
+
+/** Anteckningskortet — personkortens vita yta; författare + tidpunkt i
+    huvudraden (motiveringskortens anatomi är omvänd: citat först, namn
+    under — här är AVSÄNDAREN kontexten som läses först). */
+function AnteckningsKort({ anteckning, event }: { anteckning: Anteckning; event: ProtoEvent }) {
+  const fas = anteckningsFas(anteckning.tidpunkt, event);
+  return (
+    <article className="flex flex-col gap-1.5 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="font-semibold text-body">{anteckning.forfattare}</span>
+        <span className="shrink-0 text-caption text-text-muted">
+          {ANTECKNING_TID.format(anteckning.tidpunkt)}
+          {fas && ` · ${fas}`}
+        </span>
+      </div>
+      <p className="whitespace-pre-line text-body">{anteckning.text}</p>
+    </article>
+  );
+}
+
+function AnteckningarSektion({ event }: { event: ProtoEvent }) {
+  const [text, setText] = useState('');
+  const [egna, setEgna] = useState<Anteckning[]>([]);
+  const [annons, setAnnons] = useState('');
+  const alla = [...egna, ...demoAnteckningar(event)].sort(
+    (a, b) => b.tidpunkt.getTime() - a.tidpunkt.getTime(),
+  );
+  const laggTill = () => {
+    const rensad = text.trim();
+    if (!rensad) return;
+    setEgna((e) => [
+      { id: `egen-${e.length + 1}`, forfattare: 'Lotta', tidpunkt: new Date(), text: rensad },
+      ...e,
+    ]);
+    setText('');
+    setAnnons('Anteckningen har lagts till.');
+  };
+  return (
+    <>
+      <div className="flex flex-col gap-2 py-3">
+        <TextArea
+          label="Ny anteckning"
+          hideLabel
+          size="sm"
+          rows={3}
+          placeholder="Skriv en anteckning …"
+          value={text}
+          onChange={setText}
+        />
+        <Button size="sm" onPress={laggTill} className="self-end">
+          Lägg till anteckning
+        </Button>
+        <p className="sr-only" role="status" aria-live="polite">
+          {annons}
+        </p>
+      </div>
+      <div className="py-3">
+        {alla.length > 0 ? (
+          <ul className="flex flex-col gap-2.5">
+            {alla.map((a) => (
+              <li key={a.id}>
+                <AnteckningsKort anteckning={a} event={event} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-caption text-text-muted">
+            Inga anteckningar ännu — det du skriver här sparas med tidpunkt och namn.
+          </p>
+        )}
+      </div>
+    </>
+  );
+}
+
 /** K52: bor över-raden i markerings-läget — RAC Checkbox i
     betalnings-kryssets ruta-grammatik (K29) + personkortens radform;
     sängen tänds när personen är ikryssad. Obockad är NEUTRAL (till
@@ -2698,6 +2868,15 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
 
       <ProtoGrupp id="proto-grupp-gruppdynamik" rubrik="Gruppdynamik">
         <GruppdynamikLista eventId={eventId} />
+      </ProtoGrupp>
+
+      {/* K66 (Marcus: "sista avsnittet … under gruppdynamik"): egen
+          namngiven grupp DIREKT UNDER Gruppdynamik — sidans sista.
+          Grupp-grammatiken kräver rubriken utanför kortet; att baka in
+          strömmen I Gruppdynamik-kortet hade gett en rubriklös tredje
+          sektion (K65 rev sub-rubrikerna där). */}
+      <ProtoGrupp id="proto-grupp-anteckningar" rubrik="Anteckningar">
+        <AnteckningarSektion event={event} />
       </ProtoGrupp>
     </>,
   );
