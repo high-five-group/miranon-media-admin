@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 73 🟢 PÅGÅR (2026-07-19 →, andra pausen 2026-07-20 återupptagen samma dag) — Eventsidan: konvergensen K1–K44 pågår + S56 stängd + header-regeln skarp
+### Session 73 ⏸️ PAUSAD (2026-07-19 →, tredje pausen 2026-07-20) — Eventsidan: konvergensen K1–K65 pågår + S56 stängd + header-regeln skarp + sage-gröna skarp
 
 > Scope: sessionsdok `2026-07-19-session-73.md` Del 1 (kanonisk plats):
 > eventsidan (detaljvyn `/event/$eventId`) genom konvergens till facit
@@ -118,6 +118,32 @@
   (a) personkortens metayta AVBRUSAS + (b) HANTERA-flödet för
   ohanterade — på `/event/demo-1?variant=B` i Marcus-takt; sedan
   vidare mot Marcus-låst facit → list-PRD-vägbeslutet.**
+- [x] **KONVERGENS-PASSET K45–K65** (2026-07-20, Del 5 kanonisk plats;
+  22 commits `e9e11ed`→`b97f75a`): Marcus-ordern a+b LEVERERAD
+  (metayta-avbrusningen K45 + hantera-flödet K46) · Bekräfta alla-
+  pillen (K47, grön K48, radie K55) + kuvert-grammatiken sluten ·
+  **SKARP: sage-gröna #606B57** (K49, primitiv + spec; facit-beröring
+  Marcus-kvitterad) · Bor över-raden + kryss-markeringen (K50–K52;
+  draget medvetet bortvalt) · **Obekräftade/Bekräftade-språket** (K53;
+  ORDLISTA-post; hanterad-carryn STÄNGD) · geometri-fixen Δ=0 (K54) +
+  hover (K56) + filterläget avbrusat (K57/K58) · växlaren minimerbar
+  (K59) · **NÄRVARO-REGISTRET** (K60, LMS-mönstret) · streck-markörer
+  (K61) · Anmäld-raden = anmälan-länk (K62) · **GRUPPDYNAMIK ersätter
+  Anmälda** (K63–K65: erfarenhetsmix + accordions med kurshistorik i
+  kalenderfärgerna + motiveringarna med Läs mer; Anmälda-rivningen
+  STÄNGD) · **K65-RÄTTELSEN** (Marcus-fångst: motiverings-fälten
+  FINNS i basen — data-model-gapet stängt durabelt) · öppet röda:
+  K56-runnet (läkt K57) + mojibake-incidenten (läkt) + API-rate-limit
+  (K61–K65-runs overifierade). **INGET FACIT LÅST.**
+- [x] **PAUSAD IGEN — tredje pausen** (2026-07-20, Marcus-order "kör
+  /session-paus"): `lifecycle: paused` + förankrad PAUSLÄGE-rubrik
+  (tredje) + fullt HANDOFF (TILLSTÅND med CI-skulden · CARRY med 11
+  lesson-kandidater · numrering 074/L294/T79/f45 · resume-vägen);
+  dev-servern stoppad; trädet rent + pushat. **NÄSTA:
+  `session-resume` av S73 i färsk kontext — steg 0: verifiera
+  K61–K65 + landningens CI-runs per jobb (rate-limit-skulden); sedan
+  Marcus dömer Gruppdynamik + Närvaro-registret och konvergensen
+  fortsätter mot facit → list-PRD-vägbeslutet.**
 
 ### Session 72 ✅ AVSLUTAD (2026-07-19) — Event-listan: grillad samsyn → konvergens till FACIT (variant B, K1–K14) + skarpa skal-fixar + T78
 
