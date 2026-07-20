@@ -62,6 +62,7 @@ import {
   Plus,
   Printer,
   Send,
+  UserCheck,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -106,7 +107,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K22 — Väntelista-raden i Beläggning (utanför taket, utan prick)',
+    stegLabel: 'K23 — Gå till check-in som primärknapp över Åtgärder',
   },
 ];
 
@@ -888,6 +889,19 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
           <p className="text-small text-text-muted">{event.tidKvarTillEvent}</p>
         )}
       </header>
+
+      {/* K23 (Marcus): check-in är EVENTDAGENS PRIMÄRHANDLING — Lotta står
+          i dörren med telefonen och ska hitta den på en sekund
+          (Eventbrite/Luma-klassen: Check in som framhävd primärknapp på
+          eventsidan). EN primärknapp per sida — ÖVER Åtgärds-listan
+          (sekundärhandlingarna), aldrig i den; lg = 48 px touch-golvet.
+          PROTOTYP-NO-OP: check-in-sidan (dörr-optimerad närvaro,
+          per-session mot Deltaganden) byggs INTE ännu — PRD-krav,
+          bokfört (Marcus-order: "knappen nu, sidan senare"). */}
+      <Button intent="primary" size="lg" className="w-full">
+        <UserCheck aria-hidden="true" size={20} />
+        Gå till check-in
+      </Button>
 
       {/* K19 (Marcus): Åtgärds-gruppen ÖVERST — sidans operativa handlingar
           samlade före datagrupperna (Omedelbarhet: på eventdagar är
