@@ -857,8 +857,26 @@ export function EventsListPrototype() {
     aktiv
       ? 'flex items-center justify-center rounded-full bg-bg px-3.5 py-2 text-text shadow-sm'
       : 'flex items-center justify-center rounded-full px-3.5 py-2 text-text-secondary';
+  // K74 (Marcus: "NEJ NEJ NEJ … i linje med list- och kalendervy-
+  // väljaren fast på motsatt sida i samma stil" — K73:s titelrads-
+  // primärknapp PRÖVAD-OCH-RIVEN): Skapa nytt event-ingången bor på
+  // VY-RADEN, vänster (väljaren behåller höger), i väljarnas mjuka
+  // kapselstil (rounded-full bg-bg-muted + ikon 18) — inte primär-
+  // knappens svärta. Följer med i BÅDA vy-lägena (K10: raden har fast
+  // position). Målet är befintliga skarpa /mer/skapa-event
+  // (CreateEventForm mot create-event-EF:en, Fas 6f/ADR-066);
+  // CalendarPlus + etiketten == Mer-radens (K47 samma överallt);
+  // Mer-ingången KVAR tills Marcus dömer flytt vs dubblering.
+  // Facit-utökningen öppet bokförd (S72-facitet låst 2026-07-19).
   const vyRad = (
-    <div className="flex justify-end">
+    <div className="flex items-center justify-between gap-3">
+      <Link
+        to="/mer/skapa-event"
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+      >
+        <CalendarPlus aria-hidden="true" size={18} className="shrink-0" />
+        Skapa nytt event
+      </Link>
       <fieldset className="inline-flex rounded-full bg-bg-muted p-1">
         <legend className="sr-only">Visningsläge</legend>
         <button
@@ -934,30 +952,7 @@ export function EventsListPrototype() {
   // (skalets main bär 16 px — dubbelkants-fyndet M6).
   return (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      {/* K73 (Marcus: "jag vill nog ha in den på event-sidan" —
-          facit-UTÖKNING öppet bokförd, S72-facitet låst 2026-07-19,
-          utökningen Marcus-order 2026-07-20): Skapa nytt event-ingången
-          på TITELRADENS höger-slot (Polaris primaryAction-klassen;
-          detaljsidans EventKey-pill är samma rad-grammatik). Målet är
-          BEFINTLIGA skarpa sidan /mer/skapa-event (CreateEventForm mot
-          create-event-EF:en, Fas 6f/ADR-066) — ingen ny form byggs.
-          CalendarPlus == Mer-radens ikon + samma etikett (K47-regeln:
-          samma handling, samma grammatik överallt). Mer-ingången KVAR
-          tills Marcus dömer flytt vs dubblering (K21-precedenten rev
-          dubblett på SAMMA sida — detta är cross-yta). Link med
-          primärknappens komponent-tokens: navigations-SEMANTIK +
-          knapp-VISUAL (RAC-Buttonens data-attribut nås ej på Link;
-          ButtonLink-primitiv i biblioteket = facit-fråga). */}
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="font-semibold text-3xl">Event</h1>
-        <Link
-          to="/mer/skapa-event"
-          className="text-(color:--mm-button-primary-text) inline-flex min-h-8 shrink-0 select-none items-center gap-1.5 rounded bg-(--mm-button-primary-bg) px-3 font-sans text-small hover:bg-(--mm-button-primary-bg-hover) motion-safe:transition-colors"
-        >
-          <CalendarPlus aria-hidden="true" size={16} className="shrink-0" />
-          Skapa nytt event
-        </Link>
-      </div>
+      <h1 className="font-semibold text-3xl">Event</h1>
       {/* K10: vy-toggeln ÖVER period-toggeln, fast position i båda lägena;
           i kalenderläget ERSÄTTER månadsnavet period-toggeln. */}
       {vyRad}
@@ -988,7 +983,7 @@ export const LIST_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'B',
     label: 'Variant B',
     steg: 3,
-    stegLabel: 'FACIT 2026-07-19 · K73-utökning PÅGÅR — Skapa nytt event-ingången',
+    stegLabel: 'FACIT 2026-07-19 · K74 PÅGÅR — Skapa-ingången i vy-väljarraden (K73 riven)',
   },
 ];
 // Växlaren själv är T78a-lyft till delade dev-komponenten
