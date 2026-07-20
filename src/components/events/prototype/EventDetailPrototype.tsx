@@ -114,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K51 — säng-ikonen rättad: kortens dubbelsäng (BedDouble), samma glyf överallt',
+    stegLabel: 'K52 — bor över-markeringen: kryss-läget i radens klick (en kolumn, säng-kryss)',
   },
 ];
 
@@ -1080,10 +1080,61 @@ function DeltagarKort({
   );
 }
 
+/** K52: bor över-raden i markerings-läget — RAC Checkbox i
+    betalnings-kryssets ruta-grammatik (K29) + personkortens radform;
+    sängen tänds när personen är ikryssad. Obockad är NEUTRAL (till
+    skillnad från BetalKryss röda: att inte bo över är normalläge,
+    inte avvikelse). */
+function BorOverRad({
+  d,
+  vald,
+  onChange,
+}: {
+  d: DemoDeltagare;
+  vald: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <Checkbox
+      isSelected={vald}
+      onChange={onChange}
+      className="group flex cursor-pointer items-center gap-3 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
+    >
+      <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
+        <Check
+          aria-hidden="true"
+          size={14}
+          className="text-text-inverse opacity-0 group-data-[selected]:opacity-100"
+        />
+      </span>
+      <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+        <span className="truncate font-semibold text-body">{d.namn}</span>
+        {KATEGORI_PILL[d.kategori] && (
+          <span className="shrink-0 rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+            {KATEGORI_PILL[d.kategori]}
+          </span>
+        )}
+      </span>
+      <BedDouble
+        aria-hidden="true"
+        size={16}
+        className={`shrink-0 ${vald ? 'text-text' : 'text-text-muted opacity-40'}`}
+      />
+    </Checkbox>
+  );
+}
+
 /** K40 (Marcus): summeringsraderna KLICKBARA — radens siffra ÄR urvalet
     man ser vid klick (aktiv rad markeras, klick igen rensar; flat lista
     + rensa-rad under filtret). Eventinfo-radens klick visar de som
     SAKNAR (deltat är det åtgärdbara).
+    K52 (Marcus-kvitterad rek. A): Bor över-raden är en ARBETSRAD —
+    klicket öppnar MARKERINGS-LÄGET (alla anmälda i EN kolumn,
+    säng-kryss per rad) i stället för ren filterlista; radens siffra är
+    fortfarande urvalet, nu redigerbart på plats. Öppen K40-avvikelse.
+    Draget (tvåkolumns-transfer) MEDVETET valt bort som grundform:
+    430 px-ytan + WCAG 2.2 SC 2.5.7 (en-pekar-alternativ krävs ändå) +
+    betalnings-arbetsytans redan etablerade kryss-grammatik.
     K42 (Marcus — LOTTAS MAIL-FLÖDE, speglas i radordningen): mail 1 =
     ANMÄLNINGSBEKRÄFTELSEN (först av allt, bär betalningsinstruktionerna;
     när den är skickad är anmälan HANTERAD) → ev. betalningspåminnelse
@@ -1270,10 +1321,18 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
      (mail 1, bär betalningsinstruktionerna) — PRD-krav: EF-operationen
      + Status-flip till "Bekräftad (mail skickat)" server-side. */
   const [skickade, setSkickade] = useState<Record<string, string>>({});
+  /* K52: bor över-markeringen — demo-lokal overlay (read-only-regeln);
+     skarpa formen = write-op per anmälan på PRD-kryssfältet (additivt
+     per ADR-063). */
+  const [borOverVal, setBorOverVal] = useState<Record<string, boolean>>({});
+  const vaxlaBorOver = (personId: string, v: boolean) =>
+    setBorOverVal((s) => ({ ...s, [personId]: v }));
   const bas = DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1'];
-  const deltagare = bas.map((d) =>
-    skickade[d.personId] ? { ...d, bekraftelse: skickade[d.personId] } : d,
-  );
+  const deltagare = bas.map((d) => ({
+    ...d,
+    bekraftelse: skickade[d.personId] ?? d.bekraftelse,
+    borOver: borOverVal[d.personId] ?? d.borOver,
+  }));
   const skickaBekraftelse = (personId: string) =>
     setSkickade((s) => ({ ...s, [personId]: new Date().toISOString() }));
   const [filter, setFilter] = useState<'alla' | DeltagarKategori>('alla');
@@ -1305,6 +1364,13 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
   const statusTraffar =
     statusFilter == null ? null : visade.filter(STATUSFILTER[statusFilter].test);
   const vaxlaStatus = (f: StatusFilter) => setStatusFilter((nu) => (nu === f ? null : f));
+  /* K52: ikryssade överst — sorterat på BAS-datat (stabilt under
+     markeringen; nykryssade flyttar upp först vid omöppning — raderna
+     hoppar inte under fingret). */
+  const basBorOver = new Set(bas.filter((d) => d.borOver).map((d) => d.personId));
+  const markeringsLista = [...visade].sort(
+    (a, b) => Number(basBorOver.has(b.personId)) - Number(basBorOver.has(a.personId)),
+  );
   const kortLista = (lista: DemoDeltagare[]) => (
     <ul className="flex flex-col gap-2.5">
       {lista.map((d) => (
@@ -1421,7 +1487,24 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
                 Rensa filtret
               </button>
             </div>
-            {statusTraffar.length > 0 ? (
+            {statusFilter === 'borOver' ? (
+              <>
+                <p className="text-small text-text-secondary">
+                  Kryssa i vilka som bor över — antalet räknas upp direkt.
+                </p>
+                <ul className="flex flex-col gap-2.5">
+                  {markeringsLista.map((d) => (
+                    <li key={d.personId}>
+                      <BorOverRad
+                        d={d}
+                        vald={d.borOver}
+                        onChange={(v) => vaxlaBorOver(d.personId, v)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : statusTraffar.length > 0 ? (
               kortLista(statusTraffar)
             ) : (
               <p className="py-2 text-small text-text-secondary">Inga träffar i denna kategori.</p>
