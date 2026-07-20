@@ -115,7 +115,8 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K69 — Anteckningar: knappen åter i primitivens radie (K68-radien prövad-och-riven)',
+    stegLabel:
+      'K70 — Anteckningar: resize ÅTER (K68 rev fel sak) — eget grepp indraget från kurvan',
   },
 ];
 
@@ -1606,11 +1607,15 @@ function AnteckningarSektion({ event }: { event: ProtoEvent }) {
         {/* K67 (Marcus: rutan ska sitta som korten): radien lyfts till
             INRE kort-radien rounded-xl == antecknings-korten under
             (yttre kortets 2xl hade gjort rutan rundare än korten i
-            samma kolumn). K68 (Marcus): resize-GREPPET rivet — grepp-
-            strecken krockar med rundningen i nedre högra hörnet;
-            composern är fast 3-radig (auto-grow/behållen resize =
-            facit-fråga, jfr primitivens resize-y-default).
-            Descendant-variant: primitivens radie/resize bor i cva:n på
+            samma kolumn). K70 (Marcus: "rutan måste ju ha resize"):
+            K68 rev FUNKTIONEN när felet var UTSEENDET — resize-y åter
+            (primitivens default), och UA-greppet ersätts med EGET
+            grepp via ::-webkit-resizer: två diagonala linjer INDRAGNA
+            från hörnet så de går fria från rundningen (live-prövat i
+            browsern före kodfästning). Firefox saknar pseudo-elementet
+            → UA-greppet (funktionellt; prototyp-heuristik — skarp
+            cross-browser-form = facit-fråga, ev. auto-grow).
+            Descendant-variant: primitivens radie/grepp bor i cva:n på
             själva textarean — prototyp-lokal override, ej biblioteks-
             ändring; ev. varianter i primitiven = facit-fråga. */}
         <TextArea
@@ -1621,7 +1626,7 @@ function AnteckningarSektion({ event }: { event: ProtoEvent }) {
           placeholder="Skriv en anteckning …"
           value={text}
           onChange={setText}
-          className="[&_textarea]:resize-none [&_textarea]:rounded-xl"
+          className="[&_textarea::-webkit-resizer]:bg-[linear-gradient(135deg,transparent_0_9px,var(--p-neutral-400)_9px_10.5px,transparent_10.5px_13px,var(--p-neutral-400)_13px_14.5px,transparent_14.5px)] [&_textarea]:rounded-xl"
         />
         {/* K69 (Marcus): knappen i PRIMITIVENS radie — K68:s rounded-xl
             PRÖVAD-OCH-RIVEN (knappen är en handling, inte en yta;
