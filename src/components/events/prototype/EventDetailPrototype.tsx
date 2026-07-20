@@ -113,7 +113,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K37 — personkorten: kategori-pill vid avvikelse + mail- och historik-överblick',
+    stegLabel: 'K38 — deltagarnas sammanfattning + kategori-flikarna',
   },
 ];
 
@@ -907,6 +907,33 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
   ],
 };
 
+/** K38: kapsel-knappen (S72-togglens form) delad mellan betalnings-
+    flikarna och deltagar-filtret — en grammatik, en klass. */
+function KapselKnapp({
+  aktiv,
+  onClick,
+  children,
+}: {
+  aktiv: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={aktiv}
+      onClick={onClick}
+      className={
+        aktiv
+          ? 'rounded-full bg-bg px-2.5 py-2 text-center font-semibold text-small shadow-sm'
+          : 'rounded-full px-2.5 py-2 text-center font-medium text-small text-text-secondary'
+      }
+    >
+      {children}
+    </button>
+  );
+}
+
 /** K37: mailstatus-posten — skickad = MailCheck + datum (ikonen + datumet
     bär "skickad"); ej skickad = klartext (Gunilla — aldrig bara "–"). */
 function MailStatus({ namn, skickad }: { namn: string; skickad: string | null }) {
@@ -917,6 +944,99 @@ function MailStatus({ namn, skickad }: { namn: string; skickad: string | null })
       <MailCheck aria-hidden="true" size={12} className="shrink-0" />
       {namn} {Number.isNaN(datum.getTime()) ? skickad : DAGMANAD.format(datum)}
     </span>
+  );
+}
+
+/** K38: deltagar-kortets innehåll — sammanfattning ("hur många") +
+    kategorifilter + personkorten ("vilka"). Sammanfattningen räknar
+    ALLTID hela eventet (filtret styr bara list-urvalet). Bekräftelse/
+    deltagarinfo bär saknas-delta (alla SKA få dem — norm); påminnelsen
+    visar bara antal (skickas endast till dem som behöver — inget
+    normtal att räkna mot). */
+function DeltagarLista({ eventId }: { eventId: string }) {
+  const deltagare = DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1'];
+  const [filter, setFilter] = useState<'alla' | DeltagarKategori>('alla');
+  const visade = filter === 'alla' ? deltagare : deltagare.filter((d) => d.kategori === filter);
+  const antalKategori = (k: DeltagarKategori) => deltagare.filter((d) => d.kategori === k).length;
+  const antalSkickade = (falt: 'bekraftelse' | 'paminnelse' | 'deltagarinfo') =>
+    deltagare.filter((d) => d[falt] != null).length;
+  const totalt = deltagare.length;
+  const raknadRad = (skickade: number) => (
+    <>
+      {`${skickade} av ${totalt}`}
+      {totalt - skickade > 0 && (
+        <span className="ml-2 font-medium text-error tabular-nums">−{totalt - skickade}</span>
+      )}
+    </>
+  );
+  return (
+    <>
+      <dl className="divide-y divide-border">
+        <FkRad term="Bekräftelse skickad">{raknadRad(antalSkickade('bekraftelse'))}</FkRad>
+        <FkRad term="Betalningspåminnelse skickad">{String(antalSkickade('paminnelse'))}</FkRad>
+        <FkRad term="Deltagarinfo skickad">{raknadRad(antalSkickade('deltagarinfo'))}</FkRad>
+      </dl>
+      <div className="flex flex-col gap-2.5 py-3">
+        <fieldset className="grid grid-cols-4 rounded-full bg-bg-emphasized p-1">
+          <legend className="sr-only">Visa deltagare</legend>
+          <KapselKnapp aktiv={filter === 'alla'} onClick={() => setFilter('alla')}>
+            Alla ({totalt})
+          </KapselKnapp>
+          <KapselKnapp aktiv={filter === 'formular'} onClick={() => setFilter('formular')}>
+            Formulär ({antalKategori('formular')})
+          </KapselKnapp>
+          <KapselKnapp aktiv={filter === 'manuell'} onClick={() => setFilter('manuell')}>
+            Manuella ({antalKategori('manuell')})
+          </KapselKnapp>
+          <KapselKnapp aktiv={filter === 'medfoljande'} onClick={() => setFilter('medfoljande')}>
+            +1 ({antalKategori('medfoljande')})
+          </KapselKnapp>
+        </fieldset>
+        {visade.length > 0 ? (
+          <ul className="flex flex-col gap-2.5">
+            {visade.map((d) => (
+              <li key={d.personId}>
+                <Link
+                  to="/personer/$personId"
+                  params={{ personId: d.personId }}
+                  className="flex flex-col gap-1 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
+                >
+                  <span className="flex items-start justify-between gap-3 font-semibold text-body">
+                    {d.namn}
+                    {/* K37: kategori-pillen ENDAST vid avvikelse (tysta
+                        normen) — via formulär är omärkt. */}
+                    {KATEGORI_PILL[d.kategori] && (
+                      <span className="shrink-0 rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+                        {KATEGORI_PILL[d.kategori]}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-caption text-text-muted">E-post</span>
+                  <span className="text-small">{d.epost}</span>
+                  {/* K37: mail-överblicken (basens tre skickad-tidsstämplar)
+                      + Miranon-historiken (Antal genomförda event) — CRM-
+                      klassens kontaktkorts-sammanfattning; Lotta ser allt
+                      utan att öppna personen. */}
+                  <span className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-caption text-text-muted">
+                    <MailStatus namn="Bekräftelse" skickad={d.bekraftelse} />
+                    <MailStatus namn="Påminnelse" skickad={d.paminnelse} />
+                    <MailStatus namn="Deltagarinfo" skickad={d.deltagarinfo} />
+                  </span>
+                  <span className="flex items-center gap-1.5 text-caption text-text-muted">
+                    <History aria-hidden="true" size={12} className="shrink-0" />
+                    {d.tidigareEvent === 0
+                      ? 'Första eventet hos Miranon'
+                      : `${d.tidigareEvent} tidigare event hos Miranon`}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -1296,18 +1416,9 @@ function BetalningsDetaljer({
   const klara = betalningar.filter((p) => p.avgift && p.slut);
   const lista = flik === 'saknar' ? saknar : klara;
   const flikKnapp = (denna: 'saknar' | 'klara', etikett: string) => (
-    <button
-      type="button"
-      aria-pressed={flik === denna}
-      onClick={() => setFlik(denna)}
-      className={
-        flik === denna
-          ? 'rounded-full bg-bg px-3 py-2 text-center font-semibold text-small shadow-sm'
-          : 'rounded-full px-3 py-2 text-center font-medium text-small text-text-secondary'
-      }
-    >
+    <KapselKnapp aktiv={flik === denna} onClick={() => setFlik(denna)}>
       {etikett}
-    </button>
+    </KapselKnapp>
   );
   return (
     <div className="flex flex-col gap-3 py-3">
@@ -1630,55 +1741,14 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
         )}
       </ProtoGrupp>
 
-      {/* K35 (Marcus): Anmälda deltagare ÖVER Betalningar. K36 (Marcus:
-          Airtable-referensens form — airtable-eventmanager-02 "Anmälda"):
-          grå panel där varje person är en VIT rundad ruta med namnet i
-          fetstil + E-post som etikett-över-värde (grund-arvets K2-
-          grammatik). Prick + kategorietikett RIVNA (löses på annat sätt,
-          Marcus-beslut). Hela vita kortet är länken till person-
-          detaljvyn (NavCard-grammatiken: hel klickbar yta, ingen
-          chevron); ETT list-barn i gruppkortet → divide-y biter inte
-          på person-korten. */}
+      {/* K35 (Marcus): Anmälda deltagare ÖVER Betalningar. K36: Airtable-
+          referensens form (grå panel + vita personkort). K38 (Marcus:
+          "inte tydligt nog — struktur/sammanfattning upptill, tabbar som
+          betalningsdetaljerna"): mail-SAMMANFATTNINGEN överst (FkRad +
+          Betalningars röda saknas-delta — "hur många") + kategori-
+          FLIKARNA i familje-kapseln ("vilka"; filtrerar korten). */}
       <ProtoGrupp id="proto-grupp-deltagare" rubrik="Anmälda deltagare">
-        <ul className="flex flex-col gap-2.5 py-3">
-          {(DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1']).map((d) => (
-            <li key={d.personId}>
-              <Link
-                to="/personer/$personId"
-                params={{ personId: d.personId }}
-                className="flex flex-col gap-1 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
-              >
-                <span className="flex items-start justify-between gap-3 font-semibold text-body">
-                  {d.namn}
-                  {/* K37: kategori-pillen ENDAST vid avvikelse (tysta
-                      normen) — via formulär är omärkt. */}
-                  {KATEGORI_PILL[d.kategori] && (
-                    <span className="shrink-0 rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
-                      {KATEGORI_PILL[d.kategori]}
-                    </span>
-                  )}
-                </span>
-                <span className="text-caption text-text-muted">E-post</span>
-                <span className="text-small">{d.epost}</span>
-                {/* K37: mail-överblicken (basens tre skickad-tidsstämplar)
-                    + Miranon-historiken (Antal genomförda event) — CRM-
-                    klassens kontaktkorts-sammanfattning; Lotta ser allt
-                    utan att öppna personen. */}
-                <span className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-caption text-text-muted">
-                  <MailStatus namn="Bekräftelse" skickad={d.bekraftelse} />
-                  <MailStatus namn="Påminnelse" skickad={d.paminnelse} />
-                  <MailStatus namn="Deltagarinfo" skickad={d.deltagarinfo} />
-                </span>
-                <span className="flex items-center gap-1.5 text-caption text-text-muted">
-                  <History aria-hidden="true" size={12} className="shrink-0" />
-                  {d.tidigareEvent === 0
-                    ? 'Första eventet hos Miranon'
-                    : `${d.tidigareEvent} tidigare event hos Miranon`}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <DeltagarLista eventId={eventId} />
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-betalning" rubrik="Betalningar">
