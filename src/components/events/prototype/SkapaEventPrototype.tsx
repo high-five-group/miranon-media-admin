@@ -15,7 +15,10 @@
  * FK-formklassen (K17-arvet): stora chevronen + h1 + systemkontext-rad
  * (FK-principen: berätta vad systemet sätter själv — eventnummer,
  * anmälningslänk, status) · grupprubriker utanför tonala kort ·
- * label-över-fält · obligatorisk-markering i etiketten · fel först
+ * label-över-fält (K84, Marcus: ALLT på sidan är obligatoriskt →
+ * inga obligatorisk-markeringar — markera undantag, inte normen;
+ * isRequired kvar för skärmläsare; K17-sidan med MIXADE fält behåller
+ * sina markeringar) · fel först
  * vid Skapa-försöket · DatumFalt = K13:s RAC DateRangePicker
  * (detaljsidans Ändra-grammatik, INTE skarpa sidans text-Inputs).
  *
@@ -129,7 +132,7 @@ export function SkapaEventPrototype() {
           <ProtoGrupp id="skapa-event-om" rubrik="Om eventet">
             <div className="flex flex-col gap-4 py-4">
               <Select
-                label="Event (obligatorisk)"
+                label="Event"
                 placeholder="Välj event"
                 selectedKey={eventVal || null}
                 onSelectionChange={(k) => setEventVal(String(k))}
@@ -144,7 +147,7 @@ export function SkapaEventPrototype() {
                 ))}
               </Select>
               <Select
-                label="Eventtyp (obligatorisk)"
+                label="Eventtyp"
                 placeholder="Välj eventtyp"
                 selectedKey={typ || null}
                 onSelectionChange={(k) => setTyp(String(k))}
@@ -159,7 +162,7 @@ export function SkapaEventPrototype() {
                 ))}
               </Select>
               <Input
-                label="Ort (obligatorisk)"
+                label="Ort"
                 value={ort}
                 onChange={setOrt}
                 isRequired
@@ -170,9 +173,7 @@ export function SkapaEventPrototype() {
                   formklassen; DatumFalt bär aria-label). Felraden manuell:
                   RAC-pickern har ingen errorMessage-slot i vår rad-form. */}
               <div className="flex flex-col gap-1">
-                <span className="text-(color:--mm-input-label-text) text-small">
-                  Datum (obligatorisk)
-                </span>
+                <span className="text-(color:--mm-input-label-text) text-small">Datum</span>
                 <I18nProvider locale="sv-SE">
                   <DatumFalt value={datum} onChange={setDatum} />
                 </I18nProvider>
@@ -189,7 +190,7 @@ export function SkapaEventPrototype() {
             <div className="flex flex-col gap-4 py-4">
               <div className="flex flex-col gap-1">
                 <span className="text-(color:--mm-input-label-text) text-small">
-                  Max antal platser (obligatorisk)
+                  Max antal platser
                 </span>
                 <I18nProvider locale="sv-SE">
                   <div className="w-32">
@@ -208,7 +209,7 @@ export function SkapaEventPrototype() {
                 )}
               </div>
               <Select
-                label="Eventformat (obligatorisk)"
+                label="Eventformat"
                 placeholder="Välj eventformat"
                 selectedKey={format || null}
                 onSelectionChange={(k) => setFormat(String(k))}
