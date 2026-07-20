@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 73 🟢 PÅGÅR (2026-07-19 →, paus 2026-07-20 återupptagen samma dag) — Eventsidan: konvergensen K1–K13 pågår + S56 stängd + header-regeln skarp
+### Session 73 ⏸️ PAUSAD (2026-07-19 →, andra pausen 2026-07-20) — Eventsidan: konvergensen K1–K44 pågår + S56 stängd + header-regeln skarp
 
 > Scope: sessionsdok `2026-07-19-session-73.md` Del 1 (kanonisk plats):
 > eventsidan (detaljvyn `/event/$eventId`) genom konvergens till facit
@@ -82,6 +82,30 @@
   eventsidan i Marcus-takt — närmast Beläggnings-Ändra (morfen) +
   innehålls-frågan (Eventmanager-referenserna) — tills Marcus låser
   FACIT; därefter list-PRD-vägbeslutet (Del 1 punkt 3).**
+- [x] **KONVERGENS-PASSET K14–K44** (2026-07-20, Del 4 kanonisk plats;
+  31 commits `bbce0b4`→`92c0d97`, ALLA runs gröna per jobb):
+  Beläggnings-morfen + innehållsmodellen (Marcus-modellen == basens
+  fält 1:1; segmenterad mätare + Väntelista-rad) · manuell
+  anmälan-SIDAN (K17, FK-formklassen, ny route) · Åtgärds-gruppen
+  (frekvensordnad, vänsterställd, chevron-prövningen K25) · check-in-
+  ingången (svart knapp PRÖVAD-OCH-RIVEN → NavCard-form i radmått) ·
+  Betalningar: röda deltan + inline-ARBETSYTAN (flikar · deadline-
+  badge · kryss/notering per betalning · påminn-mailto + historik) ·
+  Anmälda deltagare-kortet (referensens vita personkort · mail-
+  sammanfattning med klickfilter · kategori-flikar · Ohanterade/
+  Hanterade-accordions i ARBETSKÖ-mönstret · Lottas mail-flöde
+  speglat [bekräftelse→påminnelse→eventinfo] · dags-att-skicka-
+  signalen + auto-utskicks-krysset K44). PRD-korgen kraftigt växt +
+  7 lesson-kandidater (allt i Del 4/PAUSLÄGE). **INGET FACIT LÅST.**
+- [x] **PAUSAD IGEN** (2026-07-20, Marcus-order "kör /session-paus"):
+  `lifecycle: paused` + förankrad PAUSLÄGE-rubrik (andra pausen) +
+  fullt HANDOFF (TILLSTÅND · CARRY med nästa-sessionens Marcus-order ·
+  numrering 074/L294/T79/f45 · resume-vägen); dev-servern stoppad;
+  trädet rent + pushat, CI grön per jobb. **NÄSTA: `session-resume`
+  av S73 i färsk kontext — utför Marcus-ordern: personkortens metayta
+  AVBRUSAS (Anmäld + TID på en rad · endast UTFÖRDA åtgärder ·
+  "hos Miranon Media" hela namnet) + HANTERA-flödet för ohanterade
+  (knapp/väg saknas) — sedan vidare mot Marcus-låst facit.**
 
 ### Session 72 ✅ AVSLUTAD (2026-07-19) — Event-listan: grillad samsyn → konvergens till FACIT (variant B, K1–K14) + skarpa skal-fixar + T78
 
