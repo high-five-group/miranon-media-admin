@@ -406,30 +406,16 @@ function PubliceraHandtag({
       }}
       className="relative h-12 w-full touch-none select-none rounded-full bg-bg-emphasized"
     >
-      {/* Fyllnaden: grönt band som SLÄPAR bakom handtaget (Resend-formen).
-          K80 (Marcus: "ser fortfarande lågupplöst ut" → 4x-zoom-diagnos):
-          fransen var FYLLNADEN — i vila låg den 48 px bakom 48 px-cirkeln
-          och dess kantutjämning stack ut runt randen som smutskant. Nu:
-          OSYNLIG i vila (opacity 0) · når bara till handtagets MITT under
-          drag (höger kant alltid gömd under cirkeln) · eget klipp-lager
-          (overflow-hidden rounded-full) så bandet aldrig läcker utanför
-          rännan — och handtagets skugga klipps INTE (syskon, ej barn). */}
-      <span aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-full">
-        <span
-          style={{
-            width: `calc(${pos * 100}% - ${pos * 48}px + 24px)`,
-            opacity: pos === 0 && !publicerad ? 0 : 1,
-          }}
-          className={`absolute inset-y-0 left-0 bg-success ${
-            dragPos == null ? 'motion-safe:transition-[width,opacity]' : ''
-          }`}
-        />
-      </span>
+      {/* K82 (Marcus): den gröna FYLLNADEN — släpet under drag + gröna
+          spåret efter mål — PRÖVAD-OCH-RIVEN (K78-formen; K80 slipade
+          dess frans men Marcus rev hela greppet). Armad-signalen bärs av
+          BOCKEN i cirkeln + texten; rännan förblir tonad i alla lägen.
+          Instruktionstextens uttoning under draget behålls. */}
       <span
         aria-hidden="true"
         style={publicerad ? undefined : { opacity: 1 - pos }}
         className={`absolute inset-0 flex items-center justify-center gap-[0.4em] text-small ${
-          publicerad ? 'font-medium text-text-inverse' : 'text-text-muted'
+          publicerad ? 'font-medium' : 'text-text-muted'
         }`}
       >
         {publicerad ? 'Publiceras på' : 'Dra för att publicera på'} <MiranonSe />
