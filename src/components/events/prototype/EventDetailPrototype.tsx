@@ -115,7 +115,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K43 — eventinfo 0 av 10 + dags-att-skicka-signalen',
+    stegLabel: 'K44 — reserverad signal-slot: auto-utskicks-krysset när signalen vilar',
   },
 ];
 
@@ -1053,26 +1053,28 @@ function SummeringsRad({
   term: string;
   aktiv: boolean;
   onClick: () => void;
-  /** K43: valfri signal-rad under räkningen (t.ex. dags-att-skicka-
-      badgen) — ingår i klickytan (hela raden är filtret). */
+  /** K43/K44: signal-SLOTTEN under räkningen — alltid reserverad plats
+      (dags-att-skicka-badgen ELLER auto-utskicks-krysset). Ligger
+      UTANFÖR filter-knappen: slotten kan bära egna interaktiva element
+      (kryssrutan) och interaktivt-i-interaktivt är förbjudet. */
   signal?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-pressed={aktiv}
-      onClick={onClick}
-      className={`flex w-full flex-col gap-1.5 py-3 text-left ${
-        aktiv ? '-mx-2 w-auto rounded-lg bg-bg-emphasized px-2' : ''
-      }`}
-    >
-      <span className="flex w-full items-center justify-between gap-4">
+    <div className="flex flex-col gap-1.5 py-2">
+      <button
+        type="button"
+        aria-pressed={aktiv}
+        onClick={onClick}
+        className={`flex w-full items-center justify-between gap-4 py-1.5 text-left ${
+          aktiv ? '-mx-2 w-auto rounded-lg bg-bg-emphasized px-2' : ''
+        }`}
+      >
         <span className="text-small text-text-muted">{term}</span>
         <span className="text-right text-body">{children}</span>
-      </span>
-      {signal}
-    </button>
+      </button>
+      {signal && <div className="flex min-h-7 items-center">{signal}</div>}
+    </div>
   );
 }
 
@@ -1081,21 +1083,63 @@ function SummeringsRad({
     utskick saknas tänds badgen (betalnings-deadline-badgens grammatik:
     bg-surface-pill + Clock + warning-ton). Tystnar när eventet passerat
     eller alla fått. */
-function eventinfoSignal(e: ProtoEvent): string | null {
+/** K44: eventinfo-gränsen (2 veckor före start) som datum, eller null. */
+function eventinfoGrans(e: ProtoEvent): Date | null {
   if (!e.startdatum) return null;
   const start = new Date(e.startdatum);
   if (Number.isNaN(start.getTime())) return null;
   const grans = new Date(start);
   grans.setDate(grans.getDate() - 14);
+  grans.setHours(0, 0, 0, 0);
+  return grans;
+}
+
+function eventinfoSignal(e: ProtoEvent): string | null {
+  const grans = eventinfoGrans(e);
+  if (grans == null || !e.startdatum) return null;
+  const start = new Date(e.startdatum);
   const idag = new Date();
   idag.setHours(0, 0, 0, 0);
-  grans.setHours(0, 0, 0, 0);
   start.setHours(0, 0, 0, 0);
   if (idag < grans || idag > start) return null;
   const dagarKvar = Math.round((start.getTime() - idag.getTime()) / 86_400_000);
   if (dagarKvar === 0) return 'Dags att skicka — eventet är idag';
   if (dagarKvar === 1) return 'Dags att skicka — eventet är imorgon';
   return `Dags att skicka — eventet är om ${dagarKvar} dagar`;
+}
+
+/** K44 (Marcus): auto-utskicks-krysset i signal-slotten — ikryssad =
+    eventinfon skickas automatiskt på gräns-datumet; urkryssad = inget
+    automatiskt utskick (signalen tar över när gränsen nås). NEUTRAL
+    ton (urkryssad är ett medvetet val, inte ett fel — skild från
+    BetalKryssets röda obetalt-semantik). PROTOTYP-minnes-state; PRD:
+    schemalagt utskick + opt-out-fält per event FINNS INTE i basen —
+    nytt additivt fält + schemalagd automation. */
+function AutoKryss({
+  vald,
+  datum,
+  onChange,
+}: {
+  vald: boolean;
+  datum: string;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <Checkbox
+      isSelected={vald}
+      onChange={onChange}
+      className="group flex cursor-pointer items-center gap-2 text-small text-text-secondary"
+    >
+      <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
+        <Check
+          aria-hidden="true"
+          size={14}
+          className="text-text-inverse opacity-0 group-data-[selected]:opacity-100"
+        />
+      </span>
+      {vald ? `Schemalagt att skickas automatiskt ${datum}` : 'Skickas inte automatiskt'}
+    </Checkbox>
+  );
 }
 
 /** K40: accordion-rubriken (Marcus: "dropdown-rubriker under tabbraden")
@@ -1149,6 +1193,8 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
   const deltagare = DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1'];
   const [filter, setFilter] = useState<'alla' | DeltagarKategori>('alla');
   const [statusFilter, setStatusFilter] = useState<StatusFilter | null>(null);
+  // K44: auto-utskicks-valet (minnes-state; PRD = per-event-fält i basen).
+  const [autoUtskick, setAutoUtskick] = useState(true);
   const ohanteradeTotalt = deltagare.filter((d) => !arHanterad(d)).length;
   const [oppna, setOppna] = useState({ ohanterade: true, hanterade: ohanteradeTotalt === 0 });
   const visade = filter === 'alla' ? deltagare : deltagare.filter((d) => d.kategori === filter);
@@ -1216,13 +1262,21 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
           aktiv={statusFilter === 'saknarEventinfo'}
           onClick={() => vaxlaStatus('saknarEventinfo')}
           signal={
-            totalt - deltagarinfoSkickade > 0 &&
-            eventinfoSignal(event) && (
+            // K44 (Marcus): slotten ALLTID reserverad — signalen när den
+            // är aktiv, annars auto-utskicks-krysset (schemalagt datum;
+            // urkryssat = inget automatiskt utskick).
+            totalt - deltagarinfoSkickade > 0 && eventinfoSignal(event) ? (
               <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 font-medium text-small text-warning">
                 <Clock aria-hidden="true" size={14} />
                 {eventinfoSignal(event)}
               </span>
-            )
+            ) : eventinfoGrans(event) ? (
+              <AutoKryss
+                vald={autoUtskick}
+                datum={DAGMANAD.format(eventinfoGrans(event) as Date)}
+                onChange={setAutoUtskick}
+              />
+            ) : null
           }
         >
           {`${deltagarinfoSkickade} av ${totalt}`}
