@@ -49,7 +49,10 @@ import { AntalFalt, DatumFalt, ProtoGrupp } from './EventDetailPrototype';
 // UI-Eventtyp → basens Typ är PRD-materia.
 const EVENT_OPTIONS = ['Fjärrskådning', 'RIM 1', 'RIM 2', 'RIM 3'];
 const EVENTTYP_OPTIONS = ['Utbildning', 'Föreläsning'];
-const FORMAT_OPTIONS = ['Tvådagars — Dag 1 + Dag 2', 'Endagars — Föreläsning'];
+// K83 (Marcus): formatspråket "2 dagar"/"1 dag" — mappningen till
+// basens Eventformat/Sessionsmall (Dag 1 + Dag 2 · Föreläsning) är
+// PRD-materia (etikett ≠ record; skarpa sidan listar get-event-formats).
+const FORMAT_OPTIONS = ['2 dagar', '1 dag'];
 
 export function SkapaEventPrototype() {
   const navigate = useNavigate();
