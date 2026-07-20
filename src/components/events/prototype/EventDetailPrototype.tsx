@@ -112,7 +112,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K33 — likbredda notisrutor (ikon-slotten alltid renderad)',
+    stegLabel: 'K34 — påminnelse-historiken under varje person',
   },
 ];
 
@@ -760,6 +760,14 @@ function LaggTillRad({ eventId }: { eventId: string }) {
    write-operationer för betalstatus/notering (mark-registration-fee-paid
    [ADR-049] finns; slutbetalning + notering saknas). */
 
+/** K34 (Marcus): påminnelse-HISTORIK per person — skickade
+    betalningspåminnelser skrivs ut under betalnings-linjerna. Bas-gapet
+    (verifierat data-model): `Betalningspåminnelse skickad`
+    (fldE0cR4r9vI0rKiL) är EN dateTime — senaste, odelad på avgift/slut,
+    ingen logg; PRD-val = per-betalnings-tidsstämplar (additivt) eller
+    härledning ur mailloggen (Resend-historiken; mer/maillogg finns). */
+type PaminnelsePost = { betalning: 'avgift' | 'slut'; skickad: string };
+
 /** K31 (Marcus): noteringen hör till EN betalning — per-betalnings-fält
     (avgiftNotering/slutNotering) i stället för en per person. OBS
     bas-gapet: basen har EN `Notering` per anmälan (fldPMsiRoLWcgUbsv) —
@@ -773,11 +781,15 @@ type BetalningsRad = {
   slut: boolean;
   avgiftNotering: string;
   slutNotering: string;
+  historik: PaminnelsePost[];
 };
 
 /** Fiktiva demo-personer (aldrig verkliga namn ur basen — PII). Koherent
     med demo-1:s aggregat vid start: 5 av 8 avgifter, 2 av 8 slutbetalningar. */
-const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
+const DEMO_BETALNINGAR: Record<
+  string,
+  (Omit<BetalningsRad, 'historik'> & { historik?: PaminnelsePost[] })[]
+> = {
   'demo-1': [
     {
       personId: 'demo-p1',
@@ -787,6 +799,7 @@ const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
       slut: false,
       avgiftNotering: '',
       slutNotering: '',
+      historik: [{ betalning: 'avgift', skickad: '2026-07-18' }],
     },
     {
       personId: 'demo-p2',
@@ -805,6 +818,11 @@ const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
       slut: false,
       avgiftNotering: 'Lovade betala efter lönen',
       slutNotering: '',
+      // K34-demot (Marcus-exemplet): Sara har fått påminnelse om BÅDA.
+      historik: [
+        { betalning: 'avgift', skickad: '2026-07-16' },
+        { betalning: 'slut', skickad: '2026-07-16' },
+      ],
     },
     {
       personId: 'demo-p4',
@@ -857,7 +875,10 @@ const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
 /** Start-staten för betalningsarbetsytan (per event-id; okänt id → demo-1,
     speglar demoEventById — aldrig tom yta i demo-läget). */
 function initBetalningar(eventId: string): BetalningsRad[] {
-  return (DEMO_BETALNINGAR[eventId] ?? DEMO_BETALNINGAR['demo-1']).map((rad) => ({ ...rad }));
+  return (DEMO_BETALNINGAR[eventId] ?? DEMO_BETALNINGAR['demo-1']).map((rad) => ({
+    ...rad,
+    historik: rad.historik ?? [],
+  }));
 }
 
 /** K29: betalnings-krysset — RAC Checkbox i bibliotekets fält-grammatik
@@ -970,6 +991,7 @@ function BetalningsLinje({
   notering,
   onVald,
   onNotering,
+  onPaminn,
 }: {
   label: string;
   namn: string;
@@ -979,6 +1001,9 @@ function BetalningsLinje({
   notering: string;
   onVald: (v: boolean) => void;
   onNotering: (v: string) => void;
+  /** K34: ikon-klicket loggar en historik-post (minnes-state; skarpt
+      loggar send-email-EF:n — mailto öppnar bara Lottas mailklient). */
+  onPaminn: () => void;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -1000,6 +1025,7 @@ function BetalningsLinje({
           <a
             href={`mailto:${epost}?subject=${encodeURIComponent(`Påminnelse: ${label.toLowerCase()} för ${eventNamn}`)}`}
             aria-label={`Påminn ${namn} om ${label.toLowerCase()} via mail`}
+            onClick={onPaminn}
             className="flex size-8 items-center justify-center rounded-full text-text-secondary hover:text-text"
           >
             <Mail aria-hidden="true" size={16} />
@@ -1010,10 +1036,21 @@ function BetalningsLinje({
   );
 }
 
+/** K34: historik-postens utskrift — "Påminnelse om X skickad 16 juli"
+    (DAGMANAD, aldrig rå ISO — Gunilla). */
+function paminnelseText(post: PaminnelsePost): string {
+  const vad = post.betalning === 'avgift' ? 'anmälningsavgift' : 'slutbetalning';
+  const datum = new Date(post.skickad);
+  const nar = Number.isNaN(datum.getTime()) ? post.skickad : DAGMANAD.format(datum);
+  return `Påminnelse om ${vad} skickad ${nar}`;
+}
+
 /** K29: person-raden i arbetsytan — namnet länkar till person-detaljvyn
     (demo-personId; skarpt bär shapen riktiga person-id — PRD); K31: två
     betalnings-linjer med egna noteringar; K32: påminn-ikonen per linje
-    (eventnamnet in i ämnesraden). */
+    (eventnamnet in i ämnesraden); K34: HISTORIKEN under linjerna —
+    skickade påminnelser skrivs ut (tyst tidslinje-form, Stripe activity-
+    klassen; MailCheck-ikonen dekorativ) och påminn-klick loggar live. */
 function BetalningsPersonRad({
   person,
   eventNamn,
@@ -1023,6 +1060,10 @@ function BetalningsPersonRad({
   eventNamn: string;
   onUppdatera: (patch: Partial<BetalningsRad>) => void;
 }) {
+  const loggaPaminnelse = (betalning: PaminnelsePost['betalning']) =>
+    onUppdatera({
+      historik: [...person.historik, { betalning, skickad: new Date().toISOString().slice(0, 10) }],
+    });
   return (
     <li className="flex flex-col gap-2 py-3">
       <Link
@@ -1041,6 +1082,7 @@ function BetalningsPersonRad({
         notering={person.avgiftNotering}
         onVald={(v) => onUppdatera({ avgift: v })}
         onNotering={(v) => onUppdatera({ avgiftNotering: v })}
+        onPaminn={() => loggaPaminnelse('avgift')}
       />
       <BetalningsLinje
         label="Slutbetalning"
@@ -1051,7 +1093,21 @@ function BetalningsPersonRad({
         notering={person.slutNotering}
         onVald={(v) => onUppdatera({ slut: v })}
         onNotering={(v) => onUppdatera({ slutNotering: v })}
+        onPaminn={() => loggaPaminnelse('slut')}
       />
+      {person.historik.length > 0 && (
+        <ul className="flex flex-col gap-0.5">
+          {person.historik.map((post) => (
+            <li
+              key={`${post.betalning}-${post.skickad}-${person.historik.indexOf(post)}`}
+              className="flex items-center gap-1.5 text-caption text-text-muted"
+            >
+              <MailCheck aria-hidden="true" size={12} className="shrink-0" />
+              {paminnelseText(post)}
+            </li>
+          ))}
+        </ul>
+      )}
     </li>
   );
 }
