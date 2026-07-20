@@ -106,7 +106,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K20 — åtgärdsraderna vänsterställda',
+    stegLabel: 'K21 — Lägg till manuell anmälan överst i Åtgärder',
   },
 ];
 
@@ -693,9 +693,11 @@ function HandlingsRad({
 
 /** K16 (Marcus): "Lägg till manuell anmälan" — vägen in för anmälningar
     utanför formuläret (mail/telefon → basens Källa="Manuell"). Egen sida
-    (K17, FK-formklassen); länkrad i kortbotten under Ändra-raden
-    (IMG_1542-radgrammatiken, två åtgärdsrader staplade). Renderas i
-    BÅDA kortlägena (morf-pariteten). */
+    (K17, FK-formklassen). K21 (Marcus): FLYTTAD från Beläggnings-
+    kortbotten till Åtgärds-gruppens TOPP — frekvensordningen (vanligaste
+    handlingen först; det är denna Lotta gör mest). Dubbletten i
+    Beläggnings-kortet revs (två identiska ingångar på samma sida är
+    brus). Formen = HandlingsRadens vänsterställda (K20). */
 function LaggTillRad({ eventId }: { eventId: string }) {
   return (
     <div className="py-3">
@@ -703,9 +705,9 @@ function LaggTillRad({ eventId }: { eventId: string }) {
         to="/event/$eventId/ny-anmalan"
         params={{ eventId }}
         search={(prev) => prev}
-        className="flex w-full items-center justify-center gap-2 font-medium text-body"
+        className="flex w-full items-center gap-2 text-left font-medium text-body"
       >
-        <Plus aria-hidden="true" size={16} />
+        <Plus aria-hidden="true" size={16} className="shrink-0" />
         Lägg till manuell anmälan
       </Link>
     </div>
@@ -889,6 +891,7 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
           konsekvens (varje kort har rubrik utanför). Urvalet justeras i
           senare K-steg på Marcus-beslut. */}
       <ProtoGrupp id="proto-grupp-atgarder" rubrik="Åtgärder">
+        <LaggTillRad eventId={eventId} />
         <HandlingsRad ikon={MailCheck}>Skicka bekräftelsemail till obekräftade</HandlingsRad>
         <HandlingsRad ikon={BellRing}>Skicka betalningspåminnelse till obetalda</HandlingsRad>
         <HandlingsRad ikon={BadgeCheck}>Markera alla obetalda som betalda</HandlingsRad>
@@ -964,7 +967,6 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
             <AndraRad onPress={() => setRedigerar('belaggning')} />
           </>
         )}
-        <LaggTillRad eventId={eventId} />
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-betalning" rubrik="Betalningar">
