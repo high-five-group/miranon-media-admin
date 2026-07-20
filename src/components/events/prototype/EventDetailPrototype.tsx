@@ -50,13 +50,18 @@ import { type CalendarDate, parseDate } from '@internationalized/date';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
+  BadgeCheck,
+  BellRing,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  type LucideIcon,
+  MailCheck,
   Minus,
   Pencil,
   Plus,
   Printer,
+  Send,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -101,7 +106,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K18 — pillen och förklaringstexterna rivna + Skriv ut-knappen',
+    stegLabel: 'K19 — Åtgärds-gruppen överst (Skriv ut flyttad dit)',
   },
 ];
 
@@ -649,6 +654,39 @@ function BelaggningForm({
   );
 }
 
+/** K19 (Marcus): Åtgärds-gruppens rad — sidans operativa handlingar i
+    familje-grammatikens radform (IMG_1542:s åtgärdsrader; centrerad
+    ikon+text som Ändra-raden). Varje rad mappar mot BEFINTLIG system-
+    kapacitet: bekräftelse/betalningspåminnelse/deltagarinfo = send-email-
+    EF:ns mail-typer (confirmation/payment/participant-info, data-model
+    §Mail-flöden); markera betalda = mark-registration-fee-paid-
+    operationen (ADR-049) i bulk. PROTOTYP-NO-OP utom utskriften
+    (read-only-regeln); skarpa kravet = bulk-operationer per event
+    (selektionerna obekräftade/obetalda/alla anmälda) + confirm-grind på
+    massmutationen (PRD). */
+function HandlingsRad({
+  ikon: Ikon,
+  onPress,
+  children,
+}: {
+  ikon: LucideIcon;
+  onPress?: () => void;
+  children: string;
+}) {
+  return (
+    <div className="py-3">
+      <button
+        type="button"
+        onClick={onPress}
+        className="flex w-full items-center justify-center gap-2 font-medium text-body"
+      >
+        <Ikon aria-hidden="true" size={16} />
+        {children}
+      </button>
+    </div>
+  );
+}
+
 /** K16 (Marcus): "Lägg till manuell anmälan" — vägen in för anmälningar
     utanför formuläret (mail/telefon → basens Källa="Manuell"). Egen sida
     (K17, FK-formklassen); länkrad i kortbotten under Ändra-raden
@@ -756,26 +794,19 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
   // runda back-knapp). 44 px = touch-target-golvet på köpet.
   // Skärmläsaren får målet via aria-label ("Tillbaka till event");
   // search-genomslaget bevarat.
-  // K18 (Marcus): toppraden = chevronen vänster + Skriv ut höger (Polaris
-  // page-header-mönstret: back till vänster, sidans åtgärder till höger).
-  // Tydlig text + ikon så Lotta SER att sidan går att skriva ut;
-  // utskriften är browserns egen (window.print).
+  // K19 (Marcus): K18:s Skriv ut-knapp på toppraden REVS — den bröt mot
+  // titelradens metadata-vikt (EventKey-pillen precis under). Utskriften
+  // bor nu som rad i Åtgärds-gruppen; toppraden åter chevronen ensam (K10).
   const sidRam = (innehall: React.ReactNode) => (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      <div className="mx-4 flex items-center justify-between gap-3">
-        <Link
-          to="/event"
-          search={(prev) => prev}
-          aria-label="Tillbaka till event"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-bg-muted"
-        >
-          <ChevronLeft aria-hidden="true" size={26} />
-        </Link>
-        <Button intent="secondary" onPress={() => window.print()}>
-          <Printer aria-hidden="true" size={16} />
-          Skriv ut
-        </Button>
-      </div>
+      <Link
+        to="/event"
+        search={(prev) => prev}
+        aria-label="Tillbaka till event"
+        className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
+      >
+        <ChevronLeft aria-hidden="true" size={26} />
+      </Link>
       {innehall}
     </section>
   );
@@ -847,6 +878,21 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
           <p className="text-small text-text-muted">{event.tidKvarTillEvent}</p>
         )}
       </header>
+
+      {/* K19 (Marcus): Åtgärds-gruppen ÖVERST — sidans operativa handlingar
+          samlade före datagrupperna (Omedelbarhet: på eventdagar är
+          åtgärderna sidans poäng). Rubriken behålls — grupp-grammatikens
+          konsekvens (varje kort har rubrik utanför). Urvalet justeras i
+          senare K-steg på Marcus-beslut. */}
+      <ProtoGrupp id="proto-grupp-atgarder" rubrik="Åtgärder">
+        <HandlingsRad ikon={MailCheck}>Skicka bekräftelsemail till obekräftade</HandlingsRad>
+        <HandlingsRad ikon={BellRing}>Skicka betalningspåminnelse till obetalda</HandlingsRad>
+        <HandlingsRad ikon={BadgeCheck}>Markera alla obetalda som betalda</HandlingsRad>
+        <HandlingsRad ikon={Send}>Skicka deltagarinformation till alla anmälda</HandlingsRad>
+        <HandlingsRad ikon={Printer} onPress={() => window.print()}>
+          Skriv ut denna detaljsida
+        </HandlingsRad>
+      </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-om" rubrik="Om eventet">
         {redigerar === 'om' ? (
