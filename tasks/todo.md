@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 73 🟢 PÅGÅR (2026-07-19 →, FACIT 2026-07-20) — Eventsidan: konvergensen K1–K72 → FACIT LÅST + S56 stängd + header-regeln skarp + sage-gröna skarp
+### Session 73 🟢 PÅGÅR (2026-07-19 →, FACIT + UTÖKNING 2026-07-20) — Eventsidan K1–K72 FACIT + Skapa-utökningen K73–K85 FACIT + S56 stängd + 4 skarpa leveranser
 
 > Scope: sessionsdok `2026-07-19-session-73.md` Del 1 (kanonisk plats):
 > eventsidan (detaljvyn `/event/$eventId`) genom konvergens till facit
@@ -181,6 +181,27 @@
   punkt 3): PRD:er för listan + eventsidan (/to-prd) → skivor
   (/to-issues) → ADR-073-parallell-batch; därefter end-pass med skörd
   (14 kandidater) + BUILD-LOG + N+1.**
+- [x] **FACIT-UTÖKNINGEN K73–K85: SKAPA NYTT EVENT** (2026-07-20,
+  Del 7 kanonisk plats; `c27bc54`→`5e9809c`, T79-taggad): Marcus-
+  fångst post-facit ("glömt Skapa nytt event!") → väg A → ingången
+  K73 (riven) → **K74 LÅST** (kapsel på vy-väljarraden) → sidan
+  K75–K84 i K17-formklassen (Event/Eventtyp-språket [ORDLISTA öppet
+  dubbelrättad K77→K78] · publicerings-HANDTAGET slide-to-confirm
+  [Resend-research; toggle+fyllnad prövade-och-rivna; pling + bock] ·
+  drag-vakterna K79 · frans-diagnosen K80 · mono-domänen K81 ·
+  "2 dagar"/"1 dag" K83 · obligatorisk-rivningen K84) · **T79 född**
+  (custom miranon.se; publiceringsflaggan FINNS EJ i basen) ·
+  **SKARP K85**: falsk fokusring vid mus-öppnade dropdowns släckt
+  (RAC-modalitets-regeln i base.css, fulla grindar) · **FACIT:
+  Marcus "nöjd med denna sida som facit också"** — facit-SHA
+  `a303c65`; bilagorna uppdaterade (S73 +3 skärmar + trail; S72
+  utöknings-notering) · miljö-incident ×2: watcher-döva dev-servrar
+  (curl-verifiera serverad modul — formen etablerad) ·
+  lesson-kandidater nu 18. **NÄSTA: PRD:erna för HELA familjen
+  (lista + eventsida + skapa; /to-prd) → skivor (/to-issues) →
+  ADR-073-batch · chevron-konsekvensen (Marcus-kvittens) ·
+  hemvist-/Mer-ingångs-frågorna vid PRD · session-end med skörd
+  (18 kandidater) + BUILD-LOG + N+1.**
 
 ### Session 72 ✅ AVSLUTAD (2026-07-19) — Event-listan: grillad samsyn → konvergens till FACIT (variant B, K1–K14) + skarpa skal-fixar + T78
 

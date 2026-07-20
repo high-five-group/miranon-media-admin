@@ -77,3 +77,13 @@ mönsterbesluten. List-PRD:ts födelsetidpunkt är ÖPPEN (S73-start
 eller efter familje-konvergensen — Marcus-val i S73). Riven blir
 prototypen först vid skarpa byggets start (klausul iv oförändrad:
 NYSKRIVEN implementation, koden absorberas aldrig).
+
+## Facit-UTÖKNING 2026-07-20 (S73 K73–K74) — öppet bokförd
+
+Marcus-fångst post-facit: listan saknade **Skapa nytt event**-ingång.
+Facitet UTÖKAT med kvittens (aldrig tyst): kapsel VÄNSTER på
+vy-väljarraden i väljarnas stil (K74 `a64f15c`; K73:s
+titelrads-primärknapp prövad-och-riven på Marcus-dom) → familje-
+prototypsidan `/event/skapa`. Skärmdump + skapa-sidans eget facit:
+S73-bilagan (`../s73-eventsida-konvergens/`, FACIT-utökningen
+K73–K84).

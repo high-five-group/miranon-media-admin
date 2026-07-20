@@ -23,8 +23,8 @@ tidKvar-rad) → CHECK-IN-kortet (NavCard-form i åtgärdsradens mått) →
 ÅTGÄRDER (6 rader, kuvert-grammatiken, hover-plattan K72) → OM EVENTET
 (key-value + Ändra-läget) → BELÄGGNING (Marcus-modellen K16 +
 segmenterad mätare + Ändra-morfen Δ=0 px) → ANMÄLDA DELTAGARE
-(summeringsrader med hover K56 + Bekräfta alla-pillen + Bor över-raden
-+ kategori-flikar + Obekräftade/Bekräftade-accordions + personkortens
+(summeringsrader med hover K56 + Bekräfta alla-pillen + Bor över-raden +
+kategori-flikar + Obekräftade/Bekräftade-accordions + personkortens
 metayta K45 + hantera-flödet K46 + Anmäld-länken K62) → BETALNINGAR
 (röda deltan + inline-ARBETSYTAN) → NÄRVARO (REGISTRET K60,
 LMS-mönstret) → GRUPPDYNAMIK (erfarenhetsmix-mätare + nivå-accordions
@@ -77,6 +77,41 @@ auto-grow-composer). Sage-gröna `#606B57` app-brett (K49, skarp).
   eventinfo-utskick K44 · anteckningar-strömmen: backend-vägvalet
   Airtable record comments vs additiv tabell + författare = inloggad
   användare K66).
+
+## FACIT-UTÖKNINGEN K73–K84 — deklarerad 2026-07-20
+
+Marcus-fångst post-facit ("vi glömt … Skapa nytt event!") + väg A-kvittens
+→ facit-utökning ÖPPET bokförd (låst facit utökas med kvittens, rivs
+aldrig tyst). Marcus: **"Sedan är jag nöjd med denna sida som facit
+också."** Facit-SHA för utökningen: `a303c65` (K84).
+
+| Fil | Läge |
+|---|---|
+| `FACIT-lista-skapa-ingangen.png` | Listvyn med Skapa-ingången: kapsel VÄNSTER på vy-väljarraden i väljarnas stil (K74; K73:s titelrads-primärknapp prövad-och-riven) |
+| `FACIT-skapa-sidan.png` | Skapa nytt event-sidan, hela (K75–K84): K17-formklassen · Event/Eventtyp/Ort/Datum(RAC)/Max platser/Eventformat · inga obligatorisk-markeringar (allt krävs) · publicerings-handtaget · grön Skapa-knapp |
+| `FACIT-skapa-handtag-armad.png` | Publicerings-handtaget ARMAT: bock i cirkeln + "Publiceras på miranon.se" (mono) — ingen grön fyllnad (K82-rivningen) |
+
+Trail: K73 ingång titelraden (`c27bc54`, riven) → K74 vy-raden LÅST
+(`a64f15c`) → K75 sidan i familjeformen (`d94d625`) → K76 publicerings-
+avsnittet + T79 född (`072ff39`; toggle, riven) → K77 slide-to-confirm +
+Event-research (`d4b2cc6`) → K78 Resend-detaljerna (`9dbbed6`) →
+K79 drag-vakterna (`5202884`) → K80 frans-diagnosen (`1189683`) →
+K81 mono-domänen (`53be2d6`) → K82 fyllnaden riven (`dfa40b5`) →
+K83 "2 dagar"/"1 dag" (`0bba300`) → K84 obligatorisk-rivningen
+(`a303c65`). Språktrail öppet bokförd: Kurs → Utbildning (K77, FEL) →
+Event + Eventtyp (K78, ORDLISTA rättad öppet).
+
+Öppet till skarpa skivorna (utöver sektionen ovan): skarpa
+/mer/skapa-event ORÖRD (throwaway-kontraktet — skarp form byggs om
+efter detta facit) · hemvisten /mer vs /event + Mer-ingångens
+kvar/riv = Marcus-frågor vid PRD · publiceringsflaggan FINNS EJ i
+basen (additivt fält ADR-063) + publicerings-KONTRAKTET = T79 ·
+Eventformat-etiketterna "2 dagar"/"1 dag" ↔ basens
+Eventformat/Sessionsmall = PRD-mappning · UI-Eventtyp ↔ basens Typ
+(namnkrocken: basens `Eventtyp` är Eventformat-länken) ·
+SlideToConfirm-/ButtonLink-primitiver + grön knapp-intent +
+auto-grow-variant = biblioteks-facit-frågor · pling-ljudasset +
+preferens · författare/auth (K66-kravet gäller även här).
 
 ## Prototypens lifecycle
 
