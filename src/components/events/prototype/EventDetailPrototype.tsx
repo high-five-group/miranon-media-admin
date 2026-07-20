@@ -116,7 +116,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     label: 'Prototypen',
     steg: 1,
     stegLabel:
-      'K70 — Anteckningar: resize ÅTER (K68 rev fel sak) — eget grepp indraget från kurvan',
+      'K71 — Anteckningar: AUTO-GROW ersätter greppet (K70 prövad-och-riven) — rutan växer med texten',
   },
 ];
 
@@ -1607,17 +1607,17 @@ function AnteckningarSektion({ event }: { event: ProtoEvent }) {
         {/* K67 (Marcus: rutan ska sitta som korten): radien lyfts till
             INRE kort-radien rounded-xl == antecknings-korten under
             (yttre kortets 2xl hade gjort rutan rundare än korten i
-            samma kolumn). K70 (Marcus: "rutan måste ju ha resize"):
-            K68 rev FUNKTIONEN när felet var UTSEENDET — resize-y åter
-            (primitivens default), och UA-greppet ersätts med EGET
-            grepp via ::-webkit-resizer: två diagonala linjer INDRAGNA
-            från hörnet så de går fria från rundningen (live-prövat i
-            browsern före kodfästning). Firefox saknar pseudo-elementet
-            → UA-greppet (funktionellt; prototyp-heuristik — skarp
-            cross-browser-form = facit-fråga, ev. auto-grow).
-            Descendant-variant: primitivens radie/grepp bor i cva:n på
-            själva textarean — prototyp-lokal override, ej biblioteks-
-            ändring; ev. varianter i primitiven = facit-fråga. */}
+            samma kolumn). K71 (Marcus: K70-greppet "bedrövligt" →
+            LÖSNINGSKLASSBYTE): AUTO-GROW ersätter allt manuellt grepp —
+            rutan VÄXER med texten (field-sizing: content; composer-
+            branschklassen Linear/Notion/Slack/Jira bär inga grepp).
+            Resize-behovet (plats för långa anteckningar, K70) löses av
+            att rutan aldrig är för liten: start 3 rader (min-h ur
+            size sm), tak max-h-64 och intern rull därefter.
+            Browsers utan field-sizing (Firefox/äldre Safari) faller
+            till fast 3-radig — funktionellt; skarp form = facit-fråga.
+            Descendant-variant: prototyp-lokal override, ej biblioteks-
+            ändring; ev. auto-grow-variant i primitiven = facit-fråga. */}
         <TextArea
           label="Ny anteckning"
           hideLabel
@@ -1626,7 +1626,7 @@ function AnteckningarSektion({ event }: { event: ProtoEvent }) {
           placeholder="Skriv en anteckning …"
           value={text}
           onChange={setText}
-          className="[&_textarea::-webkit-resizer]:bg-[linear-gradient(135deg,transparent_0_9px,var(--p-neutral-400)_9px_10.5px,transparent_10.5px_13px,var(--p-neutral-400)_13px_14.5px,transparent_14.5px)] [&_textarea]:rounded-xl"
+          className="[&_textarea]:field-sizing-content [&_textarea]:max-h-64 [&_textarea]:resize-none [&_textarea]:rounded-xl"
         />
         {/* K69 (Marcus): knappen i PRIMITIVENS radie — K68:s rounded-xl
             PRÖVAD-OCH-RIVEN (knappen är en handling, inte en yta;
