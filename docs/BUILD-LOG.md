@@ -2798,6 +2798,21 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 73 — Eventsidan K1–K72 → FACIT + Skapa-utökningen K73–K85 → FACIT + S56 stängd + fyra skarpa leveranser (2026-07-19 → 2026-07-20)
+
+**Commit-range:** `fc9f2fb` (dok-födelse) → HEAD; 85 K-iterationer över FEM konvergens-pass, TRE pauser/resumes (ADR-051/ADR-069 i drift ×3). **Mål:** eventsidan (detaljvyn) genom konvergens till facit + administrativ S56-stängning; utökat på Marcus-fångst med Skapa nytt event (ingång + sida). Ej byggplan-fas — design-/konvergenssession; skarpt bygge via PRD + skivor (nästa session).
+
+- **EVENTSIDANS FACIT (K1–K72, Del 3–6):** Marcus 2026-07-20 "nöjd … efter 72 iterationer". Formen: topprad → check-in-kort → Åtgärder (hover-plattan K72) → Om eventet + Beläggning (Ändra-morfen Δ=0) → Anmälda deltagare (arbetskö-accordions + hantera-flödet + Bekräfta alla) → Betalningar (inline-arbetsytan) → NÄRVARO-REGISTRET (K60) → GRUPPDYNAMIK (K63–K65) → ANTECKNINGAR (K66–K71: tidsstämplad ström, härledd Under/Efter-fas, auto-grow-composer). Facit-SHA `9826278`; kanon = bilagan `s73-eventsida-konvergens/` (8 skärmar + trail).
+- **SKAPA-UTÖKNINGEN (K73–K85, Del 7):** post-facit-fångst → väg A. K74-ingången (kapsel på vy-väljarraden; K73-titelradsformen riven) → K75 sidan i K17-formklassen mot CreateEventForms fältfacit (create-event-EF:en FANNS — Fas 6f) → publicerings-HANDTAGET (slide-to-confirm per Resend-research; toggle + grön fyllnad prövade-och-rivna; pling + bock; drag-vakter + ref-buret drag-tillstånd) → språktrailen Kurs→Utbildning→**Event/Eventtyp** (ORDLISTA öppet dubbelrättad) → mono-domänen · "2 dagar"/"1 dag" · obligatorisk-rivningen. Facit-SHA `a303c65`; +3 skärmar i bilagan; **T79 född** (custom miranon.se — Shopify/Elfsight-ersättningen; publiceringsflaggan FINNS EJ i basen, live-verifierad).
+- **Skarpa leveranser (4):** headern riven app-brett (`ac3f198`, K1) · sage-gröna `#606B57` (K49, tokens + spec) · scrollbar-arvet från S72 stod · **K85 fokus-modalitets-fixen** (`5e9809c`: `[data-rac]:focus-visible:not([data-focus-visible])` — falsk ring vid mus-öppnade dropdowns släckt app-brett, tangentbordsindikationen verifierad intakt; fulla grindar 296 API + build).
+- **S56 administrativt stängd** (Del 2): lifecycle → closed + skörd L292–L293 + T65 closed (TASK-4 helt Done).
+- **Avvikelser/incidenter (öppet bokförda):** K69-grindincidenten (obunden förkontroll-kedja → röd push, läkt `2cbcaed`) · facit-landningens MD004 (radbrytnings-plus, läkt `9bd3b00`) ·  Vite-watchern DÖV ×2 (levande server, stale modul — curl-verifierings-formen etablerad) · GitHub sekundär-throttling på CI-efterkontroller (403 med full kvot) · enda röda runs genom fem pass: K56 + K69 + `c94b90e` — alla öppet bokförda och läkta.
+- **Numrering:** ingen ny ADR (allt under baren; 73==73, nästa 074) · lessons **L292–L304** (S56-skörden + 11 ur 18 kandidater; kandidat 3 förkastad som L286/L290-instans, kandidat 4 som L25-förstärkning — motiv i Del 8) · tråd **T79** (nästa T80) · fälla 45 orörd · hub-lyftet L284–L304 + T78-hubhalvan buntat till nästa hub-beröring.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-19-session-73.md`](../tasks/sessions/2026-07-19-session-73.md) (Del 1–8 + Paushistorik ×3) + bilagan [`tasks/sessions/bilagor/s73-eventsida-konvergens/`](../tasks/sessions/bilagor/s73-eventsida-konvergens/) + S72-bilagans utöknings-notering. **EJ fas-avslut.** Kvar efter S73: **PRD:erna för HELA event-familjen** (lista + eventsida + skapa; /to-prd → /to-issues → ADR-073-batch) · chevron-konsekvensen (Marcus-kvittens) · hemvist-/Mer-ingångsfrågorna (avgörs i PRD) · T79-spåret · hub-lyftet · Marcus-moment: Update-klicket i claude.ai.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

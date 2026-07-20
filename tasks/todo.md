@@ -202,6 +202,17 @@
   ADR-073-batch · chevron-konsekvensen (Marcus-kvittens) ·
   hemvist-/Mer-ingångs-frågorna vid PRD · session-end med skörd
   (18 kandidater) + BUILD-LOG + N+1.**
+- [x] **SESSION-END-PASSET** (2026-07-20, Marcus-order "Vi kör
+  session-end först"; Del 8 kanonisk plats): SKÖRDEN 18 kandidater →
+  **L294–L304** (11 [UNIVERSAL]; k3 förkastad som L286/L290-instans,
+  k4 som L25-förstärkning — motiv i Del 8) · **BUILD-LOG S73-post**
+  (fem pass, två facit, fyra skarpa, incidenterna) · Del 8
+  (skörde-redovisning + transcript-referenser ×4 wc-verifierade +
+  numrering: 074/L305/T80/f45) · dev-servern stoppad. **NÄSTA (N+1):
+  familje-PRD:erna → skivor · chevron-konsekvensen · T79 · hub-lyftet
+  L284–L304 + T78-hubhalvan.** Stängningen (lifecycle: closed +
+  AVSLUTAD-rubrik) väntar på Marcus coverage-kvittens
+  (stängnings-grind 2, ADR-069).
 
 ### Session 72 ✅ AVSLUTAD (2026-07-19) — Event-listan: grillad samsyn → konvergens till FACIT (variant B, K1–K14) + skarpa skal-fixar + T78
 

@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-19
+updated: 2026-07-20
 review_by: 2026-11-15
 status: stable
 ---
@@ -4197,3 +4197,180 @@ grind-röda är fair att rätta för att avblockera — trädet ska vara
 rent, och den sessionen svarar inte längre. Släkt med [[L248]]
 (git-formernas semantik) och [[L235]] (grind-maskering); distinkt
 axel: ärvd rödhet över commit-gränsen.
+
+### L294 [UNIVERSAL] — En selektiv referens kan inte bevisa FRÅNVARO — "finns ej"-slutsatser kräver live-verifiering mot källsystemet
+
+Datum: 2026-07-20 (S73-skörd) | Källa: S73 K63/K65 (Marcus-fångst:
+"fältet finns ej"-claimen byggde på data-model-läsning; basen HAR
+fältet + tre systerfält) + K76 (publiceringsflaggan verifierades
+live INNAN frånvaro-claimen) (klass: verifikations-disciplin)
+
+En referens (dokumentation, schema-spegel, cache) bevisar vad den
+INNEHÅLLER — aldrig vad källsystemet SAKNAR. Referensen kan släpa,
+vara selektiv eller aldrig ha täckt ytan. En frånvaro-slutsats
+("fältet/flaggan/endpointen finns inte") kräver live-introspektion av
+källsystemet; en närvaro-slutsats kan referensen bära. Positiv
+tillämpning K76: describe_table FÖRE claimen. Släkt med [[L293]]
+(vad verifieringen faktiskt dömer); distinkt axel: referensens
+bevisriktning.
+
+### L295 [UNIVERSAL] — Ögat är inget mätinstrument: visuell paritet MÄTS i DOM, visuella defekter DIAGNOSTISERAS i förstoring
+
+Datum: 2026-07-20 (S73-skörd) | Källa: S73 K13 (morf-sömlöshet:
+DOM-mätning fann 65 px-hoppet ögat missade) · K67/K68 (padding
+"kändes ojämn" — mätningen visade 17/17, orsaken var radie-krock;
+kant-inseten 13 vs 17 fångades av mått, ej öga) · K79→K80
+("lågupplöst"-cirkeln: TVÅ kant/skugga-hypoteser föll; 4x-zoomad
+skärmdump fann fransen — den gröna fyllnadens kantutjämning bakom
+handtaget) (klass: verifikations-disciplin)
+
+Två former, samma princip: (a) paritet/geometri verifieras med
+DOM-mätning (getBoundingClientRect, y-diff == 0, inset-siffror) —
+aldrig okulärt; (b) en UPPLEVD visuell defekt diagnostiseras genom
+att FÖRSTORA evidensen (zoomad hög-DPI-skärmdump av det exakta
+elementet) INNAN fix-hypoteser formuleras — annars fixar man fel
+orsak med självförtroende. Instrumentet före hypotesen.
+
+### L296 [UNIVERSAL] — Levande-men-döv dev-server: verifiera den SERVERADE artefakten, inte bara disken
+
+Datum: 2026-07-20 (S73-skörd) | Källa: S73 K82–K84 (Vite-watchern
+tappade filen i TVÅ servrar i rad: servern svarade 200 och HMR-loggen
+såg normal ut, men modulen som serverades var gammal; touch hjälpte
+ej; disk-grep visade rätt kod → falsk trygghet) (klass:
+verifikations-disciplin)
+
+En dev-server kan vara levande (svarar, loggar) men DÖV (watchern
+följer inte filen) — då verifierar du gammal kod i browsern hur rätt
+disken än är. Formen: vid varje misstanke om utebliven effekt,
+curl:a den SERVERADE modulen och grep:a efter ändringens signatur —
+matchar den inte disken är watchern död och servern startas om
+(varpå samma curl-verifiering görs FÖRE beteende-verifieringen).
+Skärper [[L275]]/[[L282]] (stale server-processer): även en FÄRSK
+process kan vara döv från start.
+
+### L297 [UNIVERSAL] — Grind-stopp är EXIT-KODAD KEDJA, aldrig output läst med ögat
+
+Datum: 2026-07-20 (S73-skörd) | Källa: S73 TRE instanser i EN
+session: K11 (biome --write applicerar aldrig unsafe-fixar →
+nursery-fel kvar trots "fixat") · K56 (`tail -1` åt "Found 1
+error"-raden) · K69 (grep-räkningen stod FÖRE ett semikolon —
+"Found 1 error" skrevs ut och commiten gick ändå)
+(klass: grind-disciplin)
+
+En förkontroll som inte STYR exekveringsflödet är dekoration: allt
+som avgör pass/fail måste vara en exit-kodad kedja där rött
+mekaniskt STOPPAR (`if grep -q …; then exit 1; fi &&` — aldrig `;`),
+och fix-läget måste täcka grindens HELA regeluppsättning (unsafe/
+nursery-regler kräver explicit räkning efter fix). Tre återfall i
+samma session bevisar att klassen inte hålls med disciplin utan med
+FORM. Instansierar och skärper [[L280]]/[[L291]] till en byggregel.
+
+### L298 [UNIVERSAL] — CI-efterkontrollens form: EN gles list-sväng; 403 med full kvot = SEKUNDÄR throttling som kräver backoff
+
+Datum: 2026-07-20 (S73-skörd) | Källa: S73 K63-driften (parallella
+gh run watch → 403 på hela ytan) · resume-fyndet (`gh run list
+--commit <sha>` gav TOM lista för existerande run; branch-lista +
+SHA-match band runnet) · K85-passet (403 trots rate_limit-endpointens
+4982/5000 kvar — sekundära mönster-limiten på upprepade identiska
+actions-anrop; nya försök förlängde bara throttlingen)
+(klass: verktygs-disciplin)
+
+Formen för CI-efterkontroll: ETT `gh run list --branch`-anrop som
+täcker ALLA väntande SHA:n via SHA-match (aldrig per-SHA-svep,
+aldrig `--commit`-filtret [opålitligt], aldrig parallella watchers) —
+och vid 403: kontrollera `gh api rate_limit` (kvot-fri); är kvoten
+FULL är det den SEKUNDÄRA abuse-limiten som triggats av
+anrops-MÖNSTRET — svaret är lång backoff eller verifiering vid nästa
+naturliga landning, aldrig tätare polling. Skärper kandidat-trailen
+ur [[L297]]-klassen på API-ytan.
+
+### L299 [UNIVERSAL] — Två underkännanden på samma detalj = byt LÖSNINGSKLASS, lappa inte en tredje gång
+
+Datum: 2026-07-20 (S73-skörd) | Källa: S73 resize-trailen (K68 grepp
+rivet → K70 eget grepp "bedrövligt" → K71 LÖSNINGSKLASSBYTE till
+auto-grow = nöjd) · publicerings-trailen (K76 toggle "inte en
+Resend-grej" → K77 slide-to-confirm = rätt klass direkt efter
+research) (klass: design-konvergens)
+
+När beställaren underkänt två varianter av SAMMA lösningsklass är
+sannolikheten hög att KLASSEN är fel, inte utförandet — tredje
+försöket ska vara en annan klass (eller föregås av research på vad
+förebilden faktiskt gör), inte en tredje lappning. Kompletterar
+prövad-och-riven-mönstret med en eskalationsregel.
+
+### L300 [UNIVERSAL] — Kontinuerligt interaktions-tillstånd bor i en REF — event-handlers läser annars förra renderns state
+
+Datum: 2026-07-20 (S73-skörd) | Källa: S73 K77 (drag-handtaget:
+pointermove-handlern läste dragPos ur render-closuren → moves i
+samma frame såg stale null/gammalt värde; draget dog. Ref-buret
+tillstånd + state enbart för rendern löste det, DOM-verifierat
+före/efter) (klass: react-mönster)
+
+Högfrekventa händelseströmmar (pointermove, scroll, resize-observers)
+hinner leverera flera events mellan React-renders — handlers som
+läser interaktions-tillstånd ur closure-state opererar då på förra
+renderns värden. Mönstret: det LEVANDE tillståndet bor i en ref
+(synkron sanning), medan useState endast speglar det för rendern.
+Gäller varje drag/gesture-implementation.
+
+### L301 [UNIVERSAL] — Browserns :focus-visible-heuristik klassar skript-fokus som tangentbord — komponentbibliotekets modalitets-attribut är facit
+
+Datum: 2026-07-20 (S73-skörd) | Källa: S73 K85 (Marcus-fångst:
+fokusring runt HELA dropdown-menyn vid MUS-öppning; React Aria
+autofokuserar listboxen vid popover-öppning och native
+:focus-visible tänder på skript-fokus; RAC sätter
+data-focus-visible ENDAST vid tangentbord →
+`[data-rac]:focus-visible:not([data-focus-visible])` släcker den
+falska ringen, tangentbordsindikationen intakt)
+(klass: a11y-mönster)
+
+Native :focus-visible kan inte skilja "skriptet flyttade fokus åt
+mus-användaren" från äkta tangentbordsnavigation — bibliotek som
+spårar interaktionsmodalitet (React Arias data-focus-visible) vet.
+Globala fokusring-regler behöver därför en modalitets-brygga för
+bibliotekets ägda element; ringen styrs av bibliotekets attribut,
+inte av heuristiken. Tangentbordsindikationen får aldrig offras —
+verifiera BÅDA modaliteterna.
+
+### L302 [UNIVERSAL] — Skript-transformation av källfiler: trasigt utfall åtgärdas återställ-från-git, aldrig auto-fix på korrupt fil
+
+Datum: 2026-07-20 (S73-skörd) | Källa: S73 K41 (skript-ersättning
+producerade oparsead kod; auto-fix ovanpå förvärrade) · K53 (perl
+utan -Mutf8 dubbelkodade svenska tecken) · K84 (positiv tillämpning:
+rent ASCII-mönster valdes medvetet + mojibake-grep efteråt = 0)
+(klass: verktygs-disciplin)
+
+Batch-transformationer (sed/perl/kodmods) kan korrumpera subtilt
+(encoding, parse-brott). Är utfallet trasigt: återställ filen från
+git och applicera om kirurgiskt/med korrigerat verktyg — kör ALDRIG
+auto-fix/formatterare på en korrupt fil (det cementerar skadan).
+Förebyggande: håll mönstret i ren ASCII när målet är icke-ASCII-text,
+och verifiera encoding-signaturer (mojibake-grep) direkt efter.
+
+### L303 [UNIVERSAL] — Interaktivt bor aldrig i interaktivt — slot-ytor läggs som syskon utanför den klickbara ytan
+
+Datum: 2026-07-20 (S73-skörd) | Källa: S73 K44 (signal-slotten med
+kryssruta lades UTANFÖR filter-knappen) · K46 (hantera-knappen i
+personkortet: kortet gjordes till wrapper-div, länken + knappen
+syskon) (klass: a11y-mönster)
+
+Nästlade interaktiva element (knapp i länk, kryssruta i knapp) ger
+trasig semantik för tangentbord/skärmläsare och odefinierade
+klickytor. Formen: den yttre ytan slutar vara interaktiv (wrapper),
+och varje interaktivt element blir SYSKON med egen yta — slot-ytor
+för framtida interaktion placeras utanför redan vid designen.
+
+### L304 [UNIVERSAL] — Fristående Playwright med e2e-svitens storageState = credentials-fri browser-verifiering i prototyp-takt
+
+Datum: 2026-07-20 (S73-skörd) | Källa: S73 K14–K85 (mönstret bar
+alla fem konvergens-passen: skript/MCP-driven browser mot dev-servern
+återanvände e2e-svitens sparade auth-state — mätning, interaktion
+och skärmdumpar utan att hantera inloggningsuppgifter i
+verifieringsflödet) (klass: verktygs-mönster)
+
+En e2e-svits `storageState` (auth-setup-projektets sparade session)
+är en återanvändbar nyckel för AD-HOC-browserverifiering: fristående
+skript och browser-MCP kan verifiera autentiserade ytor i
+iterationstakt utan credentials i flödet. Gör DOM-mätning och
+tillståndstester till standardverktyg under konvergens, inte bara i
+sviten.
