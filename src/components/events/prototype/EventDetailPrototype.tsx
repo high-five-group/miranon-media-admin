@@ -114,7 +114,8 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K56 — summeringsraderna hovrar: aktiv-plattan som hover-affordans (pointer-enheter)',
+    stegLabel:
+      'K57 — filterläget avbrusat: Visar-/instruktionsraderna rivna, Rensa på inner-inseten',
   },
 ];
 
@@ -1144,14 +1145,13 @@ function BorOverRad({
     EVENTINFO (Marcus-språket; basens fält heter `Deltagarinfo skickad` —
     ORDLISTA-/PRD-not, ingen bas-ändring här). */
 type StatusFilter = 'obekraftade' | 'bekraftade' | 'paminda' | 'saknarEventinfo' | 'borOver';
-const STATUSFILTER: Record<StatusFilter, { etikett: string; test: (d: DemoDeltagare) => boolean }> =
-  {
-    obekraftade: { etikett: 'obekräftade anmälningar', test: (d) => !arBekraftad(d) },
-    bekraftade: { etikett: 'fått anmälningsbekräftelse', test: (d) => d.bekraftelse != null },
-    paminda: { etikett: 'fått betalningspåminnelse', test: (d) => d.paminnelse != null },
-    saknarEventinfo: { etikett: 'saknar eventinfo', test: (d) => d.deltagarinfo == null },
-    borOver: { etikett: 'bor över', test: (d) => d.borOver },
-  };
+const STATUSFILTER: Record<StatusFilter, { test: (d: DemoDeltagare) => boolean }> = {
+  obekraftade: { test: (d) => !arBekraftad(d) },
+  bekraftade: { test: (d) => d.bekraftelse != null },
+  paminda: { test: (d) => d.paminnelse != null },
+  saknarEventinfo: { test: (d) => d.deltagarinfo == null },
+  borOver: { test: (d) => d.borOver },
+};
 
 function SummeringsRad({
   term,
@@ -1482,10 +1482,12 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
         </fieldset>
         {statusTraffar != null ? (
           <>
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-small text-text-secondary">
-                Visar: {STATUSFILTER[statusFilter as StatusFilter].etikett} ({statusTraffar.length})
-              </p>
+            {/* K57 (Marcus): "Visar:"-raden + instruktionsraden RIVNA —
+                man har ju tryckt på raden, urvalet förklarar sig självt.
+                Rensa filtret ensam, högerställd på kortens INNER-inset
+                (16 px — K6-grammatiken: friliggande text linjerar med
+                innehållet i rutorna, inte ytterkanten). */}
+            <div className="flex justify-end pr-4">
               <button
                 type="button"
                 onClick={() => setStatusFilter(null)}
@@ -1495,22 +1497,17 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
               </button>
             </div>
             {statusFilter === 'borOver' ? (
-              <>
-                <p className="text-small text-text-secondary">
-                  Kryssa i vilka som bor över — antalet räknas upp direkt.
-                </p>
-                <ul className="flex flex-col gap-2.5">
-                  {markeringsLista.map((d) => (
-                    <li key={d.personId}>
-                      <BorOverRad
-                        d={d}
-                        vald={d.borOver}
-                        onChange={(v) => vaxlaBorOver(d.personId, v)}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </>
+              <ul className="flex flex-col gap-2.5">
+                {markeringsLista.map((d) => (
+                  <li key={d.personId}>
+                    <BorOverRad
+                      d={d}
+                      vald={d.borOver}
+                      onChange={(v) => vaxlaBorOver(d.personId, v)}
+                    />
+                  </li>
+                ))}
+              </ul>
             ) : statusTraffar.length > 0 ? (
               kortLista(statusTraffar)
             ) : (
