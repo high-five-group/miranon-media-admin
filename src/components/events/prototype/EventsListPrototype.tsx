@@ -318,7 +318,22 @@ function VariantBCard({
     rad 267) FINNS i basen men INTE i get-event-shapen — demo-fält här;
     skarpa kravet = EF-/modell-utökning (PRD-post, ingen bas-ändring).
     Verklig data saknar fältet → identitets-pillen döljs. */
-export type ProtoEvent = Event & { boverAntal?: number; eventKey?: string };
+/** K16-beläggningsfälten (S73, Marcus-modellen — FINNS i basen men EJ i
+    get-event-shapen; PRD-krav = EF-/modell-utökning med per-källa-
+    uppdelningen): reserverade = basens `Extra platser` ("Reserverade av
+    Roger och Lotta") · manuelltTillagda = basens `Manuella platser`
+    ("Anmälningar som kommer in utanför formuläret") · medfoljande =
+    antal +1-anmälningar (`Källa`="+1" / `Medföljande till`-länken,
+    CompanionModal-mekanismen). `antalAnmalda` läses i prototypen som
+    VIA FORMULÄR-räkningen (basens Källa TOM). Verklig data saknar
+    fälten → raderna döljs. */
+export type ProtoEvent = Event & {
+  boverAntal?: number;
+  eventKey?: string;
+  reserverade?: number;
+  manuelltTillagda?: number;
+  medfoljande?: number;
+};
 
 function demoEvent(overrides: Partial<ProtoEvent> & Pick<Event, 'id'>): ProtoEvent {
   return {
@@ -379,6 +394,10 @@ export const DEMO_EVENTS: ProtoEvent[] = [
     anmaldBelaggning: 8 / 12,
     status: 'Planerat',
     boverAntal: 3,
+    // K16: kompositions-demo — 8 formulär + 1 reserverad + 1 manuell + 1 medföljande = 11 av 12.
+    reserverade: 1,
+    manuelltTillagda: 1,
+    medfoljande: 1,
   }),
   demoEvent({
     id: 'demo-2',

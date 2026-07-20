@@ -93,26 +93,39 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K15 — smalare antal-fält + beläggnings-mätaren',
+    stegLabel: 'K16+K17 — beläggningsmodellen (kategorier + segment) + manuell anmälan-sidan',
   },
 ];
 
 /* ── Hjälpare (kopierade ur EventDetail — medvetet odelade) ── */
 
 /** Visat eventnamn ur de fält Airtable kan leverera — aldrig krasch/tomt. */
-function eventName(e: Event): string {
+export function eventName(e: Event): string {
   return e.eventNamn ?? e.eventlabel ?? 'Namnlöst event';
 }
 
-/** Fullt = inga platser kvar. `platserKvar` null (okänt tak) → ej "fullt". */
-function isFull(e: Event): boolean {
-  return e.platserKvar != null && e.platserKvar <= 0;
-}
+/** K16: kategorifärgerna för beläggnings-kompositionen (GitHub-storage-
+    klassen: prickar på raderna == segment i stapeln). Färg aldrig ensam
+    bärare — varje kategori har sin siffra i raden. Grön/röd undviks
+    (upptagna av Fullt/Inställt-semantiken i familje-grammatiken);
+    reserverade = neutral grå ("hålls", inte deltagare). */
+const KATEGORI = {
+  formular: 'bg-(--p-blue-700)',
+  manuell: 'bg-(--p-copper-500)',
+  medfoljande: 'bg-(--p-gold-500)',
+  reserverad: 'bg-(--p-neutral-400)',
+} as const;
 
-/** Beläggnings-procent (andel) som text, eller null när taket saknas. */
-function percentText(e: Event): string | null {
-  if (e.anmaldBelaggning == null) return null;
-  return `${Math.round(e.anmaldBelaggning * 100)} %`;
+/** K16: beläggnings-kompositionen i Marcus-modellen — delarna som fyller
+    taket. `antalAnmalda` = via formulär (basens Källa TOM); övriga är
+    demo-/PRD-fälten (se ProtoEvent). Saknade fält (verklig data) → 0. */
+function belaggningsDelar(e: ProtoEvent) {
+  return [
+    { nyckel: 'formular', klass: KATEGORI.formular, antal: e.antalAnmalda },
+    { nyckel: 'manuell', klass: KATEGORI.manuell, antal: e.manuelltTillagda ?? 0 },
+    { nyckel: 'medfoljande', klass: KATEGORI.medfoljande, antal: e.medfoljande ?? 0 },
+    { nyckel: 'reserverad', klass: KATEGORI.reserverad, antal: e.reserverade ?? 0 },
+  ];
 }
 
 /** K3 (IMG_1542-formen): key-value-RAD — etikett vänster, värde höger.
@@ -124,11 +137,31 @@ function percentText(e: Event): string | null {
     denna yta är en LÄSYTA där värdena är materian. Avdelarna bärs av
     dl:ens divide-y (K6-fix: display:contents bröt selektorn — divide-y
     opererar på DOM-barn, inte layoutträdet). */
-function FkRad({ term, children }: { term: string; children: React.ReactNode }) {
+function FkRad({
+  term,
+  prick,
+  pill,
+  children,
+}: {
+  term: string;
+  /** K16: kategoriprick (dekorativ — siffran i raden är bäraren). */
+  prick?: string;
+  /** K16 (Marcus: "via formulär som pill typ"): käll-etikett efter termen. */
+  pill?: string;
+  children: React.ReactNode;
+}) {
   if (children == null || children === '') return null;
   return (
     <div className="flex items-center justify-between gap-4 py-3">
-      <dt className="text-small text-text-muted">{term}</dt>
+      <dt className="flex items-center gap-2 text-small text-text-muted">
+        {prick && <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${prick}`} />}
+        {term}
+        {pill && (
+          <span className="rounded-full bg-surface px-2 py-0.5 text-caption text-text-secondary">
+            {pill}
+          </span>
+        )}
+      </dt>
       <dd className="text-right text-body">{children}</dd>
     </div>
   );
@@ -143,7 +176,7 @@ const LANGDATUM = new Intl.DateTimeFormat('sv-SE', {
   year: 'numeric',
 });
 const DAGMANAD = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
-function datumSpannText(e: Event): string {
+export function datumSpannText(e: Event): string {
   if (!e.startdatum) return 'Datum ej satt';
   const start = new Date(e.startdatum);
   if (Number.isNaN(start.getTime())) return 'Datum ej satt';
@@ -158,7 +191,7 @@ function datumSpannText(e: Event): string {
 /** K3 (IMG_1542-formen): grupprubriken står UTANFÖR den tonala kortytan
     (FK: "Adress"/"Kontakt" ovanför sina kort); kortet bär radlistan med
     avdelare (divide-y). Kopierad form, ej delad komponent. */
-function ProtoGrupp({
+export function ProtoGrupp({
   id,
   rubrik,
   children,
@@ -318,11 +351,14 @@ function tillDatumRange(e: ProtoEvent): { start: CalendarDate; end: CalendarDate
     i samma låda (Stripe/Linear-klassens geometri-bevarade inline-morf). */
 function RedigeringsRad({
   term,
+  prick,
   nuvarande,
   slotKlass = 'w-60',
   children,
 }: {
   term: string;
+  /** K16: kategoriprick — samma prick som visningsradens (morf-pariteten). */
+  prick?: string;
   /** K13 (Marcus): nuvarande värdet synligt VÄNSTER om fältet genom hela
       ändringen — "så man ser vad man ändrar från". */
   nuvarande?: string | null;
@@ -338,7 +374,10 @@ function RedigeringsRad({
   // låda (K12-mätningen: wrap ger radhopp).
   return (
     <div className="flex items-center justify-between gap-4 py-2">
-      <dt className="shrink-0 text-small text-text-muted">{term}</dt>
+      <dt className="flex shrink-0 items-center gap-2 text-small text-text-muted">
+        {prick && <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${prick}`} />}
+        {term}
+      </dt>
       <dd className="flex min-w-0 flex-1 items-center justify-end gap-3">
         <span className="truncate text-small text-text-secondary">{nuvarande || '–'}</span>
         <div className={`${slotKlass} shrink-0`}>{children}</div>
@@ -440,19 +479,24 @@ function OmEventetForm({
     saknar NumberField-primitiv → rå RAC i prototypen, samma väg som
     DateRangePicker (K11). Rad-formen speglar DatumFalt (min-h-8 ==
     radgeometrin). Tomt fält = NaN i RAC → null (basens "platser ej satt"). */
-function AntalFalt({
+export function AntalFalt({
+  label,
   value,
+  min = 0,
   onChange,
 }: {
+  /** Fältets tillgängliga namn (aria-label — raden/etiketten utanför bär det visuella). */
+  label: string;
   value: number | null;
+  min?: number;
   onChange: (v: number | null) => void;
 }) {
   return (
     <NumberField
-      aria-label="Max antal platser"
+      aria-label={label}
       value={value ?? Number.NaN}
       onChange={(v) => onChange(Number.isNaN(v) ? null : v)}
-      minValue={0}
+      minValue={min}
       className="flex w-full flex-col gap-1"
     >
       <Group className="flex min-h-8 w-full items-center gap-1 rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-1">
@@ -479,47 +523,62 @@ function AntalFalt({
   );
 }
 
-/** K15 (Marcus: "sista raden ska vara en progressbar, men informationen
-    8 av 12 och 67 % ska få plats"): fotnoten → beläggnings-MÄTAREN.
-    Stapel-grammatiken ärvs RAKT AV från listkortens beläggningsblock
-    (S72-facitet: text över spår · bg-surface-spår h-1.5 · neutral
-    fyllnad · grön vid fullbokat · andel capad 100) + procenten på
-    textradens högerkant — branschformen för kapacitetsmätare (caption
-    vänster, värde höger, stapel under; GitHub-kvot/Polaris-klassen).
-    TEXTEN är bäraren (färg/stapel aldrig ensam — a11y); stapeln
-    dekorativ (aria-hidden). Utan satt tak: spåret står tomt (listans
-    slot-modell). Delad mellan visnings- och Ändra-läget (morf-pariteten). */
+/** K15 (Marcus): fotnoten → beläggnings-MÄTAREN — caption vänster, procent
+    höger, stapel under (kapacitetsmätarens branschform; GitHub-kvot/
+    Polaris-klassen) på listans spår-grammatik (bg-surface h-1.5).
+    K16 (Marcus-modellen): stapeln SEGMENTERAD per kategori (GitHub-
+    storage-klassen) — segmenten == radernas prickar, samma ordning som
+    delarna fyller taket (deltagare först, reserverade sist). Summan
+    inkluderar reserverade → "upptagna", inte "bokade" (semantik-flagga,
+    öppet bokförd). TEXTEN är bäraren (färg/stapel aldrig ensam — a11y);
+    stapeln dekorativ (aria-hidden), spill klipps av spåret (överbokning).
+    Utan satt tak: spåret står tomt (listans slot-modell). Delad mellan
+    visnings- och Ändra-läget (morf-pariteten). */
 function BelaggningsMatare({ event }: { event: ProtoEvent }) {
-  const full = isFull(event);
-  const percent = percentText(event);
-  const andel =
-    event.maxPlatser != null && event.maxPlatser > 0
-      ? Math.min(100, Math.round((event.antalAnmalda / event.maxPlatser) * 100))
-      : 0;
+  const max = event.maxPlatser;
+  const delar = belaggningsDelar(event);
+  const upptagna = delar.reduce((summa, del) => summa + del.antal, 0);
+  const full = max != null && max > 0 && upptagna >= max;
+  const procent = max != null && max > 0 ? Math.round((upptagna / max) * 100) : null;
   return (
     <div className="flex flex-col gap-1.5 py-3">
       <div className="flex items-baseline justify-between gap-4">
         <span className="text-small text-text-muted">
-          {event.maxPlatser != null
-            ? `${event.antalAnmalda} av ${event.maxPlatser} platser bokade`
-            : `${event.antalAnmalda} anmälda (platser ej satt)`}
+          {max != null
+            ? `${upptagna} av ${max} platser upptagna`
+            : `${upptagna} upptagna (platser ej satt)`}
           {full ? ' · Fullt' : ''}
         </span>
-        {percent && (
-          <span className="font-medium text-small text-text-secondary tabular-nums">{percent}</span>
+        {procent != null && (
+          <span className="font-medium text-small text-text-secondary tabular-nums">
+            {procent} %
+          </span>
         )}
       </div>
-      <div aria-hidden="true" className="h-1.5 rounded-full bg-surface">
-        <div
-          className={`h-full rounded-full ${full ? 'bg-success' : 'bg-(--p-neutral-400)'}`}
-          style={{ width: `${andel}%` }}
-        />
+      <div aria-hidden="true" className="flex h-1.5 gap-px overflow-hidden rounded-full bg-surface">
+        {max != null && max > 0
+          ? delar
+              .filter((del) => del.antal > 0)
+              .map((del) => (
+                <div
+                  key={del.nyckel}
+                  className={`h-full ${del.klass}`}
+                  style={{ width: `${Math.min(100, (del.antal / max) * 100)}%` }}
+                />
+              ))
+          : null}
       </div>
     </div>
   );
 }
 
-type BelaggningVarden = Pick<ProtoEvent, 'maxPlatser' | 'platserKvar' | 'anmaldBelaggning'>;
+/** K16: de redigerbara är basens TRE skrivbara number-fält (Max antal
+    platser · Extra platser/Reserverade · Manuella platser/Manuellt
+    tillagda); via formulär + Medföljande är HÄRLEDDA räkningar ur
+    Anmälningar (Källa-dimensionen) och står kvar som läsrader.
+    Härledda värden behöver inte re-deriveras längre — mätaren räknar
+    live ur delarna (Platser kvar-raden är riven ur Marcus-modellen). */
+type BelaggningVarden = Pick<ProtoEvent, 'maxPlatser' | 'reserverade' | 'manuelltTillagda'>;
 
 function BelaggningForm({
   event,
@@ -531,6 +590,8 @@ function BelaggningForm({
   onAvbryt: () => void;
 }) {
   const [maxPlatser, setMaxPlatser] = useState<number | null>(event.maxPlatser);
+  const [reserverade, setReserverade] = useState<number | null>(event.reserverade ?? null);
+  const [manuellt, setManuellt] = useState<number | null>(event.manuelltTillagda ?? null);
   return (
     <>
       <dl className="divide-y divide-border">
@@ -539,11 +600,29 @@ function BelaggningForm({
           nuvarande={event.maxPlatser != null ? String(event.maxPlatser) : null}
           slotKlass="w-32"
         >
-          <AntalFalt value={maxPlatser} onChange={setMaxPlatser} />
+          <AntalFalt label="Max antal platser" value={maxPlatser} onChange={setMaxPlatser} />
         </RedigeringsRad>
-        <FkRad term="Anmälda">{String(event.antalAnmalda)}</FkRad>
-        <FkRad term="Platser kvar">
-          {event.platserKvar != null ? String(event.platserKvar) : null}
+        <RedigeringsRad
+          term="Reserverade"
+          prick={KATEGORI.reserverad}
+          nuvarande={event.reserverade != null ? String(event.reserverade) : null}
+          slotKlass="w-32"
+        >
+          <AntalFalt label="Reserverade" value={reserverade} onChange={setReserverade} />
+        </RedigeringsRad>
+        <FkRad term="Anmälda deltagare" prick={KATEGORI.formular} pill="via formulär">
+          {String(event.antalAnmalda)}
+        </FkRad>
+        <RedigeringsRad
+          term="Manuellt tillagda"
+          prick={KATEGORI.manuell}
+          nuvarande={event.manuelltTillagda != null ? String(event.manuelltTillagda) : null}
+          slotKlass="w-32"
+        >
+          <AntalFalt label="Manuellt tillagda" value={manuellt} onChange={setManuellt} />
+        </RedigeringsRad>
+        <FkRad term="Medföljande (+1)" prick={KATEGORI.medfoljande}>
+          {event.medfoljande != null ? String(event.medfoljande) : null}
         </FkRad>
       </dl>
       <BelaggningsMatare event={event} />
@@ -555,9 +634,8 @@ function BelaggningForm({
           onPress={() =>
             onSpara({
               maxPlatser,
-              platserKvar: maxPlatser != null ? maxPlatser - event.antalAnmalda : null,
-              anmaldBelaggning:
-                maxPlatser != null && maxPlatser > 0 ? event.antalAnmalda / maxPlatser : null,
+              reserverade: reserverade ?? undefined,
+              manuelltTillagda: manuellt ?? undefined,
             })
           }
         >
@@ -568,6 +646,27 @@ function BelaggningForm({
         </Button>
       </div>
     </>
+  );
+}
+
+/** K16 (Marcus): "Lägg till manuell anmälan" — vägen in för anmälningar
+    utanför formuläret (mail/telefon → basens Källa="Manuell"). Egen sida
+    (K17, FK-formklassen); länkrad i kortbotten under Ändra-raden
+    (IMG_1542-radgrammatiken, två åtgärdsrader staplade). Renderas i
+    BÅDA kortlägena (morf-pariteten). */
+function LaggTillRad({ eventId }: { eventId: string }) {
+  return (
+    <div className="py-3">
+      <Link
+        to="/event/$eventId/ny-anmalan"
+        params={{ eventId }}
+        search={(prev) => prev}
+        className="flex w-full items-center justify-center gap-2 font-medium text-body"
+      >
+        <Plus aria-hidden="true" size={16} />
+        Lägg till manuell anmälan
+      </Link>
+    </div>
   );
 }
 
@@ -601,7 +700,7 @@ function AtgardsRad({
  * demo-eventet som representativ bild — aldrig 404 i demo-läget (Marcus
  * ska aldrig mötas av en vägg i konvergensen).
  */
-function demoEventById(eventId: string): ProtoEvent {
+export function demoEventById(eventId: string): ProtoEvent {
   return DEMO_EVENTS.find((e) => e.id === eventId) ?? DEMO_EVENTS[0];
 }
 
@@ -778,13 +877,25 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
           </I18nProvider>
         ) : (
           <>
+            {/* K16 (Marcus-modellen): radordningen är Marcus' — taket först,
+                sedan kategorierna som fyller det. Prickarna == stapelns
+                segment; "via formulär"-pillen bär käll-distinktionen
+                (basens Källa TOM = formuläranmälan). */}
             <dl className="divide-y divide-border">
               <FkRad term="Max antal platser">
                 {event.maxPlatser != null ? String(event.maxPlatser) : null}
               </FkRad>
-              <FkRad term="Anmälda">{String(event.antalAnmalda)}</FkRad>
-              <FkRad term="Platser kvar">
-                {event.platserKvar != null ? String(event.platserKvar) : null}
+              <FkRad term="Reserverade" prick={KATEGORI.reserverad}>
+                {event.reserverade != null ? String(event.reserverade) : null}
+              </FkRad>
+              <FkRad term="Anmälda deltagare" prick={KATEGORI.formular} pill="via formulär">
+                {String(event.antalAnmalda)}
+              </FkRad>
+              <FkRad term="Manuellt tillagda" prick={KATEGORI.manuell}>
+                {event.manuelltTillagda != null ? String(event.manuelltTillagda) : null}
+              </FkRad>
+              <FkRad term="Medföljande (+1)" prick={KATEGORI.medfoljande}>
+                {event.medfoljande != null ? String(event.medfoljande) : null}
               </FkRad>
             </dl>
             {/* K15: fotnotsraden ersatt av mätaren (IMG_1542-fotnotens plats,
@@ -793,6 +904,7 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
             <AndraRad onPress={() => setRedigerar('belaggning')} />
           </>
         )}
+        <LaggTillRad eventId={eventId} />
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-betalning" rubrik="Betalningar">
