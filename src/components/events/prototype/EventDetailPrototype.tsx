@@ -51,7 +51,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
   BadgeCheck,
-  Bed,
+  BedDouble,
   CalendarDays,
   Check,
   ChevronDown,
@@ -114,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K50 — Bor över-raden sist med säng-ikon: universell, klickfilter, PRD-fält',
+    stegLabel: 'K51 — säng-ikonen rättad: kortens dubbelsäng (BedDouble), samma glyf överallt',
   },
 ];
 
@@ -1385,7 +1385,7 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
             K-steg (Marcus-vägval); PRD-kravet bokfört på fältet. */}
         <SummeringsRad
           term="Bor över"
-          ikon={Bed}
+          ikon={BedDouble}
           aktiv={statusFilter === 'borOver'}
           onClick={() => vaxlaStatus('borOver')}
         >
