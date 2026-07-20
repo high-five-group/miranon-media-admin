@@ -113,7 +113,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K47 — Bekräfta alla-pillen på Ohanterade-raden + kuvert-ikonen överallt',
+    stegLabel: 'K48 — Bekräfta alla i success-grönt: vit text + kuvert på FK-oliven',
   },
 ];
 
@@ -1404,11 +1404,15 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
                   kontrollerarId="deltagare-ohanterade"
                   onToggle={() => setOppna((o) => ({ ...o, ohanterade: !o.ohanterade }))}
                   handling={
+                    // K48 (Marcus): pillen i success-GRÖNT med vit text +
+                    // ikon — sidans positiva massåtgärd bär success-rollen
+                    // (samma token som fullbokat-mätaren); vit på
+                    // --mm-success (#686648) = 5,86:1, AA-ren.
                     <button
                       type="button"
                       aria-label="Skicka bekräftelse till alla ohanterade"
                       onClick={bekraftaAlla}
-                      className="flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 font-medium text-small shadow-sm"
+                      className="flex items-center gap-1.5 rounded-full bg-success px-2.5 py-1 font-medium text-small text-text-inverse shadow-sm"
                     >
                       <Mail aria-hidden="true" size={14} className="shrink-0" />
                       Bekräfta alla
