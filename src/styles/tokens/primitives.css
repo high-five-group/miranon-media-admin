@@ -36,7 +36,10 @@
   --p-red-100: #fef2f2;
   --p-blue-500: #4a6b8a;
   --p-blue-100: #eff6ff;
-  --p-green-500: #686648;
+  /* K49 (S73, Marcus-kvitterad väg A): sage ur Vue-arvet
+     (--miranon-category-user-sage) — Fas 0-värdet #686648 saknade
+     härlednings-trail och var fel transkription av Miranon-gröna. */
+  --p-green-500: #606b57;
   --p-green-100: #f0fdf4;
 
   /* ── Typsnitt ── */

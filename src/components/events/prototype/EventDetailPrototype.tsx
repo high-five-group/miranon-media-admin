@@ -113,7 +113,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K48 — Bekräfta alla i success-grönt: vit text + kuvert på FK-oliven',
+    stegLabel: 'K49 — vår gröna rättad till sage #606B57 (primitiven + spec; alla gröna ytor)',
   },
 ];
 
@@ -1407,7 +1407,7 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
                     // K48 (Marcus): pillen i success-GRÖNT med vit text +
                     // ikon — sidans positiva massåtgärd bär success-rollen
                     // (samma token som fullbokat-mätaren); vit på
-                    // --mm-success (#686648) = 5,86:1, AA-ren.
+                    // --mm-success (#606B57 sage, K49) = 5,61:1, AA-ren.
                     <button
                       type="button"
                       aria-label="Skicka bekräftelse till alla ohanterade"

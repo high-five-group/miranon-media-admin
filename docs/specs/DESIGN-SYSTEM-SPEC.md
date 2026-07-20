@@ -64,7 +64,7 @@ Du skriver `text-primary` som pekar på `--mm-primary` som pekar på `#D4960A`.
   --p-red-100: #FEF2F2;
   --p-blue-500: #4A6B8A;
   --p-blue-100: #EFF6FF;
-  --p-green-500: #686648;
+  --p-green-500: #606B57; /* sage — Vue-arvets Miranon-gröna (K49 S73; Fas 0-värdet #686648 var feltranskription) */
   --p-green-100: #F0FDF4;
 
   /* ── Typsnitt ── */
