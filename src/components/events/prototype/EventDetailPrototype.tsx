@@ -115,7 +115,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K41 — röd ohanterat-ton · rubrik-rutor · +1/Formulär rivna',
+    stegLabel: 'K42 — Lottas mail-flöde speglat (bekräftelse-raden + Eventinfo-namnet)',
   },
 ];
 
@@ -1012,7 +1012,7 @@ function DeltagarKort({ d }: { d: DemoDeltagare }) {
         </span>
         <MailStatus namn="Bekräftelse" skickad={d.bekraftelse} />
         <MailStatus namn="Påminnelse" skickad={d.paminnelse} />
-        <MailStatus namn="Deltagarinfo" skickad={d.deltagarinfo} />
+        <MailStatus namn="Eventinfo" skickad={d.deltagarinfo} />
       </span>
       <span className="flex items-center gap-1.5 text-caption text-text-muted">
         <History aria-hidden="true" size={12} className="shrink-0" />
@@ -1026,14 +1026,21 @@ function DeltagarKort({ d }: { d: DemoDeltagare }) {
 
 /** K40 (Marcus): summeringsraderna KLICKBARA — radens siffra ÄR urvalet
     man ser vid klick (aktiv rad markeras, klick igen rensar; flat lista
-    + rensa-rad under filtret). Deltagarinfo-radens klick visar de som
-    SAKNAR (deltat är det åtgärdbara). */
-type StatusFilter = 'ohanterade' | 'paminda' | 'saknarDeltagarinfo';
+    + rensa-rad under filtret). Eventinfo-radens klick visar de som
+    SAKNAR (deltat är det åtgärdbara).
+    K42 (Marcus — LOTTAS MAIL-FLÖDE, speglas i radordningen): mail 1 =
+    ANMÄLNINGSBEKRÄFTELSEN (först av allt, bär betalningsinstruktionerna;
+    när den är skickad är anmälan HANTERAD) → ev. betalningspåminnelse
+    emellan → mail 2 = EVENTINFO (2 veckor före eventet). UI-ordet är
+    EVENTINFO (Marcus-språket; basens fält heter `Deltagarinfo skickad` —
+    ORDLISTA-/PRD-not, ingen bas-ändring här). */
+type StatusFilter = 'ohanterade' | 'bekraftade' | 'paminda' | 'saknarEventinfo';
 const STATUSFILTER: Record<StatusFilter, { etikett: string; test: (d: DemoDeltagare) => boolean }> =
   {
     ohanterade: { etikett: 'ohanterade anmälningar', test: (d) => !arHanterad(d) },
+    bekraftade: { etikett: 'fått anmälningsbekräftelse', test: (d) => d.bekraftelse != null },
     paminda: { etikett: 'fått betalningspåminnelse', test: (d) => d.paminnelse != null },
-    saknarDeltagarinfo: { etikett: 'saknar deltagarinfo', test: (d) => d.deltagarinfo == null },
+    saknarEventinfo: { etikett: 'saknar eventinfo', test: (d) => d.deltagarinfo == null },
   };
 
 function SummeringsRad({
@@ -1117,7 +1124,7 @@ function DeltagarLista({ eventId }: { eventId: string }) {
   const [oppna, setOppna] = useState({ ohanterade: true, hanterade: ohanteradeTotalt === 0 });
   const visade = filter === 'alla' ? deltagare : deltagare.filter((d) => d.kategori === filter);
   const antalKategori = (k: DeltagarKategori) => deltagare.filter((d) => d.kategori === k).length;
-  const antalSkickade = (falt: 'paminnelse' | 'deltagarinfo') =>
+  const antalSkickade = (falt: 'bekraftelse' | 'paminnelse' | 'deltagarinfo') =>
     deltagare.filter((d) => d[falt] != null).length;
   const totalt = deltagare.length;
   const ohanterade = visade
@@ -1153,6 +1160,21 @@ function DeltagarLista({ eventId }: { eventId: string }) {
             '0'
           )}
         </SummeringsRad>
+        {/* K42 (Marcus): raderna i LOTTAS UTSKICKSORDNING — bekräftelsen
+            (mail 1, bär betalningsinstruktionerna) → ev. påminnelse →
+            eventinfo (mail 2, 2 veckor före eventet). */}
+        <SummeringsRad
+          term="Anmälningsbekräftelse skickad"
+          aktiv={statusFilter === 'bekraftade'}
+          onClick={() => vaxlaStatus('bekraftade')}
+        >
+          {`${antalSkickade('bekraftelse')} av ${totalt}`}
+          {totalt - antalSkickade('bekraftelse') > 0 && (
+            <span className="ml-2 font-medium text-error tabular-nums">
+              −{totalt - antalSkickade('bekraftelse')}
+            </span>
+          )}
+        </SummeringsRad>
         <SummeringsRad
           term="Betalningspåminnelse skickad"
           aktiv={statusFilter === 'paminda'}
@@ -1161,9 +1183,9 @@ function DeltagarLista({ eventId }: { eventId: string }) {
           {String(antalSkickade('paminnelse'))}
         </SummeringsRad>
         <SummeringsRad
-          term="Deltagarinfo skickad"
-          aktiv={statusFilter === 'saknarDeltagarinfo'}
-          onClick={() => vaxlaStatus('saknarDeltagarinfo')}
+          term="Eventinfo skickad"
+          aktiv={statusFilter === 'saknarEventinfo'}
+          onClick={() => vaxlaStatus('saknarEventinfo')}
         >
           {`${deltagarinfoSkickade} av ${totalt}`}
           {totalt - deltagarinfoSkickade > 0 && (
@@ -1870,7 +1892,7 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
         <HandlingsRad ikon={MailCheck}>Skicka bekräftelsemail till obekräftade</HandlingsRad>
         <HandlingsRad ikon={BellRing}>Skicka betalningspåminnelse till obetalda</HandlingsRad>
         <HandlingsRad ikon={BadgeCheck}>Markera alla obetalda som betalda</HandlingsRad>
-        <HandlingsRad ikon={Send}>Skicka deltagarinformation till alla anmälda</HandlingsRad>
+        <HandlingsRad ikon={Send}>Skicka eventinfo till alla anmälda</HandlingsRad>
         <HandlingsRad ikon={Printer} onPress={() => window.print()}>
           Skriv ut denna detaljsida
         </HandlingsRad>
