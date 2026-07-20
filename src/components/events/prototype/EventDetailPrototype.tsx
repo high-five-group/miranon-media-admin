@@ -107,7 +107,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K25 — chevron-prövningen (alla åtgärdsrader + check-in)',
+    stegLabel: 'K26 — check-in-kortet i exakt åtgärdsradernas form',
   },
 ];
 
@@ -908,30 +908,18 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
 
       {/* K23 (Marcus): check-in är EVENTDAGENS PRIMÄRHANDLING — egen
           framhävd ingång ÖVER Åtgärds-listan (Eventbrite/Luma-klassen),
-          aldrig en rad i den. K24 (Marcus: "det blev inte snyggt"):
-          K23:s svarta primärknapp REVS — en tung fylld bar är främmande i
-          sidans grammatik (tonala kort + rader). Formen är i stället
-          NavCard-FACITETS (M6, S64): hel klickbar kort-rad, ikon 20 px +
-          etikett, navcard-tokens, ingen chevron (app-regeln) — KOPIERAD
-          form, ej delad komponent (throwaway-kontraktet; primitiven är
-          route-typad och check-in-sidan finns inte än). PROTOTYP-NO-OP:
-          sidan (dörr-optimerad närvaro, per-session mot Deltaganden) är
-          PRD-krav — knappen nu, sidan senare (Marcus-order). */}
-      <button
-        type="button"
-        className="text-(color:--mm-navcard-text) flex min-h-12 items-center gap-4 rounded-2xl border border-(--mm-navcard-border) bg-(--mm-navcard-bg) px-4 py-4 text-left font-semibold text-body contrast-more:border-(--mm-navcard-border-contrast)"
-      >
-        <UserCheck
-          aria-hidden="true"
-          size={20}
-          className="text-(color:--mm-navcard-icon) shrink-0"
-        />
-        <span className="grow">Gå till check-in</span>
-        {/* K25-prövningen (Marcus): chevron höger — "mer tydligt att det är
-            en knapp". Bryter mot NavCard-facitets ingen-chevron-regel;
-            prövas öppet, låses eller rivs. */}
-        <ChevronRight aria-hidden="true" size={20} className="shrink-0 text-text-secondary" />
-      </button>
+          aldrig en rad i den. K24: K23:s svarta primärknapp REVS (tung
+          fylld bar främmande i kort+rad-grammatiken) → NavCard-form.
+          K26 (Marcus): kortet i EXAKT åtgärdsradernas form — samma
+          HandlingsRad (ikon 16 · py-3 · font-medium · chevron 18) i ett
+          eget kort-skal (ProtoGrupp-kortens yta, utan rubrik); det
+          speciella bärs av placeringen + ensamheten, inte av avvikande
+          mått. PROTOTYP-NO-OP: check-in-sidan (dörr-optimerad närvaro,
+          per-session mot Deltaganden) är PRD-krav — knappen nu, sidan
+          senare (Marcus-order). Chevron per K25-prövningen. */}
+      <div className="rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
+        <HandlingsRad ikon={UserCheck}>Gå till check-in</HandlingsRad>
+      </div>
 
       {/* K19 (Marcus): Åtgärds-gruppen ÖVERST — sidans operativa handlingar
           samlade före datagrupperna (Omedelbarhet: på eventdagar är
