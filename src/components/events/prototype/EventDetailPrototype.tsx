@@ -53,11 +53,11 @@ import {
   BadgeCheck,
   BellRing,
   CalendarDays,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   type LucideIcon,
-  Mail,
   MailCheck,
   Minus,
   Pencil,
@@ -75,6 +75,7 @@ import {
   CalendarGridBody,
   CalendarGridHeader,
   CalendarHeaderCell,
+  Checkbox,
   DateInput,
   DateRangePicker,
   DateSegment,
@@ -109,7 +110,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K28 — avdelaren under Öppna detaljer riven',
+    stegLabel: 'K29 — betalningsarbetsytan (alla anmälda · kryss · notering · person-länk)',
   },
 ];
 
@@ -737,68 +738,143 @@ function LaggTillRad({ eventId }: { eventId: string }) {
   );
 }
 
-/* ── K27: Betalningar-kortets inline-detaljer (Marcus: "stanna på samma
-   sida") — disclosure-raden ersätter navigationen till betalnings-vyn.
-   Detalj-innehållet är Eventmanager-referensens "Ej skickat full
-   betalning" (airtable-eventmanager-02) GJORD BÄTTRE: avvikelse-lista
-   (endast de som saknar något — inte pill-brus per rad), deadline
-   formulerad på svenska EN gång (inte "-106" per rad), "Påminn" som ren
-   mailto-handling (inte rå mailto:-text som länktext), vertikala
-   person-rader (ingen horisontell scroll — mobilen först). Per-person-
-   datat är DEMO (fiktiva namn): skarpa kravet = betalningsdetalj-shape
-   per anmälan (Anmälningsavgift/Slutbetalning/deadline ur basen) — PRD.
-   mailto är Eventmanagers befintliga påminnelse-väg (read-only-säker);
-   skarpa flödet är send-email-EF:ns payment-typ. */
+/* ── K27→K29: Betalningar-kortets inline-detaljer (Marcus: "stanna på
+   samma sida") — disclosure-raden ersätter navigationen till
+   betalnings-vyn. K29 (Marcus: "det vi tänkte bygga i betalningsvyn"):
+   detaljytan är BETALNINGSARBETSYTAN — ALLA anmälda, grupperade efter
+   betalstatus (gästlista-branschformen: Eventbrite/Luma grupperar per
+   status; Linear-klassens checklist-flytt), direkta KRYSS per betalning
+   (RAC Checkbox — biblioteket saknar primitiv, samma rå-RAC-väg som
+   NumberField/DateRangePicker), NOTERING per person ("Swishade 19/7"),
+   namnet LÄNKAR till person-detaljvyn (Stripe-klassen: titeln länkar,
+   kontrollerna ligger bredvid — aldrig rad-klick + inline-kontroller
+   blandat). Kryss uppdaterar minnes-staten → personen FLYTTAR grupp och
+   kortets röda deltan räknar ner LIVE (Omedelbarhet; samma härlednings-
+   grepp som beläggnings-morfen). Deadline formulerad på svenska EN gång
+   (aldrig referensens "-106" per rad; airtable-eventmanager-02).
+   PROTOTYP: ren minnes-state, inga writes (read-only-regeln). Skarpa
+   kraven (PRD): betalningsdetalj-shape per anmälan (personId + namn +
+   Anmälningsavgift/Slutbetalning + Notering + deadline ur basen) +
+   write-operationer för betalstatus/notering (mark-registration-fee-paid
+   [ADR-049] finns; slutbetalning + notering saknas). */
 
-type DemoBetalning = {
+type BetalningsRad = {
+  personId: string;
   namn: string;
   epost: string;
-  avgiftMottagen: boolean;
-  slutbetalningMottagen: boolean;
+  avgift: boolean;
+  slut: boolean;
+  notering: string;
 };
 
 /** Fiktiva demo-personer (aldrig verkliga namn ur basen — PII). Koherent
-    med demo-1:s aggregat: 3 saknar avgift, 6 saknar slutbetalning. */
-const DEMO_BETALNINGAR: Record<string, DemoBetalning[]> = {
+    med demo-1:s aggregat vid start: 5 av 8 avgifter, 2 av 8 slutbetalningar. */
+const DEMO_BETALNINGAR: Record<string, BetalningsRad[]> = {
   'demo-1': [
     {
+      personId: 'demo-p1',
       namn: 'Eva Lindqvist',
       epost: 'eva.lindqvist@example.com',
-      avgiftMottagen: false,
-      slutbetalningMottagen: false,
+      avgift: false,
+      slut: false,
+      notering: '',
     },
     {
+      personId: 'demo-p2',
       namn: 'Johan Berg',
       epost: 'johan.berg@example.com',
-      avgiftMottagen: false,
-      slutbetalningMottagen: false,
+      avgift: false,
+      slut: false,
+      notering: '',
     },
     {
+      personId: 'demo-p3',
       namn: 'Sara Nyström',
       epost: 'sara.nystrom@example.com',
-      avgiftMottagen: false,
-      slutbetalningMottagen: false,
+      avgift: false,
+      slut: false,
+      notering: 'Lovade betala efter lönen',
     },
     {
+      personId: 'demo-p4',
       namn: 'Peter Åkesson',
       epost: 'peter.akesson@example.com',
-      avgiftMottagen: true,
-      slutbetalningMottagen: false,
+      avgift: true,
+      slut: false,
+      notering: '',
     },
     {
+      personId: 'demo-p5',
       namn: 'Maria Holm',
       epost: 'maria.holm@example.com',
-      avgiftMottagen: true,
-      slutbetalningMottagen: false,
+      avgift: true,
+      slut: false,
+      notering: '',
     },
     {
+      personId: 'demo-p6',
       namn: 'Anders Ek',
       epost: 'anders.ek@example.com',
-      avgiftMottagen: true,
-      slutbetalningMottagen: false,
+      avgift: true,
+      slut: false,
+      notering: '',
+    },
+    {
+      personId: 'demo-p7',
+      namn: 'Karin Sjögren',
+      epost: 'karin.sjogren@example.com',
+      avgift: true,
+      slut: true,
+      notering: 'Swishade 12/7',
+    },
+    {
+      personId: 'demo-p8',
+      namn: 'Lars Öhman',
+      epost: 'lars.ohman@example.com',
+      avgift: true,
+      slut: true,
+      notering: '',
     },
   ],
 };
+
+/** Start-staten för betalningsarbetsytan (per event-id; okänt id → demo-1,
+    speglar demoEventById — aldrig tom yta i demo-läget). */
+function initBetalningar(eventId: string): BetalningsRad[] {
+  return (DEMO_BETALNINGAR[eventId] ?? DEMO_BETALNINGAR['demo-1']).map((rad) => ({ ...rad }));
+}
+
+/** K29: betalnings-krysset — RAC Checkbox i bibliotekets fält-grammatik
+    (input-tokens; ibockad = mörk ruta + check, kalender-facitets
+    bg-text/text-inverse-par). Obockad etikett i RÖTT fetstil — "vilka
+    betalningar folk inte gjort" ska synas direkt (texten + tomma rutan
+    bär; rött förstärker). */
+function BetalKryss({
+  label,
+  vald,
+  onChange,
+}: {
+  label: string;
+  vald: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <Checkbox
+      isSelected={vald}
+      onChange={onChange}
+      className="group flex cursor-pointer items-center gap-2 text-small"
+    >
+      <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
+        <Check
+          aria-hidden="true"
+          size={14}
+          className="text-text-inverse opacity-0 group-data-[selected]:opacity-100"
+        />
+      </span>
+      <span className={vald ? 'text-text-secondary' : 'font-medium text-error'}>{label}</span>
+    </Checkbox>
+  );
+}
 
 /** Deadline-texten: betalningsdeadline = 14 dagar före eventstart
     (demo-antagande; basens verkliga deadline-formel = PRD-fråga).
@@ -853,42 +929,96 @@ function DetaljRad({
   );
 }
 
-/** K27: detalj-innehållet — avvikelse-listan "saknar betalning". */
-function BetalningsDetaljer({ event, eventId }: { event: ProtoEvent; eventId: string }) {
-  const personer = DEMO_BETALNINGAR[eventId] ?? DEMO_BETALNINGAR['demo-1'] ?? [];
-  const deadline = deadlineText(event);
+/** K29: person-raden i arbetsytan — namnet länkar till person-detaljvyn
+    (demo-personId; skarpt bär shapen riktiga person-id — PRD), kryss per
+    betalning, notering direkt i raden (Lottas flöde: bocka + skriv
+    "Swishade 19/7" utan extra klick). */
+function BetalningsPersonRad({
+  person,
+  onUppdatera,
+}: {
+  person: BetalningsRad;
+  onUppdatera: (patch: Partial<BetalningsRad>) => void;
+}) {
   return (
-    <div className="flex flex-col py-3">
-      <h3 className="font-semibold text-small">Saknar betalning</h3>
+    <li className="flex flex-col gap-2.5 py-3">
+      <Link
+        to="/personer/$personId"
+        params={{ personId: person.personId }}
+        className="self-start font-medium text-body underline-offset-2 hover:underline"
+      >
+        {person.namn}
+      </Link>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <BetalKryss
+          label="Anmälningsavgift"
+          vald={person.avgift}
+          onChange={(v) => onUppdatera({ avgift: v })}
+        />
+        <BetalKryss
+          label="Slutbetalning"
+          vald={person.slut}
+          onChange={(v) => onUppdatera({ slut: v })}
+        />
+      </div>
+      <Input
+        size="sm"
+        label={`Notering för ${person.namn}`}
+        hideLabel
+        placeholder="Notering, t.ex. Swishade 19/7"
+        value={person.notering}
+        onChange={(v) => onUppdatera({ notering: v })}
+      />
+    </li>
+  );
+}
+
+/** K29: detalj-innehållet — betalningsarbetsytan. Grupperna sorterar
+    tydligheten: de som SAKNAR betalning först, klara sist; kryssen
+    flyttar personen mellan grupperna live. */
+function BetalningsDetaljer({
+  event,
+  betalningar,
+  onUppdatera,
+}: {
+  event: ProtoEvent;
+  betalningar: BetalningsRad[];
+  onUppdatera: (epost: string, patch: Partial<BetalningsRad>) => void;
+}) {
+  const deadline = deadlineText(event);
+  const saknar = betalningar.filter((p) => !p.avgift || !p.slut);
+  const klara = betalningar.filter((p) => p.avgift && p.slut);
+  return (
+    <div className="flex flex-col gap-1 py-3">
       {deadline && <p className="text-small text-text-muted">{deadline}</p>}
-      <ul className="mt-2 divide-y divide-border">
-        {personer
-          .filter((p) => !p.avgiftMottagen || !p.slutbetalningMottagen)
-          .map((p) => (
-            <li key={p.epost} className="flex items-center justify-between gap-4 py-2.5">
-              <div className="min-w-0">
-                <p className="truncate font-medium text-body">{p.namn}</p>
-                <p className="text-small text-text-muted">
-                  Saknar:{' '}
-                  {[
-                    !p.avgiftMottagen && 'anmälningsavgift',
-                    !p.slutbetalningMottagen && 'slutbetalning',
-                  ]
-                    .filter(Boolean)
-                    .join(' + ')}
-                </p>
-              </div>
-              <a
-                href={`mailto:${p.epost}?subject=${encodeURIComponent(`Påminnelse: betalning för ${eventName(event)}`)}`}
-                className="flex shrink-0 items-center gap-1.5 font-medium text-body underline-offset-2 hover:underline"
-              >
-                <Mail aria-hidden="true" size={14} />
-                Påminn
-                <span className="sr-only">{` ${p.namn} via mail`}</span>
-              </a>
-            </li>
+      <h3 className="mt-2 font-semibold text-small">Saknar betalning ({saknar.length})</h3>
+      {saknar.length > 0 ? (
+        <ul className="divide-y divide-border">
+          {saknar.map((p) => (
+            <BetalningsPersonRad
+              key={p.epost}
+              person={p}
+              onUppdatera={(patch) => onUppdatera(p.epost, patch)}
+            />
           ))}
-      </ul>
+        </ul>
+      ) : (
+        <p className="py-2 text-small text-text-secondary">Alla anmälda har betalat.</p>
+      )}
+      {klara.length > 0 && (
+        <>
+          <h3 className="mt-3 font-semibold text-small">Klara ({klara.length})</h3>
+          <ul className="divide-y divide-border">
+            {klara.map((p) => (
+              <BetalningsPersonRad
+                key={p.epost}
+                person={p}
+                onUppdatera={(patch) => onUppdatera(p.epost, patch)}
+              />
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
@@ -957,6 +1087,11 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
   const [override, setOverride] = useState<Partial<ProtoEvent>>({});
   // K27 (Marcus: "stanna på samma sida"): betalningsdetaljerna inline.
   const [visaBetalningsdetaljer, setVisaBetalningsdetaljer] = useState(false);
+  // K29: betalningsarbetsytans minnes-state — kryssen/noteringarna lever
+  // här så kortets räknings-rader och deltan följer LIVE (inga writes).
+  const [betalningar, setBetalningar] = useState(() => initBetalningar(eventId));
+  const uppdateraBetalning = (epost: string, patch: Partial<BetalningsRad>) =>
+    setBetalningar((rader) => rader.map((r) => (r.epost === epost ? { ...r, ...patch } : r)));
 
   const bas: ProtoEvent | undefined = useDemo ? demoEventById(eventId) : fetched;
   const event: ProtoEvent | undefined = bas ? { ...bas, ...override } : undefined;
@@ -1177,21 +1312,23 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
             minustecknet är bäraren (text), rött förstärker (färg aldrig
             ensam); visas endast vid avvikelse. Gamla "Slutbetalning
             saknas"-avvikelseraden ERSATT av deltat på sin räknings-rad
-            (samma information, en rad mindre). */}
+            (samma information, en rad mindre). K29: räkningarna härleds
+            LIVE ur arbetsytans state — Lottas kryss räknar ner deltat
+            direkt (Omedelbarhet; demo-substratet, ej event-aggregaten). */}
         <dl className="divide-y divide-border">
           <FkRad term="Anmälningsavgifter">
-            {`${event.antalAnmalningsavgifter} av ${event.antalAnmalda} mottagna`}
-            {event.antalAnmalda - event.antalAnmalningsavgifter > 0 && (
+            {`${betalningar.filter((b) => b.avgift).length} av ${betalningar.length} mottagna`}
+            {betalningar.some((b) => !b.avgift) && (
               <span className="ml-2 font-medium text-error tabular-nums">
-                −{event.antalAnmalda - event.antalAnmalningsavgifter}
+                −{betalningar.filter((b) => !b.avgift).length}
               </span>
             )}
           </FkRad>
           <FkRad term="Slutbetalningar">
-            {`${event.antalSlutbetalningar} mottagna`}
-            {event.antalSlutbetalningFelande > 0 && (
+            {`${betalningar.filter((b) => b.slut).length} mottagna`}
+            {betalningar.some((b) => !b.slut) && (
               <span className="ml-2 font-medium text-error tabular-nums">
-                −{event.antalSlutbetalningFelande}
+                −{betalningar.filter((b) => !b.slut).length}
               </span>
             )}
           </FkRad>
@@ -1207,7 +1344,11 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
             onToggle={() => setVisaBetalningsdetaljer((v) => !v)}
           />
           <div id="proto-betalningsdetaljer" hidden={!visaBetalningsdetaljer}>
-            <BetalningsDetaljer event={event} eventId={eventId} />
+            <BetalningsDetaljer
+              event={event}
+              betalningar={betalningar}
+              onUppdatera={uppdateraBetalning}
+            />
           </div>
         </div>
       </ProtoGrupp>
