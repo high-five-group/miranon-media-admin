@@ -51,6 +51,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
   BadgeCheck,
+  Bed,
   CalendarDays,
   Check,
   ChevronDown,
@@ -113,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K49 — vår gröna rättad till sage #606B57 (primitiven + spec; alla gröna ytor)',
+    stegLabel: 'K50 — Bor över-raden sist med säng-ikon: universell, klickfilter, PRD-fält',
   },
 ];
 
@@ -798,6 +799,11 @@ type DemoDeltagare = {
       anmälan kom in. K45: med klockslag — metayta-raden visar dag + tid
       (Inskickad ÄR dateTime i basen; demot speglar det). */
   anmald: string;
+  /** K50 (Marcus): övernattning — universellt på ALLA event (hemma-hos-
+      event är normalfallet med sovande gäster). FÄLTET FINNS EJ I BASEN
+      — PRD-krav: per-anmälan-kryss (additivt per ADR-063); listkortets
+      boverAntal blir härledd summering av detta. */
+  borOver: boolean;
   bekraftelse: string | null;
   paminnelse: string | null;
   deltagarinfo: string | null;
@@ -819,6 +825,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       paminnelse: '2026-07-18',
       deltagarinfo: null,
       tidigareEvent: 0,
+      borOver: false,
     },
     {
       personId: 'demo-p2',
@@ -830,6 +837,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       paminnelse: null,
       deltagarinfo: null,
       tidigareEvent: 1,
+      borOver: false,
     },
     {
       personId: 'demo-p3',
@@ -841,6 +849,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       paminnelse: '2026-07-16',
       deltagarinfo: null,
       tidigareEvent: 3,
+      borOver: true,
     },
     {
       personId: 'demo-p4',
@@ -852,6 +861,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       paminnelse: null,
       deltagarinfo: null,
       tidigareEvent: 0,
+      borOver: false,
     },
     {
       personId: 'demo-p5',
@@ -863,6 +873,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       paminnelse: null,
       deltagarinfo: null,
       tidigareEvent: 2,
+      borOver: false,
     },
     {
       personId: 'demo-p6',
@@ -874,6 +885,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       paminnelse: null,
       deltagarinfo: null,
       tidigareEvent: 5,
+      borOver: true,
     },
     {
       personId: 'demo-p7',
@@ -885,6 +897,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       paminnelse: null,
       deltagarinfo: null,
       tidigareEvent: 4,
+      borOver: false,
     },
     {
       personId: 'demo-p8',
@@ -896,6 +909,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       paminnelse: null,
       deltagarinfo: null,
       tidigareEvent: 2,
+      borOver: false,
     },
     {
       personId: 'demo-p9',
@@ -907,6 +921,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       paminnelse: null,
       deltagarinfo: null,
       tidigareEvent: 1,
+      borOver: false,
     },
     {
       personId: 'demo-p10',
@@ -918,6 +933,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       paminnelse: null,
       deltagarinfo: null,
       tidigareEvent: 0,
+      borOver: true,
     },
   ],
 };
@@ -1074,23 +1090,27 @@ function DeltagarKort({
     emellan → mail 2 = EVENTINFO (2 veckor före eventet). UI-ordet är
     EVENTINFO (Marcus-språket; basens fält heter `Deltagarinfo skickad` —
     ORDLISTA-/PRD-not, ingen bas-ändring här). */
-type StatusFilter = 'ohanterade' | 'bekraftade' | 'paminda' | 'saknarEventinfo';
+type StatusFilter = 'ohanterade' | 'bekraftade' | 'paminda' | 'saknarEventinfo' | 'borOver';
 const STATUSFILTER: Record<StatusFilter, { etikett: string; test: (d: DemoDeltagare) => boolean }> =
   {
     ohanterade: { etikett: 'ohanterade anmälningar', test: (d) => !arHanterad(d) },
     bekraftade: { etikett: 'fått anmälningsbekräftelse', test: (d) => d.bekraftelse != null },
     paminda: { etikett: 'fått betalningspåminnelse', test: (d) => d.paminnelse != null },
     saknarEventinfo: { etikett: 'saknar eventinfo', test: (d) => d.deltagarinfo == null },
+    borOver: { etikett: 'bor över', test: (d) => d.borOver },
   };
 
 function SummeringsRad({
   term,
+  ikon: Ikon,
   aktiv,
   onClick,
   signal,
   children,
 }: {
   term: string;
+  /** K50 (Marcus): valfri rad-ikon före termen (Bor över-radens säng). */
+  ikon?: LucideIcon;
   aktiv: boolean;
   onClick: () => void;
   /** K43/K44: signal-SLOTTEN under räkningen — alltid reserverad plats
@@ -1110,7 +1130,10 @@ function SummeringsRad({
           aktiv ? '-mx-2 w-auto rounded-lg bg-bg-emphasized px-2' : ''
         }`}
       >
-        <span className="text-small text-text-muted">{term}</span>
+        <span className="flex items-center gap-1.5 text-small text-text-muted">
+          {Ikon && <Ikon aria-hidden="true" size={14} className="shrink-0" />}
+          {term}
+        </span>
         <span className="text-right text-body">{children}</span>
       </button>
       {signal && <div className="flex min-h-7 items-center">{signal}</div>}
@@ -1355,6 +1378,18 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
               −{totalt - deltagarinfoSkickade}
             </span>
           )}
+        </SummeringsRad>
+        {/* K50 (Marcus): Bor över SIST — universell rad på ALLA event
+            (hemma-hos-eventen är normalfallet med sovande gäster);
+            sängen bär radens identitet. Markerings-flödet = eget
+            K-steg (Marcus-vägval); PRD-kravet bokfört på fältet. */}
+        <SummeringsRad
+          term="Bor över"
+          ikon={Bed}
+          aktiv={statusFilter === 'borOver'}
+          onClick={() => vaxlaStatus('borOver')}
+        >
+          {String(deltagare.filter((d) => d.borOver).length)}
         </SummeringsRad>
       </div>
       <div className="flex flex-col gap-2.5 py-3">
