@@ -114,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K54 — summeringsradernas geometri konstant: inset alltid, aktiv togglar bara bg',
+    stegLabel: 'K55 — Bekräfta alla-knappen på containerns radie (rounded-lg, ej pill)',
   },
 ];
 
@@ -1537,7 +1537,7 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
                       type="button"
                       aria-label="Skicka bekräftelse till alla obekräftade"
                       onClick={bekraftaAlla}
-                      className="flex items-center gap-1.5 rounded-full bg-success px-2.5 py-1 font-medium text-small text-text-inverse shadow-sm"
+                      className="flex items-center gap-1.5 rounded-lg bg-success px-2.5 py-1 font-medium text-small text-text-inverse shadow-sm"
                     >
                       <Mail aria-hidden="true" size={14} className="shrink-0" />
                       Bekräfta alla
