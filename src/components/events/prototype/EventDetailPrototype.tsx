@@ -114,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K55 — Bekräfta alla-knappen på containerns radie (rounded-lg, ej pill)',
+    stegLabel: 'K56 — summeringsraderna hovrar: aktiv-plattan som hover-affordans (pointer-enheter)',
   },
 ];
 
@@ -1184,7 +1184,7 @@ function SummeringsRad({
         type="button"
         aria-pressed={aktiv}
         onClick={onClick}
-        className={`-mx-2 flex w-auto items-center justify-between gap-4 rounded-lg px-2 py-1.5 text-left ${
+        className={`-mx-2 flex w-auto items-center justify-between gap-4 rounded-lg px-2 py-1.5 text-left hover:bg-bg-emphasized motion-safe:transition-colors ${
           aktiv ? 'bg-bg-emphasized' : ''
         }`}
       >
