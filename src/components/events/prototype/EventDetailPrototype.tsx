@@ -114,7 +114,8 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K63 — Gruppdynamik ersätter Anmälda: erfarenhetsmix + motiveringarna ur anmälan',
+    stegLabel:
+      'K64 — Gruppdynamik uppgraderad: nivåraderna expanderar till personer + kurshistorik',
   },
 ];
 
@@ -1238,20 +1239,69 @@ const ERFARENHETS_NIVAER = [
   { etikett: '3+ tidigare event', klass: 'bg-(--p-blue-700)', test: (n: number) => n >= 3 },
 ];
 
+/** K64: per-person-KURSHISTORIK (vilka kurser + NÄR) — koherent med
+    tidigareEvent-räknarna. Kursfärgerna == kalender-legendens KURS_INFO
+    exakt (Fjärrskådning blå · RIM 1 grön · RIM 2 koppar · RIM 3 röd) —
+    en kursfärgs-grammatik i hela familjen. PRD: historiken ur
+    Deltaganden per person (event-länk + startdatum + Närvaropoäng-
+    regeln) — deltagar-shapens Miranon-historik utökas. */
+const KURSFARG: Record<string, string> = {
+  Fjärrskådning: 'bg-(--p-blue-500)',
+  'RIM 1': 'bg-(--p-green-500)',
+  'RIM 2': 'bg-(--p-copper-500)',
+  'RIM 3': 'bg-(--p-red-500)',
+};
+const MANAD_AR = new Intl.DateTimeFormat('sv-SE', { month: 'long', year: 'numeric' });
+type KursPost = { kurs: string; datum: string };
+const DEMO_HISTORIK: Record<string, KursPost[]> = {
+  'demo-p2': [{ kurs: 'Fjärrskådning', datum: '2025-11-15' }],
+  'demo-p3': [
+    { kurs: 'Fjärrskådning', datum: '2025-08-23' },
+    { kurs: 'RIM 1', datum: '2025-10-18' },
+    { kurs: 'RIM 2', datum: '2026-02-21' },
+  ],
+  'demo-p5': [
+    { kurs: 'Fjärrskådning', datum: '2025-10-11' },
+    { kurs: 'RIM 1', datum: '2026-02-07' },
+  ],
+  'demo-p6': [
+    { kurs: 'Fjärrskådning', datum: '2025-03-22' },
+    { kurs: 'RIM 1', datum: '2025-05-17' },
+    { kurs: 'RIM 2', datum: '2025-09-20' },
+    { kurs: 'RIM 3', datum: '2026-01-24' },
+    { kurs: 'Fjärrskådning', datum: '2026-04-18' },
+  ],
+  'demo-p7': [
+    { kurs: 'Fjärrskådning', datum: '2025-06-14' },
+    { kurs: 'RIM 1', datum: '2025-09-13' },
+    { kurs: 'RIM 2', datum: '2025-12-06' },
+    { kurs: 'RIM 3', datum: '2026-04-11' },
+  ],
+  'demo-p8': [
+    { kurs: 'Fjärrskådning', datum: '2025-09-27' },
+    { kurs: 'RIM 1', datum: '2026-01-17' },
+  ],
+  'demo-p9': [{ kurs: 'Fjärrskådning', datum: '2025-12-13' }],
+};
+
 /** K63 (Marcus + cohort-mönstret [Maven Reflections: deltagarnas mål
     pre-course så instruktören kan anpassa innehållet; beginning-course-
     survey-forskningen: erfarenhetsmixen styr aktivitetsnivån]):
     GRUPPDYNAMIK — Lottas "vilka är i rummet?" i två sektioner:
-    kvantitativ erfarenhetsmix (beläggnings-grammatiken: summeringsrad +
-    mätare + streck-rader) + kvalitativa motiveringar (citatet FÖRST,
-    namnet under — Lotta läser rummet, inte registret). Ersätter gamla
-    Anmälda-gruppen (riven — redundant sedan K35; carry-frågan stängd). */
+    kvantitativ erfarenhetsmix + kvalitativa motiveringar. Ersatte gamla
+    Anmälda-gruppen (riven — redundant sedan K35; carry-frågan stängd).
+    K64 (Marcus: "snyggare + vilka är de, vilka kurser, NÄR"):
+    nivåraderna är ACCORDIONS (K40-grammatiken: radens siffra är
+    urvalet) — expanderat läge visar personerna med sin kurshistorik
+    (kursfärgs-streck == kalender-legenden + månad/år) · citaten i VITA
+    KORT (personkortens yta — kvalitativa röster får egen scen). */
 function GruppdynamikLista({ eventId }: { eventId: string }) {
   const deltagare = DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1'];
   const totalt = deltagare.length;
+  const [oppnaNivaer, setOppnaNivaer] = useState<Record<string, boolean>>({});
   const nivaer = ERFARENHETS_NIVAER.map((n) => ({
     ...n,
-    antal: deltagare.filter((d) => n.test(d.tidigareEvent)).length,
+    personer: deltagare.filter((d) => n.test(d.tidigareEvent)),
   }));
   const aterkommande = deltagare.filter((d) => d.tidigareEvent > 0).length;
   const roster = deltagare.flatMap((d) =>
@@ -1271,31 +1321,93 @@ function GruppdynamikLista({ eventId }: { eventId: string }) {
           className="flex h-1.5 gap-px overflow-hidden rounded-full bg-surface"
         >
           {nivaer
-            .filter((n) => n.antal > 0)
+            .filter((n) => n.personer.length > 0)
             .map((n) => (
               <div
                 key={n.etikett}
                 className={n.klass}
-                style={{ width: `${(100 * n.antal) / totalt}%` }}
+                style={{ width: `${(100 * n.personer.length) / totalt}%` }}
               />
             ))}
         </div>
       </div>
-      <dl className="divide-y divide-border">
-        {nivaer.map((n) => (
-          <FkRad key={n.etikett} term={n.etikett} streck={n.klass}>
-            {String(n.antal)}
-          </FkRad>
-        ))}
-      </dl>
+      {nivaer.map((n, i) => (
+        <div key={n.etikett} className="flex flex-col">
+          <button
+            type="button"
+            aria-expanded={!!oppnaNivaer[n.etikett]}
+            aria-controls={`gruppdynamik-niva-${i}`}
+            onClick={() => setOppnaNivaer((o) => ({ ...o, [n.etikett]: !o[n.etikett] }))}
+            className="-mx-2 flex w-auto items-center justify-between gap-4 rounded-lg px-2 py-3 text-left hover:bg-bg-emphasized motion-safe:transition-colors"
+          >
+            <span className="flex items-center gap-2 text-small text-text-muted">
+              <span
+                aria-hidden="true"
+                className={`w-1 shrink-0 self-stretch rounded-full ${n.klass}`}
+              />
+              {n.etikett}
+            </span>
+            <span className="flex shrink-0 items-center gap-2">
+              <span className="text-body tabular-nums">{n.personer.length}</span>
+              <ChevronDown
+                aria-hidden="true"
+                size={16}
+                className={`shrink-0 text-text-secondary motion-safe:transition-transform ${oppnaNivaer[n.etikett] ? 'rotate-180' : ''}`}
+              />
+            </span>
+          </button>
+          <div
+            id={`gruppdynamik-niva-${i}`}
+            hidden={!oppnaNivaer[n.etikett]}
+            className="flex flex-col gap-2.5 pb-3"
+          >
+            {n.personer.map((d) => {
+              const historik = DEMO_HISTORIK[d.personId] ?? [];
+              return (
+                <div
+                  key={d.personId}
+                  className="flex flex-col gap-1.5 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
+                >
+                  <span className="font-semibold text-body">{d.namn}</span>
+                  {historik.length > 0 ? (
+                    <ul className="flex flex-col gap-1">
+                      {historik.map((h) => (
+                        <li
+                          key={`${h.kurs}-${h.datum}`}
+                          className="flex items-center justify-between gap-3 text-caption"
+                        >
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <span
+                              aria-hidden="true"
+                              className={`h-3.5 w-1 shrink-0 rounded-full ${KURSFARG[h.kurs] ?? 'bg-(--p-neutral-500)'}`}
+                            />
+                            <span className="truncate text-text-secondary">{h.kurs}</span>
+                          </span>
+                          <span className="shrink-0 text-text-muted">
+                            {MANAD_AR.format(new Date(h.datum))}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-caption text-text-muted">
+                      Inga tidigare event — första gången hos Miranon Media
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
       <div className="flex flex-col py-3">
-        <p className="pb-1.5 text-caption text-text-muted">
+        <p className="pb-2 text-caption text-text-muted">
           ”Varför vill du gå den här kursen?” — ur anmälan
         </p>
-        <ul className="flex flex-col divide-y divide-border">
+        <ul className="flex flex-col gap-2.5">
           {roster.map((r) => (
-            <li key={r.namn} className="py-3">
-              <figure className="flex flex-col gap-1">
+            <li key={r.namn}>
+              <figure className="flex flex-col gap-1.5 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)">
                 <blockquote className="text-body">”{r.svar}”</blockquote>
                 <figcaption className="text-caption text-text-muted">{r.namn}</figcaption>
               </figure>
