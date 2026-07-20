@@ -114,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K58 — luft mellan tabbraden och Rensa filtret: 16 px (space-4-steget)',
+    stegLabel: 'K59 — prototypväxlaren minimerbar: Göm → hörn-pill, persistent över omladdning',
   },
 ];
 
