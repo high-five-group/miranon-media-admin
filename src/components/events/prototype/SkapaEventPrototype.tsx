@@ -33,7 +33,7 @@ import type { CalendarDate } from '@internationalized/date';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { I18nProvider } from 'react-aria-components';
+import { I18nProvider, Switch } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -54,6 +54,7 @@ export function SkapaEventPrototype() {
   const [datum, setDatum] = useState<{ start: CalendarDate; end: CalendarDate } | null>(null);
   const [maxPlatser, setMaxPlatser] = useState<number | null>(null);
   const [format, setFormat] = useState('');
+  const [publicera, setPublicera] = useState(false);
   const [visaFel, setVisaFel] = useState(false);
   const [skapad, setSkapad] = useState(false);
 
@@ -87,22 +88,22 @@ export function SkapaEventPrototype() {
         <ChevronLeft aria-hidden="true" size={26} />
       </Link>
 
+      {/* K76 (Marcus): systemkontextraden RIVEN — "eventnummer,
+          anmälningslänk …" är backend-angelägenhet, irrelevant för
+          Lotta; sånt ska bara funka. (K75 ärvde raden ur skarpa sidans
+          copy — felapplicerad FK-princip: att INTE fråga efter det
+          systemet vet betyder inte att det ska FÖRKLARAS.) */}
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
         <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
           Skapa nytt event
         </h1>
-        {/* FK-principen: det systemet sätter själv berättas — frågas
-            aldrig efter (eventnummer/EventKey/anmälningslänk server-side;
-            status Planerat per skarpa kontraktet). */}
-        <p className="text-small text-text-secondary">
-          Eventnummer, anmälningslänk och status (Planerat) sätts automatiskt.
-        </p>
       </header>
 
       {skapad ? (
         <div role="status" className="flex flex-col items-start gap-4 px-4">
           <MessageBox intent="success" title="Eventet skapat (prototyp)">
-            I den skarpa versionen skapas eventet i basen och du landar direkt på dess detaljsida.
+            I den skarpa versionen skapas eventet i basen
+            {publicera ? ', publiceras på miranon.se' : ''} och du landar direkt på dess detaljsida.
             Prototypen sparar ingenting.
           </MessageBox>
           <Button intent="primary" onPress={tillListan}>
@@ -208,6 +209,40 @@ export function SkapaEventPrototype() {
                 ))}
               </Select>
             </div>
+          </ProtoGrupp>
+
+          {/* K76 (Marcus-VISIONEN — T79: custom miranon.se ersätter
+              Shopify-mallen + Elfsight-widgetarna [kalender +
+              anmälningsformulär] så webbplats och app delar samma
+              källa och samarbetar direkt): publicerings-avsnittet.
+              Switchen i Resend-klassens glid-form — RAC Switch:
+              klick/tangentbord med animerad tumme; äkta DRAG-gest +
+              Switch-primitiv i biblioteket = facit-frågor.
+              PRD-krav: publiceringsflaggan FINNS EJ i basen
+              (live-fältlistan denna session — Eventplanering bär ingen
+              publish-flagga) → additivt bas-fält (ADR-063) +
+              create-event-EF:ens input utökas + publicerings-
+              KONTRAKTET (vad flaggan styr på webbplatsen) designas i
+              T79-spåret. */}
+          <ProtoGrupp id="skapa-event-publicering" rubrik="Publicering">
+            <Switch
+              isSelected={publicera}
+              onChange={setPublicera}
+              className="group flex items-center justify-between gap-4 py-4 data-[focus-visible]:outline data-[focus-visible]:outline-(--mm-color-focus-ring) data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2"
+            >
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="font-medium text-body">Publicera på miranon.se</span>
+                <span className="text-caption text-text-muted">
+                  Eventet visas i webbplatsens kalender och öppnar för anmälan.
+                </span>
+              </span>
+              <span
+                aria-hidden="true"
+                className="h-7 w-12 shrink-0 rounded-full bg-(--p-neutral-400) p-1 group-data-[selected]:bg-success motion-safe:transition-colors"
+              >
+                <span className="block size-5 rounded-full bg-surface shadow-sm group-data-[selected]:translate-x-5 motion-safe:transition-transform" />
+              </span>
+            </Switch>
           </ProtoGrupp>
 
           {/* Knappraden: primär först (FK-formklassen); px-4 = kortens inner-inset. */}
