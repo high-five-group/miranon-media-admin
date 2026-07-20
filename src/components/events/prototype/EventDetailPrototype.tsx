@@ -114,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K60 — närvaro-registret: rader × sessions-bockar + total %, ej-genomfört-läge',
+    stegLabel: 'K61 — beläggningskategoriernas prickar → vertikala streck (kalenderns K14-form)',
   },
 ];
 
@@ -126,7 +126,7 @@ export function eventName(e: Event): string {
 }
 
 /** K16: kategorifärgerna för beläggnings-kompositionen (GitHub-storage-
-    klassen: prickar på raderna == segment i stapeln). Färg aldrig ensam
+    klassen: streck på raderna == segment i stapeln). Färg aldrig ensam
     bärare — varje kategori har sin siffra i raden. Grön/röd undviks
     (upptagna av Fullt/Inställt-semantiken i familje-grammatiken);
     reserverade = neutral grå ("hålls", inte deltagare). */
@@ -160,19 +160,24 @@ function belaggningsDelar(e: ProtoEvent) {
     opererar på DOM-barn, inte layoutträdet). */
 function FkRad({
   term,
-  prick,
+  streck,
   children,
 }: {
   term: string;
-  /** K16: kategoriprick (dekorativ — siffran i raden är bäraren). */
-  prick?: string;
+  /** K16: kategorimarkör (dekorativ — siffran i raden är bäraren).
+      K61 (Marcus): STRECK i stället för prick — kalendervyns
+      K14-form (Google-agendans vertikala kursfärgs-streck); en
+      markör-grammatik i hela familjen, större färgyta. */
+  streck?: string;
   children: React.ReactNode;
 }) {
   if (children == null || children === '') return null;
   return (
     <div className="flex items-center justify-between gap-4 py-3">
       <dt className="flex items-center gap-2 text-small text-text-muted">
-        {prick && <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${prick}`} />}
+        {streck && (
+          <span aria-hidden="true" className={`w-1 shrink-0 self-stretch rounded-full ${streck}`} />
+        )}
         {term}
       </dt>
       <dd className="text-right text-body">{children}</dd>
@@ -365,14 +370,15 @@ function tillDatumRange(e: ProtoEvent): { start: CalendarDate; end: CalendarDate
     i samma låda (Stripe/Linear-klassens geometri-bevarade inline-morf). */
 function RedigeringsRad({
   term,
-  prick,
+  streck,
   nuvarande,
   slotKlass = 'w-60',
   children,
 }: {
   term: string;
-  /** K16: kategoriprick — samma prick som visningsradens (morf-pariteten). */
-  prick?: string;
+  /** K16: kategorimarkör — samma streck som visningsradens
+      (morf-pariteten; K61: streck-formen, kalendervyns K14-streck). */
+  streck?: string;
   /** K13 (Marcus): nuvarande värdet synligt VÄNSTER om fältet genom hela
       ändringen — "så man ser vad man ändrar från". */
   nuvarande?: string | null;
@@ -389,7 +395,9 @@ function RedigeringsRad({
   return (
     <div className="flex items-center justify-between gap-4 py-2">
       <dt className="flex shrink-0 items-center gap-2 text-small text-text-muted">
-        {prick && <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${prick}`} />}
+        {streck && (
+          <span aria-hidden="true" className={`w-1 shrink-0 self-stretch rounded-full ${streck}`} />
+        )}
         {term}
       </dt>
       <dd className="flex min-w-0 flex-1 items-center justify-end gap-3">
@@ -541,7 +549,7 @@ export function AntalFalt({
     höger, stapel under (kapacitetsmätarens branschform; GitHub-kvot/
     Polaris-klassen) på listans spår-grammatik (bg-surface h-1.5).
     K16 (Marcus-modellen): stapeln SEGMENTERAD per kategori (GitHub-
-    storage-klassen) — segmenten == radernas prickar, samma ordning som
+    storage-klassen) — segmenten == radernas streck, samma ordning som
     delarna fyller taket (deltagare först, reserverade sist). Summan
     inkluderar reserverade → "upptagna", inte "bokade" (semantik-flagga,
     öppet bokförd). TEXTEN är bäraren (färg/stapel aldrig ensam — a11y);
@@ -618,24 +626,24 @@ function BelaggningForm({
         </RedigeringsRad>
         <RedigeringsRad
           term="Reserverade"
-          prick={KATEGORI.reserverad}
+          streck={KATEGORI.reserverad}
           nuvarande={event.reserverade != null ? String(event.reserverade) : null}
           slotKlass="w-32"
         >
           <AntalFalt label="Reserverade" value={reserverade} onChange={setReserverade} />
         </RedigeringsRad>
-        <FkRad term="Anmälda deltagare" prick={KATEGORI.formular}>
+        <FkRad term="Anmälda deltagare" streck={KATEGORI.formular}>
           {String(event.antalAnmalda)}
         </FkRad>
         <RedigeringsRad
           term="Manuellt tillagda"
-          prick={KATEGORI.manuell}
+          streck={KATEGORI.manuell}
           nuvarande={event.manuelltTillagda != null ? String(event.manuelltTillagda) : null}
           slotKlass="w-32"
         >
           <AntalFalt label="Manuellt tillagda" value={manuellt} onChange={setManuellt} />
         </RedigeringsRad>
-        <FkRad term="Medföljande" prick={KATEGORI.medfoljande}>
+        <FkRad term="Medföljande" streck={KATEGORI.medfoljande}>
           {event.medfoljande != null ? String(event.medfoljande) : null}
         </FkRad>
         {/* K22: läsrad även i Ändra-läget (extern räkning, aldrig fält). */}
@@ -764,7 +772,7 @@ function LaggTillRad({ eventId }: { eventId: string }) {
    [ADR-049] finns; slutbetalning + notering saknas). */
 
 /* ── K35 (Marcus): "Anmälda deltagare"-kortet ÖVER Betalningar — alla
-   anmälda med sin BELÄGGNINGS-KATEGORI (prickarna == K16-grammatiken;
+   anmälda med sin BELÄGGNINGS-KATEGORI (strecken == K16-grammatiken;
    reserverade är platser, inte personer → ingår ej). Namnen länkar till
    person-detaljvyn (samma Stripe-klass som betalningslistan). Demo-
    koherens: 8 via formulär + 1 manuellt tillagd + 1 medföljande = 10.
@@ -2355,21 +2363,21 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
               <FkRad term="Max antal platser">
                 {event.maxPlatser != null ? String(event.maxPlatser) : null}
               </FkRad>
-              <FkRad term="Reserverade" prick={KATEGORI.reserverad}>
+              <FkRad term="Reserverade" streck={KATEGORI.reserverad}>
                 {event.reserverade != null ? String(event.reserverade) : null}
               </FkRad>
-              <FkRad term="Anmälda deltagare" prick={KATEGORI.formular}>
+              <FkRad term="Anmälda deltagare" streck={KATEGORI.formular}>
                 {String(event.antalAnmalda)}
               </FkRad>
-              <FkRad term="Manuellt tillagda" prick={KATEGORI.manuell}>
+              <FkRad term="Manuellt tillagda" streck={KATEGORI.manuell}>
                 {event.manuelltTillagda != null ? String(event.manuelltTillagda) : null}
               </FkRad>
-              <FkRad term="Medföljande" prick={KATEGORI.medfoljande}>
+              <FkRad term="Medföljande" streck={KATEGORI.medfoljande}>
                 {event.medfoljande != null ? String(event.medfoljande) : null}
               </FkRad>
               {/* K22 (Marcus): Väntelistan ALLTID med — det är alternativet
-                  när taket är nått. UTAN prick: väntande upptar inga
-                  platser (aldrig segment i mätaren) — prick-grammatiken
+                  när taket är nått. UTAN streck: väntande upptar inga
+                  platser (aldrig segment i mätaren) — streck-grammatiken
                   bär innanför/utanför-taket-distinktionen. */}
               <FkRad term="Väntelista">
                 {event.vantelista != null ? String(event.vantelista) : null}
