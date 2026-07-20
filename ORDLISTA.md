@@ -26,18 +26,20 @@ anmälningar, deltaganden och engagemang länkar till.
 *I koden:* `Person`.
 
 **Event** — ett schemalagt kurs- eller föreläsningstillfälle med ort, datum och
-platser (Airtable-tabellen heter Eventplanering).
-*Undvik:* tillfälle, kurs (utbildningen är taxonomi-axeln; eventet är tillfället).
+platser (Airtable-tabellen heter Eventplanering). Även VALET av vad som ges
+benämns Event i UI (Fjärrskådning, RIM 1–3 — "Välj event"; Marcus S73 K78).
+*Undvik:* tillfälle, kurs (kursen är taxonomi-axeln; eventet är tillfället),
+utbildning (utbildning är en EVENTTYP — se Eventtyp).
 *I koden:* `Event`.
 
-**Utbildning** — taxonomi-axeln: det Roger & Lotta kallar sitt kursutbud
-(Fjärrskådning, RIM 1, RIM 2, RIM 3); ett event är ett tillfälle av en
-utbildning. UI-etiketter använder Utbildning (Marcus-rättelse S73 K77 —
-"Kurs" var agent-etikett). Skilj från event-fältet Typ, vars ena option
-också heter Utbildning (Utbildning/Föreläsning — basens enum).
-*Undvik:* kurs (vardaglig synonym; lever kvar i kod-arv som kursfärgerna),
-eventnamn (tekniskt fältnamn, inte domänspråk).
-*I koden:* `eventNamn` (basens `Event (source)`).
+**Eventtyp** — klassningen av ett event: Utbildning eller Föreläsning
+(Marcus S73 K78; K77:s Utbildning-post var FEL — utbildning är en eventtyp,
+inte taxonomi-axeln — och är ersatt av denna, öppet rättat). Namnkrock mot
+basen bokförd: basens fält `Typ` bär enumen Utbildning/Föreläsning, medan
+basens fält `Eventtyp` är LÄNKEN till Eventformat-tabellen — UI-språket
+följer Roger & Lotta; mappningen är PRD-materia.
+*Undvik:* typ (ensamt; tekniskt fältnamn, inte domänspråk).
+*I koden:* `typ` (basens `Typ`).
 
 **Anmälan** — en persons begäran att delta i ett specifikt event.
 *Undvik:* bokning, registrering.

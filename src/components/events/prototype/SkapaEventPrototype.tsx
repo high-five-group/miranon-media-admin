@@ -31,7 +31,7 @@
 
 import type { CalendarDate } from '@internationalized/date';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { ChevronLeft, Globe } from 'lucide-react';
+import { Check, ChevronLeft } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { I18nProvider } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
@@ -40,17 +40,22 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { AntalFalt, DatumFalt, ProtoGrupp } from './EventDetailPrototype';
 
-// K77 (Marcus): domänspråket är UTBILDNING — Roger & Lotta benämner
-// kurserna så (ORDLISTA-posten Utbildning; "Kurs" var min etikett).
-const UTBILDNING_OPTIONS = ['Fjärrskådning', 'RIM 1', 'RIM 2', 'RIM 3'];
-const TYP_OPTIONS = ['Utbildning', 'Föreläsning'];
+// K78 (Marcus-rättelse av K77-rättelsen): valet BENÄMNS EVENT, och
+// Utbildning/Föreläsning är EVENTTYPER (ORDLISTA-posten Eventtyp;
+// K77:s Utbildning-post var fel och är omskriven). Namnkrock mot
+// basen öppet bokförd: basens fält `Typ` bär enumen
+// Utbildning/Föreläsning medan basens fält `Eventtyp` är LÄNKEN till
+// Eventformat — UI-språket följer Roger & Lotta, mappningen
+// UI-Eventtyp → basens Typ är PRD-materia.
+const EVENT_OPTIONS = ['Fjärrskådning', 'RIM 1', 'RIM 2', 'RIM 3'];
+const EVENTTYP_OPTIONS = ['Utbildning', 'Föreläsning'];
 const FORMAT_OPTIONS = ['Tvådagars — Dag 1 + Dag 2', 'Endagars — Föreläsning'];
 
 export function SkapaEventPrototype() {
   const navigate = useNavigate();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  const [utbildning, setUtbildning] = useState('');
+  const [eventVal, setEventVal] = useState('');
   const [typ, setTyp] = useState('');
   const [ort, setOrt] = useState('');
   const [datum, setDatum] = useState<{ start: CalendarDate; end: CalendarDate } | null>(null);
@@ -66,7 +71,7 @@ export function SkapaEventPrototype() {
   }, []);
 
   const fel = {
-    utbildning: utbildning === '',
+    eventVal: eventVal === '',
     typ: typ === '',
     ort: ort.trim() === '',
     datum: datum == null,
@@ -117,30 +122,30 @@ export function SkapaEventPrototype() {
           <ProtoGrupp id="skapa-event-om" rubrik="Om eventet">
             <div className="flex flex-col gap-4 py-4">
               <Select
-                label="Utbildning (obligatorisk)"
-                placeholder="Välj utbildning"
-                selectedKey={utbildning || null}
-                onSelectionChange={(k) => setUtbildning(String(k))}
+                label="Event (obligatorisk)"
+                placeholder="Välj event"
+                selectedKey={eventVal || null}
+                onSelectionChange={(k) => setEventVal(String(k))}
                 isRequired
-                isInvalid={visaFel && fel.utbildning}
-                errorMessage="Välj en utbildning"
+                isInvalid={visaFel && fel.eventVal}
+                errorMessage="Välj ett event"
               >
-                {UTBILDNING_OPTIONS.map((o) => (
+                {EVENT_OPTIONS.map((o) => (
                   <SelectItem key={o} id={o}>
                     {o}
                   </SelectItem>
                 ))}
               </Select>
               <Select
-                label="Typ (obligatorisk)"
-                placeholder="Välj typ"
+                label="Eventtyp (obligatorisk)"
+                placeholder="Välj eventtyp"
                 selectedKey={typ || null}
                 onSelectionChange={(k) => setTyp(String(k))}
                 isRequired
                 isInvalid={visaFel && fel.typ}
-                errorMessage="Välj en typ"
+                errorMessage="Välj en eventtyp"
               >
-                {TYP_OPTIONS.map((o) => (
+                {EVENTTYP_OPTIONS.map((o) => (
                   <SelectItem key={o} id={o}>
                     {o}
                   </SelectItem>
@@ -258,19 +263,43 @@ export function SkapaEventPrototype() {
   );
 }
 
-/** K77 — publicerings-HANDTAGET (slide-to-confirm, Resend-klassen):
-    dra hela vägen HÖGER för att arma publiceringen; dra tillbaka
-    vänster för att ångra. Släpp mitt i → fjädrar till utgångsläget
-    (intentionalitets-trösklarna 90 %/10 %). Geometri: spår h-12,
-    handtag 44 px med 2 px inset; positionen som ratio 0–1 →
-    left-calc (ingen mätning i render).
-    A11y (11-ribban — drag får ALDRIG vara enda vägen): elementet är
-    fokuserbart med role="switch"; Space/Enter togglar samma val;
-    fokusring via base.css-globalen (:focus-visible på riktigt
-    fokuserbart element); motion-reduce: ingen fjäder. touch-none
-    krävs för pointer-drag på mobil. Skarp form + ev. SlideToConfirm-
-    primitiv i biblioteket = facit-frågor (RAC saknar mönstret —
-    ren pointer-events-yta). */
+/** K78 — prototyp-plinget vid armad publicering (Marcus: "ett pling
+    och grön bock"): kort tvåtons-chime via Web Audio (inga assets).
+    Skarp form = ljud-asset + användarrespekt/preferens = facit-fråga. */
+function plinga() {
+  try {
+    const ctx = new AudioContext();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.setValueAtTime(1318.5, ctx.currentTime + 0.08);
+    g.gain.setValueAtTime(0.001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    o.connect(g).connect(ctx.destination);
+    o.start();
+    o.stop(ctx.currentTime + 0.4);
+    o.onended = () => ctx.close();
+  } catch {
+    // Ljud är förstärkning, aldrig bärare — tystnad är ok (autoplay-policy m.m.).
+  }
+}
+
+/** K77→K78 — publicerings-HANDTAGET (slide-to-confirm, Resend-klassen;
+    K78 = Marcus Resend-detaljerna): cirkeln täcker EXAKT hela rännan
+    (size-12 == h-12, ingen inset) · GRÖN FYLLNAD följer bakom handtaget
+    under draget · vid mål: PLING + grön BOCK i cirkeln · ikonen i
+    cirkeln RIVEN (tom vit cirkel; bocken är målets belöning) · rännans
+    kontur RIVEN (tonad ränna bg-bg-emphasized bär formen själv) ·
+    instruktions-texten tonar ut med fyllnaden. Dra tillbaka = ångra;
+    släpp mitt i = fjädrar (90/10-trösklarna).
+    A11y (11-ribban — drag får ALDRIG vara enda vägen): fokuserbar med
+    role="switch"; Space/Enter togglar samma val (plingar också vid
+    armning — samma feedback); fokusring via base.css-globalen;
+    motion-reduce: ingen fjäder-animation. touch-none för pointer-drag
+    på mobil. Drag-tillståndet REF-buret (stale-closure-fixen K77).
+    Skarp form + ev. SlideToConfirm-primitiv = facit-frågor. */
 function PubliceraHandtag({
   publicerad,
   onChange,
@@ -279,9 +308,6 @@ function PubliceraHandtag({
   onChange: (v: boolean) => void;
 }) {
   const sparRef = useRef<HTMLDivElement>(null);
-  // Drag-tillståndet bor i en REF (closure-säkert mellan högfrekventa
-  // pointermoves — event-handlers ser annars förra renderns state);
-  // dragPos-staten finns ENBART för rendern.
   const dragRef = useRef<number | null>(null);
   const [dragPos, setDragPos] = useState<number | null>(null);
   const pos = dragPos ?? (publicerad ? 1 : 0);
@@ -291,6 +317,11 @@ function PubliceraHandtag({
     if (!spar) return 0;
     const r = spar.getBoundingClientRect();
     return Math.min(1, Math.max(0, (clientX - r.left - 24) / (r.width - 48)));
+  };
+
+  const satt = (v: boolean) => {
+    if (v && !publicerad) plinga();
+    onChange(v);
   };
 
   return (
@@ -303,7 +334,7 @@ function PubliceraHandtag({
       onKeyDown={(e) => {
         if (e.key === ' ' || e.key === 'Enter') {
           e.preventDefault();
-          onChange(!publicerad);
+          satt(!publicerad);
         }
       }}
       onPointerDown={(e) => {
@@ -323,7 +354,7 @@ function PubliceraHandtag({
       }}
       onPointerUp={() => {
         const p = dragRef.current;
-        if (p != null) onChange(p >= 0.9 ? true : p <= 0.1 ? false : publicerad);
+        if (p != null) satt(p >= 0.9 ? true : p <= 0.1 ? false : publicerad);
         dragRef.current = null;
         setDragPos(null);
       }}
@@ -331,14 +362,20 @@ function PubliceraHandtag({
         dragRef.current = null;
         setDragPos(null);
       }}
-      className={`relative h-12 w-full touch-none select-none rounded-full border motion-safe:transition-colors ${
-        publicerad
-          ? 'border-transparent bg-success'
-          : 'border-(--mm-input-border) bg-(--mm-input-bg)'
-      }`}
+      className="relative h-12 w-full touch-none select-none rounded-full bg-bg-emphasized"
     >
+      {/* Fyllnaden: grönt band från vänsterkanten fram till handtagets
+          högerkant — följer draget (Resend-formen). */}
       <span
         aria-hidden="true"
+        style={{ width: `calc(${pos * 100}% - ${pos * 48}px + 48px)` }}
+        className={`absolute inset-y-0 left-0 rounded-full bg-success ${
+          dragPos == null ? 'motion-safe:transition-[width]' : ''
+        }`}
+      />
+      <span
+        aria-hidden="true"
+        style={publicerad ? undefined : { opacity: 1 - pos }}
         className={`absolute inset-0 flex items-center justify-center text-small ${
           publicerad ? 'font-medium text-text-inverse' : 'text-text-muted'
         }`}
@@ -347,12 +384,14 @@ function PubliceraHandtag({
       </span>
       <span
         aria-hidden="true"
-        style={{ left: `calc(2px + ${pos * 100}% - ${pos * 48}px)` }}
-        className={`absolute top-0.5 flex size-11 items-center justify-center rounded-full bg-surface shadow-sm ${
+        style={{ left: `calc(${pos * 100}% - ${pos * 48}px)` }}
+        className={`absolute top-0 flex size-12 items-center justify-center rounded-full bg-surface shadow-sm ${
           dragPos == null ? 'motion-safe:transition-[left]' : ''
         }`}
       >
-        <Globe aria-hidden="true" size={18} className="text-text-secondary" />
+        {publicerad && (
+          <Check aria-hidden="true" size={22} strokeWidth={3} className="text-success" />
+        )}
       </span>
     </div>
   );
