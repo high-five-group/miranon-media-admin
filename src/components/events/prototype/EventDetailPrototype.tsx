@@ -59,6 +59,7 @@ import {
   ChevronRight,
   Clock,
   History,
+  Inbox,
   type LucideIcon,
   Mail,
   MailCheck,
@@ -113,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K38 — deltagarnas sammanfattning + kategori-flikarna',
+    stegLabel: 'K39 — arbetskön: Ohanterade/Hanterade + Anmäld-datumet',
   },
 ];
 
@@ -793,6 +794,9 @@ type DemoDeltagare = {
   namn: string;
   epost: string;
   kategori: DeltagarKategori;
+  /** K39: basens `Inskickad` (dateTime, create-registration) — när
+      anmälan kom in. */
+  anmald: string;
   bekraftelse: string | null;
   paminnelse: string | null;
   deltagarinfo: string | null;
@@ -809,6 +813,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Eva Lindqvist',
       epost: 'eva.lindqvist@example.com',
       kategori: 'formular',
+      anmald: '2026-06-28',
       bekraftelse: '2026-06-28',
       paminnelse: '2026-07-18',
       deltagarinfo: null,
@@ -819,6 +824,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Johan Berg',
       epost: 'johan.berg@example.com',
       kategori: 'formular',
+      anmald: '2026-06-29',
       bekraftelse: '2026-06-30',
       paminnelse: null,
       deltagarinfo: null,
@@ -829,6 +835,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Sara Nyström',
       epost: 'sara.nystrom@example.com',
       kategori: 'formular',
+      anmald: '2026-06-30',
       bekraftelse: '2026-07-01',
       paminnelse: '2026-07-16',
       deltagarinfo: null,
@@ -839,6 +846,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Peter Åkesson',
       epost: 'peter.akesson@example.com',
       kategori: 'formular',
+      anmald: '2026-06-29',
       bekraftelse: '2026-06-29',
       paminnelse: null,
       deltagarinfo: null,
@@ -849,6 +857,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Maria Holm',
       epost: 'maria.holm@example.com',
       kategori: 'formular',
+      anmald: '2026-07-01',
       bekraftelse: '2026-07-02',
       paminnelse: null,
       deltagarinfo: null,
@@ -859,6 +868,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Anders Ek',
       epost: 'anders.ek@example.com',
       kategori: 'formular',
+      anmald: '2026-07-02',
       bekraftelse: '2026-07-03',
       paminnelse: null,
       deltagarinfo: null,
@@ -869,6 +879,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Karin Sjögren',
       epost: 'karin.sjogren@example.com',
       kategori: 'formular',
+      anmald: '2026-06-26',
       bekraftelse: '2026-06-27',
       paminnelse: null,
       deltagarinfo: '2026-07-18',
@@ -879,6 +890,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Lars Öhman',
       epost: 'lars.ohman@example.com',
       kategori: 'formular',
+      anmald: '2026-06-26',
       bekraftelse: '2026-06-27',
       paminnelse: null,
       deltagarinfo: '2026-07-18',
@@ -889,6 +901,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Ulrika Dahl',
       epost: 'ulrika.dahl@example.com',
       kategori: 'manuell',
+      anmald: '2026-07-15',
       bekraftelse: null,
       paminnelse: null,
       deltagarinfo: null,
@@ -899,6 +912,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Elin Öhman',
       epost: 'elin.ohman@example.com',
       kategori: 'medfoljande',
+      anmald: '2026-07-12',
       bekraftelse: null,
       paminnelse: null,
       deltagarinfo: null,
@@ -947,34 +961,119 @@ function MailStatus({ namn, skickad }: { namn: string; skickad: string | null })
   );
 }
 
+/** K39 (Marcus-semantiken, bas-belagd): HANTERAD ⟺ bekräftelse skickad —
+    basens Status har bokstavligen "Obekräftad"/"Bekräftad (mail
+    skickat)". Ohanterade är Lottas ATT GÖRA. */
+function arHanterad(d: DemoDeltagare): boolean {
+  return d.bekraftelse != null;
+}
+
+/** K39: kort-datum ur ISO (DAGMANAD, aldrig rå ISO — Gunilla). */
+function kortDatum(iso: string): string {
+  const datum = new Date(iso);
+  return Number.isNaN(datum.getTime()) ? iso : DAGMANAD.format(datum);
+}
+
+/** K37/K39: personkortet — namn + pillar (Ohanterad i varningston före
+    kategori-pillen; hanterad är OMÄRKT — tysta normen) · e-post ·
+    tidslinjen som börjar med NÄR anmälan kom in (basens `Inskickad`) ·
+    mail-överblicken · Miranon-historiken. */
+function DeltagarKort({ d }: { d: DemoDeltagare }) {
+  return (
+    <Link
+      to="/personer/$personId"
+      params={{ personId: d.personId }}
+      className="flex flex-col gap-1 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
+    >
+      <span className="flex items-start justify-between gap-3 font-semibold text-body">
+        {d.namn}
+        <span className="flex shrink-0 items-center gap-1.5">
+          {!arHanterad(d) && (
+            <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-warning">
+              Ohanterad
+            </span>
+          )}
+          {KATEGORI_PILL[d.kategori] && (
+            <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+              {KATEGORI_PILL[d.kategori]}
+            </span>
+          )}
+        </span>
+      </span>
+      <span className="text-caption text-text-muted">E-post</span>
+      <span className="text-small">{d.epost}</span>
+      <span className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-caption text-text-muted">
+        <span className="flex items-center gap-1">
+          <Inbox aria-hidden="true" size={12} className="shrink-0" />
+          Anmäld {kortDatum(d.anmald)}
+        </span>
+        <MailStatus namn="Bekräftelse" skickad={d.bekraftelse} />
+        <MailStatus namn="Påminnelse" skickad={d.paminnelse} />
+        <MailStatus namn="Deltagarinfo" skickad={d.deltagarinfo} />
+      </span>
+      <span className="flex items-center gap-1.5 text-caption text-text-muted">
+        <History aria-hidden="true" size={12} className="shrink-0" />
+        {d.tidigareEvent === 0
+          ? 'Första eventet hos Miranon'
+          : `${d.tidigareEvent} tidigare event hos Miranon`}
+      </span>
+    </Link>
+  );
+}
+
 /** K38: deltagar-kortets innehåll — sammanfattning ("hur många") +
     kategorifilter + personkorten ("vilka"). Sammanfattningen räknar
-    ALLTID hela eventet (filtret styr bara list-urvalet). Bekräftelse/
-    deltagarinfo bär saknas-delta (alla SKA få dem — norm); påminnelsen
-    visar bara antal (skickas endast till dem som behöver — inget
-    normtal att räkna mot). */
+    ALLTID hela eventet (filtret styr bara list-urvalet). Deltagarinfo
+    bär saknas-delta (alla SKA få den — norm); påminnelsen visar bara
+    antal (skickas endast till dem som behöver). K39: bekräftelse-raden
+    ERSATT av "Ohanterade anmälningar" (samma data, Marcus-semantiken) +
+    listan delad i ARBETSKÖ-mönstret: Ohanterade överst (äldst först —
+    kö), Hanterade under (senast anmäld först — journal); grupprubriker
+    endast när det finns ohanterade (tyst norm annars). */
 function DeltagarLista({ eventId }: { eventId: string }) {
   const deltagare = DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1'];
   const [filter, setFilter] = useState<'alla' | DeltagarKategori>('alla');
   const visade = filter === 'alla' ? deltagare : deltagare.filter((d) => d.kategori === filter);
   const antalKategori = (k: DeltagarKategori) => deltagare.filter((d) => d.kategori === k).length;
-  const antalSkickade = (falt: 'bekraftelse' | 'paminnelse' | 'deltagarinfo') =>
+  const antalSkickade = (falt: 'paminnelse' | 'deltagarinfo') =>
     deltagare.filter((d) => d[falt] != null).length;
   const totalt = deltagare.length;
-  const raknadRad = (skickade: number) => (
-    <>
-      {`${skickade} av ${totalt}`}
-      {totalt - skickade > 0 && (
-        <span className="ml-2 font-medium text-error tabular-nums">−{totalt - skickade}</span>
-      )}
-    </>
+  const ohanteradeTotalt = deltagare.filter((d) => !arHanterad(d)).length;
+  const ohanterade = visade
+    .filter((d) => !arHanterad(d))
+    .sort((a, b) => a.anmald.localeCompare(b.anmald));
+  const hanterade = visade
+    .filter((d) => arHanterad(d))
+    .sort((a, b) => b.anmald.localeCompare(a.anmald));
+  const deltagarinfoSkickade = antalSkickade('deltagarinfo');
+  const kortLista = (lista: DemoDeltagare[]) => (
+    <ul className="flex flex-col gap-2.5">
+      {lista.map((d) => (
+        <li key={d.personId}>
+          <DeltagarKort d={d} />
+        </li>
+      ))}
+    </ul>
   );
   return (
     <>
       <dl className="divide-y divide-border">
-        <FkRad term="Bekräftelse skickad">{raknadRad(antalSkickade('bekraftelse'))}</FkRad>
+        <FkRad term="Ohanterade anmälningar">
+          {ohanteradeTotalt > 0 ? (
+            <span className="font-medium text-warning tabular-nums">{ohanteradeTotalt}</span>
+          ) : (
+            '0'
+          )}
+        </FkRad>
         <FkRad term="Betalningspåminnelse skickad">{String(antalSkickade('paminnelse'))}</FkRad>
-        <FkRad term="Deltagarinfo skickad">{raknadRad(antalSkickade('deltagarinfo'))}</FkRad>
+        <FkRad term="Deltagarinfo skickad">
+          {`${deltagarinfoSkickade} av ${totalt}`}
+          {totalt - deltagarinfoSkickade > 0 && (
+            <span className="ml-2 font-medium text-error tabular-nums">
+              −{totalt - deltagarinfoSkickade}
+            </span>
+          )}
+        </FkRad>
       </dl>
       <div className="flex flex-col gap-2.5 py-3">
         <fieldset className="grid grid-cols-4 rounded-full bg-bg-emphasized p-1">
@@ -992,48 +1091,23 @@ function DeltagarLista({ eventId }: { eventId: string }) {
             +1 ({antalKategori('medfoljande')})
           </KapselKnapp>
         </fieldset>
-        {visade.length > 0 ? (
-          <ul className="flex flex-col gap-2.5">
-            {visade.map((d) => (
-              <li key={d.personId}>
-                <Link
-                  to="/personer/$personId"
-                  params={{ personId: d.personId }}
-                  className="flex flex-col gap-1 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
-                >
-                  <span className="flex items-start justify-between gap-3 font-semibold text-body">
-                    {d.namn}
-                    {/* K37: kategori-pillen ENDAST vid avvikelse (tysta
-                        normen) — via formulär är omärkt. */}
-                    {KATEGORI_PILL[d.kategori] && (
-                      <span className="shrink-0 rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
-                        {KATEGORI_PILL[d.kategori]}
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-caption text-text-muted">E-post</span>
-                  <span className="text-small">{d.epost}</span>
-                  {/* K37: mail-överblicken (basens tre skickad-tidsstämplar)
-                      + Miranon-historiken (Antal genomförda event) — CRM-
-                      klassens kontaktkorts-sammanfattning; Lotta ser allt
-                      utan att öppna personen. */}
-                  <span className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-caption text-text-muted">
-                    <MailStatus namn="Bekräftelse" skickad={d.bekraftelse} />
-                    <MailStatus namn="Påminnelse" skickad={d.paminnelse} />
-                    <MailStatus namn="Deltagarinfo" skickad={d.deltagarinfo} />
-                  </span>
-                  <span className="flex items-center gap-1.5 text-caption text-text-muted">
-                    <History aria-hidden="true" size={12} className="shrink-0" />
-                    {d.tidigareEvent === 0
-                      ? 'Första eventet hos Miranon'
-                      : `${d.tidigareEvent} tidigare event hos Miranon`}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : (
+        {visade.length === 0 ? (
           <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>
+        ) : ohanterade.length > 0 ? (
+          <>
+            <h3 className="font-semibold text-small text-warning">
+              Ohanterade ({ohanterade.length})
+            </h3>
+            {kortLista(ohanterade)}
+            {hanterade.length > 0 && (
+              <>
+                <h3 className="mt-1.5 font-semibold text-small">Hanterade ({hanterade.length})</h3>
+                {kortLista(hanterade)}
+              </>
+            )}
+          </>
+        ) : (
+          kortLista(hanterade)
         )}
       </div>
     </>
