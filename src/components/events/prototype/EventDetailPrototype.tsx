@@ -115,7 +115,8 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K66 — Anteckningar: tidsstämplad ström (författare + innan/under/efter) + composer',
+    stegLabel:
+      'K67 — Anteckningar: Innan-etiketten riven (tysta normen) + composer-rutan i inre kort-radien',
   },
 ];
 
@@ -1467,9 +1468,11 @@ function GruppdynamikLista({ eventId }: { eventId: string }) {
    bär författare + tidpunkt. CRM-notes-klassen (HubSpot/Pipedrive/
    Attio): composer överst + nyast först — anteckningar är minnesstöd,
    inte konversation (GitHub/Linear-ordningen äldst-först gäller dialog).
-   Fas-etiketten Innan/Under/Efter eventet HÄRLEDS ur tidpunkten mot
-   eventets datum — ingen manuell kategorisering; Marcus-framingen
-   kodas i data, inte i inmatningsval.
+   Fas-etiketten HÄRLEDS ur tidpunkten mot eventets datum — ingen
+   manuell kategorisering; Marcus-framingen kodas i data, inte i
+   inmatningsval. K67 (Marcus): "Innan eventet" RIVEN — tysta normen
+   (T14/K37-grammatiken: normalfallet omärkt, badge endast vid
+   avvikelse); endast Under/Efter markeras.
    PROTOTYP: minnes-state (read-only-regeln; sidladdning nollställer);
    nya anteckningar skrivs som "Lotta" — författare = INLOGGAD användare
    är PRD-krav (appen bär ingen auth-identitet idag).
@@ -1499,14 +1502,15 @@ const ANTECKNING_TID = new Intl.DateTimeFormat('sv-SE', {
     fel runt midnatt). */
 const DAGSTAMPEL = new Intl.DateTimeFormat('sv-SE');
 
-/** Fasen på DAGS-granularitet: före startdagen = Innan, efter slutdagen
-    = Efter, annars Under (endagsevent: slut = start). */
+/** Fasen på DAGS-granularitet: efter slutdagen = Efter, på eventdagarna
+    = Under (endagsevent: slut = start). K67 (Marcus): före startdagen är
+    NORMALFALLET → omärkt (tysta normen). */
 function anteckningsFas(tidpunkt: Date, e: ProtoEvent): string {
   const start = e.startdatum;
   if (!start) return '';
   const slut = e.slutdatum ?? start;
   const dag = DAGSTAMPEL.format(tidpunkt);
-  if (dag < start) return 'Innan eventet';
+  if (dag < start) return '';
   if (dag > slut) return 'Efter eventet';
   return 'Under eventet';
 }
@@ -1594,6 +1598,14 @@ function AnteckningarSektion({ event }: { event: ProtoEvent }) {
   return (
     <>
       <div className="flex flex-col gap-2 py-3">
+        {/* K67 (Marcus: rutan ska sitta som korten): radien lyfts till
+            INRE kort-radien rounded-xl == antecknings-korten under
+            (yttre kortets 2xl hade gjort rutan rundare än korten i
+            samma kolumn); DOM-mätt 17/17 px inset — paddingen var
+            redan symmetrisk, upplevelsen kom av radie-krocken (4 px).
+            Descendant-variant: primitivens radie bor i cva:n på
+            själva textarean — prototyp-lokal override, ej biblioteks-
+            ändring; ev. radie-variant i primitiven = facit-fråga. */}
         <TextArea
           label="Ny anteckning"
           hideLabel
@@ -1602,6 +1614,7 @@ function AnteckningarSektion({ event }: { event: ProtoEvent }) {
           placeholder="Skriv en anteckning …"
           value={text}
           onChange={setText}
+          className="[&_textarea]:rounded-xl"
         />
         <Button size="sm" onPress={laggTill} className="self-end">
           Lägg till anteckning
