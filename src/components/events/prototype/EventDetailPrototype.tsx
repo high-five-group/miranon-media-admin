@@ -114,7 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K53 — språket rättat: Obekräftade/Bekräftade (basens Status-ord) överallt',
+    stegLabel: 'K54 — summeringsradernas geometri konstant: inset alltid, aktiv togglar bara bg',
   },
 ];
 
@@ -1175,12 +1175,17 @@ function SummeringsRad({
 }) {
   return (
     <div className="flex flex-col gap-1.5 py-2">
+      {/* K54 (Marcus-fyndet "siffrorna hoppar in"): geometrin KONSTANT
+          över lägena — insetten (-mx-2 px-2) reserveras ALLTID, aktiv
+          togglar ENBART bakgrunden. Gamla formen bar w-full + villkorat
+          w-auto: w-full vann kaskaden, så -mx-2 sköt boxen åt vänster i
+          stället för att bredda den — högersiffrorna hoppade in ~16 px. */}
       <button
         type="button"
         aria-pressed={aktiv}
         onClick={onClick}
-        className={`flex w-full items-center justify-between gap-4 py-1.5 text-left ${
-          aktiv ? '-mx-2 w-auto rounded-lg bg-bg-emphasized px-2' : ''
+        className={`-mx-2 flex w-auto items-center justify-between gap-4 rounded-lg px-2 py-1.5 text-left ${
+          aktiv ? 'bg-bg-emphasized' : ''
         }`}
       >
         <span className="flex items-center gap-1.5 text-small text-text-muted">
