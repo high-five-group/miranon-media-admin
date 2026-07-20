@@ -112,7 +112,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K35 — Anmälda deltagare-kortet (kategoriprickarna) över Betalningar',
+    stegLabel: 'K36 — Anmälda deltagare i referensens form (vita personkort)',
   },
 ];
 
@@ -772,15 +772,13 @@ function LaggTillRad({ eventId }: { eventId: string }) {
 
 type DeltagarKategori = 'formular' | 'manuell' | 'medfoljande';
 
-const KATEGORI_ETIKETT: Record<DeltagarKategori, string> = {
-  formular: 'Via formulär',
-  manuell: 'Manuellt tillagd',
-  medfoljande: 'Medföljande (+1)',
-};
-
 type DemoDeltagare = {
   personId: string;
   namn: string;
+  epost: string;
+  /** K36: kategorin visas INTE längre i listan (Marcus rev prick +
+      etikett — "det löser vi på annat sätt"); behålls i datat för
+      kommande form. */
   kategori: DeltagarKategori;
 };
 
@@ -788,16 +786,66 @@ type DemoDeltagare = {
     utanför formuläret. */
 const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
   'demo-1': [
-    { personId: 'demo-p1', namn: 'Eva Lindqvist', kategori: 'formular' },
-    { personId: 'demo-p2', namn: 'Johan Berg', kategori: 'formular' },
-    { personId: 'demo-p3', namn: 'Sara Nyström', kategori: 'formular' },
-    { personId: 'demo-p4', namn: 'Peter Åkesson', kategori: 'formular' },
-    { personId: 'demo-p5', namn: 'Maria Holm', kategori: 'formular' },
-    { personId: 'demo-p6', namn: 'Anders Ek', kategori: 'formular' },
-    { personId: 'demo-p7', namn: 'Karin Sjögren', kategori: 'formular' },
-    { personId: 'demo-p8', namn: 'Lars Öhman', kategori: 'formular' },
-    { personId: 'demo-p9', namn: 'Ulrika Dahl', kategori: 'manuell' },
-    { personId: 'demo-p10', namn: 'Elin Öhman', kategori: 'medfoljande' },
+    {
+      personId: 'demo-p1',
+      namn: 'Eva Lindqvist',
+      epost: 'eva.lindqvist@example.com',
+      kategori: 'formular',
+    },
+    {
+      personId: 'demo-p2',
+      namn: 'Johan Berg',
+      epost: 'johan.berg@example.com',
+      kategori: 'formular',
+    },
+    {
+      personId: 'demo-p3',
+      namn: 'Sara Nyström',
+      epost: 'sara.nystrom@example.com',
+      kategori: 'formular',
+    },
+    {
+      personId: 'demo-p4',
+      namn: 'Peter Åkesson',
+      epost: 'peter.akesson@example.com',
+      kategori: 'formular',
+    },
+    {
+      personId: 'demo-p5',
+      namn: 'Maria Holm',
+      epost: 'maria.holm@example.com',
+      kategori: 'formular',
+    },
+    {
+      personId: 'demo-p6',
+      namn: 'Anders Ek',
+      epost: 'anders.ek@example.com',
+      kategori: 'formular',
+    },
+    {
+      personId: 'demo-p7',
+      namn: 'Karin Sjögren',
+      epost: 'karin.sjogren@example.com',
+      kategori: 'formular',
+    },
+    {
+      personId: 'demo-p8',
+      namn: 'Lars Öhman',
+      epost: 'lars.ohman@example.com',
+      kategori: 'formular',
+    },
+    {
+      personId: 'demo-p9',
+      namn: 'Ulrika Dahl',
+      epost: 'ulrika.dahl@example.com',
+      kategori: 'manuell',
+    },
+    {
+      personId: 'demo-p10',
+      namn: 'Elin Öhman',
+      epost: 'elin.ohman@example.com',
+      kategori: 'medfoljande',
+    },
   ],
 };
 
@@ -1511,27 +1559,28 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
         )}
       </ProtoGrupp>
 
-      {/* K35 (Marcus): Anmälda deltagare ÖVER Betalningar — vilka de ÄR
-          före hur de betalat; kategoripricken knyter raden till
-          beläggnings-kompositionen. */}
+      {/* K35 (Marcus): Anmälda deltagare ÖVER Betalningar. K36 (Marcus:
+          Airtable-referensens form — airtable-eventmanager-02 "Anmälda"):
+          grå panel där varje person är en VIT rundad ruta med namnet i
+          fetstil + E-post som etikett-över-värde (grund-arvets K2-
+          grammatik). Prick + kategorietikett RIVNA (löses på annat sätt,
+          Marcus-beslut). Hela vita kortet är länken till person-
+          detaljvyn (NavCard-grammatiken: hel klickbar yta, ingen
+          chevron); ETT list-barn i gruppkortet → divide-y biter inte
+          på person-korten. */}
       <ProtoGrupp id="proto-grupp-deltagare" rubrik="Anmälda deltagare">
-        <ul className="divide-y divide-border">
+        <ul className="flex flex-col gap-2.5 py-3">
           {(DEMO_DELTAGARE[eventId] ?? DEMO_DELTAGARE['demo-1']).map((d) => (
-            <li key={d.personId} className="flex items-center justify-between gap-4 py-3">
+            <li key={d.personId}>
               <Link
                 to="/personer/$personId"
                 params={{ personId: d.personId }}
-                className="min-w-0 truncate font-medium text-body underline-offset-2 hover:underline"
+                className="flex flex-col gap-1 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
               >
-                {d.namn}
+                <span className="font-semibold text-body">{d.namn}</span>
+                <span className="text-caption text-text-muted">E-post</span>
+                <span className="text-small">{d.epost}</span>
               </Link>
-              <span className="flex shrink-0 items-center gap-2 text-small text-text-muted">
-                <span
-                  aria-hidden="true"
-                  className={`size-2 rounded-full ${KATEGORI[d.kategori]}`}
-                />
-                {KATEGORI_ETIKETT[d.kategori]}
-              </span>
             </li>
           ))}
         </ul>
