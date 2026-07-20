@@ -115,7 +115,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K40 — klickbara summeringsrader + accordion-grupperna',
+    stegLabel: 'K41 — röd ohanterat-ton · rubrik-rutor · +1/Formulär rivna',
   },
 ];
 
@@ -635,7 +635,7 @@ function BelaggningForm({
         >
           <AntalFalt label="Manuellt tillagda" value={manuellt} onChange={setManuellt} />
         </RedigeringsRad>
-        <FkRad term="Medföljande (+1)" prick={KATEGORI.medfoljande}>
+        <FkRad term="Medföljande" prick={KATEGORI.medfoljande}>
           {event.medfoljande != null ? String(event.medfoljande) : null}
         </FkRad>
         {/* K22: läsrad även i Ändra-läget (extern räkning, aldrig fält). */}
@@ -780,7 +780,7 @@ type DeltagarKategori = 'formular' | 'manuell' | 'medfoljande';
     inget märke; endast manuell/+1 får en diskret pill. */
 const KATEGORI_PILL: Partial<Record<DeltagarKategori, string>> = {
   manuell: 'Manuellt tillagd',
-  medfoljande: 'Medföljande (+1)',
+  medfoljande: 'Medföljande',
 };
 
 /** K37: mail- och historik-överblicken per deltagare — ALLT finns i
@@ -984,18 +984,15 @@ function DeltagarKort({ d }: { d: DemoDeltagare }) {
     <Link
       to="/personer/$personId"
       params={{ personId: d.personId }}
-      className={`flex flex-col gap-1 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast) ${
-        // K40 (Marcus: "tydligare med ohanterade"): varnings-vänsterkant
-        // på ohanterade kort (alert-kortets branschform) + pill i
-        // warning-bg — texten "Ohanterad" bär, färgen förstärker.
-        arHanterad(d) ? '' : 'border-l-(--mm-warning) border-l-4'
-      }`}
+      className="flex flex-col gap-1 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
     >
       <span className="flex items-start justify-between gap-3 font-semibold text-body">
         {d.namn}
         <span className="flex shrink-0 items-center gap-1.5">
+          {/* K41 (Marcus): ohanterat-tonen RÖD (inte koppar) och K40:s
+              vänsterkant-markering riven — pillen bär ensam. */}
           {!arHanterad(d) && (
-            <span className="rounded-full bg-(--mm-warning-bg) px-2 py-0.5 font-medium text-caption text-warning">
+            <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
               Ohanterad
             </span>
           )}
@@ -1087,10 +1084,10 @@ function GruppRubrik({
       aria-expanded={oppen}
       aria-controls={kontrollerarId}
       onClick={onToggle}
-      className="flex w-full items-center justify-between gap-3 py-1 text-left"
+      className="flex w-full items-center justify-between gap-3 rounded-lg bg-bg-emphasized px-3 py-2.5 text-left"
     >
       <span
-        className={`flex items-center gap-1.5 font-semibold text-small ${varning ? 'text-warning' : ''}`}
+        className={`flex items-center gap-1.5 font-semibold text-small ${varning ? 'text-error' : ''}`}
       >
         {varning && <TriangleAlert aria-hidden="true" size={14} className="shrink-0" />}
         {children}
@@ -1151,7 +1148,7 @@ function DeltagarLista({ eventId }: { eventId: string }) {
           onClick={() => vaxlaStatus('ohanterade')}
         >
           {ohanteradeTotalt > 0 ? (
-            <span className="font-medium text-warning tabular-nums">{ohanteradeTotalt}</span>
+            <span className="font-medium text-error tabular-nums">{ohanteradeTotalt}</span>
           ) : (
             '0'
           )}
@@ -1177,19 +1174,18 @@ function DeltagarLista({ eventId }: { eventId: string }) {
         </SummeringsRad>
       </div>
       <div className="flex flex-col gap-2.5 py-3">
-        <fieldset className="grid grid-cols-4 rounded-full bg-bg-emphasized p-1">
+        {/* K41 (Marcus): Formulär-tabben riven — formulärvägen är NORMEN
+            och behöver ingen egen flik; "+1" struket ur alla etiketter. */}
+        <fieldset className="grid grid-cols-3 rounded-full bg-bg-emphasized p-1">
           <legend className="sr-only">Visa deltagare</legend>
           <KapselKnapp aktiv={filter === 'alla'} onClick={() => setFilter('alla')}>
             Alla ({totalt})
-          </KapselKnapp>
-          <KapselKnapp aktiv={filter === 'formular'} onClick={() => setFilter('formular')}>
-            Formulär ({antalKategori('formular')})
           </KapselKnapp>
           <KapselKnapp aktiv={filter === 'manuell'} onClick={() => setFilter('manuell')}>
             Manuella ({antalKategori('manuell')})
           </KapselKnapp>
           <KapselKnapp aktiv={filter === 'medfoljande'} onClick={() => setFilter('medfoljande')}>
-            +1 ({antalKategori('medfoljande')})
+            Medföljande ({antalKategori('medfoljande')})
           </KapselKnapp>
         </fieldset>
         {statusTraffar != null ? (
@@ -1936,7 +1932,7 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
               <FkRad term="Manuellt tillagda" prick={KATEGORI.manuell}>
                 {event.manuelltTillagda != null ? String(event.manuelltTillagda) : null}
               </FkRad>
-              <FkRad term="Medföljande (+1)" prick={KATEGORI.medfoljande}>
+              <FkRad term="Medföljande" prick={KATEGORI.medfoljande}>
                 {event.medfoljande != null ? String(event.medfoljande) : null}
               </FkRad>
               {/* K22 (Marcus): Väntelistan ALLTID med — det är alternativet
