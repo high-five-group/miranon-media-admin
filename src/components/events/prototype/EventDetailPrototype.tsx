@@ -114,8 +114,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel:
-      'K57 — filterläget avbrusat: Visar-/instruktionsraderna rivna, Rensa på inner-inseten',
+    stegLabel: 'K58 — luft mellan tabbraden och Rensa filtret: 16 px (space-4-steget)',
   },
 ];
 
@@ -1487,7 +1486,9 @@ function DeltagarLista({ eventId, event }: { eventId: string; event: ProtoEvent 
                 Rensa filtret ensam, högerställd på kortens INNER-inset
                 (16 px — K6-grammatiken: friliggande text linjerar med
                 innehållet i rutorna, inte ytterkanten). */}
-            <div className="flex justify-end pr-4">
+            {/* K58 (Marcus): extra luft ovanför Rensa — mt-1.5 + gap-2.5
+                = 16 px från tabbraden (4 px-gridets space-4-steg). */}
+            <div className="mt-1.5 flex justify-end pr-4">
               <button
                 type="button"
                 onClick={() => setStatusFilter(null)}
