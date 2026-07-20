@@ -115,7 +115,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K44 — reserverad signal-slot: auto-utskicks-krysset när signalen vilar',
+    stegLabel: 'K45 — personkortens metayta avbrusad: anmäld + tid, endast utförda åtgärder',
   },
 ];
 
@@ -190,6 +190,7 @@ const LANGDATUM = new Intl.DateTimeFormat('sv-SE', {
   year: 'numeric',
 });
 const DAGMANAD = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
+const KLOCKSLAG = new Intl.DateTimeFormat('sv-SE', { hour: '2-digit', minute: '2-digit' });
 export function datumSpannText(e: Event): string {
   if (!e.startdatum) return 'Datum ej satt';
   const start = new Date(e.startdatum);
@@ -796,7 +797,8 @@ type DemoDeltagare = {
   epost: string;
   kategori: DeltagarKategori;
   /** K39: basens `Inskickad` (dateTime, create-registration) — när
-      anmälan kom in. */
+      anmälan kom in. K45: med klockslag — metayta-raden visar dag + tid
+      (Inskickad ÄR dateTime i basen; demot speglar det). */
   anmald: string;
   bekraftelse: string | null;
   paminnelse: string | null;
@@ -814,7 +816,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Eva Lindqvist',
       epost: 'eva.lindqvist@example.com',
       kategori: 'formular',
-      anmald: '2026-06-28',
+      anmald: '2026-06-28T09:14',
       bekraftelse: '2026-06-28',
       paminnelse: '2026-07-18',
       deltagarinfo: null,
@@ -825,7 +827,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Johan Berg',
       epost: 'johan.berg@example.com',
       kategori: 'formular',
-      anmald: '2026-06-29',
+      anmald: '2026-06-29T11:52',
       bekraftelse: '2026-06-30',
       paminnelse: null,
       deltagarinfo: null,
@@ -836,7 +838,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Sara Nyström',
       epost: 'sara.nystrom@example.com',
       kategori: 'formular',
-      anmald: '2026-06-30',
+      anmald: '2026-06-30T15:03',
       bekraftelse: '2026-07-01',
       paminnelse: '2026-07-16',
       deltagarinfo: null,
@@ -847,7 +849,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Peter Åkesson',
       epost: 'peter.akesson@example.com',
       kategori: 'formular',
-      anmald: '2026-06-29',
+      anmald: '2026-06-29T19:44',
       bekraftelse: '2026-06-29',
       paminnelse: null,
       deltagarinfo: null,
@@ -858,7 +860,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Maria Holm',
       epost: 'maria.holm@example.com',
       kategori: 'formular',
-      anmald: '2026-07-01',
+      anmald: '2026-07-01T08:27',
       bekraftelse: '2026-07-02',
       paminnelse: null,
       deltagarinfo: null,
@@ -869,7 +871,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Anders Ek',
       epost: 'anders.ek@example.com',
       kategori: 'formular',
-      anmald: '2026-07-02',
+      anmald: '2026-07-02T21:16',
       bekraftelse: '2026-07-03',
       paminnelse: null,
       deltagarinfo: null,
@@ -880,7 +882,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Karin Sjögren',
       epost: 'karin.sjogren@example.com',
       kategori: 'formular',
-      anmald: '2026-06-26',
+      anmald: '2026-06-26T13:05',
       bekraftelse: '2026-06-27',
       paminnelse: null,
       deltagarinfo: null,
@@ -891,7 +893,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Lars Öhman',
       epost: 'lars.ohman@example.com',
       kategori: 'formular',
-      anmald: '2026-06-26',
+      anmald: '2026-06-26T17:38',
       bekraftelse: '2026-06-27',
       paminnelse: null,
       deltagarinfo: null,
@@ -902,7 +904,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Ulrika Dahl',
       epost: 'ulrika.dahl@example.com',
       kategori: 'manuell',
-      anmald: '2026-07-15',
+      anmald: '2026-07-15T10:20',
       bekraftelse: null,
       paminnelse: null,
       deltagarinfo: null,
@@ -913,7 +915,7 @@ const DEMO_DELTAGARE: Record<string, DemoDeltagare[]> = {
       namn: 'Elin Öhman',
       epost: 'elin.ohman@example.com',
       kategori: 'medfoljande',
-      anmald: '2026-07-12',
+      anmald: '2026-07-12T12:41',
       bekraftelse: null,
       paminnelse: null,
       deltagarinfo: null,
@@ -949,10 +951,12 @@ function KapselKnapp({
   );
 }
 
-/** K37: mailstatus-posten — skickad = MailCheck + datum (ikonen + datumet
-    bär "skickad"); ej skickad = klartext (Gunilla — aldrig bara "–"). */
-function MailStatus({ namn, skickad }: { namn: string; skickad: string | null }) {
-  if (skickad == null) return <span>{namn} ej skickad</span>;
+/** K37: mailstatus-posten — MailCheck + datum (ikonen + datumet bär
+    "skickad"). K45 (Marcus — avbrusningen): "ej skickad"-klartexten
+    RIVEN från kortet — endast UTFÖRDA åtgärder renderas (kortet guards
+    på null); deltat/att-göra bär summeringsraderna + Ohanterade-kön,
+    inte varje kort. */
+function MailStatus({ namn, skickad }: { namn: string; skickad: string }) {
   const datum = new Date(skickad);
   return (
     <span className="flex items-center gap-1">
@@ -975,10 +979,21 @@ function kortDatum(iso: string): string {
   return Number.isNaN(datum.getTime()) ? iso : DAGMANAD.format(datum);
 }
 
+/** K45: klockslaget ur Inskickad-dateTimen (tom sträng vid rent datum
+    utan tid går ej att skilja från 00:00 — demot bär alltid tid). */
+function klockslag(iso: string): string {
+  const datum = new Date(iso);
+  return Number.isNaN(datum.getTime()) ? '' : KLOCKSLAG.format(datum);
+}
+
 /** K37/K39: personkortet — namn + pillar (Ohanterad i varningston före
     kategori-pillen; hanterad är OMÄRKT — tysta normen) · e-post ·
     tidslinjen som börjar med NÄR anmälan kom in (basens `Inskickad`) ·
-    mail-överblicken · Miranon-historiken. */
+    mail-överblicken · Miranon-historiken.
+    K45 (Marcus — metaytans AVBRUSNING): Anmäld dag + klockslag på EN
+    rad (Inskickad är dateTime) · därunder ENDAST utförda åtgärder på
+    var sin rad · sista raden historiken med HELA namnet
+    "Miranon Media". */
 function DeltagarKort({ d }: { d: DemoDeltagare }) {
   return (
     <Link
@@ -1005,20 +1020,20 @@ function DeltagarKort({ d }: { d: DemoDeltagare }) {
       </span>
       <span className="text-caption text-text-muted">E-post</span>
       <span className="text-small">{d.epost}</span>
-      <span className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-caption text-text-muted">
+      <span className="mt-1.5 flex flex-col gap-1 text-caption text-text-muted">
         <span className="flex items-center gap-1">
           <Inbox aria-hidden="true" size={12} className="shrink-0" />
-          Anmäld {kortDatum(d.anmald)}
+          Anmäld {kortDatum(d.anmald)} {klockslag(d.anmald)}
         </span>
-        <MailStatus namn="Bekräftelse" skickad={d.bekraftelse} />
-        <MailStatus namn="Påminnelse" skickad={d.paminnelse} />
-        <MailStatus namn="Eventinfo" skickad={d.deltagarinfo} />
+        {d.bekraftelse != null && <MailStatus namn="Bekräftelse" skickad={d.bekraftelse} />}
+        {d.paminnelse != null && <MailStatus namn="Påminnelse" skickad={d.paminnelse} />}
+        {d.deltagarinfo != null && <MailStatus namn="Eventinfo" skickad={d.deltagarinfo} />}
       </span>
       <span className="flex items-center gap-1.5 text-caption text-text-muted">
         <History aria-hidden="true" size={12} className="shrink-0" />
         {d.tidigareEvent === 0
-          ? 'Första eventet hos Miranon'
-          : `${d.tidigareEvent} tidigare event hos Miranon`}
+          ? 'Första eventet hos Miranon Media'
+          : `${d.tidigareEvent} tidigare event hos Miranon Media`}
       </span>
     </Link>
   );
