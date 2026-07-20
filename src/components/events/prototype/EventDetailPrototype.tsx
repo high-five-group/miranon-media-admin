@@ -106,7 +106,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K21 — Lägg till manuell anmälan överst i Åtgärder',
+    stegLabel: 'K22 — Väntelista-raden i Beläggning (utanför taket, utan prick)',
   },
 ];
 
@@ -629,6 +629,10 @@ function BelaggningForm({
         <FkRad term="Medföljande (+1)" prick={KATEGORI.medfoljande}>
           {event.medfoljande != null ? String(event.medfoljande) : null}
         </FkRad>
+        {/* K22: läsrad även i Ändra-läget (extern räkning, aldrig fält). */}
+        <FkRad term="Väntelista">
+          {event.vantelista != null ? String(event.vantelista) : null}
+        </FkRad>
       </dl>
       <BelaggningsMatare event={event} />
       {/* Spara/Avbryt på Ändra-radens plats och höjd (K12-mönstret). */}
@@ -959,6 +963,13 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
               </FkRad>
               <FkRad term="Medföljande (+1)" prick={KATEGORI.medfoljande}>
                 {event.medfoljande != null ? String(event.medfoljande) : null}
+              </FkRad>
+              {/* K22 (Marcus): Väntelistan ALLTID med — det är alternativet
+                  när taket är nått. UTAN prick: väntande upptar inga
+                  platser (aldrig segment i mätaren) — prick-grammatiken
+                  bär innanför/utanför-taket-distinktionen. */}
+              <FkRad term="Väntelista">
+                {event.vantelista != null ? String(event.vantelista) : null}
               </FkRad>
             </dl>
             {/* K15: fotnotsraden ersatt av mätaren (IMG_1542-fotnotens plats,

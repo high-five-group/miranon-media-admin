@@ -327,12 +327,19 @@ function VariantBCard({
     CompanionModal-mekanismen). `antalAnmalda` läses i prototypen som
     VIA FORMULÄR-räkningen (basens Källa TOM). Verklig data saknar
     fälten → raderna döljs. */
+/** K22: vantelista = antal väntande FÖR EVENTET. OBS bas-gapet (verifierat
+    data-model §Väntelista): tabellen är idag INTE per-event-kopplad —
+    `Event`-fältet bär brand-värdet ("Psionautics", EF-hårdkodat), ingen
+    EventKey/Event-länk. PRD-krav = additiv event-koppling på Väntelista
+    (ADR-063-klassen) + shape-/EF-utökning. Väntande UPPTAR inga platser
+    (rad utan prick, aldrig segment i mätaren). */
 export type ProtoEvent = Event & {
   boverAntal?: number;
   eventKey?: string;
   reserverade?: number;
   manuelltTillagda?: number;
   medfoljande?: number;
+  vantelista?: number;
 };
 
 function demoEvent(overrides: Partial<ProtoEvent> & Pick<Event, 'id'>): ProtoEvent {
@@ -398,6 +405,7 @@ export const DEMO_EVENTS: ProtoEvent[] = [
     reserverade: 1,
     manuelltTillagda: 1,
     medfoljande: 1,
+    vantelista: 0,
   }),
   demoEvent({
     id: 'demo-2',
@@ -415,6 +423,8 @@ export const DEMO_EVENTS: ProtoEvent[] = [
     anmaldBelaggning: 1,
     status: 'Planerat',
     boverAntal: 5,
+    // K22: fullbokat-demot — väntelistan är alternativet när taket är nått.
+    vantelista: 3,
   }),
   demoEvent({
     id: 'demo-3',
