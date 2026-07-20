@@ -59,6 +59,7 @@ import {
   ChevronRight,
   Clock,
   type LucideIcon,
+  Mail,
   MailCheck,
   Minus,
   Pencil,
@@ -111,7 +112,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K31 — en linje per betalning med egen notering',
+    stegLabel: 'K32 — placeholdern riven + påminn-ikon per betalnings-linje',
   },
 ];
 
@@ -952,10 +953,19 @@ function DetaljRad({
     notisruta håller inte"): EN LINJE PER BETALNING — kryss + etikett i
     fast kolumn (w-40, likbredds-läxan K13: gemensam skanlinje) och
     betalningens EGEN notering på samma linje. Statusen och dess
-    anteckning läses ihop (Stripe-klassen: per-betalnings-memo). */
+    anteckning läses ihop (Stripe-klassen: per-betalnings-memo).
+    K32 (Marcus): exempel-placeholdern RIVEN (placeholder-som-instruktion
+    är antimönstret — försvinner vid skrivning; aria-etiketten bär) +
+    PÅMINN-mailikonen höger om notisraden — per-betalnings-mailto med
+    betalningen i ämnesraden (Eventmanagers påminnelse-väg, read-only-
+    säker; skarpa flödet = send-email-EF:ns payment-typ). Visas ENDAST
+    på obetalda linjer (påminnelse om ibockad betalning är meningslös;
+    Klara-fliken hålls ren) — formval, rivs på Marcus-ord. */
 function BetalningsLinje({
   label,
   namn,
+  epost,
+  eventNamn,
   vald,
   notering,
   onVald,
@@ -963,13 +973,15 @@ function BetalningsLinje({
 }: {
   label: string;
   namn: string;
+  epost: string;
+  eventNamn: string;
   vald: boolean;
   notering: string;
   onVald: (v: boolean) => void;
   onNotering: (v: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
       <div className="w-40 shrink-0">
         <BetalKryss label={label} vald={vald} onChange={onVald} />
       </div>
@@ -977,23 +989,34 @@ function BetalningsLinje({
         size="sm"
         label={`Notering ${label.toLowerCase()} för ${namn}`}
         hideLabel
-        placeholder="Notering, t.ex. Swishade 19/7"
         className="min-w-44 flex-1"
         value={notering}
         onChange={onNotering}
       />
+      {!vald && (
+        <a
+          href={`mailto:${epost}?subject=${encodeURIComponent(`Påminnelse: ${label.toLowerCase()} för ${eventNamn}`)}`}
+          aria-label={`Påminn ${namn} om ${label.toLowerCase()} via mail`}
+          className="flex size-8 shrink-0 items-center justify-center rounded-full text-text-secondary hover:text-text"
+        >
+          <Mail aria-hidden="true" size={16} />
+        </a>
+      )}
     </div>
   );
 }
 
 /** K29: person-raden i arbetsytan — namnet länkar till person-detaljvyn
     (demo-personId; skarpt bär shapen riktiga person-id — PRD); K31: två
-    betalnings-linjer med egna noteringar. */
+    betalnings-linjer med egna noteringar; K32: påminn-ikonen per linje
+    (eventnamnet in i ämnesraden). */
 function BetalningsPersonRad({
   person,
+  eventNamn,
   onUppdatera,
 }: {
   person: BetalningsRad;
+  eventNamn: string;
   onUppdatera: (patch: Partial<BetalningsRad>) => void;
 }) {
   return (
@@ -1008,6 +1031,8 @@ function BetalningsPersonRad({
       <BetalningsLinje
         label="Anmälningsavgift"
         namn={person.namn}
+        epost={person.epost}
+        eventNamn={eventNamn}
         vald={person.avgift}
         notering={person.avgiftNotering}
         onVald={(v) => onUppdatera({ avgift: v })}
@@ -1016,6 +1041,8 @@ function BetalningsPersonRad({
       <BetalningsLinje
         label="Slutbetalning"
         namn={person.namn}
+        epost={person.epost}
+        eventNamn={eventNamn}
         vald={person.slut}
         notering={person.slutNotering}
         onVald={(v) => onUppdatera({ slut: v })}
@@ -1083,6 +1110,7 @@ function BetalningsDetaljer({
             <BetalningsPersonRad
               key={p.epost}
               person={p}
+              eventNamn={eventName(event)}
               onUppdatera={(patch) => onUppdatera(p.epost, patch)}
             />
           ))}
