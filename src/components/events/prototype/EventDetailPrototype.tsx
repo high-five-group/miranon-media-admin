@@ -49,10 +49,11 @@
 import { type CalendarDate, parseDate } from '@internationalized/date';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { CalendarDays, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Minus, Pencil, Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
   Button as AriaButton,
+  Input as AriaInput,
   CalendarCell,
   CalendarGrid,
   CalendarGridBody,
@@ -65,6 +66,7 @@ import {
   Group,
   Heading,
   I18nProvider,
+  NumberField,
   Popover,
   RangeCalendar,
 } from 'react-aria-components';
@@ -91,7 +93,7 @@ export const DETAIL_PROTO_VARIANTS: PrototypeVariant[] = [
     key: 'K',
     label: 'Prototypen',
     steg: 1,
-    stegLabel: 'K13 — likbredda fält + nuvarande värde synligt',
+    stegLabel: 'K14 — Beläggnings-Ändra (morfen)',
   },
 ];
 
@@ -423,6 +425,124 @@ function OmEventetForm({
   );
 }
 
+/* ── K14: Beläggnings-Ändra (Marcus-ordern vid resume: samma
+   morf-behandling som Om eventet) — ENDAST Max antal platser är
+   redigerbart (skrivbart number-fält i basen, `fldbyEz8djcxCBO5r`,
+   data-model §Eventplanering); Anmälda/Platser kvar/beläggningen är
+   HÄRLEDDA (rollup/formel) och står kvar som läsrader — kontext, inte
+   fält. Spara re-deriverar de härledda värdena i minnes-state (speglar
+   basens formler — annars ljuger fotnoten mot det nya taket).
+   Read-only-regeln oförändrad: inga writes; skarpa kravet =
+   write-operation + allowlist-post (PRD-krav, bokfört sedan K6). */
+
+/** Antal-fältet: RAC NumberField (branschmönstret för numerisk inmatning —
+    inputmode-numeriskt fält + stegknappar, locale-medvetet); biblioteket
+    saknar NumberField-primitiv → rå RAC i prototypen, samma väg som
+    DateRangePicker (K11). Rad-formen speglar DatumFalt (min-h-8 ==
+    radgeometrin). Tomt fält = NaN i RAC → null (basens "platser ej satt"). */
+function AntalFalt({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <NumberField
+      aria-label="Max antal platser"
+      value={value ?? Number.NaN}
+      onChange={(v) => onChange(Number.isNaN(v) ? null : v)}
+      minValue={0}
+      className="flex w-full flex-col gap-1"
+    >
+      <Group className="flex min-h-8 w-full items-center gap-1 rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-1">
+        <AriaButton
+          slot="decrement"
+          aria-label="Minska"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full"
+        >
+          <Minus aria-hidden="true" size={16} />
+        </AriaButton>
+        <AriaInput
+          placeholder="Ej satt"
+          className="placeholder:text-(color:--mm-input-text-placeholder) w-full min-w-0 bg-transparent text-center text-small tabular-nums outline-none"
+        />
+        <AriaButton
+          slot="increment"
+          aria-label="Öka"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full"
+        >
+          <Plus aria-hidden="true" size={16} />
+        </AriaButton>
+      </Group>
+    </NumberField>
+  );
+}
+
+/** Fotnotsraden delad mellan visnings- och Ändra-läget — samma text och
+    geometri i båda lägena (morfen rör bara det redigerbara). */
+function BelaggningsFotnot({ event }: { event: ProtoEvent }) {
+  const percent = percentText(event);
+  return (
+    <p className="py-3 text-small text-text-muted">
+      {belaggningText(event)}
+      {isFull(event) ? ' · Fullt' : ''}
+      {percent ? ` · ${percent} fullt` : ''}
+    </p>
+  );
+}
+
+type BelaggningVarden = Pick<ProtoEvent, 'maxPlatser' | 'platserKvar' | 'anmaldBelaggning'>;
+
+function BelaggningForm({
+  event,
+  onSpara,
+  onAvbryt,
+}: {
+  event: ProtoEvent;
+  onSpara: (v: BelaggningVarden) => void;
+  onAvbryt: () => void;
+}) {
+  const [maxPlatser, setMaxPlatser] = useState<number | null>(event.maxPlatser);
+  return (
+    <>
+      <dl className="divide-y divide-border">
+        <RedigeringsRad
+          term="Max antal platser"
+          nuvarande={event.maxPlatser != null ? String(event.maxPlatser) : null}
+        >
+          <AntalFalt value={maxPlatser} onChange={setMaxPlatser} />
+        </RedigeringsRad>
+        <FkRad term="Anmälda">{String(event.antalAnmalda)}</FkRad>
+        <FkRad term="Platser kvar">
+          {event.platserKvar != null ? String(event.platserKvar) : null}
+        </FkRad>
+      </dl>
+      <BelaggningsFotnot event={event} />
+      {/* Spara/Avbryt på Ändra-radens plats och höjd (K12-mönstret). */}
+      <div className="flex items-center justify-center gap-2 py-2">
+        <Button
+          size="sm"
+          intent="primary"
+          onPress={() =>
+            onSpara({
+              maxPlatser,
+              platserKvar: maxPlatser != null ? maxPlatser - event.antalAnmalda : null,
+              anmaldBelaggning:
+                maxPlatser != null && maxPlatser > 0 ? event.antalAnmalda / maxPlatser : null,
+            })
+          }
+        >
+          Spara
+        </Button>
+        <Button size="sm" intent="secondary" onPress={onAvbryt}>
+          Avbryt
+        </Button>
+      </div>
+    </>
+  );
+}
+
 /** K3: åtgärdsrad i kortbotten (IMG_1542:s "Ändra"-rad) — centrerad
     länkrad; avdelaren mot raderna ovanför bärs av kortets divide-y. */
 function AtgardsRad({
@@ -481,7 +601,9 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
 
   // K11: Ändra-lägets minnes-state — override läggs ÖVER visnings-eventet
   // (ren minnes-yta, inga writes; sidladdning nollställer — read-only-regeln).
-  const [redigerar, setRedigerar] = useState(false);
+  // K14: staten sektions-typad — EN sektion redigeras i taget (att öppna en
+  // stänger den andra; per-sektion-redigeringens lugn, Stripe/Polaris-klassen).
+  const [redigerar, setRedigerar] = useState<'om' | 'belaggning' | null>(null);
   const [override, setOverride] = useState<Partial<ProtoEvent>>({});
 
   const bas: ProtoEvent | undefined = useDemo ? demoEventById(eventId) : fetched;
@@ -551,9 +673,6 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
 
   if (!event) return null; // nås ej: demo är synkron, verklig täcks ovan
 
-  const percent = percentText(event);
-  const full = isFull(event);
-
   return sidRam(
     <>
       {/* aria-live: bekräftar för skärmläsare att eventet anlänt. */}
@@ -593,15 +712,15 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
       </header>
 
       <ProtoGrupp id="proto-grupp-om" rubrik="Om eventet">
-        {redigerar ? (
+        {redigerar === 'om' ? (
           <I18nProvider locale="sv-SE">
             <OmEventetForm
               event={event}
               onSpara={(v) => {
                 setOverride((o) => ({ ...o, ...v }));
-                setRedigerar(false);
+                setRedigerar(null);
               }}
-              onAvbryt={() => setRedigerar(false)}
+              onAvbryt={() => setRedigerar(null)}
             />
           </I18nProvider>
         ) : (
@@ -612,29 +731,40 @@ export function EventDetailPrototype({ eventId, useDemo }: { eventId: string; us
               <FkRad term="Datum">{datumSpannText(event)}</FkRad>
               <FkRad term="Status">{event.status}</FkRad>
             </dl>
-            <AndraRad onPress={() => setRedigerar(true)} />
+            <AndraRad onPress={() => setRedigerar('om')} />
           </>
         )}
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-belaggning" rubrik="Beläggning">
-        <dl className="divide-y divide-border">
-          <FkRad term="Max antal platser">
-            {event.maxPlatser != null ? String(event.maxPlatser) : null}
-          </FkRad>
-          <FkRad term="Anmälda">{String(event.antalAnmalda)}</FkRad>
-          <FkRad term="Platser kvar">
-            {event.platserKvar != null ? String(event.platserKvar) : null}
-          </FkRad>
-        </dl>
-        {/* Fotnotsraden (IMG_1542:s "Din adress hämtas från Skatteverket"):
-            sammanfattningen som TEXT — färg aldrig ensam bärare. */}
-        <p className="py-3 text-small text-text-muted">
-          {belaggningText(event)}
-          {full ? ' · Fullt' : ''}
-          {percent ? ` · ${percent} fullt` : ''}
-        </p>
-        <AndraRad />
+        {redigerar === 'belaggning' ? (
+          <I18nProvider locale="sv-SE">
+            <BelaggningForm
+              event={event}
+              onSpara={(v) => {
+                setOverride((o) => ({ ...o, ...v }));
+                setRedigerar(null);
+              }}
+              onAvbryt={() => setRedigerar(null)}
+            />
+          </I18nProvider>
+        ) : (
+          <>
+            <dl className="divide-y divide-border">
+              <FkRad term="Max antal platser">
+                {event.maxPlatser != null ? String(event.maxPlatser) : null}
+              </FkRad>
+              <FkRad term="Anmälda">{String(event.antalAnmalda)}</FkRad>
+              <FkRad term="Platser kvar">
+                {event.platserKvar != null ? String(event.platserKvar) : null}
+              </FkRad>
+            </dl>
+            {/* Fotnotsraden (IMG_1542:s "Din adress hämtas från Skatteverket"):
+                sammanfattningen som TEXT — färg aldrig ensam bärare. */}
+            <BelaggningsFotnot event={event} />
+            <AndraRad onPress={() => setRedigerar('belaggning')} />
+          </>
+        )}
       </ProtoGrupp>
 
       <ProtoGrupp id="proto-grupp-betalning" rubrik="Betalningar">
