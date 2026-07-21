@@ -33,8 +33,15 @@ export function useUpdateEvent(eventId: string) {
     mutationFn: (values) => dataSource.updateEvent({ eventId, ...values }),
 
     // aria-live för den lyckade sparningen (ingen annan SR-signal för morf-stängningen).
+    // MERGE, inte ersättning (task-18.2): update-event-svaret bär ALDRIG
+    // beläggningens aggregerade räkningar (viaFormular/medfoljande/vantelista —
+    // endast get-event aggregerar; optional-nycklar är FRÅNVARANDE i det parse:ade
+    // svaret och skriver därför inte över) — utan mergen skulle raderna blinka
+    // bort ur Beläggningskortet tills onSettled-refetchen landat (lugnt laddläge).
     onSuccess: (updated) => {
-      queryClient.setQueryData(queryKeys.events.detail(eventId), updated);
+      queryClient.setQueryData<Event>(queryKeys.events.detail(eventId), (prev) =>
+        prev ? { ...prev, ...updated } : updated,
+      );
       alertScreenReader('Ändringarna sparade.');
     },
 

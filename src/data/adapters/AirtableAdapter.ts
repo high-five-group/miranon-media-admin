@@ -354,6 +354,10 @@ export class AirtableAdapter implements DataSourceAdapter {
     if (input.slutdatum !== undefined) body.slutdatum = input.slutdatum;
     if (input.status !== undefined) body.status = input.status;
     if (input.maxPlatser !== undefined) body.maxPlatser = input.maxPlatser;
+    // Beläggningens Ändra (task-18.2): K16-modellens två kategorifält —
+    // EF:en mappar till basens 'Extra platser'/'Manuella platser' server-side.
+    if (input.reserverade !== undefined) body.reserverade = input.reserverade;
+    if (input.manuelltTillagda !== undefined) body.manuelltTillagda = input.manuelltTillagda;
 
     const data = await postEdgeFunction<{ event: unknown }>('update-event', body);
     return EventSchema.parse(data.event);

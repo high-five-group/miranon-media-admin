@@ -16,6 +16,7 @@
 import { type APIRequestContext, expect, test } from '@playwright/test';
 import { z } from 'zod';
 import { EventSchema } from '../../src/domain/schemas';
+import { BELAGGNING_EVENT_ID, BELAGGNING_EXPECTED } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 async function callGetEvent(
@@ -100,6 +101,78 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
       nanEvents.length,
       'minst ett staging-event måste ha NaN-beläggning (→null) så coercion-vägen bevisas',
     ).toBeGreaterThan(0);
+  });
+
+  // ── Beläggningens innehållsmodell (task-18.2; K16 — AC #1) ──
+  // PERMANENT seedad fixtur (tests/api/fixtures.ts BELAGGNING_*) — den globala
+  // stopp-grinden "seeda inte i onödan" är prövad och passerad: ingen EF kan
+  // skriva Källa TOM/'+1' eller vänteliste-länken, så en seedad fixtur är enda
+  // deterministiska vägen till positiva per-källa-bevis (get-waitlist-precedent).
+
+  test('per-källa-uppdelningen (AC #1): fixturens kända värden + summering mot basens fält', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await callGetEvent(request, config, jwt, BELAGGNING_EVENT_ID);
+    expect(res.status()).toBe(200);
+    const event = EventSchema.parse(((await res.json()) as { event: unknown }).event);
+
+    // Kategorifälten ur eventraden (basens skrivbara number-fält, 1-till-1).
+    expect(event.maxPlatser, 'Max antal platser').toBe(BELAGGNING_EXPECTED.maxPlatser);
+    expect(event.reserverade, "reserverade = basens 'Extra platser'").toBe(
+      BELAGGNING_EXPECTED.reserverade,
+    );
+    expect(event.manuelltTillagda, "manuelltTillagda = basens 'Manuella platser'").toBe(
+      BELAGGNING_EXPECTED.manuelltTillagda,
+    );
+
+    // Per-källa-räkningarna: 2 × Källa TOM → viaFormular; 1 × '+1' → medfoljande;
+    // fixturens Källa 'Manuell'-rad räknas i INGEN av dem (exkluderings-beviset —
+    // distinkta värden 2 ≠ 1 utesluter förväxlade räknare).
+    expect(event.viaFormular, 'viaFormular = länkade Anmälningar med Källa TOM').toBe(
+      BELAGGNING_EXPECTED.viaFormular,
+    );
+    expect(event.medfoljande, "medfoljande = länkade Anmälningar med Källa '+1'").toBe(
+      BELAGGNING_EXPECTED.medfoljande,
+    );
+
+    // Väntelistan via NYA länkfältet 'Event (länk)': 2 kopplade rader varav 1
+    // Flyttad till anmälan → aktiv-filtret ger 1 (AC #3:s läs-bevis).
+    expect(event.vantelista, 'vantelista = AKTIVA event-kopplade Väntelisteplatser').toBe(
+      BELAGGNING_EXPECTED.vantelista,
+    );
+
+    // SUMMERINGEN mot basens fält: basens formel 'Antal anmälda' =
+    // länkade Anmälningar (4: viaFormular 2 + medfoljande 1 + Manuell-raden 1)
+    // + 'Manuella platser' (1) = 5 — segmenten är konsistenta med basens egen
+    // aggregering, inte en parallell sanning.
+    expect(event.antalAnmalda, "basens 'Antal anmälda'-formel (länkar + manuella)").toBe(
+      BELAGGNING_EXPECTED.antalAnmalda,
+    );
+    expect(
+      (event.viaFormular ?? 0) + (event.medfoljande ?? 0) + 1 + (event.manuelltTillagda ?? 0),
+      'per-källa-delarna + Manuell-raden summerar mot basens Antal anmälda',
+    ).toBe(event.antalAnmalda);
+  });
+
+  test('beläggnings-fälten är ADDITIVT-optional: godtyckligt event bär räkningar ≥ 0', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const id = await firstEventId(request, config, jwt);
+
+    const res = await callGetEvent(request, config, jwt, id);
+    expect(res.status()).toBe(200);
+    const event = EventSchema.parse(((await res.json()) as { event: unknown }).event);
+
+    // get-event bär ALLTID räkningarna (0 när inget länkat) — optional-formen
+    // finns för get-events/äldre cache, inte för get-event-svaret.
+    expect(event.viaFormular).toBeGreaterThanOrEqual(0);
+    expect(event.medfoljande).toBeGreaterThanOrEqual(0);
+    expect(event.vantelista).toBeGreaterThanOrEqual(0);
   });
 
   test('okänt ID → 404 + body { error } (mall-kontraktet, ärvt från get-person)', async ({

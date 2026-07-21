@@ -110,14 +110,18 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     ],
   },
   // Uppdatera ett BEFINTLIGT event i Eventplanering (task-18.1, PRD task-18 beslut 2–3 —
-  // eventsidans Om eventet-Ändra; Beläggningens Ändra återanvänder operationen i sin skiva).
+  // eventsidans Om eventet-Ändra; Beläggningens Ändra [task-18.2] återanvänder operationen
+  // för K16-modellens tre skrivbara: maxPlatser + reserverade/'Extra platser' +
+  // manuelltTillagda/'Manuella platser').
   // update-event-EF:en bygger `fields` SERVER-SIDE ur typade inputs (typ/ort/startdatum/
-  // slutdatum/status/maxPlatser) — listan är därför en SSOT-grind mot framtida kod-drift
-  // (om EF:en någon gång skulle försöka skriva ett fält utanför listan → findDisallowedField
-  // fäller före Airtable-anropet), ej en klient-nåbar deny-yta. Skrivbarheten LIVE-VERIFIERAD
-  // mot staging-schemat (tblVE3UKWl1CKrphV) 2026-07-21 INNAN posten låstes (L294): Typ/Status
-  // singleSelect · Ort singleLineText · Startdatum/Slutdatum date · Max antal platser number ·
-  // Månad/år singleSelect — inga formel-/rollup-fält. 'Månad/år' sätts ALDRIG av klienten:
+  // slutdatum/status/maxPlatser/reserverade/manuelltTillagda) — listan är därför en SSOT-grind
+  // mot framtida kod-drift (om EF:en någon gång skulle försöka skriva ett fält utanför listan →
+  // findDisallowedField fäller före Airtable-anropet), ej en klient-nåbar deny-yta.
+  // Skrivbarheten LIVE-VERIFIERAD mot staging-schemat (tblVE3UKWl1CKrphV) 2026-07-21 INNAN
+  // posterna låstes (L294; 18.1-passet + 18.2:s describe_table-pull): Typ/Status singleSelect ·
+  // Ort singleLineText · Startdatum/Slutdatum date · Max antal platser number · Extra platser
+  // number (fldIHwVr8Wq5tp4o6) · Manuella platser number (fld8pUb6x2G3YIovs) · Månad/år
+  // singleSelect — inga formel-/rollup-fält. 'Månad/år' sätts ALDRIG av klienten:
   // den OMHÄRLEDS server-side ur nya Startdatum (ADR-066 b6-arvet — en datum-edit får inte
   // drifta basens manuella Månad/år). System-genererade (EventKey/Event-nr) + formel/rollup/
   // lookup + spegel/länk-fält sätts ALDRIG. Tabell per NAMN (ADR-050 bas-portabilitet).
@@ -130,6 +134,8 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Slutdatum',
       'Månad/år',
       'Max antal platser',
+      'Extra platser',
+      'Manuella platser',
       'Status',
     ],
   },

@@ -8,6 +8,7 @@ import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
+import { Belaggning } from './detail/Belaggning';
 import { DetaljGrupp, EtikettVardeRad } from './detail/DetaljGrupp';
 import { OmEventet } from './detail/OmEventet';
 
@@ -41,10 +42,11 @@ function LankRad({
  * innehållet är GRUPPER med rubrik utanför tonala kort (DetaljGrupp).
  *
  * 18.1:s snitt: sidstrukturen + Om eventet med Ändra-morfen (uppdatera-event-
- * vertikalen). Beläggning/Anmälda deltagare/Betalningar/Närvaro står som
- * INTERIM-grupper i facit-ordningen — befintlig data i grupp-grammatiken +
- * länkar till dagens detaljytor; deras facit-innehåll byggs i 18.2/18.4/18.8/
- * 18.9 (Åtgärder + check-in är 18.3; Gruppdynamik/Anteckningar 18.10/18.11).
+ * vertikalen). 18.2: Beläggningen till facit (K16-innehållsmodellen + mätaren +
+ * Ändra-morfen). Anmälda deltagare/Betalningar/Närvaro står som INTERIM-grupper
+ * i facit-ordningen — befintlig data i grupp-grammatiken + länkar till dagens
+ * detaljytor; deras facit-innehåll byggs i 18.4/18.8/18.9 (Åtgärder + check-in
+ * är 18.3; Gruppdynamik/Anteckningar 18.10/18.11).
  *
  * A11y (11/10):
  * - Chevronen ensam bär "detta är en undersida" (44 px rund länk,
@@ -156,19 +158,9 @@ export function EventDetail({ eventId }: { eventId: string }) {
 
       <OmEventet event={event} />
 
-      {/* INTERIM (18.2 äger innehållsmodellen + morfen): befintliga beläggnings-
-          värden i grupp-grammatiken. */}
-      <DetaljGrupp id="grupp-belaggning" rubrik="Beläggning">
-        <dl className="divide-y divide-border">
-          <EtikettVardeRad term="Max antal platser">
-            {event.maxPlatser != null ? String(event.maxPlatser) : null}
-          </EtikettVardeRad>
-          <EtikettVardeRad term="Anmälda deltagare">{String(event.antalAnmalda)}</EtikettVardeRad>
-          <EtikettVardeRad term="Platser kvar">
-            {event.platserKvar != null ? String(event.platserKvar) : null}
-          </EtikettVardeRad>
-        </dl>
-      </DetaljGrupp>
+      {/* Beläggningen (task-18.2): K16-innehållsmodellen + segmenterad mätare +
+          Ändra-morfen — ersätter 18.1:s interim-rader. */}
+      <Belaggning event={event} />
 
       {/* INTERIM (18.4 bygger arbetskön): ingången till dagens anmälda-yta. */}
       <DetaljGrupp id="grupp-anmalda" rubrik="Anmälda deltagare">

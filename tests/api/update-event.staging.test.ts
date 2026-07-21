@@ -24,6 +24,9 @@
 //      input-denies: saknat/ogiltigt eventId → 400, inga uppdaterbara fält → 400,
 //      ogiltig datum-form → 400, negativt maxPlatser → 400.
 //   4. anon (ingen JWT) → 401 (delad gateway/requireUser).
+//   5. platser-morfen (task-18.2, AC #2): maxPlatser + reserverade ('Extra
+//      platser') + manuelltTillagda ('Manuella platser') skrivs i EN operation
+//      mot eget sentinel-event, omläsning via get-event, teardown återställer.
 //
 // EVENTFORMAT-ANKARE: create-setup:en kräver eventtyp (ADR-066 b5) → samma seedade
 // sentinel-fixtur som create-event-sviten (`ZZ-create-event-test-format`).
@@ -53,6 +56,10 @@ interface UpdateBody {
   slutdatum?: string;
   status?: string;
   maxPlatser?: number;
+  // Beläggningens Ändra (task-18.2): reserverade → 'Extra platser',
+  // manuelltTillagda → 'Manuella platser' (K16-modellens mappning).
+  reserverade?: number;
+  manuelltTillagda?: number;
 }
 
 function postUpdate(
@@ -177,6 +184,86 @@ test.describe('update-event — skarp conformance (task-18.1)', () => {
     expect(restored.ort).toBe(SENTINEL_ORT);
     expect(restored.typ).toBe('Utbildning');
     expect(restored.status).toBe('Planerat');
+  });
+
+  test('platser-morfen (AC #2): skriver ALLA TRE fälten mot staging; omläsning + teardown', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    // Eget sentinel-event — delade staging-fixturer muteras aldrig (TASK-6-klassen).
+    const eventId = await createSentinelEvent(request, config, jwt);
+
+    try {
+      // Beläggningens sektions-spara: K16-modellens tre skrivbara i EN operation.
+      const res = await postUpdate(request, config, jwt, {
+        eventId,
+        maxPlatser: 14,
+        reserverade: 3,
+        manuelltTillagda: 2,
+      });
+      const raw = await res.text();
+      expect(res.status(), raw).toBe(200);
+      const body = JSON.parse(raw) as {
+        event: Record<string, unknown>;
+        record: { id: string; fields: Record<string, unknown> };
+      };
+
+      // (i) SKRIV-BEVIS ur råa record.fields — segmenten mappar basens fält 1-till-1
+      // (AC #1-summeringen: reserverade == 'Extra platser', manuelltTillagda ==
+      // 'Manuella platser'; domänspråket i API:t, basnamnen endast server-side).
+      expect(body.record.fields['Max antal platser']).toBe(14);
+      expect(body.record.fields['Extra platser']).toBe(3);
+      expect(body.record.fields['Manuella platser']).toBe(2);
+      // Datum EJ skickat → 'Månad/år' orört (härledningen är Startdatum-bunden).
+      expect(body.record.fields['Startdatum']).toBe('2026-09-15');
+
+      // (ii) Domän-envelope bär de två kategorifälten (update-svaret cache-sätts).
+      const domain = EventSchema.parse(body.event);
+      expect(domain.maxPlatser).toBe(14);
+      expect(domain.reserverade).toBe(3);
+      expect(domain.manuelltTillagda).toBe(2);
+
+      // (iii) OMLÄSNING via get-event — läs-vägen visar de nya värdena.
+      const reread = await readEvent(request, config, jwt, eventId);
+      expect(reread.maxPlatser).toBe(14);
+      expect(reread.reserverade).toBe(3);
+      expect(reread.manuelltTillagda).toBe(2);
+    } finally {
+      // TEARDOWN: återställ kapacitetsfälten (Ort/Typ/Status rördes aldrig här;
+      // Extra/Manuella platser fanns inte på sentineln → 0 är närmast "osatt"
+      // som operationen kan skriva — sentinel-raden städas därtill av purgen).
+      await postUpdate(request, config, jwt, {
+        eventId,
+        maxPlatser: 20,
+        reserverade: 0,
+        manuelltTillagda: 0,
+      });
+    }
+
+    // Restore-bevis (utanför finally — får inte svälja assert-fel i cleanup-vägen).
+    const restored = await readEvent(request, config, jwt, eventId);
+    expect(restored.maxPlatser).toBe(20);
+    expect(restored.ort).toBe(SENTINEL_ORT);
+  });
+
+  test('deny: negativt reserverade/manuelltTillagda → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res1 = await postUpdate(request, config, jwt, {
+      eventId: 'recAAAAAAAAAAAAA',
+      reserverade: -1,
+    });
+    expect(res1.status()).toBe(400);
+    expect(((await res1.json()) as { error?: string }).error).toMatch(/reserverade/i);
+
+    const res2 = await postUpdate(request, config, jwt, {
+      eventId: 'recAAAAAAAAAAAAA',
+      manuelltTillagda: -1,
+    });
+    expect(res2.status()).toBe(400);
+    expect(((await res2.json()) as { error?: string }).error).toMatch(/manuelltTillagda/i);
   });
 
   test('deny: eventId saknas → 400', async ({ request }) => {
