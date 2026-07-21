@@ -21,6 +21,34 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 74 🟢 PÅGÅR (2026-07-21) — Familje-PRD:erna → skivor → ADR-073-batch
+
+> Scope: sessionsdok `2026-07-21-session-74.md` Del 1 (kanonisk
+> plats): familje-PRD:erna (lista + eventsida + skapa) via `/to-prd`
+> → skivor via `/to-issues` (ADR-073-partitionering); de öppna
+> designfrågorna avgörs i PRD-arbetet. Kadensrad per L67. (Sektionen
+> född vid Del 2-landningen — S70-precedenten.)
+
+- [x] **Dok-födelse** (2026-07-21): `6c9d409`, run 29810667368 grön
+  per jobb (docs-only-formen); numrering disk-verifierad (ADR 074
+  [73==73, skriptet grönt] · L305 · T80 · fälla 45); audit-ci PASSED;
+  inga pausade dok; plugin 1.16.0 AKTIV (sjätte sessionen med
+  asynkrona vakten). FYND: Dependabot-PR #65/#66 (defererade, Ej i
+  scope). Marcus-kvittens: S74 + scope. **NÄSTA: `/to-prd`.**
+- [x] **FAMILJE-PRD-LANDNINGEN** (2026-07-21, Del 2 kanonisk plats):
+  **TASK-17** (listan: 4 skivor + QA) · **TASK-18** (eventsidan:
+  11 skivor + familje-rivningen + QA; write-vertikalerna + de
+  additiva bas-fälten) · **TASK-19** (skapa: 4 skivor + QA)
+  publicerade via backlog-CLI:t med DoD-extra-grindarna
+  (L220/L245/L246 + bas-additivitets-grinden ADR-050/ADR-063).
+  Skarv-kvittensen + 4 designbeslut Marcus-kvitterade per
+  rekommendation: två befintliga skarvar (api + e2e/axe) ·
+  chevron-regeln RIVS öppet (verkställs i TASK-18 skiva 3) ·
+  hemvisten event-familjens skapa-sida + Mer-ingången rivs ·
+  Anteckningar = ADDITIV tabell (egen ADR vid skivan) ·
+  publiceringsflaggan additiv nu (kontraktet = T79).
+  **NÄSTA: skivorna via `/to-issues` (Del 1 scope-punkt 2).**
+
 ### Session 73 ✅ AVSLUTAD (2026-07-19 → 2026-07-21) — Eventsidan K1–K72 FACIT + Skapa-utökningen K73–K85 FACIT + S56 stängd + 4 skarpa leveranser
 
 > Scope: sessionsdok `2026-07-19-session-73.md` Del 1 (kanonisk plats):
