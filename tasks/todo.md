@@ -64,6 +64,23 @@
   18.1→18.2→18.3→18.8→18.9→18.10→18.11→18.4→18.5→18.6→18.7→18.12 ·
   svans 17.5→19.4→18.13) → AFK-dagen → status-rapport vid Marcus
   hemkomst.**
+- [x] **BATCH KÖRD → HALT 0/22 mergade** (2026-07-21, Del 3 kanonisk
+  plats): avfyrad som run `wf_dd115d9e-aca` efter Marcus-kvittot
+  "Kör på och lycka till" · **HALT efter ~24 min: 18.1 ABORT —
+  claims-luckan `src/domain/**` (läs-shapen: EventSchema + modell +
+  paritetsfil) varken tillåten eller förbjuden yta; SYSTEMATISK för
+  P2 (även 18.4/18.9/18.10) → drain per kontraktet** · 17.1
+  LEVERERAD granskningsfärdig på `origin/task/17.1` (`2f0e666`; TDD
+  rött-först, alla grindar gröna, facit-avprickad) men EJ mergad
+  (drain — inte fel i leveransen) · övriga 20 ej-startade, orörda.
+  Bokfört: 18.1 abort-not `525dac5` · 17.1 drain-not `0677103` ·
+  fynd-kort TASK-20 `7f8ae75` · worktrees + lokala brancher städade
+  · basen orörd · CI grön per jobb hela vägen. **NÄSTA: MARCUS
+  VÄG-BESLUT ikväll ("resten i ny order", S74 Del 4) — rek. A:
+  merge:a task/17.1 + ny batch-order med claims-utökning
+  `src/domain/**` (18.1/18.4/18.9/18.10) + eventKey-fasning (Del 3
+  fynd 1–2); rek. B: ny order enbart claims-säkra kort. Därefter
+  end-pass på Marcus-signal.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 
