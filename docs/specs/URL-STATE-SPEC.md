@@ -42,6 +42,7 @@ Ingen URL-state. Hem visar alltid aktuell status. Inget att bokmerka, inget att 
 | Param | Typ | Default | Parsning |
 |-------|-----|---------|----------|
 | `period` | `'upcoming' \| 'past'` | `'upcoming'` | `parseAsStringEnum` |
+| `vy` | `'lista' \| 'kalender'` | `'lista'` | `parseAsStringEnum` |
 
 ```typescript
 const [period, setPeriod] = useQueryState(
@@ -49,14 +50,28 @@ const [period, setPeriod] = useQueryState(
   parseAsStringEnum(['upcoming', 'past']).withDefault('upcoming')
     .withOptions({ history: 'push' })
 );
+const [vy, setVy] = useQueryState(
+  'vy',
+  parseAsStringEnum(['lista', 'kalender']).withDefault('lista')
+    .withOptions({ history: 'push' })
+);
 
-// /event                → Kommande (default, inga synliga params)
+// /event                → Kommande i listvyn (default, inga synliga params)
 // /event?period=past    → Tidigare
+// /event?vy=kalender    → Kalendervyn
 ```
 
 **Period** (ORDLISTA) härleds ur eventets startdatum mot idag — ALDRIG ur
 Status-fältet (stänger T14). Sorteringen är LÅST per period (Kommande
 närmast först, Tidigare senast först) — inget `?sort`-val existerar.
+
+**Vy** (task-17.4): lista är default med REN URL (nuqs `clearOnDefault`
+rensar parametern när Listvy väljs); `?vy=kalender` bär kalenderläget.
+Parametrarna är oberoende: kalendern ÄGER tiden (månadsnavet ersätter
+period-toggeln och läser hela källan ofiltrerad), så `?period` är inert i
+kalenderläget men bevaras i URL:en — växlingen tillbaka till listan
+återställer exakt periodläget. Dag-valet i kalendern är UI-state
+(`useState`, HUR-klassen) — inte URL-buret.
 
 > **Reconcilierad (task-17.2, 2026-07-21 — S72-facitet):** `?period`
 > ERSÄTTER den tidigare `?status`+`?sort`-modellen. Skäl: S72-konvergensen
@@ -64,7 +79,7 @@ närmast först, Tidigare senast först) — inget `?sort`-val existerar.
 > (PRD TASK-17 beslut 5); "status" som namn på tidsfiltret var
 > T14-begreppsgrumligheten (status = planeringstillstånd, inte tidsaxel).
 > Gamla params ignoreras av parsern (okända params ar inerta).
-> Vyvalet `?vy=kalender` tillkommer i kalendervy-skivan (task-17.4).
+> Vyvalet `?vy=kalender` levererades i kalendervy-skivan (task-17.4).
 
 Query-nyckeln ar STABIL (`['events', 'list']` — hela listan hamtas,
 period-filtret sker klient-side, se `src/queries/keys.ts`).
@@ -167,6 +182,7 @@ Varje filtrerad vy ar en unik URL:
 |----------|-----|
 | Kommande event (default) | `/event` |
 | Tidigare event | `/event?period=past` |
+| Kalendervyn | `/event?vy=kalender` |
 | Event-betalning (route, C1) | `/event/rec123/betalning` |
 | Personsokning | `/personer?q=andersson` |
 
