@@ -110,7 +110,7 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     await expect(page.locator('header')).toHaveCount(0);
   });
 
-  test('AC 1: sex NavCard-rader i TVÅ grupper med facit-ordning, tysta ikoner, INGEN chevron', async ({
+  test('AC 1: sex NavCard-rader i TVÅ grupper med facit-ordning, tysta ikoner, chevron per rad', async ({
     page,
   }) => {
     await page.goto('/mer');
@@ -132,21 +132,23 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     await expect(grupper.nth(1).getByRole('link')).toHaveText(['Skapa nytt event', 'Bygg segment']);
     await expect(nav.getByRole('link')).toHaveCount(6);
 
-    // TabBar-testens ikon-mönster: varje rad bär EXAKT en dekorativ ikon
-    // (aria-hidden) — etiketten ensam bär länknamnet (redan assertat via
+    // Varje rad bär EXAKT två dekorativa svg (radikon + chevron, båda
+    // aria-hidden) — etiketten ensam bär länknamnet (redan assertat via
     // toHaveText ovan: namnet är etikettexten, utan ikonbrus).
     for (const link of await nav.getByRole('link').all()) {
-      await expect(link.locator('svg[aria-hidden="true"]')).toHaveCount(1);
+      await expect(link.locator('svg[aria-hidden="true"]')).toHaveCount(2);
     }
 
-    // Ikonen i tabbar-paritet: 20×20 renderade px (M5-varvet).
-    const ikonBox = await nav.getByRole('link').first().locator('svg').boundingBox();
+    // Radikonen i tabbar-paritet: 20×20 renderade px (M5-varvet).
+    const ikonBox = await nav.getByRole('link').first().locator('svg').first().boundingBox();
     expect(ikonBox?.width).toBe(20);
     expect(ikonBox?.height).toBe(20);
 
-    // App-breda regeln (M4-varvet, D-reviderad): navigationsrader bär INTE
-    // chevron. Lucide-ikoner bär sitt namn i class-attributet.
-    await expect(nav.locator('svg[class*="chevron" i]')).toHaveCount(0);
+    // Chevron-koherensen (task-18.3): ingen-chevron-regeln är RIVEN ÖPPET
+    // (S73 K25-prövningens Marcus-kvitterade konsekvens, PRD task-18
+    // beslut 15) — chevron betyder att raden leder vidare, och Mer-menyns
+    // rader bär den för app-koherens med eventsidans åtgärdsrader.
+    await expect(nav.locator('svg.lucide-chevron-right')).toHaveCount(6);
   });
 
   test('AC 2: måtten computed-verifierade mot facitet (DoD 6)', async ({ page }) => {
