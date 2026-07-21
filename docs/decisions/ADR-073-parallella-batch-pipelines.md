@@ -64,6 +64,55 @@
 >    jobb-nivå-concurrency som ERSÄTTNING för orkestrator-kedjan står
 >    oförändrat — komplement-statusen ärvs (defense-in-depth BAKOM
 >    den seriella PR→CI→merge-kedjan).
+>
+> **Amendering 3 (Session 75, 2026-07-21 — batch-halten 18.1 +
+> täcknings-passets premiär; kanonisk trail: S75-doket Del 3–4;
+> Marcus-kvittens i delegerad senior-form "Du är senior här, gör det
+> som blir absolut bäst"):** tre poster; beslutstexten bevaras
+> oförändrad (immutabilitet).
+>
+> 1. **Täcknings-passet — ny obligatorisk grind före parallell
+>    avfyrning.** Kollisions-check ≠ täcknings-check: beslut 1:s
+>    claims-intersektion fångar overlap mellan kort men INTE
+>    inkompletta claims (S75-halten: 18.1 krävde ordagrant "eventKey
+>    in i läs-shapen" = `src/domain/**` som varken var tillåten eller
+>    förbjuden yta — batchen haltade på första P2-kortet, 0/22).
+>    Grinden: per kort mappas spec-textens namngivna artefakter
+>    BOTTOM-UP mot repots lagerkarta (disk-verifierat, aldrig gissat)
+>    och claims måste omfatta resultatet (claims ⊇ krävd yta); gap
+>    läks i claims-designen FÖRE avfyrning. Premiären (S75, alla 21
+>    återstående kort): **15/21 verdicts GAP** — utöver de fyra kända
+>    domain-korten även manifest-beroende (17.4), genererad route-fil
+>    (19.2), spec-/ADR-/primitiv-API-ytor (18.3/18.11/19.1) och
+>    adapter-vägen (19.4). En omkörning utan passet hade haltat
+>    igen, upprepade gånger. Mekaniseringen ersätter
+>    orkestrator-vaksamhet (~9 %-klassen, ADR-053-grunden).
+> 2. **Delade-ytor-registret (repo-värden; skript-logik universell,
+>    värden per projekt).** Horisontella ytor som VARJE partition
+>    måste tilldela explicit (fasat schema eller en ägare — aldrig
+>    onämnd): (1) `src/domain/schemas/**` + `src/domain/models/**` +
+>    paritetsfilen `src/domain/__tests__/schemas.assignable.ts` ·
+>    (2) `supabase/functions/_shared/**` (field-allowlists.ts =
+>    allowlist-SSOT) · (3) `src/styles/tokens/**` ·
+>    (4) primitiv-standard-klustret (barreln + `tests/a11y/
+>    primitives.spec.ts` + `src/routes/dev/primitives.tsx` +
+>    `docs/specs/DESIGN-SYSTEM-SPEC.md`) · (5) `src/data/**`
+>    (adapter-lagret) · (6) `src/queries/**` · (7) manifestet
+>    (`package.json`/lockfilen) · (8) genererade `src/routeTree.gen.ts`
+>    samt config-ytorna. field-allowlists-posten var S66-lärd;
+>    registret gör klassen durabel i stället för re-upptäckt per
+>    batch. Hub-halvan (mekanismen i /work-batch-skillen) lyfts
+>    separat; denna post bär SPOKE-VÄRDENA.
+> 3. **Konflikt-upplösnings-mandat för merge-agenten (bundet;
+>    halt-first orörd för kod).** Merge-tree-konflikt som ENBART rör
+>    (a) `src/routeTree.gen.ts` → mekanisk regenerering i temp-
+>    worktree (router-cli finns som devDependency; typecheck-
+>    verifierad före push) eller (b) bokförings-md-ytor
+>    (`backlog/tasks/**`, `docs/specs/**`, `docs/decisions/**`) →
+>    union-upplösning med BÅDA sidor bevarade, öppet bokförd i PR +
+>    kortets notes. VARJE konflikt som rör annan kod = HALT
+>    (kontraktets halt-first oförändrat). Precedent:
+>    17.1-kortfilens orkestrator-upplösta union (S75, `3d72a4c`).
 
 ## Kontext
 
