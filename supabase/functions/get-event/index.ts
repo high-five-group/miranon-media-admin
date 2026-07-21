@@ -38,6 +38,11 @@ function mapEvent(record: { id: string; fields: Record<string, unknown> }) {
     antalSlutbetalningar: scalarNumber(f['Antal mottagna slutbetalningar']) ?? 0, // rollup
     antalSlutbetalningFelande: scalarNumber(f['Antal slutbetalning saknas']) ?? 0, // formel
     status: selectName(f['Status'] ?? null), // singleSelect (om det finns)
+    // eventKey (task-18.1): formel "Event-" & {Event-nr} — EventKey-pillen på
+    // detaljsidans topprad. Håll i synk med get-events (fältet är OPTIONAL i
+    // EventSchema — saknas värdet UTELÄMNAS nyckeln: JSON.stringify droppar
+    // undefined; aldrig null). Båda EF:erna bär fältet sedan samma leverans.
+    eventKey: typeof f['EventKey'] === 'string' ? f['EventKey'] : undefined,
   };
 }
 

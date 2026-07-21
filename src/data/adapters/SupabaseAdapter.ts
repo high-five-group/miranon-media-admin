@@ -14,6 +14,7 @@ import type {
   SaveSegmentInput,
   SegmentResult,
   SegmentRule,
+  UpdateEventInput,
 } from '../../domain/schemas';
 import type {
   AttendanceFilters,
@@ -111,6 +112,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async createEvent(_input: CreateEventInput): Promise<CreatedEvent> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async updateEvent(_input: UpdateEventInput): Promise<Event> {
     throw new Error(NOT_IMPLEMENTED);
   }
 }

@@ -22,4 +22,10 @@ export const EventSchema = z.object({
   antalSlutbetalningar: z.number(),
   antalSlutbetalningFelande: z.number(),
   status: z.enum(EventStatus).nullable(),
+  // eventKey (task-18.1): system-genererad formel "Event-N" (EventKey-pillen på
+  // detaljsidans topprad). OPTIONAL — inte required/nullable — så en klient med
+  // äldre EF-svar i cachen (utan fältet) inte fäller z.array-parsen av hela listan;
+  // EF:erna UTELÄMNAR nyckeln när värdet mot förmodan saknas (aldrig null), och
+  // BÅDA läs-EF:erna (get-event + get-events) returnerar fältet sedan samma leverans.
+  eventKey: z.string().optional(),
 });

@@ -109,6 +109,30 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Idempotensnyckel',
     ],
   },
+  // Uppdatera ett BEFINTLIGT event i Eventplanering (task-18.1, PRD task-18 beslut 2–3 —
+  // eventsidans Om eventet-Ändra; Beläggningens Ändra återanvänder operationen i sin skiva).
+  // update-event-EF:en bygger `fields` SERVER-SIDE ur typade inputs (typ/ort/startdatum/
+  // slutdatum/status/maxPlatser) — listan är därför en SSOT-grind mot framtida kod-drift
+  // (om EF:en någon gång skulle försöka skriva ett fält utanför listan → findDisallowedField
+  // fäller före Airtable-anropet), ej en klient-nåbar deny-yta. Skrivbarheten LIVE-VERIFIERAD
+  // mot staging-schemat (tblVE3UKWl1CKrphV) 2026-07-21 INNAN posten låstes (L294): Typ/Status
+  // singleSelect · Ort singleLineText · Startdatum/Slutdatum date · Max antal platser number ·
+  // Månad/år singleSelect — inga formel-/rollup-fält. 'Månad/år' sätts ALDRIG av klienten:
+  // den OMHÄRLEDS server-side ur nya Startdatum (ADR-066 b6-arvet — en datum-edit får inte
+  // drifta basens manuella Månad/år). System-genererade (EventKey/Event-nr) + formel/rollup/
+  // lookup + spegel/länk-fält sätts ALDRIG. Tabell per NAMN (ADR-050 bas-portabilitet).
+  'update-event': {
+    tableId: 'Eventplanering',
+    allowedFields: [
+      'Typ',
+      'Ort',
+      'Startdatum',
+      'Slutdatum',
+      'Månad/år',
+      'Max antal platser',
+      'Status',
+    ],
+  },
   // Bulk-mail på segment → revisionsrad i Utskickslogg (Fas 6h, ADR-067 D7 — repots
   // fjärde write-vertikal). send-email-EF:en bygger `fields` SERVER-SIDE ur typade inputs
   // (amne/mailtext/accepterade Personers record-ID/filter-snapshot/jobId) — listan är en

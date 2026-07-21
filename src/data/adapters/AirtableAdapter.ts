@@ -27,6 +27,7 @@ import {
   type SegmentResult,
   SegmentResultSchema,
   type SegmentRule,
+  type UpdateEventInput,
   WaitlistEntrySchema,
 } from '../../domain/schemas';
 import type {
@@ -334,5 +335,27 @@ export class AirtableAdapter implements DataSourceAdapter {
       idempotencyKey: input.idempotencyKey,
     });
     return CreatedEventSchema.parse(data.event);
+  }
+
+  /**
+   * Uppdatera ett befintligt event (task-18.1). POST mot update-event-EF, som bygger
+   * write-shapen server-side ur de typade optionella fälten (endast närvarande fält
+   * skickas — frånvaro betyder "ändra inte"), omhärleder Månad/år när Startdatum
+   * ändras (ADR-066 b6-arvet) och PATCH:ar raden. Svaret bär `event` i den BERIKADE
+   * läs-shapen (samma mappning som get-event) — `.parse()` validerar vid datagränsen
+   * (ADR-026); råa `record`-fältet är skriv-bevis för conformance och konsumeras ej här.
+   * Ingen idempotensnyckel: PATCH med absoluta värden är naturligt idempotent.
+   */
+  async updateEvent(input: UpdateEventInput): Promise<Event> {
+    const body: Record<string, unknown> = { eventId: input.eventId };
+    if (input.typ !== undefined) body.typ = input.typ;
+    if (input.ort !== undefined) body.ort = input.ort;
+    if (input.startdatum !== undefined) body.startdatum = input.startdatum;
+    if (input.slutdatum !== undefined) body.slutdatum = input.slutdatum;
+    if (input.status !== undefined) body.status = input.status;
+    if (input.maxPlatser !== undefined) body.maxPlatser = input.maxPlatser;
+
+    const data = await postEdgeFunction<{ event: unknown }>('update-event', body);
+    return EventSchema.parse(data.event);
   }
 }

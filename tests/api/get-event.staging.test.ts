@@ -61,6 +61,9 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
     // Skarp validering vid datagränsen — samma .parse som adaptern kör.
     const event = EventSchema.parse(body.event);
     expect(event.id).toBe(id);
+    // eventKey i läs-shapen (task-18.1): system-genererad formel "Event-N" — finns på
+    // varje Eventplanering-rad → ska alltid följa med get-event (EventKey-pillen bär den).
+    expect(event.eventKey).toMatch(/^Event-\d+$/);
   });
 
   test('get-events: HELA listan parse:ar INKL. NaN-beläggnings-event (klass-bug stängd)', async ({
@@ -81,6 +84,14 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
     // exerceras skarpt.
     const events = z.array(EventSchema).parse(body.events);
     expect(events.length).toBeGreaterThan(0);
+
+    // eventKey i BÅDA läs-EF:erna i SAMMA leverans (task-18.1-fasningen): saknas fältet i
+    // get-events fäller z.array-parsen ovan hela listvyn — bevisa att varje rad bär det.
+    for (const e of events) {
+      expect(e.eventKey, `event ${e.id} saknar eventKey i get-events-shapen`).toMatch(
+        /^Event-\d+$/,
+      );
+    }
 
     // Minst ETT event ska ha anmaldBelaggning===null (NaN coerced till null) — annars
     // exercerades inte NaN-vägen och beviset är ihåligt.

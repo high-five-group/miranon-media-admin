@@ -19,4 +19,6 @@ export interface Event {
   antalSlutbetalningar: number;
   antalSlutbetalningFelande: number;
   status: EventStatusValue | null;
+  /** System-genererad EventKey-formel ("Event-N") — optional: speglar schemat (task-18.1). */
+  eventKey?: string;
 }
