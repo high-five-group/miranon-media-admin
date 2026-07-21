@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { ClipboardList, Hourglass, Star } from 'lucide-react';
+import { CalendarDays, ClipboardList, Hourglass, List, Star } from 'lucide-react';
 import { useState } from 'react';
 import {
   Button,
@@ -13,6 +13,8 @@ import {
   SelectItem,
   Skeleton,
   TextArea,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@/components/primitives';
 
 const MESSAGE_INTENTS = ['info', 'success', 'warning', 'error'] as const;
@@ -246,6 +248,69 @@ function PrimitivesPage() {
           <div data-demo="skeleton-list" className="flex flex-col gap-2">
             <Skeleton variant="listRow" />
             <Skeleton variant="listRow" />
+          </div>
+        </div>
+      </section>
+      <section aria-labelledby="rubrik-togglebuttongroup" className="mt-8 max-w-md">
+        <h2 id="rubrik-togglebuttongroup" className="text-xl">
+          ToggleButtonGroup
+        </h2>
+        <p className="mt-2 text-small text-text-secondary">
+          Pill-toggeln (S72-facitets form, spec §16): alltid exakt ett val, radiogroup-semantik,
+          pilnavigering. Tre belagda former: period (spread), vy-ikoner (inline) och flik-kapslar
+          (sm).
+        </p>
+        <div className="mt-4 flex flex-col gap-4">
+          {/* Period-formen — spread: likbreda segment som fyller bredden. */}
+          <ToggleButtonGroup
+            label="Period"
+            spread
+            defaultSelectedKey="upcoming"
+            onSelectionChange={(key) => setSenastTryckt(`period: ${key}`)}
+          >
+            <ToggleButton id="upcoming">Kommande</ToggleButton>
+            <ToggleButton id="past">Tidigare</ToggleButton>
+          </ToggleButtonGroup>
+          {/* Ikon-formen — inline kapsel; namnet bärs av aria-label,
+              ikonen är dekorativ (aria-hidden). px per vy-toggelns facit. */}
+          <div>
+            <ToggleButtonGroup
+              label="Visningsläge"
+              defaultSelectedKey="lista"
+              onSelectionChange={(key) => setSenastTryckt(`vy: ${key}`)}
+            >
+              <ToggleButton id="lista" aria-label="Listvy" className="px-3.5">
+                <List aria-hidden="true" size={18} />
+              </ToggleButton>
+              <ToggleButton id="kalender" aria-label="Kalendervy" className="px-3.5">
+                <CalendarDays aria-hidden="true" size={18} />
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </div>
+          {/* Flik-kapsel-formen — sm: eventsidans betalningsflikar/filter. */}
+          <div>
+            <ToggleButtonGroup
+              label="Deltagarfilter"
+              defaultSelectedKey="alla"
+              onSelectionChange={(key) => setSenastTryckt(`filter: ${key}`)}
+            >
+              <ToggleButton id="alla" size="sm">
+                Alla
+              </ToggleButton>
+              <ToggleButton id="manuell" size="sm">
+                Manuellt tillagda
+              </ToggleButton>
+              <ToggleButton id="medfoljande" size="sm">
+                Medföljande
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </div>
+          {/* Inaktiverat läge — hela gruppen. */}
+          <div>
+            <ToggleButtonGroup label="Inaktiverad demo" defaultSelectedKey="av" isDisabled>
+              <ToggleButton id="av">Av</ToggleButton>
+              <ToggleButton id="pa">På</ToggleButton>
+            </ToggleButtonGroup>
           </div>
         </div>
       </section>

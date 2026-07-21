@@ -52,6 +52,12 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
     await checkA11y({ include: ['[aria-labelledby="rubrik-navcard"]'] });
   });
 
+  test('ToggleButtonGroup — sektion (radiogroup-semantiken i alla fyra demo-formerna)', async ({
+    checkA11y,
+  }) => {
+    await checkA11y({ include: ['[aria-labelledby="rubrik-togglebuttongroup"]'] });
+  });
+
   test('Skeleton — sektion (Roselli-markupen i laddläge)', async ({ page, checkA11y }) => {
     // Sektionen renderar laddläget statiskt (aria-busy-container med
     // aria-hidden-block + sr-only-besked) — skannas i exakt det tillstånd

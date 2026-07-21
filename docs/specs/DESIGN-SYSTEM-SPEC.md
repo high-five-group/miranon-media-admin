@@ -1146,6 +1146,74 @@ Konsumenten äger innehålls-containern som laddar och sätter:
 
 ---
 
+## 16. ToggleButtonGroup — pill-toggel-primitiven
+
+Kapselformad växlare där exakt ETT alternativ alltid är valt. Byggd på
+react-aria-components `ToggleButtonGroup`/`ToggleButton` (ADR-044).
+Facit-källa: S72-konvergensens pill-form (bilagan
+`tasks/sessions/bilagor/s72-event-lista-konvergens/`, FACIT-listvyn).
+Belagda konsumenter: event-listans period-toggel och vy-ikon-toggel
+(task-17.2) samt eventsidans flik-kapslar (TASK-18-familjen).
+
+### API (medvetet minimalt)
+
+```tsx
+<ToggleButtonGroup label="Period" spread defaultSelectedKey="upcoming"
+  onSelectionChange={(key) => setPeriod(key)}>
+  <ToggleButton id="upcoming">Kommande</ToggleButton>
+  <ToggleButton id="past">Tidigare</ToggleButton>
+</ToggleButtonGroup>
+```
+
+| Prop | Typ | Roll |
+|---|---|---|
+| `label` | `string` | Gruppens tillgängliga namn (radiogroup) — visas aldrig visuellt |
+| `spread` | `boolean` | Likbreda segment som fyller bredden (period-formen); default inline kapsel |
+| `selectedKey` / `defaultSelectedKey` | `K extends string` | Vald pill (controlled/uncontrolled) |
+| `onSelectionChange` | `(key: K) => void` | Ny nyckel — aldrig "inget val" (alltid-ett-val) |
+| `ToggleButton.id` | `K` | Pillens nyckel |
+| `ToggleButton.size` | `'sm' \| 'md'` | `md` = period-formen (text-body, px-5); `sm` = flik-kapseln (text-small, px-2.5) |
+| `className` | `string` | Merge:as efter variant-klasserna (Button-precedenten; ikon-pillen justerar `px-3.5`) |
+
+**Förseglade beslut** (inte utelämnanden): `selectionMode="single"` +
+`disallowEmptySelection` — React Aria ger då radiogroup/radio-semantik
+(`role="radiogroup"`, `role="radio"` + `aria-checked`) och pill-toggelns
+kontrakt är att en tidshorisont/vy alltid är aktiv. Orientering
+horisontell (ingen vertikal konsument — över-engineering-vakten; växer
+additivt vid verkligt behov).
+
+### Anatomi och tangentbord
+
+- Gruppen är EN tabbstopp (toolbar-mönstret): pilnavigering
+  Vänster/Höger flyttar fokus inom gruppen, Enter/Space väljer, Tab
+  lämnar gruppen.
+- Ikon-piller: namnet bärs av `aria-label` på `ToggleButton`, ikonen är
+  `aria-hidden` (vy-toggelns form).
+- Fokusring via den globala `:focus-visible`-regeln (base.css) — ingen
+  egen fokus-styling.
+
+### Form (S72-facitet, computed-låst)
+
+- Track: `rounded-full`, `--mm-bg-muted`, 4 px inre luft (`p-1`).
+- Vald pill: `--mm-bg` (vit), semibold, `shadow-sm`, `--mm-text`.
+- Ovald pill: transparent, medium, `--mm-text-secondary`.
+- Statisk (ingen transition/animation) — reduced-motion/print utan
+  specialfall (NavCard-precedenten; globala neutraliseringen täcker).
+- Träffyta: md-pillen ≈40 px hög, tracket ≥44 px.
+
+### Tokens
+
+Inga egna komponent-tokens: formen konsumerar semantiska tokens direkt
+via Tailwind-mappningen (`bg-bg-muted` → `--mm-bg-muted` osv.) —
+RadioGroup-precedentens token-konsumtion. Komponent-tokens införs först
+när ett tema-behov kräver omdirigering per komponent.
+
+Beteendekontraktet är computed-style-testat i
+`tests/a11y/ToggleButtonGroup.spec.ts`; axe-skanningen av demo-sektionen
+bor i `tests/a11y/primitives.spec.ts`.
+
+---
+
 ## Ändringslogg
 
 | Datum | Förändring |
@@ -1155,4 +1223,5 @@ Konsumenten äger innehålls-containern som laddar och sätter:
 | 2026-07-12 | §14 NavCard — navigationsrads-primitiven (M6-facitet, S64 Del 3): API, anatomi, form, komponent-tokens + app-breda regeln "navigationsrader bär inte chevron" (task-9.1). |
 | 2026-07-12 | §15 Lugnt laddläge — laddprincipen (app-bred, S63 Del 2-samsynen + task-8.1:s mätlåsta framträdande-form) + Skeleton-primitiven: API, Roselli-anatomin, form, komponent-tokens (task-8.2). |
 | 2026-07-18 | §15 Form: skeleton-tonen till branschbandet — 1.4.11-feltillämpningen korrigerad (dekorativt undantag per Understanding 1.4.11; MUI/Carbon/shadcn-värden citerade), ny semantisk roll-token `--mm-bg-placeholder` (neutral-200), shimmer 45→75 %, kontrast-kontraktet dubbelriktat i Skeleton.spec (task-8.6; S67 QA-fynd, L269-klassen). |
+| 2026-07-21 | §16 ToggleButtonGroup — pill-toggel-primitiven (S72-facitet): API, förseglade beslut (singel-val + alltid-ett-val → radiogroup-semantik), anatomi/tangentbord, computed-låst form, semantisk token-konsumtion utan komponent-tokens (task-17.1). |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |
