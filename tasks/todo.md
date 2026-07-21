@@ -48,6 +48,21 @@
   Anteckningar = ADDITIV tabell (egen ADR vid skivan) ·
   publiceringsflaggan additiv nu (kontraktet = T79).
   **NÄSTA: skivorna via `/to-issues` (Del 1 scope-punkt 2).**
+- [x] **SKIV-LANDNINGEN** (2026-07-21, Del 3 kanonisk plats): **25
+  barn-kort publicerade i beroendeordning** — TASK-17: 6 (17.3
+  kursfärgs-tokensen = PREFAKTORERING, delas av kalendern +
+  gruppdynamiken) · TASK-18: 14 (arbetskön DELAD i skelett 18.4 +
+  personkort 18.5 per Marcus-delegerat storleksval; 18.13
+  familje-rivningen med --dep på ALLA 21 bygg-skivor) · TASK-19: 5.
+  Skiv-godkännandet i klartext-form (Marcus-fångst "för diffusa" →
+  tre direkt svarbara frågor): storleken delegerad · beroendena
+  kvitterade (17.5←18.7, 19.2←17.2) · **deadline-regeln LÅST: start
+  − 14 dagar** (inskriven i 18.8). Etiketter: ready-for-agent ×22 +
+  QA ready-for-human ×3; DoD-arvet per skiva; graf-verifierad
+  (Sequence 1 = tre disjunkta startkedjor 17.1+17.3 ∥ 18.1 ∥ 19.1 =
+  ADR-073-partitions-kandidaterna). **NÄSTA: exekveringen —
+  `/do-work` eller Marcus-partitionerad `/work-batch` (ADR-073);
+  därefter end-pass på Marcus-signal.**
 
 ### Session 73 ✅ AVSLUTAD (2026-07-19 → 2026-07-21) — Eventsidan K1–K72 FACIT + Skapa-utökningen K73–K85 FACIT + S56 stängd + 4 skarpa leveranser
 
