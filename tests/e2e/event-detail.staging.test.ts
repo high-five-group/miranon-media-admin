@@ -48,6 +48,13 @@ function eventDetail(overrides: EventMock = {}): EventMock {
     antalSlutbetalningFelande: 6,
     status: 'Planerat',
     eventKey: 'Event-21',
+    // Beläggningens innehållsmodell (task-18.2, K16) — facit-lik komposition:
+    // 8 + 1 + 1 + 1 = 11 av 12 upptagna (92 %), väntelistan 0 utanför taket.
+    reserverade: 1,
+    manuelltTillagda: 1,
+    viaFormular: 8,
+    medfoljande: 1,
+    vantelista: 0,
     ...overrides,
   };
 }
@@ -285,17 +292,10 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     await expect(omGrupp.getByRole('button', { name: 'Ändra' })).toBeFocused();
   });
 
-  test('interim-sektionerna behåller funktionen: beläggnings-rader + länkar till detaljytorna', async ({
-    page,
-  }) => {
+  test('interim-sektionerna behåller funktionen: länkar till detaljytorna', async ({ page }) => {
     await mockEvent(page, eventDetail());
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-
-    // Beläggning som etikett-värde-rader (18.2 äger innehållsmodellen + morfen).
-    const belaggning = page.locator('section[aria-labelledby="grupp-belaggning"]');
-    await expect(belaggning.getByText('Max antal platser')).toBeVisible();
-    await expect(belaggning.getByText('12', { exact: true })).toBeVisible();
 
     // Länkarna till de befintliga detaljytorna (ersätts av 18.4/18.8/18.9).
     await expect(page.getByRole('link', { name: 'Öppna anmälda-vyn' })).toHaveAttribute(
@@ -353,7 +353,9 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     ).toBeVisible();
   });
 
-  test('axe 0 violations — visningsläget OCH morf-läget', async ({ page }) => {
+  test('axe 0 violations — visningsläget OCH morf-lägena (Om eventet + Beläggning)', async ({
+    page,
+  }) => {
     await mockEvent(page, eventDetail());
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -368,5 +370,328 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
       .click();
     const morf = await new AxeBuilder({ page }).withTags(taggar).analyze();
     expect(morf.violations).toEqual([]);
+
+    // Stäng Om eventet-morfen och öppna Beläggningens (task-18.2) — nya mönster
+    // (RAC NumberField, segmenterad mätare) får axe-0 i sitt öppna läge.
+    await page
+      .locator('section[aria-labelledby="grupp-om-eventet"]')
+      .getByRole('button', { name: 'Avbryt' })
+      .click();
+    await page
+      .locator('section[aria-labelledby="grupp-belaggning"]')
+      .getByRole('button', { name: 'Ändra' })
+      .click();
+    const belaggningsMorf = await new AxeBuilder({ page }).withTags(taggar).analyze();
+    expect(belaggningsMorf.violations).toEqual([]);
+  });
+});
+
+/**
+ * task-18.2 — Beläggningen till S73-facit (K14–K22): innehållsmodellen som
+ * mappar basen 1-till-1, segmenterad mätare med streck-markörer, Väntelista-
+ * raden alltid med utanför taket, och Ändra-morfen på de tre skrivbara fälten
+ * via uppdatera-event-operationen.
+ *
+ * Deterministisk via `page.route`-mock (mark-paid-precedentens split): SERVER-
+ * kontraktet (allowlist, faktisk mutation mot staging, per-källa-aggregationen,
+ * omläsning, restore) bevisas av tests/api/update-event.staging.test.ts +
+ * tests/api/get-event.staging.test.ts; dessa e2e bevisar KLIENTENS form och
+ * beteende flak-fritt (renderad verifiering — L245/L246).
+ */
+test.describe('Beläggningen (task-18.2)', () => {
+  test('K16-modellen renderad mot facit: radordning, värden, väntelistan alltid med', async ({
+    page,
+  }) => {
+    await mockEvent(page, eventDetail());
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-belaggning"]');
+
+    // Radordningen är Marcus-modellens (K16): taket först, sedan kategorierna
+    // som fyller det, väntelistan sist (utanför taket).
+    const termer = await grupp.locator('dt').allTextContents();
+    expect(termer).toEqual([
+      'Max antal platser',
+      'Reserverade',
+      'Anmälda deltagare',
+      'Manuellt tillagda',
+      'Medföljande',
+      'Väntelista',
+    ]);
+
+    // Värdena ur innehållsmodellen (per-källa — inte basens aggregat).
+    const varden = await grupp.locator('dd').allTextContents();
+    expect(varden).toEqual(['12', '1', '8', '1', '1', '0']);
+  });
+
+  test('streck-markörerna: kategorirader bär färgade streck == mätarens segment; väntelistan utan', async ({
+    page,
+  }) => {
+    await mockEvent(page, eventDetail());
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-belaggning"]');
+
+    // Renderad verifiering (L245): streckens computed background-color per rad —
+    // fyra kategorirader har streck, Max/Väntelista har inga.
+    const streckFarger = await grupp
+      .locator('dt span[aria-hidden="true"]')
+      .evaluateAll((els) => els.map((el) => getComputedStyle(el).backgroundColor));
+    expect(streckFarger.length).toBe(4);
+    // Fyra DISTINKTA kategorifärger (aldrig samma färg två gånger).
+    expect(new Set(streckFarger).size).toBe(4);
+
+    // Mätarens segment bär SAMMA färger som strecken (GitHub-storage-klassen:
+    // streck på raderna == segment i stapeln) — ordningen är fyllnadsordningen
+    // (deltagare först, reserverade sist), inte radordningen.
+    const segmentFarger = await grupp
+      .locator('[data-testid^="belaggning-segment-"]')
+      .evaluateAll((els) => els.map((el) => getComputedStyle(el).backgroundColor));
+    expect(segmentFarger.length).toBe(4);
+    expect(new Set(segmentFarger)).toEqual(new Set(streckFarger));
+
+    // Deltagar-blå är INTE fokusringens exklusiva #1b4965 (konstitutionen:
+    // --p-blue-700 aldrig till annat — medveten facit-avvikelse, öppet bokförd).
+    expect(streckFarger).not.toContain('rgb(27, 73, 101)');
+  });
+
+  test('mätaren: "11 av 12 platser upptagna" + 92 % + proportionella segment; dekorativ stapel', async ({
+    page,
+  }) => {
+    await mockEvent(page, eventDetail());
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-belaggning"]');
+
+    // TEXTEN är bäraren (a11y): summering + procent (8+1+1+1 = 11 av 12 = 92 %).
+    await expect(grupp.getByText('11 av 12 platser upptagna')).toBeVisible();
+    await expect(grupp.getByText('92 %')).toBeVisible();
+
+    // Stapeln är dekorativ (aria-hidden) och segmentbredderna proportionella:
+    // formulär-segmentet (8/12) är störst — DOM-mätt (L246).
+    const matare = grupp.locator('[data-testid="belaggning-matare"]');
+    await expect(matare.locator('[aria-hidden="true"]')).toHaveCount(1);
+    const bredder = await matare
+      .locator('[data-testid^="belaggning-segment-"]')
+      .evaluateAll((els) =>
+        els.map((el) => ({
+          nyckel: (el as HTMLElement).dataset.testid,
+          bredd: el.getBoundingClientRect().width,
+        })),
+      );
+    const formular = bredder.find((b) => b.nyckel === 'belaggning-segment-formular');
+    expect(formular).toBeTruthy();
+    for (const b of bredder) {
+      if (b.nyckel !== 'belaggning-segment-formular') {
+        expect(formular?.bredd ?? 0).toBeGreaterThan(b.bredd);
+      }
+    }
+  });
+
+  test('fullt event: " · Fullt" i mätartexten; utan tak: tomt spår', async ({ page }) => {
+    await mockEvent(
+      page,
+      eventDetail({ viaFormular: 9, maxPlatser: 12, reserverade: 1, manuelltTillagda: 1 }),
+    );
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByText('12 av 12 platser upptagna · Fullt')).toBeVisible();
+  });
+
+  test('MORFEN Δ=0 px DOM-mätt (AC #2): kortets geometri + etikett-positioner; likbredda w-32-fält', async ({
+    page,
+  }) => {
+    await mockEvent(page, eventDetail());
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-belaggning"]');
+    const kort = grupp.locator('[data-testid="grupp-kort"]');
+
+    // DOKUMENT-relativa positioner (top + scrollY): morfens autoFocus scrollar
+    // fältet i vy → viewport-relativa boundingBox-y skiftar av SCROLLEN, inte
+    // av geometrin. Dokument-koordinater är den ärliga Δ=0 px-mätningen.
+    const kortBox = () =>
+      kort.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return { top: r.top + window.scrollY, height: r.height, width: r.width };
+      });
+    const labelTops = () =>
+      kort
+        .locator('dt')
+        .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().top + window.scrollY));
+
+    // Läge 1 (visning): kortets box + varje etiketts y-position.
+    const before = await kortBox();
+    const labelYBefore = await labelTops();
+
+    await grupp.getByRole('button', { name: 'Ändra' }).click();
+
+    // Läge 2 (redigering): exakt samma kort-geometri och rad-positioner (Δ=0 px).
+    const after = await kortBox();
+    expect(after.height).toBe(before.height);
+    expect(after.top).toBe(before.top);
+    expect(after.width).toBe(before.width);
+
+    const labelYAfter = await labelTops();
+    expect(labelYAfter).toEqual(labelYBefore);
+
+    // Likbredda fält per-FORMULÄR (K15): tre antal-fält-slotar, exakt samma
+    // bredd, smalare än Om eventets w-60 (fältbredd speglar förväntat svar).
+    const slotBredder = await kort
+      .locator('[data-testid="falt-slot"]')
+      .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+    expect(slotBredder.length).toBe(3);
+    expect(new Set(slotBredder).size).toBe(1);
+    expect(slotBredder[0]).toBeLessThan(240);
+  });
+
+  test('"ändrar från"-mönstret: nuvarande värden dämpade bredvid antal-fälten', async ({
+    page,
+  }) => {
+    await mockEvent(page, eventDetail());
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-belaggning"]');
+    await grupp.getByRole('button', { name: 'Ändra' }).click();
+
+    // Nuvarande värden står kvar synliga (dämpade) genom hela ändringen —
+    // endast de TRE redigerbara raderna bär mönstret (läsraderna är kontext).
+    const nuvarande = grupp.locator('[data-testid="nuvarande-varde"]');
+    await expect(nuvarande).toHaveText(['12', '1', '1']);
+
+    // Fokus-kontinuitet: första fältet fokuserat när morfen öppnas.
+    await expect(grupp.getByRole('textbox', { name: 'Max antal platser' })).toBeFocused();
+  });
+
+  test('Spara skriver via update-event: TRE absoluta fält; mergen behåller räkningsraderna', async ({
+    page,
+  }) => {
+    // Server-sanning i mocken: efter update speglar get-event det nya värdet —
+    // onSettled-refetchen (ADR-016 E) ska KONVERGERA, inte backa.
+    let serverMax = 12;
+    await page.route(GET_EVENT, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ event: eventDetail({ maxPlatser: serverMax }) }),
+      });
+    });
+    let updateBody: Record<string, unknown> | null = null;
+    await page.route(UPDATE_EVENT, async (route) => {
+      updateBody = route.request().postDataJSON() as Record<string, unknown>;
+      serverMax = 14;
+      // update-event-svaret bär ALDRIG räkningarna (viaFormular/medfoljande/
+      // vantelista) — exakt EF-formen; mergen i useUpdateEvent måste bevara dem.
+      const {
+        viaFormular: _vf,
+        medfoljande: _mf,
+        vantelista: _vl,
+        ...utanRakningar
+      } = eventDetail({ maxPlatser: 14 });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          event: utanRakningar,
+          record: { id: EVENT_ID, fields: {} },
+        }),
+      });
+    });
+
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-belaggning"]');
+    await grupp.getByRole('button', { name: 'Ändra' }).click();
+
+    // Ändra Max antal platser 12 → 14 (RAC NumberField committar vid blur).
+    await grupp.getByRole('textbox', { name: 'Max antal platser' }).fill('14');
+    await grupp.getByRole('button', { name: 'Spara' }).click();
+
+    // Morfen stängs mot svaret; raden visar nya värdet.
+    await expect(grupp.getByRole('button', { name: 'Ändra' })).toBeVisible();
+    await expect(grupp.getByText('14', { exact: true })).toBeVisible();
+
+    // Payloaden: eventId + sektionens TRE fält som absoluta värden, inga extra.
+    expect(updateBody).toEqual({
+      eventId: EVENT_ID,
+      maxPlatser: 14,
+      reserverade: 1,
+      manuelltTillagda: 1,
+    });
+
+    // MERGE-BEVISET: räkningsraderna står kvar direkt efter Spara (utan mergen
+    // hade Anmälda deltagare/Medföljande/Väntelista blinkat bort tills refetchen).
+    const termer = await grupp.locator('dt').allTextContents();
+    expect(termer).toContain('Anmälda deltagare');
+    expect(termer).toContain('Väntelista');
+    await expect(grupp.getByText('8', { exact: true })).toBeVisible();
+  });
+
+  test('fel-väg: update-event 500 → role=alert med fel, morfen förblir öppen', async ({ page }) => {
+    await mockEvent(page, eventDetail());
+    await page.route(UPDATE_EVENT, async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Internal error', requestId: 'req-test-2' }),
+      });
+    });
+
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-belaggning"]');
+    await grupp.getByRole('button', { name: 'Ändra' }).click();
+    await grupp.getByRole('button', { name: 'Spara' }).click();
+
+    await expect(page.getByRole('alert')).toContainText('Kunde inte spara');
+    await expect(grupp.getByRole('button', { name: 'Spara' })).toBeVisible();
+  });
+
+  test('Avbryt: ändringar kastas; fokus tillbaka till Beläggningens Ändra-knapp', async ({
+    page,
+  }) => {
+    await mockEvent(page, eventDetail());
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-belaggning"]');
+    await grupp.getByRole('button', { name: 'Ändra' }).click();
+    await grupp.getByRole('textbox', { name: 'Max antal platser' }).fill('99');
+    await grupp.getByRole('button', { name: 'Avbryt' }).click();
+
+    // Visningsläget åter med OFÖRÄNDRAT värde; fokus-retur till gruppens Ändra.
+    await expect(grupp.getByText('12', { exact: true })).toBeVisible();
+    await expect(grupp.getByRole('button', { name: 'Ändra' })).toBeFocused();
+  });
+
+  test('stale cache utan beläggningsfält: räkningsrader 0, väntelistan ändå med, ingen krasch', async ({
+    page,
+  }) => {
+    // Optional-fälten frånvarande (äldre EF-svar/get-events-cache-form).
+    await mockEvent(
+      page,
+      eventDetail({
+        reserverade: undefined,
+        manuelltTillagda: undefined,
+        viaFormular: undefined,
+        medfoljande: undefined,
+        vantelista: undefined,
+      }),
+    );
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-belaggning"]');
+    const termer = await grupp.locator('dt').allTextContents();
+    // Rader med null-värde döljs (K6-normen); Anmälda deltagare + Väntelista
+    // står ALLTID (K22) — med 0.
+    expect(termer).toEqual(['Max antal platser', 'Anmälda deltagare', 'Väntelista']);
   });
 });

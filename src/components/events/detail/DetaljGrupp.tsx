@@ -42,12 +42,31 @@ export function DetaljGrupp({
  * Geometrin är morf-paritetens visningssida: py-3 + 24 px textrad = 48 px,
  * exakt lika med RedigeringsRad (py-2 + 32 px fält). Ändra ALDRIG ena sidan utan
  * den andra — Δ=0 px är DOM-mätt i e2e (AC #3).
+ *
+ * `streck` (task-18.2; K16/K61): vertikal kategorimarkör vänster om etiketten —
+ * kalendervyns streck-form (en markör-grammatik i familjen). Dekorativ
+ * (aria-hidden): siffran i raden är bäraren, färg aldrig ensam. Strecket är
+ * self-stretch inom radens oförändrade py — geometrin (48 px) rörs inte.
  */
-export function EtikettVardeRad({ term, children }: { term: string; children: ReactNode }) {
+export function EtikettVardeRad({
+  term,
+  streck,
+  children,
+}: {
+  term: string;
+  /** Kategorimarkörens bg-klass (t.ex. beläggningens KATEGORI-färger). */
+  streck?: string;
+  children: ReactNode;
+}) {
   if (children == null || children === '') return null;
   return (
     <div className="flex items-center justify-between gap-4 py-3">
-      <dt className="flex items-center gap-2 text-small text-text-muted">{term}</dt>
+      <dt className="flex items-center gap-2 text-small text-text-muted">
+        {streck && (
+          <span aria-hidden="true" className={`w-1 shrink-0 self-stretch rounded-full ${streck}`} />
+        )}
+        {term}
+      </dt>
       <dd className="text-right text-body">{children}</dd>
     </div>
   );
@@ -61,26 +80,40 @@ export function EtikettVardeRad({ term, children }: { term: string; children: Re
  *
  * "Ändrar från"-mönstret (K13): nuvarande värdet synligt DÄMPAT vänster om
  * fältet genom hela ändringen. Likbredds-regeln (K13): alla fält i samma
- * formulär delar exakt slot-bredd (w-60) — fälten är w-full inuti slotten.
+ * formulär delar exakt slot-bredd — regeln är per-FORMULÄR (K15): Om eventets
+ * fyra fält delar w-60 (default), Beläggningens antal-fält delar w-32
+ * (fältbredd speglar förväntat svar, GOV.UK-formregeln) via `slotKlass`.
+ * `streck` (task-18.2): samma kategorimarkör som visningsradens (morf-pariteten).
  */
 export function RedigeringsRad({
   term,
+  streck,
   nuvarande,
+  slotKlass = 'w-60',
   children,
 }: {
   term: string;
+  /** Kategorimarkörens bg-klass — samma som visningsradens (morf-paritet). */
+  streck?: string;
   /** Nuvarande värde, visas dämpat ("ändrar från"); null/tomt → "–". */
   nuvarande?: string | null;
+  /** Slot-breddklass — likbredd per FORMULÄR (K15); default Om eventets w-60. */
+  slotKlass?: string;
   children: ReactNode;
 }) {
   return (
     <div className="flex items-center justify-between gap-4 py-2">
-      <dt className="flex shrink-0 items-center gap-2 text-small text-text-muted">{term}</dt>
+      <dt className="flex shrink-0 items-center gap-2 text-small text-text-muted">
+        {streck && (
+          <span aria-hidden="true" className={`w-1 shrink-0 self-stretch rounded-full ${streck}`} />
+        )}
+        {term}
+      </dt>
       <dd className="flex min-w-0 flex-1 items-center justify-end gap-3">
         <span data-testid="nuvarande-varde" className="truncate text-small text-text-secondary">
           {nuvarande || '–'}
         </span>
-        <div data-testid="falt-slot" className="w-60 shrink-0">
+        <div data-testid="falt-slot" className={`${slotKlass} shrink-0`}>
           {children}
         </div>
       </dd>

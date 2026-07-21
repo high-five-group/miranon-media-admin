@@ -14,12 +14,13 @@ import { findDisallowedField, getOperation } from '../_shared/field-allowlists.t
 //
 // FÄLT-SHAPE byggs SERVER-SIDE ur typade inputs — klienten skickar ALDRIG en rå
 // `fields`-map. Alla uppdaterbara fält är OPTIONAL (partiell update — Om eventet
-// skickar typ/ort/datum/status; Beläggningens Ändra-skiva återanvänder operationen
-// för platser); minst ETT måste vara satt. Endast live-verifierade skrivbara fält
-// (L294, staging-schema 2026-07-21): Typ/Status (singleSelect), Ort (singleLineText),
-// Startdatum/Slutdatum (date ISO), Max antal platser (number). System-genererade
-// fält sätts ALDRIG (EventKey formel / Event-nr autoNumber); spegel-/länk- och
-// formel-/rollup-fält rörs aldrig.
+// skickar typ/ort/datum/status; Beläggningens Ändra [task-18.2] skickar
+// maxPlatser/reserverade/manuelltTillagda — K16-modellens tre skrivbara); minst
+// ETT måste vara satt. Endast live-verifierade skrivbara fält (L294,
+// staging-schema 2026-07-21): Typ/Status (singleSelect), Ort (singleLineText),
+// Startdatum/Slutdatum (date ISO), Max antal platser/Extra platser/Manuella
+// platser (number). System-genererade fält sätts ALDRIG (EventKey formel /
+// Event-nr autoNumber); spegel-/länk- och formel-/rollup-fält rörs aldrig.
 //
 // MÅNAD/ÅR-HÄRLEDNINGEN (ADR-066 b6-arvet): ändras Startdatum OMHÄRLEDS `Månad/år`
 // server-side ur det nya datumet — annars driftar basens manuella singleSelect mot
@@ -98,6 +99,14 @@ function mapEvent(record: { id: string; fields: Record<string, unknown> }) {
     // eventKey: saknas värdet UTELÄMNAS nyckeln (undefined droppas av
     // JSON.stringify; OPTIONAL i EventSchema — aldrig null). Håll i synk.
     eventKey: typeof f['EventKey'] === 'string' ? f['EventKey'] : undefined,
+    // Beläggningens TVÅ skrivbara kategorifält (task-18.2, K16) — PATCH-svaret
+    // bär dem. Räkningarna (viaFormular/medfoljande/vantelista) aggregeras
+    // MEDVETET INTE här (write-EF:en förblir ett Airtable-anrop; ADDITIVT-
+    // OPTIONAL i EventSchema) — klienten MERGE-cachar (useUpdateEvent) och
+    // onSettled-refetchen mot get-event bär hela modellen. Osatt → nyckeln
+    // UTELÄMNAS (eventKey-formen — aldrig null).
+    reserverade: scalarNumber(f['Extra platser']) ?? undefined,
+    manuelltTillagda: scalarNumber(f['Manuella platser']) ?? undefined,
   };
 }
 
@@ -135,6 +144,8 @@ Deno.serve(async (req) => {
     const slutdatum = body?.slutdatum;
     const status = body?.status;
     const maxPlatser = body?.maxPlatser;
+    const reserverade = body?.reserverade;
+    const manuelltTillagda = body?.manuelltTillagda;
 
     // Mål-raden: Airtable-record-ID (rec-prefix — create-registrations eventId-grind).
     if (typeof eventId !== 'string' || !eventId.startsWith('rec')) {
@@ -163,6 +174,20 @@ Deno.serve(async (req) => {
     ) {
       return badRequest('maxPlatser must be a non-negative number when present', corsHeaders);
     }
+    if (
+      reserverade !== undefined &&
+      (typeof reserverade !== 'number' || !Number.isFinite(reserverade) || reserverade < 0)
+    ) {
+      return badRequest('reserverade must be a non-negative number when present', corsHeaders);
+    }
+    if (
+      manuelltTillagda !== undefined &&
+      (typeof manuelltTillagda !== 'number' ||
+        !Number.isFinite(manuelltTillagda) ||
+        manuelltTillagda < 0)
+    ) {
+      return badRequest('manuelltTillagda must be a non-negative number when present', corsHeaders);
+    }
 
     // Bygg write-fält SERVER-SIDE — endast närvarande inputs, endast live-verifierade
     // skrivbara fält (L294). Månad/år OMHÄRLEDS när Startdatum ändras (ADR-066 b6-arvet).
@@ -176,10 +201,15 @@ Deno.serve(async (req) => {
     if (typeof slutdatum === 'string') fields['Slutdatum'] = slutdatum;
     if (typeof status === 'string') fields['Status'] = status.trim();
     if (typeof maxPlatser === 'number') fields['Max antal platser'] = maxPlatser;
+    // K16-modellens mappning (task-18.2): reserverade → 'Extra platser',
+    // manuelltTillagda → 'Manuella platser' (domänspråket i API:t, basens
+    // fältnamn endast här server-side).
+    if (typeof reserverade === 'number') fields['Extra platser'] = reserverade;
+    if (typeof manuelltTillagda === 'number') fields['Manuella platser'] = manuelltTillagda;
 
     if (Object.keys(fields).length === 0) {
       return badRequest(
-        'At least one updatable field is required (typ, ort, startdatum, slutdatum, status, maxPlatser)',
+        'At least one updatable field is required (typ, ort, startdatum, slutdatum, status, maxPlatser, reserverade, manuelltTillagda)',
         corsHeaders,
       );
     }

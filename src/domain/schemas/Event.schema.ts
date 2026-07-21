@@ -28,4 +28,27 @@ export const EventSchema = z.object({
   // EF:erna UTELÄMNAR nyckeln när värdet mot förmodan saknas (aldrig null), och
   // BÅDA läs-EF:erna (get-event + get-events) returnerar fältet sedan samma leverans.
   eventKey: z.string().optional(),
+
+  // ── Beläggningens innehållsmodell (task-18.2; S73-facit K16, PRD task-18
+  // beslut 5) — mappar basen 1-till-1. SAMTLIGA fält ADDITIVT-OPTIONAL i
+  // eventKey-formen: UTELÄMNAS-vid-saknas, ALDRIG null (null skulle kollidera
+  // med list-prototypens ProtoEvent-typ — 18.1-precedenten). get-events
+  // (P1-listan) och äldre cache-svar bär dem inte, och endast get-event
+  // aggregerar (update-event returnerar de två skrivbara men aldrig
+  // räkningarna — useUpdateEvent MERGE-cachar därför, se hooken). ──
+
+  // Reserverade = basens 'Extra platser' (skrivbart number; osatt i basen →
+  // nyckeln utelämnas).
+  reserverade: z.number().optional(),
+  // Manuellt tillagda = basens 'Manuella platser' (osatt → nyckeln utelämnas).
+  manuelltTillagda: z.number().optional(),
+  // "Anmälda deltagare"-raden: antal länkade Anmälningar med Källa TOM
+  // (= formuläranmälningar; frånvaro är sanning — data-model §Källa-värden).
+  viaFormular: z.number().optional(),
+  // Antal länkade Anmälningar med Källa '+1' (CompanionModal-medföljande).
+  medfoljande: z.number().optional(),
+  // Antal AKTIVA event-kopplade Väntelisteplatser via nya länkfältet
+  // 'Event (länk)' (task-18.2, additivt staging-fält; NOT Flyttad till anmälan
+  // — get-waitlist:s aktiv-semantik). Utanför taket, aldrig ett segment (K22).
+  vantelista: z.number().optional(),
 });
