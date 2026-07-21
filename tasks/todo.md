@@ -21,6 +21,34 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 75 ⏸️ PAUSAD (2026-07-21) — Batch-exekveringen: work-batch max 22, två pipelines
+
+> Scope: sessionsdok `2026-07-21-session-75.md` Del 1 (kanonisk
+> plats): exekvera Marcus batch-order AFK (ordern ordagrant i S74
+> Del 4). Sektionen född vid paus-landningen (paus ÄR en landning,
+> L67/L223). Kadensrad per L67.
+
+- [x] **Dok-födelse** (2026-07-21): `d71d7ad` (VÄNTAT RÖD på docs-
+  jobbet — MD032-incidenten, L297-recidiv: pipe åt exit-koden; läkt
+  `117ea30` grön per jobb); numrering disk-verifierad (074/L307/T80/
+  f45); S74 closed `d350aa0`. **NÄSTA: batch-avfyrningen.**
+- [x] **AVFYRAD + MARCUS-STOPPAD (yt-bytet)** (2026-07-21, Del 2
+  kanonisk plats): förkraven gröna (allowlist [känd lucka rm/git rm
+  → 18.13 kan stalla, sist] · semafor · B-flaggan AV [T46 ej
+  switchad] · 22 kandidater) · claims-fasningen: 19.4 → svansen
+  (delar field-allowlists.ts med P2) · orkestrerings-skriptet
+  författat + avfyrat (wf_7967e44e-c2b) · Marcus-stopp sekunder
+  senare ("vi byter yta") → TaskStop · **sidoeffekt-verifieringen
+  REN** (0 remote brancher · inga PR:ar · inga kort-mutationer;
+  lokala task/17.1+18.1 städade). **NÄSTA: PAUSAD — se nedan.**
+- [x] **PAUSAD** (2026-07-21, Marcus-order "Stoppa! Vi byter yta"):
+  `lifecycle: paused` + förankrad PAUSLÄGE-rubrik + fullt HANDOFF
+  (TILLSTÅND · CARRY [batch-ordern STÅR — inget nytt kvitto krävs ·
+  referens-skriptet · kända risker · lesson-kandidat 1
+  L297-recidivet] · numrering · resume-vägen). **NÄSTA: NY Code-yta
+  → `/session-resume` på S75 → avfyra batchen per stående ordern →
+  AFK-dagen → status-rapport vid Marcus hemkomst.**
+
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 
 > Scope: sessionsdok `2026-07-21-session-74.md` Del 1 (kanonisk
