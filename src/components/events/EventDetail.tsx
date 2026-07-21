@@ -1,64 +1,57 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { ChevronLeft } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
+import { DetaljGrupp, EtikettVardeRad } from './detail/DetaljGrupp';
+import { OmEventet } from './detail/OmEventet';
 
 /** Visat eventnamn ur de fält Airtable kan leverera — aldrig krasch/tomt. */
 function eventName(e: Event): string {
   return e.eventNamn ?? e.eventlabel ?? 'Namnlöst event';
 }
 
-/** Beläggning som TEXT (färg aldrig ensam bärare). Null-säker: osatt tak → ingen NaN. */
-function belaggningText(e: Event): string {
-  if (e.maxPlatser == null) return `${e.antalAnmalda} anmälda (platser ej satt)`;
-  return `${e.antalAnmalda} av ${e.maxPlatser} platser`;
-}
-
-/** Fullt = inga platser kvar. `platserKvar` null (okänt tak) → ej "fullt". */
-function isFull(e: Event): boolean {
-  return e.platserKvar != null && e.platserKvar <= 0;
-}
-
-/** Beläggnings-procent (andel) som text, eller null när taket saknas. */
-function percentText(e: Event): string | null {
-  if (e.anmaldBelaggning == null) return null;
-  return `${Math.round(e.anmaldBelaggning * 100)} %`;
-}
-
-/** En rad i en fält/värde-lista; hoppar tomma värden (renderar inte null). */
-function DescRow({ term, children }: { term: string; children: React.ReactNode }) {
-  if (children == null || children === '') return null;
+/** Länk-rad i kortform — interim-ingång till en befintlig detaljyta. */
+function LankRad({
+  to,
+  eventId,
+  children,
+}: {
+  to: '/event/$eventId/anmalda' | '/event/$eventId/betalning' | '/event/$eventId/narvaro';
+  eventId: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-      <dt className="text-small text-text-muted sm:min-w-48">{term}</dt>
-      <dd className="text-small">{children}</dd>
+    <div className="py-3">
+      <Link to={to} params={{ eventId }} className="text-body underline">
+        {children}
+      </Link>
     </div>
   );
 }
 
 /**
- * Event-detalj — Info-vy (Fas 6b L2). BERIKAD OPERATIONS-ÖVERSIKT: eventets
- * identitet + beläggnings-överblick + betalnings-/närvaro-SAMMANFATTNING (siffror
- * + länkar till detaljytorna), INTE duplicerade rådata-listor. get-event speglar
- * get-events-mappningen för EN rad (ingen aggregering). Data via `fetchEvent` →
- * get-event-EF (router-context-DI, ADR-055).
+ * Eventsidan — S73-facitets grundform (task-18.1). Toppraden bär identiteten
+ * (stor chevron ensam + h1 = eventnamnet + EventKey-pill + tid kvar-raden);
+ * innehållet är GRUPPER med rubrik utanför tonala kort (DetaljGrupp).
  *
- * Panel-pekar-in-i-motorrummet: info-vyn är ÖVERSIKTEN; betalning/närvaro/anmälda
- * är detaljytorna. Ingen redundans — sammanfattande siffror + länkar, ej listorna.
+ * 18.1:s snitt: sidstrukturen + Om eventet med Ändra-morfen (uppdatera-event-
+ * vertikalen). Beläggning/Anmälda deltagare/Betalningar/Närvaro står som
+ * INTERIM-grupper i facit-ordningen — befintlig data i grupp-grammatiken +
+ * länkar till dagens detaljytor; deras facit-innehåll byggs i 18.2/18.4/18.8/
+ * 18.9 (Åtgärder + check-in är 18.3; Gruppdynamik/Anteckningar 18.10/18.11).
  *
- * A11y (11/10, speglar PersonDetail):
- * - `<h1>` = eventnamn; fokus flyttas dit när data anlänt (namnlöst → fallback,
- *   aldrig krasch).
- * - Data-anländning annonseras i `aria-live="polite"`.
- * - Loading: `aria-busy` + synlig + sr-only status.
- * - Fel OCH 404-ej-funnen: `role="alert"` via MessageBox (ingen dubbel-announcer).
- * - `document.title` = eventnamn när laddat.
- * - "Tillbaka till event-listan"-länk alltid närvarande.
- * - Beläggnings-/betalnings-siffror som läsbar text (skärmläsaren får hela bilden).
+ * A11y (11/10):
+ * - Chevronen ensam bär "detta är en undersida" (44 px rund länk,
+ *   aria-label "Tillbaka till event"); h1 = eventnamnet, fokus dit vid laddning.
+ * - Data-anländning annonseras i aria-live; Lugnt laddläge: skeleton i
+ *   slutgeometri (aria-busy + sr-besked — ingen synlig "Laddar…"-textrad).
+ * - Fel OCH 404 via MessageBox (role=alert); document.title = eventnamnet.
  */
 export function EventDetail({ eventId }: { eventId: string }) {
   const dataSource = useDataSource();
@@ -90,132 +83,121 @@ export function EventDetail({ eventId }: { eventId: string }) {
     }
   }, [event]);
 
-  const backLink = (
-    <Link to="/event" className="text-small underline">
-      ← Tillbaka till event-listan
-    </Link>
+  // Sid-chromen står ALLTID i slutgeometri — bara innehållsytan växlar mellan
+  // ladd/fel/laddat (Lugnt laddläge). Chevronen i rubrikstorlek (44 px-knapp,
+  // touch-target-golvet) är sidans enda navigations-krom upptill.
+  const sidRam = (innehall: React.ReactNode) => (
+    <section className="flex flex-col gap-6 pt-2 lg:pt-10">
+      <Link
+        to="/event"
+        aria-label="Tillbaka till event"
+        className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
+      >
+        <ChevronLeft aria-hidden="true" size={26} />
+      </Link>
+      {innehall}
+    </section>
   );
 
   if (isPending) {
-    return (
-      <section className="flex flex-col gap-4 p-4" aria-busy="true">
-        {backLink}
-        <p role="status" aria-live="polite">
-          Laddar event…
-        </p>
-      </section>
+    // Lugnt laddläge: skeleton i slutgeometri — identitetsblocket + tonala
+    // kortytor; besked endast för skärmläsare (ingen synlig textrad).
+    return sidRam(
+      <div role="status" aria-busy="true" className="flex flex-col gap-6">
+        <span className="sr-only">Laddar event…</span>
+        <Skeleton variant="text" className="mx-4 w-3/5 text-3xl" />
+        <Skeleton variant="listRow" className="h-44 rounded-2xl" />
+        <Skeleton variant="listRow" className="h-32 rounded-2xl" />
+        <Skeleton variant="listRow" className="h-36 rounded-2xl" />
+      </div>,
     );
   }
 
   if (isError) {
-    return (
-      <section className="flex flex-col gap-4 p-4">
-        {backLink}
-        {notFound ? (
-          <MessageBox intent="error" title="Eventet hittades inte">
-            Inget event med det ID:t finns. Det kan ha tagits bort, eller så är länken felaktig.
-          </MessageBox>
-        ) : (
-          <MessageBox intent="error" title="Kunde inte hämta eventet">
-            {error instanceof Error ? error.message : 'Okänt fel.'}
-          </MessageBox>
-        )}
-      </section>
+    return sidRam(
+      notFound ? (
+        <MessageBox intent="error" title="Eventet hittades inte">
+          Inget event med det ID:t finns. Det kan ha tagits bort, eller så är länken felaktig.
+        </MessageBox>
+      ) : (
+        <MessageBox intent="error" title="Kunde inte hämta eventet">
+          {error instanceof Error ? error.message : 'Okänt fel.'}
+        </MessageBox>
+      ),
     );
   }
 
-  const datumspann = [event.startdatum, event.slutdatum]
-    .filter(Boolean)
-    .filter((d, i, arr) => arr.indexOf(d) === i) // start === slut → visa en gång
-    .join(' – ');
-  const percent = percentText(event);
-  const full = isFull(event);
-
-  return (
-    <section className="flex flex-col gap-6 p-4">
-      {backLink}
-
+  return sidRam(
+    <>
       {/* aria-live: bekräftar för skärmläsare att eventet anlänt. */}
       <p className="sr-only" role="status" aria-live="polite">
         {`Event ${eventName(event)} laddat.`}
       </p>
 
-      <header className="flex flex-col gap-1">
-        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-2xl">
-          {eventName(event)}
-        </h1>
+      {/* Toppraden (S73-facit K7–K10): identiteten UR korten — sidhuvud på ren
+          bakgrund; placeringen ÄR lås-signalen. h1 = eventnamnet (rubrikpolicyn);
+          EventKey-pillen som titel-metadata till höger (liten mot titeln);
+          tid kvar-raden under; tunn avdelare. */}
+      <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
+        <div className="flex items-center justify-between gap-3">
+          <h1 ref={headingRef} tabIndex={-1} className="min-w-0 break-words font-semibold text-3xl">
+            {eventName(event)}
+          </h1>
+          {event.eventKey && (
+            <span className="shrink-0 rounded-full bg-bg-muted px-3 py-1 font-medium text-small text-text-secondary">
+              {event.eventKey}
+            </span>
+          )}
+        </div>
         {event.tidKvarTillEvent && (
           <p className="text-small text-text-muted">{event.tidKvarTillEvent}</p>
         )}
       </header>
 
-      <section aria-labelledby="sektion-identitet" className="flex flex-col gap-2">
-        <h2 id="sektion-identitet" className="font-semibold text-lg">
-          Om eventet
-        </h2>
-        <dl className="flex flex-col gap-1">
-          <DescRow term="Typ">{event.typ}</DescRow>
-          <DescRow term="Ort">{event.ort}</DescRow>
-          <DescRow term="Datum">{datumspann || null}</DescRow>
-          <DescRow term="Status">{event.status}</DescRow>
-        </dl>
-      </section>
+      <OmEventet event={event} />
 
-      <section aria-labelledby="sektion-belaggning" className="flex flex-col gap-2">
-        <h2 id="sektion-belaggning" className="font-semibold text-lg">
-          Beläggning
-        </h2>
-        {/* Beläggning bärs av TEXT; "Fullt" + procent gör bilden begriplig. */}
-        <p className="text-small">
-          {belaggningText(event)}
-          {full ? ' · Fullt' : ''}
-          {percent ? ` · ${percent} fullt` : ''}
-        </p>
-        <dl className="flex flex-col gap-1">
-          <DescRow term="Platser kvar">
+      {/* INTERIM (18.2 äger innehållsmodellen + morfen): befintliga beläggnings-
+          värden i grupp-grammatiken. */}
+      <DetaljGrupp id="grupp-belaggning" rubrik="Beläggning">
+        <dl className="divide-y divide-border">
+          <EtikettVardeRad term="Max antal platser">
+            {event.maxPlatser != null ? String(event.maxPlatser) : null}
+          </EtikettVardeRad>
+          <EtikettVardeRad term="Anmälda deltagare">{String(event.antalAnmalda)}</EtikettVardeRad>
+          <EtikettVardeRad term="Platser kvar">
             {event.platserKvar != null ? String(event.platserKvar) : null}
-          </DescRow>
+          </EtikettVardeRad>
         </dl>
-      </section>
+      </DetaljGrupp>
 
-      <section aria-labelledby="sektion-betalning" className="flex flex-col gap-2">
-        <h2 id="sektion-betalning" className="font-semibold text-lg">
-          Betalningar
-        </h2>
-        <p className="text-small">
-          {`${event.antalAnmalningsavgifter} av ${event.antalAnmalda} har betalat anmälningsavgift.`}
-        </p>
-        <p className="text-small">
-          {`Slutbetalningar: ${event.antalSlutbetalningar} mottagna` +
-            (event.antalSlutbetalningFelande > 0
-              ? `, ${event.antalSlutbetalningFelande} saknas.`
-              : '.')}
-        </p>
-        <Link to="/event/$eventId/betalning" params={{ eventId }} className="text-small underline">
-          Öppna betalnings-vyn →
-        </Link>
-      </section>
+      {/* INTERIM (18.4 bygger arbetskön): ingången till dagens anmälda-yta. */}
+      <DetaljGrupp id="grupp-anmalda" rubrik="Anmälda deltagare">
+        <LankRad to="/event/$eventId/anmalda" eventId={eventId}>
+          Öppna anmälda-vyn
+        </LankRad>
+      </DetaljGrupp>
 
-      <section aria-labelledby="sektion-narvaro" className="flex flex-col gap-2">
-        <h2 id="sektion-narvaro" className="font-semibold text-lg">
-          Närvaro
-        </h2>
-        {/* Ingen närvaro-siffra i get-event-shapen — gissa inte fält; länka bara. */}
-        <Link to="/event/$eventId/narvaro" params={{ eventId }} className="text-small underline">
-          Öppna närvaro-vyn →
-        </Link>
-      </section>
+      {/* INTERIM (18.8 bygger arbetsytan): räknerader + ingången till betalnings-ytan. */}
+      <DetaljGrupp id="grupp-betalningar" rubrik="Betalningar">
+        <dl className="divide-y divide-border">
+          <EtikettVardeRad term="Anmälningsavgifter">
+            {`${event.antalAnmalningsavgifter} av ${event.antalAnmalda} mottagna`}
+          </EtikettVardeRad>
+          <EtikettVardeRad term="Slutbetalningar">
+            {`${event.antalSlutbetalningar} mottagna`}
+          </EtikettVardeRad>
+        </dl>
+        <LankRad to="/event/$eventId/betalning" eventId={eventId}>
+          Öppna betalnings-vyn
+        </LankRad>
+      </DetaljGrupp>
 
-      <section aria-labelledby="sektion-anmalda" className="flex flex-col gap-2">
-        <h2 id="sektion-anmalda" className="font-semibold text-lg">
-          Anmälda
-        </h2>
-        {/* Ingen anmälda-siffra i get-event-shapen — gissa inte fält; länka bara
-            (speglar närvaro-sektionens form). Fas 6c L2: anmälda-vyn byggd. */}
-        <Link to="/event/$eventId/anmalda" params={{ eventId }} className="text-small underline">
-          Öppna anmälda-vyn →
-        </Link>
-      </section>
-    </section>
+      {/* INTERIM (18.9 bygger registret): ingången till dagens närvaro-yta. */}
+      <DetaljGrupp id="grupp-narvaro" rubrik="Närvaro">
+        <LankRad to="/event/$eventId/narvaro" eventId={eventId}>
+          Öppna närvaro-vyn
+        </LankRad>
+      </DetaljGrupp>
+    </>,
   );
 }

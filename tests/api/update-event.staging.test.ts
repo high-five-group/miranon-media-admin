@@ -1,0 +1,238 @@
+// update-event — skarp conformance mot deployad staging-EF (task-18.1, PRD task-18
+// Implementationsbeslut 2–3).
+//
+// update-event SKRIVER (POST → PATCH på BEFINTLIG Eventplanering-rad). Repots femte
+// write-vertikal; speglar create-event/create-registration/save-segment:s säkerhets-
+// kontrakt (POST→405, requireUser→401, body→400, allowlist-SSOT, {error}+requestId)
+// men för UPDATE. Till skillnad mot create-event bär den INGEN idempotensnyckel:
+// en PATCH med absoluta värden är naturligt idempotent (retry ger samma sluttillstånd)
+// — samma klass som mark-registration-fee-paid/update-person-note (update-record).
+//
+// Bevisar mot SKARP staging-data:
+//   1. allow (AC #1 på API-nivån): eget SENTINEL-event skapas via create-event
+//      (Ort 'ZZ-create-event-test', ADR-060) → update-event ÄNDRAR (typ/ort/datum/
+//      status/maxPlatser) → 200 + SKRIV-BEVIS ur råa record.fields + 'Månad/år'
+//      OMHÄRLETT ur nya Startdatum (ADR-066 b6-arvet — datum-edit får inte drifta
+//      basens manuella Månad/år) → OMLÄSNING via get-event visar nya värden →
+//      teardown ÅTERSTÄLLER ursprungsvärdena (finally; sentinel-raden städas därtill
+//      av ADR-060-purgen). Delade staging-fixturer muteras ALDRIG (TASK-6-klassen).
+//   2. eventKey i domän-svaret: update-event:s `event`-envelope bär det system-
+//      genererade eventKey (läs-shape-utökningen i samma leverans, task-18.1).
+//   3. deny-by-default: fälten byggs SERVER-SIDE ur typade inputs (klienten kan
+//      aldrig skicka en rå fields-map) — allowlisten är SSOT-grind mot kod-drift,
+//      ej en klient-nåbar deny-yta (create-event-mönstret). Klient-nåbara
+//      input-denies: saknat/ogiltigt eventId → 400, inga uppdaterbara fält → 400,
+//      ogiltig datum-form → 400, negativt maxPlatser → 400.
+//   4. anon (ingen JWT) → 401 (delad gateway/requireUser).
+//
+// EVENTFORMAT-ANKARE: create-setup:en kräver eventtyp (ADR-066 b5) → samma seedade
+// sentinel-fixtur som create-event-sviten (`ZZ-create-event-test-format`).
+//
+// Auth via getValidUserJWT (api-token-setup T24-b). Lokalt skip:as utan creds;
+// skarpa beviset körs i CI (STAGING_REQUIRED=1).
+
+import { randomUUID } from 'node:crypto';
+import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
+import { EventSchema } from '../../src/domain/schemas';
+import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
+
+const ENDPOINT = '/functions/v1/update-event';
+const SENTINEL_ORT = 'ZZ-create-event-test';
+// Ändrad ort under testet — återställs till SENTINEL_ORT i finally så att
+// ADR-060-purgens exakta Ort-match ('^ZZ-create-event-test$') består.
+const UPDATED_ORT = 'ZZ-create-event-test-uppdaterad';
+
+// Samma seedade Eventformat-ankare som create-event.staging.test.ts (Session 38 L1).
+const SEEDED_EVENTFORMAT_ID = 'recclDd7hUQsfxoVs';
+
+interface UpdateBody {
+  eventId?: string;
+  typ?: string;
+  ort?: string;
+  startdatum?: string;
+  slutdatum?: string;
+  status?: string;
+  maxPlatser?: number;
+}
+
+function postUpdate(
+  request: APIRequestContext,
+  config: ApiConfig,
+  jwt: string | undefined,
+  body: UpdateBody,
+): Promise<APIResponse> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (jwt) headers.Authorization = `Bearer ${jwt}`;
+  return request.post(`${config.baseUrl}${ENDPOINT}`, { headers, data: body });
+}
+
+/** Skapa ett eget sentinel-event att mutera (ADR-060; rör aldrig delade fixturer). */
+async function createSentinelEvent(
+  request: APIRequestContext,
+  config: ApiConfig,
+  jwt: string,
+): Promise<string> {
+  const res = await request.post(`${config.baseUrl}/functions/v1/create-event`, {
+    headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+    data: {
+      event: 'Fjärrskådning',
+      typ: 'Utbildning',
+      ort: SENTINEL_ORT,
+      startdatum: '2026-09-15',
+      slutdatum: '2026-09-16',
+      maxPlatser: 20,
+      eventtyp: process.env.TEST_EVENTFORMAT_RECORD_ID || SEEDED_EVENTFORMAT_ID,
+      idempotencyKey: randomUUID(),
+    },
+  });
+  const raw = await res.text();
+  expect(res.status(), raw).toBe(201);
+  return (JSON.parse(raw) as { record: { id: string } }).record.id;
+}
+
+/** Omläsning via get-event — samma EF som detaljsidan läser genom (AC #1-formen). */
+async function readEvent(
+  request: APIRequestContext,
+  config: ApiConfig,
+  jwt: string,
+  id: string,
+): Promise<Record<string, unknown>> {
+  const res = await request.get(
+    `${config.baseUrl}/functions/v1/get-event?id=${encodeURIComponent(id)}`,
+    { headers: { Authorization: `Bearer ${jwt}` } },
+  );
+  expect(res.status()).toBe(200);
+  return ((await res.json()) as { event: Record<string, unknown> }).event;
+}
+
+test.describe('update-event — skarp conformance (task-18.1)', () => {
+  test('allow: ändra → spara → omläsning visar nya värden; teardown återställer (sentinel-event)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    // Eget sentinel-event — delade staging-fixturer muteras aldrig (TASK-6-klassen).
+    const eventId = await createSentinelEvent(request, config, jwt);
+
+    try {
+      const res = await postUpdate(request, config, jwt, {
+        eventId,
+        typ: 'Föreläsning',
+        ort: UPDATED_ORT,
+        startdatum: '2026-10-01',
+        slutdatum: '2026-10-02',
+        status: 'Flyttat',
+        maxPlatser: 33,
+      });
+      const raw = await res.text();
+      expect(res.status(), raw).toBe(200);
+      const body = JSON.parse(raw) as {
+        event: Record<string, unknown>;
+        record: { id: string; fields: Record<string, unknown> };
+      };
+
+      // (i) SKRIV-BEVIS ur råa record.fields — EF:en satte fälten i Airtable.
+      expect(body.record.id).toBe(eventId);
+      expect(body.record.fields['Typ']).toBe('Föreläsning');
+      expect(body.record.fields['Ort']).toBe(UPDATED_ORT);
+      expect(body.record.fields['Startdatum']).toBe('2026-10-01');
+      expect(body.record.fields['Slutdatum']).toBe('2026-10-02');
+      expect(body.record.fields['Status']).toBe('Flyttat');
+      expect(body.record.fields['Max antal platser']).toBe(33);
+      // 'Månad/år' OMHÄRLETT ur nya Startdatum (ADR-066 b6-arvet) — ej skickat av klienten.
+      expect(body.record.fields['Månad/år']).toBe('Oktober 2026');
+
+      // (ii) Domän-envelope: samma berikade läs-shape som get-event (adapterns parse-väg)
+      // + system-genererade eventKey (läs-shape-utökningen, task-18.1).
+      const domain = EventSchema.parse(body.event);
+      expect(domain.id).toBe(eventId);
+      expect(domain.typ).toBe('Föreläsning');
+      expect(domain.eventKey).toMatch(/^Event-\d+$/);
+
+      // (iii) OMLÄSNING via get-event — nya värden syns i läs-vägen (AC #1).
+      const reread = await readEvent(request, config, jwt, eventId);
+      expect(reread.typ).toBe('Föreläsning');
+      expect(reread.ort).toBe(UPDATED_ORT);
+      expect(reread.startdatum).toBe('2026-10-01');
+      expect(reread.slutdatum).toBe('2026-10-02');
+      expect(reread.status).toBe('Flyttat');
+      expect(reread.maxPlatser).toBe(33);
+    } finally {
+      // TEARDOWN ÅTERSTÄLLER (AC #1): skriv tillbaka ursprungsvärdena — särskilt Ort
+      // till SENTINEL_ORT så ADR-060-purgens exakta match består. Körs även vid fel.
+      await postUpdate(request, config, jwt, {
+        eventId,
+        typ: 'Utbildning',
+        ort: SENTINEL_ORT,
+        startdatum: '2026-09-15',
+        slutdatum: '2026-09-16',
+        status: 'Planerat',
+        maxPlatser: 20,
+      });
+    }
+
+    // Restore-bevis (utanför finally — får inte svälja assert-fel i cleanup-vägen).
+    const restored = await readEvent(request, config, jwt, eventId);
+    expect(restored.ort).toBe(SENTINEL_ORT);
+    expect(restored.typ).toBe('Utbildning');
+    expect(restored.status).toBe('Planerat');
+  });
+
+  test('deny: eventId saknas → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await postUpdate(request, config, jwt, { ort: 'Skövde' });
+    expect(res.status()).toBe(400);
+    expect(((await res.json()) as { error?: string }).error).toMatch(/eventId/i);
+  });
+
+  test('deny: eventId utan rec-prefix → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await postUpdate(request, config, jwt, {
+      eventId: 'inteEttRecordId',
+      ort: 'Skövde',
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test('deny: inga uppdaterbara fält → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await postUpdate(request, config, jwt, { eventId: 'recAAAAAAAAAAAAA' });
+    expect(res.status()).toBe(400);
+    expect(((await res.json()) as { error?: string }).error).toMatch(/least one/i);
+  });
+
+  test('deny: ogiltig startdatum-form → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await postUpdate(request, config, jwt, {
+      eventId: 'recAAAAAAAAAAAAA',
+      startdatum: '01/10/2026',
+    });
+    expect(res.status()).toBe(400);
+    expect(((await res.json()) as { error?: string }).error).toMatch(/startdatum/i);
+  });
+
+  test('deny: negativt maxPlatser → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await postUpdate(request, config, jwt, {
+      eventId: 'recAAAAAAAAAAAAA',
+      maxPlatser: -1,
+    });
+    expect(res.status()).toBe(400);
+    expect(((await res.json()) as { error?: string }).error).toMatch(/maxPlatser/i);
+  });
+
+  test('anon (ingen JWT) → 401', async ({ request }) => {
+    const config = getApiConfig();
+    const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: { eventId: 'recANY', ort: 'X' },
+    });
+    await classify401Body(res);
+  });
+});

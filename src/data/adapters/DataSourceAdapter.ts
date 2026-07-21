@@ -14,6 +14,7 @@ import type {
   SaveSegmentInput,
   SegmentResult,
   SegmentRule,
+  UpdateEventInput,
 } from '../../domain/schemas';
 import type {
   AttendanceFilters,
@@ -119,4 +120,13 @@ export interface DataSourceAdapter {
    * (`CreatedEvent`) bär de system-genererade EventKey/Event-nr.
    */
   createEvent(input: CreateEventInput): Promise<CreatedEvent>;
+
+  /**
+   * Uppdatera ett befintligt event (task-18.1, PRD task-18 beslut 2–3). Tar
+   * write-shapen `UpdateEventInput` (typade optionella fält + eventId); EF:en
+   * bygger Airtable-fälten server-side, omhärleder Månad/år när Startdatum
+   * ändras och PATCH:ar raden. Svaret är den BERIKADE läs-shapen (`Event`) —
+   * samma form som fetchEvent, så cachen kan sättas direkt.
+   */
+  updateEvent(input: UpdateEventInput): Promise<Event>;
 }
