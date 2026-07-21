@@ -1009,6 +1009,10 @@ Radgap inom grupp: 10 px (`gap-2.5`); mellan grupper: 32 px (`gap-8`).
   tabbar-paritet i storlek och familj; ett steg tystare än etiketten
   (M3-listmönstrets research-belägg).
 - Etikett 16/600 (`text-body` + semibold), `--mm-navcard-text`.
+- Chevron 18 px höger, `--mm-navcard-icon`, `aria-hidden` — samma
+  grammatik som eventsidans åtgärdsrader (S73 K25/K72); tillagd vid
+  2026-07-21-regelrivningen (se regel-sektionen nedan). Länknamnet är
+  fortsatt etiketten ENSAM.
 - **Ingen hover-bakgrundsändring** — transparent-i-vila + hover-grå
   är PRÖVAD OCH FÖRKASTAD (M3, S64); återinförs inte utan nytt
   facit-beslut.
@@ -1018,13 +1022,23 @@ Radgap inom grupp: 10 px (`gap-2.5`); mellan grupper: 32 px (`gap-8`).
   (= `--mm-border-strong`). Statisk rad — reduced-motion/print utan
   specialfall (globala neutraliseringen täcker).
 
-### App-bred regel: navigationsrader bär inte chevron
+### App-bred regel: chevron betyder att raden leder vidare
 
-Navigationsrader (NavCard och alla kommande rad-navigationsytor) bär
-**ingen chevron** — "desto mindre saker desto renare" (M4-varvet,
-D-reviderad; öppet bokförd revision av samsyn D). Dropdown-indikatorer
-(t.ex. `Select`:s `ChevronDown`) är en ANNAN mönsterklass och berörs
-inte av regeln.
+**REGELRIVNING ÖPPET BOKFÖRD (2026-07-21, task-18.3).** Den tidigare
+regeln på denna plats — "navigationsrader bär inte chevron" ("desto
+mindre saker desto renare", M4-varvet, D-reviderad) — är RIVEN som
+Marcus-kvitterad konsekvens av S73:s K25-prövning: eventsidans
+åtgärdsrader LÅSTES med chevroner i facitet, och prövnings-kontraktet
+krävde då att app-regeln rivs öppet och att Mer-menyn följer med för
+koherens (PRD task-18 implementationsbeslut 15; facit-bilagan
+`s73-eventsida-konvergens/` §Öppet bokfört).
+
+Ny regel: **chevron betyder att raden leder vidare.** Rader som tar
+användaren till en annan yta eller in i ett flöde (NavCard, eventsidans
+åtgärds- och check-in-rader) bär chevron 18 px höger i sekundärfärgen,
+`aria-hidden` (etiketten bär namnet ensam). Dropdown-indikatorer
+(t.ex. `Select`:s `ChevronDown`) är fortsatt en ANNAN mönsterklass;
+tab-baren är inte en rad-klass och berörs inte.
 
 ### Komponent-tokens (components.css)
 
@@ -1268,4 +1282,5 @@ stavas klassmönstret inte ut här.
 | 2026-07-18 | §15 Form: skeleton-tonen till branschbandet — 1.4.11-feltillämpningen korrigerad (dekorativt undantag per Understanding 1.4.11; MUI/Carbon/shadcn-värden citerade), ny semantisk roll-token `--mm-bg-placeholder` (neutral-200), shimmer 45→75 %, kontrast-kontraktet dubbelriktat i Skeleton.spec (task-8.6; S67 QA-fynd, L269-klassen). |
 | 2026-07-21 | §16 ToggleButtonGroup — pill-toggel-primitiven (S72-facitet): API, förseglade beslut (singel-val + alltid-ett-val → radiogroup-semantik), anatomi/tangentbord, computed-låst form, semantisk token-konsumtion utan komponent-tokens (task-17.1). |
 | 2026-07-21 | §17 Kursfärger — ADR-064-taxonomins semantiska tokens (S72-facitets legend, solida 500-kulörer): fem `--mm-kurs-*`-roller mot befintliga primitiver + uppslaget `src/lib/kursfarg.ts` (teckenexakta basvärden, Annat som uppsamling; ersätter prototypens namn-matchning) (task-17.3). |
+| 2026-07-21 | §14 REGELRIVNING: "navigationsrader bär inte chevron" riven öppet (S73 K25-prövningens Marcus-kvitterade konsekvens; PRD task-18 beslut 15) → ny regel "chevron betyder att raden leder vidare"; NavCard-formen får chevron 18 px höger i sekundärfärgen, Mer-menyn följer med för app-koherens (task-18.3). |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |

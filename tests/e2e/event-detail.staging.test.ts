@@ -113,10 +113,11 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    // Grupperna i facit-ordning (18.1:s delmängd — Åtgärder/check-in är 18.3,
-    // Gruppdynamik/Anteckningar 18.10/18.11).
+    // Grupperna i facit-ordning (18.1+18.3:s delmängd — check-in-kortet är
+    // rubrikfritt per K26; Gruppdynamik/Anteckningar 18.10/18.11).
     const rubriker = await page.getByRole('heading', { level: 2 }).allTextContents();
     expect(rubriker).toEqual([
+      'Åtgärder',
       'Om eventet',
       'Beläggning',
       'Anmälda deltagare',
@@ -158,23 +159,34 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     const omGrupp = page.locator('section[aria-labelledby="grupp-om-eventet"]');
     const kort = omGrupp.locator('[data-testid="grupp-kort"]');
 
+    // DOKUMENT-relativa positioner (top + scrollY, 18.2-testets mätform):
+    // morfens autoFocus scrollar fältet i vy — sedan 18.3 lade Åtgärder +
+    // check-in ovanför ligger kortet lägre och scrollen slår till. Viewport-
+    // relativa boundingBox-y skiftar då av SCROLLEN, inte av geometrin;
+    // dokument-koordinater är den ärliga Δ=0 px-mätningen.
+    const kortBox = () =>
+      kort.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return { top: r.top + window.scrollY, height: r.height, width: r.width };
+      });
+    const labelTops = () =>
+      kort
+        .locator('dt')
+        .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().top + window.scrollY));
+
     // Läge 1 (visning): kortets box + varje etiketts y-position.
-    const before = await kort.boundingBox();
-    const labelYBefore = await kort
-      .locator('dt')
-      .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().top));
+    const before = await kortBox();
+    const labelYBefore = await labelTops();
 
     await omGrupp.getByRole('button', { name: 'Ändra' }).click();
 
     // Läge 2 (redigering): exakt samma kort-geometri och rad-positioner (Δ=0 px).
-    const after = await kort.boundingBox();
-    expect(after?.height).toBe(before?.height);
-    expect(after?.y).toBe(before?.y);
-    expect(after?.width).toBe(before?.width);
+    const after = await kortBox();
+    expect(after.height).toBe(before.height);
+    expect(after.top).toBe(before.top);
+    expect(after.width).toBe(before.width);
 
-    const labelYAfter = await kort
-      .locator('dt')
-      .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().top));
+    const labelYAfter = await labelTops();
     expect(labelYAfter).toEqual(labelYBefore);
 
     // Likbredda fält: alla fyra fält-slotar exakt samma bredd (K13-regeln).
@@ -383,6 +395,181 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
       .click();
     const belaggningsMorf = await new AxeBuilder({ page }).withTags(taggar).analyze();
     expect(belaggningsMorf.violations).toEqual([]);
+  });
+});
+
+/**
+ * task-18.3 — Åtgärds-gruppen + check-in-ingången + chevron-koherensen
+ * (S73-facit K19–K26, K47, K72).
+ *
+ * Renderad verifiering (L245/L246): hover-plattans grammatik, måttpariteten
+ * check-in ↔ åtgärdsrad och kuvert-grammatiken bevisas via computed-style/
+ * DOM-mätning — aldrig klass-tittande. Utskicks-raderna + Markera betalda är
+ * ÄNNU inte kopplade (flödena byggs i 18.6/18.8) och bär aria-disabled tills
+ * dess — öppet bokfört interim; Skriv ut är skarp (window.print).
+ */
+test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
+  test('check-in-ingången: eget rubrikfritt kort ÖVER Åtgärder i exakt åtgärdsradens mått', async ({
+    page,
+  }) => {
+    await mockEvent(page, eventDetail());
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    // Ingången är en LÄNK med belagt mål (PRD beslut 18-mönstret, öppet
+    // avgjort i skivan): befintliga närvaro-ytan tills check-in-sidan byggs.
+    const checkIn = page.getByRole('link', { name: 'Gå till check-in' });
+    await expect(checkIn).toBeVisible();
+    await expect(checkIn).toHaveAttribute('href', `/event/${EVENT_ID}/narvaro`);
+
+    // Eget kort-skal (K24/K26): tonal yta + 16 px-radie, UTAN rubrik —
+    // det speciella bärs av placeringen + ensamheten, inte avvikande mått.
+    const kort = page.locator('[data-testid="checkin-kort"]');
+    const kortStil = await kort.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { bg: s.backgroundColor, radie: s.borderRadius };
+    });
+    expect(kortStil.bg).not.toBe('rgba(0, 0, 0, 0)');
+    expect(kortStil.radie).toBe('16px');
+    expect(await kort.locator('h2').count()).toBe(0);
+
+    // Placeringen: kortet ligger ovanför Åtgärds-gruppen (K23 — eventdagens
+    // primärhandling), och raden delar åtgärdsradens mått (K26, DOM-mätt).
+    const atgarder = page.locator('section[aria-labelledby="grupp-atgarder"]');
+    const kortBox = await kort.boundingBox();
+    const atgarderBox = await atgarder.boundingBox();
+    expect((kortBox?.y ?? 0) + (kortBox?.height ?? 0)).toBeLessThanOrEqual(atgarderBox?.y ?? 0);
+
+    const checkInHojd = (await checkIn.boundingBox())?.height;
+    const atgardsRadHojd = (
+      await atgarder.getByRole('link', { name: 'Lägg till manuell anmälan' }).boundingBox()
+    )?.height;
+    expect(checkInHojd).toBe(atgardsRadHojd);
+  });
+
+  test('Åtgärder: sex rader i frekvensordning med kuvert-grammatiken och chevroner', async ({
+    page,
+  }) => {
+    await mockEvent(page, eventDetail());
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-atgarder"]');
+
+    // Frekvensordningen (K21: vanligaste först) — Lägg till är en LÄNK till
+    // manuell anmälan-sidan (K16/K17), resten knappar.
+    const lagg = grupp.getByRole('link', { name: 'Lägg till manuell anmälan' });
+    await expect(lagg).toHaveAttribute('href', `/event/${EVENT_ID}/ny-anmalan`);
+    const radNamn = await grupp
+      .locator('a, button')
+      .evaluateAll((els) => els.map((el) => (el.textContent ?? '').trim()));
+    expect(radNamn).toEqual([
+      'Lägg till manuell anmälan',
+      'Skicka bekräftelsemail till obekräftade',
+      'Skicka betalningspåminnelse till obetalda',
+      'Markera alla obetalda som betalda',
+      'Skicka eventinfo till alla anmälda',
+      'Skriv ut denna detaljsida',
+    ]);
+
+    // Kuvert-grammatiken (K47): Mail på VARJE skicka mail-handling — exakt
+    // de tre utskicks-raderna; plus/badge-check/printer bär sina rader.
+    await expect(grupp.locator('svg.lucide-mail')).toHaveCount(3);
+    await expect(grupp.locator('svg.lucide-plus')).toHaveCount(1);
+    await expect(grupp.locator('svg.lucide-badge-check')).toHaveCount(1);
+    await expect(grupp.locator('svg.lucide-printer')).toHaveCount(1);
+
+    // K25-chevronen på ALLA sex rader (chevron = raden leder vidare).
+    await expect(grupp.locator('svg.lucide-chevron-right')).toHaveCount(6);
+  });
+
+  test('hover-plattan (K72): emphasized-platta med rundade hörn på hovrad rad, transparent i vila', async ({
+    page,
+  }) => {
+    await mockEvent(page, eventDetail());
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-atgarder"]');
+    const rad = grupp.getByRole('button', { name: 'Skicka bekräftelsemail till obekräftade' });
+
+    // Vila: transparent bakgrund (plattan finns bara vid hover).
+    const bgVila = await rad.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(bgVila).toBe('rgba(0, 0, 0, 0)');
+
+    // Hover: emphasized-plattan (K56-grammatiken) — computed mot token-kedjan.
+    // toHaveCSS auto-retryar förbi motion-safe-transitionens mellanvärden.
+    const emphasized = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--mm-bg-emphasized)';
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    });
+    await rad.hover();
+    await expect(rad).toHaveCSS('background-color', emphasized);
+    await expect(rad).toHaveCSS('border-radius', '8px');
+
+    // Plattans -mx-2-geometri (K72): knappen skjuter 8 px UTANFÖR kortets
+    // 16 px innehålls-inset (kant + padding) — plattan får luft utan att
+    // texten flyttas. DOM-mätt mot kortets computed kant/padding-kedja.
+    const kortet = grupp.locator('[data-testid="grupp-kort"]');
+    const kortMatt = await kortet.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return {
+        x: el.getBoundingClientRect().x,
+        inset: Number.parseFloat(s.borderLeftWidth) + Number.parseFloat(s.paddingLeft),
+      };
+    });
+    expect(kortMatt.inset).toBe(17); // 1 px kant + 16 px padding (px-4)
+    const radX = (await rad.boundingBox())?.x ?? 0;
+    expect(radX).toBe(kortMatt.x + kortMatt.inset - 8);
+  });
+
+  test('Skriv ut är skarp: raden anropar window.print', async ({ page }) => {
+    await mockEvent(page, eventDetail());
+    await page.addInitScript(() => {
+      (window as unknown as { __printAnrop: number }).__printAnrop = 0;
+      window.print = () => {
+        (window as unknown as { __printAnrop: number }).__printAnrop += 1;
+      };
+    });
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Skriv ut denna detaljsida' }).click();
+    const anrop = await page.evaluate(
+      () => (window as unknown as { __printAnrop: number }).__printAnrop,
+    );
+    expect(anrop).toBe(1);
+  });
+
+  test('okopplade rader bär aria-disabled tills sina flöden finns (18.6/18.8); de skarpa gör det inte', async ({
+    page,
+  }) => {
+    await mockEvent(page, eventDetail());
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-atgarder"]');
+    for (const namn of [
+      'Skicka bekräftelsemail till obekräftade',
+      'Skicka betalningspåminnelse till obetalda',
+      'Markera alla obetalda som betalda',
+      'Skicka eventinfo till alla anmälda',
+    ]) {
+      await expect(grupp.getByRole('button', { name: namn })).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
+    }
+    await expect(
+      grupp.getByRole('link', { name: 'Lägg till manuell anmälan' }),
+    ).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(
+      grupp.getByRole('button', { name: 'Skriv ut denna detaljsida' }),
+    ).not.toHaveAttribute('aria-disabled', 'true');
   });
 });
 

@@ -31,7 +31,7 @@ async function resolvedTokenColor(page: Page, tokenNamn: string): Promise<string
 }
 
 test.describe('NavCard — M6-facitets beteendekontrakt', () => {
-  test('hela ytan är EN länk: etiketten bär länknamnet ensam, ikonen är dekorativ, ingen chevron', async ({
+  test('hela ytan är EN länk: etiketten bär länknamnet ensam, ikon + chevron är dekorativa', async ({
     page,
   }) => {
     const sektion = page.locator(SEKTION);
@@ -42,11 +42,41 @@ test.describe('NavCard — M6-facitets beteendekontrakt', () => {
     // här bevisas den positiva wiringen ände-till-ände).
     await expect(lank).toHaveAttribute('href', '/mer/anmalningar');
 
-    // Exakt EN svg (ingen chevron — app-bred regel, D-reviderad M4),
-    // och den är dekorativ (aria-hidden) så länknamnet är rent.
+    // Exakt TVÅ svg: radikonen + chevronen. Ingen-chevron-regeln är RIVEN
+    // ÖPPET (task-18.3; S73 K25-prövningens Marcus-kvitterade konsekvens):
+    // chevron betyder att raden leder vidare — spec §14. Båda dekorativa
+    // (aria-hidden) så länknamnet är rent.
     const ikoner = lank.locator('svg');
-    await expect(ikoner).toHaveCount(1);
+    await expect(ikoner).toHaveCount(2);
     await expect(ikoner.first()).toHaveAttribute('aria-hidden', 'true');
+    await expect(ikoner.last()).toHaveAttribute('aria-hidden', 'true');
+    await expect(lank.locator('svg.lucide-chevron-right')).toHaveCount(1);
+  });
+
+  test('chevronen: 18 px i sekundärfärgen, sist i raden (leder vidare-grammatiken)', async ({
+    page,
+  }) => {
+    const lank = page.locator(SEKTION).getByRole('link', { name: 'Anmälningar' });
+    const chevron = lank.locator('svg.lucide-chevron-right');
+    const matt = await chevron.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { bredd: s.width, hojd: s.height, farg: s.color };
+    });
+    // Åtgärdsradernas chevron-grammatik (S73 K25/K72): 18 px, sekundärfärgen.
+    expect(matt.bredd).toBe('18px');
+    expect(matt.hojd).toBe('18px');
+    expect(matt.farg).toBe(await resolvedTokenColor(page, '--mm-text-secondary'));
+
+    // Chevronen är radens sista element (höger — "raden leder vidare").
+    const positioner = await lank.evaluate((el) => {
+      const svgs = el.querySelectorAll('svg');
+      const sista = svgs[svgs.length - 1] as SVGElement;
+      return {
+        chevronHoger: sista.getBoundingClientRect().right,
+        lankHoger: el.getBoundingClientRect().right,
+      };
+    });
+    expect(positioner.chevronHoger).toBeLessThanOrEqual(positioner.lankHoger);
   });
 
   test('träffyta: raden är ≈58 px hög (≥44 px-golvet)', async ({ page }) => {
