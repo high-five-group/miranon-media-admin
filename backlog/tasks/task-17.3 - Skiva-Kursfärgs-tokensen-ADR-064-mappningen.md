@@ -4,7 +4,7 @@ title: 'Skiva: Kursfärgs-tokensen (ADR-064-mappningen)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-21 19:39'
+updated_date: '2026-07-21 20:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,13 +30,15 @@ Prefaktorering: kursfärgerna (Fjärrskådning, RIM 1, RIM 2, RIM 3, Annat) etab
 väntar design-review (S75-batchen v2). Levererat: 5 semantiska kursfärgs-tokens (--mm-kurs-*, semantic.css, primitivlagret orört — alla fem facit-kulörer fanns som primitiver) + uppslaget src/lib/kursfarg.ts (teckenexakta basvärden Fjärrskådning/Resor i medvetandet 1-3 → klass, Annat som uppsamling; KURSFARGER i legendordning) + spec §17. Renderad verifiering GRÖN: computed-style i Chromium 5/5 tokens + 5/5 bg-utilities == facit-kulörerna (#4a6b8a/#606b57/#a3491c/#a90000/#6b6b6b). Grindar: biome 0 · typecheck 0 · test:api 296/296 · build grön (bundelgrep: exakt 5 utilities) · markdownlint+vale 0. TDD-AVVIKELSE: rött-först ej möjligt — PRD:ns Testbeslut (ingen unit-skarv; api-skarven endast läs-shape) + claims-ytan utan testfiler; beteendet renderat-bevisat här och låses av 17.4 AC#1 + 18.10 AC#2.
 
 Historik — AFK-halt (S75 v2): PR-CI-run 29861999049 röd på steget 'Audit dependencies (audit-ci with allowlist)' — 2 nya high-advisories i transitiva beroenden: fast-uri GHSA-4c8g-83qw-93j6 (host confusion, >=3.0.0 <3.1.3) + linkify-it GHSA-v245-v573-v5vm (ReDoS-klass DoS, <=5.0.1, via markdown-it). Orelaterat till skivans diff (semantic.css + src/lib/kursfarg.ts + spec + kort); dependency-bump utanför tillåten yta och ej merge-konflikt → KONFLIKT-MANDATET ej tillämpligt, halt-first. PR #69 lämnad öppen, branch task/17.3 kvar för återupptagning. [Upplöst i S75-batch v2 merge-kedjan: audit-läkningen 93eb969 inmergad, halten historisk.]
+
+CI grönt per jobb: PR-run 29864167430 + main-run 29864624002 (S75-batch v2)
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
