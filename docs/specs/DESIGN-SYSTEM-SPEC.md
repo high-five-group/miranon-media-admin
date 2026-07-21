@@ -1214,6 +1214,49 @@ bor i `tests/a11y/primitives.spec.ts`.
 
 ---
 
+## 17. Kursfärger — ADR-064-taxonomins semantiska tokens
+
+Kursfärgerna ger varje kurs i event-taxonomin (ADR-064) en fast färg —
+S72-facitets legend (kalendervyns dag-plattor, legend-prickar och
+månadssummeringens streck; Gruppdynamikens kurshistorik i
+TASK-18-familjen). Facit-källa: bilagan
+`tasks/sessions/bilagor/s72-event-lista-konvergens/`, FACIT-kalendervyn
+(K11/K12: solida 500-kulörer — legendens och dag-plattornas kulör är
+SAMMA token).
+
+### Tokens (semantiska lagret)
+
+| Token | Primitiv | Legend-etikett |
+|---|---|---|
+| `--mm-kurs-fjarrskadning` | `--p-blue-500` | Fjärrskådning |
+| `--mm-kurs-rim1` | `--p-green-500` | RIM 1 |
+| `--mm-kurs-rim2` | `--p-copper-500` | RIM 2 |
+| `--mm-kurs-rim3` | `--p-red-500` | RIM 3 |
+| `--mm-kurs-annat` | `--p-neutral-500` | Annat |
+
+Alla fem kulörer fanns redan som primitiver — primitivlagret är orört
+(task-17.3). Riktvärdet är ≤5–7 färger med **Annat som uppsamling**:
+Psionautics, nakna "Resor i medvetandet" (fälla 35), saknat kursnamn och
+framtida kurser landar i Annat utan kod-ändring. En ny kurs får egen
+färg först genom nytt designbeslut (token + mappningspost), aldrig
+implicit.
+
+### Mappningen (ett uppslag, ingen namn-matchning i vyer)
+
+Uppslaget kurs → färg bor i `src/lib/kursfarg.ts`
+(segment-taxonomy-prejudikatets placering): `kursfargForKurs(kurs)` tar
+basens exakta kursnamn (`Event (source)`-värdet — teckenexakt, samma
+JOIN-nyckel-klass som segment-taxonomin) och ger `{ klass, etikett,
+token, bgClass }`; `KURSFARGER` bär legendens ordning. Prototypens
+regex-matchning på visningsnamn är ersatt — vyer gör ALDRIG egen
+namn-matchning. Tailwind-literalerna (`bgClass`-fälten, kompletta
+klass-strängar) bor i modulen eftersom JIT:s statiska scanning kräver
+literaler i källan — Tailwinds källskanning läser för övrigt även
+markdown, så klass-formade exempel i docs emitterar utilities; därför
+stavas klassmönstret inte ut här.
+
+---
+
 ## Ändringslogg
 
 | Datum | Förändring |
@@ -1224,4 +1267,5 @@ bor i `tests/a11y/primitives.spec.ts`.
 | 2026-07-12 | §15 Lugnt laddläge — laddprincipen (app-bred, S63 Del 2-samsynen + task-8.1:s mätlåsta framträdande-form) + Skeleton-primitiven: API, Roselli-anatomin, form, komponent-tokens (task-8.2). |
 | 2026-07-18 | §15 Form: skeleton-tonen till branschbandet — 1.4.11-feltillämpningen korrigerad (dekorativt undantag per Understanding 1.4.11; MUI/Carbon/shadcn-värden citerade), ny semantisk roll-token `--mm-bg-placeholder` (neutral-200), shimmer 45→75 %, kontrast-kontraktet dubbelriktat i Skeleton.spec (task-8.6; S67 QA-fynd, L269-klassen). |
 | 2026-07-21 | §16 ToggleButtonGroup — pill-toggel-primitiven (S72-facitet): API, förseglade beslut (singel-val + alltid-ett-val → radiogroup-semantik), anatomi/tangentbord, computed-låst form, semantisk token-konsumtion utan komponent-tokens (task-17.1). |
+| 2026-07-21 | §17 Kursfärger — ADR-064-taxonomins semantiska tokens (S72-facitets legend, solida 500-kulörer): fem `--mm-kurs-*`-roller mot befintliga primitiver + uppslaget `src/lib/kursfarg.ts` (teckenexakta basvärden, Annat som uppsamling; ersätter prototypens namn-matchning) (task-17.3). |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |

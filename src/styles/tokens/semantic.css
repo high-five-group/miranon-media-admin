@@ -61,6 +61,18 @@
   --mm-cat-comm: var(--p-blue-500);
   --mm-cat-system: var(--p-neutral-400);
 
+  /* ── Kursfärger (ADR-064-taxonomin; S72-facitets legend, task-17.3) ──
+     Solida 500-kulörer — legendens och dag-plattornas kulör är SAMMA
+     token (K12-beslutet). Riktvärdet ≤5–7 färger med Annat som
+     uppsamling (Psionautics, nakna "Resor i medvetandet", framtida
+     kurser). Uppslaget kurs → token bor i src/lib/kursfarg.ts — vyer
+     gör aldrig egen namn-matchning (spec §17). */
+  --mm-kurs-fjarrskadning: var(--p-blue-500);
+  --mm-kurs-rim1: var(--p-green-500);
+  --mm-kurs-rim2: var(--p-copper-500);
+  --mm-kurs-rim3: var(--p-red-500);
+  --mm-kurs-annat: var(--p-neutral-500);
+
   /* ── Knappar ── */
   --mm-btn-primary-bg: var(--p-neutral-800);
   --mm-btn-primary-text: var(--p-neutral-0);
