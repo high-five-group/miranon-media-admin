@@ -79,7 +79,7 @@
   },
   "overrides": {
     "@tanstack/history": "1.161.6",
-    "linkify-it": "5.0.1"
+    "linkify-it": "6.0.0"
   },
   "description": "React-admin för Miranon Media — eventhantering, anmälningar och rapportering ovanpå Airtable + Supabase. Privat projekt.",
   "author": "Marcus Johansson <marcus@h5gruppen.se>",
