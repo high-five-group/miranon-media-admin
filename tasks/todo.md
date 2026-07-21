@@ -81,6 +81,23 @@
   `src/domain/**` (18.1/18.4/18.9/18.10) + eventKey-fasning (Del 3
   fynd 1–2); rek. B: ny order enbart claims-säkra kort. Därefter
   end-pass på Marcus-signal.**
+- [x] **VÄG-BESLUTET + BATCH V2 AVFYRAD** (2026-07-21, Del 4
+  kanonisk plats): Marcus delegerad senior-order ("Du är senior
+  här, gör det som blir absolut bäst") på rek. A + kodifieringen —
+  order-tolkningen öppet bokförd i Del 4. Utfört: **17.1 MERGAD**
+  (kortfil-konflikten union-upplöst `3d72a4c` → PR #68 → tre runs
+  gröna per jobb → bokföring `9c6aec0` → städat; kvar: DoD #5
+  design-review) · **täcknings-passets premiär** (wf_428c7bef-11b:
+  21/21 kort, **15 GAP** — mekanismen empiriskt rättfärdigad) ·
+  **ADR-073 Amendering 3** `7c02b64` (täcknings-grinden ·
+  delade-ytor-registret 8 poster · konflikt-mandatet) · **batch v2
+  avfyrad** (wf_7a56889c-9eb: 21 kort, täcknings-validerade claims
+  med FAS-direktiv och konflikt-mandat i merge-kedjan). Lesson-
+  kandidater: kollisions≠täcknings ([UNIVERSAL]-kandidat) ·
+  pipe-till-tail ×3. **NÄSTA: batch v2 löper → hub-lyftet av
+  mekanismen till work-batch-skillen (egen landning, marcus-system)
+  → status-rapport vid Marcus hemkomst → QA-våg/design-review =
+  Marcus → end-pass på signal.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 
