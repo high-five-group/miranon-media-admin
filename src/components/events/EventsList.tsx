@@ -1,145 +1,105 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
-import { Select, SelectItem } from '@/components/primitives/Select';
+import { Skeleton } from '@/components/primitives/Skeleton';
+import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
+import { dateValue, EventCard, type Period } from './EventCard';
 
-type StatusFilter = 'upcoming' | 'past' | 'all';
-type SortKey = 'date' | 'name' | 'capacity';
-
-const STATUS_VALUES: StatusFilter[] = ['upcoming', 'past', 'all'];
-const SORT_VALUES: SortKey[] = ['date', 'name', 'capacity'];
-
-const STATUS_LABEL: Record<StatusFilter, string> = {
+const PERIOD_VALUES: Period[] = ['upcoming', 'past'];
+const PERIOD_LABEL: Record<Period, string> = {
   upcoming: 'Kommande',
   past: 'Tidigare',
-  all: 'Alla',
-};
-const SORT_LABEL: Record<SortKey, string> = {
-  date: 'Datum',
-  name: 'Namn',
-  capacity: 'Beläggning',
 };
 
-/** Visat eventnamn ur de fält Airtable kan leverera — aldrig krasch/tomt. */
-function eventName(e: Event): string {
-  return e.eventNamn ?? e.eventlabel ?? 'Namnlöst event';
-}
-
 /**
- * Beläggning som TEXT (färg får ALDRIG vara ensam bärare —
- * ACCESSIBILITY-CHECKLIST §1). Null-säker: saknad `maxPlatser` → ingen
- * division, ingen "NaN", explicit "platser ej satt".
- */
-function belaggningText(e: Event): string {
-  if (e.maxPlatser == null) return `${e.antalAnmalda} anmälda (platser ej satt)`;
-  return `${e.antalAnmalda} av ${e.maxPlatser} platser`;
-}
-
-/** Fullt = inga platser kvar. `platserKvar` null (okänt tak) → ej "fullt". */
-function isFull(e: Event): boolean {
-  return e.platserKvar != null && e.platserKvar <= 0;
-}
-
-/** Beläggnings-procent (andel) som text, eller null när taket saknas. */
-function percentText(e: Event): string | null {
-  if (e.anmaldBelaggning == null) return null;
-  return `${Math.round(e.anmaldBelaggning * 100)} %`;
-}
-
-/** Tid-värde för datum-sort; null startdatum → Infinity (sist oavsett riktning). */
-function dateValue(e: Event): number {
-  if (!e.startdatum) return Number.POSITIVE_INFINITY;
-  const t = new Date(e.startdatum).getTime();
-  return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
-}
-
-/**
- * Klient-side filter + sort (Fas 6b L1). `fetchEvents()` levererar hela listan;
- * status/sort härleds här tills get-events tar params (post-Fas E).
+ * Filtrera på period + sortera. PERIOD härleds ur `startdatum` mot idag —
+ * ALDRIG ur Status-fältet (ORDLISTA "Period"; stänger T14 tekniskt):
+ * planeringstillstånd (Planerat/Genomfört/Inställt/Flyttat) och tidsaxel
+ * är två fria axlar — ett inställt event i framtiden är Kommande + Inställt.
+ * Event utan startdatum räknas som Kommande (ännu ej daterat, inte förbi).
  *
- * STATUS-FILTER (UX-val, flaggat): `upcoming`/`past` härleds ur `startdatum` vs
- * idag — INTE ur `status`-enumet (Planerat/Genomfört/… är planeringstillstånd,
- * inte temporalt). Event utan startdatum räknas som `upcoming` (ännu ej daterat,
- * inte förbi).
- *
- * SORT (entydig per B′-beslut):
- * - `date`: startdatum. Riktning följer filtret (UX-val): `past` → senast först
- *   (fallande), annars närmast först (stigande). null-datum sist via dateValue.
- * - `name`: visat namn, A–Ö (locale `sv`).
- * - `capacity`: `anmaldBelaggning` (ANDEL), FALLANDE (fullast överst = mest
- *   handlingskrävande); null-beläggning SIST (faller aldrig till toppen) — samma
- *   null-sist-disciplin som 6a cursor-historik.
+ * Ordningen är LÅST utan sorteringsval (story 2): Kommande närmast först
+ * (stigande), Tidigare senast först (fallande); null-datum sist.
  */
-function filterAndSort(events: Event[], status: StatusFilter, sort: SortKey): Event[] {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const todayStart = now.getTime();
-
+function filterByPeriod(events: Event[], period: Period, idagStart: number): Event[] {
   const filtered = events.filter((e) => {
-    if (status === 'all') return true;
-    const isPast = dateValue(e) < todayStart; // Infinity (null) → aldrig past
-    return status === 'past' ? isPast : !isPast;
+    const isPast = dateValue(e) < idagStart; // Infinity (null) → aldrig past
+    return period === 'past' ? isPast : !isPast;
   });
-
-  const sorted = [...filtered];
-  if (sort === 'name') {
-    sorted.sort((a, b) => eventName(a).localeCompare(eventName(b), 'sv'));
-  } else if (sort === 'capacity') {
-    sorted.sort((a, b) => {
-      const av = a.anmaldBelaggning;
-      const bv = b.anmaldBelaggning;
-      if (av == null && bv == null) return 0;
-      if (av == null) return 1; // null sist
-      if (bv == null) return -1;
-      return bv - av; // fallande
-    });
-  } else {
-    const dir = status === 'past' ? -1 : 1; // past → fallande
-    sorted.sort((a, b) => dir * (dateValue(a) - dateValue(b)));
-  }
-  return sorted;
+  const dir = period === 'past' ? -1 : 1;
+  return [...filtered].sort((a, b) => dir * (dateValue(a) - dateValue(b)));
 }
 
-/** Läsbar beskrivning av aktiv ordning — för aria-live + Gunilla-begriplighet. */
-function sortDescription(status: StatusFilter, sort: SortKey): string {
-  if (sort === 'name') return 'sorterat efter namn, A–Ö';
-  if (sort === 'capacity') return 'sorterat efter beläggning, fullast först';
-  return status === 'past'
-    ? 'sorterat efter datum, senast först'
-    : 'sorterat efter datum, närmast först';
+/** "Juli 2026" — månadsgrupprubriken bär månaden (sv-SE, versal först). */
+function monthLabel(e: Event): string {
+  if (!e.startdatum) return 'Datum ej satt';
+  const d = new Date(e.startdatum);
+  if (Number.isNaN(d.getTime())) return 'Datum ej satt';
+  const label = new Intl.DateTimeFormat('sv-SE', { month: 'long', year: 'numeric' }).format(d);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/** Gruppera den redan sorterade listan per månad (tomma månader finns inte). */
+function groupByMonth(events: Event[]): { label: string; events: Event[] }[] {
+  const groups: { label: string; events: Event[] }[] = [];
+  for (const e of events) {
+    const label = monthLabel(e);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) {
+      last.events.push(e);
+    } else {
+      groups.push({ label, events: [e] });
+    }
+  }
+  return groups;
 }
 
 /**
- * Event-lista (Fas 6b L1) — filtrerbar + sorterbar vy över Eventplanering.
+ * Event-listan till S72-facit (task-17.2) — listvyn ände-till-ände. Facit:
+ * `tasks/sessions/bilagor/s72-event-lista-konvergens/FACIT-listvyn.png`
+ * ("Facit, vi låser hela event-listans yta", 2026-07-19).
  *
- * Datakällan nås via router-context (`useDataSource`, ADR-055) och är LIVE
- * (`fetchEvents` → get-events). URL-state: `?status` + `?sort` (nuqs, history
- * push) per URL-STATE-SPEC. Logiken speglar `PersonsList` (6a-certifierad a11y).
+ * Formen: period-toggeln [Kommande|Tidigare] (ToggleButtonGroup-primitiven,
+ * spread — facitets likbreda pill-segment) → månadsgrupper (riktiga
+ * h2-rubriker, story 17) → likformiga slot-kort (EventCard) → strukturerat
+ * text-tomläge. Vy-ikon-toggeln (?vy) tillkommer i task-17.4, Skapa-ingången
+ * ägs av skapa-PRD:n, bor över-raden av task-17.5.
+ *
+ * URL-kontraktet: `?period=upcoming|past` (nuqs, history push — delbart och
+ * back-bart per URL-STATE-SPEC §Event) ERSÄTTER gamla `?status`+`?sort`;
+ * sorteringen är låst per period (story 2) så inget sort-val behövs.
+ *
+ * Datakällan via router-context (`useDataSource`, ADR-055), stabil
+ * query-nyckel (`events.list` — hela listan, klient-side filter).
  *
  * A11y (vy-ribba 11/10/10, Tillgänglighet 11):
- * - Status- och sort-kontroller är React Aria `Select` (riktiga kontroller,
- *   tangentbord + type-ahead; aktivt val exponeras av Select-semantiken).
- * - Omsortering/omfiltrering BEKRÄFTAS via `aria-live`-region (PersonsList-
- *   announcern) — "Visar kommande event, sorterat efter …, N event."
- * - Beläggning bärs av TEXT (aldrig enbart färg); "Fullt" + ev. procent i text.
- * - Loading via `role=status`; rad-namn är tangentbordsnåbara länkar till
- *   /event/$eventId (info-vyn).
+ * - Period-toggeln är primitivens radiogroup (pilnavigering + Enter/Space,
+ *   exakt ett val alltid — a11y-mönstret bevisat i primitivens spec).
+ * - Periodväxling BEKRÄFTAS via aria-live ("Visar tidigare event. 2 event.")
+ *   — PersonsList-announcern, skip-first.
+ * - Lugnt laddläge (ORDLISTA; DESIGN-SYSTEM-SPEC §15): riktig h1 + riktig
+ *   toggle direkt, skeleton-block i listans slutgeometri; Roselli-anatomin
+ *   (role=status + aria-busy + sr-only-besked, blocken aria-hidden).
+ * - Beläggning/status bärs av TEXT (färg förstärker, aldrig ensam bärare).
  */
 export function EventsList() {
   const dataSource = useDataSource();
-  const [status, setStatus] = useQueryState(
-    'status',
-    parseAsStringEnum(STATUS_VALUES).withDefault('upcoming').withOptions({ history: 'push' }),
+  const [period, setPeriod] = useQueryState(
+    'period',
+    parseAsStringEnum(PERIOD_VALUES).withDefault('upcoming').withOptions({ history: 'push' }),
   );
-  const [sort, setSort] = useQueryState(
-    'sort',
-    parseAsStringEnum(SORT_VALUES).withDefault('date').withOptions({ history: 'push' }),
-  );
+
+  // Dagsstarten: EN referenspunkt för både periodfiltret och dagar-kvar-
+  // pillen (NastaEventCard-disciplinen — aldrig två olika "idag").
+  const idagStart = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return now.getTime();
+  }, []);
 
   const { data, isPending, isError, error } = useQuery({
     queryKey: queryKeys.events.list,
@@ -147,125 +107,118 @@ export function EventsList() {
   });
 
   const events = useMemo(
-    () => (data ? filterAndSort(data, status, sort) : []),
-    [data, status, sort],
+    () => (data ? filterByPeriod(data, period, idagStart) : []),
+    [data, period, idagStart],
   );
+  const groups = useMemo(() => groupByMonth(events), [events]);
 
-  // A11y: bekräfta omfiltrering/omsortering. Hoppa initial mount (ingen annons
-  // utan användar-handling) — samma "skip first" som PersonsList.
+  // A11y: bekräfta periodväxlingen — ENDAST vid faktisk växling (ingen
+  // annons vid mount eller datalandning; PersonsList-announcerns princip,
+  // skärpt till period-diff så initial-laddningen förblir tyst).
   const [announcement, setAnnouncement] = useState('');
-  const isFirst = useRef(true);
+  const prevPeriod = useRef(period);
   useEffect(() => {
-    if (isFirst.current) {
-      isFirst.current = false;
-      return;
-    }
-    if (isPending) return;
-    setAnnouncement(
-      `Visar ${STATUS_LABEL[status].toLowerCase()} event, ${sortDescription(status, sort)}. ${
-        events.length
-      } ${events.length === 1 ? 'event' : 'event'}.`,
-    );
-  }, [status, sort, events.length, isPending]);
+    if (isPending || prevPeriod.current === period) return;
+    prevPeriod.current = period;
+    setAnnouncement(`Visar ${PERIOD_LABEL[period].toLowerCase()} event. ${events.length} event.`);
+  }, [period, events.length, isPending]);
 
-  const controls = (
-    <div className="flex flex-wrap gap-3">
-      <Select
-        label="Visa"
-        selectedKey={status}
-        onSelectionChange={(key) => setStatus(key as StatusFilter)}
-        className="w-auto min-w-40"
-      >
-        {STATUS_VALUES.map((v) => (
-          <SelectItem key={v} id={v}>
-            {STATUS_LABEL[v]}
-          </SelectItem>
-        ))}
-      </Select>
-      <Select
-        label="Sortera efter"
-        selectedKey={sort}
-        onSelectionChange={(key) => setSort(key as SortKey)}
-        className="w-auto min-w-40"
-      >
-        {SORT_VALUES.map((v) => (
-          <SelectItem key={v} id={v}>
-            {SORT_LABEL[v]}
-          </SelectItem>
-        ))}
-      </Select>
-    </div>
+  const toggle = (
+    <ToggleButtonGroup<Period>
+      label="Period"
+      spread
+      selectedKey={period}
+      onSelectionChange={(key) => setPeriod(key)}
+    >
+      {PERIOD_VALUES.map((p) => (
+        <ToggleButton key={p} id={p}>
+          {PERIOD_LABEL[p]}
+        </ToggleButton>
+      ))}
+    </ToggleButtonGroup>
   );
 
-  if (isPending) {
-    return (
-      <div className="flex flex-col gap-4">
-        {controls}
-        <p role="status" aria-live="polite">
-          Laddar event…
-        </p>
-      </div>
-    );
-  }
+  const body = (() => {
+    if (isPending) {
+      // Lugnt laddläge: skeleton i listans SLUTGEOMETRI — månadsrubrik-raden
+      // + tre kort-block som speglar EventCards exakta anatomi (samma
+      // padding/gap/typografi-klasser → layout-skift ≈ 0 vid datalandning).
+      return (
+        <div role="status" aria-busy="true" className="flex flex-col gap-2">
+          <span className="sr-only">Laddar event…</span>
+          <Skeleton variant="text" className="w-28 text-small" />
+          <div className="flex flex-col gap-3">
+            {['a', 'b', 'c'].map((k) => (
+              <div
+                key={k}
+                className="flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted p-4"
+              >
+                <div className="flex flex-col gap-1 text-small">
+                  <div className="min-h-[2lh] text-body">
+                    <Skeleton variant="text" className="w-3/5 text-body" />
+                  </div>
+                  <Skeleton variant="text" className="w-2/5" />
+                  <Skeleton variant="text" className="w-1/2" />
+                </div>
+                <div className="flex flex-col gap-1 text-caption">
+                  <Skeleton variant="text" className="w-2/5" />
+                  <Skeleton variant="text" className="h-1.5 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
 
-  if (isError) {
-    return (
-      <div className="flex flex-col gap-4">
-        {controls}
+    if (isError) {
+      return (
         <MessageBox intent="error" title="Kunde inte hämta event">
           {error instanceof Error ? error.message : 'Okänt fel.'}
         </MessageBox>
-      </div>
-    );
-  }
+      );
+    }
 
-  const total = events.length;
-  const showPercent = sort === 'capacity';
+    if (events.length === 0) {
+      // Strukturerat text-tomläge per facit (story 13): avsiktligt, lugnt.
+      return (
+        <div className="flex flex-col items-center gap-1 py-12 text-center">
+          <p className="font-medium text-body">
+            {period === 'upcoming' ? 'Inga kommande event' : 'Inga tidigare event'}
+          </p>
+          <p className="text-small text-text-muted">
+            {period === 'upcoming'
+              ? 'Event du planerar dyker upp här.'
+              : 'Genomförda event dyker upp här.'}
+          </p>
+        </div>
+      );
+    }
+
+    return groups.map((group) => (
+      <section key={group.label} className="flex flex-col gap-2">
+        <h2 className="font-semibold text-small text-text-secondary">{group.label}</h2>
+        <ul aria-label={`Event ${group.label}`} className="flex flex-col gap-3">
+          {group.events.map((e) => (
+            <EventCard key={e.id} event={e} period={period} idagStart={idagStart} />
+          ))}
+        </ul>
+      </section>
+    ));
+  })();
 
   return (
-    <div className="flex flex-col gap-4">
-      {controls}
+    <div className="flex flex-col gap-6">
+      {toggle}
 
-      {/* Dold aria-live-region som bekräftar omfiltrering/omsortering. */}
-      <p className="sr-only" role="status" aria-live="polite">
+      {/* Dold aria-live-region som bekräftar periodväxlingen. MEDVETET utan
+          role="status": laddlägets skeleton-container äger status-rollen
+          ensam (Roselli-anatomin) — live-regionen annonserar ändå. */}
+      <p className="sr-only" aria-live="polite">
         {announcement}
       </p>
 
-      <p role="status" aria-live="polite" className="text-small text-text-muted">
-        {total === 0
-          ? `Inga ${STATUS_LABEL[status].toLowerCase()} event.`
-          : `${total} ${total === 1 ? 'event' : 'event'} (${STATUS_LABEL[status].toLowerCase()})`}
-      </p>
-
-      {total > 0 && (
-        <ul aria-label="Event" className="flex flex-col gap-3">
-          {events.map((e) => {
-            const percent = percentText(e);
-            const full = isFull(e);
-            return (
-              <li key={e.id} className="flex flex-col gap-1 border-b pb-3">
-                <Link
-                  to="/event/$eventId"
-                  params={{ eventId: e.id }}
-                  className="font-medium underline"
-                >
-                  {eventName(e)}
-                </Link>
-                <span className="text-small text-text-muted">
-                  {[e.startdatum, e.ort, e.status].filter(Boolean).join(' · ')}
-                </span>
-                <span className="text-small">
-                  {/* Beläggning bärs av text; "Fullt" + (vid capacity-sort) procent
-                      gör ordningen begriplig (Gunilla-principen). */}
-                  {belaggningText(e)}
-                  {full ? ' · Fullt' : ''}
-                  {showPercent && percent ? ` · ${percent} fullt` : ''}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {body}
     </div>
   );
 }

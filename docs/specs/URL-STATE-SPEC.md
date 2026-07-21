@@ -41,32 +41,33 @@ Ingen URL-state. Hem visar alltid aktuell status. Inget att bokmerka, inget att 
 
 | Param | Typ | Default | Parsning |
 |-------|-----|---------|----------|
-| `status` | `'upcoming' \| 'past' \| 'all'` | `'upcoming'` | `parseAsStringEnum` |
-| `sort` | `'date' \| 'name' \| 'capacity'` | `'date'` | `parseAsStringEnum` |
+| `period` | `'upcoming' \| 'past'` | `'upcoming'` | `parseAsStringEnum` |
 
 ```typescript
-const [status, setStatus] = useQueryState(
-  'status',
-  parseAsStringEnum(['upcoming', 'past', 'all']).withDefault('upcoming')
-);
-const [sort, setSort] = useQueryState(
-  'sort',
-  parseAsStringEnum(['date', 'name', 'capacity']).withDefault('date')
+const [period, setPeriod] = useQueryState(
+  'period',
+  parseAsStringEnum(['upcoming', 'past']).withDefault('upcoming')
+    .withOptions({ history: 'push' })
 );
 
-// /event                          → upcoming + date (defaults, inga synliga params)
-// /event?status=past              → past + date
-// /event?status=all&sort=name     → all + name
+// /event                → Kommande (default, inga synliga params)
+// /event?period=past    → Tidigare
 ```
 
-Koppling till TanStack Query -- nar `status` eller `sort` andras via nuqs andras query key automatiskt:
+**Period** (ORDLISTA) härleds ur eventets startdatum mot idag — ALDRIG ur
+Status-fältet (stänger T14). Sorteringen är LÅST per period (Kommande
+närmast först, Tidigare senast först) — inget `?sort`-val existerar.
 
-```typescript
-const { data: events } = useSuspenseQuery({
-  queryKey: ['events', { status, sort }],
-  queryFn: () => dataSource.fetchEvents({ status, sort }),
-});
-```
+> **Reconcilierad (task-17.2, 2026-07-21 — S72-facitet):** `?period`
+> ERSÄTTER den tidigare `?status`+`?sort`-modellen. Skäl: S72-konvergensen
+> låste period-toggeln [Kommande|Tidigare] med låst ordning per period
+> (PRD TASK-17 beslut 5); "status" som namn på tidsfiltret var
+> T14-begreppsgrumligheten (status = planeringstillstånd, inte tidsaxel).
+> Gamla params ignoreras av parsern (okända params ar inerta).
+> Vyvalet `?vy=kalender` tillkommer i kalendervy-skivan (task-17.4).
+
+Query-nyckeln ar STABIL (`['events', 'list']` — hela listan hamtas,
+period-filtret sker klient-side, se `src/queries/keys.ts`).
 
 ### Event-detalj (`/event/$eventId`)
 
@@ -89,7 +90,7 @@ länk-/bokmärkbar (`/event/rec123/betalning`) och Back rör sig mellan ytor nat
 > route-gräns ger parallell laddning + äkta länkbarhet per yta (Ryan Florence,
 > "When To Fetch"; react.wiki: nested routes när olika innehållsvägar ska ha olika
 > URL:er). Flik-modellen (en route, tab-villkorad query) deferrades till förmån
-> för routes. Listans `?status` + `?sort` är oförändrade (äkta filter-state).
+> för routes. Listans filter-state är URL-buret (`?period` sedan task-17.2).
 
 ### Personer (`/personer`)
 
@@ -148,8 +149,8 @@ nuqs skriver till `window.history` via `pushState` (default) eller `replaceState
 
 ```typescript
 // push = ny historikpost (Back fungerar) — for filter och flikar
-const [status, setStatus] = useQueryState('status',
-  parseAsStringEnum(['upcoming', 'past', 'all']).withDefault('upcoming')
+const [period, setPeriod] = useQueryState('period',
+  parseAsStringEnum(['upcoming', 'past']).withDefault('upcoming')
     .withOptions({ history: 'push' })
 );
 // replace = ingen ny historikpost — for paginering (undviker "Back-trappa")
@@ -165,7 +166,7 @@ Varje filtrerad vy ar en unik URL:
 | Scenario | URL |
 |----------|-----|
 | Kommande event (default) | `/event` |
-| Tidigare event | `/event?status=past` |
+| Tidigare event | `/event?period=past` |
 | Event-betalning (route, C1) | `/event/rec123/betalning` |
 | Personsokning | `/personer?q=andersson` |
 
@@ -179,19 +180,19 @@ nuqs hanterar serialisering automatiskt. Ogiltiga params kraschar aldrig appen:
 - `parseAsStringEnum`: `"past"` → `'past'`, `"bananas"` → default (`'upcoming'`)
 - `parseAsString`: `"anna"` → `'anna'`, tom → default (`''`)
 
-Alla parsers ar typsokra -- TypeScript vet att `status` ar `'upcoming' | 'past' | 'all'` (aldrig `string`, aldrig `undefined`).
+Alla parsers ar typsokra -- TypeScript vet att `period` ar `'upcoming' | 'past'` (aldrig `string`, aldrig `undefined`).
 
 ## Samspel: nuqs + TanStack Router + TanStack Query
 
 ```text
-URL (/event?status=past&sort=name)
+URL (/event?period=past)
        |
        +-- TanStack Router: validerar route, kor loader
        |       L- loader: queryClient.ensureQueryData({ queryKey: ['events'] })
        |
-       L-- nuqs: laser ?status=past, ?sort=name → React state
-               L- komponent: useSuspenseQuery({ queryKey: ['events', { status, sort }] })
-                       L- TanStack Query: data fran cache (seedad av loader) → render
+       L-- nuqs: laser ?period=past → React state
+               L- komponent: useQuery({ queryKey: ['events', 'list'] })
+                       L- TanStack Query: data fran cache → klient-side periodfilter → render
 ```
 
 Tre bibliotek, en URL, noll konflikter. Routern ager navigering, nuqs ager params, Query ager data.
