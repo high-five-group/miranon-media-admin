@@ -4,7 +4,7 @@ title: 'Skiva: Listvyn till S72-facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-21 20:46'
+updated_date: '2026-07-21 21:02'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,13 +30,15 @@ Event-listan renderar facitets listvy ände-till-ände: period-toggeln Kommande/
 
 <!-- SECTION:NOTES:BEGIN -->
 Levererad i S75-batchen v2 (parallell form, ADR-073): listvyn till S72-facit ände-till-ände — ToggleButtonGroup-konsumtion (spread), månadsgrupper (riktiga h2), likformiga slot-kort (EventCard, vy-lokal), strukturerat tomläge, Lugnt laddläge, ?period=upcoming|past ersätter ?status+?sort (URL-STATE-SPEC §Event omskriven; e2e-sviten omskriven, 12 tester TDD rött-först: 11/11 röda före implementation, 12/12 gröna efter). Facit-avprickning: computed-verifiering i e2e (2lh-rubrikreserv 48px, --mm-success-kontur/stapel, --mm-error/--mm-warning-slots, platshållar-rader, mät-stillhet vid datalandning) + skärmdump 390×844 mot bilagan. ÖPPEN FACIT-AVVIKELSE (a11y-golvet): Inställt-dämpningen är text-token-buren (text-muted + opacity endast på dekor) i stället för prototypens kort-opacity-60 — axe mätte 2.77–3.96:1 (< AA 4.5:1) med kort-opacity; slot-röda blir nu osläckt --mm-error. Utanför skivan (syns i facit-bilagan men ägs av andra kort): vy-ikon-toggeln (17.4), bor över-raden (17.5), Skapa-ingången (19.x). Väntar design-review (S75-batchen v2).
+
+CI grönt per jobb: PR-run 29867397616 + main-run 29867858651 (S75-batch v2)
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
