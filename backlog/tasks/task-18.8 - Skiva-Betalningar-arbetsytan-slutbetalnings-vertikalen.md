@@ -4,6 +4,7 @@ title: 'Skiva: Betalningar (arbetsytan + slutbetalnings-vertikalen)'
 status: To Do
 assignee: []
 created_date: '2026-07-21 08:20'
+updated_date: '2026-07-21 23:10'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,6 +25,12 @@ Betalningskortet visar röda saknas-deltan (minustecknet bär) och Öppna detalj
 - [ ] #2 Deadline-badgen visar start-minus-14-dagar-regeln; deltan och grupperna härleds live bevisat i e2e
 - [ ] #3 Påminnelse-vägvalet (additiva fält kontra maillogg-härledning) bokfört öppet i skivan före implementation
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AFK-halt (S75 v2): PR-CI rött (run 29875779970, PR #76): (1) audit-ci — GHSA-f88m-g3jw-g9cj (sharp inherited vulnerabilities in libvips: CVE-2026-33327/33328/35590/35591) via vite-plugin-pwa>@vite-pwa/assets-generator>sharp, ej i allowlist — ny advisory, orelaterad till branchens diff; (2) E2E staging 3 failed i tests/e2e/mark-paid.staging.test.ts (deadline-badgen start-minus-14 AC #2 toHaveText; Saknar-återflytt toBeVisible element not found; delta-avgifter −3-mismatch), 200 passed. Kod-/config-fix utanför merge-agentens mandat — halt-first. Branch task/18.8 + PR #76 kvarstår för åtgärd.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
