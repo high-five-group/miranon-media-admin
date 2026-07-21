@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { CalendarDays, List } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -8,12 +9,18 @@ import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
 import { dateValue, EventCard, type Period } from './EventCard';
+import { EventsCalendar } from './EventsCalendar';
 
 const PERIOD_VALUES: Period[] = ['upcoming', 'past'];
 const PERIOD_LABEL: Record<Period, string> = {
   upcoming: 'Kommande',
   past: 'Tidigare',
 };
+
+/** Vyvalet (URL-STATE-SPEC §Event): lista är default (ren URL — nuqs
+    clearOnDefault), `?vy=kalender` bär kalenderläget (task-17.4). */
+type Vy = 'lista' | 'kalender';
+const VY_VALUES: Vy[] = ['lista', 'kalender'];
 
 /**
  * Filtrera på period + sortera. PERIOD härleds ur `startdatum` mot idag —
@@ -63,15 +70,17 @@ function groupByMonth(events: Event[]): { label: string; events: Event[] }[] {
  * `tasks/sessions/bilagor/s72-event-lista-konvergens/FACIT-listvyn.png`
  * ("Facit, vi låser hela event-listans yta", 2026-07-19).
  *
- * Formen: period-toggeln [Kommande|Tidigare] (ToggleButtonGroup-primitiven,
- * spread — facitets likbreda pill-segment) → månadsgrupper (riktiga
- * h2-rubriker, story 17) → likformiga slot-kort (EventCard) → strukturerat
- * text-tomläge. Vy-ikon-toggeln (?vy) tillkommer i task-17.4, Skapa-ingången
- * ägs av skapa-PRD:n, bor över-raden av task-17.5.
+ * Formen: vy-ikon-toggeln (lista förvald, task-17.4) → period-toggeln
+ * [Kommande|Tidigare] (ToggleButtonGroup-primitiven, spread — facitets
+ * likbreda pill-segment) → månadsgrupper (riktiga h2-rubriker, story 17) →
+ * likformiga slot-kort (EventCard) → strukturerat text-tomläge. I kalender-
+ * läget (`?vy=kalender`) ersätter EventsCalendar period-toggeln + listan.
+ * Skapa-ingången ägs av skapa-PRD:n, bor över-raden av task-17.5.
  *
- * URL-kontraktet: `?period=upcoming|past` (nuqs, history push — delbart och
- * back-bart per URL-STATE-SPEC §Event) ERSÄTTER gamla `?status`+`?sort`;
- * sorteringen är låst per period (story 2) så inget sort-val behövs.
+ * URL-kontraktet: `?period=upcoming|past` + `?vy=kalender` (nuqs, history
+ * push — delbart och back-bart per URL-STATE-SPEC §Event) ERSÄTTER gamla
+ * `?status`+`?sort`; sorteringen är låst per period (story 2) så inget
+ * sort-val behövs. Kalenderläget läser inte ?period (kalendern äger tiden).
  *
  * Datakällan via router-context (`useDataSource`, ADR-055), stabil
  * query-nyckel (`events.list` — hela listan, klient-side filter).
@@ -92,6 +101,13 @@ export function EventsList() {
     'period',
     parseAsStringEnum(PERIOD_VALUES).withDefault('upcoming').withOptions({ history: 'push' }),
   );
+  // Vyvalet i URL:en (story 15): ?vy=kalender — lista är default med REN URL
+  // (clearOnDefault); history push så Back rör sig mellan vylägena.
+  const [vy, setVy] = useQueryState(
+    'vy',
+    parseAsStringEnum(VY_VALUES).withDefault('lista').withOptions({ history: 'push' }),
+  );
+  const kalenderLage = vy === 'kalender';
 
   // Dagsstarten: EN referenspunkt för både periodfiltret och dagar-kvar-
   // pillen (NastaEventCard-disciplinen — aldrig två olika "idag").
@@ -138,6 +154,43 @@ export function EventsList() {
     </ToggleButtonGroup>
   );
 
+  // Vy-ikon-toggeln (S72-facit K10): kompakt ikon-kapsel i samma grammatik
+  // som period-toggeln, placerad ÖVER den på fast position i BÅDA lägena →
+  // sömlös växling (inget hoppar). Ikonerna bär synligt; aria-label bär
+  // semantiken (primitivens ikon-pill-mönster, spec §16). Högerställd —
+  // vänstra platsen på raden ägs av Skapa-ingången (skapa-PRD:n, 19.x).
+  const vyRad = (
+    <div className="flex justify-end">
+      <ToggleButtonGroup<Vy>
+        label="Visningsläge"
+        selectedKey={vy}
+        onSelectionChange={(key) => setVy(key)}
+      >
+        <ToggleButton
+          id="lista"
+          aria-label="Listvy"
+          className="flex items-center justify-center px-3.5"
+        >
+          <List aria-hidden="true" size={18} />
+        </ToggleButton>
+        <ToggleButton
+          id="kalender"
+          aria-label="Kalendervy"
+          className="flex items-center justify-center px-3.5"
+        >
+          <CalendarDays aria-hidden="true" size={18} />
+        </ToggleButton>
+      </ToggleButtonGroup>
+    </div>
+  );
+
+  // Felläget delas av båda vylägena (samma datakälla, samma besked).
+  const felRuta = (
+    <MessageBox intent="error" title="Kunde inte hämta event">
+      {error instanceof Error ? error.message : 'Okänt fel.'}
+    </MessageBox>
+  );
+
   const body = (() => {
     if (isPending) {
       // Lugnt laddläge: skeleton i listans SLUTGEOMETRI — månadsrubrik-raden
@@ -172,11 +225,7 @@ export function EventsList() {
     }
 
     if (isError) {
-      return (
-        <MessageBox intent="error" title="Kunde inte hämta event">
-          {error instanceof Error ? error.message : 'Okänt fel.'}
-        </MessageBox>
-      );
+      return felRuta;
     }
 
     if (events.length === 0) {
@@ -209,16 +258,30 @@ export function EventsList() {
 
   return (
     <div className="flex flex-col gap-6">
-      {toggle}
+      {/* Vy-toggeln ÖVER period-toggeln, fast position i båda lägena; i
+          kalenderläget ERSÄTTER kalenderns månadsnav period-toggeln (PRD
+          beslut 7 — navet är kalenderns tidsnavigation). */}
+      {vyRad}
+      {!kalenderLage && toggle}
 
       {/* Dold aria-live-region som bekräftar periodväxlingen. MEDVETET utan
           role="status": laddlägets skeleton-container äger status-rollen
-          ensam (Roselli-anatomin) — live-regionen annonserar ändå. */}
+          ensam (Roselli-anatomin) — live-regionen annonserar ändå. ALLTID
+          monterad (stabil live-region; period växlas bara i listläget). */}
       <p className="sr-only" aria-live="polite">
         {announcement}
       </p>
 
-      {body}
+      {kalenderLage ? (
+        isError ? (
+          felRuta
+        ) : (
+          // Kalendern äger tiden: HELA källan, ofiltrerad av ?period.
+          <EventsCalendar events={data ?? []} isPending={isPending} idagStart={idagStart} />
+        )
+      ) : (
+        body
+      )}
     </div>
   );
 }
