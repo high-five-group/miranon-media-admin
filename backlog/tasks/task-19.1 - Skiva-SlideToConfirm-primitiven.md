@@ -4,7 +4,7 @@ title: 'Skiva: SlideToConfirm-primitiven'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-21 22:15'
+updated_date: '2026-07-21 22:33'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,13 +29,15 @@ Biblioteket får dra-till-bekräfta-primitiven: drag-vakter, grepp-krav och offs
 
 <!-- SECTION:NOTES:BEGIN -->
 väntar design-review (S75-batchen v2). Leverans: SlideToConfirm-primitiven (APG-switch för hand — RAC/Radix klick-toggle river avsikts-mekaniken K79; förseglat i spec §18) + barrel + demo-sektion (/dev/primitives, facit-instans + tyst defaultSelected-instans) + a11y-mönster-spec tests/a11y/SlideToConfirm.spec.ts (15 tester: semantik/tangentbord/fokusring, K79-drag-vakterna inkl grepp-offset, 90/10-fjädern + text-uttoning, computed-låst facit-form, pling-preferenser via AudioContext-stubb, axe-0 i båda tillstånden) + sektions-skan i primitives.spec.ts + DESIGN-SYSTEM-SPEC §18. Inga komponent-tokens (§16-precedenten — components.css orörd). TDD: minimaltest rött-först (2 röda före komponent), fulla specen rött-först (8 röda före full implementation), därefter grönt 15/15; hela a11y-sviten 61/61. Facit-avprickning (DoD 6): computed-style-assertions i mönster-specen + skärmdumpar (oarmerad/mitt-i-drag/armerad, 390 px) visuellt jämförda mot FACIT-skapa-sidan/FACIT-skapa-handtag-armad — bock+monodomän utan fyllnad verifierat renderat. DoD 7 ej tillämplig: inga bas-ändringar i denna skiva. Grindar: biome exit 0 · typecheck+typecheck:tests 0 fel · test:api 307/307 · build grön · test:a11y 61/61 (allt via staging-semaforen).
+
+CI grönt per jobb: PR-run 29873302703 + main-run 29873758165 (S75-batch v2)
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
