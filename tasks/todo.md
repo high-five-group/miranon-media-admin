@@ -98,6 +98,19 @@
   mekanismen till work-batch-skillen (egen landning, marcus-system)
   → status-rapport vid Marcus hemkomst → QA-våg/design-review =
   Marcus → end-pass på signal.**
+- [x] **AUDIT-HALT → LÄKT → BATCH RESUMED** (2026-07-21, Del 5
+  kanonisk plats): v2-halt vid 17.3-mergen — TVÅ nya
+  upstream-advisories (fast-uri + linkify-it, dev-only-kedjor)
+  fällde ALLA runs; 17.3 + 18.1 FÄRDIGBYGGDA på brancher (claims
+  v2 höll). Läkning `93eb969` (fast-uri 3.1.4 lockfile ·
+  linkify-it-overriden 5.0.1→6.0.0 per 9b97dad-mönstret,
+  konsument-verifierad) — CI grön per jobb inkl. fullt Test+Build.
+  Resume samma run-ID med v2.1-kedjan (audit-arvs-check ·
+  PR-återbruk · kort-state-arv). **Hub-lyftet KLART** (`8ec6c6f`,
+  1.17.0; T18-distributions-gapet noterat — reinstall =
+  Marcus-moment). **NÄSTA: batch v2.1 löper → status-rapport vid
+  hemkomst → QA-våg/design-review = Marcus → end-pass på
+  signal.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 
