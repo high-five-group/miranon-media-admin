@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 75 ⏸️ PAUSAD (2026-07-21) — Batch-exekveringen: work-batch max 22, två pipelines
+### Session 75 🟢 PÅGÅR (2026-07-21, paus vid yt-bytet återupptagen samma dag) — Batch-exekveringen: work-batch max 22, två pipelines
 
 > Scope: sessionsdok `2026-07-21-session-75.md` Del 1 (kanonisk
 > plats): exekvera Marcus batch-order AFK (ordern ordagrant i S74
@@ -48,6 +48,22 @@
   L297-recidivet] · numrering · resume-vägen). **NÄSTA: NY Code-yta
   → `/session-resume` på S75 → avfyra batchen per stående ordern →
   AFK-dagen → status-rapport vid Marcus hemkomst.**
+- [x] **ÅTERUPPTAGEN** (2026-07-21, Marcus-order `/session-resume på
+  S75` i färsk Code-yta + "kör på tills jag kommer hem"):
+  `lifecycle: paused → active` + PAUSLÄGE-rubriken →
+  Paushistorik-form (grind-konsistensen, session-18-mönstret);
+  numrering re-verifierad mot färsk disk — ADR 074 (73 på disk) ·
+  L307 (L306 sist) · T80 (T79 sist) · fälla 45 (44 sist), ingen
+  mellansession förbrukade nummer; audit-ci PASSED; CI grön på
+  paus-committen `68bf3fb`; batch-förkraven re-verifierade
+  (semaforen finns · allowlist-luckan rm/git rm STÅR [18.13 sist,
+  ofarlig stall] · B-flaggan AV · 25 kort To Do varav 22
+  ready-for-agent · caffeinate AKTIV — Marcus-momentet utfört).
+  **NÄSTA: avfyra batchen per stående ordern (S74 Del 4 + Del 2:s
+  slutliga partition: P1 17.1→17.3→17.2→17.4→19.1→19.2→19.3 · P2
+  18.1→18.2→18.3→18.8→18.9→18.10→18.11→18.4→18.5→18.6→18.7→18.12 ·
+  svans 17.5→19.4→18.13) → AFK-dagen → status-rapport vid Marcus
+  hemkomst.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 
