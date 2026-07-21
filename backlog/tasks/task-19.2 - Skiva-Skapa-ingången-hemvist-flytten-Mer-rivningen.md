@@ -4,6 +4,7 @@ title: 'Skiva: Skapa-ingången + hemvist-flytten + Mer-rivningen'
 status: To Do
 assignee: []
 created_date: '2026-07-21 08:21'
+updated_date: '2026-07-21 23:25'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,6 +24,12 @@ Skapa nytt event-kapseln läggs vänster på listans vy-väljarrad i väljarnas 
 - [ ] #1 Ingången renderar per facit-lista-skapa-ingången och leder till skapa-sidan
 - [ ] #2 Mer-ingången borta och gamla routen hanterad öppet; berörda e2e uppdaterade i samma skiva
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AFK-drain (S75-batch v2.1): kortet är BYGGT + pushat på origin/task/19.2 (2021465, skapa-ingången + hemvist-flytten + Mer-rivningen) — merge drainad av 18.8-halten (extern audit-advisory + 18.8-egna e2e-fel), INTE av fel i denna leverans. PLOCKA INTE OM: nästa steg är merge av branchen via ordinarie kedja i ny batch-order.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

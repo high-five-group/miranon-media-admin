@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-21 09:30'
+updated_date: '2026-07-21 23:26'
 labels: []
 dependencies: []
 priority: low
@@ -21,3 +22,9 @@ Symptom: tests/a11y/primitives.spec.ts rad 4 säger 'A11y-runner mot samtliga 6 
 
 Förväntat beteende: doc-kommentaren speglar aktuell täckning eller uttrycks antal-löst (t.ex. 'samtliga primitiver i sektionslistan'). Icke-blockerande, kosmetiskt — ingen kodbeteende-påverkan.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Uppdatering (S75-batch v2.1, 19.1-bygget): täckningen är nu 11 sektioner (NavCard, Skeleton, ToggleButtonGroup, SlideToConfirm tillkomna) — docblocken bör bli räknings-neutral.
+<!-- SECTION:NOTES:END -->
