@@ -58,6 +58,15 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
     await checkA11y({ include: ['[aria-labelledby="rubrik-togglebuttongroup"]'] });
   });
 
+  test('SlideToConfirm — sektion (oarmerad huvudinstans + armerad tyst-instans)', async ({
+    checkA11y,
+  }) => {
+    // Båda tillstånden i EN skan: huvudinstansen oarmerad + demo-instansen
+    // med defaultSelected armerad. Tillstånds-cyklad skan bor i
+    // mönster-specen SlideToConfirm.spec.ts (AC 1, task-19.1).
+    await checkA11y({ include: ['[aria-labelledby="rubrik-slidetoconfirm"]'] });
+  });
+
   test('Skeleton — sektion (Roselli-markupen i laddläge)', async ({ page, checkA11y }) => {
     // Sektionen renderar laddläget statiskt (aria-busy-container med
     // aria-hidden-block + sr-only-besked) — skannas i exakt det tillstånd

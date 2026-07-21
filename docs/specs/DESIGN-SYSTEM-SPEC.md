@@ -1271,6 +1271,97 @@ stavas klassmönstret inte ut här.
 
 ---
 
+## 18. SlideToConfirm — dra-till-bekräfta-primitiven
+
+Handtag för tunga, avsiktliga handlingar: DRAGET är bekräftelsen
+(Resend Broadcasts-klassen) — ett råkat klick kan aldrig utlösa valet.
+Byggd för hand som APG-switch (se förseglade beslut). Facit-källa:
+S73-facit-utökningen K77–K84 (bilagan
+`tasks/sessions/bilagor/s73-eventsida-konvergens/`,
+FACIT-skapa-sidan.png + FACIT-skapa-handtag-armad.png). Belagd
+konsument: skapa-sidans publicerings-handtag (task-19.3/19.4).
+
+### API (medvetet minimalt)
+
+```tsx
+<SlideToConfirm
+  label="Publicera på miranon.se"
+  prompt={<>Dra för att publicera på <Domän /></>}
+  confirmedLabel={<>Publiceras på <Domän /></>}
+  isSelected={publicera}
+  onChange={setPublicera}
+/>
+```
+
+| Prop | Typ | Roll |
+|---|---|---|
+| `label` | `string` | Switchens tillgängliga namn — visas aldrig visuellt (instruktions-texten är aria-hidden och tillstånds-växlande) |
+| `prompt` | `ReactNode` | Instruktionstext i oarmerat läge (tonar ut under draget) |
+| `confirmedLabel` | `ReactNode` | Text i armerat läge, bredvid bocken |
+| `isSelected` / `defaultSelected` | `boolean` | Armerat läge (controlled/uncontrolled) |
+| `onChange` | `(isSelected: boolean) => void` | Anropas ENDAST när värdet faktiskt ändras |
+| `sound` | `boolean` | Diskret pling vid armering (default på) — konsument-preferensens säte; `prefers-reduced-motion` respekteras alltid oavsett värde |
+| `className` | `string` | Merge:as efter formklasserna (Button-precedenten) |
+
+Domän-/monotexten är KONSUMENT-ägd (K81:s adress-grammatik bor i
+`prompt`/`confirmedLabel`-noderna) — primitiven har ingen åsikt om
+textens typografi.
+
+**Förseglade beslut** (inte utelämnanden): byggd som APG-switch för
+hand, INTE på react-aria-components/Radix `Switch` — de togglar på
+klick, vilket river avsikts-mekaniken (K79: draget kräver grepp och
+håll). Släpp-trösklarna 90/10 och grepp-vakterna är
+konvergens-låsta (K77–K79). Inget `isDisabled` (ingen belagd
+konsument — över-engineering-vakten; växer additivt vid verkligt
+behov).
+
+### Anatomi och tangentbord
+
+- Roten är EN fokuserbar `role="switch"` med `aria-checked` —
+  oarmerat/armerat annonseras som av/på; `label` bär namnet.
+- Space/Enter togglar samma val — draget är FÖRSTÄRKNING, aldrig enda
+  vägen (11-ribban; PRD TASK-19 användarberättelse 9–10).
+- Drag-vakterna (K79): endast primärknapp · greppet måste ligga PÅ
+  cirkeln (klick på rännan teleporterar inte) · grepp-offseten bevaras
+  (kant-grepp = kant-följ) · släppt knapp utan pointerup avslutar
+  draget (ingen hovring-följning). Drag-tillståndet är REF-buret
+  (L300).
+- Släpp: ≥90 % armerar (pling), ≤10 % avarmerar, däremellan fjädrar
+  cirkeln tillbaka (`motion-safe`; globala reduced-motion-
+  neutraliseringen täcker dessutom).
+- Fokusring via den globala `:focus-visible`-regeln (base.css).
+
+### Form (S73-facitet, computed-låst)
+
+- Ränna: `rounded-full`, `--mm-bg-emphasized`, höjd 48 px, INGEN
+  kontur (K78-rivningen: tonad yta bär formen själv).
+- Cirkel: 48×48 px — täcker EXAKT rännans höjd, ingen inset (K78);
+  `--mm-surface` + `shadow-md`; tom i vila — bocken är målets belöning.
+- Armerat läge: bock i `--mm-success` + `confirmedLabel` i medium —
+  INGEN fyllnad i något läge (K82-rivningen: armad-signalen bärs av
+  bock + text, aldrig av grön yta).
+- Instruktionstexten (`--mm-text-muted`, text-small) tonar ut linjärt
+  med drag-positionen.
+- Pling: kort tvåtons-chime via Web Audio (inga assets); spelas ENDAST
+  vid armering; tystnad under `prefers-reduced-motion: reduce` och vid
+  `sound={false}`; ljud är förstärkning, aldrig bärare.
+- `prefers-contrast: more` och print: synlig kontur via **outline**
+  (layout-neutral — en border hade flyttat cirkelns positioneringsbox
+  och brutit ingen-inset-formen).
+
+### Tokens
+
+Inga egna komponent-tokens: formen konsumerar semantiska tokens direkt
+via Tailwind-mappningen (§16-precedenten). Komponent-tokens införs
+först när ett tema-behov kräver omdirigering per komponent.
+
+Beteende- och formkontraktet är computed-testat i
+`tests/a11y/SlideToConfirm.spec.ts` (a11y-mönster-specen: semantik,
+tangentbord, drag-vakter, pling-preferenser, axe-0 i båda tillstånden);
+sektions-skanen i runnern bor i `tests/a11y/primitives.spec.ts`.
+
+---
+
 ## Ändringslogg
 
 | Datum | Förändring |
@@ -1283,4 +1374,5 @@ stavas klassmönstret inte ut här.
 | 2026-07-21 | §16 ToggleButtonGroup — pill-toggel-primitiven (S72-facitet): API, förseglade beslut (singel-val + alltid-ett-val → radiogroup-semantik), anatomi/tangentbord, computed-låst form, semantisk token-konsumtion utan komponent-tokens (task-17.1). |
 | 2026-07-21 | §17 Kursfärger — ADR-064-taxonomins semantiska tokens (S72-facitets legend, solida 500-kulörer): fem `--mm-kurs-*`-roller mot befintliga primitiver + uppslaget `src/lib/kursfarg.ts` (teckenexakta basvärden, Annat som uppsamling; ersätter prototypens namn-matchning) (task-17.3). |
 | 2026-07-21 | §14 REGELRIVNING: "navigationsrader bär inte chevron" riven öppet (S73 K25-prövningens Marcus-kvitterade konsekvens; PRD task-18 beslut 15) → ny regel "chevron betyder att raden leder vidare"; NavCard-formen får chevron 18 px höger i sekundärfärgen, Mer-menyn följer med för app-koherens (task-18.3). |
+| 2026-07-22 | §18 SlideToConfirm — dra-till-bekräfta-primitiven (S73-facit-utökningen K77–K84): API, förseglade beslut (hand-byggd APG-switch — klick-toggle river avsikts-mekaniken; 90/10-trösklar; inget isDisabled), K79-drag-vakterna + L300-ref-tillståndet, computed-låst form utan fyllnad (K82), pling med preferens-respekt, semantisk token-konsumtion utan komponent-tokens (task-19.1). |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |
