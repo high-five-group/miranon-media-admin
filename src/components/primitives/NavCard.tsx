@@ -1,4 +1,5 @@
 import { createLink } from '@tanstack/react-router';
+import { ChevronRight } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { Link as AriaLink, type LinkProps as AriaLinkProps } from 'react-aria-components';
 
@@ -24,11 +25,15 @@ interface NavCardLinkProps extends Omit<AriaLinkProps, 'children' | 'className' 
 }
 
 // Färger uteslutande via komponent-tokens (--mm-navcard-*, components.css).
-// INGEN chevron (app-bred regel: navigationsrader bär inte chevron) och
-// INGEN hover-bakgrundsändring (M3 prövad och förkastad) — medvetna
-// facit-beslut, inte utelämnanden. Fokusringen kommer från den globala
-// *:focus-visible-regeln i base.css; kantlinjen blir synlig under
-// prefers-contrast: more. Raden är statisk (ingen transition/animation).
+// CHEVRON höger (18 px, sekundärfärgen, aria-hidden): den tidigare
+// ingen-chevron-regeln är RIVEN ÖPPET (task-18.3; S73 K25-prövningens
+// Marcus-kvitterade konsekvens, PRD task-18 beslut 15) — chevron betyder
+// att raden leder vidare, samma grammatik som eventsidans åtgärdsrader
+// (spec §14 bär rivningen). INGEN hover-bakgrundsändring (M3 prövad och
+// förkastad) — medvetet facit-beslut, inte utelämnande. Fokusringen
+// kommer från den globala *:focus-visible-regeln i base.css; kantlinjen
+// blir synlig under prefers-contrast: more. Raden är statisk (ingen
+// transition/animation).
 function NavCardLink({ icon: Icon, label, ...props }: NavCardLinkProps) {
   return (
     <AriaLink
@@ -37,6 +42,7 @@ function NavCardLink({ icon: Icon, label, ...props }: NavCardLinkProps) {
     >
       <Icon size={20} aria-hidden className="text-(color:--mm-navcard-icon) shrink-0" />
       <span className="grow">{label}</span>
+      <ChevronRight size={18} aria-hidden className="text-(color:--mm-navcard-icon) shrink-0" />
     </AriaLink>
   );
 }
@@ -51,8 +57,8 @@ function NavCardLink({ icon: Icon, label, ...props }: NavCardLinkProps) {
  * är ett typfel. Renderar ett riktigt `<a href>`; router-navigering,
  * hover/press-semantik och fokushantering följer med utan egen kod.
  *
- * Tillgänglighet: etiketten bär länknamnet ensam (ikonen `aria-hidden`),
- * träffytan är ≈58 px (≥44 px), fokusring via den globala
+ * Tillgänglighet: etiketten bär länknamnet ensam (radikonen OCH chevronen
+ * är `aria-hidden`), träffytan är ≈58 px (≥44 px), fokusring via den globala
  * `:focus-visible`-regeln, synlig kantlinje under `prefers-contrast: more`.
  *
  * Anatomi: NavCard är själva raden — konsumenten äger `<nav aria-label>`

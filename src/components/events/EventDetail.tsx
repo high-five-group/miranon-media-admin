@@ -8,6 +8,7 @@ import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
+import { Atgarder, CheckInKort } from './detail/Atgarder';
 import { Belaggning } from './detail/Belaggning';
 import { DetaljGrupp, EtikettVardeRad } from './detail/DetaljGrupp';
 import { OmEventet } from './detail/OmEventet';
@@ -43,10 +44,11 @@ function LankRad({
  *
  * 18.1:s snitt: sidstrukturen + Om eventet med Ändra-morfen (uppdatera-event-
  * vertikalen). 18.2: Beläggningen till facit (K16-innehållsmodellen + mätaren +
- * Ändra-morfen). Anmälda deltagare/Betalningar/Närvaro står som INTERIM-grupper
+ * Ändra-morfen). 18.3: check-in-ingången + Åtgärds-gruppen + chevron-koherensen.
+ * Anmälda deltagare/Betalningar/Närvaro står som INTERIM-grupper
  * i facit-ordningen — befintlig data i grupp-grammatiken + länkar till dagens
- * detaljytor; deras facit-innehåll byggs i 18.4/18.8/18.9 (Åtgärder + check-in
- * är 18.3; Gruppdynamik/Anteckningar 18.10/18.11).
+ * detaljytor; deras facit-innehåll byggs i 18.4/18.8/18.9
+ * (Gruppdynamik/Anteckningar 18.10/18.11).
  *
  * A11y (11/10):
  * - Chevronen ensam bär "detta är en undersida" (44 px rund länk,
@@ -155,6 +157,12 @@ export function EventDetail({ eventId }: { eventId: string }) {
           <p className="text-small text-text-muted">{event.tidKvarTillEvent}</p>
         )}
       </header>
+
+      {/* Check-in-ingången + Åtgärder (task-18.3; S73-facit K19–K26): check-in
+          som rubrikfritt kort ÖVER Åtgärds-gruppen, gruppen före datagrupperna.
+          Länkmåls- och kopplingsinterimen är öppet bokförda i Atgarder.tsx. */}
+      <CheckInKort eventId={eventId} />
+      <Atgarder eventId={eventId} />
 
       <OmEventet event={event} />
 
