@@ -75,6 +75,18 @@ async function mockEvent(
       body: status === 200 ? JSON.stringify({ event: body }) : JSON.stringify({ error: 'x' }),
     });
   });
+  // Betalningar-gruppen (task-18.8) hämtar anmälningarna — stubbas tom så
+  // sviten förblir deterministisk (arbetsytans egen svit: mark-paid-e2e).
+  await page.route(
+    '**/functions/v1/get-registrations*',
+    async (route: { fulfill: (r: unknown) => Promise<void> }) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ registrations: [] }),
+      });
+    },
+  );
   return release;
 }
 
@@ -309,15 +321,14 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    // Länkarna till de befintliga detaljytorna (ersätts av 18.4/18.8/18.9).
+    // Länkarna till de befintliga detaljytorna (ersätts av 18.4/18.9).
+    // Betalningar är SKARP sedan 18.8 (inline-arbetsytan, egen svit i
+    // mark-paid-e2e) — betalnings-vyn och dess länk är rivna.
     await expect(page.getByRole('link', { name: 'Öppna anmälda-vyn' })).toHaveAttribute(
       'href',
       `/event/${EVENT_ID}/anmalda`,
     );
-    await expect(page.getByRole('link', { name: 'Öppna betalnings-vyn' })).toHaveAttribute(
-      'href',
-      `/event/${EVENT_ID}/betalning`,
-    );
+    await expect(page.getByRole('link', { name: 'Öppna betalnings-vyn' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Öppna närvaro-vyn' })).toHaveAttribute(
       'href',
       `/event/${EVENT_ID}/narvaro`,

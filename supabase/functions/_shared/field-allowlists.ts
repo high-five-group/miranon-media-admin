@@ -37,6 +37,41 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Anmälningar',
     allowedFields: ['Anmälningsavgift'],
   },
+  // Markera slutbetalningen (task-18.8, PRD task-18 beslut 9 — betalnings-
+  // arbetsytans andra kryss; namnet som mark-registration-fee-paid lämnade rum
+  // för). Target-fält 'Slutbetalning' (fldIImadnJUZHr5Qh, singleSelect
+  // Mottagen/Ej mottagen/'Ej relevant (för föreläsningar)') — skrivbarheten
+  // LIVE-VERIFIERAD mot staging-schemat (describe_table tbloOcrppVoyrHbrq
+  // 2026-07-22, L294) INNAN posten låstes. Allowlisten gatar FÄLTET, inte
+  // värdet — samma operation togglar tillbaka till 'Ej mottagen' (kryssets
+  // av-bock + test-teardown). Tabell per NAMN (ADR-050 bas-portabilitet).
+  'mark-final-payment-paid': {
+    tableId: 'Anmälningar',
+    allowedFields: ['Slutbetalning'],
+  },
+  // Notering per BETALNING (task-18.8; ADR-063 additiva fält — påminnelse-/
+  // noterings-vägvalet öppet bokfört i kortet). EXAKT de två additiva
+  // multilineText-fälten (staging: fldy4fFMx0iOjZVpi/fldQIV1mOyjTtJWDn,
+  // skapade additivt 2026-07-22 — skrivbara per konstruktion, L294); gamla
+  // odelade 'Notering' (fldPMsiRoLWcgUbsv) ligger MEDVETET utanför listan —
+  // den rörs aldrig av appen (bas-maximeringen T16 äger ev. migrering).
+  // Tabell per NAMN (ADR-050 bas-portabilitet).
+  'update-registration-payment-note': {
+    tableId: 'Anmälningar',
+    allowedFields: ['Notering anmälningsavgift', 'Notering slutbetalning'],
+  },
+  // Påminnelselogg per BETALNING (task-18.8): senaste påminnelse-tidsstämpeln
+  // per betalning — basens utskicks-grammatik (Bekräftelse skickad-klassen).
+  // EXAKT de två additiva dateTime-fälten (staging: fldohZk9EAp59XbMf/
+  // fld49lOLga7U0WWYR, skapade additivt 2026-07-22 — skrivbara per
+  // konstruktion, L294); gamla odelade 'Betalningspåminnelse skickad'
+  // (fldE0cR4r9vI0rKiL) MEDVETET utanför listan (samma T16-avgränsning som
+  // noteringen). null-värde RENSAR fältet (Airtable-PATCH-semantik) —
+  // teardown-vägen för test-fixturer. Tabell per NAMN (ADR-050).
+  'log-payment-reminder': {
+    tableId: 'Anmälningar',
+    allowedFields: ['Påminnelse anmälningsavgift skickad', 'Påminnelse slutbetalning skickad'],
+  },
   // Spara fri-text-anteckning på en Person (Fas 6a L6, Session 23). Skrivbart
   // multilineText-fält (fldWGlNr3ujRHo85w, data-model.md § Personer — write-fält);
   // Synk-gate 2 beviljad av Marcus. Tabell per NAMN (ADR-050 bas-portabilitet);

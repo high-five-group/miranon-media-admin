@@ -119,7 +119,8 @@ test.describe('Anmälda-vy (Fas 6c L2 — LÄS-vy via get-registrations)', () =>
     // Inskickad formaterat sv-SE (aldrig rå ISO).
     await expect(page.getByText('2026-05-02').first()).toBeVisible();
 
-    // LÄS-vy: ingen markera-betald-/spara-kontroll (write = betalnings-vyns jobb).
+    // LÄS-vy: ingen markera-betald-/spara-kontroll (write = eventsidans
+    // betalnings-arbetsyta sedan task-18.8).
     // Namn-scopad så app-skalets chrome ej ger falskt negativ.
     await expect(page.getByRole('button', { name: /markera|betald|spara|ändra/i })).toHaveCount(0);
 

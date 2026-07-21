@@ -10,7 +10,8 @@ import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
 import { Atgarder, CheckInKort } from './detail/Atgarder';
 import { Belaggning } from './detail/Belaggning';
-import { DetaljGrupp, EtikettVardeRad } from './detail/DetaljGrupp';
+import { Betalningar } from './detail/Betalningar';
+import { DetaljGrupp } from './detail/DetaljGrupp';
 import { OmEventet } from './detail/OmEventet';
 
 /** Visat eventnamn ur de fält Airtable kan leverera — aldrig krasch/tomt. */
@@ -24,7 +25,7 @@ function LankRad({
   eventId,
   children,
 }: {
-  to: '/event/$eventId/anmalda' | '/event/$eventId/betalning' | '/event/$eventId/narvaro';
+  to: '/event/$eventId/anmalda' | '/event/$eventId/narvaro';
   eventId: string;
   children: React.ReactNode;
 }) {
@@ -177,20 +178,11 @@ export function EventDetail({ eventId }: { eventId: string }) {
         </LankRad>
       </DetaljGrupp>
 
-      {/* INTERIM (18.8 bygger arbetsytan): räknerader + ingången till betalnings-ytan. */}
-      <DetaljGrupp id="grupp-betalningar" rubrik="Betalningar">
-        <dl className="divide-y divide-border">
-          <EtikettVardeRad term="Anmälningsavgifter">
-            {`${event.antalAnmalningsavgifter} av ${event.antalAnmalda} mottagna`}
-          </EtikettVardeRad>
-          <EtikettVardeRad term="Slutbetalningar">
-            {`${event.antalSlutbetalningar} mottagna`}
-          </EtikettVardeRad>
-        </dl>
-        <LankRad to="/event/$eventId/betalning" eventId={eventId}>
-          Öppna betalnings-vyn
-        </LankRad>
-      </DetaljGrupp>
+      {/* Betalningar (task-18.8): röda saknas-deltan + inline-ARBETSYTAN
+          (K27–K34) — ersätter 18.1:s interim-rader och den gamla
+          betalnings-vyn (K27: Marcus "stanna på samma sida"). Deltan och
+          grupper härleds LIVE ur anmälnings-cachen, inte event-aggregaten. */}
+      <Betalningar event={event} />
 
       {/* INTERIM (18.9 bygger registret): ingången till dagens närvaro-yta. */}
       <DetaljGrupp id="grupp-narvaro" rubrik="Närvaro">

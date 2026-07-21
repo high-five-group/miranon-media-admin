@@ -10,7 +10,8 @@ const LANGDATUM = new Intl.DateTimeFormat('sv-SE', {
   month: 'long',
   year: 'numeric',
 });
-const DAGMANAD = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
+/** Dag + månad utan år ("17 juli") — delas med Betalningars deadline/historik (task-18.8). */
+export const DAGMANAD = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
 
 export function datumSpannText(e: Pick<Event, 'startdatum' | 'slutdatum'>): string {
   if (!e.startdatum) return 'Datum ej satt';

@@ -73,6 +73,15 @@ function mapRegistration(record: { id: string; fields: Record<string, unknown> }
     tidigareErfarenhet: f['Vilka kurser från Roger och Lotta har du deltagit i tidigare?'] ?? null,
     antalPlatser: f['Antal platser'] ?? 1, // number
     notering: f['Notering'] ?? null, // text
+    // Betalnings-vertikalens fyra ADDITIVA fält (task-18.8, ADR-063 —
+    // per-betalnings-notering + senaste påminnelse per betalning; vägvalet
+    // additiva fält är öppet bokfört i kortet). Fälten är staging-födda
+    // 2026-07-22; mot en bas där de ännu saknas (prod före prod-deployen)
+    // ger ?? null — shapen är alltid komplett, aldrig undefined.
+    noteringAnmalningsavgift: f['Notering anmälningsavgift'] ?? null, // text (additiv)
+    noteringSlutbetalning: f['Notering slutbetalning'] ?? null, // text (additiv)
+    paminnelseAnmalningsavgiftSkickad: f['Påminnelse anmälningsavgift skickad'] ?? null, // dateTime (additiv)
+    paminnelseSlutbetalningSkickad: f['Påminnelse slutbetalning skickad'] ?? null, // dateTime (additiv)
     eventId: Array.isArray(f['Event']) ? f['Event'][0] : null, // linked record → first ID
     personId: Array.isArray(f['Person']) ? f['Person'][0] : null, // linked record → first ID
   };

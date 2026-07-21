@@ -25,4 +25,13 @@ export const RegistrationSchema = z.object({
   notering: z.string().nullable(),
   eventId: z.string().nullable(),
   personId: z.string().nullable(),
+  // Betalnings-vertikalens fyra ADDITIVA fält (task-18.8; ADR-063 —
+  // per-betalnings-notering + senaste påminnelse per betalning). ADDITIVT-
+  // OPTIONAL (18.2:s Event-form): äldre mockar/cachade svar utan fälten
+  // parsar oförändrat; deployad get-registrations levererar dem alltid
+  // (?? null). Konsumtion normaliserar ?? null.
+  noteringAnmalningsavgift: z.string().nullable().optional(),
+  noteringSlutbetalning: z.string().nullable().optional(),
+  paminnelseAnmalningsavgiftSkickad: z.string().nullable().optional(),
+  paminnelseSlutbetalningSkickad: z.string().nullable().optional(),
 });
