@@ -4,6 +4,7 @@ title: 'Skiva: Kursfärgs-tokensen (ADR-064-mappningen)'
 status: To Do
 assignee: []
 created_date: '2026-07-21 08:19'
+updated_date: '2026-07-21 19:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,6 +23,12 @@ Prefaktorering: kursfärgerna (Fjärrskådning, RIM 1, RIM 2, RIM 3, Annat) etab
 - [ ] #1 Tokensen bor i semantik-/komponentlagret; inga hårdkodade färger i komponenter och primitivlagret orört
 - [ ] #2 Mappningen kurs mot token täcker taxonomins klasser + Annat som uppsamling och konsumeras via ett enda uppslag (ingen namn-matchning i vyer)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AFK-halt (S75 v2): PR-CI-run 29861999049 röd på steget 'Audit dependencies (audit-ci with allowlist)' — 2 nya high-advisories i transitiva beroenden: fast-uri GHSA-4c8g-83qw-93j6 (host confusion, >=3.0.0 <3.1.3) + linkify-it GHSA-v245-v573-v5vm (ReDoS-klass DoS, <=5.0.1, via markdown-it). Orelaterat till skivans diff (semantic.css + src/lib/kursfarg.ts + spec + kort); dependency-bump utanför tillåten yta och ej merge-konflikt → KONFLIKT-MANDATET ej tillämpligt, halt-first. PR #69 lämnad öppen, branch task/17.3 kvar för återupptagning.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
