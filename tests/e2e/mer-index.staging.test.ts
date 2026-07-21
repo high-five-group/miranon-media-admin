@@ -20,10 +20,17 @@ import { expect, test } from '@playwright/test';
  * logout → redirect till /login.
  *
  * task-9.2 utökar sviten mot M6-FACITET (sessionsdok S64 Del 3 + bilagor
- * s64-mer-konvergens): synlig h1 "Mer" (30/600) + shell-headern av, sex
+ * s64-mer-konvergens): synlig h1 "Mer" (30/600) + shell-headern av,
  * NavCard-rader i TVÅ luftgrupper, computed-verifierade mått (L246/L272:
  * renderad mätning slår pixel-titt och klass-närvaro) och Logga ut som
  * centrerad ghost-knapp med ikon. Befintligt kontrakt ovan BESTÅR orört.
+ *
+ * RIVNING ÖPPET BOKFÖRD (task-19.2, PRD task-19 beslut 2): Skapa nytt
+ * event-raden är RIVEN ur Mer — ingången bor nu på event-listans vy-rad
+ * (S73-facit-utökningen K74) och sidans hemvist är /event/skapa
+ * (Marcus-kvitterad 2026-07-21). M6-facitets sex rader är därmed FEM;
+ * gamla routen /mer/skapa-event omdirigerar (bevisas i
+ * skapa-event.staging.test.ts).
  */
 
 test.describe('Mer-landningen (Fas 6e L2 — statiskt skal + logout-golv)', () => {
@@ -110,7 +117,7 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     await expect(page.locator('header')).toHaveCount(0);
   });
 
-  test('AC 1: sex NavCard-rader i TVÅ grupper med facit-ordning, tysta ikoner, chevron per rad', async ({
+  test('AC 1: fem NavCard-rader i TVÅ grupper med facit-ordning, tysta ikoner, chevron per rad', async ({
     page,
   }) => {
     await page.goto('/mer');
@@ -123,14 +130,16 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     await expect(grupper).toHaveCount(2);
 
     // Grupp 1 = listorna, grupp 2 = handling före verktyg — exakt ordning.
+    // Skapa nytt event-raden RIVEN (task-19.2 — se rivnings-bokföringen i
+    // fil-huvudet); grupp 2 bär numera enbart Bygg segment.
     await expect(grupper.nth(0).getByRole('link')).toHaveText([
       'Anmälningar',
       'Väntelista',
       'Intresserade',
       'Maillogg',
     ]);
-    await expect(grupper.nth(1).getByRole('link')).toHaveText(['Skapa nytt event', 'Bygg segment']);
-    await expect(nav.getByRole('link')).toHaveCount(6);
+    await expect(grupper.nth(1).getByRole('link')).toHaveText(['Bygg segment']);
+    await expect(nav.getByRole('link')).toHaveCount(5);
 
     // Varje rad bär EXAKT två dekorativa svg (radikon + chevron, båda
     // aria-hidden) — etiketten ensam bär länknamnet (redan assertat via
@@ -148,7 +157,19 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     // (S73 K25-prövningens Marcus-kvitterade konsekvens, PRD task-18
     // beslut 15) — chevron betyder att raden leder vidare, och Mer-menyns
     // rader bär den för app-koherens med eventsidans åtgärdsrader.
-    await expect(nav.locator('svg.lucide-chevron-right')).toHaveCount(6);
+    await expect(nav.locator('svg.lucide-chevron-right')).toHaveCount(5);
+  });
+
+  test('Skapa nytt event är RIVEN ur Mer (task-19.2) — ingången bor på event-listan', async ({
+    page,
+  }) => {
+    await page.goto('/mer');
+    await expect(page.getByRole('navigation', { name: 'Mer-sidor' })).toBeVisible();
+
+    // Rivningen (PRD task-19 beslut 2): ingen länk, ingen text — ingången
+    // nås via event-listans vy-rad (events-list.staging.test.ts bevisar den).
+    await expect(page.getByRole('link', { name: 'Skapa nytt event' })).toHaveCount(0);
+    await expect(page.getByText('Skapa nytt event')).toHaveCount(0);
   });
 
   test('AC 2: måtten computed-verifierade mot facitet (DoD 6)', async ({ page }) => {

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, List } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { CalendarDays, CalendarPlus, List } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -70,12 +71,13 @@ function groupByMonth(events: Event[]): { label: string; events: Event[] }[] {
  * `tasks/sessions/bilagor/s72-event-lista-konvergens/FACIT-listvyn.png`
  * ("Facit, vi låser hela event-listans yta", 2026-07-19).
  *
- * Formen: vy-ikon-toggeln (lista förvald, task-17.4) → period-toggeln
+ * Formen: vy-raden (Skapa-ingången vänster [task-19.2, S73-utökningen K74]
+ * + vy-ikon-toggeln höger [lista förvald, task-17.4]) → period-toggeln
  * [Kommande|Tidigare] (ToggleButtonGroup-primitiven, spread — facitets
  * likbreda pill-segment) → månadsgrupper (riktiga h2-rubriker, story 17) →
  * likformiga slot-kort (EventCard) → strukturerat text-tomläge. I kalender-
  * läget (`?vy=kalender`) ersätter EventsCalendar period-toggeln + listan.
- * Skapa-ingången ägs av skapa-PRD:n, bor över-raden av task-17.5.
+ * Bor över-raden på korten ägs av task-17.5.
  *
  * URL-kontraktet: `?period=upcoming|past` + `?vy=kalender` (nuqs, history
  * push — delbart och back-bart per URL-STATE-SPEC §Event) ERSÄTTER gamla
@@ -157,10 +159,23 @@ export function EventsList() {
   // Vy-ikon-toggeln (S72-facit K10): kompakt ikon-kapsel i samma grammatik
   // som period-toggeln, placerad ÖVER den på fast position i BÅDA lägena →
   // sömlös växling (inget hoppar). Ikonerna bär synligt; aria-label bär
-  // semantiken (primitivens ikon-pill-mönster, spec §16). Högerställd —
-  // vänstra platsen på raden ägs av Skapa-ingången (skapa-PRD:n, 19.x).
+  // semantiken (primitivens ikon-pill-mönster, spec §16). Högerställd;
+  // vänstra platsen bär Skapa-ingången (task-19.2, S73-facit-utökningen
+  // K74: "i linje med list- och kalendervy-väljaren fast på motsatt sida
+  // i samma stil" — K73:s titelrads-primärknapp prövad-och-riven).
+  // Ingången är väljarnas mjuka kapsel (rounded-full bg-bg-muted, ikon 18),
+  // INTE primärknappens svärta, och leder till event-familjens skapa-sida
+  // (hemvist-flytten, PRD task-19 beslut 2). Följer med i BÅDA vy-lägena
+  // (raden har fast position). Fokusring via globala :focus-visible-regeln.
   const vyRad = (
-    <div className="flex justify-end">
+    <div className="flex items-center justify-between gap-3">
+      <Link
+        to="/event/skapa"
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+      >
+        <CalendarPlus aria-hidden="true" size={18} className="shrink-0" />
+        Skapa nytt event
+      </Link>
       <ToggleButtonGroup<Vy>
         label="Visningsläge"
         selectedKey={vy}

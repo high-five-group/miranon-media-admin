@@ -23,6 +23,7 @@ import { expect, type Page, type Route, test } from '@playwright/test';
  */
 
 const GET_EVENTS = '**/functions/v1/get-events*';
+const GET_EVENT_FORMATS = '**/functions/v1/get-event-formats*';
 const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
 
 type Row = Record<string, unknown>;
@@ -518,5 +519,92 @@ test.describe('Event-listan till S72-facit (task-17.2)', () => {
       .analyze();
 
     expect(results.violations).toEqual([]);
+  });
+});
+
+/**
+ * Skapa-ingången på vy-raden (task-19.2) — S73-FACIT-UTÖKNINGEN.
+ *
+ * Facit: `tasks/sessions/bilagor/s73-eventsida-konvergens/
+ * FACIT-lista-skapa-ingangen.png` (K74: kapsel VÄNSTER på vy-väljarraden i
+ * väljarnas stil — K73:s titelrads-primärknapp prövad-och-riven; Marcus:
+ * "i linje med list- och kalendervy-väljaren fast på motsatt sida i samma
+ * stil"). Ingången leder till event-familjens skapa-sida /event/skapa
+ * (hemvist-flytten, PRD task-19 beslut 2, Marcus-kvitterad 2026-07-21).
+ * Visuella krav bevisas COMPUTED (L245/L246/L272) — jämförande mot
+ * väljarens renderade yta, aldrig klass-närvaro.
+ */
+test.describe('Skapa-ingången på vy-raden (task-19.2)', () => {
+  test('renderar per facit: kapsel VÄNSTER på vy-raden i väljarnas stil — computed', async ({
+    page,
+  }) => {
+    await mockEvents(page, EVENTS);
+    await page.goto('/event');
+
+    const ingang = page.getByRole('link', { name: 'Skapa nytt event' });
+    await expect(ingang).toBeVisible();
+
+    // Ikonen är dekorativ (aria-hidden) — länknamnet bärs av texten ensam
+    // (namnet assertas redan av selektorn ovan).
+    await expect(ingang.locator('svg[aria-hidden="true"]')).toHaveCount(1);
+
+    // Väljarnas stil (K74): kapselns renderade yta == vy-väljarens track —
+    // samma bg-token och samma fulla radie. Jämförande computed-assertion
+    // mot SAMMA renderade sida (L272: aldrig token-antagande i testet).
+    const toggle = page.getByRole('radiogroup', { name: 'Visningsläge' });
+    const ingangStil = await ingang.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { bg: cs.backgroundColor, radius: cs.borderRadius };
+    });
+    const toggleStil = await toggle.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { bg: cs.backgroundColor, radius: cs.borderRadius };
+    });
+    expect(ingangStil.bg).toBe(toggleStil.bg);
+    expect(ingangStil.radius).toBe(toggleStil.radius);
+
+    // VÄNSTER på SAMMA rad: kapseln slutar före väljaren (väljaren behåller
+    // höger), och kapselns vertikala mitt ligger inom väljarens band — EN
+    // rad, ingen stapling (facit-geometrin).
+    const ingangBox = await ingang.boundingBox();
+    const toggleBox = await toggle.boundingBox();
+    if (!ingangBox || !toggleBox) throw new Error('ingång/väljare saknar boundingBox');
+    expect(ingangBox.x + ingangBox.width).toBeLessThan(toggleBox.x);
+    const ingangMittY = ingangBox.y + ingangBox.height / 2;
+    expect(ingangMittY).toBeGreaterThan(toggleBox.y);
+    expect(ingangMittY).toBeLessThan(toggleBox.y + toggleBox.height);
+  });
+
+  test('leder till skapa-sidan: klick → /event/skapa (hemvist-flytten)', async ({ page }) => {
+    await mockEvents(page, EVENTS);
+    // Skapa-sidans format-hämtning mockas så destinationen renderar
+    // deterministiskt (formens innehåll ägs av task-19.3 — här bevisas
+    // enbart destinationen).
+    await page.route(GET_EVENT_FORMATS, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ eventFormats: [] }),
+      });
+    });
+    await page.goto('/event');
+
+    await page.getByRole('link', { name: 'Skapa nytt event' }).click();
+    await page.waitForURL('**/event/skapa');
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeVisible();
+  });
+
+  test('följer med i kalenderläget (K10: raden har fast position i båda vy-lägena)', async ({
+    page,
+  }) => {
+    await mockEvents(page, EVENTS);
+    await page.goto('/event?vy=kalender');
+
+    await expect(
+      page
+        .getByRole('radiogroup', { name: 'Visningsläge' })
+        .getByRole('radio', { name: 'Kalendervy' }),
+    ).toBeChecked();
+    await expect(page.getByRole('link', { name: 'Skapa nytt event' })).toBeVisible();
   });
 });

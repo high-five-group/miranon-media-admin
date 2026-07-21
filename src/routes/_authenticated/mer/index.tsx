@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { CalendarPlus, ClipboardList, Filter, Hourglass, LogOut, Mail, Star } from 'lucide-react';
+import { ClipboardList, Filter, Hourglass, LogOut, Mail, Star } from 'lucide-react';
 import { useAuth } from '@/auth/useAuth';
 import { Button, NavCard } from '@/components/primitives';
 
@@ -53,9 +53,10 @@ function MerPage() {
           </li>
         </ul>
         <ul className="flex flex-col gap-2.5">
-          <li>
-            <NavCard to="/mer/skapa-event" icon={CalendarPlus} label="Skapa nytt event" />
-          </li>
+          {/* Skapa nytt event-raden RIVEN ÖPPET (task-19.2, PRD task-19
+              beslut 2): ingången bor på event-listans vy-rad (S73-facit-
+              utökningen K74) och sidan på /event/skapa (hemvist-flytten,
+              Marcus-kvitterad 2026-07-21); gamla routen omdirigerar. */}
           <li>
             <NavCard to="/mer/segment" icon={Filter} label="Bygg segment" />
           </li>
