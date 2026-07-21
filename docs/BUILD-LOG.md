@@ -2813,6 +2813,19 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 74 — Familje-PRD:erna + 25 skivor: event-familjens exekverings-underlag komplett (2026-07-21)
+
+**Commit-range:** `6c9d409` (dok-födelse) → HEAD. **Mål:** S73-handoffens NÄSTA — familje-PRD:erna (lista + eventsida + skapa) via /to-prd → skivor via /to-issues. Ej byggplan-fas — spec-/skivningssession; skarpt bygge = /work-batch (nästa session).
+
+- **PRD-korten (Del 2):** TASK-17/18/19 publicerade via backlog-CLI:t ur S72/S73-faciten (mallens ###-form; DoD-extra: L220-design-review mot facit + L245/L246-avprickningen + bas-additivitets-grinden ADR-050/ADR-063). Underlag: Explore-svep + egen läsning — EF-gap-kartan (uppdatera-event · slutbetalning/notering · bekräfta-anmälan · bor över · event-anteckningar · närvaro-write SAKNAS; skarpa 6b/6c/6f-ytor finns = ombyggnad, ej nybygge). Skarv-kvittensen + 4 designbeslut Marcus-kvitterade per rekommendation: två befintliga skarvar (api + e2e/axe) · chevron-regeln rivs öppet · hemvisten event-familjens skapa-route + Mer-ingången rivs · Anteckningar = ADDITIV tabell (egen ADR vid skivan) · publiceringsflaggan additiv nu (kontraktet = T79; registerraden synkad).
+- **Skivorna (Del 3):** 25 barn i beroendeordning — TASK-17 ×6 (17.3 kursfärgs-tokensen = prefaktorering, delas av kalendern + gruppdynamiken) · TASK-18 ×14 (arbetskön DELAD skelett/personkort på Marcus-delegerat storleksval; 18.13 familje-rivningen med dep på alla 21 bygg-skivor) · TASK-19 ×5. ready-for-agent ×22 + QA ready-for-human ×3 (konkreta manuella testplaner); DoD-arvet per skiva. Klartext-avstämningen (Marcus-fångst "för diffusa" → L305) låste deadline-regeln start − 14 dagar (18.8 → ready-for-agent). Graf-verifierad: tre disjunkta startkedjor (17.1+17.3 ∥ 18.1 ∥ 19.1) = ADR-073-partitions-kandidaterna.
+- **Avvikelser:** inga röda runs (alla gröna per jobb, docs-only-formen; TASK-15-symptomet reproducerades inte trots UTF-8-kortfilnamn) · MD018-fångst lokalt vid dok-födelsen (läkt före push) · /to-prd-invokeringen blockerad av disable-model-invocation → cache-läsnings-formen (L306).
+- **Numrering:** ingen ny ADR (73==73; Anteckningar-ADR:n mintas vid TASK-18.11) · lessons **L305–L306** (kandidat 3 MD018 förkastad med motiv — Del 4) · inga nya trådar (T79-raden synkad) · fälla 45 orörd.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-21-session-74.md`](../tasks/sessions/2026-07-21-session-74.md) (Del 1–4). **EJ fas-avslut.** Kvar efter S74: exekveringen (`/work-batch` på Marcus-order med max-kort; ev. 2-pipeline-partition på startkedjorna) · gransknings-skulden betalas i QA-vågen (TASK-4.6-precedenten) · prod-deploy av fält/EF separat auktoriserad · hub-lyftet L284–L306 + T78-hubhalvan · Marcus-moment: Update-klicket i claude.ai.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

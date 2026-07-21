@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-20
+updated: 2026-07-21
 review_by: 2026-11-15
 status: stable
 ---
@@ -4374,3 +4374,37 @@ skript och browser-MCP kan verifiera autentiserade ytor i
 iterationstakt utan credentials i flödet. Gör DOM-mätning och
 tillståndstester till standardverktyg under konvergens, inte bara i
 sviten.
+
+### L305 [UNIVERSAL] — Avstämningsfrågor ställs i domän-klartext med explicita svarsalternativ
+
+Datum: 2026-07-21 (S74) | Källa: S74 skiv-godkännandet (Marcus:
+"Frågorna till mig är alldeles för diffusa, vad är frågorna till mig
+i klartext?" — omformuleringen till tre direkt svarbara frågor gav
+tre omedelbara svar, varav ett låste betalningsdeadline-regeln som
+annars blivit ett HITL-hål i batchen) (klass: samarbets-form)
+
+En buntad avstämning är värdelös om frågorna ställs i processens
+metaspråk (granularitet, beroenderelationer, skarv-klasser) — det
+språket är agentens bokföring, inte beslutsfattarens fråga. Formen:
+varje fråga formuleras i domänens klartext, bär sin konsekvens
+synlig ("betyder att X blir klar först efter Y — okej?") och slutar
+i explicita svarsalternativ som kan besvaras med ett ord eller en
+rad. Gunilla-principens tillämpning på beslutsytor: beslutsfattaren
+ska FÖRSTÅ frågan — inte tolka tabellen den står i.
+
+### L306 [UNIVERSAL] — User-invocable-only-skill beordrad i löptext: läs skillen ur cachen och följ den — text-ordern är kvittot
+
+Datum: 2026-07-21 (S74) | Källa: S74 /to-prd ("Kör! /to-prd" skrivet
+i löptext → Skill-verktyget vägrade per disable-model-invocation;
+SKILL.md + referensfiler lästes ur plugin-cachen och följdes
+stegvis; /to-issues kom senare som äkta slash-invokering — samma
+procedur, två ingångar) (klass: harness-mekanik)
+
+Skills med `disable-model-invocation` kan inte startas av agenten
+via Skill-verktyget ens på uttrycklig order — spärren är per design
+(invokerings-kvittot ska vara användarens egen handling). Skrivs
+ordern i löptext i stället för som slash-kommando är den ändå samma
+konsent-klass: formen är att läsa skillens SKILL.md (+ referensfiler)
+ur plugin-cachen och följa stegen ordagrant — aldrig improvisera
+fram skillens jobb utan dess instruktioner, aldrig studsa ordern
+som "kan inte köras".

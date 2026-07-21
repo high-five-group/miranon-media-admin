@@ -63,6 +63,18 @@
   ADR-073-partitions-kandidaterna). **NÄSTA: exekveringen —
   `/do-work` eller Marcus-partitionerad `/work-batch` (ADR-073);
   därefter end-pass på Marcus-signal.**
+- [x] **END-PASSET** (2026-07-21, Del 4 kanonisk plats): redo-svaret
+  för `/work-batch` levererat (JA + två precisioner: max-kort-
+  mekaniken styr "alla en efter en" · UI-skivor landar
+  GRANSKNINGSFÄRDIGA, Done-flippen är Marcus [QA-vågen,
+  TASK-4.6-precedenten]) · skörden **L305–L306** [UNIVERSAL]
+  (klartext-avstämningen · cache-läsnings-formen för user-invocable-
+  only-skills; MD018-kandidaten förkastad med motiv) · BUILD-LOG
+  S74-posten · transcript-ref wc-verifierad (1 392 628 byte/438
+  rader) · numrering vid stängning: 074/L307/T80/f45. **NÄSTA (N+1 =
+  S75): `/work-batch` på Marcus-order (max-kort + ev. 2-pipeline-
+  partition på startkedjorna); stängningen (`lifecycle: closed`)
+  väntar Marcus coverage-kvittens (grind 2, ADR-069).**
 
 ### Session 73 ✅ AVSLUTAD (2026-07-19 → 2026-07-21) — Eventsidan K1–K72 FACIT + Skapa-utökningen K73–K85 FACIT + S56 stängd + 4 skarpa leveranser
 
