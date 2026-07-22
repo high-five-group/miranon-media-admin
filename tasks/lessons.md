@@ -4460,3 +4460,21 @@ grindens utfall. Formen: vakten skriver sin exit-kod till EGEN fil
 konsumenten LÄSER filen före beslut; task-notifikationens "exit 0"
 är aldrig grind-bevis. Samma disciplin som L297 (exit-kodad kedja)
 och L280 (exit binder steget) — utsträckt till bakgrunds-formen.
+
+### L310 — UI som Marcus konsumerar bär design-review-grind — även dev-verktyg; Done före hans blick är för tidig
+
+Datum: 2026-07-22 (S76) | Källa: TASK-29 (kortet saknade mänsklig
+DoD-grind → Code flippade Done efter grön CI; Marcus granskning kom
+EFTER och gav tre vågor [rail-formen · polervågen · mikrocopy-vågen]
+— kortet fick återöppnas per våg; session-end hann dessutom köras
+före godkännandet) (klass: process/DoD-design)
+
+ADR-071:s granskningsfärdig-läge är villkorat på att kortet BÄR en
+mänsklig DoD-grind — men grinden måste SÄTTAS när kortet föds. Regeln:
+varje kort vars leverans är UI som en människa ska ANVÄNDA (inklusive
+dev-verktyg med Marcus som användare) får design-review som
+DoD-extra-rad vid födseln → kortet stannar i granskningsfärdig-läge
+och Done-flippen är människans. Auto-Done reserveras för ytor utan
+mänsklig konsumtion (API-kontrakt, skript, docs). End-pass körs inte
+förrän sessionens UI-leveranser är granskade eller uttryckligen
+defererade.

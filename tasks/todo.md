@@ -77,6 +77,15 @@
   side-effect-i-updater-buggen) — grindar gröna · e2e 56/56 på
   växlarens routes · L304-rail-verifiering grön · stängnings-commit
   efter fil-läst grön vakt. **NÄSTA: end-pass.**
+- [x] **Gransknings-vågorna 2–3 + två praxis-korrigeringar +
+  L310** (2026-07-22): polervågen `e32839e` (Am. 2: beaker för K ·
+  konstant höjd · normalvikts-/sidflipp-tooltips · tangentbords-
+  flytt) + mikrocopy-vågen `4ba99c3` (Am. 3: app-fönster-ikon ·
+  fönster-knapp utan tooltip · mikroform-copy) · minnes-poster
+  reinstall-praxis + CI-vakt-alltid-bakgrund · **L310** (UI-kort bär
+  design-review-grind vid födseln — Done före Marcus blick var för
+  tidig; session-end-kompletteringen detta bevis). **NÄSTA: Done v2
+  på grön vakt → coverage-kvittens → closed.**
 
 ### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-22; paus 3 — review-vågen levererad, work-batch 12 vid resume) — Batch-exekveringen: work-batch max 22, två pipelines
 

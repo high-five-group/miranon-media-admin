@@ -3,10 +3,10 @@ id: TASK-29
 title: >-
   Prototyp-växlarens ombyggnad till ADR-074-standarden (minimal-först hörn-pill
   + pilstegning + fönster-jämförelse)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-22 14:38'
-updated_date: '2026-07-22 16:18'
+updated_date: '2026-07-22 16:27'
 labels:
   - ready-for-agent
 dependencies: []
@@ -43,10 +43,6 @@ Bygg om src/components/dev/PrototypeSwitcher.tsx till ADR-074 beslut 2–3 (Verc
 - [x] #14 VÅG 3 (Marcus-granskning 3): skarpa vyns ikon är app-fönster (ej öga) · nytt-fönster-knappen saknar tooltip (självförklarande ikon) · all tooltip-copy trimmad till professionell mikroform (Variant A — steg 1 · Prototyp — steg N · Data: demo/verklig; URL-hacket och stegLabel-kedjorna borta)
 <!-- AC:END -->
 
-
-
-
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -56,7 +52,7 @@ FACIT-REVIDERING (Marcus-direktiv under granskningen, ADR-074-amenderingen): AC 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Levererad · commit a123254 (leverans 2 rail; leverans 1 dadd8a3 CI-röd → facit-reviderad på Marcus-direktiv) · CI-run 29934613949 grön per jobb · CI-grön-första-pass: nej för kortet (leverans 1 föll på /^Visa/-namn-kollisionen; leverans 2 first-pass grön) · defekter under körning: 2 (dev-överlägg i appens namn-rymd + side-effect-i-setState-updater — båda rött-först-fångade och läkta) · TDD: ej tillämplig (dev-verktyg utan test-harness; L304-script-assertions med rött-först-bevis som ersättningsform)
+Levererad i TRE vågor · slutcommit 4ba99c3 (våg 1 pill dadd8a3 [CI-röd → facit-reviderad] · våg 2 rail+polering e32839e · våg 3 mikrocopy 4ba99c3) · CI-runs 29934613949 + 29936538680 + 29937419903 gröna per jobb (fil-läst vakt-exit) · first-pass: nej för kortet, ja för våg 2–3 · defekter: 2 rött-först-fångade (namn-rymds-kollisionen · side-effect-i-updater) · TDD ej tillämplig — L304-script-assertions A–I som ersättningsform · 14 AC över tre vågor · design-review: Marcus granskade löpande (vågorna VAR granskningen); L310 kodifierar grinden framåt
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
