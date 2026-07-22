@@ -60,6 +60,12 @@
   S75-end-pass). Marcus-moment: **T18-reinstall 1.16.0 → 1.18.0** +
   aktiverings-verifiering. **NÄSTA: end-pass på signal; TASK-29 +
   S75-resume = Marcus vägval.**
+- [x] **Reinstall-praxisen standardiserad + T18 STÄNGD** (2026-07-22,
+  Marcus-korrigering "det ska vara praxis efter varje uppdatering"):
+  `claude plugin update` körd av Code — 1.16.0→**1.18.0**→**1.18.1**
+  (praxis-bumpen `ce9dec5` åt sin egen praxis; list-verifierad) ·
+  praxis på tre ytor (minne · hub-README § Distributions-praxis ·
+  T18-stängningen). **NÄSTA: TASK-29 via do-work-formen → end-pass.**
 
 ### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-22; paus 3 — review-vågen levererad, work-batch 12 vid resume) — Batch-exekveringen: work-batch max 22, två pipelines
 
