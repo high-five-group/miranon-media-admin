@@ -9,6 +9,12 @@ import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 // staging-bas — tbl-id:n är bas-unika och skiljer sig i en duplicerad bas (ADR-050).
 const TABLE_NAME = 'Anmälningar';
 const EVENTPLANERING_TABLE = 'Eventplanering';
+const PERSONER_TABLE = 'Personer';
+
+// Personer-fältet arbetskön behöver (task-18.4): deltagarens Miranon-historik.
+// Formel (flddy8JND3YnlgZxe) = RIM 1 × + RIM 2 × + RIM 3 × + Fjärrskådning ×.
+// Fältet bor på PERSONER, inte på Anmälningar → kräver en andra tabell-läsning.
+const PERSON_EVENTS_FIELD = 'Antal genomförda event';
 
 // Max record-ID:n per batch-anrop (Anmälningar-ID:n). En chunk = en kort
 // `OR(RECORD_ID()=…)`-formel (≤50 IDs ≈ ~1.5 kB, väl under Airtables formel-/URL-
@@ -82,12 +88,61 @@ function mapRegistration(record: { id: string; fields: Record<string, unknown> }
     noteringSlutbetalning: f['Notering slutbetalning'] ?? null, // text (additiv)
     paminnelseAnmalningsavgiftSkickad: f['Påminnelse anmälningsavgift skickad'] ?? null, // dateTime (additiv)
     paminnelseSlutbetalningSkickad: f['Påminnelse slutbetalning skickad'] ?? null, // dateTime (additiv)
+    // Arbetsköns deltagar-shape (task-18.4; PRD task-18 beslut 10). Fälten är
+    // BEFINTLIGA i basen (live-verifierade mot staging-schemat 2026-07-22, L294
+    // — inga nya bas-fält). `Källa` TOM (formuläranmälningar lämnar fältet
+    // orört) ⇒ selectName ger null ⇒ klienten läser "via formulär".
+    kalla: selectName(f['Källa']), // singleSelect: Manuell | +1 | Väntelista | TOM
+    medfoljandeTill: Array.isArray(f['Medföljande till']) ? f['Medföljande till'][0] : null, // self-link → first ID
+    bekraftelseSkickad: f['Bekräftelse skickad'] ?? null, // dateTime (mail 1)
+    deltagarinfoSkickad: f['Deltagarinfo skickad'] ?? null, // dateTime (mail 2 = UI:ts "eventinfo")
+    // Fylls av person-batchen i eventId-grenen (se berikaPersonhistorik). Sätts
+    // ALLTID här så shapen är komplett även i den event-lösa grenen — nyckeln
+    // finns, värdet är null (aldrig undefined).
+    antalGenomfordaEvent: null as number | null,
     eventId: Array.isArray(f['Event']) ? f['Event'][0] : null, // linked record → first ID
     personId: Array.isArray(f['Person']) ? f['Person'][0] : null, // linked record → first ID
   };
 }
 
 type Registration = ReturnType<typeof mapRegistration>;
+
+/**
+ * Berikar anmälningarna med PERSONENS `Antal genomförda event` (task-18.4).
+ *
+ * Fältet bor på Personer, inte på Anmälningar. Läsningen sker med SAMMA
+ * chunkade `OR(RECORD_ID()=…)`-batch som anmälningarna själva (get-person-/
+ * get-attendance-mallen): unika person-ID:n → ceil(N/50) listanrop, ALDRIG ett
+ * anrop per person. En projektion (`fields`) används här — till skillnad från
+ * anmälnings-hämtningen behövs exakt ETT Personer-fält, och Personer är en bred
+ * tabell (~90 fält).
+ *
+ * Anmälningar utan Person-länk (manuella/+1 innan A2 kopplat dem) behåller null:
+ * "vet ej" är sanningen, aldrig 0 (0 betyder "första eventet" i UI:t).
+ * Muterar raderna på plats — de är EF-lokala objekt ur mapRegistration.
+ */
+async function berikaPersonhistorik(registrations: Registration[]): Promise<void> {
+  const personIds = [
+    ...new Set(registrations.map((r) => r.personId).filter((id): id is string => id != null)),
+  ];
+  if (personIds.length === 0) return;
+
+  const personer = await fetchByRecordIds(PERSONER_TABLE, personIds, [PERSON_EVENTS_FIELD]);
+  const antalPerPerson = new Map<string, number | null>(
+    personer.map((p) => {
+      const raw = p.fields[PERSON_EVENTS_FIELD];
+      // Formelfält kan beräknas till NaN/Infinity och levereras då som OBJEKT
+      // ({ specialValue }) — endast ändliga tal passerar (coerce-familjens regel).
+      return [p.id, typeof raw === 'number' && Number.isFinite(raw) ? raw : null];
+    }),
+  );
+
+  for (const r of registrations) {
+    if (r.personId != null) {
+      r.antalGenomfordaEvent = antalPerPerson.get(r.personId) ?? null;
+    }
+  }
+}
 
 /** Inskickad desc, nulls sist (dateTime ISO → Date.parse; båda null → 0; en null → sist). */
 function byInskickadDesc(a: Registration, b: Registration): number {
@@ -114,6 +169,13 @@ function byInskickadDesc(a: Registration, b: Registration): number {
  *
  * EVENT-LÖSA GRENEN (eventId saknas): OFÖRÄNDRAD — serverside filterByFormula via
  * buildEqualsFilter (status/flagga) + fetchFromAirtable med Inskickad-desc-sort. 404:ar INTE.
+ *
+ * DELTAGAR-SHAPEN (task-18.4): utöver Anmälningar-fälten bär eventId-grenen även
+ * PERSONENS `Antal genomförda event` via en andra chunkad record-ID-batch mot
+ * Personer (berikaPersonhistorik). ASYMMETRIN ÄR MEDVETEN OCH BOKFÖRD: den
+ * event-lösa grenen hämtar HELA basens anmälningar (Hem-vyn/anmälningslistan) —
+ * en person-batch där vore O(hela basen) läsanrop per request utan konsument.
+ * Där lämnas `antalGenomfordaEvent` null; nyckeln finns alltid i shapen.
  *
  * ATOMICITET: event-fetch + Anmälningar-batch är ICKE-atomär — acceptabelt för en admin-
  * läsvy, medvetet utan snapshot-isolering (samma disciplin som get-attendance/get-person).
@@ -165,6 +227,12 @@ Deno.serve(async (req) => {
 
       // 5) JS-sort: Inskickad desc, nulls sist.
       registrations.sort(byInskickadDesc);
+
+      // 6) Person-batch (task-18.4): arbetsköns `Antal genomförda event`. Sker
+      //    EFTER filtreringen så bara de faktiskt returnerade personerna hämtas,
+      //    och ENDAST i denna gren: den event-lösa grenen returnerar hela basens
+      //    anmälningar, där en person-batch vore O(hela basen) per anrop.
+      await berikaPersonhistorik(registrations);
 
       return new Response(JSON.stringify({ registrations }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
