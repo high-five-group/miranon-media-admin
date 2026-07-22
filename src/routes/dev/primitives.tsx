@@ -20,7 +20,8 @@ import {
 
 const MESSAGE_INTENTS = ['info', 'success', 'warning', 'error'] as const;
 
-const INTENTS = ['primary', 'secondary', 'danger', 'ghost'] as const;
+// 'success' = grön primär (task-19.3; S73-facit K77 — skapa-sidans "Skapa event").
+const INTENTS = ['primary', 'secondary', 'danger', 'ghost', 'success'] as const;
 const SIZES = ['sm', 'md', 'lg'] as const;
 
 export const Route = createFileRoute('/dev/primitives')({

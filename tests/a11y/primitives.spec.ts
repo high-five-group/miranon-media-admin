@@ -9,14 +9,16 @@ import { expect, test } from './fixtures';
  * 0 violations per skan (ADR-045 beslut 2).
  */
 
-const BUTTON_INTENTS = ['primary', 'secondary', 'danger', 'ghost'] as const;
+// 'success' = grön primär-intent (task-19.3; skapa-sidans "Skapa event" per
+// S73-facit K77) — samma intent-yta som övriga, egen demo-sektion.
+const BUTTON_INTENTS = ['primary', 'secondary', 'danger', 'ghost', 'success'] as const;
 
 test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
   test('demo-sidan som helhet — baseline', async ({ checkA11y }) => {
     await checkA11y();
   });
 
-  test('Button — alla fyra intent-sektioner', async ({ checkA11y }) => {
+  test('Button — alla fem intent-sektioner', async ({ checkA11y }) => {
     for (const intent of BUTTON_INTENTS) {
       await checkA11y({ include: [`[aria-labelledby="rubrik-${intent}"]`] });
     }

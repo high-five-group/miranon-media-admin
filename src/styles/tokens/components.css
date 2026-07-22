@@ -30,6 +30,13 @@
   --mm-button-ghost-text: var(--mm-text);
   --mm-button-ghost-bg-hover: var(--mm-bg-muted);
   --mm-button-ghost-bg-pressed: color-mix(in srgb, var(--mm-bg-muted), black 8%);
+  /* success = GRÖN primär (task-19.3; S73-facit K77, Marcus: skapa-knappen i
+     sage-grönt i stället för primärknappens svärta). Vit text mot --mm-success
+     (#606B57) ≈ 5,6:1 → WCAG AA. Samma hover/pressed-grammatik som danger. */
+  --mm-button-success-bg: var(--mm-success);
+  --mm-button-success-text: var(--mm-text-inverse);
+  --mm-button-success-bg-hover: color-mix(in srgb, var(--mm-success), black 12%);
+  --mm-button-success-bg-pressed: color-mix(in srgb, var(--mm-success), black 15%);
 
   /* ── Input (Fas 3 K2) ── */
   --mm-input-bg: var(--mm-bg);

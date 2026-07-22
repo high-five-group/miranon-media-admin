@@ -444,6 +444,24 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
 
+      # Playwright-artefakter vid RÖTT e2e-steg. Config:en producerar redan
+      # trace (on-first-retry), screenshot (only-on-failure) och video
+      # (retain-on-failure) — men de kastades med runnern, så ett CI-only-fel
+      # gick bara att gissa sig till. Empiriskt fångat 2026-07-22 (S75 batch 3):
+      # task-19.3 föll på 401 i CI, var grönt lokalt, och traces fanns inte att
+      # hämta. global-teardown.ts har redan purgat klartext-lösenord ur
+      # error-context.md (ADR-061 pelare 3, T29) innan uppladdningen sker.
+      - name: Ladda upp Playwright-artefakter vid rött e2e
+        if: failure() && github.actor != 'dependabot[bot]'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e-artefakter
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
       # A11y-runner per ADR-045 beslut 1+3: PLAYWRIGHT_TEST_BASE_URL lämnas
       # OSATT så webServer-blocket i playwright.config.ts startar Vite
       # dev-servern — /dev/primitives är DEV-guardad (ADR-044) och finns
