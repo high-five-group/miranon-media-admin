@@ -210,8 +210,9 @@ export function PrototypeSwitcher({
           strokeWidth="1.6"
           aria-hidden="true"
         >
-          <path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8s-2.4 4.5-6.5 4.5S1.5 8 1.5 8Z" />
-          <circle cx="8" cy="8" r="2" />
+          <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.6" />
+          <path d="M1.75 5.5h12.5" />
+          <circle cx="3.9" cy="4" r="0.5" fill="currentColor" stroke="none" />
         </svg>
         <Tooltip text="Skarpa vyn" sida={tooltipSida} />
       </button>
@@ -222,9 +223,7 @@ export function PrototypeSwitcher({
           onClick={() => setVariant(v.key)}
           aria-pressed={active?.key === v.key}
           aria-label={
-            endaVarianten
-              ? `Prototyp (?variant=${v.key}) · Steg ${v.steg} — ${v.stegLabel}`
-              : `Variant ${v.key} · Steg ${v.steg} — ${v.stegLabel}`
+            endaVarianten ? `Prototyp — steg ${v.steg}` : `Variant ${v.key} — steg ${v.steg}`
           }
           className={knapp(active?.key === v.key)}
         >
@@ -247,11 +246,7 @@ export function PrototypeSwitcher({
           )}
           {active?.key === v.key && stegBadge(v.steg)}
           <Tooltip
-            text={
-              endaVarianten
-                ? `Prototyp (?variant=${v.key}) · Steg ${v.steg} — ${v.stegLabel}`
-                : `Variant ${v.key} · Steg ${v.steg} — ${v.stegLabel}`
-            }
+            text={endaVarianten ? `Prototyp — steg ${v.steg}` : `Variant ${v.key} — steg ${v.steg}`}
             sida={tooltipSida}
           />
         </button>
@@ -265,10 +260,10 @@ export function PrototypeSwitcher({
         aria-disabled={active == null}
         aria-label={
           active == null
-            ? 'Dataläge (välj prototyp först)'
+            ? 'Dataläge (kräver vald prototyp)'
             : dataMode === 'verklig'
-              ? 'Verklig data — växla till demo'
-              : 'Demo-data — växla till verklig'
+              ? 'Data: verklig — växla till demo'
+              : 'Data: demo — växla till verklig'
         }
         className={`${knapp(active != null && dataMode === 'verklig')} ${
           active == null ? 'cursor-default opacity-40 hover:bg-transparent' : ''
@@ -290,10 +285,10 @@ export function PrototypeSwitcher({
         <Tooltip
           text={
             active == null
-              ? 'Dataläge — välj prototyp först'
+              ? 'Dataläge — kräver vald prototyp'
               : dataMode === 'verklig'
-                ? 'Data: verklig → demo'
-                : 'Data: demo → verklig'
+                ? 'Data: verklig'
+                : 'Data: demo'
           }
           sida={tooltipSida}
         />
@@ -318,7 +313,6 @@ export function PrototypeSwitcher({
           <path d="M8.5 2.5h4v4" />
           <path d="M12.5 2.5 7 8" />
         </svg>
-        <Tooltip text="Öppna i nytt fönster" sida={tooltipSida} />
       </button>
     </div>
   );

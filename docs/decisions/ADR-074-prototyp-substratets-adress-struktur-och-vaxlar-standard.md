@@ -49,6 +49,17 @@
 > TANGENTBORDS-flytt på grippen (pilar nudgar, Home/Escape dockar —
 > a11y-paritet med pointer-draget) + fokus-ring via
 > `--color-border-focus`-tokenet.
+>
+> **Amendering 3 (Session 76 samma dag — Marcus-granskning 3,
+> mikrocopy-vågen):** tre förfiningar, river Amendering 2:s
+> ikon-detalj öppet: skarpa vyns ikon är APP-FÖNSTER, inte öga
+> (metaforen är appen du ser, inte betraktandet) · nytt-fönster-
+> knappen bär INGEN tooltip (självförklarande ikon; tooltips
+> reserveras för knappar vars innebörd inte syns) · tooltip-copyn
+> trimmad till mikroform ("Variant A — steg 1" · "Prototyp — steg N"
+> · "Data: demo"/"Data: verklig") — URL-korrelationen och
+> stegLabel-kedjorna utgår ur UI:t (bor i kod/trail; hemmabyggd
+> copy-känsla var fyndet).
 
 T80 föddes S75 Del 8 (Marcus review-våg 1): `?variant`-konventionen var
 odokumenterad i specs (URL-STATE-SPEC saknade den; ADR-044 täcker endast

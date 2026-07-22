@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-07-22 14:38'
-updated_date: '2026-07-22 16:06'
+updated_date: '2026-07-22 16:18'
 labels:
   - ready-for-agent
 dependencies: []
@@ -40,7 +40,10 @@ Bygg om src/components/dev/PrototypeSwitcher.tsx till ADR-074 beslut 2–3 (Verc
 - [x] #11 EN variant i familjen → prototyp-ikon (kolv) i stället för bokstav (K-frågan); flera varianter → bokstavs-knappar; tooltip bär URL-korrelationen (?variant=nyckel)
 - [x] #12 Tooltips är ALLTID normalvikt (ärver aldrig aktiv knapps fetstil) och flippar till höger sida nära vänsterkanten (klipper aldrig)
 - [x] #13 KONSTANT höjd: data-knappen har reserverad plats även utan aktiv variant (soft-disablad: aria-disabled + dämpad + förklarande tooltip); railen är även tangentbords-flyttbar (pilar nudgar, Home/Escape dockar)
+- [x] #14 VÅG 3 (Marcus-granskning 3): skarpa vyns ikon är app-fönster (ej öga) · nytt-fönster-knappen saknar tooltip (självförklarande ikon) · all tooltip-copy trimmad till professionell mikroform (Variant A — steg 1 · Prototyp — steg N · Data: demo/verklig; URL-hacket och stegLabel-kedjorna borta)
 <!-- AC:END -->
+
+
 
 
 
