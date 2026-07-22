@@ -1,4 +1,19 @@
 {
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -c 'if ((.tool_input.command // \"\") | test(\"(^|[;&|]\\\\s*|\\\\$\\\\()gh +run +watch\")) and ((.tool_input.run_in_background // false) | not) then {hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"CI-vakt i förgrunden är förbjuden (S76-praxis): kör gh run watch som bakgrundstask (run_in_background: true) med fil-skriven exit-kod (L309), och fortsätt icke-push-arbetet under vakttiden.\"}} else empty end'",
+            "timeout": 10,
+            "statusMessage": "CI-vakt-grinden (S76)"
+          }
+        ]
+      }
+    ]
+  },
   "extraKnownMarketplaces": {
     "marcus-hub": {
       "source": {
