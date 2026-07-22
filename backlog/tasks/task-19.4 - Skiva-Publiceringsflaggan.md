@@ -4,7 +4,7 @@ title: 'Skiva: Publiceringsflaggan'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-22 19:51'
+updated_date: '2026-07-22 20:44'
 labels:
   - ready-for-agent
 dependencies:
@@ -49,13 +49,15 @@ AC #2 (skarpt ände-till-ände): det skarpa describe-blocket armerar handtaget i
 GRINDAR (lokalt, hårt grindade, allt i semafor-fönster): biome exit 0 · typecheck 0 fel · typecheck:tests 0 fel · build grön · vale 0 errors · test:api 9/9 på create-event-filen · e2e mockade 10/10 · test:a11y 62/62 · FULL e2e-svit 225 passed / 3 failed — de tre fallerarna är INTE mina (shell DoD 6 'DEV-guardad feltrigger', persist-cache offline-omladdning, kalendervyns ?vy-kontrakt) och kördes om mot DEV-server (CI:s miljöform): 24 passed / 1 skipped / 0 failed -> preview-bygge-artefakter, ingen regression ur denna diff. Ingen skapa-event-test fanns bland fallerarna.
 
 ÖPPET: DoD 3 (CI per jobb) och DoD 5 (Marcus design-review) står öppna. DoD 6: INGEN facit-punkt berörs visuellt av detta kort — handtagets renderade form är oförändrad sedan 19.1/19.3 (där den facit-avprickades); kortet ändrar bara vad armeringen GÖR. Lämnad obockad för Marcus bedömning.
+
+POST-CI-BOKFÖRING (merge-agent, S75-batchen): PR #83 mergad med merge-commit 67ad145 (aldrig squash). PR-CI run 29954677926 GRÖN per jobb (Detect changed files · Lint + Audit + TypeCheck · Docs link check · Staging sentinel purge · Test + Build · CI Passed or Skipped) — jobb-utfallen fil-lästa ur gh run view --json jobs. E2E-beviset ligger som STEG i Test + Build: 'E2E tests (staging)' success (233 passed / 3 skipped); 'API tests (staging)' success (134 passed); 'API tests (pure)' 190 passed; 'A11y tests' 62 passed; Build success. Test-count-delta mot senaste main-run med tester (32061af, run 29953409618): api-staging 132 -> 134 (+2 = kontraktstesterna armerad/oarmerad + deny fel typ), e2e 232 -> 233 (+1 = det skarpa armerings-blocket); api-pure och a11y oförändrade. MAIN-CI run 29955372036 på merge-commit 67ad145 GRÖN per jobb med identisk stegbild (233/3 e2e · 134 api-staging · 190 api-pure · 62 a11y · Build). Merge-tree mot färsk main gav exit 0 (ingen konflikt, inget upplösnings-mandat behövde tas). Claims-kvitto: 10/10 ändrade filer inom kortets deklarerade yta — noll fil utanför. Audit-läkningen 8f4aeb3 verifierad som ancestor till branchen före PR. OBEROENDE VERIFIERING (merge-agent, ej bygg-agentens ord): allowlist-namnet korsläst LIVE mot staging-schemat via Airtable-MCP describe_table — fältet 'Publicerad på miranon.se' (fldyJKnJCP1brHwL6) finns på Eventplanering tblVE3UKWl1CKrphV och matchar allowlist-strängen EXAKT. Utelämnande-formen verifierad i diffen i alla tre lagren (adapterns spread vid true · EF:ens fields-map vid true · schemats optional). GRANSKNINGSFÄRDIG — VÄNTAR DESIGN-REVIEW (MARCUS). Kortet står kvar In Progress; DoD 5 (design-review mot S73-facit-utökningen) och DoD 6 (facit-avprickningen) är Marcus-grindar och lämnas obockade. Ingen final-summary skriven, status INTE satt till Done — tvåstegs-stängningen (K61.1/T75) väntar på Marcus kvittens.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
