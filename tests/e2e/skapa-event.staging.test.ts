@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, type Route, test } from '@playwright/test';
+import { loggaInFristaende } from './helpers/fristaende-session';
 
 /**
  * Skapa nytt event — event-familjens skapa-sida mot S73-FACIT-UTÖKNINGEN
@@ -329,6 +330,17 @@ test.describe('Skapa nytt event — facit-formen + flödet (task-19.3)', () => {
 });
 
 test.describe('Skapa nytt event — SKARPT mot staging (AC #1)', () => {
+  // Skarpa EF-läsningar kräver en session som håller SERVER-SIDE. Den delade
+  // storageState-sessionen gör inte det under full svit (refresh-token-rotation
+  // över ~200 kontexter → 401 "Invalid or expired token"); mockade tester
+  // märker det aldrig, detta test gör det. Egen färsk session i stället.
+  // Se tests/e2e/helpers/fristaende-session.ts för fullständig rationale.
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test.beforeEach(async ({ page }) => {
+    await loggaInFristaende(page);
+  });
+
   /**
    * Ände-till-ände genom hela vertikalen: inga mocks — formuläret läser
    * options ur staging (get-events + get-event-formats) och SKRIVER en riktig

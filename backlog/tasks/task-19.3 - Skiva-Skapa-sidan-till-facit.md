@@ -4,7 +4,7 @@ title: 'Skiva: Skapa-sidan till facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-22 17:53'
+updated_date: '2026-07-22 19:00'
 labels:
   - ready-for-agent
 dependencies:
@@ -48,6 +48,18 @@ AC #1 (skarpt mot staging): nytt e2e-describe 'SKARPT mot staging' — inga mock
 FACIT-AVPRICKNING (DoD 6): renderad verifiering före granskning — skärmdump 390x844 av den SKARPA sidan mot bilagan (identisk uppställning: chevron, rubrik+linje, tre grupper, fältordning, handtaget, grön knapp först) + computed-assertion på Skapa-knappens background-color rgb(96,107,87) + aria-snapshot av hela formen i e2e.
 
 GRINDAR (lokalt, hårt grindade): Biome exit 0 · typecheck 0 fel · typecheck:tests 0 fel · test:api 318/318 · build grön · test:a11y 62/62 · e2e 10/10 (off-port, se avvikelsen). CI-grinden och Marcus design-review (DoD 3/5/6) står öppna.
+
+STUDS-LÄKNINGEN (2026-07-22, S75 batch 3 · orkestratorns diagnos-pass):
+
+ROTORSAK — inte formens kod. PR-CI:s e2e föll på 401 `{"error":"Invalid or expired token"}` från get-events + get-event-formats i det skarpa AC #1-testet. Reproducerat lokalt mot CORS-tillåten origin: testet är GRÖNT ensamt (10/10) och i liten seriell delmängd (68/68), men RÖTT i full parallell svit — identisk signatur som CI.
+
+Mekanismen: testet är det FÖRSTA e2e-testet i repot som gör en omockad EF-läsning (alla 27 övriga staging-e2e-filer page.route-mockar sina EF-anrop). Därför är det också det första som märker att den delade `playwright/.auth/user.json`-sessionen inte håller SERVER-SIDE under full svit — ~200 webbläsarkontexter hydreras ur samma refresh-token och rotationen gör att de flesta förlorar kapplöpningen. `requireUser` validerar mot Supabase Auth och avvisar. Mockade tester märker aldrig detta. Samma familj som T24-b:s GoTrue-429-burst i api-sviten.
+
+ÅTGÄRD: det skarpa describe-blocket får en EGEN färsk session (`test.use({ storageState: tom })` + `loggaInFristaende`) i stället för den delade. Ny helper `tests/e2e/helpers/fristaende-session.ts` bär rationalen och läser credentials ur env enligt Kandidat 34-disciplinen (aldrig literaler, aldrig loggning) — samma hard-fail som auth.setup.ts. Kostnad: en extra GoTrue-inloggning per run.
+
+VERIFIERING: full parallell svit mot staging-bygge på tillåten origin — det skarpa testet GRÖNT (217 passed). Grindar: test:api 318/318 · typecheck 0 · biome 0 fel · build grön · a11y 62/62.
+
+SIDOLEVERANS I SAMMA COMMIT: CI laddade aldrig upp Playwright-artefakter, så ett CI-only-fel gick bara att gissa sig till — traces genereras (on-first-retry) men kastades med runnern. Uppladdningssteg tillagt vid rött e2e (7 dagars retention; global-teardown har redan purgat klartext-lösenord per ADR-061 pelare 3).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
