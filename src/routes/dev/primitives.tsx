@@ -12,6 +12,7 @@ import {
   Select,
   SelectItem,
   Skeleton,
+  SlideToConfirm,
   TextArea,
   ToggleButton,
   ToggleButtonGroup,
@@ -314,6 +315,48 @@ function PrimitivesPage() {
           </div>
         </div>
       </section>
+      <section aria-labelledby="rubrik-slidetoconfirm" className="mt-8 max-w-md">
+        <h2 id="rubrik-slidetoconfirm" className="text-xl">
+          SlideToConfirm
+        </h2>
+        <p className="mt-2 text-small text-text-secondary">
+          Dra-till-bekräfta-handtaget (S73-facit-utökningen K77–K84, spec §18): draget är
+          bekräftelsen vid tunga handlingar — tangentbordet (Space/Enter) är alltid en likvärdig
+          väg. Armerat läge = bock + text utan fyllnad (K82).
+        </p>
+        <div className="mt-4 flex flex-col gap-4">
+          {/* Facit-formen — publicerings-handtaget (monodomänen per K81:s
+              adress-grammatik; 0.95em kompenserar monons optiska överstorlek). */}
+          <SlideToConfirm
+            label="Publicera på miranon.se"
+            prompt={
+              <>
+                Dra för att publicera på <MiranonSe />
+              </>
+            }
+            confirmedLabel={
+              <>
+                Publiceras på <MiranonSe />
+              </>
+            }
+            onChange={(v) => setSenastTryckt(`slidetoconfirm: ${v ? 'armerad' : 'oarmerad'}`)}
+          />
+          {/* Armerad från start (uncontrolled defaultSelected) + sound av —
+              konsument-preferensens säte (framtida app-bred ljudinställning). */}
+          <SlideToConfirm
+            label="Tyst demo utan pling"
+            prompt="Dra för att armera (tyst)"
+            confirmedLabel="Armerad (tyst)"
+            defaultSelected
+            sound={false}
+          />
+        </div>
+      </section>
     </main>
   );
+}
+
+/** K81 — domänen i mono (adress-grammatiken); konsument-ägd text, inte primitiv-API. */
+function MiranonSe() {
+  return <span className="font-mono text-[0.95em] tracking-tight">miranon.se</span>;
 }

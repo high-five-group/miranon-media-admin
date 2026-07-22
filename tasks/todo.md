@@ -111,6 +111,25 @@
   Marcus-moment). **NÄSTA: batch v2.1 löper → status-rapport vid
   hemkomst → QA-våg/design-review = Marcus → end-pass på
   signal.**
+- [x] **BATCH V2.1 KLAR: 7 MERGADE + STUDS 18.8 → STOPPAD** (natten
+  till 2026-07-22, Del 6 kanonisk plats): **8/22 kort
+  granskningsfärdiga i main** (17.1 + 17.3/18.1/17.2/18.2/17.4/
+  18.3/19.1, PR #69–75; konflikt-mandatet ×2, båda md-klass) ·
+  **18.8 ÄKTA STUDS** (färdigbyggd, PR #76 står; tredje externa
+  advisoryn + 3 branch-egna e2e-fel [staging-data-hypotes,
+  odiagnostiserad — Marcus ögon per studs-regeln]) · 19.2 byggd +
+  drainad (remote står, drain-not) · övriga 12 orörda ·
+  **sharp-läkningen `8f4aeb3`** (override 0.35.3; allowlist-vägen
+  = Marcus-klass, ej tagen) — repo-vid CI GRÖN igen · fynd-kort
+  TASK-21–25 (`9eab457`; TASK-24/25 high — 25 in i review-vågen) ·
+  sidoeffekter RENA (remote endast 18.8+19.2, avsiktliga). Batchen
+  STOPPAD på senior-beslut (studs + granskningsvågs-principen +
+  midnatt). **NÄSTA (Marcus i morgon): (1) REVIEW-VÅGEN — 8 kort
+  design-review (DoD #5) + TASK-25-fokusringen; (2) 18.8-vägvalet
+  (e2e-diagnosen); (3) ny batch-order för resterande (19.2-mergen
+  och 12 kort + ev. 18.8); (4) end-pass-docs (data-model-synken ·
+  fälla 45 · STATE-STRATEGY-driften); (5) T18-reinstall
+  (plugin 1.17.0).**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 

@@ -22,6 +22,8 @@ function distinct(values: (string | null)[]): string[] {
 /**
  * Skapa-nytt-event-formulär (Fas 6f L2, ADR-066) — appens create-event-vertikal klient-side.
  * Speglar SegmentBuilder (6g L2): fält-primitiver + a11y + pessimistisk mutation.
+ * HEMVIST: event-familjens /event/skapa (hemvist-flytten task-19.2; back-länken går till
+ * event-listan). Formens innehåll mot S73-facit-utökningen ägs av task-19.3.
  *
  * PESSIMISTISK UI (ADR-066 b4): submit → knapp disabled + pending → server-OK (201 created
  * ELLER 200 idempotent replay, BÅDA framgång) → invalidera event-listan + navigera till det
@@ -127,8 +129,8 @@ export function CreateEventForm() {
   }
 
   const backLink = (
-    <Link to="/mer" className="text-small underline">
-      ← Tillbaka till Mer
+    <Link to="/event" className="text-small underline">
+      ← Tillbaka till Event
     </Link>
   );
 

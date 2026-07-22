@@ -1,14 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { CreateEventForm } from '@/components/event';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
+// RIVEN HEMVIST — ÖPPET HANTERAD (task-19.2, PRD task-19 beslut 2): Skapa
+// nytt event bor sedan hemvist-flytten (Marcus-kvitterad 2026-07-21) i
+// event-familjen på /event/skapa; Mer-ingången är riven. Routen behålls som
+// ren omdirigering så PWA-historik och bokmärken aldrig dör (inga döda
+// URL:er) — ingen komponent, inget innehåll.
 export const Route = createFileRoute('/_authenticated/mer/skapa-event')({
-  staticData: { title: 'Skapa nytt event' },
-  component: SkapaEventPage,
+  beforeLoad: () => {
+    throw redirect({ to: '/event/skapa', replace: true });
+  },
 });
-
-// Mer — Skapa nytt event (Fas 6f L2, ADR-066): /mer/skapa-event. create-event-vertikalens
-// klient-yta — pessimistiskt formulär mot create-event-EF (idempotent upsert). Logiken bor
-// i CreateEventForm; routen håller bara montering. <Outlet/> bärs av _authenticated via AppShell.
-function SkapaEventPage() {
-  return <CreateEventForm />;
-}
