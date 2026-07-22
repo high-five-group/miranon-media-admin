@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-07-22 14:38'
-updated_date: '2026-07-22 15:24'
+updated_date: '2026-07-22 15:41'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,18 +27,21 @@ Bygg om src/components/dev/PrototypeSwitcher.tsx till ADR-074 beslut 2–3 (Verc
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [x] #1 Default-läget är minimerad hörn-pill nere höger ovanför bottom-naven (aldrig bottom-center); expansion är opt-in och localStorage-minnet består (nyckeln mm-proto-switcher-minimerad återanvänds; default-värdet inverteras)
-- [x] #2 Minimal-läget bär ‹/›-pilstegning som cyklar skarpa vyn → varianterna i ordning, och visar aktiv nyckel + steg-badge (identitetsraden i kompakt form)
-- [x] #3 Expanderad panel behåller variant-chips + identitetsrad + demo/verklig-växeln och får handlingen 'Öppna i nytt fönster' (window.open på samma route med vald variant-nyckel — jämförelse i fönster-lagret per ADR-074 beslut 3)
+- [ ] #1 Default-läget är minimerad hörn-pill nere höger ovanför bottom-naven (aldrig bottom-center); expansion är opt-in och localStorage-minnet består (nyckeln mm-proto-switcher-minimerad återanvänds; default-värdet inverteras)
+- [ ] #2 Minimal-läget bär ‹/›-pilstegning som cyklar skarpa vyn → varianterna i ordning, och visar aktiv nyckel + steg-badge (identitetsraden i kompakt form)
+- [ ] #3 Expanderad panel behåller variant-chips + identitetsrad + demo/verklig-växeln och får handlingen 'Öppna i nytt fönster' (window.open på samma route med vald variant-nyckel — jämförelse i fönster-lagret per ADR-074 beslut 3)
 - [x] #4 Utseendet stylas med designsystemets tokens (inga hårdkodade färger; den massiva svarta plattan ersätts); a11y-golvet består (aria-pressed, aria-label, synlig fokus, tab-ordning)
 - [x] #5 DEV-grinden består (monteras endast bakom import.meta.env.DEV); produktion renderar skarpa vyn oförändrat
 - [x] #6 Befintliga call-sites (EventsListPrototype, EventDetailPrototype m.fl.) fungerar utan ändring av sina props
+- [x] #7 RAIL-FORMEN (facit-revideringen, ADR-074-amenderingen): vertikal ikon-rail dockad vid höger kant vertikalt centrerad som default; endast ikon-knappar med tooltips (öga=skarpa vyn · variant-bokstäver · data-toggle · nytt-fönster); aktiv variant bär steg-badge; gamla pill/panel-formen borta
+- [x] #8 Railen är flyttbar via grip-handtaget (pointer-drag, viewport-begränsad); positionen persisteras (mm-proto-switcher-pos) och överlever omladdning; dubbelklick på grippen dockar tillbaka och rensar nyckeln
+- [x] #9 Inga knapp-namn i dev-överlägget kolliderar med appens namn-rymd (bl.a. /^Visa/-frånvaro-assertionen; e2e-sviterna på växlarens routes gröna i samma körform)
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-Leverans S76 (do-work-formen via 1.18.1-cache-läsning — Skill-verktyget registerfryst i körande session, öppet noterat). Grindar: biome 0 · typecheck 0 · test:api grön · build grön. Browser-verifierad L304-formen (fristående Playwright + login per auth.setup-mönstret, egen server 5198, Marcus 5173 orörd): pill-default 'skarp' · pilstegning → 'A · steg 1' + ?variant=A · panel med chips/identitetsrad/nytt-fönster (popup bär variant-nyckeln) · Göm-persistens MIN_KEY=1. TDD: ej tillämplig (dev-verktyg utan test-harness; FAIL-först-kapabla script-assertions som ersättningsform). AC4 okulärt bekräftad (token-yta, primary-tint-chips).
+FACIT-REVIDERING (Marcus-direktiv under granskningen, ADR-074-amenderingen): AC 1–3 SUPERSEDED av rail-formen (AC 7–9) — ej omötta, ersatta; pill-formen revs öppet (L299 lösningsklass-byte, underkännande #2). Rail levererad: dockad dragbar ikon-rail med tooltips; ref-baserad synkron persistens (side-effect-i-updater-buggen fångad rött-först i L304-skriptet); e2e 56/56 gröna på växlarens routes inkl. det CI-röda /^Visa/-kollisionstestet (run 29933197540 = pill-formens röda; rail läker strukturellt). Känd mindre kvarvaro: tooltip klipper vid extrem vänster-drag (alltid vänster-sida) — noterad, ej blockerande.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done

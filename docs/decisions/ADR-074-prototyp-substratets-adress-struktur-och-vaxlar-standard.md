@@ -9,7 +9,31 @@
 - Fas: Session 76 — arbetssätt/dev-verktyg (ingen
   byggfas-status-ändring)
 
-## Kontext
+> **Amendering (Session 76 samma dag, 2026-07-22 — Marcus-direktiv i
+> TASK-29-granskningen, underkännande #2 på växlarens form →
+> L299-lösningsklass-byte; klassad FACIT-REVIDERING med komplett
+> direktiv per ADR-071-amenderingens gränstest):** en post;
+> beslutstexten nedan bevaras oförändrad (immutabilitet).
+>
+> 1. **Beslut 2:s UI-form REVIDERAD: hörn-pill + expanderbar panel →
+>    dockad, dragbar IKON-RAIL** (Figma/Stripe-klassens verktygsrail;
+>    Marcus-direktivet: "side-bar … med ikoner bara och tooltips …
+>    fast plats bredvid contentytan men att det går att dra och
+>    flytta den"). Formen: vertikal rail, default DOCKAD vid höger
+>    kant vertikalt centrerad; endast ikon-knappar med mörka
+>    mikro-tooltips (skarpa vyn = öga · variant-bokstäver med
+>    steg-badge på aktiv · data-toggle · nytt-fönster) · flyttbar via
+>    grip-handtag (position persisteras i `POS_KEY`; dubbelklick
+>    dockar tillbaka). Följdrivningar, öppna: pilstegningen ersätts
+>    av DIREKTA variant-knappar (bättre än cykling — direktaccess) ·
+>    identitetsRADEN ersätts av steg-badge + tooltip (andemeningen
+>    "identiteten alltid synlig" består) · `MIN_KEY`-persistensen
+>    utgår (railen är permanent minimal — minimal-först-PRINCIPEN
+>    består i starkare form). Beslut 2:s tokens-krav och a11y-golv
+>    oförändrade. Empirisk bifångst som stärkte bytet: pill-formens
+>    "Visa prototyp-växlaren"-knapp kolliderade med appens
+>    `/^Visa/`-frånvaro-assertion i e2e (CI-run 29933197540 röd) —
+>    rail-formen namnger dev-överlägget utanför appens namn-rymd.
 
 T80 föddes S75 Del 8 (Marcus review-våg 1): `?variant`-konventionen var
 odokumenterad i specs (URL-STATE-SPEC saknade den; ADR-044 täcker endast
