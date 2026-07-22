@@ -4,6 +4,7 @@ title: 'Skiva: Familje-rivningen (prototypsubstratet)'
 status: To Do
 assignee: []
 created_date: '2026-07-21 08:21'
+updated_date: '2026-07-22 19:03'
 labels:
   - ready-for-agent
 dependencies:
@@ -43,6 +44,12 @@ När hela familjen är byggd rivs konvergens-substratet: de fyra prototypsidorna
 - [ ] #1 Prototypfilerna och växlaren borta; appen bygger grönt utan DEV-prototyp-grenar
 - [ ] #2 Skarpa flödena opåverkade: fulla e2e-sviten grön efter rivningen
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FLAGGAT ur S75 batch 3 (task-18.4:s leverans): /event/$eventId/anmalda-routen + EventRegistrations.tsx + tests/e2e/event-anmalda.staging.test.ts är nu OÅTKOMLIGA från eventsidan — 18.4 rev interim-länken när arbetskön tog över ytan (samma mönster som 18.8 lämnade den gamla betalnings-vyn). Testerna passerar fortfarande eftersom de navigerar direkt till routen, så inget är rött; ytan är bara död. Rivningen hör till detta kort — flaggat så den inte glöms.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
