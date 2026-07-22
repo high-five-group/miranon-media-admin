@@ -4,7 +4,7 @@ title: 'Skiva: Läs-shape-utökningen + bor över-raden på listkortet'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-22 23:15'
+updated_date: '2026-07-22 23:40'
 labels:
   - ready-for-agent
 dependencies:
@@ -59,13 +59,15 @@ test:api 349 · typecheck 0 · typecheck:tests 0 · biome exit 0 · build grön 
 
 ### Öppna review-grindar (Marcus)
 DoD #5 (design-review mot S72-facit) + #6 (facit-avprickning mot bilagor) lämnas ÖPPNA — review-bundna (18.7-precedent). Rendered computed-verifiering finns i e2e (data-slot bor-over text/antal/noll-fall, säng-glyf aria-hidden); skärmdumps-avprickning mot FACIT-listvyn.png görs vid granskningen.
+
+POST-CI-BOKFÖRING (batch-merge-agent, TASK-17.5) — GRANSKNINGSFÄRDIG, väntar design-review (Marcus): DoD #5 (design-review mot S72-facit) + #6 (facit-avprickning mot bilagor) står ÖPPNA. PR #86 mergad som merge-commit 9ff4d4644eca4270e7189e41f008887749a49c2f (--merge, ej squash — SHA-bevisen bevaras). DoD #3 bockad HÄR: CI grön per jobb på pushad commit. PR-CI run 29965768561 (pull_request, head 14e4848): 6/6 jobb success (Test+Build bär e2e-beviset: api-staging 147 passed inkl. 2 nya bor över-kontraktstester [get-event härleder + get-events aggregerar/listan], e2e-staging 246 passed av 249 [3 skip, 0 fail], a11y 62/62). main-CI run 29966285253 (push, merge-commit 9ff4d46): 6/6 jobb success, identiska test-counts. Kortet står kvar In Progress — INGEN final-summary, INGEN Done (design-review-grinden till Marcus).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
