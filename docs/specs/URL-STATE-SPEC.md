@@ -151,6 +151,28 @@ Ingen URL-state. Statiska lankar -- inget att filtrera eller dela.
 
 ---
 
+## Dev-parametrar — prototyp-substratet (ADR-074)
+
+Endast i dev-lage (`import.meta.env.DEV`) bar routes tva extra
+query-params for UI-prototyp-passen (prototype-skillen; vaxlaren
+`src/components/dev/PrototypeSwitcher.tsx`):
+
+| Param | Varden | Betydelse |
+|-------|--------|-----------|
+| `variant` | stabil nyckel `a`/`b`/`c` | Vald prototyp-variant; franvarande = skarpa vyn |
+| `data` | `verklig` | Vaxlar demo→verklig data (demo ar konvergens-default) |
+
+Nyckel-livscykeln: divergens-varianter far stabila nycklar `a`/`b`/`c`;
+vinnaren BEHALLER sin nyckel genom konvergensen (ingen omdopning);
+samma schema galler over familjens alla ytor sa att familje-flodet bar
+vardet utan oversattning. Aliaser i vaxlaren ar enbart legacy-inmappning
+for historiska URL:er — aldrig for nya pass. Steg adresseras inte i
+URL:en; frysta steg lever som snapshot-par i sessionsbilagorna. I
+produktion ar parametrarna inerta (vaxlaren monteras ej; skarpa vyn
+renderas). Fullt beslut: [ADR-074](../decisions/ADR-074-prototyp-substratets-adress-struktur-och-vaxlar-standard.md).
+
+---
+
 ## Back-knapp-beteende
 
 nuqs skriver till `window.history` via `pushState` (default) eller `replaceState`. Nar Lotta trycker Back:

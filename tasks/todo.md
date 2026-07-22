@@ -40,6 +40,17 @@
   PR-formen kodifierad · iterations-skivans triage-födsel ·
   Done-flipp-grinden per klass). T81-registerraden → spoke LEVERERAD;
   kvar hub-referensraden (hub-bunten). **NÄSTA: grillning T80.**
+- [x] **T80 grillad + Del 3-landad** (2026-07-22, denna landning):
+  4 beslut (alla A, research-grundade: Storybook · Vercel Toolbar ·
+  Chromatic · Polypane · preview-env-praxis) → **ADR-074**
+  (adress-strukturen: stabila nycklar + vinnaren behåller nyckeln ·
+  minimal-först hörn-växlare med pilstegning · snapshot-par +
+  fönster-jämförelse · hemvist/leverans) + URL-STATE-SPEC
+  §Dev-parametrar + **TASK-29** ready-for-agent + **T83** reggad
+  (Claude Design/DesignSync — Marcus-frågan; Storybook-MCP bokförd i
+  ADR-044-vågskålen). Numrering nu: 075/L307/T84/f45/TASK-30.
+  **NÄSTA: hub-bunten (T78 b + T81-rad + T82-flaggor = ETT
+  plugin-bump-moment).**
 
 ### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-22; paus 3 — review-vågen levererad, work-batch 12 vid resume) — Batch-exekveringen: work-batch max 22, två pipelines
 
