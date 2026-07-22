@@ -5,6 +5,8 @@ import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/mod
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type {
+  ConfirmRegistrationsInput,
+  ConfirmRegistrationsResult,
   CreatedEvent,
   CreateEventInput,
   EventFormat,
@@ -129,4 +131,13 @@ export interface DataSourceAdapter {
    * samma form som fetchEvent, så cachen kan sättas direkt.
    */
   updateEvent(input: UpdateEventInput): Promise<Event>;
+
+  /**
+   * Bekräfta en eller flera anmälningar (task-18.6, PRD task-18 beslut 7): SERVERN
+   * skickar bekräftelsemailet OCH flippar Status i samma operation (ORDLISTA:
+   * Bekräftad ⟺ bekräftelsen skickad). Klienten skickar ENDAST record-ID:n —
+   * mottagaren löses server-side. Samma operation bär enskild bekräftelse (ett ID)
+   * och Bekräfta alla (N ID:n); svaret är aldrig binärt.
+   */
+  confirmRegistrations(input: ConfirmRegistrationsInput): Promise<ConfirmRegistrationsResult>;
 }

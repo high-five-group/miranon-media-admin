@@ -7,6 +7,9 @@ import type { CreateRegistrationInput, Registration } from '../../domain/models/
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
   AttendanceSchema,
+  type ConfirmRegistrationsInput,
+  type ConfirmRegistrationsResult,
+  ConfirmRegistrationsResultSchema,
   type CreatedEvent,
   CreatedEventSchema,
   type CreateEventInput,
@@ -358,8 +361,35 @@ export class AirtableAdapter implements DataSourceAdapter {
     // EF:en mappar till basens 'Extra platser'/'Manuella platser' server-side.
     if (input.reserverade !== undefined) body.reserverade = input.reserverade;
     if (input.manuelltTillagda !== undefined) body.manuelltTillagda = input.manuelltTillagda;
+    // Auto-utskicket (task-18.6): null MÅSTE gå igenom (rensar schemat server-side) —
+    // därför `!== undefined`, aldrig en truthy-check.
+    if (input.deltagarinfoSchemalagd !== undefined) {
+      body.deltagarinfoSchemalagd = input.deltagarinfoSchemalagd;
+    }
+    if (input.deltagarinfoAutoAvstangt !== undefined) {
+      body.deltagarinfoAutoAvstangt = input.deltagarinfoAutoAvstangt;
+    }
 
     const data = await postEdgeFunction<{ event: unknown }>('update-event', body);
     return EventSchema.parse(data.event);
+  }
+
+  /**
+   * Bekräfta en eller flera anmälningar (task-18.6). POST mot
+   * send-registration-confirmation-EF:en, som läser upp anmälningarna SERVER-SIDE
+   * (adress/namn/status kommer aldrig från klienten), skickar bekräftelsemailet och
+   * flippar Status + 'Bekräftelse skickad' för dem vars mail accepterades. Samma
+   * operation bär den enskilda bekräftelsen och Bekräfta alla — bara antalet ID:n
+   * skiljer. `idempotencyKey` skickas i body (EF:en läser header ELLER body).
+   * `.parse()` validerar vid datagränsen (ADR-026); svaret är aldrig binärt.
+   */
+  async confirmRegistrations(
+    input: ConfirmRegistrationsInput,
+  ): Promise<ConfirmRegistrationsResult> {
+    const data = await postEdgeFunction<unknown>('send-registration-confirmation', {
+      registrationIds: input.registrationIds,
+      idempotencyKey: input.idempotencyKey,
+    });
+    return ConfirmRegistrationsResultSchema.parse(data);
   }
 }

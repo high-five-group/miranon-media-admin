@@ -5,6 +5,8 @@ import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/mod
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type {
+  ConfirmRegistrationsInput,
+  ConfirmRegistrationsResult,
   CreatedEvent,
   CreateEventInput,
   EventFormat,
@@ -116,6 +118,12 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async updateEvent(_input: UpdateEventInput): Promise<Event> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async confirmRegistrations(
+    _input: ConfirmRegistrationsInput,
+  ): Promise<ConfirmRegistrationsResult> {
     throw new Error(NOT_IMPLEMENTED);
   }
 }

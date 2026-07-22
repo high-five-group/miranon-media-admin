@@ -47,6 +47,17 @@ export const EventSchema = z.object({
   viaFormular: z.number().optional(),
   // Antal länkade Anmälningar med Källa '+1' (CompanionModal-medföljande).
   medfoljande: z.number().optional(),
+  // Auto-utskicket för eventinfo (task-18.6; PRD task-18 beslut 14) — de två
+  // ADDITIVA bas-fälten som eventsidans auto-utskicks-kryss läser och skriver:
+  // 'Deltagarinfo schemalagd' (date ISO) respektive 'Deltagarinfo auto-utskick
+  // avstängt' (checkbox, OPT-OUT: true = skickas INTE automatiskt). Basens ord är
+  // Deltagarinfo, UI-ordet är eventinfo (ORDLISTA). ADDITIVT-OPTIONAL i samma form
+  // som fälten ovan: get-events och äldre cache-svar bär dem inte. get-event och
+  // update-event bär ALLTID opt-out:en (Airtable utelämnar okryssad checkbox →
+  // EF:en normaliserar till false) och datumet endast när det är satt.
+  // UTSKICKS-MOTORN ingår INTE i kortet — fälten är styrningen, inte sändningen.
+  deltagarinfoSchemalagd: z.string().optional(),
+  deltagarinfoAutoAvstangt: z.boolean().optional(),
   // Antal AKTIVA event-kopplade Väntelisteplatser via nya länkfältet
   // 'Event (länk)' (task-18.2, additivt staging-fält; NOT Flyttad till anmälan
   // — get-waitlist:s aktiv-semantik). Utanför taket, aldrig ett segment (K22).

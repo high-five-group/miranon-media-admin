@@ -26,4 +26,11 @@ export type UpdateEventInput = {
   reserverade?: number;
   /** Beläggningens Ändra (task-18.2): skrivs till basens 'Manuella platser'. */
   manuelltTillagda?: number;
+  /**
+   * Auto-utskickets schemalagda datum (task-18.6) → basens 'Deltagarinfo schemalagd'.
+   * `null` RENSAR fältet (krysset kan ta bort ett schema); frånvaro = "ändra inte".
+   */
+  deltagarinfoSchemalagd?: string | null;
+  /** Auto-utskickets OPT-OUT (task-18.6) → 'Deltagarinfo auto-utskick avstängt'. */
+  deltagarinfoAutoAvstangt?: boolean;
 };

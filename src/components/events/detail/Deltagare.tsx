@@ -1,19 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
+  Check,
   ChevronDown,
   Clock,
   History,
   Inbox,
   type LucideIcon,
+  Mail,
   MailCheck,
   TriangleAlert,
 } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
+import { Checkbox } from 'react-aria-components';
+import { Button } from '@/components/primitives/Button';
+import { Dialog, DialogTrigger } from '@/components/primitives/Dialog';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Modal } from '@/components/primitives/Modal';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { displayName, inskickadTid } from '@/components/registrations/registration-display';
+import {
+  bekraftelseUtfall,
+  useConfirmAll,
+  useSendConfirmation,
+} from '@/data/mutations/registrationConfirmation';
+import { useUpdateEvent } from '@/data/mutations/useUpdateEvent';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
@@ -38,8 +50,11 @@ import { DAGMANAD } from './datumSpann';
  *
  * PERSONKORTEN (task-18.5; S73-facit K45/K62) bor i `DeltagarKort` nedan.
  *
- * SKELETT-AVGRÄNSNINGEN (öppet bokförd): hantera-flödet (Skicka bekräftelse /
- * Bekräfta alla) är task-18.6 och Bor över-arbetsraden task-18.7. Bor
+ * HANTERA-FLÖDET (task-18.6; S73-facit K44/K46/K47/K48) bor här sedan skivan efter:
+ * kortets Skicka bekräftelse-knapp, Bekräfta alla-pillen med kontrollfråga på
+ * Obekräftade-rubriken, och auto-utskicks-krysset i signal-slotten.
+ *
+ * SKELETT-AVGRÄNSNINGEN (öppet bokförd): Bor över-arbetsraden är task-18.7. Bor
  * över-raden saknas HELT ur summeringen (bas-fältet föds i 18.7 — en rad som
  * alltid visar 0 vore en osanning).
  *
@@ -237,18 +252,26 @@ function AvDelta({ klara, totalt }: { klara: number; totalt: number }) {
  * Accordion-rubrik (K40: "dropdown-rubriker under tabbraden") — vänsterställd
  * etikett + roterande chevron; obekräftade-rubriken i varningston med ikon
  * (texten bär, färgen förstärker).
+ *
+ * `handling` (K47) är en valfri HANDLINGS-slot på raden — Bekräfta alla-pillen.
+ * Visuellt på raden, strukturellt UTANFÖR toggle-knappen som dess syskon (L303:
+ * interaktivt bor aldrig i interaktivt); toggle-knappen blir flex-1 så chevronen
+ * stannar vid dess högerkant.
  */
 function GruppRubrik({
   oppen,
   varning,
   kontrollerarId,
   onToggle,
+  handling,
   children,
 }: {
   oppen: boolean;
   varning?: boolean;
   kontrollerarId: string;
   onToggle: () => void;
+  /** Interaktiv handling på rubrikraden — renderas som syskon till knappen. */
+  handling?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -272,7 +295,134 @@ function GruppRubrik({
           className={`shrink-0 text-text-secondary motion-safe:transition-transform ${oppen ? 'rotate-180' : ''}`}
         />
       </button>
+      {handling != null && <span className="flex shrink-0 items-center pr-2">{handling}</span>}
     </div>
+  );
+}
+
+/**
+ * BEKRÄFTA ALLA (K47/K48) — sidans positiva massåtgärd i success-grönt med vit text
+ * och kuvertet (grammatiken: Mail = skicka-handling, MailCheck = skickat-status).
+ *
+ * KONTROLLFRÅGAN är obligatorisk (PRD task-18 beslut 7 + 20: confirm-grind på varje
+ * massmutation) — pillen ÖPPNAR bara dialogen; ingenting skickas förrän Lotta
+ * bekräftat. Bulken är pessimistisk: knappen står kvar i "Skickar…" tills servern
+ * svarat, så ett halvt utfall aldrig visas som helt.
+ */
+function BekraftaAlla({
+  antal,
+  pending,
+  onBekrafta,
+}: {
+  antal: number;
+  pending: boolean;
+  onBekrafta: () => Promise<void>;
+}) {
+  return (
+    <DialogTrigger>
+      <Button
+        intent="success"
+        size="sm"
+        className="rounded-lg shadow-sm"
+        aria-label="Bekräfta alla obekräftade"
+      >
+        <Mail aria-hidden="true" size={14} className="shrink-0" />
+        Bekräfta alla
+      </Button>
+      <Modal isDismissable>
+        <Dialog
+          title="Skicka bekräftelse till alla?"
+          actions={({ close }) => (
+            <>
+              <Button intent="ghost" onPress={close} isDisabled={pending}>
+                Avbryt
+              </Button>
+              <Button
+                intent="success"
+                isDisabled={pending}
+                onPress={async () => {
+                  await onBekrafta();
+                  close();
+                }}
+              >
+                {pending
+                  ? 'Skickar…'
+                  : `Skicka ${antal} ${antal === 1 ? 'bekräftelse' : 'bekräftelser'}`}
+              </Button>
+            </>
+          )}
+        >
+          {`Bekräftelsemailet skickas till ${antal} obekräftade ${
+            antal === 1 ? 'anmälan' : 'anmälningar'
+          }, och anmälningarna blir Bekräftade. Det går inte att ångra.`}
+        </Dialog>
+      </Modal>
+    </DialogTrigger>
+  );
+}
+
+/** ISO-datum (YYYY-MM-DD) ur ett Date — lokal tid, aldrig UTC-skiftat (T27-klassen). */
+function isoDatum(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * AUTO-UTSKICKS-KRYSSET (K44) i signal-slotten: ikryssat = eventinfon är schemalagd
+ * att gå ut automatiskt på datumet; urkryssat = inget automatiskt utskick. NEUTRAL
+ * ton — urkryssat är ett medvetet val, inte ett fel (skilt från betalkryssens röda
+ * obetalt-semantik).
+ *
+ * Läser och skriver de två ADDITIVA bas-fälten (task-18.6): 'Deltagarinfo schemalagd'
+ * (datum) och 'Deltagarinfo auto-utskick avstängt' (opt-out). Saknas ett schemalagt
+ * datum i basen visas tvåveckorsgränsen — och det är också datumet som SKRIVS när
+ * krysset sätts på, så basen bär ett verkligt datum efteråt.
+ *
+ * ÖPPET BOKFÖRT (PRD task-18 §Utanför omfattningen): utskicks-MOTORN finns inte än.
+ * Krysset styr fälten som motorn ska läsa — det utför inget utskick självt.
+ */
+function AutoKryss({ event }: { event: Event }) {
+  const grans = eventinfoGrans(event.startdatum ?? null);
+  const { mutate, isPending } = useUpdateEvent(event.id);
+  // Optimistisk överlagring UNDER sparandet (hooken är pessimistisk): krysset får
+  // aldrig stå still under fingret. Nollas när mutationen landat — därefter styr
+  // cachen (servern är sanningen).
+  const [underSparande, setUnderSparande] = useState<boolean | null>(null);
+
+  if (grans == null) return null;
+
+  const faktiskt = !(event.deltagarinfoAutoAvstangt ?? false);
+  const vald = underSparande ?? faktiskt;
+  const datum = event.deltagarinfoSchemalagd ?? isoDatum(grans);
+  const datumText = DAGMANAD.format(new Date(datum));
+
+  return (
+    <Checkbox
+      isSelected={vald}
+      isDisabled={isPending}
+      onChange={(v) => {
+        setUnderSparande(v);
+        mutate(
+          {
+            deltagarinfoAutoAvstangt: !v,
+            // Sätts krysset PÅ skrivs datumet med (basen ska bära schemat, inte bara
+            // frånvaron av opt-out). Kryssas det UR rörs datumet inte — så att
+            // återkryssning behåller Lottas eventuella egna datum.
+            ...(v ? { deltagarinfoSchemalagd: datum } : {}),
+          },
+          { onSettled: () => setUnderSparande(null) },
+        );
+      }}
+      className="group flex cursor-pointer items-center gap-2 text-small text-text-secondary"
+    >
+      <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
+        <Check
+          aria-hidden="true"
+          size={14}
+          className="text-text-inverse opacity-0 group-data-[selected]:opacity-100"
+        />
+      </span>
+      {vald ? `Schemalagt att skickas automatiskt ${datumText}` : 'Skickas inte automatiskt'}
+    </Checkbox>
   );
 }
 
@@ -358,7 +508,16 @@ function MetaRad({ ikon: Ikon, children }: { ikon: LucideIcon; children: React.R
  * inte leder någonstans en osann affordans. Länkformen återinförs i samma
  * skiva som föder anmälans route.
  */
-function DeltagarKort({ reg }: { reg: Registration }) {
+function DeltagarKort({
+  reg,
+  onBekrafta,
+  pending,
+}: {
+  reg: Registration;
+  /** Kortets hantera-handling (task-18.6) — endast obekräftade kort bär den. */
+  onBekrafta: (reg: Registration) => void;
+  pending: boolean;
+}) {
   const pill = KATEGORI_PILL[kategori(reg)];
   const namn = displayName(reg);
   const anmald = anmaldText(reg);
@@ -432,16 +591,42 @@ function DeltagarKort({ reg }: { reg: Registration }) {
           </span>
         )}
       </div>
+      {/* K46 (hantera-handlingen, task-18.6): obekräftat kort bär Skicka
+          bekräftelse i kortbotten — UTANFÖR person-länken (L303), som dess
+          syskon. Bekräftade kort bär den ALDRIG: handlingen är gjord, och en
+          knapp som skickar om mailet är inte kortets jobb. */}
+      {!arBekraftad(reg) && (
+        <button
+          type="button"
+          aria-label={`Skicka bekräftelse till ${namn}`}
+          disabled={pending}
+          onClick={() => onBekrafta(reg)}
+          className="flex w-full items-center justify-center gap-2 rounded-b-xl border-border border-t px-4 py-2.5 font-medium text-small hover:bg-bg-emphasized disabled:opacity-50 motion-safe:transition-colors"
+        >
+          {/* Kuvertet — samma ikon som betalningarnas Påminn och utskicksraderna
+              (Mail = skicka-handling, MailCheck = skickat-status, K47). */}
+          <Mail aria-hidden="true" size={14} className="shrink-0" />
+          {pending ? 'Skickar…' : 'Skicka bekräftelse'}
+        </button>
+      )}
     </div>
   );
 }
 
-function DeltagarListan({ rader }: { rader: Registration[] }) {
+function DeltagarListan({
+  rader,
+  onBekrafta,
+  pendingId,
+}: {
+  rader: Registration[];
+  onBekrafta: (reg: Registration) => void;
+  pendingId: string | null;
+}) {
   return (
     <ul className="flex flex-col gap-2.5">
       {rader.map((reg) => (
         <li key={reg.id}>
-          <DeltagarKort reg={reg} />
+          <DeltagarKort reg={reg} onBekrafta={onBekrafta} pending={pendingId === reg.id} />
         </li>
       ))}
     </ul>
@@ -490,6 +675,37 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
   const traffar = filter == null ? null : visade.filter(FILTER_TEST[filter]);
   const vaxlaFilter = (f: SummeringsFilter) => setFilter((nu) => (nu === f ? null : f));
 
+  // Hantera-flödet (task-18.6): enskild bekräftelse OPTIMISTISK, bulken PESSIMISTISK
+  // bakom kontrollfrågan. Båda går genom samma server-operation.
+  const enskild = useSendConfirmation(event.id);
+  const bulk = useConfirmAll(event.id);
+  const [utfall, setUtfall] = useState<string | null>(null);
+  const pendingId = enskild.isPending ? (enskild.variables?.registration.id ?? null) : null;
+
+  const bekraftaEn = (reg: Registration) => {
+    setUtfall(null);
+    enskild.mutate(
+      { registration: reg },
+      {
+        onError: () => setUtfall(`Bekräftelsen till ${displayName(reg)} kunde inte skickas.`),
+        onSuccess: (result) => {
+          if (result.confirmed.length === 0) setUtfall(bekraftelseUtfall(result));
+        },
+      },
+    );
+  };
+
+  const bekraftaAlla = async () => {
+    setUtfall(null);
+    try {
+      const result = await bulk.mutateAsync({ registrationIds: obekraftade.map((r) => r.id) });
+      // Aldrig binärt: allt annat än rent skickat visas som det ÄR (K53-ärligheten).
+      if (result.status !== 'sent') setUtfall(bekraftelseUtfall(result));
+    } catch {
+      setUtfall('Bekräftelserna kunde inte skickas. Försök igen.');
+    }
+  };
+
   // Signalen tänds bara när det finns något ATT skicka (K44).
   const signalText =
     totalt - eventinfoSkickade > 0 ? eventinfoSignal(event.startdatum ?? null) : null;
@@ -531,17 +747,30 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
           onClick={() => vaxlaFilter('saknarEventinfo')}
           signalSlot
           signal={
-            signalText && (
+            // K44: slotten ALLTID reserverad — dags-att-skicka-signalen när den är
+            // tänd, annars auto-utskicks-krysset (task-18.6). Aldrig båda: när det
+            // är dags att skicka NU är schemat inte längre frågan.
+            signalText ? (
               <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 font-medium text-small text-warning">
                 <Clock aria-hidden="true" size={14} className="shrink-0" />
                 {signalText}
               </span>
+            ) : (
+              <AutoKryss event={event} />
             )
           }
         >
           <AvDelta klara={eventinfoSkickade} totalt={totalt} />
         </SummeringsRad>
       </div>
+
+      {utfall != null && (
+        <div className="pt-3">
+          <MessageBox intent="error" title="Bekräftelsen gick inte igenom">
+            {utfall}
+          </MessageBox>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2.5 py-3">
         {/* K41: Formulär-fliken riven — formulärvägen är NORMEN och behöver
@@ -578,7 +807,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
               </button>
             </div>
             {traffar.length > 0 ? (
-              <DeltagarListan rader={traffar} />
+              <DeltagarListan rader={traffar} onBekrafta={bekraftaEn} pendingId={pendingId} />
             ) : (
               <p className="py-2 text-small text-text-secondary">Inga träffar i denna kategori.</p>
             )}
@@ -594,11 +823,22 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                   varning
                   kontrollerarId={`${panelId}-obekraftade`}
                   onToggle={() => setOppna((o) => ({ ...o, obekraftade: !o.obekraftade }))}
+                  handling={
+                    <BekraftaAlla
+                      antal={obekraftade.length}
+                      pending={bulk.isPending}
+                      onBekrafta={bekraftaAlla}
+                    />
+                  }
                 >
                   {`Obekräftade (${obekraftade.length})`}
                 </GruppRubrik>
                 <div id={`${panelId}-obekraftade`} hidden={!oppna.obekraftade} className="pt-1.5">
-                  <DeltagarListan rader={obekraftade} />
+                  <DeltagarListan
+                    rader={obekraftade}
+                    onBekrafta={bekraftaEn}
+                    pendingId={pendingId}
+                  />
                 </div>
               </div>
             ) : (
@@ -616,7 +856,11 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                   {`Bekräftade (${bekraftade.length})`}
                 </GruppRubrik>
                 <div id={`${panelId}-bekraftade`} hidden={!oppna.bekraftade} className="pt-1.5">
-                  <DeltagarListan rader={bekraftade} />
+                  <DeltagarListan
+                    rader={bekraftade}
+                    onBekrafta={bekraftaEn}
+                    pendingId={pendingId}
+                  />
                 </div>
               </div>
             )}

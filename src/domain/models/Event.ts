@@ -36,4 +36,11 @@ export interface Event {
   medfoljande?: number;
   /** Aktiva event-kopplade Väntelisteplatser via 'Event (länk)' (utanför taket). */
   vantelista?: number;
+
+  // Auto-utskicket för eventinfo (task-18.6; PRD task-18 beslut 14) — additiva
+  // bas-fält som eventsidans auto-utskicks-kryss styr. Utskicks-MOTORN är utanför.
+  /** Schemalagt datum för auto-utskicket ('Deltagarinfo schemalagd'); osatt → utelämnas. */
+  deltagarinfoSchemalagd?: string;
+  /** OPT-OUT: true = eventinfon skickas INTE automatiskt för detta event. */
+  deltagarinfoAutoAvstangt?: boolean;
 }

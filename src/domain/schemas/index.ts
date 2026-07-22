@@ -6,6 +6,11 @@
  */
 export { AttendanceSchema } from './Attendance.schema';
 export {
+  type ConfirmRegistrationsInput,
+  type ConfirmRegistrationsResult,
+  ConfirmRegistrationsResultSchema,
+} from './ConfirmRegistrations.schema';
+export {
   type CreatedEvent,
   CreatedEventSchema,
   type CreateEventInput,

@@ -107,6 +107,12 @@ function mapEvent(record: { id: string; fields: Record<string, unknown> }) {
     // UTELÄMNAS (eventKey-formen — aldrig null).
     reserverade: scalarNumber(f['Extra platser']) ?? undefined,
     manuelltTillagda: scalarNumber(f['Manuella platser']) ?? undefined,
+    // Auto-utskickets två ADDITIVA fält (task-18.6). Datumet: osatt → nyckeln
+    // UTELÄMNAS (eventKey-formen). Opt-out: Airtable utelämnar en OKRYSSAD checkbox
+    // ur svaret — normaliseras därför till FALSE (aldrig undefined), så krysset alltid
+    // har ett definit läge att rendera. Håll i synk med get-event.
+    deltagarinfoSchemalagd: scalarString(f['Deltagarinfo schemalagd']) ?? undefined,
+    deltagarinfoAutoAvstangt: f['Deltagarinfo auto-utskick avstängt'] === true,
   };
 }
 
@@ -146,6 +152,10 @@ Deno.serve(async (req) => {
     const maxPlatser = body?.maxPlatser;
     const reserverade = body?.reserverade;
     const manuelltTillagda = body?.manuelltTillagda;
+    // Auto-utskicket (task-18.6): schemalagt datum + opt-out. Datumet får vara NULL
+    // (= rensa fältet) — därför skiljs "frånvarande" (ändra inte) från "null" (rensa).
+    const deltagarinfoSchemalagd = body?.deltagarinfoSchemalagd;
+    const deltagarinfoAutoAvstangt = body?.deltagarinfoAutoAvstangt;
 
     // Mål-raden: Airtable-record-ID (rec-prefix — create-registrations eventId-grind).
     if (typeof eventId !== 'string' || !eventId.startsWith('rec')) {
@@ -188,6 +198,19 @@ Deno.serve(async (req) => {
     ) {
       return badRequest('manuelltTillagda must be a non-negative number when present', corsHeaders);
     }
+    if (
+      deltagarinfoSchemalagd !== undefined &&
+      deltagarinfoSchemalagd !== null &&
+      (typeof deltagarinfoSchemalagd !== 'string' || !ISO_DATE_RE.test(deltagarinfoSchemalagd))
+    ) {
+      return badRequest(
+        'deltagarinfoSchemalagd must be ISO YYYY-MM-DD or null when present',
+        corsHeaders,
+      );
+    }
+    if (deltagarinfoAutoAvstangt !== undefined && typeof deltagarinfoAutoAvstangt !== 'boolean') {
+      return badRequest('deltagarinfoAutoAvstangt must be a boolean when present', corsHeaders);
+    }
 
     // Bygg write-fält SERVER-SIDE — endast närvarande inputs, endast live-verifierade
     // skrivbara fält (L294). Månad/år OMHÄRLEDS när Startdatum ändras (ADR-066 b6-arvet).
@@ -206,10 +229,19 @@ Deno.serve(async (req) => {
     // fältnamn endast här server-side).
     if (typeof reserverade === 'number') fields['Extra platser'] = reserverade;
     if (typeof manuelltTillagda === 'number') fields['Manuella platser'] = manuelltTillagda;
+    // Auto-utskicket (task-18.6): basens ord är 'Deltagarinfo' (UI-ordet eventinfo,
+    // ORDLISTA). NULL skickas VIDARE som null → Airtable RENSAR datumet (krysset kan
+    // ta bort ett schema), medan frånvaro betyder "ändra inte" som för alla andra fält.
+    if (deltagarinfoSchemalagd !== undefined) {
+      fields['Deltagarinfo schemalagd'] = deltagarinfoSchemalagd;
+    }
+    if (typeof deltagarinfoAutoAvstangt === 'boolean') {
+      fields['Deltagarinfo auto-utskick avstängt'] = deltagarinfoAutoAvstangt;
+    }
 
     if (Object.keys(fields).length === 0) {
       return badRequest(
-        'At least one updatable field is required (typ, ort, startdatum, slutdatum, status, maxPlatser, reserverade, manuelltTillagda)',
+        'At least one updatable field is required (typ, ort, startdatum, slutdatum, status, maxPlatser, reserverade, manuelltTillagda, deltagarinfoSchemalagd, deltagarinfoAutoAvstangt)',
         corsHeaders,
       );
     }
