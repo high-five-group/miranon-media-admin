@@ -29,6 +29,16 @@ const GET_EVENT = /\/functions\/v1\/get-event\?/;
 const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
 const UPDATE_RECORD = '**/functions/v1/update-record';
 const EVENT_ID = 'recBETALNING0001';
+// Scenario 2-id för tvåscenario-testerna (S75-diagnos 2): ADR-072 persistar
+// query-cachen (throttle-synk ~1 s, src/queries/persist.ts) och global
+// staleTime är 5 min (router.ts) — en re-goto på SAMMA id hydreras därför ur
+// scenario 1:s cache och refetchar aldrig (scenario 2:s mock nås aldrig; CI
+// stabilt rött, lokalt lyckoträff). Distinkta id ger distinkta query-nycklar
+// (['events','detail',id] + ['registrations', event.id]) → scenario 1-data kan
+// per konstruktion aldrig servera scenario 2. OBS: scenario 2:s EVENT-mock
+// måste bära id:t — registrations-nyckeln byggs ur SVARETS event.id
+// (Betalningar.tsx), inte ur route-parametern.
+const EVENT_ID_2 = 'recBETALNING0002';
 
 type Mock = Record<string, unknown>;
 
@@ -152,7 +162,12 @@ async function mockSidan(
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ registrations }),
+      // Servertrohet: get-registrations?eventId=X returnerar X:s anmälningar —
+      // stämpla fixturernas eventId ur eventets id (no-op för EVENT_ID-fallen,
+      // håller EVENT_ID_2-scenarierna koherenta utan call-site-brus).
+      body: JSON.stringify({
+        registrations: registrations.map((r) => ({ ...r, eventId: event.id })),
+      }),
     }),
   );
 }
@@ -264,9 +279,11 @@ test.describe('Betalningar — kortet med saknas-deltan (task-18.8, K27)', () =>
     await expect(grupp.getByTestId('delta-slutbetalningar')).toHaveCount(0);
 
     // Utan anmälningar: räkneraderna kvar (0-form), ingen "Öppna detaljer".
+    // DISTINKT eventId — scenario-isoleringen (se EVENT_ID_2-kommentaren):
+    // re-goto på samma id hade hydrerats ur scenario 1:s persistade cache.
     await page.unrouteAll();
-    await mockSidan(page, { registrations: [] });
-    await page.goto(`/event/${EVENT_ID}`);
+    await mockSidan(page, { event: eventMock({ id: EVENT_ID_2 }), registrations: [] });
+    await page.goto(`/event/${EVENT_ID_2}`);
     await expect(betalningsGrupp(page)).toContainText('0 av 0 mottagna');
     await expect(betalningsGrupp(page).getByRole('button', { name: 'Öppna detaljer' })).toHaveCount(
       0,
@@ -322,10 +339,12 @@ test.describe('Betalningar — arbetsytan (task-18.8, K29–K34)', () => {
     await expect(badge).toHaveText(`Deadline ${lugn.deadlineText} · om 6 dagar`);
 
     // Passerad: start om 3 dagar → deadline 11 dagar sedan, error-färg.
+    // DISTINKT eventId — scenario-isoleringen (se EVENT_ID_2-kommentaren):
+    // re-goto på samma id hade hydrerats ur scenario 1:s persistade cache.
     await page.unrouteAll();
     const passerad = startdatumOmDagar(3);
-    await mockSidan(page, { event: eventMock({ startdatum: passerad.iso }) });
-    await page.goto(`/event/${EVENT_ID}`);
+    await mockSidan(page, { event: eventMock({ id: EVENT_ID_2, startdatum: passerad.iso }) });
+    await page.goto(`/event/${EVENT_ID_2}`);
     await oppnaDetaljer(page);
 
     const badge2 = betalningsGrupp(page).getByTestId('betalning-deadline');
