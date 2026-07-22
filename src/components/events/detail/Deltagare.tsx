@@ -1,5 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Clock, type LucideIcon, TriangleAlert } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import {
+  ChevronDown,
+  Clock,
+  History,
+  Inbox,
+  type LucideIcon,
+  MailCheck,
+  TriangleAlert,
+} from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
@@ -11,6 +20,7 @@ import type { Registration } from '@/domain/models/Registration';
 import { RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
 import { DetaljGrupp } from './DetaljGrupp';
+import { DAGMANAD } from './datumSpann';
 
 /**
  * Anmälda deltagare som ARBETSKÖ — skelettet (task-18.4; S73-facit K35–K58).
@@ -26,11 +36,12 @@ import { DetaljGrupp } from './DetaljGrupp';
  * Klick på en summeringsrad ersätter accordions med en flat filtrerad lista
  * + "Rensa filtret" (K57: förklarande texter rivna — man har ju tryckt).
  *
- * SKELETT-AVGRÄNSNINGEN (öppet bokförd): personkortens metayta + historik är
- * task-18.5, hantera-flödet (Skicka bekräftelse / Bekräfta alla) task-18.6 och
- * Bor över-arbetsraden task-18.7. Här renderas deltagaren som en NAMN-rad med
- * sina pillar, och Bor över-raden saknas HELT ur summeringen (bas-fältet föds
- * i 18.7 — en rad som alltid visar 0 vore en osanning).
+ * PERSONKORTEN (task-18.5; S73-facit K45/K62) bor i `DeltagarKort` nedan.
+ *
+ * SKELETT-AVGRÄNSNINGEN (öppet bokförd): hantera-flödet (Skicka bekräftelse /
+ * Bekräfta alla) är task-18.6 och Bor över-arbetsraden task-18.7. Bor
+ * över-raden saknas HELT ur summeringen (bas-fältet föds i 18.7 — en rad som
+ * alltid visar 0 vore en osanning).
  *
  * Semantiken (ORDLISTA, S73 K53): Obekräftad/Bekräftad ligger exakt på basens
  * Status-ord — grupperingen läser `Status`, inte tidsstämpeln. Summeringsraden
@@ -265,31 +276,162 @@ function GruppRubrik({
   );
 }
 
+/** Klockslag ur en dateTime ('09:00'); null/ogiltigt → null (Gunilla: aldrig rå ISO). */
+const KLOCKSLAG = new Intl.DateTimeFormat('sv-SE', { hour: '2-digit', minute: '2-digit' });
+
+/** Dag + månad ur en ISO-tidsstämpel ('26 juni'); null/ogiltigt → null. */
+function dagManad(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : DAGMANAD.format(d);
+}
+
 /**
- * Deltagar-raden i skelettform: namn + Obekräftad-pill (varningston) +
- * kategori-pill. Metaytan (anmäld dag/tid, utskickshistorik, Miranon-historik)
- * och person-länken bor i task-18.5 — raden växer där, den byts inte ut.
+ * "Anmäld 1 juli 09:00" på EN rad (K45 — metaytans avbrusning; basens
+ * `Inskickad` är en dateTime). Saknad/ogiltig tidsstämpel ⇒ null ⇒ raden
+ * uteblir helt: "Anmäld —" vore brus utan innehåll.
  */
-function DeltagarRad({ reg }: { reg: Registration }) {
-  const kat = kategori(reg);
-  const pill = KATEGORI_PILL[kat];
+function anmaldText(reg: Registration): string | null {
+  if (!reg.inskickad) return null;
+  const d = new Date(reg.inskickad);
+  if (Number.isNaN(d.getTime())) return null;
+  return `Anmäld ${DAGMANAD.format(d)} ${KLOCKSLAG.format(d)}`;
+}
+
+/**
+ * SENASTE betalningspåminnelsen över basens tre parallella tidsstämplar
+ * (odelad `Betalningspåminnelse skickad` + task-18.8:s två per-betalnings-fält).
+ * Metaytan visar EN påminnelserad — det Lotta behöver veta är när hon senast
+ * jagade, inte vilket fält basen råkar bära den i (T16 enar dem).
+ */
+function senastePaminnelse(reg: Registration): string | null {
+  const kandidater = [
+    reg.betalningspaminnelseSkickad,
+    reg.paminnelseAnmalningsavgiftSkickad,
+    reg.paminnelseSlutbetalningSkickad,
+  ].filter((v): v is string => v != null && !Number.isNaN(Date.parse(v)));
+  if (kandidater.length === 0) return null;
+  return kandidater.reduce((senast, v) => (Date.parse(v) > Date.parse(senast) ? v : senast));
+}
+
+/** En rad i metaytan — ikon + text, aldrig interaktiv (K62/L303). */
+function MetaRad({ ikon: Ikon, children }: { ikon: LucideIcon; children: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)">
-      <span data-testid="deltagar-namn" className="min-w-0 break-words font-semibold text-body">
-        {displayName(reg)}
+    <span data-testid="deltagar-meta-rad" className="flex items-center gap-1">
+      <Ikon aria-hidden="true" size={12} className="shrink-0" />
+      {children}
+    </span>
+  );
+}
+
+/**
+ * Personkortet (task-18.5; S73-facit K45 + K62).
+ *
+ * IDENTITETSZONEN (namn i fetstil + E-post etikett-över-värde) ÄR person-
+ * klickytan — kort-med-titellänk-mönstret: klickytan koncentreras till
+ * identiteten i stället för hela kortet, så metaytan kan bära egna element.
+ * Saknas person-kopplingen renderas zonen som ren text — en länk till
+ * `/personer/null` vore en trasig affordans.
+ *
+ * PILLARNA står UTANFÖR länken: Obekräftad är anmälans TILLSTÅND och kategorin
+ * dess VÄG IN — ingetdera är en del av personens identitet, och att bädda in
+ * dem i länken hade gjort dess tillgängliga namn till "Anna Ek Obekräftad
+ * Medföljande". Normen (via formulär) bär inget märke alls (tysta normen, K37).
+ *
+ * METAYTAN är syskon till länken (K62/K44/L303 — interaktivt bor aldrig i
+ * interaktivt): "Anmäld dag + klockslag" på EN rad, därunder ENDAST UTFÖRDA
+ * åtgärder på var sin rad i Lottas utskicksordning (bekräftelse → påminnelse →
+ * eventinfo, K42). Ej-skickat visas ALDRIG — frånvaron är informationen, och
+ * summeringsraderna ovan bär "hur många saknar".
+ *
+ * HISTORIKRADEN sist, med HELA namnet "Miranon Media" (Marcus-ordern K45).
+ * Siffran är PERSONENS `Antal genomförda event` — exakt den räknare task-18.4
+ * införde i shapen, ingen andra väg till samma tal. Är den okänd (null: ingen
+ * person-koppling, eller EF:ens event-lösa gren) uteblir raden: "Första
+ * eventet" om en okänd person vore en osanning.
+ *
+ * ANMÄLD-RADENS LÄNKMÅL (AC #2, belagt beslut): anmälans egen sida finns INTE
+ * (PRD task-18 §Utanför omfattningen), och ingen befintlig yta visar EN
+ * anmälan — varken `/event/$eventId/anmalda` eller `/mer/anmalningar` kan
+ * djuplänkas per anmälan. Raden renderas därför OLÄNKAD. Facitets understrukna
+ * länk var en prototyp-no-op; i skarp produkt vore en understruken rad som
+ * inte leder någonstans en osann affordans. Länkformen återinförs i samma
+ * skiva som föder anmälans route.
+ */
+function DeltagarKort({ reg }: { reg: Registration }) {
+  const pill = KATEGORI_PILL[kategori(reg)];
+  const namn = displayName(reg);
+  const anmald = anmaldText(reg);
+  const bekraftelse = dagManad(reg.bekraftelseSkickad);
+  const paminnelse = dagManad(senastePaminnelse(reg));
+  const eventinfo = dagManad(reg.deltagarinfoSkickad);
+  const genomforda = reg.antalGenomfordaEvent;
+
+  const identitet = (
+    <>
+      <span data-testid="deltagar-namn" className="break-words font-semibold text-body">
+        {namn}
       </span>
-      <span className="flex shrink-0 items-center gap-1.5">
-        {!arBekraftad(reg) && (
-          <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
-            Obekräftad
+      <span className="text-caption text-text-muted">E-post</span>
+      <span className="break-words text-small">
+        {reg.email ?? <span className="text-text-muted">Saknas</span>}
+      </span>
+    </>
+  );
+
+  return (
+    <div
+      data-testid="deltagar-kort"
+      className="flex flex-col rounded-xl border border-(--mm-navcard-border) bg-surface contrast-more:border-(--mm-navcard-border-contrast)"
+    >
+      <div className="flex items-start justify-between gap-3 px-4 pt-3">
+        {reg.personId ? (
+          <Link
+            to="/personer/$personId"
+            params={{ personId: reg.personId }}
+            className="flex min-w-0 flex-1 flex-col gap-0.5"
+          >
+            {identitet}
+          </Link>
+        ) : (
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">{identitet}</span>
+        )}
+        {/* Pillarna får WRAPPA i stället för att tvinga identitetskolumnen smal:
+            på 390 px åt "Obekräftad" + "Manuellt tillagd" som shrink-0-rad upp
+            så mycket bredd att namnet radbröts och e-posten bröts MITT I ORDET
+            ("bertil@exa/mple.se"). Fångat i facit-avprickningens 390-px-mätning.
+            Staplade pillar i högerkanten är den graciösa degraderingen; på
+            bredare ytor står de kvar på EN rad som i facit. */}
+        <span className="flex max-w-[45%] shrink-0 flex-wrap items-center justify-end gap-1.5">
+          {!arBekraftad(reg) && (
+            <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
+              Obekräftad
+            </span>
+          )}
+          {pill && (
+            <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+              {pill}
+            </span>
+          )}
+        </span>
+      </div>
+      <div
+        data-testid="deltagar-metayta"
+        className="flex flex-col gap-1 px-4 pt-2.5 pb-3 text-caption text-text-muted"
+      >
+        {anmald && <MetaRad ikon={Inbox}>{anmald}</MetaRad>}
+        {bekraftelse && <MetaRad ikon={MailCheck}>{`Bekräftelse ${bekraftelse}`}</MetaRad>}
+        {paminnelse && <MetaRad ikon={MailCheck}>{`Påminnelse ${paminnelse}`}</MetaRad>}
+        {eventinfo && <MetaRad ikon={MailCheck}>{`Eventinfo ${eventinfo}`}</MetaRad>}
+        {genomforda != null && (
+          <span data-testid="deltagar-historik" className="mt-0.5 flex items-center gap-1.5">
+            <History aria-hidden="true" size={12} className="shrink-0" />
+            {genomforda === 0
+              ? 'Första eventet hos Miranon Media'
+              : `${genomforda} tidigare event hos Miranon Media`}
           </span>
         )}
-        {pill && (
-          <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
-            {pill}
-          </span>
-        )}
-      </span>
+      </div>
     </div>
   );
 }
@@ -299,7 +441,7 @@ function DeltagarListan({ rader }: { rader: Registration[] }) {
     <ul className="flex flex-col gap-2.5">
       {rader.map((reg) => (
         <li key={reg.id}>
-          <DeltagarRad reg={reg} />
+          <DeltagarKort reg={reg} />
         </li>
       ))}
     </ul>
