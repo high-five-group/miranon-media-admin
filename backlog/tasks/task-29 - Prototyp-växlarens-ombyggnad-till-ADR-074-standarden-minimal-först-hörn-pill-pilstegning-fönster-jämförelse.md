@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-22 14:38'
-updated_date: '2026-07-22 16:44'
+updated_date: '2026-07-22 16:48'
 labels:
   - ready-for-agent
 dependencies: []
@@ -45,10 +45,6 @@ Bygg om src/components/dev/PrototypeSwitcher.tsx till ADR-074 beslut 2–3 (Verc
 - [x] #16 A5 (Marcus-granskning 5): tooltips UTGÅR helt (aria-labels = a11y-golvet); steg-badgen ALLTID synlig på varje variant-knapp; RÖRELSE-FÖRBUD vid aktiv-växling (konstant border-box via transparent kant på inaktiv — mekaniskt verifierat med före/efter-boundingBox)
 <!-- AC:END -->
 
-
-
-
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -58,7 +54,7 @@ FACIT-REVIDERING (Marcus-direktiv under granskningen, ADR-074-amenderingen): AC 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Levererad i TRE vågor · slutcommit 4ba99c3 (våg 1 pill dadd8a3 [CI-röd → facit-reviderad] · våg 2 rail+polering e32839e · våg 3 mikrocopy 4ba99c3) · CI-runs 29934613949 + 29936538680 + 29937419903 gröna per jobb (fil-läst vakt-exit) · first-pass: nej för kortet, ja för våg 2–3 · defekter: 2 rött-först-fångade (namn-rymds-kollisionen · side-effect-i-updater) · TDD ej tillämplig — L304-script-assertions A–I som ersättningsform · 14 AC över tre vågor · design-review: Marcus granskade löpande (vågorna VAR granskningen); L310 kodifierar grinden framåt
+Levererad i SEX vågor · slutcommit 30ccc6b (pill dadd8a3 [CI-röd, äkta namn-rymds-fångst] · rail a123254 · polering e32839e · mikrocopy 4ba99c3 · mjukhet 4560c4d · A5 30ccc6b [tooltips ut, badge alltid, rörelse-förbud]) · samtliga CI-runs gröna per jobb med fil-lästa vakt-exits · design-review GODKÄND av Marcus ('Nu är det skitbra') · 16 AC · defekter: 3 rött-först-fångade (namn-rymds-kollisionen · side-effect-i-updatern · badge-rörelsen — den sista mekaniserad som boundingBox-assert) · TDD ej tillämplig (L304-script-assertions med rött-först-bevis)
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
