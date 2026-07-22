@@ -1,26 +1,26 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Route, test } from '@playwright/test';
+import { expect, type Page, type Route, test } from '@playwright/test';
 
 /**
- * Fas 6f L2 — Skapa nytt event. create-event-vertikalens klient-yta:
- * pessimistiskt formulär mot create-event-EF (ADR-066 b4). Eventtyp REQUIRED (b5) ur
- * get-event-formats; Event/Typ-options ur get-events.
+ * Skapa nytt event — event-familjens skapa-sida mot S73-FACIT-UTÖKNINGEN
+ * (task-19.3; bilagan FACIT-skapa-sidan.png). Sidan konsumerar den BEFINTLIGA
+ * create-event-operationen (ADR-066: server-side-byggd shape, allowlist-SSOT,
+ * Airtable-nativ upsert-idempotens på klient-genererad nyckel) — ingen ny EF.
  *
- * HEMVIST-FLYTTEN (task-19.2, PRD task-19 beslut 2, Marcus-kvitterad
- * 2026-07-21): sidan bor i EVENT-FAMILJEN på /event/skapa; Mer-ingången är
- * RIVEN och gamla routen /mer/skapa-event omdirigerar hit (öppet hanterad —
- * inga döda URL:er i PWA-historik/bokmärken). Formens INNEHÅLL mot
- * S73-facit-utökningen ägs av task-19.3.
+ * HEMVIST (task-19.2): /event/skapa; Mer-ingången riven, gamla
+ * /mer/skapa-event omdirigerar hit.
  *
- * Körs i chromium-authenticated-projektet (storageState). DETERMINISTISK via `page.route`-
- * MOCK av get-events (options), get-event-formats (Eventtyp-dropdown) och create-event
- * (mutation) — INGEN riktig staging-write, så ingen sentinel-städning behövs (jfr api-testet
- * som skriver skarpt). Fixtur-formerna speglar EF:ernas RIKTIGA svar (adaptrarna .parse():ar).
- *
- * Täckning: hemvisten (URL:en består + back-länken till event-listan + gamla
- * routens omdirigering), happy path (fyll → submit → pessimistisk navigation
- * till skapat event), required-validering (tom Eventtyp → submit blockeras
- * klient-side, fel synligt, ingen navigation), axe 0.
+ * TVÅ SVITER I SAMMA FIL:
+ *   1. FACIT + flöde — DETERMINISTISK via `page.route`-MOCK av get-events,
+ *      get-event-formats och create-event. Ingen staging-write; fixtur-formerna
+ *      speglar EF:ernas riktiga svar (adaptrarna .parse():ar dem).
+ *   2. SKARPT MOT STAGING (kortets AC #1) — INGA mocks: formuläret skriver
+ *      genom hela vertikalen till staging-basen. Sentinel-städningen är
+ *      ZZ-mönstret (Ort = `ZZ-create-event-test`, samma markör som
+ *      create-event-api-testet) + setup-purge (ADR-060,
+ *      .purge-staging-policy.json target `create-event-sentineler`).
+ *      Idempotensen byggs INTE om här — den är kontraktstestad i
+ *      tests/api/create-event.staging.test.ts och regressions-bevakas där.
  */
 
 const GET_EVENTS = /\/functions\/v1\/get-events/;
@@ -30,8 +30,15 @@ const CREATE_EVENT = /\/functions\/v1\/create-event/;
 // annars skulle detalj-mocken klobbra beforeEach:s get-events/get-event-formats-routes.
 const GET_EVENT = /\/functions\/v1\/get-event(?![s-])/;
 
-const FORMAT_ID = 'recFmtTEST00000001';
+// Bas-namnen är live-verifierade (Airtable-MCP 2026-07-22, Eventformat
+// tbl8qhuJQ5ZWPMRk4) — etiketterna "2 dagar"/"1 dag" härleds ur dem
+// (src/lib/eventformat-etikett.ts, PRD task-19 beslut 5).
+const FORMAT_2_DAGAR = { id: 'recFmtTEST00000001', namn: 'Utbildning - 2 dagar' };
+const FORMAT_1_DAG = { id: 'recFmtTEST00000002', namn: 'Föreläsning' };
 const CREATED_ID = 'recEVTcreated00001';
+
+/** Sentinel-markören för skarpa staging-writes (ADR-060; purge-policyns target). */
+const SENTINEL_ORT = 'ZZ-create-event-test';
 
 /** En komplett Event-rad (get-events-svarets form, EventSchema). */
 function ev(eventNamn: string, typ: string): Record<string, unknown> {
@@ -73,50 +80,145 @@ const CREATED_EVENT = {
   eventNr: 99,
 };
 
-test.describe('Skapa nytt event (Fas 6f L2)', () => {
+/** Väljer ett alternativ i en Select (trigger scopad via fältets testid). */
+async function valj(page: Page, faltTestId: string, alternativ: string): Promise<void> {
+  await page.getByTestId(faltTestId).getByRole('button').click();
+  await page.getByRole('option', { name: alternativ, exact: true }).click();
+}
+
+/**
+ * Fyller datumspannet (RAC DateRangePicker, sv-SE → segmentordning år-månad-dag).
+ * Segmenten är spinbuttons; start-fältets tre först, slut-fältets tre sedan.
+ */
+async function fyllDatum(page: Page, start: string, slut: string): Promise<void> {
+  const segment = page.getByTestId('falt-datum').getByRole('spinbutton');
+  await segment.nth(0).click();
+  await page.keyboard.type(start.replaceAll('-', ''));
+  await segment.nth(3).click();
+  await page.keyboard.type(slut.replaceAll('-', ''));
+}
+
+/**
+ * Fyller Max antal platser och commit:ar värdet med blur. RAC NumberField
+ * exponerar sitt fält som TEXTBOX (inte spinbutton — inmatningen är fri text
+ * med inputMode-numerik; stegknapparna är egna knappar), DOM-verifierat.
+ */
+async function fyllPlatser(page: Page, antal: string): Promise<void> {
+  const falt = page.getByTestId('falt-platser').getByRole('textbox');
+  await falt.click();
+  await falt.fill(antal);
+  await page.keyboard.press('Tab');
+}
+
+test.describe('Skapa nytt event — facit-formen + flödet (task-19.3)', () => {
   test.beforeEach(async ({ page }) => {
     await page.route(GET_EVENTS, async (route: Route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ events: [ev('Fjärrskådning', 'Utbildning')] }),
+        body: JSON.stringify({
+          events: [ev('Fjärrskådning', 'Utbildning'), ev('RIM 1', 'Föreläsning')],
+        }),
       });
     });
     await page.route(GET_EVENT_FORMATS, async (route: Route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ eventFormats: [{ id: FORMAT_ID, namn: 'RIM-format' }] }),
+        body: JSON.stringify({ eventFormats: [FORMAT_2_DAGAR, FORMAT_1_DAG] }),
       });
     });
   });
 
-  /** Fyll alla fält UTOM (valfritt) Eventformat. */
-  async function fillForm(
-    // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-    page: any,
-    { withFormat = true }: { withFormat?: boolean } = {},
+  /** Fyller hela formuläret (utom, valfritt, Eventformat). */
+  async function fyllFormular(
+    page: Page,
+    { medFormat = true }: { medFormat?: boolean } = {},
   ): Promise<void> {
-    await page.getByRole('button', { name: 'Kurs (eventnamn)' }).click();
-    await page.getByRole('option', { name: 'Fjärrskådning' }).click();
-    await page.getByRole('button', { name: 'Typ' }).click();
-    await page.getByRole('option', { name: 'Utbildning' }).click();
-    await page.getByLabel('Ort').fill('Skövde');
-    await page.getByLabel('Startdatum').fill('2026-09-15');
-    await page.getByLabel('Slutdatum').fill('2026-09-16');
-    await page.getByLabel('Max antal platser').fill('20');
-    if (withFormat) {
-      await page.getByRole('button', { name: 'Eventformat' }).click();
-      await page.getByRole('option', { name: 'RIM-format' }).click();
-    }
+    await valj(page, 'falt-event', 'Fjärrskådning');
+    await valj(page, 'falt-eventtyp', 'Utbildning');
+    await page.getByLabel('Ort', { exact: true }).fill('Skövde');
+    await fyllDatum(page, '2026-09-15', '2026-09-16');
+    await fyllPlatser(page, '20');
+    if (medFormat) await valj(page, 'falt-eventformat', '2 dagar');
   }
 
-  test('happy path: fyll → submit → pessimistisk navigation till skapat event', async ({
+  test('facit: grupperna, fältfacitet och språket per FACIT-skapa-sidan.png', async ({ page }) => {
+    await page.goto('/event/skapa');
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+
+    // Grupprubrikerna (familjens grammatik: rubrik utanför det tonala kortet).
+    for (const rubrik of ['Om eventet', 'Platser och format', 'Publicering']) {
+      await expect(page.getByRole('heading', { level: 2, name: rubrik })).toBeVisible();
+    }
+
+    // Fältfacitet + UI-språket (Event/Eventtyp per ORDLISTA, INTE basens namn).
+    await expect(page.getByTestId('falt-event')).toContainText('Event');
+    await expect(page.getByTestId('falt-eventtyp')).toContainText('Eventtyp');
+    await expect(page.getByLabel('Ort', { exact: true })).toBeVisible();
+    await expect(page.getByTestId('falt-datum')).toContainText('Datum');
+    await expect(page.getByTestId('falt-platser')).toContainText('Max antal platser');
+    await expect(page.getByTestId('falt-eventformat')).toContainText('Eventformat');
+    // Basens språk läcker ALDRIG ut i UI:t.
+    await expect(page.getByText('Event (source)')).toHaveCount(0);
+    await expect(page.getByText('Kurs (eventnamn)')).toHaveCount(0);
+
+    // Tillbaka-chevronen (familjens toppform) pekar på event-listan.
+    await expect(page.getByRole('link', { name: 'Tillbaka till event' })).toHaveAttribute(
+      'href',
+      '/event',
+    );
+
+    // K84: INGA obligatorisk-markeringar — allt krävs, alltså markeras inget.
+    const sidtext = (await page.locator('section').first().innerText()).toLowerCase();
+    expect(sidtext).not.toContain('*');
+    expect(sidtext).not.toContain('obligatorisk');
+  });
+
+  test('facit: formatetiketterna talar Lottas språk (2 dagar / 1 dag)', async ({ page }) => {
+    await page.goto('/event/skapa');
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+
+    await page.getByTestId('falt-eventformat').getByRole('button').click();
+    await expect(page.getByRole('option', { name: '2 dagar', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: '1 dag', exact: true })).toBeVisible();
+    // Basens egna namn visas aldrig för Lotta.
+    await expect(page.getByRole('option', { name: 'Utbildning - 2 dagar' })).toHaveCount(0);
+  });
+
+  test('facit: Skapa event är den GRÖNA primärknappen (success-intenten)', async ({ page }) => {
+    await page.goto('/event/skapa');
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+
+    const skapa = page.getByRole('button', { name: 'Skapa event', exact: true });
+    // --mm-success = #606B57 (sage) → vit text ≈ 5,6:1 (AA).
+    await expect(skapa).toHaveCSS('background-color', 'rgb(96, 107, 87)');
+    await expect(page.getByRole('button', { name: 'Avbryt', exact: true })).toBeVisible();
+  });
+
+  test('publicerings-handtaget renderas (utan verkan) och armeras med tangentbordet', async ({
     page,
   }) => {
-    let createCalled = false;
+    await page.goto('/event/skapa');
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+
+    const handtag = page.getByRole('switch', { name: 'Publicera på miranon.se' });
+    await expect(handtag).toBeVisible();
+    await expect(handtag).toHaveAttribute('aria-checked', 'false');
+
+    // Draget är förstärkning, aldrig enda vägen (11-ribban).
+    await handtag.focus();
+    await page.keyboard.press(' ');
+    await expect(handtag).toHaveAttribute('aria-checked', 'true');
+    await expect(handtag).toContainText('Publiceras på miranon.se');
+  });
+
+  test('happy path: fyll → Skapa event → bekräftelseläge (nästa steg ett klick bort)', async ({
+    page,
+  }) => {
+    let skickadPayload: Record<string, unknown> | null = null;
     await page.route(CREATE_EVENT, async (route: Route) => {
-      createCalled = true;
+      skickadPayload = route.request().postDataJSON();
       await route.fulfill({
         status: 201,
         contentType: 'application/json',
@@ -127,7 +229,6 @@ test.describe('Skapa nytt event (Fas 6f L2)', () => {
         }),
       });
     });
-    // Detalj-sidan (get-event) efter navigation — mockas så vy:n renderar utan fel.
     await page.route(GET_EVENT, async (route: Route) => {
       await route.fulfill({
         status: 200,
@@ -150,43 +251,41 @@ test.describe('Skapa nytt event (Fas 6f L2)', () => {
     });
 
     await page.goto('/event/skapa');
-    // Hemvisten (task-19.2): URL:en BESTÅR — ingen omdirigering bort.
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+
+    await fyllFormular(page);
+    // Handtaget armeras — men publiceringen har ÄNNU ingen verkan (19.4).
+    await page.getByRole('switch', { name: 'Publicera på miranon.se' }).focus();
+    await page.keyboard.press(' ');
+    await page.getByRole('button', { name: 'Skapa event', exact: true }).click();
+
+    // Bekräftelseläget ersätter formuläret och tar fokus.
+    const bekraftelse = page.getByTestId('bekraftelse');
+    await expect(bekraftelse).toBeVisible();
+    await expect(bekraftelse).toBeFocused();
+    await expect(bekraftelse).toContainText('Eventet är skapat');
     await expect(page).toHaveURL(/\/event\/skapa$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
 
-    await fillForm(page);
-    await page.getByRole('button', { name: 'Skapa event' }).click();
+    // Payloaden: UI-språket mappat mot kontraktets fält (namnkrocken explicit).
+    const payload = skickadPayload as Record<string, unknown> | null;
+    expect(payload).not.toBeNull();
+    expect(payload?.event).toBe('Fjärrskådning');
+    expect(payload?.typ).toBe('Utbildning');
+    expect(payload?.ort).toBe('Skövde');
+    expect(payload?.startdatum).toBe('2026-09-15');
+    expect(payload?.slutdatum).toBe('2026-09-16');
+    expect(payload?.maxPlatser).toBe(20);
+    expect(payload?.eventtyp).toBe(FORMAT_2_DAGAR.id);
+    expect(typeof payload?.idempotencyKey).toBe('string');
+    // Publiceringsflaggan finns INTE i kontraktet ännu (19.4 äger den).
+    expect(payload && 'publicera' in payload).toBe(false);
 
-    // Pessimistisk: navigerar till det skapade eventet vid server-OK.
+    // Nästa steg ett klick bort: till det skapade eventet.
+    await page.getByRole('button', { name: 'Till eventet', exact: true }).click();
     await page.waitForURL(`**/event/${CREATED_ID}`);
-    expect(createCalled).toBe(true);
   });
 
-  test('hemvisten är event-familjen: back-länken pekar på event-listan', async ({ page }) => {
-    await page.goto('/event/skapa');
-    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
-
-    // Back-länken följer hemvist-flytten (task-19.2): till event-listan,
-    // inte Mer (jfr Mer-undersidornas "← Tillbaka till Mer").
-    await expect(page.getByRole('link', { name: '← Tillbaka till Event' })).toHaveAttribute(
-      'href',
-      '/event',
-    );
-    await expect(page.getByRole('link', { name: '← Tillbaka till Mer' })).toHaveCount(0);
-  });
-
-  test('gamla routen /mer/skapa-event omdirigerar till /event/skapa (rivningen öppet hanterad)', async ({
-    page,
-  }) => {
-    await page.goto('/mer/skapa-event');
-
-    // Route-nivå-omdirigering (task-19.2): PWA-historik och bokmärken dör
-    // inte — de landar på den nya hemvisten.
-    await page.waitForURL('**/event/skapa');
-    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeVisible();
-  });
-
-  test('required-validering: tom Eventtyp → submit blockeras klient-side, fel synligt, ingen navigation', async ({
+  test('validering: tomt Eventformat → Skapa blockeras klient-side, fel synligt, ingen write', async ({
     page,
   }) => {
     let createCalled = false;
@@ -198,13 +297,20 @@ test.describe('Skapa nytt event (Fas 6f L2)', () => {
     await page.goto('/event/skapa');
     await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
 
-    await fillForm(page, { withFormat: false });
-    await page.getByRole('button', { name: 'Skapa event' }).click();
+    await fyllFormular(page, { medFormat: false });
+    await page.getByRole('button', { name: 'Skapa event', exact: true }).click();
 
-    // Klient-side-grind: Eventformat-felet syns, ingen EF-anrop, kvar på formuläret.
-    await expect(page.getByText('Eventformat krävs — det styr sessionsstrukturen.')).toBeVisible();
+    await expect(page.getByText('Välj ett eventformat')).toBeVisible();
     expect(createCalled).toBe(false);
+    await expect(page.getByTestId('bekraftelse')).toHaveCount(0);
+  });
+
+  test('hemvisten: gamla /mer/skapa-event omdirigerar till /event/skapa', async ({ page }) => {
+    await page.goto('/mer/skapa-event');
+
+    await page.waitForURL('**/event/skapa');
     await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '← Tillbaka till Mer' })).toHaveCount(0);
   });
 
   test('axe 0 violations på det renderade formuläret', async ({ page }) => {
@@ -212,13 +318,66 @@ test.describe('Skapa nytt event (Fas 6f L2)', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
 
     // Interagera så fält-states (vald option) ingår i scanet.
-    await page.getByRole('button', { name: 'Kurs (eventnamn)' }).click();
-    await page.getByRole('option', { name: 'Fjärrskådning' }).click();
+    await valj(page, 'falt-event', 'Fjärrskådning');
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .analyze();
 
     expect(results.violations).toEqual([]);
+  });
+});
+
+test.describe('Skapa nytt event — SKARPT mot staging (AC #1)', () => {
+  /**
+   * Ände-till-ände genom hela vertikalen: inga mocks — formuläret läser
+   * options ur staging (get-events + get-event-formats) och SKRIVER en riktig
+   * Eventplanering-rad via den befintliga create-event-operationen.
+   *
+   * Städning: raden bär sentinel-orten `ZZ-create-event-test` och plockas av
+   * setup-purgen (ADR-060; .purge-staging-policy.json target
+   * `create-event-sentineler`, ålders-guard 60 min, länk-guard med Eventtyp
+   * undantagen). Idempotensen byggs inte om här — se fil-huvudet.
+   *
+   * Datumen ligger i basens `Månad/år`-options-range (samma september-2026-val
+   * som create-event-api-testet, som är grönt i CI).
+   */
+  test('formuläret skapar ett riktigt event i staging och landar i bekräftelseläget', async ({
+    page,
+  }) => {
+    // Options-läsningarna är SKARPA här — vänta in dem innan formuläret rörs
+    // (en Select med tom kollektion öppnar ingen popover; mot mockad data är
+    // svaren omedelbara, mot staging är de det inte).
+    const eventsSvar = page.waitForResponse((r) => r.url().includes('/get-events'));
+    const formatSvar = page.waitForResponse((r) => r.url().includes('/get-event-formats'));
+    await page.goto('/event/skapa');
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+    expect((await eventsSvar).status()).toBe(200);
+    expect((await formatSvar).status()).toBe(200);
+
+    // Event/Eventtyp-options är LIVE-härledda ur staging-eventen — plocka
+    // första tillgängliga i stället för att anta ett värde.
+    await page.getByTestId('falt-event').getByRole('button').click();
+    await page.getByRole('option').first().click();
+    await page.getByTestId('falt-eventtyp').getByRole('button').click();
+    await page.getByRole('option').first().click();
+
+    await page.getByLabel('Ort', { exact: true }).fill(SENTINEL_ORT);
+    await fyllDatum(page, '2026-09-15', '2026-09-16');
+    await fyllPlatser(page, '20');
+    // "2 dagar" = etiketten för staging-formatet `Utbildning - 2 dagar`
+    // (eventformat-etikett-mappningen bevisad mot LIVE-data).
+    await valj(page, 'falt-eventformat', '2 dagar');
+
+    await page.getByRole('button', { name: 'Skapa event', exact: true }).click();
+
+    // Bekräftelseläget är skriv-beviset: det renderas ENBART på server-OK
+    // (201 created / 200 idempotent replay) från den skarpa create-event-EF:en.
+    const bekraftelse = page.getByTestId('bekraftelse');
+    await expect(bekraftelse).toBeVisible({ timeout: 20_000 });
+    await expect(bekraftelse).toContainText('Eventet är skapat');
+    // Nästa steg är ett klick bort (knappen finns; detaljsidans egen rendering
+    // är eventsidans kontrakt, inte detta korts).
+    await expect(page.getByRole('button', { name: 'Till eventet', exact: true })).toBeVisible();
   });
 });

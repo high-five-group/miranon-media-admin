@@ -21,6 +21,10 @@ const buttonVariants = cva(
           'bg-(--mm-button-danger-bg) text-(color:--mm-button-danger-text) data-[hovered]:bg-(--mm-button-danger-bg-hover) data-[pressed]:bg-(--mm-button-danger-bg-pressed)',
         ghost:
           'bg-(--mm-button-ghost-bg) text-(color:--mm-button-ghost-text) data-[hovered]:bg-(--mm-button-ghost-bg-hover) data-[pressed]:bg-(--mm-button-ghost-bg-pressed)',
+        // success = grön primär (task-19.3; S73-facit K77) — bekräftande
+        // huvudhandling där svärtan läser som för tung (skapa-sidans "Skapa event").
+        success:
+          'bg-(--mm-button-success-bg) text-(color:--mm-button-success-text) data-[hovered]:bg-(--mm-button-success-bg-hover) data-[pressed]:bg-(--mm-button-success-bg-pressed)',
       },
       size: {
         sm: 'min-h-8 gap-1.5 px-3 text-small',
@@ -59,6 +63,9 @@ export interface ButtonProps
  * </Button>
  * <Button intent="danger" size="sm" isDisabled>
  *   Ta bort
+ * </Button>
+ * <Button intent="success" onPress={() => create()}>
+ *   Skapa event
  * </Button>
  * ```
  */
