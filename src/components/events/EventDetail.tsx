@@ -11,6 +11,7 @@ import { queryKeys } from '@/queries/keys';
 import { Atgarder, CheckInKort } from './detail/Atgarder';
 import { Belaggning } from './detail/Belaggning';
 import { Betalningar } from './detail/Betalningar';
+import { Deltagare } from './detail/Deltagare';
 import { DetaljGrupp } from './detail/DetaljGrupp';
 import { OmEventet } from './detail/OmEventet';
 
@@ -180,12 +181,12 @@ export function EventDetail({ eventId }: { eventId: string }) {
           Ändra-morfen — ersätter 18.1:s interim-rader. */}
       <Belaggning event={event} />
 
-      {/* INTERIM (18.4 bygger arbetskön): ingången till dagens anmälda-yta. */}
-      <DetaljGrupp id="grupp-anmalda" rubrik="Anmälda deltagare">
-        <LankRad to="/event/$eventId/anmalda" eventId={eventId}>
-          Öppna anmälda-vyn
-        </LankRad>
-      </DetaljGrupp>
+      {/* Anmälda deltagare som ARBETSKÖ (task-18.4; K35–K58): summeringsrader
+          med filter + kategori-flikar + Obekräftade/Bekräftade-accordions —
+          ersätter 18.1:s interim-länk till den gamla anmälda-vyn. Personkorten
+          (18.5), hantera-flödet (18.6) och Bor över-raden (18.7) växer in i
+          samma skelett. */}
+      <Deltagare event={event} />
 
       {/* Betalningar (task-18.8): röda saknas-deltan + inline-ARBETSYTAN
           (K27–K34) — ersätter 18.1:s interim-rader och den gamla

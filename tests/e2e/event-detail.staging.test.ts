@@ -335,13 +335,11 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    // Länkarna till de befintliga detaljytorna (ersätts av 18.4/18.9).
+    // Närvaro är den SISTA interim-sektionen (18.9 bygger registret).
     // Betalningar är SKARP sedan 18.8 (inline-arbetsytan, egen svit i
-    // mark-paid-e2e) — betalnings-vyn och dess länk är rivna.
-    await expect(page.getByRole('link', { name: 'Öppna anmälda-vyn' })).toHaveAttribute(
-      'href',
-      `/event/${EVENT_ID}/anmalda`,
-    );
+    // mark-paid-e2e) och Anmälda deltagare sedan 18.4 (arbetskön, egen svit i
+    // event-deltagare-e2e) — deras länkar till de gamla vyerna är rivna.
+    await expect(page.getByRole('link', { name: 'Öppna anmälda-vyn' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Öppna betalnings-vyn' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Öppna närvaro-vyn' })).toHaveAttribute(
       'href',

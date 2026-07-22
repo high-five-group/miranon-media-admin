@@ -60,6 +60,34 @@ Mekanismen: testet är det FÖRSTA e2e-testet i repot som gör en omockad EF-lä
 VERIFIERING: full parallell svit mot staging-bygge på tillåten origin — det skarpa testet GRÖNT (217 passed). Grindar: test:api 318/318 · typecheck 0 · biome 0 fel · build grön · a11y 62/62.
 
 SIDOLEVERANS I SAMMA COMMIT: CI laddade aldrig upp Playwright-artefakter, så ett CI-only-fel gick bara att gissa sig till — traces genereras (on-first-retry) men kastades med runnern. Uppladdningssteg tillagt vid rött e2e (7 dagars retention; global-teardown har redan purgat klartext-lösenord per ADR-061 pelare 3).
+
+---
+
+HISTORIK — HALT-NOTEN FRÅN BATCH-KÖRNINGEN (bevarad per ADR-073 Am 3 mandat (b), union; läkt av studs-läkningen ovan):
+
+AVBRUTEN AV MERGE-AGENTEN (S75 batch, ADR-073) — HALT i steg 5 (PR-CI-vakten per jobb). INGEN MERGE.
+
+PR: #80 (https://github.com/marcus803/miranon-media-admin/pull/80) — STÅR KVAR som åtgärdsyta.
+Branch: task/19.3 @ 2ab90224254185f36bd4d06d6b74ad5d5331c736 — STÅR KVAR (lokal + remote).
+PR-CI-run: 29944497868 — conclusion: failure.
+
+PER JOBB: Detect changed files=success · Lint + Audit + TypeCheck=success · Staging sentinel purge=success · Docs link check=success · Test + Build=FAILURE · CI Passed or Skipped=skipped.
+Test + Build per steg: API tests (pure)=success · API tests (staging)=success · Install Playwright Chromium=success · E2E tests (staging)=FAILURE · A11y tests (axe-runner)=skipped · Build=skipped.
+
+E2E-UTFALL (kortets e2e-bevis, pr-ci-bevisformen): 215 passed · 1 failed · 3 skipped av 219.
+
+FALLERANDE TEST (verbatim ur run-loggen):
+  [chromium-authenticated] > tests/e2e/skapa-event.staging.test.ts:345:3 > Skapa nytt event — SKARPT mot staging (AC #1) > formuläret skapar ett riktigt event i staging och landar i bekräftelseläget
+  Error: expect(received).toBe(expected) // Object.is equality
+    Expected: 200
+    Received: 401
+    > 355 |     expect((await eventsSvar).status()).toBe(200);
+    at tests/e2e/skapa-event.staging.test.ts:355:41
+  Föll identiskt på Retry #1 och Retry #2 (dvs INTE flake).
+
+TOLKNING (ej åtgärdad av merge-agenten): det är kortets EGET nya SKARPA describe som faller — sidans live-läsning (events-anropet) svarar 401 i CI-miljön, medan de mockade testerna och den ÖVRIGA staging-sviten (inkl. tests/api staging) är gröna. Bygg-agentens lokala e2e-körning skedde off-port mot ett lokalt staging-bygge (port 4173, CORS-tillåten preview-origin) — den miljön bar en auth-form som CI-runnern inte bär. Fixen hör till bygg-agenten (auth/token-vägen för den skarpa läsningen i CI), inte till merge-kedjan.
+
+KORT-TILLSTÅND: status återställd To Do. AC/DoD-bockarna på branchen är INTE landade på main (ingen merge skedde) — kortet på main står orört i sitt för-batch-skick förutom denna not.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
