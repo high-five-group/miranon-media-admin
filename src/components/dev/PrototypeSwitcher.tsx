@@ -7,9 +7,11 @@
  * körbarhets-golvet.
  *
  * Identitetsmodellen (S72): VARIANT = divergens-axeln · STEG =
- * konvergens-axeln. Identiteten bärs av aktiv knapps steg-badge +
- * tooltip. EN variant i familjen → prototyp-ikon (kolv) i stället för
- * kryptisk bokstav (S76-polervågen: "vad betyder K?"); flera varianter →
+ * konvergens-axeln. Identiteten bärs av den ALLTID synliga
+ * steg-badgen på variant-knapparna (A5: tooltips utgår helt —
+ * knapparna är inlärda; aria-labels är a11y-golvet). EN variant i
+ * familjen → prototyp-ikon (kolv) i stället för kryptisk bokstav
+ * (S76-polervågen: "vad betyder K?"); flera varianter →
  * bokstavs-knappar (särskiljbarhet kräver dem).
  *
  * URL-kontraktet (ADR-074 beslut 1): `?variant=<nyckel>` (null = skarpa
@@ -19,7 +21,7 @@
  * Rail-formen: alltid kompakt, KONSTANT höjd (data-knappen har
  * reserverad plats även utan aktiv variant — höjd-hopp är förbjudna);
  * flyttbar via grip (pointer-drag ELLER piltangenter; Home/Escape
- * dockar; dubbelklick dockar); tooltips flippar sida nära vänsterkant.
+ * dockar; dubbelklick dockar).
  */
 import { useQueryState } from 'nuqs';
 import { useRef, useState } from 'react';
@@ -52,26 +54,6 @@ function lasPos(): Pos | null {
   }
 }
 
-/** Mörk mikro-tooltip; sidan styrs av railens läge (klipper aldrig vid
-    vänsterkant). Alltid normalvikt — ärver ALDRIG knappens fetstil.
-    Mjuk entré (intent-fördröjd fade in, snabb fade ut; respekterar
-    reduced motion) + mycket mjuk pil in mot ikonen. */
-function Tooltip({ text, sida }: { text: string; sida: 'vanster' | 'hoger' }) {
-  const placering = sida === 'vanster' ? 'right-full mr-2.5' : 'left-full ml-2.5';
-  const pil = sida === 'vanster' ? '-right-[4px]' : '-left-[4px]';
-  return (
-    <span
-      aria-hidden="true"
-      className={`pointer-events-none absolute top-1/2 ${placering} -translate-y-1/2 whitespace-nowrap rounded-md bg-text px-2 py-1 font-normal text-caption text-text-inverse opacity-0 shadow-lg transition-opacity duration-150 ease-out group-hover:opacity-100 group-hover:delay-300 group-focus-visible:opacity-100 motion-reduce:transition-none`}
-    >
-      {text}
-      <span
-        className={`absolute top-1/2 ${pil} h-2 w-2 -translate-y-1/2 rotate-45 rounded-[2px] bg-text`}
-      />
-    </span>
-  );
-}
-
 export function PrototypeSwitcher({
   variants,
   aliases = {},
@@ -92,8 +74,6 @@ export function PrototypeSwitcher({
   const resolved = variantParam == null ? null : (aliases[variantParam] ?? variantParam);
   const active = variants.find((v) => v.key === resolved) ?? null;
   const endaVarianten = variants.length === 1;
-  // Nära vänsterkanten flippar tooltipen till höger sida (klipp-skyddet).
-  const tooltipSida: 'vanster' | 'hoger' = pos && pos.x < 140 ? 'hoger' : 'vanster';
 
   const sattPos = (p: Pos | null) => {
     posRef.current = p;
@@ -160,10 +140,10 @@ export function PrototypeSwitcher({
   const fokus =
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus';
   const knapp = (isActive: boolean) =>
-    `group relative flex h-9 w-9 items-center justify-center rounded-full text-small transition-colors ${fokus} ${
+    `relative flex h-9 w-9 items-center justify-center rounded-full text-small transition-colors ${fokus} ${
       isActive
         ? 'border border-primary bg-primary-tint font-semibold text-text'
-        : 'text-text-secondary hover:bg-bg-subtle'
+        : 'border border-transparent text-text-secondary hover:bg-bg-subtle'
     }`;
   const stegBadge = (steg: number) => (
     <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-text px-0.5 font-semibold text-[10px] text-text-inverse">
@@ -220,7 +200,6 @@ export function PrototypeSwitcher({
           <path d="M1.75 5.5h12.5" />
           <circle cx="3.9" cy="4" r="0.5" fill="currentColor" stroke="none" />
         </svg>
-        <Tooltip text="Skarpa vyn" sida={tooltipSida} />
       </button>
       {variants.map((v) => (
         <button
@@ -248,8 +227,7 @@ export function PrototypeSwitcher({
           ) : (
             <span className="font-mono">{v.key}</span>
           )}
-          {active?.key === v.key && stegBadge(v.steg)}
-          <Tooltip text={endaVarianten ? 'Prototyp' : `Variant ${v.key}`} sida={tooltipSida} />
+          {stegBadge(v.steg)}
         </button>
       ))}
       <button
@@ -277,16 +255,6 @@ export function PrototypeSwitcher({
           <path d="M2.5 3.5v9c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-9" />
           <path d="M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2" />
         </svg>
-        <Tooltip
-          text={
-            active == null
-              ? 'Kräver prototyp'
-              : dataMode === 'verklig'
-                ? 'Verklig data'
-                : 'Demo-data'
-          }
-          sida={tooltipSida}
-        />
       </button>
       <span aria-hidden="true" className="h-px w-6 bg-border" />
       <button

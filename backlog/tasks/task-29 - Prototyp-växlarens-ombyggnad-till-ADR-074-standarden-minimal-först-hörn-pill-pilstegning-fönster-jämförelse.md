@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-22 14:38'
-updated_date: '2026-07-22 16:35'
+updated_date: '2026-07-22 16:44'
 labels:
   - ready-for-agent
 dependencies: []
@@ -42,7 +42,10 @@ Bygg om src/components/dev/PrototypeSwitcher.tsx till ADR-074 beslut 2–3 (Verc
 - [x] #13 KONSTANT höjd: data-knappen har reserverad plats även utan aktiv variant (soft-disablad: aria-disabled + dämpad + förklarande tooltip); railen är även tangentbords-flyttbar (pilar nudgar, Home/Escape dockar)
 - [x] #14 VÅG 3 (Marcus-granskning 3): skarpa vyns ikon är app-fönster (ej öga) · nytt-fönster-knappen saknar tooltip (självförklarande ikon) · all tooltip-copy trimmad till professionell mikroform (Variant A — steg 1 · Prototyp — steg N · Data: demo/verklig; URL-hacket och stegLabel-kedjorna borta)
 - [x] #15 MJUKHETS-VÅGEN (Marcus-granskning 4): tooltip med intent-fördröjd mjuk fade-entré (300 ms delay/150 ms ease-out, snabb ut, motion-reduce respekteras) + mycket mjuk pil in mot ikonen (rundad romb, sidflippar); kortast möjliga copy (Variant A · Prototyp · Skarpa vyn · Demo-data/Verklig data/Kräver prototyp); steg utgår ur tooltipen — badgen ensam bär konvergens-räknaren
+- [x] #16 A5 (Marcus-granskning 5): tooltips UTGÅR helt (aria-labels = a11y-golvet); steg-badgen ALLTID synlig på varje variant-knapp; RÖRELSE-FÖRBUD vid aktiv-växling (konstant border-box via transparent kant på inaktiv — mekaniskt verifierat med före/efter-boundingBox)
 <!-- AC:END -->
+
+
 
 
 

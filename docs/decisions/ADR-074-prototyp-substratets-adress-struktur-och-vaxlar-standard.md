@@ -50,6 +50,17 @@
 > a11y-paritet med pointer-draget) + fokus-ring via
 > `--color-border-focus`-tokenet.
 >
+> **Amendering 5 (Session 76 samma dag — Marcus-granskning 5; river
+> A4:s tooltip-apparat öppet):** TOOLTIPS UTGÅR HELT — knapparna är
+> inlärda och tooltipen kändes överflödig (aria-labels består som
+> a11y-golv). Identiteten bärs av steg-badgen som nu är ALLTID
+> synlig på varje variant-knapp (inte bara aktiv). RÖRELSE-FÖRBUDET:
+> inget i railen får flytta sig vid aktiv-växling — aktiv-kanten
+> finns därför alltid (transparent på inaktiv) så padding-boxen och
+> därmed badge-ankaret är konstant (1 px-rörelsen var
+> Marcus-fångst); mekaniskt verifierad via före/efter-boundingBox i
+> L304-skriptet.
+>
 > **Amendering 4 (Session 76 samma dag — Marcus-granskning 4,
 > mjukhets-vågen; river A3:s mikroform-copy öppet):** tooltipen får
 > intent-fördröjd MJUK entré (fade in efter ~300 ms hover-avsikt,
