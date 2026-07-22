@@ -169,16 +169,40 @@ async function tokenColor(page: Page, cssVar: string): Promise<string> {
   }, cssVar);
 }
 
-const DAGMANAD = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
+// Referensklockan är BROWSERNS tidszon (playwright.config.ts: timezoneId
+// 'Europe/Stockholm'), aldrig Node-processens (UTC i CI) — all datumaritmetik
+// och formattering förankras därför explicit i Europe/Stockholm (S75-diagnosen:
+// Node-lokal "idag" kan vara en annan kalenderdag än browserns).
+const TIDSZON = 'Europe/Stockholm';
 
-/** Startdatum `dagar` dagar från idag (lokal midnatt) som ISO-datum. */
+const DAGMANAD = new Intl.DateTimeFormat('sv-SE', {
+  day: 'numeric',
+  month: 'long',
+  timeZone: TIDSZON,
+});
+
+/** Dagens datumdelar i Europe/Stockholm — oberoende av Node-processens TZ. */
+function stockholmIdag(): { ar: number; manad: number; dag: number } {
+  const delar = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: TIDSZON,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const del = (typ: string) => Number(delar.find((p) => p.type === typ)?.value);
+  return { ar: del('year'), manad: del('month'), dag: del('day') };
+}
+
+/** Startdatum `dagar` dagar från idag (Stockholm-kalenderdag) som ISO-datum. */
 function startdatumOmDagar(dagar: number): { iso: string; deadlineText: string } {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + dagar);
-  const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const deadline = new Date(d);
-  deadline.setDate(deadline.getDate() - 14);
+  const idag = stockholmIdag();
+  // Kalenderaritmetiken görs i UTC-rummet (Date.UTC normaliserar överslag);
+  // UTC-midnatt formatterad i Stockholm (alltid UTC+1/+2) är samma kalenderdag.
+  const start = new Date(Date.UTC(idag.ar, idag.manad - 1, idag.dag + dagar));
+  const iso = start.toISOString().slice(0, 10);
+  const deadline = new Date(
+    Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() - 14),
+  );
   return { iso, deadlineText: DAGMANAD.format(deadline) };
 }
 
@@ -355,9 +379,14 @@ test.describe('Betalningar — arbetsytan (task-18.8, K29–K34)', () => {
     page,
   }) => {
     await mockSidan(page);
+    let releaseUpdate: () => void = () => {};
+    const updateGate = new Promise<void>((resolve) => {
+      releaseUpdate = resolve;
+    });
     let updatePayload: Record<string, unknown> | null = null;
     await page.route(UPDATE_RECORD, async (route) => {
       updatePayload = route.request().postDataJSON() as Record<string, unknown>;
+      await updateGate; // återflytten måste synas UTAN att vänta på svaret
       await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     });
 
@@ -368,13 +397,23 @@ test.describe('Betalningar — arbetsytan (task-18.8, K29–K34)', () => {
     await grupp.getByRole('radio', { name: 'Klara (2)' }).click();
     await klickaKryss(page, 'Anmälningsavgift för Karin Sjögren');
 
+    // FÖRE nätverkssvaret (gaten hålls): återflytten 2→1 och deltat −3→−4 är
+    // live ur cachen. Tillståndet är TRANSIENT — onSettled-refetchen mot den
+    // statiska mocken återställer pre-mutations-facit, så gaten är det enda
+    // deterministiska assert-fönstret (S75-diagnosen, grann-testets mönster).
+    await expect(grupp.getByRole('radio', { name: 'Klara (1)' })).toBeVisible();
+    await expect(grupp.getByTestId('delta-avgifter')).toHaveText('−4');
+
     expect(updatePayload).toMatchObject({
       operationKey: 'mark-registration-fee-paid',
       recordId: 'recBET00000karin',
       fields: { Anmälningsavgift: 'Ej mottagen' },
     });
-    await expect(grupp.getByRole('radio', { name: 'Klara (1)' })).toBeVisible();
-    await expect(grupp.getByTestId('delta-avgifter')).toHaveText('−4');
+
+    releaseUpdate();
+    await expect(page.locator('[data-mm-announcer]')).toContainText(
+      'Anmälningsavgift markerad som ej mottagen för Karin Sjögren',
+    );
   });
 
   test('noteringen sparas på blur via noterings-operationen med betalningens EGET fält', async ({
