@@ -200,6 +200,31 @@
   term-valet · 3 månads-knappen · 4 Done-kandidater
   17.1/17.3/18.2/18.3 [+19.1 via /dev/primitives]; TASK-25 står
   öppen) → review-fix-våg → batch-order 12 → end-pass på signal.**
+- [x] **REVIEW-FIX-VÅG 1 LEVERERAD + MERGAD** (2026-07-22, Del 9
+  kanonisk plats): Marcus-kvittens 1=A/2=A(kortdelen)/3=A →
+  kalenderpaketet (table-fixed likbredd · FK-idag-ring IMG_1590 ·
+  vald dag markeringsram utan guldplatta [S72-facit-revidering
+  öppen] · toggle-avval [klon-buren onChange — instans-identitets-
+  guarden empiriskt belagd]) + countdown-suffixet "kvar till
+  eventet" (villkorat; formeln MCP-läst, bifynd eventdagen=Avslutat
+  → data-model-synken) + termen "platser reserverade" (EventCard +
+  NastaEventCard + 7 e2e-sviter; prototypen orörd — fryst facit).
+  Rött-först 7→53/53 i egen worktree/server 5198 (Marcus 5173
+  orörd) · CI-fångst: head-trunkerad inventerings-grep dolde 5
+  assertions (tysta-cap-klassen, lesson-kandidat 6) → fullsvep →
+  PR #78 grön per jobb → mergad `a0ce2eb` → main-run 29912258901
+  grön per jobb → städat (0 task-brancher · 1 worktree) →
+  huvudträdet pullat (Marcus dev-server bär fixarna vid
+  omladdning). T81 registrerad (Marcus-fångst: process-spåret
+  saknade tråd) · ORDLISTA "Reserverad plats" · kort-kommentarer
+  17.4/18.1/17.2 (DoD #5 öppen). **NÄSTA: (1) MARCUS: omgranska
+  fixarna + 18.8 ["Öppna detaljer" kräver event med aktiva
+  anmälningar] + 19.2 [skapa-pillen på vy-raden] efter omladdning;
+  (2) Done-flippar (fråga 4: 17.1/17.3/18.2/18.3 [+19.1 via
+  /dev/primitives]) + TASK-25 + beläggningsradens namn (rek "Extra
+  platser"); (3) T80-substrat-researchen (Marcus-prioriterat nästa
+  fokus — egen session med grillning rekommenderad); (4)
+  batch-order 12 · end-pass på signal.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 

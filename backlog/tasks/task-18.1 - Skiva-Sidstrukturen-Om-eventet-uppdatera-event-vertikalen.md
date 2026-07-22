@@ -4,7 +4,7 @@ title: 'Skiva: Sidstrukturen + Om eventet + uppdatera-event-vertikalen'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-22 09:10'
+updated_date: '2026-07-22 10:41'
 labels:
   - ready-for-agent
 dependencies: []
@@ -41,6 +41,11 @@ CI grönt per jobb: PR-run 29865299294 + main-run 29865719700 (S75-batch v2)
 created: 2026-07-22 09:10
 ---
 Review-våg 1 (Marcus 2026-07-22): countdown-raden under eventnamnet godkänd som tillägg ('klar förbättring') MEN texten ska lyda t.ex. '7 veckor och 6 dagar kvar till eventet'. OBS källan: tidKvarTillEvent är pass-through från get-event-EF:n (EventDetail.tsx rad ~157 renderar strängen rått; ingen klient-formatter finns) — fixen verifierar EF-/formel-källans hela utfallsrymd FÖRST (blint klient-suffix bryter om fältet ibland bär icke-nedräknings-text, t.ex. pågående/avslutat läge). Åtgärd i review-fix-vågen på denna yta.
+---
+
+created: 2026-07-22 10:41
+---
+Review-fix-vågen LEVERERAD (PR #78): countdown-raden bär 'X ... kvar till eventet' villkorat på nedräkningsformerna — basens formel fldcwlblR3JQxXVbe MCP-verifierad till exakt tre utfall (Avslutat | N dagar | N vecka/veckor [och M dagar]); Avslutat renderas rå, e2e-pinnat i båda grenarna. BIFYND (T16-klass, till data-model-synken i end-passet): formelns IS_AFTER-gren klassar även själva EVENTDAGEN som Avslutat. DoD #5 STÅR ÖPPEN — omgranskning.
 ---
 <!-- COMMENTS:END -->
 

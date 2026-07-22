@@ -4,7 +4,7 @@ title: 'Skiva: Listvyn till S72-facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-22 09:09'
+updated_date: '2026-07-22 10:41'
 labels:
   - ready-for-agent
 dependencies:
@@ -40,6 +40,11 @@ CI grönt per jobb: PR-run 29867397616 + main-run 29867858651 (S75-batch v2)
 created: 2026-07-22 09:09
 ---
 Review-våg 1 (Marcus 2026-07-22): listkortets beläggningsrad ska säga 'X av Y platser reserverade' i st.f. 'bokade'. TERM-KOLLISION flaggad före fix: 'Reserverade' är redan etikett för en ANNAN kvantitet i detaljvyns beläggningsuppdelning (Belaggning.tsx rad ~146, term + inmatningsfält), och samma 'platser bokade'-sträng finns även i Hem-vyns NastaEventCard.tsx rad ~163. Term-beslut väntar Marcus (ORDLISTA-post först vid kristallisering); fixen sveper båda förekomsterna + ev. omdöp i beläggningen. Åtgärd i review-fix-vågen på denna yta före DoD #5-flipp.
+---
+
+created: 2026-07-22 10:41
+---
+Review-fix-vågen LEVERERAD (PR #78): 'X av Y platser reserverade' på listkorten + Hem-vyns NastaEventCard + sju e2e-sviter svepta (full inventering UTAN head-cap efter CI-fångsten — den trunkerade grepen dolde events-list + hem; prototypen medvetet orörd: fryst S72-facit, rivs i 18.13). ORDLISTA-posten 'Reserverad plats' skriven (Marcus-kristalliserad 2026-07-22). KVAR ÖPPET: beläggningsuppdelningens etikett 'Reserverade' = bas-fältet Extra platser ('Extra platser reserverade av Roger och Lotta') — rekommendation: döp raden 'Extra platser' (basens eget namn); Marcus beslutar. DoD #5 STÅR ÖPPEN.
 ---
 <!-- COMMENTS:END -->
 

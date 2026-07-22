@@ -157,7 +157,8 @@ status: stable
 
 | Tråd | Titel | Tillstånd | Ingång |
 |---|---|---|---|
-| T80 | Prototyp-substratets adress-struktur + växlarens framtid (research-spår) | paused | S75 Del 8 (Marcus review-våg 1, 2026-07-22): ?variant-konventionen är odokumenterad i specs (URL-STATE-SPEC saknar den; ADR-044 täcker endast /dev-ytorna; auktoritativ text bor i kod-kommentarer + prototype-skillen) och växlaren upplevs ful/okonsekvent — research av branschmönster (variant-adressering, sida-vid-sida-jämförelse, minimal pil-växlare) FÖRE design; 18.13 river event-familjens instans, så spåret gäller det PERMANENTA arbetssättet för kommande familjer/produkter. |
+| T80 | Prototyp-substratets adress-struktur + växlarens framtid (research-spår) | paused | S75 Del 8 (Marcus review-våg 1, 2026-07-22): ?variant-konventionen är odokumenterad i specs (URL-STATE-SPEC saknar den; ADR-044 täcker endast /dev-ytorna; auktoritativ text bor i kod-kommentarer + prototype-skillen) och växlaren upplevs ful/okonsekvent — research av branschmönster (variant-adressering, sida-vid-sida-jämförelse, minimal pil-växlare) FÖRE design; 18.13 river event-familjens instans, så spåret gäller det PERMANENTA arbetssättet för kommande familjer/produkter. Marcus-prioriterat nästa fokus efter review-fixarna (S75 Del 9). |
+| T81 | Review-utfalls-klasserna: fix-våg vs iterations-skivor → ADR-071-amendering (process-spår) | paused | S75 Del 8–9 (Marcus review-våg 1, 2026-07-22; Marcus-fångst: spåret saknade tråd): klassningen — review-FIX på levererat kort åtgärdas direkt i samlad fix-våg FÖRE Done-flipp; review-ITERATION blir ny skiva under familje-PRD:n in i batch-ordning — tillämpad i Del 8-triagen + Del 9-fix-vågen (PR #78). Permanentas som ADR-071-amendering i end-passet på Marcus-signal. |
 
 ## Så här registrerar du en ny tråd
 

@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-20
+updated: 2026-07-22
 review_by: 2027-01-02
 status: stable
 ---
@@ -142,6 +142,19 @@ basens Status-ord ("Obekräftad"/"Bekräftad (mail skickat)") — Marcus-beslut
 S73 K53, som ersatte konvergensens arbetsord.
 *Undvik:* ohanterad, hanterad (S73 K39–K52-arbetsorden, rivna K53).
 *I koden:* `arBekraftad` (eventsidans prototyp); basens fält `Status`.
+
+**Reserverad plats** — en plats som hålls av en anmälan i väntan på betalning
+(anmälningsavgift och/eller slutbetalning); uteblir betalningen frigörs
+platsen — därför "X av Y platser reserverade" på event- och Hem-korten,
+aldrig "bokade" (bokad låter definitiv; reservationen är villkorad).
+Marcus-kristalliserad i review-våg 1 (S75, 2026-07-22). Skilj från basens
+fält **Extra platser** ("Extra platser reserverade av Roger och Lotta") —
+manuellt hållna platser utanför anmälningsflödet, i dag visade under
+beläggningsuppdelningens etikett "Reserverade"; etikettens namn är ett
+öppet Marcus-beslut (S75 review-våg 1). Beläggningssummans "upptagna"
+(inkluderar båda slagen) är en medveten tredje term och står kvar.
+*Undvik:* bokad (platser), belagd (som kort-copy).
+*I koden:* strängen "platser reserverade" (`EventCard`, `NastaEventCard`).
 
 **Period** — event-listans tidsaxel: Kommande eller Tidigare, härledd ur
 eventets startdatum mot idag — ALDRIG ur Status-fältet. Skild från eventets
