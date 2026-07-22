@@ -51,6 +51,15 @@
   ADR-044-vågskålen). Numrering nu: 075/L307/T84/f45/TASK-30.
   **NÄSTA: hub-bunten (T78 b + T81-rad + T82-flaggor = ETT
   plugin-bump-moment).**
+- [x] **Hub-bunten + fyra trådstängningar** (2026-07-22, denna
+  landning): hub `1f9ca16`, plugin **1.18.0** — prototype-skillens
+  Standard-form (T78 b) · work-batch T81-referensraden ·
+  T82-flippen 6 av 7 (STOPPA → Marcus A; work-batch KVARLÅST,
+  ADR-071 b1) + README-policyn. Registret: **T80/T81/T82/T78
+  STÄNGDA** (lessons-buntningen löst upp öppet — L284–L306 kvar i
+  S75-end-pass). Marcus-moment: **T18-reinstall 1.16.0 → 1.18.0** +
+  aktiverings-verifiering. **NÄSTA: end-pass på signal; TASK-29 +
+  S75-resume = Marcus vägval.**
 
 ### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-22; paus 3 — review-vågen levererad, work-batch 12 vid resume) — Batch-exekveringen: work-batch max 22, två pipelines
 
