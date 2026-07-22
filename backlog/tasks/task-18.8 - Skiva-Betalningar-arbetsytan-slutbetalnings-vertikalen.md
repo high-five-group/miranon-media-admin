@@ -4,7 +4,7 @@ title: 'Skiva: Betalningar (arbetsytan + slutbetalnings-vertikalen)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-22 07:58'
+updated_date: '2026-07-22 08:27'
 labels:
   - ready-for-agent
 dependencies:
@@ -38,13 +38,15 @@ AFK-halt (S75 v2): PR-CI rött (run 29875779970, PR #76): (1) audit-ci — GHSA-
 Studs-åtgärden (S75): tre testdesign-fixar per diagnosen (TZ-förankringen Europe/Stockholm ×2 + gate-mönstret för av-bock-racet); TZ-bevis + race-bevis 10/10 i retur
 
 Studs-åtgärd 2 (S75): scenario-isoleringen läkt med distinkta eventId per scenario (persist-hydrerings-mekanismen, diagnos-runda 2 trippelbevisad; även grann-testets latenta instans); determinism-bevis 3/3 + 20/20
+
+CI grönt per jobb: PR-run 29902222934 + main-run 29903576104 (S75, mergad efter två diagnos-/åtgärdsrundor — TZ-förankringen + scenario-isoleringen; orkestratorn körde steg 6–10 efter reload-parkeringen)
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
