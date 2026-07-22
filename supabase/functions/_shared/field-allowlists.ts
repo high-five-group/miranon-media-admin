@@ -85,6 +85,20 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Anmälningar',
     allowedFields: ['Status', 'Bekräftelse skickad'],
   },
+  // Bor över-markeringen per anmälan (task-18.7, PRD task-18 beslut 8 —
+  // eventsidans kryss-läge). EXAKT ett fält: 'Bor över' (fldGYYNnQi7XlfbhP,
+  // checkbox), ADDITIVT skapat i STAGING 2026-07-22 och skrivbarheten
+  // LIVE-VERIFIERAD (PATCH + läs-tillbaka) INNAN posten låstes (L294).
+  // Allowlisten gatar FÄLTET, inte värdet — samma operation kryssar i och ur
+  // (och är därmed test-teardownens väg). Eventets bor över-ANTAL härleds
+  // ALLTID ur dessa kryss; något lagrat räknefält finns medvetet inte och kan
+  // därför inte heller skrivas. ⚠️ PROD-fältet är INTE skapat — hård
+  // prod-deploy-förutsättning (fält FÖRE EF, per miljö; data-model.md §Kända
+  // fällor 37). Tabell per NAMN (ADR-050 bas-portabilitet).
+  'set-registration-lodging': {
+    tableId: 'Anmälningar',
+    allowedFields: ['Bor över'],
+  },
   // Spara fri-text-anteckning på en Person (Fas 6a L6, Session 23). Skrivbart
   // multilineText-fält (fldWGlNr3ujRHo85w, data-model.md § Personer — write-fält);
   // Synk-gate 2 beviljad av Marcus. Tabell per NAMN (ADR-050 bas-portabilitet);

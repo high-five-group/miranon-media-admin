@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
+  BedDouble,
   Check,
   ChevronDown,
   Clock,
@@ -25,6 +26,7 @@ import {
   useConfirmAll,
   useSendConfirmation,
 } from '@/data/mutations/registrationConfirmation';
+import { useSetBorOver } from '@/data/mutations/registrationLodging';
 import { useUpdateEvent } from '@/data/mutations/useUpdateEvent';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
@@ -135,13 +137,17 @@ type FlikNyckel = 'alla' | 'manuell' | 'medfoljande';
  * Eventinfo-radens klick visar de som SAKNAR eventinfo — det åtgärdbara är att-
  * göra-mängden, aldrig den avklarade.
  */
-type SummeringsFilter = 'obekraftade' | 'bekraftelse' | 'paminda' | 'saknarEventinfo';
+type SummeringsFilter = 'obekraftade' | 'bekraftelse' | 'paminda' | 'saknarEventinfo' | 'borOver';
 
 const FILTER_TEST: Record<SummeringsFilter, (r: Registration) => boolean> = {
   obekraftade: (r) => !arBekraftad(r),
   bekraftelse: (r) => r.bekraftelseSkickad != null,
   paminda: harPaminnelse,
   saknarEventinfo: (r) => r.deltagarinfoSkickad == null,
+  // Radens SIFFRA är de ikryssade; radens KLICK öppnar däremot kryss-läget med
+  // ALLA anmälda (K52 — arbetsrad, inte filterlista). Testet står kvar som
+  // urvals-definition (räknaren) och för Record-fullständigheten.
+  borOver: (r) => r.borOver === true,
 };
 
 /** Två veckor före eventets start — Lottas eventinfo-gräns (mail 2, K42/K44). */
@@ -613,6 +619,63 @@ function DeltagarKort({
   );
 }
 
+/**
+ * BOR ÖVER-KRYSSRADEN (task-18.7; S73-facit K50/K52). En RAC Checkbox i
+ * betalnings-kryssets ruta-grammatik (samma size-5-ruta som AutoKryss ovan) +
+ * personkortens radform; säng-glyfen tänds när personen är ikryssad. Obockad är
+ * NEUTRAL — att inte bo över är normalläget, inte en avvikelse (skilt från
+ * betalkryssets röda obetalt-semantik).
+ *
+ * Precedent 18.8: rå RAC-Checkbox, INTE lyft till Mm-primitiv (kryss-läget är
+ * den enda konsumenten; en primitiv utan andra användare vore spekulation).
+ * Kortet ÄR kryssrutan (hela raden är klickytan) — ingen inbäddad interaktiv
+ * länk, så L303:s interaktivt-i-interaktivt-förbud hålls; namnet är ren text.
+ *
+ * A11y: RAC ger `role="checkbox"` + `aria-checked`; det tillgängliga namnet
+ * kommer ur radens text (namn + ev. kategori-pill). Kategori-pillen är samma
+ * märke som personkortens (via formulär = tyst norm, inget märke, K37).
+ */
+function BorOverRad({
+  reg,
+  onToggle,
+}: {
+  reg: Registration;
+  onToggle: (reg: Registration, borOver: boolean) => void;
+}) {
+  const pill = KATEGORI_PILL[kategori(reg)];
+  return (
+    <Checkbox
+      data-testid="bor-over-rad"
+      isSelected={reg.borOver === true}
+      onChange={(v) => onToggle(reg, v)}
+      className="group flex cursor-pointer items-center gap-3 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
+    >
+      <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
+        <Check
+          aria-hidden="true"
+          size={14}
+          className="text-text-inverse opacity-0 group-data-[selected]:opacity-100"
+        />
+      </span>
+      <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+        <span data-testid="bor-over-namn" className="truncate font-semibold text-body">
+          {displayName(reg)}
+        </span>
+        {pill && (
+          <span className="shrink-0 rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+            {pill}
+          </span>
+        )}
+      </span>
+      <BedDouble
+        aria-hidden="true"
+        size={16}
+        className={`shrink-0 ${reg.borOver === true ? 'text-text' : 'text-text-muted opacity-40'}`}
+      />
+    </Checkbox>
+  );
+}
+
 function DeltagarListan({
   rader,
   onBekrafta,
@@ -647,6 +710,9 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
   const bekraftelseSkickade = aktiva.filter((r) => r.bekraftelseSkickad != null).length;
   const pamindaTotalt = aktiva.filter(harPaminnelse).length;
   const eventinfoSkickade = aktiva.filter((r) => r.deltagarinfoSkickad != null).length;
+  // LIVE-RÄKNAREN (K52): alltid HÄRLEDD ur kryssen i samma cache-rad som
+  // kryss-läget muterar optimistiskt — aldrig ett lagrat räknefält (PRD beslut 8).
+  const borOverTotalt = aktiva.filter((r) => r.borOver === true).length;
 
   const visade = useMemo(
     () => (flik === 'alla' ? aktiva : aktiva.filter((r) => kategori(r) === flik)),
@@ -673,7 +739,35 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
   });
 
   const traffar = filter == null ? null : visade.filter(FILTER_TEST[filter]);
-  const vaxlaFilter = (f: SummeringsFilter) => setFilter((nu) => (nu === f ? null : f));
+
+  // Kryss-lägets STABILA sorterings-snapshot (K52): fångas när läget ÖPPNAS så
+  // att en nykryssad rad inte hoppar upp under fingret — omsorteringen sker
+  // först vid nästa öppning. `Set` av record-ID:n (visnings-oberoende av vilken
+  // flik som är vald). null = läget är stängt.
+  const [borOverSnapshot, setBorOverSnapshot] = useState<Set<string> | null>(null);
+  const lodging = useSetBorOver(event.id);
+
+  const vaxlaFilter = (f: SummeringsFilter) =>
+    setFilter((nu) => {
+      const next = nu === f ? null : f;
+      if (f === 'borOver' && next === 'borOver') {
+        setBorOverSnapshot(new Set(aktiva.filter((r) => r.borOver === true).map((r) => r.id)));
+      }
+      return next;
+    });
+
+  const toggleBorOver = (reg: Registration, borOver: boolean) =>
+    lodging.mutate({ registration: reg, borOver });
+
+  // Kryss-lägets lista: ALLA visade anmälda (arbetsrad, inte filterlista) med
+  // ikryssade — enligt snapshoten — överst. Array.sort är stabil (ES2019) så
+  // inbördes ordning bevaras inom varje grupp.
+  const markeringsLista =
+    filter === 'borOver' && borOverSnapshot != null
+      ? [...visade].sort(
+          (a, b) => Number(borOverSnapshot.has(b.id)) - Number(borOverSnapshot.has(a.id)),
+        )
+      : [];
 
   // Hantera-flödet (task-18.6): enskild bekräftelse OPTIMISTISK, bulken PESSIMISTISK
   // bakom kontrollfrågan. Båda går genom samma server-operation.
@@ -762,6 +856,18 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
         >
           <AvDelta klara={eventinfoSkickade} totalt={totalt} />
         </SummeringsRad>
+        {/* K50: Bor över SIST — universell rad på ALLA event (hemma-hos-eventen
+            är normalfallet med sovande gäster); säng-glyfen bär radens identitet.
+            Radens SIFFRA är de ikryssade (härledd live); radens KLICK öppnar
+            KRYSS-LÄGET (K52 — arbetsrad, inte filterlista). */}
+        <SummeringsRad
+          term="Bor över"
+          ikon={BedDouble}
+          aktiv={filter === 'borOver'}
+          onClick={() => vaxlaFilter('borOver')}
+        >
+          <span className="tabular-nums">{borOverTotalt}</span>
+        </SummeringsRad>
       </div>
 
       {utfall != null && (
@@ -806,7 +912,23 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                 Rensa filtret
               </button>
             </div>
-            {traffar.length > 0 ? (
+            {filter === 'borOver' ? (
+              // KRYSS-LÄGET (K52): ALLA visade anmälda i EN kolumn, säng-kryss
+              // per rad, ikryssade (snapshot) överst. Ersätter personkorten helt.
+              markeringsLista.length > 0 ? (
+                <ul className="flex flex-col gap-2.5">
+                  {markeringsLista.map((reg) => (
+                    <li key={reg.id}>
+                      <BorOverRad reg={reg} onToggle={toggleBorOver} />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="py-2 text-small text-text-secondary">
+                  Inga deltagare i denna kategori.
+                </p>
+              )
+            ) : traffar.length > 0 ? (
               <DeltagarListan rader={traffar} onBekrafta={bekraftaEn} pendingId={pendingId} />
             ) : (
               <p className="py-2 text-small text-text-secondary">Inga träffar i denna kategori.</p>

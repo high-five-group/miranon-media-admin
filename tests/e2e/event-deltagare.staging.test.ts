@@ -181,7 +181,8 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await oppnaEventsidan(page);
 
     // K42: bekräftelse (mail 1) → betalningspåminnelse → eventinfo (mail 2).
-    // Bor över-raden ingår MEDVETET inte (bas-fältet föds i task-18.7).
+    // Bor över-raden SIST sedan task-18.7 (bas-fältet föddes där; denna fixtur
+    // sätter ingen borOver → 0). Dess kryss-läge har egen svit event-bor-over.
     const rader = gruppen(page).locator('button[aria-pressed="false"]');
     const etiketter = await gruppen(page).locator('button[aria-pressed]').allTextContents();
     expect(etiketter).toEqual([
@@ -189,9 +190,10 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
       'Anmälningsbekräftelse skickad2 av 4−2',
       'Betalningspåminnelse skickad1',
       'Eventinfo skickad1 av 4−3',
+      'Bor över0',
     ]);
-    // Alla fyra står otryckta i grundläget (inget filter aktivt).
-    await expect(rader).toHaveCount(4);
+    // Alla fem står otryckta i grundläget (inget filter aktivt).
+    await expect(rader).toHaveCount(5);
 
     // Eva (Avbokad/Ombokad) syns aldrig i kön — 4 aktiva, inte 5.
     await expect(gruppen(page).getByText('Eva Sten')).toHaveCount(0);

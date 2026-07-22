@@ -47,4 +47,11 @@ export const RegistrationSchema = z.object({
   bekraftelseSkickad: z.string().nullable().optional(),
   deltagarinfoSkickad: z.string().nullable().optional(),
   antalGenomfordaEvent: z.number().nullable().optional(),
+  // Bor över-markeringen (task-18.7; PRD task-18 beslut 8). ADDITIVT-OPTIONAL
+  // av samma skäl som fälten ovan. BOOLEAN utan null (Event-schemats
+  // `deltagarinfoAutoAvstangt`-precedent): Airtable utelämnar en OMARKERAD
+  // checkbox helt ur svaret, och EF:en normaliserar `=== true` → osatt ⇒ false.
+  // Bas-fältet 'Bor över' (fldGYYNnQi7XlfbhP) är ADDITIVT staging-fött
+  // 2026-07-22 och LIVE-verifierat skrivbart (L294) före mappningen.
+  borOver: z.boolean().optional(),
 });

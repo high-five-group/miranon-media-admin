@@ -297,3 +297,48 @@ test.describe('get-registrations — deltagar-shapens utökning (task-18.4)', ()
     expect(byId.get(ARBETSKO_EXPECTED.manuellId)?.antalGenomfordaEvent).toBeNull();
   });
 });
+
+// ── task-18.7: bor över-fältet i läs-shapen ──────────────────────────────────
+//
+// `borOver` ← Anmälningar.`Bor över` (ADDITIVT checkbox-fält fldGYYNnQi7XlfbhP,
+// staging-fött 2026-07-22). Kontraktet är BOOLEAN, aldrig null/undefined:
+// Airtable utelämnar en omarkerad checkbox helt ur record-svaret, så EF:en
+// normaliserar `=== true` — annars hade "urkryssad" blivit "vet ej" och
+// kryss-lägets tillstånd varit obestämt.
+//
+// Fixturen bär BÅDA utfallen på samma event (1 ikryssad av 4) — det är också
+// facit för den HÄRLEDDA summeringen (aldrig ett lagrat räknefält).
+test.describe('get-registrations — bor över i läs-shapen (task-18.7)', () => {
+  test('väg D: borOver är boolean på varje rad och speglar fixturens kryss', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const { status, registrations } = await callGetRegistrations(
+      request,
+      config,
+      jwt,
+      ARBETSKO_EVENT_ID,
+    );
+    expect(status).toBe(200);
+    expect(registrations).toHaveLength(ARBETSKO_EXPECTED.antalAnmalningar);
+
+    for (const reg of registrations) {
+      const raw = reg as unknown as Record<string, unknown>;
+      expect(raw, `rad ${reg.id}: nyckeln 'borOver' saknas i svaret`).toHaveProperty('borOver');
+      expect(typeof raw.borOver, `rad ${reg.id}: 'borOver' ska vara boolean`).toBe('boolean');
+    }
+
+    const byId = new Map(registrations.map((r) => [r.id, r]));
+    // Ikryssad ⇒ true; urkryssad/osatt ⇒ false. Skillnaden på samma event är
+    // beviset att fältet faktiskt LÄSES (en konstant hade gett samma värde).
+    expect(byId.get(ARBETSKO_EXPECTED.bekraftadId)?.borOver).toBe(true);
+    expect(byId.get(ARBETSKO_EXPECTED.obekraftadId)?.borOver).toBe(false);
+    expect(byId.get(ARBETSKO_EXPECTED.manuellId)?.borOver).toBe(false);
+    expect(byId.get(ARBETSKO_EXPECTED.medfoljandeId)?.borOver).toBe(false);
+
+    // Den HÄRLEDDA summeringen (eventsidans rad + 17.5:s listkortsrad) —
+    // räknas ur kryssen, aldrig ur ett lagrat räknefält.
+    expect(registrations.filter((r) => r.borOver).length).toBe(ARBETSKO_EXPECTED.borOverAntal);
+  });
+});

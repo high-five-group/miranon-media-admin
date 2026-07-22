@@ -482,3 +482,116 @@ test.describe('update-record — betalnings-vertikalen (task-18.8)', () => {
     }
   });
 });
+
+// Bor över-vertikalens operation (task-18.7, AC #1 — PRD task-18 beslut 8):
+// set-registration-lodging → EXAKT ['Bor över'] (ADDITIVT checkbox-fält
+// fldGYYNnQi7XlfbhP, staging-fött 2026-07-22). Deny-ytan är ett ÄKTA
+// Anmälningar-fält utanför listan (Status — bekräftelse-operationens fält):
+// blandning fälls, inte bara okända fält. Allow-vägen kryssar i den seedade
+// posten (TEST_REGISTRATION_RECORD_ID) och kryssar UR i finally — allowlisten
+// gatar fältet, inte värdet, så samma operation bär teardownen.
+// Field-isolering: ingen annan *.staging.test asserterar `borOver` på den
+// seedade posten (bor över-läsbeviset står mot ZZ-arbetsko-fixturen, ett annat
+// event) → parallell körning kan inte se den tillfälliga mutationen.
+test.describe('update-record — bor över-vertikalen (task-18.7)', () => {
+  /** Läs den seedade postens `borOver` via get-registrations (event-lösa grenen). */
+  async function readSeededBorOver(
+    request: APIRequestContext,
+    baseUrl: string,
+    authHeaders: Record<string, string>,
+    recordId: string,
+  ): Promise<boolean> {
+    const r = await request.get(`${baseUrl}/functions/v1/get-registrations`, {
+      headers: authHeaders,
+    });
+    expect(r.status()).toBe(200);
+    const body = (await r.json()) as {
+      registrations: ({ id: string } & Record<string, unknown>)[];
+    };
+    const rec = body.registrations.find((x) => x.id === recordId);
+    expect(rec, `seedad post ${recordId} hittades inte via get-registrations`).toBeTruthy();
+    return rec?.borOver === true;
+  }
+
+  /** Seed-ankaret (samma post som betalnings-testerna muterar och restaurerar). */
+  function seededLodgingRecordId(): string {
+    const recordId = process.env.TEST_REGISTRATION_RECORD_ID ?? '';
+    expect(
+      recordId,
+      'TEST_REGISTRATION_RECORD_ID måste vara satt i staging-env (lokalt: raden finns i .env.test.example — seed-ankaret, docs/BUILD-LOG.md)',
+    ).not.toBe('');
+    return recordId;
+  }
+
+  test('deny: set-registration-lodging med fält utanför allowlist → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+
+    // Allowlisten är EXAKT ['Bor över'] — 'Status' är ett äkta Anmälningar-fält
+    // men hör till send-registration-confirmation; blandning fälls före
+    // Airtable-anropet (operations-avgränsningen).
+    const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${userJwt}` },
+      data: {
+        operationKey: 'set-registration-lodging',
+        recordId: 'recAAAAAAAAAAAAA',
+        fields: { Status: 'Bekräftad (mail skickat)' },
+      },
+    });
+
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/not allowed for operation/);
+  });
+
+  test('allow: set-registration-lodging → 200 (kryssar i + kryssar ur i teardown)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+    const authHeaders = { Authorization: `Bearer ${userJwt}` };
+    const recordId = seededLodgingRecordId();
+
+    const original = await readSeededBorOver(request, config.baseUrl, authHeaders, recordId);
+
+    try {
+      const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'set-registration-lodging',
+          recordId,
+          fields: { 'Bor över': true },
+        },
+      });
+      expect(res.status()).toBe(200);
+
+      // Läs-tillbaka: bevisar att krysset faktiskt sattes (ej bara 200) OCH att
+      // läs-shapens nya `borOver` bär det.
+      expect(await readSeededBorOver(request, config.baseUrl, authHeaders, recordId)).toBe(true);
+
+      // Av-bocken går genom SAMMA operation (allowlisten gatar fältet, inte
+      // värdet) — kryss-lägets toggle är därmed kontraktstestad åt båda håll.
+      const av = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'set-registration-lodging',
+          recordId,
+          fields: { 'Bor över': false },
+        },
+      });
+      expect(av.status()).toBe(200);
+      expect(await readSeededBorOver(request, config.baseUrl, authHeaders, recordId)).toBe(false);
+    } finally {
+      // Restore: skriv tillbaka ursprungstillståndet så staging-data lämnas
+      // exakt som den hittades. Körs även om assertionen ovan kastar.
+      await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'set-registration-lodging',
+          recordId,
+          fields: { 'Bor över': original },
+        },
+      });
+    }
+  });
+});
