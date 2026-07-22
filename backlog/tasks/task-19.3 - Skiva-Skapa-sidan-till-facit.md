@@ -4,7 +4,7 @@ title: 'Skiva: Skapa-sidan till facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-22 19:00'
+updated_date: '2026-07-22 19:10'
 labels:
   - ready-for-agent
 dependencies:
@@ -88,13 +88,15 @@ FALLERANDE TEST (verbatim ur run-loggen):
 TOLKNING (ej åtgärdad av merge-agenten): det är kortets EGET nya SKARPA describe som faller — sidans live-läsning (events-anropet) svarar 401 i CI-miljön, medan de mockade testerna och den ÖVRIGA staging-sviten (inkl. tests/api staging) är gröna. Bygg-agentens lokala e2e-körning skedde off-port mot ett lokalt staging-bygge (port 4173, CORS-tillåten preview-origin) — den miljön bar en auth-form som CI-runnern inte bär. Fixen hör till bygg-agenten (auth/token-vägen för den skarpa läsningen i CI), inte till merge-kedjan.
 
 KORT-TILLSTÅND: status återställd To Do. AC/DoD-bockarna på branchen är INTE landade på main (ingen merge skedde) — kortet på main står orört i sitt för-batch-skick förutom denna not.
+
+MERGAD (S75 batch 3, studs-läkningen): PR #80 → merge-commit 6e0a78c. PR-CI-run 29949249222 GRÖN PER JOBB (6/6 fil-lästa: detect · lint+audit+typecheck · sentinel purge · docs link check · Test + Build [bär e2e-beviset] · CI Passed). Kortet står GRANSKNINGSFÄRDIGT — In Progress, DoD #5 (Marcus design-review mot FACIT-skapa-sidan.png) och DoD #6 öppna. Done-flippen är Marcus.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
