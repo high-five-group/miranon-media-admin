@@ -4,7 +4,7 @@ title: 'Skiva: Hantera-flödet (bekräftelse-vertikalen + Bekräfta alla)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-22 21:02'
+updated_date: '2026-07-22 21:27'
 labels:
   - ready-for-agent
 dependencies:
@@ -25,8 +25,6 @@ Lotta kan tömma kön: Skicka bekräftelse-knappen i det obekräftade kortets bo
 - [x] #2 Bekräfta alla kräver kontrollfråga och uppdaterar grupper + summeringsrader live i e2e
 - [x] #3 Schemalagt-fälten additiva i staging; krysset styr dem bevisat
 <!-- AC:END -->
-
-
 
 ## Implementation Notes
 
@@ -171,13 +169,28 @@ träffar inte den väggen.
 3. PROD: prod-fälten på Eventplanering saknas och EF:en är prod-exkluderad.
    Prod-deploy = separat auktoriserad handling MED fält FÖRE EF
    (ADR-066/067-carryn, fälla 37-mönstret).
+
+## Post-CI-bokföring (merge-agenten, S75 batch 4)
+
+DoD #3 bockad — CI grön PER JOBB, jobb-utfallen fil-lästa ur `gh run view --json jobs`:
+
+- PR #84, PR-CI run `29957994974` (headSha `cf4ecdc`): Lint + Audit + TypeCheck · Detect changed files · Docs link check · Staging sentinel purge · Test + Build · CI Passed or Skipped — ALLA success. E2E-beviset ligger som steg i Test + Build (repot har ingen separat e2e-jobb-nod): `E2E tests (staging) -> success`, 240 passed.
+- Merge-commit `b0835438d23e8f507bcaa21ccdf7719c496dfa32` (merge-commit, aldrig squash — SHA-beviset bevarat).
+- main-CI run `29958671101` (headSha `b083543`): samma sex jobb ALLA success; `API tests (pure)` · `API tests (staging)` · `E2E tests (staging)` · `A11y tests (axe-runner)` alla success.
+
+Test-count-delta mot föregående gröna main-run (`29955372036`, TASK-18.5-mergen):
+api-pure 190 → 202 (+12) · api-staging 134 → 142 (+8) · e2e 233 → 240 (+7) · a11y 62 → 62 (±0).
+
+Claims-kvitto: 21/21 filer i `9b87d5d..cf4ecdc` inom kortets deklarerade yta — noll filer utanför. Merge-tree mot färsk main exit 0 (inga konflikter, inget upplösnings-mandat behövde användas). Audit-arvet (sharp-läkningen `8f4aeb3`) verifierat som ancestor till branchen före PR.
+
+GRANSKNINGSFÄRDIG — väntar design-review (Marcus). Kortet står kvar In Progress; DoD #5 (design-review mot S73-facit i webbläsaren) är Marcus att bocka. Ingen final-summary skriven, status Done sätts INTE av merge-agenten.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
