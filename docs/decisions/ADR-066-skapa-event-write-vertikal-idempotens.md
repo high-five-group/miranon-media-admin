@@ -88,6 +88,41 @@ Idempotens-alternativen (affärsnyckel-merge / ingen idempotens / check-then-cre
 
 **Implementeras L1 (ej här):** ny EF `create-event` (egen katalog + `index.ts` `Deno.serve`, ej generisk `update-record`; säkerhets-kontrakt speglat: POST→405 / `requireUser`→401 / body→400 / `{error}`+`requestId` / `mapErrorToResponse`); ny allowlist-post; nytt schema-fält `Idempotensnyckel` staging+prod; tester `create-event.staging.test.ts` (deny/allow) + e2e. Merge-fältets live-skrivbarhet blir en explicit STOPPA-grind i L1. 6g-EF:er-carryn (staging-only) är oförändrad.
 
+## Tillägg (additivt) — 2026-07-22 (task-19.4, publiceringsflaggan)
+
+> Additiv utökning av create-setet (beslut 2). Besluts-texten ovan är
+> **oförändrad/immutabel**; detta tillägg lägger EN ny post i den kontrakterade
+> fält-tabellen och låser dess skriv-semantik. Ingen ny ADR-fil
+> (`check-adr-count` orörd) — flaggan är ADR-063-klassens additiva bas-fält, och
+> PRD task-19 förutsåg uttryckligen att ingen ny ADR behövs. Grund: S73-facit-
+> utökningen (K77–K84) gav skapa-sidan ett dra-till-bekräfta-handtag för
+> publicering; task-19.4 ger handtaget verkan.
+
+| Syfte | Fält (NAMN) | Fält-ID | Typ |
+|---|---|---|---|
+| Publicering | `Publicerad på miranon.se` | `fldyJKnJCP1brHwL6` _(staging)_ | checkbox (additivt, task-19.4) |
+
+- **Klient-input:** `publicera` (boolean, VALFRI) i create-event-bodyn. Närvarande
+  men av fel typ → 400 (deny-by-default; ingen coercion av `'ja'`/`1`).
+- **OARMERAT = fältet UTELÄMNAS ur `fields`-mapen.** EF:ens fields-map är TÄT: ett
+  inskrivet `false` SÄTTER checkboxen (och skulle vid en idempotent replay kunna
+  nolla en flagga som satts i basen). Utelämnande är därför enda korrekta formen
+  för "lämnar flaggan osatt" — invarianten hålls i hela kedjan: formuläret skickar
+  handtagets läge, adaptern utelämnar nyckeln när den inte är armerad, EF:en
+  skriver fältet enbart på `publicera === true`.
+- **Allowlist:** `'Publicerad på miranon.se'` läggs till `create-event`-postens
+  `allowedFields` (SSOT-grinden i `_shared/field-allowlists.ts`). Namnet är EXAKT
+  Airtable-fältnamnet; tabellen adresseras fortsatt per NAMN (ADR-050).
+- **Miljö-ordning (samma hårda förutsättning som `Idempotensnyckel`, §Kända fällor
+  37):** fältet är skapat ADDITIVT i **STAGING** (`apphjj8Q7lkXCMsL4`) 2026-07-22
+  och verifierat live före allowlist-låsningen. **PROD-fältet är INTE skapat** —
+  prod-EF-deploy av create-event FÅR INTE ske innan prod-fältet finns, annars
+  fäller Airtable skrivningen för ett armerat create. Prod-fält + prod-EF-deploy =
+  EN separat Marcus-auktoriserad handling (ADR-050/ADR-063).
+- **Avgränsning:** vad flaggan STYR på miranon.se (kalender-synlighet,
+  anmälningsformulär, event-sida) är **T79:s** kontrakt. Denna ADR bär enbart att
+  flaggan skrivs, aldrig vad den betyder för webbplatsen.
+
 ## Källor
 
 - **Stripe — Idempotent requests:** [docs.stripe.com/api/idempotent_requests](https://docs.stripe.com/api/idempotent_requests) + [error-handling (low-level)](https://docs.stripe.com/error-low-level) — UUID-nyckel bevarad över retries; strikt param-match-semantik (avgränsad i beslut 3).

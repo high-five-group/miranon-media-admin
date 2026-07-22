@@ -19,6 +19,12 @@ import { findDisallowedField, getOperation } from '../_shared/field-allowlists.t
 // har noll. `Månad/år` härleds ur Startdatum (ADR-066 b6 — basens manuella singleSelect
 // är en designbrist, §Kända fällor 36; vi route-around:ar den server-side).
 //
+// PUBLICERINGSFLAGGAN (task-19.4, ADR-066-tillägget): den VALFRIA boolean-inputen
+// `publicera` armerar checkbox-fältet `Publicerad på miranon.se`. Armerat → fältet läggs
+// i fields-mapen som `true`; OARMERAT → fältet UTELÄMNAS helt (se fields-bygget nedan).
+// Vad flaggan STYR på miranon.se (kalender-synlighet, anmälningsformulär, event-sida) är
+// T79:s kontrakt — EF:en bär bara flaggan. Prod-fältet måste finnas FÖRE prod-deploy.
+//
 // VALIDERING (manuell deny-by-default): speglar create-registration/save-segment som
 // validerar manuellt, INTE via Zod — Zod används bara i klient-/adapter-lagret (ADR-026),
 // inte i EF-request-vägen. Kodbas-konsistens > abstrakt schema-kanon (samma princip som
@@ -35,6 +41,10 @@ import { findDisallowedField, getOperation } from '../_shared/field-allowlists.t
 const OPERATION_KEY = 'create-event';
 const MERGE_FIELD = 'Idempotensnyckel';
 const STATUS_CREATE_DEFAULT = 'Planerat';
+// PUBLICERINGSFLAGGAN (task-19.4, ADR-066-tillägget) — EXAKT Airtable-fältnamnet
+// (checkbox, staging `fldyJKnJCP1brHwL6`). Skapa-sidans dra-till-bekräfta-handtag
+// armerar den; vad flaggan STYR på miranon.se är T79:s kontrakt, inte EF:ens.
+const PUBLICERAD_FIELD = 'Publicerad på miranon.se';
 
 // UUID v4-format (samma form som crypto.randomUUID() genererar klient-side).
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -128,6 +138,7 @@ Deno.serve(async (req) => {
     const maxPlatser = body?.maxPlatser;
     const status = typeof body?.status === 'string' && body.status.trim() ? body.status : STATUS_CREATE_DEFAULT;
     const eventtyp = body?.eventtyp;
+    const publicera = body?.publicera;
 
     // INVARIANT: Idempotency-Key krävs (header har företräde, body som fallback —
     // create-registration-mönstret). Saknas → 400. Format: UUID v4 (non-empty).
@@ -168,6 +179,11 @@ Deno.serve(async (req) => {
     if (typeof eventtyp !== 'string' || !eventtyp.startsWith('rec')) {
       return badRequest('eventtyp is required (Eventformat record-ID, rec-prefix)', corsHeaders);
     }
+    // publicera är VALFRI (task-19.4) — frånvaro = oarmerad flagga. Närvarande men av
+    // fel typ är däremot ett klient-fel (deny-by-default: ingen coercion av 'ja'/1).
+    if (publicera !== undefined && typeof publicera !== 'boolean') {
+      return badRequest('publicera must be a boolean when present', corsHeaders);
+    }
 
     // Allowlist-SSOT: hämta operationens tableId + allowedFields.
     const operation = getOperation(OPERATION_KEY);
@@ -191,6 +207,14 @@ Deno.serve(async (req) => {
       Eventtyp: [eventtyp],
       [MERGE_FIELD]: idempotencyKey,
     };
+
+    // PUBLICERINGSFLAGGAN (task-19.4): fältet läggs in ENDAST när handtaget är armerat.
+    // `fields` är en TÄT map — ett inskrivet `false`/`undefined` SÄTTER fältet (och skulle
+    // vid en idempotent replay dessutom kunna nolla en flagga som satts i basen). Att
+    // UTELÄMNA nyckeln är därför enda korrekta formen för "lämnar flaggan osatt".
+    if (publicera === true) {
+      fields[PUBLICERAD_FIELD] = true;
+    }
 
     // SSOT-grind: varje server-byggt fält måste vara på operationens allowlist
     // (defense-in-depth mot framtida kod-drift; deny → 400). 'Idempotensnyckel' ÄR

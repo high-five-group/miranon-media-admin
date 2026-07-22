@@ -181,3 +181,13 @@ statusbadge-beslutet).
 *Undvik:* status som namn på tidsfiltret (T14-grumligheten; gäller även
 URL-parametern).
 *I koden:* `?period=upcoming|past` (event-listans URL-state).
+
+**Publicerad på miranon.se** — eventets publiceringsflagga: markerar att
+eventet ska synas på miranon.se. Armeras i skapa-flödet med dra-till-bekräfta-
+handtaget (aldrig ett råkat klick) och bärs av basens likanämnda checkbox på
+Eventplanering. Flaggan säger enbart ATT eventet är publicerat — vad
+publiceringen STYR på webben (kalender-synlighet, anmälningsformulär,
+event-sida) är webbplatsens kontrakt, inte appens (tråd T79).
+*Undvik:* publik, live, synlig (otydliga om vad som blir synligt var).
+*I koden:* `publicera` (create-event-inputen); basfältet
+`Publicerad på miranon.se`.

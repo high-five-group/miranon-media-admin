@@ -16,6 +16,10 @@
 //      server-side, så field-allowlisten är en SSOT-grind mot kod-drift, ej en klient-deny-yta —
 //      samma mönster som create-registration deny-testet).
 //   5. anon (ingen JWT) → 401 (delad gateway/requireUser).
+//   6. PUBLICERINGSFLAGGAN (task-19.4): `publicera: true` → checkbox-fältet `Publicerad på
+//      miranon.se` SATT i råa record.fields; utelämnad ELLER explicit `false` → fältet OSATT
+//      (EF:en utelämnar det ur fields-mapen — ett skrivet false skulle sätta checkboxen);
+//      närvarande men av fel typ → 400. Bas-fältet är ADDITIVT och finns ENDAST i staging.
 //
 // EVENTFORMAT-ANKARE: eventtyp KRÄVS vid create (ADR-066 b5, GREN A) → driver Sessionsmall.
 // Staging Eventformat var TOMT vid bygget (Session 38) → en permanent sentinel-fixtur seedades
@@ -48,7 +52,13 @@ interface CreateBody {
   status?: string;
   eventtyp?: string;
   idempotencyKey?: string;
+  publicera?: unknown;
 }
+
+// Publiceringsflaggan (task-19.4) — EXAKT Airtable-fältnamnet i Eventplanering
+// (staging `fldyJKnJCP1brHwL6`, checkbox, additivt skapat 2026-07-22). Airtable
+// utelämnar en OMARKERAD checkbox ur `fields` → `undefined` ÄR "osatt".
+const PUBLICERINGSFALT = 'Publicerad på miranon.se';
 
 function postCreate(
   request: APIRequestContext,
@@ -151,6 +161,68 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
     expect(secondBody.created).toBe(false);
     // SAMMA record-ID → ingen dubblett skapades (upsert matchade på Idempotensnyckel).
     expect(secondBody.record.id).toBe(firstId);
+  });
+
+  test('PUBLICERINGSFLAGGAN: armerad create → flaggan SATT; oarmerad create → flaggan OSATT', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const eventtyp = eventformatId();
+
+    // (1) ARMERAT: publicera=true → EF:en lägger fältet i fields-mapen → checkboxen satt.
+    const armerad = await postCreate(request, config, jwt, {
+      ...validBody(eventtyp, randomUUID()),
+      publicera: true,
+    });
+    const armeradRaw = await armerad.text();
+    expect(armerad.status(), armeradRaw).toBe(201);
+    const armeradBody = JSON.parse(armeradRaw) as {
+      record: { id: string; fields: Record<string, unknown> };
+    };
+    expect(armeradBody.record.fields[PUBLICERINGSFALT]).toBe(true);
+
+    // (2) OARMERAT: publicera utelämnas helt → fältet UTELÄMNAS ur fields-mapen.
+    // Ett `false`/`undefined` som SKRIVS in skulle SÄTTA fältet — utelämnande är
+    // enda korrekta formen för "lämnar flaggan osatt" (kortets FAS-direktiv).
+    const oarmerad = await postCreate(
+      request,
+      config,
+      jwt,
+      validBody(eventtyp, randomUUID()), // ingen publicera-nyckel alls
+    );
+    const oarmeradRaw = await oarmerad.text();
+    expect(oarmerad.status(), oarmeradRaw).toBe(201);
+    const oarmeradBody = JSON.parse(oarmeradRaw) as {
+      record: { id: string; fields: Record<string, unknown> };
+    };
+    expect(oarmeradBody.record.fields[PUBLICERINGSFALT]).toBeUndefined();
+
+    // (3) EXPLICIT false → samma osatta utfall (klienten ska utelämna, men en
+    // explicit oarmerad flagga får ALDRIG bli en satt checkbox).
+    const explicitFalse = await postCreate(request, config, jwt, {
+      ...validBody(eventtyp, randomUUID()),
+      publicera: false,
+    });
+    const explicitRaw = await explicitFalse.text();
+    expect(explicitFalse.status(), explicitRaw).toBe(201);
+    const explicitBody = JSON.parse(explicitRaw) as {
+      record: { fields: Record<string, unknown> };
+    };
+    expect(explicitBody.record.fields[PUBLICERINGSFALT]).toBeUndefined();
+  });
+
+  test('deny: publicera av fel typ (ej boolean) → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const eventtyp = eventformatId();
+
+    const res = await postCreate(request, config, jwt, {
+      ...validBody(eventtyp, randomUUID()),
+      publicera: 'ja',
+    });
+    expect(res.status()).toBe(400);
+    expect(((await res.json()) as { error?: string }).error).toMatch(/publicera/i);
   });
 
   test('INVARIANT: saknad idempotencyKey → 400', async ({ request }) => {

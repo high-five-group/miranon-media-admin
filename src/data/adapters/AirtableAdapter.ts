@@ -322,6 +322,10 @@ export class AirtableAdapter implements DataSourceAdapter {
    * createRegistration). BÅDE 201 (created) OCH 200 (idempotent replay) är framgång och
    * returnerar samma `event`-shape — adaptern skiljer dem INTE (en replay är inte ett fel).
    * `.parse()` validerar vid datagränsen (ADR-026); råa `record`-fältet konsumeras ej här.
+   *
+   * PUBLICERINGSFLAGGAN (task-19.4): `publicera` skickas ENDAST när handtaget är armerat.
+   * En oarmerad flagga utelämnas ur payloaden hela vägen — EF:ens fields-map är tät, så
+   * ett skickat `false` skulle SÄTTA Airtable-fältet i stället för att lämna det osatt.
    */
   async createEvent(input: CreateEventInput): Promise<CreatedEvent> {
     const data = await postEdgeFunction<{ event: unknown }>('create-event', {
@@ -333,6 +337,7 @@ export class AirtableAdapter implements DataSourceAdapter {
       maxPlatser: input.maxPlatser,
       eventtyp: input.eventtyp,
       idempotencyKey: input.idempotencyKey,
+      ...(input.publicera === true ? { publicera: true } : {}),
     });
     return CreatedEventSchema.parse(data.event);
   }
