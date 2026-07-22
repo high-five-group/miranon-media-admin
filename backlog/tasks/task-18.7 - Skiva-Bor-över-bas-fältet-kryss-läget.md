@@ -4,7 +4,7 @@ title: 'Skiva: Bor över (bas-fältet + kryss-läget)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-22 22:10'
+updated_date: '2026-07-22 22:37'
 labels:
   - ready-for-agent
 dependencies:
@@ -59,13 +59,21 @@ Bor över-raden (säng-glyf + antal) som sista summeringsrad; radens klick öppn
 
 ### Öppna review-grindar (Marcus)
 - DoD #5 (design-review mot S73-facit) + #6 (facit-avprickning mot bilagor) lämnas ÖPPNA — review-bundna. Rendered computed-verifiering finns i e2e (kolumn-geometri, checked-states, live-räknare); skärmdumps-avprickning mot bilagorna görs vid granskningen.
+
+### Post-CI-bokföring (merge-agent, AFK-batch S75)
+GRANSKNINGSFÄRDIG — väntar design-review (Marcus). Kortet står kvar **In Progress**; ingen final-summary satt (tvåstegs-stängningen).
+- DoD #3 bockad: **CI grön per jobb** på pushad merge-commit.
+- Merge-commit: **3947cdd116d6c69e9f329552be351d68946fbc82** (PR #85, --merge/merge-commit — inte squash).
+- PR-CI run **29962324612** grön per jobb: Detect changed files · Lint+Audit+TypeCheck · Staging sentinel purge · Docs link check · Test+Build (API pure 202 · API staging 145 · E2E staging 245/248 pass, 3 skipped · A11y 62 · Build) · CI Passed.
+- main-CI run **29962935647** grön per jobb: samma jobb-uppsättning, alla success (E2E/API/A11y/Build).
+- DoD #5 (design-review mot S73-facit) + #6 (facit-avprickning mot bilagor) lämnas ÖPPNA — Marcus-bundna.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
