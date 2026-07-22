@@ -60,6 +60,10 @@ interface UpdateBody {
   // manuelltTillagda → 'Manuella platser' (K16-modellens mappning).
   reserverade?: number;
   manuelltTillagda?: number;
+  // Auto-utskickets två ADDITIVA bas-fält (task-18.6): schemalagt datum
+  // ('Deltagarinfo schemalagd') + opt-out ('Deltagarinfo auto-utskick avstängt').
+  deltagarinfoSchemalagd?: string | null;
+  deltagarinfoAutoAvstangt?: boolean;
 }
 
 function postUpdate(
@@ -246,6 +250,77 @@ test.describe('update-event — skarp conformance (task-18.1)', () => {
     const restored = await readEvent(request, config, jwt, eventId);
     expect(restored.maxPlatser).toBe(20);
     expect(restored.ort).toBe(SENTINEL_ORT);
+  });
+
+  test('auto-utskicks-fälten (task-18.6 AC #3): schemalagt datum + opt-out skrivs och läses tillbaka', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    // Eget sentinel-event — delade staging-fixturer muteras aldrig (TASK-6-klassen).
+    const eventId = await createSentinelEvent(request, config, jwt);
+
+    try {
+      // Krysset URKRYSSAT ("Skickas inte automatiskt"): opt-out true + datumet står kvar.
+      const av = await postUpdate(request, config, jwt, {
+        eventId,
+        deltagarinfoSchemalagd: '2026-09-01',
+        deltagarinfoAutoAvstangt: true,
+      });
+      const avRaw = await av.text();
+      expect(av.status(), avRaw).toBe(200);
+      const avBody = JSON.parse(avRaw) as {
+        event: Record<string, unknown>;
+        record: { fields: Record<string, unknown> };
+      };
+      // (i) SKRIV-BEVIS ur råa record.fields — ADDITIVA staging-fälten (2026-07-22).
+      expect(avBody.record.fields['Deltagarinfo schemalagd']).toBe('2026-09-01');
+      expect(avBody.record.fields['Deltagarinfo auto-utskick avstängt']).toBe(true);
+      // (ii) Domän-envelope (adapterns parse-väg).
+      const domain = EventSchema.parse(avBody.event);
+      expect(domain.deltagarinfoSchemalagd).toBe('2026-09-01');
+      expect(domain.deltagarinfoAutoAvstangt).toBe(true);
+      // (iii) OMLÄSNING via get-event — läs-vägen krysset renderas ur.
+      const reread = await readEvent(request, config, jwt, eventId);
+      expect(reread.deltagarinfoSchemalagd).toBe('2026-09-01');
+      expect(reread.deltagarinfoAutoAvstangt).toBe(true);
+
+      // Krysset IKRYSSAT igen: opt-out false (checkbox false ⇒ Airtable utelämnar
+      // fältet ur svaret — läs-vägen normaliserar till false, aldrig undefined).
+      const pa = await postUpdate(request, config, jwt, {
+        eventId,
+        deltagarinfoSchemalagd: '2026-09-02',
+        deltagarinfoAutoAvstangt: false,
+      });
+      expect(pa.status()).toBe(200);
+      const paReread = await readEvent(request, config, jwt, eventId);
+      expect(paReread.deltagarinfoSchemalagd).toBe('2026-09-02');
+      expect(paReread.deltagarinfoAutoAvstangt).toBe(false);
+    } finally {
+      // TEARDOWN: rensa schemat (null ⇒ Airtable tömmer date-fältet) + opt-out av.
+      await postUpdate(request, config, jwt, {
+        eventId,
+        deltagarinfoSchemalagd: null,
+        deltagarinfoAutoAvstangt: false,
+      });
+    }
+
+    // Restore-bevis (utanför finally — får inte svälja assert-fel i cleanup-vägen).
+    const restored = await readEvent(request, config, jwt, eventId);
+    expect(restored.deltagarinfoSchemalagd ?? null).toBeNull();
+    expect(restored.deltagarinfoAutoAvstangt).toBe(false);
+  });
+
+  test('deny: ogiltig deltagarinfoSchemalagd-form → 400 (task-18.6)', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await postUpdate(request, config, jwt, {
+      eventId: 'recAAAAAAAAAAAAA',
+      deltagarinfoSchemalagd: '01/09/2026',
+    });
+    expect(res.status()).toBe(400);
+    expect(((await res.json()) as { error?: string }).error).toMatch(/deltagarinfoSchemalagd/i);
   });
 
   test('deny: negativt reserverade/manuelltTillagda → 400', async ({ request }) => {

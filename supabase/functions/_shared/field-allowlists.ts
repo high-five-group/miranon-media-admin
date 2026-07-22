@@ -72,6 +72,19 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Anmälningar',
     allowedFields: ['Påminnelse anmälningsavgift skickad', 'Påminnelse slutbetalning skickad'],
   },
+  // Bekräfta en anmälan (task-18.6, PRD task-18 beslut 7) — bekräftelsemailet (mail 1)
+  // OCH status-flippen är EN operation server-side. send-registration-confirmation-EF:en
+  // bygger `fields` SERVER-SIDE ur den UPPLÄSTA anmälan (klienten skickar bara record-ID:n)
+  // — listan är därför en SSOT-grind mot framtida kod-drift, ej en klient-nåbar deny-yta.
+  // EXAKT två fält: 'Status' (fldWr5cCPNx9HEKtL, singleSelect → 'Bekräftad (mail skickat)')
+  // och 'Bekräftelse skickad' (fld0jnbkIbuFAumgG, dateTime) — BÅDA befintliga och
+  // LIVE-VERIFIERADE mot staging-schemat (describe_table tbloOcrppVoyrHbrq 2026-07-22, L294)
+  // INNAN posten låstes; INGA nya bas-fält behövdes för denna vertikal. Betalfälten och
+  // gamla odelade 'Notering' ligger MEDVETET utanför listan. Tabell per NAMN (ADR-050).
+  'send-registration-confirmation': {
+    tableId: 'Anmälningar',
+    allowedFields: ['Status', 'Bekräftelse skickad'],
+  },
   // Spara fri-text-anteckning på en Person (Fas 6a L6, Session 23). Skrivbart
   // multilineText-fält (fldWGlNr3ujRHo85w, data-model.md § Personer — write-fält);
   // Synk-gate 2 beviljad av Marcus. Tabell per NAMN (ADR-050 bas-portabilitet);
@@ -181,6 +194,15 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Extra platser',
       'Manuella platser',
       'Status',
+      // Auto-utskickets två ADDITIVA fält (task-18.6, PRD task-18 beslut 14; ADR-063):
+      // 'Deltagarinfo schemalagd' (fldB4rk2VZcm4GdxY, date ISO) + 'Deltagarinfo
+      // auto-utskick avstängt' (fldPrSKNUTJpJqctw, checkbox) — skapade additivt i
+      // STAGING 2026-07-22 och skrivbarheten LIVE-VERIFIERAD (PATCH + rensning) INNAN
+      // posterna låstes (L294). Basens ord 'Deltagarinfo' (UI-ordet är eventinfo,
+      // ORDLISTA). null på date-fältet RENSAR (Airtable-PATCH-semantik) — krysset
+      // styr dem, utskicks-MOTORN ligger utanför kortet.
+      'Deltagarinfo schemalagd',
+      'Deltagarinfo auto-utskick avstängt',
     ],
   },
   // Bulk-mail på segment → revisionsrad i Utskickslogg (Fas 6h, ADR-067 D7 — repots

@@ -146,6 +146,18 @@ tidsstämpeln, aldrig ett lagrat tillstånd.
 *I koden:* `deltagarinfoSkickad` (Registration-shapen, speglar bas-fältet);
 `eventinfoSignal` (eventsidans härledning).
 
+**Auto-utskick** — det SCHEMALAGDA eventinfo-utskicket per event: ett datum
+(normalt tvåveckorsgränsen) plus ett opt-out, som Lotta styr med krysset i
+eventsidans signal-slot. Två additiva bas-fält bär det (`Deltagarinfo
+schemalagd` respektive `Deltagarinfo auto-utskick avstängt` — basens ord, jfr
+Eventinfo). Begreppet är STYRNINGEN, inte sändningen: utskicks-motorn som ska
+läsa fälten finns ännu inte (PRD task-18 §Utanför omfattningen), och krysset
+lovar därför bara vad basen bär. Kristalliserat i task-18.6.
+*Undvik:* automatiskt mail (tvetydigt mot bekräftelsemailet), schemaläggning
+(mekanismen, inte begreppet).
+*I koden:* `deltagarinfoSchemalagd` / `deltagarinfoAutoAvstangt` (Event-shapen);
+`AutoKryss` (`detail/Deltagare.tsx`).
+
 **Obekräftad/Bekräftad** — anmälans bekräftelsestatus: Bekräftad ⟺
 anmälningsbekräftelsen (mail 1, bär betalningsinstruktionerna) är skickad;
 Obekräftade är Lottas att-göra-kö på eventsidan. Språket ligger exakt på

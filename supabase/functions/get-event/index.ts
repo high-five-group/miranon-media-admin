@@ -139,6 +139,13 @@ function mapEvent(
     // eventKey-formen — aldrig null, OPTIONAL i EventSchema).
     reserverade: scalarNumber(f['Extra platser']) ?? undefined, // 'Extra platser'
     manuelltTillagda: scalarNumber(f['Manuella platser']) ?? undefined, // 'Manuella platser'
+    // Auto-utskicket (task-18.6, PRD task-18 beslut 14): schemalagt datum + opt-out
+    // ur de ADDITIVA staging-fälten. Datumet: osatt → nyckeln UTELÄMNAS (eventKey-
+    // formen). Opt-out: Airtable utelämnar en OKRYSSAD checkbox ur svaret →
+    // normaliseras till FALSE (aldrig undefined) så krysset alltid har ett definit
+    // läge. Håll i synk med update-event/index.ts.
+    deltagarinfoSchemalagd: scalarString(f['Deltagarinfo schemalagd']) ?? undefined,
+    deltagarinfoAutoAvstangt: f['Deltagarinfo auto-utskick avstängt'] === true,
     viaFormular: belaggning.viaFormular, // länkade Anmälningar, Källa TOM
     medfoljande: belaggning.medfoljande, // länkade Anmälningar, Källa '+1'
     vantelista: belaggning.vantelista, // aktiva event-kopplade Väntelisteplatser
