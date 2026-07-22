@@ -21,6 +21,26 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 76 🟢 PÅGÅENDE (2026-07-22) — T80/T81/T82-mellansessionen: grillning T81 → T80 + hub-bunten i ett plugin-bump-moment
+
+> Scope: sessionsdok `2026-07-22-session-76.md` Del 1 (kanonisk
+> plats): ordningsfrågans verkställande — egen mellansession FÖRE
+> S75-resumen (S75 står pausad orörd; batch-huvudspåret vid resume
+> oförändrat). Kadensrad per L67.
+
+- [x] **Dok-födelse** (2026-07-22): `11f7047` grön per jobb (run
+  29924758953; Docs link check körd, Test+Build docs-only-skippade).
+  Numrering disk-verifierad (074/L307/T83/f45/TASK-29; T82
+  Marcus-reggad `eb139fa` in i scopet). **NÄSTA: grillning T81.**
+- [x] **T81 grillad + spoke-levererad** (2026-07-22, denna landning):
+  5 beslut, alla A på Code-rek med Marcus-kvittens, research-grundade
+  (Google eng-practices · Conventional Comments · Bugzilla ·
+  Scrum/DoR · K8s-triage) → **ADR-071-amenderingen** (klassrymden
+  3+2 · tvådelat gränstest · fix-vågens femdelade kontrakt inkl.
+  PR-formen kodifierad · iterations-skivans triage-födsel ·
+  Done-flipp-grinden per klass). T81-registerraden → spoke LEVERERAD;
+  kvar hub-referensraden (hub-bunten). **NÄSTA: grillning T80.**
+
 ### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-22; paus 3 — review-vågen levererad, work-batch 12 vid resume) — Batch-exekveringen: work-batch max 22, två pipelines
 
 > Scope: sessionsdok `2026-07-21-session-75.md` Del 1 (kanonisk

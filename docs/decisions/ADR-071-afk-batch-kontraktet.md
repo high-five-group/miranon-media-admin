@@ -8,6 +8,64 @@
 - Fas: Session 61–62 — arbetssätt/exekverings-process (ingen
   byggfas-status-ändring)
 
+> **Amendering (Session 76, 2026-07-22 — T81 review-utfalls-klasserna;
+> grillad samsyn S76 Del 2 [5 beslut, samtliga på Code-rekommendation
+> med Marcus-kvittens, varav två villkorade "djupt genomtänkt och
+> branschledarmässigt" → research-pass före låsning]; research-grund:
+> Google eng-practices · Conventional Comments · Bugzilla/Mozilla-
+> resolutionerna · Scrum sprint review + Definition of Ready ·
+> Kubernetes-triage; empirisk grund: S75 Del 8–10, review-våg 1 +
+> fix-vågorna PR #78/#79):** fyra poster som förlänger beslut 3 förbi
+> "Done-flippen är Marcus" med review-utfallens hantering;
+> beslutstexten nedan bevaras oförändrad (immutabilitet).
+>
+> 1. **Klassrymden — tre hanterings-klasser + två bokförings-utfall.**
+>    **FIX** (byggfel mot facit/kort) och **FACIT-REVIDERING** (Marcus
+>    ändrar facitet med komplett direktiv inom kortets leverans-yta;
+>    rivs ÖPPET, aldrig tyst) hanteras i fix-vågen; **ITERATION**
+>    (öppen designfråga ELLER ny yta/nytt scope) blir ny skiva.
+>    Bokförings-utfall: **INGEN DEFEKT** (facit-exakt leverans, eller
+>    ägs-av-annat-kort → bokförs på ägande kort) · **STALE LÄGE**
+>    (granskningen träffade äldre serverat läge → omgranskning i
+>    färskt läge, ingen klassning dessförinnan). Gränstestet är
+>    TVÅDELAT: *komplett direktiv?* + *inom levererad yta?* — båda JA
+>    → fix-våg; annars skiva. (T81-radens ursprungliga avsikts-formel
+>    ersatt öppet: den felklassade S75:s facit-revideringar redan vid
+>    första mötet med empirin.)
+> 2. **Fix-vågens kontrakt (femdelat).** (i) Färskt-läge-kontroll +
+>    verifiering av varje review-punkt mot kod/kort/facit FÖRE
+>    klassning — utforsknings-belägg, aldrig gissning; (ii)
+>    klassningen eskaleras som STOPPA-frågor i domän-klartext (L305)
+>    — Marcus-kvittensen är vågens avfyrningskvitto; (iii) samlad våg
+>    = EN PR med merge-commit (ej squash — SHA-bevisen) och CI grön
+>    per jobb på PR + main: fix-vågens leveransform AVVIKER medvetet
+>    från beslut 5:s trunk-push (fixar rör redan levererade ytor
+>    under Marcus aktiva granskning; main hålls stabil tills vågen är
+>    helt grön och landar atomiskt); (iv) rött-först-bevis i samma
+>    körform per fix; (v) kort-kommentar per berört kort — DoD #5
+>    fortsatt öppen tills omgranskning.
+> 3. **Iterations-skivan — född vid triagen, beslutsgrindad
+>    exekvering.** Föds OMEDELBART vid triagen (aldrig tyst, ADR-053)
+>    via backlog-CLI:t som barn under familje-PRD:n: öppna
+>    beslutsfrågor på kortet, DoD-arv + extra-grindar vid födseln,
+>    beroenden deklarerade. `ready-for-agent` flippas FÖRST på Marcus
+>    designbeslut (grillning som norm vid design-fork, enkel kvittens
+>    vid liten fråga); därefter ordinarie batch-ordning — ingen
+>    gräddfil (Ready-gate-/needs-triage-mönstret).
+> 4. **Done-flipp-grinden per klass.** Utan anmärkning → flipp på
+>    EXPLICIT kort-kvittens (generell positiv signal räcker aldrig);
+>    FIX/FACIT-REVIDERING → flipp först efter mergad fix-våg + Marcus
+>    omgranskning i färskt läge; ITERATION blockerar ALDRIG
+>    moderkortets flipp (nytt scope är nytt kort). Flippen utförs i
+>    tvåstegs-stängningens form med kvittensen som kvitto.
+>
+> Termerna (fix-våg · iterations-skiva · facit-revidering) har hemvist
+> HÄR — EJ ORDLISTA.md (processtermer, inte produktdomän;
+> T71-precedentet i beslut 2). Hub-referensrad i work-batch-skillen
+> tas i S76:s hub-bunt (T78 b + T82) = ett plugin-bump-moment.
+> Kanonisk samsyns-trail: `tasks/sessions/2026-07-22-session-76.md`
+> Del 2.
+
 ## Kontext
 
 T61 (AFK/Ralph-loopen, armerad S50 med designbeslutet "loopen är en yttre
