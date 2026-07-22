@@ -16,7 +16,12 @@
 import { type APIRequestContext, expect, test } from '@playwright/test';
 import { z } from 'zod';
 import { EventSchema } from '../../src/domain/schemas';
-import { BELAGGNING_EVENT_ID, BELAGGNING_EXPECTED } from './fixtures';
+import {
+  ARBETSKO_EVENT_ID,
+  ARBETSKO_EXPECTED,
+  BELAGGNING_EVENT_ID,
+  BELAGGNING_EXPECTED,
+} from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 async function callGetEvent(
@@ -173,6 +178,63 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
     expect(event.viaFormular).toBeGreaterThanOrEqual(0);
     expect(event.medfoljande).toBeGreaterThanOrEqual(0);
     expect(event.vantelista).toBeGreaterThanOrEqual(0);
+  });
+
+  // ── Bor över-summeringen (task-17.5; AC #1) ──
+  // HÄRLEDD räkning ur eventets länkade Anmälningars 'Bor över'-kryss (fältet
+  // fött task-18.7). Faciten är PERMANENT seedad (DELTAT-FÖRST — 18.7 satte
+  // ARBETSKO-fixturens bekraftadId=true, övriga tre false → 1 av 4). Ingen
+  // efemär seed: den permanenta fixturen bär ett känt kryss (mer robust än
+  // teardown-beroende seed). BELAGGNING-fixturen bär NOLL kryss → noll-fallets
+  // bevis (summeringen är ett definit tal ≥0, aldrig undefined/utelämnad i
+  // aggregerings-EF:erna). Både get-event (single) och get-events (listan —
+  // listkortets faktiska datakälla) aggregerar den.
+
+  test('bor över-summeringen (AC #1): get-event härleder antalet ur fixturens kryss', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    // ARBETSKO: 1 av 4 länkade Anmälningar ikryssad → summering 1.
+    const arbetskoRes = await callGetEvent(request, config, jwt, ARBETSKO_EVENT_ID);
+    expect(arbetskoRes.status()).toBe(200);
+    const arbetsko = EventSchema.parse(((await arbetskoRes.json()) as { event: unknown }).event);
+    expect(arbetsko.borOverAntal, 'ARBETSKO: 1 ikryssad Bor över (bekraftadId)').toBe(
+      ARBETSKO_EXPECTED.borOverAntal,
+    );
+
+    // BELAGGNING: 0 ikryssade → summering 0 (noll är ett definit värde, ej utelämnat).
+    const belaggningRes = await callGetEvent(request, config, jwt, BELAGGNING_EVENT_ID);
+    expect(belaggningRes.status()).toBe(200);
+    const belaggning = EventSchema.parse(
+      ((await belaggningRes.json()) as { event: unknown }).event,
+    );
+    expect(belaggning.borOverAntal, 'BELAGGNING: 0 ikryssade Bor över → 0').toBe(0);
+  });
+
+  test('bor över-summeringen (AC #1): get-events aggregerar per event i listan (listkortets källa)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    expect(res.status()).toBe(200);
+    const events = z.array(EventSchema).parse(((await res.json()) as { events: unknown }).events);
+
+    // get-events är listkortets datakälla (queryKeys.events.list) → borOverAntal
+    // MÅSTE aggregeras här, inte bara i get-event. ARBETSKO-eventet bär 1.
+    const arbetsko = events.find((e) => e.id === ARBETSKO_EVENT_ID);
+    expect(arbetsko, 'ARBETSKO-eventet ska finnas i get-events-listan').toBeDefined();
+    expect(arbetsko?.borOverAntal, 'listans ARBETSKO-event: 1 ikryssad Bor över').toBe(
+      ARBETSKO_EXPECTED.borOverAntal,
+    );
+
+    // Noll-fallet i listan: BELAGGNING-eventet bär 0 (definit, aldrig undefined).
+    const belaggning = events.find((e) => e.id === BELAGGNING_EVENT_ID);
+    expect(belaggning?.borOverAntal, 'listans BELAGGNING-event: 0 ikryssade Bor över').toBe(0);
   });
 
   test('okänt ID → 404 + body { error } (mall-kontraktet, ärvt från get-person)', async ({

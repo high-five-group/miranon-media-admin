@@ -62,4 +62,14 @@ export const EventSchema = z.object({
   // 'Event (länk)' (task-18.2, additivt staging-fält; NOT Flyttad till anmälan
   // — get-waitlist:s aktiv-semantik). Utanför taket, aldrig ett segment (K22).
   vantelista: z.number().optional(),
+
+  // Bor över-summeringen (task-17.5, PRD task-18 beslut 8 / task-17 story 9):
+  // HÄRLEDD räkning av ikryssade 'Bor över' bland eventets länkade Anmälningar —
+  // listkortets säng-rad (EventCard) läser den. INGET lagrat räknefält (ADR-063:
+  // antalet härleds ALLTID ur kryssen; själva checkbox-fältet fött i task-18.7).
+  // ADDITIVT-OPTIONAL i samma form som beläggningsräkningarna ovan: get-events OCH
+  // get-event aggregerar den (ALLTID ett tal ≥0 där), medan update-event/
+  // create-event och äldre cache-svar UTELÄMNAR den (undefined droppas av
+  // JSON.stringify — aldrig null, OPTIONAL i EventSchema så z.array-parsen håller).
+  borOverAntal: z.number().optional(),
 });

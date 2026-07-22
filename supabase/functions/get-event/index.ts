@@ -64,18 +64,26 @@ function linkedIds(value: unknown): string[] {
  * ALDRIG länk-filter i formel (T15-klassen — matchar primär-display, ej ID).
  * Saknar basen länkfälten (t.ex. prod före den separat auktoriserade
  * fält-deployen) → tomma arrays → 0-räkningar, aldrig fel.
+ *
+ * borOverAntal (task-17.5): HÄRLEDD räkning av ikryssade 'Bor över' bland
+ * eventets länkade Anmälningar — listkortets/eventsidans säng-rad. Läses ur
+ * SAMMA registrerings-batch som per-källa-uppdelningen (fältet adderat till
+ * fields-listan) → ingen extra rundtur. Checkbox: Airtable UTELÄMNAR en
+ * okryssad ruta ur svaret → `=== true` normaliserar (aldrig null; samma
+ * mappning som get-registrations, task-18.7). Inget lagrat räknefält (ADR-063).
  */
 async function fetchBelaggning(f: Fields): Promise<{
   viaFormular: number;
   medfoljande: number;
   vantelista: number;
+  borOverAntal: number;
 }> {
   const regIds = linkedIds(f['Anmälningar (länkat fält)']);
   const waitIds = linkedIds(f['Väntelista (länkat fält)']);
 
   const [regs, waits] = await Promise.all([
     regIds.length > 0
-      ? fetchByRecordIds(REGISTRATIONS_TABLE, regIds, ['Källa'])
+      ? fetchByRecordIds(REGISTRATIONS_TABLE, regIds, ['Källa', 'Bor över'])
       : Promise.resolve([]),
     waitIds.length > 0
       ? fetchByRecordIds(WAITLIST_TABLE, waitIds, ['Flyttad till anmälan'])
@@ -84,15 +92,18 @@ async function fetchBelaggning(f: Fields): Promise<{
 
   let viaFormular = 0;
   let medfoljande = 0;
+  let borOverAntal = 0;
   for (const reg of regs) {
     const kalla = selectName(reg.fields['Källa']);
     if (kalla === null) viaFormular += 1;
     else if (kalla === '+1') medfoljande += 1;
+    // Bor över är checkbox-fältet på anmälan (task-18.7): true = bor över.
+    if (reg.fields['Bor över'] === true) borOverAntal += 1;
   }
   // Checkbox: true = flyttad (historik, utanför kön); blank/false = aktiv.
   const vantelista = waits.filter((w) => w.fields['Flyttad till anmälan'] !== true).length;
 
-  return { viaFormular, medfoljande, vantelista };
+  return { viaFormular, medfoljande, vantelista, borOverAntal };
 }
 
 // Fältnamn från Airtable → ren API-respons. Bas-fälten mappas IDENTISKT med
@@ -102,7 +113,12 @@ async function fetchBelaggning(f: Fields): Promise<{
 // get-events/index.ts och update-event/index.ts om fält ändras.
 function mapEvent(
   record: { id: string; fields: Record<string, unknown> },
-  belaggning: { viaFormular: number; medfoljande: number; vantelista: number },
+  belaggning: {
+    viaFormular: number;
+    medfoljande: number;
+    vantelista: number;
+    borOverAntal: number;
+  },
 ) {
   const f = record.fields;
 
@@ -149,6 +165,10 @@ function mapEvent(
     viaFormular: belaggning.viaFormular, // länkade Anmälningar, Källa TOM
     medfoljande: belaggning.medfoljande, // länkade Anmälningar, Källa '+1'
     vantelista: belaggning.vantelista, // aktiva event-kopplade Väntelisteplatser
+    // Bor över-summeringen (task-17.5): härlett antal ikryssade 'Bor över'
+    // bland eventets Anmälningar (listkortets/eventsidans säng-rad). Håll i
+    // synk med get-events mapEvent (samma härledning ur registrerings-batchen).
+    borOverAntal: belaggning.borOverAntal,
   };
 }
 

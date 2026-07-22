@@ -180,8 +180,10 @@ anmälda och ett säng-kryss per person (ikryssade överst, stabil ordning under
 markeringen, live-räknare) — en ARBETSRAD, inte en filterlista (S73 K50/K52).
 Obockad är NEUTRAL (att inte bo över är normalläge, inte avvikelse — skilt
 från betalkryssets röda obetalt-semantik).
-*I koden:* `borOver` (läs-shapen); write-operationen `set-registration-lodging`;
-`BorOverRad` (`detail/Deltagare.tsx`); basens fält `Bor över`.
+*I koden:* `borOver` (anmälans läs-shape); `borOverAntal` (eventets läs-shape —
+listkortets härledda summering, `EventCard`, task-17.5); write-operationen
+`set-registration-lodging`; `BorOverRad` (`detail/Deltagare.tsx`); basens fält
+`Bor över`.
 
 **Reserverad plats** — en plats som hålls av en anmälan i väntan på betalning
 (anmälningsavgift och/eller slutbetalning); uteblir betalningen frigörs
