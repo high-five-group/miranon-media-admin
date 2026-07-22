@@ -106,13 +106,22 @@
   STOPPADES KONTROLLERAT i steg 5 inför Marcus fönster-reload** —
   PR #76 OPEN, INGET mergat, PR-CI-run 29902222934 (headSha
   165fb66) fortsätter server-side; worktree wt-188-merge + lokal
-  branch task/18.8 står; remote 165fb66. **NÄSTA (efter reload,
-  vilken yta som helst): kolla run 29902222934 per jobb — grön →
-  kör merge-kedjans steg 6–10 på PR #76 (merge-commit, main-vakt,
-  disk-verifiering, DoD#3-bokföring, städ per kontraktsordningen);
-  röd → ny diagnosrunda. Därefter: Marcus review-våg 9(+1) kort →
-  ny batch-order för resterande 12 → end-pass-docs (Del 6-listan) →
-  S75-skörd (lesson-kandidater 1–3 + täcknings-passet).**
+  branch task/18.8 står; remote 165fb66. **NÄSTA: se nästa rad.**
+- [x] **18.8 I HAMN — 10/22 GRANSKNINGSFÄRDIGA I MAIN** (2026-07-22,
+  Del 7 kanonisk plats): reloaden överlevd, run 29902222934 GRÖN
+  per jobb → steg 6–10 körda inline: **PR #76 MERGAD** (`3a36968`,
+  main-run 29903576104 grön per jobb) · DoD #3-bokföring `e826d3f`
+  (run 29904039235, 0 failure) · städ i kontraktsordning (0
+  task-brancher lokalt+remote, 1 worktree). 18.8:s väg: två
+  diagnos-/åtgärdsrundor (TZ-förankringen `7592ca1` +
+  scenario-isoleringen `165fb66`, determinism-bevis 3/3 + 20/20)
+  — fynd TASK-26/27/28. **NÄSTA: (1) MARCUS REVIEW-VÅG — 10 kort
+  (17.1 · 17.2 · 17.3 · 17.4 · 18.1 · 18.2 · 18.3 · 18.8 · 19.1 ·
+  19.2) + TASK-25-fokusringen; per kvittens: DoD #5 + final-summary
+  och Done-flipp (tvåstegs); (2) ny batch-order för resterande 12;
+  (3) end-pass-docs (data-model-synken · fälla 45 ·
+  STATE-STRATEGY); (4) end-pass/skörd på Marcus-signal;
+  (5) T18-plugin-reinstall (1.17.0).**
   kanonisk plats): v2-halt vid 17.3-mergen — TVÅ nya
   upstream-advisories (fast-uri + linkify-it, dev-only-kedjor)
   fällde ALLA runs; 17.3 + 18.1 FÄRDIGBYGGDA på brancher (claims
