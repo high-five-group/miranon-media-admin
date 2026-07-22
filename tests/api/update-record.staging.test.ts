@@ -18,7 +18,7 @@
 // Auth-/anonym-deny (401) testas inte här utan i require-user-sviten via
 // den delade requireUser-gatewayen (täcker alla Edge Functions).
 
-import { expect, test } from '@playwright/test';
+import { type APIRequestContext, expect, test } from '@playwright/test';
 import { HISTORY_PERSON_ID } from './fixtures';
 import { getApiConfig, getValidUserJWT } from './helpers';
 
@@ -224,6 +224,259 @@ test.describe('update-record — update-person-note (Personer.Anteckningar)', ()
           operationKey: 'update-person-note',
           recordId: HISTORY_PERSON_ID,
           fields: { Anteckningar: original ?? '' },
+        },
+      });
+    }
+  });
+});
+
+// Betalnings-vertikalens tre operationer (task-18.8, AC #1 — PRD task-18
+// beslut 9): mark-final-payment-paid → ['Slutbetalning'] ·
+// update-registration-payment-note → de TVÅ additiva per-betalnings-
+// noteringsfälten · log-payment-reminder → de TVÅ additiva per-betalnings-
+// tidsstämpelfälten (påminnelse-vägvalet ADDITIVA FÄLT, bokfört i skivan).
+// Deny-yta per operation: ett ÄKTA Anmälningar-fält som ligger MEDVETET
+// utanför listan (Anmälningsavgift resp. gamla odelade Notering/
+// Betalningspåminnelse skickad) → findDisallowedField fäller före Airtable-
+// anropet. Allow-vägen muterar den seedade posten
+// (TEST_REGISTRATION_RECORD_ID) och restaurerar i finally (ADR-049-mönstret:
+// allowlisten gatar fältet, inte värdet). Läs-tillbaka via get-registrations
+// bevisar samtidigt läs-shapens fyra nya fält (deploy-bundna: röda före
+// EF-redeploy av update-record + get-registrations).
+test.describe('update-record — betalnings-vertikalen (task-18.8)', () => {
+  /** Läs den seedade postens betalningsfält via get-registrations (event-lösa grenen). */
+  async function readSeededPayment(
+    request: APIRequestContext,
+    baseUrl: string,
+    authHeaders: Record<string, string>,
+    recordId: string,
+  ): Promise<{
+    slutbetalning: string | null;
+    noteringAnmalningsavgift: string | null;
+    noteringSlutbetalning: string | null;
+    paminnelseAnmalningsavgiftSkickad: string | null;
+    paminnelseSlutbetalningSkickad: string | null;
+  }> {
+    const r = await request.get(`${baseUrl}/functions/v1/get-registrations`, {
+      headers: authHeaders,
+    });
+    expect(r.status()).toBe(200);
+    const body = (await r.json()) as {
+      registrations: ({ id: string } & Record<string, unknown>)[];
+    };
+    const rec = body.registrations.find((x) => x.id === recordId);
+    expect(rec, `seedad post ${recordId} hittades inte via get-registrations`).toBeTruthy();
+    return {
+      slutbetalning: (rec?.slutbetalning ?? null) as string | null,
+      noteringAnmalningsavgift: (rec?.noteringAnmalningsavgift ?? null) as string | null,
+      noteringSlutbetalning: (rec?.noteringSlutbetalning ?? null) as string | null,
+      paminnelseAnmalningsavgiftSkickad: (rec?.paminnelseAnmalningsavgiftSkickad ?? null) as
+        | string
+        | null,
+      paminnelseSlutbetalningSkickad: (rec?.paminnelseSlutbetalningSkickad ?? null) as
+        | string
+        | null,
+    };
+  }
+
+  function seededRecordId(): string {
+    const recordId = process.env.TEST_REGISTRATION_RECORD_ID ?? '';
+    expect(
+      recordId,
+      'TEST_REGISTRATION_RECORD_ID måste vara satt i staging-env (lokalt: raden finns i .env.test.example — seed-ankaret, docs/BUILD-LOG.md)',
+    ).not.toBe('');
+    return recordId;
+  }
+
+  test('deny: mark-final-payment-paid med fält utanför allowlist → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+
+    // Allowlisten är EXAKT ['Slutbetalning'] — Anmälningsavgift är ett äkta
+    // Anmälningar-fält men hör till mark-registration-fee-paid; blandning
+    // fälls (operations-avgränsningen, inte bara okända fält).
+    const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${userJwt}` },
+      data: {
+        operationKey: 'mark-final-payment-paid',
+        recordId: 'recAAAAAAAAAAAAA',
+        fields: { Anmälningsavgift: 'Mottagen' },
+      },
+    });
+
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/not allowed for operation/);
+  });
+
+  test('deny: update-registration-payment-note med gamla odelade Notering → 400', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+
+    // Gamla 'Notering' (fldPMsiRoLWcgUbsv) ligger MEDVETET utanför listan —
+    // per-betalnings-vertikalen skriver ENDAST de två additiva fälten
+    // (ADR-063: det odelade fältet lämnas orört av appen).
+    const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${userJwt}` },
+      data: {
+        operationKey: 'update-registration-payment-note',
+        recordId: 'recAAAAAAAAAAAAA',
+        fields: { Notering: 'x' },
+      },
+    });
+
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/not allowed for operation/);
+  });
+
+  test('deny: log-payment-reminder med gamla odelade Betalningspåminnelse skickad → 400', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+
+    // Gamla 'Betalningspåminnelse skickad' (fldE0cR4r9vI0rKiL) ligger MEDVETET
+    // utanför listan — samma odelad-fält-avgränsning som noteringen.
+    const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${userJwt}` },
+      data: {
+        operationKey: 'log-payment-reminder',
+        recordId: 'recAAAAAAAAAAAAA',
+        fields: { 'Betalningspåminnelse skickad': '2026-07-22T10:00:00.000Z' },
+      },
+    });
+
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/not allowed for operation/);
+  });
+
+  test('allow: mark-final-payment-paid → 200 (muterar Slutbetalning + restaurerar)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+    const authHeaders = { Authorization: `Bearer ${userJwt}` };
+    const recordId = seededRecordId();
+
+    const original = (await readSeededPayment(request, config.baseUrl, authHeaders, recordId))
+      .slutbetalning;
+
+    try {
+      const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'mark-final-payment-paid',
+          recordId,
+          fields: { Slutbetalning: 'Mottagen' },
+        },
+      });
+      expect(res.status()).toBe(200);
+
+      // Läs-tillbaka: bevisar att mutationen faktiskt satte fältet (ej bara 200).
+      expect(
+        (await readSeededPayment(request, config.baseUrl, authHeaders, recordId)).slutbetalning,
+      ).toBe('Mottagen');
+    } finally {
+      // Restore: allowlisten gatar fältet, inte värdet — samma operation
+      // skriver tillbaka ursprungsvärdet ('Ej mottagen' om posten saknade).
+      await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'mark-final-payment-paid',
+          recordId,
+          fields: { Slutbetalning: original ?? 'Ej mottagen' },
+        },
+      });
+    }
+  });
+
+  test('allow: update-registration-payment-note → 200 (båda additiva fälten + restaurerar)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+    const authHeaders = { Authorization: `Bearer ${userJwt}` };
+    const recordId = seededRecordId();
+
+    const original = await readSeededPayment(request, config.baseUrl, authHeaders, recordId);
+    const AVGIFT_SENTINEL = 'ZZ-18.8-avgift-notering';
+    const SLUT_SENTINEL = 'ZZ-18.8-slut-notering';
+
+    try {
+      const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'update-registration-payment-note',
+          recordId,
+          fields: {
+            'Notering anmälningsavgift': AVGIFT_SENTINEL,
+            'Notering slutbetalning': SLUT_SENTINEL,
+          },
+        },
+      });
+      expect(res.status()).toBe(200);
+
+      // Läs-tillbaka bevisar mutationen OCH läs-shapens nya noteringsfält.
+      const after = await readSeededPayment(request, config.baseUrl, authHeaders, recordId);
+      expect(after.noteringAnmalningsavgift).toBe(AVGIFT_SENTINEL);
+      expect(after.noteringSlutbetalning).toBe(SLUT_SENTINEL);
+    } finally {
+      // Restore: null → '' (tom multilineText round-trippar till null vid
+      // läsning — update-person-note-precedentens teardown-form).
+      await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'update-registration-payment-note',
+          recordId,
+          fields: {
+            'Notering anmälningsavgift': original.noteringAnmalningsavgift ?? '',
+            'Notering slutbetalning': original.noteringSlutbetalning ?? '',
+          },
+        },
+      });
+    }
+  });
+
+  test('allow: log-payment-reminder → 200 (tidsstämpel + restaurerar)', async ({ request }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+    const authHeaders = { Authorization: `Bearer ${userJwt}` };
+    const recordId = seededRecordId();
+
+    const original = await readSeededPayment(request, config.baseUrl, authHeaders, recordId);
+    const STAMP = '2026-07-22T10:00:00.000Z';
+
+    try {
+      const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'log-payment-reminder',
+          recordId,
+          fields: { 'Påminnelse anmälningsavgift skickad': STAMP },
+        },
+      });
+      expect(res.status()).toBe(200);
+
+      // Läs-tillbaka: epoch-jämförelse (Airtable normaliserar ISO-formen,
+      // tidpunkten är kontraktet — inte strängformen).
+      const after = await readSeededPayment(request, config.baseUrl, authHeaders, recordId);
+      expect(after.paminnelseAnmalningsavgiftSkickad, 'tidsstämpeln sattes inte').not.toBeNull();
+      expect(Date.parse(after.paminnelseAnmalningsavgiftSkickad as string)).toBe(Date.parse(STAMP));
+    } finally {
+      // Restore: null RENSAR dateTime-fältet (Airtable-PATCH-semantik) —
+      // fixturen lämnas exakt som den hittades.
+      await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'log-payment-reminder',
+          recordId,
+          fields: {
+            'Påminnelse anmälningsavgift skickad': original.paminnelseAnmalningsavgiftSkickad,
+          },
         },
       });
     }
