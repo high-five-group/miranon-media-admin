@@ -2,18 +2,25 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, type Route, test } from '@playwright/test';
 
 /**
- * Fas 6f L2 — Skapa nytt event (/mer/skapa-event). create-event-vertikalens klient-yta:
+ * Fas 6f L2 — Skapa nytt event. create-event-vertikalens klient-yta:
  * pessimistiskt formulär mot create-event-EF (ADR-066 b4). Eventtyp REQUIRED (b5) ur
  * get-event-formats; Event/Typ-options ur get-events.
+ *
+ * HEMVIST-FLYTTEN (task-19.2, PRD task-19 beslut 2, Marcus-kvitterad
+ * 2026-07-21): sidan bor i EVENT-FAMILJEN på /event/skapa; Mer-ingången är
+ * RIVEN och gamla routen /mer/skapa-event omdirigerar hit (öppet hanterad —
+ * inga döda URL:er i PWA-historik/bokmärken). Formens INNEHÅLL mot
+ * S73-facit-utökningen ägs av task-19.3.
  *
  * Körs i chromium-authenticated-projektet (storageState). DETERMINISTISK via `page.route`-
  * MOCK av get-events (options), get-event-formats (Eventtyp-dropdown) och create-event
  * (mutation) — INGEN riktig staging-write, så ingen sentinel-städning behövs (jfr api-testet
  * som skriver skarpt). Fixtur-formerna speglar EF:ernas RIKTIGA svar (adaptrarna .parse():ar).
  *
- * Täckning: happy path (fyll → submit → pessimistisk navigation till skapat event),
- * required-validering (tom Eventtyp → submit blockeras klient-side, fel synligt, ingen
- * navigation), axe 0.
+ * Täckning: hemvisten (URL:en består + back-länken till event-listan + gamla
+ * routens omdirigering), happy path (fyll → submit → pessimistisk navigation
+ * till skapat event), required-validering (tom Eventtyp → submit blockeras
+ * klient-side, fel synligt, ingen navigation), axe 0.
  */
 
 const GET_EVENTS = /\/functions\/v1\/get-events/;
@@ -142,7 +149,9 @@ test.describe('Skapa nytt event (Fas 6f L2)', () => {
       });
     });
 
-    await page.goto('/mer/skapa-event');
+    await page.goto('/event/skapa');
+    // Hemvisten (task-19.2): URL:en BESTÅR — ingen omdirigering bort.
+    await expect(page).toHaveURL(/\/event\/skapa$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
 
     await fillForm(page);
@@ -151,6 +160,30 @@ test.describe('Skapa nytt event (Fas 6f L2)', () => {
     // Pessimistisk: navigerar till det skapade eventet vid server-OK.
     await page.waitForURL(`**/event/${CREATED_ID}`);
     expect(createCalled).toBe(true);
+  });
+
+  test('hemvisten är event-familjen: back-länken pekar på event-listan', async ({ page }) => {
+    await page.goto('/event/skapa');
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+
+    // Back-länken följer hemvist-flytten (task-19.2): till event-listan,
+    // inte Mer (jfr Mer-undersidornas "← Tillbaka till Mer").
+    await expect(page.getByRole('link', { name: '← Tillbaka till Event' })).toHaveAttribute(
+      'href',
+      '/event',
+    );
+    await expect(page.getByRole('link', { name: '← Tillbaka till Mer' })).toHaveCount(0);
+  });
+
+  test('gamla routen /mer/skapa-event omdirigerar till /event/skapa (rivningen öppet hanterad)', async ({
+    page,
+  }) => {
+    await page.goto('/mer/skapa-event');
+
+    // Route-nivå-omdirigering (task-19.2): PWA-historik och bokmärken dör
+    // inte — de landar på den nya hemvisten.
+    await page.waitForURL('**/event/skapa');
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeVisible();
   });
 
   test('required-validering: tom Eventtyp → submit blockeras klient-side, fel synligt, ingen navigation', async ({
@@ -162,7 +195,7 @@ test.describe('Skapa nytt event (Fas 6f L2)', () => {
       await route.fulfill({ status: 201, contentType: 'application/json', body: '{}' });
     });
 
-    await page.goto('/mer/skapa-event');
+    await page.goto('/event/skapa');
     await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
 
     await fillForm(page, { withFormat: false });
@@ -175,7 +208,7 @@ test.describe('Skapa nytt event (Fas 6f L2)', () => {
   });
 
   test('axe 0 violations på det renderade formuläret', async ({ page }) => {
-    await page.goto('/mer/skapa-event');
+    await page.goto('/event/skapa');
     await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
 
     // Interagera så fält-states (vald option) ingår i scanet.
