@@ -4,7 +4,7 @@ title: 'Skiva: Personkorten (metaytan + historiken)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-22 19:48'
+updated_date: '2026-07-22 20:15'
 labels:
   - ready-for-agent
 dependencies:
@@ -143,13 +143,55 @@ describe-block med egen mock. Ingen fil utanför ytan rörd.
 Egen dev-server på port **5188** plus `PLAYWRIGHT_TEST_BASE_URL` (hoppar
 över webServer-blocket). Sviten är helt route-mockad, så staging-CORS är
 aldrig i spel. Port 5173 (Marcus dev-server) ALDRIG rörd.
+
+## Post-CI-bokföring (orkestratorn, main)
+
+**DoD #3 — CI grön per jobb: BOCKAD.**
+
+- **PR-CI** (PR #82, headSha `97f11aa`) — run **29952727375**, samtliga
+  sex jobb gröna: Detect changed files · Lint + Audit + TypeCheck ·
+  Staging sentinel purge · Docs link check · **Test + Build** ·
+  CI Passed or Skipped. E2E-steget uttryckligen `success`
+  (artefakt-uppladdningen `skipped` — den kör bara vid rött).
+  Stegvis: api pure 190 · api staging 132 · **e2e 232 passed /
+  3 skipped / 0 failed** · a11y 62 · build grön.
+- **main-CI** (merge-commit `32061af`) — run **29953409618**, samma
+  sex jobb gröna, e2e-steget `success`: e2e 232 passed / 3 skipped ·
+  a11y 62 · build grön.
+- **Test-count-delta:** föregående main-run (29949852372, TASK-19.3:s
+  merge) gav e2e **224 passed / 3 skipped**. Nu **232 / 3** — delta
+  **+8**, exakt de åtta nya personkorts-testerna. Noll röda i CI:
+  de två lokalt röda i bygg-agentens fulla svit är miljöbundna
+  (port-5188-CORS) och existerar inte i CI:s körform.
+
+**Merge:** merge-commit `32061af3d4ad1bbcfc3e4e287abfd8f72ad3808d`
+(PR #82, `--merge`, aldrig squash — SHA-bevisen bevarade).
+
+**Claims-kvitto (3/3 filer inom deklarerad yta):**
+`backlog/tasks/task-18.5 - Skiva-Personkorten-metaytan-historiken.md` ·
+`src/components/events/detail/Deltagare.tsx` ·
+`tests/e2e/event-detail.staging.test.ts`. Ingen fil utanför ytan;
+inga delade horisontella filer rörda (noll schema-, adapter-,
+allowlist-, token- eller ORDLISTA-edit) — merge-tree-grinden mot
+färsk main gav exit 0 utan konflikt.
+
+**FAS-direktiven verifierade mot disk av orkestratorn:**
+räknaren `antalGenomfordaEvent` är EXAKT TASK-18.4:s Personer-räknare
+(`get-registrations/index.ts` rad 142 → shapen → historikraden) — ingen
+andra väg till samma siffra · `kalla` (fldwk2sl7CkBv9epw) var redan
+mappad ur 18.4, inget nytt fält behövdes.
+
+**STATUS: GRANSKNINGSFÄRDIG — väntar design-review (Marcus).**
+Kortet står kvar **In Progress**. DoD #5 (design-review mot S73-facit
+i webbläsaren) är den enda öppna punkten och är Marcus handling;
+Done-flippen sker efter hans granskning (ADR-071 beslut 3).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
