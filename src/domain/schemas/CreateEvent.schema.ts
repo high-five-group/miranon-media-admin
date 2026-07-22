@@ -42,6 +42,11 @@ export type CreatedEvent = z.infer<typeof CreatedEventSchema>;
  * `fields` server-side ur dem. `idempotencyKey` (UUID v4) bevaras över retries av SAMMA
  * submit (ADR-066 b3) — klienten genererar den när formuläret öppnas, ej per knapptryck.
  * `status` utelämnas → EF:en defaultar 'Planerat'.
+ *
+ * `publicera` (task-19.4) är PUBLICERINGSFLAGGAN — dra-till-bekräfta-handtagets läge.
+ * VALFRI och additiv: frånvaro betyder oarmerad flagga (adaptern skickar nyckeln endast
+ * när den är armerad, EF:en skriver Airtable-fältet endast då). Vad flaggan STYR på
+ * miranon.se är T79:s kontrakt.
  */
 export type CreateEventInput = {
   event: string;
@@ -52,4 +57,5 @@ export type CreateEventInput = {
   maxPlatser: number;
   eventtyp: string;
   idempotencyKey: string;
+  publicera?: boolean;
 };

@@ -129,6 +129,14 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // från motsatt sida (Anmälningar/Närvaro) sätts ALDRIG. 'Idempotensnyckel' MÅSTE vara med —
   // EF:en skriver det server-side som merge-nyckel för upserten (ADR-066 b3); annars fäller
   // findDisallowedField vår egen skrivning. Tabell per NAMN (ADR-050 bas-portabilitet).
+  // 'Publicerad på miranon.se' (task-19.4, ADR-066-tillägget) är PUBLICERINGSFLAGGAN som
+  // skapa-sidans dra-till-bekräfta-handtag armerar. ADDITIVT checkbox-fält, live-verifierat
+  // mot STAGING-schemat (tblVE3UKWl1CKrphV, fält `fldyJKnJCP1brHwL6`, skapat 2026-07-22 —
+  // skrivbart per konstruktion, L294) INNAN posten låstes; namnet är EXAKT Airtable-fältnamnet.
+  // ⚠️ PROD-fältet är INTE skapat — hård prod-deploy-förutsättning (fält FÖRE EF, per miljö;
+  // samma ordning som 'Idempotensnyckel', data-model.md §Kända fällor 37). EF:en skriver
+  // fältet ENDAST när flaggan är ARMERAD; oarmerat utelämnas det ur fields-mapen (ett skrivet
+  // `false` skulle SÄTTA checkboxen till omarkerad — utelämnande är formen för "osatt").
   'create-event': {
     tableId: 'Eventplanering',
     allowedFields: [
@@ -141,6 +149,7 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Max antal platser',
       'Status',
       'Eventtyp',
+      'Publicerad på miranon.se',
       'Idempotensnyckel',
     ],
   },

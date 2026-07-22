@@ -22,6 +22,12 @@ import { loggaInFristaende } from './helpers/fristaende-session';
  *      .purge-staging-policy.json target `create-event-sentineler`).
  *      Idempotensen byggs INTE om här — den är kontraktstestad i
  *      tests/api/create-event.staging.test.ts och regressions-bevakas där.
+ *
+ * PUBLICERINGSFLAGGAN (task-19.4): handtaget armerar bas-fältet `Publicerad på
+ * miranon.se`. Mockade sviten bevisar payload-formen i BÅDA lägena (armerat →
+ * `publicera: true`; oarmerat → nyckeln HELT frånvarande); skarpa sviten bevisar
+ * armeringen ände-till-ände mot staging via create-event-svarets råa record.fields.
+ * Allowlist-avgränsningen + osatt-formen kontraktstestas i api-sviten.
  */
 
 const GET_EVENTS = /\/functions\/v1\/get-events/;
@@ -40,6 +46,13 @@ const CREATED_ID = 'recEVTcreated00001';
 
 /** Sentinel-markören för skarpa staging-writes (ADR-060; purge-policyns target). */
 const SENTINEL_ORT = 'ZZ-create-event-test';
+
+/**
+ * Publiceringsflaggan (task-19.4) — EXAKT Airtable-fältnamnet i Eventplanering
+ * (staging `fldyJKnJCP1brHwL6`, checkbox). Läses ur create-event-svarets råa
+ * `record.fields` i det skarpa testet = skriv-beviset ände-till-ände.
+ */
+const PUBLICERINGSFALT = 'Publicerad på miranon.se';
 
 /** En komplett Event-rad (get-events-svarets form, EventSchema). */
 function ev(eventNamn: string, typ: string): Record<string, unknown> {
@@ -197,9 +210,7 @@ test.describe('Skapa nytt event — facit-formen + flödet (task-19.3)', () => {
     await expect(page.getByRole('button', { name: 'Avbryt', exact: true })).toBeVisible();
   });
 
-  test('publicerings-handtaget renderas (utan verkan) och armeras med tangentbordet', async ({
-    page,
-  }) => {
+  test('publicerings-handtaget renderas och armeras med tangentbordet', async ({ page }) => {
     await page.goto('/event/skapa');
     await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
 
@@ -255,7 +266,7 @@ test.describe('Skapa nytt event — facit-formen + flödet (task-19.3)', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
 
     await fyllFormular(page);
-    // Handtaget armeras — men publiceringen har ÄNNU ingen verkan (19.4).
+    // Handtaget ARMERAS → publiceringsflaggan följer med i payloaden (19.4).
     await page.getByRole('switch', { name: 'Publicera på miranon.se' }).focus();
     await page.keyboard.press(' ');
     await page.getByRole('button', { name: 'Skapa event', exact: true }).click();
@@ -278,12 +289,49 @@ test.describe('Skapa nytt event — facit-formen + flödet (task-19.3)', () => {
     expect(payload?.maxPlatser).toBe(20);
     expect(payload?.eventtyp).toBe(FORMAT_2_DAGAR.id);
     expect(typeof payload?.idempotencyKey).toBe('string');
-    // Publiceringsflaggan finns INTE i kontraktet ännu (19.4 äger den).
-    expect(payload && 'publicera' in payload).toBe(false);
+    // Publiceringsflaggan (19.4): ARMERAT handtag → nyckeln med i payloaden.
+    expect(payload?.publicera).toBe(true);
 
     // Nästa steg ett klick bort: till det skapade eventet.
     await page.getByRole('button', { name: 'Till eventet', exact: true }).click();
     await page.waitForURL(`**/event/${CREATED_ID}`);
+  });
+
+  test('publiceringsflaggan: OARMERAT handtag → nyckeln utelämnas HELT ur payloaden', async ({
+    page,
+  }) => {
+    let skickadPayload: Record<string, unknown> | null = null;
+    await page.route(CREATE_EVENT, async (route: Route) => {
+      skickadPayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          event: CREATED_EVENT,
+          record: { id: CREATED_ID, fields: {} },
+          created: true,
+        }),
+      });
+    });
+
+    await page.goto('/event/skapa');
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+
+    await fyllFormular(page);
+    // Handtaget lämnas OARMERAT — skapa utan publicering är default-vägen
+    // (PRD-berättelse 6).
+    await expect(page.getByRole('switch', { name: 'Publicera på miranon.se' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    await page.getByRole('button', { name: 'Skapa event', exact: true }).click();
+    await expect(page.getByTestId('bekraftelse')).toBeVisible();
+
+    // Ett skickat `false` skulle SÄTTA basens checkbox (EF:ens fields-map är tät)
+    // — därför måste nyckeln vara HELT frånvarande, inte falsk.
+    const payload = skickadPayload as Record<string, unknown> | null;
+    expect(payload).not.toBeNull();
+    expect(payload && 'publicera' in payload).toBe(false);
   });
 
   test('validering: tomt Eventformat → Skapa blockeras klient-side, fel synligt, ingen write', async ({
@@ -381,7 +429,22 @@ test.describe('Skapa nytt event — SKARPT mot staging (AC #1)', () => {
     // (eventformat-etikett-mappningen bevisad mot LIVE-data).
     await valj(page, 'falt-eventformat', '2 dagar');
 
+    // PUBLICERINGSFLAGGAN (task-19.4 AC #2): handtaget ARMERAS i UI:t — hela
+    // vägen genom vertikalen till checkboxen i basen.
+    const handtag = page.getByRole('switch', { name: 'Publicera på miranon.se' });
+    await handtag.focus();
+    await page.keyboard.press(' ');
+    await expect(handtag).toHaveAttribute('aria-checked', 'true');
+
+    const createSvar = page.waitForResponse((r) => r.url().includes('/create-event'));
     await page.getByRole('button', { name: 'Skapa event', exact: true }).click();
+
+    // SKRIV-BEVISET för flaggan: EF:ens råa `record.fields` (samma envelope som
+    // api-kontraktstestet läser) visar checkboxen SATT på den skapade raden.
+    const createBody = (await (await createSvar).json()) as {
+      record: { id: string; fields: Record<string, unknown> };
+    };
+    expect(createBody.record.fields[PUBLICERINGSFALT]).toBe(true);
 
     // Bekräftelseläget är skriv-beviset: det renderas ENBART på server-OK
     // (201 created / 200 idempotent replay) från den skarpa create-event-EF:en.

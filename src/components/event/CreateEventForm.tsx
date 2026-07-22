@@ -58,10 +58,13 @@ function MiranonSe() {
  * Eventformat som driver Sessionsmall). Formatens etiketter ("2 dagar"/"1 dag")
  * mappas i `eventformatEtikett` ur den befintliga format-läsningen.
  *
- * PUBLICERING UTAN VERKAN (task-19.3-avgränsningen): publiceringsflaggan finns
- * ÄNNU INTE i basen — handtaget renderas per facit men dess läge skickas
- * ALDRIG till create-event. task-19.4 lägger det additiva bas-fältet, utökar
- * allowlisten och wirar handtaget.
+ * PUBLICERINGEN (task-19.4): handtagets armerade läge skickas som `publicera`
+ * till create-event, som sätter det additiva bas-fältet `Publicerad på
+ * miranon.se`. OARMERAT skickas ALDRIG som `false` — nyckeln utelämnas hela
+ * vägen ned (adaptern), eftersom EF:ens fields-map är tät och ett skrivet
+ * `false` skulle SÄTTA fältet. Vad flaggan STYR på miranon.se (kalender-
+ * synlighet, anmälningsformulär, event-sida) är T79:s kontrakt, inte detta
+ * korts — här armeras den bara.
  *
  * KONTRAKTET (ADR-066, oförändrat — ingen ny operation): server-side-byggd
  * fält-shape, allowlist-SSOT, Airtable-nativ upsert-idempotens på en KLIENT-
@@ -90,7 +93,7 @@ export function CreateEventForm() {
   const [datum, setDatum] = useState<{ start: CalendarDate; end: CalendarDate } | null>(null);
   const [maxPlatser, setMaxPlatser] = useState<number | null>(null);
   const [format, setFormat] = useState('');
-  // Publicerings-handtaget: lokalt läge UTAN verkan tills flaggan finns (19.4).
+  // Publicerings-handtaget: armerat läge skickas som `publicera` till create-event (19.4).
   const [publicera, setPublicera] = useState(false);
   const [visaFel, setVisaFel] = useState(false); // true efter första Skapa-försöket
 
@@ -165,6 +168,9 @@ export function CreateEventForm() {
       maxPlatser,
       eventtyp: format,
       idempotencyKey,
+      // Publiceringsflaggan (19.4): armerat läge armerar bas-fältet. Oarmerat
+      // utelämnas hela vägen ned — adaptern skickar aldrig ett `false`.
+      publicera,
     });
   }
 
