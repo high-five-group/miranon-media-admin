@@ -18,6 +18,20 @@ export const RegistrationStatus = {
 
 export type RegistrationStatusValue = (typeof RegistrationStatus)[keyof typeof RegistrationStatus];
 
+// Anmälningar.Källa (fldwk2sl7CkBv9epw) — singleSelect med 3 options + TOM.
+// Live-verifierad mot STAGING-schemat 2026-07-22 (task-18.4, L294) före
+// shape-utökningen. TOM (frånvarande värde) är den BÄRANDE normen: en anmälan
+// som kom via webbformuläret lämnar fältet orört — eventsidans arbetskö läser
+// därför `kalla === null` som "via formulär" (S73-facit K16/K37: normen får
+// inget märke; endast Manuell/+1 bär pill).
+export const RegistrationSource = {
+  MANUELL: 'Manuell',
+  MEDFOLJANDE: '+1',
+  VANTELISTA: 'Väntelista',
+} as const;
+
+export type RegistrationSourceValue = (typeof RegistrationSource)[keyof typeof RegistrationSource];
+
 export const FlagStatus = {
   NY_ANMALAN: 'Ny anmälan',
   EJ_MOTTAGEN: 'Ej mottagen',

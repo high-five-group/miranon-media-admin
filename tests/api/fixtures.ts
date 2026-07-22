@@ -41,3 +41,43 @@ export const BELAGGNING_EXPECTED = {
   vantelista: 1,
   antalAnmalda: 5,
 } as const;
+
+/**
+ * `ZZ-arbetsko-fixtur` — permanent arbetskö-fixtur i staging-Eventplanering
+ * (task-18.4; seedad via MCP 2026-07-22, Ort 'ZZ-arbetsko-fixtur' — medvetet
+ * SKILD från ADR-060-purgens sentinel-markör, precis som beläggnings-fixturen).
+ * EGET event (inte beläggnings-fixturens) så BELAGGNING_EXPECTED:s räkningar
+ * står orörda. Bär deltagar-shape-utökningens SAMTLIGA fall mot kända värden:
+ *
+ *   | anmälan       | Källa   | Status                  | Inskickad (UTC)  | bekräftelse | eventinfo | medföljandeTill | antalGenomfordaEvent |
+ *   |---------------|---------|-------------------------|------------------|-------------|-----------|-----------------|----------------------|
+ *   | Bekraftad     | (tom)   | Bekräftad (mail skickat)| 2025-09-01 08:15 | 09-02 10:00 | 09-03 11:00 | –             | 1 (Person-batch)     |
+ *   | Manuell       | Manuell | Obekräftad              | 2025-09-04 07:05 | –           | –         | –               | null (ingen Person)  |
+ *   | Obekraftad    | (tom)   | Obekräftad              | 2025-09-05 09:30 | –           | –         | –               | null (ingen Person)  |
+ *   | Medfoljande   | +1      | Obekräftad              | 2025-09-06 12:45 | –           | –         | Bekraftad       | null (ingen Person)  |
+ *
+ * `antalGenomfordaEvent` = 1 kommer ur PERSONEN `ZZ-Arbetsko Person 01`
+ * (`rec7F8jYc7rczwwkM`, formeln `Antal genomförda event` flddy8JND3YnlgZxe)
+ * som bär EN Deltagande-rad (Fjärrskådning, Närvarande) på detta event.
+ * Number-vs-null-skillnaden är batch-läsningens skarpa bevis: bara en faktisk
+ * Personer-läsning kan ge 1 på en rad och null på en annan.
+ *
+ * Ingen EF kan skriva Källa TOM/'+1', `Medföljande till` eller de två
+ * skickad-tidsstämplarna → seedad fixtur är enda deterministiska vägen
+ * (beläggnings-/väntelistefixturernas precedent). STÄDA INTE.
+ */
+export const ARBETSKO_EVENT_ID = 'recZyRIzbqWSifAQO';
+export const ARBETSKO_EXPECTED = {
+  /** Anmälan med BÅDA skickad-tidsstämplarna + Person-länk (Källa tom). */
+  bekraftadId: 'rec2OjLD2qiKzZCA0',
+  /** Anmälan med Källa 'Manuell' — alla nya tidsstämpel-/länkfält null. */
+  manuellId: 'recn7huvtrMiJgXxv',
+  /** Anmälan utan någonting satt — null-vägens bevis (Källa tom). */
+  obekraftadId: 'recwH8y4FTZZi1wYg',
+  /** Anmälan med Källa '+1' + `Medföljande till` → bekraftadId. */
+  medfoljandeId: 'recFf7eNoFfNJhfvh',
+  bekraftelseSkickad: '2025-09-02T10:00:00.000Z',
+  deltagarinfoSkickad: '2025-09-03T11:00:00.000Z',
+  antalGenomfordaEvent: 1,
+  antalAnmalningar: 4,
+} as const;

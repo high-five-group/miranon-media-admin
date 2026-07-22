@@ -135,13 +135,28 @@ odefinierad i UB 16 (granskningsfyndet L269); definierad i task-7-grillningen
 (S63, grillad samsyn); mekaniken bor i task-7:s PRD.
 *Undvik:* "Laddar…"-textrader (mönstret som underkändes i S62), spinner.
 
+**Eventinfo** — det andra mailet i Lottas utskicksflöde: den praktiska
+informationen inför eventet (plats, tider, medtag), som går ut cirka två
+veckor före start. UI-ordet är alltid "eventinfo" — basens fält heter
+`Deltagarinfo skickad` och byter INTE namn (Marcus-språket S73 K42; basens
+namn står kvar tills bas-maximeringen T16 eventuellt enar dem). Dags-att-
+skicka-signalen på eventsidan är härledd ur tvåveckorsgränsen mot
+tidsstämpeln, aldrig ett lagrat tillstånd.
+*Undvik:* deltagarinfo, deltagarinformation (basens ord i UI-text).
+*I koden:* `deltagarinfoSkickad` (Registration-shapen, speglar bas-fältet);
+`eventinfoSignal` (eventsidans härledning).
+
 **Obekräftad/Bekräftad** — anmälans bekräftelsestatus: Bekräftad ⟺
 anmälningsbekräftelsen (mail 1, bär betalningsinstruktionerna) är skickad;
 Obekräftade är Lottas att-göra-kö på eventsidan. Språket ligger exakt på
 basens Status-ord ("Obekräftad"/"Bekräftad (mail skickat)") — Marcus-beslut
-S73 K53, som ersatte konvergensens arbetsord.
+S73 K53, som ersatte konvergensens arbetsord. Arbetsköns gruppering läser
+`Status` (anmälans tillstånd); summeringsraden "Anmälningsbekräftelse
+skickad" läser utskicks-tidsstämpeln (`Bekräftelse skickad`) — samma
+begrepp, två källor som visas var för sig när de divergerar (task-18.4).
 *Undvik:* ohanterad, hanterad (S73 K39–K52-arbetsorden, rivna K53).
-*I koden:* `arBekraftad` (eventsidans prototyp); basens fält `Status`.
+*I koden:* `arBekraftad` (eventsidans arbetskö, `detail/Deltagare.tsx`);
+basens fält `Status`.
 
 **Reserverad plats** — en plats som hålls av en anmälan i väntan på betalning
 (anmälningsavgift och/eller slutbetalning); uteblir betalningen frigörs

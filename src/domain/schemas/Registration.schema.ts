@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FlagStatus, PaymentStatus, RegistrationStatus } from '../types/Status';
+import { FlagStatus, PaymentStatus, RegistrationSource, RegistrationStatus } from '../types/Status';
 
 // Enum-fälten härleds ur Status.ts-konstanterna (single source) och är
 // data-verifierade mot live-basen 2026-06-10: 0 records utanför
@@ -34,4 +34,17 @@ export const RegistrationSchema = z.object({
   noteringSlutbetalning: z.string().nullable().optional(),
   paminnelseAnmalningsavgiftSkickad: z.string().nullable().optional(),
   paminnelseSlutbetalningSkickad: z.string().nullable().optional(),
+  // Arbetsköns deltagar-shape (task-18.4; PRD task-18 beslut 10). ADDITIVT-
+  // OPTIONAL (samma form som betalfälten ovan): fyra delande konsumenters
+  // mockar parsar oförändrat. Fält-existensen LIVE-verifierad mot staging-
+  // schemat 2026-07-22 (tbloOcrppVoyrHbrq/tbl6ZyCm3V026iFTU, L294) före
+  // mappningen: Källa fldwk2sl7CkBv9epw · Medföljande till fld39KEXJxyulXfsN ·
+  // Bekräftelse skickad fld0jnbkIbuFAumgG · Deltagarinfo skickad
+  // fld3WBS0QQrqLpYtK · Personer.Antal genomförda event flddy8JND3YnlgZxe.
+  // `kalla` är enum:ad mot RegistrationSource — Källa TOM levereras som null.
+  kalla: z.enum(RegistrationSource).nullable().optional(),
+  medfoljandeTill: z.string().nullable().optional(),
+  bekraftelseSkickad: z.string().nullable().optional(),
+  deltagarinfoSkickad: z.string().nullable().optional(),
+  antalGenomfordaEvent: z.number().nullable().optional(),
 });

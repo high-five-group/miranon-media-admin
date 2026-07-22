@@ -33,6 +33,7 @@
 import { type APIRequestContext, expect, test } from '@playwright/test';
 import { z } from 'zod';
 import { RegistrationSchema } from '../../src/domain/schemas';
+import { ARBETSKO_EVENT_ID, ARBETSKO_EXPECTED } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 type Registration = z.infer<typeof RegistrationSchema>;
@@ -172,5 +173,127 @@ test.describe('get-registrations — skarp conformance (Fas 6c, T15 väg D)', ()
       `${config.baseUrl}/functions/v1/get-registrations?eventId=recANY`,
     );
     await classify401Body(res);
+  });
+});
+
+// ── task-18.4: deltagar-shapens utökning (arbetskö-skelettets datakontrakt) ──
+//
+// Fem additiva LÄS-fält som eventsidans arbetskö bygger på:
+//   kalla                 — Anmälningar.`Källa` (singleSelect; TOM = via formulär)
+//   medfoljandeTill       — Anmälningar.`Medföljande till` (self-link → första ID)
+//   bekraftelseSkickad    — Anmälningar.`Bekräftelse skickad` (dateTime)
+//   deltagarinfoSkickad   — Anmälningar.`Deltagarinfo skickad` (dateTime; UI-ordet
+//                            är EVENTINFO, basens fält heter Deltagarinfo)
+//   antalGenomfordaEvent  — PERSONER.`Antal genomförda event` (formel) via
+//                            CHUNKAD record-ID-batch (get-person-mallen, ALDRIG
+//                            ett anrop per person) — eventId-grenen bär batchen.
+//
+// Testar KONTRAKTET (fält-närvaro + värde-mappning + null-vägen + person-batchens
+// number-vs-null-skillnad), aldrig implementationen. Fixturen är permanent och
+// beskriven i fixtures.ts — LÄSER bara, ingen mutation/teardown behövs.
+test.describe('get-registrations — deltagar-shapens utökning (task-18.4)', () => {
+  test('väg D: alla fem nya nycklar NÄRVARANDE på varje rad (aldrig undefined)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const { status, registrations } = await callGetRegistrations(
+      request,
+      config,
+      jwt,
+      ARBETSKO_EVENT_ID,
+    );
+    expect(status).toBe(200);
+    expect(registrations).toHaveLength(ARBETSKO_EXPECTED.antalAnmalningar);
+
+    // Schemat är additivt-OPTIONAL (äldre cachade svar ska parsa) — den deployade
+    // EF:en måste ändå leverera varje nyckel som värde-eller-null, aldrig utelämnad.
+    for (const reg of registrations) {
+      const raw = reg as unknown as Record<string, unknown>;
+      for (const key of [
+        'kalla',
+        'medfoljandeTill',
+        'bekraftelseSkickad',
+        'deltagarinfoSkickad',
+        'antalGenomfordaEvent',
+      ]) {
+        expect(raw, `rad ${reg.id}: nyckeln '${key}' saknas i svaret`).toHaveProperty(key);
+        expect(raw[key], `rad ${reg.id}: '${key}' får aldrig vara undefined`).not.toBeUndefined();
+      }
+    }
+  });
+
+  test('väg D: Källa-mappningen — TOM → null (via formulär), Manuell, +1', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const { status, registrations } = await callGetRegistrations(
+      request,
+      config,
+      jwt,
+      ARBETSKO_EVENT_ID,
+    );
+    expect(status).toBe(200);
+    const byId = new Map(registrations.map((r) => [r.id, r]));
+
+    // Källa TOM är BÄRANDE semantik (via formulär = normen) → måste bli null,
+    // aldrig tom sträng: kategori-filtret på eventsidan skiljer på null och värde.
+    expect(byId.get(ARBETSKO_EXPECTED.bekraftadId)?.kalla).toBeNull();
+    expect(byId.get(ARBETSKO_EXPECTED.obekraftadId)?.kalla).toBeNull();
+    expect(byId.get(ARBETSKO_EXPECTED.manuellId)?.kalla).toBe('Manuell');
+    expect(byId.get(ARBETSKO_EXPECTED.medfoljandeId)?.kalla).toBe('+1');
+  });
+
+  test('väg D: skickad-tidsstämplarna + medföljande-länken mappas (och null när osatta)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const { status, registrations } = await callGetRegistrations(
+      request,
+      config,
+      jwt,
+      ARBETSKO_EVENT_ID,
+    );
+    expect(status).toBe(200);
+    const byId = new Map(registrations.map((r) => [r.id, r]));
+
+    const bekraftad = byId.get(ARBETSKO_EXPECTED.bekraftadId);
+    expect(bekraftad?.bekraftelseSkickad).toBe(ARBETSKO_EXPECTED.bekraftelseSkickad);
+    expect(bekraftad?.deltagarinfoSkickad).toBe(ARBETSKO_EXPECTED.deltagarinfoSkickad);
+    expect(bekraftad?.medfoljandeTill).toBeNull();
+
+    // Osatta tidsstämplar → null (kortet renderar ENDAST utförda åtgärder).
+    const obekraftad = byId.get(ARBETSKO_EXPECTED.obekraftadId);
+    expect(obekraftad?.bekraftelseSkickad).toBeNull();
+    expect(obekraftad?.deltagarinfoSkickad).toBeNull();
+
+    // Self-link → FÖRSTA record-ID:t (aldrig arrayen, aldrig display-namnet).
+    expect(byId.get(ARBETSKO_EXPECTED.medfoljandeId)?.medfoljandeTill).toBe(
+      ARBETSKO_EXPECTED.bekraftadId,
+    );
+  });
+
+  test('väg D: antalGenomfordaEvent kommer ur PERSON-batchen (number vs null)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const { status, registrations } = await callGetRegistrations(
+      request,
+      config,
+      jwt,
+      ARBETSKO_EVENT_ID,
+    );
+    expect(status).toBe(200);
+    const byId = new Map(registrations.map((r) => [r.id, r]));
+
+    // Raden MED Person-länk bär personens formelvärde; raderna UTAN Person-länk
+    // bär null. Skillnaden kan bara uppstå om Personer faktiskt lästes — en
+    // `?? 0`-genväg hade gett 0 på båda och fällt detta test.
+    expect(byId.get(ARBETSKO_EXPECTED.bekraftadId)?.antalGenomfordaEvent).toBe(
+      ARBETSKO_EXPECTED.antalGenomfordaEvent,
+    );
+    expect(byId.get(ARBETSKO_EXPECTED.obekraftadId)?.antalGenomfordaEvent).toBeNull();
+    expect(byId.get(ARBETSKO_EXPECTED.manuellId)?.antalGenomfordaEvent).toBeNull();
   });
 });

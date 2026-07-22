@@ -1,4 +1,9 @@
-import type { FlagStatusValue, PaymentStatusValue, RegistrationStatusValue } from '../types/Status';
+import type {
+  FlagStatusValue,
+  PaymentStatusValue,
+  RegistrationSourceValue,
+  RegistrationStatusValue,
+} from '../types/Status';
 
 /**
  * Input för att skapa en manuell anmälan (create-registration-EF, Fas 6c).
@@ -52,4 +57,27 @@ export interface Registration {
   noteringSlutbetalning?: string | null;
   paminnelseAnmalningsavgiftSkickad?: string | null;
   paminnelseSlutbetalningSkickad?: string | null;
+  /**
+   * Arbetsköns deltagar-shape (task-18.4; PRD task-18 beslut 10). ADDITIVT-
+   * OPTIONAL av samma skäl som betalfälten ovan: fyra andra konsumenter
+   * (useDashboardData, AnmalningarList, EventRegistrations, detail/Betalningar)
+   * delar Registration och deras mockar får inte falla. Deployad
+   * get-registrations levererar dem alltid som värde-eller-null.
+   *
+   * `kalla` — basens `Källa`; TOM ⇒ null ⇒ "via formulär" (normen, S73 K37).
+   * `medfoljandeTill` — basens `Medföljande till` (self-link) → FÖRSTA
+   *   record-ID:t; kopplar en +1-anmälan till sin huvudanmälan.
+   * `bekraftelseSkickad` / `deltagarinfoSkickad` — utskicks-tidsstämplarna
+   *   (mail 1 respektive mail 2). UI-ordet för den senare är EVENTINFO;
+   *   basens fält heter `Deltagarinfo skickad` (ORDLISTA-noten).
+   * `antalGenomfordaEvent` — PERSONENS `Antal genomförda event` (formel),
+   *   hämtad via chunkad Personer-batch i EF:ens eventId-gren. null när
+   *   anmälan saknar Person-länk ELLER när svaret kom ur den event-lösa
+   *   grenen (som medvetet inte batchar hela basens personer).
+   */
+  kalla?: RegistrationSourceValue | null;
+  medfoljandeTill?: string | null;
+  bekraftelseSkickad?: string | null;
+  deltagarinfoSkickad?: string | null;
+  antalGenomfordaEvent?: number | null;
 }
