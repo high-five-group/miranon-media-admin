@@ -4,7 +4,7 @@ title: 'Skiva: Betalningar (arbetsytan + slutbetalnings-vertikalen)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-22 08:27'
+updated_date: '2026-07-22 09:10'
 labels:
   - ready-for-agent
 dependencies:
@@ -41,6 +41,15 @@ Studs-åtgärd 2 (S75): scenario-isoleringen läkt med distinkta eventId per sce
 
 CI grönt per jobb: PR-run 29902222934 + main-run 29903576104 (S75, mergad efter två diagnos-/åtgärdsrundor — TZ-förankringen + scenario-isoleringen; orkestratorn körde steg 6–10 efter reload-parkeringen)
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-22 09:10
+---
+Review-våg 1 (Marcus 2026-07-22): kunde inte se 'Öppna detaljer'-knappen vid granskning. Verifierat i kod: knappen FINNS (Betalningar.tsx DetaljRad rad ~128, disclosure till inline-arbetsytan) men renderas ENDAST vid minst 1 AKTIV anmälan (villkoret aktiva.length större än 0, rad ~499); dessutom mergades kortet först 2026-07-22 ~10:20 (PR #76) — sannolikt granskades ett äldre serverat läge (dev-servern kör repo-trädet; mergarna nådde trädet ~10:30). Omgranskning: ladda om + öppna ett event MED aktiva anmälningar. e2e 13/13 bevisar arbetsytan i färsk main.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

@@ -180,6 +180,26 @@
   batch-order för resterande 12 på Marcus-signal (OBS 18.11 mintar
   ADR — nästa nummer disk-verifieras då); (3) end-pass-docs; (4)
   end-pass/skörd på signal; (5) T18-reinstall (1.17.0).**
+- [x] **REVIEW-VÅG 1 MOTTAGEN + TRIAGERAD** (2026-07-22, Del 8
+  kanonisk plats): Marcus-review på listan/kalendern/detaljsidan + 2
+  meta-spår; ALLT verifierat mot kod/kort/FK-referens före klassning
+  (3 parallella Explore-agenter). Utfall: 2 defekter (kalenderns
+  olikbreda dagar [table-fixed saknas] · idag-markering saknas mot
+  FK-golvet IMG_1590) · 2 facit-revideringar (vald dag utan
+  guldplatta · "Visa hela månaden"-ersättaren) · 2 småfixar
+  (countdown-suffixet [EF-pass-through — käll-verifiering först] ·
+  reserverade-termen [KOLLISION med Belaggnings-etiketten,
+  term-beslut väntar]) · 2 nya skivor TASK-17.7 (filtervyn+utskrift)
+  och TASK-18.15 (åtgärds-siffror) UTAN ready-for-agent · tråd T80
+  (prototyp-substratet; ?variant odokumenterad i specs) ·
+  review-kommentarer på 17.2/17.4/17.5/18.1/18.8/19.2 ·
+  skapa-ingången + "Öppna detaljer" FINNS (e2e-bevisade; korten
+  mergade i morse → äldre serverat läge sannolikt; 18.8 kräver även
+  minst 1 aktiv anmälan) — omgranskning = Marcus. INGA Done-flippar.
+  **NÄSTA: Marcus STOPPA-beslut i chatten (1 fix-vågen nu? · 2
+  term-valet · 3 månads-knappen · 4 Done-kandidater
+  17.1/17.3/18.2/18.3 [+19.1 via /dev/primitives]; TASK-25 står
+  öppen) → review-fix-våg → batch-order 12 → end-pass på signal.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 

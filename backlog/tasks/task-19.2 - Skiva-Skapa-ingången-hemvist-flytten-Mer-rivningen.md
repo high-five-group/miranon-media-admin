@@ -4,7 +4,7 @@ title: 'Skiva: Skapa-ingången + hemvist-flytten + Mer-rivningen'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-22 07:14'
+updated_date: '2026-07-22 09:10'
 labels:
   - ready-for-agent
 dependencies:
@@ -34,6 +34,15 @@ AFK-drain (S75-batch v2.1): kortet är BYGGT + pushat på origin/task/19.2 (2021
 
 CI grönt per jobb: PR-run 29898514118 + main-run 29898981269 (S75, efter-batch-merge på Marcus-order)
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-22 09:10
+---
+Review-våg 1 (Marcus 2026-07-22): 'kommer inte till skapa-sidan i skarpa vyn' — verifierat i kod: ingången FINNS ('Skapa nytt event'-pillen med CalendarPlus på listans vy-rad, EventsList.tsx rad ~172, till /event/skapa som renderar skarpa CreateEventForm; e2e-bevisad klick-väg). Kortet mergades först 2026-07-22 på morgonen (PR #77) — sannolikt äldre serverat läge vid granskningen; omgranskning efter omladdning. Formens INNEHÅLL mot facit ägs av 19.3 (obyggd) — bedömningen av själva sidan väntar korrekt på 19.3.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

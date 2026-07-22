@@ -4,7 +4,7 @@ title: 'Skiva: Listvyn till S72-facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-21 21:02'
+updated_date: '2026-07-22 09:09'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,6 +33,15 @@ Levererad i S75-batchen v2 (parallell form, ADR-073): listvyn till S72-facit än
 
 CI grönt per jobb: PR-run 29867397616 + main-run 29867858651 (S75-batch v2)
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-22 09:09
+---
+Review-våg 1 (Marcus 2026-07-22): listkortets beläggningsrad ska säga 'X av Y platser reserverade' i st.f. 'bokade'. TERM-KOLLISION flaggad före fix: 'Reserverade' är redan etikett för en ANNAN kvantitet i detaljvyns beläggningsuppdelning (Belaggning.tsx rad ~146, term + inmatningsfält), och samma 'platser bokade'-sträng finns även i Hem-vyns NastaEventCard.tsx rad ~163. Term-beslut väntar Marcus (ORDLISTA-post först vid kristallisering); fixen sveper båda förekomsterna + ev. omdöp i beläggningen. Åtgärd i review-fix-vågen på denna yta före DoD #5-flipp.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

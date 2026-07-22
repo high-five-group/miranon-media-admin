@@ -4,7 +4,7 @@ title: 'Skiva: Kalendervyn till S72-facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-21 21:49'
+updated_date: '2026-07-22 09:09'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,6 +33,15 @@ Levererad i S75-batchen v2 (parallell form, ADR-073): kalendervyn till S72-facit
 
 CI grönt per jobb: PR-run 29870508571 + main-run 29871006378 (S75-batch v2)
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-22 09:09
+---
+Review-våg 1 (Marcus 2026-07-22), fyra punkter på kalender-ytan före DoD #5: (1) DEFEKT dag-rutornas olikbredd — CalendarGrid är en tabell med w-full UTAN table-fixed (table-layout:auto); veckodags-th:arnas olika textbredd (mån/tis/ons...) drar isär kolumnerna; fix: table-fixed eller likvärdig tvingad likbredd. (2) IDAG-markering SAKNAS helt (React Arias isToday/data-today oanvänt) — FK-golvet föreskriver ring-markerad idag (docs/reference/fk-referens README rad 29, IMG_1590). (3) FACIT-REVIDERING på Marcus-order: vald dag ska INTE ha guld-platta (bg-primary rivs), endast markeringsram — ringen behålls/förstärks; idag- och vald-tillståndens samspel designas ihop (a11y: markering ej enbart färgburen, kontrast mot färgade plattor); e2e-computed-assertions som pinnar guld-bg skrivs om i samma fix, S72-facit-avvikelsen bokförs öppet. (4) 'Visa hela månaden'-returen (facitets dag-flöde, setSelected(null)) upplevs ologisk — förslag: toggle-avval på vald dag ersätter knappen; Marcus-beslut väntar. Fixarna körs i review-fix-våg på detta kort; Done efter omgranskning.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

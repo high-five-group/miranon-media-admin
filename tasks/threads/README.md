@@ -157,7 +157,7 @@ status: stable
 
 | Tråd | Titel | Tillstånd | Ingång |
 |---|---|---|---|
-| _(inga ännu)_ | | | |
+| T80 | Prototyp-substratets adress-struktur + växlarens framtid (research-spår) | paused | S75 Del 8 (Marcus review-våg 1, 2026-07-22): ?variant-konventionen är odokumenterad i specs (URL-STATE-SPEC saknar den; ADR-044 täcker endast /dev-ytorna; auktoritativ text bor i kod-kommentarer + prototype-skillen) och växlaren upplevs ful/okonsekvent — research av branschmönster (variant-adressering, sida-vid-sida-jämförelse, minimal pil-växlare) FÖRE design; 18.13 river event-familjens instans, så spåret gäller det PERMANENTA arbetssättet för kommande familjer/produkter. |
 
 ## Så här registrerar du en ny tråd
 

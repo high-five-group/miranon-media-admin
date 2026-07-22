@@ -4,6 +4,7 @@ title: 'Skiva: Läs-shape-utökningen + bor över-raden på listkortet'
 status: To Do
 assignee: []
 created_date: '2026-07-21 08:20'
+updated_date: '2026-07-22 09:09'
 labels:
   - ready-for-agent
 dependencies:
@@ -34,3 +35,12 @@ Listkortens bor över-rad (säng-glyf + antal) läser en HÄRLEDD summering av b
 - [ ] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-22 09:09
+---
+Review-våg 1 (Marcus 2026-07-22): emfas — bor över-raden får INTE ändra korthöjd när den landar; kort med och utan bor över ska vara likhöga. AC #2:s slot-modell med platshållare vid noll är exakt detta krav (raden renderas ALLTID, reserverad; prototypens mönster EventsListPrototype rad ~290). Bokfört som review-förankring — ingen spec-ändring behövd.
+---
+<!-- COMMENTS:END -->

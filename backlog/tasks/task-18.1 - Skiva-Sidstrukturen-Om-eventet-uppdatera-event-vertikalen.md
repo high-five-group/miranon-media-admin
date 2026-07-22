@@ -4,7 +4,7 @@ title: 'Skiva: Sidstrukturen + Om eventet + uppdatera-event-vertikalen'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-21 20:32'
+updated_date: '2026-07-22 09:10'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,6 +34,15 @@ väntar design-review (S75-batchen v2). LEVERANS (task/18.1): sidstrukturen (top
 
 CI grönt per jobb: PR-run 29865299294 + main-run 29865719700 (S75-batch v2)
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-22 09:10
+---
+Review-våg 1 (Marcus 2026-07-22): countdown-raden under eventnamnet godkänd som tillägg ('klar förbättring') MEN texten ska lyda t.ex. '7 veckor och 6 dagar kvar till eventet'. OBS källan: tidKvarTillEvent är pass-through från get-event-EF:n (EventDetail.tsx rad ~157 renderar strängen rått; ingen klient-formatter finns) — fixen verifierar EF-/formel-källans hela utfallsrymd FÖRST (blint klient-suffix bryter om fältet ibland bär icke-nedräknings-text, t.ex. pågående/avslutat läge). Åtgärd i review-fix-vågen på denna yta.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
