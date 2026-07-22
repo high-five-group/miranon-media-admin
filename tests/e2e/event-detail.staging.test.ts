@@ -905,3 +905,307 @@ test.describe('Beläggningen (task-18.2)', () => {
     expect(termer).toEqual(['Max antal platser', 'Anmälda deltagare', 'Väntelista']);
   });
 });
+
+/**
+ * task-18.5 — PERSONKORTEN i Anmälda deltagare (S73-facit K45/K62).
+ *
+ * Formen: identitetszonen (namn i fetstil + E-post etikett-över-värde) ÄR
+ * person-klickytan; metaytan ligger UTANFÖR den (interaktivt i interaktivt är
+ * förbjudet, K44/L303) och bär Anmäld dag + klockslag på EN rad, därunder
+ * ENDAST UTFÖRDA åtgärder, sist historikraden med HELA namnet Miranon Media.
+ *
+ * **Placering (öppet bokförd):** task-18.4:s deltagar-svit ligger utanför denna
+ * skivas deklarerade fil-yta; personkorten renderas på eventsidan och bevisas
+ * därför i eventsidans egen svit. Samma `page.route`-mock-split som ovan.
+ */
+
+const PK_EVENT_ID = 'recPERSONKORT0001';
+const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
+
+type PkJson = Record<string, unknown>;
+
+function pkRegistrering(overrides: PkJson): PkJson {
+  return {
+    id: 'recPk',
+    namn: null,
+    fornamn: null,
+    efternamn: null,
+    email: null,
+    telefon: null,
+    eventNamn: 'Resor i medvetandet 1',
+    ort: 'Skövde',
+    status: 'Obekräftad',
+    flagga: null,
+    anmalningsavgift: 'Ej mottagen',
+    slutbetalning: 'Ej mottagen',
+    betalningspaminnelseSkickad: null,
+    inskickad: null,
+    motivering: null,
+    tidigareErfarenhet: null,
+    antalPlatser: 1,
+    notering: null,
+    eventId: PK_EVENT_ID,
+    personId: null,
+    kalla: null,
+    medfoljandeTill: null,
+    bekraftelseSkickad: null,
+    deltagarinfoSkickad: null,
+    antalGenomfordaEvent: null,
+    ...overrides,
+  };
+}
+
+/**
+ * Anna  — Obekräftad · person-länk · 0 genomförda ⇒ "Första eventet"
+ *         · INGEN utförd åtgärd (ej-skickat får aldrig synas)
+ * David  — Bekräftad · person-länk · Källa '+1' · alla tre utskicken utförda
+ *         · 3 genomförda ⇒ "3 tidigare event"
+ * Cecilia— Bekräftad · SAKNAR person-länk och e-post · räknaren okänd (null)
+ */
+const PK_DELTAGARE: PkJson[] = [
+  pkRegistrering({
+    id: 'recPkAnna',
+    namn: 'Anna Ek',
+    email: 'anna@example.se',
+    personId: 'recPersonAnna001',
+    inskickad: '2026-07-01T09:00:00.000Z',
+    antalGenomfordaEvent: 0,
+  }),
+  pkRegistrering({
+    id: 'recPkDavid',
+    namn: 'David Nord',
+    email: 'david@example.se',
+    personId: 'recPersonDavid01',
+    status: 'Bekräftad (mail skickat)',
+    kalla: '+1',
+    inskickad: '2026-06-25T09:00:00.000Z',
+    bekraftelseSkickad: '2026-06-26T09:00:00.000Z',
+    betalningspaminnelseSkickad: '2026-07-08T09:00:00.000Z',
+    deltagarinfoSkickad: '2026-07-10T09:00:00.000Z',
+    antalGenomfordaEvent: 3,
+  }),
+  pkRegistrering({
+    id: 'recPkCecilia',
+    namn: 'Cecilia Lund',
+    status: 'Bekräftad (mail skickat)',
+    inskickad: '2026-07-05T09:00:00.000Z',
+  }),
+];
+
+async function mockaPersonkort(
+  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
+  page: any,
+  registrations: PkJson[] = PK_DELTAGARE,
+): Promise<void> {
+  await page.route(GET_EVENT, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ event: eventDetail({ id: PK_EVENT_ID }) }),
+    });
+  });
+  await page.route(GET_REGISTRATIONS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ registrations }),
+    });
+  });
+}
+
+test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
+  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
+  const gruppen = (page: any) => page.locator('section[aria-labelledby="grupp-deltagare"]');
+
+  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
+  async function oppnaSidan(page: any): Promise<void> {
+    await page.goto(`/event/${PK_EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(gruppen(page).getByRole('heading', { name: 'Anmälda deltagare' })).toBeVisible();
+    // Arkivet är stängt per K40 — personkorten där behövs i flera assertioner.
+    await gruppen(page).getByRole('button', { name: 'Bekräftade (2)', exact: true }).click();
+  }
+
+  /** Kortet för en namngiven deltagare. */
+  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
+  const kortet = (page: any, namn: string) =>
+    gruppen(page).getByTestId('deltagar-kort').filter({ hasText: namn });
+
+  test('identitetszonen är person-länken: namn i fetstil + E-post etikett-över-värde', async ({
+    page,
+  }) => {
+    await mockaPersonkort(page);
+    await oppnaSidan(page);
+
+    const anna = kortet(page, 'Anna Ek');
+    const identitet = anna.getByRole('link');
+    await expect(identitet).toHaveAttribute('href', '/personer/recPersonAnna001');
+
+    // Namnet ligger INUTI person-länken och står i fetstil (facitets identitet).
+    await expect(identitet.getByTestId('deltagar-namn')).toHaveText('Anna Ek');
+    const vikt = await identitet
+      .getByTestId('deltagar-namn')
+      .evaluate((el: Element) => getComputedStyle(el).fontWeight);
+    expect(Number(vikt)).toBeGreaterThanOrEqual(600);
+
+    // E-post som ETIKETT ÖVER VÄRDE — båda inne i identitetszonen.
+    await expect(identitet.getByText('E-post', { exact: true })).toBeVisible();
+    await expect(identitet.getByText('anna@example.se')).toBeVisible();
+
+    // Kategori-pillen står UTANFÖR länken (status är ingen del av identiteten)
+    // och normen (via formulär) bär inget märke alls.
+    await expect(identitet.getByText('Obekräftad')).toHaveCount(0);
+    await expect(anna.getByText('Obekräftad')).toBeVisible();
+    await expect(anna.getByText('Manuellt tillagd')).toHaveCount(0);
+    await expect(
+      kortet(page, 'David Nord').getByText('Medföljande', { exact: true }),
+    ).toBeVisible();
+  });
+
+  test('metaytan ligger UTANFÖR person-länken och bär Anmäld dag + klockslag på EN rad', async ({
+    page,
+  }) => {
+    await mockaPersonkort(page);
+    await oppnaSidan(page);
+
+    const anna = kortet(page, 'Anna Ek');
+    const meta = anna.getByTestId('deltagar-metayta');
+
+    // K62/L303: metaytan är SYSKON till länken — noll länkar/knappar inuti den.
+    await expect(meta.locator('a, button')).toHaveCount(0);
+    await expect(anna.getByRole('link').getByTestId('deltagar-metayta')).toHaveCount(0);
+
+    // EN rad med både dag och klockslag (Inskickad är en dateTime).
+    const rader = await meta.getByTestId('deltagar-meta-rad').allTextContents();
+    expect(rader).toHaveLength(1);
+    expect(rader[0]).toMatch(/^Anmäld 1 juli \d{2}:\d{2}$/);
+  });
+
+  test('ENDAST utförda åtgärder renderas — ej-skickat visas aldrig', async ({ page }) => {
+    await mockaPersonkort(page);
+    await oppnaSidan(page);
+
+    // Anna har inget utskick gjort: metaytan bär BARA Anmäld-raden.
+    const annaRader = await kortet(page, 'Anna Ek')
+      .getByTestId('deltagar-meta-rad')
+      .allTextContents();
+    expect(annaRader).toEqual([annaRader[0]]);
+    await expect(kortet(page, 'Anna Ek').getByText(/Ej skickat|Ej skickad/)).toHaveCount(0);
+
+    // David har alla tre utförda — var och en på sin egen rad, i Lottas
+    // utskicksordning (bekräftelse → påminnelse → eventinfo, K42).
+    const davidRader = await kortet(page, 'David Nord')
+      .getByTestId('deltagar-meta-rad')
+      .allTextContents();
+    expect(davidRader.slice(1)).toEqual([
+      'Bekräftelse 26 juni',
+      'Påminnelse 8 juli',
+      'Eventinfo 10 juli',
+    ]);
+    expect(davidRader[0]).toMatch(/^Anmäld 25 juni \d{2}:\d{2}$/);
+  });
+
+  test('historikraden: Första eventet / N tidigare event — HELA namnet Miranon Media', async ({
+    page,
+  }) => {
+    await mockaPersonkort(page);
+    await oppnaSidan(page);
+
+    await expect(kortet(page, 'Anna Ek').getByTestId('deltagar-historik')).toHaveText(
+      'Första eventet hos Miranon Media',
+    );
+    await expect(kortet(page, 'David Nord').getByTestId('deltagar-historik')).toHaveText(
+      '3 tidigare event hos Miranon Media',
+    );
+    // Okänd räknare (ingen person-koppling) ⇒ ingen rad — en osann "Första
+    // eventet" är värre än en utelämnad rad.
+    await expect(kortet(page, 'Cecilia Lund').getByTestId('deltagar-historik')).toHaveCount(0);
+  });
+
+  test('utan person-koppling: identitetszonen renderas OLÄNKAD, e-postluckan syns', async ({
+    page,
+  }) => {
+    await mockaPersonkort(page);
+    await oppnaSidan(page);
+
+    const cecilia = kortet(page, 'Cecilia Lund');
+    await expect(cecilia.getByRole('link')).toHaveCount(0);
+    await expect(cecilia.getByTestId('deltagar-namn')).toHaveText('Cecilia Lund');
+    // Luckan redovisas som den är — aldrig bortdesignad, aldrig "null".
+    await expect(cecilia.getByText('E-post', { exact: true })).toBeVisible();
+    await expect(cecilia.getByText('Saknas', { exact: true })).toBeVisible();
+  });
+
+  test('AC #2: Anmäld-raden är OLÄNKAD — anmälans egen sida finns inte', async ({ page }) => {
+    await mockaPersonkort(page);
+    await oppnaSidan(page);
+
+    // Belagt beslut (PRD task-18 punkt 18): ingen befintlig yta visar EN
+    // anmälan, så raden får INGEN länk-affordans i skarp produkt — en
+    // understruken no-op vore en osann affordans.
+    const anmald = kortet(page, 'Anna Ek').getByTestId('deltagar-meta-rad').first();
+    await expect(anmald).toHaveText(/^Anmäld /);
+    await expect(anmald.locator('a, button')).toHaveCount(0);
+    const dekoration = await anmald.evaluate(
+      (el: Element) => getComputedStyle(el).textDecorationLine,
+    );
+    expect(dekoration).toBe('none');
+    // Hela deltagarlistans enda länkar är person-länkarna (2 av 3 korten).
+    await expect(gruppen(page).getByTestId('deltagar-kort').getByRole('link')).toHaveCount(2);
+  });
+
+  test('390 px med TVÅ pillar: namnet och e-posten bryts inte mitt i ordet', async ({ page }) => {
+    // DEFEKT fångad i facit-avprickningens 390-px-mätning: pillspannet stod
+    // shrink-0 och åt så mycket bredd att identitetskolumnen kollapsade —
+    // namnet radbröts och e-posten bröts MITT I ORDET ("bertil@exa/mple.se").
+    // Pillarna wrappar nu i stället. Mätt som RADBOXAR (getClientRects), inte
+    // klass-närvaro (L246).
+    await page.setViewportSize({ width: 390, height: 844 });
+    // HELA facit-uppsättningen + Bertil — samma scen som facit-avprickningens
+    // skärmdump, så testet och den renderade verifieringen bevisar samma bild.
+    await mockaPersonkort(page, [
+      ...PK_DELTAGARE,
+      pkRegistrering({
+        id: 'recPkBertil',
+        namn: 'Bertil Sund',
+        email: 'bertil@example.se',
+        personId: 'recPersonBertil1',
+        kalla: 'Manuell',
+        inskickad: '2026-06-20T14:30:00.000Z',
+        antalGenomfordaEvent: 1,
+      }),
+    ]);
+    await page.goto(`/event/${PK_EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const bertil = kortet(page, 'Bertil Sund');
+    // Båda pillarna renderas (kombinationen obekräftad + manuellt tillagd).
+    await expect(bertil.getByText('Obekräftad')).toBeVisible();
+    await expect(bertil.getByText('Manuellt tillagd')).toBeVisible();
+
+    // Radboxarna räknas över TEXTINNEHÅLLET via en Range — elementens egna
+    // getClientRects() ger alltid 1 (flex-items blockifieras), vilket hade
+    // gjort assertionen blind för precis den brytning som var defekten.
+    const radboxar = (el: Element) => {
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      return r.getClientRects().length;
+    };
+    expect(await bertil.getByTestId('deltagar-namn').evaluate(radboxar)).toBe(1);
+    expect(await bertil.getByText('bertil@example.se').evaluate(radboxar)).toBe(1);
+  });
+
+  test('axe 0 på personkorten', async ({ page }) => {
+    await mockaPersonkort(page);
+    await oppnaSidan(page);
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .include('section[aria-labelledby="grupp-deltagare"]')
+      .analyze();
+    expect(
+      results.violations,
+      results.violations.map((v) => `${v.id}: ${v.help}`).join('\n'),
+    ).toEqual([]);
+  });
+});
