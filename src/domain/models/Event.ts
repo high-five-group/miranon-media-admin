@@ -36,6 +36,11 @@ export interface Event {
   medfoljande?: number;
   /** Aktiva event-kopplade Väntelisteplatser via 'Event (länk)' (utanför taket). */
   vantelista?: number;
+  /** Bor över-summeringen (task-17.5): härlett antal ikryssade 'Bor över' bland
+   *  eventets Anmälningar — listkortets säng-rad (EventCard). Optional speglar
+   *  schemat: get-events/get-event aggregerar (alltid tal ≥0); update-event/
+   *  create-event/äldre cache utelämnar (aldrig null). Härleds ur kryssen (ADR-063). */
+  borOverAntal?: number;
 
   // Auto-utskicket för eventinfo (task-18.6; PRD task-18 beslut 14) — additiva
   // bas-fält som eventsidans auto-utskicks-kryss styr. Utskicks-MOTORN är utanför.

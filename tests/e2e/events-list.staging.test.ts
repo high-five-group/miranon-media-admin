@@ -40,6 +40,7 @@ function ev(o: {
   platserKvar?: number | null;
   anmaldBelaggning?: number | null;
   status?: string | null;
+  borOverAntal?: number;
 }): Row {
   return {
     id: o.id,
@@ -60,6 +61,9 @@ function ev(o: {
     antalSlutbetalningar: 0,
     antalSlutbetalningFelande: 0,
     status: o.status ?? 'Planerat',
+    // Bor över-summeringen (task-17.5): get-events returnerar ALLTID ett tal ≥0
+    // (härlett per event) → mocken speglar det (default 0 = noll-fallet).
+    borOverAntal: o.borOverAntal ?? 0,
   };
 }
 
@@ -78,6 +82,7 @@ const EVENTS: Row[] = [
     antalAnmalda: 8,
     platserKvar: 4,
     anmaldBelaggning: 8 / 12,
+    borOverAntal: 3, // bor över-radens antal-fall (task-17.5)
   }),
   ev({
     id: 'recFULL',
@@ -356,6 +361,30 @@ test.describe('Event-listan till S72-facit (task-17.2)', () => {
     await expect(past).toBeVisible();
     await expect(slot(past)).toHaveCount(0);
     await expect(past).not.toContainText('Genomfört');
+  });
+
+  test('bor över-raden per facit (task-17.5): säng-rad på VARJE kort, antal + noll-platshållare', async ({
+    page,
+  }) => {
+    await mockEvents(page, EVENTS);
+    await page.goto('/event');
+    await expect(eventItems(page)).toHaveCount(5);
+
+    // Slot-modellen (AC #2 + review-våg 1): bor över-raden renderas på VARJE
+    // kort (reserverad — kort med och utan bor över är likhöga), aldrig
+    // villkorligt dold. Räknar raden på alla fem månadsgrupp-korten.
+    await expect(eventItems(page).locator('[data-slot="bor-over"]')).toHaveCount(5);
+
+    // Antalet bärs av TEXTEN (säng-glyfen är dekor, aria-hidden): Grundkurs
+    // har 3 ikryssade → "3 bor över" med exakt en dekor-ikon.
+    const grund = kort(page, 'Grundkurs i medvetande');
+    await expect(grund.locator('[data-slot="bor-over"]')).toHaveText('3 bor över');
+    await expect(grund.locator('[data-slot="bor-over"] svg[aria-hidden="true"]')).toHaveCount(1);
+
+    // Noll-platshållaren (AC #2): ett event utan kryss visar "0 bor över" —
+    // raden renderas ändå (0 är ett definit värde, inte "dölj raden").
+    const noll = kort(page, 'Föreläsning: Medveten kontakt');
+    await expect(noll.locator('[data-slot="bor-over"]')).toHaveText('0 bor över');
   });
 
   test('avvikelse-markeringarna per facit: Inställt dämpat + genomstruket, Flyttat i varselfärg — computed', async ({

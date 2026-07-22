@@ -44,6 +44,7 @@ function ev(o: {
   antalAnmalda?: number;
   platserKvar?: number | null;
   status?: string | null;
+  borOverAntal?: number;
 }): Row {
   return {
     id: o.id,
@@ -64,6 +65,9 @@ function ev(o: {
     antalSlutbetalningar: 0,
     antalSlutbetalningFelande: 0,
     status: o.status ?? 'Planerat',
+    // Bor över-summeringen (task-17.5): get-events returnerar ALLTID ett tal ≥0
+    // → mocken speglar det (default 0). Dag-tryckets EventCard visar då raden.
+    borOverAntal: o.borOverAntal ?? 0,
   };
 }
 

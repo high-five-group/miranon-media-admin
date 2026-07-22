@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { CalendarDays, MapPin } from 'lucide-react';
+import { BedDouble, CalendarDays, MapPin } from 'lucide-react';
 import type { Event } from '@/domain/models/Event';
 
 /** Event-listans tidsaxel (ORDLISTA "Period") — härledd ur startdatum, aldrig ur Status. */
@@ -72,8 +72,9 @@ function dagarKvarText(startMs: number, idagStartMs: number): string {
  * grå är facitets `--p-neutral-400` (semantisk meter-token saknas ännu —
  * tokens-ytan är delad, se task-17.2-notes).
  *
- * "Bor över"-raden tillkommer i task-17.5 (läs-shape-utökningen) — slot-
- * modellens likformighet består: raden saknas på ALLA kort tills dess.
+ * "Bor över"-raden (task-17.5): säng-glyf + härlett antal (`borOverAntal` ur
+ * get-events aggregering) som SISTA metaraden — renderas ALLTID (slot-modellen;
+ * 0 → "0 bor över", saknat värde → "–"), så korten förblir likhöga (review-våg 1).
  */
 export function EventCard({
   event: e,
@@ -146,6 +147,21 @@ export function EventCard({
           {e.startdatum && Number.isFinite(startMs)
             ? LANGDATUM.format(new Date(e.startdatum))
             : 'Datum ej satt'}
+        </span>
+        {/* Bor över-raden ALLTID (slot-modellen, task-17.5): säng-glyf + antal.
+            Antalet HÄRLEDS ur eventets Anmälningar (get-events aggregerar) —
+            ett tal ≥0, där 0 renderas som "0 bor över" (platshållaren vid noll
+            är att raden reserveras, inte döljs → kort med och utan bor över är
+            likhöga, review-våg 1). "–" är den ärliga formen vid saknat värde
+            (äldre cache-svar utan fältet). Ikonen är dekor (aria-hidden);
+            texten bär antalet (WCAG 1.4.1). */}
+        <span data-slot="bor-over" className="flex items-center gap-1.5">
+          <BedDouble
+            aria-hidden="true"
+            size={14}
+            className={`shrink-0 ${installt ? 'opacity-60 contrast-more:opacity-100' : 'text-text-secondary'}`}
+          />
+          {e.borOverAntal ?? '–'} bor över
         </span>
       </div>
       {/* Beläggningsblocket ALLTID (slot-modellen): texten bär, stapeln

@@ -77,7 +77,7 @@ function groupByMonth(events: Event[]): { label: string; events: Event[] }[] {
  * likbreda pill-segment) → månadsgrupper (riktiga h2-rubriker, story 17) →
  * likformiga slot-kort (EventCard) → strukturerat text-tomläge. I kalender-
  * läget (`?vy=kalender`) ersätter EventsCalendar period-toggeln + listan.
- * Bor över-raden på korten ägs av task-17.5.
+ * Korten bär bor över-raden (härlett antal ur get-events, task-17.5).
  *
  * URL-kontraktet: `?period=upcoming|past` + `?vy=kalender` (nuqs, history
  * push — delbart och back-bart per URL-STATE-SPEC §Event) ERSÄTTER gamla
@@ -227,6 +227,10 @@ export function EventsList() {
                   </div>
                   <Skeleton variant="text" className="w-2/5" />
                   <Skeleton variant="text" className="w-1/2" />
+                  {/* Bor över-radens skeleton (task-17.5): fjärde metaraden så
+                      slutgeometrin matchar EventCards nya rad (Lugnt laddläge —
+                      datalandningen flyttar ingenting). */}
+                  <Skeleton variant="text" className="w-1/3" />
                 </div>
                 <div className="flex flex-col gap-1 text-caption">
                   <Skeleton variant="text" className="w-2/5" />
