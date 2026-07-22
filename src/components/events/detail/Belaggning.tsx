@@ -100,7 +100,10 @@ function BelaggningsMatare({ event }: { event: Event }) {
 /**
  * Ändra-läget (task-18.2; S73-facit K14–K16): samma sömlösa morf som Om eventet
  * (Δ=0 px DOM-mätt) på basens TRE skrivbara number-fält — Max antal platser ·
- * Reserverade ('Extra platser') · Manuellt tillagda ('Manuella platser').
+ * Extra platser · Manuellt tillagda ('Manuella platser'). Etiketten "Extra
+ * platser" är basens eget fältnamn (Marcus-beslut 2026-07-22, review-våg 1)
+ * — löser termkollisionen mot kortens "platser reserverade" (ORDLISTA
+ * "Reserverad plats"); läs-shapens fältnamn `reserverade` består.
  * Via formulär/Medföljande/Väntelista är HÄRLEDDA räkningar och står kvar som
  * läsrader (kontext, inte fält). Likbredds-regeln per-FORMULÄR (K15): w-32 —
  * antal-fält behöver inte textfältens 240 px. Spara skriver via
@@ -143,12 +146,12 @@ function BelaggningForm({ event, onStang }: { event: Event; onStang: () => void 
           />
         </RedigeringsRad>
         <RedigeringsRad
-          term="Reserverade"
+          term="Extra platser"
           streck={KATEGORI.reserverad}
           nuvarande={event.reserverade != null ? String(event.reserverade) : null}
           slotKlass="w-32"
         >
-          <AntalFalt label="Reserverade" value={reserverade} onChange={setReserverade} />
+          <AntalFalt label="Extra platser" value={reserverade} onChange={setReserverade} />
         </RedigeringsRad>
         <EtikettVardeRad term="Anmälda deltagare" streck={KATEGORI.formular}>
           {String(event.viaFormular ?? 0)}
@@ -224,7 +227,7 @@ export function Belaggning({ event }: { event: Event }) {
             <EtikettVardeRad term="Max antal platser">
               {event.maxPlatser != null ? String(event.maxPlatser) : null}
             </EtikettVardeRad>
-            <EtikettVardeRad term="Reserverade" streck={KATEGORI.reserverad}>
+            <EtikettVardeRad term="Extra platser" streck={KATEGORI.reserverad}>
               {event.reserverade != null ? String(event.reserverade) : null}
             </EtikettVardeRad>
             <EtikettVardeRad term="Anmälda deltagare" streck={KATEGORI.formular}>
