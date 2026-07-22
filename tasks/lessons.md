@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-21
+updated: 2026-07-22
 review_by: 2026-11-15
 status: stable
 ---
@@ -4408,3 +4408,55 @@ konsent-klass: formen är att läsa skillens SKILL.md (+ referensfiler)
 ur plugin-cachen och följa stegen ordagrant — aldrig improvisera
 fram skillens jobb utan dess instruktioner, aldrig studsa ordern
 som "kan inte köras".
+
+### L307 [UNIVERSAL] — Side effects hör i event-handlern, aldrig i setState-updatern
+
+Datum: 2026-07-22 (S76) | Källa: TASK-29 rail-dragningen
+(persistens-skrivningen låg i setPos-updatern; React kör updaters vid
+flush EFTER senare synkrona handlers — dubbelklickets removeItem
+kördes först, varpå updaterns setItem ÅTERSKREV nyckeln;
+rött-först-fångad i L304-skriptet, läkt med ref-speglad position +
+synkron persistens i pointerup-handlern) (klass: React-mekanik)
+
+En setState-updater är en REN beräkning som React schemalägger — den
+kan köras efter andra handlers i samma interaktionskedja (och
+dubbel-köras i StrictMode). Side effects i updatern (localStorage,
+API-anrop, DOM) exekverar därför i fel ordning relativt synkrona
+handlers. Formen: spegla interaktionstillståndet i en ref (L300-
+grannmönstret) och utför side effecten SYNKRONT i event-handlern;
+updatern får bara returnera nästa tillstånd.
+
+### L308 [UNIVERSAL] — Dev-överlägg namnges UTANFÖR appens namn-rymd — frånvaro-assertions ser även dev-UI
+
+Datum: 2026-07-22 (S76) | Källa: TASK-29 leverans 1 CI-röd
+(run 29933197540: pill-knappen "Visa prototyp-växlaren" träffade
+appens frånvaro-assertion `getByRole('button', { name: /^Visa/ })
+.toHaveCount(0)` — testet asserterar att GAMLA app-kontroller är
+borta, men dev-växlaren monteras i dev-läge där e2e kör; rail-formen
+läkte strukturellt genom ikon-knappar utan app-verb) (klass:
+test-kontrakt)
+
+E2E-sviter kör i dev-läge → dev-grindade överlägg (växlare,
+debug-paneler) EXISTERAR i testets tillgänglighetsträd. Varje
+frånvaro-assertion (toHaveCount(0) på namn-regex) är därmed ett
+KONTRAKT även mot dev-verktygens accessible names. Namnge dev-UI
+utanför appens verb-/namnrymd (ikoner + beskrivande fraser, inte
+app-kommandon som "Visa …"), och sväng regex-namn-assertions mot
+dev-överläggens namn vid varje ny dev-yta.
+
+### L309 [UNIVERSAL] — Bakgrundstaskens exit är WRAPPERNS exit — vaktens kod skrivs till fil och läses därifrån
+
+Datum: 2026-07-22 (S76) | Källa: TASK-29 CI-vakten (bakgrundstasken
+rapporterade "completed exit 0" medan output-FILEN bar
+`CI_VAKT_EXIT=1` — kommandot slutade med echo/view som åt vaktens
+kod; run 29933197540 var RÖD; fångad vid fil-läsningen, halt-first
+tillämpad; pipe-klassens femte skepnad men EGEN mekanism:
+efterföljande kommandon, inte pipe) (klass: shell-mekanik)
+
+Ett bakgrundskommando med flera steg rapporterar SISTA stegets exit
+som task-status — varje echo/vy-kommando efter vakten maskerar
+grindens utfall. Formen: vakten skriver sin exit-kod till EGEN fil
+(`echo "EXIT=$?" > vaktfil` direkt efter grind-kommandot) och
+konsumenten LÄSER filen före beslut; task-notifikationens "exit 0"
+är aldrig grind-bevis. Samma disciplin som L297 (exit-kodad kedja)
+och L280 (exit binder steget) — utsträckt till bakgrunds-formen.

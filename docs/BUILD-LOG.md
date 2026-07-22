@@ -2826,6 +2826,22 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
+## Session 76 — T80/T81/T82-mellansessionen: två grillningar → ADR-071-amendering + ADR-074, hub-bunt 1.18.1, reinstall-praxisen, TASK-29 i två vågor (2026-07-22)
+
+**Commit-range:** `11f7047` (dok-födelse) → HEAD. **Mål:** ordningsfrågans verkställande (S75 pausad orörd) — egen mellansession för T81 + T80 (+ T82 på Marcus scope-utökning) FÖRE S75-resumens batch. Ej byggplan-fas — process-/dev-verktygs-session.
+
+- **T81 (Del 2):** grillad samsyn 5 beslut (alla A, research: Google eng-practices · Conventional Comments · Bugzilla · Scrum/DoR · K8s-triage) → **ADR-071-amenderingen**: klassrymden 3+2 (FIX · FACIT-REVIDERING · ITERATION + INGEN DEFEKT · STALE LÄGE) med TVÅDELAT gränstest (komplett direktiv? + inom levererad yta? — ersätter avsikts-formeln öppet) · fix-vågens femdelade kontrakt (EN PR/våg, merge-commit, rött-först, STOPPA-klassning som kvitto, DoD #5 öppen) · iterations-skivans triage-födsel + ready-for-agent-grind · Done-flipp-grinden per klass (`16bb045`).
+- **T80 (Del 3):** research FÖRE design (Storybook · Histoire [tunt, öppet deklarerat] · Vercel Toolbar · Chromatic/Applitools · Polypane · preview-env-praxis) → **ADR-074** (adress-strukturen: stabila nycklar `a/b/c`, VINNAREN BEHÅLLER NYCKELN [alias-rotorsaken], steg EJ i URL · växlar-standarden · jämförelsen: snapshot-par + fönster-lagret, compare-route deferred med re-trigger) + URL-STATE-SPEC §Dev-parametrar + TASK-29 född + **T83** reggad (Claude Design/DesignSync — Marcus-frågan; Storybook-MCP ej aktuell, bokförd i ADR-044-vågskålen) (`434f1ad`). Sido-svar: Storybook-MCP verifierad som gränssnitt TILL Storybook-instans.
+- **Hub-bunten (Del 4):** plugin 1.17.0→**1.18.0** (hub `1f9ca16`) — prototype-skillens Standard-form (T78 b) · work-batch T81-referensraden · **T82-flippen 6 av 7** (work-batch KVARLÅST per ADR-071 b1 — kollisionen riven öppet i STOPPA-frågan; Marcus A). Trådar STÄNGDA: T78/T80/T81/T82 (`1e873ec`).
+- **Reinstall-praxisen (Del 5, Marcus-korrigering skarp ton):** `claude plugin update` är CODE-praxis i SAMMA landning som varje bump — aldrig Marcus-moment; skarpbevisad ×2 (1.16.0→1.18.0 + praxis-bumpen **1.18.1** hub `ce9dec5` som åt sin egen praxis); tre durabla ytor (minnes-post · hub-README § Distributions-praxis · **T18 STÄNGD**) (`8ab7fc0`).
+- **TASK-29 (Del 6, do-work-formen ur 1.18.1-cachen — Skill-vägran = registerfrys, väntat):** leverans 1 pill `dadd8a3` → **CI RÖD** (run 29933197540: "Visa prototyp-växlaren" × appens `/^Visa/`-frånvaro-assertion; wrapper-exit-fångsten — vaktens äkta exit i FILEN) + Marcus facit-revidering mid-turn (underkännande #2 → L299 klassbyte) → leverans 2 **IKON-RAIL** `a123254` (dockad dragbar rail med tooltips; ADR-074-amendering river pill-formen öppet; ref-synkron POS_KEY-persistens efter rött-först-fångst) → CI-run 29934613949 grön per jobb → stängnings-commit `3715621`, kortet **Done** (AC 1–3 superseded → AC 7–9; 2 defekter rött-först-fångade).
+- **Avvikelser:** run 29933197540 väntat-oväntat RÖD (äkta fångst, ej flake) · MD004 radbrytnings-plussets instans 2+3 läkta före push · en pipe-maskerad exit self-fångad och omkörd opipat.
+- **Numrering:** ADR **074** mintad (+2 amenderingar: 071 + 074) · lessons **L307–L309** ([UNIVERSAL] ×3: side-effect-i-updater · dev-överläggens namn-rymd · wrapper-exit) · trådar T83 född; T18/T78/T80/T81/T82 stängda · TASK-29 Done · nästa: 075/L310/T84/f45/TASK-30.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-22-session-76.md`](../tasks/sessions/2026-07-22-session-76.md) (Del 1–7). **EJ fas-avslut.** Kvar efter S76: S75-resumen (work-batch 12, huvudspåret) · review-loopens Done-flippar (fråga 4) + TASK-25 · hub-lyftet L284–L309 (buntat vid hub-sync-moment) · GRANSKNINGSDATA-städet · T83/T63 vid design-horisonten · Marcus-moment: Update-klicket i claude.ai.
+
+---
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
