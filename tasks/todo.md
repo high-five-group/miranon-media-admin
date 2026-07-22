@@ -98,7 +98,21 @@
   mekanismen till work-batch-skillen (egen landning, marcus-system)
   → status-rapport vid Marcus hemkomst → QA-våg/design-review =
   Marcus → end-pass på signal.**
-- [x] **AUDIT-HALT → LÄKT → BATCH RESUMED** (2026-07-21, Del 5
+- [x] **REVIEW-FASEN + 18.8-REMEDIERING PÅGÅR; FÖNSTER-RELOAD-PARKERING**
+  (2026-07-22): 9 kort mergade granskningsfärdiga (…+ 19.2 via PR
+  #77) · 18.8: diagnos ×2 + åtgärd ×2 KLARA på branchen (TZ-fixen
+  7592ca1 · scenario-isoleringen 165fb66, determinism-bevis 3/3 +
+  20/20; fynd-kort TASK-26/27/28) · **merge-kedja 2 för PR #76
+  STOPPADES KONTROLLERAT i steg 5 inför Marcus fönster-reload** —
+  PR #76 OPEN, INGET mergat, PR-CI-run 29902222934 (headSha
+  165fb66) fortsätter server-side; worktree wt-188-merge + lokal
+  branch task/18.8 står; remote 165fb66. **NÄSTA (efter reload,
+  vilken yta som helst): kolla run 29902222934 per jobb — grön →
+  kör merge-kedjans steg 6–10 på PR #76 (merge-commit, main-vakt,
+  disk-verifiering, DoD#3-bokföring, städ per kontraktsordningen);
+  röd → ny diagnosrunda. Därefter: Marcus review-våg 9(+1) kort →
+  ny batch-order för resterande 12 → end-pass-docs (Del 6-listan) →
+  S75-skörd (lesson-kandidater 1–3 + täcknings-passet).**
   kanonisk plats): v2-halt vid 17.3-mergen — TVÅ nya
   upstream-advisories (fast-uri + linkify-it, dev-only-kedjor)
   fällde ALLA runs; 17.3 + 18.1 FÄRDIGBYGGDA på brancher (claims
