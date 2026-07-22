@@ -625,7 +625,7 @@ test.describe('Beläggningen (task-18.2)', () => {
     const termer = await grupp.locator('dt').allTextContents();
     expect(termer).toEqual([
       'Max antal platser',
-      'Reserverade',
+      'Extra platser',
       'Anmälda deltagare',
       'Manuellt tillagda',
       'Medföljande',
