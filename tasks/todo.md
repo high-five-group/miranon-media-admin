@@ -332,6 +332,25 @@
   `/session-resume` på S75 → avfyra work-batch på resterande 12 per
   Marcus-order → review-kvittenser löpande → T80/end-pass på
   signal.**
+- [x] **ÅTERUPPTAGEN, TREDJE RESUMEN** (2026-07-22, Marcus-order
+  `/session-resume på S75` i färsk Code-yta efter S76-mellansessionen):
+  `lifecycle: paused → active` + PAUSLÄGE-rubriken → Paushistorik-form;
+  numrering re-verifierad mot färsk disk — **S76 FÖRBRUKADE nummer**:
+  ADR **075** (074 på disk, ej 074) · **L311** (L310 sist, ej L307) ·
+  **T84** (T83 sist, ej T82) · fälla 45 (oförändrad) · fynd-kort
+  **TASK-30** (task-29 sist); repo rent på `622963f`, main-run
+  29940221587 grön per jobb (6/6, docs-only-formen). Carry-divergens:
+  T80/T81/T82-ordningsfrågan är **STÄNGD av S76** (ADR-074 +
+  ADR-071-amenderingen + T82-flippen levererade FÖRE batchen, precis
+  som Code-rek:en föreslog) · work-batch-skillen **KVARLÅST** per
+  ADR-071 b1 (ordern måste ges explicit, ej löptext-invokering) ·
+  referens-skriptet `work-batch-s75-v2-wf_7a56889c-9eb.js` finns EJ
+  kvar på disk (efemär scratchpad — designbesluten är bevarade i Del
+  3–6, skriptet återförfattas). **NÄSTA: avfyra work-batch på
+  resterande 12 (P1-rest 19.3 · P2-rest
+  18.9/18.10/18.11/18.4/18.5/18.6/18.7/18.12 · svans 17.5/19.4/18.13)
+  på explicit Marcus-order → review-kvittenser löpande → end-pass på
+  signal.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 
