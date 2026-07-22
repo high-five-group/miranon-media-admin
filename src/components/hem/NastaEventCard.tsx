@@ -154,13 +154,14 @@ export function NastaEventCard() {
               {nasta.startdatum ? LANGDATUM.format(new Date(nasta.startdatum)) : 'Datum ej satt'}
             </span>
           </div>
-          {/* "X av Y platser bokade" (caption, secondary) + tunn stapel (vit
-              track, primär-dämpad fyllnad) — K10-facit. Stapeln är dekor
-              (aria-hidden): texten bär beläggningen, färg aldrig ensam. */}
+          {/* "X av Y platser reserverade" (caption, secondary) + tunn stapel
+              (vit track, primär-dämpad fyllnad) — K10-facit; termen per
+              ORDLISTA "Reservera (plats)" (review-våg 1, Marcus 2026-07-22).
+              Stapeln är dekor (aria-hidden): texten bär, färg aldrig ensam. */}
           {maxPlatser != null ? (
             <div className="flex flex-col gap-1">
               <span className="text-caption text-text-secondary">
-                {belagda} av {maxPlatser} platser bokade
+                {belagda} av {maxPlatser} platser reserverade
               </span>
               <div aria-hidden="true" className="h-1.5 rounded-full bg-surface">
                 <div

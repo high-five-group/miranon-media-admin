@@ -154,8 +154,17 @@ export function EventDetail({ eventId }: { eventId: string }) {
             </span>
           )}
         </div>
+        {/* Nedräkningsformerna får suffixet "kvar till eventet" (review-
+            våg 1, Marcus 2026-07-22). Basens formel (fldcwlblR3JQxXVbe,
+            läst 2026-07-22) har exakt tre utfall: "Avslutat" | "N dagar" |
+            "N vecka/veckor [och M dagar]" — Avslutat är enda icke-
+            nedräknaren och lämnas rå (aldrig "Avslutat kvar till eventet"). */}
         {event.tidKvarTillEvent && (
-          <p className="text-small text-text-muted">{event.tidKvarTillEvent}</p>
+          <p className="text-small text-text-muted">
+            {event.tidKvarTillEvent === 'Avslutat'
+              ? event.tidKvarTillEvent
+              : `${event.tidKvarTillEvent} kvar till eventet`}
+          </p>
         )}
       </header>
 

@@ -9,10 +9,14 @@ import { expect, type Page, test } from '@playwright/test';
  * kalendervyn här" → "Facit, vi låser hela event-listans yta", 2026-07-19).
  * Formen: vy-ikon-toggeln (lista förvald) med `?vy=kalender` i URL:en,
  * React Aria Calendar-motorn med FK-skinnet, solida dag-plattor i EXAKT
- * legendens kulör (kursfärgs-tokensen, task-17.3), månadsnav som ersätter
- * period-toggeln i kalenderläget, månadssummeringen med kursfärgs-streck,
- * dag-tryck → dagens event som kort + "Visa hela månaden"-retur; vald dag
- * guld med mörk ring.
+ * legendens kulör (kursfärgs-tokensen, task-17.3), likbreda dag-kolumner
+ * (table-fixed), månadsnav som ersätter period-toggeln i kalenderläget,
+ * månadssummeringen med kursfärgs-streck, dag-tryck → dagens event som
+ * kort + toggle-avval (klick/Enter på vald dag → månaden åter); vald dag
+ * bär mörk markeringsram och behåller plattans kulör; idag FK-ringmarkeras
+ * runt dagssiffran (fk-referens IMG_1590). Review-våg 1 (Marcus
+ * 2026-07-22): guld-plattan + "Visa hela månaden"-knappen ur S72-facitet
+ * rivna ÖPPET till förmån för ram + toggle; idag-markeringen tillkom.
  *
  * AC-mappning: AC#1 = plattor/legend/vald-dag computed (L245/L246/L272);
  * AC#2 = ?vy-kontraktet + dag-flödet i e2e, begriplig annonsering, axe-0.
@@ -332,7 +336,7 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
     expect(dag(16).endsWith('-16')).toBe(true);
   });
 
-  test('AC#1+#2 — dag-flödet: dag-tryck visar dagens kort, vald dag guld med mörk ring (computed), retur till månaden', async ({
+  test('AC#1+#2 — dag-flödet: dag-tryck visar dagens kort, vald dag bär mörk ram med plattans kulör kvar (computed), toggle-avval åter till månaden', async ({
     page,
   }) => {
     const { manadNamn } = await kalenderFixtur(page);
@@ -344,28 +348,32 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
     const dagens = page.getByRole('list', { name: 'Valda dagens event' });
     await expect(dagens).toBeVisible();
     await expect(dagens.getByRole('link', { name: 'Fjärrskådning' })).toBeVisible();
-    await expect(dagens).toContainText('10 av 10 platser bokade');
+    await expect(dagens).toContainText('10 av 10 platser reserverade');
     // Månadssummeringen är ersatt av dag-läget.
     await expect(summering(page, manadNamn)).toHaveCount(0);
 
-    // Vald dag: GULD platta (--mm-primary) med MÖRK ring (--mm-text) —
-    // computed per facit-dagval-bilden; aria-selected bär tillståndet.
-    const guld = await resolvedTokenColor(page, '--mm-primary');
+    // Vald dag: mörk markeringsram (--mm-text i ring-skuggan) och plattan
+    // BEHÅLLER kursens kulör — guld-plattan är riven (review-våg 1, Marcus
+    // 2026-07-22; S72-facit-revideringen öppet bokförd i task-17.4).
+    const fjarr = await resolvedTokenColor(page, '--mm-kurs-fjarrskadning');
     const mork = await resolvedTokenColor(page, '--mm-text');
     await expect(cell(page, 17)).toHaveAttribute('aria-selected', 'true');
     const valdStil = await platta(page, 17).evaluate((el) => {
       const s = getComputedStyle(el);
       return { backgroundColor: s.backgroundColor, boxShadow: s.boxShadow };
     });
-    expect(valdStil.backgroundColor).toBe(guld);
+    expect(valdStil.backgroundColor).toBe(fjarr);
     expect(valdStil.boxShadow).toContain(mork);
 
-    // "Visa hela månaden" → summeringen åter, valet släppt, plattan åter kursfärgad.
-    await page.getByRole('button', { name: 'Visa hela månaden' }).click();
+    // Toggle-avval: klick på den valda dagen igen → summeringen åter,
+    // valet släppt; "Visa hela månaden"-knappen är riven.
+    await platta(page, 17).click();
     await expect(summering(page, manadNamn).getByRole('listitem')).toHaveCount(3);
     await expect(dagens).toHaveCount(0);
+    await expect(cell(page, 17)).not.toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('button', { name: 'Visa hela månaden' })).toHaveCount(0);
     expect(await platta(page, 17).evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
-      await resolvedTokenColor(page, '--mm-kurs-fjarrskadning'),
+      fjarr,
     );
   });
 
@@ -385,12 +393,59 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
     const dagens = page.getByRole('list', { name: 'Valda dagens event' });
     await expect(dagens.getByRole('link', { name: 'Fjärrskådning' })).toBeVisible();
 
-    // Tom dag via tangentbord (17 → 15): lugn strukturerad text, med retur.
+    // Tom dag via tangentbord (17 → 15): lugn strukturerad text.
     await page.keyboard.press('ArrowLeft');
     await page.keyboard.press('ArrowLeft');
     await page.keyboard.press('Enter');
     await expect(page.getByText('Inga event denna dag.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Visa hela månaden' })).toBeVisible();
+
+    // Tangentbords-toggeln: Enter på redan vald dag avmarkerar (paritet
+    // med pekar-togglen — WCAG 2.1.1) → månadssummeringen åter.
+    await page.keyboard.press('Enter');
+    await expect(summering(page, manadNamn).getByRole('listitem')).toHaveCount(3);
+  });
+
+  test('likbreda dag-kolumner: table-fixed ger sju kolumner med samma bredd (review-våg 1-defekten)', async ({
+    page,
+  }) => {
+    const { manadNamn } = await kalenderFixtur(page);
+    await page.goto('/event?vy=kalender');
+    await expect(summering(page, manadNamn).getByRole('listitem')).toHaveCount(3);
+
+    // Utan table-fixed satte veckodags-th:arnas textbredd (mån/tis/ons …)
+    // kolumnbredderna (table-layout: auto → innehållsstyrd bredd). Mät
+    // första body-radens celler: alla sju likbreda (subpixel-tolerans).
+    const bredder = await gridden(page)
+      .locator('tbody tr')
+      .first()
+      .locator('td')
+      .evaluateAll((celler) => celler.map((c) => c.getBoundingClientRect().width));
+    expect(bredder).toHaveLength(7);
+    expect(Math.max(...bredder) - Math.min(...bredder)).toBeLessThan(1.5);
+  });
+
+  test('idag FK-ringmarkeras: tunn cirkel runt dagssiffran, oberoende av plattans kulör', async ({
+    page,
+  }) => {
+    const { manadNamn, idagStr, ar } = await kalenderFixtur(page);
+    await page.goto('/event?vy=kalender');
+    await expect(summering(page, manadNamn).getByRole('listitem')).toHaveCount(3);
+
+    // Idag-plattan via sitt tillgängliga datum-namn (aria-label bär hela
+    // datumet); visible-filtret väljer bort grannmånadens invisible-dubblett.
+    const dd = Number(idagStr.slice(8, 10));
+    const idagPlatta = gridden(page)
+      .getByLabel(new RegExp(`\\b${dd} ${manadNamn} ${ar}`, 'i'))
+      .filter({ visible: true });
+    await expect(idagPlatta).toHaveCount(1);
+
+    // FK-idiomet (fk-referens IMG_1590): ringen sitter på ett runt spann
+    // RUNT SIFFRAN (formburen markering, inte färgburen) — ring-1 = 1px
+    // ring-skugga i currentColor → kontrasten följer plattans textfärg.
+    const ringSpann = idagPlatta.locator('span');
+    await expect(ringSpann).toHaveText(String(dd));
+    const skugga = await ringSpann.evaluate((el) => getComputedStyle(el).boxShadow);
+    expect(skugga).toMatch(/0px 0px 0px 1px/);
   });
 
   test('AC#2 — kalenderns dagar annonseras begripligt: grid-namn, svenska veckodagar (mån först), datum-namn på cellerna', async ({
