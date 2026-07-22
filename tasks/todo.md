@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 75 🟢 PÅGÅR (2026-07-21, paus vid yt-bytet återupptagen samma dag) — Batch-exekveringen: work-batch max 22, två pipelines
+### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-22; paus 2 — yt-byte under review-fasen) — Batch-exekveringen: work-batch max 22, två pipelines
 
 > Scope: sessionsdok `2026-07-21-session-75.md` Del 1 (kanonisk
 > plats): exekvera Marcus batch-order AFK (ordern ordagrant i S74
@@ -98,30 +98,7 @@
   mekanismen till work-batch-skillen (egen landning, marcus-system)
   → status-rapport vid Marcus hemkomst → QA-våg/design-review =
   Marcus → end-pass på signal.**
-- [x] **REVIEW-FASEN + 18.8-REMEDIERING PÅGÅR; FÖNSTER-RELOAD-PARKERING**
-  (2026-07-22): 9 kort mergade granskningsfärdiga (…+ 19.2 via PR
-  #77) · 18.8: diagnos ×2 + åtgärd ×2 KLARA på branchen (TZ-fixen
-  7592ca1 · scenario-isoleringen 165fb66, determinism-bevis 3/3 +
-  20/20; fynd-kort TASK-26/27/28) · **merge-kedja 2 för PR #76
-  STOPPADES KONTROLLERAT i steg 5 inför Marcus fönster-reload** —
-  PR #76 OPEN, INGET mergat, PR-CI-run 29902222934 (headSha
-  165fb66) fortsätter server-side; worktree wt-188-merge + lokal
-  branch task/18.8 står; remote 165fb66. **NÄSTA: se nästa rad.**
-- [x] **18.8 I HAMN — 10/22 GRANSKNINGSFÄRDIGA I MAIN** (2026-07-22,
-  Del 7 kanonisk plats): reloaden överlevd, run 29902222934 GRÖN
-  per jobb → steg 6–10 körda inline: **PR #76 MERGAD** (`3a36968`,
-  main-run 29903576104 grön per jobb) · DoD #3-bokföring `e826d3f`
-  (run 29904039235, 0 failure) · städ i kontraktsordning (0
-  task-brancher lokalt+remote, 1 worktree). 18.8:s väg: två
-  diagnos-/åtgärdsrundor (TZ-förankringen `7592ca1` +
-  scenario-isoleringen `165fb66`, determinism-bevis 3/3 + 20/20)
-  — fynd TASK-26/27/28. **NÄSTA: (1) MARCUS REVIEW-VÅG — 10 kort
-  (17.1 · 17.2 · 17.3 · 17.4 · 18.1 · 18.2 · 18.3 · 18.8 · 19.1 ·
-  19.2) + TASK-25-fokusringen; per kvittens: DoD #5 + final-summary
-  och Done-flipp (tvåstegs); (2) ny batch-order för resterande 12;
-  (3) end-pass-docs (data-model-synken · fälla 45 ·
-  STATE-STRATEGY); (4) end-pass/skörd på Marcus-signal;
-  (5) T18-plugin-reinstall (1.17.0).**
+- [x] **AUDIT-HALT → LÄKT → BATCH RESUMED** (2026-07-21, Del 5
   kanonisk plats): v2-halt vid 17.3-mergen — TVÅ nya
   upstream-advisories (fast-uri + linkify-it, dev-only-kedjor)
   fällde ALLA runs; 17.3 + 18.1 FÄRDIGBYGGDA på brancher (claims
@@ -153,6 +130,40 @@
   och 12 kort + ev. 18.8); (4) end-pass-docs (data-model-synken ·
   fälla 45 · STATE-STRATEGY-driften); (5) T18-reinstall
   (plugin 1.17.0).**
+- [x] **REMEDIERINGEN + FÖNSTER-RELOAD-PARKERINGEN** (2026-07-22,
+  Del 7 kanonisk plats): Marcus-order "tar tag i 19.2 och 18.8" →
+  **19.2 MERGAD** (PR #77, tre runs gröna per jobb, kortfil-unionen
+  per mandatet, städat) · 18.8: diagnos ×2 + åtgärd ×2 på branchen
+  (runda 1: datadrift-hypotesen FALSIFIERAD — TZ-skevheten ×2 +
+  av-bock-racet, fix `7592ca1` · runda 2: persist-hydrerings-
+  mekanismen trippelbevisad, fix `165fb66` distinkta eventId;
+  determinism-bevis 3/3 + 20/20) · fynd TASK-26/27/28 · **merge-
+  kedja 2 STOPPAD KONTROLLERAT i steg 5 inför Marcus
+  fönster-reload** (PR #76 OPEN, inget mergat; PR-CI server-side;
+  parkering `87f6ff2`). **NÄSTA: post-reload — kolla runnet →
+  steg 6–10.**
+- [x] **18.8 I HAMN — 10/22 GRANSKNINGSFÄRDIGA I MAIN** (2026-07-22,
+  Del 7 kanonisk plats): reloaden överlevd, run 29902222934 GRÖN
+  per jobb → steg 6–10 körda inline: **PR #76 MERGAD** (`3a36968`,
+  main-run 29903576104 grön per jobb) · DoD #3-bokföring `e826d3f`
+  (run 29904039235, 0 failure) · städ i kontraktsordning (0
+  task-brancher lokalt+remote, 1 worktree). **NÄSTA: (1) MARCUS
+  REVIEW-VÅG — 10 kort + TASK-25; per kvittens DoD #5 +
+  final-summary och Done-flipp (tvåstegs); (2) ny batch-order för
+  resterande 12; (3) end-pass-docs; (4) end-pass/skörd på signal;
+  (5) T18-plugin-reinstall (1.17.0).**
+- [x] **PAUSAD, ANDRA PAUSEN** (2026-07-22, Marcus-order "Vi pausar
+  här och fortsätter på ny yta … kör /session-paus"): `lifecycle:
+  paused` + förankrad PAUSLÄGE-rubrik + fullt HANDOFF (TILLSTÅND
+  [10/22 mergade · 0 review-kvittenser · sidoeffekter rena ·
+  Marcus egen dev-server på 5173 rörs ej] · CARRY [review-vågen ·
+  batch-ordern för 12 · end-pass-docs-listan · lesson-kandidater
+  1–4 · TASK-20–28 + Dependabot #65/#66] · numrering
+  074/L307/T80/f45/TASK-29 · resume-vägen). Todo-radskadan från
+  reload-brådskan (AUDIT-HALT-radens huvud) upptäckt + reparerad i
+  paus-landningen. **NÄSTA: NY Code-yta → `/session-resume` på S75
+  → processa review-kvittenserna → batch-order 12 → end-pass på
+  signal.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 
