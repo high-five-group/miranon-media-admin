@@ -63,7 +63,7 @@ function dagarKvarText(startMs: number, idagStartMs: number): string {
  *   prefers-contrast: more släpper dämpningen helt (genomstrykningen +
  *   slot-texten bär ensamma).
  * - Fullbokat: grön kontur + grön stapel-fyllnad; texten "X av X platser
- *   bokade" bär redan tillståndet (färg aldrig ensam — WCAG 1.4.1).
+ *   reserverade" bär redan tillståndet (färg aldrig ensam — WCAG 1.4.1).
  *
  * Klickytan är HELA kortet via `after:absolute after:inset-0` på rubriklänken
  * mot kortets `relative` (NastaEventCard-precedenten: EN länk, rent länknamn).
@@ -153,7 +153,7 @@ export function EventCard({
       <div className="flex flex-col gap-1">
         <span className={`text-caption ${dampadText || 'text-text-secondary'}`}>
           {maxPlatser != null
-            ? `${e.antalAnmalda} av ${maxPlatser} platser bokade`
+            ? `${e.antalAnmalda} av ${maxPlatser} platser reserverade`
             : `${e.antalAnmalda} anmälda (platser ej satt)`}
         </span>
         <div

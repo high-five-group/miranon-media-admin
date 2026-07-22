@@ -338,7 +338,7 @@ test.describe('Event-listan till S72-facit (task-17.2)', () => {
 
     // Normalkortet: beläggningstext + fylld stapel.
     const grund = kort(page, 'Grundkurs i medvetande');
-    await expect(grund).toContainText('8 av 12 platser bokade');
+    await expect(grund).toContainText('8 av 12 platser reserverade');
     const fyllnad = grund.locator('[data-slot="belaggning-fyllnad"]');
     expect(
       Number.parseFloat(await fyllnad.evaluate((el) => getComputedStyle(el).width)),
@@ -412,7 +412,7 @@ test.describe('Event-listan till S72-facit (task-17.2)', () => {
 
     const success = await resolvedTokenColor(page, '--mm-success');
     const full = kort(page, 'Fjärrskådning fördjupning');
-    await expect(full).toContainText('10 av 10 platser bokade');
+    await expect(full).toContainText('10 av 10 platser reserverade');
     expect(await full.evaluate((el) => getComputedStyle(el).borderTopColor)).toBe(success);
     expect(
       await full

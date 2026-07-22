@@ -211,7 +211,7 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     // (ingen mock har besvarats): innehållet kan bara komma ur lagringen.
     const main = page.locator('main#main');
     await expect(main.getByRole('link', { name: /Signe Sparad/ })).toBeVisible();
-    await expect(page.getByText('5 av 20 platser bokade')).toBeVisible();
+    await expect(page.getByText('5 av 20 platser reserverade')).toBeVisible();
 
     // Nätverksnivå-beviset: bakgrundshämtningen är AKTIV (två mottagna,
     // obesvarade anrop — get-registrations + get-events; registrations-queryn

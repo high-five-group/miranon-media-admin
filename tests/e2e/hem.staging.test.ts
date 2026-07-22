@@ -516,7 +516,7 @@ test.describe('Nästa event + Obetalda till facit (task-4.3)', () => {
     await expect(kort.getByRole('link')).toHaveCount(1);
   });
 
-  test('AC 4 — "X av Y platser bokade" + beläggningsstapelns fyllnadsandel matchar X/Y (renderad mätning)', async ({
+  test('AC 4 — "X av Y platser reserverade" + beläggningsstapelns fyllnadsandel matchar X/Y (renderad mätning)', async ({
     page,
   }) => {
     await mock(page, {
@@ -535,7 +535,7 @@ test.describe('Nästa event + Obetalda till facit (task-4.3)', () => {
 
     // Caption-texten är informationsbäraren (stapeln aldrig ensam): 12px
     // (text-caption) i secondary (--mm-text-secondary #525151).
-    const caption = kort.getByText('5 av 20 platser bokade', { exact: true });
+    const caption = kort.getByText('5 av 20 platser reserverade', { exact: true });
     await expect(caption).toBeVisible();
     const captionStil = await caption.evaluate((el) => {
       const s = getComputedStyle(el);
@@ -1082,7 +1082,7 @@ test.describe('Osynliga uppdateringen (task-4.5)', () => {
     const main = page.locator('main#main');
     await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
     await expect(page.getByRole('link', { name: /Anna Andersson/ })).toBeVisible();
-    await expect(page.getByText('5 av 20 platser bokade')).toBeVisible();
+    await expect(page.getByText('5 av 20 platser reserverade')).toBeVisible();
     await expect(main.getByRole('status')).toHaveCount(0);
 
     // L246-mätfällan: neutralisera muspekaren — hover-tillstånd ger falsk diff.
@@ -1142,7 +1142,7 @@ test.describe('Osynliga uppdateringen (task-4.5)', () => {
 
     const obetalda = page.getByRole('region', { name: 'Obetalda anmälningsavgifter' });
     await expect(obetalda.getByText('1', { exact: true })).toBeVisible();
-    await expect(page.getByText('5 av 20 platser bokade')).toBeVisible();
+    await expect(page.getByText('5 av 20 platser reserverade')).toBeVisible();
 
     // Mät containrarna FÖRE (layout-stillhetens referens).
     const ytor = {
@@ -1170,7 +1170,7 @@ test.describe('Osynliga uppdateringen (task-4.5)', () => {
 
     // Berörda värden bytta …
     await expect(obetalda.getByText('2', { exact: true })).toBeVisible();
-    await expect(page.getByText('6 av 20 platser bokade')).toBeVisible();
+    await expect(page.getByText('6 av 20 platser reserverade')).toBeVisible();
     // … oberörda orörda …
     await expect(page.getByRole('link', { name: /Anna Andersson/ })).toBeVisible();
     await expect(page.getByText('Utan event')).toBeVisible();

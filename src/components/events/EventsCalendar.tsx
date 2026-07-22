@@ -1,4 +1,4 @@
-import { CalendarDate, getLocalTimeZone } from '@internationalized/date';
+import { CalendarDate, getLocalTimeZone, isSameDay } from '@internationalized/date';
 import { Link } from '@tanstack/react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -100,16 +100,24 @@ const NAV_KNAPP =
  * (WCAG 1.4.1): legenden bär orden, månadssummeringen bär månadens innehåll
  * i listform (story 12 — skärmläsarens karta), dag-trycket visar korten.
  *
- * Formerna ur facitet:
+ * Formerna ur facitet + review-våg 1 (Marcus 2026-07-22 — S72-facitets
+ * guld-platta och "Visa hela månaden"-knapp RIVNA ÖPPET, idag-markeringen
+ * och likbredds-kravet tillkom; bokfört i task-17.4):
  * - Dag-plattor: solida i legendens exakta token-kulör (500-serien, vit
- *   semibold text); tomma dagar muted; utanför-månaden osynlig.
- * - Vald dag: GULD (--mm-primary) med MÖRK ring (--mm-text, ring-offset) —
- *   dagval-bilden; valet annonseras via aria-selected (grid-mönstret).
+ *   semibold text); tomma dagar muted; utanför-månaden osynlig; kolumnerna
+ *   likbreda via table-fixed (table-layout: auto lät veckodags-th:arnas
+ *   textbredd dra isär gridden — review-våg 1-defekten).
+ * - Vald dag: MÖRK markeringsram (--mm-text, ring-offset) — plattan
+ *   behåller sin egen kulör; valet annonseras via aria-selected.
+ * - Idag: FK-idiomet (fk-referens IMG_1590) — tunn cirkel runt SIFFRAN i
+ *   currentColor (formburen markering, kontrasten följer plattans
+ *   textfärg); skärmläsar-namnet bär redan idag-prefixet (react-aria).
  * - Månadssummeringen (agenda-under-grid, K12): fokusmånadens event som
  *   kompakta rader med vertikalt kursfärgs-streck (K14), korta kursnamn
  *   (K13; Annat-uppsamlingen bär eventnamnet) och datum · ort.
- * - Dag-tryck: dagens event som likformiga slot-kort (EventCard, B-formen)
- *   + "Visa hela månaden"-retur; tom dag får lugn strukturerad text.
+ * - Dag-tryck: dagens event som likformiga slot-kort (EventCard, B-formen);
+ *   klick/Enter på den valda dagen AVMARKERAR (toggle — månaden åter);
+ *   tom dag får lugn strukturerad text.
  *
  * Lugnt laddläge (ORDLISTA): gridden är datalös geometri och renderas
  * DIREKT i slutform; under pending bär summeringsytan dimensionsstabila
@@ -195,13 +203,6 @@ export function EventsCalendar({
               ))}
             </ul>
           )}
-          <button
-            type="button"
-            onClick={() => setSelected(null)}
-            className="self-center font-medium text-small text-text-secondary underline underline-offset-2"
-          >
-            Visa hela månaden
-          </button>
         </div>
       );
     }
@@ -253,8 +254,18 @@ export function EventsCalendar({
       <div className="flex flex-col gap-4">
         <Calendar
           aria-label="Eventkalender"
-          value={selected}
-          onChange={setSelected}
+          // KLONEN bär togglen: useControlledState fyrar onChange endast när
+          // Object.is skiljer nya värdet från value-PROPEN, och grid-cellernas
+          // datum-instanser är STABILA över renders — klick på redan vald dag
+          // skickar samma instans och tystas utan klonen (empiriskt rött
+          // 2026-07-22; källorna lästa: useControlledState.js-guarden +
+          // useCalendarCell.js onPress som alltid kallar selectDate).
+          value={selected && new CalendarDate(selected.year, selected.month, selected.day)}
+          // Toggle-avval (review-våg 1): val av redan vald dag släpper valet
+          // — ersätter den rivna "Visa hela månaden"-knappen; samma väg för
+          // pekare, tangentbordets Enter och skärmläsarens virtuella klick
+          // (alla går via onPress → selectDate).
+          onChange={(d) => setSelected((prev) => (prev && d && isSameDay(prev, d) ? null : d))}
           focusedValue={focused}
           onFocusChange={setFocused}
           className="flex flex-col gap-3"
@@ -270,7 +281,10 @@ export function EventsCalendar({
               <ChevronRight aria-hidden="true" size={20} />
             </AriaButton>
           </header>
-          <CalendarGrid weekdayStyle="short" className="w-full border-separate border-spacing-1">
+          <CalendarGrid
+            weekdayStyle="short"
+            className="w-full table-fixed border-separate border-spacing-1"
+          >
             <CalendarGridHeader>
               {(day) => (
                 <CalendarHeaderCell className="pb-1 font-medium text-caption text-text-secondary">
@@ -285,6 +299,7 @@ export function EventsCalendar({
                 const dagens = byDay.get(date.toString());
                 const farg =
                   dagens && dagens.length > 0 ? kursfargForKurs(dagens[0].eventNamn) : null;
+                const arIdag = isSameDay(date, idag);
                 return (
                   <CalendarCell
                     date={date}
@@ -292,15 +307,28 @@ export function EventsCalendar({
                       [
                         'relative flex h-11 items-center justify-center rounded-lg text-small tabular-nums',
                         isOutsideMonth ? 'invisible' : '',
-                        isSelected
-                          ? 'bg-primary font-semibold text-text ring-2 ring-text ring-offset-1'
-                          : farg
-                            ? `${farg.bgClass} font-semibold text-text-inverse`
-                            : 'bg-bg-muted text-text-secondary',
+                        farg
+                          ? `${farg.bgClass} font-semibold text-text-inverse`
+                          : 'bg-bg-muted text-text-secondary',
+                        // Vald dag: ENDAST mörk markeringsram — plattan
+                        // behåller sin kulör (guld-plattan riven öppet,
+                        // review-våg 1; ramen + aria-selected bär valet).
+                        isSelected ? 'font-semibold ring-2 ring-text ring-offset-1' : '',
                       ].join(' ')
                     }
                   >
-                    {({ formattedDate }) => formattedDate}
+                    {({ formattedDate }) =>
+                      arIdag ? (
+                        // FK-idiomet (IMG_1590): idag = tunn cirkel runt
+                        // SIFFRAN i currentColor — formburen markering med
+                        // kontrast på både färgad och tom platta.
+                        <span className="grid size-7 place-items-center rounded-full ring-1 ring-current">
+                          {formattedDate}
+                        </span>
+                      ) : (
+                        formattedDate
+                      )
+                    }
                   </CalendarCell>
                 );
               }}

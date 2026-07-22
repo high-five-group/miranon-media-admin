@@ -270,7 +270,7 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
     mocken.hall = false;
     await mocken.slappAlla();
     await expect(page.getByRole('link', { name: /Person0 Andersson/ })).toBeVisible();
-    await expect(page.getByText('5 av 20 platser bokade')).toBeVisible();
+    await expect(page.getByText('5 av 20 platser reserverade')).toBeVisible();
     await expect(main.getByRole('status')).toHaveCount(0);
     // Deterministisk måla-klart-vänta (dubbel-rAF, task-4.5) — ingen fast delay.
     await page.evaluate(

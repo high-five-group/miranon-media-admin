@@ -116,8 +116,22 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     // EventKey-pillen på titelraden (metadata, inte titel-storlek).
     await expect(page.getByText('Event-21')).toBeVisible();
 
-    // Tid kvar-raden under titeln.
-    await expect(page.getByText('1 vecka och 3 dagar')).toBeVisible();
+    // Tid kvar-raden under titeln — nedräkningsformerna bär suffixet
+    // "kvar till eventet" (review-våg 1, Marcus 2026-07-22).
+    await expect(page.getByText('1 vecka och 3 dagar kvar till eventet')).toBeVisible();
+  });
+
+  test('tid kvar-raden: "Avslutat" renderas rått utan kvar-suffix (formelns enda icke-nedräkningsgren)', async ({
+    page,
+  }) => {
+    // Basens formel (fldcwlblR3JQxXVbe, läst 2026-07-22) ger exakt tre
+    // former: "Avslutat" | "N dagar" | "N vecka/veckor [och M dagar]" —
+    // suffixet får aldrig ge "Avslutat kvar till eventet".
+    await mockEvent(page, eventDetail({ tidKvarTillEvent: 'Avslutat' }));
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByText('Avslutat', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Avslutat kvar till/)).toHaveCount(0);
   });
 
   test('grupp-grammatiken: rubriker UTANFÖR tonala kort; facit-ordningen', async ({ page }) => {
