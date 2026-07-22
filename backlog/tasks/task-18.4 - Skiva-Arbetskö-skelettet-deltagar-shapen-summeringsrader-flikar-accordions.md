@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-22 18:10'
+updated_date: '2026-07-22 18:30'
 labels:
   - ready-for-agent
 dependencies:
@@ -28,8 +28,6 @@ Anmälda deltagare-kortet får arbetsköns skelett ände-till-ände: deltagar-sh
 - [x] #2 Summeringsradernas klickfilter och accordion-grupperingen bevisade i e2e; ordningen äldst-först respektive senast-först verifierad
 - [x] #3 Signal-slotten renderar per facit i båda lägena (badge respektive tom reserv) utan geometri-hopp
 <!-- AC:END -->
-
-
 
 ## Implementation Notes
 
@@ -131,13 +129,50 @@ UTAN att röra Marcus dev-server: egen dev-server på port **5188** +
 `PLAYWRIGHT_TEST_BASE_URL` (hoppar över webServer-blocket). Sviten är helt
 route-mockad, så staging-CORS aldrig i spel. Därmed är e2e-beviset LOKALT
 observerat, inte bara PR-CI-buret — RÖD-fasen inkluderad. Port 5173 orörd.
+
+## Post-CI-bokföring (merge-agenten, 2026-07-22)
+
+Mergad till main som merge-commit `431233e` (PR #81, merge-commit ALLTID —
+aldrig squash, SHA-beviset bevaras).
+
+**PR-CI run 29945860514** — grön per jobb, fil-läst: Detect changed files ·
+Lint + Audit + TypeCheck · Staging sentinel purge · Docs link check ·
+Test + Build · CI Passed or Skipped (6/6 success).
+**main-CI run 29946401652** på `431233e` — grön per jobb, samma sex jobb (6/6).
+
+**e2e-beviset uttryckligen (pr-ci-bevisformen):** `E2E tests (staging)` inne i
+Test + Build: 220 passed / 3 skipped / 0 failed i BÅDA runnen.
+Test-count-delta mot main-baseline (run 29938873266 @ 4560c4d):
+api staging 128 → 132 (+4 kontraktstester, AC #1) · e2e 212 → 220 passed
+(+8 tester, AC #2/#3) · api pure 185 oförändrat · a11y 62/62 oförändrat.
+Deltat matchar kortets bevisrader exakt.
+
+**Claims-kvitto:** 12/12 ändrade filer inom kortets deklarerade yta —
+noll fil utanför. `src/routeTree.gen.ts` ej committad (gitignorad, korrekt).
+`tasks/lessons.md` och `docs/reference/data-model.md` orörda.
+Merge-tree-grinden mot färsk main gav exit 0 (ingen konflikt, inget
+upplösnings-mandat behövde användas).
+
+**DoD #3 bockad** — bevis är CI-runnen ovan.
+
+**GRANSKNINGSFÄRDIG — väntar design-review (Marcus).** Kortet står kvar
+In Progress: DoD #5 (design-review mot S73-facit i webbläsaren) är öppen och
+kan bara bockas av Marcus. Ingen final-summary skriven, status ej satt Done.
+Commit-SHA att granska: `431233e` (branch-head `231f504`).
+
+**Merge-agentens observation (blockerar inte, ej åtgärdad):** ORDLISTA-posten
+**Eventinfo** lades mellan `Lugnt laddläge` och `Obekräftad/Bekräftad`. Den
+sektionen är inte strikt alfabetisk redan på main (Mina sidor → Lugnt laddläge),
+så placeringen följer omgivningen snarare än FAS-direktivets alfabet-regel.
+Hunken är egen och orsakade ingen merge-friktion; noteras öppet i stället för
+att tyst omsorteras (omsortering är uttryckligen förbjuden under batchen).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
