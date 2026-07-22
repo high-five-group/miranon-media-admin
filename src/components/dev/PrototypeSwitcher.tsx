@@ -1,29 +1,33 @@
 /**
  * [DEV-VERKTYG] PrototypeSwitcher — delad prototyp-växlare som dockad,
- * dragbar ikon-rail (ADR-074 beslut 2 REVIDERAT S76 på Marcus-direktiv;
- * T78 a-hemvisten, TASK-29). STÅENDE dev-komponent — varken throwaway-kod
- * eller 11/11/11-produktbiblioteket: monteras endast bakom
- * `import.meta.env.DEV` (ADR-044-mekaniken) och möter körbarhets-golvet.
+ * dragbar ikon-rail (ADR-074 beslut 2 REVIDERAT S76 + polervågen på
+ * Marcus-granskning; T78 a-hemvisten, TASK-29). STÅENDE dev-komponent —
+ * varken throwaway-kod eller 11/11/11-produktbiblioteket: monteras endast
+ * bakom `import.meta.env.DEV` (ADR-044-mekaniken) och möter
+ * körbarhets-golvet.
  *
  * Identitetsmodellen (S72): VARIANT = divergens-axeln · STEG =
- * konvergens-axeln. Identiteten bärs i rail-formen av aktiv knapps
- * steg-badge + tooltip (full rad: "Variant A · Steg 1 — label").
+ * konvergens-axeln. Identiteten bärs av aktiv knapps steg-badge +
+ * tooltip. EN variant i familjen → prototyp-ikon (kolv) i stället för
+ * kryptisk bokstav (S76-polervågen: "vad betyder K?"); flera varianter →
+ * bokstavs-knappar (särskiljbarhet kräver dem).
  *
  * URL-kontraktet (ADR-074 beslut 1): `?variant=<nyckel>` (null = skarpa
  * vyn) · `?data=verklig`. Stabila nycklar; `aliases` är ENBART
  * legacy-inmappning för historiska URL:er.
  *
- * Rail-formen (beslut 2-revideringen): alltid kompakt — endast
- * ikon-knappar med tooltips (Figma/Stripe-klassens verktygsrail).
- * Default DOCKAD vid höger kant, vertikalt centrerad; flyttbar via
- * grip-handtaget (position persisteras i POS_KEY; dubbelklick på grippen
- * dockar tillbaka). Live-jämförelse i fönster-lagret via ⧉ (beslut 3).
+ * Rail-formen: alltid kompakt, KONSTANT höjd (data-knappen har
+ * reserverad plats även utan aktiv variant — höjd-hopp är förbjudna);
+ * flyttbar via grip (pointer-drag ELLER piltangenter; Home/Escape
+ * dockar; dubbelklick dockar); tooltips flippar sida nära vänsterkant.
  */
 import { useQueryState } from 'nuqs';
 import { useRef, useState } from 'react';
 
 /** Dragen position {x,y} i px; saknad post = dockad default-position. */
 const POS_KEY = 'mm-proto-switcher-pos';
+/** Piltangenternas nudge-steg (px) på grip-handtaget. */
+const NUDGE = 16;
 
 export type PrototypeVariant = {
   /** URL-nyckeln i `?variant=` */
@@ -48,12 +52,14 @@ function lasPos(): Pos | null {
   }
 }
 
-/** Mörk mikro-tooltip till vänster om railen (CSS-only, group-hover). */
-function Tooltip({ text }: { text: string }) {
+/** Mörk mikro-tooltip; sidan styrs av railens läge (klipper aldrig vid
+    vänsterkant). Alltid normalvikt — ärver ALDRIG knappens fetstil. */
+function Tooltip({ text, sida }: { text: string; sida: 'vanster' | 'hoger' }) {
+  const placering = sida === 'vanster' ? 'right-full mr-2' : 'left-full ml-2';
   return (
     <span
       aria-hidden="true"
-      className="pointer-events-none absolute top-1/2 right-full mr-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-text px-2 py-1 text-caption text-text-inverse shadow-lg group-hover:block group-focus-visible:block"
+      className={`pointer-events-none absolute top-1/2 ${placering} hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-text px-2 py-1 font-normal text-caption text-text-inverse shadow-lg group-hover:block group-focus-visible:block`}
     >
       {text}
     </span>
@@ -71,51 +77,93 @@ export function PrototypeSwitcher({
   const [variantParam, setVariant] = useQueryState('variant');
   const [dataMode, setDataMode] = useQueryState('data');
   const [pos, setPos] = useState<Pos | null>(lasPos);
-  // Senaste positionen speglas i en ref (L300-mönstret) så persistensen kan
-  // ske SYNKRONT i pointerup-handlern — en side effect i setState-updatern
-  // körs efter dubbelklickets docka() och skulle återskriva nyckeln.
+  // Positionen speglas i en ref (L300/L307) så persistensen sker SYNKRONT
+  // i event-handlern — aldrig som side effect i setState-updatern.
   const posRef = useRef<Pos | null>(pos);
   const drag = useRef<{ pekareId: number; dx: number; dy: number } | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
 
   const resolved = variantParam == null ? null : (aliases[variantParam] ?? variantParam);
   const active = variants.find((v) => v.key === resolved) ?? null;
+  const endaVarianten = variants.length === 1;
+  // Nära vänsterkanten flippar tooltipen till höger sida (klipp-skyddet).
+  const tooltipSida: 'vanster' | 'hoger' = pos && pos.x < 140 ? 'hoger' : 'vanster';
+
+  const sattPos = (p: Pos | null) => {
+    posRef.current = p;
+    setPos(p);
+  };
+  const persistera = () => {
+    if (posRef.current) localStorage.setItem(POS_KEY, JSON.stringify(posRef.current));
+  };
+  const klampad = (x: number, y: number): Pos => {
+    const r = railRef.current?.getBoundingClientRect();
+    const w = r?.width ?? 48;
+    const h = r?.height ?? 240;
+    return {
+      x: Math.min(Math.max(x, 4), window.innerWidth - w - 4),
+      y: Math.min(Math.max(y, 4), window.innerHeight - h - 4),
+    };
+  };
 
   const startaDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const r = rail.getBoundingClientRect();
+    const r = railRef.current?.getBoundingClientRect();
+    if (!r) return;
     drag.current = { pekareId: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const flytta = (e: React.PointerEvent<HTMLButtonElement>) => {
     const d = drag.current;
-    const rail = railRef.current;
-    if (!d || d.pekareId !== e.pointerId || !rail) return;
-    const r = rail.getBoundingClientRect();
-    const x = Math.min(Math.max(e.clientX - d.dx, 4), window.innerWidth - r.width - 4);
-    const y = Math.min(Math.max(e.clientY - d.dy, 4), window.innerHeight - r.height - 4);
-    posRef.current = { x, y };
-    setPos(posRef.current);
+    if (!d || d.pekareId !== e.pointerId) return;
+    sattPos(klampad(e.clientX - d.dx, e.clientY - d.dy));
   };
   const slappDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (drag.current?.pekareId !== e.pointerId) return;
     drag.current = null;
-    if (posRef.current) localStorage.setItem(POS_KEY, JSON.stringify(posRef.current));
+    persistera();
   };
   const docka = () => {
     drag.current = null;
-    posRef.current = null;
-    setPos(null);
+    sattPos(null);
     localStorage.removeItem(POS_KEY);
   };
+  /** Tangentbords-flytt: pilar nudgar, Home/Escape dockar (a11y-paritet
+      med pointer-draget). */
+  const nudge = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === 'Home' || e.key === 'Escape') {
+      e.preventDefault();
+      docka();
+      return;
+    }
+    const r = railRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const bas: Pos = posRef.current ?? { x: r.left, y: r.top };
+    const steg: Record<string, Pos> = {
+      ArrowLeft: { x: bas.x - NUDGE, y: bas.y },
+      ArrowRight: { x: bas.x + NUDGE, y: bas.y },
+      ArrowUp: { x: bas.x, y: bas.y - NUDGE },
+      ArrowDown: { x: bas.x, y: bas.y + NUDGE },
+    };
+    const nasta = steg[e.key];
+    if (!nasta) return;
+    e.preventDefault();
+    sattPos(klampad(nasta.x, nasta.y));
+    persistera();
+  };
 
+  const fokus =
+    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus';
   const knapp = (isActive: boolean) =>
-    `group relative flex h-9 w-9 items-center justify-center rounded-full text-small transition-colors ${
+    `group relative flex h-9 w-9 items-center justify-center rounded-full text-small transition-colors ${fokus} ${
       isActive
         ? 'border border-primary bg-primary-tint font-semibold text-text'
         : 'text-text-secondary hover:bg-bg-subtle'
     }`;
+  const stegBadge = (steg: number) => (
+    <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-text px-0.5 font-semibold text-[10px] text-text-inverse">
+      {steg}
+    </span>
+  );
 
   return (
     <div
@@ -127,13 +175,14 @@ export function PrototypeSwitcher({
     >
       <button
         type="button"
-        aria-label="Flytta prototyp-växlaren (dra; dubbelklick dockar tillbaka)"
+        aria-label="Flytta prototyp-växlaren: dra eller piltangenter; Home eller dubbelklick dockar"
         onPointerDown={startaDrag}
         onPointerMove={flytta}
         onPointerUp={slappDrag}
         onPointerCancel={slappDrag}
         onDoubleClick={docka}
-        className="group relative flex h-7 w-9 cursor-grab touch-none items-center justify-center rounded-full text-text-muted hover:bg-bg-subtle active:cursor-grabbing"
+        onKeyDown={nudge}
+        className={`flex h-7 w-9 cursor-grab touch-none items-center justify-center rounded-full text-text-muted hover:bg-bg-subtle active:cursor-grabbing ${fokus}`}
       >
         <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" aria-hidden="true">
           <circle cx="2.5" cy="2" r="1.3" />
@@ -143,7 +192,6 @@ export function PrototypeSwitcher({
           <circle cx="2.5" cy="12" r="1.3" />
           <circle cx="7.5" cy="12" r="1.3" />
         </svg>
-        <Tooltip text="Dra för att flytta · dubbelklick dockar" />
       </button>
       <span aria-hidden="true" className="h-px w-6 bg-border" />
       <button
@@ -165,7 +213,7 @@ export function PrototypeSwitcher({
           <path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8s-2.4 4.5-6.5 4.5S1.5 8 1.5 8Z" />
           <circle cx="8" cy="8" r="2" />
         </svg>
-        <Tooltip text="Skarpa vyn" />
+        <Tooltip text="Skarpa vyn" sida={tooltipSida} />
       </button>
       {variants.map((v) => (
         <button
@@ -173,48 +221,83 @@ export function PrototypeSwitcher({
           type="button"
           onClick={() => setVariant(v.key)}
           aria-pressed={active?.key === v.key}
-          aria-label={`Variant ${v.key} · Steg ${v.steg} — ${v.stegLabel}`}
+          aria-label={
+            endaVarianten
+              ? `Prototyp (?variant=${v.key}) · Steg ${v.steg} — ${v.stegLabel}`
+              : `Variant ${v.key} · Steg ${v.steg} — ${v.stegLabel}`
+          }
           className={knapp(active?.key === v.key)}
         >
-          <span className="font-mono">{v.key}</span>
-          {active?.key === v.key && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-text px-0.5 font-semibold text-[10px] text-text-inverse">
-              {v.steg}
-            </span>
+          {endaVarianten ? (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              aria-hidden="true"
+            >
+              <path d="M6 1.5h4" />
+              <path d="M6.8 1.5v4.2L3 12.2a1.6 1.6 0 0 0 1.4 2.3h7.2a1.6 1.6 0 0 0 1.4-2.3L9.2 5.7V1.5" />
+              <path d="M4.6 10h6.8" />
+            </svg>
+          ) : (
+            <span className="font-mono">{v.key}</span>
           )}
-          <Tooltip text={`Variant ${v.key} · Steg ${v.steg} — ${v.stegLabel}`} />
-        </button>
-      ))}
-      {active && (
-        <button
-          type="button"
-          onClick={() => setDataMode(dataMode === 'verklig' ? null : 'verklig')}
-          aria-pressed={dataMode === 'verklig'}
-          aria-label={
-            dataMode === 'verklig'
-              ? 'Verklig data — växla till demo'
-              : 'Demo-data — växla till verklig'
-          }
-          className={knapp(dataMode === 'verklig')}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            aria-hidden="true"
-          >
-            <ellipse cx="8" cy="3.5" rx="5.5" ry="2" />
-            <path d="M2.5 3.5v9c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-9" />
-            <path d="M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2" />
-          </svg>
+          {active?.key === v.key && stegBadge(v.steg)}
           <Tooltip
-            text={dataMode === 'verklig' ? 'Data: verklig → demo' : 'Data: demo → verklig'}
+            text={
+              endaVarianten
+                ? `Prototyp (?variant=${v.key}) · Steg ${v.steg} — ${v.stegLabel}`
+                : `Variant ${v.key} · Steg ${v.steg} — ${v.stegLabel}`
+            }
+            sida={tooltipSida}
           />
         </button>
-      )}
+      ))}
+      <button
+        type="button"
+        onClick={() => {
+          if (active) setDataMode(dataMode === 'verklig' ? null : 'verklig');
+        }}
+        aria-pressed={active != null && dataMode === 'verklig'}
+        aria-disabled={active == null}
+        aria-label={
+          active == null
+            ? 'Dataläge (välj prototyp först)'
+            : dataMode === 'verklig'
+              ? 'Verklig data — växla till demo'
+              : 'Demo-data — växla till verklig'
+        }
+        className={`${knapp(active != null && dataMode === 'verklig')} ${
+          active == null ? 'cursor-default opacity-40 hover:bg-transparent' : ''
+        }`}
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          aria-hidden="true"
+        >
+          <ellipse cx="8" cy="3.5" rx="5.5" ry="2" />
+          <path d="M2.5 3.5v9c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-9" />
+          <path d="M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2" />
+        </svg>
+        <Tooltip
+          text={
+            active == null
+              ? 'Dataläge — välj prototyp först'
+              : dataMode === 'verklig'
+                ? 'Data: verklig → demo'
+                : 'Data: demo → verklig'
+          }
+          sida={tooltipSida}
+        />
+      </button>
       <span aria-hidden="true" className="h-px w-6 bg-border" />
       <button
         type="button"
@@ -235,7 +318,7 @@ export function PrototypeSwitcher({
           <path d="M8.5 2.5h4v4" />
           <path d="M12.5 2.5 7 8" />
         </svg>
-        <Tooltip text="Öppna i nytt fönster" />
+        <Tooltip text="Öppna i nytt fönster" sida={tooltipSida} />
       </button>
     </div>
   );

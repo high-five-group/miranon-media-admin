@@ -3,10 +3,10 @@ id: TASK-29
 title: >-
   Prototyp-växlarens ombyggnad till ADR-074-standarden (minimal-först hörn-pill
   + pilstegning + fönster-jämförelse)
-status: Done
+status: In Progress
 assignee: []
 created_date: '2026-07-22 14:38'
-updated_date: '2026-07-22 15:50'
+updated_date: '2026-07-22 16:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,7 +36,13 @@ Bygg om src/components/dev/PrototypeSwitcher.tsx till ADR-074 beslut 2–3 (Verc
 - [x] #7 RAIL-FORMEN (facit-revideringen, ADR-074-amenderingen): vertikal ikon-rail dockad vid höger kant vertikalt centrerad som default; endast ikon-knappar med tooltips (öga=skarpa vyn · variant-bokstäver · data-toggle · nytt-fönster); aktiv variant bär steg-badge; gamla pill/panel-formen borta
 - [x] #8 Railen är flyttbar via grip-handtaget (pointer-drag, viewport-begränsad); positionen persisteras (mm-proto-switcher-pos) och överlever omladdning; dubbelklick på grippen dockar tillbaka och rensar nyckeln
 - [x] #9 Inga knapp-namn i dev-överlägget kolliderar med appens namn-rymd (bl.a. /^Visa/-frånvaro-assertionen; e2e-sviterna på växlarens routes gröna i samma körform)
+- [x] #10 POLERVÅGEN (Marcus-granskning 2): grip-handtaget saknar tooltip (aria-label bär instruktionen)
+- [x] #11 EN variant i familjen → prototyp-ikon (kolv) i stället för bokstav (K-frågan); flera varianter → bokstavs-knappar; tooltip bär URL-korrelationen (?variant=nyckel)
+- [x] #12 Tooltips är ALLTID normalvikt (ärver aldrig aktiv knapps fetstil) och flippar till höger sida nära vänsterkanten (klipper aldrig)
+- [x] #13 KONSTANT höjd: data-knappen har reserverad plats även utan aktiv variant (soft-disablad: aria-disabled + dämpad + förklarande tooltip); railen är även tangentbords-flyttbar (pilar nudgar, Home/Escape dockar)
 <!-- AC:END -->
+
+
 
 ## Implementation Notes
 

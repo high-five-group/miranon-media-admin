@@ -34,6 +34,21 @@
 >    "Visa prototyp-växlaren"-knapp kolliderade med appens
 >    `/^Visa/`-frånvaro-assertion i e2e (CI-run 29933197540 röd) —
 >    rail-formen namnger dev-överlägget utanför appens namn-rymd.
+>
+> **Amendering 2 (Session 76 samma dag — polervågen på Marcus-
+> granskning 2 ["Nu börjar de likna något"] + Codes topp-till-tå-
+> pass):** sex förfiningar INOM rail-formen, beslutstexten bevaras:
+> grip-handtaget bär ingen tooltip (aria-label räcker) · EN variant i
+> familjen renderas som PROTOTYP-IKON (kolv) i stället för kryptisk
+> bokstav — "vad betyder K?"-fyndet; bokstäver endast när flera
+> varianter kräver särskiljning; URL-korrelationen bor i tooltipen ·
+> tooltips alltid NORMALVIKT (ärver aldrig aktiv knapps fetstil) ·
+> KONSTANT rail-höjd: data-knappens plats reserveras alltid
+> (soft-disablad utan aktiv variant — höjd-hopp förbjudna) · tooltips
+> SIDFLIPPAR nära vänsterkanten (klipp-resten stängd) ·
+> TANGENTBORDS-flytt på grippen (pilar nudgar, Home/Escape dockar —
+> a11y-paritet med pointer-draget) + fokus-ring via
+> `--color-border-focus`-tokenet.
 
 T80 föddes S75 Del 8 (Marcus review-våg 1): `?variant`-konventionen var
 odokumenterad i specs (URL-STATE-SPEC saknade den; ADR-044 täcker endast
