@@ -50,6 +50,21 @@
 > a11y-paritet med pointer-draget) + fokus-ring via
 > `--color-border-focus`-tokenet.
 >
+> **Amendering 4 (Session 76 samma dag — Marcus-granskning 4,
+> mjukhets-vågen; river A3:s mikroform-copy öppet):** tooltipen får
+> intent-fördröjd MJUK entré (fade in efter ~300 ms hover-avsikt,
+> 150 ms ease-out; snabb fade ut; `motion-reduce` respekteras) +
+> mycket mjuk PIL in mot ikonen (8 px rundad romb i tooltip-färgen —
+> breddad på direkt Marcus-justering,
+> sidflippar med tooltipen) · copyn minimeras till KORTASTE form:
+> "Variant A" · "Prototyp" · "Skarpa vyn" ·
+> "Demo-data"/"Verklig data"/"Kräver prototyp" — STEG utgår ur
+> tooltipen; badgen ensam bär konvergens-räknaren. Samma våg
+> MEKANISERADE CI-vakt-praxisen: PreToolUse-hook i spoke
+> `.claude/settings.json` nekar foreground `gh run watch`
+> (bakgrund + fil-exit är enda vägen; hooken skarpbevisad via
+> avsiktligt spärr-test).
+>
 > **Amendering 3 (Session 76 samma dag — Marcus-granskning 3,
 > mikrocopy-vågen):** tre förfiningar, river Amendering 2:s
 > ikon-detalj öppet: skarpa vyns ikon är APP-FÖNSTER, inte öga

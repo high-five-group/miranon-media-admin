@@ -53,15 +53,21 @@ function lasPos(): Pos | null {
 }
 
 /** Mörk mikro-tooltip; sidan styrs av railens läge (klipper aldrig vid
-    vänsterkant). Alltid normalvikt — ärver ALDRIG knappens fetstil. */
+    vänsterkant). Alltid normalvikt — ärver ALDRIG knappens fetstil.
+    Mjuk entré (intent-fördröjd fade in, snabb fade ut; respekterar
+    reduced motion) + mycket mjuk pil in mot ikonen. */
 function Tooltip({ text, sida }: { text: string; sida: 'vanster' | 'hoger' }) {
-  const placering = sida === 'vanster' ? 'right-full mr-2' : 'left-full ml-2';
+  const placering = sida === 'vanster' ? 'right-full mr-2.5' : 'left-full ml-2.5';
+  const pil = sida === 'vanster' ? '-right-[4px]' : '-left-[4px]';
   return (
     <span
       aria-hidden="true"
-      className={`pointer-events-none absolute top-1/2 ${placering} hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-text px-2 py-1 font-normal text-caption text-text-inverse shadow-lg group-hover:block group-focus-visible:block`}
+      className={`pointer-events-none absolute top-1/2 ${placering} -translate-y-1/2 whitespace-nowrap rounded-md bg-text px-2 py-1 font-normal text-caption text-text-inverse opacity-0 shadow-lg transition-opacity duration-150 ease-out group-hover:opacity-100 group-hover:delay-300 group-focus-visible:opacity-100 motion-reduce:transition-none`}
     >
       {text}
+      <span
+        className={`absolute top-1/2 ${pil} h-2 w-2 -translate-y-1/2 rotate-45 rounded-[2px] bg-text`}
+      />
     </span>
   );
 }
@@ -222,9 +228,7 @@ export function PrototypeSwitcher({
           type="button"
           onClick={() => setVariant(v.key)}
           aria-pressed={active?.key === v.key}
-          aria-label={
-            endaVarianten ? `Prototyp — steg ${v.steg}` : `Variant ${v.key} — steg ${v.steg}`
-          }
+          aria-label={endaVarianten ? 'Prototyp' : `Variant ${v.key}`}
           className={knapp(active?.key === v.key)}
         >
           {endaVarianten ? (
@@ -245,10 +249,7 @@ export function PrototypeSwitcher({
             <span className="font-mono">{v.key}</span>
           )}
           {active?.key === v.key && stegBadge(v.steg)}
-          <Tooltip
-            text={endaVarianten ? `Prototyp — steg ${v.steg}` : `Variant ${v.key} — steg ${v.steg}`}
-            sida={tooltipSida}
-          />
+          <Tooltip text={endaVarianten ? 'Prototyp' : `Variant ${v.key}`} sida={tooltipSida} />
         </button>
       ))}
       <button
@@ -258,13 +259,7 @@ export function PrototypeSwitcher({
         }}
         aria-pressed={active != null && dataMode === 'verklig'}
         aria-disabled={active == null}
-        aria-label={
-          active == null
-            ? 'Dataläge (kräver vald prototyp)'
-            : dataMode === 'verklig'
-              ? 'Data: verklig — växla till demo'
-              : 'Data: demo — växla till verklig'
-        }
+        aria-label={active == null ? 'Dataläge (kräver prototyp)' : 'Dataläge'}
         className={`${knapp(active != null && dataMode === 'verklig')} ${
           active == null ? 'cursor-default opacity-40 hover:bg-transparent' : ''
         }`}
@@ -285,10 +280,10 @@ export function PrototypeSwitcher({
         <Tooltip
           text={
             active == null
-              ? 'Dataläge — kräver vald prototyp'
+              ? 'Kräver prototyp'
               : dataMode === 'verklig'
-                ? 'Data: verklig'
-                : 'Data: demo'
+                ? 'Verklig data'
+                : 'Demo-data'
           }
           sida={tooltipSida}
         />
