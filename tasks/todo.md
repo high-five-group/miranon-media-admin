@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-22; paus 2 — yt-byte under review-fasen) — Batch-exekveringen: work-batch max 22, två pipelines
+### Session 75 🟢 PÅGÅR (2026-07-21 → 2026-07-22; paus 2 återupptagen 2026-07-22) — Batch-exekveringen: work-batch max 22, två pipelines
 
 > Scope: sessionsdok `2026-07-21-session-75.md` Del 1 (kanonisk
 > plats): exekvera Marcus batch-order AFK (ordern ordagrant i S74
@@ -164,6 +164,22 @@
   paus-landningen. **NÄSTA: NY Code-yta → `/session-resume` på S75
   → processa review-kvittenserna → batch-order 12 → end-pass på
   signal.**
+- [x] **ÅTERUPPTAGEN, ANDRA RESUMEN** (2026-07-22, Marcus-order
+  `/session-resume på S75` i färsk Code-yta): `lifecycle: paused →
+  active` + PAUSLÄGE-rubriken → Paushistorik-form (andra pausen;
+  grind-konsistensen, session-18-mönstret); numrering re-verifierad
+  mot färsk disk — ADR 074 (73 sist) · L307 (L306 sist) · T80 (T79
+  sist) · fälla 45 (44 sist) · TASK-29 (task-28 sist), ingen
+  mellansession förbrukade nummer; audit-ci PASSED;
+  lifecycle-grinden lokalt grön; paus-committens run 29904878141
+  GRÖN per jobb (docs-only-formen); S53-falsklarmet avfärdat
+  (kropps-rad — frontmatter closed); Marcus egen dev-server på 5173
+  ORÖRD; plugin-cachen 1.16.0 (T18-reinstall = Marcus-moment).
+  **NÄSTA: (1) MARCUS REVIEW-VÅG — 10 kort + TASK-25; per kvittens
+  DoD #5 + final-summary + Done-flipp (tvåstegs); (2) ny
+  batch-order för resterande 12 på Marcus-signal (OBS 18.11 mintar
+  ADR — nästa nummer disk-verifieras då); (3) end-pass-docs; (4)
+  end-pass/skörd på signal; (5) T18-reinstall (1.17.0).**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 
