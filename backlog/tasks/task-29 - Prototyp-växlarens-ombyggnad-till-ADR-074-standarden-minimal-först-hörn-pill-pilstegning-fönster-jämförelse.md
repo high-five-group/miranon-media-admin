@@ -3,10 +3,10 @@ id: TASK-29
 title: >-
   Prototyp-växlarens ombyggnad till ADR-074-standarden (minimal-först hörn-pill
   + pilstegning + fönster-jämförelse)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-22 14:38'
-updated_date: '2026-07-22 15:41'
+updated_date: '2026-07-22 15:50'
 labels:
   - ready-for-agent
 dependencies: []
@@ -44,10 +44,16 @@ Bygg om src/components/dev/PrototypeSwitcher.tsx till ADR-074 beslut 2–3 (Verc
 FACIT-REVIDERING (Marcus-direktiv under granskningen, ADR-074-amenderingen): AC 1–3 SUPERSEDED av rail-formen (AC 7–9) — ej omötta, ersatta; pill-formen revs öppet (L299 lösningsklass-byte, underkännande #2). Rail levererad: dockad dragbar ikon-rail med tooltips; ref-baserad synkron persistens (side-effect-i-updater-buggen fångad rött-först i L304-skriptet); e2e 56/56 gröna på växlarens routes inkl. det CI-röda /^Visa/-kollisionstestet (run 29933197540 = pill-formens röda; rail läker strukturellt). Känd mindre kvarvaro: tooltip klipper vid extrem vänster-drag (alltid vänster-sida) — noterad, ej blockerande.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit a123254 (leverans 2 rail; leverans 1 dadd8a3 CI-röd → facit-reviderad på Marcus-direktiv) · CI-run 29934613949 grön per jobb · CI-grön-första-pass: nej för kortet (leverans 1 föll på /^Visa/-namn-kollisionen; leverans 2 first-pass grön) · defekter under körning: 2 (dev-överlägg i appens namn-rymd + side-effect-i-setState-updater — båda rött-först-fångade och läkta) · TDD: ej tillämplig (dev-verktyg utan test-harness; L304-script-assertions med rött-först-bevis som ersättningsform)
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

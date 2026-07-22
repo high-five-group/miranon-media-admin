@@ -66,6 +66,17 @@
   (praxis-bumpen `ce9dec5` åt sin egen praxis; list-verifierad) ·
   praxis på tre ytor (minne · hub-README § Distributions-praxis ·
   T18-stängningen). **NÄSTA: TASK-29 via do-work-formen → end-pass.**
+- [x] **TASK-29 LEVERERAD i TVÅ vågor → Done** (2026-07-22,
+  do-work-formen ur 1.18.1-cachen; Skill-vägran = registerfrys,
+  väntat): leverans 1 pill `dadd8a3` → CI RÖD (run 29933197540:
+  "Visa prototyp-växlaren" × appens /^Visa/-frånvaro-assertion;
+  wrapper-exit-fångsten — vaktens äkta exit stod i FILEN) + Marcus
+  facit-revidering ("sidebar med ikoner/tooltips + dragbar", L299
+  klassbyte) → leverans 2 IKON-RAIL `a123254` (ADR-074-amendering;
+  ref-synkron POS_KEY-persistens efter rött-först-fångst av
+  side-effect-i-updater-buggen) — grindar gröna · e2e 56/56 på
+  växlarens routes · L304-rail-verifiering grön · stängnings-commit
+  efter fil-läst grön vakt. **NÄSTA: end-pass.**
 
 ### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-22; paus 3 — review-vågen levererad, work-batch 12 vid resume) — Batch-exekveringen: work-batch max 22, två pipelines
 
