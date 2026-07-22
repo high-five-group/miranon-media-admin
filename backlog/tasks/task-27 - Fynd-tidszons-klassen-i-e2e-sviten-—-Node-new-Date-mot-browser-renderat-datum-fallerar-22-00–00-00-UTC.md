@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-22 07:12'
+updated_date: '2026-07-22 07:23'
 labels: []
 dependencies: []
 priority: high
@@ -19,3 +20,9 @@ Proveniens: S75, diagnos-agenten för 18.8-studsen. Mekanism bevisad: testets No
 
 Förväntat: grep-svep över tests/e2e/** + gemensam Stockholm-förankrad datum-hjälpare för testens referensklocka. Snabbsignatur ur diagnosen: TZ-fel är stabila över CI-retries (identiska diffar), race-fel växlar mönster.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Svep-resultatet (fix-agenten, S75): EN exponerad assert utöver 18.8:s två — tests/e2e/hem.staging.test.ts:755 ('igår'-etiketten härleds ur Node-lokal new Date()+setDate(−1), rad 669–675, med öppet bokfört runner-zon-antagande rad 680). Övriga klassade EJ exponerade: epoch-baserade Date.now()-fixturer utan datum-text-asserts · fasta Date.UTC-fixturer (sortordning) · redan TZ-förankrade (events-list-kalender + hem 413–429). Åtgärdsomfånget är alltså: 1 assert + gemensam Stockholm-hjälpare.
+<!-- SECTION:NOTES:END -->
