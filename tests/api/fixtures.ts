@@ -65,6 +65,12 @@ export const BELAGGNING_EXPECTED = {
  * Ingen EF kan skriva Källa TOM/'+1', `Medföljande till` eller de två
  * skickad-tidsstämplarna → seedad fixtur är enda deterministiska vägen
  * (beläggnings-/väntelistefixturernas precedent). STÄDA INTE.
+ *
+ * BOR ÖVER (task-18.7): `Bekraftad`-raden bär `Bor över` = ikryssad, de tre
+ * andra urkryssade — seedat via MCP 2026-07-22 i samma veva som det additiva
+ * fältet föddes. Skillnaden true-vs-false på samma event är läs-mappningens
+ * skarpa bevis (en `=== true`-normalisering som alltid gav false hade fällt
+ * det) och 17.5:s härledda antal (1 av 4) har därmed ett känt facit.
  */
 export const ARBETSKO_EVENT_ID = 'recZyRIzbqWSifAQO';
 export const ARBETSKO_EXPECTED = {
@@ -80,4 +86,6 @@ export const ARBETSKO_EXPECTED = {
   deltagarinfoSkickad: '2025-09-03T11:00:00.000Z',
   antalGenomfordaEvent: 1,
   antalAnmalningar: 4,
+  /** Antal ikryssade `Bor över` på eventet (endast bekraftadId) — 17.5:s facit. */
+  borOverAntal: 1,
 } as const;

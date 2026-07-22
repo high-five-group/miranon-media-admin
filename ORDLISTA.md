@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-22
+updated: 2026-07-23
 review_by: 2027-01-02
 status: stable
 ---
@@ -169,6 +169,19 @@ begrepp, två källor som visas var för sig när de divergerar (task-18.4).
 *Undvik:* ohanterad, hanterad (S73 K39–K52-arbetsorden, rivna K53).
 *I koden:* `arBekraftad` (eventsidans arbetskö, `detail/Deltagare.tsx`);
 basens fält `Status`.
+
+**Bor över** — markeringen per anmälan att deltagaren sover över på eventet
+(hemma-hos-eventen är normalfallet med övernattande gäster). Ett eget
+ADDITIVT checkbox-fält per Anmälan (`Bor över`, staging-fött task-18.7); dess
+antal HÄRLEDS alltid ur kryssen (både eventsidans summeringsrad och
+listkortets rad), aldrig ur ett lagrat räknefält. **Kryss-läget** är
+arbetsformen: eventsidans Bor över-rad öppnar en enkolumnslista med ALLA
+anmälda och ett säng-kryss per person (ikryssade överst, stabil ordning under
+markeringen, live-räknare) — en ARBETSRAD, inte en filterlista (S73 K50/K52).
+Obockad är NEUTRAL (att inte bo över är normalläge, inte avvikelse — skilt
+från betalkryssets röda obetalt-semantik).
+*I koden:* `borOver` (läs-shapen); write-operationen `set-registration-lodging`;
+`BorOverRad` (`detail/Deltagare.tsx`); basens fält `Bor över`.
 
 **Reserverad plats** — en plats som hålls av en anmälan i väntan på betalning
 (anmälningsavgift och/eller slutbetalning); uteblir betalningen frigörs

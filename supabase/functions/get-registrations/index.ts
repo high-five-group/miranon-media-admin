@@ -96,6 +96,13 @@ function mapRegistration(record: { id: string; fields: Record<string, unknown> }
     medfoljandeTill: Array.isArray(f['Medföljande till']) ? f['Medföljande till'][0] : null, // self-link → first ID
     bekraftelseSkickad: f['Bekräftelse skickad'] ?? null, // dateTime (mail 1)
     deltagarinfoSkickad: f['Deltagarinfo skickad'] ?? null, // dateTime (mail 2 = UI:ts "eventinfo")
+    // Bor över-markeringen (task-18.7, ADR-063 — ADDITIVT checkbox-fält
+    // fldGYYNnQi7XlfbhP, staging-fött 2026-07-22). `=== true` (ej `?? null`):
+    // Airtable UTELÄMNAR en omarkerad checkbox ur record-svaret, så en
+    // null-mappning hade gjort "urkryssad" till "vet ej". Mot en bas UTAN
+    // fältet (prod före prod-deployen) ger den false — läsningen tål det
+    // (fälla 37 gäller bara skrivningar).
+    borOver: f['Bor över'] === true, // checkbox (additiv)
     // Fylls av person-batchen i eventId-grenen (se berikaPersonhistorik). Sätts
     // ALLTID här så shapen är komplett även i den event-lösa grenen — nyckeln
     // finns, värdet är null (aldrig undefined).

@@ -80,4 +80,16 @@ export interface Registration {
   bekraftelseSkickad?: string | null;
   deltagarinfoSkickad?: string | null;
   antalGenomfordaEvent?: number | null;
+  /**
+   * Bor över-markeringen per anmälan (task-18.7; PRD task-18 beslut 8 —
+   * eventsidans kryss-läge). ADDITIVT-OPTIONAL som fälten ovan, men BOOLEAN
+   * UTAN null: Airtable utelämnar en omarkerad checkbox helt ur record-svaret,
+   * och EF:en normaliserar med `=== true` (Event-shapens
+   * `deltagarinfoAutoAvstangt`-precedent) — "osatt" och "urkryssad" är samma
+   * tillstånd i basen och ska inte låtsas vara två i shapen.
+   *
+   * Eventets bor över-ANTAL härleds ALLTID ur dessa kryss (aldrig ett lagrat
+   * räknefält) — både i eventsidans summeringsrad och i listkortets rad (17.5).
+   */
+  borOver?: boolean;
 }
