@@ -21,7 +21,7 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 75 🟢 PÅGÅR (2026-07-21 → 2026-07-22; paus 2 återupptagen 2026-07-22) — Batch-exekveringen: work-batch max 22, två pipelines
+### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-22; paus 3 — review-vågen levererad, work-batch 12 vid resume) — Batch-exekveringen: work-batch max 22, två pipelines
 
 > Scope: sessionsdok `2026-07-21-session-75.md` Del 1 (kanonisk
 > plats): exekvera Marcus batch-order AFK (ordern ordagrant i S74
@@ -225,6 +225,34 @@
   platser"); (3) T80-substrat-researchen (Marcus-prioriterat nästa
   fokus — egen session med grillning rekommenderad); (4)
   batch-order 12 · end-pass på signal.**
+- [x] **GRANSKNINGS-DATAT + EXTRA PLATSER-FIXEN** (2026-07-22, Del 10
+  kanonisk plats): Marcus mid-turn-order → rotorsak MCP-verifierad
+  (staging har NOLL riktiga kommande event — endast ZZ-sentineler) →
+  GRANSKNINGSDATA skapade, Notering-märkta: event Event-796
+  (recigcY12dDllUkYt, Fjärrskådning Skövde 15–16 aug) + anmälan
+  recc45ZswKKBE91BK (Greta Granskning; avgift Mottagen ·
+  slutbetalning Ej mottagen · deadline 2026-08-01) → betalningsvyn
+  granskningsbar (delta −1 · Öppna detaljer · Påminn-rad); städpunkt
+  efter review. **Extra platser-fixen** (Marcus "ta den"): PR #79 →
+  mergad `68a1aa5`, main-run 29916640745 grön per jobb; tre
+  render-ställen + K16-assertionen; rött-först → 31/31; grindar
+  gröna; städat; ORDLISTA-posten uppdaterad; kommentarer
+  18.2/17.2/18.8. Lesson-kandidat 7 (pipe-processdöd).
+  **NÄSTA: PAUSAD — se nedan.**
+- [x] **PAUSAD, TREDJE PAUSEN** (2026-07-22, Marcus-order "sen kör vi
+  /session-paus" + batch-förhandsfrågan besvarad JA): `lifecycle:
+  paused` + förankrad PAUSLÄGE-rubrik + fullt HANDOFF (TILLSTÅND
+  [10/22 mergade + fix-våg 1 komplett PR #78/#79 · 0 formella
+  Done-flippar trots positiv generell signal · sidoeffekter rena +
+  2 GRANSKNINGSDATA-poster i staging · Marcus dev-server rörs ej] ·
+  CARRY [HUVUDSPÅR: work-batch resterande 12 vid resume — ordern ges
+  vid avfyrning · review-loopen fråga 4 + TASK-25 + omgranskningar ·
+  T80 efter batchen · T81/ADR-071-amendering + end-pass-docs +
+  lesson-kandidater 1–7 + TASK-20–28/Dependabot/T18] · numrering
+  074/L307/T82/f45/TASK-29 · resume-vägen). **NÄSTA: NY Code-yta →
+  `/session-resume` på S75 → avfyra work-batch på resterande 12 per
+  Marcus-order → review-kvittenser löpande → T80/end-pass på
+  signal.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 

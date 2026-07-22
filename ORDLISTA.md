@@ -149,9 +149,9 @@ platsen — därför "X av Y platser reserverade" på event- och Hem-korten,
 aldrig "bokade" (bokad låter definitiv; reservationen är villkorad).
 Marcus-kristalliserad i review-våg 1 (S75, 2026-07-22). Skilj från basens
 fält **Extra platser** ("Extra platser reserverade av Roger och Lotta") —
-manuellt hållna platser utanför anmälningsflödet, i dag visade under
-beläggningsuppdelningens etikett "Reserverade"; etikettens namn är ett
-öppet Marcus-beslut (S75 review-våg 1). Beläggningssummans "upptagna"
+manuellt hållna platser utanför anmälningsflödet, visade under
+beläggningsuppdelningens etikett "Extra platser" — basens eget fältnamn
+(Marcus-beslut 2026-07-22, PR #79). Beläggningssummans "upptagna"
 (inkluderar båda slagen) är en medveten tredje term och står kvar.
 *Undvik:* bokad (platser), belagd (som kort-copy).
 *I koden:* strängen "platser reserverade" (`EventCard`, `NastaEventCard`).

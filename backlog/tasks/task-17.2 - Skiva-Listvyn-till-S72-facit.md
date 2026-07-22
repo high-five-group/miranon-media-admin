@@ -4,7 +4,7 @@ title: 'Skiva: Listvyn till S72-facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-22 10:41'
+updated_date: '2026-07-22 11:50'
 labels:
   - ready-for-agent
 dependencies:
@@ -45,6 +45,11 @@ Review-våg 1 (Marcus 2026-07-22): listkortets beläggningsrad ska säga 'X av Y
 created: 2026-07-22 10:41
 ---
 Review-fix-vågen LEVERERAD (PR #78): 'X av Y platser reserverade' på listkorten + Hem-vyns NastaEventCard + sju e2e-sviter svepta (full inventering UTAN head-cap efter CI-fångsten — den trunkerade grepen dolde events-list + hem; prototypen medvetet orörd: fryst S72-facit, rivs i 18.13). ORDLISTA-posten 'Reserverad plats' skriven (Marcus-kristalliserad 2026-07-22). KVAR ÖPPET: beläggningsuppdelningens etikett 'Reserverade' = bas-fältet Extra platser ('Extra platser reserverade av Roger och Lotta') — rekommendation: döp raden 'Extra platser' (basens eget namn); Marcus beslutar. DoD #5 STÅR ÖPPEN.
+---
+
+created: 2026-07-22 11:50
+---
+Delfrågan STÄNGD (2026-07-22): beläggningsradens namn beslutat 'Extra platser' (PR #79) — termkollisionen som flaggades i denna korts review-kommentar är därmed helt löst; ORDLISTA-posten uppdaterad.
 ---
 <!-- COMMENTS:END -->
 

@@ -4,7 +4,7 @@ title: 'Skiva: Betalningar (arbetsytan + slutbetalnings-vertikalen)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-22 09:10'
+updated_date: '2026-07-22 11:50'
 labels:
   - ready-for-agent
 dependencies:
@@ -48,6 +48,11 @@ CI grönt per jobb: PR-run 29902222934 + main-run 29903576104 (S75, mergad efter
 created: 2026-07-22 09:10
 ---
 Review-våg 1 (Marcus 2026-07-22): kunde inte se 'Öppna detaljer'-knappen vid granskning. Verifierat i kod: knappen FINNS (Betalningar.tsx DetaljRad rad ~128, disclosure till inline-arbetsytan) men renderas ENDAST vid minst 1 AKTIV anmälan (villkoret aktiva.length större än 0, rad ~499); dessutom mergades kortet först 2026-07-22 ~10:20 (PR #76) — sannolikt granskades ett äldre serverat läge (dev-servern kör repo-trädet; mergarna nådde trädet ~10:30). Omgranskning: ladda om + öppna ett event MED aktiva anmälningar. e2e 13/13 bevisar arbetsytan i färsk main.
+---
+
+created: 2026-07-22 11:50
+---
+Gransknings-blockeringen LÖST (2026-07-22, Marcus-order 'Skapa en anmälan så jag kan granska vyn'): staging saknade riktiga kommande event (endast ZZ-sentineler — förklarar även att inga event bar anmälningar). Skapade GRANSKNINGSDATA i staging: event Event-796 (recigcY12dDllUkYt, Fjärrskådning · Skövde · 15–16 aug 2026, Notering-märkt) + anmälan recc45ZswKKBE91BK (Greta Granskning; avgift Mottagen · slutbetalning Ej mottagen · deadline 2026-08-01 om 10 dagar) → betalningskortet visar delta −1 + Öppna detaljer + arbetsytan med ett ikryssat kryss, obetald rad och Påminn-ikon. STÄDPUNKT: båda posterna raderas/behålls per Marcus efter review-vågen (bokfört i S75 paus-handoff).
 ---
 <!-- COMMENTS:END -->
 

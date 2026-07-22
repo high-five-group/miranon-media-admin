@@ -4,7 +4,7 @@ title: 'Skiva: Beläggningen till facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-21 21:29'
+updated_date: '2026-07-22 11:50'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,6 +33,15 @@ väntar design-review (S75-batchen v2). LEVERANS (task/18.2): Beläggningen till
 
 CI grönt per jobb: PR-run 29869238698 + main-run 29869685191 (S75-batch v2)
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-22 11:50
+---
+Review-fix-våg 1 del 2 LEVERERAD (PR #79 → merge 68a1aa5; main-run 29916640745 grön per jobb): beläggningsuppdelningens etikett 'Reserverade' → 'Extra platser' per Marcus-beslut 2026-07-22 ('Extra platser funkar, ta den') — basens eget fältnamn, löser termkollisionen mot kortens 'platser reserverade'. Tre render-ställen (läs-rad + morf-rad + AntalFalt-label) + K16-radordnings-assertionen; läs-shapens fältnamn reserverade består. Rött-först K16 → 31/31. DoD #5 STÅR ÖPPEN — omgranskning (Marcus generella signal 2026-07-22: 'allt jag kan se so far ser bra ut' — ej formell flipp).
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
