@@ -1,10 +1,10 @@
 ---
 id: TASK-18.13
 title: 'Skiva: Familje-rivningen (prototypsubstratet)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 14:47'
+updated_date: '2026-07-23 14:59'
 labels:
   - ready-for-agent
 dependencies:
@@ -49,10 +49,10 @@ Inga skarpa ytor rörs. Täcker inga användarberättelser — kontraktsstädnin
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
-- [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
+- [x] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->
 
@@ -87,3 +87,9 @@ GRINDAR: typecheck 0 · biome 0 · build grön · test:api 375 passed · test:a1
 
 DoD #6 EJ TILLÄMPLIG som facit-avprickning: skivan rör inga facit-punkter (skarpa vyerna är oförändrade — e2e-sviterna ÄR beviset för det) och den enda nya ytan är dev-intern utan facit-bilaga. DoD #7 vakuöst uppfylld: inga bas-ändringar.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Familje-rivningen levererad (PR #98, merge-commit 3266d8a; PR-CI run 30017534176 GRÖN PER JOBB 6/6 inkl. Test + Build). RIVET: fyra prototypkomponenter + DEMO_EVENTS-datat + ?variant=-grenarna i alla fyra event-routerna — throwaway-kontraktets klausul iv/v verkställd; faciten lever i bilagorna (s72/s73-konvergens) + git-historiken. NYTT (Marcus-beslut B på kortets A/B-fråga): src/routes/dev/prototyper.tsx ger PrototypeSwitcher hemvist — ADR-074 beslut 4 gör den till stående verktyg, men efter rivningen hade den noll konsumenter OCH noll testtäckning (verifieringen red på de rivna ?variant=-grenarna). Ytan är minimal + ADR-044-grindad: två attrapp-varianter + ensam-variant-formen (railen byter form vid den gränsen) och ?variant=/?data= utskrivna. Renderings-verifierat: rail monterad, variant A stegbar (URL + ruta följer), noll sidfel. SCOPE-KORRIGERING PÅ MARCUS-BESLUT A: de tre 'döda ytorna' står KVAR — typecheck fällde deras borttagning och avslöjade levande konsumenter (narvaro-routen = check-in-ingångens BELAGT-INTERIM-mål från 18.3 · anmalda-routen = AnmalningarLists länkmål per rad · AddRegistrationModal = anmälda-vyns) tvärtemot kortets eventsidan-centrerade noter; rivningen är gated på ersättarna (18.17 respektive check-in-sidan). DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 ('Det blir väl bra så länge. Kvitterar.') — DoD #5. DoD #6 EJ TILLÄMPLIG SOM FACIT-AVPRICKNING och bockad med motiv: skivan rör inga facit-punkter (de skarpa vyerna är oförändrade — e2e 97/97 över event-familjen ÄR beviset, inkl. sviterna för de bevarade ytorna) och den enda nya ytan är dev-intern utan facit-bilaga; renderad verifiering av dev-ytan gjord ändå (skärmdump + DOM-mätning). Grindar: typecheck 0 · biome 0 · build grön · api 375 · a11y 65. Två flakes i fullsvit, båda gröna ensamma och orörda av ändringen (send-email.staging + patterns/Listbox) — TASK-34:s isolerings-klass. Alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
