@@ -1,9 +1,10 @@
 ---
 id: TASK-18.11
 title: 'Skiva: Anteckningar (egen ADR + additiv tabell + strömmen)'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
+updated_date: '2026-07-23 03:29'
 labels:
   - ready-for-agent
 dependencies:
@@ -21,8 +22,35 @@ Eventets minne: tidsstämplad antecknings-ström med composer överst och nyast 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 ADR:n mintad; tabellen additiv i staging; läs- och skriv-operationerna kontraktstestade med teardown
-- [ ] #2 Strömmen, fas-etiketterna och auto-grow bevisade i e2e; renderat mot facit-anteckningarna
+- [x] #2 Strömmen, fas-etiketterna och auto-grow bevisade i e2e; renderat mot facit-anteckningarna
 <!-- AC:END -->
+
+
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## task-18.11 leverans (agent, branch task/18.11)
+
+### Additiv staging-tabell (ADR-063/050, staging apphjj8Q7lkXCMsL4)
+Ny tabell **Anteckningar** (tbl87a23xDv19Mb6R), skapad additivt via MCP 2026-07-23. Fält:
+- Författare — singleLineText, PRIMÄR (fldYrr6yZn0PY1klo); satt SERVER-SIDE ur JWT user_metadata.display_name
+- Anteckning — multilineText (fldySy08jfMimADIt)
+- Event — multipleRecordLinks → Eventplanering (fldSJ5Vjx8QcBOaYR)
+- Tidpunkt = Airtables createdTime (inget skrivet fält)
+Omvänd länk på Eventplanering: 'Anteckningar' (fld5ExUmcDPtUnUiM). Skrivbarheten LIVE-VERIFIERAD (create+läs+radera) INNAN allowlist-posten låstes (L294). Ny allowlist-operation 'create-event-note' i field-allowlists.ts. (data-model.md-synk deferrad till sessionens end-pass.)
+
+### Deploy-gap (DoD #7 — separat Marcus-auktoriserad handling; agenten saknar deploy-creds)
+- STAGING-deploy av EF:erna get-event-notes + create-event-note KRÄVS innan api-conformance-sviterna (tests/api/*-event-note*.staging.test.ts) blir gröna. Tills dess deploy-gatade (404 function-not-found). CI-verifiering efter deploy.
+- PROD: tabellen + EF:erna EJ skapade i prod (app8uGPrVCVOm6LfD) — hård prod-deploy-förutsättning (tabell FÖRE EF, per miljö).
+
+### Orkestrator-handoff (utanför kort-yta)
+- ROOT README.md rad ~144 ADR-räkningen 74→75 måste bumpas för scripts/check-adr-count.sh (CI-grind). Roten ligger UTANFÖR kortets tillåtna yta (claims-listan pekade docs/decisions/README.md, men check-adr-count läser ROOT README). Räkne-bumpen är dessutom en merge-serialiserings-punkt för parallella ADR-mintande kort → korrekt att orkestratorn sätter den vid merge. docs/decisions/README.md katalog-rad + ADR-075-filen är levererade i kort-ytan.
+
+### TDD-bevis
+- e2e (mockad, chromium-authenticated mot port 5188): RÖTT observerat — event-anteckningar-sviten föll 7/7 på 'h1 saknas' (mock-eventet saknade EventSchema-required number-fält → fetchEvent-parse kastade). GRÖNT efter komplett event-shape: 8/8. Andra RÖD→GRÖNT: läs-fel-testet föll (fel-ytan hann inte fram inom 5s — 500 retry-kedja fetchWithRetry×React Query) → timeout 12s → grönt.
+- api-conformance: RÖD-fasen ej observerbar lokalt (EF ej deployad) → TDD-AVVIKELSE, deploy-gatad enligt ovan.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

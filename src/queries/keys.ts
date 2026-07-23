@@ -26,6 +26,10 @@ export const queryKeys = {
     // Närvaro per event (Fas 6b L3): get-attendance (Deltaganden filtrerade på
     // eventId). Egen gren så närvaro-cachen kan invalideras oberoende av detaljen.
     attendance: (eventId: string) => ['events', 'attendance', eventId] as const,
+    // Anteckningar per event (task-18.11, ADR-075): get-event-notes (Anteckningar
+    // via eventets omvända länk). Egen gren så antecknings-strömmen kan invalideras
+    // av useCreateEventNote oberoende av event-detaljen.
+    notes: (eventId: string) => ['events', 'notes', eventId] as const,
     // Eventformat-poster för create-event:s Eventtyp-dropdown (Fas 6f L2): GLOBAL läs-
     // lista (get-event-formats). STABIL nyckel — `getEventFormats()` hämtar alla format,
     // inga klient-filters. Speglar waitlist.all-formen (parameterlös global lista).

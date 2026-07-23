@@ -21,6 +21,14 @@
       "exactMatchPattern": "^ZZ-create-event-test$",
       "linkGuard": true,
       "linkGuardExcludeFields": ["Eventtyp"]
+    },
+    {
+      "name": "create-event-note-sentineler",
+      "table": "Anteckningar",
+      "filterByFormula": "AND(FIND('ZZ-note-test+', {Anteckning}) = 1, FIND('@sentinel', {Anteckning}) > 0)",
+      "exactMatchField": "Anteckning",
+      "exactMatchPattern": "^ZZ-note-test\\+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}@sentinel$",
+      "linkGuard": false
     }
   ]
 }

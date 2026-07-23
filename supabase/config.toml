@@ -46,3 +46,13 @@ verify_jwt = true
 # vilket är hela poängen med M6.
 [functions.create-admin-user]
 verify_jwt = true
+
+# Anteckningar-vertikalen (task-18.11, ADR-075): läs- + skriv-EF mot den additiva
+# Anteckningar-tabellen. Gateway-första-försvar aktivt; requireUser läggs OVANPÅ i
+# koden (defense-in-depth). create-event-note sätter dessutom författaren server-side
+# ur den verifierade JWT:ns user_metadata.display_name (spoof-säker attribution).
+[functions.get-event-notes]
+verify_jwt = true
+
+[functions.create-event-note]
+verify_jwt = true

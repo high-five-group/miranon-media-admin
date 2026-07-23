@@ -19,6 +19,7 @@ export {
 } from './CreateEvent.schema';
 export { EngagementSchema } from './Engagement.schema';
 export { EventSchema } from './Event.schema';
+export { EventNoteSchema } from './EventNote.schema';
 export { type Intresserad, IntresseradSchema } from './Intresserad.schema';
 export {
   BulkMailSchema,

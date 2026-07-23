@@ -117,6 +117,16 @@ function PrimitivesPage() {
             isInvalid
             isRequired
           />
+          {/* autoGrow = composer-formen (task-18.11): växer med innehållet upp till
+              taket, resize-handtaget utgår, kort-radien. */}
+          <TextArea
+            label="Anteckning (autoGrow-composer)"
+            hideLabel
+            size="sm"
+            rows={3}
+            autoGrow
+            placeholder="Skriv en anteckning …"
+          />
           <TextArea label="Låst fält" isDisabled placeholder="Kan inte redigeras" />
         </div>
       </section>

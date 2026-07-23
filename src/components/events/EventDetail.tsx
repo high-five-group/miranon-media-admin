@@ -8,6 +8,7 @@ import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
+import { Anteckningar } from './detail/Anteckningar';
 import { Atgarder, CheckInKort } from './detail/Atgarder';
 import { Belaggning } from './detail/Belaggning';
 import { Betalningar } from './detail/Betalningar';
@@ -188,6 +189,11 @@ export function EventDetail({ eventId }: { eventId: string }) {
           arbetskön (Deltagare) — React Query dedupar till EN fetch. Anteckningar
           (18.11) blir sidans sista grupp EFTER denna. */}
       <Gruppdynamik event={event} />
+
+      {/* Anteckningar (task-18.11; K66–K71, ADR-075): sidans SISTA grupp —
+          tidsstämplad ström (composer överst, nyast först) med server-satt författare
+          och härledd Under/Efter-fas. Egen get-event-notes-fetch (events.notes-cachen). */}
+      <Anteckningar event={event} />
     </>,
   );
 }

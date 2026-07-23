@@ -22,8 +22,27 @@ import { expect, test } from '@playwright/test';
  */
 
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
+const GET_EVENT_NOTES = '**/functions/v1/get-event-notes*';
 const UPDATE_EVENT = '**/functions/v1/update-event';
 const EVENT_ID = 'recDETAIL0000001';
+
+/**
+ * Anteckningar-gruppen (task-18.11) fetchar get-event-notes för VARJE event. Stubbas
+ * tom här så eventsidans övriga sviter förblir deterministiska (antecknings-strömmens
+ * egna beteenden bevisas i event-anteckningar.staging.test.ts).
+ */
+async function mockNotes(
+  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
+  page: any,
+): Promise<void> {
+  await page.route(GET_EVENT_NOTES, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ notes: [] }),
+    });
+  });
+}
 
 type EventMock = Record<string, unknown>;
 
@@ -87,6 +106,7 @@ async function mockEvent(
       });
     },
   );
+  await mockNotes(page);
   return release;
 }
 
@@ -151,6 +171,7 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
       'Betalningar',
       'Närvaro',
       'Gruppdynamik',
+      'Anteckningar',
     ]);
 
     // Rubriken står UTANFÖR den tonala kortytan: h2:s förälder är sektionen,
@@ -249,6 +270,7 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     // Server-sanning i mocken (mark-paid-mönstret): efter update speglar get-event
     // det nya värdet — onSettled-refetchen (ADR-016 E) ska KONVERGERA, inte backa.
     let serverOrt = 'Skövde';
+    await mockNotes(page);
     await page.route(GET_EVENT, async (route) => {
       await route.fulfill({
         status: 200,
@@ -792,6 +814,7 @@ test.describe('Beläggningen (task-18.2)', () => {
     // Server-sanning i mocken: efter update speglar get-event det nya värdet —
     // onSettled-refetchen (ADR-016 E) ska KONVERGERA, inte backa.
     let serverMax = 12;
+    await mockNotes(page);
     await page.route(GET_EVENT, async (route) => {
       await route.fulfill({
         status: 200,
@@ -1012,6 +1035,7 @@ async function mockaPersonkort(
       body: JSON.stringify({ event: eventDetail({ id: PK_EVENT_ID }) }),
     });
   });
+  await mockNotes(page);
   await page.route(GET_REGISTRATIONS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
     await route.fulfill({
       status: 200,
@@ -1340,6 +1364,7 @@ async function mockaGruppdynamik(
       body: JSON.stringify({ event: eventDetail({ id: GD_EVENT_ID }) }),
     });
   });
+  await mockNotes(page);
   await page.route(GET_REGISTRATIONS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
     await route.fulfill({
       status: 200,

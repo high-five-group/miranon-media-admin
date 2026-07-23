@@ -50,6 +50,17 @@ driver Insiktskedjan.
 *Undvik:* närvaro (närvaron är statusen på posten, inte posten själv).
 *I koden:* `Attendance`.
 
+**Anteckning** — eventets minne: en tidsstämplad post i eventsidans antecknings-STRÖM
+(composer överst, nyast först) med författare (den inloggade användaren, satt server-side
+ur den verifierade identiteten) och en härledd fas-etikett (Under/Efter eventet; Innan
+omärkt per tysta normen). Skild från *person*-anteckningen (Personers fria
+`Anteckningar`-fält, `update-person-note`) — event-anteckningen bor i en EGEN additiv
+tabell (`Anteckningar`, ADR-075), en post per rad, aldrig en klumpad fritext-yta.
+*Undvik:* kommentar; notering (Eventplaneringens `Notering` är den gamla EN-fältsytan
+som strömmen ersätter, inte utökar).
+*I koden:* `EventNote` (läs-shape), `CreateEventNoteInput` (skriv-shape); basens tabell
+`Anteckningar`.
+
 **Väntelisteplats** — en persons plats i kön till ett fullbokat event, sorterad
 på när personen ställde sig.
 *Undvik:* reserv, köplats.
