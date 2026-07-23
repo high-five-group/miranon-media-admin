@@ -200,12 +200,25 @@ test.describe('Skapa nytt event — facit-formen + flödet (task-19.3)', () => {
     await expect(page.getByRole('option', { name: 'Utbildning - 2 dagar' })).toHaveCount(0);
   });
 
-  test('facit: Skapa event är den GRÖNA primärknappen (success-intenten)', async ({ page }) => {
+  test('facit (rev. 2026-07-23): Skapa event följer grön-regeln DYNAMISKT — mörkgrå oarmerad, grön vid armerad publicering', async ({
+    page,
+  }) => {
+    // Marcus review-våg 5: K77:s statiskt gröna knapp riven — intenten
+    // följer publicerings-läget (grön-regeln på knappens FAKTISKA semantik:
+    // oarmerat når skapandet inget utomstående → primary; armerat
+    // publiceras eventet → success). 18.16:s K77-A-beslut amenderat.
     await page.goto('/event/skapa');
     await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
 
     const skapa = page.getByRole('button', { name: 'Skapa event', exact: true });
-    // --mm-success = #606B57 (sage) → vit text ≈ 5,6:1 (AA).
+    // Oarmerat: primary (mörkgrå, --p-neutral-800 #282928).
+    await expect(skapa).toHaveCSS('background-color', 'rgb(40, 41, 40)');
+
+    // Armera publiceringen (tangentbordet — draget är förstärkning).
+    const handtag = page.getByRole('switch', { name: 'Publicera på miranon.se' });
+    await handtag.focus();
+    await page.keyboard.press(' ');
+    // Armerat: success (sage #606B57 → vit text ≈ 5,6:1, AA).
     await expect(skapa).toHaveCSS('background-color', 'rgb(96, 107, 87)');
     await expect(page.getByRole('button', { name: 'Avbryt', exact: true })).toBeVisible();
   });
@@ -217,12 +230,18 @@ test.describe('Skapa nytt event — facit-formen + flödet (task-19.3)', () => {
     const handtag = page.getByRole('switch', { name: 'Publicera på miranon.se' });
     await expect(handtag).toBeVisible();
     await expect(handtag).toHaveAttribute('aria-checked', 'false');
+    // Review-våg 5 (Marcus): oarmerade prompten utan destination — kort
+    // "Dra för att publicera"; destinationen bärs av armerade läget + aria.
+    await expect(handtag).toContainText('Dra för att publicera');
+    await expect(handtag).not.toContainText('Dra för att publicera på');
 
     // Draget är förstärkning, aldrig enda vägen (11-ribban).
     await handtag.focus();
     await page.keyboard.press(' ');
     await expect(handtag).toHaveAttribute('aria-checked', 'true');
-    await expect(handtag).toContainText('Publiceras på miranon.se');
+    // Punkt 15: armerade texten utan destination (självklar; aria bär den).
+    await expect(handtag).toContainText('Publiceras');
+    await expect(handtag).not.toContainText('Publiceras på');
   });
 
   test('happy path: fyll → Skapa event → bekräftelseläge (nästa steg ett klick bort)', async ({
@@ -456,21 +475,25 @@ test.describe('Skapa nytt event — SKARPT mot staging (AC #1)', () => {
     await expect(page.getByRole('button', { name: 'Till eventet', exact: true })).toBeVisible();
   });
 
-  test('review-våg 3: miranon.se i brödtextens typsnitt med medium-vikt — mono-formen riven (K81)', async ({
+  test('review-våg 5 (p15): armerade texten är "Publiceras" i promptens vikt — domänen borta ur UI:t', async ({
     page,
   }) => {
-    // Marcus (2026-07-23): domänen ska bära samma typsnitt som övrig text,
-    // viktad något fetare (500). K81:s mono-adressgrammatik rivs öppet.
+    // Marcus punkt 15 (2026-07-23): destinationen är självklar — armerade
+    // läget säger bara "Publiceras", i SAMMA vikt som "Dra för att
+    // publicera" (medium-lyftet rivet med MiranonSe-komponenten; K81-sagan
+    // stängd — domänen förekommer inte längre som synlig text på sidan).
     await page.goto('/event/skapa');
     await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+    const handtag = page.getByRole('switch', { name: 'Publicera på miranon.se' });
+    await handtag.focus();
+    await page.keyboard.press(' ');
 
-    const doman = page.getByText('miranon.se', { exact: true }).first();
-    await expect(doman).toBeVisible();
-    const stil = await doman.evaluate((el) => {
-      const s = getComputedStyle(el);
-      return { family: s.fontFamily, weight: s.fontWeight };
-    });
-    expect(stil.family).not.toMatch(/mono/i);
-    expect(stil.weight).toBe('500');
+    await expect(handtag).toContainText('Publiceras');
+    await expect(handtag).not.toContainText('Publiceras på');
+    expect(await page.getByText('miranon.se', { exact: true }).count()).toBe(0);
+    const vikt = await handtag
+      .getByText('Publiceras', { exact: true })
+      .evaluate((el) => getComputedStyle(el).fontWeight);
+    expect(vikt).toBe('400');
   });
 });

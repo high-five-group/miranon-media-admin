@@ -25,16 +25,10 @@ function distinct(values: (string | null)[]): string[] {
   );
 }
 
-/**
- * Domänen i brödtextens typsnitt, viktad medium (rev. review-våg 3
- * 2026-07-23): K81:s mono-adressgrammatik RIVEN av Marcus ("samma typsnitt
- * som övrig text … något fetare — som det ser ut nu passar liksom inte den
- * här appen"). Vikten lyfter domänen som destination utan font-brottet.
- * Konsument-ägd text, inte primitiv-API (samma form som demo-sidans).
- */
-function MiranonSe() {
-  return <span className="font-medium">miranon.se</span>;
-}
+/* MiranonSe-komponenten RIVEN (review-våg 5, Marcus punkt 15): armerade
+   texten är bara "Publiceras" — destinationen är självklar (ingen annan
+   sajt kopplas hit) och bärs av aria-labeln. K81-sagan (mono → medium →
+   riven) stängd; domänen förekommer inte längre i skapa-sidans UI. */
 
 /**
  * Skapa nytt event — event-familjens skapa-sida i FAMILJENS FORMKLASS
@@ -358,27 +352,29 @@ export function CreateEventForm() {
           {/* Handtaget renderas per facit men har ÄNNU ingen verkan: flaggan
               finns inte i basen och `publicera` skickas ALDRIG till
               create-event. task-19.4 wirar den (additivt bas-fält + allowlist). */}
+          {/* Båda lägenas texter utan destination och i samma vikt (review-
+              våg 5, punkt 15): "Dra för att publicera" / "Publiceras" —
+              destinationen är självklar och bärs av aria-labeln. */}
           <SlideToConfirm
             label="Publicera på miranon.se"
-            prompt={
-              <>
-                Dra för att publicera på <MiranonSe />
-              </>
-            }
-            confirmedLabel={
-              <>
-                Publiceras på <MiranonSe />
-              </>
-            }
+            prompt="Dra för att publicera"
+            confirmedLabel="Publiceras"
             isSelected={publicera}
             onChange={setPublicera}
           />
         </div>
       </DetaljGrupp>
 
-      {/* Knappraden: primär först (formklassen); px-4 = kortens inner-inset. */}
+      {/* Knappraden: primär först (formklassen); px-4 = kortens inner-inset.
+          Intenten följer publicerings-läget (dynamiska grön-regeln, review-
+          våg 5): oarmerat når skapandet inget utomstående → primary; armerat
+          publiceras eventet → success. K77:s statiska grön-form riven. */}
       <div className="flex items-center gap-2 px-4">
-        <Button intent="success" onPress={handleSubmit} isDisabled={mutation.isPending}>
+        <Button
+          intent={publicera ? 'success' : 'primary'}
+          onPress={handleSubmit}
+          isDisabled={mutation.isPending}
+        >
           {mutation.isPending ? 'Skapar…' : 'Skapa event'}
         </Button>
         <Button intent="secondary" onPress={tillListan} isDisabled={mutation.isPending}>

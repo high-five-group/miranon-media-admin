@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-23 08:55'
-updated_date: '2026-07-23 09:23'
+updated_date: '2026-07-23 10:36'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,10 +28,6 @@ Marcus review-våg 2 (2026-07-23), lyft vid 18.6-granskningen; SCOPE-UTÖKAD + d
 - [ ] #4 Berörda e2e uppdaterade i samma skiva (inkl. skapa-sidans K77-lås)
 <!-- AC:END -->
 
-
-
-
-
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
@@ -39,3 +35,12 @@ Marcus review-våg 2 (2026-07-23), lyft vid 18.6-granskningen; SCOPE-UTÖKAD + d
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-23 10:36
+---
+AMENDERING (2026-07-23, review-våg 5, PR #94): K77-beslutet A (statiskt primary) RIVET av Marcus-resonemanget — Skapa event får DYNAMISK intent: primary oarmerad publicering, success armerad (grön-regeln på knappens faktiska semantik i stunden; schemalagda publiceringar gör oarmerat skapande internt). Implementerad direkt i vågen — 18.16:s audit-scope för Skapa event är därmed VERKSTÄLLT; kvar i skivan: regelkodifieringen i DESIGN-SYSTEM-SPEC (inkl. dynamisk-intent-mönstret) + resten av app-auditen + storleks-reglerna.
+---
+<!-- COMMENTS:END -->

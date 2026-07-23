@@ -118,8 +118,8 @@ export interface SlideToConfirmProps {
  * ```tsx
  * <SlideToConfirm
  *   label="Publicera på miranon.se"
- *   prompt={<>Dra för att publicera på <Domän /></>}
- *   confirmedLabel={<>Publiceras på <Domän /></>}
+ *   prompt="Dra för att publicera"
+ *   confirmedLabel="Publiceras"
  *   isSelected={publicera}
  *   onChange={setPublicera}
  * />
@@ -243,8 +243,10 @@ export function SlideToConfirm({
         data-slot="text"
         style={selected ? undefined : { opacity: 1 - pos }}
         className={cn(
-          'absolute inset-0 flex items-center justify-center gap-[0.4em] text-small',
-          selected ? 'font-medium' : 'text-text-muted',
+          // Samma typografi i båda lägena (rev. 2026-07-23, Marcus p15:
+          // "samma vikt och allting") — bocken i cirkeln ÄR armad-markören,
+          // texten byter bara innehåll. K82:s font-medium-lyft rivet öppet.
+          'absolute inset-0 flex items-center justify-center gap-[0.4em] text-small text-text-muted',
         )}
       >
         {selected ? confirmedLabel : prompt}
