@@ -542,5 +542,26 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
 
     const efter = await vyToggle(page).boundingBox();
     expect(efter?.x).toBe(fore?.x);
+
+    // MEKANISM-KONTRAKTET (computed, L245/L246): CI:s headless-chromium bär
+    // overlay-scrollbars som tar 0 layoutplats — x-asserten ovan kan därför
+    // ALDRIG falla i CI (empiriskt belagt av rött-först-runnet 29993773642:
+    // preconditions höll och x stod still MOT ofixad kod); den bär i
+    // klassisk-scrollbar-miljöer där hoppet faktiskt syns. Den CI-bevisbara
+    // formen är gutter-REGELN själv: scrollbar-gutter RESERVERAR plats även
+    // med overlay-scrollbars (S72:s centrerings-/16 px-CI-bevis), så
+    // computed-värdet är regelns sanning i alla miljöer.
+    const gutter800 = await page.evaluate(
+      () => getComputedStyle(document.documentElement).scrollbarGutter,
+    );
+    expect(gutter800).toBe('stable both-edges');
+
+    // Mobil-undantaget står: under sm (640) reserveras INGEN rännsten
+    // (M6-facitets absoluta FK-mått; mer-e2e:ns 16 px-lås är CI-beviset).
+    await page.setViewportSize({ width: 390, height: 844 });
+    const gutter390 = await page.evaluate(
+      () => getComputedStyle(document.documentElement).scrollbarGutter,
+    );
+    expect(gutter390).toBe('auto');
   });
 });
