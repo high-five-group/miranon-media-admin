@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { TextArea } from '@/components/primitives/TextArea';
@@ -75,25 +75,36 @@ function AnteckningsKort({ note, event }: { note: EventNote; event: Event }) {
 }
 
 /**
- * Composern (K68–K71): auto-grow-skrivruta + "Lägg till anteckning". Skrivningen är
- * ICKE-optimistisk (useCreateEventNote): pending→bekräftat, strömmen refetchar vid
- * settle. Fel-ytan (role=alert) renderas ur mutationens error. Författaren skickas
+ * Composern (K68–K71, rev. review-våg 3 2026-07-23): auto-grow-skrivruta +
+ * "Spara" + sekundär "Rensa" som visas först när fältet har innehåll
+ * (CRM-notes-klassens form — progressive disclosure av sekundärhandlingen).
+ * Rensa tömmer fältet och återför fokus till skrivrutan (knappen försvinner —
+ * fokus får aldrig tappas till body). Skrivningen är ICKE-optimistisk
+ * (useCreateEventNote): pending→bekräftat, strömmen refetchar vid settle.
+ * Fel-ytan (role=alert) renderas ur mutationens error. Författaren skickas
  * ALDRIG — EF:en sätter den server-side (ADR-075).
  */
 function Composer({ eventId }: { eventId: string }) {
   const [text, setText] = useState('');
+  const rutaRef = useRef<HTMLTextAreaElement>(null);
   const mutation = useCreateEventNote(eventId);
   const kanSpara = text.trim().length > 0 && !mutation.isPending;
 
-  const laggTill = () => {
+  const spara = () => {
     const rensad = text.trim();
     if (!rensad || mutation.isPending) return;
     mutation.mutate(rensad, { onSuccess: () => setText('') });
   };
 
+  const rensa = () => {
+    setText('');
+    rutaRef.current?.focus();
+  };
+
   return (
     <div className="flex flex-col gap-2 pt-4 pb-3">
       <TextArea
+        ref={rutaRef}
         label="Ny anteckning"
         hideLabel
         size="sm"
@@ -108,9 +119,16 @@ function Composer({ eventId }: { eventId: string }) {
           {mutation.error instanceof Error ? mutation.error.message : 'Okänt fel.'}
         </MessageBox>
       )}
-      <Button size="sm" onPress={laggTill} isDisabled={!kanSpara} className="self-end">
-        Lägg till anteckning
-      </Button>
+      <div className="flex items-center justify-end gap-2">
+        {text.length > 0 && (
+          <Button intent="ghost" size="sm" onPress={rensa}>
+            Rensa
+          </Button>
+        )}
+        <Button size="sm" onPress={spara} isDisabled={!kanSpara}>
+          Spara
+        </Button>
+      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ title: 'Skiva: Anteckningar (egen ADR + additiv tabell + strömmen)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 09:08'
+updated_date: '2026-07-23 09:40'
 labels:
   - ready-for-agent
 dependencies:
@@ -64,6 +64,11 @@ MERGAD (S75 batch 5, orkestrator-läkt halt + staging-deploy): PR #89 → merge-
 created: 2026-07-23 09:08
 ---
 Review-våg 2 (2026-07-23): tomläget — FACIT-REVIDERING (svansen '— det du skriver här sparas…' riven; 'Inga anteckningar ännu' och inget mer). PR #91. DoD #5 fortsatt öppen tills omgranskning.
+---
+
+created: 2026-07-23 09:40
+---
+Review-våg 3 (2026-07-23, PR #92): composern K68–K71 reviderad — 'Lägg till anteckning' → 'Spara' + sekundär 'Rensa' (ghost) som visas först vid innehåll (CRM-notes-formen, Marcus punkt 8; ordvalet Rensa på delegerad senior-order); fokus återförs till skrivrutan efter Rensa; TextArea-primitiven fick React-19-ref. DoD #5 fortsatt öppen tills omgranskning.
 ---
 <!-- COMMENTS:END -->
 

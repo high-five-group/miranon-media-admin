@@ -4,7 +4,7 @@ title: 'Skiva: Hantera-flödet (bekräftelse-vertikalen + Bekräfta alla)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-23 09:08'
+updated_date: '2026-07-23 09:40'
 labels:
   - ready-for-agent
 dependencies:
@@ -192,6 +192,11 @@ GRANSKNINGSFÄRDIG — väntar design-review (Marcus). Kortet står kvar In Prog
 created: 2026-07-23 09:08
 ---
 Review-våg 2 (2026-07-23): Bekräfta alla-rundningen — FACIT-REVIDERING (K47-pillens rounded-lg matchade facit; Marcus: primitivens rundning gäller, konsekvens över appen). Fix i PR #91 + e2e-lås 4 px. Grön intent orörd — blir första instansen av grön-knapp-regeln (18.16). DoD #5 fortsatt öppen tills omgranskning.
+---
+
+created: 2026-07-23 09:40
+---
+Review-våg 3 (2026-07-23, PR #92): Bekräfta alla-insetet symmetriserat — handlings-slotten pr-2 → pr-1 så knappen har 4 px till barens kanter åt alla håll (Marcus punkt 7). DoD #5 fortsatt öppen tills omgranskning.
 ---
 <!-- COMMENTS:END -->
 

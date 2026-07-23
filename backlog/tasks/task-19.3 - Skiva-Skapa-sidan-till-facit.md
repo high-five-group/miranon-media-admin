@@ -4,7 +4,7 @@ title: 'Skiva: Skapa-sidan till facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-22 19:10'
+updated_date: '2026-07-23 09:40'
 labels:
   - ready-for-agent
 dependencies:
@@ -91,6 +91,15 @@ KORT-TILLSTÅND: status återställd To Do. AC/DoD-bockarna på branchen är INT
 
 MERGAD (S75 batch 3, studs-läkningen): PR #80 → merge-commit 6e0a78c. PR-CI-run 29949249222 GRÖN PER JOBB (6/6 fil-lästa: detect · lint+audit+typecheck · sentinel purge · docs link check · Test + Build [bär e2e-beviset] · CI Passed). Kortet står GRANSKNINGSFÄRDIGT — In Progress, DoD #5 (Marcus design-review mot FACIT-skapa-sidan.png) och DoD #6 öppna. Done-flippen är Marcus.
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-23 09:40
+---
+Review-våg 3 (2026-07-23, PR #92): miranon.se-typsnittet — K81:s mono-adressgrammatik RIVEN på Marcus-direktiv (punkt 10): brödtextens typsnitt i font-medium. E2e-kontrakt på computed fontFamily/fontWeight. DoD #5 fortsatt öppen tills omgranskning.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

@@ -383,4 +383,28 @@ test.describe('Hantera-flödet — bekräftelse-vertikalen (task-18.6)', () => {
     await expect(knapp).toBeVisible();
     await expect(knapp).toHaveCSS('border-radius', '4px');
   });
+
+  test('review-våg 3: Bekräfta alla sitter med SAMMA inset åt alla håll i obekräftade-baren', async ({
+    page,
+  }) => {
+    // Marcus (2026-07-23): lika långt avstånd till barens kanter åt alla
+    // håll. Baren är knappens farförälder (handling-slotten → rubrik-raden);
+    // mäts som boundingRect-inset — topp/botten ≈ höger.
+    await mocka(page, eventDetail());
+    await oppnaEventsidan(page);
+    const knapp = gruppen(page).getByRole('button', { name: 'Bekräfta alla obekräftade' });
+    await expect(knapp).toBeVisible();
+    const inset = await knapp.evaluate((el) => {
+      const bar = (el.parentElement as HTMLElement).parentElement as HTMLElement;
+      const b = el.getBoundingClientRect();
+      const r = bar.getBoundingClientRect();
+      return { top: b.top - r.top, bottom: r.bottom - b.bottom, right: r.right - b.right };
+    });
+    // Empiri (run 29997158867): höger 4 px (pr-1) · topp/botten 4,5 px —
+    // barens höjd är 41 px (py-2.5 + text-smalls line-height) och ett udda
+    // tal kan aldrig ge perfekt symmetri kring 32 px-knappen. Kravet är
+    // VISUELL likhet: inom en pixel. Före fixen var diffen 4 px (pr-2).
+    expect(Math.abs(inset.right - inset.top)).toBeLessThanOrEqual(1);
+    expect(Math.abs(inset.right - inset.bottom)).toBeLessThanOrEqual(1);
+  });
 });

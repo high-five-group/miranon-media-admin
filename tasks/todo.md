@@ -390,6 +390,22 @@
   av de 21 skivorna; tvåstegs-Done per ADR-071-amenderingens
   klassning; öppna design-frågorna 18.5/18.10/18.12) → 18.13 A/B +
   kör → prod-deploy → end-pass/skörd (session-end, N+1) på signal.**
+- [x] **REVIEW-VÅGEN IGÅNG: punkt 1–10 + fix-vågorna 2–3** (2026-07-23,
+  Del 15): våg 2 (p1–6) klassad + "Go!" → staging-redeploy ALLA 10
+  batch-EF:er (STALE LÄGE-roten: dev==staging, endast 3/10 var
+  deployade) → **PR #91 MERGAD `fb8388b`** (tvåcommit-formen: röd
+  29993773642 på exakt kontrakten → grön 29995321330 per jobb;
+  gutter lg→sm · rounded · K62-no-op · tomlägena + min-h-paret).
+  Skivor födda: **18.16** (knapp-standard, SCOPE-UTÖKAD, K77-A
+  avgjord, ready-for-agent) + **18.17** (anmälan-detaljvyn).
+  Senior-delegeringen ("jag kvitterar det du kvitterar") → 8A Rensa ·
+  K77-A · font-medium. METODFYND [UNIVERSAL]: CI-overlay-scrollbars
+  ⇒ computed-kontrakt för skal-CSS. **PR #92 (våg 3: inset ·
+  Spara/Rensa · miranon.se) i luften** — vakter: röd→push→grön→merge
+  samt main-vakt fb8388b. **NÄSTA: PR #92-kedjan hem → Marcus git pull +
+  omgranskning i färskt läge (vågarna + STALE-ytorna) → Done-flippar
+  per kort-kvittens → 18.13 A/B + kör → prod-deploy → end-pass/skörd
+  på signal.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 

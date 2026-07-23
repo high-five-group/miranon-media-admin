@@ -204,7 +204,7 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
     const grupp = gruppen(page);
     const ruta = grupp.getByRole('textbox', { name: 'Ny anteckning' });
     await ruta.fill('Ny testanteckning från composern');
-    await grupp.getByRole('button', { name: 'Lägg till anteckning' }).click();
+    await grupp.getByRole('button', { name: 'Spara', exact: true }).click();
 
     // Den nya noten dyker upp (refetch efter settle) och rutan töms.
     await expect(grupp.getByText('Ny testanteckning från composern')).toBeVisible();
@@ -273,5 +273,36 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
       .withTags(taggar)
       .analyze();
     expect(resultat.violations).toEqual([]);
+  });
+
+  test('review-våg 3: composern — Spara + Rensa som visas först vid innehåll (CRM-formen)', async ({
+    page,
+  }) => {
+    // Marcus (2026-07-23): 'Lägg till anteckning' → 'Spara' + sekundär Rensa
+    // som progressive disclosure vid dirty state (CRM-notes-klassens form —
+    // HubSpot/Pipedrive-composern; K68–K71 revideras öppet). Rensa tömmer
+    // fältet och fokus återförs till skrivrutan (knappen försvinner —
+    // fokus får aldrig tappas till body).
+    await mockSidan(page, { notes: [] });
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = gruppen(page);
+    const skrivruta = grupp.getByRole('textbox', { name: 'Ny anteckning' });
+    const spara = grupp.getByRole('button', { name: 'Spara', exact: true });
+    await expect(spara).toBeVisible();
+    await expect(spara).toBeDisabled();
+    await expect(grupp.getByRole('button', { name: 'Rensa', exact: true })).toHaveCount(0);
+
+    await skrivruta.fill('Utkast som ångras');
+    const rensa = grupp.getByRole('button', { name: 'Rensa', exact: true });
+    await expect(rensa).toBeVisible();
+    await expect(spara).toBeEnabled();
+
+    await rensa.click();
+    await expect(skrivruta).toHaveValue('');
+    await expect(grupp.getByRole('button', { name: 'Rensa', exact: true })).toHaveCount(0);
+    await expect(spara).toBeDisabled();
+    await expect(skrivruta).toBeFocused();
   });
 });
