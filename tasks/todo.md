@@ -21,6 +21,44 @@
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 77 🟢 PÅGÅR (2026-07-23) — Processgransknings-landningen: merge-grinden mekaniserad + riskanpassad CI-design
+
+> Scope: sessionsdok `2026-07-23-session-77.md` Del 1 (kanonisk plats):
+> svara upp processgranskningens fynd — våg 1 exekverad + våg 2 designad.
+> Marcus-kvittens "Kvitterar. Kör." 2026-07-23. Kadensrad per L67.
+
+- [x] **Dok-födelse** (2026-07-23): `d913850`, run 30021430017 grön per
+  jobb. Numrering disk-verifierad (77/076/L321/T85/f45/TASK-36 + FYND:
+  BUILD-LOG S75-postens 076-fel → rättat i steg 0). **NÄSTA: steg 0.**
+- [x] **Steg 0 — svars-sektionen + erratum** (2026-07-23): Codes
+  verifikation + beslutsläge in i processgranskningen `f9ef244` +
+  BUILD-LOG-rättelsen `ad1fb1f`; run 30021555024 grön per jobb. Sista
+  direktpush-era-landningarna. **NÄSTA: steg 1 ruleset.**
+- [x] **Steg 1 — MERGE-GRINDEN AKTIVERAD** (2026-07-23): ruleset
+  `main-skydd` (id 19627609; PR-krav 0 approvals + required check "CI
+  Passed or Skipped" strict + force-push-/deletion-block + TOM bypass) +
+  `allow_auto_merge`. Grind-bevis: direktpush AVVISAD (remote rejected,
+  regelutslag i klartext) · konfig-återläsning · PR #99 BLOCKED→
+  auto-merge. ALL bokföring via auto-merge-PR hädanefter (beslut A).
+  **NÄSTA: steg 2+3 ci.yml-PR.**
+- [x] **Steg 2+3 — ci.yml-vågen** (2026-07-23, PR #99 `36f06ef`,
+  run 30022170992 grön per jobb + AUTO-MERGAD): actionlint
+  release-pinnad + SHA256 (utelämning #3 stängd) · Test+Build →
+  test-fast/a11y/test-staging (mutexen ENDAST staging; depbot-gruppen
+  retirerad) · bärar-invarianten 4→3 (skript + 7/7-testsvit).
+  Split-empiri första skarpa runnet: Pure+Build-signal 29 s (förr ~10
+  min) · a11y 1:32 parallell · staging 8:35 ensam på mutexen. **NÄSTA:
+  steg 4 docs-PR.**
+- [x] **Steg 4 — dokumentation + upptag** (2026-07-23, denna PR):
+  ADR-076 (merge-grinden; katalograd + räkning 75→76) · ADR-029-noter
+  (#3 migrerad, #5 STÄNGD) · ADR-039-not (bärare 6→5) · CONTRIBUTING
+  (PR-flödet mekanisk sanning + jobb-namn) · våg 2-designen →
+  `docs/research/riskanpassad-ci-design-2026-07-23.md` · tråd **T85**
+  (rad + kort) · sessionsdok Del 2–3. **NÄSTA: end-pass på Marcus
+  signal (skörd L321+ [deferral-utan-återbesöks-trigger +
+  MD004-quote-instansen] · hub-lyftet L284–L320 står oförändrat kvar ·
+  våg 2a/2b/2c per T85 i Marcus-takt).**
+
 ### Session 76 ✅ AVSLUTAD (2026-07-22) — T80/T81/T82-mellansessionen + TASK-29-railen godkänd + mekaniska CI-vakt-grinden
 
 > Scope: sessionsdok `2026-07-22-session-76.md` Del 1 (kanonisk

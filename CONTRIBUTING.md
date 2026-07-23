@@ -79,8 +79,10 @@ ALDRIG Airtable-cred, EF-only-gränsen). Lokalt: `npm run purge:staging`
 `.purge-staging-policy.json`, guard-testerna i
 `scripts/test-purge-staging-sentinels.mjs`.
 
-CI drabbas aldrig av kollisionen — den kör projekten som separata
-sekventiella steg (`.github/workflows/ci.yml` Test+Build); samma
+CI drabbas aldrig av kollisionen — den kör staging-projekten som separata
+sekventiella steg (`.github/workflows/ci.yml` `test-staging`; Test+Build
+splittades S77 i `test-fast`/`a11y`/`test-staging` där ENDAST
+`test-staging` bär staging-mutexen); samma
 kollisionsklass hanteras mellan CI-runs av `concurrency: staging-tests` och
 mellan parallella lokala pipelines av staging-semaforen
 ([ADR-073](docs/decisions/ADR-073-parallella-batch-pipelines.md) beslut 3+4).
@@ -121,11 +123,19 @@ Detta är 11/10-disciplinens systemiska skydd mot drift mellan dokument (Kandida
 
 ## Pull Request-flöde
 
-PR till `main` triggar CI (`.github/workflows/ci.yml`) som kör Biome + tsc + test:api + build.
-PR mergas först när:
+**Mekaniskt enforce:at sedan 2026-07-23** (ruleset `main-skydd`,
+[ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md)):
+ALLT når `main` via PR — direktpush avvisas av GitHub. PR:n kan mergas
+först när required-checken **"CI Passed or Skipped"** är grön på senaste
+SHA med up-to-date branch; force-push och deletion av `main` är
+blockerade. Bokförings-PR:er (docs/backlog/sessionsdok) landar via
+auto-merge (`gh pr merge --auto --merge`).
 
-- CI är grön
-- Marcus har godkänt
+PR till `main` triggar CI (`.github/workflows/ci.yml`). Utöver den
+mekaniska grinden gäller:
+
+- Marcus har godkänt (kod-/UI-ändringar; design-review-grinden per L310 —
+  ren bokföring auto-mergar på grön CI)
 - DoD-checklistan i PR-mallen är fylld
 - ADR refererad om arkitekturbeslut tagits
 
