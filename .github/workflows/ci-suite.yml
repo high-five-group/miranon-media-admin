@@ -19,6 +19,15 @@ name: CI Suite (reusable)
 
 on:
   workflow_call:
+    inputs:
+      run_staging:
+        description: >-
+          true (default) = kör staging-stegen (purge + test-staging). false =
+          D1-klassen (ren UI-ändring, task-36.3): staging + purge skippas
+          (ingen mutex) medan pure/build + a11y kör. Default true ⇒ nightly.yml,
+          som ej skickar inputen, kör alltid full svit.
+        type: boolean
+        default: true
 
 permissions: {}
 
@@ -32,7 +41,9 @@ jobs:
     # Dependabot-skip på JOBB-nivå (ADR-031 Lager 3 — Dependabot-runs saknar
     # Actions-secrets och rör aldrig staging). Docs-only-skippet bärs numera
     # av caller-gaten (ci.yml suite-jobbets if: should_skip_tests != 'true').
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    # inputs.run_staging: false vid D1 (ren UI-ändring, task-36.3) → purge
+    # onödig (staging skippas) ⇒ hoppas med (internt villkor, ej path-filter).
+    if: ${{ inputs.run_staging && github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -144,7 +155,9 @@ jobs:
     # needs purge: setup-purgen (ADR-060 punkt 3–4) ska ha kört FÖRE staging-
     # stegen. Villkoret tolererar 'skipped' (dependabot) men INTE 'failure'.
     needs: [purge]
-    if: ${{ !cancelled() && github.actor != 'dependabot[bot]' && (needs.purge.result == 'success' || needs.purge.result == 'skipped') }}
+    # inputs.run_staging: false vid D1 → staging + mutex skippas (a11y/pure/build
+    # kör ändå i sina egna jobb). Internt villkor, aldrig path-filter (AC#5).
+    if: ${{ !cancelled() && inputs.run_staging && github.actor != 'dependabot[bot]' && (needs.purge.result == 'success' || needs.purge.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     permissions:

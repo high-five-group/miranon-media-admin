@@ -28,6 +28,10 @@ jobs:
     outputs:
       should_skip_tests: ${{ steps.changed-files.outputs.only_changed == 'true' }}
       docs_changed: ${{ steps.changed-docs.outputs.any_changed == 'true' }}
+      # D1-klassen (task-36.3 / ADR-077): true = ALLA ändrade filer är ren UI-yta
+      # (stilmallar/CSS/publika statiska filer) OCH ingen exkluderad fil (samma
+      # exkludering som docs-klassen) → staging skippas, a11y/pure/build kör.
+      ui_low_risk: ${{ steps.changed-ui.outputs.only_changed == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -97,6 +101,36 @@ jobs:
             **/*.md
             .lycheeignore
             .github/workflows/ci.yml
+
+      - name: Get changed UI files (D1-klassning)
+        id: changed-ui
+        # D1-klassen (task-36.3): en ALLOWLIST, aldrig blocklist. only_changed
+        # blir true ENDAST när varenda ändrad fil matchar en UI-positiv OCH ingen
+        # matchar en exkludering. Exkluderingarna är IDENTISKA med
+        # should_skip_tests-stegets (AC#2): CI-workflow, paketmanifest, låsfil och
+        # byggkonfig kan ALDRIG bli D1 — även om de ligger i samma commit som en
+        # CSS-fil faller hela commiten till full svit (allowlist-golvet, AC#4).
+        # quotepath: false — samma invariant som de andra stegen (TASK-15).
+        # Bevisas med kontrastbevis-tripel, inte resonemang (AC#6).
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
+        with:
+          quotepath: false
+          files: |
+            **/*.css
+            src/styles/**
+            public/**
+            !.github/workflows/**
+            !.github/dependabot.yml
+            !package.json
+            !package-lock.json
+            !audit-ci.jsonc
+            !tsconfig*.json
+            !biome.json
+            !vite.config.ts
+            !playwright.config.ts
+            !tsr.config.json
+            !.nvmrc
+            !.gitignore
 
   # Job 2: Always-on lint + audit + typecheck.
   # Kör på ALLA commits oavsett doc-only-detection. Per ADR-029 §1b + K17.
@@ -315,6 +349,11 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/ci-suite.yml
+    # run_staging: false vid D1 (ren UI-ändring) → ci-suite skippar purge +
+    # staging (ingen mutex) men kör pure/build + a11y. Default i ci-suite är
+    # true, så nightly.yml (som ej skickar inputen) kör alltid full svit.
+    with:
+      run_staging: ${{ needs.changed.outputs.ui_low_risk != 'true' }}
     secrets: inherit
 
   # Job 4: Markdown link validation. Conditional på docs-changes.
