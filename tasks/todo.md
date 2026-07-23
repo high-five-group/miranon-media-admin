@@ -100,7 +100,7 @@
   (sex vågor, 16 AC) · `lifecycle: closed` · S76 STÄNGD. **NÄSTA
   ARBETE = NY YTA: S75-resume, work-batch 12.**
 
-### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-23; paus 4 — batch-arbetet KLART [21/24 skivor i main granskningsfärdiga], review-vågen + A/B-beslut + prod-deploy vid resume) — Batch-exekveringen: work-batch max 22, två pipelines
+### Session 75 🟢 PÅGÅR (2026-07-21 → 2026-07-23; paus 4 återupptagen 2026-07-23 — review-vågen + 18.13 A/B + prod-deploy) — Batch-exekveringen: work-batch max 22, två pipelines
 
 > Scope: sessionsdok `2026-07-21-session-75.md` Del 1 (kanonisk
 > plats): exekvera Marcus batch-order AFK (ordern ordagrant i S74
@@ -373,6 +373,22 @@
   TASK-35 · resume-vägen). **NÄSTA: NY Code-yta → `/session-resume` på
   S75 → hela review-vågen med Marcus → 18.13 A/B + kör → prod-deploy →
   end-pass/skörd (session-end, N+1) på signal.**
+- [x] **ÅTERUPPTAGEN, FJÄRDE RESUMEN** (2026-07-23, Marcus-order
+  `/session-resume på S75` i färsk Code-yta): `lifecycle: paused →
+  active` + PAUSLÄGE-rubriken → Paushistorik-form + Del 14; numrering
+  re-verifierad mot färsk disk — **INGEN mellansession förbrukade
+  nummer**, handoffens värden håller: ADR **076** (075 sist) · **L311**
+  (L310 sist) · **T84** (T83 sist) · fälla **45** (44 sist) ·
+  **TASK-35** (task-34 sist); repo rent på `10a5fdc`, audit-ci PASSED,
+  0 task-brancher, review-scopet CLI-verifierat (21 kort In Progress).
+  DIVERGENS öppet bokförd: paus-committen `10a5fdc` **SAKNAR CI-run**
+  (API 0 träffar på head_sha, ingen skip-markör — docs-only;
+  resume-committens run täcker trädet, vaktad i bakgrund).
+  Todo-headerns missade PÅGÅR-flip från tredje resumen rättad.
+  **NÄSTA: hela review-vågen med Marcus (design-review mot S73-facit
+  av de 21 skivorna; tvåstegs-Done per ADR-071-amenderingens
+  klassning; öppna design-frågorna 18.5/18.10/18.12) → 18.13 A/B +
+  kör → prod-deploy → end-pass/skörd (session-end, N+1) på signal.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 
