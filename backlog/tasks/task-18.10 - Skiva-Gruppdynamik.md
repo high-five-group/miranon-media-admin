@@ -4,6 +4,7 @@ title: 'Skiva: Gruppdynamik'
 status: To Do
 assignee: []
 created_date: '2026-07-21 08:21'
+updated_date: '2026-07-23 01:56'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,6 +25,12 @@ Gruppdynamik-avsnittet ände-till-ände: erfarenhetsmixens summeringsrad med sek
 - [ ] #1 Gruppdynamik-shape-utökningen kontraktstestad
 - [ ] #2 Mätaren, accordions och kurshistoriken i tokens-färgerna renderade mot facit-gruppdynamik-bilagan; Läs mer-beteendet bevisat i e2e
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AFK-BATCH MERGE-AGENT HALT (steg 5 — PR-CI-vakten per jobb) 2026-07-23. PR #88 skapad (branch task/18.10, head 7d4ddc86). PR-CI run 29972808069: jobbet 'Docs link check' RÖTT (completed failure). Rotorsak (markdownlint-cli2, lokalt reproducerad mot branch-filen): docs/specs/DESIGN-SYSTEM-SPEC.md:1275 — MD004/ul-style [Expected: dash; Actual: plus] + MD032/blanks-around-lists [Context: '+ nivastreck) som svarar pa...']. Den mjuk-radbrutna parentesen '(matar-segment + nivastreck)' la fragmentet '+ nivastreck)' vid radstart dar Markdown laser '+' som list-bullet -> mis-render + markdownlint-brott. Introducerat av branchens spec-edit (§17-tillagget); mains fil ren. Ovriga PR-jobb vid halt: Lint+Audit+TypeCheck gron, Detect changed files gron, Staging sentinel purge gron, Test+Build pagick (irrelevant — docs redan rott => rod overall). INGEN merge, main OrORD. Atgardsyta: fixa radbrytningen sa '+' inte hamnar vid radstart (t.ex. slut ihop raden eller byt '+' mot 'och'), pusha till branchen, kor om. Branch + PR #88 star kvar.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
