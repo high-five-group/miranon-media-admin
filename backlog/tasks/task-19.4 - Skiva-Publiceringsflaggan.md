@@ -4,7 +4,7 @@ title: 'Skiva: Publiceringsflaggan'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 10:36'
+updated_date: '2026-07-23 10:45'
 labels:
   - ready-for-agent
 dependencies:
@@ -59,6 +59,11 @@ POST-CI-BOKFÖRING (merge-agent, S75-batchen): PR #83 mergad med merge-commit 67
 created: 2026-07-23 10:36
 ---
 Review-våg 5 (2026-07-23, PR #94): prompten kortad till 'Dra för att publicera' (destinationen bärs av armerade läget 'Publiceras på miranon.se' + aria-label). DoD #5 fortsatt öppen tills omgranskning.
+---
+
+created: 2026-07-23 10:45
+---
+Punkt 15 (2026-07-23, PR #94): armerade texten kortad till 'Publiceras' i promptens vikt — MiranonSe-komponenten riven, K81-sagan stängd (mono → medium → riven på en dag; destinationen bärs av aria-labeln). DoD #5 fortsatt öppen.
 ---
 <!-- COMMENTS:END -->
 
