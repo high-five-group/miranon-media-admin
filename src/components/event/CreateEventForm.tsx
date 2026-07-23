@@ -358,13 +358,11 @@ export function CreateEventForm() {
           {/* Handtaget renderas per facit men har ÄNNU ingen verkan: flaggan
               finns inte i basen och `publicera` skickas ALDRIG till
               create-event. task-19.4 wirar den (additivt bas-fält + allowlist). */}
+          {/* Prompten utan destination (review-våg 5): "Dra för att
+              publicera" — destinationen bärs av armerade läget + aria-label. */}
           <SlideToConfirm
             label="Publicera på miranon.se"
-            prompt={
-              <>
-                Dra för att publicera på <MiranonSe />
-              </>
-            }
+            prompt="Dra för att publicera"
             confirmedLabel={
               <>
                 Publiceras på <MiranonSe />
@@ -376,9 +374,16 @@ export function CreateEventForm() {
         </div>
       </DetaljGrupp>
 
-      {/* Knappraden: primär först (formklassen); px-4 = kortens inner-inset. */}
+      {/* Knappraden: primär först (formklassen); px-4 = kortens inner-inset.
+          Intenten följer publicerings-läget (dynamiska grön-regeln, review-
+          våg 5): oarmerat når skapandet inget utomstående → primary; armerat
+          publiceras eventet → success. K77:s statiska grön-form riven. */}
       <div className="flex items-center gap-2 px-4">
-        <Button intent="success" onPress={handleSubmit} isDisabled={mutation.isPending}>
+        <Button
+          intent={publicera ? 'success' : 'primary'}
+          onPress={handleSubmit}
+          isDisabled={mutation.isPending}
+        >
           {mutation.isPending ? 'Skapar…' : 'Skapa event'}
         </Button>
         <Button intent="secondary" onPress={tillListan} isDisabled={mutation.isPending}>
