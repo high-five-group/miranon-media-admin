@@ -198,6 +198,23 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     expect(await omGrupp.getByText('2026-07-31').count()).toBe(0);
   });
 
+  test('review-våg 4: samma-månad-spann kollapsas — "15–16 augusti 2026" (branschformen)', async ({
+    page,
+  }) => {
+    // Marcus (2026-07-23): "15 augusti – 16 augusti 2026" är oproffsigt —
+    // spann inom samma månad skrivs dag–dag månad år (tätt tankstreck,
+    // svenska skrivregler). Biblioteksfixen i datumSpannText bär alla
+    // konsumenter (Om eventet · ny-anmälans kontextrad · redigeringsraden);
+    // spann över månads-/årsgräns behåller sina former (låset ovan).
+    await mockEvent(page, eventDetail({ startdatum: '2026-08-15', slutdatum: '2026-08-16' }));
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const omGrupp = page.locator('section[aria-labelledby="grupp-om-eventet"]');
+    await expect(omGrupp.getByText('15–16 augusti 2026', { exact: true })).toBeVisible();
+    expect(await omGrupp.getByText('15 augusti – 16 augusti 2026').count()).toBe(0);
+  });
+
   test('MORFEN Δ=0 px DOM-mätt (AC #3): kortets geometri + etikett-positioner identiska; likbredda fält', async ({
     page,
   }) => {
