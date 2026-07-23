@@ -1,10 +1,10 @@
 ---
 id: TASK-19.2
 title: 'Skiva: Skapa-ingången + hemvist-flytten + Mer-rivningen'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-22 09:10'
+updated_date: '2026-07-23 11:57'
 labels:
   - ready-for-agent
 dependencies:
@@ -44,13 +44,19 @@ Review-våg 1 (Marcus 2026-07-22): 'kommer inte till skapa-sidan i skarpa vyn' �
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Skapa-ingången + hemvist-flytten + Mer-rivningen levererad (PR #77, merge-commit; tre runs gröna per jobb). Skapa-event-ingången bor på event-familjens route med pillen på vy-raden; den gamla Mer-ingången riven öppet per PRD-beslutet. DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (S75 femte resumen, omgransknings-protokollet Yta 1 — kvittens 'Allt ok' över ytans sex kort; ingången + den rivna Mer-vägen verifierade i browsern). DoD #5 bockad; alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->

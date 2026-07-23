@@ -1,10 +1,10 @@
 ---
 id: TASK-17.1
 title: 'Skiva: ToggleButtonGroup-primitiven (pill-toggeln)'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-21 19:14'
+updated_date: '2026-07-23 11:56'
 labels:
   - ready-for-agent
 dependencies: []
@@ -35,12 +35,18 @@ AFK-drain (S75-batchen, run wf_dd115d9e-aca): kortet är BYGGT + GRANSKNINGSFÄR
 CI grönt per jobb: PR-run 29859790114 + main-run 29860236793 (S75-batchen, merge efter drain-upplösning)
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i S75-batchen (PR #68, merge-commit; PR-run 29859790114 + main-run 29860236793 gröna per jobb). ToggleButtonGroup-primitiven på React Aria i pill-formen med demo- + spec-sektion; TDD rött-först 13 computed-style-assertions (track/pill-tokens, spread-likbredd <1 px, träffytor 40/44 px, global fokusring, statisk + print). DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (S75 femte resumen, omgransknings-protokollet Yta 1: period-toggeln + pilnavigering granskad i browsern mot S72-facit — kvittens 'Allt ok' över ytans sex kort). DoD #5 därmed bockad; alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->

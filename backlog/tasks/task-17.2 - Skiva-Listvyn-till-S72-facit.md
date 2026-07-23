@@ -1,10 +1,10 @@
 ---
 id: TASK-17.2
 title: 'Skiva: Listvyn till S72-facit'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-23 09:08'
+updated_date: '2026-07-23 11:56'
 labels:
   - ready-for-agent
 dependencies:
@@ -58,12 +58,18 @@ Review-våg 2 (2026-07-23): vy-växlingshoppet lista↔kalender klassat FACIT-RE
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Listvyn till S72-facit levererad i S75-batchen (PR-kedjan, CI grön per jobb). Omgranskad efter fix-våg 2: vy-växlingshoppet lista↔kalender rivet (scrollbar-gutter-gränsen lg → sm, computed-style-kontrakt efter CI-overlay-scrollbar-fyndet) + termen 'platser reserverade' + Extra platser-fixen. DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (S75 femte resumen, omgransknings-protokollet Yta 1 — kvittens 'Allt ok' över ytans sex kort; växlingen fram/tillbaka verifierad utan sidledshopp). DoD #5 bockad; alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->

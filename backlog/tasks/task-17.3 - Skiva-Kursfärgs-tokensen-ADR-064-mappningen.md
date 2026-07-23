@@ -1,10 +1,10 @@
 ---
 id: TASK-17.3
 title: 'Skiva: Kursfärgs-tokensen (ADR-064-mappningen)'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-21 20:16'
+updated_date: '2026-07-23 11:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,12 +34,18 @@ Historik — AFK-halt (S75 v2): PR-CI-run 29861999049 röd på steget 'Audit dep
 CI grönt per jobb: PR-run 29864167430 + main-run 29864624002 (S75-batch v2)
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Kursfärgs-tokensen (ADR-064-mappningen) levererad i S75-batchen, CI grön per jobb. Legendens kulörer och kalenderplattornas färger delar samma semantiska token-källa (prefaktorering som kalendern + gruppdynamiken konsumerar). DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (S75 femte resumen, omgransknings-protokollet Yta 1 — kvittens 'Allt ok' över ytans sex kort; legend/platta-kulörerna jämförda i browsern). DoD #5 bockad; alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->

@@ -1,10 +1,10 @@
 ---
 id: TASK-17.5
 title: 'Skiva: Läs-shape-utökningen + bor över-raden på listkortet'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-22 23:40'
+updated_date: '2026-07-23 11:59'
 labels:
   - ready-for-agent
 dependencies:
@@ -69,8 +69,8 @@ POST-CI-BOKFÖRING (batch-merge-agent, TASK-17.5) — GRANSKNINGSFÄRDIG, vänta
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
-- [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
+- [x] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->
 
 ## Comments
@@ -81,3 +81,9 @@ created: 2026-07-22 09:09
 Review-våg 1 (Marcus 2026-07-22): emfas — bor över-raden får INTE ändra korthöjd när den landar; kort med och utan bor över ska vara likhöga. AC #2:s slot-modell med platshållare vid noll är exakt detta krav (raden renderas ALLTID, reserverad; prototypens mönster EventsListPrototype rad ~290). Bokfört som review-förankring — ingen spec-ändring behövd.
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Läs-shape-utökningen + bor över-raden på listkortet levererad (PR #86, merge-commit 9ff4d46; PR-run 29965768561 + main-run 29966285253, 6/6 jobb gröna — api-staging 147 inkl. 2 nya bor över-kontraktstester, e2e-staging 246, a11y 62/62). DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (S75 femte resumen, omgransknings-protokollet Yta 1 — kvittens 'Allt ok' över ytans sex kort). DoD #6 FACIT-AVPRICKNINGEN UTFÖRD vid granskningen per kortets egen plan (review-bunden, 18.7-precedenten): renderad verifiering mot skarp staging-lista 390x844 — bor över-raden är SISTA metaraden på varje kort (säng-glyf + antal), glyfen aria-hidden=true (texten bär, WCAG 1.4.1), samtliga 66 kort EXAKT likhöga (unika korthöjder = {193 px}) vilket bevisar slot-modellens platshållare vid noll (review-våg 1:s emfas), och skärmdumpen jämförd mot FACIT-listvyn.png: metarads-grammatiken pin/kalender/säng + beläggningsrad + stapel matchar facit. ENDA avvikelsen mot facit-bilden är den beslutade term-revideringen 'platser bokade' -> 'platser reserverade' (review-våg 1, ORDLISTA-posten). ÖPPET BOKFÖRT: staging-listan bär just nu enbart noll-fallet ('0 bor över' på alla kort) — icke-noll-fallet är bevisat via e2e-mock (3 bor över) + de 2 api-kontraktstesterna mot deployad staging-EF, inte via skarp lista.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,10 +1,10 @@
 ---
 id: TASK-17.4
 title: 'Skiva: Kalendervyn till S72-facit'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-23 09:08'
+updated_date: '2026-07-23 11:57'
 labels:
   - ready-for-agent
 dependencies:
@@ -53,12 +53,18 @@ Review-våg 2 (2026-07-23): vy-växlingshoppet lista↔kalender (sid-scrollbaren
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Kalendervyn till S72-facit levererad i S75-batchen, CI grön per jobb. Omgranskad efter fix-våg 1 (kalenderpaketet: table-fixed likbredd, FK-idag-ring, vald dag som markeringsram, toggle-avval) och fix-våg 2 (vy-växlingshoppet rivet åt båda håll). DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (S75 femte resumen, omgransknings-protokollet Yta 1 — kvittens 'Allt ok' över ytans sex kort; månadsnav, dag-flöde, idag-ring och summering granskade). DoD #5 bockad; alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->
