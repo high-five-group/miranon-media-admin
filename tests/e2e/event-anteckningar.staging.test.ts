@@ -253,9 +253,12 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     // 500 är retry-bart (fetchWithRetry 5xx × React Query non-4xx-retry) → fel-ytan
     // dyker upp först när retry-kedjan uttömts; timeout rymmer den (app-retry-kontraktet).
-    await expect(gruppen(page).getByRole('alert')).toContainText('Kunde inte hämta anteckningarna', {
-      timeout: 12_000,
-    });
+    await expect(gruppen(page).getByRole('alert')).toContainText(
+      'Kunde inte hämta anteckningarna',
+      {
+        timeout: 12_000,
+      },
+    );
   });
 
   test('axe 0 violations — Anteckningar-gruppen (ström + composer)', async ({ page }) => {

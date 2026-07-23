@@ -56,6 +56,7 @@ och sätter `Författare` = display_name → e-post → user-id (så fältet ald
 tomt). Klienten skickar ENDAST `{ eventId, text }`.
 
 **3. Läs- + skriv-EF:er i operations-mönstret** (ADR-066-formen):
+
 - `get-event-notes` (läs): eventets omvända `Anteckningar`-länk → record-ID-batch
   (get-attendance-mallen, T15-säker: aldrig länkfält-filter) → domän-shape →
   sorterad nyast först server-side.
