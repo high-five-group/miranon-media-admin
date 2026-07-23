@@ -381,9 +381,10 @@
   (L310 sist) · **T84** (T83 sist) · fälla **45** (44 sist) ·
   **TASK-35** (task-34 sist); repo rent på `10a5fdc`, audit-ci PASSED,
   0 task-brancher, review-scopet CLI-verifierat (21 kort In Progress).
-  DIVERGENS öppet bokförd: paus-committen `10a5fdc` **SAKNAR CI-run**
-  (API 0 träffar på head_sha, ingen skip-markör — docs-only;
-  resume-committens run täcker trädet, vaktad i bakgrund).
+  DIVERGENS öppet bokförd + UPPLÖST: paus-committens CI-run skapades
+  FÖRDRÖJT (~8 min Actions-tröghet, API 0 träffar vid resume-läsningen)
+  — `10a5fdc` run 29989982817 · resume-committen `b36b7fb` run
+  29990108180, **BÅDA GRÖNA per jobb** (6/6, docs-only-formen).
   Todo-headerns missade PÅGÅR-flip från tredje resumen rättad.
   **NÄSTA: hela review-vågen med Marcus (design-review mot S73-facit
   av de 21 skivorna; tvåstegs-Done per ADR-071-amenderingens
