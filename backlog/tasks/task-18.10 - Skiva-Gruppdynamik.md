@@ -1,10 +1,10 @@
 ---
 id: TASK-18.10
 title: 'Skiva: Gruppdynamik'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 09:08'
+updated_date: '2026-07-23 12:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -82,13 +82,19 @@ Review-våg 2 (2026-07-23): tomläget — FACIT-REVIDERING ('Inget att visa änn
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Gruppdynamik levererad i S75-batchen (CI grön per jobb). Omgranskad efter fix-våg 2 (tomläget 'Inget att visa ännu' centrerat + min-h-28-korthöjds-paret med Närvaro). DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (omgransknings-protokollet Yta 3, granskad mot arbetsko-fixturen med data). [FRÅGA] AVGJORD PÅ DELEGERAD SENIOR-ORDER (Marcus: 'kör på din rekommendation som senior'), TVÅ DELAR: (1) SKALAN FÖRBLIR NEUTRAL — koden verifierad: --mm-erfarenhet-ny/mellan/erfaren mappar mot p-neutral-300/500/700, alltså redan en sekventiell grå ramp, INGEN kodändring behövd. Motivet: blått är appens primärfärg och signalerar handling; gruppdynamiken är läsinformation och ska inte konkurrera med arbetskön om blicken. (2) ERFARENHETS-BADGE-CHIPPET BEHÅLLS trots att det ligger över facit. Motivet är datahederlighet: chippet visar personens KANONISKA Erfarenhetsbadge rå ur basen (RIM-3-BLIND), medan nivå-bucketarna härleds ur antalGenomfordaEvent (RIM-3-INKLUDERANDE). När de två avviker ÄR divergensen den kända badge-luckan (T16) visad som den är — att riva chippet vore att designa bort ett bas-defekt-symptom i appen, vilket ADR-063 uttryckligen förbjuder (resolution sker I BASEN). Chippet är dessutom lågmält (bg-bg-muted + text-secondary) och konkurrerar inte med facitets hierarki. Öppet bokfört som medveten facit-utökning. DoD #5 bockad; alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->

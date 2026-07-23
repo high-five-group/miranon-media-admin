@@ -1,10 +1,10 @@
 ---
 id: TASK-18.11
 title: 'Skiva: Anteckningar (egen ADR + additiv tabell + strömmen)'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 09:40'
+updated_date: '2026-07-23 12:59'
 labels:
   - ready-for-agent
 dependencies:
@@ -72,13 +72,19 @@ Review-våg 3 (2026-07-23, PR #92): composern K68–K71 reviderad — 'Lägg til
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Anteckningar (ADR-075 + additiv tabell + strömmen) levererad (PR #89 efter orkestrator-läkt halt, merge-commit 3962cc9; PR-CI 29977902924 GRÖN PER JOBB 6/6 inkl. conformance mot deployade EF). Omgranskad efter fix-våg 2 (tomlägets svans riven) + våg 3 (composern 'Spara' + sekundär 'Rensa' vid innehåll, fokus-återföring, TextArea-primitivens React-19-ref). DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (omgransknings-protokollet Yta 3). DE FEM ÖVRIGA ÖPPNA DoD-POSTERNA STÄNGDA MED BEVIS vid granskningen: #1 båda AC bockade (ADR mintad + tabell additiv + operationerna kontraktstestade med teardown · strömmen/fas-etiketterna/auto-grow e2e-bevisade). #2 grind-klassen täckt av PR-runnets 6/6 gröna jobb (CI kör samma grindar som lokalt, L147-klassen). #4 diffen path-scopad — merge-committens fil-lista verifierad: enbart kort-ytans filer (komponenter, adapters/mutations/schemas, de två EF:erna, config.toml, field-allowlists, api/e2e-tester, ADR-075, primitives-demon), inga orelaterade. #6 FACIT-AVPRICKNING mot skarp staging: composern visar ENBART 'Spara' i tomt läge och 'Rensa' + 'Spara' så snart fältet bär innehåll (våg 3:s CRM-notes-form, mätt via knapp-inventering), tomläget renderar 'Inga anteckningar ännu' utan svans (våg 2:s facit-revidering); strömmen + fas-etiketterna bärs av e2e-beviset eftersom staging saknar anteckningsdata — öppet bokfört, ej påstått browser-verifierat. #7 tabellen + de två EF:erna finns i STAGING (create-event-note + get-event-notes ACTIVE v2, redeployade i STALE-åtgärden 2026-07-23); PROD-tabellen är EJ skapad, så prod-deploy förblir separat Marcus-auktoriserad handling per ADR-050/ADR-063. OBS INFÖR PROD-DEPLOY-VÅGEN: kortets egen not säger att .prod-functions-allowlist.conf lämnades orörd, men allowlistan BÄR create-event-note + get-event-notes (tillagda i kortets egen commit 4093af1) — de är alltså prod-DEKLARERADE. Ordningen tabell FÖRE EF måste därför hållas manuellt i prod-vågen, annars deployas två EF:er mot en tabell som inte finns. Alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
-- [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
-- [ ] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
+- [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->

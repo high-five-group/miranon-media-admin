@@ -1,10 +1,10 @@
 ---
 id: TASK-19.4
 title: 'Skiva: Publiceringsflaggan'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 10:45'
+updated_date: '2026-07-23 12:59'
 labels:
   - ready-for-agent
 dependencies:
@@ -67,13 +67,19 @@ Punkt 15 (2026-07-23, PR #94): armerade texten kortad till 'Publiceras' i prompt
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Publiceringsflaggan levererad i S75-batchen (additivt bas-fält 'Publicerad på miranon.se' fldyJKnJCP1brHwL6 i STAGING; prod orörd; allowlist-utökningen kontraktstestad). Omgranskad efter fix-våg 4/5 (p14–p15). DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (omgransknings-protokollet Yta 2). DoD #6 FACIT-AVPRICKNINGEN UTFÖRD vid granskningen — renderad verifiering mot skarp sida 390x844: promptens text är 'Dra för att publicera' (utan destination, p14) med computed font-weight 400, och den armerade texten är 'Publiceras' med SAMMA computed font-weight 400 — p15:s krav att armerade texten bär promptens vikt är därmed mätt, inte antaget (K82-lyftet i SlideToConfirm-primitiven rivet i våg 5). Alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
-- [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
+- [x] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->

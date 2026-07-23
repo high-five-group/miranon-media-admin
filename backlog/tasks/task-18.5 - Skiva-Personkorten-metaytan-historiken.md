@@ -1,10 +1,10 @@
 ---
 id: TASK-18.5
 title: 'Skiva: Personkorten (metaytan + historiken)'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-23 09:08'
+updated_date: '2026-07-23 12:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -196,13 +196,19 @@ Review-våg 2 (2026-07-23): två utfall. (1) Anmäld-raden: PRD task-18 p18:s ol
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Personkorten (metaytan + historiken) levererade i S75-batchen (CI grön per jobb). Omgranskade efter fix-våg 2 (Anmäld-radens understrykning, K62-formen som no-op tills 18.17 ger länkmålet) + EF-redeployen som gjorde historikraden synlig. DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (omgransknings-protokollet Yta 3). [FRÅGA] AVGJORD PÅ DELEGERAD SENIOR-ORDER (Marcus: 'kör på din rekommendation som senior'): statuspillarna (Obekräftad/Manuellt tillagd) BEHÅLLS UTANFÖR person-länken. Koden verifierad (Deltagare.tsx rad 553-581): Link omsluter enbart identiteten (namn + e-post), pillarna är syskon i samma flex-rad. Motivet är skärmläsar-upplevelsen — pillar inuti länken hamnar i länkens tillgängliga namn ('Greta Granskning E-post granskning-review@example.com Obekräftad Manuellt tillagd, länk') och gör listan tung att navigera. S73-facit är ett VISUELLT facit, inte en DOM-spec; visuellt är formen identisk (pillarna står i högerkanten, wrappar på 390 px per facit-avprickningens mätning). Öppet bokfört som medveten DOM-avvikelse mot facit-bilden. DoD #5 bockad; alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->

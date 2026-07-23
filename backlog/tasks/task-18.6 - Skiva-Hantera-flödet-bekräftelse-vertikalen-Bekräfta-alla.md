@@ -1,10 +1,10 @@
 ---
 id: TASK-18.6
 title: 'Skiva: Hantera-flödet (bekräftelse-vertikalen + Bekräfta alla)'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-23 09:40'
+updated_date: '2026-07-23 12:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -200,13 +200,19 @@ Review-våg 3 (2026-07-23, PR #92): Bekräfta alla-insetet symmetriserat — han
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Hantera-flödet (bekräftelse-vertikalen + Bekräfta alla) levererat i S75-batchen (CI grön per jobb). Omgranskat efter fix-våg 2/3: Bekräfta alla-pillens rundning till primitivens 'rounded' (facit-revidering, K47) + symmetriskt inset pr-2 → pr-1. DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (omgransknings-protokollet Yta 3). DoD #5 bockad; alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->

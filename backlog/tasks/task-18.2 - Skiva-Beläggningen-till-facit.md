@@ -1,10 +1,10 @@
 ---
 id: TASK-18.2
 title: 'Skiva: Beläggningen till facit'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-22 11:50'
+updated_date: '2026-07-23 12:52'
 labels:
   - ready-for-agent
 dependencies:
@@ -43,13 +43,19 @@ Review-fix-våg 1 del 2 LEVERERAD (PR #79 → merge 68a1aa5; main-run 2991664074
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Beläggningen till facit levererad i S75-batchen (CI grön per jobb). Omgranskad efter Extra platser-fixen (PR #79: tre render-ställen + K16-assertionen; ORDLISTA-posten). DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (omgransknings-protokollet Yta 3). DoD #5 bockad; alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->

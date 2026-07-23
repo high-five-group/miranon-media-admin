@@ -1,10 +1,10 @@
 ---
 id: TASK-18.7
 title: 'Skiva: Bor över (bas-fältet + kryss-läget)'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-22 22:37'
+updated_date: '2026-07-23 12:59'
 labels:
   - ready-for-agent
 dependencies:
@@ -69,13 +69,19 @@ GRANSKNINGSFÄRDIG — väntar design-review (Marcus). Kortet står kvar **In Pr
 - DoD #5 (design-review mot S73-facit) + #6 (facit-avprickning mot bilagor) lämnas ÖPPNA — Marcus-bundna.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Bor över (bas-fältet + kryss-läget) levererad i S75-batchen (CI grön per jobb); kryssfältet additivt i staging med egen write-operation, summeringen alltid härledd. DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (omgransknings-protokollet Yta 3). DoD #6 FACIT-AVPRICKNINGEN UTFÖRD vid granskningen mot skarp staging (arbetsko-fixturen recZyRIzbqWSifAQO, 390x844): summeringsraden renderar 'Bor över 1' som sista åtgärdsrad; radens klick öppnar KRYSS-LÄGET inline (K52-formen, ej dialog) med alla fyra anmälda i EN kolumn — checkbox-räkningen på sidan går 1 → 5 (signal-krysset + fyra personrader) och EXAKT EN personrad står ikryssad, dvs. identiskt med summeringens 1 (härledningen bevisad mot rendering, inte mot ett lagrat räknefält); 'Rensa filtret' synlig som utgång. Alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
-- [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
+- [x] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->

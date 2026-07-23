@@ -1,10 +1,10 @@
 ---
 id: TASK-19.3
 title: 'Skiva: Skapa-sidan till facit'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 10:36'
+updated_date: '2026-07-23 12:58'
 labels:
   - ready-for-agent
 dependencies:
@@ -106,13 +106,19 @@ Review-våg 5 (2026-07-23, PR #94): Skapa event-knappen dynamisk intent — prim
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Skapa-sidan till facit levererad (PR #80, merge-commit 6e0a78c; PR-CI 29949249222 grön per jobb). Omgranskad efter fix-våg 3 + 5. DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (omgransknings-protokollet Yta 2). DoD #6 FACIT-AVPRICKNINGEN UTFÖRD PÅ NYTT vid granskningen (den tidigare avprickningen var delvis inaktuell efter vågorna) — renderad verifiering mot skarp sida 390x844: (1) DYNAMISKA GRÖN-REGELN (p13) computed-belagd — 'Skapa event' background-color rgb(40,41,40) MÖRKGRÅ i oarmerat läge, rgb(96,107,87) GRÖN när publiceringen armeras; (2) miranon.se-komponenten BORTA ur hela sidans text (p15, K81-sagan stängd); (3) skärmdump jämförd mot FACIT-skapa-sidan.png: uppställningen intakt — chevron, rubrik+linje, tre grupper (Om eventet · Platser och format · Publicering), fältordning, handtaget, grön knapp först + Avbryt. Alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
-- [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
+- [x] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->

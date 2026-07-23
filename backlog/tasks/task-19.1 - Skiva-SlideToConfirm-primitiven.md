@@ -1,10 +1,10 @@
 ---
 id: TASK-19.1
 title: 'Skiva: SlideToConfirm-primitiven'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-21 22:36'
+updated_date: '2026-07-23 12:58'
 labels:
   - ready-for-agent
 dependencies: []
@@ -35,13 +35,19 @@ CI grönt per jobb: PR-run 29873302703 + main-run 29873758165 (S75-batch v2)
 POST-CI-avvikelse öppet bokförd (S75-batch v2): bokförings-runnet 29874196114 RÖTT på audit-steget — NY upstream-advisory GHSA-f88m-g3jw-g9cj (sharp <0.35.0 via vite-plugin-pwa>@vite-pwa/assets-generator, high) ej i audit-ci-allowlisten (tom). Diffen exonererad: 237d37a rörde enbart denna kortfil, identisk package-lock, samma jobb grönt på main-runnet 29873758165 minuter tidigare. Leveransens grindar (PR-run 29873302703 + main-run 29873758165) gröna per jobb — DoD 3 står. Åtgärd = ADR-028 Konvention-flöde (Marcus-beslut), utanför task-19.1-ytan. Runnet på denna bokförings-commit väntas också rött av samma orsak. BATCH-BLOCKER: alla efterföljande runs röda tills allowlist-beslutet tagits.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+SlideToConfirm-primitiven levererad i S75-batchen (CI grön per jobb). APG-switch för hand (RAC/Radix klick-toggle river avsikts-mekaniken K79; förseglat i DESIGN-SYSTEM-SPEC §18) + demo-sektion + 15 a11y-mönstertester. Omgranskad efter fix-våg 5 (p15: armerade textens font-medium-lyft rivet — bocken är armad-markören). DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (omgransknings-protokollet Yta 2, kvittens 'Hoppet är borta … jag kvitterar'). DoD #7 EJ TILLÄMPLIG och därför bockad: skivan bär INGA bas-ändringar (primitiv + demo + spec), villkoret är vakuöst uppfyllt — bokfört öppet i stället för att lämnas hängande. Renderad verifiering vid granskningen (utöver kortets egen DoD #6): role=switch med aria-checked false→true på Space, global fokusring computed 2px solid offset 2px. Alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
-- [ ] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
+- [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->

@@ -1,10 +1,10 @@
 ---
 id: TASK-18.3
 title: 'Skiva: Åtgärds-gruppen + check-in-ingången + chevron-koherensen'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-21 22:13'
+updated_date: '2026-07-23 12:52'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,13 +33,19 @@ Levererad i S75-batchen v2 (parallell form, ADR-073 Am. 3) — väntar design-re
 CI grönt per jobb: PR-run 29872099012 + main-run 29872575945 (S75-batch v2)
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Åtgärds-gruppen + check-in-ingången + chevron-koherensen levererad i S75-batchen (CI grön per jobb); chevron-regeln revs öppet per PRD-beslutet. DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (omgransknings-protokollet Yta 3). DoD #5 bockad; alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->
