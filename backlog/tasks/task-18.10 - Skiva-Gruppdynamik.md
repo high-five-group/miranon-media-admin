@@ -4,7 +4,7 @@ title: 'Skiva: Gruppdynamik'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 01:44'
+updated_date: '2026-07-23 01:56'
 labels:
   - ready-for-agent
 dependencies:
@@ -63,6 +63,12 @@ MotiveringsKort mäter FAKTISK overflow (scrollHeight > clientHeight mot line-cl
 11 ändrade filer (10 M + 1 ny), ALLA inom kortets yta. routeTree.gen.ts ej committad (gitignorad). tasks/lessons.md + docs/reference/data-model.md orörda. Nya staging-fält = INGA (pre-existerande, live-verifierade).
 
 GRANSKNINGSFÄRDIG — väntar design-review (Marcus, DoD #5). Kortet står In Progress. DoD #3 (CI grön per jobb) bocks av orkestratorn efter grön CI.
+
+---
+
+HISTORIK — HALT-NOTEN FRÅN BATCH-KÖRNINGEN (bevarad per ADR-073 Am 3 mandat (b), union; LÄKT av orkestrator-fixen 4416fc0: '+ nivåstreck)' → 'plus nivåstreck', rebruten rad. markdownlint 0 issues efter läkning):
+
+AFK-BATCH MERGE-AGENT HALT (steg 5 — PR-CI-vakten per jobb) 2026-07-23. PR #88 skapad (branch task/18.10, head 7d4ddc86). PR-CI run 29972808069: jobbet 'Docs link check' RÖTT (completed failure). Rotorsak (markdownlint-cli2, lokalt reproducerad mot branch-filen): docs/specs/DESIGN-SYSTEM-SPEC.md:1275 — MD004/ul-style [Expected: dash; Actual: plus] + MD032/blanks-around-lists [Context: '+ nivastreck) som svarar pa...']. Den mjuk-radbrutna parentesen '(matar-segment + nivastreck)' la fragmentet '+ nivastreck)' vid radstart dar Markdown laser '+' som list-bullet -> mis-render + markdownlint-brott. Introducerat av branchens spec-edit (§17-tillagget); mains fil ren. Ovriga PR-jobb vid halt: Lint+Audit+TypeCheck gron, Detect changed files gron, Staging sentinel purge gron, Test+Build pagick (irrelevant — docs redan rott => rod overall). INGEN merge, main OrORD. Atgardsyta: fixa radbrytningen sa '+' inte hamnar vid radstart (t.ex. slut ihop raden eller byt '+' mot 'och'), pusha till branchen, kor om. Branch + PR #88 star kvar.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
