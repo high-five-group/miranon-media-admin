@@ -4,7 +4,7 @@ title: 'Skiva: Familje-rivningen (prototypsubstratet)'
 status: To Do
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 07:38'
+updated_date: '2026-07-23 14:47'
 labels:
   - ready-for-agent
 dependencies:
@@ -36,28 +36,32 @@ ordinal: 63000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-När hela familjen är byggd rivs event-familjens konvergens-substrat: de fyra prototypsidorna (`src/components/events/prototype/*.tsx` — EventsList/EventDetail/SkapaEvent/ManuellAnmalan-Prototype), demo-datat och routernas `?variant=`-prototypgrenar (event/index · event/$eventId/index · event/skapa · event/$eventId/ny-anmalan) — plus de nu döda supersederade ytorna som flaggats i noterna (anmalda-vyn/EventRegistrations, standalone-närvaron/EventAttendance, AddRegistrationModal). Faciten bärs vidare av bilagorna och git-historiken (throwaway-kontraktets klausuler iv och v — prototypkod absorberas aldrig, riven vid skarpa byggets slut).
+När hela familjen är byggd och granskad rivs event-familjens konvergens-substrat: de fyra prototypsidorna (`src/components/events/prototype/*.tsx` — EventsList/EventDetail/SkapaEvent/ManuellAnmalan-Prototype), demo-datat och routernas `?variant=`-prototypgrenar (event/index · event/$eventId/index · event/skapa · event/$eventId/ny-anmalan). Faciten bärs vidare av bilagorna och git-historiken (throwaway-kontraktets klausuler iv och v — prototypkod absorberas aldrig, riven vid skarpa byggets slut).
 
-**VÄXLAREN BEHÅLLS (SCOPE-KORRIGERING mot ADR-074).** `src/components/dev/PrototypeSwitcher.tsx` är per ADR-074 (beslut 4 + rad 110–112) en STÅENDE delad dev-komponent som består — den byggdes OM i S76 (TASK-29, ikon-railen, sex granskningsvågor) till permanent verktyg för kommande familjer/produkter. Detta korrigerar kortets ursprungstext (skriven 2026-07-21, FÖRE S76) som sa 'riv prototyp-växlaren' — ADR-074 (2026-07-22) är nyare och styrande, och adresserar 18.13 explicit.
+**VÄXLAREN BEHÅLLS OCH FÅR EGET HEM (ADR-074 beslut 4 + Marcus-beslut B 2026-07-23).** `src/components/dev/PrototypeSwitcher.tsx` är en STÅENDE delad dev-komponent — ombyggd i S76 (TASK-29, ikon-railen) till permanent verktyg. Efter rivningen har den noll konsumenter och dess enda verifiering red på de `?variant=`-grenar som rivs; därför monteras den på en egen minimal dev-route `/dev/prototyper` (ADR-044-mönstret) så verktyget är levande och testbart mellan prototyp-passen.
+
+**SCOPE-KORRIGERING 2 (2026-07-23, Marcus-beslut A): de tre 'döda ytorna' rivs INTE i denna skiva.** Disk-verifieringen vid implementationen (typecheck fällde rivningen) visade att de har LEVANDE konsumenter, tvärtemot kortets tidigare noter: (a) `/event/$eventId/narvaro` är målet för 'Gå till check-in' i Atgarder.tsx — ett öppet avgjort BELAGT-INTERIM-mål i task-18.3 tills check-in-sidan föds; (b) `/event/$eventId/anmalda` + EventRegistrations är länkmål för VARJE rad i AnmalningarList (Mer-vyn, Hems CTA); (c) AddRegistrationModal lever eller dör med (b). Rivning nu hade brutit två levande vägar eller tvingat in obeslutade UX-ändringar i en kontraktsstädning. De rivs när sina ersättare finns — anmälda-ytan när task-18.17 (per-anmälan-detaljvyn) kan ta över AnmalningarLists länkmål, närvaro-ytan när check-in-sidan föds.
 
 Inga skarpa ytor rörs. Täcker inga användarberättelser — kontraktsstädning.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
-- [ ] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
+- [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Prototyp-instanserna + demo-datat + routernas prototypgrenar + de döda supersederade ytorna borta; appen bygger grönt utan DEV-prototyp-grenar. PrototypeSwitcher.tsx BEHÅLLS (ADR-074 beslut 4).
-- [ ] #2 Skarpa flödena opåverkade: fulla e2e-sviten grön efter rivningen
+- [x] #1 Prototyp-instanserna (fyra komponenter + demo-datat) och routernas ?variant=-prototypgrenar borta; appen bygger grönt utan DEV-prototyp-grenar
+- [x] #2 PrototypeSwitcher.tsx BEHÅLLS (ADR-074 beslut 4) och monteras på egen minimal dev-route /dev/prototyper (Marcus-beslut B) — railen renderar, varianter stegbara, URL-kontraktet speglat
+- [x] #3 Skarpa flödena opåverkade: e2e-sviterna över event-familjen gröna efter rivningen
+- [x] #4 De tre levande ytorna (narvaro-routen + anmalda-routen/EventRegistrations + AddRegistrationModal) ORÖRDA per Marcus-beslut A — rivningen gated på ersättarna (18.17 respektive check-in-sidan)
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -74,4 +78,12 @@ SCOPE-KORRIGERING (2026-07-23, S75 Del 13 — Marcus-beordrad efter S76-läsning
 DISK-VERIFIERAT rivnings-inventarium: (a) src/components/events/prototype/{EventsList,EventDetail,SkapaEvent,ManuellAnmalan}Prototype.tsx · (b) routernas prototypgrenar i event/index.tsx, event/$eventId/index.tsx, event/skapa.tsx, event/$eventId/ny-anmalan.tsx · (c) döda ytor: /event/$eventId/anmalda + EventRegistrations.tsx + event-anmalda e2e · standalone-närvaron (narvaro.tsx + EventAttendance.tsx + event-narvaro e2e) · AddRegistrationModal. BEHÅLLS: src/components/dev/PrototypeSwitcher.tsx.
 
 ÖPPEN FÖLJDFRÅGA (Marcus vill resonera senare — EJ beslutad): efter rivningen har PrototypeSwitcher INGA konsumenter kvar i event-familjen (idag monteras den av instanserna + de fyra routerna). Alternativ A: låt den stå oanvänd (ren ADR-074-läsning, verktyget vilar tills nästa prototyp-pass). Alternativ B: ge den ett hem nu (t.ex. en /dev-route som monterar den) så den är levande/testbar. Code-gissning A, men Marcus beslutar. Detta avgör om rivningen får lämna en oanvänd-men-behållen komponent (kan kräva biome/dead-code-hantering) eller om ett litet /dev-mount ingår i 18.13:s scope.
+
+LEVERANS (S75 femte resumen, 2026-07-23). RIVET: fyra prototypkomponenter + DEMO_EVENTS-datat (bodde i EventsListPrototype) + ?variant=-grenarna i alla fyra routerna; barrel-exporterna orörda (prototyperna exporterades aldrig därifrån). NYTT: src/routes/dev/prototyper.tsx — minimal ADR-044-grindad yta som monterar railen med två attrapp-varianter + en ensam-variant-form (växlaren BYTER FORM vid den gränsen: en variant ⇒ prototyp-ikon, flera ⇒ bokstavsknappar) och speglar ?variant=/?data= i en utskriven ruta så persistens- eller alias-regressioner är läsbara utan devtools. Renderings-verifierat mot dev-servern: rubrik + rail monterad, variant A stegbar (URL blir ?variant=A och rutan följer), noll sidfel.
+
+FYNDET SOM STOPPADE RIVNINGEN (varför scope-korrigering 2 finns): typecheck fällde borttagningen av de tre 'döda' ytorna med tre TS-fel — Atgarder.tsx:79/110 (check-in-ingångens union-typ + länken) och AnmalningarList.tsx:130-131. Ytorna är alltså LEVANDE konsumenter, inte döda. Kortets tidigare noter var byggda ur eventsidans perspektiv ('oåtkomliga FRÅN eventsidan') vilket är sant men inte hela bilden. STOPPA-fråga ställd till Marcus → beslut A: låt dem stå, riv när ersättarna finns. Filerna återställdes orörda och e2e-sviterna för anmalda + narvaro står kvar gröna.
+
+GRINDAR: typecheck 0 · biome 0 · build grön · test:api 375 passed · test:a11y 65 passed · e2e event-familjen 97/97 passed (inkl. event-anmalda + event-narvaro, dvs. de bevarade ytorna). TVÅ FLAKES i fullsvit, BÅDA GRÖNA ENSAMMA och orörda av denna ändring: tests/api/send-email.staging.ts (RESOLUTION LIVE-fallet) + tests/a11y/patterns/Listbox.spec.ts — samma isolerings-klass som TASK-34.
+
+DoD #6 EJ TILLÄMPLIG som facit-avprickning: skivan rör inga facit-punkter (skarpa vyerna är oförändrade — e2e-sviterna ÄR beviset för det) och den enda nya ytan är dev-intern utan facit-bilaga. DoD #7 vakuöst uppfylld: inga bas-ändringar.
 <!-- SECTION:NOTES:END -->
