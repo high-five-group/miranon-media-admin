@@ -15,6 +15,7 @@ import type { z } from 'zod';
 import type { Attendance } from '../models/Attendance';
 import type { Engagement } from '../models/Engagement';
 import type { Event } from '../models/Event';
+import type { EventNote } from '../models/EventNote';
 import type { BulkMail, MailLogEntry, MailPayload, MailSendResult } from '../models/MailPayload';
 import type { Person } from '../models/Person';
 import type { Registration } from '../models/Registration';
@@ -24,6 +25,7 @@ import type {
   AttendanceSchema,
   BulkMailSchema,
   EngagementSchema,
+  EventNoteSchema,
   EventSchema,
   MailLogEntrySchema,
   MailPayloadSchema,
@@ -42,6 +44,7 @@ type AssertEqual<A, B> =
 const _attendance: AssertEqual<z.infer<typeof AttendanceSchema>, Attendance> = true;
 const _engagement: AssertEqual<z.infer<typeof EngagementSchema>, Engagement> = true;
 const _event: AssertEqual<z.infer<typeof EventSchema>, Event> = true;
+const _eventNote: AssertEqual<z.infer<typeof EventNoteSchema>, EventNote> = true;
 const _mailPayload: AssertEqual<z.infer<typeof MailPayloadSchema>, MailPayload> = true;
 const _mailSendResult: AssertEqual<z.infer<typeof MailSendResultSchema>, MailSendResult> = true;
 const _mailLogEntry: AssertEqual<z.infer<typeof MailLogEntrySchema>, MailLogEntry> = true;
@@ -55,6 +58,7 @@ export const _schemaAssignabilityAsserts = {
   _attendance,
   _engagement,
   _event,
+  _eventNote,
   _mailPayload,
   _mailSendResult,
   _mailLogEntry,

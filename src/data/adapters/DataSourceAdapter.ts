@@ -1,6 +1,7 @@
 import type { Attendance } from '../../domain/models/Attendance';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
+import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
 import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/models/MailPayload';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
@@ -140,4 +141,20 @@ export interface DataSourceAdapter {
    * och Bekräfta alla (N ID:n); svaret är aldrig binärt.
    */
   confirmRegistrations(input: ConfirmRegistrationsInput): Promise<ConfirmRegistrationsResult>;
+
+  /**
+   * Hämta eventets anteckningar (task-18.11, ADR-075). Läsning via get-event-notes:
+   * eventets omvända `Anteckningar`-länk → batch-hämtade Anteckningar-rader,
+   * mappade till domän-shape och sorterade nyast först (server-side). Ren läsning.
+   */
+  fetchEventNotes(eventId: string): Promise<EventNote[]>;
+
+  /**
+   * Skapa en anteckning på ett event (task-18.11, ADR-075). Tar write-shapen
+   * `CreateEventNoteInput` (eventId + text); FÖRFATTAREN sätts server-side ur den
+   * inloggade användarens verifierade identitet (aldrig klient-buren), och
+   * `tidpunkt` ur Airtables createdTime. Returnerar den skapade anteckningen i
+   * domän-shape.
+   */
+  createEventNote(input: CreateEventNoteInput): Promise<EventNote>;
 }

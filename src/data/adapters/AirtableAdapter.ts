@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { Attendance } from '../../domain/models/Attendance';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
+import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
 import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/models/MailPayload';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
@@ -15,6 +16,7 @@ import {
   type CreateEventInput,
   type EventFormat,
   EventFormatSchema,
+  EventNoteSchema,
   EventSchema,
   type Intresserad,
   IntresseradSchema,
@@ -396,5 +398,34 @@ export class AirtableAdapter implements DataSourceAdapter {
       idempotencyKey: input.idempotencyKey,
     });
     return ConfirmRegistrationsResultSchema.parse(data);
+  }
+
+  /**
+   * Hämta eventets anteckningar (task-18.11, ADR-075). get-event-notes-EF:en läser
+   * eventets omvända `Anteckningar`-länk och batch-hämtar Anteckningar-raderna
+   * (samma record-ID-batch-form som get-attendance), mappar till domän-shape och
+   * sorterar nyast först server-side. `.parse()` validerar vid datagränsen
+   * (ADR-026; z.array — en LISTA). 404 (okänt eventId) propagerar som
+   * `EdgeFunctionError` med `status: 404`.
+   */
+  async fetchEventNotes(eventId: string): Promise<EventNote[]> {
+    const data = await callEdgeFunction<{ notes: unknown }>('get-event-notes', { eventId });
+    return z.array(EventNoteSchema).parse(data.notes);
+  }
+
+  /**
+   * Skapa en anteckning på ett event (task-18.11, ADR-075). POST mot
+   * create-event-note-EF, som gatar auth (requireUser), sätter FÖRFATTAREN
+   * server-side ur den verifierade JWT:ns `user_metadata.display_name` (aldrig
+   * klient-buren — spoof-säker attribution) och länkar eventet. EF-svaret bär
+   * `note` (ren domän-shape) — `.parse()` validerar vid datagränsen (ADR-026); det
+   * parallella råa `record`-fältet är skriv-bevis för conformance och konsumeras ej här.
+   */
+  async createEventNote(input: CreateEventNoteInput): Promise<EventNote> {
+    const data = await postEdgeFunction<{ note: unknown }>('create-event-note', {
+      eventId: input.eventId,
+      text: input.text,
+    });
+    return EventNoteSchema.parse(data.note);
   }
 }

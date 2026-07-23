@@ -241,6 +241,24 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Idempotensnyckel',
     ],
   },
+  // Skapa en anteckning i eventets ström (task-18.11, PRD task-18 beslut 13; ADR-075 —
+  // egen ADR: attribuerings-avvägningen additiv tabell vs Airtable record comments).
+  // create-event-note-EF:en bygger `fields` SERVER-SIDE ur typad input (text) plus
+  // FÖRFATTAREN ur den verifierade JWT:ns user_metadata.display_name (aldrig klient-
+  // buren — spoof-säker attribution) och Event-länken ur eventId — listan är därför en
+  // SSOT-grind mot framtida kod-drift (findDisallowedField fäller ett fält utanför
+  // listan före Airtable-anropet), ej en klient-nåbar deny-yta. EXAKT de tre skrivbara
+  // fälten i den ADDITIVA Anteckningar-tabellen (staging tbl87a23xDv19Mb6R, skapad
+  // additivt 2026-07-23; skrivbarheten LIVE-VERIFIERAD via create+läs-tillbaka+radera
+  // INNAN posten låstes, L294): 'Författare' (singleLineText, primär), 'Anteckning'
+  // (multilineText), 'Event' (multipleRecordLinks → Eventplanering). Tidpunkten sätts av
+  // Airtables createdTime (aldrig ett skrivet fält). ⚠️ PROD-tabellen är INTE skapad —
+  // hård prod-deploy-förutsättning (tabell FÖRE EF, per miljö; ADR-050/ADR-063).
+  // Tabell per NAMN (ADR-050 bas-portabilitet).
+  'create-event-note': {
+    tableId: 'Anteckningar',
+    allowedFields: ['Författare', 'Anteckning', 'Event'],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.
