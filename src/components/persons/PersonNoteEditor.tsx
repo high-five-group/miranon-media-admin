@@ -147,3 +147,5 @@ export function PersonNoteEditor({ personId, note }: PersonNoteEditorProps) {
     </div>
   );
 }
+
+// task-36.3 D1-kontrastbevis case 2 — komponentkod i commit → full svit [rivs]
