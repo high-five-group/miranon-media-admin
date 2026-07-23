@@ -100,7 +100,7 @@
   (sex vågor, 16 AC) · `lifecycle: closed` · S76 STÄNGD. **NÄSTA
   ARBETE = NY YTA: S75-resume, work-batch 12.**
 
-### Session 75 🟢 PÅGÅR (2026-07-21 → 2026-07-23; paus 5 återupptagen 2026-07-23 — omgransknings-protokollet → Done-flippar → 18.13 → QA → prod-deploy → session-end) — Batch-exekveringen: work-batch max 22, två pipelines
+### Session 75 ✅ AVSLUTAD (2026-07-21 → 2026-07-23; fem pauser/resumer) — Batch-exekveringen → review-vågorna → event-familjen komplett + prod-basen speglad
 
 > Scope: sessionsdok `2026-07-21-session-75.md` Del 1 (kanonisk
 > plats): exekvera Marcus batch-order AFK (ordern ordagrant i S74
@@ -458,6 +458,20 @@
   ligger flera versioner efter + notes-EF:erna saknas; T40:s prod-smoke ej
   uppsatt) → session-end (N+1) med full skörd. FYND: test-auth ligger i prod
   trots allowlist-förbudet.**
+
+- [x] **SESSIONEN AVSLUTAD** (2026-07-23, Marcus-order "Kör!", Del 19):
+  skörd **L311–L320** (tio lärdomar, åtta [UNIVERSAL]) + explicit
+  FÖRKASTNINGSLISTA över kandidater som prövades och föll under
+  mint-baren (registrerade, ej tyst tappade) · **BUILD-LOG-post** för hela
+  spannet `d71d7ad` → `c65ce26` (188 commits) · trådar synkade (T84 född ·
+  T39 uppdaterad med MÄTT versions-gap · **TASK-35** registrerad: test-auth
+  i prod) · **ingen ny ADR** (K84-förenandet prövat mot ADR-baren och funnet
+  under den — befintlig spec bar det; räkningen står på 075) ·
+  transcript-referens med verifierade siffror (1 465 rader / 4 869 470 byte).
+  **NÄSTA SESSION (S77): EF-delen av prod-deployen (T39/T40) · test-auth-
+  städet (TASK-35) · väljar-grillningen 18.18/18.19 + bygget · 17.7 · 18.15 ·
+  18.16/18.17 · hub-lyftet L284–L320. Marcus-moment: Update-klicket i
+  claude.ai.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 

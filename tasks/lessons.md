@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-22
+updated: 2026-07-23
 review_by: 2026-11-15
 status: stable
 ---
@@ -4478,3 +4478,141 @@ och Done-flippen är människans. Auto-Done reserveras för ytor utan
 mänsklig konsumtion (API-kontrakt, skript, docs). End-pass körs inte
 förrän sessionens UI-leveranser är granskade eller uttryckligen
 defererade.
+
+### L311 — [UNIVERSAL] CI:s headless-browser bär overlay-scrollbars: VISUELLA hopp-asserts är strukturellt vakuösa där
+
+Datum: 2026-07-23 (S75 review-våg 2) | Källa: vy-växlingshoppet — ett
+x-koordinat-assert stod STILLA mot ofixad kod i CI, bevisat av
+rött-först-runnet 29993773642 (klass: test-design/miljö)
+
+Overlay-scrollbars tar noll layoutplats, så ett test som mäter om
+innehållet flyttar sig i sidled kan aldrig falla i CI — oavsett hur
+trasig regeln är. Ett grönt sådant test är alltså inget bevis.
+`scrollbar-gutter` RESERVERAR däremot plats även i den miljön, vilket
+gör COMPUTED STYLE till den bevisbara formen för skal-CSS-regler.
+Regeln: kontrakt på en CSS-regel mäts på regeln (computed), inte på
+dess visuella konsekvens; den visuella mätningen får stå kvar som
+skydd i klassisk-scrollbar-miljöer men räknas aldrig som CI-beviset.
+
+### L312 — [UNIVERSAL] Tredjeparts-bibliotek sätter INLINE-stilar som river skal-CSS — author-`!important` är den specificerade motmedicinen
+
+Datum: 2026-07-23 (S75 review-våg 6) | Källa: React Arias
+`usePreventScroll` satte inline `scrollbar-gutter: stable` på `<html>`
+vid varje overlay-öppning och rev vår symmetriska `both-edges` →
+sidan hoppade 5,5 px (centrerat) / 11 px (vänsterställt) i varje
+select, popover och modal i appen (klass: arkitektur/CSS-kaskad)
+
+En riven skal-regel ser ut som en ny bugg men är en KASKAD-konflikt:
+inline-deklarationer slår all vanlig author-CSS. Enda nivån som
+besegrar dem är author-`!important` — det är exakt vad undantaget
+finns till för i CSS Cascade, inte en lukt. Regeln: när en skal-regel
+mystiskt "slutar gälla" i vissa lägen, LÄS BIBLIOTEKETS KÄLLA efter
+inline-stilsättning innan du felsöker din egen CSS; och försvara
+invarianten med scoped `!important` + dokumenterat motiv i stället för
+att bygga runt symptomet. Fixa aldrig ett kaskadproblem med mer
+specificitet — det förlorar mot inline varje gång.
+
+### L313 — [UNIVERSAL] "Död yta" måste verifieras mot HELA konsument-grafen — inte mot den yta man råkar titta från
+
+Datum: 2026-07-23 (S75 TASK-18.13) | Källa: rivnings-kortet listade tre
+ytor som döda; typecheck fällde borttagningen med tre TS-fel — alla tre
+hade levande konsumenter (klass: refaktorering/scope)
+
+Kortets noter var skrivna ur EVENTSIDANS perspektiv ("oåtkomliga från
+eventsidan") — sant, men inte hela bilden: närvaro-routen var
+check-in-ingångens medvetet valda interim-mål, och anmälda-routen var
+länkmål för varje rad i en helt annan vy. Regeln: innan en yta rivs,
+sök hela repot efter dess route-sträng OCH dess komponentnamn, och läs
+varje träff — "ingen länkar hit längre" är en hypotes tills grafen är
+genomsökt. Typkontroll är den billigaste mekaniska fångsten: riv först,
+låt kompilatorn tala, återställ vid protest.
+
+### L314 — [UNIVERSAL] `gh run list --commit` matchar bara FULLSTÄNDIG SHA — förkortad ger noll träffar
+
+Datum: 2026-07-23 (S75) | Källa: CI-vakten rapporterade "ingen run
+skapad" på en commit vars run existerade och var grön; vakten matades
+med 7-teckens SHA (klass: verktyg/falsklarm)
+
+Filtret jämför mot `head_sha` exakt. En förkortad SHA ger tom lista,
+vilket läser precis som "workflowen triggade aldrig" — och den
+felläsningen är dyr, eftersom den ser ut som en infrastruktur-incident.
+Regeln: alla skript och vakter som frågar efter runs använder
+`git rev-parse <ref>`, aldrig den korta formen. Vid noll träffar:
+verifiera SHA-formen FÖRE du drar slutsatsen att runnet saknas.
+
+### L315 — [UNIVERSAL] Bakgrundsvakters git-operationer måste vara BRANCH-EXPLICITA
+
+Datum: 2026-07-23 (S75 våg 4–5) | Källa: två parallella fix-vågor med
+bakgrundsvakter som körde `git push`/`checkout` utan branch-argument
+medan förgrundsarbetet bytte branch (klass: automation/race)
+
+En vakt som lever över tid delar arbetsträd med det arbete den vaktar.
+Plain `git push` betyder "nuvarande branch" — vilket är en annan branch
+än när vakten startade. Regeln: varje git-operation i en bakgrundsvakt
+namnger sin branch/remote explicit (`git push origin <branch>`), och
+vakten läser hellre tillstånd via `gh`-API än via arbetsträdet.
+
+### L316 — [UNIVERSAL] Primitivens EGNA defaults är del av kontraktsytan
+
+Datum: 2026-07-23 (S75 p15) | Källa: ett kontrakt mätte font-weight 500
+där konsumenten inte satt någon vikt alls — värdet kom ur primitivens
+inbyggda stil, så "fixen" i konsumenten kunde aldrig få testet grönt
+(klass: test-design/komponentbibliotek)
+
+När ett kontrakt mäter en computed egenskap på en komponent mäter det
+SUMMAN av primitivens default och konsumentens override. Regeln:
+inventera primitivens egen stil FÖRE du skriver toleransen eller
+förväntan — annars skriver du ett kontrakt mot fel lager, och fixen
+måste landa i primitiven även när felet observerades i konsumenten.
+
+### L317 — Tvåcommit-SHA-formens röda varv uteblir om PR:en öppnas EFTER fix-committen
+
+Datum: 2026-07-23 (S75 review-våg 7) | Källa: kontrakt-commit och
+fix-commit pushades i följd, PR öppnades sist → CI startade först på
+fix-committen; rödheten finns bara lokalt (klass: process/bevisform)
+
+Rött-först-beviset i CI hänger på att ett run FAKTISKT kör den röda
+committen. På en ny branch triggar bara PR-eventet — så ordningen är:
+pusha kontraktet → ÖPPNA PR:en → invänta det röda runnet → pusha
+fixen. Görs det i fel ordning är SHA-separationen kvar i historiken men
+CI-beviset saknas, och det ska då sägas rakt ut i leveransen i stället
+för att låta formen se komplett ut.
+
+### L318 — [UNIVERSAL] Deploy-verifiering är en EGEN grind: mockade e2e döljer drift mellan kod och deployad backend
+
+Datum: 2026-07-23 (S75 STALE LÄGE) | Källa: batchen ändrade 10 Edge
+Functions men bara 3 deployades; granskningen skedde mot gamla
+svars-shapes och CI var grönt hela tiden (klass: leverans/miljö)
+
+E2e som mockar nätverkslagret bevisar klientens beteende mot ett
+KONTRAKT — aldrig att kontraktet är utrullat. Regeln: när en leverans
+ändrar server-kod hör "deployad i den miljö granskningen sker mot" till
+leveransens definition av klar, och verifieras mot miljön (versions-
+eller shape-läsning), inte mot testsvitens färg.
+
+### L319 — Actions-instabilitet uppträder i KLUSTER — vakter behöver rerun-medvetenhet, inte bara röd/grön-läsning
+
+Datum: 2026-07-23 (S75) | Källa: tre anomaliformer samma dygn —
+fördröjd run-skapelse (~8 min), jobb-API som släpade efter run-avslut,
+och en cancelled körning; dessutom en jobb-timeout som RAPPORTERAS som
+`cancelled` (klass: CI/observabilitet)
+
+En vakt som bara läser slutstatus feltolkar infrastruktur som
+leveransfel. Två konkreta läsregler: `cancelled` kan betyda
+jobb-timeout (jämför jobbets start/slut mot `timeout-minutes` innan du
+tror på "avbruten"), och röda tester som retryas tre gånger med
+spårfångst kan ensamma skjuta ett jobb över taket. Vakter ska kunna
+skilja infrastruktur från innehåll och föreslå `gh run rerun --failed`
+i stället för att larma.
+
+### L320 — [UNIVERSAL] Kontrakt på visuell likhet, inte på tal-identitet
+
+Datum: 2026-07-23 (S75 p15 + skal-kontraktet) | Källa: en udda
+containerhöjd kan aldrig ge exakt symmetri — ett assert på exakt
+likhet fälldes av en halv pixel (klass: test-design)
+
+Layout räknas i subpixlar och avrundas per browser. Ett kontrakt som
+kräver `a === b` på renderade mått är därför skört utan att vara
+strängare. Regeln: mät mot en TOLERANS som uttrycker kravet
+("visuellt omärkbart" ≈ ≤ 1 px) och skriv motivet i testet, så att
+nästa läsare inte "skärper" det tillbaka till identitet.
