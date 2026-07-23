@@ -48,11 +48,15 @@ export interface InputProps
  * `aria-invalid` sätts automatiskt vid `isInvalid` (ADR-046; explicit
  * aria-errormessage-wiring riven efter DOM-forensik + skärmläsarpass).
  * Använd `lg` (48 px) för sökfält/primärflöden per ARIA-UPGRADE §2.5.8.
+ * MÄRKNING (K84, ACCESSIBILITY-CHECKLIST § Formulär): `isRequired` bär
+ * required-status programmatiskt — skriv INTE "(obligatorisk)" i `label`
+ * som norm. Visuell märkning sätts på formulärets UNDANTAG: är minoriteten
+ * frivillig märks de "(valfritt)", krävs allt märks ingenting.
  *
  * @example
  * ```tsx
  * <Input
- *   label="Namn (obligatorisk)"
+ *   label="Namn"
  *   description="Ange personens fullständiga namn"
  *   errorMessage="Namn får inte vara tomt"
  *   isInvalid={!!errors.name}
