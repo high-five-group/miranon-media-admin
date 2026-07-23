@@ -4,7 +4,7 @@ title: 'Skiva: Familje-rivningen (prototypsubstratet)'
 status: To Do
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-22 19:03'
+updated_date: '2026-07-23 02:06'
 labels:
   - ready-for-agent
 dependencies:
@@ -49,6 +49,8 @@ När hela familjen är byggd rivs konvergens-substratet: de fyra prototypsidorna
 
 <!-- SECTION:NOTES:BEGIN -->
 FLAGGAT ur S75 batch 3 (task-18.4:s leverans): /event/$eventId/anmalda-routen + EventRegistrations.tsx + tests/e2e/event-anmalda.staging.test.ts är nu OÅTKOMLIGA från eventsidan — 18.4 rev interim-länken när arbetskön tog över ytan (samma mönster som 18.8 lämnade den gamla betalnings-vyn). Testerna passerar fortfarande eftersom de navigerar direkt till routen, så inget är rött; ytan är bara död. Rivningen hör till detta kort — flaggat så den inte glöms.
+
+UTÖKAD RIVNINGSYTA ur S75 batch 4 (18.9:s leverans): standalone-närvaron är nu SUPERSEDERAD av det inline-registret men behållen per RIV INGENTING. Filerna: src/routes/_authenticated/event/$eventId/narvaro.tsx + EventAttendance.tsx + tests/e2e/event-narvaro.staging.test.ts. EventAttendance.tsx räknar dessutom fortfarande närvaro klient-side ur status medan registret nu binder basens Närvaropoäng (narvaropoang) — källinkonsistens som försvinner när standalone rivs. Lägg dessa i rivningens filuppsättning (utöver anmalda-vyn 18.4 flaggade).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done

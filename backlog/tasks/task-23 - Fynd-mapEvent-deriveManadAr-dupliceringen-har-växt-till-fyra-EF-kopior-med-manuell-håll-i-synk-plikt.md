@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-21 23:26'
-updated_date: '2026-07-22 19:03'
+updated_date: '2026-07-23 02:06'
 labels: []
 dependencies: []
 priority: medium
@@ -27,4 +27,6 @@ Förväntat: gemensam modul i supabase/functions/_shared/ (samma SSOT-mönster s
 
 <!-- SECTION:NOTES:BEGIN -->
 FÖRSTÄRKT av S75 batch 3 (task-18.4): den chunkade OR(RECORD_ID()=…)-batchen finns nu i TRE EF:er — get-attendance, get-person och get-registrations — med nästan identiska kopior av chunk() + fetchByRecordIds(). Dupliceringen växer alltså i två oberoende dimensioner: mapEvent ×4 och batch-läsningen ×3. Rimlig _shared-kandidat när baren nås.
+
+S75 batch 4 (17.5): mapEvent-kopiorna hölls i synk för LÄS-shapen igen — borOverAntal-aggregeringen lades avsiktligt bara i läs-EF:erna (get-events/get-event), write-EF:erna utelämnar den (samma form som viaFormular/medfoljande). Ingen NY drift införd, men fyra-kopior-skulden kvarstår och växer per läs-fält.
 <!-- SECTION:NOTES:END -->
