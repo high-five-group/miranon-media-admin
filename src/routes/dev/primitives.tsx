@@ -88,12 +88,7 @@ function PrimitivesPage() {
             description="Används för bekräftelsemail"
             placeholder="anna@exempel.se"
           />
-          <Input
-            label="Namn (obligatorisk)"
-            errorMessage="Namn får inte vara tomt"
-            isInvalid
-            isRequired
-          />
+          <Input label="Namn" errorMessage="Namn får inte vara tomt" isInvalid isRequired />
           <Input label="Låst fält" isDisabled placeholder="Kan inte redigeras" />
         </div>
       </section>
@@ -112,7 +107,7 @@ function PrimitivesPage() {
             rows={6}
           />
           <TextArea
-            label="Meddelande (obligatorisk)"
+            label="Meddelande"
             errorMessage="Meddelande får inte vara tomt"
             isInvalid
             isRequired

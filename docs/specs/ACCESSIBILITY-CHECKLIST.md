@@ -80,7 +80,14 @@ Använd checklistan vid varje ny vy, komponent eller leveranssteg.
 
 - [ ] React Aria-komponenter: `TextField`, `NumberField`, `Select`, `Checkbox`, `RadioGroup` används istället för rå HTML
 - [ ] Varje fält har `<Label>` (synlig, inte bara placeholder)
-- [ ] Required fält markeras med text "(obligatorisk)" — aldrig bara asterisk
+- [ ] Required-status framgår **programmatiskt** på varje obligatoriskt fält (`isRequired` → `aria-required`), så skärmläsaren annonserar den oavsett etikett-text
+- [ ] Required-status framgår **visuellt** genom att UNDANTAGEN märks med text, aldrig normen (K84, Marcus-beslut S73; review-våg 7 2026-07-23 förenade regeln app-brett):
+  - är minoriteten frivillig → märk dem `"(valfritt)"` (t.ex. manuell anmälan: tre obligatoriska omärkta, Mobilnummer/Notering märkta)
+  - är minoriteten obligatorisk → märk dem `"(obligatorisk)"`
+  - krävs ALLT på sidan → märk ingenting alls (t.ex. skapa event)
+  - fält som alltid bär ett värde (stepper med default) är inget undantag och märks inte
+  - **naken asterisk är aldrig tillåten** — märkningen är alltid ord, aldrig ett tecken som kräver en teckenförklaring
+  - Mönstret följer GOV.UK Design System, som märker frivilliga fält i stället för obligatoriska; a11y-golvet bärs av den programmatiska raden ovan, inte av etikett-texten
 - [ ] Fält för persondata har korrekt `autocomplete`-attribut (WCAG 1.3.5):
   - Namn: `autocomplete="name"`
   - E-post: `autocomplete="email"`
