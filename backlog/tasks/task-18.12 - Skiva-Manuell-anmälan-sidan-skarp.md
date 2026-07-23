@@ -1,10 +1,10 @@
 ---
 id: TASK-18.12
 title: 'Skiva: Manuell anmälan-sidan skarp'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 05:04'
+updated_date: '2026-07-23 13:55'
 labels:
   - ready-for-agent
 dependencies:
@@ -49,13 +49,19 @@ MERGE-HALT (steg 5, PR-CI-vakten) — S75-batch: PR #90 skapad, PR-CI run 299802
 MERGAD (S75 batch 6): PR #90 → merge-commit 8f9e4bb. PR-CI-run (branch-head fce9f07) GRÖN PER JOBB 6/6. 'Halten' var INGET fel — Test+Build var bara ej terminal i merge-agentens fönster; efterföljande vakt bekräftade grönt. Bygg-agenten deployade create-registration till STAGING själv (ACTIVE). GRANSKNINGSFÄRDIG — In Progress, DoD #5 (design-review + facit-inkonsistens-frågorna) öppna. **PROD-DEPLOY KVAR (Marcus): create-registration till PROD** (staging deployad; prod-fälten Antal platser + Notering är BEFINTLIGA så ingen prod-fält-förutsättning). Done-flippen är Marcus.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Manuell anmälan-sidan skarp levererad i S75-batchen (CI grön per jobb); create-registration-vertikalen med Källa=Manuell och server-satt event-koppling, idempotens per sid-öppning, pessimistisk UI med 409-vägen inline. DESIGN-REVIEW GODKÄND av Marcus 2026-07-23 (omgransknings-protokollet Yta 4, kvittens 'Jag kvitterar yta 4'). [FRÅGA] AVGJORD PÅ DELEGERAD SENIOR-ORDER och ÅTGÄRDAD I REVIEW-VÅG 7 (PR #96, merge-commit 147f3f4; tvåcommit-form, lokalt rött 4/6 → grönt 6/6 inkl. axe 0) — TVÅ DELAR: (1) BEKRÄFTELSE-COPYN kopplad till beläggnings-modellen: 'Anmälan för X är skapad med källan Manuell' → 'X är anmäld och har N plats(er) reserverad(e). Anmälan är obekräftad tills du skickar bekräftelsen från eventsidan.' Platsantalet ur svaret (serverns sanning) med numerus-hantering; ORDLISTA-orden Reserverad plats + Obekräftad bär texten; fält-jargongen Källa utgår (den syns som pillen 'Manuellt tillagd' i arbetskön). (2) MÄRKNINGEN till K84: '(obligatorisk)' bort från de tre obligatoriska, '(valfritt)' på Mobilnummer + Notering, isRequired kvar så skärmläsaren annonserar required. Familjen bar två konventioner (CreateEventForm följde K84, denna sida gjorde tvärtom) — nu en. KONFLIKT MOT GOVERNING SPEC UPPTÄCKT OCH LÖST: ACCESSIBILITY-CHECKLIST.md § Formulär föreskrev '(obligatorisk)'-märkning; STOPPA-fråga ställd, Marcus-beslut A (förena) → PR #97 (merge-commit 755632e) rev raden öppet och ersatte den med den tvådelade regeln (programmatiskt alltid + visuellt på undantagen, naken asterisk förbjuden; GOV.UK-mönstret namngivet), plus följdarbete i Input-primitivens docstring och /dev/primitives-demon. Alla AC + DoD gröna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->
