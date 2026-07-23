@@ -38,6 +38,24 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * server-side-byggd fält-shape, allowlist-SSOT, idempotens på en KLIENT-genererad
  * nyckel som skapas EN gång per sid-öppning (lazy useState) och bevaras över retries.
  *
+ * MÄRKNINGS-REGELN (K84, review-våg 7 — Marcus-frågan i omgransknings-protokollet
+ * avgjord på delegerad senior-order): normen är att fältet krävs → markera
+ * UNDANTAGEN, inte normen. CreateEventForm följer samma regel i sin ytterlighet
+ * (allt krävs ⇒ ingen märkning alls); här bär de två frivilliga fälten
+ * "(valfritt)" och de tre obligatoriska står omärkta. Familjen får därmed EN
+ * regel i stället för två konventioner. `isRequired` står kvar på de tre — det
+ * är plattformens semantik som bär a11y-golvet (skärmläsaren annonserar
+ * "obligatorisk"), inte etikett-texten; Antal platser är omärkt eftersom det
+ * alltid bär ett värde (default 1) och därför inte är ett undantag.
+ *
+ * BEKRÄFTELSE-COPYN (samma order): texten säger vad som HÄNDE i domänens ord —
+ * platserna är RESERVERADE (ORDLISTA "Reserverad plats") och anmälan står
+ * OBEKRÄFTAD tills bekräftelsen skickas (ORDLISTA Obekräftad/Bekräftad), vilket
+ * kopplar bekräftelseläget till beläggnings-modellen i stället för att bara
+ * kvittera en lyckad skrivning. Den interna fält-jargongen "källan Manuell" är
+ * borttagen: Källa är spårbarhet och syns där den hör hemma — som pillen
+ * "Manuellt tillagd" på personkortet i arbetskön.
+ *
  * PESSIMISTISK UI (create kan 409:a — en rad ska aldrig blinka fram och försvinna,
  * useCreateRegistration-noten): submit → knappen låst + pending → 201 → aria-live +
  * roster-invalidering (i hooken) → BEKRÄFTELSELÄGE (nästa steg ett klick bort). 409
@@ -146,6 +164,10 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
   if (skapad) {
     const namn =
       skapad.namn ?? ([skapad.fornamn, skapad.efternamn].filter(Boolean).join(' ') || 'anmälan');
+    // Platsantalet ur SVARET (serverns sanning), inte ur formulärets state —
+    // bekräftelsen ska kvittera vad som faktiskt skrevs. Saknas fältet (äldre
+    // EF-svar) faller vi tillbaka på det som skickades, aldrig på en gissning.
+    const platser = skapad.antalPlatser ?? antal ?? 1;
     return (
       <section className="flex flex-col gap-6 pt-2 lg:pt-10">
         {rubrik}
@@ -156,7 +178,9 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
           className="flex flex-col items-start gap-4 px-4 outline-none"
         >
           <MessageBox intent="success" title="Anmälan sparad">
-            Anmälan för {namn} är skapad med källan Manuell.
+            {namn} är anmäld och har {platser} {platser === 1 ? 'plats' : 'platser'} reserverad
+            {platser === 1 ? '' : 'e'}. Anmälan är obekräftad tills du skickar bekräftelsen från
+            eventsidan.
           </MessageBox>
           <Button intent="primary" onPress={tillbaka}>
             Tillbaka till eventet
@@ -173,7 +197,7 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
       <DetaljGrupp id="ny-anmalan-deltagare" rubrik="Deltagare">
         <div className="flex flex-col gap-4 py-4">
           <Input
-            label="Förnamn (obligatorisk)"
+            label="Förnamn"
             value={fornamn}
             onChange={setFornamn}
             isRequired
@@ -183,7 +207,7 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
             isDisabled={mutation.isPending}
           />
           <Input
-            label="Efternamn (obligatorisk)"
+            label="Efternamn"
             value={efternamn}
             onChange={setEfternamn}
             isRequired
@@ -193,7 +217,7 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
             isDisabled={mutation.isPending}
           />
           <Input
-            label="E-post (obligatorisk)"
+            label="E-post"
             type="email"
             value={epost}
             onChange={setEpost}
@@ -204,7 +228,7 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
             isDisabled={mutation.isPending}
           />
           <Input
-            label="Mobilnummer"
+            label="Mobilnummer (valfritt)"
             type="tel"
             value={mobil}
             onChange={setMobil}
@@ -227,7 +251,7 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
             </I18nProvider>
           </div>
           <TextArea
-            label="Notering"
+            label="Notering (valfritt)"
             value={notering}
             onChange={setNotering}
             isDisabled={mutation.isPending}
