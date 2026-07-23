@@ -57,13 +57,32 @@ relevant signal (visual + a11y) än dagens fullsvit ger för CSS.
 
 ## Merge-run-dedup (våg 2a)
 
+> **RÄTTELSE (S78, 2026-07-23) — cache-mekanismen nedan är FALSIFIERAD och
+> ersatt.** Web-research mot förstapartsdokumentation (GitHub Docs,
+> *Restrictions for accessing a cache*) visar att en cache skapad av en
+> `pull_request`-run skapas för merge-refen och "can only be restored by
+> re-runs of the pull request" — den är alltså OSYNLIG för main-push-runnen
+> som skulle läsa den. Mekanismen hade gett permanent cache-miss: noll
+> besparing plus en onödig skrivning per PR, utan att någonsin se trasig ut.
+> **Ersättare (Marcus-kvitterad väg A, bevisad mot disk + API på merge-commit
+> `db6ef53`):** main-runnen läser andra föräldern (`HEAD^2` = PR-headen),
+> verifierar `HEAD^{tree}` ≡ `HEAD^2^{tree}` (identiska: `1eaa2bb…`) och
+> frågar `gh run list --commit <full SHA>` om den SHA:n redan har en grön run
+> (`conclusion: success`). Ingen ny lagringsyta; fail-closed på varje
+> avvikelse; steget bor i `changed`-jobbet som redan har `fetch-depth: 0`, så
+> ADR-039/054-invarianten förblir orörd. Kanonisk form: TASK-36 §
+> Implementationsbeslut; ADR-077 bär rivningen i sin kontext.
+> Sundhetsvillkoret (ADR-076 strict up-to-date) är oförändrat och bär även
+> ersättaren.
+
 Problem (processgranskningen § 5): varje merge kör om identiskt innehåll
 ~10 min på main-push och håller mutexen mot nästa PR.
 
-Design: main-push-runs börjar med tree-jämförelse — `git rev-parse
-'HEAD^{tree}'` slås upp mot cache-nyckeln `green-tree-<treehash>` som
-gröna PR-runs skriver (`actions/cache`, husidiom). Träff ⇒ heavy-jobben
-skippas (`ci-passed` grön per "or Skipped"-semantiken); miss ⇒ full svit.
+Design (~~ursprunglig, riven ovan~~): main-push-runs börjar med
+tree-jämförelse — `git rev-parse 'HEAD^{tree}'` slås upp mot cache-nyckeln
+`green-tree-<treehash>` som gröna PR-runs skriver (`actions/cache`,
+husidiom). Träff ⇒ heavy-jobben skippas (`ci-passed` grön per "or
+Skipped"-semantiken); miss ⇒ full svit.
 
 - Sund TACK VARE ADR-076:s strict up-to-date: merge commit av
   up-to-date-branch har tree ≡ PR-head-tree.
