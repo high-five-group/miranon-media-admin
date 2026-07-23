@@ -294,3 +294,90 @@ Flytta inte bara det långsamma till natten. Då byter ni långsam feedback mot 
 Och allra rakast: innan ni bygger fler ADR:er, grindvakter eller sessionsmekanismer bör ni skydda `main`, sluta skicka avsiktligt rött till delad CI och avskaffa staging som global seriell resurs. De tre sakerna skulle göra processen både säkrare och märkbart snabbare än ytterligare processlager.
 
 Jag har endast läst repo, GitHubmetadata och externa källor. Inga filer, inställningar eller externa tillstånd ändrades.
+
+## Verifikation och beslutsläge (Code, 2026-07-23)
+
+> **Proveniens:** intern verifiering utförd av Code samma dag som analysen
+> landade, i separat läs-pass parallellt med S75 (repo-state läst vid HEAD
+> `147f3f4`→`399d77c`; inga filer ändrades under själva verifieringen —
+> denna sektion är dess enda skrivavtryck, landad i efterhand). Metod:
+> läsning av repo-state, GitHub-API (branch protection, rulesets, run- och
+> PR-metadata) samt ADR-/trail-forensik. Analysens externa källpåståenden
+> (DORA, Meta, Shopify, GitHub, Fowler, Google) är rimlighetsbedömda mot
+> känd litteratur, inte omverifierade.
+
+### Utfall per huvudpåstående
+
+| # | Codex-påstående | Utfall |
+|---|---|---|
+| 1 | `main` oskyddad | **Bekräftat.** API: `Branch not protected`; rulesets: `[]`. Tillägg: repot är **publikt** (medvetet, [ADR-024](../decisions/ADR-024-publika-professionalitetssignaler.md)) — branch protection och rulesets är alltså kostnadsfritt tillgängliga, inget plan-hinder finns. |
+| 2 | Review sker inte på slutlig commit | **Bekräftat, skarpare än analysen:** PR #94:s enda registrerade review (`COMMENTED`, Codex-boten) gjordes på `9cc9c22` — den avsiktligt RÖDA committen. Fem commits följde ogranskade fram till merge `afceeb6`. |
+| 3 | Nästan-binär riskklassning | **Bekräftat.** Exakt två klasser existerar: docs-only-skip respektive full svit (`should_skip_tests` i [`ci.yml`](../../.github/workflows/ci.yml)). |
+| 4 | Staging är flaskhalsen | **Bekräftat, plus en förvärring analysen missade:** `staging-tests`-mutexen omsluter HELA Test+Build-jobbet. Mätt i run 30012389097: Lint 33 s, changed 8 s, purge 9 s, docs 30 s — och Test+Build 9 min 57 s (plus 1 min 49 s köväntan i den körningen). Endast staging-stegen (API + E2E, ~6 min) behöver låset; pure-tester, a11y, build och npm-install håller det i onödan. |
+| 5 | Fullsvit körs dubbelt (PR + main-push) | **Bekräftat** (`on: pull_request` + `push: main`). |
+| 6 | Avsiktligt röda runs genom delad CI | **Bekräftat:** 7 röda + 1 avbruten av de 30 senaste körningarna, samtliga ur review-vågornas rött-först-pushar. Nyans: praxisen är kodifierad ([ADR-071](../decisions/ADR-071-afk-batch-kontraktet.md) + fix-vågens femdelade kontrakt) — ändring är ett praxis-beslut, inte en städning. |
+| 7 | CSS saknar visual-signal | **Bekräftat men underdrivet:** `tests/visual/` är TOM. `test:visual` har inga tester att köra — signalen måste byggas från noll, inklusive CI-genererade Linux-baselines (lokala macOS-skärmdumpar kan inte tjäna som CI-referens). |
+| 8 | actionlint-luckan | **Bekräftat.** Install-skriptet hämtas från muterbar `main` och exekverar före all checksumme-verifiering (verifieringen görs av det hämtade skriptet självt). [ADR-029](../decisions/ADR-029-ci-architektur-changed-files-pattern.md) utelämning #3 motiverade valet med upstream-precedent 2026-05-13; huset har därefter självt etablerat ett starkare mönster — shellcheck-steget i samma fil (pinnad version + egen SHA256-verifiering). |
+| 9 | Merge queue | **Ej tillgänglig:** repot ägs av ett User-konto och merge queue kräver org-ägt repo. Required checks + up-to-date-krav ger huvudskyddet. |
+| 10 | Dokumenttyngd | Siffrorna stämmer (75 ADR:er, 13-punkters per-session-DoD, 621-raders ci.yml). Bedömningen nyanseras nedan. |
+
+### Forensik: de största luckorna är deferraler, inte missar
+
+- Branch protection sköts medvetet på framtiden 2026-05-13 (ADR-029
+  § Medvetna utelämningar #5, K1.A Block A.4), och `ci-passed`-aggregatorn
+  byggdes uttryckligen som "branch-protection-required-stable" i väntan på
+  aktivering. Deferralen återupptogs aldrig — analysen hittade en glömd
+  strömbrytare, inte ett hål i tänket.
+- [ADR-036](../decisions/ADR-036-kvalitetsgrind-ci-enda-mekaniska-enforcement.md)
+  konstaterar öppet att CI är enda mekaniska enforcement — men adresserar
+  pre-commit-frågan, inte merge-grinden.
+- Staging-mutexen deklareras redan i ci.yml som "defense-in-depth …
+  komplement", inte slutarkitektur — samstämmigt med analysens
+  "säkerhetsplåster".
+
+### Nyanser mot analysen
+
+1. **"Mekanisk enforcement 5/10" blandar två axlar.** Innehålls-enforcement
+   (fail-closed-detektion, grindvakter som truth-table-testar sig själva) är
+   över branschstandard; merge-enforcement är nära noll. Det som saknas är en
+   switch, inte ett systemskifte.
+2. **Dokumenttyngden är delvis målfunktion, inte overhead.** Systemet är
+   självt en leverabel (ADR-024 publika signaler,
+   [ADR-063](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md)
+   bas-som-mall, ADR-068 övningsramverket). Retroaktiv bantning avvisas.
+   Kärnan består framåt: en liten ändring ska inte bära en stor administrativ
+   svans — riskklassning bör på sikt gälla även processen, som eget senare
+   beslut.
+3. **Rött-först: byt bärare, avskaffa inte.** Bevisvärdet (citerbara
+   run-ID:n) behålls via: rött+grönt pushas ihop (grön head-run), lokalt rött
+   körutdrag citeras i kort/sessionsdok, och grind-bevis körs via riktad
+   manuellt startad workflow (husets precedent: gate-proof-run 27337333679
+   för a11y-grinden).
+
+### Beslutsläge (2026-07-23)
+
+- **Våg 1 GODKÄND av Marcus** — aktivera ruleset på `main` (require PR,
+  required check = `ci-passed`-aggregatorn, blockera force-push/deletion,
+  up-to-date-krav), migrera actionlint-installen till shellcheck-mönstret,
+  och splitta Test+Build så staging-mutexen endast bär staging-stegen.
+  Körning inväntar Marcus klartecken och sker EFTER S75:s landning — ci.yml
+  rörs inte under aktiv review-våg.
+- **Våg 2** — riskklass D1 (css/tokens/copy) i changed-files-idiomet,
+  fail-closed (okänd fil ⇒ full svit); rött-först-bärarbytet; visual
+  regression byggd som D1:s huvudsignal. Grillnings-kandidat: design före
+  bygge.
+- **Våg 3** — staging per-run-isolering (run-ID-scoping, inga globala fasta
+  poster; [ADR-060](../decisions/ADR-060-sentinel-setup-purge-create-conformance.md)-arkitekturen
+  är halva vägen) samdesignad med bas-maximeringen (ADR-063, post-Fas-6);
+  tangerar T27 och T45. Därefter nightly-svit med larmkedja (först när D1
+  skapat gapet — annars ren duplicering) samt mätskript (lead time, kötid,
+  röd-orsak).
+- **Avvisat:** merge queue (ägarform), ML-testselektion, retroaktiv
+  dok-bantning, "flytta allt tungt till natten" (sen feedback ersätter inte
+  snabb).
+- **Upptag:** tråd registreras i tråd-registret efter S75:s landning (ID
+  tilldelas vid registrerings-ögonblicket; registret rörs inte under aktiv
+  session). *Efterhands-not vid landningen: upptaget blev Session 77 —
+  tråden fick ID T85; besluten A+A (bokföring via auto-merge-PR;
+  rött-först-bärarbyte) låstes av Marcus 2026-07-23 och verkställs S77
+  respektive våg 2c.*
