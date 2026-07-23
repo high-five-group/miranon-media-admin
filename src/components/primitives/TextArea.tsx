@@ -1,4 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
+import type { Ref } from 'react';
 import {
   TextArea as AriaTextArea,
   type TextFieldProps as AriaTextFieldProps,
@@ -60,6 +61,8 @@ export interface TextAreaProps
    */
   autoGrow?: boolean;
   className?: string;
+  /** Ref till det underliggande `<textarea>`-elementet (React 19-stil, som Button). */
+  ref?: Ref<HTMLTextAreaElement>;
 }
 
 /**
@@ -91,6 +94,7 @@ export function TextArea({
   size,
   autoGrow,
   className,
+  ref,
   ...props
 }: TextAreaProps) {
   return (
@@ -103,6 +107,7 @@ export function TextArea({
         <Label className="text-(color:--mm-input-label-text) text-small">{label}</Label>
       )}
       <AriaTextArea
+        ref={ref}
         placeholder={placeholder}
         rows={rows}
         className={textAreaVariants({ size, autoGrow })}

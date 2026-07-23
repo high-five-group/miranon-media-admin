@@ -26,13 +26,14 @@ function distinct(values: (string | null)[]): string[] {
 }
 
 /**
- * Domänen i MONO — adress-grammatiken (S73-facit K81, Marcus: "skriva ut
- * miranon.se med en annan font?"): URL:er i monospace är etablerad klass och
- * lyfter domänen som DESTINATION. 0.95em kompenserar monons optiska överstorlek.
+ * Domänen i brödtextens typsnitt, viktad medium (rev. review-våg 3
+ * 2026-07-23): K81:s mono-adressgrammatik RIVEN av Marcus ("samma typsnitt
+ * som övrig text … något fetare — som det ser ut nu passar liksom inte den
+ * här appen"). Vikten lyfter domänen som destination utan font-brottet.
  * Konsument-ägd text, inte primitiv-API (samma form som demo-sidans).
  */
 function MiranonSe() {
-  return <span className="font-mono text-[0.95em] tracking-tight">miranon.se</span>;
+  return <span className="font-medium">miranon.se</span>;
 }
 
 /**

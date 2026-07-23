@@ -301,7 +301,9 @@ function GruppRubrik({
           className={`shrink-0 text-text-secondary motion-safe:transition-transform ${oppen ? 'rotate-180' : ''}`}
         />
       </button>
-      {handling != null && <span className="flex shrink-0 items-center pr-2">{handling}</span>}
+      {/* pr-1 = 4 px — samma inset som knappens topp/botten mot baren
+          (rubrik-radens py-2.5 kring 32 px-knappen; review-våg 3). */}
+      {handling != null && <span className="flex shrink-0 items-center pr-1">{handling}</span>}
     </div>
   );
 }
