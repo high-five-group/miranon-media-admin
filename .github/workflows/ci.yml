@@ -114,7 +114,7 @@ jobs:
           # scripts/check-frontmatter.sh Check 2 (git log -1 --format=%cs -- <fil>).
           # Finit djup var anti-mönstret (1→50→100→250 brast 4 ggr när orörda
           # governing-docs passerade boundaryn). Konsistent med changed-jobbet;
-          # invarianten (ADR-039) hålls enhetlig över alla 6 bärare.
+          # invarianten (ADR-039) hålls enhetlig över alla 5 bärare.
           fetch-depth: 0
 
       - name: Setup Node
@@ -141,18 +141,27 @@ jobs:
         run: npm run typecheck:tests
 
       - name: Check workflow files (actionlint)
-        # Install via maintainer-distribuerat script per K1.D §0 utelämning #3.
-        # Script verifierar binär-checksums; teknisk motsvarighet till SHA-pin.
-        # Migration-väg: vid framtida rhysd/actionlint-action-release, byt
-        # till SHA-pinnad action per ADR-029 §6.
+        # Release-pinnad install + egen SHA256-verifiering — shellcheck-
+        # stegets mönster (S77 våg 1; processgranskningen 2026-07-23 § 8).
+        # Ersätter ADR-029 utelämning #3:s download-script-form: skriptet
+        # hämtades från MUTERBAR main och exekverade före all verifiering —
+        # dess egen checksumme-koll skyddar inte mot komprometterad källa.
+        # SHA256 downstream-beräknad mot fast release-asset 2026-07-23
+        # (releases är immutabla); re-verifiering: ladda samma URL +
+        # sha256sum lokalt. Erratum-not i ADR-029.
         # -ignore (smal, exakt feltext): actionlint 1.7.12:s schema släpar
         # efter Actions-featuren `queue:` i concurrency (plattforms-release
         # 2026-05-07; runtimen accepterar nyckeln — Test+Build grön i run
         # 29200533939 med den aktiv). LIFT: ta bort flaggan när actionlint
         # stödjer nyckeln (regexen blir då vestigial, matchar inget).
         run: |
-          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          ./actionlint -color -ignore 'unexpected key "queue" for "concurrency" section'
+          AL_VERSION="1.7.12"
+          AL_SHA256="8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+          AL_URL="https://github.com/rhysd/actionlint/releases/download/v${AL_VERSION}/actionlint_${AL_VERSION}_linux_amd64.tar.gz"
+          curl -sL "${AL_URL}" -o /tmp/actionlint.tar.gz
+          echo "${AL_SHA256}  /tmp/actionlint.tar.gz" | sha256sum -c
+          tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint
+          /tmp/actionlint -color -ignore 'unexpected key "queue" for "concurrency" section'
 
       - name: Check YAML syntax (yamllint)
         # Per ADR-030 § Del 1.4: yamllint kompletterar actionlint (yamllint =
@@ -303,10 +312,11 @@ jobs:
         # Medvetet UTAN explicit fetch-depth-config: jobbet kör enbart
         # purge-skriptet + policy-filen och behöver ingen git-historik.
         # fetch-depth-invarianten (ADR-039/ADR-054,
-        # scripts/check-fetch-depth-invariant.sh) räknar EXAKT 4 config-rader
-        # (changed/lint/test/docs) — detta jobb står utanför bärar-mängden by
-        # design; lägg ALDRIG en sådan config-rad här utan att uppdatera
-        # EXPECTED_CI_CARRIERS + ADR-039.
+        # scripts/check-fetch-depth-invariant.sh) räknar EXAKT 3 config-rader
+        # (changed/lint/docs; test-jobbens rad utgick vid S77-splitten —
+        # inga historik-beroende skript där) — detta jobb står utanför
+        # bärar-mängden by design; lägg ALDRIG en sådan config-rad här utan
+        # att uppdatera EXPECTED_CI_CARRIERS + ADR-039.
 
       - name: Setup Node
         uses: actions/setup-node@v6.4.0
@@ -315,7 +325,7 @@ jobs:
 
       # Setup-purge FÖRE test (ADR-060 punkt 3–4, wirad via TASK-16):
       # sentinel-rader äldre än ålders-guarden raderas ur staging-basen INNAN
-      # Test + Build skapar nya. EGET jobb = egen runner-VM med EGEN secret —
+      # staging-jobbet skapar nya. EGET jobb = egen runner-VM med EGEN secret —
       # test-jobbet ser aldrig Airtable-token (EF-only-gränsen, ADR-060
       # punkt 2+4). Ålders-guarden (60 min, .purge-staging-policy.json)
       # skyddar in-flight-körningar — därför behöver jobbet INTE
@@ -328,50 +338,28 @@ jobs:
         env:
           STAGING_AIRTABLE_TOKEN: ${{ secrets.STAGING_AIRTABLE_TOKEN }}
 
-  test:
-    name: Test + Build
-    # needs purge: setup-purgen (ADR-060 punkt 3–4) ska ha kört FÖRE
-    # staging-stegen. Villkoret tolererar 'skipped' (dependabot/docs-only)
-    # men INTE 'failure' — röd purge stoppar sviten synligt (halt-first).
-    needs: [changed, purge]
-    if: ${{ !cancelled() && needs.changed.outputs.should_skip_tests != 'true' && (needs.purge.result == 'success' || needs.purge.result == 'skipped') }}
+  # Jobben 3a-3c: gamla Test+Build-jobbet SPLITTAT (S77 våg 1;
+  # processgranskningen 2026-07-23 § 4 + Codes verifikation): mutexen
+  # staging-tests bars tidigare av HELA jobbet (~10 min mätt, run
+  # 30012389097) fast endast staging-stegen (~6 min) rör den delade
+  # miljön. Efter splitten: staging-mutexen bärs ENDAST av test-staging;
+  # pure/build/a11y rapporterar parallellt (~2-3 min första-fel-signal)
+  # och köar aldrig bakom staging.
+  test-fast:
+    name: Pure + Build
+    needs: changed
+    if: needs.changed.outputs.should_skip_tests != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     permissions:
       contents: read
-    # Staging-stegen (test:api:staging + e2e-staging) delar EN staging-
-    # miljö — samtidiga Test+Build-runs är TASK-6-kollisionen på CI-nivå
-    # (ADR-073 beslut 4). Gruppen serialiserar jobbet över alla
-    # staging-RÖRANDE runs (PR ∥ PR och PR ∥ main-push); queue: max
-    # (Actions-feature 2026-05-07) köar väntande FIFO i stället för
-    # default-beteendet att avbryta pending. cancel-in-progress medvetet
-    # OSATT (krav för queue: max; en startad staging-svit avbryts aldrig
-    # mitt i). Defense-in-depth BAKOM orkestratorns seriella
-    # PR→CI→merge-kedja, inte ersättning — komplement-beslutet S66 Del 2.
-    #
-    # VILLKORLIG grupp (ADR-073-amendering 2, S68): dependabot-runs
-    # skippar SAMTLIGA staging-/serversteg (ADR-031 Lager 3 — stegens
-    # if: github.actor != 'dependabot[bot]') och får därför UNIK grupp
-    # (depbot-<run_id>) i stället för att FIFO-köa bakom en mutex vars
-    # resurs de aldrig rör (S68-empiri: 44 s Test+Build-arbete, 7m15s
-    # elapsed; monoton kö-trappa över 6 samtidiga PR:er 2026-07-18).
-    # SAMMA predikat (github.actor) driver både stegens skip och
-    # grupp-valet → invarianten "aldrig två staging-rörande runs
-    # samtidigt" är definitionell, även vid re-run (re-run-actor ≠
-    # dependabot ⇒ staging-stegen körs OCH gruppen blir staging-tests).
-    concurrency:
-      group: ${{ github.actor == 'dependabot[bot]' && format('depbot-{0}', github.run_id) || 'staging-tests' }}
-      queue: max
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        with:
-          # fetch-depth: 0 = FULL historik (ADR-054, 2026-06-17) för
-          # scripts/check-frontmatter.sh Check 2 (git log -1 --format=%cs -- <fil>).
-          # Finit djup var anti-mönstret (1→50→100→250 brast 4 ggr när orörda
-          # governing-docs passerade boundaryn). Konsistent med changed-jobbet;
-          # invarianten (ADR-039) hålls enhetlig över alla 6 bärare.
-          fetch-depth: 0
+        # Medvetet UTAN fetch-depth-config (purge-jobbets mönster): jobbet
+        # kör inga historik-beroende skript. Invarianten (ADR-039/ADR-054)
+        # räknar EXAKT 3 config-rader (changed/lint/docs) — detta jobb står
+        # utanför bärar-mängden by design.
 
       - name: Setup Node
         uses: actions/setup-node@v6.4.0
@@ -385,16 +373,126 @@ jobs:
       - name: API tests (pure)
         run: npm run test:api:pure
 
-      # ADR-031 Lager 3 (Alt D Hybrid): staging-steg skippas för
-      # Dependabot-PR:er pga GitHub Actions secrets-isolation
-      # (Dependabot-workflows har endast access till Dependabot-secrets,
-      # inte Actions-secrets — by-design supply-chain-defense per
-      # GitHub Docs). Dep-bump-regression fångas via pure-tests +
-      # typecheck + biome + build + 6 lint-grindvakter. Marcus manuell
-      # pre-merge-verify för staging-coverage-gap per Lager 4.
-      # Etablerad Session 6.6.5 K3 (2026-05-16).
+      - name: Build
+        run: npm run build
+
+  a11y:
+    name: A11y (axe-runner)
+    needs: changed
+    # A11y-runnern rör ALDRIG staging (egen alltid-färsk dev-server på
+    # dedikerad port, ADR-045 beslut 1+3) → ingen mutex. Dependabot-skip
+    # på JOBB-nivå per ADR-031 Lager 3 (secrets-isolation).
+    if: needs.changed.outputs.should_skip_tests != 'true' && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        # Medvetet UTAN fetch-depth-config — samma rationale som test-fast;
+        # utanför bärar-mängden (ADR-039).
+
+      - name: Setup Node
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Cache Playwright browsers (~150MB) per ADR-029 §1c. Samma nyckel
+      # som test-staging — först färdiga jobbet värmer, det andra hit:ar.
+      # hashFiles(package-lock.json) ger atomic cache-key vs full deps-state.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6.1.0
+        id: playwright-cache-a11y
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright Chromium
+        # Skippar --with-deps per Vite-mönstret (verifierat 2026-05-13;
+        # ubuntu-latest har Playwright OS-libs förinstallerade; historik i
+        # gamla Test+Build-jobbets kommentar, git-blame före S77-splitten).
+        run: npx playwright install chromium
+
+      # A11y-runner per ADR-045 beslut 1+3: PLAYWRIGHT_TEST_BASE_URL lämnas
+      # OSATT så webServer-blocket i playwright.config.ts startar Vite
+      # dev-servern — /dev/primitives är DEV-guardad (ADR-044) och finns
+      # inte i staging-build. VITE_*-env krävs av @t3-oss/env-core-
+      # valideringen vid dev-server-boot.
+      - name: A11y tests (axe-runner)
+        run: npm run test:a11y
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+
+  test-staging:
+    name: Staging (API + E2E)
+    # needs purge: setup-purgen (ADR-060 punkt 3–4) ska ha kört FÖRE
+    # staging-stegen. Villkoret tolererar 'skipped' (dependabot/docs-only)
+    # men INTE 'failure' — röd purge stoppar sviten synligt (halt-first).
+    needs: [changed, purge]
+    # Dependabot-skip på JOBB-nivå (ADR-031 Lager 3): jobbet startar
+    # aldrig för dependabot-runs och tar därmed aldrig mutex-plats.
+    # ADR-073-amendering 2:s VILLKORLIGA grupp (depbot-<run_id>) är
+    # därmed RETIRERAD (S77): ett jobb som aldrig startar köar aldrig —
+    # samma invariant "aldrig två staging-rörande runs samtidigt",
+    # definitionellt, utan uttrycket.
+    if: ${{ !cancelled() && needs.changed.outputs.should_skip_tests != 'true' && github.actor != 'dependabot[bot]' && (needs.purge.result == 'success' || needs.purge.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    # Staging-stegen delar EN staging-miljö — samtidiga runs är
+    # TASK-6-kollisionen på CI-nivå (ADR-073 beslut 4). Gruppen
+    # serialiserar jobbet över alla staging-rörande runs (PR ∥ PR och
+    # PR ∥ main-push); queue: max köar väntande FIFO. cancel-in-progress
+    # medvetet OSATT (krav för queue: max; en startad staging-svit
+    # avbryts aldrig mitt i). Defense-in-depth BAKOM orkestratorns
+    # seriella PR→CI→merge-kedja — komplement-beslutet S66 Del 2.
+    # Slutarkitekturen är per-run-dataisolering (våg 3,
+    # processgranskningen § 6); mutexen är interim.
+    concurrency:
+      group: staging-tests
+      queue: max
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        # Medvetet UTAN fetch-depth-config — samma rationale som test-fast;
+        # utanför bärar-mängden (ADR-039).
+
+      - name: Setup Node
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6.1.0
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      # ADR-031 Lager 3 (Alt D Hybrid): staging kräver Actions-secrets som
+      # Dependabot-workflows saknar (by-design supply-chain-defense per
+      # GitHub Docs) — därav jobb-nivå-skippet ovan. Dep-bump-regression
+      # fångas via pure-tests + typecheck + biome + build +
+      # lint-grindvakterna. Etablerad Session 6.6.5 K3 (2026-05-16).
       - name: API tests (staging)
-        if: github.actor != 'dependabot[bot]'
         run: npm run test:api:staging
         env:
           STAGING_REQUIRED: '1'
@@ -406,35 +504,7 @@ jobs:
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
           TEST_REGISTRATION_RECORD_ID: ${{ secrets.TEST_REGISTRATION_RECORD_ID }}
 
-      # Cache Playwright browsers (~150MB) per ADR-029 §1c.
-      # Job-isolation från lint-jobbet kräver explicit cache för delade artefakter.
-      # hashFiles(package-lock.json) ger atomic cache-key vs full deps-state →
-      # ingen silent correctness violation vid semver-range-bump.
-      - name: Cache Playwright browsers
-        uses: actions/cache@v6.1.0
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install Playwright Chromium
-        # Skippar --with-deps per Vite-mönstret (verifierat 2026-05-13).
-        # ubuntu-latest har Playwright OS-libs förinstallerade
-        # (libgbm1, libnss3, libasound2t64, libxcomposite1, etc.).
-        # --with-deps krävde apt-get update som var fragilt mot
-        # azure-mirror-hängningar (Commit 1.5 timeout 615s, K11-anti-mönster
-        # skördat — Vite hade redan dropped --with-deps i sin ci.yml).
-        # Vid full cache-hit (lock-file oförändrad): browser-install hoppar (~5s).
-        # Vid restore-keys-hit: laddar nya browser-binärer vid version-mismatch.
-        # Vid cold cache: laddar browser-binärer (~30s vs 150s med --with-deps).
-        run: npx playwright install chromium
-
-      # ADR-031 Lager 3 (Alt D Hybrid) — se kommentar ovan på API
-      # tests (staging) för fullständig motivation.
       - name: E2E tests (staging)
-        if: github.actor != 'dependabot[bot]'
         run: npm run test:e2e:staging
         env:
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
@@ -452,7 +522,7 @@ jobs:
       # hämta. global-teardown.ts har redan purgat klartext-lösenord ur
       # error-context.md (ADR-061 pelare 3, T29) innan uppladdningen sker.
       - name: Ladda upp Playwright-artefakter vid rött e2e
-        if: failure() && github.actor != 'dependabot[bot]'
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-e2e-artefakter
@@ -461,23 +531,6 @@ jobs:
             playwright-report/
           retention-days: 7
           if-no-files-found: ignore
-
-      # A11y-runner per ADR-045 beslut 1+3: PLAYWRIGHT_TEST_BASE_URL lämnas
-      # OSATT så webServer-blocket i playwright.config.ts startar Vite
-      # dev-servern — /dev/primitives är DEV-guardad (ADR-044) och finns
-      # inte i staging-build. VITE_*-env krävs av @t3-oss/env-core-
-      # valideringen vid dev-server-boot (samma mönster som E2E-steget).
-      # Dependabot-skip per ADR-031 Lager 3 (secrets-isolation, samma
-      # rationale som API/E2E-staging-stegen ovan).
-      - name: A11y tests (axe-runner)
-        if: github.actor != 'dependabot[bot]'
-        run: npm run test:a11y
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
-
-      - name: Build
-        run: npm run build
 
   # Job 4: Markdown link validation. Conditional på docs-changes.
   # Per ADR-029 §1d. Ny kvalitets-check som inte fanns innan ("höjer kvaliten").
@@ -497,7 +550,7 @@ jobs:
           # scripts/check-frontmatter.sh Check 2 (git log -1 --format=%cs -- <fil>).
           # Finit djup var anti-mönstret (1→50→100→250 brast 4 ggr när orörda
           # governing-docs passerade boundaryn). Konsistent med changed-jobbet;
-          # invarianten (ADR-039) hålls enhetlig över alla 6 bärare.
+          # invarianten (ADR-039) hålls enhetlig över alla 5 bärare.
           fetch-depth: 0
 
       - name: Restore lychee cache
@@ -613,7 +666,7 @@ jobs:
   ci-passed:
     name: CI Passed or Skipped
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
-    needs: [changed, lint, test, docs, purge]
+    needs: [changed, lint, test-fast, a11y, test-staging, docs, purge]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     permissions: {}

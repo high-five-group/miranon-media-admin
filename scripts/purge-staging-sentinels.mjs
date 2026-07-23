@@ -2,9 +2,10 @@
 // scripts/purge-staging-sentinels.mjs — setup-purge av sentinel-rader i
 // staging-basen (ADR-060 punkt 3–4, wirad via TASK-16).
 //
-// Körs som SEPARAT CI-jobb (egen runner, egen secret) FÖRE Test + Build —
-// aldrig i test-jobbet (EF-only-gränsen: testet får ALDRIG Airtable-token,
-// ADR-060 punkt 2+4). Lokalt: `npm run purge:staging` (token ur .env.seed).
+// Körs som SEPARAT CI-jobb (egen runner, egen secret) FÖRE staging-jobbet
+// (test-staging efter S77-splitten) — aldrig i test-jobben (EF-only-gränsen:
+// testet får ALDRIG Airtable-token, ADR-060 punkt 2+4). Lokalt:
+// `npm run purge:staging` (token ur .env.seed).
 //
 // Logiken är universell; alla projekt-värden bor i .purge-staging-policy.json
 // (config-driven grindvakts-konvention, CLAUDE.md). Token via env:
