@@ -4,7 +4,7 @@ title: 'Skiva: Gruppdynamik'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 01:56'
+updated_date: '2026-07-23 02:14'
 labels:
   - ready-for-agent
 dependencies:
@@ -69,13 +69,15 @@ GRANSKNINGSFÄRDIG — väntar design-review (Marcus, DoD #5). Kortet står In P
 HISTORIK — HALT-NOTEN FRÅN BATCH-KÖRNINGEN (bevarad per ADR-073 Am 3 mandat (b), union; LÄKT av orkestrator-fixen 4416fc0: '+ nivåstreck)' → 'plus nivåstreck', rebruten rad. markdownlint 0 issues efter läkning):
 
 AFK-BATCH MERGE-AGENT HALT (steg 5 — PR-CI-vakten per jobb) 2026-07-23. PR #88 skapad (branch task/18.10, head 7d4ddc86). PR-CI run 29972808069: jobbet 'Docs link check' RÖTT (completed failure). Rotorsak (markdownlint-cli2, lokalt reproducerad mot branch-filen): docs/specs/DESIGN-SYSTEM-SPEC.md:1275 — MD004/ul-style [Expected: dash; Actual: plus] + MD032/blanks-around-lists [Context: '+ nivastreck) som svarar pa...']. Den mjuk-radbrutna parentesen '(matar-segment + nivastreck)' la fragmentet '+ nivastreck)' vid radstart dar Markdown laser '+' som list-bullet -> mis-render + markdownlint-brott. Introducerat av branchens spec-edit (§17-tillagget); mains fil ren. Ovriga PR-jobb vid halt: Lint+Audit+TypeCheck gron, Detect changed files gron, Staging sentinel purge gron, Test+Build pagick (irrelevant — docs redan rott => rod overall). INGEN merge, main OrORD. Atgardsyta: fixa radbrytningen sa '+' inte hamnar vid radstart (t.ex. slut ihop raden eller byt '+' mot 'och'), pusha till branchen, kor om. Branch + PR #88 star kvar.
+
+MERGAD (S75 batch 4, orkestrator-läkt halt): PR #88 → merge-commit a0f1c9b. PR-CI-run 29973467803 GRÖN PER JOBB (6/6 fil-lästa: detect · lint+audit+typecheck · sentinel purge · docs link check [den som föll — nu grön] · Test + Build [e2e-beviset] · CI Passed). Halten var markdownlint-slip i docs-fil, ej kod (kod grön hela vägen). Kortet GRANSKNINGSFÄRDIGT — In Progress, DoD #5 (design-review mot facit) + DoD #6 öppna. Done-flippen är Marcus.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
