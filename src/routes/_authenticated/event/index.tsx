@@ -1,11 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useQueryState } from 'nuqs';
-import { PrototypeSwitcher } from '@/components/dev/PrototypeSwitcher';
 import { EventsList } from '@/components/events';
-import {
-  EventsListPrototype,
-  LIST_PROTO_VARIANTS,
-} from '@/components/events/prototype/EventsListPrototype';
 
 export const Route = createFileRoute('/_authenticated/event/')({
   staticData: { title: 'Event' },
@@ -17,39 +11,19 @@ export const Route = createFileRoute('/_authenticated/event/')({
 // EventsList; routen håller bara rubrik + montering (jfr personer/index.tsx).
 // Sektionen bär facitets rytm (Mer-formens grund-arv): synlig h1 30/600
 // (rubrikpolicyn S64), topp-luft pt-2/lg:pt-10, INGEN egen sidopadding —
-// skalets main bär 16 px (dubbelkants-fyndet M6). Syskon: event/$eventId/
-// (detalj-routes info/betalning/narvaro), <Outlet/> bärs av _authenticated
-// via AppShell.
+// skalets main bär 16 px (dubbelkants-fyndet M6). Syskon: event/$eventId/,
+// <Outlet/> bärs av _authenticated via AppShell.
 //
-// [PROTOTYPE] S72 konvergens-pass (T66 fas 2, underform A): `?variant=K`
-// renderar EventsListPrototype i stället — ENDAST i dev (ADR-044-mekaniken
-// på komponentnivå; produktionen ser aldrig växlaren eller prototypen).
-// Rivs vid svar-fångsten (throwaway-kontraktet klausul iv; klausul v S72:
-// behålls som familje-substrat tills skarpt bygge). Växlaren är delade
-// dev-komponenten (T78a, S73); K→A är legacy-aliaset från K1–K3-passen.
-const switcher = <PrototypeSwitcher variants={LIST_PROTO_VARIANTS} aliases={{ K: 'A' }} />;
-
+// Prototyp-grenen (`?variant=`) RIVEN i task-18.13 när hela familjen var
+// byggd och granskad — throwaway-kontraktets klausul iv/v. Faciten lever
+// vidare i bilagorna (tasks/sessions/bilagor/s72-event-lista-konvergens/)
+// och i git-historiken; växlaren själv består som stående dev-verktyg
+// (ADR-074 beslut 4) med hemvist /dev/prototyper.
 function EventPage() {
-  const [variant] = useQueryState('variant');
-  // Variant A = grillade strukturen · B = Hem-kortets grammatik (divergens-
-  // beslutet i konvergensen); 'K' tolereras som legacy-URL från K1–K3-passen.
-  const showPrototype =
-    import.meta.env.DEV && (variant === 'A' || variant === 'B' || variant === 'K');
-  // K2: prototypen bär sin EGEN sektion + h1 (Mer-formens grund-arv, utan
-  // dubbel sidopadding) — skarpa vyn behåller dagens wrapper orörd.
-  if (showPrototype) {
-    return (
-      <>
-        <EventsListPrototype />
-        {switcher}
-      </>
-    );
-  }
   return (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
       <h1 className="font-semibold text-3xl">Event</h1>
       <EventsList />
-      {import.meta.env.DEV ? switcher : null}
     </section>
   );
 }
