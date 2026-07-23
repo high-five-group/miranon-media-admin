@@ -25,6 +25,10 @@ jobs:
     timeout-minutes: 3
     permissions:
       contents: read
+      # actions: read — dedup-steget (task-36.4) frågar körnings-API:t
+      # (gh run list) om PR-headen redan har en grön CI-run. Minsta grant
+      # utöver contents:read.
+      actions: read
     outputs:
       should_skip_tests: ${{ steps.changed-files.outputs.only_changed == 'true' }}
       docs_changed: ${{ steps.changed-docs.outputs.any_changed == 'true' }}
@@ -32,6 +36,9 @@ jobs:
       # (stilmallar/CSS/publika statiska filer) OCH ingen exkluderad fil (samma
       # exkludering som docs-klassen) → staging skippas, a11y/pure/build kör.
       ui_low_risk: ${{ steps.changed-ui.outputs.only_changed == 'true' }}
+      # Merge-dedup (task-36.4 / ADR-077): true = main-push vars träd redan
+      # bevisats grönt i PR:en → tunga jobb hoppas. Fail-closed (se steget).
+      dedup_hit: ${{ steps.dedup.outputs.dedup_hit == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -131,6 +138,55 @@ jobs:
             !tsr.config.json
             !.nvmrc
             !.gitignore
+
+      - name: Merge-dedup — hoppa tungt om trädet redan bevisats grönt
+        id: dedup
+        # task-36.4 / ADR-077. Innehållsadresserad dedup UTAN ny lagringsyta:
+        # på en main-push (merge-commit) läses andra föräldern (den mergade
+        # PR-headen), och de tunga jobben hoppas ENDAST om merge-commitens träd
+        # är identiskt med PR-headens träd OCH den SHA:n redan har en grön
+        # CI-run. Sundheten vilar på merge-grindens strict up-to-date-krav
+        # (ADR-076): en up-to-date-branch ger merge-commit vars träd == PR-head.
+        #
+        # ASYMMETRIN ÄR MEDVETEN: nyckeln ÄR trädet självt, så dedupen kan bara
+        # orsaka onödig körning, aldrig släppa förbi otestat. FAIL-CLOSED på
+        # VARJE avvikelse — ingen andra förälder, träd-avvikelse, API-fel eller
+        # icke-grön run ⇒ dedup_hit=false ⇒ full svit. Full SHA mot API:t (L314;
+        # förkortad SHA ger noll träffar). Bor i changed-jobbet som redan har
+        # fetch-depth: 0 → fetch-depth-invarianten (ADR-039/054) ORÖRD.
+        # Logiken unit-testad lokalt mot 6 grenar (1 hit + 5 fail-closed) före
+        # bygget. Cache-formen är FALSIFIERAD och byggs aldrig (L325).
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          dedup_hit=false
+          if [ "${EVENT_NAME}" = "push" ]; then
+            if head2=$(git rev-parse --verify HEAD^2 2>/dev/null); then
+              tree_head=$(git rev-parse 'HEAD^{tree}')
+              tree_head2=$(git rev-parse "${head2}^{tree}")
+              if [ "${tree_head}" = "${tree_head2}" ]; then
+                conc=$(gh run list --commit "${head2}" --workflow ci.yml \
+                  --json conclusion,status \
+                  --jq '[.[] | select(.status == "completed")][0].conclusion // ""' \
+                  2>/dev/null || echo "APIERR")
+                if [ "${conc}" = "success" ]; then
+                  dedup_hit=true
+                  echo "✅ Dedup-TRÄFF: träd == ${head2:0:12}^{tree} och den SHA:n har grön CI-run → tunga jobb hoppas."
+                else
+                  echo "Dedup-miss: PR-head-run conclusion='${conc}' ej success → full svit (fail-closed)."
+                fi
+              else
+                echo "Dedup-miss: träd-avvikelse (${tree_head:0:12} != ${tree_head2:0:12}) → full svit (fail-closed)."
+              fi
+            else
+              echo "Dedup-miss: ingen andra förälder (ej merge-commit) → full svit (fail-closed)."
+            fi
+          else
+            echo "Dedup ej tillämplig (event=${EVENT_NAME}, ej push) → full svit."
+          fi
+          echo "dedup_hit=${dedup_hit}" >> "${GITHUB_OUTPUT}"
 
   # Job 2: Always-on lint + audit + typecheck.
   # Kör på ALLA commits oavsett doc-only-detection. Per ADR-029 §1b + K17.
@@ -337,7 +393,11 @@ jobs:
   suite:
     name: Test suite
     needs: changed
-    if: ${{ needs.changed.outputs.should_skip_tests != 'true' }}
+    # Skippas vid docs-only (should_skip_tests) ELLER merge-dedup-träff
+    # (dedup_hit, task-36.4): main-push vars träd redan bevisats grönt kör inte
+    # om tunga jobb. Paraply-checken (ci-passed, always()) blir grön ändå —
+    # skipped tolereras (AC#3). Fail-closad dedup ⇒ full svit vid varje tvivel.
+    if: ${{ needs.changed.outputs.should_skip_tests != 'true' && needs.changed.outputs.dedup_hit != 'true' }}
     # Permissions-taket för det anropade ci-suite.yml. Ett anropat workflow kan
     # bara BEHÅLLA eller MINSKA anroparens token-permissions, aldrig eskalera
     # (GitHub Docs: "Permissions can only be maintained or reduced—not
