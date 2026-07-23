@@ -1269,6 +1269,32 @@ literaler i källan — Tailwinds källskanning läser för övrigt även
 markdown, så klass-formade exempel i docs emitterar utilities; därför
 stavas klassmönstret inte ut här.
 
+### Erfarenhetsmixens sekventiella skala (task-18.10 — gruppdynamik)
+
+Eventsidans Gruppdynamik-avsnitt bär en **sekventiell** skala
+(mätar-segment plus nivåstreck) som svarar på *hur mycket* erfarenhet en
+deltagare har — till skillnad från kursfärgernas **kvalitativa** kulörer,
+som svarar på *vilken* kurs. De två får därför medvetet olika färgrymd.
+
+| Token | Primitiv | Nivå |
+|---|---|---|
+| `--mm-erfarenhet-ny` | `--p-neutral-300` | Första eventet |
+| `--mm-erfarenhet-mellan` | `--p-neutral-500` | 1–2 tidigare event |
+| `--mm-erfarenhet-erfaren` | `--p-neutral-700` | 3+ tidigare event |
+
+En **neutral lightness-ramp** (ljus → mörk = ny → erfaren): kromatiskt
+distinkt från samtliga kurs-/kategori-kulörer (blå/grön/koppar/röd/guld) och
+respekterar fokusringens exklusiva `#1B4965` (`--p-blue-700` rörs aldrig, och
+en tredje mörk *blå* saknas i primitivlagret — som är läs-yta i denna skiva).
+Segmenten och strecken är dekorativa (`aria-hidden`); nivåns antal står som
+**text** i etiketten — färg är aldrig ensam bärare (WCAG 1.4.1).
+
+Nivå-BUCKETarna härleds ur `antalGenomfordaEvent` (basens RIM-3-inkluderande
+räknare) — 0 / 1–2 / 3+. Deltagarens kanoniska `Erfarenhetsbadge` (formel,
+RIM-3-BLIND) visas RÅ på personkortet: när den avviker från räknaren är just
+den divergensen den kända badge-luckan (T16) visad som den är, aldrig
+bortdesignad.
+
 ---
 
 ## 18. SlideToConfirm — dra-till-bekräfta-primitiven

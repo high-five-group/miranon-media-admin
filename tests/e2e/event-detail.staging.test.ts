@@ -139,8 +139,9 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    // Grupperna i facit-ordning (18.1+18.3:s delmängd — check-in-kortet är
-    // rubrikfritt per K26; Gruppdynamik/Anteckningar 18.10/18.11).
+    // Grupperna i facit-ordning (check-in-kortet är rubrikfritt per K26;
+    // Gruppdynamik är sidans sista datagrupp sedan 18.10 — Anteckningar 18.11
+    // blir den allra sista efteråt).
     const rubriker = await page.getByRole('heading', { level: 2 }).allTextContents();
     expect(rubriker).toEqual([
       'Åtgärder',
@@ -149,6 +150,7 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
       'Anmälda deltagare',
       'Betalningar',
       'Närvaro',
+      'Gruppdynamik',
     ]);
 
     // Rubriken står UTANFÖR den tonala kortytan: h2:s förälder är sektionen,
@@ -1208,6 +1210,303 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .include('section[aria-labelledby="grupp-deltagare"]')
+      .analyze();
+    expect(
+      results.violations,
+      results.violations.map((v) => `${v.id}: ${v.help}`).join('\n'),
+    ).toEqual([]);
+  });
+});
+
+/**
+ * ── Gruppdynamik — erfarenhetsmix + kurshistorik + motiveringar (task-18.10) ──
+ *
+ * Deterministisk via `page.route`-mock av get-registrations (samma split som
+ * 18.4/18.5; helt mockad, staging-CORS aldrig i spel — körs på egen dev-port).
+ *
+ * Datasetet bär facitets tre nivåer + T16-luckan + genomförd-filtret + Läs mer:
+ *   Erik  — 3 genomförda (⇒ "3+") · badge 'Resenär steg 1–2' (RIM-3-BLIND: räknaren
+ *           säger 3+, badgen bara 1–2 = den kända luckan visad RÅ) · kurshistorik
+ *           FS/RIM 1/RIM 2 genomförda + en Dag 2-dubblett + en icke-närvaro-rad
+ *           (båda ska filtreras bort) · LÅNG motivering (Läs mer)
+ *   Sara  — 2 genomförda (⇒ "1–2") · badge 'Resenär steg 1' · KORT motivering
+ *   Anna  — 0 genomförda (⇒ "Första eventet") · badge 'Ej påbörjat' · tom kurshistorik
+ *   Uno   — Källa 'Manuell', INGEN Person-länk (räknare/badge/kurshistorik null,
+ *           ingen motivering) ⇒ EJ klassificerbar → utanför mixen helt
+ */
+
+const GD_EVENT_ID = 'recGRUPPDYNAMIK1';
+
+const GD_LANG_MOTIVERING =
+  'Hej! Jag lyssnade på ett poddavsnitt med Roger för en tid sedan och kände direkt att det här vill jag utforska mer.\nJag har alltid varit en sökande person och gått några kurser genom åren, men det är först nu jag har tid att fördjupa mig på riktigt. Det är så givande att både lära sig nytt och samtidigt få träffa andra som är intresserade av samma saker.';
+
+type GdHist = Record<string, unknown>;
+function gdHist(id: string, kursnamn: string, datum: string, overrides: GdHist = {}): GdHist {
+  // PersonHistoryEntry-shapen (get-person-kontraktet återanvänt). Standard =
+  // en GENOMFÖRD kurspost (Dag 1, Närvarande, narvaro true).
+  return {
+    id,
+    kursnamn,
+    eventLabel: `${kursnamn}-event`,
+    datum,
+    session: 'Dag 1',
+    status: 'Närvarande',
+    narvaro: true,
+    ort: 'Skövde',
+    typ: 'Utbildning',
+    ...overrides,
+  };
+}
+
+function gdReg(overrides: PkJson): PkJson {
+  return pkRegistrering({
+    eventId: GD_EVENT_ID,
+    erfarenhetsbadge: null,
+    kurshistorik: null,
+    ...overrides,
+  });
+}
+
+const GD_DELTAGARE: PkJson[] = [
+  gdReg({
+    id: 'recGdErik',
+    namn: 'Erik Berg',
+    email: 'erik@example.se',
+    personId: 'recPersonErik001',
+    status: 'Bekräftad (mail skickat)',
+    inskickad: '2026-07-01T09:00:00.000Z',
+    antalGenomfordaEvent: 3,
+    // RIM-3-BLIND: räknaren 3+ men badgen bara 1–2 = den kända luckan (T16).
+    erfarenhetsbadge: 'Resenär steg 1–2',
+    motivering: GD_LANG_MOTIVERING,
+    kurshistorik: [
+      gdHist('recH1', 'Fjärrskådning', '2025-08-23'),
+      gdHist('recH2', 'Resor i medvetandet 1', '2025-10-18'),
+      gdHist('recH3', 'Resor i medvetandet 2', '2026-02-21'),
+      // Dag 2-dubblett av samma event — får ALDRIG bli en egen kurshistorik-rad.
+      gdHist('recH4', 'Resor i medvetandet 2', '2026-02-22', { session: 'Dag 2' }),
+      // Ej närvarande — filtreras bort (genomförd = Närvaropoäng 1).
+      gdHist('recH5', 'Resor i medvetandet 3', '2026-04-11', {
+        status: 'Frånvarande',
+        narvaro: false,
+      }),
+    ],
+  }),
+  gdReg({
+    id: 'recGdSara',
+    namn: 'Sara Nyström',
+    email: 'sara@example.se',
+    personId: 'recPersonSara001',
+    status: 'Bekräftad (mail skickat)',
+    inskickad: '2026-07-02T09:00:00.000Z',
+    antalGenomfordaEvent: 2,
+    erfarenhetsbadge: 'Resenär steg 1',
+    motivering: 'Gick RIM 1 i februari och vill utforska mitt medvetande djupare.',
+    kurshistorik: [
+      gdHist('recH6', 'Fjärrskådning', '2025-10-11'),
+      gdHist('recH7', 'Resor i medvetandet 1', '2026-02-07'),
+    ],
+  }),
+  gdReg({
+    id: 'recGdAnna',
+    namn: 'Anna Ek',
+    email: 'anna@example.se',
+    personId: 'recPersonAnna002',
+    inskickad: '2026-07-03T09:00:00.000Z',
+    antalGenomfordaEvent: 0,
+    erfarenhetsbadge: 'Ej påbörjat',
+    motivering: 'Har länge velat utforska mitt inre.',
+    kurshistorik: [],
+  }),
+  gdReg({
+    id: 'recGdUno',
+    namn: 'Uno Manuell',
+    status: 'Bekräftad (mail skickat)',
+    kalla: 'Manuell',
+    inskickad: '2026-07-04T09:00:00.000Z',
+    // Ingen Person-länk ⇒ EF:en lämnar räknare/badge/kurshistorik null.
+  }),
+];
+
+async function mockaGruppdynamik(
+  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
+  page: any,
+  registrations: PkJson[] = GD_DELTAGARE,
+): Promise<void> {
+  await page.route(GET_EVENT, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ event: eventDetail({ id: GD_EVENT_ID }) }),
+    });
+  });
+  await page.route(GET_REGISTRATIONS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ registrations }),
+    });
+  });
+}
+
+test.describe('Gruppdynamik — erfarenhetsmix + kurshistorik + motiveringar (task-18.10)', () => {
+  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
+  const gruppen = (page: any) => page.locator('section[aria-labelledby="grupp-gruppdynamik"]');
+
+  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
+  async function oppnaSidan(page: any): Promise<void> {
+    await page.goto(`/event/${GD_EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(gruppen(page).getByRole('heading', { name: 'Gruppdynamik' })).toBeVisible();
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
+  const niva = (page: any, namn: string) =>
+    gruppen(page).getByRole('button', { name: new RegExp(`^${namn}`) });
+
+  test('summeringsraden: återkommande av KLASSIFICERBARA (manuell utan länk räknas ej)', async ({
+    page,
+  }) => {
+    await mockaGruppdynamik(page);
+    await oppnaSidan(page);
+
+    // Klassificerbara = Erik, Sara, Anna (Uno saknar räknare ⇒ utanför mixen).
+    // Återkommande (räknare > 0) = Erik + Sara = 2 av 3.
+    await expect(gruppen(page).getByTestId('gruppdynamik-summering')).toHaveText('2 av 3');
+    // Uno finns aldrig i erfarenhetsmixen (varken bucket eller kort).
+    await expect(gruppen(page).getByText('Uno Manuell')).toHaveCount(0);
+  });
+
+  test('de tre nivå-accordionerna bär rätt antal (buckets ur antalGenomfordaEvent)', async ({
+    page,
+  }) => {
+    await mockaGruppdynamik(page);
+    await oppnaSidan(page);
+
+    await expect(niva(page, 'Första eventet')).toContainText('1');
+    await expect(niva(page, '1–2 tidigare event')).toContainText('1');
+    await expect(niva(page, '3\\+ tidigare event')).toContainText('1');
+  });
+
+  test('accordion öppnar personkortet med kurshistorik i kursfärgs-tokensen + månad/år', async ({
+    page,
+  }) => {
+    await mockaGruppdynamik(page);
+    await oppnaSidan(page);
+
+    const knapp = niva(page, '3\\+ tidigare event');
+    await expect(knapp).toHaveAttribute('aria-expanded', 'false');
+    await knapp.click();
+    await expect(knapp).toHaveAttribute('aria-expanded', 'true');
+
+    const erik = gruppen(page)
+      .getByTestId('gruppdynamik-personkort')
+      .filter({ hasText: 'Erik Berg' });
+    await expect(erik).toBeVisible();
+
+    // GENOMFÖRD-FILTRET + DEDUP: FS/RIM 1/RIM 2 = 3 rader. Dag 2-dubbletten och
+    // den icke-närvarande RIM 3-raden syns ALDRIG.
+    const rader = erik.getByTestId('gruppdynamik-kurshistorik-rad');
+    await expect(rader).toHaveCount(3);
+    await expect(rader.nth(0)).toContainText('Fjärrskådning');
+    await expect(rader.nth(0)).toContainText('augusti 2025');
+    await expect(rader.nth(1)).toContainText('RIM 1'); // legend-etiketten, ej basens långnamn
+    await expect(rader.nth(1)).toContainText('oktober 2025');
+    await expect(rader.nth(2)).toContainText('RIM 2');
+    await expect(rader.nth(2)).toContainText('februari 2026');
+    await expect(erik.getByText('RIM 3')).toHaveCount(0);
+
+    // Kursfärgs-TOKENSEN renderade: RIM 1-streckets bakgrund == --mm-kurs-rim1
+    // (#606b57 = rgb(96,107,87)). Bevisar tokens-färgen, inte bara en klass.
+    const rim1Streck = rader.nth(1).locator('span[aria-hidden="true"]');
+    const bg = await rim1Streck.evaluate((el: Element) => getComputedStyle(el).backgroundColor);
+    expect(bg).toBe('rgb(96, 107, 87)');
+  });
+
+  test('T16: den RÅA Erfarenhetsbadgen visas som den är (RIM-3-blind, ej bortdesignad)', async ({
+    page,
+  }) => {
+    await mockaGruppdynamik(page);
+    await oppnaSidan(page);
+
+    // Erik står i "3+ tidigare event" (räknaren är RIM-3-inkluderande) MEN bär
+    // badgen 'Resenär steg 1–2' (RIM-3-BLIND). Divergensen ÄR den kända luckan.
+    await niva(page, '3\\+ tidigare event').click();
+    const erik = gruppen(page)
+      .getByTestId('gruppdynamik-personkort')
+      .filter({ hasText: 'Erik Berg' });
+    await expect(erik.getByTestId('gruppdynamik-badge')).toHaveText('Resenär steg 1–2');
+  });
+
+  test('Första eventet: tom kurshistorik ⇒ "första gången"-raden, ingen kurshistorik-rad', async ({
+    page,
+  }) => {
+    await mockaGruppdynamik(page);
+    await oppnaSidan(page);
+
+    await niva(page, 'Första eventet').click();
+    const anna = gruppen(page)
+      .getByTestId('gruppdynamik-personkort')
+      .filter({ hasText: 'Anna Ek' });
+    await expect(anna).toContainText('första gången hos Miranon Media');
+    await expect(anna.getByTestId('gruppdynamik-kurshistorik-rad')).toHaveCount(0);
+  });
+
+  test('motiveringarna som vita kort — Läs mer visas BARA vid faktisk overflow', async ({
+    page,
+  }) => {
+    await mockaGruppdynamik(page);
+    await oppnaSidan(page);
+
+    const erik = gruppen(page)
+      .getByTestId('gruppdynamik-motivering')
+      .filter({ hasText: 'Erik Berg' });
+    const anna = gruppen(page)
+      .getByTestId('gruppdynamik-motivering')
+      .filter({ hasText: 'Anna Ek' });
+
+    // Manuell utan formulärsvar (Uno) får inget motiveringskort.
+    await expect(gruppen(page).getByTestId('gruppdynamik-motivering')).toHaveCount(3);
+
+    // Kort svar (Anna) ryms på ≤3 rader ⇒ INGEN knapp.
+    await expect(anna.getByRole('button')).toHaveCount(0);
+
+    // Långt svar (Erik) overflowar ⇒ knappen finns (ETT motiveringskort =
+    // EN knapp → stabil roll-locator; aria-label är KONTEXTUELL och ändras
+    // Läs hela ⇄ Visa mindre, så vi ankrar aldrig på det föränderliga namnet).
+    const knapp = erik.getByRole('button');
+    await expect(knapp).toBeVisible();
+    await expect(knapp).toHaveText('Läs mer');
+    await expect(knapp).toHaveAttribute('aria-expanded', 'false');
+    await expect(knapp).toHaveAttribute('aria-label', 'Läs hela motiveringen från Erik Berg');
+
+    const vitStil = await erik
+      .getByTestId('gruppdynamik-motivering-text')
+      .evaluate((el: Element) => getComputedStyle(el).whiteSpace);
+    expect(vitStil).toBe('pre-line');
+
+    await knapp.click();
+    await expect(knapp).toHaveText('Visa mindre');
+    await expect(knapp).toHaveAttribute('aria-expanded', 'true');
+    await expect(knapp).toHaveAttribute('aria-label', 'Visa mindre av motiveringen från Erik Berg');
+    await expect(erik).toContainText('gått några kurser genom åren');
+
+    await knapp.click();
+    await expect(knapp).toHaveText('Läs mer');
+  });
+
+  test('axe 0 på gruppdynamiken (mätare, accordions öppna, motiveringar)', async ({ page }) => {
+    await mockaGruppdynamik(page);
+    await oppnaSidan(page);
+
+    // Öppna alla accordions så personkorten + kurshistoriken axe-täcks öppna.
+    await niva(page, 'Första eventet').click();
+    await niva(page, '1–2 tidigare event').click();
+    await niva(page, '3\\+ tidigare event').click();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .include('section[aria-labelledby="grupp-gruppdynamik"]')
       .analyze();
     expect(
       results.violations,

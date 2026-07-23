@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { FlagStatus, PaymentStatus, RegistrationSource, RegistrationStatus } from '../types/Status';
+import { PersonHistoryEntrySchema } from './PersonDetail.schema';
 
 // Enum-fälten härleds ur Status.ts-konstanterna (single source) och är
 // data-verifierade mot live-basen 2026-06-10: 0 records utanför
@@ -54,4 +55,26 @@ export const RegistrationSchema = z.object({
   // Bas-fältet 'Bor över' (fldGYYNnQi7XlfbhP) är ADDITIVT staging-fött
   // 2026-07-22 och LIVE-verifierat skrivbart (L294) före mappningen.
   borOver: z.boolean().optional(),
+  // Gruppdynamik-shapen (task-18.10; PRD task-18 beslut 12). ADDITIVT-OPTIONAL
+  // av samma skäl som fälten ovan — fyra delande konsumenters mockar parsar
+  // oförändrat. Fält-existensen LIVE-verifierad mot staging-schemat 2026-07-23
+  // (Personer tbl6ZyCm3V026iFTU · Deltaganden tbldWHH6sSHWoQPHH, L294) FÖRE
+  // mappningen: Erfarenhetsbadge fld04qqDQLgbJbBef (formel, Personer) ·
+  // Deltaganden-länken fld5shm9UER5CMyTl + raderna Kursnamn (lookup)
+  // fldJyjymEoo514AgN · Event startdatum fldExIP1zw5o6ib63 · Session
+  // fldBPZnsDL0bNIRHx · Närvaropoäng fldwuo94BY46VUOm4.
+  //
+  // `erfarenhetsbadge` — PERSONENS kanoniska `Erfarenhetsbadge` (formel), hämtad
+  //   i SAMMA person-batch som `antalGenomfordaEvent`. RÅ ur basen: badgen är
+  //   RIM 3-BLIND (data-model §Kända buggar) — den KÄNDA luckan (T16) visas som
+  //   den är, designas aldrig bort. null när anmälan saknar Person-länk eller i
+  //   den event-lösa grenen (spegel av antalGenomfordaEvent).
+  // `kurshistorik` — PERSONENS deltaganden (PersonHistoryEntry-shape återanvänd
+  //   ur get-person, ingen parallell form) via en TREDJE chunkad record-ID-batch
+  //   mot Deltaganden. RÅ per-session-rader (samma kontrakt som get-person:s
+  //   historik); gruppdynamik-vyn härleder genomförda+deduperade kurser
+  //   klientside (narvaro && Session ∈ {Dag 1, Föreläsning}). null = ingen
+  //   Person-länk / event-lösa grenen; [] = person utan deltaganden.
+  erfarenhetsbadge: z.string().nullable().optional(),
+  kurshistorik: z.array(PersonHistoryEntrySchema).nullable().optional(),
 });
