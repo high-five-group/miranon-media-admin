@@ -100,7 +100,7 @@
   (sex vågor, 16 AC) · `lifecycle: closed` · S76 STÄNGD. **NÄSTA
   ARBETE = NY YTA: S75-resume, work-batch 12.**
 
-### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-22; paus 3 — review-vågen levererad, work-batch 12 vid resume) — Batch-exekveringen: work-batch max 22, två pipelines
+### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-23; paus 4 — batch-arbetet KLART [21/24 skivor i main granskningsfärdiga], review-vågen + A/B-beslut + prod-deploy vid resume) — Batch-exekveringen: work-batch max 22, två pipelines
 
 > Scope: sessionsdok `2026-07-21-session-75.md` Del 1 (kanonisk
 > plats): exekvera Marcus batch-order AFK (ordern ordagrant i S74
@@ -351,6 +351,28 @@
   18.9/18.10/18.11/18.4/18.5/18.6/18.7/18.12 · svans 17.5/19.4/18.13)
   på explicit Marcus-order → review-kvittenser löpande → end-pass på
   signal.**
+- [x] **BATCH KÖRD 3–6 → 11/12 MERGADE** (2026-07-22→23, Del 12): fyra
+  vågor kring do-work + täcknings-pass. 18.4/18.5/18.6/18.7/17.5/18.9/
+  19.4/18.10/18.11/18.12 + 19.3 MERGADE granskningsfärdiga (PR
+  #80–90). TRE orkestrator-läkta halter: 19.3 (e2e-session-läkning +
+  ny helper + CI-artefakt-uppladdning) · 18.10 (markdown `+`-fällan) ·
+  18.11 (3 mekaniska + staging-EF-deploy). **STAGING-EF-DEPLOYS
+  autonomt** (create-event-note · get-event-notes · create-registration;
+  prod ORÖRD). Fynd TASK-30–34. **21/24 skivor i main, 0 Done-flippar.**
+- [x] **18.13 SCOPE-KORRIGERING mot ADR-074** (2026-07-23, Del 13,
+  Marcus-order efter S76-läsning): kortet sa "riv växlaren", ADR-074 sa
+  "växlaren består" — äkta konflikt, ADR:n vann. Description + AC #1
+  omskrivna (river instanser, BEHÅLL PrototypeSwitcher); rm-allowlist
+  tillagd. A/B-följdfrågan öppen (Marcus). 18.13 HÅLLET till efter review.
+- [x] **PAUSAD, FJÄRDE PAUSEN** (2026-07-23, Marcus-order "pausar vi
+  denna sessionen för att köra resume på ny yta, där kör vi hela min
+  review"): `lifecycle: paused` + förankrad PAUSLÄGE-rubrik + fullt
+  HANDOFF (TILLSTÅND [21/24 i main granskningsfärdiga · HEAD `9f41762`
+  grön per jobb] · CARRY [review-vågen · 18.13 A/B · prod-deploy-vågen ·
+  17.7/18.15 · fynd · lesson-kandidater] · numrering 076/L311/T84/f45/
+  TASK-35 · resume-vägen). **NÄSTA: NY Code-yta → `/session-resume` på
+  S75 → hela review-vågen med Marcus → 18.13 A/B + kör → prod-deploy →
+  end-pass/skörd (session-end, N+1) på signal.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 
