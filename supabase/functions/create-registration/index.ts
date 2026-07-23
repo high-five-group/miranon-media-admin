@@ -120,6 +120,8 @@ Deno.serve(async (req) => {
     const efternamn = body?.efternamn;
     const email = body?.email;
     const telefon = body?.telefon;
+    const antalPlatser = body?.antalPlatser;
+    const notering = body?.notering;
     const eventId = body?.eventId;
 
     // INVARIANT: Idempotency-Key krävs (header har företräde, body som fallback).
@@ -151,6 +153,21 @@ Deno.serve(async (req) => {
     // telefon valfri — om angiven måste den vara en sträng.
     if (telefon != null && typeof telefon !== 'string') {
       return badRequest('telefon must be a string when provided', corsHeaders);
+    }
+    // antalPlatser valfri (facit-formen skickar den alltid, default 1; modalen
+    // utelämnar den). Om angiven: positivt HELTAL ≥ 1 (basens number, precision 0).
+    if (antalPlatser != null) {
+      if (
+        typeof antalPlatser !== 'number' ||
+        !Number.isInteger(antalPlatser) ||
+        antalPlatser < 1
+      ) {
+        return badRequest('antalPlatser must be a positive integer when provided', corsHeaders);
+      }
+    }
+    // notering valfri — om angiven måste den vara en sträng (multilineText).
+    if (notering != null && typeof notering !== 'string') {
+      return badRequest('notering must be a string when provided', corsHeaders);
     }
     // eventId: Airtable-recordId-format (speglar update-record:s rec-prefix-grind).
     if (typeof eventId !== 'string' || !eventId.startsWith('rec')) {
@@ -221,6 +238,15 @@ Deno.serve(async (req) => {
     };
     if (typeof telefon === 'string' && telefon.trim()) {
       fields['Mobilnummer'] = telefon.trim();
+    }
+    // Facit-formens två återstående fält (task-18.12). Antal platser skrivs när
+    // angivet (annars lämnas basens number tomt — läs-mappningen normaliserar ?? 1);
+    // Notering skrivs bara när icke-tom (tom text ⇒ fältet lämnas osatt).
+    if (typeof antalPlatser === 'number') {
+      fields['Antal platser'] = antalPlatser;
+    }
+    if (typeof notering === 'string' && notering.trim()) {
+      fields['Notering'] = notering.trim();
     }
 
     // SSOT-grind: varje server-byggt fält måste vara på operationens allowlist

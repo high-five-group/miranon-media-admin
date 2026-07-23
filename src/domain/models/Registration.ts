@@ -14,12 +14,21 @@ import type {
  * EF:en härleder resten server-side (EventKey via lookup, Källa/Status/Inskickad
  * som konstanter, Person-länk via A2). `idempotencyKey` är en klient-genererad
  * UUID (crypto.randomUUID) per submit (ADR-059).
+ *
+ * `antalPlatser` + `notering` (task-18.12; facit-formens SEX fält): ADDITIVT-
+ * OPTIONAL så den befintliga modal-callern (AddRegistrationModal) står orörd —
+ * skarpa formsidan skickar dem alltid, modalen utelämnar dem. EF:en skriver
+ * 'Antal platser' (number) när angivet och 'Notering' (multilineText) när icke-tom.
  */
 export interface CreateRegistrationInput {
   fornamn: string;
   efternamn: string;
   email: string;
   telefon: string | null;
+  /** Antal platser (facit-formen; default 1). Osatt ⇒ EF:en skriver ej fältet. */
+  antalPlatser?: number;
+  /** Fri-text-notering (facit-formen). Tom/osatt ⇒ EF:en skriver ej fältet. */
+  notering?: string | null;
   eventId: string;
   idempotencyKey: string;
 }

@@ -10,6 +10,13 @@ export interface CreateRegistrationFormValues {
   efternamn: string;
   email: string;
   telefon: string | null;
+  /**
+   * Facit-formens två fält (task-18.12). ADDITIVT-OPTIONAL: den skarpa
+   * manuell-anmälan-sidan skickar dem alltid, modal-callern (AddRegistrationModal)
+   * utelämnar dem och står därmed orörd.
+   */
+  antalPlatser?: number;
+  notering?: string | null;
   /** Klient-genererad UUID per submission (ADR-059) — stabil över retries. */
   idempotencyKey: string;
 }
@@ -45,6 +52,8 @@ export function useCreateRegistration(eventId: string) {
         efternamn: values.efternamn,
         email: values.email,
         telefon: values.telefon,
+        antalPlatser: values.antalPlatser,
+        notering: values.notering,
         eventId,
         idempotencyKey: values.idempotencyKey,
       };
