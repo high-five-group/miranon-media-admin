@@ -25,16 +25,10 @@ function distinct(values: (string | null)[]): string[] {
   );
 }
 
-/**
- * Domänen i brödtextens typsnitt, viktad medium (rev. review-våg 3
- * 2026-07-23): K81:s mono-adressgrammatik RIVEN av Marcus ("samma typsnitt
- * som övrig text … något fetare — som det ser ut nu passar liksom inte den
- * här appen"). Vikten lyfter domänen som destination utan font-brottet.
- * Konsument-ägd text, inte primitiv-API (samma form som demo-sidans).
- */
-function MiranonSe() {
-  return <span className="font-medium">miranon.se</span>;
-}
+/* MiranonSe-komponenten RIVEN (review-våg 5, Marcus punkt 15): armerade
+   texten är bara "Publiceras" — destinationen är självklar (ingen annan
+   sajt kopplas hit) och bärs av aria-labeln. K81-sagan (mono → medium →
+   riven) stängd; domänen förekommer inte längre i skapa-sidans UI. */
 
 /**
  * Skapa nytt event — event-familjens skapa-sida i FAMILJENS FORMKLASS
@@ -358,16 +352,13 @@ export function CreateEventForm() {
           {/* Handtaget renderas per facit men har ÄNNU ingen verkan: flaggan
               finns inte i basen och `publicera` skickas ALDRIG till
               create-event. task-19.4 wirar den (additivt bas-fält + allowlist). */}
-          {/* Prompten utan destination (review-våg 5): "Dra för att
-              publicera" — destinationen bärs av armerade läget + aria-label. */}
+          {/* Båda lägenas texter utan destination och i samma vikt (review-
+              våg 5, punkt 15): "Dra för att publicera" / "Publiceras" —
+              destinationen är självklar och bärs av aria-labeln. */}
           <SlideToConfirm
             label="Publicera på miranon.se"
             prompt="Dra för att publicera"
-            confirmedLabel={
-              <>
-                Publiceras på <MiranonSe />
-              </>
-            }
+            confirmedLabel="Publiceras"
             isSelected={publicera}
             onChange={setPublicera}
           />
