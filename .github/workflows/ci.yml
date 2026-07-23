@@ -651,24 +651,36 @@ jobs:
         # Etablerad: Session 6.6.6 K3.6 (2026-05-20).
         run: bash scripts/test-vale-regression.sh
 
-  # Job 5: Aggregator för branch-protection-readiness.
-  # Per ADR-029 §1e. Grön status om alla föregående jobb antingen passerade
-  # eller skippades. Required check vid framtida branch protection.
-  # Enkel single-aggregator (utelämning #5 — branch protection ej aktiv).
-  #
-  # If-villkor använder needs.*.result-array istället för cancelled()/failure()
-  # (workflow-level context). cancelled() fångar bara workflow-cancellation,
-  # inte per-job-cancellation — välkänd GHA-gotcha bekräftad empiriskt i
-  # Commit 1.5 timeout-run (test-jobb cancellades; ci-passed rapporterade
-  # success felaktigt). Vite-mönstret har samma bug men fungerar mestadels
-  # pga failure-propagation i deras pipeline; för 11/10-strikthet använder
-  # vi GHA-officiella aggregator-pattern.
+  # Job 5: Aggregator — REQUIRED CHECK för main-rulesetet (ADR-076).
+  # Per ADR-029 §1e + S77-incidenten (PR #101): jobbet KÖR ALLTID och
+  # rapporterar success ELLER failure — ALDRIG skipped. Gamla formen
+  # (if-villkor som skippade jobbet vid failure i needs) var FAIL-OPEN
+  # som required check: GitHub räknar en skipped check som uppfylld →
+  # auto-merge mergade en RÖD PR (docs-jobb failure, aggregator skipped;
+  # run 30023934304 → main-rött 30024005788). Detta är dual-signal-
+  # behovet som ADR-029 utelämning #5 förutsåg ("explicit failure-signal
+  # överflödig utan automation som läser den") — rulesetet ÄR den
+  # automationen; signalen aktiverad här. Cancelled-gotchan (Commit 1.5:
+  # per-job-cancellation osynlig för cancelled()) täcks av samma
+  # needs-läsning: cancelled ⇒ explicit fail.
+  # Fail-grenens gate-proof: riktad workflow_dispatch i våg 2a (öppen
+  # bevis-skuld, bokförd i sessionsdok S77 Del 4 + T85).
   ci-passed:
     name: CI Passed or Skipped
-    if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+    if: ${{ always() }}
     needs: [changed, lint, test-fast, a11y, test-staging, docs, purge]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     permissions: {}
     steps:
-      - run: echo "CI Passed or Skipped — all required jobs are green or skipped per design."
+      - name: Verifiera needs-resultaten (fail-closed)
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "${NEEDS}" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          bad=$(echo "${NEEDS}" | jq -r '[to_entries[] | select(.value.result == "failure" or .value.result == "cancelled")] | length')
+          if [ "${bad}" -ne 0 ]; then
+            echo "❌ ${bad} jobb med failure/cancelled — aggregatorn FAILAR explicit (aldrig skipped; required-check-hålet stängt S77)."
+            exit 1
+          fi
+          echo "✅ CI Passed or Skipped — alla jobb success eller skipped-by-design."
