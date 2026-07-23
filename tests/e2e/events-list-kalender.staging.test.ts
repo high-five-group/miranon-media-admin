@@ -524,6 +524,10 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
     await mockEvents(page, events);
     await page.goto('/event');
     await expect(vyToggle(page)).toBeVisible();
+    // Gate på FULLT renderad lista (T26-mönstret): toggeln renderar före
+    // datan, och utan gaten mäter preconditionen en ännu kort sida —
+    // CI-racet som fällde run 29994446804 (lokalt alltid snabbt nog).
+    await expect(page.getByText('Hopptestkurs 20')).toBeVisible();
 
     // Precondition: listvyn scrollar — annars bevisar mätningen inget (L289).
     const listanScrollar = await page.evaluate(

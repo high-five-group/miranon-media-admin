@@ -1105,8 +1105,11 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     const anna = kortet(page, 'Anna Ek');
     const meta = anna.getByTestId('deltagar-metayta');
 
-    // K62/L303: metaytan är SYSKON till länken — noll länkar/knappar inuti den.
-    await expect(meta.locator('a, button')).toHaveCount(0);
+    // K62/L303: metaytan är SYSKON till länken (aldrig inuti den). Rev.
+    // 2026-07-23 (p18-rivningen): metaytan bär numera EXAKT en interaktiv
+    // yta — Anmäld-no-op-knappen — men fortsatt inga LÄNKAR.
+    await expect(meta.locator('a')).toHaveCount(0);
+    await expect(meta.locator('button')).toHaveCount(1);
     await expect(anna.getByRole('link').getByTestId('deltagar-metayta')).toHaveCount(0);
 
     // EN rad med både dag och klockslag (Inskickad är en dateTime).
