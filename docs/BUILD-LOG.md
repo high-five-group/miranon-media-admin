@@ -2891,6 +2891,22 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-07-23-session-78.md`](../tasks/sessions/2026-07-23-session-78.md) (Del 1–4 + HANDOFF). **EJ fas-avslut.** Kvar efter S78 (HANDOFF på toppnivå i sessionsdoket): ci.yml-trion 36.2 (reusable nattnätet) → 36.3 (D1 + `.playwright-mcp/`-gitignore) → 36.4 (dedup HEAD^2-formen) + ADR-077 · 36.5 (mätskript) → 36.6 (rött-först) → 36.7 (visual, egen session) → 36.8 (QA) · hub-lyftet L284–L325 · Marcus-moment: Update-klicket i claude.ai.
 
+---
+
+## Session 79 — T85 våg 2a: nattnätet (36.2) — reusable fullsvit + larmkedja + ADR-077 (2026-07-23)
+
+**Commit-range:** `9b6daec` (dok-födelse) → stängnings-PR. **Mål:** ta `ci.yml`-trions första skiva (36.2 nattnätet) i land under direkt hand (L324), som reusable-workflow-extraktion. Ej byggplan-fas — CI-/infrastruktur-session.
+
+- **Av-riskande spike FÖRE refaktor (run 30036119790, kastad):** bevisade `workflow_call` + `secrets: inherit` (secret-arv längd 40) + job-nivå `queue: max` i reusable-kontext — de tre okända — innan `ci.yml` rördes. Rev spiken (branch + remote) efter bevis.
+- **Reusable-extraktionen (PR #112 `55283ae`, CI 30037766751 grön inkl. staging skarpt):** tunga sviten (purge · pure+build · a11y · staging) → **`ci-suite.yml`** (`workflow_call`), anropad av både `ci.yml` (presubmit, villkorat) och **`nightly.yml`** (schema ~03:00 + dispatch). De TRE fetch-depth-bärarna (changed/lint/docs) ORÖRDA i ci.yml (invariant grön: 3); `ci-passed` needs → `[changed, lint, docs, suite]`, jq byte-identisk ⇒ fail-closad genom refaktorn (L322); bevis-skuld-kommentaren → betald.
+- **ADR-077 mintad** (klassning + dedup + nattnät; cache-rivningen L325, nightly-valet L324, visual i konsekvens-del) + README 76→77 + katalograd. CONTRIBUTING § Nattnätet (stängningsregeln, aldrig tyst). `ci-natt`-label skapad.
+- **Nattnätet skarpt bevisat (manuella dispatchar, run-ID citerade):** grön natt run **30039548355** — full svit + no-cache-länk + moderate-audit gröna, **larm-jobbet SKIPPAT, noll ärenden** (AC#1/#4/#6). Rött via `simulate_failure=true` run **30039559724** → larm skapade **ärende #114** korrekt (tilldelad marcus803, label `ci-natt`, run-länk + spann-rad) (AC#3). Test-ärendet stängt med öppen motivering (dess egen regel praktiserad).
+- **gate-proof re-kört på main (run 30038462683 GRÖN):** L322 fail-closed bekräftad genom reusable-refaktorn (DoD#6).
+- **Avvikelser (öppet bokförda) — TRE fångster, alla CI-fångade, → L326:** (1) `startup_failure` #1 (run 30037333924) — ci.yml:s topp-nivå `permissions: {}` gjorde ci-suites `contents: read` till en eskalering; anropat workflow kan bara behålla/minska (GitHub Docs verifierat) → suite-jobbet grantar taket. (2) `startup_failure` #2 (run 30038460735) — SAMMA bugg i `nightly.yml` (andra anroparen, missad i ci.yml-fixen; PR #113). (3) span-faktafel (PR #115) — larmet konflaterade "ingen tidigare grön" med "grön natt på samma SHA"; senare = flake-signal, nu tre distinkta grenar, unit-testad lokalt. Spiken hade `permissions: {}` = förenkling som maskerade #1/#2.
+- **Numrering:** ADR **077** mintad · lesson **L326** ([UNIVERSAL]: reusable-permissions-eskalering + spike-postur + varje-anropare) · ingen ny tråd (T85 forts.) · fälla 45 orörd · nästa: 079/077/L327/T86/f45/task-37 (36.3 nästa).
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-23-session-79.md`](../tasks/sessions/2026-07-23-session-79.md) (Del 1–2). **EJ fas-avslut.** Kvar efter 36.2: **36.3 D1-klassen** (+ `.playwright-mcp/`-gitignore) → **36.4 merge-dedup** (HEAD^2) — refererar nu befintlig ADR-077 · 36.5 (mätskript) → 36.6 (rött-först) → 36.7 (visual, egen session) → 36.8 (QA) · hub-lyftet L284–L326 · Marcus-moment: Update-klicket i claude.ai.
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
