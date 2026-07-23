@@ -493,4 +493,54 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
 
     expect(results.violations).toEqual([]);
   });
+
+  test('review-våg 2: vy-växlingen flyttar INTE innehållet i sidled när sid-scrollbaren försvinner', async ({
+    page,
+  }) => {
+    // Marcus-vetot (2026-07-23): layout-hopp är absolut förbjudet — river
+    // base.css:s öppet accepterade avvägning att klassisk-scrollbar-fönster
+    // smalare än lg återfår sidbytes-hoppet. 800×1000 ligger mitt i bandet
+    // sm ≤ w < lg. Riggen: 20 kommande event i NÄSTA månad ⇒ listvyn är
+    // längre än viewporten (sid-scrollbar PÅ) medan innevarande månads
+    // kalender är tom och kort (sid-scrollbar AV). Utan symmetrisk rännsten
+    // (scrollbar-gutter stable both-edges) ändras innehållsbredden vid
+    // växlingen → toggeln flyttar i sidled. Beviset bär i klassisk-scrollbar-
+    // miljö (CI:s ubuntu-chromium); i overlay-miljöer håller preconditions
+    // men hoppet existerar inte.
+    await page.setViewportSize({ width: 800, height: 1000 });
+    const nu = new Date();
+    await page.clock.setFixedTime(nu);
+    const nastaManad = new Date(nu.getFullYear(), nu.getMonth() + 1, 15);
+    const prefix = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Stockholm' })
+      .format(nastaManad)
+      .slice(0, 7);
+    const events: Row[] = Array.from({ length: 20 }, (_, i) =>
+      ev({
+        id: `recHOPP${String(i).padStart(2, '0')}`,
+        namn: `Hopptestkurs ${i + 1}`,
+        startdatum: `${prefix}-${String(i + 1).padStart(2, '0')}`,
+      }),
+    );
+    await mockEvents(page, events);
+    await page.goto('/event');
+    await expect(vyToggle(page)).toBeVisible();
+
+    // Precondition: listvyn scrollar — annars bevisar mätningen inget (L289).
+    const listanScrollar = await page.evaluate(
+      () => document.documentElement.scrollHeight > document.documentElement.clientHeight,
+    );
+    expect(listanScrollar).toBe(true);
+    const fore = await vyToggle(page).boundingBox();
+
+    await vyToggle(page).getByRole('radio', { name: 'Kalendervy' }).click();
+    await expect(gridden(page)).toBeVisible();
+    // Precondition: kalendervyn scrollar INTE (sid-scrollbaren har försvunnit).
+    const kalendernScrollar = await page.evaluate(
+      () => document.documentElement.scrollHeight > document.documentElement.clientHeight,
+    );
+    expect(kalendernScrollar).toBe(false);
+
+    const efter = await vyToggle(page).boundingBox();
+    expect(efter?.x).toBe(fore?.x);
+  });
 });

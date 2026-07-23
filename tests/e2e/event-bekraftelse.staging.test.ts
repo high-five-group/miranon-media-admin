@@ -370,4 +370,17 @@ test.describe('Hantera-flödet — bekräftelse-vertikalen (task-18.6)', () => {
     const dialoglage = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
     expect(dialoglage.violations).toEqual([]);
   });
+
+  test('review-våg 2: Bekräfta alla bär primitivens rundning — ingen pill-override', async ({
+    page,
+  }) => {
+    // Marcus (2026-07-23): samma hörnradie som appens övriga knappar —
+    // facitets rounded-lg-pill (K47) riven öppet; primitivens `rounded`
+    // (4 px) gäller. Grön intent (success) står kvar orörd.
+    await mocka(page, eventDetail());
+    await oppnaEventsidan(page);
+    const knapp = gruppen(page).getByRole('button', { name: 'Bekräfta alla obekräftade' });
+    await expect(knapp).toBeVisible();
+    await expect(knapp).toHaveCSS('border-radius', '4px');
+  });
 });

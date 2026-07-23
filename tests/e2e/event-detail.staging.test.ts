@@ -372,9 +372,11 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     // (registret fetchar INTE närvaron för kommande event → ingen get-attendance-
     // mock behövs här). Full register-täckning: event-narvaro-register.staging.test.ts.
     const narvaro = page.locator('section[aria-labelledby="grupp-narvaro"]');
-    await expect(
-      narvaro.getByText('Eventet är inte genomfört ännu — närvaron fylls i vid check-in.'),
-    ).toBeVisible();
+    // Review-våg 2 (Marcus 2026-07-23): tomlägestexten kortad — svansen
+    // "— närvaron fylls i vid check-in" riven; centrerad gråad (muted) text.
+    const tomlage = narvaro.getByText('Eventet är inte genomfört ännu', { exact: true });
+    await expect(tomlage).toBeVisible();
+    await expect(tomlage).toHaveCSS('text-align', 'center');
   });
 
   test('namnlöst event → fallback, ingen krasch; pill utelämnas utan eventKey', async ({
@@ -1168,21 +1170,26 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     await expect(cecilia.getByText('Saknas', { exact: true })).toBeVisible();
   });
 
-  test('AC #2: Anmäld-raden är OLÄNKAD — anmälans egen sida finns inte', async ({ page }) => {
+  test('AC #2 (rev. 2026-07-23): Anmäld-raden är understruken interaktiv yta — no-op tills 18.17', async ({
+    page,
+  }) => {
     await mockaPersonkort(page);
     await oppnaSidan(page);
 
-    // Belagt beslut (PRD task-18 punkt 18): ingen befintlig yta visar EN
-    // anmälan, så raden får INGEN länk-affordans i skarp produkt — en
-    // understruken no-op vore en osann affordans.
-    const anmald = kortet(page, 'Anna Ek').getByTestId('deltagar-meta-rad').first();
+    // Review-våg 2 (Marcus 2026-07-23): PRD task-18 punkt 18 ("ingen
+    // länk-affordans i skarp produkt") RIVEN ÖPPET — facit-K62-formen gäller:
+    // understruken rad med "Öppna anmälan"-namnet, no-op-knapp tills
+    // per-anmälan-detaljvyn (18.17) föder länkmålet. Ingen <a> förrän dess.
+    const anmald = kortet(page, 'Anna Ek').getByRole('button', {
+      name: 'Öppna anmälan för Anna Ek',
+    });
+    await expect(anmald).toBeVisible();
     await expect(anmald).toHaveText(/^Anmäld /);
-    await expect(anmald.locator('a, button')).toHaveCount(0);
     const dekoration = await anmald.evaluate(
       (el: Element) => getComputedStyle(el).textDecorationLine,
     );
-    expect(dekoration).toBe('none');
-    // Hela deltagarlistans enda länkar är person-länkarna (2 av 3 korten).
+    expect(dekoration).toContain('underline');
+    // Deltagarlistans enda LÄNKAR är fortsatt person-länkarna (2 av 3 korten).
     await expect(gruppen(page).getByTestId('deltagar-kort').getByRole('link')).toHaveCount(2);
   });
 
@@ -1537,5 +1544,33 @@ test.describe('Gruppdynamik — erfarenhetsmix + kurshistorik + motiveringar (ta
       results.violations,
       results.violations.map((v) => `${v.id}: ${v.help}`).join('\n'),
     ).toEqual([]);
+  });
+
+  test('review-våg 2: tomläget — "Inget att visa ännu" centrerat gråat + samma korthöjd som Närvaro', async ({
+    page,
+  }) => {
+    // Marcus (2026-07-23): tomma kort ser lika stora ut — gemensam fast
+    // minimihöjd för Närvaro- och Gruppdynamik-korten i tomläge; texten
+    // "Inget att visa ännu" centrerad i muted-tonen (ersätter den gamla
+    // vänsterställda erfarenhetsmix-raden).
+    await mockaGruppdynamik(page, []);
+    await oppnaSidan(page);
+
+    const tomlage = gruppen(page).getByText('Inget att visa ännu', { exact: true });
+    await expect(tomlage).toBeVisible();
+    await expect(tomlage).toHaveCSS('text-align', 'center');
+
+    // Höjd-paret: default-eventet är Planerat ⇒ Närvaro visar sitt tomläge
+    // på samma sida — de två tonala korten är exakt lika höga.
+    const narvaroKort = page
+      .locator('section[aria-labelledby="grupp-narvaro"]')
+      .getByTestId('grupp-kort');
+    await expect(
+      narvaroKort.getByText('Eventet är inte genomfört ännu', { exact: true }),
+    ).toBeVisible();
+    const gdKort = gruppen(page).getByTestId('grupp-kort');
+    const nBox = await narvaroKort.boundingBox();
+    const gBox = await gdKort.boundingBox();
+    expect(nBox?.height).toBe(gBox?.height);
   });
 });
