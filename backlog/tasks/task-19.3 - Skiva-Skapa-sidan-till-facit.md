@@ -4,7 +4,7 @@ title: 'Skiva: Skapa-sidan till facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 09:40'
+updated_date: '2026-07-23 10:36'
 labels:
   - ready-for-agent
 dependencies:
@@ -98,6 +98,11 @@ MERGAD (S75 batch 3, studs-läkningen): PR #80 → merge-commit 6e0a78c. PR-CI-r
 created: 2026-07-23 09:40
 ---
 Review-våg 3 (2026-07-23, PR #92): miranon.se-typsnittet — K81:s mono-adressgrammatik RIVEN på Marcus-direktiv (punkt 10): brödtextens typsnitt i font-medium. E2e-kontrakt på computed fontFamily/fontWeight. DoD #5 fortsatt öppen tills omgranskning.
+---
+
+created: 2026-07-23 10:36
+---
+Review-våg 5 (2026-07-23, PR #94): Skapa event-knappen dynamisk intent — primary oarmerad / success armerad publicering (K77:s statiska grön-form riven; dynamiska grön-regeln). E2e-låset omskrivet till båda lägena. DoD #5 fortsatt öppen tills omgranskning.
 ---
 <!-- COMMENTS:END -->
 

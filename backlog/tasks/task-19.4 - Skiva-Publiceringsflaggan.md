@@ -4,7 +4,7 @@ title: 'Skiva: Publiceringsflaggan'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-22 20:44'
+updated_date: '2026-07-23 10:36'
 labels:
   - ready-for-agent
 dependencies:
@@ -52,6 +52,15 @@ GRINDAR (lokalt, hårt grindade, allt i semafor-fönster): biome exit 0 · typec
 
 POST-CI-BOKFÖRING (merge-agent, S75-batchen): PR #83 mergad med merge-commit 67ad145 (aldrig squash). PR-CI run 29954677926 GRÖN per jobb (Detect changed files · Lint + Audit + TypeCheck · Docs link check · Staging sentinel purge · Test + Build · CI Passed or Skipped) — jobb-utfallen fil-lästa ur gh run view --json jobs. E2E-beviset ligger som STEG i Test + Build: 'E2E tests (staging)' success (233 passed / 3 skipped); 'API tests (staging)' success (134 passed); 'API tests (pure)' 190 passed; 'A11y tests' 62 passed; Build success. Test-count-delta mot senaste main-run med tester (32061af, run 29953409618): api-staging 132 -> 134 (+2 = kontraktstesterna armerad/oarmerad + deny fel typ), e2e 232 -> 233 (+1 = det skarpa armerings-blocket); api-pure och a11y oförändrade. MAIN-CI run 29955372036 på merge-commit 67ad145 GRÖN per jobb med identisk stegbild (233/3 e2e · 134 api-staging · 190 api-pure · 62 a11y · Build). Merge-tree mot färsk main gav exit 0 (ingen konflikt, inget upplösnings-mandat behövde tas). Claims-kvitto: 10/10 ändrade filer inom kortets deklarerade yta — noll fil utanför. Audit-läkningen 8f4aeb3 verifierad som ancestor till branchen före PR. OBEROENDE VERIFIERING (merge-agent, ej bygg-agentens ord): allowlist-namnet korsläst LIVE mot staging-schemat via Airtable-MCP describe_table — fältet 'Publicerad på miranon.se' (fldyJKnJCP1brHwL6) finns på Eventplanering tblVE3UKWl1CKrphV och matchar allowlist-strängen EXAKT. Utelämnande-formen verifierad i diffen i alla tre lagren (adapterns spread vid true · EF:ens fields-map vid true · schemats optional). GRANSKNINGSFÄRDIG — VÄNTAR DESIGN-REVIEW (MARCUS). Kortet står kvar In Progress; DoD 5 (design-review mot S73-facit-utökningen) och DoD 6 (facit-avprickningen) är Marcus-grindar och lämnas obockade. Ingen final-summary skriven, status INTE satt till Done — tvåstegs-stängningen (K61.1/T75) väntar på Marcus kvittens.
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-23 10:36
+---
+Review-våg 5 (2026-07-23, PR #94): prompten kortad till 'Dra för att publicera' (destinationen bärs av armerade läget 'Publiceras på miranon.se' + aria-label). DoD #5 fortsatt öppen tills omgranskning.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
