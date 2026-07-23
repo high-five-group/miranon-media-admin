@@ -1,3 +1,4 @@
+import type { PersonHistoryEntry } from '../schemas/PersonDetail.schema';
 import type {
   FlagStatusValue,
   PaymentStatusValue,
@@ -92,4 +93,22 @@ export interface Registration {
    * räknefält) — både i eventsidans summeringsrad och i listkortets rad (17.5).
    */
   borOver?: boolean;
+  /**
+   * Gruppdynamik-shapen (task-18.10; PRD task-18 beslut 12 — erfarenhetsmix +
+   * per-person-kurshistorik). ADDITIVT-OPTIONAL som fälten ovan; deployad
+   * get-registrations levererar dem i eventId-grenen som värde-eller-null.
+   *
+   * `erfarenhetsbadge` — PERSONENS kanoniska `Erfarenhetsbadge` (formel på
+   *   Personer), hämtad i samma person-batch som `antalGenomfordaEvent`. RÅ ur
+   *   basen — badgen är RIM 3-BLIND (data-model §Kända buggar i insiktskedjan);
+   *   den KÄNDA luckan (T16) visas som den är. null när Person-länk saknas eller
+   *   i den event-lösa grenen.
+   * `kurshistorik` — PERSONENS deltaganden, `PersonHistoryEntry`-shapen
+   *   ÅTERANVÄND ur get-person (ingen parallell kurshistorik-form). RÅA
+   *   per-session-rader; gruppdynamik-vyn härleder genomförda+deduperade kurser
+   *   klientside. null = ingen Person-länk / event-lösa grenen; [] = person utan
+   *   deltaganden.
+   */
+  erfarenhetsbadge?: string | null;
+  kurshistorik?: PersonHistoryEntry[] | null;
 }

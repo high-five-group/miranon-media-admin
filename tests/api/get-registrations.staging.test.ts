@@ -342,3 +342,103 @@ test.describe('get-registrations — bor över i läs-shapen (task-18.7)', () =>
     expect(registrations.filter((r) => r.borOver).length).toBe(ARBETSKO_EXPECTED.borOverAntal);
   });
 });
+
+// ── task-18.10: gruppdynamik-shapen (erfarenhetsbadge + kurshistorik) ─────────
+//
+// Två additiva LÄS-fält som eventsidans Gruppdynamik-avsnitt bygger på:
+//   erfarenhetsbadge — PERSONER.`Erfarenhetsbadge` (formel; RIM 3-BLIND — den
+//                      KÄNDA luckan T16 visas RÅ, designas aldrig bort) via
+//                      SAMMA person-batch som antalGenomfordaEvent.
+//   kurshistorik     — PERSONENS deltaganden (PersonHistoryEntry-shapen
+//                      återanvänd ur get-person) via en TREDJE chunkad record-ID-
+//                      batch mot Deltaganden. RÅA per-session-rader; vyn härleder
+//                      genomförda kurser klientside.
+//
+// Testar KONTRAKTET (fält-närvaro + värde-mappning + null-vägen), aldrig
+// implementationen. Fixturen är permanent (fixtures.ts) — LÄSER bara.
+// `ZZ-Arbetsko Person 01` bär EN Fjärrskådning-Deltagande (Närvarande, Dag 1) →
+// badge 'Fjärrskådare' + en kurshistorik-post; de tre Person-lösa anmälningarna
+// får badge + kurshistorik null (samma null-väg som antalGenomfordaEvent).
+test.describe('get-registrations — gruppdynamik-shapen (task-18.10)', () => {
+  test('väg D: erfarenhetsbadge + kurshistorik NÄRVARANDE på varje rad (aldrig undefined)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const { status, registrations } = await callGetRegistrations(
+      request,
+      config,
+      jwt,
+      ARBETSKO_EVENT_ID,
+    );
+    expect(status).toBe(200);
+    expect(registrations).toHaveLength(ARBETSKO_EXPECTED.antalAnmalningar);
+
+    // Schemat är additivt-OPTIONAL (äldre cachade svar ska parsa) — den deployade
+    // EF:en måste ändå leverera varje nyckel som värde-eller-null, aldrig utelämnad.
+    for (const reg of registrations) {
+      const raw = reg as unknown as Record<string, unknown>;
+      for (const key of ['erfarenhetsbadge', 'kurshistorik']) {
+        expect(raw, `rad ${reg.id}: nyckeln '${key}' saknas i svaret`).toHaveProperty(key);
+        expect(raw[key], `rad ${reg.id}: '${key}' får aldrig vara undefined`).not.toBeUndefined();
+      }
+    }
+  });
+
+  test('väg D: erfarenhetsbadge — kanonisk badge ur person-batchen (null utan Person-länk)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const { status, registrations } = await callGetRegistrations(
+      request,
+      config,
+      jwt,
+      ARBETSKO_EVENT_ID,
+    );
+    expect(status).toBe(200);
+    const byId = new Map(registrations.map((r) => [r.id, r]));
+
+    // Person-länkad rad bär personens RÅA badge; Person-lösa rader bär null.
+    // Skillnaden badge-vs-null på samma event är beviset att Personer LÄSTES
+    // (en konstant hade gett samma på båda).
+    expect(byId.get(ARBETSKO_EXPECTED.bekraftadId)?.erfarenhetsbadge).toBe(
+      ARBETSKO_EXPECTED.erfarenhetsbadge,
+    );
+    expect(byId.get(ARBETSKO_EXPECTED.obekraftadId)?.erfarenhetsbadge).toBeNull();
+    expect(byId.get(ARBETSKO_EXPECTED.manuellId)?.erfarenhetsbadge).toBeNull();
+  });
+
+  test('väg D: kurshistorik kommer ur DELTAGANDEN-batchen (PersonHistoryEntry-shape)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const { status, registrations } = await callGetRegistrations(
+      request,
+      config,
+      jwt,
+      ARBETSKO_EVENT_ID,
+    );
+    expect(status).toBe(200);
+    const byId = new Map(registrations.map((r) => [r.id, r]));
+
+    // Person-länkad rad: kurshistorik är en array med personens deltagande-poster
+    // (PersonHistoryEntry-shapen). Fixturpersonen bär EXAKT en (Fjärrskådning).
+    const bekraftad = byId.get(ARBETSKO_EXPECTED.bekraftadId);
+    expect(Array.isArray(bekraftad?.kurshistorik)).toBe(true);
+    expect(bekraftad?.kurshistorik).toHaveLength(1);
+    const post = bekraftad?.kurshistorik?.[0];
+    expect(post?.kursnamn).toBe(ARBETSKO_EXPECTED.kurshistorikKursnamn);
+    expect(post?.datum).toBe(ARBETSKO_EXPECTED.kurshistorikDatum);
+    expect(post?.session).toBe(ARBETSKO_EXPECTED.kurshistorikSession);
+    // narvaro speglar Närvaropoäng=1 (RÅ ur basen) — gruppdynamik-vyns
+    // genomförd-filter (narvaro && Session ∈ {Dag 1, Föreläsning}) vilar på den.
+    expect(post?.narvaro).toBe(true);
+
+    // Person-lös rad: kurshistorik null (vet ej), aldrig [] — samma null-väg
+    // som antalGenomfordaEvent/erfarenhetsbadge (en batch som INTE lästes).
+    expect(byId.get(ARBETSKO_EXPECTED.obekraftadId)?.kurshistorik).toBeNull();
+    expect(byId.get(ARBETSKO_EXPECTED.manuellId)?.kurshistorik).toBeNull();
+  });
+});

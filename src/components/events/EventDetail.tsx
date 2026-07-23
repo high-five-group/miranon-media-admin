@@ -12,6 +12,7 @@ import { Atgarder, CheckInKort } from './detail/Atgarder';
 import { Belaggning } from './detail/Belaggning';
 import { Betalningar } from './detail/Betalningar';
 import { Deltagare } from './detail/Deltagare';
+import { Gruppdynamik } from './detail/Gruppdynamik';
 import { Narvaro } from './detail/Narvaro';
 import { OmEventet } from './detail/OmEventet';
 
@@ -180,6 +181,13 @@ export function EventDetail({ eventId }: { eventId: string }) {
           REN LÄSNING (närvaro-write bor på check-in-sidan). Fetchar närvaron
           ENDAST för genomförda event (kommande event anropar aldrig EF:en). */}
       <Narvaro event={event} />
+
+      {/* Gruppdynamik (task-18.10; K63–K65): erfarenhetsmixen (summeringsrad +
+          sekventiell mätare + nivå-accordions med per-person-kurshistorik) +
+          motiveringarna som vita kort. Delar registrations.byEvent-cachen med
+          arbetskön (Deltagare) — React Query dedupar till EN fetch. Anteckningar
+          (18.11) blir sidans sista grupp EFTER denna. */}
+      <Gruppdynamik event={event} />
     </>,
   );
 }

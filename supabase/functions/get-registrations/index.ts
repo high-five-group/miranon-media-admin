@@ -10,11 +10,35 @@ import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 const TABLE_NAME = 'Anmälningar';
 const EVENTPLANERING_TABLE = 'Eventplanering';
 const PERSONER_TABLE = 'Personer';
+const DELTAGANDEN_TABLE = 'Deltaganden';
 
-// Personer-fältet arbetskön behöver (task-18.4): deltagarens Miranon-historik.
-// Formel (flddy8JND3YnlgZxe) = RIM 1 × + RIM 2 × + RIM 3 × + Fjärrskådning ×.
-// Fältet bor på PERSONER, inte på Anmälningar → kräver en andra tabell-läsning.
+// Personer-fälten arbetskön + gruppdynamiken behöver. Alla tre bor på PERSONER
+// (inte på Anmälningar) → hämtas i SAMMA person-batch (en projektion).
+//   `Antal genomförda event` (flddy8JND3YnlgZxe, formel) = RIM 1 × + RIM 2 × +
+//     RIM 3 × + Fjärrskådning × — arbetsköns räknare (task-18.4).
+//   `Erfarenhetsbadge` (fld04qqDQLgbJbBef, formel) = gruppdynamikens kanoniska
+//     erfarenhetsklass (task-18.10). RÅ ur basen: badgen är RIM 3-BLIND
+//     (data-model §Kända buggar) — den kända luckan (T16) visas som den är.
+//   `Deltaganden` (fld5shm9UER5CMyTl, länk) = personens deltagande-record-ID:n,
+//     ingången till kurshistorik-batchen (task-18.10).
 const PERSON_EVENTS_FIELD = 'Antal genomförda event';
+const PERSON_BADGE_FIELD = 'Erfarenhetsbadge';
+const PERSON_DELTAGANDEN_FIELD = 'Deltaganden';
+
+// Fält att hämta ur Deltaganden för gruppdynamikens per-person-kurshistorik
+// (task-18.10). SAMMA urval som get-person:s HISTORY_FIELDS → PersonHistoryEntry-
+// shapen återanvänds oförändrad (ingen parallell kurshistorik-form). Ett urval
+// håller batch-svaret litet; alla verifierade i live-schemat (tbldWHH6sSHWoQPHH).
+const HISTORY_FIELDS = [
+  'Kursnamn (lookup)',
+  'Eventlabel (text)',
+  'Event startdatum',
+  'Session',
+  'Status',
+  'Närvaropoäng',
+  'Event ort',
+  'Event typ',
+];
 
 // Max record-ID:n per batch-anrop (Anmälningar-ID:n). En chunk = en kort
 // `OR(RECORD_ID()=…)`-formel (≤50 IDs ≈ ~1.5 kB, väl under Airtables formel-/URL-
@@ -55,6 +79,29 @@ async function fetchByRecordIds(
     out.push(...records);
   }
   return out;
+}
+
+/**
+ * Mappar en Deltaganden-rad → en kurshistorik-post (PersonHistoryEntry-form).
+ * TECKENEXAKT spegel av get-person:s `mapHistoryEntry` — samma value-object, så
+ * gruppdynamikens `kurshistorik` och persondetaljens `historik` delar kontrakt.
+ * Alla fält är 1→1 per Deltagande (lookup/rollup av ETT event, eller egen
+ * singleSelect/formel) → explicit SKALÄR coercion (scalarString), aldrig
+ * array-droppande. `narvaro` speglar Närvaropoäng (1 = närvaro).
+ */
+function mapHistoryEntry(record: { id: string; fields: Fields }) {
+  const f = record.fields;
+  return {
+    id: record.id,
+    kursnamn: scalarString(f['Kursnamn (lookup)']),
+    eventLabel: scalarString(f['Eventlabel (text)']),
+    datum: scalarString(f['Event startdatum']),
+    session: scalarString(f['Session']),
+    status: scalarString(f['Status']),
+    narvaro: f['Närvaropoäng'] === 1,
+    ort: scalarString(f['Event ort']),
+    typ: scalarString(f['Event typ']),
+  };
 }
 
 function mapRegistration(record: { id: string; fields: Record<string, unknown> }) {
@@ -107,6 +154,12 @@ function mapRegistration(record: { id: string; fields: Record<string, unknown> }
     // ALLTID här så shapen är komplett även i den event-lösa grenen — nyckeln
     // finns, värdet är null (aldrig undefined).
     antalGenomfordaEvent: null as number | null,
+    // Gruppdynamik (task-18.10). Fylls i eventId-grenen: `erfarenhetsbadge` ur
+    // person-batchen (samma anrop som antalGenomfordaEvent), `kurshistorik` ur
+    // en tredje chunkad Deltaganden-batch. Sätts ALLTID här så shapen är
+    // komplett även i den event-lösa grenen (nyckeln finns, värdet null).
+    erfarenhetsbadge: null as string | null,
+    kurshistorik: null as ReturnType<typeof mapHistoryEntry>[] | null,
     eventId: Array.isArray(f['Event']) ? f['Event'][0] : null, // linked record → first ID
     personId: Array.isArray(f['Person']) ? f['Person'][0] : null, // linked record → first ID
   };
@@ -115,18 +168,27 @@ function mapRegistration(record: { id: string; fields: Record<string, unknown> }
 type Registration = ReturnType<typeof mapRegistration>;
 
 /**
- * Berikar anmälningarna med PERSONENS `Antal genomförda event` (task-18.4).
+ * Berikar anmälningarna med PERSONENS gruppdynamik-data (task-18.4 + task-18.10):
+ * `antalGenomfordaEvent`, `erfarenhetsbadge` och `kurshistorik`.
  *
- * Fältet bor på Personer, inte på Anmälningar. Läsningen sker med SAMMA
- * chunkade `OR(RECORD_ID()=…)`-batch som anmälningarna själva (get-person-/
- * get-attendance-mallen): unika person-ID:n → ceil(N/50) listanrop, ALDRIG ett
- * anrop per person. En projektion (`fields`) används här — till skillnad från
- * anmälnings-hämtningen behövs exakt ETT Personer-fält, och Personer är en bred
- * tabell (~90 fält).
+ * TVÅ chunkade `OR(RECORD_ID()=…)`-batchar (get-person-/get-attendance-mallen —
+ * ALDRIG ett anrop per person/deltagande, alltid ceil(N/50) listanrop):
+ *   1) PERSONER-batch (en projektion; Personer är ~90 fält): hämtar
+ *      `Antal genomförda event` + `Erfarenhetsbadge` (formelfält som bor på
+ *      Personer, inte Anmälningar) + `Deltaganden`-länken (ingången till batch 2).
+ *   2) DELTAGANDEN-batch: personernas samlade deltagande-record-ID:n hämtas i
+ *      EN chunkad batch → mappas till PersonHistoryEntry (RÅA per-session-rader,
+ *      samma kontrakt som get-person:s historik). Gruppdynamik-vyn härleder
+ *      genomförda+deduperade kurser klientside.
  *
- * Anmälningar utan Person-länk (manuella/+1 innan A2 kopplat dem) behåller null:
- * "vet ej" är sanningen, aldrig 0 (0 betyder "första eventet" i UI:t).
- * Muterar raderna på plats — de är EF-lokala objekt ur mapRegistration.
+ * ASYMMETRI (medveten, bokförd i header-docen): körs ENDAST i eventId-grenen.
+ * Den event-lösa grenen hämtar hela basens anmälningar — en person/deltagande-
+ * batch där vore O(hela basen) läsanrop per request utan konsument.
+ *
+ * NULL-SEMANTIKEN: anmälan utan Person-länk (manuella/+1 innan A2 kopplat dem)
+ * behåller null på alla tre fälten — "vet ej" är sanningen, aldrig 0/"" (0
+ * betyder "första eventet" i UI:t, [] betyder "inga deltaganden"). Muterar
+ * raderna på plats — de är EF-lokala objekt ur mapRegistration.
  */
 async function berikaPersonhistorik(registrations: Registration[]): Promise<void> {
   const personIds = [
@@ -134,19 +196,55 @@ async function berikaPersonhistorik(registrations: Registration[]): Promise<void
   ];
   if (personIds.length === 0) return;
 
-  const personer = await fetchByRecordIds(PERSONER_TABLE, personIds, [PERSON_EVENTS_FIELD]);
-  const antalPerPerson = new Map<string, number | null>(
-    personer.map((p) => {
-      const raw = p.fields[PERSON_EVENTS_FIELD];
-      // Formelfält kan beräknas till NaN/Infinity och levereras då som OBJEKT
-      // ({ specialValue }) — endast ändliga tal passerar (coerce-familjens regel).
-      return [p.id, typeof raw === 'number' && Number.isFinite(raw) ? raw : null];
-    }),
-  );
+  // 1) PERSONER-batch — räknare + badge + deltagande-länkar i EN projektion.
+  const personer = await fetchByRecordIds(PERSONER_TABLE, personIds, [
+    PERSON_EVENTS_FIELD,
+    PERSON_BADGE_FIELD,
+    PERSON_DELTAGANDEN_FIELD,
+  ]);
+  const antalPerPerson = new Map<string, number | null>();
+  const badgePerPerson = new Map<string, string | null>();
+  const deltagandeIdsPerPerson = new Map<string, string[]>();
+  for (const p of personer) {
+    const raw = p.fields[PERSON_EVENTS_FIELD];
+    // Formelfält kan beräknas till NaN/Infinity och levereras då som OBJEKT
+    // ({ specialValue }) — endast ändliga tal passerar (coerce-familjens regel).
+    antalPerPerson.set(p.id, typeof raw === 'number' && Number.isFinite(raw) ? raw : null);
+    // Erfarenhetsbadge är en formel-STRÄNG (SWITCH); tom/objekt → null.
+    const badge = p.fields[PERSON_BADGE_FIELD];
+    badgePerPerson.set(p.id, typeof badge === 'string' && badge !== '' ? badge : null);
+    deltagandeIdsPerPerson.set(
+      p.id,
+      Array.isArray(p.fields[PERSON_DELTAGANDEN_FIELD])
+        ? (p.fields[PERSON_DELTAGANDEN_FIELD] as string[])
+        : [],
+    );
+  }
+
+  // 2) DELTAGANDEN-batch — alla personers deltaganden i EN chunkad läsning.
+  //    En Map<deltagandeId, entry> så varje persons historik kan återskapas i
+  //    länkens ordning (Personer.Deltaganden). Personen behöver inte bära
+  //    reverse-länken `Person (länk)` på raden — vi vet redan vilka ID:n hör vart.
+  const allaDeltagandeIds = [...new Set([...deltagandeIdsPerPerson.values()].flat())];
+  const entryPerId = new Map<string, ReturnType<typeof mapHistoryEntry>>();
+  if (allaDeltagandeIds.length > 0) {
+    for (const d of await fetchByRecordIds(DELTAGANDEN_TABLE, allaDeltagandeIds, HISTORY_FIELDS)) {
+      entryPerId.set(d.id, mapHistoryEntry(d));
+    }
+  }
 
   for (const r of registrations) {
     if (r.personId != null) {
       r.antalGenomfordaEvent = antalPerPerson.get(r.personId) ?? null;
+      r.erfarenhetsbadge = badgePerPerson.get(r.personId) ?? null;
+      // Personen fanns i batchen ⇒ kurshistorik är en (ev. tom) array; annars null.
+      const ids = deltagandeIdsPerPerson.get(r.personId);
+      r.kurshistorik = ids
+        ? ids.flatMap((id) => {
+            const e = entryPerId.get(id);
+            return e ? [e] : [];
+          })
+        : null;
     }
   }
 }
@@ -177,12 +275,15 @@ function byInskickadDesc(a: Registration, b: Registration): number {
  * EVENT-LÖSA GRENEN (eventId saknas): OFÖRÄNDRAD — serverside filterByFormula via
  * buildEqualsFilter (status/flagga) + fetchFromAirtable med Inskickad-desc-sort. 404:ar INTE.
  *
- * DELTAGAR-SHAPEN (task-18.4): utöver Anmälningar-fälten bär eventId-grenen även
- * PERSONENS `Antal genomförda event` via en andra chunkad record-ID-batch mot
- * Personer (berikaPersonhistorik). ASYMMETRIN ÄR MEDVETEN OCH BOKFÖRD: den
- * event-lösa grenen hämtar HELA basens anmälningar (Hem-vyn/anmälningslistan) —
- * en person-batch där vore O(hela basen) läsanrop per request utan konsument.
- * Där lämnas `antalGenomfordaEvent` null; nyckeln finns alltid i shapen.
+ * DELTAGAR-SHAPEN (task-18.4 + task-18.10): utöver Anmälningar-fälten bär
+ * eventId-grenen PERSONENS gruppdynamik-data via TVÅ chunkade record-ID-batchar
+ * i berikaPersonhistorik — en mot Personer (`Antal genomförda event` +
+ * `Erfarenhetsbadge` + `Deltaganden`-länken) och en mot Deltaganden (personernas
+ * kurshistorik, PersonHistoryEntry-shapen återanvänd ur get-person). ASYMMETRIN
+ * ÄR MEDVETEN OCH BOKFÖRD: den event-lösa grenen hämtar HELA basens anmälningar
+ * (Hem-vyn/anmälningslistan) — batcharna där vore O(hela basen) läsanrop per
+ * request utan konsument. Där lämnas `antalGenomfordaEvent`/`erfarenhetsbadge`/
+ * `kurshistorik` null; nycklarna finns alltid i shapen.
  *
  * ATOMICITET: event-fetch + Anmälningar-batch är ICKE-atomär — acceptabelt för en admin-
  * läsvy, medvetet utan snapshot-isolering (samma disciplin som get-attendance/get-person).

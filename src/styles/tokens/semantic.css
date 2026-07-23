@@ -73,6 +73,19 @@
   --mm-kurs-rim3: var(--p-red-500);
   --mm-kurs-annat: var(--p-neutral-500);
 
+  /* ── Erfarenhetsmixens sekventiella skala (task-18.10; gruppdynamik) ──
+     En SEKVENTIELL skala (mörkare = mer erfaren) — medvetet skild från
+     kurs-/kategorifärgernas KVALITATIVA kulörer (de svarar "vilken kurs",
+     denna svarar "hur mycket"). Neutral lightness-ramp: kromatiskt distinkt
+     från alla kurs-/kategori-kulörer (som är blå/grön/koppar/röd/guld) och
+     respekterar fokusringens exklusiva #1B4965 (--p-blue-700 rörs aldrig).
+     Dekorativ (mätarsegment/streck är aria-hidden; antalet står som TEXT —
+     färg är aldrig ensam bärare). Riktvärdet är 3 nivåer: ny → mellan →
+     erfaren. Spec: DESIGN-SYSTEM-SPEC §17. */
+  --mm-erfarenhet-ny: var(--p-neutral-300);
+  --mm-erfarenhet-mellan: var(--p-neutral-500);
+  --mm-erfarenhet-erfaren: var(--p-neutral-700);
+
   /* ── Knappar ── */
   --mm-btn-primary-bg: var(--p-neutral-800);
   --mm-btn-primary-text: var(--p-neutral-0);

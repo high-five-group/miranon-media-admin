@@ -88,4 +88,16 @@ export const ARBETSKO_EXPECTED = {
   antalAnmalningar: 4,
   /** Antal ikryssade `Bor över` på eventet (endast bekraftadId) — 17.5:s facit. */
   borOverAntal: 1,
+  /**
+   * Gruppdynamik-shapen (task-18.10). `ZZ-Arbetsko Person 01` (bekraftadId:s
+   * person) bär den kanoniska `Erfarenhetsbadge` 'Fjärrskådare' (formeln ur
+   * EN Fjärrskådning-Deltagande) och EN kurshistorik-post. De tre andra
+   * anmälningarna saknar Person-länk → badge + kurshistorik null (samma
+   * null-väg som antalGenomfordaEvent). Live-verifierat mot staging 2026-07-23
+   * (person rec7F8jYc7rczwwkM · Deltagande recQWjimysYJrkY0n).
+   */
+  erfarenhetsbadge: 'Fjärrskådare',
+  kurshistorikKursnamn: 'Fjärrskådning',
+  kurshistorikDatum: '2025-10-20',
+  kurshistorikSession: 'Dag 1',
 } as const;
