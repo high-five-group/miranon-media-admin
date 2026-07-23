@@ -1,6 +1,6 @@
 import { fetchAirtableRecord, fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
-import { scalarString, selectName } from '../_shared/coerce.ts';
+import { scalarNumber, scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 
@@ -21,6 +21,10 @@ const ATTENDANCE_FIELDS = [
   'Person (länk)',
   'Event',
   'Anmälan',
+  // Närvaropoäng (task-18.9, fldwuo94BY46VUOm4) — basens formel: 1 om Status ∈
+  // {Närvarande, Deltog online}, annars 0. Närvaro-registret läser poängen RÅ ur
+  // basen (aldrig klient-omräknad) så registrets % matchar rollup-kedjan exakt.
+  'Närvaropoäng',
 ];
 
 // Max record-ID:n per batch-anrop (gäller BÅDA batcharna: Deltaganden-ID:n och
@@ -71,6 +75,7 @@ function mapAttendance(record: { id: string; fields: Fields }) {
     status: selectName(f['Status']), // singleSelect → enum-namn
     noteringar: scalarString(f['Noteringar']), // multilineText (skalär)
     avstamt: scalarString(f['Avstämt']), // dateTime (skalär ISO-sträng)
+    narvaropoang: scalarNumber(f['Närvaropoäng']), // formel → 0/1 (poäng-mappningen rå ur basen)
   };
 }
 

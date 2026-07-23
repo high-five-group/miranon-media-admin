@@ -29,4 +29,15 @@ export const AttendanceSchema = z.object({
   status: z.enum(AttendanceStatus).nullable(),
   noteringar: z.string().nullable(),
   avstamt: z.string().nullable(),
+  // Närvaropoäng (task-18.9) — basens `Närvaropoäng`-formel (fldwuo94BY46VUOm4):
+  // 1 om Status ∈ {Närvarande, Deltog online}, annars 0. LÄST rå ur basen
+  // (scalarNumber) så närvaro-registret räknar EXAKT samma poäng som rollup-kedjan
+  // (all kurshistorik räknas uppåt härifrån) — vyn får aldrig räkna närvaro
+  // annorlunda än basen. `.optional()` (ej required som personNamn): den DEPLOYADE
+  // staging-EF:en returnerar Närvaropoäng först efter den separata, Marcus-
+  // auktoriserade EF-deployen (DoD #7) — ett required-fält hade fällt
+  // get-attendance.staging-conformance-parsen mot den icke-deployade EF:en
+  // (additiv-optional-formen för delade shapes). `.nullable()` bär scalarNumbers
+  // specialValue-fallback (NaN/Infinity-objekt → null).
+  narvaropoang: z.number().nullable().optional(),
 });
