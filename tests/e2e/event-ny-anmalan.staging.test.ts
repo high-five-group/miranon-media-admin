@@ -144,13 +144,21 @@ test.describe('Manuell anmälan-sidan — skarp (task-18.12)', () => {
     await expect(page.getByRole('heading', { level: 2, name: 'Deltagare' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 2, name: 'Anmälan' })).toBeVisible();
 
-    // Facit-formens sex fält.
-    await expect(page.getByLabel('Förnamn (obligatorisk)')).toBeVisible();
-    await expect(page.getByLabel('Efternamn (obligatorisk)')).toBeVisible();
-    await expect(page.getByLabel('E-post (obligatorisk)')).toBeVisible();
-    await expect(page.getByLabel('Mobilnummer')).toBeVisible();
+    // Facit-formens sex fält. MÄRKNINGS-REGELN (K84, review-våg 7): normen är
+    // att fältet krävs → markera UNDANTAGEN, inte normen. Samma regel som
+    // CreateEventForm följer (där allt krävs ⇒ ingen märkning alls); här är de
+    // två frivilliga fälten märkta "(valfritt)" och de obligatoriska omärkta.
+    // isRequired står kvar på de tre — skärmläsaren annonserar "obligatorisk"
+    // via plattformen, så a11y-golvet bärs av semantiken, inte av etikett-text.
+    await expect(page.getByLabel('Förnamn', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Efternamn', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('E-post', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Mobilnummer (valfritt)')).toBeVisible();
     await expect(page.getByLabel('Antal platser')).toBeVisible();
-    await expect(page.getByLabel('Notering')).toBeVisible();
+    await expect(page.getByLabel('Notering (valfritt)')).toBeVisible();
+
+    // Ingen "(obligatorisk)"-text får finnas kvar någonstans på sidan.
+    await expect(page.getByText('(obligatorisk)')).toHaveCount(0);
 
     // Knappraden: primär först.
     await expect(page.getByRole('button', { name: 'Spara anmälan' })).toBeVisible();
@@ -163,14 +171,14 @@ test.describe('Manuell anmälan-sidan — skarp (task-18.12)', () => {
     const getBody = await mockEndpoints(page, { createStatus: 201 });
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
-    await page.getByLabel('Förnamn (obligatorisk)').fill('Ny');
-    await page.getByLabel('Efternamn (obligatorisk)').fill('Manuell');
-    await page.getByLabel('E-post (obligatorisk)').fill('ny@example.se');
-    await page.getByLabel('Mobilnummer').fill('070-1234567');
+    await page.getByLabel('Förnamn', { exact: true }).fill('Ny');
+    await page.getByLabel('Efternamn', { exact: true }).fill('Manuell');
+    await page.getByLabel('E-post', { exact: true }).fill('ny@example.se');
+    await page.getByLabel('Mobilnummer (valfritt)').fill('070-1234567');
     // Antal platser: default 1 → öka till 3 via stepparen (RAC NumberField).
     await page.getByRole('button', { name: 'Öka' }).click();
     await page.getByRole('button', { name: 'Öka' }).click();
-    await page.getByLabel('Notering').fill('Ringde in — betalar via faktura.');
+    await page.getByLabel('Notering (valfritt)').fill('Ringde in — betalar via faktura.');
 
     await page.getByRole('button', { name: 'Spara anmälan' }).click();
 
@@ -178,6 +186,20 @@ test.describe('Manuell anmälan-sidan — skarp (task-18.12)', () => {
     await expect(page.getByRole('heading', { level: 2, name: 'Deltagare' })).toBeHidden();
     await expect(page.getByTestId('bekraftelse')).toBeVisible();
     await expect(page.getByText('Anmälan sparad')).toBeVisible();
+
+    // BEKRÄFTELSE-COPYN MOT BELÄGGNINGS-MODELLEN (review-våg 7): texten ska
+    // säga vad som HÄNDE i domänens egna ord — att platserna nu är RESERVERADE
+    // (ORDLISTA "Reserverad plats"; mocken bär antalPlatser 3 ⇒ plural) och att
+    // anmälan står OBEKRÄFTAD tills bekräftelsen skickas (ORDLISTA
+    // Obekräftad/Bekräftad). Den interna fält-jargongen "källan Manuell" är
+    // borta: Källa är spårbarhet, och den syns där den hör hemma — som pillen
+    // "Manuellt tillagd" i arbetskön.
+    await expect(
+      page.getByText('Ny Manuell är anmäld och har 3 platser reserverade.', { exact: false }),
+    ).toBeVisible();
+    await expect(page.getByText(/obekräftad tills du skickar bekräftelsen/i)).toBeVisible();
+    await expect(page.getByText('källan Manuell')).toHaveCount(0);
+
     await expect(page.getByRole('button', { name: 'Tillbaka till eventet' })).toBeVisible();
 
     // POST-kroppen bar de nya fälten (Källa/EventKey/Event sätts server-side, ej i kroppen).
@@ -194,9 +216,9 @@ test.describe('Manuell anmälan-sidan — skarp (task-18.12)', () => {
     await mockEndpoints(page, { createStatus: 409 });
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
-    await page.getByLabel('Förnamn (obligatorisk)').fill('Ny');
-    await page.getByLabel('Efternamn (obligatorisk)').fill('Manuell');
-    await page.getByLabel('E-post (obligatorisk)').fill('ny@example.se');
+    await page.getByLabel('Förnamn', { exact: true }).fill('Ny');
+    await page.getByLabel('Efternamn', { exact: true }).fill('Manuell');
+    await page.getByLabel('E-post', { exact: true }).fill('ny@example.se');
     await page.getByRole('button', { name: 'Spara anmälan' }).click();
 
     await expect(page.getByRole('alert')).toContainText('redan anmäld');
@@ -209,8 +231,8 @@ test.describe('Manuell anmälan-sidan — skarp (task-18.12)', () => {
     const getBody = await mockEndpoints(page, { createStatus: 201 });
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
-    await page.getByLabel('Förnamn (obligatorisk)').fill('Ny');
-    await page.getByLabel('Efternamn (obligatorisk)').fill('Manuell');
+    await page.getByLabel('Förnamn', { exact: true }).fill('Ny');
+    await page.getByLabel('Efternamn', { exact: true }).fill('Manuell');
     // E-post lämnas tom.
     await page.getByRole('button', { name: 'Spara anmälan' }).click();
 
