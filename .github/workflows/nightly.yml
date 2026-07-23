@@ -1,0 +1,158 @@
+---
+name: Nightly
+
+# Nattnätet (task-36.2 / T85 våg 2a, ADR-077): post-submit-nätet som gör
+# presubmit-selektionen (D1/dedup, task-36.3/36.4) försvarbar. Kör hela
+# repot i full bredd när kön är tom och mutexen fri — allt som dagens
+# selektion hoppade över prövas senast inom ett dygn. Rött ⇒ automatiskt,
+# tilldelat ärende (kyrkogårds-motgift: CONTRIBUTING § Nattnätet — stängs
+# aldrig tyst).
+
+on:
+  schedule:
+    # 01:00 UTC ≈ 03:00 Europe/Stockholm (CEST, sommar) / 02:00 (CET, vinter).
+    # GitHub-cron saknar tidszon; ~03:00 är avsiktligt approximativt (tom kö
+    # nattetid oavsett DST-glidningen).
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: >-
+          true = tvinga larm-jobbet att fyra även om sviten är grön (bevisar
+          larmkedjan utan en äkta röd natt; städa test-ärendet med motivering).
+        type: boolean
+        default: false
+
+# Least-privilege default (ADR-029 §4); larm-jobbet höjer själv till issues:write.
+permissions: {}
+
+# En nattkörning avbryts aldrig mitt i (cancel-in-progress OSATT).
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  # Full tung svit via EN KÄLLA (delad med ci.yml). Ovillkorat: natten kör
+  # allt (github.actor = schemaläggaren, aldrig dependabot → inner-skippen
+  # biter inte). Staging-jobbet tar den delade staging-tests-mutexen.
+  suite:
+    name: Nattlig fullsvit
+    uses: ./.github/workflows/ci-suite.yml
+    secrets: inherit
+
+  # Bredare sårbarhetsgranskning än dagsvitens (daglig: audit-ci.jsonc high:true).
+  # Natten sänker tröskeln till moderate → fångar advisories som dagsviten
+  # medvetet släpper förbi, vid en tidpunkt då ingen väntar på svaret.
+  nightly-audit:
+    name: Bredare sårbarhetsgranskning
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies (moderate — bredare än dagsvitens high)
+        run: npx audit-ci --moderate
+
+  # Länkkontroll UTAN cache — dagsviten cachar (cache-lychee-v2) för fart;
+  # natten kör kall för att fånga länk-röta som en varm cache skulle dölja.
+  # Scopet är AVSIKTLIGT identiskt med ci.yml:s docs-jobb (lychee-args); en
+  # framtida konsolidering till lychee-konfigfil är noterad men ej byggd (YAGNI).
+  nightly-links:
+    name: Länkkontroll (utan cache)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Run lychee link check (no cache)
+        # SHA-pin per ADR-029 §6 — samma pin som ci.yml docs-jobbet.
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8  # v2.9.0
+        with:
+          args: >-
+            --no-progress
+            --verbose
+            --header "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            --exclude-path docs/archive
+            --exclude-path docs/reference/pocock
+            './docs/**/*.md'
+            './tasks/*.md'
+            './tasks/sessions/*.md'
+            './tasks/threads/*.md'
+            './*.md'
+          fail: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Larmkedjan: fyrar vid RÖD natt (eller simulate_failure-dispatch). Skapar
+  # ett tilldelat, etiketterat ärende med körningslänk + commit-spann sedan
+  # senaste GRÖNA natt. Grön natt ⇒ jobbet skippas ⇒ inget ärende, inga spår
+  # (AC#4). issues:write endast här.
+  alarm:
+    name: Larm vid röd natt
+    needs: [suite, nightly-audit, nightly-links]
+    if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || inputs.simulate_failure) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Skapa nattärende (tilldelat, etiketterat, med spann)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SERVER: ${{ github.server_url }}
+          RUN_ID: ${{ github.run_id }}
+          CURRENT_SHA: ${{ github.sha }}
+          SIMULATED: ${{ inputs.simulate_failure }}
+        run: |
+          set -euo pipefail
+          run_url="${SERVER}/${REPO}/actions/runs/${RUN_ID}"
+
+          # Senaste GRÖNA nattkörning (exkl. denna) → commit-spann.
+          last_green=$(gh run list --workflow nightly.yml --branch main \
+            --status success --limit 1 --json headSha \
+            --jq '.[0].headSha // ""' || echo "")
+
+          if [ -n "${last_green}" ] && [ "${last_green}" != "${CURRENT_SHA}" ]; then
+            span="[\`${last_green:0:7}...${CURRENT_SHA:0:7}\`](${SERVER}/${REPO}/compare/${last_green}...${CURRENT_SHA})"
+          else
+            span="_(ingen tidigare grön nattkörning — hela historiken fram till \`${CURRENT_SHA:0:7}\`)_"
+          fi
+
+          note=""
+          if [ "${SIMULATED}" = "true" ]; then
+            note=$'\n\n> ⚠️ **SIMULERAT** via `simulate_failure`-dispatch — larmkedje-test, ingen äkta regression. Stäng med denna motivering.'
+          fi
+
+          title="🌙 Nattnätet rött — $(date -u +%F)"
+          body="Den schemalagda nattkörningen (\`nightly.yml\`) blev röd.
+
+          - **Körning:** ${run_url}
+          - **Commit-spann sedan senaste gröna natt:** ${span}
+          - **HEAD:** \`${CURRENT_SHA}\`
+
+          Stängningsregel (CONTRIBUTING § Nattnätet): detta ärende stängs ENDAST med (a) en åtgärd som fixar grundorsaken eller (b) en öppet skriven motivering — aldrig tyst.${note}"
+
+          gh issue create \
+            --repo "${REPO}" \
+            --title "${title}" \
+            --body "${body}" \
+            --label ci-natt \
+            --assignee marcus803

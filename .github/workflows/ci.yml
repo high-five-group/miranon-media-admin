@@ -293,244 +293,19 @@ jobs:
             .checklist-policy.conf \
             .frontmatter-policy.conf
 
-  # Job 3: Heavy test-suite + build. Conditional på changed-detection.
-  # Per ADR-029 §1c. Skippas helt på doc-only-commits (~70s spill eliminerat).
-  purge:
-    name: Staging sentinel purge
+  # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
+  # delad med nightly.yml; task-36.2 / ADR-077). Villkorat på changed-
+  # detection: HELA svit-anropet skippas på doc-only-commits
+  # (should_skip_tests) → aggregatorn ser 'suite: skipped' (tolererat).
+  # secrets: inherit → staging-secrets når inner-jobben (bevisat via spike
+  # 2026-07-23, run 30036119790). Dependabot-hanteringen bor INNE i
+  # ci-suite.yml (per-jobb) — test-fast måste köra även för dependabot.
+  suite:
+    name: Test suite
     needs: changed
-    # Samma grind som staging-stegen: hoppar docs-only (should_skip_tests)
-    # och Dependabot (ADR-031 Lager 3 — Dependabot-runs saknar Actions-
-    # secrets och rör aldrig staging; test-jobbet tolererar 'skipped').
-    if: needs.changed.outputs.should_skip_tests != 'true' && github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        # Medvetet UTAN explicit fetch-depth-config: jobbet kör enbart
-        # purge-skriptet + policy-filen och behöver ingen git-historik.
-        # fetch-depth-invarianten (ADR-039/ADR-054,
-        # scripts/check-fetch-depth-invariant.sh) räknar EXAKT 3 config-rader
-        # (changed/lint/docs; test-jobbens rad utgick vid S77-splitten —
-        # inga historik-beroende skript där) — detta jobb står utanför
-        # bärar-mängden by design; lägg ALDRIG en sådan config-rad här utan
-        # att uppdatera EXPECTED_CI_CARRIERS + ADR-039.
-
-      - name: Setup Node
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version-file: '.nvmrc'
-
-      # Setup-purge FÖRE test (ADR-060 punkt 3–4, wirad via TASK-16):
-      # sentinel-rader äldre än ålders-guarden raderas ur staging-basen INNAN
-      # staging-jobbet skapar nya. EGET jobb = egen runner-VM med EGEN secret —
-      # test-jobbet ser aldrig Airtable-token (EF-only-gränsen, ADR-060
-      # punkt 2+4). Ålders-guarden (60 min, .purge-staging-policy.json)
-      # skyddar in-flight-körningar — därför behöver jobbet INTE
-      # staging-tests-mutexen (den täcker ändå bara CI↔CI, inte CI↔lokal).
-      # STAGING_AIRTABLE_TOKEN = least-privilege-PAT scopad till ENBART
-      # staging-basen (data.records:read+write) — kan aldrig röra prod ens
-      # vid läcka.
-      - name: Purge staging sentinels
-        run: node scripts/purge-staging-sentinels.mjs
-        env:
-          STAGING_AIRTABLE_TOKEN: ${{ secrets.STAGING_AIRTABLE_TOKEN }}
-
-  # Jobben 3a-3c: gamla Test+Build-jobbet SPLITTAT (S77 våg 1;
-  # processgranskningen 2026-07-23 § 4 + Codes verifikation): mutexen
-  # staging-tests bars tidigare av HELA jobbet (~10 min mätt, run
-  # 30012389097) fast endast staging-stegen (~6 min) rör den delade
-  # miljön. Efter splitten: staging-mutexen bärs ENDAST av test-staging;
-  # pure/build/a11y rapporterar parallellt (~2-3 min första-fel-signal)
-  # och köar aldrig bakom staging.
-  test-fast:
-    name: Pure + Build
-    needs: changed
-    if: needs.changed.outputs.should_skip_tests != 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        # Medvetet UTAN fetch-depth-config (purge-jobbets mönster): jobbet
-        # kör inga historik-beroende skript. Invarianten (ADR-039/ADR-054)
-        # räknar EXAKT 3 config-rader (changed/lint/docs) — detta jobb står
-        # utanför bärar-mängden by design.
-
-      - name: Setup Node
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: API tests (pure)
-        run: npm run test:api:pure
-
-      - name: Build
-        run: npm run build
-
-  a11y:
-    name: A11y (axe-runner)
-    needs: changed
-    # A11y-runnern rör ALDRIG staging (egen alltid-färsk dev-server på
-    # dedikerad port, ADR-045 beslut 1+3) → ingen mutex. Dependabot-skip
-    # på JOBB-nivå per ADR-031 Lager 3 (secrets-isolation).
-    if: needs.changed.outputs.should_skip_tests != 'true' && github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        # Medvetet UTAN fetch-depth-config — samma rationale som test-fast;
-        # utanför bärar-mängden (ADR-039).
-
-      - name: Setup Node
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      # Cache Playwright browsers (~150MB) per ADR-029 §1c. Samma nyckel
-      # som test-staging — först färdiga jobbet värmer, det andra hit:ar.
-      # hashFiles(package-lock.json) ger atomic cache-key vs full deps-state.
-      - name: Cache Playwright browsers
-        uses: actions/cache@v6.1.0
-        id: playwright-cache-a11y
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install Playwright Chromium
-        # Skippar --with-deps per Vite-mönstret (verifierat 2026-05-13;
-        # ubuntu-latest har Playwright OS-libs förinstallerade; historik i
-        # gamla Test+Build-jobbets kommentar, git-blame före S77-splitten).
-        run: npx playwright install chromium
-
-      # A11y-runner per ADR-045 beslut 1+3: PLAYWRIGHT_TEST_BASE_URL lämnas
-      # OSATT så webServer-blocket i playwright.config.ts startar Vite
-      # dev-servern — /dev/primitives är DEV-guardad (ADR-044) och finns
-      # inte i staging-build. VITE_*-env krävs av @t3-oss/env-core-
-      # valideringen vid dev-server-boot.
-      - name: A11y tests (axe-runner)
-        run: npm run test:a11y
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
-
-  test-staging:
-    name: Staging (API + E2E)
-    # needs purge: setup-purgen (ADR-060 punkt 3–4) ska ha kört FÖRE
-    # staging-stegen. Villkoret tolererar 'skipped' (dependabot/docs-only)
-    # men INTE 'failure' — röd purge stoppar sviten synligt (halt-first).
-    needs: [changed, purge]
-    # Dependabot-skip på JOBB-nivå (ADR-031 Lager 3): jobbet startar
-    # aldrig för dependabot-runs och tar därmed aldrig mutex-plats.
-    # ADR-073-amendering 2:s VILLKORLIGA grupp (depbot-<run_id>) är
-    # därmed RETIRERAD (S77): ett jobb som aldrig startar köar aldrig —
-    # samma invariant "aldrig två staging-rörande runs samtidigt",
-    # definitionellt, utan uttrycket.
-    if: ${{ !cancelled() && needs.changed.outputs.should_skip_tests != 'true' && github.actor != 'dependabot[bot]' && (needs.purge.result == 'success' || needs.purge.result == 'skipped') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
-    permissions:
-      contents: read
-    # Staging-stegen delar EN staging-miljö — samtidiga runs är
-    # TASK-6-kollisionen på CI-nivå (ADR-073 beslut 4). Gruppen
-    # serialiserar jobbet över alla staging-rörande runs (PR ∥ PR och
-    # PR ∥ main-push); queue: max köar väntande FIFO. cancel-in-progress
-    # medvetet OSATT (krav för queue: max; en startad staging-svit
-    # avbryts aldrig mitt i). Defense-in-depth BAKOM orkestratorns
-    # seriella PR→CI→merge-kedja — komplement-beslutet S66 Del 2.
-    # Slutarkitekturen är per-run-dataisolering (våg 3,
-    # processgranskningen § 6); mutexen är interim.
-    concurrency:
-      group: staging-tests
-      queue: max
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        # Medvetet UTAN fetch-depth-config — samma rationale som test-fast;
-        # utanför bärar-mängden (ADR-039).
-
-      - name: Setup Node
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v6.1.0
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install Playwright Chromium
-        run: npx playwright install chromium
-
-      # ADR-031 Lager 3 (Alt D Hybrid): staging kräver Actions-secrets som
-      # Dependabot-workflows saknar (by-design supply-chain-defense per
-      # GitHub Docs) — därav jobb-nivå-skippet ovan. Dep-bump-regression
-      # fångas via pure-tests + typecheck + biome + build +
-      # lint-grindvakterna. Etablerad Session 6.6.5 K3 (2026-05-16).
-      - name: API tests (staging)
-        run: npm run test:api:staging
-        env:
-          STAGING_REQUIRED: '1'
-          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-          TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
-          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
-          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
-          TEST_REGISTRATION_RECORD_ID: ${{ secrets.TEST_REGISTRATION_RECORD_ID }}
-
-      - name: E2E tests (staging)
-        run: npm run test:e2e:staging
-        env:
-          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-          TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
-          VITE_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
-
-      # Playwright-artefakter vid RÖTT e2e-steg. Config:en producerar redan
-      # trace (on-first-retry), screenshot (only-on-failure) och video
-      # (retain-on-failure) — men de kastades med runnern, så ett CI-only-fel
-      # gick bara att gissa sig till. Empiriskt fångat 2026-07-22 (S75 batch 3):
-      # task-19.3 föll på 401 i CI, var grönt lokalt, och traces fanns inte att
-      # hämta. global-teardown.ts har redan purgat klartext-lösenord ur
-      # error-context.md (ADR-061 pelare 3, T29) innan uppladdningen sker.
-      - name: Ladda upp Playwright-artefakter vid rött e2e
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-e2e-artefakter
-          path: |
-            test-results/
-            playwright-report/
-          retention-days: 7
-          if-no-files-found: ignore
+    if: ${{ needs.changed.outputs.should_skip_tests != 'true' }}
+    uses: ./.github/workflows/ci-suite.yml
+    secrets: inherit
 
   # Job 4: Markdown link validation. Conditional på docs-changes.
   # Per ADR-029 §1d. Ny kvalitets-check som inte fanns innan ("höjer kvaliten").
@@ -663,12 +438,13 @@ jobs:
   # automationen; signalen aktiverad här. Cancelled-gotchan (Commit 1.5:
   # per-job-cancellation osynlig för cancelled()) täcks av samma
   # needs-läsning: cancelled ⇒ explicit fail.
-  # Fail-grenens gate-proof: riktad workflow_dispatch i våg 2a (öppen
-  # bevis-skuld, bokförd i sessionsdok S77 Del 4 + T85).
+  # Fail-grenens gate-proof: gate-proof.yml (task-36.1, levererad S78) —
+  # bevis-skulden BETALD (tvåsidigt: run 30032296699 grön + self-test
+  # 30032299223 röd). Kör gate-proof.yml efter varje ci.yml-ändring (T85).
   ci-passed:
     name: CI Passed or Skipped
     if: ${{ always() }}
-    needs: [changed, lint, test-fast, a11y, test-staging, docs, purge]
+    needs: [changed, lint, docs, suite]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     permissions: {}

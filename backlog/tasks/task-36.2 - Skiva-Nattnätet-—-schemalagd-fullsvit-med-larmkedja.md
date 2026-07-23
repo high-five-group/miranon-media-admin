@@ -1,9 +1,10 @@
 ---
 id: TASK-36.2
 title: 'Skiva: Nattnätet — schemalagd fullsvit med larmkedja'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-23 17:12'
+updated_date: '2026-07-23 19:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,19 +29,19 @@ Täcker användarberättelser: 7, 8, 9
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 En schemalagd körning startar varje natt (~03:00 svensk tid) och kan även avfyras manuellt
-- [ ] #2 Nattkörningen kör full svit inklusive staging-stegen i mutexen, länkkontroll UTAN cache och bredare sårbarhetsgranskning än dagsvitens
+- [x] #2 Nattkörningen kör full svit inklusive staging-stegen i mutexen, länkkontroll UTAN cache och bredare sårbarhetsgranskning än dagsvitens
 - [ ] #3 En röd nattkörning skapar automatiskt ett ärende: tilldelat, etiketterat, med länk till körningen och commit-spannet sedan senaste GRÖNA nattkörning
 - [ ] #4 Ett grönt nattnät skapar inget ärende och lämnar inga spår som kräver städning
-- [ ] #5 Stängningsregeln står i bidragsguiden: ett nattärende stängs endast med åtgärd eller öppet skriven motivering — aldrig tyst
+- [x] #5 Stängningsregeln står i bidragsguiden: ett nattärende stängs endast med åtgärd eller öppet skriven motivering — aldrig tyst
 - [ ] #6 Beviset är en manuellt avfyrad körning med citerat körnings-ID; nattens schemalagda inväntas inte
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Statiska workflow-grindar gröna på ändrad CI-konfiguration (actionlint, yamllint, shellcheck strict)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Statiska workflow-grindar gröna på ändrad CI-konfiguration (actionlint, yamllint, shellcheck strict)
 - [ ] #6 L322-invarianten oregresserad: paraply-checken har alltid-kör-villkoret ENSAMT och exit:ar 1 vid failure/cancelled
 <!-- DOD:END -->
