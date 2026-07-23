@@ -291,8 +291,10 @@ export function Gruppdynamik({ event }: { event: Event }) {
   if (totalt === 0 && roster.length === 0) {
     return (
       <DetaljGrupp id="grupp-gruppdynamik" rubrik="Gruppdynamik">
-        <p className="py-3 text-small text-text-muted">
-          Ingen erfarenhetsmix att visa än — inga klassificerbara deltagare eller motiveringar.
+        {/* Review-våg 2 (2026-07-23): centrerad muted-text + samma min-h som
+            Närvaros tomläge — tomma kort ser lika stora ut. */}
+        <p className="flex min-h-28 items-center justify-center text-center text-small text-text-muted">
+          Inget att visa ännu
         </p>
       </DetaljGrupp>
     );

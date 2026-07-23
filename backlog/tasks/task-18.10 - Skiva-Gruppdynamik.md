@@ -4,7 +4,7 @@ title: 'Skiva: Gruppdynamik'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 02:14'
+updated_date: '2026-07-23 09:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -72,6 +72,15 @@ AFK-BATCH MERGE-AGENT HALT (steg 5 — PR-CI-vakten per jobb) 2026-07-23. PR #88
 
 MERGAD (S75 batch 4, orkestrator-läkt halt): PR #88 → merge-commit a0f1c9b. PR-CI-run 29973467803 GRÖN PER JOBB (6/6 fil-lästa: detect · lint+audit+typecheck · sentinel purge · docs link check [den som föll — nu grön] · Test + Build [e2e-beviset] · CI Passed). Halten var markdownlint-slip i docs-fil, ej kod (kod grön hela vägen). Kortet GRANSKNINGSFÄRDIGT — In Progress, DoD #5 (design-review mot facit) + DoD #6 öppna. Done-flippen är Marcus.
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-23 09:08
+---
+Review-våg 2 (2026-07-23): tomläget — FACIT-REVIDERING ('Inget att visa ännu' centrerat muted ersätter vänsterställda erfarenhetsmix-raden) + gemensam fast minimihöjd med Närvaro-kortet (min-h-28, e2e-låst). PR #91. OBS: gruppdynamik-datat Marcus granskade kan ha varit STALE (get-registrations-redeployen 2026-07-23) — omgranskning i färskt läge. DoD #5 fortsatt öppen.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

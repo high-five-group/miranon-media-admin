@@ -6,7 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-23 08:55'
-labels: []
+updated_date: '2026-07-23 09:23'
+labels:
+  - ready-for-agent
 dependencies: []
 parent_task_id: TASK-18
 ordinal: 84000
@@ -15,14 +17,20 @@ ordinal: 84000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Marcus review-våg 2 (2026-07-23), lyft vid 18.6-granskningen: global semantisk knapp-regel — handlingar som NÅR UTOMSTÅENDE (mail/SMS till deltagare o.dyl.) bär intent success (grön); handlingar som stannar i appen bär mörkgrå standard (primary). 'Bekräfta alla' är redan grön och blir regelns första instans. Kodifieras i DESIGN-SYSTEM-SPEC (§Button-intents) + app-bred intent-audit (känd avvikare: personkortets 'Skicka bekräftelse'-knapp i kortbotten är idag omarkerad och blir grön under regeln). KONFLIKT att avgöra FÖRE bygge: 'Skapa event' är success-grön per S73-facit K77 (svärtan läste för tungt) men når INTE utomstående — (A) regeln vinner, Skapa event flippas mörkgrå (K77 rivs öppet) · (B) Skapa event undantas öppet i regeltexten · (C) annat. Beslutsrymden är Marcus designbeslut (grillning vid behov).
+Marcus review-våg 2 (2026-07-23), lyft vid 18.6-granskningen; SCOPE-UTÖKAD + designbesluten AVGJORDA 2026-07-23 på delegerad senior-order ('Du är senior … Jag kvitterar det du kvitterar som branschledarsenior' — Del 4-precedentets orderklass, tolkningen öppet bokförd i Del 15). SKIVAN = SAMLAD KNAPP-STANDARD: (1) INTENT-REGELN — handlingar som NÅR UTOMSTÅENDE (mail/SMS till deltagare o.dyl.) bär intent success (grön); interna handlingar mörkgrå standard (primary). K77-KONFLIKTEN AVGJORD: A — regeln vinner, 'Skapa event' flippas till primary och S73-facit K77 rivs ÖPPET (semantisk färgregel utan ad-hoc-undantag; upplevd svärta hanteras i så fall på token-nivå, aldrig per undantag; lätt återvändo bokförs). Känd avvikare in i regeln: personkortets 'Skicka bekräftelse' → success. (2) STORLEKS-REGLERNA — användningsregler för primitivens skala sm/md/lg (32/40/48) per ytklass (primärflöden md/lg, kort/rader sm; ACCESSIBILITY-CHECKLIST §2-golvet) kodifieras i DESIGN-SYSTEM-SPEC §Button. (3) APP-BRED AUDIT av samtliga knappytor mot båda regelverken, avvikare flippas, berörda e2e uppdateras. Exekveras i ordinarie backlog-ordning (ingen gräddfil).
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Marcus-beslut bokfört: regelformuleringen + K77-konflikten (A/B/C) — ev. facit-revidering rivs öppet
-- [ ] #2 Vid bifall: regeln kodifierad i DESIGN-SYSTEM-SPEC + intent-audit över appens samtliga knappytor utförd och bokförd; avvikare flippade per regeln; berörda e2e uppdaterade i samma skiva
+- [x] #1 Marcus-beslut bokfört: regelformuleringen + K77-konflikten (A/B/C) — ev. facit-revidering rivs öppet
+- [ ] #2 Intent-regeln + storleks-reglerna kodifierade i DESIGN-SYSTEM-SPEC §Button (K77-rivningen öppet bokförd med återvändo-not)
+- [ ] #3 App-bred knapp-audit utförd och bokförd: avvikare flippade per båda regelverken ('Skapa event' → primary; 'Skicka bekräftelse' → success; fler ur auditen)
+- [ ] #4 Berörda e2e uppdaterade i samma skiva (inkl. skapa-sidans K77-lås)
 <!-- AC:END -->
+
+
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

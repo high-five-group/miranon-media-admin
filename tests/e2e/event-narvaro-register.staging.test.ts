@@ -221,10 +221,11 @@ test.describe('Närvaro-registret på eventsidan (task-18.9)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
     const sektion = narvaroSektion(page);
-    // Lugnt ej-genomfört-läge — registret monteras inte.
-    await expect(
-      sektion.getByText('Eventet är inte genomfört ännu — närvaron fylls i vid check-in.'),
-    ).toBeVisible();
+    // Lugnt ej-genomfört-läge — registret monteras inte. Review-våg 2
+    // (Marcus 2026-07-23): texten kortad (svansen riven), centrerad gråad.
+    const tomlage = sektion.getByText('Eventet är inte genomfört ännu', { exact: true });
+    await expect(tomlage).toBeVisible();
+    await expect(tomlage).toHaveCSS('text-align', 'center');
     await expect(sektion.getByText('Total närvaro')).toHaveCount(0);
     await expect(sektion.getByRole('table')).toHaveCount(0);
     // Kommande event får ALDRIG anropa get-attendance (noll e2e-rippel-motivet).

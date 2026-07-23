@@ -4,7 +4,7 @@ title: 'Skiva: Närvaro-registret'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 00:42'
+updated_date: '2026-07-23 09:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -54,6 +54,15 @@ Genomförda event visar närvaron som register: attendance-shapen utökas till p
 - DoD #3 (CI grön per jobb på pushad commit) bockad på denna grund.
 - Claims-kvitto (merge-agent, oberoende disk-verifiering): diff 471b7f0..c1fe336 = 9/9 filer inom kortets deklarerade yta (7 M + 2 A, 0 D). RIV INGENTING respekterad — standalone /narvaro-route + EventAttendance.tsx orörda (rivning tas separat, per byggagentens bokförda avvikelse ovan).
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-23 09:08
+---
+Review-våg 2 (2026-07-23): tomläget — FACIT-REVIDERING (svansen '— närvaron fylls i vid check-in' riven; texten kortad, centrerad, muted) + gemensam fast minimihöjd med Gruppdynamik-kortet (min-h-28, e2e-låst korthöjds-par). PR #91. DoD #5 fortsatt öppen tills omgranskning.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

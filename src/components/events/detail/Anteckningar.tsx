@@ -154,11 +154,7 @@ function Strommen({ event }: { event: Event }) {
   }
 
   if (notes.length === 0) {
-    return (
-      <p className="text-caption text-text-muted">
-        Inga anteckningar ännu — det du skriver här sparas med tidpunkt och namn.
-      </p>
-    );
+    return <p className="text-caption text-text-muted">Inga anteckningar ännu</p>;
   }
 
   return (

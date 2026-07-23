@@ -238,11 +238,9 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
     await mockSidan(page, { notes: [] });
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(
-      gruppen(page).getByText(
-        'Inga anteckningar ännu — det du skriver här sparas med tidpunkt och namn.',
-      ),
-    ).toBeVisible();
+    // Review-våg 2 (Marcus 2026-07-23): "Inga anteckningar ännu" och inget
+    // mer — förklarings-svansen riven.
+    await expect(gruppen(page).getByText('Inga anteckningar ännu', { exact: true })).toBeVisible();
   });
 
   test('läs-fel: get-event-notes 500 → role=alert i gruppen, resten av sidan intakt', async ({

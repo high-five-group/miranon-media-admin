@@ -4,7 +4,7 @@ title: 'Skiva: Personkorten (metaytan + historiken)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-22 20:15'
+updated_date: '2026-07-23 09:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -186,6 +186,15 @@ Kortet står kvar **In Progress**. DoD #5 (design-review mot S73-facit
 i webbläsaren) är den enda öppna punkten och är Marcus handling;
 Done-flippen sker efter hans granskning (ADR-071 beslut 3).
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-23 09:08
+---
+Review-våg 2 (2026-07-23): två utfall. (1) Anmäld-raden: PRD task-18 p18:s olänkad-beslut RIVET ÖPPET — facit-K62-formen (understruken 'Öppna anmälan'-yta) återinförd som no-op i PR #91; länkmålet föds i 18.17. AC #2:s e2e omskrivet. (2) Historikraden: STALE LÄGE — raden fanns i bygget; staging-EF:en get-registrations föregick historik-berikningen. Batchens 10 EF:er staging-redeployade 2026-07-23 → omgranskning i färskt läge. DoD #5 fortsatt öppen.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
