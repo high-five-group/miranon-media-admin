@@ -383,4 +383,24 @@ test.describe('Hantera-flödet — bekräftelse-vertikalen (task-18.6)', () => {
     await expect(knapp).toBeVisible();
     await expect(knapp).toHaveCSS('border-radius', '4px');
   });
+
+  test('review-våg 3: Bekräfta alla sitter med SAMMA inset åt alla håll i obekräftade-baren', async ({
+    page,
+  }) => {
+    // Marcus (2026-07-23): lika långt avstånd till barens kanter åt alla
+    // håll. Baren är knappens farförälder (handling-slotten → rubrik-raden);
+    // mäts som boundingRect-inset — topp/botten ≈ höger.
+    await mocka(page, eventDetail());
+    await oppnaEventsidan(page);
+    const knapp = gruppen(page).getByRole('button', { name: 'Bekräfta alla obekräftade' });
+    await expect(knapp).toBeVisible();
+    const inset = await knapp.evaluate((el) => {
+      const bar = (el.parentElement as HTMLElement).parentElement as HTMLElement;
+      const b = el.getBoundingClientRect();
+      const r = bar.getBoundingClientRect();
+      return { top: b.top - r.top, bottom: r.bottom - b.bottom, right: r.right - b.right };
+    });
+    expect(inset.right).toBeCloseTo(inset.top, 0);
+    expect(inset.right).toBeCloseTo(inset.bottom, 0);
+  });
 });

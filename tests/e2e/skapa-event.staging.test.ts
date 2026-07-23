@@ -455,4 +455,22 @@ test.describe('Skapa nytt event — SKARPT mot staging (AC #1)', () => {
     // är eventsidans kontrakt, inte detta korts).
     await expect(page.getByRole('button', { name: 'Till eventet', exact: true })).toBeVisible();
   });
+
+  test('review-våg 3: miranon.se i brödtextens typsnitt med medium-vikt — mono-formen riven (K81)', async ({
+    page,
+  }) => {
+    // Marcus (2026-07-23): domänen ska bära samma typsnitt som övrig text,
+    // viktad något fetare (500). K81:s mono-adressgrammatik rivs öppet.
+    await page.goto('/event/skapa');
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+
+    const doman = page.getByText('miranon.se', { exact: true }).first();
+    await expect(doman).toBeVisible();
+    const stil = await doman.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { family: s.fontFamily, weight: s.fontWeight };
+    });
+    expect(stil.family).not.toMatch(/mono/i);
+    expect(stil.weight).toBe('500');
+  });
 });
