@@ -4,7 +4,7 @@ title: 'Skiva: Anteckningar (egen ADR + additiv tabell + strömmen)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 03:58'
+updated_date: '2026-07-23 09:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -57,6 +57,15 @@ HALT vid steg 5 (PR-CI-vakten). PR #89, CI-run 29977396636 (pull_request). ROD C
 
 MERGAD (S75 batch 5, orkestrator-läkt halt + staging-deploy): PR #89 → merge-commit 3962cc9. PR-CI-run 29977902924 GRÖN PER JOBB (6/6: de två jobb som föll [Lint+Audit+TypeCheck biome/ADR-count · Docs link check markdownlint] nu gröna + Test + Build med conformance-sviterna mot deployade EF). AC #1 bockad (conformance NU grön mot deployade EF). GRANSKNINGSFÄRDIG — In Progress, DoD #5 (design-review + ADR-075-granskning) + prod-EF-deploy öppna. **PROD-DEPLOY KVAR (Marcus): create-event-note + get-event-notes till PROD** (staging deployad + ACTIVE v1; .prod-functions-allowlist.conf ej rörd, fail-closed). Done-flippen är Marcus.
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-23 09:08
+---
+Review-våg 2 (2026-07-23): tomläget — FACIT-REVIDERING (svansen '— det du skriver här sparas…' riven; 'Inga anteckningar ännu' och inget mer). PR #91. DoD #5 fortsatt öppen tills omgranskning.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

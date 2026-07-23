@@ -4,7 +4,7 @@ title: 'Skiva: Listvyn till S72-facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-22 11:50'
+updated_date: '2026-07-23 09:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -50,6 +50,11 @@ Review-fix-vågen LEVERERAD (PR #78): 'X av Y platser reserverade' på listkorte
 created: 2026-07-22 11:50
 ---
 Delfrågan STÄNGD (2026-07-22): beläggningsradens namn beslutat 'Extra platser' (PR #79) — termkollisionen som flaggades i denna korts review-kommentar är därmed helt löst; ORDLISTA-posten uppdaterad.
+---
+
+created: 2026-07-23 09:08
+---
+Review-våg 2 (2026-07-23): vy-växlingshoppet lista↔kalender klassat FACIT-REVIDERING — S72:s öppna <lg-avvägning riven (Marcus-vetot: layout-hopp absolut förbjudet). Fix i PR #91: scrollbar-gutter-gränsen lg → sm (base.css) + e2e-kontrakt i events-list-kalender-sviten. DoD #5 fortsatt öppen tills omgranskning.
 ---
 <!-- COMMENTS:END -->
 

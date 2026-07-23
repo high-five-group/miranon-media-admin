@@ -4,7 +4,7 @@ title: 'Skiva: Hantera-flödet (bekräftelse-vertikalen + Bekräfta alla)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:20'
-updated_date: '2026-07-22 21:27'
+updated_date: '2026-07-23 09:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -185,6 +185,15 @@ Claims-kvitto: 21/21 filer i `9b87d5d..cf4ecdc` inom kortets deklarerade yta —
 
 GRANSKNINGSFÄRDIG — väntar design-review (Marcus). Kortet står kvar In Progress; DoD #5 (design-review mot S73-facit i webbläsaren) är Marcus att bocka. Ingen final-summary skriven, status Done sätts INTE av merge-agenten.
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-23 09:08
+---
+Review-våg 2 (2026-07-23): Bekräfta alla-rundningen — FACIT-REVIDERING (K47-pillens rounded-lg matchade facit; Marcus: primitivens rundning gäller, konsekvens över appen). Fix i PR #91 + e2e-lås 4 px. Grön intent orörd — blir första instansen av grön-knapp-regeln (18.16). DoD #5 fortsatt öppen tills omgranskning.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

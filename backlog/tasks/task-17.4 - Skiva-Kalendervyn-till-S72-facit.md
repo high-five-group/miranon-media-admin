@@ -4,7 +4,7 @@ title: 'Skiva: Kalendervyn till S72-facit'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-22 10:41'
+updated_date: '2026-07-23 09:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -45,6 +45,11 @@ Review-våg 1 (Marcus 2026-07-22), fyra punkter på kalender-ytan före DoD #5: 
 created: 2026-07-22 10:41
 ---
 Review-fix-vågen LEVERERAD (PR #78 → merge a0ce2eb; main-run 29912258901 grön per jobb): (1) table-fixed — likbreda dagkolumner (defekten läkt); (2) idag FK-ringmarkerad runt siffran (IMG_1590; currentColor-ring, formburen); (3) vald dag: mörk markeringsram, guld-plattan RIVEN — S72-facit-revideringen öppet bokförd i kod- och e2e-docstrings; (4) toggle-avval (klick/Enter på vald dag) ersatte Visa hela månaden-knappen per Marcus-beslut 3=A. Toggle-mekaniken: klonad value-prop bryter instans-identiteten som tystade onChange (useControlledState-guarden mot stabila cell-instanser; empiriskt rött→grönt). Nya e2e: likbredds-mätning · idag-ring · toggle pekare+tangentbord. DoD #5 STÅR ÖPPEN — Marcus omgranskar i webbläsaren efter omladdning.
+---
+
+created: 2026-07-23 09:08
+---
+Review-våg 2 (2026-07-23): vy-växlingshoppet lista↔kalender (sid-scrollbaren försvinner i kalenderläget) — FACIT-REVIDERING av S72:s scrollbar-avvägning, fix i PR #91 (gutter ≥ sm + rött-först-e2e). DoD #5 fortsatt öppen tills omgranskning.
 ---
 <!-- COMMENTS:END -->
 
