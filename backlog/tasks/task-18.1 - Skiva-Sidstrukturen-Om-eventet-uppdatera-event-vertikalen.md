@@ -4,7 +4,7 @@ title: 'Skiva: Sidstrukturen + Om eventet + uppdatera-event-vertikalen'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:19'
-updated_date: '2026-07-22 10:41'
+updated_date: '2026-07-23 10:21'
 labels:
   - ready-for-agent
 dependencies: []
@@ -46,6 +46,11 @@ Review-våg 1 (Marcus 2026-07-22): countdown-raden under eventnamnet godkänd so
 created: 2026-07-22 10:41
 ---
 Review-fix-vågen LEVERERAD (PR #78): countdown-raden bär 'X ... kvar till eventet' villkorat på nedräkningsformerna — basens formel fldcwlblR3JQxXVbe MCP-verifierad till exakt tre utfall (Avslutat | N dagar | N vecka/veckor [och M dagar]); Avslutat renderas rå, e2e-pinnat i båda grenarna. BIFYND (T16-klass, till data-model-synken i end-passet): formelns IS_AFTER-gren klassar även själva EVENTDAGEN som Avslutat. DoD #5 STÅR ÖPPEN — omgranskning.
+---
+
+created: 2026-07-23 10:21
+---
+Review-våg 4 (2026-07-23, PR #93): datumSpannText (K10) fick samma-månad-kollapsen — '15–16 augusti 2026' i stället för '15 augusti – 16 augusti 2026' (Marcus punkt 12; svenska skrivregler, tätt tankstreck). Cross-månad-/årsformerna orörda. DoD #5 fortsatt öppen tills omgranskning.
 ---
 <!-- COMMENTS:END -->
 
