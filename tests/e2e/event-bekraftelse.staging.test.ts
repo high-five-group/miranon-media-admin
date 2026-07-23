@@ -400,7 +400,11 @@ test.describe('Hantera-flödet — bekräftelse-vertikalen (task-18.6)', () => {
       const r = bar.getBoundingClientRect();
       return { top: b.top - r.top, bottom: r.bottom - b.bottom, right: r.right - b.right };
     });
-    expect(inset.right).toBeCloseTo(inset.top, 0);
-    expect(inset.right).toBeCloseTo(inset.bottom, 0);
+    // Empiri (run 29997158867): höger 4 px (pr-1) · topp/botten 4,5 px —
+    // barens höjd är 41 px (py-2.5 + text-smalls line-height) och ett udda
+    // tal kan aldrig ge perfekt symmetri kring 32 px-knappen. Kravet är
+    // VISUELL likhet: inom en pixel. Före fixen var diffen 4 px (pr-2).
+    expect(Math.abs(inset.right - inset.top)).toBeLessThanOrEqual(1);
+    expect(Math.abs(inset.right - inset.bottom)).toBeLessThanOrEqual(1);
   });
 });
