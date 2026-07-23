@@ -100,7 +100,7 @@
   (sex vågor, 16 AC) · `lifecycle: closed` · S76 STÄNGD. **NÄSTA
   ARBETE = NY YTA: S75-resume, work-batch 12.**
 
-### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-23; paus 5 — FEM fix-vågor levererade [PR #91–#94], 21 granskningsfärdiga, protokollet → Done-flippar → 18.13 → QA → prod-deploy → session-end vid resume) — Batch-exekveringen: work-batch max 22, två pipelines
+### Session 75 🟢 PÅGÅR (2026-07-21 → 2026-07-23; paus 5 återupptagen 2026-07-23 — omgransknings-protokollet → Done-flippar → 18.13 → QA → prod-deploy → session-end) — Batch-exekveringen: work-batch max 22, två pipelines
 
 > Scope: sessionsdok `2026-07-21-session-75.md` Del 1 (kanonisk
 > plats): exekvera Marcus batch-order AFK (ordern ordagrant i S74
@@ -423,6 +423,20 @@
   fullt HANDOFF. **NÄSTA: NY Code-yta → `/session-resume` på S75 →
   Marcus git pull + protokollet → kvittenser/Done-flippar → 18.13 →
   QA → prod-deploy → session-end (N+1).**
+- [x] **ÅTERUPPTAGEN, FEMTE RESUMEN** (2026-07-23, Marcus-order "Vi kör
+  `/session-resume` på S75" i färsk Code-yta, Del 17): `lifecycle:
+  paused → active` + PAUSLÄGE-rubriken → Paushistorik-form +
+  PÅGÅR-rubrik; numrering re-verifierad mot färsk disk — **INGEN
+  mellansession förbrukade nummer**, handoffens värden håller: ADR
+  **076** (075 sist) · **L311** (L310 sist) · **T84** (T83 sist) ·
+  fälla **45** (44 sist) · **TASK-35** (task-34 sist). Repo rent på
+  `04e60cd` med **grön run** (fjärde pausens saknade-run-divergens
+  återkom EJ), audit-ci PASSED, 0 task-brancher; leverans-läget
+  CLI-verifierat oförändrat (21 In Progress · 0 Done-flippar · 18.13
+  HÅLLET · QA-korten To Do). **NÄSTA: omgransknings-protokollet
+  (bilagan) — Marcus git pull + dev-omstart → fyra ytor → "NN
+  ok"-kvittenser → Done-flippar löpande → 18.13 A/B → QA-korten →
+  prod-deploy-vågen → session-end (N+1).**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 
