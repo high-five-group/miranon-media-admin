@@ -437,6 +437,27 @@
   (bilagan) — Marcus git pull + dev-omstart → fyra ytor → "NN
   ok"-kvittenser → Done-flippar löpande → 18.13 A/B → QA-korten →
   prod-deploy-vågen → session-end (N+1).**
+- [x] **PROTOKOLLET STÄNGT + 18.13 + PROD-BASEN SPEGLAD** (2026-07-23, Del
+  17–18): omgranskningen klar **21/21 kort Done** över fyra ytor (Marcus
+  kvitterade yta för yta) · **fix-våg 6** PR #95 rev det GLOBALA
+  sidleds-hoppet (React Arias inline `scrollbar-gutter: stable` river vår
+  `both-edges` vid varje overlay-öppning — author-!important är motmedicinen)
+  · **fix-våg 7** PR #96 (bekräftelse-copyn mot beläggnings-modellen +
+  märkningen till K84) · **PR #97** rev ACCESSIBILITY-CHECKLIST-raden öppet
+  på Marcus-beslut A och ersatte den med den tvådelade regeln (programmatiskt
+  alltid + visuellt på undantagen; GOV.UK-mönstret) · **TASK-18.13** PR #98
+  (prototyp-substratet rivet, växlaren fick `/dev/prototyper` per beslut B;
+  de tre "döda ytorna" står KVAR per beslut A efter att typecheck avslöjat
+  levande konsumenter) · **QA-korten 17.6/18.14/19.5 Done** (Marcus körde
+  testplanerna) · **PROD-BASENS BAS-DEL UTFÖRD** (Marcus "Ja, kör"): nio
+  additiva ändringar — Anteckningar-tabellen + 5 fält på Anmälningar + 3 på
+  Eventplanering, samtliga verifierade med återläsning och bokförda med
+  prod-ID:n i data-model.md; `Väntelista (länkat fält)` medvetet EJ speglad
+  (prods fält är singleLineText → typkonvertering, ej additivt). **NÄSTA:
+  EF-delen SKJUTEN till eget pass (T39 i full omfattning: 11 av 13 prod-EF:er
+  ligger flera versioner efter + notes-EF:erna saknas; T40:s prod-smoke ej
+  uppsatt) → session-end (N+1) med full skörd. FYND: test-auth ligger i prod
+  trots allowlist-förbudet.**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 

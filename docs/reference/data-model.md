@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-20
+updated: 2026-07-23
 review_by: 2026-11-15
 status: stable
 ---
@@ -88,6 +88,44 @@ app8uGPrVCVOm6LfD
 | Instagram Posts | `tblMpQI1crF521Xsp` | 1 | **Tom strukturell behållare** — bara `Name` (singleLineText). |
 
 **18 tabeller. 358 fält totalt 2026-04-28.** Källa: `02-live-state.md` §1–§2.
+
+#### Prod-basens additiva tillskott 2026-07-23 (S75 prod-deploy-vågen)
+
+Event-familjens bygge (TASK-17/18/19) skapade fält i STAGING först per
+ADR-063/ADR-050. Prod-speglingen utfördes 2026-07-23 som Marcus-auktoriserad
+handling — **enbart additivt, ingen befintlig data eller något befintligt fält
+rördes.** Fält-ID:n skiljer sig mellan baserna (Airtable tilldelar per bas);
+EF-lagret adresserar därför fält på NAMN, aldrig ID (ADR-050:s
+portabilitetsval — verifierat vid denna vågs forensik: `Idempotensnyckel` bär
+olika ID i staging och prod).
+
+| Yta | Prod-ID | Typ | Skiva |
+|---|---|---|---|
+| **Anteckningar** (ny tabell) | `tblaUhH1KF9k9imul` | Författare + Anteckning + Event-länk | 18.11 / ADR-075 |
+| Eventplanering → `Anteckningar` | `fldBhALs9OxAfj2Kv` | auto-fött spegelfält till tabellen ovan | 18.11 |
+| Anmälningar → `Bor över` | `fld4Flif4NoFnNsxS` | checkbox | 18.7 |
+| Anmälningar → `Notering anmälningsavgift` | `fldf60miCtMuP45WO` | multilineText | 18.8 |
+| Anmälningar → `Notering slutbetalning` | `fldJyDlJWudYwBdxi` | multilineText | 18.8 |
+| Anmälningar → `Påminnelse anmälningsavgift skickad` | `fldPAI0k3tRAmrJfR` | dateTime | 18.8 |
+| Anmälningar → `Påminnelse slutbetalning skickad` | `fldYhYamzVOVnEb0Q` | dateTime | 18.8 |
+| Eventplanering → `Publicerad på miranon.se` | `fldrjj61ovL3Zv1mN` | checkbox | 19.4 |
+| Eventplanering → `Deltagarinfo schemalagd` | `flddBo4RPJvluWuQw` | date (ISO) | 18.6 |
+| Eventplanering → `Deltagarinfo auto-utskick avstängt` | `fldoIwNdetKHkIeaL` | checkbox | 18.6 |
+
+**KVARSTÅENDE DIVERGENS — `Väntelista (länkat fält)` speglades MEDVETET INTE.**
+Staging bär den som auto-fött inverse till `Väntelista.Event (länk)`. I PROD är
+`Väntelista.Event` (`fldC01Nf3lVWrOgdw`) fortfarande **singleLineText** — att
+skapa länken i prod hade antingen lagt ett andra Event-fält bredvid textfältet
+eller krävt en TYPKONVERTERING av ett fält med skarp data, vilket inte är en
+additiv operation. Divergensen är alltså inte en glömska utan en gräns:
+staging-basen har konverterat fältet, prod har inte. Får konsekvensen att
+get-event-EF:ens Väntelista-räkning inte kan läsa prod förrän fältet
+harmoniserats — egen Marcus-auktoriserad operation, kandidat för
+bas-maximeringen (T16).
+
+Fält som INTE behövde speglas (fanns redan i prod): `Antal platser`,
+`Notering` (Anmälningar) och `Närvaropoäng` (Deltaganden, `fldwuo94BY46VUOm4`
+— samma ID i båda baserna).
 
 ### Aktiva event
 
