@@ -42,6 +42,27 @@ body {
       scrollbar-color): smal, dämpad tumme på transparent spår i stället
       för default-blockets visuella popp. Tumfärgen håller 1.4.11-golvet
       ≥3:1 (egen styling = eget kontrast-ansvar; se --mm-scrollbar-thumb).
+   3. !important FÖRSVARAR symmetrin mot React Arias scroll-lås (review-våg
+      6, Marcus-fångst 2026-07-23 på skapa-sidans väljare). Rotorsak, källäst
+      i react-aria/dist/private/overlays/usePreventScroll.mjs rad 51–55: när
+      en modal overlay öppnas (Select-popover, Dialog, Modal) sätter
+      preventScrollStandard() INLINE på <html> — men endast när scrollbaren
+      tar layoutplats (innerWidth − clientWidth > 0, dvs. klassiska
+      scrollbars) — scrollbarGutter: 'stable' + overflow: 'hidden'. Deras
+      värde är den ENKELSIDIGA formen, och en inline-deklaration slår vanlig
+      author-CSS i kaskaden → vänsterrännstenen rivs i öppningsögonblicket
+      och hela sidan hoppar i sidled (uppmätt: centrerat innehåll halva
+      rännstensbredden, vänsterställt hela — 11 px). Det är samma hopp-klass
+      som Marcus-vetot i review-våg 2 träffade, men via en mekanism som
+      RIVER den fixen, i varje overlay i appen. author !important är den
+      ENDA nivån som besegrar en inline-deklaration (CSS Cascade §6.2:s
+      uttryckliga syfte) — därav undantaget från "inga !important". Deras
+      överflow: hidden lämnas orörd: gutters reserveras även på en
+      overflow-hidden scroll-container, så låset gör sitt jobb medan vår
+      symmetri står kvar. MOBILT (< 640) är regeln medvetet FRÅNVARANDE och
+      React Arias enkelsidiga kompensation gör där rätt sak: den håller
+      högerrännstenen medan scrollbaren är borttagen, vilket är precis vad
+      som behövs när ingen rännsten är reserverad från början.
    Overlay-scrollbars (macOS-default) tar ingen layoutplats och påverkas
    inte — där finns varken hoppet eller poppet. */
 html {
@@ -51,7 +72,9 @@ html {
 
 @media (min-width: 640px) {
   html {
-    scrollbar-gutter: stable both-edges;
+    /* !important: se punkt 3 ovan — försvarar symmetrin mot React Arias
+       inline scrollbar-gutter: stable vid overlay-öppning. */
+    scrollbar-gutter: stable both-edges !important;
   }
 }
 
