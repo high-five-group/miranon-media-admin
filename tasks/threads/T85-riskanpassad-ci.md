@@ -38,10 +38,34 @@ i samma kö.
 | Våg | Innehåll | Status |
 |---|---|---|
 | 1 | Merge-grinden ([ADR-076](../../docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md)) + actionlint-pinning + jobb-splitten (PR #99) | ✅ EXEKVERAD S77 (grind-bevis i S77-sessionsdok) |
-| 2a | D1-klassen + merge-dedup + nightly/larm + mätskript | design klar — nästa upptag |
+| 2a | D1-klassen + merge-dedup + nightly/larm + mätskript + gate-proof | 🔨 UNDER EXEKVERING S78 (task-36 + skivor; **36.1 gate-proof LANDAD** — bevis-skulden betald, se nedan) |
 | 2b | Visual regression från noll (CI-födda baselines) | design klar — egen skiva |
 | 2c | Rött-först-bärarbytet (ADR-071-amendering) | beslut A låst; verkställs med våg 2 |
 | 3 | Staging-per-run-isolering (mutexen avvecklas) | riktning satt; samdesign med ADR-063 post-Fas-6; tangerar T27/T45 |
+
+## Bevis-skulden (S77 end-pass-incidenten) — BETALD S78
+
+S77:s incident lämnade en öppen bevis-skuld: aggregatorns FAIL-gren gjordes
+fail-closed men bevisades aldrig skarpt (L322 — konfig-verifierad, ej
+gate-bevisad). task-36.1 (gate-proof-workflowen) betalar den:
+`.github/workflows/gate-proof.yml` är en riktad `workflow_dispatch` som är
+sitt eget test.
+
+- **Positivt bevis** (default) run **30032296699** = GRÖN: paraply-repliken
+  kör `always()` + den verbatim fail-closed jq-grenen ur `ci-passed` blir
+  `failure` på ett framkallat rött jobb.
+- **Negativ self-test** (`simulate_skip=true`) run **30032299223** = RÖD:
+  paraply-repliken tvingas skippa → assert-jobbet fångar det → röd körning.
+  Detta är exakt L322-hålet demonstrerat: en skippad paraply-check räknas
+  INTE tyst som grön.
+
+Landad via PR #107 (`b412bb8`), CI-run 30031630066 grön per jobb.
+
+**Öppen durabel bärare (L321):** gate-proof:s jq-fail-closed-gren är en
+VERBATIM REPLIK av `ci-passed`:s → drift-risk vid framtida ändring av den
+riktiga aggregatorn. Läks vid nästa `ci.yml`-touch (36.3/36.4-sessionen).
+Samma touch uppdaterar `ci.yml`-kommentaren (~rad 666) från "öppen
+bevis-skuld" till betald.
 
 ## Upptags-form
 
