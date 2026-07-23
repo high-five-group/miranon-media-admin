@@ -1,10 +1,10 @@
 ---
 id: TASK-36.1
 title: 'Skiva: Gate-proof-workflowen — paraply-checkens FAIL-gren bevisas skarpt'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-23 17:11'
-updated_date: '2026-07-23 17:56'
+updated_date: '2026-07-23 18:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,10 +27,10 @@ Täcker användarberättelser: 12, 13
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 En riktad, manuellt avfyrbar workflow finns som kör ENDAST det som ska bevisas — den rör aldrig staging-miljön och tar aldrig den delade mutexen
-- [ ] #2 Avfyrningen tvingar ett jobb till failure och asserterar att paraply-checken får conclusion failure — inte skipped, inte frånvarande
-- [ ] #3 En avfyrning där paraply-checken skippas eller uteblir gör workflowen RÖD (den är sitt eget test)
-- [ ] #4 Körnings-ID för minst en grön avfyrning är citerat på kortet
-- [ ] #5 S77:s öppna bevis-skuld är kvitterad: sessionsdokets och tråd-kortets referens till skulden pekar på detta bevis
+- [x] #2 Avfyrningen tvingar ett jobb till failure och asserterar att paraply-checken får conclusion failure — inte skipped, inte frånvarande
+- [x] #3 En avfyrning där paraply-checken skippas eller uteblir gör workflowen RÖD (den är sitt eget test)
+- [x] #4 Körnings-ID för minst en grön avfyrning är citerat på kortet
+- [x] #5 S77:s öppna bevis-skuld är kvitterad: sessionsdokets och tråd-kortets referens till skulden pekar på detta bevis
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -43,13 +43,21 @@ Design (3 jobb): forced-red (step-nivå continue-on-error → genuint exit 1, jo
 Plattforms-tvingade trohets-noter (öppna): (1) GitHub kan inte visa ett rött JOBB i en grön körning, så den avsiktliga failuren manifesteras som en STEP-outcome. (2) Jobb-nivå continue-on-error maskerar failure till success i BÅDE needs.result OCH REST-API:ts conclusion (actions/toolkit#1739, verifierat mot förstapartsdok) — därför används endast STEP-nivå-COE och signalen förmedlas via jobb-output, inte needs.result. jq-fail-closed-uttrycket är byte-för-byte ci-passed; endast shell-testen moderniserad [ ] → [[ ]] för shellcheck-strict.
 
 Lokala grindar gröna: actionlint 1.7.12 (pinnad, kör shellcheck på run:), yamllint 1.38.0 (.yamllint.yml), shellcheck 0.11.0 strict (--severity=style --enable=all). Rött-först lokalt: fail-closed jq körd med SIGNAL=failure→exit 1, SIGNAL=cancelled→exit 1, SIGNAL=success→exit 0. L322-invarianten oregresserad: ci.yml orörd (ci-passed har if: always() ensamt + exit-1-steg). AC#2-5 + DoD#1/#3 kvar till stängning: kräver gate-proof-avfyrning på main + citerat run-ID.
+
+Gate-proof-avfyrningar (main @ b412bb8): POSITIVT BEVIS run 30032296699 = GRÖN (assert-proof grön: umbrella-replica result=success + fail-gren outcome=failure på rött jobb). NEGATIV SELF-TEST (simulate_skip=true) run 30032299223 = RÖD (umbrella-replica skipped → assert-proof failure — L322-hålet fångat). Öppen not: gate-proof:s jq-fail-closed-gren är en VERBATIM REPLIK av ci-passed → drift-risk vid framtida ci-passed-ändring; durabel bärare: läks vid 36.3/36.4 (ci.yml-touch) + T85-raden. ci.yml-kommentar (~rad 666, 'öppen bevis-skuld') uppdateras vid samma ci.yml-touch.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · leverans-commit b412bb8 (PR #107) · CI-run 30031630066 per jobb · CI-grön-första-pass: ja · defekter: inga · TDD: ej tillämplig (workflow-bevis-infra, bevisad via skarp avfyrning). Gate-proof på main: positivt bevis run 30032296699 GRÖN, negativ self-test run 30032299223 RÖD (som avsett). S77:s bevis-skuld (L322) BETALD.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Statiska workflow-grindar gröna på ändrad CI-konfiguration (actionlint, yamllint, shellcheck strict)
 - [x] #6 L322-invarianten oregresserad: paraply-checken har alltid-kör-villkoret ENSAMT och exit:ar 1 vid failure/cancelled
