@@ -4,7 +4,7 @@ title: 'Skiva: Manuell anmälan-sidan skarp'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 04:48'
+updated_date: '2026-07-23 05:04'
 labels:
   - ready-for-agent
 dependencies:
@@ -45,13 +45,15 @@ GRINDAR (lokalt gröna): typecheck 0 · typecheck:tests 0 · biome 0 · build gr
 HISTORIK — MERGE-HALT-NOTEN FRÅN BATCH-KÖRNINGEN (bevarad per ADR-073 Am 3 mandat (b), union; INGEN äkta CI-fel — Test+Build var bara ej terminal i agentens fönster; PR-CI därefter GRÖN per jobb 6/6, run 29980247435):
 
 MERGE-HALT (steg 5, PR-CI-vakten) — S75-batch: PR #90 skapad, PR-CI run 29980247435 nådde INGET terminalt tillstånd inom merge-agentens fönster (forcerad output-terminering). Jobb-utfall vid avbrott: Detect changed files=success · Lint+Audit+TypeCheck=success · Docs link check=success · Staging sentinel purge=success · Test + Build=IN_PROGRESS (ej terminal) · CI Passed or Skipped=pending. Alla slutförda jobb GRÖNA (4/6) — detta är INTE ett pipeline-fel utan ett ofullständigt-CI-avbrott. Ingen merge utförd; main orörd. Steg 1–4 passerade: färsk main=fork-SHA (branch redan à jour, audit-arv ancestor), merge-tree exit 0 (ren), claims-kvitto 10/10 filer inom yta. Branch task/18.12 + PR #90 KVAR som åtgärdsyta för ren re-pick (CI körs då färskt om). Stale-vakt-fil (run 29977396636) fångad och kasserad före felaktig HALT.
+
+MERGAD (S75 batch 6): PR #90 → merge-commit 8f9e4bb. PR-CI-run (branch-head fce9f07) GRÖN PER JOBB 6/6. 'Halten' var INGET fel — Test+Build var bara ej terminal i merge-agentens fönster; efterföljande vakt bekräftade grönt. Bygg-agenten deployade create-registration till STAGING själv (ACTIVE). GRANSKNINGSFÄRDIG — In Progress, DoD #5 (design-review + facit-inkonsistens-frågorna) öppna. **PROD-DEPLOY KVAR (Marcus): create-registration till PROD** (staging deployad; prod-fälten Antal platser + Notering är BEFINTLIGA så ingen prod-fält-förutsättning). Done-flippen är Marcus.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
