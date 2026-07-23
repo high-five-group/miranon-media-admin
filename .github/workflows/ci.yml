@@ -304,6 +304,16 @@ jobs:
     name: Test suite
     needs: changed
     if: ${{ needs.changed.outputs.should_skip_tests != 'true' }}
+    # Permissions-taket för det anropade ci-suite.yml. Ett anropat workflow kan
+    # bara BEHÅLLA eller MINSKA anroparens token-permissions, aldrig eskalera
+    # (GitHub Docs: "Permissions can only be maintained or reduced—not
+    # elevated—throughout the chain"). ci.yml:s topp-nivå är permissions: {}
+    # (least-privilege default, ADR-029 §4) — utan detta grant ärver suite-
+    # jobbet {} och ci-suite:s jobb (contents: read för checkout) blir en
+    # eskalering ⇒ startup_failure. Empiriskt fångat S79 (run 30037333924);
+    # spike 30036119790 var grön just för att dess reusable-jobb bar {}.
+    permissions:
+      contents: read
     uses: ./.github/workflows/ci-suite.yml
     secrets: inherit
 
