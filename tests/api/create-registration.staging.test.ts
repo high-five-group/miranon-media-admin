@@ -44,6 +44,8 @@ interface CreateBody {
   efternamn?: string;
   email?: string;
   telefon?: string | null;
+  antalPlatser?: unknown;
+  notering?: unknown;
   eventId?: string;
   idempotencyKey?: string;
 }
@@ -127,6 +129,97 @@ test.describe('create-registration — skarp conformance (Fas 6c L4)', () => {
     expect(reg.email).toBe(email);
     expect(reg.fornamn).toBe('Sentinel');
     expect(reg.personId, 'Person-länk sätts ej vid create (delegeras till A2)').toBeNull();
+  });
+
+  test('allow: create med antalPlatser + notering → 201 + skriv-bevis (facit-formens sex fält, task-18.12)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const eventId = await findSeededEventId(request, config, jwt);
+
+    const email = sentinelEmail();
+    const noteringText = 'Ringde in på telefon — betalar via faktura vecka 32.';
+    const res = await postCreate(request, config, jwt, {
+      fornamn: 'Sentinel',
+      efternamn: 'Platser',
+      email,
+      telefon: null,
+      antalPlatser: 3,
+      notering: noteringText,
+      eventId,
+      idempotencyKey: randomUUID(),
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as {
+      registration: unknown;
+      record: { id: string; fields: Record<string, unknown> };
+    };
+
+    // (i) SKRIV-BEVIS ur råa record.fields — EF:en satte de två nya fälten i Airtable.
+    expect(body.record.fields['Antal platser']).toBe(3);
+    expect(body.record.fields['Notering']).toBe(noteringText);
+    expect(body.record.fields['Källa']).toBe('Manuell'); // fortsatt Manuell-vertikalen
+
+    // (ii) Domän-shape (adapterns parse-väg) bär fälten oförändrade.
+    const reg: Registration = RegistrationSchema.parse(body.registration);
+    expect(reg.antalPlatser).toBe(3);
+    expect(reg.notering).toBe(noteringText);
+  });
+
+  test('deny: antalPlatser < 1 → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postCreate(request, config, jwt, {
+      fornamn: 'X',
+      efternamn: 'Y',
+      email: sentinelEmail(),
+      telefon: null,
+      antalPlatser: 0,
+      eventId: 'recDeny0000000001', // rec-format ok; antalPlatser-grinden fäller före
+      idempotencyKey: randomUUID(),
+    });
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/antalPlatser/i);
+  });
+
+  test('deny: antalPlatser icke-heltal → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postCreate(request, config, jwt, {
+      fornamn: 'X',
+      efternamn: 'Y',
+      email: sentinelEmail(),
+      telefon: null,
+      antalPlatser: 1.5,
+      eventId: 'recDeny0000000001',
+      idempotencyKey: randomUUID(),
+    });
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/antalPlatser/i);
+  });
+
+  test('deny: notering icke-sträng → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postCreate(request, config, jwt, {
+      fornamn: 'X',
+      efternamn: 'Y',
+      email: sentinelEmail(),
+      telefon: null,
+      notering: 123, // number → deny
+      eventId: 'recDeny0000000001',
+      idempotencyKey: randomUUID(),
+    });
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/notering/i);
   });
 
   test('409: samma sentinel-person + event två ggr → andra = 409 + existingName', async ({

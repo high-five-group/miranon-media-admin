@@ -155,6 +155,10 @@ export class AirtableAdapter implements DataSourceAdapter {
       telefon: input.telefon,
       eventId: input.eventId,
       idempotencyKey: input.idempotencyKey,
+      // Facit-formens två fält (task-18.12): additivt-optional, skickas bara när
+      // satta så modal-callern (som utelämnar dem) inte tvingar tomma nycklar.
+      ...(input.antalPlatser !== undefined ? { antalPlatser: input.antalPlatser } : {}),
+      ...(input.notering != null ? { notering: input.notering } : {}),
     });
     return RegistrationSchema.parse(data.registration);
   }
