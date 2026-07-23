@@ -35,6 +35,10 @@ src/routeTree.gen.ts
 /blob-report
 /test-results
 /playwright/.cache
+# Playwright MCP-serverns artefakt-katalog (browser-verktyget) — aldrig committad,
+# rapporterad ospårad i åtta sessioner (task-36.3 hygien-post, L321-klassen: durabel
+# bärare = denna rad, inte en end-pass-anteckning som dör med sessionen)
+.playwright-mcp/
 
 # Playwright auth state — innehåller TEST_USER session-tokens, ALDRIG committa
 playwright/.auth/*

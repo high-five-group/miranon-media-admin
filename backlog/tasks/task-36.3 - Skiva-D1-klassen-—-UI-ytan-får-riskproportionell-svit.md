@@ -1,9 +1,10 @@
 ---
 id: TASK-36.3
 title: 'Skiva: D1-klassen — UI-ytan får riskproportionell svit'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-23 17:12'
+updated_date: '2026-07-23 20:42'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,21 +32,21 @@ Täcker användarberättelser: 1, 2, 3, 4
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 En ny riskklass D1 detekteras deterministiskt ur ändrade filer: stilmallar, CSS och publika statiska filer
-- [ ] #2 D1 bär SAMMA exkluderingsmönster som dokumentationsklassen redan har — CI-konfiguration, paketmanifest, låsfil och byggkonfigurationer kan ALDRIG bli D1
+- [x] #2 D1 bär SAMMA exkluderingsmönster som dokumentationsklassen redan har — CI-konfiguration, paketmanifest, låsfil och byggkonfigurationer kan ALDRIG bli D1
 - [ ] #3 Vid D1 skippas staging-jobbet (och därmed mutexen); lint, snabbtester och a11y kör
 - [ ] #4 Allt som inte uttryckligen matchar D0 eller D1 kör full svit — okänt givet klassas som högsta risk
-- [ ] #5 Jobb skippas internt med villkor, ALDRIG via path-filter på workflow-nivå — paraply-checken rapporterar alltid
+- [x] #5 Jobb skippas internt med villkor, ALDRIG via path-filter på workflow-nivå — paraply-checken rapporterar alltid
 - [ ] #6 Kontrastbevis-tripeln körd med citerade körnings-ID: ren UI-ändring ger D1 utan staging · UI plus komponentkod ger full svit · UI plus CI-konfiguration ger full svit
-- [ ] #7 Katalogen med browser-verktygets artefakter är tillagd bland ignorerade filer och syns inte längre som ospårad
+- [x] #7 Katalogen med browser-verktygets artefakter är tillagd bland ignorerade filer och syns inte längre som ospårad
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Statiska workflow-grindar gröna på ändrad CI-konfiguration (actionlint, yamllint, shellcheck strict)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Statiska workflow-grindar gröna på ändrad CI-konfiguration (actionlint, yamllint, shellcheck strict)
 - [ ] #6 Kontrastbevis körda och körnings-ID:n citerade på kortet — ett bevis utan ID räknas inte
-- [ ] #7 L322-invarianten oregresserad: paraply-checken har alltid-kör-villkoret ENSAMT och exit:ar 1 vid failure/cancelled
+- [x] #7 L322-invarianten oregresserad: paraply-checken har alltid-kör-villkoret ENSAMT och exit:ar 1 vid failure/cancelled
 <!-- DOD:END -->
