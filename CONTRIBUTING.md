@@ -139,6 +139,24 @@ mekaniska grinden gäller:
 - DoD-checklistan i PR-mallen är fylld
 - ADR refererad om arkitekturbeslut tagits
 
+## Nattnätet
+
+En schemalagd fullsvit (`.github/workflows/nightly.yml`, ~03:00 svensk tid)
+prövar hela repot i full bredd varje natt — inklusive det som presubmit-
+selektionen (riskklassning/dedup) medvetet hoppade över. Nätet är
+förutsättningen som gör selektionen försvarbar: en skipp före merge blir en
+fördröjning på högst ett dygn, aldrig ett permanent hål
+([ADR-077](docs/decisions/ADR-077-riskanpassad-ci-klassning-dedup-nightly.md)).
+
+En röd nattkörning skapar automatiskt ett tilldelat ärende (etikett
+`ci-natt`) med länk till körningen och commit-spannet sedan senaste gröna
+natt.
+
+**Stängningsregel — ett nattärende stängs ALDRIG tyst.** Antingen (a) åtgärdas
+grundorsaken, eller (b) skrivs en öppen motivering ut i ärendet innan det
+stängs. Regeln är larmkedjans motgift mot kyrkogårdseffekten: ett larm ingen
+läser är värdelöst, och tyst stängning gör larmet till en kyrkogård.
+
 ## Lokala dev-verktyg (frivilligt)
 
 Utöver `npm install` (se [README](README.md#snabbstart)) finns CI-grindvakter
