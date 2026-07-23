@@ -4,7 +4,7 @@ title: 'Skiva: Manuell anmälan-sidan skarp'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 04:37'
+updated_date: '2026-07-23 04:48'
 labels:
   - ready-for-agent
 dependencies:
@@ -39,6 +39,12 @@ BAS-/EF-BOKFÖRING (ADR-063/ADR-050):
 GRINDAR (lokalt gröna): typecheck 0 · typecheck:tests 0 · biome 0 · build grön · test:api 376/376 (4 nya create-registration-fall RÖDA före staging-deploy → GRÖNA efter) · e2e event-ny-anmalan 6/6 (axe-0) · modal-regression event-add-registration 6/6 · test:a11y 62/62.
 
 ÖPPET: DoD #5 (Marcus design-review MOT S73-facit i webbläsaren) + DoD #6 (facit-avprickning) — human-review-grinden lämnad öppen. DoD #3 (CI grön) — orkestratorn efter push.
+
+---
+
+HISTORIK — MERGE-HALT-NOTEN FRÅN BATCH-KÖRNINGEN (bevarad per ADR-073 Am 3 mandat (b), union; INGEN äkta CI-fel — Test+Build var bara ej terminal i agentens fönster; PR-CI därefter GRÖN per jobb 6/6, run 29980247435):
+
+MERGE-HALT (steg 5, PR-CI-vakten) — S75-batch: PR #90 skapad, PR-CI run 29980247435 nådde INGET terminalt tillstånd inom merge-agentens fönster (forcerad output-terminering). Jobb-utfall vid avbrott: Detect changed files=success · Lint+Audit+TypeCheck=success · Docs link check=success · Staging sentinel purge=success · Test + Build=IN_PROGRESS (ej terminal) · CI Passed or Skipped=pending. Alla slutförda jobb GRÖNA (4/6) — detta är INTE ett pipeline-fel utan ett ofullständigt-CI-avbrott. Ingen merge utförd; main orörd. Steg 1–4 passerade: färsk main=fork-SHA (branch redan à jour, audit-arv ancestor), merge-tree exit 0 (ren), claims-kvitto 10/10 filer inom yta. Branch task/18.12 + PR #90 KVAR som åtgärdsyta för ren re-pick (CI körs då färskt om). Stale-vakt-fil (run 29977396636) fångad och kasserad före felaktig HALT.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
