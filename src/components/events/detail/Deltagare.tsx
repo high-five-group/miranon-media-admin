@@ -329,7 +329,7 @@ function BekraftaAlla({
       <Button
         intent="success"
         size="sm"
-        className="rounded-lg shadow-sm"
+        className="shadow-sm"
         aria-label="Bekräfta alla obekräftade"
       >
         <Mail aria-hidden="true" size={14} className="shrink-0" />
@@ -506,13 +506,11 @@ function MetaRad({ ikon: Ikon, children }: { ikon: LucideIcon; children: React.R
  * person-koppling, eller EF:ens event-lösa gren) uteblir raden: "Första
  * eventet" om en okänd person vore en osanning.
  *
- * ANMÄLD-RADENS LÄNKMÅL (AC #2, belagt beslut): anmälans egen sida finns INTE
- * (PRD task-18 §Utanför omfattningen), och ingen befintlig yta visar EN
- * anmälan — varken `/event/$eventId/anmalda` eller `/mer/anmalningar` kan
- * djuplänkas per anmälan. Raden renderas därför OLÄNKAD. Facitets understrukna
- * länk var en prototyp-no-op; i skarp produkt vore en understruken rad som
- * inte leder någonstans en osann affordans. Länkformen återinförs i samma
- * skiva som föder anmälans route.
+ * ANMÄLD-RADENS LÄNKMÅL (AC #2, rev. 2026-07-23 review-våg 2): PRD task-18
+ * p18:s olänkad-beslut REVS ÖPPET av Marcus — facit-K62-formen gäller:
+ * understruken rad med "Öppna anmälan"-namnet. Anmälans egen sida finns ännu
+ * inte (task-18.17 föder route + shape + vy), så raden är en no-op-knapp i
+ * prototypens K26-grammatik tills 18.17 byter den till Link.
  */
 function DeltagarKort({
   reg,
@@ -584,7 +582,17 @@ function DeltagarKort({
         data-testid="deltagar-metayta"
         className="flex flex-col gap-1 px-4 pt-2.5 pb-3 text-caption text-text-muted"
       >
-        {anmald && <MetaRad ikon={Inbox}>{anmald}</MetaRad>}
+        {anmald && (
+          <button
+            type="button"
+            aria-label={`Öppna anmälan för ${namn}`}
+            data-testid="deltagar-meta-rad"
+            className="flex items-center gap-1 self-start underline underline-offset-2"
+          >
+            <Inbox aria-hidden="true" size={12} className="shrink-0" />
+            {anmald}
+          </button>
+        )}
         {bekraftelse && <MetaRad ikon={MailCheck}>{`Bekräftelse ${bekraftelse}`}</MetaRad>}
         {paminnelse && <MetaRad ikon={MailCheck}>{`Påminnelse ${paminnelse}`}</MetaRad>}
         {eventinfo && <MetaRad ikon={MailCheck}>{`Eventinfo ${eventinfo}`}</MetaRad>}

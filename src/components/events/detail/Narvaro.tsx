@@ -219,8 +219,10 @@ export function Narvaro({ event }: { event: Event }) {
       {event.status === EventStatus.GENOMFORT ? (
         <NarvaroRegister eventId={event.id} />
       ) : (
-        <p className="py-8 text-center text-small text-text-secondary">
-          Eventet är inte genomfört ännu — närvaron fylls i vid check-in.
+        // Review-våg 2 (2026-07-23): kortad centrerad muted-text + samma
+        // min-h som Gruppdynamiks tomläge — tomma kort ser lika stora ut.
+        <p className="flex min-h-28 items-center justify-center text-center text-small text-text-muted">
+          Eventet är inte genomfört ännu
         </p>
       )}
     </DetaljGrupp>
