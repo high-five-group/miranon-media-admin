@@ -1,0 +1,133 @@
+---
+name: Gate Proof — CI Passed or Skipped FAIL-branch
+
+# Riktad, manuellt avfyrbar bevis-workflow (task-36.1 / T85 våg 2a).
+#
+# Bevisar skarpt att merge-grindens paraply-check `ci-passed` ("CI Passed or
+# Skipped" i ci.yml) FAILAR — aldrig skippas, aldrig uteblir — när ett jobb i
+# dess needs blir rött. Det är exakt fail-open-hålet som orsakade S77:s
+# end-pass-incident (skippad required check räknades som uppfylld; L322).
+#
+# Formen är sitt eget test: en GRÖN avfyrning = paraply-repliken körde (always())
+# OCH dess fail-closed-gren blev failure på ett rött jobb. En RÖD avfyrning =
+# repliken skippades/uteblev eller fail-closed-grenen fyrade inte (regression).
+#
+# Bor i EGEN fil: tar aldrig staging-tests-mutexen (ci.yml), rör aldrig
+# staging-miljön, konkurrerar aldrig med ordinarie körningar.
+#
+# Plattforms-tvingade trohets-noter (öppna, aldrig tysta):
+#   1. GitHub kan inte visa ett RÖTT jobb inuti en GRÖN körning. Den avsiktliga
+#      failuren manifesteras därför som en STEP-outcome (step-nivå
+#      continue-on-error): steget kör genuint `exit 1`, jobbet förblir grönt.
+#   2. Paraply-repliken läser den röda signalen via ett JOBB-OUTPUT (forced-reds
+#      step-outcome), inte via needs.result — ett JOBB-nivå continue-on-error
+#      hade maskerat needs.result OCH REST-API:ts conclusion till success
+#      (actions/toolkit#1739). Ingen job-nivå-COE används därför någonstans här;
+#      den fail-closed jq-logiken nedan är VERBATIM ur ci.yml:s ci-passed, bara
+#      matad ur den sanna step-outcomen i stället för live needs.result.
+
+on:
+  workflow_dispatch:
+    inputs:
+      simulate_skip:
+        description: >-
+          false (default) = positivt bevis (paraply-repliken körs, workflowen
+          ska bli GRÖN). true = negativ kontroll: paraply-repliken tvingas SKIPPA
+          så assert-jobbet fångar det och workflowen ska bli RÖD (self-test).
+        type: boolean
+        default: false
+
+# Least-privilege: dessa jobb rör aldrig repot eller något API.
+permissions: {}
+
+# Egen unik concurrency-grupp per körning — tar ALDRIG staging-tests-mutexen.
+concurrency:
+  group: gate-proof-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  # Jobb 1: framkalla den avsiktliga failuren. Step-nivå continue-on-error ⇒
+  # steget kör genuint `exit 1` men jobbet förblir grönt (körningen får inte
+  # sänkas — AC#4 kräver grön avfyrning). Den sanna outcomen exponeras som
+  # jobb-output och matar paraply-replikens FAIL-gren nedan.
+  forced-red:
+    name: Framkalla rött jobb (avsiktlig failure)
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    permissions: {}
+    outputs:
+      outcome: ${{ steps.fail.outcome }}
+    steps:
+      - name: Fail on purpose
+        id: fail
+        continue-on-error: true
+        run: |
+          echo "Framkallar ett rött jobb med avsikt — dess step-outcome matar paraply-replikens FAIL-gren."
+          exit 1
+
+  # Jobb 2: EXAKT replik av ci.yml:s ci-passed FAIL-gren. if: always() ENSAMT
+  # (L322-invarianten): repliken körs även när dess needs bär en failure.
+  # Verify-steget kör den VERBATIM fail-closed jq-logiken; step-nivå
+  # continue-on-error gör att dess `exit 1` blir en observerbar outcome=failure
+  # utan att sänka körningen. Outcomen exponeras som jobb-output till assert:en.
+  umbrella-replica:
+    name: CI Passed or Skipped (replik under bevis)
+    needs: [forced-red]
+    if: ${{ always() && !inputs.simulate_skip }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    outputs:
+      fired: ${{ steps.verify.outcome }}
+    steps:
+      - name: Verifiera needs-resultaten (fail-closed) — verbatim ci-passed jq-gren
+        id: verify
+        continue-on-error: true
+        env:
+          SIGNAL: ${{ needs.forced-red.outputs.outcome }}
+        run: |
+          # needs.forced-red.result är "success" (forced-red är grönt via
+          # step-COE) — den avsiktliga failuren bor i step-outcomen, förmedlad
+          # hit via jobb-output SIGNAL. Bygg needs-ekvivalenten och kör den
+          # VERBATIM ci-passed jq-fail-closed-grenen på den (shell-test [[ ]]
+          # för shellcheck-strict; jq-uttrycket är byte-för-byte ci-passed).
+          NEEDS=$(jq -cn --arg r "${SIGNAL}" '{"forced-red": {result: $r}}')
+          echo "Needs (rekonstruerat ur forced-reds step-outcome):"
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<<"${NEEDS}"
+          bad=$(jq -r '[to_entries[] | select(.value.result == "failure" or .value.result == "cancelled")] | length' <<<"${NEEDS}")
+          if [[ "${bad}" -ne 0 ]]; then
+            echo "❌ ${bad} jobb med failure/cancelled — aggregatorn FAILAR explicit (aldrig skipped; required-check-hålet stängt S77)."
+            exit 1
+          fi
+          echo "✅ CI Passed or Skipped — alla jobb success eller skipped-by-design."
+
+  # Jobb 3: assert:en — enda jobbet UTAN continue-on-error, så dess conclusion
+  # färgar körningen. Kör alltid (if: always()). GRÖN endast om paraply-repliken
+  # (a) körde rent (result == success — inte skipped/absent) OCH (b) dess
+  # fail-closed-gren blev failure. Allt annat ⇒ exit 1 ⇒ RÖD workflow (AC#3).
+  assert-proof:
+    name: Assertera paraply-checkens FAIL-gren
+    needs: [umbrella-replica]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    permissions: {}
+    steps:
+      - name: Assertera att FAIL-grenen fyrade (aldrig skipped/frånvarande)
+        env:
+          UMBRELLA_RESULT: ${{ needs.umbrella-replica.result }}
+          UMBRELLA_FIRED: ${{ needs.umbrella-replica.outputs.fired }}
+        run: |
+          echo "Paraply-replikens jobb-result: ${UMBRELLA_RESULT}"
+          echo "Paraply-replikens FAIL-gren-outcome: ${UMBRELLA_FIRED:-<tomt>}"
+          if [[ "${UMBRELLA_RESULT}" != "success" ]]; then
+            echo "❌ BEVIS UNDERKÄNT: paraply-repliken körde inte rent (result=${UMBRELLA_RESULT})."
+            echo "   skipped/absent ⇒ paraply-checken vore fail-open — exakt L322-hålet."
+            exit 1
+          fi
+          if [[ "${UMBRELLA_FIRED}" != "failure" ]]; then
+            echo "❌ BEVIS UNDERKÄNT: fail-closed-grenen gav outcome=${UMBRELLA_FIRED:-<tomt>}, väntade failure."
+            exit 1
+          fi
+          echo "✅ BEVISAT: paraply-checken (if: always() + fail-closed) körde OCH blev failure på ett rött jobb."
+          echo "   Skulle den skippas eller utebli ⇒ denna workflow RÖD. Beviset är inbyggt i leveransen."
