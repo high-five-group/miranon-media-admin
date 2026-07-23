@@ -1,10 +1,10 @@
 ---
 id: TASK-36.3
 title: 'Skiva: D1-klassen — UI-ytan får riskproportionell svit'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-23 17:12'
-updated_date: '2026-07-23 20:42'
+updated_date: '2026-07-23 21:09'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,22 +31,28 @@ Täcker användarberättelser: 1, 2, 3, 4
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 En ny riskklass D1 detekteras deterministiskt ur ändrade filer: stilmallar, CSS och publika statiska filer
+- [x] #1 En ny riskklass D1 detekteras deterministiskt ur ändrade filer: stilmallar, CSS och publika statiska filer
 - [x] #2 D1 bär SAMMA exkluderingsmönster som dokumentationsklassen redan har — CI-konfiguration, paketmanifest, låsfil och byggkonfigurationer kan ALDRIG bli D1
-- [ ] #3 Vid D1 skippas staging-jobbet (och därmed mutexen); lint, snabbtester och a11y kör
-- [ ] #4 Allt som inte uttryckligen matchar D0 eller D1 kör full svit — okänt givet klassas som högsta risk
+- [x] #3 Vid D1 skippas staging-jobbet (och därmed mutexen); lint, snabbtester och a11y kör
+- [x] #4 Allt som inte uttryckligen matchar D0 eller D1 kör full svit — okänt givet klassas som högsta risk
 - [x] #5 Jobb skippas internt med villkor, ALDRIG via path-filter på workflow-nivå — paraply-checken rapporterar alltid
-- [ ] #6 Kontrastbevis-tripeln körd med citerade körnings-ID: ren UI-ändring ger D1 utan staging · UI plus komponentkod ger full svit · UI plus CI-konfiguration ger full svit
+- [x] #6 Kontrastbevis-tripeln körd med citerade körnings-ID: ren UI-ändring ger D1 utan staging · UI plus komponentkod ger full svit · UI plus CI-konfiguration ger full svit
 - [x] #7 Katalogen med browser-verktygets artefakter är tillagd bland ignorerade filer och syns inte längre som ospårad
 <!-- AC:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · ci.yml (changed-ui + ui_low_risk) + ci-suite.yml (run_staging-input) + .gitignore (PR #117 659bcf9) · CI grön per jobb (delivery 30043233137) · CI-grön-första-pass: ja · defekter under körning: 0 · TDD: ej tillämplig (CI-config; beviset är kontrastbevis-tripel). Kontrastbevis-tripel citerad: case 1 ren .css run 30043867877 (D1, staging SKIPPED, a11y/pure/build körda, ci-passed grön) · case 2 .css+.tsx run 30043886869 (D3, staging RAN) · case 3 config run 30043233137 (D3, staging RAN, exkluderingen bet). .playwright-mcp/ ignorerad (AC#7). fetch-depth-invariant + L322 orörda.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Statiska workflow-grindar gröna på ändrad CI-konfiguration (actionlint, yamllint, shellcheck strict)
-- [ ] #6 Kontrastbevis körda och körnings-ID:n citerade på kortet — ett bevis utan ID räknas inte
+- [x] #6 Kontrastbevis körda och körnings-ID:n citerade på kortet — ett bevis utan ID räknas inte
 - [x] #7 L322-invarianten oregresserad: paraply-checken har alltid-kör-villkoret ENSAMT och exit:ar 1 vid failure/cancelled
 <!-- DOD:END -->

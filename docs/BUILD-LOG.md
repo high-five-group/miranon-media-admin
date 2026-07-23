@@ -2893,7 +2893,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 ---
 
-## Session 79 — T85 våg 2a: nattnätet (36.2) — reusable fullsvit + larmkedja + ADR-077 (2026-07-23)
+## Session 79 — T85 våg 2a: nattnätet (36.2) + D1-klassen (36.3) — reusable fullsvit, larmkedja, riskproportionell CI + ADR-077 (2026-07-23)
 
 **Commit-range:** `9b6daec` (dok-födelse) → stängnings-PR. **Mål:** ta `ci.yml`-trions första skiva (36.2 nattnätet) i land under direkt hand (L324), som reusable-workflow-extraktion. Ej byggplan-fas — CI-/infrastruktur-session.
 
@@ -2903,9 +2903,10 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Nattnätet skarpt bevisat (manuella dispatchar, run-ID citerade):** grön natt run **30039548355** — full svit + no-cache-länk + moderate-audit gröna, **larm-jobbet SKIPPAT, noll ärenden** (AC#1/#4/#6). Rött via `simulate_failure=true` run **30039559724** → larm skapade **ärende #114** korrekt (tilldelad marcus803, label `ci-natt`, run-länk + spann-rad) (AC#3). Test-ärendet stängt med öppen motivering (dess egen regel praktiserad).
 - **gate-proof re-kört på main (run 30038462683 GRÖN):** L322 fail-closed bekräftad genom reusable-refaktorn (DoD#6).
 - **Avvikelser (öppet bokförda) — TRE fångster, alla CI-fångade, → L326:** (1) `startup_failure` #1 (run 30037333924) — ci.yml:s topp-nivå `permissions: {}` gjorde ci-suites `contents: read` till en eskalering; anropat workflow kan bara behålla/minska (GitHub Docs verifierat) → suite-jobbet grantar taket. (2) `startup_failure` #2 (run 30038460735) — SAMMA bugg i `nightly.yml` (andra anroparen, missad i ci.yml-fixen; PR #113). (3) span-faktafel (PR #115) — larmet konflaterade "ingen tidigare grön" med "grön natt på samma SHA"; senare = flake-signal, nu tre distinkta grenar, unit-testad lokalt. Spiken hade `permissions: {}` = förenkling som maskerade #1/#2.
-- **Numrering:** ADR **077** mintad · lesson **L326** ([UNIVERSAL]: reusable-permissions-eskalering + spike-postur + varje-anropare) · ingen ny tråd (T85 forts.) · fälla 45 orörd · nästa: 079/077/L327/T86/f45/task-37 (36.3 nästa).
+- **36.3 D1-klassen levererad (PR #117 `659bcf9`, CI 30043233137 grön):** ren UI-ändring (CSS/stilmallar/publika statiska filer) klassas **D1** → staging + mutex skippas, lint/pure/build/a11y kör. Deklarativt `changed-ui`-steg i ci.yml (UI-positiva + D0:s exkluderingar, allowlist aldrig blocklist) → output `ui_low_risk`; `suite`-jobbet skickar `with: run_staging = (ui_low_risk != true)`; ci-suite.yml fick `workflow_call`-input `run_staging` (default **true** ⇒ nightly kör alltid full svit), purge + test-staging skippar internt (villkor, ej path-filter — paraply-checken rapporterar alltid, AC#5). `.playwright-mcp/`-gitignore (AC#7, L321-klassen — durabel bärare = AC). **Kontrastbevis-tripel citerad:** case 1 ren `.css` run **30043867877** (D1, staging SKIPPED, a11y/pure/build körda, `ci-passed` grön) · case 2 `.css`+`.tsx` run **30043886869** (D3, staging RAN) · case 3 config run **30043233137** (D3, staging RAN, exkluderingen bet). fetch-depth-invariant (3) + L322 orörda. Noll defekter, first-pass-grönt. Proof-PR:er #118/#119 rivna efter bevis.
+- **Numrering:** ADR **077** mintad (36.2) · lesson **L326** ([UNIVERSAL]: reusable-permissions-eskalering + spike-postur + varje-anropare; 36.3 ren, ingen ny lesson) · ingen ny tråd (T85 forts.) · fälla 45 orörd · nästa: 079/077/L327/T86/f45/task-37 (**36.4 merge-dedup** nästa).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-23-session-79.md`](../tasks/sessions/2026-07-23-session-79.md) (Del 1–2). **EJ fas-avslut.** Kvar efter 36.2: **36.3 D1-klassen** (+ `.playwright-mcp/`-gitignore) → **36.4 merge-dedup** (HEAD^2) — refererar nu befintlig ADR-077 · 36.5 (mätskript) → 36.6 (rött-först) → 36.7 (visual, egen session) → 36.8 (QA) · hub-lyftet L284–L326 · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-23-session-79.md`](../tasks/sessions/2026-07-23-session-79.md) (Del 1–3). **EJ fas-avslut.** Kvar efter 36.3: **36.4 merge-dedup** (`HEAD^2`+tree-ekvivalens, L325-formen) — refererar befintlig ADR-077 · 36.5 (mätskript, dep 36.2) → 36.6 (rött-först, ADR-071-am) → 36.7 (visual, egen session) → 36.8 (QA) · hub-lyftet L284–L326 · Marcus-moment: Update-klicket i claude.ai.
 
 ## Session-modellen
 
