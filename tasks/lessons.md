@@ -4657,4 +4657,64 @@ medveten utelämning stängs, konsumera HELA dess text — utelämning #5
 bar både "aktivera branch protection" och dual-signal-behovet
 ("explicit failure-signal överflödig utan automation som läser
 den"); halva stängdes, andra halvan blev hålet. Fail-grenens
-gate-proof är öppen bevis-skuld (T85 våg 2a).
+gate-proof är öppen bevis-skuld (T85 våg 2a). → BETALD S78 (task-36.1,
+gate-proof.yml; positivt bevis + negativ self-test; se L323-not + T85).
+
+### L323 — [UNIVERSAL] En do-work-subagent bär inte den asynkrona CI-svansen över sin kontext-livslängd — orkestratorn äger den
+
+Datum: 2026-07-23 (S78, work-batch 36.1) | Källa: första do-work-subagenten
+byggde gate-proof.yml + öppnade leverans-PR #107 + armerade auto-merge, men
+RETURNERADE före CI-grön → gate-proof-avfyrningen + stängnings-PR:n nåddes
+aldrig; kortet stod korrekt In Progress (inget halt) (klass: process/orkestrering)
+
+do-work:s tvåstegs-stängning (leverans-commit → asynkron bakgrunds-CI-vakt →
+stängnings-commit, L280) förutsätter en PERSISTENT session som kan återuppta
+efter vakten. En engångs-subagent har ingen sådan återkomst: när den returnerar
+sin schema-status avslutas kontexten, och allt bortom leverans-PR:n (CI-vänta,
+merge-verifiering, ev. gate-proof-avfyrning, stängning) faller. Regeln för
+work-batch i sekventiell form: subagenten bygger + lokal-verifierar + öppnar
+leverans-PR + armerar auto-merge + RAPPORTERAR — och STOPPAR där; orkestratorn
+(persistent session) äger CI-vänta + merge + stängning. Det är parallell-formens
+ADR-073-steg-4-rollfördelning tillämpad SERIELLT. do-work-skillens "driv till
+stängd commit" gäller alltjämt — men i batch ligger svansen hos orkestratorn,
+inte hos den friska subagenten. Kontraktets "oberoende disk-verifiering per kort"
+räddade läget: orkestratorn litade aldrig på agentens ord, disk-verifierade det
+faktiska tillståndet och slutförde svansen.
+
+### L324 — [UNIVERSAL] En skivas risk-klass bestäms av vad den MÅSTE röra eller duplicera — inte av var dess fil bor
+
+Datum: 2026-07-23 (S78, batch-planeringen) | Källa: 36.2 (nattnätet) klassades
+"additiv lågrisk, fil-disjunkt" ihop med 36.1/36.5 — men nightly måste köra
+ci.yml:s FULLA jobb-uppsättning, så den kräver antingen ci.yml-reusable-refaktor
+(en källa) eller jobb-duplicering (andra-källa-drift), och är därmed ci.yml-klass
+oavsett att den kan bo i egen fil (klass: process/skivning)
+
+Att en skiva får en EGEN fil säger inget om dess risk-klass. Fil-hemvisten är en
+placerings-fråga; risk-klassen bestäms av vad skivan är TVUNGEN att röra eller
+hålla i synk för att fungera. En "egen fil" som måste duplicera eller anropa den
+mest känsliga delade filens innehåll ärver den filens känslighet. Klassa en skiva
+efter dess tvingade beroenden (vad den måste röra/duplicera/hålla-i-synk), inte
+efter var dess primära artefakt hamnar — annars hamnar en känslig skiva i fel
+batch-fack. Praktisk följd: nattnäts-/dedup-/klassnings-arbetet (36.2/36.3/36.4)
+är ETT sammanhängande ci.yml-arbete under direkt hand, inte en additiv subagent-batch.
+
+### L325 — [UNIVERSAL] GitHub Actions pull_request-cache är merge-ref-scopad och osynlig för main-push-runs — cache-baserad cross-trigger-dedup fungerar inte
+
+Datum: 2026-07-23 (S78, cache-dedupen falsifierad) | Källa: design-dokets
+merge-dedup byggde på "gröna PR-runs skriver cache-nyckel, main-push-runs läser"
+— web-research mot GitHub Docs (*Restrictions for accessing a cache*) falsifierade
+den FÖRE bygget (klass: CI/plattform)
+
+GitHub Docs verbatim: "When a cache is created by a workflow run triggered on a
+pull request, the cache is created for the merge ref (refs/pull/.../merge) …
+can only be restored by re-runs of the pull request" + "Workflow runs cannot
+restore caches created for child branches or sibling branches." En cache skriven
+av en pull_request-run är alltså OSYNLIG för main-push-runnen som skulle läsa den
+— en cache-baserad dedup mellan de två triggrarna ger PERMANENT cache-miss: noll
+besparing, en onödig skrivning per PR, och INGET synligt fel (grön CI, tyst
+utebliven vinst). Regeln: verifiera cache-branch-scoping mot förstapartsdok före
+varje cache-baserad cross-trigger-design; en overifierad extern-plattforms-antagelse
+kan se grön ut och tyst utebli (web-research-disciplinen i praktiken). Ersättaren
+här är innehållsadresserad utan lagring: main-runnen läser `HEAD^2` (mergade
+PR-headen), verifierar tree-ekvivalens och frågar `gh run list --commit <full SHA>`
+om den redan har en grön run — bevisad mot disk + API före förslag (task-36.4).
