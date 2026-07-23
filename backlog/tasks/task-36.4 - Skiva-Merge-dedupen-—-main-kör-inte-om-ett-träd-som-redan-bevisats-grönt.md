@@ -1,10 +1,10 @@
 ---
 id: TASK-36.4
 title: 'Skiva: Merge-dedupen — main kör inte om ett träd som redan bevisats grönt'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-23 17:13'
-updated_date: '2026-07-23 21:45'
+updated_date: '2026-07-23 21:56'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,22 +31,28 @@ Täcker användarberättelser: 5, 6
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Main-körningen läser merge-commitens andra förälder (den mergade PR-headen) och jämför trädhashar
-- [ ] #2 Dedup-träff kräver BÅDE att merge-commitens träd är identiskt med PR-headens träd OCH att den SHA:n har en grön körning enligt körnings-API:t
-- [ ] #3 Vid träff hoppas de tunga jobben över; paraply-checken rapporterar fortfarande och blir grön
+- [x] #1 Main-körningen läser merge-commitens andra förälder (den mergade PR-headen) och jämför trädhashar
+- [x] #2 Dedup-träff kräver BÅDE att merge-commitens träd är identiskt med PR-headens träd OCH att den SHA:n har en grön körning enligt körnings-API:t
+- [x] #3 Vid träff hoppas de tunga jobben över; paraply-checken rapporterar fortfarande och blir grön
 - [x] #4 Fail-closed på VARJE avvikelse: ingen andra förälder, trädavvikelse, API-fel eller icke-grön körning ⇒ full svit
 - [x] #5 Uppslaget använder fullständig SHA — förkortad SHA ger noll träffar mot körnings-API:t (L314)
 - [x] #6 Steget bor i jobbet som redan har full historik: fetch-depth-bärar-invarianten är ORÖRD och dess testsvit fortsatt grön
-- [ ] #7 Kontrastbevis-paret körd med citerade körnings-ID: merge med träff hoppar över tunga jobb · avvikelse ger full svit
+- [x] #7 Kontrastbevis-paret körd med citerade körnings-ID: merge med träff hoppar över tunga jobb · avvikelse ger full svit
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · ci.yml dedup-steg (git HEAD^2 tree-jämförelse + gh run list full SHA) + suite-if + changed-jobbets actions:read (PR #121 b75df1c) · CI grön per jobb (PR-run 30047428027 full svit; main-push 30047936570 Test suite SKIPPAD) · CI-grön-första-pass: ja · defekter under körning: 0 · TDD: dedup-logiken unit-testad lokalt mot 6 grenar (1 hit + 5 fail-closed: pull_request/ingen-förälder/icke-grön/API-fel/tom conclusion) FÖRE bygget, alla korrekt. Kontrastbevis-par: MISS PR-event run 30047428027 (full svit, staging RAN) · HIT main-push run 30047936570 (Test suite SKIPPAD, dedup-steg-logg 'Dedup-TRÄFF: träd == a7f60c52^{tree} → tunga jobb hoppas', ci-passed grön/fail-closed intakt). Mekanism verifierad disk+API på bf592ca. fetch-depth-invariant ORÖRD (3 bärare, testsvit 7/7). Cache-formen falsifierad, ej byggd (L325).
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Statiska workflow-grindar gröna på ändrad CI-konfiguration (actionlint, yamllint, shellcheck strict)
-- [ ] #6 Kontrastbevis körda och körnings-ID:n citerade på kortet — ett bevis utan ID räknas inte
+- [x] #6 Kontrastbevis körda och körnings-ID:n citerade på kortet — ett bevis utan ID räknas inte
 - [x] #7 L322-invarianten oregresserad: paraply-checken har alltid-kör-villkoret ENSAMT och exit:ar 1 vid failure/cancelled
 <!-- DOD:END -->
