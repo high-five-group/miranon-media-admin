@@ -4,7 +4,7 @@ title: 'Skiva: Närvaro-registret'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 00:18'
+updated_date: '2026-07-23 00:42'
 labels:
   - ready-for-agent
 dependencies:
@@ -43,13 +43,23 @@ Genomförda event visar närvaron som register: attendance-shapen utökas till p
 **Inga nya direktberoenden** (package.json/lockfilen orörda). --color-success fanns redan (ingen ny token).
 
 **Grindar (lokalt gröna):** typecheck 0 · biome check . exit 0 · build grön · api-pure 208 · api-staging get-attendance 6 · test:a11y 62 · e2e register 8 + event-detail 47 + regression (deltagare/bekräftelse/bor-över/mark-paid/anmälda/add-registration) 44.
+
+## Merge-agent — post-CI-bokföring (granskningsfärdig)
+
+**Status: In Progress — granskningsfärdig, väntar design-review (Marcus) mot S73-facit (DoD #5/#6 + AC-facit-punkterna kvarstår HITL).**
+
+- Merge-commit på main: c1fe336a1ab88fb3d763d14faaed773f98fabe93 (äkta merge-commit, 2 parents — ingen squash; SHA-bevis bevarat).
+- PR #87 (feature-commit e806c51). PR-CI run 29968913808 GRÖN per jobb: Lint+Audit+TypeCheck · Detect changed files · Staging sentinel purge · Docs link check · Test+Build · CI Passed. E2E-steget uttryckligt grönt (E2E staging 254 passed; api-pure 208, api-staging 147, a11y 62).
+- main-CI run 29969407963 (push, merge-commit c1fe336) GRÖN per jobb: samma 6 jobb success; Test+Build-stegen api-pure/api-staging/E2E-staging/a11y/Build alla success.
+- DoD #3 (CI grön per jobb på pushad commit) bockad på denna grund.
+- Claims-kvitto (merge-agent, oberoende disk-verifiering): diff 471b7f0..c1fe336 = 9/9 filer inom kortets deklarerade yta (7 M + 2 A, 0 D). RIV INGENTING respekterad — standalone /narvaro-route + EventAttendance.tsx orörda (rivning tas separat, per byggagentens bokförda avvikelse ovan).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review MOT S73-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
