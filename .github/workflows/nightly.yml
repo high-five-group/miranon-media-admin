@@ -37,6 +37,13 @@ jobs:
   # biter inte). Staging-jobbet tar den delade staging-tests-mutexen.
   suite:
     name: Nattlig fullsvit
+    # Permissions-taket för ci-suite.yml — ett anropat workflow kan bara behålla
+    # eller minska, aldrig eskalera (samma regel som ci.yml:s suite-jobb). Utan
+    # detta grant ärver suite nightly:s topp-nivå permissions: {} och ci-suite:s
+    # contents: read blir en eskalering ⇒ startup_failure. Andra anroparen —
+    # missad i ci.yml-fixen, fångad av nightly-dispatchen (run 30038460735).
+    permissions:
+      contents: read
     uses: ./.github/workflows/ci-suite.yml
     secrets: inherit
 
