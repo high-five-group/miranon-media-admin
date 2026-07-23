@@ -12,31 +12,12 @@ import { Atgarder, CheckInKort } from './detail/Atgarder';
 import { Belaggning } from './detail/Belaggning';
 import { Betalningar } from './detail/Betalningar';
 import { Deltagare } from './detail/Deltagare';
-import { DetaljGrupp } from './detail/DetaljGrupp';
+import { Narvaro } from './detail/Narvaro';
 import { OmEventet } from './detail/OmEventet';
 
 /** Visat eventnamn ur de fält Airtable kan leverera — aldrig krasch/tomt. */
 function eventName(e: Event): string {
   return e.eventNamn ?? e.eventlabel ?? 'Namnlöst event';
-}
-
-/** Länk-rad i kortform — interim-ingång till en befintlig detaljyta. */
-function LankRad({
-  to,
-  eventId,
-  children,
-}: {
-  to: '/event/$eventId/anmalda' | '/event/$eventId/narvaro';
-  eventId: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="py-3">
-      <Link to={to} params={{ eventId }} className="text-body underline">
-        {children}
-      </Link>
-    </div>
-  );
 }
 
 /**
@@ -194,12 +175,11 @@ export function EventDetail({ eventId }: { eventId: string }) {
           grupper härleds LIVE ur anmälnings-cachen, inte event-aggregaten. */}
       <Betalningar event={event} />
 
-      {/* INTERIM (18.9 bygger registret): ingången till dagens närvaro-yta. */}
-      <DetaljGrupp id="grupp-narvaro" rubrik="Närvaro">
-        <LankRad to="/event/$eventId/narvaro" eventId={eventId}>
-          Öppna närvaro-vyn
-        </LankRad>
-      </DetaljGrupp>
+      {/* Närvaro-registret (task-18.9; K60): genomfört event → LMS-register
+          (rader × sessioner, Total närvaro %); kommande event → lugnt läge.
+          REN LÄSNING (närvaro-write bor på check-in-sidan). Fetchar närvaron
+          ENDAST för genomförda event (kommande event anropar aldrig EF:en). */}
+      <Narvaro event={event} />
     </>,
   );
 }

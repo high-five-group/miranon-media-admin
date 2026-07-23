@@ -330,21 +330,27 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     await expect(omGrupp.getByRole('button', { name: 'Ändra' })).toBeFocused();
   });
 
-  test('interim-sektionerna behåller funktionen: länkar till detaljytorna', async ({ page }) => {
+  test('detaljsidans sektioner är skarpa: inga interim-länkar; Närvaro-registret bär sektionen', async ({
+    page,
+  }) => {
     await mockEvent(page, eventDetail());
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    // Närvaro är den SISTA interim-sektionen (18.9 bygger registret).
-    // Betalningar är SKARP sedan 18.8 (inline-arbetsytan, egen svit i
-    // mark-paid-e2e) och Anmälda deltagare sedan 18.4 (arbetskön, egen svit i
-    // event-deltagare-e2e) — deras länkar till de gamla vyerna är rivna.
+    // Alla tre tidigare interim-länkar är rivna: Anmälda deltagare (18.4, egen
+    // svit event-deltagare-e2e), Betalningar (18.8, mark-paid-e2e) och Närvaro
+    // (18.9, registret) är nu skarpa sektioner — inga "Öppna …-vyn"-länkar kvar.
     await expect(page.getByRole('link', { name: 'Öppna anmälda-vyn' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Öppna betalnings-vyn' })).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Öppna närvaro-vyn' })).toHaveAttribute(
-      'href',
-      `/event/${EVENT_ID}/narvaro`,
-    );
+    await expect(page.getByRole('link', { name: 'Öppna närvaro-vyn' })).toHaveCount(0);
+
+    // Närvaro-registret: default-eventet är Planerat → lugnt ej-genomfört-läge
+    // (registret fetchar INTE närvaron för kommande event → ingen get-attendance-
+    // mock behövs här). Full register-täckning: event-narvaro-register.staging.test.ts.
+    const narvaro = page.locator('section[aria-labelledby="grupp-narvaro"]');
+    await expect(
+      narvaro.getByText('Eventet är inte genomfört ännu — närvaron fylls i vid check-in.'),
+    ).toBeVisible();
   });
 
   test('namnlöst event → fallback, ingen krasch; pill utelämnas utan eventKey', async ({
