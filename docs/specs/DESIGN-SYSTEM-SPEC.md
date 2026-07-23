@@ -1271,10 +1271,10 @@ stavas klassmönstret inte ut här.
 
 ### Erfarenhetsmixens sekventiella skala (task-18.10 — gruppdynamik)
 
-Eventsidans Gruppdynamik-avsnitt bär en **sekventiell** skala (mätar-segment
-+ nivåstreck) som svarar på *hur mycket* erfarenhet en deltagare har — till
-skillnad från kursfärgernas **kvalitativa** kulörer, som svarar på *vilken*
-kurs. De två får därför medvetet olika färgrymd.
+Eventsidans Gruppdynamik-avsnitt bär en **sekventiell** skala
+(mätar-segment plus nivåstreck) som svarar på *hur mycket* erfarenhet en
+deltagare har — till skillnad från kursfärgernas **kvalitativa** kulörer,
+som svarar på *vilken* kurs. De två får därför medvetet olika färgrymd.
 
 | Token | Primitiv | Nivå |
 |---|---|---|
