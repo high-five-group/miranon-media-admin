@@ -100,7 +100,7 @@
   (sex vågor, 16 AC) · `lifecycle: closed` · S76 STÄNGD. **NÄSTA
   ARBETE = NY YTA: S75-resume, work-batch 12.**
 
-### Session 75 🟢 PÅGÅR (2026-07-21 → 2026-07-23; paus 4 återupptagen 2026-07-23 — review-vågen + 18.13 A/B + prod-deploy) — Batch-exekveringen: work-batch max 22, två pipelines
+### Session 75 ⏸️ PAUSAD (2026-07-21 → 2026-07-23; paus 5 — FEM fix-vågor levererade [PR #91–#94], 21 granskningsfärdiga, protokollet → Done-flippar → 18.13 → QA → prod-deploy → session-end vid resume) — Batch-exekveringen: work-batch max 22, två pipelines
 
 > Scope: sessionsdok `2026-07-21-session-75.md` Del 1 (kanonisk
 > plats): exekvera Marcus batch-order AFK (ordern ordagrant i S74
@@ -406,6 +406,23 @@
   omgranskning i färskt läge (vågarna + STALE-ytorna) → Done-flippar
   per kort-kvittens → 18.13 A/B + kör → prod-deploy → end-pass/skörd
   på signal.**
+- [x] **VÅGORNA 3–5 HEM + VÄLJAR-SKIVORNA + PAUSAD, FEMTE PAUSEN**
+  (2026-07-23, Del 16): PR #92 `f1ff211` · #93 `15c5730` (Actions-
+  cancelled run → rerun grön) · #94 `afceeb6` — samtliga main-runs
+  GRÖNA per jobb; p12 datumspann-kollapsen · p13 DYNAMISKA grön-regeln
+  (Marcus-formen slog K77-A; 18.16 amenderad) · p14–15 "Dra för att
+  publicera"/"Publiceras" (MiranonSe RIVEN, K81-sagan stängd;
+  SlideToConfirms K82-lyft rivet). **18.18 + 18.19 födda** (event-
+  väljaren ny-anmälan + eventsidan; beslut a–d + rubrik A/B öppna).
+  "Flippa alla 21"-förslaget AVVISAT mot Done-flipp-grinden →
+  **omgransknings-protokollet** som bilaga
+  (`bilagor/s75-omgranskningsprotokoll.md`). Sessions-gränsen beslutad:
+  resume = S75:s SISTA (protokoll → Done-flippar → 18.13 → QA →
+  PROD-DEPLOY [Marcus-beslutad inom S75] → session-end); S77 =
+  väljar-grillningen + bygget. `lifecycle: paused` (femte pausen) +
+  fullt HANDOFF. **NÄSTA: NY Code-yta → `/session-resume` på S75 →
+  Marcus git pull + protokollet → kvittenser/Done-flippar → 18.13 →
+  QA → prod-deploy → session-end (N+1).**
 
 ### Session 74 ✅ AVSLUTAD (2026-07-21) — Familje-PRD:erna → 25 skivor → batch-ordern till S75
 
