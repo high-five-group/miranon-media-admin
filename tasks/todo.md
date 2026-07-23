@@ -55,9 +55,16 @@
   (PR-flödet mekanisk sanning + jobb-namn) · våg 2-designen →
   `docs/research/riskanpassad-ci-design-2026-07-23.md` · tråd **T85**
   (rad + kort) · sessionsdok Del 2–3. **NÄSTA: end-pass på Marcus
-  signal (skörd L321+ [deferral-utan-återbesöks-trigger +
-  MD004-quote-instansen] · hub-lyftet L284–L320 står oförändrat kvar ·
-  våg 2a/2b/2c per T85 i Marcus-takt).**
+  signal.**
+- [x] **End-pass** (2026-07-23, denna PR): skörd **L321** [UNIVERSAL]
+  (deferral utan återbesöks-bärare = tyst permanent;
+  MD004-quote-kandidaten FÖRKASTAD som L222-instans med motiv) ·
+  BUILD-LOG S77-post · sessionsdok Del 4 + transcript-ref (2 287 081
+  bytes) · numrering efter S77: 78/077/L322/T86/f45/TASK-36. **NÄSTA:
+  Marcus coverage-kvittens → stängnings-PR (`lifecycle: closed` +
+  todo-flipp) · därefter NY yta: våg 2a/2b/2c per T85 i Marcus-takt ·
+  hub-lyftet L284–L321 vid hub-sync-moment · Marcus-moment:
+  Update-klicket i claude.ai.**
 
 ### Session 76 ✅ AVSLUTAD (2026-07-22) — T80/T81/T82-mellansessionen + TASK-29-railen godkänd + mekaniska CI-vakt-grinden
 

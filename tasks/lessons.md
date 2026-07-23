@@ -4616,3 +4616,23 @@ kräver `a === b` på renderade mått är därför skört utan att vara
 strängare. Regeln: mät mot en TOLERANS som uttrycker kravet
 ("visuellt omärkbart" ≈ ≤ 1 px) och skriv motivet i testet, så att
 nästa läsare inte "skärper" det tillbaka till identitet.
+
+### L321 — [UNIVERSAL] En deferral utan återbesöks-bärare är en tyst permanent
+
+Datum: 2026-07-23 (S77) | Källa: ADR-029 § Medvetna utelämningar #5
+(branch protection) stod 2026-05-13→2026-07-23 med färdigbyggd
+landningsbana (aggregatorn döpt "branch-protection-required-stable")
+och återupptogs först av en EXTERN processanalys (klass:
+process/deferral)
+
+En medveten utelämning som bara dokumenteras i ADR-prosa ("kan
+utvidgas vid framtida aktivering") har ingen mekanism som tar den
+tillbaka till ytan: frusen beslutstext läses inte om, och till
+skillnad från LIFT-noter i kod — som återses varje gång filen rörs —
+passerar inget framtida arbete genom en ADR:s utelämningslista.
+Priset här: repots största säkerhetslucka stod öppen i två månader
+medan allt som krävdes för att stänga den redan var byggt. Regeln:
+varje deferral får en DURABEL återbesöks-bärare vid födseln — en
+tråd-rad, en todo-post eller en lift-trigger med konkret villkor i en
+yta som faktiskt passeras. "Vid framtida X" utan bärare är ingen
+trigger; det är en önskan.
