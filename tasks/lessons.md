@@ -4718,3 +4718,51 @@ kan se grön ut och tyst utebli (web-research-disciplinen i praktiken). Ersätta
 här är innehållsadresserad utan lagring: main-runnen läser `HEAD^2` (mergade
 PR-headen), verifierar tree-ekvivalens och frågar `gh run list --commit <full SHA>`
 om den redan har en grön run — bevisad mot disk + API före förslag (task-36.4).
+
+### L326 — [UNIVERSAL] Ett anropat reusable workflow kan inte eskalera anroparens token-permissions — varje anropare måste sätta taket, och en spike måste spegla den VERKLIGA säkerhets-posturen
+
+Datum: 2026-07-23 (S79, task-36.2 reusable-refaktorn) | Källa: två skarpa
+`startup_failure` när `ci.yml` + `nightly.yml` anropade nyextraherade
+`ci-suite.yml` — verifierat mot GitHub Docs *Reuse workflows* (klass:
+CI/plattform + spike-metodik)
+
+GitHub Docs verbatim: "Permissions can only be maintained or reduced—not
+elevated—throughout the chain." Ett anropande jobb (`uses: ./…/reusable.yml`)
+ärver anroparens token-permissions (jobb-nivå, annars workflow-topp-nivå), och
+det anropade workflowets jobb kan bara BEHÅLLA eller MINSKA — aldrig eskalera.
+Konsekvens med least-privilege-golvet (`permissions: {}` på topp-nivå, ADR-029
+§4): ett anropat jobb som deklarerar `contents: read` (för checkout) blir en
+ESKALERING → `startup_failure`. Fixen är att anropar-JOBBET grantar taket
+(`permissions: { contents: read }`) — normala jobb får åsidosätta topp-nivån
+fritt (`lint` gör det redan), men reusable-KEDJAN cappas.
+
+Tre lärdomar i en, alla dyrköpta samma session:
+
+1. **Diagnos-blindheten är total.** `startup_failure` skapar INGA check-runs,
+   INGA jobb-logs, och API-annotationerna är 404/tomma. Varken
+   `run --log`, `/annotations`, `check-runs` eller GraphQL gav feltexten. Det
+   som knäckte rotorsaken var SPIKE-KONTRASTEN (working vs failing) +
+   dokumentations-verifiering — inte log-läsning. Regeln: när en workflow dör
+   före jobb-skapelse, jämför mot en känd-grön minimal-variant och läs
+   plattformsdoket; jaga inte icke-existerande logs.
+
+2. **En av-riskande spike måste spegla den VERKLIGA säkerhets-posturen.**
+   Spiken (run 30036119790) bevisade `workflow_call` + `secrets: inherit` +
+   job-nivå `queue: max` i reusable-kontext — men dess reusable-jobb bar
+   `permissions: {}`, exakt förenklingen som MASKERADE buggen. En spike med
+   förenklad postur ger falsk trygghet: den bevisar mekaniken men döljer den
+   klass av fel den skulle fånga. Spikens jobb ska bära samma permissions,
+   samma secrets-behov och samma checkout som det skarpa målet.
+
+3. **Fixen måste appliceras på VARJE anropare — self-review missar den andra.**
+   `ci.yml`-fixen (PR #112) täckte första anroparen; `nightly.yml` (andra
+   anroparen, samma reusable) hade identiskt fel och gav ett andra
+   `startup_failure` på första nightly-dispatchen. Self-review-fångst är ~9 %
+   (konstitutionen); det var CI (nightly-dispatchen) som fångade det. Regeln
+   vid en reusable-extraktion: greppa ALLA `uses: ./…/<reusable>` och verifiera
+   permissions-taket på var och en i samma pass — behandla anropar-mängden som
+   en checklista, inte en punkt.
+
+Komplement: L322 (fail-closed genom refaktorn — jq-logiken byte-identisk, bara
+`needs`-listan omkopplad; gate-proof-repliken förblev giltig) + L325 (samma
+våg, cache-rivningen).
