@@ -4636,3 +4636,25 @@ varje deferral får en DURABEL återbesöks-bärare vid födseln — en
 tråd-rad, en todo-post eller en lift-trigger med konkret villkor i en
 yta som faktiskt passeras. "Vid framtida X" utan bärare är ingen
 trigger; det är en önskan.
+
+### L322 — [UNIVERSAL] En required check som kan skippas är fail-open — paraply-checken måste ALLTID köra och explicit faila
+
+Datum: 2026-07-23 (S77 end-pass-incidenten) | Källa: PR nr 101
+auto-mergades trots RÖTT docs-jobb — aggregatorn skippades av sitt
+if-villkor och GitHub räknar en skippad required check som UPPFYLLD
+(run 30023934304 → main-rött 30024005788, fångat av backstopen inom
+minuter) (klass: CI/merge-grind)
+
+GitHubs required status checks blockerar på failure och väntar på
+expected — men en check-run med conclusion `skipped` uppfyller
+kravet. En aggregator med `if: always() && !contains(needs.*.result,
+'failure')` failar därför ALDRIG: vid rött skippas den, och skip är
+grönt ljus för mergen. Regeln: en paraply-check som är required ska
+ha `if: always()` ENSAMT och läsa needs-resultaten i ett steg som
+exit:ar 1 vid failure/cancelled — signalen ska vara success ELLER
+failure, aldrig frånvaro. Följdregel (L321-förstärkning): när en
+medveten utelämning stängs, konsumera HELA dess text — utelämning #5
+bar både "aktivera branch protection" och dual-signal-behovet
+("explicit failure-signal överflödig utan automation som läser
+den"); halva stängdes, andra halvan blev hålet. Fail-grenens
+gate-proof är öppen bevis-skuld (T85 våg 2a).

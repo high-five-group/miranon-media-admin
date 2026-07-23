@@ -4,6 +4,8 @@
 - Datum: 2026-07-23
 - Fas: Meta (Session 77 — processgransknings-landningen, våg 1)
 
+> **Korrigering (Session 77 samma dag, 2026-07-23 — skipped-aggregator-hålet):** Bevis-sektionens BLOCKED→auto-merge-bevis höll för grön kedja (PR #99/#100), men grinden hade ett fail-open-hål: aggregator-jobbet kunde SKIPPAS när ett needs-jobb var failure, och GitHub räknar en skippad required check som UPPFYLLD — PR nr 101 auto-mergades därför RÖD (runs 30023934304/30024005788; main-backstopen fångade inom minuter). Stängt samma dag i fix-PR:n: aggregatorn kör alltid (`if: always()` ensamt) och failar explicit på failure/cancelled i needs (L322). Detta var ADR-029 utelämning #5:s ANDRA halva — dual-signal-behovet — som inte konsumerades vid stängningen (L321-klassen i praktiken). Required-checken är först härmed fail-closed; fail-grenens gate-proof = öppen bevis-skuld (T85 våg 2a).
+
 ## Kontext
 
 Den externa processgranskningen
