@@ -4,7 +4,7 @@ title: 'Skiva: Anteckningar (egen ADR + additiv tabell + strömmen)'
 status: In Progress
 assignee: []
 created_date: '2026-07-21 08:21'
-updated_date: '2026-07-23 03:29'
+updated_date: '2026-07-23 03:37'
 labels:
   - ready-for-agent
 dependencies:
@@ -50,6 +50,12 @@ Omvänd länk på Eventplanering: 'Anteckningar' (fld5ExUmcDPtUnUiM). Skrivbarhe
 ### TDD-bevis
 - e2e (mockad, chromium-authenticated mot port 5188): RÖTT observerat — event-anteckningar-sviten föll 7/7 på 'h1 saknas' (mock-eventet saknade EventSchema-required number-fält → fetchEvent-parse kastade). GRÖNT efter komplett event-shape: 8/8. Andra RÖD→GRÖNT: läs-fel-testet föll (fel-ytan hann inte fram inom 5s — 500 retry-kedja fetchWithRetry×React Query) → timeout 12s → grönt.
 - api-conformance: RÖD-fasen ej observerbar lokalt (EF ej deployad) → TDD-AVVIKELSE, deploy-gatad enligt ovan.
+
+---
+
+HISTORIK — HALT-NOTEN FRÅN BATCH-KÖRNINGEN (bevarad per ADR-073 Am 3 mandat (b), union; LÄKT av orkestrator-fixen 1ff5760: ADR-räkning 74→75 · biome-format · MD032 · staging-EF-deploy. Alla fyra åtgärdade, se leverans-noten ovan):
+
+HALT vid steg 5 (PR-CI-vakten). PR #89, CI-run 29977396636 (pull_request). ROD CI: jobb 'Lint + Audit + TypeCheck' => FAILURE pa steget 'Biome check'; jobb 'Docs link check' => FAILURE pa steget 'Check markdown hygiene (markdownlint-cli2)'; 'Detect changed files' + 'Staging sentinel purge' grona, 'Test + Build' var in_progress vid HALT. Deterministisk rot-orsak aven verifierad fore PR: branchen adderar ADR-075 (75 ADR-filer i docs/decisions/) men rot-README.md star kvar pa '74 arkitekturbeslut' och orordes ej pa branchen => scripts/check-adr-count.sh (ci.yml ADR-039-grinden) faller. Ingen merge utford. Fixytor ligger delvis UTANFOR merge-agentens skrivbara yta (rot-README.md ej i claims v2). Branch task/18.11 + PR #89 lamnade STAENDE som atgardsyta.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
