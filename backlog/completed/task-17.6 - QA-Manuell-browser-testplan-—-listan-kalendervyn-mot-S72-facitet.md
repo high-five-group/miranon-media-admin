@@ -1,9 +1,10 @@
 ---
 id: TASK-17.6
 title: 'QA: Manuell browser-testplan — listan + kalendervyn mot S72-facitet'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-21 08:22'
+updated_date: '2026-07-23 14:55'
 labels:
   - ready-for-human
 dependencies:
@@ -32,8 +33,8 @@ Manuell testplan efter skiv-kedjan (körs i browsern mot staging-data, mobilmåt
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
