@@ -2,10 +2,13 @@
 # scripts/check-fetch-depth-invariant.sh — konsistens-grind (ADR-039).
 #
 # L50:s obyggda test-hälft. Hävdar att repots fetch-depth-värde hålls
-# ENHETLIGT över de 6 LEVANDE (muterbara) bärarna:
-#   1-4. .github/workflows/ci.yml — fetch-depth i changed/lint/test/docs-jobben
-#   5.   .frontmatter-policy.conf — FRONTMATTER_MIN_HISTORY_DEPTH
-#   6.   scripts/check-frontmatter.sh — default ${FRONTMATTER_MIN_HISTORY_DEPTH:-N}
+# ENHETLIGT över de 5 LEVANDE (muterbara) bärarna:
+#   1-3. .github/workflows/ci.yml — fetch-depth i changed/lint/docs-jobben
+#        (test-jobbens rad utgick vid S77-splitten: test-fast/a11y/
+#        test-staging kör inga historik-beroende skript → shallow default,
+#        medvetet utanför bärar-mängden likt purge-jobbet)
+#   4.   .frontmatter-policy.conf — FRONTMATTER_MIN_HISTORY_DEPTH
+#   5.   scripts/check-frontmatter.sh — default ${FRONTMATTER_MIN_HISTORY_DEPTH:-N}
 #
 # Bakgrund: när fetch-depth bumpades 50→100 (2026-05-26) följde tröskeln inte
 # med i alla bärare → falsk-negativt detektionsfönster commit-djup 50–99
@@ -20,7 +23,7 @@
 # börjar med '#'). För ADR-029 + ADR-030 hävdas i stället att en ERRATUM-not
 # finns som pekar på aktuellt värde (ej värde-likhet med frusen brödtext).
 #
-# Exit 0 om alla 6 levande bärare är ömsesidigt identiska OCH båda ADR:erna
+# Exit 0 om alla 5 levande bärare är ömsesidigt identiska OCH båda ADR:erna
 # bär erratum som nämner aktuellt värde. Exit 1 vid drift.
 #
 # Källa: docs/decisions/ADR-039-konsistens-grindar-kadens.md
@@ -34,9 +37,10 @@ FM_SCRIPT="scripts/check-frontmatter.sh"
 ADR029="docs/decisions/ADR-029-ci-architektur-changed-files-pattern.md"
 ADR030="docs/decisions/ADR-030-docs-grindvakter-frontmatter-policy.md"
 
-# Namngiven bärar-mängd: 4 ci.yml-jobb (changed/lint/test/docs).
+# Namngiven bärar-mängd: 3 ci.yml-jobb (changed/lint/docs).
 # CI-topologi-ändring → uppdatera detta + ADR-039 (medveten enkelvärde-policy).
-EXPECTED_CI_CARRIERS=4
+# 4→3 vid S77-splitten (test-jobbet delades; nya jobb utan historik-behov).
+EXPECTED_CI_CARRIERS=3
 
 fail=0
 
@@ -45,7 +49,7 @@ fail=0
 ci_vals=$(grep -E "^[[:space:]]*fetch-depth: [0-9]+" "${CI}" | grep -oE "[0-9]+$" || true)
 ci_n=$(printf '%s' "${ci_vals}" | grep -c . || true)
 if [[ "${ci_n}" -ne "${EXPECTED_CI_CARRIERS}" ]]; then
-    echo "❌ ${CI}: hittade ${ci_n} fetch-depth-config-rader (förväntat ${EXPECTED_CI_CARRIERS}: changed/lint/test/docs)."
+    echo "❌ ${CI}: hittade ${ci_n} fetch-depth-config-rader (förväntat ${EXPECTED_CI_CARRIERS}: changed/lint/docs)."
     echo "   Fix: om CI-topologin avsiktligt ändrats — uppdatera EXPECTED_CI_CARRIERS + ADR-039."
     fail=1
 fi
@@ -73,14 +77,14 @@ LIVE=""
 if [[ "${uniq_n}" -eq 1 ]]; then
     LIVE="${uniq_vals}"
     if [[ "${fail}" -eq 0 ]]; then
-        echo "✅ fetch-depth-invariant: alla 6 levande bärare == ${LIVE} (ci×${ci_n}, conf, script-default)."
+        echo "✅ fetch-depth-invariant: alla 5 levande bärare == ${LIVE} (ci×${ci_n}, conf, script-default)."
     fi
 else
     ci_joined=$(printf '%s' "${ci_vals}" | tr '\n' ' ' || true)
     echo "❌ fetch-depth-drift mellan levande bärare. Unika värden funna:"
     printf '%s\n' "${uniq_vals}" | sed 's/^/     - /'
     echo "   ci.yml-jobb: ${ci_joined}| conf: ${conf_val:-<saknas>} | script-default: ${script_val:-<saknas>}"
-    echo "   Fix: sätt SAMMA värde i alla 6 bärare (ci.yml ×4, ${CONF}, ${FM_SCRIPT})."
+    echo "   Fix: sätt SAMMA värde i alla 5 bärare (ci.yml ×3, ${CONF}, ${FM_SCRIPT})."
     fail=1
 fi
 

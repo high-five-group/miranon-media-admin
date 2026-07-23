@@ -10,7 +10,10 @@
 #   T5 ci.yml-KOMMENTAR säger annat värde men config-rader lika → 0
 #      (bevisar att grinden EXKLUDERAR kommentarer / frusen text)
 #   T6 erratum finns men nämner ej aktuellt levande värde → 1
-#   T7 fel antal ci-bärare (3 i st f 4) → 1
+#   T7 fel antal ci-bärare (2 i st f 3) → 1
+#
+# Topologi 4→3 vid S77-splitten (test-jobbet delades i test-fast/a11y/
+# test-staging utan fetch-depth-config) — fixturerna speglar 3 bärar-jobb.
 #
 # Test-isolering: /tmp/k0b-test-fetch-depth/ med ci.yml + conf + script +
 # ADR-fixturer. Återställer via trap. INGEN ändring av real-repo.
@@ -48,10 +51,12 @@ setup() {
     chmod +x "${TEST_DIR}/scripts/check-fetch-depth-invariant.sh"
 }
 
-# write_ci <v_changed> <v_lint> <v_test> <v_docs> <comment_value> [omit_one]
-# Om omit_one="omit" skrivs bara 3 config-rader (changed utelämnas).
+# write_ci <v_changed> <v_lint> <v_docs> <comment_value> [omit_one]
+# Om omit_one="omit" skrivs bara 2 config-rader (changed utelämnas).
+# Speglar S77-topologin: 3 bärar-jobb (changed/lint/docs); test-jobben
+# saknar fetch-depth-config by design.
 write_ci() {
-    local vc=$1 vl=$2 vt=$3 vd=$4 vcomment=$5 omit=${6:-}
+    local vc=$1 vl=$2 vd=$3 vcomment=$4 omit=${5:-}
     {
         echo "jobs:"
         echo "  changed:"
@@ -63,8 +68,6 @@ write_ci() {
         echo "  lint:"
         echo "        with:"
         echo "          fetch-depth: ${vl}"
-        echo "  test:"
-        echo "          fetch-depth: ${vt}"
         echo "  docs:"
         echo "          fetch-depth: ${vd}"
     } > "${TEST_DIR}/.github/workflows/ci.yml"
@@ -129,7 +132,7 @@ mark() {
 # ============================================================
 echo "═══ T1: alla 6 lika (100) + båda errata pekar på 100 → exit 0 ═══"
 setup
-write_ci 100 100 100 100 100
+write_ci 100 100 100 100
 write_conf 100
 write_script 100
 write_adr "${ADR029_PATH}" 1 100
@@ -137,13 +140,13 @@ write_adr "${ADR030_PATH}" 1 100
 out=$(run_gate); ec=$?
 ok=0
 check_exit "T1" 0 "${ec}" || ok=1
-check_contains "T1" "alla 6 levande bärare == 100" "${out}" || ok=1
+check_contains "T1" "alla 5 levande bärare == 100" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
 echo "═══ T2: ci-bärar-drift (lint 99) → exit 1 ═══"
 setup
-write_ci 100 99 100 100 100
+write_ci 100 99 100 100
 write_conf 100
 write_script 100
 write_adr "${ADR029_PATH}" 1 100
@@ -157,7 +160,7 @@ mark "${ok}"
 # ============================================================
 echo "═══ T3: conf-drift (50, övriga 100) → exit 1 ═══"
 setup
-write_ci 100 100 100 100 100
+write_ci 100 100 100 100
 write_conf 50
 write_script 100
 write_adr "${ADR029_PATH}" 1 100
@@ -171,7 +174,7 @@ mark "${ok}"
 # ============================================================
 echo "═══ T4: ADR-029 saknar erratum → exit 1 ═══"
 setup
-write_ci 100 100 100 100 100
+write_ci 100 100 100 100
 write_conf 100
 write_script 100
 write_adr "${ADR029_PATH}" 0 100
@@ -185,7 +188,7 @@ mark "${ok}"
 # ============================================================
 echo "═══ T5: ci.yml-KOMMENTAR säger 50 men config-rader alla 100 → exit 0 (exkluderings-bevis) ═══"
 setup
-write_ci 100 100 100 100 50
+write_ci 100 100 100 50
 write_conf 100
 write_script 100
 write_adr "${ADR029_PATH}" 1 100
@@ -193,13 +196,13 @@ write_adr "${ADR030_PATH}" 1 100
 out=$(run_gate); ec=$?
 ok=0
 check_exit "T5" 0 "${ec}" || ok=1
-check_contains "T5" "alla 6 levande bärare == 100" "${out}" || ok=1
+check_contains "T5" "alla 5 levande bärare == 100" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
 echo "═══ T6: erratum finns men nämner ej aktuellt värde (säger 50, live=100) → exit 1 ═══"
 setup
-write_ci 100 100 100 100 100
+write_ci 100 100 100 100
 write_conf 100
 write_script 100
 write_adr "${ADR029_PATH}" 1 50
@@ -211,9 +214,9 @@ check_contains "T6" "nämner inte aktuellt levande värde" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
-echo "═══ T7: fel antal ci-bärare (3 i st f 4) → exit 1 ═══"
+echo "═══ T7: fel antal ci-bärare (2 i st f 3) → exit 1 ═══"
 setup
-write_ci 100 100 100 100 100 omit
+write_ci 100 100 100 100 omit
 write_conf 100
 write_script 100
 write_adr "${ADR029_PATH}" 1 100
@@ -221,7 +224,7 @@ write_adr "${ADR030_PATH}" 1 100
 out=$(run_gate); ec=$?
 ok=0
 check_exit "T7" 1 "${ec}" || ok=1
-check_contains "T7" "förväntat 4" "${out}" || ok=1
+check_contains "T7" "förväntat 3" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
