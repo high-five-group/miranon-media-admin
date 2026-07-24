@@ -2965,6 +2965,18 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-07-24-session-83.md`](../tasks/sessions/2026-07-24-session-83.md) (Del 1–7). **EJ fas-avslut.** Kvar: nattbygget i FRISK session (work-batch, max-kort 6) → morgongranskning → T85-korrigeringsfönstret · konventions-hemmet (grillning) · hub-lyftet L284–L337 vid hub-sync-moment · Marcus-moment: Update-klicket i claude.ai.
 
+## Session 85 — Dukningen för nattbygget: audit-läkningen + go-redo för S86 (2026-07-25)
+
+**Commit-range:** `3a50e8e` (läknings-PR #169) → stängnings-PR. **Mål:** läka den röda audit-grinden + städa + duka nattbygget så S86 startar på ett Marcus-"go" (T86 § Körplanen punkt 4). Ej byggplan-fas — förvaltnings-/dukningssession; körd på Fable 5 efter Marcus-rapport om S83-resumens Opus-körning (orienterings-passet fann S83 komplett stängd — röran var redan öppet bokförd i S83 Del 7).
+
+- **Audit-läkningen (PR #169):** `GHSA-mh99-v99m-4gvg` (high, DoS/OOM i brace-expansion) publicerades 21:53Z — ~20 min före S83:s sista merge-run, som gick röd på main (enbart audit-jobbet; PR-runnen var grön minuterna före). Båda instanserna (2.1.2 + 5.0.7) i sårbart intervall ≤ 5.0.7, inga 2.x-patchar → global override **5.0.8** (dual ESM+CJS = kompatibel med `minimatch@5`:s require). Bevis: full svit lokalt FÖRE push (audit Passed · typecheck · Biome 0 errors · build med PWA-precachen = workbox-kedjan skarpt exekverad · **376/376 API**) + PR-run grön per jobb + main-merge-run 30132229085 grön per jobb — **36.4-dedupens första skarpa config-klass-träff** (Test suite dedup-SKIPPAD på main-runnen). ADR-028-allowlisten ej tillämplig (patch fanns); allowlisten förblir tom. → **L338** [UNIVERSAL].
+- **Städet:** S84-worktreen riven (0 unika commits, verifierat före riv) · **50 lokala brancher** fullt innehållna i main rensade (huvuddelen `worktree-wf_*`-rester; `proto/*` ×5 orörda per återupplivningsvägen) · `odoo-autonomous-test-plan` (2026-05-07, 2 unika) kvar — Marcus-beslut.
+- **Kortläget re-verifierat via backlog-CLI:t:** ready-for-agent ×6 `To Do` · externa deps Done ×4 (17.2/18.3/18.5/18.12) · enda interna kedjan 18.18→18.19.
+- **Dukningen (PR #170 dok-födelse + PR #171):** batch-ordern `tasks/sessions/bilagor/s85-nattbygget/batch-order.md` — /work-batch max-kort 6 · ADR-071-kontraktet i ADR-076-landningsform (trunk-push-beslutet superseded av merge-grinden) · rött-först per S80-amenderingen · halt-first · pilot-loggrad per skiva (T86) · F6-fönstret föreslaget 18.16 (Marcus-veto vid "go") · INSTANT-regeln (ADR-078) · **konventions-bilagan** (sex JSDoc-belagda mönster med källpekare = L337-skyddet; öppet märkt batch-lokal läskopia — hem-frågan förblir grillnings-klass).
+- **Numrering efter S85:** nästa 86/079/L339/T91/f46/task-39.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-25-session-85.md`](../tasks/sessions/2026-07-25-session-85.md) (Del 1–3). **EJ fas-avslut.** Kvar: **S86 nattbygget på Marcus "go"** (ordern är batch-kvittot) → morgongranskning → T85-korrigeringsfönstret · konventions-grillningen (/grill-me) · hub-lyftet L284–L338 vid hub-sync-moment · dependabot-PR #162 Marcus-review · Marcus-moment: Update-klicket i claude.ai.
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

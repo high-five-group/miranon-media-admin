@@ -75,6 +75,13 @@ BUILD-LOG S83-post.
   läskopia — hemfrågan förblir grillnings-klass). **NÄSTA:
   session-end på Marcus coverage-kvittens → S86 NATTBYGGET på Marcus
   "go" (ordern är batch-kvittot).**
+- [x] **Stängningen, pre-kvittens** (2026-07-25, denna PR): skörd
+  **L338** [UNIVERSAL] (grön PR-run = ögonblicksbild av omvärlden) +
+  BUILD-LOG S85-post + sessionsdok Del 3 med transcript-ref
+  (472 rader / 1 018 925 byte, wc-verifierat). Ingen ny ADR (öppet
+  motiverat) · inga nya trådar (ADR-053-triagen: allt registrerat).
+  **NÄSTA: Marcus coverage-kvittens → `lifecycle: closed` +
+  rubrik-flipp → S86 nattbygget.**
 
 ### Session 77 ✅ AVSLUTAD (2026-07-23) — Processgransknings-landningen: merge-grinden mekaniserad + riskanpassad CI-design
 
