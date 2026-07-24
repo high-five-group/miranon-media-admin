@@ -100,6 +100,17 @@
 # transient, ta bort.
 ^https://css-tricks\.com/print-stylesheet-approaches-blacklist-vs-whitelist/$
 
+# gitlab.com CI-runner-specifik 429-rate-limit (Session 84, 2026-07-24).
+# Bevisad dubbel: [429 Too Many Requests] i PR-runs 30122100173 (19:57Z)
+# OCH 30122829665-klassens omkörning (20:34Z) — cache-exclude-status '429'
+# gör att båda var färska försök, re-run läker alltså inte. Lokal curl:
+# 200 på 0,9 s — länken är frisk; gitlab.com rate-limitar GHA-IP-ranges.
+# Samma klass som tanstack/opentelemetry/digg (GHA-IP strypt av sajt);
+# 2-instans-beslut per digg.se-precedenten. Påverkar
+# docs/decisions/ADR-032-vale-lazy-continuation-helfil-disable.md.
+# Lessons-flag: re-utvärdera i framtida session — om transient, ta bort.
+^https://gitlab\.com/gitlab-org/gitlab/-/merge_requests/88894$
+
 # help.shopify.com permanent bot-block (Session 83, 2026-07-24). 403 för
 # ALLA icke-browser-klienter: CI-lychee MED browser-UA-headern OCH lokal
 # curl ×2 UA-former — Cloudflare bot management på hela hjälpcentret,
