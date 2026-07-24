@@ -69,6 +69,43 @@ gate-proof re-kört (run **30038462683** grön) bekräftade fail-closed genom
 refaktorn. `ci.yml`-kommentaren (~rad 666) uppdaterad "öppen bevis-skuld"→betald
 (36.2). Bäraren kvarstår för FRAMTIDA jq-ändringar (då MÅSTE repliken speglas).
 
+## Eftergranskningen (Codex 2026-07-24) → korrigeringspaketet
+
+Marcus beställde omgranskning efter våg 1–2:s utlösning. Dom: **6,5 →
+8/10** — åtgärdspaketet bekräftat verkligt ("inte
+dokumentationsteater"; main-skyddet "starkt löst", D1 "precis hur en
+säker fast track bör utformas", dedupen "ovanligt välgjord",
+incidenthanteringen "ett moget arbetssätt"). Rapport + Codes
+verifikation:
+[eftergranskningen](../../docs/research/arbetsflode-processgranskning-eftergranskning-2026-07-24.md)
+(§ Verifikation och beslutsläge — beslutsdrivande fynd verifierade;
+sanningsfixen i CONTRIBUTING § Visuell regression + T86-pilotens
+protokoll v2 åtgärdades direkt i S82-konversationen, PR #145).
+
+**Korrigeringspaketet (KVAR — tas som eget T85-pass/kort):**
+
+1. **Mätardefinitionerna** (`scripts/ci-metrics.mjs`) — åtgärdas FÖRE
+   beslutsanvändning av siffrorna: flaky-nämnaren (`run_attempt > 1`
+   betyder inte röd första körning; incidenter ≠ röda försök),
+   staging-"kötiden" mäter workflow-start→jobb-start (inte
+   mutex-väntan isolerat), röd-orsaken läser endast `failure` (missar
+   `startup_failure`/`timed_out`/`action_required`/`stale`).
+2. **Nattlarms-observatören** — larmjobb i samma workflow kan inte se
+   sitt eget `startup_failure` (run 30038460735) eller utebliven
+   schemakörning; separat `workflow_run`-vakt eller motsvarande,
+   täckande även `timed_out`/`action_required`.
+3. **Vale-SHA256** — samma checksummeform som actionlint.
+4. **Required-check app-bindningen** — `integration_id` mot GitHub
+   Actions så checknamnet inte kan publiceras av annan write-aktör.
+5. **Cron-timezone** — `timezone: Europe/Stockholm` ersätter
+   UTC-approximationen + den inaktuella kommentaren i nightly.
+
+**Beslutsklass (Marcus):** 36.7-kortformalian (Done med öppna AC 7–8 +
+DoD — parkeringens formella hemvist) · 36.8-ordningen (QA-punkt 11
+förutsätter T87-aktivering) · nightly-visual-frågan (aktivera visual i
+nightly FÖRE PR-grinden? rör T87:s ett-stegs-design — grillbar) ·
+merge-only som husregel (dedup-förutsägbarheten).
+
 ## Upptags-form
 
 Våg 2a/2b/2c tas som egna pass (PRD-kort/skivor eller session-scope) med
