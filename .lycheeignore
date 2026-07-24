@@ -99,3 +99,12 @@
 # 2026-07-24.md. Lessons-flag: re-utvärdera i framtida session — om
 # transient, ta bort.
 ^https://css-tricks\.com/print-stylesheet-approaches-blacklist-vs-whitelist/$
+
+# help.shopify.com permanent bot-block (Session 83, 2026-07-24). 403 för
+# ALLA icke-browser-klienter: CI-lychee MED browser-UA-headern OCH lokal
+# curl ×2 UA-former — Cloudflare bot management på hela hjälpcentret,
+# fungerar endast i riktig browser. Inte GHA-IP-klassen (lokal 403 också)
+# utan UA/fingerprint-klassen (jfr travisgosselin-posten). Påverkar
+# docs/research/detaljsida-postvy-monster-2026-07-24.md. Domän-brett:
+# blocket är systemiskt för help.shopify.com.
+^https://help\.shopify\.com/.*$
