@@ -82,6 +82,19 @@ verifikation:
 sanningsfixen i CONTRIBUTING § Visuell regression + T86-pilotens
 protokoll v2 åtgärdades direkt i S82-konversationen, PR #145).
 
+**SEKVENS LÅST (Marcus 2026-07-24):** paketet tas som NÄSTA
+processfönster — egen fokuserad session EFTER nattbygget, BINDANDE
+FÖRE review-pilotens beslut (T86, 10–15 loggrader) och före all vidare
+CI-utbyggnad. Nattbygget blockeras inte: produktarbete = den "normala
+drift" eftergranskningens punkt 9 efterfrågar, pilotens datainsamling
+använder inte ci-metrics-siffrorna, och visual-grinden SKA vara
+parkerad under avsiktliga UI-ändringar (T87-beslutet). Sessionen
+BÖRJAR med att verifiera Codex tre mätpåståenden mot
+`scripts/ci-metrics.mjs` (hypotes-regeln gäller även extern granskare).
+Nightly-visual-punkten: Code TVEKSAM — förväntat-röda nätter under
+UI-fas är kyrkogårds-klassen (L321); Codex missade UI-fas-dynamiken →
+grillas i sessionen, tas inte rakt av.
+
 **Korrigeringspaketet (KVAR — tas som eget T85-pass/kort):**
 
 1. **Mätardefinitionerna** (`scripts/ci-metrics.mjs`) — åtgärdas FÖRE
