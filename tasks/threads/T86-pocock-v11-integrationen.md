@@ -202,6 +202,13 @@ nattbyggets kort (§ Körplanen nedan).
    (rött visual-jobb) synkats mot verkligheten — punkten förutsätter
    T87-aktivering (Codex-eftergranskningen; Marcus-beslut om
    ordningen).
+6. **Nästa processfönster (SEKVENS LÅST, Marcus 2026-07-24):**
+   T85-korrigeringssessionen — mätardefinitions-verifiering + fix,
+   nattlarms-observatören, Vale-SHA256, cron-timezone +
+   beslutsfrågorna (36.7-formalian · 36.8-ordningen ·
+   nightly-visual-grillningen · merge-only). BINDANDE före
+   pilot-beslutet och före all vidare CI-utbyggnad (T85-kortets
+   § Eftergranskningen bär fulltexten).
 
 Parallell-landningsdisciplinen (L328) gäller: docs-PR:er landas inte
 under en långsam svits fönster.
