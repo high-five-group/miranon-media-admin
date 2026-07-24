@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
+import { VISUAL_SUPABASE_ANON_KEY, VISUAL_SUPABASE_URL } from './tests/visual/support/fixture-data';
 
 // Ladda .env.test för LOKALA körningar (task-10 AC 3, officiella Playwright-
 // mönstret playwright.dev/docs/test-parameterize). Tre verifierade egenskaper
@@ -26,6 +27,17 @@ dotenv.config({ path: path.resolve(import.meta.dirname, '.env.test'), quiet: tru
 // är orört.
 const A11Y_DEV_PORT = 5199;
 const isA11yRun = process.env.PLAYWRIGHT_A11Y_DEV_SERVER === '1';
+
+// Visual-runnern (task-36.7) kör mot en ALLTID-FÄRSK dev-server på dedikerad
+// port i a11y-mönstret — men med FIXTUR-ENV injicerad: servern binder mot den
+// fiktiva visual-fixture-URL:en (tests/visual/support/fixture-data.ts), aldrig
+// staging (AC 4: noll staging-beroende — testerna mockar allt nätverk).
+// Dedikerad port behövs även lokalt: 5173 bär ofta en vanlig dev-server med
+// verklig env, och stale-server-vakten ska vägra den — inte tvinga fram att
+// den stängs (E2E-portlåset till 5173 är CORS-bundet; visual har ingen
+// CORS-yta alls, så fri port är riskfri).
+const VISUAL_DEV_PORT = 5299;
+const isVisualRun = process.env.PLAYWRIGHT_VISUAL_DEV_SERVER === '1';
 
 // E2E-dev-servern är PORTLÅST till 5173: staging-CORS_ALLOWED_ORIGINS tillåter
 // exakt origin http://localhost:5173 (jfr tests/api/cors.staging.test.ts) — en
@@ -109,7 +121,13 @@ export default defineConfig({
   // hela runnet (Playwrights page-snapshot listar input-värden, även för
   // type=password). Ren artefakt-efterbearbetning — rör ej testbeteende/a11y.
   globalTeardown: './tests/global-teardown.ts',
-  snapshotPathTemplate: '{testDir}/visual/__screenshots__/{testFilePath}/{arg}{ext}',
+  // task-36.7: {projectName} skiljer vyport-projekten åt (samma spec-fil, två
+  // skott — utan den kolliderar filnamnen) och {platform} bär AC 3: endast
+  // -linux checkas in (baselines föds i CI), -darwin/-win32 är gitignorerade
+  // personliga jämförelse-baselines. Fas 0-mallen saknade båda — den skrevs
+  // före CI-födda-baselines-principen och antog global testDir.
+  snapshotPathTemplate:
+    '{testDir}/__screenshots__/{testFileName}/{arg}-{projectName}-{platform}{ext}',
   // T26: 0 lokalt (se flakes direkt) / 2 i CI (absorbera infra-brus utan
   // att maskera äkta fel — Playwright rapporterar flaky ≠ failed).
   retries: process.env.CI ? 2 : 0,
@@ -144,19 +162,35 @@ export default defineConfig({
             reuseExistingServer: false,
             timeout: 60_000,
           }
-        : isA11yRun
+        : isVisualRun
           ? {
-              command: `npm run dev -- --port ${A11Y_DEV_PORT} --strictPort`,
-              url: `http://localhost:${A11Y_DEV_PORT}`,
+              command: `npm run dev -- --port ${VISUAL_DEV_PORT} --strictPort`,
+              url: `http://localhost:${VISUAL_DEV_PORT}`,
               reuseExistingServer: false,
               timeout: 60_000,
+              // Fixtur-env:en vinner över .env-filer (Vites process-env-
+              // företräde) — appen binder mot den fiktiva URL:en.
+              env: {
+                VITE_SUPABASE_URL: VISUAL_SUPABASE_URL,
+                VITE_SUPABASE_ANON_KEY: VISUAL_SUPABASE_ANON_KEY,
+                // Devtools-knapparna (dev-läge) hör inte hemma i baselines
+                // och deras versioner får aldrig driva pixlar (__root.tsx).
+                VITE_DEVTOOLS: '0',
+              },
             }
-          : {
-              command: `npm run dev -- --port ${E2E_DEV_PORT} --strictPort`,
-              url: `http://localhost:${E2E_DEV_PORT}`,
-              reuseExistingServer: false,
-              timeout: 60_000,
-            },
+          : isA11yRun
+            ? {
+                command: `npm run dev -- --port ${A11Y_DEV_PORT} --strictPort`,
+                url: `http://localhost:${A11Y_DEV_PORT}`,
+                reuseExistingServer: false,
+                timeout: 60_000,
+              }
+            : {
+                command: `npm run dev -- --port ${E2E_DEV_PORT} --strictPort`,
+                url: `http://localhost:${E2E_DEV_PORT}`,
+                reuseExistingServer: false,
+                timeout: 60_000,
+              },
   projects: [
     {
       name: 'setup',
@@ -221,15 +255,26 @@ export default defineConfig({
           (isA11yRun ? `http://localhost:${A11Y_DEV_PORT}` : `http://localhost:${E2E_DEV_PORT}`),
       },
     },
+    // Visual-projekten (task-36.7): kanoniskt anrop `npm run test:visual`
+    // (env-flaggan startar fixtur-servern på dedikerad port — se webServer).
+    // Hermetiken bor i tests/visual/support/hermetic.ts; baselines föds i CI.
     {
       name: 'visual-desktop',
       testDir: './tests/visual',
-      use: { viewport: { width: 1440, height: 900 }, colorScheme: 'light' },
+      use: {
+        viewport: { width: 1440, height: 900 },
+        colorScheme: 'light',
+        baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || `http://localhost:${VISUAL_DEV_PORT}`,
+      },
     },
     {
       name: 'visual-mobile',
       testDir: './tests/visual',
-      use: { viewport: { width: 375, height: 812 }, colorScheme: 'light' },
+      use: {
+        viewport: { width: 375, height: 812 },
+        colorScheme: 'light',
+        baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || `http://localhost:${VISUAL_DEV_PORT}`,
+      },
     },
     // Villkorat (task-10): existerar ENDAST under PLAYWRIGHT_STAGING_PREVIEW=1
     // så att plain `npx playwright test` och CI aldrig drar igång preview-
