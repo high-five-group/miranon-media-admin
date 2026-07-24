@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-24
+updated: 2026-07-25
 review_by: 2026-11-15
 status: stable
 ---
@@ -4980,3 +4980,21 @@ komponenter · kodkommentarer = "hur" för lokal logik, uttryckligen INTE
 konventionsbärare. Hemvist-valet är ADR-bar klass och grillas i egen
 session — men principen står: **en konvention utan hem är en konvention
 som kommer att brytas.**
+
+### L338 — [UNIVERSAL] En grön PR-run är en ögonblicksbild av omvärlden — main kan gå röd utan att repot ändrats
+
+Datum: 2026-07-25 (S85) | Källa: S83:s stängnings-PR #168 — PR-runnen
+grön, merge-runnen ~20 minuter senare röd på SAMMA träd (advisoryn
+GHSA-mh99-v99m-4gvg publicerades 21:53Z, mellan körningarna; andra
+advisory-blockaden på samma dygn efter js-yaml 16:47Z)
+
+Audit-grinden slår upp beroendeträdet i en levande extern databas vid
+VARJE körning. Grindens utfall är därför en funktion av (träd, omvärld,
+tidpunkt) — inte av trädet ensamt. Konsekvenser: (1) röd main efter en
+grön PR är inte automatiskt en trasig merge — läs VILKET jobb som föll
+före felklassning (här: enbart audit-jobbet på en docs-only-diff); (2)
+"samma innehåll var grönt nyss" är inget motbevis; (3) läkningen är en
+framåt-landning (override/bump; allowlist-flödet endast när patch
+saknas, ADR-028), aldrig re-run — databasen glömmer inte.
+Sessionsstart-rutinens audit-status-koll är designad för exakt denna
+klass: verifiera grinden FÖRE sessionens första landning.

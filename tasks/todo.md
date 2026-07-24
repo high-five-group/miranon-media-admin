@@ -15,6 +15,27 @@
 
 ## Aktuellt fokus
 
+**Session 85 ✅ AVSLUTAD (2026-07-25)** — **DUKNINGEN FÖR NATTBYGGET:
+main läkt + go-redo för S86.** Audit-grinden läkt: `GHSA-mh99-v99m-4gvg`
+(high, brace-expansion, publ 21:53Z — ~20 min före S83:s sista
+merge-run som gick röd på main) → override **5.0.8**, **PR #169**;
+full svit-bevis lokalt (376/376 API) + main-merge-run 30132229085 grön
+per jobb (**36.4-dedupens första skarpa config-klass-träff**). Städ:
+S84-worktreen riven (0 unika) · 50 mergade lokala brancher rensade
+(`proto/*` orörda) · odoo-branchen kvar (Marcus-beslut). Kortläget
+re-verifierat via backlog-CLI: ready-for-agent ×6, externa deps Done
+×4. **GO-YTAN: `tasks/sessions/bilagor/s85-nattbygget/batch-order.md`**
+(max-kort 6 · ADR-071-kontraktet i ADR-076-form · rött-först S80 ·
+halt-first · pilot-logg T86 · F6-förslag 18.16 · konventions-bilagan =
+L337-skyddet, öppet märkt läskopia). **SKÖRD L338** [UNIVERSAL] (grön
+PR-run = ögonblicksbild av omvärlden). **NÄSTA (NY session S86):
+NATTBYGGET på Marcus "go"** — ordern i bilagan är batch-kvittot →
+morgongranskning → T85-korrigeringsfönstret · konventions-grillningen
+(/grill-me) · hub-lyftet L284–L338 vid hub-sync · dependabot #162
+Marcus-review · Marcus-moment: Update-klicket i claude.ai. Numrering
+efter S85: 86/079/L339/T91/f46/task-39. Full narrativ: sessionsdok S85
+Del 1–3 + BUILD-LOG S85-post.
+
 **Session 83 ✅ AVSLUTAD (2026-07-24)** — **PROTOTYP-PASSEN INFÖR
 NATTBYGGET: ready-for-agent ×6 NÅDD, nattbygget är körbart** (17.7 ·
 18.15 · 18.16 · 18.17 · 18.18 · 18.19). Fyra konvergens-pass låsta av
@@ -46,7 +67,7 @@ BUILD-LOG S83-post.
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 85 (PÅGÅENDE 2026-07-25) — Dukningen för nattbygget: audit-läkningen + go-redo för S86
+### Session 85 ✅ AVSLUTAD (2026-07-25) — Dukningen för nattbygget: audit-läkningen + go-redo för S86
 
 > Scope: sessionsdok `2026-07-25-session-85.md` Del 1 (kanonisk plats):
 > läk audit-grinden + städa + duka nattbygget så S86 startar på ett
@@ -75,6 +96,19 @@ BUILD-LOG S83-post.
   läskopia — hemfrågan förblir grillnings-klass). **NÄSTA:
   session-end på Marcus coverage-kvittens → S86 NATTBYGGET på Marcus
   "go" (ordern är batch-kvittot).**
+- [x] **Stängningen, pre-kvittens** (2026-07-25, denna PR): skörd
+  **L338** [UNIVERSAL] (grön PR-run = ögonblicksbild av omvärlden) +
+  BUILD-LOG S85-post + sessionsdok Del 3 med transcript-ref
+  (472 rader / 1 018 925 byte, wc-verifierat). Ingen ny ADR (öppet
+  motiverat) · inga nya trådar (ADR-053-triagen: allt registrerat).
+  **NÄSTA: Marcus coverage-kvittens → `lifecycle: closed` +
+  rubrik-flipp → S86 nattbygget.**
+- [x] **STÄNGD** (2026-07-25, denna PR): Marcus coverage-kvittens
+  **"Inget att säkra, flippa"** → `lifecycle: closed` + denna
+  rubrik-flipp + toppblock. **NÄSTA ARBETE = NY YTA (S86):
+  nattbygget på Marcus "go" — ordern i
+  `tasks/sessions/bilagor/s85-nattbygget/batch-order.md` är
+  batch-kvittot.**
 
 ### Session 77 ✅ AVSLUTAD (2026-07-23) — Processgransknings-landningen: merge-grinden mekaniserad + riskanpassad CI-design
 
