@@ -39,7 +39,7 @@ disk-bekräftade. Adresserbart: ~5–7 min + kontext per prototyp-pass.
 | F2 | engångs-verifieringsskript per prototyp-pass (fem `proto-*.debug.mjs` ackumulerade 2026-07-24); miljöfakta återupptäcks trots att 5173-vägran är dokumenterad task-5-design | [M] | incheckat parametriserat `scripts/proto-verify.mjs` + miljöfakta-pekare i prototype-skillen; lesson-kandidat | T85-korrigeringsfönstret |
 | F3 | grindloop utan autofix: check → class-sort-fall → `--write` → recheck (bekräftad sekvens 14:59–15:00) | [M] | autofix före grind som standardsteg i iterationsloopar | T85-korrigeringsfönstret |
 | F4 | exakt-kopia-baslinje skrevs som generativ Write (12,9 KB) — drift-risk + ~3–4k output-tokens; prototype-skillen kräver exakt kopia men föreskriver ingen metod | [B] | `cp` + riktade Edits, exakthet by construction; skrivs in i prototype-skillens konvergens-avsnitt | hub-skill-ändring, Marcus-kvittens |
-| F6 | ~80 % av fönstrets 68 917 output-tokens var thinking (72 tankeblock, xhigh) | [B, experiment] | ETT återstående prototyp-pass på lägre effort; jämför väggklocka + utfall + grindar mot baslinjen | återstående S83-pass — FÖRE T85 |
+| F6 | ~80 % av fönstrets 68 917 output-tokens var thinking (72 tankeblock, xhigh) | [B, experiment] | ETT prototyp-pass på lägre effort; jämför väggklocka + utfall + grindar mot baslinjen | **omlandat 2026-07-24 → ett av nattbyggets pilot-fönster** (se Beslutsläge) |
 
 **Avstyrkt (bokfört, ej tyst):** F5b "lätt-variant av session-start" —
 ceremonin är ~1 min/pass vid flerpass-sessioner (amortering = F5a, redan
@@ -54,6 +54,16 @@ Marcus 2026-07-24: paketriktningen kvitterad ("bra förbättringsgrejer", tråd
 beordrad; tråd-vs-T85-inbakning delegerad till Code → egen tråd). Per punkt:
 F1b/F2/F3 mekaniska — exekveras utan vidare beslut i sina fönster; F1a/F4/F6
 tas som små explicita Marcus-beslut vid respektive upptag.
+
+**F6 — upptaget taget vid S83-resumen 2026-07-24, fönstret OMLANDAT.** Det
+anvisade fönstret ("återstående S83-pass") föll på pass 4 (eventväljar-paret
+18.18+18.19) — sessionens tyngsta kvarvarande designarbete: två kort, ny
+komponentfamilj, A/B-val på 18.19. Code-rek: kör passet oförändrat och lägg
+F6 på ett av nattbyggets pilot-fönster i stället, där utfallet mäts mekaniskt
+mot skivans AC + grindar i stället för mot Marcus-omdöme i browsern —
+experimentet blir jämförbart först när utfallsmåttet är objektivt. Marcus:
+"vi skjuter på F6, kör oförändrat." Nytt fönster: nattbygget (T86 § Körplanen
+punkt 4), fortfarande FÖRE T85-korrigeringssessionen.
 
 ## Relationer
 
