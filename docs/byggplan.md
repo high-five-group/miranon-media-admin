@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-07
+updated: 2026-07-24
 review_by: 2026-11-15
 status: stable
 ---
@@ -111,7 +111,7 @@ O(1)-läsbar audit-status per Fas 6-subfas (L200: spridd-över-sessioner-status 
 | 6g Segment-yta | KLAR (L1–L4) + **PROD-DEPLOYAD (S43)** | ✅ ren — Session 37 (fem områden GODKÄNDA, AVVIKELSE ingen, 11/10/10). **Prod-deploy S43:** compute-segment/save-segment/get-segments ACTIVE v1 på prod (`lvjsfnphlauldxqlncpl`), auth-grind-bevisad (401/405), override-smal (de 5 stale orörda); full autentiserad prod-smoke deferrad → T40 |
 | 6h Mail-handling | byggd L0–L3 (S39–S41, staging) | ✅ ren — Session 41 (fem områden GODKÄNDA; EN avvikelse noll-leverans-send ROT-RESOLVERAD samma session; bibliotek 11/11/11, vy 11/10/10). Prod-deploy = T44 M3 + Code-at-prod-deploy kvarstår |
 
-> **Closeout-förkrav:** FULLT Fas 6 fas-avslut kan ske först när: 6e retro-auditerad, 6f byggd + auditerad, 6h byggd + auditerad (6g klar + auditerad ✓). Avslutet inkluderar phase-end-verify, byggplan 6→KLAR, FAS-NIVÅ fitness-svep (full port-paritet + komplett EF-ribba-inventering tvärs ALLA subfaser — ej bara ackumulerade per-slice-audits), CHANGELOG, lessons-hub-lyft L149–L201, arkivering.
+> **Closeout-förkrav:** FULLT Fas 6 fas-avslut kan ske först när: 6e retro-auditerad, 6f byggd + auditerad, 6h byggd + auditerad (6g klar + auditerad ✓), samt **vertikaler prod-deployade + prod-smoke-verifierade** (T40-dimensionen, inwirad 2026-07-24 S84 vid T40-lösningen; EF-lagret uppfyllt samma dag — T39-synken av alla 13 allowlistade + autentiserade smokes gröna; send-emails utskicksväg ägs separat av T55, prod-frontend-deploy-kontrollen av T46). Avslutet inkluderar phase-end-verify, byggplan 6→KLAR, FAS-NIVÅ fitness-svep (full port-paritet + komplett EF-ribba-inventering tvärs ALLA subfaser — ej bara ackumulerade per-slice-audits), CHANGELOG, lessons-hub-lyft L149–L201, arkivering.
 
 ---
 

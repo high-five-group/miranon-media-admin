@@ -12,6 +12,21 @@
 > `docs/reference/data-model.md` § Prod-basens additiva tillskott och
 > `npx supabase secrets list` (namn, ej värden).
 
+<!-- markdownlint-disable-next-line MD028 -->
+
+> **UTFALL 2026-07-24 (samma dag, S84 A-kedjan på Marcus-go):** planen
+> §5–§6 EXEKVERAD. test-auth raderad (§7 AC #1) → kanonisk
+> full-allowlist-deploy 13/13 (11 versionsbump + notes-paret NYTT I
+> PROD) → deny-triple ×13 grön → autentiserade smokes gröna: läs-tripeln
+> (Airtable-secreterna runtime-bevisade — §3.1-fyndet stängt),
+> create-event-idempotensen (201→replay 200 samma rad),
+> notes-rundturen, save-segment 201; ZZ-teardown verifierad. Två nya
+> fynd: **fälla 45** (Månad/år-selectens options-horisont slutar dec
+> 2026 → create-event 500 för 2027-event) + **sju EF:er saknar egen
+> metod-vakt** (GET → 401 i stället för 405; backlog-fynd). L216:s
+> override-krav upphävt. T39/T40/T33 stängda; frontend-kontrollen +
+> allowlist-utvidgningen övergick till T46.
+
 ## 1. Huvudslutsats
 
 **Den verkliga innehålls-driften är väsentligt smalare än versionsgapet.**
