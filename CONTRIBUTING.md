@@ -176,11 +176,20 @@ läser är värdelöst, och tyst stängning gör larmet till en kyrkogård.
 
 ## Visuell regression
 
-Varje UI-ändring jämförs mot incheckade referensbilder (task-36.7): sex
+**Läge: BYGGD men PR-grinden MEDVETET INAKTIV** (Marcus-beslut A, S81 —
+tidig UI-fas; aktiverings-steget bor komplett i tråd
+[T87](tasks/threads/T87-visual-grind-aktivering.md), trigger: UI-takten
+lugnar). Tills grinden aktiveras körs jämförelsen LOKALT på begäran
+(`npm run test:visual`), inte i CI — sanningsfix per
+Codex-eftergranskningen 2026-07-24.
+
+Infrastrukturen: incheckade referensbilder (task-36.7) för sex
 facit-tunga vyer × två vyportar i en hermetisk fixturvärld
 (`tests/visual/support/` — mockade EF-svar, seedad session, pinnad Inter,
-frusen klocka; noll staging, noll mutex). CI-jobbet kör
+frusen klocka; noll staging, noll mutex). Jämförelsen kör
 `--update-snapshots=none`: saknad eller avvikande baseline failar hårt.
+När grinden aktiveras (T87) gäller detta som blockerande CI-jobb för
+UI- och full-klassen.
 
 **Baselines föds i CI, aldrig lokalt.** Skärmbilder är plattformsbundna —
 endast `-linux`-bilder checkas in. Födseln sker via `visual-baselines.yml`
