@@ -23,6 +23,7 @@
     "test:preview:staging": "npm run build:staging && npm run verify:staging-bundle && PLAYWRIGHT_STAGING_PREVIEW=1 playwright test --project=staging-preview",
     "test:a11y": "PLAYWRIGHT_A11Y_DEV_SERVER=1 playwright test --project=a11y",
     "purge:staging": "node --env-file-if-exists=.env.seed scripts/purge-staging-sentinels.mjs",
+    "metrics:ci": "node scripts/ci-metrics.mjs",
     "postinstall": "git config core.hooksPath .githooks"
   },
   "dependencies": {
