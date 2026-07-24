@@ -5,6 +5,16 @@
 - **Fas:** Projekt-grundande (gäller hela appen + dess datakälla; konsumeras av post-Fas-6-maximerings-milstolpen)
 - **Relation:** Förfinar ADR-062 (korrigerar dess maximerings-princips premiss — se Öppen rivning nedan)
 
+> **S81-not (2026-07-24, additiv — ursprungstexten orörd): samdesign-poster
+> vid milstolpens dekomponering.** När maximerings-milstolpen dekomponeras
+> (grillning → kort) ska två vilande trådar tas med i samma pass, båda med
+> denna milstolpe som namngiven trigger: **T85 våg 3** (staging-per-run-
+> isolering — mutexen avvecklas; samdesignas med basens datamodell-arbete)
+> och **T87** (visual-grindens aktivering — trigger-kandidaten "UI-takten
+> lugnar" sammanfaller naturligt med milstolpen). Motpekaren finns här för
+> att trådarnas framåt-pekare inte ska vara enda bäraren (kontinuitet:
+> dubbelriktad länkning; Marcus-fråga S81).
+
 ## Kontext
 
 ADR-062 (segment-yta) etablerade principen "beräkna från källan (Deltaganden), registrera projektionens brister" — kallad "route-around-but-register". Den principen bar en outtalad premiss: att Airtable-basen var ett provisorium på väg att ersättas av Supabase, och att man därför inte skulle lägga 11/10-hantverk på "det döende". Den premissen är FALSK och rivs här öppet.
