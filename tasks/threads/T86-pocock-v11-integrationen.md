@@ -126,14 +126,28 @@ föreslagen åtgärd per fynd · separat "utanför kortets scope"-sektion
 för routning. Triagen är implementerns: åtgärda inom scope / avfärda
 MED motivering / routa — alla tre synliga i transparens-rapporten
 (extern fångst av triagen själv).
+Protokoll-skärpningar (Codex-eftergranskningen 2026-07-24, antagna
+FÖRE start): (1) granskat träd registreras — diffens HEAD-SHA stämplas
+i transparens-rapporten + loggraden; (2) omgranskningsregeln —
+materiell kodändring EFTER ett reviewfynd får en fokuserad andra
+passering (triviala namn-/kommentarändringar undantas); (3) validering
+efter fynd — reviewfixar följs av berörda tester, tvärgående ändring ⇒
+full svit om; (4) oberoende-ärlighet: subagenten är en kvalificerad
+second opinion (färsk kontext), INTE organisatorisk separation of
+duties — samma modellfamilj kan dela systematisk blindhet.
 
 **Mått (loggtabellen nedan, en rad per skiva):** fynd per axel
 (spec-trohet/standards) · utfall (åtgärdade/avfärdade[skäl]/routade) ·
 klass (blocker = hade gett fel beteende eller brutet AC · kvalitet =
 bättre kod, samma beteende · brus) · review-tid i minuter
-(väggklocka, stämplad i transparens-rapporten) · MISSAR = nedströms-
-fynd av Marcus/QA/CI som reviewn borde sett (recall-måttet; facit:
-QA-vandringen 36.8 + granskningsvågorna).
+(väggklocka, stämplad i transparens-rapporten) · OBSERVERADE ESCAPES =
+nedströms-fynd av Marcus/QA/CI som reviewn borde sett (medvetet INTE
+kallat recall — hela felmängden är okänd; facit: granskningsvågorna +
+QA-vandringen) · total leveranslatens lokalt-grönt→merge per skiva
+(review-tiden ligger före push och syns inte i CI-måtten).
+Nämnar-definitioner: brusandel = avfärdade ÷ alla rapporterade unika
+inom-scope-fynd; dubbletter räknas EN gång; routade fynd står utanför
+både träff- och brus-nämnaren (egen kategori).
 
 **Beslutskriterier (LÅSTA före start):** PERMANENTA (→ ADR, blocket
 blir ordinarie text) om ≥1/3 av skivorna ger ≥1 åtgärdat
@@ -142,6 +156,10 @@ blocker-/kvalitetsfynd OCH brusandelen <50 % OCH median-kostnaden
 eller >10 min median utan motsvarande fångst · GRÅZON: EXAKT en
 justeringsrunda (smalare axel/kortklass, +~5 skivor) → tvingat beslut.
 Beslutet är Marcus på Code-rekommendation, bokförs här.
+Marcus-momentet under piloten (bekräftelsebias-motmedlet, Codex-
+skärpning 4): Marcus kontrollerar ALLA blocker-fynd, alla omtvistade
+avfärdanden och ett stickprov av övriga avfärdanden — naturlig hemvist
+i morgongranskningen/Done-flippen.
 
 **Omfång + start (ÖPPEN REVIDERING av beslutsläge 3:s ursprungsvillkor):**
 10–15 produktkod-skivor (docs-/config-kort deltar inte).
@@ -179,8 +197,12 @@ nattbyggets kort (§ Körplanen nedan).
 4. **Nattbygget:** work-batch-order i frisk session (max-kort 5,
    ±18.16) → varje produktkod-skiva = pilot-skiva med loggrad i
    tabellen ovan; UI-skivor stannar i granskningsfärdigt läge.
-5. **Morgonen:** Marcus granskningsvåg + 36.8 QA-vandringen = "missar
-   nedströms"-facit för pilot-loggen.
+5. **Morgonen:** Marcus granskningsvåg = escapes-facit för
+   pilot-loggen + pilot-triagens Marcus-moment (blocker-fynd +
+   avfärdande-stickprov). OBS 36.8: körs först när QA-planens punkt 11
+   (rött visual-jobb) synkats mot verkligheten — punkten förutsätter
+   T87-aktivering (Codex-eftergranskningen; Marcus-beslut om
+   ordningen).
 
 Parallell-landningsdisciplinen (L328) gäller: docs-PR:er landas inte
 under en långsam svits fönster.
