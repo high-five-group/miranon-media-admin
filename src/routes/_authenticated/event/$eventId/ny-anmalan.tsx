@@ -1,4 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { PrototypeSwitcher } from '@/components/dev/PrototypeSwitcher';
+// [PROTOTYPE] S83 pass 4 (TASK-18.18) — kastbar import, rivs med passet.
+import { PROTO_VARIANTS_18_18 } from '@/components/events/EventValjarePrototyp';
 import { ManuellAnmalanForm } from '@/components/events/ManuellAnmalanForm';
 
 export const Route = createFileRoute('/_authenticated/event/$eventId/ny-anmalan')({
@@ -13,5 +16,12 @@ export const Route = createFileRoute('/_authenticated/event/$eventId/ny-anmalan'
 // Prototyp-grenen (`?variant=`) RIVEN i task-18.13 — se event/index.tsx.
 function NyAnmalanPage() {
   const { eventId } = Route.useParams();
-  return <ManuellAnmalanForm eventId={eventId} />;
+  // [PROTOTYPE] S83 pass 4 (TASK-18.18): railen DEV-monteras; väljar-grenen
+  // bor i ManuellAnmalanForm. Rivs med passet.
+  return (
+    <>
+      <ManuellAnmalanForm eventId={eventId} />
+      {import.meta.env.DEV ? <PrototypeSwitcher variants={PROTO_VARIANTS_18_18} /> : null}
+    </>
+  );
 }

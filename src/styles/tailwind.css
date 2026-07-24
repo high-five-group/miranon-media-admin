@@ -127,6 +127,24 @@
       transform: translateX(100%);
     }
   }
+
+  /* ── [PROTOTYPE] S83 pass 4 (18.18) — avslöjningen ──
+     Progressive disclosure: innehåll som inte fanns förrän ett val gjordes
+     glider in i stället för att hoppa fram. Kort väg (8 px) — avslöjningen
+     ska kännas som en följd av valet, inte som en egen händelse.
+     Konsumeras ENDAST via motion-safe: (WCAG 2.2.2).
+     RIVS med prototyp-passet om formen inte låses. */
+  @keyframes mm-avsloj {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 /* ── Inline-rullningsytans scrollmarkör (K10-facit, task-4.4) ──

@@ -1,11 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 import { useEffect, useRef, useState } from 'react';
 import { I18nProvider } from 'react-aria-components';
 import { AntalFalt } from '@/components/events/detail/AntalFalt';
-import { DetaljGrupp } from '@/components/events/detail/DetaljGrupp';
+import { DetaljGrupp, EtikettVardeRad } from '@/components/events/detail/DetaljGrupp';
 import { datumSpannText } from '@/components/events/detail/datumSpann';
+// [PROTOTYPE] S83 pass 4 (TASK-18.18) — kastbar import, rivs med passet.
+import { EventValjarePrototyp } from '@/components/events/EventValjarePrototyp';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -13,6 +16,8 @@ import { TextArea } from '@/components/primitives/TextArea';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useCreateRegistration } from '@/data/mutations/useCreateRegistration';
 import { useDataSource } from '@/data/useDataSource';
+import type { Event } from '@/domain/models/Event';
+import { EventStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
 
 // Samma format-grind som EF:en/modalen (medvetet enkel — servern är slutgiltig
@@ -67,6 +72,13 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
   const dataSource = useDataSource();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const bekraftelseRef = useRef<HTMLDivElement>(null);
+  // [PROTOTYPE] S83 pass 4 (TASK-18.18): DEV-grindad väljar-gren.
+  // `k` = event valt (ingången från eventsidans Åtgärder — dagens enda väg).
+  // `t` = INGET event valt (den kommande ingången från hem-vyn). Samma sida,
+  // samma block, samma ordning — skillnaden är enbart om eventet är känt.
+  const [variantParam] = useQueryState('variant');
+  const valjarProto = import.meta.env.DEV && (variantParam === 'k' || variantParam === 't');
+  const tomtLage = import.meta.env.DEV && variantParam === 't';
 
   // Idempotens-nyckel: en per sid-öppning (remount), bevarad över retries (ADR-059).
   const [idempotencyKey] = useState(() => crypto.randomUUID());
@@ -84,14 +96,22 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
 
   // Kontextraden: vilket event anmälan gäller. Samma cache-nyckel som eventsidan →
   // normalt varm vid navigering från Åtgärder. 4xx retryas ej (CreateEventForm-formen).
+  // PLACEHOLDER UR LISTCACHEN: när Lotta väljer event i väljaren har vi redan
+  // posten — get-events bär typ · ort · datum · maxPlatser · platserKvar ·
+  // status (empiriskt verifierat mot svaret). `placeholderData` (INTE
+  // initialData) är TanStacks anvisning för partiella listposter.
+  const queryClient = useQueryClient();
   const eventQuery = useQuery({
     queryKey: queryKeys.events.detail(eventId),
     queryFn: () => dataSource.fetchEvent(eventId),
+    placeholderData: () =>
+      queryClient.getQueryData<Event[]>(queryKeys.events.list)?.find((e) => e.id === eventId),
     retry: (failureCount, err) =>
       !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
       failureCount < 3,
   });
   const event = eventQuery.data;
+  const arPlatshallare = eventQuery.isPlaceholderData;
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -144,17 +164,27 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
       >
         <ChevronLeft aria-hidden="true" size={26} />
       </Link>
-      <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
+      <header className="flex flex-col gap-2.5 border-border border-b px-4 pb-5">
         <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
           Lägg till manuell anmälan
         </h1>
-        {/* Kontexten: vilket event anmälan gäller — låst, aldrig ett fält. */}
-        {event && (
-          <p className="text-small text-text-secondary">
-            {(event.eventlabel ?? event.eventNamn) && `${event.eventlabel ?? event.eventNamn} · `}
-            {datumSpannText(event)}
-          </p>
-        )}
+        {/* [PROTOTYPE] S83 pass 4 (18.18): `?variant=k` ersätter den låsta
+            kontextraden med EVENTVÄLJAREN (förvald från djuplänken, bytbar —
+            bytet navigerar URL:en; ifyllda fält behålls per rek b eftersom
+            komponenterna inte remountas). Utan variant = skarpa raden orörd.
+            Rivs med passet (klausul iv). */}
+        {/* Väljaren är FLYTTAD ur rubriken och ned i Eventet-gruppen — sidan
+            ska bära eventkontext för djuplänkning från hem-vyn. Utan variant =
+            skarpa raden orörd. */}
+        {valjarProto
+          ? null
+          : event && (
+              <p className="text-small text-text-secondary">
+                {(event.eventlabel ?? event.eventNamn) &&
+                  `${event.eventlabel ?? event.eventNamn} · `}
+                {datumSpannText(event)}
+              </p>
+            )}
       </header>
     </>
   );
@@ -194,100 +224,206 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
       {rubrik}
 
-      <DetaljGrupp id="ny-anmalan-deltagare" rubrik="Deltagare">
-        <div className="flex flex-col gap-4 py-4">
-          <Input
-            label="Förnamn"
-            value={fornamn}
-            onChange={setFornamn}
-            isRequired
-            isInvalid={visaFel && fel.fornamn}
-            errorMessage="Fyll i förnamn"
-            autoComplete="given-name"
-            isDisabled={mutation.isPending}
-          />
-          <Input
-            label="Efternamn"
-            value={efternamn}
-            onChange={setEfternamn}
-            isRequired
-            isInvalid={visaFel && fel.efternamn}
-            errorMessage="Fyll i efternamn"
-            autoComplete="family-name"
-            isDisabled={mutation.isPending}
-          />
-          <Input
-            label="E-post"
-            type="email"
-            value={epost}
-            onChange={setEpost}
-            isRequired
-            isInvalid={visaFel && fel.epost}
-            errorMessage="Fyll i en giltig e-postadress"
-            autoComplete="email"
-            isDisabled={mutation.isPending}
-          />
-          <Input
-            label="Mobilnummer (valfritt)"
-            type="tel"
-            value={mobil}
-            onChange={setMobil}
-            autoComplete="tel"
-            isDisabled={mutation.isPending}
+      {/* TOMT LÄGE (ingången från hem-vyn): eventvalet är sidans enda handling
+          och står FRISTÅENDE — ingen grupprubrik, inga gråa spökfält under.
+          Progressive disclosure-regeln: en kontroll som inte är tillämplig
+          förrän ett val gjorts DÖLJS och avslöjas vid valet. */}
+      {tomtLage && (
+        <div className="flex flex-col gap-3 px-4">
+          <EventValjarePrototyp
+            eventId=""
+            to="/event/$eventId/ny-anmalan"
+            form="tom"
+            variantEfterVal="k"
           />
         </div>
-      </DetaljGrupp>
+      )}
 
-      <DetaljGrupp id="ny-anmalan-anmalan" rubrik="Anmälan">
-        <div className="flex flex-col gap-4 py-4">
-          {/* Antal platser i rad-stepparens form (K14-arvet); synlig etikett över
-              fältet (formklassen) — AntalFalt bär samma namn som aria-label. */}
-          <div className="flex flex-col gap-1">
-            <span className="text-(color:--mm-input-label-text) text-small">Antal platser</span>
-            <I18nProvider locale="sv-SE">
-              <div className="w-32">
-                <AntalFalt label="Antal platser" value={antal} min={1} onChange={setAntal} />
-              </div>
-            </I18nProvider>
+      {/* EVENTET-gruppen. Blocket ligger FÖRST — vid djuplänk är "är detta rätt
+          event?" Lottas första fråga. Den FYLLIGA väljaren bär IDENTITETEN
+          (namn · ort · datum), så sammanfattningen under upprepar dem inte
+          utan bär bara det som påverkar HANDLINGEN. Data ur eventQuery som
+          redan fanns — ingen ny läs-shape. */}
+      {valjarProto && !tomtLage && (
+        <div
+          data-testid="eventet-kort"
+          className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+        >
+          {/* Rubrikfritt kort (CheckInKort-formen) — blockrubriken "Eventet"
+              riven på Marcus-order 2026-07-24: väljaren säger redan vad
+              blocket är. Väljaren är VIT här: den sitter på grå kortyta och
+              ska lyfta ur den, inte smälta in. */}
+          <div className="py-3">
+            <EventValjarePrototyp
+              eventId={eventId}
+              to="/event/$eventId/ny-anmalan"
+              form="kontextrad"
+              vit
+            />
           </div>
-          <TextArea
-            label="Notering (valfritt)"
-            value={notering}
-            onChange={setNotering}
-            isDisabled={mutation.isPending}
-          />
+          {event && (
+            <>
+              <EtikettVardeRad term="Typ">{event.typ}</EtikettVardeRad>
+              {/* Platser kvar + listkortets EGEN beläggningsstapel (EventCard):
+                  siffran är exakt, stapeln gör "nästan fullt" avläsbart på en
+                  blick — samma form Lotta redan känner från event-listan.
+                  Segmenterade mätaren hör hemma på eventsidan, inte i en
+                  sammanfattning. Båda talen finns i listcachen → ingen laddning.
+                  Stapeln är aria-hidden dekor; texten bär (WCAG 1.4.1). */}
+              <div className="flex flex-col gap-1.5 py-3">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-small text-text-muted">Platser kvar</span>
+                  <span className="text-right text-body">
+                    {event.platserKvar == null
+                      ? '–'
+                      : `${event.platserKvar} av ${event.maxPlatser ?? '–'}`}
+                  </span>
+                </div>
+                {event.maxPlatser != null && event.maxPlatser > 0 ? (
+                  <div aria-hidden="true" className="h-1.5 rounded-full bg-surface">
+                    <div
+                      data-slot="belaggning-fyllnad"
+                      className={`h-full rounded-full ${
+                        event.platserKvar != null && event.platserKvar <= 0
+                          ? 'bg-success'
+                          : 'bg-(--p-neutral-400)'
+                      }`}
+                      style={{
+                        width: `${Math.min(100, Math.round((event.antalAnmalda / event.maxPlatser) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                ) : null}
+              </div>
+              {!arPlatshallare && event.vantelista ? (
+                <div className="motion-safe:animate-[mm-avsloj_260ms_ease-out]">
+                  <EtikettVardeRad term="Väntelista">
+                    {`${event.vantelista} personer`}
+                  </EtikettVardeRad>
+                </div>
+              ) : null}
+              <EtikettVardeRad term="Status">
+                {event.status && event.status !== EventStatus.PLANERAT ? event.status : null}
+              </EtikettVardeRad>
+              <div className="flex flex-col py-1.5">
+                <Link
+                  to="/event/$eventId"
+                  params={{ eventId }}
+                  className="-mx-2 flex w-auto items-center gap-2 rounded-lg px-2 py-1.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors"
+                >
+                  Gå till eventdetaljer
+                  <ChevronRight
+                    aria-hidden="true"
+                    size={18}
+                    className="ml-auto shrink-0 text-text-secondary"
+                  />
+                </Link>
+              </div>
+            </>
+          )}
         </div>
-      </DetaljGrupp>
+      )}
 
-      {/* Knappraden: primär först (formklassen); px-4 = kortens inner-inset. */}
-      <div className="flex items-center gap-2 px-4">
-        <Button intent="primary" onPress={handleSubmit} isDisabled={mutation.isPending}>
-          {mutation.isPending ? 'Sparar…' : 'Spara anmälan'}
-        </Button>
-        <Button intent="secondary" onPress={tillbaka} isDisabled={mutation.isPending}>
-          Avbryt
-        </Button>
-      </div>
+      {/* Resten av formuläret finns inte förrän ett event är valt — den
+          avslöjas (inte av-gråas) vid valet. */}
+      {!tomtLage && (
+        <div className="flex flex-col gap-6 motion-safe:animate-[mm-avsloj_260ms_ease-out]">
+          <DetaljGrupp id="ny-anmalan-deltagare" rubrik="Deltagare">
+            <div className="flex flex-col gap-4 py-4">
+              <Input
+                label="Förnamn"
+                value={fornamn}
+                onChange={setFornamn}
+                isRequired
+                isInvalid={visaFel && fel.fornamn}
+                errorMessage="Fyll i förnamn"
+                autoComplete="given-name"
+                isDisabled={mutation.isPending}
+              />
+              <Input
+                label="Efternamn"
+                value={efternamn}
+                onChange={setEfternamn}
+                isRequired
+                isInvalid={visaFel && fel.efternamn}
+                errorMessage="Fyll i efternamn"
+                autoComplete="family-name"
+                isDisabled={mutation.isPending}
+              />
+              <Input
+                label="E-post"
+                type="email"
+                value={epost}
+                onChange={setEpost}
+                isRequired
+                isInvalid={visaFel && fel.epost}
+                errorMessage="Fyll i en giltig e-postadress"
+                autoComplete="email"
+                isDisabled={mutation.isPending}
+              />
+              <Input
+                label="Mobilnummer (valfritt)"
+                type="tel"
+                value={mobil}
+                onChange={setMobil}
+                autoComplete="tel"
+                isDisabled={mutation.isPending}
+              />
+            </div>
+          </DetaljGrupp>
 
-      {/* Mutations-utfall — annonseras för skärmläsare. Vid fel: värden bevarade,
+          <DetaljGrupp id="ny-anmalan-anmalan" rubrik="Anmälan">
+            <div className="flex flex-col gap-4 py-4">
+              {/* Antal platser i rad-stepparens form (K14-arvet); synlig etikett över
+              fältet (formklassen) — AntalFalt bär samma namn som aria-label. */}
+              <div className="flex flex-col gap-1">
+                <span className="text-(color:--mm-input-label-text) text-small">Antal platser</span>
+                <I18nProvider locale="sv-SE">
+                  <div className="w-32">
+                    <AntalFalt label="Antal platser" value={antal} min={1} onChange={setAntal} />
+                  </div>
+                </I18nProvider>
+              </div>
+              <TextArea
+                label="Notering (valfritt)"
+                value={notering}
+                onChange={setNotering}
+                isDisabled={mutation.isPending}
+              />
+            </div>
+          </DetaljGrupp>
+
+          {/* Knappraden: primär först (formklassen); px-4 = kortens inner-inset. */}
+          <div className="flex items-center gap-2 px-4">
+            <Button intent="primary" onPress={handleSubmit} isDisabled={mutation.isPending}>
+              {mutation.isPending ? 'Sparar…' : 'Spara anmälan'}
+            </Button>
+            <Button intent="secondary" onPress={tillbaka} isDisabled={mutation.isPending}>
+              Avbryt
+            </Button>
+          </div>
+
+          {/* Mutations-utfall — annonseras för skärmläsare. Vid fel: värden bevarade,
           knappen åter aktiv. */}
-      <div aria-live="polite" aria-busy={mutation.isPending} className="px-4">
-        {mutation.isPending && <p className="text-small text-text-muted">Sparar anmälan…</p>}
+          <div aria-live="polite" aria-busy={mutation.isPending} className="px-4">
+            {mutation.isPending && <p className="text-small text-text-muted">Sparar anmälan…</p>}
 
-        {/* 409: inline affärs-fel (role=alert via MessageBox). */}
-        {isDuplicate && !mutation.isPending && (
-          <MessageBox intent="error" title="Redan anmäld">
-            Personen är redan anmäld till det här eventet.
-          </MessageBox>
-        )}
+            {/* 409: inline affärs-fel (role=alert via MessageBox). */}
+            {isDuplicate && !mutation.isPending && (
+              <MessageBox intent="error" title="Redan anmäld">
+                Personen är redan anmäld till det här eventet.
+              </MessageBox>
+            )}
 
-        {/* Övriga fel: requestId bärs i meddelandet (EdgeFunctionError). */}
-        {otherError && !mutation.isPending && (
-          <MessageBox intent="error" title="Kunde inte skapa anmälan">
-            {otherError instanceof Error ? otherError.message : 'Okänt fel.'}
-          </MessageBox>
-        )}
-      </div>
+            {/* Övriga fel: requestId bärs i meddelandet (EdgeFunctionError). */}
+            {otherError && !mutation.isPending && (
+              <MessageBox intent="error" title="Kunde inte skapa anmälan">
+                {otherError instanceof Error ? otherError.message : 'Okänt fel.'}
+              </MessageBox>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
