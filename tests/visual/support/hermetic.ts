@@ -2,7 +2,15 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test as base } from '@playwright/test';
-import { EVENTS_RESPONSE, FROZEN_NOW, REGISTRATIONS_RESPONSE } from './fixture-data';
+import {
+  EVENT_DETAIL_RESPONSE,
+  EVENT_FORMATS_RESPONSE,
+  EVENT_NOTES_RESPONSE,
+  EVENTS_RESPONSE,
+  FROZEN_NOW,
+  PERSONS_RESPONSE,
+  REGISTRATIONS_RESPONSE,
+} from './fixture-data';
 
 export { expect } from '@playwright/test';
 
@@ -70,11 +78,25 @@ function buildSession() {
   };
 }
 
-/** EF-namn → fruset svar. Växer per vy i steg 2 — en omockad EF svarar 501
- *  med namnet i klartext (synligt fel, aldrig tyst tom data). */
-const EF_FIXTURES: Record<string, unknown> = {
+/**
+ * EF-namn → fruset svar (objekt) eller param-medveten resolver (funktion —
+ * speglar EF:ens query-param-beteende, t.ex. get-registrations eventId-
+ * filter). En omockad EF svarar 501 med namnet i klartext (synligt fel,
+ * aldrig tyst tom data).
+ */
+const EF_FIXTURES: Record<string, unknown | ((url: URL) => unknown)> = {
   'get-events': EVENTS_RESPONSE,
-  'get-registrations': REGISTRATIONS_RESPONSE,
+  'get-registrations': (url: URL) => {
+    const eventId = url.searchParams.get('eventId');
+    if (!eventId) return REGISTRATIONS_RESPONSE;
+    return {
+      registrations: REGISTRATIONS_RESPONSE.registrations.filter((r) => r.eventId === eventId),
+    };
+  },
+  'get-event': EVENT_DETAIL_RESPONSE,
+  'get-event-notes': EVENT_NOTES_RESPONSE,
+  'get-event-formats': EVENT_FORMATS_RESPONSE,
+  'get-persons': PERSONS_RESPONSE,
 };
 
 export const test = base.extend({
@@ -128,9 +150,10 @@ export const test = base.extend({
       if (route.request().method() === 'OPTIONS') {
         return route.fulfill({ status: 204, headers: PREFLIGHT_HEADERS });
       }
-      const efNamn =
-        new URL(route.request().url()).pathname.split('/functions/v1/')[1] ?? '(okänd)';
-      const svar = EF_FIXTURES[efNamn];
+      const url = new URL(route.request().url());
+      const efNamn = url.pathname.split('/functions/v1/')[1] ?? '(okänd)';
+      const fixtur = EF_FIXTURES[efNamn];
+      const svar = typeof fixtur === 'function' ? fixtur(url) : fixtur;
       if (svar === undefined) {
         return route.fulfill({
           status: 501,
