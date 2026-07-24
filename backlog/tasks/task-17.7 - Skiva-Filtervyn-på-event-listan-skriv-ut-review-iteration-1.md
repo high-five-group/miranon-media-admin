@@ -4,8 +4,9 @@ title: 'Skiva: Filtervyn på event-listan + skriv ut (review-iteration 1)'
 status: To Do
 assignee: []
 created_date: '2026-07-22 09:09'
-updated_date: '2026-07-24 13:57'
-labels: []
+updated_date: '2026-07-24 14:40'
+labels:
+  - ready-for-agent
 dependencies:
   - TASK-17.2
 parent_task_id: TASK-17
@@ -37,6 +38,8 @@ BYGGKRAV (låsta):
 4. TOMLÄGE: aktiva filter + 0 träffar => 'Inga event matchar filtren' + Rensa-knapp (SKILJT från period-tomläget som består orört).
 5. SKRIV UT: knapp i panelfoten (Printer-ikon) => window.print(). @media print döljer nav + kontroller via ÅTERANVÄNDBAR print-utility (GOV.UK-idiomet, ej engångs-CSS); print-huvud renderas: 'Event — {Period}[ · {aktiva filter}] · {N} event · Utskrivet {långdatum}'. Kalenderläget berörs ej av filtret (kalendern äger tiden, PRD beslut 7).
 6. ÖPPEN DELFRÅGA FÖRE BYGGE: URL-delbarhet för filterval (?typ/?ort/?status via nuqs + URL-STATE-SPEC-uppdatering per kortets villkor) — Code-rek JA (konsistent med ?period/?vy-grammatiken); Marcus-svar inväntas, bokförs här.
+
+URL-BESLUTET AVGJORT (Marcus 2026-07-24, på Code-rek med förtroende-kvittens; förklarad på Gunilla-nivå — valet hamnar i webbadressen: kopierbar länk, back-bart, omladdnings-säkert): JA — filtervalen URL-delbara via nuqs (?typ/?ort/?status i listans befintliga URL-grammatik, clearOnDefault för ren URL utan filter); URL-STATE-SPEC §Event uppdateras i samma skiva (kortets villkor). Byggkrav 6 därmed stängt — skivan komplett speccad.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
