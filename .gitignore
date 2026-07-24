@@ -66,3 +66,9 @@ package-lock.json.pre-k0åg
 # Segment-export: utdata bär deltagares e-postadresser — committas ALDRIG (T73)
 docs/backfill/segment-export/segment-export.json
 docs/backfill/segment-export/lista-*.csv
+
+# Visuell regression (task-36.7, AC 3): ENDAST linux-baselines checkas in —
+# baselines föds i CI (rätt miljö), aldrig lokalt. Lokalt genererade
+# plattformsbilder är personliga jämförelse-baselines och ignoreras.
+tests/visual/__screenshots__/**/*-darwin.png
+tests/visual/__screenshots__/**/*-win32.png

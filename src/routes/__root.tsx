@@ -43,11 +43,14 @@ function RootLayout() {
           grenar (login/dev/inloggat), därför här och inte i AppShell
           (Session 16 K3 STOPPA-utfall A, beslut 2). */}
       <RouteAnnouncer />
-      {import.meta.env.DEV && (
+      {import.meta.env.DEV && import.meta.env.VITE_DEVTOOLS !== '0' && (
         <>
           {/* Topp-positioner sedan Fas 5: tab baren äger botten-ytan — en
               botten-fäst devtools-knapp skymmer flikarna (axe target-size,
-              K3-verifieringsfynd). */}
+              K3-verifieringsfynd). VITE_DEVTOOLS=0 stänger av knapparna i
+              dev-läge — visual-fixturservern (task-36.7) kräver det: dev-
+              artefakter hör inte hemma i baselines, och devtools-versioner
+              får aldrig driva pixlar. */}
           <TanStackRouterDevtools position="top-right" />
           <ReactQueryDevtools initialIsOpen={false} buttonPosition="top-left" />
         </>
