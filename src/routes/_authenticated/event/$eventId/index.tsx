@@ -1,5 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { PrototypeSwitcher } from '@/components/dev/PrototypeSwitcher';
 import { EventDetail } from '@/components/events';
+// [PROTOTYPE] S83 pass 2 (TASK-18.15) — kastbar import, rivs med passet.
+import { PROTO_VARIANTS_18_15 } from '@/components/events/detail/AtgarderPrototyp';
 
 export const Route = createFileRoute('/_authenticated/event/$eventId/')({
   staticData: { title: 'Event' },
@@ -16,5 +19,12 @@ export const Route = createFileRoute('/_authenticated/event/$eventId/')({
 // (tasks/sessions/bilagor/s73-eventsida-konvergens/) och i git-historiken.
 function EventInfoPage() {
   const { eventId } = Route.useParams();
-  return <EventDetail eventId={eventId} />;
+  // [PROTOTYPE] S83 pass 2 (TASK-18.15): railen DEV-monteras; själva
+  // variant-bytet bor i EventDetail (Åtgärds-gruppen). Rivs med passet.
+  return (
+    <>
+      <EventDetail eventId={eventId} />
+      {import.meta.env.DEV ? <PrototypeSwitcher variants={PROTO_VARIANTS_18_15} /> : null}
+    </>
+  );
 }

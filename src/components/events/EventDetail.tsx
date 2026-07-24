@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 import { useEffect, useRef } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
@@ -10,6 +11,8 @@ import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
 import { Anteckningar } from './detail/Anteckningar';
 import { Atgarder, CheckInKort } from './detail/Atgarder';
+// [PROTOTYPE] S83 pass 2 (TASK-18.15) — kastbar import, rivs med passet.
+import { AtgarderPrototyp } from './detail/AtgarderPrototyp';
 import { Belaggning } from './detail/Belaggning';
 import { Betalningar } from './detail/Betalningar';
 import { Deltagare } from './detail/Deltagare';
@@ -46,6 +49,10 @@ export function EventDetail({ eventId }: { eventId: string }) {
   const dataSource = useDataSource();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const announceRef = useRef(false);
+  // [PROTOTYPE] S83 pass 2 (TASK-18.15): `?variant=k` byter Åtgärds-gruppen
+  // mot numrerade boxar-kopian (DEV-grindad). Rivs med passet (klausul iv).
+  const [variantParam] = useQueryState('variant');
+  const atgarderProto = import.meta.env.DEV && variantParam === 'k';
 
   const {
     data: event,
@@ -156,7 +163,7 @@ export function EventDetail({ eventId }: { eventId: string }) {
           som rubrikfritt kort ÖVER Åtgärds-gruppen, gruppen före datagrupperna.
           Länkmåls- och kopplingsinterimen är öppet bokförda i Atgarder.tsx. */}
       <CheckInKort eventId={eventId} />
-      <Atgarder eventId={eventId} />
+      {atgarderProto ? <AtgarderPrototyp eventId={eventId} /> : <Atgarder eventId={eventId} />}
 
       <OmEventet event={event} />
 
