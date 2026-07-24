@@ -1,0 +1,131 @@
+---
+owner: marcus803
+updated: 2026-07-24
+review_by: 2026-10-24
+status: stable
+lifecycle: paused
+---
+
+# T87 — Visual-grindens aktivering (medvetet parkerad)
+
+> Tråd-kort (ADR-053). Född S81 2026-07-24 ur task-36.7-stängningen.
+> Commit-tagg: `[T87]`.
+
+## Ursprung och beslut
+
+Task-36.7 byggde visuell regression från noll: hermetisk fixturvärld,
+sex vyer × två vyportar (2x, Marcus-beslut S81), CI-födda linux-baselines
+via `visual-baselines.yml`, hela kedjan bevisad ände-till-ände (baseline-PR
+nr 140). Det SISTA steget — CI-jobbet som gör jämförelsen till en
+blockerande grind — parkerades på **Marcus-beslut A (S81)**: appen är i
+tidig UI-fas med många avsiktliga utseende-ändringar per session, och en
+aktiv grind hade blockerat auto-mergen vid varje design-ändring — i direkt
+konflikt med T85:s processhastighets-arbete. En vakt vars larm är förväntat
+vid varje ändring bär ingen signal.
+
+Rådgivande läge (`continue-on-error`) förkastades öppet: signal som får
+ignoreras är kyrkogårds-klassen (L321).
+
+## Vad som redan fungerar utan grinden
+
+- `npm run test:visual` lokalt — Codes eget verktyg under bygget
+  ("vad ändrade min ändring?"), personliga darwin-baselines gitignorerade.
+- `visual-baselines.yml` — dispatchbar när som helst; föder granskningsbar
+  baseline-PR (räknefixen `-uall` + inställnings-förutsättningen
+  dokumenterad i workflow-headern).
+- Linux-baselines (2x, 2880×1804) incheckade och Marcus-välsignade
+  (PR nr 140, S81).
+
+## Aktiverings-trigger
+
+Grinden aktiveras när UI-iterationstakten lugnat — naturliga kandidater:
+inför bas-maximeringen (ADR-063-milstolpen) eller när Lotta börjar använda
+appen skarpt. Marcus avgör; tråden är påminnelsen.
+
+## Aktiverings-steget (EN liten PR)
+
+1. Färska baselines först om utseendet ändrats sedan senaste välsignelsen:
+   dispatcha `visual-baselines.yml` → granska → merga baseline-PR:n.
+2. Lägg jobbet nedan i `.github/workflows/ci-suite.yml` (efter `a11y`,
+   före `test-staging`). Suite-resultatet bär jobbet → paraplyet
+   (`ci-passed`, L322) behöver INTE röras; D1 + full-klass kör det,
+   docs-klassen skippar det via caller-gaten, nightly får det via samma
+   reusable (AC 7 + AC 8 i task-36.7 verkställs båda av detta enda steg).
+3. Statiska grindar (actionlint med queue-ignore, yamllint) + PR:ns egen
+   gröna körning mot befintliga baselines är beviset.
+
+```yaml
+  # Visuell regression (task-36.7, aktiverad via T87) — hermetisk
+  # fixturvärld: alltid-färsk dev-server på dedikerad port med FIKTIV
+  # Supabase-URL, allt nätverk mockat (tests/visual/support/hermetic.ts)
+  # → INGA secrets, INGEN staging, INGEN mutex. Körs därför ÄVEN för
+  # dependabot (secrets-isolationen ADR-031 är irrelevant utan secrets —
+  # medvetet INGEN actor-skip): en Playwright-/browser-bump ska få sin
+  # FÖRVÄNTADE baseline-drift synlig på själva uppgraderings-PR:n
+  # (kadens-regeln, CONTRIBUTING § Visuell regression). Baselines föds
+  # ALDRIG här: --update-snapshots=none failar hårt vid saknad eller
+  # avvikande baseline — födseln bor i visual-baselines.yml.
+  visual:
+    name: Visuell regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        # Medvetet UTAN fetch-depth-config — utanför bärar-mängden (ADR-039).
+
+      - name: Setup Node
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Samma cache-nyckel som a11y/test-staging (ADR-029 §1c) — först
+      # färdiga jobbet värmer, de andra hit:ar.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6.1.0
+        id: playwright-cache-visual
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      - name: Visuella regressionstester (frusen fixturvärld)
+        run: npm run test:visual -- --update-snapshots=none
+
+      # Diff-artefakterna (expected/actual/diff per bild) är själva
+      # granskningsunderlaget vid rött — utan dem är ett visuellt fel
+      # bara en pixelsiffra i loggen.
+      - name: Ladda upp visuella diff-artefakter vid rött
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diff-artefakter
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+```
+
+## Vardagen när grinden är aktiv (så blir det INTE trögt)
+
+Grönt visual-jobb = kvitto på att utseendet står stilla — noll manuellt.
+Avsiktlig design-ändring: Marcus godkänner utseendet i browser-QA:n
+(granskningsfärdig-läget, ADR-071) som idag — baseline-uppdateringen är
+därefter BOKFÖRING på det kvittot (Code dispatchar + refererar
+QA-kvittensen), inte en andra bildgranskning. Bild-granskning på riktigt
+behövs endast vid uppgraderings-drift (kadens-regeln) — sällan.
+
+## Designtrail
+
+Sessionsdok S81 Del 2–6 (hela bygget) · CONTRIBUTING § Visuell
+regression · task-36.7-kortet (AC 7–8 = detta aktiverings-steg) ·
+besläktad `T85` (våg 2b).
