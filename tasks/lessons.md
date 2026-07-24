@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-23
+updated: 2026-07-24
 review_by: 2026-11-15
 status: stable
 ---
@@ -4766,3 +4766,57 @@ Tre lärdomar i en, alla dyrköpta samma session:
 Komplement: L322 (fail-closed genom refaktorn — jq-logiken byte-identisk, bara
 `needs`-listan omkopplad; gate-proof-repliken förblev giltig) + L325 (samma
 våg, cache-rivningen).
+
+### L327 — [UNIVERSAL] Bot-PR-kedjan har TVÅ plattformsgrindar utöver koden — repo-inställningen och event-beteendet — och båda måste bevisas empiriskt, inte bara doc-läsas
+
+Datum: 2026-07-24 (S81, task-36.7 baseline-workflowen) | Källa: två skarpa
+run-utfall (30079692827 fail + 30081586584 direkt-kö) mot GitHub Docs
+GITHUB_TOKEN-sidan (klass: CI/plattform + verifikations-metodik)
+
+Ett workflow som ska öppna en PR med `GITHUB_TOKEN` möter två grindar som
+inte syns i workflow-koden:
+
+1. **Repo-inställningen** "Allow GitHub Actions to create and approve pull
+   requests" (API: `actions/permissions/workflow` →
+   `can_approve_pull_request_reviews`) är AV per GitHub-default. Utan den
+   failar `gh pr create` med "GitHub Actions is not permitted to create or
+   approve pull requests" — EFTER att generering + push lyckats (halvvägs-
+   utfall: branch utan PR). Minsta vidgning: slå på flaggan men behåll
+   `default_workflow_permissions: read`; i ett repo vars ruleset kräver 0
+   approvals är approve-halvan verkningslös och create-halvan allt som ges.
+2. **Event-beteendet:** förstapartsdok säger att GITHUB_TOKEN-skapade PR:er
+   får sina pull_request-runs i approval-required-läge ("Approve workflows
+   to run"). EMPIRIN visade annat: runnen gick direkt till kö utan banner
+   (trolig interaktion med inställningen i punkt 1). Designen som förlitade
+   sig på approval-bannern som mänsklig grind bar därför fel mekanism —
+   den verkliga grinden är ruleset + merge-beslutet.
+
+Regeln: en plattformsmekanism som ska BÄRA en processgrind bevisas med en
+skarp körning innan designen bokförs som färdig — doc-läsning räcker inte
+ens när dokumentet är förstaparts och färskt (jfr L325: samma klass, cache-
+scoping). Avvikelsen dokumenteras öppet där mekanismen beskrivs.
+Bikupa-fynd i samma kedja: `git status --porcelain` kollapsar en helt
+ospårad katalog till EN rad — räkna filer med `-uall`.
+
+### L328 — [UNIVERSAL] Strict required checks + heterogena CI-tider + parallella landningar = BEHIND-svält för långsamma PR:er
+
+Datum: 2026-07-24 (S81, PR nr 133) | Källa: tre BEHIND-varv mot parallella
+docs-landningar (PR nr 132/134/135, ~15 min-kadens) innan konvergens på
+fjärde försöket (klass: CI/process)
+
+Med "require branches to be up to date" (strict) på required-checken måste
+en PR:s branch innehålla main-toppen vid merge. En PR vars svit tar ~10 min
+(full klass, staging-mutex) förlorar då RACET mot varje parallell docs-PR
+(~1 min CI): main flyttar sig under sviten → BEHIND → `gh pr update-branch`
+→ ny 10-min-svit → main har flyttat sig igen. Tre varv i S81 innan den
+parallella strömmen sinade.
+
+Mönstret är strukturellt, inte otur: svält-risken växer med (svit-tid ×
+parallell landnings-frekvens). Mitigering i stigande styrka: (a) acceptera
+loopen när parallellströmmen är ändlig (S81-fallet — kostnaden är väntetid,
+inte fel), (b) sekvensera medvetet: landa snabba docs-PR:er FÖRE eller
+EFTER den långsamma, inte under dess svit-fönster (parallell-sessioners
+landningsdisciplin), (c) om klassen blir kronisk: GitHub merge queue är
+branschverktyget byggt för exakt detta. Strict-kravet är RÄTT (grinden
+bevisar main+PR-kombinationen) — lösningen är landnings-koordinering,
+aldrig att släppa strict.

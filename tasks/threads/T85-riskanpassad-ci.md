@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-23
+updated: 2026-07-24
 review_by: 2026-10-23
 status: stable
 lifecycle: active
@@ -39,7 +39,7 @@ i samma kö.
 |---|---|---|
 | 1 | Merge-grinden ([ADR-076](../../docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md)) + actionlint-pinning + jobb-splitten (PR #99) | ✅ EXEKVERAD S77 (grind-bevis i S77-sessionsdok) |
 | 2a | D1-klassen + merge-dedup + nightly/larm + mätskript + gate-proof | ✅ KOMPLETT: **36.1 gate-proof** (S78) + **ci.yml-trion 36.2/36.3/36.4** (S79, ADR-077) + **36.5 mätskriptet** (S80: `scripts/ci-metrics.mjs` + nightly-metrics i larm-needs; utgångsvärde citerat på kortet; se BUILD-LOG S80) |
-| 2b | Visual regression från noll (CI-födda baselines) | design klar — **36.7**, egen session (ready-for-human) |
+| 2b | Visual regression från noll (CI-födda baselines) | ✅ BYGGD S81: **36.7** Done — hermetisk fixturvärld (`tests/visual/support/`) + 6 vyer × 2 vyportar (2x, Marcus-beslut) + `visual-baselines.yml` ände-till-ände (baseline-PR nr 140 Marcus-välsignad); GRIND-jobbet (AC 7–8) medvetet PARKERAT → [`T87`](T87-visual-grind-aktivering.md) (Marcus-beslut A: tidig UI-fas, aktiv grind mot batch-hastigheten); L327+L328 skördade |
 | 2c | Rött-först-bärarbytet (ADR-071-amendering) | ✅ VERKSTÄLLD S80: **36.6** Done — ADR-071 S80-amenderingen (lokalt körutdrag som bärare, rött+grönt ihop, grind-bevis via gate-proof) + CONTRIBUTING § Rött-först |
 | 3 | Staging-per-run-isolering (mutexen avvecklas) | riktning satt; samdesign med ADR-063 post-Fas-6; tangerar T27/T45 |
 
