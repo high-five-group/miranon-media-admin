@@ -16,6 +16,14 @@ name: Visual baselines
 # släpper CI:n. Medvetet INGEN PAT/GitHub App — noll nya secrets, noll
 # rotationsyta (designtrail: sessionsdok S81 Del 3; verifierad mot
 # förstapartsdok 2026-07-24).
+#
+# FÖRUTSÄTTNING (repo-inställning): Settings → Actions → General →
+# "Allow GitHub Actions to create and approve pull requests" måste vara PÅ
+# (API: actions/permissions/workflow, can_approve_pull_request_reviews).
+# Utan den failar gh pr create med "GitHub Actions is not permitted to
+# create or approve pull requests" (empiriskt: run 30079692827, S81).
+# default_workflow_permissions hålls kvar på read — approve-halvan är
+# verkningslös här (ruleset main-skydd kräver 0 approvals).
 
 on:
   workflow_dispatch:
@@ -74,8 +82,11 @@ jobs:
           RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
-          if git status --porcelain -- tests/visual/__screenshots__ | grep -q .; then
-            antal=$(git status --porcelain -- tests/visual/__screenshots__ | wc -l | tr -d ' ')
+          # -uall: porcelain kollapsar annars en helt ospårad katalog till EN
+          # rad → fel bildantal i PR-titeln (empiriskt: PR-titeln "1 bilder"
+          # vid 12 födda bilder, run 30079805732).
+          if git status --porcelain -uall -- tests/visual/__screenshots__ | grep -q .; then
+            antal=$(git status --porcelain -uall -- tests/visual/__screenshots__ | wc -l | tr -d ' ')
             gren="visual-baselines/run-${RUN_ID}"
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

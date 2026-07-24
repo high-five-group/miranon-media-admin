@@ -136,6 +136,11 @@ export default defineConfig({
       maxDiffPixelRatio: 0.01,
       threshold: 0.2,
       animations: 'disabled',
+      // scale 'device' + deviceScaleFactor 2 i visual-projekten (task-36.7,
+      // Marcus-beslut S81): Retina-skarpa baselines — granskningen av
+      // baseline-PR:er är ett återkommande människomoment och default-1x
+      // upplevs oskarp på 2x-skärm. Ratio-trösklarna ovan är skala-neutrala.
+      scale: 'device',
     },
   },
   use: {
@@ -263,6 +268,7 @@ export default defineConfig({
       testDir: './tests/visual',
       use: {
         viewport: { width: 1440, height: 900 },
+        deviceScaleFactor: 2,
         colorScheme: 'light',
         baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || `http://localhost:${VISUAL_DEV_PORT}`,
       },
@@ -272,6 +278,7 @@ export default defineConfig({
       testDir: './tests/visual',
       use: {
         viewport: { width: 375, height: 812 },
+        deviceScaleFactor: 2,
         colorScheme: 'light',
         baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || `http://localhost:${VISUAL_DEV_PORT}`,
       },
