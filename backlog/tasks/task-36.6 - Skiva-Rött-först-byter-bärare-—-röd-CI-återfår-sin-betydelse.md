@@ -1,10 +1,10 @@
 ---
 id: TASK-36.6
 title: 'Skiva: Rött-först byter bärare — röd CI återfår sin betydelse'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-23 17:14'
-updated_date: '2026-07-24 06:47'
+updated_date: '2026-07-24 06:49'
 labels:
   - ready-for-agent
 dependencies:
@@ -46,10 +46,16 @@ Täcker användarberättelser: 11, 12
 Amenderings-blocket S80 överst i ADR-071 (ursprungstext orörd; fix-vågens rad iv öppet amenderad med bevarad ursprungslydelse). CONTRIBUTING § Rött-först — bevisformen tillagd mellan PR-flödet och Nattnätet. Ingen ny ADR — motivet står i blocket (AC#7).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 5de8aa4 · CI-run 30073375124 per jobb (docs-only, Test suite by-design-skippad, länkkontroll grön) · CI-grön-första-pass: ja · defekter under körning: 0 (en MD028 självfångad lokalt före commit) · TDD: ej tillämplig (docs-kort)
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
