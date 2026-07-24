@@ -46,6 +46,36 @@ BUILD-LOG S83-post.
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 85 (PÅGÅENDE 2026-07-25) — Dukningen för nattbygget: audit-läkningen + go-redo för S86
+
+> Scope: sessionsdok `2026-07-25-session-85.md` Del 1 (kanonisk plats):
+> läk audit-grinden + städa + duka nattbygget så S86 startar på ett
+> Marcus-"go". Marcus-kvitterat i sessionsordern 2026-07-25.
+> Kadensrad per L67.
+
+- [x] **Audit-läkningen** (2026-07-25): `GHSA-mh99-v99m-4gvg` (high,
+  brace-expansion, publ 21:53Z — 20 min före S83:s merge-run som gick
+  röd) → override 5.0.8, **PR #169** mergad; main-merge-run
+  30132229085 grön per jobb (Test suite dedup-SKIPPAD, 36.4:s första
+  skarpa config-klass-träff). Full svit lokalt före push (376/376
+  api). **NÄSTA: dok-födelse.**
+- [x] **Dok-födelse** (2026-07-25): `31fea35`, PR #170. Numrering
+  disk-verifierad (85/079/L338/T91/f46/task-39 — nattbygget = **S86**).
+  **NÄSTA: städ + dukning.**
+- [x] **Städet** (2026-07-25): S84-worktreen riven (0 unika commits,
+  verifierat före riv) · 50 mergade lokala brancher rensade
+  (`proto/*` ×5 orörda) · `odoo-autonomous-test-plan` kvar
+  (2 unika, Marcus-beslut). Kortläget re-verifierat via backlog-CLI:
+  ready-for-agent ×6, externa deps Done ×4.
+- [x] **Dukningen** (2026-07-25, denna PR): sessionsdok Del 2 +
+  **batch-ordern** `tasks/sessions/bilagor/s85-nattbygget/batch-order.md`
+  (ADR-071-kontraktet i ADR-076-landningsform · rött-först per
+  S80-amenderingen · halt-first · pilot-loggrad per skiva ·
+  F6-förslag: 18.16 · konventions-bilagan = L337-skyddet, öppet märkt
+  läskopia — hemfrågan förblir grillnings-klass). **NÄSTA:
+  session-end på Marcus coverage-kvittens → S86 NATTBYGGET på Marcus
+  "go" (ordern är batch-kvittot).**
+
 ### Session 77 ✅ AVSLUTAD (2026-07-23) — Processgransknings-landningen: merge-grinden mekaniserad + riskanpassad CI-design
 
 > Scope: sessionsdok `2026-07-23-session-77.md` Del 1 (kanonisk plats):
