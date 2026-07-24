@@ -4888,3 +4888,95 @@ klassningen överskattas drift grovt (här: versionsgapet antydde "allt
 driftat", innehållet visade 4 EF:er + två delade filer, tre rena
 no-ops) — och sync-beslut fattas då på fel riskbild. Verktygsoberoende:
 gäller varje selektivt bundlad artefakt (EF, lambda, container-lager).
+
+### L330 — [UNIVERSAL] Prototypkod committas per ITERATION, inte per pass — arbetsträdet är ingen förvaring
+
+Datum: 2026-07-24 (S83 pass 4) | Källa: dagens 18.18-iterationer skrevs
+över av `git restore --source=<proto-branch>` och gick förlorade;
+arbetsträdet var enda kopian (klass: dataförlust, kastbar kod)
+
+"Kastbar" betyder att koden kastas NÄR PASSET ÄR KLART — inte att den
+får förloras mitt i. Passets egen konvention var redan rätt (SHA per
+iteration: 17.7 `0eba03b`, 18.15 `eda160f`, 18.17 `5437fb1`), men
+efterlevdes inte efter en session-paus. Under ett pass som blandar
+prototyp-iteration med PR-arbete på skarpa filer sker branch-växlingar
+löpande, och varje växling är ett tillfälle att förlora ocommittat
+arbete.
+
+Regeln: **varje Marcus-kvitterad iteration får en commit på
+proto-branchen innan nästa påbörjas**, och agenten står PÅ
+proto-branchen under passet i stället för på main — då hamnar commits
+rätt utan att någon behöver komma ihåg det. Bonus: prototyp-SHA:erna
+blir en gratis iterationslogg för fångst-sekvensen.
+
+### L331 — [UNIVERSAL] `git restore --source` / `git checkout <ref> -- <path>` är destruktivt — ett kommando som var rätt i ett tidigare läge kan vara fel nu
+
+Datum: 2026-07-24 (S83 pass 4) | Källa: TVÅ dataförluster samma pass —
+handoffens återställningskommando kördes om senare (skrev över dagens
+iterationer), och `git checkout proto/... -- tasks/ backlog/` skrev över
+hela fångst-arbetet (klass: dataförlust, handoff-artefakter)
+
+Det första kommandot kom ur ett HANDOFF-block och var korrekt vid
+resume-tillfället — arbetsträdet var då tomt. Senare i samma session,
+med timmar av ocommittat arbete i trädet, var samma kommando
+destruktivt. Det andra var Codes eget, och gjorde samma sak igen inom
+en timme trots att L330/L331 just formulerats — vilket i sig är
+bevisningen: en lesson som bara är NEDSKRIVEN ändrar inte beteende
+under pågående pass.
+
+Regeln: före `git restore --source` eller `git checkout <ref> -- <path>`
+— kör `git status` och verifiera att det som skrivs över antingen är
+committat eller avsiktligt kastbart. Ett kommando kopierat ur ett
+handoff-block ärver inte sin säkerhet. Och: dessa två kommandon har
+ingen ångra-väg — reflog räddar commits, inte arbetsträd.
+
+### L332 — [UNIVERSAL] HTTP 500 på en icke-idempotent POST betyder INTE att skrivningen uteblev
+
+Datum: 2026-07-24 (S83 pass 4) | Källa: GitHub-incident — `POST /pulls`
+svarade 500 samtidigt som PR:en faktiskt skapades; retry-loopen
+fortsatte försöka (klass: extern-API-robusthet)
+
+Vakten rapporterade "GAV UPP efter 60 min" medan PR #160 låg skapad och
+mergad. Att GitHub avvisade de senare försöken med "No commits between
+main and…" var tur — mot ett API utan den dedupen hade loopen skapat
+dubbletter.
+
+Regeln: en retry mot en icke-idempotent skrivning måste **läsa tillbaka
+tillståndet först** (finns resursen redan?) i stället för att blint
+försöka igen. 5xx säger att svaret uteblev, inte att operationen gjorde
+det.
+
+### L333 — [UNIVERSAL] Ett vaktskript som kan rapportera framgång utan att ha verifierat den är värre än ingen vakt
+
+Datum: 2026-07-24 (S83 pass 4) | Källa: CI-vakt returnerade exit 0 vid
+timeout → notifieringen sa "completed" fast PR:en låg OPEN; separat vakt
+sa "GAV UPP" fast arbetet var klart (klass: verifierings-disciplin)
+
+Två vakter i samma session gav motsatta felaktiga besked. Gemensam
+nämnare: vaktens utsaga behandlades som fakta i stället för som en
+hypotes om verkligheten.
+
+Regeln: vaktens exitkod och filutdata är en SIGNAL, aldrig facit —
+tillståndet verifieras mot auktoritativ källa (`gh pr view --json
+state,mergedAt`) innan det rapporteras vidare. Och: timeout ska alltid
+ge non-zero exit, aldrig 0. Detta är hypotes-verifierings-disciplinen
+tillämpad på egna verktyg, inte bara på andras påståenden.
+
+### L334 — Konventioner som bara lever i kodkommentarer överlever inte in i nästa agent-fönster
+
+Datum: 2026-07-24 (S83 pass 4) | Källa: Code uppfann egen grammatik TVÅ
+gånger inom en timme för mönster repot redan hade (månadsrubrikens form,
+länkens vikt) — båda fångade av Marcus, ingen av self-review (klass:
+kunskapsarkitektur; Marcus-order: "konventioner måste ju ha ett HEM")
+
+Formklassen, chevron-grammatiken, slot-modellen och märkningsregeln bor
+alla som JSDoc i enskilda komponenter. Det räcker så länge samma agent
+med färsk kontext bygger — men inte över pass-gränser, och definitivt
+inte för nattbyggets subagenter som saknar passets kontext.
+
+Branschskiktningen (research 2026-07-24): design system-doc = SSOT för
+visuellt språk · ADR = beslut + rationale · Storybook = SSOT för kodade
+komponenter · kodkommentarer = "hur" för lokal logik, uttryckligen INTE
+konventionsbärare. Hemvist-valet är ADR-bar klass och grillas i egen
+session — men principen står: **en konvention utan hem är en konvention
+som kommer att brytas.**
