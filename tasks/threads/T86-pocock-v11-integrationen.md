@@ -51,7 +51,7 @@ lifecycle: active
 2. **Korpus-landningen** (denna spoke-PR): fyra rå-transkript + destillat/
    gap-analys + detta tråd-kort.
 
-**PARKERAT MED VILLKOR:**
+**AKTIVERAT (i drift under mätperiod):**
 
 3. **Review-piloten** — subagent-review i do-work-skarven (lokalt grönt →
    review → leverans-commit): EN subagent, två axlar (spec-trohet mot
@@ -64,7 +64,9 @@ lifecycle: active
    grund" (2026-07-24); planen preciserad + kvitterad samma dag ("Det
    låter ju väldigt bra") — fulltext i § Pilotplanen nedan.
    Start-villkoret ÖPPET REVIDERAT där (ursprungligen "när
-   36.x-instrumenten är levererade").
+   36.x-instrumenten är levererade"). **AKTIVERAD 2026-07-24** (hub
+   `291865d`, plugin 1.20.0 — PILOT-blocket i do-work steg
+   4→5-skarven, distribuerad + verifierad; L329).
 
 **GRILLNINGSKLASS (egen session vid trigger):**
 
@@ -148,15 +150,40 @@ Ursprungsvillkoret "när 36.x-instrumenten är levererade" reviderat:
 skiva eftersom review-tiden ligger FÖRE push och inte syns i
 PR-ledtiden — verkligt villkor är NÄSTA PRODUKTKOD-BATCH utan att
 störa 36.7/36.8; naturlig start är event-familje-arbetet efter
-QA-vandringen. **Aktiveringen:** liten hub-landning (PILOT-blocket i
-do-work + plugin-bump/reinstall per S76-praxisen) i frisk session på
-Marcus kör-order.
+QA-vandringen. **Aktiveringen: UTFÖRD 2026-07-24** (hub `291865d`,
+plugin 1.19.0 → 1.20.0, update + list verifierade —
+list-verifieringen från huvudkatalogen, L329). Första pilot-skivorna:
+nattbyggets kort (§ Körplanen nedan).
 
 **Pilot-loggen (fylls per skiva under piloten):**
 
 | Skiva | Fynd (spec/std) | Åtgärdade | Avfärdade (skäl) | Routade | Klass | Tid (min) | Missar nedströms |
 |---|---|---|---|---|---|---|---|
 | _–_ | | | | | | | |
+
+## Körplanen 2026-07-24 → nattbygget (kvitterad i S82-konversationen)
+
+1. **Codex-uppföljningsrapporten inväntas** (Marcus-beställd
+   omgranskning efter T85-utlösningen): läses + disk-verifieras
+   påstående-för-påstående i S82-konversationen före dess stängning;
+   flödespåverkande fynd triageas före nattbygget.
+2. **Prototyp-pass per yta** (HITL, konvergens från exakt kopia per
+   standardformen): 17.7 filtervyn · 18.15 numrerade boxar · 18.17
+   per-anmälan-detaljvyn · 18.18 + 18.19 eventväljar-paret (troligen
+   ETT pass — samma komponentfamilj). Svar-fångst → byggkrav in i
+   korten (utdrags-undantaget) → `ready-for-agent`.
+3. **ÖPPEN MARCUS-FRÅGA:** 18.16 (grön knapp-regeln,
+   review-iteration 2) står utanför listan — med i nattbygget (kan
+   ready-for-agent:as utan prototyp om regeln är låst) eller medvetet
+   utanför?
+4. **Nattbygget:** work-batch-order i frisk session (max-kort 5,
+   ±18.16) → varje produktkod-skiva = pilot-skiva med loggrad i
+   tabellen ovan; UI-skivor stannar i granskningsfärdigt läge.
+5. **Morgonen:** Marcus granskningsvåg + 36.8 QA-vandringen = "missar
+   nedströms"-facit för pilot-loggen.
+
+Parallell-landningsdisciplinen (L328) gäller: docs-PR:er landas inte
+under en långsam svits fönster.
 
 ## Varför tråden finns
 
@@ -170,9 +197,10 @@ Sekvensen mot T85 är designad: processhastighets-spåret (Codex-vågorna)
 
 ## Nästa steg
 
-- **A.** Review-piloten aktiveras vid nästa produktkod-batch
-  (§ Pilotplanen — start-villkoret öppet reviderat 2026-07-24; villkor i
-  beslutsläge 3). Aktiveringen är en hub-ändring i do-work + mätrutin.
+- **A.** Review-piloten är AKTIV sedan 2026-07-24 (hub `291865d`,
+  plugin 1.20.0) — första pilot-skivorna är nattbyggets kort
+  (§ Körplanen); loggtabellen fylls per skiva och beslutet tvingas
+  efter 10–15 rader per de låsta kriterierna.
 - **B.** Wayfinder-grillningen vid AT-Max-uppstart eller nästa dimmiga
   initiativ (beslutsläge 4).
 - **C.** Marcus väljer teach-pilotämne när han vill öppna det spåret
