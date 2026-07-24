@@ -2948,6 +2948,23 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-07-24-session-84.md`](../tasks/sessions/2026-07-24-session-84.md) (Del 1–4). **EJ fas-avslut.** Kvar: TASK-37 (audit-läget) + TASK-38 (metod-vakterna) plockbara · T46 bär go-live-resterna · hub-lyftet L284–L332 vid hub-sync-moment · Marcus-moment: Update-klicket i claude.ai.
 
+## Session 83 — Prototyp-passen inför nattbygget: konvergens per yta → ready-for-agent ×6 (2026-07-24)
+
+**Commit-range:** `e5830cd` (dok-födelse, PR #149) → stängnings-PR. **Mål:** ge nattbyggets sex kort sina saknade designbeslut via konvergens-prototyp mot Marcus i browsern (T86 § Körplanen punkt 2–3). Ej byggplan-fas — HITL-designsession. Pausad efter pass 3, återupptagen samma dygn (`session-resume`, N bevarat).
+
+- **Fyra konvergens-pass, alla låsta av Marcus i browsern:** 17.7 filtervyn (chips → dropdowns på Marcus-fångst "ort kommer ju bli lång"; tratt + tre Select + print) · 18.15 numrerade boxar (hover-kollisionen fångad av Marcus: siffer-ruta och hover-platta delade `bg-emphasized` → vit ruta) · 18.17 anmälningsvyn (tyngsta passet — 51 fält MCP-lästa + elit-IA-research + tre iterationsvarv; FEM biblioteks-kandidater) · **18.18+18.19 eventväljar-paret** (sju iterationer, Del 6).
+- **Pass 4-facit:** 18.19 **variant A** (väljaren ÄR rubriken) låst i första visningen. 18.18: **tomt och valt läge som TVÅ TILLSTÅND, inte två sidor** — progressive disclosure (dölj → avslöja) ersatte disabled-fält efter Marcus dom; sök + månadsgruppering ersatte kalender-idén; rubrikfritt kort, vit väljare, beläggningsstapel, nedtonad navigeringslänk. 14 byggkrav i kortet.
+- **Research avgjorde tre val:** route-semantiken → **alternativ b** på tre precedent (Linear `/new` + `/team/LIN/new` · Rails nested-creation · Jiras gating-fält) · sök-tröskeln (USWDS >15; staging 11 och växande) · progressive disclosure (UXPin/PatternFly/ui-patterns).
+- **INSTANT-KRAVET föddes** (Marcus: "ALLT i denna app ska vara instant, det ska vara en regel också") och landade i SKARP kod **PR #163**: EF-latensen mätt (~1,1 s get-event · ~1,4 s get-registrations) → `placeholderData` ur listcachen + prefetch på avsikt. Direktklick 1315 ms → hover 1500 ms **278 ms**; CLS 0,000 vid navigering. Beläggningen skyddad mot en sekund falska nollor (`?? 0` mot aggregat som bara get-event bär). Airtable-golvet accepterat tills Supabase → **T90**.
+- **SLUTRÄKNING: ready-for-agent ×6 NÅDD** (17.7 · 18.15 · 18.16 · 18.17 · 18.18 · 18.19) — **nattbygget är körbart**.
+- **Incidenter öppet bokförda (Del 7):** js-yaml-advisoryn GHSA-pm4m-ph32-ghv5 publicerad 16:47Z mitt i passet blockerade ALL landning → override till 5.2.2, allowlisten orörd (PR #160) · GitHub-outage bröt PR-skapandet i ~50 min och gav **HTTP 500 samtidigt som operationen utfördes** · **dataförlust ×2** av ocommittat arbete (iterationerna + fångst-sekvensen), båda återskapade och verifierade mot facit · prototypcommits på lokal main ×2 (aldrig pushade).
+- **Nummerkollision med S84:** syskonsessionen stängde under pass 4 och skördade L330–L332 → S83:s fem numrerades om till **L333–L337** (PR #167). Disk-verifiering vid resume räckte inte — numret måste läsas om omedelbart före skrivning.
+- **KONVENTIONS-HEMMET öppen till nästa session** (Marcus-order: "konventioner måste ju ha ett HEM"): belagt problem — Code uppfann egen grammatik två gånger inom en timme för mönster repot redan hade. Research klar (design system-doc · ADR · Storybook · kommentarer), hemvist-valet är ADR-bar/grillnings-klass. → **L337**.
+- **ADR-078 mintad vid stängningen** (Marcus-order): INSTANT-regeln — navigering väntar aldrig på data vi redan har; placeholder ur listcache, skydd för partiella fält, prefetch på avsikt, skeleton i slutgeometri, golvet deklareras mätt. Bevisad i PR #163.
+- **Numrering efter S83:** nästa 85/079/L338/T91/f46/task-39.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-24-session-83.md`](../tasks/sessions/2026-07-24-session-83.md) (Del 1–7). **EJ fas-avslut.** Kvar: nattbygget i FRISK session (work-batch, max-kort 6) → morgongranskning → T85-korrigeringsfönstret · konventions-hemmet (grillning) · hub-lyftet L284–L337 vid hub-sync-moment · Marcus-moment: Update-klicket i claude.ai.
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
