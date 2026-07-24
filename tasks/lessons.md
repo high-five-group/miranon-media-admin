@@ -4837,3 +4837,54 @@ körs alltid med huvudkatalogen som cwd; en `✘ disabled` från en
 worktree är en läs-artefakt, inte ett distributions-fel — verifiera
 från huvudkatalogen innan åtgärd (samma anti-hypotes-disciplin som all
 felsökning).
+
+### L330 — [UNIVERSAL] Select-fält med tidsbundna optioner är en tickande skrivgräns — verifiera write-mål mot select-OPTIONERNA, inte bara fält-existensen
+
+Datum: 2026-07-24 (S84, T40-prod-smoken) | Källa: create-event 500:ade
+i prod på 2027-datum — `Månad/år` är singleSelect vars optioner slutar
+"December 2026"; server-koden härleder värdet ur Startdatum och skriver
+utan typecast → okänd option avvisas (fälla 45; klass:
+datamodell/write-verifiering)
+
+Pre-flighten korsverifierade att alla FÄLT som EF-koden skriver FINNS i
+prod — men ett select-fälts skrivbarhet beror också på att VÄRDET finns
+bland optionerna, och tidsbundna optioner (månader, år, terminer) gör
+gränsen rörlig: koden är korrekt idag och 500:ar när kalendern passerar
+options-horisonten. Regel: en write-mål-verifiering av select-fält
+omfattar options-rymden (describe_table), och varje select vars
+optioner är tidsserier flaggas som designdefekt (rätt form: härledd
+formel eller fritext). Staging kan dölja fällan — testdatum väljs
+typiskt inom nuvarande horisont.
+
+### L331 — [UNIVERSAL] Deny-kontraktets form per endpoint härleds ur källkoden, inte ur klass-mallen — samma svit kan bära olika vakt-ordning per funktion
+
+Datum: 2026-07-24 (S84, deny-triplen ×13) | Källa: "fel metod→405"
+gällde 6 av 13 EF:er; övriga 7 saknar egen metod-vakt och auth-vägrar
+först (401) — förväntans-mallen från 6f/6g-precedenten gav 7 falska
+röda tills källkoden lästes (klass: verifiering/smoke-design)
+
+En bevisform etablerad på en delmängd (create-event/save-segments
+deny-triple) är inte automatiskt hela svitens kontrakt — vakt-ordning
+(metod-check före/efter auth) är per-funktions-kod, inte klass-egenskap.
+Regel: innan en förväntan skrivs per endpoint, läs vaktens faktiska
+ordning i källan och koda förväntan därifrån; en avvikelse klassas
+sedan medvetet (här: 401 är fortfarande korrekt DENY — asymmetrin blev
+hygien-kort, inte smoke-fel). Generaliserar L204-familjen: kontraktet
+bor i artefakten, inte i mallen.
+
+### L332 — [UNIVERSAL] Diff mot nedladdad deployad artefakt kräver bundlings-klassning — "Only in disk" är oftast artefakt av selektiv bundling, inte drift
+
+Datum: 2026-07-24 (S84, T39-pre-flighten) | Källa: rå fil-räkning gav
+"4–12 _shared-filer diffade" per EF; efter klassning (DIFFAR vs
+BARA-PÅ-DISK) var verklig drift 0–2 filer — bundlern inkluderar endast
+importerade filer, så disk-filer utanför funktionens import-graf är
+inte deployad-kod-skillnad (klass: deploy-forensik)
+
+När deployad kod hämtas och diffas mot disk-HEAD måste diffen delas i
+tre klasser: (a) filer i BÅDA som skiljer = verklig drift, (b) bara i
+artefakten = borttaget/ej längre importerat, (c) bara på disk = utanför
+import-grafen ELLER nytt beroende som nästa deploy tar med. Utan
+klassningen överskattas drift grovt (här: versionsgapet antydde "allt
+driftat", innehållet visade 4 EF:er + två delade filer, tre rena
+no-ops) — och sync-beslut fattas då på fel riskbild. Verktygsoberoende:
+gäller varje selektivt bundlad artefakt (EF, lambda, container-lager).

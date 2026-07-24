@@ -2935,6 +2935,19 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-07-24-session-81.md`](../tasks/sessions/2026-07-24-session-81.md) (Del 1–7). **EJ fas-avslut.** Kvar av task-36: **36.8** (QA-vandringen, ready-for-human, dep 36.7 ✓ AVBLOCKAD) · T87 vilande (grind-aktiveringen) · hub-lyftet L284–L328 vid hub-sync-moment · dependabot-PR #65/#137 Marcus-review · Marcus-moment: Update-klicket i claude.ai.
 
+## Session 84 — EF-prod-synken: T39-pre-flight → A-kedjan — prod på HEAD, datavägen bevisad, T39/T40/T33 stängda (2026-07-24)
+
+**Commit-range:** `c976651` (dok-födelse, PR #150) → stängnings-PR. **Mål:** EF-delen av prod-deployen (T39/T40) + TASK-35 — parallell session (S82-formen/T67) i egen worktree bredvid aktiva S83. Ej byggplan-fas — deploy-/förvaltningssession.
+
+- **Pre-flighten (PR #151):** T39-notens föreskrivna form utförd read-only — alla 12 deployade prod-EF:er nedladdade + innehålls-diffade mot HEAD inkl. bundlad `_shared` per funktion. Huvudresultat: **verklig drift smalare än versionsgapet** (4 EF:er egen-kod-drift; delade driften = env-drivet `AIRTABLE_BASE_ID` + `field-allowlists`-tillskotten; 3 innehålls-no-ops) → **L332**. Riskfynd: bas-ID-secreten fanns men var runtime-obevisad → läs-smoke sekvenserades först. Leverabel: `docs/research/t39-ef-sync-preflight-2026-07-24.md` (karta + deploy-/smoke-plan + TASK-35-underlag).
+- **Marcus-förkraven (dashboarden, beslut C-kanalen):** smoke-user `marcus+ef-smoke@h5gruppen.se` skapad (lösenord i lokal git-ignorerad `.env.prod-smoke`); Playwright-paret raderat; `marcus@marcusjohansson.me` raderad efter Code-forensik (Vue-era-admin på ej Marcus-kontrollerad domän = övertagsvektor; 5 juli-inloggningen Marcus-kvitterad egen) → **T33 STÄNGD**. Env-svepet verifierat rent (S26/S32 tog lagren).
+- **A-kedjan (Marcus-go):** `test-auth` raderad ur prod (TASK-35 AC1, verifierad) → kanoniska full-allowlist-deployen **13/13** (11 bump + `create-event-note`/`get-event-notes` NYA I PROD; L216-override-kravet UPPHÄVT) → deny-triple ×13 grön efter källkods-klassad förväntans-rättning (**L331**; metod-vakts-asymmetrin → TASK-38) → autentiserade smokes gröna: läs-tripeln (secreterna runtime-bevisade) · create-event-idempotensen (201→replay 200 samma rad) · notes-rundturen · save-segment 201 → ZZ-teardown verifierad via Airtable-MCP. **T39 + T40 STÄNGDA**; frontend-kontrollen + allowlist-utvidgningen (9 app-EF:er) ärvs av T46; byggplanens closeout-förkrav fick T40-dimensionen.
+- **Diagnos-fynd under smoken:** create-event 500 på 2027-datum → prod-schemat läst via MCP → **fälla 45** (`Månad/år`-selectens options-horisont slutar december 2026; **appen kan inte skapa 2027-event i prod förrän löst**) → **L330**. TASK-35 Done (AC2-beslutet: audit-läge JA → TASK-37).
+- **Kvälls-incidenterna (stängnings-PR #161):** GitHub-API-incident bröt PR-skapandet (löst med retry-vakt via REST) och lämnade syskonsessionens gröna js-yaml-fix-PR #160 oarmerad → Code armerade, CLEAN-merge direkt (advisory GHSA-pm4m-ph32-ghv5, high, publicerad 18:47 samma kväll) · Lychee-429 på gitlab.com-länk i orörd ADR-032 (2 CI-instanser, lokalt 200) → `.lycheeignore`-post per digg.se-precedentens 2-instans-beslut; config-ändringen triggade korrekt fulla sviten som gick grön per jobb.
+- **Numrering efter S84:** nästa 85/078/L333/T88/f46/task-39.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-24-session-84.md`](../tasks/sessions/2026-07-24-session-84.md) (Del 1–4). **EJ fas-avslut.** Kvar: TASK-37 (audit-läget) + TASK-38 (metod-vakterna) plockbara · T46 bär go-live-resterna · hub-lyftet L284–L332 vid hub-sync-moment · Marcus-moment: Update-klicket i claude.ai.
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
