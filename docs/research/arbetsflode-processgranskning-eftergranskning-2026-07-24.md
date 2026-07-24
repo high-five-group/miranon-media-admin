@@ -3,6 +3,11 @@
 > Datum: 2026-07-24  
 > Omfattning: repots arbetsflöde, GitHub-regler, verkliga Actions-körningar, TASK-36/T85, T87 och T86.  
 > Arbetssätt: helt skrivskyddad granskning. Inga filer eller externa tillstånd har ändrats.
+> Länk-normalisering (Code, samma dag, öppet bokförd): rapportens
+> maskin-absoluta fil-länkar (`/Users/…/fil:rad`) omskrivna till
+> repo-relativa med radnumret i länktexten (lychee-grinden kan inte lösa
+> absoluta lokala paths); backlog-kortens två länkar avlänkade till
+> kodstil (specialtecken i filnamnen). Innehållet i övrigt orört.
 
 ## Sammanfattande dom
 
@@ -53,7 +58,7 @@ Detta stänger rapportens allvarligaste hål. GitHub bekräftar att strict-läge
 
 ### 2. Paraply-checken är nu fail-closed
 
-[ci.yml](/Users/marcus/Repon/miranon-media-admin/.github/workflows/ci.yml:553) kör paraplyjobbet med `if: always()` och läser alla beroendejobbs resultat. `failure` och `cancelled` ger explicit `exit 1`.
+[ci.yml — rad 553](../../.github/workflows/ci.yml) kör paraplyjobbet med `if: always()` och läser alla beroendejobbs resultat. `failure` och `cancelled` ger explicit `exit 1`.
 
 Detta är rätt konstruktion eftersom GitHub behandlar skippade jobb som lyckade. En required check som kan hoppas över är annars säkerhetsmässigt fail-open. [GitHubs status-check-dokumentation](https://docs.github.com/en/pull-requests/reference/status-checks).
 
@@ -61,7 +66,7 @@ Detta är rätt konstruktion eftersom GitHub behandlar skippade jobb som lyckade
 
 ### 3. D1-fasttracken är konservativt utformad
 
-D1-klassningen i [ci.yml](/Users/marcus/Repon/miranon-media-admin/.github/workflows/ci.yml:112) är en allowlist, inte en blocklist. Okända eller blandade ändringar faller tillbaka till full svit. CI-, paket-, lås- och byggkonfiguration kan inte dras ned till lågrisk av en samtidig CSS-fil.
+D1-klassningen i [ci.yml — rad 112](../../.github/workflows/ci.yml) är en allowlist, inte en blocklist. Okända eller blandade ändringar faller tillbaka till full svit. CI-, paket-, lås- och byggkonfiguration kan inte dras ned till lågrisk av en samtidig CSS-fil.
 
 Det här är precis hur en säker fast track bör utformas:
 
@@ -74,7 +79,7 @@ Jag rekommenderar att ni inte introducerar D2 ännu. D0/D1/D3 är en sund först
 
 ### 4. Merge-dedupliceringen är ovanligt välgjord
 
-Dedupen i [ci.yml](/Users/marcus/Repon/miranon-media-admin/.github/workflows/ci.yml:142) verifierar både att merge-commitens träd är identiskt med PR-headens träd och att just den fullständiga SHA:n har en framgångsrik CI-körning. Alla avvikelser ger full svit.
+Dedupen i [ci.yml — rad 142](../../.github/workflows/ci.yml) verifierar både att merge-commitens träd är identiskt med PR-headens träd och att just den fullständiga SHA:n har en framgångsrik CI-körning. Alla avvikelser ger full svit.
 
 Det ger rätt asymmetri:
 
@@ -87,7 +92,7 @@ En mindre inkonsekvens är att rulesetet tillåter merge, squash och rebase meda
 
 ### 5. Jobbuppdelningen ger tidigare återkoppling
 
-[ci-suite.yml](/Users/marcus/Repon/miranon-media-admin/.github/workflows/ci-suite.yml:72) separerar pure/build, a11y och staging. Det minskar inte alltid tiden tills en full D3-PR kan mergas, men det ger användbar signal tidigare och begränsar staging-mutexen till rätt jobb.
+[ci-suite.yml — rad 72](../../.github/workflows/ci-suite.yml) separerar pure/build, a11y och staging. Det minskar inte alltid tiden tills en full D3-PR kan mergas, men det ger användbar signal tidigare och begränsar staging-mutexen till rätt jobb.
 
 Detta är en verklig hastighetsförbättring, inte bara ompaketering.
 
@@ -99,7 +104,7 @@ Det återställer den viktiga semantiken: rött i normal CI betyder oväntat fel
 
 ### 7. Nattnätet är arkitektoniskt rätt tänkt
 
-[nightly.yml](/Users/marcus/Repon/miranon-media-admin/.github/workflows/nightly.yml:34) återanvänder samma tunga svit, gör bredare audit, kör kall länkkontroll och har en larmkedja. Två verkliga gröna nattkörningar och en simulerad larmkörning finns.
+[nightly.yml — rad 34](../../.github/workflows/nightly.yml) återanvänder samma tunga svit, gör bredare audit, kör kall länkkontroll och har en larmkedja. Två verkliga gröna nattkörningar och en simulerad larmkörning finns.
 
 Det är rätt princip: snabb, selektiv presubmit ovanpå en bredare post-submit-kontroll.
 
@@ -109,9 +114,9 @@ Det är rätt princip: snabb, selektiv presubmit ovanpå en bredare post-submit-
 
 Detta är rapportens viktigaste kvarvarande sanningsgap.
 
-[CONTRIBUTING](/Users/marcus/Repon/miranon-media-admin/CONTRIBUTING.md:177) säger att varje UI-ändring jämförs mot referensbilder och att CI-jobbet kör jämförelsen. Något sådant jobb finns inte i `ci-suite.yml` eller `nightly.yml`.
+[CONTRIBUTING — rad 177](../../CONTRIBUTING.md) säger att varje UI-ändring jämförs mot referensbilder och att CI-jobbet kör jämförelsen. Något sådant jobb finns inte i `ci-suite.yml` eller `nightly.yml`.
 
-TASK-36.7 är dessutom markerad `Done`, trots att AC 7–8 och samtliga DoD-rader är öppna: [TASK-36.7](/Users/marcus/Repon/miranon-media-admin/backlog/tasks/task-36.7%20-%20Skiva-Visuell-regression-från-noll-—-CI-födda-baselines.md:32). Samtidigt kräver QA-planens punkt 11 ett rött visual-jobb som inte existerar: [TASK-36.8](/Users/marcus/Repon/miranon-media-admin/backlog/tasks/task-36.8%20-%20QA-Manuell-testplan-—-riskanpassad-CI-mot-verkligt-arbetsflöde.md:48).
+TASK-36.7 är dessutom markerad `Done`, trots att AC 7–8 och samtliga DoD-rader är öppna: `task-36.7`-kortet (rad 32). Samtidigt kräver QA-planens punkt 11 ett rött visual-jobb som inte existerar: `task-36.8`-kortet (rad 48).
 
 Själva visual-infrastrukturen är däremot bra:
 
@@ -128,7 +133,7 @@ Min rekommendation är:
 
 1. Gör sanningen konsekvent omedelbart: beskriv visual som byggd men inaktiv och gör QA-punkt 11 explicit blockerad av T87.
 2. Överväg att aktivera visual i nightly före PR-grinden. Då får ni åtminstone ett automatiskt nät utan att blockera varje designiteration.
-3. Aktivera PR-grinden när UI-takten lugnar, enligt [T87](/Users/marcus/Repon/miranon-media-admin/tasks/threads/T87-visual-grind-aktivering.md:39).
+3. Aktivera PR-grinden när UI-takten lugnar, enligt [T87 — rad 39](../../tasks/threads/T87-visual-grind-aktivering.md).
 
 Jag skulle inte kalla hela TASK-36 bevisad förrän denna motsägelse är löst.
 
@@ -142,7 +147,7 @@ Det senaste 100-körningsfönstret rapporterar:
 - “flaky-frekvens” 60 procent
 - dedup 20/20
 
-Tre mätproblem finns i [ci-metrics.mjs](/Users/marcus/Repon/miranon-media-admin/scripts/ci-metrics.mjs:90):
+Tre mätproblem finns i [ci-metrics.mjs — rad 90](../../scripts/ci-metrics.mjs):
 
 1. **Staging-kötiden är inte mutex-kötid.** Den mäter workflow-start till staging-jobbets start och inkluderar därför upstream-jobb, runner-kö och purge. Den kan inte isolerat användas för att bedöma mutexen.
 
@@ -172,7 +177,7 @@ Observatören bör även täcka `startup_failure`, `timed_out`, `action_required
 
 D1 undviker staging, och D3 ger tidigare signal från parallella jobb. Men fulla produktändringar tar fortfarande omkring åtta minuter och går genom en global staging-mutex.
 
-Den strukturella effekten syns redan i [L328](/Users/marcus/Repon/miranon-media-admin/tasks/lessons.md:4801): PR #133 behövde tre update-branch-varv eftersom snabbare docs-PR:er hann flytta `main` under den långa sviten.
+Den strukturella effekten syns redan i [L328 — rad 4801](../../tasks/lessons.md): PR #133 behövde tre update-branch-varv eftersom snabbare docs-PR:er hann flytta `main` under den långa sviten.
 
 Detta är inte skäl att släppa strict-läget. GitHub dokumenterar att strict ger fler byggen men säkrare kombinationsbevis. En merge queue är branschverktyget för problemet, men GitHubs merge queue är i nuläget begränsad till organisationsägda publika repo eller organisationsägda privata Enterprise Cloud-repo. [GitHubs merge queue-dokumentation](https://docs.github.com/en/enterprise-cloud%40latest/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue).
 
@@ -193,9 +198,9 @@ Risken är begränsad i ett solorepo, men om målet är säkerhetsmässig fronti
 
 ### 6. Actionlint-luckan är stängd, men Vale saknar integritetskontroll
 
-Actionlint installeras nu från en fast release och verifieras med SHA256: [ci.yml](/Users/marcus/Repon/miranon-media-admin/.github/workflows/ci.yml:233). Det stänger ursprungsfyndet ordentligt.
+Actionlint installeras nu från en fast release och verifieras med SHA256: [ci.yml — rad 233](../../.github/workflows/ci.yml). Det stänger ursprungsfyndet ordentligt.
 
-Vale hämtas däremot som versionspinnad tarball utan checksummeverifiering: [ci.yml](/Users/marcus/Repon/miranon-media-admin/.github/workflows/ci.yml:506). Det är mycket bättre än muterbar `main`, men inte samma supply-chain-nivå som actionlint. Samma checksummeform bör användas.
+Vale hämtas däremot som versionspinnad tarball utan checksummeverifiering: [ci.yml — rad 506](../../.github/workflows/ci.yml). Det är mycket bättre än muterbar `main`, men inte samma supply-chain-nivå som actionlint. Samma checksummeform bör användas.
 
 ### 7. Workflow-ytan har vuxit kraftigt
 
@@ -243,7 +248,7 @@ Den huvudsakliga risken är dokumenttillväxt, men skillen kräver destillat i s
 
 Min raka dom: **kör piloten, men permanenta den inte i nuvarande form utan några protokollskärpningar.**
 
-Det som är mycket bra i [T86](/Users/marcus/Repon/miranon-media-admin/tasks/threads/T86-pocock-v11-integrationen.md:108):
+Det som är mycket bra i [T86 — rad 108](../../tasks/threads/T86-pocock-v11-integrationen.md):
 
 - uttrycklig hypotes och nollhypotes
 - låsta kriterier före start
@@ -294,7 +299,7 @@ Min rekommendation är inte att tillåta direktpush igen. Den är att minska ant
 
 ## Små men konkreta korrigeringar
 
-Nightly-workflowen säger att GitHub-cron saknar tidszon och använder därför ungefärlig UTC-mappning: [nightly.yml](/Users/marcus/Repon/miranon-media-admin/.github/workflows/nightly.yml:11). GitHub Actions stöder nu IANA-tidszon direkt, exempelvis `timezone: Europe/Stockholm`. [Aktuell workflow-syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax).
+Nightly-workflowen säger att GitHub-cron saknar tidszon och använder därför ungefärlig UTC-mappning: [nightly.yml — rad 11](../../.github/workflows/nightly.yml). GitHub Actions stöder nu IANA-tidszon direkt, exempelvis `timezone: Europe/Stockholm`. [Aktuell workflow-syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax).
 
 Det är ingen säkerhetsbrist, men en enkel möjlighet att ta bort DST-glidning och en inaktuell kommentar.
 
