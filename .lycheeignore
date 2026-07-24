@@ -88,3 +88,14 @@
 # hemma utanför länk-grinden (jfr ADR-022 kategori 4).
 ^https://img\.shields\.io/.*$
 
+
+# css-tricks.com CI-runner-specifik UA/WAF-415 (Session 83, 2026-07-24).
+# Main-run 30099251314 fick 415 Unsupported Media Type på artikel-URL:en
+# TROTS browser-UA-headern; PR-runnen (30099177288, samma innehåll) gick
+# grön EN minut tidigare och lokal curl ger 200 med båda UA-formerna —
+# intermittent Cloudflare/WAF-blockering av GHA-IP, samma klass som
+# tanstack/opentelemetry/digg. OBS: 415 cachas (endast 429 exkluderas)
+# så re-run läker inte. Påverkar docs/research/filtervy-listor-monster-
+# 2026-07-24.md. Lessons-flag: re-utvärdera i framtida session — om
+# transient, ta bort.
+^https://css-tricks\.com/print-stylesheet-approaches-blacklist-vs-whitelist/$
