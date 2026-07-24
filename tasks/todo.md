@@ -15,21 +15,30 @@
 
 ## Aktuellt fokus
 
-**Session 83 ▶️ AKTIV (2026-07-24)** — prototyp-passen inför nattbygget:
-**ALLA SEX KORT `ready-for-agent` — sluträkningen NÅDD, nattbygget är
-körbart** (17.7 · 18.15 · 18.16 · 18.17 · 18.18 · 18.19). Pass 4
-(eventväljar-paret) låst efter sju iterationer: 18.19 variant A ·
-18.18 tomt/valt som TVÅ TILLSTÅND med progressive disclosure, sök,
-månadsgruppering, beläggningsstapel. **INSTANT-kravet** föddes och
-landade i skarp kod (PR #163: placeholder ur listcachen + prefetch på
-avsikt; 1315 → 278 ms, CLS 0,000). Tråd **T90** (laddupplevelsen +
-belastningsbeslutet). Skörd **L333–L337**. Incidenter öppet bokförda:
+**Session 83 ✅ AVSLUTAD (2026-07-24)** — **PROTOTYP-PASSEN INFÖR
+NATTBYGGET: ready-for-agent ×6 NÅDD, nattbygget är körbart** (17.7 ·
+18.15 · 18.16 · 18.17 · 18.18 · 18.19). Fyra konvergens-pass låsta av
+Marcus i browsern; pass 4 (eventväljar-paret) tog sju iterationer:
+18.19 **variant A** · 18.18 tomt/valt som TVÅ TILLSTÅND med progressive
+disclosure (disabled-fälten revs), sök, månadsgruppering,
+beläggningsstapel. Research avgjorde tre val (Linear/Rails/Jira →
+route-alternativ b · USWDS-tröskeln · progressive disclosure).
+**INSTANT-KRAVET föddes → ADR-078 mintad** (Marcus-order): navigering
+väntar aldrig på data vi redan har — bevisad i skarp kod **PR #163**
+(1315 → **278 ms**, CLS 0,000). Tråd **T90** (laddupplevelsen +
+belastningsbeslutet). **SKÖRD L333–L337** [UNIVERSAL ×4] — prototypkod
+per iteration · `git restore` destruktivt · HTTP 500 ≠ skrivning
+uteblev · vakt utan verifiering. Incidenter öppet bokförda:
 js-yaml-advisoryn mitt i passet (PR #160) · GitHub-outage ·
-dataförlust ×2 (återskapade, verifierade) · prototypcommits på lokal
-main. **ÖPPET till nästa session: KONVENTIONS-HEMMET** (Marcus-order,
-grillnings-/ADR-klass — sessionsdok Del 7). **NÄSTA: nattbygget i
-FRISK session** (work-batch, max-kort 6) → morgongranskning →
-T85-korrigeringsfönstret. Full narrativ: sessionsdok S83 Del 1–7.
+dataförlust ×2 (återskapade + verifierade) · nummerkollision med S84
+(L330–L332 → omnumrering, PR #167). **ÖPPET: KONVENTIONS-HEMMET**
+(Marcus-order, grillnings-/ADR-klass — sessionsdok Del 7).
+**NÄSTA (NY session S85): nattbygget** (work-batch, max-kort 6,
+pilot-skivor 1–6) → morgongranskning → T85-korrigeringsfönstret ·
+konventions-hemmet · hub-lyftet L284–L337 vid hub-sync-moment ·
+Marcus-moment: Update-klicket i claude.ai. Numrering efter S83:
+85/079/L338/T91/f46/task-39. Full narrativ: sessionsdok S83 Del 1–8 +
+BUILD-LOG S83-post.
 
 **Övning 2 (session 51 →)** — epok-ramen per [ADR-068](../docs/decisions/ADR-068-ovnings-ramverket.md); byggplanen är Övning 2:s karta.
 

@@ -2960,7 +2960,8 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Incidenter öppet bokförda (Del 7):** js-yaml-advisoryn GHSA-pm4m-ph32-ghv5 publicerad 16:47Z mitt i passet blockerade ALL landning → override till 5.2.2, allowlisten orörd (PR #160) · GitHub-outage bröt PR-skapandet i ~50 min och gav **HTTP 500 samtidigt som operationen utfördes** · **dataförlust ×2** av ocommittat arbete (iterationerna + fångst-sekvensen), båda återskapade och verifierade mot facit · prototypcommits på lokal main ×2 (aldrig pushade).
 - **Nummerkollision med S84:** syskonsessionen stängde under pass 4 och skördade L330–L332 → S83:s fem numrerades om till **L333–L337** (PR #167). Disk-verifiering vid resume räckte inte — numret måste läsas om omedelbart före skrivning.
 - **KONVENTIONS-HEMMET öppen till nästa session** (Marcus-order: "konventioner måste ju ha ett HEM"): belagt problem — Code uppfann egen grammatik två gånger inom en timme för mönster repot redan hade. Research klar (design system-doc · ADR · Storybook · kommentarer), hemvist-valet är ADR-bar/grillnings-klass. → **L337**.
-- **Numrering efter S83:** nästa 85/078/L338/T91/f46/task-39.
+- **ADR-078 mintad vid stängningen** (Marcus-order): INSTANT-regeln — navigering väntar aldrig på data vi redan har; placeholder ur listcache, skydd för partiella fält, prefetch på avsikt, skeleton i slutgeometri, golvet deklareras mätt. Bevisad i PR #163.
+- **Numrering efter S83:** nästa 85/079/L338/T91/f46/task-39.
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-07-24-session-83.md`](../tasks/sessions/2026-07-24-session-83.md) (Del 1–7). **EJ fas-avslut.** Kvar: nattbygget i FRISK session (work-batch, max-kort 6) → morgongranskning → T85-korrigeringsfönstret · konventions-hemmet (grillning) · hub-lyftet L284–L337 vid hub-sync-moment · Marcus-moment: Update-klicket i claude.ai.
 
