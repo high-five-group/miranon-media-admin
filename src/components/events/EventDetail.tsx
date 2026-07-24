@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
 import { useEffect, useRef } from 'react';
@@ -44,6 +44,7 @@ function eventName(e: Event): string {
  */
 export function EventDetail({ eventId }: { eventId: string }) {
   const dataSource = useDataSource();
+  const queryClient = useQueryClient();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const announceRef = useRef(false);
 
@@ -52,9 +53,22 @@ export function EventDetail({ eventId }: { eventId: string }) {
     isPending,
     isError,
     error,
+    isPlaceholderData,
   } = useQuery({
     queryKey: queryKeys.events.detail(eventId),
     queryFn: () => dataSource.fetchEvent(eventId),
+    // Seedning ur listcachen: get-events bär identiteten och taket (typ · ort ·
+    // datum · maxPlatser · platserKvar · status), så sidhuvudet och Om eventet
+    // står direkt i stället för att vänta ut get-event (~1,1 s mätt). Det är
+    // `placeholderData` och inte `initialData` med avsikt — listposten är
+    // PARTIELL och får aldrig persisteras som om den vore hel.
+    //
+    // Beläggnings-aggregaten (viaFormular · manuelltTillagda · medfoljande ·
+    // reserverade · vantelista) finns BARA i get-event, och Belaggning läser
+    // dem med `?? 0`. Sektionen hålls därför i skeleton tills riktiga data
+    // landat — utan det hade mätaren ritat en sekund av falska nollor.
+    placeholderData: () =>
+      queryClient.getQueryData<Event[]>(queryKeys.events.list)?.find((e) => e.id === eventId),
     // 4xx (inkl. 404) är klient-fel → meningslöst att retrya (speglar fetchPerson).
     retry: (failureCount, err) =>
       !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
@@ -161,8 +175,21 @@ export function EventDetail({ eventId }: { eventId: string }) {
       <OmEventet event={event} />
 
       {/* Beläggningen (task-18.2): K16-innehållsmodellen + segmenterad mätare +
-          Ändra-morfen — ersätter 18.1:s interim-rader. */}
-      <Belaggning event={event} />
+          Ändra-morfen — ersätter 18.1:s interim-rader.
+          Skeleton medan sidan står på listcachens placeholder (se queryn):
+          höjden är DOM-mätt mot sektionens slutgeometri, 336 px mot 337 —
+          Lugnt laddläge kräver slutgeometri, annars byts en falsk mätare mot
+          ett layouthopp. Höjden är typfallet; mätarens kategoriantal varierar
+          något. */}
+      {isPlaceholderData ? (
+        <div role="status" aria-busy="true" className="flex min-w-0 flex-col gap-2">
+          <span className="sr-only">Laddar beläggning…</span>
+          <Skeleton variant="text" className="mx-4 w-32 text-lg" />
+          <Skeleton variant="listRow" className="h-[303px] rounded-2xl" />
+        </div>
+      ) : (
+        <Belaggning event={event} />
+      )}
 
       {/* Anmälda deltagare som ARBETSKÖ (task-18.4; K35–K58): summeringsrader
           med filter + kategori-flikar + Obekräftade/Bekräftade-accordions —
