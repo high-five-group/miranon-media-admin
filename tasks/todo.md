@@ -15,12 +15,15 @@
 
 ## Aktuellt fokus
 
-**Session 83 ⏸️ PAUSAD (2026-07-24)** — prototyp-passen inför
-nattbygget: 4 av 6 kort `ready-for-agent` (17.7 · 18.15 · 18.16 ·
-18.17); pass 4 (eventväljaren 18.18+18.19) mitt-i-iteration på
-`proto/s83-18-18-19-eventvaljaren`; PR #157 i luften. **Fullt
-HANDOFF-block: sessionsdok S83 § PAUSLÄGE** (resume via
-`session-resume`, N=83 bevaras).
+**Session 83 ▶️ ÅTERUPPTAGEN (2026-07-24, `session-resume`, N=83
+bevarat)** — prototyp-passen inför nattbygget: 4 av 6 kort
+`ready-for-agent` (17.7 · 18.15 · 18.16 · 18.17). PR #157 mergad
+(steg 0 no-op vid resumen), main grön, numreringen oförändrad sedan
+pausen. **Kvar: pass 4** (eventväljaren 18.18+18.19) — prototypen
+ligger på `proto/s83-18-18-19-eventvaljaren` `3c95acf`, Marcus-
+granskningen ej påbörjad. T89:s F6-experiment omlandat till
+nattbyggets pilot-fönster (Marcus-beslut). **Resume-utfall + nästa
+steg: sessionsdok S83 Del 5 + § Paushistorik.**
 
 **Övning 2 (session 51 →)** — epok-ramen per [ADR-068](../docs/decisions/ADR-068-ovnings-ramverket.md); byggplanen är Övning 2:s karta.
 
