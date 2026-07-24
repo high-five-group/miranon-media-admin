@@ -174,6 +174,34 @@ grundorsaken, eller (b) skrivs en öppen motivering ut i ärendet innan det
 stängs. Regeln är larmkedjans motgift mot kyrkogårdseffekten: ett larm ingen
 läser är värdelöst, och tyst stängning gör larmet till en kyrkogård.
 
+## Visuell regression
+
+Varje UI-ändring jämförs mot incheckade referensbilder (task-36.7): sex
+facit-tunga vyer × två vyportar i en hermetisk fixturvärld
+(`tests/visual/support/` — mockade EF-svar, seedad session, pinnad Inter,
+frusen klocka; noll staging, noll mutex). CI-jobbet kör
+`--update-snapshots=none`: saknad eller avvikande baseline failar hårt.
+
+**Baselines föds i CI, aldrig lokalt.** Skärmbilder är plattformsbundna —
+endast `-linux`-bilder checkas in. Födseln sker via `visual-baselines.yml`
+(avfyrbar): den genererar bilderna i rätt miljö och öppnar en baseline-PR,
+så varje ändring av vad som anses korrekt är en diff någon GRANSKAT — aldrig
+en tyst uppdatering. PR:ns CI står i approval-required-läge (»Approve
+workflows to run«) tills granskaren släpper den: samma blick som godkänner
+bilderna släpper grinden (medvetet GITHUB_TOKEN-formen — noll extra
+secrets).
+
+**Kadens-regeln:** en uppgradering av webbläsare eller testverktyg
+(Playwright-bump, Chromium-drift) ger FÖRVÄNTAD baseline-drift. Den
+hanteras med en baseline-PR granskad IHOP med uppgraderingen — visual-jobbet
+körs därför även på Dependabot-PR:er (inga secrets behövs), så driften blir
+synlig på själva uppgraderings-PR:n i stället för att landa tyst och fälla
+nästa orelaterade UI-ändring.
+
+**Lokalt:** `npm run test:visual` (egen dev-server på port 5299 med
+fixtur-env). Första lokala körningen föder `-darwin`-bilder — de är
+PERSONLIGA jämförelse-baselines, gitignorerade, och ska aldrig checkas in.
+
 ## Lokala dev-verktyg (frivilligt)
 
 Utöver `npm install` (se [README](README.md#snabbstart)) finns CI-grindvakter
