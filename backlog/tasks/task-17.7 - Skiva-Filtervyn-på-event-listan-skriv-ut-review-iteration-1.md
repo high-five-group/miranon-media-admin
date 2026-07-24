@@ -4,8 +4,9 @@ title: 'Skiva: Filtervyn på event-listan + skriv ut (review-iteration 1)'
 status: To Do
 assignee: []
 created_date: '2026-07-22 09:09'
-updated_date: '2026-07-22 09:09'
-labels: []
+updated_date: '2026-07-24 14:13'
+labels:
+  - ready-for-agent
 dependencies:
   - TASK-17.2
 parent_task_id: TASK-17
@@ -24,6 +25,12 @@ Marcus review-våg 1 (2026-07-22, design-review av S75-leveransen): event-listan
 - [ ] #1 Filterdimensionerna + interaktionsformen Marcus-kvitterade före implementation (research-underlag citerat)
 - [ ] #2 Filter + utskrift levererade per beslutad spec med e2e + axe-0; URL-STATE-SPEC uppdaterad om URL-state införs
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+URL-BESLUTET AVGJORT (Marcus 2026-07-24, på Code-rek med förtroende-kvittens): JA — filtervalen URL-delbara via nuqs (?typ/?ort/?status i listans befintliga URL-grammatik, clearOnDefault för ren URL utan filter); URL-STATE-SPEC §Event uppdateras i samma skiva (kortets villkor). Byggkrav 6 därmed stängt — skivan komplett speccad.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
