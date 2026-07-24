@@ -1,9 +1,10 @@
 ---
 id: TASK-35
 title: 'Fynd: test-auth ligger deployad i PROD trots allowlist-förbudet'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-23 15:23'
+updated_date: '2026-07-24 19:41'
 labels: []
 dependencies: []
 priority: medium
@@ -24,14 +25,20 @@ Risk: en test-only auth-yta står exponerad i produktionsprojektet. Låg akut ri
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 test-auth borttagen ur prod-projektet, verifierat via functions list
-- [ ] #2 Överväg audit-läge i deploy-prod-functions.sh som rapporterar icke-allowlistade prod-funktioner (eget beslut — dokumenteras oavsett utfall)
+- [x] #1 test-auth borttagen ur prod-projektet, verifierat via functions list
+- [x] #2 Överväg audit-läge i deploy-prod-functions.sh som rapporterar icke-allowlistade prod-funktioner (eget beslut — dokumenteras oavsett utfall)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+UTFÖRT 2026-07-24 (S84, Marcus-go A-kedjan): AC1 — test-auth raderad ur prod via 'supabase functions delete test-auth --project-ref lvjsfnphlauldxqlncpl', verifierad med functions list (11 funktioner kvar, samtliga allowlistade; efter T39-synken 13/13 allowlistade ACTIVE). AC2 — övervägandet GJORT och dokumenterat: REKOMMENDATION JA, --audit-läge i deploy-prod-functions.sh (fail-closed bakåt; design i docs/research/t39-ef-sync-preflight-2026-07-24.md §7); implementationen registrerad som eget fynd-kort i backloggen.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
