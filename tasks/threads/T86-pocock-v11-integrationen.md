@@ -58,11 +58,13 @@ lifecycle: active
    kortets AC/Testbeslut + standards mot KVALITETSDEFINITIONER/design-
    system-spec/Fowler-smells/T56), fynd åtgärdas inom kortets scope eller
    avfärdas MED motivering i transparens-rapporten; strukturella fynd
-   utanför scope → kort/tråd. AKTIVERAS när T85 våg 2a:s mätinstrument
-   (korten 36.x) är levererade — piloten ska mätas från dag ett (lead
-   time-nettoeffekt + fångst per skiva över ~10–15 skivor), därefter
-   permanentas (sannolikt ADR) eller rivas öppet. Marcus-kvittens på
-   pilotformen: "Okej bra, nu står vi på en bra grund" (2026-07-24).
+   utanför scope → kort/tråd. Piloten mäts från dag ett över ~10–15
+   skivor, därefter permanentas (sannolikt ADR) eller rivas öppet.
+   Marcus-kvittens på pilotformen: "Okej bra, nu står vi på en bra
+   grund" (2026-07-24); planen preciserad + kvitterad samma dag ("Det
+   låter ju väldigt bra") — fulltext i § Pilotplanen nedan.
+   Start-villkoret ÖPPET REVIDERAT där (ursprungligen "när
+   36.x-instrumenten är levererade").
 
 **GRILLNINGSKLASS (egen session vid trigger):**
 
@@ -98,6 +100,64 @@ lifecycle: active
 - Teach-trigger på vanliga frågor; Wayfinder-bygge före grillningen;
   rename som egen landning.
 
+## Pilotplanen — review-piloten preciserad (2026-07-24, Marcus-kvitterad: "Det låter ju väldigt bra")
+
+**Hypotes:** en review-subagent med färsk kontext, mellan lokalt grönt
+och leverans-commit, fångar problem de deterministiska grindarna inte
+ser — spec-MISSTOLKNINGAR (koden gör vad implementern trodde kortet
+menade) och kvalitativa brister (fel abstraktion, smells, brutna
+token-/T56-principer) — till kostnad lägre än fångstens värde.
+**Nollhypotes** (måste kunna landas i): mest brus eller inget, bara
+minuter adderade → rivs. **Baseline-ärlighet:** first-pass-CI ligger
+~100 % — värdet måste bevisas i skiktet CI inte mäter.
+
+**Mekanik:** placering do-work steg 5 (efter lokalt grönt, FÖRE
+leverans-commiten — EN-commit-normen består); skill-texten får ett
+märkt PILOT-block med T86-referens (rivning = ren radering).
+Subagentens input: diffen mot main + kortets AC/Testbeslut +
+PRD-föräldern + standards-dokumenten (KVALITETSDEFINITIONER-11-REACT ·
+DESIGN-SYSTEM-SPEC:ens token-regler · Fowler-smell-listan · T56-kraven)
+— ALDRIG implementerns resonemang (oberoende läsning är poängen).
+Output-kontraktet (Cursor-lärdomarna): prioriterad fyndlista
+(spec-trohet/strukturellt överst) · tak ~7 fynd · plats + varför +
+föreslagen åtgärd per fynd · separat "utanför kortets scope"-sektion
+för routning. Triagen är implementerns: åtgärda inom scope / avfärda
+MED motivering / routa — alla tre synliga i transparens-rapporten
+(extern fångst av triagen själv).
+
+**Mått (loggtabellen nedan, en rad per skiva):** fynd per axel
+(spec-trohet/standards) · utfall (åtgärdade/avfärdade[skäl]/routade) ·
+klass (blocker = hade gett fel beteende eller brutet AC · kvalitet =
+bättre kod, samma beteende · brus) · review-tid i minuter
+(väggklocka, stämplad i transparens-rapporten) · MISSAR = nedströms-
+fynd av Marcus/QA/CI som reviewn borde sett (recall-måttet; facit:
+QA-vandringen 36.8 + granskningsvågorna).
+
+**Beslutskriterier (LÅSTA före start):** PERMANENTA (→ ADR, blocket
+blir ordinarie text) om ≥1/3 av skivorna ger ≥1 åtgärdat
+blocker-/kvalitetsfynd OCH brusandelen <50 % OCH median-kostnaden
+≤5 min/skiva · RIV ÖPPET om träffkvot <1/5 skivor eller brus dominerar
+eller >10 min median utan motsvarande fångst · GRÅZON: EXAKT en
+justeringsrunda (smalare axel/kortklass, +~5 skivor) → tvingat beslut.
+Beslutet är Marcus på Code-rekommendation, bokförs här.
+
+**Omfång + start (ÖPPEN REVIDERING av beslutsläge 3:s ursprungsvillkor):**
+10–15 produktkod-skivor (docs-/config-kort deltar inte).
+Ursprungsvillkoret "när 36.x-instrumenten är levererade" reviderat:
+36.5 är redan i drift, och pilotens bärande mått loggas manuellt per
+skiva eftersom review-tiden ligger FÖRE push och inte syns i
+PR-ledtiden — verkligt villkor är NÄSTA PRODUKTKOD-BATCH utan att
+störa 36.7/36.8; naturlig start är event-familje-arbetet efter
+QA-vandringen. **Aktiveringen:** liten hub-landning (PILOT-blocket i
+do-work + plugin-bump/reinstall per S76-praxisen) i frisk session på
+Marcus kör-order.
+
+**Pilot-loggen (fylls per skiva under piloten):**
+
+| Skiva | Fynd (spec/std) | Åtgärdade | Avfärdade (skäl) | Routade | Klass | Tid (min) | Missar nedströms |
+|---|---|---|---|---|---|---|---|
+| _–_ | | | | | | | |
+
 ## Varför tråden finns
 
 Arbetssättet ÄR Pocock-härlett (S47–S50) och Matts repo utvecklas snabbt
@@ -110,7 +170,8 @@ Sekvensen mot T85 är designad: processhastighets-spåret (Codex-vågorna)
 
 ## Nästa steg
 
-- **A.** Review-piloten aktiveras när 36.x-korten är klara (villkor i
+- **A.** Review-piloten aktiveras vid nästa produktkod-batch
+  (§ Pilotplanen — start-villkoret öppet reviderat 2026-07-24; villkor i
   beslutsläge 3). Aktiveringen är en hub-ändring i do-work + mätrutin.
 - **B.** Wayfinder-grillningen vid AT-Max-uppstart eller nästa dimmiga
   initiativ (beslutsläge 4).
