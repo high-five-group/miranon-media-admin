@@ -1,9 +1,10 @@
 ---
 id: TASK-36.7
 title: 'Skiva: Visuell regression från noll — CI-födda baselines'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-23 17:14'
+updated_date: '2026-07-24 10:43'
 labels:
   - ready-for-human
 dependencies:
@@ -30,16 +31,28 @@ Täcker användarberättelser: 2
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Baselines föds i CI, ALDRIG lokalt: en dedikerad avfyrbar workflow genererar dem i samma miljö de jämförs i och öppnar en baseline-PR
-- [ ] #2 Varje baseline-ändring är en granskningsbar diff i en PR — aldrig en tyst uppdatering
-- [ ] #3 Endast linux-baselines checkas in; lokalt genererade plattformsbilder är ignorerade
-- [ ] #4 Testerna mockar backend-svaren med fixturdata: noll staging-beroende, noll mutex, stabila pixlar
-- [ ] #5 Datumkänsliga ytor är frusna via fixtur och vid behov maskning, så en bild inte blir röd av att klockan går
-- [ ] #6 Omfattning v1: de facit-tunga vyerna i två vyporter (skrivbord och mobil), cirka tolv bilder, jobbet under ett par minuter
+- [x] #1 Baselines föds i CI, ALDRIG lokalt: en dedikerad avfyrbar workflow genererar dem i samma miljö de jämförs i och öppnar en baseline-PR
+- [x] #2 Varje baseline-ändring är en granskningsbar diff i en PR — aldrig en tyst uppdatering
+- [x] #3 Endast linux-baselines checkas in; lokalt genererade plattformsbilder är ignorerade
+- [x] #4 Testerna mockar backend-svaren med fixturdata: noll staging-beroende, noll mutex, stabila pixlar
+- [x] #5 Datumkänsliga ytor är frusna via fixtur och vid behov maskning, så en bild inte blir röd av att klockan går
+- [x] #6 Omfattning v1: de facit-tunga vyerna i två vyporter (skrivbord och mobil), cirka tolv bilder, jobbet under ett par minuter
 - [ ] #7 Eget CI-jobb som kör på UI-klassen och full-klassen men skippas på dokumentationsklassen, utan mutex
 - [ ] #8 Nattkörningen utökas med den fulla visuella sviten (raden som nattnätets skiva medvetet lämnade öppen)
-- [ ] #9 Kadens-regeln dokumenterad: uppgradering av webbläsare eller testverktyg ger förväntad baseline-drift och hanteras med en baseline-PR granskad ihop med uppgraderingen
+- [x] #9 Kadens-regeln dokumenterad: uppgradering av webbläsare eller testverktyg ger förväntad baseline-drift och hanteras med en baseline-PR granskad ihop med uppgraderingen
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC 7–8 (grind-jobbet i ci-suite + nightly-utökningen) MEDVETET PARKERADE på Marcus-beslut A (S81): tidig UI-fas — aktiv grind blockerar auto-merge per avsiktlig design-ändring (mot T85-hastigheten). Aktiverings-steget ligger KOMPLETT i tråd T87 (jobbet inbäddat i kortet, trigger: UI-takten lugnar). Rådgivande läge förkastat öppet (L321-klassen). 2x-beslutet (Marcus S81): deviceScaleFactor 2 + scale device — granskningsupplevelsen är del av vaktens design. Repo-inställningen 'Actions får skapa PR:er' påslagen (minsta vidgning, read behållen) — dokumenterad i workflow-headern med empiriska felet citerat.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Visuell regression byggd från noll och bevisad ände-till-ände i S81: hermetisk fixturvärld (seedad session · EF-mockar i zod-parsad form · pinnad Inter v20 · frusen klocka · hermetik-vakt · dedikerad fixtur-server 5299) → sex facit-tunga vyer × två vyportar = 12 bilder på ~15 s → CI-födda 2x-linux-baselines (Marcus-granskade och välsignade, PR nr 140) via visual-baselines.yml. Leverans-PR:er 133/136/139/140 samtliga gröna per jobb. AC 7–8 (blockerande grind-jobbet + nightly) MEDVETET PARKERADE på Marcus-beslut A → tråd T87 bär aktiverings-steget komplett (trigger: UI-takten lugnar). Rött-först: saknad-baseline-rött med körutdrag i sessionsdok Del 2. Två skarpa processfynd: repo-inställningen för Actions-PR-skapande (påslagen, minsta vidgning) + porcelain-uall-räknebuggen (fixad, bevisad i PR nr 140-titeln). Full trail: sessionsdok S81 Del 2–6.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
