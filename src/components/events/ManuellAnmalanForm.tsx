@@ -306,15 +306,22 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
                 {event.status && event.status !== EventStatus.PLANERAT ? event.status : null}
               </EtikettVardeRad>
               <div className="flex flex-col py-1.5">
+                {/* Sekundär NAVIGERING, inte en handling: nedtonad ett steg
+                    från Åtgärds-radernas form (text-small + text-secondary i
+                    stället för font-medium + text-body) så den inte läser som
+                    primär. Men INTE ned till text-muted — det är etikett-
+                    färgen (dt), och en länk som ser ut som en etikett slutar
+                    läsas som klickbar. Chevronen bär "detta leder någonstans".
+                    Kontrasten mot bg-muted är mätt, se AC i kortet. */}
                 <Link
                   to="/event/$eventId"
                   params={{ eventId }}
-                  className="-mx-2 flex w-auto items-center gap-2 rounded-lg px-2 py-1.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors"
+                  className="-mx-2 flex w-auto items-center gap-2 rounded-lg px-2 py-1.5 text-left text-small text-text-secondary hover:bg-bg-emphasized motion-safe:transition-colors"
                 >
                   Gå till eventdetaljer
                   <ChevronRight
                     aria-hidden="true"
-                    size={18}
+                    size={16}
                     className="ml-auto shrink-0 text-text-secondary"
                   />
                 </Link>
