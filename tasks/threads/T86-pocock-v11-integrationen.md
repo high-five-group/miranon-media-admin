@@ -190,12 +190,11 @@ nattbyggets kort (§ Körplanen nedan).
    per-anmälan-detaljvyn · 18.18 + 18.19 eventväljar-paret (troligen
    ETT pass — samma komponentfamilj). Svar-fångst → byggkrav in i
    korten (utdrags-undantaget) → `ready-for-agent`.
-3. **ÖPPEN MARCUS-FRÅGA:** 18.16 (grön knapp-regeln,
-   review-iteration 2) står utanför listan — med i nattbygget (kan
-   ready-for-agent:as utan prototyp om regeln är låst) eller medvetet
-   utanför?
-4. **Nattbygget:** work-batch-order i frisk session (max-kort 5,
-   ±18.16) → varje produktkod-skiva = pilot-skiva med loggrad i
+3. **AVGJORT (Marcus 2026-07-24): 18.16 MED i nattbygget.** Grön
+   knapp-regeln är låst → kortet ready-for-agent:as i facit-passet
+   UTAN prototyp, tillsammans med de prototypade kortens etikettering.
+4. **Nattbygget:** work-batch-order i frisk session (max-kort 6,
+   inkl. 18.16) → varje produktkod-skiva = pilot-skiva med loggrad i
    tabellen ovan; UI-skivor stannar i granskningsfärdigt läge.
 5. **Morgonen:** Marcus granskningsvåg = escapes-facit för
    pilot-loggen + pilot-triagens Marcus-moment (blocker-fynd +
