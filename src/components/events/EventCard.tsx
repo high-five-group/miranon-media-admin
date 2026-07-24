@@ -1,6 +1,9 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { BedDouble, CalendarDays, MapPin } from 'lucide-react';
+import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
+import { queryKeys } from '@/queries/keys';
 
 /** Event-listans tidsaxel (ORDLISTA "Period") — härledd ur startdatum, aldrig ur Status. */
 export type Period = 'upcoming' | 'past';
@@ -85,6 +88,22 @@ export function EventCard({
   period: Period;
   idagStart: number;
 }) {
+  const dataSource = useDataSource();
+  const queryClient = useQueryClient();
+  /** Värmer eventsidans båda queries. Idempotent — React Query dedupar. */
+  const forbered = () => {
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.events.detail(e.id),
+      queryFn: () => dataSource.fetchEvent(e.id),
+      staleTime: 30_000,
+    });
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.registrations.byEvent(e.id),
+      queryFn: () => dataSource.fetchRegistrations({ eventId: e.id }),
+      staleTime: 30_000,
+    });
+  };
+
   const startMs = dateValue(e);
   const installt = e.status === 'Inställt';
   const flyttat = e.status === 'Flyttat';
@@ -110,6 +129,14 @@ export function EventCard({
 
   return (
     <li
+      // PREFETCH PÅ AVSIKT: eventsidans två anrop (~1,1 s respektive ~1,4 s
+      // mätt) hinner aldrig bli instant om de startar först vid klicket.
+      // Hover/fokus är den tidigaste ärliga signalen om att kortet ska
+      // öppnas — anropen startar där i stället. React Query dedupar, så
+      // upprepad hover kostar inget, och `staleTime` gör att en redan
+      // hämtad detalj inte hämtas om.
+      onMouseEnter={forbered}
+      onFocusCapture={forbered}
       className={`relative flex flex-col gap-2 rounded-2xl border bg-bg-muted p-4 hover:bg-bg-emphasized motion-safe:transition-colors ${kontur}`}
     >
       {slot ? (
