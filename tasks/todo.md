@@ -15,6 +15,13 @@
 
 ## Aktuellt fokus
 
+**Session 83 ⏸️ PAUSAD (2026-07-24)** — prototyp-passen inför
+nattbygget: 4 av 6 kort `ready-for-agent` (17.7 · 18.15 · 18.16 ·
+18.17); pass 4 (eventväljaren 18.18+18.19) mitt-i-iteration på
+`proto/s83-18-18-19-eventvaljaren`; PR #157 i luften. **Fullt
+HANDOFF-block: sessionsdok S83 § PAUSLÄGE** (resume via
+`session-resume`, N=83 bevaras).
+
 **Övning 2 (session 51 →)** — epok-ramen per [ADR-068](../docs/decisions/ADR-068-ovnings-ramverket.md); byggplanen är Övning 2:s karta.
 
 **Fas 5.5 — Vertikal write-slice: staging-miljön KLAR ✅; deny/allow-grinden avblockerad.** Server-kontraktet levererat och CI-grönt (operation `mark-registration-fee-paid` → `Anmälningsavgift`, ADR-049). Den isolerade staging-miljön är byggd (ADR-050 bygg-sekvens 1–7 komplett) och hela staging-testsviten grön (41 passed/0 skipped). **Nästa: Fas 5.5 klient-UI (K2) i ny session** (peka bakåt på session 18; en stängd session resume:as ej — ny sessions-yta, ADR-052/L124).
