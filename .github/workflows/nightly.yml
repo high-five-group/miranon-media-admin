@@ -106,13 +106,49 @@ jobs:
           fail: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
+  # Mätskriptet (task-36.5 / ADR-077): CI-hastighet som siffror — ledtid,
+  # mutex-kötid, röd-orsak, flaky-frekvens, dedup-träffkvot ur körnings-API:t.
+  # Nattlig körning bygger kurvan av sig själv; samma skript körs manuellt via
+  # `npm run metrics:ci`. Testsviten (fixtur-data) körs som första steg så
+  # test-ci-metrics.mjs har en återkommande CI-bärare utan att ci.yml rörs.
+  # Skriptet är beroendefritt (node + gh) — inget npm ci behövs.
+  nightly-metrics:
+    name: CI-mätning (siffror, ej känsla)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Metrics-testsvit (fixtur-data, aldrig levande API)
+        run: node scripts/test-ci-metrics.mjs
+
+      - name: CI-mätning (fönster 50 runs) → logg + step-summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/ci-metrics.mjs --limit 50 | tee metrics-report.txt
+          { echo '```'; cat metrics-report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
   # Larmkedjan: fyrar vid RÖD natt (eller simulate_failure-dispatch). Skapar
   # ett tilldelat, etiketterat ärende med körningslänk + commit-spann sedan
   # senaste GRÖNA natt. Grön natt ⇒ jobbet skippas ⇒ inget ärende, inga spår
-  # (AC#4). issues:write endast här.
+  # (AC#4). issues:write endast här. nightly-metrics ingår i needs — röda
+  # mätningar får aldrig vara tysta (L321-klassen: nightly saknar annan
+  # åskådare, rött utan larm vore en tyst permanent).
   alarm:
     name: Larm vid röd natt
-    needs: [suite, nightly-audit, nightly-links]
+    needs: [suite, nightly-audit, nightly-links, nightly-metrics]
     if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || inputs.simulate_failure) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
