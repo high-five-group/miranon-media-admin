@@ -15,15 +15,21 @@
 
 ## Aktuellt fokus
 
-**Session 83 ▶️ ÅTERUPPTAGEN (2026-07-24, `session-resume`, N=83
-bevarat)** — prototyp-passen inför nattbygget: 4 av 6 kort
-`ready-for-agent` (17.7 · 18.15 · 18.16 · 18.17). PR #157 mergad
-(steg 0 no-op vid resumen), main grön, numreringen oförändrad sedan
-pausen. **Kvar: pass 4** (eventväljaren 18.18+18.19) — prototypen
-ligger på `proto/s83-18-18-19-eventvaljaren` `3c95acf`, Marcus-
-granskningen ej påbörjad. T89:s F6-experiment omlandat till
-nattbyggets pilot-fönster (Marcus-beslut). **Resume-utfall + nästa
-steg: sessionsdok S83 Del 5 + § Paushistorik.**
+**Session 83 ▶️ AKTIV (2026-07-24)** — prototyp-passen inför nattbygget:
+**ALLA SEX KORT `ready-for-agent` — sluträkningen NÅDD, nattbygget är
+körbart** (17.7 · 18.15 · 18.16 · 18.17 · 18.18 · 18.19). Pass 4
+(eventväljar-paret) låst efter sju iterationer: 18.19 variant A ·
+18.18 tomt/valt som TVÅ TILLSTÅND med progressive disclosure, sök,
+månadsgruppering, beläggningsstapel. **INSTANT-kravet** föddes och
+landade i skarp kod (PR #163: placeholder ur listcachen + prefetch på
+avsikt; 1315 → 278 ms, CLS 0,000). Tråd **T90** (laddupplevelsen +
+belastningsbeslutet). Skörd **L330–L334**. Incidenter öppet bokförda:
+js-yaml-advisoryn mitt i passet (PR #160) · GitHub-outage ·
+dataförlust ×2 (återskapade, verifierade) · prototypcommits på lokal
+main. **ÖPPET till nästa session: KONVENTIONS-HEMMET** (Marcus-order,
+grillnings-/ADR-klass — sessionsdok Del 7). **NÄSTA: nattbygget i
+FRISK session** (work-batch, max-kort 6) → morgongranskning →
+T85-korrigeringsfönstret. Full narrativ: sessionsdok S83 Del 1–7.
 
 **Övning 2 (session 51 →)** — epok-ramen per [ADR-068](../docs/decisions/ADR-068-ovnings-ramverket.md); byggplanen är Övning 2:s karta.
 
