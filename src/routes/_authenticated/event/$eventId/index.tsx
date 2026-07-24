@@ -1,5 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { PrototypeSwitcher } from '@/components/dev/PrototypeSwitcher';
 import { EventDetail } from '@/components/events';
+// [PROTOTYPE] S83 pass 4 (TASK-18.19) — kastbar import, rivs med passet.
+import { PROTO_VARIANTS_18_19 } from '@/components/events/EventValjarePrototyp';
 
 export const Route = createFileRoute('/_authenticated/event/$eventId/')({
   staticData: { title: 'Event' },
@@ -16,5 +19,12 @@ export const Route = createFileRoute('/_authenticated/event/$eventId/')({
 // (tasks/sessions/bilagor/s73-eventsida-konvergens/) och i git-historiken.
 function EventInfoPage() {
   const { eventId } = Route.useParams();
-  return <EventDetail eventId={eventId} />;
+  // [PROTOTYPE] S83 pass 4 (TASK-18.19): railen DEV-monteras (A/B-divergensen);
+  // väljar-grenen bor i EventDetail. Rivs med passet.
+  return (
+    <>
+      <EventDetail eventId={eventId} />
+      {import.meta.env.DEV ? <PrototypeSwitcher variants={PROTO_VARIANTS_18_19} /> : null}
+    </>
+  );
 }

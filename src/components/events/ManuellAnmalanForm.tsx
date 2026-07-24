@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 import { useEffect, useRef, useState } from 'react';
 import { I18nProvider } from 'react-aria-components';
 import { AntalFalt } from '@/components/events/detail/AntalFalt';
 import { DetaljGrupp } from '@/components/events/detail/DetaljGrupp';
 import { datumSpannText } from '@/components/events/detail/datumSpann';
+// [PROTOTYPE] S83 pass 4 (TASK-18.18) — kastbar import, rivs med passet.
+import { EventValjarePrototyp } from '@/components/events/EventValjarePrototyp';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -67,6 +70,9 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
   const dataSource = useDataSource();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const bekraftelseRef = useRef<HTMLDivElement>(null);
+  // [PROTOTYPE] S83 pass 4 (TASK-18.18): DEV-grindad väljar-gren.
+  const [variantParam] = useQueryState('variant');
+  const valjarProto = import.meta.env.DEV && variantParam === 'k';
 
   // Idempotens-nyckel: en per sid-öppning (remount), bevarad över retries (ADR-059).
   const [idempotencyKey] = useState(() => crypto.randomUUID());
@@ -144,16 +150,30 @@ export function ManuellAnmalanForm({ eventId }: { eventId: string }) {
       >
         <ChevronLeft aria-hidden="true" size={26} />
       </Link>
-      <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
+      <header className="flex flex-col gap-2.5 border-border border-b px-4 pb-5">
         <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
           Lägg till manuell anmälan
         </h1>
-        {/* Kontexten: vilket event anmälan gäller — låst, aldrig ett fält. */}
-        {event && (
-          <p className="text-small text-text-secondary">
-            {(event.eventlabel ?? event.eventNamn) && `${event.eventlabel ?? event.eventNamn} · `}
-            {datumSpannText(event)}
-          </p>
+        {/* [PROTOTYPE] S83 pass 4 (18.18): `?variant=k` ersätter den låsta
+            kontextraden med EVENTVÄLJAREN (förvald från djuplänken, bytbar —
+            bytet navigerar URL:en; ifyllda fält behålls per rek b eftersom
+            komponenterna inte remountas). Utan variant = skarpa raden orörd.
+            Rivs med passet (klausul iv). */}
+        {valjarProto ? (
+          <div className="self-start">
+            <EventValjarePrototyp
+              eventId={eventId}
+              to="/event/$eventId/ny-anmalan"
+              form="kontextrad"
+            />
+          </div>
+        ) : (
+          event && (
+            <p className="text-small text-text-secondary">
+              {(event.eventlabel ?? event.eventNamn) && `${event.eventlabel ?? event.eventNamn} · `}
+              {datumSpannText(event)}
+            </p>
+          )
         )}
       </header>
     </>

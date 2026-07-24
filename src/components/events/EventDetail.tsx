@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 import { useEffect, useRef } from 'react';
+// [PROTOTYPE] S83 pass 4 (TASK-18.19) — kastbar import, rivs med passet.
+import { EventValjarePrototyp } from '@/components/events/EventValjarePrototyp';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
@@ -46,6 +49,12 @@ export function EventDetail({ eventId }: { eventId: string }) {
   const dataSource = useDataSource();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const announceRef = useRef(false);
+  // [PROTOTYPE] S83 pass 4 (TASK-18.19): `?variant=a` = väljaren ÄR rubriken
+  // (Stripe-formen) · `?variant=b` = kompakt kontroll ovanför H1:an.
+  // DEV-grindad; utan variant = skarpa vyn orörd. Rivs med passet.
+  const [variantParam] = useQueryState('variant');
+  const valjarVariant =
+    import.meta.env.DEV && (variantParam === 'a' || variantParam === 'b') ? variantParam : null;
 
   const {
     data: event,
@@ -128,10 +137,27 @@ export function EventDetail({ eventId }: { eventId: string }) {
           EventKey-pillen som titel-metadata till höger (liten mot titeln);
           tid kvar-raden under; tunn avdelare. */}
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
+        {/* [PROTOTYPE] 18.19 B: kompakt väljar-kontroll OVANFÖR H1:an. */}
+        {valjarVariant === 'b' ? (
+          <div className="self-start pb-1">
+            <EventValjarePrototyp eventId={eventId} to="/event/$eventId" form="kontextrad" />
+          </div>
+        ) : null}
         <div className="flex items-center justify-between gap-3">
-          <h1 ref={headingRef} tabIndex={-1} className="min-w-0 break-words font-semibold text-3xl">
-            {eventName(event)}
-          </h1>
+          {/* [PROTOTYPE] 18.19 A: väljaren ÄR rubriken (namnet som trigger). */}
+          {valjarVariant === 'a' ? (
+            <h1 ref={headingRef} tabIndex={-1} className="min-w-0">
+              <EventValjarePrototyp eventId={eventId} to="/event/$eventId" form="rubrik" />
+            </h1>
+          ) : (
+            <h1
+              ref={headingRef}
+              tabIndex={-1}
+              className="min-w-0 break-words font-semibold text-3xl"
+            >
+              {eventName(event)}
+            </h1>
+          )}
           {event.eventKey && (
             <span className="shrink-0 rounded-full bg-bg-muted px-3 py-1 font-medium text-small text-text-secondary">
               {event.eventKey}
