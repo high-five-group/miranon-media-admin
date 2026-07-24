@@ -23,7 +23,7 @@ körbart** (17.7 · 18.15 · 18.16 · 18.17 · 18.18 · 18.19). Pass 4
 månadsgruppering, beläggningsstapel. **INSTANT-kravet** föddes och
 landade i skarp kod (PR #163: placeholder ur listcachen + prefetch på
 avsikt; 1315 → 278 ms, CLS 0,000). Tråd **T90** (laddupplevelsen +
-belastningsbeslutet). Skörd **L330–L334**. Incidenter öppet bokförda:
+belastningsbeslutet). Skörd **L333–L337**. Incidenter öppet bokförda:
 js-yaml-advisoryn mitt i passet (PR #160) · GitHub-outage ·
 dataförlust ×2 (återskapade, verifierade) · prototypcommits på lokal
 main. **ÖPPET till nästa session: KONVENTIONS-HEMMET** (Marcus-order,

@@ -4889,7 +4889,7 @@ driftat", innehållet visade 4 EF:er + två delade filer, tre rena
 no-ops) — och sync-beslut fattas då på fel riskbild. Verktygsoberoende:
 gäller varje selektivt bundlad artefakt (EF, lambda, container-lager).
 
-### L330 — [UNIVERSAL] Prototypkod committas per ITERATION, inte per pass — arbetsträdet är ingen förvaring
+### L333 — [UNIVERSAL] Prototypkod committas per ITERATION, inte per pass — arbetsträdet är ingen förvaring
 
 Datum: 2026-07-24 (S83 pass 4) | Källa: dagens 18.18-iterationer skrevs
 över av `git restore --source=<proto-branch>` och gick förlorade;
@@ -4909,7 +4909,7 @@ proto-branchen under passet i stället för på main — då hamnar commits
 rätt utan att någon behöver komma ihåg det. Bonus: prototyp-SHA:erna
 blir en gratis iterationslogg för fångst-sekvensen.
 
-### L331 — [UNIVERSAL] `git restore --source` / `git checkout <ref> -- <path>` är destruktivt — ett kommando som var rätt i ett tidigare läge kan vara fel nu
+### L334 — [UNIVERSAL] `git restore --source` / `git checkout <ref> -- <path>` är destruktivt — ett kommando som var rätt i ett tidigare läge kan vara fel nu
 
 Datum: 2026-07-24 (S83 pass 4) | Källa: TVÅ dataförluster samma pass —
 handoffens återställningskommando kördes om senare (skrev över dagens
@@ -4920,7 +4920,7 @@ Det första kommandot kom ur ett HANDOFF-block och var korrekt vid
 resume-tillfället — arbetsträdet var då tomt. Senare i samma session,
 med timmar av ocommittat arbete i trädet, var samma kommando
 destruktivt. Det andra var Codes eget, och gjorde samma sak igen inom
-en timme trots att L330/L331 just formulerats — vilket i sig är
+en timme trots att L333/L334 just formulerats — vilket i sig är
 bevisningen: en lesson som bara är NEDSKRIVEN ändrar inte beteende
 under pågående pass.
 
@@ -4930,7 +4930,7 @@ committat eller avsiktligt kastbart. Ett kommando kopierat ur ett
 handoff-block ärver inte sin säkerhet. Och: dessa två kommandon har
 ingen ångra-väg — reflog räddar commits, inte arbetsträd.
 
-### L332 — [UNIVERSAL] HTTP 500 på en icke-idempotent POST betyder INTE att skrivningen uteblev
+### L335 — [UNIVERSAL] HTTP 500 på en icke-idempotent POST betyder INTE att skrivningen uteblev
 
 Datum: 2026-07-24 (S83 pass 4) | Källa: GitHub-incident — `POST /pulls`
 svarade 500 samtidigt som PR:en faktiskt skapades; retry-loopen
@@ -4946,7 +4946,7 @@ tillståndet först** (finns resursen redan?) i stället för att blint
 försöka igen. 5xx säger att svaret uteblev, inte att operationen gjorde
 det.
 
-### L333 — [UNIVERSAL] Ett vaktskript som kan rapportera framgång utan att ha verifierat den är värre än ingen vakt
+### L336 — [UNIVERSAL] Ett vaktskript som kan rapportera framgång utan att ha verifierat den är värre än ingen vakt
 
 Datum: 2026-07-24 (S83 pass 4) | Källa: CI-vakt returnerade exit 0 vid
 timeout → notifieringen sa "completed" fast PR:en låg OPEN; separat vakt
@@ -4962,7 +4962,7 @@ state,mergedAt`) innan det rapporteras vidare. Och: timeout ska alltid
 ge non-zero exit, aldrig 0. Detta är hypotes-verifierings-disciplinen
 tillämpad på egna verktyg, inte bara på andras påståenden.
 
-### L334 — Konventioner som bara lever i kodkommentarer överlever inte in i nästa agent-fönster
+### L337 — Konventioner som bara lever i kodkommentarer överlever inte in i nästa agent-fönster
 
 Datum: 2026-07-24 (S83 pass 4) | Källa: Code uppfann egen grammatik TVÅ
 gånger inom en timme för mönster repot redan hade (månadsrubrikens form,
