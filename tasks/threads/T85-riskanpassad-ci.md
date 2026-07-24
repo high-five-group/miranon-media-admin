@@ -38,9 +38,9 @@ i samma kö.
 | Våg | Innehåll | Status |
 |---|---|---|
 | 1 | Merge-grinden ([ADR-076](../../docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md)) + actionlint-pinning + jobb-splitten (PR #99) | ✅ EXEKVERAD S77 (grind-bevis i S77-sessionsdok) |
-| 2a | D1-klassen + merge-dedup + nightly/larm + mätskript + gate-proof | 🔨 UNDER EXEKVERING S78 (task-36 + skivor; **36.1 gate-proof LANDAD** — bevis-skulden betald, se nedan) |
-| 2b | Visual regression från noll (CI-födda baselines) | design klar — egen skiva |
-| 2c | Rött-först-bärarbytet (ADR-071-amendering) | beslut A låst; verkställs med våg 2 |
+| 2a | D1-klassen + merge-dedup + nightly/larm + mätskript + gate-proof | 🔨 STÖRRE DELEN LEVERERAD: **36.1 gate-proof** (S78) + **ci.yml-trion 36.2 nattnätet · 36.3 D1-klassen · 36.4 merge-dedup KOMPLETT S79** (ADR-077 mintad; se BUILD-LOG S79). KVAR: **36.5 mätskript** (dep 36.2 ✓) |
+| 2b | Visual regression från noll (CI-födda baselines) | design klar — **36.7**, egen session (ready-for-human) |
+| 2c | Rött-först-bärarbytet (ADR-071-amendering) | beslut A låst; **36.6**, verkställs efter 36.5 |
 | 3 | Staging-per-run-isolering (mutexen avvecklas) | riktning satt; samdesign med ADR-063 post-Fas-6; tangerar T27/T45 |
 
 ## Bevis-skulden (S77 end-pass-incidenten) — BETALD S78
@@ -61,11 +61,13 @@ sitt eget test.
 
 Landad via PR #107 (`b412bb8`), CI-run 30031630066 grön per jobb.
 
-**Öppen durabel bärare (L321):** gate-proof:s jq-fail-closed-gren är en
+**Durabel bärare (L321) — HANTERAD S79:** gate-proof:s jq-fail-closed-gren är en
 VERBATIM REPLIK av `ci-passed`:s → drift-risk vid framtida ändring av den
-riktiga aggregatorn. Läks vid nästa `ci.yml`-touch (36.3/36.4-sessionen).
-Samma touch uppdaterar `ci.yml`-kommentaren (~rad 666) från "öppen
-bevis-skuld" till betald.
+riktiga aggregatorn. I S79:s reusable-refaktor (36.2) ändrades `ci-passed`:s
+`needs`-lista men jq-logiken förblev BYTE-IDENTISK → repliken fortsatt giltig;
+gate-proof re-kört (run **30038462683** grön) bekräftade fail-closed genom
+refaktorn. `ci.yml`-kommentaren (~rad 666) uppdaterad "öppen bevis-skuld"→betald
+(36.2). Bäraren kvarstår för FRAMTIDA jq-ändringar (då MÅSTE repliken speglas).
 
 ## Upptags-form
 
