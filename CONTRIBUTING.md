@@ -139,6 +139,23 @@ mekaniska grinden gäller:
 - DoD-checklistan i PR-mallen är fylld
 - ADR refererad om arkitekturbeslut tagits
 
+## Rött-först — bevisformen
+
+Rött-först är obligatoriskt för produktkod: testet skrivs och körs RÖTT
+lokalt FÖRE den gröna koden. Beviset bärs av det **lokala körutdraget** —
+testnamn, observerat felutfall, antal — citerat på kortet och i
+sessionsdok. Bärarformen beslutades i
+[ADR-071-amenderingen S80](docs/decisions/ADR-071-afk-batch-kontraktet.md);
+en röd körning i den delade CI-kön är INTE bevisformen.
+
+- **Rött och grönt pushas IHOP:** CI kör en gång, på grön head;
+  historiken behåller båda commits och forensiken går via git.
+- **Avsiktligt röda körningar i den delade kön är förbjudna** — rött i CI
+  ska betyda EN sak: oväntad regression.
+- **Grind-bevis** (att en CI-grind faktiskt fyrar) görs via den riktade
+  avfyrningsformen `gate-proof.yml` (`workflow_dispatch`), som bevisar
+  sig själv: en avfyrning som inte ger failure är ett underkänt bygge.
+
 ## Nattnätet
 
 En schemalagd fullsvit (`.github/workflows/nightly.yml`, ~03:00 svensk tid)

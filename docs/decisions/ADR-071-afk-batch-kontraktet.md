@@ -8,6 +8,37 @@
 - Fas: Session 61–62 — arbetssätt/exekverings-process (ingen
   byggfas-status-ändring)
 
+> **Amendering (Session 80, 2026-07-24 — task-36.6 rött-först-bärarbytet;
+> beslutet låst av Marcus 2026-07-23 i processgransknings-landningen [S77,
+> T85 våg 2b, beslut A]; empirisk grund: 7 av de 30 senaste körningarna
+> var avsiktligt röda bevis-runs — var och en konsumerar kö + staging-
+> mutex, och bevisformen bar ett tyst fel: öppnas PR:en efter att fixen
+> redan committats uteblir det röda varvet utan att någon märker det):**
+> EN punkt i fix-vågens kontrakt (S76-amenderingens post 2 iv) byter
+> bärare; all övrig beslutstext bevaras oförändrad (immutabilitet).
+>
+> 1. **Rött-först förblir OBLIGATORISKT — bäraren är det lokala
+>    körutdraget.** Testet skrivs och körs RÖTT lokalt FÖRE den gröna
+>    koden; beviset är ett citerat körutdrag (testnamn, observerat
+>    felutfall, antal) på kortet och i sessionsdok — inte en röd körning
+>    i den delade kön.
+> 2. **Rött och grönt pushas IHOP.** CI kör en gång, på grön head;
+>    historiken behåller båda commits (röd + grön) så forensiken går via
+>    git i stället för via en röd körning.
+> 3. **Grind-bevis har egen hemvist.** Att en CI-grind faktiskt fyrar
+>    bevisas via den riktade avfyrningsformen (`gate-proof.yml`,
+>    task-36.1, `workflow_dispatch`) som bevisar sig själv — ALDRIG via
+>    avsiktligt röda körningar i den delade kön.
+> 4. **Ingen ny ADR mintas** (öppet motiverat): bärarbytet ändrar EN
+>    punkt i ett existerande kontrakt med etablerad amenderingsform;
+>    ADR-baren nås inte — lätt att återställa (en punkt), väntad med
+>    S77-/T85-kontext, och avvägningen är bokförd här.
+>
+> Vinsten är dubbel: den delade kön slipper bevis-körningarna, och röd CI
+> återfår sin enda ärliga betydelse — OVÄNTAD regression. Kanonisk trail:
+> `docs/research/riskanpassad-ci-design-2026-07-23.md` (våg 2b) +
+> `tasks/sessions/2026-07-24-session-80.md` Del 3.
+>
 > **Amendering (Session 76, 2026-07-22 — T81 review-utfalls-klasserna;
 > grillad samsyn S76 Del 2 [5 beslut, samtliga på Code-rekommendation
 > med Marcus-kvittens, varav två villkorade "djupt genomtänkt och
@@ -41,9 +72,11 @@
 >    per jobb på PR + main: fix-vågens leveransform AVVIKER medvetet
 >    från beslut 5:s trunk-push (fixar rör redan levererade ytor
 >    under Marcus aktiva granskning; main hålls stabil tills vågen är
->    helt grön och landar atomiskt); (iv) rött-först-bevis i samma
->    körform per fix; (v) kort-kommentar per berört kort — DoD #5
->    fortsatt öppen tills omgranskning.
+>    helt grön och landar atomiskt); (iv) rött-först-bevis med citerat
+>    lokalt körutdrag per fix, rött + grönt pushade ihop *(raden
+>    amenderad S80 — bärarbytet i blocket ovan; ursprunglig lydelse:
+>    "rött-först-bevis i samma körform per fix")*; (v) kort-kommentar
+>    per berört kort — DoD #5 fortsatt öppen tills omgranskning.
 > 3. **Iterations-skivan — född vid triagen, beslutsgrindad
 >    exekvering.** Föds OMEDELBART vid triagen (aldrig tyst, ADR-053)
 >    via backlog-CLI:t som barn under familje-PRD:n: öppna

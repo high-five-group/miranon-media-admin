@@ -1,9 +1,10 @@
 ---
 id: TASK-36.6
 title: 'Skiva: Rött-först byter bärare — röd CI återfår sin betydelse'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-23 17:14'
+updated_date: '2026-07-24 06:47'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,19 +31,25 @@ Täcker användarberättelser: 11, 12
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 AFK-batch-kontraktet amenderas i sin etablerade form: nytt daterat amenderings-block överst, befintlig beslutstext bevarad ORÖRD (immutabilitet)
-- [ ] #2 Amenderingen slår fast att rött-först förblir OBLIGATORISKT lokalt, med citerat körutdrag (testnamn, felutfall, antal) i kort och sessionsdok
-- [ ] #3 Amenderingen slår fast att rött och grönt pushas IHOP: CI kör en gång, på grön head; historiken behåller båda commits och forensiken går via git
-- [ ] #4 Amenderingen pekar ut den riktade avfyrningsformen som hemvist för grind-bevis — inga avsiktligt röda körningar i den delade kön
-- [ ] #5 Den rad i fix-vågens kontrakt som krävde rött-först-bevis i samma körform är uppdaterad så att kontraktet inte längre säger emot sig självt
-- [ ] #6 Bidragsguiden speglar den nya bärarformen så att regeln är läsbar där arbetet faktiskt görs
-- [ ] #7 Ingen ny ADR mintas för detta — bärarbytet ÄR en amendering, och det står öppet varför
+- [x] #1 AFK-batch-kontraktet amenderas i sin etablerade form: nytt daterat amenderings-block överst, befintlig beslutstext bevarad ORÖRD (immutabilitet)
+- [x] #2 Amenderingen slår fast att rött-först förblir OBLIGATORISKT lokalt, med citerat körutdrag (testnamn, felutfall, antal) i kort och sessionsdok
+- [x] #3 Amenderingen slår fast att rött och grönt pushas IHOP: CI kör en gång, på grön head; historiken behåller båda commits och forensiken går via git
+- [x] #4 Amenderingen pekar ut den riktade avfyrningsformen som hemvist för grind-bevis — inga avsiktligt röda körningar i den delade kön
+- [x] #5 Den rad i fix-vågens kontrakt som krävde rött-först-bevis i samma körform är uppdaterad så att kontraktet inte längre säger emot sig självt
+- [x] #6 Bidragsguiden speglar den nya bärarformen så att regeln är läsbar där arbetet faktiskt görs
+- [x] #7 Ingen ny ADR mintas för detta — bärarbytet ÄR en amendering, och det står öppet varför
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Amenderings-blocket S80 överst i ADR-071 (ursprungstext orörd; fix-vågens rad iv öppet amenderad med bevarad ursprungslydelse). CONTRIBUTING § Rött-först — bevisformen tillagd mellan PR-flödet och Nattnätet. Ingen ny ADR — motivet står i blocket (AC#7).
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
