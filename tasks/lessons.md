@@ -4820,3 +4820,20 @@ landningsdisciplin), (c) om klassen blir kronisk: GitHub merge queue är
 branschverktyget byggt för exakt detta. Strict-kravet är RÄTT (grinden
 bevisar main+PR-kombinationen) — lösningen är landnings-koordinering,
 aldrig att släppa strict.
+
+### L329 — [UNIVERSAL] `claude plugin list` läser enable-status per projekt-path — distributions-verifiering körs från huvudkatalogen
+
+Datum: 2026-07-24 (S82-konversationen, T86-aktiveringen) | Källa:
+1.20.0-distributionen visade `✘ disabled` när list kördes med cwd i en
+git-worktree under `.claude/worktrees/`, men `✔ enabled` från
+huvudkatalogen (klass: plugin-distribution, T18)
+
+Install-recordet är user-scope (ADR-035) men enable-flaggan läses per
+projekt-identitet = path; en worktree-path räknas som eget projekt utan
+enable-post. S76-praxisens list-verifiering efter versionsbump ger
+därför falskt larm om den körs från en worktree. Regeln:
+verifierings-steget (`claude plugin update` + `claude plugin list`)
+körs alltid med huvudkatalogen som cwd; en `✘ disabled` från en
+worktree är en läs-artefakt, inte ett distributions-fel — verifiera
+från huvudkatalogen innan åtgärd (samma anti-hypotes-disciplin som all
+felsökning).
