@@ -472,10 +472,14 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
 
 /**
  * task-18.3 — Åtgärds-gruppen + check-in-ingången + chevron-koherensen
- * (S73-facit K19–K26, K47, K72).
+ * (S73-facit K19–K26, K47, K72) — amenderad av task-18.15: åtgärds-radernas
+ * LEDANDE ikoner (kuvert-grammatiken K47) är ersatta av radnummer 1–6 i vita
+ * rutor (referentbarhet — "gå till åtgärd 4", Gunilla-principen; öppen
+ * facit-revidering, S83 konvergens-pass 2). Kuvertet består i övriga ytor;
+ * check-in-kortets UserCheck är orörd.
  *
  * Renderad verifiering (L245/L246): hover-plattans grammatik, måttpariteten
- * check-in ↔ åtgärdsrad och kuvert-grammatiken bevisas via computed-style/
+ * check-in ↔ åtgärdsrad och numrutans form bevisas via computed-style/
  * DOM-mätning — aldrig klass-tittande. Utskicks-raderna + Markera betalda är
  * ÄNNU inte kopplade (flödena byggs i 18.6/18.8) och bär aria-disabled tills
  * dess — öppet bokfört interim; Skriv ut är skarp (window.print).
@@ -519,7 +523,7 @@ test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
     expect(checkInHojd).toBe(atgardsRadHojd);
   });
 
-  test('Åtgärder: sex rader i frekvensordning med kuvert-grammatiken och chevroner', async ({
+  test('Åtgärder: sex rader i frekvensordning med radnummer 1–6 (18.15) och chevroner', async ({
     page,
   }) => {
     await mockEvent(page, eventDetail());
@@ -529,30 +533,101 @@ test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
     const grupp = page.locator('section[aria-labelledby="grupp-atgarder"]');
 
     // Frekvensordningen (K21: vanligaste först) — Lägg till är en LÄNK till
-    // manuell anmälan-sidan (K16/K17), resten knappar.
+    // manuell anmälan-sidan (K16/K17), resten knappar. Numren 1–6 följer
+    // ordningen (18.15 byggkrav 1: ordningen ändras ej).
     const lagg = grupp.getByRole('link', { name: 'Lägg till manuell anmälan' });
     await expect(lagg).toHaveAttribute('href', `/event/${EVENT_ID}/ny-anmalan`);
-    const radNamn = await grupp
-      .locator('a, button')
-      .evaluateAll((els) => els.map((el) => (el.textContent ?? '').trim()));
-    expect(radNamn).toEqual([
+
+    const rader = grupp.locator('a, button');
+    await expect(rader).toHaveCount(6);
+    const radNamn = [
       'Lägg till manuell anmälan',
       'Skicka bekräftelsemail till obekräftade',
       'Skicka betalningspåminnelse till obetalda',
       'Markera alla obetalda som betalda',
       'Skicka eventinfo till alla anmälda',
       'Skriv ut denna detaljsida',
-    ]);
+    ];
+    for (const [i, namn] of radNamn.entries()) {
+      // AT-PARITETEN (18.15 AC 2): radNAMNET är oförändrat — numret är
+      // aria-hidden dekor och ingår ALDRIG i det tillgängliga namnet.
+      await expect(rader.nth(i)).toHaveAccessibleName(namn);
+      // Radnumret leder raden (visuell referens: "gå till åtgärd 4").
+      await expect(rader.nth(i).locator('span[aria-hidden="true"]').first()).toHaveText(
+        String(i + 1),
+      );
+    }
 
-    // Kuvert-grammatiken (K47): Mail på VARJE skicka mail-handling — exakt
-    // de tre utskicks-raderna; plus/badge-check/printer bär sina rader.
-    await expect(grupp.locator('svg.lucide-mail')).toHaveCount(3);
-    await expect(grupp.locator('svg.lucide-plus')).toHaveCount(1);
-    await expect(grupp.locator('svg.lucide-badge-check')).toHaveCount(1);
-    await expect(grupp.locator('svg.lucide-printer')).toHaveCount(1);
+    // RIVNINGEN (18.15): de ledande lucide-ikonerna är ersatta av numrutor —
+    // kuvert-grammatiken (K47) består i övriga ytor, och check-in-kortets
+    // UserCheck (utanför gruppen) är orörd (byggkrav 3).
+    await expect(grupp.locator('svg.lucide-mail')).toHaveCount(0);
+    await expect(grupp.locator('svg.lucide-plus')).toHaveCount(0);
+    await expect(grupp.locator('svg.lucide-badge-check')).toHaveCount(0);
+    await expect(grupp.locator('svg.lucide-printer')).toHaveCount(0);
+    await expect(page.locator('[data-testid="checkin-kort"] svg.lucide-user-check')).toHaveCount(1);
 
     // K25-chevronen på ALLA sex rader (chevron = raden leder vidare).
     await expect(grupp.locator('svg.lucide-chevron-right')).toHaveCount(6);
+  });
+
+  test('numrutan (18.15): vit 24×24-ruta i radens radie-språk som ALDRIG delar färg med hover-plattan', async ({
+    page,
+  }) => {
+    await mockEvent(page, eventDetail());
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-atgarder"]');
+    const rad = grupp.getByRole('button', { name: 'Skicka bekräftelsemail till obekräftade' });
+    const ruta = rad.locator('span[aria-hidden="true"]').first();
+
+    // Formen (byggkrav 2, renderad — L245/L246): 24×24 (size-6), radius 8 px
+    // (rounded-lg — radens/hover-plattans radie-språk, K56; kortets YTTERradie
+    // är 16 px och en annan skala), siffran i text-caption (12 px) semibold.
+    const box = await ruta.boundingBox();
+    expect(box?.width).toBe(24);
+    expect(box?.height).toBe(24);
+
+    // LEDANDE positionen (byggkrav 1: numrutan ERSÄTTER den ledande ikonen) —
+    // rutan står först i raden, vid radens innehållskant (px-2 = 8 px).
+    // Delta-mätt i SAMMA ögonblick som box-mätningen (ompasserings-härdning:
+    // ingen retry-separerad om-mätning som kan jämföra gamla mot färska x).
+    const radBox = await rad.boundingBox();
+    expect((box?.x ?? 0) - (radBox?.x ?? 0)).toBe(8);
+
+    await expect(ruta).toHaveCSS('border-radius', '8px');
+    await expect(ruta).toHaveCSS('font-size', '12px');
+    await expect(ruta).toHaveCSS('font-weight', '600');
+    // Siffran CENTRERAD i rutan (byggkrav 2, renderad — flex-centreringen).
+    await expect(ruta).toHaveCSS('justify-content', 'center');
+    await expect(ruta).toHaveCSS('align-items', 'center');
+
+    // FÄRGVAKTEN (beslutsgrundad, S83-konvergensen: grå ruta föll på att den
+    // delade färg med hover-plattan — Marcus-fångst): rutan är bg-surface och
+    // får ALDRIG dela värde med bg-emphasized, i VILA och under HOVER.
+    // Siffran bär text-text-secondary (byggkrav 2, renderad).
+    const [surface, emphasized, sekundar] = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      document.body.appendChild(probe);
+      const las = (token: string) => {
+        probe.style.color = token;
+        return getComputedStyle(probe).color;
+      };
+      const trio = [
+        las('var(--mm-surface)'),
+        las('var(--mm-bg-emphasized)'),
+        las('var(--mm-text-secondary)'),
+      ];
+      probe.remove();
+      return trio;
+    });
+    expect(surface).not.toBe(emphasized);
+    await expect(ruta).toHaveCSS('background-color', surface);
+    await expect(ruta).toHaveCSS('color', sekundar);
+    await rad.hover();
+    await expect(rad).toHaveCSS('background-color', emphasized);
+    await expect(ruta).toHaveCSS('background-color', surface);
   });
 
   test('hover-plattan (K72): emphasized-platta med rundade hörn på hovrad rad, transparent i vila', async ({
