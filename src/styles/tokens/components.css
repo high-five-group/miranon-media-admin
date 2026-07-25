@@ -38,6 +38,64 @@
   --mm-button-success-bg-hover: color-mix(in srgb, var(--mm-success), black 12%);
   --mm-button-success-bg-pressed: color-mix(in srgb, var(--mm-success), black 15%);
 
+  /* ── Button emphasis-dimensionen (task-18.16 granskningsvåg; Marcus
+     beslut A 2026-07-25 — spec §19 tvådimensionell: intent × emphasis).
+     solid = raderna ovan (oförändrade). OUTLINE: transparent yta, intent-
+     färgen bärs av text + kant — kort-/listrads-klassens form (aldrig solid
+     fyllnad inuti kort). SUBTLE: svag intent-tonad platta (mix mot
+     transparent → komponerar korrekt över tonala kort-/rad-ytor), samma
+     text-bärare — toolbar-/tabellrads-klassen. Textfärgerna håller AA som
+     text: primary neutral-800 ≫ 4,5:1 · danger #A90000 ≈ 5,6:1 även mot
+     subtle-plattan över emphasized · SUCCESS MÖRKAS 15 % som textbärare
+     (#606B57 rå mäter ≈ 4,2:1 mot subtle-plattan över emphasized-raden —
+     under AA-golvet; mörkad ≈ 5,4:1 där och ≈ 7,1:1 mot vitt; border
+     behåller råa intent-kulören — kanten är identitet, texten är bärare).
+     Hover/pressed mörknar tonen stegvis (samma color-mix-grammatik som
+     solid-raderna). */
+  --mm-button-primary-outline-text: var(--mm-btn-primary-bg);
+  --mm-button-primary-outline-border: var(--mm-btn-primary-bg);
+  --mm-button-primary-outline-bg: transparent;
+  --mm-button-primary-outline-bg-hover: color-mix(
+    in srgb,
+    var(--mm-btn-primary-bg) 8%,
+    transparent
+  );
+  --mm-button-primary-outline-bg-pressed: color-mix(
+    in srgb,
+    var(--mm-btn-primary-bg) 14%,
+    transparent
+  );
+  --mm-button-primary-subtle-text: var(--mm-btn-primary-bg);
+  --mm-button-primary-subtle-bg: color-mix(in srgb, var(--mm-btn-primary-bg) 10%, transparent);
+  --mm-button-primary-subtle-bg-hover: color-mix(
+    in srgb,
+    var(--mm-btn-primary-bg) 16%,
+    transparent
+  );
+  --mm-button-primary-subtle-bg-pressed: color-mix(
+    in srgb,
+    var(--mm-btn-primary-bg) 22%,
+    transparent
+  );
+  --mm-button-success-outline-text: color-mix(in srgb, var(--mm-success), black 15%);
+  --mm-button-success-outline-border: var(--mm-success);
+  --mm-button-success-outline-bg: transparent;
+  --mm-button-success-outline-bg-hover: color-mix(in srgb, var(--mm-success) 8%, transparent);
+  --mm-button-success-outline-bg-pressed: color-mix(in srgb, var(--mm-success) 14%, transparent);
+  --mm-button-success-subtle-text: color-mix(in srgb, var(--mm-success), black 15%);
+  --mm-button-success-subtle-bg: color-mix(in srgb, var(--mm-success) 10%, transparent);
+  --mm-button-success-subtle-bg-hover: color-mix(in srgb, var(--mm-success) 16%, transparent);
+  --mm-button-success-subtle-bg-pressed: color-mix(in srgb, var(--mm-success) 22%, transparent);
+  --mm-button-danger-outline-text: var(--mm-error);
+  --mm-button-danger-outline-border: var(--mm-error);
+  --mm-button-danger-outline-bg: transparent;
+  --mm-button-danger-outline-bg-hover: color-mix(in srgb, var(--mm-error) 8%, transparent);
+  --mm-button-danger-outline-bg-pressed: color-mix(in srgb, var(--mm-error) 14%, transparent);
+  --mm-button-danger-subtle-text: var(--mm-error);
+  --mm-button-danger-subtle-bg: color-mix(in srgb, var(--mm-error) 10%, transparent);
+  --mm-button-danger-subtle-bg-hover: color-mix(in srgb, var(--mm-error) 16%, transparent);
+  --mm-button-danger-subtle-bg-pressed: color-mix(in srgb, var(--mm-error) 22%, transparent);
+
   /* ── Input (Fas 3 K2) ── */
   --mm-input-bg: var(--mm-bg);
   --mm-input-bg-disabled: var(--mm-bg-muted);

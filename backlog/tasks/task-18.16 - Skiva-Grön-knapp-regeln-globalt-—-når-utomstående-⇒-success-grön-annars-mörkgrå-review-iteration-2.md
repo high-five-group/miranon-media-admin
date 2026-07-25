@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-23 08:55'
-updated_date: '2026-07-25 02:08'
+updated_date: '2026-07-25 09:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,6 +32,23 @@ Marcus review-våg 2 (2026-07-23), lyft vid 18.6-granskningen; SCOPE-UTÖKAD + d
 
 <!-- SECTION:NOTES:BEGIN -->
 Levererad i S86-nattbatchen (AFK, F6-fönstret: lägre effort). TDD rött-först (S80): 2 röda e2e-körningar citerade — (1) event-bekraftelse 'Skicka bekräftelse-knappen bor ENDAST…': toHaveCSS background-color förväntat rgb(96,107,87), observerat rgba(0,0,0,0) (1 failed); (2) mer-segment-send 'happy path…': sendBtn förväntat rgb(96,107,87), observerat danger-röd (1 failed). Rött+grönt pushat IHOP. AC#2: DESIGN-SYSTEM-SPEC §19 (intent-regeln + dynamisk intent + K77-rivningen öppet bokförd med återvändo-not på token-nivå + storleks-reglerna sm/md/lg per ytklass) + ändringslogg-rad. AC#3: app-bred audit — flippade avvikare: personkortets Skicka bekräftelse (grå kortfot → Button intent=success, geometri via className) + segment-utskickets 'Skicka till N personer' (danger → success; oåterkallelighets-skyddet bärs av skriv-för-att-bekräfta-grinden, Bekräfta alla-precedenten); övriga ytor konforma (Betalningars Påminn = mailto-länk, åtgärds-rader = rad-grammatik, enda kvarvarande danger = dev-rutten + Ta bort-klassen); Skapa event-flippen redan verkställd i review-våg 5 (PR #94). AC#4: färg-lås tillagda i event-bekraftelse + mer-segment-send; skapa-sidans K77-lås verifierat grönt orört. Bifix i berörd fil: axe-flake-guarden i event-bekraftelse skärpt (överläggets data-entering/opacity — fade:en bor på ModalOverlay, inte dialogen; 3x-repeat grön). Review-piloten: 7+1 fynd, 7 åtgärdade, 0 avfärdade, 3 routade (task-41 · task-42 · T91); logg i T86 § Pilot-loggen; diff e8b011bbbb50 → ompass. 91d00ce3232f. Grindar lokalt: test:api 376 grön · typecheck 0 · biome 0 fel · build grön · berörda e2e 13/13 (+37/37 vid 3x-repeat). DoD#3 (CI per jobb) bockas av CI-svansen post-merge.
+
+## Granskningsvågens FACIT-REVIDERING (S86 morgongranskning, Marcus beslut A 2026-07-25)
+
+§19 OMSKRIVEN TILL TVÅDIMENSIONELL REGEL: INTENT styr färgen (success = når utomstående · primary = internt · danger = destruktivt; intenten följer handlingen, aldrig platsen) × EMPHASIS styrs av YTKLASSEN (sidnivå/primär handlingsyta = solid, max EN solid per yta och max en per självständig sektion · kort och listrader = outline eller subtle — intent-färgen bärs av text + kant, ALDRIG solid fyllnad inuti kort · tabellrader/toolbars = subtle kompakt). Gamla §19-formen (endimensionell) riven öppet med revideringsnot i spec-texten; K77-rivningen står kvar. Research-grund noterad i §19: Polaris tone×variant · Carbon danger i tre viktnivåer · M3 text-buttons-i-kort · FK 'en primär per del'.
+
+IMPLEMENTATION (branch fix/s86-granskningsvag): (a) Button-primitiven utökad med emphasis-varianter (solid = dagens form/default · outline · subtle) ORTOGONALT mot intent via CVA compoundVariants (varje intent×emphasis-kombination äger hela sin visuella form — inga överlappande klasser mellan axlarna); secondary/ghost är neutrala stödformer utanför emphasis-dimensionen (dokumenterad no-op). Tokens i components.css per 3-lagersregeln: --mm-button-{primary,success,danger}-{outline,subtle}-* (inga hårdkodade färger). AA-VAKT: success-textbäraren för outline/subtle mörkas 15 % på token-nivå — rå #606B57 mäter ≈4,2:1 mot subtle-plattan över emphasized-raden (under golvet); mörkad ≈5,4:1 där, ≈7,1:1 mot vitt; kanten behåller råa intent-kulören. subtle tänder border-current under prefers-contrast: more; focus-ring global; transition-colors-parity. (b) Greta-fallet: deltagarkortens 'Skicka bekräftelse' (Deltagare.tsx kortfoten) → intent=success emphasis=outline.
+
+(c) APP-AUDIT — KLASSNINGSTABELL (kort-/rad-inbäddade knappar mot nya regeln):
+- Deltagarkortens kortfots-'Skicka bekräftelse' (Deltagare.tsx) = kort-i-lista → FLIPPAD success/outline (Greta-fallet, Marcus utpekad).
+- 'Bekräfta alla'-pillen (Deltagare.tsx GruppRubrik-raden) = toolbar-/rubrikrad → FLIPPAD success/subtle kompakt (sm). Dialogens 'Skicka N bekräftelser' = dialog-actions (primär handlingsyta) → solid BEHÅLLS.
+- Segment-utskickets 'Skicka till N personer' (confirm-dialog) = dialog-actions → solid BEHÅLLS; sidans 'Granska och skicka…' = sidnivå → solid BEHÅLLS.
+- AnmalanDetails Kontakt-'Skicka bekräftelse' = sidans ENDA primära handling i självständig sektion ('max en solid per sektion'-klausulen; 18.17-facitets låsta form intent=success size=sm) → solid BEHÅLLS. ÖPPET FÖR OMGRANSKNING: sitter visuellt i tonal kort-yta — flippas till outline om Marcus läser ytklassen som kort snarare än sektion.
+- Morf-lägenas Spara (OmEventet · Belaggning · Anteckningar · PersonNoteEditor) = sektionens eget redigeringsflöde (primär handlingsyta i morf-läget) → solid BEHÅLLS; primary-outline vore dessutom visuellt oskiljbar från secondary-solid (hierarki-kollaps i Spara/Avbryt-raden). ÖPPET FÖR OMGRANSKNING (samma sektions-vs-kort-läsning).
+- Övriga: formulärens knapprader + bekräftelselägen (sidnivå solid) · 'Ladda fler' secondary · SectionError secondary · dev-fel danger (sidnivå) · ghost-klassen — konforma.
+KLASSNINGSPRINCIP (bokförd): 'kort och listrader' = instans-kort i listor + rader; 'självständig sektion' (DetaljGrupp-yta med eget handlingsflöde) får bära max EN solid — utan den läsningen blir max-en-per-sektion-klausulen referenslös (alla sektioner är tonala kort).
+
+(d) E2E-FÄRGLÅS: event-bekraftelse Bertil-låset omskrivet solid→outline (bg transparent + border/color via tokenColor-proben mot --mm-button-success-outline-*); dialogens solid-lås + mer-segment-send + skapa-event + anmalan-detalj OFÖRÄNDRADE (solid består per klassningen). Rött-först ej observerbart lokalt (5173 = Marcus levande dev-server, hård vägran by-design) — PR-CI är beviset, bokfört i PR-bodyn.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done

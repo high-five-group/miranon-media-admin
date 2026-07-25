@@ -37,7 +37,12 @@ import { groupByMonth } from './manadsgrupp';
  * RUBRIK-FORMEN (18.19, facit punkt 1): h1 = eventnamnet i full rubrikstorlek
  * med chevron-par (20 px); hela ytan klickbar i hover-plattans grammatik
  * (-mx-2 px-2 py-1 rounded-lg + bg-emphasized; K54-vakten: max-w-full, aldrig
- * w-full ihop med -mx-2). RUBRIK-SEMANTIKEN: h1:ans accessible name är EXAKT
+ * w-full ihop med -mx-2). RUBRIKEN RADBRYTER ALDRIG (Marcus-fix 2026-07-25,
+ * morgongranskningen: "Fjärrskådning" bröts, "Resor i medvetandet 3" värre):
+ * namn-spannet är nowrap + visuell truncate med ellipsis vid överflöd —
+ * chevron-paret behåller sin plats. Truncaten är ENBART visuell: accessible
+ * name är HELA namnet (accname beräknas ur textinnehållet, inte ur
+ * CSS-klippningen). RUBRIK-SEMANTIKEN: h1:ans accessible name är EXAKT
  * eventnamnet — triggern aria-labelledby:as till namn-spannet (aldrig
  * "Välj event"-etiketten, som hade förorenat rubriken); "vad kontrollen gör"
  * bärs av aria-description ("Byt event") + aria-haspopup (Stripe-formen:
@@ -57,9 +62,15 @@ import { groupByMonth } from './manadsgrupp';
  * STÄNGDA LÄGET bär B-formens kontextrad (kursfärgs-prick + namn
  * font-medium + ort + kollapsat datumspann) — väljaren bär IDENTITETEN
  * (punkt 3): vit (`bg-surface`) på grå kortyta, hover `bg-bg-muted`.
+ * FAST BREDD (facit-komplettering, Marcus-beslut 2026-07-25 — bredden var
+ * aldrig låst i S83-facitet och triggern växte med innehållet): stängda
+ * triggern sträcker sig hela vägen över sitt block (`w-full`) med samma
+ * marginal mot blockkanten på höger sida som på vänster (symmetrin bärs av
+ * kortets `px-4`); chevronen står vid högerkanten via `ml-auto`. K54-vakten
+ * respekteras: ingen `-mx-2` i denna form.
  * TOMT LÄGE (ingen `valtEventId`): fristående full bredd-form som sidans
  * enda handling (punkt 7): `rounded-2xl border bg-surface px-4 py-4`,
- * kalender-ikon + "Välj event".
+ * kalender-ikon + "Välj event" — samma fulla bredd som valda läget.
  *
  * LISTAN (punkt 8–10): sök från start (USWDS-tröskeln >15 val — staging har
  * 11 och listan växer monotont), matchar namn ELLER ort (textValue bär
@@ -162,7 +173,10 @@ export function EventValjare({
             <SelectValue className="min-w-0">
               {() =>
                 valtEvent ? (
-                  <span id={namnId} className="break-words">
+                  // block + truncate = nowrap-låset (aldrig radbrytning) med
+                  // ellipsis vid överflöd; enbart visuellt — accname bär hela
+                  // namnet (se komponent-huvudet, Marcus-fix 2026-07-25).
+                  <span id={namnId} className="block truncate">
                     {eventName(valtEvent)}
                   </span>
                 ) : (
@@ -190,8 +204,10 @@ export function EventValjare({
             tomtLage
               ? // Fristående formen (punkt 7): sidans enda handling, full bredd.
                 'flex w-full items-center gap-2.5 rounded-2xl border border-border bg-surface px-4 py-4 text-body hover:bg-bg-muted motion-safe:transition-colors'
-              : // Pillen på grå kortyta (punkt 3): vit, lyfter ur ytan.
-                'flex w-auto max-w-full items-center gap-2 self-start rounded-full border border-border bg-surface px-3.5 py-2 text-small hover:bg-bg-muted motion-safe:transition-colors'
+              : // Pillen på grå kortyta (punkt 3): vit, lyfter ur ytan. FAST
+                // BREDD över hela blocket (Marcus-beslut 2026-07-25) — aldrig
+                // innehållsstyrd; chevronen vid högerkanten (ml-auto).
+                'flex w-full items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2 text-small hover:bg-bg-muted motion-safe:transition-colors'
           }
         >
           {tomtLage ? (
@@ -215,7 +231,7 @@ export function EventValjare({
           <ChevronsUpDown
             aria-hidden="true"
             size={16}
-            className={`shrink-0 text-text-secondary ${tomtLage ? 'ml-auto' : ''}`}
+            className="ml-auto shrink-0 text-text-secondary"
           />
         </AriaButton>
       )}

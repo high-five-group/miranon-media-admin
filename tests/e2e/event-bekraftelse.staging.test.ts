@@ -32,6 +32,18 @@ const EVENT_ID = 'recBEKRAFTELSE001';
 
 type Json = Record<string, unknown>;
 
+/** Resolva en tokens computed-färg (probe-mönstret — token-kedjan, ej hårdkod). */
+async function tokenColor(page: Page, cssVar: string): Promise<string> {
+  return page.evaluate((v) => {
+    const probe = document.createElement('span');
+    probe.style.color = `var(${v})`;
+    document.body.appendChild(probe);
+    const c = getComputedStyle(probe).color;
+    probe.remove();
+    return c;
+  }, cssVar);
+}
+
 /** YYYY-MM-DD `n` dagar från idag (toleranta fönster — T27-klassen). */
 function omDagar(n: number): string {
   const d = new Date();
@@ -220,14 +232,22 @@ test.describe('Hantera-flödet — bekräftelse-vertikalen (task-18.6)', () => {
     const knappILank = await gruppen(page).locator('a[href*="/personer/"] button').count();
     expect(knappILank).toBe(0);
 
-    // Grön-knapp-regeln (task-18.16, kortets utpekade avvikare): Skicka
-    // bekräftelse NÅR UTOMSTÅENDE → success-formen (--mm-success #606B57,
-    // vit text ≈ 5,6:1 AA) — aldrig kortfotens tysta grå.
+    // §19 tvådimensionell (Marcus beslut A 2026-07-25, Greta-fallet): intent
+    // success (når utomstående) × emphasis OUTLINE i kort-ytklassen —
+    // intent-färgen bärs av text + kant, ALDRIG solid fyllnad inuti kort.
+    // Gamla solid-låset (bg #606B57 + vit text) revs med beslutet.
     const bertil = gruppen(page).getByRole('button', {
       name: 'Skicka bekräftelse till Bertil Sund',
     });
-    await expect(bertil).toHaveCSS('background-color', 'rgb(96, 107, 87)');
-    await expect(bertil).toHaveCSS('color', 'rgb(255, 255, 255)');
+    await expect(bertil).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(bertil).toHaveCSS(
+      'border-top-color',
+      await tokenColor(page, '--mm-button-success-outline-border'),
+    );
+    await expect(bertil).toHaveCSS(
+      'color',
+      await tokenColor(page, '--mm-button-success-outline-text'),
+    );
   });
 
   test('AC #1: enskild bekräftelse skickar record-ID:t och flyttar kortet till Bekräftade LIVE', async ({

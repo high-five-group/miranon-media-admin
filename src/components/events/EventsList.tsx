@@ -268,14 +268,23 @@ export function EventsList() {
   // under (facit k02; MOJ:s "Show filter"-toggle utan sidopanel-överbyggnad).
   // React Aria Disclosure wirar trigger↔panel (aria-expanded/aria-controls,
   // Enter/Space, hidden-attribut på stängd panel) — ingen egen ARIA-mekanik.
-  // gap-6 mellan rad och öppen panel = yttre kolumnens rytm (stängd panel
-  // tar ingen plats — inget dubbelgap). print:hidden på roten: kontroller
-  // är meningslösa på papper (GOV.UK-blacklisten).
+  //
+  // PANEL-ELEMENTET LÄMNAS OSTYLAT (Marcus-fix 2026-07-25, grundorsak
+  // verifierad i react-arias useDisclosure-källa): stängd panel döljs med
+  // hidden="until-found" ⇒ content-visibility: hidden — INNEHÅLLET döljs
+  // men panel-elementets EGEN bakgrund/padding renderas, så visuella stilar
+  // direkt på DisclosurePanel gav en tom grå rand i stängt läge. Bakgrund/
+  // padding/rounded/gap bor därför på en INRE wrapper (försvinner med
+  // innehållet), och rytmen mellan rad och öppen panel bärs av wrapperns
+  // mt-6 — INTE av gap på roten (ett rot-gap hade lämnat 24 px dött
+  // utrymme efter det 0 px höga panel-elementet i stängt läge).
+  // print:hidden på roten: kontroller är meningslösa på papper
+  // (GOV.UK-blacklisten).
   const filterRad = (
     <Disclosure
       isExpanded={filterOppen}
       onExpandedChange={setFilterOppen}
-      className="flex flex-col gap-6 print:hidden"
+      className="flex flex-col print:hidden"
     >
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
@@ -328,94 +337,98 @@ export function EventsList() {
           </span>
         </AriaButton>
       </div>
-      <DisclosurePanel className="flex flex-col gap-4 rounded-2xl bg-bg-muted p-4">
-        {isPending ? (
-          // Lugnt laddläge i panelen (ADR-078 beslut 2+4): dropdown-formade
-          // skelett i SLUTGEOMETRIN (label-rad + sm-fält = samma höjd som
-          // Select) tills källan landat — alternativen kan inte härledas ur
-          // ingenting, och en tom grid hade hoppat vid datalandningen.
-          // Blocken är dekor (Skeleton är alltid aria-hidden); laddbeskedet
-          // ägs av listkroppens status-region (Roselli-anatomin — EN region).
-          <div className="grid gap-3 sm:grid-cols-3">
-            {(['typ', 'ort', 'status'] as const).map((dim) => (
-              <div key={dim} className="flex w-full flex-col gap-1">
-                <Skeleton variant="text" className="w-10 text-small" />
-                <Skeleton variant="text" className="h-8" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-3">
-            {/* En dimension utan värden i källan renderar ingen dropdown —
+      <DisclosurePanel data-testid="filter-panel">
+        {/* Tonala kortets form på INRE wrappern (se rot-kommentaren): allt
+            visuellt försvinner med innehållet när until-found döljer panelen. */}
+        <div className="mt-6 flex flex-col gap-4 rounded-2xl bg-bg-muted p-4">
+          {isPending ? (
+            // Lugnt laddläge i panelen (ADR-078 beslut 2+4): dropdown-formade
+            // skelett i SLUTGEOMETRIN (label-rad + sm-fält = samma höjd som
+            // Select) tills källan landat — alternativen kan inte härledas ur
+            // ingenting, och en tom grid hade hoppat vid datalandningen.
+            // Blocken är dekor (Skeleton är alltid aria-hidden); laddbeskedet
+            // ägs av listkroppens status-region (Roselli-anatomin — EN region).
+            <div className="grid gap-3 sm:grid-cols-3">
+              {(['typ', 'ort', 'status'] as const).map((dim) => (
+                <div key={dim} className="flex w-full flex-col gap-1">
+                  <Skeleton variant="text" className="w-10 text-small" />
+                  <Skeleton variant="text" className="h-8" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-3">
+              {/* En dimension utan värden i källan renderar ingen dropdown —
                 bokförd degradering av byggkravets "TRE dropdowns" (review-
                 pilotens fynd 6a, noterat på kortet): inget att filtrera på
                 är ärligare än en död kontroll. Ett OKÄNT URL-värde (fri
                 sträng, URL-beslutet) renderas som extra alternativ så
                 triggern kommunicerar vad URL:en faktiskt filtrerar på —
                 aldrig RAC:s råa placeholder (fynd 6b). */}
-            {(['typ', 'ort', 'status'] as const).map((dim) => {
-              // ALLA-vakten: en handskriven ?typ=__alla får inte skapa ett
-              // dubblett-id bredvid nolläges-itemet (ompasseringens fynd —
-              // RAC-kollektionen kräver unika nycklar).
-              const okantVarde =
-                valda[dim] != null && valda[dim] !== ALLA && !alternativ[dim].includes(valda[dim])
-                  ? valda[dim]
-                  : null;
-              return alternativ[dim].length > 0 ? (
-                <Select
-                  key={dim}
-                  data-testid={`filter-${dim}`}
-                  label={DIM_LABEL[dim]}
-                  size="sm"
-                  selectedKey={valda[dim] ?? ALLA}
-                  onSelectionChange={(k) => {
-                    const varde = k == null || String(k) === ALLA ? null : String(k);
-                    if (dim === 'typ') setTyp(varde);
-                    else if (dim === 'ort') setOrt(varde);
-                    else setStatus(varde as EventStatusValue | null);
-                  }}
-                >
-                  <SelectItem id={ALLA}>{DIM_NOLLAGE[dim]}</SelectItem>
-                  {alternativ[dim].map((varde) => (
-                    <SelectItem key={varde} id={varde}>
-                      {varde}
-                    </SelectItem>
-                  ))}
-                  {okantVarde != null ? (
-                    <SelectItem id={okantVarde}>{okantVarde}</SelectItem>
-                  ) : null}
-                </Select>
-              ) : null;
-            })}
-          </div>
-        )}
-        <div className="flex items-center justify-between gap-3 border-border-light border-t pt-3">
-          {isPending ? (
-            <Skeleton variant="text" className="w-32 text-small" />
-          ) : (
-            <span className="text-small text-text-secondary">
-              Visar {events.length} av {periodEvents.length} event
-            </span>
+              {(['typ', 'ort', 'status'] as const).map((dim) => {
+                // ALLA-vakten: en handskriven ?typ=__alla får inte skapa ett
+                // dubblett-id bredvid nolläges-itemet (ompasseringens fynd —
+                // RAC-kollektionen kräver unika nycklar).
+                const okantVarde =
+                  valda[dim] != null && valda[dim] !== ALLA && !alternativ[dim].includes(valda[dim])
+                    ? valda[dim]
+                    : null;
+                return alternativ[dim].length > 0 ? (
+                  <Select
+                    key={dim}
+                    data-testid={`filter-${dim}`}
+                    label={DIM_LABEL[dim]}
+                    size="sm"
+                    selectedKey={valda[dim] ?? ALLA}
+                    onSelectionChange={(k) => {
+                      const varde = k == null || String(k) === ALLA ? null : String(k);
+                      if (dim === 'typ') setTyp(varde);
+                      else if (dim === 'ort') setOrt(varde);
+                      else setStatus(varde as EventStatusValue | null);
+                    }}
+                  >
+                    <SelectItem id={ALLA}>{DIM_NOLLAGE[dim]}</SelectItem>
+                    {alternativ[dim].map((varde) => (
+                      <SelectItem key={varde} id={varde}>
+                        {varde}
+                      </SelectItem>
+                    ))}
+                    {okantVarde != null ? (
+                      <SelectItem id={okantVarde}>{okantVarde}</SelectItem>
+                    ) : null}
+                  </Select>
+                ) : null;
+              })}
+            </div>
           )}
-          <div className="flex items-center gap-2">
-            {aktiva > 0 ? (
-              <AriaButton
-                onPress={rensaFilter}
-                className="rounded-full px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
-              >
-                Rensa filter
-              </AriaButton>
-            ) : null}
-            {/* Skriv ut = den synliga filtrerade listan (byggkrav 5) —
+          <div className="flex items-center justify-between gap-3 border-border-light border-t pt-3">
+            {isPending ? (
+              <Skeleton variant="text" className="w-32 text-small" />
+            ) : (
+              <span className="text-small text-text-secondary">
+                Visar {events.length} av {periodEvents.length} event
+              </span>
+            )}
+            <div className="flex items-center gap-2">
+              {aktiva > 0 ? (
+                <AriaButton
+                  onPress={rensaFilter}
+                  className="rounded-full px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+                >
+                  Rensa filter
+                </AriaButton>
+              ) : null}
+              {/* Skriv ut = den synliga filtrerade listan (byggkrav 5) —
                 ingen parallell utskriftsvy. Kapseln i Skapa-ingångens
                 grammatik, lyft på surface mot panelens tonala botten. */}
-            <AriaButton
-              onPress={() => window.print()}
-              className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
-            >
-              <Printer aria-hidden="true" size={18} className="shrink-0" />
-              Skriv ut
-            </AriaButton>
+              <AriaButton
+                onPress={() => window.print()}
+                className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+              >
+                <Printer aria-hidden="true" size={18} className="shrink-0" />
+                Skriv ut
+              </AriaButton>
+            </div>
           </div>
         </div>
       </DisclosurePanel>

@@ -524,12 +524,14 @@ export function AnmalanDetail({
           </DetaljGrupp>
 
           {/* Ansökningssvar (byggkrav 8): fullbredds-fritext med läs mer-klipp;
-              tomma döljs — hela gruppen utgår när båda saknas. */}
+              tomma döljs — hela gruppen utgår när båda saknas. Etiketten
+              "Frågor" (facit-revidering, Marcus-beslut 2026-07-25 — kortare
+              än fältnamnets "Frågor/funderingar"; bas-fältet heter kvar). */}
           {(reg.motivering || reg.fragorFunderingar) && (
             <DetaljGrupp id="grupp-svar" rubrik="Ansökningssvar">
               {reg.motivering && <FritextRad etikett="Motivering" text={reg.motivering} />}
               {reg.fragorFunderingar && (
-                <FritextRad etikett="Frågor/funderingar" text={reg.fragorFunderingar} />
+                <FritextRad etikett="Frågor" text={reg.fragorFunderingar} />
               )}
             </DetaljGrupp>
           )}

@@ -775,7 +775,11 @@ test.describe('Filtervyn på event-listan + skriv ut (task-17.7)', () => {
     await expect(panel).toBeVisible();
 
     // Panelens facit-form COMPUTED (L272): tonala kortets bg + rounded-2xl.
-    const panelStil = await panel.evaluate((el) => {
+    // Formen bor på den INRE wrappern sedan Marcus-fixen 2026-07-25 —
+    // panel-ELEMENTET är ostylat (until-found/content-visibility renderar
+    // elementets egen bakgrund/padding även i stängt läge; grå rand-buggen).
+    const wrapper = panel.locator('> div');
+    const panelStil = await wrapper.evaluate((el) => {
       const cs = getComputedStyle(el);
       return { bg: cs.backgroundColor, radius: cs.borderRadius };
     });
@@ -827,6 +831,33 @@ test.describe('Filtervyn på event-listan + skriv ut (task-17.7)', () => {
     // Kalenderläget berörs ej av filtret (kalendern äger tiden, PRD beslut 7).
     await page.goto('/event?vy=kalender');
     await expect(filterKnapp(page)).toHaveCount(0);
+  });
+
+  test('stängd panel är VISUELLT FRÅNVARANDE — ingen grå rand (Marcus-fix 2026-07-25)', async ({
+    page,
+  }) => {
+    // Grundorsak (react-arias useDisclosure): hidden="until-found" ⇒
+    // content-visibility: hidden — innehållet döljs men panel-elementets
+    // EGEN bakgrund/padding renderas. Stilarna bor därför på inre wrappern;
+    // stängt läge får addera NOLL synlig yta (prototypens form).
+    await mockEvents(page, FILTER_EVENTS);
+    await page.goto('/event');
+    await expect(eventItems(page)).toHaveCount(5);
+
+    // Stängt läge från start: panelen osynlig och 0 px hög — ingen rand.
+    const panel = page.getByTestId('filter-panel');
+    await expect(panel).not.toBeVisible();
+    const stangdBox = await panel.boundingBox();
+    expect(stangdBox?.height ?? 0).toBe(0);
+
+    // Öppna → panelen syns; stäng igen → visuellt frånvarande IGEN (samma
+    // lås efter en interaktionscykel — inte bara initialtillståndet).
+    await filterKnapp(page).click();
+    await expect(panel).toBeVisible();
+    await filterKnapp(page).click();
+    await expect(panel).not.toBeVisible();
+    const aterStangdBox = await panel.boundingBox();
+    expect(aterStangdBox?.height ?? 0).toBe(0);
   });
 
   test('live-filtrering utan Apply: valet skriver URL:en, AND över dimensioner, räknare + aria-live; Rensa återställer till ren URL', async ({

@@ -1388,25 +1388,35 @@ sektions-skanen i runnern bor i `tests/a11y/primitives.spec.ts`.
 
 ---
 
-## 19. Button — intent- och storleks-reglerna (den samlade knapp-standarden)
+## 19. Button — den TVÅDIMENSIONELLA knapp-standarden (intent × emphasis + storlek)
 
 Primitiven bor i `src/components/primitives/Button.tsx` (RAC-bas per
 ADR-044, CVA-varianter, komponent-tokens `--mm-button-*`). Denna sektion
-kodifierar ANVÄNDNINGS-reglerna — vilken intent och storlek en knapp får
-bära var (task-18.16; Marcus review-våg 2, designbesluten avgjorda på
-delegerad senior-order 2026-07-23).
+kodifierar ANVÄNDNINGS-reglerna — vilken intent, emphasis och storlek en
+knapp får bära var.
 
-### Intent-regeln (grön-knapp-regeln)
+> **ÖPPEN REVIDERINGSNOT (Marcus beslut A, 2026-07-25 — morgongranskningen
+> av 18.16):** §19:s ursprungsform (endimensionell — intent-regeln utan
+> emphasis-dimension, allt renderat solid) rivs öppet och ersätts av den
+> tvådimensionella regeln nedan: INTENT styr färgen, EMPHASIS styrs av
+> YTKLASSEN. Beslutsgrund (research-belagd): Shopify Polaris skiljer
+> `tone` × `variant` som ortogonala axlar · IBM Carbon bär danger i tre
+> viktnivåer (primary/tertiary/ghost) · Material 3 föreskriver text-/
+> outline-knappar inuti kort · FK:s "en primär handling per del".
+> K77-rivningen (nedan) står kvar oförändrad.
 
-Semantisk färgregel utan ad-hoc-undantag:
+### Dimension 1 — INTENT styr färgen
+
+Semantisk färgregel utan ad-hoc-undantag. **Intenten följer HANDLINGEN,
+aldrig platsen:**
 
 | Intent | Regel |
 |---|---|
 | `success` (sage-grön) | Handlingar som **NÅR UTOMSTÅENDE** — mail/SMS till deltagare o.dyl. (Skicka bekräftelse, Bekräfta alla, segment-utskickets Skicka, armerad publicering). |
 | `primary` (mörkgrå) | **Interna** huvudhandlingar — skriver bara i systemet (Spara, Skapa anmälan, Räkna antal, Exportera). |
-| `secondary` | Sekundär handling bredvid en huvudhandling (Avbryt i formulär, Redigera, Hämta fler). |
 | `danger` (röd) | **Destruktions-klassen** — tar bort eller förstör (Ta bort). ALDRIG som "viktigt/oåterkalleligt": skydd mot oåterkallelighet bärs av confirm-grinder (skriv-för-att-bekräfta, kontrollfråga), inte av rött. |
-| `ghost` | Lågviktade handlingar i trängre ytor (dialog-Avbryt, dismiss, Rensa). |
+| `secondary` | Neutral stödform: sekundär handling bredvid en huvudhandling (Avbryt i formulär, Redigera, Hämta fler). Står UTANFÖR emphasis-dimensionen (är i sig en neutral outline). |
+| `ghost` | Neutral stödform: lågviktade handlingar i trängre ytor (dialog-Avbryt, dismiss, Rensa). Står UTANFÖR emphasis-dimensionen (är i sig en neutral subtle). |
 
 - **Dynamisk intent** när knappens FAKTISKA semantik i stunden växlar:
   skapa-sidans "Skapa event" är `primary` oarmerad och `success` vid
@@ -1419,8 +1429,33 @@ Semantisk färgregel utan ad-hoc-undantag:
   dynamisk intent ovan. Återvändo-not: upplevs helheten för tung/för
   grön hanteras det på TOKEN-nivå (`--mm-button-*`), aldrig per
   undantag; lätt återvändo = flippa intent-attributet.
-- Texten bär alltid — färgen är förstärkning (WCAG 1.4.1). Alla
-  intents mot sina text-tokens håller AA (success #606B57 + vit ≈ 5,6:1).
+- Texten bär alltid — färgen är förstärkning (WCAG 1.4.1).
+
+### Dimension 2 — EMPHASIS styrs av YTKLASSEN
+
+Emphasis-skalan `solid`/`outline`/`subtle` (primitivens `emphasis`-prop,
+default `solid`) väljs av ytan knappen sitter i — aldrig av handlingen:
+
+| Ytklass | Emphasis |
+|---|---|
+| **Sidnivå / primär handlingsyta** (formulärens knapprader, dialog-actions, sektionens eget redigeringsflöde) | `solid`. Max EN solid per yta; en sida med självständiga sektioner bär max en solid per sektion. |
+| **Kort och listrader** (deltagar-/personkort, instans-kort i listor) | `outline` eller `subtle` — intent-färgen bärs av **text + kant**, ALDRIG solid fyllnad inuti kort. |
+| **Tabellrader / toolbars** (grupp-rubrikrader, rad-verktyg) | `subtle` kompakt (`size="sm"`). |
+
+- Emphasis ändrar ALDRIG intenten: Greta-fallets kortfots-knapp är
+  fortfarande `success` (når utomstående) — bara viktad för kortets
+  ytklass (`emphasis="outline"`).
+- AA-golvet i textbärarna: success-textbäraren för outline/subtle mörkas
+  15 % på token-nivå (rå #606B57 mäter ≈ 4,2:1 mot subtle-plattan över
+  emphasized-raden — mörkad ≈ 5,4:1; kanten behåller råa intent-kulören).
+  `subtle` tänder en kant i intent-färgen under `prefers-contrast: more`.
+- Prejudikat flippade vid emphasis-införandet (fix-vågen 2026-07-25):
+  deltagarkortens Skicka bekräftelse (solid → `success`/`outline`,
+  Greta-fallet) och Bekräfta alla-pillen på grupp-rubrikraden (solid →
+  `success`/`subtle`; dialogens bekräfta-knapp är dialog-actions och
+  förblir solid). Sidnivå-solids står orörda: AnmalanDetails Skicka
+  bekräftelse (sidans enda primära handling), morf-lägenas Spara
+  (sektionens redigeringsflöde), formulärens knapprader.
 
 ### Storleks-reglerna
 
@@ -1443,9 +1478,9 @@ bokfört i kod-kommentaren.
 Länkar och rad-grammatiken (§14 NavCard, åtgärds-/handlingsrader) står
 utanför intent-regeln av FORM-skäl: rader bär inte knapp-intents —
 intent-regeln träffar knapparna i det flöde raden leder till.
-Prejudikat flippade vid regelinförandet (task-18.16): personkortets
-Skicka bekräftelse (grå kortfot → success) och segment-utskickets
-"Skicka till N personer" (`danger` → `success`).
+Prejudikat flippade vid intent-regelns införande (task-18.16):
+personkortets Skicka bekräftelse (grå kortfot → success) och
+segment-utskickets "Skicka till N personer" (`danger` → `success`).
 
 ---
 
@@ -1463,4 +1498,5 @@ Skicka bekräftelse (grå kortfot → success) och segment-utskickets
 | 2026-07-21 | §14 REGELRIVNING: "navigationsrader bär inte chevron" riven öppet (S73 K25-prövningens Marcus-kvitterade konsekvens; PRD task-18 beslut 15) → ny regel "chevron betyder att raden leder vidare"; NavCard-formen får chevron 18 px höger i sekundärfärgen, Mer-menyn följer med för app-koherens (task-18.3). |
 | 2026-07-22 | §18 SlideToConfirm — dra-till-bekräfta-primitiven (S73-facit-utökningen K77–K84): API, förseglade beslut (hand-byggd APG-switch — klick-toggle river avsikts-mekaniken; 90/10-trösklar; inget isDisabled), K79-drag-vakterna + L300-ref-tillståndet, computed-låst form utan fyllnad (K82), pling med preferens-respekt, semantisk token-konsumtion utan komponent-tokens (task-19.1). |
 | 2026-07-25 | §19 Button — intent- och storleks-reglerna (task-18.16, Marcus review-våg 2): grön-knapp-regeln (når-utomstående ⇒ success, internt ⇒ primary; danger = destruktions-klassen, aldrig "oåterkalleligt"), dynamisk-intent-mönstret, K77-rivningen öppet bokförd med återvändo-not, storleksskalan sm/md/lg per ytklass, app-bred audit bokförd (personkortets Skicka bekräftelse + segment-utskickets faro-knapp flippade till success). |
+| 2026-07-25 | §19 REVIDERAD till TVÅDIMENSIONELL regel (Marcus beslut A, morgongranskningen — 18.16 facit-revidering): intent styr färgen × emphasis styrs av ytklassen (solid = sidnivå/primär handlingsyta, max en per yta/sektion · outline/subtle = kort och listrader, aldrig solid fyllnad inuti kort · subtle kompakt = tabellrader/toolbars). Ursprungsformens endimensionella regel riven öppet (revideringsnot i §19); K77-rivningen står kvar. Button-primitiven får emphasis-varianter + `--mm-button-*-outline/subtle-*`-tokens (success-textbäraren AA-mörkad 15 %). Flippar: deltagarkortens Skicka bekräftelse → success/outline (Greta-fallet) · Bekräfta alla-pillen → success/subtle. Research-grund: Polaris tone×variant · Carbon danger i tre viktnivåer · M3 text-buttons-i-kort · FK "en primär per del". |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |

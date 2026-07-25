@@ -5038,3 +5038,21 @@ BYGG-agent (slutar vid armerad auto-merge, returnerar direkt — noll väntan)
 och SVANS-agent (äger hela CI-kedjan: PR-run → merge → main-run per jobb →
 bokförings-PR). v2-batchen körde 17 agenter i den formen: 0 fel, CI grön
 första pass i samtliga led.
+
+### L341 — [UNIVERSAL] Styla aldrig ett until-found-dolt element direkt — content-visibility döljer innehållet, inte elementets egen låda
+
+Datum: 2026-07-25 (S86 granskningsvågen) | Källa: 17.7-fixen — filterpanelen
+syntes som tom grå rand i stängt läge trots "dold" panel (klass:
+biblioteks-mekanik; Marcus-fynd i morgongranskningen)
+
+React Aria (useDisclosure) döljer stängd DisclosurePanel med
+hidden="until-found" ⇒ content-visibility: hidden — INNEHÅLLET skippas ur
+rendering, men elementets EGEN bakgrund, padding och kant renderas kvar som
+en tom låda (skillnaden mot display: none). Visuella stilar
+(bg/padding/rounded) direkt på panel-elementet ger därför en synlig rand i
+stängt läge. Formen: panel-elementet lämnas ostylat och allt visuellt bor på
+en INRE wrapper (försvinner med innehållet); rytm-avstånd bärs av wrapperns
+margin — inte av gap på föräldern (gap:et står kvar runt det 0 px höga
+panel-elementet). Gäller varje until-found-/content-visibility-mekanism,
+inte bara RAC. E2e-låset: stängt läge assertas visuellt frånvarande
+(not.toBeVisible + boundingBox-höjd 0), inte bara "innehållet borta".

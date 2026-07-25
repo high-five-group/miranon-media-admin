@@ -309,8 +309,12 @@ function GruppRubrik({
 }
 
 /**
- * BEKRÄFTA ALLA (K47/K48) — sidans positiva massåtgärd i success-grönt med vit text
- * och kuvertet (grammatiken: Mail = skicka-handling, MailCheck = skickat-status).
+ * BEKRÄFTA ALLA (K47/K48) — sidans positiva massåtgärd i success-intenten med
+ * kuvertet (grammatiken: Mail = skicka-handling, MailCheck = skickat-status).
+ * §19 tvådimensionell (Marcus beslut A 2026-07-25): pillen sitter på grupp-
+ * rubrikens RAD (toolbar-ytklassen) → emphasis=subtle kompakt — intent-färgen
+ * bärs av text + tonplatta, aldrig solid fyllnad på raden. Dialogens
+ * bekräfta-knapp är dialog-actions (primär handlingsyta) och förblir solid.
  *
  * KONTROLLFRÅGAN är obligatorisk (PRD task-18 beslut 7 + 20: confirm-grind på varje
  * massmutation) — pillen ÖPPNAR bara dialogen; ingenting skickas förrän Lotta
@@ -330,6 +334,7 @@ function BekraftaAlla({
     <DialogTrigger>
       <Button
         intent="success"
+        emphasis="subtle"
         size="sm"
         className="shadow-sm"
         aria-label="Bekräfta alla obekräftade"
@@ -629,14 +634,16 @@ function DeltagarKort({
           bekräftelse i kortbotten — UTANFÖR person-länken (L303), som dess
           syskon. Bekräftade kort bär den ALDRIG: handlingen är gjord, och en
           knapp som skickar om mailet är inte kortets jobb.
-          Grön-knapp-regeln (task-18.16, kortets utpekade avvikare in i regeln):
-          handlingen NÅR UTOMSTÅENDE → success-INTENTEN via Button-primitiven
-          (DESIGN-SYSTEM-SPEC §19) — kortfotens geometri (rounded-b-xl, full
-          bredd, py-2.5) uttrycks via className, aldrig handvirade tokens
+          §19 tvådimensionell (Marcus beslut A 2026-07-25, Greta-fallet):
+          intent=success (handlingen NÅR UTOMSTÅENDE) × emphasis=outline —
+          kortets ytklass bär intent-färgen i text + kant, ALDRIG solid
+          fyllnad inuti kort. Kortfotens geometri (rounded-b-xl, full bredd,
+          py-2.5) uttrycks via className, aldrig handvirade tokens
           (review-piloten 18.16: en token-kopia driver isär tyst). */}
       {!arBekraftad(reg) && (
         <Button
           intent="success"
+          emphasis="outline"
           aria-label={`Skicka bekräftelse till ${namn}`}
           isDisabled={pending}
           onPress={() => onBekrafta(reg)}

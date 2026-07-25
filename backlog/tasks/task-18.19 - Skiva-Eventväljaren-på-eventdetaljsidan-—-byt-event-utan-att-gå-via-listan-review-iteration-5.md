@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-23 10:00'
-updated_date: '2026-07-25 07:05'
+updated_date: '2026-07-25 09:10'
 labels:
   - ready-for-agent
 dependencies:
@@ -69,6 +69,14 @@ Review-piloten (T86): granskat träd f2cea1aa (bas main f8af246) — 7 fynd (1 s
 AVVIKELSER (öppet bokförda): (1) AC #2:s bokstav 'delad komponent med 18.18 utan ändringar' tolkad per facitets punkt 3 ('ETT väljar-bygge bär båda ytorna') och kortets egen beskrivning ('får här sin ANDRA konsument'): rubrik-formen är en ADDITIV variant-prop — 18.18-ytans form, beteende och testkontrakt är oförändrade (16/16 utan teständring), list-/sök-maskineriet delas byte-identiskt; bokstavstolkningen (fryst fil) hade gjort facitets variant A omöjlig. Marcus-kvittens i morgongranskningen. (2) Dep-dispensen (18.18 i granskningsfärdigt läge) behövde INTE aktiveras — 18.18 stod Done vid plock. (3) Visual-baselines: eventsida.png-baselinen driftar av rubrik-formen (chevron-par + hover-platta i h1:an) — visual är inte PR-grind; refresh ingår i T87:s aktiveringssteg 1 (dispatcha visual-baselines.yml), samma läge som nattens övriga UI-skivor. (4) eventName-dubbleringen (EventDetail lokal kopia vs EventCards export) noterad ur reviewn — pre-existing, utanför skivan, tas vid nästa beröring (ingen kort-routning; lyft-klassen bor i task-47:s städfamilj).
 
 ÖPPNA MARCUS-MOMENT (morgongranskningen): (1) AC #2-tolkningens kvittens (additiv variant = biblioteks-beviset); (2) rubrik-triggerns AT-upplevelse i VoiceOver (accname = eventnamnet, beskrivningen 'Byt event' — mekaniskt e2e-bevisad, manuellt pass kvarstår per 18.18-precedenten); (3) N1-semantiken (sök-värmningen) om Marcus vill snäva den.
+
+## Granskningsvågens FIX (S86 morgongranskning, Marcus-beslut 2026-07-25)
+
+FYND: rubrik-triggern (form="rubrik", h1:an) RADBRYTS på långa eventnamn ('Fjärrskådning' bröts; 'Resor i medvetandet 3' värre). Marcus: får aldrig hända.
+
+FIX (branch fix/s86-granskningsvag, EN samlad fix-vågs-PR per ADR-071 S76-amenderingen): namn-spannet i rubrik-formen flippat break-words → block + truncate (nowrap + visuell ellipsis vid överflöd); chevron-paret behåller sin plats (shrink-0); truncaten är ENBART visuell — accessible name förblir HELA namnet (aria-labelledby mot namn-spannet; accname beräknas ur textinnehållet, inte CSS-klippningen). Fil: src/components/events/EventValjare.tsx.
+
+E2E-LÅS (event-detail.staging.test.ts, 18.19-blocket): nytt test 'rubrik-triggern RADBRYTER ALDRIG' — computed nowrap/ellipsis/overflow-x + scrollWidth>clientWidth-bevis att ellipsis är aktiv + geometri-lås (EN rad, <60 px) + chevron innanför viewport + accname = hela namnet + väljaren öppningsbar från truncerad trigger. RÖTT-FÖRST EJ OBSERVERBART LOKALT: e2e-dev-servern är portlåst till 5173 (reuseExistingServer false + strictPort) och porten bärs av Marcus levande dev-server — PR-CI:ts e2e-steg är beviset (pr-ci-bevisformen S66), öppet bokfört i PR-bodyn.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
