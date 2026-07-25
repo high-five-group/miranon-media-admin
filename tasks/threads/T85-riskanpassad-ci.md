@@ -129,9 +129,9 @@ grillas i sessionen, tas inte rakt av.
    Actions så checknamnet inte kan publiceras av annan write-aktör.
 5. ~~**Cron-timezone**~~ ✅ **ÅTGÄRDAD S88** — och Codes egen misstanke FÖLL.
    Code antog att GitHub Actions inte stöder något timezone-fält alls. Falskt:
-   `schedule`-timezone är GA sedan **2026-03-19**, verifierat mot github/docs
-   primärkälla (*"You can optionally specify a timezone using an IANA timezone
-   string"*) — inte bara mot agentens sammanfattning. Grind-risken prövad
+   `schedule`-timezone är GA sedan **2026-03-19**, verifierat mot GitHubs egen
+   dokumentationskälla (`github/docs`) — *"You can optionally specify a timezone
+   using an IANA timezone string"* — inte bara mot agentens sammanfattning. Grind-risken prövad
    TVÅSIDIGT mot vår PINNADE actionlint 1.7.12: giltig zon → exit 0, typo
    `Europe/Stokholm` → `invalid timezone … must be a valid IANA timezone name`.
    Stödet kom i just 1.7.12; ingen `-ignore` behövs. Nu `cron: '0 3 * * *'` +
