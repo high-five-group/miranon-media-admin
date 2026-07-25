@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-12
+updated: 2026-07-25
 review_by: 2026-09-17
 status: stable
 ---
@@ -118,6 +118,7 @@ status: stable
 | `T89` | S83-transkriptgranskningens förbättringspaket — extern Chat-granskning av S83-utdraget (startprompt → första stopp) + Codes JSONL-/disk-verifikation; sex fynd: todo.md-arkivet (F1) · verify-harness + miljöfakta (F2) · autofix före grind (F3) · cp-baslinje (F4) · effort-experimentet (F6); F5b avstyrkt öppet. F1b/F2/F3 → T85-korrigeringsfönstret; F6 före T85 (återstående prototyp-pass) | `active` | [T89-s83-granskningspaketet.md](T89-s83-granskningspaketet.md) |
 
 | `T90` | Laddupplevelsen på event-ytorna — Marcus-beordrad tråd (S83 pass 4, 2026-07-24): **regeln är att allt i appen ska vara INSTANT**, och skeleton-laddningen är dessutom inte branschledarmässig designmässigt ("det ser helt enkelt inte snyggt ut"). Delvis adresserat i PR #163 (placeholder ur listcachen + prefetch på avsikt; direktklick 1315 ms → hover 1500 ms 278 ms; CLS 0,000 vid navigering) — men golvet är Airtables EF-latens: `get-event` ~1,1 s, `get-registrations` ~1,4 s mätt, vilket inte går att optimera bort klientsidan. Marcus accepterar gränsen tills **Supabase-migrationen** stänger den. KVAR i tråden: (a) laddlägenas DESIGN som eget pass — den bästa skeletonen är den man aldrig ser, men de som ändå syns ska se ut som design; (b) öppet belastningsbeslut: varm registrations-cache för ALLA event skulle eliminera det sista layouthoppet (Anmälda deltagare 187 → 627 px, CLS 0,045 om man scrollar dit under laddning) men kostar 11 × 2 anrop mot Airtable vid listöppning — rate limit 5 req/s, 429-risk; ej taget av Code | `paused` | PR #163 · besläktad `T87` (visual-grinden) · bas-/Supabase-spåret `ADR-063` |
+| `T91` | Två samtidiga färg-assertions-filosofier i test-sviten (`tokenColor`-wiring-verifiering vs teckenexakta rgb-literals) — båda försvarbara, valet obokfört; en rad i test-README/spec avgör det en gång för alla | `paused` | _(ingen kort än — endast registrerad); uppstod S86 nattbygget (task-18.16 review-pilot, utanför-scope-fynd)_ |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >

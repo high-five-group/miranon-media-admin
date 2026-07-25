@@ -147,6 +147,12 @@ test.describe('Skicka mail på segment (Fas 6h L3)', () => {
     const sendBtn = dialog.getByRole('button', { name: 'Skicka till 3 personer' });
     await expect(sendBtn).toBeDisabled();
 
+    // Grön-knapp-regeln (task-18.16): utskicket NÅR UTOMSTÅENDE → success
+    // (#606B57), aldrig danger — skyddet mot oåterkalleligheten bärs av
+    // skriv-för-att-bekräfta-grinden, inte av rött (Bekräfta alla-precedenten).
+    await expect(sendBtn).toHaveCSS('background-color', 'rgb(96, 107, 87)');
+    await expect(sendBtn).toHaveCSS('color', 'rgb(255, 255, 255)');
+
     // Fel antal → fortfarande låst.
     const confirmField = dialog.getByRole('textbox', { name: /Skriv antalet mottagare/ });
     await confirmField.fill('99');

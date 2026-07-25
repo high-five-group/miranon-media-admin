@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-24
+updated: 2026-07-25
 review_by: 2026-10-22
 status: stable
 lifecycle: active
@@ -179,6 +179,7 @@ nattbyggets kort (§ Körplanen nedan).
 |---|---|---|---|---|---|---|---|
 | 17.7 (diff adb2c614 → ompass. e1e29f45) | 7 (2/5) | 6 | 1 (fynd 5: text-[10px]-badgen — facit-låst form, öppet bokförd mot spec-regeln i kod + kort; 6a-delen likaså bokförd degradering) | 0 | 1 blocker (print-huvud i kalenderläget) / 6 kvalitet | ~10 (två pass) | _fylls i morgongranskningen_ |
 | 18.15 (diff e9cff7d8 → ompass. 4839d1bb) | 4 (2/2) | 4 | 0 | 2 (task-39 röststyrnings-gapet · task-40 contrast-more-avgränsningen) | 0 blocker / 2 kvalitet / 2 brus (brusen gratis härdningar, åtgärdade) | ~8 (två pass) | _fylls i morgongranskningen_ |
+| 18.16 (diff e8b011bbbb50 → ompass. 91d00ce3232f; F6-skivan, lägre effort) | 7+1 (4/3; ompass. fångade T90-ID-krocken i tråd-registret — S83-kollisionsklassen, rättad till T91) | 7 (inkl. kortfoten → Button-primitiv i stället för handvirade tokens; §19-snävning + form-rationale; color-assertion; ID-krocken) | 0 (fynd 6 = processpåminnelse om AC-bockar, verkställd i stängningsdisciplinen) | 3 (task-41 fokusring-på-success · task-42 Atgarder-kommentaråldring · T91 färg-assertions-filosofin) | 0 blocker / 5 kvalitet / 2 process-nit / 1 bokförings-krock | ~12 (två pass) | _fylls i morgongranskningen_ |
 
 ## Körplanen 2026-07-24 → nattbygget (kvitterad i S82-konversationen)
 

@@ -228,9 +228,13 @@ export function SegmentMailCompose() {
               </Button>
               {/* Faro-knapp: LÅST tills confirmMatch. Native isDisabled (Button-
                   primitiven bär ej ren aria-disabled); upptäckbarhet bärs av den
-                  synliga knappen + fält-instruktionen + aria-live-aviseringen nedan. */}
+                  synliga knappen + fält-instruktionen + aria-live-aviseringen nedan.
+                  Grön-knapp-regeln (task-18.16): utskicket NÅR UTOMSTÅENDE →
+                  success, aldrig danger (danger är destruktions-klassens intent);
+                  oåterkallelighets-skyddet bärs av skriv-för-att-bekräfta-
+                  grinden + separationen, inte av rött (Bekräfta alla-precedenten). */}
               <Button
-                intent="danger"
+                intent="success"
                 isDisabled={!confirmMatch || !canSend || sendMutation.isPending}
                 onPress={() => {
                   handleConfirmSend();

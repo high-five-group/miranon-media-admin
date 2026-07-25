@@ -1388,6 +1388,67 @@ sektions-skanen i runnern bor i `tests/a11y/primitives.spec.ts`.
 
 ---
 
+## 19. Button — intent- och storleks-reglerna (den samlade knapp-standarden)
+
+Primitiven bor i `src/components/primitives/Button.tsx` (RAC-bas per
+ADR-044, CVA-varianter, komponent-tokens `--mm-button-*`). Denna sektion
+kodifierar ANVÄNDNINGS-reglerna — vilken intent och storlek en knapp får
+bära var (task-18.16; Marcus review-våg 2, designbesluten avgjorda på
+delegerad senior-order 2026-07-23).
+
+### Intent-regeln (grön-knapp-regeln)
+
+Semantisk färgregel utan ad-hoc-undantag:
+
+| Intent | Regel |
+|---|---|
+| `success` (sage-grön) | Handlingar som **NÅR UTOMSTÅENDE** — mail/SMS till deltagare o.dyl. (Skicka bekräftelse, Bekräfta alla, segment-utskickets Skicka, armerad publicering). |
+| `primary` (mörkgrå) | **Interna** huvudhandlingar — skriver bara i systemet (Spara, Skapa anmälan, Räkna antal, Exportera). |
+| `secondary` | Sekundär handling bredvid en huvudhandling (Avbryt i formulär, Redigera, Hämta fler). |
+| `danger` (röd) | **Destruktions-klassen** — tar bort eller förstör (Ta bort). ALDRIG som "viktigt/oåterkalleligt": skydd mot oåterkallelighet bärs av confirm-grinder (skriv-för-att-bekräfta, kontrollfråga), inte av rött. |
+| `ghost` | Lågviktade handlingar i trängre ytor (dialog-Avbryt, dismiss, Rensa). |
+
+- **Dynamisk intent** när knappens FAKTISKA semantik i stunden växlar:
+  skapa-sidans "Skapa event" är `primary` oarmerad och `success` vid
+  armerad publicering (publiceringen når utomstående; oarmerat skapande
+  är internt). Mönstret gäller generellt — intenten följer vad trycket
+  GÖR, inte vad ytan heter.
+- **K77-rivningen, öppet bokförd:** S73-facitets K77 (statiskt grön
+  "Skapa event") revs i två steg — 18.16-beslutet A (regeln vinner →
+  statiskt `primary`) amenderades i review-våg 5 (PR #94) till
+  dynamisk intent ovan. Återvändo-not: upplevs helheten för tung/för
+  grön hanteras det på TOKEN-nivå (`--mm-button-*`), aldrig per
+  undantag; lätt återvändo = flippa intent-attributet.
+- Texten bär alltid — färgen är förstärkning (WCAG 1.4.1). Alla
+  intents mot sina text-tokens håller AA (success #606B57 + vit ≈ 5,6:1).
+
+### Storleks-reglerna
+
+Skalan `sm`/`md`/`lg` = 32/40/48 px min-höjd (ACCESSIBILITY-CHECKLIST
+§2-golvet: aldrig under 24×24; 44×44 rekommenderas i primärflöden):
+
+| Storlek | Ytklass |
+|---|---|
+| `md` (40 px, default) / `lg` (48 px) | Primärflöden: formulärens knapprader, sid-nivåns huvudhandlingar, dialog-actions. |
+| `sm` (32 px) | Kort, rader och inline-ytor: morf-lägenas Spara/Avbryt, kort-verktyg (Redigera/Rensa), list-pillar (Bekräfta alla). |
+
+Egen geometri uttrycks via primitivens `className`
+(tailwind-merge-precedenten) — t.ex. personkortets kortfots-knapp
+Skicka bekräftelse (`w-full rounded-t-none rounded-b-xl`). Handvirade
+token-kopior utanför primitiven är anti-mönster (duplicerad wiring
+driver isär tyst); tillåts ENDAST där primitivens form genuint inte
+kan uttrycka facit-geometrin ens via className, och då med skälet
+bokfört i kod-kommentaren.
+
+Länkar och rad-grammatiken (§14 NavCard, åtgärds-/handlingsrader) står
+utanför intent-regeln av FORM-skäl: rader bär inte knapp-intents —
+intent-regeln träffar knapparna i det flöde raden leder till.
+Prejudikat flippade vid regelinförandet (task-18.16): personkortets
+Skicka bekräftelse (grå kortfot → success) och segment-utskickets
+"Skicka till N personer" (`danger` → `success`).
+
+---
+
 ## Ändringslogg
 
 | Datum | Förändring |
@@ -1401,4 +1462,5 @@ sektions-skanen i runnern bor i `tests/a11y/primitives.spec.ts`.
 | 2026-07-21 | §17 Kursfärger — ADR-064-taxonomins semantiska tokens (S72-facitets legend, solida 500-kulörer): fem `--mm-kurs-*`-roller mot befintliga primitiver + uppslaget `src/lib/kursfarg.ts` (teckenexakta basvärden, Annat som uppsamling; ersätter prototypens namn-matchning) (task-17.3). |
 | 2026-07-21 | §14 REGELRIVNING: "navigationsrader bär inte chevron" riven öppet (S73 K25-prövningens Marcus-kvitterade konsekvens; PRD task-18 beslut 15) → ny regel "chevron betyder att raden leder vidare"; NavCard-formen får chevron 18 px höger i sekundärfärgen, Mer-menyn följer med för app-koherens (task-18.3). |
 | 2026-07-22 | §18 SlideToConfirm — dra-till-bekräfta-primitiven (S73-facit-utökningen K77–K84): API, förseglade beslut (hand-byggd APG-switch — klick-toggle river avsikts-mekaniken; 90/10-trösklar; inget isDisabled), K79-drag-vakterna + L300-ref-tillståndet, computed-låst form utan fyllnad (K82), pling med preferens-respekt, semantisk token-konsumtion utan komponent-tokens (task-19.1). |
+| 2026-07-25 | §19 Button — intent- och storleks-reglerna (task-18.16, Marcus review-våg 2): grön-knapp-regeln (når-utomstående ⇒ success, internt ⇒ primary; danger = destruktions-klassen, aldrig "oåterkalleligt"), dynamisk-intent-mönstret, K77-rivningen öppet bokförd med återvändo-not, storleksskalan sm/md/lg per ytklass, app-bred audit bokförd (personkortets Skicka bekräftelse + segment-utskickets faro-knapp flippade till success). |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |
