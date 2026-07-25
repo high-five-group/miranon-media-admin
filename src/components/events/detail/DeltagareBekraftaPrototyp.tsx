@@ -60,7 +60,7 @@ function anmaldText(r: Registration): string | null {
 }
 
 /** Max ~3 kort synliga, resten bakom inline scroll (Marcus skiss). */
-const SCROLL_KLASS = 'max-h-[25.5rem] overflow-y-auto pr-1';
+const SCROLL_KLASS = 'scrollbar-inline max-h-[25.5rem] overflow-y-auto pr-1';
 
 /**
  * MARKERBART KORT: RAC Checkbox — hela kortet är klickytan, aria-checked
