@@ -90,13 +90,27 @@ BUILD-LOG S83-post.
   jobb i samtliga led. Skörd: task-39–47 (9 fynd-kort) · T91 · L339 +
   L340 [UNIVERSAL ×2] · pilot-loggrader ×6 i T86 · F6-rådata i T89.
   Full narrativ: sessionsdok Del 2.
-- [x] **Bokförings-landningen** (2026-07-25, denna PR): sessionsdok
-  Del 2 + L340 + T89 § F6-mätningen + denna kadens. **NÄSTA (Marcus
-  morgongranskning): granskningsvågen i browsern = pilot-loggens
-  escapes-facit → Done-flippar 17.7/18.15 + kvittenserna (18.18 ×3 ·
-  18.19 AC#2 · 18.16 danger→success + K77 · 18.17 DONE-klassningen) →
-  därefter T85-korrigeringsfönstret (sekvens låst) ·
-  konventions-grillningen (/grill-me) · hub-lyftet L284–L340 ·
+- [x] **Bokförings-landningen** (2026-07-25, PR #186): sessionsdok
+  Del 2 + L340 + T89 § F6-mätningen + kadens.
+- [x] **Morgongranskningen + tre fixvågor** (2026-07-25): Done-flippar
+  17.7/18.15 (PR #187) + escapes-facit (17.7 RÄTTAD 0→1) ·
+  18.17-datafrågorna (staging-fixturer + CORS +5174/+5175) ·
+  **våg 1 PR #188** (5 p: §19 TVÅDIMENSIONELL beslut A · nowrap ·
+  bredden · Frågor · filterranden→L341) · **våg 2 PR #189**
+  (rubrik-utrymmet · autofocus · popover form B · +11px-overlay→L342) ·
+  **våg 3 PR #191** (fokusring deterministisk · grått kryss ·
+  scrollbar). Full narrativ: sessionsdok Del 3.
+- [x] **Prototyp-passet** (2026-07-25): markera-läget — divergens →
+  **A**, konvergens 2–4, Marcus "Lås denna" → **task-48** (8 låsta
+  byggkrav) + k04-snapshots (PR #190); proto-branch bevarad.
+- [x] **Stängningen, pre-kvittens** (2026-07-25, denna PR): skörd
+  **L339–L343** [UNIVERSAL ×5] + BUILD-LOG S86-post + sessionsdok
+  Del 3–4 med transcript-ref (1 328 rader / 3 580 380 byte,
+  wc-verifierat) + T86-rättelsen. Ingen ny ADR (öppet motiverat).
+  **NÄSTA: Marcus coverage-kvittens → `lifecycle: closed` +
+  rubrik-flipp → NY YTA (S87): Marcus-triage task-39–48 (48 =
+  markera-lägets bygge) · T85-korrigeringsfönstret ·
+  konventions-grillningen (/grill-me) · hub-lyftet L284–L343 ·
   dependabot #162/#65 · Marcus-moment: Update-klicket i claude.ai.**
 
 ### Session 85 ✅ AVSLUTAD (2026-07-25) — Dukningen för nattbygget: audit-läkningen + go-redo för S86

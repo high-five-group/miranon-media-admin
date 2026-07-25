@@ -2977,6 +2977,21 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-07-25-session-85.md`](../tasks/sessions/2026-07-25-session-85.md) (Del 1–3). **EJ fas-avslut.** Kvar: **S86 nattbygget på Marcus "go"** (ordern är batch-kvittot) → morgongranskning → T85-korrigeringsfönstret · konventions-grillningen (/grill-me) · hub-lyftet L284–L338 vid hub-sync-moment · dependabot-PR #162 Marcus-review · Marcus-moment: Update-klicket i claude.ai.
 
+## Session 86 — Nattbygget 6/6 + morgongranskningens tre fixvågor + markera-lägets prototyp (2026-07-25)
+
+**Commit-range:** `aa89793` (dok-födelse, PR #173) → stängnings-PR; PR-spann **#173–#191** (19 mergade, gröna per jobb). **Mål:** exekvera nattbatchen (S85-dukade ordern, Marcus "GO") + morgongranskningen. Ej byggplan-fas.
+
+- **NATTBATCHEN 6/6, noll halt:** 17.7 · 18.15 · 18.16 (F6, effort low) · 18.17 · 18.18 · 18.19 — alla i ADR-076-form med tvåstegs-stängning, CI grön FÖRSTA PASS i samtliga led, rött-först-bevis per kort, review-pilot ×6 (T86-loggen). Ny EF get-registration (staging). **v1-incidenten:** första batchens agent parkerade på Monitor-callback (L323-repris) → v2-omstart med **bygg/svans/verify-split** (17 agenter felfritt, ~6,7 h, ~2,3 M tokens) → **L340**. F6-rådata i T89 (utfall avvek inte från baslinjen).
+- **Morgongranskningen:** Done-flippar 17.7 + 18.15 · escapes-facit i T86 (3 design-escapes; 17.7-raden RÄTTAD 0→1 samma dag — filterranden fångades post-flipp) · 18.17-datafrågorna utredda (2 databrist → staging-fixturer [Greta-relationerna · Frida-formulär · 3 scrollposter] · 1 by design · 1 bas-gap task-44) · **CORS-allowlisten +5174/+5175** (digest-verifierad superset, trippel preflight).
+- **Fixvåg 1 (PR #188, 5 p):** 18.19-nowrap · 18.18-bredden · **§19 TVÅDIMENSIONELL (Marcus beslut A: intent × emphasis; Button solid/outline/subtle)** · "Frågor"-etiketten · 17.7-filterranden (until-found-klassen → **L341**).
+- **Fixvåg 2 (PR #189):** rubrik-utrymmet (RIM 3 på en rad) · sök-autofocus (rAF-racet rivet) · popover = triggerbredd (form B, research) · **app-bred overlay-förskjutning +11 px läkt** (scrollbar-gutter-klassen → **L342**) · lokal bevisform (preview-port + klonad auth + mockar).
+- **Fixvåg 3 (PR #191, Code inline):** sökrutans fokusring **deterministisk** (tre samverkande fokusregler kartlagda empiriskt → `.mm-fokusring-vid-fokus`, personsökrutans blå form) · grått rensa-kryss (RAC clear-Button) · väljarlistans scrollbar → scrollbar-inline · e2e-lås (computed ring + kryss).
+- **PROTOTYP-PASSET (Marcus-beordrat):** deltagarkortens bekräftelse-flöde — divergens a/b/c → **A (markera-läget)**, konvergens steg 2–4 → Marcus **"Lås denna"** → svar-fångst **task-48** (8 låsta byggkrav) + k04-snapshots (PR #190); proto-branch `proto/s86-deltagarkort-markering` (mergas aldrig). Ersätter §19-outline-formen på korten — interaktionsbyte, inte färgjustering.
+- **SKÖRD L339–L343** [UNIVERSAL ×5] + task-39–48 + T91 + **L343** (orkestratorns delade-arbetsyte-miss, öppet bokförd). Ingen ny ADR (öppet motiverat).
+- **Numrering efter S86:** nästa 87/079/L344/T92/f46/task-49.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-25-session-86.md`](../tasks/sessions/2026-07-25-session-86.md) (Del 1–4). **EJ fas-avslut.** Kvar: Marcus-triage av task-39–48 (task-48 = markera-lägets bygge) · T85-korrigeringsfönstret · konventions-grillningen (/grill-me) · hub-lyftet L284–L343 vid hub-sync-moment · dependabot #162/#65 · Marcus-moment: Update-klicket i claude.ai.
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

@@ -5080,3 +5080,21 @@ A/B-mätning av popover.x − trigger.x på bred (klassisk scrollbar) OCH smal
 (gutter frånvarande) viewport — båda ska vara 0. Följdlärdom i samma pass:
 mät ALDRIG textbredd (scrollWidth-klipptester) före `document.fonts.ready`
 — fallback-metriken är bredare och ger falska klipp i CI.
+
+### L343 — [UNIVERSAL] Orkestratorn får inte röra den delade arbetsytan medan en agent arbetar i den — branch-byten är kollisioner, inte bokföring
+
+Datum: 2026-07-25 (S86 granskningsvågen) | Källa: under våg 2 checkade
+orkestratorn ut docs-brancher i huvudrepot (svar-fångstens landning) medan
+fix-agenten arbetade där; agenten fann "arbetsträdet stod plötsligt på main"
+och felattribuerade det till Marcus (klass: orkestrerings-disciplin;
+ofarligt utfall denna gång — allt var pushat — men ren tur)
+
+Sekventiell agent-form delar EN arbetsyta. Orkestratorns git checkout,
+commit eller städning mitt i en agents körning är samma kollisionsklass
+som två agenter i samma träd — agentens diff-, status- och branch-antaganden
+invalideras tyst, och felattribueringen förorenar dess rapport. Regeln:
+under en agents arbetsyte-fönster gör orkestratorn ENDAST läsningar mot
+ytan; egna landningar går i EGEN worktree (docs-landningar är också
+landningar) eller väntar tills agentens fönster stängt. Parallell-formens
+worktree-disciplin (ADR-073) gäller alltså ÄVEN orkestratorn själv i
+sekventiell form.
