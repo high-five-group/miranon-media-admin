@@ -9,6 +9,7 @@ import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import type { PersonHistoryEntry } from '@/domain/schemas';
 import { RegistrationStatus } from '@/domain/types/Status';
+import { arGenomford } from '@/lib/genomford';
 import { kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
 import { DetaljGrupp } from './DetaljGrupp';
@@ -68,14 +69,14 @@ const ERFARENHETS_NIVAER: readonly {
 const MANAD_AR = new Intl.DateTimeFormat('sv-SE', { month: 'long', year: 'numeric' });
 
 /**
- * Personens GENOMFÖRDA, deduperade kurser ur de råa kurshistorik-raderna:
- * närvaro (Närvaropoäng=1) OCH Session ∈ {Dag 1, Föreläsning} — exakt basens
- * `Genomfört event (1 rad per event)`-formel (en rad per event, ingen
- * dubbelräkning av tvådagars-event). Kronologiskt (äldst först, som facit).
+ * Personens GENOMFÖRDA, deduperade kurser ur de råa kurshistorik-raderna via
+ * det DELADE `arGenomford`-predikatet (src/lib/genomford.ts — basens
+ * `Genomfört event (1 rad per event)`-formel; samma definition som
+ * RIM-behörigheten, task-18.17). Kronologiskt (äldst först, som facit).
  */
 function genomfordaKurser(historik: PersonHistoryEntry[] | null | undefined): PersonHistoryEntry[] {
   return (historik ?? [])
-    .filter((h) => h.narvaro && (h.session === 'Dag 1' || h.session === 'Föreläsning'))
+    .filter(arGenomford)
     .slice()
     .sort((a, b) => (a.datum ?? '').localeCompare(b.datum ?? ''));
 }

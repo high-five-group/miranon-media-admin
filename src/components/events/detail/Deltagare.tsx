@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
   BedDouble,
@@ -510,20 +510,35 @@ function MetaRad({ ikon: Ikon, children }: { ikon: LucideIcon; children: React.R
  *
  * ANMÄLD-RADENS LÄNKMÅL (AC #2, rev. 2026-07-23 review-våg 2): PRD task-18
  * p18:s olänkad-beslut REVS ÖPPET av Marcus — facit-K62-formen gäller:
- * understruken rad med "Öppna anmälan"-namnet. Anmälans egen sida finns ännu
- * inte (task-18.17 föder route + shape + vy), så raden är en no-op-knapp i
- * prototypens K26-grammatik tills 18.17 byter den till Link.
+ * understruken rad med "Öppna anmälan"-namnet. Sedan task-18.17 är raden en
+ * riktig Link till per-anmälan-detaljvyn (/event/$eventId/anmalan/
+ * $registrationId) med PREFETCH PÅ AVSIKT (INSTANT, ADR-078): get-registration
+ * (~1–3 s varm mot staging) startar vid hover/fokus — den tidigaste ärliga
+ * öppnings-signalen — i stället för vid klicket; React Query dedupar, och
+ * detaljvyns placeholder står dessutom på list-cachen den här sidan redan bär.
  */
 function DeltagarKort({
   reg,
+  eventId,
   onBekrafta,
   pending,
 }: {
   reg: Registration;
+  /** Eventets record-ID — Anmäld-radens länkmål (task-18.17). */
+  eventId: string;
   /** Kortets hantera-handling (task-18.6) — endast obekräftade kort bär den. */
   onBekrafta: (reg: Registration) => void;
   pending: boolean;
 }) {
+  const queryClient = useQueryClient();
+  const dataSource = useDataSource();
+  const forberedAnmalan = () => {
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.registrations.detail(reg.id),
+      queryFn: () => dataSource.fetchRegistration(reg.id),
+      staleTime: 30_000,
+    });
+  };
   const pill = KATEGORI_PILL[kategori(reg)];
   const namn = displayName(reg);
   const anmald = anmaldText(reg);
@@ -585,15 +600,18 @@ function DeltagarKort({
         className="flex flex-col gap-1 px-4 pt-2.5 pb-3 text-caption text-text-muted"
       >
         {anmald && (
-          <button
-            type="button"
+          <Link
+            to="/event/$eventId/anmalan/$registrationId"
+            params={{ eventId, registrationId: reg.id }}
             aria-label={`Öppna anmälan för ${namn}`}
             data-testid="deltagar-meta-rad"
+            onMouseEnter={forberedAnmalan}
+            onFocus={forberedAnmalan}
             className="flex items-center gap-1 self-start underline underline-offset-2"
           >
             <Inbox aria-hidden="true" size={12} className="shrink-0" />
             {anmald}
-          </button>
+          </Link>
         )}
         {bekraftelse && <MetaRad ikon={MailCheck}>{`Bekräftelse ${bekraftelse}`}</MetaRad>}
         {paminnelse && <MetaRad ikon={MailCheck}>{`Påminnelse ${paminnelse}`}</MetaRad>}
@@ -693,10 +711,13 @@ function BorOverRad({
 
 function DeltagarListan({
   rader,
+  eventId,
   onBekrafta,
   pendingId,
 }: {
   rader: Registration[];
+  /** Eventets record-ID — kortens Anmäld-rad länkar till anmälans sida (18.17). */
+  eventId: string;
   onBekrafta: (reg: Registration) => void;
   pendingId: string | null;
 }) {
@@ -704,7 +725,12 @@ function DeltagarListan({
     <ul className="flex flex-col gap-2.5">
       {rader.map((reg) => (
         <li key={reg.id}>
-          <DeltagarKort reg={reg} onBekrafta={onBekrafta} pending={pendingId === reg.id} />
+          <DeltagarKort
+            reg={reg}
+            eventId={eventId}
+            onBekrafta={onBekrafta}
+            pending={pendingId === reg.id}
+          />
         </li>
       ))}
     </ul>
@@ -944,7 +970,12 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                 </p>
               )
             ) : traffar.length > 0 ? (
-              <DeltagarListan rader={traffar} onBekrafta={bekraftaEn} pendingId={pendingId} />
+              <DeltagarListan
+                rader={traffar}
+                eventId={event.id}
+                onBekrafta={bekraftaEn}
+                pendingId={pendingId}
+              />
             ) : (
               <p className="py-2 text-small text-text-secondary">Inga träffar i denna kategori.</p>
             )}
@@ -973,6 +1004,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                 <div id={`${panelId}-obekraftade`} hidden={!oppna.obekraftade} className="pt-1.5">
                   <DeltagarListan
                     rader={obekraftade}
+                    eventId={event.id}
                     onBekrafta={bekraftaEn}
                     pendingId={pendingId}
                   />
@@ -995,6 +1027,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                 <div id={`${panelId}-bekraftade`} hidden={!oppna.bekraftade} className="pt-1.5">
                   <DeltagarListan
                     rader={bekraftade}
+                    eventId={event.id}
                     onBekrafta={bekraftaEn}
                     pendingId={pendingId}
                   />

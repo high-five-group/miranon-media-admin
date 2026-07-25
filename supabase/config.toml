@@ -37,6 +37,11 @@ verify_jwt = true
 [functions.get-registrations]
 verify_jwt = true
 
+# Per-anmälan-detaljshapen (task-18.17): single-get som återanvänder
+# get-registrations läs-kärna (_shared/registration-read.ts).
+[functions.get-registration]
+verify_jwt = true
+
 [functions.update-record]
 verify_jwt = true
 

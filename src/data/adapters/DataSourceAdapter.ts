@@ -13,6 +13,7 @@ import type {
   EventFormat,
   Intresserad,
   PersonDetail,
+  RegistrationDetail,
   SavedSegment,
   SaveSegmentInput,
   SegmentResult,
@@ -75,6 +76,15 @@ export interface DataSourceAdapter {
    * server-side. Returnerar den skapade anmälan i domän-shape (Fas 6c).
    */
   createRegistration(input: CreateRegistrationInput): Promise<Registration>;
+
+  /**
+   * Hämta en enskild anmälan i detalj-shape (task-18.17). get-registration-EF:en
+   * återanvänder get-registrations läs-kärna (samma mappning + person-berikning)
+   * och utökar med detaljfälten: autonummer-ID, formulär + options-ID, villkor,
+   * event-lookups, deadline-formlerna och medföljande-relationen åt BÅDA håll.
+   * 404 (okänt ID) propagerar som `EdgeFunctionError` med `status: 404`.
+   */
+  fetchRegistration(id: string): Promise<RegistrationDetail>;
 
   /** Hämta deltaganden (närvaro) för ett event */
   fetchAttendance(filters?: AttendanceFilters): Promise<Attendance[]>;

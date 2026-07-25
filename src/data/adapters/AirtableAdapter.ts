@@ -25,6 +25,8 @@ import {
   type PersonDetail,
   PersonDetailSchema,
   PersonSchema,
+  type RegistrationDetail,
+  RegistrationDetailSchema,
   RegistrationSchema,
   type SavedSegment,
   SavedSegmentSchema,
@@ -161,6 +163,21 @@ export class AirtableAdapter implements DataSourceAdapter {
       ...(input.notering != null ? { notering: input.notering } : {}),
     });
     return RegistrationSchema.parse(data.registration);
+  }
+
+  /**
+   * Hämta en enskild anmälan i detalj-shape (task-18.17). get-registration-EF:en
+   * återanvänder get-registrations läs-kärna (`_shared/registration-read.ts` —
+   * samma mappning + person-berikning, aldrig en parallell mapper) och utökar
+   * med detaljfälten (autonummer-ID, formulär + options-ID, villkor,
+   * event-lookups, deadline-formlerna, medföljande-relationen åt båda håll).
+   * `.parse()` validerar vid datagränsen (ADR-026; single, ej z.array). 404
+   * från EF:en (okänt ID) propagerar som `EdgeFunctionError` med `status: 404`
+   * — vyn skiljer ej-funnen från övriga fel på den (get-person-mönstret).
+   */
+  async fetchRegistration(id: string): Promise<RegistrationDetail> {
+    const data = await callEdgeFunction<{ registration: unknown }>('get-registration', { id });
+    return RegistrationDetailSchema.parse(data.registration);
   }
 
   /**

@@ -2,7 +2,7 @@ import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-q
 import { displayName } from '@/components/registrations/registration-display';
 import { useDataSource } from '@/data/useDataSource';
 import type { Registration } from '@/domain/models/Registration';
-import type { ConfirmRegistrationsResult } from '@/domain/schemas';
+import type { ConfirmRegistrationsResult, RegistrationDetail } from '@/domain/schemas';
 import { RegistrationStatus } from '@/domain/types/Status';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
 import { queryKeys } from '@/queries/keys';
@@ -110,6 +110,82 @@ export function useSendConfirmation(eventId: string) {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: key });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(eventId) });
+    },
+  });
+}
+
+/**
+ * ENSKILD bekräftelse från PER-ANMÄLAN-DETALJVYN (task-18.17; Kontakt-
+ * sektionens Skicka bekräftelse-knapp) — OPTIMISTISK, samma server-operation
+ * och samma spegel-patch som kortets `useSendConfirmation`, men mot
+ * DETALJ-cachen (`registrations.detail`) i stället för event-listans. Egen
+ * hook i stället för en parameter-gren: cache-shaperna är olika
+ * (RegistrationDetail-singel kontra Registration[]-lista) och en delad hook
+ * hade burit båda formerna i varje anrop.
+ *
+ * Tidslinjen ("Bekräftelsemail skickat") och status-badgen härleds ur samma
+ * cache-rad — den optimistiska patchen driver hela vyn utan extra state.
+ * onSettled invaliderar även event-listan + event-detaljen (samma skäl som
+ * kortets hook: gruppering respektive 'Bekräftad beläggning (%)').
+ */
+export function useSendConfirmationFromDetail(eventId: string, registrationId: string) {
+  const queryClient = useQueryClient();
+  const dataSource = useDataSource();
+  const detailKey = queryKeys.registrations.detail(registrationId);
+
+  return useMutation<
+    ConfirmRegistrationsResult,
+    Error,
+    { registration: Registration },
+    { previous: unknown }
+  >({
+    mutationFn: () =>
+      dataSource.confirmRegistrations({
+        registrationIds: [registrationId],
+        idempotencyKey: crypto.randomUUID(),
+      }),
+
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: detailKey });
+      const previous = queryClient.getQueryData(detailKey);
+      // Typad mot DETALJ-shapen (review-fynd F5): nyckeln bär
+      // RegistrationDetail — en Registration-typning hade släppt igenom en
+      // framtida patch som tyst tappar detalj-nycklarna. I placeholder-läget
+      // är cachen tom (old undefined) → patchen no-op:ar och refetchen i
+      // onSettled konvergerar — aldrig ett fabricerat cache-objekt.
+      queryClient.setQueryData<RegistrationDetail>(detailKey, (old) =>
+        old
+          ? {
+              ...old,
+              status: RegistrationStatus.BEKRAFTAD,
+              bekraftelseSkickad: new Date().toISOString(),
+            }
+          : old,
+      );
+      return { previous };
+    },
+
+    onError: (_err, { registration }, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(detailKey, context.previous);
+      }
+      alertScreenReader(
+        `Bekräftelsen till ${displayName(registration)} kunde inte skickas. Försök igen.`,
+      );
+    },
+
+    onSuccess: (result, { registration }) => {
+      alertScreenReader(
+        result.confirmed.length > 0
+          ? `Bekräftelse skickad till ${displayName(registration)}.`
+          : bekraftelseUtfall(result),
+      );
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: detailKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.registrations.byEvent(eventId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(eventId) });
     },
   });

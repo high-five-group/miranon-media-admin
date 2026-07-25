@@ -13,6 +13,7 @@ import type {
   EventFormat,
   Intresserad,
   PersonDetail,
+  RegistrationDetail,
   SavedSegment,
   SaveSegmentInput,
   SegmentResult,
@@ -67,6 +68,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async createRegistration(_input: CreateRegistrationInput): Promise<Registration> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchRegistration(_id: string): Promise<RegistrationDetail> {
     throw new Error(NOT_IMPLEMENTED);
   }
 
