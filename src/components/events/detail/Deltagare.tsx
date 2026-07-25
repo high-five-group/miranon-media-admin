@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import {
   BedDouble,
   Check,
+  CheckCheck,
   ChevronDown,
   Clock,
   History,
@@ -11,8 +12,9 @@ import {
   Mail,
   MailCheck,
   TriangleAlert,
+  X,
 } from 'lucide-react';
-import { useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
 import { Dialog, DialogTrigger } from '@/components/primitives/Dialog';
@@ -21,11 +23,7 @@ import { Modal } from '@/components/primitives/Modal';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { displayName, inskickadTid } from '@/components/registrations/registration-display';
-import {
-  bekraftelseUtfall,
-  useConfirmAll,
-  useSendConfirmation,
-} from '@/data/mutations/registrationConfirmation';
+import { bekraftelseUtfall, useConfirmAll } from '@/data/mutations/registrationConfirmation';
 import { useSetBorOver } from '@/data/mutations/registrationLodging';
 import { useUpdateEvent } from '@/data/mutations/useUpdateEvent';
 import { useDataSource } from '@/data/useDataSource';
@@ -52,9 +50,21 @@ import { DAGMANAD } from './datumSpann';
  *
  * PERSONKORTEN (task-18.5; S73-facit K45/K62) bor i `DeltagarKort` nedan.
  *
- * HANTERA-FLÖDET (task-18.6; S73-facit K44/K46/K47/K48) bor här sedan skivan efter:
- * kortets Skicka bekräftelse-knapp, Bekräfta alla-pillen med kontrollfråga på
- * Obekräftade-rubriken, och auto-utskicks-krysset i signal-slotten.
+ * HANTERA-FLÖDET — FACIT-REVIDERAT av task-48 (S86-prototypen, Marcus-låst
+ * 2026-07-25). Tre former ur task-18.6 är RIVNA och kommer inte tillbaka:
+ *   · K46 — personkortets "Skicka bekräftelse" i kortfoten. Solid eller
+ *     outline spelade ingen roll: en knapp per kort dräpte kortens läsbarhet.
+ *   · K47/K48 — "Bekräfta alla"-pillen på Obekräftade-rubriken med sin
+ *     kontrollfråga. Den bekräftade ALLA eller inget; urvalet var osynligt.
+ *   · Med K46 följde `useSendConfirmation` (den optimistiska enskilda vägen
+ *     från eventsidan). 1-klicks-genvägen byggs på HEM-vyn i stället —
+ *     Marcus-beslut 2 på kortet. Skriv INTE in anmälans egen sida här.
+ *
+ * I deras ställe: ett explicit MARKERA-LÄGE (`useMarkeringsLage`) där hela
+ * kortet är klickyta med checkbox-semantik, en batch-bar med live-räknare och
+ * breddlås, och kontrollfrågan kvar på massmutationen. Vägen in är ENBART
+ * Markera-knappen på rubrikraden; Esc och Avbryt är vägarna ut. Auto-utskicks-
+ * krysset (K44) i signal-slotten är orört.
  *
  * SKELETT-AVGRÄNSNINGEN (öppet bokförd): Bor över-arbetsraden är task-18.7. Bor
  * över-raden saknas HELT ur summeringen (bas-fältet föds i 18.7 — en rad som
@@ -308,69 +318,196 @@ function GruppRubrik({
   );
 }
 
+/** Böjer "anmälan/anmälningar" efter antal — svenskan har ingen 0-singular. */
+function anmalanOrd(antal: number): string {
+  return antal === 1 ? 'anmälan' : 'anmälningar';
+}
+
 /**
- * BEKRÄFTA ALLA (K47/K48) — sidans positiva massåtgärd i success-intenten med
- * kuvertet (grammatiken: Mail = skicka-handling, MailCheck = skickat-status).
- * §19 tvådimensionell (Marcus beslut A 2026-07-25): pillen sitter på grupp-
- * rubrikens RAD (toolbar-ytklassen) → emphasis=subtle kompakt — intent-färgen
- * bärs av text + tonplatta, aldrig solid fyllnad på raden. Dialogens
- * bekräfta-knapp är dialog-actions (primär handlingsyta) och förblir solid.
+ * MARKERA-LÄGETS TILLSTÅNDSMASKIN (task-48).
  *
- * KONTROLLFRÅGAN är obligatorisk (PRD task-18 beslut 7 + 20: confirm-grind på varje
- * massmutation) — pillen ÖPPNAR bara dialogen; ingenting skickas förrän Lotta
- * bekräftat. Bulken är pessimistisk: knappen står kvar i "Skickar…" tills servern
- * svarat, så ett halvt utfall aldrig visas som helt.
+ * Ett smalt gränssnitt över en icke-trivial tillståndsmängd: läget självt,
+ * urvalet, och de avledningar UI:t behöver (antal, allaValda). Anropare rör
+ * aldrig `Set`-mekaniken — de säger vad som ska hända, inte hur.
+ *
+ * SANERINGEN är hela skälet till att detta är en hook och inte två `useState`:
+ * kandidatmängden krymper under läget (en batch bekräftar korten och de lämnar
+ * kön), och ett urval som pekar på försvunna record-ID:n skulle räkna fel i
+ * batch-barens etikett och skicka spök-ID:n till servern. Effekten skär bort
+ * det som inte längre finns — men bara när något FAKTISKT försvunnit, annars
+ * hade varje render skapat ett nytt Set och loopat.
  */
-function BekraftaAlla({
+function useMarkeringsLage(kandidatIds: readonly string[]) {
+  const [aktivt, setAktivt] = useState(false);
+  const [valda, setValda] = useState<ReadonlySet<string>>(() => new Set());
+
+  const kandidatNyckel = kandidatIds.join('|');
+  useEffect(() => {
+    // Töms kön helt finns ingen yta kvar att markera i — läget stänger sig
+    // självt i stället för att stå aktivt mot ingenting (review-fynd 3).
+    if (kandidatNyckel === '') {
+      setAktivt(false);
+      setValda((nu) => (nu.size === 0 ? nu : new Set()));
+      return;
+    }
+    const kvar = new Set(kandidatNyckel.split('|'));
+    setValda((nu) => {
+      if (nu.size === 0) return nu;
+      const sanerat = new Set([...nu].filter((id) => kvar.has(id)));
+      return sanerat.size === nu.size ? nu : sanerat;
+    });
+  }, [kandidatNyckel]);
+
+  const stang = useCallback(() => {
+    setAktivt(false);
+    setValda(new Set());
+  }, []);
+
+  // Esc lämnar läget (byggkrav 7). Dokument-nivå: läget äger hela kön, och
+  // fokus kan stå på vilket kort som helst när Lotta vill backa ur.
+  useEffect(() => {
+    if (!aktivt) return;
+    const vidTangent = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') stang();
+    };
+    document.addEventListener('keydown', vidTangent);
+    return () => document.removeEventListener('keydown', vidTangent);
+  }, [aktivt, stang]);
+
+  return {
+    aktivt,
+    valda,
+    antal: valda.size,
+    allaValda: kandidatIds.length > 0 && valda.size === kandidatIds.length,
+    oppna: useCallback(() => setAktivt(true), []),
+    stang,
+    vaxla: useCallback((id: string, vald: boolean) => {
+      setValda((nu) => {
+        const next = new Set(nu);
+        if (vald) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+    }, []),
+    markeraAlla: useCallback(() => setValda(new Set(kandidatIds)), [kandidatIds]),
+    rensa: useCallback(() => setValda(new Set()), []),
+  };
+}
+
+/**
+ * BATCH-BAREN (task-48 byggkrav 3) — markera-lägets handlingsyta, ovanför kön.
+ *
+ * §19: solid success på bekräfta-knappen är förenligt med emphasis-regeln —
+ * baren ÄR blockets primära handlingsyta (inte en kort- eller radyta), och
+ * handlingen når utomstående (bekräftelsemail). Markera alla är neutral
+ * stödform (secondary), Rensa lågviktad (ghost) och dyker upp först när det
+ * finns något att rensa.
+ *
+ * BREDDLÅSET: etiketten växlar mellan "0/1/6/99 anmälningar" och skulle annars
+ * få knappen att ändra bredd under fingret vid varje klick. En osynlig
+ * platshållare i tvåsiffrig maxform sätter bredden en gång; den synliga texten
+ * ligger i samma grid-cell ovanpå med `tabular-nums` så siffran inte heller
+ * rör sig inom sin egen bredd. Platshållaren är `aria-hidden` — knappens
+ * tillgängliga namn är den SYNLIGA texten.
+ *
+ * KONTROLLFRÅGAN (byggkrav 6, PRD task-18 beslut 7 + 20) sitter på
+ * bekräfta-knappen: massmutationer passerar alltid en confirm-grind. Bulken är
+ * pessimistisk — knappen står i "Skickar…" tills servern svarat, så ett halvt
+ * utfall aldrig visas som helt.
+ */
+function MarkeringsBatchBar({
   antal,
+  totalt,
+  allaValda,
   pending,
   onBekrafta,
+  onMarkeraAlla,
+  onRensa,
 }: {
   antal: number;
+  totalt: number;
+  allaValda: boolean;
   pending: boolean;
   onBekrafta: () => Promise<void>;
+  onMarkeraAlla: () => void;
+  onRensa: () => void;
 }) {
   return (
-    <DialogTrigger>
+    <div data-testid="markering-batchbar" className="flex flex-wrap items-center gap-2 pb-2.5">
+      <DialogTrigger>
+        <Button intent="success" size="sm" isDisabled={antal === 0 || pending}>
+          <Mail aria-hidden="true" size={14} className="shrink-0" />
+          <span className="grid">
+            {/* Breddlåsets platshållare — tvåsiffrig maxform, aldrig läst av AT. */}
+            <span
+              aria-hidden="true"
+              className="invisible col-start-1 row-start-1 whitespace-nowrap"
+            >
+              Bekräfta 99 anmälningar
+            </span>
+            <span className="col-start-1 row-start-1 whitespace-nowrap tabular-nums">
+              {`Bekräfta ${antal} ${anmalanOrd(antal)}`}
+            </span>
+          </span>
+        </Button>
+        {/* isKeyboardDismissDisabled under sändning (review-fynd 5): båda
+            dialogknapparna är isDisabled={pending} för att skydda en pågående
+            batch — utan detta gick Escape förbi spärren, dialogen försvann mitt
+            i "Skickar…" och Lotta stod utan återkoppling. */}
+        <Modal isDismissable isKeyboardDismissDisabled={pending}>
+          <Dialog
+            title="Skicka bekräftelse?"
+            actions={({ close }) => (
+              <>
+                <Button intent="ghost" onPress={close} isDisabled={pending}>
+                  Avbryt
+                </Button>
+                <Button
+                  intent="success"
+                  isDisabled={pending}
+                  onPress={async () => {
+                    await onBekrafta();
+                    close();
+                  }}
+                >
+                  {pending
+                    ? 'Skickar…'
+                    : `Skicka ${antal} ${antal === 1 ? 'bekräftelse' : 'bekräftelser'}`}
+                </Button>
+              </>
+            )}
+          >
+            {`Bekräftelsemailet skickas till ${antal} obekräftad${antal === 1 ? '' : 'a'} ${anmalanOrd(
+              antal,
+            )}, och ${antal === 1 ? 'anmälan blir Bekräftad' : 'anmälningarna blir Bekräftade'}. Det går inte att ångra.`}
+          </Dialog>
+        </Modal>
+      </DialogTrigger>
       <Button
-        intent="success"
-        emphasis="subtle"
+        intent="secondary"
         size="sm"
-        className="shadow-sm"
-        aria-label="Bekräfta alla obekräftade"
+        isDisabled={allaValda || pending}
+        onPress={onMarkeraAlla}
       >
-        <Mail aria-hidden="true" size={14} className="shrink-0" />
-        Bekräfta alla
+        Markera alla
       </Button>
-      <Modal isDismissable>
-        <Dialog
-          title="Skicka bekräftelse till alla?"
-          actions={({ close }) => (
-            <>
-              <Button intent="ghost" onPress={close} isDisabled={pending}>
-                Avbryt
-              </Button>
-              <Button
-                intent="success"
-                isDisabled={pending}
-                onPress={async () => {
-                  await onBekrafta();
-                  close();
-                }}
-              >
-                {pending
-                  ? 'Skickar…'
-                  : `Skicka ${antal} ${antal === 1 ? 'bekräftelse' : 'bekräftelser'}`}
-              </Button>
-            </>
-          )}
-        >
-          {`Bekräftelsemailet skickas till ${antal} obekräftade ${
-            antal === 1 ? 'anmälan' : 'anmälningar'
-          }, och anmälningarna blir Bekräftade. Det går inte att ångra.`}
-        </Dialog>
-      </Modal>
-    </DialogTrigger>
+      {antal > 0 && (
+        <Button intent="ghost" size="sm" isDisabled={pending} onPress={onRensa}>
+          Rensa
+        </Button>
+      )}
+      {/* Live-räknaren: seende ser antalet i knappen, skärmläsaren får det här.
+          `polite` — urvalet är löpande arbete, aldrig ett avbrott värt assertive. */}
+      <span
+        data-testid="markering-live"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {`${antal} av ${totalt} markerade`}
+      </span>
+    </div>
   );
 }
 
@@ -522,18 +659,30 @@ function MetaRad({ ikon: Ikon, children }: { ikon: LucideIcon; children: React.R
  * öppnings-signalen — i stället för vid klicket; React Query dedupar, och
  * detaljvyns placeholder står dessutom på list-cachen den här sidan redan bär.
  */
-function DeltagarKort({
+/**
+ * Kortets INNEHÅLL — delat av båda lägena så formen aldrig kan driva isär.
+ *
+ * `lankat` styr AFFORDANSEN, inte innehållet: i markera-läget vilar person-
+ * och anmälnings-länkarna (Marcus-beslut 1, väg A — iOS edit-mode-
+ * konventionen) och samma text renderas som ren text. Det är också det som
+ * gör hela kortet till en laglig checkbox: utan ankare inuti bryts aldrig
+ * L303 (interaktivt bor aldrig i interaktivt).
+ *
+ * `vald` styr pill-raden: Obekräftad-pillen VIKER för markeringen (byggkrav 2
+ * — ingen 'Vald'-pill ersätter den) och lämnar plats åt WCAG 1.4.1-bäraren,
+ * så att valt tillstånd aldrig vilar på färgen ensam. Kategori-pillen står
+ * kvar i båda lägena: vägen in är inte ett urvalstillstånd.
+ */
+function KortInnehall({
   reg,
   eventId,
-  onBekrafta,
-  pending,
+  lankat,
+  vald,
 }: {
   reg: Registration;
-  /** Eventets record-ID — Anmäld-radens länkmål (task-18.17). */
   eventId: string;
-  /** Kortets hantera-handling (task-18.6) — endast obekräftade kort bär den. */
-  onBekrafta: (reg: Registration) => void;
-  pending: boolean;
+  lankat: boolean;
+  vald: boolean;
 }) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
@@ -565,12 +714,9 @@ function DeltagarKort({
   );
 
   return (
-    <div
-      data-testid="deltagar-kort"
-      className="flex flex-col rounded-xl border border-(--mm-navcard-border) bg-surface contrast-more:border-(--mm-navcard-border-contrast)"
-    >
+    <>
       <div className="flex items-start justify-between gap-3 px-4 pt-3">
-        {reg.personId ? (
+        {lankat && reg.personId ? (
           <Link
             to="/personer/$personId"
             params={{ personId: reg.personId }}
@@ -588,7 +734,18 @@ function DeltagarKort({
             Staplade pillar i högerkanten är den graciösa degraderingen; på
             bredare ytor står de kvar på EN rad som i facit. */}
         <span className="flex max-w-[45%] shrink-0 flex-wrap items-center justify-end gap-1.5">
-          {!arBekraftad(reg) && (
+          {vald && (
+            // WCAG 1.4.1-bäraren (byggkrav 7): valt tillstånd får aldrig vila
+            // på grönt ensamt. Glyfen bor i pill-radens FRIGJORDA plats —
+            // Marcus-låsta formen är orörd, ingen ny yta tillkommer.
+            <CheckCheck
+              data-testid="markering-check"
+              aria-hidden="true"
+              size={16}
+              className="shrink-0 text-success"
+            />
+          )}
+          {!arBekraftad(reg) && !vald && (
             <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
               Obekräftad
             </span>
@@ -604,20 +761,23 @@ function DeltagarKort({
         data-testid="deltagar-metayta"
         className="flex flex-col gap-1 px-4 pt-2.5 pb-3 text-caption text-text-muted"
       >
-        {anmald && (
-          <Link
-            to="/event/$eventId/anmalan/$registrationId"
-            params={{ eventId, registrationId: reg.id }}
-            aria-label={`Öppna anmälan för ${namn}`}
-            data-testid="deltagar-meta-rad"
-            onMouseEnter={forberedAnmalan}
-            onFocus={forberedAnmalan}
-            className="flex items-center gap-1 self-start underline underline-offset-2"
-          >
-            <Inbox aria-hidden="true" size={12} className="shrink-0" />
-            {anmald}
-          </Link>
-        )}
+        {anmald &&
+          (lankat ? (
+            <Link
+              to="/event/$eventId/anmalan/$registrationId"
+              params={{ eventId, registrationId: reg.id }}
+              aria-label={`Öppna anmälan för ${namn}`}
+              data-testid="deltagar-meta-rad"
+              onMouseEnter={forberedAnmalan}
+              onFocus={forberedAnmalan}
+              className="flex items-center gap-1 self-start underline underline-offset-2"
+            >
+              <Inbox aria-hidden="true" size={12} className="shrink-0" />
+              {anmald}
+            </Link>
+          ) : (
+            <MetaRad ikon={Inbox}>{anmald}</MetaRad>
+          ))}
         {bekraftelse && <MetaRad ikon={MailCheck}>{`Bekräftelse ${bekraftelse}`}</MetaRad>}
         {paminnelse && <MetaRad ikon={MailCheck}>{`Påminnelse ${paminnelse}`}</MetaRad>}
         {eventinfo && <MetaRad ikon={MailCheck}>{`Eventinfo ${eventinfo}`}</MetaRad>}
@@ -630,32 +790,77 @@ function DeltagarKort({
           </span>
         )}
       </div>
-      {/* K46 (hantera-handlingen, task-18.6): obekräftat kort bär Skicka
-          bekräftelse i kortbotten — UTANFÖR person-länken (L303), som dess
-          syskon. Bekräftade kort bär den ALDRIG: handlingen är gjord, och en
-          knapp som skickar om mailet är inte kortets jobb.
-          §19 tvådimensionell (Marcus beslut A 2026-07-25, Greta-fallet):
-          intent=success (handlingen NÅR UTOMSTÅENDE) × emphasis=outline —
-          kortets ytklass bär intent-färgen i text + kant, ALDRIG solid
-          fyllnad inuti kort. Kortfotens geometri (rounded-b-xl, full bredd,
-          py-2.5) uttrycks via className, aldrig handvirade tokens
-          (review-piloten 18.16: en token-kopia driver isär tyst). */}
-      {!arBekraftad(reg) && (
-        <Button
-          intent="success"
-          emphasis="outline"
-          aria-label={`Skicka bekräftelse till ${namn}`}
-          isDisabled={pending}
-          onPress={() => onBekrafta(reg)}
-          className="w-full rounded-t-none rounded-b-xl py-2.5 font-medium text-small"
-        >
-          {/* Kuvertet — samma ikon som betalningarnas Påminn och utskicksraderna
-              (Mail = skicka-handling, MailCheck = skickat-status, K47). */}
-          <Mail aria-hidden="true" size={14} className="shrink-0" />
-          {pending ? 'Skickar…' : 'Skicka bekräftelse'}
-        </Button>
-      )}
+    </>
+  );
+}
+
+/**
+ * VILANDE personkort (task-18.5; S73-facit K45 + K62) — kortet Lotta läser.
+ *
+ * K46-RIVNINGEN (task-48 byggkrav 2, öppet bokförd): kortfotens "Skicka
+ * bekräftelse" är BORTA, även här i vilande läge. Enskild bekräftelse från
+ * eventsidan finns inte längre — bekräftelser skickas i batch via markera-
+ * läget, och 1-klicks-genvägen byggs på HEM-vyn där den hör hemma
+ * (Marcus-beslut 2 på kortet). Skriv INTE in anmälans egen sida som
+ * ersättare här.
+ *
+ * Kortet behåller ALLT annat: person-länken på identitetszonen, Anmäld-radens
+ * länk med prefetch på avsikt (18.17/ADR-078), historikraden (K45), pillar och
+ * metayta. Prototypens avsaknad av dem var en förenkling, inte facit.
+ */
+function DeltagarKort({ reg, eventId }: { reg: Registration; eventId: string }) {
+  return (
+    <div
+      data-testid="deltagar-kort"
+      className="flex flex-col rounded-xl border border-(--mm-navcard-border) bg-surface contrast-more:border-(--mm-navcard-border-contrast)"
+    >
+      <KortInnehall reg={reg} eventId={eventId} lankat vald={false} />
     </div>
+  );
+}
+
+/**
+ * MARKERBART kort (task-48 byggkrav 2) — hela kortet ÄR kryssrutan.
+ *
+ * Rå RAC Checkbox per BorOverRad-precedenten (Marcus-beslut 1): länkarna vilar
+ * i läget, så ingen GridList och ingen ny primitiv behövs — kravet på
+ * "aria-multiselectable-form" uppfylls av N fristående checkboxar med var sitt
+ * tillgängliga namn. Namnet kommer ur kortets egen text (namn + e-post +
+ * metarader), vilket är exakt vad en skärmläsaranvändare behöver för att veta
+ * VAD som markeras.
+ *
+ * Formen: `--mm-success-bg` platta + `--mm-success` kant när vald, annars
+ * kortets vanliga yta. Kanten finns i BÅDA lägena så geometrin aldrig hoppar
+ * vid val — bara dess färg byts.
+ */
+function MarkerbartKort({
+  reg,
+  eventId,
+  vald,
+  onChange,
+}: {
+  reg: Registration;
+  eventId: string;
+  vald: boolean;
+  onChange: (vald: boolean) => void;
+}) {
+  return (
+    <Checkbox
+      data-testid="markerbart-kort"
+      isSelected={vald}
+      onChange={onChange}
+      // contrast-more-kanten bor i VARDERA grenen, aldrig i bas-klasserna:
+      // Tailwind-varianten vinner över den ovillkorade `border-(--mm-success)`
+      // och gav annars valda kort den NEUTRALA kortkanten i förhöjd kontrast —
+      // exakt de användare regeln finns för tappade urvals-signalen (review-fynd 6).
+      className={`flex cursor-pointer flex-col rounded-xl border ${
+        vald
+          ? 'border-(--mm-success) bg-(--mm-success-bg) contrast-more:border-(--mm-success)'
+          : 'border-(--mm-navcard-border) bg-surface contrast-more:border-(--mm-navcard-border-contrast)'
+      }`}
+    >
+      <KortInnehall reg={reg} eventId={eventId} lankat={false} vald={vald} />
+    </Checkbox>
   );
 }
 
@@ -716,28 +921,60 @@ function BorOverRad({
   );
 }
 
+/**
+ * Kortlistan. `markering` != null ⇒ markera-läget: korten blir kryssrutor.
+ *
+ * `rullande` (byggkrav 4) ger OBEKRÄFTADE-kön sin egen höjd: ~3 kort syns och
+ * klippet mitt i det fjärde ÄR scroll-affordansen — kön får aldrig trycka ned
+ * resten av sidan när inflödet är stort. Rullningsytan är ett riktigt tab-stopp
+ * (axe scrollable-region-focusable; NyaAnmalningarCard-precedenten) så
+ * tangentbordsanvändare når korten längre ned.
+ */
 function DeltagarListan({
   rader,
   eventId,
-  onBekrafta,
-  pendingId,
+  rullande = false,
+  testId,
+  markering,
 }: {
   rader: Registration[];
   /** Eventets record-ID — kortens Anmäld-rad länkar till anmälans sida (18.17). */
   eventId: string;
-  onBekrafta: (reg: Registration) => void;
-  pendingId: string | null;
+  /** Begränsa höjden till ~3 kort och rulla inline (byggkrav 4). */
+  rullande?: boolean;
+  testId?: string;
+  /** Markera-lägets koppling; null = vilande läge med länkar. */
+  markering?: {
+    valda: ReadonlySet<string>;
+    vaxla: (id: string, vald: boolean) => void;
+  } | null;
 }) {
+  const rullKlasser = rullande
+    ? 'focus-ring-inset scrollbar-inline max-h-[25.5rem] overflow-y-auto pr-2.5'
+    : '';
+  // Tabb-stoppet hör till RULLNINGEN, inte till listan: under fyra kort ryms
+  // allt och ett fokuserbart område utan funktion vore ett tomt stopp i
+  // tangentbordsflödet (review-småfynd). Fyra är gränsen där max-h börjar bita.
+  const kanRulla = rullande && rader.length > 3;
   return (
-    <ul className="flex flex-col gap-2.5">
+    <ul
+      data-testid={testId}
+      tabIndex={kanRulla ? 0 : undefined}
+      aria-label={kanRulla ? 'Obekräftade anmälningar' : undefined}
+      className={`flex flex-col gap-2.5 ${rullKlasser}`}
+    >
       {rader.map((reg) => (
         <li key={reg.id}>
-          <DeltagarKort
-            reg={reg}
-            eventId={eventId}
-            onBekrafta={onBekrafta}
-            pending={pendingId === reg.id}
-          />
+          {markering ? (
+            <MarkerbartKort
+              reg={reg}
+              eventId={eventId}
+              vald={markering.valda.has(reg.id)}
+              onChange={(vald) => markering.vaxla(reg.id, vald)}
+            />
+          ) : (
+            <DeltagarKort reg={reg} eventId={eventId} />
+          )}
         </li>
       ))}
     </ul>
@@ -795,7 +1032,12 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
   const [borOverSnapshot, setBorOverSnapshot] = useState<Set<string> | null>(null);
   const lodging = useSetBorOver(event.id);
 
-  const vaxlaFilter = (f: SummeringsFilter) =>
+  const vaxlaFilter = (f: SummeringsFilter) => {
+    // Ett filter ERSÄTTER hela accordion-grenen som bär markera-läget. Läts
+    // läget leva vidare osynligt skulle det återuppstå med gamla val när
+    // filtret rensas, och dess Esc-lyssnare äta Escape under tiden
+    // (review-fynd 3). Läget är bundet till sin yta: försvinner ytan, stängs det.
+    markering.stang();
     setFilter((nu) => {
       const next = nu === f ? null : f;
       if (f === 'borOver' && next === 'borOver') {
@@ -803,6 +1045,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
       }
       return next;
     });
+  };
 
   const toggleBorOver = (reg: Registration, borOver: boolean) =>
     lodging.mutate({ registration: reg, borOver });
@@ -817,32 +1060,53 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
         )
       : [];
 
-  // Hantera-flödet (task-18.6): enskild bekräftelse OPTIMISTISK, bulken PESSIMISTISK
-  // bakom kontrollfrågan. Båda går genom samma server-operation.
-  const enskild = useSendConfirmation(event.id);
+  // Hantera-flödet (task-48): ENDAST batch, alltid pessimistiskt bakom
+  // kontrollfrågan. Den enskilda optimistiska vägen (useSendConfirmation) revs
+  // med K46 — ett halvt bulk-utfall får aldrig visas som helt, och en
+  // 1-klicks-genväg hör hemma på Hem-vyn, inte i eventsidans arbetskö.
   const bulk = useConfirmAll(event.id);
   const [utfall, setUtfall] = useState<string | null>(null);
-  const pendingId = enskild.isPending ? (enskild.variables?.registration.id ?? null) : null;
 
-  const bekraftaEn = (reg: Registration) => {
-    setUtfall(null);
-    enskild.mutate(
-      { registration: reg },
-      {
-        onError: () => setUtfall(`Bekräftelsen till ${displayName(reg)} kunde inte skickas.`),
-        onSuccess: (result) => {
-          if (result.confirmed.length === 0) setUtfall(bekraftelseUtfall(result));
-        },
-      },
-    );
-  };
+  // Markera-lägets kandidater = kön så som den visas (flikvalet gäller).
+  const obekraftadeIds = useMemo(() => obekraftade.map((r) => r.id), [obekraftade]);
+  const markering = useMarkeringsLage(obekraftadeIds);
 
-  const bekraftaAlla = async () => {
+  /**
+   * FOKUS-ÅTERLÄMNINGEN när läget stängs (review-fynd 1).
+   *
+   * Stängs läget från dialogen rivs batch-barens knapp (dialogens trigger) i
+   * samma commit som modalens FocusScope — React Aria hittar då ingen ansluten
+   * `nodeToRestore` och fokus faller till `document.body`. Lotta börjar om från
+   * sidans topp, och en skärmläsaranvändare tappar sin plats mitt i arbetet.
+   *
+   * Effekten körs EFTER commit, när Markera-knappen åter finns i DOM, och
+   * lämnar fokus där arbetet fortsätter. Gäller alla vägar ut: Avbryt, Esc och
+   * fullbordad batch — Avbryt-vägen fungerade tidigare bara av en slump (React
+   * återanvände DOM-noden).
+   */
+  const markeraKnappRef = useRef<HTMLButtonElement>(null);
+  const varAktivt = useRef(false);
+  useEffect(() => {
+    if (varAktivt.current && !markering.aktivt) markeraKnappRef.current?.focus();
+    varAktivt.current = markering.aktivt;
+  }, [markering.aktivt]);
+
+  const bekraftaMarkerade = async () => {
     setUtfall(null);
+    const ids = [...markering.valda];
     try {
-      const result = await bulk.mutateAsync({ registrationIds: obekraftade.map((r) => r.id) });
+      const result = await bulk.mutateAsync({ registrationIds: ids });
       // Aldrig binärt: allt annat än rent skickat visas som det ÄR (K53-ärligheten).
-      if (result.status !== 'sent') setUtfall(bekraftelseUtfall(result));
+      // URVALET ÖVERLEVER ett icke-rent utfall (review-fynd 2): servern svarar
+      // 200 även vid 'partial'/'failed'/'skipped', och att då nolla markeringen
+      // hade tvingat Lotta att markera om tolv kort för att försöka igen. Endast
+      // ett RENT skickat utfall betyder att arbetet är utfört — bara då stängs
+      // läget. Samma logik som catch-grenen, som alltid behållit urvalet.
+      if (result.status !== 'sent') {
+        setUtfall(bekraftelseUtfall(result));
+        return;
+      }
+      markering.stang();
     } catch {
       setUtfall('Bekräftelserna kunde inte skickas. Försök igen.');
     }
@@ -977,12 +1241,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                 </p>
               )
             ) : traffar.length > 0 ? (
-              <DeltagarListan
-                rader={traffar}
-                eventId={event.id}
-                onBekrafta={bekraftaEn}
-                pendingId={pendingId}
-              />
+              <DeltagarListan rader={traffar} eventId={event.id} />
             ) : (
               <p className="py-2 text-small text-text-secondary">Inga träffar i denna kategori.</p>
             )}
@@ -993,27 +1252,70 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
           <>
             {obekraftade.length > 0 ? (
               <div>
+                {/* Byggkrav 1: Markera ERSÄTTER Bekräfta alla-pillen på samma
+                    plats; i läget står Avbryt där. K47/K48-formen (pill +
+                    kontrollfråga på rubriken) är riven — massmutationen har
+                    flyttat till batch-baren där urvalet syns innan det
+                    skickas. §19: rubrikraden är toolbar-ytklass ⇒ kompakt sm;
+                    Markera skriver inget utåt (intern handling) ⇒ primary. */}
                 <GruppRubrik
                   oppen={oppna.obekraftade}
                   varning
                   kontrollerarId={`${panelId}-obekraftade`}
                   onToggle={() => setOppna((o) => ({ ...o, obekraftade: !o.obekraftade }))}
                   handling={
-                    <BekraftaAlla
-                      antal={obekraftade.length}
-                      pending={bulk.isPending}
-                      onBekrafta={bekraftaAlla}
-                    />
+                    markering.aktivt ? (
+                      <Button
+                        intent="ghost"
+                        size="sm"
+                        aria-label="Avbryt markering"
+                        onPress={markering.stang}
+                      >
+                        <X aria-hidden="true" size={14} className="shrink-0" />
+                        Avbryt
+                      </Button>
+                    ) : (
+                      <Button
+                        ref={markeraKnappRef}
+                        intent="primary"
+                        emphasis="subtle"
+                        size="sm"
+                        className="shadow-sm"
+                        aria-label="Markera anmälningar"
+                        onPress={() => {
+                          // Läget kräver att kön är öppen — annars markerar
+                          // Lotta i en panel hon inte ser.
+                          setOppna((o) => ({ ...o, obekraftade: true }));
+                          markering.oppna();
+                        }}
+                      >
+                        Markera
+                      </Button>
+                    )
                   }
                 >
                   {`Obekräftade (${obekraftade.length})`}
                 </GruppRubrik>
                 <div id={`${panelId}-obekraftade`} hidden={!oppna.obekraftade} className="pt-1.5">
+                  {markering.aktivt && (
+                    <MarkeringsBatchBar
+                      antal={markering.antal}
+                      totalt={obekraftade.length}
+                      allaValda={markering.allaValda}
+                      pending={bulk.isPending}
+                      onBekrafta={bekraftaMarkerade}
+                      onMarkeraAlla={markering.markeraAlla}
+                      onRensa={markering.rensa}
+                    />
+                  )}
                   <DeltagarListan
                     rader={obekraftade}
                     eventId={event.id}
-                    onBekrafta={bekraftaEn}
-                    pendingId={pendingId}
+                    rullande
+                    testId="obekraftade-ko"
+                    markering={
+                      markering.aktivt ? { valda: markering.valda, vaxla: markering.vaxla } : null
+                    }
                   />
                 </div>
               </div>
@@ -1032,12 +1334,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                   {`Bekräftade (${bekraftade.length})`}
                 </GruppRubrik>
                 <div id={`${panelId}-bekraftade`} hidden={!oppna.bekraftade} className="pt-1.5">
-                  <DeltagarListan
-                    rader={bekraftade}
-                    eventId={event.id}
-                    onBekrafta={bekraftaEn}
-                    pendingId={pendingId}
-                  />
+                  <DeltagarListan rader={bekraftade} eventId={event.id} />
                 </div>
               </div>
             )}
