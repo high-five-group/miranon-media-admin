@@ -581,3 +581,5 @@ jobs:
             exit 1
           fi
           echo "✅ CI Passed or Skipped — alla jobb success eller skipped-by-design."
+
+# [QA-36.8 punkt 3] Klassningstest — mergas aldrig.
