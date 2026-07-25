@@ -20,9 +20,39 @@ export function dateValue(e: Event): number {
   return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
 }
 
-/** Fullt = inga platser kvar. `platserKvar` null (okänt tak) → ej "fullt". */
-function isFull(e: Event): boolean {
+/** Fullt = inga platser kvar. `platserKvar` null (okänt tak) → ej "fullt".
+    Exporterad sedan task-18.18 (delad med eventväljarens sammanfattning). */
+export function isFull(e: Event): boolean {
   return e.platserKvar != null && e.platserKvar <= 0;
+}
+
+/**
+ * Listkortets ENKLA beläggningsstapel (S72-facitets B-kort) — spår + fyllnad,
+ * bredd = antalAnmalda/maxPlatser, grön fyllnad vid fullt. DELAD sedan
+ * task-18.18 (review-pilotens F6): eventväljarens sammanfattning bär samma
+ * form — en grammatik, inte två kopior (manadsgrupp-lyftets klass). Alltid
+ * dekor (aria-hidden här): texten bär beläggningen (WCAG 1.4.1).
+ */
+export function BelaggningsStapel({
+  event: e,
+  className = '',
+}: {
+  event: Event;
+  className?: string;
+}) {
+  const andel =
+    e.maxPlatser != null && e.maxPlatser > 0
+      ? Math.min(100, Math.round((e.antalAnmalda / e.maxPlatser) * 100))
+      : 0;
+  return (
+    <div aria-hidden="true" className={`h-1.5 rounded-full bg-surface ${className}`}>
+      <div
+        data-slot="belaggning-fyllnad"
+        className={`h-full rounded-full ${isFull(e) ? 'bg-success' : 'bg-(--p-neutral-400)'}`}
+        style={{ width: `${andel}%` }}
+      />
+    </div>
+  );
 }
 
 /** Långdatum per facit-kortets datumrad ("31 juli 2026") — sv-SE, aldrig rå ISO (Gunilla). */
@@ -109,10 +139,6 @@ export function EventCard({
   const flyttat = e.status === 'Flyttat';
   const full = isFull(e);
   const maxPlatser = e.maxPlatser;
-  const andel =
-    maxPlatser != null && maxPlatser > 0
-      ? Math.min(100, Math.round((e.antalAnmalda / maxPlatser) * 100))
-      : 0;
   // Status-slotten: avvikelsen vinner alltid; dagar-kvar endast Kommande.
   const slot = installt
     ? { text: 'Inställt', cls: 'text-error' }
@@ -199,18 +225,10 @@ export function EventCard({
             ? `${e.antalAnmalda} av ${maxPlatser} platser reserverade`
             : `${e.antalAnmalda} anmälda (platser ej satt)`}
         </span>
-        <div
-          aria-hidden="true"
-          className={`h-1.5 rounded-full bg-surface ${
-            installt ? 'opacity-60 contrast-more:opacity-100' : ''
-          }`}
-        >
-          <div
-            data-slot="belaggning-fyllnad"
-            className={`h-full rounded-full ${full ? 'bg-success' : 'bg-(--p-neutral-400)'}`}
-            style={{ width: `${andel}%` }}
-          />
-        </div>
+        <BelaggningsStapel
+          event={e}
+          className={installt ? 'opacity-60 contrast-more:opacity-100' : ''}
+        />
       </div>
     </li>
   );

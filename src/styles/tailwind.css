@@ -127,6 +127,26 @@
       transform: translateX(100%);
     }
   }
+
+  /* ── Avslöjningen (task-18.18, facit punkt 7) ──
+     Progressive disclosure-regeln: innehåll som avslöjas vid ett val
+     glider in mjukt — opacity + 8 px uppåt. Konsumeras ENDAST via
+     motion-safe:-varianten (stum vid prefers-reduced-motion; samma
+     media-gate-disciplin som skeleton-shimmern). Durationen är inget
+     token-värde: ingen konsument justerar den (över-engineering-vakten). */
+  --animate-mm-avsloj: mm-avsloj 0.2s ease-out both;
+
+  @keyframes mm-avsloj {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 /* ── Inline-rullningsytans scrollmarkör (K10-facit, task-4.4) ──
