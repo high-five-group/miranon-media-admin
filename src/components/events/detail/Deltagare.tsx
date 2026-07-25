@@ -610,20 +610,25 @@ function DeltagarKort({
       {/* K46 (hantera-handlingen, task-18.6): obekräftat kort bär Skicka
           bekräftelse i kortbotten — UTANFÖR person-länken (L303), som dess
           syskon. Bekräftade kort bär den ALDRIG: handlingen är gjord, och en
-          knapp som skickar om mailet är inte kortets jobb. */}
+          knapp som skickar om mailet är inte kortets jobb.
+          Grön-knapp-regeln (task-18.16, kortets utpekade avvikare in i regeln):
+          handlingen NÅR UTOMSTÅENDE → success-INTENTEN via Button-primitiven
+          (DESIGN-SYSTEM-SPEC §19) — kortfotens geometri (rounded-b-xl, full
+          bredd, py-2.5) uttrycks via className, aldrig handvirade tokens
+          (review-piloten 18.16: en token-kopia driver isär tyst). */}
       {!arBekraftad(reg) && (
-        <button
-          type="button"
+        <Button
+          intent="success"
           aria-label={`Skicka bekräftelse till ${namn}`}
-          disabled={pending}
-          onClick={() => onBekrafta(reg)}
-          className="flex w-full items-center justify-center gap-2 rounded-b-xl border-border border-t px-4 py-2.5 font-medium text-small hover:bg-bg-emphasized disabled:opacity-50 motion-safe:transition-colors"
+          isDisabled={pending}
+          onPress={() => onBekrafta(reg)}
+          className="w-full rounded-t-none rounded-b-xl py-2.5 font-medium text-small"
         >
           {/* Kuvertet — samma ikon som betalningarnas Påminn och utskicksraderna
               (Mail = skicka-handling, MailCheck = skickat-status, K47). */}
           <Mail aria-hidden="true" size={14} className="shrink-0" />
           {pending ? 'Skickar…' : 'Skicka bekräftelse'}
-        </button>
+        </Button>
       )}
     </div>
   );

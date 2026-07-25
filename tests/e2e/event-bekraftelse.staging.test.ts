@@ -217,6 +217,15 @@ test.describe('Hantera-flödet — bekräftelse-vertikalen (task-18.6)', () => {
     // L303: knappen ligger UTANFÖR person-länken (interaktivt aldrig i interaktivt).
     const knappILank = await gruppen(page).locator('a[href*="/personer/"] button').count();
     expect(knappILank).toBe(0);
+
+    // Grön-knapp-regeln (task-18.16, kortets utpekade avvikare): Skicka
+    // bekräftelse NÅR UTOMSTÅENDE → success-formen (--mm-success #606B57,
+    // vit text ≈ 5,6:1 AA) — aldrig kortfotens tysta grå.
+    const bertil = gruppen(page).getByRole('button', {
+      name: 'Skicka bekräftelse till Bertil Sund',
+    });
+    await expect(bertil).toHaveCSS('background-color', 'rgb(96, 107, 87)');
+    await expect(bertil).toHaveCSS('color', 'rgb(255, 255, 255)');
   });
 
   test('AC #1: enskild bekräftelse skickar record-ID:t och flyttar kortet till Bekräftade LIVE', async ({
@@ -367,6 +376,13 @@ test.describe('Hantera-flödet — bekräftelse-vertikalen (task-18.6)', () => {
       'background-color',
       'rgb(96, 107, 87)',
     );
+    // Guard-skärpning (task-18.16): knappens EGEN färg blir slutgiltig före
+    // ÖVERLÄGGETS fade (Modal.tsx: transition-opacity bor på ModalOverlay,
+    // dialogen själv skalar bara) — axe komposit-räknar genom överläggets
+    // opacity och mäter 4,17:1 mot #767f6e mitt i transitionen. Vänta tills
+    // RAC:s entering-tillstånd släppt och överläggets opacity är slutgiltig.
+    await expect(page.locator('[data-entering]')).toHaveCount(0);
+    await expect(page.locator('div.fixed.inset-0.z-50')).toHaveCSS('opacity', '1');
     const dialoglage = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
     expect(dialoglage.violations).toEqual([]);
   });
