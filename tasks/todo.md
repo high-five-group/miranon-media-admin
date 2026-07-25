@@ -42,7 +42,10 @@ jobb (#214, #215, #218, #219, #220). **NÄSTA (NY session S90): `task-48`** (Mar
 → Roger & Lotta-spåret (T95). **T87 avblockerad men oförändrat parkerad**
 (linux-brusgolvet omätt tills grinden körs). Numrering efter S89:
 90/079/L349/T98/f46/task-52. Full narrativ: sessionsdok S89 Del 1–3 +
-BUILD-LOG S89-post.
+BUILD-LOG S89-post. **T98 FÖRBRUKAD → nästa tråd T99** (parallell
+utforsknings-session efter S89:s stängning födde
+[`T98`](threads/T98-codex-pr-granskningslagret.md) — Codex
+PR-granskningslagret; S82-precedenten för nummer taget efter kadens-raden).
 
 **Session 88 ✅ AVSLUTAD (2026-07-25)** — **T85-KORRIGERINGSFÖNSTRET:
 PAKETET BETALT, TRE FYND UR QA-VANDRINGEN.** Tolv landningar
