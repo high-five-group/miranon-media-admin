@@ -138,7 +138,17 @@ function BatchBar({
     <div className="flex flex-wrap items-center gap-2 rounded-xl bg-bg-muted px-3 py-2">
       <Button intent="success" size="sm" isDisabled={antal === 0} onPress={onBekrafta}>
         <Mail aria-hidden="true" size={14} className="shrink-0" />
-        {`Bekräfta ${antal} ${antal === 1 ? 'anmälan' : 'anmälningar'}`}
+        {/* Breddlåset (Marcus steg 3): osynlig platshållare i tvåsiffrig
+            maxform ger konstant knappbredd — texten växlar ovanpå i samma
+            grid-cell utan att knappen andas. tabular-nums mot siffer-skutt. */}
+        <span className="grid text-center tabular-nums">
+          <span aria-hidden="true" className="invisible col-start-1 row-start-1">
+            Bekräfta 99 anmälningar
+          </span>
+          <span className="col-start-1 row-start-1">
+            {`Bekräfta ${antal} ${antal === 1 ? 'anmälan' : 'anmälningar'}`}
+          </span>
+        </span>
       </Button>
       <Button intent="secondary" size="sm" isDisabled={antal === totalt} onPress={onMarkeraAlla}>
         Markera alla
