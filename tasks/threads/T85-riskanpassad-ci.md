@@ -182,11 +182,29 @@ grillas i sessionen, tas inte rakt av.
    körningen schemaläggs, inte när den startar. Bärande för punkt 2: en vakt
    måste ha marginal mot uppmätt drift, inte mot nominell cron.
 
-**Beslutsklass (Marcus):** 36.7-kortformalian (Done med öppna AC 7–8 +
-DoD — parkeringens formella hemvist) · 36.8-ordningen (QA-punkt 11
-förutsätter T87-aktivering) · nightly-visual-frågan (aktivera visual i
-nightly FÖRE PR-grinden? rör T87:s ett-stegs-design — grillbar) ·
-merge-only som husregel (dedup-förutsägbarheten).
+**Beslutsklass — SAMTLIGA FYRA AVGJORDA av Marcus 2026-07-25 (S88):**
+
+1. **36.7-kortformalian → A: låt stå.** Kortet förblir Done med AC 7–8
+   öppna; T87 är bäraren. Att skapa ett eget kort för en parkering vars
+   trigger är "när UI-takten lugnar" (inte ett beroende) hade gett ett kort
+   ingen kan plocka — trådar är repots form för just det.
+2. **36.8-ordningen → C, UTFÖRD AV CODE på Marcus delegation**
+   (*"utför C åt mig som om du vore mig"*). QA-vandringen kördes i sin
+   helhet; punkt 11 lokalt eftersom grinden är parkerad. **Tio av tolv
+   punkter gröna; två öppet oavklarade med skäl** (punkt 5 kräver att
+   merge-grinden försvagas — priset togs inte; punkt 12 kräver en veckas
+   kalendertid). **TRE FYND blev egna kort: TASK-49 · TASK-50 · TASK-51.**
+   Fullt utfall per punkt i kortets notes.
+3. **Nightly-visual → A: vänta.** Visual aktiveras i ett steg via T87, inte
+   splittrat. Codes tveksamhet stod fast: förväntat-röda nätter under UI-fas
+   är kyrkogårds-klassen (L321), samma skäl som fällde rådgivande läge.
+   **QA-fyndet TASK-49 stärker beslutet i efterhand** — grinden hade ändå
+   varit blind på desktop, så en tidig aktivering hade gett falsk trygghet.
+4. **Merge-only → A: verkställd.** `allowed_merge_methods` låst till
+   `["merge"]` i ruleset 19627609; ADR-076 punkt 6 bär motiveringen.
+   Dedupen läser `HEAD^2` — squash/rebase ger ingen sådan förälder, och
+   tidsvinsten hade försvunnit TYST. Låset kostar noll: merge var redan
+   husets enda metod.
 
 ## Upptags-form
 
