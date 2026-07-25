@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-07-22 09:09'
-updated_date: '2026-07-25 00:59'
+updated_date: '2026-07-25 01:14'
 labels:
   - ready-for-agent
 dependencies:
@@ -51,13 +51,21 @@ Lokala grindar: typecheck 0 fel · typecheck:tests 0 fel · biome 0 errors (5 wa
 INSTANT-regeln (ADR-078): ej berörd — skivan ändrar ingen datahämtning/navigering; golvet oförändrat (deklareras mätt via befintliga sviten). Visual-baselines (eventsida.png) driftar avsiktligt — uppdateras via visual-baselines-workflowens människogrindade PR, ej CI-grind (T87 ej aktiverad).
 
 Väntar design-review (DoD #5) — Done-flippen är Marcus (granskningsfärdigt läge, ADR-071 beslut 3).
+
+CI-bokföring (svans, batch S86): PR #176 MERGED (merge-commit c224847) · PR-run 30137595027 grön per jobb (8/8) · main-run 30137948566 grön per jobb (Test suite merge-dedup-SKIPPAD by design, 36.4-träff). Väntar design-review (DoD #5) — Done-flippen är Marcus. AFK-proveniens: batch S86, do-work-agent + svans-agent.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit e338782 · CI-run 30137595027 (PR) + 30137948566 (main) per jobb · CI-grön-första-pass: ja · defekter under körning: 0 · TDD: 1 cykel (e2e-skarven batchar skivans beteenden; rött-först 2 failed observerat) · review-pilot T86: 4 åtgärdade, 2 routade som nya kort (task-39, task-40) · AFK-proveniens: batch S86, do-work-agent — väntar design-review (DoD #5), Done-flippen är Marcus
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd (per skiva med UI-yta; L220)
 - [x] #6 Renderad verifiering (computed-style/skärmdump) per berörd punkt före granskning (L245/L246)
