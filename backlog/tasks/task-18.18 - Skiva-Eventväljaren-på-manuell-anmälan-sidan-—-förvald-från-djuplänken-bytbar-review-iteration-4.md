@@ -3,10 +3,10 @@ id: TASK-18.18
 title: >-
   Skiva: Eventväljaren på manuell anmälan-sidan — förvald från djuplänken,
   bytbar (review-iteration 4)
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-23 09:56'
-updated_date: '2026-07-24 21:39'
+updated_date: '2026-07-25 05:19'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,8 +24,8 @@ Marcus review-våg (2026-07-23), riktnings-beslut kvitterat ('Vi gör så istäl
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Marcus designbeslut a–d bokförda (kvittens på rek. eller grillnings-utfall)
-- [ ] #2 Väljaren renderad: förvald från djuplänken, bytbar; stängda läget bär B-formens kontextrad (prick + namn medium + ort + kollapsat spann); rå eventlabel borta ur UI:t
-- [ ] #3 Route-/state-semantiken per beslut a–b; e2e täcker förval + byte + djuplänk; axe 0 på ytan
+- [x] #2 Väljaren renderad: förvald från djuplänken, bytbar; stängda läget bär B-formens kontextrad (prick + namn medium + ort + kollapsat spann); rå eventlabel borta ur UI:t
+- [x] #3 Route-/state-semantiken per beslut a–b; e2e täcker förval + byte + djuplänk; axe 0 på ytan
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -64,12 +64,27 @@ FACIT LÅST 2026-07-24 (S83 pass 4, konvergens mot Marcus i browsern — "Nu är
 **BAS-GAP (Marcus 2026-07-24): PRIS saknas helt i `Event`-modellen.** Kan inte visas i sammanfattningen utan additivt bas-fält. Registrerat som bas-gap i ADR-063-klassen, in senare — samma hantering som 18.17:s två (URL/UTM-fångst · noterings-författare).
 
 **Bilagor:** tasks/sessions/bilagor/s83-eventvaljaren-konvergens/
+
+AFK-leverans (batch S86, do-work-agent, ADR-071/ADR-076-landningsform):
+
+TDD rött-först (S80-amenderingen): nya describe-blocket 'Eventväljaren på manuell anmälan-sidan (task-18.18)' (8 tester) + facit-uppdaterat 18.12-rendertest körda FÖRE implementation — observerat utfall 9 failed / 5 passed (3,0 min): samtliga nya föll på saknad väljare, 'Error: element(s) not found … waiting for getByRole(button, name /Välj event/)' (bl.a. 'förval från djuplänken: Eventet-blocket FÖRST …', 'byte navigerar URL:en och BEHÅLLER ifyllda personfält …', 'tomt läge (/anmalan/ny) …', 'axe 0 violations …'); 18.12-rendertestet föll på eventlabel-flippen. Efter implementation: 14/14 gröna i filen; berörd yta events-list + kalender + event-detail 84/84. En cykel (e2e-skarven batchar skivans beteenden; rött+grönt pushas ihop). En defekt under körning: axe definition-list (dl-nästling i Platser kvar-raden) — fångad av eget axe-test, omstrukturerad (dl-grupperna axe-giltiga), 14/14.
+
+KOMPONENTVALET BOKFÖRT (beslut d/punkt 12): byggt på React Arias EGEN dokumenterade sökväljar-form — Select (rik trigger) + Autocomplete + SearchField + ListBox i Popover (react-aria.adobe.com/Select § 'Autocomplete with SearchField'; RAC 1.19-exports verifierade). Inline-ComboBoxens alltid-synliga textfält kan inte rendera facitets stängda läge (rik kontextrad utan fält); Autocomplete-i-Select ÄR combobox-maskineriet i popover-form (virtuell fokus/aria-activedescendant, piltangenter, Enter väljer, Escape stänger) — punkt 12:s rationale (React Aria + sök, 11-ribban) uppfylld, bokstaven 'ComboBox' omlandad öppet här.
+
+BYGGT: EventValjare.tsx (vy-komponent 11/10/10; stängt läge = B-formens kontextrad med kursfärgs-prick [18.17:s Avser-grammatik] + namn font-medium + ort + kollapsat spann; tomt läge = fristående vit kort-trigger med kalender-ikon; sök från start matchar namn ELLER ort via textValue; programmatisk fokus via rAF — aldrig autoFocus; månadsgrupper via DELADE groupByMonth) · manadsgrupp.ts (punkt 9-lyftet: monthLabel/groupByMonth ur EventsList → delad modul, EventsList konsumerar) · ManuellAnmalanForm omskriven (TVÅ TILLSTÅND: ValtLage/TomtLage; Eventet-blocket FÖRST i CheckInKort-formen utan mx [breddparitet DOM-asserted mot grupp-kort]; sammanfattning Typ · Platser kvar + EventCards enkla stapel · Status endast ≠ Planerat · Väntelista SIST villkorad >0 med mm-avsloj; 'Gå till eventdetaljer' i navigeringens nedtonade vikt [14px/vikt<500 computed-asserted]; rå eventlabel-raden RIVEN) · tunn route /anmalan/ny (beslut 13; hem-vyns kommande knapp är ingången — utanför skivan, bokfört i routens kommentar) · mm-avsloj-keyframes (motion-safe-gated, tailwind.css @theme).
+
+INSTANT (ADR-078): sammanfattningen seedas ur listcachen med placeholderData (aldrig initialData); vantelista renderas ALDRIG ur placeholder (?? 0-skyddet — raden villkorad på riktig detalj-data >0, ligger SIST så inga rader ovanför flyttas, glider in motion-safe); kall djuplänk får skeleton i slutgeometri (rader + stapel); byte utan remount → fälten behålls (beslut b/14), mutations-utfall nollställs + idempotensnyckel roteras per skapa-intention vid byte (bekräftelseläge för event A kan aldrig visas för event B).
+
+Lokala grindar: typecheck 0 fel · typecheck:tests 0 fel · biome 0 errors (5 warnings/26 infos pre-existerande i orörda filer) · build grön · test:api 381/381 · e2e event-ny-anmalan 14/14 + events-list/kalender/event-detail 84/84 · axe 0 (stängt läge helsides · öppen väljare scopad per ComboBox-mönstermallens ariaHideOutside-not · tomt läge helsides). Renderad verifiering: breddparitet eventet-block = grupp-kort (0-diff boundingBox) · stapelbredd 67 % (8/12) · länkvikt 14px/<500 · mm-avsloj-keyframes + utility verifierade i byggd CSS · blockordning före Deltagare (boundingBox-y).
+Review-piloten (T86): granskat träd 20525690 (bas main 1ccd5a1) — 7 fynd (2 spec / 5 std); fokuserad ompassering på fix-diffen (träd 62203385) — 1 nytt nit-fynd (F8, bokförings-kommentaren). Triage: 8 åtgärdade (F1 komponentvals-bokföringen HÄR på kortet — spec-konflikten punkt 12 [ComboBox] vs punkt 3 [rik trigger utan fält] omlandad till React Arias dokumenterade Select+Autocomplete-form, Marcus-kvittens i morgongranskningen · F2 avslöjnings-avsikten till router-history-state, StrictMode-dubbelinvokering gjorde modulflaggan opålitlig i dev · F3 mekaniskt AT-kontrakts-e2e [DOM-fokus kvar i fältet + aria-activedescendant-förflyttning] · F4 synkron utfalls-gating via mutationEventIdRef — utfall från event A målas aldrig under B:s URL, inte ens en frame före reset-effekten · F5 EN dl med giltig dt+dd+dd-grupp — en skärmläsar-grammatik i stället för tre syskonstrukturer · F6 SelectItem-konsumtion + BelaggningsStapel-lyft ur EventCard, dubblett-driften eliminerad · F7 e2e-bevis för nyckelrotation + utfalls-nollställning vid byte · F8 reload-fallet i F2-bokföringen), 0 avfärdade, 1 routad (task-45: kommande-filter/sort-dubbleringen — utanför skivans mandat, samma lyft-klass som punkt 9). Reviewfixarna validerade: e2e-filen 16/16 · berörd yta events-list/kalender/event-detail 84/84 · test:api 381/381 omkört (EventCard tvärgående; en transient staging-409-flaky klassad via isolerad 12/12-omkörning) · typecheck/typecheck:tests/biome/build gröna. Review-tid ~7 min (två pass); +3 havererade CLI-starter före passen (headless claude -p hänger på MCP-server-laddning — löst med --strict-mcp-config; driftnot i T86).
+
+ÖPPNA MARCUS-MOMENT (morgongranskningen): (1) F1-kvittensen — komponentvals-omlandningen ComboBox→Select+Autocomplete; (2) manuellt VoiceOver-pass på sökväljaren (facit punkt 8:s AT-krav utöver det mekaniska e2e-kontraktet); (3) bekräftelseläget visar inte längre vilket event anmälan gällde (eventidentiteten bor i väljaren, som inte renderas i bekräftelseläget — arv från 18.12, ompasseringens observation).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

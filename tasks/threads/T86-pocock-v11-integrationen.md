@@ -181,6 +181,13 @@ nattbyggets kort (§ Körplanen nedan).
 | 18.15 (diff e9cff7d8 → ompass. 4839d1bb) | 4 (2/2) | 4 | 0 | 2 (task-39 röststyrnings-gapet · task-40 contrast-more-avgränsningen) | 0 blocker / 2 kvalitet / 2 brus (brusen gratis härdningar, åtgärdade) | ~8 (två pass) | _fylls i morgongranskningen_ |
 | 18.16 (diff e8b011bbbb50 → ompass. 91d00ce3232f; F6-skivan, lägre effort) | 7+1 (4/3; ompass. fångade T90-ID-krocken i tråd-registret — S83-kollisionsklassen, rättad till T91) | 7 (inkl. kortfoten → Button-primitiv i stället för handvirade tokens; §19-snävning + form-rationale; color-assertion; ID-krocken) | 0 (fynd 6 = processpåminnelse om AC-bockar, verkställd i stängningsdisciplinen) | 3 (task-41 fokusring-på-success · task-42 Atgarder-kommentaråldring · T91 färg-assertions-filosofin) | 0 blocker / 5 kvalitet / 2 process-nit / 1 bokförings-krock | ~12 (två pass) | _fylls i morgongranskningen_ |
 | 18.17 (diff 3df9b42af7da → ompass. 222c69324fde) | 7 (2/5) | 7 (statusLage tre-lägen mot falsk Bekräftad-badge · eventTyp/eventOrt ur EVENTRADEN — anmälans formulär-kopior tomma för app-skapade · aria-label-kontext på Läs mer · contrast-more + clipboard-.catch · RegistrationDetail-typad cache-patch · delat arGenomford-predikat · PaymentStatus-konstanten) | 0 | 0 (Deadline-formelns Ej relevant-bug var redan T16-bokförd, 18.8-bifyndet — utanför scope-sektion, ej nytt) | 1 korrekthet (falsk status-badge på nåbara vägar — URL/+1-länkar förbi arbetsköns arAktiv-filter) / 6 kvalitet | ~14 (två pass) | _fylls i morgongranskningen_ |
+| 18.18 (träd 20525690 → ompass. 62203385) | 7+1 (2/5; ompass. 1 nit) | 8 (F1 komponentvals-bokföringen på kortet [spec-konflikt punkt 12 vs 3, Marcus-kvittens i morgonen] · F2 avslöjnings-avsikt → router-history-state [StrictMode-buggen] · F3 AT-kontrakts-e2e aria-activedescendant · F4 synkron utfalls-gating mutationEventIdRef · F5 en dl med dt+dd+dd · F6 SelectItem + BelaggningsStapel-lyft · F7 nyckelrotations-bevis i e2e · F8 reload-fallet i bokföringen) | 0 | 1 (task-45 kommande-filter/sort-dubbleringen) | 0 blocker / 2 spec / 1 struktur / 1 a11y / 3 kvalitet / 1 nit; 3 öppna Marcus-moment bokförda på kortet (F1-kvittens · VoiceOver-pass · bekräftelselägets eventidentitet) | ~7 (två pass) | _fylls i morgongranskningen_ |
+
+> **Driftnot (S86-batchen, 18.18-agenten):** headless review-subagent via
+> `claude -p` hänger på MCP-server-laddningen i denna miljö (3 havererade
+> starter à 10 min). Botemedlet är `--mcp-config '{"mcpServers":{}}'
+> --strict-mcp-config` — review-passet behöver inga MCP-verktyg. Gäller
+> alla framtida pilot-spawns i repot.
 
 ## Körplanen 2026-07-24 → nattbygget (kvitterad i S82-konversationen)
 

@@ -14,6 +14,9 @@ import { EventStatus, type EventStatusValue } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
 import { dateValue, EventCard, type Period } from './EventCard';
 import { EventsCalendar } from './EventsCalendar';
+// Månadsgrupperingen är DELAD sedan task-18.18 (eventväljaren blev andra
+// konsumenten — facit punkt 9: två grammatiker för samma sak är drift).
+import { groupByMonth } from './manadsgrupp';
 
 const PERIOD_VALUES: Period[] = ['upcoming', 'past'];
 const PERIOD_LABEL: Record<Period, string> = {
@@ -43,30 +46,6 @@ function filterByPeriod(events: Event[], period: Period, idagStart: number): Eve
   });
   const dir = period === 'past' ? -1 : 1;
   return [...filtered].sort((a, b) => dir * (dateValue(a) - dateValue(b)));
-}
-
-/** "Juli 2026" — månadsgrupprubriken bär månaden (sv-SE, versal först). */
-function monthLabel(e: Event): string {
-  if (!e.startdatum) return 'Datum ej satt';
-  const d = new Date(e.startdatum);
-  if (Number.isNaN(d.getTime())) return 'Datum ej satt';
-  const label = new Intl.DateTimeFormat('sv-SE', { month: 'long', year: 'numeric' }).format(d);
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
-/** Gruppera den redan sorterade listan per månad (tomma månader finns inte). */
-function groupByMonth(events: Event[]): { label: string; events: Event[] }[] {
-  const groups: { label: string; events: Event[] }[] = [];
-  for (const e of events) {
-    const label = monthLabel(e);
-    const last = groups[groups.length - 1];
-    if (last && last.label === label) {
-      last.events.push(e);
-    } else {
-      groups.push({ label, events: [e] });
-    }
-  }
-  return groups;
 }
 
 /** Filterdimensionerna (task-17.7) — Event-modellens tre kategoriska fält. */
