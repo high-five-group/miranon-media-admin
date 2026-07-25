@@ -4,6 +4,7 @@ title: 'QA: Manuell testplan — riskanpassad CI mot verkligt arbetsflöde'
 status: To Do
 assignee: []
 created_date: '2026-07-23 17:15'
+updated_date: '2026-07-25 19:12'
 labels:
   - ready-for-human
 dependencies:
@@ -52,10 +53,37 @@ TESTPLAN
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Samtliga sju skivor levererade och deras bevis-ID:n citerade
-- [ ] #2 Testplanen nedan genomförd av Marcus med utfall noterat per punkt
-- [ ] #3 Eventuella fynd har blivit EGNA kort med exakt symptom och förväntat beteende — planen retuscheras aldrig i efterhand
+- [x] #1 Samtliga sju skivor levererade och deras bevis-ID:n citerade
+- [x] #2 Testplanen nedan genomförd av Marcus med utfall noterat per punkt
+- [x] #3 Eventuella fynd har blivit EGNA kort med exakt symptom och förväntat beteende — planen retuscheras aldrig i efterhand
 <!-- AC:END -->
+
+
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+GENOMFÖRD 2026-07-25 (S88) av Code på Marcus uttryckliga delegation ("utför C åt mig som om du vore mig"). Punkt 11 kördes lokalt per Marcus beslut C i T85:s beslutsfråga 2, eftersom visual-grinden är parkerad (T87).
+
+UTFALL PER PUNKT
+
+1. Snabbfilen i skarpt bruk — GRÖN. PR #207 (ren stiländring): D1-klass bekräftad. Staging sentinel purge + Staging (API+E2E) SKIPPADE; Lint+Audit+TypeCheck, A11y, Pure+Build körda. Run 30170296882.
+2. Snabbfilen får inte gälla för mycket — GRÖN. PR #208 (stilmall + komponentfil i samma commit): FULL SVIT. Stilmallen drog inte ned risken. Run 30170303950.
+3. Infrastruktur kan aldrig bli lågrisk — TESTET GRÖNT, körningen röd av annan orsak. PR #209 (ci.yml + CSS): full svit kördes, alltså korrekt klassning. Körningen föll på Staging sentinel purge (fetch failed) → se TASK-50. Run 30170306759.
+4. Dedupen i verkligt merge-flöde — GRÖN. Samtliga fyra kod-/config-landningar denna session (PR #201/#202/#203/#205) visar markören "Dedup-TRÄFF" i changed-jobbets logg och Test suite=skipped på main-push. Mätskriptet: 21 träff / 0 miss.
+5. Dedupen vågar inte gissa — EJ UTFÖRD, öppet bokförd. Punkten kräver en icke-up-to-date merge, men strict_required_status_checks_policy + merge-only (Marcus-beslut S88) gör den situationen omöjlig att framkalla utan att tillfälligt försvaga merge-grinden. Det priset togs inte. Skivans egna kontrastbevis kvarstår som grund: MISS 30047428027 / HIT 30047936570 (task-36.4, S79).
+6. Nattnätet i praktiken — GRÖN. Manuell dispatch 30170198960: alla sju jobb success, larm-jobbet korrekt SKIPPAT, inget ärende, inget skräp.
+7. Larmkedjan när något går sönder — LARMET FUNGERAR, INFORMATIONEN INTE. Dispatch 30170606995 (simulate_failure) skapade ärende #210, tilldelat marcus803, etikett ci-natt, med körningslänk + HEAD + stängningsregel. MEN commit-spannet sade "ingen tidigare grön nattkörning" trots FEM gröna, varav en 25 min gammal. Grundorsak bevisad: alarm-jobbet saknar actions:read, gh run list failar 403, och "|| echo" sväljer felet så den mest alarmerande grenen väljs. Systematiskt sedan larmet byggdes — ärende #114 (2026-07-23) bär samma text. → TASK-51.
+8. Grinden stoppar faktiskt en merge — GRÖN. gate-proof 30170205149: assert-jobbet rapporterar UMBRELLA_FIRED=failure, alltså blev paraply-checken failure och inte skipped. S77:s incident kan inte upprepas.
+9. Rött-först i nytt bärarskick — GRÖN, utförd skarpt i denna session. Mätardefinitions-fixen (PR #201): 8 test(er) RÖDA → alla gröna, citerat som lokalt körutdrag i commit-body. Ingen röd körning i den delade kön. Kontraktet kändes inte krångligare — bäraren är ett kommando och en klistrad utskrift.
+10. Siffrorna — GRÖN, läsbara. PR-ledtid median 1,2 / p95 15,7 min (n=21) · skapad→staging-start median 0,5 / p95 6,1 min (n=17) · instabilitet 0,0 % bevisad, 0 overifierade · dedup 100 % (21/0). Röd-orsaker inkluderar nu "Docs link check: 1" — Codes egen Vale-miss i PR #202, korrekt fångad av de S88-korrigerade mätardefinitionerna.
+11. Visuell regression — RÖTT FYND. Lokalt: app-bred ändring av brödtextfärg fångades av 4 av 6 MOBILA vyer och av NOLL desktop-vyer. Grundorsak bevisad: maxDiffPixelRatio 0.01 är en andel, och desktop har 4,26x större yta (5 184 000 px mot 1 218 000 px). Med ratio sänkt till 0.001 failade alla 12 inkl. samtliga desktop. → TASK-49. Diff-artefakten granskad visuellt och bedömd läsbar, men en global vertikal förskjutning "smittar" hela bilden och kan dölja ytterligare ändringar. Återställning verifierad: 12/12 gröna.
+12. Helhetskänslan — EJ UTFÖRBAR I SESSION. Punkten frågar hur flödet känns efter en veckas normalt arbete. Genuint Marcus-fråga, kräver kalendertid. Bärare: denna notes-post.
+
+FYND SOM BLEV EGNA KORT (AC #3): TASK-49 (visual-tröskelns vyport-asymmetri) · TASK-50 (purge utan mutex) · TASK-51 (larmets commit-spann har aldrig fungerat).
+
+Ingen punkt retuscherades i efterhand. Två av tolv punkter är öppet oavklarade med skäl.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

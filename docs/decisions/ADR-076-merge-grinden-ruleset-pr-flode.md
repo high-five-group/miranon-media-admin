@@ -69,7 +69,7 @@ org-ägt repo).
        { "type": "deletion" },
        { "type": "non_fast_forward" },
        { "type": "pull_request", "parameters": {
-           "allowed_merge_methods": ["merge", "squash", "rebase"],
+           "allowed_merge_methods": ["merge"],
            "required_approving_review_count": 0,
            "required_reviewers": [],
            "dismiss_stale_reviews_on_push": false,
@@ -103,6 +103,20 @@ org-ägt repo).
 
    `gate-proof.yml`:s replik heter `CI Passed or Skipped (replik under bevis)`
    — distinkt kontext, opåverkad.
+
+6. **Merge-only som husregel** (Marcus-beslut S88 2026-07-25, T85-paketets
+   beslutsfråga 4). `allowed_merge_methods` låst till `["merge"]`; squash och
+   rebase är inte längre valbara.
+
+   Skälet är inte historik-estetik utan **dedupens förutsägbarhet**:
+   merge-dedupen (task-36.4) hittar PR-trädet via `HEAD^2`, merge-commitens
+   andra förälder. Squash och rebase skapar ingen sådan förälder, så dedupen
+   går fail-closed och kör hela sviten igen.
+
+   Ingenting *går sönder* utan låset — men tidsvinsten försvinner **tyst**,
+   och en tyst prestandaförlust är svårast att upptäcka i efterhand. Låset
+   kostar samtidigt ingenting: merge var redan den enda metod huset använder
+   (`gh pr merge --auto --merge` i hela flödet).
 
 ## Alternativ som övervägdes
 
