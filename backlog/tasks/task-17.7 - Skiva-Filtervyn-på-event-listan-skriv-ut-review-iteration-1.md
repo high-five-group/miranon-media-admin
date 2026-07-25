@@ -1,10 +1,10 @@
 ---
 id: TASK-17.7
 title: 'Skiva: Filtervyn på event-listan + skriv ut (review-iteration 1)'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-22 09:09'
-updated_date: '2026-07-25 00:29'
+updated_date: '2026-07-25 08:48'
 labels:
   - ready-for-agent
 dependencies:
@@ -52,6 +52,8 @@ Review-piloten (T86): granskat träd adb2c614 (bas main f51ec95) — 6 fynd; omp
 Lokala grindar: typecheck 0 fel · typecheck:tests 0 fel · biome 0 errors · build grön · test:api 376/376 · e2e events-list+kalender 36/36 · axe-0 med öppen panel + aktivt filter. Renderad verifiering (DoD #6): computed-asserts på trigger-aktiv (bg-text), badge (bg-accent/text-inverse), panel (bg-muted, radius 16px), print-emulering (nav/kontroller dolda, print-huvudets exakta text mot k02-print).
 
 CI-bokföring (svans, batch S86): PR #174 MERGED (merge-commit 9ca7b52) · PR-run 30135949402 grön per jobb · main-run 30136271886 grön per jobb (Test suite merge-dedup-SKIPPAD by design, 36.4-träff). Väntar design-review (DoD #5) — Done-flippen är Marcus. AFK-proveniens: batch S86, do-work-agent + svans-agent.
+
+Design-review godkänd: Marcus morgongranskning 2026-07-25 i webbläsaren, utan anmärkning ('OK'). Done-flipp per ADR-071 (utan anmärkning → flipp på kvittens).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -66,6 +68,6 @@ Levererad · commit f11cc37 · CI-run 30135949402 (PR) + 30136271886 (main) per 
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd (per skiva med UI-yta; L220)
+- [x] #5 Design-review: Marcus-granskning i webbläsaren godkänd (per skiva med UI-yta; L220)
 - [x] #6 Renderad verifiering (computed-style/skärmdump) per berörd punkt före granskning (L245/L246)
 <!-- DOD:END -->
