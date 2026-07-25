@@ -3,10 +3,12 @@ id: TASK-51
 title: >-
   Fynd: nattlarmets commit-spann har ALDRIG fungerat — alarm-jobbet saknar
   actions:read och felet sväljs tyst
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-25 19:11'
-labels: []
+updated_date: '2026-07-25 20:26'
+labels:
+  - ready-for-agent
 dependencies: []
 ordinal: 112000
 ---
