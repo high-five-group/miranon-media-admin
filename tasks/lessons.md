@@ -5028,10 +5028,31 @@ finns inte i deras verktygslista (fyra oberoende svans-agenter ToolSearch:ade
 förgäves). En subagent som måste vänta på extern signal (CI-run, merge) får
 därför ALDRIG avsluta sin tur i väntan — den håller sig aktiv med
 bakgrundsvakt (gh run watch till loggfil, run_in_background) + avgränsad
-foreground-avläsning på loggen/API:t (tail/grep -m1 eller bounded poll utan
-foreground-sleep) och verifierar varje vakt-utsaga mot auktoritativ källa
-(L336) innan den agerar. Dess sista handling är alltid retur-kontraktet
-(StructuredOutput), även vid abort.
+foreground-avläsning på loggen/API:t och verifierar varje vakt-utsaga mot
+auktoritativ källa (L336) innan den agerar. Dess sista handling är alltid
+retur-kontraktet (StructuredOutput), även vid abort.
+
+**AMENDERING 2026-07-25 (S87 städ-vågen) — `tail/grep -m1`-formen RIVS ÖPPET.**
+Ursprungstexten erbjöd "tail/grep -m1 **eller** bounded poll" som likvärdiga
+avläsningsformer. Den förra är trasig och lärdomen spred därmed felet: S86:s
+fix-vågs-agent följde den och brände **23 min 30 s av 71 min** på död väntan.
+`tail -f LOGG | grep -m1 MÖNSTER` kan aldrig avsluta i tid — `tail -f` släpper
+aldrig pipen även när grep matchat, så en alarm-/timeout-wrapper brinner av hela
+budgeten varje gång (bevis: `grep-exit: 142` i alla tre anropen TROTS att
+`WATCH-EXIT: 0` syns i utdatan). Värst blev cykel 3: nio minuters väntan på en
+körning som varit grön i sju minuter innan vakten ens startade.
+
+Använd **`scripts/ci-wait.sh`** — inte ett handvirat idiom. Den gör bounded poll
+mot `gh run view --json`, kontrollerar terminal-state **före första sömnen**
+(cykel-3-buggen), och levererar **per-jobb-verdikt** som ADR-071 §2(iii)
+faktiskt kräver, med skippade jobb explicit märkta som icke-bevis (L322).
+Fail-closed: allt som inte är `success` eller `skipped` fäller. Testsvit:
+`scripts/test-ci-wait.sh` (13 fall; T1 är regressionsvakten mot cykel-3-buggen
+— rött-först-bevisad: trasig form 30 s, läkt form 0 s).
+
+Generaliseringen bortom CI: **en väntemekanism vars avslutsvillkor inte kan
+observeras av mekanismen själv är ingen väntemekanism — den är en timeout med
+extra steg.** Kontrollera alltid om villkoret redan är uppfyllt innan du sover.
 
 Orkestrerings-regeln (L323-formen i workflow-skript): dela kortet i
 BYGG-agent (slutar vid armerad auto-merge, returnerar direkt — noll väntan)
