@@ -169,10 +169,16 @@ jobs:
     permissions:
       contents: read
       issues: write
-      # TASK-51 (S89): `gh run list` läser körnings-API:t och kräver detta
-      # grant. Utan det failade anropet 403 och spannet blev tyst fel ända
-      # sedan larmet byggdes (S79). nightly-metrics ovan hade redan samma
-      # grant för sitt gh-anrop — larm-jobbet fick aldrig samma behandling.
+      # TASK-51 (S89): `gh run list` läser körnings-API:t. Ospecificerade
+      # permissions sätts till none, så utan detta grant är actions=none och
+      # anropet får 403 när det väl når API:t. nightly-metrics ovan hade
+      # redan samma grant — larm-jobbet fick aldrig samma behandling.
+      #
+      # ÄRLIG AVGRÄNSNING: 403:an är dokumentations-belagd, inte observerad.
+      # Det fel vi FAKTISKT såg (run 30173436345) var "failed to determine
+      # base repo" från den saknade --repo-flaggan nedan — den dödade
+      # anropet före behörighetsprövningen. Båda krävs; ordningen på
+      # felen gjorde bara den andra osynlig.
       actions: read
     steps:
       - name: Skapa nattärende (tilldelat, etiketterat, med spann)
@@ -195,8 +201,14 @@ jobs:
           # sin första gren — ett faktapåstående om historiken byggt på
           # frånvaro av data (TASK-51). Samma klass som L322: signalen ska
           # vara success ELLER failure, aldrig frånvaro.
+          # --repo är OBLIGATORISK här: jobbet gör ingen checkout, så gh kan
+          # inte härleda repot ur en git-remote. Utan flaggan dör anropet på
+          # "failed to determine base repo" INNAN behörigheten ens prövas
+          # (skarpt bevisat, run 30173436345). gh issue create nedan hade
+          # flaggan från början — gh run list fick den aldrig.
           gh_failed=""
-          last_green=$(gh run list --workflow nightly.yml --branch main \
+          last_green=$(gh run list --repo "${REPO}" \
+            --workflow nightly.yml --branch main \
             --status success --limit 1 --json headSha \
             --jq '.[0].headSha // ""') || gh_failed="1"
 

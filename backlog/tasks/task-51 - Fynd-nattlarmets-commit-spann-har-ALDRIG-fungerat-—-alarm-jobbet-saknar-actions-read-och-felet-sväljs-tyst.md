@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-07-25 19:11'
-updated_date: '2026-07-25 20:26'
+updated_date: '2026-07-25 20:35'
 labels:
   - ready-for-agent
 dependencies: []
@@ -39,6 +39,27 @@ FÖRVÄNTAT BETEENDE: (1) alarm-jobbet får 'actions: read'. (2) Ett misslyckat 
 - [ ] #4 Ingen annan tyst '|| echo' i nightly.yml eller nightly-watchdog.yml maskerar ett API-fel — hela filerna genomsökta
 - [ ] #5 Ärende #114 och #210 refereras i lösningen som de två historiska bevisen
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+GRUNDORSAKS-KORRIGERING (S89 2026-07-25, skarpt bevisad): kortets ursprungliga grundorsak — 'gh run list kräver actions: read, anropet failar med 403' — var märkt (bevisad) men var en HÄRLEDNING. Rött-först-dispatchen 30173436345 mot ofixad main visade det faktiska felet:
+
+  failed to determine base repo: failed to run git:
+  fatal: not a git repository (or any of the parent directories): .git
+
+alarm-jobbet gör INGEN checkout, och 'gh run list' saknade --repo. Anropet dog alltså på repo-härledningen INNAN behörigheten prövades. 'gh issue create' i samma steg hade --repo "${REPO}" från början; 'gh run list' fick den aldrig.
+
+Jobbets GITHUB_TOKEN-block i samma logg bekräftar samtidigt att grantet saknas: Contents: read / Issues: write / Metadata: read — ingen Actions-rad.
+
+BÅDA KRÄVS. --repo är skarpt bevisad (felet syns i loggen). 'actions: read' är dokumentations-belagd men INTE observerad: ospecificerade permissions sätts till none, så anropet skulle få 403 när det väl når API:t. Ordningen på felen gjorde det andra osynligt. Denna avgränsning är öppet skriven i workflow-kommentaren — inget påstående om 403 görs som om det vore sett.
+
+BREDARE FYND (bäring utanför detta kort): en fix byggd enbart på kortets diagnos hade passerat samtliga lokala grindar (actionlint 1.7.12, yamllint, biome — alla gröna) och ändå INTE löst buggen; den hade bara bytt lögnen mot ett ärligt 'kunde inte hämta spannet'. Det var rött-först-passet mot skarp körning som avslöjade det. AC #1 ('returnerar en SHA i skarp körning') var formulerad så att halvfixen inte kunde smyga igenom — kravet på skarpt utfall, inte på mekanism, gjorde jobbet (L346:s klass).
+
+TILLÄGG UTÖVER KORTET: fältnamnet 'Commit-spann sedan senaste gröna natt' rättat till '...senaste gröna körning av nattsviten'. Anropet returnerar senaste gröna körning av nightly.yml inklusive dagtids-dispatcher (empiriskt: eed4927, dispatch 18:56 2026-07-25), inte senaste gröna natt. Fältet påstod något smalare än det mätte — samma ärlighetsklass som buggen självt. Underlaget behölls (bredare underlag ger snävare, mer användbart spann); namnet gjordes sant.
+
+Test-ärenden att stänga med motivering per CONTRIBUTING § Nattnätet: #216 (rött-först, ofixad kod).
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
