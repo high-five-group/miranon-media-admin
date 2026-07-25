@@ -42,6 +42,10 @@
     "tasks/sessions/archive/**",
     "docs/archive/**",
     "docs/reference/pocock/**",
+    // Rå-transkript, vendoriserat 2026-07-25 (S87). Endast KÄLLFILEN exkluderas
+    // — destillatet i samma katalog är vår egen prosa och grindas normalt.
+    // Snävare än pocock-precedenten med avsikt: exkludera råmaterial, inte hyllan.
+    "docs/reference/miranon-arkitektur/miranon-arkitektur-konversation-*.md",
     "tests/vale-regression/**",
     "node_modules/**",
     "dist/**",
