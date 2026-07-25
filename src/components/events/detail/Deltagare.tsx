@@ -12,8 +12,11 @@ import {
   MailCheck,
   TriangleAlert,
 } from 'lucide-react';
+// [PROTOTYPE] S86 divergens-pass — kastbar wiring (throwaway-kontraktet):
+import { useQueryState } from 'nuqs';
 import { useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
+import { PrototypeSwitcher } from '@/components/dev/PrototypeSwitcher';
 import { Button } from '@/components/primitives/Button';
 import { Dialog, DialogTrigger } from '@/components/primitives/Dialog';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -33,8 +36,16 @@ import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
+import { type BekraftaProtoVariant, ObekraftadeProto } from './DeltagareBekraftaPrototyp';
 import { DetaljGrupp } from './DetaljGrupp';
 import { DAGMANAD } from './datumSpann';
+
+/** [PROTOTYPE] Divergens-varianterna (ADR-074: stabila nycklar a/b/c). */
+const PROTO_VARIANTS = [
+  { key: 'a', label: 'A — Markera-läge', steg: 1, stegLabel: 'Divergens' },
+  { key: 'b', label: 'B — Direktmarkering', steg: 1, stegLabel: 'Divergens' },
+  { key: 'c', label: 'C — Kompakt kryssläge', steg: 1, stegLabel: 'Divergens' },
+];
 
 /**
  * Anmälda deltagare som ARBETSKÖ — skelettet (task-18.4; S73-facit K35–K58).
@@ -748,6 +759,12 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
   const panelId = useId();
   const [flik, setFlik] = useState<FlikNyckel>('alla');
   const [filter, setFilter] = useState<SummeringsFilter | null>(null);
+  // [PROTOTYPE] S86: ?variant=a|b|c ersätter Obekräftade-sektionen (DEV).
+  const [variantParam] = useQueryState('variant');
+  const protoVariant: BekraftaProtoVariant | null =
+    import.meta.env.DEV && (variantParam === 'a' || variantParam === 'b' || variantParam === 'c')
+      ? variantParam
+      : null;
 
   const aktiva = useMemo(() => registreringar.filter(arAktiv), [registreringar]);
 
@@ -991,7 +1008,10 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
           <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>
         ) : (
           <>
-            {obekraftade.length > 0 ? (
+            {obekraftade.length > 0 && protoVariant != null ? (
+              // [PROTOTYPE] S86 divergens: hela Obekräftade-sektionen ersatt.
+              <ObekraftadeProto variant={protoVariant} rader={obekraftade} />
+            ) : obekraftade.length > 0 ? (
               <div>
                 <GruppRubrik
                   oppen={oppna.obekraftade}
@@ -1073,6 +1093,8 @@ export function Deltagare({ event }: { event: Event }) {
       ) : (
         <ArbetsKo event={event} registreringar={data} />
       )}
+      {/* [PROTOTYPE] S86 divergens-växlaren — DEV-grindad (ADR-044-mekaniken). */}
+      {import.meta.env.DEV && <PrototypeSwitcher variants={PROTO_VARIANTS} />}
     </DetaljGrupp>
   );
 }
