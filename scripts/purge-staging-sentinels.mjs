@@ -160,14 +160,67 @@ export function chunk(ids, size) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Skiljer NÄTVERKSFEL från API-fel (TASK-50).
+ *
+ * `fetch()` kastar `TypeError` när anropet aldrig nådde fram — DNS, TCP, TLS.
+ * Det är transient och värt ett nytt försök. Ett HTTP-svar med statuskod är
+ * något helt annat: 422 betyder att anropet är fel, och att köra om det tre
+ * gånger gör bara samma misstag snabbare. Default är därför FALSE — okända
+ * feltyper retry:as aldrig.
+ */
+export function isTransientNetworkError(err) {
+  return err instanceof TypeError;
+}
+
+/** Exponentiell backoff för försök n (1-indexerat): 1 s, 2 s, 4 s … */
+export function backoffMs(attempt) {
+  return 1000 * 2 ** (attempt - 1);
+}
+
+const NETWORK_ATTEMPTS = 3;
+
+/**
+ * fetch med retry på transienta nätverksfel.
+ *
+ * INCIDENTEN (2026-07-25 18:47:15, QA-vandringens PR-trio): purge-jobbet dog
+ * på `TypeError: fetch failed` 1,5 s in, vid FÖRSTA listanropet — före någon
+ * delete. Ett ögonblicks nätverksstörning fällde hela CI-körningen via
+ * paraply-checken. 429 hade retry sedan bygget; nätverkslagret hade inget.
+ *
+ * Retryn är säker även för DELETE: anropet nådde aldrig fram, så det kan inte
+ * ha utförts. (Hade felet kommit EFTER ett svar vore det ett HTTP-fel, och
+ * de retry:as inte.)
+ */
+export async function fetchWithNetworkRetry(url, token, init) {
+  let lastErr;
+  for (let attempt = 1; attempt <= NETWORK_ATTEMPTS; attempt += 1) {
+    try {
+      return await fetch(url, { ...init, headers: { Authorization: `Bearer ${token}` } });
+    } catch (err) {
+      if (!isTransientNetworkError(err)) throw err;
+      lastErr = err;
+      if (attempt < NETWORK_ATTEMPTS) {
+        const wait = backoffMs(attempt);
+        console.log(
+          `   nätverksfel (${err.message}) — försök ${attempt}/${NETWORK_ATTEMPTS}, väntar ${wait} ms …`,
+        );
+        await sleep(wait);
+      }
+    }
+  }
+  console.error(`   nätverksfel kvarstod efter ${NETWORK_ATTEMPTS} försök`);
+  throw lastErr;
+}
+
 async function airtableRequest(url, token, throttleMs, init = {}) {
   await sleep(throttleMs); // enkel throttle: sekventiella anrop < 5 req/s
-  let res = await fetch(url, { ...init, headers: { Authorization: `Bearer ${token}` } });
+  let res = await fetchWithNetworkRetry(url, token, init);
   if (res.status === 429) {
     // Dokumenterat kontrakt: vänta 30 s, försök igen (en gång).
     console.log('   429 rate limit — väntar 30 s och försöker igen …');
     await sleep(30_000);
-    res = await fetch(url, { ...init, headers: { Authorization: `Bearer ${token}` } });
+    res = await fetchWithNetworkRetry(url, token, init);
   }
   if (!res.ok) {
     const body = await res.text().catch(() => '');
