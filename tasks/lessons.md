@@ -5101,3 +5101,34 @@ A/B-mätning av popover.x − trigger.x på bred (klassisk scrollbar) OCH smal
 (gutter frånvarande) viewport — båda ska vara 0. Följdlärdom i samma pass:
 mät ALDRIG textbredd (scrollWidth-klipptester) före `document.fonts.ready`
 — fallback-metriken är bredare och ger falska klipp i CI.
+
+### L343 — [UNIVERSAL] En linter körd med default-flaggor är inte grinden — grindens ANROP är kontraktet
+
+Datum: 2026-07-25 (S87 städ-vågen) | Källa: PR #195 gick röd på
+`shellcheck` trots att jag rapporterat "shellcheck GRÖN" tio minuter
+tidigare (klass: falsk-grön verifiering; kostnad: en röd CI-cykel + en
+fix-runda)
+
+Jag körde `shellcheck scripts/ci-wait.sh` och fick tyst grönt. CI kör
+`shellcheck --severity=style --enable=all`. Skillnaden är inte kosmetisk:
+`--enable=all` slår på de OPTIONAL-checkar (SC2310, SC2312, SC2249) som
+default-läget håller avstängda — och alla sex fynden låg i den mängden.
+Min lokala körning var strukturellt oförmögen att se det grinden ser.
+
+Det gäller varje verktyg med konfigurerbar stränghet: `shellcheck`
+(`--enable`), `eslint`/`biome` (config-fil + `--max-warnings`), `vale`
+(`MinAlertLevel`), `tsc` (`-p` mot rätt tsconfig), `markdownlint`
+(globs + ignores). **Läs grindens faktiska anropsrad ur workflow-filen
+och kör den, verbatim.** En parafras av grinden är ett antagande om
+grinden.
+
+Skärpning som gäller även när man tror sig ha kollat: jag HADE greppat
+`ci.yml` efter "shellcheck" och sett raden `Install shellcheck (pinned
+v0.11.0)` — men läste installations-steget, inte kör-steget. Att ha
+träffat rätt fil är inte att ha läst rätt rad.
+
+Formen som håller: kopiera grindens kommando till en lokal körning över
+grindens FULLA fil-mängd (här: `scripts/*.sh .githooks/*
+.checklist-policy.conf .frontmatter-policy.conf` — inte bara de filer man
+själv rört, eftersom grinden inte är diff-scopad). Rapportera "grön" först
+då.

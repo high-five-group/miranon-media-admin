@@ -72,43 +72,71 @@ done
 [[ "${TIMEOUT}" =~ ^[0-9]+$ ]] || die "--timeout måste vara ett heltal (sekunder)"
 [[ "${INTERVAL}" =~ ^[1-9][0-9]*$ ]] || die "--interval måste vara ett positivt heltal"
 
-DEADLINE=$(( $(date +%s) + TIMEOUT ))
-budget_left() { [[ $(date +%s) -lt ${DEADLINE} ]]; }
+NOW="$(date +%s)"
+DEADLINE=$(( NOW + TIMEOUT ))
+
+# Budget-kontrollen är medvetet INLINE, inte en funktion: en funktion anropad i
+# `||`-position stänger av set -e för hela uttrycket (SC2310), och en
+# kommandosubstitution inuti `[[ ]]` maskerar sitt returvärde (SC2312).
+# Grinden kör shellcheck --severity=style --enable=all och fäller båda.
 
 # --- Steg 1: lös upp run-ID ------------------------------------------------
 # En nypushad commit har ännu ingen run. Vi pollar tills den dyker upp ELLER
 # budgeten tar slut — men vi SOVER ALDRIG före första försöket.
-resolve_run() {
-    case "${MODE}" in
-        run) printf '%s' "${TARGET}"; return 0 ;;
-        pr)
-            local sha
-            sha="$("${GH}" pr view "${TARGET}" --json headRefOid -q '.headRefOid' 2>/dev/null || true)"
-            [[ -n "${sha}" ]] || return 1
-            list_run --commit "${sha}" ;;
-        commit) list_run --commit "${TARGET}" ;;
-        branch) list_run --branch "${TARGET}" ;;
-    esac
-}
-
 list_run() {
-    local out
+    local out rc
+    set +e
     if [[ -n "${WORKFLOW}" ]]; then
         out="$("${GH}" run list "$1" "$2" --workflow "${WORKFLOW}" --limit 1 \
-              --json databaseId -q '.[0].databaseId' 2>/dev/null || true)"
+              --json databaseId -q '.[0].databaseId' 2>/dev/null)"
     else
         out="$("${GH}" run list "$1" "$2" --limit 1 \
-              --json databaseId -q '.[0].databaseId' 2>/dev/null || true)"
+              --json databaseId -q '.[0].databaseId' 2>/dev/null)"
     fi
-    [[ -n "${out}" && "${out}" != "null" ]] || return 1
+    rc=$?
+    set -e
+    [[ "${rc}" -eq 0 && -n "${out}" && "${out}" != "null" ]] || return 1
     printf '%s' "${out}"
+}
+
+resolve_run() {
+    local sha rc
+    case "${MODE}" in
+        run)
+            printf '%s' "${TARGET}"
+            ;;
+        pr)
+            set +e
+            sha="$("${GH}" pr view "${TARGET}" --json headRefOid -q '.headRefOid' 2>/dev/null)"
+            rc=$?
+            set -e
+            [[ "${rc}" -eq 0 && -n "${sha}" ]] || return 1
+            list_run --commit "${sha}"
+            ;;
+        commit)
+            list_run --commit "${TARGET}"
+            ;;
+        branch)
+            list_run --branch "${TARGET}"
+            ;;
+        *)
+            die "internt fel: okänd mode '${MODE}'"
+            ;;
+    esac
 }
 
 RUN_ID=""
 while :; do
-    RUN_ID="$(resolve_run || true)"
-    [[ -n "${RUN_ID}" ]] && break
-    budget_left || die "hittade ingen körning för ${MODE}=${TARGET} inom ${TIMEOUT}s" 2
+    set +e
+    RUN_ID="$(resolve_run)"
+    RESOLVE_RC=$?
+    set -e
+    [[ "${RESOLVE_RC}" -eq 0 && -n "${RUN_ID}" ]] && break
+
+    NOW="$(date +%s)"
+    if [[ "${NOW}" -ge "${DEADLINE}" ]]; then
+        die "hittade ingen körning för ${MODE}=${TARGET} inom ${TIMEOUT}s" 2
+    fi
     say "ci-wait: ingen körning ännu för ${MODE}=${TARGET} — nytt försök om ${INTERVAL}s"
     sleep "${INTERVAL}"
 done
@@ -119,19 +147,24 @@ say "ci-wait: följer körning ${RUN_ID}"
 # TERMINAL-KONTROLLEN SKER FÖRE FÖRSTA SÖMNEN. Det var exakt denna ordning
 # cykel 3 saknade: körningen var redan klar när vakten startade, men vakten
 # sov ändå bort nio minuter innan den läste av.
-STATUS=""; CONCLUSION=""
+STATUS=""
+CONCLUSION=""
 while :; do
-    read -r STATUS CONCLUSION <<<"$(
-        "${GH}" run view "${RUN_ID}" --json status,conclusion \
-            -q '.status + " " + (.conclusion // "-")' 2>/dev/null || printf 'unknown -'
-    )"
+    set +e
+    RUN_STATE="$("${GH}" run view "${RUN_ID}" --json status,conclusion \
+        -q '.status + " " + (.conclusion // "-")' 2>/dev/null)"
+    STATE_RC=$?
+    set -e
+    [[ "${STATE_RC}" -eq 0 && -n "${RUN_STATE}" ]] || RUN_STATE="unknown -"
+    read -r STATUS CONCLUSION <<<"${RUN_STATE}"
 
     [[ "${STATUS}" == "completed" ]] && break
 
-    budget_left || {
+    NOW="$(date +%s)"
+    if [[ "${NOW}" -ge "${DEADLINE}" ]]; then
         say "ci-wait: TIMEOUT efter ${TIMEOUT}s — körning ${RUN_ID} står i '${STATUS}'"
         exit 2
-    }
+    fi
     say "ci-wait: ${STATUS} — nästa avläsning om ${INTERVAL}s"
     sleep "${INTERVAL}"
 done
