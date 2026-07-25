@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { BedDouble, CalendarDays, MapPin } from 'lucide-react';
+import { useCallback } from 'react';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
@@ -24,6 +25,37 @@ export function dateValue(e: Event): number {
     Exporterad sedan task-18.18 (delad med eventväljarens sammanfattning). */
 export function isFull(e: Event): boolean {
   return e.platserKvar != null && e.platserKvar <= 0;
+}
+
+/**
+ * Värmer eventsidans båda queries för ett event — PREFETCH PÅ AVSIKT
+ * (ADR-078 beslut 3): hover/fokus är den tidigaste ärliga signalen om att en
+ * yta ska öppnas, anropen startar där i stället för vid klicket. Idempotent —
+ * React Query dedupar, `staleTime` gör upprepad avsikt gratis. DELAD sedan
+ * task-18.19 (review-pilotens F1): listkortet och eventväljaren bär samma
+ * värmning — en form, inte två kopior (BelaggningsStapel-lyftets klass).
+ */
+export function useForberedEventDetalj(): (eventId: string) => void {
+  const dataSource = useDataSource();
+  const queryClient = useQueryClient();
+  // Stabil identitet (ompasseringens N3): callbacken ingår i effekt-deps hos
+  // konsumenter (AvsiktVidFokus) — utan memoisering hade varje omrendering
+  // re-avfyrat avsikts-effekten utan ny användarsignal.
+  return useCallback(
+    (eventId: string) => {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.events.detail(eventId),
+        queryFn: () => dataSource.fetchEvent(eventId),
+        staleTime: 30_000,
+      });
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.registrations.byEvent(eventId),
+        queryFn: () => dataSource.fetchRegistrations({ eventId }),
+        staleTime: 30_000,
+      });
+    },
+    [dataSource, queryClient],
+  );
 }
 
 /**
@@ -118,21 +150,9 @@ export function EventCard({
   period: Period;
   idagStart: number;
 }) {
-  const dataSource = useDataSource();
-  const queryClient = useQueryClient();
-  /** Värmer eventsidans båda queries. Idempotent — React Query dedupar. */
-  const forbered = () => {
-    queryClient.prefetchQuery({
-      queryKey: queryKeys.events.detail(e.id),
-      queryFn: () => dataSource.fetchEvent(e.id),
-      staleTime: 30_000,
-    });
-    queryClient.prefetchQuery({
-      queryKey: queryKeys.registrations.byEvent(e.id),
-      queryFn: () => dataSource.fetchRegistrations({ eventId: e.id }),
-      staleTime: 30_000,
-    });
-  };
+  /** Värmer eventsidans båda queries (delade useForberedEventDetalj). */
+  const varmDetalj = useForberedEventDetalj();
+  const forbered = () => varmDetalj(e.id);
 
   const startMs = dateValue(e);
   const installt = e.status === 'Inställt';

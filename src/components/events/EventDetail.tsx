@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
@@ -16,6 +16,8 @@ import { Deltagare } from './detail/Deltagare';
 import { Gruppdynamik } from './detail/Gruppdynamik';
 import { Narvaro } from './detail/Narvaro';
 import { OmEventet } from './detail/OmEventet';
+import { useForberedEventDetalj } from './EventCard';
+import { EventValjare } from './EventValjare';
 
 /** Visat eventnamn ur de fält Airtable kan leverera — aldrig krasch/tomt. */
 function eventName(e: Event): string {
@@ -38,6 +40,10 @@ function eventName(e: Event): string {
  * A11y (11/10):
  * - Chevronen ensam bär "detta är en undersida" (44 px rund länk,
  *   aria-label "Tillbaka till event"); h1 = eventnamnet, fokus dit vid laddning.
+ *   Sedan task-18.19 är h1:an OCKSÅ eventväljarens trigger (variant A —
+ *   rubrik-semantiken orörd: accessibla namnet är exakt eventnamnet; se
+ *   EventValjare). Vid byte följer document.title med; fokus återvänder till
+ *   triggern via React Arias fokus-retur, aldrig ett nytt fokus-hopp.
  * - Data-anländning annonseras i aria-live; Lugnt laddläge: skeleton i
  *   slutgeometri (aria-busy + sr-besked — ingen synlig "Laddar…"-textrad).
  * - Fel OCH 404 via MessageBox (role=alert); document.title = eventnamnet.
@@ -45,8 +51,9 @@ function eventName(e: Event): string {
 export function EventDetail({ eventId }: { eventId: string }) {
   const dataSource = useDataSource();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const announceRef = useRef(false);
+  const harFokuserat = useRef(false);
 
   const {
     data: event,
@@ -77,14 +84,58 @@ export function EventDetail({ eventId }: { eventId: string }) {
 
   const notFound = error instanceof EdgeFunctionError && error.status === 404;
 
-  // Fokus → <h1> + document.title när data anlänt (en gång per laddning).
+  // Fokus → <h1> vid FÖRSTA dataanländningen (en gång per sidbesök). Väljar-
+  // bytet (task-18.19) remountar inte komponenten och flyttar INTE fokus om:
+  // React Aria returnerar fokus till rubrik-triggern när popovern stängs,
+  // och den fokus-kontinuiteten ska inte brytas.
   useEffect(() => {
-    if (event && !announceRef.current) {
-      announceRef.current = true;
+    if (event && !harFokuserat.current) {
+      harFokuserat.current = true;
       headingRef.current?.focus();
-      document.title = `${eventName(event)} — Miranon Media Admin`;
     }
   }, [event]);
+
+  // document.title följer eventNAMNET (nyckeln är titel-STRÄNGEN — `event`-
+  // objektet byter identitet per render när placeholdern räknas om, och en
+  // objekt-nycklad effekt hade avbrutit sin egen frame i cleanupen).
+  const titel = event ? `${eventName(event)} — Miranon Media Admin` : null;
+  const titelRef = useRef<string | null>(null);
+  useEffect(() => {
+    titelRef.current = titel;
+    if (titel != null) document.title = titel;
+  }, [titel]);
+
+  // Väljar-bytet (task-18.19): RouteAnnouncer skriver den generiska route-
+  // titeln ("Event") vid varje klient-navigation — dess onResolved landar
+  // EFTER sidans effekt när INSTANT-placeholdern gör datat omedelbart
+  // (empiriskt: även efter en rAF ur effekten). Sidan re-assertar därför
+  // eventnamnet i SAMMA signal, en frame efter announcerns synkrona
+  // skrivning. Pathname-vakten hindrar läckage: när navigationen lämnat
+  // sidan re-assertas ingenting.
+  const router = useRouter();
+  useEffect(() => {
+    return router.subscribe('onResolved', () => {
+      const titelNu = titelRef.current;
+      if (titelNu == null) return;
+      if (router.state.location.pathname.replace(/\/$/, '') !== `/event/${eventId}`) return;
+      requestAnimationFrame(() => {
+        document.title = titelNu;
+      });
+    });
+  }, [router, eventId]);
+
+  /** Prefetch på avsikt (ADR-078 beslut 3): hover/virtuell fokus på en
+      väljar-rad värmer bytesmålets båda queries via delade
+      useForberedEventDetalj (EventCards form, PR #163 — review-pilotens F1:
+      en värmning, inte två kopior). */
+  const varmDetalj = useForberedEventDetalj();
+  const varmBytesmal = useCallback(
+    (id: string) => {
+      if (id === eventId) return; // sidans eget event är redan hämtat/hämtas
+      varmDetalj(id);
+    },
+    [eventId, varmDetalj],
+  );
 
   // Sid-chromen står ALLTID i slutgeometri — bara innehållsytan växlar mellan
   // ladd/fel/laddat (Lugnt laddläge). Chevronen i rubrikstorlek (44 px-knapp,
@@ -137,15 +188,28 @@ export function EventDetail({ eventId }: { eventId: string }) {
         {`Event ${eventName(event)} laddat.`}
       </p>
 
-      {/* Toppraden (S73-facit K7–K10): identiteten UR korten — sidhuvud på ren
-          bakgrund; placeringen ÄR lås-signalen. h1 = eventnamnet (rubrikpolicyn);
+      {/* Toppraden (S73-facit K7–K10 + task-18.19 variant A): identiteten UR
+          korten — sidhuvud på ren bakgrund; placeringen ÄR lås-signalen.
+          h1 = eventnamnet OCH väljar-triggern (väljaren ÄR rubriken —
+          pogo-sticking-elimineringen: byt event här, detaljerna laddas direkt
+          utan omväg via listan; Stripe-/Linear-/Airtable-precedenten).
           EventKey-pillen som titel-metadata till höger (liten mot titeln);
-          tid kvar-raden under; tunn avdelare. */}
+          tid kvar-raden under; tunn avdelare — sidhuvudet i övrigt orört
+          (facit punkt 2). */}
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
         <div className="flex items-center justify-between gap-3">
-          <h1 ref={headingRef} tabIndex={-1} className="min-w-0 break-words font-semibold text-3xl">
-            {eventName(event)}
-          </h1>
+          <EventValjare
+            form="rubrik"
+            valtEventId={eventId}
+            valtEvent={event}
+            rubrikRef={headingRef}
+            // Bytet navigerar routen (18.18 beslut a, ärvt): /event/$eventId
+            // med behållna sökparametrar — URL:en alltid sann och delbar.
+            onByte={(id) =>
+              navigate({ to: '/event/$eventId', params: { eventId: id }, search: (prev) => prev })
+            }
+            onAvsikt={varmBytesmal}
+          />
           {event.eventKey && (
             <span className="shrink-0 rounded-full bg-bg-muted px-3 py-1 font-medium text-small text-text-secondary">
               {event.eventKey}

@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
  * task-18.9 — Närvaro-REGISTRET på eventsidan (S73-facit K60).
@@ -92,6 +93,7 @@ async function setup(
   attendance: Row[],
   { attendanceStatus = 200 }: { attendanceStatus?: number } = {},
 ): Promise<{ attendanceCalls: () => number }> {
+  await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
   let calls = 0;
   await page.route(GET_EVENT, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
     await route.fulfill({

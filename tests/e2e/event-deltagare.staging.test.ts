@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
+import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
  * task-18.4 — Anmälda deltagare som ARBETSKÖ (S73-facit K35–K58): summeringsrader
@@ -146,6 +147,7 @@ const DELTAGARE: Json[] = [
 ];
 
 async function mocka(page: Page, event: Json, registrations: Json[] = DELTAGARE): Promise<void> {
+  await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
   await page.route(GET_EVENT, async (route) => {
     await route.fulfill({
       status: 200,

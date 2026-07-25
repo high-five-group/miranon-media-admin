@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
+import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
  * task-18.8 — Betalningar-gruppens inline-ARBETSYTA på eventsidan (S73-facit
@@ -151,6 +152,7 @@ async function mockSidan(
     registrations = facitRegistrations(),
   }: { event?: Mock; registrations?: Mock[] } = {},
 ) {
+  await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
   await page.route(GET_EVENT, (route) =>
     route.fulfill({
       status: 200,

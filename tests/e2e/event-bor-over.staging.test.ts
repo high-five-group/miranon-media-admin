@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
+import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
  * task-18.7 — Bor över: summeringsraden + KRYSS-LÄGET (S73-facit K50/K52).
@@ -136,6 +137,7 @@ const DELTAGARE: Json[] = [
 type Skrivning = { operationKey: string; recordId: string; fields: Record<string, unknown> };
 
 async function mocka(page: Page): Promise<Skrivning[]> {
+  await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
   const skrivningar: Skrivning[] = [];
   // Serverns rader muteras av skrivningarna så en refetch (mutationens
   // onSettled-invalidering) inte "ångrar" den optimistiska flippen.

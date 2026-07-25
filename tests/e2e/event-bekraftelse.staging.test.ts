@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, type Route, test } from '@playwright/test';
+import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
  * task-18.6 — Hantera-flödet: bekräftelse-vertikalen + Bekräfta alla + auto-utskicks-
@@ -133,6 +134,7 @@ type Mockar = {
  * rulla tillbaka den.
  */
 async function mocka(page: Page, event: Json, deltagare: Json[] = grundData()): Promise<Mockar> {
+  await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
   const mockar: Mockar = { confirmCalls: [], updateEventCalls: [] };
   let aktuellt = event;
   const lista = [...deltagare];
