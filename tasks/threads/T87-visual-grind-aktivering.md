@@ -42,6 +42,24 @@ Grinden aktiveras när UI-iterationstakten lugnat — naturliga kandidater:
 inför bas-maximeringen (ADR-063-milstolpen) eller när Lotta börjar använda
 appen skarpt. Marcus avgör; tråden är påminnelsen.
 
+## BLOCKERANDE FÖRKRAV (S88 2026-07-25): TASK-49 måste lösas först
+
+QA-vandringen (task-36.8 punkt 11) avslöjade att sviten är **systematiskt
+blind på desktop**: en app-bred ändring av brödtextfärgen fångades av 4 av 6
+MOBILA vyer och av **noll** desktop-vyer. Grundorsaken är `maxDiffPixelRatio:
+0.01` — en ANDEL — mot vyportar med 4,26× ytskillnad (desktop 5 184 000 px
+mot mobil 1 218 000 px). Bevis: med ratio 0.001 failade alla 12 inklusive
+samtliga desktop.
+
+**Konsekvens för denna tråd:** aktiverings-steget nedan är fortfarande
+tekniskt korrekt, men skulle sätta upp en grind som släpper igenom
+desktop-regressioner. Det vore falsk trygghet — sämre än ingen grind, per
+husets egen kyrkogårds-regel.
+
+Aktivera alltså INTE före **`TASK-49`** är löst. Marcus-beslutet i S88
+(nightly-visual → A, vänta) fattades innan fyndet fanns och **stärktes av
+det**: hade vi aktiverat tidigt hade vi trott oss skyddade utan att vara det.
+
 ## Aktiverings-steget (EN liten PR)
 
 1. Färska baselines först om utseendet ändrats sedan senaste välsignelsen:
