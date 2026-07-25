@@ -102,6 +102,31 @@ BUILD-LOG S83-post.
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 87 🔄 PÅGÅENDE (2026-07-25) — Städ-vågen: den obetalda räntan före nästa stora spår
+
+> Scope: sessionsdok `2026-07-25-session-87.md` Del 1 (kanonisk plats).
+> Marcus-kvitterat 2026-07-25 ("helt i linje med dina rekommendationer",
+> BESLUT 1 alt. A) efter granskningsrunda som reviderade två antaganden.
+> Underlag: `bilagor/s87-spaning/` (nio läsande agenter). Kadensrad per L67.
+
+- [x] **S86-stängningen** (2026-07-25): PR #193 mergad, `6d49a02`, main
+  grön per jobb (Docs link check körd + grön, Test suite dedup-skippad).
+  Del 3–4 + BUILD-LOG-post + T86-omtriage + **T92** mintad.
+  **NÄSTA: dok-födelse.**
+- [ ] **Dok-födelse + spanings-bilagan** (denna PR): S87 Del 1 +
+  `bilagor/s87-spaning/` (nio rapporter + README med proveniens och
+  läsvarning — två agent-fynd visade sig felaktiga vid granskning).
+  **NÄSTA: `scripts/ci-wait.sh`.**
+- [ ] **`scripts/ci-wait.sh` + L340-amendering** — bounded poll ersätter
+  `tail -f | grep -m1` som aldrig terminerar; L340 föreskriver den trasiga
+  formen och sprider felet vidare. Löpande ränta 6–9 min/CI-cykel.
+- [ ] **Arkitektur-korpusen** → `docs/reference/miranon-arkitektur/`
+  (Pocock-precedenten) + destillat + T79-uppdatering + AI-assistent-spåret
+  registrerat. **Rör EJ ci.yml** (0 URL:er verifierat).
+- [ ] **task-48** — kort-komplettering (förälder TASK-18, DoD #5+#6) →
+  `/do-work` som **pilot-rad 7**. Väg A: länkarna vilar. Öppen delfråga
+  vid upptaget: den optimistiska enskilda bekräftelsen försvinner.
+
 ### Session 86 ✅ AVSLUTAD (2026-07-25) — Nattbygget 6/6 + morgongranskningens tre fix-vågor
 
 > Scope: sessionsdok `2026-07-25-session-86.md` Del 1 (kanonisk plats):
