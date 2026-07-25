@@ -4,7 +4,7 @@ title: 'Skiva: Filtervyn på event-listan + skriv ut (review-iteration 1)'
 status: Done
 assignee: []
 created_date: '2026-07-22 09:09'
-updated_date: '2026-07-25 08:48'
+updated_date: '2026-07-25 09:11'
 labels:
   - ready-for-agent
 dependencies:
@@ -54,6 +54,16 @@ Lokala grindar: typecheck 0 fel · typecheck:tests 0 fel · biome 0 errors · bu
 CI-bokföring (svans, batch S86): PR #174 MERGED (merge-commit 9ca7b52) · PR-run 30135949402 grön per jobb · main-run 30136271886 grön per jobb (Test suite merge-dedup-SKIPPAD by design, 36.4-träff). Väntar design-review (DoD #5) — Done-flippen är Marcus. AFK-proveniens: batch S86, do-work-agent + svans-agent.
 
 Design-review godkänd: Marcus morgongranskning 2026-07-25 i webbläsaren, utan anmärkning ('OK'). Done-flipp per ADR-071 (utan anmärkning → flipp på kvittens).
+
+## Granskningsvågens FIX (S86 morgongranskning, Marcus-beslut 2026-07-25 — efter Done-flippen)
+
+FYND (Marcus): 'vi har en grå rad för filtreringen som ligger fast där även när filtreringen är stängd … Så va det inte i prototypen va?' — korrekt: prototypen (0eba03b) hade villkorad rendering = ingen rand; facitet avsåg ingen synlig rad i stängt läge.
+
+GRUNDORSAK (verifierad i react-arias useDisclosure-källa): React Aria döljer stängd panel med hidden="until-found" ⇒ content-visibility: hidden — INNEHÅLLET döljs men panel-elementets EGEN bakgrund/padding renderas. Vår panel bar 'rounded-2xl bg-bg-muted p-4' direkt på DisclosurePanel-elementet → tom grå rand (32 px padding-yta med tonal bg).
+
+FIX (React Aria-idiomet; branch fix/s86-granskningsvag, granskningsvågens samlade PR): DisclosurePanel-elementet ostylat (endast data-testid); bakgrund/padding/rounded/gap flyttade till INRE wrapper-div — allt visuellt försvinner med innehållet. Rytmen rad↔öppen panel bärs av wrapperns mt-6 i stället för rotens gap-6 (ett rot-gap hade lämnat 24 px dött utrymme efter det 0 px höga panel-elementet i stängt läge). Aria-wiring, print:hidden, skeleton-läget, dropdowns och panelfot oförändrade. Fil: src/components/events/EventsList.tsx.
+
+E2E-LÅS (events-list.staging.test.ts): nytt test 'stängd panel är VISUELLT FRÅNVARANDE — ingen grå rand' (not.toBeVisible + boundingBox-höjd 0, initialt OCH efter öppna/stäng-cykel; röd mot pre-fix-koden som renderade 32 px-randen); befintliga öppet-läges-formlåset omdirigerat till inre wrappern (panel-elementet är nu ostylat by-design). Rött-först ej observerbart lokalt (5173 = Marcus levande dev-server; portlåst svit med hård vägran) — PR-CI är beviset, bokfört i PR-bodyn. Kortet förblir Done; fixen är granskningsvågens.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

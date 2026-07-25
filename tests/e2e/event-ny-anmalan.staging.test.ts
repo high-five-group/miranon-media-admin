@@ -411,6 +411,43 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
     expect(Number(lankStil.fontWeight)).toBeLessThan(500);
   });
 
+  test('fast bredd (facit-komplettering, Marcus-beslut 2026-07-25): stängda triggern spänner över hela blocket med symmetriska marginaler', async ({
+    page,
+  }) => {
+    // Bredden var aldrig låst i S83-facitet — triggern växte med innehållet.
+    // Beslutet: full blockbredd, samma inset höger som vänster (kortets px-4);
+    // chevronen står vid triggerns högerkant (ml-auto).
+    await mockEndpoints(page);
+    await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
+
+    const trigger = valjarTrigger(page);
+    await expect(trigger).toContainText('Resor i medvetandet 1');
+    const blockBox = await page.getByTestId('eventet-block').boundingBox();
+    const triggerBox = await trigger.boundingBox();
+    expect(blockBox).not.toBeNull();
+    expect(triggerBox).not.toBeNull();
+
+    const vanster = (triggerBox?.x ?? 0) - (blockBox?.x ?? 0);
+    const hoger =
+      (blockBox?.x ?? 0) +
+      (blockBox?.width ?? 0) -
+      ((triggerBox?.x ?? 0) + (triggerBox?.width ?? 0));
+    // Kortets inner-inset på VÄNSTER (px-4 = 16 px + kortets 1 px
+    // transparenta kant som ingår i boundingBox = 17) — och SAMMA på höger
+    // (symmetrin ÄR Marcus-beslutet).
+    expect(vanster).toBeCloseTo(17, 0);
+    expect(hoger).toBeCloseTo(vanster, 0);
+
+    // Chevronen vid högerkanten: triggerns px-3.5 (14 px) + triggerns egen
+    // 1 px-kant i boundingBox = 15.
+    const chevronBox = await trigger.locator('svg.lucide-chevrons-up-down').boundingBox();
+    expect(
+      (triggerBox?.x ?? 0) +
+        (triggerBox?.width ?? 0) -
+        ((chevronBox?.x ?? 0) + (chevronBox?.width ?? 0)),
+    ).toBeCloseTo(15, 0);
+  });
+
   test('status ≠ Planerat får sitt märke; väntelista-raden borta vid 0', async ({ page }) => {
     await mockEndpoints(page, { eventOverrides: { status: 'Flyttat' } });
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);

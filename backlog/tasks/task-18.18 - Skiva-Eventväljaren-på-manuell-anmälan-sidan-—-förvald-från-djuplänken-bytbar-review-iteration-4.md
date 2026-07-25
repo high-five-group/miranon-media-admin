@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-23 09:56'
-updated_date: '2026-07-25 05:32'
+updated_date: '2026-07-25 09:31'
 labels:
   - ready-for-agent
 dependencies:
@@ -79,6 +79,16 @@ Lokala grindar: typecheck 0 fel · typecheck:tests 0 fel · biome 0 errors (5 wa
 Review-piloten (T86): granskat träd 20525690 (bas main 1ccd5a1) — 7 fynd (2 spec / 5 std); fokuserad ompassering på fix-diffen (träd 62203385) — 1 nytt nit-fynd (F8, bokförings-kommentaren). Triage: 8 åtgärdade (F1 komponentvals-bokföringen HÄR på kortet — spec-konflikten punkt 12 [ComboBox] vs punkt 3 [rik trigger utan fält] omlandad till React Arias dokumenterade Select+Autocomplete-form, Marcus-kvittens i morgongranskningen · F2 avslöjnings-avsikten till router-history-state, StrictMode-dubbelinvokering gjorde modulflaggan opålitlig i dev · F3 mekaniskt AT-kontrakts-e2e [DOM-fokus kvar i fältet + aria-activedescendant-förflyttning] · F4 synkron utfalls-gating via mutationEventIdRef — utfall från event A målas aldrig under B:s URL, inte ens en frame före reset-effekten · F5 EN dl med giltig dt+dd+dd-grupp — en skärmläsar-grammatik i stället för tre syskonstrukturer · F6 SelectItem-konsumtion + BelaggningsStapel-lyft ur EventCard, dubblett-driften eliminerad · F7 e2e-bevis för nyckelrotation + utfalls-nollställning vid byte · F8 reload-fallet i F2-bokföringen), 0 avfärdade, 1 routad (task-45: kommande-filter/sort-dubbleringen — utanför skivans mandat, samma lyft-klass som punkt 9). Reviewfixarna validerade: e2e-filen 16/16 · berörd yta events-list/kalender/event-detail 84/84 · test:api 381/381 omkört (EventCard tvärgående; en transient staging-409-flaky klassad via isolerad 12/12-omkörning) · typecheck/typecheck:tests/biome/build gröna. Review-tid ~7 min (två pass); +3 havererade CLI-starter före passen (headless claude -p hänger på MCP-server-laddning — löst med --strict-mcp-config; driftnot i T86).
 
 ÖPPNA MARCUS-MOMENT (morgongranskningen): (1) F1-kvittensen — komponentvals-omlandningen ComboBox→Select+Autocomplete; (2) manuellt VoiceOver-pass på sökväljaren (facit punkt 8:s AT-krav utöver det mekaniska e2e-kontraktet); (3) bekräftelseläget visar inte längre vilket event anmälan gällde (eventidentiteten bor i väljaren, som inte renderas i bekräftelseläget — arv från 18.12, ompasseringens observation).
+
+## Granskningsvågens FIX + FACIT-KOMPLETTERING (S86 morgongranskning, Marcus-beslut 2026-07-25)
+
+FYND: eventväljarens stängda trigger på manuell anmälan-sidan VÄXTE i bredd med innehållet. FACIT-KOMPLETTERING: bredden var ALDRIG låst i S83-facitet (punkt 3 låste färg/innehåll, inte bredden) — Marcus-beslutet kompletterar facitet: FAST bredd, triggern sträcker sig hela vägen över sitt block med samma marginal mot blockkanten på höger sida som på vänster (symmetrin bärs av kortets px-4; full blockbredd).
+
+FIX (branch fix/s86-granskningsvag): stängda kontextrad-triggern w-auto max-w-full self-start → w-full; chevronen alltid ml-auto (högerkanten). K54-vakten respekterad (ingen -mx-2 i formen). Tomt läge (/anmalan/ny) var redan full bredd — konsekvent. Fil: src/components/events/EventValjare.tsx.
+
+E2E-LÅS (event-ny-anmalan.staging.test.ts, 18.18-blocket): nytt test 'fast bredd (facit-komplettering, Marcus-beslut 2026-07-25)' — vänster-inset 16 px (px-4) = höger-inset (symmetri-lås) + chevron 14 px (px-3.5) från triggerns högerkant. Rött-först ej observerbart lokalt (5173 bärs av Marcus levande dev-server; hård vägran by-design) — PR-CI är beviset, bokfört i PR-bodyn.
+
+FIXUP (samma PR): PR-CI:ts första pass föll på symmetri-låsets absolutvärde — insetten är 17 px, inte 16 (kortets 1 px transparenta kant ingår i boundingBox; likaså triggerns egen kant → chevron-insetten 15, inte 14). Symmetrin (Marcus-beslutet) höll; absoluta förväntningar korrigerade med kant-förklaring i testet. Klassad testdefekt, inte produktdefekt.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

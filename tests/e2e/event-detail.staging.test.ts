@@ -1993,4 +1993,58 @@ test.describe('Eventväljaren på eventdetaljsidan (task-18.19)', () => {
       .analyze();
     expect(oppen.violations).toEqual([]);
   });
+
+  test('rubrik-triggern RADBRYTER ALDRIG (Marcus-fix 2026-07-25): nowrap + visuell ellipsis, chevronen behåller sin plats, accname är HELA namnet', async ({
+    page,
+  }) => {
+    // Morgongranskningen S86: "Fjärrskådning" bröts på smal viewport,
+    // "Resor i medvetandet 3" värre — rubriken får ALDRIG radbrytas.
+    // Truncaten är ENBART visuell: accname beräknas ur textinnehållet.
+    const LANGT_NAMN =
+      'Resor i medvetandet 3 — fördjupningsresan för återvändande deltagare med övernattning';
+    await mockEvent(page, eventDetail({ eventNamn: LANGT_NAMN }));
+    await mockNotes(page);
+    await mockValjarLista(page, VALJAR_LISTA);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/event/${EVENT_ID}`);
+
+    const heading = page.getByRole('heading', { level: 1, name: LANGT_NAMN });
+    await expect(heading).toBeVisible();
+    const trigger = heading.getByRole('button');
+
+    // Accessible name = HELA namnet — klippningen förorenar aldrig accname.
+    await expect(trigger).toHaveAccessibleName(LANGT_NAMN);
+
+    // Nowrap-låset (computed, L245/L246): namn-spannet bryter aldrig rad och
+    // klipper med ellipsis vid överflöd. Spannet lokaliseras via triggerns
+    // aria-labelledby (accname-bäraren, exakt det spann låset gäller) —
+    // `span[id]` vore tvetydigt: RAC:s SelectValue bär ett eget auto-id.
+    const labelId = await trigger.getAttribute('aria-labelledby');
+    expect(labelId).toBeTruthy();
+    const namnSpann = page.locator(`[id="${labelId}"]`);
+    await expect(namnSpann).toHaveCSS('white-space', 'nowrap');
+    await expect(namnSpann).toHaveCSS('text-overflow', 'ellipsis');
+    await expect(namnSpann).toHaveCSS('overflow-x', 'hidden');
+
+    // Ellipsis är faktiskt AKTIV på denna viewport (innehållet överflödar).
+    const klippt = await namnSpann.evaluate((el) => el.scrollWidth > el.clientWidth);
+    expect(klippt).toBe(true);
+
+    // Geometri-låset: EN rad (text-3xl-raden + py-1 ≈ 44 px; två rader ≈ 80).
+    const triggerBox = await trigger.boundingBox();
+    expect(triggerBox?.height ?? 0).toBeLessThan(60);
+
+    // Chevron-paret behåller sin plats: synligt, till höger om namnet och
+    // INNANFÖR viewporten (aldrig utskuffat av det långa namnet).
+    const chevron = trigger.locator('svg.lucide-chevrons-up-down');
+    await expect(chevron).toBeVisible();
+    const chevronBox = await chevron.boundingBox();
+    const namnBox = await namnSpann.boundingBox();
+    expect(chevronBox?.x ?? 0).toBeGreaterThanOrEqual((namnBox?.x ?? 0) + (namnBox?.width ?? 0));
+    expect((chevronBox?.x ?? 0) + (chevronBox?.width ?? 0)).toBeLessThanOrEqual(390);
+
+    // Väljaren fungerar fortsatt från den truncerade triggern.
+    await trigger.click();
+    await expect(page.getByRole('searchbox', { name: 'Sök event eller ort' })).toBeFocused();
+  });
 });

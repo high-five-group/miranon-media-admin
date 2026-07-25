@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-23 08:55'
-updated_date: '2026-07-25 03:48'
+updated_date: '2026-07-25 09:11'
 labels:
   - ready-for-agent
 dependencies:
@@ -163,6 +163,10 @@ renderade verifiering): fullpage-dumpar 390x844 (bekräftad + obekräftad) mot
 facit-bilagorna k04/k04-obekraftad + computed-style-assertions i e2e
 (deadline-pillens bg-surface, knappens success-token). Fynd routade till
 kort: task-43 (noterings-migreringen) + task-44 (URL/UTM-fälten).
+
+## Granskningsvågens FACIT-REVIDERING, liten (S86 morgongranskning, Marcus-beslut 2026-07-25)
+
+Etiketten 'Frågor/funderingar' i Ansökningssvar-blocket (AnmalanDetail.tsx, FritextRad) → 'Frågor'. Bas-fältet ('Frågor eller funderingar?') och shape-nyckeln fragorFunderingar heter kvar — endast den renderade etiketten reviderades. E2E: ingen svit asserterade gamla etiketten (grep-verifierat: 'funderingar' förekommer endast i schema-/fältkommentarer) — inga teständringar krävdes. Branch fix/s86-granskningsvag (EN samlad fix-vågs-PR).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
