@@ -3,10 +3,10 @@ id: TASK-18.15
 title: >-
   Skiva: Åtgärds-radernas siffer-referens — numrerade boxar i stället för ikoner
   (review-iteration 1)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-22 09:09'
-updated_date: '2026-07-25 01:14'
+updated_date: '2026-07-25 08:48'
 labels:
   - ready-for-agent
 dependencies:
@@ -53,6 +53,8 @@ INSTANT-regeln (ADR-078): ej berörd — skivan ändrar ingen datahämtning/navi
 Väntar design-review (DoD #5) — Done-flippen är Marcus (granskningsfärdigt läge, ADR-071 beslut 3).
 
 CI-bokföring (svans, batch S86): PR #176 MERGED (merge-commit c224847) · PR-run 30137595027 grön per jobb (8/8) · main-run 30137948566 grön per jobb (Test suite merge-dedup-SKIPPAD by design, 36.4-träff). Väntar design-review (DoD #5) — Done-flippen är Marcus. AFK-proveniens: batch S86, do-work-agent + svans-agent.
+
+Design-review godkänd: Marcus morgongranskning 2026-07-25 i webbläsaren, utan anmärkning ('Nummerrutorna är ok'). Done-flipp per ADR-071 (utan anmärkning → flipp på kvittens).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -67,6 +69,6 @@ Levererad · commit e338782 · CI-run 30137595027 (PR) + 30137948566 (main) per 
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd (per skiva med UI-yta; L220)
+- [x] #5 Design-review: Marcus-granskning i webbläsaren godkänd (per skiva med UI-yta; L220)
 - [x] #6 Renderad verifiering (computed-style/skärmdump) per berörd punkt före granskning (L245/L246)
 <!-- DOD:END -->

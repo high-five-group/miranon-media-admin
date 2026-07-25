@@ -1,7 +1,7 @@
 ---
 id: TASK-17.7
 title: 'Skiva: Filtervyn på event-listan + skriv ut (review-iteration 1)'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-22 09:09'
 updated_date: '2026-07-25 09:11'
@@ -53,7 +53,9 @@ Lokala grindar: typecheck 0 fel · typecheck:tests 0 fel · biome 0 errors · bu
 
 CI-bokföring (svans, batch S86): PR #174 MERGED (merge-commit 9ca7b52) · PR-run 30135949402 grön per jobb · main-run 30136271886 grön per jobb (Test suite merge-dedup-SKIPPAD by design, 36.4-träff). Väntar design-review (DoD #5) — Done-flippen är Marcus. AFK-proveniens: batch S86, do-work-agent + svans-agent.
 
-## Granskningsvågens FIX (S86 morgongranskning, Marcus-beslut 2026-07-25)
+Design-review godkänd: Marcus morgongranskning 2026-07-25 i webbläsaren, utan anmärkning ('OK'). Done-flipp per ADR-071 (utan anmärkning → flipp på kvittens).
+
+## Granskningsvågens FIX (S86 morgongranskning, Marcus-beslut 2026-07-25 — efter Done-flippen)
 
 FYND (Marcus): 'vi har en grå rad för filtreringen som ligger fast där även när filtreringen är stängd … Så va det inte i prototypen va?' — korrekt: prototypen (0eba03b) hade villkorad rendering = ingen rand; facitet avsåg ingen synlig rad i stängt läge.
 
@@ -76,6 +78,6 @@ Levererad · commit f11cc37 · CI-run 30135949402 (PR) + 30136271886 (main) per 
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd (per skiva med UI-yta; L220)
+- [x] #5 Design-review: Marcus-granskning i webbläsaren godkänd (per skiva med UI-yta; L220)
 - [x] #6 Renderad verifiering (computed-style/skärmdump) per berörd punkt före granskning (L245/L246)
 <!-- DOD:END -->
