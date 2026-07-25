@@ -12,7 +12,8 @@ import { Anteckningar } from './detail/Anteckningar';
 import { Atgarder, CheckInKort } from './detail/Atgarder';
 import { Belaggning } from './detail/Belaggning';
 import { Betalningar } from './detail/Betalningar';
-import { Deltagare } from './detail/Deltagare';
+// [PROTOTYPE] S86: wrappern bär växlaren utanför DetaljGrupp (steg 2).
+import { DeltagareMedProto } from './detail/Deltagare';
 import { Gruppdynamik } from './detail/Gruppdynamik';
 import { Narvaro } from './detail/Narvaro';
 import { OmEventet } from './detail/OmEventet';
@@ -260,7 +261,7 @@ export function EventDetail({ eventId }: { eventId: string }) {
           ersätter 18.1:s interim-länk till den gamla anmälda-vyn. Personkorten
           (18.5), hantera-flödet (18.6) och Bor över-raden (18.7) växer in i
           samma skelett. */}
-      <Deltagare event={event} />
+      <DeltagareMedProto event={event} />
 
       {/* Betalningar (task-18.8): röda saknas-deltan + inline-ARBETSYTAN
           (K27–K34) — ersätter 18.1:s interim-rader och den gamla

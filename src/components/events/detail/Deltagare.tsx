@@ -40,11 +40,9 @@ import { type BekraftaProtoVariant, ObekraftadeProto } from './DeltagareBekrafta
 import { DetaljGrupp } from './DetaljGrupp';
 import { DAGMANAD } from './datumSpann';
 
-/** [PROTOTYPE] Divergens-varianterna (ADR-074: stabila nycklar a/b/c). */
+/** [PROTOTYPE] Vinnaren A i konvergens (ADR-074: nyckeln behålls; b/c rivna). */
 const PROTO_VARIANTS = [
-  { key: 'a', label: 'A — Markera-läge', steg: 1, stegLabel: 'Divergens' },
-  { key: 'b', label: 'B — Direktmarkering', steg: 1, stegLabel: 'Divergens' },
-  { key: 'c', label: 'C — Kompakt kryssläge', steg: 1, stegLabel: 'Divergens' },
+  { key: 'a', label: 'A — Markera-läge', steg: 2, stegLabel: 'Konvergens 2' },
 ];
 
 /**
@@ -759,12 +757,10 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
   const panelId = useId();
   const [flik, setFlik] = useState<FlikNyckel>('alla');
   const [filter, setFilter] = useState<SummeringsFilter | null>(null);
-  // [PROTOTYPE] S86: ?variant=a|b|c ersätter Obekräftade-sektionen (DEV).
+  // [PROTOTYPE] S86: ?variant=a ersätter Obekräftade-sektionen (DEV).
   const [variantParam] = useQueryState('variant');
   const protoVariant: BekraftaProtoVariant | null =
-    import.meta.env.DEV && (variantParam === 'a' || variantParam === 'b' || variantParam === 'c')
-      ? variantParam
-      : null;
+    import.meta.env.DEV && variantParam === 'a' ? variantParam : null;
 
   const aktiva = useMemo(() => registreringar.filter(arAktiv), [registreringar]);
 
@@ -1010,7 +1006,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
           <>
             {obekraftade.length > 0 && protoVariant != null ? (
               // [PROTOTYPE] S86 divergens: hela Obekräftade-sektionen ersatt.
-              <ObekraftadeProto variant={protoVariant} rader={obekraftade} />
+              <ObekraftadeProto rader={obekraftade} />
             ) : obekraftade.length > 0 ? (
               <div>
                 <GruppRubrik
@@ -1093,8 +1089,19 @@ export function Deltagare({ event }: { event: Event }) {
       ) : (
         <ArbetsKo event={event} registreringar={data} />
       )}
-      {/* [PROTOTYPE] S86 divergens-växlaren — DEV-grindad (ADR-044-mekaniken). */}
-      {import.meta.env.DEV && <PrototypeSwitcher variants={PROTO_VARIANTS} />}
     </DetaljGrupp>
+  );
+}
+
+/**
+ * [PROTOTYPE] Växlaren UTANFÖR DetaljGrupp — divide-y i gruppen ritade
+ * annars en avdelare ovanför railens DOM-plats (Marcus-fångst steg 2).
+ */
+export function DeltagareMedProto({ event }: { event: Event }) {
+  return (
+    <>
+      <Deltagare event={event} />
+      {import.meta.env.DEV && <PrototypeSwitcher variants={PROTO_VARIANTS} />}
+    </>
   );
 }
