@@ -184,6 +184,44 @@ nattbyggets kort (§ Körplanen nedan).
 | 18.18 (träd 20525690 → ompass. 62203385) | 7+1 (2/5; ompass. 1 nit) | 8 (F1 komponentvals-bokföringen på kortet [spec-konflikt punkt 12 vs 3, Marcus-kvittens i morgonen] · F2 avslöjnings-avsikt → router-history-state [StrictMode-buggen] · F3 AT-kontrakts-e2e aria-activedescendant · F4 synkron utfalls-gating mutationEventIdRef · F5 en dl med dt+dd+dd · F6 SelectItem + BelaggningsStapel-lyft · F7 nyckelrotations-bevis i e2e · F8 reload-fallet i bokföringen) | 0 | 1 (task-45 kommande-filter/sort-dubbleringen) | 0 blocker / 2 spec / 1 struktur / 1 a11y / 3 kvalitet / 1 nit; 3 öppna Marcus-moment bokförda på kortet (F1-kvittens · VoiceOver-pass · bekräftelselägets eventidentitet) | ~7 (två pass) | **1 design-escape:** väljaren växer i bredd med innehållet → fast full blockbredd (Marcus-fångst, facit-komplettering; fix-vågen) |
 | 18.19 (träd f2cea1aa → ompass. 75f66211) | 7+3 (1/6; ompass. 3 nya i F1-omkretsen) | 10 (F1 prefetch-paret → delad useForberedEventDetalj + tangentbords-avsikt via AvsiktVidFokus [virtuell fokus avger inga DOM-event] + e2e-bevis för båda vägarna · F2 RouteAnnouncer-invariantdocen rättad, grundorsaken → task-46 · F3 valjar-lista-helpern + get-events-stub i 7 läckande sviter · F4 eventKey i listraderna + pill-assert före släppet · F5 kommentarstädning · F6 harFokuserat-ref i st.f. boolean-i-förklädnad · F7 kontrakts-defensiv-kommentaren · N1 sök-värmningens breddade avsikts-semantik öppet bokförd i kod · N2 fokus-invänta före ArrowDown i e2e · N3 useCallback-kedjan in i effekt-deps) | 0 | 2 (task-46 dynamisk sidtitel i route-lagret · task-47 e2e-fixture-konsolidering) | 0 blocker / 1 spec / 2 struktur / 4 kvalitet / 3 nit | ~9 (två pass) | **1 design-escape:** rubrik-triggern radbryts på långa eventnamn (Marcus-fångst) → nowrap-form (fix-vågen) |
 
+### Escapes-kolumnens kalibrering — OMTRIAGE 2026-07-25 (S86 → S87)
+
+**Varför kolumnen ovan är ofullständig:** den fylldes i PR #187 (mergad
+09:16Z) efter Marcus FÖRSTA granskningsvåg. Därefter landade **tre
+ytterligare vågor** — PR #188 (09:43Z), #189 (10:57Z), #191 (11:35Z) —
+med cirka åtta nedströms-fynd som aldrig nådde tabellen. Kolumnen får
+alltså INTE läsas som pilotens facit i sitt nuvarande skick.
+
+**Beslutet om hur de ska räknas skjuts medvetet till T85-sessionen**
+(sekvenslåsningen gör T85 bindande före pilotbeslutet). För att inget
+data ska gå förlorat under tiden bokförs fynden **neutralt i två
+dimensioner** — ingen dom fälls här:
+
+| Dimension | Definition | Våg 2–3-fynden |
+|---|---|---|
+| **(a) Diff-synliga** | Fynd en diff-läsande review-subagent hade KUNNAT se ur koden | Autofocus-racet (extern rAF vs RAC:s fokusmaskineri — synligt i koden, dolt för e2e som var grönt) · fokusringens tre samverkande CSS-regler |
+| **(b) Browser-only** | Fynd som kräver renderad yta, verkligt viewport-mått eller Marcus designomdöme | Rubrik-utrymmet vid 390 px (mätfråga) · popover-högerförskjutningen · overlay-origo-buggen · grå rand i stängd panel · blått vs grått kryss · §19-hierarkin i deltagarkortet |
+
+**Varför distinktionen avgör pilotens öde:** mäts (b) mot en diff-läsande
+subagent mäter vi den mot något den strukturellt inte kan leverera —
+och då rivs piloten på fel grund. Mäts bara (a) riskerar vi tvärtom att
+dölja en verklig takyta. Ett av våg 2-fynden är dessutom **inte en escape
+alls**: autofocus-formen var FACIT-TROGET byggd (facit punkt 8 sa "aldrig
+autoFocus") och det var FACIT som revs, inte koden som var fel.
+
+**Öppen post till T85-sessionen:** avgör räkne-regeln, fyll kolumnen enligt
+den, och notera att fix-vågorna själva kördes under direkt hand (inte via
+do-work-skarven) — grep på "pilot" i deras commit-bodies ger noll träffar,
+så de räknas rimligen inte som pilot-skivor. Det är en slutsats av frånvaro,
+inte ett bokfört beslut.
+
+**Lägesbild mot de låsta kriterierna (n=6, alltså under tröskeln 10–15):**
+träffkvot 6/6 (krav ≥1/3) ✅ · brusandel ~3 %, 1 avfärdat av ~36 inom-scope
+(krav <50 %) ✅ · **median review-tid 9,5 min mot kravet ≤5 min/skiva** ❌ —
+men 9,5 är inte >10, så RIV-villkoret slår inte heller till. Piloten ligger
+alltså i **GRÅZON** redan på nuvarande data, vilket per kriterierna ger
+EXAKT en justeringsrunda (+~5 skivor) → tvingat beslut.
+
 > **Driftnot (S86-batchen, 18.18-agenten):** headless review-subagent via
 > `claude -p` hänger på MCP-server-laddningen i denna miljö (3 havererade
 > starter à 10 min). Botemedlet är `--mcp-config '{"mcpServers":{}}'
