@@ -410,11 +410,11 @@ function SokFalt() {
             appens grå ikonform (X 16, muted → text vid hover). */}
         <AriaInput
           placeholder="Sök event eller ort…"
-          className="text-(color:--mm-input-text) placeholder:text-(color:--mm-input-text-placeholder) min-h-10 w-full rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 pr-10 text-body mm-fokusring-vid-fokus [&::-webkit-search-cancel-button]:[-webkit-appearance:none]"
+          className="text-(color:--mm-input-text) placeholder:text-(color:--mm-input-text-placeholder) mm-fokusring-vid-fokus min-h-10 w-full rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 pr-10 text-body [&::-webkit-search-cancel-button]:[-webkit-appearance:none]"
         />
         <AriaButton
           aria-label="Rensa sökningen"
-          className="-translate-y-1/2 absolute top-1/2 right-2 flex size-6 items-center justify-center rounded text-text-muted hover:text-text group-data-[empty]:hidden"
+          className="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded text-text-muted hover:text-text group-data-[empty]:hidden"
         >
           <X aria-hidden="true" size={16} className="shrink-0" />
         </AriaButton>
