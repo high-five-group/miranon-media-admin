@@ -5056,3 +5056,27 @@ margin — inte av gap på föräldern (gap:et står kvar runt det 0 px höga
 panel-elementet). Gäller varje until-found-/content-visibility-mekanism,
 inte bara RAC. E2e-låset: stängt läge assertas visuellt frånvarande
 (not.toBeVisible + boundingBox-höjd 0), inte bara "innehållet borta".
+
+### L342 — [UNIVERSAL] scrollbar-gutter på html förskjuter canvas-origo — body-portalerade absoluta overlays dubbelräknar offseten; positionerad body är läkningen
+
+Datum: 2026-07-25 (S86 granskningsvåg 2) | Källa: Marcus-fyndet "väljar-
+popovern högerförskjuten utanför innehållet" — grundorsaken isolerad
+empiriskt i preview-mätloop (klass: CSS-canvas-geometri × overlay-
+positionering; drabbar VARJE RAC-overlay i appen, inte bara väljaren)
+
+`scrollbar-gutter: stable both-edges` på html flyttar canvas-origo åt höger
+med rännstensbredden vid KLASSISKA scrollbars (Linux/Windows; uppmätt
++11 px i Playwright-chromium — html-boxens boundingClientRect.x ≠ 0).
+React Aria (och varje bibliotek som mäter trigger via boundingClientRect
+och sätter absolut `left` på en body-portalerad overlay) räknar i
+VIEWPORT-koordinater — men browsern tolkar `left` från det förskjutna
+canvas-origot → overlayn renderar +rännstensbredden fel. macOS
+overlay-scrollbars maskerar felet (offset 0) — klassen syns först i CI
+eller på Windows/Linux. Läkningen är EN rad: `body { position: relative }`
+— body blir overlayernas containing block och positionerings-bibliotekets
+container-gren kompenserar offseten korrekt (RAC calculatePosition tar
+container-vägen i stället för viewport-vägen). Verifikationsform:
+A/B-mätning av popover.x − trigger.x på bred (klassisk scrollbar) OCH smal
+(gutter frånvarande) viewport — båda ska vara 0. Följdlärdom i samma pass:
+mät ALDRIG textbredd (scrollWidth-klipptester) före `document.fonts.ready`
+— fallback-metriken är bredare och ger falska klipp i CI.

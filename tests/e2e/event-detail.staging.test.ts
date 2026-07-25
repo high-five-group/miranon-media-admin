@@ -1831,9 +1831,11 @@ test.describe('Eventväljaren på eventdetaljsidan (task-18.19)', () => {
     // formen där "Välj event" är Select-etiketten).
     await expect(page.getByRole('button', { name: /Välj event/ })).toHaveCount(0);
 
-    // Chevron-paret (20 px) intill namnet — aria-hidden dekor (texten bär).
+    // Chevron-paret intill namnet — aria-hidden dekor (texten bär). 18 px =
+    // §14-chevronstandarden (facitets 20 revs öppet i våg 2 för
+    // rubrik-utrymmet, Marcus 2026-07-25).
     const chevron = trigger.locator('svg.lucide-chevrons-up-down');
-    await expect(chevron).toHaveAttribute('width', '20');
+    await expect(chevron).toHaveAttribute('width', '18');
     await expect(chevron).toHaveAttribute('aria-hidden', 'true');
 
     // Hover-plattans grammatik (renderad verifiering, L245/L246): -mx-2 =
@@ -2046,5 +2048,70 @@ test.describe('Eventväljaren på eventdetaljsidan (task-18.19)', () => {
     // Väljaren fungerar fortsatt från den truncerade triggern.
     await trigger.click();
     await expect(page.getByRole('searchbox', { name: 'Sök event eller ort' })).toBeFocused();
+  });
+
+  test('RIM 3 — längsta verkliga kursnamnet — ryms på EN rad UTAN ellipsis på mobilbredd (Marcus våg 2): rubriken får radens utrymme, EventKey-pillen viker under', async ({
+    page,
+  }) => {
+    // Marcus omgranskning 2026-07-25: truncate räcker inte — "Resor i
+    // medvetandet 3" SKA rymmas ("annars faller hela konceptet med
+    // Eventnamnet som rubrik"). Ellipsis är ENBART extremnamns-skyddsnät.
+    await mockEvent(page, eventDetail({ eventNamn: 'Resor i medvetandet 3' }));
+    await mockNotes(page);
+    await mockValjarLista(page, VALJAR_LISTA);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/event/${EVENT_ID}`);
+
+    const heading = page.getByRole('heading', { level: 1, name: 'Resor i medvetandet 3' });
+    await expect(heading).toBeVisible();
+    const trigger = heading.getByRole('button');
+
+    // FONT-VAKT: mät aldrig textbredd förrän Inter är laddad — fallback-
+    // metriken är ~6 % bredare och gav falskt klipp i CI (våg 2-fyndet).
+    await page.evaluate(() => document.fonts.ready);
+
+    // INGEN ellipsis: namn-spannet överflödar inte (scrollWidth <= clientWidth).
+    const labelId = await trigger.getAttribute('aria-labelledby');
+    expect(labelId).toBeTruthy();
+    const namnSpann = page.locator(`[id="${labelId}"]`);
+    await expect(namnSpann).toHaveText('Resor i medvetandet 3');
+    const klippt = await namnSpann.evaluate((el) => el.scrollWidth > el.clientWidth);
+    expect(klippt).toBe(false);
+
+    // EN rad (geometri-låset från våg 1 gäller även här).
+    const triggerBox = await trigger.boundingBox();
+    expect(triggerBox?.height ?? 0).toBeLessThan(60);
+
+    // EventKey-pillen har vikt UNDER rubriken (basis-full < sm) — synlig,
+    // fortfarande UTANFÖR h1:an (facit punkt 2:s semantik står).
+    const pill = page.getByText('Event-21');
+    await expect(pill).toBeVisible();
+    await expect(heading.getByText('Event-21')).toHaveCount(0);
+    const pillBox = await pill.boundingBox();
+    expect(pillBox?.y ?? 0).toBeGreaterThanOrEqual(
+      (triggerBox?.y ?? 0) + (triggerBox?.height ?? 0) - 1,
+    );
+  });
+
+  test('popovern matchar triggerns bredd med min-w-golv och linjerar vänsterkanten (form B, Marcus 2026-07-25)', async ({
+    page,
+  }) => {
+    await mockaValjarSidan(page);
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const trigger = rubrikTrigger(page, 'Resor i medvetandet 1');
+    await trigger.click();
+    const popover = page.getByTestId('event-valjare-popover');
+    await expect(popover).toBeVisible();
+
+    // width = var(--trigger-width) (RAC sätter variabeln automatiskt) med
+    // min-w-72-golvet (288 px) som hängsle för smala rubrik-triggrar;
+    // placement="bottom start" ⇒ vänsterkanterna linjerar (aldrig den
+    // centrerade default-placeringen som sköt popovern utanför innehållet).
+    const trigBox = await trigger.boundingBox();
+    const popBox = await popover.boundingBox();
+    expect(Math.abs((popBox?.x ?? 0) - (trigBox?.x ?? 0))).toBeLessThanOrEqual(1);
+    expect(popBox?.width ?? 0).toBeCloseTo(Math.max(trigBox?.width ?? 0, 288), 0);
   });
 });

@@ -22,6 +22,25 @@ body {
   padding: 0;
 }
 
+/* POSITIONERAD BODY — overlay-origo-fixen (S86 granskningsvåg 2, 2026-07-25;
+   Marcus-fyndet "väljar-popovern högerförskjuten utanför innehållet").
+   Grundorsak, empiriskt isolerad i preview-mätloop (A/B-verifierad):
+   scrollbar-gutter stable both-edges (ovan) förskjuter canvas-origo med
+   rännstensbredden vid KLASSISKA scrollbars (Linux/Windows; html-boxens
+   viewport-x uppmätt +11 px i Playwright-chromium 1280). React Aria mäter
+   triggern i VIEWPORT-koordinater (boundingClientRect, redan +11) och
+   sätter overlayens absoluta `left` — som browsern sedan tolkar från det
+   FÖRSKJUTNA canvas-origot → dubbelräkning: varje body-portalerad
+   RAC-overlay (Select-popovers, menyer) renderade +rännstensbredden åt
+   höger på ≥ 640. En POSITIONERAD body gör body till overlayernas
+   containing block → React Arias container-gren (calculatePosition
+   getPosition, ej viewport-grenen) räknar triggerns position RELATIVT
+   body och kompenserar offseten korrekt. Uppmätt efter fix: x-diff 0 på
+   1280 OCH 390; overlay-scrollbars (macOS) opåverkade (offset 0 där). */
+body {
+  position: relative;
+}
+
 /* Scrollbar-formen (S72-fyndet i två steg; rev. review-våg 2 2026-07-23):
    1. Rännstenen reserveras SYMMETRISKT (scrollbar-gutter stable both-edges,
       Baseline 2024, ≥ sm 640): sidor med och utan scrollbar får samma

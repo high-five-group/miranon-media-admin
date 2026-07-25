@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, ChevronsUpDown } from 'lucide-react';
-import { type Ref, useEffect, useId, useMemo, useRef } from 'react';
+import { type Ref, useEffect, useId, useMemo } from 'react';
 import {
   Button as AriaButton,
   Input as AriaInput,
@@ -35,12 +35,14 @@ import { groupByMonth } from './manadsgrupp';
  * formerna — endast triggern växlar.
  *
  * RUBRIK-FORMEN (18.19, facit punkt 1): h1 = eventnamnet i full rubrikstorlek
- * med chevron-par (20 px); hela ytan klickbar i hover-plattans grammatik
- * (-mx-2 px-2 py-1 rounded-lg + bg-emphasized; K54-vakten: max-w-full, aldrig
- * w-full ihop med -mx-2). RUBRIKEN RADBRYTER ALDRIG (Marcus-fix 2026-07-25,
- * morgongranskningen: "Fjärrskådning" bröts, "Resor i medvetandet 3" värre):
- * namn-spannet är nowrap + visuell truncate med ellipsis vid överflöd —
- * chevron-paret behåller sin plats. Truncaten är ENBART visuell: accessible
+ * med chevron-par (18 px — §14-standarden; facitets 20 revs öppet i våg 2
+ * för rubrik-utrymmet); hela ytan klickbar i hover-plattans grammatik
+ * (-mx-2 px-2 py-1 rounded-lg + bg-emphasized; K54-vaktens ande: breddtaket
+ * är kolumnen + eget mx-överhäng, aldrig w-full). RUBRIKEN RADBRYTER ALDRIG
+ * (Marcus-fix 2026-07-25): namn-spannet är nowrap; RUBRIKEN SKA RYMMA
+ * verkliga kursnamn (våg 2: RIM 3 på EN rad — sidytan ger radens utrymme,
+ * se EventDetail-headerns pill-vikning) och truncate med ellipsis står kvar
+ * ENBART som extremnamns-skyddsnät. Truncaten är ENBART visuell: accessible
  * name är HELA namnet (accname beräknas ur textinnehållet, inte ur
  * CSS-klippningen). RUBRIK-SEMANTIKEN: h1:ans accessible name är EXAKT
  * eventnamnet — triggern aria-labelledby:as till namn-spannet (aldrig
@@ -74,9 +76,16 @@ import { groupByMonth } from './manadsgrupp';
  *
  * LISTAN (punkt 8–10): sök från start (USWDS-tröskeln >15 val — staging har
  * 11 och listan växer monotont), matchar namn ELLER ort (textValue bär
- * båda), fokus flyttas PROGRAMMATISKT till fältet när listan öppnas
- * (aldrig autoFocus-attributet — a11y/noAutofocus undertrycks inte);
- * kommande event närmast först; månadsgrupperade i EventsLists EGEN
+ * båda); sökfältet får fokus när listan öppnas via `autoFocus` på
+ * SearchField — React Arias EGEN dokumenterade form för Select+Autocomplete
+ * (react-aria.adobe.com/Select § "Autocomplete with SearchField" och
+ * /Autocomplete § "with Select": båda exemplen bär `<SearchField autoFocus>`;
+ * propen registreras INUTI RAC:s fokusmaskineri). Ursprungsformens
+ * "programmatiskt, aldrig autoFocus" (facit punkt 8) REVS ÖPPET av Marcus
+ * våg 2-beslut 2026-07-25: den externa rAF-fokusen var ett race mot RAC:s
+ * egen öppnings-fokusering och tappade fokus i verklig användning
+ * (prototyp-regressionen — prototypen fokuserade direkt vid öppning).
+ * Kommande event närmast först; månadsgrupperade i EventsLists EGEN
  * rubrikform via delade `groupByMonth` (punkt 9 — lyftet är skivans krav).
  *
  * Datakällan är listcachen (`events.list` — samma nyckel som event-listan):
@@ -164,11 +173,21 @@ export function EventValjare({
         // spannet (namnet, aldrig etiketten, är rubriken) och beskrivs av
         // "Byt event"-spannet nedanför.
         <h1 ref={rubrikRef} tabIndex={-1} className="min-w-0 font-semibold text-3xl">
+          {/* max-w-[calc(100%+1rem)]: RUBRIKEN FÅR HELA RADENS UTRYMME
+              (Marcus våg 2 2026-07-25 — RIM 3 ska rymmas på EN rad). Formen
+              fullbordar -mx-2-designen: hover-plattans padding bor UTANFÖR
+              textkolumnen, så knappens breddtak är kolumnen + sitt eget
+              mx-överhäng (16 px) — texten linjerar med innehållskanten och
+              får kolumnens fulla bredd. K54-vaktens ande hålls: bredden
+              växer aldrig utanför överhänget (ingen w-full). gap-1.5 +
+              chevron 18 (§14-chevronstorlekens standard; 20-formen riven
+              öppet) ger RIM 3 ~17 px marginal med Inter laddad (uppmätt i
+              preview-loopen; fallback-metrik ryms exakt). */}
           <AriaButton
             data-testid="event-valjare-trigger"
             aria-labelledby={namnId}
             aria-describedby={beskrivningId}
-            className="-mx-2 inline-flex max-w-full items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-bg-emphasized motion-safe:transition-colors"
+            className="-mx-2 inline-flex max-w-[calc(100%+1rem)] items-center gap-1.5 rounded-lg px-2 py-1 text-left hover:bg-bg-emphasized motion-safe:transition-colors"
           >
             <SelectValue className="min-w-0">
               {() =>
@@ -194,7 +213,7 @@ export function EventValjare({
                 )
               }
             </SelectValue>
-            <ChevronsUpDown aria-hidden="true" size={20} className="shrink-0 text-text-secondary" />
+            <ChevronsUpDown aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
           </AriaButton>
         </h1>
       ) : (
@@ -240,9 +259,20 @@ export function EventValjare({
           Byt event
         </span>
       ) : null}
+      {/* POPOVER-BREDDEN = TRIGGERNS (facit-komplettering form B, Marcus-
+          beslut 2026-07-25 efter research): default-placeringen "bottom"
+          centrerade en innehållsbred popover under triggern → högerförskjuten
+          utanför innehållet. RAC:s Popover sätter --trigger-width automatiskt
+          (uppdaterad via resize observer; verifierad i 1.19.0) — width:
+          var(--trigger-width) + min-w-72-golv (18rem, så en smal rubrik-
+          trigger inte ger oanvändbar söklista) + placement="bottom start"
+          (vänsterkant-linjerad). Precedent: React Aria Select-docs använder
+          exakt --trigger-width; Radix --radix-select-trigger-width; Material
+          exposed dropdown. containerPadding/shouldFlip = RAC-default. */}
       <Popover
         data-testid="event-valjare-popover"
-        className="flex min-w-(--trigger-width) flex-col gap-1 rounded-xl border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-2 shadow-lg"
+        placement="bottom start"
+        className="flex w-(--trigger-width) min-w-72 flex-col gap-1 rounded-xl border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-2 shadow-lg"
       >
         {/* Autocomplete = React Arias combobox-maskineri i popover-form:
             sökfältet styr listboxen (virtuell fokus), filtret matchar
@@ -354,21 +384,21 @@ function KontextRad({ event }: { event: Event }) {
 }
 
 /**
- * Sökfältet i listan (punkt 8): med från start (USWDS-tröskeln), fokus
- * PROGRAMMATISKT vid öppning — rAF så React Arias egen fokushantering
- * (FocusScope) hunnit köra först; aldrig autoFocus-attributet
- * (a11y/noAutofocus undertrycks inte när golvet är 11).
+ * Sökfältet i listan (punkt 8): med från start (USWDS-tröskeln). Fokus vid
+ * öppning bärs av `autoFocus`-PROPEN på SearchField — React Arias
+ * dokumenterade mekanism för Select+Autocomplete (docs-exemplens exakta
+ * form; propen går genom RAC:s FocusScope i stället för att tävla med den).
+ * Ursprungsformen (extern rAF-fokus efter mount) revs öppet 2026-07-25:
+ * den var ett race mot RAC:s egen öppnings-fokusering — grönt i e2e men
+ * fokus-tapp i verklig användning (prototyp-regressionen). Detta är RAC:s
+ * autoFocus-prop i en just-öppnad popover (svar på användarens egen
+ * handling), inte sidladdnings-autofokus — a11y/noAutofocus-golvet gäller
+ * sidladdning och skärs inte.
  */
 function SokFalt() {
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => ref.current?.focus());
-    return () => cancelAnimationFrame(id);
-  }, []);
   return (
-    <SearchField aria-label="Sök event eller ort" className="flex flex-col">
+    <SearchField autoFocus aria-label="Sök event eller ort" className="flex flex-col">
       <AriaInput
-        ref={ref}
         placeholder="Sök event eller ort…"
         className="text-(color:--mm-input-text) placeholder:text-(color:--mm-input-text-placeholder) min-h-10 w-full rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 text-body"
       />
