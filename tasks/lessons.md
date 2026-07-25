@@ -4998,3 +4998,17 @@ framåt-landning (override/bump; allowlist-flödet endast när patch
 saknas, ADR-028), aldrig re-run — databasen glömmer inte.
 Sessionsstart-rutinens audit-status-koll är designad för exakt denna
 klass: verifiera grinden FÖRE sessionens första landning.
+
+### L339 — [UNIVERSAL] Asynkron URL-skrivning gör page.url() till en race i e2e — polla URL:en före strikt läsning
+
+Datum: 2026-07-25 (S86 nattbygget, task-17.7) | Källa: review-pilotens fynd 4 +
+tangentbordstestets flake under bygget
+
+nuqs (och varje URL-state-bibliotek med throttlad/batchad history-skrivning)
+uppdaterar React-state synkront men skriver URL:en asynkront (~50 ms throttle).
+En e2e-assert som läser page.url() direkt efter en DOM-poll (toHaveCount et al.)
+blir sann på state-uppdateringen FÖRE URL-flushen — intermittent rött i exakt
+den skarv som bär URL-kontraktet. Mönstret: polla URL:en först
+(await expect(page).toHaveURL(...) eller await expect.poll(() => new URL(page.url())...))
+och läs strikt därefter. DOM-tillstånd och URL-tillstånd är två klockor;
+testet måste vänta in den klocka det assertar.
