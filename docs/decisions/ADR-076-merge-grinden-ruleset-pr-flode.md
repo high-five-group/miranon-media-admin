@@ -50,7 +50,13 @@ org-ägt repo).
    2026-07-23): branch → `gh pr create` → `gh pr merge --auto --merge`;
    docs-only-CI ≈ 1 min ger +1–2 min landningslatens. Merge-metoden är
    merge commit (husets historik-form).
-4. Kanonisk ruleset-konfig (återskapnings-underlag):
+4. Kanonisk ruleset-konfig (återskapnings-underlag). **Uppdaterad S88
+   2026-07-25** — blocket härlett VERBATIM ur live-GET, inte handskrivet.
+   Den tidigare versionen hade driftat: tre fält som API:t sätter
+   (`allowed_merge_methods`, `required_reviewers`, `do_not_enforce_on_create`)
+   saknades, vilket gjorde underlaget lossy — en `PUT` av det gamla blocket
+   hade tyst nollat dem. Det finns **ingen PATCH** för rulesets; `PUT` är full
+   objekt-ersättning, så återskapning MÅSTE ske från ett komplett block.
 
    ```json
    {
@@ -63,17 +69,40 @@ org-ägt repo).
        { "type": "deletion" },
        { "type": "non_fast_forward" },
        { "type": "pull_request", "parameters": {
+           "allowed_merge_methods": ["merge", "squash", "rebase"],
            "required_approving_review_count": 0,
+           "required_reviewers": [],
            "dismiss_stale_reviews_on_push": false,
            "require_code_owner_review": false,
            "require_last_push_approval": false,
            "required_review_thread_resolution": false } },
        { "type": "required_status_checks", "parameters": {
            "strict_required_status_checks_policy": true,
-           "required_status_checks": [ { "context": "CI Passed or Skipped" } ] } }
+           "do_not_enforce_on_create": false,
+           "required_status_checks": [
+             { "context": "CI Passed or Skipped", "integration_id": 15368 } ] } }
      ]
    }
    ```
+
+5. **App-bindning på required check** (tillagd S88 2026-07-25, T85-paketets
+   punkt 4). `integration_id: 15368` = GitHub Actions, verifierat två
+   oberoende vägar: appen som faktiskt publicerar checken på en färsk
+   main-commit (`commits/{sha}/check-runs` → `app.id`), och `/apps/github-actions`.
+
+   Utan bindningen räckte det att publicera **namnet** `CI Passed or Skipped`
+   för att uppfylla grinden. Hotet var konkret, inte teoretiskt: repot har en
+   andra app med `checks:write` installerad, och `POST /repos/.../statuses/{sha}`
+   låter vilken write-token som helst sätta kontexten direkt. Den ytan var
+   helt oanvänd (`total_count: 0`), så bindningen bröt ingen legitim trafik.
+
+   Riktningen är fail-closed: uteblir Actions-checken förblir PR:n blockerad.
+   **Ärlig avgränsning** — bindningen stoppar andra *aktörer*, inte något som
+   körs *inne i* Actions (fortfarande app 15368). Den stänger
+   förfalsknings-hålet, inte workflow-integritet.
+
+   `gate-proof.yml`:s replik heter `CI Passed or Skipped (replik under bevis)`
+   — distinkt kontext, opåverkad.
 
 ## Alternativ som övervägdes
 
