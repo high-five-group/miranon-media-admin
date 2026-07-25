@@ -42,7 +42,29 @@ Grinden aktiveras när UI-iterationstakten lugnat — naturliga kandidater:
 inför bas-maximeringen (ADR-063-milstolpen) eller när Lotta börjar använda
 appen skarpt. Marcus avgör; tråden är påminnelsen.
 
-## BLOCKERANDE FÖRKRAV (S88 2026-07-25): TASK-49 måste lösas först
+## FÖRKRAVET ÄR BETALT (S89 2026-07-25) — `TASK-49` löst
+
+`maxDiffPixels: 2000` satt vid sidan av befintlig ratio. Playwright tar
+`Math.min` av de två taken (källkod, `playwright-core` 1.61.1), så det
+absoluta taket biter på stora bilder medan ratio-taket biter på små —
+ingen per-projekt-uträkning behövs. Bevis: samma app-breda ändring som
+QA:n använde fångas nu av **12/12** vyer (före: 4 mobila, 0 desktop), och
+12/12 är gröna på orörd kod.
+
+Två av kortets premisser rättades under mätningen: ytkvoten 4,26× är
+**maxvärdet, inte det generella** (bilderna är fullPage, så ytan följer
+sidans höjd — uppmätta kvoter 2,37–4,26×), och eventsidans desktop-bild
+tillät i praktiken 201 772 avvikande pixlar.
+
+**Kvarstående osäkerhet inför aktivering:** brusgolvet (0 px över tre
+körningar) är mätt på darwin. Linux-brus i CI är omätt eftersom sviten inte
+körs i CI förrän denna tråd aktiverar grinden — första CI-körningen är
+facit. Marginalen är tilltagen för det (2000 mot minsta äkta fynd 11 357).
+
+Aktiveringen självt är **oförändrat parkerad** på Marcus-beslut A (S81);
+denna sektion tar bara bort blockeraren, den flyttar inte triggern.
+
+## Historik: förkravet som det formulerades (S88 2026-07-25)
 
 QA-vandringen (task-36.8 punkt 11) avslöjade att sviten är **systematiskt
 blind på desktop**: en app-bred ändring av brödtextfärgen fångades av 4 av 6
@@ -56,7 +78,7 @@ tekniskt korrekt, men skulle sätta upp en grind som släpper igenom
 desktop-regressioner. Det vore falsk trygghet — sämre än ingen grind, per
 husets egen kyrkogårds-regel.
 
-Aktivera alltså INTE före **`TASK-49`** är löst. Marcus-beslutet i S88
+Aktivera alltså INTE före **`TASK-49`** är löst. **(Betalt S89 — se sektionen ovan.)** Marcus-beslutet i S88
 (nightly-visual → A, vänta) fattades innan fyndet fanns och **stärktes av
 det**: hade vi aktiverat tidigt hade vi trott oss skyddade utan att vara det.
 

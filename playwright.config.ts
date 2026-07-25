@@ -133,13 +133,40 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   expect: {
     toHaveScreenshot: {
+      // TASK-49 (S89): ratio ENSAM gjorde stora vyer systematiskt okänsliga.
+      // Playwright räknar om ratio till ett absolut tak internt
+      // (playwright-core 1.61.1: maxDiffPixels2 = bredd * höjd * ratio), och
+      // våra bilder är fullPage — så taket följer sidans höjd. Uppmätt: en
+      // app-bred textfärgsändring gav 11 357–61 335 avvikande px, men
+      // eventsidans desktop-bild (2880x7006) tillät 201 772. Fyra mobila vyer
+      // fångade regressionen, noll desktop.
+      //
+      // Sätts BÅDA vinner den striktaste (Math.min i samma källa) — därför
+      // behövs ingen per-projekt-uträkning: det absoluta taket biter på stora
+      // bilder, ratio-taket biter om en vy blir liten nog att 2000 vore slappt.
+      //
+      // 2000 är MÄTT, inte gissat: brusgolvet mot färsk baseline är 0 px över
+      // tre körningar (fixturvärlden är frusen — klocka, font, nätverk), och
+      // minsta uppmätta ÄKTA regression var 11 357 px. Talet ligger 5,7x under
+      // den och rejält över noll-golvet.
+      //
+      // ÄRLIG AVGRÄNSNING: brusgolvet är mätt på darwin. Linux-brus i CI är
+      // OMÄTT — visual-sviten körs inte i CI förrän T87 aktiverar grinden.
+      // Marginalen ovan är tilltagen för det; första CI-körningen är facit.
       maxDiffPixelRatio: 0.01,
+      maxDiffPixels: 2000,
       threshold: 0.2,
       animations: 'disabled',
       // scale 'device' + deviceScaleFactor 2 i visual-projekten (task-36.7,
       // Marcus-beslut S81): Retina-skarpa baselines — granskningen av
       // baseline-PR:er är ett återkommande människomoment och default-1x
-      // upplevs oskarp på 2x-skärm. Ratio-trösklarna ovan är skala-neutrala.
+      // upplevs oskarp på 2x-skärm.
+      //
+      // Ratio-trösklarna är skala-neutrala för just deviceScaleFactor (2x
+      // ändrar täljare och nämnare proportionellt). Den ursprungliga
+      // formuleringen stannade där och lästes som "ratio är ytneutralt" —
+      // det är den INTE mellan bilder av olika storlek, vilket TASK-49
+      // avtäckte. Därav det absoluta taket ovan.
       scale: 'device',
     },
   },
