@@ -169,6 +169,17 @@ jobs:
     permissions:
       contents: read
       issues: write
+      # TASK-51 (S89): `gh run list` läser körnings-API:t. Ospecificerade
+      # permissions sätts till none, så utan detta grant är actions=none och
+      # anropet får 403 när det väl når API:t. nightly-metrics ovan hade
+      # redan samma grant — larm-jobbet fick aldrig samma behandling.
+      #
+      # ÄRLIG AVGRÄNSNING: 403:an är dokumentations-belagd, inte observerad.
+      # Det fel vi FAKTISKT såg (run 30173436345) var "failed to determine
+      # base repo" från den saknade --repo-flaggan nedan — den dödade
+      # anropet före behörighetsprövningen. Båda krävs; ordningen på
+      # felen gjorde bara den andra osynlig.
+      actions: read
     steps:
       - name: Skapa nattärende (tilldelat, etiketterat, med spann)
         env:
@@ -182,21 +193,38 @@ jobs:
           set -euo pipefail
           run_url="${SERVER}/${REPO}/actions/runs/${RUN_ID}"
 
-          # Senaste GRÖNA nattkörning (exkl. denna) → commit-spann.
-          last_green=$(gh run list --workflow nightly.yml --branch main \
+          # Senaste GRÖNA körningen av nightly.yml på main (exkl. denna).
+          #
+          # Exit-koden fångas SEPARAT från resultatet. Den gamla formen
+          # `$(gh ... || echo "")` kollapsade "anropet gick fel" och "det finns
+          # inget svar" till samma tomma sträng, och villkorskedjan valde då
+          # sin första gren — ett faktapåstående om historiken byggt på
+          # frånvaro av data (TASK-51). Samma klass som L322: signalen ska
+          # vara success ELLER failure, aldrig frånvaro.
+          # --repo är OBLIGATORISK här: jobbet gör ingen checkout, så gh kan
+          # inte härleda repot ur en git-remote. Utan flaggan dör anropet på
+          # "failed to determine base repo" INNAN behörigheten ens prövas
+          # (skarpt bevisat, run 30173436345). gh issue create nedan hade
+          # flaggan från början — gh run list fick den aldrig.
+          gh_failed=""
+          last_green=$(gh run list --repo "${REPO}" \
+            --workflow nightly.yml --branch main \
             --status success --limit 1 --json headSha \
-            --jq '.[0].headSha // ""' || echo "")
+            --jq '.[0].headSha // ""') || gh_failed="1"
 
-          # Tre distinkta fall — meddelandet får aldrig ljuga om läget:
-          #   1. Ingen tidigare grön natt (första gången / alla röda).
-          #   2. Föregående gröna natt låg på SAMMA träd (noll-commit-natt) →
+          # Fyra distinkta fall — meddelandet får aldrig ljuga om läget:
+          #   0. Anropet misslyckades → spannet är OKÄNT, inte tomt.
+          #   1. Ingen tidigare grön körning (första gången / alla röda).
+          #   2. Föregående gröna körning låg på SAMMA träd (noll-commit-natt) →
           #      inget commit-spann finns, OCH samma kod var grön igår = flake/
           #      infra-signal (får ej döljas som "ingen tidigare grön").
-          #   3. Föregående gröna natt på annat träd → äkta compare-spann.
-          if [ -z "${last_green}" ]; then
-            span="_(ingen tidigare grön nattkörning — första gången eller alla röda; hela historiken fram till \`${CURRENT_SHA:0:7}\`)_"
+          #   3. Föregående gröna körning på annat träd → äkta compare-spann.
+          if [ -n "${gh_failed}" ]; then
+            span="_(**kunde inte hämta spannet** — anropet mot körnings-API:t misslyckades. Detta är INTE ett påstående om historiken: spannet är okänt. Se körningsloggen; kontrollera att larm-jobbet har \`actions: read\`.)_"
+          elif [ -z "${last_green}" ]; then
+            span="_(ingen tidigare grön körning av nattsviten — första gången eller alla röda; hela historiken fram till \`${CURRENT_SHA:0:7}\`)_"
           elif [ "${last_green}" = "${CURRENT_SHA}" ]; then
-            span="_(samma träd \`${CURRENT_SHA:0:7}\` var GRÖNT i föregående nattkörning — inget commit-spann; sannolik flake eller infra-regression, ej kod)_"
+            span="_(samma träd \`${CURRENT_SHA:0:7}\` var GRÖNT i föregående körning av nattsviten — inget commit-spann; sannolik flake eller infra-regression, ej kod)_"
           else
             span="[\`${last_green:0:7}...${CURRENT_SHA:0:7}\`](${SERVER}/${REPO}/compare/${last_green}...${CURRENT_SHA})"
           fi
@@ -210,7 +238,7 @@ jobs:
           body="Den schemalagda nattkörningen (\`nightly.yml\`) blev röd.
 
           - **Körning:** ${run_url}
-          - **Commit-spann sedan senaste gröna natt:** ${span}
+          - **Commit-spann sedan senaste gröna körning av nattsviten:** ${span}
           - **HEAD:** \`${CURRENT_SHA}\`
 
           Stängningsregel (CONTRIBUTING § Nattnätet): detta ärende stängs ENDAST med (a) en åtgärd som fixar grundorsaken eller (b) en öppet skriven motivering — aldrig tyst.${note}"
