@@ -3,10 +3,10 @@ id: TASK-18.16
 title: >-
   Skiva: Grön-knapp-regeln globalt — når-utomstående ⇒ success-grön, annars
   mörkgrå (review-iteration 2)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-23 08:55'
-updated_date: '2026-07-25 01:54'
+updated_date: '2026-07-25 02:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -38,7 +38,7 @@ Levererad i S86-nattbatchen (AFK, F6-fönstret: lägre effort). TDD rött-först
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -50,3 +50,9 @@ created: 2026-07-23 10:36
 AMENDERING (2026-07-23, review-våg 5, PR #94): K77-beslutet A (statiskt primary) RIVET av Marcus-resonemanget — Skapa event får DYNAMISK intent: primary oarmerad publicering, success armerad (grön-regeln på knappens faktiska semantik i stunden; schemalagda publiceringar gör oarmerat skapande internt). Implementerad direkt i vågen — 18.16:s audit-scope för Skapa event är därmed VERKSTÄLLT; kvar i skivan: regelkodifieringen i DESIGN-SYSTEM-SPEC (inkl. dynamisk-intent-mönstret) + resten av app-auditen + storleks-reglerna.
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 6fbe1db3609e8a71d28a57602dcc0f084a5cbcf4 · CI-run: PR-run 30139437114 grön per jobb (8/8 success, attempt 1) + main-run 30139690464 grön per jobb (Test suite dedup-SKIPPAD by-design, 36.4; merge-SHA d17dbd7b) · CI-grön-första-pass: ja · defekter under körning: 7+1 (review-piloten: 7 åtgärdade, 0 avfärdade, 3 routade task-41 · task-42 · T91; + bifix axe-flake-guard i berörd fil) · TDD: rött-först (S80), 2 röda e2e-körningar citerade, rött+grönt pushat ihop · AFK-proveniens: batch S86, do-work-agent
+<!-- SECTION:FINAL_SUMMARY:END -->
