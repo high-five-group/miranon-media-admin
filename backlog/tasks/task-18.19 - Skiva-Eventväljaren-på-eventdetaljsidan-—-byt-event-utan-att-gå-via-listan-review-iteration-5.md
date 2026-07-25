@@ -3,10 +3,10 @@ id: TASK-18.19
 title: >-
   Skiva: Eventväljaren på eventdetaljsidan — byt event utan att gå via listan
   (review-iteration 5)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-23 10:00'
-updated_date: '2026-07-25 06:52'
+updated_date: '2026-07-25 07:05'
 labels:
   - ready-for-agent
 dependencies:
@@ -71,10 +71,16 @@ AVVIKELSER (öppet bokförda): (1) AC #2:s bokstav 'delad komponent med 18.18 ut
 ÖPPNA MARCUS-MOMENT (morgongranskningen): (1) AC #2-tolkningens kvittens (additiv variant = biblioteks-beviset); (2) rubrik-triggerns AT-upplevelse i VoiceOver (accname = eventnamnet, beskrivningen 'Byt event' — mekaniskt e2e-bevisad, manuellt pass kvarstår per 18.18-precedenten); (3) N1-semantiken (sök-värmningen) om Marcus vill snäva den.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 1f950d6acb4a1f226e5e651fff2c937b560ee7cb · CI-run 30148318132 (PR, 8/8 jobb gröna) + 30148621310 (main, grön per jobb; Test suite dedup-skippad by design vid 36.4-träff) · CI-grön-första-pass: ja (enda runnen på branchen) · defekter under körning: 1 (INSTANT-e2e:ns toHaveTitle — RouteAnnouncer-tävlingen, fångad av eget test; grundorsak routad till task-46) · TDD: rött-först — 5 nya e2e röda före implementation (5 failed/1 passed), 5/5 gröna efter, hela event-detail-sviten 54/54, en cykel · AFK-proveniens: batch S86, do-work-agent
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
