@@ -5028,10 +5028,31 @@ finns inte i deras verktygslista (fyra oberoende svans-agenter ToolSearch:ade
 förgäves). En subagent som måste vänta på extern signal (CI-run, merge) får
 därför ALDRIG avsluta sin tur i väntan — den håller sig aktiv med
 bakgrundsvakt (gh run watch till loggfil, run_in_background) + avgränsad
-foreground-avläsning på loggen/API:t (tail/grep -m1 eller bounded poll utan
-foreground-sleep) och verifierar varje vakt-utsaga mot auktoritativ källa
-(L336) innan den agerar. Dess sista handling är alltid retur-kontraktet
-(StructuredOutput), även vid abort.
+foreground-avläsning på loggen/API:t och verifierar varje vakt-utsaga mot
+auktoritativ källa (L336) innan den agerar. Dess sista handling är alltid
+retur-kontraktet (StructuredOutput), även vid abort.
+
+**AMENDERING 2026-07-25 (S87 städ-vågen) — `tail/grep -m1`-formen RIVS ÖPPET.**
+Ursprungstexten erbjöd "tail/grep -m1 **eller** bounded poll" som likvärdiga
+avläsningsformer. Den förra är trasig och lärdomen spred därmed felet: S86:s
+fix-vågs-agent följde den och brände **23 min 30 s av 71 min** på död väntan.
+`tail -f LOGG | grep -m1 MÖNSTER` kan aldrig avsluta i tid — `tail -f` släpper
+aldrig pipen även när grep matchat, så en alarm-/timeout-wrapper brinner av hela
+budgeten varje gång (bevis: `grep-exit: 142` i alla tre anropen TROTS att
+`WATCH-EXIT: 0` syns i utdatan). Värst blev cykel 3: nio minuters väntan på en
+körning som varit grön i sju minuter innan vakten ens startade.
+
+Använd **`scripts/ci-wait.sh`** — inte ett handvirat idiom. Den gör bounded poll
+mot `gh run view --json`, kontrollerar terminal-state **före första sömnen**
+(cykel-3-buggen), och levererar **per-jobb-verdikt** som ADR-071 §2(iii)
+faktiskt kräver, med skippade jobb explicit märkta som icke-bevis (L322).
+Fail-closed: allt som inte är `success` eller `skipped` fäller. Testsvit:
+`scripts/test-ci-wait.sh` (13 fall; T1 är regressionsvakten mot cykel-3-buggen
+— rött-först-bevisad: trasig form 30 s, läkt form 0 s).
+
+Generaliseringen bortom CI: **en väntemekanism vars avslutsvillkor inte kan
+observeras av mekanismen själv är ingen väntemekanism — den är en timeout med
+extra steg.** Kontrollera alltid om villkoret redan är uppfyllt innan du sover.
 
 Orkestrerings-regeln (L323-formen i workflow-skript): dela kortet i
 BYGG-agent (slutar vid armerad auto-merge, returnerar direkt — noll väntan)
@@ -5080,3 +5101,34 @@ A/B-mätning av popover.x − trigger.x på bred (klassisk scrollbar) OCH smal
 (gutter frånvarande) viewport — båda ska vara 0. Följdlärdom i samma pass:
 mät ALDRIG textbredd (scrollWidth-klipptester) före `document.fonts.ready`
 — fallback-metriken är bredare och ger falska klipp i CI.
+
+### L343 — [UNIVERSAL] En linter körd med default-flaggor är inte grinden — grindens ANROP är kontraktet
+
+Datum: 2026-07-25 (S87 städ-vågen) | Källa: PR #195 gick röd på
+`shellcheck` trots att jag rapporterat "shellcheck GRÖN" tio minuter
+tidigare (klass: falsk-grön verifiering; kostnad: en röd CI-cykel + en
+fix-runda)
+
+Jag körde `shellcheck scripts/ci-wait.sh` och fick tyst grönt. CI kör
+`shellcheck --severity=style --enable=all`. Skillnaden är inte kosmetisk:
+`--enable=all` slår på de OPTIONAL-checkar (SC2310, SC2312, SC2249) som
+default-läget håller avstängda — och alla sex fynden låg i den mängden.
+Min lokala körning var strukturellt oförmögen att se det grinden ser.
+
+Det gäller varje verktyg med konfigurerbar stränghet: `shellcheck`
+(`--enable`), `eslint`/`biome` (config-fil + `--max-warnings`), `vale`
+(`MinAlertLevel`), `tsc` (`-p` mot rätt tsconfig), `markdownlint`
+(globs + ignores). **Läs grindens faktiska anropsrad ur workflow-filen
+och kör den, verbatim.** En parafras av grinden är ett antagande om
+grinden.
+
+Skärpning som gäller även när man tror sig ha kollat: jag HADE greppat
+`ci.yml` efter "shellcheck" och sett raden `Install shellcheck (pinned
+v0.11.0)` — men läste installations-steget, inte kör-steget. Att ha
+träffat rätt fil är inte att ha läst rätt rad.
+
+Formen som håller: kopiera grindens kommando till en lokal körning över
+grindens FULLA fil-mängd (här: `scripts/*.sh .githooks/*
+.checklist-policy.conf .frontmatter-policy.conf` — inte bara de filer man
+själv rört, eftersom grinden inte är diff-scopad). Rapportera "grön" först
+då.
