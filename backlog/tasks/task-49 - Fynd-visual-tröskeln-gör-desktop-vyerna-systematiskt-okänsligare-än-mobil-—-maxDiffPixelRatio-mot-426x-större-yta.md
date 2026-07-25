@@ -3,10 +3,10 @@ id: TASK-49
 title: >-
   Fynd: visual-tröskeln gör desktop-vyerna systematiskt okänsligare än mobil —
   maxDiffPixelRatio mot 4,26x större yta
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-25 18:56'
-updated_date: '2026-07-25 20:55'
+updated_date: '2026-07-25 21:28'
 labels:
   - ready-for-agent
 dependencies: []
@@ -76,6 +76,28 @@ AC#2 — ÄRLIG AVVIKELSE: kriteriet krävde belägg mot 'minst två branschproj
 
 ÄRLIG AVGRÄNSNING: brusgolvet är mätt på darwin. Linux-brus i CI är OMÄTT eftersom visual-sviten inte körs i CI förrän T87 aktiverar grinden. Marginalen är tilltagen för det; första CI-körningen är facit. Noterat i konfigen.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Visual-svitens desktop-blindhet borta — löst med ett absolut pixeltak, inte per-projekt-konfiguration.
+
+FORM: global maxDiffPixels: 2000 vid sidan av befintlig maxDiffPixelRatio: 0.01. Playwright tar Math.min av de två taken (playwright-core 1.61.1, källkodsläst — dokumentationen besvarar inte frågan), så det absoluta taket biter på stora bilder och ratio-taket på små. Självreglerande; inget räknas om per vyport.
+
+TALET ÄR MÄTT: brusgolv mot färsk baseline 0 px över tre körningar (fixturvärlden är frusen — klocka, pinnad Inter, mockat nätverk); minsta uppmätta äkta regression 11 357 px; största 61 335 px. 2000 ligger 5,7x under minsta äkta fynd.
+
+UTFALL: före 4 mobila + 0 desktop; efter 12/12 (AC#3). 12/12 gröna på orörd kod (AC#4). typecheck 0, biome 0.
+
+KORTETS PREMISS RÄTTAD: ytkvoten 4,26x är maxvärdet, inte det generella — bilderna är fullPage, så ytan följer sidans höjd (uppmätta kvoter 2,37-4,26x). Eventsidans desktop-bild tillät 201 772 avvikande pixlar.
+
+SIDOFYND: 2 816/2 826 px som först liknade brus var exakt reproducerbara över tre körningar och bara i en vy — en stale lokal darwin-baseline, inte flake. Hade tröskeln kalibrerats mot den hade den satts mot fel golv.
+
+AC#2 OKRYSSAD, AVSIKTLIGT: kriteriet krävde belägg mot minst två namngivna branschprojekt. Inga med publik motivering för vyport-asymmetri hittades; belägget blev Playwrights källkod, vilket besvarar designfrågan definitivt i stället för indicerande. Starkare än kriteriet krävde, men en annan sak än vad som står — kryssas inte av åt mig själv.
+
+AVGRÄNSNING: brusgolvet är mätt på darwin. Linux-brus i CI är omätt eftersom sviten inte körs i CI förrän T87 aktiverar grinden; första CI-körningen är facit. Noterat i playwright.config.ts och i T87-kortet.
+
+T87 uppdaterad (AC#5): blockeraren borttagen, aktiveringen oförändrat parkerad på Marcus-beslut A.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

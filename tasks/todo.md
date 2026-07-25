@@ -15,6 +15,35 @@
 
 ## Aktuellt fokus
 
+**Session 89 ✅ AVSLUTAD (2026-07-25)** — **QA-VANDRINGENS TRE FYND:
+ALLA TRE HADE FEL GRUNDORSAK.** Korten skrevs kvällen innan ur QA-vandringen,
+två med stämpeln `GRUNDORSAK (bevisad)` — symptomen var korrekta, steget till
+orsak brast i samtliga. **TASK-51:** felet var saknad `--repo` (jobbet gör
+ingen checkout), inte 403 — anropet dog före behörighetsprövningen. En fix på
+kortets diagnos hade passerat ALLA lokala grindar och ändå inte löst buggen;
+AC #1:s krav på **skarpt utfall** räddade den. Tvåsidigt bevis #216 (lögnen)
+mot #217 (`ec3877f...4a3a58d`, compare-länk API-verifierad `ahead_by: 3`);
+fältnamnet rättat utöver kortet; #114 fick efterspår. **TASK-49:** löst med
+global `maxDiffPixels: 2000` — **ingen per-projekt-konfig**, eftersom
+Playwrights källkod tar `Math.min` av absolut och ratio-tak. Talet MÄTT
+(brusgolv **0 px** ×3 körningar · minsta äkta regression **11 357 px**);
+premissen 4,26× rättad till maxvärde (fullPage ⇒ höjdberoende, 2,37–4,26×;
+eventsidan tillät **201 772 px**). Utfall före 4 mobila/0 desktop → efter
+**12/12**. AC #2 lämnad okryssad (källkodsbelägg ≠ två branschprojekt).
+**TASK-50:** kortets mutex hade **rivit ett medvetet designval** —
+ålders-guarden ersätter den, står ordagrant i `ci-suite.yml`. Verkligt fel:
+`fetch()` utan try/catch (429 hade retry, nätverkslagret inget). Byggt
+`fetchWithNetworkRetry` + 9 testfall, tre mot mockad fetch som räknar anrop.
+Kollisionen öppet bokförd, EJ byggd bort. **SKÖRD L347–L348** [UNIVERSAL ×2]
+— L347 AC mot utfall aldrig mot mekanism (ett åtgärds-AC kan bockas av med
+buggen kvar) · L348 kommentar som förklarar frånvaro är ett designval.
+**Ingen ADR** (079 ledigt), inga fällor, inga trådar. Fem PR:er gröna per
+jobb (#214, #215, #218, #219, #220). **NÄSTA (NY session S90): `task-48`** (Marcus-bokförd)
+→ Roger & Lotta-spåret (T95). **T87 avblockerad men oförändrat parkerad**
+(linux-brusgolvet omätt tills grinden körs). Numrering efter S89:
+90/079/L349/T98/f46/task-52. Full narrativ: sessionsdok S89 Del 1–3 +
+BUILD-LOG S89-post.
+
 **Session 88 ✅ AVSLUTAD (2026-07-25)** — **T85-KORRIGERINGSFÖNSTRET:
 PAKETET BETALT, TRE FYND UR QA-VANDRINGEN.** Tolv landningar
 (PR #199–#211 + hub-PR #1), alla gröna per jobb utom en självförvållad

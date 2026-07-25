@@ -5217,3 +5217,78 @@ Följdregel bekräftad i samma pass: **en simulering som ingen läser kritiskt
 är inte ett bevis, den är en ritual.** Bevis-lägen (`simulate_failure`,
 `simulate_missing`) är bara värda något om utfallet granskas som om det vore
 skarpt.
+
+---
+
+### L347
+
+**Ett fynd-korts SYMPTOM är observation — dess GRUNDORSAK är nästan alltid en
+härledning. Skriv acceptanskriterier mot SKARPT UTFALL, aldrig mot mekanism.**
+`[UNIVERSAL]`
+
+**Empiri (S89, 2026-07-25):** tre fynd-kort ur samma QA-vandring byggdes i
+följd. **Alla tre hade fel grundorsak.** Symptomen var korrekt observerade i
+samtliga fall; det var steget från symptom till orsak som brast. Två av korten
+bar dessutom stämpeln `GRUNDORSAK (bevisad)` — de var härledningar.
+
+| Kort | Kortet sa | Verkligheten |
+|---|---|---|
+| TASK-51 | 403 för att `actions: read` saknas | Saknad `--repo` — anropet dog på repo-härledningen före behörighetsprövningen |
+| TASK-49 | Ytkvoten 4,26× gäller generellt | 4,26× är *maxvärdet*; bilderna är fullPage, så ytan följer sidans höjd (2,37–4,26×) |
+| TASK-50 | Två purges kolliderar utan mutex | Transient nätverksfel 1,5 s in, vid första listanropet, före någon delete |
+
+**Vad som avgjorde skillnaden var AC-formuleringen, inte noggrannheten:**
+
+- TASK-51 AC #1 — *"gh run list returnerar en SHA i skarp körning"* = **utfall**.
+  Räddade fixen. En fix byggd på kortets diagnos passerade actionlint, yamllint,
+  biome OCH ett eget gren-test — och löste ändå ingenting; den hade bara bytt
+  lögnen mot ett ärligt *"kunde inte hämta spannet"*. Hade AC:t lytt "lägg till
+  `actions: read`" vore kortet avbockat med buggen kvar.
+- TASK-49 AC #3 — *"fångas av BÅDE desktop och mobil"* = **utfall**. Höll även
+  när premissen om ytkvoten visade sig vara fel, eftersom kriteriet mätte
+  resultatet och inte antagandet.
+- TASK-50 AC #1 — *"alla jobb som muterar staging delar samma concurrency-grupp"*
+  = **mekanism**. Att bocka av det hade byggt mutexen, rivit ett medvetet
+  designval, och lämnat det verkliga felet kvar. Kriteriet var uppfyllbart utan
+  att problemet var löst.
+
+**Regeln:** ett AC som beskriver en ÅTGÄRD kan bockas av med buggen i behåll —
+det ärver kortets diagnos som premiss. Ett AC som beskriver ett UTFALL kan bara
+bockas av om problemet faktiskt är borta, oavsett om diagnosen var rätt.
+
+**Följdregel:** när ett kort stämplar sin grundorsak "bevisad", kontrollera vad
+beviset var. Symptom-observation + plausibel mekanism är inte bevis. Skarp
+körning som visar felet är det.
+
+Släkt: [[L346]] (testplaner som frågar "räcker resultatet?" mäter värdet;
+"hände det?" mäter ritualen) — L347 är samma princip flyttad ett steg uppströms,
+från testplan till acceptanskriterium.
+
+---
+
+### L348
+
+**En kommentar som förklarar varför något SAKNAS är ett designval — läs den
+före du "fixar" frånvaron.** `[UNIVERSAL]`
+
+**Empiri (S89, TASK-50):** kortet ville lägga en concurrency-mutex på
+purge-jobbet. Jobbet bar redan en kommentar som besvarade exakt den frågan:
+
+> `# Ålders-guarden (60 min, .purge-staging-policy.json) skyddar in-flight-`
+> `# körningar — därför behöver jobbet INTE staging-tests-mutexen.`
+
+Åtgärden hade rivit valet utan att veta varför det fattades, inte löst det
+observerade felet, och förlängt mutex-kön för allt annat — precis vad kortets
+eget AC #3 oroade sig för.
+
+Detta är CLAUDE.md:s pre-K-forensik tillämpad på en specifik och lätt missad
+form: **frånvaro med motivering**. En saknad rad ser ut som en lucka, och en
+lucka inbjuder till att fyllas. Skillnaden mellan lucka och designval står ofta
+i koden intill — men bara om man läser den innan man skriver.
+
+Operativt: innan du lägger till något som "saknas", greppa filen efter en
+motivering till frånvaron. Finns den, är bevisbördan omvänd — det är nu du som
+ska visa varför valet inte längre håller.
+
+Släkt: [[L347]] (kortets diagnos är en härledning), [[L325]] (falsifiera öppet
+i stället för att bygga vidare på ett antagande).
