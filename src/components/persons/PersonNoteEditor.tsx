@@ -147,3 +147,5 @@ export function PersonNoteEditor({ personId, note }: PersonNoteEditorProps) {
     </div>
   );
 }
+
+// [QA-36.8 punkt 2] Klassningstest — mergas aldrig.
