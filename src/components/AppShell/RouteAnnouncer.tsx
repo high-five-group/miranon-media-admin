@@ -11,7 +11,13 @@ import { useEffect, useRef, useState } from 'react';
  * - Initial sidladdning annonseras INTE (skärmläsaren läser redan
  *   dokumentet då) — `lastHref`-vakten släpper bara igenom byten.
  * - `document.title` uppdateras i samma steg så fönstertitel och
- *   annonsering aldrig divergerar.
+ *   annonsering matchar VID NAVIGATIONS-ÖGONBLICKET. Sidor med data-driven
+ *   titel (PersonDetail, AnmalanDetail, EventDetail m.fl.) FÖRFINAR sedan
+ *   titeln när datat landat — annonseringen förblir den generiska route-
+ *   titeln. EventDetail re-assertar dessutom sin titel efter onResolved
+ *   (task-18.19: INSTANT-placeholder gör datat omedelbart, så denna
+ *   generiska skrivning landar annars sist vid väljar-byten). Grundorsaken
+ *   — dynamisk titel i route-lagret — är routad som eget kort.
  * - Landmark-fri och global: bor i __root och gäller alla grenar
  *   (Session 16 K3 STOPPA-utfall A, beslut 2).
  */

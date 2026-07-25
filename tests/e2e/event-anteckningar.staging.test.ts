@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
  * task-18.11 — Anteckningar (S73-facit K66–K71, ADR-075): tidsstämplad ström
@@ -90,6 +91,7 @@ async function mockSidan(
   page: any,
   opts: MockOpts = {},
 ): Promise<{ captured: () => Json | null }> {
+  await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
   const notesStatus = opts.notesStatus ?? 200;
   let notesList: Json[] = opts.notes ?? DEMO_NOTES;
   let capturedBody: Json | null = null;

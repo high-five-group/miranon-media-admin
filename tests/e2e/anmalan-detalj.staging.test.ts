@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, type Route, test } from '@playwright/test';
+import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
  * task-18.17 — Per-anmälan-detaljvyn (S83-facit, Marcus-låst 2026-07-24):
@@ -202,6 +203,7 @@ async function mocka(
     manualRelease = false,
   }: { detaljer: Json[]; listor?: Json[]; manualRelease?: boolean },
 ): Promise<{ confirmCalls: Json[]; release: () => void }> {
+  await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
   const confirmCalls: Json[] = [];
   const perId = new Map(detaljer.map((d) => [d.id as string, d]));
 

@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, type Page, type Route, test } from '@playwright/test';
+import { mockValjarLista, type ValjarRad, valjarRad } from './helpers/valjar-lista';
 
 /**
  * task-18.1 — Eventsidans grundform (S73-facit) + Om eventet-morfen +
@@ -45,6 +46,40 @@ async function mockNotes(
 }
 
 type EventMock = Record<string, unknown>;
+
+/** task-18.19: eventväljarens bytesmål på detaljsidan. */
+const BYT_HOST_ID = 'recDETAILHOST002';
+const BYT_FJARR_ID = 'recDETAILFJARR03';
+
+/** Väljarlistan: sidans event (juli 2099) + två bytesmål + ett passerat
+    event (2000) som kommande-filtret ska sålla bort. Delade stub-formen
+    (helpers/valjar-lista.ts) med filens egna rader; eventKey per rad så
+    sidhuvudets pill kan stå direkt ur placeholdern (review-pilotens F4). */
+const VALJAR_LISTA: ValjarRad[] = [
+  valjarRad({
+    id: EVENT_ID,
+    namn: 'Resor i medvetandet 1',
+    startdatum: '2099-07-31',
+    slutdatum: '2099-08-01',
+    eventKey: 'Event-21',
+  }),
+  valjarRad({
+    id: BYT_FJARR_ID,
+    namn: 'Fjärrskådning',
+    startdatum: '2099-08-15',
+    slutdatum: '2099-08-16',
+    eventKey: 'Event-55',
+  }),
+  valjarRad({
+    id: BYT_HOST_ID,
+    namn: 'Höstretreat',
+    ort: 'Mullsjö',
+    startdatum: '2099-09-12',
+    slutdatum: '2099-09-13',
+    eventKey: 'Event-77',
+  }),
+  valjarRad({ id: 'recDETAILGAMMAL4', namn: 'Passerat event', startdatum: '2000-01-15' }),
+];
 
 function eventDetail(overrides: EventMock = {}): EventMock {
   return {
@@ -107,6 +142,7 @@ async function mockEvent(
     },
   );
   await mockNotes(page);
+  await mockValjarLista(page, VALJAR_LISTA);
   return release;
 }
 
@@ -288,6 +324,7 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     // det nya värdet — onSettled-refetchen (ADR-016 E) ska KONVERGERA, inte backa.
     let serverOrt = 'Skövde';
     await mockNotes(page);
+    await mockValjarLista(page, VALJAR_LISTA);
     await page.route(GET_EVENT, async (route) => {
       await route.fulfill({
         status: 200,
@@ -909,6 +946,7 @@ test.describe('Beläggningen (task-18.2)', () => {
     // onSettled-refetchen (ADR-016 E) ska KONVERGERA, inte backa.
     let serverMax = 12;
     await mockNotes(page);
+    await mockValjarLista(page, VALJAR_LISTA);
     await page.route(GET_EVENT, async (route) => {
       await route.fulfill({
         status: 200,
@@ -1130,6 +1168,7 @@ async function mockaPersonkort(
     });
   });
   await mockNotes(page);
+  await mockValjarLista(page, VALJAR_LISTA);
   await page.route(GET_REGISTRATIONS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
     await route.fulfill({
       status: 200,
@@ -1483,6 +1522,7 @@ async function mockaGruppdynamik(
     });
   });
   await mockNotes(page);
+  await mockValjarLista(page, VALJAR_LISTA);
   await page.route(GET_REGISTRATIONS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
     await route.fulfill({
       status: 200,
@@ -1683,5 +1723,274 @@ test.describe('Gruppdynamik — erfarenhetsmix + kurshistorik + motiveringar (ta
     const nBox = await narvaroKort.boundingBox();
     const gBox = await gdKort.boundingBox();
     expect(nBox?.height).toBe(gBox?.height);
+  });
+});
+
+/**
+ * task-18.19 — Eventväljaren på eventdetaljsidan (review-iteration 5; S83
+ * pass 4-facit, Marcus-låst 2026-07-24: **VARIANT A — väljaren ÄR rubriken**).
+ *
+ * H1:an är triggern: eventnamnet i full rubrikstorlek med chevron-par (20 px),
+ * hela ytan klickbar i hover-plattans grammatik (-mx-2 px-2 py-1 rounded-lg +
+ * bg-emphasized); sidhuvudets övriga delar (EventKey-pillen, tid kvar-raden,
+ * avdelaren) orörda. Listan är SAMMA komponentfamilj som 18.18
+ * (biblioteks-beviset: EventValjare, andra konsumenten — kommande event
+ * närmast först, sök, månadsgruppering). Bytet navigerar routen
+ * (/event/$eventId — URL:en alltid sann och delbar; 18.18 beslut a).
+ *
+ * INSTANT (ADR-078 + facit punkt 5): rubriken och Om eventet står DIREKT ur
+ * listcachen vid byte (placeholderData); beläggnings-aggregaten finns bara i
+ * get-event och hålls i skeleton tills detaljen landat (aldrig falska nollor);
+ * prefetch på avsikt (hover på listrad värmer get-event + get-registrations).
+ *
+ * RUBRIK-SEMANTIKEN (AC #3): h1:ans accessible name är EXAKT eventnamnet —
+ * väljar-etiketten får aldrig förorena rubriken; "vad kontrollen gör" bärs av
+ * aria-description ("Byt event") + aria-haspopup, aldrig av namnet
+ * (Stripe-formen: objektnamnet ÄR triggern).
+ */
+test.describe('Eventväljaren på eventdetaljsidan (task-18.19)', () => {
+  /** Detalj-svar per event-ID + väljarlistan + tomma stubs; spårar anropen
+      (prefetch-beviset). `hallHostDetaljen` grindar bytesmålets get-event
+      (INSTANT-beviset: placeholder-läget hålls öppet tills release). */
+  async function mockaValjarSidan(
+    page: Page,
+    { hallHostDetaljen = false }: { hallHostDetaljen?: boolean } = {},
+  ): Promise<{ slappHost: () => void; detaljAnrop: () => string[]; regAnrop: () => string[] }> {
+    let slappHost = () => {};
+    const grind = hallHostDetaljen ? new Promise<void>((r) => (slappHost = r)) : null;
+    const detaljAnrop: string[] = [];
+    const regAnrop: string[] = [];
+
+    await page.route(GET_EVENT, async (route: Route) => {
+      const id = new URL(route.request().url()).searchParams.get('id') ?? '';
+      detaljAnrop.push(id);
+      if (id === BYT_HOST_ID) {
+        if (grind) await grind;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            event: eventDetail({
+              id: BYT_HOST_ID,
+              eventlabel: 'Höstretreat (label)',
+              eventNamn: 'Höstretreat',
+              ort: 'Mullsjö',
+              startdatum: '2099-09-12',
+              slutdatum: '2099-09-13',
+              tidKvarTillEvent: null,
+              eventKey: 'Event-77',
+              vantelista: 2,
+            }),
+          }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ event: eventDetail() }),
+      });
+    });
+    await page.route(GET_REGISTRATIONS, async (route: Route) => {
+      regAnrop.push(new URL(route.request().url()).searchParams.get('eventId') ?? '');
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ registrations: [] }),
+      });
+    });
+    await mockNotes(page);
+    await mockValjarLista(page, VALJAR_LISTA);
+    return { slappHost, detaljAnrop: () => detaljAnrop, regAnrop: () => regAnrop };
+  }
+
+  /** Rubrik-triggern: accessibla namnet är EXAKT eventnamnet (rubrik-semantiken). */
+  function rubrikTrigger(page: Page, namn: string) {
+    return page.getByRole('button', { name: namn, exact: true });
+  }
+
+  test('väljaren ÄR rubriken (variant A): h1 = eventnamnet är trigger med chevron-par; sidhuvudet i övrigt orört', async ({
+    page,
+  }) => {
+    await mockaValjarSidan(page);
+    await page.goto(`/event/${EVENT_ID}`);
+
+    // h1 = eventnamnet, EXAKT (accname-fullmatch — ingen "Välj event"-
+    // förorening av rubriken), fokuserad efter laddning (fokus-semantiken).
+    const heading = page.getByRole('heading', { level: 1, name: 'Resor i medvetandet 1' });
+    await expect(heading).toBeVisible();
+    await expect(heading).toBeFocused();
+
+    // Triggern bor I h1:an (hela rubrikytan är klickbar) och bär eventnamnet
+    // som accessibla namn; "vad kontrollen gör" bärs av beskrivningen.
+    const trigger = rubrikTrigger(page, 'Resor i medvetandet 1');
+    await expect(heading.getByRole('button')).toHaveCount(1);
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+    await expect(trigger).toHaveAccessibleDescription('Byt event');
+    // Väljar-etiketten finns ALDRIG som knappnamn på denna yta (jfr 18.18-
+    // formen där "Välj event" är Select-etiketten).
+    await expect(page.getByRole('button', { name: /Välj event/ })).toHaveCount(0);
+
+    // Chevron-paret (20 px) intill namnet — aria-hidden dekor (texten bär).
+    const chevron = trigger.locator('svg.lucide-chevrons-up-down');
+    await expect(chevron).toHaveAttribute('width', '20');
+    await expect(chevron).toHaveAttribute('aria-hidden', 'true');
+
+    // Hover-plattans grammatik (renderad verifiering, L245/L246): -mx-2 =
+    // plattan skjuter 8 px utanför rubrikens vänsterkant utan att texten
+    // flyttas; px-2 py-1 + rounded-lg; emphasized-plattan vid hover.
+    const h1Box = await heading.boundingBox();
+    const triggerBox = await trigger.boundingBox();
+    expect((h1Box?.x ?? 0) - (triggerBox?.x ?? 0)).toBe(8);
+    await expect(trigger).toHaveCSS('padding-left', '8px');
+    await expect(trigger).toHaveCSS('padding-top', '4px');
+    await expect(trigger).toHaveCSS('border-radius', '8px');
+    const emphasized = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--mm-bg-emphasized)';
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    });
+    const bgVila = await trigger.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(bgVila).toBe('rgba(0, 0, 0, 0)');
+    await trigger.hover();
+    await expect(trigger).toHaveCSS('background-color', emphasized);
+
+    // Sidhuvudets övriga delar orörda (facit punkt 2): EventKey-pillen till
+    // höger (UTANFÖR h1:an), tid kvar-raden under.
+    await expect(page.getByText('Event-21')).toBeVisible();
+    await expect(heading.getByText('Event-21')).toHaveCount(0);
+    await expect(page.getByText('1 vecka och 3 dagar kvar till eventet')).toBeVisible();
+  });
+
+  test('förvald = aktuellt event; listan är den delade komponentfamiljen: sök + månadsgruppering + kommande närmast först', async ({
+    page,
+  }) => {
+    await mockaValjarSidan(page);
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    await rubrikTrigger(page, 'Resor i medvetandet 1').click();
+
+    // Sökfältet får fokus när listan öppnas (18.18 punkt 8 — samma maskineri).
+    const sok = page.getByRole('searchbox', { name: 'Sök event eller ort' });
+    await expect(sok).toBeFocused();
+
+    // Månadsgruppering i EventsLists form; kommande närmast först; passerade
+    // sållas bort; FÖRVALD = sidans aktuella event (aria-selected).
+    await expect(page.getByText('Juli 2099', { exact: true })).toBeVisible();
+    await expect(page.getByText('Augusti 2099', { exact: true })).toBeVisible();
+    await expect(page.getByText('September 2099', { exact: true })).toBeVisible();
+    const options = page.getByRole('option');
+    await expect(options).toHaveCount(3);
+    await expect(options.nth(0)).toContainText('Resor i medvetandet 1');
+    await expect(options.nth(1)).toContainText('Fjärrskådning');
+    await expect(options.nth(2)).toContainText('Höstretreat');
+    await expect(page.getByRole('option', { name: /Passerat event/ })).toHaveCount(0);
+    await expect(options.nth(0)).toHaveAttribute('aria-selected', 'true');
+
+    // Sök matchar namn ELLER ort (delade filtret).
+    await sok.pressSequentially('mullsjö');
+    await expect(page.getByRole('option')).toHaveCount(1);
+    await expect(page.getByRole('option').first()).toContainText('Höstretreat');
+  });
+
+  test('INSTANT-bytet (ADR-078 + facit punkt 5): rubriken står direkt ur listcachen, beläggningen i skeleton tills detaljen landat; fokus åter till triggern', async ({
+    page,
+  }) => {
+    const { slappHost } = await mockaValjarSidan(page, { hallHostDetaljen: true });
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    await rubrikTrigger(page, 'Resor i medvetandet 1').click();
+    await page.getByRole('option', { name: /Höstretreat/ }).click();
+
+    // Bytet navigerar routen (beslut a): URL:en alltid sann och delbar.
+    await expect(page).toHaveURL(new RegExp(`/event/${BYT_HOST_ID}$`));
+
+    // Rubriken står DIREKT ur listcachen — get-event för bytesmålet är ännu
+    // GRINDAT (ingen väntan på data vi redan har; placeholder, aldrig tomt).
+    const nyRubrik = page.getByRole('heading', { level: 1, name: 'Höstretreat' });
+    await expect(nyRubrik).toBeVisible();
+    await expect(page).toHaveTitle(/Höstretreat/);
+
+    // HELA sidhuvudet står ur placeholdern — även EventKey-pillen (listposten
+    // bär eventKey; review-pilotens F4): asserterad FÖRE släppet av detaljen.
+    await expect(page.getByText('Event-77')).toBeVisible();
+
+    // Om eventet står också direkt (listposten bär typ · ort · datum).
+    const omGrupp = page.locator('section[aria-labelledby="grupp-om-eventet"]');
+    await expect(omGrupp.getByText('Mullsjö', { exact: true })).toBeVisible();
+
+    // Beläggnings-aggregaten finns BARA i get-event (?? 0-klassen): sektionen
+    // hålls i skeleton — ALDRIG en sekund av falska nollor (ADR-078 beslut 2).
+    const belaggningSkeleton = page.getByRole('status').filter({ hasText: 'Laddar beläggning…' });
+    await expect(belaggningSkeleton).toBeVisible();
+    await expect(belaggningSkeleton).toHaveAttribute('aria-busy', 'true');
+    await expect(page.locator('section[aria-labelledby="grupp-belaggning"]')).toHaveCount(0);
+
+    // Fokus-semantiken efter byte: fokus återvänder till rubrik-triggern
+    // (React Arias fokus-retur) — aldrig tappat till body.
+    await expect(rubrikTrigger(page, 'Höstretreat')).toBeFocused();
+
+    // Detaljen släpps → beläggningen renderas med riktig data (väntelistan 2).
+    slappHost();
+    const belaggning = page.locator('section[aria-labelledby="grupp-belaggning"]');
+    await expect(belaggning).toBeVisible();
+    await expect(belaggningSkeleton).toHaveCount(0);
+    await expect(belaggning.getByText('Väntelista')).toBeVisible();
+    await expect(belaggning.getByText('2', { exact: true })).toBeVisible();
+  });
+
+  test('prefetch på avsikt (ADR-078 beslut 3): hover på en listrad värmer bytesmålets queries utan navigering', async ({
+    page,
+  }) => {
+    const { detaljAnrop, regAnrop } = await mockaValjarSidan(page);
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    await rubrikTrigger(page, 'Resor i medvetandet 1').click();
+    // Invänta sökfältets programmatiska fokus (rAF) före tangenttryck —
+    // annars kan ArrowDown landa utanför popovern (ompasseringens N2).
+    await expect(page.getByRole('searchbox', { name: 'Sök event eller ort' })).toBeFocused();
+
+    // TANGENTBORDSVÄGEN (review-pilotens F1 — ADR-078 beslut 3 nämner hover
+    // OCH fokus): pil ned flyttar den virtuella fokusen från det valda
+    // eventet till nästa kommande (Fjärrskådning, 18.18:s AT-kontrakt) →
+    // avsikts-värmning utan mus, likvärdig upplevelse oavsett styrsätt.
+    await page.keyboard.press('ArrowDown');
+    await expect.poll(() => detaljAnrop().filter((id) => id === BYT_FJARR_ID).length).toBe(1);
+    await expect.poll(() => regAnrop().filter((id) => id === BYT_FJARR_ID).length).toBe(1);
+
+    // MUSVÄGEN: hover på en annan rad startar get-event + get-registrations
+    // för det bytesmålet — klicket sker aldrig, URL:en står kvar.
+    await page.getByRole('option', { name: /Höstretreat/ }).hover();
+    await expect.poll(() => detaljAnrop().filter((id) => id === BYT_HOST_ID).length).toBe(1);
+    await expect.poll(() => regAnrop().filter((id) => id === BYT_HOST_ID).length).toBe(1);
+    await expect(page).toHaveURL(new RegExp(`/event/${EVENT_ID}$`));
+  });
+
+  test('axe 0 violations: stängt läge (helsides) + öppen väljare (scopad)', async ({ page }) => {
+    await mockaValjarSidan(page);
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const taggar = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+    const stangd = await new AxeBuilder({ page }).withTags(taggar).analyze();
+    expect(stangd.violations).toEqual([]);
+
+    // Öppen väljare — scopad skan (ComboBox-mönstermallens scope-not: RAC:s
+    // ariaHideOutside ger helsides-false-positive på aria-hidden-focus för
+    // icke-modala popovers; det interaktiva skannas i stället).
+    await rubrikTrigger(page, 'Resor i medvetandet 1').click();
+    await expect(page.getByRole('searchbox', { name: 'Sök event eller ort' })).toBeFocused();
+    const oppen = await new AxeBuilder({ page })
+      .withTags(taggar)
+      .include('h1')
+      .include('[data-testid="event-valjare-popover"]')
+      .analyze();
+    expect(oppen.violations).toEqual([]);
   });
 });
