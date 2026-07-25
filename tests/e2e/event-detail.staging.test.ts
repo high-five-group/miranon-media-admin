@@ -1831,9 +1831,11 @@ test.describe('Eventväljaren på eventdetaljsidan (task-18.19)', () => {
     // formen där "Välj event" är Select-etiketten).
     await expect(page.getByRole('button', { name: /Välj event/ })).toHaveCount(0);
 
-    // Chevron-paret (20 px) intill namnet — aria-hidden dekor (texten bär).
+    // Chevron-paret intill namnet — aria-hidden dekor (texten bär). 18 px =
+    // §14-chevronstandarden (facitets 20 revs öppet i våg 2 för
+    // rubrik-utrymmet, Marcus 2026-07-25).
     const chevron = trigger.locator('svg.lucide-chevrons-up-down');
-    await expect(chevron).toHaveAttribute('width', '20');
+    await expect(chevron).toHaveAttribute('width', '18');
     await expect(chevron).toHaveAttribute('aria-hidden', 'true');
 
     // Hover-plattans grammatik (renderad verifiering, L245/L246): -mx-2 =
@@ -2063,6 +2065,10 @@ test.describe('Eventväljaren på eventdetaljsidan (task-18.19)', () => {
     const heading = page.getByRole('heading', { level: 1, name: 'Resor i medvetandet 3' });
     await expect(heading).toBeVisible();
     const trigger = heading.getByRole('button');
+
+    // FONT-VAKT: mät aldrig textbredd förrän Inter är laddad — fallback-
+    // metriken är ~6 % bredare och gav falskt klipp i CI (våg 2-fyndet).
+    await page.evaluate(() => document.fonts.ready);
 
     // INGEN ellipsis: namn-spannet överflödar inte (scrollWidth <= clientWidth).
     const labelId = await trigger.getAttribute('aria-labelledby');

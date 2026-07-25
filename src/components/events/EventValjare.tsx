@@ -35,12 +35,14 @@ import { groupByMonth } from './manadsgrupp';
  * formerna — endast triggern växlar.
  *
  * RUBRIK-FORMEN (18.19, facit punkt 1): h1 = eventnamnet i full rubrikstorlek
- * med chevron-par (20 px); hela ytan klickbar i hover-plattans grammatik
- * (-mx-2 px-2 py-1 rounded-lg + bg-emphasized; K54-vakten: max-w-full, aldrig
- * w-full ihop med -mx-2). RUBRIKEN RADBRYTER ALDRIG (Marcus-fix 2026-07-25,
- * morgongranskningen: "Fjärrskådning" bröts, "Resor i medvetandet 3" värre):
- * namn-spannet är nowrap + visuell truncate med ellipsis vid överflöd —
- * chevron-paret behåller sin plats. Truncaten är ENBART visuell: accessible
+ * med chevron-par (18 px — §14-standarden; facitets 20 revs öppet i våg 2
+ * för rubrik-utrymmet); hela ytan klickbar i hover-plattans grammatik
+ * (-mx-2 px-2 py-1 rounded-lg + bg-emphasized; K54-vaktens ande: breddtaket
+ * är kolumnen + eget mx-överhäng, aldrig w-full). RUBRIKEN RADBRYTER ALDRIG
+ * (Marcus-fix 2026-07-25): namn-spannet är nowrap; RUBRIKEN SKA RYMMA
+ * verkliga kursnamn (våg 2: RIM 3 på EN rad — sidytan ger radens utrymme,
+ * se EventDetail-headerns pill-vikning) och truncate med ellipsis står kvar
+ * ENBART som extremnamns-skyddsnät. Truncaten är ENBART visuell: accessible
  * name är HELA namnet (accname beräknas ur textinnehållet, inte ur
  * CSS-klippningen). RUBRIK-SEMANTIKEN: h1:ans accessible name är EXAKT
  * eventnamnet — triggern aria-labelledby:as till namn-spannet (aldrig
@@ -171,11 +173,21 @@ export function EventValjare({
         // spannet (namnet, aldrig etiketten, är rubriken) och beskrivs av
         // "Byt event"-spannet nedanför.
         <h1 ref={rubrikRef} tabIndex={-1} className="min-w-0 font-semibold text-3xl">
+          {/* max-w-[calc(100%+1rem)]: RUBRIKEN FÅR HELA RADENS UTRYMME
+              (Marcus våg 2 2026-07-25 — RIM 3 ska rymmas på EN rad). Formen
+              fullbordar -mx-2-designen: hover-plattans padding bor UTANFÖR
+              textkolumnen, så knappens breddtak är kolumnen + sitt eget
+              mx-överhäng (16 px) — texten linjerar med innehållskanten och
+              får kolumnens fulla bredd. K54-vaktens ande hålls: bredden
+              växer aldrig utanför överhänget (ingen w-full). gap-1.5 +
+              chevron 18 (§14-chevronstorlekens standard; 20-formen riven
+              öppet) ger RIM 3 ~17 px marginal med Inter laddad (uppmätt i
+              preview-loopen; fallback-metrik ryms exakt). */}
           <AriaButton
             data-testid="event-valjare-trigger"
             aria-labelledby={namnId}
             aria-describedby={beskrivningId}
-            className="-mx-2 inline-flex max-w-full items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-bg-emphasized motion-safe:transition-colors"
+            className="-mx-2 inline-flex max-w-[calc(100%+1rem)] items-center gap-1.5 rounded-lg px-2 py-1 text-left hover:bg-bg-emphasized motion-safe:transition-colors"
           >
             <SelectValue className="min-w-0">
               {() =>
@@ -201,7 +213,7 @@ export function EventValjare({
                 )
               }
             </SelectValue>
-            <ChevronsUpDown aria-hidden="true" size={20} className="shrink-0 text-text-secondary" />
+            <ChevronsUpDown aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
           </AriaButton>
         </h1>
       ) : (

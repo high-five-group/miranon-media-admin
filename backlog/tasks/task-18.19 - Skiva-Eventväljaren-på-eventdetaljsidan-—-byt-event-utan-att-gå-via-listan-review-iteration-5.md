@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-23 10:00'
-updated_date: '2026-07-25 10:12'
+updated_date: '2026-07-25 10:47'
 labels:
   - ready-for-agent
 dependencies:
@@ -89,6 +89,14 @@ FIXUP (samma PR): PR-CI:ts första pass föll på testets egen locator — 'span
 (3) FACIT-KOMPLETTERING form B (delad med 18.18): popover-bredden — width: var(--trigger-width) + min-w-72-golv + placement='bottom start'. På denna yta = rubrik-triggerns bredd med min-golvet som hängsle (smal trigger får aldrig oanvändbar söklista). Nytt e2e-lås: popover-bredd = max(triggerbredd, 288) + vänsterkant-linjering ±1 px.
 
 Rött-först ej observerbart lokalt (5173/5174/5175 = tre levande servrar, portlåst svit) — PR-CI är beviset; RIM 3-testet är rött mot våg 1-koden by-design (pillen på raden klippte RIM 3 vid 390).
+
+VÅG 2-ITERATION 2 (PR #189 CI-rött → grundorsaks-pass med NY LOKAL BEVISFORM): PR-runnens två fall diagnostiserades i en LOKAL PREVIEW-MÄTLOOP (vite preview på egen port 4183 + klonad auth-state + Playwright route-mockar + PLAYWRIGHT_TEST_BASE_URL — rör INTE de tre levande servrarna; dist/sw.js raderad under körning för mock-determinism).
+
+(A) RIM 3-testet föll på FONT-FALLBACK-MÄTFEL + 0-marginal: med Inter laddad är RIM 3 exakt 282 px = dagens textyta (0 px marginal); CI mätte före font-load (fallback ~6 % bredare → falskt klipp). FIX: (i) font-vakt i båda rubrik-mättesterna (document.fonts.ready före scrollWidth-mätning); (ii) rubrik-utrymmes-kombon ger ~17 px robust marginal — knappens breddtak max-w-[calc(100%+1rem)] (fullbordar -mx-2-designen: plattan utanför textkolumnen; K54-vaktens ande hålls — aldrig w-full), gap-2 → gap-1.5, chevron-paret 20 → 18 px (§14-chevronstandarden; facitets 20 RIVS ÖPPET för rubrik-utrymmet). Uppmätt i loopen: RIM 3 282 px i 299 px textyta.
+
+(B) Form B-testets 11-px-diff var en PRE-EXISTING APP-BRED DEFEKT som det nya låset exponerade: scrollbar-gutter stable both-edges (base.css ≥ 640) förskjuter canvas-origo +rännstensbredden vid klassiska scrollbars; RAC mäter triggern i viewport-koordinater och browsern tolkar overlayens absoluta left från det förskjutna origot → VARJE body-portalerad RAC-overlay renderade +11 px höger i CI/Linux (macOS overlay-scrollbars maskerar felet — därför osynligt lokalt för Marcus utom i det läge han såg). LÄKNING (empiriskt A/B-verifierad i loopen: x-diff 11.0 → 0.0 på 1280, 0.0 på 390): body { position: relative } i base.css — body blir overlayernas containing block och RAC:s container-gren kompenserar offseten. App-bred läkning (alla Select-popovers/menyer), L342 mintad.
+
+LOKALT E2E-BEVIS (nya loopen): event-detail 59/59 + event-ny-anmalan 16/16 (alla våg 2-lås gröna) + bredare regression event-bekraftelse/events-list/kalender/anmalan-detalj 62/62; enda undantag skapa-events SKARPA staging-fall (CORS: 4183 ej i EF-allowlist — 4173/5173 är) = loopens kända begränsning, fallet bevisas av PR-CI. Övriga grindar: typecheck 0 · typecheck:tests 0 · biome 0 errors · build grön · test:api 381/381.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

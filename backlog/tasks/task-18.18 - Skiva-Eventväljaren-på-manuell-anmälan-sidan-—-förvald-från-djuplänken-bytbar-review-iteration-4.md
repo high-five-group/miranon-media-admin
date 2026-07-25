@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-23 09:56'
-updated_date: '2026-07-25 10:12'
+updated_date: '2026-07-25 10:47'
 labels:
   - ready-for-agent
 dependencies:
@@ -97,6 +97,8 @@ FIXUP (samma PR): PR-CI:ts första pass föll på symmetri-låsets absolutvärde
 (3) FACIT-KOMPLETTERING — FORMVAL B (Marcus-beslut efter research 2026-07-25): POPOVERN MATCHAR TRIGGERNS BREDD. Fyndet: default placement 'bottom' centrerade den innehållsbreda popovern under triggern → högerförskjuten utanför innehållet. Mekanik (verifierad i installerad react-aria-components 1.19.0): RAC Popover sätter --trigger-width automatiskt (uppdaterad via resize observer) → width: var(--trigger-width) (w-(--trigger-width)) + min-w-72-golv (18rem — smal trigger ger aldrig oanvändbar söklista) + placement='bottom start'; containerPadding/shouldFlip = RAC-default. RESEARCH-REFERENS: React Aria Select-docs använder exakt --trigger-width; Radix --radix-select-trigger-width; Material exposed dropdown menu = fältets bredd. På denna yta blir popovern = våg 1:s fasta full-bredds-trigger; på eventdetaljsidan rubrik-triggerns bredd med min-golvet som hängsle. E2E-lås i båda sviterna (bredd + vänsterkant ±1 px).
 
 Rött-först ej observerbart lokalt (tre levande servrar 5173/5174/5175; portlåst svit) — PR-CI är beviset.
+
+VÅG 2-ITERATION 2: delade väljar-maskineriets popover-förskjutning (form B-låsets 11-px-diff i CI) visade sig vara pre-existing app-bred defekt (scrollbar-gutter × RAC-overlay-origo) — läkt med body { position: relative } i base.css (grundorsak + A/B-bevis i 18.19-notes; L342). 18.18-ytans egna lås (fast bredd · fokus båda vägarna · popover-bredd/kant) gröna i den nya lokala preview-loopen: event-ny-anmalan 16/16.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
