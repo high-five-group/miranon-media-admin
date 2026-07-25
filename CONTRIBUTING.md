@@ -97,6 +97,7 @@ admin-secrets — TASK-6-kortets notes bär hela beviskedjan.
 - [ ] `npm run typecheck` 0 fel
 - [ ] `npx @biomejs/biome check .` 0 fel
 - [ ] `npm run build` grön
+- [ ] CI grön **per jobb** på pushad commit — verifieras med `bash scripts/ci-wait.sh --commit "$(git rev-parse HEAD)"` (topp-nivåns `conclusion` är inte beviset; skippade jobb blockerar inte men bevisar ingenting, L322). Efter push: använd det lokala SHA:t, inte `--pr` — GitHubs PR-API kan returnera föregående head i sekunderna efter push
 - [ ] `docs/BUILD-LOG.md` uppdaterad med sessionens resultat (planerat vs faktiskt, avvikelser, verifieringsoutput)
 - [ ] ADR skapad i `docs/decisions/` för varje arkitekturbeslut
 - [ ] `tasks/lessons.md` uppdaterad (markera `[UNIVERSAL]` där tillämpligt; lyft till hub inom 7 dagar)

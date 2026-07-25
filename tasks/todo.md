@@ -15,6 +15,33 @@
 
 ## Aktuellt fokus
 
+**Session 87 ✅ AVSLUTAD (2026-07-25)** — **STÄD-VÅGEN: DEN OBETALDA
+RÄNTAN BETALD.** Fem PR:er (#193–#197), alla gröna per jobb, strikt
+seriellt landade (merge-grinden gör parallella landningar långsammare, ej
+snabbare — L328). Föregicks av en **spaning med nio läsande subagenter**
+(0 fel, ~15 min, 483 verktygsanrop, ~1,38 M tokens) vars fyra fynd ändrade
+planen innan den verkställdes: **ingen frontend-deploy existerar** (Roger &
+Lotta-spårets grind 0 är alltså obyggd) · **Personer + persondetalj är
+redan byggda** men förfacit ⇒ ombyggnad, ej nybygge · L340 spred aktivt en
+bugg · backlog-kön var tom. **Granskningsrundan rev två av Codes egna
+rekommendationer:** T85-låsningen blockerar INTE produktarbete (står
+ordagrant i meningen efter), och arkitektur-landningen behövde inte röra
+ci.yml (0 URL:er verifierat — agentens rekommendation var internt
+motsägelsefull). **LEVERERAT:** `scripts/ci-wait.sh` + 13 testfall
+(T1 rött-först-bevisad: trasig form 30 s, läkt 0 s; skarpt 3 s där idiomet
+kostade nio minuter) + **L340 amenderad** · arkitektur-korpusen
+vendoriserad + destillat (**kärnfynd: AI-assistenten är ett tvärsnitt över
+allt byggt, inte en fas — dess verktyg wrappar vårt befintliga
+operations-register**) · **T79** uppdaterad, **T92** + **T93** födda ·
+task-48 kompletterad till enda plockbara kortet. **INCIDENT → L343**
+[UNIVERSAL]: PR #195 gick röd på shellcheck efter att Code rapporterat
+grönt — default-flaggor mot grindens `--enable=all`; skärpningen är att
+`ci.yml` HADE greppats men installations-steget lästs i stället för
+kör-steget. **Ingen ADR** (079 ledigt), inga nya fällor. **NÄSTA (NY
+session S88): T85-KORRIGERINGSFÖNSTRET** → task-48 → Roger &
+Lotta-spåret. Numrering efter S87: 88/079/L344/T98/f46/task-49. Full
+narrativ: sessionsdok S87 Del 1–3 + BUILD-LOG S87-post.
+
 **Session 86 ✅ AVSLUTAD (2026-07-25)** — **NATTBYGGET 6/6 + MORGONGRANSKNINGENS
 TRE FIX-VÅGOR.** `/work-batch` max-kort 6 levererade hela event-familjens
 återstod i ADR-076-form, **CI grön FÖRSTA PASS i samtliga led**, 0 halt
@@ -102,7 +129,7 @@ BUILD-LOG S83-post.
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 87 🔄 PÅGÅENDE (2026-07-25) — Städ-vågen: den obetalda räntan före nästa stora spår
+### Session 87 ✅ AVSLUTAD (2026-07-25) — Städ-vågen: den obetalda räntan betald
 
 > Scope: sessionsdok `2026-07-25-session-87.md` Del 1 (kanonisk plats).
 > Marcus-kvitterat 2026-07-25 ("helt i linje med dina rekommendationer",
@@ -145,13 +172,30 @@ BUILD-LOG S83-post.
   besvarade + publicerings-divergensen utskriven), **T93** registrerad.
   Ingen ADR, ingen byggplans-edit — båda med skäl i klartext.
   **NÄSTA: task-48 (STOPPAD på Marcus-beslut).**
-- [ ] **task-48** — kort-komplettering (förälder TASK-18, DoD #5+#6,
-  serialiserings-not mot TASK-47) → `/do-work` som **pilot-rad 7**.
-  Väg A kvitterad: länkarna vilar. **STOPPAD på öppen delfråga:** när
-  per-kort-knappen rivs försvinner den optimistiska enskilda bekräftelsen
-  (1 klick → 4 interaktioner + pessimistisk väntan). Ej utskrivet i facit;
-  märkbar vardagsförändring för Lotta. Code-rek: skriv in anmälans egen
-  sida som avsedd enkel-väg.
+- [x] **task-48 kompletterad och plockbar** (2026-07-25): Marcus-beslut
+  bokförda på kortet — **väg A** (länkarna vilar ⇒ rå RAC Checkbox per
+  BorOverRad-precedenten, ingen GridList, ~3–4,5 h) och **enskild
+  bekräftelse accepterad som riven** eftersom 1-klick-interaktionen byggs
+  på **Hem-vyn** i stället; genvägen flyttas dit den hör hemma. Kortet fick
+  DoD #5 + #6, serialiserings-not mot TASK-47, förälder-not mot TASK-18
+  och `ready-for-agent` — **enda plockbara kortet i kön**.
+  `proto/s86-deltagarkort-markering` pushad som försäkring (mergas ALDRIG).
+  **ÖPPET BOKFÖRD SCOPE-REDUKTION:** bygget ingick i S87:s scope men
+  flyttas till kommande session på Marcus beslut att stänga här.
+- [x] **Stängnings-landningen** (2026-07-25, denna PR): sessionsdok
+  **Del 2–3** (fyra landningar + spaningens fyra premiss-ändrande fynd +
+  granskningsrundans två rättelser + L343-incidenten + transcript-ref) ·
+  **BUILD-LOG S87-post** · denna kadens. **NÄSTA (NY session S88):
+  T85-KORRIGERINGSFÖNSTRET** — Marcus-beslut; billigaste stunden att röra
+  CI är när ingenting är i luften och just nu finns noll öppna PR:er.
+  Avblockerar T86-beslutet + **T87**, där task-48:s avsiktliga
+  baseline-drift ska landa. Sessionen BÖRJAR med att verifiera Codex tre
+  mätpåståenden mot `scripts/ci-metrics.mjs` (hypotes-regeln gäller även
+  extern granskare). Därefter: task-48 → Roger & Lotta-spåret (grind 0 =
+  frontend-deploy, saknas HELT; grillning + tre ADR:er). Bakgrund:
+  hub-lyftet L284–L343 · konventions-grillningen ·
+  arkitektur-placeringens epok-grillning (T93/T79) · dependabot #162/#65 ·
+  Marcus-moment: Update-klicket i claude.ai.
 
 ### Session 86 ✅ AVSLUTAD (2026-07-25) — Nattbygget 6/6 + morgongranskningens tre fix-vågor
 
