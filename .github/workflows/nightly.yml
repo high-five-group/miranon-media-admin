@@ -10,10 +10,24 @@ name: Nightly
 
 on:
   schedule:
-    # 01:00 UTC ≈ 03:00 Europe/Stockholm (CEST, sommar) / 02:00 (CET, vinter).
-    # GitHub-cron saknar tidszon; ~03:00 är avsiktligt approximativt (tom kö
-    # nattetid oavsett DST-glidningen).
-    - cron: '0 1 * * *'
+    # 03:00 Europe/Stockholm året om (T85-korrigeringspaketet punkt 5, S88).
+    # Den tidigare kommentaren påstod att "GitHub-cron saknar tidszon" — det
+    # är falskt sedan 2026-03-19, då schedule-timezone blev GA. Verifierat mot
+    # github/docs och mot vår PINNADE actionlint 1.7.12, som validerar nyckeln
+    # (stödet kom i just den versionen; ingen -ignore behövs).
+    #
+    # 03:00 är valt, inte godtyckligt: docs anger att en tid i DST-luckan
+    # skjuts fram till nästa giltiga tid (02:30 → 03:00) vid vår-omställningen.
+    # 03:00 hamnar aldrig i luckan, så klockslaget står stilla året om.
+    #
+    # ÄRLIG BEGRÄNSNING: timezone styr när körningen SCHEMALÄGGS, inte när den
+    # startar. Uppmätt eftersläp i repot är stort — de två faktiska
+    # schedule-runsen startade 03:56 och 04:00 UTC mot cron 01:00 UTC, alltså
+    # ~3 h. GitHub-schemat är best-effort och kan tappa köade jobb helt. Vakter
+    # som mäter "kom natten igång?" måste därför ha marginal mot uppmätt drift,
+    # inte mot nominell cron.
+    - cron: '0 3 * * *'
+      timezone: 'Europe/Stockholm'
   workflow_dispatch:
     inputs:
       simulate_failure:

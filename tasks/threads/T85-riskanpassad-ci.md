@@ -117,11 +117,33 @@ grillas i sessionen, tas inte rakt av.
    sitt eget `startup_failure` (run 30038460735) eller utebliven
    schemakörning; separat `workflow_run`-vakt eller motsvarande,
    täckande även `timed_out`/`action_required`.
-3. **Vale-SHA256** — samma checksummeform som actionlint.
+3. ~~**Vale-SHA256**~~ ✅ **ÅTGÄRDAD S88.** Steget hade actionlint-formens
+   `curl -sL` + `tar` men saknade dess `sha256sum -c` — alltså halva mönstret.
+   Checksumman `ff2b49ff…96db3` verifierad TRE oberoende vägar 2026-07-25
+   (egen nedladdning + `shasum -a 256` · Vale-projektets
+   `vale_3.14.1_checksums.txt` · Releases-API:ts digest) — identiska.
+   **Bifynd:** `errata-ai/vale` är omdöpt till `vale-cli/vale`; URL:en lever
+   på GitHub-redirect. Org-namnsbytet görs vid nästa versions-bump, inte nu
+   (URL och checksumma hör ihop).
 4. **Required-check app-bindningen** — `integration_id` mot GitHub
    Actions så checknamnet inte kan publiceras av annan write-aktör.
-5. **Cron-timezone** — `timezone: Europe/Stockholm` ersätter
-   UTC-approximationen + den inaktuella kommentaren i nightly.
+5. ~~**Cron-timezone**~~ ✅ **ÅTGÄRDAD S88** — och Codes egen misstanke FÖLL.
+   Code antog att GitHub Actions inte stöder något timezone-fält alls. Falskt:
+   `schedule`-timezone är GA sedan **2026-03-19**, verifierat mot github/docs
+   primärkälla (*"You can optionally specify a timezone using an IANA timezone
+   string"*) — inte bara mot agentens sammanfattning. Grind-risken prövad
+   TVÅSIDIGT mot vår PINNADE actionlint 1.7.12: giltig zon → exit 0, typo
+   `Europe/Stokholm` → `invalid timezone … must be a valid IANA timezone name`.
+   Stödet kom i just 1.7.12; ingen `-ignore` behövs. Nu `cron: '0 3 * * *'` +
+   `timezone: 'Europe/Stockholm'` — **03:00 valt medvetet** eftersom docs anger
+   att en tid i DST-luckan skjuts fram (02:30 → 03:00) vid vår-omställningen.
+   Gör CONTRIBUTING:162, ADR-077:90 och task-36.2 AC1 (som alla redan lovar
+   "~03:00 svensk tid") bokstavligt sanna året om — inga följdredigeringar
+   behövdes.
+   **UPPMÄTT DRIFT som INTE löses av detta:** de två faktiska schedule-runsen
+   startade 03:56 och 04:00 UTC mot cron 01:00 UTC (~3 h). Timezone styr när
+   körningen schemaläggs, inte när den startar. Bärande för punkt 2: en vakt
+   måste ha marginal mot uppmätt drift, inte mot nominell cron.
 
 **Beslutsklass (Marcus):** 36.7-kortformalian (Done med öppna AC 7–8 +
 DoD — parkeringens formella hemvist) · 36.8-ordningen (QA-punkt 11
