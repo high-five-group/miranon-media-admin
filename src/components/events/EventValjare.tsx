@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, ChevronsUpDown } from 'lucide-react';
+import { CalendarDays, ChevronsUpDown, X } from 'lucide-react';
 import { type Ref, useEffect, useId, useMemo } from 'react';
 import {
   Button as AriaButton,
@@ -397,11 +397,28 @@ function KontextRad({ event }: { event: Event }) {
  */
 function SokFalt() {
   return (
-    <SearchField autoFocus aria-label="Sök event eller ort" className="flex flex-col">
-      <AriaInput
-        placeholder="Sök event eller ort…"
-        className="text-(color:--mm-input-text) placeholder:text-(color:--mm-input-text-placeholder) min-h-10 w-full rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 text-body"
-      />
+    <SearchField autoFocus aria-label="Sök event eller ort" className="group flex flex-col">
+      <div className="relative">
+        {/* RING-DETERMINISMEN (Marcus-beslut 2026-07-25, våg 3): sökrutan i en
+            ÖPPNAD väljare är en skriv-yta — ringen visas ALLTID vid DOM-fokus
+            (RAC data-focused), oavsett modalitet. Grundorsaken till "ibland
+            ring": globala *:focus-visible + data-rac-släckaren (S73 K85) gör
+            ringen modalitetsstyrd — mus-öppning gav fokus utan ring, första
+            tangenttryck tände den, kryss-klick släckte. Samma ring-tokens som
+            globalen; outline-none hindrar dubbelritning när båda gäller.
+            Native webkit-krysset (blått) ersätts av RAC:s clear-Button i
+            appens grå ikonform (X 16, muted → text vid hover). */}
+        <AriaInput
+          placeholder="Sök event eller ort…"
+          className="text-(color:--mm-input-text) placeholder:text-(color:--mm-input-text-placeholder) min-h-10 w-full rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 pr-10 text-body mm-fokusring-vid-fokus [&::-webkit-search-cancel-button]:[-webkit-appearance:none]"
+        />
+        <AriaButton
+          aria-label="Rensa sökningen"
+          className="-translate-y-1/2 absolute top-1/2 right-2 flex size-6 items-center justify-center rounded text-text-muted hover:text-text group-data-[empty]:hidden"
+        >
+          <X aria-hidden="true" size={16} className="shrink-0" />
+        </AriaButton>
+      </div>
     </SearchField>
   );
 }
