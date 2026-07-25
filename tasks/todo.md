@@ -15,6 +15,26 @@
 
 ## Aktuellt fokus
 
+**Session 86 ✅ AVSLUTAD (2026-07-25)** — **NATTBYGGET 6/6 + MORGONGRANSKNINGEN:
+work-batch-nattkörningen levererade alla sex skivor (17.7 · 18.15 · 18.16 [F6]
+· 18.17 · 18.18 · 18.19) med CI grön första pass i samtliga led; v1-incidenten
+(Monitor-parkering, L323-repris) → v2:s bygg/svans/verify-split (L340).
+Morgonens granskningsvåg: Done-flippar 17.7/18.15 · tre fixvågor
+(PR #188/#189/#191: §19 TVÅDIMENSIONELL [beslut A] · rubrik-utrymmet ·
+autofocus ·
+popover form B · +11px-overlay-läkningen · fokusring-determinismen ·
+grått kryss · scrollbarar) · 18.17-datafrågorna (staging-fixturer + CORS
++5174/5175) · **markera-lägets prototyp-pass** (divergens→A, konvergens
+2–4, "Lås denna" → task-48 + k04-snapshots). **SKÖRD L339–L343**
+[UNIVERSAL ×5]. PR-spannet #173–#191 (19 mergade). **NÄSTA (NY session
+S87): Marcus-triage task-39–48
+(48 = markera-lägets bygge) · T85-korrigeringsfönstret ·
+konventions-grillningen (/grill-me) · hub-lyftet L284–L343 ·
+dependabot #162/#65 · Marcus-moment: Update-klicket i claude.ai.**
+Numrering efter S86:
+87/079/L344/T92/f46/task-49. Full narrativ: sessionsdok S86 Del 1–4 +
+BUILD-LOG S86-post.
+
 **Session 85 ✅ AVSLUTAD (2026-07-25)** — **DUKNINGEN FÖR NATTBYGGET:
 main läkt + go-redo för S86.** Audit-grinden läkt: `GHSA-mh99-v99m-4gvg`
 (high, brace-expansion, publ 21:53Z — ~20 min före S83:s sista
@@ -67,7 +87,7 @@ BUILD-LOG S83-post.
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 86 🔄 PÅGÅENDE (2026-07-25) — Nattbygget: batchen körd 6/6, morgongranskningen väntar
+### Session 86 ✅ AVSLUTAD (2026-07-25) — Nattbygget 6/6 + morgongranskningens tre fixvågor + markera-lägets prototyp
 
 > Scope: sessionsdok `2026-07-25-session-86.md` Del 1 (kanonisk plats):
 > nattbygget — de sex ready-for-agent-skivorna via /work-batch per
@@ -112,6 +132,9 @@ BUILD-LOG S83-post.
   markera-lägets bygge) · T85-korrigeringsfönstret ·
   konventions-grillningen (/grill-me) · hub-lyftet L284–L343 ·
   dependabot #162/#65 · Marcus-moment: Update-klicket i claude.ai.**
+- [x] **STÄNGD** (2026-07-25, denna PR): Marcus coverage-kvittens
+  **"Inget att säkra"** → `lifecycle: closed` + denna rubrik-flipp +
+  toppblock. **NÄSTA ARBETE = NY YTA (S87).**
 
 ### Session 85 ✅ AVSLUTAD (2026-07-25) — Dukningen för nattbygget: audit-läkningen + go-redo för S86
 
