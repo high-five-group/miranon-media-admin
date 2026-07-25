@@ -29,6 +29,13 @@
 #   --interval <sek>   pollintervall (default 20)
 #   --quiet            bara slutverdikt
 #
+# EFTER EN PUSH: använd `--commit "$(git rev-parse HEAD)"`, inte `--pr`.
+#   GitHubs PR-API kan returnera FÖREGÅENDE head-SHA i sekunderna efter en push
+#   (empiriskt fångat 2026-07-25: --pr latchade på den gamla, röda körningen och
+#   rapporterade dess utfall som om det vore den nya pushens). Det lokala SHA:t
+#   är auktoritativt för "commiten jag just pushade" — API:t är det inte.
+#   Skriptet skriver alltid ut vilket SHA det följer så drift syns direkt.
+#
 # EXIT-KODER (fail-closed)
 #   0  terminal + inget jobb failade         2  timeout (budgeten slut)
 #   1  minst ett jobb failade/cancelled       3  användningsfel / kunde ej lösa run
@@ -141,7 +148,17 @@ while :; do
     sleep "${INTERVAL}"
 done
 
-say "ci-wait: följer körning ${RUN_ID}"
+# Visa vilket SHA körningen tillhör — gör API-drift (stale headRefOid) synlig
+# i stället för tyst. Se § EFTER EN PUSH i huvudet.
+set +e
+RUN_SHA="$("${GH}" run view "${RUN_ID}" --json headSha -q '.headSha' 2>/dev/null)"
+SHA_RC=$?
+set -e
+if [[ "${SHA_RC}" -eq 0 && -n "${RUN_SHA}" ]]; then
+    say "ci-wait: följer körning ${RUN_ID} (commit ${RUN_SHA:0:8})"
+else
+    say "ci-wait: följer körning ${RUN_ID} (commit okänd)"
+fi
 
 # --- Steg 2: vänta till terminal-state -------------------------------------
 # TERMINAL-KONTROLLEN SKER FÖRE FÖRSTA SÖMNEN. Det var exakt denna ordning
