@@ -74,8 +74,26 @@ designval.
    som att Codex-input hanteras rigoröst. Boten delar namn med sin homonym och
    drunknar i den.
 
-**Timing var inte orsaken.** Codex svarar på 2,5–4,5 min; merge sker 5–10 min efter
-öppning. I 5 av 6 kontrollerade fall låg kommentaren där före merge. Fönstret fanns.
+**Timing är en FJÄRDE orsak — och den strukturellt värsta.** Skärpt 2026-07-25 mot
+30 mergade PR:er efter att den första formuleringen ("timing var inte orsaken",
+grundad på sex kod-PR:er) inte höll mot bredare data. Bilden är tvådelad:
+
+| PR-klass | Livslängd | Codex vs merge |
+|---|---|---|
+| **Kod-PR** (full testsvit) | ~10–45 min | Review hinner **före** merge — låg där oläst |
+| **Docs-PR** (Test suite skippad) | **~57–75 s** | Review kommer **67–99 s EFTER** merge |
+
+Verifierat efter-merge på PR #221 (+95 s), #219 (+73 s), #212 (+67 s), #186 (+99 s) —
+fyra av fyra snabba PR:er. Före-merge på #189 (−2367 s) och #187 (−1435 s).
+
+Konsekvensen är hård: **på vår vanligaste PR-typ kan ingen grind fånga fyndet,
+eftersom mergen redan skett när reviewn föds.** Docs-only-klassningen (ADR-077) som
+ger oss snabbhet är samma mekanism som gör granskningslagret verkningslöst där.
+Detta är inte ett läsdisciplin-problem utan ett arkitekturproblem i skarven mellan
+auto-merge och en asynkron granskare.
+
+Egen empiri: **denna tråds egen PR #222 levde i 72 sekunder och fick ingen review
+alls** — varken före eller efter.
 
 **Kvitto på att ingen läst:** noll reaktioner, noll svar, noll mänskliga
 line-comments på samtliga inventerade PR:er.
@@ -181,8 +199,15 @@ fångar de nästa nitton fynden också.
 - **Var bor läsningen?** Steg i `do-work`:s stängning · egen CI-check som läser
   API:t · moment i `session-end`. Skill-materia (hub) eller repo-materia (spoke)?
 - **Kvot-blindheten** — hur upptäcks nästa tysta vägg? Samma klass som TASK-51.
-- **Auto-merge-fönstret** — 5–10 min räcker för Codex (2,5–4,5 min), men marginalen
-  är tunn. PR #212 mergades 67 sekunder innan reviewn kom.
+- **Auto-merge-fönstret — nu den svåraste mekaniska frågan** (uppgraderad efter
+  30-PR-mätningen ovan). Docs-PR:er lever ~60–75 s och Codex svarar 67–99 s efter
+  merge. Ingen CI-check kan gata det som föds efter mergen. Kandidater, alla med
+  kostnad: (a) minsta-livslängd på PR före auto-merge — betalar med den snabbhet
+  T85 byggde · (b) efterhands-svep som läser mergade PR:ers reviews och registrerar
+  fynd som kort — fångar allt men blockerar inget · (c) `@codex review` synkront
+  före merge på valda klasser · (d) acceptera att docs-PR:er är ogranskade och
+  säga det öppet. **(b) är enda formen som fångar det strukturella fallet** —
+  men den är per definition rådgivande, vilket kolliderar med L321/L322-frågan ovan.
 - **Relation till T86:s review-pilot** — den mäter en subagent-review i
   do-work-skarven. Codex-lagret är en andra, oberoende granskningskälla på samma yta.
   Överlappar de? Ska de mätas i samma vågskål?
