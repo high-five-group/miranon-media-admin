@@ -109,3 +109,5 @@
   --p-ease-in: cubic-bezier(0.4, 0, 1, 1);
   --p-ease-out: cubic-bezier(0, 0, 0.2, 1);
 }
+
+/* [QA-36.8 punkt 1] Ren stiländring — klassningstest, mergas aldrig. */
