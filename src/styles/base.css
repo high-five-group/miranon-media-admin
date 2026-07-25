@@ -115,6 +115,18 @@ body {
   outline: none;
 }
 
+/* Deterministisk fokusring för skriv-ytor som autofokuseras i overlays
+   (S86, Marcus-beslut 2026-07-25: eventväljarens sökruta): ringen visas
+   vid ALLT DOM-fokus, oavsett modalitet — mus-öppningens autofokus gav
+   annars fokus utan ring och första tangenttrycket tände den ("ingen
+   logik"-upplevelsen). Samma form som personsökrutans (globalen ovan);
+   står EFTER släckaren i samma olagrade fil så den vinner ordningsvägen. */
+.mm-fokusring-vid-fokus:focus {
+  outline: var(--mm-focus-ring-width) solid var(--mm-focus-ring);
+  outline-offset: var(--mm-focus-ring-offset);
+  border-radius: 2px;
+}
+
 *:focus-visible {
   outline: var(--mm-focus-ring-width) solid var(--mm-focus-ring);
   outline-offset: var(--mm-focus-ring-offset);
@@ -141,6 +153,16 @@ body {
    är orörd. Olagrad som grannarna (cascade-arkitekturen, L246). */
 [data-rac]:focus-visible:not([data-focus-visible]) {
   outline: none;
+}
+
+/* mm-fokusring-vid-fokus måste vinna ÄVEN över data-rac-släckaren ovan
+   (annars: ring bara i vissa modalitetslägen = "ingen logik"-flimret,
+   S86 Marcus-fångst). Attributet i selektorn matchar släckarens
+   specificitet + klassen övertrumfar; står sist i fokus-sektionen. */
+.mm-fokusring-vid-fokus[data-rac]:focus {
+  outline: var(--mm-focus-ring-width) solid var(--mm-focus-ring);
+  outline-offset: var(--mm-focus-ring-offset);
+  border-radius: 2px;
 }
 
 /* Rubriker: aktivera Inter Display-variant via opsz-axel.
