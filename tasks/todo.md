@@ -113,19 +113,45 @@ BUILD-LOG S83-post.
   grön per jobb (Docs link check körd + grön, Test suite dedup-skippad).
   Del 3–4 + BUILD-LOG-post + T86-omtriage + **T92** mintad.
   **NÄSTA: dok-födelse.**
-- [ ] **Dok-födelse + spanings-bilagan** (denna PR): S87 Del 1 +
-  `bilagor/s87-spaning/` (nio rapporter + README med proveniens och
-  läsvarning — två agent-fynd visade sig felaktiga vid granskning).
-  **NÄSTA: `scripts/ci-wait.sh`.**
-- [ ] **`scripts/ci-wait.sh` + L340-amendering** — bounded poll ersätter
-  `tail -f | grep -m1` som aldrig terminerar; L340 föreskriver den trasiga
-  formen och sprider felet vidare. Löpande ränta 6–9 min/CI-cykel.
-- [ ] **Arkitektur-korpusen** → `docs/reference/miranon-arkitektur/`
-  (Pocock-precedenten) + destillat + T79-uppdatering + AI-assistent-spåret
-  registrerat. **Rör EJ ci.yml** (0 URL:er verifierat).
-- [ ] **task-48** — kort-komplettering (förälder TASK-18, DoD #5+#6) →
-  `/do-work` som **pilot-rad 7**. Väg A: länkarna vilar. Öppen delfråga
-  vid upptaget: den optimistiska enskilda bekräftelsen försvinner.
+- [x] **Dok-födelse + spanings-bilagan** (2026-07-25): PR #194 mergad,
+  `3cf2add`. S87 Del 1 + `bilagor/s87-spaning/` (nio rapporter, 220 kB +
+  README med proveniens och läsvarning — två agent-fynd visade sig
+  felaktiga eller internt motsägelsefulla vid granskning och är utskrivna
+  som sådana). **NÄSTA: `scripts/ci-wait.sh`.**
+- [x] **`scripts/ci-wait.sh` + L340-amendering + L343** (2026-07-25):
+  PR #195 mergad, `3cf2add`→`f1ee01e`, grön per jobb. Bounded poll med
+  terminal-kontroll FÖRE första sömnen + per-jobb-verdikt (ADR-071
+  §2(iii)) + skippade jobb märkta som icke-bevis (L322). 13 testfall,
+  gh-stub, noll nätverk; T1 rött-först-bevisad (trasig form 30 s, läkt
+  form 0 s). Skarpt: 3 s på en avslutad main-run där idiomet kostade nio
+  minuter. **INCIDENT — egen falsk-grön verifiering:** PR:en gick RÖD på
+  shellcheck sedan jag rapporterat grönt; jag körde default-flaggor, CI
+  kör `--severity=style --enable=all` och alla sex fynden låg i
+  optional-mängden. Sex fynd åtgärdade i sak, inga suppressions →
+  **L343** [UNIVERSAL]: grindens ANROP är kontraktet, inte verktygets
+  namn. Andra fångsten i samma svans: `--pr` latchade på föregående
+  körning (PR-API:ts head lagrar efter push) → skriptet visar nu följd
+  commit-SHA, och `--commit "$(git rev-parse HEAD)"` är dokumenterad väg.
+  **NÄSTA: arkitektur-korpusen.**
+- [x] **Arkitektur-korpusen** (2026-07-25): PR #196 mergad, `60745cc`,
+  grön per jobb (config-klass → full svit, ej docs-dedup). Rå-doket
+  vendoriserat + destillat/gap-analys per Pocock-precedenten, men med
+  **snävare exkludering** — bara källfilen, inte hyllan, så destillatet
+  grindas som den egna prosa det är. **ci.yml ORÖRD** (0 URL:er + 0
+  relativa länkar verifierat — spanings-agentens rekommendation var
+  internt motsägelsefull). Kärnfynd: AI-assistenten är ett **tvärsnitt
+  över allt byggt**, inte en fas — dess verktyg wrappar vårt befintliga
+  operations-register. **T79** uppdaterad (två av tre öppna frågor
+  besvarade + publicerings-divergensen utskriven), **T93** registrerad.
+  Ingen ADR, ingen byggplans-edit — båda med skäl i klartext.
+  **NÄSTA: task-48 (STOPPAD på Marcus-beslut).**
+- [ ] **task-48** — kort-komplettering (förälder TASK-18, DoD #5+#6,
+  serialiserings-not mot TASK-47) → `/do-work` som **pilot-rad 7**.
+  Väg A kvitterad: länkarna vilar. **STOPPAD på öppen delfråga:** när
+  per-kort-knappen rivs försvinner den optimistiska enskilda bekräftelsen
+  (1 klick → 4 interaktioner + pessimistisk väntan). Ej utskrivet i facit;
+  märkbar vardagsförändring för Lotta. Code-rek: skriv in anmälans egen
+  sida som avsedd enkel-väg.
 
 ### Session 86 ✅ AVSLUTAD (2026-07-25) — Nattbygget 6/6 + morgongranskningens tre fix-vågor
 
