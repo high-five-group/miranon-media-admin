@@ -15,6 +15,40 @@
 
 ## Aktuellt fokus
 
+**Session 88 ✅ AVSLUTAD (2026-07-25)** — **T85-KORRIGERINGSFÖNSTRET:
+PAKETET BETALT, TRE FYND UR QA-VANDRINGEN.** Tolv landningar
+(PR #199–#211 + hub-PR #1), alla gröna per jobb utom en självförvållad
+röd. **Codex tre mätpåståenden höll alla tre** — det tredje skarpare än
+granskaren visste: `redRuns` läste bara `failure`, så måttet hade räknat
+repots egen `startup_failure` (run 30038460735, L326) som *inte röd*.
+**Nattvakten byggd på research-grundat beslut C** (Marcus delegerade
+efter web-research-disciplinen): SRE-checklistan delar problemet längs en
+gräns som finns i koden, Prometheus Watchdog är precedenten, och
+researchen fann **inget** projekt där en extern vakt ersatte det interna
+larmet. Grace mot **uppmätt** drift, dedup, bevis-läge; rekursionen öppet
+bokförd. **Punkt 4 bar två fällor** (ingen PATCH för rulesets ·
+ADR-076:s kanoniska JSON hade driftat och hade tyst nollat tre fält).
+**Punkt 5 föll Codes egen misstanke** — timezone finns sedan 2026-03-19,
+prövat tvåsidigt mot den PINNADE actionlint. **QA-VANDRINGEN utförd av
+Code på Marcus delegation** (10/12 punkter, två öppet oavklarade) gav
+**tre fynd skivornas egna bevis missat: TASK-49** (visual-grinden blind
+på desktop — 4/6 mobila fångade, **0/6 desktop**; ratio-tröskel mot
+4,26× större yta) · **TASK-50** (purge rör staging utan mutex) ·
+**TASK-51** (nattlarmets commit-spann har ALDRIG fungerat — saknar
+`actions: read`, felet sväljs tyst; ärende #114 bär samma text sedan
+2026-07-23). **Fyra beslut:** kortformalian A · QA:n C · nightly-visual
+A (**TASK-49 stärkte det i efterhand**) · **merge-only A, verkställd**.
+**SKÖRD L344–L346** [UNIVERSAL ×3] — L344 bärgad ur övergivna PR #192
+(osäkrad i tio timmar utan att L-serien visade det) · L345 grind-kvitto
+gäller en commit, inte en session · L346 testplaner som frågar "räcker
+resultatet?" mäter värdet. **Ingen ADR** (079 ledigt), inga fällor, inga
+trådar. **NÄSTA (NY session S89): de tre QA-fynden** i ordning TASK-51 →
+TASK-49 → TASK-50, därefter task-48 → Roger & Lotta-spåret (T95).
+**T86-beslutet avblockerat av T85 men spärrat av n=6; escapes-räkne-regeln
+avgjordes INTE och kvarstår öppen.** Numrering efter S88:
+89/079/L347/T98/f46/task-52. Full narrativ: sessionsdok S88 Del 1–3 +
+BUILD-LOG S88-post.
+
 **Session 87 ✅ AVSLUTAD (2026-07-25)** — **STÄD-VÅGEN: DEN OBETALDA
 RÄNTAN BETALD.** Fem PR:er (#193–#197), alla gröna per jobb, strikt
 seriellt landade (merge-grinden gör parallella landningar långsammare, ej

@@ -5162,3 +5162,58 @@ någon räkning visade det, eftersom L-serien såg obruten ut. Sekundär lärdom
 omskrivning från main-sidan bevarar inte automatiskt det som bara fanns i
 grenen, och numren avslöjar det inte — bara innehålls-diffen gör det. Stäng
 aldrig en övergiven PR utan att först diffa den mot det som faktiskt landade.
+
+### L345 — [UNIVERSAL] Ett grönt grind-kvitto gäller en commit, inte en session — och ett jobb är alla sina grindar
+
+Datum: 2026-07-25 (S88) | Källa: PR #202 gick röd på Vale sedan jag ändrat
+ett trådkort efter min senaste prosa-körning (klass: föråldrat kvitto;
+kostnad: en röd CI-cykel)
+
+Jag hade kört `markdownlint-cli2` efter ändringen och `lint:prose` **före**
+den. Båda var gröna — men den ena grönskan var från fel tidpunkt. CI kör
+dem i **samma jobb** (`Docs link check`, som dessutom rymmer lychee), så
+"jag körde grindarna" var sant om mängden och falskt om ögonblicket.
+
+Två skärpningar, båda i L343:s släkt men distinkta:
+
+1. **Kvittot är bundet till innehållet, inte till sessionen.** Varje ny
+   redigering ogiltigförklarar alla tidigare grindkvitton på den filen.
+   Kör om efter sista ändringen — inte efter den näst sista.
+2. **Ett CI-jobb är alla sina steg.** Att ha kört *en* av jobbets grindar är
+   inte att ha kört jobbet. Ta reda på vilka verktyg som delar jobb innan du
+   rapporterar det grönt: här låg lychee, markdownlint och Vale under samma
+   namn, och bara ett av tre var faktiskt aktuellt.
+
+Formen som håller: kör hela jobbets grindmängd som sista handling före
+`git add`, efter att alla filer är i sitt slutliga skick.
+
+### L346 — [UNIVERSAL] En testplan som frågar "hände det?" mäter mekanismen; frågar den "räcker resultatet?" mäter värdet
+
+Datum: 2026-07-25 (S88, QA-vandringen task-36.8) | Källa: punkt 7 avslöjade
+att nattlarmets commit-spann aldrig fungerat — en bugg som överlevt sedan
+larmet byggdes två dagar tidigare (klass: testplans-design)
+
+Larmkedjan hade "bevisats" en gång tidigare (ärende #114, S79) och betraktats
+som verifierad. Den kontrollen frågade i praktiken *skapades ett ärende?* —
+och svaret var ja. QA-punkt 7 ställde i stället frågan:
+
+> "Läs ärendet som om du vaknat till det: räcker informationen för att veta
+> var man börjar?"
+
+Svaret var nej. Ärendets mest värdefulla fält — commit-spannet sedan senaste
+gröna natt — sade "ingen tidigare grön nattkörning" trots att fem fanns.
+Grundorsak: jobbet saknade `actions: read`, `gh run list` failade 403, och
+ett `|| echo ""` svalde felet så att den mest alarmerande grenen valdes.
+Samma text stod i #114 hela tiden; ingen hade läst den kritiskt.
+
+Generaliserbart: **acceptanskriterier som beskriver mekanismen ("ett ärende
+skapas", "jobbet blir rött", "mailet skickas") passerar även när innehållet
+är värdelöst.** Kriterier som beskriver *mottagarens situation* ("räcker det
+för att agera?", "vet man var man börjar?") kan bara passera om kedjan
+fungerar hela vägen ut. Skriv minst ett sådant per mekanism som ska bära ett
+mänskligt beslut.
+
+Följdregel bekräftad i samma pass: **en simulering som ingen läser kritiskt
+är inte ett bevis, den är en ritual.** Bevis-lägen (`simulate_failure`,
+`simulate_missing`) är bara värda något om utfallet granskas som om det vore
+skarpt.
