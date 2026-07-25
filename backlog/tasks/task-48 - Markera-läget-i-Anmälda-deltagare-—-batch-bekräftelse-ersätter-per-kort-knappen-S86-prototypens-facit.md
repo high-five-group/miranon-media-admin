@@ -6,7 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-25 10:51'
-labels: []
+updated_date: '2026-07-25 16:00'
+labels:
+  - ready-for-agent
 dependencies: []
 ordinal: 109000
 ---
@@ -33,10 +35,30 @@ LÅSTA BYGGKRAV (facit):
 - [ ] #2 K46/K47/K48-rivningarna öppet bokförda i kod-kommentarer + spec; §19-audit-raden för Greta-fallet uppdaterad
 <!-- AC:END -->
 
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MARCUS-BESLUT 2026-07-25 (S87) — tre punkter som avgör bygget:
+
+1. LÄNK-FORKEN: väg A. Anmäld-radens länk och person-länken VILAR i markera-läget (iOS edit-mode-konventionen, exakt vad prototypens snapshots visar). Därmed räcker rå RAC Checkbox per BorOverRad-precedenten (Deltagare.tsx:669-672, med sin explicita rationale mot primitiv-lyft) — INGEN GridList, ingen ny primitiv-mark, ingen 11/11/11-ribba. Krav 7:s 'el. likvärdig aria-multiselectable-form' är den väg som gäller. Uppskattning: ~3-4,5 h, ETT kort.
+
+2. ENSKILD BEKRÄFTELSE: rivningen av per-kort-knappen tar med sig useSendConfirmation (registrationConfirmation.ts:62-115) och därmed den optimistiska snabbvägen från eventsidan. Marcus-beslut: ACCEPTERAT — 1-klick-interaktionen byggs i stället på HEM-VYN. Genvägen flyttas alltså dit den hör hemma i stället för att behållas på eventsidan. Riv utan ersättare här; skriv INTE in anmälans egen sida som enkel-väg.
+
+3. PARENT: TASK-18 (PRD Eventsidan till S73-facit) är förälder — dess § Testbeslut ska läsas i do-work steg 2. Fältet parent_task_id kan inte sättas via backlog task edit (endast vid create), därför står relationen här.
+
+SERIALISERING: task-48 FÖRE TASK-47. TASK-47 (e2e-fixture-konsolidering) pekar explicit ut get-registrations-stubbarna, och task-48 skriver om event-bekraftelse.staging.test.ts som äger dem (7 av 9 tester, ~250 av 448 rader). Omvänd ordning skriver om TASK-47:s nyskapade helper direkt.
+
+KROCK-VARNING: §19:s prejudikatlista ändras av denna landning — 'Skicka bekräftelse → success/outline (Greta-fallet)' och 'Bekräfta alla-pillen → success/subtle' upphör båda att existera. Varje parallellt knapp-arbete som läser §19 som gällande karta läser fel efter detta.
+
+PROTOTYP: proto/s86-deltagarkort-markering finns ENDAST lokalt (aldrig pushad). Kortkoden kan INTE absorberas — dess MarkerbartKort gör hela kortet till en RAC Checkbox med kortinnehållet inuti, vilket är oförenligt med krav 5 (L303: interaktivt bor aldrig i interaktivt). Absorberbart är batch-barens breddlås (osynlig platshållare + tabular-nums) och scroll-klassen.
+<!-- SECTION:NOTES:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd (L220)
+- [ ] #6 Renderad verifiering (computed-style/skärmdump) av markera-lägets valda kort + batch-barens breddlås (L245/L246)
 <!-- DOD:END -->

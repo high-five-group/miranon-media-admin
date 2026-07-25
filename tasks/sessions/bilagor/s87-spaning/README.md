@@ -65,3 +65,29 @@ utan att veta att det inte finns någon adress att bjuda in till. **Ingen av de
 tre kunde se att den ena rapporten drar undan brådskan från de andra två.**
 Det är integratörsvärdet, och det är skälet att spaningen kördes samlad i
 stället för som separata sessioner.
+
+## Marcus åtta punkter — var de landade
+
+Spaningen utgick från åtta frågor Marcus skrev ned 2026-07-25 plus en önskan
+att starta bygget av tre vyer. Tabellen är kartan från hans anteckningar till
+repots durabla bärare — **efter den här raden behövs anteckningarna inte
+längre.**
+
+| Marcus punkt | Vad det visade sig vara | Durabel bärare | Väntar på |
+|---|---|---|---|
+| 1. Instant/Routes-ADR | Ingen ADR — baren nås ej. Men `URL-STATE-SPEC` har driftat och route-grammatiken bor i tre hemvister | **T94** | Konventions-hemmets grillning |
+| 2. Review-piloten T86 / F6 / T85 | Piloten omogen (6 av 10–15) och i **gråzon** (median 9,5 min mot ≤5). F6 kördes, inkonklusivt-positivt | T86 (escapes omtriagerad) · T89 | T85-sessionen; F6-beslutet är eget litet moment |
+| 3. Arkitektur-konversationen | AI-assistenten genuint odokumenterad; miranon.se saknade arkitektur | `docs/reference/miranon-arkitektur/` · **T93** · T79 | Epok-grillning (Övning 2 vs 3) |
+| 4. "Riktig app" + inbjudan | **Grind 0 saknas helt: ingen frontend-deploy** | **T95** | Grillning + hosting-ADR |
+| 5. "Xapi-grejen" | Fas 6.5. Marcus minne stämde exakt — panelen är låst K10-facit. Men lagringstabellen finns inte och historik-vyn saknar facit | `byggplan.md` Fas 6.5 · `FEATURE-ACTIVITY-LOG.md` | Grillning (4 öppna beslut, 2 ADR-kandidater) |
+| 6. Fix-vågens 1 h 11 m | 33 % död väntan från ett idiom **L340 självt föreskrev** | `ci-wait.sh` + L340-amendering + L343 · **T92** (resten) | — levererat |
+| 7. task-48 | Var inte plockbar; omfattningen hängde på en enda fork | Kortet, nu `ready-for-agent` | — plockbart |
+| 8. Systemmeddelandena | Båda bilderna = `AppErrorBoundary`. Appen saknar toast-lager helt | **T96** | Prototyp-pass |
+| Bygget (Check-in/Personer/persondetalj) | Personer + persondetalj **finns redan** men förfacit ⇒ ombyggnad. Check-in obyggd, write-vägen saknas | **T97** | Grillning för check-in-forken |
+
+Ordningen som föreslogs och kvitterades: **T85-korrigeringen → task-48 →
+Roger & Lotta-spåret (T95)**, med de övriga köade. Skälet till att T85 går
+först är inte sekvenslåsningen (den blockerar inte produktarbete) utan att
+**den billigaste stunden att röra CI är när ingenting är i luften** — och att
+T85 avblockerar både T86-beslutet och T87, där task-48:s avsiktliga
+baseline-drift ska landa.
