@@ -462,14 +462,35 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
     await valjarTrigger(page).click();
     const sok = page.getByRole('searchbox', { name: 'Sök event eller ort' });
     await expect(sok).toBeFocused();
+
+    // RING-DETERMINISMEN (Marcus våg 3 2026-07-25): fokusringen ska SYNAS
+    // instant vid mus-öppning — inte bero på modalitets-heuristiken (tre
+    // samverkande base.css-regler gav "ibland ring"-flimret; läkt med
+    // .mm-fokusring-vid-fokus, specificitets-placerad över alla tre).
+    // Computed-bevis i personsökrutans exakta form: 2px solid --mm-focus-ring.
+    await expect(sok).toHaveCSS('outline-style', 'solid');
+    await expect(sok).toHaveCSS('outline-color', 'rgb(27, 73, 101)');
+
+    // Grå rensa-krysset (Marcus våg 3): RAC:s clear-Button i appens ikonform
+    // — native webkit-blå kryss undanstyrt; knappen dold vid tomt fält,
+    // synlig + text-muted-grå med innehåll.
+    const rensa = page.getByRole('button', { name: 'Rensa sökningen' });
+    await expect(rensa).toBeHidden();
+    await sok.fill('resor');
+    await expect(rensa).toBeVisible();
+    await expect(rensa).toHaveCSS('color', 'rgb(107, 107, 107)');
+    await rensa.click();
+    await expect(sok).toHaveValue('');
+
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('event-valjare-popover')).toHaveCount(0);
 
     // Tangentbordsvägen: fokus på triggern (RAC:s fokus-retur efter Escape)
-    // → Enter öppnar → fältet har fokus.
+    // → Enter öppnar → fältet har fokus — och ringen står även här.
     await expect(valjarTrigger(page)).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(sok).toBeFocused();
+    await expect(sok).toHaveCSS('outline-style', 'solid');
   });
 
   test('popovern matchar den fasta full-bredds-triggern (form B, Marcus 2026-07-25): bredd och vänsterkant', async ({
