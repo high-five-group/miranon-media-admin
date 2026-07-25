@@ -125,8 +125,20 @@ grillas i sessionen, tas inte rakt av.
    **Bifynd:** `errata-ai/vale` är omdöpt till `vale-cli/vale`; URL:en lever
    på GitHub-redirect. Org-namnsbytet görs vid nästa versions-bump, inte nu
    (URL och checksumma hör ihop).
-4. **Required-check app-bindningen** — `integration_id` mot GitHub
-   Actions så checknamnet inte kan publiceras av annan write-aktör.
+4. ~~**Required-check app-bindningen**~~ ✅ **ÅTGÄRDAD S88.**
+   `integration_id: 15368` (GitHub Actions) tillagd på required check i
+   ruleset `main-skydd` (id 19627609). App-id verifierat två oberoende vägar
+   ur repots egen data — inte hämtat ur minnet. **Hotet var konkret:** repot
+   har en andra app med `checks:write` installerad, och
+   `POST /repos/.../statuses/{sha}` lät vilken write-token som helst sätta
+   kontexten `CI Passed or Skipped`. Ytan var oanvänd (`total_count: 0`), så
+   bindningen bröt ingen legitim trafik.
+   **Två fällor hanterade:** det finns ingen `PATCH` för rulesets — `PUT` är
+   full objekt-ersättning, så payloaden härleddes ur live-GET med en
+   diff-grind (exakt +1 semantiskt fält) och en sparad baseline som
+   återställning. Och **ADR-076:s kanoniska JSON hade driftat** (saknade tre
+   API-satta fält) — en `PUT` av det blocket hade tyst nollat dem; ADR:n
+   uppdaterad till live-formen i samma landning.
 5. ~~**Cron-timezone**~~ ✅ **ÅTGÄRDAD S88** — och Codes egen misstanke FÖLL.
    Code antog att GitHub Actions inte stöder något timezone-fält alls. Falskt:
    `schedule`-timezone är GA sedan **2026-03-19**, verifierat mot GitHubs egen
