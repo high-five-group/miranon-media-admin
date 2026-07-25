@@ -34,6 +34,7 @@ function ev(o: {
   namn: string;
   startdatum: string | null;
   slutdatum?: string | null;
+  typ?: string | null;
   ort?: string | null;
   maxPlatser?: number | null;
   antalAnmalda?: number;
@@ -46,7 +47,7 @@ function ev(o: {
     id: o.id,
     eventlabel: o.namn,
     eventNamn: o.namn,
-    typ: 'Kurs',
+    typ: o.typ !== undefined ? o.typ : 'Kurs',
     ort: o.ort !== undefined ? o.ort : 'Skövde',
     startdatum: o.startdatum,
     slutdatum: o.slutdatum ?? o.startdatum,
@@ -286,8 +287,10 @@ test.describe('Event-listan till S72-facit (task-17.2)', () => {
         .first(),
     ).toHaveText('Grundkurs i medvetande');
     // Select-kontrollerna ("Visa"/"Sortera efter") existerar inte längre.
+    // Exakt namn-match (task-17.7): filtervyns tratt-knapp heter "Visa filter"
+    // och får inte träffas av det gamla kontrollnamnets vakt.
     await expect(page.getByRole('button', { name: /Sortera efter/ })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /^Visa/ })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Visa', exact: true })).toHaveCount(0);
   });
 
   test('månadsgrupperna: riktiga rubriker i tillgänglighetsträdet, kronologisk ordning, korten under rätt månad', async ({
@@ -635,5 +638,480 @@ test.describe('Skapa-ingången på vy-raden (task-19.2)', () => {
         .getByRole('radio', { name: 'Kalendervy' }),
     ).toBeChecked();
     await expect(page.getByRole('link', { name: 'Skapa nytt event' })).toBeVisible();
+  });
+});
+
+/**
+ * Filtervyn på event-listan + skriv ut (task-17.7) — S83-PROTOTYP-FACIT.
+ *
+ * Facit: `tasks/sessions/bilagor/s83-filtervy-konvergens/` (k02 låst
+ * filterform + k02-print; Marcus-låst 2026-07-24: "Vi låser den så").
+ * Research-grund: docs/research/filtervy-listor-monster-2026-07-24.md
+ * (disclosure-bar = MOJ-mönstret; NN/g live-filtrering vid klientlokal data).
+ *
+ * Byggkraven (kortets Implementation Notes, låsta): tratt-ingång HÖGER om
+ * period-toggeln (aria-expanded/aria-controls, siffer-badge, sr-only-namn) ·
+ * disclosure-panel med TRE Select-dropdowns (Typ · Ort · Status; värden ur
+ * HELA källan, typ/ort sv-alfabetiskt, status kanonisk ordning) · ETT val
+ * per dimension, AND över dimensioner, LIVE utan Apply · räknare + aria-live ·
+ * eget filter-tomläge SKILJT från period-tomläget · Skriv ut via
+ * window.print() med print-huvud och print-dold nav/kontroller · URL-delbara
+ * filterval ?typ/?ort/?status (nuqs, ren URL utan filter).
+ * Visuella facit-krav bevisas COMPUTED (L245/L246/L272).
+ */
+test.describe('Filtervyn på event-listan + skriv ut (task-17.7)', () => {
+  /**
+   * Filter-diversifierad uppsättning (5 kommande + 2 tidigare): tre typer,
+   * fyra orter, tre statusar (Flyttat MEDVETET frånvarande — bevisar att
+   * alternativen HÄRLEDS ur källan, inte hårdkodas). Status-ordningen i
+   * datat är vald så att kanonisk ordning ≠ alfabetisk ordning går att skilja.
+   */
+  const FILTER_EVENTS: Row[] = [
+    ev({
+      id: 'recFU1',
+      namn: 'Medialkurs steg 1',
+      typ: 'Kurs',
+      ort: 'Skövde',
+      startdatum: '2099-03-05',
+      maxPlatser: 12,
+      antalAnmalda: 8,
+      platserKvar: 4,
+    }),
+    ev({
+      id: 'recFU2',
+      namn: 'Healingkväll',
+      typ: 'Föreläsning',
+      ort: 'Göteborg',
+      startdatum: '2099-03-20',
+      maxPlatser: 30,
+      antalAnmalda: 12,
+      platserKvar: 18,
+    }),
+    ev({
+      id: 'recFU3',
+      namn: 'Storseans',
+      typ: 'Föreläsning',
+      ort: 'Stockholm',
+      startdatum: '2099-06-17',
+      maxPlatser: 80,
+      antalAnmalda: 12,
+      platserKvar: 68,
+      status: 'Inställt',
+    }),
+    ev({
+      id: 'recFU4',
+      namn: 'Retreat — inre resa',
+      typ: 'Retreat',
+      ort: 'Ulvåker',
+      startdatum: '2099-08-27',
+      maxPlatser: 16,
+      antalAnmalda: 9,
+      platserKvar: 7,
+    }),
+    ev({
+      id: 'recFU5',
+      namn: 'Höstretreat',
+      typ: 'Retreat',
+      ort: 'Ulvåker',
+      startdatum: '2099-10-28',
+      maxPlatser: 16,
+      antalAnmalda: 2,
+      platserKvar: 14,
+    }),
+    ev({
+      id: 'recFP1',
+      namn: 'Vårseans',
+      typ: 'Föreläsning',
+      ort: 'Göteborg',
+      startdatum: '2000-04-10',
+      maxPlatser: 30,
+      antalAnmalda: 24,
+      platserKvar: 6,
+      status: 'Genomfört',
+    }),
+    ev({
+      id: 'recFP2',
+      namn: 'Vinterkurs',
+      typ: 'Kurs',
+      ort: 'Skövde',
+      startdatum: '2000-01-05',
+      maxPlatser: 12,
+      antalAnmalda: 12,
+      platserKvar: 0,
+      status: 'Genomfört',
+    }),
+  ];
+
+  /** Tratt-ingången (öppnar/stänger filterpanelen). */
+  function filterKnapp(page: Page) {
+    return page.getByRole('button', { name: /^(Visa|Dölj) filter/ });
+  }
+
+  /** Väljer ett alternativ i en filter-Select (skapa-event-testets idiom). */
+  async function valjFilter(page: Page, testId: string, alternativ: string): Promise<void> {
+    await page.getByTestId(testId).getByRole('button').click();
+    await page.getByRole('option', { name: alternativ, exact: true }).click();
+  }
+
+  test('filter-ingången: tratt-knapp i period-raden med aria-expanded/aria-controls; panelen bär tre dropdowns med härledda alternativ i facit-ordning', async ({
+    page,
+  }) => {
+    await mockEvents(page, FILTER_EVENTS);
+    await page.goto('/event');
+
+    // Stängd ingång: "Visa filter", aria-expanded=false, ingen badge.
+    const knapp = filterKnapp(page);
+    await expect(knapp).toHaveAccessibleName('Visa filter');
+    await expect(knapp).toHaveAttribute('aria-expanded', 'false');
+
+    // Öppning: aria-expanded=true + namnbytet till "Dölj filter";
+    // aria-controls pekar på den nu synliga panelen (disclosure-kontraktet).
+    await knapp.click();
+    await expect(knapp).toHaveAttribute('aria-expanded', 'true');
+    await expect(knapp).toHaveAccessibleName('Dölj filter');
+    const panelId = await knapp.getAttribute('aria-controls');
+    expect(panelId).toBeTruthy();
+    const panel = page.locator(`[id="${panelId}"]`);
+    await expect(panel).toBeVisible();
+
+    // Panelens facit-form COMPUTED (L272): tonala kortets bg + rounded-2xl.
+    const panelStil = await panel.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { bg: cs.backgroundColor, radius: cs.borderRadius };
+    });
+    expect(panelStil.bg).toBe(await resolvedTokenColor(page, '--mm-bg-muted'));
+    expect(panelStil.radius).toBe('16px');
+
+    // TRE dropdowns med synliga labels i facit-ordningen Typ · Ort · Status.
+    for (const [testId, label] of [
+      ['filter-typ', 'Typ'],
+      ['filter-ort', 'Ort'],
+      ['filter-status', 'Status'],
+    ] as const) {
+      await expect(page.getByTestId(testId)).toContainText(label);
+    }
+
+    // Typ-alternativen HÄRLEDS ur HELA källan: nolläget först, sedan
+    // sv-alfabetiskt (Föreläsning < Kurs < Retreat).
+    await page.getByTestId('filter-typ').getByRole('button').click();
+    await expect(page.getByRole('option')).toHaveText([
+      'Alla typer',
+      'Föreläsning',
+      'Kurs',
+      'Retreat',
+    ]);
+    await page.keyboard.press('Escape');
+
+    // Ort sv-alfabetiskt.
+    await page.getByTestId('filter-ort').getByRole('button').click();
+    await expect(page.getByRole('option')).toHaveText([
+      'Alla orter',
+      'Göteborg',
+      'Skövde',
+      'Stockholm',
+      'Ulvåker',
+    ]);
+    await page.keyboard.press('Escape');
+
+    // Status i KANONISK ordning (Planerat/Genomfört/Inställt — aldrig
+    // alfabetisk) och ENDAST närvarande värden (Flyttat saknas i källan).
+    await page.getByTestId('filter-status').getByRole('button').click();
+    await expect(page.getByRole('option')).toHaveText([
+      'Alla statusar',
+      'Planerat',
+      'Genomfört',
+      'Inställt',
+    ]);
+    await page.keyboard.press('Escape');
+
+    // Kalenderläget berörs ej av filtret (kalendern äger tiden, PRD beslut 7).
+    await page.goto('/event?vy=kalender');
+    await expect(filterKnapp(page)).toHaveCount(0);
+  });
+
+  test('live-filtrering utan Apply: valet skriver URL:en, AND över dimensioner, räknare + aria-live; Rensa återställer till ren URL', async ({
+    page,
+  }) => {
+    await mockEvents(page, FILTER_EVENTS);
+    await page.goto('/event');
+    await expect(eventItems(page)).toHaveCount(5);
+
+    await filterKnapp(page).click();
+
+    // ETT val filtrerar DIREKT (ingen Apply-knapp existerar) och skriver URL:en.
+    await valjFilter(page, 'filter-typ', 'Föreläsning');
+    await expect(eventItems(page)).toHaveCount(2);
+    await expect(page).toHaveURL(/[?&]typ=/); // poll — nuqs throttlar URL-skrivningen
+    expect(new URL(page.url()).searchParams.get('typ')).toBe('Föreläsning');
+    await expect(page.getByRole('button', { name: /Apply|Tillämpa|Filtrera$/ })).toHaveCount(0);
+
+    // Räknaren i panelfoten + aria-live-bekräftelsen (skiljs på punkten).
+    await expect(page.getByText('Visar 2 av 5 event', { exact: true })).toBeVisible();
+    await expect(page.getByText('Visar 2 av 5 event.', { exact: true })).toHaveCount(1);
+
+    // AND över dimensioner: Föreläsning ∧ Göteborg → exakt Healingkväll.
+    await valjFilter(page, 'filter-ort', 'Göteborg');
+    await expect(eventItems(page)).toHaveCount(1);
+    await expect(eventItems(page).getByRole('link')).toHaveText('Healingkväll');
+    await expect(page).toHaveURL(/[?&]ort=/); // poll — nuqs throttlar URL-skrivningen
+    expect(new URL(page.url()).searchParams.get('ort')).toBe('Göteborg');
+    await expect(page.getByText('Visar 1 av 5 event', { exact: true })).toBeVisible();
+
+    // Badgen bär antalet aktiva val; sr-namnet bär samma tal.
+    await expect(filterKnapp(page)).toHaveAccessibleName('Dölj filter, 2 aktiva filterval');
+
+    // Rensa filter: allt nollställs, URL:en är REN (inga filterparams kvar).
+    // expect.poll — nuqs throttlar URL-skrivningen (review-pilotens fynd 4).
+    await page.getByRole('button', { name: 'Rensa filter' }).click();
+    await expect(eventItems(page)).toHaveCount(5);
+    await expect.poll(() => new URL(page.url()).search).toBe('');
+    await expect(page.getByText('Visar 5 av 5 event', { exact: true })).toBeVisible();
+    await expect(filterKnapp(page)).toHaveAccessibleName('Dölj filter');
+  });
+
+  test('delbar URL + stabila alternativ: direktnavigering återger filterläget; periodbyte behåller filter och alternativrymd — aktiv-indikationen computed', async ({
+    page,
+  }) => {
+    await mockEvents(page, FILTER_EVENTS);
+    await page.goto('/event?typ=Kurs');
+
+    // Direktnavigering återger exakt läget: filtrerad lista + badge — panelen
+    // är STÄNGD men aktiv-indikationen syns (MOJ-affordans-läxan).
+    await expect(eventItems(page)).toHaveCount(1);
+    await expect(eventItems(page).getByRole('link')).toHaveText('Medialkurs steg 1');
+    const knapp = filterKnapp(page);
+    await expect(knapp).toHaveAttribute('aria-expanded', 'false');
+    // Singular-böjning (review-pilotens fynd 3): "1 aktivt filterval".
+    await expect(knapp).toHaveAccessibleName('Visa filter, 1 aktivt filterval');
+
+    // Aktiv/öppen knapp per facit COMPUTED: bg-text + text-text-inverse;
+    // badgen bär accent-bg med inverse-text (öppet bokförd facit-avvikelse
+    // från prototypens text-text — WCAG 1.4.3-golvet skärs aldrig).
+    expect(await knapp.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+      await resolvedTokenColor(page, '--mm-text'),
+    );
+    const badge = knapp.locator('span[aria-hidden="true"]');
+    await expect(badge).toHaveText('1');
+    const badgeStil = await badge.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { bg: cs.backgroundColor, color: cs.color };
+    });
+    expect(badgeStil.bg).toBe(await resolvedTokenColor(page, '--mm-accent'));
+    expect(badgeStil.color).toBe(await resolvedTokenColor(page, '--mm-text-inverse'));
+
+    // Periodbyte BEHÅLLER filtret (params är oberoende) och filtrerar
+    // Tidigare-listan: Kurs ∧ past → exakt Vinterkurs.
+    await page
+      .getByRole('radiogroup', { name: 'Period' })
+      .getByRole('radio', { name: 'Tidigare' })
+      .click();
+    await expect(page).toHaveURL(/[?&]period=past/);
+    expect(new URL(page.url()).searchParams.get('typ')).toBe('Kurs');
+    await expect(eventItems(page)).toHaveCount(1);
+    await expect(eventItems(page).getByRole('link')).toHaveText('Vinterkurs');
+
+    // Alternativen är STABILA över periodbytet (härledda ur HELA källan,
+    // inte den periodfiltrerade): typ-listan är identisk i Tidigare-läget.
+    await knapp.click();
+    await expect(page.getByText('Visar 1 av 2 event', { exact: true })).toBeVisible();
+    await page.getByTestId('filter-typ').getByRole('button').click();
+    await expect(page.getByRole('option')).toHaveText([
+      'Alla typer',
+      'Föreläsning',
+      'Kurs',
+      'Retreat',
+    ]);
+  });
+
+  test('filter-tomläget: aktiva filter + 0 träffar ger eget tomläge med Rensa — period-tomläget består orört', async ({
+    page,
+  }) => {
+    await mockEvents(page, FILTER_EVENTS);
+    await page.goto('/event');
+    await filterKnapp(page).click();
+
+    // Kurs ∧ Ulvåker = 0 träffar → filter-tomläget (inte period-tomläget).
+    await valjFilter(page, 'filter-typ', 'Kurs');
+    await valjFilter(page, 'filter-ort', 'Ulvåker');
+    await expect(eventItems(page)).toHaveCount(0);
+    await expect(page.getByText('Inga event matchar filtren')).toBeVisible();
+    await expect(page.getByText('Inga kommande event')).toHaveCount(0);
+    await expect(page.getByText('Visar 0 av 5 event', { exact: true })).toBeVisible();
+
+    // Tomlägets Rensa-knapp är återvägen (research: tydlig återväg).
+    await page.getByRole('button', { name: 'Rensa filter' }).last().click();
+    await expect(eventItems(page)).toHaveCount(5);
+    await expect(page.getByText('Inga event matchar filtren')).toHaveCount(0);
+
+    // Okänt URL-värde (fri sträng per URL-beslutet): filtret är aktivt,
+    // tomläget visas och dropdown-triggern KOMMUNICERAR värdet som extra
+    // alternativ — aldrig RAC:s råa placeholder (review-pilotens fynd 6b).
+    await page.goto('/event?typ=Okänd');
+    await expect(page.getByText('Inga event matchar filtren')).toBeVisible();
+    await expect(filterKnapp(page)).toHaveAccessibleName('Visa filter, 1 aktivt filterval');
+    await filterKnapp(page).click();
+    await expect(page.getByTestId('filter-typ')).toContainText('Okänd');
+
+    // Period-tomläget består ORÖRT: tom källa + aktivt filter visar
+    // period-tomläget (det finns inga event att "rensa fram").
+    // Persist-cachen rensas före om-navigeringen (ADR-072): annars
+    // hydreras föregående lista ur localStorage och tomläget nås aldrig.
+    await mockEvents(page, []);
+    await arrangeraTomCache(page);
+    await page.goto('/event?typ=Kurs');
+    await expect(page.getByText('Inga kommande event')).toBeVisible();
+    await expect(page.getByText('Inga event matchar filtren')).toHaveCount(0);
+  });
+
+  test('ogiltig ?status-parameter är inert (enum-parsning): inga aktiva filter, hela listan renderas', async ({
+    page,
+  }) => {
+    await mockEvents(page, FILTER_EVENTS);
+    await page.goto('/event?status=bananas');
+
+    await expect(eventItems(page)).toHaveCount(5);
+    const knapp = filterKnapp(page);
+    await expect(knapp).toHaveAccessibleName('Visa filter');
+    await expect(knapp.locator('span[aria-hidden="true"]')).toHaveCount(0);
+    // Inaktiv stängd knapp bär kapselns tysta ton — inte aktiv-svärtan.
+    expect(await knapp.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+      await resolvedTokenColor(page, '--mm-bg-muted'),
+    );
+  });
+
+  test('Skriv ut: knappen anropar window.print; @media print döljer nav + kontroller och renderar utskriftshuvudet', async ({
+    page,
+  }) => {
+    await mockEvents(page, FILTER_EVENTS);
+    await page.addInitScript(() => {
+      (window as unknown as { __printAnrop: number }).__printAnrop = 0;
+      window.print = () => {
+        (window as unknown as { __printAnrop: number }).__printAnrop += 1;
+      };
+    });
+    await page.goto('/event');
+    await filterKnapp(page).click();
+    await valjFilter(page, 'filter-typ', 'Retreat');
+    await expect(eventItems(page)).toHaveCount(2);
+
+    // Skriv ut-knappen i panelfoten anropar window.print (utskriften ÄR den
+    // synliga filtrerade listan — ingen parallell utskriftsvy).
+    await page.getByRole('button', { name: 'Skriv ut' }).click();
+    expect(
+      await page.evaluate(() => (window as unknown as { __printAnrop: number }).__printAnrop),
+    ).toBe(1);
+
+    // @media print (emulerad): nav + samtliga kontroller döljs (GOV.UK-
+    // blacklisten via återanvändbar print-utility), listan består.
+    await page.emulateMedia({ media: 'print' });
+    await expect(page.locator('nav')).toBeHidden();
+    await expect(page.getByRole('radiogroup', { name: 'Period' })).toBeHidden();
+    await expect(page.getByRole('link', { name: 'Skapa nytt event' })).toBeHidden();
+    await expect(filterKnapp(page)).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Skriv ut' })).toBeHidden();
+    await expect(page.getByRole('heading', { level: 1, name: 'Event' })).toBeVisible();
+    await expect(eventItems(page)).toHaveCount(2);
+
+    // Print-huvudet bär kontexten pappret annars tappar (facit k02-print):
+    // "Event — {Period} · {aktiva filter} · {N} event · Utskrivet {långdatum}".
+    const langdatum = new Intl.DateTimeFormat('sv-SE', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date());
+    await expect(
+      page.getByText(`Event — Kommande · Typ: Retreat · 2 event · Utskrivet ${langdatum}`, {
+        exact: true,
+      }),
+    ).toBeVisible();
+
+    // Tillbaka till skärmläget: huvudet är print-only.
+    await page.emulateMedia({ media: 'screen' });
+    await expect(page.getByText(/Utskrivet /)).toBeHidden();
+    await expect(page.getByRole('radiogroup', { name: 'Period' })).toBeVisible();
+
+    // Kalenderläget berörs EJ (byggkrav 5): inget utskriftshuvud där —
+    // kalendern läser hela källan ofiltrerad och list-/filterkontexten
+    // hade ljugit på pappret (review-pilotens fynd 1).
+    await page.goto('/event?vy=kalender');
+    await expect(
+      page.getByRole('radiogroup', { name: 'Visningsläge' }).getByRole('radio', {
+        name: 'Kalendervy',
+      }),
+    ).toBeChecked();
+    await page.emulateMedia({ media: 'print' });
+    await expect(page.getByText(/Utskrivet /)).toHaveCount(0);
+  });
+
+  test('Lugnt laddläge i panelen (INSTANT-regeln): aldrig falska nollor — skeleton i slutgeometri tills datat landat', async ({
+    page,
+  }) => {
+    await arrangeraTomCache(page);
+    const mocken = await hallbarMock(page, FILTER_EVENTS);
+    await page.goto('/event');
+
+    // Panelen kan öppnas DIREKT (ingen väntan på data för själva ytan) …
+    await filterKnapp(page).click();
+    const panelId = await filterKnapp(page).getAttribute('aria-controls');
+    const panel = page.locator(`[id="${panelId}"]`);
+    await expect(panel).toBeVisible();
+
+    // … men räknaren ritar ALDRIG falska nollor ("Visar 0 av 0 event")
+    // medan svaret är parkerat — skelett bär ytan (ADR-078 beslut 2).
+    await expect(page.getByText(/Visar 0 av 0/)).toHaveCount(0);
+    await expect(panel.getByRole('button', { name: /^(Typ|Ort|Status)/ })).toHaveCount(0);
+
+    // Slutgeometri: panelhöjden står still när datat landar (beslut 4).
+    const holdBox = await panel.boundingBox();
+    mocken.hall = false;
+    await mocken.slappAlla();
+    await expect(page.getByText('Visar 5 av 5 event', { exact: true })).toBeVisible();
+    await expect(page.getByTestId('filter-typ')).toBeVisible();
+    const landatBox = await panel.boundingBox();
+    if (!holdBox || !landatBox) throw new Error('panelen saknar boundingBox');
+    expect(Math.abs(landatBox.height - holdBox.height)).toBeLessThanOrEqual(1);
+  });
+
+  test('tangentbord: Enter öppnar disclosuren, dropdown-valet görs och filtrerar utan pekare', async ({
+    page,
+  }) => {
+    await mockEvents(page, FILTER_EVENTS);
+    await page.goto('/event');
+
+    const knapp = filterKnapp(page);
+    await knapp.focus();
+    await page.keyboard.press('Enter');
+    await expect(knapp).toHaveAttribute('aria-expanded', 'true');
+
+    // Typ-dropdownen med enbart tangentbord: öppna, stega, välj.
+    await page.getByTestId('filter-typ').getByRole('button').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('listbox')).toBeVisible();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await expect(eventItems(page)).toHaveCount(2);
+    await expect(page).toHaveURL(/[?&]typ=/); // poll — nuqs throttlar URL-skrivningen
+    expect(new URL(page.url()).searchParams.get('typ')).toBe('Föreläsning');
+
+    // Rensa via tangentbord: knappen unmountas i trycket — fokus flyttas
+    // till tratt-knappen, aldrig till body (review-pilotens fynd 2).
+    await page.getByRole('button', { name: 'Rensa filter' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(eventItems(page)).toHaveCount(5);
+    await expect(knapp).toBeFocused();
+  });
+
+  test('axe 0 violations med öppen filterpanel och aktivt filter', async ({ page }) => {
+    await mockEvents(page, FILTER_EVENTS);
+    await page.goto('/event');
+    await filterKnapp(page).click();
+    await valjFilter(page, 'filter-typ', 'Retreat');
+    await expect(eventItems(page)).toHaveCount(2);
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
   });
 });

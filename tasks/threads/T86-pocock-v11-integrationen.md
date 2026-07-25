@@ -177,7 +177,7 @@ nattbyggets kort (§ Körplanen nedan).
 
 | Skiva | Fynd (spec/std) | Åtgärdade | Avfärdade (skäl) | Routade | Klass | Tid (min) | Missar nedströms |
 |---|---|---|---|---|---|---|---|
-| _–_ | | | | | | | |
+| 17.7 (diff adb2c614 → ompass. e1e29f45) | 7 (2/5) | 6 | 1 (fynd 5: text-[10px]-badgen — facit-låst form, öppet bokförd mot spec-regeln i kod + kort; 6a-delen likaså bokförd degradering) | 0 | 1 blocker (print-huvud i kalenderläget) / 6 kvalitet | ~10 (två pass) | _fylls i morgongranskningen_ |
 
 ## Körplanen 2026-07-24 → nattbygget (kvitterad i S82-konversationen)
 
