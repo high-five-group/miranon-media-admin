@@ -145,35 +145,113 @@ t(
   },
 );
 
-// --- Flaky-frekvens: rött som blev grönt vid omkörning av samma kod (AC#1) ---
+// --- Röda utfall: alla terminala icke-leveranser, inte bara `failure` ---
+// GitHub har nio conclusions. Att bara läsa `failure` missar bland annat
+// `startup_failure` — vilket repot självt drabbades av (run 30038460735,
+// S79:s permissions-eskalering, L326). En vakt som inte ser sin egen värsta
+// incident mäter fel sak.
 
-t(
-  'flaky: grön run med attempt > 1 är instabilitet; kvoten = omkörnings-grönt / allt slutligt rött+omkörnings-grönt',
-  () => {
-    const runs = [
-      mkRun({ leadMin: 5, attempt: 2 }), // röd → grön på SAMMA SHA = flake
-      mkRun({ conclusion: 'failure', leadMin: 9 }), // slutligt röd = äkta rött
-      mkRun({ leadMin: 4 }),
-      mkRun({ leadMin: 6 }),
-      mkRun({ event: 'push', leadMin: 3 }),
-    ];
-    const m = computeMetrics({ runs, jobsByRunId: {}, dedupLogByRunId: {} });
-    assert.equal(m.flaky.rerunGreen, 1);
-    assert.equal(m.flaky.redFinal, 1);
-    assert.equal(m.flaky.share, 0.5);
-  },
-);
+t('röd-orsak: startup_failure, timed_out, action_required och stale räknas som röda', () => {
+  const runs = [
+    mkRun({ conclusion: 'failure' }),
+    mkRun({ conclusion: 'startup_failure' }),
+    mkRun({ conclusion: 'timed_out' }),
+    mkRun({ conclusion: 'action_required' }),
+    mkRun({ conclusion: 'stale' }),
+    mkRun({ conclusion: 'success' }),
+    mkRun({ conclusion: 'cancelled' }), // hålls isär (L319), ej röd
+    mkRun({ conclusion: 'skipped' }), // ej röd
+  ];
+  const m = computeMetrics({ runs, jobsByRunId: {}, dedupLogByRunId: {} });
+  assert.equal(m.redCauses.redRuns, 5);
+  assert.equal(m.redCauses.byConclusion.startup_failure, 1);
+  assert.equal(m.redCauses.byConclusion.timed_out, 1);
+  assert.equal(m.redCauses.byConclusion.failure, 1);
+});
 
-t('flaky: utan röda utfall är kvoten null — aldrig 0/0 maskerat som "stabilt"', () => {
+t('röd-orsak: röd körning UTAN failade jobb redovisas explicit — försvinner aldrig tyst', () => {
+  // startup_failure betyder att inga jobb ens startade: byJob blir tom, och
+  // utan egen redovisning ser rapporten ut som "röd men ingen orsak".
+  const sf = mkRun({ conclusion: 'startup_failure' });
+  const vanligtRott = mkRun({ conclusion: 'failure' });
   const m = computeMetrics({
-    runs: [mkRun({ leadMin: 5 }), mkRun({ leadMin: 7 })],
-    jobsByRunId: {},
+    runs: [sf, vanligtRott],
+    jobsByRunId: {
+      [vanligtRott.id]: [{ name: 'CI / Staging (API + E2E)', conclusion: 'failure' }],
+    },
     dedupLogByRunId: {},
   });
-  assert.equal(m.flaky.rerunGreen, 0);
-  assert.equal(m.flaky.redFinal, 0);
-  assert.equal(m.flaky.share, null);
+  assert.equal(m.redCauses.redRuns, 2);
+  assert.equal(m.redCauses.byJob['Staging (API + E2E)'], 1);
+  assert.equal(m.redCauses.withoutJobLevelCause.length, 1);
+  assert.equal(m.redCauses.withoutJobLevelCause[0].conclusion, 'startup_failure');
 });
+
+// --- Instabilitet: BEVISAD flake, aldrig antagen (S88 mätardefinitions-fix) ---
+// Tidigare räknades varje grön run med run_attempt > 1 som flake. Omkörning
+// sker också vid plattforms-incidenter, ändrade secrets, cache-experiment och
+// ren nyfikenhet — attempt-räknaren bär inte orsaken. Föregående attempts
+// utfall måste läsas; saknas det klassas körningen som OVERIFIERAD, aldrig
+// som flake.
+
+t('instabilitet: flake kräver BEVISAT röd föregående attempt — attempt > 1 räcker inte', () => {
+  const flake = mkRun({ leadMin: 5, attempt: 2 });
+  const omkordAvAnnanOrsak = mkRun({ leadMin: 6, attempt: 2 });
+  const runs = [flake, omkordAvAnnanOrsak, mkRun({ leadMin: 4 })];
+  const m = computeMetrics({
+    runs,
+    jobsByRunId: {},
+    dedupLogByRunId: {},
+    priorAttemptsByRunId: {
+      [flake.id]: [{ run_attempt: 1, conclusion: 'failure' }],
+      [omkordAvAnnanOrsak.id]: [{ run_attempt: 1, conclusion: 'success' }],
+    },
+  });
+  assert.equal(m.flaky.provenFlaky, 1);
+  assert.equal(m.flaky.unverifiedReruns, 0);
+});
+
+t('instabilitet: okänd föregående attempt blir OVERIFIERAD — aldrig antagen flake', () => {
+  const okand = mkRun({ leadMin: 5, attempt: 3 });
+  const m = computeMetrics({
+    runs: [okand, mkRun({ leadMin: 4 })],
+    jobsByRunId: {},
+    dedupLogByRunId: {},
+    priorAttemptsByRunId: {},
+  });
+  assert.equal(m.flaky.provenFlaky, 0);
+  assert.equal(m.flaky.unverifiedReruns, 1);
+  assert.equal(m.flaky.rate, 0);
+});
+
+t('instabilitet: nämnaren är slutförda körningar — inte blandad population', () => {
+  const flake = mkRun({ leadMin: 5, attempt: 2 });
+  const runs = [
+    flake,
+    mkRun({ conclusion: 'failure' }),
+    mkRun({ leadMin: 4 }),
+    mkRun({ leadMin: 6 }),
+  ];
+  const m = computeMetrics({
+    runs,
+    jobsByRunId: {},
+    dedupLogByRunId: {},
+    priorAttemptsByRunId: { [flake.id]: [{ run_attempt: 1, conclusion: 'failure' }] },
+  });
+  // 1 bevisad flake av 4 slutförda = 25 %. Gamla formen gav 1/(1+1) = 50 %
+  // genom att blanda omkörnings-gröna med slutligt röda i nämnaren.
+  assert.equal(m.flaky.rate, 0.25);
+  assert.equal(m.flaky.redFinal, 1);
+});
+
+t(
+  'instabilitet: utan slutförda körningar är kvoten null — aldrig 0/0 maskerat som "stabilt"',
+  () => {
+    const m = computeMetrics({ runs: [], jobsByRunId: {}, dedupLogByRunId: {} });
+    assert.equal(m.flaky.provenFlaky, 0);
+    assert.equal(m.flaky.rate, null);
+  },
+);
 
 // --- Dedup-träffkvot (task-36.4): läses ur changed-jobbets logg (AC#1) ---
 // Skip-status kan inte skilja dedup-träff från docs-skip — loggens exakta
@@ -250,6 +328,41 @@ t('L314: kort form resolvas via git rev-parse-resolvern, gissas aldrig', () => {
 t('L314: oresolverbar ref kastar med L314-hänvisning — tyst noll-träff är förbjuden', () => {
   assert.throws(() => resolveFullSha('finns-ej', () => ''), /L314/);
   assert.throws(() => resolveFullSha('kortsha', () => 'fortfarande-inte-40-hex'), /L314/);
+});
+
+// --- Rapportens ärlighet: måttnamn får inte påstå mer än datan bär ---
+
+t('renderReport: staging-måttet utges INTE för isolerad mutex-väntan', () => {
+  // Måttet är run.created_at → staging.started_at och innehåller därmed
+  // runner-allokering + uppströms-jobbens körtid + mutex-väntan. Koden vet
+  // det (kommentaren säger det) — men rapportraden gjorde inte det, och det
+  // är rapporten en människa fattar beslut på.
+  const r = mkRun({ leadMin: 20 });
+  const m = computeMetrics({
+    runs: [r],
+    jobsByRunId: { [r.id]: [{ name: 'Test suite / Staging (API + E2E)', started_at: min(7) }] },
+    dedupLogByRunId: {},
+  });
+  const text = renderReport(m);
+  assert.doesNotMatch(
+    text,
+    /kötid[^\n]*\(mutex-väntan\)/,
+    'rapporten får inte utge skapad→jobbstart för isolerad mutex-väntan',
+  );
+  assert.match(text, /uppströms/, 'rapporten ska säga vad måttet faktiskt innehåller');
+});
+
+t('renderReport: instabilitet redovisar bevisade flakes och overifierade omkörningar isär', () => {
+  const flake = mkRun({ leadMin: 5, attempt: 2 });
+  const okand = mkRun({ leadMin: 6, attempt: 2 });
+  const m = computeMetrics({
+    runs: [flake, okand, mkRun({ leadMin: 4 })],
+    jobsByRunId: {},
+    dedupLogByRunId: {},
+    priorAttemptsByRunId: { [flake.id]: [{ run_attempt: 1, conclusion: 'failure' }] },
+  });
+  const text = renderReport(m);
+  assert.match(text, /overifierad/i, 'overifierade omkörningar ska synas, inte tystas');
 });
 
 // --- Rapporten: siffrorna och läsreglerna syns i utskriften ---

@@ -52,6 +52,24 @@ const STAGING_JOB_SUFFIX = 'Staging (API + E2E)';
 const FULL_SHA_PATTERN = /^[0-9a-f]{40}$/;
 
 /**
+ * Terminala utfall som betyder "körningen levererade inte". GitHub har nio
+ * conclusions; att bara läsa `failure` gör måttet blint för `startup_failure`
+ * (repot drabbades: run 30038460735, S79, L326), `timed_out`,
+ * `action_required` och `stale`.
+ *
+ * `cancelled` ingår MEDVETET INTE — den hålls isär och flaggas per L319
+ * (cancelled kan vara en jobb-timeout förklädd till användaravbrott).
+ * `skipped` och `neutral` är inte röda.
+ */
+const RED_CONCLUSIONS = new Set([
+  'failure',
+  'startup_failure',
+  'timed_out',
+  'action_required',
+  'stale',
+]);
+
+/**
  * L314: `gh run list`/körnings-API:ts commit-filter matchar bara FULLSTÄNDIG
  * SHA — förkortad ger tyst noll träffar, vilket läser som "runnet saknas".
  * Allt commit-uppslag går därför genom denna funktion: 40-hex passerar,
@@ -87,7 +105,12 @@ export function classifyDedupLog(logText) {
  * Härled samtliga mått ur ett fönster av CI-runs + deras jobb + dedup-loggar.
  * Ren funktion: all API-hämtning sker utanför (fixtur-testbar, AC#3/AC#4).
  */
-export function computeMetrics({ runs, jobsByRunId = {}, dedupLogByRunId = {} }) {
+export function computeMetrics({
+  runs,
+  jobsByRunId = {},
+  dedupLogByRunId = {},
+  priorAttemptsByRunId = {},
+}) {
   const completed = runs.filter((r) => r.status === 'completed');
 
   // PR-ledtid push→grönt: gröna pull_request-runs, created_at → updated_at.
@@ -110,14 +133,26 @@ export function computeMetrics({ runs, jobsByRunId = {}, dedupLogByRunId = {} })
   // (conclusion=cancelled) hålls isär och flaggas med körtid — L319: cancelled
   // kan vara en jobb-timeout (jämför körtiden mot jobbets timeout-minutes
   // innan "avbruten av användare" godtas som förklaring).
-  const redRuns = completed.filter((r) => r.conclusion === 'failure');
+  //
+  // S88: mängden röda utfall utvidgad. Tidigare lästes ENBART `failure`, vilket
+  // gjorde måttet blint för `startup_failure` — exakt den klass repot självt
+  // drabbades av i S79 (run 30038460735, permissions-eskalering i reusable-
+  // anroparna, L326). Ett mått som inte ser sin egen värsta incident mäter fel
+  // sak. `cancelled` hålls fortsatt isär (L319), `skipped`/`neutral` är inte
+  // röda.
+  const redRuns = completed.filter((r) => RED_CONCLUSIONS.has(r.conclusion));
   const byJob = {};
+  const byConclusion = {};
   const cancelled = [];
+  const withoutJobLevelCause = [];
   for (const r of redRuns) {
+    byConclusion[r.conclusion] = (byConclusion[r.conclusion] ?? 0) + 1;
+    let sawFailedJob = false;
     for (const j of jobsByRunId[r.id] ?? []) {
       const bareName = j.name?.includes(' / ') ? j.name.split(' / ').at(-1) : j.name;
       if (j.conclusion === 'failure') {
         byJob[bareName] = (byJob[bareName] ?? 0) + 1;
+        sawFailedJob = true;
       } else if (j.conclusion === 'cancelled') {
         cancelled.push({
           runId: r.id,
@@ -127,21 +162,47 @@ export function computeMetrics({ runs, jobsByRunId = {}, dedupLogByRunId = {} })
         });
       }
     }
+    // En röd körning utan failat jobb har en orsak UTANFÖR jobb-nivån —
+    // `startup_failure` startar inga jobb alls. Utan egen redovisning ser
+    // rapporten ut som "röd men ingen orsak", vilket läser som mätfel.
+    if (!sawFailedJob) {
+      withoutJobLevelCause.push({ runId: r.id, conclusion: r.conclusion });
+    }
   }
 
-  // Flaky-frekvens: en grön run med run_attempt > 1 var röd och blev grön vid
-  // omkörning av SAMMA kod = instabilitet, inte leveransfel (L319:s
-  // rerun-medvetenhet). Kvot = omkörnings-grönt / (omkörnings-grönt +
-  // slutligt rött); null när inga röda utfall finns — 0/0 får aldrig läsas
-  // som "bevisat stabilt".
-  const rerunGreen = completed.filter(
-    (r) => r.conclusion === 'success' && (r.run_attempt ?? 1) > 1,
-  ).length;
-  const redFinal = redRuns.length;
+  // Instabilitet: en flake är en körning som blev grön först efter omkörning
+  // AV SAMMA KOD, där en tidigare attempt bevisat var röd.
+  //
+  // S88: `run_attempt > 1` räcker INTE som bevis. En omkörning startas också
+  // vid plattforms-incidenter (GitHub-outage), ändrade secrets, cache-
+  // experiment och ren nyfikenhet — attempt-räknaren bär inte orsaken. Den
+  // gamla formen räknade varje grön omkörning som flake och blandade dessutom
+  // två populationer i nämnaren (omkörnings-gröna + slutligt röda), vilket
+  // inte är en frekvens över körningar.
+  //
+  // Saknas föregående attempts utfall klassas körningen som OVERIFIERAD och
+  // räknas ALDRIG som flake — okänt får inte bli en anklagelse.
+  let provenFlaky = 0;
+  let unverifiedReruns = 0;
+  for (const r of completed) {
+    if (r.conclusion !== 'success' || (r.run_attempt ?? 1) <= 1) continue;
+    const priors = priorAttemptsByRunId[r.id];
+    if (!priors?.length) {
+      unverifiedReruns += 1;
+    } else if (priors.some((a) => RED_CONCLUSIONS.has(a.conclusion))) {
+      provenFlaky += 1;
+    } else {
+      // Omkörd, men ingen tidigare attempt var röd — alltså omkörd av annan
+      // orsak. Varken flake eller okänd.
+    }
+  }
   const flaky = {
-    rerunGreen,
-    redFinal,
-    share: rerunGreen + redFinal === 0 ? null : rerunGreen / (rerunGreen + redFinal),
+    provenFlaky,
+    unverifiedReruns,
+    redFinal: redRuns.length,
+    // Nämnare = slutförda körningar. "Hur ofta är CI instabil?" är en frekvens
+    // över körningar, inte en kvot mellan två sorters dåliga utfall.
+    rate: completed.length === 0 ? null : provenFlaky / completed.length,
   };
 
   // Dedup-träffkvot: kvoten räknas ENDAST över tillämpliga utfall
@@ -171,7 +232,7 @@ export function computeMetrics({ runs, jobsByRunId = {}, dedupLogByRunId = {} })
       medianMin: percentile(stagingQueues, 50),
       p95Min: percentile(stagingQueues, 95),
     },
-    redCauses: { redRuns: redRuns.length, byJob, cancelled },
+    redCauses: { redRuns: redRuns.length, byJob, byConclusion, cancelled, withoutJobLevelCause },
     flaky,
     dedup,
   };
@@ -180,25 +241,38 @@ export function computeMetrics({ runs, jobsByRunId = {}, dedupLogByRunId = {} })
 const fmtMin = (v) => (v === null ? '–' : `${v} min`);
 const fmtPct = (v) => (v === null ? '– (inga tillämpliga utfall)' : `${(v * 100).toFixed(1)} %`);
 
+/** Röd-uppdelning per conclusion — gör synligt att måttet ser mer än `failure`. */
+const fmtConclusions = (byConclusion) => {
+  const entries = Object.entries(byConclusion ?? {}).sort((a, b) => b[1] - a[1]);
+  return entries.length === 0 ? '' : ` (${entries.map(([c, n]) => `${c}: ${n}`).join(' · ')})`;
+};
+
 /** Läsbar rapport — samma siffror som --json, för människor och step-summary. */
 export function renderReport(m) {
   const lines = [
     `CI-mätning — fönster: ${m.window.total} runs (${m.window.completed} slutförda)`,
     '',
     `▸ PR-ledtid push→grönt: median ${fmtMin(m.prLeadTime.medianMin)} · p95 ${fmtMin(m.prLeadTime.p95Min)} (n=${m.prLeadTime.n})`,
-    `▸ Staging-kötid skapad→jobbstart (mutex-väntan): median ${fmtMin(m.stagingQueue.medianMin)} · p95 ${fmtMin(m.stagingQueue.p95Min)} (n=${m.stagingQueue.n})`,
-    `▸ Röda runs: ${m.redCauses.redRuns} — failade jobb:`,
+    `▸ Tid skapad→staging-start: median ${fmtMin(m.stagingQueue.medianMin)} · p95 ${fmtMin(m.stagingQueue.p95Min)} (n=${m.stagingQueue.n})`,
+    '    innehåller runner-allokering + uppströms-jobbens körtid + mutex-väntan — INTE isolerad mutex-tid',
+    `▸ Röda runs: ${m.redCauses.redRuns}${fmtConclusions(m.redCauses.byConclusion)} — failade jobb:`,
   ];
   const jobEntries = Object.entries(m.redCauses.byJob).sort((a, b) => b[1] - a[1]);
   if (jobEntries.length === 0) lines.push('    (inga bevisat failade jobb)');
   for (const [job, count] of jobEntries) lines.push(`    ${job}: ${count}`);
+  for (const r of m.redCauses.withoutJobLevelCause) {
+    lines.push(
+      `    ⚠️  run ${r.runId} — röd som "${r.conclusion}" UTAN failat jobb: orsaken ligger utanför jobb-nivån (t.ex. startup_failure startar inga jobb)`,
+    );
+  }
   for (const c of m.redCauses.cancelled) {
     lines.push(
       `    ⚠️  run ${c.runId} — ${c.job}: avbruten efter ${fmtMin(c.runtimeMin)}; möjlig jobb-timeout (L319), aldrig antaget användaravbrott`,
     );
   }
   lines.push(
-    `▸ Flaky-frekvens: ${fmtPct(m.flaky.share)} av röda utfall blev gröna vid omkörning av samma kod (${m.flaky.rerunGreen} omkörnings-gröna / ${m.flaky.redFinal} slutligt röda)`,
+    `▸ Instabilitet: ${fmtPct(m.flaky.rate)} av körningarna var BEVISAT flaky (${m.flaky.provenFlaky} av ${m.window.completed} slutförda; tidigare attempt bevisat röd)`,
+    `    ${m.flaky.unverifiedReruns} omkörning(ar) med overifierad orsak — räknas aldrig som flake · ${m.flaky.redFinal} slutligt röda`,
     `▸ Merge-dedup (task-36.4): träffkvot ${fmtPct(m.dedup.hitRate)} (${m.dedup.hits} träff / ${m.dedup.misses} miss · ${m.dedup.notApplicable} ej tillämpliga · ${m.dedup.unknown} okända)`,
   );
   return lines.join('\n');
@@ -238,7 +312,25 @@ async function fetchWindow(limit, commitSha) {
 
   const jobsByRunId = {};
   const dedupLogByRunId = {};
+  const priorAttemptsByRunId = {};
   for (const r of runs) {
+    // Instabilitets-bevis: för en grön run med run_attempt > 1 hämtas de
+    // TIDIGARE attempternas utfall. Utan detta kan flake inte skiljas från en
+    // omkörning av annan orsak (incident, secret-byte, cache-experiment) —
+    // och skriptet klassar då körningen som overifierad i stället för att anta.
+    // Endast omkörda gröna runs kostar extra anrop; de är få.
+    if (r.conclusion === 'success' && (r.run_attempt ?? 1) > 1) {
+      const priors = [];
+      for (let n = 1; n < r.run_attempt; n += 1) {
+        try {
+          const attempt = await gh(['api', `${base}/runs/${r.id}/attempts/${n}`]);
+          priors.push({ run_attempt: n, conclusion: attempt.conclusion });
+        } catch (err) {
+          console.error(`⚠️  attempt ${n} saknas för run ${r.id}: ${err.message}`);
+        }
+      }
+      if (priors.length > 0) priorAttemptsByRunId[r.id] = priors;
+    }
     // L319-medvetenhet: körnings-API:t kan släpa/felas per run — en enskild
     // miss får inte fälla hela mätningen; runet räknas då utan jobb-data.
     try {
@@ -262,7 +354,7 @@ async function fetchWindow(limit, commitSha) {
       }
     }
   }
-  return { runs, jobsByRunId, dedupLogByRunId };
+  return { runs, jobsByRunId, dedupLogByRunId, priorAttemptsByRunId };
 }
 
 async function gitRevParse(ref) {

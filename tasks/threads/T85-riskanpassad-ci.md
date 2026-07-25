@@ -97,12 +97,22 @@ grillas i sessionen, tas inte rakt av.
 
 **Korrigeringspaketet (KVAR — tas som eget T85-pass/kort):**
 
-1. **Mätardefinitionerna** (`scripts/ci-metrics.mjs`) — åtgärdas FÖRE
-   beslutsanvändning av siffrorna: flaky-nämnaren (`run_attempt > 1`
-   betyder inte röd första körning; incidenter ≠ röda försök),
-   staging-"kötiden" mäter workflow-start→jobb-start (inte
-   mutex-väntan isolerat), röd-orsaken läser endast `failure` (missar
-   `startup_failure`/`timed_out`/`action_required`/`stale`).
+1. ~~**Mätardefinitionerna**~~ ✅ **ÅTGÄRDAD S88** (2026-07-25). Alla tre
+   påståenden verifierades mot koden och höll; det tredje bevisades dessutom
+   empiriskt mot repots egen historik (`startup_failure` finns: run
+   **30038460735** + **30037333924** — måttet hade räknat S79:s egen
+   permissions-incident som "inte röd"). Åtgärdat: `RED_CONCLUSIONS` utvidgad
+   till `failure`/`startup_failure`/`timed_out`/`action_required`/`stale`
+   (`cancelled` hålls fortsatt isär per L319) · röd körning utan failat jobb
+   redovisas explicit i stället för att se ut som mätfel · flake kräver nu
+   **bevisat röd föregående attempt** (hämtas via `runs/{id}/attempts/{n}`);
+   okänd orsak klassas OVERIFIERAD och räknas aldrig som flake · nämnaren är
+   slutförda körningar i stället för en blandad population · rapportradernas
+   formuleringar rättade — måttet skapad→staging-start utges inte längre för
+   isolerad mutex-väntan. Rött-först: 8 röda → alla gröna. Ny mätning efter
+   fixen: PR-ledtid median 1,2 / p95 15,7 min (n=22) · 3 röda (samtliga
+   `failure`) · instabilitet 0,0 % bevisad, 0 overifierade · dedup 100 %
+   (21/0).
 2. **Nattlarms-observatören** — larmjobb i samma workflow kan inte se
    sitt eget `startup_failure` (run 30038460735) eller utebliven
    schemakörning; separat `workflow_run`-vakt eller motsvarande,
