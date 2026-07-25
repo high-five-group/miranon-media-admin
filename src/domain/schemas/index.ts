@@ -36,6 +36,12 @@ export {
 } from './PersonDetail.schema';
 export { RegistrationSchema } from './Registration.schema';
 export {
+  type RegistrationDetail,
+  RegistrationDetailSchema,
+  type RelateradAnmalan,
+  RelateradAnmalanSchema,
+} from './RegistrationDetail.schema';
+export {
   type Modalitet,
   ModalitetSchema,
   type Par,

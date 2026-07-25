@@ -12,6 +12,11 @@ export const queryKeys = {
   registrations: {
     all: ['registrations'] as const,
     byEvent: (eventId: string) => ['registrations', eventId] as const,
+    // Per-anmälan-detalj (task-18.17): aggregerande get-registration per
+    // record-ID. Egen gren under 'registrations' (persons.detail-mönstret) så
+    // detalj-cachen kan invalideras oberoende av event-listorna — och tvärtom:
+    // `invalidateQueries({ queryKey: registrations.all })` träffar båda.
+    detail: (id: string) => ['registrations', 'detail', id] as const,
   },
   events: {
     all: ['events'] as const,

@@ -1164,8 +1164,10 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     await oppnaSidan(page);
 
     const anna = kortet(page, 'Anna Ek');
-    const identitet = anna.getByRole('link');
-    await expect(identitet).toHaveAttribute('href', '/personer/recPersonAnna001');
+    // Kortet bär sedan 18.17 TVÅ länkar (person + anmälan) — identitetszonen
+    // är person-länken, adresserad på sitt href.
+    const identitet = anna.locator('a[href="/personer/recPersonAnna001"]');
+    await expect(identitet).toBeVisible();
 
     // Namnet ligger INUTI person-länken och står i fetstil (facitets identitet).
     await expect(identitet.getByTestId('deltagar-namn')).toHaveText('Anna Ek');
@@ -1197,12 +1199,14 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     const anna = kortet(page, 'Anna Ek');
     const meta = anna.getByTestId('deltagar-metayta');
 
-    // K62/L303: metaytan är SYSKON till länken (aldrig inuti den). Rev.
-    // 2026-07-23 (p18-rivningen): metaytan bär numera EXAKT en interaktiv
-    // yta — Anmäld-no-op-knappen — men fortsatt inga LÄNKAR.
-    await expect(meta.locator('a')).toHaveCount(0);
-    await expect(meta.locator('button')).toHaveCount(1);
-    await expect(anna.getByRole('link').getByTestId('deltagar-metayta')).toHaveCount(0);
+    // K62/L303: metaytan är SYSKON till person-länken (aldrig inuti den).
+    // Sedan 18.17 är Anmäld-raden en riktig LÄNK till anmälans sida — metaytan
+    // bär EXAKT en länk och inga knappar (no-op-eran är över).
+    await expect(meta.locator('a')).toHaveCount(1);
+    await expect(meta.locator('button')).toHaveCount(0);
+    await expect(
+      anna.locator('a[href="/personer/recPersonAnna001"]').getByTestId('deltagar-metayta'),
+    ).toHaveCount(0);
 
     // EN rad med både dag och klockslag (Inskickad är en dateTime).
     const rader = await meta.getByTestId('deltagar-meta-rad').allTextContents();
@@ -1258,14 +1262,19 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     await oppnaSidan(page);
 
     const cecilia = kortet(page, 'Cecilia Lund');
-    await expect(cecilia.getByRole('link')).toHaveCount(0);
+    // IDENTITETSZONEN olänkad (ingen person-koppling) — men Anmäld-radens
+    // anmälningslänk (18.17) finns kvar: den kräver ingen person.
+    await expect(cecilia.locator('a[href^="/personer/"]')).toHaveCount(0);
+    await expect(
+      cecilia.locator(`a[href="/event/${PK_EVENT_ID}/anmalan/recPkCecilia"]`),
+    ).toHaveCount(1);
     await expect(cecilia.getByTestId('deltagar-namn')).toHaveText('Cecilia Lund');
     // Luckan redovisas som den är — aldrig bortdesignad, aldrig "null".
     await expect(cecilia.getByText('E-post', { exact: true })).toBeVisible();
     await expect(cecilia.getByText('Saknas', { exact: true })).toBeVisible();
   });
 
-  test('AC #2 (rev. 2026-07-23): Anmäld-raden är understruken interaktiv yta — no-op tills 18.17', async ({
+  test('AC #2 (rev. 2026-07-23; länkad i 18.17): Anmäld-raden är understruken LÄNK till anmälans sida', async ({
     page,
   }) => {
     await mockaPersonkort(page);
@@ -1273,19 +1282,26 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
 
     // Review-våg 2 (Marcus 2026-07-23): PRD task-18 punkt 18 ("ingen
     // länk-affordans i skarp produkt") RIVEN ÖPPET — facit-K62-formen gäller:
-    // understruken rad med "Öppna anmälan"-namnet, no-op-knapp tills
-    // per-anmälan-detaljvyn (18.17) föder länkmålet. Ingen <a> förrän dess.
-    const anmald = kortet(page, 'Anna Ek').getByRole('button', {
+    // understruken rad med "Öppna anmälan"-namnet. Sedan task-18.17 finns
+    // länkmålet (per-anmälan-detaljvyn) och raden är en riktig <a>.
+    const anmald = kortet(page, 'Anna Ek').getByRole('link', {
       name: 'Öppna anmälan för Anna Ek',
     });
     await expect(anmald).toBeVisible();
     await expect(anmald).toHaveText(/^Anmäld /);
+    await expect(anmald).toHaveAttribute('href', `/event/${PK_EVENT_ID}/anmalan/recPkAnna`);
     const dekoration = await anmald.evaluate(
       (el: Element) => getComputedStyle(el).textDecorationLine,
     );
     expect(dekoration).toContain('underline');
-    // Deltagarlistans enda LÄNKAR är fortsatt person-länkarna (2 av 3 korten).
-    await expect(gruppen(page).getByTestId('deltagar-kort').getByRole('link')).toHaveCount(2);
+    // Kortens länkar: person-länkarna (2 av 3 korten) + Anmäld-länkarna
+    // (alla 3 korten bär Inskickad) — inga andra.
+    await expect(
+      gruppen(page).getByTestId('deltagar-kort').locator('a[href^="/personer/"]'),
+    ).toHaveCount(2);
+    await expect(
+      gruppen(page).getByTestId('deltagar-kort').locator('a[href*="/anmalan/"]'),
+    ).toHaveCount(3);
   });
 
   test('390 px med TVÅ pillar: namnet och e-posten bryts inte mitt i ordet', async ({ page }) => {
