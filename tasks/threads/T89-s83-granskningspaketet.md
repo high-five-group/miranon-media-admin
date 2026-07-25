@@ -65,6 +65,27 @@ experimentet blir jämförbart först när utfallsmåttet är objektivt. Marcus:
 "vi skjuter på F6, kör oförändrat." Nytt fönster: nattbygget (T86 § Körplanen
 punkt 4), fortfarande FÖRE T85-korrigeringssessionen.
 
+## F6-mätningen (S86 nattbygget 2026-07-25 — rådata, slutsatsen är upptagets)
+
+F6-fönstret föll på **task-18.16** (Code-förslag i batch-ordern, inget
+Marcus-veto vid "go"): bygg-agenten kördes på effort **low**; batchens
+övriga fyra byggen (default effort) är baslinjen. Mekaniskt utfall:
+
+| Skiva | Effort | Bygg-väggklocka | Review-fynd (blocker) | CI första pass | Slutstatus |
+|---|---|---|---|---|---|
+| 18.16 (F6) | low | 28,7 min | 8 (0) | ja | Done |
+| 18.15 | default | 28,1 min | 4 (0) | ja | REVIEW_READY |
+| 18.17 | default | 73,6 min | 7 (1 korrekthet, pilot-fångad) | ja | Done |
+| 18.18 | default | 89,8 min | 8 (0) | ja | Done |
+| 18.19 | default | 79,5 min | 10 (0) | ja | Done |
+
+Läsnot: skivstorlekarna är olika — närmast jämförbar i omfång är 18.15.
+F6-skivan avvek inte i utfall (0 blocker, grön första pass, alla grindar,
+Done) och låg i väggklocka i nivå med 18.15 trots scope-utökningen
+(spec-§19-kodifiering + app-audit + 2 flippar). Full rådata:
+sessionsdok S86 Del 2 + T86 § Pilot-loggen. Jämförelsen mot
+Marcus-morgongranskningens escapes-facit återstår innan F6-beslutet tas.
+
 ## Relationer
 
 [T85](T85-riskanpassad-ci.md) (samma processgransknings-genre;

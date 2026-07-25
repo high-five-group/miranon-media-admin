@@ -5012,3 +5012,29 @@ den skarv som bär URL-kontraktet. Mönstret: polla URL:en först
 (await expect(page).toHaveURL(...) eller await expect.poll(() => new URL(page.url())...))
 och läs strikt därefter. DOM-tillstånd och URL-tillstånd är två klockor;
 testet måste vänta in den klocka det assertar.
+
+### L340 — [UNIVERSAL] En workflow-subagent nås aldrig av asynkrona callbacks — väntan är bakgrundsvakt + blockerande avläsning i egen tur
+
+Datum: 2026-07-25 (S86 nattbatchen) | Källa: v1-batchens enda fel — 17.7:s
+do-work-agent parkerade sig på en Monitor-callback för CI-väntan och
+avslutade sin tur; callbacken når aldrig en workflow-subagent, schema-returen
+uteblev och orkestreringen felade trots att leveransen (PR #174) var komplett
+(klass: orkestrerings-design; L323-repris — lessons konsulteras vid DESIGN,
+inte bara vid retrospektiv)
+
+Två miljöfakta om workflow-subagenter, båda empiriskt bevisade i natten:
+(1) Monitor-verktygets callback levereras aldrig till dem; (2) TaskOutput
+finns inte i deras verktygslista (fyra oberoende svans-agenter ToolSearch:ade
+förgäves). En subagent som måste vänta på extern signal (CI-run, merge) får
+därför ALDRIG avsluta sin tur i väntan — den håller sig aktiv med
+bakgrundsvakt (gh run watch till loggfil, run_in_background) + avgränsad
+foreground-avläsning på loggen/API:t (tail/grep -m1 eller bounded poll utan
+foreground-sleep) och verifierar varje vakt-utsaga mot auktoritativ källa
+(L336) innan den agerar. Dess sista handling är alltid retur-kontraktet
+(StructuredOutput), även vid abort.
+
+Orkestrerings-regeln (L323-formen i workflow-skript): dela kortet i
+BYGG-agent (slutar vid armerad auto-merge, returnerar direkt — noll väntan)
+och SVANS-agent (äger hela CI-kedjan: PR-run → merge → main-run per jobb →
+bokförings-PR). v2-batchen körde 17 agenter i den formen: 0 fel, CI grön
+första pass i samtliga led.

@@ -67,6 +67,38 @@ BUILD-LOG S83-post.
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
+### Session 86 🔄 PÅGÅENDE (2026-07-25) — Nattbygget: batchen körd 6/6, morgongranskningen väntar
+
+> Scope: sessionsdok `2026-07-25-session-86.md` Del 1 (kanonisk plats):
+> nattbygget — de sex ready-for-agent-skivorna via /work-batch per
+> S85-dukade batch-ordern (ordern är batch-kvittot; Marcus "GO på S86"
+> 2026-07-25). Kadensrad per L67.
+
+- [x] **Dok-födelsen** (2026-07-25): `aa89793`, PR #173 mergad.
+  Förkravs-re-verifieringen grön (main per jobb · ready-for-agent ×6 ·
+  plugin 1.20.1 · audit Passed · numrering 86/079/L339/T91/f46/task-39).
+  **NÄSTA: batch-avfyrningen.**
+- [x] **v1-avfyrningen + incidenten** (2026-07-25): sekventiell
+  do-work-loop; 17.7 LEVERERAD (PR #174) men agenten parkerade på
+  Monitor-callback för CI-väntan → schema-retur uteblev → workflow-fel.
+  L323-repris, öppet bokförd. Ingen kod förlorad, inget kort studsat.
+  **NÄSTA: v2-omstart med rot-orsaks-fix.**
+- [x] **v2-batchen KLAR 6/6, noll halt** (2026-07-25):
+  bygg/svans/verify-split (L323-formen). 17.7 + 18.15 **REVIEW_READY**
+  (Done-flippen är Marcus) · 18.16 (F6, effort low) + 18.17 + 18.18 +
+  18.19 **Done**. PR #174–#185 alla mergade, CI grön FÖRSTA PASS per
+  jobb i samtliga led. Skörd: task-39–47 (9 fynd-kort) · T91 · L339 +
+  L340 [UNIVERSAL ×2] · pilot-loggrader ×6 i T86 · F6-rådata i T89.
+  Full narrativ: sessionsdok Del 2.
+- [x] **Bokförings-landningen** (2026-07-25, denna PR): sessionsdok
+  Del 2 + L340 + T89 § F6-mätningen + denna kadens. **NÄSTA (Marcus
+  morgongranskning): granskningsvågen i browsern = pilot-loggens
+  escapes-facit → Done-flippar 17.7/18.15 + kvittenserna (18.18 ×3 ·
+  18.19 AC#2 · 18.16 danger→success + K77 · 18.17 DONE-klassningen) →
+  därefter T85-korrigeringsfönstret (sekvens låst) ·
+  konventions-grillningen (/grill-me) · hub-lyftet L284–L340 ·
+  dependabot #162/#65 · Marcus-moment: Update-klicket i claude.ai.**
+
 ### Session 85 ✅ AVSLUTAD (2026-07-25) — Dukningen för nattbygget: audit-läkningen + go-redo för S86
 
 > Scope: sessionsdok `2026-07-25-session-85.md` Del 1 (kanonisk plats):
