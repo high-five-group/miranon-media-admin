@@ -15,6 +15,41 @@
 
 ## Aktuellt fokus
 
+**Session 86 ✅ AVSLUTAD (2026-07-25)** — **NATTBYGGET 6/6 + MORGONGRANSKNINGENS
+TRE FIX-VÅGOR.** `/work-batch` max-kort 6 levererade hela event-familjens
+återstod i ADR-076-form, **CI grön FÖRSTA PASS i samtliga led**, 0 halt
+(17 agenter · ~6,7 h · ~2,3 M subagent-tokens · 1055 verktygsanrop).
+**v1-incidenten → L340** [UNIVERSAL]: Monitor-callback når aldrig
+workflow-subagenter (L323-repris) → **bygg/svans/verify-splitten** införd,
+inget kort byggdes om. **F6** (18.16 på effort `low`): 28,7 min mot
+jämförbara 28,1 — ingen avvikelse; de tre fix-vågorna träffade uteslutande
+default-effort-skivor. **Morgongranskningen i tre iterationer**
+(PR #188/#189/#191 + prototyp-svarfångst #190): **§19 FACIT-REVIDERAD till
+intent × emphasis** (research-belagd, AA-vakt på success-outline) ·
+**facit punkt 8:s "aldrig autoFocus" rivet öppet** (RAC:s egen prop läker
+ett rAF-race som e2e inte kunde se) · rubriken ska RYMMA namnet, inte
+klippa det · popovern matchar triggerbredden · fokusringens tre
+samverkande CSS-regler. Grundorsaker lästa ur react-arias källa →
+**L341** (`until-found` + `content-visibility`) + **L342**
+(`scrollbar-gutter` förskjuter canvas-origo). **FIX-VÅGENS TIDSFORENSIK:**
+71 min 14 s varav **23,5 min (33 %) död väntan** från idiomet
+`tail -f | grep -m1` — **som L340 självt föreskriver**; 16,9 min var
+kontrakts-obligatorisk CI-tid och ~20,6 min verkligt arbete
+(`ee021eb` = 17 filer / +552 rader). **SKÖRD: task-39–48 · T91 ·
+L339–L342** [UNIVERSAL ×4]. T86:s escapes-kolumn **omtriagerad neutralt
+i två dimensioner** (diff-synliga vs browser-only) — räkne-regeln avgörs
+i T85-sessionen per sekvenslåsningen. **NÄSTA (NY session S87 —
+STÄD-VÅGEN): S86-stängning → `scripts/ci-wait.sh` + L340-amendering →
+arkitektur-korpusen till `docs/reference/` → task-48 efter länk-forken.
+Därefter Marcus vägval: T85-korrigeringen (bindande före T86-beslutet +
+vidare CI-utbyggnad — men **blockerar INTE produktarbete**, verifierat i
+T85:85–91) vs Roger & Lotta-spåret (grind 0 = frontend-deploy, som
+saknas HELT). Bakgrund: hub-lyftet L284–L342 · konventions-grillningen ·
+dependabot #162/#65 · Marcus-moment: Update-klicket i claude.ai.**
+**T92 mintad** (agent-mekanikens två obetalda poster ur fix-vågs-forensiken).
+Numrering efter S86: 87/079/L343/T93/f46/task-49. Full narrativ:
+sessionsdok S86 Del 1–4 + BUILD-LOG S86-post.
+
 **Session 85 ✅ AVSLUTAD (2026-07-25)** — **DUKNINGEN FÖR NATTBYGGET:
 main läkt + go-redo för S86.** Audit-grinden läkt: `GHSA-mh99-v99m-4gvg`
 (high, brace-expansion, publ 21:53Z — ~20 min före S83:s sista
@@ -67,7 +102,7 @@ BUILD-LOG S83-post.
 
 **Session 20 ✅ (lifecycle-fält, ADR-052) + Session 21 ✅ (tråd-arkitektur, ADR-053) KLARA. RESUME av session 19: bygg-steg 3–7 KLARA — ADR-050 staging-migration KOMPLETT (2026-06-15).** Hela sekvensen landad: ADR-050 + förarbete → empirisk läsning + schema-check CLEAN (3) → staging-secrets (4) → 6 EF:er deployade via bare CLI (5) → CI-test-secrets repointade mot staging, väg b (6) → CORS + deny-tester av-skippade (7a) → seedad post + allow-test med restore-teardown (7b). Staging-testsvit: **41 passed/0 skipped**. `staging==prod`-defekten (L110) strukturellt stängd. Återstår (ej staging): Fas 5.5 K2 klient-UI.
 
-### Session 86 🔄 PÅGÅENDE (2026-07-25) — Nattbygget: batchen körd 6/6, morgongranskningen väntar
+### Session 86 ✅ AVSLUTAD (2026-07-25) — Nattbygget 6/6 + morgongranskningens tre fix-vågor
 
 > Scope: sessionsdok `2026-07-25-session-86.md` Del 1 (kanonisk plats):
 > nattbygget — de sex ready-for-agent-skivorna via /work-batch per
@@ -90,14 +125,53 @@ BUILD-LOG S83-post.
   jobb i samtliga led. Skörd: task-39–47 (9 fynd-kort) · T91 · L339 +
   L340 [UNIVERSAL ×2] · pilot-loggrader ×6 i T86 · F6-rådata i T89.
   Full narrativ: sessionsdok Del 2.
-- [x] **Bokförings-landningen** (2026-07-25, denna PR): sessionsdok
-  Del 2 + L340 + T89 § F6-mätningen + denna kadens. **NÄSTA (Marcus
+- [x] **Bokförings-landningen** (2026-07-25): sessionsdok
+  Del 2 + L340 + T89 § F6-mätningen + kadens. **NÄSTA (Marcus
   morgongranskning): granskningsvågen i browsern = pilot-loggens
   escapes-facit → Done-flippar 17.7/18.15 + kvittenserna (18.18 ×3 ·
   18.19 AC#2 · 18.16 danger→success + K77 · 18.17 DONE-klassningen) →
   därefter T85-korrigeringsfönstret (sekvens låst) ·
   konventions-grillningen (/grill-me) · hub-lyftet L284–L340 ·
   dependabot #162/#65 · Marcus-moment: Update-klicket i claude.ai.**
+- [x] **Done-flippar + escapes-facit** (2026-07-25): PR #187 —
+  17.7 + 18.15 Done på Marcus kvittens ("OK" · "Nummerrutorna är ok");
+  T86:s escapes-kolumn ifylld ur våg 1. **NÄSTA: fix-vågen.**
+- [x] **Granskningsvåg 1** (2026-07-25): PR #188 + fixup `9521be8`
+  (två testdefekter ur PR-CI:s första pass). Fem Marcus-beslut —
+  18.19 nowrap · 18.18 fast triggerbredd · **18.16 §19 FACIT-REVIDERAD
+  till intent × emphasis** (beslut A, AA-vakt på success-outline) ·
+  18.17 "Frågor" · 17.7 filterpanelens grå rand (grundorsak i
+  react-arias `useDisclosure` → **L341**). **NÄSTA: omgranskning.**
+- [x] **Granskningsvåg 2 + iteration 2** (2026-07-25): PR #189 +
+  `a79e381`. Rubriken ska RYMMA namnet (pillen viker deterministiskt
+  under h1 vid 390) · autofocus-racet läkt med RAC:s egen prop —
+  **facit punkt 8 rivet öppet** · popovern matchar triggerbredden
+  (form B, `--trigger-width`). Overlay-origo-grundorsaken → **L342**;
+  ny lokal bevisform uppfunnen (preview-mätloop 4183, ej härdad).
+  **NÄSTA: prototyp-svarfångst + våg 3.**
+- [x] **Prototyp-svarfångsten** (2026-07-25): PR #190 — deltagarkortens
+  bekräftelseknapp löst med NYTT INTERAKTIONSFLÖDE i st.f. färgjustering;
+  divergens A/B/C → A vald → konvergens → Marcus-låst. Facit =
+  **task-48** (8 byggkrav) + k04-snapshots. **NÄSTA: våg 3.**
+- [x] **Granskningsvåg 3** (2026-07-25): PR #191 — sökrutans fokusring
+  deterministisk (tre samverkande CSS-regler var grundorsaken till
+  modalitetsflimret) + grått rensa-kryss. Bevis mot levande dev-server.
+  **NÄSTA: stängningen.**
+- [x] **Stängnings-landningen** (2026-07-25, denna PR): sessionsdok
+  **Del 3–4** (de tre vågorna + prototyp-svarfångsten + fix-vågens
+  tidsforensik + transcript-ref) · **BUILD-LOG S86-post** ·
+  T86-escapes **omtriagerad neutralt i två dimensioner** (diff-synliga
+  vs browser-only; räkne-regeln avgörs i T85-sessionen) · denna kadens.
+  **NÄSTA (NY session S87 — städ-vågen): S86-stängning →
+  `scripts/ci-wait.sh` + L340-amendering (löpande ränta 6–9 min/CI-cykel)
+  → arkitektur-korpusen till `docs/reference/` (rör EJ ci.yml — 0 URL:er)
+  → task-48 efter länk-forken. Därefter Marcus vägval: T85-korrigeringen
+  (bindande före T86-beslutet + vidare CI-utbyggnad — men **blockerar
+  INTE produktarbete**, verifierat i T85:85–91) vs Roger & Lotta-spåret
+  (grind 0 = frontend-deploy, som saknas HELT — ingen hosting-config,
+  ingen deploy-workflow). Bakgrund: hub-lyftet L284–L342 ·
+  konventions-grillningen · dependabot #162/#65 · Marcus-moment:
+  Update-klicket i claude.ai.**
 
 ### Session 85 ✅ AVSLUTAD (2026-07-25) — Dukningen för nattbygget: audit-läkningen + go-redo för S86
 
