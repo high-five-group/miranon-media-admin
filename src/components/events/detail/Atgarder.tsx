@@ -1,42 +1,64 @@
 import { Link } from '@tanstack/react-router';
-import {
-  BadgeCheck,
-  ChevronRight,
-  type LucideIcon,
-  Mail,
-  Plus,
-  Printer,
-  UserCheck,
-} from 'lucide-react';
+import { ChevronRight, type LucideIcon, UserCheck } from 'lucide-react';
 import { DetaljGrupp } from './DetaljGrupp';
 
 /**
- * Åtgärds-gruppen + check-in-ingången (task-18.3; S73-facit K19–K26, K47, K72).
- * Nyskriven mot facit-bilagan (throwaway-kontraktet — prototypkod absorberas
- * aldrig); facit-referenserna (K-stegen) pekar på den låsta konvergens-trailen.
+ * Åtgärds-gruppen + check-in-ingången (task-18.3; S73-facit K19–K26, K47, K72;
+ * amenderad av task-18.15). Nyskriven mot facit-bilagan (throwaway-kontraktet —
+ * prototypkod absorberas aldrig); facit-referenserna (K-stegen) pekar på den
+ * låsta konvergens-trailen.
  *
- * Radformen (K20/K25/K72): VÄNSTERSTÄLLDA rader med ikon-kolumn (16 px),
+ * Radformen (K20/K25/K72): VÄNSTERSTÄLLDA rader med ledande kolumn (radnummer
+ * i Åtgärds-gruppen sedan 18.15; check-in-ingången behåller sin 16 px-ikon),
  * chevron höger (18 px — chevron betyder att raden leder vidare; den gamla
  * ingen-chevron-regeln revs öppet i denna skiva, spec §14) och hover-PLATTAN
  * (K56-grammatiken: -mx-2 px-2 rounded-lg + bg-emphasized + motion-safe) —
  * plattan skjuter 8 px utanför kortets 16 px-inset utan att texten flyttas.
  * Radens totalhöjd är konstant (wrapper py-1.5 + knapp py-1.5 = 12 px lodrätt
- * kring 24 px-textraden); wrappern är flex-col så flex-stretchen ger knappen
- * full bredd trots w-auto (K54-vakten: aldrig w-full ihop med -mx-2).
+ * kring 24 px-textraden — numrutans 24 px fyller raden utan att höja den);
+ * wrappern är flex-col så flex-stretchen ger knappen full bredd trots w-auto
+ * (K54-vakten: aldrig w-full ihop med -mx-2).
  */
 const RAD_KLASS =
   '-mx-2 flex w-auto items-center gap-2 rounded-lg px-2 py-1.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';
 
-/** Åtgärdsradens knappform. `ariaDisabled`: raden renderar per facit men dess
-    flöde finns ännu inte — tillståndet annonseras ärligt för hjälpmedel tills
-    flödet kopplas (öppet bokfört interim; se Atgarder nedan). */
+/**
+ * Radnumret i vit ruta (18.15-facitet; S83 konvergens-pass 2, Marcus-låst
+ * 2026-07-24): 24×24 (size-6) i radens/hover-plattans radie-språk (rounded-lg,
+ * K56 — kortets YTTERradie är 16 px och en annan skala) och
+ * bg-surface — VIT, får ALDRIG dela färg med radens hover-platta
+ * bg-emphasized (den grå rutan föll på exakt den hover-kollisionen i
+ * konvergensen; färgvalet är beslutsgrundat). aria-hidden: numret är VISUELL
+ * referens ("gå till åtgärd 4" i instruktioner och manualer,
+ * Gunilla-principen) — radNAMNET är oförändrat (AT-pariteten, AC 2).
+ */
+function NumRuta({ n }: { n: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-flex size-6 shrink-0 items-center justify-center rounded-lg bg-surface font-semibold text-caption text-text-secondary"
+    >
+      {n}
+    </span>
+  );
+}
+
+/** Radens ledande slot — exakt EN form per rad: åtgärds-raderna bär RADNUMMER
+    (18.15), check-in-ingången behåller sin ikon (berörs ej av skivan). */
+type Ledande = { nummer: number; ikon?: never } | { ikon: LucideIcon; nummer?: never };
+
+/** Åtgärdsradens knappform — numrerad sedan 18.15 (Åtgärds-gruppens enda
+    knappform; ikonvarianten utgick med rivningen). `ariaDisabled`: raden
+    renderar per facit men dess flöde finns ännu inte — tillståndet annonseras
+    ärligt för hjälpmedel tills flödet kopplas (öppet bokfört interim; se
+    Atgarder nedan). */
 function HandlingsRad({
-  ikon: Ikon,
+  nummer,
   onPress,
   ariaDisabled,
   children,
 }: {
-  ikon: LucideIcon;
+  nummer: number;
   onPress?: () => void;
   ariaDisabled?: boolean;
   children: string;
@@ -49,7 +71,7 @@ function HandlingsRad({
         aria-disabled={ariaDisabled || undefined}
         className={RAD_KLASS}
       >
-        <Ikon aria-hidden="true" size={16} className="shrink-0" />
+        <NumRuta n={nummer} />
         {children}
         <ChevronRight
           aria-hidden="true"
@@ -61,15 +83,14 @@ function HandlingsRad({
   );
 }
 
-/** Åtgärdsradens länkform — samma renderade grammatik som knappraden
-    (K26/K47: samma överallt), som router-typad länk. */
+/** Åtgärdsradens länkform — samma renderade grammatik som knappraden (K26:
+    samma överallt), som router-typad länk; ledande slot per Ledande-unionen. */
 function HandlingsLank({
-  ikon: Ikon,
   to,
   eventId,
   children,
-}: {
-  ikon: LucideIcon;
+  ...ledande
+}: Ledande & {
   to: '/event/$eventId/ny-anmalan' | '/event/$eventId/narvaro';
   eventId: string;
   children: string;
@@ -77,7 +98,11 @@ function HandlingsLank({
   return (
     <div className="flex flex-col py-1.5">
       <Link to={to} params={{ eventId }} className={RAD_KLASS}>
-        <Ikon aria-hidden="true" size={16} className="shrink-0" />
+        {ledande.nummer !== undefined ? (
+          <NumRuta n={ledande.nummer} />
+        ) : (
+          <ledande.ikon aria-hidden="true" size={16} className="shrink-0" />
+        )}
         {children}
         <ChevronRight
           aria-hidden="true"
@@ -119,8 +144,16 @@ export function CheckInKort({ eventId }: { eventId: string }) {
  * datagrupperna (Omedelbarhet — på eventdagar är åtgärderna sidans poäng),
  * i frekvensordning med Lägg till manuell anmälan först (K21: vanligaste
  * handlingen närmast handen; länken går till manuell anmälan-sidan, K16/K17 —
- * skarp form byggs i 18.12). Kuvert-grammatiken (K47): Mail på VARJE skicka
- * mail-handling; BadgeCheck för markera-handlingen; Printer för utskriften.
+ * skarp form byggd i 18.12).
+ *
+ * RIVNINGSNOT (task-18.15, FACIT-REVIDERING AV S73-K47, riven ÖPPET per
+ * 18.3-precedenten): kuvert-grammatikens LEDANDE ikoner (Mail på varje
+ * skicka-handling, BadgeCheck för markera, Printer för utskriften) är
+ * ersatta av RADNUMMER 1–6 — referentbarhet vann ("gå till åtgärd 4" i
+ * instruktioner och manualer är entydigt, Gunilla-principen: numrerade steg
+ * förstås utan förkunskaper). Kuvert-grammatiken BESTÅR i övriga ytor
+ * (Deltagare-kortens Mail/MailCheck; check-in-kortets UserCheck orörd).
+ * Numren följer frekvensordningen och ändras ej (byggkrav 1).
  *
  * Kopplingsläget per rad (kortets spec: "Skriv ut är skarp; utskicks-raderna
  * kopplas till sina flöden när de finns"):
@@ -134,22 +167,22 @@ export function CheckInKort({ eventId }: { eventId: string }) {
 export function Atgarder({ eventId }: { eventId: string }) {
   return (
     <DetaljGrupp id="grupp-atgarder" rubrik="Åtgärder">
-      <HandlingsLank ikon={Plus} to="/event/$eventId/ny-anmalan" eventId={eventId}>
+      <HandlingsLank nummer={1} to="/event/$eventId/ny-anmalan" eventId={eventId}>
         Lägg till manuell anmälan
       </HandlingsLank>
-      <HandlingsRad ikon={Mail} ariaDisabled>
+      <HandlingsRad nummer={2} ariaDisabled>
         Skicka bekräftelsemail till obekräftade
       </HandlingsRad>
-      <HandlingsRad ikon={Mail} ariaDisabled>
+      <HandlingsRad nummer={3} ariaDisabled>
         Skicka betalningspåminnelse till obetalda
       </HandlingsRad>
-      <HandlingsRad ikon={BadgeCheck} ariaDisabled>
+      <HandlingsRad nummer={4} ariaDisabled>
         Markera alla obetalda som betalda
       </HandlingsRad>
-      <HandlingsRad ikon={Mail} ariaDisabled>
+      <HandlingsRad nummer={5} ariaDisabled>
         Skicka eventinfo till alla anmälda
       </HandlingsRad>
-      <HandlingsRad ikon={Printer} onPress={() => window.print()}>
+      <HandlingsRad nummer={6} onPress={() => window.print()}>
         Skriv ut denna detaljsida
       </HandlingsRad>
     </DetaljGrupp>
