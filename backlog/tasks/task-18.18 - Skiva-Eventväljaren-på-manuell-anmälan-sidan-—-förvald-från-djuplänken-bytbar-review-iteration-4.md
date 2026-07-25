@@ -3,10 +3,10 @@ id: TASK-18.18
 title: >-
   Skiva: Eventväljaren på manuell anmälan-sidan — förvald från djuplänken,
   bytbar (review-iteration 4)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-23 09:56'
-updated_date: '2026-07-25 05:19'
+updated_date: '2026-07-25 05:32'
 labels:
   - ready-for-agent
 dependencies:
@@ -81,10 +81,16 @@ Review-piloten (T86): granskat träd 20525690 (bas main 1ccd5a1) — 7 fynd (2 s
 ÖPPNA MARCUS-MOMENT (morgongranskningen): (1) F1-kvittensen — komponentvals-omlandningen ComboBox→Select+Autocomplete; (2) manuellt VoiceOver-pass på sökväljaren (facit punkt 8:s AT-krav utöver det mekaniska e2e-kontraktet); (3) bekräftelseläget visar inte längre vilket event anmälan gällde (eventidentiteten bor i väljaren, som inte renderas i bekräftelseläget — arv från 18.12, ompasseringens observation).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 744b8c0b56c46cb57afa8b61b8d0248233d85589 · CI-run: PR-run 30145610730 grön per jobb (8/8 success, attempt 1) + main-run 30145869389 grön per jobb (Test suite dedup-SKIPPAD by-design, 36.4; merge-SHA 9877662e) · CI-grön-första-pass: ja · defekter under körning: 1+8 (bygget: axe definition-list-defekten i Platser kvar-raden fälld av eget axe-test, omstrukturerad → 14/14; review-piloten T86: 8 fynd åtgärdade [7 första pass + F8-nit i ompasseringen], 0 avfärdade, 1 routad till task-45) · TDD: rött-först per S80-amenderingen — nytt describe-block (8 tester) + facit-uppdaterat 18.12-rendertest körda FÖRE implementation (observerat 9 failed/5 passed), efter implementation 14/14, en cykel (e2e-skarven batchar skivans beteenden; rött+grönt pushas ihop) · AFK-proveniens: batch S86, do-work-agent
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
