@@ -43,6 +43,9 @@ Ingen URL-state. Hem visar alltid aktuell status. Inget att bokmerka, inget att 
 |-------|-----|---------|----------|
 | `period` | `'upcoming' \| 'past'` | `'upcoming'` | `parseAsStringEnum` |
 | `vy` | `'lista' \| 'kalender'` | `'lista'` | `parseAsStringEnum` |
+| `typ` | `string \| null` | `null` (inget filter) | `parseAsString` |
+| `ort` | `string \| null` | `null` (inget filter) | `parseAsString` |
+| `status` | `EventStatusValue \| null` | `null` (inget filter) | `parseAsStringEnum` |
 
 ```typescript
 const [period, setPeriod] = useQueryState(
@@ -72,6 +75,20 @@ period-toggeln och läser hela källan ofiltrerad), så `?period` är inert i
 kalenderläget men bevaras i URL:en — växlingen tillbaka till listan
 återställer exakt periodläget. Dag-valet i kalendern är UI-state
 (`useState`, HUR-klassen) — inte URL-buret.
+
+**Filtervalen** (task-17.7, URL-BESLUTET Marcus 2026-07-24): `?typ`/`?ort`/
+`?status` bär filtervyns tre dropdown-val — kopierbar länk, back-bart
+(history push), omladdnings-säkert. `null` = inget filter = parametern
+BORTA (nuqs tar bort parametern vid null — ren URL utan filter,
+clearOnDefault-klassens beteende). `typ`/`ort` är fria strängar (värdena
+härleds ur källan); `status` enum-parsas mot de kanoniska värdena
+(Planerat/Genomfört/Inställt/Flyttat) så ogiltiga params — inklusive
+gamla kontraktets `?status=past` — är inerta. Filtret appliceras
+klient-side på den periodfiltrerade listan (AND över dimensioner, live
+utan Apply). Panelens öppet/stängt är UI-state (HUR-klassen); i
+kalenderläget är filterparams inerta men bevaras (samma modell som
+`?period`). Exempel: `/event?typ=Kurs&ort=Skövde` → Kommande kurser i
+Skövde i listvyn.
 
 > **Reconcilierad (task-17.2, 2026-07-21 — S72-facitet):** `?period`
 > ERSÄTTER den tidigare `?status`+`?sort`-modellen. Skäl: S72-konvergensen

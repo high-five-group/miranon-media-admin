@@ -1,10 +1,10 @@
 ---
 id: TASK-17.7
 title: 'Skiva: Filtervyn på event-listan + skriv ut (review-iteration 1)'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-22 09:09'
-updated_date: '2026-07-24 14:40'
+updated_date: '2026-07-25 00:16'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,7 +23,7 @@ Marcus review-våg 1 (2026-07-22, design-review av S75-leveransen): event-listan
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Filterdimensionerna + interaktionsformen Marcus-kvitterade före implementation (research-underlag citerat)
-- [ ] #2 Filter + utskrift levererade per beslutad spec med e2e + axe-0; URL-STATE-SPEC uppdaterad om URL-state införs
+- [x] #2 Filter + utskrift levererade per beslutad spec med e2e + axe-0; URL-STATE-SPEC uppdaterad om URL-state införs
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -40,14 +40,24 @@ BYGGKRAV (låsta):
 6. ÖPPEN DELFRÅGA FÖRE BYGGE: URL-delbarhet för filterval (?typ/?ort/?status via nuqs + URL-STATE-SPEC-uppdatering per kortets villkor) — Code-rek JA (konsistent med ?period/?vy-grammatiken); Marcus-svar inväntas, bokförs här.
 
 URL-BESLUTET AVGJORT (Marcus 2026-07-24, på Code-rek med förtroende-kvittens; förklarad på Gunilla-nivå — valet hamnar i webbadressen: kopierbar länk, back-bart, omladdnings-säkert): JA — filtervalen URL-delbara via nuqs (?typ/?ort/?status i listans befintliga URL-grammatik, clearOnDefault för ren URL utan filter); URL-STATE-SPEC §Event uppdateras i samma skiva (kortets villkor). Byggkrav 6 därmed stängt — skivan komplett speccad.
+
+AFK-leverans (batch S86, do-work-agent, ADR-071/ADR-076-landningsform):
+
+TDD rött-först (S80-amenderingen): nya describe-blocket 'Filtervyn på event-listan + skriv ut (task-17.7)' (10 tester) kört FÖRE implementation — observerat utfall 9 failed / 1 passed (3,7 min): samtliga nio föll på saknad ingång, 'Test timeout of 30000ms exceeded … waiting for getByRole(button, name /^(Visa|Dölj) filter/)' (bl.a. 'filter-ingången: tratt-knapp …', 'live-filtrering utan Apply …', 'Skriv ut: knappen anropar window.print …', 'axe 0 violations …'); den tionde (skärpt vakt i gamla kontrakts-testet) grön. Efter implementation: 10/10 gröna; hela berörda ytan 36/36 (events-list + events-list-kalender). En cykel (e2e-skarven batchar skivans beteenden; rött+grönt pushas ihop).
+
+Review-piloten (T86): granskat träd adb2c614 (bas main f51ec95) — 6 fynd; ompassering på fix-diffen (träd e1e29f45) — 1 nytt lågfynd. Triage: 6 åtgärdade (print-huvudet villkorat bort i kalenderläget · fokus till tratt-knappen vid Rensa · '1 aktivt filterval' · expect.poll på ren-URL-assert · okänt URL-värde som extra SelectItem · ALLA-sentinel-vakten), 1 bokförd i stället för kodändring (text-[10px]-badgemikrotexten — facit-låst k02-form; skalan saknar steg under text-caption; badge-skalsteg mintas först vid andra konsument). Bokförd degradering (fynd 6a): dimension utan källvärden renderar ingen dropdown — ärligare än död kontroll; laddskelettet visar tre block (slutgeometri för normalfallet).
+
+Öppen facit-avvikelse (WCAG-golvet): badge-texten text-text-inverse i stället för prototypens text-text (2,6:1 mot accent-kopparn — 1.4.3 skärs aldrig; 5,96:1 uppmätt; task-17.2-prejudikatet).
+
+Lokala grindar: typecheck 0 fel · typecheck:tests 0 fel · biome 0 errors · build grön · test:api 376/376 · e2e events-list+kalender 36/36 · axe-0 med öppen panel + aktivt filter. Renderad verifiering (DoD #6): computed-asserts på trigger-aktiv (bg-text), badge (bg-accent/text-inverse), panel (bg-muted, radius 16px), print-emulering (nav/kontroller dolda, print-huvudets exakta text mot k02-print).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd (per skiva med UI-yta; L220)
-- [ ] #6 Renderad verifiering (computed-style/skärmdump) per berörd punkt före granskning (L245/L246)
+- [x] #6 Renderad verifiering (computed-style/skärmdump) per berörd punkt före granskning (L245/L246)
 <!-- DOD:END -->

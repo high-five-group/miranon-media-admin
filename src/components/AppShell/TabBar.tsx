@@ -49,7 +49,10 @@ export function TabBar() {
   return (
     <nav
       aria-label="Huvudnavigation"
-      className="fixed inset-x-4 bottom-4 mx-auto max-w-[568px] rounded-full border border-border bg-surface contrast-more:border-border-strong"
+      // print:hidden (task-17.7): navigation är död på papper — GOV.UK-
+      // blacklisten via Tailwinds återanvändbara print-variant (idiomets
+      // motsvarighet till govuk-!-display-none-print), aldrig engångs-CSS.
+      className="fixed inset-x-4 bottom-4 mx-auto max-w-[568px] rounded-full border border-border bg-surface contrast-more:border-border-strong print:hidden"
     >
       <ul className="my-0 flex w-full list-none items-center gap-1 p-1">
         {TABS.map((tab) => {
