@@ -508,9 +508,21 @@ jobs:
         # till actionlint per ADR-029 § Utelämning #3). vale-action är
         # underhåll-osäker (~17 mån gammal); binary minimerar Actions-
         # supply-chain-yta.
+        # SHA256 tillagd S88 (T85-korrigeringspaketet punkt 3) — steget hade
+        # actionlint-formens curl+tar men saknade dess checksumme-koll, alltså
+        # halva mönstret. Siffran verifierad tre oberoende vägar 2026-07-25:
+        # egen nedladdning + sha256sum, Vale-projektets vale_3.14.1_checksums.txt,
+        # och Releases-API:ts digest-fält — identiska. Releases är immutabla;
+        # re-verifiering: ladda samma URL + sha256sum lokalt.
+        # NOT: errata-ai/vale är omdöpt till vale-cli/vale — URL:en nedan lever
+        # på GitHub-redirect (curl -sL). Byte av org-namn görs vid nästa
+        # versions-bump, inte här (URL + checksumma hör ihop).
         run: |
           VALE_VERSION="3.14.1"
-          curl -sL "https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz" -o /tmp/vale.tar.gz
+          VALE_SHA256="ff2b49ffaa9dcd246fd5008f03ff67746d2790b75bf4d3657e2fb9530fb96db3"
+          VALE_URL="https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
+          curl -sL "${VALE_URL}" -o /tmp/vale.tar.gz
+          echo "${VALE_SHA256}  /tmp/vale.tar.gz" | sha256sum -c
           tar -xzf /tmp/vale.tar.gz -C /tmp
           sudo mv /tmp/vale /usr/local/bin/vale
           vale --version
