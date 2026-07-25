@@ -280,7 +280,7 @@ export function EventValjare({
         <Autocomplete filter={contains}>
           <SokFalt />
           <ListBox
-            className="max-h-80 overflow-auto outline-none"
+            className="scrollbar-inline max-h-80 overflow-auto outline-none"
             renderEmptyState={() => (
               <p className="px-3 py-2 text-small text-text-muted">
                 {isPending ? 'Laddar event…' : 'Inga event matchar sökningen'}
