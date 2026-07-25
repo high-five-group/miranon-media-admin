@@ -36,7 +36,7 @@ disk-bekräftade. Adresserbart: ~5–7 min + kontext per prototyp-pass.
 |---|---|---|---|---|
 | F1a | `todo.md` 330,8 KB historikarkiv (megarad rad 7: 13 383 tecken; sessionsnarrativ har idag TRE hemvister: sessionsdok + BUILD-LOG + rad 7) | [B] | historik → arkiv/BUILD-LOG som enda narrativa hemvist; mål < 50 KB; Pre-K-pass på kadensradens roll först | eget litet beslut/pass |
 | F1b | session-start-skillen föreskriver oguardad `todo.md`-läsning → 1 garanterat avvisat anrop + ~20 KB per session, varje agent | [M] | föreskriv Read med limit i hub-skillen | T85-korrigeringsfönstret el. hub-sync |
-| F2 | engångs-verifieringsskript per prototyp-pass (fem `proto-*.debug.mjs` ackumulerade 2026-07-24); miljöfakta återupptäcks trots att 5173-vägran är dokumenterad task-5-design | [M] | incheckat parametriserat `scripts/proto-verify.mjs` + miljöfakta-pekare i prototype-skillen; lesson-kandidat | T85-korrigeringsfönstret |
+| F2 | engångs-verifieringsskript per prototyp-pass (**sex**, ej fem — `proto-*.debug.mjs` ackumulerade 2026-07-24); miljöfakta återupptäcks trots att 5173-vägran är dokumenterad task-5-design | [M] | ✅ **DELVIS ÅTGÄRDAD S88, verktygs-halvan AVSTYRKT** — se nedan | T85-korrigeringsfönstret |
 | F3 | grindloop utan autofix: check → class-sort-fall → `--write` → recheck (bekräftad sekvens 14:59–15:00) | [M] | autofix före grind som standardsteg i iterationsloopar | T85-korrigeringsfönstret |
 | F4 | exakt-kopia-baslinje skrevs som generativ Write (12,9 KB) — drift-risk + ~3–4k output-tokens; prototype-skillen kräver exakt kopia men föreskriver ingen metod | [B] | `cp` + riktade Edits, exakthet by construction; skrivs in i prototype-skillens konvergens-avsnitt | hub-skill-ändring, Marcus-kvittens |
 | F6 | ~80 % av fönstrets 68 917 output-tokens var thinking (72 tankeblock, xhigh) | [B, experiment] | ETT prototyp-pass på lägre effort; jämför väggklocka + utfall + grindar mot baslinjen | **omlandat 2026-07-24 → ett av nattbyggets pilot-fönster** (se Beslutsläge) |
@@ -47,6 +47,48 @@ praxis) och är ADR-043/L67/L68:s drift-skydd; dok-födelsen fångade dessutom
 en räknedrift i själva S83-starten (BUILD-LOG:s föråldrade L-räkning).
 Granskningens § 5 bevarandevärden gäller oavkortat: async-disciplinen,
 subagent-parallelliseringen och verifieringsambitionen optimeras INTE bort.
+
+## F2 — utfall S88 (2026-07-25): dokument ja, verktyg nej
+
+**Verktygs-halvan avstyrkt, öppet bokförd.** Förslaget var ett incheckat
+parametriserat `scripts/proto-verify.mjs`. Kartläggningen av de faktiska
+skripten (sex, inte fem — `3c95acf` på `proto/s83-18-18-19-eventvaljaren`)
+visar att abstraktionen inte är motiverad:
+
+- Gemensam kärna är **~16 rader bootstrap** (auth-state, viewport, felsamlare,
+  screenshot). Allt annat är *påståendet*, och det var olika i varje skript:
+  element-scopad screenshot · hover + computed style · URL-assertion efter
+  combobox-val · print-media-emulering · loop över demo-anmälningar.
+- Ett parametriserat skript hade behövt återexponera Playwrights API som
+  CLI-flaggor.
+- **Alla sex konsumenter är redan raderade** per throwaway-kontraktet ⇒
+  över-engineering-vaktens "ingen abstraktion utan faktisk nuvarande
+  användare" faller rakt av.
+- Ett `scripts/`-skript är permanent kod under Biome + typecheck, som skulle
+  betjäna efemära konsumenter.
+
+**Miljöfakta-halvan levererad** som
+[`docs/reference/prototyp-verifiering-runbook.md`](../../docs/reference/prototyp-verifiering-runbook.md)
+— portkarta, 5173-vägran som design (task-5), auth-state, DEV-gejten, och den
+bärande faktan som stod **ingenstans**: plain node + `chromium.launch()` läser
+aldrig `playwright.config.ts`, vilket är hela skälet att ett pass kan koppla
+upp mot Marcus levande 5173 utan att döda den.
+
+**Uppgraderings-trigger** om ett senare pass faktiskt återanvänder bootstrappen
+oförändrad: formen är en ~20-raders `withProtoPage(fn)`, aldrig en flagg-CLI —
+och byggs då, inte i förväg.
+
+**Överlappet mot [`T92`](README.md) punkt (a) — registrerad i tråd-registret,
+inget eget kort än — är avfärdat med ett hårt faktum:** T92(a):s recept bygger på `vite preview`, alltså
+produktionsbygge, där `import.meta.env.DEV` är falskt ⇒ `/dev/prototyper` finns
+inte och `?variant=` är dött. **Preview-loopen kan aldrig bära ett
+prototyp-pass.** Kraven är dessutom motsatta: T92(a) behöver isolation *från*
+5173, F2 anslutning *till* den. Delad yta är exakt en artefakt —
+miljöfakta-dokumentet. Ett dokument, två recept.
+
+**Bifynd:** städkontraktet höll inte — sex `[DEBUG-S83]`-skript ligger kvar på
+två proto-branch-tippar trots headern "Städas efter passet". Noterat i
+runbookens § Städkontraktet.
 
 ## Beslutsläge
 
