@@ -113,10 +113,35 @@ grillas i sessionen, tas inte rakt av.
    fixen: PR-ledtid median 1,2 / p95 15,7 min (n=22) · 3 röda (samtliga
    `failure`) · instabilitet 0,0 % bevisad, 0 overifierade · dedup 100 %
    (21/0).
-2. **Nattlarms-observatören** — larmjobb i samma workflow kan inte se
-   sitt eget `startup_failure` (run 30038460735) eller utebliven
-   schemakörning; separat `workflow_run`-vakt eller motsvarande,
-   täckande även `timed_out`/`action_required`.
+2. ~~**Nattlarms-observatören**~~ ✅ **ÅTGÄRDAD S88** —
+   `.github/workflows/nightly-watchdog.yml`.
+   **Hålet empiriskt bevisat, ej resonerat:** run 30038460735 hade
+   `total_count: 0` jobb ⇒ larm-jobbet instansierades aldrig; repots enda
+   `ci-natt`-ärende någonsin (#114) kom från en SIMULERAD dispatch, den
+   verkliga incidenten lämnade noll spår.
+   **`workflow_run`-vägen förkastad:** octokit-payloadschemat saknar
+   `startup_failure` i sitt enum — att webhooken fyrar på det får inte antas.
+   Vald form är schemalagd vakt som läser API:t (`?status=startup_failure`
+   verifierat fungerande).
+   **Arkitektur C, research-grundad** (Marcus delegerade beslutet efter
+   web-research-disciplinen): vakten ERSÄTTER INTE larm-jobbet. Google SRE:s
+   larmregel-checklista (*"detect an otherwise undetected condition"*)
+   godkänner den för uteblivet/`startup_failure` och underkänner den för
+   resten, där larm-jobbet har rikare data (commit-spann, flake-signal).
+   Precedent: Prometheus Watchdog (bevakar kanalen, ligger bredvid),
+   `armbian/os` watchdog.yml. Researchen fann **inget** mönster där en extern
+   vakt ersatte det interna larmet — alternativ A saknade precedent.
+   **Tre villkor inbyggda:** grace 26 h mot UPPMÄTT drift (~3 h), aldrig mot
+   nominell cron — annars falsklarmsmaskin · dedup mot öppna `ci-natt`-ärenden
+   (motsvarar Alertmanagers inhibition; besvarar SRE-checklistans fråga 5) ·
+   **bevis-läge** `simulate_missing` — *"an untested dead man's switch is worse
+   than none at all"*.
+   **Öppet bokförd begränsning — rekursionen:** vakten är själv en
+   Actions-cron och ärver defekten den täcker. Fångar det vanliga fallet, inte
+   det sällsynta att hela schemaläggningen ligger nere. Extern klocka är eget
+   beslut; medveten deferral med bärare.
+   Grenlogiken testad lokalt över 11 fall före landning; skarpt bevis via
+   dispatch efter merge.
 3. ~~**Vale-SHA256**~~ ✅ **ÅTGÄRDAD S88.** Steget hade actionlint-formens
    `curl -sL` + `tar` men saknade dess `sha256sum -c` — alltså halva mönstret.
    Checksumman `ff2b49ff…96db3` verifierad TRE oberoende vägar 2026-07-25

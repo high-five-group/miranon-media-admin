@@ -1,0 +1,156 @@
+---
+name: Nattvakt
+
+# Vakt som står UTANFÖR nattkörningen (T85-korrigeringspaketet punkt 2, S88).
+#
+# VARFÖR DEN FINNS: nightly.yml:s larm-jobb bor INNE i den körning det bevakar.
+# Det kan därför bara larma om körningen faktiskt äger rum. Två fall bryter det,
+# och det ena har hänt på riktigt:
+#   1. startup_failure — GitHub avvisar hela körningen. Empiriskt: run
+#      30038460735 (2026-07-23) hade total_count: 0 jobb, alltså instansierades
+#      aldrig larm-jobbet. Repots enda ci-natt-ärende någonsin (#114) kom från
+#      en SIMULERAD dispatch; den verkliga incidenten lämnade noll spår.
+#   2. Utebliven schemakörning — GitHub dokumenterar själva att schemalagda
+#      körningar kan fördröjas och att köade jobb kan tappas.
+#
+# ARKITEKTUR (C, research-grundad 2026-07-25): vakten ERSÄTTER INTE larm-jobbet.
+# Google SRE:s checklista för nya larmregler frågar "does this rule detect an
+# otherwise undetected condition?" — vilket godkänner vakten för de två fallen
+# ovan och underkänner den för resten, där larm-jobbet redan är en observatör
+# med RIKARE data (commit-spann, flake-signal). Samma mönster som Prometheus
+# Watchdog: ett larm som bevakar kanalen och ligger BREDVID vanliga larm.
+# Precedent i GitHub Actions: armbian/os watchdog.yml.
+#
+# DEDUP: en enda kontroll av öppna ci-natt-ärenden före skapande. Motsvarar
+# Alertmanagers inhibition och besvarar SRE-checklistans fråga 5 ("are other
+# people getting paged for this issue…"). Utan den vore detta alternativ B.
+#
+# ÖPPET BOKFÖRD BEGRÄNSNING — REKURSIONEN: vakten är själv en GitHub
+# Actions-cron och ärver därmed exakt den defekt den ska täcka. Den fångar det
+# VANLIGA fallet (en enskild körning tappas eller vägrar starta) men inte det
+# sällsynta (hela schemaläggningen nere). Att bryta rekursionen kräver en klocka
+# utanför GitHub — separat beslut om extern tjänst, medveten deferral.
+#
+# BEVIS-LÄGE: "an untested dead man's switch is worse than none at all because
+# it gives false confidence." Vakten måste därför kunna avfyras på beställning —
+# samma praxis som nightly.yml:s simulate_failure och gate-proof.yml.
+
+on:
+  schedule:
+    # 12:00 Europe/Stockholm. Nattnätet schemaläggs 03:00 och har uppmätt
+    # eftersläp på ~3 h (03:56 / 04:00 UTC mot cron 01:00 UTC) — 12:00 ger
+    # gott om marginal även en trög natt.
+    - cron: '0 12 * * *'
+      timezone: 'Europe/Stockholm'
+  workflow_dispatch:
+    inputs:
+      simulate_missing:
+        description: >-
+          true = tvinga larm-grenen även när natten är frisk (bevisar
+          vaktkedjan utan att invänta en äkta incident; städa test-ärendet
+          med motivering).
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-watchdog
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: Kom natten igång?
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - name: Kontrollera senaste schemalagda nattkörning
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SERVER: ${{ github.server_url }}
+          RUN_ID: ${{ github.run_id }}
+          SIMULATE: ${{ inputs.simulate_missing }}
+        run: |
+          set -euo pipefail
+
+          # Fönstret mäts mot UPPMÄTT drift, inte mot nominell cron. En grace
+          # satt mot schemat hade gjort vakten till en falsklarmsmaskin — och
+          # husregeln är att ett falsklarm är värre än ingen vakt.
+          window_hours=26
+
+          runs_json=$(gh run list --repo "${REPO}" --workflow nightly.yml \
+            --branch main --event schedule --limit 1 \
+            --json conclusion,createdAt,databaseId)
+          count=$(jq 'length' <<<"${runs_json}")
+
+          rubrik=""
+          orsak=""
+
+          if [ "${SIMULATE}" = "true" ]; then
+            rubrik="Nattvakten — BEVIS-LÄGE"
+            orsak="Avfyrad via \`simulate_missing\`-dispatch. Ingen äkta avvikelse; detta bevisar bara att vaktkedjan fungerar."
+          elif [ "${count}" -eq 0 ]; then
+            rubrik="Nattnätet har aldrig kört"
+            orsak="Ingen schemalagd körning av \`nightly.yml\` hittades över huvud taget."
+          else
+            conclusion=$(jq -r '.[0].conclusion // ""' <<<"${runs_json}")
+            created=$(jq -r '.[0].createdAt' <<<"${runs_json}")
+            last_id=$(jq -r '.[0].databaseId' <<<"${runs_json}")
+            created_epoch=$(date -u -d "${created}" +%s)
+            now_epoch=$(date -u +%s)
+            age_hours=$(( (now_epoch - created_epoch) / 3600 ))
+            last_url="${SERVER}/${REPO}/actions/runs/${last_id}"
+
+            if [ "${age_hours}" -gt "${window_hours}" ]; then
+              rubrik="Nattnätet uteblev"
+              orsak="Senaste schemalagda körningen är **${age_hours} h** gammal (fönster: ${window_hours} h). Senast sedda: ${last_url}"
+            elif [ "${conclusion}" = "startup_failure" ]; then
+              rubrik="Nattnätet vägrade starta"
+              orsak="Senaste körningen har \`conclusion: startup_failure\` — noll jobb instansierades, så larm-jobbet i \`nightly.yml\` kunde per konstruktion inte fyra. Körning: ${last_url}"
+            elif [ -n "${conclusion}" ] && [ "${conclusion}" != "success" ]; then
+              rubrik="Nattnätet rött utan larm"
+              orsak="Senaste körningen har \`conclusion: ${conclusion}\` men inget öppet \`ci-natt\`-ärende finns — larm-jobbet kan självt ha uteblivit. Körning: ${last_url}"
+            fi
+          fi
+
+          if [ -z "${rubrik}" ]; then
+            echo "✅ Natten kom igång och larm-läget är konsistent — vakten är tyst."
+            exit 0
+          fi
+
+          # DEDUP före skapande: vakten dubblerar aldrig ett larm som
+          # nightly.yml redan lagt. I bevis-läge kringgås dedupen med avsikt,
+          # annars kan kedjan inte bevisas medan ett äkta ärende är öppet.
+          open_count=$(gh issue list --repo "${REPO}" --label ci-natt \
+            --state open --json number --jq 'length')
+          if [ "${open_count}" -gt 0 ] && [ "${SIMULATE}" != "true" ]; then
+            echo "Avvikelse funnen (${rubrik}), men ${open_count} öppet ci-natt-ärende finns redan — larmar inte (dedup)."
+            exit 0
+          fi
+
+          note=""
+          if [ "${SIMULATE}" = "true" ]; then
+            note=$'\n\n> ⚠️ **SIMULERAT** via `simulate_missing`-dispatch — vaktkedje-test, ingen äkta avvikelse. Stäng med denna motivering.'
+          fi
+
+          body="Nattvakten hittade en avvikelse som \`nightly.yml\`:s eget larm-jobb inte kan rapportera.
+
+          - **Vad:** ${orsak}
+          - **Vaktens körning:** ${SERVER}/${REPO}/actions/runs/${RUN_ID}
+
+          Vakten står utanför nattkörningen just för att kunna se det som ett larm inuti den är blint för: \`startup_failure\` (noll jobb ⇒ inget larm-jobb) och utebliven schemakörning.
+
+          Stängningsregel (CONTRIBUTING § Nattnätet): stängs ENDAST med (a) åtgärd som fixar grundorsaken eller (b) öppet skriven motivering — aldrig tyst.${note}"
+
+          gh issue create \
+            --repo "${REPO}" \
+            --title "🌑 ${rubrik} — $(date -u +%F)" \
+            --body "${body}" \
+            --label ci-natt \
+            --assignee marcus803

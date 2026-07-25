@@ -170,6 +170,42 @@ En röd nattkörning skapar automatiskt ett tilldelat ärende (etikett
 `ci-natt`) med länk till körningen och commit-spannet sedan senaste gröna
 natt.
 
+### Nattvakten — vad larm-jobbet inte kan se
+
+Larm-jobbet bor **inne i** nattkörningen och kan därför bara larma om
+körningen faktiskt äger rum. Två fall bryter det, och det ena har hänt:
+
+- **`startup_failure`** — GitHub avvisar hela körningen och noll jobb
+  instansieras, alltså inte heller larm-jobbet. Empiriskt: run `30038460735`
+  (2026-07-23) lämnade noll spår.
+- **Utebliven schemakörning** — GitHub dokumenterar att schemalagda
+  körningar kan fördröjas och att köade jobb kan tappas.
+
+`.github/workflows/nightly-watchdog.yml` står därför **utanför** och frågar
+API:t en gång per dag: kom natten igång, och är larm-läget konsistent?
+
+**Den ersätter inte larm-jobbet.** Arbetsdelningen följer en verklig gräns —
+kan körningen observera sig själv eller inte. Larm-jobbet behåller "natten
+körde och något gick sönder" (direktlarm, med commit-spann och flake-signal
+som en extern vakt inte kan rekonstruera); vakten tar bara det som annars är
+oobserverat. Samma mönster som Prometheus Watchdog, och samma linjal som
+Google SRE:s checklista för nya larmregler: *does this rule detect an
+otherwise undetected condition?*
+
+Vakten kontrollerar öppna `ci-natt`-ärenden före den skapar ett nytt, så du
+aldrig får dubbla ärenden om samma natt.
+
+**Bevis-läge:** kör vakten via `workflow_dispatch` med `simulate_missing:
+true` för att avfyra larmkedjan utan att invänta en äkta incident. En
+otestad dödmansgrepp ger falsk trygghet — därför är läget en del av
+konstruktionen, inte en eftertanke. Städa testärendet med motivering.
+
+**Öppet bokförd begränsning:** vakten är själv en schemalagd körning och
+ärver därmed den defekt den ska täcka. Den fångar det vanliga fallet (en
+enskild körning tappas eller vägrar starta) men inte det sällsynta att hela
+schemaläggningen ligger nere. Att bryta den rekursionen kräver en klocka
+utanför GitHub.
+
 **Stängningsregel — ett nattärende stängs ALDRIG tyst.** Antingen (a) åtgärdas
 grundorsaken, eller (b) skrivs en öppen motivering ut i ärendet innan det
 stängs. Regeln är larmkedjans motgift mot kyrkogårdseffekten: ett larm ingen
