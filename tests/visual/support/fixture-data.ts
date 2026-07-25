@@ -297,7 +297,147 @@ export const EVENT_FORMATS_RESPONSE = {
   ],
 } as const;
 
-/** `get-persons`-svaret (personlistan, en sida — nextCursor null). */
+// ══════════════════════════════════════════════════════════════════════════
+// PERSONER-VÄRLDEN (get-persons + get-person)
+// ══════════════════════════════════════════════════════════════════════════
+//
+// FORM-TROHET. Fältvärdena nedan är live-verifierade mot PROD-basen
+// `app8uGPrVCVOm6LfD` via MCP 2026-07-26 (9 stickprov i Personer, 4 i
+// Deltaganden) — inte påhittade etiketter. Det som ändrades mot den första
+// fixtur-generationen, och varför:
+//
+//  · `harAktivAnmalan` är formeln IF(kommande > 0, "Aktiv", "Ingen aktiv
+//    anmälan") → ALDRIG null, ALDRIG "Ja". Den gamla fixturen skrev "Ja", ett
+//    värde som inte finns i basen. Konsekvensen syns nu i listan: PersonsList
+//    renderar bokstavligen "Aktiv anmälan: Ingen aktiv anmälan" (den grenar på
+//    truthiness, inte på strängvärdet). Det är en verklig defekt som fixturen
+//    tidigare dolde — den ska synas i prototyp-underlaget, inte döljas.
+//  · `erfarenhetsniva` / `erfarenhetsbadge` är SWITCH-formler → ALLTID satta,
+//    aldrig null. Badge-värdena är "Ej påbörjat" · "Fjärrskådare" ·
+//    "Resenär steg 1" · "Resenär steg 1 (upprepat)" · "Resenär steg 1–2" ·
+//    "Resenär steg 1–2 (upprepat)" · "Avvikelse" (data-model.md §Insiktskedjan).
+//    De gamla värdena "RIM 1"/"RIM 2" existerar inte. Notera längden på
+//    "Resenär steg 1–2 (upprepat)" — en pill-design måste tåla den.
+//  · `manuellFlagga` ("Manuella flagga") är en singleSelect med choices=[] i
+//    basen → ALLTID null (data-model.md §Kända fällor 25). Död yta. Den gamla
+//    fixturens "Följ upp betalning" gick inte att få fram i verkligheten.
+//  · `senasteInteraktion` har TVÅ former i prod: touchpoint-raden
+//    "2026-09-13 09:41 – Inskickad anmälan" och event-raden
+//    "Varberg – Utbildning – Resor i medvetandet 2 – 2026-08-22". Båda finns
+//    nedan; de är olika långa och det är precis det en radgrammatik ska tåla.
+//  · `namn` är formeln IF(båda namnfälten tomma, "Ej tillgängligt", …) → en
+//    namnlös lead bär STRÄNGEN "Ej tillgängligt", inte null (fälla 43).
+//  · `radSkapad` / `senasteInteraktionDatum` är ISO-datetime i prod, inte
+//    datum-strängar.
+//
+// TOMMA FÄLT ÄR AVSIKTLIGA: tre personer saknar e-post, två saknar telefon, en
+// saknar båda, flera saknar ort. En design som bara håller för fulla rader är
+// inte färdig.
+
+/** De två kuraterade persondetaljerna, exporterade så prototyp-pass och specar
+ *  kan djuplänka (`/personer/${VISUAL_PERSON_RIK_ID}`) utan ID-kopiering. */
+export const VISUAL_PERSON_RIK_ID = 'recVisualPers00009';
+export const VISUAL_PERSON_TUNN_ID = 'recVisualPers00017';
+
+/**
+ * DEN RIKA personen — maximal fyllnad: sex anmälningar, tio deltaganden över
+ * fem event (varav ett KOMMANDE), tre lead-hämtningar, lång motivering, lång
+ * anteckning, AI-flagga, community-flaggor och tre orter.
+ *
+ * Not om `antalDeltaganden` (3) < `antalGenomfordaEvent` (4): det är basens
+ * verkliga form, inte ett slarvfel. "Totala deltaganden" = RIM 1 × + RIM 2 × +
+ * Fjärrskådning × och missar övriga kurstyper (data-model.md §Kända fällor 31,
+ * LUCKA A) medan "Antal genomförda event" summerar alla. Detaljvyn visar båda
+ * talen i samma lista — motsägelsen ska synas i underlaget.
+ */
+const PERSON_RIK = {
+  id: VISUAL_PERSON_RIK_ID,
+  namn: 'Ingrid Isaksson',
+  fornamn: 'Ingrid',
+  efternamn: 'Isaksson',
+  email: 'ingrid.isaksson@example.se',
+  telefon: '0705558812',
+  ort: ['Rönninge', 'Skövde', 'Varberg'],
+  manuellFlagga: null,
+  aiFlagga: 'Stabil och mottaglig',
+  anteckningar:
+    'Ringde själv inför Skövde-eventet och erbjöd sig att hjälpa till med incheckningen. Har med sig två vänner som inte anmält sig ännu — stäm av platsantalet med Roger innan bekräftelsen går ut.',
+  antalAnmalningar: 6,
+  antalDeltaganden: 3,
+  erfarenhetsniva: 'Genomfört RIM steg 1–2 (upprepat)',
+  erfarenhetsbadge: 'Resenär steg 1–2 (upprepat)',
+  senasteInteraktion: '2026-09-12 18:04 – Inskickad anmälan',
+  senasteInteraktionDatum: '2026-09-12T18:04:11.482Z',
+  dagarSedanSenaste: 3,
+  harAktivAnmalan: 'Aktiv',
+  ejGodkandMail: false,
+  radSkapad: '2024-08-14T09:22:41.000Z',
+  anmalningIds: [
+    'recVisualReg000101',
+    'recVisualReg000102',
+    'recVisualReg000103',
+    'recVisualReg000104',
+    'recVisualReg000105',
+    'recVisualReg000106',
+  ],
+  deltagandeIds: [
+    'recVisualDelt00101',
+    'recVisualDelt00102',
+    'recVisualDelt00103',
+    'recVisualDelt00104',
+    'recVisualDelt00105',
+    'recVisualDelt00106',
+    'recVisualDelt00107',
+    'recVisualDelt00108',
+    'recVisualDelt00109',
+    'recVisualDelt00110',
+  ],
+};
+
+/**
+ * DEN TUNNA personen — en namnlös lead som nyss angett sin e-post för ett
+ * erbjudande (A4-flödet). Allt utom e-post är tomt: inga anmälningar, inga
+ * deltaganden, ingen ort, inget telefonnummer, ingen historik, inga hämtningar,
+ * inga flaggor, ingen anteckning.
+ *
+ * Den är lika viktig som den rika: den är enda sättet att se om designen bär
+ * sina TOMTILLSTÅND. `namn` = "Ej tillgängligt" är basens formel-utfall, inte
+ * en platshållare vi hittat på — persondetaljens `displayName` faller därför
+ * ALDRIG tillbaka på "Namnlös person — <e-post>" i skarp drift, den skriver
+ * "Ej tillgängligt" som rubrik. Det är ett designproblem som ska bedömas.
+ */
+const PERSON_TUNN = {
+  id: VISUAL_PERSON_TUNN_ID,
+  namn: 'Ej tillgängligt',
+  fornamn: null,
+  efternamn: null,
+  email: 'p.lindqvist@example.se',
+  telefon: null,
+  ort: [],
+  manuellFlagga: null,
+  aiFlagga: null,
+  anteckningar: null,
+  antalAnmalningar: 0,
+  antalDeltaganden: 0,
+  erfarenhetsniva: 'Ej påbörjat',
+  erfarenhetsbadge: 'Ej påbörjat',
+  senasteInteraktion: '2026-09-14 08:12 – Angett e-post för att ta del av ett erbjudande',
+  senasteInteraktionDatum: '2026-09-14T08:12:03.117Z',
+  dagarSedanSenaste: 1,
+  harAktivAnmalan: 'Ingen aktiv anmälan',
+  ejGodkandMail: false,
+  radSkapad: '2026-09-14T08:12:03.000Z',
+  anmalningIds: [],
+  deltagandeIds: [],
+};
+
+/**
+ * `get-persons`-världen — HELA personmängden (17 personer), i namn-ordning.
+ *
+ * `nextCursor: null` här betyder "detta är hela världen", inte "en sida".
+ * Sidindelningen görs av `resolvePersonsResponse` nedan, som är den mock
+ * hermetic.ts faktiskt registrerar.
+ */
 export const PERSONS_RESPONSE = {
   persons: [
     {
@@ -313,14 +453,14 @@ export const PERSONS_RESPONSE = {
       anteckningar: null,
       antalAnmalningar: 1,
       antalDeltaganden: 0,
-      erfarenhetsniva: null,
-      erfarenhetsbadge: null,
-      senasteInteraktion: 'Anmälan Utbildning Skövde',
-      senasteInteraktionDatum: '2026-09-13',
+      erfarenhetsniva: 'Ej påbörjat',
+      erfarenhetsbadge: 'Ej påbörjat',
+      senasteInteraktion: '2026-09-13 09:41 – Inskickad anmälan',
+      senasteInteraktionDatum: '2026-09-13T09:41:22.184Z',
       dagarSedanSenaste: 2,
-      harAktivAnmalan: 'Ja',
+      harAktivAnmalan: 'Aktiv',
       ejGodkandMail: false,
-      radSkapad: '2026-09-13',
+      radSkapad: '2026-09-13T09:41:21.000Z',
       anmalningIds: ['recVisualReg000001'],
       deltagandeIds: [],
     },
@@ -337,14 +477,14 @@ export const PERSONS_RESPONSE = {
       anteckningar: 'Återkommande deltagare.',
       antalAnmalningar: 2,
       antalDeltaganden: 1,
-      erfarenhetsniva: 'RIM 1',
-      erfarenhetsbadge: 'RIM 1',
-      senasteInteraktion: 'Anmälan Utbildning Skövde',
-      senasteInteraktionDatum: '2026-09-14',
+      erfarenhetsniva: 'RIM steg 1',
+      erfarenhetsbadge: 'Resenär steg 1',
+      senasteInteraktion: '2026-09-14 18:07 – Inskickad anmälan',
+      senasteInteraktionDatum: '2026-09-14T18:07:55.903Z',
       dagarSedanSenaste: 1,
-      harAktivAnmalan: 'Ja',
+      harAktivAnmalan: 'Aktiv',
       ejGodkandMail: false,
-      radSkapad: '2026-04-02',
+      radSkapad: '2026-04-02T11:18:04.000Z',
       anmalningIds: ['recVisualReg000002'],
       deltagandeIds: ['recVisualDelt00001'],
     },
@@ -361,14 +501,14 @@ export const PERSONS_RESPONSE = {
       anteckningar: 'Vegetarisk kost.',
       antalAnmalningar: 1,
       antalDeltaganden: 1,
-      erfarenhetsniva: 'RIM 1',
-      erfarenhetsbadge: 'RIM 1',
-      senasteInteraktion: 'Avgift mottagen',
-      senasteInteraktionDatum: '2026-09-04',
-      dagarSedanSenaste: 11,
-      harAktivAnmalan: 'Ja',
+      erfarenhetsniva: 'RIM steg 1',
+      erfarenhetsbadge: 'Resenär steg 1',
+      senasteInteraktion: 'Varberg – Utbildning – Resor i medvetandet 1 – 2026-08-22',
+      senasteInteraktionDatum: '2026-08-22T00:00:00.000Z',
+      dagarSedanSenaste: 24,
+      harAktivAnmalan: 'Aktiv',
       ejGodkandMail: false,
-      radSkapad: '2026-02-17',
+      radSkapad: '2026-02-17T14:03:55.000Z',
       anmalningIds: ['recVisualReg000003'],
       deltagandeIds: ['recVisualDelt00002'],
     },
@@ -385,17 +525,20 @@ export const PERSONS_RESPONSE = {
       anteckningar: null,
       antalAnmalningar: 1,
       antalDeltaganden: 0,
-      erfarenhetsniva: null,
-      erfarenhetsbadge: null,
-      senasteInteraktion: 'Slutbetalning mottagen',
-      senasteInteraktionDatum: '2026-09-01',
+      erfarenhetsniva: 'Ej påbörjat',
+      erfarenhetsbadge: 'Ej påbörjat',
+      senasteInteraktion: '2026-09-01 16:20 – Inskickad anmälan',
+      senasteInteraktionDatum: '2026-09-01T16:20:39.472Z',
       dagarSedanSenaste: 14,
-      harAktivAnmalan: 'Ja',
+      harAktivAnmalan: 'Aktiv',
       ejGodkandMail: false,
-      radSkapad: '2026-08-28',
+      radSkapad: '2026-08-28T10:02:11.000Z',
       anmalningIds: ['recVisualReg000004'],
       deltagandeIds: [],
     },
+    // "Ej tillgängligt" sorterar mellan David och Emma — namnlösa leads
+    // hamnar mitt i listan i skarp drift, inte samlade i en klump.
+    PERSON_TUNN,
     {
       id: 'recVisualPers00005',
       namn: 'Emma Eklund',
@@ -409,14 +552,14 @@ export const PERSONS_RESPONSE = {
       anteckningar: null,
       antalAnmalningar: 1,
       antalDeltaganden: 2,
-      erfarenhetsniva: 'RIM 2',
-      erfarenhetsbadge: 'RIM 2',
-      senasteInteraktion: 'Anmälan Föreläsning Göteborg',
-      senasteInteraktionDatum: '2026-09-05',
+      erfarenhetsniva: 'Genomfört RIM steg 1–2',
+      erfarenhetsbadge: 'Resenär steg 1–2',
+      senasteInteraktion: '2026-09-05 12:33 – Inskickad anmälan',
+      senasteInteraktionDatum: '2026-09-05T12:33:07.611Z',
       dagarSedanSenaste: 10,
-      harAktivAnmalan: 'Ja',
+      harAktivAnmalan: 'Aktiv',
       ejGodkandMail: false,
-      radSkapad: '2025-11-20',
+      radSkapad: '2025-11-20T19:44:02.000Z',
       anmalningIds: ['recVisualReg000005'],
       deltagandeIds: ['recVisualDelt00003', 'recVisualDelt00004'],
     },
@@ -428,19 +571,20 @@ export const PERSONS_RESPONSE = {
       email: 'filip.forsberg@example.se',
       telefon: '070-123 45 06',
       ort: ['Skövde'],
-      manuellFlagga: 'Följ upp betalning',
+      // manuellFlagga är ALLTID null i basen (choices=[], fälla 25).
+      manuellFlagga: null,
       aiFlagga: null,
       anteckningar: null,
       antalAnmalningar: 1,
       antalDeltaganden: 0,
-      erfarenhetsniva: null,
-      erfarenhetsbadge: null,
-      senasteInteraktion: 'Betalningspåminnelse skickad',
-      senasteInteraktionDatum: '2026-09-10',
+      erfarenhetsniva: 'Ej påbörjat',
+      erfarenhetsbadge: 'Ej påbörjat',
+      senasteInteraktion: '2026-09-10 08:15 – Inskickad anmälan',
+      senasteInteraktionDatum: '2026-09-10T08:15:44.021Z',
       dagarSedanSenaste: 5,
-      harAktivAnmalan: 'Ja',
+      harAktivAnmalan: 'Aktiv',
       ejGodkandMail: false,
-      radSkapad: '2026-08-25',
+      radSkapad: '2026-08-25T08:15:44.000Z',
       anmalningIds: ['recVisualReg000006'],
       deltagandeIds: [],
     },
@@ -457,14 +601,14 @@ export const PERSONS_RESPONSE = {
       anteckningar: null,
       antalAnmalningar: 1,
       antalDeltaganden: 3,
-      erfarenhetsniva: 'RIM 2',
-      erfarenhetsbadge: 'RIM 2',
-      senasteInteraktion: 'Deltagande Utbildning Varberg',
-      senasteInteraktionDatum: '2026-08-23',
-      dagarSedanSenaste: 23,
-      harAktivAnmalan: null,
+      erfarenhetsniva: 'Genomfört RIM steg 1–2 (upprepat)',
+      erfarenhetsbadge: 'Resenär steg 1–2 (upprepat)',
+      senasteInteraktion: 'Varberg – Utbildning – Resor i medvetandet 2 – 2026-08-22',
+      senasteInteraktionDatum: '2026-08-22T00:00:00.000Z',
+      dagarSedanSenaste: 24,
+      harAktivAnmalan: 'Ingen aktiv anmälan',
       ejGodkandMail: false,
-      radSkapad: '2025-05-12',
+      radSkapad: '2025-05-12T07:31:19.000Z',
       anmalningIds: ['recVisualReg000007'],
       deltagandeIds: ['recVisualDelt00005', 'recVisualDelt00006', 'recVisualDelt00007'],
     },
@@ -477,21 +621,514 @@ export const PERSONS_RESPONSE = {
       telefon: '070-123 45 08',
       ort: [],
       manuellFlagga: null,
-      aiFlagga: 'Trolig lead',
-      anteckningar: 'Fyllde i intresseformuläret i somras.',
+      aiFlagga: 'Stabil och mottaglig',
+      anteckningar: 'Fyllde i intresseformuläret i somras. Vill veta mer om fjärrskådning.',
       antalAnmalningar: 0,
       antalDeltaganden: 0,
-      erfarenhetsniva: null,
-      erfarenhetsbadge: null,
-      senasteInteraktion: 'Intresseanmälan',
-      senasteInteraktionDatum: '2026-07-30',
+      erfarenhetsniva: 'Ej påbörjat',
+      erfarenhetsbadge: 'Ej påbörjat',
+      senasteInteraktion: '2026-07-30 21:04 – Angett e-post för att ta del av ett erbjudande',
+      senasteInteraktionDatum: '2026-07-30T21:04:18.220Z',
       dagarSedanSenaste: 47,
-      harAktivAnmalan: null,
+      harAktivAnmalan: 'Ingen aktiv anmälan',
       ejGodkandMail: true,
-      radSkapad: '2026-07-30',
+      radSkapad: '2026-07-30T21:04:17.000Z',
       anmalningIds: [],
       deltagandeIds: [],
+    },
+    PERSON_RIK,
+    {
+      // Utan e-post: anmäld per telefon. contactLine faller tillbaka på ett värde.
+      id: 'recVisualPers00010',
+      namn: 'Johan Jonsson',
+      fornamn: 'Johan',
+      efternamn: 'Jonsson',
+      email: null,
+      telefon: '0703112244',
+      ort: ['Ulvåker'],
+      manuellFlagga: null,
+      aiFlagga: null,
+      anteckningar: 'Anmäld per telefon — e-post saknas, ring för bekräftelse.',
+      antalAnmalningar: 1,
+      antalDeltaganden: 0,
+      erfarenhetsniva: 'Ej påbörjat',
+      erfarenhetsbadge: 'Ej påbörjat',
+      senasteInteraktion: '2026-09-11 13:52 – Inskickad anmälan',
+      senasteInteraktionDatum: '2026-09-11T13:52:10.664Z',
+      dagarSedanSenaste: 4,
+      harAktivAnmalan: 'Aktiv',
+      ejGodkandMail: false,
+      radSkapad: '2026-09-11T13:52:10.000Z',
+      anmalningIds: ['recVisualReg000010'],
+      deltagandeIds: [],
+    },
+    {
+      id: 'recVisualPers00011',
+      namn: 'Karin Kvist',
+      fornamn: 'Karin',
+      efternamn: 'Kvist',
+      email: 'karin.kvist@example.se',
+      telefon: '0708871209',
+      ort: ['Göteborg', 'Skövde'],
+      manuellFlagga: null,
+      aiFlagga: null,
+      anteckningar: null,
+      antalAnmalningar: 3,
+      antalDeltaganden: 2,
+      erfarenhetsniva: 'Genomfört RIM steg 1–2',
+      erfarenhetsbadge: 'Resenär steg 1–2',
+      senasteInteraktion: 'Göteborg – Utbildning – Resor i medvetandet 2 – 2026-06-13',
+      senasteInteraktionDatum: '2026-06-13T00:00:00.000Z',
+      dagarSedanSenaste: 94,
+      harAktivAnmalan: 'Ingen aktiv anmälan',
+      ejGodkandMail: false,
+      radSkapad: '2024-11-02T18:20:33.000Z',
+      anmalningIds: ['recVisualReg000011', 'recVisualReg000012', 'recVisualReg000013'],
+      deltagandeIds: [
+        'recVisualDelt00011',
+        'recVisualDelt00012',
+        'recVisualDelt00013',
+        'recVisualDelt00014',
+      ],
+    },
+    {
+      // Utan telefon.
+      id: 'recVisualPers00012',
+      namn: 'Leila Khoury',
+      fornamn: 'Leila',
+      efternamn: 'Khoury',
+      email: 'leila.khoury@example.se',
+      telefon: null,
+      ort: ['Göteborg'],
+      manuellFlagga: null,
+      aiFlagga: null,
+      anteckningar: null,
+      antalAnmalningar: 1,
+      antalDeltaganden: 1,
+      erfarenhetsniva: 'Fjärrskådning',
+      erfarenhetsbadge: 'Fjärrskådare',
+      senasteInteraktion: '2026-09-09 20:11 – Angett e-post för att ta del av ett erbjudande',
+      senasteInteraktionDatum: '2026-09-09T20:11:38.905Z',
+      dagarSedanSenaste: 6,
+      harAktivAnmalan: 'Aktiv',
+      ejGodkandMail: false,
+      radSkapad: '2026-03-08T09:15:27.000Z',
+      anmalningIds: ['recVisualReg000014'],
+      deltagandeIds: ['recVisualDelt00015', 'recVisualDelt00016'],
+    },
+    {
+      id: 'recVisualPers00013',
+      namn: 'Mikael Malm',
+      fornamn: 'Mikael',
+      efternamn: 'Malm',
+      email: 'mikael.malm@example.se',
+      telefon: '0730559914',
+      ort: ['Skövde'],
+      manuellFlagga: null,
+      aiFlagga: null,
+      anteckningar: 'Avregistrerade sig från utskick i augusti.',
+      antalAnmalningar: 2,
+      antalDeltaganden: 0,
+      erfarenhetsniva: 'Ej påbörjat',
+      erfarenhetsbadge: 'Ej påbörjat',
+      senasteInteraktion: '2026-08-19 07:48 – Inskickad anmälan',
+      senasteInteraktionDatum: '2026-08-19T07:48:52.310Z',
+      dagarSedanSenaste: 27,
+      harAktivAnmalan: 'Aktiv',
+      ejGodkandMail: true,
+      radSkapad: '2026-05-19T07:48:52.000Z',
+      anmalningIds: ['recVisualReg000015', 'recVisualReg000016'],
+      deltagandeIds: [],
+    },
+    {
+      // Utan e-post, med lång kurshistorik — den kombination som gör att en
+      // "maila alla"-affordans tyst tappar sin mest erfarna deltagare.
+      id: 'recVisualPers00014',
+      namn: 'Nina Nyström',
+      fornamn: 'Nina',
+      efternamn: 'Nyström',
+      email: null,
+      telefon: '0761224408',
+      ort: ['Stockholm'],
+      manuellFlagga: null,
+      aiFlagga: null,
+      anteckningar: null,
+      antalAnmalningar: 4,
+      antalDeltaganden: 3,
+      erfarenhetsniva: 'Genomfört RIM steg 1–2 (upprepat)',
+      erfarenhetsbadge: 'Resenär steg 1–2 (upprepat)',
+      senasteInteraktion: 'Stockholm – Utbildning – Fjärrskådning – 2026-04-11',
+      senasteInteraktionDatum: '2026-04-11T00:00:00.000Z',
+      dagarSedanSenaste: 157,
+      harAktivAnmalan: 'Ingen aktiv anmälan',
+      ejGodkandMail: false,
+      radSkapad: '2024-06-30T16:12:08.000Z',
+      anmalningIds: [
+        'recVisualReg000017',
+        'recVisualReg000018',
+        'recVisualReg000019',
+        'recVisualReg000020',
+      ],
+      deltagandeIds: [
+        'recVisualDelt00021',
+        'recVisualDelt00022',
+        'recVisualDelt00023',
+        'recVisualDelt00024',
+        'recVisualDelt00025',
+        'recVisualDelt00026',
+      ],
+    },
+    {
+      // Varken e-post eller telefon — backfillad rad. contactLine ger null och
+      // raden tappar hela sin mellanrad.
+      id: 'recVisualPers00015',
+      namn: 'Oskar Olsson',
+      fornamn: 'Oskar',
+      efternamn: 'Olsson',
+      email: null,
+      telefon: null,
+      ort: [],
+      manuellFlagga: null,
+      aiFlagga: null,
+      anteckningar: 'Backfillad rad från 2024 — kontaktuppgifter saknas i källan.',
+      antalAnmalningar: 1,
+      antalDeltaganden: 0,
+      erfarenhetsniva: 'Ej påbörjat',
+      erfarenhetsbadge: 'Ej påbörjat',
+      senasteInteraktion: '2026-04-19 17:15 – Inskickad anmälan',
+      senasteInteraktionDatum: '2026-04-19T17:15:02.883Z',
+      dagarSedanSenaste: 149,
+      harAktivAnmalan: 'Ingen aktiv anmälan',
+      ejGodkandMail: false,
+      radSkapad: '2026-04-19T17:15:01.000Z',
+      anmalningIds: ['recVisualReg000021'],
+      deltagandeIds: [],
+    },
+    {
+      id: 'recVisualPers00016',
+      namn: 'Petra Palm',
+      fornamn: 'Petra',
+      efternamn: 'Palm',
+      email: 'petra.palm@example.se',
+      telefon: '0725540071',
+      ort: ['Stockholm', 'Rönninge'],
+      manuellFlagga: null,
+      aiFlagga: null,
+      anteckningar: null,
+      antalAnmalningar: 2,
+      antalDeltaganden: 1,
+      erfarenhetsniva: 'RIM steg 1 – upprepat',
+      erfarenhetsbadge: 'Resenär steg 1 (upprepat)',
+      senasteInteraktion: '2026-09-08 11:26 – Inskickad anmälan',
+      senasteInteraktionDatum: '2026-09-08T11:26:44.512Z',
+      dagarSedanSenaste: 7,
+      harAktivAnmalan: 'Aktiv',
+      ejGodkandMail: false,
+      radSkapad: '2025-09-01T11:26:44.000Z',
+      anmalningIds: ['recVisualReg000022', 'recVisualReg000023'],
+      deltagandeIds: ['recVisualDelt00031', 'recVisualDelt00032'],
     },
   ],
   nextCursor: null,
 } as const;
+
+type FixturePerson = (typeof PERSONS_RESPONSE)['persons'][number];
+
+/**
+ * Sidstorlek i fixturvärlden.
+ *
+ * Appen skickar `pageSize=50` (PersonsList PAGE_SIZE, ADR-056) och världen har
+ * 17 personer — utan tak hade "Ladda fler" ALDRIG renderats och listans näst
+ * viktigaste beteende varit osynligt i varje snapshot. Taket är därför ett
+ * medvetet instrument, inte en avvikelse från EF-formen: EF:en klampar likaså
+ * mot ett tak (Airtables 100). 10 är valt så första sidan är lång nog att se ut
+ * som en scanlista och andra sidan (7) fortfarande fylls.
+ */
+const FIXTURE_PAGE_SIZE = 10;
+
+/**
+ * Opak cursor i EF:ens envelope-form (`{ o: <backend-token> }` base64-kodad,
+ * `_shared/cursor.ts`). Fixturens backend-token är radindex — klienten ser
+ * aldrig formen, precis som mot Airtables offset (ADR-056).
+ */
+function encodeFixtureCursor(offset: number): string {
+  return Buffer.from(JSON.stringify({ o: String(offset) })).toString('base64');
+}
+
+/** Packar upp fixtur-cursorn; felformad → 0 (första sidan), aldrig krasch. */
+function decodeFixtureCursor(cursor: string): number {
+  try {
+    const parsed: unknown = JSON.parse(Buffer.from(cursor, 'base64').toString('utf8'));
+    const token = (parsed as { o?: unknown } | null)?.o;
+    const offset = Number.parseInt(typeof token === 'string' ? token : '', 10);
+    return Number.isFinite(offset) && offset > 0 ? offset : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Speglar EF:ens `buildSearchAcrossFieldsFilter`: gemen-normaliserad
+ * delsträngsmatchning över Namn, E-post, Telefon och ARRAYJOIN(Ort)
+ * (`get-persons/index.ts` SEARCH_FIELDS).
+ */
+function matchesSearch(person: FixturePerson, term: string): boolean {
+  if (!term) return true;
+  return [person.namn, person.email, person.telefon, person.ort.join(' ')]
+    .filter((value): value is string => typeof value === 'string')
+    .some((value) => value.toLowerCase().includes(term));
+}
+
+/**
+ * `get-persons`-mocken — param-medveten resolver, inte ett fruset objekt.
+ *
+ * Respekterar `?search=`, `?pageSize=` och `?cursor=` med samma semantik som
+ * EF:en: sortering på Namn stigande, sökning över fyra fält, opak cursor och
+ * `nextCursor: null` först på sista sidan. Det är det som gör att BÅDE
+ * sökningen och "Ladda fler" går att visa i fixturvärlden.
+ */
+export function resolvePersonsResponse(url: URL) {
+  const term = (url.searchParams.get('search') ?? '').trim().toLowerCase();
+  const rawPageSize = Number.parseInt(url.searchParams.get('pageSize') ?? '', 10);
+  const pageSize = Math.min(
+    Number.isFinite(rawPageSize) && rawPageSize > 0 ? rawPageSize : FIXTURE_PAGE_SIZE,
+    FIXTURE_PAGE_SIZE,
+  );
+  const cursor = url.searchParams.get('cursor');
+  const offset = cursor ? decodeFixtureCursor(cursor) : 0;
+
+  const traffar = PERSONS_RESPONSE.persons
+    .filter((person) => matchesSearch(person, term))
+    .sort((a, b) => a.namn.localeCompare(b.namn, 'sv'));
+
+  const slut = offset + pageSize;
+  return {
+    persons: traffar.slice(offset, slut),
+    nextCursor: slut < traffar.length ? encodeFixtureCursor(slut) : null,
+  };
+}
+
+/**
+ * Detaljfälten för DEN RIKA personen (PersonDetailSchema minus list-delmängden
+ * — de tio fält `Person.schema.ts` inte bär).
+ *
+ * Två saker att veta innan de läses som sanning:
+ *
+ *  1. `motivering` är en STRÄNG här därför att `PersonDetail.schema.ts:44`
+ *     kräver `z.string().nullable()`. I prod är fältet en ARRAY
+ *     (live-verifierat: `["Det är dags", null]`) och get-person skickar det rått
+ *     → ZodError i AirtableAdapter → "Kunde inte hämta persondetaljer". Det är
+ *     byggunderlagets R1 och är INTE fixat här; fixturen är medvetet
+ *     schema-trogen så vyn går att rita.
+ *  2. `nastaEvent` är MEDVETEN FIKTION — det enda fältet nedan som prod i
+ *     praktiken aldrig producerar. EF:en läser `Nästa event (text)`, men basen
+ *     bär fältet `Nästa event (rad)`; en live-kontrollerad person MED kommande
+ *     event saknade `Nästa event (text)` helt, dvs. `nastaEvent` är i praktiken
+ *     alltid null i drift. Värdet står kvar så en prototyp KAN pröva formen —
+ *     men designa aldrig som om fältet vore fyllt idag.
+ *
+ * `antalHamtningar: 1` mot tre poster i `allaHamtningar` är däremot basens
+ * verkliga inkonsistens (två olika rollups), inte ett slarvfel.
+ */
+const RIK_DETALJ = {
+  aterkommande: 'Ja',
+  nastaEvent: 'Skövde – Utbildning – Resor i medvetandet 3 – 2026-09-26',
+  antalGenomfordaEvent: 4,
+  senasteDeltagandeDatum: '2026-05-01',
+  antalHamtningar: 1,
+  allaHamtningar: [
+    'Pyramidernas Vajrar (2026-06-09)',
+    'Guidad meditation – Första resan (2025-11-25)',
+    'Pyramidernas Vajrar (2024-10-02)',
+  ],
+  motivering:
+    'Jag har haft egna upplevelser och läst många böcker som gjort mig förvissad om att vi alla är del av samma medvetande. Nu vill jag lära mig metoder för att ta mig till andra nivåer — och den här gången vill jag ta med mig två vänner som är nyfikna men försiktiga.',
+  inbjudenCommunity: true,
+  skapatKontoCommunity: true,
+  // Tio deltaganden = fem event × Dag 1/Dag 2, sorterade datum DESC precis som
+  // get-person sorterar dem. Statusmixen är basens verkliga optionsuppsättning
+  // (Ej avstämt · Närvarande · Frånvarande · Försenad · Avbröt · Deltog online)
+  // och `narvaro` = Närvaropoäng === 1, dvs. sant för Närvarande/Deltog online.
+  //
+  // Det ÖVERSTA eventet är KOMMANDE (2026-09-26 > FROZEN_NOW). Dagens
+  // PersonDetail skriver "Ej närvaro" på det — en framtida kurs kan inte ha
+  // frånvaro. Den defekten ska synas i prototyp-underlaget, inte döljas.
+  historik: [
+    {
+      id: 'recVisualDelt00101',
+      kursnamn: 'Resor i medvetandet 3',
+      eventLabel: 'Skövde – Utbildning – Resor i medvetandet 3 – 2026-09-26',
+      datum: '2026-09-26',
+      session: 'Dag 1',
+      status: 'Ej avstämt',
+      narvaro: false,
+      ort: 'Skövde',
+      typ: 'Utbildning',
+    },
+    {
+      id: 'recVisualDelt00102',
+      kursnamn: 'Resor i medvetandet 3',
+      eventLabel: 'Skövde – Utbildning – Resor i medvetandet 3 – 2026-09-26',
+      datum: '2026-09-26',
+      session: 'Dag 2',
+      status: 'Ej avstämt',
+      narvaro: false,
+      ort: 'Skövde',
+      typ: 'Utbildning',
+    },
+    {
+      id: 'recVisualDelt00103',
+      kursnamn: 'Psionautics',
+      eventLabel: 'Ödeshög – Utbildning – Psionautics – 2026-05-01',
+      datum: '2026-05-01',
+      session: 'Dag 1',
+      status: 'Närvarande',
+      narvaro: true,
+      ort: 'Ödeshög',
+      typ: 'Utbildning',
+    },
+    {
+      id: 'recVisualDelt00104',
+      kursnamn: 'Psionautics',
+      eventLabel: 'Ödeshög – Utbildning – Psionautics – 2026-05-01',
+      datum: '2026-05-01',
+      session: 'Dag 2',
+      status: 'Deltog online',
+      narvaro: true,
+      ort: 'Ödeshög',
+      typ: 'Utbildning',
+    },
+    {
+      id: 'recVisualDelt00105',
+      kursnamn: 'Fjärrskådning',
+      eventLabel: 'Varberg – Utbildning – Fjärrskådning – 2026-02-07',
+      datum: '2026-02-07',
+      session: 'Dag 1',
+      status: 'Närvarande',
+      narvaro: true,
+      ort: 'Varberg',
+      typ: 'Utbildning',
+    },
+    {
+      id: 'recVisualDelt00106',
+      kursnamn: 'Fjärrskådning',
+      eventLabel: 'Varberg – Utbildning – Fjärrskådning – 2026-02-07',
+      datum: '2026-02-07',
+      session: 'Dag 2',
+      status: 'Frånvarande',
+      narvaro: false,
+      ort: 'Varberg',
+      typ: 'Utbildning',
+    },
+    {
+      id: 'recVisualDelt00107',
+      kursnamn: 'Resor i medvetandet 2',
+      eventLabel: 'Rönninge – Utbildning – Resor i medvetandet 2 – 2025-10-18',
+      datum: '2025-10-18',
+      session: 'Dag 1',
+      status: 'Närvarande',
+      narvaro: true,
+      ort: 'Rönninge',
+      typ: 'Utbildning',
+    },
+    {
+      id: 'recVisualDelt00108',
+      kursnamn: 'Resor i medvetandet 2',
+      eventLabel: 'Rönninge – Utbildning – Resor i medvetandet 2 – 2025-10-18',
+      datum: '2025-10-18',
+      session: 'Dag 2',
+      status: 'Närvarande',
+      narvaro: true,
+      ort: 'Rönninge',
+      typ: 'Utbildning',
+    },
+    {
+      id: 'recVisualDelt00109',
+      kursnamn: 'Resor i medvetandet 1',
+      eventLabel: 'Rönninge – Utbildning – Resor i medvetandet 1 – 2024-11-17',
+      datum: '2024-11-17',
+      session: 'Dag 1',
+      status: 'Försenad',
+      narvaro: true,
+      ort: 'Rönninge',
+      typ: 'Utbildning',
+    },
+    {
+      id: 'recVisualDelt00110',
+      kursnamn: 'Resor i medvetandet 1',
+      eventLabel: 'Rönninge – Utbildning – Resor i medvetandet 1 – 2024-11-17',
+      datum: '2024-11-17',
+      session: 'Dag 2',
+      status: 'Avbröt',
+      narvaro: false,
+      ort: 'Rönninge',
+      typ: 'Utbildning',
+    },
+  ],
+};
+
+/**
+ * Detaljfälten för DEN TUNNA personen — allt tomt. Detaljvyns tre tomtillstånd
+ * (kontakt utan ort, "Ingen registrerad kurshistorik", "Inga
+ * lead-magnet-hämtningar registrerade") utlöses alla av den här posten.
+ */
+const TUNN_DETALJ = {
+  aterkommande: 'Nej',
+  nastaEvent: null,
+  antalGenomfordaEvent: 0,
+  senasteDeltagandeDatum: null,
+  antalHamtningar: 0,
+  allaHamtningar: [],
+  motivering: null,
+  inbjudenCommunity: false,
+  skapatKontoCommunity: false,
+  historik: [],
+};
+
+/**
+ * Härledd detalj-stomme för de personer som INTE är kuraterade: listradens 22
+ * fält + de tio detaljfälten tomma. Finns för att varje rad i listan ska vara
+ * klickbar under prototyp-arbetet — utan den ger 15 av 17 rader felruta i
+ * stället för en vy.
+ *
+ * VARNING: stommen är inte konsistent med listraden (en person med
+ * `antalDeltaganden: 3` får ändå `historik: []`). Bedöm aldrig
+ * historik-designen mot en härledd person — använd de två kuraterade.
+ */
+const HARLEDD_DETALJ_STOMME = {
+  aterkommande: 'Nej',
+  nastaEvent: null,
+  antalGenomfordaEvent: 0,
+  senasteDeltagandeDatum: null,
+  antalHamtningar: 0,
+  allaHamtningar: [],
+  motivering: null,
+  inbjudenCommunity: false,
+  skapatKontoCommunity: false,
+  historik: [],
+};
+
+/** `get-person`-svaren för de två kuraterade personerna, keyed på record-ID. */
+export const PERSON_DETAIL_RESPONSE = {
+  [VISUAL_PERSON_RIK_ID]: { person: { ...PERSON_RIK, ...RIK_DETALJ } },
+  [VISUAL_PERSON_TUNN_ID]: { person: { ...PERSON_TUNN, ...TUNN_DETALJ } },
+};
+
+/**
+ * `get-person`-mocken. Kuraterad detalj om ID:t är en av de två; annars en
+ * härledd stomme ur listraden. ID utanför fixturvärlden → `undefined`, vilket
+ * hermetic.ts besvarar med 501 i klartext (synligt fel, aldrig tyst tom vy).
+ * EF:ens 404-gren går alltså inte att öva här — den kräver statuskod-stöd i
+ * mock-harnesset och behövs inte för person-ytornas designarbete.
+ */
+export function resolvePersonResponse(url: URL) {
+  const id = url.searchParams.get('id');
+  if (!id) return undefined;
+
+  const kuraterad = PERSON_DETAIL_RESPONSE[id as keyof typeof PERSON_DETAIL_RESPONSE];
+  if (kuraterad) return kuraterad;
+
+  const listrad = PERSONS_RESPONSE.persons.find((person) => person.id === id);
+  if (!listrad) return undefined;
+  return { person: { ...listrad, ...HARLEDD_DETALJ_STOMME } };
+}
