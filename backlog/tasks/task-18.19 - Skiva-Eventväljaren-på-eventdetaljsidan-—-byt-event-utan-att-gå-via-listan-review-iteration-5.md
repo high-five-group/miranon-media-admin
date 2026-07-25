@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-23 10:00'
-updated_date: '2026-07-25 09:10'
+updated_date: '2026-07-25 09:31'
 labels:
   - ready-for-agent
 dependencies:
@@ -77,6 +77,8 @@ FYND: rubrik-triggern (form="rubrik", h1:an) RADBRYTS på långa eventnamn ('Fj�
 FIX (branch fix/s86-granskningsvag, EN samlad fix-vågs-PR per ADR-071 S76-amenderingen): namn-spannet i rubrik-formen flippat break-words → block + truncate (nowrap + visuell ellipsis vid överflöd); chevron-paret behåller sin plats (shrink-0); truncaten är ENBART visuell — accessible name förblir HELA namnet (aria-labelledby mot namn-spannet; accname beräknas ur textinnehållet, inte CSS-klippningen). Fil: src/components/events/EventValjare.tsx.
 
 E2E-LÅS (event-detail.staging.test.ts, 18.19-blocket): nytt test 'rubrik-triggern RADBRYTER ALDRIG' — computed nowrap/ellipsis/overflow-x + scrollWidth>clientWidth-bevis att ellipsis är aktiv + geometri-lås (EN rad, <60 px) + chevron innanför viewport + accname = hela namnet + väljaren öppningsbar från truncerad trigger. RÖTT-FÖRST EJ OBSERVERBART LOKALT: e2e-dev-servern är portlåst till 5173 (reuseExistingServer false + strictPort) och porten bärs av Marcus levande dev-server — PR-CI:ts e2e-steg är beviset (pr-ci-bevisformen S66), öppet bokfört i PR-bodyn.
+
+FIXUP (samma PR): PR-CI:ts första pass föll på testets egen locator — 'span[id]' i triggern var tvetydig (RAC:s SelectValue bär eget auto-id; strict mode violation, 2 träffar). Låset omskrivet till aria-labelledby-uppslag (accname-bäraren exakt). Klassad testdefekt, inte produktdefekt — exakt den klass lokal rött-först-körning hade fångat (porten upptagen, bokfört ovan).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

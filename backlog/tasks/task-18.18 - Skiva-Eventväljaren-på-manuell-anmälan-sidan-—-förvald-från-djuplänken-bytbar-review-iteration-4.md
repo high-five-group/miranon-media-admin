@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-23 09:56'
-updated_date: '2026-07-25 09:10'
+updated_date: '2026-07-25 09:31'
 labels:
   - ready-for-agent
 dependencies:
@@ -87,6 +87,8 @@ FYND: eventväljarens stängda trigger på manuell anmälan-sidan VÄXTE i bredd
 FIX (branch fix/s86-granskningsvag): stängda kontextrad-triggern w-auto max-w-full self-start → w-full; chevronen alltid ml-auto (högerkanten). K54-vakten respekterad (ingen -mx-2 i formen). Tomt läge (/anmalan/ny) var redan full bredd — konsekvent. Fil: src/components/events/EventValjare.tsx.
 
 E2E-LÅS (event-ny-anmalan.staging.test.ts, 18.18-blocket): nytt test 'fast bredd (facit-komplettering, Marcus-beslut 2026-07-25)' — vänster-inset 16 px (px-4) = höger-inset (symmetri-lås) + chevron 14 px (px-3.5) från triggerns högerkant. Rött-först ej observerbart lokalt (5173 bärs av Marcus levande dev-server; hård vägran by-design) — PR-CI är beviset, bokfört i PR-bodyn.
+
+FIXUP (samma PR): PR-CI:ts första pass föll på symmetri-låsets absolutvärde — insetten är 17 px, inte 16 (kortets 1 px transparenta kant ingår i boundingBox; likaså triggerns egen kant → chevron-insetten 15, inte 14). Symmetrin (Marcus-beslutet) höll; absoluta förväntningar korrigerade med kant-förklaring i testet. Klassad testdefekt, inte produktdefekt.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

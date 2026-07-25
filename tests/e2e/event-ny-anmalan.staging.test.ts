@@ -432,17 +432,20 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
       (blockBox?.x ?? 0) +
       (blockBox?.width ?? 0) -
       ((triggerBox?.x ?? 0) + (triggerBox?.width ?? 0));
-    // Kortets inner-inset (px-4 = 16 px) på VÄNSTER — och SAMMA på höger.
-    expect(vanster).toBeCloseTo(16, 0);
+    // Kortets inner-inset på VÄNSTER (px-4 = 16 px + kortets 1 px
+    // transparenta kant som ingår i boundingBox = 17) — och SAMMA på höger
+    // (symmetrin ÄR Marcus-beslutet).
+    expect(vanster).toBeCloseTo(17, 0);
     expect(hoger).toBeCloseTo(vanster, 0);
 
-    // Chevronen vid högerkanten: triggerns px-3.5 (14 px) är enda avståndet.
+    // Chevronen vid högerkanten: triggerns px-3.5 (14 px) + triggerns egen
+    // 1 px-kant i boundingBox = 15.
     const chevronBox = await trigger.locator('svg.lucide-chevrons-up-down').boundingBox();
     expect(
       (triggerBox?.x ?? 0) +
         (triggerBox?.width ?? 0) -
         ((chevronBox?.x ?? 0) + (chevronBox?.width ?? 0)),
-    ).toBeCloseTo(14, 0);
+    ).toBeCloseTo(15, 0);
   });
 
   test('status ≠ Planerat får sitt märke; väntelista-raden borta vid 0', async ({ page }) => {

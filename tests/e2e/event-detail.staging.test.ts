@@ -2016,8 +2016,12 @@ test.describe('Eventväljaren på eventdetaljsidan (task-18.19)', () => {
     await expect(trigger).toHaveAccessibleName(LANGT_NAMN);
 
     // Nowrap-låset (computed, L245/L246): namn-spannet bryter aldrig rad och
-    // klipper med ellipsis vid överflöd.
-    const namnSpann = trigger.locator('span[id]');
+    // klipper med ellipsis vid överflöd. Spannet lokaliseras via triggerns
+    // aria-labelledby (accname-bäraren, exakt det spann låset gäller) —
+    // `span[id]` vore tvetydigt: RAC:s SelectValue bär ett eget auto-id.
+    const labelId = await trigger.getAttribute('aria-labelledby');
+    expect(labelId).toBeTruthy();
+    const namnSpann = page.locator(`[id="${labelId}"]`);
     await expect(namnSpann).toHaveCSS('white-space', 'nowrap');
     await expect(namnSpann).toHaveCSS('text-overflow', 'ellipsis');
     await expect(namnSpann).toHaveCSS('overflow-x', 'hidden');
