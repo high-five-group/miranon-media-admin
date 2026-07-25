@@ -14,9 +14,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  backoffMs,
   chunk,
+  fetchWithNetworkRetry,
   isExactSentinel,
   isOldEnough,
+  isTransientNetworkError,
   linkGuardTrips,
   planPurge,
   validatePolicy,
@@ -51,6 +54,17 @@ let failed = 0;
 function t(name, fn) {
   try {
     fn();
+    console.log(`✅ ${name}`);
+  } catch (err) {
+    failed += 1;
+    console.error(`❌ ${name}: ${err.message}`);
+  }
+}
+
+/** Asynkron variant — retry-mekanismen måste awaitas för att kunna räknas. */
+async function tAsync(name, fn) {
+  try {
+    await fn();
     console.log(`✅ ${name}`);
   } catch (err) {
     failed += 1;
@@ -255,6 +269,95 @@ t('chunk delar i ≤10-batchar (Airtable delete-gränsen)', () => {
   assert.equal(batches.length, 3);
   assert.equal(batches[0].length, 10);
   assert.equal(batches[2].length, 3);
+});
+
+// --- nätverksrobusthet (TASK-50) ---
+//
+// Incidenten: 2026-07-25 18:47:15 dog purge-jobbet på `TypeError: fetch
+// failed` 1,5 s in, vid FÖRSTA listanropet. Ett transient nätverksfel fällde
+// hela CI-körningen via paraply-checken. 429 hade retry sedan tidigare;
+// nätverkslagret hade ingenting.
+
+t('TypeError från fetch klassas som transient', () => {
+  assert.equal(isTransientNetworkError(new TypeError('fetch failed')), true);
+});
+
+t('ApiError (HTTP-fel med statuskod) är INTE transient — får aldrig retry:as', () => {
+  // En 422 från Airtable betyder att anropet är fel, inte att nätet vek sig.
+  // Retry på den vore att köra samma trasiga anrop tre gånger.
+  assert.equal(isTransientNetworkError(new Error('Airtable GET 422: ...')), false);
+});
+
+t('godtyckligt fel är inte transient (fail-closed default)', () => {
+  assert.equal(isTransientNetworkError(new RangeError('nope')), false);
+  assert.equal(isTransientNetworkError('inte ens ett fel'), false);
+  assert.equal(isTransientNetworkError(null), false);
+});
+
+t('backoff är exponentiell och börjar på 1 s', () => {
+  assert.equal(backoffMs(1), 1000);
+  assert.equal(backoffMs(2), 2000);
+  assert.equal(backoffMs(3), 4000);
+});
+
+t('backoff-summan håller sig långt under jobbets timeout-minutes: 5', () => {
+  // Tre försök = två väntor (1 s + 2 s). Med throttle och API-tid kvar är
+  // marginalen till 5 min stor — retryn får aldrig bli det som fäller jobbet.
+  const total = backoffMs(1) + backoffMs(2);
+  assert.equal(total, 3000);
+  assert.ok(total < 60_000, 'backoff-summan ska vara försumbar mot timeouten');
+});
+
+// Mekanismen, inte bara klassificeringen: att retryn FAKTISKT sker.
+// Pura tester ovan bevisar att TypeError klassas rätt — de bevisar inte att
+// funktionen försöker om. Dessa gör det, mot en mockad fetch.
+
+await tAsync('nätverksfel läks: andra försöket lyckas, anropet returnerar svaret', async () => {
+  const orig = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    if (calls === 1) throw new TypeError('fetch failed');
+    return { ok: true, status: 200 };
+  };
+  try {
+    const res = await fetchWithNetworkRetry('https://x.invalid', 'tok', {});
+    assert.equal(res.status, 200);
+    assert.equal(calls, 2, 'ska ha gjort exakt två anrop');
+  } finally {
+    globalThis.fetch = orig;
+  }
+});
+
+await tAsync('ihållande nätverksfel ger upp efter tre försök och kastar', async () => {
+  const orig = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    throw new TypeError('fetch failed');
+  };
+  try {
+    await assert.rejects(() => fetchWithNetworkRetry('https://x.invalid', 'tok', {}), TypeError);
+    assert.equal(calls, 3, 'ska ha gjort exakt tre anrop');
+  } finally {
+    globalThis.fetch = orig;
+  }
+});
+
+await tAsync('HTTP-fel retry:as ALDRIG — ett anrop, svaret returneras orört', async () => {
+  const orig = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return { ok: false, status: 422 };
+  };
+  try {
+    const res = await fetchWithNetworkRetry('https://x.invalid', 'tok', {});
+    assert.equal(res.status, 422);
+    assert.equal(calls, 1, 'HTTP-fel är inte transient — exakt ett anrop');
+  } finally {
+    globalThis.fetch = orig;
+  }
 });
 
 t('skarpa policy-filen på disk passerar validatePolicy', () => {
