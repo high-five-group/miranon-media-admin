@@ -194,10 +194,19 @@ export function EventDetail({ eventId }: { eventId: string }) {
           pogo-sticking-elimineringen: byt event här, detaljerna laddas direkt
           utan omväg via listan; Stripe-/Linear-/Airtable-precedenten).
           EventKey-pillen som titel-metadata till höger (liten mot titeln);
-          tid kvar-raden under; tunn avdelare — sidhuvudet i övrigt orört
-          (facit punkt 2). */}
+          tid kvar-raden under; tunn avdelare.
+          RUBRIKEN FÅR RADENS UTRYMME (Marcus våg 2-fix 2026-07-25: "Resor i
+          medvetandet 3" SKA rymmas på EN rad — "annars faller hela konceptet
+          med Eventnamnet som rubrik"): på smal yta (< sm) viker EventKey-
+          pillen deterministiskt UNDER rubriken (basis-full på wrappern +
+          flex-wrap på raden) så h1-raden får hela innehållsbredden; på ≥ sm
+          står pillen kvar till höger som förr. Deterministisk brytpunkt i
+          stället för intrinsic-wrap: truncate-kedjans min-w-0 gör att flex
+          hellre krymper rubriken än viker syskonet — ellipsis-formen står
+          kvar ENBART som yttersta skyddsnät för extremnamn, aldrig för
+          verkliga kursnamn (längsta verkliga = RIM 3, mäts i e2e). */}
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
           <EventValjare
             form="rubrik"
             valtEventId={eventId}
@@ -211,8 +220,13 @@ export function EventDetail({ eventId }: { eventId: string }) {
             onAvsikt={varmBytesmal}
           />
           {event.eventKey && (
-            <span className="shrink-0 rounded-full bg-bg-muted px-3 py-1 font-medium text-small text-text-secondary">
-              {event.eventKey}
+            // Wrappern bär radbeteendet (basis-full = egen rad under rubriken
+            // på smal yta; pill-bakgrunden får aldrig full bredd — därför
+            // ligger den på inner-spannet, inte på flex-itemet).
+            <span className="flex basis-full sm:basis-auto">
+              <span className="shrink-0 rounded-full bg-bg-muted px-3 py-1 font-medium text-small text-text-secondary">
+                {event.eventKey}
+              </span>
             </span>
           )}
         </div>

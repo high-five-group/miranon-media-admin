@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-23 10:00'
-updated_date: '2026-07-25 09:31'
+updated_date: '2026-07-25 10:12'
 labels:
   - ready-for-agent
 dependencies:
@@ -79,6 +79,16 @@ FIX (branch fix/s86-granskningsvag, EN samlad fix-vågs-PR per ADR-071 S76-amend
 E2E-LÅS (event-detail.staging.test.ts, 18.19-blocket): nytt test 'rubrik-triggern RADBRYTER ALDRIG' — computed nowrap/ellipsis/overflow-x + scrollWidth>clientWidth-bevis att ellipsis är aktiv + geometri-lås (EN rad, <60 px) + chevron innanför viewport + accname = hela namnet + väljaren öppningsbar från truncerad trigger. RÖTT-FÖRST EJ OBSERVERBART LOKALT: e2e-dev-servern är portlåst till 5173 (reuseExistingServer false + strictPort) och porten bärs av Marcus levande dev-server — PR-CI:ts e2e-steg är beviset (pr-ci-bevisformen S66), öppet bokfört i PR-bodyn.
 
 FIXUP (samma PR): PR-CI:ts första pass föll på testets egen locator — 'span[id]' i triggern var tvetydig (RAC:s SelectValue bär eget auto-id; strict mode violation, 2 träffar). Låset omskrivet till aria-labelledby-uppslag (accname-bäraren exakt). Klassad testdefekt, inte produktdefekt — exakt den klass lokal rött-först-körning hade fångat (porten upptagen, bokfört ovan).
+
+## Granskningsvåg 2 (S86, Marcus omgranskning av PR #188 — 2026-07-25)
+
+(1) FIX, iteration på våg 1: truncate med '…' räckte INTE — Marcus: 'Resor i medvetandet 3' SKA rymmas på EN rad ('annars faller hela konceptet med Eventnamnet som rubrik'). ANALYS: begränsaren var EventKey-pillen som syskon på h1-raden (justify-between gap-3; på 390-viewport fick rubriken ~250 px av 358). FIX (EventDetail.tsx): h1-raden flex-wrap; pill-wrappern basis-full sm:basis-auto → på smal yta (< sm) viker pillen DETERMINISTISKT under rubriken och h1-raden får hela innehållsbredden (RIM 3 ≈ 343 px ryms i 358). Deterministisk brytpunkt i stället för intrinsic-wrap: truncate-kedjans min-w-0 gör att flex hellre krymper rubriken än viker syskonet. Ellipsis-formen står kvar ENBART som extremnamns-skyddsnät (våg 1-testet står orört som det låset). Facit punkt 2 ('sidhuvudet i övrigt orört') REVIDERAD öppet för smal yta: pillen konsekvent under rubriken på mobil, kvar till höger ≥ sm. E2E-lås: nytt RIM 3-test (390-viewport: scrollWidth <= clientWidth = INGEN ellipsis + en rad + pillen under, utanför h1:an).
+
+(2) FIX, prototyp-regression (delad med 18.18): autofocus-mekaniken — se 18.18-notes; rubrik-ytan delar SokFalt oförändrat.
+
+(3) FACIT-KOMPLETTERING form B (delad med 18.18): popover-bredden — width: var(--trigger-width) + min-w-72-golv + placement='bottom start'. På denna yta = rubrik-triggerns bredd med min-golvet som hängsle (smal trigger får aldrig oanvändbar söklista). Nytt e2e-lås: popover-bredd = max(triggerbredd, 288) + vänsterkant-linjering ±1 px.
+
+Rött-först ej observerbart lokalt (5173/5174/5175 = tre levande servrar, portlåst svit) — PR-CI är beviset; RIM 3-testet är rött mot våg 1-koden by-design (pillen på raden klippte RIM 3 vid 390).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

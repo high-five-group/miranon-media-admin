@@ -448,6 +448,51 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
     ).toBeCloseTo(15, 0);
   });
 
+  test('sökfältet får fokus på BÅDA öppningsvägarna (Marcus våg 2-regression 2026-07-25): mus-klick och tangentbord', async ({
+    page,
+  }) => {
+    // Prototyp-regressionen: skarpa byggets rAF-fokus var ett race mot RAC:s
+    // egen öppnings-fokusering (grönt i e2e, fokus-tapp i verkligheten).
+    // Läkt med autoFocus-propen på SearchField (React Arias dokumenterade
+    // Select+Autocomplete-form) — här låses BÅDA interaktionsvägarna.
+    await mockEndpoints(page);
+    await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
+
+    // Musvägen.
+    await valjarTrigger(page).click();
+    const sok = page.getByRole('searchbox', { name: 'Sök event eller ort' });
+    await expect(sok).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('event-valjare-popover')).toHaveCount(0);
+
+    // Tangentbordsvägen: fokus på triggern (RAC:s fokus-retur efter Escape)
+    // → Enter öppnar → fältet har fokus.
+    await expect(valjarTrigger(page)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(sok).toBeFocused();
+  });
+
+  test('popovern matchar den fasta full-bredds-triggern (form B, Marcus 2026-07-25): bredd och vänsterkant', async ({
+    page,
+  }) => {
+    await mockEndpoints(page);
+    await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
+
+    const trigger = valjarTrigger(page);
+    await expect(trigger).toContainText('Resor i medvetandet 1');
+    const trigBox = await trigger.boundingBox();
+    await trigger.click();
+
+    // width = var(--trigger-width) (> min-w-golvet här: triggern är full
+    // blockbredd sedan våg 1) + placement="bottom start" ⇒ popovern ligger
+    // exakt under triggern, aldrig högerförskjuten utanför innehållet.
+    const popover = page.getByTestId('event-valjare-popover');
+    await expect(popover).toBeVisible();
+    const popBox = await popover.boundingBox();
+    expect(Math.abs((popBox?.x ?? 0) - (trigBox?.x ?? 0))).toBeLessThanOrEqual(1);
+    expect(popBox?.width ?? 0).toBeCloseTo(trigBox?.width ?? 0, 0);
+  });
+
   test('status ≠ Planerat får sitt märke; väntelista-raden borta vid 0', async ({ page }) => {
     await mockEndpoints(page, { eventOverrides: { status: 'Flyttat' } });
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);

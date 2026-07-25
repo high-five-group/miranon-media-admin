@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, ChevronsUpDown } from 'lucide-react';
-import { type Ref, useEffect, useId, useMemo, useRef } from 'react';
+import { type Ref, useEffect, useId, useMemo } from 'react';
 import {
   Button as AriaButton,
   Input as AriaInput,
@@ -74,9 +74,16 @@ import { groupByMonth } from './manadsgrupp';
  *
  * LISTAN (punkt 8–10): sök från start (USWDS-tröskeln >15 val — staging har
  * 11 och listan växer monotont), matchar namn ELLER ort (textValue bär
- * båda), fokus flyttas PROGRAMMATISKT till fältet när listan öppnas
- * (aldrig autoFocus-attributet — a11y/noAutofocus undertrycks inte);
- * kommande event närmast först; månadsgrupperade i EventsLists EGEN
+ * båda); sökfältet får fokus när listan öppnas via `autoFocus` på
+ * SearchField — React Arias EGEN dokumenterade form för Select+Autocomplete
+ * (react-aria.adobe.com/Select § "Autocomplete with SearchField" och
+ * /Autocomplete § "with Select": båda exemplen bär `<SearchField autoFocus>`;
+ * propen registreras INUTI RAC:s fokusmaskineri). Ursprungsformens
+ * "programmatiskt, aldrig autoFocus" (facit punkt 8) REVS ÖPPET av Marcus
+ * våg 2-beslut 2026-07-25: den externa rAF-fokusen var ett race mot RAC:s
+ * egen öppnings-fokusering och tappade fokus i verklig användning
+ * (prototyp-regressionen — prototypen fokuserade direkt vid öppning).
+ * Kommande event närmast först; månadsgrupperade i EventsLists EGEN
  * rubrikform via delade `groupByMonth` (punkt 9 — lyftet är skivans krav).
  *
  * Datakällan är listcachen (`events.list` — samma nyckel som event-listan):
@@ -240,9 +247,20 @@ export function EventValjare({
           Byt event
         </span>
       ) : null}
+      {/* POPOVER-BREDDEN = TRIGGERNS (facit-komplettering form B, Marcus-
+          beslut 2026-07-25 efter research): default-placeringen "bottom"
+          centrerade en innehållsbred popover under triggern → högerförskjuten
+          utanför innehållet. RAC:s Popover sätter --trigger-width automatiskt
+          (uppdaterad via resize observer; verifierad i 1.19.0) — width:
+          var(--trigger-width) + min-w-72-golv (18rem, så en smal rubrik-
+          trigger inte ger oanvändbar söklista) + placement="bottom start"
+          (vänsterkant-linjerad). Precedent: React Aria Select-docs använder
+          exakt --trigger-width; Radix --radix-select-trigger-width; Material
+          exposed dropdown. containerPadding/shouldFlip = RAC-default. */}
       <Popover
         data-testid="event-valjare-popover"
-        className="flex min-w-(--trigger-width) flex-col gap-1 rounded-xl border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-2 shadow-lg"
+        placement="bottom start"
+        className="flex w-(--trigger-width) min-w-72 flex-col gap-1 rounded-xl border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-2 shadow-lg"
       >
         {/* Autocomplete = React Arias combobox-maskineri i popover-form:
             sökfältet styr listboxen (virtuell fokus), filtret matchar
@@ -354,21 +372,21 @@ function KontextRad({ event }: { event: Event }) {
 }
 
 /**
- * Sökfältet i listan (punkt 8): med från start (USWDS-tröskeln), fokus
- * PROGRAMMATISKT vid öppning — rAF så React Arias egen fokushantering
- * (FocusScope) hunnit köra först; aldrig autoFocus-attributet
- * (a11y/noAutofocus undertrycks inte när golvet är 11).
+ * Sökfältet i listan (punkt 8): med från start (USWDS-tröskeln). Fokus vid
+ * öppning bärs av `autoFocus`-PROPEN på SearchField — React Arias
+ * dokumenterade mekanism för Select+Autocomplete (docs-exemplens exakta
+ * form; propen går genom RAC:s FocusScope i stället för att tävla med den).
+ * Ursprungsformen (extern rAF-fokus efter mount) revs öppet 2026-07-25:
+ * den var ett race mot RAC:s egen öppnings-fokusering — grönt i e2e men
+ * fokus-tapp i verklig användning (prototyp-regressionen). Detta är RAC:s
+ * autoFocus-prop i en just-öppnad popover (svar på användarens egen
+ * handling), inte sidladdnings-autofokus — a11y/noAutofocus-golvet gäller
+ * sidladdning och skärs inte.
  */
 function SokFalt() {
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => ref.current?.focus());
-    return () => cancelAnimationFrame(id);
-  }, []);
   return (
-    <SearchField aria-label="Sök event eller ort" className="flex flex-col">
+    <SearchField autoFocus aria-label="Sök event eller ort" className="flex flex-col">
       <AriaInput
-        ref={ref}
         placeholder="Sök event eller ort…"
         className="text-(color:--mm-input-text) placeholder:text-(color:--mm-input-text-placeholder) min-h-10 w-full rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 text-body"
       />

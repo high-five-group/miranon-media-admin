@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-23 09:56'
-updated_date: '2026-07-25 09:31'
+updated_date: '2026-07-25 10:12'
 labels:
   - ready-for-agent
 dependencies:
@@ -89,6 +89,14 @@ FIX (branch fix/s86-granskningsvag): stängda kontextrad-triggern w-auto max-w-f
 E2E-LÅS (event-ny-anmalan.staging.test.ts, 18.18-blocket): nytt test 'fast bredd (facit-komplettering, Marcus-beslut 2026-07-25)' — vänster-inset 16 px (px-4) = höger-inset (symmetri-lås) + chevron 14 px (px-3.5) från triggerns högerkant. Rött-först ej observerbart lokalt (5173 bärs av Marcus levande dev-server; hård vägran by-design) — PR-CI är beviset, bokfört i PR-bodyn.
 
 FIXUP (samma PR): PR-CI:ts första pass föll på symmetri-låsets absolutvärde — insetten är 17 px, inte 16 (kortets 1 px transparenta kant ingår i boundingBox; likaså triggerns egen kant → chevron-insetten 15, inte 14). Symmetrin (Marcus-beslutet) höll; absoluta förväntningar korrigerade med kant-förklaring i testet. Klassad testdefekt, inte produktdefekt.
+
+## Granskningsvåg 2 (S86, Marcus omgranskning av PR #188 — 2026-07-25)
+
+(2) FIX, prototyp-regression: autofocus på sökrutan saknades vid öppning i verklig användning. UTREDNING (ordern: befintligt fokus-test var GRÖNT — varför missar verkligheten?): skarpa byggets form var EXTERN rAF-fokus en frame efter SokFalt-mount — ett race mot RAC:s egen öppnings-fokusering (FocusScope/Autocomplete-maskineriet); racets utfall är timing-beroende → e2e-grönt men fokus-tapp i verkligheten. Prototypen (proto/s83-18-18-19-eventvaljaren-iter, git show-läst) fokuserade DIREKT vid öppning utan konkurrerande maskineri — regressionen uppstod när skarpa bygget lade fokusen UTANFÖR RAC:s system. LÄKNING: autoFocus-PROPEN på SearchField — React Arias EGEN dokumenterade form för Select+Autocomplete (react-aria.adobe.com/Select § 'Autocomplete with SearchField' OCH /Autocomplete § 'with Select' bär båda <SearchField autoFocus>; propen registreras INUTI RAC:s fokusmaskineri = deterministisk). Facit punkt 8:s 'programmatiskt, aldrig autoFocus' REVS ÖPPET (Marcus våg 2-order): noAutofocus-golvet gäller sidladdnings-autofokus, inte fokus i en just-öppnad popover som svar på användarens egen handling; biome flaggar inte (verifierat). E2E-lås: nytt test låser BÅDA öppningsvägarna (mus-klick + tangentbord/Enter → sökfältet fokuserat). Gäller båda ytorna (delad SokFalt).
+
+(3) FACIT-KOMPLETTERING — FORMVAL B (Marcus-beslut efter research 2026-07-25): POPOVERN MATCHAR TRIGGERNS BREDD. Fyndet: default placement 'bottom' centrerade den innehållsbreda popovern under triggern → högerförskjuten utanför innehållet. Mekanik (verifierad i installerad react-aria-components 1.19.0): RAC Popover sätter --trigger-width automatiskt (uppdaterad via resize observer) → width: var(--trigger-width) (w-(--trigger-width)) + min-w-72-golv (18rem — smal trigger ger aldrig oanvändbar söklista) + placement='bottom start'; containerPadding/shouldFlip = RAC-default. RESEARCH-REFERENS: React Aria Select-docs använder exakt --trigger-width; Radix --radix-select-trigger-width; Material exposed dropdown menu = fältets bredd. På denna yta blir popovern = våg 1:s fasta full-bredds-trigger; på eventdetaljsidan rubrik-triggerns bredd med min-golvet som hängsle. E2E-lås i båda sviterna (bredd + vänsterkant ±1 px).
+
+Rött-först ej observerbart lokalt (tre levande servrar 5173/5174/5175; portlåst svit) — PR-CI är beviset.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
