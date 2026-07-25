@@ -3,10 +3,10 @@ id: TASK-18.17
 title: >-
   Skiva: Per-anmälan-detaljvyn — route + läs-shape + vy (Anmäld-radens länkmål)
   (review-iteration 3)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-23 08:55'
-updated_date: '2026-07-25 03:35'
+updated_date: '2026-07-25 03:48'
 labels:
   - ready-for-agent
 dependencies:
@@ -165,10 +165,16 @@ facit-bilagorna k04/k04-obekraftad + computed-style-assertions i e2e
 kort: task-43 (noterings-migreringen) + task-44 (URL/UTM-fälten).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 220ea19029956039dfc1a1a8f325c0a0f87eeb52 · CI-run: PR-run 30142544910 grön per jobb (8/8 success, attempt 1) + main-run 30142833315 grön per jobb (Test suite dedup-SKIPPAD by-design, 36.4; merge-SHA ebf36a25) · CI-grön-första-pass: ja · defekter under körning: 7+1 (review-piloten: 7 åtgärdade, 0 avfärdade, 0 routade; + axe dlitem-defekten fälld av e2e-sviten i första körningen, rött→grönt; bas-gap routade till kort: task-43 + task-44) · TDD: api-skarven rött-först (5 röda före EF-deploy → gröna efter); e2e-avvikelse: anmalan-detalj-sviten skriven mot färdig komponentdesign, rött ej observerat före UI-bygget (18.1/18.2/18.8-klassens kostnadsavvägning) · AFK-proveniens: batch S86, do-work-agent
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
