@@ -42,7 +42,7 @@ import { DAGMANAD } from './datumSpann';
 
 /** [PROTOTYPE] Vinnaren A i konvergens (ADR-074: nyckeln behålls; b/c rivna). */
 const PROTO_VARIANTS = [
-  { key: 'a', label: 'A — Markera-läge', steg: 2, stegLabel: 'Konvergens 2' },
+  { key: 'a', label: 'A — Markera-läge', steg: 3, stegLabel: 'Konvergens 3' },
 ];
 
 /**
