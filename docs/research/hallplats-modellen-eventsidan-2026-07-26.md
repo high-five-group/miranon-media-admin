@@ -120,6 +120,7 @@ automatiskt". Aldrig båda.
 **Tre flikar:** `Alla (10)` · `Manuella (2)` · `Medföljande (1)`.
 
 **Två sektioner:**
+
 - **Obekräftade (2)** — FAST rubrik utan chevron (revs 2026-07-26, task-48
   review-våg 2), max ~3 kort med inline-scroll, mörk solid **Markera**-knapp.
   I markera-läget: batch-bar `[Bekräfta 2 anmälningar]` `[Markera alla]`
