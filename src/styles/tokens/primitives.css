@@ -24,6 +24,12 @@
        duger. Se fynd F9.
      · Blå är den enda skala vars ankare är FLYTTAT. Se noten vid blåskalan
        och fynd F10.
+     · Steg 12 fördjupades 2026-07-27 efter att mappningen mot den gamla
+       paletten mättes. Neutralernas steg 12 låg på CIE L* 18,4 medan
+       brödtexten (neutral-900) ligger på 14,2 — texten hade blivit LJUSARE
+       vid en migrering. Avvikelsen är nu 0,4. Samma fördjupning gäller alla
+       sex skalor och gav blåskalan ett djupblått steg 12 (#002546) där den
+       förut tvingades till grått för att undvika fokusringen.
      ═══════════════════════════════════════════════════════════════════════ */
 
   /* ── Guld ── ankare steg 9 = tidigare --p-gold-500 ── */
@@ -38,7 +44,7 @@
   --p-gold-9: #d4960a;
   --p-gold-10: #c28900;
   --p-gold-11: #966800;
-  --p-gold-12: #604100;
+  --p-gold-12: #513700;
 
   /* ── Koppar ── ankare steg 9 = tidigare --p-copper-500 ── */
   --p-copper-1: #fffcfb;
@@ -52,7 +58,7 @@
   --p-copper-9: #a3491c;
   --p-copper-10: #974012;
   --p-copper-11: #7a2d00;
-  --p-copper-12: #4b1900;
+  --p-copper-12: #401400;
 
   /* ── Neutraler ── ankare steg 9 = tidigare --p-neutral-500 ──
      Ton 100°, kroma 0,008 (Marcus-beslut 2026-07-26). Tonen följer Radix
@@ -75,7 +81,7 @@
   --p-neutral-9: #6b6b6b;
   --p-neutral-10: #62625d;
   --p-neutral-11: #4c4c47;
-  --p-neutral-12: #2d2d2a;
+  --p-neutral-12: #252522;
 
   /* ── Sage ── ankare steg 9 = tidigare --p-green-500 ──
      Heter sage och inte green: det är vad kulören faktiskt är och vad
@@ -93,7 +99,7 @@
   --p-sage-9: #606b57;
   --p-sage-10: #57614e;
   --p-sage-11: #434c3b;
-  --p-sage-12: #262d21;
+  --p-sage-12: #1f2619;
 
   /* ── Blå ── NYTT ankare, flyttat från --p-blue-500 (Marcus-beslut 2026-07-26) ──
      Detta är den enda skala vars ankare INTE är den gamla palettens kulör, och
@@ -124,7 +130,7 @@
   --p-blue-9: #1f6cb0;
   --p-blue-10: #1462a4;
   --p-blue-11: #004c85;
-  --p-blue-12: #292c31;
+  --p-blue-12: #002546;
 
   /* ── Röd ── ankare steg 9 = tidigare --p-red-500 ── */
   --p-red-1: #fffcfb;
@@ -138,7 +144,7 @@
   --p-red-9: #a90000;
   --p-red-10: #9a0000;
   --p-red-11: #790000;
-  --p-red-12: #4b0000;
+  --p-red-12: #3f0000;
 
   /* ═══════════════════════════════════════════════════════════════════════
      DEN GAMLA PALETTEN — utgående

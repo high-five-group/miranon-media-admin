@@ -51,8 +51,18 @@ const FORDELNING = [0, 0.06, 0.155, 0.27, 0.405, 0.56, 0.75, 0.88];
  * ljushet. Relativt och inte absolut: ett mörkt ankare (Miranons koppar) ska
  * inte tvinga fram steg som kollapsar mot svart, och ett ljust ankare
  * (Miranons guld) ska ändå nå läsbar textkontrast.
+ *
+ * Steg 10 ligger nära ankaret med avsikt — det är "solid yta, hover" och ska
+ * vara en nyansskillnad, inte ett kliv.
+ *
+ * Sista faktorn sänktes från 0,56 till 0,50 när mappningen mot den gamla
+ * paletten mättes: neutralernas steg 12 landade på CIE L* 18,4 medan
+ * brödtexten (--mm-text, neutral-900) ligger på 14,2 och primärknappens yta
+ * (neutral-800) på 16,5. Fyra gamla steg mappade till samma nya, och texten
+ * hade blivit LJUSARE vid en migrering. Med 0,50 hamnar steg 12 på 14,6 —
+ * mellan de två roller det ska bära, som skiljer bara 2,3 enheter.
  */
-const UNDER_ANKARET = [0.935, 0.785, 0.56];
+const UNDER_ANKARET = [0.935, 0.785, 0.5];
 
 /**
  * Mättnadsprofil relativt ankarets mättnad. Toppar vid steg 9 (den solida) och
