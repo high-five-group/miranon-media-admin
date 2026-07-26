@@ -1,0 +1,91 @@
+{
+  "$kommentar": "Kurerade fynd från färgauditen 2026-07-26. Den enda handskrivna filen i atlasen — allt annat härleds ur src/. Varje fynd ska ha en verifiering som går att köra om.",
+  "granskat": {
+    "datum": "2026-07-26",
+    "omfattning": "src/ — komponenter, rutter, stilar",
+    "utanfor": "e2e-tester, Airtable-basens egna färgval, docs/ utöver DESIGN-SYSTEM-SPEC.md"
+  },
+  "rent": [
+    {
+      "kontroll": "Hårdkodade hex/rgb/hsl i komponenter",
+      "resultat": "0",
+      "not": "Samtliga träffar i src/ är kommentarstext, inte kod."
+    },
+    { "kontroll": "Arbiträra Tailwind-värden (bg-[#fff])", "resultat": "0" },
+    { "kontroll": "Inline style med färg", "resultat": "0" },
+    { "kontroll": "Färgliteraler i SVG fill/stroke", "resultat": "0" }
+  ],
+  "fynd": [
+    {
+      "id": "F1",
+      "rubrik": "Två döda färgklasser i login",
+      "allvar": "hög",
+      "plats": ["src/routes/login.tsx:111", "src/routes/login.tsx:119"],
+      "vad": "text-red-600 och text-white genererar ingen CSS. src/styles/tailwind.css:12 nollställer Tailwinds defaultpalett med --color-*: initial, och ingen av klasserna finns i @theme.",
+      "verifiering": "grep -c '\\.text-white' dist/assets/*.css → 0, medan .text-text-muted och .bg-primary finns i samma fil.",
+      "foljd": "Felmeddelandet vid inloggning renderas inte rött. Skärmläsare når det ändå via role=alert + aria-live.",
+      "fallan": "text-white på bg-primary hade gett 2,57:1 — under AA. Som det faktiskt renderas ärver texten --mm-text och når 6,04:1. Den döda klassen räddar kontrasten. Rätt åtgärd är att ta bort raden, inte att ersätta den med text-text-inverse."
+    },
+    {
+      "id": "F2",
+      "rubrik": "Två parallella konsumtionsvägar för samma roller",
+      "allvar": "medel",
+      "vad": "@theme exponerar 35 färgroller medan semantic.css definierar 58. Resten konsumeras med arbitrary-property-syntax: bg-(--mm-input-bg), border-(--mm-border-field).",
+      "verifiering": "Samma roll förekommer i båda formerna: bg-text (8 träffar) och bg-(--mm-text) (1), border-text (4) och border-(--mm-text) (1).",
+      "foljd": "14 av 35 @theme-roller används aldrig som utility. Nio av dem lever ändå via var() i CSS-lagret — de är exponerade på fel väg, inte döda."
+    },
+    {
+      "id": "F3",
+      "rubrik": "Tre sätt att uttrycka svag avdelare",
+      "allvar": "medel",
+      "vad": "divide-border (28 träffar), border-text-muted/20 (11) och border-border-light (3) gör samma sak. Mittersta lånar en textroll som kantfärg.",
+      "foljd": "border-text-muted/20 är dessutom den enda alfa-användningen i utility-lagret, medan CSS-lagret bär åtta olika color-mix-procent (6, 8, 10, 12, 14, 15, 16, 22). Genomskinlighet uttrycks på två sätt i två lager utan gemensam skala."
+    },
+    {
+      "id": "F4",
+      "rubrik": "Kategorifärgerna är en död roll-grupp med kulörkollision",
+      "allvar": "låg",
+      "vad": "--mm-cat-personal, cat-event, cat-people, cat-comm, cat-system plus deras fem --color-cat-* i @theme: tio deklarationer, noll användningar i src/.",
+      "verifiering": "grep -rn 'mm-cat-\\|color-cat-' src/ utanför semantic.css och tailwind.css → tomt.",
+      "foljd": "cat-personal och cat-event pekar dessutom på samma primitiv (--p-gold-500). Två av fem kategorier hade inte gått att skilja åt."
+    },
+    {
+      "id": "F5",
+      "rubrik": "Specen har drivit isär från koden",
+      "allvar": "medel",
+      "plats": ["docs/specs/DESIGN-SYSTEM-SPEC.md §1"],
+      "vad": "Specen anger --mm-text-muted: var(--p-neutral-400) (3,50:1 mot vit). Koden har --p-neutral-500 (5,33:1).",
+      "foljd": "Koden är rätt och specen föråldrad. Rollen används 164 gånger — den mest använda färgrollen i appen. Hade specen följts vore 164 platser under AA.",
+      "ovrigt": "Specen listar också 25 komponent-tokens (--mm-stat-card-*, --mm-table-*, --mm-menu-*) som aldrig byggdes, och saknar --mm-state-hover i §1."
+    },
+    {
+      "id": "F6",
+      "rubrik": "Fem primitiver är definierade men aldrig använda",
+      "allvar": "låg",
+      "vad": "--p-gold-200, --p-gold-700, --p-copper-200, --p-copper-400 och --p-neutral-1000 förekommer bara på sin egen definitionsrad.",
+      "foljd": "gold-700 är den enda guldnyans som klarar AA för text (4,91:1 mot vit) — och den används inte. Guld kan därför i praktiken inte bära text någonstans i appen."
+    },
+    {
+      "id": "F7",
+      "rubrik": "Guldskalan är två kulörer hopfogade till en",
+      "allvar": "medel",
+      "vad": "Stegen 100–400 ligger på kulörton ~92° i CIE LCh, stegen 500–700 på ~78°. Ett brott på 13 grader mitt i skalan.",
+      "foljd": "--mm-primary-muted (gold-400) är inte en nedtonad primär utan en annan kulör — olivgul mot primärens amber. Ljushetsskillnaden dem emellan är bara 3,2 L*-enheter; det som skiljer är kulörtonen."
+    },
+    {
+      "id": "F8",
+      "rubrik": "Kopparskalan saknar hela sitt mellanband",
+      "allvar": "medel",
+      "vad": "Mellan copper-200 och copper-400 ligger 33,8 L*-enheter. Där ryms två till tre steg. Skalan saknar dessutom ett 300-steg helt.",
+      "foljd": "Koppar är CTA-färgen och har ingen användbar ton mellan nästan-vitt och mättat."
+    },
+    {
+      "id": "F9",
+      "rubrik": "Varumärkesguldet kan inte bära vit text eller vara UI-yta mot vitt",
+      "allvar": "hög",
+      "vad": "--p-gold-500 (#D4960A) mäter 2,57:1 mot vit yta. WCAG 1.4.11 kräver 3:1 för UI-komponenter och 4,5:1 för brödtext.",
+      "verifiering": "Guld vid kulörton 78,7° klarar 3:1 mot vitt först vid OKLCH-ljushet ≤ 0,67 (#C38900). Varumärkesguldet ligger på 0,715.",
+      "foljd": "Det är en fysisk egenskap hos en mättad gul-orange, inte ett fel i paletten. Guld kan vara yta under mörk text, men aldrig yta under vit text mot vit bakgrund. Det förklarar varför primärknappen är neutral-800 och inte guld."
+    }
+  ]
+}

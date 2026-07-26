@@ -1,0 +1,2248 @@
+{
+  "$description": "Färgatlas för Miranon Media Admin. Genererad ur src/ av scripts/build-farg-atlas.mjs — redigera inte för hand.",
+  "$extensions": {
+    "se.miranon.atlas": {
+      "format": "DTCG 2025.10",
+      "granskat": {
+        "datum": "2026-07-26",
+        "omfattning": "src/ — komponenter, rutter, stilar",
+        "utanfor": "e2e-tester, Airtable-basens egna färgval, docs/ utöver DESIGN-SYSTEM-SPEC.md"
+      },
+      "rent": [
+        {
+          "kontroll": "Hårdkodade hex/rgb/hsl i komponenter",
+          "resultat": "0",
+          "not": "Samtliga träffar i src/ är kommentarstext, inte kod."
+        },
+        {
+          "kontroll": "Arbiträra Tailwind-värden (bg-[#fff])",
+          "resultat": "0"
+        },
+        {
+          "kontroll": "Inline style med färg",
+          "resultat": "0"
+        },
+        {
+          "kontroll": "Färgliteraler i SVG fill/stroke",
+          "resultat": "0"
+        }
+      ],
+      "fynd": [
+        {
+          "id": "F1",
+          "rubrik": "Två döda färgklasser i login",
+          "allvar": "hög",
+          "plats": [
+            "src/routes/login.tsx:111",
+            "src/routes/login.tsx:119"
+          ],
+          "vad": "text-red-600 och text-white genererar ingen CSS. src/styles/tailwind.css:12 nollställer Tailwinds defaultpalett med --color-*: initial, och ingen av klasserna finns i @theme.",
+          "verifiering": "grep -c '\\.text-white' dist/assets/*.css → 0, medan .text-text-muted och .bg-primary finns i samma fil.",
+          "foljd": "Felmeddelandet vid inloggning renderas inte rött. Skärmläsare når det ändå via role=alert + aria-live.",
+          "fallan": "text-white på bg-primary hade gett 2,57:1 — under AA. Som det faktiskt renderas ärver texten --mm-text och når 6,04:1. Den döda klassen räddar kontrasten. Rätt åtgärd är att ta bort raden, inte att ersätta den med text-text-inverse."
+        },
+        {
+          "id": "F2",
+          "rubrik": "Två parallella konsumtionsvägar för samma roller",
+          "allvar": "medel",
+          "vad": "@theme exponerar 35 färgroller medan semantic.css definierar 58. Resten konsumeras med arbitrary-property-syntax: bg-(--mm-input-bg), border-(--mm-border-field).",
+          "verifiering": "Samma roll förekommer i båda formerna: bg-text (8 träffar) och bg-(--mm-text) (1), border-text (4) och border-(--mm-text) (1).",
+          "foljd": "14 av 35 @theme-roller används aldrig som utility. Nio av dem lever ändå via var() i CSS-lagret — de är exponerade på fel väg, inte döda."
+        },
+        {
+          "id": "F3",
+          "rubrik": "Tre sätt att uttrycka svag avdelare",
+          "allvar": "medel",
+          "vad": "divide-border (28 träffar), border-text-muted/20 (11) och border-border-light (3) gör samma sak. Mittersta lånar en textroll som kantfärg.",
+          "foljd": "border-text-muted/20 är dessutom den enda alfa-användningen i utility-lagret, medan CSS-lagret bär åtta olika color-mix-procent (6, 8, 10, 12, 14, 15, 16, 22). Genomskinlighet uttrycks på två sätt i två lager utan gemensam skala."
+        },
+        {
+          "id": "F4",
+          "rubrik": "Kategorifärgerna är en död roll-grupp med kulörkollision",
+          "allvar": "låg",
+          "vad": "--mm-cat-personal, cat-event, cat-people, cat-comm, cat-system plus deras fem --color-cat-* i @theme: tio deklarationer, noll användningar i src/.",
+          "verifiering": "grep -rn 'mm-cat-\\|color-cat-' src/ utanför semantic.css och tailwind.css → tomt.",
+          "foljd": "cat-personal och cat-event pekar dessutom på samma primitiv (--p-gold-500). Två av fem kategorier hade inte gått att skilja åt."
+        },
+        {
+          "id": "F5",
+          "rubrik": "Specen har drivit isär från koden",
+          "allvar": "medel",
+          "plats": [
+            "docs/specs/DESIGN-SYSTEM-SPEC.md §1"
+          ],
+          "vad": "Specen anger --mm-text-muted: var(--p-neutral-400) (3,50:1 mot vit). Koden har --p-neutral-500 (5,33:1).",
+          "foljd": "Koden är rätt och specen föråldrad. Rollen används 164 gånger — den mest använda färgrollen i appen. Hade specen följts vore 164 platser under AA.",
+          "ovrigt": "Specen listar också 25 komponent-tokens (--mm-stat-card-*, --mm-table-*, --mm-menu-*) som aldrig byggdes, och saknar --mm-state-hover i §1."
+        },
+        {
+          "id": "F6",
+          "rubrik": "Fem primitiver är definierade men aldrig använda",
+          "allvar": "låg",
+          "vad": "--p-gold-200, --p-gold-700, --p-copper-200, --p-copper-400 och --p-neutral-1000 förekommer bara på sin egen definitionsrad.",
+          "foljd": "gold-700 är den enda guldnyans som klarar AA för text (4,91:1 mot vit) — och den används inte. Guld kan därför i praktiken inte bära text någonstans i appen."
+        },
+        {
+          "id": "F7",
+          "rubrik": "Guldskalan är två kulörer hopfogade till en",
+          "allvar": "medel",
+          "vad": "Stegen 100–400 ligger på kulörton ~92° i CIE LCh, stegen 500–700 på ~78°. Ett brott på 13 grader mitt i skalan.",
+          "foljd": "--mm-primary-muted (gold-400) är inte en nedtonad primär utan en annan kulör — olivgul mot primärens amber. Ljushetsskillnaden dem emellan är bara 3,2 L*-enheter; det som skiljer är kulörtonen."
+        },
+        {
+          "id": "F8",
+          "rubrik": "Kopparskalan saknar hela sitt mellanband",
+          "allvar": "medel",
+          "vad": "Mellan copper-200 och copper-400 ligger 33,8 L*-enheter. Där ryms två till tre steg. Skalan saknar dessutom ett 300-steg helt.",
+          "foljd": "Koppar är CTA-färgen och har ingen användbar ton mellan nästan-vitt och mättat."
+        },
+        {
+          "id": "F9",
+          "rubrik": "Varumärkesguldet kan inte bära vit text eller vara UI-yta mot vitt",
+          "allvar": "hög",
+          "vad": "--p-gold-500 (#D4960A) mäter 2,57:1 mot vit yta. WCAG 1.4.11 kräver 3:1 för UI-komponenter och 4,5:1 för brödtext.",
+          "verifiering": "Guld vid kulörton 78,7° klarar 3:1 mot vitt först vid OKLCH-ljushet ≤ 0,67 (#C38900). Varumärkesguldet ligger på 0,715.",
+          "foljd": "Det är en fysisk egenskap hos en mättad gul-orange, inte ett fel i paletten. Guld kan vara yta under mörk text, men aldrig yta under vit text mot vit bakgrund. Det förklarar varför primärknappen är neutral-800 och inte guld."
+        }
+      ],
+      "kontrakt": {
+        "guld": [
+          {
+            "krav": "Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11)",
+            "uppmatt": 2.5715342059066595,
+            "golv": 3,
+            "haller": false
+          },
+          {
+            "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
+            "uppmatt": 4.582618212842003,
+            "golv": 4.5,
+            "haller": true
+          },
+          {
+            "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
+            "uppmatt": 8.697465054258151,
+            "golv": 7,
+            "haller": true
+          },
+          {
+            "krav": "Steg 12 mot steg 1",
+            "uppmatt": 9.111082451057824,
+            "golv": 7,
+            "haller": true
+          },
+          {
+            "krav": "Steg 7 mot steg 2 (kant urskiljbar)",
+            "uppmatt": 1.867328537485545,
+            "golv": 1.4,
+            "haller": true
+          }
+        ],
+        "koppar": [
+          {
+            "krav": "Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11)",
+            "uppmatt": 5.953914077009506,
+            "golv": 3,
+            "haller": true
+          },
+          {
+            "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
+            "uppmatt": 8.576392803207634,
+            "golv": 4.5,
+            "haller": true
+          },
+          {
+            "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
+            "uppmatt": 13.13611881700308,
+            "golv": 7,
+            "haller": true
+          },
+          {
+            "krav": "Steg 12 mot steg 1",
+            "uppmatt": 14.301789344854214,
+            "golv": 7,
+            "haller": true
+          },
+          {
+            "krav": "Steg 7 mot steg 2 (kant urskiljbar)",
+            "uppmatt": 3.223322381725675,
+            "golv": 1.4,
+            "haller": true
+          }
+        ],
+        "neutral": [
+          {
+            "krav": "Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11)",
+            "uppmatt": 5.32921162976606,
+            "golv": 3,
+            "haller": true
+          },
+          {
+            "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
+            "uppmatt": 7.861985717921205,
+            "golv": 4.5,
+            "haller": true
+          },
+          {
+            "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
+            "uppmatt": 12.411518727747291,
+            "golv": 7,
+            "haller": true
+          },
+          {
+            "krav": "Steg 12 mot steg 1",
+            "uppmatt": 13.539270812799575,
+            "golv": 7,
+            "haller": true
+          },
+          {
+            "krav": "Steg 7 mot steg 2 (kant urskiljbar)",
+            "uppmatt": 2.991157226261048,
+            "golv": 1.4,
+            "haller": true
+          }
+        ]
+      }
+    }
+  },
+  "primitiv": {
+    "$type": "color",
+    "$description": "Lager 1 — råa värden.",
+    "gold": {
+      "100": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9843,
+            0.9529,
+            0.8784
+          ],
+          "hex": "#fbf3e0"
+        },
+        "$description": "--p-gold-100 · CIE L* 96.0 · kontrast mot vit 1.11:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-100",
+            "anvandning": 1,
+            "status": "levande",
+            "oklch": {
+              "L": 0.9653,
+              "C": 0.0264,
+              "h": 87.9
+            }
+          }
+        }
+      },
+      "200": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9608,
+            0.902,
+            0.7373
+          ],
+          "hex": "#f5e6bc"
+        },
+        "$description": "--p-gold-200 · CIE L* 91.5 · kontrast mot vit 1.24:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-200",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9265,
+              "C": 0.0571,
+              "h": 90.7
+            }
+          }
+        }
+      },
+      "300": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9412,
+            0.8392,
+            0.5412
+          ],
+          "hex": "#f0d68a"
+        },
+        "$description": "--p-gold-300 · CIE L* 86.2 · kontrast mot vit 1.43:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-300",
+            "anvandning": 1,
+            "status": "levande",
+            "oklch": {
+              "L": 0.881,
+              "C": 0.0995,
+              "h": 91.3
+            }
+          }
+        }
+      },
+      "400": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7686,
+            0.6588,
+            0.251
+          ],
+          "hex": "#c4a840"
+        },
+        "$description": "--p-gold-400 · CIE L* 69.5 · kontrast mot vit 2.33:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-400",
+            "anvandning": 1,
+            "status": "levande",
+            "oklch": {
+              "L": 0.7371,
+              "C": 0.1254,
+              "h": 93.9
+            }
+          }
+        }
+      },
+      "500": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.8314,
+            0.5882,
+            0.0392
+          ],
+          "hex": "#d4960a"
+        },
+        "$description": "--p-gold-500 · CIE L* 66.4 · kontrast mot vit 2.57:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-500",
+            "anvandning": 5,
+            "status": "levande",
+            "oklch": {
+              "L": 0.7153,
+              "C": 0.147,
+              "h": 78.7
+            }
+          }
+        }
+      },
+      "600": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7216,
+            0.502,
+            0.0392
+          ],
+          "hex": "#b8800a"
+        },
+        "$description": "--p-gold-600 · CIE L* 57.7 · kontrast mot vit 3.43:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-600",
+            "anvandning": 1,
+            "status": "levande",
+            "oklch": {
+              "L": 0.6402,
+              "C": 0.1316,
+              "h": 77.4
+            }
+          }
+        }
+      },
+      "700": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5882,
+            0.4078,
+            0.0392
+          ],
+          "hex": "#96680a"
+        },
+        "$description": "--p-gold-700 · CIE L* 47.5 · kontrast mot vit 4.91:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-700",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.5515,
+              "C": 0.1123,
+              "h": 77.4
+            }
+          }
+        }
+      }
+    },
+    "copper": {
+      "100": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9922,
+            0.9569,
+            0.9333
+          ],
+          "hex": "#fdf4ee"
+        },
+        "$description": "--p-copper-100 · CIE L* 96.7 · kontrast mot vit 1.09:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-100",
+            "anvandning": 2,
+            "status": "levande",
+            "oklch": {
+              "L": 0.9725,
+              "C": 0.0126,
+              "h": 56.3
+            }
+          }
+        }
+      },
+      "200": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9608,
+            0.8471,
+            0.7686
+          ],
+          "hex": "#f5d8c4"
+        },
+        "$description": "--p-copper-200 · CIE L* 88.2 · kontrast mot vit 1.35:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-200",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.901,
+              "C": 0.0421,
+              "h": 56.7
+            }
+          }
+        }
+      },
+      "400": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7686,
+            0.4157,
+            0.2275
+          ],
+          "hex": "#c46a3a"
+        },
+        "$description": "--p-copper-400 · CIE L* 54.4 · kontrast mot vit 3.84:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-400",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.6188,
+              "C": 0.1304,
+              "h": 47
+            }
+          }
+        }
+      },
+      "500": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6392,
+            0.2863,
+            0.1098
+          ],
+          "hex": "#a3491c"
+        },
+        "$description": "--p-copper-500 · CIE L* 42.2 · kontrast mot vit 5.95:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-500",
+            "anvandning": 6,
+            "status": "levande",
+            "oklch": {
+              "L": 0.5148,
+              "C": 0.1319,
+              "h": 44
+            }
+          }
+        }
+      },
+      "600": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5412,
+            0.2392,
+            0.0902
+          ],
+          "hex": "#8a3d17"
+        },
+        "$description": "--p-copper-600 · CIE L* 35.6 · kontrast mot vit 7.61:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-600",
+            "anvandning": 2,
+            "status": "levande",
+            "oklch": {
+              "L": 0.4563,
+              "C": 0.1162,
+              "h": 43.9
+            }
+          }
+        }
+      }
+    },
+    "neutral": {
+      "0": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        },
+        "$description": "--p-neutral-0 · CIE L* 100.0 · kontrast mot vit 1.00:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-0",
+            "anvandning": 7,
+            "status": "levande",
+            "oklch": {
+              "L": 1,
+              "C": 0,
+              "h": 89.9
+            }
+          }
+        }
+      },
+      "25": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9804,
+            0.9804,
+            0.9725
+          ],
+          "hex": "#fafaf8"
+        },
+        "$description": "--p-neutral-25 · CIE L* 98.2 · kontrast mot vit 1.05:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-25",
+            "anvandning": 1,
+            "status": "levande",
+            "oklch": {
+              "L": 0.9845,
+              "C": 0.0026,
+              "h": 106.4
+            }
+          }
+        }
+      },
+      "50": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9608,
+            0.9608,
+            0.9529
+          ],
+          "hex": "#f5f5f3"
+        },
+        "$description": "--p-neutral-50 · CIE L* 96.5 · kontrast mot vit 1.09:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-50",
+            "anvandning": 1,
+            "status": "levande",
+            "oklch": {
+              "L": 0.9696,
+              "C": 0.0026,
+              "h": 106.4
+            }
+          }
+        }
+      },
+      "100": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9294,
+            0.9333,
+            0.9137
+          ],
+          "hex": "#edeee9"
+        },
+        "$description": "--p-neutral-100 · CIE L* 93.9 · kontrast mot vit 1.17:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-100",
+            "anvandning": 2,
+            "status": "levande",
+            "oklch": {
+              "L": 0.947,
+              "C": 0.0067,
+              "h": 115.7
+            }
+          }
+        }
+      },
+      "200": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.8824,
+            0.8902,
+            0.8824
+          ],
+          "hex": "#e1e3e1"
+        },
+        "$description": "--p-neutral-200 · CIE L* 90.0 · kontrast mot vit 1.29:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-200",
+            "anvandning": 3,
+            "status": "levande",
+            "oklch": {
+              "L": 0.9137,
+              "C": 0.0034,
+              "h": 145.5
+            }
+          }
+        }
+      },
+      "300": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7686,
+            0.7686,
+            0.7608
+          ],
+          "hex": "#c4c4c2"
+        },
+        "$description": "--p-neutral-300 · CIE L* 79.1 · kontrast mot vit 1.75:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-300",
+            "anvandning": 2,
+            "status": "levande",
+            "oklch": {
+              "L": 0.8197,
+              "C": 0.0028,
+              "h": 106.5
+            }
+          }
+        }
+      },
+      "400": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5373,
+            0.5373,
+            0.5373
+          ],
+          "hex": "#898989"
+        },
+        "$description": "--p-neutral-400 · CIE L* 57.1 · kontrast mot vit 3.50:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-400",
+            "anvandning": 6,
+            "status": "levande",
+            "oklch": {
+              "L": 0.6301,
+              "C": 0,
+              "h": 89.9
+            }
+          }
+        }
+      },
+      "500": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4196,
+            0.4196,
+            0.4196
+          ],
+          "hex": "#6b6b6b"
+        },
+        "$description": "--p-neutral-500 · CIE L* 45.2 · kontrast mot vit 5.33:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-500",
+            "anvandning": 3,
+            "status": "levande",
+            "oklch": {
+              "L": 0.5278,
+              "C": 0,
+              "h": 89.9
+            }
+          }
+        }
+      },
+      "600": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.3216,
+            0.3176,
+            0.3176
+          ],
+          "hex": "#525151"
+        },
+        "$description": "--p-neutral-600 · CIE L* 34.5 · kontrast mot vit 7.91:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-600",
+            "anvandning": 1,
+            "status": "levande",
+            "oklch": {
+              "L": 0.4359,
+              "C": 0.0013,
+              "h": 17.2
+            }
+          }
+        }
+      },
+      "700": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2275,
+            0.2275,
+            0.2275
+          ],
+          "hex": "#3a3a3a"
+        },
+        "$description": "--p-neutral-700 · CIE L* 24.4 · kontrast mot vit 11.37:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-700",
+            "anvandning": 2,
+            "status": "levande",
+            "oklch": {
+              "L": 0.3485,
+              "C": 0,
+              "h": 89.9
+            }
+          }
+        }
+      },
+      "800": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1569,
+            0.1608,
+            0.1569
+          ],
+          "hex": "#282928"
+        },
+        "$description": "--p-neutral-800 · CIE L* 16.5 · kontrast mot vit 14.60:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-800",
+            "anvandning": 2,
+            "status": "levande",
+            "oklch": {
+              "L": 0.2795,
+              "C": 0.0023,
+              "h": 145.5
+            }
+          }
+        }
+      },
+      "900": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1412,
+            0.1412,
+            0.1412
+          ],
+          "hex": "#242424"
+        },
+        "$description": "--p-neutral-900 · CIE L* 14.2 · kontrast mot vit 15.52:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-900",
+            "anvandning": 1,
+            "status": "levande",
+            "oklch": {
+              "L": 0.2603,
+              "C": 0,
+              "h": 89.9
+            }
+          }
+        }
+      },
+      "1000": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.102,
+            0.102,
+            0.102
+          ],
+          "hex": "#1a1a1a"
+        },
+        "$description": "--p-neutral-1000 · CIE L* 9.3 · kontrast mot vit 17.40:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-1000",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.2178,
+              "C": 0,
+              "h": 89.9
+            }
+          }
+        }
+      }
+    },
+    "blue": {
+      "100": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9373,
+            0.9647,
+            1
+          ],
+          "hex": "#eff6ff"
+        },
+        "$description": "--p-blue-100 · CIE L* 96.6 · kontrast mot vit 1.09:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-100",
+            "anvandning": 1,
+            "status": "levande",
+            "oklch": {
+              "L": 0.9705,
+              "C": 0.0142,
+              "h": 254.6
+            }
+          }
+        }
+      },
+      "500": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2902,
+            0.4196,
+            0.5412
+          ],
+          "hex": "#4a6b8a"
+        },
+        "$description": "--p-blue-500 · CIE L* 44.0 · kontrast mot vit 5.58:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-500",
+            "anvandning": 5,
+            "status": "levande",
+            "oklch": {
+              "L": 0.5154,
+              "C": 0.0625,
+              "h": 247.6
+            }
+          }
+        }
+      },
+      "700": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1059,
+            0.2863,
+            0.3961
+          ],
+          "hex": "#1b4965"
+        },
+        "$description": "--p-blue-700 · CIE L* 29.3 · kontrast mot vit 9.60:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-700",
+            "anvandning": 3,
+            "status": "levande",
+            "oklch": {
+              "L": 0.3875,
+              "C": 0.0688,
+              "h": 238.9
+            }
+          }
+        }
+      }
+    },
+    "red": {
+      "100": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9961,
+            0.949,
+            0.949
+          ],
+          "hex": "#fef2f2"
+        },
+        "$description": "--p-red-100 · CIE L* 96.4 · kontrast mot vit 1.09:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-100",
+            "anvandning": 1,
+            "status": "levande",
+            "oklch": {
+              "L": 0.9705,
+              "C": 0.0129,
+              "h": 17.4
+            }
+          }
+        }
+      },
+      "500": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6627,
+            0,
+            0
+          ],
+          "hex": "#a90000"
+        },
+        "$description": "--p-red-500 · CIE L* 34.9 · kontrast mot vit 7.82:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-500",
+            "anvandning": 2,
+            "status": "levande",
+            "oklch": {
+              "L": 0.4614,
+              "C": 0.1893,
+              "h": 29.2
+            }
+          }
+        }
+      }
+    },
+    "green": {
+      "100": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9412,
+            0.9922,
+            0.9569
+          ],
+          "hex": "#f0fdf4"
+        },
+        "$description": "--p-green-100 · CIE L* 98.2 · kontrast mot vit 1.05:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-green-100",
+            "anvandning": 1,
+            "status": "levande",
+            "oklch": {
+              "L": 0.9819,
+              "C": 0.0181,
+              "h": 155.8
+            }
+          }
+        }
+      },
+      "500": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.3765,
+            0.4196,
+            0.3412
+          ],
+          "hex": "#606b57"
+        },
+        "$description": "--p-green-500 · CIE L* 43.8 · kontrast mot vit 5.62:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-green-500",
+            "anvandning": 2,
+            "status": "levande",
+            "oklch": {
+              "L": 0.5124,
+              "C": 0.0335,
+              "h": 131.1
+            }
+          }
+        }
+      }
+    }
+  },
+  "roll": {
+    "$type": "color",
+    "$description": "Lager 2 — semantiska roller.",
+    "primary": {
+      "$value": "{primitiv.gold.500}",
+      "$description": "--mm-primary → var(--p-gold-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-primary",
+          "anvandning": 4,
+          "viaUtility": 2,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "primary-hover": {
+      "$value": "{primitiv.gold.600}",
+      "$description": "--mm-primary-hover → var(--p-gold-600)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-primary-hover",
+          "anvandning": 0,
+          "viaUtility": 0,
+          "viaVar": 0,
+          "status": "oanvänd",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "primary-tint": {
+      "$value": "{primitiv.gold.100}",
+      "$description": "--mm-primary-tint → var(--p-gold-100)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-primary-tint",
+          "anvandning": 7,
+          "viaUtility": 6,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "primary-pale": {
+      "$value": "{primitiv.gold.300}",
+      "$description": "--mm-primary-pale → var(--p-gold-300)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-primary-pale",
+          "anvandning": 1,
+          "viaUtility": 0,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "primary-muted": {
+      "$value": "{primitiv.gold.400}",
+      "$description": "--mm-primary-muted → var(--p-gold-400)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-primary-muted",
+          "anvandning": 1,
+          "viaUtility": 1,
+          "viaVar": 0,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "accent": {
+      "$value": "{primitiv.copper.500}",
+      "$description": "--mm-accent → var(--p-copper-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-accent",
+          "anvandning": 4,
+          "viaUtility": 4,
+          "viaVar": 0,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "accent-hover": {
+      "$value": "{primitiv.copper.600}",
+      "$description": "--mm-accent-hover → var(--p-copper-600)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-accent-hover",
+          "anvandning": 0,
+          "viaUtility": 0,
+          "viaVar": 0,
+          "status": "oanvänd",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "accent-tint": {
+      "$value": "{primitiv.copper.100}",
+      "$description": "--mm-accent-tint → var(--p-copper-100)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-accent-tint",
+          "anvandning": 0,
+          "viaUtility": 0,
+          "viaVar": 0,
+          "status": "oanvänd",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "text": {
+      "$value": "{primitiv.neutral.900}",
+      "$description": "--mm-text → var(--p-neutral-900)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-text",
+          "anvandning": 54,
+          "viaUtility": 33,
+          "viaVar": 21,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "text-secondary": {
+      "$value": "{primitiv.neutral.600}",
+      "$description": "--mm-text-secondary → var(--p-neutral-600)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-text-secondary",
+          "anvandning": 99,
+          "viaUtility": 96,
+          "viaVar": 3,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "text-muted": {
+      "$value": "{primitiv.neutral.500}",
+      "$description": "--mm-text-muted → var(--p-neutral-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-text-muted",
+          "anvandning": 177,
+          "viaUtility": 176,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "text-inverse": {
+      "$value": "{primitiv.neutral.0}",
+      "$description": "--mm-text-inverse → var(--p-neutral-0)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-text-inverse",
+          "anvandning": 13,
+          "viaUtility": 11,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "bg": {
+      "$value": "{primitiv.neutral.0}",
+      "$description": "--mm-bg → var(--p-neutral-0)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-bg",
+          "anvandning": 20,
+          "viaUtility": 7,
+          "viaVar": 13,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "bg-subtle": {
+      "$value": "{primitiv.neutral.25}",
+      "$description": "--mm-bg-subtle → var(--p-neutral-25)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-bg-subtle",
+          "anvandning": 6,
+          "viaUtility": 6,
+          "viaVar": 0,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "bg-muted": {
+      "$value": "{primitiv.neutral.50}",
+      "$description": "--mm-bg-muted → var(--p-neutral-50)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-bg-muted",
+          "anvandning": 65,
+          "viaUtility": 58,
+          "viaVar": 7,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "bg-emphasized": {
+      "$value": "{primitiv.neutral.100}",
+      "$description": "--mm-bg-emphasized → var( --p-neutral-100 )",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-bg-emphasized",
+          "anvandning": 31,
+          "viaUtility": 30,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "bg-placeholder": {
+      "$value": "{primitiv.neutral.200}",
+      "$description": "--mm-bg-placeholder → var( --p-neutral-200 )",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-bg-placeholder",
+          "anvandning": 1,
+          "viaUtility": 0,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "surface": {
+      "$value": "{primitiv.neutral.0}",
+      "$description": "--mm-surface → var(--p-neutral-0)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-surface",
+          "anvandning": 40,
+          "viaUtility": 38,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "surface-raised": {
+      "$value": "{primitiv.neutral.0}",
+      "$description": "--mm-surface-raised → var(--p-neutral-0)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-surface-raised",
+          "anvandning": 0,
+          "viaUtility": 0,
+          "viaVar": 0,
+          "status": "oanvänd",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "surface-overlay": {
+      "$value": "{primitiv.neutral.0}",
+      "$description": "--mm-surface-overlay → var(--p-neutral-0)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-surface-overlay",
+          "anvandning": 2,
+          "viaUtility": 0,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "state-hover": {
+      "$description": "Beräknad: color-mix(in srgb, var(--mm-text) 6%, transparent)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-state-hover",
+          "anvandning": 4,
+          "viaUtility": 0,
+          "viaVar": 4,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "state-hover-contrast": {
+      "$description": "Beräknad: color-mix(in srgb, var(--mm-text) 12%, transparent)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-state-hover-contrast",
+          "anvandning": 2,
+          "viaUtility": 0,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "border": {
+      "$value": "{primitiv.neutral.200}",
+      "$description": "--mm-border → var(--p-neutral-200)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-border",
+          "anvandning": 59,
+          "viaUtility": 54,
+          "viaVar": 5,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "border-light": {
+      "$value": "{primitiv.neutral.100}",
+      "$description": "--mm-border-light → var(--p-neutral-100)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-border-light",
+          "anvandning": 3,
+          "viaUtility": 3,
+          "viaVar": 0,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "border-strong": {
+      "$value": "{primitiv.neutral.300}",
+      "$description": "--mm-border-strong → var(--p-neutral-300)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-border-strong",
+          "anvandning": 38,
+          "viaUtility": 36,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "border-field": {
+      "$value": "{primitiv.neutral.400}",
+      "$description": "--mm-border-field → var( --p-neutral-400 )",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-border-field",
+          "anvandning": 2,
+          "viaUtility": 0,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "border-focus": {
+      "$value": "{primitiv.gold.500}",
+      "$description": "--mm-border-focus → var(--p-gold-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-border-focus",
+          "anvandning": 1,
+          "viaUtility": 1,
+          "viaVar": 0,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "scrollbar-thumb": {
+      "$value": "{primitiv.neutral.400}",
+      "$description": "--mm-scrollbar-thumb → var( --p-neutral-400 )",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-scrollbar-thumb",
+          "anvandning": 2,
+          "viaUtility": 0,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "success": {
+      "$value": "{primitiv.green.500}",
+      "$description": "--mm-success → var(--p-green-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-success",
+          "anvandning": 33,
+          "viaUtility": 8,
+          "viaVar": 25,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "success-bg": {
+      "$value": "{primitiv.green.100}",
+      "$description": "--mm-success-bg → var(--p-green-100)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-success-bg",
+          "anvandning": 6,
+          "viaUtility": 2,
+          "viaVar": 4,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "error": {
+      "$value": "{primitiv.red.500}",
+      "$description": "--mm-error → var(--p-red-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-error",
+          "anvandning": 29,
+          "viaUtility": 11,
+          "viaVar": 18,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "error-bg": {
+      "$value": "{primitiv.red.100}",
+      "$description": "--mm-error-bg → var(--p-red-100)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-error-bg",
+          "anvandning": 3,
+          "viaUtility": 0,
+          "viaVar": 3,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "info": {
+      "$value": "{primitiv.blue.500}",
+      "$description": "--mm-info → var(--p-blue-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-info",
+          "anvandning": 3,
+          "viaUtility": 0,
+          "viaVar": 3,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "info-bg": {
+      "$value": "{primitiv.blue.100}",
+      "$description": "--mm-info-bg → var(--p-blue-100)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-info-bg",
+          "anvandning": 1,
+          "viaUtility": 0,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "warning": {
+      "$value": "{primitiv.copper.500}",
+      "$description": "--mm-warning → var(--p-copper-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-warning",
+          "anvandning": 12,
+          "viaUtility": 9,
+          "viaVar": 3,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "warning-bg": {
+      "$value": "{primitiv.copper.100}",
+      "$description": "--mm-warning-bg → var(--p-copper-100)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-warning-bg",
+          "anvandning": 4,
+          "viaUtility": 3,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "cat-personal": {
+      "$value": "{primitiv.gold.500}",
+      "$description": "--mm-cat-personal → var(--p-gold-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-cat-personal",
+          "anvandning": 0,
+          "viaUtility": 0,
+          "viaVar": 0,
+          "status": "oanvänd",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "cat-event": {
+      "$value": "{primitiv.gold.500}",
+      "$description": "--mm-cat-event → var(--p-gold-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-cat-event",
+          "anvandning": 0,
+          "viaUtility": 0,
+          "viaVar": 0,
+          "status": "oanvänd",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "cat-people": {
+      "$value": "{primitiv.copper.500}",
+      "$description": "--mm-cat-people → var(--p-copper-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-cat-people",
+          "anvandning": 0,
+          "viaUtility": 0,
+          "viaVar": 0,
+          "status": "oanvänd",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "cat-comm": {
+      "$value": "{primitiv.blue.500}",
+      "$description": "--mm-cat-comm → var(--p-blue-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-cat-comm",
+          "anvandning": 0,
+          "viaUtility": 0,
+          "viaVar": 0,
+          "status": "oanvänd",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "cat-system": {
+      "$value": "{primitiv.neutral.400}",
+      "$description": "--mm-cat-system → var(--p-neutral-400)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-cat-system",
+          "anvandning": 0,
+          "viaUtility": 0,
+          "viaVar": 0,
+          "status": "oanvänd",
+          "exponeradITheme": true
+        }
+      }
+    },
+    "kurs-fjarrskadning": {
+      "$value": "{primitiv.blue.500}",
+      "$description": "--mm-kurs-fjarrskadning → var(--p-blue-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-kurs-fjarrskadning",
+          "anvandning": 2,
+          "viaUtility": 0,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "kurs-rim1": {
+      "$value": "{primitiv.green.500}",
+      "$description": "--mm-kurs-rim1 → var(--p-green-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-kurs-rim1",
+          "anvandning": 2,
+          "viaUtility": 0,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "kurs-rim2": {
+      "$value": "{primitiv.copper.500}",
+      "$description": "--mm-kurs-rim2 → var(--p-copper-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-kurs-rim2",
+          "anvandning": 2,
+          "viaUtility": 0,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "kurs-rim3": {
+      "$value": "{primitiv.red.500}",
+      "$description": "--mm-kurs-rim3 → var(--p-red-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-kurs-rim3",
+          "anvandning": 2,
+          "viaUtility": 0,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "kurs-annat": {
+      "$value": "{primitiv.neutral.500}",
+      "$description": "--mm-kurs-annat → var(--p-neutral-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-kurs-annat",
+          "anvandning": 2,
+          "viaUtility": 0,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "erfarenhet-ny": {
+      "$value": "{primitiv.neutral.300}",
+      "$description": "--mm-erfarenhet-ny → var(--p-neutral-300)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-erfarenhet-ny",
+          "anvandning": 1,
+          "viaUtility": 0,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "erfarenhet-mellan": {
+      "$value": "{primitiv.neutral.500}",
+      "$description": "--mm-erfarenhet-mellan → var(--p-neutral-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-erfarenhet-mellan",
+          "anvandning": 1,
+          "viaUtility": 0,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "erfarenhet-erfaren": {
+      "$value": "{primitiv.neutral.700}",
+      "$description": "--mm-erfarenhet-erfaren → var(--p-neutral-700)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-erfarenhet-erfaren",
+          "anvandning": 1,
+          "viaUtility": 0,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "btn-primary-bg": {
+      "$value": "{primitiv.neutral.800}",
+      "$description": "--mm-btn-primary-bg → var(--p-neutral-800)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-btn-primary-bg",
+          "anvandning": 9,
+          "viaUtility": 0,
+          "viaVar": 9,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "btn-primary-text": {
+      "$value": "{primitiv.neutral.0}",
+      "$description": "--mm-btn-primary-text → var(--p-neutral-0)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-btn-primary-text",
+          "anvandning": 2,
+          "viaUtility": 0,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "btn-primary-hover": {
+      "$value": "{primitiv.neutral.700}",
+      "$description": "--mm-btn-primary-hover → var(--p-neutral-700)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-btn-primary-hover",
+          "anvandning": 2,
+          "viaUtility": 0,
+          "viaVar": 2,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "btn-secondary-text": {
+      "$value": "{primitiv.neutral.800}",
+      "$description": "--mm-btn-secondary-text → var(--p-neutral-800)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-btn-secondary-text",
+          "anvandning": 1,
+          "viaUtility": 0,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "btn-secondary-border": {
+      "$value": "{primitiv.neutral.200}",
+      "$description": "--mm-btn-secondary-border → var(--p-neutral-200)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-btn-secondary-border",
+          "anvandning": 1,
+          "viaUtility": 0,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "btn-cta-bg": {
+      "$value": "{primitiv.copper.500}",
+      "$description": "--mm-btn-cta-bg → var(--p-copper-500)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-btn-cta-bg",
+          "anvandning": 1,
+          "viaUtility": 0,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "btn-cta-text": {
+      "$value": "{primitiv.neutral.0}",
+      "$description": "--mm-btn-cta-text → var(--p-neutral-0)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-btn-cta-text",
+          "anvandning": 1,
+          "viaUtility": 0,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "btn-cta-hover": {
+      "$value": "{primitiv.copper.600}",
+      "$description": "--mm-btn-cta-hover → var(--p-copper-600)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-btn-cta-hover",
+          "anvandning": 1,
+          "viaUtility": 0,
+          "viaVar": 1,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    },
+    "focus-ring": {
+      "$value": "{primitiv.blue.700}",
+      "$description": "--mm-focus-ring → var(--p-blue-700)",
+      "$extensions": {
+        "se.miranon.atlas": {
+          "cssVar": "--mm-focus-ring",
+          "anvandning": 15,
+          "viaUtility": 0,
+          "viaVar": 15,
+          "status": "levande",
+          "exponeradITheme": false
+        }
+      }
+    }
+  },
+  "forslag": {
+    "$type": "color",
+    "$description": "Förslag — ej implementerat.",
+    "guld": {
+      "1": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.9882,
+            0.9725
+          ],
+          "hex": "#fffcf8"
+        },
+        "$description": "Steg 1 — Sidbakgrund"
+      },
+      "2": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.9647,
+            0.9098
+          ],
+          "hex": "#fff6e8"
+        },
+        "$description": "Steg 2 — Subtil bakgrund"
+      },
+      "3": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.9255,
+            0.8078
+          ],
+          "hex": "#ffecce"
+        },
+        "$description": "Steg 3 — Komponentyta"
+      },
+      "4": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.8745,
+            0.6784
+          ],
+          "hex": "#ffdfad"
+        },
+        "$description": "Steg 4 — Komponentyta, hover"
+      },
+      "5": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9882,
+            0.8157,
+            0.5451
+          ],
+          "hex": "#fcd08b"
+        },
+        "$description": "Steg 5 — Komponentyta, aktiv"
+      },
+      "6": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.949,
+            0.7569,
+            0.4353
+          ],
+          "hex": "#f2c16f"
+        },
+        "$description": "Steg 6 — Subtil kant"
+      },
+      "7": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.898,
+            0.6824,
+            0.3059
+          ],
+          "hex": "#e5ae4e"
+        },
+        "$description": "Steg 7 — Kant och fokusring"
+      },
+      "8": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.8667,
+            0.6314,
+            0.1843
+          ],
+          "hex": "#dda12f"
+        },
+        "$description": "Steg 8 — Kant, hover"
+      },
+      "9": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.8314,
+            0.5882,
+            0.0392
+          ],
+          "hex": "#d4960a"
+        },
+        "$description": "Steg 9 — Solid yta"
+      },
+      "10": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7608,
+            0.5373,
+            0
+          ],
+          "hex": "#c28900"
+        },
+        "$description": "Steg 10 — Solid yta, hover"
+      },
+      "11": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5882,
+            0.4078,
+            0
+          ],
+          "hex": "#966800"
+        },
+        "$description": "Steg 11 — Text, låg kontrast"
+      },
+      "12": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.3765,
+            0.2549,
+            0
+          ],
+          "hex": "#604100"
+        },
+        "$description": "Steg 12 — Text, hög kontrast"
+      }
+    },
+    "koppar": {
+      "1": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.9882,
+            0.9843
+          ],
+          "hex": "#fffcfb"
+        },
+        "$description": "Steg 1 — Sidbakgrund"
+      },
+      "2": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.9412,
+            0.9137
+          ],
+          "hex": "#fff0e9"
+        },
+        "$description": "Steg 2 — Subtil bakgrund"
+      },
+      "3": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.8627,
+            0.8039
+          ],
+          "hex": "#ffdccd"
+        },
+        "$description": "Steg 3 — Komponentyta"
+      },
+      "4": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9922,
+            0.7647,
+            0.6706
+          ],
+          "hex": "#fdc3ab"
+        },
+        "$description": "Steg 4 — Komponentyta, hover"
+      },
+      "5": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9373,
+            0.6706,
+            0.5569
+          ],
+          "hex": "#efab8e"
+        },
+        "$description": "Steg 5 — Komponentyta, aktiv"
+      },
+      "6": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.8667,
+            0.5686,
+            0.4392
+          ],
+          "hex": "#dd9170"
+        },
+        "$description": "Steg 6 — Subtil kant"
+      },
+      "7": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7686,
+            0.4471,
+            0.302
+          ],
+          "hex": "#c4724d"
+        },
+        "$description": "Steg 7 — Kant och fokusring"
+      },
+      "8": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7059,
+            0.3608,
+            0.2
+          ],
+          "hex": "#b45c33"
+        },
+        "$description": "Steg 8 — Kant, hover"
+      },
+      "9": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6392,
+            0.2863,
+            0.1098
+          ],
+          "hex": "#a3491c"
+        },
+        "$description": "Steg 9 — Solid yta"
+      },
+      "10": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5922,
+            0.251,
+            0.0706
+          ],
+          "hex": "#974012"
+        },
+        "$description": "Steg 10 — Solid yta, hover"
+      },
+      "11": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4784,
+            0.1765,
+            0
+          ],
+          "hex": "#7a2d00"
+        },
+        "$description": "Steg 11 — Text, låg kontrast"
+      },
+      "12": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2941,
+            0.098,
+            0
+          ],
+          "hex": "#4b1900"
+        },
+        "$description": "Steg 12 — Text, hög kontrast"
+      }
+    },
+    "neutral": {
+      "1": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9922,
+            0.9922,
+            0.9922
+          ],
+          "hex": "#fdfdfd"
+        },
+        "$description": "Steg 1 — Sidbakgrund"
+      },
+      "2": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9529,
+            0.9529,
+            0.9529
+          ],
+          "hex": "#f3f3f3"
+        },
+        "$description": "Steg 2 — Subtil bakgrund"
+      },
+      "3": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.898,
+            0.898,
+            0.898
+          ],
+          "hex": "#e5e5e5"
+        },
+        "$description": "Steg 3 — Komponentyta"
+      },
+      "4": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.8275,
+            0.8275,
+            0.8275
+          ],
+          "hex": "#d3d3d3"
+        },
+        "$description": "Steg 4 — Komponentyta, hover"
+      },
+      "5": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.749,
+            0.749,
+            0.749
+          ],
+          "hex": "#bfbfbf"
+        },
+        "$description": "Steg 5 — Komponentyta, aktiv"
+      },
+      "6": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6588,
+            0.6588,
+            0.6588
+          ],
+          "hex": "#a8a8a8"
+        },
+        "$description": "Steg 6 — Subtil kant"
+      },
+      "7": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5529,
+            0.5529,
+            0.5529
+          ],
+          "hex": "#8d8d8d"
+        },
+        "$description": "Steg 7 — Kant och fokusring"
+      },
+      "8": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4824,
+            0.4824,
+            0.4824
+          ],
+          "hex": "#7b7b7b"
+        },
+        "$description": "Steg 8 — Kant, hover"
+      },
+      "9": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4196,
+            0.4196,
+            0.4196
+          ],
+          "hex": "#6b6b6b"
+        },
+        "$description": "Steg 9 — Solid yta"
+      },
+      "10": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.3804,
+            0.3804,
+            0.3804
+          ],
+          "hex": "#616161"
+        },
+        "$description": "Steg 10 — Solid yta, hover"
+      },
+      "11": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2941,
+            0.2941,
+            0.2941
+          ],
+          "hex": "#4b4b4b"
+        },
+        "$description": "Steg 11 — Text, låg kontrast"
+      },
+      "12": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1765,
+            0.1765,
+            0.1765
+          ],
+          "hex": "#2d2d2d"
+        },
+        "$description": "Steg 12 — Text, hög kontrast"
+      }
+    }
+  }
+}
