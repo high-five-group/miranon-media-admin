@@ -15,8 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 91 ⏸️ PAUSAD IGEN (2026-07-27, andra pausen — inför
-verktygs-ombyggnaden)** — **RESUMEN GAV SEX RESEARCH-PASS, FYRA
+**Session 91 🔄 ÅTERUPPTAGEN (2026-07-27 via `session-resume`, efter andra
+pausen)** — **RESUMEN GAV SEX RESEARCH-PASS, FYRA
 MEKANISERINGAR OCH TVÅ RIVNA EGNA SLUTSATSER.** Merge queue **STÄNGD** (batchar
 ej `merge_group`-bygg + kräver org-ägt repo). Shardning **blockerad** (Airtable
 ej klonbar). Push-kadensen **låg rätt**. **Hermetik-mätningen körd skarpt:** 865
@@ -31,14 +31,22 @@ före körning) · fråga 1:s rekommendation byttes helt efter att Marcus uppgav
 Supabase-migrering **inom ett par veckor**. **VERKTYGS-LUCKAN AVTÄCKT (Marcus
 fråga):** arkitektur researchades, **verktygsval inte** — fyra egenbyggen där
 mogna verktyg finns (`npm-run-all` · `gh run watch` · MSW · Nx/`paths-filter`).
-**Marcus order: behåll men INAKTIVERA det byggda, bygg om som proffsen.**
-Mekanisering 1–4 klara (docs-klassning · `check:docs` · `ci-wait` exit 4 ·
-hub §6 Delegering v1.3); 6–7 öppna. **NÄSTA: `session-resume` av 91 →
-verktygs-ombyggnaden → avsluta grillningen (4 obesvarade beslut) → de 19
+**Marcus order: behåll men INAKTIVERA det byggda, bygg om som proffsen** —
+**scopet därefter KORRIGERAT** av verktygs-passet: tre av fyra egenbyggen var
+motiverade, kvar står MSW-bytet + listparitets-grinden. Mekanisering 1–4 klara
+(docs-klassning · `check:docs` · `ci-wait` exit 4 · hub §6 Delegering v1.3);
+6–7 öppna. **RESUME 2026-07-27:** numreringen disk-verifierad oförändrad ·
+T100:s research-pass startat (leverans-mekaniken, EJ samma fråga som det landade
+§6-passet) · **nx.dev-fallet utrett:** länkarna är GILTIGA (200 lokalt + 0 errors
+i grön CI-körning 30223666880), den röda main-körningen 30223287042 var
+**transient** och överlevde lychees tre default-retries — `.lycheeignore` vore
+fel verktyg, retry-härdning är rätt. **NÄSTA: T100-passets utfall → länkgrindens
+form (`--offline` finns inbyggt = uppdelningen kräver ingen egen konstruktion) →
+verktygs-åtgärderna → avsluta grillningen (4 obesvarade beslut) → de 19
 acceptance-filerna.** **AVVIKELSE ATT LÖSA:** byggplanens Fas E säger `DEFER`
 post-Fas 7, Marcus säger veckor — byggplanen är styrande och ska uppdateras
-först. Numrering: 91/079/L360/T100/f46/task-53. Full narrativ: sessionsdok S91
-Del 1–7 + PAUSLÄGE. *(Föregående fokus-text för S91 nedan.)*
+först. Numrering: 91/079/L360/T101/f46/task-53. Full narrativ: sessionsdok S91
+Del 1–7 + Paushistorik. *(Föregående fokus-text för S91 nedan.)*
 
 **Session 91 (första passet, 2026-07-26)** —
 **DESIGN-REVIEWEN AV TASK-48, OCH DAGEN
