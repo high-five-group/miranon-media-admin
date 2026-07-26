@@ -32,6 +32,20 @@
   --mm-surface-raised: var(--p-neutral-0); /* + shadow */
   --mm-surface-overlay: var(--p-neutral-0); /* + shadow-xl */
 
+  /* ── Interaktions-lager (state layers, S91) ──
+     GENOMSKINLIGA skrim, inte opaka toner: de mörknar vilken yta som helst
+     under sig med ett konstant perceptuellt steg. Rollen finns för
+     återkoppling på ytor vars bakgrund ÄGS AV KONSUMENTEN och alltså inte
+     är känd när regeln skrivs — en opak platta kollapsar då in i tracket
+     (empiriskt: ToggleButtonGroup-hovern mot Betalningars
+     bg-emphasized-track, uppmätt ΔE00 0,00). Branschmönstret är Material 3:s
+     state layers och Radix alpha-skalor. Uppmätt steg med 6 %: ΔE00 2,77 mot
+     bg-muted · 2,60 mot bg-emphasized · 2,63 mot vit — jämför komponentens
+     egen vald/ovald-skillnad på ΔE00 2,30. Text-secondary håller ≥6,0:1 på
+     samtliga. Kontrast-varianten dubblar steget (ΔE00 ≈5,4; text ≥5,4:1). */
+  --mm-state-hover: color-mix(in srgb, var(--mm-text) 6%, transparent);
+  --mm-state-hover-contrast: color-mix(in srgb, var(--mm-text) 12%, transparent);
+
   /* ── Borders ── */
   --mm-border: var(--p-neutral-200);
   --mm-border-light: var(--p-neutral-100);

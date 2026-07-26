@@ -1211,9 +1211,65 @@ additivt vid verkligt behov).
 - Track: `rounded-full`, `--mm-bg-muted`, 4 px inre luft (`p-1`).
 - Vald pill: `--mm-bg` (vit), semibold, `shadow-sm`, `--mm-text`.
 - Ovald pill: transparent, medium, `--mm-text-secondary`.
-- Statisk (ingen transition/animation) — reduced-motion/print utan
-  specialfall (NavCard-precedenten; globala neutraliseringen täcker).
+- Ingen animation. Enda övergången är hover-plattans
+  `motion-safe:transition-[background-color]` (se nedan) —
+  reduced-motion/print utan specialfall (globala neutraliseringen täcker).
 - Träffyta: md-pillen ≈40 px hög, tracket ≥44 px.
+
+### Hover-återkoppling
+
+Hover är inte ett TILLSTÅND utan ÅTERKOPPLING på att ytan går att klicka.
+Tillstånden (vald/disabled) bärs av data-attributen; hovern ligger vid
+sidan av dem och rör bara ovald pill. Infört efter Marcus design-review
+2026-07-26 (S91) — flikarna saknade affordansen som resten av repots
+chip- och pill-ytor har.
+
+- Bärare: `data-[hovered]` (React Arias `useHover`, Button/Input-
+  precedenten) — inte Tailwinds `hover:`. `useHover` sätter attributet
+  endast för mus/penna (`pointerType === 'touch'` returnerar tidigt) och
+  kopplas bort när knappen är disabled. Touch- och disabled-golvet blir
+  därmed STRUKTURELLT, inte en override som kan glida. Strikt starkare än
+  `@media (hover:hover)`, som är enhets-förmåga och ger klibbig hover på
+  hybrid-enheter.
+- Platta: `--mm-state-hover` på ovald pill
+  (`not-data-[selected]:data-[hovered]`). Vald pill står ORÖRD — den är
+  redan upplyft, och en platta ovanpå hade suddat gränsen mellan "vald"
+  och "muspekaren är här". Riktningarna går isär: vald går ljusare än
+  tracket, hover går mörkare.
+- **Plattan är ett genomskinligt SKRIM, inte en opak ton.** Tracket ägs av
+  konsumenten (`className` på gruppen) — Betalningar sätter
+  `bg-bg-emphasized` på sitt. Med en opak `bg-bg-emphasized`-platta blev
+  hovern på just den ytan uppmätt ΔE00 **0,00**: den försvann helt. Ett
+  skrim mörknar i stället vilken bakgrund som helst med ett konstant steg.
+  Regeln generaliserar: **återkoppling på en yta vars bakgrund du inte
+  äger ska vara ett alfa-lager, aldrig en fast ton.** Branschmönstret är
+  Material 3:s state layers och Radix alpha-skalor.
+- `prefers-contrast: more`: plattan växlar till
+  `--mm-state-hover-contrast` (dubbla alfat).
+- Övergång: `motion-safe:transition-[background-color]`. MEDVETET smalare
+  än precedentens `transition-colors` — den listan omfattar i Tailwind v4
+  även `outline-color`, vilket hade tonat in den globala
+  `:focus-visible`-ringen över 150 ms. Fokusindikatorn ska stå direkt.
+- Tangentbordet får sin likvärdiga återkoppling ur fokusringen, inte ur
+  plattan; kanalerna är åtskilda, inte dubblerade.
+
+Uppmätt (sRGB, skrimmet KOMPOSITERAT över respektive track; WCAG 2.x +
+CIEDE2000):
+
+| Track | Platta | Steg mot track (ΔE00) | Etikett på plattan |
+|---|---|---|---|
+| `bg-muted` (standard) | rgb(232,232,231) | 2,77 | 6,45:1 (AA ✓) |
+| `bg-emphasized` (Betalningar) | rgb(225,226,221) | 2,60 | 6,07:1 (AA ✓) |
+| `bg` (vit, hypotetisk) | rgb(242,242,242) | 2,63 | 7,07:1 (AA ✓) |
+| `bg-muted` + `contrast-more` | rgb(220,220,218) | 5,39 | 5,76:1 (AA ✓) |
+| `bg-emphasized` + `contrast-more` | rgb(213,214,209) | 5,33 | 5,41:1 (AA ✓) |
+
+Referens: komponentens egen vald/ovald-skillnad (vit pill mot `bg-muted`)
+är ΔE00 **2,30**. Plattan ligger alltså på samma urskiljbarhetsnivå som
+den redan godkända vald-signalen — men åt motsatt håll, så "hovrad ovald"
+och "vald" kan inte förväxlas — och håller det steget oberoende av vilken
+ton tracket bär. Kontrast-gränserna och track-oberoendet vaktas som
+computed-assertioner i sviten, inte som påstående.
 
 ### Tokens
 
@@ -1221,6 +1277,12 @@ Inga egna komponent-tokens: formen konsumerar semantiska tokens direkt
 via Tailwind-mappningen (`bg-bg-muted` → `--mm-bg-muted` osv.) —
 RadioGroup-precedentens token-konsumtion. Komponent-tokens införs först
 när ett tema-behov kräver omdirigering per komponent.
+
+Hover-skrimmet bor i SEMANTISKA lagret som `--mm-state-hover` /
+`--mm-state-hover-contrast` — en roll ("interaktions-lager"), inte en
+komponent-token: rollen är generell för varje yta som behöver återkoppling
+mot en bakgrund den inte äger, och är därmed återanvändbar av nästa
+primitiv utan ändring.
 
 Beteendekontraktet är computed-style-testat i
 `tests/a11y/ToggleButtonGroup.spec.ts`; axe-skanningen av demo-sektionen
@@ -1529,5 +1591,6 @@ segment-utskickets "Skicka till N personer" (`danger` → `success`).
 | 2026-07-25 | §19 Button — intent- och storleks-reglerna (task-18.16, Marcus review-våg 2): grön-knapp-regeln (når-utomstående ⇒ success, internt ⇒ primary; danger = destruktions-klassen, aldrig "oåterkalleligt"), dynamisk-intent-mönstret, K77-rivningen öppet bokförd med återvändo-not, storleksskalan sm/md/lg per ytklass, app-bred audit bokförd (personkortets Skicka bekräftelse + segment-utskickets faro-knapp flippade till success). |
 | 2026-07-26 | §19 PREJUDIKAT-RIVNING (task-48): de två prejudikaten ur 18.16:s fix-våg — deltagarkortens Skicka bekräftelse (`success`/`outline`, Greta-fallet) och Bekräfta alla-pillen (`success`/`subtle`) — upphörde att existera när markera-läget ersatte hantera-flödet i Anmälda deltagare. Raderna behålls som beslutshistorik med öppen not; emphasis-regeln själv är oförändrad. Nya prejudikat: batch-barens `success` solid (blockets primära handlingsyta) + Markera-knappens `primary`/`subtle` `sm` på grupp-rubrikraden. **KORRIGERAD 2026-07-26 (S91) — se raden nedan.** |
 | 2026-07-26 | §19 LÄGESÖPPNAR-UNDANTAGET + korrigering av samma dags prejudikat (task-48 fix-våg 1, Marcus design-review S91): Markera-knappen är `primary` **solid** `sm` = S86-facit, INTE `subtle` som landningen tidigare samma dag skrev in; Avbryt ärver `primary`/`subtle` på samma plats (ghost saknade bakgrund och läste som textlänk). Ytklass-tabellens toolbar-rad bär nu undantaget: en lägesöppnare är sektionens primära kontroll, inte ett rad-verktyg. Processnoten bevarad i §19-kroppen — en skriven regel väger aldrig tyngre än en Marcus-låst form, och kollisionen ska lyftas i stället för att avgöras av den som bygger. |
+| 2026-07-26 | §16 MOTIVERINGS-RIVNING + hover-återkoppling (Marcus design-review S91: "borde inte 'Manuella' och 'Medföljande' i översta togglen där ha hover?"). Den gamla koden motiverade frånvaron med att pekare/tangentbord/touch skulle få "identisk semantik" — den motiveringen blandade ihop TILLSTÅND med ÅTERKOPPLING och är riven, inte kompletterad. Ovald pill får hover-skrimmet `--mm-state-hover` via `not-data-[selected]:data-[hovered]`; vald pill står orörd; `prefers-contrast: more` växlar till `--mm-state-hover-contrast`. Bäraren är React Arias `data-hovered` (Button/Input-precedenten) — touch och disabled utesluts strukturellt av `useHover`, inte av en override. Övergången är MEDVETET smalare än precedentens `transition-colors` (den drar med `outline-color` och hade tonat in fokusringen). NYA SEMANTISKA TOKENS: `--mm-state-hover` / `--mm-state-hover-contrast` (interaktions-lager, alfa-skrim) — en opak platta mätte ΔE00 0,00 mot Betalningars egna `bg-bg-emphasized`-track, dvs. hovern försvann på den ytan; skrim mörknar valfri bakgrund med konstant steg. Kontrast + ΔE00 uppmätt och computed-vaktat i sviten på båda tracken. |
 | 2026-07-25 | §19 REVIDERAD till TVÅDIMENSIONELL regel (Marcus beslut A, morgongranskningen — 18.16 facit-revidering): intent styr färgen × emphasis styrs av ytklassen (solid = sidnivå/primär handlingsyta, max en per yta/sektion · outline/subtle = kort och listrader, aldrig solid fyllnad inuti kort · subtle kompakt = tabellrader/toolbars). Ursprungsformens endimensionella regel riven öppet (revideringsnot i §19); K77-rivningen står kvar. Button-primitiven får emphasis-varianter + `--mm-button-*-outline/subtle-*`-tokens (success-textbäraren AA-mörkad 15 %). Flippar: deltagarkortens Skicka bekräftelse → success/outline (Greta-fallet) · Bekräfta alla-pillen → success/subtle. Research-grund: Polaris tone×variant · Carbon danger i tre viktnivåer · M3 text-buttons-i-kort · FK "en primär per del". |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |

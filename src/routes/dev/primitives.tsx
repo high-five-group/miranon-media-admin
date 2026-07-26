@@ -265,7 +265,8 @@ function PrimitivesPage() {
         <p className="mt-2 text-small text-text-secondary">
           Pill-toggeln (S72-facitets form, spec §16): alltid exakt ett val, radiogroup-semantik,
           pilnavigering. Tre belagda former: period (spread), vy-ikoner (inline) och flik-kapslar
-          (sm).
+          (sm). Hovra en OVALD pill — plattan är ett genomskinligt skrim, så den håller sitt steg
+          även på ett track vars ton konsumenten satt själv (fjärde gruppen).
         </p>
         <div className="mt-4 flex flex-col gap-4">
           {/* Period-formen — spread: likbreda segment som fyller bredden. */}
@@ -309,6 +310,26 @@ function PrimitivesPage() {
               </ToggleButton>
               <ToggleButton id="medfoljande" size="sm">
                 Medföljande
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </div>
+          {/* OMSTÄLLT TRACK (S91) — Betalningar sätter `bg-bg-emphasized` på
+              sitt track via className. Ytan finns här för att vakta att
+              hover-skrimmet håller sitt steg på ett track vars ton ÄGS AV
+              KONSUMENTEN: en opak hover-platta kollapsade in i just den här
+              tonen och försvann helt. */}
+          <div>
+            <ToggleButtonGroup
+              label="Omställt track"
+              className="bg-bg-emphasized"
+              defaultSelectedKey="saknar"
+              onSelectionChange={(key) => setSenastTryckt(`omstallt: ${key}`)}
+            >
+              <ToggleButton id="saknar" size="sm">
+                Saknar betalning
+              </ToggleButton>
+              <ToggleButton id="klara" size="sm">
+                Klara
               </ToggleButton>
             </ToggleButtonGroup>
           </div>
