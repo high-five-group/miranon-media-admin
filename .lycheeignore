@@ -156,3 +156,15 @@
 ^https://events-support\.ringcentral\.com/.*$
 ^https://help\.tickettailor\.com/.*$
 ^https://sched\.com/.*$
+
+# dl.acm.org — ACM Digital Library bakom bot-skydd (S91, 2026-07-26).
+# Två instanser i PR-run 30206013619 (samma URL, två förekomster i
+# docs/research/push-kadens-agent-arbetstrad-2026-07-26.md). Klassbevis:
+#   dl.acm.org   CI 403 / lokalt 403 med Chrome-UA → UA/fingerprint-klassen,
+#                inte GHA-IP-klassen (jfr splashthat/ringcentral/tickettailor).
+# DOI-länken är den kanoniska referensen till Rigby & Bird, "Convergent
+# contemporary software peer review practices" (FSE 2013). Research-passet
+# kunde inte extrahera PDF:en och citerar siffrorna via sekundär återgivning —
+# det står öppet i forskningsdokumentet. Det är grindens hämtning som blockeras,
+# inte källans existens.
+^https://dl\.acm\.org/doi/.*$
