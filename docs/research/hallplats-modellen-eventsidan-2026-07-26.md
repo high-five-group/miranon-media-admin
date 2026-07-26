@@ -234,8 +234,11 @@ ingenstans — varken i kod, bas, ordlista eller historik.**
    fritt ämne och fri mailtext. Den känner inte till mallen
    `medveten-kontakt-deltagarinformation` och skriver inte `Deltagarinfo
    skickad`. Sökning på `participant-info` i `supabase/` och `src/` ger **noll
-   träffar**. `type='participant-info'`-vägen som `data-model.md` beskriver är
-   Vue-erans EF, inte denna app.
+   träffar**. `type='participant-info'`-vägen som `data-model.md` beskriver
+   tillhör en ANNAN kodbas — källhänvisningen i § F.3 pekar på
+   `psionautics/supabase/functions/send-email/index.ts` (commit `1a07d1b`,
+   2026-04-27). Att vägen inte finns här är verifierat; exakt vilket repo som
+   äger den är inte verifierat i detta pass och påstås därför inte.
 
 6. **Det enda verkliga eventinfo-utskicket i loggen** (`data-model.md` § Skarpa
    skick, rad 988): 2026-04-16 09:48, mallen
