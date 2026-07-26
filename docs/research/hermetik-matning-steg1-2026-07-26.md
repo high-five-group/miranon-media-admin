@@ -195,12 +195,36 @@ mekanismer kan förklara stegringen, och båda är egenskaper hos uppställninge
 
 **Detta är ett fynd i sig, inte bara en störning i mätningen:** e2e-sviten mot
 delad muterbar staging är känslig för sin egen historik. Samma svit, samma kod,
-olika utfall beroende på vad som körts före. Det är precis den egenskap ett
-mutexfritt hermetiskt jobb tar bort — och den är ett argument för utbrytningen
-som mätningen råkade producera på köpet.
+olika utfall beroende på vad som körts före.
 
 Skarp purge kördes **inte**: de 19 äldre sentinelerna är inte den här sessionens
 att radera, och CI:s `Staging sentinel purge`-jobb plockar dem vid nästa körning.
+
+#### RÄTTELSE — fyndet är svagare än det först formulerades
+
+Första lydelsen av avsnittet ovan påstod att icke-idempotensen var "ett argument
+för utbrytningen som mätningen råkade producera". **Den slutsatsen höll inte när
+den prövades.**
+
+Samma kod kördes i CI (PR #253, körning `30220126225`) och staging-jobbet blev
+**grönt på 9 min 48 s — noll fel**, medan mina lokala körningar gav upp till sex.
+Skillnaden är mekanisk och lätt att belägga:
+
+- CI: `test-staging` har `needs: [purge]`, alltså **städas basen före varje
+  körning**.
+- Lokalt: `npm run test:e2e:staging` är enbart `playwright test
+  --project=chromium-authenticated` — **ingen purge alls**.
+
+Degraderingen 1 → 1 → 2 → 6 mätte alltså effekten av att köra fyra sviter i rad
+**utan städning**, vilket CI aldrig gör. Sviten är inte idempotent *utan purge* —
+och purge-jobbet finns just därför.
+
+Vad som står kvar: sviten är beroende av en städmekanism för att vara stabil, och
+den beroendekedjan finns inte i ett hermetiskt jobb. Det är en verklig men
+**mycket svagare** fördel än den ursprungliga formuleringen antydde, och den får
+inte användas som bärande argument för utbrytningen. Flakighet i CI existerar
+(TASK-27 bevakar den, och S90 bokförde ett skarpt fall), men **denna mätning
+bevisar den inte**.
 
 ## Vad detta betyder för steg 2
 
