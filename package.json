@@ -23,6 +23,8 @@
     "test:a11y": "PLAYWRIGHT_A11Y_DEV_SERVER=1 playwright test --project=a11y",
     "test:visual": "PLAYWRIGHT_VISUAL_DEV_SERVER=1 playwright test --project=visual-desktop --project=visual-mobile",
     "purge:staging": "node --env-file-if-exists=.env.seed scripts/purge-staging-sentinels.mjs",
+    "seed:review": "node --env-file-if-exists=.env.seed scripts/seed-review-fixture.mjs",
+    "seed:review:clean": "node --env-file-if-exists=.env.seed scripts/seed-review-fixture.mjs --clean",
     "metrics:ci": "node scripts/ci-metrics.mjs",
     "postinstall": "git config core.hooksPath .githooks"
   },
