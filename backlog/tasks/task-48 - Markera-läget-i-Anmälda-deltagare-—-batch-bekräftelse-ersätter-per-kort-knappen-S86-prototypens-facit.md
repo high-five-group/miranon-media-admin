@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-07-25 10:51'
-updated_date: '2026-07-25 22:39'
+updated_date: '2026-07-26 11:19'
 labels:
   - ready-for-agent
 dependencies: []
@@ -35,8 +35,6 @@ LÅSTA BYGGKRAV (facit):
 - [x] #2 K46/K47/K48-rivningarna öppet bokförda i kod-kommentarer + spec; §19-audit-raden för Greta-fallet uppdaterad
 <!-- AC:END -->
 
-
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -54,6 +52,40 @@ KROCK-VARNING: §19:s prejudikatlista ändras av denna landning — 'Skicka bekr
 
 PROTOTYP: proto/s86-deltagarkort-markering finns ENDAST lokalt (aldrig pushad). Kortkoden kan INTE absorberas — dess MarkerbartKort gör hela kortet till en RAC Checkbox med kortinnehållet inuti, vilket är oförenligt med krav 5 (L303: interaktivt bor aldrig i interaktivt). Absorberbart är batch-barens breddlås (osynlig platshållare + tabular-nums) och scroll-klassen.
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-26 11:07
+---
+REVIEW-VÅG 1 (Marcus design-review 2026-07-26, S91) — tre fynd, alla åtgärdade. TVÅ AV DEM REVIDERAR LÅSTA BYGGKRAV och bokförs därför öppet:
+
+1. BYGGKRAV 1 — FACIT-AVVIKELSE RÄTTAD. Markera-knappen levererades som `primary`/`subtle` (ljusgrå); S86-facit visar MÖRK SOLID. Byggkravet sa 'intent primary, sm' och låste aldrig emphasis — bygget läste §19:s toolbar-rad, fann kollisionen mot det Marcus-låsta facit, löste den tyst till regelns fördel och skrev in sin lösning i §19 som nytt prejudikat. Rättat till default solid = `--mm-btn-primary-bg` #282928 (mätt: rgb(40, 41, 40) på vit text) = exakt facit. §19 amenderad med LÄGESÖPPNAR-UNDANTAGET (en knapp som försätter sektionen i ett annat läge är sektionens primära kontroll, inte ett rad-verktyg) + processnot: en skriven regel väger aldrig tyngre än en Marcus-låst form, kollisionen ska lyftas.
+
+2. BYGGKRAV 7 — CHECK-GLYFEN RIVEN PÅ MARCUS-BESLUT. Kravet sanktionerade en 'diskret check-indikator', men mätning visar att den inte behövdes: ovalt kort har transparent kant (rgba(0,0,0,0)), valt kort får #606b57 — skillnaden är att en KONTUR UPPSTÅR (närvaro/frånvaro av visuellt element), inte ett färgbyte, så WCAG 1.4.1 håller utan glyf. Kanten mäter 5,6:1 mot vitt (1.4.11 kräver 3:1) och 3,2:1 i ren ljushet mot `--mm-border-strong` under prefers-contrast: more. Den gröna plattan mäter 1,05:1 mot vitt och bär i praktiken ingenting för den färgblinde — KANTEN är bäraren, dokumenterat i kod så den inte tonas ned senare. Glyfen var dessutom `CheckCheck` (dubbel bock = 'skickat och läst' i meddelande-konventionen), fel signal på ett kort vars poäng är att något strax SKA skickas. E2e omskrivet: vaktar nu frånvaro av glyf + transparent oval kant i stället för glyfens närvaro.
+
+3. AVBRYT-KNAPPEN (Marcus-tillägg i samma våg). `ghost` → `primary`/`subtle`: ghost saknade bakgrund helt och läste som textlänk. Ärver nu plattan Markera lämnade (mätt i vila: #282928 @ 10 %). Emphasis-paret solid/subtle på samma plats.
+
+Verifiering: 17/17 e2e gröna inkl. axe 0; biome 0 fel; typecheck rent. DoD #5 fortsatt öppen — Marcus granskar byggkrav 3–6 parallellt.
+---
+
+created: 2026-07-26 11:19
+---
+REVIEW-VÅG 2 (Marcus design-review 2026-07-26, S91) — fynd 4: Obekräftade-kön är inte längre fällbar.
+
+Marcus: 'Obekräftade behöver ju inte ha dropdown-funktionen, den visar ju aldrig mer än 3 kort och du bör alltid markera och tömma listan, varför skulle du vilja gömma den.'
+
+Håller. Byggkrav 4 låser kön till ~3 synliga kort med inline-scroll, så fällningen sparade ingen vertikal plats — den kunde bara dölja arbete som väntar. KÖ vs REGISTER är distinktionen (samma som L353): Obekräftade ska tömmas, Bekräftade är ett arkiv som växer mot hela deltagarlistan och behåller därför sin fällning.
+
+ÄNDRAT: `GruppRubrik` har nu två former — utelämnas `onToggle` renderas ren rubrikrad utan knapp, chevron och aria-expanded. Obekräftade använder den; Bekräftade är oförändrad. Panelens `hidden` borttagen. `oppna`-objektet ersatt av `bekraftadeOppen` (en boolean — det fanns inget andra tillstånd kvar att lagra).
+
+SIDOEFFEKT VÄRD ATT NOTERA: Markera-knappen hade en lapp som force-öppnade panelen (`setOppna(... obekraftade: true)`) eftersom läget annars kunde startas i en kollapsad yta. Lappen är riven — mekanismen behövs inte när ytan inte går att stänga. Fällningen bar alltså en dold kostnad utöver sig själv.
+
+Detta reviderar S73-facits accordion-PAR (EventDetail-docblocken beskrev 'Obekräftade/Bekräftade-accordions'). Öppet bokfört.
+
+VERIFIERING: 25/25 e2e gröna över event-deltagare + event-bekraftelse inkl. axe 0 i tre lägen; biome 0 fel; typecheck rent. Renderat kontrollerat: 0 knappar och 0 chevroner på kö-rubriken, 1 kvar på arkivet. Testerna uppdaterade — accordion-testet omskrivet till 'kön är FAST och äldst först' med en REGRESSIONSVAKT som faller om en växling återinförs på kö-rubriken.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

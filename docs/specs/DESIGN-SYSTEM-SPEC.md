@@ -1440,7 +1440,7 @@ default `solid`) väljs av ytan knappen sitter i — aldrig av handlingen:
 |---|---|
 | **Sidnivå / primär handlingsyta** (formulärens knapprader, dialog-actions, sektionens eget redigeringsflöde) | `solid`. Max EN solid per yta; en sida med självständiga sektioner bär max en solid per sektion. |
 | **Kort och listrader** (deltagar-/personkort, instans-kort i listor) | `outline` eller `subtle` — intent-färgen bärs av **text + kant**, ALDRIG solid fyllnad inuti kort. |
-| **Tabellrader / toolbars** (grupp-rubrikrader, rad-verktyg) | `subtle` kompakt (`size="sm"`). |
+| **Tabellrader / toolbars** (grupp-rubrikrader, rad-verktyg) | `subtle` kompakt (`size="sm"`). **Undantag — lägesöppnaren:** en knapp som försätter hela sektionen i ett annat läge (markera-läge, redigeringsläge) är sektionens primära kontroll, inte ett rad-verktyg, och bär `solid`. Utgången ur läget bär `subtle` på samma plats. |
 
 - Emphasis ändrar ALDRIG intenten. Greta-fallets kortfots-knapp *var*
   `success` (når utomstående) viktad för kortets ytklass
@@ -1471,8 +1471,20 @@ default `solid`) väljs av ytan knappen sitter i — aldrig av handlingen:
   landning: markera-lägets batch-bar bär `success` **solid** — baren är
   blockets primära handlingsyta (inte en kort- eller radyta), vilket är
   emphasis-regeln tillämpad, inte ett undantag från den — och
-  Markera-knappen på grupp-rubrikraden är `primary`/`subtle` `sm`
-  (toolbar-ytklass; att öppna ett urvalsläge skriver inget utåt).
+  Markera/Avbryt-paret på grupp-rubrikraden bär `primary` `sm` i
+  emphasis-paret **solid** (Markera) / **subtle** (Avbryt), per
+  lägesöppnar-undantaget i ytklass-tabellen ovan.
+- **KORRIGERING 2026-07-26 (S91, Marcus design-review):** raden ovan löd
+  först att Markera-knappen är `primary`/`subtle` `sm` med hänvisning till
+  toolbar-ytklassen. Det var fel, och felet är värt att bevara som varning:
+  S86-facit — Marcus-låst med orden "Lås denna" — visar en MÖRK SOLID knapp
+  (`--mm-btn-primary-bg` = `#282928`). Bygget läste §19:s toolbar-rad,
+  fann en kollision mot facit, löste den tyst till regelns fördel och
+  skrev sedan in sin egen lösning här som nytt prejudikat. **En skriven
+  regel väger aldrig tyngre än en Marcus-låst form; kollisionen ska
+  lyftas, inte avgöras av den som bygger.** Lägesöppnar-undantaget ovan
+  är den principiella upplösningen — det var den distinktion som saknades
+  i regeln, inte facit som hade fel.
 
 ### Storleks-reglerna
 
@@ -1515,6 +1527,7 @@ segment-utskickets "Skicka till N personer" (`danger` → `success`).
 | 2026-07-21 | §14 REGELRIVNING: "navigationsrader bär inte chevron" riven öppet (S73 K25-prövningens Marcus-kvitterade konsekvens; PRD task-18 beslut 15) → ny regel "chevron betyder att raden leder vidare"; NavCard-formen får chevron 18 px höger i sekundärfärgen, Mer-menyn följer med för app-koherens (task-18.3). |
 | 2026-07-22 | §18 SlideToConfirm — dra-till-bekräfta-primitiven (S73-facit-utökningen K77–K84): API, förseglade beslut (hand-byggd APG-switch — klick-toggle river avsikts-mekaniken; 90/10-trösklar; inget isDisabled), K79-drag-vakterna + L300-ref-tillståndet, computed-låst form utan fyllnad (K82), pling med preferens-respekt, semantisk token-konsumtion utan komponent-tokens (task-19.1). |
 | 2026-07-25 | §19 Button — intent- och storleks-reglerna (task-18.16, Marcus review-våg 2): grön-knapp-regeln (når-utomstående ⇒ success, internt ⇒ primary; danger = destruktions-klassen, aldrig "oåterkalleligt"), dynamisk-intent-mönstret, K77-rivningen öppet bokförd med återvändo-not, storleksskalan sm/md/lg per ytklass, app-bred audit bokförd (personkortets Skicka bekräftelse + segment-utskickets faro-knapp flippade till success). |
-| 2026-07-26 | §19 PREJUDIKAT-RIVNING (task-48): de två prejudikaten ur 18.16:s fix-våg — deltagarkortens Skicka bekräftelse (`success`/`outline`, Greta-fallet) och Bekräfta alla-pillen (`success`/`subtle`) — upphörde att existera när markera-läget ersatte hantera-flödet i Anmälda deltagare. Raderna behålls som beslutshistorik med öppen not; emphasis-regeln själv är oförändrad. Nya prejudikat: batch-barens `success` solid (blockets primära handlingsyta) + Markera-knappens `primary`/`subtle` `sm` på grupp-rubrikraden. |
+| 2026-07-26 | §19 PREJUDIKAT-RIVNING (task-48): de två prejudikaten ur 18.16:s fix-våg — deltagarkortens Skicka bekräftelse (`success`/`outline`, Greta-fallet) och Bekräfta alla-pillen (`success`/`subtle`) — upphörde att existera när markera-läget ersatte hantera-flödet i Anmälda deltagare. Raderna behålls som beslutshistorik med öppen not; emphasis-regeln själv är oförändrad. Nya prejudikat: batch-barens `success` solid (blockets primära handlingsyta) + Markera-knappens `primary`/`subtle` `sm` på grupp-rubrikraden. **KORRIGERAD 2026-07-26 (S91) — se raden nedan.** |
+| 2026-07-26 | §19 LÄGESÖPPNAR-UNDANTAGET + korrigering av samma dags prejudikat (task-48 fix-våg 1, Marcus design-review S91): Markera-knappen är `primary` **solid** `sm` = S86-facit, INTE `subtle` som landningen tidigare samma dag skrev in; Avbryt ärver `primary`/`subtle` på samma plats (ghost saknade bakgrund och läste som textlänk). Ytklass-tabellens toolbar-rad bär nu undantaget: en lägesöppnare är sektionens primära kontroll, inte ett rad-verktyg. Processnoten bevarad i §19-kroppen — en skriven regel väger aldrig tyngre än en Marcus-låst form, och kollisionen ska lyftas i stället för att avgöras av den som bygger. |
 | 2026-07-25 | §19 REVIDERAD till TVÅDIMENSIONELL regel (Marcus beslut A, morgongranskningen — 18.16 facit-revidering): intent styr färgen × emphasis styrs av ytklassen (solid = sidnivå/primär handlingsyta, max en per yta/sektion · outline/subtle = kort och listrader, aldrig solid fyllnad inuti kort · subtle kompakt = tabellrader/toolbars). Ursprungsformens endimensionella regel riven öppet (revideringsnot i §19); K77-rivningen står kvar. Button-primitiven får emphasis-varianter + `--mm-button-*-outline/subtle-*`-tokens (success-textbäraren AA-mörkad 15 %). Flippar: deltagarkortens Skicka bekräftelse → success/outline (Greta-fallet) · Bekräfta alla-pillen → success/subtle. Research-grund: Polaris tone×variant · Carbon danger i tre viktnivåer · M3 text-buttons-i-kort · FK "en primär per del". |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |
