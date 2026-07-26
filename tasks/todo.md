@@ -15,7 +15,32 @@
 
 ## Aktuellt fokus
 
-**Session 91 ▶️ ÅTERUPPTAGEN (2026-07-26, `session-resume`, N=91 bevarat)** —
+**Session 91 ⏸️ PAUSAD IGEN (2026-07-27, andra pausen — inför
+verktygs-ombyggnaden)** — **RESUMEN GAV SEX RESEARCH-PASS, FYRA
+MEKANISERINGAR OCH TVÅ RIVNA EGNA SLUTSATSER.** Merge queue **STÄNGD** (batchar
+ej `merge_group`-bygg + kräver org-ägt repo). Shardning **blockerad** (Airtable
+ej klonbar). Push-kadensen **låg rätt**. **Hermetik-mätningen körd skarpt:** 865
+restanrop, 86 % fonts, **19 av 32 filer rena enbart via font-pinning**; tre
+körningar gav 118/118/118 staging-anrop. **Falsifierat:** "e2e skriver aldrig
+till staging" — `skapa-event` skriver skarpt. **Branschpraxis-passet:** branschen
+köper determinism genom **efemär backend**, inte mockning; vår delade staging är
+lägst rankad hos Google + HOLD hos Thoughtworks; Ghost är vår manöver exakt —
+men precedent för efemär backend mot icke-självhostbar SaaS är **tomt**.
+**TVÅ EGNA SLUTSATSER RIVNA:** idempotens-fyndet föll när CI gav grönt (purge
+före körning) · fråga 1:s rekommendation byttes helt efter att Marcus uppgav
+Supabase-migrering **inom ett par veckor**. **VERKTYGS-LUCKAN AVTÄCKT (Marcus
+fråga):** arkitektur researchades, **verktygsval inte** — fyra egenbyggen där
+mogna verktyg finns (`npm-run-all` · `gh run watch` · MSW · Nx/`paths-filter`).
+**Marcus order: behåll men INAKTIVERA det byggda, bygg om som proffsen.**
+Mekanisering 1–4 klara (docs-klassning · `check:docs` · `ci-wait` exit 4 ·
+hub §6 Delegering v1.3); 6–7 öppna. **NÄSTA: `session-resume` av 91 →
+verktygs-ombyggnaden → avsluta grillningen (4 obesvarade beslut) → de 19
+acceptance-filerna.** **AVVIKELSE ATT LÖSA:** byggplanens Fas E säger `DEFER`
+post-Fas 7, Marcus säger veckor — byggplanen är styrande och ska uppdateras
+först. Numrering: 91/079/L360/T100/f46/task-53. Full narrativ: sessionsdok S91
+Del 1–7 + PAUSLÄGE. *(Föregående fokus-text för S91 nedan.)*
+
+**Session 91 (första passet, 2026-07-26)** —
 **DESIGN-REVIEWEN AV TASK-48, OCH DAGEN
 DÅ ARBETSFORMEN BLEV SITT EGET ÄMNE.** **`task-48` är `Done`** — Marcus
 granskade i webbläsaren och gav **fyra fynd**, alla åtgärdade i tre vågor:

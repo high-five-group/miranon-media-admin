@@ -168,3 +168,12 @@
 # det står öppet i forskningsdokumentet. Det är grindens hämtning som blockeras,
 # inte källans existens.
 ^https://dl\.acm\.org/doi/.*$
+
+# uber.com — bot-skydd som svarar 406 Not Acceptable (S91, 2026-07-27).
+# Två instanser i docs/research/hermetisk-vs-skarp-e2e-branschpraxis-2026-07-26.md
+# (samma URL, brödtext + källförteckning). Klassbevis:
+#   uber.com   CI 406 / lokalt 406 BÅDE med och utan Chrome-UA → serverside
+#              content-negotiation-spärr, inte GHA-IP- eller UA-klassen.
+# Källan (Ubers SLATE-artikel om testning mot delade miljöer) är LÄST och citerad
+# i research-passet; det är grindens hämtning som avvisas, inte källans existens.
+^https://www\.uber\.com/.*$
