@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # scripts/test-ci-wait.sh
 #
-# Empirisk test-suite för scripts/ci-wait.sh (S87 städ-vågen).
-# 11 testfall:
+# Empirisk test-suite för scripts/ci-wait.sh (S87 städ-vågen; utökad S91).
+# 15 testfall:
 #   T1  terminal-kontroll FÖRE första sömnen  ← regressionsvakten för cykel-3-buggen
 #   T2  grön körning, alla jobb success → 0
 #   T3  failande jobb → 1 (fail-closed)
@@ -14,16 +14,29 @@
 #   T9  run dyker aldrig upp → 2
 #   T10 --pr-upplösning via headRefOid → 0
 #   T11 användningsfel (ingen/dubbel mode, ogiltigt intervall) → 3
+#   T12 superseddad ≠ röd (S91), fyra fall:
+#       a topp-conclusion cancelled + nyare körning finns  → 4
+#       b cancelled UTAN nyare körning                     → 1  (fail-closed)
+#       c cancelled + aggregator-failure + nyare           → 4  (verklighetsfallet)
+#       d topp-conclusion failure + nyare finns            → 1  (bara avbrutna supersederas)
 #
 # Test-isolering: /tmp/s87-test-ci-wait/ med en gh-stub på PATH som läser ett
 # tillståndsfil-scenario. Återställer via trap. INGEN nätverkstrafik, inget
 # riktigt gh-anrop, INGEN ändring av real-repo.
 #
+# STUBBENS GRÄNS (S91, dyrköpt): en grön stubbsvit bevisar LOGIKEN, inte att
+# den möter verkligheten. Superseddad-fixens första version var grön mot alla
+# stubbfall och föll ändå direkt mot skarpt API, därför att stubben inte
+# speglade att aggregatorn "CI Passed or Skipped" failar by design vid avbrott.
+# T12c bär det fallet nu — men lärdomen är att en ändring i denna svit ska
+# följas av skarpa körningar mot verkliga run-ID:n innan den anses bevisad.
+#
 # Användning: bash scripts/test-ci-wait.sh
 # Exit 0 om alla testfall passerar. Exit 1 om någon failar.
 #
 # Källa: tasks/sessions/2026-07-25-session-86.md Del 4 (tidsforensiken)
-# Etablerad: Session 87 städ-vågen
+#        tasks/sessions/2026-07-26-session-91.md (superseddad-klassen)
+# Etablerad: Session 87 städ-vågen; T12 tillagd Session 91
 
 set -uo pipefail
 
@@ -51,6 +64,9 @@ setup() {
     #   GH_RUNLIST_MISSES  antal `run list`-anrop som ska ge tomt svar först
     #   GH_PENDING_READS   antal `run view --json status`-anrop som ska ge in_progress
     #   GH_JOBS            per-jobb-rader, "namn<TAB>conclusion", en per rad
+    #   GH_NEWER_RUN       (S91) svar på superseddad-frågan: ID för en NYARE
+    #                      körning på samma branch, eller tomt = ingen nyare
+    #   GH_RUN_META        (S91) "branch<TAB>createdAt<TAB>workflowName"
     cat > "${TEST_DIR}/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 set -uo pipefail
@@ -65,19 +81,30 @@ case "$1" in
   run)
     case "$2" in
       list)
+        # S91: superseddad-frågan känns igen på createdAt i --json-fälten;
+        # run-upplösningens listanrop begär bara databaseId.
+        if [[ "$*" == *"createdAt"* ]]; then
+            printf '%s\n' "${GH_NEWER_RUN:-}"; exit 0
+        fi
         n="$(bump runlist)"
         if [[ "${n}" -le "${GH_RUNLIST_MISSES:-0}" ]]; then printf '\n'; else printf '4242\n'; fi
         exit 0 ;;
       view)
-        # Skilj status-avläsning från jobb-avläsning på -q-uttrycket.
+        # Skilj avläsningarna på vilka --json-fält som begärs.
         if [[ "$*" == *"jobs"* ]]; then
             printf '%b\n' "${GH_JOBS:-Lint\tsuccess}"
+        elif [[ "$*" == *"headBranch"* ]]; then
+            printf '%b\n' "${GH_RUN_META:-feat/x\t2026-07-26T12:00:00Z\tCI}"
+        elif [[ "$*" == *"headSha"* ]]; then
+            # Egen gren sedan S91: föll tidigare igenom till status-grenen och
+            # gav "completed success" som SHA — trasig stub, harmlöst utfall.
+            printf 'deadbeefcafe0123\n'
         else
             n="$(bump statusread)"
             if [[ "${n}" -le "${GH_PENDING_READS:-0}" ]]; then
                 printf 'in_progress -\n'
             else
-                printf 'completed success\n'
+                printf 'completed %s\n' "${GH_CONCLUSION:-success}"
             fi
         fi
         exit 0 ;;
@@ -114,7 +141,7 @@ run_case() {
 }
 
 setup
-printf 'test-ci-wait: kör 11 testfall mot %s\n\n' "${GATE_SRC}"
+printf 'test-ci-wait: kör 15 testfall mot %s\n\n' "${GATE_SRC}"
 
 # T1 — REGRESSIONSVAKTEN. En redan avslutad körning får ALDRIG kosta en sömn.
 #      Cykel 3 i S86:s fix-våg sov bort nio minuter på exakt detta.
@@ -135,7 +162,7 @@ run_case "T4  skippat jobb fäller inte → 0" 0 - \
     bash ./ci-wait.sh --run 4242 --quiet
 
 run_case "T5  okänd conclusion fäller (fail-closed) → 1" 1 - \
-    env GH_JOBS='Lint\tsuccess\nDeploy\tcancelled' \
+    env GH_JOBS='Lint\tsuccess\nDeploy\ttimed_out' \
     bash ./ci-wait.sh --run 4242 --quiet
 
 run_case "T6  in_progress → completed, pollar klart → 0" 0 6 \
@@ -161,6 +188,53 @@ run_case "T10 --pr-upplösning via headRefOid → 0" 0 - \
 run_case "T11a användningsfel: ingen mode → 3" 3 - env bash ./ci-wait.sh --quiet
 run_case "T11b användningsfel: dubbel mode → 3" 3 - env bash ./ci-wait.sh --run 1 --pr 2
 run_case "T11c användningsfel: ogiltigt intervall → 3" 3 - env bash ./ci-wait.sh --run 1 --interval 0
+
+# T12 — SUPERSEDDAD ≠ RÖD (S91, mekaniserings-punkt 3).
+# cancel-in-progress avbryter föregående körning vid varje ny push, och en
+# orkestrerare som kör update-branch på en agents gren gör samma sak. Utfallet
+# blev tidigare "RÖD" och skickade läsaren att felsöka en körning som aldrig
+# hade något fel — den var bara inaktuell.
+#
+# NYCKELN ÄR TOPP-NIVÅNS conclusion, INTE jobb-mönstret. Första versionen av
+# fixen prövade superseddad-frågan på jobb med conclusion "cancelled" och var
+# grön mot stubben — men föll direkt mot verkligheten: aggregatorn
+# "CI Passed or Skipped" failar BY DESIGN när jobb avbryts (S77:s fail-closed-
+# form), så en avbruten körning bär nästan alltid ett failure-jobb och
+# failure-grenen träffade före superseddad-prövningen. Empirisk kartläggning av
+# fyra verkliga avbrutna körningar (30202493540, 30201694815, 30201501825,
+# 30201387903, alla 2026-07-26) visade att jobb-mönstren varierar helt medan
+# topp-conclusion är "cancelled" i samtliga. T12c nedan är det fall som hade
+# fångat felet direkt.
+#
+# GitHubs API bär INGET fält för avbrottsorsaken (verifierat mot 30201494270:
+# varken run_attempt, event eller tidsstämplar skiljer concurrency-avbrott från
+# manuellt), så frågan blir den enda som spelar roll för beslutet: FINNS en
+# nyare körning på samma branch och workflow? Då är utfallet inaktuellt oavsett
+# varför det dog.
+run_case "T12a topp-conclusion cancelled + nyare finns → 4 (superseddad)" 4 - \
+    env GH_CONCLUSION=cancelled GH_JOBS='Lint\tsuccess\nTest suite\tcancelled' \
+    GH_NEWER_RUN=9999 \
+    bash ./ci-wait.sh --run 4242 --quiet
+
+run_case "T12b cancelled UTAN nyare körning → 1 (fail-closed, oförändrat)" 1 - \
+    env GH_CONCLUSION=cancelled GH_JOBS='Lint\tsuccess\nTest suite\tcancelled' \
+    GH_NEWER_RUN= \
+    bash ./ci-wait.sh --run 4242 --quiet
+
+# T12c — VERKLIGHETSFALLET. Aggregatorn failar som konsekvens av avbrottet;
+# dess failure är inte oberoende information. Detta är fallet som sänkte v1.
+run_case "T12c cancelled + aggregator-failure + nyare → 4 (aggregatorn är följd, ej orsak)" 4 - \
+    env GH_CONCLUSION=cancelled \
+    GH_JOBS='Detect changed files\tsuccess\nLint\tcancelled\nCI Passed or Skipped\tfailure' \
+    GH_NEWER_RUN=9999 \
+    bash ./ci-wait.sh --run 4242 --quiet
+
+# T12d — bara AVBRUTNA körningar kan supersederas. En körning som genuint
+# FAILADE behåller sitt röda utfall även om en nyare körning finns.
+run_case "T12d topp-conclusion failure + nyare finns → 1 (bara avbrutna supersederas)" 1 - \
+    env GH_CONCLUSION=failure GH_JOBS='Lint\tsuccess\nTest\tfailure' \
+    GH_NEWER_RUN=9999 \
+    bash ./ci-wait.sh --run 4242 --quiet
 
 printf '\ntest-ci-wait: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
 [[ "${FAILED}" -eq 0 ]] || exit 1
