@@ -350,6 +350,61 @@ function anmalanOrd(antal: number): string {
 }
 
 /**
+ * BATCHENS UTFALLS-YTA — båda riktningarna, samma plats (Marcus design-review
+ * 2026-07-26, S91, fynd (c)).
+ *
+ * Förr tändes ytan ENBART vid partial/failed/fel: ett rent lyckat utfall var
+ * den enda tysta vägen genom flödet, alltså precis tvärtemot vad som borde
+ * kvitteras tydligast. Lotta tryckte skicka, läget stängde, och ingenting sa
+ * att det gick igenom.
+ *
+ * FORM — research-grundad (web-research-disciplinen; mönstret, inte bara
+ * mekanismen):
+ *  · GOV.UK Design System, notification banner: den GRÖNA versionen används
+ *    "to confirm that something they're expecting to happen has happened", och
+ *    "should be removed when the user moves to a new page". Alltså: inline på
+ *    arbetsytan, med en livslängd bunden till arbetssteget — inte en artefakt
+ *    som ligger kvar. https://design-system.service.gov.uk/components/notification-banner/
+ *  · Shopify Polaris, Toast: rätt form för korta framgångskvitton, MEN dess
+ *    egna a11y-not varnar för att den "disappears automatically" och är svår
+ *    att nå för användare med syn- eller finmotorik-begränsningar; med
+ *    handling krävs ≥10 000 ms. https://polaris-react.shopify.com/components/feedback-indicators/toast
+ *  · IBM Carbon, notification: inline-notiser är persistenta tills användaren
+ *    avfärdar dem; toast är för passiva framgångsmeddelanden.
+ *    https://carbondesignsystem.com/components/notification/usage/
+ *
+ * VALET: MessageBox på samma yta som felen (appen har ingen toast — den är
+ * Fas 5-scope, MessageBox-docblocken). Ingen självförsvinnande timer: Polaris
+ * egen varning gäller, och GOV.UK:s "removed when the user moves on" översätts
+ * i en SPA till nästa arbetssteg i blocket — kvittensen rensas när markera-
+ * läget öppnas igen, när fliken byts, när ett summeringsfilter växlas och när
+ * nästa batch startar. Dessutom en stäng-knapp, den kontroll en toast saknar.
+ *
+ * SKÄRMLÄSAREN får kvittensen på det mönster som redan finns i blocket:
+ * `MessageBox intent="success"` renderar `role="status"` (polite) — samma
+ * live-region-form som batch-barens sr-only-räknare — OCH mutationens
+ * `alertScreenReader` (den globala announcern, region i DOM före texten) är
+ * kvar som den garanterade bäraren. Två bärare är medvetet: en artig
+ * dubbelläsning är billigare än tystnad för den som inte ser plattan.
+ */
+type Utfall = { ton: 'success' | 'error'; titel: string; text: string };
+
+/**
+ * Konstant rubrik per riktning (GOV.UK: "use the same heading for green
+ * notification banners within the same service" — igenkänning framför
+ * variation, och rubriken bär utfallet så färgen aldrig är ensam bärare).
+ */
+const SKICKAT_TITEL = 'Skickat';
+const MISSLYCKAD_TITEL = 'Bekräftelsen gick inte igenom';
+
+/** Kvittensens brödtext — antalet kommer ur SERVERNS `confirmed`, aldrig urvalet. */
+function skickatKvittens(antal: number): string {
+  return antal === 1
+    ? 'Bekräftelsen är skickad. Anmälan står nu som Bekräftad.'
+    : `${antal} bekräftelser är skickade. Anmälningarna står nu som Bekräftade.`;
+}
+
+/**
  * MARKERA-LÄGETS TILLSTÅNDSMASKIN (task-48).
  *
  * Ett smalt gränssnitt över en icke-trivial tillståndsmängd: läget självt,
@@ -758,8 +813,36 @@ function KortInnehall({
             så mycket bredd att namnet radbröts och e-posten bröts MITT I ORDET
             ("bertil@exa/mple.se"). Fångat i facit-avprickningens 390-px-mätning.
             Staplade pillar i högerkanten är den graciösa degraderingen; på
-            bredare ytor står de kvar på EN rad som i facit. */}
-        <span className="flex max-w-[45%] shrink-0 flex-wrap items-center justify-end gap-1.5">
+            bredare ytor står de kvar på EN rad som i facit.
+
+            PILL-SLOTTEN ÄR RESERVERAD, INTE INNEHÅLLS-STYRD (Marcus
+            design-review 2026-07-26, S91, fynd (e) — sågtanden). `max-w-[45%]`
+            lät slottens bredd följa pillarna, och eftersom identitetskolumnen
+            är `flex-1` mot samma rad ÄRVDE den variationen: uppmätt på 430 px
+            fick ett kort MED kategori-pill 157,95 px identitetsbredd och ett
+            UTAN 214,33 px — e-posten radbröts bara i det smala fallet, och
+            korten sågtandade 166/145/166/145. Samma mekanism på 390 px i
+            arkivet (170,58 mot 278 px ⇒ 188/167).
+
+            Marcus hypotes var pill-radens HÖJD; mätningen falsifierade den och
+            är bokförd öppet på kortet: pill-kolumnen mäter 22 px (en rad) resp.
+            50 px (två) mot identitetskolumnens 67 px — den är ALDRIG radens
+            högsta element och kan därför inte driva korthöjden. Bäraren är
+            BREDDEN. En reserverad slot (samma hus-mönster som signal-slottens
+            `min-h-8`) ger varje kort identisk identitetsbredd, vilket gör både
+            sågtanden och en dold INOM-kort-instabilitet omöjliga: när
+            Obekräftad-pillen viker vid val krympte slotten förr från 139,05 →
+            107,42 px, e-posten fick plats igen och kortet HOPPADE 166 → 145
+            mitt under fingret (uppmätt före fixen på 430 px).
+
+            7,5rem = 120 px rymmer den bredaste pillen ("Manuellt tillagd",
+            uppmätt 107,42 px) med marginal; en framtida bredare pill radbryter
+            inuti sin egen pill (två pill-rader = 50 px < identitetens 67) och
+            påverkar fortfarande inte höjden. Från `sm` och uppåt är kortets
+            innermått ~479–500 px och 45 % (≥215 px) rymmer BÅDA pillarna på en
+            rad — facit-formen på breda ytor — utan att identitetskolumnen blir
+            trång (mätt: ingen sågtand på 768/1280 varken före eller efter). */}
+        <span className="flex w-30 shrink-0 flex-wrap items-center justify-end gap-1.5 sm:w-[45%]">
           {!arBekraftad(reg) && !vald && (
             <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
               Obekräftad
@@ -1050,13 +1133,29 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
     [visade],
   );
 
-  // Inbox-fokus (K40): kön öppen, arkivet ett klick bort — är kön tom öppnas
-  // arkivet i stället. Initialt tillstånd, därefter Lottas eget val.
-  // Endast Bekräftade är fällbar (se GruppRubrik): Obekräftade-kön står alltid
-  // öppen sedan S91:s review — den har ingen växling kvar att lagra.
-  // Startvärdet: registret fälls ut direkt när kön är tom, annars är arbetet
-  // det första ögat ska möta.
-  const [bekraftadeOppen, setBekraftadeOppen] = useState(obekraftadeTotalt === 0);
+  /**
+   * Inbox-fokus (K40): kön öppen, arkivet ett klick bort — är kön tom fälls
+   * arkivet ut i stället. Endast Bekräftade är fällbar (se GruppRubrik):
+   * Obekräftade-kön står alltid öppen sedan S91:s review.
+   *
+   * `null` betyder ALDRIG VÄXLAD och är hela poängen (Marcus design-review
+   * 2026-07-26, S91, fynd (b)). Förr var detta `useState(obekraftadeTotalt === 0)`
+   * — ett startvärde som beräknades EN gång vid monteringen, vilket gav samma
+   * sluttillstånd två olika utseenden: tömdes kön genom en batch i sessionen
+   * stod arkivet kvar HOPFÄLLT (uppmätt aria-expanded=false), medan en färsk
+   * sidladdning på exakt samma data fällde ut det. Det icke-berörda
+   * default-läget FÖLJER nu kön i stället för monteringsögonblicket.
+   *
+   * Ett explicit klick skriver en riktig boolean och respekteras därefter —
+   * Lottas eget val vinner alltid över härledningen, även när kön går till noll.
+   *
+   * Härledningen läser `obekraftadeTotalt` (hela eventet), inte den visade
+   * köns längd: en kategori-flik som råkar sakna obekräftade betyder inte att
+   * arbetet är gjort. Samma storhet som det gamla startvärdet läste — det som
+   * ändras är NÄR den utvärderas, inte VAD.
+   */
+  const [bekraftadeVal, setBekraftadeVal] = useState<boolean | null>(null);
+  const bekraftadeOppen = bekraftadeVal ?? obekraftadeTotalt === 0;
 
   const traffar = filter == null ? null : visade.filter(FILTER_TEST[filter]);
 
@@ -1073,6 +1172,8 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
     // filtret rensas, och dess Esc-lyssnare äta Escape under tiden
     // (review-fynd 3). Läget är bundet till sin yta: försvinner ytan, stängs det.
     markering.stang();
+    // Nytt arbetssteg ⇒ förra batchens kvittens är förbrukad (fynd (c)).
+    setUtfall(null);
     setFilter((nu) => {
       const next = nu === f ? null : f;
       if (f === 'borOver' && next === 'borOver') {
@@ -1100,7 +1201,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
   // med K46 — ett halvt bulk-utfall får aldrig visas som helt, och en
   // 1-klicks-genväg hör hemma på Hem-vyn, inte i eventsidans arbetskö.
   const bulk = useConfirmAll(event.id);
-  const [utfall, setUtfall] = useState<string | null>(null);
+  const [utfall, setUtfall] = useState<Utfall | null>(null);
 
   // Markera-lägets kandidater = kön så som den visas (flikvalet gäller).
   const obekraftadeIds = useMemo(() => obekraftade.map((r) => r.id), [obekraftade]);
@@ -1138,13 +1239,30 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
       // ett RENT skickat utfall betyder att arbetet är utfört — bara då stängs
       // läget. Samma logik som catch-grenen, som alltid behållit urvalet.
       if (result.status !== 'sent') {
-        setUtfall(bekraftelseUtfall(result));
+        setUtfall({ ton: 'error', titel: MISSLYCKAD_TITEL, text: bekraftelseUtfall(result) });
         return;
       }
+      // FRAMGÅNGEN KVITTERAS (fynd (c)): tystnaden var förr reserverad för
+      // exakt det utfall som borde bekräftas tydligast.
+      setUtfall({
+        ton: 'success',
+        titel: SKICKAT_TITEL,
+        text: skickatKvittens(result.confirmed.length),
+      });
       markering.stang();
     } catch {
-      setUtfall('Bekräftelserna kunde inte skickas. Försök igen.');
+      setUtfall({
+        ton: 'error',
+        titel: MISSLYCKAD_TITEL,
+        text: 'Bekräftelserna kunde inte skickas. Försök igen.',
+      });
     }
+  };
+
+  /** Nytt arbetssteg i blocket ⇒ kvittensen för det förra är förbrukad. */
+  const oppnaMarkering = () => {
+    setUtfall(null);
+    markering.oppna();
   };
 
   // Signalen tänds bara när det finns något ATT skicka (K44).
@@ -1218,9 +1336,9 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
       </div>
 
       {utfall != null && (
-        <div className="pt-3">
-          <MessageBox intent="error" title="Bekräftelsen gick inte igenom">
-            {utfall}
+        <div data-testid="bekraftelse-utfall" className="pt-3">
+          <MessageBox intent={utfall.ton} title={utfall.titel} onDismiss={() => setUtfall(null)}>
+            {utfall.text}
           </MessageBox>
         </div>
       )}
@@ -1232,7 +1350,10 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
           label="Visa deltagare"
           spread
           selectedKey={flik}
-          onSelectionChange={(key: FlikNyckel) => setFlik(key)}
+          onSelectionChange={(key: FlikNyckel) => {
+            setUtfall(null);
+            setFlik(key);
+          }}
         >
           <ToggleButton id="alla" size="sm">
             {`Alla (${totalt})`}
@@ -1324,7 +1445,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                         intent="primary"
                         size="sm"
                         aria-label="Markera anmälningar"
-                        onPress={markering.oppna}
+                        onPress={oppnaMarkering}
                       >
                         Markera
                       </Button>
@@ -1366,7 +1487,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                 <GruppRubrik
                   oppen={bekraftadeOppen}
                   kontrollerarId={`${panelId}-bekraftade`}
-                  onToggle={() => setBekraftadeOppen((v) => !v)}
+                  onToggle={() => setBekraftadeVal(!bekraftadeOppen)}
                 >
                   {`Bekräftade (${bekraftade.length})`}
                 </GruppRubrik>

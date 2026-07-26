@@ -137,7 +137,28 @@ export function useSendConfirmationFromDetail(eventId: string, registrationId: s
  * BEKRÄFTA ALLA (bulk) — PESSIMISTISK bakom kontrollfrågan (PRD beslut 20:
  * confirm-grind på varje massmutation). Ingen optimistisk patch: ett bulk-utfall
  * kan vara partiellt, och att flytta tio kort som om allt gick igenom vore en
- * osanning. Listan uppdateras när servern svarat och refetchen landat.
+ * osanning. Listan uppdateras när SERVERN svarat.
+ *
+ * SVARET ÄR FACIT — INTE OMHÄMTNINGEN (Marcus design-review 2026-07-26, S91,
+ * fynd (a)). Mätt mot ett staging-event med 8+8: kön stod oförändrad i ~5,5 s
+ * efter att markera-läget stängt, för att koden kastade serverns svar och
+ * väntade på en full `get-registrations`-runda. Servern berättar redan exakt
+ * vad som hände — `confirmed` (record-ID:n som fick BÅDE mail och status-flip,
+ * atomicitets-kontraktet) och `bekraftelseSkickad` (tidsstämpeln som skrevs) —
+ * så svaret skrivs in i listcachen här i stället för att slängas.
+ *
+ * DETTA ÄR INTE OPTIMISM (byggkrav 6 står oförändrat): patchen sker i
+ * `onSuccess`, alltså EFTER serverns bekräftelse, och skriver ENDAST de ID:n
+ * servern själv rapporterade som bekräftade. Ett partiellt utfall flyttar
+ * exakt de kort som faktiskt gick igenom och lämnar resten i kön — ett halvt
+ * utfall kan alltså fortfarande aldrig visas som helt. Skillnaden mot en
+ * optimistisk mutation är tidpunkten (efter svar, inte före) och källan
+ * (serverns lista, inte klientens gissning).
+ *
+ * `cancelQueries` före patchen: en omhämtning som redan var i luften när
+ * mutationen svarade hade annars kunnat landa EFTER patchen och skriva
+ * tillbaka de gamla raderna. Invalideringen i `onSettled` står kvar och gör
+ * jobbet i bakgrunden — patchad data visas medan den rundan pågår.
  */
 export function useConfirmAll(eventId: string) {
   const queryClient = useQueryClient();
@@ -149,8 +170,25 @@ export function useConfirmAll(eventId: string) {
     mutationFn: ({ registrationIds }) =>
       dataSource.confirmRegistrations({ registrationIds, idempotencyKey: crypto.randomUUID() }),
 
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       alertScreenReader(bekraftelseUtfall(result));
+      if (result.confirmed.length === 0) return;
+      const listan = queryKeys.registrations.byEvent(eventId);
+      await queryClient.cancelQueries({ queryKey: listan });
+      const bekraftade = new Set(result.confirmed);
+      queryClient.setQueryData<Registration[]>(listan, (old) =>
+        old?.map((r) =>
+          bekraftade.has(r.id)
+            ? {
+                ...r,
+                status: RegistrationStatus.BEKRAFTAD,
+                // Serverns egen tidsstämpel. Skrev servern ingen (null) rörs
+                // fältet inte — en påhittad tidsstämpel vore en osanning.
+                bekraftelseSkickad: result.bekraftelseSkickad ?? r.bekraftelseSkickad,
+              }
+            : r,
+        ),
+      );
     },
 
     onError: () => {
