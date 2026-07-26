@@ -127,3 +127,32 @@
 # hämtning som blockeras, inte källans existens.
 ^https://splashthat\.com/.*$
 ^https://help\.classdojo\.com/.*$
+
+# S91 (2026-07-26): hållplats-modellens branschresearch. Fyra 403 i PR-run
+# 30201397277, uppmätta lokalt samma dag med curl ×2 UA-former (plain +
+# browser-UA) för klassning:
+#
+#   support.splashthat.com        lokalt 403 / 403  → UA/fingerprint-klassen
+#   events-support.ringcentral.com lokalt 403 / 403 → UA/fingerprint-klassen
+#   help.tickettailor.com          lokalt 403 / 403 → UA/fingerprint-klassen
+#   sched.com                      lokalt 200 / 200 → GHA-IP-klassen
+#
+# De tre första är permanenta bot-block (Zendesk-/Intercom-hjälpcenter bakom
+# bot management, samma klass som help.shopify.com ovan) — de läker aldrig och
+# behöver ingen re-utvärdering. OBS: `^https://splashthat\.com/.*$` (S90) täcker
+# INTE support-subdomänen — därav egen rad.
+#
+# sched.com är GHA-IP-klassen (jfr tanstack/opentelemetry/digg/css-tricks).
+# EN-INSTANS-POST, öppet bokförd: 403 CACHAS av lychee (endast 429 exkluderas,
+# se css-tricks-posten), så en omkörning kan per konstruktion inte producera den
+# andra instansen som digg.se-precedenten annars kräver. Följer i stället
+# css-tricks-postens form: en instans med dokumenterat klassbevis.
+# Lessons-flag: re-utvärdera i framtida session — om transient, ta bort.
+#
+# Alla fyra källor är LÄSTA och citerade i
+# docs/research/hallplats-modellen-eventsidan-2026-07-26.md; det är grindens
+# hämtning som blockeras, inte källornas existens.
+^https://support\.splashthat\.com/.*$
+^https://events-support\.ringcentral\.com/.*$
+^https://help\.tickettailor\.com/.*$
+^https://sched\.com/.*$
