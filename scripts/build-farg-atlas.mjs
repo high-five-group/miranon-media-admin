@@ -87,11 +87,19 @@ function samlaFiler(katalog, filter, traff = []) {
   return traff;
 }
 
-/** Hur många gånger ett token nämns utanför sin egen definitionsfil. */
+/**
+ * Hur många gånger ett token nämns utanför sin egen definitionsfil.
+ *
+ * Gränsen skrivs ut som (?![\w-]) och inte som \b. Regexens ordgräns räknar
+ * bindestreck som gräns, så `--mm-text\b` matchar inuti `--mm-text-muted` —
+ * och varje token vars namn är prefix till ett annat fick sin användning
+ * uppräknad med de andras. --mm-text rapporterades som 21 när den verkliga
+ * siffran var 15.
+ */
 function raknaAnvandning(namn, kallor) {
   let n = 0;
   for (const { text } of kallor) {
-    n += (text.match(new RegExp(`${namn}\\b`, 'g')) || []).length;
+    n += (text.match(new RegExp(`${namn}(?![\\w-])`, 'g')) || []).length;
   }
   return n;
 }
@@ -118,11 +126,16 @@ function byggModell() {
   const tsx = samlaFiler('src', /\.tsx?$/)
     .filter((f) => !f.endsWith('routeTree.gen.ts'))
     .map((f) => ({ fil: f, text: las(f) }));
+  // Kommentarerna strippas före räkning. En roll som bara NÄMNS i en
+  // motiveringstext är inte använd, och stilfilerna här är tätt kommenterade —
+  // --mm-success rapporterades som 14 träffar i components.css där 13 var
+  // faktiska deklarationer och en var brödtext om färgen.
+  const utanKommentar = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
   const cssKallor = [
-    { fil: 'semantic.css', text: semantiskCss },
-    { fil: 'components.css', text: komponentCss },
-    { fil: 'tailwind.css', text: temaCss },
-    { fil: 'base.css', text: las('src/styles/base.css') },
+    { fil: 'semantic.css', text: utanKommentar(semantiskCss) },
+    { fil: 'components.css', text: utanKommentar(komponentCss) },
+    { fil: 'tailwind.css', text: utanKommentar(temaCss) },
+    { fil: 'base.css', text: utanKommentar(las('src/styles/base.css')) },
   ];
 
   const primitivFarger = [...primitiv]
@@ -144,13 +157,19 @@ function byggModell() {
       utilityFor.set(m[1], temaNamn.replace('--color-', ''));
   }
 
+  // Vänstergränsen skrivs (^|[^\w-]) och inte \b. Ordgränsen matchar efter ett
+  // bindestreck, så \b(outline)-text träffar inuti CSS-variabelnamnet
+  // --mm-button-primary-outline-text och räknade tre klassnamn som inte finns.
   const raknaUtility = (bas) =>
     tsx.reduce(
       (n, { text }) =>
         n +
         (
           text.match(
-            new RegExp(`\\b(bg|text|border|ring|outline|divide|fill|stroke)-${bas}(?![\\w-])`, 'g'),
+            new RegExp(
+              `(^|[^\\w-])(bg|text|border|ring|outline|divide|fill|stroke)-${bas}(?![\\w-])`,
+              'gm',
+            ),
           ) || []
         ).length,
       0,
@@ -235,7 +254,7 @@ function dtcgFarg(hex) {
   };
 }
 
-function byggDtcg(modell, skalor, forslag, fynd) {
+function byggDtcg(modell, skalor, forslag, fynd, neutralvagar) {
   const primitiv = { $type: 'color', $description: 'Lager 1 — råa värden.' };
   for (const [grupp, lista] of skalor) {
     primitiv[grupp] = {};
@@ -292,6 +311,23 @@ function byggDtcg(modell, skalor, forslag, fynd) {
     }
   }
 
+  // Neutralvägarna renderades först bara i HTML. En maskinläsbar fil som visar
+  // mindre än den visuella är ett tyst löftesbrott: den som konsumerar JSON:en
+  // ser inte de alternativ sidan lägger fram.
+  const jamforelse = {
+    $type: 'color',
+    $description: 'Neutralernas mättnadsnivåer — underlag, ej implementerat.',
+  };
+  for (const v of neutralvagar) {
+    jamforelse[v.nyckel] = { $description: `${v.rubrik} — ${v.not}` };
+    for (const s of v.skala) {
+      jamforelse[v.nyckel][s.steg] = {
+        $value: dtcgFarg(s.hex),
+        $description: `Steg ${s.steg} — ${s.roll}`,
+      };
+    }
+  }
+
   return {
     $description:
       'Färgatlas för Miranon Media Admin. Genererad ur src/ av scripts/build-farg-atlas.mjs — redigera inte för hand.',
@@ -307,6 +343,7 @@ function byggDtcg(modell, skalor, forslag, fynd) {
     primitiv,
     roll,
     forslag: forslagsGrupp,
+    jamforelse,
   };
 }
 
@@ -720,7 +757,7 @@ const neutralvagar = [
   },
 ];
 
-const dtcg = byggDtcg(modell, skalor, forslag, fynd);
+const dtcg = byggDtcg(modell, skalor, forslag, fynd, neutralvagar);
 writeFileSync(
   join(ROT, 'docs/design/farg-atlas.tokens.json'),
   `${JSON.stringify(dtcg, null, 2)}\n`,
