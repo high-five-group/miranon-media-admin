@@ -64,6 +64,29 @@ jobs:
           # Test+Build för varje commit som rör kortfiler utan kod
           # (K1.17-klassen; TASK-15 S69, kontrastbevis run 29657524469
           # [kortfil → full] vs 29657760975 [ren ASCII-docs → skip]).
+          #
+          # DOCS-VERKTYGENS EGNA CONFIGFILER (S91): .lycheeignore, .vale.ini,
+          # .vale/** och .markdownlint-cli2.jsonc står i listan nedan. De läses
+          # ENBART av docs-jobbets grindar (lychee, markdownlint, Vale) och kan
+          # per konstruktion inte påverka testsviten — verifierat med grep över
+          # hela trädet 2026-07-26; enda träffarna utanför denna fil är
+          # kommentarer plus scripts/test-vale-regression.sh, som självt kör i
+          # docs-jobbet. Samma rationale som tests/vale-regression/** +
+          # scripts/test-vale-regression.sh, vilka redan bar klassningen —
+          # dessa fyra var luckan i den.
+          # EMPIRI, två oberoende fall där full svit kördes i onödan:
+          #   run 30201519323 — .lycheeignore + 1 .md                        → 14,3 min
+          #   run 30163753632 — .vale.ini + .markdownlint-cli2.jsonc + 3 .md →  9,8 min
+          # PARAD ÄNDRING (obligatorisk): varje docs-config-post här måste ALLTID
+          # finnas även i changed-docs-stegets lista nedan. Utan paret blir en
+          # ensam-ändring av filen BÅDE testsvit-skippad OCH docs-skippad, alltså
+          # tyst ovaliderad (fail-open, L322-klassen). De två listorna härleds
+          # oberoende och ingen grind håller dem synkade — paret hålls för hand.
+          #
+          # NOT OM FORMEN: kommentarer måste stå HÄR, aldrig inne i "files: |".
+          # Det blocket är en YAML literal block scalar — en "#"-rad där blir en
+          # literal glob-post, inte en kommentar. Felet gjordes och fångades
+          # under bygget av just denna ändring (S91), därav noten.
           quotepath: false
           files: |
             **/*.md
@@ -77,6 +100,10 @@ jobs:
             .github/CODEOWNERS
             .vscode/extensions.json
             .editorconfig
+            .lycheeignore
+            .vale.ini
+            .vale/**
+            .markdownlint-cli2.jsonc
             !.github/workflows/**
             !.github/dependabot.yml
             !package.json
@@ -97,6 +124,18 @@ jobs:
         # docs-link-check — stänger skip-gapet). Hålls ISÄR från should_skip_tests-
         # steget så det medvetna !.github/workflows/**-valet bevaras (en ci.yml-only-
         # commit kör fortfarande Test+Build via det orörda only_changed-filtret).
+        #
+        # S91: listan utvidgad så den TÄCKER should_skip_tests-stegets docs-poster.
+        # Två klasser lades till, av två olika skäl:
+        #   (a) .vale.ini / .vale/** / .markdownlint-cli2.jsonc — nya i BÅDA listorna.
+        #       Paret är obligatoriskt: utan raden här hade skip-tests-tillägget gjort
+        #       en ensam-ändring av dem tyst ovaliderad (svit skippad + docs skippad).
+        #   (b) tests/vale-regression/** + scripts/test-vale-regression.sh — stod
+        #       REDAN i skip-tests-listan men saknades här, alltså ett befintligt
+        #       fail-open: en ensam-ändring skippade testsviten OCH docs-jobbet, och
+        #       docs-jobbet är det enda som kör Vale-regressionssviten. Shellcheck i
+        #       det alltid-på lint-jobbet gav syntaxtäckning men ingen funktionell.
+        # Invarianten framåt: docs-verktygs-config hör hemma i BÅDA listorna.
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
           # quotepath: false — samma invariant som changed-files-steget
@@ -107,6 +146,11 @@ jobs:
           files: |
             **/*.md
             .lycheeignore
+            .vale.ini
+            .vale/**
+            .markdownlint-cli2.jsonc
+            tests/vale-regression/**
+            scripts/test-vale-regression.sh
             .github/workflows/ci.yml
 
       - name: Get changed UI files (D1-klassning)
