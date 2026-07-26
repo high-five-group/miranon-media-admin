@@ -201,6 +201,102 @@
             "golv": 1.4,
             "haller": true
           }
+        ],
+        "sage": [
+          {
+            "krav": "Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11)",
+            "uppmatt": 5.617885427974359,
+            "golv": 3,
+            "haller": true
+          },
+          {
+            "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
+            "uppmatt": 8.098617982442013,
+            "golv": 4.5,
+            "haller": true
+          },
+          {
+            "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
+            "uppmatt": 12.782768302459273,
+            "golv": 7,
+            "haller": true
+          },
+          {
+            "krav": "Steg 12 mot steg 1",
+            "uppmatt": 13.900938725460176,
+            "golv": 7,
+            "haller": true
+          },
+          {
+            "krav": "Steg 7 mot steg 2 (kant urskiljbar)",
+            "uppmatt": 3.082472834536767,
+            "golv": 1.4,
+            "haller": true
+          }
+        ],
+        "bla": [
+          {
+            "krav": "Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11)",
+            "uppmatt": 5.583260903837898,
+            "golv": 3,
+            "haller": true
+          },
+          {
+            "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
+            "uppmatt": 8.107607071781974,
+            "golv": 4.5,
+            "haller": true
+          },
+          {
+            "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
+            "uppmatt": 12.783376830932676,
+            "golv": 7,
+            "haller": true
+          },
+          {
+            "krav": "Steg 12 mot steg 1",
+            "uppmatt": 13.839271708431996,
+            "golv": 7,
+            "haller": true
+          },
+          {
+            "krav": "Steg 7 mot steg 2 (kant urskiljbar)",
+            "uppmatt": 3.095332911402504,
+            "golv": 1.4,
+            "haller": true
+          }
+        ],
+        "rod": [
+          {
+            "krav": "Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11)",
+            "uppmatt": 7.81539809078535,
+            "golv": 3,
+            "haller": true
+          },
+          {
+            "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
+            "uppmatt": 10.304221509168585,
+            "golv": 4.5,
+            "haller": true
+          },
+          {
+            "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
+            "uppmatt": 14.37951135291964,
+            "golv": 7,
+            "haller": true
+          },
+          {
+            "krav": "Steg 12 mot steg 1",
+            "uppmatt": 15.832531950482043,
+            "golv": 7,
+            "haller": true
+          },
+          {
+            "krav": "Steg 7 mot steg 2 (kant urskiljbar)",
+            "uppmatt": 3.880156420242892,
+            "golv": 1.4,
+            "haller": true
+          }
         ]
       }
     }
@@ -2240,6 +2336,444 @@
             0.1765
           ],
           "hex": "#2d2d2d"
+        },
+        "$description": "Steg 12 — Text, hög kontrast"
+      }
+    },
+    "sage": {
+      "1": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9882,
+            0.9922,
+            0.9804
+          ],
+          "hex": "#fcfdfa"
+        },
+        "$description": "Steg 1 — Sidbakgrund"
+      },
+      "2": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9451,
+            0.9569,
+            0.9333
+          ],
+          "hex": "#f1f4ee"
+        },
+        "$description": "Steg 2 — Subtil bakgrund"
+      },
+      "3": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.8824,
+            0.902,
+            0.8667
+          ],
+          "hex": "#e1e6dd"
+        },
+        "$description": "Steg 3 — Komponentyta"
+      },
+      "4": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.8078,
+            0.8353,
+            0.7843
+          ],
+          "hex": "#ced5c8"
+        },
+        "$description": "Steg 4 — Komponentyta, hover"
+      },
+      "5": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7216,
+            0.7529,
+            0.6941
+          ],
+          "hex": "#b8c0b1"
+        },
+        "$description": "Steg 5 — Komponentyta, aktiv"
+      },
+      "6": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6275,
+            0.6627,
+            0.6
+          ],
+          "hex": "#a0a999"
+        },
+        "$description": "Steg 6 — Subtil kant"
+      },
+      "7": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5176,
+            0.5569,
+            0.4824
+          ],
+          "hex": "#848e7b"
+        },
+        "$description": "Steg 7 — Kant och fokusring"
+      },
+      "8": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4431,
+            0.4863,
+            0.4078
+          ],
+          "hex": "#717c68"
+        },
+        "$description": "Steg 8 — Kant, hover"
+      },
+      "9": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.3765,
+            0.4196,
+            0.3412
+          ],
+          "hex": "#606b57"
+        },
+        "$description": "Steg 9 — Solid yta"
+      },
+      "10": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.3412,
+            0.3804,
+            0.3059
+          ],
+          "hex": "#57614e"
+        },
+        "$description": "Steg 10 — Solid yta, hover"
+      },
+      "11": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2627,
+            0.298,
+            0.2314
+          ],
+          "hex": "#434c3b"
+        },
+        "$description": "Steg 11 — Text, låg kontrast"
+      },
+      "12": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.149,
+            0.1765,
+            0.1294
+          ],
+          "hex": "#262d21"
+        },
+        "$description": "Steg 12 — Text, hög kontrast"
+      }
+    },
+    "bla": {
+      "1": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9843,
+            0.9922,
+            1
+          ],
+          "hex": "#fbfdff"
+        },
+        "$description": "Steg 1 — Sidbakgrund"
+      },
+      "2": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9216,
+            0.9608,
+            0.9961
+          ],
+          "hex": "#ebf5fe"
+        },
+        "$description": "Steg 2 — Subtil bakgrund"
+      },
+      "3": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.8431,
+            0.902,
+            0.9608
+          ],
+          "hex": "#d7e6f5"
+        },
+        "$description": "Steg 3 — Komponentyta"
+      },
+      "4": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7569,
+            0.8353,
+            0.9137
+          ],
+          "hex": "#c1d5e9"
+        },
+        "$description": "Steg 4 — Komponentyta, hover"
+      },
+      "5": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6627,
+            0.7569,
+            0.8471
+          ],
+          "hex": "#a9c1d8"
+        },
+        "$description": "Steg 5 — Komponentyta, aktiv"
+      },
+      "6": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5608,
+            0.6667,
+            0.7686
+          ],
+          "hex": "#8faac4"
+        },
+        "$description": "Steg 6 — Subtil kant"
+      },
+      "7": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4392,
+            0.5569,
+            0.6706
+          ],
+          "hex": "#708eab"
+        },
+        "$description": "Steg 7 — Kant och fokusring"
+      },
+      "8": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.3608,
+            0.4863,
+            0.6039
+          ],
+          "hex": "#5c7c9a"
+        },
+        "$description": "Steg 8 — Kant, hover"
+      },
+      "9": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2902,
+            0.4196,
+            0.5412
+          ],
+          "hex": "#4a6b8a"
+        },
+        "$description": "Steg 9 — Solid yta"
+      },
+      "10": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2549,
+            0.3804,
+            0.498
+          ],
+          "hex": "#41617f"
+        },
+        "$description": "Steg 10 — Solid yta, hover"
+      },
+      "11": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1843,
+            0.298,
+            0.4
+          ],
+          "hex": "#2f4c66"
+        },
+        "$description": "Steg 11 — Text, låg kontrast"
+      },
+      "12": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0941,
+            0.1765,
+            0.251
+          ],
+          "hex": "#182d40"
+        },
+        "$description": "Steg 12 — Text, hög kontrast"
+      }
+    },
+    "rod": {
+      "1": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.9882,
+            0.9843
+          ],
+          "hex": "#fffcfb"
+        },
+        "$description": "Steg 1 — Sidbakgrund"
+      },
+      "2": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.9333,
+            0.9216
+          ],
+          "hex": "#ffeeeb"
+        },
+        "$description": "Steg 2 — Subtil bakgrund"
+      },
+      "3": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.8431,
+            0.8157
+          ],
+          "hex": "#ffd7d0"
+        },
+        "$description": "Steg 3 — Komponentyta"
+      },
+      "4": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.7294,
+            0.6863
+          ],
+          "hex": "#ffbaaf"
+        },
+        "$description": "Steg 4 — Komponentyta, hover"
+      },
+      "5": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9961,
+            0.5882,
+            0.5255
+          ],
+          "hex": "#fe9686"
+        },
+        "$description": "Steg 5 — Komponentyta, aktiv"
+      },
+      "6": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9176,
+            0.4588,
+            0.4
+          ],
+          "hex": "#ea7566"
+        },
+        "$description": "Steg 6 — Subtil kant"
+      },
+      "7": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.8118,
+            0.3059,
+            0.2471
+          ],
+          "hex": "#cf4e3f"
+        },
+        "$description": "Steg 7 — Kant och fokusring"
+      },
+      "8": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.7412,
+            0.1765,
+            0.1333
+          ],
+          "hex": "#bd2d22"
+        },
+        "$description": "Steg 8 — Kant, hover"
+      },
+      "9": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6627,
+            0,
+            0
+          ],
+          "hex": "#a90000"
+        },
+        "$description": "Steg 9 — Solid yta"
+      },
+      "10": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6039,
+            0,
+            0
+          ],
+          "hex": "#9a0000"
+        },
+        "$description": "Steg 10 — Solid yta, hover"
+      },
+      "11": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4745,
+            0,
+            0
+          ],
+          "hex": "#790000"
+        },
+        "$description": "Steg 11 — Text, låg kontrast"
+      },
+      "12": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2941,
+            0,
+            0
+          ],
+          "hex": "#4b0000"
         },
         "$description": "Steg 12 — Text, hög kontrast"
       }

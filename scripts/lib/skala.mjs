@@ -11,7 +11,7 @@
  * runt den, så att steg 9 är exakt den kulör appen redan bär.
  */
 
-import { kontrast, maxKroma, oklch, oklchTillHex } from './farg.mjs';
+import { kontrast, lch, maxKroma, oklch, oklchTillHex } from './farg.mjs';
 
 /** Rollen varje steg fyller. Index 0 = steg 1. */
 export const STEG_ROLLER = [
@@ -139,4 +139,42 @@ export function provaKontrakt(skala) {
     golv,
     haller: uppmatt >= golv,
   }));
+}
+
+/**
+ * Perceptuellt avstånd mellan två färger i CIE LCh.
+ *
+ * Grovt mått, inte ΔE2000 — men tillräckligt för frågan det ställs för: ligger
+ * ett genererat steg så nära en färg som reserverats för ett annat syfte att de
+ * kan förväxlas?
+ */
+function avstand(a, b) {
+  const x = lch(a);
+  const y = lch(b);
+  const dh = (((x.h - y.h + 180) % 360) - 180) * 0.5;
+  return Math.hypot(x.L - y.L, x.C - y.C, dh);
+}
+
+/**
+ * Letar efter steg som kolliderar med en färg reserverad för annat bruk.
+ *
+ * Bakgrunden är fokusringen: `tasks/lessons.md` (Session 25, UNIVERSAL) slår
+ * fast att den ska bära en färg som inte används till något annat, eftersom
+ * exklusiviteten är det som gör den omisskännlig. En fullständig blåskala
+ * producerar ett steg som är dess tvilling — den konflikten ska synas i
+ * atlasen, inte tunas bort i tysthet.
+ *
+ * @param {Array} skala
+ * @param {Array<{hex: string, vad: string}>} reserverade
+ * @param {number} [trosklen] - avstånd under vilket färgerna räknas som förväxlingsbara
+ */
+export function hittaKollisioner(skala, reserverade, trosklen = 12) {
+  const traffar = [];
+  for (const steg of skala) {
+    for (const r of reserverade) {
+      const d = avstand(steg.hex, r.hex);
+      if (d < trosklen) traffar.push({ steg: steg.steg, hex: steg.hex, ...r, avstand: d });
+    }
+  }
+  return traffar;
 }

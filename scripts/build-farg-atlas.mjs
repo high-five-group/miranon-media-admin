@@ -20,7 +20,21 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { hexTillRgb, matning, oklch, textPa } from './lib/farg.mjs';
-import { byggSkala, provaKontrakt } from './lib/skala.mjs';
+import { byggSkala, hittaKollisioner, provaKontrakt } from './lib/skala.mjs';
+
+/**
+ * Vad varje primitivgrupp faktiskt ÄR i appen. Gruppnamnet kommer ur
+ * tokennamnet och räcker inte: "green — 2 steg" säger ingenting om att det är
+ * sage-grönt som bär skapa-knappen och används 33 gånger.
+ */
+const ETIKETT = {
+  gold: 'Guld/amber — primärfärgen',
+  copper: 'Koppar — accent, CTA och varning',
+  neutral: 'Neutraler — bär omkring 450 av appens färganvändningar',
+  blue: 'Blå — info, kommunikation, Fjärrskådning. Plus fokusringen, som är exklusiv',
+  red: 'Röd — fel och RIM 3',
+  green: 'Sage — success, skapa-knappen och RIM 1',
+};
 
 const ROT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const las = (p) => readFileSync(join(ROT, p), 'utf8');
@@ -328,7 +342,8 @@ function byggHtml(modell, skalor, forslag, fynd) {
         storsta && storsta.delta > 15
           ? `<strong>Största hål:</strong> ${esc(storsta.fran)} → ${esc(storsta.till)}, ${storsta.delta.toFixed(1)} L*-enheter. Där ryms flera steg.`
           : 'Stegen ligger jämnt fördelade.';
-      return skalRad(`${grupp} — ${lista.length} steg`, rutor, not);
+      const etikett = ETIKETT[grupp] ?? grupp;
+      return skalRad(`${etikett} · ${lista.length} steg`, rutor, not);
     })
     .join('\n');
 
@@ -355,6 +370,12 @@ function byggHtml(modell, skalor, forslag, fynd) {
       const rutor = data.skala.map((s) =>
         ruta(s.hex, s.steg, `<code>${esc(s.hex)}</code><span class="roll">${esc(s.roll)}</span>`),
       );
+      const kollisioner = (data.kollisioner ?? [])
+        .map(
+          (k) =>
+            `<li class="fel"><span>!</span> Steg ${k.steg} (<code>${esc(k.hex)}</code>) ligger på avstånd ${k.avstand.toFixed(1)} från ${esc(k.vad)} — perceptuellt samma färg</li>`,
+        )
+        .join('');
       const kontrakt = data.kontrakt
         .map(
           (k) =>
@@ -362,10 +383,10 @@ function byggHtml(modell, skalor, forslag, fynd) {
         )
         .join('');
       return `<section class="skala">
-      <h3>${esc(namn)} — förslag, 12 steg</h3>
+      <h3>${esc(data.rubrik ?? namn)} — förslag, 12 steg</h3>
       <p class="ingress">${esc(data.not)}</p>
       <div class="rutor">${rutor.join('')}</div>
-      <ul class="kontrakt">${kontrakt}</ul>
+      <ul class="kontrakt">${kollisioner}${kontrakt}</ul>
     </section>`;
     })
     .join('\n');
@@ -566,24 +587,45 @@ const fynd = JSON.parse(las('docs/design/farg-atlas.fynd.json'));
 
 const forslag = {
   guld: {
+    rubrik: 'Guld/amber',
     ankare: '#d4960a',
     not: 'Ankaret är --p-gold-500. Kulörtonen låses till ankarets 78,7° vilket rätar ut brottet i fynd F7 — dagens ljusa steg driver mot 92°. Steg 9 når inte 3:1 mot vit yta; det är en fysisk egenskap hos en mättad gul-orange, inte ett fel i skalan. Behövs guld som UI-yta mot vitt är steg 10 den ljusaste som duger.',
   },
   koppar: {
+    rubrik: 'Koppar',
     ankare: '#a3491c',
     not: 'Ankaret är --p-copper-500. Skalan byggs ut från ankaret i stället för från en fast ljushetstabell — Miranons koppar är mörkare än vad ett steg 9 brukar vara, och en fast tabell hade gjort skalan icke-monoton. Mellanbandet som saknas i fynd F8 fylls av stegen 3–8.',
   },
   neutral: {
+    rubrik: 'Neutraler',
     ankare: '#6b6b6b',
-    not: 'Ankaret är --p-neutral-500. Neutralerna bär omkring 450 av appens färganvändningar — de förtjänar högst upplösning. Nuvarande skala har ett hål på 22 L*-enheter mellan 300 och 400 och tre nästan identiska steg i botten (800/900/1000 ligger inom 5 enheter).',
+    not: 'Ankaret är --p-neutral-500. Neutralerna bär omkring 450 av appens färganvändningar — de förtjänar högst upplösning. Nuvarande skala har ett hål på 22 L*-enheter mellan 300 och 400 och tre nästan identiska steg i botten (800/900/1000 ligger inom 5 enheter). OBS: en genererad skala blir kromatiskt neutral, medan dagens neutraler är svagt varma. Den tonen är ett designval som bör fattas medvetet, inte tappas bort i en omräkning.',
+  },
+  sage: {
+    rubrik: 'Sage',
+    ankare: '#606b57',
+    not: 'Ankaret är --p-green-500, sage-grönt ur Vue-arvet. Rollen --mm-success används 33 gånger och bär bland annat skapa-knappen, men primitiven har idag bara två steg: 100 och 500. Det är den mest använda kulören som helt saknar skala.',
+  },
+  bla: {
+    rubrik: 'Blå',
+    ankare: '#4a6b8a',
+    not: 'Ankaret är --p-blue-500. Skalan har en konflikt som inte går att räkna bort — se kollisionsnoten under stegen.',
+    reserverade: [{ hex: '#1b4965', vad: 'fokusringen (--p-blue-700)' }],
+  },
+  rod: {
+    rubrik: 'Röd',
+    ankare: '#a90000',
+    not: 'Ankaret är --p-red-500. Bär både fel-tillstånd och kursfärgen RIM 3 — två roller på samma primitiv, vilket är värt att hålla ögonen på om röd ska börja bära fler betydelser.',
   },
 };
 for (const [namn, data] of Object.entries(forslag)) {
   data.skala = byggSkala(data.ankare);
   data.kontrakt = provaKontrakt(data.skala);
+  data.kollisioner = data.reserverade ? hittaKollisioner(data.skala, data.reserverade) : [];
   const brutna = data.kontrakt.filter((k) => !k.haller).length;
+  const kollision = data.kollisioner.length ? `, ${data.kollisioner.length} kollision` : '';
   console.log(
-    `  ${namn.padEnd(8)} 12 steg genererade runt ${data.ankare} — ${brutna === 0 ? 'alla kontrakt håller' : `${brutna} kontrakt faller`}`,
+    `  ${namn.padEnd(8)} 12 steg runt ${data.ankare} — ${brutna === 0 ? 'alla kontrakt håller' : `${brutna} kontrakt faller`}${kollision}`,
   );
 }
 
