@@ -177,3 +177,13 @@
 # Källan (Ubers SLATE-artikel om testning mot delade miljöer) är LÄST och citerad
 # i research-passet; det är grindens hämtning som avvisas, inte källans existens.
 ^https://www\.uber\.com/.*$
+
+# www.npmjs.com — bot-skydd, 403 både med och utan Chrome-UA (S91, 2026-07-27).
+# Paketets EXISTENS är verifierad mot den auktoritativa källan i stället:
+# registry.npmjs.org/@msw%2Fplaywright svarar 200. Webb-frontend spärrar
+# automatiserad hämtning; registry-API:t gör det inte.
+# NOT: denna post är ett av de 19 externa undantag som motiverar
+# förbättringsspåret i sessionsdok S91 § "länkgrinden är fel designad" —
+# externa länkar bör flyttas till en nattlig icke-blockerande kontroll i
+# stället för att blockera PR:er och generera undantag som aldrig rensas.
+^https://www\.npmjs\.com/package/.*$
