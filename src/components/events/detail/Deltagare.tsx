@@ -835,8 +835,11 @@ function KortInnehall({
             107,42 px, e-posten fick plats igen och kortet HOPPADE 166 → 145
             mitt under fingret (uppmätt före fixen på 430 px).
 
-            7,5rem = 120 px rymmer den bredaste pillen ("Manuellt tillagd",
-            uppmätt 107,42 px) med marginal; en framtida bredare pill radbryter
+            7,5rem = 120 px rymmer den bredaste pillen med marginal — uppmätta
+            naturliga bredder: "Från väntelistan" 110,95 · "Manuellt tillagd"
+            107,42 · "Medföljande" 90,09 · "Obekräftad" 82,67. Två pillar
+            samtidigt ryms aldrig på en rad här och staplas som förr (den
+            avsiktliga 390-px-lösningen). En framtida bredare pill radbryter
             inuti sin egen pill (två pill-rader = 50 px < identitetens 67) och
             påverkar fortfarande inte höjden. Från `sm` och uppåt är kortets
             innermått ~479–500 px och 45 % (≥215 px) rymmer BÅDA pillarna på en
