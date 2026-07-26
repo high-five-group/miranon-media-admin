@@ -5468,6 +5468,72 @@ grillningen; varianterna itereras aldrig i valfasen).
 
 ### L354
 
+**En orsaks-hypotes om layout MÄTS innan den byggs — dimensionen man tror bär
+är sällan den som bär.** `[UNIVERSAL]`
+
+**Empiri (S91, `task-48`, fynd (e), 2026-07-26):** deltagarkorten sågtandade
+21 px på 430 px beroende på om kategori-pillen "Manuellt tillagd" fanns.
+Beställningen löd "reservera pill-radens HÖJD". Mätningen före bygget
+falsifierade den: pill-kolumnen mäter 22 px (en rad) resp. 50 px (två) mot
+identitetskolumnens 67 px — den är aldrig radens högsta element och kan inte
+driva korthöjden. Bäraren var BREDDEN: `max-w-[45%]` lät slottens bredd följa
+innehållet, identitetskolumnen (`flex-1`) ärvde variationen (157,95 px med
+pill mot 214,33 utan), och e-posten radbröts bara i det smala fallet. Hade
+höjden reserverats enligt hypotesen hade sågtanden stått kvar, med en ny
+tom reserv ovanpå.
+
+**Bonusfyndet mätningen gav gratis:** samma mekanism dolde en INOM-kort-
+instabilitet som ingen hade sett — när Obekräftad-pillen viker vid val krympte
+slotten 139,05 → 107,42 px, e-posten fick plats igen och kortet hoppade
+166 → 145 px mitt under fingret. Den var osynlig i den ursprungliga
+observationen och hade överlevt varje fix som utgick från hypotesen.
+
+**Regeln:** en rapporterad symtom-korrelation ("hoppar när pillen finns") är
+data; den medföljande orsaksförklaringen ("för att pill-raden är högre") är en
+hypotes med samma bevisbörda som vilken annan. Reproducera symtomet med
+mätvärden per delelement FÖRST — bredd, höjd och radantal per kolumn — och låt
+siffrorna peka ut bäraren. Fixen adresserar det mätta, och divergensen mot
+hypotesen bokförs öppet i stället för att tigas ihjäl.
+
+Släkt: [[L325]] (falsifiera öppet i stället för att bygga vidare på ett
+antagande), [[L245]]/[[L246]] (renderad verifiering — mät, påstå inte),
+[[L347]] (kortets diagnos är en härledning, inte facit).
+
+---
+
+### L355
+
+**Serverns svar ÄR facit — kasta det inte och vänta på en omhämtning.**
+`[UNIVERSAL]`
+
+**Empiri (S91, `task-48`, fynd (a), 2026-07-26):** batch-bekräftelsen var
+pessimistisk enligt ett Marcus-låst byggkrav, och pessimismen tolkades som "vyn
+uppdateras av nästa `get-registrations`". Uppmätt mot staging: kön stod
+oförändrad i 5 488 ms efter att läget stängt — åtta kort låg kvar som om
+knappen inte gjort något. Mutationen returnerade hela tiden `confirmed:
+string[]` + `bekraftelseSkickad`, alltså exakt vad som hänt och när, och den
+informationen slängdes. Att skriva svaret till listcachen i `onSuccess` (med
+`cancelQueries` före, så en omhämtning i luften inte skriver tillbaka gammalt)
+tog samma flöde till 486 ms utan att röra pessimismen.
+
+**Distinktionen som gör det lagligt:** optimistisk mutation = skriv FÖRE svaret,
+med klientens gissning. Detta = skriv EFTER svaret, med serverns egen lista. Ett
+partiellt utfall flyttar exakt de poster servern rapporterade och lämnar resten
+— halv-utfallet kan fortfarande aldrig visas som helt, vilket var hela skälet
+till pessimismen. Invalideringen står kvar och konvergerar i bakgrunden.
+
+**Regeln:** när en mutation returnerar tillräckligt för att beskriva sin egen
+effekt är väntan på en refetch inte försiktighet utan spill. Fråga vid varje
+`invalidateQueries`-only-mutation: "bär svaret redan det vyn behöver?" Gör det
+— skriv in det. Testvakten är deterministisk utan klocka: fördröj omhämtningen
+och räkna landade svar, så faller fallet om koden börjar vänta igen.
+
+Släkt: [[L356]] (mät före), [[L245]] (renderad verifiering).
+
+---
+
+### L356
+
 **`transition-colors` tonar in fokusringen — Tailwind v4:s egenskapslista
 innehåller `outline-color`.** `[UNIVERSAL]`
 
@@ -5500,7 +5566,9 @@ verifiering: mät computed, påstå inte).
 
 ---
 
-### L355
+---
+
+### L357
 
 **Hover är ÅTERKOPPLING, inte ett tillstånd — likvärdiga kanaler är inte
 identiska kanaler.** `[UNIVERSAL]`
@@ -5537,7 +5605,9 @@ som ser rätt ut i koden och är fel i renderat läge).
 
 ---
 
-### L356
+---
+
+### L358
 
 **Återkoppling på en yta vars bakgrund du inte äger måste vara ett
 ALFA-LAGER, aldrig en fast ton.** `[UNIVERSAL]`
@@ -5576,7 +5646,9 @@ korsning av flera evidenslinjer).
 
 ---
 
-### L357
+---
+
+### L359
 
 **Hover-assertioner måste kunna HOVRA OM — ett engångs-`hover()` kan tappas av
 en layout-omläggning efteråt.** `[UNIVERSAL]`
@@ -5616,6 +5688,6 @@ Två sidofynd ur samma spår, båda återanvändbara:
 återställs hovern vid varje försök. Assertera mot det RESOLVERADE
 token-värdet (settle-grinden), och hämta token-värdet FÖRE hovern.
 
-Släkt: [[L246]] (renderad verifiering — mät computed), [[L354]] (samma
+Släkt: [[L246]] (renderad verifiering — mät computed), [[L356]] (samma
 komponent: `transition-colors` drog med `outline-color`), [[L94]] (a11y-fynd
 kräver flera evidenslinjer — här var felmeddelandet direkt vilseledande).

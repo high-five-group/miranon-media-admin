@@ -156,23 +156,58 @@ function mangaObekraftade(): Json[] {
   );
 }
 
+/**
+ * Fyra obekräftade där VARANNAN bär kategori-pillen "Manuellt tillagd" —
+ * sågtandens fixtur (fynd (e)). Namn och e-postadresser i verklig längd: det
+ * var just den kombinationen som avslöjade felet, eftersom identitetskolumnens
+ * radbrytning är det som slår om när pill-slotten stjäl bredd.
+ */
+function blandadeObekraftade(): Json[] {
+  const rader = [
+    { namn: 'Anna Ekstrand', post: 'anna.ekstrand@example.se', kalla: 'Manuell' },
+    { namn: 'Bertil Sundberg', post: 'bertil.sundberg@example.se', kalla: null },
+    { namn: 'Cecilia Lundgren', post: 'cecilia.lundgren@example.se', kalla: 'Manuell' },
+    { namn: 'David Nordqvist', post: 'david.nordqvist@example.se', kalla: null },
+  ];
+  return rader.map((r, i) =>
+    registrering({
+      id: `recBland${i}`,
+      namn: r.namn,
+      email: r.post,
+      kalla: r.kalla,
+      inskickad: `2026-07-0${i + 1}T09:00:00.000Z`,
+    }),
+  );
+}
+
 type Mockar = {
   /** Varje POST-body mot bekräftelse-EF:en (kontrollfrågans bevis: noll = inget hänt). */
   confirmCalls: Json[];
   /** Varje POST-body mot update-event (auto-krysset). */
   updateEventCalls: Json[];
+  /** Antal get-registrations-svar som FAKTISKT landat (fördröjningen inräknad). */
+  hamtningarKlara: number;
 };
+
+/** Fördröj varje omhämtning EFTER den första — staging-latensen i miniatyr. */
+type MockOptioner = { refetchFordrojningMs?: number };
 
 /**
  * TILLSTÅNDSBÄRANDE mockar: bekräftelse-anropet muterar `deltagare`-listan som
  * get-registrations serverar (status + tidsstämpel) — precis som servern gör — så att
  * refetchen efter mutationen bekräftar utfallet i stället för att rulla tillbaka det.
  */
-async function mocka(page: Page, event: Json, deltagare: Json[] = grundData()): Promise<Mockar> {
+async function mocka(
+  page: Page,
+  event: Json,
+  deltagare: Json[] = grundData(),
+  optioner: MockOptioner = {},
+): Promise<Mockar> {
   await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
-  const mockar: Mockar = { confirmCalls: [], updateEventCalls: [] };
+  const mockar: Mockar = { confirmCalls: [], updateEventCalls: [], hamtningarKlara: 0 };
   let aktuellt = event;
   const lista = [...deltagare];
+  let hamtningar = 0;
 
   await page.route(GET_EVENT, async (route: Route) => {
     await route.fulfill({
@@ -182,6 +217,14 @@ async function mocka(page: Page, event: Json, deltagare: Json[] = grundData()): 
     });
   });
   await page.route(GET_REGISTRATIONS, async (route: Route) => {
+    hamtningar += 1;
+    // Första hämtningen (sidladdningen) är snabb; omhämtningarna bär
+    // fördröjningen, så testet kan skilja "svaret drev vyn" från "refetchen
+    // drev vyn" utan att mäta klocka.
+    if (hamtningar > 1 && optioner.refetchFordrojningMs) {
+      await new Promise((r) => setTimeout(r, optioner.refetchFordrojningMs));
+    }
+    mockar.hamtningarKlara += 1;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -499,6 +542,182 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
     );
     // Läget stängs när batchen gått igenom — arbetet är utfört.
     await expect(gruppen(page).getByRole('button', { name: 'Markera anmälningar' })).toBeVisible();
+  });
+
+  test('fynd (a): kön töms av SERVERNS svar — inte av omhämtningen', async ({ page }) => {
+    // Marcus design-review 2026-07-26 (S91): vyn stod oförändrad i ~5,5 s efter
+    // att läget stängt, eftersom svaret kastades och koden väntade på en full
+    // get-registrations-runda. Omhämtningen bär här 5 s fördröjning; kön ska
+    // vara tom INNAN den landat. Ingen klock-assertion — räknaren
+    // `hamtningarKlara` avgör deterministiskt VEM som drev vyn.
+    const mockar = await mocka(page, eventDetail(), grundData(), { refetchFordrojningMs: 5000 });
+    await oppnaEventsidan(page);
+    await oppnaMarkeringslaget(page);
+
+    const bar = gruppen(page).getByTestId('markering-batchbar');
+    await bar.getByRole('button', { name: 'Markera alla' }).click();
+    await bar.getByRole('button', { name: /^Bekräfta 2 anmäl/ }).click();
+
+    const foreSandning = mockar.hamtningarKlara;
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^Skicka 2 bekräftelser/ })
+      .click();
+
+    await expect(gruppen(page).getByText('Inga obekräftade — alla är bekräftade.')).toBeVisible({
+      timeout: 3000,
+    });
+    // Kärnan: ingen omhämtning har hunnit landa — serverns svar drev vyn.
+    expect(mockar.hamtningarKlara).toBe(foreSandning);
+    await expect(
+      gruppen(page).getByRole('button', { name: /^Obekräftade anmälningar/ }),
+    ).toHaveText('Obekräftade anmälningar0');
+
+    // Patchen skriver serverns EGNA fält: status flyttar korten till arkivet
+    // och tidsstämpeln syns på metaraden.
+    const arkiv = gruppen(page).getByRole('button', { name: 'Bekräftade (3)', exact: true });
+    await expect(arkiv).toBeVisible();
+    await expect(gruppen(page).getByText('Bekräftelse 22 juli')).toHaveCount(2);
+
+    // …och när omhämtningen väl landar står bilden kvar (ingen tillbakarullning).
+    await expect
+      .poll(() => mockar.hamtningarKlara, { timeout: 15000 })
+      .toBeGreaterThan(foreSandning);
+    await expect(gruppen(page).getByText('Inga obekräftade — alla är bekräftade.')).toBeVisible();
+  });
+
+  test('fynd (b): arkivet fälls ut när kön töms I SESSIONEN, inte bara vid sidladdning', async ({
+    page,
+  }) => {
+    // Regressionsvakt mot monteringstidpunktens värde: `bekraftadeOppen` var
+    // ett engångsberäknat startvärde, så samma sluttillstånd såg olika ut
+    // beroende på hur man kom dit (uppmätt aria-expanded=false efter batch,
+    // true efter reload).
+    await mocka(page, eventDetail());
+    await oppnaEventsidan(page);
+
+    const arkivFore = gruppen(page).getByRole('button', { name: 'Bekräftade (1)', exact: true });
+    await expect(arkivFore).toHaveAttribute('aria-expanded', 'false');
+
+    await oppnaMarkeringslaget(page);
+    const bar = gruppen(page).getByTestId('markering-batchbar');
+    await bar.getByRole('button', { name: 'Markera alla' }).click();
+    await bar.getByRole('button', { name: /^Bekräfta 2 anmäl/ }).click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^Skicka 2 bekräftelser/ })
+      .click();
+
+    await expect(gruppen(page).getByText('Inga obekräftade — alla är bekräftade.')).toBeVisible();
+    await expect(
+      gruppen(page).getByRole('button', { name: 'Bekräftade (3)', exact: true }),
+    ).toHaveAttribute('aria-expanded', 'true');
+    // Utfällt betyder verkligen synligt innehåll, inte bara ett attribut.
+    await expect(gruppen(page).getByTestId('deltagar-namn')).toHaveCount(3);
+  });
+
+  test('fynd (c): en ren framgång KVITTERAS — med antal, för AT, och utan att bli kvarliggande', async ({
+    page,
+  }) => {
+    // Förr var det lyckade utfallet flödets enda tysta väg: utfalls-ytan tändes
+    // bara vid partial/failed/fel. Sex i kön så det finns arbete kvar efteråt.
+    await mocka(page, eventDetail(), mangaObekraftade());
+    await oppnaEventsidan(page);
+    await oppnaMarkeringslaget(page);
+
+    // TVÅ markerade ⇒ pluralform med serverns antal ur `confirmed`.
+    await markerbaraKort(page).nth(0).click();
+    await markerbaraKort(page).nth(1).click();
+    await gruppen(page)
+      .getByTestId('markering-batchbar')
+      .getByRole('button', { name: /^Bekräfta 2 anmäl/ })
+      .click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^Skicka 2 bekräftelser/ })
+      .click();
+
+    const kvittens = gruppen(page).getByTestId('bekraftelse-utfall');
+    await expect(kvittens).toBeVisible();
+    await expect(kvittens.getByText('Skickat')).toBeVisible();
+    await expect(
+      kvittens.getByText('2 bekräftelser är skickade. Anmälningarna står nu som Bekräftade.'),
+    ).toBeVisible();
+    // AT-bäraren: MessageBox intent="success" ⇒ role="status" (artigt), samma
+    // live-region-form som batch-barens räknare. Rivs rollen är kvittensen
+    // stum för den som inte ser plattan — därför lokaliseras den via ROLLEN.
+    await expect(kvittens.getByRole('status')).toBeVisible();
+
+    // INTE en kvarliggande artefakt: nästa arbetssteg i blocket rensar den.
+    await gruppen(page).getByRole('button', { name: 'Markera anmälningar' }).click();
+    await expect(kvittens).toHaveCount(0);
+
+    // …och singularformen, som dessutom går att stänga för hand — kontrollen
+    // en självförsvinnande toast saknar (Polaris a11y-not).
+    await markerbaraKort(page).nth(0).click();
+    await gruppen(page)
+      .getByTestId('markering-batchbar')
+      .getByRole('button', { name: /^Bekräfta 1 anmälan/ })
+      .click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^Skicka 1 bekräftelse/ })
+      .click();
+    await expect(
+      kvittens.getByText('Bekräftelsen är skickad. Anmälan står nu som Bekräftad.'),
+    ).toBeVisible();
+    await kvittens.getByRole('button', { name: 'Stäng meddelande' }).click();
+    await expect(kvittens).toHaveCount(0);
+  });
+
+  test('fynd (e): korthöjden är oberoende av kategori-pillen — mellan kort OCH genom lägena', async ({
+    page,
+  }) => {
+    // Sågtanden: pill-slotten var innehålls-styrd (`max-w-[45%]`), så
+    // identitetskolumnen ärvde variationen och e-posten radbröts bara på korten
+    // MED kategori-pill. Uppmätt på 430 px före fixen: 166/145/166/145, och
+    // samma kort hoppade 166 → 145 när Obekräftad-pillen vek vid val.
+    await page.setViewportSize({ width: 430, height: 900 });
+    await mocka(page, eventDetail(), blandadeObekraftade());
+    await oppnaEventsidan(page);
+
+    const hojder = async (testid: string) =>
+      gruppen(page)
+        .getByTestId(testid)
+        .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)));
+
+    // Kön bär två kort MED och två UTAN kategori-pill.
+    await expect(gruppen(page).getByText('Manuellt tillagd')).toHaveCount(2);
+    const vilande = await hojder('deltagar-kort');
+    expect(vilande).toHaveLength(4);
+    expect(Math.max(...vilande) - Math.min(...vilande)).toBeLessThanOrEqual(1);
+
+    // Samma höjd i markera-läget…
+    await oppnaMarkeringslaget(page);
+    const iLage = await hojder('markerbart-kort');
+    expect(Math.max(...iLage) - Math.min(...iLage)).toBeLessThanOrEqual(1);
+    expect(Math.abs(iLage[0] - vilande[0])).toBeLessThanOrEqual(1);
+
+    // …och när Obekräftad-pillen viker för markeringen. Både ett kort MED
+    // kategori-pill och ett UTAN, eftersom det var just skillnaden dem emellan
+    // som drev hoppet.
+    await markerbaraKort(page).filter({ hasText: 'Anna Ekstrand' }).click();
+    await markerbaraKort(page).filter({ hasText: 'Bertil Sundberg' }).click();
+    const valda = await hojder('markerbart-kort');
+    expect(Math.max(...valda) - Math.min(...valda)).toBeLessThanOrEqual(1);
+    expect(Math.abs(valda[0] - vilande[0])).toBeLessThanOrEqual(1);
+
+    // Pill-slotten är RESERVERAD: identisk bredd oavsett om pillen finns.
+    const slotBredder = await gruppen(page)
+      .getByTestId('markerbart-kort')
+      .evaluateAll((els) =>
+        els.map((el) => {
+          const namn = el.querySelector('[data-testid="deltagar-namn"]') as HTMLElement;
+          const slot = namn.parentElement?.nextElementSibling as HTMLElement;
+          return Math.round(slot.getBoundingClientRect().width);
+        }),
+      );
+    expect(new Set(slotBredder).size).toBe(1);
   });
 
   test('review-fynd 2: ett icke-rent utfall BEHÅLLER urvalet och läget', async ({ page }) => {

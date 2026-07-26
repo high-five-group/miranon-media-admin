@@ -241,6 +241,43 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await expect(arkiv).toBeHidden();
   });
 
+  test('arkivets default FÖLJER kön, men ett explicit klick vinner (fynd (b))', async ({
+    page,
+  }) => {
+    // `bekraftadeOppen` var förr ett startvärde som beräknades EN gång vid
+    // monteringen — samma sluttillstånd fick därför två utseenden beroende på
+    // hur man kom dit. Nu betyder `null` "aldrig växlad" och härleds live ur
+    // kön; ett klick skriver en riktig boolean som därefter respekteras.
+    // Fixtur utan obekräftade: kön är tom ⇒ registret ska stå UTFÄLLT.
+    const allaBekraftade = DELTAGARE.map((r) =>
+      r.status === 'Obekräftad'
+        ? {
+            ...r,
+            status: 'Bekräftad (mail skickat)',
+            bekraftelseSkickad: '2026-07-07T09:00:00.000Z',
+          }
+        : r,
+    );
+    await mocka(page, eventDetail(), allaBekraftade);
+    await oppnaEventsidan(page);
+
+    const arkiv = gruppen(page).getByRole('button', { name: 'Bekräftade (4)', exact: true });
+    await expect(arkiv).toHaveAttribute('aria-expanded', 'true');
+    await expect(gruppen(page).getByText('Inga obekräftade — alla är bekräftade.')).toBeVisible();
+
+    // Explicit fällning vinner över härledningen…
+    await arkiv.click();
+    await expect(arkiv).toHaveAttribute('aria-expanded', 'false');
+
+    // …och överlever en omrendering av hela grenen (filter på och av).
+    const rad = gruppen(page).getByRole('button', { name: /^Anmälningsbekräftelse/ });
+    await rad.click();
+    await gruppen(page).getByRole('button', { name: 'Rensa filtret' }).click();
+    await expect(
+      gruppen(page).getByRole('button', { name: 'Bekräftade (4)', exact: true }),
+    ).toHaveAttribute('aria-expanded', 'false');
+  });
+
   test('summeringsradens klick FILTRERAR till flat lista + Rensa filtret; klick igen rensar', async ({
     page,
   }) => {
