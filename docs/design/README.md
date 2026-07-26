@@ -25,27 +25,49 @@ npm run atlas
 Ändras ett tokenvärde i appen följer atlasen med. Kör om efter varje ändring i
 `src/styles/tokens/`, så kan de två aldrig hamna i otakt.
 
-## Hur skalförslagen är gjorda
+## Hur skalorna är gjorda
 
-De föreslagna skalorna följer [Radix tolvstegsmodell](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale),
+Skalorna följer [Radix tolvstegsmodell](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale),
 där varje steg är en UI-roll och inte en godtycklig nyans: sidbakgrund,
 komponentytor, kanter, solida ytor, text.
 
-Skalorna genereras i OKLCH därför att lika stora ljushetssteg där också ser lika
-stora ut — samma skäl som fick Tailwind att definiera om hela sin palett i den
-rymden i version 4. Varumärkesfärgen är alltid ankare och flyttas aldrig: steg 9
-är exakt den kulör appen redan bär, och resten byggs ut från den.
+De genereras i OKLCH därför att lika stora ljushetssteg där också ser lika stora
+ut — samma skäl som fick Tailwind att definiera om hela sin palett i den rymden
+i version 4. Varumärkesfärgen är ankare och blir steg 9, så identiteten är
+oförändrad och resten byggs ut från den.
 
-Varje förslag prövas mot de kontrakt Radix garanterar för sina egna skalor —
-att steg 11 når läsbar kontrast mot steg 2, att steg 9 duger som UI-yta, och så
-vidare. Kontrakten står under respektive skala i atlasen, med uppmätt värde.
-Ett kontrakt som faller döljs inte.
+Ankaret är flyttat i exakt en skala: blå. Skälet står i fynd F10 — den gamla
+info-blå låg för nära fokusringen för att gå att skilja från den.
+
+Varje skala prövas mot de kontrakt Radix garanterar för sina egna — att steg 11
+når läsbar kontrast mot steg 2, att steg 9 duger som UI-yta, och så vidare.
+Kontrakten står under respektive skala med uppmätt värde. Ett kontrakt som
+faller döljs inte: guldets steg 9 når 2,57:1 mot vit yta och redovisas som
+brutet, eftersom en mättad gul-orange inte kan nå 3:1 vid den ljusheten.
 
 Matematiken bor i `scripts/lib/farg.mjs`, skalgenereringen i
 `scripts/lib/skala.mjs`.
 
+## Verifiering
+
+```bash
+npm run atlas
+```
+
+bygger om, formaterar och kör `scripts/verifiera-farg-atlas.mjs` — drygt tusen
+kontroller som prövar varje påstående i atlasen mot källkoden.
+
+Verifieraren är avsiktligt **oberoende** av generatorn: kontrastformeln,
+CIE-matematiken, tokenutläsningen och användningsräkningen är skrivna en gång
+till ur specifikationerna i stället för importerade. En verifiering som lånar
+generatorns kod bekräftar bara att koden är konsekvent med sig själv. Den
+ordningen fångade fyra verkliga räknefel första gången den kördes.
+
 ## Status
 
-Förslagen är **förslag**. Ingenting av det är implementerat i appen, och
-`src/styles/tokens/` är orört. Atlasen dokumenterar och föreslår; besluten är
-inte fattade.
+Skalorna ligger i `src/styles/tokens/primitives.css` men **ingen roll pekar på
+dem ännu** — appen renderar oförändrad. Det som finns är materialet, färdigt
+att väljas ur.
+
+Migreringen av `--mm-*`-rollerna till de nya skalorna är ett eget beslut och
+det som ändrar appens utseende.

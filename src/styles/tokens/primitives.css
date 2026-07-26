@@ -22,10 +22,8 @@
        (3:1) som UI-yta. Det är fysiken hos en mättad gul-orange, inte ett fel
        i skalan — behövs guld som yta mot vitt är steg 10 den ljusaste som
        duger. Se fynd F9.
-     · Blå saknas här med avsikt. Fokusringens #1B4965 ockuperar den ljushet
-       blåskalans textsteg behöver, och varje genererad variant blir antingen
-       förväxlingsbar med fokusringen eller inte längre blå. Se fynd F10 —
-       det löses genom att flytta info-blå, inte genom att justera skalan.
+     · Blå är den enda skala vars ankare är FLYTTAT. Se noten vid blåskalan
+       och fynd F10.
      ═══════════════════════════════════════════════════════════════════════ */
 
   /* ── Guld ── ankare steg 9 = tidigare --p-gold-500 ── */
@@ -96,6 +94,37 @@
   --p-sage-10: #57614e;
   --p-sage-11: #434c3b;
   --p-sage-12: #262d21;
+
+  /* ── Blå ── NYTT ankare, flyttat från --p-blue-500 (Marcus-beslut 2026-07-26) ──
+     Detta är den enda skala vars ankare INTE är den gamla palettens kulör, och
+     skälet är fynd F10: --p-blue-500 (#4A6B8A) låg på perceptuellt avstånd 15,1
+     från fokusringens #1B4965 — nästan identisk mättnad och ton, åtskilda bara
+     av ljushet. En fokusring runt ett info-element gick knappt att urskilja, och
+     varje blåskala byggd runt det ankaret blev antingen förväxlingsbar med
+     fokusringen eller inte längre blå i den mörka änden.
+
+     Fokusringen vinner och står fast (lessons.md Session 25, UNIVERSAL:
+     exklusiviteten är det som gör den igenkännbar). Info-blå flyttar i stället.
+
+     #1F6CB0 ligger på samma ljushet som den gamla (CIE L* 44,4 mot 44,0) och
+     närmaste ton, men med dubbla mättnaden (C 42,6 mot 21,0). Det ger den
+     skarpaste möjliga uppdelningen: fokusringen är den DOVA mörkblå, info är
+     den KLARA. Avståndet blev 27,3 och hela skalan är fri från kollisioner.
+
+     Rollernas kontrast är i praktiken oförändrad: som text mot info-ytan 5,04:1
+     (dagens 5,13), som kursplatta under vit text 5,48:1 (dagens 5,58). */
+  --p-blue-1: #fbfdff;
+  --p-blue-2: #ebf5ff;
+  --p-blue-3: #d1e7ff;
+  --p-blue-4: #b1d7ff;
+  --p-blue-5: #93c3f5;
+  --p-blue-6: #75ace5;
+  --p-blue-7: #5290ce;
+  --p-blue-8: #377dc0;
+  --p-blue-9: #1f6cb0;
+  --p-blue-10: #1462a4;
+  --p-blue-11: #004c85;
+  --p-blue-12: #292c31;
 
   /* ── Röd ── ankare steg 9 = tidigare --p-red-500 ── */
   --p-red-1: #fffcfb;

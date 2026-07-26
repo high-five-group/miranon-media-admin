@@ -96,6 +96,9 @@
   .fynd .id { font: .8rem ui-monospace, monospace; color: var(--tyst); }
   .fynd .allvar { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em;
                   color: var(--tyst); margin-left: auto; }
+  .fynd .atgard { border-left: 3px solid var(--ok); padding-left: .7rem; }
+  .fynd.löst { border-left-color: var(--ok); opacity: .85; }
+  .fynd.löst .allvar { color: var(--ok); }
   .fynd p { font-size: .87rem; margin: .4rem 0; }
   .fynd .plats code { font-size: .75rem; }
   .fynd .verif { color: var(--tyst); }
@@ -108,348 +111,503 @@
 <div class="omslag">
 <header>
   <h1>Färgatlas</h1>
-  <p class="lead">Nuläget i Miranon Media Admins färgsystem, mätt och renderat — plus vad som saknas
-     och hur en fullständig palett skulle se ut. Genererad ur <code>src/</code>, inte skriven för hand.</p>
-  <p class="meta">Byggd 2026-07-26 · 92 primitiver ·
+  <p class="lead">Miranon Media Admins palett, mätt och renderad ur <code>src/</code> — inte
+     skriven för hand. Sex tolvstegsskalor ligger i appen som material; rollerna pekar
+     ännu på den gamla paletten.</p>
+  <p class="meta">Byggd 2026-07-26 · 104 primitiver ·
      58 roller · 38 utilities i <code>@theme</code></p>
 </header>
 
-<h2>1. Nuläget — primitiva skalor</h2>
-<p class="lead">Varje ruta visar hex, CIE L* (perceptuell ljushet — måttet som avgör om två steg
-   känns lika stora), kontrast mot vit yta, och hur många gånger tokenet faktiskt används.</p>
+<h2>1. Paletten</h2>
+<p class="lead">Sex skalor om tolv steg enligt Radix rollindelning: varje steg är en UI-roll,
+   inte en godtycklig nyans. Genererade i OKLCH därför att lika stora ljushetssteg där också
+   ser lika stora ut. <strong>Steg 9 är ankaret</strong> — den kulör appen redan bär — och det
+   är flyttat i exakt en skala: blå, av skäl som står i fynd F10.</p>
+<p class="lead">Skalorna finns i <code>primitives.css</code> men ingen roll pekar på dem ännu.
+   Migreringen är ett eget beslut; det som står här är materialet, färdigt att väljas ur.</p>
 <section class="skala">
-  <h3>Guld — tolvstegsskalan (ny, ingen roll pekar hit än) · 12 steg</h3>
-  <p class="ingress"><strong>Största hål:</strong> --p-gold-11 → --p-gold-12, 17.4 L*-enheter. Där ryms flera steg.</p>
+  <h3>Guld — primärfärgen · 12 steg</h3>
+  <p class="ingress">Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.</p>
   <div class="rutor"><div class="ruta"><div class="prov" style="background:#fffcf8;color:#1a1a1a">1</div><div class="under"><code>#fffcf8</code>
-           <span>L* 99.1</span>
-           <span>1.02:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fff6e8;color:#1a1a1a">2</div><div class="under"><code>#fff6e8</code>
-           <span>L* 97.2</span>
-           <span>1.07:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffecce;color:#1a1a1a">3</div><div class="under"><code>#ffecce</code>
-           <span>L* 94.2</span>
-           <span>1.16:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffdfad;color:#1a1a1a">4</div><div class="under"><code>#ffdfad</code>
-           <span>L* 90.3</span>
-           <span>1.28:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fcd08b;color:#1a1a1a">5</div><div class="under"><code>#fcd08b</code>
-           <span>L* 85.8</span>
-           <span>1.44:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f2c16f;color:#1a1a1a">6</div><div class="under"><code>#f2c16f</code>
-           <span>L* 80.8</span>
-           <span>1.66:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#e5ae4e;color:#1a1a1a">7</div><div class="under"><code>#e5ae4e</code>
-           <span>L* 74.5</span>
-           <span>2.00:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#dda12f;color:#1a1a1a">8</div><div class="under"><code>#dda12f</code>
-           <span>L* 70.2</span>
-           <span>2.28:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#d4960a;color:#1a1a1a">9</div><div class="under"><code>#d4960a</code>
-           <span>L* 66.4</span>
-           <span>2.57:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c28900;color:#1a1a1a">10</div><div class="under"><code>#c28900</code>
-           <span>L* 61.1</span>
-           <span>3.06:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#966800;color:#ffffff">11</div><div class="under"><code>#966800</code>
-           <span>L* 47.5</span>
-           <span>4.91:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#604100;color:#ffffff">12</div><div class="under"><code>#604100</code>
-           <span>L* 30.1</span>
-           <span>9.32:1</span>
-           <span class="dod">oanvänd</span></div></div></div>
-</section>
+         <span class="roll">Sidbakgrund</span>
+         <span>L* 99.1</span>
+         <span>1.02:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fff6e8;color:#1a1a1a">2</div><div class="under"><code>#fff6e8</code>
+         <span class="roll">Subtil bakgrund</span>
+         <span>L* 97.2</span>
+         <span>1.07:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffecce;color:#1a1a1a">3</div><div class="under"><code>#ffecce</code>
+         <span class="roll">Komponentyta</span>
+         <span>L* 94.2</span>
+         <span>1.16:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffdfad;color:#1a1a1a">4</div><div class="under"><code>#ffdfad</code>
+         <span class="roll">Komponentyta, hover</span>
+         <span>L* 90.3</span>
+         <span>1.28:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fcd08b;color:#1a1a1a">5</div><div class="under"><code>#fcd08b</code>
+         <span class="roll">Komponentyta, aktiv</span>
+         <span>L* 85.8</span>
+         <span>1.44:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f2c16f;color:#1a1a1a">6</div><div class="under"><code>#f2c16f</code>
+         <span class="roll">Subtil kant</span>
+         <span>L* 80.8</span>
+         <span>1.66:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#e5ae4e;color:#1a1a1a">7</div><div class="under"><code>#e5ae4e</code>
+         <span class="roll">Kant och fokusring</span>
+         <span>L* 74.5</span>
+         <span>2.00:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#dda12f;color:#1a1a1a">8</div><div class="under"><code>#dda12f</code>
+         <span class="roll">Kant, hover</span>
+         <span>L* 70.2</span>
+         <span>2.28:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#d4960a;color:#1a1a1a">9</div><div class="under"><code>#d4960a</code>
+         <span class="roll">Solid yta</span>
+         <span>L* 66.4</span>
+         <span>2.57:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c28900;color:#1a1a1a">10</div><div class="under"><code>#c28900</code>
+         <span class="roll">Solid yta, hover</span>
+         <span>L* 61.1</span>
+         <span>3.06:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#966800;color:#ffffff">11</div><div class="under"><code>#966800</code>
+         <span class="roll">Text, låg kontrast</span>
+         <span>L* 47.5</span>
+         <span>4.91:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#604100;color:#ffffff">12</div><div class="under"><code>#604100</code>
+         <span class="roll">Text, hög kontrast</span>
+         <span>L* 30.1</span>
+         <span>9.32:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section><ul class="kontrakt"><li class="fel"><span>✗</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>2.57</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>4.58</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>8.70</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>9.11</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>1.87</strong> (golv 1.4)</li></ul>
 <section class="skala">
-  <h3>Koppar — tolvstegsskalan (ny) · 12 steg</h3>
-  <p class="ingress">Stegen ligger jämnt fördelade.</p>
+  <h3>Koppar — accent och CTA · 12 steg</h3>
+  <p class="ingress">Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.</p>
   <div class="rutor"><div class="ruta"><div class="prov" style="background:#fffcfb;color:#1a1a1a">1</div><div class="under"><code>#fffcfb</code>
-           <span>L* 99.2</span>
-           <span>1.02:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fff0e9;color:#1a1a1a">2</div><div class="under"><code>#fff0e9</code>
-           <span>L* 95.8</span>
-           <span>1.11:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffdccd;color:#1a1a1a">3</div><div class="under"><code>#ffdccd</code>
-           <span>L* 90.3</span>
-           <span>1.28:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fdc3ab;color:#1a1a1a">4</div><div class="under"><code>#fdc3ab</code>
-           <span>L* 83.4</span>
-           <span>1.55:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#efab8e;color:#1a1a1a">5</div><div class="under"><code>#efab8e</code>
-           <span>L* 75.7</span>
-           <span>1.93:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#dd9170;color:#1a1a1a">6</div><div class="under"><code>#dd9170</code>
-           <span>L* 67.1</span>
-           <span>2.51:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c4724d;color:#1a1a1a">7</div><div class="under"><code>#c4724d</code>
-           <span>L* 56.4</span>
-           <span>3.58:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#b45c33;color:#ffffff">8</div><div class="under"><code>#b45c33</code>
-           <span>L* 49.0</span>
-           <span>4.65:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a3491c;color:#ffffff">9</div><div class="under"><code>#a3491c</code>
-           <span>L* 42.2</span>
-           <span>5.95:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#974012;color:#ffffff">10</div><div class="under"><code>#974012</code>
-           <span>L* 38.4</span>
-           <span>6.87:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#7a2d00;color:#ffffff">11</div><div class="under"><code>#7a2d00</code>
-           <span>L* 29.5</span>
-           <span>9.53:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#4b1900;color:#ffffff">12</div><div class="under"><code>#4b1900</code>
-           <span>L* 16.5</span>
-           <span>14.60:1</span>
-           <span class="dod">oanvänd</span></div></div></div>
-</section>
+         <span class="roll">Sidbakgrund</span>
+         <span>L* 99.2</span>
+         <span>1.02:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fff0e9;color:#1a1a1a">2</div><div class="under"><code>#fff0e9</code>
+         <span class="roll">Subtil bakgrund</span>
+         <span>L* 95.8</span>
+         <span>1.11:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffdccd;color:#1a1a1a">3</div><div class="under"><code>#ffdccd</code>
+         <span class="roll">Komponentyta</span>
+         <span>L* 90.3</span>
+         <span>1.28:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fdc3ab;color:#1a1a1a">4</div><div class="under"><code>#fdc3ab</code>
+         <span class="roll">Komponentyta, hover</span>
+         <span>L* 83.4</span>
+         <span>1.55:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#efab8e;color:#1a1a1a">5</div><div class="under"><code>#efab8e</code>
+         <span class="roll">Komponentyta, aktiv</span>
+         <span>L* 75.7</span>
+         <span>1.93:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#dd9170;color:#1a1a1a">6</div><div class="under"><code>#dd9170</code>
+         <span class="roll">Subtil kant</span>
+         <span>L* 67.1</span>
+         <span>2.51:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c4724d;color:#1a1a1a">7</div><div class="under"><code>#c4724d</code>
+         <span class="roll">Kant och fokusring</span>
+         <span>L* 56.4</span>
+         <span>3.58:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#b45c33;color:#ffffff">8</div><div class="under"><code>#b45c33</code>
+         <span class="roll">Kant, hover</span>
+         <span>L* 49.0</span>
+         <span>4.65:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a3491c;color:#ffffff">9</div><div class="under"><code>#a3491c</code>
+         <span class="roll">Solid yta</span>
+         <span>L* 42.2</span>
+         <span>5.95:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#974012;color:#ffffff">10</div><div class="under"><code>#974012</code>
+         <span class="roll">Solid yta, hover</span>
+         <span>L* 38.4</span>
+         <span>6.87:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#7a2d00;color:#ffffff">11</div><div class="under"><code>#7a2d00</code>
+         <span class="roll">Text, låg kontrast</span>
+         <span>L* 29.5</span>
+         <span>9.53:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#4b1900;color:#ffffff">12</div><div class="under"><code>#4b1900</code>
+         <span class="roll">Text, hög kontrast</span>
+         <span>L* 16.5</span>
+         <span>14.60:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section><ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.95</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>8.58</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>13.14</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>14.30</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.22</strong> (golv 1.4)</li></ul>
 <section class="skala">
-  <h3>Neutraler — tolvstegsskalan (ny, ton 100° kroma 0,008) · 12 steg</h3>
-  <p class="ingress">Stegen ligger jämnt fördelade.</p>
+  <h3>Neutraler — ton 100°, kroma 0,008 · 12 steg</h3>
+  <p class="ingress">Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.</p>
   <div class="rutor"><div class="ruta"><div class="prov" style="background:#fdfdfc;color:#1a1a1a">1</div><div class="under"><code>#fdfdfc</code>
-           <span>L* 99.3</span>
-           <span>1.02:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f4f3f2;color:#1a1a1a">2</div><div class="under"><code>#f4f3f2</code>
-           <span>L* 95.9</span>
-           <span>1.11:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#e5e5e2;color:#1a1a1a">3</div><div class="under"><code>#e5e5e2</code>
-           <span>L* 90.9</span>
-           <span>1.26:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#d4d3d0;color:#1a1a1a">4</div><div class="under"><code>#d4d3d0</code>
-           <span>L* 84.6</span>
-           <span>1.50:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c0bfbb;color:#1a1a1a">5</div><div class="under"><code>#c0bfbb</code>
-           <span>L* 77.3</span>
-           <span>1.84:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a9a9a4;color:#1a1a1a">6</div><div class="under"><code>#a9a9a4</code>
-           <span>L* 69.1</span>
-           <span>2.36:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#8e8d89;color:#1a1a1a">7</div><div class="under"><code>#8e8d89</code>
-           <span>L* 58.6</span>
-           <span>3.32:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#7c7b76;color:#ffffff">8</div><div class="under"><code>#7c7b76</code>
-           <span>L* 51.6</span>
-           <span>4.24:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">9</div><div class="under"><code>#6b6b6b</code>
-           <span>L* 45.2</span>
-           <span>5.33:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#62625d;color:#ffffff">10</div><div class="under"><code>#62625d</code>
-           <span>L* 41.4</span>
-           <span>6.13:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#4c4c47;color:#ffffff">11</div><div class="under"><code>#4c4c47</code>
-           <span>L* 32.2</span>
-           <span>8.63:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#2d2d2a;color:#ffffff">12</div><div class="under"><code>#2d2d2a</code>
-           <span>L* 18.4</span>
-           <span>13.81:1</span>
-           <span class="dod">oanvänd</span></div></div></div>
-</section>
+         <span class="roll">Sidbakgrund</span>
+         <span>L* 99.3</span>
+         <span>1.02:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f4f3f2;color:#1a1a1a">2</div><div class="under"><code>#f4f3f2</code>
+         <span class="roll">Subtil bakgrund</span>
+         <span>L* 95.9</span>
+         <span>1.11:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#e5e5e2;color:#1a1a1a">3</div><div class="under"><code>#e5e5e2</code>
+         <span class="roll">Komponentyta</span>
+         <span>L* 90.9</span>
+         <span>1.26:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#d4d3d0;color:#1a1a1a">4</div><div class="under"><code>#d4d3d0</code>
+         <span class="roll">Komponentyta, hover</span>
+         <span>L* 84.6</span>
+         <span>1.50:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c0bfbb;color:#1a1a1a">5</div><div class="under"><code>#c0bfbb</code>
+         <span class="roll">Komponentyta, aktiv</span>
+         <span>L* 77.3</span>
+         <span>1.84:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a9a9a4;color:#1a1a1a">6</div><div class="under"><code>#a9a9a4</code>
+         <span class="roll">Subtil kant</span>
+         <span>L* 69.1</span>
+         <span>2.36:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#8e8d89;color:#1a1a1a">7</div><div class="under"><code>#8e8d89</code>
+         <span class="roll">Kant och fokusring</span>
+         <span>L* 58.6</span>
+         <span>3.32:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#7c7b76;color:#ffffff">8</div><div class="under"><code>#7c7b76</code>
+         <span class="roll">Kant, hover</span>
+         <span>L* 51.6</span>
+         <span>4.24:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">9</div><div class="under"><code>#6b6b6b</code>
+         <span class="roll">Solid yta</span>
+         <span>L* 45.2</span>
+         <span>5.33:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#62625d;color:#ffffff">10</div><div class="under"><code>#62625d</code>
+         <span class="roll">Solid yta, hover</span>
+         <span>L* 41.4</span>
+         <span>6.13:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#4c4c47;color:#ffffff">11</div><div class="under"><code>#4c4c47</code>
+         <span class="roll">Text, låg kontrast</span>
+         <span>L* 32.2</span>
+         <span>8.63:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#2d2d2a;color:#ffffff">12</div><div class="under"><code>#2d2d2a</code>
+         <span class="roll">Text, hög kontrast</span>
+         <span>L* 18.4</span>
+         <span>13.81:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section><ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.33</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>7.79</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>12.46</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>13.57</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.00</strong> (golv 1.4)</li></ul>
 <section class="skala">
-  <h3>Sage — tolvstegsskalan (ny) · 12 steg</h3>
-  <p class="ingress">Stegen ligger jämnt fördelade.</p>
+  <h3>Sage — success och skapa-knappen · 12 steg</h3>
+  <p class="ingress">Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.</p>
   <div class="rutor"><div class="ruta"><div class="prov" style="background:#fcfdfa;color:#1a1a1a">1</div><div class="under"><code>#fcfdfa</code>
-           <span>L* 99.2</span>
-           <span>1.02:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f1f4ee;color:#1a1a1a">2</div><div class="under"><code>#f1f4ee</code>
-           <span>L* 95.8</span>
-           <span>1.11:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#e1e6dd;color:#1a1a1a">3</div><div class="under"><code>#e1e6dd</code>
-           <span>L* 90.7</span>
-           <span>1.27:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ced5c8;color:#1a1a1a">4</div><div class="under"><code>#ced5c8</code>
-           <span>L* 84.4</span>
-           <span>1.50:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#b8c0b1;color:#1a1a1a">5</div><div class="under"><code>#b8c0b1</code>
-           <span>L* 76.7</span>
-           <span>1.87:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a0a999;color:#1a1a1a">6</div><div class="under"><code>#a0a999</code>
-           <span>L* 68.1</span>
-           <span>2.43:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#848e7b;color:#1a1a1a">7</div><div class="under"><code>#848e7b</code>
-           <span>L* 57.7</span>
-           <span>3.42:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#717c68;color:#ffffff">8</div><div class="under"><code>#717c68</code>
-           <span>L* 50.6</span>
-           <span>4.39:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#606b57;color:#ffffff">9</div><div class="under"><code>#606b57</code>
-           <span>L* 43.8</span>
-           <span>5.62:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#57614e;color:#ffffff">10</div><div class="under"><code>#57614e</code>
-           <span>L* 39.8</span>
-           <span>6.51:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#434c3b;color:#ffffff">11</div><div class="under"><code>#434c3b</code>
-           <span>L* 31.1</span>
-           <span>8.99:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#262d21;color:#ffffff">12</div><div class="under"><code>#262d21</code>
-           <span>L* 17.5</span>
-           <span>14.19:1</span>
-           <span class="dod">oanvänd</span></div></div></div>
-</section>
+         <span class="roll">Sidbakgrund</span>
+         <span>L* 99.2</span>
+         <span>1.02:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f1f4ee;color:#1a1a1a">2</div><div class="under"><code>#f1f4ee</code>
+         <span class="roll">Subtil bakgrund</span>
+         <span>L* 95.8</span>
+         <span>1.11:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#e1e6dd;color:#1a1a1a">3</div><div class="under"><code>#e1e6dd</code>
+         <span class="roll">Komponentyta</span>
+         <span>L* 90.7</span>
+         <span>1.27:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ced5c8;color:#1a1a1a">4</div><div class="under"><code>#ced5c8</code>
+         <span class="roll">Komponentyta, hover</span>
+         <span>L* 84.4</span>
+         <span>1.50:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#b8c0b1;color:#1a1a1a">5</div><div class="under"><code>#b8c0b1</code>
+         <span class="roll">Komponentyta, aktiv</span>
+         <span>L* 76.7</span>
+         <span>1.87:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a0a999;color:#1a1a1a">6</div><div class="under"><code>#a0a999</code>
+         <span class="roll">Subtil kant</span>
+         <span>L* 68.1</span>
+         <span>2.43:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#848e7b;color:#1a1a1a">7</div><div class="under"><code>#848e7b</code>
+         <span class="roll">Kant och fokusring</span>
+         <span>L* 57.7</span>
+         <span>3.42:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#717c68;color:#ffffff">8</div><div class="under"><code>#717c68</code>
+         <span class="roll">Kant, hover</span>
+         <span>L* 50.6</span>
+         <span>4.39:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#606b57;color:#ffffff">9</div><div class="under"><code>#606b57</code>
+         <span class="roll">Solid yta</span>
+         <span>L* 43.8</span>
+         <span>5.62:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#57614e;color:#ffffff">10</div><div class="under"><code>#57614e</code>
+         <span class="roll">Solid yta, hover</span>
+         <span>L* 39.8</span>
+         <span>6.51:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#434c3b;color:#ffffff">11</div><div class="under"><code>#434c3b</code>
+         <span class="roll">Text, låg kontrast</span>
+         <span>L* 31.1</span>
+         <span>8.99:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#262d21;color:#ffffff">12</div><div class="under"><code>#262d21</code>
+         <span class="roll">Text, hög kontrast</span>
+         <span>L* 17.5</span>
+         <span>14.19:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section><ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.62</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>8.10</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>12.78</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>13.90</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.08</strong> (golv 1.4)</li></ul>
 <section class="skala">
-  <h3>Röd — tolvstegsskalan (ny) · 12 steg</h3>
-  <p class="ingress">Stegen ligger jämnt fördelade.</p>
+  <h3>Blå — info och Fjärrskådning. Ankaret flyttat, se F10 · 12 steg</h3>
+  <p class="ingress">Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fbfdff;color:#1a1a1a">1</div><div class="under"><code>#fbfdff</code>
+         <span class="roll">Sidbakgrund</span>
+         <span>L* 99.2</span>
+         <span>1.02:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ebf5ff;color:#1a1a1a">2</div><div class="under"><code>#ebf5ff</code>
+         <span class="roll">Subtil bakgrund</span>
+         <span>L* 96.1</span>
+         <span>1.10:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#d1e7ff;color:#1a1a1a">3</div><div class="under"><code>#d1e7ff</code>
+         <span class="roll">Komponentyta</span>
+         <span>L* 90.7</span>
+         <span>1.27:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#b1d7ff;color:#1a1a1a">4</div><div class="under"><code>#b1d7ff</code>
+         <span class="roll">Komponentyta, hover</span>
+         <span>L* 84.6</span>
+         <span>1.50:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#93c3f5;color:#1a1a1a">5</div><div class="under"><code>#93c3f5</code>
+         <span class="roll">Komponentyta, aktiv</span>
+         <span>L* 77.2</span>
+         <span>1.85:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#75ace5;color:#1a1a1a">6</div><div class="under"><code>#75ace5</code>
+         <span class="roll">Subtil kant</span>
+         <span>L* 68.7</span>
+         <span>2.39:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#5290ce;color:#1a1a1a">7</div><div class="under"><code>#5290ce</code>
+         <span class="roll">Kant och fokusring</span>
+         <span>L* 58.2</span>
+         <span>3.37:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#377dc0;color:#ffffff">8</div><div class="under"><code>#377dc0</code>
+         <span class="roll">Kant, hover</span>
+         <span>L* 51.0</span>
+         <span>4.32:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#1f6cb0;color:#ffffff">9</div><div class="under"><code>#1f6cb0</code>
+         <span class="roll">Solid yta</span>
+         <span>L* 44.4</span>
+         <span>5.48:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#1462a4;color:#ffffff">10</div><div class="under"><code>#1462a4</code>
+         <span class="roll">Solid yta, hover</span>
+         <span>L* 40.5</span>
+         <span>6.34:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#004c85;color:#ffffff">11</div><div class="under"><code>#004c85</code>
+         <span class="roll">Text, låg kontrast</span>
+         <span>L* 31.5</span>
+         <span>8.85:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#292c31;color:#ffffff">12</div><div class="under"><code>#292c31</code>
+         <span class="roll">Text, hög kontrast</span>
+         <span>L* 17.9</span>
+         <span>14.01:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section><ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.48</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>8.02</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>12.70</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>13.74</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.05</strong> (golv 1.4)</li></ul>
+<section class="skala">
+  <h3>Röd — fel · 12 steg</h3>
+  <p class="ingress">Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.</p>
   <div class="rutor"><div class="ruta"><div class="prov" style="background:#fffcfb;color:#1a1a1a">1</div><div class="under"><code>#fffcfb</code>
-           <span>L* 99.2</span>
-           <span>1.02:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffeeeb;color:#1a1a1a">2</div><div class="under"><code>#ffeeeb</code>
-           <span>L* 95.3</span>
-           <span>1.12:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffd7d0;color:#1a1a1a">3</div><div class="under"><code>#ffd7d0</code>
-           <span>L* 89.1</span>
-           <span>1.32:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffbaaf;color:#1a1a1a">4</div><div class="under"><code>#ffbaaf</code>
-           <span>L* 81.6</span>
-           <span>1.63:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fe9686;color:#1a1a1a">5</div><div class="under"><code>#fe9686</code>
-           <span>L* 72.6</span>
-           <span>2.12:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ea7566;color:#1a1a1a">6</div><div class="under"><code>#ea7566</code>
-           <span>L* 62.7</span>
-           <span>2.90:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#cf4e3f;color:#ffffff">7</div><div class="under"><code>#cf4e3f</code>
-           <span>L* 50.8</span>
-           <span>4.36:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#bd2d22;color:#ffffff">8</div><div class="under"><code>#bd2d22</code>
-           <span>L* 42.5</span>
-           <span>5.90:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a90000;color:#ffffff">9</div><div class="under"><code>#a90000</code>
-           <span>L* 34.9</span>
-           <span>7.82:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#9a0000;color:#ffffff">10</div><div class="under"><code>#9a0000</code>
-           <span>L* 31.5</span>
-           <span>8.85:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#790000;color:#ffffff">11</div><div class="under"><code>#790000</code>
-           <span>L* 23.9</span>
-           <span>11.58:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#4b0000;color:#ffffff">12</div><div class="under"><code>#4b0000</code>
-           <span>L* 12.6</span>
-           <span>16.16:1</span>
-           <span class="dod">oanvänd</span></div></div></div>
-</section>
+         <span class="roll">Sidbakgrund</span>
+         <span>L* 99.2</span>
+         <span>1.02:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffeeeb;color:#1a1a1a">2</div><div class="under"><code>#ffeeeb</code>
+         <span class="roll">Subtil bakgrund</span>
+         <span>L* 95.3</span>
+         <span>1.12:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffd7d0;color:#1a1a1a">3</div><div class="under"><code>#ffd7d0</code>
+         <span class="roll">Komponentyta</span>
+         <span>L* 89.1</span>
+         <span>1.32:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffbaaf;color:#1a1a1a">4</div><div class="under"><code>#ffbaaf</code>
+         <span class="roll">Komponentyta, hover</span>
+         <span>L* 81.6</span>
+         <span>1.63:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fe9686;color:#1a1a1a">5</div><div class="under"><code>#fe9686</code>
+         <span class="roll">Komponentyta, aktiv</span>
+         <span>L* 72.6</span>
+         <span>2.12:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ea7566;color:#1a1a1a">6</div><div class="under"><code>#ea7566</code>
+         <span class="roll">Subtil kant</span>
+         <span>L* 62.7</span>
+         <span>2.90:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#cf4e3f;color:#ffffff">7</div><div class="under"><code>#cf4e3f</code>
+         <span class="roll">Kant och fokusring</span>
+         <span>L* 50.8</span>
+         <span>4.36:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#bd2d22;color:#ffffff">8</div><div class="under"><code>#bd2d22</code>
+         <span class="roll">Kant, hover</span>
+         <span>L* 42.5</span>
+         <span>5.90:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a90000;color:#ffffff">9</div><div class="under"><code>#a90000</code>
+         <span class="roll">Solid yta</span>
+         <span>L* 34.9</span>
+         <span>7.82:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#9a0000;color:#ffffff">10</div><div class="under"><code>#9a0000</code>
+         <span class="roll">Solid yta, hover</span>
+         <span>L* 31.5</span>
+         <span>8.85:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#790000;color:#ffffff">11</div><div class="under"><code>#790000</code>
+         <span class="roll">Text, låg kontrast</span>
+         <span>L* 23.9</span>
+         <span>11.58:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#4b0000;color:#ffffff">12</div><div class="under"><code>#4b0000</code>
+         <span class="roll">Text, hög kontrast</span>
+         <span>L* 12.6</span>
+         <span>16.16:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section><ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>7.82</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>10.30</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>14.38</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>15.83</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.88</strong> (golv 1.4)</li></ul>
+
+<h2>2. Den gamla paletten — utgående</h2>
+<p class="lead">Vad appens roller faktiskt pekar på idag. Ersätts av skalorna ovan när
+   migreringen görs. Kolumnen längst ner i varje ruta visar hur många gånger tokenet
+   används.</p>
 <section class="skala">
   <h3>Guld/amber — primärfärgen · 7 steg</h3>
-  <p class="ingress"><strong>Största hål:</strong> --p-gold-300 → --p-gold-400, 16.7 L*-enheter. Där ryms flera steg.</p>
+  <p class="ingress"><strong>Största hål:</strong> --p-gold-300 → --p-gold-400, 16.7 L*-enheter.</p>
   <div class="rutor"><div class="ruta"><div class="prov" style="background:#fbf3e0;color:#1a1a1a">100</div><div class="under"><code>#fbf3e0</code>
-           <span>L* 96.0</span>
-           <span>1.11:1</span>
-           <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#f5e6bc;color:#1a1a1a">200</div><div class="under"><code>#f5e6bc</code>
-           <span>L* 91.5</span>
-           <span>1.24:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f0d68a;color:#1a1a1a">300</div><div class="under"><code>#f0d68a</code>
-           <span>L* 86.2</span>
-           <span>1.43:1</span>
-           <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#c4a840;color:#1a1a1a">400</div><div class="under"><code>#c4a840</code>
-           <span>L* 69.5</span>
-           <span>2.33:1</span>
-           <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#d4960a;color:#1a1a1a">500</div><div class="under"><code>#d4960a</code>
-           <span>L* 66.4</span>
-           <span>2.57:1</span>
-           <span class="lev">5×</span></div></div><div class="ruta"><div class="prov" style="background:#b8800a;color:#1a1a1a">600</div><div class="under"><code>#b8800a</code>
-           <span>L* 57.7</span>
-           <span>3.43:1</span>
-           <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#96680a;color:#ffffff">700</div><div class="under"><code>#96680a</code>
-           <span>L* 47.5</span>
-           <span>4.91:1</span>
-           <span class="dod">oanvänd</span></div></div></div>
+         
+         <span>L* 96.0</span>
+         <span>1.11:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#f5e6bc;color:#1a1a1a">200</div><div class="under"><code>#f5e6bc</code>
+         
+         <span>L* 91.5</span>
+         <span>1.24:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f0d68a;color:#1a1a1a">300</div><div class="under"><code>#f0d68a</code>
+         
+         <span>L* 86.2</span>
+         <span>1.43:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#c4a840;color:#1a1a1a">400</div><div class="under"><code>#c4a840</code>
+         
+         <span>L* 69.5</span>
+         <span>2.33:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#d4960a;color:#1a1a1a">500</div><div class="under"><code>#d4960a</code>
+         
+         <span>L* 66.4</span>
+         <span>2.57:1</span>
+         <span class="lev">5×</span></div></div><div class="ruta"><div class="prov" style="background:#b8800a;color:#1a1a1a">600</div><div class="under"><code>#b8800a</code>
+         
+         <span>L* 57.7</span>
+         <span>3.43:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#96680a;color:#ffffff">700</div><div class="under"><code>#96680a</code>
+         
+         <span>L* 47.5</span>
+         <span>4.91:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
 </section>
 <section class="skala">
   <h3>Koppar — accent, CTA och varning · 5 steg</h3>
-  <p class="ingress"><strong>Största hål:</strong> --p-copper-200 → --p-copper-400, 33.8 L*-enheter. Där ryms flera steg.</p>
+  <p class="ingress"><strong>Största hål:</strong> --p-copper-200 → --p-copper-400, 33.8 L*-enheter.</p>
   <div class="rutor"><div class="ruta"><div class="prov" style="background:#fdf4ee;color:#1a1a1a">100</div><div class="under"><code>#fdf4ee</code>
-           <span>L* 96.7</span>
-           <span>1.09:1</span>
-           <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#f5d8c4;color:#1a1a1a">200</div><div class="under"><code>#f5d8c4</code>
-           <span>L* 88.2</span>
-           <span>1.35:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c46a3a;color:#1a1a1a">400</div><div class="under"><code>#c46a3a</code>
-           <span>L* 54.4</span>
-           <span>3.84:1</span>
-           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a3491c;color:#ffffff">500</div><div class="under"><code>#a3491c</code>
-           <span>L* 42.2</span>
-           <span>5.95:1</span>
-           <span class="lev">6×</span></div></div><div class="ruta"><div class="prov" style="background:#8a3d17;color:#ffffff">600</div><div class="under"><code>#8a3d17</code>
-           <span>L* 35.6</span>
-           <span>7.61:1</span>
-           <span class="lev">2×</span></div></div></div>
+         
+         <span>L* 96.7</span>
+         <span>1.09:1</span>
+         <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#f5d8c4;color:#1a1a1a">200</div><div class="under"><code>#f5d8c4</code>
+         
+         <span>L* 88.2</span>
+         <span>1.35:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c46a3a;color:#1a1a1a">400</div><div class="under"><code>#c46a3a</code>
+         
+         <span>L* 54.4</span>
+         <span>3.84:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a3491c;color:#ffffff">500</div><div class="under"><code>#a3491c</code>
+         
+         <span>L* 42.2</span>
+         <span>5.95:1</span>
+         <span class="lev">6×</span></div></div><div class="ruta"><div class="prov" style="background:#8a3d17;color:#ffffff">600</div><div class="under"><code>#8a3d17</code>
+         
+         <span>L* 35.6</span>
+         <span>7.61:1</span>
+         <span class="lev">2×</span></div></div></div>
 </section>
 <section class="skala">
   <h3>Neutraler — bär omkring 450 av appens färganvändningar · 13 steg</h3>
-  <p class="ingress"><strong>Största hål:</strong> --p-neutral-300 → --p-neutral-400, 22.0 L*-enheter. Där ryms flera steg.</p>
+  <p class="ingress"><strong>Största hål:</strong> --p-neutral-300 → --p-neutral-400, 22.0 L*-enheter.</p>
   <div class="rutor"><div class="ruta"><div class="prov" style="background:#ffffff;color:#1a1a1a">0</div><div class="under"><code>#ffffff</code>
-           <span>L* 100.0</span>
-           <span>1.00:1</span>
-           <span class="lev">7×</span></div></div><div class="ruta"><div class="prov" style="background:#fafaf8;color:#1a1a1a">25</div><div class="under"><code>#fafaf8</code>
-           <span>L* 98.2</span>
-           <span>1.05:1</span>
-           <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#f5f5f3;color:#1a1a1a">50</div><div class="under"><code>#f5f5f3</code>
-           <span>L* 96.5</span>
-           <span>1.09:1</span>
-           <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#edeee9;color:#1a1a1a">100</div><div class="under"><code>#edeee9</code>
-           <span>L* 93.9</span>
-           <span>1.17:1</span>
-           <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#e1e3e1;color:#1a1a1a">200</div><div class="under"><code>#e1e3e1</code>
-           <span>L* 90.0</span>
-           <span>1.29:1</span>
-           <span class="lev">3×</span></div></div><div class="ruta"><div class="prov" style="background:#c4c4c2;color:#1a1a1a">300</div><div class="under"><code>#c4c4c2</code>
-           <span>L* 79.1</span>
-           <span>1.75:1</span>
-           <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#898989;color:#1a1a1a">400</div><div class="under"><code>#898989</code>
-           <span>L* 57.1</span>
-           <span>3.50:1</span>
-           <span class="lev">6×</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">500</div><div class="under"><code>#6b6b6b</code>
-           <span>L* 45.2</span>
-           <span>5.33:1</span>
-           <span class="lev">3×</span></div></div><div class="ruta"><div class="prov" style="background:#525151;color:#ffffff">600</div><div class="under"><code>#525151</code>
-           <span>L* 34.5</span>
-           <span>7.91:1</span>
-           <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#3a3a3a;color:#ffffff">700</div><div class="under"><code>#3a3a3a</code>
-           <span>L* 24.4</span>
-           <span>11.37:1</span>
-           <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#282928;color:#ffffff">800</div><div class="under"><code>#282928</code>
-           <span>L* 16.5</span>
-           <span>14.60:1</span>
-           <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#242424;color:#ffffff">900</div><div class="under"><code>#242424</code>
-           <span>L* 14.2</span>
-           <span>15.52:1</span>
-           <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#1a1a1a;color:#ffffff">1000</div><div class="under"><code>#1a1a1a</code>
-           <span>L* 9.3</span>
-           <span>17.40:1</span>
-           <span class="dod">oanvänd</span></div></div></div>
+         
+         <span>L* 100.0</span>
+         <span>1.00:1</span>
+         <span class="lev">7×</span></div></div><div class="ruta"><div class="prov" style="background:#fafaf8;color:#1a1a1a">25</div><div class="under"><code>#fafaf8</code>
+         
+         <span>L* 98.2</span>
+         <span>1.05:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#f5f5f3;color:#1a1a1a">50</div><div class="under"><code>#f5f5f3</code>
+         
+         <span>L* 96.5</span>
+         <span>1.09:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#edeee9;color:#1a1a1a">100</div><div class="under"><code>#edeee9</code>
+         
+         <span>L* 93.9</span>
+         <span>1.17:1</span>
+         <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#e1e3e1;color:#1a1a1a">200</div><div class="under"><code>#e1e3e1</code>
+         
+         <span>L* 90.0</span>
+         <span>1.29:1</span>
+         <span class="lev">3×</span></div></div><div class="ruta"><div class="prov" style="background:#c4c4c2;color:#1a1a1a">300</div><div class="under"><code>#c4c4c2</code>
+         
+         <span>L* 79.1</span>
+         <span>1.75:1</span>
+         <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#898989;color:#1a1a1a">400</div><div class="under"><code>#898989</code>
+         
+         <span>L* 57.1</span>
+         <span>3.50:1</span>
+         <span class="lev">6×</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">500</div><div class="under"><code>#6b6b6b</code>
+         
+         <span>L* 45.2</span>
+         <span>5.33:1</span>
+         <span class="lev">3×</span></div></div><div class="ruta"><div class="prov" style="background:#525151;color:#ffffff">600</div><div class="under"><code>#525151</code>
+         
+         <span>L* 34.5</span>
+         <span>7.91:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#3a3a3a;color:#ffffff">700</div><div class="under"><code>#3a3a3a</code>
+         
+         <span>L* 24.4</span>
+         <span>11.37:1</span>
+         <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#282928;color:#ffffff">800</div><div class="under"><code>#282928</code>
+         
+         <span>L* 16.5</span>
+         <span>14.60:1</span>
+         <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#242424;color:#ffffff">900</div><div class="under"><code>#242424</code>
+         
+         <span>L* 14.2</span>
+         <span>15.52:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#1a1a1a;color:#ffffff">1000</div><div class="under"><code>#1a1a1a</code>
+         
+         <span>L* 9.3</span>
+         <span>17.40:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
 </section>
 <section class="skala">
   <h3>Blå — info, kommunikation, Fjärrskådning. Plus fokusringen, som är exklusiv · 3 steg</h3>
-  <p class="ingress"><strong>Största hål:</strong> --p-blue-100 → --p-blue-500, 52.7 L*-enheter. Där ryms flera steg.</p>
+  <p class="ingress"><strong>Största hål:</strong> --p-blue-100 → --p-blue-500, 52.7 L*-enheter.</p>
   <div class="rutor"><div class="ruta"><div class="prov" style="background:#eff6ff;color:#1a1a1a">100</div><div class="under"><code>#eff6ff</code>
-           <span>L* 96.6</span>
-           <span>1.09:1</span>
-           <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#4a6b8a;color:#ffffff">500</div><div class="under"><code>#4a6b8a</code>
-           <span>L* 44.0</span>
-           <span>5.58:1</span>
-           <span class="lev">5×</span></div></div><div class="ruta"><div class="prov" style="background:#1b4965;color:#ffffff">700</div><div class="under"><code>#1b4965</code>
-           <span>L* 29.3</span>
-           <span>9.60:1</span>
-           <span class="lev">2×</span></div></div></div>
+         
+         <span>L* 96.6</span>
+         <span>1.09:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#4a6b8a;color:#ffffff">500</div><div class="under"><code>#4a6b8a</code>
+         
+         <span>L* 44.0</span>
+         <span>5.58:1</span>
+         <span class="lev">5×</span></div></div><div class="ruta"><div class="prov" style="background:#1b4965;color:#ffffff">700</div><div class="under"><code>#1b4965</code>
+         
+         <span>L* 29.3</span>
+         <span>9.60:1</span>
+         <span class="lev">2×</span></div></div></div>
 </section>
 <section class="skala">
   <h3>Röd — fel och RIM 3 · 2 steg</h3>
-  <p class="ingress"><strong>Största hål:</strong> --p-red-100 → --p-red-500, 61.5 L*-enheter. Där ryms flera steg.</p>
+  <p class="ingress"><strong>Största hål:</strong> --p-red-100 → --p-red-500, 61.5 L*-enheter.</p>
   <div class="rutor"><div class="ruta"><div class="prov" style="background:#fef2f2;color:#1a1a1a">100</div><div class="under"><code>#fef2f2</code>
-           <span>L* 96.4</span>
-           <span>1.09:1</span>
-           <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#a90000;color:#ffffff">500</div><div class="under"><code>#a90000</code>
-           <span>L* 34.9</span>
-           <span>7.82:1</span>
-           <span class="lev">2×</span></div></div></div>
+         
+         <span>L* 96.4</span>
+         <span>1.09:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#a90000;color:#ffffff">500</div><div class="under"><code>#a90000</code>
+         
+         <span>L* 34.9</span>
+         <span>7.82:1</span>
+         <span class="lev">2×</span></div></div></div>
 </section>
 <section class="skala">
   <h3>Sage — success, skapa-knappen och RIM 1 · 2 steg</h3>
-  <p class="ingress"><strong>Största hål:</strong> --p-green-100 → --p-green-500, 54.4 L*-enheter. Där ryms flera steg.</p>
+  <p class="ingress"><strong>Största hål:</strong> --p-green-100 → --p-green-500, 54.4 L*-enheter.</p>
   <div class="rutor"><div class="ruta"><div class="prov" style="background:#f0fdf4;color:#1a1a1a">100</div><div class="under"><code>#f0fdf4</code>
-           <span>L* 98.2</span>
-           <span>1.05:1</span>
-           <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#606b57;color:#ffffff">500</div><div class="under"><code>#606b57</code>
-           <span>L* 43.8</span>
-           <span>5.62:1</span>
-           <span class="lev">2×</span></div></div></div>
+         
+         <span>L* 98.2</span>
+         <span>1.05:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#606b57;color:#ffffff">500</div><div class="under"><code>#606b57</code>
+         
+         <span>L* 43.8</span>
+         <span>5.62:1</span>
+         <span class="lev">2×</span></div></div></div>
 </section>
 
-<h2>2. Nuläget — semantiska roller</h2>
+<h2>3. Semantiska roller</h2>
 <p class="lead">Lager 2. Kolumnen <em>i @theme</em> visar om rollen är exponerad som
    Tailwind-utility eller bara nåbar via <code>var()</code> — de två konsumtionsvägarna i fynd F2.</p>
 <div class="tabellyta"><table>
@@ -805,22 +963,24 @@
     </tr></tbody>
 </table></div>
 <ul class="noter">
-  <li><strong>65</strong> primitiver är oanvända: <code>--p-gold-1</code>, <code>--p-gold-2</code>, <code>--p-gold-3</code>, <code>--p-gold-4</code>, <code>--p-gold-5</code>, <code>--p-gold-6</code>, <code>--p-gold-7</code>, <code>--p-gold-8</code>, <code>--p-gold-9</code>, <code>--p-gold-10</code>, <code>--p-gold-11</code>, <code>--p-gold-12</code>, <code>--p-copper-1</code>, <code>--p-copper-2</code>, <code>--p-copper-3</code>, <code>--p-copper-4</code>, <code>--p-copper-5</code>, <code>--p-copper-6</code>, <code>--p-copper-7</code>, <code>--p-copper-8</code>, <code>--p-copper-9</code>, <code>--p-copper-10</code>, <code>--p-copper-11</code>, <code>--p-copper-12</code>, <code>--p-neutral-1</code>, <code>--p-neutral-2</code>, <code>--p-neutral-3</code>, <code>--p-neutral-4</code>, <code>--p-neutral-5</code>, <code>--p-neutral-6</code>, <code>--p-neutral-7</code>, <code>--p-neutral-8</code>, <code>--p-neutral-9</code>, <code>--p-neutral-10</code>, <code>--p-neutral-11</code>, <code>--p-neutral-12</code>, <code>--p-sage-1</code>, <code>--p-sage-2</code>, <code>--p-sage-3</code>, <code>--p-sage-4</code>, <code>--p-sage-5</code>, <code>--p-sage-6</code>, <code>--p-sage-7</code>, <code>--p-sage-8</code>, <code>--p-sage-9</code>, <code>--p-sage-10</code>, <code>--p-sage-11</code>, <code>--p-sage-12</code>, <code>--p-red-1</code>, <code>--p-red-2</code>, <code>--p-red-3</code>, <code>--p-red-4</code>, <code>--p-red-5</code>, <code>--p-red-6</code>, <code>--p-red-7</code>, <code>--p-red-8</code>, <code>--p-red-9</code>, <code>--p-red-10</code>, <code>--p-red-11</code>, <code>--p-red-12</code>, <code>--p-gold-200</code>, <code>--p-gold-700</code>, <code>--p-copper-200</code>, <code>--p-copper-400</code>, <code>--p-neutral-1000</code></li>
+  <li><strong>77</strong> primitiver är oanvända: <code>--p-gold-1</code>, <code>--p-gold-2</code>, <code>--p-gold-3</code>, <code>--p-gold-4</code>, <code>--p-gold-5</code>, <code>--p-gold-6</code>, <code>--p-gold-7</code>, <code>--p-gold-8</code>, <code>--p-gold-9</code>, <code>--p-gold-10</code>, <code>--p-gold-11</code>, <code>--p-gold-12</code>, <code>--p-copper-1</code>, <code>--p-copper-2</code>, <code>--p-copper-3</code>, <code>--p-copper-4</code>, <code>--p-copper-5</code>, <code>--p-copper-6</code>, <code>--p-copper-7</code>, <code>--p-copper-8</code>, <code>--p-copper-9</code>, <code>--p-copper-10</code>, <code>--p-copper-11</code>, <code>--p-copper-12</code>, <code>--p-neutral-1</code>, <code>--p-neutral-2</code>, <code>--p-neutral-3</code>, <code>--p-neutral-4</code>, <code>--p-neutral-5</code>, <code>--p-neutral-6</code>, <code>--p-neutral-7</code>, <code>--p-neutral-8</code>, <code>--p-neutral-9</code>, <code>--p-neutral-10</code>, <code>--p-neutral-11</code>, <code>--p-neutral-12</code>, <code>--p-sage-1</code>, <code>--p-sage-2</code>, <code>--p-sage-3</code>, <code>--p-sage-4</code>, <code>--p-sage-5</code>, <code>--p-sage-6</code>, <code>--p-sage-7</code>, <code>--p-sage-8</code>, <code>--p-sage-9</code>, <code>--p-sage-10</code>, <code>--p-sage-11</code>, <code>--p-sage-12</code>, <code>--p-blue-1</code>, <code>--p-blue-2</code>, <code>--p-blue-3</code>, <code>--p-blue-4</code>, <code>--p-blue-5</code>, <code>--p-blue-6</code>, <code>--p-blue-7</code>, <code>--p-blue-8</code>, <code>--p-blue-9</code>, <code>--p-blue-10</code>, <code>--p-blue-11</code>, <code>--p-blue-12</code>, <code>--p-red-1</code>, <code>--p-red-2</code>, <code>--p-red-3</code>, <code>--p-red-4</code>, <code>--p-red-5</code>, <code>--p-red-6</code>, <code>--p-red-7</code>, <code>--p-red-8</code>, <code>--p-red-9</code>, <code>--p-red-10</code>, <code>--p-red-11</code>, <code>--p-red-12</code>, <code>--p-gold-200</code>, <code>--p-gold-700</code>, <code>--p-copper-200</code>, <code>--p-copper-400</code>, <code>--p-neutral-1000</code>
+      <em>(de nya skalorna ligger här tills rollerna migreras)</em></li>
   <li><strong>9</strong> roller är oanvända: <code>--mm-primary-hover</code>, <code>--mm-accent-hover</code>, <code>--mm-accent-tint</code>, <code>--mm-surface-raised</code>, <code>--mm-cat-personal</code>, <code>--mm-cat-event</code>, <code>--mm-cat-people</code>, <code>--mm-cat-comm</code>, <code>--mm-cat-system</code></li>
   <li><strong>14</strong> av 38 <code>@theme</code>-utilities används aldrig i TSX
       (flera lever ändå via <code>var()</code> i CSS-lagret)</li>
 </ul>
 
-<h2>3. Vad som håller</h2>
+<h2>4. Vad som håller</h2>
 <ul class="rent"><li><span class="ok">✓</span> Hårdkodade hex/rgb/hsl i komponenter: <strong>0</strong> — Samtliga träffar i src/ är kommentarstext, inte kod.</li><li><span class="ok">✓</span> Arbiträra Tailwind-värden (bg-[#fff]): <strong>0</strong></li><li><span class="ok">✓</span> Inline style med färg: <strong>0</strong></li><li><span class="ok">✓</span> Färgliteraler i SVG fill/stroke: <strong>0</strong></li></ul>
 
-<h2>4. Brister</h2>
+<h2>5. Brister</h2>
 <article class="fynd hög">
       <h3><span class="id">F1</span> Två döda färgklasser i login <span class="allvar">hög</span></h3>
       <p class="plats"><code>src/routes/login.tsx:111</code> · <code>src/routes/login.tsx:119</code></p>
       <p>text-red-600 och text-white genererar ingen CSS. src/styles/tailwind.css:12 nollställer Tailwinds defaultpalett med --color-*: initial, och ingen av klasserna finns i @theme.</p>
       <p class="verif"><strong>Verifiering:</strong> grep -c '\.text-white' dist/assets/*.css → 0, medan .text-text-muted och .bg-primary finns i samma fil.</p>
       <p><strong>Följd:</strong> Felmeddelandet vid inloggning renderas inte rött. Skärmläsare når det ändå via role=alert + aria-live.</p>
+      
       <p class="fallan"><strong>Fällan:</strong> text-white på bg-primary hade gett 2,57:1 — under AA. Som det faktiskt renderas ärver texten --mm-text och når 6,04:1. Den döda klassen räddar kontrasten. Rätt åtgärd är att ta bort raden, inte att ersätta den med text-text-inverse.</p>
       
     </article>
@@ -832,6 +992,7 @@
       <p><strong>Följd:</strong> 14 av 35 @theme-roller används aldrig som utility. Nio av dem lever ändå via var() i CSS-lagret — de är exponerade på fel väg, inte döda.</p>
       
       
+      
     </article>
 <article class="fynd medel">
       <h3><span class="id">F3</span> Tre sätt att uttrycka svag avdelare <span class="allvar">medel</span></h3>
@@ -839,6 +1000,7 @@
       <p>divide-border (28 träffar), border-text-muted/20 (11) och border-border-light (3) gör samma sak. Mittersta lånar en textroll som kantfärg.</p>
       
       <p><strong>Följd:</strong> border-text-muted/20 är dessutom den enda alfa-användningen i utility-lagret, medan CSS-lagret bär åtta olika color-mix-procent (6, 8, 10, 12, 14, 15, 16, 22). Genomskinlighet uttrycks på två sätt i två lager utan gemensam skala.</p>
+      
       
       
     </article>
@@ -850,6 +1012,7 @@
       <p><strong>Följd:</strong> cat-personal och cat-event pekar dessutom på samma primitiv (--p-gold-500). Två av fem kategorier hade inte gått att skilja åt.</p>
       
       
+      
     </article>
 <article class="fynd medel">
       <h3><span class="id">F5</span> Specen har drivit isär från koden <span class="allvar">medel</span></h3>
@@ -857,6 +1020,7 @@
       <p>Specen anger --mm-text-muted: var(--p-neutral-400) (3,50:1 mot vit). Koden har --p-neutral-500 (5,33:1).</p>
       
       <p><strong>Följd:</strong> Koden är rätt och specen föråldrad. Rollen används 164 gånger — den mest använda färgrollen i appen. Hade specen följts vore 164 platser under AA.</p>
+      
       
       <p>Specen listar också 25 komponent-tokens (--mm-stat-card-*, --mm-table-*, --mm-menu-*) som aldrig byggdes, och saknar --mm-state-hover i §1.</p>
     </article>
@@ -868,6 +1032,7 @@
       <p><strong>Följd:</strong> gold-700 är den enda guldnyans som klarar AA för text (4,91:1 mot vit) — och den används inte. Guld kan därför i praktiken inte bära text någonstans i appen.</p>
       
       
+      
     </article>
 <article class="fynd medel">
       <h3><span class="id">F7</span> Guldskalan är två kulörer hopfogade till en <span class="allvar">medel</span></h3>
@@ -875,6 +1040,7 @@
       <p>Stegen 100–400 ligger på kulörton ~92° i CIE LCh, stegen 500–700 på ~78°. Ett brott på 13 grader mitt i skalan.</p>
       
       <p><strong>Följd:</strong> --mm-primary-muted (gold-400) är inte en nedtonad primär utan en annan kulör — olivgul mot primärens amber. Ljushetsskillnaden dem emellan är bara 3,2 L*-enheter; det som skiljer är kulörtonen.</p>
+      
       
       
     </article>
@@ -886,6 +1052,7 @@
       <p><strong>Följd:</strong> Koppar är CTA-färgen och har ingen användbar ton mellan nästan-vitt och mättat.</p>
       
       
+      
     </article>
 <article class="fynd hög">
       <h3><span class="id">F9</span> Varumärkesguldet kan inte bära vit text eller vara UI-yta mot vitt <span class="allvar">hög</span></h3>
@@ -895,103 +1062,28 @@
       <p><strong>Följd:</strong> Det är en fysisk egenskap hos en mättad gul-orange, inte ett fel i paletten. Guld kan vara yta under mörk text, men aldrig yta under vit text mot vit bakgrund. Det förklarar varför primärknappen är neutral-800 och inte guld.</p>
       
       
+      
     </article>
-<article class="fynd hög">
-      <h3><span class="id">F10</span> Info-blå och fokusringen är förväxlingsbara redan idag <span class="allvar">hög</span></h3>
+<article class="fynd löst">
+      <h3><span class="id">F10</span> Info-blå och fokusringen var förväxlingsbara — löst 2026-07-26 <span class="allvar">löst</span></h3>
       
       <p>--p-blue-500 (#4A6B8A, som bär --mm-info, --mm-cat-comm och kursfärgen Fjärrskådning) ligger på perceptuellt avstånd 15,1 från fokusringens #1B4965. De har nästan identisk mättnad (21,0 mot 21,6) och nära kulörton (261,8° mot 255,4°) — det enda som skiljer dem är ljushet.</p>
       <p class="verif"><strong>Verifiering:</strong> CIE LCh-avstånd mellan #4a6b8a och #1b4965 = 15,1. Till jämförelse ligger --p-blue-100 på 69,4 och --mm-text på 51,8 från samma färg.</p>
       <p><strong>Följd:</strong> tasks/lessons.md (Session 25, UNIVERSAL) slår fast att fokusringen ska ha 'ingen relation till amber, copper, info eller text' — men den har relation till info. En fokusring runt ett info-element är svår att urskilja från elementet.</p>
+      <p class="atgard"><strong>Löst:</strong> Marcus beslut: fokusringen står fast (lessons.md Session 25 — exklusiviteten är det som gör den igenkännbar), info-blå flyttar. Den nya blåskalans ankare är #1F6CB0: samma ljushet som den gamla (CIE L* 44,4 mot 44,0) och närmaste ton, men dubbla mättnaden (C 42,6 mot 21,0). Fokusringen är därmed den DOVA mörkblå och info den KLARA. Avståndet gick från 15,1 till 27,3 och hela skalan är fri från kollisioner. Rollernas kontrast är i praktiken oförändrad: 5,04:1 som text mot info-ytan (dagens 5,13), 5,48:1 som kursplatta under vit text (dagens 5,58). Kvar att göra: migrera --mm-info, --mm-cat-comm och --mm-kurs-fjarrskadning till den nya skalan — det ändrar appens utseende och hör till migreringen.</p>
       <p class="fallan"><strong>Fällan:</strong> Fyndet uppstod inte ur den genererade skalan; skalan avslöjade det bara. Konflikten finns i paletten som den ser ut nu, och den försvinner inte av att vi låter bli att generera. Marcus har beslutat att fokusringen står fast — då är det info-blå som behöver flytta, eller så accepteras närheten som ett medvetet undantag.</p>
       
     </article>
 
-<h2>5. Neutralernas värme — hur mycket?</h2>
-<p class="lead">Neutralerna bär omkring 450 av appens färganvändningar, så deras ton slår
-   igenom överallt. Men <strong>tonvalet spelar nästan ingen roll</strong> — 70°, 106° och 120°
-   skiljer en till två hexpunkter. Det som avgör om värmen syns är mättnaden, och där ligger
-   dagens neutraler på 0,003 medan Radix egen sand ligger på 0,0013. Alla fyra nedan har
-   samma ton (100°, Radix natural pairing mot guldet) och skiljs bara av kroma.</p>
-<p class="lead">Dagens skala hoppar dessutom mellan 106°, 116° och 146°, och fem av tretton
-   steg är helt rena. Det är ojämnheten som märks — inte tonen.</p>
-<section class="skala">
-  <h3>Dagens skala, som referens · 13 steg</h3>
-  <div class="rutor"><div class="ruta"><div class="prov" style="background:#ffffff;color:#1a1a1a">0</div><div class="under"><code>#ffffff</code><span>L* 100.0</span></div></div><div class="ruta"><div class="prov" style="background:#fafaf8;color:#1a1a1a">25</div><div class="under"><code>#fafaf8</code><span>L* 98.2</span></div></div><div class="ruta"><div class="prov" style="background:#f5f5f3;color:#1a1a1a">50</div><div class="under"><code>#f5f5f3</code><span>L* 96.5</span></div></div><div class="ruta"><div class="prov" style="background:#edeee9;color:#1a1a1a">100</div><div class="under"><code>#edeee9</code><span>L* 93.9</span></div></div><div class="ruta"><div class="prov" style="background:#e1e3e1;color:#1a1a1a">200</div><div class="under"><code>#e1e3e1</code><span>L* 90.0</span></div></div><div class="ruta"><div class="prov" style="background:#c4c4c2;color:#1a1a1a">300</div><div class="under"><code>#c4c4c2</code><span>L* 79.1</span></div></div><div class="ruta"><div class="prov" style="background:#898989;color:#1a1a1a">400</div><div class="under"><code>#898989</code><span>L* 57.1</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">500</div><div class="under"><code>#6b6b6b</code><span>L* 45.2</span></div></div><div class="ruta"><div class="prov" style="background:#525151;color:#ffffff">600</div><div class="under"><code>#525151</code><span>L* 34.5</span></div></div><div class="ruta"><div class="prov" style="background:#3a3a3a;color:#ffffff">700</div><div class="under"><code>#3a3a3a</code><span>L* 24.4</span></div></div><div class="ruta"><div class="prov" style="background:#282928;color:#ffffff">800</div><div class="under"><code>#282928</code><span>L* 16.5</span></div></div><div class="ruta"><div class="prov" style="background:#242424;color:#ffffff">900</div><div class="under"><code>#242424</code><span>L* 14.2</span></div></div><div class="ruta"><div class="prov" style="background:#1a1a1a;color:#ffffff">1000</div><div class="under"><code>#1a1a1a</code><span>L* 9.3</span></div></div></div>
-</section>
-<section class="skala">
-      <h3>Ren — ingen ton alls</h3>
-      <p class="ingress">Referens. Äkta grå, kulörerna gör allt färgarbete. Risken är att ytorna känns kliniska bredvid guld och koppar.</p>
-      <div class="rutor"><div class="ruta"><div class="prov" style="background:#fdfdfd;color:#1a1a1a">1</div><div class="under"><code>#fdfdfd</code><span class="roll">Sidbakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#f3f3f3;color:#1a1a1a">2</div><div class="under"><code>#f3f3f3</code><span class="roll">Subtil bakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#e5e5e5;color:#1a1a1a">3</div><div class="under"><code>#e5e5e5</code><span class="roll">Komponentyta</span></div></div><div class="ruta"><div class="prov" style="background:#d3d3d3;color:#1a1a1a">4</div><div class="under"><code>#d3d3d3</code><span class="roll">Komponentyta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#bfbfbf;color:#1a1a1a">5</div><div class="under"><code>#bfbfbf</code><span class="roll">Komponentyta, aktiv</span></div></div><div class="ruta"><div class="prov" style="background:#a8a8a8;color:#1a1a1a">6</div><div class="under"><code>#a8a8a8</code><span class="roll">Subtil kant</span></div></div><div class="ruta"><div class="prov" style="background:#8d8d8d;color:#1a1a1a">7</div><div class="under"><code>#8d8d8d</code><span class="roll">Kant och fokusring</span></div></div><div class="ruta"><div class="prov" style="background:#7b7b7b;color:#ffffff">8</div><div class="under"><code>#7b7b7b</code><span class="roll">Kant, hover</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">9</div><div class="under"><code>#6b6b6b</code><span class="roll">Solid yta</span></div></div><div class="ruta"><div class="prov" style="background:#616161;color:#ffffff">10</div><div class="under"><code>#616161</code><span class="roll">Solid yta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#4b4b4b;color:#ffffff">11</div><div class="under"><code>#4b4b4b</code><span class="roll">Text, låg kontrast</span></div></div><div class="ruta"><div class="prov" style="background:#2d2d2d;color:#ffffff">12</div><div class="under"><code>#2d2d2d</code><span class="roll">Text, hög kontrast</span></div></div></div>
-      <ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.33</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>7.86</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>12.41</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>13.54</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>2.99</strong> (golv 1.4)</li></ul>
-    </section>
-<section class="skala">
-      <h3>Dagens nivå — kroma 0,003</h3>
-      <p class="ingress">Den värme appen har nu, men jämnt fördelad. Dagens ton hoppar mellan 106°, 116° och 146°, och fem av tretton steg är helt rena — det är ojämnheten som märks, inte tonen.</p>
-      <div class="rutor"><div class="ruta"><div class="prov" style="background:#fdfdfc;color:#1a1a1a">1</div><div class="under"><code>#fdfdfc</code><span class="roll">Sidbakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#f3f3f3;color:#1a1a1a">2</div><div class="under"><code>#f3f3f3</code><span class="roll">Subtil bakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#e5e5e4;color:#1a1a1a">3</div><div class="under"><code>#e5e5e4</code><span class="roll">Komponentyta</span></div></div><div class="ruta"><div class="prov" style="background:#d3d3d2;color:#1a1a1a">4</div><div class="under"><code>#d3d3d2</code><span class="roll">Komponentyta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#bfbfbe;color:#1a1a1a">5</div><div class="under"><code>#bfbfbe</code><span class="roll">Komponentyta, aktiv</span></div></div><div class="ruta"><div class="prov" style="background:#a9a8a7;color:#1a1a1a">6</div><div class="under"><code>#a9a8a7</code><span class="roll">Subtil kant</span></div></div><div class="ruta"><div class="prov" style="background:#8e8d8c;color:#1a1a1a">7</div><div class="under"><code>#8e8d8c</code><span class="roll">Kant och fokusring</span></div></div><div class="ruta"><div class="prov" style="background:#7c7b79;color:#ffffff">8</div><div class="under"><code>#7c7b79</code><span class="roll">Kant, hover</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">9</div><div class="under"><code>#6b6b6b</code><span class="roll">Solid yta</span></div></div><div class="ruta"><div class="prov" style="background:#62615f;color:#ffffff">10</div><div class="under"><code>#62615f</code><span class="roll">Solid yta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#4c4b4a;color:#ffffff">11</div><div class="under"><code>#4c4b4a</code><span class="roll">Text, låg kontrast</span></div></div><div class="ruta"><div class="prov" style="background:#2d2d2b;color:#ffffff">12</div><div class="under"><code>#2d2d2b</code><span class="roll">Text, hög kontrast</span></div></div></div>
-      <ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.33</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>7.84</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>12.44</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>13.56</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>2.99</strong> (golv 1.4)</li></ul>
-    </section>
-<section class="skala">
-      <h3>Varm — kroma 0,008 (rekommenderad)</h3>
-      <p class="ingress">Ungefär dubbelt dagens värme. Märkbart varmare ytor, fortfarande långt under det som skulle läsa som beige. Följer Radix natural pairing mot guldet.</p>
-      <div class="rutor"><div class="ruta"><div class="prov" style="background:#fdfdfc;color:#1a1a1a">1</div><div class="under"><code>#fdfdfc</code><span class="roll">Sidbakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#f4f3f2;color:#1a1a1a">2</div><div class="under"><code>#f4f3f2</code><span class="roll">Subtil bakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#e5e5e2;color:#1a1a1a">3</div><div class="under"><code>#e5e5e2</code><span class="roll">Komponentyta</span></div></div><div class="ruta"><div class="prov" style="background:#d4d3d0;color:#1a1a1a">4</div><div class="under"><code>#d4d3d0</code><span class="roll">Komponentyta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#c0bfbb;color:#1a1a1a">5</div><div class="under"><code>#c0bfbb</code><span class="roll">Komponentyta, aktiv</span></div></div><div class="ruta"><div class="prov" style="background:#a9a9a4;color:#1a1a1a">6</div><div class="under"><code>#a9a9a4</code><span class="roll">Subtil kant</span></div></div><div class="ruta"><div class="prov" style="background:#8e8d89;color:#1a1a1a">7</div><div class="under"><code>#8e8d89</code><span class="roll">Kant och fokusring</span></div></div><div class="ruta"><div class="prov" style="background:#7c7b76;color:#ffffff">8</div><div class="under"><code>#7c7b76</code><span class="roll">Kant, hover</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">9</div><div class="under"><code>#6b6b6b</code><span class="roll">Solid yta</span></div></div><div class="ruta"><div class="prov" style="background:#62625d;color:#ffffff">10</div><div class="under"><code>#62625d</code><span class="roll">Solid yta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#4c4c47;color:#ffffff">11</div><div class="under"><code>#4c4c47</code><span class="roll">Text, låg kontrast</span></div></div><div class="ruta"><div class="prov" style="background:#2d2d2a;color:#ffffff">12</div><div class="under"><code>#2d2d2a</code><span class="roll">Text, hög kontrast</span></div></div></div>
-      <ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.33</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>7.79</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>12.46</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>13.57</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.00</strong> (golv 1.4)</li></ul>
-    </section>
-<section class="skala">
-      <h3>Sand — kroma 0,025</h3>
-      <p class="ingress">Tydligt varm. Här börjar neutralen läsa som en egen kulör och konkurrera med guldet — Radix varnar uttryckligen för mättade gråskalor av det skälet. Med som ytterlighet så du ser var gränsen går.</p>
-      <div class="rutor"><div class="ruta"><div class="prov" style="background:#fdfdfa;color:#1a1a1a">1</div><div class="under"><code>#fdfdfa</code><span class="roll">Sidbakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#f4f4ef;color:#1a1a1a">2</div><div class="under"><code>#f4f4ef</code><span class="roll">Subtil bakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#e6e5dd;color:#1a1a1a">3</div><div class="under"><code>#e6e5dd</code><span class="roll">Komponentyta</span></div></div><div class="ruta"><div class="prov" style="background:#d5d4c9;color:#1a1a1a">4</div><div class="under"><code>#d5d4c9</code><span class="roll">Komponentyta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#c1c0b3;color:#1a1a1a">5</div><div class="under"><code>#c1c0b3</code><span class="roll">Komponentyta, aktiv</span></div></div><div class="ruta"><div class="prov" style="background:#aba99b;color:#1a1a1a">6</div><div class="under"><code>#aba99b</code><span class="roll">Subtil kant</span></div></div><div class="ruta"><div class="prov" style="background:#908e7f;color:#1a1a1a">7</div><div class="under"><code>#908e7f</code><span class="roll">Kant och fokusring</span></div></div><div class="ruta"><div class="prov" style="background:#7e7c6c;color:#ffffff">8</div><div class="under"><code>#7e7c6c</code><span class="roll">Kant, hover</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">9</div><div class="under"><code>#6b6b6b</code><span class="roll">Solid yta</span></div></div><div class="ruta"><div class="prov" style="background:#646252;color:#ffffff">10</div><div class="under"><code>#646252</code><span class="roll">Solid yta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#4e4c3e;color:#ffffff">11</div><div class="under"><code>#4e4c3e</code><span class="roll">Text, låg kontrast</span></div></div><div class="ruta"><div class="prov" style="background:#2f2d23;color:#ffffff">12</div><div class="under"><code>#2f2d23</code><span class="roll">Text, hög kontrast</span></div></div></div>
-      <ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.33</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>7.84</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>12.52</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>13.55</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>2.99</strong> (golv 1.4)</li></ul>
-    </section>
-
-<h2>6. Möjligheten — fullständiga skalor</h2>
-<p class="lead">Tolvstegsmodellen är Radix rollindelning: varje steg är en UI-roll, inte en
-   godtycklig nyans. Skalorna nedan är genererade i OKLCH runt de befintliga varumärkesfärgerna
-   — <strong>ankaret flyttas aldrig</strong>, steg 9 är exakt den kulör appen redan bär.
-   Kontrakten under varje skala är samma garantier Radix ger för sina egna.</p>
-<section class="skala">
-      <h3>Guld/amber — förslag, 12 steg</h3>
-      <p class="ingress">Ankaret är --p-gold-500. Kulörtonen låses till ankarets 78,7° vilket rätar ut brottet i fynd F7 — dagens ljusa steg driver mot 92°. Steg 9 når inte 3:1 mot vit yta; det är en fysisk egenskap hos en mättad gul-orange, inte ett fel i skalan. Behövs guld som UI-yta mot vitt är steg 10 den ljusaste som duger.</p>
-      <div class="rutor"><div class="ruta"><div class="prov" style="background:#fffcf8;color:#1a1a1a">1</div><div class="under"><code>#fffcf8</code><span class="roll">Sidbakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#fff6e8;color:#1a1a1a">2</div><div class="under"><code>#fff6e8</code><span class="roll">Subtil bakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#ffecce;color:#1a1a1a">3</div><div class="under"><code>#ffecce</code><span class="roll">Komponentyta</span></div></div><div class="ruta"><div class="prov" style="background:#ffdfad;color:#1a1a1a">4</div><div class="under"><code>#ffdfad</code><span class="roll">Komponentyta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#fcd08b;color:#1a1a1a">5</div><div class="under"><code>#fcd08b</code><span class="roll">Komponentyta, aktiv</span></div></div><div class="ruta"><div class="prov" style="background:#f2c16f;color:#1a1a1a">6</div><div class="under"><code>#f2c16f</code><span class="roll">Subtil kant</span></div></div><div class="ruta"><div class="prov" style="background:#e5ae4e;color:#1a1a1a">7</div><div class="under"><code>#e5ae4e</code><span class="roll">Kant och fokusring</span></div></div><div class="ruta"><div class="prov" style="background:#dda12f;color:#1a1a1a">8</div><div class="under"><code>#dda12f</code><span class="roll">Kant, hover</span></div></div><div class="ruta"><div class="prov" style="background:#d4960a;color:#1a1a1a">9</div><div class="under"><code>#d4960a</code><span class="roll">Solid yta</span></div></div><div class="ruta"><div class="prov" style="background:#c28900;color:#1a1a1a">10</div><div class="under"><code>#c28900</code><span class="roll">Solid yta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#966800;color:#ffffff">11</div><div class="under"><code>#966800</code><span class="roll">Text, låg kontrast</span></div></div><div class="ruta"><div class="prov" style="background:#604100;color:#ffffff">12</div><div class="under"><code>#604100</code><span class="roll">Text, hög kontrast</span></div></div></div>
-      <ul class="kontrakt"><li class="fel"><span>✗</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>2.57</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>4.58</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>8.70</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>9.11</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>1.87</strong> (golv 1.4)</li></ul>
-    </section>
-<section class="skala">
-      <h3>Koppar — förslag, 12 steg</h3>
-      <p class="ingress">Ankaret är --p-copper-500. Skalan byggs ut från ankaret i stället för från en fast ljushetstabell — Miranons koppar är mörkare än vad ett steg 9 brukar vara, och en fast tabell hade gjort skalan icke-monoton. Mellanbandet som saknas i fynd F8 fylls av stegen 3–8.</p>
-      <div class="rutor"><div class="ruta"><div class="prov" style="background:#fffcfb;color:#1a1a1a">1</div><div class="under"><code>#fffcfb</code><span class="roll">Sidbakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#fff0e9;color:#1a1a1a">2</div><div class="under"><code>#fff0e9</code><span class="roll">Subtil bakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#ffdccd;color:#1a1a1a">3</div><div class="under"><code>#ffdccd</code><span class="roll">Komponentyta</span></div></div><div class="ruta"><div class="prov" style="background:#fdc3ab;color:#1a1a1a">4</div><div class="under"><code>#fdc3ab</code><span class="roll">Komponentyta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#efab8e;color:#1a1a1a">5</div><div class="under"><code>#efab8e</code><span class="roll">Komponentyta, aktiv</span></div></div><div class="ruta"><div class="prov" style="background:#dd9170;color:#1a1a1a">6</div><div class="under"><code>#dd9170</code><span class="roll">Subtil kant</span></div></div><div class="ruta"><div class="prov" style="background:#c4724d;color:#1a1a1a">7</div><div class="under"><code>#c4724d</code><span class="roll">Kant och fokusring</span></div></div><div class="ruta"><div class="prov" style="background:#b45c33;color:#ffffff">8</div><div class="under"><code>#b45c33</code><span class="roll">Kant, hover</span></div></div><div class="ruta"><div class="prov" style="background:#a3491c;color:#ffffff">9</div><div class="under"><code>#a3491c</code><span class="roll">Solid yta</span></div></div><div class="ruta"><div class="prov" style="background:#974012;color:#ffffff">10</div><div class="under"><code>#974012</code><span class="roll">Solid yta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#7a2d00;color:#ffffff">11</div><div class="under"><code>#7a2d00</code><span class="roll">Text, låg kontrast</span></div></div><div class="ruta"><div class="prov" style="background:#4b1900;color:#ffffff">12</div><div class="under"><code>#4b1900</code><span class="roll">Text, hög kontrast</span></div></div></div>
-      <ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.95</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>8.58</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>13.14</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>14.30</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.22</strong> (golv 1.4)</li></ul>
-    </section>
-<section class="skala">
-      <h3>Neutraler — förslag, 12 steg</h3>
-      <p class="ingress">Ankaret är --p-neutral-500. Neutralerna bär omkring 450 av appens färganvändningar — de förtjänar högst upplösning. Nuvarande skala har ett hål på 22 L*-enheter mellan 300 och 400 och tre nästan identiska steg i botten (800/900/1000 ligger inom 5 enheter). OBS: en genererad skala blir kromatiskt neutral, medan dagens neutraler är svagt varma. Den tonen är ett designval som bör fattas medvetet, inte tappas bort i en omräkning.</p>
-      <div class="rutor"><div class="ruta"><div class="prov" style="background:#fdfdfd;color:#1a1a1a">1</div><div class="under"><code>#fdfdfd</code><span class="roll">Sidbakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#f3f3f3;color:#1a1a1a">2</div><div class="under"><code>#f3f3f3</code><span class="roll">Subtil bakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#e5e5e5;color:#1a1a1a">3</div><div class="under"><code>#e5e5e5</code><span class="roll">Komponentyta</span></div></div><div class="ruta"><div class="prov" style="background:#d3d3d3;color:#1a1a1a">4</div><div class="under"><code>#d3d3d3</code><span class="roll">Komponentyta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#bfbfbf;color:#1a1a1a">5</div><div class="under"><code>#bfbfbf</code><span class="roll">Komponentyta, aktiv</span></div></div><div class="ruta"><div class="prov" style="background:#a8a8a8;color:#1a1a1a">6</div><div class="under"><code>#a8a8a8</code><span class="roll">Subtil kant</span></div></div><div class="ruta"><div class="prov" style="background:#8d8d8d;color:#1a1a1a">7</div><div class="under"><code>#8d8d8d</code><span class="roll">Kant och fokusring</span></div></div><div class="ruta"><div class="prov" style="background:#7b7b7b;color:#ffffff">8</div><div class="under"><code>#7b7b7b</code><span class="roll">Kant, hover</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">9</div><div class="under"><code>#6b6b6b</code><span class="roll">Solid yta</span></div></div><div class="ruta"><div class="prov" style="background:#616161;color:#ffffff">10</div><div class="under"><code>#616161</code><span class="roll">Solid yta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#4b4b4b;color:#ffffff">11</div><div class="under"><code>#4b4b4b</code><span class="roll">Text, låg kontrast</span></div></div><div class="ruta"><div class="prov" style="background:#2d2d2d;color:#ffffff">12</div><div class="under"><code>#2d2d2d</code><span class="roll">Text, hög kontrast</span></div></div></div>
-      <ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.33</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>7.86</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>12.41</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>13.54</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>2.99</strong> (golv 1.4)</li></ul>
-    </section>
-<section class="skala">
-      <h3>Sage — förslag, 12 steg</h3>
-      <p class="ingress">Ankaret är --p-green-500, sage-grönt ur Vue-arvet. Rollen --mm-success används 33 gånger och bär bland annat skapa-knappen, men primitiven har idag bara två steg: 100 och 500. Det är den mest använda kulören som helt saknar skala.</p>
-      <div class="rutor"><div class="ruta"><div class="prov" style="background:#fcfdfa;color:#1a1a1a">1</div><div class="under"><code>#fcfdfa</code><span class="roll">Sidbakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#f1f4ee;color:#1a1a1a">2</div><div class="under"><code>#f1f4ee</code><span class="roll">Subtil bakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#e1e6dd;color:#1a1a1a">3</div><div class="under"><code>#e1e6dd</code><span class="roll">Komponentyta</span></div></div><div class="ruta"><div class="prov" style="background:#ced5c8;color:#1a1a1a">4</div><div class="under"><code>#ced5c8</code><span class="roll">Komponentyta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#b8c0b1;color:#1a1a1a">5</div><div class="under"><code>#b8c0b1</code><span class="roll">Komponentyta, aktiv</span></div></div><div class="ruta"><div class="prov" style="background:#a0a999;color:#1a1a1a">6</div><div class="under"><code>#a0a999</code><span class="roll">Subtil kant</span></div></div><div class="ruta"><div class="prov" style="background:#848e7b;color:#1a1a1a">7</div><div class="under"><code>#848e7b</code><span class="roll">Kant och fokusring</span></div></div><div class="ruta"><div class="prov" style="background:#717c68;color:#ffffff">8</div><div class="under"><code>#717c68</code><span class="roll">Kant, hover</span></div></div><div class="ruta"><div class="prov" style="background:#606b57;color:#ffffff">9</div><div class="under"><code>#606b57</code><span class="roll">Solid yta</span></div></div><div class="ruta"><div class="prov" style="background:#57614e;color:#ffffff">10</div><div class="under"><code>#57614e</code><span class="roll">Solid yta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#434c3b;color:#ffffff">11</div><div class="under"><code>#434c3b</code><span class="roll">Text, låg kontrast</span></div></div><div class="ruta"><div class="prov" style="background:#262d21;color:#ffffff">12</div><div class="under"><code>#262d21</code><span class="roll">Text, hög kontrast</span></div></div></div>
-      <ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.62</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>8.10</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>12.78</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>13.90</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.08</strong> (golv 1.4)</li></ul>
-    </section>
-<section class="skala">
-      <h3>Blå — förslag, 12 steg</h3>
-      <p class="ingress">Ankaret är --p-blue-500. Skalan har en konflikt som inte går att räkna bort — se kollisionsnoten under stegen.</p>
-      <div class="rutor"><div class="ruta"><div class="prov" style="background:#fbfdff;color:#1a1a1a">1</div><div class="under"><code>#fbfdff</code><span class="roll">Sidbakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#ebf5fe;color:#1a1a1a">2</div><div class="under"><code>#ebf5fe</code><span class="roll">Subtil bakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#d7e6f5;color:#1a1a1a">3</div><div class="under"><code>#d7e6f5</code><span class="roll">Komponentyta</span></div></div><div class="ruta"><div class="prov" style="background:#c1d5e9;color:#1a1a1a">4</div><div class="under"><code>#c1d5e9</code><span class="roll">Komponentyta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#a9c1d8;color:#1a1a1a">5</div><div class="under"><code>#a9c1d8</code><span class="roll">Komponentyta, aktiv</span></div></div><div class="ruta"><div class="prov" style="background:#8faac4;color:#1a1a1a">6</div><div class="under"><code>#8faac4</code><span class="roll">Subtil kant</span></div></div><div class="ruta"><div class="prov" style="background:#708eab;color:#1a1a1a">7</div><div class="under"><code>#708eab</code><span class="roll">Kant och fokusring</span></div></div><div class="ruta"><div class="prov" style="background:#5c7c9a;color:#ffffff">8</div><div class="under"><code>#5c7c9a</code><span class="roll">Kant, hover</span></div></div><div class="ruta"><div class="prov" style="background:#4a6b8a;color:#ffffff">9</div><div class="under"><code>#4a6b8a</code><span class="roll">Solid yta</span></div></div><div class="ruta"><div class="prov" style="background:#575f66;color:#ffffff">10</div><div class="under"><code>#575f66</code><span class="roll">Solid yta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#47494c;color:#ffffff">11</div><div class="under"><code>#47494c</code><span class="roll">Text, låg kontrast</span></div></div><div class="ruta"><div class="prov" style="background:#242c34;color:#ffffff">12</div><div class="under"><code>#242c34</code><span class="roll">Text, hög kontrast</span></div></div></div>
-      <ul class="kontrakt"><li class="fel"><span>!</span> Steg 9 (<code>#1b4965</code>) ligger på avstånd 15.1 från fokusringen (--p-blue-700) — perceptuellt samma färg</li><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.58</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>8.18</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>12.81</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>13.87</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.10</strong> (golv 1.4)</li></ul>
-    </section>
-<section class="skala">
-      <h3>Röd — förslag, 12 steg</h3>
-      <p class="ingress">Ankaret är --p-red-500. Bär både fel-tillstånd och kursfärgen RIM 3 — två roller på samma primitiv, vilket är värt att hålla ögonen på om röd ska börja bära fler betydelser.</p>
-      <div class="rutor"><div class="ruta"><div class="prov" style="background:#fffcfb;color:#1a1a1a">1</div><div class="under"><code>#fffcfb</code><span class="roll">Sidbakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#ffeeeb;color:#1a1a1a">2</div><div class="under"><code>#ffeeeb</code><span class="roll">Subtil bakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#ffd7d0;color:#1a1a1a">3</div><div class="under"><code>#ffd7d0</code><span class="roll">Komponentyta</span></div></div><div class="ruta"><div class="prov" style="background:#ffbaaf;color:#1a1a1a">4</div><div class="under"><code>#ffbaaf</code><span class="roll">Komponentyta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#fe9686;color:#1a1a1a">5</div><div class="under"><code>#fe9686</code><span class="roll">Komponentyta, aktiv</span></div></div><div class="ruta"><div class="prov" style="background:#ea7566;color:#1a1a1a">6</div><div class="under"><code>#ea7566</code><span class="roll">Subtil kant</span></div></div><div class="ruta"><div class="prov" style="background:#cf4e3f;color:#ffffff">7</div><div class="under"><code>#cf4e3f</code><span class="roll">Kant och fokusring</span></div></div><div class="ruta"><div class="prov" style="background:#bd2d22;color:#ffffff">8</div><div class="under"><code>#bd2d22</code><span class="roll">Kant, hover</span></div></div><div class="ruta"><div class="prov" style="background:#a90000;color:#ffffff">9</div><div class="under"><code>#a90000</code><span class="roll">Solid yta</span></div></div><div class="ruta"><div class="prov" style="background:#9a0000;color:#ffffff">10</div><div class="under"><code>#9a0000</code><span class="roll">Solid yta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#790000;color:#ffffff">11</div><div class="under"><code>#790000</code><span class="roll">Text, låg kontrast</span></div></div><div class="ruta"><div class="prov" style="background:#4b0000;color:#ffffff">12</div><div class="under"><code>#4b0000</code><span class="roll">Text, hög kontrast</span></div></div></div>
-      <ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>7.82</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>10.30</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>14.38</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>15.83</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.88</strong> (golv 1.4)</li></ul>
-    </section>
-
-<h2>7. Så här är atlasen byggd</h2>
+<h2>6. Så här är atlasen byggd</h2>
 <p class="lead">Tokens läses ur <code>src/styles/tokens/*.css</code>, användningen räknas i
-   <code>src/**/*.tsx</code>, mätvärdena beräknas i <code>scripts/lib/farg.mjs</code> och
-   skalförslagen genereras i <code>scripts/lib/skala.mjs</code>. Det enda handskrivna är
-   auditens fynd i <code>docs/design/farg-atlas.fynd.json</code>.</p>
-<p class="lead">Kör <code>npm run atlas</code> för att bygga om. Ändras ett tokenvärde i appen
-   följer atlasen med — den kan inte hamna i otakt med koden.</p>
+   <code>src/</code>, mätvärdena beräknas i <code>scripts/lib/farg.mjs</code> och skalorna
+   genereras i <code>scripts/lib/skala.mjs</code>. Det enda handskrivna är auditens fynd i
+   <code>docs/design/farg-atlas.fynd.json</code>.</p>
+<p class="lead"><code>npm run atlas</code> bygger om, formaterar och kör
+   <code>scripts/verifiera-farg-atlas.mjs</code> — drygt tusen kontroller som prövar varje
+   påstående här mot källkoden med egen, oberoende matematik. Atlasen kan inte tyst glida
+   isär från appen.</p>
 </div>
 <script>
   // Respekterar en ev. temaväxlare i värdmiljön utan att kräva en.

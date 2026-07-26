@@ -20,7 +20,7 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { hexTillRgb, matning, oklch, textPa } from './lib/farg.mjs';
-import { byggSkala, hittaKollisioner, provaKontrakt } from './lib/skala.mjs';
+import { provaKontrakt, STEG_ROLLER } from './lib/skala.mjs';
 
 /**
  * Vad varje primitivgrupp faktiskt ÄR i appen. Gruppnamnet kommer ur
@@ -28,11 +28,12 @@ import { byggSkala, hittaKollisioner, provaKontrakt } from './lib/skala.mjs';
  * sage-grönt som bär skapa-knappen och används 33 gånger.
  */
 const ETIKETT = {
-  'gold\u00a0': 'Guld — tolvstegsskalan (ny, ingen roll pekar hit än)',
-  'copper\u00a0': 'Koppar — tolvstegsskalan (ny)',
-  'neutral\u00a0': 'Neutraler — tolvstegsskalan (ny, ton 100° kroma 0,008)',
-  'sage\u00a0': 'Sage — tolvstegsskalan (ny)',
-  'red\u00a0': 'Röd — tolvstegsskalan (ny)',
+  'gold\u00a0': 'Guld — primärfärgen',
+  'copper\u00a0': 'Koppar — accent och CTA',
+  'neutral\u00a0': 'Neutraler — ton 100°, kroma 0,008',
+  'sage\u00a0': 'Sage — success och skapa-knappen',
+  'blue\u00a0': 'Blå — info och Fjärrskådning. Ankaret flyttat, se F10',
+  'red\u00a0': 'Röd — fel',
   gold: 'Guld/amber — primärfärgen',
   copper: 'Koppar — accent, CTA och varning',
   neutral: 'Neutraler — bär omkring 450 av appens färganvändningar',
@@ -254,7 +255,7 @@ function dtcgFarg(hex) {
   };
 }
 
-function byggDtcg(modell, skalor, forslag, fynd, neutralvagar) {
+function byggDtcg(modell, skalor, fynd) {
   const primitiv = { $type: 'color', $description: 'Lager 1 — råa värden.' };
   for (const [grupp, lista] of skalor) {
     primitiv[grupp] = {};
@@ -300,34 +301,6 @@ function byggDtcg(modell, skalor, forslag, fynd, neutralvagar) {
     };
   }
 
-  const forslagsGrupp = { $type: 'color', $description: 'Förslag — ej implementerat.' };
-  for (const [namn, data] of Object.entries(forslag)) {
-    forslagsGrupp[namn] = {};
-    for (const s of data.skala) {
-      forslagsGrupp[namn][s.steg] = {
-        $value: dtcgFarg(s.hex),
-        $description: `Steg ${s.steg} — ${s.roll}`,
-      };
-    }
-  }
-
-  // Neutralvägarna renderades först bara i HTML. En maskinläsbar fil som visar
-  // mindre än den visuella är ett tyst löftesbrott: den som konsumerar JSON:en
-  // ser inte de alternativ sidan lägger fram.
-  const jamforelse = {
-    $type: 'color',
-    $description: 'Neutralernas mättnadsnivåer — underlag, ej implementerat.',
-  };
-  for (const v of neutralvagar) {
-    jamforelse[v.nyckel] = { $description: `${v.rubrik} — ${v.not}` };
-    for (const s of v.skala) {
-      jamforelse[v.nyckel][s.steg] = {
-        $value: dtcgFarg(s.hex),
-        $description: `Steg ${s.steg} — ${s.roll}`,
-      };
-    }
-  }
-
   return {
     $description:
       'Färgatlas för Miranon Media Admin. Genererad ur src/ av scripts/build-farg-atlas.mjs — redigera inte för hand.',
@@ -337,13 +310,10 @@ function byggDtcg(modell, skalor, forslag, fynd, neutralvagar) {
         granskat: fynd.granskat,
         rent: fynd.rent,
         fynd: fynd.fynd,
-        kontrakt: Object.fromEntries(Object.entries(forslag).map(([n, d]) => [n, d.kontrakt])),
       },
     },
     primitiv,
     roll,
-    forslag: forslagsGrupp,
-    jamforelse,
   };
 }
 
@@ -367,58 +337,56 @@ function skalRad(titel, poster, beskrivning) {
 </section>`;
 }
 
-function byggHtml(modell, skalor, forslag, fynd, neutralvagar) {
-  const dagensNeutral = (skalor.get('neutral') ?? [])
-    .map((f) =>
-      ruta(f.hex, f.steg, `<code>${esc(f.hex)}</code><span>L* ${f.cieL.toFixed(1)}</span>`),
-    )
-    .join('');
-  const neutralSektioner = neutralvagar
-    .map((v) => {
-      const rutor = v.skala
-        .map((s) =>
-          ruta(s.hex, s.steg, `<code>${esc(s.hex)}</code><span class="roll">${esc(s.roll)}</span>`),
-        )
-        .join('');
-      const kontrakt = provaKontrakt(v.skala)
+function byggHtml(modell, skalor, fynd) {
+  const nu = new Date().toISOString().slice(0, 10);
+
+  // Skalorna renderas en gång, inte två. Tidigare stod tolvstegsskalorna både
+  // som "nuläge" och som "förslag" — samma färger på två ställen med olika
+  // status, vilket är precis den sortens motsägelse atlasen finns för att
+  // fånga. Rollnamn och kontrakt, som bara fanns i förslagsvyn, följer med hit.
+  const renderaSkala = ([grupp, lista]) => {
+    const ny = grupp.endsWith(' ');
+    const hal = hittaHal(lista);
+    const storsta = hal.length ? hal.reduce((a, b) => (b.delta > a.delta ? b : a)) : null;
+
+    const rutor = lista.map((f) =>
+      ruta(
+        f.hex,
+        f.steg ?? f.namn.replace('--p-', ''),
+        `<code>${esc(f.hex)}</code>
+         ${ny && f.steg ? `<span class="roll">${esc(STEG_ROLLER[f.steg - 1] ?? '')}</span>` : ''}
+         <span>L* ${f.cieL.toFixed(1)}</span>
+         <span>${f.motVit.toFixed(2)}:1</span>
+         <span class="${f.anvandning === 0 ? 'dod' : 'lev'}">${f.anvandning === 0 ? 'oanvänd' : `${f.anvandning}×`}</span>`,
+      ),
+    );
+
+    let kontraktLista = '';
+    if (ny && lista.length === 12) {
+      kontraktLista = `<ul class="kontrakt">${provaKontrakt(lista.map((f) => ({ hex: f.hex })))
         .map(
           (k) =>
             `<li class="${k.haller ? 'ok' : 'fel'}"><span>${k.haller ? '✓' : '✗'}</span> ${esc(k.krav)} — <strong>${k.uppmatt.toFixed(2)}</strong> (golv ${k.golv})</li>`,
         )
-        .join('');
-      return `<section class="skala">
-      <h3>${esc(v.rubrik)}</h3>
-      <p class="ingress">${esc(v.not)}</p>
-      <div class="rutor">${rutor}</div>
-      <ul class="kontrakt">${kontrakt}</ul>
-    </section>`;
-    })
+        .join('')}</ul>`;
+    }
+
+    const not = ny
+      ? 'Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.'
+      : storsta && storsta.delta > 15
+        ? `<strong>Största hål:</strong> ${esc(storsta.fran)} → ${esc(storsta.till)}, ${storsta.delta.toFixed(1)} L*-enheter.`
+        : 'Stegen ligger jämnt fördelade.';
+
+    return `${skalRad(`${ETIKETT[grupp] ?? grupp} · ${lista.length} steg`, rutor, not)}${kontraktLista}`;
+  };
+
+  const nyaSektioner = [...skalor]
+    .filter(([g]) => g.endsWith(' '))
+    .map(renderaSkala)
     .join('\n');
-
-  const nu = new Date().toISOString().slice(0, 10);
-
-  // Nuläge — en rad per skala
-  const nulageSektioner = [...skalor]
-    .map(([grupp, lista]) => {
-      const hal = hittaHal(lista);
-      const storsta = hal.length ? hal.reduce((a, b) => (b.delta > a.delta ? b : a)) : null;
-      const rutor = lista.map((f) =>
-        ruta(
-          f.hex,
-          f.steg ?? f.namn.replace('--p-', ''),
-          `<code>${esc(f.hex)}</code>
-           <span>L* ${f.cieL.toFixed(1)}</span>
-           <span>${f.motVit.toFixed(2)}:1</span>
-           <span class="${f.anvandning === 0 ? 'dod' : 'lev'}">${f.anvandning === 0 ? 'oanvänd' : `${f.anvandning}×`}</span>`,
-        ),
-      );
-      const not =
-        storsta && storsta.delta > 15
-          ? `<strong>Största hål:</strong> ${esc(storsta.fran)} → ${esc(storsta.till)}, ${storsta.delta.toFixed(1)} L*-enheter. Där ryms flera steg.`
-          : 'Stegen ligger jämnt fördelade.';
-      const etikett = ETIKETT[grupp] ?? grupp;
-      return skalRad(`${etikett} · ${lista.length} steg`, rutor, not);
-    })
+  const gamlaSektioner = [...skalor]
+    .filter(([g]) => !g.endsWith(' '))
+    .map(renderaSkala)
     .join('\n');
 
   // Roller
@@ -439,32 +407,6 @@ function byggHtml(modell, skalor, forslag, fynd, neutralvagar) {
     .join('');
 
   // Förslag
-  const forslagSektioner = Object.entries(forslag)
-    .map(([namn, data]) => {
-      const rutor = data.skala.map((s) =>
-        ruta(s.hex, s.steg, `<code>${esc(s.hex)}</code><span class="roll">${esc(s.roll)}</span>`),
-      );
-      const kollisioner = (data.kollisioner ?? [])
-        .map(
-          (k) =>
-            `<li class="fel"><span>!</span> Steg ${k.steg} (<code>${esc(k.hex)}</code>) ligger på avstånd ${k.avstand.toFixed(1)} från ${esc(k.vad)} — perceptuellt samma färg</li>`,
-        )
-        .join('');
-      const kontrakt = data.kontrakt
-        .map(
-          (k) =>
-            `<li class="${k.haller ? 'ok' : 'fel'}"><span>${k.haller ? '✓' : '✗'}</span> ${esc(k.krav)} — <strong>${k.uppmatt.toFixed(2)}</strong> (golv ${k.golv})</li>`,
-        )
-        .join('');
-      return `<section class="skala">
-      <h3>${esc(data.rubrik ?? namn)} — förslag, 12 steg</h3>
-      <p class="ingress">${esc(data.not)}</p>
-      <div class="rutor">${rutor.join('')}</div>
-      <ul class="kontrakt">${kollisioner}${kontrakt}</ul>
-    </section>`;
-    })
-    .join('\n');
-
   const fyndSektioner = fynd.fynd
     .map(
       (f) => `<article class="fynd ${esc(f.allvar)}">
@@ -473,6 +415,7 @@ function byggHtml(modell, skalor, forslag, fynd, neutralvagar) {
       <p>${esc(f.vad)}</p>
       ${f.verifiering ? `<p class="verif"><strong>Verifiering:</strong> ${esc(f.verifiering)}</p>` : ''}
       ${f.foljd ? `<p><strong>Följd:</strong> ${esc(f.foljd)}</p>` : ''}
+      ${f.atgard ? `<p class="atgard"><strong>Löst:</strong> ${esc(f.atgard)}</p>` : ''}
       ${f.fallan ? `<p class="fallan"><strong>Fällan:</strong> ${esc(f.fallan)}</p>` : ''}
       ${f.ovrigt ? `<p>${esc(f.ovrigt)}</p>` : ''}
     </article>`,
@@ -588,6 +531,9 @@ function byggHtml(modell, skalor, forslag, fynd, neutralvagar) {
   .fynd .id { font: .8rem ui-monospace, monospace; color: var(--tyst); }
   .fynd .allvar { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em;
                   color: var(--tyst); margin-left: auto; }
+  .fynd .atgard { border-left: 3px solid var(--ok); padding-left: .7rem; }
+  .fynd.löst { border-left-color: var(--ok); opacity: .85; }
+  .fynd.löst .allvar { color: var(--ok); }
   .fynd p { font-size: .87rem; margin: .4rem 0; }
   .fynd .plats code { font-size: .75rem; }
   .fynd .verif { color: var(--tyst); }
@@ -600,18 +546,29 @@ function byggHtml(modell, skalor, forslag, fynd, neutralvagar) {
 <div class="omslag">
 <header>
   <h1>Färgatlas</h1>
-  <p class="lead">Nuläget i Miranon Media Admins färgsystem, mätt och renderat — plus vad som saknas
-     och hur en fullständig palett skulle se ut. Genererad ur <code>src/</code>, inte skriven för hand.</p>
+  <p class="lead">Miranon Media Admins palett, mätt och renderad ur <code>src/</code> — inte
+     skriven för hand. Sex tolvstegsskalor ligger i appen som material; rollerna pekar
+     ännu på den gamla paletten.</p>
   <p class="meta">Byggd ${nu} · ${modell.primitivFarger.length} primitiver ·
      ${modell.semantiskaRoller.length} roller · ${modell.temaRoller.length} utilities i <code>@theme</code></p>
 </header>
 
-<h2>1. Nuläget — primitiva skalor</h2>
-<p class="lead">Varje ruta visar hex, CIE L* (perceptuell ljushet — måttet som avgör om två steg
-   känns lika stora), kontrast mot vit yta, och hur många gånger tokenet faktiskt används.</p>
-${nulageSektioner}
+<h2>1. Paletten</h2>
+<p class="lead">Sex skalor om tolv steg enligt Radix rollindelning: varje steg är en UI-roll,
+   inte en godtycklig nyans. Genererade i OKLCH därför att lika stora ljushetssteg där också
+   ser lika stora ut. <strong>Steg 9 är ankaret</strong> — den kulör appen redan bär — och det
+   är flyttat i exakt en skala: blå, av skäl som står i fynd F10.</p>
+<p class="lead">Skalorna finns i <code>primitives.css</code> men ingen roll pekar på dem ännu.
+   Migreringen är ett eget beslut; det som står här är materialet, färdigt att väljas ur.</p>
+${nyaSektioner}
 
-<h2>2. Nuläget — semantiska roller</h2>
+<h2>2. Den gamla paletten — utgående</h2>
+<p class="lead">Vad appens roller faktiskt pekar på idag. Ersätts av skalorna ovan när
+   migreringen görs. Kolumnen längst ner i varje ruta visar hur många gånger tokenet
+   används.</p>
+${gamlaSektioner}
+
+<h2>3. Semantiska roller</h2>
 <p class="lead">Lager 2. Kolumnen <em>i @theme</em> visar om rollen är exponerad som
    Tailwind-utility eller bara nåbar via <code>var()</code> — de två konsumtionsvägarna i fynd F2.</p>
 <div class="tabellyta"><table>
@@ -619,46 +576,28 @@ ${nulageSektioner}
   <tbody>${rollRader}</tbody>
 </table></div>
 <ul class="noter">
-  <li><strong>${doda.length}</strong> primitiver är oanvända: ${doda.map((d) => `<code>${esc(d.namn)}</code>`).join(', ') || '—'}</li>
+  <li><strong>${doda.length}</strong> primitiver är oanvända: ${doda.map((d) => `<code>${esc(d.namn)}</code>`).join(', ') || '—'}
+      <em>(de nya skalorna ligger här tills rollerna migreras)</em></li>
   <li><strong>${dodaRoller.length}</strong> roller är oanvända: ${dodaRoller.map((d) => `<code>${esc(d.namn)}</code>`).join(', ') || '—'}</li>
   <li><strong>${utilityDoda.length}</strong> av ${modell.temaRoller.length} <code>@theme</code>-utilities används aldrig i TSX
       (flera lever ändå via <code>var()</code> i CSS-lagret)</li>
 </ul>
 
-<h2>3. Vad som håller</h2>
+<h2>4. Vad som håller</h2>
 <ul class="rent">${rentRader}</ul>
 
-<h2>4. Brister</h2>
+<h2>5. Brister</h2>
 ${fyndSektioner}
 
-<h2>5. Neutralernas värme — hur mycket?</h2>
-<p class="lead">Neutralerna bär omkring 450 av appens färganvändningar, så deras ton slår
-   igenom överallt. Men <strong>tonvalet spelar nästan ingen roll</strong> — 70°, 106° och 120°
-   skiljer en till två hexpunkter. Det som avgör om värmen syns är mättnaden, och där ligger
-   dagens neutraler på 0,003 medan Radix egen sand ligger på 0,0013. Alla fyra nedan har
-   samma ton (100°, Radix natural pairing mot guldet) och skiljs bara av kroma.</p>
-<p class="lead">Dagens skala hoppar dessutom mellan 106°, 116° och 146°, och fem av tretton
-   steg är helt rena. Det är ojämnheten som märks — inte tonen.</p>
-<section class="skala">
-  <h3>Dagens skala, som referens · 13 steg</h3>
-  <div class="rutor">${dagensNeutral}</div>
-</section>
-${neutralSektioner}
-
-<h2>6. Möjligheten — fullständiga skalor</h2>
-<p class="lead">Tolvstegsmodellen är Radix rollindelning: varje steg är en UI-roll, inte en
-   godtycklig nyans. Skalorna nedan är genererade i OKLCH runt de befintliga varumärkesfärgerna
-   — <strong>ankaret flyttas aldrig</strong>, steg 9 är exakt den kulör appen redan bär.
-   Kontrakten under varje skala är samma garantier Radix ger för sina egna.</p>
-${forslagSektioner}
-
-<h2>7. Så här är atlasen byggd</h2>
+<h2>6. Så här är atlasen byggd</h2>
 <p class="lead">Tokens läses ur <code>src/styles/tokens/*.css</code>, användningen räknas i
-   <code>src/**/*.tsx</code>, mätvärdena beräknas i <code>scripts/lib/farg.mjs</code> och
-   skalförslagen genereras i <code>scripts/lib/skala.mjs</code>. Det enda handskrivna är
-   auditens fynd i <code>docs/design/farg-atlas.fynd.json</code>.</p>
-<p class="lead">Kör <code>npm run atlas</code> för att bygga om. Ändras ett tokenvärde i appen
-   följer atlasen med — den kan inte hamna i otakt med koden.</p>
+   <code>src/</code>, mätvärdena beräknas i <code>scripts/lib/farg.mjs</code> och skalorna
+   genereras i <code>scripts/lib/skala.mjs</code>. Det enda handskrivna är auditens fynd i
+   <code>docs/design/farg-atlas.fynd.json</code>.</p>
+<p class="lead"><code>npm run atlas</code> bygger om, formaterar och kör
+   <code>scripts/verifiera-farg-atlas.mjs</code> — drygt tusen kontroller som prövar varje
+   påstående här mot källkoden med egen, oberoende matematik. Atlasen kan inte tyst glida
+   isär från appen.</p>
 </div>
 <script>
   // Respekterar en ev. temaväxlare i värdmiljön utan att kräva en.
@@ -673,99 +612,12 @@ const modell = byggModell();
 const skalor = grupperaSkalor(modell.primitivFarger);
 const fynd = JSON.parse(las('docs/design/farg-atlas.fynd.json'));
 
-const forslag = {
-  guld: {
-    rubrik: 'Guld/amber',
-    ankare: '#d4960a',
-    not: 'Ankaret är --p-gold-500. Kulörtonen låses till ankarets 78,7° vilket rätar ut brottet i fynd F7 — dagens ljusa steg driver mot 92°. Steg 9 når inte 3:1 mot vit yta; det är en fysisk egenskap hos en mättad gul-orange, inte ett fel i skalan. Behövs guld som UI-yta mot vitt är steg 10 den ljusaste som duger.',
-  },
-  koppar: {
-    rubrik: 'Koppar',
-    ankare: '#a3491c',
-    not: 'Ankaret är --p-copper-500. Skalan byggs ut från ankaret i stället för från en fast ljushetstabell — Miranons koppar är mörkare än vad ett steg 9 brukar vara, och en fast tabell hade gjort skalan icke-monoton. Mellanbandet som saknas i fynd F8 fylls av stegen 3–8.',
-  },
-  neutral: {
-    rubrik: 'Neutraler',
-    ankare: '#6b6b6b',
-    not: 'Ankaret är --p-neutral-500. Neutralerna bär omkring 450 av appens färganvändningar — de förtjänar högst upplösning. Nuvarande skala har ett hål på 22 L*-enheter mellan 300 och 400 och tre nästan identiska steg i botten (800/900/1000 ligger inom 5 enheter). OBS: en genererad skala blir kromatiskt neutral, medan dagens neutraler är svagt varma. Den tonen är ett designval som bör fattas medvetet, inte tappas bort i en omräkning.',
-  },
-  sage: {
-    rubrik: 'Sage',
-    ankare: '#606b57',
-    not: 'Ankaret är --p-green-500, sage-grönt ur Vue-arvet. Rollen --mm-success används 33 gånger och bär bland annat skapa-knappen, men primitiven har idag bara två steg: 100 och 500. Det är den mest använda kulören som helt saknar skala.',
-  },
-  bla: {
-    rubrik: 'Blå',
-    ankare: '#4a6b8a',
-    not: 'Ankaret är --p-blue-500. Skalan har en konflikt som inte går att räkna bort — se kollisionsnoten under stegen.',
-    reserverade: [{ hex: '#1b4965', vad: 'fokusringen (--p-blue-700)' }],
-  },
-  rod: {
-    rubrik: 'Röd',
-    ankare: '#a90000',
-    not: 'Ankaret är --p-red-500. Bär både fel-tillstånd och kursfärgen RIM 3 — två roller på samma primitiv, vilket är värt att hålla ögonen på om röd ska börja bära fler betydelser.',
-  },
-};
-for (const [namn, data] of Object.entries(forslag)) {
-  data.skala = byggSkala(data.ankare, { reserverade: data.reserverade });
-  data.kontrakt = provaKontrakt(data.skala);
-  data.kollisioner = data.reserverade ? hittaKollisioner(data.skala, data.reserverade) : [];
-  const brutna = data.kontrakt.filter((k) => !k.haller).length;
-  const kollision = data.kollisioner.length ? `, ${data.kollisioner.length} kollision` : '';
-  console.log(
-    `  ${namn.padEnd(8)} 12 steg runt ${data.ankare} — ${brutna === 0 ? 'alla kontrakt håller' : `${brutna} kontrakt faller`}${kollision}`,
-  );
-}
-
-// Neutralernas ton är det enda palettvalet som slår igenom på hela appen — de
-// bär omkring 450 användningar.
-//
-// Mätningen flyttade frågan. Tonvalet spelar nästan ingen roll: 70°, 106° och
-// 120° skiljer en till två hexpunkter vid rimlig mättnad. Det som avgör om
-// värmen syns är kroma. Dagens neutraler ligger på 0,003 och Radix egen sand på
-// 0,0013 — branschen håller tintade gråskalor mycket diskreta, eftersom en
-// mättad grå börjar konkurrera med accenten.
-//
-// Tonen 100° följer Radix natural pairing: välj gråskalan vars ton ligger
-// närmast accenten. Guldet sitter på 78,7°, kopparn på 44°, och appens egna
-// ljusa steg ligger redan på 106°.
-const NEUTRALTON = 100;
-const neutralvagar = [
-  {
-    nyckel: 'ren',
-    rubrik: 'Ren — ingen ton alls',
-    not: 'Referens. Äkta grå, kulörerna gör allt färgarbete. Risken är att ytorna känns kliniska bredvid guld och koppar.',
-    skala: byggSkala('#6b6b6b', { kroma: 0 }),
-  },
-  {
-    nyckel: 'dagens',
-    rubrik: 'Dagens nivå — kroma 0,003',
-    not: 'Den värme appen har nu, men jämnt fördelad. Dagens ton hoppar mellan 106°, 116° och 146°, och fem av tretton steg är helt rena — det är ojämnheten som märks, inte tonen.',
-    skala: byggSkala('#6b6b6b', { kulorton: NEUTRALTON, kroma: 0.003 }),
-  },
-  {
-    nyckel: 'varm',
-    rubrik: 'Varm — kroma 0,008 (rekommenderad)',
-    not: 'Ungefär dubbelt dagens värme. Märkbart varmare ytor, fortfarande långt under det som skulle läsa som beige. Följer Radix natural pairing mot guldet.',
-    skala: byggSkala('#6b6b6b', { kulorton: NEUTRALTON, kroma: 0.008 }),
-  },
-  {
-    nyckel: 'sand',
-    rubrik: 'Sand — kroma 0,025',
-    not: 'Tydligt varm. Här börjar neutralen läsa som en egen kulör och konkurrera med guldet — Radix varnar uttryckligen för mättade gråskalor av det skälet. Med som ytterlighet så du ser var gränsen går.',
-    skala: byggSkala('#6b6b6b', { kulorton: NEUTRALTON, kroma: 0.025 }),
-  },
-];
-
-const dtcg = byggDtcg(modell, skalor, forslag, fynd, neutralvagar);
+const dtcg = byggDtcg(modell, skalor, fynd);
 writeFileSync(
   join(ROT, 'docs/design/farg-atlas.tokens.json'),
   `${JSON.stringify(dtcg, null, 2)}\n`,
 );
-writeFileSync(
-  join(ROT, 'docs/design/farg-atlas.html'),
-  byggHtml(modell, skalor, forslag, fynd, neutralvagar),
-);
+writeFileSync(join(ROT, 'docs/design/farg-atlas.html'), byggHtml(modell, skalor, fynd));
 
 // Utdata formateras av repots egen formatterare — se npm-scriptet `atlas`, som
 // kedjar biome efter generatorn. Genererade filer undantas medvetet INTE från

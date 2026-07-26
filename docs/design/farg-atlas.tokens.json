@@ -32,10 +32,7 @@
           "id": "F1",
           "rubrik": "Två döda färgklasser i login",
           "allvar": "hög",
-          "plats": [
-            "src/routes/login.tsx:111",
-            "src/routes/login.tsx:119"
-          ],
+          "plats": ["src/routes/login.tsx:111", "src/routes/login.tsx:119"],
           "vad": "text-red-600 och text-white genererar ingen CSS. src/styles/tailwind.css:12 nollställer Tailwinds defaultpalett med --color-*: initial, och ingen av klasserna finns i @theme.",
           "verifiering": "grep -c '\\.text-white' dist/assets/*.css → 0, medan .text-text-muted och .bg-primary finns i samma fil.",
           "foljd": "Felmeddelandet vid inloggning renderas inte rött. Skärmläsare når det ändå via role=alert + aria-live.",
@@ -68,9 +65,7 @@
           "id": "F5",
           "rubrik": "Specen har drivit isär från koden",
           "allvar": "medel",
-          "plats": [
-            "docs/specs/DESIGN-SYSTEM-SPEC.md §1"
-          ],
+          "plats": ["docs/specs/DESIGN-SYSTEM-SPEC.md §1"],
           "vad": "Specen anger --mm-text-muted: var(--p-neutral-400) (3,50:1 mot vit). Koden har --p-neutral-500 (5,33:1).",
           "foljd": "Koden är rätt och specen föråldrad. Rollen används 164 gånger — den mest använda färgrollen i appen. Hade specen följts vore 164 platser under AA.",
           "ovrigt": "Specen listar också 25 komponent-tokens (--mm-stat-card-*, --mm-table-*, --mm-menu-*) som aldrig byggdes, och saknar --mm-state-hover i §1."
@@ -106,208 +101,15 @@
         },
         {
           "id": "F10",
-          "rubrik": "Info-blå och fokusringen är förväxlingsbara redan idag",
-          "allvar": "hög",
+          "rubrik": "Info-blå och fokusringen var förväxlingsbara — löst 2026-07-26",
+          "allvar": "löst",
+          "atgard": "Marcus beslut: fokusringen står fast (lessons.md Session 25 — exklusiviteten är det som gör den igenkännbar), info-blå flyttar. Den nya blåskalans ankare är #1F6CB0: samma ljushet som den gamla (CIE L* 44,4 mot 44,0) och närmaste ton, men dubbla mättnaden (C 42,6 mot 21,0). Fokusringen är därmed den DOVA mörkblå och info den KLARA. Avståndet gick från 15,1 till 27,3 och hela skalan är fri från kollisioner. Rollernas kontrast är i praktiken oförändrad: 5,04:1 som text mot info-ytan (dagens 5,13), 5,48:1 som kursplatta under vit text (dagens 5,58). Kvar att göra: migrera --mm-info, --mm-cat-comm och --mm-kurs-fjarrskadning till den nya skalan — det ändrar appens utseende och hör till migreringen.",
           "vad": "--p-blue-500 (#4A6B8A, som bär --mm-info, --mm-cat-comm och kursfärgen Fjärrskådning) ligger på perceptuellt avstånd 15,1 från fokusringens #1B4965. De har nästan identisk mättnad (21,0 mot 21,6) och nära kulörton (261,8° mot 255,4°) — det enda som skiljer dem är ljushet.",
           "verifiering": "CIE LCh-avstånd mellan #4a6b8a och #1b4965 = 15,1. Till jämförelse ligger --p-blue-100 på 69,4 och --mm-text på 51,8 från samma färg.",
           "foljd": "tasks/lessons.md (Session 25, UNIVERSAL) slår fast att fokusringen ska ha 'ingen relation till amber, copper, info eller text' — men den har relation till info. En fokusring runt ett info-element är svår att urskilja från elementet.",
           "fallan": "Fyndet uppstod inte ur den genererade skalan; skalan avslöjade det bara. Konflikten finns i paletten som den ser ut nu, och den försvinner inte av att vi låter bli att generera. Marcus har beslutat att fokusringen står fast — då är det info-blå som behöver flytta, eller så accepteras närheten som ett medvetet undantag."
         }
-      ],
-      "kontrakt": {
-        "guld": [
-          {
-            "krav": "Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11)",
-            "uppmatt": 2.5715342059066595,
-            "golv": 3,
-            "haller": false
-          },
-          {
-            "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
-            "uppmatt": 4.582618212842003,
-            "golv": 4.5,
-            "haller": true
-          },
-          {
-            "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
-            "uppmatt": 8.697465054258151,
-            "golv": 7,
-            "haller": true
-          },
-          {
-            "krav": "Steg 12 mot steg 1",
-            "uppmatt": 9.111082451057824,
-            "golv": 7,
-            "haller": true
-          },
-          {
-            "krav": "Steg 7 mot steg 2 (kant urskiljbar)",
-            "uppmatt": 1.867328537485545,
-            "golv": 1.4,
-            "haller": true
-          }
-        ],
-        "koppar": [
-          {
-            "krav": "Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11)",
-            "uppmatt": 5.953914077009506,
-            "golv": 3,
-            "haller": true
-          },
-          {
-            "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
-            "uppmatt": 8.576392803207634,
-            "golv": 4.5,
-            "haller": true
-          },
-          {
-            "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
-            "uppmatt": 13.13611881700308,
-            "golv": 7,
-            "haller": true
-          },
-          {
-            "krav": "Steg 12 mot steg 1",
-            "uppmatt": 14.301789344854214,
-            "golv": 7,
-            "haller": true
-          },
-          {
-            "krav": "Steg 7 mot steg 2 (kant urskiljbar)",
-            "uppmatt": 3.223322381725675,
-            "golv": 1.4,
-            "haller": true
-          }
-        ],
-        "neutral": [
-          {
-            "krav": "Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11)",
-            "uppmatt": 5.32921162976606,
-            "golv": 3,
-            "haller": true
-          },
-          {
-            "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
-            "uppmatt": 7.861985717921205,
-            "golv": 4.5,
-            "haller": true
-          },
-          {
-            "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
-            "uppmatt": 12.411518727747291,
-            "golv": 7,
-            "haller": true
-          },
-          {
-            "krav": "Steg 12 mot steg 1",
-            "uppmatt": 13.539270812799575,
-            "golv": 7,
-            "haller": true
-          },
-          {
-            "krav": "Steg 7 mot steg 2 (kant urskiljbar)",
-            "uppmatt": 2.991157226261048,
-            "golv": 1.4,
-            "haller": true
-          }
-        ],
-        "sage": [
-          {
-            "krav": "Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11)",
-            "uppmatt": 5.617885427974359,
-            "golv": 3,
-            "haller": true
-          },
-          {
-            "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
-            "uppmatt": 8.098617982442013,
-            "golv": 4.5,
-            "haller": true
-          },
-          {
-            "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
-            "uppmatt": 12.782768302459273,
-            "golv": 7,
-            "haller": true
-          },
-          {
-            "krav": "Steg 12 mot steg 1",
-            "uppmatt": 13.900938725460176,
-            "golv": 7,
-            "haller": true
-          },
-          {
-            "krav": "Steg 7 mot steg 2 (kant urskiljbar)",
-            "uppmatt": 3.082472834536767,
-            "golv": 1.4,
-            "haller": true
-          }
-        ],
-        "bla": [
-          {
-            "krav": "Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11)",
-            "uppmatt": 5.583260903837898,
-            "golv": 3,
-            "haller": true
-          },
-          {
-            "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
-            "uppmatt": 8.181557687664576,
-            "golv": 4.5,
-            "haller": true
-          },
-          {
-            "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
-            "uppmatt": 12.81223823811918,
-            "golv": 7,
-            "haller": true
-          },
-          {
-            "krav": "Steg 12 mot steg 1",
-            "uppmatt": 13.87051704064932,
-            "golv": 7,
-            "haller": true
-          },
-          {
-            "krav": "Steg 7 mot steg 2 (kant urskiljbar)",
-            "uppmatt": 3.095332911402504,
-            "golv": 1.4,
-            "haller": true
-          }
-        ],
-        "rod": [
-          {
-            "krav": "Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11)",
-            "uppmatt": 7.81539809078535,
-            "golv": 3,
-            "haller": true
-          },
-          {
-            "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
-            "uppmatt": 10.304221509168585,
-            "golv": 4.5,
-            "haller": true
-          },
-          {
-            "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
-            "uppmatt": 14.37951135291964,
-            "golv": 7,
-            "haller": true
-          },
-          {
-            "krav": "Steg 12 mot steg 1",
-            "uppmatt": 15.832531950482043,
-            "golv": 7,
-            "haller": true
-          },
-          {
-            "krav": "Steg 7 mot steg 2 (kant urskiljbar)",
-            "uppmatt": 3.880156420242892,
-            "golv": 1.4,
-            "haller": true
-          }
-        ]
-      }
+      ]
     }
   },
   "primitiv": {
@@ -317,11 +119,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9882,
-            0.9725
-          ],
+          "components": [1, 0.9882, 0.9725],
           "hex": "#fffcf8"
         },
         "$description": "--p-gold-1 · CIE L* 99.1 · kontrast mot vit 1.02:1",
@@ -341,11 +139,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9647,
-            0.9098
-          ],
+          "components": [1, 0.9647, 0.9098],
           "hex": "#fff6e8"
         },
         "$description": "--p-gold-2 · CIE L* 97.2 · kontrast mot vit 1.07:1",
@@ -365,11 +159,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9255,
-            0.8078
-          ],
+          "components": [1, 0.9255, 0.8078],
           "hex": "#ffecce"
         },
         "$description": "--p-gold-3 · CIE L* 94.2 · kontrast mot vit 1.16:1",
@@ -389,11 +179,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.8745,
-            0.6784
-          ],
+          "components": [1, 0.8745, 0.6784],
           "hex": "#ffdfad"
         },
         "$description": "--p-gold-4 · CIE L* 90.3 · kontrast mot vit 1.28:1",
@@ -413,11 +199,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9882,
-            0.8157,
-            0.5451
-          ],
+          "components": [0.9882, 0.8157, 0.5451],
           "hex": "#fcd08b"
         },
         "$description": "--p-gold-5 · CIE L* 85.8 · kontrast mot vit 1.44:1",
@@ -437,11 +219,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.949,
-            0.7569,
-            0.4353
-          ],
+          "components": [0.949, 0.7569, 0.4353],
           "hex": "#f2c16f"
         },
         "$description": "--p-gold-6 · CIE L* 80.8 · kontrast mot vit 1.66:1",
@@ -461,11 +239,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.898,
-            0.6824,
-            0.3059
-          ],
+          "components": [0.898, 0.6824, 0.3059],
           "hex": "#e5ae4e"
         },
         "$description": "--p-gold-7 · CIE L* 74.5 · kontrast mot vit 2.00:1",
@@ -485,11 +259,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8667,
-            0.6314,
-            0.1843
-          ],
+          "components": [0.8667, 0.6314, 0.1843],
           "hex": "#dda12f"
         },
         "$description": "--p-gold-8 · CIE L* 70.2 · kontrast mot vit 2.28:1",
@@ -509,11 +279,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8314,
-            0.5882,
-            0.0392
-          ],
+          "components": [0.8314, 0.5882, 0.0392],
           "hex": "#d4960a"
         },
         "$description": "--p-gold-9 · CIE L* 66.4 · kontrast mot vit 2.57:1",
@@ -533,11 +299,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7608,
-            0.5373,
-            0
-          ],
+          "components": [0.7608, 0.5373, 0],
           "hex": "#c28900"
         },
         "$description": "--p-gold-10 · CIE L* 61.1 · kontrast mot vit 3.06:1",
@@ -557,11 +319,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5882,
-            0.4078,
-            0
-          ],
+          "components": [0.5882, 0.4078, 0],
           "hex": "#966800"
         },
         "$description": "--p-gold-11 · CIE L* 47.5 · kontrast mot vit 4.91:1",
@@ -581,11 +339,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3765,
-            0.2549,
-            0
-          ],
+          "components": [0.3765, 0.2549, 0],
           "hex": "#604100"
         },
         "$description": "--p-gold-12 · CIE L* 30.1 · kontrast mot vit 9.32:1",
@@ -607,11 +361,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9882,
-            0.9843
-          ],
+          "components": [1, 0.9882, 0.9843],
           "hex": "#fffcfb"
         },
         "$description": "--p-copper-1 · CIE L* 99.2 · kontrast mot vit 1.02:1",
@@ -631,11 +381,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9412,
-            0.9137
-          ],
+          "components": [1, 0.9412, 0.9137],
           "hex": "#fff0e9"
         },
         "$description": "--p-copper-2 · CIE L* 95.8 · kontrast mot vit 1.11:1",
@@ -655,11 +401,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.8627,
-            0.8039
-          ],
+          "components": [1, 0.8627, 0.8039],
           "hex": "#ffdccd"
         },
         "$description": "--p-copper-3 · CIE L* 90.3 · kontrast mot vit 1.28:1",
@@ -679,11 +421,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.7647,
-            0.6706
-          ],
+          "components": [0.9922, 0.7647, 0.6706],
           "hex": "#fdc3ab"
         },
         "$description": "--p-copper-4 · CIE L* 83.4 · kontrast mot vit 1.55:1",
@@ -703,11 +441,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9373,
-            0.6706,
-            0.5569
-          ],
+          "components": [0.9373, 0.6706, 0.5569],
           "hex": "#efab8e"
         },
         "$description": "--p-copper-5 · CIE L* 75.7 · kontrast mot vit 1.93:1",
@@ -727,11 +461,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8667,
-            0.5686,
-            0.4392
-          ],
+          "components": [0.8667, 0.5686, 0.4392],
           "hex": "#dd9170"
         },
         "$description": "--p-copper-6 · CIE L* 67.1 · kontrast mot vit 2.51:1",
@@ -751,11 +481,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.4471,
-            0.302
-          ],
+          "components": [0.7686, 0.4471, 0.302],
           "hex": "#c4724d"
         },
         "$description": "--p-copper-7 · CIE L* 56.4 · kontrast mot vit 3.58:1",
@@ -775,11 +501,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7059,
-            0.3608,
-            0.2
-          ],
+          "components": [0.7059, 0.3608, 0.2],
           "hex": "#b45c33"
         },
         "$description": "--p-copper-8 · CIE L* 49.0 · kontrast mot vit 4.65:1",
@@ -799,11 +521,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6392,
-            0.2863,
-            0.1098
-          ],
+          "components": [0.6392, 0.2863, 0.1098],
           "hex": "#a3491c"
         },
         "$description": "--p-copper-9 · CIE L* 42.2 · kontrast mot vit 5.95:1",
@@ -823,11 +541,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5922,
-            0.251,
-            0.0706
-          ],
+          "components": [0.5922, 0.251, 0.0706],
           "hex": "#974012"
         },
         "$description": "--p-copper-10 · CIE L* 38.4 · kontrast mot vit 6.87:1",
@@ -847,11 +561,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4784,
-            0.1765,
-            0
-          ],
+          "components": [0.4784, 0.1765, 0],
           "hex": "#7a2d00"
         },
         "$description": "--p-copper-11 · CIE L* 29.5 · kontrast mot vit 9.53:1",
@@ -871,11 +581,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2941,
-            0.098,
-            0
-          ],
+          "components": [0.2941, 0.098, 0],
           "hex": "#4b1900"
         },
         "$description": "--p-copper-12 · CIE L* 16.5 · kontrast mot vit 14.60:1",
@@ -897,11 +603,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.9922,
-            0.9882
-          ],
+          "components": [0.9922, 0.9922, 0.9882],
           "hex": "#fdfdfc"
         },
         "$description": "--p-neutral-1 · CIE L* 99.3 · kontrast mot vit 1.02:1",
@@ -921,11 +623,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9569,
-            0.9529,
-            0.949
-          ],
+          "components": [0.9569, 0.9529, 0.949],
           "hex": "#f4f3f2"
         },
         "$description": "--p-neutral-2 · CIE L* 95.9 · kontrast mot vit 1.11:1",
@@ -945,11 +643,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.898,
-            0.898,
-            0.8863
-          ],
+          "components": [0.898, 0.898, 0.8863],
           "hex": "#e5e5e2"
         },
         "$description": "--p-neutral-3 · CIE L* 90.9 · kontrast mot vit 1.26:1",
@@ -969,11 +663,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8314,
-            0.8275,
-            0.8157
-          ],
+          "components": [0.8314, 0.8275, 0.8157],
           "hex": "#d4d3d0"
         },
         "$description": "--p-neutral-4 · CIE L* 84.6 · kontrast mot vit 1.50:1",
@@ -993,11 +683,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7529,
-            0.749,
-            0.7333
-          ],
+          "components": [0.7529, 0.749, 0.7333],
           "hex": "#c0bfbb"
         },
         "$description": "--p-neutral-5 · CIE L* 77.3 · kontrast mot vit 1.84:1",
@@ -1017,11 +703,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0.6627,
-            0.6431
-          ],
+          "components": [0.6627, 0.6627, 0.6431],
           "hex": "#a9a9a4"
         },
         "$description": "--p-neutral-6 · CIE L* 69.1 · kontrast mot vit 2.36:1",
@@ -1041,11 +723,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5569,
-            0.5529,
-            0.5373
-          ],
+          "components": [0.5569, 0.5529, 0.5373],
           "hex": "#8e8d89"
         },
         "$description": "--p-neutral-7 · CIE L* 58.6 · kontrast mot vit 3.32:1",
@@ -1065,11 +743,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4863,
-            0.4824,
-            0.4627
-          ],
+          "components": [0.4863, 0.4824, 0.4627],
           "hex": "#7c7b76"
         },
         "$description": "--p-neutral-8 · CIE L* 51.6 · kontrast mot vit 4.24:1",
@@ -1089,11 +763,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4196,
-            0.4196,
-            0.4196
-          ],
+          "components": [0.4196, 0.4196, 0.4196],
           "hex": "#6b6b6b"
         },
         "$description": "--p-neutral-9 · CIE L* 45.2 · kontrast mot vit 5.33:1",
@@ -1113,11 +783,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3843,
-            0.3843,
-            0.3647
-          ],
+          "components": [0.3843, 0.3843, 0.3647],
           "hex": "#62625d"
         },
         "$description": "--p-neutral-10 · CIE L* 41.4 · kontrast mot vit 6.13:1",
@@ -1137,11 +803,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.298,
-            0.298,
-            0.2784
-          ],
+          "components": [0.298, 0.298, 0.2784],
           "hex": "#4c4c47"
         },
         "$description": "--p-neutral-11 · CIE L* 32.2 · kontrast mot vit 8.63:1",
@@ -1161,11 +823,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1765,
-            0.1765,
-            0.1647
-          ],
+          "components": [0.1765, 0.1765, 0.1647],
           "hex": "#2d2d2a"
         },
         "$description": "--p-neutral-12 · CIE L* 18.4 · kontrast mot vit 13.81:1",
@@ -1187,11 +845,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9882,
-            0.9922,
-            0.9804
-          ],
+          "components": [0.9882, 0.9922, 0.9804],
           "hex": "#fcfdfa"
         },
         "$description": "--p-sage-1 · CIE L* 99.2 · kontrast mot vit 1.02:1",
@@ -1211,11 +865,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9451,
-            0.9569,
-            0.9333
-          ],
+          "components": [0.9451, 0.9569, 0.9333],
           "hex": "#f1f4ee"
         },
         "$description": "--p-sage-2 · CIE L* 95.8 · kontrast mot vit 1.11:1",
@@ -1235,11 +885,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8824,
-            0.902,
-            0.8667
-          ],
+          "components": [0.8824, 0.902, 0.8667],
           "hex": "#e1e6dd"
         },
         "$description": "--p-sage-3 · CIE L* 90.7 · kontrast mot vit 1.27:1",
@@ -1259,11 +905,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8078,
-            0.8353,
-            0.7843
-          ],
+          "components": [0.8078, 0.8353, 0.7843],
           "hex": "#ced5c8"
         },
         "$description": "--p-sage-4 · CIE L* 84.4 · kontrast mot vit 1.50:1",
@@ -1283,11 +925,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7216,
-            0.7529,
-            0.6941
-          ],
+          "components": [0.7216, 0.7529, 0.6941],
           "hex": "#b8c0b1"
         },
         "$description": "--p-sage-5 · CIE L* 76.7 · kontrast mot vit 1.87:1",
@@ -1307,11 +945,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6275,
-            0.6627,
-            0.6
-          ],
+          "components": [0.6275, 0.6627, 0.6],
           "hex": "#a0a999"
         },
         "$description": "--p-sage-6 · CIE L* 68.1 · kontrast mot vit 2.43:1",
@@ -1331,11 +965,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5176,
-            0.5569,
-            0.4824
-          ],
+          "components": [0.5176, 0.5569, 0.4824],
           "hex": "#848e7b"
         },
         "$description": "--p-sage-7 · CIE L* 57.7 · kontrast mot vit 3.42:1",
@@ -1355,11 +985,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4431,
-            0.4863,
-            0.4078
-          ],
+          "components": [0.4431, 0.4863, 0.4078],
           "hex": "#717c68"
         },
         "$description": "--p-sage-8 · CIE L* 50.6 · kontrast mot vit 4.39:1",
@@ -1379,11 +1005,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3765,
-            0.4196,
-            0.3412
-          ],
+          "components": [0.3765, 0.4196, 0.3412],
           "hex": "#606b57"
         },
         "$description": "--p-sage-9 · CIE L* 43.8 · kontrast mot vit 5.62:1",
@@ -1403,11 +1025,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3412,
-            0.3804,
-            0.3059
-          ],
+          "components": [0.3412, 0.3804, 0.3059],
           "hex": "#57614e"
         },
         "$description": "--p-sage-10 · CIE L* 39.8 · kontrast mot vit 6.51:1",
@@ -1427,11 +1045,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2627,
-            0.298,
-            0.2314
-          ],
+          "components": [0.2627, 0.298, 0.2314],
           "hex": "#434c3b"
         },
         "$description": "--p-sage-11 · CIE L* 31.1 · kontrast mot vit 8.99:1",
@@ -1451,11 +1065,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.149,
-            0.1765,
-            0.1294
-          ],
+          "components": [0.149, 0.1765, 0.1294],
           "hex": "#262d21"
         },
         "$description": "--p-sage-12 · CIE L* 17.5 · kontrast mot vit 14.19:1",
@@ -1473,15 +1083,253 @@
         }
       }
     },
+    "blue ": {
+      "1": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.9843, 0.9922, 1],
+          "hex": "#fbfdff"
+        },
+        "$description": "--p-blue-1 · CIE L* 99.2 · kontrast mot vit 1.02:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-1",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9931,
+              "C": 0.0034,
+              "h": 247.9
+            }
+          }
+        }
+      },
+      "2": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.9216, 0.9608, 1],
+          "hex": "#ebf5ff"
+        },
+        "$description": "--p-blue-2 · CIE L* 96.1 · kontrast mot vit 1.10:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-2",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9656,
+              "C": 0.0171,
+              "h": 248
+            }
+          }
+        }
+      },
+      "3": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.8196, 0.9059, 1],
+          "hex": "#d1e7ff"
+        },
+        "$description": "--p-blue-3 · CIE L* 90.7 · kontrast mot vit 1.27:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-3",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9192,
+              "C": 0.0404,
+              "h": 250.6
+            }
+          }
+        }
+      },
+      "4": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.6941, 0.8431, 1],
+          "hex": "#b1d7ff"
+        },
+        "$description": "--p-blue-4 · CIE L* 84.6 · kontrast mot vit 1.50:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-4",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.8654,
+              "C": 0.0689,
+              "h": 249.9
+            }
+          }
+        }
+      },
+      "5": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.5765, 0.7647, 0.9608],
+          "hex": "#93c3f5"
+        },
+        "$description": "--p-blue-5 · CIE L* 77.2 · kontrast mot vit 1.85:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-5",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.8015,
+              "C": 0.0876,
+              "h": 250
+            }
+          }
+        }
+      },
+      "6": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.4588, 0.6745, 0.898],
+          "hex": "#75ace5"
+        },
+        "$description": "--p-blue-6 · CIE L* 68.7 · kontrast mot vit 2.39:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-6",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.7287,
+              "C": 0.1016,
+              "h": 250.2
+            }
+          }
+        }
+      },
+      "7": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.3216, 0.5647, 0.8078],
+          "hex": "#5290ce"
+        },
+        "$description": "--p-blue-7 · CIE L* 58.2 · kontrast mot vit 3.37:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-7",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.6386,
+              "C": 0.1138,
+              "h": 250
+            }
+          }
+        }
+      },
+      "8": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.2157, 0.4902, 0.7529],
+          "hex": "#377dc0"
+        },
+        "$description": "--p-blue-8 · CIE L* 51.0 · kontrast mot vit 4.32:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-8",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.577,
+              "C": 0.1251,
+              "h": 250.1
+            }
+          }
+        }
+      },
+      "9": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.1216, 0.4235, 0.6902],
+          "hex": "#1f6cb0"
+        },
+        "$description": "--p-blue-9 · CIE L* 44.4 · kontrast mot vit 5.48:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-9",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.5207,
+              "C": 0.1295,
+              "h": 249.9
+            }
+          }
+        }
+      },
+      "10": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.0784, 0.3843, 0.6431],
+          "hex": "#1462a4"
+        },
+        "$description": "--p-blue-10 · CIE L* 40.5 · kontrast mot vit 6.34:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-10",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.4871,
+              "C": 0.1273,
+              "h": 249.9
+            }
+          }
+        }
+      },
+      "11": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0, 0.298, 0.5216],
+          "hex": "#004c85"
+        },
+        "$description": "--p-blue-11 · CIE L* 31.5 · kontrast mot vit 8.85:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-11",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.4095,
+              "C": 0.1147,
+              "h": 249.6
+            }
+          }
+        }
+      },
+      "12": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.1608, 0.1725, 0.1922],
+          "hex": "#292c31"
+        },
+        "$description": "--p-blue-12 · CIE L* 17.9 · kontrast mot vit 14.01:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-blue-12",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.2921,
+              "C": 0.0101,
+              "h": 260.7
+            }
+          }
+        }
+      }
+    },
     "red ": {
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9882,
-            0.9843
-          ],
+          "components": [1, 0.9882, 0.9843],
           "hex": "#fffcfb"
         },
         "$description": "--p-red-1 · CIE L* 99.2 · kontrast mot vit 1.02:1",
@@ -1501,11 +1349,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9333,
-            0.9216
-          ],
+          "components": [1, 0.9333, 0.9216],
           "hex": "#ffeeeb"
         },
         "$description": "--p-red-2 · CIE L* 95.3 · kontrast mot vit 1.12:1",
@@ -1525,11 +1369,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.8431,
-            0.8157
-          ],
+          "components": [1, 0.8431, 0.8157],
           "hex": "#ffd7d0"
         },
         "$description": "--p-red-3 · CIE L* 89.1 · kontrast mot vit 1.32:1",
@@ -1549,11 +1389,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.7294,
-            0.6863
-          ],
+          "components": [1, 0.7294, 0.6863],
           "hex": "#ffbaaf"
         },
         "$description": "--p-red-4 · CIE L* 81.6 · kontrast mot vit 1.63:1",
@@ -1573,11 +1409,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9961,
-            0.5882,
-            0.5255
-          ],
+          "components": [0.9961, 0.5882, 0.5255],
           "hex": "#fe9686"
         },
         "$description": "--p-red-5 · CIE L* 72.6 · kontrast mot vit 2.12:1",
@@ -1597,11 +1429,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9176,
-            0.4588,
-            0.4
-          ],
+          "components": [0.9176, 0.4588, 0.4],
           "hex": "#ea7566"
         },
         "$description": "--p-red-6 · CIE L* 62.7 · kontrast mot vit 2.90:1",
@@ -1621,11 +1449,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8118,
-            0.3059,
-            0.2471
-          ],
+          "components": [0.8118, 0.3059, 0.2471],
           "hex": "#cf4e3f"
         },
         "$description": "--p-red-7 · CIE L* 50.8 · kontrast mot vit 4.36:1",
@@ -1645,11 +1469,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7412,
-            0.1765,
-            0.1333
-          ],
+          "components": [0.7412, 0.1765, 0.1333],
           "hex": "#bd2d22"
         },
         "$description": "--p-red-8 · CIE L* 42.5 · kontrast mot vit 5.90:1",
@@ -1669,11 +1489,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0,
-            0
-          ],
+          "components": [0.6627, 0, 0],
           "hex": "#a90000"
         },
         "$description": "--p-red-9 · CIE L* 34.9 · kontrast mot vit 7.82:1",
@@ -1693,11 +1509,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6039,
-            0,
-            0
-          ],
+          "components": [0.6039, 0, 0],
           "hex": "#9a0000"
         },
         "$description": "--p-red-10 · CIE L* 31.5 · kontrast mot vit 8.85:1",
@@ -1717,11 +1529,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4745,
-            0,
-            0
-          ],
+          "components": [0.4745, 0, 0],
           "hex": "#790000"
         },
         "$description": "--p-red-11 · CIE L* 23.9 · kontrast mot vit 11.58:1",
@@ -1741,11 +1549,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2941,
-            0,
-            0
-          ],
+          "components": [0.2941, 0, 0],
           "hex": "#4b0000"
         },
         "$description": "--p-red-12 · CIE L* 12.6 · kontrast mot vit 16.16:1",
@@ -1767,11 +1571,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9843,
-            0.9529,
-            0.8784
-          ],
+          "components": [0.9843, 0.9529, 0.8784],
           "hex": "#fbf3e0"
         },
         "$description": "--p-gold-100 · CIE L* 96.0 · kontrast mot vit 1.11:1",
@@ -1791,11 +1591,7 @@
       "200": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9608,
-            0.902,
-            0.7373
-          ],
+          "components": [0.9608, 0.902, 0.7373],
           "hex": "#f5e6bc"
         },
         "$description": "--p-gold-200 · CIE L* 91.5 · kontrast mot vit 1.24:1",
@@ -1815,11 +1611,7 @@
       "300": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9412,
-            0.8392,
-            0.5412
-          ],
+          "components": [0.9412, 0.8392, 0.5412],
           "hex": "#f0d68a"
         },
         "$description": "--p-gold-300 · CIE L* 86.2 · kontrast mot vit 1.43:1",
@@ -1839,11 +1631,7 @@
       "400": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.6588,
-            0.251
-          ],
+          "components": [0.7686, 0.6588, 0.251],
           "hex": "#c4a840"
         },
         "$description": "--p-gold-400 · CIE L* 69.5 · kontrast mot vit 2.33:1",
@@ -1863,11 +1651,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8314,
-            0.5882,
-            0.0392
-          ],
+          "components": [0.8314, 0.5882, 0.0392],
           "hex": "#d4960a"
         },
         "$description": "--p-gold-500 · CIE L* 66.4 · kontrast mot vit 2.57:1",
@@ -1887,11 +1671,7 @@
       "600": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7216,
-            0.502,
-            0.0392
-          ],
+          "components": [0.7216, 0.502, 0.0392],
           "hex": "#b8800a"
         },
         "$description": "--p-gold-600 · CIE L* 57.7 · kontrast mot vit 3.43:1",
@@ -1911,11 +1691,7 @@
       "700": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5882,
-            0.4078,
-            0.0392
-          ],
+          "components": [0.5882, 0.4078, 0.0392],
           "hex": "#96680a"
         },
         "$description": "--p-gold-700 · CIE L* 47.5 · kontrast mot vit 4.91:1",
@@ -1937,11 +1713,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.9569,
-            0.9333
-          ],
+          "components": [0.9922, 0.9569, 0.9333],
           "hex": "#fdf4ee"
         },
         "$description": "--p-copper-100 · CIE L* 96.7 · kontrast mot vit 1.09:1",
@@ -1961,11 +1733,7 @@
       "200": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9608,
-            0.8471,
-            0.7686
-          ],
+          "components": [0.9608, 0.8471, 0.7686],
           "hex": "#f5d8c4"
         },
         "$description": "--p-copper-200 · CIE L* 88.2 · kontrast mot vit 1.35:1",
@@ -1985,11 +1753,7 @@
       "400": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.4157,
-            0.2275
-          ],
+          "components": [0.7686, 0.4157, 0.2275],
           "hex": "#c46a3a"
         },
         "$description": "--p-copper-400 · CIE L* 54.4 · kontrast mot vit 3.84:1",
@@ -2009,11 +1773,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6392,
-            0.2863,
-            0.1098
-          ],
+          "components": [0.6392, 0.2863, 0.1098],
           "hex": "#a3491c"
         },
         "$description": "--p-copper-500 · CIE L* 42.2 · kontrast mot vit 5.95:1",
@@ -2033,11 +1793,7 @@
       "600": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5412,
-            0.2392,
-            0.0902
-          ],
+          "components": [0.5412, 0.2392, 0.0902],
           "hex": "#8a3d17"
         },
         "$description": "--p-copper-600 · CIE L* 35.6 · kontrast mot vit 7.61:1",
@@ -2059,11 +1815,7 @@
       "0": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            1,
-            1
-          ],
+          "components": [1, 1, 1],
           "hex": "#ffffff"
         },
         "$description": "--p-neutral-0 · CIE L* 100.0 · kontrast mot vit 1.00:1",
@@ -2083,11 +1835,7 @@
       "25": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9804,
-            0.9804,
-            0.9725
-          ],
+          "components": [0.9804, 0.9804, 0.9725],
           "hex": "#fafaf8"
         },
         "$description": "--p-neutral-25 · CIE L* 98.2 · kontrast mot vit 1.05:1",
@@ -2107,11 +1855,7 @@
       "50": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9608,
-            0.9608,
-            0.9529
-          ],
+          "components": [0.9608, 0.9608, 0.9529],
           "hex": "#f5f5f3"
         },
         "$description": "--p-neutral-50 · CIE L* 96.5 · kontrast mot vit 1.09:1",
@@ -2131,11 +1875,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9294,
-            0.9333,
-            0.9137
-          ],
+          "components": [0.9294, 0.9333, 0.9137],
           "hex": "#edeee9"
         },
         "$description": "--p-neutral-100 · CIE L* 93.9 · kontrast mot vit 1.17:1",
@@ -2155,11 +1895,7 @@
       "200": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8824,
-            0.8902,
-            0.8824
-          ],
+          "components": [0.8824, 0.8902, 0.8824],
           "hex": "#e1e3e1"
         },
         "$description": "--p-neutral-200 · CIE L* 90.0 · kontrast mot vit 1.29:1",
@@ -2179,11 +1915,7 @@
       "300": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.7686,
-            0.7608
-          ],
+          "components": [0.7686, 0.7686, 0.7608],
           "hex": "#c4c4c2"
         },
         "$description": "--p-neutral-300 · CIE L* 79.1 · kontrast mot vit 1.75:1",
@@ -2203,11 +1935,7 @@
       "400": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5373,
-            0.5373,
-            0.5373
-          ],
+          "components": [0.5373, 0.5373, 0.5373],
           "hex": "#898989"
         },
         "$description": "--p-neutral-400 · CIE L* 57.1 · kontrast mot vit 3.50:1",
@@ -2227,11 +1955,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4196,
-            0.4196,
-            0.4196
-          ],
+          "components": [0.4196, 0.4196, 0.4196],
           "hex": "#6b6b6b"
         },
         "$description": "--p-neutral-500 · CIE L* 45.2 · kontrast mot vit 5.33:1",
@@ -2251,11 +1975,7 @@
       "600": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3216,
-            0.3176,
-            0.3176
-          ],
+          "components": [0.3216, 0.3176, 0.3176],
           "hex": "#525151"
         },
         "$description": "--p-neutral-600 · CIE L* 34.5 · kontrast mot vit 7.91:1",
@@ -2275,11 +1995,7 @@
       "700": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2275,
-            0.2275,
-            0.2275
-          ],
+          "components": [0.2275, 0.2275, 0.2275],
           "hex": "#3a3a3a"
         },
         "$description": "--p-neutral-700 · CIE L* 24.4 · kontrast mot vit 11.37:1",
@@ -2299,11 +2015,7 @@
       "800": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1569,
-            0.1608,
-            0.1569
-          ],
+          "components": [0.1569, 0.1608, 0.1569],
           "hex": "#282928"
         },
         "$description": "--p-neutral-800 · CIE L* 16.5 · kontrast mot vit 14.60:1",
@@ -2323,11 +2035,7 @@
       "900": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1412,
-            0.1412,
-            0.1412
-          ],
+          "components": [0.1412, 0.1412, 0.1412],
           "hex": "#242424"
         },
         "$description": "--p-neutral-900 · CIE L* 14.2 · kontrast mot vit 15.52:1",
@@ -2347,11 +2055,7 @@
       "1000": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.102,
-            0.102,
-            0.102
-          ],
+          "components": [0.102, 0.102, 0.102],
           "hex": "#1a1a1a"
         },
         "$description": "--p-neutral-1000 · CIE L* 9.3 · kontrast mot vit 17.40:1",
@@ -2373,11 +2077,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9373,
-            0.9647,
-            1
-          ],
+          "components": [0.9373, 0.9647, 1],
           "hex": "#eff6ff"
         },
         "$description": "--p-blue-100 · CIE L* 96.6 · kontrast mot vit 1.09:1",
@@ -2397,11 +2097,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2902,
-            0.4196,
-            0.5412
-          ],
+          "components": [0.2902, 0.4196, 0.5412],
           "hex": "#4a6b8a"
         },
         "$description": "--p-blue-500 · CIE L* 44.0 · kontrast mot vit 5.58:1",
@@ -2421,11 +2117,7 @@
       "700": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1059,
-            0.2863,
-            0.3961
-          ],
+          "components": [0.1059, 0.2863, 0.3961],
           "hex": "#1b4965"
         },
         "$description": "--p-blue-700 · CIE L* 29.3 · kontrast mot vit 9.60:1",
@@ -2447,11 +2139,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9961,
-            0.949,
-            0.949
-          ],
+          "components": [0.9961, 0.949, 0.949],
           "hex": "#fef2f2"
         },
         "$description": "--p-red-100 · CIE L* 96.4 · kontrast mot vit 1.09:1",
@@ -2471,11 +2159,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0,
-            0
-          ],
+          "components": [0.6627, 0, 0],
           "hex": "#a90000"
         },
         "$description": "--p-red-500 · CIE L* 34.9 · kontrast mot vit 7.82:1",
@@ -2497,11 +2181,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9412,
-            0.9922,
-            0.9569
-          ],
+          "components": [0.9412, 0.9922, 0.9569],
           "hex": "#f0fdf4"
         },
         "$description": "--p-green-100 · CIE L* 98.2 · kontrast mot vit 1.05:1",
@@ -2521,11 +2201,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3765,
-            0.4196,
-            0.3412
-          ],
+          "components": [0.3765, 0.4196, 0.3412],
           "hex": "#606b57"
         },
         "$description": "--p-green-500 · CIE L* 43.8 · kontrast mot vit 5.62:1",
@@ -3356,1478 +3032,6 @@
           "exponeradITheme": false
         }
       }
-    }
-  },
-  "forslag": {
-    "$type": "color",
-    "$description": "Förslag — ej implementerat.",
-    "guld": {
-      "1": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9882,
-            0.9725
-          ],
-          "hex": "#fffcf8"
-        },
-        "$description": "Steg 1 — Sidbakgrund"
-      },
-      "2": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9647,
-            0.9098
-          ],
-          "hex": "#fff6e8"
-        },
-        "$description": "Steg 2 — Subtil bakgrund"
-      },
-      "3": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9255,
-            0.8078
-          ],
-          "hex": "#ffecce"
-        },
-        "$description": "Steg 3 — Komponentyta"
-      },
-      "4": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            1,
-            0.8745,
-            0.6784
-          ],
-          "hex": "#ffdfad"
-        },
-        "$description": "Steg 4 — Komponentyta, hover"
-      },
-      "5": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9882,
-            0.8157,
-            0.5451
-          ],
-          "hex": "#fcd08b"
-        },
-        "$description": "Steg 5 — Komponentyta, aktiv"
-      },
-      "6": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.949,
-            0.7569,
-            0.4353
-          ],
-          "hex": "#f2c16f"
-        },
-        "$description": "Steg 6 — Subtil kant"
-      },
-      "7": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.898,
-            0.6824,
-            0.3059
-          ],
-          "hex": "#e5ae4e"
-        },
-        "$description": "Steg 7 — Kant och fokusring"
-      },
-      "8": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.8667,
-            0.6314,
-            0.1843
-          ],
-          "hex": "#dda12f"
-        },
-        "$description": "Steg 8 — Kant, hover"
-      },
-      "9": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.8314,
-            0.5882,
-            0.0392
-          ],
-          "hex": "#d4960a"
-        },
-        "$description": "Steg 9 — Solid yta"
-      },
-      "10": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.7608,
-            0.5373,
-            0
-          ],
-          "hex": "#c28900"
-        },
-        "$description": "Steg 10 — Solid yta, hover"
-      },
-      "11": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.5882,
-            0.4078,
-            0
-          ],
-          "hex": "#966800"
-        },
-        "$description": "Steg 11 — Text, låg kontrast"
-      },
-      "12": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.3765,
-            0.2549,
-            0
-          ],
-          "hex": "#604100"
-        },
-        "$description": "Steg 12 — Text, hög kontrast"
-      }
-    },
-    "koppar": {
-      "1": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9882,
-            0.9843
-          ],
-          "hex": "#fffcfb"
-        },
-        "$description": "Steg 1 — Sidbakgrund"
-      },
-      "2": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9412,
-            0.9137
-          ],
-          "hex": "#fff0e9"
-        },
-        "$description": "Steg 2 — Subtil bakgrund"
-      },
-      "3": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            1,
-            0.8627,
-            0.8039
-          ],
-          "hex": "#ffdccd"
-        },
-        "$description": "Steg 3 — Komponentyta"
-      },
-      "4": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.7647,
-            0.6706
-          ],
-          "hex": "#fdc3ab"
-        },
-        "$description": "Steg 4 — Komponentyta, hover"
-      },
-      "5": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9373,
-            0.6706,
-            0.5569
-          ],
-          "hex": "#efab8e"
-        },
-        "$description": "Steg 5 — Komponentyta, aktiv"
-      },
-      "6": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.8667,
-            0.5686,
-            0.4392
-          ],
-          "hex": "#dd9170"
-        },
-        "$description": "Steg 6 — Subtil kant"
-      },
-      "7": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.4471,
-            0.302
-          ],
-          "hex": "#c4724d"
-        },
-        "$description": "Steg 7 — Kant och fokusring"
-      },
-      "8": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.7059,
-            0.3608,
-            0.2
-          ],
-          "hex": "#b45c33"
-        },
-        "$description": "Steg 8 — Kant, hover"
-      },
-      "9": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.6392,
-            0.2863,
-            0.1098
-          ],
-          "hex": "#a3491c"
-        },
-        "$description": "Steg 9 — Solid yta"
-      },
-      "10": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.5922,
-            0.251,
-            0.0706
-          ],
-          "hex": "#974012"
-        },
-        "$description": "Steg 10 — Solid yta, hover"
-      },
-      "11": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4784,
-            0.1765,
-            0
-          ],
-          "hex": "#7a2d00"
-        },
-        "$description": "Steg 11 — Text, låg kontrast"
-      },
-      "12": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.2941,
-            0.098,
-            0
-          ],
-          "hex": "#4b1900"
-        },
-        "$description": "Steg 12 — Text, hög kontrast"
-      }
-    },
-    "neutral": {
-      "1": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.9922,
-            0.9922
-          ],
-          "hex": "#fdfdfd"
-        },
-        "$description": "Steg 1 — Sidbakgrund"
-      },
-      "2": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9529,
-            0.9529,
-            0.9529
-          ],
-          "hex": "#f3f3f3"
-        },
-        "$description": "Steg 2 — Subtil bakgrund"
-      },
-      "3": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.898,
-            0.898,
-            0.898
-          ],
-          "hex": "#e5e5e5"
-        },
-        "$description": "Steg 3 — Komponentyta"
-      },
-      "4": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.8275,
-            0.8275,
-            0.8275
-          ],
-          "hex": "#d3d3d3"
-        },
-        "$description": "Steg 4 — Komponentyta, hover"
-      },
-      "5": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.749,
-            0.749,
-            0.749
-          ],
-          "hex": "#bfbfbf"
-        },
-        "$description": "Steg 5 — Komponentyta, aktiv"
-      },
-      "6": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.6588,
-            0.6588,
-            0.6588
-          ],
-          "hex": "#a8a8a8"
-        },
-        "$description": "Steg 6 — Subtil kant"
-      },
-      "7": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.5529,
-            0.5529,
-            0.5529
-          ],
-          "hex": "#8d8d8d"
-        },
-        "$description": "Steg 7 — Kant och fokusring"
-      },
-      "8": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4824,
-            0.4824,
-            0.4824
-          ],
-          "hex": "#7b7b7b"
-        },
-        "$description": "Steg 8 — Kant, hover"
-      },
-      "9": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4196,
-            0.4196,
-            0.4196
-          ],
-          "hex": "#6b6b6b"
-        },
-        "$description": "Steg 9 — Solid yta"
-      },
-      "10": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.3804,
-            0.3804,
-            0.3804
-          ],
-          "hex": "#616161"
-        },
-        "$description": "Steg 10 — Solid yta, hover"
-      },
-      "11": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.2941,
-            0.2941,
-            0.2941
-          ],
-          "hex": "#4b4b4b"
-        },
-        "$description": "Steg 11 — Text, låg kontrast"
-      },
-      "12": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.1765,
-            0.1765,
-            0.1765
-          ],
-          "hex": "#2d2d2d"
-        },
-        "$description": "Steg 12 — Text, hög kontrast"
-      }
-    },
-    "sage": {
-      "1": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9882,
-            0.9922,
-            0.9804
-          ],
-          "hex": "#fcfdfa"
-        },
-        "$description": "Steg 1 — Sidbakgrund"
-      },
-      "2": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9451,
-            0.9569,
-            0.9333
-          ],
-          "hex": "#f1f4ee"
-        },
-        "$description": "Steg 2 — Subtil bakgrund"
-      },
-      "3": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.8824,
-            0.902,
-            0.8667
-          ],
-          "hex": "#e1e6dd"
-        },
-        "$description": "Steg 3 — Komponentyta"
-      },
-      "4": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.8078,
-            0.8353,
-            0.7843
-          ],
-          "hex": "#ced5c8"
-        },
-        "$description": "Steg 4 — Komponentyta, hover"
-      },
-      "5": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.7216,
-            0.7529,
-            0.6941
-          ],
-          "hex": "#b8c0b1"
-        },
-        "$description": "Steg 5 — Komponentyta, aktiv"
-      },
-      "6": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.6275,
-            0.6627,
-            0.6
-          ],
-          "hex": "#a0a999"
-        },
-        "$description": "Steg 6 — Subtil kant"
-      },
-      "7": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.5176,
-            0.5569,
-            0.4824
-          ],
-          "hex": "#848e7b"
-        },
-        "$description": "Steg 7 — Kant och fokusring"
-      },
-      "8": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4431,
-            0.4863,
-            0.4078
-          ],
-          "hex": "#717c68"
-        },
-        "$description": "Steg 8 — Kant, hover"
-      },
-      "9": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.3765,
-            0.4196,
-            0.3412
-          ],
-          "hex": "#606b57"
-        },
-        "$description": "Steg 9 — Solid yta"
-      },
-      "10": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.3412,
-            0.3804,
-            0.3059
-          ],
-          "hex": "#57614e"
-        },
-        "$description": "Steg 10 — Solid yta, hover"
-      },
-      "11": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.2627,
-            0.298,
-            0.2314
-          ],
-          "hex": "#434c3b"
-        },
-        "$description": "Steg 11 — Text, låg kontrast"
-      },
-      "12": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.149,
-            0.1765,
-            0.1294
-          ],
-          "hex": "#262d21"
-        },
-        "$description": "Steg 12 — Text, hög kontrast"
-      }
-    },
-    "bla": {
-      "1": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9843,
-            0.9922,
-            1
-          ],
-          "hex": "#fbfdff"
-        },
-        "$description": "Steg 1 — Sidbakgrund"
-      },
-      "2": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9216,
-            0.9608,
-            0.9961
-          ],
-          "hex": "#ebf5fe"
-        },
-        "$description": "Steg 2 — Subtil bakgrund"
-      },
-      "3": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.8431,
-            0.902,
-            0.9608
-          ],
-          "hex": "#d7e6f5"
-        },
-        "$description": "Steg 3 — Komponentyta"
-      },
-      "4": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.7569,
-            0.8353,
-            0.9137
-          ],
-          "hex": "#c1d5e9"
-        },
-        "$description": "Steg 4 — Komponentyta, hover"
-      },
-      "5": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0.7569,
-            0.8471
-          ],
-          "hex": "#a9c1d8"
-        },
-        "$description": "Steg 5 — Komponentyta, aktiv"
-      },
-      "6": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.5608,
-            0.6667,
-            0.7686
-          ],
-          "hex": "#8faac4"
-        },
-        "$description": "Steg 6 — Subtil kant"
-      },
-      "7": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4392,
-            0.5569,
-            0.6706
-          ],
-          "hex": "#708eab"
-        },
-        "$description": "Steg 7 — Kant och fokusring"
-      },
-      "8": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.3608,
-            0.4863,
-            0.6039
-          ],
-          "hex": "#5c7c9a"
-        },
-        "$description": "Steg 8 — Kant, hover"
-      },
-      "9": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.2902,
-            0.4196,
-            0.5412
-          ],
-          "hex": "#4a6b8a"
-        },
-        "$description": "Steg 9 — Solid yta"
-      },
-      "10": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.3412,
-            0.3725,
-            0.4
-          ],
-          "hex": "#575f66"
-        },
-        "$description": "Steg 10 — Solid yta, hover"
-      },
-      "11": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.2784,
-            0.2863,
-            0.298
-          ],
-          "hex": "#47494c"
-        },
-        "$description": "Steg 11 — Text, låg kontrast"
-      },
-      "12": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.1412,
-            0.1725,
-            0.2039
-          ],
-          "hex": "#242c34"
-        },
-        "$description": "Steg 12 — Text, hög kontrast"
-      }
-    },
-    "rod": {
-      "1": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9882,
-            0.9843
-          ],
-          "hex": "#fffcfb"
-        },
-        "$description": "Steg 1 — Sidbakgrund"
-      },
-      "2": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9333,
-            0.9216
-          ],
-          "hex": "#ffeeeb"
-        },
-        "$description": "Steg 2 — Subtil bakgrund"
-      },
-      "3": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            1,
-            0.8431,
-            0.8157
-          ],
-          "hex": "#ffd7d0"
-        },
-        "$description": "Steg 3 — Komponentyta"
-      },
-      "4": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            1,
-            0.7294,
-            0.6863
-          ],
-          "hex": "#ffbaaf"
-        },
-        "$description": "Steg 4 — Komponentyta, hover"
-      },
-      "5": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9961,
-            0.5882,
-            0.5255
-          ],
-          "hex": "#fe9686"
-        },
-        "$description": "Steg 5 — Komponentyta, aktiv"
-      },
-      "6": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9176,
-            0.4588,
-            0.4
-          ],
-          "hex": "#ea7566"
-        },
-        "$description": "Steg 6 — Subtil kant"
-      },
-      "7": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.8118,
-            0.3059,
-            0.2471
-          ],
-          "hex": "#cf4e3f"
-        },
-        "$description": "Steg 7 — Kant och fokusring"
-      },
-      "8": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.7412,
-            0.1765,
-            0.1333
-          ],
-          "hex": "#bd2d22"
-        },
-        "$description": "Steg 8 — Kant, hover"
-      },
-      "9": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0,
-            0
-          ],
-          "hex": "#a90000"
-        },
-        "$description": "Steg 9 — Solid yta"
-      },
-      "10": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.6039,
-            0,
-            0
-          ],
-          "hex": "#9a0000"
-        },
-        "$description": "Steg 10 — Solid yta, hover"
-      },
-      "11": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4745,
-            0,
-            0
-          ],
-          "hex": "#790000"
-        },
-        "$description": "Steg 11 — Text, låg kontrast"
-      },
-      "12": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.2941,
-            0,
-            0
-          ],
-          "hex": "#4b0000"
-        },
-        "$description": "Steg 12 — Text, hög kontrast"
-      }
-    }
-  },
-  "jamforelse": {
-    "$type": "color",
-    "$description": "Neutralernas mättnadsnivåer — underlag, ej implementerat.",
-    "ren": {
-      "1": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.9922,
-            0.9922
-          ],
-          "hex": "#fdfdfd"
-        },
-        "$description": "Steg 1 — Sidbakgrund"
-      },
-      "2": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9529,
-            0.9529,
-            0.9529
-          ],
-          "hex": "#f3f3f3"
-        },
-        "$description": "Steg 2 — Subtil bakgrund"
-      },
-      "3": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.898,
-            0.898,
-            0.898
-          ],
-          "hex": "#e5e5e5"
-        },
-        "$description": "Steg 3 — Komponentyta"
-      },
-      "4": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.8275,
-            0.8275,
-            0.8275
-          ],
-          "hex": "#d3d3d3"
-        },
-        "$description": "Steg 4 — Komponentyta, hover"
-      },
-      "5": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.749,
-            0.749,
-            0.749
-          ],
-          "hex": "#bfbfbf"
-        },
-        "$description": "Steg 5 — Komponentyta, aktiv"
-      },
-      "6": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.6588,
-            0.6588,
-            0.6588
-          ],
-          "hex": "#a8a8a8"
-        },
-        "$description": "Steg 6 — Subtil kant"
-      },
-      "7": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.5529,
-            0.5529,
-            0.5529
-          ],
-          "hex": "#8d8d8d"
-        },
-        "$description": "Steg 7 — Kant och fokusring"
-      },
-      "8": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4824,
-            0.4824,
-            0.4824
-          ],
-          "hex": "#7b7b7b"
-        },
-        "$description": "Steg 8 — Kant, hover"
-      },
-      "9": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4196,
-            0.4196,
-            0.4196
-          ],
-          "hex": "#6b6b6b"
-        },
-        "$description": "Steg 9 — Solid yta"
-      },
-      "10": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.3804,
-            0.3804,
-            0.3804
-          ],
-          "hex": "#616161"
-        },
-        "$description": "Steg 10 — Solid yta, hover"
-      },
-      "11": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.2941,
-            0.2941,
-            0.2941
-          ],
-          "hex": "#4b4b4b"
-        },
-        "$description": "Steg 11 — Text, låg kontrast"
-      },
-      "12": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.1765,
-            0.1765,
-            0.1765
-          ],
-          "hex": "#2d2d2d"
-        },
-        "$description": "Steg 12 — Text, hög kontrast"
-      },
-      "$description": "Ren — ingen ton alls — Referens. Äkta grå, kulörerna gör allt färgarbete. Risken är att ytorna känns kliniska bredvid guld och koppar."
-    },
-    "dagens": {
-      "1": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.9922,
-            0.9882
-          ],
-          "hex": "#fdfdfc"
-        },
-        "$description": "Steg 1 — Sidbakgrund"
-      },
-      "2": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9529,
-            0.9529,
-            0.9529
-          ],
-          "hex": "#f3f3f3"
-        },
-        "$description": "Steg 2 — Subtil bakgrund"
-      },
-      "3": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.898,
-            0.898,
-            0.8941
-          ],
-          "hex": "#e5e5e4"
-        },
-        "$description": "Steg 3 — Komponentyta"
-      },
-      "4": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.8275,
-            0.8275,
-            0.8235
-          ],
-          "hex": "#d3d3d2"
-        },
-        "$description": "Steg 4 — Komponentyta, hover"
-      },
-      "5": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.749,
-            0.749,
-            0.7451
-          ],
-          "hex": "#bfbfbe"
-        },
-        "$description": "Steg 5 — Komponentyta, aktiv"
-      },
-      "6": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0.6588,
-            0.6549
-          ],
-          "hex": "#a9a8a7"
-        },
-        "$description": "Steg 6 — Subtil kant"
-      },
-      "7": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.5569,
-            0.5529,
-            0.549
-          ],
-          "hex": "#8e8d8c"
-        },
-        "$description": "Steg 7 — Kant och fokusring"
-      },
-      "8": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4863,
-            0.4824,
-            0.4745
-          ],
-          "hex": "#7c7b79"
-        },
-        "$description": "Steg 8 — Kant, hover"
-      },
-      "9": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4196,
-            0.4196,
-            0.4196
-          ],
-          "hex": "#6b6b6b"
-        },
-        "$description": "Steg 9 — Solid yta"
-      },
-      "10": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.3843,
-            0.3804,
-            0.3725
-          ],
-          "hex": "#62615f"
-        },
-        "$description": "Steg 10 — Solid yta, hover"
-      },
-      "11": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.298,
-            0.2941,
-            0.2902
-          ],
-          "hex": "#4c4b4a"
-        },
-        "$description": "Steg 11 — Text, låg kontrast"
-      },
-      "12": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.1765,
-            0.1765,
-            0.1686
-          ],
-          "hex": "#2d2d2b"
-        },
-        "$description": "Steg 12 — Text, hög kontrast"
-      },
-      "$description": "Dagens nivå — kroma 0,003 — Den värme appen har nu, men jämnt fördelad. Dagens ton hoppar mellan 106°, 116° och 146°, och fem av tretton steg är helt rena — det är ojämnheten som märks, inte tonen."
-    },
-    "varm": {
-      "1": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.9922,
-            0.9882
-          ],
-          "hex": "#fdfdfc"
-        },
-        "$description": "Steg 1 — Sidbakgrund"
-      },
-      "2": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9569,
-            0.9529,
-            0.949
-          ],
-          "hex": "#f4f3f2"
-        },
-        "$description": "Steg 2 — Subtil bakgrund"
-      },
-      "3": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.898,
-            0.898,
-            0.8863
-          ],
-          "hex": "#e5e5e2"
-        },
-        "$description": "Steg 3 — Komponentyta"
-      },
-      "4": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.8314,
-            0.8275,
-            0.8157
-          ],
-          "hex": "#d4d3d0"
-        },
-        "$description": "Steg 4 — Komponentyta, hover"
-      },
-      "5": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.7529,
-            0.749,
-            0.7333
-          ],
-          "hex": "#c0bfbb"
-        },
-        "$description": "Steg 5 — Komponentyta, aktiv"
-      },
-      "6": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0.6627,
-            0.6431
-          ],
-          "hex": "#a9a9a4"
-        },
-        "$description": "Steg 6 — Subtil kant"
-      },
-      "7": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.5569,
-            0.5529,
-            0.5373
-          ],
-          "hex": "#8e8d89"
-        },
-        "$description": "Steg 7 — Kant och fokusring"
-      },
-      "8": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4863,
-            0.4824,
-            0.4627
-          ],
-          "hex": "#7c7b76"
-        },
-        "$description": "Steg 8 — Kant, hover"
-      },
-      "9": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4196,
-            0.4196,
-            0.4196
-          ],
-          "hex": "#6b6b6b"
-        },
-        "$description": "Steg 9 — Solid yta"
-      },
-      "10": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.3843,
-            0.3843,
-            0.3647
-          ],
-          "hex": "#62625d"
-        },
-        "$description": "Steg 10 — Solid yta, hover"
-      },
-      "11": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.298,
-            0.298,
-            0.2784
-          ],
-          "hex": "#4c4c47"
-        },
-        "$description": "Steg 11 — Text, låg kontrast"
-      },
-      "12": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.1765,
-            0.1765,
-            0.1647
-          ],
-          "hex": "#2d2d2a"
-        },
-        "$description": "Steg 12 — Text, hög kontrast"
-      },
-      "$description": "Varm — kroma 0,008 (rekommenderad) — Ungefär dubbelt dagens värme. Märkbart varmare ytor, fortfarande långt under det som skulle läsa som beige. Följer Radix natural pairing mot guldet."
-    },
-    "sand": {
-      "1": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.9922,
-            0.9804
-          ],
-          "hex": "#fdfdfa"
-        },
-        "$description": "Steg 1 — Sidbakgrund"
-      },
-      "2": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.9569,
-            0.9569,
-            0.9373
-          ],
-          "hex": "#f4f4ef"
-        },
-        "$description": "Steg 2 — Subtil bakgrund"
-      },
-      "3": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.902,
-            0.898,
-            0.8667
-          ],
-          "hex": "#e6e5dd"
-        },
-        "$description": "Steg 3 — Komponentyta"
-      },
-      "4": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.8353,
-            0.8314,
-            0.7882
-          ],
-          "hex": "#d5d4c9"
-        },
-        "$description": "Steg 4 — Komponentyta, hover"
-      },
-      "5": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.7569,
-            0.7529,
-            0.702
-          ],
-          "hex": "#c1c0b3"
-        },
-        "$description": "Steg 5 — Komponentyta, aktiv"
-      },
-      "6": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.6706,
-            0.6627,
-            0.6078
-          ],
-          "hex": "#aba99b"
-        },
-        "$description": "Steg 6 — Subtil kant"
-      },
-      "7": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.5647,
-            0.5569,
-            0.498
-          ],
-          "hex": "#908e7f"
-        },
-        "$description": "Steg 7 — Kant och fokusring"
-      },
-      "8": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4941,
-            0.4863,
-            0.4235
-          ],
-          "hex": "#7e7c6c"
-        },
-        "$description": "Steg 8 — Kant, hover"
-      },
-      "9": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.4196,
-            0.4196,
-            0.4196
-          ],
-          "hex": "#6b6b6b"
-        },
-        "$description": "Steg 9 — Solid yta"
-      },
-      "10": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.3922,
-            0.3843,
-            0.3216
-          ],
-          "hex": "#646252"
-        },
-        "$description": "Steg 10 — Solid yta, hover"
-      },
-      "11": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.3059,
-            0.298,
-            0.2431
-          ],
-          "hex": "#4e4c3e"
-        },
-        "$description": "Steg 11 — Text, låg kontrast"
-      },
-      "12": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            0.1843,
-            0.1765,
-            0.1373
-          ],
-          "hex": "#2f2d23"
-        },
-        "$description": "Steg 12 — Text, hög kontrast"
-      },
-      "$description": "Sand — kroma 0,025 — Tydligt varm. Här börjar neutralen läsa som en egen kulör och konkurrera med guldet — Radix varnar uttryckligen för mättade gråskalor av det skälet. Med som ytterlighet så du ser var gränsen går."
     }
   }
 }

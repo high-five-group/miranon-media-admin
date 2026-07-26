@@ -89,8 +89,9 @@
     },
     {
       "id": "F10",
-      "rubrik": "Info-blå och fokusringen är förväxlingsbara redan idag",
-      "allvar": "hög",
+      "rubrik": "Info-blå och fokusringen var förväxlingsbara — löst 2026-07-26",
+      "allvar": "löst",
+      "atgard": "Marcus beslut: fokusringen står fast (lessons.md Session 25 — exklusiviteten är det som gör den igenkännbar), info-blå flyttar. Den nya blåskalans ankare är #1F6CB0: samma ljushet som den gamla (CIE L* 44,4 mot 44,0) och närmaste ton, men dubbla mättnaden (C 42,6 mot 21,0). Fokusringen är därmed den DOVA mörkblå och info den KLARA. Avståndet gick från 15,1 till 27,3 och hela skalan är fri från kollisioner. Rollernas kontrast är i praktiken oförändrad: 5,04:1 som text mot info-ytan (dagens 5,13), 5,48:1 som kursplatta under vit text (dagens 5,58). Kvar att göra: migrera --mm-info, --mm-cat-comm och --mm-kurs-fjarrskadning till den nya skalan — det ändrar appens utseende och hör till migreringen.",
       "vad": "--p-blue-500 (#4A6B8A, som bär --mm-info, --mm-cat-comm och kursfärgen Fjärrskådning) ligger på perceptuellt avstånd 15,1 från fokusringens #1B4965. De har nästan identisk mättnad (21,0 mot 21,6) och nära kulörton (261,8° mot 255,4°) — det enda som skiljer dem är ljushet.",
       "verifiering": "CIE LCh-avstånd mellan #4a6b8a och #1b4965 = 15,1. Till jämförelse ligger --p-blue-100 på 69,4 och --mm-text på 51,8 från samma färg.",
       "foljd": "tasks/lessons.md (Session 25, UNIVERSAL) slår fast att fokusringen ska ha 'ingen relation till amber, copper, info eller text' — men den har relation till info. En fokusring runt ett info-element är svår att urskilja från elementet.",

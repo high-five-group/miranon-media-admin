@@ -400,7 +400,14 @@ for (const [ny, gammal] of [
   );
 }
 
-kolla('Blå har medvetet ingen tolvstegsskala', !primKalla.has('--p-blue-1'));
+// Blå är den enda skala vars ankare flyttades (fynd F10). Att det INTE är den
+// gamla kulören är själva åtgärden, så kontrollen är omvänd mot de andra fem.
+kolla('Blå har en tolvstegsskala', primKalla.has('--p-blue-1'));
+kolla(
+  'Blåskalans ankare är flyttat bort från den gamla kulören',
+  primKalla.get('--p-blue-9') !== primKalla.get('--p-blue-500'),
+  `${primKalla.get('--p-blue-9')} mot ${primKalla.get('--p-blue-500')}`,
+);
 
 // ── F. Appen ska vara oförändrad ────────────────────────────────────────────
 
@@ -450,22 +457,11 @@ for (const [namn, varde] of primKalla) {
   );
 }
 
-// Ingen hex på sidan får sakna motsvarighet i källan eller i de genererade
-// förslagen — en färgruta utan ursprung är precis den sortens påhitt atlasen
-// finns för att förhindra.
-const kandaHexar = new Set(
-  [
-    ...[...primKalla.values()],
-    ...[atlas.forslag, atlas.jamforelse]
-      .flatMap((rot) => Object.values(rot))
-      .filter((g) => typeof g === 'object')
-      .flatMap((g) => Object.values(g))
-      .flatMap((t) =>
-        t?.$value?.hex ? [t.$value.hex] : Object.values(t ?? {}).map((x) => x?.$value?.hex),
-      )
-      .filter(Boolean),
-  ].map((h) => String(h).toLowerCase()),
-);
+// Ingen hex på sidan får sakna motsvarighet i källan. Sedan paletten spikades
+// finns inga förslag eller jämförelser kvar att rendera, så varje färgruta ska
+// gå att spåra till en primitiv i primitives.css — en färg utan ursprung är
+// precis den sortens påhitt atlasen finns för att förhindra.
+const kandaHexar = new Set([...primKalla.values()].map((h) => String(h).toLowerCase()));
 const provHexar = [...html.matchAll(/class="prov" style="background:(#[0-9a-f]{6})/g)].map((m) =>
   m[1].toLowerCase(),
 );
