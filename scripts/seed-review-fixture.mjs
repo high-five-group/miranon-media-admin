@@ -398,7 +398,15 @@ export function kapacitetFor(totaltAntal, belaggning) {
   return jamnad;
 }
 
-/** Eventets fält. `Månad/år` sätts ALDRIG — se doc-kommentar i main. */
+/**
+ * Eventets fält.
+ *
+ * `Månad/år` sätts ALDRIG. Appens månadsgruppering härleds klient-sidan ur
+ * `Startdatum`, och fältet är ett manuellt singleSelect (data-model § Kända
+ * fällor 36 + 45) — att sätta det kräver en giltig option som inte går att
+ * läsa utan schema-scope, och en gissad option ger 422 (ingen typecast).
+ * Det befintliga granskningseventet bär fältet tomt och renderar rätt.
+ */
 export function buildEvent({ ort, startdatum, slutdatum, maxPlatser, config }) {
   return {
     'Event (source)': config.select.eventSource,
