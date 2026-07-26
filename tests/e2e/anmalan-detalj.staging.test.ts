@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, type Route, test } from '@playwright/test';
 import { mockValjarLista } from './helpers/valjar-lista';
+import { expect, type Page, type Route, test } from './support/test-bas';
 
 /**
  * task-18.17 — Per-anmälan-detaljvyn (S83-facit, Marcus-låst 2026-07-24):

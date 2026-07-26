@@ -22,6 +22,24 @@ status: stable
 
 ## Kort svar
 
+> **RÄTTELSE (2026-07-26, samma dag, efter steg 1:s skarpa mätning).** Två
+> påståenden nedan höll inte när de prövades mot verkligheten och rivs öppet
+> hellre än att stå kvar:
+>
+> 1. **"E2E-sviten skriver aldrig till staging" är FALSIFIERAT.**
+>    `skapa-event.staging.test.ts` gör ett skarpt `POST
+>    /functions/v1/create-event` — testet heter uttryckligen *"formuläret skapar
+>    ett riktigt event i staging"*. Filen gör dessutom två egna `POST
+>    /auth/v1/token`. Den ska alltså **inte** flyttas ur den skarpa sviten.
+> 2. **"296 av 332 tester är hermetiska" var för optimistiskt på fil-nivå.**
+>    Samtliga 32 e2e-filer har restanrop. Men 86 % av dem går till Google Fonts,
+>    inte staging, så slutsatsen står kvar med marginal: **19 av 32 filer blir
+>    rena enbart genom typsnitts-pinning**, och 13 filer behöver arbete.
+>
+> Riktningen i detta pass — att låta mindre arbete behöva den dyra resursen —
+> bekräftas av mätningen. Det är premisserna som skärps, inte slutsatsen.
+> Fullt utfall: [`hermetik-matning-steg1-2026-07-26.md`](hermetik-matning-steg1-2026-07-26.md).
+
 **Cirka 410 sekunder — 6,8 av jobbets 9,25 minuter, 74 % — bärs av e2e-tester
 som redan installerar sina egna Edge-Function-mockar och därför inte behöver
 den delade staging-miljön för sin data.** Det som genuint måste ha en verklig

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, type Route, test } from '@playwright/test';
+import { expect, type Page, type Route, test } from './support/test-bas';
 
 /**
  * Hem-vyn (task-1.3 A-skelettet → task-4.2 K10-facit-strukturen → task-4.3

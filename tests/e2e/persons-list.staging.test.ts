@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './support/test-bas';
 
 /**
  * Fas 6a — Personer-listan (cursor-paginerad, ADR-056).

@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Route, test } from '@playwright/test';
+import { expect, type Route, test } from './support/test-bas';
 
 /**
  * Fas 6g L2 — Segment-byggar-yta (/mer/segment). Bygger include/exclude-regel

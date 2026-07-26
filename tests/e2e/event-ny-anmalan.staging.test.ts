@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, type Route, test } from '@playwright/test';
+import { expect, type Page, type Route, test } from './support/test-bas';
 
 /**
  * Manuell anmälan-sidan: task-18.12 (skarpa formen) + task-18.18 (eventväljaren).

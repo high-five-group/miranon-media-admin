@@ -72,3 +72,7 @@ docs/backfill/segment-export/lista-*.csv
 # plattformsbilder är personliga jämförelse-baselines och ignoreras.
 tests/visual/__screenshots__/**/*-darwin.png
 tests/visual/__screenshots__/**/*-win32.png
+
+# Hermetik-rapportens mätdata (S91 steg 1) — utanför test-results/ eftersom
+# Playwright rensar sin outputDir vid varje körningsstart.
+.hermetik/

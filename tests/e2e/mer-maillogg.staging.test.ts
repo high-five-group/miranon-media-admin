@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './support/test-bas';
 
 /**
  * Fas 6e L2 Landning 2 — Maillogg-vy (/mer/maillogg, LÄS-vy via get-mail-log,
