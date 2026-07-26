@@ -3,10 +3,10 @@ id: TASK-48
 title: >-
   Markera-läget i Anmälda deltagare — batch-bekräftelse ersätter
   per-kort-knappen (S86-prototypens facit)
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-25 10:51'
-updated_date: '2026-07-25 16:00'
+updated_date: '2026-07-25 22:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,9 +31,11 @@ LÅSTA BYGGKRAV (facit):
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Markera-flödet levererat per de 8 låsta byggkraven med e2e + axe-0 (nya + befintliga deltagar-tester uppdaterade)
-- [ ] #2 K46/K47/K48-rivningarna öppet bokförda i kod-kommentarer + spec; §19-audit-raden för Greta-fallet uppdaterad
+- [x] #1 Markera-flödet levererat per de 8 låsta byggkraven med e2e + axe-0 (nya + befintliga deltagar-tester uppdaterade)
+- [x] #2 K46/K47/K48-rivningarna öppet bokförda i kod-kommentarer + spec; §19-audit-raden för Greta-fallet uppdaterad
 <!-- AC:END -->
+
+
 
 ## Implementation Notes
 
@@ -55,10 +57,10 @@ PROTOTYP: proto/s86-deltagarkort-markering finns ENDAST lokalt (aldrig pushad). 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd (L220)
-- [ ] #6 Renderad verifiering (computed-style/skärmdump) av markera-lägets valda kort + batch-barens breddlås (L245/L246)
+- [x] #6 Renderad verifiering (computed-style/skärmdump) av markera-lägets valda kort + batch-barens breddlås (L245/L246)
 <!-- DOD:END -->

@@ -1,4 +1,4 @@
-import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { displayName } from '@/components/registrations/registration-display';
 import { useDataSource } from '@/data/useDataSource';
 import type { Registration } from '@/domain/models/Registration';
@@ -22,23 +22,6 @@ import { queryKeys } from '@/queries/keys';
  * kortet på samma sida skulle annars visa ett gammalt tal.
  */
 
-/** Rollback-context (ADR-016 komponent C): snapshot före optimistisk write. */
-interface ConfirmContext {
-  previous: Registration[] | undefined;
-}
-
-/** Patcha EN anmälans rad i event-listans cache. */
-function patchRegistration(
-  queryClient: QueryClient,
-  key: readonly unknown[],
-  id: string,
-  patch: Partial<Registration>,
-) {
-  queryClient.setQueryData<Registration[]>(key, (old) =>
-    old?.map((r) => (r.id === id ? { ...r, ...patch } : r)),
-  );
-}
-
 /**
  * Utfalls-text för skärmläsaren — ALDRIG "klart" när servern sa något annat.
  * Serverns svar är aldrig binärt (sent/partial/failed/skipped), så texten läses ur
@@ -59,61 +42,20 @@ export function bekraftelseUtfall(result: ConfirmRegistrationsResult): string {
 }
 
 /**
- * ENSKILD bekräftelse (kortets Skicka bekräftelse-knapp) — OPTIMISTISK.
- * Den optimistiska patchen speglar exakt vad servern gör vid framgång: Status →
- * 'Bekräftad (mail skickat)' + tidsstämpeln. Faller anropet rullas den tillbaka;
- * blir utfallet något annat än skickat konvergerar onSettled-refetchen mot servern.
+ * RIVEN (task-48, 2026-07-26): `useSendConfirmation` — eventsidans enskilda
+ * OPTIMISTISKA bekräftelse, som drev deltagarkortens "Skicka bekräftelse"
+ * (K46). Kortknappen revs med markera-läget, och hooken hade därmed noll
+ * konsumenter. Rivningen tar med sig den optimistiska snabbvägen FRÅN
+ * EVENTSIDAN: bekräftelser skickas nu i batch, pessimistiskt bakom
+ * kontrollfrågan.
+ *
+ * Marcus-beslut 2 på kortet: ersättaren byggs INTE här — 1-klicks-
+ * interaktionen får sin hemvist på HEM-vyn, där den hör hemma. Skriv inte in
+ * anmälans egen sida som eventsidans enkel-väg.
+ *
+ * `useSendConfirmationFromDetail` nedan är en ANNAN väg (per-anmälan-sidan,
+ * detalj-cachen) och står orörd.
  */
-export function useSendConfirmation(eventId: string) {
-  const queryClient = useQueryClient();
-  const dataSource = useDataSource();
-  const key = queryKeys.registrations.byEvent(eventId);
-
-  return useMutation<
-    ConfirmRegistrationsResult,
-    Error,
-    { registration: Registration },
-    ConfirmContext
-  >({
-    mutationFn: ({ registration }) =>
-      dataSource.confirmRegistrations({
-        registrationIds: [registration.id],
-        idempotencyKey: crypto.randomUUID(),
-      }),
-
-    onMutate: async ({ registration }) => {
-      await queryClient.cancelQueries({ queryKey: key });
-      const previous = queryClient.getQueryData<Registration[]>(key);
-      patchRegistration(queryClient, key, registration.id, {
-        status: RegistrationStatus.BEKRAFTAD,
-        bekraftelseSkickad: new Date().toISOString(),
-      });
-      return { previous };
-    },
-
-    onError: (_err, { registration }, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(key, context.previous);
-      }
-      alertScreenReader(
-        `Bekräftelsen till ${displayName(registration)} kunde inte skickas. Försök igen.`,
-      );
-    },
-
-    onSuccess: (result, { registration }) => {
-      alertScreenReader(
-        result.confirmed.length > 0
-          ? `Bekräftelse skickad till ${displayName(registration)}.`
-          : bekraftelseUtfall(result),
-      );
-    },
-
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: key });
-      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(eventId) });
-    },
-  });
-}
 
 /**
  * ENSKILD bekräftelse från PER-ANMÄLAN-DETALJVYN (task-18.17; Kontakt-
