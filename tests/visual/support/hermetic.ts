@@ -8,8 +8,9 @@ import {
   EVENT_NOTES_RESPONSE,
   EVENTS_RESPONSE,
   FROZEN_NOW,
-  PERSONS_RESPONSE,
   REGISTRATIONS_RESPONSE,
+  resolvePersonResponse,
+  resolvePersonsResponse,
 } from './fixture-data';
 
 export { expect } from '@playwright/test';
@@ -96,7 +97,12 @@ const EF_FIXTURES: Record<string, unknown | ((url: URL) => unknown)> = {
   'get-event': EVENT_DETAIL_RESPONSE,
   'get-event-notes': EVENT_NOTES_RESPONSE,
   'get-event-formats': EVENT_FORMATS_RESPONSE,
-  'get-persons': PERSONS_RESPONSE,
+  // Personer: BÅDA är resolvers — listan speglar EF:ens search/pageSize/cursor
+  // (annars vore sök och "Ladda fler" osynliga i fixturvärlden), detaljen
+  // slår upp `?id=` mot de kuraterade personerna med härledd stomme som
+  // fallback. Se fixture-data.ts §Personer-världen.
+  'get-persons': resolvePersonsResponse,
+  'get-person': resolvePersonResponse,
 };
 
 export const test = base.extend({

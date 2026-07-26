@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-25
+updated: 2026-07-26
 review_by: 2026-11-15
 status: stable
 ---
@@ -5292,3 +5292,174 @@ ska visa varför valet inte längre håller.
 
 Släkt: [[L347]] (kortets diagnos är en härledning), [[L325]] (falsifiera öppet
 i stället för att bygga vidare på ett antagande).
+
+---
+
+### L349
+
+**En RAC-komponents ROLL bor på det dolda `<input>`, inte på träffytan — mät
+form på ytan, tillstånd på inputen.** `[UNIVERSAL]`
+
+**Empiri (S90, `task-48`, 2026-07-26):** markera-lägets kort byggdes som rå
+React Aria Components-`Checkbox` (BorOverRad-precedenten). Testerna asserterade
+`role` och `aria-checked` på det element `getByTestId('markerbart-kort')`
+returnerar och gick **röda trots korrekt kod**. RAC renderar träffytan som en
+`<label>` och lägger checkbox-rollen på en visuellt gömd `<input>` inuti:
+labeln bär formen (bakgrund, kant, tillgängligt namn), inputen bär tillståndet.
+Kostnaden var en hel testomgång innan formen förstods.
+
+**Regeln, båda leden:**
+
+- **Form** mäts på träffytan — `toHaveCSS('background-color', …)` på kortet.
+- **Tillstånd** mäts på rollbäraren — `kort.getByRole('checkbox')` följt av
+  `toBeChecked()`. Aldrig `aria-checked` på labeln.
+
+**Generaliserar till varje RAC-komponent med dold input** (`Checkbox`, `Radio`,
+`Switch`, `CheckboxGroup`-barn) och till alla bibliotek som bygger på samma
+visually-hidden-input-mönster. Diagnos-signalen är specifik och värd att känna
+igen: **ett rött roll-/tillstånds-assert på en komponent vars axe-körning är
+grön betyder nästan alltid att selektorn pekar på fel nod** — inte att
+a11y-wiringen är trasig. Axe läser trädet; selektorn läste bara ytan.
+
+Släkt: [[L203]] (ankra e2e-selektorer i stället för att lita på att en
+substring träffar rätt nod), [[L94]] (axe och DOM-forensik är skilda
+evidenslinjer — de svarar på olika frågor).
+
+---
+
+### L350
+
+**Ett 200-svar som inte är RENT är inte ett lyckat svar — grena på
+utfallsklassen, aldrig på frånvaron av exception.** `[UNIVERSAL]`
+
+**Empiri (S90, `task-48`, review-fynd 2):** batch-bekräftelsens Edge Function
+svarar med fyra utfallsklasser i samma 200-kropp — `sent`, `partial`,
+`failed`, `skipped`. Klientkoden skilde bara på "kastade fel" och "kastade inte
+fel", så ett `partial`-svar behandlades som fullständig framgång: markera-läget
+stängdes och urvalet nollades. För Lotta betydde det att tolv kort hade behövt
+markeras om från början för att göra ett nytt försök på de som faktiskt
+misslyckades — det värsta möjliga läget att kasta bort urvalet i.
+
+**Regeln:** när ett API modellerar flera utfallsklasser i ett lyckat
+HTTP-svar är `try/catch` bara halva grenen. Läs klassen ur kroppen och låt den
+styra tillståndet: rent utfall stänger läget, allt annat behåller urvalet så
+att användaren kan försöka igen på resten. `catch` bär fortfarande sin egen,
+femte gren.
+
+**Operativt kännetecken att leta efter:** ett svarsschema med en `failed`-,
+`errors`- eller `skipped`-lista är en deklaration om att servern kan lyckas
+delvis. Finns listan i kontraktet ska den finnas i klientens grenar och i ett
+eget test — annars är den delvisa vägen otestad per konstruktion.
+
+Släkt: [[L208]] (permissive-batch-svar: `errors` är frånvarande, inte tom, vid
+noll rad-fel — samma familj av tysta delutfall), [[L347]] (mät utfallet, inte
+mekanismen).
+
+---
+
+### L351
+
+**En kategorisk guard som är fel i halva sitt tillämpningsområde kostar mer än
+den skyddar — den får agenten att sluta leta.** `[UNIVERSAL]`
+
+**Empiri (S90, 2026-07-26):** hubbens konstitution bar guarden *"Airtable MCP
+kan INTE se automationer, interfaces, vyer, formulär eller extensions"*.
+Påståendet är sant för `mcp__airtable__*`-servern och **falskt för
+claude.ai-connectorn**, som exponerar `list_automations` och `get_automation`.
+Följden var mätbar: A8:s ägarskap av `Avstämt` stod som öppen fråga i två
+sessioner, och prototyp-passets divergens-README bokförde det som
+referens-grundat i stället för live-verifierat — trots att verifieringen tog
+minuter och var read-only. Guarden korrigerades i marcus-system PR nr 2.
+
+**Varför just kategoriska guarder är dyra:** en guard är skriven för att stoppa
+ett letande. Det är hela poängen. Men samma egenskap gör en felaktig guard till
+en osynlig kostnad — den producerar inget rött, ingen varning och ingen
+avvikelse. Den producerar bara frågor som stannar öppna, och ingen mekanism i
+systemet upptäcker det.
+
+**Regeln:** en guard som handlar om ett VERKTYGS förmåga ska bära sitt
+giltighetsområde i själva texten — vilken server, vilken version, vilken
+åtkomstnivå. Skriv "server X kan inte", aldrig "MCP kan inte". Och när en guard
+råkar blockera exakt det du behöver: **pröva den en gång mot verkligheten innan
+du accepterar den.** En guard är dokumentation, och dokumentation är en
+hypotes med samma bevisbörda som alla andra.
+
+Släkt: [[L294]] (en selektiv referens kan inte bevisa frånvaro — "finns ej"
+kräver live-verifiering), [[L189]] (ett förbyggt schema är ett antagande tills
+det korsats mot live).
+
+---
+
+### L352
+
+**En Tailwind-variant i bas-strängen vinner över en villkorad grundklass —
+tillstånds-signaler måste bära sin variant i VARDERA grenen.** `[UNIVERSAL]`
+
+**Empiri (S90, `task-48`, review-fynd 6):** kortets bas-sträng bar
+`contrast-more:border-(--mm-navcard-border-contrast)` och den villkorade grenen
+bar `border-(--mm-success)` för valt tillstånd. Under `prefers-contrast: more`
+vann varianten, och **valda kort fick den neutrala kortkanten** — exakt de
+användare regeln finns för tappade urvals-signalen. Läkningen var att flytta
+`contrast-more`-kanten in i båda grenarna, så att varje tillstånd bär sin egen
+förhöjda kontrast.
+
+**Varför den är svår att fånga:** defekten är osynlig för hela vår
+grindapparat. Axe granskar inte tillstånds-differentiering under
+media-preferenser, e2e läser den villkorade klassen och ser rätt token, och de
+visuella snapshottarna körs utan `prefers-contrast: more`. Den syns bara för en
+människa i rätt läge — eller genom att man vet regeln.
+
+**Regeln:** en villkorad klass som ska överleva en media-variant måste
+upprepa varianten i varje gren. Bas-strängen får bära det som gäller ALLA
+tillstånd; så snart ett tillstånd ändrar samma egenskap är bas-varianten en
+tyst överskrivning. Gäller varje Tailwind-variant med samma egenskaps-yta som
+en villkorad klass — `contrast-more:`, `dark:`, `motion-reduce:`, `print:`.
+
+Släkt: [[L94]] (a11y-beslut kräver korsning av flera evidenslinjer — den här
+klassen syns i noll av de automatiska), [[L348]] (läs varför något ser ut som
+det gör innan du ändrar det).
+
+---
+
+### L353
+
+**När den öppna frågan är "vilken mönsterklass tillhör problemet" går
+research-passet FÖRE prototyp-passet — annars divergerar man inom fel klass.**
+`[UNIVERSAL]`
+
+**Empiri (S90, check-in-passet, 2026-07-26):** de tre planerade
+divergens-varianterna för check-in-sidan bar write-forken som axel — A =
+event-nivå "markera alla", B = per-person-toggle, C = dörr-optimerad sök.
+Research-passet
+(`docs/research/checkin-monsterklassen-2026-07-26.md`) kördes först och **vände
+forken helt**: noll av fem undersökta produkter (Eventbrite Organizer, Luma,
+Cvent OnArrival, Splash Host, Sched) bär massmarkering vid dörren; varje funnen
+massmarkering ligger i register-klassen. Premissen "de flesta har samma
+tillstånd" är sann EFTER eventet och falsk UNDER insläppet. Konsekvensen var
+att forken upplöstes i stället för att väljas — A9/A10 hör till registret,
+per-post-write till dörren, en skrivväg per situation — och att `task-48`:s
+markera-läge generaliserar till registret, inte till dörren.
+
+**Vad ordningen kostade och sparade:** research-passet är ett bakgrunds-pass
+som löper parallellt med annat arbete. Divergens-passet är tre byggda ytor plus
+Marcus granskningstid. Hade ordningen varit den omvända hade tre varianter
+byggts inom en mönsterklass som inte matchar situationen, och valet mellan dem
+hade varit ett val mellan tre fel svar — ett fel som inte syns i granskningen,
+eftersom varianterna ser rimliga ut var för sig.
+
+**Regeln:** skilj på de två frågeklasserna innan ett prototyp-pass beställs.
+
+- **"Vilken FORM ska den här ytan ha?"** → divergens-pass direkt. Formen är
+  smaksak grundad i vårt eget facit, och Marcus blick är instrumentet.
+- **"Vilken MÖNSTERKLASS tillhör det här problemet?"** → research först.
+  Klassen är en empirisk fråga om hur problemet lösts av andra, och prototypen
+  ärver svaret som axel.
+
+Signalen att man står i den andra klassen: divergens-axeln ÄR den öppna frågan.
+Bär varianterna själva ett ospecificerat arkitektur- eller domänval, är det
+valet inte moget för bild ännu.
+
+Släkt: [[L58]] (research ska peka ut vilken mekanism-familj som matchar, inte
+bekräfta den mest tilltalande hypotesen), [[L161]] (research kan VÄNDA en
+rekommendation — belägget före, inte efter), [[L237]] (prototyp-svaret är
+grillningen; varianterna itereras aldrig i valfasen).
