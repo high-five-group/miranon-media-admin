@@ -112,7 +112,19 @@ Vad passet måste besvara:
 4. **Identitets-/profilkontext specifikt:** hur bär andra långlivade agent-
    uppsättningar användarprofil och värdefilter? Tunn precedent deklareras öppet.
 
-## Åtgärdsalternativ — EJ värderade, väntar på passet
+## Åtgärdsalternativ — passet är kört, värderingen finns i det
+
+> **Status 2026-07-27 (S91-resumen):** passet nedan är **KÖRT** och landat i
+> [`instruktionsleverans-branschpraxis-2026-07-27.md`](../../docs/research/instruktionsleverans-branschpraxis-2026-07-27.md).
+> Villkoret "ingen åtgärd innan passet är läst" är därmed uppfyllt. Alternativen
+> står kvar oredigerade nedan som historik; deras värdering mot belägget bor i
+> passet, inte här. **Beslutet är Marcus och är ännu inte taget.**
+>
+> **Premiss-korrigering (verifierad på disk):** `~/.claude/CLAUDE.md` är en
+> **symlänk** till `~/Repon/marcus-system/CLAUDE.md`. "Hub-`CLAUDE.md`" och
+> användar-scope-filen är alltså samma fil, och den laddas varje session.
+> Fyndet står oförändrat — de fyra refererade artefakterna når fortfarande
+> aldrig fram — men åtgärdsrymden är en annan än kortet antog.
 
 Antecknade för att inte tappas, uttryckligen **inte** en rekommendation:
 
@@ -153,6 +165,29 @@ konsekvensen för hela konstitutionen större än denna tråds fyra filer.
 
 ## Trail
 
+- **2026-07-27 (S91-resumen):** **research-passet KÖRT** och landat i
+  [`instruktionsleverans-branschpraxis-2026-07-27.md`](../../docs/research/instruktionsleverans-branschpraxis-2026-07-27.md)
+  (641 rader). Passets bärande claims **efterverifierade av Code** mot
+  förstapartskällan innan de fördes vidare — samtliga höll:
+  - *"A `CLAUDE.md` file at the plugin root is not loaded as project context.
+    Plugins contribute context through skills, agents, and hooks rather than
+    CLAUDE.md."* + *"Installed plugins cannot reference files outside their
+    directory."* (`code.claude.com/docs/en/plugins-reference`) — **river
+    alternativ 1**: filen i cachen är inte filen i sessionen.
+  - *"imported files load at launch"* → `@`-import **sparar ingen kontext**;
+    *"CLAUDE.md content is delivered as a user message after the system prompt"*
+    → agentdefinitionens kropp är ett starkare lager än CLAUDE.md
+    (`docs/en/memory`).
+  - `~/.claude/rules/` finns som mekanism och laddas **ovillkorligt** utan
+    `paths`-frontmatter — en väg kortet inte kände till. Katalogen finns **inte**
+    på maskinen (verifierat), liksom `~/.claude/agents/`.
+  - `InstructionsLoaded`-hooken finns och är **exakt** den mekaniska
+    verifierings-grind steg 3 nedan efterlyser (`docs/en/hooks`); dokumentationen
+    rekommenderar den uttryckligen för detta.
+  - 200-raders-riktvärdet är **publicerat** förstaparts (*"target under 200 lines
+    per CLAUDE.md file"*) — men dess empiriska grund är fortsatt odokumenterad,
+    och faktorstudien som finner noll effekt av filstorlek står kvar.
+  Ingen åtgärd vald — **beslutet är Marcus**.
 - **2026-07-27 (S91):** tråden född. Fyndet verifierat i tre kontroller,
   omfattningen utvidgad från en fil till fyra efter Marcus fråga om
   dokumentationens kvalitet. Research-passet formulerat men **ej kört** — Marcus
