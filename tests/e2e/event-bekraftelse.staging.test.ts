@@ -488,8 +488,9 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
     expect(typeof mockar.confirmCalls[0].idempotencyKey).toBe('string');
 
     await expect(dialog).toBeHidden();
-    // Kön krymper till Anna; summeringsraderna följer med.
-    await expect(gruppen(page).getByRole('button', { name: 'Obekräftade (1)' })).toBeVisible();
+    // Kön krymper till Anna; summeringsraderna följer med. Rubriken är ren
+    // text sedan S91 (kön är inte längre fällbar) — därför getByText.
+    await expect(gruppen(page).getByText('Obekräftade (1)')).toBeVisible();
     await expect(
       gruppen(page).getByRole('button', { name: /^Obekräftade anmälningar/ }),
     ).toHaveText('Obekräftade anmälningar1');

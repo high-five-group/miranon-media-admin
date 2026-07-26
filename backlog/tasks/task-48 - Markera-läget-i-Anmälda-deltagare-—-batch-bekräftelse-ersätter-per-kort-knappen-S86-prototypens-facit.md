@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-07-25 10:51'
-updated_date: '2026-07-26 11:07'
+updated_date: '2026-07-26 11:19'
 labels:
   - ready-for-agent
 dependencies: []
@@ -67,6 +67,23 @@ REVIEW-VÅG 1 (Marcus design-review 2026-07-26, S91) — tre fynd, alla åtgärd
 3. AVBRYT-KNAPPEN (Marcus-tillägg i samma våg). `ghost` → `primary`/`subtle`: ghost saknade bakgrund helt och läste som textlänk. Ärver nu plattan Markera lämnade (mätt i vila: #282928 @ 10 %). Emphasis-paret solid/subtle på samma plats.
 
 Verifiering: 17/17 e2e gröna inkl. axe 0; biome 0 fel; typecheck rent. DoD #5 fortsatt öppen — Marcus granskar byggkrav 3–6 parallellt.
+---
+
+created: 2026-07-26 11:19
+---
+REVIEW-VÅG 2 (Marcus design-review 2026-07-26, S91) — fynd 4: Obekräftade-kön är inte längre fällbar.
+
+Marcus: 'Obekräftade behöver ju inte ha dropdown-funktionen, den visar ju aldrig mer än 3 kort och du bör alltid markera och tömma listan, varför skulle du vilja gömma den.'
+
+Håller. Byggkrav 4 låser kön till ~3 synliga kort med inline-scroll, så fällningen sparade ingen vertikal plats — den kunde bara dölja arbete som väntar. KÖ vs REGISTER är distinktionen (samma som L353): Obekräftade ska tömmas, Bekräftade är ett arkiv som växer mot hela deltagarlistan och behåller därför sin fällning.
+
+ÄNDRAT: `GruppRubrik` har nu två former — utelämnas `onToggle` renderas ren rubrikrad utan knapp, chevron och aria-expanded. Obekräftade använder den; Bekräftade är oförändrad. Panelens `hidden` borttagen. `oppna`-objektet ersatt av `bekraftadeOppen` (en boolean — det fanns inget andra tillstånd kvar att lagra).
+
+SIDOEFFEKT VÄRD ATT NOTERA: Markera-knappen hade en lapp som force-öppnade panelen (`setOppna(... obekraftade: true)`) eftersom läget annars kunde startas i en kollapsad yta. Lappen är riven — mekanismen behövs inte när ytan inte går att stänga. Fällningen bar alltså en dold kostnad utöver sig själv.
+
+Detta reviderar S73-facits accordion-PAR (EventDetail-docblocken beskrev 'Obekräftade/Bekräftade-accordions'). Öppet bokfört.
+
+VERIFIERING: 25/25 e2e gröna över event-deltagare + event-bekraftelse inkl. axe 0 i tre lägen; biome 0 fel; typecheck rent. Renderat kontrollerat: 0 knappar och 0 chevroner på kö-rubriken, 1 kvar på arkivet. Testerna uppdaterade — accordion-testet omskrivet till 'kön är FAST och äldst först' med en REGRESSIONSVAKT som faller om en växling återinförs på kö-rubriken.
 ---
 <!-- COMMENTS:END -->
 

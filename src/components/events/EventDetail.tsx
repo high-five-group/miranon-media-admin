@@ -270,10 +270,14 @@ export function EventDetail({ eventId }: { eventId: string }) {
       )}
 
       {/* Anmälda deltagare som ARBETSKÖ (task-18.4; K35–K58): summeringsrader
-          med filter + kategori-flikar + Obekräftade/Bekräftade-accordions —
-          ersätter 18.1:s interim-länk till den gamla anmälda-vyn. Personkorten
-          (18.5), hantera-flödet (18.6) och Bor över-raden (18.7) växer in i
-          samma skelett. */}
+          med filter + kategori-flikar + en FAST Obekräftade-kö och ett fällbart
+          Bekräftade-arkiv — ersätter 18.1:s interim-länk till den gamla
+          anmälda-vyn. Personkorten (18.5), hantera-flödet (18.6) och Bor
+          över-raden (18.7) växer in i samma skelett.
+
+          Accordion-PARET är rivet 2026-07-26 (task-48 review-våg 2): kön är en
+          yta som ska tömmas och rymmer ändå bara ~3 kort, arkivet växer mot
+          hela deltagarlistan. Bara det senare tjänar på att gå att fälla. */}
       <Deltagare event={event} />
 
       {/* Betalningar (task-18.8): röda saknas-deltan + inline-ARBETSYTAN

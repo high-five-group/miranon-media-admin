@@ -4,7 +4,7 @@ import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
  * task-18.4 — Anmälda deltagare som ARBETSKÖ (S73-facit K35–K58): summeringsrader
- * med klickfilter, kategori-flikar, Obekräftade/Bekräftade-accordions och
+ * med klickfilter, kategori-flikar, FAST Obekräftade-kö + fällbart Bekräftade-arkiv och
  * eventinfo-signalens alltid reserverade slot.
  *
  * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
@@ -17,7 +17,7 @@ import { mockValjarLista } from './helpers/valjar-lista';
  * bevisar KLIENTENS form och beteende flak-fritt utan delad staging-data.
  *
  * Täckning: summeringsradernas ordning + värden (AC #2), klickfiltret med
- * Rensa filtret, accordion-grupperingen med äldst-först/senast-först (AC #2),
+ * Rensa filtret, grupperingen med äldst-först/senast-först (AC #2),
  * kategori-flikarna, signal-slottens båda lägen utan geometri-hopp (AC #3),
  * avbokade räknas bort, axe 0.
  */
@@ -201,22 +201,24 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await expect(gruppen(page).getByText('Eva Sten')).toHaveCount(0);
   });
 
-  test('accordions: Obekräftade ÖPPEN äldst först, Bekräftade STÄNGD senast först', async ({
-    page,
-  }) => {
+  test('kön är FAST och äldst först; arkivet är fällbart och senast först', async ({ page }) => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
-    const obekraftade = gruppen(page).getByRole('button', { name: 'Obekräftade (2)' });
     const bekraftade = gruppen(page).getByRole('button', { name: 'Bekräftade (2)', exact: true });
 
-    // Inbox-fokus (K40): kön i ansiktet, arkivet ett klick bort.
-    await expect(obekraftade).toHaveAttribute('aria-expanded', 'true');
+    // Obekräftade-rubriken är INGEN knapp längre (Marcus design-review S91):
+    // kön ska tömmas, inte gömmas, och den visar ändå aldrig mer än ~3 kort.
+    // Regressionsvakt — återinförs en växling här faller detta fall.
+    await expect(gruppen(page).getByText('Obekräftade (2)')).toBeVisible();
+    await expect(gruppen(page).getByRole('button', { name: 'Obekräftade (2)' })).toHaveCount(0);
+
+    // Inbox-fokus (K40): kön står alltid öppen, arkivet är ett klick bort.
     await expect(bekraftade).toHaveAttribute('aria-expanded', 'false');
 
     // ÄLDST FÖRST i kön: Bertil (06-20) före Anna (07-01).
-    const koPanelId = await obekraftade.getAttribute('aria-controls');
-    const ko = page.locator(`#${koPanelId}`);
+    const ko = gruppen(page).getByTestId('obekraftade-ko');
+    await expect(ko).toBeVisible();
     expect(await ko.getByTestId('deltagar-namn').allTextContents()).toEqual([
       'Bertil Sund',
       'Anna Ek',
@@ -252,7 +254,7 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'true');
 
     // Accordion-rubrikerna är borta — urvalet står som flat lista.
-    await expect(gruppen(page).getByRole('button', { name: 'Obekräftade (2)' })).toHaveCount(0);
+    await expect(gruppen(page).getByText('Obekräftade (2)')).toHaveCount(0);
     expect(await gruppen(page).getByTestId('deltagar-namn').allTextContents()).toEqual([
       'Anna Ek',
       'Bertil Sund',
@@ -274,14 +276,14 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
 
     // Rensa filtret → accordions tillbaka.
     await rensa.click();
-    await expect(gruppen(page).getByRole('button', { name: 'Obekräftade (2)' })).toBeVisible();
+    await expect(gruppen(page).getByText('Obekräftade (2)')).toBeVisible();
 
     // Klick på en AKTIV rad rensar också (toggle-semantiken).
     await obekraftadeRad.click();
     await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'true');
     await obekraftadeRad.click();
     await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'false');
-    await expect(gruppen(page).getByRole('button', { name: 'Obekräftade (2)' })).toBeVisible();
+    await expect(gruppen(page).getByText('Obekräftade (2)')).toBeVisible();
   });
 
   test('kategori-flikarna filtrerar listorna; summeringarna räknar ALLTID hela eventet', async ({
@@ -391,7 +393,7 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await expect(gruppen(page).getByTestId('eventinfo-signal-slot')).toHaveCount(1);
   });
 
-  test('tomt event: inga anmälda → lugn text, inga accordions', async ({ page }) => {
+  test('tomt event: inga anmälda → lugn text, inga grupp-rubriker', async ({ page }) => {
     await mocka(page, eventDetail(), []);
     await oppnaEventsidan(page);
 
@@ -401,7 +403,7 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await expect(gruppen(page).getByText('Inga deltagare i denna kategori.')).toBeVisible();
   });
 
-  test('axe 0 i grundläget, i filtrerat läge och med båda accordions öppna', async ({ page }) => {
+  test('axe 0 i grundläget, i filtrerat läge och med arkivet utfällt', async ({ page }) => {
     await mocka(page, eventDetail({ startdatum: omDagar(7), slutdatum: omDagar(8) }));
     await oppnaEventsidan(page);
 
