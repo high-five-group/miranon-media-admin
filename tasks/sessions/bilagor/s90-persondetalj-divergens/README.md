@@ -212,7 +212,7 @@ en designfråga.
 
 Dev-servern, sedan:
 
-```
+```text
 /personer/recVisualPers00009?variant=a   ← rik person
 /personer/recVisualPers00017?variant=b   ← tunn lead
 ```
@@ -227,3 +227,51 @@ för varje person som har en motivering — `Motivering (text)` är en **array**
 prod medan schemat kräver en sträng (ZodError → "Kunde inte hämta
 persondetaljer"). Fixturen är medvetet schema-trogen så vyn går att rita. Buggen
 är oförändrad och ligger utanför det här passet.
+
+---
+
+## Natt-chefens granskningsnot (2026-07-26)
+
+Tillagd av orkestratorn efter egen genomgång av bilderna — inte av bygg-agenten.
+
+### Jag håller med om rekommendationen: B som skelett
+
+`b-tunn-mobil.png` mot `a-tunn-mobil.png` är bilagans avgörande jämförelse.
+B:s tunna lead är inte en tom sida: kontakten står överst där den gör nytta,
+"Just nu" bär den enda faktiska händelsen, och tomtillstånden är lugna och
+ärliga i stället för att skrika. A:s tunna person öppnar med tre nollor.
+Kontakt-som-handlingsrader (`mailto:`/`tel:` med chevron) är dessutom rätt
+grammatik — det är §14:s NavCard-form, inte en påhittad variant.
+
+### FJÄRDE BYGGKRAVET — "Senaste interaktion" visas rått (missat av bygg-agenten)
+
+Bygg-agenten listade tre defekter som byggkrav oavsett vinnare. Det finns en
+fjärde, synlig i BÅDA person-bilderna:
+
+> "Senaste kontakt för 3 dagar sedan: **2026-09-12 18:04** – Inskickad anmälan"
+> "Senaste kontakt för 1 dag sedan: **2026-09-14 08:12** – Angett e-post …"
+
+Raden bär **dubbelt datum** — en relativ tid OCH en absolut tidsstämpel — och
+den absoluta är rå ISO-form. Orsaken är att basens `Senaste interaktion (text)`
+är ett FÖRFORMATERAT fält som redan innehåller sitt eget datum i strängen;
+appen sätter sin relativa formulering framför och dubblerar därmed
+informationen.
+
+Det bryter mot två saker samtidigt: appens egen datumgrammatik (som skriver
+"26 september", aldrig "2026-09-26") och Gunilla-principen (`18:04` som del av
+en ISO-klump är inte något en icke-teknisk läsare ska behöva tolka).
+
+Samma klass syns i B:s "Just nu": *"Nästa event: Skövde – Utbildning – Resor i
+medvetandet 3 – **2026-09-26**"*.
+
+**Åtgärd i skivan, oavsett vald variant:** antingen plocka isär basfältet
+server-side till {tidpunkt, händelse} och formatera i klienten, eller visa
+enbart den relativa tiden och lägga den absoluta i `title`/tooltip. Välj INTE
+tyst — det är samma källa-vs-implementation-skiktning som §3.8 styr.
+
+### Öppen fråga: ska AI-flaggan synas för Lotta?
+
+`a`/`b` visar raden "AI-flagga: Stabil och mottaglig" under "Att känna till".
+Det är ett internt bas-fält som beskriver en person i tredje person. Innan det
+byggs skarpt bör det avgöras om det hör hemma i en vy Lotta öppnar framför en
+deltagare — inte bara om det får plats.
