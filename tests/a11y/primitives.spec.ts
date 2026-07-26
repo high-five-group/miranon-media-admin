@@ -54,7 +54,7 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
     await checkA11y({ include: ['[aria-labelledby="rubrik-navcard"]'] });
   });
 
-  test('ToggleButtonGroup — sektion (radiogroup-semantiken i alla fyra demo-formerna)', async ({
+  test('ToggleButtonGroup — sektion (radiogroup-semantiken i alla fem demo-formerna)', async ({
     checkA11y,
   }) => {
     await checkA11y({ include: ['[aria-labelledby="rubrik-togglebuttongroup"]'] });

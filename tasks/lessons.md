@@ -5463,3 +5463,159 @@ Släkt: [[L58]] (research ska peka ut vilken mekanism-familj som matchar, inte
 bekräfta den mest tilltalande hypotesen), [[L161]] (research kan VÄNDA en
 rekommendation — belägget före, inte efter), [[L237]] (prototyp-svaret är
 grillningen; varianterna itereras aldrig i valfasen).
+
+---
+
+### L354
+
+**`transition-colors` tonar in fokusringen — Tailwind v4:s egenskapslista
+innehåller `outline-color`.** `[UNIVERSAL]`
+
+**Empiri (S91, ToggleButtonGroup-hovern, 2026-07-26):** hover-plattan skulle
+följa repots precedent `motion-safe:transition-colors` (EventValjare, TabBar).
+Primitivens computed-låsta fokus-test föll direkt: ringens `outlineColor`
+mättes till `rgb(80, 81, 82)` i stället för `--mm-focus-ring`s
+`rgb(27, 73, 101)` — ett mellanvärde mitt i en 150 ms-övergång. Tailwind v4
+expanderar `transition-colors` till `color, background-color, border-color,
+outline-color, text-decoration-color, fill, stroke` + gradient-stoppen.
+Fokusringen kommer från en GLOBAL `:focus-visible`-regel (base.css), så ingen
+lokal klass avslöjar kopplingen — utilityn på pillen fjärrstyr en ring som
+deklareras någon annanstans. Läkningen var `transition-[background-color]`:
+exakt den egenskap hovern faktiskt ändrar.
+
+**Varför den är svår att fånga:** ögat läser en 150 ms-intoning som "ringen
+kom direkt", och en flake-tolkning ligger nära till hands när ett
+färg-assertion faller på ett mellanvärde. Den fångades bara för att repot
+redan hade ett computed-lås på ringens EXAKTA färg i fokusögonblicket — utan
+det låset hade en långsammare fokusindikator glidit in tyst.
+
+**Regeln:** `transition-colors` är en bred lista, inte "färgerna jag råkar
+ändra". Bär ytan en fokusring — egen eller global — smalna av till de
+egenskaper övergången faktiskt gäller. Fokusindikatorn ska stå omedelbart;
+den är inte en yta att animera. Kontrollera samma sak för `transition-all`.
+
+Släkt: [[L352]] (en variant i bas-strängen överskriver tyst en villkorad
+gren — samma klass av osynlig egenskaps-kollision), [[L246]] (renderad
+verifiering: mät computed, påstå inte).
+
+---
+
+### L355
+
+**Hover är ÅTERKOPPLING, inte ett tillstånd — likvärdiga kanaler är inte
+identiska kanaler.** `[UNIVERSAL]`
+
+**Empiri (S91, Marcus design-review 2026-07-26):** "borde inte 'Manuella' och
+'Medföljande' i översta togglen där ha hover?" `ToggleButtonGroup` saknade
+hover helt, med en motivering i koden som lät principfast: states bärs av
+React Arias data-attribut "inte `:hover`/`:active` — så pekare, tangentbord
+och touch får identisk semantik". Den meningen blandar ihop två ting.
+TILLSTÅND (vald/disabled) ska mycket riktigt vara identiska över alla
+kanaler. ÅTERKOPPLING på att ytan går att klicka ska vara LIKVÄRDIG, inte
+identisk: pekaren får hover, tangentbordet får focus-visible, touch får
+ingenting (fingret täcker ytan ändå). Att kräva identisk återkoppling
+betyder i praktiken att den svagaste kanalen sätter taket — och alla tappar
+affordansen. Repot hade 56 `hover:`-användningar; flikarna var undantaget,
+inte regeln.
+
+**Varför den är svår att fånga:** motiveringen var skriven, självsäker och
+låg i koden på rätt ställe. Pre-K-forensiken ("läs varför state ser ut som
+det gör") returnerar en förklaring som LÅTER som ett medvetet designval, och
+det stannar granskningen. En felaktig motivering är farligare än ingen
+motivering.
+
+**Regeln:** när en kod-kommentar motiverar en FRÅNVARO, pröva om den
+motiveringen faktiskt bär — särskilt när den generaliserar över
+inmatningskanaler. Fråga: är det här ett tillstånd eller en återkoppling?
+Håller vi samma regel på jämförbara ytor i repot? Bär den inte, RIVS
+motiveringen och skrivs om — den kompletteras inte, för då står felet kvar
+bredvid rättelsen.
+
+Släkt: [[L348]] (läs varför något ser ut som det gör innan du ändrar det —
+den här är dess baksida: förklaringen kan vara fel), [[L352]] (a11y-regler
+som ser rätt ut i koden och är fel i renderat läge).
+
+---
+
+### L356
+
+**Återkoppling på en yta vars bakgrund du inte äger måste vara ett
+ALFA-LAGER, aldrig en fast ton.** `[UNIVERSAL]`
+
+**Empiri (S91, ToggleButtonGroup-hovern, 2026-07-26):** hover-plattan sattes
+till `bg-bg-emphasized` — en opak ton, uppmätt ΔE00 2,31 mot primitivens
+standard-track, alltså precis lika urskiljbar som komponentens egen
+vald/ovald-skillnad. Korrekt på fyra av fem konsument-ytor. På den femte satte
+`Betalningar.tsx` `className="bg-bg-emphasized"` på SITT track — samma ton — och
+hovern mätte då **ΔE00 0,00**. Den fanns i DOM:en, hade rätt data-attribut,
+passerade varje token-assertion och var totalt osynlig. Läkningen var ett
+genomskinligt skrim (`--mm-state-hover`, 6 % av `--mm-text`) som mörknar vilken
+bakgrund som helst med konstant steg: uppmätt ΔE00 2,77 / 2,60 / 2,63 mot
+bg-muted, bg-emphasized respektive vit.
+
+**Varför den är svår att fånga:** primitiven exponerar `className` mot gruppen,
+så tracket är en ÖPPEN parameter — men den designas som om den vore fast,
+eftersom demo-ytan och de flesta konsumenter använder default. Assertionen
+"plattan === förväntad token" är grön i exakt det ögonblick defekten uppstår:
+det är kollisionen mellan två korrekta tokens som är felet, inte fel token.
+Fyndet krävde att varje konsument-yta mättes RENDERAT, en i taget — inventeringen
+`grep -rn "ToggleButton" src/` var det som gjorde det möjligt.
+
+**Regeln:** när en primitiv låter konsumenten sätta bakgrunden är varje
+återkoppling som ritas mot den bakgrunden ett alfa-lager. Fast ton är bara
+tillåtet när ytan under är stängd. Assertionen ska mäta det KOMPOSITERADE
+resultatet mot den faktiska underliggande ytan, inte token-identitet — och
+minst två olika underlag ska finnas i vaktande demo-yta. Branschmönstret är
+Material 3:s state layers och Radix alpha-skalor; båda finns av exakt detta
+skäl.
+
+Släkt: [[L352]] (samma familj: två regler som var för sig är rätt och
+tillsammans släcker en signal), [[L246]] (renderad verifiering per yta —
+en token-assertion är inte en verifiering), [[L94]] (a11y-beslut kräver
+korsning av flera evidenslinjer).
+
+---
+
+### L357
+
+**Hover-assertioner måste kunna HOVRA OM — ett engångs-`hover()` kan tappas av
+en layout-omläggning efteråt.** `[UNIVERSAL]`
+
+**Empiri (S91, ToggleButtonGroup-hovern, 2026-07-26):** hover-sviten var grön i
+isolerad körning (74/74) och rött ungefär vart trettionde test under last
+(4 workers × 6 repeats, respektive a11y+e2e samtidigt). Felet var svårläst —
+det pekade ut ett KONTRAST-fel, inte ett hover-fel. Playwrights spårning visade
+vad som faktiskt hände:
+
+```text
+oklab(… / 0.06) → oklab(… / 0.058) → oklab(… / 0.018) → rgba(0, 0, 0, 0)
+```
+
+Det är en fade-UT. Hovern tändes, `data-hovered` sattes, och sedan la sidan om
+sig (font-laddning/hydrering under CPU-last) så att pekaren hamnade utanför
+pillen. Playwrights `hover()` gör actionability-kontroll FÖRE musflytten —
+inget skydd finns mot att elementet flyttar sig EFTER. Ett väntande
+`expect().toHaveCSS()` kan bara polla, aldrig hovra om, så det pollade en
+transparent yta till timeout.
+
+Två sidofynd ur samma spår, båda återanvändbara:
+
+- **Mitt i en transition rapporterar Chrome interpolerade värden i `oklab(…)`,
+  inte i den deklarerade formen.** En computed-färg-assertion mot
+  `color(srgb …)` matchar därför först när övergången är KLAR — vilket gör
+  assertionen till en gratis settle-grind, men samtidigt värdelös som
+  "har hovern börjat"-test. En `alfa > 0`-poll är motsatsen: den svarar direkt
+  och mäter en halvfärdig platta.
+- **DOM-probar som mäter tokens ska tas ur flödet** (`position: absolute`,
+  dolt). En prob som appendas till `body` kan knuffa sidhöjden över
+  scrollbar-tröskeln och flytta layouten i sidled — exakt det som slår bort en
+  pågående hover.
+
+**Regeln:** allt som ska hållas hovrat medan det asserteras körs i ett
+`expect(async () => { await x.hover(); await expect(...); }).toPass()` — så
+återställs hovern vid varje försök. Assertera mot det RESOLVERADE
+token-värdet (settle-grinden), och hämta token-värdet FÖRE hovern.
+
+Släkt: [[L246]] (renderad verifiering — mät computed), [[L354]] (samma
+komponent: `transition-colors` drog med `outline-color`), [[L94]] (a11y-fynd
+kräver flera evidenslinjer — här var felmeddelandet direkt vilseledande).
