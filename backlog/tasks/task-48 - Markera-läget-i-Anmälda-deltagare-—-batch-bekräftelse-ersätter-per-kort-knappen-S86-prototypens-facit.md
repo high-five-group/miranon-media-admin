@@ -3,10 +3,10 @@ id: TASK-48
 title: >-
   Markera-läget i Anmälda deltagare — batch-bekräftelse ersätter
   per-kort-knappen (S86-prototypens facit)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-25 10:51'
-updated_date: '2026-07-26 12:05'
+updated_date: '2026-07-26 13:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -104,14 +104,35 @@ VAKTER: fyra nya e2e-fall, alla RÖD-VERIFIERADE mot gamla koden — (e) Receive
 
 VERIFIERING: 30/30 e2e över event-bekraftelse + event-deltagare inkl. axe 0; 62/62 i angränsande event-detail + event-bor-over; biome 0 fel; typecheck rent; build grön; markdownlint 0; vale 0 fel. Lessons L354 (mät orsaks-hypotesen innan du bygger den) + L355 (serverns svar är facit — kasta det inte). DoD #5 fortsatt öppen — Marcus granskning kvarstår.
 ---
+
+created: 2026-07-26 13:40
+---
+STÄNGNING 2026-07-26 (S91) — Marcus: 'Flippa kortet till Done. Det är ok.'
+
+VAD SOM FAKTISKT GRANSKADES, exakt — kortets form är prejudikat för alla framtida massoperationer, och en framtida läsare ska inte tro att mer verifierades än vad som gjordes.
+
+GRANSKAT AV MARCUS I WEBBLÄSAREN (gav fyra fynd, alla åtgärdade):
+- Markera-knappens färg → facit-avvikelse, byggkrav 1 (våg 1, PR #233)
+- Den gröna dubbel-bocken → byggkrav 7 reviderat, glyfen riven (våg 1)
+- Avbryt-knappens synlighet → ghost blev primary/subtle (våg 1)
+- Obekräftade-kön fällbar → accordion riven, byggkrav 4:s premiss (våg 2, PR #234)
+
+GRANSKAT AV CODE, MÄTT OCH ÅTGÄRDAT (våg 3, PR #238):
+- Batch-flödets slutvy: 5 488 ms → 486 ms tömning; arkivet fälls ut när kön töms; kvittens vid ren framgång (GOV.UK/Polaris/Carbon-grundad)
+- Korthöjden: sågtanden 166/145 → 166 rakt igenom; inom-kort-stabiliteten var BRUTEN (166 → 166 → 145) och är nu strukturell
+
+EJ GENOMGÅNGET I WEBBLÄSAREN: byggkrav 3, 4, 5 och 6 prickades aldrig av post för post — breddlåset vid 2 mot 8 valda, telefonbredden i handen, kontrollfrågans formulering och köns scroll-affordans. Samtliga är e2e-täckta och renderat mätta (breddlåset 205,89 px identiskt vid 2 och 6 valda; kön 408 px mot scrollHeight 824), men Marcus höll dem aldrig i handen. Kortet stängs på hans uttryckliga godkännande, inte på en fullständig avprickning. Detta är en medveten avvägning, öppet bokförd — inte en lucka som passerade obemärkt.
+
+ARV TILL EFTERFÖLJANDE ARBETE: TASK-18.20 (Bekräftade-pariteten) ärver markera-lägets grammatik men är BLOCKERAD av hållplats-frågan (docs/research/hallplats-modellen-eventsidan-2026-07-26.md). Fyra Marcus-beslut väntar där.
+---
 <!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd (L220)
+- [x] #5 Design-review: Marcus-granskning i webbläsaren godkänd (L220)
 - [x] #6 Renderad verifiering (computed-style/skärmdump) av markera-lägets valda kort + batch-barens breddlås (L245/L246)
 <!-- DOD:END -->
