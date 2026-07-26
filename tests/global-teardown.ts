@@ -15,6 +15,7 @@
 import type { Dirent } from 'node:fs';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { HERMETIK_RAPPORT_FIL } from './e2e/support/hermetik-rapport-fil';
 
 const OUTPUT_DIR = 'test-results';
 const REDACTION = '<REDACTED (ADR-061 Pelare 3 / T29)>';
@@ -44,6 +45,78 @@ async function* walk(dir: string): AsyncGenerator<string> {
   }
 }
 
+/**
+ * Hermetik-rapporten (S91, mätningens steg 1) — sammanställs hit och skrivs till
+ * stdout, så utfallet hamnar direkt i CI-loggen utan artefakt-hantering.
+ * No-op när mätläget inte körts och filen alltså saknas.
+ *
+ * Läser JSONL:en som `tests/e2e/support/test-bas.ts` skrivit under körningen.
+ * Källa: docs/research/staging-svitens-tidsbudget-2026-07-26.md § 5 steg 1.
+ */
+const RAPPORT_FIL = HERMETIK_RAPPORT_FIL;
+
+interface Restanrop {
+  fil: string;
+  test: string;
+  host: string;
+  metod: string;
+  sokvag: string;
+}
+
+async function rapporteraHermetik(): Promise<void> {
+  let rader: string;
+  try {
+    rader = (await readFile(RAPPORT_FIL)).toString('utf-8');
+  } catch {
+    return; // Mätläget kördes inte — inget att rapportera.
+  }
+
+  const anrop: Restanrop[] = rader
+    .split('\n')
+    .filter((rad) => rad.trim() !== '')
+    .flatMap((rad) => {
+      try {
+        return [JSON.parse(rad) as Restanrop];
+      } catch {
+        return [];
+      }
+    });
+
+  const perFil = new Map<string, Map<string, number>>();
+  for (const a of anrop) {
+    const nyckel = `${a.host}${a.sokvag}`;
+    const fil = perFil.get(a.fil) ?? new Map<string, number>();
+    fil.set(nyckel, (fil.get(nyckel) ?? 0) + 1);
+    perFil.set(a.fil, fil);
+  }
+
+  const ut: string[] = [
+    '',
+    '═══ HERMETIK-RAPPORT (S91 steg 1) ═══',
+    `Restanrop som slank förbi testernas egna mockar: ${anrop.length} st`,
+    `Filer med restanrop: ${perFil.size}`,
+    '',
+  ];
+
+  for (const [fil, mal] of [...perFil.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const summa = [...mal.values()].reduce((s, n) => s + n, 0);
+    ut.push(`  ${fil} — ${summa} anrop`);
+    for (const [nyckel, antal] of [...mal.entries()].sort((a, b) => b[1] - a[1])) {
+      ut.push(`      ${antal.toString().padStart(4)} × ${nyckel}`);
+    }
+  }
+
+  ut.push(
+    '',
+    'Filer UTAN restanrop är kandidater för det mutexfria jobbet (steg 2).',
+    'En fil saknas här enbart om den aldrig lät ett anrop nå nätverket.',
+    '═══════════════════════════════════',
+    '',
+  );
+
+  process.stdout.write(`${ut.join('\n')}\n`);
+}
+
 export default async function globalTeardown(): Promise<void> {
   for await (const file of walk(OUTPUT_DIR)) {
     const content = (await readFile(file)).toString('utf-8');
@@ -52,4 +125,5 @@ export default async function globalTeardown(): Promise<void> {
       await writeFile(file, purged);
     }
   }
+  await rapporteraHermetik();
 }

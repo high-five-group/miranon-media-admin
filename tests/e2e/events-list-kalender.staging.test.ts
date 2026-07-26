@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page, test } from './support/test-bas';
 
 /**
  * Kalendervyn till S72-facit (task-17.4).

@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Route, test } from '@playwright/test';
+import { expect, type Route, test } from './support/test-bas';
 
 /**
  * Fas 6h L3 — Skicka-mail-på-segment-yta (compose-UI i SegmentBuilder, /mer/segment).
