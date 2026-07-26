@@ -68,8 +68,8 @@ av `task-48` i webbläsaren (DoD #5) → Done-flipp · (2) variantvalen —
 persondetalj A/B/C, check-in A/B/C, listans tonal/zebra-fork (L237: justeringar
 i valfasen blir byggkrav) · (3) därefter PRD + skivor per yta, där
 check-in-kartans kort 1–3 är variant-oberoende och kan börja direkt.
-`TASK-52` plockbart fynd-kort.** Numrering efter S90:
-91/079/L354/T99/f46/task-53. Full narrativ: sessionsdok S90 Del 1–2 +
+`TASK-52` plockbart fynd-kort. **GUIDEN: [`bilagor/s90-review-guide.md`](sessions/bilagor/s90-review-guide.md)** — körbar review-wizard som tar de fyra besluten i beroendeordning med URL:er, bildpar, skiljande frågor, fällor och ifyllnadsrutor; task-48-avsnittet bär facit-jämförelsen mot S86-bilderna + de åtta byggkraven som avprickningslista.** Numrering efter S90:
+91/079/L354/T99/f46/task-53. Full narrativ: sessionsdok S90 Del 1–3 +
 BUILD-LOG S90-post.
 
 **Session 89 ✅ AVSLUTAD (2026-07-25)** — **QA-VANDRINGENS TRE FYND:
