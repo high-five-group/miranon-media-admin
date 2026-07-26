@@ -110,13 +110,218 @@
   <h1>Färgatlas</h1>
   <p class="lead">Nuläget i Miranon Media Admins färgsystem, mätt och renderat — plus vad som saknas
      och hur en fullständig palett skulle se ut. Genererad ur <code>src/</code>, inte skriven för hand.</p>
-  <p class="meta">Byggd 2026-07-26 · 32 primitiver ·
+  <p class="meta">Byggd 2026-07-26 · 92 primitiver ·
      58 roller · 38 utilities i <code>@theme</code></p>
 </header>
 
 <h2>1. Nuläget — primitiva skalor</h2>
 <p class="lead">Varje ruta visar hex, CIE L* (perceptuell ljushet — måttet som avgör om två steg
    känns lika stora), kontrast mot vit yta, och hur många gånger tokenet faktiskt används.</p>
+<section class="skala">
+  <h3>Guld — tolvstegsskalan (ny, ingen roll pekar hit än) · 12 steg</h3>
+  <p class="ingress"><strong>Största hål:</strong> --p-gold-11 → --p-gold-12, 17.4 L*-enheter. Där ryms flera steg.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fffcf8;color:#1a1a1a">1</div><div class="under"><code>#fffcf8</code>
+           <span>L* 99.1</span>
+           <span>1.02:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fff6e8;color:#1a1a1a">2</div><div class="under"><code>#fff6e8</code>
+           <span>L* 97.2</span>
+           <span>1.07:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffecce;color:#1a1a1a">3</div><div class="under"><code>#ffecce</code>
+           <span>L* 94.2</span>
+           <span>1.16:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffdfad;color:#1a1a1a">4</div><div class="under"><code>#ffdfad</code>
+           <span>L* 90.3</span>
+           <span>1.28:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fcd08b;color:#1a1a1a">5</div><div class="under"><code>#fcd08b</code>
+           <span>L* 85.8</span>
+           <span>1.44:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f2c16f;color:#1a1a1a">6</div><div class="under"><code>#f2c16f</code>
+           <span>L* 80.8</span>
+           <span>1.66:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#e5ae4e;color:#1a1a1a">7</div><div class="under"><code>#e5ae4e</code>
+           <span>L* 74.5</span>
+           <span>2.00:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#dda12f;color:#1a1a1a">8</div><div class="under"><code>#dda12f</code>
+           <span>L* 70.2</span>
+           <span>2.28:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#d4960a;color:#1a1a1a">9</div><div class="under"><code>#d4960a</code>
+           <span>L* 66.4</span>
+           <span>2.57:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c28900;color:#1a1a1a">10</div><div class="under"><code>#c28900</code>
+           <span>L* 61.1</span>
+           <span>3.06:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#966800;color:#ffffff">11</div><div class="under"><code>#966800</code>
+           <span>L* 47.5</span>
+           <span>4.91:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#604100;color:#ffffff">12</div><div class="under"><code>#604100</code>
+           <span>L* 30.1</span>
+           <span>9.32:1</span>
+           <span class="dod">oanvänd</span></div></div></div>
+</section>
+<section class="skala">
+  <h3>Koppar — tolvstegsskalan (ny) · 12 steg</h3>
+  <p class="ingress">Stegen ligger jämnt fördelade.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fffcfb;color:#1a1a1a">1</div><div class="under"><code>#fffcfb</code>
+           <span>L* 99.2</span>
+           <span>1.02:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fff0e9;color:#1a1a1a">2</div><div class="under"><code>#fff0e9</code>
+           <span>L* 95.8</span>
+           <span>1.11:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffdccd;color:#1a1a1a">3</div><div class="under"><code>#ffdccd</code>
+           <span>L* 90.3</span>
+           <span>1.28:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fdc3ab;color:#1a1a1a">4</div><div class="under"><code>#fdc3ab</code>
+           <span>L* 83.4</span>
+           <span>1.55:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#efab8e;color:#1a1a1a">5</div><div class="under"><code>#efab8e</code>
+           <span>L* 75.7</span>
+           <span>1.93:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#dd9170;color:#1a1a1a">6</div><div class="under"><code>#dd9170</code>
+           <span>L* 67.1</span>
+           <span>2.51:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c4724d;color:#1a1a1a">7</div><div class="under"><code>#c4724d</code>
+           <span>L* 56.4</span>
+           <span>3.58:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#b45c33;color:#ffffff">8</div><div class="under"><code>#b45c33</code>
+           <span>L* 49.0</span>
+           <span>4.65:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a3491c;color:#ffffff">9</div><div class="under"><code>#a3491c</code>
+           <span>L* 42.2</span>
+           <span>5.95:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#974012;color:#ffffff">10</div><div class="under"><code>#974012</code>
+           <span>L* 38.4</span>
+           <span>6.87:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#7a2d00;color:#ffffff">11</div><div class="under"><code>#7a2d00</code>
+           <span>L* 29.5</span>
+           <span>9.53:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#4b1900;color:#ffffff">12</div><div class="under"><code>#4b1900</code>
+           <span>L* 16.5</span>
+           <span>14.60:1</span>
+           <span class="dod">oanvänd</span></div></div></div>
+</section>
+<section class="skala">
+  <h3>Neutraler — tolvstegsskalan (ny, ton 100° kroma 0,008) · 12 steg</h3>
+  <p class="ingress">Stegen ligger jämnt fördelade.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fdfdfc;color:#1a1a1a">1</div><div class="under"><code>#fdfdfc</code>
+           <span>L* 99.3</span>
+           <span>1.02:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f4f3f2;color:#1a1a1a">2</div><div class="under"><code>#f4f3f2</code>
+           <span>L* 95.9</span>
+           <span>1.11:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#e5e5e2;color:#1a1a1a">3</div><div class="under"><code>#e5e5e2</code>
+           <span>L* 90.9</span>
+           <span>1.26:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#d4d3d0;color:#1a1a1a">4</div><div class="under"><code>#d4d3d0</code>
+           <span>L* 84.6</span>
+           <span>1.50:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c0bfbb;color:#1a1a1a">5</div><div class="under"><code>#c0bfbb</code>
+           <span>L* 77.3</span>
+           <span>1.84:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a9a9a4;color:#1a1a1a">6</div><div class="under"><code>#a9a9a4</code>
+           <span>L* 69.1</span>
+           <span>2.36:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#8e8d89;color:#1a1a1a">7</div><div class="under"><code>#8e8d89</code>
+           <span>L* 58.6</span>
+           <span>3.32:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#7c7b76;color:#ffffff">8</div><div class="under"><code>#7c7b76</code>
+           <span>L* 51.6</span>
+           <span>4.24:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">9</div><div class="under"><code>#6b6b6b</code>
+           <span>L* 45.2</span>
+           <span>5.33:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#62625d;color:#ffffff">10</div><div class="under"><code>#62625d</code>
+           <span>L* 41.4</span>
+           <span>6.13:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#4c4c47;color:#ffffff">11</div><div class="under"><code>#4c4c47</code>
+           <span>L* 32.2</span>
+           <span>8.63:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#2d2d2a;color:#ffffff">12</div><div class="under"><code>#2d2d2a</code>
+           <span>L* 18.4</span>
+           <span>13.81:1</span>
+           <span class="dod">oanvänd</span></div></div></div>
+</section>
+<section class="skala">
+  <h3>Sage — tolvstegsskalan (ny) · 12 steg</h3>
+  <p class="ingress">Stegen ligger jämnt fördelade.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fcfdfa;color:#1a1a1a">1</div><div class="under"><code>#fcfdfa</code>
+           <span>L* 99.2</span>
+           <span>1.02:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f1f4ee;color:#1a1a1a">2</div><div class="under"><code>#f1f4ee</code>
+           <span>L* 95.8</span>
+           <span>1.11:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#e1e6dd;color:#1a1a1a">3</div><div class="under"><code>#e1e6dd</code>
+           <span>L* 90.7</span>
+           <span>1.27:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ced5c8;color:#1a1a1a">4</div><div class="under"><code>#ced5c8</code>
+           <span>L* 84.4</span>
+           <span>1.50:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#b8c0b1;color:#1a1a1a">5</div><div class="under"><code>#b8c0b1</code>
+           <span>L* 76.7</span>
+           <span>1.87:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a0a999;color:#1a1a1a">6</div><div class="under"><code>#a0a999</code>
+           <span>L* 68.1</span>
+           <span>2.43:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#848e7b;color:#1a1a1a">7</div><div class="under"><code>#848e7b</code>
+           <span>L* 57.7</span>
+           <span>3.42:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#717c68;color:#ffffff">8</div><div class="under"><code>#717c68</code>
+           <span>L* 50.6</span>
+           <span>4.39:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#606b57;color:#ffffff">9</div><div class="under"><code>#606b57</code>
+           <span>L* 43.8</span>
+           <span>5.62:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#57614e;color:#ffffff">10</div><div class="under"><code>#57614e</code>
+           <span>L* 39.8</span>
+           <span>6.51:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#434c3b;color:#ffffff">11</div><div class="under"><code>#434c3b</code>
+           <span>L* 31.1</span>
+           <span>8.99:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#262d21;color:#ffffff">12</div><div class="under"><code>#262d21</code>
+           <span>L* 17.5</span>
+           <span>14.19:1</span>
+           <span class="dod">oanvänd</span></div></div></div>
+</section>
+<section class="skala">
+  <h3>Röd — tolvstegsskalan (ny) · 12 steg</h3>
+  <p class="ingress">Stegen ligger jämnt fördelade.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fffcfb;color:#1a1a1a">1</div><div class="under"><code>#fffcfb</code>
+           <span>L* 99.2</span>
+           <span>1.02:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffeeeb;color:#1a1a1a">2</div><div class="under"><code>#ffeeeb</code>
+           <span>L* 95.3</span>
+           <span>1.12:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffd7d0;color:#1a1a1a">3</div><div class="under"><code>#ffd7d0</code>
+           <span>L* 89.1</span>
+           <span>1.32:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffbaaf;color:#1a1a1a">4</div><div class="under"><code>#ffbaaf</code>
+           <span>L* 81.6</span>
+           <span>1.63:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fe9686;color:#1a1a1a">5</div><div class="under"><code>#fe9686</code>
+           <span>L* 72.6</span>
+           <span>2.12:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ea7566;color:#1a1a1a">6</div><div class="under"><code>#ea7566</code>
+           <span>L* 62.7</span>
+           <span>2.90:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#cf4e3f;color:#ffffff">7</div><div class="under"><code>#cf4e3f</code>
+           <span>L* 50.8</span>
+           <span>4.36:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#bd2d22;color:#ffffff">8</div><div class="under"><code>#bd2d22</code>
+           <span>L* 42.5</span>
+           <span>5.90:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a90000;color:#ffffff">9</div><div class="under"><code>#a90000</code>
+           <span>L* 34.9</span>
+           <span>7.82:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#9a0000;color:#ffffff">10</div><div class="under"><code>#9a0000</code>
+           <span>L* 31.5</span>
+           <span>8.85:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#790000;color:#ffffff">11</div><div class="under"><code>#790000</code>
+           <span>L* 23.9</span>
+           <span>11.58:1</span>
+           <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#4b0000;color:#ffffff">12</div><div class="under"><code>#4b0000</code>
+           <span>L* 12.6</span>
+           <span>16.16:1</span>
+           <span class="dod">oanvänd</span></div></div></div>
+</section>
 <section class="skala">
   <h3>Guld/amber — primärfärgen · 7 steg</h3>
   <p class="ingress"><strong>Största hål:</strong> --p-gold-300 → --p-gold-400, 16.7 L*-enheter. Där ryms flera steg.</p>
@@ -600,7 +805,7 @@
     </tr></tbody>
 </table></div>
 <ul class="noter">
-  <li><strong>5</strong> primitiver är oanvända: <code>--p-gold-200</code>, <code>--p-gold-700</code>, <code>--p-copper-200</code>, <code>--p-copper-400</code>, <code>--p-neutral-1000</code></li>
+  <li><strong>65</strong> primitiver är oanvända: <code>--p-gold-1</code>, <code>--p-gold-2</code>, <code>--p-gold-3</code>, <code>--p-gold-4</code>, <code>--p-gold-5</code>, <code>--p-gold-6</code>, <code>--p-gold-7</code>, <code>--p-gold-8</code>, <code>--p-gold-9</code>, <code>--p-gold-10</code>, <code>--p-gold-11</code>, <code>--p-gold-12</code>, <code>--p-copper-1</code>, <code>--p-copper-2</code>, <code>--p-copper-3</code>, <code>--p-copper-4</code>, <code>--p-copper-5</code>, <code>--p-copper-6</code>, <code>--p-copper-7</code>, <code>--p-copper-8</code>, <code>--p-copper-9</code>, <code>--p-copper-10</code>, <code>--p-copper-11</code>, <code>--p-copper-12</code>, <code>--p-neutral-1</code>, <code>--p-neutral-2</code>, <code>--p-neutral-3</code>, <code>--p-neutral-4</code>, <code>--p-neutral-5</code>, <code>--p-neutral-6</code>, <code>--p-neutral-7</code>, <code>--p-neutral-8</code>, <code>--p-neutral-9</code>, <code>--p-neutral-10</code>, <code>--p-neutral-11</code>, <code>--p-neutral-12</code>, <code>--p-sage-1</code>, <code>--p-sage-2</code>, <code>--p-sage-3</code>, <code>--p-sage-4</code>, <code>--p-sage-5</code>, <code>--p-sage-6</code>, <code>--p-sage-7</code>, <code>--p-sage-8</code>, <code>--p-sage-9</code>, <code>--p-sage-10</code>, <code>--p-sage-11</code>, <code>--p-sage-12</code>, <code>--p-red-1</code>, <code>--p-red-2</code>, <code>--p-red-3</code>, <code>--p-red-4</code>, <code>--p-red-5</code>, <code>--p-red-6</code>, <code>--p-red-7</code>, <code>--p-red-8</code>, <code>--p-red-9</code>, <code>--p-red-10</code>, <code>--p-red-11</code>, <code>--p-red-12</code>, <code>--p-gold-200</code>, <code>--p-gold-700</code>, <code>--p-copper-200</code>, <code>--p-copper-400</code>, <code>--p-neutral-1000</code></li>
   <li><strong>9</strong> roller är oanvända: <code>--mm-primary-hover</code>, <code>--mm-accent-hover</code>, <code>--mm-accent-tint</code>, <code>--mm-surface-raised</code>, <code>--mm-cat-personal</code>, <code>--mm-cat-event</code>, <code>--mm-cat-people</code>, <code>--mm-cat-comm</code>, <code>--mm-cat-system</code></li>
   <li><strong>14</strong> av 38 <code>@theme</code>-utilities används aldrig i TSX
       (flera lever ändå via <code>var()</code> i CSS-lagret)</li>
@@ -770,8 +975,8 @@
 <section class="skala">
       <h3>Blå — förslag, 12 steg</h3>
       <p class="ingress">Ankaret är --p-blue-500. Skalan har en konflikt som inte går att räkna bort — se kollisionsnoten under stegen.</p>
-      <div class="rutor"><div class="ruta"><div class="prov" style="background:#fbfdff;color:#1a1a1a">1</div><div class="under"><code>#fbfdff</code><span class="roll">Sidbakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#ebf5fe;color:#1a1a1a">2</div><div class="under"><code>#ebf5fe</code><span class="roll">Subtil bakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#d7e6f5;color:#1a1a1a">3</div><div class="under"><code>#d7e6f5</code><span class="roll">Komponentyta</span></div></div><div class="ruta"><div class="prov" style="background:#c1d5e9;color:#1a1a1a">4</div><div class="under"><code>#c1d5e9</code><span class="roll">Komponentyta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#a9c1d8;color:#1a1a1a">5</div><div class="under"><code>#a9c1d8</code><span class="roll">Komponentyta, aktiv</span></div></div><div class="ruta"><div class="prov" style="background:#8faac4;color:#1a1a1a">6</div><div class="under"><code>#8faac4</code><span class="roll">Subtil kant</span></div></div><div class="ruta"><div class="prov" style="background:#708eab;color:#1a1a1a">7</div><div class="under"><code>#708eab</code><span class="roll">Kant och fokusring</span></div></div><div class="ruta"><div class="prov" style="background:#5c7c9a;color:#ffffff">8</div><div class="under"><code>#5c7c9a</code><span class="roll">Kant, hover</span></div></div><div class="ruta"><div class="prov" style="background:#4a6b8a;color:#ffffff">9</div><div class="under"><code>#4a6b8a</code><span class="roll">Solid yta</span></div></div><div class="ruta"><div class="prov" style="background:#565f68;color:#ffffff">10</div><div class="under"><code>#565f68</code><span class="roll">Solid yta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#464a4e;color:#ffffff">11</div><div class="under"><code>#464a4e</code><span class="roll">Text, låg kontrast</span></div></div><div class="ruta"><div class="prov" style="background:#222c36;color:#ffffff">12</div><div class="under"><code>#222c36</code><span class="roll">Text, hög kontrast</span></div></div></div>
-      <ul class="kontrakt"><li class="fel"><span>!</span> Steg 9 (<code>#1b4965</code>) ligger på avstånd 15.1 från fokusringen (--p-blue-700) — perceptuellt samma färg</li><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.58</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>8.10</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>12.84</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>13.90</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.10</strong> (golv 1.4)</li></ul>
+      <div class="rutor"><div class="ruta"><div class="prov" style="background:#fbfdff;color:#1a1a1a">1</div><div class="under"><code>#fbfdff</code><span class="roll">Sidbakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#ebf5fe;color:#1a1a1a">2</div><div class="under"><code>#ebf5fe</code><span class="roll">Subtil bakgrund</span></div></div><div class="ruta"><div class="prov" style="background:#d7e6f5;color:#1a1a1a">3</div><div class="under"><code>#d7e6f5</code><span class="roll">Komponentyta</span></div></div><div class="ruta"><div class="prov" style="background:#c1d5e9;color:#1a1a1a">4</div><div class="under"><code>#c1d5e9</code><span class="roll">Komponentyta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#a9c1d8;color:#1a1a1a">5</div><div class="under"><code>#a9c1d8</code><span class="roll">Komponentyta, aktiv</span></div></div><div class="ruta"><div class="prov" style="background:#8faac4;color:#1a1a1a">6</div><div class="under"><code>#8faac4</code><span class="roll">Subtil kant</span></div></div><div class="ruta"><div class="prov" style="background:#708eab;color:#1a1a1a">7</div><div class="under"><code>#708eab</code><span class="roll">Kant och fokusring</span></div></div><div class="ruta"><div class="prov" style="background:#5c7c9a;color:#ffffff">8</div><div class="under"><code>#5c7c9a</code><span class="roll">Kant, hover</span></div></div><div class="ruta"><div class="prov" style="background:#4a6b8a;color:#ffffff">9</div><div class="under"><code>#4a6b8a</code><span class="roll">Solid yta</span></div></div><div class="ruta"><div class="prov" style="background:#575f66;color:#ffffff">10</div><div class="under"><code>#575f66</code><span class="roll">Solid yta, hover</span></div></div><div class="ruta"><div class="prov" style="background:#47494c;color:#ffffff">11</div><div class="under"><code>#47494c</code><span class="roll">Text, låg kontrast</span></div></div><div class="ruta"><div class="prov" style="background:#242c34;color:#ffffff">12</div><div class="under"><code>#242c34</code><span class="roll">Text, hög kontrast</span></div></div></div>
+      <ul class="kontrakt"><li class="fel"><span>!</span> Steg 9 (<code>#1b4965</code>) ligger på avstånd 15.1 från fokusringen (--p-blue-700) — perceptuellt samma färg</li><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.58</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>8.18</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>12.81</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>13.87</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.10</strong> (golv 1.4)</li></ul>
     </section>
 <section class="skala">
       <h3>Röd — förslag, 12 steg</h3>

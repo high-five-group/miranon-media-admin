@@ -28,6 +28,11 @@ import { byggSkala, hittaKollisioner, provaKontrakt } from './lib/skala.mjs';
  * sage-grönt som bär skapa-knappen och används 33 gånger.
  */
 const ETIKETT = {
+  'gold\u00a0': 'Guld — tolvstegsskalan (ny, ingen roll pekar hit än)',
+  'copper\u00a0': 'Koppar — tolvstegsskalan (ny)',
+  'neutral\u00a0': 'Neutraler — tolvstegsskalan (ny, ton 100° kroma 0,008)',
+  'sage\u00a0': 'Sage — tolvstegsskalan (ny)',
+  'red\u00a0': 'Röd — tolvstegsskalan (ny)',
   gold: 'Guld/amber — primärfärgen',
   copper: 'Koppar — accent, CTA och varning',
   neutral: 'Neutraler — bär omkring 450 av appens färganvändningar',
@@ -193,7 +198,12 @@ function grupperaSkalor(primitivFarger) {
   const grupper = new Map();
   for (const f of primitivFarger) {
     const m = f.namn.match(/^--p-([a-z]+)-(\d+)$/);
-    const nyckel = m ? m[1] : 'ovrigt';
+    // Två generationer lever sida vid sida under migreringen. Tolvstegsskalorna
+    // numreras 1–12, den gamla paletten 100–1000; utan den här delningen
+    // blandas de i samma rad och sorteras 1, 2, … 12, 100, 200 som om de vore
+    // en enda skala.
+    const nyGeneration = m && Number(m[2]) >= 1 && Number(m[2]) <= 12;
+    const nyckel = m ? (nyGeneration ? `${m[1]}\u00a0` : m[1]) : 'ovrigt';
     if (!grupper.has(nyckel)) grupper.set(nyckel, []);
     grupper.get(nyckel).push({ ...f, steg: m ? Number(m[2]) : null });
   }

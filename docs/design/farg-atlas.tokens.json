@@ -32,10 +32,7 @@
           "id": "F1",
           "rubrik": "Två döda färgklasser i login",
           "allvar": "hög",
-          "plats": [
-            "src/routes/login.tsx:111",
-            "src/routes/login.tsx:119"
-          ],
+          "plats": ["src/routes/login.tsx:111", "src/routes/login.tsx:119"],
           "vad": "text-red-600 och text-white genererar ingen CSS. src/styles/tailwind.css:12 nollställer Tailwinds defaultpalett med --color-*: initial, och ingen av klasserna finns i @theme.",
           "verifiering": "grep -c '\\.text-white' dist/assets/*.css → 0, medan .text-text-muted och .bg-primary finns i samma fil.",
           "foljd": "Felmeddelandet vid inloggning renderas inte rött. Skärmläsare når det ändå via role=alert + aria-live.",
@@ -68,9 +65,7 @@
           "id": "F5",
           "rubrik": "Specen har drivit isär från koden",
           "allvar": "medel",
-          "plats": [
-            "docs/specs/DESIGN-SYSTEM-SPEC.md §1"
-          ],
+          "plats": ["docs/specs/DESIGN-SYSTEM-SPEC.md §1"],
           "vad": "Specen anger --mm-text-muted: var(--p-neutral-400) (3,50:1 mot vit). Koden har --p-neutral-500 (5,33:1).",
           "foljd": "Koden är rätt och specen föråldrad. Rollen används 164 gånger — den mest använda färgrollen i appen. Hade specen följts vore 164 platser under AA.",
           "ovrigt": "Specen listar också 25 komponent-tokens (--mm-stat-card-*, --mm-table-*, --mm-menu-*) som aldrig byggdes, och saknar --mm-state-hover i §1."
@@ -252,19 +247,19 @@
           },
           {
             "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
-            "uppmatt": 8.09575336468985,
+            "uppmatt": 8.181557687664576,
             "golv": 4.5,
             "haller": true
           },
           {
             "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
-            "uppmatt": 12.84091151001075,
+            "uppmatt": 12.81223823811918,
             "golv": 7,
             "haller": true
           },
           {
             "krav": "Steg 12 mot steg 1",
-            "uppmatt": 13.901558697773671,
+            "uppmatt": 13.87051704064932,
             "golv": 7,
             "haller": true
           },
@@ -313,15 +308,1221 @@
   "primitiv": {
     "$type": "color",
     "$description": "Lager 1 — råa värden.",
+    "gold ": {
+      "1": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [1, 0.9882, 0.9725],
+          "hex": "#fffcf8"
+        },
+        "$description": "--p-gold-1 · CIE L* 99.1 · kontrast mot vit 1.02:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-1",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9923,
+              "C": 0.0062,
+              "h": 75.4
+            }
+          }
+        }
+      },
+      "2": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [1, 0.9647, 0.9098],
+          "hex": "#fff6e8"
+        },
+        "$description": "--p-gold-2 · CIE L* 97.2 · kontrast mot vit 1.07:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-2",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9764,
+              "C": 0.0208,
+              "h": 79.1
+            }
+          }
+        }
+      },
+      "3": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [1, 0.9255, 0.8078],
+          "hex": "#ffecce"
+        },
+        "$description": "--p-gold-3 · CIE L* 94.2 · kontrast mot vit 1.16:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-3",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9506,
+              "C": 0.0444,
+              "h": 79.3
+            }
+          }
+        }
+      },
+      "4": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [1, 0.8745, 0.6784],
+          "hex": "#ffdfad"
+        },
+        "$description": "--p-gold-4 · CIE L* 90.3 · kontrast mot vit 1.28:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-4",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9183,
+              "C": 0.0735,
+              "h": 78.7
+            }
+          }
+        }
+      },
+      "5": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.9882, 0.8157, 0.5451],
+          "hex": "#fcd08b"
+        },
+        "$description": "--p-gold-5 · CIE L* 85.8 · kontrast mot vit 1.44:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-5",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.8805,
+              "C": 0.0997,
+              "h": 78.2
+            }
+          }
+        }
+      },
+      "6": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.949, 0.7569, 0.4353],
+          "hex": "#f2c16f"
+        },
+        "$description": "--p-gold-6 · CIE L* 80.8 · kontrast mot vit 1.66:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-6",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.8378,
+              "C": 0.1149,
+              "h": 79.1
+            }
+          }
+        }
+      },
+      "7": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.898, 0.6824, 0.3059],
+          "hex": "#e5ae4e"
+        },
+        "$description": "--p-gold-7 · CIE L* 74.5 · kontrast mot vit 2.00:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-7",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.784,
+              "C": 0.129,
+              "h": 78.7
+            }
+          }
+        }
+      },
+      "8": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.8667, 0.6314, 0.1843],
+          "hex": "#dda12f"
+        },
+        "$description": "--p-gold-8 · CIE L* 70.2 · kontrast mot vit 2.28:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-8",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.7479,
+              "C": 0.141,
+              "h": 78.6
+            }
+          }
+        }
+      },
+      "9": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.8314, 0.5882, 0.0392],
+          "hex": "#d4960a"
+        },
+        "$description": "--p-gold-9 · CIE L* 66.4 · kontrast mot vit 2.57:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-9",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.7153,
+              "C": 0.147,
+              "h": 78.7
+            }
+          }
+        }
+      },
+      "10": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.7608, 0.5373, 0],
+          "hex": "#c28900"
+        },
+        "$description": "--p-gold-10 · CIE L* 61.1 · kontrast mot vit 3.06:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-10",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.6693,
+              "C": 0.139,
+              "h": 79.1
+            }
+          }
+        }
+      },
+      "11": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.5882, 0.4078, 0],
+          "hex": "#966800"
+        },
+        "$description": "--p-gold-11 · CIE L* 47.5 · kontrast mot vit 4.91:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-11",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.5512,
+              "C": 0.1148,
+              "h": 78.2
+            }
+          }
+        }
+      },
+      "12": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.3765, 0.2549, 0],
+          "hex": "#604100"
+        },
+        "$description": "--p-gold-12 · CIE L* 30.1 · kontrast mot vit 9.32:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-gold-12",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.4002,
+              "C": 0.0834,
+              "h": 78.1
+            }
+          }
+        }
+      }
+    },
+    "copper ": {
+      "1": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [1, 0.9882, 0.9843],
+          "hex": "#fffcfb"
+        },
+        "$description": "--p-copper-1 · CIE L* 99.2 · kontrast mot vit 1.02:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-1",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9931,
+              "C": 0.0035,
+              "h": 39.5
+            }
+          }
+        }
+      },
+      "2": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [1, 0.9412, 0.9137],
+          "hex": "#fff0e9"
+        },
+        "$description": "--p-copper-2 · CIE L* 95.8 · kontrast mot vit 1.11:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-2",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9651,
+              "C": 0.0188,
+              "h": 46.8
+            }
+          }
+        }
+      },
+      "3": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [1, 0.8627, 0.8039],
+          "hex": "#ffdccd"
+        },
+        "$description": "--p-copper-3 · CIE L* 90.3 · kontrast mot vit 1.28:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-3",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9197,
+              "C": 0.044,
+              "h": 44.6
+            }
+          }
+        }
+      },
+      "4": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.9922, 0.7647, 0.6706],
+          "hex": "#fdc3ab"
+        },
+        "$description": "--p-copper-4 · CIE L* 83.4 · kontrast mot vit 1.55:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-4",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.8632,
+              "C": 0.0745,
+              "h": 43.5
+            }
+          }
+        }
+      },
+      "5": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.9373, 0.6706, 0.5569],
+          "hex": "#efab8e"
+        },
+        "$description": "--p-copper-5 · CIE L* 75.7 · kontrast mot vit 1.93:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-5",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.7987,
+              "C": 0.0899,
+              "h": 44
+            }
+          }
+        }
+      },
+      "6": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.8667, 0.5686, 0.4392],
+          "hex": "#dd9170"
+        },
+        "$description": "--p-copper-6 · CIE L* 67.1 · kontrast mot vit 2.51:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-6",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.726,
+              "C": 0.1034,
+              "h": 44.2
+            }
+          }
+        }
+      },
+      "7": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.7686, 0.4471, 0.302],
+          "hex": "#c4724d"
+        },
+        "$description": "--p-copper-7 · CIE L* 56.4 · kontrast mot vit 3.58:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-7",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.6349,
+              "C": 0.1158,
+              "h": 44.5
+            }
+          }
+        }
+      },
+      "8": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.7059, 0.3608, 0.2],
+          "hex": "#b45c33"
+        },
+        "$description": "--p-copper-8 · CIE L* 49.0 · kontrast mot vit 4.65:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-8",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.5726,
+              "C": 0.1267,
+              "h": 44.2
+            }
+          }
+        }
+      },
+      "9": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.6392, 0.2863, 0.1098],
+          "hex": "#a3491c"
+        },
+        "$description": "--p-copper-9 · CIE L* 42.2 · kontrast mot vit 5.95:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-9",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.5148,
+              "C": 0.1319,
+              "h": 44
+            }
+          }
+        }
+      },
+      "10": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.5922, 0.251, 0.0706],
+          "hex": "#974012"
+        },
+        "$description": "--p-copper-10 · CIE L* 38.4 · kontrast mot vit 6.87:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-10",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.4814,
+              "C": 0.1291,
+              "h": 44
+            }
+          }
+        }
+      },
+      "11": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.4784, 0.1765, 0],
+          "hex": "#7a2d00"
+        },
+        "$description": "--p-copper-11 · CIE L* 29.5 · kontrast mot vit 9.53:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-11",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.4037,
+              "C": 0.1181,
+              "h": 43.7
+            }
+          }
+        }
+      },
+      "12": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.2941, 0.098, 0],
+          "hex": "#4b1900"
+        },
+        "$description": "--p-copper-12 · CIE L* 16.5 · kontrast mot vit 14.60:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-copper-12",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.2882,
+              "C": 0.0837,
+              "h": 44.1
+            }
+          }
+        }
+      }
+    },
+    "neutral ": {
+      "1": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.9922, 0.9922, 0.9882],
+          "hex": "#fdfdfc"
+        },
+        "$description": "--p-neutral-1 · CIE L* 99.3 · kontrast mot vit 1.02:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-1",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9938,
+              "C": 0.0013,
+              "h": 106.4
+            }
+          }
+        }
+      },
+      "2": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.9569, 0.9529, 0.949],
+          "hex": "#f4f3f2"
+        },
+        "$description": "--p-neutral-2 · CIE L* 95.9 · kontrast mot vit 1.11:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-2",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9646,
+              "C": 0.0017,
+              "h": 67.8
+            }
+          }
+        }
+      },
+      "3": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.898, 0.898, 0.8863],
+          "hex": "#e5e5e2"
+        },
+        "$description": "--p-neutral-3 · CIE L* 90.9 · kontrast mot vit 1.26:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-3",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9211,
+              "C": 0.004,
+              "h": 106.5
+            }
+          }
+        }
+      },
+      "4": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.8314, 0.8275, 0.8157],
+          "hex": "#d4d3d0"
+        },
+        "$description": "--p-neutral-4 · CIE L* 84.6 · kontrast mot vit 1.50:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-4",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.8668,
+              "C": 0.0042,
+              "h": 91.5
+            }
+          }
+        }
+      },
+      "5": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.7529, 0.749, 0.7333],
+          "hex": "#c0bfbb"
+        },
+        "$description": "--p-neutral-5 · CIE L* 77.3 · kontrast mot vit 1.84:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-5",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.8043,
+              "C": 0.0057,
+              "h": 95.1
+            }
+          }
+        }
+      },
+      "6": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.6627, 0.6627, 0.6431],
+          "hex": "#a9a9a4"
+        },
+        "$description": "--p-neutral-6 · CIE L* 69.1 · kontrast mot vit 2.36:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-6",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.7333,
+              "C": 0.0071,
+              "h": 106.6
+            }
+          }
+        }
+      },
+      "7": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.5569, 0.5529, 0.5373],
+          "hex": "#8e8d89"
+        },
+        "$description": "--p-neutral-7 · CIE L* 58.6 · kontrast mot vit 3.32:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-7",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.643,
+              "C": 0.006,
+              "h": 95.1
+            }
+          }
+        }
+      },
+      "8": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.4863, 0.4824, 0.4627],
+          "hex": "#7c7b76"
+        },
+        "$description": "--p-neutral-8 · CIE L* 51.6 · kontrast mot vit 4.24:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-8",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.5822,
+              "C": 0.0076,
+              "h": 97.4
+            }
+          }
+        }
+      },
+      "9": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.4196, 0.4196, 0.4196],
+          "hex": "#6b6b6b"
+        },
+        "$description": "--p-neutral-9 · CIE L* 45.2 · kontrast mot vit 5.33:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-9",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.5278,
+              "C": 0,
+              "h": 89.9
+            }
+          }
+        }
+      },
+      "10": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.3843, 0.3843, 0.3647],
+          "hex": "#62625d"
+        },
+        "$description": "--p-neutral-10 · CIE L* 41.4 · kontrast mot vit 6.13:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-10",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.4945,
+              "C": 0.0078,
+              "h": 106.7
+            }
+          }
+        }
+      },
+      "11": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.298, 0.298, 0.2784],
+          "hex": "#4c4c47"
+        },
+        "$description": "--p-neutral-11 · CIE L* 32.2 · kontrast mot vit 8.63:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-11",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.4149,
+              "C": 0.0081,
+              "h": 106.7
+            }
+          }
+        }
+      },
+      "12": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.1765, 0.1765, 0.1647],
+          "hex": "#2d2d2a"
+        },
+        "$description": "--p-neutral-12 · CIE L* 18.4 · kontrast mot vit 13.81:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-neutral-12",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.2961,
+              "C": 0.0053,
+              "h": 106.7
+            }
+          }
+        }
+      }
+    },
+    "sage ": {
+      "1": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.9882, 0.9922, 0.9804],
+          "hex": "#fcfdfa"
+        },
+        "$description": "--p-sage-1 · CIE L* 99.2 · kontrast mot vit 1.02:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-sage-1",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9925,
+              "C": 0.0041,
+              "h": 121.6
+            }
+          }
+        }
+      },
+      "2": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.9451, 0.9569, 0.9333],
+          "hex": "#f1f4ee"
+        },
+        "$description": "--p-sage-2 · CIE L* 95.8 · kontrast mot vit 1.11:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-sage-2",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9632,
+              "C": 0.0085,
+              "h": 128.6
+            }
+          }
+        }
+      },
+      "3": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.8824, 0.902, 0.8667],
+          "hex": "#e1e6dd"
+        },
+        "$description": "--p-sage-3 · CIE L* 90.7 · kontrast mot vit 1.27:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-sage-3",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9186,
+              "C": 0.0132,
+              "h": 130.8
+            }
+          }
+        }
+      },
+      "4": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.8078, 0.8353, 0.7843],
+          "hex": "#ced5c8"
+        },
+        "$description": "--p-sage-4 · CIE L* 84.4 · kontrast mot vit 1.50:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-sage-4",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.864,
+              "C": 0.0192,
+              "h": 130.2
+            }
+          }
+        }
+      },
+      "5": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.7216, 0.7529, 0.6941],
+          "hex": "#b8c0b1"
+        },
+        "$description": "--p-sage-5 · CIE L* 76.7 · kontrast mot vit 1.87:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-sage-5",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.7973,
+              "C": 0.0225,
+              "h": 130.1
+            }
+          }
+        }
+      },
+      "6": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.6275, 0.6627, 0.6],
+          "hex": "#a0a999"
+        },
+        "$description": "--p-sage-6 · CIE L* 68.1 · kontrast mot vit 2.43:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-sage-6",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.723,
+              "C": 0.0248,
+              "h": 131.2
+            }
+          }
+        }
+      },
+      "7": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.5176, 0.5569, 0.4824],
+          "hex": "#848e7b"
+        },
+        "$description": "--p-sage-7 · CIE L* 57.7 · kontrast mot vit 3.42:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-sage-7",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.633,
+              "C": 0.0301,
+              "h": 130
+            }
+          }
+        }
+      },
+      "8": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.4431, 0.4863, 0.4078],
+          "hex": "#717c68"
+        },
+        "$description": "--p-sage-8 · CIE L* 50.6 · kontrast mot vit 4.39:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-sage-8",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.5712,
+              "C": 0.0327,
+              "h": 131
+            }
+          }
+        }
+      },
+      "9": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.3765, 0.4196, 0.3412],
+          "hex": "#606b57"
+        },
+        "$description": "--p-sage-9 · CIE L* 43.8 · kontrast mot vit 5.62:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-sage-9",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.5124,
+              "C": 0.0335,
+              "h": 131.1
+            }
+          }
+        }
+      },
+      "10": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.3412, 0.3804, 0.3059],
+          "hex": "#57614e"
+        },
+        "$description": "--p-sage-10 · CIE L* 39.8 · kontrast mot vit 6.51:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-sage-10",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.4782,
+              "C": 0.0322,
+              "h": 130.2
+            }
+          }
+        }
+      },
+      "11": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.2627, 0.298, 0.2314],
+          "hex": "#434c3b"
+        },
+        "$description": "--p-sage-11 · CIE L* 31.1 · kontrast mot vit 8.99:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-sage-11",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.4031,
+              "C": 0.03,
+              "h": 130.4
+            }
+          }
+        }
+      },
+      "12": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.149, 0.1765, 0.1294],
+          "hex": "#262d21"
+        },
+        "$description": "--p-sage-12 · CIE L* 17.5 · kontrast mot vit 14.19:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-sage-12",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.2863,
+              "C": 0.0234,
+              "h": 132.4
+            }
+          }
+        }
+      }
+    },
+    "red ": {
+      "1": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [1, 0.9882, 0.9843],
+          "hex": "#fffcfb"
+        },
+        "$description": "--p-red-1 · CIE L* 99.2 · kontrast mot vit 1.02:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-1",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9931,
+              "C": 0.0035,
+              "h": 39.5
+            }
+          }
+        }
+      },
+      "2": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [1, 0.9333, 0.9216],
+          "hex": "#ffeeeb"
+        },
+        "$description": "--p-red-2 · CIE L* 95.3 · kontrast mot vit 1.12:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-2",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9618,
+              "C": 0.0189,
+              "h": 29.5
+            }
+          }
+        }
+      },
+      "3": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [1, 0.8431, 0.8157],
+          "hex": "#ffd7d0"
+        },
+        "$description": "--p-red-3 · CIE L* 89.1 · kontrast mot vit 1.32:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-3",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.9111,
+              "C": 0.046,
+              "h": 29.6
+            }
+          }
+        }
+      },
+      "4": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [1, 0.7294, 0.6863],
+          "hex": "#ffbaaf"
+        },
+        "$description": "--p-red-4 · CIE L* 81.6 · kontrast mot vit 1.63:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-4",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.8499,
+              "C": 0.0821,
+              "h": 29.1
+            }
+          }
+        }
+      },
+      "5": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.9961, 0.5882, 0.5255],
+          "hex": "#fe9686"
+        },
+        "$description": "--p-red-5 · CIE L* 72.6 · kontrast mot vit 2.12:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-5",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.7782,
+              "C": 0.1281,
+              "h": 29.6
+            }
+          }
+        }
+      },
+      "6": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.9176, 0.4588, 0.4],
+          "hex": "#ea7566"
+        },
+        "$description": "--p-red-6 · CIE L* 62.7 · kontrast mot vit 2.90:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-6",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.6948,
+              "C": 0.1476,
+              "h": 28.9
+            }
+          }
+        }
+      },
+      "7": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.8118, 0.3059, 0.2471],
+          "hex": "#cf4e3f"
+        },
+        "$description": "--p-red-7 · CIE L* 50.8 · kontrast mot vit 4.36:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-7",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.5948,
+              "C": 0.1664,
+              "h": 29.5
+            }
+          }
+        }
+      },
+      "8": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.7412, 0.1765, 0.1333],
+          "hex": "#bd2d22"
+        },
+        "$description": "--p-red-8 · CIE L* 42.5 · kontrast mot vit 5.90:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-8",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.5257,
+              "C": 0.1823,
+              "h": 29.2
+            }
+          }
+        }
+      },
+      "9": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.6627, 0, 0],
+          "hex": "#a90000"
+        },
+        "$description": "--p-red-9 · CIE L* 34.9 · kontrast mot vit 7.82:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-9",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.4614,
+              "C": 0.1893,
+              "h": 29.2
+            }
+          }
+        }
+      },
+      "10": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.6039, 0, 0],
+          "hex": "#9a0000"
+        },
+        "$description": "--p-red-10 · CIE L* 31.5 · kontrast mot vit 8.85:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-10",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.4309,
+              "C": 0.1768,
+              "h": 29.2
+            }
+          }
+        }
+      },
+      "11": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.4745, 0, 0],
+          "hex": "#790000"
+        },
+        "$description": "--p-red-11 · CIE L* 23.9 · kontrast mot vit 11.58:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-11",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.3618,
+              "C": 0.1485,
+              "h": 29.2
+            }
+          }
+        }
+      },
+      "12": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.2941, 0, 0],
+          "hex": "#4b0000"
+        },
+        "$description": "--p-red-12 · CIE L* 12.6 · kontrast mot vit 16.16:1",
+        "$extensions": {
+          "se.miranon.atlas": {
+            "cssVar": "--p-red-12",
+            "anvandning": 0,
+            "status": "oanvänd",
+            "oklch": {
+              "L": 0.2592,
+              "C": 0.1064,
+              "h": 29.2
+            }
+          }
+        }
+      }
+    },
     "gold": {
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9843,
-            0.9529,
-            0.8784
-          ],
+          "components": [0.9843, 0.9529, 0.8784],
           "hex": "#fbf3e0"
         },
         "$description": "--p-gold-100 · CIE L* 96.0 · kontrast mot vit 1.11:1",
@@ -341,11 +1542,7 @@
       "200": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9608,
-            0.902,
-            0.7373
-          ],
+          "components": [0.9608, 0.902, 0.7373],
           "hex": "#f5e6bc"
         },
         "$description": "--p-gold-200 · CIE L* 91.5 · kontrast mot vit 1.24:1",
@@ -365,11 +1562,7 @@
       "300": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9412,
-            0.8392,
-            0.5412
-          ],
+          "components": [0.9412, 0.8392, 0.5412],
           "hex": "#f0d68a"
         },
         "$description": "--p-gold-300 · CIE L* 86.2 · kontrast mot vit 1.43:1",
@@ -389,11 +1582,7 @@
       "400": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.6588,
-            0.251
-          ],
+          "components": [0.7686, 0.6588, 0.251],
           "hex": "#c4a840"
         },
         "$description": "--p-gold-400 · CIE L* 69.5 · kontrast mot vit 2.33:1",
@@ -413,11 +1602,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8314,
-            0.5882,
-            0.0392
-          ],
+          "components": [0.8314, 0.5882, 0.0392],
           "hex": "#d4960a"
         },
         "$description": "--p-gold-500 · CIE L* 66.4 · kontrast mot vit 2.57:1",
@@ -437,11 +1622,7 @@
       "600": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7216,
-            0.502,
-            0.0392
-          ],
+          "components": [0.7216, 0.502, 0.0392],
           "hex": "#b8800a"
         },
         "$description": "--p-gold-600 · CIE L* 57.7 · kontrast mot vit 3.43:1",
@@ -461,11 +1642,7 @@
       "700": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5882,
-            0.4078,
-            0.0392
-          ],
+          "components": [0.5882, 0.4078, 0.0392],
           "hex": "#96680a"
         },
         "$description": "--p-gold-700 · CIE L* 47.5 · kontrast mot vit 4.91:1",
@@ -487,11 +1664,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.9569,
-            0.9333
-          ],
+          "components": [0.9922, 0.9569, 0.9333],
           "hex": "#fdf4ee"
         },
         "$description": "--p-copper-100 · CIE L* 96.7 · kontrast mot vit 1.09:1",
@@ -511,11 +1684,7 @@
       "200": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9608,
-            0.8471,
-            0.7686
-          ],
+          "components": [0.9608, 0.8471, 0.7686],
           "hex": "#f5d8c4"
         },
         "$description": "--p-copper-200 · CIE L* 88.2 · kontrast mot vit 1.35:1",
@@ -535,11 +1704,7 @@
       "400": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.4157,
-            0.2275
-          ],
+          "components": [0.7686, 0.4157, 0.2275],
           "hex": "#c46a3a"
         },
         "$description": "--p-copper-400 · CIE L* 54.4 · kontrast mot vit 3.84:1",
@@ -559,11 +1724,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6392,
-            0.2863,
-            0.1098
-          ],
+          "components": [0.6392, 0.2863, 0.1098],
           "hex": "#a3491c"
         },
         "$description": "--p-copper-500 · CIE L* 42.2 · kontrast mot vit 5.95:1",
@@ -583,11 +1744,7 @@
       "600": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5412,
-            0.2392,
-            0.0902
-          ],
+          "components": [0.5412, 0.2392, 0.0902],
           "hex": "#8a3d17"
         },
         "$description": "--p-copper-600 · CIE L* 35.6 · kontrast mot vit 7.61:1",
@@ -609,11 +1766,7 @@
       "0": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            1,
-            1
-          ],
+          "components": [1, 1, 1],
           "hex": "#ffffff"
         },
         "$description": "--p-neutral-0 · CIE L* 100.0 · kontrast mot vit 1.00:1",
@@ -633,11 +1786,7 @@
       "25": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9804,
-            0.9804,
-            0.9725
-          ],
+          "components": [0.9804, 0.9804, 0.9725],
           "hex": "#fafaf8"
         },
         "$description": "--p-neutral-25 · CIE L* 98.2 · kontrast mot vit 1.05:1",
@@ -657,11 +1806,7 @@
       "50": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9608,
-            0.9608,
-            0.9529
-          ],
+          "components": [0.9608, 0.9608, 0.9529],
           "hex": "#f5f5f3"
         },
         "$description": "--p-neutral-50 · CIE L* 96.5 · kontrast mot vit 1.09:1",
@@ -681,11 +1826,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9294,
-            0.9333,
-            0.9137
-          ],
+          "components": [0.9294, 0.9333, 0.9137],
           "hex": "#edeee9"
         },
         "$description": "--p-neutral-100 · CIE L* 93.9 · kontrast mot vit 1.17:1",
@@ -705,11 +1846,7 @@
       "200": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8824,
-            0.8902,
-            0.8824
-          ],
+          "components": [0.8824, 0.8902, 0.8824],
           "hex": "#e1e3e1"
         },
         "$description": "--p-neutral-200 · CIE L* 90.0 · kontrast mot vit 1.29:1",
@@ -729,11 +1866,7 @@
       "300": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.7686,
-            0.7608
-          ],
+          "components": [0.7686, 0.7686, 0.7608],
           "hex": "#c4c4c2"
         },
         "$description": "--p-neutral-300 · CIE L* 79.1 · kontrast mot vit 1.75:1",
@@ -753,11 +1886,7 @@
       "400": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5373,
-            0.5373,
-            0.5373
-          ],
+          "components": [0.5373, 0.5373, 0.5373],
           "hex": "#898989"
         },
         "$description": "--p-neutral-400 · CIE L* 57.1 · kontrast mot vit 3.50:1",
@@ -777,11 +1906,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4196,
-            0.4196,
-            0.4196
-          ],
+          "components": [0.4196, 0.4196, 0.4196],
           "hex": "#6b6b6b"
         },
         "$description": "--p-neutral-500 · CIE L* 45.2 · kontrast mot vit 5.33:1",
@@ -801,11 +1926,7 @@
       "600": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3216,
-            0.3176,
-            0.3176
-          ],
+          "components": [0.3216, 0.3176, 0.3176],
           "hex": "#525151"
         },
         "$description": "--p-neutral-600 · CIE L* 34.5 · kontrast mot vit 7.91:1",
@@ -825,11 +1946,7 @@
       "700": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2275,
-            0.2275,
-            0.2275
-          ],
+          "components": [0.2275, 0.2275, 0.2275],
           "hex": "#3a3a3a"
         },
         "$description": "--p-neutral-700 · CIE L* 24.4 · kontrast mot vit 11.37:1",
@@ -849,11 +1966,7 @@
       "800": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1569,
-            0.1608,
-            0.1569
-          ],
+          "components": [0.1569, 0.1608, 0.1569],
           "hex": "#282928"
         },
         "$description": "--p-neutral-800 · CIE L* 16.5 · kontrast mot vit 14.60:1",
@@ -873,11 +1986,7 @@
       "900": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1412,
-            0.1412,
-            0.1412
-          ],
+          "components": [0.1412, 0.1412, 0.1412],
           "hex": "#242424"
         },
         "$description": "--p-neutral-900 · CIE L* 14.2 · kontrast mot vit 15.52:1",
@@ -897,11 +2006,7 @@
       "1000": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.102,
-            0.102,
-            0.102
-          ],
+          "components": [0.102, 0.102, 0.102],
           "hex": "#1a1a1a"
         },
         "$description": "--p-neutral-1000 · CIE L* 9.3 · kontrast mot vit 17.40:1",
@@ -923,11 +2028,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9373,
-            0.9647,
-            1
-          ],
+          "components": [0.9373, 0.9647, 1],
           "hex": "#eff6ff"
         },
         "$description": "--p-blue-100 · CIE L* 96.6 · kontrast mot vit 1.09:1",
@@ -947,11 +2048,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2902,
-            0.4196,
-            0.5412
-          ],
+          "components": [0.2902, 0.4196, 0.5412],
           "hex": "#4a6b8a"
         },
         "$description": "--p-blue-500 · CIE L* 44.0 · kontrast mot vit 5.58:1",
@@ -971,11 +2068,7 @@
       "700": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1059,
-            0.2863,
-            0.3961
-          ],
+          "components": [0.1059, 0.2863, 0.3961],
           "hex": "#1b4965"
         },
         "$description": "--p-blue-700 · CIE L* 29.3 · kontrast mot vit 9.60:1",
@@ -997,11 +2090,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9961,
-            0.949,
-            0.949
-          ],
+          "components": [0.9961, 0.949, 0.949],
           "hex": "#fef2f2"
         },
         "$description": "--p-red-100 · CIE L* 96.4 · kontrast mot vit 1.09:1",
@@ -1021,11 +2110,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0,
-            0
-          ],
+          "components": [0.6627, 0, 0],
           "hex": "#a90000"
         },
         "$description": "--p-red-500 · CIE L* 34.9 · kontrast mot vit 7.82:1",
@@ -1047,11 +2132,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9412,
-            0.9922,
-            0.9569
-          ],
+          "components": [0.9412, 0.9922, 0.9569],
           "hex": "#f0fdf4"
         },
         "$description": "--p-green-100 · CIE L* 98.2 · kontrast mot vit 1.05:1",
@@ -1071,11 +2152,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3765,
-            0.4196,
-            0.3412
-          ],
+          "components": [0.3765, 0.4196, 0.3412],
           "hex": "#606b57"
         },
         "$description": "--p-green-500 · CIE L* 43.8 · kontrast mot vit 5.62:1",
@@ -1915,11 +2992,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9882,
-            0.9725
-          ],
+          "components": [1, 0.9882, 0.9725],
           "hex": "#fffcf8"
         },
         "$description": "Steg 1 — Sidbakgrund"
@@ -1927,11 +3000,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9647,
-            0.9098
-          ],
+          "components": [1, 0.9647, 0.9098],
           "hex": "#fff6e8"
         },
         "$description": "Steg 2 — Subtil bakgrund"
@@ -1939,11 +3008,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9255,
-            0.8078
-          ],
+          "components": [1, 0.9255, 0.8078],
           "hex": "#ffecce"
         },
         "$description": "Steg 3 — Komponentyta"
@@ -1951,11 +3016,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.8745,
-            0.6784
-          ],
+          "components": [1, 0.8745, 0.6784],
           "hex": "#ffdfad"
         },
         "$description": "Steg 4 — Komponentyta, hover"
@@ -1963,11 +3024,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9882,
-            0.8157,
-            0.5451
-          ],
+          "components": [0.9882, 0.8157, 0.5451],
           "hex": "#fcd08b"
         },
         "$description": "Steg 5 — Komponentyta, aktiv"
@@ -1975,11 +3032,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.949,
-            0.7569,
-            0.4353
-          ],
+          "components": [0.949, 0.7569, 0.4353],
           "hex": "#f2c16f"
         },
         "$description": "Steg 6 — Subtil kant"
@@ -1987,11 +3040,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.898,
-            0.6824,
-            0.3059
-          ],
+          "components": [0.898, 0.6824, 0.3059],
           "hex": "#e5ae4e"
         },
         "$description": "Steg 7 — Kant och fokusring"
@@ -1999,11 +3048,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8667,
-            0.6314,
-            0.1843
-          ],
+          "components": [0.8667, 0.6314, 0.1843],
           "hex": "#dda12f"
         },
         "$description": "Steg 8 — Kant, hover"
@@ -2011,11 +3056,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8314,
-            0.5882,
-            0.0392
-          ],
+          "components": [0.8314, 0.5882, 0.0392],
           "hex": "#d4960a"
         },
         "$description": "Steg 9 — Solid yta"
@@ -2023,11 +3064,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7608,
-            0.5373,
-            0
-          ],
+          "components": [0.7608, 0.5373, 0],
           "hex": "#c28900"
         },
         "$description": "Steg 10 — Solid yta, hover"
@@ -2035,11 +3072,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5882,
-            0.4078,
-            0
-          ],
+          "components": [0.5882, 0.4078, 0],
           "hex": "#966800"
         },
         "$description": "Steg 11 — Text, låg kontrast"
@@ -2047,11 +3080,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3765,
-            0.2549,
-            0
-          ],
+          "components": [0.3765, 0.2549, 0],
           "hex": "#604100"
         },
         "$description": "Steg 12 — Text, hög kontrast"
@@ -2061,11 +3090,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9882,
-            0.9843
-          ],
+          "components": [1, 0.9882, 0.9843],
           "hex": "#fffcfb"
         },
         "$description": "Steg 1 — Sidbakgrund"
@@ -2073,11 +3098,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9412,
-            0.9137
-          ],
+          "components": [1, 0.9412, 0.9137],
           "hex": "#fff0e9"
         },
         "$description": "Steg 2 — Subtil bakgrund"
@@ -2085,11 +3106,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.8627,
-            0.8039
-          ],
+          "components": [1, 0.8627, 0.8039],
           "hex": "#ffdccd"
         },
         "$description": "Steg 3 — Komponentyta"
@@ -2097,11 +3114,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.7647,
-            0.6706
-          ],
+          "components": [0.9922, 0.7647, 0.6706],
           "hex": "#fdc3ab"
         },
         "$description": "Steg 4 — Komponentyta, hover"
@@ -2109,11 +3122,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9373,
-            0.6706,
-            0.5569
-          ],
+          "components": [0.9373, 0.6706, 0.5569],
           "hex": "#efab8e"
         },
         "$description": "Steg 5 — Komponentyta, aktiv"
@@ -2121,11 +3130,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8667,
-            0.5686,
-            0.4392
-          ],
+          "components": [0.8667, 0.5686, 0.4392],
           "hex": "#dd9170"
         },
         "$description": "Steg 6 — Subtil kant"
@@ -2133,11 +3138,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.4471,
-            0.302
-          ],
+          "components": [0.7686, 0.4471, 0.302],
           "hex": "#c4724d"
         },
         "$description": "Steg 7 — Kant och fokusring"
@@ -2145,11 +3146,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7059,
-            0.3608,
-            0.2
-          ],
+          "components": [0.7059, 0.3608, 0.2],
           "hex": "#b45c33"
         },
         "$description": "Steg 8 — Kant, hover"
@@ -2157,11 +3154,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6392,
-            0.2863,
-            0.1098
-          ],
+          "components": [0.6392, 0.2863, 0.1098],
           "hex": "#a3491c"
         },
         "$description": "Steg 9 — Solid yta"
@@ -2169,11 +3162,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5922,
-            0.251,
-            0.0706
-          ],
+          "components": [0.5922, 0.251, 0.0706],
           "hex": "#974012"
         },
         "$description": "Steg 10 — Solid yta, hover"
@@ -2181,11 +3170,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4784,
-            0.1765,
-            0
-          ],
+          "components": [0.4784, 0.1765, 0],
           "hex": "#7a2d00"
         },
         "$description": "Steg 11 — Text, låg kontrast"
@@ -2193,11 +3178,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2941,
-            0.098,
-            0
-          ],
+          "components": [0.2941, 0.098, 0],
           "hex": "#4b1900"
         },
         "$description": "Steg 12 — Text, hög kontrast"
@@ -2207,11 +3188,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.9922,
-            0.9922
-          ],
+          "components": [0.9922, 0.9922, 0.9922],
           "hex": "#fdfdfd"
         },
         "$description": "Steg 1 — Sidbakgrund"
@@ -2219,11 +3196,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9529,
-            0.9529,
-            0.9529
-          ],
+          "components": [0.9529, 0.9529, 0.9529],
           "hex": "#f3f3f3"
         },
         "$description": "Steg 2 — Subtil bakgrund"
@@ -2231,11 +3204,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.898,
-            0.898,
-            0.898
-          ],
+          "components": [0.898, 0.898, 0.898],
           "hex": "#e5e5e5"
         },
         "$description": "Steg 3 — Komponentyta"
@@ -2243,11 +3212,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8275,
-            0.8275,
-            0.8275
-          ],
+          "components": [0.8275, 0.8275, 0.8275],
           "hex": "#d3d3d3"
         },
         "$description": "Steg 4 — Komponentyta, hover"
@@ -2255,11 +3220,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.749,
-            0.749,
-            0.749
-          ],
+          "components": [0.749, 0.749, 0.749],
           "hex": "#bfbfbf"
         },
         "$description": "Steg 5 — Komponentyta, aktiv"
@@ -2267,11 +3228,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6588,
-            0.6588,
-            0.6588
-          ],
+          "components": [0.6588, 0.6588, 0.6588],
           "hex": "#a8a8a8"
         },
         "$description": "Steg 6 — Subtil kant"
@@ -2279,11 +3236,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5529,
-            0.5529,
-            0.5529
-          ],
+          "components": [0.5529, 0.5529, 0.5529],
           "hex": "#8d8d8d"
         },
         "$description": "Steg 7 — Kant och fokusring"
@@ -2291,11 +3244,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4824,
-            0.4824,
-            0.4824
-          ],
+          "components": [0.4824, 0.4824, 0.4824],
           "hex": "#7b7b7b"
         },
         "$description": "Steg 8 — Kant, hover"
@@ -2303,11 +3252,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4196,
-            0.4196,
-            0.4196
-          ],
+          "components": [0.4196, 0.4196, 0.4196],
           "hex": "#6b6b6b"
         },
         "$description": "Steg 9 — Solid yta"
@@ -2315,11 +3260,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3804,
-            0.3804,
-            0.3804
-          ],
+          "components": [0.3804, 0.3804, 0.3804],
           "hex": "#616161"
         },
         "$description": "Steg 10 — Solid yta, hover"
@@ -2327,11 +3268,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2941,
-            0.2941,
-            0.2941
-          ],
+          "components": [0.2941, 0.2941, 0.2941],
           "hex": "#4b4b4b"
         },
         "$description": "Steg 11 — Text, låg kontrast"
@@ -2339,11 +3276,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1765,
-            0.1765,
-            0.1765
-          ],
+          "components": [0.1765, 0.1765, 0.1765],
           "hex": "#2d2d2d"
         },
         "$description": "Steg 12 — Text, hög kontrast"
@@ -2353,11 +3286,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9882,
-            0.9922,
-            0.9804
-          ],
+          "components": [0.9882, 0.9922, 0.9804],
           "hex": "#fcfdfa"
         },
         "$description": "Steg 1 — Sidbakgrund"
@@ -2365,11 +3294,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9451,
-            0.9569,
-            0.9333
-          ],
+          "components": [0.9451, 0.9569, 0.9333],
           "hex": "#f1f4ee"
         },
         "$description": "Steg 2 — Subtil bakgrund"
@@ -2377,11 +3302,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8824,
-            0.902,
-            0.8667
-          ],
+          "components": [0.8824, 0.902, 0.8667],
           "hex": "#e1e6dd"
         },
         "$description": "Steg 3 — Komponentyta"
@@ -2389,11 +3310,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8078,
-            0.8353,
-            0.7843
-          ],
+          "components": [0.8078, 0.8353, 0.7843],
           "hex": "#ced5c8"
         },
         "$description": "Steg 4 — Komponentyta, hover"
@@ -2401,11 +3318,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7216,
-            0.7529,
-            0.6941
-          ],
+          "components": [0.7216, 0.7529, 0.6941],
           "hex": "#b8c0b1"
         },
         "$description": "Steg 5 — Komponentyta, aktiv"
@@ -2413,11 +3326,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6275,
-            0.6627,
-            0.6
-          ],
+          "components": [0.6275, 0.6627, 0.6],
           "hex": "#a0a999"
         },
         "$description": "Steg 6 — Subtil kant"
@@ -2425,11 +3334,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5176,
-            0.5569,
-            0.4824
-          ],
+          "components": [0.5176, 0.5569, 0.4824],
           "hex": "#848e7b"
         },
         "$description": "Steg 7 — Kant och fokusring"
@@ -2437,11 +3342,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4431,
-            0.4863,
-            0.4078
-          ],
+          "components": [0.4431, 0.4863, 0.4078],
           "hex": "#717c68"
         },
         "$description": "Steg 8 — Kant, hover"
@@ -2449,11 +3350,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3765,
-            0.4196,
-            0.3412
-          ],
+          "components": [0.3765, 0.4196, 0.3412],
           "hex": "#606b57"
         },
         "$description": "Steg 9 — Solid yta"
@@ -2461,11 +3358,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3412,
-            0.3804,
-            0.3059
-          ],
+          "components": [0.3412, 0.3804, 0.3059],
           "hex": "#57614e"
         },
         "$description": "Steg 10 — Solid yta, hover"
@@ -2473,11 +3366,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2627,
-            0.298,
-            0.2314
-          ],
+          "components": [0.2627, 0.298, 0.2314],
           "hex": "#434c3b"
         },
         "$description": "Steg 11 — Text, låg kontrast"
@@ -2485,11 +3374,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.149,
-            0.1765,
-            0.1294
-          ],
+          "components": [0.149, 0.1765, 0.1294],
           "hex": "#262d21"
         },
         "$description": "Steg 12 — Text, hög kontrast"
@@ -2499,11 +3384,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9843,
-            0.9922,
-            1
-          ],
+          "components": [0.9843, 0.9922, 1],
           "hex": "#fbfdff"
         },
         "$description": "Steg 1 — Sidbakgrund"
@@ -2511,11 +3392,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9216,
-            0.9608,
-            0.9961
-          ],
+          "components": [0.9216, 0.9608, 0.9961],
           "hex": "#ebf5fe"
         },
         "$description": "Steg 2 — Subtil bakgrund"
@@ -2523,11 +3400,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8431,
-            0.902,
-            0.9608
-          ],
+          "components": [0.8431, 0.902, 0.9608],
           "hex": "#d7e6f5"
         },
         "$description": "Steg 3 — Komponentyta"
@@ -2535,11 +3408,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7569,
-            0.8353,
-            0.9137
-          ],
+          "components": [0.7569, 0.8353, 0.9137],
           "hex": "#c1d5e9"
         },
         "$description": "Steg 4 — Komponentyta, hover"
@@ -2547,11 +3416,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0.7569,
-            0.8471
-          ],
+          "components": [0.6627, 0.7569, 0.8471],
           "hex": "#a9c1d8"
         },
         "$description": "Steg 5 — Komponentyta, aktiv"
@@ -2559,11 +3424,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5608,
-            0.6667,
-            0.7686
-          ],
+          "components": [0.5608, 0.6667, 0.7686],
           "hex": "#8faac4"
         },
         "$description": "Steg 6 — Subtil kant"
@@ -2571,11 +3432,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4392,
-            0.5569,
-            0.6706
-          ],
+          "components": [0.4392, 0.5569, 0.6706],
           "hex": "#708eab"
         },
         "$description": "Steg 7 — Kant och fokusring"
@@ -2583,11 +3440,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3608,
-            0.4863,
-            0.6039
-          ],
+          "components": [0.3608, 0.4863, 0.6039],
           "hex": "#5c7c9a"
         },
         "$description": "Steg 8 — Kant, hover"
@@ -2595,11 +3448,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2902,
-            0.4196,
-            0.5412
-          ],
+          "components": [0.2902, 0.4196, 0.5412],
           "hex": "#4a6b8a"
         },
         "$description": "Steg 9 — Solid yta"
@@ -2607,36 +3456,24 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3373,
-            0.3725,
-            0.4078
-          ],
-          "hex": "#565f68"
+          "components": [0.3412, 0.3725, 0.4],
+          "hex": "#575f66"
         },
         "$description": "Steg 10 — Solid yta, hover"
       },
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2745,
-            0.2902,
-            0.3059
-          ],
-          "hex": "#464a4e"
+          "components": [0.2784, 0.2863, 0.298],
+          "hex": "#47494c"
         },
         "$description": "Steg 11 — Text, låg kontrast"
       },
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1333,
-            0.1725,
-            0.2118
-          ],
-          "hex": "#222c36"
+          "components": [0.1412, 0.1725, 0.2039],
+          "hex": "#242c34"
         },
         "$description": "Steg 12 — Text, hög kontrast"
       }
@@ -2645,11 +3482,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9882,
-            0.9843
-          ],
+          "components": [1, 0.9882, 0.9843],
           "hex": "#fffcfb"
         },
         "$description": "Steg 1 — Sidbakgrund"
@@ -2657,11 +3490,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9333,
-            0.9216
-          ],
+          "components": [1, 0.9333, 0.9216],
           "hex": "#ffeeeb"
         },
         "$description": "Steg 2 — Subtil bakgrund"
@@ -2669,11 +3498,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.8431,
-            0.8157
-          ],
+          "components": [1, 0.8431, 0.8157],
           "hex": "#ffd7d0"
         },
         "$description": "Steg 3 — Komponentyta"
@@ -2681,11 +3506,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.7294,
-            0.6863
-          ],
+          "components": [1, 0.7294, 0.6863],
           "hex": "#ffbaaf"
         },
         "$description": "Steg 4 — Komponentyta, hover"
@@ -2693,11 +3514,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9961,
-            0.5882,
-            0.5255
-          ],
+          "components": [0.9961, 0.5882, 0.5255],
           "hex": "#fe9686"
         },
         "$description": "Steg 5 — Komponentyta, aktiv"
@@ -2705,11 +3522,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9176,
-            0.4588,
-            0.4
-          ],
+          "components": [0.9176, 0.4588, 0.4],
           "hex": "#ea7566"
         },
         "$description": "Steg 6 — Subtil kant"
@@ -2717,11 +3530,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8118,
-            0.3059,
-            0.2471
-          ],
+          "components": [0.8118, 0.3059, 0.2471],
           "hex": "#cf4e3f"
         },
         "$description": "Steg 7 — Kant och fokusring"
@@ -2729,11 +3538,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7412,
-            0.1765,
-            0.1333
-          ],
+          "components": [0.7412, 0.1765, 0.1333],
           "hex": "#bd2d22"
         },
         "$description": "Steg 8 — Kant, hover"
@@ -2741,11 +3546,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0,
-            0
-          ],
+          "components": [0.6627, 0, 0],
           "hex": "#a90000"
         },
         "$description": "Steg 9 — Solid yta"
@@ -2753,11 +3554,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6039,
-            0,
-            0
-          ],
+          "components": [0.6039, 0, 0],
           "hex": "#9a0000"
         },
         "$description": "Steg 10 — Solid yta, hover"
@@ -2765,11 +3562,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4745,
-            0,
-            0
-          ],
+          "components": [0.4745, 0, 0],
           "hex": "#790000"
         },
         "$description": "Steg 11 — Text, låg kontrast"
@@ -2777,11 +3570,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2941,
-            0,
-            0
-          ],
+          "components": [0.2941, 0, 0],
           "hex": "#4b0000"
         },
         "$description": "Steg 12 — Text, hög kontrast"

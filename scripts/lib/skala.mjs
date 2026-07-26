@@ -125,9 +125,21 @@ export function byggSkala(ankareHex, opt = {}) {
       const kvar = hittaKollisioner([skala[i]], opt.reserverade, TROSKEL);
       if (!kvar.length) continue;
 
+      // Avmättning, inte uppmättning. Båda riktningarna prövades: att mätta upp
+      // ger ett klarblått steg 10 men fungerar inte alls för steg 11, som
+      // ligger på fokusringens exakta ljushet och därför måste bära hela
+      // avståndet i mättnad — och blå når inte den mättnaden så mörkt. Resultatet
+      // blev en skala som gick dov, klarblå, grå. Ett konsekvent dovt slut är
+      // ärligare än en skala som byter karaktär tre gånger.
+      //
+      // Att stegen tappar sin blåhet är inte en brist i metoden utan i paletten:
+      // se fynd F10. Fokusringen ockuperar den ljushet blåskalans textsteg
+      // behöver, och det löses genom att flytta info-blå — inte genom att
+      // finjustera här.
       const { L } = oklch(skala[i].hex);
-      for (let faktor = 0.9; faktor >= 0; faktor -= 0.05) {
-        const kandidat = oklchTillHex({ L, C: baskroma * KROMA_PROFIL[i] * faktor, h });
+      const bas = baskroma * KROMA_PROFIL[i];
+      for (const faktor of [0.85, 0.7, 0.55, 0.4, 0.25, 0.1, 0]) {
+        const kandidat = oklchTillHex({ L, C: Math.min(bas * faktor, maxKroma(L, h)), h });
         if (!hittaKollisioner([{ steg: i + 1, hex: kandidat }], opt.reserverade, TROSKEL).length) {
           skala[i] = { ...skala[i], hex: kandidat, undanvek: kvar[0].vad };
           break;
