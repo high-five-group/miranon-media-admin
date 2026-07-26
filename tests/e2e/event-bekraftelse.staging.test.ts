@@ -353,9 +353,16 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
     await expect(anna.getByText('Obekräftad')).toHaveCount(0);
     await expect(anna.getByText('Manuellt tillagd')).toBeVisible();
 
-    // WCAG 1.4.1 (byggkrav 7): valt tillstånd bärs av mer än färg — den
-    // diskreta check-indikatorn står i pill-radens frigjorda plats.
-    await expect(anna.getByTestId('markering-check')).toBeVisible();
+    // WCAG 1.4.1 (byggkrav 7, REVIDERAT 2026-07-26 i Marcus design-review):
+    // check-glyfen är riven. Bäraren är kanten, och det som gör den till en
+    // icke-färg-signal är att den OVALDA kanten är transparent — markeringen
+    // är alltså att en kontur uppstår, inte att en färg byts. Testet vaktar
+    // därför frånvaron av glyf OCH den transparenta ovalda kanten; tonas den
+    // senare upp till en synlig neutral kant blir skillnaden ren nyans och
+    // 1.4.1 faller, vilket detta fall då fångar.
+    await expect(anna.getByTestId('markering-check')).toHaveCount(0);
+    const ovald = kort.filter({ hasNotText: 'Anna Ek' });
+    await expect(ovald).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
   });
 
   test('byggkrav 3: batch-baren — Bekräfta X mutad vid 0, Markera alla, Rensa vid ≥1, live-räknare', async ({
