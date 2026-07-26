@@ -13,6 +13,13 @@
 
 import { kontrast, lch, maxKroma, oklch, oklchTillHex } from './farg.mjs';
 
+/**
+ * Under detta perceptuella avstånd räknas två färger som förväxlingsbara.
+ * Satt med marginal: fokusringens igenkännbarhet är hela poängen med att den
+ * är exklusiv, så gränsfall ska falla ut på den säkra sidan.
+ */
+const TROSKEL = 18;
+
 /** Rollen varje steg fyller. Index 0 = steg 1. */
 export const STEG_ROLLER = [
   'Sidbakgrund',
@@ -62,11 +69,18 @@ const KROMA_PROFIL = [0.14, 0.26, 0.42, 0.56, 0.68, 0.78, 0.88, 0.96, 1.0, 0.98,
  * @param {number} [opt.kulorton] - lås kulörtonen till detta gradtal i stället
  *   för ankarets egen (används när en befintlig skala driver i ton och ska
  *   rätas ut mot ankaret)
- * @returns {Array<{steg: number, hex: string, roll: string}>}
+ * @param {number} [opt.kroma] - använd denna mättnad i stället för ankarets.
+ *   Behövs för neutraler, där ankaret är kromatiskt rent och en skala med
+ *   ärvd mättnad blir gråare än den ton huset faktiskt har
+ * @param {Array<{hex: string, vad: string}>} [opt.reserverade] - färger skalan
+ *   ska hålla sig undan från. Steg som hamnar för nära avmättas tills de går
+ *   att skilja åt
+ * @returns {Array<{steg: number, hex: string, roll: string, undanvek?: string}>}
  */
 export function byggSkala(ankareHex, opt = {}) {
   const ankare = oklch(ankareHex);
   const h = opt.kulorton ?? ankare.h;
+  const baskroma = opt.kroma ?? ankare.C;
 
   // Ljusheten byggs ut från ankaret åt båda håll i stället för från en fast
   // tabell. En fast tabell antar att varumärkesfärgen råkar ha den ljushet ett
@@ -82,7 +96,7 @@ export function byggSkala(ankareHex, opt = {}) {
     const steg = i + 1;
     if (steg === 9) return { steg, hex: ankareHex.toLowerCase(), roll: STEG_ROLLER[i] };
 
-    const C = Math.min(ankare.C * KROMA_PROFIL[i], maxKroma(L, h));
+    const C = Math.min(baskroma * KROMA_PROFIL[i], maxKroma(L, h));
     return { steg, hex: oklchTillHex({ L, C, h }), roll: STEG_ROLLER[i] };
   });
 
@@ -94,6 +108,32 @@ export function byggSkala(ankareHex, opt = {}) {
     [12, 7],
   ]) {
     skala[steg - 1] = morknaTills(skala[steg - 1], skala[1].hex, golv, h, ankare.C);
+  }
+
+  // Undanvikandet körs SIST, efter textkalibreringen. Kalibreringen sätter om
+  // mättnaden för att nå sitt kontrastgolv och skulle annars återinföra just
+  // den mättnad som nyss veks bort — ordningen är inte godtycklig.
+  //
+  // Steg som krockar med en reserverad färg avmättas tills de går att skilja
+  // åt. Ljusheten hålls fast — den bär skalans ordning — så det är mättnaden
+  // som får ge vika. Blå är fallet detta finns för: info-blå och fokusringen
+  // har nästan identisk mättnad och ton och skiljs bara av ljushet, så en
+  // skala som vandrar nedåt från info-blå går rakt genom fokusringen.
+  if (opt.reserverade?.length) {
+    for (let i = 0; i < skala.length; i++) {
+      if (i + 1 === 9) continue; // ankaret flyttas aldrig
+      const kvar = hittaKollisioner([skala[i]], opt.reserverade, TROSKEL);
+      if (!kvar.length) continue;
+
+      const { L } = oklch(skala[i].hex);
+      for (let faktor = 0.9; faktor >= 0; faktor -= 0.05) {
+        const kandidat = oklchTillHex({ L, C: baskroma * KROMA_PROFIL[i] * faktor, h });
+        if (!hittaKollisioner([{ steg: i + 1, hex: kandidat }], opt.reserverade, TROSKEL).length) {
+          skala[i] = { ...skala[i], hex: kandidat, undanvek: kvar[0].vad };
+          break;
+        }
+      }
+    }
   }
 
   return skala;
@@ -168,7 +208,7 @@ function avstand(a, b) {
  * @param {Array<{hex: string, vad: string}>} reserverade
  * @param {number} [trosklen] - avstånd under vilket färgerna räknas som förväxlingsbara
  */
-export function hittaKollisioner(skala, reserverade, trosklen = 12) {
+export function hittaKollisioner(skala, reserverade, trosklen = TROSKEL) {
   const traffar = [];
   for (const steg of skala) {
     for (const r of reserverade) {

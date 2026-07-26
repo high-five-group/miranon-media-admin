@@ -320,7 +320,34 @@ function skalRad(titel, poster, beskrivning) {
 </section>`;
 }
 
-function byggHtml(modell, skalor, forslag, fynd) {
+function byggHtml(modell, skalor, forslag, fynd, neutralvagar) {
+  const dagensNeutral = (skalor.get('neutral') ?? [])
+    .map((f) =>
+      ruta(f.hex, f.steg, `<code>${esc(f.hex)}</code><span>L* ${f.cieL.toFixed(1)}</span>`),
+    )
+    .join('');
+  const neutralSektioner = neutralvagar
+    .map((v) => {
+      const rutor = v.skala
+        .map((s) =>
+          ruta(s.hex, s.steg, `<code>${esc(s.hex)}</code><span class="roll">${esc(s.roll)}</span>`),
+        )
+        .join('');
+      const kontrakt = provaKontrakt(v.skala)
+        .map(
+          (k) =>
+            `<li class="${k.haller ? 'ok' : 'fel'}"><span>${k.haller ? '✓' : '✗'}</span> ${esc(k.krav)} — <strong>${k.uppmatt.toFixed(2)}</strong> (golv ${k.golv})</li>`,
+        )
+        .join('');
+      return `<section class="skala">
+      <h3>${esc(v.rubrik)}</h3>
+      <p class="ingress">${esc(v.not)}</p>
+      <div class="rutor">${rutor}</div>
+      <ul class="kontrakt">${kontrakt}</ul>
+    </section>`;
+    })
+    .join('\n');
+
   const nu = new Date().toISOString().slice(0, 10);
 
   // Nuläge — en rad per skala
@@ -557,14 +584,25 @@ ${nulageSektioner}
 <h2>4. Brister</h2>
 ${fyndSektioner}
 
-<h2>5. Möjligheten — fullständiga skalor</h2>
+<h2>5. Neutralernas ton — tre vägar</h2>
+<p class="lead">Neutralerna bär omkring 450 av appens färganvändningar, så deras ton är det
+   enda palettvalet som slår igenom överallt. Dagens ljusa steg ligger på kromavägd medelton
+   <strong>120°</strong> — gulgrönt, inte varmt. Varmt vore 60–90°, där guldet (78,7°) och
+   kopparn (44°) bor. Här är alla tre renderade mot samma ankare.</p>
+<section class="skala">
+  <h3>Dagens skala, som referens · 13 steg</h3>
+  <div class="rutor">${dagensNeutral}</div>
+</section>
+${neutralSektioner}
+
+<h2>6. Möjligheten — fullständiga skalor</h2>
 <p class="lead">Tolvstegsmodellen är Radix rollindelning: varje steg är en UI-roll, inte en
    godtycklig nyans. Skalorna nedan är genererade i OKLCH runt de befintliga varumärkesfärgerna
    — <strong>ankaret flyttas aldrig</strong>, steg 9 är exakt den kulör appen redan bär.
    Kontrakten under varje skala är samma garantier Radix ger för sina egna.</p>
 ${forslagSektioner}
 
-<h2>6. Så här är atlasen byggd</h2>
+<h2>7. Så här är atlasen byggd</h2>
 <p class="lead">Tokens läses ur <code>src/styles/tokens/*.css</code>, användningen räknas i
    <code>src/**/*.tsx</code>, mätvärdena beräknas i <code>scripts/lib/farg.mjs</code> och
    skalförslagen genereras i <code>scripts/lib/skala.mjs</code>. Det enda handskrivna är
@@ -619,7 +657,7 @@ const forslag = {
   },
 };
 for (const [namn, data] of Object.entries(forslag)) {
-  data.skala = byggSkala(data.ankare);
+  data.skala = byggSkala(data.ankare, { reserverade: data.reserverade });
   data.kontrakt = provaKontrakt(data.skala);
   data.kollisioner = data.reserverade ? hittaKollisioner(data.skala, data.reserverade) : [];
   const brutna = data.kontrakt.filter((k) => !k.haller).length;
@@ -629,12 +667,42 @@ for (const [namn, data] of Object.entries(forslag)) {
   );
 }
 
+// Neutralernas ton är det enda valet som slår igenom på hela appen — de bär
+// omkring 450 användningar. Dagens ljusa steg ligger på kromavägd medelton
+// 120°, vilket är gulgrönt och inte varmt; varmt vore 60–90°, där guldet
+// (78,7°) och kopparn (44°) bor. Skillnaden är för stor för att antas bort, så
+// alla tre vägarna renderas i stället för att beskrivas.
+const NEUTRALKROMA = 0.005;
+const neutralvagar = [
+  {
+    nyckel: 'idag',
+    rubrik: 'Dagens ton — gulgrön, 120°',
+    not: 'Bevarar anslaget appen har nu. Mätningen: de ljusa stegen (25–300) plus 800 har ton, resten är kromatiskt rena. Skalan här gör tonen konsekvent genom alla tolv steg i stället för att låta den komma och gå.',
+    skala: byggSkala('#6b6b6b', { kulorton: 120, kroma: NEUTRALKROMA }),
+  },
+  {
+    nyckel: 'ren',
+    rubrik: 'Ren — kromatiskt neutral',
+    not: 'Ingen ton alls. Läser som äkta grå och låter kulörerna göra allt färgarbete. Risken är att ytorna känns kliniska bredvid guld och koppar.',
+    skala: byggSkala('#6b6b6b', { kroma: 0 }),
+  },
+  {
+    nyckel: 'varm',
+    rubrik: 'Varm — 70°, mot guldet',
+    not: 'Det "varm" faktiskt betyder: en ton som drar mot guldets 78,7° och kopparns 44°. Ytorna får samma temperatur som varumärkesfärgerna i stället för att dra åt grönt.',
+    skala: byggSkala('#6b6b6b', { kulorton: 70, kroma: NEUTRALKROMA }),
+  },
+];
+
 const dtcg = byggDtcg(modell, skalor, forslag, fynd);
 writeFileSync(
   join(ROT, 'docs/design/farg-atlas.tokens.json'),
   `${JSON.stringify(dtcg, null, 2)}\n`,
 );
-writeFileSync(join(ROT, 'docs/design/farg-atlas.html'), byggHtml(modell, skalor, forslag, fynd));
+writeFileSync(
+  join(ROT, 'docs/design/farg-atlas.html'),
+  byggHtml(modell, skalor, forslag, fynd, neutralvagar),
+);
 
 // Utdata formateras av repots egen formatterare — se npm-scriptet `atlas`, som
 // kedjar biome efter generatorn. Genererade filer undantas medvetet INTE från

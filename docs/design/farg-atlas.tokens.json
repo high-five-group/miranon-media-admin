@@ -103,6 +103,15 @@
           "vad": "--p-gold-500 (#D4960A) mäter 2,57:1 mot vit yta. WCAG 1.4.11 kräver 3:1 för UI-komponenter och 4,5:1 för brödtext.",
           "verifiering": "Guld vid kulörton 78,7° klarar 3:1 mot vitt först vid OKLCH-ljushet ≤ 0,67 (#C38900). Varumärkesguldet ligger på 0,715.",
           "foljd": "Det är en fysisk egenskap hos en mättad gul-orange, inte ett fel i paletten. Guld kan vara yta under mörk text, men aldrig yta under vit text mot vit bakgrund. Det förklarar varför primärknappen är neutral-800 och inte guld."
+        },
+        {
+          "id": "F10",
+          "rubrik": "Info-blå och fokusringen är förväxlingsbara redan idag",
+          "allvar": "hög",
+          "vad": "--p-blue-500 (#4A6B8A, som bär --mm-info, --mm-cat-comm och kursfärgen Fjärrskådning) ligger på perceptuellt avstånd 15,1 från fokusringens #1B4965. De har nästan identisk mättnad (21,0 mot 21,6) och nära kulörton (261,8° mot 255,4°) — det enda som skiljer dem är ljushet.",
+          "verifiering": "CIE LCh-avstånd mellan #4a6b8a och #1b4965 = 15,1. Till jämförelse ligger --p-blue-100 på 69,4 och --mm-text på 51,8 från samma färg.",
+          "foljd": "tasks/lessons.md (Session 25, UNIVERSAL) slår fast att fokusringen ska ha 'ingen relation till amber, copper, info eller text' — men den har relation till info. En fokusring runt ett info-element är svår att urskilja från elementet.",
+          "fallan": "Fyndet uppstod inte ur den genererade skalan; skalan avslöjade det bara. Konflikten finns i paletten som den ser ut nu, och den försvinner inte av att vi låter bli att generera. Marcus har beslutat att fokusringen står fast — då är det info-blå som behöver flytta, eller så accepteras närheten som ett medvetet undantag."
         }
       ],
       "kontrakt": {
@@ -243,19 +252,19 @@
           },
           {
             "krav": "Steg 11 mot steg 2 (brödtext, WCAG AA)",
-            "uppmatt": 8.107607071781974,
+            "uppmatt": 8.09575336468985,
             "golv": 4.5,
             "haller": true
           },
           {
             "krav": "Steg 12 mot steg 2 (rubriktext, WCAG AAA)",
-            "uppmatt": 12.783376830932676,
+            "uppmatt": 12.84091151001075,
             "golv": 7,
             "haller": true
           },
           {
             "krav": "Steg 12 mot steg 1",
-            "uppmatt": 13.839271708431996,
+            "uppmatt": 13.901558697773671,
             "golv": 7,
             "haller": true
           },
@@ -2599,11 +2608,11 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.2549,
-            0.3804,
-            0.498
+            0.3373,
+            0.3725,
+            0.4078
           ],
-          "hex": "#41617f"
+          "hex": "#565f68"
         },
         "$description": "Steg 10 — Solid yta, hover"
       },
@@ -2611,11 +2620,11 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.1843,
-            0.298,
-            0.4
+            0.2745,
+            0.2902,
+            0.3059
           ],
-          "hex": "#2f4c66"
+          "hex": "#464a4e"
         },
         "$description": "Steg 11 — Text, låg kontrast"
       },
@@ -2623,11 +2632,11 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.0941,
-            0.1765,
-            0.251
+            0.1333,
+            0.1725,
+            0.2118
           ],
-          "hex": "#182d40"
+          "hex": "#222c36"
         },
         "$description": "Steg 12 — Text, hög kontrast"
       }
