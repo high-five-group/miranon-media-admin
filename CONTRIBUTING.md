@@ -54,10 +54,13 @@ kanoniska kommandona separat:
 | `npm run test:visual` | Visuella regressionstester |
 | `npm run test:preview:staging` | Byggt staging-bygge på preview-porten 4173: bygge → bundelgrind → login/Hem-bevis (TASK-10) |
 | `npm run purge:staging` | Sentinel-purge av staging-basen (setup-purge, ADR-060) — kräver `.env.seed`; `-- --dry-run` för plan utan radering |
+| `npm run seed:review` | Granskningsfixtur i staging: kommande event + bekräftade/obekräftade anmälningar för design-review — kräver `.env.seed`; `-- --dry-run` för plan utan skrivning |
+| `npm run seed:review:clean` | Raderar granskningsfixturen igen (samma guards, samma `--dry-run`) |
 
-Lokal browser-verifiering/QA mot staging via byggt bygge har fem kända
+Lokal browser-verifiering/QA mot staging via byggt bygge har sex kända
 fällor (fel-mode-bundle, CORS-blockerad port, saknade test-env-vars,
-stale node_modules efter merge, service worker på dev-originet) — recept
+stale node_modules efter merge, service worker på dev-originet,
+localStorage-persistad query-cache) — recept
 och sanering i
 [`docs/reference/staging-verifiering-runbook.md`](docs/reference/staging-verifiering-runbook.md).
 
@@ -78,6 +81,13 @@ ALDRIG Airtable-cred, EF-only-gränsen). Lokalt: `npm run purge:staging`
 äldre än 60 min rörs (skydd för pågående körningar); alla värden bor i
 `.purge-staging-policy.json`, guard-testerna i
 `scripts/test-purge-staging-sentinels.mjs`.
+
+**Granskningsfixturer får ALDRIG matcha purge-mönstren** — då raderas
+Marcus granskningsdata mitt under granskningen. `npm run seed:review`
+(`scripts/seed-review-fixture.mjs`) skapar sådan data med markörer utanför
+purgens räckvidd och korsläser dem mot `.purge-staging-policy.json` före
+varje körning, så vakten inte kan drifta ifrån den purge som faktiskt körs.
+Recept, parametrar och de fyra fällorna: runbookens § Granskningsfixtur.
 
 CI drabbas aldrig av kollisionen — den kör staging-projekten som separata
 sekventiella steg (`.github/workflows/ci.yml` `test-staging`; Test+Build

@@ -1,12 +1,15 @@
 # Staging-verifiering i lokal browser — runbook
 
 > Syfte: köra browser-verifiering, QA eller mätning mot **staging** via ett
-> lokalt bygge utan att gå i någon av de fem kända fällorna. Fällorna
+> lokalt bygge utan att gå i någon av de sex kända fällorna. Fällorna
 > upptäcktes empiriskt under T76-piloten och S65/S66-batcharna (task-8.1,
 > task-9.3, post-batch-incidenten 2026-07-12) och är hårda att
 > symptom-diagnostisera — appen ser ofta "oförändrad" eller "trasig på fel
 > ställe" ut. Läs det här FÖRE felsökning av konstigt browser-beteende mot
 > staging. Kanonisk kravkälla: task-10 (backlog).
+>
+> Behöver granskningen DATA att titta på — ett kommande event med anmälningar
+> — bor receptet i § Granskningsfixtur längre ned. Skapa den aldrig för hand.
 
 ## Snabbrecept
 
@@ -30,7 +33,7 @@ npm run preview:staging        # servar dist/ på http://localhost:4173 (strictP
 SW-saneringskedjan nedan om du återanvänder en profil som tidigare besökt
 byggda appar).
 
-## De fem fällorna
+## De sex fällorna
 
 | # | Symptom | Rotorsak | Skyddsräcke |
 |---|---|---|---|
@@ -39,6 +42,12 @@ byggda appar).
 | 3 | Playwright hard-failar med `TEST_USER_EMAIL/TEST_USER_PASSWORD env vars required` trots att `.env.test` finns | `playwright.config.ts` läste enbart `process.env` — CI får secrets via workflow-env, lokalt fanns ingen laddare | `playwright.config.ts` laddar `.env.test` via dotenv ([officiella Playwright-mönstret](https://playwright.dev/docs/test-parameterize)); source-prefixet behövs inte längre |
 | 4 | Dev-servern spyr `Failed to resolve import` efter en merge; browsern visar samtidigt en STALE bundle så appen ser oförändrad ut | Merge som lägger nya paket landar utan `npm install` i arbetsytan, och en redan igångkörd Vite cachar den misslyckade modulupplösningen | Post-merge-manifest-steget nedan (L275) |
 | 5 | Browsern visar en GAMMAL version av appen på `localhost:5173` oavsett vad servern servar — utan synligt fel | En BYGGD app servad på dev-originet registrerar sin service worker där; Workbox `NavigationRoute` servar alla navigationer cache-first ur precachen, för evigt | Byggda appar servas ALDRIG på 5173 — preview kör på egen port/origin 4173 (`preview:staging`); sanering: kedjan nedan |
+| 6 | Data ändrad i Airtable syns INTE i appen — inte ens efter hårdladdning | Appen persistar sin query-cache i **localStorage** (`src/queries/persist.ts`) med global `staleTime` 5 min (`src/router.ts`). localStorage överlever hårdladdning, så cachen serveras vidare | `localStorage.clear()` i konsolen — eller vänta ut de fem minuterna |
+
+Fälla 6 är den som biter under en pågående granskning: fixturen skapas, basen
+är korrekt, och appen står ändå kvar på gårdagens vy. Skilj den från fälla 5 på
+symptomet — fälla 5 ger gammal KOD (appen ser oförändrad ut), fälla 6 ger
+gammal DATA (appen är rätt, siffrorna är fel). Hårdladdning botar ingen av dem.
 
 Fälla 5-mekaniken i detalj: en SW-registrering är **origin-bunden**
 (protokoll + host + port — [MDN Service Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API)).
@@ -101,6 +110,126 @@ flaggan som beredskap snarare än miljöläge är tunn — det deklareras öppet
 här i stället för att fejkas; beslutet omprövas om en verklig
 skalerings-situation uppstår.
 
+## Granskningsfixtur — data att granska
+
+En design-review av event-, anmälnings- eller betalningsvyerna behöver ett
+KOMMANDE event med anmälningar i basen. Staging har normalt bara
+CI-sentineler, så datan måste skapas. **Skapa den aldrig för hand.**
+
+Samma jobb gjordes manuellt 2026-07-22 (Event-796, Ort `Skövde`, noteringen
+"GRANSKNINGSDATA (S75 review-våg 1)") och igen 2026-07-26 (Ort
+`ZZ-GRANSKNING-S91`). Andra gången kostade lika mycket som första, eftersom
+den första inte lämnade någon väg efter sig. `scripts/seed-review-fixture.mjs`
+ÄR den vägen.
+
+### Kör det
+
+```bash
+npm run seed:review                 # 8 bekräftade + 8 obekräftade, event om 8 dagar
+npm run seed:review -- --dry-run    # planera, skriv ingenting
+npm run seed:review:clean           # radera fixturen igen
+```
+
+Alla parametrar (defaults inom parentes):
+
+| Flagga | Betydelse |
+|---|---|
+| `--ort <namn>` | Fixturens Ort — också dess markör (`ZZ-GRANSKNING-FIXTUR`) |
+| `--bekraftade N` | Antal `Bekräftad (mail skickat)` (8) |
+| `--obekraftade N` | Antal `Obekräftad` (8) |
+| `--dagar N` | Dagar från idag till eventstart (8) |
+| `--dry-run` | Planera och rapportera, skriv/radera inget — finns i BÅDA lägena |
+
+Skriptet slutar med den enda rad som egentligen behövs:
+
+```text
+  http://localhost:5173/event/recEFBwyinW8Cz2SJ
+```
+
+Token: `STAGING_AIRTABLE_TOKEN` ur gitignorade `.env.seed` (se
+`.env.seed.example`) — samma least-privilege-PAT som `npm run purge:staging`.
+Guard-testerna bor i `scripts/test-seed-review-fixture.mjs` (`node
+scripts/test-seed-review-fixture.mjs`), samma konvention som
+`test-purge-staging-sentinels.mjs`.
+
+### Vad som skapas
+
+- **Ett event** i Eventplanering: `Fjärrskådning` / `Utbildning` / `Planerat`,
+  Dag 1 + Dag 2 via den obligatoriska `Eventtyp`-länken (ADR-066 b5), och en
+  `Notering` som börjar med sentineln `[SEED-REVIEW-FIXTUR]`.
+- **En person per anmälan** i Personer — egna, aldrig de permanenta
+  fixturerna.
+- **En anmälan per person** i Anmälningar, med `Event`-, `EventKey`- och
+  `Person`-länk satta av skriptet.
+
+Datan är medvetet ojämn, så vyerna har något att visa: varannan rad bär
+`Källa = Manuell` (ger kategori-pillen "Manuellt tillagd"), varannan lämnar
+Källa tom (formuläranmälan — frånvaro är sanningen). `Inskickad` sprids
+linjärt över ~fem veckor bakåt så kön får en äkta äldst-först-ordning,
+betalstatus varieras i båda grupperna, och de bekräftade bär
+`Bekräftelse skickad` så meta-raden syns. Bygget är deterministiskt: samma
+flaggor ger samma fixtur, så en granskning går att återskapa exakt.
+
+**`Person`-länken sätts av skriptet, inte av automation A2.** Automationerna
+är avstängda i staging (empiriskt: 16 skapade anmälningar gav 0 Deltaganden,
+och CI-sentinelerna saknar Person-länk). Utan länken blir personens
+`Antal genomförda event` okänd — och då uteblir historikraden "Första eventet
+hos Miranon Media" på deltagarkortet, ofta just den rad granskningen gäller.
+
+### Hur man städar
+
+```bash
+npm run seed:review:clean -- --ort ZZ-GRANSKNING-FIXTUR --dry-run
+npm run seed:review:clean -- --ort ZZ-GRANSKNING-FIXTUR
+```
+
+Clean raderar anmälningarna först (då släpper personernas länk), sedan
+personerna, sist eventet — och efter-verifierar att inget radera-bart står
+kvar. Den är lika hårt guardad som create-läget och rapporterar varje rad den
+LÄMNAR kvar, med orsak. En rad utan fixtur-markör rörs aldrig; fail-safe-
+riktningen är alltid "hellre lämna kvar och rapportera".
+
+### De fyra fällorna i skriptet
+
+Fällorna nedan kostade tid när fixturen byggdes för hand. Skriptet kodar bort
+dem — de står här för den som ändrar skriptet eller bygger något liknande.
+
+1. **Purge-kollisionen.** `scripts/purge-staging-sentinels.mjs` körs FÖRE varje
+   staging-CI-jobb och raderar sentineler äldre än 60 min. En granskningsfixtur
+   som matchar dess mönster (`Ort = 'ZZ-create-event-test'`, e-post
+   `create-test+<uuid>@staging.test`) försvinner alltså mitt under
+   granskningen. Fixturen använder därför markörer utanför dem: en egen
+   e-postdomän `@granskning.test` (purgen tittar bara på `@staging.test`) och
+   en `Notering`-sentinel purgen aldrig läser. Skriptet LÄSER
+   `.purge-staging-policy.json` och korsläser sina markörer mot den skarpa
+   policyn före varje körning — mönstren dupliceras aldrig in i skriptet, så
+   vakten kan inte drifta ifrån den purge som faktiskt körs.
+2. **De permanenta fixturerna rörs aldrig.** Personerna `rec7F8jYc7rczwwkM`
+   (ZZ-Arbetsko Person 01) och `recqxaFNwHAdQlAqb` (ZZ-History Person 01) bär
+   exakta rollup-assertions i testsviten (TASK-31) — att länka nya anmälningar
+   till dem, eller råka radera dem, fäller tester. Skriptet skapar EGNA
+   personer, och båda record-ID:na står i `protectedRecordIds` och kan aldrig
+   raderas ens vid markör-träff.
+3. **Datumvalet.** Ett kluster på ~15 identiska sentinel-event ligger på
+   `2026-09-15`; en fixtur där är omöjlig att hitta i listan. Default är därför
+   `--dagar 8` — nära i tiden, alltså överst i "Kommande".
+4. **Beläggningen.** `Max antal platser` sätts alltid så att
+   `Anmäld beläggning (%)` stannar under 60 % (16 anmälningar ⇒ 30 platser).
+   Automation A6 skickar fullbokat-notis vid 100 %, och även om automationerna
+   är avstängda i staging idag förlitar sig fixturen inte på det.
+
+### Varför skriptet aldrig läser schemat
+
+Tokenet är least-privilege: `data.records:read` + `data.records:write`, inget
+mer. Ett anrop mot `meta/bases/.../tables` svarar **403**. Alla select-värden
+är därför PINNADE konstanter i skriptets `CONFIG`-block, verifierade mot
+[`data-model.md`](./data-model.md) § Schema cheat sheet. `typecast` används
+ALDRIG — ett ogiltigt select-värde ska ge hårt 422, aldrig tyst föda en ny
+option i basen. Av samma skäl sätts **`Månad/år` inte**: appens
+månadsgruppering härleds klient-sidan ur `Startdatum`, och att sätta fältet
+hade krävt en giltig option man inte kan läsa utan schema-scope
+(§ Kända fällor 36 + 45).
+
 ## Relaterat
 
 - [`CONTRIBUTING.md` § Testkörning](../../CONTRIBUTING.md) — kanoniska
@@ -112,3 +241,7 @@ skalerings-situation uppstår.
   — PWA-/SW-arkitekturen.
 - `tests/preview/staging-preview.test.ts` — Playwright-beviset som
   `test:preview:staging` kör.
+- `scripts/seed-review-fixture.mjs` + `scripts/test-seed-review-fixture.mjs`
+  — granskningsfixturen och dess guard-tester (§ Granskningsfixtur ovan);
+  `scripts/purge-staging-sentinels.mjs` + `.purge-staging-policy.json` — den
+  CI-purge fixturens markörer korsläses mot.
