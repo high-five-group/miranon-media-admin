@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-07-25 10:51'
-updated_date: '2026-07-26 11:19'
+updated_date: '2026-07-26 12:05'
 labels:
   - ready-for-agent
 dependencies: []
@@ -84,6 +84,25 @@ SIDOEFFEKT VÄRD ATT NOTERA: Markera-knappen hade en lapp som force-öppnade pan
 Detta reviderar S73-facits accordion-PAR (EventDetail-docblocken beskrev 'Obekräftade/Bekräftade-accordions'). Öppet bokfört.
 
 VERIFIERING: 25/25 e2e gröna över event-deltagare + event-bekraftelse inkl. axe 0 i tre lägen; biome 0 fel; typecheck rent. Renderat kontrollerat: 0 knappar och 0 chevroner på kö-rubriken, 1 kvar på arkivet. Testerna uppdaterade — accordion-testet omskrivet till 'kön är FAST och äldst först' med en REGRESSIONSVAKT som faller om en växling återinförs på kö-rubriken.
+---
+
+created: 2026-07-26 12:05
+---
+REVIEW-VÅG 3 (Marcus design-review 2026-07-26, S91) — fyra fynd (a/b/c/e), PR #238. En av dem falsifierar sin egen beställning och bokförs därför öppet.
+
+(a) KÖN TÖMS AV SERVERNS SVAR, INTE AV OMHÄMTNINGEN. Uppmätt före: 5 488 ms från kvitterad kontrollfråga till tömd kö (5 s refetch-fördröjning i mock; motsvarar Marcus ~5 s mot staging). Orsaken var inte pessimismen utan att svaret KASTADES — useConfirmAll fick redan 'confirmed[]' + 'bekraftelseSkickad' och väntade ändå på en full get-registrations. Svaret skrivs nu till listcachen i onSuccess (cancelQueries före, så en omhämtning i luften inte skriver tillbaka gammalt); onSettled-invalideringen står kvar och konvergerar i bakgrunden. Uppmätt efter: 486 ms med oförändrad fördröjning. BYGGKRAV 6 ORÖRT: patchen sker EFTER serverns bekräftelse och skriver bara de ID:n servern själv rapporterade — ett partiellt utfall flyttar exakt det som gick igenom. Skillnaden mot optimism är tidpunkten (efter svar) och källan (serverns lista).
+
+(b) ARKIVET FÖLJER KÖN OAVSETT VÄG IN. 'bekraftadeOppen' var useState(obekraftadeTotalt === 0) — beräknat en gång vid monteringen, så samma sluttillstånd fick två utseenden: uppmätt aria-expanded=false när kön tömdes i sessionen, true vid färsk sidladdning på samma data. Nu useState<boolean | null>(null) där null betyder ALDRIG VÄXLAD och härleds live; ett explicit klick skriver en boolean som därefter vinner. Härledningen läser hela eventet (inte visade köns längd) — samma storhet som det gamla startvärdet, det som ändras är NÄR den utvärderas.
+
+(c) EN REN FRAMGÅNG KVITTERAS. Utfalls-ytan tändes bara vid partial/failed/fel — det lyckade utfallet var flödets enda tysta väg. Nu MessageBox intent=success med serverns antal, role=status för AT (mutationens alertScreenReader kvar som garanterad bärare), stäng-knapp, och rensning vid nästa arbetssteg i blocket (Markera igen, flikbyte, filterväxling, ny batch). RESEARCH-GRUNDAT MÖNSTERVAL: GOV.UK notification banner (grön = 'confirm that something they're expecting to happen has happened', 'should be removed when the user moves to a new page') · Polaris Toast (egen a11y-not mot självförsvinnande kvitton: 'disappears automatically', svår att nå för syn-/finmotorik-begränsade) · Carbon (inline persisterar tills den avfärdas). Ingen timer alltså — GOV.UK:s 'moves on' översätts i en SPA till nästa arbetssteg.
+
+(e) SÅGTANDEN BORT — HYPOTESEN FALSIFIERAD ÖPPET. Beställningen löd 'reservera pill-radens HÖJD'. Mätningen håller inte med: pill-kolumnen mäter 22 px (en rad) resp. 50 px (två) mot identitetskolumnens 67 px — den är ALDRIG radens högsta element och kan därför inte driva korthöjden. Bäraren är BREDDEN: max-w-[45%] lät slotten följa innehållet, identitetskolumnen (flex-1) ärvde variationen (430 px: 157,95 px med kategori-pill mot 214,33 utan) och e-posten radbröts bara i det smala fallet. Fixen reserverar slotten: w-30 (120 px >= bredaste pillen 'Från väntelistan', uppmätt 110,95) + sm:w-[45%] som bevarar facits en-rads-pillform på breda ytor (kortets innermått ~479–500 px från 640 px och upp). Uppmätt 430 px kön: 166/145/166/145 → 166 rakt igenom. 390 px arkiv: 167/188/167/188 → ingen pill-korrelation kvar (resten följer namn-/e-postlängd = innehåll). 768/1280 px oförändrat 145/167 med pillarna på EN rad.
+
+BONUSFYND som (e)-mätningen gav gratis: samma mekanism dolde en INOM-kort-instabilitet ingen sett. När Obekräftad-pillen viker vid val krympte slotten 139,05 → 107,42 px, e-posten fick plats igen och kortet HOPPADE 166 → 145 mitt under fingret (430 px). Efter: 166 → 166 → 166 genom vilande/läge/valt — nu strukturellt i stället för av en slump. 390-px-radbrytningen är orörd; metarads-variationen står kvar (innehåll, inte layoutbrus).
+
+VAKTER: fyra nya e2e-fall, alla RÖD-VERIFIERADE mot gamla koden — (e) Received: 21 (exakt Marcus sågtand), (b) Expected 'true' Received 'false', (a) kön ej tömd inom 3 s. (a)-vakten mäter ingen klocka: den fördröjer omhämtningen och räknar landade svar, så den faller deterministiskt om koden börjar vänta på refetchen igen.
+
+VERIFIERING: 30/30 e2e över event-bekraftelse + event-deltagare inkl. axe 0; 62/62 i angränsande event-detail + event-bor-over; biome 0 fel; typecheck rent; build grön; markdownlint 0; vale 0 fel. Lessons L354 (mät orsaks-hypotesen innan du bygger den) + L355 (serverns svar är facit — kasta det inte). DoD #5 fortsatt öppen — Marcus granskning kvarstår.
 ---
 <!-- COMMENTS:END -->
 
