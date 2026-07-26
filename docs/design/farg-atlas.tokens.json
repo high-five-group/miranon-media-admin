@@ -32,10 +32,7 @@
           "id": "F1",
           "rubrik": "Två döda färgklasser i login",
           "allvar": "hög",
-          "plats": [
-            "src/routes/login.tsx:111",
-            "src/routes/login.tsx:119"
-          ],
+          "plats": ["src/routes/login.tsx:111", "src/routes/login.tsx:119"],
           "vad": "text-red-600 och text-white genererar ingen CSS. src/styles/tailwind.css:12 nollställer Tailwinds defaultpalett med --color-*: initial, och ingen av klasserna finns i @theme.",
           "verifiering": "grep -c '\\.text-white' dist/assets/*.css → 0, medan .text-text-muted och .bg-primary finns i samma fil.",
           "foljd": "Felmeddelandet vid inloggning renderas inte rött. Skärmläsare når det ändå via role=alert + aria-live.",
@@ -68,9 +65,7 @@
           "id": "F5",
           "rubrik": "Specen har drivit isär från koden",
           "allvar": "medel",
-          "plats": [
-            "docs/specs/DESIGN-SYSTEM-SPEC.md §1"
-          ],
+          "plats": ["docs/specs/DESIGN-SYSTEM-SPEC.md §1"],
           "vad": "Specen anger --mm-text-muted: var(--p-neutral-400) (3,50:1 mot vit). Koden har --p-neutral-500 (5,33:1).",
           "foljd": "Koden är rätt och specen föråldrad. Rollen används 164 gånger — den mest använda färgrollen i appen. Hade specen följts vore 164 platser under AA.",
           "ovrigt": "Specen listar också 25 komponent-tokens (--mm-stat-card-*, --mm-table-*, --mm-menu-*) som aldrig byggdes, och saknar --mm-state-hover i §1."
@@ -113,6 +108,48 @@
           "verifiering": "CIE LCh-avstånd mellan #4a6b8a och #1b4965 = 15,1. Till jämförelse ligger --p-blue-100 på 69,4 och --mm-text på 51,8 från samma färg.",
           "foljd": "tasks/lessons.md (Session 25, UNIVERSAL) slår fast att fokusringen ska ha 'ingen relation till amber, copper, info eller text' — men den har relation till info. En fokusring runt ett info-element är svår att urskilja från elementet.",
           "fallan": "Fyndet uppstod inte ur den genererade skalan; skalan avslöjade det bara. Konflikten finns i paletten som den ser ut nu, och den försvinner inte av att vi låter bli att generera. Marcus har beslutat att fokusringen står fast — då är det info-blå som behöver flytta, eller så accepteras närheten som ett medvetet undantag."
+        },
+        {
+          "id": "F11",
+          "rubrik": "Primärknappens pressed-läge är ljusare än vila",
+          "allvar": "hög",
+          "plats": ["src/styles/tokens/components.css:19"],
+          "vad": "--mm-button-primary-bg-pressed räknas som color-mix på HOVER-värdet, inte på vilo-värdet: color-mix(in srgb, var(--mm-btn-primary-hover), black 10%). Hover är ljusare än vila (neutral-700 mot neutral-800), så pressed hamnar över vilo-läget.",
+          "verifiering": "vila #282928 CIE L* 16,5 · hover #3a3a3a 24,4 · pressed #343434 21,7. Pressed ligger 5,2 L*-enheter ÖVER vila.",
+          "foljd": "Att trycka ner knappen gör den ljusare än den var innan man rörde den. Alla andra intents (danger, success) räknar pressed på sitt eget vilo-värde och mörknar korrekt — primary är den enda som ärver hoverns.",
+          "fallan": "Buggen finns i appen idag och har inget med migreringen att göra. Men den förvärras av den: med neutral-11 som hover växer inversionen från 5,2 till omkring 31 enheter. Rätta före migreringen, inte efter."
+        },
+        {
+          "id": "F12",
+          "rubrik": "Rollen för hover-yta finns, är noga motiverad, och används av en enda komponent",
+          "allvar": "medel",
+          "vad": "--mm-state-hover infördes i S91 med elva rader motivering och uppmätt ΔE00 — genomskinliga skrim i stället för opaka plattor, just för att en opak platta kollapsar mot tonala bakgrunder. Den konsumeras av ToggleButtonGroup.tsx och ingen annan.",
+          "verifiering": "hover:bg-bg-emphasized 17 träffar · hover:bg-bg-muted 4 · hover:bg-bg-subtle 3 · bg-(--mm-state-hover) 1.",
+          "foljd": "17 av 25 hover-ytor använder --mm-bg-emphasized, som i sin egen kommentar är definierad som AKTIV-markering — alltså en annan tillståndsroll. Regeln bor i en CSS-kommentar som konsumenterna aldrig läser."
+        },
+        {
+          "id": "F13",
+          "rubrik": "Mix-lagrets egen motivering upphör att gälla med tolvstegsskalorna",
+          "allvar": "medel",
+          "plats": ["src/styles/tokens/components.css:13-15"],
+          "vad": "Kommentaren lyder: 'Pressed-nyanser via color-mix eftersom semantiskt mörkare värde saknas för resp. roll.' Det var sant med den gamla paletten.",
+          "foljd": "Tolvstegsskalorna har steg 10, 11 och 12 för varje kulör. Grunden för samtliga sju black-N%-mixar försvinner — efter migreringen är de inte längre nödvändiga utan teknisk skuld. De sju error-mixarna är redan idag redundanta på ett annat sätt: ankaret är oflyttat, så de ger byte-identiska resultat, men landar mellan steg 10 och 11 och matchar alltså inget steg."
+        },
+        {
+          "id": "F14",
+          "rubrik": "Primärknappens yta och brödtexten kollapsar till samma steg",
+          "allvar": "hög",
+          "vad": "--mm-btn-primary-bg pekar på neutral-800 och --mm-text på neutral-900. Båda mappar närmast till neutral-12 i den nya skalan.",
+          "verifiering": "neutral-800 CIE L* 16,5 och neutral-900 14,2 ligger 2,3 enheter isär; neutral-12 ligger på 14,6. Rollerna matar 9 respektive 7 komponent-tokens.",
+          "foljd": "Efter en naiv migrering är primärknappens yta exakt brödtextens färg. Två ramper som varit åtskilda smälter ihop, och dialog-overlayen (byggd på --mm-text) härrör då från samma källa som primary-subtle-plattorna (byggda på --mm-btn-primary-bg). Det är inget palettfel utan ett rollbeslut som måste fattas medvetet."
+        },
+        {
+          "id": "F15",
+          "rubrik": "Fem saknade lager-2-roller är grundorsaken till spridningen",
+          "allvar": "medel",
+          "vad": "Varje mönster där samma visuella syfte uttrycks på tre till fem sätt går tillbaka på en roll som inte finns: solid inverterad yta (14 förekomster via --mm-text), vald/selected-tillstånd (11 via fyra olika roller), mätarens track och fyllnad (12 via fem implementationer), osynlig-tills-kontrast-kant (11 via NavCard-tokens utanför NavCard), samt en gemensam alfaskala.",
+          "verifiering": "Svag avdelare uttrycks på fyra sätt: divide-border 28 · border-text-muted/20 11 · bg-border 5 · border-border-light 3.",
+          "foljd": "Där rollen SAKNAS improviserar varje komponent. Där rollen FINNS men bor i en CSS-kommentar (F12) uppstår samma spridning av motsatt skäl. Mätarens tokengap är redan öppet bokfört i två komponenter oberoende av varandra, vilket gör det starkare som fynd — två skivor stötte på samma vägg."
         }
       ]
     }
@@ -124,11 +161,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9882,
-            0.9725
-          ],
+          "components": [1, 0.9882, 0.9725],
           "hex": "#fffcf8"
         },
         "$description": "--p-gold-1 · CIE L* 99.1 · kontrast mot vit 1.02:1",
@@ -148,11 +181,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9647,
-            0.9098
-          ],
+          "components": [1, 0.9647, 0.9098],
           "hex": "#fff6e8"
         },
         "$description": "--p-gold-2 · CIE L* 97.2 · kontrast mot vit 1.07:1",
@@ -172,11 +201,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9255,
-            0.8078
-          ],
+          "components": [1, 0.9255, 0.8078],
           "hex": "#ffecce"
         },
         "$description": "--p-gold-3 · CIE L* 94.2 · kontrast mot vit 1.16:1",
@@ -196,11 +221,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.8745,
-            0.6784
-          ],
+          "components": [1, 0.8745, 0.6784],
           "hex": "#ffdfad"
         },
         "$description": "--p-gold-4 · CIE L* 90.3 · kontrast mot vit 1.28:1",
@@ -220,11 +241,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9882,
-            0.8157,
-            0.5451
-          ],
+          "components": [0.9882, 0.8157, 0.5451],
           "hex": "#fcd08b"
         },
         "$description": "--p-gold-5 · CIE L* 85.8 · kontrast mot vit 1.44:1",
@@ -244,11 +261,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.949,
-            0.7569,
-            0.4353
-          ],
+          "components": [0.949, 0.7569, 0.4353],
           "hex": "#f2c16f"
         },
         "$description": "--p-gold-6 · CIE L* 80.8 · kontrast mot vit 1.66:1",
@@ -268,11 +281,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.898,
-            0.6824,
-            0.3059
-          ],
+          "components": [0.898, 0.6824, 0.3059],
           "hex": "#e5ae4e"
         },
         "$description": "--p-gold-7 · CIE L* 74.5 · kontrast mot vit 2.00:1",
@@ -292,11 +301,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8667,
-            0.6314,
-            0.1843
-          ],
+          "components": [0.8667, 0.6314, 0.1843],
           "hex": "#dda12f"
         },
         "$description": "--p-gold-8 · CIE L* 70.2 · kontrast mot vit 2.28:1",
@@ -316,11 +321,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8314,
-            0.5882,
-            0.0392
-          ],
+          "components": [0.8314, 0.5882, 0.0392],
           "hex": "#d4960a"
         },
         "$description": "--p-gold-9 · CIE L* 66.4 · kontrast mot vit 2.57:1",
@@ -340,11 +341,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7608,
-            0.5373,
-            0
-          ],
+          "components": [0.7608, 0.5373, 0],
           "hex": "#c28900"
         },
         "$description": "--p-gold-10 · CIE L* 61.1 · kontrast mot vit 3.06:1",
@@ -364,11 +361,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5882,
-            0.4078,
-            0
-          ],
+          "components": [0.5882, 0.4078, 0],
           "hex": "#966800"
         },
         "$description": "--p-gold-11 · CIE L* 47.5 · kontrast mot vit 4.91:1",
@@ -388,11 +381,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3176,
-            0.2157,
-            0
-          ],
+          "components": [0.3176, 0.2157, 0],
           "hex": "#513700"
         },
         "$description": "--p-gold-12 · CIE L* 25.2 · kontrast mot vit 11.07:1",
@@ -414,11 +403,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9882,
-            0.9843
-          ],
+          "components": [1, 0.9882, 0.9843],
           "hex": "#fffcfb"
         },
         "$description": "--p-copper-1 · CIE L* 99.2 · kontrast mot vit 1.02:1",
@@ -438,11 +423,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9412,
-            0.9137
-          ],
+          "components": [1, 0.9412, 0.9137],
           "hex": "#fff0e9"
         },
         "$description": "--p-copper-2 · CIE L* 95.8 · kontrast mot vit 1.11:1",
@@ -462,11 +443,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.8627,
-            0.8039
-          ],
+          "components": [1, 0.8627, 0.8039],
           "hex": "#ffdccd"
         },
         "$description": "--p-copper-3 · CIE L* 90.3 · kontrast mot vit 1.28:1",
@@ -486,11 +463,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.7647,
-            0.6706
-          ],
+          "components": [0.9922, 0.7647, 0.6706],
           "hex": "#fdc3ab"
         },
         "$description": "--p-copper-4 · CIE L* 83.4 · kontrast mot vit 1.55:1",
@@ -510,11 +483,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9373,
-            0.6706,
-            0.5569
-          ],
+          "components": [0.9373, 0.6706, 0.5569],
           "hex": "#efab8e"
         },
         "$description": "--p-copper-5 · CIE L* 75.7 · kontrast mot vit 1.93:1",
@@ -534,11 +503,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8667,
-            0.5686,
-            0.4392
-          ],
+          "components": [0.8667, 0.5686, 0.4392],
           "hex": "#dd9170"
         },
         "$description": "--p-copper-6 · CIE L* 67.1 · kontrast mot vit 2.51:1",
@@ -558,11 +523,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.4471,
-            0.302
-          ],
+          "components": [0.7686, 0.4471, 0.302],
           "hex": "#c4724d"
         },
         "$description": "--p-copper-7 · CIE L* 56.4 · kontrast mot vit 3.58:1",
@@ -582,11 +543,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7059,
-            0.3608,
-            0.2
-          ],
+          "components": [0.7059, 0.3608, 0.2],
           "hex": "#b45c33"
         },
         "$description": "--p-copper-8 · CIE L* 49.0 · kontrast mot vit 4.65:1",
@@ -606,11 +563,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6392,
-            0.2863,
-            0.1098
-          ],
+          "components": [0.6392, 0.2863, 0.1098],
           "hex": "#a3491c"
         },
         "$description": "--p-copper-9 · CIE L* 42.2 · kontrast mot vit 5.95:1",
@@ -630,11 +583,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5922,
-            0.251,
-            0.0706
-          ],
+          "components": [0.5922, 0.251, 0.0706],
           "hex": "#974012"
         },
         "$description": "--p-copper-10 · CIE L* 38.4 · kontrast mot vit 6.87:1",
@@ -654,11 +603,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4784,
-            0.1765,
-            0
-          ],
+          "components": [0.4784, 0.1765, 0],
           "hex": "#7a2d00"
         },
         "$description": "--p-copper-11 · CIE L* 29.5 · kontrast mot vit 9.53:1",
@@ -678,11 +623,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.251,
-            0.0784,
-            0
-          ],
+          "components": [0.251, 0.0784, 0],
           "hex": "#401400"
         },
         "$description": "--p-copper-12 · CIE L* 13.2 · kontrast mot vit 15.93:1",
@@ -704,11 +645,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.9922,
-            0.9882
-          ],
+          "components": [0.9922, 0.9922, 0.9882],
           "hex": "#fdfdfc"
         },
         "$description": "--p-neutral-1 · CIE L* 99.3 · kontrast mot vit 1.02:1",
@@ -728,11 +665,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9569,
-            0.9529,
-            0.949
-          ],
+          "components": [0.9569, 0.9529, 0.949],
           "hex": "#f4f3f2"
         },
         "$description": "--p-neutral-2 · CIE L* 95.9 · kontrast mot vit 1.11:1",
@@ -752,11 +685,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.898,
-            0.898,
-            0.8863
-          ],
+          "components": [0.898, 0.898, 0.8863],
           "hex": "#e5e5e2"
         },
         "$description": "--p-neutral-3 · CIE L* 90.9 · kontrast mot vit 1.26:1",
@@ -776,11 +705,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8314,
-            0.8275,
-            0.8157
-          ],
+          "components": [0.8314, 0.8275, 0.8157],
           "hex": "#d4d3d0"
         },
         "$description": "--p-neutral-4 · CIE L* 84.6 · kontrast mot vit 1.50:1",
@@ -800,11 +725,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7529,
-            0.749,
-            0.7333
-          ],
+          "components": [0.7529, 0.749, 0.7333],
           "hex": "#c0bfbb"
         },
         "$description": "--p-neutral-5 · CIE L* 77.3 · kontrast mot vit 1.84:1",
@@ -824,11 +745,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0.6627,
-            0.6431
-          ],
+          "components": [0.6627, 0.6627, 0.6431],
           "hex": "#a9a9a4"
         },
         "$description": "--p-neutral-6 · CIE L* 69.1 · kontrast mot vit 2.36:1",
@@ -848,11 +765,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5569,
-            0.5529,
-            0.5373
-          ],
+          "components": [0.5569, 0.5529, 0.5373],
           "hex": "#8e8d89"
         },
         "$description": "--p-neutral-7 · CIE L* 58.6 · kontrast mot vit 3.32:1",
@@ -872,11 +785,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4863,
-            0.4824,
-            0.4627
-          ],
+          "components": [0.4863, 0.4824, 0.4627],
           "hex": "#7c7b76"
         },
         "$description": "--p-neutral-8 · CIE L* 51.6 · kontrast mot vit 4.24:1",
@@ -896,11 +805,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4196,
-            0.4196,
-            0.4196
-          ],
+          "components": [0.4196, 0.4196, 0.4196],
           "hex": "#6b6b6b"
         },
         "$description": "--p-neutral-9 · CIE L* 45.2 · kontrast mot vit 5.33:1",
@@ -920,11 +825,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3843,
-            0.3843,
-            0.3647
-          ],
+          "components": [0.3843, 0.3843, 0.3647],
           "hex": "#62625d"
         },
         "$description": "--p-neutral-10 · CIE L* 41.4 · kontrast mot vit 6.13:1",
@@ -944,11 +845,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.298,
-            0.298,
-            0.2784
-          ],
+          "components": [0.298, 0.298, 0.2784],
           "hex": "#4c4c47"
         },
         "$description": "--p-neutral-11 · CIE L* 32.2 · kontrast mot vit 8.63:1",
@@ -968,11 +865,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1451,
-            0.1451,
-            0.1333
-          ],
+          "components": [0.1451, 0.1451, 0.1333],
           "hex": "#252522"
         },
         "$description": "--p-neutral-12 · CIE L* 14.6 · kontrast mot vit 15.37:1",
@@ -994,11 +887,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9882,
-            0.9922,
-            0.9804
-          ],
+          "components": [0.9882, 0.9922, 0.9804],
           "hex": "#fcfdfa"
         },
         "$description": "--p-sage-1 · CIE L* 99.2 · kontrast mot vit 1.02:1",
@@ -1018,11 +907,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9451,
-            0.9569,
-            0.9333
-          ],
+          "components": [0.9451, 0.9569, 0.9333],
           "hex": "#f1f4ee"
         },
         "$description": "--p-sage-2 · CIE L* 95.8 · kontrast mot vit 1.11:1",
@@ -1042,11 +927,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8824,
-            0.902,
-            0.8667
-          ],
+          "components": [0.8824, 0.902, 0.8667],
           "hex": "#e1e6dd"
         },
         "$description": "--p-sage-3 · CIE L* 90.7 · kontrast mot vit 1.27:1",
@@ -1066,11 +947,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8078,
-            0.8353,
-            0.7843
-          ],
+          "components": [0.8078, 0.8353, 0.7843],
           "hex": "#ced5c8"
         },
         "$description": "--p-sage-4 · CIE L* 84.4 · kontrast mot vit 1.50:1",
@@ -1090,11 +967,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7216,
-            0.7529,
-            0.6941
-          ],
+          "components": [0.7216, 0.7529, 0.6941],
           "hex": "#b8c0b1"
         },
         "$description": "--p-sage-5 · CIE L* 76.7 · kontrast mot vit 1.87:1",
@@ -1114,11 +987,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6275,
-            0.6627,
-            0.6
-          ],
+          "components": [0.6275, 0.6627, 0.6],
           "hex": "#a0a999"
         },
         "$description": "--p-sage-6 · CIE L* 68.1 · kontrast mot vit 2.43:1",
@@ -1138,11 +1007,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5176,
-            0.5569,
-            0.4824
-          ],
+          "components": [0.5176, 0.5569, 0.4824],
           "hex": "#848e7b"
         },
         "$description": "--p-sage-7 · CIE L* 57.7 · kontrast mot vit 3.42:1",
@@ -1162,11 +1027,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4431,
-            0.4863,
-            0.4078
-          ],
+          "components": [0.4431, 0.4863, 0.4078],
           "hex": "#717c68"
         },
         "$description": "--p-sage-8 · CIE L* 50.6 · kontrast mot vit 4.39:1",
@@ -1186,11 +1047,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3765,
-            0.4196,
-            0.3412
-          ],
+          "components": [0.3765, 0.4196, 0.3412],
           "hex": "#606b57"
         },
         "$description": "--p-sage-9 · CIE L* 43.8 · kontrast mot vit 5.62:1",
@@ -1210,11 +1067,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3412,
-            0.3804,
-            0.3059
-          ],
+          "components": [0.3412, 0.3804, 0.3059],
           "hex": "#57614e"
         },
         "$description": "--p-sage-10 · CIE L* 39.8 · kontrast mot vit 6.51:1",
@@ -1234,11 +1087,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2627,
-            0.298,
-            0.2314
-          ],
+          "components": [0.2627, 0.298, 0.2314],
           "hex": "#434c3b"
         },
         "$description": "--p-sage-11 · CIE L* 31.1 · kontrast mot vit 8.99:1",
@@ -1258,11 +1107,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1216,
-            0.149,
-            0.098
-          ],
+          "components": [0.1216, 0.149, 0.098],
           "hex": "#1f2619"
         },
         "$description": "--p-sage-12 · CIE L* 14.1 · kontrast mot vit 15.56:1",
@@ -1284,11 +1129,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9843,
-            0.9922,
-            1
-          ],
+          "components": [0.9843, 0.9922, 1],
           "hex": "#fbfdff"
         },
         "$description": "--p-blue-1 · CIE L* 99.2 · kontrast mot vit 1.02:1",
@@ -1308,11 +1149,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9216,
-            0.9608,
-            1
-          ],
+          "components": [0.9216, 0.9608, 1],
           "hex": "#ebf5ff"
         },
         "$description": "--p-blue-2 · CIE L* 96.1 · kontrast mot vit 1.10:1",
@@ -1332,11 +1169,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8196,
-            0.9059,
-            1
-          ],
+          "components": [0.8196, 0.9059, 1],
           "hex": "#d1e7ff"
         },
         "$description": "--p-blue-3 · CIE L* 90.7 · kontrast mot vit 1.27:1",
@@ -1356,11 +1189,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6941,
-            0.8431,
-            1
-          ],
+          "components": [0.6941, 0.8431, 1],
           "hex": "#b1d7ff"
         },
         "$description": "--p-blue-4 · CIE L* 84.6 · kontrast mot vit 1.50:1",
@@ -1380,11 +1209,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5765,
-            0.7647,
-            0.9608
-          ],
+          "components": [0.5765, 0.7647, 0.9608],
           "hex": "#93c3f5"
         },
         "$description": "--p-blue-5 · CIE L* 77.2 · kontrast mot vit 1.85:1",
@@ -1404,11 +1229,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4588,
-            0.6745,
-            0.898
-          ],
+          "components": [0.4588, 0.6745, 0.898],
           "hex": "#75ace5"
         },
         "$description": "--p-blue-6 · CIE L* 68.7 · kontrast mot vit 2.39:1",
@@ -1428,11 +1249,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3216,
-            0.5647,
-            0.8078
-          ],
+          "components": [0.3216, 0.5647, 0.8078],
           "hex": "#5290ce"
         },
         "$description": "--p-blue-7 · CIE L* 58.2 · kontrast mot vit 3.37:1",
@@ -1452,11 +1269,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2157,
-            0.4902,
-            0.7529
-          ],
+          "components": [0.2157, 0.4902, 0.7529],
           "hex": "#377dc0"
         },
         "$description": "--p-blue-8 · CIE L* 51.0 · kontrast mot vit 4.32:1",
@@ -1476,11 +1289,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1216,
-            0.4235,
-            0.6902
-          ],
+          "components": [0.1216, 0.4235, 0.6902],
           "hex": "#1f6cb0"
         },
         "$description": "--p-blue-9 · CIE L* 44.4 · kontrast mot vit 5.48:1",
@@ -1500,11 +1309,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.0784,
-            0.3843,
-            0.6431
-          ],
+          "components": [0.0784, 0.3843, 0.6431],
           "hex": "#1462a4"
         },
         "$description": "--p-blue-10 · CIE L* 40.5 · kontrast mot vit 6.34:1",
@@ -1524,11 +1329,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0,
-            0.298,
-            0.5216
-          ],
+          "components": [0, 0.298, 0.5216],
           "hex": "#004c85"
         },
         "$description": "--p-blue-11 · CIE L* 31.5 · kontrast mot vit 8.85:1",
@@ -1548,11 +1349,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0,
-            0.1451,
-            0.2745
-          ],
+          "components": [0, 0.1451, 0.2745],
           "hex": "#002546"
         },
         "$description": "--p-blue-12 · CIE L* 14.2 · kontrast mot vit 15.52:1",
@@ -1574,11 +1371,7 @@
       "1": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9882,
-            0.9843
-          ],
+          "components": [1, 0.9882, 0.9843],
           "hex": "#fffcfb"
         },
         "$description": "--p-red-1 · CIE L* 99.2 · kontrast mot vit 1.02:1",
@@ -1598,11 +1391,7 @@
       "2": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.9333,
-            0.9216
-          ],
+          "components": [1, 0.9333, 0.9216],
           "hex": "#ffeeeb"
         },
         "$description": "--p-red-2 · CIE L* 95.3 · kontrast mot vit 1.12:1",
@@ -1622,11 +1411,7 @@
       "3": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.8431,
-            0.8157
-          ],
+          "components": [1, 0.8431, 0.8157],
           "hex": "#ffd7d0"
         },
         "$description": "--p-red-3 · CIE L* 89.1 · kontrast mot vit 1.32:1",
@@ -1646,11 +1431,7 @@
       "4": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            0.7294,
-            0.6863
-          ],
+          "components": [1, 0.7294, 0.6863],
           "hex": "#ffbaaf"
         },
         "$description": "--p-red-4 · CIE L* 81.6 · kontrast mot vit 1.63:1",
@@ -1670,11 +1451,7 @@
       "5": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9961,
-            0.5882,
-            0.5255
-          ],
+          "components": [0.9961, 0.5882, 0.5255],
           "hex": "#fe9686"
         },
         "$description": "--p-red-5 · CIE L* 72.6 · kontrast mot vit 2.12:1",
@@ -1694,11 +1471,7 @@
       "6": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9176,
-            0.4588,
-            0.4
-          ],
+          "components": [0.9176, 0.4588, 0.4],
           "hex": "#ea7566"
         },
         "$description": "--p-red-6 · CIE L* 62.7 · kontrast mot vit 2.90:1",
@@ -1718,11 +1491,7 @@
       "7": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8118,
-            0.3059,
-            0.2471
-          ],
+          "components": [0.8118, 0.3059, 0.2471],
           "hex": "#cf4e3f"
         },
         "$description": "--p-red-7 · CIE L* 50.8 · kontrast mot vit 4.36:1",
@@ -1742,11 +1511,7 @@
       "8": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7412,
-            0.1765,
-            0.1333
-          ],
+          "components": [0.7412, 0.1765, 0.1333],
           "hex": "#bd2d22"
         },
         "$description": "--p-red-8 · CIE L* 42.5 · kontrast mot vit 5.90:1",
@@ -1766,11 +1531,7 @@
       "9": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0,
-            0
-          ],
+          "components": [0.6627, 0, 0],
           "hex": "#a90000"
         },
         "$description": "--p-red-9 · CIE L* 34.9 · kontrast mot vit 7.82:1",
@@ -1790,11 +1551,7 @@
       "10": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6039,
-            0,
-            0
-          ],
+          "components": [0.6039, 0, 0],
           "hex": "#9a0000"
         },
         "$description": "--p-red-10 · CIE L* 31.5 · kontrast mot vit 8.85:1",
@@ -1814,11 +1571,7 @@
       "11": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4745,
-            0,
-            0
-          ],
+          "components": [0.4745, 0, 0],
           "hex": "#790000"
         },
         "$description": "--p-red-11 · CIE L* 23.9 · kontrast mot vit 11.58:1",
@@ -1838,11 +1591,7 @@
       "12": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2471,
-            0,
-            0
-          ],
+          "components": [0.2471, 0, 0],
           "hex": "#3f0000"
         },
         "$description": "--p-red-12 · CIE L* 9.5 · kontrast mot vit 17.34:1",
@@ -1864,11 +1613,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9843,
-            0.9529,
-            0.8784
-          ],
+          "components": [0.9843, 0.9529, 0.8784],
           "hex": "#fbf3e0"
         },
         "$description": "--p-gold-100 · CIE L* 96.0 · kontrast mot vit 1.11:1",
@@ -1888,11 +1633,7 @@
       "200": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9608,
-            0.902,
-            0.7373
-          ],
+          "components": [0.9608, 0.902, 0.7373],
           "hex": "#f5e6bc"
         },
         "$description": "--p-gold-200 · CIE L* 91.5 · kontrast mot vit 1.24:1",
@@ -1912,11 +1653,7 @@
       "300": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9412,
-            0.8392,
-            0.5412
-          ],
+          "components": [0.9412, 0.8392, 0.5412],
           "hex": "#f0d68a"
         },
         "$description": "--p-gold-300 · CIE L* 86.2 · kontrast mot vit 1.43:1",
@@ -1936,11 +1673,7 @@
       "400": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.6588,
-            0.251
-          ],
+          "components": [0.7686, 0.6588, 0.251],
           "hex": "#c4a840"
         },
         "$description": "--p-gold-400 · CIE L* 69.5 · kontrast mot vit 2.33:1",
@@ -1960,11 +1693,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8314,
-            0.5882,
-            0.0392
-          ],
+          "components": [0.8314, 0.5882, 0.0392],
           "hex": "#d4960a"
         },
         "$description": "--p-gold-500 · CIE L* 66.4 · kontrast mot vit 2.57:1",
@@ -1984,11 +1713,7 @@
       "600": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7216,
-            0.502,
-            0.0392
-          ],
+          "components": [0.7216, 0.502, 0.0392],
           "hex": "#b8800a"
         },
         "$description": "--p-gold-600 · CIE L* 57.7 · kontrast mot vit 3.43:1",
@@ -2008,11 +1733,7 @@
       "700": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5882,
-            0.4078,
-            0.0392
-          ],
+          "components": [0.5882, 0.4078, 0.0392],
           "hex": "#96680a"
         },
         "$description": "--p-gold-700 · CIE L* 47.5 · kontrast mot vit 4.91:1",
@@ -2034,11 +1755,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9922,
-            0.9569,
-            0.9333
-          ],
+          "components": [0.9922, 0.9569, 0.9333],
           "hex": "#fdf4ee"
         },
         "$description": "--p-copper-100 · CIE L* 96.7 · kontrast mot vit 1.09:1",
@@ -2058,11 +1775,7 @@
       "200": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9608,
-            0.8471,
-            0.7686
-          ],
+          "components": [0.9608, 0.8471, 0.7686],
           "hex": "#f5d8c4"
         },
         "$description": "--p-copper-200 · CIE L* 88.2 · kontrast mot vit 1.35:1",
@@ -2082,11 +1795,7 @@
       "400": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.4157,
-            0.2275
-          ],
+          "components": [0.7686, 0.4157, 0.2275],
           "hex": "#c46a3a"
         },
         "$description": "--p-copper-400 · CIE L* 54.4 · kontrast mot vit 3.84:1",
@@ -2106,11 +1815,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6392,
-            0.2863,
-            0.1098
-          ],
+          "components": [0.6392, 0.2863, 0.1098],
           "hex": "#a3491c"
         },
         "$description": "--p-copper-500 · CIE L* 42.2 · kontrast mot vit 5.95:1",
@@ -2130,11 +1835,7 @@
       "600": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5412,
-            0.2392,
-            0.0902
-          ],
+          "components": [0.5412, 0.2392, 0.0902],
           "hex": "#8a3d17"
         },
         "$description": "--p-copper-600 · CIE L* 35.6 · kontrast mot vit 7.61:1",
@@ -2156,11 +1857,7 @@
       "0": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            1,
-            1,
-            1
-          ],
+          "components": [1, 1, 1],
           "hex": "#ffffff"
         },
         "$description": "--p-neutral-0 · CIE L* 100.0 · kontrast mot vit 1.00:1",
@@ -2180,11 +1877,7 @@
       "25": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9804,
-            0.9804,
-            0.9725
-          ],
+          "components": [0.9804, 0.9804, 0.9725],
           "hex": "#fafaf8"
         },
         "$description": "--p-neutral-25 · CIE L* 98.2 · kontrast mot vit 1.05:1",
@@ -2204,11 +1897,7 @@
       "50": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9608,
-            0.9608,
-            0.9529
-          ],
+          "components": [0.9608, 0.9608, 0.9529],
           "hex": "#f5f5f3"
         },
         "$description": "--p-neutral-50 · CIE L* 96.5 · kontrast mot vit 1.09:1",
@@ -2228,11 +1917,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9294,
-            0.9333,
-            0.9137
-          ],
+          "components": [0.9294, 0.9333, 0.9137],
           "hex": "#edeee9"
         },
         "$description": "--p-neutral-100 · CIE L* 93.9 · kontrast mot vit 1.17:1",
@@ -2252,11 +1937,7 @@
       "200": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.8824,
-            0.8902,
-            0.8824
-          ],
+          "components": [0.8824, 0.8902, 0.8824],
           "hex": "#e1e3e1"
         },
         "$description": "--p-neutral-200 · CIE L* 90.0 · kontrast mot vit 1.29:1",
@@ -2276,11 +1957,7 @@
       "300": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.7686,
-            0.7686,
-            0.7608
-          ],
+          "components": [0.7686, 0.7686, 0.7608],
           "hex": "#c4c4c2"
         },
         "$description": "--p-neutral-300 · CIE L* 79.1 · kontrast mot vit 1.75:1",
@@ -2300,11 +1977,7 @@
       "400": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.5373,
-            0.5373,
-            0.5373
-          ],
+          "components": [0.5373, 0.5373, 0.5373],
           "hex": "#898989"
         },
         "$description": "--p-neutral-400 · CIE L* 57.1 · kontrast mot vit 3.50:1",
@@ -2324,11 +1997,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.4196,
-            0.4196,
-            0.4196
-          ],
+          "components": [0.4196, 0.4196, 0.4196],
           "hex": "#6b6b6b"
         },
         "$description": "--p-neutral-500 · CIE L* 45.2 · kontrast mot vit 5.33:1",
@@ -2348,11 +2017,7 @@
       "600": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3216,
-            0.3176,
-            0.3176
-          ],
+          "components": [0.3216, 0.3176, 0.3176],
           "hex": "#525151"
         },
         "$description": "--p-neutral-600 · CIE L* 34.5 · kontrast mot vit 7.91:1",
@@ -2372,11 +2037,7 @@
       "700": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2275,
-            0.2275,
-            0.2275
-          ],
+          "components": [0.2275, 0.2275, 0.2275],
           "hex": "#3a3a3a"
         },
         "$description": "--p-neutral-700 · CIE L* 24.4 · kontrast mot vit 11.37:1",
@@ -2396,11 +2057,7 @@
       "800": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1569,
-            0.1608,
-            0.1569
-          ],
+          "components": [0.1569, 0.1608, 0.1569],
           "hex": "#282928"
         },
         "$description": "--p-neutral-800 · CIE L* 16.5 · kontrast mot vit 14.60:1",
@@ -2420,11 +2077,7 @@
       "900": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1412,
-            0.1412,
-            0.1412
-          ],
+          "components": [0.1412, 0.1412, 0.1412],
           "hex": "#242424"
         },
         "$description": "--p-neutral-900 · CIE L* 14.2 · kontrast mot vit 15.52:1",
@@ -2444,11 +2097,7 @@
       "1000": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.102,
-            0.102,
-            0.102
-          ],
+          "components": [0.102, 0.102, 0.102],
           "hex": "#1a1a1a"
         },
         "$description": "--p-neutral-1000 · CIE L* 9.3 · kontrast mot vit 17.40:1",
@@ -2470,11 +2119,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9373,
-            0.9647,
-            1
-          ],
+          "components": [0.9373, 0.9647, 1],
           "hex": "#eff6ff"
         },
         "$description": "--p-blue-100 · CIE L* 96.6 · kontrast mot vit 1.09:1",
@@ -2494,11 +2139,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.2902,
-            0.4196,
-            0.5412
-          ],
+          "components": [0.2902, 0.4196, 0.5412],
           "hex": "#4a6b8a"
         },
         "$description": "--p-blue-500 · CIE L* 44.0 · kontrast mot vit 5.58:1",
@@ -2518,11 +2159,7 @@
       "700": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.1059,
-            0.2863,
-            0.3961
-          ],
+          "components": [0.1059, 0.2863, 0.3961],
           "hex": "#1b4965"
         },
         "$description": "--p-blue-700 · CIE L* 29.3 · kontrast mot vit 9.60:1",
@@ -2544,11 +2181,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9961,
-            0.949,
-            0.949
-          ],
+          "components": [0.9961, 0.949, 0.949],
           "hex": "#fef2f2"
         },
         "$description": "--p-red-100 · CIE L* 96.4 · kontrast mot vit 1.09:1",
@@ -2568,11 +2201,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.6627,
-            0,
-            0
-          ],
+          "components": [0.6627, 0, 0],
           "hex": "#a90000"
         },
         "$description": "--p-red-500 · CIE L* 34.9 · kontrast mot vit 7.82:1",
@@ -2594,11 +2223,7 @@
       "100": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.9412,
-            0.9922,
-            0.9569
-          ],
+          "components": [0.9412, 0.9922, 0.9569],
           "hex": "#f0fdf4"
         },
         "$description": "--p-green-100 · CIE L* 98.2 · kontrast mot vit 1.05:1",
@@ -2618,11 +2243,7 @@
       "500": {
         "$value": {
           "colorSpace": "srgb",
-          "components": [
-            0.3765,
-            0.4196,
-            0.3412
-          ],
+          "components": [0.3765, 0.4196, 0.3412],
           "hex": "#606b57"
         },
         "$description": "--p-green-500 · CIE L* 43.8 · kontrast mot vit 5.62:1",
@@ -3461,11 +3082,7 @@
     "button-primary-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1569,
-          0.1608,
-          0.1569
-        ],
+        "components": [0.1569, 0.1608, 0.1569],
         "hex": "#282928"
       },
       "$description": "--mm-button-primary-bg → var(--mm-btn-primary-bg)",
@@ -3474,9 +3091,7 @@
           "cssVar": "--mm-button-primary-bg",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-btn-primary-bg"
-          ],
+          "beror": ["--mm-btn-primary-bg"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3485,11 +3100,7 @@
     "button-primary-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          1,
-          1,
-          1
-        ],
+        "components": [1, 1, 1],
         "hex": "#ffffff"
       },
       "$description": "--mm-button-primary-text → var(--mm-btn-primary-text)",
@@ -3498,9 +3109,7 @@
           "cssVar": "--mm-button-primary-text",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-btn-primary-text"
-          ],
+          "beror": ["--mm-btn-primary-text"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3509,11 +3118,7 @@
     "button-primary-bg-hover": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.2275,
-          0.2275,
-          0.2275
-        ],
+        "components": [0.2275, 0.2275, 0.2275],
         "hex": "#3a3a3a"
       },
       "$description": "--mm-button-primary-bg-hover → var(--mm-btn-primary-hover)",
@@ -3522,9 +3127,7 @@
           "cssVar": "--mm-button-primary-bg-hover",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-btn-primary-hover"
-          ],
+          "beror": ["--mm-btn-primary-hover"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3533,11 +3136,7 @@
     "button-primary-bg-pressed": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.2039,
-          0.2039,
-          0.2039
-        ],
+        "components": [0.2039, 0.2039, 0.2039],
         "hex": "#343434"
       },
       "$description": "--mm-button-primary-bg-pressed → color-mix(in srgb, var(--mm-btn-primary-hover), black 10%)",
@@ -3546,9 +3145,7 @@
           "cssVar": "--mm-button-primary-bg-pressed",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-btn-primary-hover"
-          ],
+          "beror": ["--mm-btn-primary-hover"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3561,9 +3158,7 @@
           "cssVar": "--mm-button-secondary-bg",
           "grupp": "button",
           "typ": "transparent",
-          "beror": [
-            "--mm-btn-secondary-bg"
-          ],
+          "beror": ["--mm-btn-secondary-bg"],
           "alfa": 0,
           "anvandning": 1
         }
@@ -3572,11 +3167,7 @@
     "button-secondary-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1569,
-          0.1608,
-          0.1569
-        ],
+        "components": [0.1569, 0.1608, 0.1569],
         "hex": "#282928"
       },
       "$description": "--mm-button-secondary-text → var(--mm-btn-secondary-text)",
@@ -3585,9 +3176,7 @@
           "cssVar": "--mm-button-secondary-text",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-btn-secondary-text"
-          ],
+          "beror": ["--mm-btn-secondary-text"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3596,11 +3185,7 @@
     "button-secondary-border": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.8824,
-          0.8902,
-          0.8824
-        ],
+        "components": [0.8824, 0.8902, 0.8824],
         "hex": "#e1e3e1"
       },
       "$description": "--mm-button-secondary-border → var(--mm-btn-secondary-border)",
@@ -3609,9 +3194,7 @@
           "cssVar": "--mm-button-secondary-border",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-btn-secondary-border"
-          ],
+          "beror": ["--mm-btn-secondary-border"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3620,11 +3203,7 @@
     "button-secondary-bg-hover": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.9608,
-          0.9608,
-          0.9529
-        ],
+        "components": [0.9608, 0.9608, 0.9529],
         "hex": "#f5f5f3"
       },
       "$description": "--mm-button-secondary-bg-hover → var(--mm-bg-muted)",
@@ -3633,9 +3212,7 @@
           "cssVar": "--mm-button-secondary-bg-hover",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-bg-muted"
-          ],
+          "beror": ["--mm-bg-muted"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3644,11 +3221,7 @@
     "button-secondary-bg-pressed": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.8824,
-          0.8824,
-          0.8784
-        ],
+        "components": [0.8824, 0.8824, 0.8784],
         "hex": "#e1e1e0"
       },
       "$description": "--mm-button-secondary-bg-pressed → color-mix(in srgb, var(--mm-bg-muted), black 8%)",
@@ -3657,9 +3230,7 @@
           "cssVar": "--mm-button-secondary-bg-pressed",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-bg-muted"
-          ],
+          "beror": ["--mm-bg-muted"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3668,11 +3239,7 @@
     "button-danger-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-button-danger-bg → var(--mm-error)",
@@ -3681,9 +3248,7 @@
           "cssVar": "--mm-button-danger-bg",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3692,11 +3257,7 @@
     "button-danger-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          1,
-          1,
-          1
-        ],
+        "components": [1, 1, 1],
         "hex": "#ffffff"
       },
       "$description": "--mm-button-danger-text → var(--mm-text-inverse)",
@@ -3705,9 +3266,7 @@
           "cssVar": "--mm-button-danger-text",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-text-inverse"
-          ],
+          "beror": ["--mm-text-inverse"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3716,11 +3275,7 @@
     "button-danger-bg-hover": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.5843,
-          0,
-          0
-        ],
+        "components": [0.5843, 0, 0],
         "hex": "#950000"
       },
       "$description": "--mm-button-danger-bg-hover → color-mix(in srgb, var(--mm-error), black 12%)",
@@ -3729,9 +3284,7 @@
           "cssVar": "--mm-button-danger-bg-hover",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3740,11 +3293,7 @@
     "button-danger-bg-pressed": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.5647,
-          0,
-          0
-        ],
+        "components": [0.5647, 0, 0],
         "hex": "#900000"
       },
       "$description": "--mm-button-danger-bg-pressed → color-mix(in srgb, var(--mm-error), black 15%)",
@@ -3753,9 +3302,7 @@
           "cssVar": "--mm-button-danger-bg-pressed",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3777,11 +3324,7 @@
     "button-ghost-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1412,
-          0.1412,
-          0.1412
-        ],
+        "components": [0.1412, 0.1412, 0.1412],
         "hex": "#242424"
       },
       "$description": "--mm-button-ghost-text → var(--mm-text)",
@@ -3790,9 +3333,7 @@
           "cssVar": "--mm-button-ghost-text",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-text"
-          ],
+          "beror": ["--mm-text"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3801,11 +3342,7 @@
     "button-ghost-bg-hover": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.9608,
-          0.9608,
-          0.9529
-        ],
+        "components": [0.9608, 0.9608, 0.9529],
         "hex": "#f5f5f3"
       },
       "$description": "--mm-button-ghost-bg-hover → var(--mm-bg-muted)",
@@ -3814,9 +3351,7 @@
           "cssVar": "--mm-button-ghost-bg-hover",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-bg-muted"
-          ],
+          "beror": ["--mm-bg-muted"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3825,11 +3360,7 @@
     "button-ghost-bg-pressed": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.8824,
-          0.8824,
-          0.8784
-        ],
+        "components": [0.8824, 0.8824, 0.8784],
         "hex": "#e1e1e0"
       },
       "$description": "--mm-button-ghost-bg-pressed → color-mix(in srgb, var(--mm-bg-muted), black 8%)",
@@ -3838,9 +3369,7 @@
           "cssVar": "--mm-button-ghost-bg-pressed",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-bg-muted"
-          ],
+          "beror": ["--mm-bg-muted"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3849,11 +3378,7 @@
     "button-success-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3765,
-          0.4196,
-          0.3412
-        ],
+        "components": [0.3765, 0.4196, 0.3412],
         "hex": "#606b57"
       },
       "$description": "--mm-button-success-bg → var(--mm-success)",
@@ -3862,9 +3387,7 @@
           "cssVar": "--mm-button-success-bg",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3873,11 +3396,7 @@
     "button-success-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          1,
-          1,
-          1
-        ],
+        "components": [1, 1, 1],
         "hex": "#ffffff"
       },
       "$description": "--mm-button-success-text → var(--mm-text-inverse)",
@@ -3886,9 +3405,7 @@
           "cssVar": "--mm-button-success-text",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-text-inverse"
-          ],
+          "beror": ["--mm-text-inverse"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3897,11 +3414,7 @@
     "button-success-bg-hover": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3294,
-          0.3686,
-          0.302
-        ],
+        "components": [0.3294, 0.3686, 0.302],
         "hex": "#545e4d"
       },
       "$description": "--mm-button-success-bg-hover → color-mix(in srgb, var(--mm-success), black 12%)",
@@ -3910,9 +3423,7 @@
           "cssVar": "--mm-button-success-bg-hover",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3921,11 +3432,7 @@
     "button-success-bg-pressed": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3216,
-          0.3569,
-          0.2902
-        ],
+        "components": [0.3216, 0.3569, 0.2902],
         "hex": "#525b4a"
       },
       "$description": "--mm-button-success-bg-pressed → color-mix(in srgb, var(--mm-success), black 15%)",
@@ -3934,9 +3441,7 @@
           "cssVar": "--mm-button-success-bg-pressed",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3945,11 +3450,7 @@
     "button-primary-outline-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1569,
-          0.1608,
-          0.1569
-        ],
+        "components": [0.1569, 0.1608, 0.1569],
         "hex": "#282928"
       },
       "$description": "--mm-button-primary-outline-text → var(--mm-btn-primary-bg)",
@@ -3958,9 +3459,7 @@
           "cssVar": "--mm-button-primary-outline-text",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-btn-primary-bg"
-          ],
+          "beror": ["--mm-btn-primary-bg"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -3969,11 +3468,7 @@
     "button-primary-outline-border": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1569,
-          0.1608,
-          0.1569
-        ],
+        "components": [0.1569, 0.1608, 0.1569],
         "hex": "#282928"
       },
       "$description": "--mm-button-primary-outline-border → var(--mm-btn-primary-bg)",
@@ -3982,9 +3477,7 @@
           "cssVar": "--mm-button-primary-outline-border",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-btn-primary-bg"
-          ],
+          "beror": ["--mm-btn-primary-bg"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4006,11 +3499,7 @@
     "button-primary-outline-bg-hover": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1569,
-          0.1608,
-          0.1569
-        ],
+        "components": [0.1569, 0.1608, 0.1569],
         "hex": "#282928"
       },
       "$description": "--mm-button-primary-outline-bg-hover → color-mix( in srgb, var(--mm-btn-primary-bg) 8%, transparent )",
@@ -4019,9 +3508,7 @@
           "cssVar": "--mm-button-primary-outline-bg-hover",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-btn-primary-bg"
-          ],
+          "beror": ["--mm-btn-primary-bg"],
           "alfa": 0.08,
           "anvandning": 1
         }
@@ -4030,11 +3517,7 @@
     "button-primary-outline-bg-pressed": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1569,
-          0.1608,
-          0.1569
-        ],
+        "components": [0.1569, 0.1608, 0.1569],
         "hex": "#282928"
       },
       "$description": "--mm-button-primary-outline-bg-pressed → color-mix( in srgb, var(--mm-btn-primary-bg) 14%, transparent )",
@@ -4043,9 +3526,7 @@
           "cssVar": "--mm-button-primary-outline-bg-pressed",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-btn-primary-bg"
-          ],
+          "beror": ["--mm-btn-primary-bg"],
           "alfa": 0.14,
           "anvandning": 1
         }
@@ -4054,11 +3535,7 @@
     "button-primary-subtle-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1569,
-          0.1608,
-          0.1569
-        ],
+        "components": [0.1569, 0.1608, 0.1569],
         "hex": "#282928"
       },
       "$description": "--mm-button-primary-subtle-text → var(--mm-btn-primary-bg)",
@@ -4067,9 +3544,7 @@
           "cssVar": "--mm-button-primary-subtle-text",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-btn-primary-bg"
-          ],
+          "beror": ["--mm-btn-primary-bg"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4078,11 +3553,7 @@
     "button-primary-subtle-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1569,
-          0.1608,
-          0.1569
-        ],
+        "components": [0.1569, 0.1608, 0.1569],
         "hex": "#282928"
       },
       "$description": "--mm-button-primary-subtle-bg → color-mix(in srgb, var(--mm-btn-primary-bg) 10%, transparent)",
@@ -4091,9 +3562,7 @@
           "cssVar": "--mm-button-primary-subtle-bg",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-btn-primary-bg"
-          ],
+          "beror": ["--mm-btn-primary-bg"],
           "alfa": 0.1,
           "anvandning": 1
         }
@@ -4102,11 +3571,7 @@
     "button-primary-subtle-bg-hover": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1569,
-          0.1608,
-          0.1569
-        ],
+        "components": [0.1569, 0.1608, 0.1569],
         "hex": "#282928"
       },
       "$description": "--mm-button-primary-subtle-bg-hover → color-mix( in srgb, var(--mm-btn-primary-bg) 16%, transparent )",
@@ -4115,9 +3580,7 @@
           "cssVar": "--mm-button-primary-subtle-bg-hover",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-btn-primary-bg"
-          ],
+          "beror": ["--mm-btn-primary-bg"],
           "alfa": 0.16,
           "anvandning": 1
         }
@@ -4126,11 +3589,7 @@
     "button-primary-subtle-bg-pressed": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1569,
-          0.1608,
-          0.1569
-        ],
+        "components": [0.1569, 0.1608, 0.1569],
         "hex": "#282928"
       },
       "$description": "--mm-button-primary-subtle-bg-pressed → color-mix( in srgb, var(--mm-btn-primary-bg) 22%, transparent )",
@@ -4139,9 +3598,7 @@
           "cssVar": "--mm-button-primary-subtle-bg-pressed",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-btn-primary-bg"
-          ],
+          "beror": ["--mm-btn-primary-bg"],
           "alfa": 0.22,
           "anvandning": 1
         }
@@ -4150,11 +3607,7 @@
     "button-success-outline-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3216,
-          0.3569,
-          0.2902
-        ],
+        "components": [0.3216, 0.3569, 0.2902],
         "hex": "#525b4a"
       },
       "$description": "--mm-button-success-outline-text → color-mix(in srgb, var(--mm-success), black 15%)",
@@ -4163,9 +3616,7 @@
           "cssVar": "--mm-button-success-outline-text",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4174,11 +3625,7 @@
     "button-success-outline-border": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3765,
-          0.4196,
-          0.3412
-        ],
+        "components": [0.3765, 0.4196, 0.3412],
         "hex": "#606b57"
       },
       "$description": "--mm-button-success-outline-border → var(--mm-success)",
@@ -4187,9 +3634,7 @@
           "cssVar": "--mm-button-success-outline-border",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4211,11 +3656,7 @@
     "button-success-outline-bg-hover": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3765,
-          0.4196,
-          0.3412
-        ],
+        "components": [0.3765, 0.4196, 0.3412],
         "hex": "#606b57"
       },
       "$description": "--mm-button-success-outline-bg-hover → color-mix(in srgb, var(--mm-success) 8%, transparent)",
@@ -4224,9 +3665,7 @@
           "cssVar": "--mm-button-success-outline-bg-hover",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 0.08,
           "anvandning": 1
         }
@@ -4235,11 +3674,7 @@
     "button-success-outline-bg-pressed": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3765,
-          0.4196,
-          0.3412
-        ],
+        "components": [0.3765, 0.4196, 0.3412],
         "hex": "#606b57"
       },
       "$description": "--mm-button-success-outline-bg-pressed → color-mix(in srgb, var(--mm-success) 14%, transparent)",
@@ -4248,9 +3683,7 @@
           "cssVar": "--mm-button-success-outline-bg-pressed",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 0.14,
           "anvandning": 1
         }
@@ -4259,11 +3692,7 @@
     "button-success-subtle-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3216,
-          0.3569,
-          0.2902
-        ],
+        "components": [0.3216, 0.3569, 0.2902],
         "hex": "#525b4a"
       },
       "$description": "--mm-button-success-subtle-text → color-mix(in srgb, var(--mm-success), black 15%)",
@@ -4272,9 +3701,7 @@
           "cssVar": "--mm-button-success-subtle-text",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4283,11 +3710,7 @@
     "button-success-subtle-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3765,
-          0.4196,
-          0.3412
-        ],
+        "components": [0.3765, 0.4196, 0.3412],
         "hex": "#606b57"
       },
       "$description": "--mm-button-success-subtle-bg → color-mix(in srgb, var(--mm-success) 10%, transparent)",
@@ -4296,9 +3719,7 @@
           "cssVar": "--mm-button-success-subtle-bg",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 0.1,
           "anvandning": 1
         }
@@ -4307,11 +3728,7 @@
     "button-success-subtle-bg-hover": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3765,
-          0.4196,
-          0.3412
-        ],
+        "components": [0.3765, 0.4196, 0.3412],
         "hex": "#606b57"
       },
       "$description": "--mm-button-success-subtle-bg-hover → color-mix(in srgb, var(--mm-success) 16%, transparent)",
@@ -4320,9 +3737,7 @@
           "cssVar": "--mm-button-success-subtle-bg-hover",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 0.16,
           "anvandning": 1
         }
@@ -4331,11 +3746,7 @@
     "button-success-subtle-bg-pressed": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3765,
-          0.4196,
-          0.3412
-        ],
+        "components": [0.3765, 0.4196, 0.3412],
         "hex": "#606b57"
       },
       "$description": "--mm-button-success-subtle-bg-pressed → color-mix(in srgb, var(--mm-success) 22%, transparent)",
@@ -4344,9 +3755,7 @@
           "cssVar": "--mm-button-success-subtle-bg-pressed",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 0.22,
           "anvandning": 1
         }
@@ -4355,11 +3764,7 @@
     "button-danger-outline-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-button-danger-outline-text → var(--mm-error)",
@@ -4368,9 +3773,7 @@
           "cssVar": "--mm-button-danger-outline-text",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4379,11 +3782,7 @@
     "button-danger-outline-border": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-button-danger-outline-border → var(--mm-error)",
@@ -4392,9 +3791,7 @@
           "cssVar": "--mm-button-danger-outline-border",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4416,11 +3813,7 @@
     "button-danger-outline-bg-hover": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-button-danger-outline-bg-hover → color-mix(in srgb, var(--mm-error) 8%, transparent)",
@@ -4429,9 +3822,7 @@
           "cssVar": "--mm-button-danger-outline-bg-hover",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 0.08,
           "anvandning": 1
         }
@@ -4440,11 +3831,7 @@
     "button-danger-outline-bg-pressed": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-button-danger-outline-bg-pressed → color-mix(in srgb, var(--mm-error) 14%, transparent)",
@@ -4453,9 +3840,7 @@
           "cssVar": "--mm-button-danger-outline-bg-pressed",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 0.14,
           "anvandning": 1
         }
@@ -4464,11 +3849,7 @@
     "button-danger-subtle-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-button-danger-subtle-text → var(--mm-error)",
@@ -4477,9 +3858,7 @@
           "cssVar": "--mm-button-danger-subtle-text",
           "grupp": "button",
           "typ": "alias",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4488,11 +3867,7 @@
     "button-danger-subtle-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-button-danger-subtle-bg → color-mix(in srgb, var(--mm-error) 10%, transparent)",
@@ -4501,9 +3876,7 @@
           "cssVar": "--mm-button-danger-subtle-bg",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 0.1,
           "anvandning": 1
         }
@@ -4512,11 +3885,7 @@
     "button-danger-subtle-bg-hover": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-button-danger-subtle-bg-hover → color-mix(in srgb, var(--mm-error) 16%, transparent)",
@@ -4525,9 +3894,7 @@
           "cssVar": "--mm-button-danger-subtle-bg-hover",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 0.16,
           "anvandning": 1
         }
@@ -4536,11 +3903,7 @@
     "button-danger-subtle-bg-pressed": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-button-danger-subtle-bg-pressed → color-mix(in srgb, var(--mm-error) 22%, transparent)",
@@ -4549,9 +3912,7 @@
           "cssVar": "--mm-button-danger-subtle-bg-pressed",
           "grupp": "button",
           "typ": "mix",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 0.22,
           "anvandning": 1
         }
@@ -4560,11 +3921,7 @@
     "input-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          1,
-          1,
-          1
-        ],
+        "components": [1, 1, 1],
         "hex": "#ffffff"
       },
       "$description": "--mm-input-bg → var(--mm-bg)",
@@ -4573,9 +3930,7 @@
           "cssVar": "--mm-input-bg",
           "grupp": "input",
           "typ": "alias",
-          "beror": [
-            "--mm-bg"
-          ],
+          "beror": ["--mm-bg"],
           "alfa": 1,
           "anvandning": 14
         }
@@ -4584,11 +3939,7 @@
     "input-bg-disabled": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.9608,
-          0.9608,
-          0.9529
-        ],
+        "components": [0.9608, 0.9608, 0.9529],
         "hex": "#f5f5f3"
       },
       "$description": "--mm-input-bg-disabled → var(--mm-bg-muted)",
@@ -4597,9 +3948,7 @@
           "cssVar": "--mm-input-bg-disabled",
           "grupp": "input",
           "typ": "alias",
-          "beror": [
-            "--mm-bg-muted"
-          ],
+          "beror": ["--mm-bg-muted"],
           "alfa": 1,
           "anvandning": 4
         }
@@ -4608,11 +3957,7 @@
     "input-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1412,
-          0.1412,
-          0.1412
-        ],
+        "components": [0.1412, 0.1412, 0.1412],
         "hex": "#242424"
       },
       "$description": "--mm-input-text → var(--mm-text)",
@@ -4621,9 +3966,7 @@
           "cssVar": "--mm-input-text",
           "grupp": "input",
           "typ": "alias",
-          "beror": [
-            "--mm-text"
-          ],
+          "beror": ["--mm-text"],
           "alfa": 1,
           "anvandning": 6
         }
@@ -4632,11 +3975,7 @@
     "input-text-placeholder": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.4196,
-          0.4196,
-          0.4196
-        ],
+        "components": [0.4196, 0.4196, 0.4196],
         "hex": "#6b6b6b"
       },
       "$description": "--mm-input-text-placeholder → var(--mm-text-muted)",
@@ -4645,9 +3984,7 @@
           "cssVar": "--mm-input-text-placeholder",
           "grupp": "input",
           "typ": "alias",
-          "beror": [
-            "--mm-text-muted"
-          ],
+          "beror": ["--mm-text-muted"],
           "alfa": 1,
           "anvandning": 9
         }
@@ -4656,11 +3993,7 @@
     "input-border": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.5373,
-          0.5373,
-          0.5373
-        ],
+        "components": [0.5373, 0.5373, 0.5373],
         "hex": "#898989"
       },
       "$description": "--mm-input-border → var(--mm-border-field)",
@@ -4669,9 +4002,7 @@
           "cssVar": "--mm-input-border",
           "grupp": "input",
           "typ": "alias",
-          "beror": [
-            "--mm-border-field"
-          ],
+          "beror": ["--mm-border-field"],
           "alfa": 1,
           "anvandning": 16
         }
@@ -4680,11 +4011,7 @@
     "input-border-invalid": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-input-border-invalid → var(--mm-error)",
@@ -4693,9 +4020,7 @@
           "cssVar": "--mm-input-border-invalid",
           "grupp": "input",
           "typ": "alias",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 1,
           "anvandning": 4
         }
@@ -4704,11 +4029,7 @@
     "input-label-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1412,
-          0.1412,
-          0.1412
-        ],
+        "components": [0.1412, 0.1412, 0.1412],
         "hex": "#242424"
       },
       "$description": "--mm-input-label-text → var(--mm-text)",
@@ -4717,9 +4038,7 @@
           "cssVar": "--mm-input-label-text",
           "grupp": "input",
           "typ": "alias",
-          "beror": [
-            "--mm-text"
-          ],
+          "beror": ["--mm-text"],
           "alfa": 1,
           "anvandning": 8
         }
@@ -4728,11 +4047,7 @@
     "input-description-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3216,
-          0.3176,
-          0.3176
-        ],
+        "components": [0.3216, 0.3176, 0.3176],
         "hex": "#525151"
       },
       "$description": "--mm-input-description-text → var(--mm-text-secondary)",
@@ -4741,9 +4056,7 @@
           "cssVar": "--mm-input-description-text",
           "grupp": "input",
           "typ": "alias",
-          "beror": [
-            "--mm-text-secondary"
-          ],
+          "beror": ["--mm-text-secondary"],
           "alfa": 1,
           "anvandning": 2
         }
@@ -4752,11 +4065,7 @@
     "input-error-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-input-error-text → var(--mm-error)",
@@ -4765,9 +4074,7 @@
           "cssVar": "--mm-input-error-text",
           "grupp": "input",
           "typ": "alias",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 1,
           "anvandning": 6
         }
@@ -4776,11 +4083,7 @@
     "select-popover-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          1,
-          1,
-          1
-        ],
+        "components": [1, 1, 1],
         "hex": "#ffffff"
       },
       "$description": "--mm-select-popover-bg → var(--mm-surface-overlay)",
@@ -4789,9 +4092,7 @@
           "cssVar": "--mm-select-popover-bg",
           "grupp": "select",
           "typ": "alias",
-          "beror": [
-            "--mm-surface-overlay"
-          ],
+          "beror": ["--mm-surface-overlay"],
           "alfa": 1,
           "anvandning": 3
         }
@@ -4800,11 +4101,7 @@
     "select-popover-border": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.8824,
-          0.8902,
-          0.8824
-        ],
+        "components": [0.8824, 0.8902, 0.8824],
         "hex": "#e1e3e1"
       },
       "$description": "--mm-select-popover-border → var(--mm-border)",
@@ -4813,9 +4110,7 @@
           "cssVar": "--mm-select-popover-border",
           "grupp": "select",
           "typ": "alias",
-          "beror": [
-            "--mm-border"
-          ],
+          "beror": ["--mm-border"],
           "alfa": 1,
           "anvandning": 3
         }
@@ -4824,11 +4119,7 @@
     "select-item-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1412,
-          0.1412,
-          0.1412
-        ],
+        "components": [0.1412, 0.1412, 0.1412],
         "hex": "#242424"
       },
       "$description": "--mm-select-item-text → var(--mm-text)",
@@ -4837,9 +4128,7 @@
           "cssVar": "--mm-select-item-text",
           "grupp": "select",
           "typ": "alias",
-          "beror": [
-            "--mm-text"
-          ],
+          "beror": ["--mm-text"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4848,11 +4137,7 @@
     "select-item-bg-focused": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.9843,
-          0.9529,
-          0.8784
-        ],
+        "components": [0.9843, 0.9529, 0.8784],
         "hex": "#fbf3e0"
       },
       "$description": "--mm-select-item-bg-focused → var(--mm-primary-tint)",
@@ -4861,9 +4146,7 @@
           "cssVar": "--mm-select-item-bg-focused",
           "grupp": "select",
           "typ": "alias",
-          "beror": [
-            "--mm-primary-tint"
-          ],
+          "beror": ["--mm-primary-tint"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4872,11 +4155,7 @@
     "select-item-bg-selected": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.9412,
-          0.8392,
-          0.5412
-        ],
+        "components": [0.9412, 0.8392, 0.5412],
         "hex": "#f0d68a"
       },
       "$description": "--mm-select-item-bg-selected → var(--mm-primary-pale)",
@@ -4885,9 +4164,7 @@
           "cssVar": "--mm-select-item-bg-selected",
           "grupp": "select",
           "typ": "alias",
-          "beror": [
-            "--mm-primary-pale"
-          ],
+          "beror": ["--mm-primary-pale"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4896,11 +4173,7 @@
     "messagebox-info-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.9373,
-          0.9647,
-          1
-        ],
+        "components": [0.9373, 0.9647, 1],
         "hex": "#eff6ff"
       },
       "$description": "--mm-messagebox-info-bg → var(--mm-info-bg)",
@@ -4909,9 +4182,7 @@
           "cssVar": "--mm-messagebox-info-bg",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-info-bg"
-          ],
+          "beror": ["--mm-info-bg"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4920,11 +4191,7 @@
     "messagebox-info-border": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.2902,
-          0.4196,
-          0.5412
-        ],
+        "components": [0.2902, 0.4196, 0.5412],
         "hex": "#4a6b8a"
       },
       "$description": "--mm-messagebox-info-border → var(--mm-info)",
@@ -4933,9 +4200,7 @@
           "cssVar": "--mm-messagebox-info-border",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-info"
-          ],
+          "beror": ["--mm-info"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4944,11 +4209,7 @@
     "messagebox-info-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.2902,
-          0.4196,
-          0.5412
-        ],
+        "components": [0.2902, 0.4196, 0.5412],
         "hex": "#4a6b8a"
       },
       "$description": "--mm-messagebox-info-text → var(--mm-info)",
@@ -4957,9 +4218,7 @@
           "cssVar": "--mm-messagebox-info-text",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-info"
-          ],
+          "beror": ["--mm-info"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4968,11 +4227,7 @@
     "messagebox-success-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.9412,
-          0.9922,
-          0.9569
-        ],
+        "components": [0.9412, 0.9922, 0.9569],
         "hex": "#f0fdf4"
       },
       "$description": "--mm-messagebox-success-bg → var(--mm-success-bg)",
@@ -4981,9 +4236,7 @@
           "cssVar": "--mm-messagebox-success-bg",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-success-bg"
-          ],
+          "beror": ["--mm-success-bg"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -4992,11 +4245,7 @@
     "messagebox-success-border": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3765,
-          0.4196,
-          0.3412
-        ],
+        "components": [0.3765, 0.4196, 0.3412],
         "hex": "#606b57"
       },
       "$description": "--mm-messagebox-success-border → var(--mm-success)",
@@ -5005,9 +4254,7 @@
           "cssVar": "--mm-messagebox-success-border",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5016,11 +4263,7 @@
     "messagebox-success-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3765,
-          0.4196,
-          0.3412
-        ],
+        "components": [0.3765, 0.4196, 0.3412],
         "hex": "#606b57"
       },
       "$description": "--mm-messagebox-success-text → var(--mm-success)",
@@ -5029,9 +4272,7 @@
           "cssVar": "--mm-messagebox-success-text",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-success"
-          ],
+          "beror": ["--mm-success"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5040,11 +4281,7 @@
     "messagebox-warning-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.9922,
-          0.9569,
-          0.9333
-        ],
+        "components": [0.9922, 0.9569, 0.9333],
         "hex": "#fdf4ee"
       },
       "$description": "--mm-messagebox-warning-bg → var(--mm-warning-bg)",
@@ -5053,9 +4290,7 @@
           "cssVar": "--mm-messagebox-warning-bg",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-warning-bg"
-          ],
+          "beror": ["--mm-warning-bg"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5064,11 +4299,7 @@
     "messagebox-warning-border": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6392,
-          0.2863,
-          0.1098
-        ],
+        "components": [0.6392, 0.2863, 0.1098],
         "hex": "#a3491c"
       },
       "$description": "--mm-messagebox-warning-border → var(--mm-warning)",
@@ -5077,9 +4308,7 @@
           "cssVar": "--mm-messagebox-warning-border",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-warning"
-          ],
+          "beror": ["--mm-warning"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5088,11 +4317,7 @@
     "messagebox-warning-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6392,
-          0.2863,
-          0.1098
-        ],
+        "components": [0.6392, 0.2863, 0.1098],
         "hex": "#a3491c"
       },
       "$description": "--mm-messagebox-warning-text → var(--mm-warning)",
@@ -5101,9 +4326,7 @@
           "cssVar": "--mm-messagebox-warning-text",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-warning"
-          ],
+          "beror": ["--mm-warning"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5112,11 +4335,7 @@
     "messagebox-error-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.9961,
-          0.949,
-          0.949
-        ],
+        "components": [0.9961, 0.949, 0.949],
         "hex": "#fef2f2"
       },
       "$description": "--mm-messagebox-error-bg → var(--mm-error-bg)",
@@ -5125,9 +4344,7 @@
           "cssVar": "--mm-messagebox-error-bg",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-error-bg"
-          ],
+          "beror": ["--mm-error-bg"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5136,11 +4353,7 @@
     "messagebox-error-border": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-messagebox-error-border → var(--mm-error)",
@@ -5149,9 +4362,7 @@
           "cssVar": "--mm-messagebox-error-border",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5160,11 +4371,7 @@
     "messagebox-error-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.6627,
-          0,
-          0
-        ],
+        "components": [0.6627, 0, 0],
         "hex": "#a90000"
       },
       "$description": "--mm-messagebox-error-text → var(--mm-error)",
@@ -5173,9 +4380,7 @@
           "cssVar": "--mm-messagebox-error-text",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-error"
-          ],
+          "beror": ["--mm-error"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5184,11 +4389,7 @@
     "messagebox-body-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1412,
-          0.1412,
-          0.1412
-        ],
+        "components": [0.1412, 0.1412, 0.1412],
         "hex": "#242424"
       },
       "$description": "--mm-messagebox-body-text → var(--mm-text)",
@@ -5197,9 +4398,7 @@
           "cssVar": "--mm-messagebox-body-text",
           "grupp": "messagebox",
           "typ": "alias",
-          "beror": [
-            "--mm-text"
-          ],
+          "beror": ["--mm-text"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5208,11 +4407,7 @@
     "dialog-overlay-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1412,
-          0.1412,
-          0.1412
-        ],
+        "components": [0.1412, 0.1412, 0.1412],
         "hex": "#242424"
       },
       "$description": "--mm-dialog-overlay-bg → color-mix(in srgb, var(--mm-text) 50%, transparent)",
@@ -5221,9 +4416,7 @@
           "cssVar": "--mm-dialog-overlay-bg",
           "grupp": "dialog",
           "typ": "mix",
-          "beror": [
-            "--mm-text"
-          ],
+          "beror": ["--mm-text"],
           "alfa": 0.5,
           "anvandning": 1
         }
@@ -5232,11 +4425,7 @@
     "dialog-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          1,
-          1,
-          1
-        ],
+        "components": [1, 1, 1],
         "hex": "#ffffff"
       },
       "$description": "--mm-dialog-bg → var(--mm-surface-overlay)",
@@ -5245,9 +4434,7 @@
           "cssVar": "--mm-dialog-bg",
           "grupp": "dialog",
           "typ": "alias",
-          "beror": [
-            "--mm-surface-overlay"
-          ],
+          "beror": ["--mm-surface-overlay"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5256,11 +4443,7 @@
     "navcard-bg": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.9608,
-          0.9608,
-          0.9529
-        ],
+        "components": [0.9608, 0.9608, 0.9529],
         "hex": "#f5f5f3"
       },
       "$description": "--mm-navcard-bg → var(--mm-bg-muted)",
@@ -5269,9 +4452,7 @@
           "cssVar": "--mm-navcard-bg",
           "grupp": "navcard",
           "typ": "alias",
-          "beror": [
-            "--mm-bg-muted"
-          ],
+          "beror": ["--mm-bg-muted"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5280,11 +4461,7 @@
     "navcard-text": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.1412,
-          0.1412,
-          0.1412
-        ],
+        "components": [0.1412, 0.1412, 0.1412],
         "hex": "#242424"
       },
       "$description": "--mm-navcard-text → var(--mm-text)",
@@ -5293,9 +4470,7 @@
           "cssVar": "--mm-navcard-text",
           "grupp": "navcard",
           "typ": "alias",
-          "beror": [
-            "--mm-text"
-          ],
+          "beror": ["--mm-text"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5304,11 +4479,7 @@
     "navcard-icon": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3216,
-          0.3176,
-          0.3176
-        ],
+        "components": [0.3216, 0.3176, 0.3176],
         "hex": "#525151"
       },
       "$description": "--mm-navcard-icon → var(--mm-text-secondary)",
@@ -5317,9 +4488,7 @@
           "cssVar": "--mm-navcard-icon",
           "grupp": "navcard",
           "typ": "alias",
-          "beror": [
-            "--mm-text-secondary"
-          ],
+          "beror": ["--mm-text-secondary"],
           "alfa": 1,
           "anvandning": 2
         }
@@ -5341,11 +4510,7 @@
     "navcard-border-contrast": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.7686,
-          0.7686,
-          0.7608
-        ],
+        "components": [0.7686, 0.7686, 0.7608],
         "hex": "#c4c4c2"
       },
       "$description": "--mm-navcard-border-contrast → var(--mm-border-strong)",
@@ -5354,9 +4519,7 @@
           "cssVar": "--mm-navcard-border-contrast",
           "grupp": "navcard",
           "typ": "alias",
-          "beror": [
-            "--mm-border-strong"
-          ],
+          "beror": ["--mm-border-strong"],
           "alfa": 1,
           "anvandning": 6
         }
@@ -5365,11 +4528,7 @@
     "skeleton-block": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.8824,
-          0.8902,
-          0.8824
-        ],
+        "components": [0.8824, 0.8902, 0.8824],
         "hex": "#e1e3e1"
       },
       "$description": "--mm-skeleton-block → var(--mm-bg-placeholder)",
@@ -5378,9 +4537,7 @@
           "cssVar": "--mm-skeleton-block",
           "grupp": "skeleton",
           "typ": "alias",
-          "beror": [
-            "--mm-bg-placeholder"
-          ],
+          "beror": ["--mm-bg-placeholder"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5389,11 +4546,7 @@
     "skeleton-block-contrast": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          0.3216,
-          0.3176,
-          0.3176
-        ],
+        "components": [0.3216, 0.3176, 0.3176],
         "hex": "#525151"
       },
       "$description": "--mm-skeleton-block-contrast → var(--mm-text-secondary)",
@@ -5402,9 +4555,7 @@
           "cssVar": "--mm-skeleton-block-contrast",
           "grupp": "skeleton",
           "typ": "alias",
-          "beror": [
-            "--mm-text-secondary"
-          ],
+          "beror": ["--mm-text-secondary"],
           "alfa": 1,
           "anvandning": 1
         }
@@ -5413,11 +4564,7 @@
     "skeleton-shimmer": {
       "$value": {
         "colorSpace": "srgb",
-        "components": [
-          1,
-          1,
-          1
-        ],
+        "components": [1, 1, 1],
         "hex": "#ffffff"
       },
       "$description": "--mm-skeleton-shimmer → color-mix(in srgb, var(--mm-bg) 75%, transparent)",
@@ -5426,9 +4573,7 @@
           "cssVar": "--mm-skeleton-shimmer",
           "grupp": "skeleton",
           "typ": "mix",
-          "beror": [
-            "--mm-bg"
-          ],
+          "beror": ["--mm-bg"],
           "alfa": 0.75,
           "anvandning": 1
         }

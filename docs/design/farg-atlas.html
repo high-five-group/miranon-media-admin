@@ -1580,10 +1580,283 @@
     </tr></tbody>
 </table></div>
 
-<h2>5. Vad som håller</h2>
+<h2>5. Migreringens påverkan</h2>
+<p class="lead">Vad som händer med varje gammal primitiv om rollerna pekas om. <strong>ΔL*</strong>
+   är ljushetsskillnaden — den avgör om ytan flyttar sig. <strong>Avstånd</strong> är det fulla
+   perceptuella måttet och fångar också när en färg byter karaktär vid samma ljushet.</p>
+<div class="tabellyta"><table>
+  <thead><tr><th>Gammal</th><th></th><th>Närmast ny</th><th></th><th>ΔL*</th><th>Avstånd</th><th>Bedömning</th></tr></thead>
+  <tbody><tr>
+      <td><code>--p-gold-100</code></td>
+      <td><span class="punkt" style="background:#fbf3e0"></span><code>#fbf3e0</code></td>
+      <td><code>--p-gold-2</code></td>
+      <td><span class="punkt" style="background:#fff6e8"></span><code>#fff6e8</code></td>
+      <td>1.2</td>
+      <td>4.6</td>
+      <td class="varn">märkbar</td>
+    </tr><tr>
+      <td><code>--p-gold-200</code></td>
+      <td><span class="punkt" style="background:#f5e6bc"></span><code>#f5e6bc</code></td>
+      <td><code>--p-gold-4</code></td>
+      <td><span class="punkt" style="background:#ffdfad"></span><code>#ffdfad</code></td>
+      <td>1.2</td>
+      <td>8.7</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-gold-300</code></td>
+      <td><span class="punkt" style="background:#f0d68a"></span><code>#f0d68a</code></td>
+      <td><code>--p-gold-5</code></td>
+      <td><span class="punkt" style="background:#fcd08b"></span><code>#fcd08b</code></td>
+      <td>0.4</td>
+      <td>5.6</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-gold-400</code></td>
+      <td><span class="punkt" style="background:#c4a840"></span><code>#c4a840</code></td>
+      <td><code>--p-gold-8</code></td>
+      <td><span class="punkt" style="background:#dda12f"></span><code>#dda12f</code></td>
+      <td>0.7</td>
+      <td>11.3</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-gold-500</code></td>
+      <td><span class="punkt" style="background:#d4960a"></span><code>#d4960a</code></td>
+      <td><code>--p-gold-9</code></td>
+      <td><span class="punkt" style="background:#d4960a"></span><code>#d4960a</code></td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-gold-600</code></td>
+      <td><span class="punkt" style="background:#b8800a"></span><code>#b8800a</code></td>
+      <td><code>--p-gold-10</code></td>
+      <td><span class="punkt" style="background:#c28900"></span><code>#c28900</code></td>
+      <td>3.4</td>
+      <td>5.5</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-gold-700</code></td>
+      <td><span class="punkt" style="background:#96680a"></span><code>#96680a</code></td>
+      <td><code>--p-gold-11</code></td>
+      <td><span class="punkt" style="background:#966800"></span><code>#966800</code></td>
+      <td>0.0</td>
+      <td>2.2</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-copper-100</code></td>
+      <td><span class="punkt" style="background:#fdf4ee"></span><code>#fdf4ee</code></td>
+      <td><code>--p-copper-2</code></td>
+      <td><span class="punkt" style="background:#fff0e9"></span><code>#fff0e9</code></td>
+      <td>0.9</td>
+      <td>5.5</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-copper-200</code></td>
+      <td><span class="punkt" style="background:#f5d8c4"></span><code>#f5d8c4</code></td>
+      <td><code>--p-copper-3</code></td>
+      <td><span class="punkt" style="background:#ffdccd"></span><code>#ffdccd</code></td>
+      <td>2.0</td>
+      <td>6.6</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-copper-400</code></td>
+      <td><span class="punkt" style="background:#c46a3a"></span><code>#c46a3a</code></td>
+      <td><code>--p-copper-7</code></td>
+      <td><span class="punkt" style="background:#c4724d"></span><code>#c4724d</code></td>
+      <td>2.0</td>
+      <td>8.4</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-copper-500</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td><code>--p-copper-9</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-copper-600</code></td>
+      <td><span class="punkt" style="background:#8a3d17"></span><code>#8a3d17</code></td>
+      <td><code>--p-copper-10</code></td>
+      <td><span class="punkt" style="background:#974012"></span><code>#974012</code></td>
+      <td>2.8</td>
+      <td>7.1</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-0</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td><code>--p-neutral-1</code></td>
+      <td><span class="punkt" style="background:#fdfdfc"></span><code>#fdfdfc</code></td>
+      <td>0.7</td>
+      <td>117.2</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-25</code></td>
+      <td><span class="punkt" style="background:#fafaf8"></span><code>#fafaf8</code></td>
+      <td><code>--p-neutral-1</code></td>
+      <td><span class="punkt" style="background:#fdfdfc"></span><code>#fdfdfc</code></td>
+      <td>1.1</td>
+      <td>1.2</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-neutral-50</code></td>
+      <td><span class="punkt" style="background:#f5f5f3"></span><code>#f5f5f3</code></td>
+      <td><code>--p-neutral-2</code></td>
+      <td><span class="punkt" style="background:#f4f3f2"></span><code>#f4f3f2</code></td>
+      <td>0.6</td>
+      <td>17.4</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-100</code></td>
+      <td><span class="punkt" style="background:#edeee9"></span><code>#edeee9</code></td>
+      <td><code>--p-neutral-2</code></td>
+      <td><span class="punkt" style="background:#f4f3f2"></span><code>#f4f3f2</code></td>
+      <td>2.0</td>
+      <td>21.4</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-200</code></td>
+      <td><span class="punkt" style="background:#e1e3e1"></span><code>#e1e3e1</code></td>
+      <td><code>--p-neutral-3</code></td>
+      <td><span class="punkt" style="background:#e5e5e2"></span><code>#e5e5e2</code></td>
+      <td>0.8</td>
+      <td>17.2</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-300</code></td>
+      <td><span class="punkt" style="background:#c4c4c2"></span><code>#c4c4c2</code></td>
+      <td><code>--p-neutral-5</code></td>
+      <td><span class="punkt" style="background:#c0bfbb"></span><code>#c0bfbb</code></td>
+      <td>1.8</td>
+      <td>5.4</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-400</code></td>
+      <td><span class="punkt" style="background:#898989"></span><code>#898989</code></td>
+      <td><code>--p-neutral-7</code></td>
+      <td><span class="punkt" style="background:#8e8d89"></span><code>#8e8d89</code></td>
+      <td>1.5</td>
+      <td>122.3</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-500</code></td>
+      <td><span class="punkt" style="background:#6b6b6b"></span><code>#6b6b6b</code></td>
+      <td><code>--p-neutral-9</code></td>
+      <td><span class="punkt" style="background:#6b6b6b"></span><code>#6b6b6b</code></td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-neutral-600</code></td>
+      <td><span class="punkt" style="background:#525151"></span><code>#525151</code></td>
+      <td><code>--p-neutral-11</code></td>
+      <td><span class="punkt" style="background:#4c4c47"></span><code>#4c4c47</code></td>
+      <td>2.4</td>
+      <td>45.2</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-700</code></td>
+      <td><span class="punkt" style="background:#3a3a3a"></span><code>#3a3a3a</code></td>
+      <td><code>--p-neutral-11</code></td>
+      <td><span class="punkt" style="background:#4c4c47"></span><code>#4c4c47</code></td>
+      <td>7.7</td>
+      <td>117.7</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-800</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td><code>--p-neutral-12</code></td>
+      <td><span class="punkt" style="background:#252522"></span><code>#252522</code></td>
+      <td>1.9</td>
+      <td>17.5</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-900</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td><code>--p-neutral-12</code></td>
+      <td><span class="punkt" style="background:#252522"></span><code>#252522</code></td>
+      <td>0.4</td>
+      <td>117.5</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-1000</code></td>
+      <td><span class="punkt" style="background:#1a1a1a"></span><code>#1a1a1a</code></td>
+      <td><code>--p-neutral-12</code></td>
+      <td><span class="punkt" style="background:#252522"></span><code>#252522</code></td>
+      <td>5.3</td>
+      <td>117.6</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-blue-700</code></td>
+      <td><span class="punkt" style="background:#1b4965"></span><code>#1b4965</code></td>
+      <td><code>--p-blue-11</code></td>
+      <td><span class="punkt" style="background:#004c85"></span><code>#004c85</code></td>
+      <td>2.2</td>
+      <td>18.8</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-red-500</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td><code>--p-red-9</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-red-100</code></td>
+      <td><span class="punkt" style="background:#fef2f2"></span><code>#fef2f2</code></td>
+      <td><code>--p-red-2</code></td>
+      <td><span class="punkt" style="background:#ffeeeb"></span><code>#ffeeeb</code></td>
+      <td>1.1</td>
+      <td>7.5</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-blue-500</code></td>
+      <td><span class="punkt" style="background:#4a6b8a"></span><code>#4a6b8a</code></td>
+      <td><code>--p-blue-9</code></td>
+      <td><span class="punkt" style="background:#1f6cb0"></span><code>#1f6cb0</code></td>
+      <td>0.5</td>
+      <td>22.3</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-blue-100</code></td>
+      <td><span class="punkt" style="background:#eff6ff"></span><code>#eff6ff</code></td>
+      <td><code>--p-blue-2</code></td>
+      <td><span class="punkt" style="background:#ebf5ff"></span><code>#ebf5ff</code></td>
+      <td>0.5</td>
+      <td>3.3</td>
+      <td class="varn">märkbar</td>
+    </tr><tr>
+      <td><code>--p-green-500</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td><code>--p-sage-9</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-green-100</code></td>
+      <td><span class="punkt" style="background:#f0fdf4"></span><code>#f0fdf4</code></td>
+      <td><code>--p-sage-1</code></td>
+      <td><span class="punkt" style="background:#fcfdfa"></span><code>#fcfdfa</code></td>
+      <td>1.0</td>
+      <td>16.4</td>
+      <td class="fel">synlig</td>
+    </tr></tbody>
+</table></div>
+<ul class="noter">
+  <li><strong>Fokusringen migreras inte.</strong> <code>--p-blue-700</code> står i tabellen
+      eftersom den är en gammal primitiv, men den är exklusiv per
+      <code>lessons.md:298</code> och ska behålla <code>#1B4965</code>. En migrering som
+      pekar om den bryter fynd F10:s lösning.</li>
+  <li><code>--p-blue-500</code> → <code>--p-blue-9</code> är ingen mappning utan en avsiktlig
+      färgändring (fynd F10). Ljushetsskillnaden är liten, avståndet stort.</li>
+</ul>
+
+<h2>6. Vad som håller</h2>
 <ul class="rent"><li><span class="ok">✓</span> Hårdkodade hex/rgb/hsl i komponenter: <strong>0</strong> — Samtliga träffar i src/ är kommentarstext, inte kod.</li><li><span class="ok">✓</span> Arbiträra Tailwind-värden (bg-[#fff]): <strong>0</strong></li><li><span class="ok">✓</span> Inline style med färg: <strong>0</strong></li><li><span class="ok">✓</span> Färgliteraler i SVG fill/stroke: <strong>0</strong></li></ul>
 
-<h2>6. Brister</h2>
+<h2>7. Brister</h2>
 <article class="fynd hög">
       <h3><span class="id">F1</span> Två döda färgklasser i login <span class="allvar">hög</span></h3>
       <p class="plats"><code>src/routes/login.tsx:111</code> · <code>src/routes/login.tsx:119</code></p>
@@ -1684,8 +1957,58 @@
       <p class="fallan"><strong>Fällan:</strong> Fyndet uppstod inte ur den genererade skalan; skalan avslöjade det bara. Konflikten finns i paletten som den ser ut nu, och den försvinner inte av att vi låter bli att generera. Marcus har beslutat att fokusringen står fast — då är det info-blå som behöver flytta, eller så accepteras närheten som ett medvetet undantag.</p>
       
     </article>
+<article class="fynd hög">
+      <h3><span class="id">F11</span> Primärknappens pressed-läge är ljusare än vila <span class="allvar">hög</span></h3>
+      <p class="plats"><code>src/styles/tokens/components.css:19</code></p>
+      <p>--mm-button-primary-bg-pressed räknas som color-mix på HOVER-värdet, inte på vilo-värdet: color-mix(in srgb, var(--mm-btn-primary-hover), black 10%). Hover är ljusare än vila (neutral-700 mot neutral-800), så pressed hamnar över vilo-läget.</p>
+      <p class="verif"><strong>Verifiering:</strong> vila #282928 CIE L* 16,5 · hover #3a3a3a 24,4 · pressed #343434 21,7. Pressed ligger 5,2 L*-enheter ÖVER vila.</p>
+      <p><strong>Följd:</strong> Att trycka ner knappen gör den ljusare än den var innan man rörde den. Alla andra intents (danger, success) räknar pressed på sitt eget vilo-värde och mörknar korrekt — primary är den enda som ärver hoverns.</p>
+      
+      <p class="fallan"><strong>Fällan:</strong> Buggen finns i appen idag och har inget med migreringen att göra. Men den förvärras av den: med neutral-11 som hover växer inversionen från 5,2 till omkring 31 enheter. Rätta före migreringen, inte efter.</p>
+      
+    </article>
+<article class="fynd medel">
+      <h3><span class="id">F12</span> Rollen för hover-yta finns, är noga motiverad, och används av en enda komponent <span class="allvar">medel</span></h3>
+      
+      <p>--mm-state-hover infördes i S91 med elva rader motivering och uppmätt ΔE00 — genomskinliga skrim i stället för opaka plattor, just för att en opak platta kollapsar mot tonala bakgrunder. Den konsumeras av ToggleButtonGroup.tsx och ingen annan.</p>
+      <p class="verif"><strong>Verifiering:</strong> hover:bg-bg-emphasized 17 träffar · hover:bg-bg-muted 4 · hover:bg-bg-subtle 3 · bg-(--mm-state-hover) 1.</p>
+      <p><strong>Följd:</strong> 17 av 25 hover-ytor använder --mm-bg-emphasized, som i sin egen kommentar är definierad som AKTIV-markering — alltså en annan tillståndsroll. Regeln bor i en CSS-kommentar som konsumenterna aldrig läser.</p>
+      
+      
+      
+    </article>
+<article class="fynd medel">
+      <h3><span class="id">F13</span> Mix-lagrets egen motivering upphör att gälla med tolvstegsskalorna <span class="allvar">medel</span></h3>
+      <p class="plats"><code>src/styles/tokens/components.css:13-15</code></p>
+      <p>Kommentaren lyder: 'Pressed-nyanser via color-mix eftersom semantiskt mörkare värde saknas för resp. roll.' Det var sant med den gamla paletten.</p>
+      
+      <p><strong>Följd:</strong> Tolvstegsskalorna har steg 10, 11 och 12 för varje kulör. Grunden för samtliga sju black-N%-mixar försvinner — efter migreringen är de inte längre nödvändiga utan teknisk skuld. De sju error-mixarna är redan idag redundanta på ett annat sätt: ankaret är oflyttat, så de ger byte-identiska resultat, men landar mellan steg 10 och 11 och matchar alltså inget steg.</p>
+      
+      
+      
+    </article>
+<article class="fynd hög">
+      <h3><span class="id">F14</span> Primärknappens yta och brödtexten kollapsar till samma steg <span class="allvar">hög</span></h3>
+      
+      <p>--mm-btn-primary-bg pekar på neutral-800 och --mm-text på neutral-900. Båda mappar närmast till neutral-12 i den nya skalan.</p>
+      <p class="verif"><strong>Verifiering:</strong> neutral-800 CIE L* 16,5 och neutral-900 14,2 ligger 2,3 enheter isär; neutral-12 ligger på 14,6. Rollerna matar 9 respektive 7 komponent-tokens.</p>
+      <p><strong>Följd:</strong> Efter en naiv migrering är primärknappens yta exakt brödtextens färg. Två ramper som varit åtskilda smälter ihop, och dialog-overlayen (byggd på --mm-text) härrör då från samma källa som primary-subtle-plattorna (byggda på --mm-btn-primary-bg). Det är inget palettfel utan ett rollbeslut som måste fattas medvetet.</p>
+      
+      
+      
+    </article>
+<article class="fynd medel">
+      <h3><span class="id">F15</span> Fem saknade lager-2-roller är grundorsaken till spridningen <span class="allvar">medel</span></h3>
+      
+      <p>Varje mönster där samma visuella syfte uttrycks på tre till fem sätt går tillbaka på en roll som inte finns: solid inverterad yta (14 förekomster via --mm-text), vald/selected-tillstånd (11 via fyra olika roller), mätarens track och fyllnad (12 via fem implementationer), osynlig-tills-kontrast-kant (11 via NavCard-tokens utanför NavCard), samt en gemensam alfaskala.</p>
+      <p class="verif"><strong>Verifiering:</strong> Svag avdelare uttrycks på fyra sätt: divide-border 28 · border-text-muted/20 11 · bg-border 5 · border-border-light 3.</p>
+      <p><strong>Följd:</strong> Där rollen SAKNAS improviserar varje komponent. Där rollen FINNS men bor i en CSS-kommentar (F12) uppstår samma spridning av motsatt skäl. Mätarens tokengap är redan öppet bokfört i två komponenter oberoende av varandra, vilket gör det starkare som fynd — två skivor stötte på samma vägg.</p>
+      
+      
+      
+    </article>
 
-<h2>7. Så här är atlasen byggd</h2>
+<h2>8. Så här är atlasen byggd</h2>
 <p class="lead">Tokens läses ur <code>src/styles/tokens/*.css</code>, användningen räknas i
    <code>src/</code>, mätvärdena beräknas i <code>scripts/lib/farg.mjs</code> och skalorna
    genereras i <code>scripts/lib/skala.mjs</code>. Det enda handskrivna är auditens fynd i

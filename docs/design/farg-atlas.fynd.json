@@ -96,6 +96,48 @@
       "verifiering": "CIE LCh-avstånd mellan #4a6b8a och #1b4965 = 15,1. Till jämförelse ligger --p-blue-100 på 69,4 och --mm-text på 51,8 från samma färg.",
       "foljd": "tasks/lessons.md (Session 25, UNIVERSAL) slår fast att fokusringen ska ha 'ingen relation till amber, copper, info eller text' — men den har relation till info. En fokusring runt ett info-element är svår att urskilja från elementet.",
       "fallan": "Fyndet uppstod inte ur den genererade skalan; skalan avslöjade det bara. Konflikten finns i paletten som den ser ut nu, och den försvinner inte av att vi låter bli att generera. Marcus har beslutat att fokusringen står fast — då är det info-blå som behöver flytta, eller så accepteras närheten som ett medvetet undantag."
+    },
+    {
+      "id": "F11",
+      "rubrik": "Primärknappens pressed-läge är ljusare än vila",
+      "allvar": "hög",
+      "plats": ["src/styles/tokens/components.css:19"],
+      "vad": "--mm-button-primary-bg-pressed räknas som color-mix på HOVER-värdet, inte på vilo-värdet: color-mix(in srgb, var(--mm-btn-primary-hover), black 10%). Hover är ljusare än vila (neutral-700 mot neutral-800), så pressed hamnar över vilo-läget.",
+      "verifiering": "vila #282928 CIE L* 16,5 · hover #3a3a3a 24,4 · pressed #343434 21,7. Pressed ligger 5,2 L*-enheter ÖVER vila.",
+      "foljd": "Att trycka ner knappen gör den ljusare än den var innan man rörde den. Alla andra intents (danger, success) räknar pressed på sitt eget vilo-värde och mörknar korrekt — primary är den enda som ärver hoverns.",
+      "fallan": "Buggen finns i appen idag och har inget med migreringen att göra. Men den förvärras av den: med neutral-11 som hover växer inversionen från 5,2 till omkring 31 enheter. Rätta före migreringen, inte efter."
+    },
+    {
+      "id": "F12",
+      "rubrik": "Rollen för hover-yta finns, är noga motiverad, och används av en enda komponent",
+      "allvar": "medel",
+      "vad": "--mm-state-hover infördes i S91 med elva rader motivering och uppmätt ΔE00 — genomskinliga skrim i stället för opaka plattor, just för att en opak platta kollapsar mot tonala bakgrunder. Den konsumeras av ToggleButtonGroup.tsx och ingen annan.",
+      "verifiering": "hover:bg-bg-emphasized 17 träffar · hover:bg-bg-muted 4 · hover:bg-bg-subtle 3 · bg-(--mm-state-hover) 1.",
+      "foljd": "17 av 25 hover-ytor använder --mm-bg-emphasized, som i sin egen kommentar är definierad som AKTIV-markering — alltså en annan tillståndsroll. Regeln bor i en CSS-kommentar som konsumenterna aldrig läser."
+    },
+    {
+      "id": "F13",
+      "rubrik": "Mix-lagrets egen motivering upphör att gälla med tolvstegsskalorna",
+      "allvar": "medel",
+      "plats": ["src/styles/tokens/components.css:13-15"],
+      "vad": "Kommentaren lyder: 'Pressed-nyanser via color-mix eftersom semantiskt mörkare värde saknas för resp. roll.' Det var sant med den gamla paletten.",
+      "foljd": "Tolvstegsskalorna har steg 10, 11 och 12 för varje kulör. Grunden för samtliga sju black-N%-mixar försvinner — efter migreringen är de inte längre nödvändiga utan teknisk skuld. De sju error-mixarna är redan idag redundanta på ett annat sätt: ankaret är oflyttat, så de ger byte-identiska resultat, men landar mellan steg 10 och 11 och matchar alltså inget steg."
+    },
+    {
+      "id": "F14",
+      "rubrik": "Primärknappens yta och brödtexten kollapsar till samma steg",
+      "allvar": "hög",
+      "vad": "--mm-btn-primary-bg pekar på neutral-800 och --mm-text på neutral-900. Båda mappar närmast till neutral-12 i den nya skalan.",
+      "verifiering": "neutral-800 CIE L* 16,5 och neutral-900 14,2 ligger 2,3 enheter isär; neutral-12 ligger på 14,6. Rollerna matar 9 respektive 7 komponent-tokens.",
+      "foljd": "Efter en naiv migrering är primärknappens yta exakt brödtextens färg. Två ramper som varit åtskilda smälter ihop, och dialog-overlayen (byggd på --mm-text) härrör då från samma källa som primary-subtle-plattorna (byggda på --mm-btn-primary-bg). Det är inget palettfel utan ett rollbeslut som måste fattas medvetet."
+    },
+    {
+      "id": "F15",
+      "rubrik": "Fem saknade lager-2-roller är grundorsaken till spridningen",
+      "allvar": "medel",
+      "vad": "Varje mönster där samma visuella syfte uttrycks på tre till fem sätt går tillbaka på en roll som inte finns: solid inverterad yta (14 förekomster via --mm-text), vald/selected-tillstånd (11 via fyra olika roller), mätarens track och fyllnad (12 via fem implementationer), osynlig-tills-kontrast-kant (11 via NavCard-tokens utanför NavCard), samt en gemensam alfaskala.",
+      "verifiering": "Svag avdelare uttrycks på fyra sätt: divide-border 28 · border-text-muted/20 11 · bg-border 5 · border-border-light 3.",
+      "foljd": "Där rollen SAKNAS improviserar varje komponent. Där rollen FINNS men bor i en CSS-kommentar (F12) uppstår samma spridning av motsatt skäl. Mätarens tokengap är redan öppet bokfört i två komponenter oberoende av varandra, vilket gör det starkare som fynd — två skivor stötte på samma vägg."
     }
   ]
 }

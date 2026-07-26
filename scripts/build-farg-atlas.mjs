@@ -288,6 +288,42 @@ function byggModell() {
   return { primitivFarger, semantiskaRoller, temaRoller, komponentTokens };
 }
 
+/**
+ * Vad som händer med varje gammal primitiv vid en migrering.
+ *
+ * Två mått, inte ett: ljushetsskillnaden avgör om ytan flyttar sig, men den
+ * missar helt att en färg byter karaktär vid samma ljushet. Blå är fallet —
+ * det nya ankaret ligger 0,5 L*-enheter från det gamla och är ändå en synligt
+ * annan blå, eftersom mättnaden är dubblerad. Bara det fulla avståndet fångar
+ * det.
+ */
+function migreringsPaverkan(primitivFarger) {
+  const arNy = (n) => /^--p-[a-z]+-([1-9]|1[0-2])$/.test(n);
+  const nya = primitivFarger.filter((f) => arNy(f.namn));
+  const familj = (n) => {
+    const f = n.match(/^--p-([a-z]+)-/)?.[1];
+    return f === 'green' ? 'sage' : f;
+  };
+
+  return primitivFarger
+    .filter((f) => !arNy(f.namn))
+    .map((g) => {
+      const kandidater = nya.filter((n) => familj(n.namn) === familj(g.namn));
+      if (!kandidater.length) return { ...g, mal: null };
+
+      let bast = null;
+      for (const n of kandidater) {
+        const d = Math.abs(n.cieL - g.cieL);
+        if (!bast || d < bast.dL)
+          bast = { namn: n.namn, hex: n.hex, dL: d, cieC: n.cieC, cieH: n.cieH };
+      }
+      // Fullt avstånd i CIE LCh, samma mått som kollisionskontrollen använder
+      const dh = (((bast.cieH - g.cieH + 180) % 360) - 180) * 0.5;
+      const avstand = Math.hypot(bast.dL, bast.cieC - g.cieC, dh);
+      return { ...g, mal: bast, avstand };
+    });
+}
+
 // ── Steg 4: gruppera primitiver i skalor ─────────────────────────────────────
 
 function grupperaSkalor(primitivFarger) {
@@ -517,6 +553,24 @@ function byggHtml(modell, skalor, fynd) {
     })
     .join('');
 
+  const migreringsRader = migreringsPaverkan(modell.primitivFarger)
+    .map((m) => {
+      if (!m.mal)
+        return `<tr><td><code>${esc(m.namn)}</code></td><td><span class="punkt" style="background:${m.hex}"></span></td><td colspan="5"><em>ingen ny familj</em></td></tr>`;
+      const niva = m.avstand > 5 ? 'fel' : m.avstand > 2.5 ? 'varn' : '';
+      const ord = m.avstand > 5 ? 'synlig' : m.avstand > 2.5 ? 'märkbar' : 'försumbar';
+      return `<tr>
+      <td><code>${esc(m.namn)}</code></td>
+      <td><span class="punkt" style="background:${m.hex}"></span><code>${esc(m.hex)}</code></td>
+      <td><code>${esc(m.mal.namn)}</code></td>
+      <td><span class="punkt" style="background:${m.mal.hex}"></span><code>${esc(m.mal.hex)}</code></td>
+      <td>${m.mal.dL.toFixed(1)}</td>
+      <td>${m.avstand.toFixed(1)}</td>
+      <td class="${niva}">${ord}</td>
+    </tr>`;
+    })
+    .join('');
+
   // Roller
   const rollRader = modell.semantiskaRoller
     .map(
@@ -726,13 +780,30 @@ ${gamlaSektioner}
   <tbody>${komponentRader}</tbody>
 </table></div>
 
-<h2>5. Vad som håller</h2>
+<h2>5. Migreringens påverkan</h2>
+<p class="lead">Vad som händer med varje gammal primitiv om rollerna pekas om. <strong>ΔL*</strong>
+   är ljushetsskillnaden — den avgör om ytan flyttar sig. <strong>Avstånd</strong> är det fulla
+   perceptuella måttet och fångar också när en färg byter karaktär vid samma ljushet.</p>
+<div class="tabellyta"><table>
+  <thead><tr><th>Gammal</th><th></th><th>Närmast ny</th><th></th><th>ΔL*</th><th>Avstånd</th><th>Bedömning</th></tr></thead>
+  <tbody>${migreringsRader}</tbody>
+</table></div>
+<ul class="noter">
+  <li><strong>Fokusringen migreras inte.</strong> <code>--p-blue-700</code> står i tabellen
+      eftersom den är en gammal primitiv, men den är exklusiv per
+      <code>lessons.md:298</code> och ska behålla <code>#1B4965</code>. En migrering som
+      pekar om den bryter fynd F10:s lösning.</li>
+  <li><code>--p-blue-500</code> → <code>--p-blue-9</code> är ingen mappning utan en avsiktlig
+      färgändring (fynd F10). Ljushetsskillnaden är liten, avståndet stort.</li>
+</ul>
+
+<h2>6. Vad som håller</h2>
 <ul class="rent">${rentRader}</ul>
 
-<h2>6. Brister</h2>
+<h2>7. Brister</h2>
 ${fyndSektioner}
 
-<h2>7. Så här är atlasen byggd</h2>
+<h2>8. Så här är atlasen byggd</h2>
 <p class="lead">Tokens läses ur <code>src/styles/tokens/*.css</code>, användningen räknas i
    <code>src/</code>, mätvärdena beräknas i <code>scripts/lib/farg.mjs</code> och skalorna
    genereras i <code>scripts/lib/skala.mjs</code>. Det enda handskrivna är auditens fynd i
