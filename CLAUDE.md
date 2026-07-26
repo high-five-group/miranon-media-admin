@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-08
+updated: 2026-07-26
 review_by: 2026-11-15
 status: stable
 ---
@@ -74,6 +74,27 @@ npm run typecheck           # 0 typfel (tsc -b, äkta över project references)
 npx @biomejs/biome check .  # 0 lint-fel
 npm run build               # bygg grön
 ```
+
+### Granskningsdata i staging — bygg den ALDRIG för hand
+
+Ska Marcus granska en yta som kräver data staging inte har (ett kommande event
+med anmälningar i båda tillstånden, en fylld kö, en lång lista):
+
+```bash
+npm run seed:review -- --ort ZZ-GRANSKNING-SNN --bekraftade 8 --obekraftade 8 --dagar 8
+npm run seed:review:clean -- --ort ZZ-GRANSKNING-SNN
+```
+
+Skriptet bär de fällor som kostade tid när jobbet gjordes för hand: bas-guard mot
+prod, korsläsning mot `.purge-staging-policy.json` så granskningsdata inte städas
+bort mitt i en pågående granskning, förbud mot att röra de permanenta
+rollup-fixturerna, och ett datumval utanför sentinel-klustret. Detaljer +
+`localStorage`-fällan: [`docs/reference/staging-verifiering-runbook.md`](docs/reference/staging-verifiering-runbook.md)
+§ Granskningsfixtur.
+
+**Varför raden står här och inte bara i runbooken:** samma jobb gjordes för hand
+två gånger (2026-07-22 och 2026-07-26) innan skriptet fanns, och ett verktyg som
+inte ligger i sessionsstartens läs-ordning hittas inte när det behövs.
 
 ---
 
