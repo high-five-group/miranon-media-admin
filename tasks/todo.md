@@ -15,7 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 91 ⏸️ PAUSAD (2026-07-26)** — **DESIGN-REVIEWEN AV TASK-48, OCH DAGEN
+**Session 91 ▶️ ÅTERUPPTAGEN (2026-07-26, `session-resume`, N=91 bevarat)** —
+**DESIGN-REVIEWEN AV TASK-48, OCH DAGEN
 DÅ ARBETSFORMEN BLEV SITT EGET ÄMNE.** **`task-48` är `Done`** — Marcus
 granskade i webbläsaren och gav **fyra fynd**, alla åtgärdade i tre vågor:
 Markera-knappens färg var en **facit-avvikelse** (bygget satte `primary`/`subtle`
@@ -43,11 +44,13 @@ serialiseras; ~20 av 30 min var spill. **MÅLBILDEN inskriven:** människan vän
 aldrig SYSSLOLÖS — skärpningen är avsiktlig, noll väntan leder till att skära i
 täckning. **Sju mekaniseringar** i Del 4, sex körbara direkt vid resume.
 **INGA lessons mintade av Code** (L354–L359 förbrukade av vågornas agenter).
-Ingen ADR (079 ledigt), inga fällor, inga trådar. **NÄSTA: `session-resume` av
-91** → research-passet (Del 4:s fyra frågor; den avgörande är om merge queue
-löser serialiseringen eller bara flyttar kön) → mekaniseringen. Numrering vid
-paus: 91/079/L360/T100/f46/task-53. Full narrativ: sessionsdok S91 Del 1–4 +
-PAUSLÄGE.
+Ingen ADR (079 ledigt), inga fällor, inga trådar. **Resumen körd 2026-07-26** —
+numreringen omläst mot disk och oförändrad, HEAD `8e86aa8`, CI + audit +
+lifecycle-grind gröna. **NÄSTA: research-passet** (Del 4:s fem frågor; den
+avgörande är om merge queue löser serialiseringen eller bara flyttar kön)
+**→ mekaniseringen** (Del 4:s punkt 1–4 och 6–7 är oberoende av researchen).
+Numrering vid resume: 91/079/L360/T100/f46/task-53. Full narrativ: sessionsdok
+S91 Del 1–5.
 
 **Session 90 ✅ AVSLUTAD (2026-07-26)** — **MARKERA-LÄGET SKARPT, OCH TRE YTOR
 SOM FICK SIN FORM.** **`task-48` levererad** (PR #226): byggt test-först,
