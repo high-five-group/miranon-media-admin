@@ -44,13 +44,29 @@ serialiseras; ~20 av 30 min var spill. **MÅLBILDEN inskriven:** människan vän
 aldrig SYSSLOLÖS — skärpningen är avsiktlig, noll väntan leder till att skära i
 täckning. **Sju mekaniseringar** i Del 4, sex körbara direkt vid resume.
 **INGA lessons mintade av Code** (L354–L359 förbrukade av vågornas agenter).
-Ingen ADR (079 ledigt), inga fällor, inga trådar. **Resumen körd 2026-07-26** —
-numreringen omläst mot disk och oförändrad, HEAD `8e86aa8`, CI + audit +
-lifecycle-grind gröna. **NÄSTA: research-passet** (Del 4:s fem frågor; den
-avgörande är om merge queue löser serialiseringen eller bara flyttar kön)
-**→ mekaniseringen** (Del 4:s punkt 1–4 och 6–7 är oberoende av researchen).
-Numrering vid resume: 91/079/L360/T100/f46/task-53. Full narrativ: sessionsdok
-S91 Del 1–5.
+Ingen ADR (079 ledigt), inga fällor, inga trådar. **RESUMEN + DEL 6 KÖRDA
+2026-07-26.** **Researchen klar — fyra pass mot primärkälla.** Merge queue är
+**stängd** (batchar inte `merge_group`-bygg, och kräver org-ägt repo — vårt är
+användarägt). Shardning **blockerad** (`parallelIndex` kolliderar över shards;
+Airtables 5 anrop/s är per BAS; basen går ej att klona — beräknade fält read-only,
+`Delete base` enterprise-only). Push-kadensen **låg rätt hela tiden** och
+premissen bakom oron föll (worktree-svepet hoppar över träd med opushade
+commits). **MÄTNINGEN VÄNDER BILDEN:** E2E-steget är 84 % av 9,25 min och
+**skriver aldrig till staging** — 296 av 332 tester mockar redan. **74 % (6,8
+min) är flyttbart**; hållningen 9,25 → ~2,4 min utan att skära i täckning, för
+API-sviten står kvar och bär integrationsbeviset. **Mekaniserat:** punkt 1
+(docs-klassningen — uppdraget pekade på FEL lista, luckan var fyra filer plus ett
+befintligt fail-open i Vale-regressionssviten; kontrastbevis skarpt 14,3 min →
+35 s) · punkt 2 (`npm run check:docs`, åtta grindar inte tre, saknat verktyg =
+SKIPPAT aldrig grönt) · punkt 3 (`ci-wait` exit 4 = superseddad; v1 var grön mot
+stubben och föll mot skarpt API). **Tre fel gjorda och fångade** — alla av
+mekanisk verifiering, noll av eftertanke. PR #247–#250. **NÄSTA: punkt 4
+(agent-brief-mallen) · punkt 6 (nummer-reservation — GRILLNINGSKANDIDAT) · punkt 7
+(partitionerings-regeln) · sedan mätningens steg 1 (hermetik-vakt i rapporterande
+läge).** Öppet: 109 mergade fjärrgrenar · `ZZ-GRANSKNING-S91` lever i staging ·
+`save-segment`-läckan saknar purge-target. Numrering: 91/079/L360/T100/f46/task-53
+(fyra lesson-kandidater i Del 6, EJ mintade — punkt 6 först). Full narrativ:
+sessionsdok S91 Del 1–6.
 
 **Session 90 ✅ AVSLUTAD (2026-07-26)** — **MARKERA-LÄGET SKARPT, OCH TRE YTOR
 SOM FICK SIN FORM.** **`task-48` levererad** (PR #226): byggt test-först,
