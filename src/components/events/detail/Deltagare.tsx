@@ -3,7 +3,6 @@ import { Link } from '@tanstack/react-router';
 import {
   BedDouble,
   Check,
-  CheckCheck,
   ChevronDown,
   Clock,
   History,
@@ -669,9 +668,9 @@ function MetaRad({ ikon: Ikon, children }: { ikon: LucideIcon; children: React.R
  * L303 (interaktivt bor aldrig i interaktivt).
  *
  * `vald` styr pill-raden: Obekräftad-pillen VIKER för markeringen (byggkrav 2
- * — ingen 'Vald'-pill ersätter den) och lämnar plats åt WCAG 1.4.1-bäraren,
- * så att valt tillstånd aldrig vilar på färgen ensam. Kategori-pillen står
- * kvar i båda lägena: vägen in är inte ett urvalstillstånd.
+ * — ingen 'Vald'-pill ersätter den). Kategori-pillen står kvar i båda lägena:
+ * vägen in är inte ett urvalstillstånd. WCAG 1.4.1-bäraren är kortets kant,
+ * inte en glyf här — se MarkerbartKort.
  */
 function KortInnehall({
   reg,
@@ -734,17 +733,6 @@ function KortInnehall({
             Staplade pillar i högerkanten är den graciösa degraderingen; på
             bredare ytor står de kvar på EN rad som i facit. */}
         <span className="flex max-w-[45%] shrink-0 flex-wrap items-center justify-end gap-1.5">
-          {vald && (
-            // WCAG 1.4.1-bäraren (byggkrav 7): valt tillstånd får aldrig vila
-            // på grönt ensamt. Glyfen bor i pill-radens FRIGJORDA plats —
-            // Marcus-låsta formen är orörd, ingen ny yta tillkommer.
-            <CheckCheck
-              data-testid="markering-check"
-              aria-hidden="true"
-              size={16}
-              className="shrink-0 text-success"
-            />
-          )}
           {!arBekraftad(reg) && !vald && (
             <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
               Obekräftad
@@ -830,8 +818,27 @@ function DeltagarKort({ reg, eventId }: { reg: Registration; eventId: string }) 
  * VAD som markeras.
  *
  * Formen: `--mm-success-bg` platta + `--mm-success` kant när vald, annars
- * kortets vanliga yta. Kanten finns i BÅDA lägena så geometrin aldrig hoppar
- * vid val — bara dess färg byts.
+ * kortets vanliga yta. Kant-BOXEN finns i båda lägena så geometrin aldrig
+ * hoppar vid val.
+ *
+ * KANTEN ÄR WCAG 1.4.1-BÄRAREN — riv den inte, och tona inte ned den.
+ * Ovalt kort har `--mm-navcard-border: transparent`, alltså INGEN synlig
+ * kontur; valt kort får `--mm-success` (#606b57). Skillnaden mellan lägena är
+ * därför att en kontur UPPSTÅR — närvaro/frånvaro av ett visuellt element, inte
+ * ett färgbyte — och det är precis det som gör att valt tillstånd inte vilar på
+ * färg ensam. Uppmätt 2026-07-26 (S91): kanten mot vitt 5,6:1 (1.4.11 kräver
+ * 3:1); under `prefers-contrast: more` står den mot `--mm-border-strong`
+ * (#c4c4c2) på 3,2:1 i ren ljushet, alltså läsbar även utan färgseende.
+ * Den gröna plattan mäter 1,05:1 mot vitt och bär i praktiken INGENTING för
+ * den färgblinde — den är dekor ovanpå signalen. Görs kanten någon gång
+ * ljusare, villkorad eller borttagen faller 1.4.1 direkt, oavsett hur tydligt
+ * det gröna ser ut för den som ser färg.
+ *
+ * Byggkrav 7:s check-glyf (`CheckCheck` i pill-radens frigjorda plats) är RIVEN
+ * 2026-07-26 på Marcus-beslut i design-reviewen: mätningen ovan visar att den
+ * inte behövdes, och dubbel-bocken läste dessutom som "skickat och läst" på ett
+ * kort vars hela poäng är att något strax SKA skickas. Öppen revidering av ett
+ * låst byggkrav — bokförd på task-48 och i DESIGN-SYSTEM-SPEC §19.
  */
 function MarkerbartKort({
   reg,
@@ -1256,8 +1263,19 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                     plats; i läget står Avbryt där. K47/K48-formen (pill +
                     kontrollfråga på rubriken) är riven — massmutationen har
                     flyttat till batch-baren där urvalet syns innan det
-                    skickas. §19: rubrikraden är toolbar-ytklass ⇒ kompakt sm;
-                    Markera skriver inget utåt (intern handling) ⇒ primary. */}
+                    skickas.
+
+                    EMPHASIS-PARET (Marcus design-review 2026-07-26, S91):
+                    Markera bär `primary` SOLID (#282928) = exakt S86-facit;
+                    Avbryt ärver den subtle plattan. Bygget hade satt Markera
+                    till `primary`/`subtle` med stöd i §19:s rad om
+                    toolbar-ytklass — men facit var Marcus-låst och vägde
+                    tyngre, och kollisionen skulle ha lyfts i stället för att
+                    lösas tyst. §19 är amenderad: en LÄGESÖPPNARE är sektionens
+                    primära kontroll, inte ett rad-verktyg, och bär därför
+                    solid. Avbryt är däremot en lågviktad utgång och tar den
+                    subtle plattan — synligare än ghost, som saknade
+                    bakgrund helt och läste som en textlänk. */}
                 <GruppRubrik
                   oppen={oppna.obekraftade}
                   varning
@@ -1266,7 +1284,8 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                   handling={
                     markering.aktivt ? (
                       <Button
-                        intent="ghost"
+                        intent="primary"
+                        emphasis="subtle"
                         size="sm"
                         aria-label="Avbryt markering"
                         onPress={markering.stang}
@@ -1278,9 +1297,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                       <Button
                         ref={markeraKnappRef}
                         intent="primary"
-                        emphasis="subtle"
                         size="sm"
-                        className="shadow-sm"
                         aria-label="Markera anmälningar"
                         onPress={() => {
                           // Läget kräver att kön är öppen — annars markerar
