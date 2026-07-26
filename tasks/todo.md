@@ -60,10 +60,14 @@ befintligt fail-open i Vale-regressionssviten; kontrastbevis skarpt 14,3 min →
 35 s) · punkt 2 (`npm run check:docs`, åtta grindar inte tre, saknat verktyg =
 SKIPPAT aldrig grönt) · punkt 3 (`ci-wait` exit 4 = superseddad; v1 var grön mot
 stubben och föll mot skarpt API). **Tre fel gjorda och fångade** — alla av
-mekanisk verifiering, noll av eftertanke. PR #247–#250. **NÄSTA: punkt 4
-(agent-brief-mallen) · punkt 6 (nummer-reservation — GRILLNINGSKANDIDAT) · punkt 7
-(partitionerings-regeln) · sedan mätningens steg 1 (hermetik-vakt i rapporterande
-läge).** Öppet: 109 mergade fjärrgrenar · `ZZ-GRANSKNING-S91` lever i staging ·
+mekanisk verifiering, noll av eftertanke. PR #247–#250. **Punkt 4 LANDAD** (hub-PR #3+#4): `code-role-discipline.md`
+**v1.3** med ny **§6 Delegering till subagenter** — partition före start, HÅRDA
+FÖRBUD i briefen, **explicit gren-mutationsrätt**, ingen dubbelbevakning,
+mottagning som hypotes; `SYSTEMET.md` §4 + tillståndsrad + ändringslogg synkade.
+Ingen plugin-bump (`templates/` ligger utanför pluginet). **NÄSTA: punkt 6
+(nummer-reservation — GRILLNINGSKANDIDAT) · punkt 7 (partitionerings-regeln —
+rör Marcus eget arbetssätt, tas ej ensidigt) · E2E-utbrytningen ur mutexen
+(ARKITEKTUR → grillning; mät-först per passets rangordning).** Öppet: 109 mergade fjärrgrenar · `ZZ-GRANSKNING-S91` lever i staging ·
 `save-segment`-läckan saknar purge-target. Numrering: 91/079/L360/T100/f46/task-53
 (fyra lesson-kandidater i Del 6, EJ mintade — punkt 6 först). Full narrativ:
 sessionsdok S91 Del 1–6.
