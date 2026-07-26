@@ -243,13 +243,17 @@ function byggModell() {
         varde,
         hex: arHex(lost) ? lost.toLowerCase() : null,
         beraknad: !arHex(lost) && /color-mix/.test(varde),
+        // transparent är ett fullgott rollvärde. --mm-border-quiet är
+        // transparent i vila per konstruktion, och en roll som filtreras bort
+        // för att den saknar hex är en roll atlasen tiger om.
+        genomskinlig: lost === 'transparent',
         iTema: Boolean(bas),
         viaVar,
         viaUtility,
         anvandning: viaVar + viaUtility,
       };
     })
-    .filter((r) => r.hex || r.beraknad);
+    .filter((r) => r.hex || r.beraknad || r.genomskinlig);
 
   // ── Lager 3 ──
   //
@@ -576,7 +580,11 @@ function byggHtml(modell, skalor, fynd) {
     .map(
       (r) => `<tr>
       <td><code>${esc(r.namn)}</code></td>
-      <td>${r.hex ? `<span class="punkt" style="background:${r.hex}"></span><code>${esc(r.hex)}</code>` : '<em>beräknad</em>'}</td>
+      <td>${
+        r.hex
+          ? `<span class="punkt" style="background:${r.hex}"></span><code>${esc(r.hex)}</code>`
+          : `<em>${r.genomskinlig ? 'transparent' : 'beräknad'}</em>`
+      }</td>
       <td><code class="tyst">${esc(r.varde)}</code></td>
       <td>${r.iTema ? 'ja' : '<span class="varn">nej</span>'}</td>
       <td class="${r.anvandning === 0 ? 'dod' : ''}">${

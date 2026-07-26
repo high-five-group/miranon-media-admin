@@ -11,9 +11,18 @@
       "resultat": "0",
       "not": "Samtliga träffar i src/ är kommentarstext, inte kod."
     },
-    { "kontroll": "Arbiträra Tailwind-värden (bg-[#fff])", "resultat": "0" },
-    { "kontroll": "Inline style med färg", "resultat": "0" },
-    { "kontroll": "Färgliteraler i SVG fill/stroke", "resultat": "0" }
+    {
+      "kontroll": "Arbiträra Tailwind-värden (bg-[#fff])",
+      "resultat": "0"
+    },
+    {
+      "kontroll": "Inline style med färg",
+      "resultat": "0"
+    },
+    {
+      "kontroll": "Färgliteraler i SVG fill/stroke",
+      "resultat": "0"
+    }
   ],
   "fynd": [
     {
@@ -99,13 +108,14 @@
     },
     {
       "id": "F11",
-      "rubrik": "Primärknappens pressed-läge är ljusare än vila",
-      "allvar": "hög",
+      "rubrik": "Primärknappens pressed-läge var ljusare än vila — löst 2026-07-27",
+      "allvar": "löst",
       "plats": ["src/styles/tokens/components.css:19"],
       "vad": "--mm-button-primary-bg-pressed räknas som color-mix på HOVER-värdet, inte på vilo-värdet: color-mix(in srgb, var(--mm-btn-primary-hover), black 10%). Hover är ljusare än vila (neutral-700 mot neutral-800), så pressed hamnar över vilo-läget.",
       "verifiering": "vila #282928 CIE L* 16,5 · hover #3a3a3a 24,4 · pressed #343434 21,7. Pressed ligger 5,2 L*-enheter ÖVER vila.",
       "foljd": "Att trycka ner knappen gör den ljusare än den var innan man rörde den. Alla andra intents (danger, success) räknar pressed på sitt eget vilo-värde och mörknar korrekt — primary är den enda som ärver hoverns.",
-      "fallan": "Buggen finns i appen idag och har inget med migreringen att göra. Men den förvärras av den: med neutral-11 som hover växer inversionen från 5,2 till omkring 31 enheter. Rätta före migreringen, inte efter."
+      "fallan": "Buggen finns i appen idag och har inget med migreringen att göra. Men den förvärras av den: med neutral-11 som hover växer inversionen från 5,2 till omkring 31 enheter. Rätta före migreringen, inte efter.",
+      "atgard": "Pressed räknas nu på VILO-värdet i stället för på hover-värdet: color-mix(in srgb, var(--mm-btn-primary-bg), black 15%). Resultatet är CIE L* 13,6 mot vilans 16,5 — 2,9 enheter under, alltså urskiljbart och konventionsenligt. Branschkonventionen är att en knapp vars hover LJUSNAR ska MÖRKNA vid tryck, så att intrycket blir intryckning; hover-ljusningen (neutral-800 → neutral-700) behålls eftersom den är rätt för en mörk knapp. 15 % är samma procent som danger och success redan använder för pressed, så primary får nu samma grammatik som de andra intents. DETTA ÄNDRAR APPENS UTSEENDE — nedtryckt primärknapp blir mörkare än förut. Vit text mot den nya pressed-ytan mäter 15,77:1."
     },
     {
       "id": "F12",
@@ -133,11 +143,13 @@
     },
     {
       "id": "F15",
-      "rubrik": "Fem saknade lager-2-roller är grundorsaken till spridningen",
+      "rubrik": "Fem saknade lager-2-roller — två namngivna, tre kräver designval",
       "allvar": "medel",
       "vad": "Varje mönster där samma visuella syfte uttrycks på tre till fem sätt går tillbaka på en roll som inte finns: solid inverterad yta (14 förekomster via --mm-text), vald/selected-tillstånd (11 via fyra olika roller), mätarens track och fyllnad (12 via fem implementationer), osynlig-tills-kontrast-kant (11 via NavCard-tokens utanför NavCard), samt en gemensam alfaskala.",
       "verifiering": "Svag avdelare uttrycks på fyra sätt: divide-border 28 · border-text-muted/20 11 · bg-border 5 · border-border-light 3.",
-      "foljd": "Där rollen SAKNAS improviserar varje komponent. Där rollen FINNS men bor i en CSS-kommentar (F12) uppstår samma spridning av motsatt skäl. Mätarens tokengap är redan öppet bokfört i två komponenter oberoende av varandra, vilket gör det starkare som fynd — två skivor stötte på samma vägg."
+      "foljd": "Där rollen SAKNAS improviserar varje komponent. Där rollen FINNS men bor i en CSS-kommentar (F12) uppstår samma spridning av motsatt skäl. Mätarens tokengap är redan öppet bokfört i två komponenter oberoende av varandra, vilket gör det starkare som fynd — två skivor stötte på samma vägg.",
+      "atgard": "NAMNGIVNA 2026-07-27, båda med värden härledda ur befintlig användning så att flytten blir visuellt neutral: --mm-surface-inverse (svärtan som YTA i stället för som text, 13 ställen lånade --mm-text) och --mm-border-quiet / --mm-border-quiet-contrast (kant som syns först under prefers-contrast, 54 ställen varav 12 lånade NavCards komponent-tokens utanför NavCard). Ingen komponent är migrerad till dem ännu.",
+      "oppet": "TRE KRÄVER DESIGNVAL och namnges inte på gissning. (1) Vald/selected-tillstånd: fyra skrivsätt i bruk med olika karaktär — bg-emphasized (neutral), primary-tint (guld), bg-text (svärta), data-[selected]:bg-bg. Valet avgör om markering är neutral, kulörburen eller inverterad. (2) Mätarens track och fyllnad: tre kulörer i bruk — bg-success (5), bg-(--p-neutral-400) (2), bg-primary-muted (1). NastaEventCard och EventCard visar SAMMA tal i samma app med olika kulör. Gapet är redan öppet bokfört i båda filerna. (3) Gemensam alfaskala: åtta procentsatser i CSS-lagret (6, 8, 10, 12, 14, 15, 16, 22) plus /20 och /95 i utility-lagret. Att konsolidera dem kräver beslut om vilka nivåer som ska finnas, och varje avvikelse från dagens värde ändrar utseendet."
     }
   ]
 }

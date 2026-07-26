@@ -181,11 +181,18 @@ for (const [namn, data] of atlasRoller) {
 for (const [namn] of semKalla) {
   if (!namn.startsWith('--mm-')) continue;
   const varde = semKalla.get(namn);
+  // `transparent` hörde inte hit förrän --mm-border-quiet infördes, och dess
+  // frånvaro var en DELAD blind fläck: generatorn filtrerade bort rollen för
+  // att den saknade hex, och den här kontrollen hoppade över den av samma
+  // skäl. Oberoende implementation räcker inte när antagandet är gemensamt —
+  // det är den svåraste sortens lucka att upptäcka, eftersom verifieringen då
+  // bekräftar exakt det den skulle ifrågasätta.
   const arFarg =
     /^#/.test(varde) ||
     /var\(\s*--p-/.test(varde) ||
     /color-mix/.test(varde) ||
-    /var\(\s*--mm-/.test(varde);
+    /var\(\s*--mm-/.test(varde) ||
+    varde.trim() === 'transparent';
   if (!arFarg) continue;
   if (/-(width|offset|offset-inset)$/.test(namn)) continue;
   kolla(`Roll ${namn} i källan finns även i atlasen`, atlasRoller.has(namn));
