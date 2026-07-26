@@ -119,3 +119,11 @@
 # docs/research/detaljsida-postvy-monster-2026-07-24.md. Domän-brett:
 # blocket är systemiskt för help.shopify.com.
 ^https://help\.shopify\.com/.*$
+
+# S90 (2026-07-26): check-in-mönsterresearchen. Båda svarar 403 mot lychee men
+# 200 i riktig browser — UA/fingerprint-klassen, samma som help.shopify.com
+# ovan och gitlab-posten (S84). Källorna är LÄSTA och citerade i
+# docs/research/checkin-monsterklassen-2026-07-26.md; det är grindens
+# hämtning som blockeras, inte källans existens.
+^https://splashthat\.com/.*$
+^https://help\.classdojo\.com/.*$

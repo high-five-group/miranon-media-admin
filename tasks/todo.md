@@ -15,6 +15,63 @@
 
 ## Aktuellt fokus
 
+**Session 90 ✅ AVSLUTAD (2026-07-26)** — **MARKERA-LÄGET SKARPT, OCH TRE YTOR
+SOM FICK SIN FORM.** **`task-48` levererad** (PR #226): byggt test-först,
+**11 nya e2e röda före implementation → 17 gröna efter**, axe 0, med
+rött-först-utfallet observerat lokalt (T92 (a):s recept — egen dev-server på
+4183, Marcus 5173 orörd — därmed **empiriskt bevisat men fortfarande ohärdat**).
+Tre former rivna i kod och spec: K46 per-kort-knappen, K47/K48 Bekräfta
+alla-pillen, `useSendConfirmation`. Renderad verifiering (DoD #6): valt kort
+`rgb(240, 253, 244)` = `--mm-success-bg` · kant `rgb(96, 107, 87)` =
+`--mm-success` · batch-knappens bredd **205,89 px identisk vid 2 och 6 valda**
+(breddlåset MÄTT) · kön 408 px mot `scrollHeight` 824. **Review-piloten gav
+7 fynd + 3 småfynd, alla åtgärdade** — två träffade 11-ribban (fokus föll till
+`document.body`; live-regionens attribut otestade) och **ett träffade Lottas
+faktiska arbete** (ett `partial`-svar nollade hela markeringen). Kortet står
+**`In Progress`** — DoD #5 design-review i webbläsaren är Marcus-moment.
+**Tre prototyp-pass** (PR #227), körda som workflows med subagenter på
+natt-chefs-order, **67 skärmdumpar över fyra bilagemappar:** Personer-listan
+konvergens från EXAKT kopia i elva förfiningssteg med **två forkar kvar på
+bild** (tonal mot zebra) · persondetalj divergens A/B/C med **tre defekter
+dödade i alla tre = byggkrav oavsett vinnare** · check-in divergens A/B/C, noll
+mutationer. **Research-passet VÄNDE check-in-forken:** "markera alla
+närvarande" är **inte** ett dörr-mönster — noll av fem undersökta produkter bär
+det vid dörren, så A9/A10 hör till registret och per-post-write till dörren.
+En skrivväg per situation; ingen fork kvar att välja. **Check-in-underlaget
+skarpt utan variantval:** A8 (`wfl1iYPrEmlKpEsRU`) live-verifierad mot prod —
+`watchFields` är enbart `Status`, alltså skriver appen **aldrig** `Avstämt`;
+allowlist-posten `set-attendance-status` låst med live-grund; generisk
+`update-record`, **ingen ny EF**; kort-kartan 0–9 med tre variant-oberoende
+skivor som kan börja omedelbart. Attribueringen (`Registrerad av` =
+`lastModifiedBy` ⇒ token-ägaren, inte Lotta) står som öppen grillningsfråga.
+**TASK-52 FÖDD** — persondetaljen faller för varje person med motivering
+(`Motivering (text)` är en LOOKUP och returnerar array, schemat kräver
+`z.string()`); live-verifierad, osynlig för alla grindar eftersom fixturvärlden
+använder schema-trogna strängar. **TASK-27 fick sin första skarpa träff
+bokförd** — CI-run 30178541626 föll 23:07 UTC på ett print-datum i task-17.7:s
+svit, alltså i en HELT ANNAN svit än de två kortet kände till; deterministiskt
+inom fönstret, tre retries räddade det inte, **landningen blockerad till efter
+midnatt UTC**. **Hub-guarden korrigerad** (marcus-system PR nr 2) —
+"Airtable MCP kan inte se automationer" gällde en av två servrar;
+claude.ai-connectorn bär `list_automations`. **SKÖRD L349–L353**
+[UNIVERSAL ×5] — L349 RAC:s roll bor på det dolda `<input>`, inte på träffytan ·
+L350 ett 200-svar som inte är rent är inte ett lyckat svar · L351 en kategorisk
+guard som är fel i halva sitt område får agenten att sluta leta · L352 en
+Tailwind-variant i bas-strängen vinner över en villkorad grundklass · L353
+research FÖRE prototyp när frågan är vilken mönsterklass problemet tillhör.
+**Ingen ADR** (079 ledigt — närvaro-write-ADR:n mintas i check-in-PRD:ns
+grillning efter variantvalet), inga fällor, inga trådar. Öppet vid dagens slut:
+PR #226 + #227 omergade (#226 blockerad av TASK-27-klassen, #227 röd på
+`Docs link check` med två 403-bottspärrar i research-dokets källförteckning —
+`.lycheeignore`-klassen). **NÄSTA (NY session S91): (1) Marcus design-review
+av `task-48` i webbläsaren (DoD #5) → Done-flipp · (2) variantvalen —
+persondetalj A/B/C, check-in A/B/C, listans tonal/zebra-fork (L237: justeringar
+i valfasen blir byggkrav) · (3) därefter PRD + skivor per yta, där
+check-in-kartans kort 1–3 är variant-oberoende och kan börja direkt.
+`TASK-52` plockbart fynd-kort.** Numrering efter S90:
+91/079/L354/T99/f46/task-53. Full narrativ: sessionsdok S90 Del 1–2 +
+BUILD-LOG S90-post.
+
 **Session 89 ✅ AVSLUTAD (2026-07-25)** — **QA-VANDRINGENS TRE FYND:
 ALLA TRE HADE FEL GRUNDORSAK.** Korten skrevs kvällen innan ur QA-vandringen,
 två med stämpeln `GRUNDORSAK (bevisad)` — symptomen var korrekta, steget till

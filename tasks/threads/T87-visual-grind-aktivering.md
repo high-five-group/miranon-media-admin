@@ -169,3 +169,24 @@ behövs endast vid uppgraderings-drift (kadens-regeln) — sällan.
 Sessionsdok S81 Del 2–6 (hela bygget) · CONTRIBUTING § Visuell
 regression · task-36.7-kortet (AC 7–8 = detta aktiverings-steg) ·
 besläktad `T85` (våg 2b).
+
+## Utökat aktiverings-krav (S90, 2026-07-26)
+
+Aktiveringssteget måste förnya **personer-baselinen**, inte bara eventsidans.
+
+S90:s prototyp-pass skrev om den hermetiska fixturvärlden: `get-persons` gick
+från ett fruset svar med 8 personer till en **paginerande resolver** med ~17
+personer och `FIXTURE_PAGE_SIZE = 10`. Personlistan renderar därmed 10 rader
+plus "Ladda fler" där baselinen har 8 rader utan knapp.
+
+`tests/visual/__screenshots__/personer.spec.ts/personer-visual-{desktop,mobile}-linux.png`
+är alltså **stale sedan commit `f0f11f3`** och personer-testet går rött så
+snart visual-sviten körs på linux. Det märktes inte i S90 eftersom grinden är
+parkerad — vilket är precis den tysta drift en parkerad grind samlar på sig.
+
+Sedan tidigare gäller samma sak för `eventsida.png` (task-48 byggkrav 8,
+markera-läget). Aktiveringen behöver alltså förnya **minst två** baselines,
+och steget bör börja med en inventering av vilka fler som driftat under
+parkeringen — inte med en lista skriven före den.
+
+Fynd-källa: S90:s smoke-verifiering av prototyp-varianterna.
