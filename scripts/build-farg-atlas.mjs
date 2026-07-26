@@ -19,7 +19,7 @@
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { hexTillRgb, matning, oklch, textPa } from './lib/farg.mjs';
+import { colorMix, hexTillRgb, matning, oklch, over, textPa } from './lib/farg.mjs';
 import { provaKontrakt, STEG_ROLLER } from './lib/skala.mjs';
 
 /**
@@ -75,6 +75,56 @@ function losAlias(varde, alla, djup = 0) {
 }
 
 const arHex = (v) => typeof v === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(v.trim());
+
+const NAMNGIVNA = { black: '#000000', white: '#ffffff', transparent: 'transparent' };
+
+/**
+ * Räknar ut vad en color-mix-deklaration faktiskt ger för färg.
+ *
+ * Två former förekommer i components.css och de betyder olika saker:
+ *   color-mix(in srgb, VAR, black 12%)      → VAR mörknad med tolv procent
+ *   color-mix(in srgb, VAR 10%, transparent) → VAR med tio procents opacitet
+ *
+ * Den andra formen ger alfa och inte en mörkare ton — blandas den i stället
+ * mot svart landar man på #110000 där rätt svar är #f6e6e6 över vit yta.
+ */
+function tolkaMix(varde, alla) {
+  if (!varde.startsWith('color-mix')) return null;
+
+  const inre = varde.slice(varde.indexOf('(') + 1, varde.lastIndexOf(')'));
+  const delar = inre.split(',').map((d) => d.trim());
+  if (delar[0] !== 'in srgb' || delar.length < 3) return null;
+
+  const los = (uttryck) => {
+    const m = uttryck.match(/var\(\s*(--[\w-]+)\s*\)/);
+    if (m) {
+      const v = alla.get(m[1]);
+      return v ? losAlias(v, alla) : null;
+    }
+    const ord = uttryck.replace(/\s*[\d.]+%\s*/, '').trim();
+    return NAMNGIVNA[ord] ?? (arHex(ord) ? ord : null);
+  };
+
+  const procent = (uttryck) => {
+    const m = uttryck.match(/([\d.]+)%/);
+    return m ? Number(m[1]) : null;
+  };
+
+  const [, forsta, andra] = delar;
+  const a = los(forsta);
+  const b = los(andra);
+  if (!a) return null;
+
+  // Vikten hör till den del som bär procenttalet; saknas den på första delen
+  // ligger den på andra, och då är första delens vikt resten.
+  const pA = procent(forsta);
+  const pB = procent(andra);
+  const vikt = pA ?? (pB !== null ? 100 - pB : 50);
+
+  if (b === 'transparent') return { hex: a, alfa: vikt / 100 };
+  if (!arHex(a) || !arHex(b)) return null;
+  return { hex: colorMix(a, vikt, b).hex, alfa: 1 };
+}
 
 // ── Steg 2: räkna faktisk användning ─────────────────────────────────────────
 
@@ -201,6 +251,32 @@ function byggModell() {
     })
     .filter((r) => r.hex || r.beraknad);
 
+  // ── Lager 3 ──
+  //
+  // Saknades i atlasen tills komponent-kartläggningen. 88 tokens, och de är
+  // inte likvärdiga: de som bara alias:ar en roll följer med automatiskt när
+  // lager 2 pekas om, medan de som räknar med color-mix gör egen färgmatte på
+  // ingångsvärdet. De senare är migreringens verkliga risk.
+  const komponentTokens = [...komponent]
+    // dialog-width-* är mått, inte färger. Ett token är inte en färg bara för
+    // att det bor i samma fil.
+    .filter(([namn]) => !/-(width|radius|padding|size|weight)(-|$)/.test(namn))
+    .map(([namn, varde]) => {
+      const grupp = namn.replace('--mm-', '').split('-')[0];
+      const beror = [...varde.matchAll(/var\(\s*(--mm-[\w-]+)\s*\)/g)].map((m) => m[1]);
+      const bas = { namn, grupp, varde, beror, anvandning: raknaAnvandning(namn, tsx) };
+
+      const mix = tolkaMix(varde, alla);
+      if (mix) return { ...bas, typ: 'mix', ...mix };
+
+      const lost = losAlias(varde, alla);
+      if (arHex(lost)) return { ...bas, typ: 'alias', hex: lost.toLowerCase(), alfa: 1 };
+      // transparent är ett fullgott värde, inte ett olöst. Fem knappvarianter
+      // bygger på det: ytan är genomskinlig och kanten bär identiteten.
+      if (lost === 'transparent') return { ...bas, typ: 'transparent', hex: null, alfa: 0 };
+      return { ...bas, typ: 'literal', hex: null, alfa: 1 };
+    });
+
   // Utility-namnet Tailwind genererar ur en @theme-post: --color-bg-muted → bg-muted
   const temaRoller = [...tema]
     .filter(([namn]) => namn.startsWith('--color-'))
@@ -209,7 +285,7 @@ function byggModell() {
       return { namn, bas, varde, anvandning: raknaUtility(bas) };
     });
 
-  return { primitivFarger, semantiskaRoller, temaRoller };
+  return { primitivFarger, semantiskaRoller, temaRoller, komponentTokens };
 }
 
 // ── Steg 4: gruppera primitiver i skalor ─────────────────────────────────────
@@ -301,6 +377,28 @@ function byggDtcg(modell, skalor, fynd) {
     };
   }
 
+  const komponent = {
+    $type: 'color',
+    $description:
+      'Lager 3 — komponent-tokens. typ=alias följer med när lager 2 pekas om; typ=mix räknar egen färgmatte på ingångsvärdet och är migreringens risk.',
+  };
+  for (const t of modell.komponentTokens) {
+    komponent[t.namn.replace('--mm-', '')] = {
+      ...(t.hex ? { $value: dtcgFarg(t.hex) } : {}),
+      $description: `${t.namn} → ${t.varde}`,
+      $extensions: {
+        'se.miranon.atlas': {
+          cssVar: t.namn,
+          grupp: t.grupp,
+          typ: t.typ,
+          beror: t.beror,
+          alfa: t.alfa,
+          anvandning: t.anvandning,
+        },
+      },
+    };
+  }
+
   return {
     $description:
       'Färgatlas för Miranon Media Admin. Genererad ur src/ av scripts/build-farg-atlas.mjs — redigera inte för hand.',
@@ -314,6 +412,7 @@ function byggDtcg(modell, skalor, fynd) {
     },
     primitiv,
     roll,
+    komponent,
   };
 }
 
@@ -388,6 +487,35 @@ function byggHtml(modell, skalor, fynd) {
     .filter(([g]) => !g.endsWith(' '))
     .map(renderaSkala)
     .join('\n');
+
+  // Lager 3
+  const lager3 = { alias: 0, mix: 0, transparent: 0, literal: 0 };
+  const rollRakning = new Map();
+  for (const t of modell.komponentTokens) {
+    lager3[t.typ] = (lager3[t.typ] ?? 0) + 1;
+    for (const r of t.beror) rollRakning.set(r, (rollRakning.get(r) ?? 0) + 1);
+  }
+  lager3.toppRoller = [...rollRakning]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([r, n]) => `<code>${esc(r)}</code> (${n})`)
+    .join(', ');
+
+  const komponentRader = modell.komponentTokens
+    .map((t) => {
+      // Genomskinliga tokens visas mot den yta de faktiskt hamnar på, annars
+      // ser de ut som sin egen fullfärg och tabellen ljuger.
+      const prov = t.hex ? (t.alfa < 1 ? over(t.hex, t.alfa, '#ffffff') : t.hex) : null;
+      return `<tr>
+      <td><code>${esc(t.namn)}</code></td>
+      <td>${prov ? `<span class="punkt" style="background:${prov}"></span><code>${esc(prov)}</code>${t.alfa < 1 ? ` <span class="delning">alfa ${t.alfa}</span>` : ''}` : `<em>${esc(t.typ)}</em>`}</td>
+      <td>${t.typ === 'mix' ? '<strong>mix</strong>' : esc(t.typ)}</td>
+      <td>${t.beror.map((r) => `<code>${esc(r)}</code>`).join(' ') || '—'}</td>
+      <td><code class="tyst">${esc(t.varde.length > 64 ? `${t.varde.slice(0, 61)}…` : t.varde)}</code></td>
+      <td class="${t.anvandning === 0 ? 'dod' : ''}">${t.anvandning || 'oanvänd'}</td>
+    </tr>`;
+    })
+    .join('');
 
   // Roller
   const rollRader = modell.semantiskaRoller
@@ -550,7 +678,7 @@ function byggHtml(modell, skalor, fynd) {
      skriven för hand. Sex tolvstegsskalor ligger i appen som material; rollerna pekar
      ännu på den gamla paletten.</p>
   <p class="meta">Byggd ${nu} · ${modell.primitivFarger.length} primitiver ·
-     ${modell.semantiskaRoller.length} roller · ${modell.temaRoller.length} utilities i <code>@theme</code></p>
+     ${modell.semantiskaRoller.length} roller · ${modell.komponentTokens.length} komponent-tokens · ${modell.temaRoller.length} utilities
 </header>
 
 <h2>1. Paletten</h2>
@@ -583,13 +711,28 @@ ${gamlaSektioner}
       (flera lever ändå via <code>var()</code> i CSS-lagret)</li>
 </ul>
 
-<h2>4. Vad som håller</h2>
+<h2>4. Komponent-tokens — lager 3</h2>
+<p class="lead">Det lager som ligger mellan rollerna och komponenterna. Kolumnen <em>typ</em>
+   avgör vad som händer vid en migrering: <strong>alias</strong> följer med automatiskt när
+   lager 2 pekas om, medan <strong>mix</strong> räknar egen färgmatte på ingångsvärdet och
+   därför kan bete sig annorlunda när ingången byter mättnad eller ljushet.</p>
+<ul class="noter">
+  <li><strong>${lager3.alias}</strong> rena alias · <strong>${lager3.mix}</strong> color-mix ·
+      <strong>${lager3.transparent}</strong> transparent · <strong>${lager3.literal}</strong> literala</li>
+  <li>Roller som matar flest komponent-tokens: ${lager3.toppRoller}</li>
+</ul>
+<div class="tabellyta"><table>
+  <thead><tr><th>Token</th><th>Färg</th><th>Typ</th><th>Beror på</th><th>Definition</th><th>Anv.</th></tr></thead>
+  <tbody>${komponentRader}</tbody>
+</table></div>
+
+<h2>5. Vad som håller</h2>
 <ul class="rent">${rentRader}</ul>
 
-<h2>5. Brister</h2>
+<h2>6. Brister</h2>
 ${fyndSektioner}
 
-<h2>6. Så här är atlasen byggd</h2>
+<h2>7. Så här är atlasen byggd</h2>
 <p class="lead">Tokens läses ur <code>src/styles/tokens/*.css</code>, användningen räknas i
    <code>src/</code>, mätvärdena beräknas i <code>scripts/lib/farg.mjs</code> och skalorna
    genereras i <code>scripts/lib/skala.mjs</code>. Det enda handskrivna är auditens fynd i
@@ -625,7 +768,7 @@ writeFileSync(join(ROT, 'docs/design/farg-atlas.html'), byggHtml(modell, skalor,
 // bort, och de växer.
 
 console.log(
-  `\n  ${modell.primitivFarger.length} primitiver, ${modell.semantiskaRoller.length} roller, ${modell.temaRoller.length} utilities`,
+  `\n  ${modell.primitivFarger.length} primitiver, ${modell.semantiskaRoller.length} roller, ${modell.komponentTokens.length} komponent-tokens, ${modell.temaRoller.length} utilities`,
 );
 console.log('  → docs/design/farg-atlas.tokens.json');
 console.log('  → docs/design/farg-atlas.html');

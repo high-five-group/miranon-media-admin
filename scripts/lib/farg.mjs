@@ -151,6 +151,39 @@ export function maxKroma(L, h) {
   return lag;
 }
 
+// ── color-mix ────────────────────────────────────────────────────────────────
+
+/**
+ * Räknar ut vad `color-mix(in srgb, ...)` faktiskt ger.
+ *
+ * Interpolationen sker i GAMMA-KODAD sRGB, inte i linjärt ljus — det är vad
+ * CSS Color 5 föreskriver för `in srgb`, och skillnaden är inte akademisk:
+ * linjär blandning ger märkbart ljusare mellanlägen. Procenten normaliseras
+ * enligt p1' = p1 / (p1 + p2).
+ *
+ * `transparent` behandlas som en alfa-multiplikator och INTE som svart. Det är
+ * den vanligaste missuppfattningen om color-mix: `color-mix(in srgb, red 10%,
+ * transparent)` är röd med tio procents opacitet, inte en mörkröd ton.
+ *
+ * @returns {{hex: string, alfa: number}}
+ */
+export function colorMix(farg, vikt, mot) {
+  const p = vikt / 100;
+
+  if (mot === 'transparent') return { hex: farg.toLowerCase(), alfa: p };
+
+  const a = hexTillRgb(farg);
+  const b = hexTillRgb(mot);
+  return { hex: rgbTillHex(a.map((v, i) => v * p + b[i] * (1 - p))), alfa: 1 };
+}
+
+/** Lägger en genomskinlig färg över en ogenomskinlig yta och ger resultatet. */
+export function over(farg, alfa, yta) {
+  const f = hexTillRgb(farg);
+  const y = hexTillRgb(yta);
+  return rgbTillHex(f.map((v, i) => v * alfa + y[i] * (1 - alfa)));
+}
+
 // ── Härledda mått för atlasen ────────────────────────────────────────────────
 
 /** Alla mått en färgruta i atlasen visar. */

@@ -191,6 +191,121 @@ for (const [namn] of semKalla) {
   kolla(`Roll ${namn} i källan finns även i atlasen`, atlasRoller.has(namn));
 }
 
+// ── B2. Komponent-tokens (lager 3) ──────────────────────────────────────────
+
+const kompKalla = lasTokens('src/styles/tokens/components.css');
+
+/**
+ * Oberoende color-mix, skriven ur CSS Color 5 i stället för importerad.
+ *
+ * Interpolationen sker i gamma-kodad sRGB — inte i linjärt ljus. Blandning mot
+ * `transparent` ger alfa och inte en mörkare färg; den skillnaden är stor nog
+ * att synas direkt (#f6e6e6 mot #110000 för samma deklaration).
+ */
+function mixaOberoende(farg, vikt, mot) {
+  if (mot === 'transparent') return { hex: farg.toLowerCase(), alfa: vikt / 100 };
+  const p = vikt / 100;
+  const a = hexTillKanaler(farg);
+  const b = hexTillKanaler(mot);
+  const kanal = (i) => Math.round(Math.min(1, Math.max(0, a[i] * p + b[i] * (1 - p))) * 255);
+  return {
+    hex: `#${[0, 1, 2].map((i) => kanal(i).toString(16).padStart(2, '0')).join('')}`,
+    alfa: 1,
+  };
+}
+
+/** Följer en var()-kedja i källan till ett faktiskt värde. */
+function slutvarde(uttryck, djup = 0) {
+  if (djup > 10) return null;
+  const m = uttryck.trim().match(/^var\(\s*(--[\w-]+)\s*\)$/);
+  if (!m) return uttryck.trim();
+  const nasta = kompKalla.get(m[1]) ?? semKalla.get(m[1]) ?? primKalla.get(m[1]);
+  return nasta ? slutvarde(nasta, djup + 1) : null;
+}
+
+const atlasKomponent = Object.entries(atlas.komponent ?? {})
+  .filter(([n]) => !n.startsWith('$'))
+  .map(([, t]) => ({ ...t.$extensions['se.miranon.atlas'], hex: t.$value?.hex }));
+
+kolla('Atlasen har ett lager 3', atlasKomponent.length > 50, `${atlasKomponent.length} tokens`);
+
+for (const t of atlasKomponent) {
+  const kallVarde = kompKalla.get(t.cssVar);
+  kolla(`Komponent-token ${t.cssVar} finns i components.css`, Boolean(kallVarde));
+  if (!kallVarde) continue;
+
+  // Beroendena ska vara exakt de roller källan refererar
+  const iKalla = [...kallVarde.matchAll(/var\(\s*(--mm-[\w-]+)\s*\)/g)].map((m) => m[1]);
+  kolla(
+    `Komponent-token ${t.cssVar} har rätt beroenden`,
+    JSON.stringify(t.beror) === JSON.stringify(iKalla),
+    `atlas ${JSON.stringify(t.beror)}, källa ${JSON.stringify(iKalla)}`,
+  );
+
+  // Typen ska stämma med hur värdet faktiskt ser ut
+  const vantadTyp = kallVarde.startsWith('color-mix')
+    ? 'mix'
+    : slutvarde(kallVarde) === 'transparent'
+      ? 'transparent'
+      : /^#/.test(String(slutvarde(kallVarde)))
+        ? 'alias'
+        : 'literal';
+  kolla(
+    `Komponent-token ${t.cssVar} har rätt typ`,
+    t.typ === vantadTyp,
+    `atlas ${t.typ}, härlett ${vantadTyp}`,
+  );
+
+  // Alias: färgen ska vara vad kedjan landar på
+  if (t.typ === 'alias') {
+    kolla(
+      `Komponent-token ${t.cssVar} löser till rätt färg`,
+      t.hex === String(slutvarde(kallVarde)).toLowerCase(),
+      `atlas ${t.hex}, kedjan ${slutvarde(kallVarde)}`,
+    );
+  }
+
+  // Mix: räkna om från grunden och jämför
+  if (t.typ === 'mix') {
+    const inre = kallVarde.slice(kallVarde.indexOf('(') + 1, kallVarde.lastIndexOf(')'));
+    const delar = inre.split(',').map((d) => d.trim());
+    if (delar.length >= 3) {
+      const namngivna = { black: '#000000', white: '#ffffff', transparent: 'transparent' };
+      const los = (u) => {
+        const v = u.match(/var\(\s*(--[\w-]+)\s*\)/);
+        if (v) return slutvarde(`var(${v[1]})`);
+        const ord = u.replace(/\s*[\d.]+%\s*/, '').trim();
+        return namngivna[ord] ?? ord;
+      };
+      const pct = (u) => {
+        const m = u.match(/([\d.]+)%/);
+        return m ? Number(m[1]) : null;
+      };
+      const a = los(delar[1]);
+      const b = los(delar[2]);
+      const vikt = pct(delar[1]) ?? (pct(delar[2]) !== null ? 100 - pct(delar[2]) : 50);
+      if (a && b && /^#/.test(a)) {
+        const vantat = mixaOberoende(a, vikt, b);
+        kolla(
+          `Komponent-token ${t.cssVar} har rätt uträknad färg`,
+          t.hex === vantat.hex && Math.abs(t.alfa - vantat.alfa) < 0.001,
+          `atlas ${t.hex}/alfa ${t.alfa}, oberoende ${vantat.hex}/alfa ${vantat.alfa}`,
+        );
+      }
+    }
+  }
+}
+
+// Fullständighet: varje färgtoken i källan ska finnas i atlasen
+for (const [namn, varde] of kompKalla) {
+  if (/-(width|radius|padding|size|weight)(-|$)/.test(namn)) continue;
+  if (!/var\(|color-mix|^#|transparent/.test(varde)) continue;
+  kolla(
+    `Komponent-token ${namn} i källan finns även i atlasen`,
+    atlasKomponent.some((t) => t.cssVar === namn),
+  );
+}
+
 // ── C. Användningsräkningen ────────────────────────────────────────────────
 
 /**

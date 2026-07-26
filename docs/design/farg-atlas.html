@@ -115,7 +115,7 @@
      skriven för hand. Sex tolvstegsskalor ligger i appen som material; rollerna pekar
      ännu på den gamla paletten.</p>
   <p class="meta">Byggd 2026-07-26 · 104 primitiver ·
-     58 roller · 38 utilities i <code>@theme</code></p>
+     58 roller · 85 komponent-tokens · 38 utilities
 </header>
 
 <h2>1. Paletten</h2>
@@ -970,10 +970,620 @@
       (flera lever ändå via <code>var()</code> i CSS-lagret)</li>
 </ul>
 
-<h2>4. Vad som håller</h2>
+<h2>4. Komponent-tokens — lager 3</h2>
+<p class="lead">Det lager som ligger mellan rollerna och komponenterna. Kolumnen <em>typ</em>
+   avgör vad som händer vid en migrering: <strong>alias</strong> följer med automatiskt när
+   lager 2 pekas om, medan <strong>mix</strong> räknar egen färgmatte på ingångsvärdet och
+   därför kan bete sig annorlunda när ingången byter mättnad eller ljushet.</p>
+<ul class="noter">
+  <li><strong>53</strong> rena alias · <strong>26</strong> color-mix ·
+      <strong>6</strong> transparent · <strong>0</strong> literala</li>
+  <li>Roller som matar flest komponent-tokens: <code>--mm-error</code> (15), <code>--mm-success</code> (13), <code>--mm-btn-primary-bg</code> (9), <code>--mm-text</code> (7)</li>
+</ul>
+<div class="tabellyta"><table>
+  <thead><tr><th>Token</th><th>Färg</th><th>Typ</th><th>Beror på</th><th>Definition</th><th>Anv.</th></tr></thead>
+  <tbody><tr>
+      <td><code>--mm-button-primary-bg</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">var(--mm-btn-primary-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-text</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-primary-text</code></td>
+      <td><code class="tyst">var(--mm-btn-primary-text)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-bg-hover</code></td>
+      <td><span class="punkt" style="background:#3a3a3a"></span><code>#3a3a3a</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-primary-hover</code></td>
+      <td><code class="tyst">var(--mm-btn-primary-hover)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#343434"></span><code>#343434</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-btn-primary-hover</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-btn-primary-hover), black 10%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-secondary-bg</code></td>
+      <td><em>transparent</em></td>
+      <td>transparent</td>
+      <td><code>--mm-btn-secondary-bg</code></td>
+      <td><code class="tyst">var(--mm-btn-secondary-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-secondary-text</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-secondary-text</code></td>
+      <td><code class="tyst">var(--mm-btn-secondary-text)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-secondary-border</code></td>
+      <td><span class="punkt" style="background:#e1e3e1"></span><code>#e1e3e1</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-secondary-border</code></td>
+      <td><code class="tyst">var(--mm-btn-secondary-border)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-secondary-bg-hover</code></td>
+      <td><span class="punkt" style="background:#f5f5f3"></span><code>#f5f5f3</code></td>
+      <td>alias</td>
+      <td><code>--mm-bg-muted</code></td>
+      <td><code class="tyst">var(--mm-bg-muted)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-secondary-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#e1e1e0"></span><code>#e1e1e0</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-bg-muted</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-bg-muted), black 8%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-bg</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-text</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td>alias</td>
+      <td><code>--mm-text-inverse</code></td>
+      <td><code class="tyst">var(--mm-text-inverse)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-bg-hover</code></td>
+      <td><span class="punkt" style="background:#950000"></span><code>#950000</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error), black 12%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#900000"></span><code>#900000</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error), black 15%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-ghost-bg</code></td>
+      <td><em>transparent</em></td>
+      <td>transparent</td>
+      <td>—</td>
+      <td><code class="tyst">transparent</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-ghost-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td>alias</td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">var(--mm-text)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-ghost-bg-hover</code></td>
+      <td><span class="punkt" style="background:#f5f5f3"></span><code>#f5f5f3</code></td>
+      <td>alias</td>
+      <td><code>--mm-bg-muted</code></td>
+      <td><code class="tyst">var(--mm-bg-muted)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-ghost-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#e1e1e0"></span><code>#e1e1e0</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-bg-muted</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-bg-muted), black 8%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-bg</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td>alias</td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">var(--mm-success)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-text</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td>alias</td>
+      <td><code>--mm-text-inverse</code></td>
+      <td><code class="tyst">var(--mm-text-inverse)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-bg-hover</code></td>
+      <td><span class="punkt" style="background:#545e4d"></span><code>#545e4d</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success), black 12%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#525b4a"></span><code>#525b4a</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success), black 15%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-outline-text</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">var(--mm-btn-primary-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-outline-border</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">var(--mm-btn-primary-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-outline-bg</code></td>
+      <td><em>transparent</em></td>
+      <td>transparent</td>
+      <td>—</td>
+      <td><code class="tyst">transparent</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-outline-bg-hover</code></td>
+      <td><span class="punkt" style="background:#eeeeee"></span><code>#eeeeee</code> <span class="delning">alfa 0.08</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">color-mix( in srgb, var(--mm-btn-primary-bg) 8%, transparent )</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-outline-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#e1e1e1"></span><code>#e1e1e1</code> <span class="delning">alfa 0.14</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">color-mix( in srgb, var(--mm-btn-primary-bg) 14%, transparent )</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-subtle-text</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">var(--mm-btn-primary-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-subtle-bg</code></td>
+      <td><span class="punkt" style="background:#eaeaea"></span><code>#eaeaea</code> <span class="delning">alfa 0.1</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-btn-primary-bg) 10%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-subtle-bg-hover</code></td>
+      <td><span class="punkt" style="background:#dddddd"></span><code>#dddddd</code> <span class="delning">alfa 0.16</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">color-mix( in srgb, var(--mm-btn-primary-bg) 16%, transparent )</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-subtle-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#d0d0d0"></span><code>#d0d0d0</code> <span class="delning">alfa 0.22</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">color-mix( in srgb, var(--mm-btn-primary-bg) 22%, transparent )</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-outline-text</code></td>
+      <td><span class="punkt" style="background:#525b4a"></span><code>#525b4a</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success), black 15%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-outline-border</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td>alias</td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">var(--mm-success)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-outline-bg</code></td>
+      <td><em>transparent</em></td>
+      <td>transparent</td>
+      <td>—</td>
+      <td><code class="tyst">transparent</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-outline-bg-hover</code></td>
+      <td><span class="punkt" style="background:#f2f3f2"></span><code>#f2f3f2</code> <span class="delning">alfa 0.08</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success) 8%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-outline-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#e9eae7"></span><code>#e9eae7</code> <span class="delning">alfa 0.14</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success) 14%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-subtle-text</code></td>
+      <td><span class="punkt" style="background:#525b4a"></span><code>#525b4a</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success), black 15%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-subtle-bg</code></td>
+      <td><span class="punkt" style="background:#eff0ee"></span><code>#eff0ee</code> <span class="delning">alfa 0.1</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success) 10%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-subtle-bg-hover</code></td>
+      <td><span class="punkt" style="background:#e6e7e4"></span><code>#e6e7e4</code> <span class="delning">alfa 0.16</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success) 16%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-subtle-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#dcdeda"></span><code>#dcdeda</code> <span class="delning">alfa 0.22</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success) 22%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-outline-text</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-outline-border</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-outline-bg</code></td>
+      <td><em>transparent</em></td>
+      <td>transparent</td>
+      <td>—</td>
+      <td><code class="tyst">transparent</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-outline-bg-hover</code></td>
+      <td><span class="punkt" style="background:#f8ebeb"></span><code>#f8ebeb</code> <span class="delning">alfa 0.08</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error) 8%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-outline-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#f3dbdb"></span><code>#f3dbdb</code> <span class="delning">alfa 0.14</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error) 14%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-subtle-text</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-subtle-bg</code></td>
+      <td><span class="punkt" style="background:#f6e6e6"></span><code>#f6e6e6</code> <span class="delning">alfa 0.1</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error) 10%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-subtle-bg-hover</code></td>
+      <td><span class="punkt" style="background:#f1d6d6"></span><code>#f1d6d6</code> <span class="delning">alfa 0.16</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error) 16%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-subtle-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#ecc7c7"></span><code>#ecc7c7</code> <span class="delning">alfa 0.22</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error) 22%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-input-bg</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td>alias</td>
+      <td><code>--mm-bg</code></td>
+      <td><code class="tyst">var(--mm-bg)</code></td>
+      <td class="">14</td>
+    </tr><tr>
+      <td><code>--mm-input-bg-disabled</code></td>
+      <td><span class="punkt" style="background:#f5f5f3"></span><code>#f5f5f3</code></td>
+      <td>alias</td>
+      <td><code>--mm-bg-muted</code></td>
+      <td><code class="tyst">var(--mm-bg-muted)</code></td>
+      <td class="">4</td>
+    </tr><tr>
+      <td><code>--mm-input-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td>alias</td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">var(--mm-text)</code></td>
+      <td class="">6</td>
+    </tr><tr>
+      <td><code>--mm-input-text-placeholder</code></td>
+      <td><span class="punkt" style="background:#6b6b6b"></span><code>#6b6b6b</code></td>
+      <td>alias</td>
+      <td><code>--mm-text-muted</code></td>
+      <td><code class="tyst">var(--mm-text-muted)</code></td>
+      <td class="">9</td>
+    </tr><tr>
+      <td><code>--mm-input-border</code></td>
+      <td><span class="punkt" style="background:#898989"></span><code>#898989</code></td>
+      <td>alias</td>
+      <td><code>--mm-border-field</code></td>
+      <td><code class="tyst">var(--mm-border-field)</code></td>
+      <td class="">16</td>
+    </tr><tr>
+      <td><code>--mm-input-border-invalid</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">4</td>
+    </tr><tr>
+      <td><code>--mm-input-label-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td>alias</td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">var(--mm-text)</code></td>
+      <td class="">8</td>
+    </tr><tr>
+      <td><code>--mm-input-description-text</code></td>
+      <td><span class="punkt" style="background:#525151"></span><code>#525151</code></td>
+      <td>alias</td>
+      <td><code>--mm-text-secondary</code></td>
+      <td><code class="tyst">var(--mm-text-secondary)</code></td>
+      <td class="">2</td>
+    </tr><tr>
+      <td><code>--mm-input-error-text</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">6</td>
+    </tr><tr>
+      <td><code>--mm-select-popover-bg</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td>alias</td>
+      <td><code>--mm-surface-overlay</code></td>
+      <td><code class="tyst">var(--mm-surface-overlay)</code></td>
+      <td class="">3</td>
+    </tr><tr>
+      <td><code>--mm-select-popover-border</code></td>
+      <td><span class="punkt" style="background:#e1e3e1"></span><code>#e1e3e1</code></td>
+      <td>alias</td>
+      <td><code>--mm-border</code></td>
+      <td><code class="tyst">var(--mm-border)</code></td>
+      <td class="">3</td>
+    </tr><tr>
+      <td><code>--mm-select-item-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td>alias</td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">var(--mm-text)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-select-item-bg-focused</code></td>
+      <td><span class="punkt" style="background:#fbf3e0"></span><code>#fbf3e0</code></td>
+      <td>alias</td>
+      <td><code>--mm-primary-tint</code></td>
+      <td><code class="tyst">var(--mm-primary-tint)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-select-item-bg-selected</code></td>
+      <td><span class="punkt" style="background:#f0d68a"></span><code>#f0d68a</code></td>
+      <td>alias</td>
+      <td><code>--mm-primary-pale</code></td>
+      <td><code class="tyst">var(--mm-primary-pale)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-info-bg</code></td>
+      <td><span class="punkt" style="background:#eff6ff"></span><code>#eff6ff</code></td>
+      <td>alias</td>
+      <td><code>--mm-info-bg</code></td>
+      <td><code class="tyst">var(--mm-info-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-info-border</code></td>
+      <td><span class="punkt" style="background:#4a6b8a"></span><code>#4a6b8a</code></td>
+      <td>alias</td>
+      <td><code>--mm-info</code></td>
+      <td><code class="tyst">var(--mm-info)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-info-text</code></td>
+      <td><span class="punkt" style="background:#4a6b8a"></span><code>#4a6b8a</code></td>
+      <td>alias</td>
+      <td><code>--mm-info</code></td>
+      <td><code class="tyst">var(--mm-info)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-success-bg</code></td>
+      <td><span class="punkt" style="background:#f0fdf4"></span><code>#f0fdf4</code></td>
+      <td>alias</td>
+      <td><code>--mm-success-bg</code></td>
+      <td><code class="tyst">var(--mm-success-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-success-border</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td>alias</td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">var(--mm-success)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-success-text</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td>alias</td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">var(--mm-success)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-warning-bg</code></td>
+      <td><span class="punkt" style="background:#fdf4ee"></span><code>#fdf4ee</code></td>
+      <td>alias</td>
+      <td><code>--mm-warning-bg</code></td>
+      <td><code class="tyst">var(--mm-warning-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-warning-border</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td>alias</td>
+      <td><code>--mm-warning</code></td>
+      <td><code class="tyst">var(--mm-warning)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-warning-text</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td>alias</td>
+      <td><code>--mm-warning</code></td>
+      <td><code class="tyst">var(--mm-warning)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-error-bg</code></td>
+      <td><span class="punkt" style="background:#fef2f2"></span><code>#fef2f2</code></td>
+      <td>alias</td>
+      <td><code>--mm-error-bg</code></td>
+      <td><code class="tyst">var(--mm-error-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-error-border</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-error-text</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-body-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td>alias</td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">var(--mm-text)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-dialog-overlay-bg</code></td>
+      <td><span class="punkt" style="background:#929292"></span><code>#929292</code> <span class="delning">alfa 0.5</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-text) 50%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-dialog-bg</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td>alias</td>
+      <td><code>--mm-surface-overlay</code></td>
+      <td><code class="tyst">var(--mm-surface-overlay)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-navcard-bg</code></td>
+      <td><span class="punkt" style="background:#f5f5f3"></span><code>#f5f5f3</code></td>
+      <td>alias</td>
+      <td><code>--mm-bg-muted</code></td>
+      <td><code class="tyst">var(--mm-bg-muted)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-navcard-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td>alias</td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">var(--mm-text)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-navcard-icon</code></td>
+      <td><span class="punkt" style="background:#525151"></span><code>#525151</code></td>
+      <td>alias</td>
+      <td><code>--mm-text-secondary</code></td>
+      <td><code class="tyst">var(--mm-text-secondary)</code></td>
+      <td class="">2</td>
+    </tr><tr>
+      <td><code>--mm-navcard-border</code></td>
+      <td><em>transparent</em></td>
+      <td>transparent</td>
+      <td>—</td>
+      <td><code class="tyst">transparent</code></td>
+      <td class="">7</td>
+    </tr><tr>
+      <td><code>--mm-navcard-border-contrast</code></td>
+      <td><span class="punkt" style="background:#c4c4c2"></span><code>#c4c4c2</code></td>
+      <td>alias</td>
+      <td><code>--mm-border-strong</code></td>
+      <td><code class="tyst">var(--mm-border-strong)</code></td>
+      <td class="">6</td>
+    </tr><tr>
+      <td><code>--mm-skeleton-block</code></td>
+      <td><span class="punkt" style="background:#e1e3e1"></span><code>#e1e3e1</code></td>
+      <td>alias</td>
+      <td><code>--mm-bg-placeholder</code></td>
+      <td><code class="tyst">var(--mm-bg-placeholder)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-skeleton-block-contrast</code></td>
+      <td><span class="punkt" style="background:#525151"></span><code>#525151</code></td>
+      <td>alias</td>
+      <td><code>--mm-text-secondary</code></td>
+      <td><code class="tyst">var(--mm-text-secondary)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-skeleton-shimmer</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code> <span class="delning">alfa 0.75</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-bg</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-bg) 75%, transparent)</code></td>
+      <td class="">1</td>
+    </tr></tbody>
+</table></div>
+
+<h2>5. Vad som håller</h2>
 <ul class="rent"><li><span class="ok">✓</span> Hårdkodade hex/rgb/hsl i komponenter: <strong>0</strong> — Samtliga träffar i src/ är kommentarstext, inte kod.</li><li><span class="ok">✓</span> Arbiträra Tailwind-värden (bg-[#fff]): <strong>0</strong></li><li><span class="ok">✓</span> Inline style med färg: <strong>0</strong></li><li><span class="ok">✓</span> Färgliteraler i SVG fill/stroke: <strong>0</strong></li></ul>
 
-<h2>5. Brister</h2>
+<h2>6. Brister</h2>
 <article class="fynd hög">
       <h3><span class="id">F1</span> Två döda färgklasser i login <span class="allvar">hög</span></h3>
       <p class="plats"><code>src/routes/login.tsx:111</code> · <code>src/routes/login.tsx:119</code></p>
@@ -1075,7 +1685,7 @@
       
     </article>
 
-<h2>6. Så här är atlasen byggd</h2>
+<h2>7. Så här är atlasen byggd</h2>
 <p class="lead">Tokens läses ur <code>src/styles/tokens/*.css</code>, användningen räknas i
    <code>src/</code>, mätvärdena beräknas i <code>scripts/lib/farg.mjs</code> och skalorna
    genereras i <code>scripts/lib/skala.mjs</code>. Det enda handskrivna är auditens fynd i
