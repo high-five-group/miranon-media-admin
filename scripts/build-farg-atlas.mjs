@@ -584,11 +584,14 @@ ${nulageSektioner}
 <h2>4. Brister</h2>
 ${fyndSektioner}
 
-<h2>5. Neutralernas ton — tre vägar</h2>
-<p class="lead">Neutralerna bär omkring 450 av appens färganvändningar, så deras ton är det
-   enda palettvalet som slår igenom överallt. Dagens ljusa steg ligger på kromavägd medelton
-   <strong>120°</strong> — gulgrönt, inte varmt. Varmt vore 60–90°, där guldet (78,7°) och
-   kopparn (44°) bor. Här är alla tre renderade mot samma ankare.</p>
+<h2>5. Neutralernas värme — hur mycket?</h2>
+<p class="lead">Neutralerna bär omkring 450 av appens färganvändningar, så deras ton slår
+   igenom överallt. Men <strong>tonvalet spelar nästan ingen roll</strong> — 70°, 106° och 120°
+   skiljer en till två hexpunkter. Det som avgör om värmen syns är mättnaden, och där ligger
+   dagens neutraler på 0,003 medan Radix egen sand ligger på 0,0013. Alla fyra nedan har
+   samma ton (100°, Radix natural pairing mot guldet) och skiljs bara av kroma.</p>
+<p class="lead">Dagens skala hoppar dessutom mellan 106°, 116° och 146°, och fem av tretton
+   steg är helt rena. Det är ojämnheten som märks — inte tonen.</p>
 <section class="skala">
   <h3>Dagens skala, som referens · 13 steg</h3>
   <div class="rutor">${dagensNeutral}</div>
@@ -667,30 +670,43 @@ for (const [namn, data] of Object.entries(forslag)) {
   );
 }
 
-// Neutralernas ton är det enda valet som slår igenom på hela appen — de bär
-// omkring 450 användningar. Dagens ljusa steg ligger på kromavägd medelton
-// 120°, vilket är gulgrönt och inte varmt; varmt vore 60–90°, där guldet
-// (78,7°) och kopparn (44°) bor. Skillnaden är för stor för att antas bort, så
-// alla tre vägarna renderas i stället för att beskrivas.
-const NEUTRALKROMA = 0.005;
+// Neutralernas ton är det enda palettvalet som slår igenom på hela appen — de
+// bär omkring 450 användningar.
+//
+// Mätningen flyttade frågan. Tonvalet spelar nästan ingen roll: 70°, 106° och
+// 120° skiljer en till två hexpunkter vid rimlig mättnad. Det som avgör om
+// värmen syns är kroma. Dagens neutraler ligger på 0,003 och Radix egen sand på
+// 0,0013 — branschen håller tintade gråskalor mycket diskreta, eftersom en
+// mättad grå börjar konkurrera med accenten.
+//
+// Tonen 100° följer Radix natural pairing: välj gråskalan vars ton ligger
+// närmast accenten. Guldet sitter på 78,7°, kopparn på 44°, och appens egna
+// ljusa steg ligger redan på 106°.
+const NEUTRALTON = 100;
 const neutralvagar = [
   {
-    nyckel: 'idag',
-    rubrik: 'Dagens ton — gulgrön, 120°',
-    not: 'Bevarar anslaget appen har nu. Mätningen: de ljusa stegen (25–300) plus 800 har ton, resten är kromatiskt rena. Skalan här gör tonen konsekvent genom alla tolv steg i stället för att låta den komma och gå.',
-    skala: byggSkala('#6b6b6b', { kulorton: 120, kroma: NEUTRALKROMA }),
-  },
-  {
     nyckel: 'ren',
-    rubrik: 'Ren — kromatiskt neutral',
-    not: 'Ingen ton alls. Läser som äkta grå och låter kulörerna göra allt färgarbete. Risken är att ytorna känns kliniska bredvid guld och koppar.',
+    rubrik: 'Ren — ingen ton alls',
+    not: 'Referens. Äkta grå, kulörerna gör allt färgarbete. Risken är att ytorna känns kliniska bredvid guld och koppar.',
     skala: byggSkala('#6b6b6b', { kroma: 0 }),
   },
   {
+    nyckel: 'dagens',
+    rubrik: 'Dagens nivå — kroma 0,003',
+    not: 'Den värme appen har nu, men jämnt fördelad. Dagens ton hoppar mellan 106°, 116° och 146°, och fem av tretton steg är helt rena — det är ojämnheten som märks, inte tonen.',
+    skala: byggSkala('#6b6b6b', { kulorton: NEUTRALTON, kroma: 0.003 }),
+  },
+  {
     nyckel: 'varm',
-    rubrik: 'Varm — 70°, mot guldet',
-    not: 'Det "varm" faktiskt betyder: en ton som drar mot guldets 78,7° och kopparns 44°. Ytorna får samma temperatur som varumärkesfärgerna i stället för att dra åt grönt.',
-    skala: byggSkala('#6b6b6b', { kulorton: 70, kroma: NEUTRALKROMA }),
+    rubrik: 'Varm — kroma 0,008 (rekommenderad)',
+    not: 'Ungefär dubbelt dagens värme. Märkbart varmare ytor, fortfarande långt under det som skulle läsa som beige. Följer Radix natural pairing mot guldet.',
+    skala: byggSkala('#6b6b6b', { kulorton: NEUTRALTON, kroma: 0.008 }),
+  },
+  {
+    nyckel: 'sand',
+    rubrik: 'Sand — kroma 0,025',
+    not: 'Tydligt varm. Här börjar neutralen läsa som en egen kulör och konkurrera med guldet — Radix varnar uttryckligen för mättade gråskalor av det skälet. Med som ytterlighet så du ser var gränsen går.',
+    skala: byggSkala('#6b6b6b', { kulorton: NEUTRALTON, kroma: 0.025 }),
   },
 ];
 
