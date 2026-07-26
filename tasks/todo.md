@@ -15,6 +15,40 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-26)** — **DESIGN-REVIEWEN AV TASK-48, OCH DAGEN
+DÅ ARBETSFORMEN BLEV SITT EGET ÄMNE.** **`task-48` är `Done`** — Marcus
+granskade i webbläsaren och gav **fyra fynd**, alla åtgärdade i tre vågor:
+Markera-knappens färg var en **facit-avvikelse** (bygget satte `primary`/`subtle`
+mot S86-facits mörka solid, löste kollisionen mot §19:s toolbar-rad TYST och
+skrev in sin egen lösning som prejudikat — rättat, och §19 bär nu
+**lägesöppnar-undantaget**) · check-glyfen **riven** efter mätning (ovald kant är
+transparent ⇒ markeringen är att en KONTUR UPPSTÅR, inte ett färgbyte; 5,6:1 mot
+vitt, 3,2:1 i ljushet under `contrast-more`; den gröna plattan mäter 1,05:1 och
+bär ingenting för den färgblinde) · Avbryt `ghost` → `primary`/`subtle` ·
+Obekräftade-kön **inte längre fällbar** (kö mot register, L353-klassen — och
+fällningen bar en dold lapp som force-öppnade panelen). **Våg 3 rev Codes egen
+diagnos:** sågtanden kom ur BREDD inte höjd, och inom-kort-stabiliteten Code
+intygade var en artefakt av fixturens e-postlängder (gamla koden: 166→166→**145**).
+Batch-flödet **5 488 ms → 486 ms**, arkivet fälls ut när kön töms, kvittens vid
+ren framgång (GOV.UK/Polaris-grundad). **Fyra agenter, elva PR:er** (#233–#245).
+**Seed-vägen byggd** (`npm run seed:review`) efter Marcus fångst att samma jobb
+gjorts för hand TVÅ gånger utan att lämna en väg — nu även i spoke-CLAUDE.md,
+eftersom ett verktyg utanför läs-ordningen inte finns i praktiken.
+**Hållplats-kartan** (#239): eventinfo har **ingen motor alls** — krysset skriver
+två fält ingen kod läser — men Marcus ordning stämmer, slutbetalnings-deadline
+och eventinfo-gränsen är SAMMA dag; `TASK-18.20` är **blockerad**, inte i
+konflikt; rek. alternativ C (hållplats som etikett). **CI-FLASKHALSEN MÄTT:**
+staging-jobbet är 9,1 av 10 min och bär en global mutex ⇒ alla PR:er
+serialiseras; ~20 av 30 min var spill. **MÅLBILDEN inskriven:** människan väntar
+aldrig SYSSLOLÖS — skärpningen är avsiktlig, noll väntan leder till att skära i
+täckning. **Sju mekaniseringar** i Del 4, sex körbara direkt vid resume.
+**INGA lessons mintade av Code** (L354–L359 förbrukade av vågornas agenter).
+Ingen ADR (079 ledigt), inga fällor, inga trådar. **NÄSTA: `session-resume` av
+91** → research-passet (Del 4:s fyra frågor; den avgörande är om merge queue
+löser serialiseringen eller bara flyttar kön) → mekaniseringen. Numrering vid
+paus: 91/079/L360/T100/f46/task-53. Full narrativ: sessionsdok S91 Del 1–4 +
+PAUSLÄGE.
+
 **Session 90 ✅ AVSLUTAD (2026-07-26)** — **MARKERA-LÄGET SKARPT, OCH TRE YTOR
 SOM FICK SIN FORM.** **`task-48` levererad** (PR #226): byggt test-först,
 **11 nya e2e röda före implementation → 17 gröna efter**, axe 0, med
