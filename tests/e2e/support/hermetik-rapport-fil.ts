@@ -9,5 +9,11 @@
  *
  * Konstanten bor här i stället för i `test-bas.ts` så att teardown kan läsa den
  * utan att importera testfixturen (och därmed köra `test.extend` vid import).
+ *
+ * VARFÖR INTE `test-results/`: Playwright RENSAR sin `outputDir` vid varje
+ * körningsstart. Första versionen lade rapporten där, och den raderades av nästa
+ * `playwright test` — mätdata från en körning som tagit fem minuter försvann på
+ * ett kommando. I CI hade den försvunnit lika tyst. Mätdata måste överleva
+ * runnern, alltså ligger den utanför `outputDir`.
  */
-export const HERMETIK_RAPPORT_FIL = 'test-results/hermetik-rapport.jsonl';
+export const HERMETIK_RAPPORT_FIL = '.hermetik/rapport.jsonl';
