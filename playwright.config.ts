@@ -121,6 +121,9 @@ export default defineConfig({
   // hela runnet (Playwrights page-snapshot listar input-värden, även för
   // type=password). Ren artefakt-efterbearbetning — rör ej testbeteende/a11y.
   globalTeardown: './tests/global-teardown.ts',
+  // S91 steg 1: nollställer hermetik-rapportens JSONL före körningen så mätningar
+  // inte ackumulerar över varandra. No-op utan PLAYWRIGHT_HERMETIK_RAPPORT=1.
+  globalSetup: './tests/global-setup.ts',
   // task-36.7: {projectName} skiljer vyport-projekten åt (samma spec-fil, två
   // skott — utan den kolliderar filnamnen) och {platform} bär AC 3: endast
   // -linux checkas in (baselines föds i CI), -darwin/-win32 är gitignorerade
