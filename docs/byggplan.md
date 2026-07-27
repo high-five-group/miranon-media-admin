@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-24
+updated: 2026-07-27
 review_by: 2026-11-15
 status: stable
 ---
@@ -88,7 +88,7 @@ Stödspecs (`SECURITY-SPEC.md`, `STATE-STRATEGY.md`, `ACCESSIBILITY-CHECKLIST.md
 | **7** | NY scope | Konsolidering — CSP-plugin (med ADR), web-vitals, Speculation Rules, View Transitions, widget-error-boundary, chaos testing, deploy-pipeline, Background Sync defer-not (se Fas 8 + ADR). | 3 sessioner |
 | **8** | NY (framtid) | Background Sync API (offline-mutationskö, defer:ad från Fas 7 — se ADR). Övrigt scope (Passkeys, push) ej låst i denna revision. Estimat fastställs vid aktualisering. Ersätter conversion-plans "Fas 8 — Passkeys, push, offline". | TBD |
 | **B** | PARALLELL | Airtable-hardening — parallell-spår med 2 synk-gates mot React-bygget per A4: Synk-gate 1 — A1–A12 inventerade och kategoriserade (redan applicerade / före Fas 2.5 / efter Fas 2.5) innan Fas 2.5 startar; Synk-gate 2 — handshake mot `field-allowlists.ts` per Fas 5.5/6-operation. Roger/Lotta-arbete. | (parallell, separat estimat) |
-| **E** | DEFER | Supabase-migration enligt 07 §A2. **Övning 2:s namngivna SLUTFAS ([ADR-068](decisions/ADR-068-ovnings-ramverket.md)) — designas i egen ADR när fasen närmar sig.** Aktualiseras post-Fas 7. Inkluderar Realtime-omläggning per B1. | (defer, separat planering) |
+| **E** | DEFER | Supabase-migration enligt 07 §A2. **Övning 2:s namngivna SLUTFAS ([ADR-068](decisions/ADR-068-ovnings-ramverket.md)) — designas i egen ADR när fasen närmar sig.** **HORISONTEN OMANKRAD 2026-07-27 (S91 premiss 4):** aktualiseras när **appens sidor är klara**, inte post-Fas 7 — se §4 Fas E § Horisont. Inkluderar Realtime-omläggning per B1. | (defer, separat planering) |
 
 **Numreringsnot:** Det "saknas" en Fas 4 i sekvensen ovan. Conversion-plan hade en Fas 4 (DataTable) som flyttats till Fas 7 efter beslut i Session 0 (förbygges-research). Numreringen behålls för spårbarhet mot conversion-plan och tidiga BUILD-LOG-poster. Se ADR-013 (Fas 4-borttagningen).
 
@@ -111,6 +111,8 @@ O(1)-läsbar audit-status per Fas 6-subfas (L200: spridd-över-sessioner-status 
 | 6g Segment-yta | KLAR (L1–L4) + **PROD-DEPLOYAD (S43)** | ✅ ren — Session 37 (fem områden GODKÄNDA, AVVIKELSE ingen, 11/10/10). **Prod-deploy S43:** compute-segment/save-segment/get-segments ACTIVE v1 på prod (`lvjsfnphlauldxqlncpl`), auth-grind-bevisad (401/405), override-smal (de 5 stale orörda); full autentiserad prod-smoke deferrad → T40 |
 | 6h Mail-handling | byggd L0–L3 (S39–S41, staging) | ✅ ren — Session 41 (fem områden GODKÄNDA; EN avvikelse noll-leverans-send ROT-RESOLVERAD samma session; bibliotek 11/11/11, vy 11/10/10). Prod-deploy = T44 M3 + Code-at-prod-deploy kvarstår |
 
+> **ÖVERORDNAT FÖRKRAV, tillagt 2026-07-27 (S91 premiss 1 + 2 — Marcus-beslut):** **Fas 6 stängs INTE** förrän appens sidor är byggda som Marcus vill ha dem. **Fem facit-lösa ytor** ska genom samma kedja som eventsidan fick — prototyp → Marcus väljer → facit → PRD → skivor: **Personer · Hem · Mer/Intresserade/Maillogg · Segment · Mail-handling**. Detta är ett krav OVANPÅ closeout-förkraven nedan, inte i stället för dem: bygg-status och arch-audit kan vara gröna medan ytan ändå inte är den Marcus vill ha. Premiss 3 lägger dessutom **CI-/grind-arkitekturen FÖRE** det arbetet. Kanonisk karta över spåren: [`../tasks/s91-restlistan.md`](../tasks/s91-restlistan.md) § Beslutade premisser.
+>
 > **Closeout-förkrav:** FULLT Fas 6 fas-avslut kan ske först när: 6e retro-auditerad, 6f byggd + auditerad, 6h byggd + auditerad (6g klar + auditerad ✓), samt **vertikaler prod-deployade + prod-smoke-verifierade** (T40-dimensionen, inwirad 2026-07-24 S84 vid T40-lösningen; EF-lagret uppfyllt samma dag — T39-synken av alla 13 allowlistade + autentiserade smokes gröna; send-emails utskicksväg ägs separat av T55, prod-frontend-deploy-kontrollen av T46). Avslutet inkluderar phase-end-verify, byggplan 6→KLAR, FAS-NIVÅ fitness-svep (full port-paritet + komplett EF-ribba-inventering tvärs ALLA subfaser — ej bara ackumulerade per-slice-audits), CHANGELOG, lessons-hub-lyft L149–L201, arkivering.
 
 ---
@@ -1036,11 +1038,30 @@ Migrera Miranon Media Admin från Airtable som primär datakälla till Supabase 
 - Hela appens omskrivning — DataSourceAdapter-pattern (etablerat i Fas 1) tar 90% av sticket
 - Airtable-bortrivning omedelbart — kvar som backup tills Fas E är verifierad
 
+#### Horisont (omankrad 2026-07-27, S91 premiss 4 — Marcus-beslut)
+
+Fasen aktualiseras när **appens sidor är klara** — inte post-Fas 7 som tidigare stod här. Konkret betyder det efter att de fem facit-lösa ytorna gått genom hela kedjan (se Fas 6 § Överordnat förkrav) och CI-/grind-arkitekturen är klar (premiss 3).
+
+**Två veckor är en ÖNSKAN, inte en deadline** — Marcus ordagrant: *"får bli som det blir"*. Ingen planering nedströms får behandla den som ett åtagande.
+
+**Varför omankringen gjordes:** den tidigare formuleringen band Fas E till Fas 7:s deploy. Premiss 1 håller Fas 6 medvetet öppen tills sidorna är byggda som Marcus vill ha dem, vilket gör "post-Fas 7" till en horisont som inte längre säger något om NÄR — den pekar på en fas vars förkrav i sin tur flyttats. Ankaret flyttas därför till det som faktiskt styr.
+
+#### 90/10-kravet på det som byggs FÖRE fasen (S91 premiss 5)
+
+CI-/grind-arkitekturen som byggs nu ska vara **110 % toppdesignad med väl underbyggda Airtable-anpassningar**, men **~90 % ska överleva Supabase-bytet** oförändrat och lika förstklassigt. Snittet är fastlagt i [ADR-080](decisions/ADR-080-acceptance-klassen-hermetisk-utbrytning.md): gränsen går **vid protokollet, inte vid läs/skriv** — testhandlers uttrycks mot EF-kontraktet, som är det som överlever datakällebytet.
+
+Konsekvens för denna fas: acceptance-klassens testarkitektur ska INTE behöva byggas om vid migreringen. Faller det antagandet är det ett Fas E-fynd som hör hemma i fasens egen ADR.
+
+**Omprövning inritad HÄR:** ADR-080 dokumenterar att hermetisk utbrytning är branschens *andrahandsval* och en medveten Airtable-kompromiss — branschens förstahandsval, efemär skarp backend, är stängt eftersom Airtable inte är självhostbar ([`airtable-constraints.md`](reference/airtable-constraints.md) P26/P27). När datakällan blir klonbar i denna fas ska topologin omprövas, inte ärvas.
+
 #### Beroenden
 
+- **Appens sidor klara** (se § Horisont ovan) — det styrande ankaret sedan 2026-07-27
 - Fas 7 deploy klar (target för migration finns)
 - Fas B avslutad (Airtable-side städat innan migration)
 - Empirisk data från Fas 7-deploy om vilka tabeller som har högst läs/skriv-tryck (informerar migrationsordning inom Fas E)
+
+> **ÖPPEN, MEDVETET EJ AVGJORD:** premiss 4 flyttade HORISONTEN — den sa ingenting om Fas 7:s roll. Fas 7-beroendet står därför kvar oförändrat, och förhållandet mellan det nya ankaret ("sidorna klara") och Fas 7:s deploy är **inte** löst av denna uppdatering. Frågan hör till Marcus när fasen aktualiseras; att tyst härleda ett svar ur premissen vore att besluta mer än premissen bär.
 
 #### Estimat
 
@@ -1097,6 +1118,7 @@ Bonus-ADR (utöver de 10 ovan): `trace_id` vs `requestId`-relationen — skrivs 
 | **1.11** | **2026-06-17** | **Fas 5.5 markerad KLAR** efter Session 22 (klient-UI K2; server-kontrakt + staging i Sessions 18/19). §2 fas-tabell uppdaterad (Fas 5.5 ✅ KLAR + estimat-summa Fas 6 → Fas 7 = 7,5 sessioner). §4 Fas 5.5-prompten utökad med "✅ Slutförd"-paragraf per Fas A-mallen — inkl. fält-valet `Anmälningsavgift` (ADR-049 supersederar DoD-radens exempel), router-context-DI ([ADR-055](decisions/ADR-055-datakalla-atkomst-router-context-di.md), första UI→data-wiringen), toast→MessageBox-avvikelsen (DoD 6) och mockad-e2e-noten (DoD 1/5/6/7/8 via `page.route`-gate). ADR-055 tillkommen (router-context-DI, README-räknare 54→55). DoD-trail: feature-CI run 27706856446. |
 | **1.12** | **2026-06-25** | **Fas 6e omdefinierad + ny Fas 6g (Segment-yta) + ny Fas 6h (Mail-handling) + mail omsekvenserad** per [ADR-062](decisions/ADR-062-segment-yta-berakn-medlemskap-fran-kalla.md). 6e slutar nu vid Maillogg — "Skicka mail (write)"-vertikalen + `send-email`-EF utflyttad. 6g = bygg/se/spara/exportera segment med beräknat medlemskap från källan (Deltaganden), dynamisk regel + snapshot-export, SKOOL-modulbehörighet (union per kurs×modalitet). 6h = bulk-mail PÅ ett segment (`send-email`, ADR-015), byggs efter 6g eftersom mottagar-upplösning kräver segment-motorn. §2 fas-tabell (Fas 6-raden: sex→åtta sub-faser) + §4 Mål + sub-fas-tabell + Beroenden + Estimat + Filer (6e nedbantad, 6g/6h tillagda) + ADR-krav + §5 ADR-index (ADR-015 Fas 6e→6h) uppdaterade. Estimat: 6e 1,5→1,0; +6g 2,0; +6h 0,5; Fas 6 5,5→7,5; grand-total Fas 6→7 9,5→11,5 (7,5+1+3). Lättläst-spegling v3 uppdaterad parallellt (sex→åtta delar, 5,5→7,5 pass, totalt-från-Fas-2 18,5→20,5). Estimat 6g/6h är Code-omdöme vid landningstillfället, revidérbart vid 6g-design. |
 | 1.13 | 2026-07-05 | **Övnings-ramverket applicerat** per [ADR-068](decisions/ADR-068-ovnings-ramverket.md) (Session 51): prolog-ramrubrik "byggplanen är Övning 2:s karta" + Fas E märkt som Övning 2:s namngivna slutfas (§2-raden + §4-promptens gränsnot, additivt). Inga scope-/estimat-/sekvens-ändringar. |
+| **1.14** | **2026-07-27** | **Fas E-horisonten omankrad + Fas 6:s stängning medvetet hållen** — Session 91, per Marcus premisser 1–5 (kanonisk lista: [`../tasks/s91-restlistan.md`](../tasks/s91-restlistan.md) § Beslutade premisser). **§2 fas-tabell rad E:** "Aktualiseras post-Fas 7" → aktualiseras när appens sidor är klara. **§2 Fas 6 closeout-blocket:** nytt ÖVERORDNAT förkrav — Fas 6 stängs INTE förrän de fem facit-lösa ytorna (Personer · Hem · Mer/Intresserade/Maillogg · Segment · Mail-handling) gått genom kedjan prototyp → Marcus väljer → facit → PRD → skivor; CI-/grind-arkitekturen först (premiss 3). **§4 Fas E:** nya sektioner § Horisont (med *"får bli som det blir"* — två veckor är önskan, ej deadline) och § 90/10-kravet (snittet vid protokollet, ej vid läs/skriv, per [ADR-080](decisions/ADR-080-acceptance-klassen-hermetisk-utbrytning.md); omprövning av hermetik-topologin inritad i fasen eftersom [`airtable-constraints.md`](reference/airtable-constraints.md) P26/P27 stänger branschens förstahandsval). **Fas 7-beroendet står KVAR oförändrat** och förhållandet till det nya ankaret är öppet noterat som EJ avgjort — premiss 4 flyttade horisonten, inte Fas 7:s roll. Inga estimat-ändringar (ankaret är en horisont, inte en omsekvensering). |
 
 ---
 

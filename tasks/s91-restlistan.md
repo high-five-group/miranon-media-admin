@@ -378,8 +378,18 @@ kostar att den måste återupptäckas genom att felet upprepas.
       filhuvud kallade förutsättningen en *repo-inställning* — den
       faktarättelsen är gjord i samma landning, så nästa läsare slipper
       utredningen. Lesson-fragment skrivet
-- [ ] Byggplanen uppdateras med Fas E-horisonten enligt premiss 4 —
-      **styrande dokument, ska göras före planering mot ny horisont**
+- [x] **Byggplanen uppdaterad med Fas E-horisonten — KLART 2026-07-27** (v1.14).
+      Ankaret flyttat från *"aktualiseras post-Fas 7"* till **appens sidor
+      klara** (premiss 4), med *"får bli som det blir"* inskrivet så att
+      två-veckors-önskan inte kan läsas som åtagande. Premiss 1 + 2 lagda som
+      **överordnat förkrav** i Fas 6:s closeout-block — de fem ytorna genom hela
+      kedjan, ett krav OVANPÅ bygg-status och arch-audit. Premiss 5 (90/10)
+      inskrivet i Fas E med snittet vid protokollet (ADR-080) och omprövningen
+      av hermetik-topologin inritad i fasen. **Fas 7-beroendet lämnat
+      OFÖRÄNDRAT** och förhållandet till det nya ankaret öppet noterat som ej
+      avgjort — premiss 4 flyttade horisonten, inte Fas 7:s roll, och att
+      härleda ett svar ur den vore att besluta mer än premissen bär.
+      **Grinden för planering mot ny horisont är därmed lyft**
 - [ ] 109 mergade fjärrgrenar på origin. **Även ~60 lokala grenar** ligger kvar
       (mätt 2026-07-27) — samma klass, egen städning
 - [ ] `save-segment`-läckan — `app-segment-test+<uuid>` saknar target i
