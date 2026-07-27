@@ -1,5 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, type Route, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, type Page, test } from './support/acceptance-bas';
 
 /**
  * Hem i Lugnt laddläge (task-8.4; princip: ORDLISTA "Lugnt laddläge" +
@@ -14,7 +17,7 @@ import { expect, type Page, type Route, test } from './support/test-bas';
  *
  * Bevisformer:
  * - Layout-skift ≈ 0 per task-4.5-bevismönstret (S55 Del 11): EF-svaren
- *   PARKERAS ofulfillade (håll-bar mock) → boundingBox-mätning UNDER
+ *   PARKERAS obesvarade (håll-bar mock) → boundingBox-mätning UNDER
  *   laddning; svaren släpps → identisk mätning EFTER data (toEqual, exakta
  *   boxar — samma form som task-4.5 AC 2:s mät-stillhet).
  * - Framträdande-formen är mätlåst per task-8.1 (kommentaren på task-8.4):
@@ -26,19 +29,24 @@ import { expect, type Page, type Route, test } from './support/test-bas';
  *   axe 0 violations i laddläge.
  *
  * TOM CACHE arrangeras EXPLICIT: persist-lagret (task-8.3, ADR-072) gör
- * kallstarten sällsynt — auth.setup:s storageState kan bära en persistad
- * cache in i testkontexten. Init-scriptet tar bort persist-nyckeln FÖRE
- * app-boot (test-arrangemang före start — INTE runtime-tömning; den vägen
- * är queryClient.clear() per ADR-072 skyddsräcke 1), så varje test här
- * träffar den äkta kallstarten skeletonen byggdes för.
+ * kallstarten sällsynt — en persistad cache kan bära data in i testkontexten.
+ * Init-scriptet tar bort persist-nyckeln FÖRE app-boot (test-arrangemang före
+ * start — INTE runtime-tömning; den vägen är queryClient.clear() per ADR-072
+ * skyddsräcke 1), så varje test här träffar den äkta kallstarten skeletonen
+ * byggdes för. Arrangemanget behålls efter flytten till acceptance-klassen
+ * trots att varje test där får en FÄRSK kontext med tom localStorage: det
+ * kostar ingenting, och kravet det uttrycker (äkta kallstart) ska stå kvar i
+ * testet även om kontext-isoleringen någon gång ändras.
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt). Deterministisk via page.route-mock av EF:erna
- * (hem-svitens regex-kontrakt).
+ * ACCEPTANCE-KLASSEN (task-59.3, ADR-080): filen flyttades hit ur e2e-sviten
+ * med hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade.
+ * Klassningen är HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 15
+ * restanrop, samtliga typsnitt, noll skarpa. Deterministisk via `network.use()`
+ * mot fixturvärldens delade handlers — inte via page.route, som hade lagt en
+ * andra avlyssningsmekanism ovanpå MSW och gjort EF-lagret svagare vaktat än
+ * allt annat nätverk.
  */
 
-const GET_REGISTRATIONS = /\/functions\/v1\/get-registrations/;
-const GET_EVENTS = /\/functions\/v1\/get-events/;
 const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
 const H1_HALSNING = /^Hej/;
 
@@ -126,39 +134,41 @@ function fulltData() {
 }
 
 /** Håll-bar mock (task-4.5:s mönster): `hall = true` parkerar EF-anropen
-    ofulfillade — laddläget står deterministiskt tills testet släpper svaren
-    (ingen fast delay, TASK-3-klassen); `slappAlla` besvarar med `data`. */
-function hallbarMock(page: Page, data: { registrations: Row[]; events: Row[] }) {
+    obesvarade — laddläget står deterministiskt tills testet släpper svaren
+    (ingen fast delay, TASK-3-klassen); `slappAlla` besvarar med `data`.
+
+    ÖVERSKUGGNING, INTE EN ANDRA FIXTURVÄRLD (task-59.3): handlarna läggs på
+    fixturvärldens normalläge via `network.use()` och gäller ENDAST detta test
+    — isoleringen är strukturell, `network` byggs om per test. Mönstren byggs
+    med `EF()` ur handlers-modulen så de per konstruktion matchar exakt det
+    normalläget matchar; en egen sträng hade kunnat drifta och då fallit igenom
+    till normalläget UTAN att något fälls (den tysta fällan, se hermetic.ts).
+
+    Parkeringen bärs av ett obesvarat löfte i resolvern i stället för av ett
+    uppskjutet Playwright-Route-objekt: MSW äger avlyssningen sedan task-54.1,
+    och en resolver som inte återvänder håller anropet i luften precis som en
+    oparkerad rutt gjorde. `slappAlla` löser dem, och svaret läses ur `st.data`
+    VID släppet — så data kan bytas mellan pollarna. */
+function hallbarMock(network: NetworkFixture, data: { registrations: Row[]; events: Row[] }) {
   const st = {
     data,
     hall: true,
-    parkerade: [] as Route[],
-    async slappAlla() {
-      const rutter = this.parkerade.splice(0);
-      for (const rutt of rutter) await uppfyll(rutt);
+    parkerade: [] as Array<() => void>,
+    slappAlla() {
+      for (const slapp of this.parkerade.splice(0)) slapp();
     },
   };
-  const uppfyll = async (rutt: Route) => {
-    const arEvents = /get-events/.test(rutt.request().url());
-    await rutt.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: arEvents
-        ? JSON.stringify({ events: st.data.events })
-        : JSON.stringify({ registrations: st.data.registrations }),
-    });
+  const svara = (arEvents: boolean) =>
+    arEvents ? json({ events: st.data.events }) : json({ registrations: st.data.registrations });
+  const hanterare = (arEvents: boolean) => async () => {
+    if (st.hall) await new Promise<void>((slapp) => st.parkerade.push(slapp));
+    return svara(arEvents);
   };
-  const hanterare = async (rutt: Route) => {
-    if (st.hall) {
-      st.parkerade.push(rutt);
-      return;
-    }
-    await uppfyll(rutt);
-  };
-  return Promise.all([
-    page.route(GET_REGISTRATIONS, hanterare),
-    page.route(GET_EVENTS, hanterare),
-  ]).then(() => st);
+  network.use(
+    http.get(EF('get-registrations'), hanterare(false)),
+    http.get(EF('get-events'), hanterare(true)),
+  );
+  return st;
 }
 
 /** Tom cache-arrangemanget: persist-nyckeln bort FÖRE app-boot (körs vid
@@ -191,9 +201,10 @@ const KORT = {
 test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
   test('AC 1 — tom cache: rubriker + kort-chrome i slutgeometri från första bildrutan; skeleton-block endast i datakropparna', async ({
     page,
+    network,
   }) => {
     await arrangeraTomCache(page);
-    await hallbarMock(page, fulltData()); // parkerad från start — äkta kallstartsfönster
+    hallbarMock(network, fulltData()); // parkerad från start — äkta kallstartsfönster
     await page.goto('/hem');
 
     // Riktiga rubriker + riktig kort-chrome DIREKT (statiskt kända): h1 +
@@ -237,9 +248,10 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
 
   test('AC 1 — grindkravet: kortens och listans boundingBox IDENTISK under laddning och efter data (layout-skift ≈ 0)', async ({
     page,
+    network,
   }) => {
     await arrangeraTomCache(page);
-    const mocken = await hallbarMock(page, fulltData());
+    const mocken = hallbarMock(network, fulltData());
     await page.goto('/hem');
 
     // Laddläget står (EF-svaren parkerade): tre laddande containrar.
@@ -268,7 +280,7 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
 
     // … släpp EF-svaren → innehållet landar …
     mocken.hall = false;
-    await mocken.slappAlla();
+    mocken.slappAlla();
     await expect(page.getByRole('link', { name: /Person0 Andersson/ })).toBeVisible();
     await expect(page.getByText('5 av 20 platser reserverade')).toBeVisible();
     await expect(main.getByRole('status')).toHaveCount(0);
@@ -298,9 +310,10 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
 
   test("AC 2 — 'Laddar…'-textraderna är borta ur Hem: laddbeskeden är enbart sr-only; ingen spinner", async ({
     page,
+    network,
   }) => {
     await arrangeraTomCache(page);
-    await hallbarMock(page, fulltData());
+    hallbarMock(network, fulltData());
     await page.goto('/hem');
     await expect(page.locator('main#main').getByRole('status')).toHaveCount(3);
 
@@ -322,9 +335,10 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
 
   test('AC 3 — framträdande-formen per task-8.1:s mätlåsta beslut: skeleton från första bildrutan, ingen fördröjningsmekanism', async ({
     page,
+    network,
   }) => {
     await arrangeraTomCache(page);
-    await hallbarMock(page, fulltData());
+    hallbarMock(network, fulltData());
     await page.goto('/hem');
 
     // Blocken är synliga MEDAN inget EF-svar levererats (nätverket parkerat
@@ -349,9 +363,10 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
 
   test('AC 4 — laddande containrar bär aria-busy + tillgängligt laddbesked; blocken är dekorativa (Roselli-mönstret)', async ({
     page,
+    network,
   }) => {
     await arrangeraTomCache(page);
-    await hallbarMock(page, fulltData());
+    hallbarMock(network, fulltData());
     await page.goto('/hem');
 
     const laddande = page.locator('main#main').getByRole('status');
@@ -373,9 +388,10 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
 
   test('AC 4 — reduced-motion ger statiska block; utan preferensen shimrar blocken långsamt', async ({
     page,
+    network,
   }) => {
     await arrangeraTomCache(page);
-    await hallbarMock(page, fulltData());
+    hallbarMock(network, fulltData());
 
     // Kontrollprovet först (L273-falsifikation): utan reducerad rörelse ÄR
     // shimmern deklarerad — annars bevisar reduce-grenen ingenting.
@@ -397,9 +413,9 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
     expect(efterReduce).toBe('none');
   });
 
-  test('AC 4 — axe 0 violations på Hem i laddläge', async ({ page }) => {
+  test('AC 4 — axe 0 violations på Hem i laddläge', async ({ page, network }) => {
     await arrangeraTomCache(page);
-    await hallbarMock(page, fulltData());
+    hallbarMock(network, fulltData());
     await page.goto('/hem');
     await expect(page.locator('main#main').getByRole('status')).toHaveCount(3);
 

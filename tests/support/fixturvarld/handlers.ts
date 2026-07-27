@@ -31,8 +31,17 @@ import {
  * Lägg bara till här när svaret ska gälla ALLA tester.
  */
 
-/** Host-agnostiskt: appen kan peka på vilken fixtur-origin som helst. */
-const EF = (namn: string) => `*/functions/v1/${namn}`;
+/**
+ * Host-agnostiskt: appen kan peka på vilken fixtur-origin som helst.
+ *
+ * EXPORTERAD SEDAN task-59.3, och det är en anti-drift-åtgärd. Ett test som
+ * överskuggar en handler med `network.use()` måste träffa EXAKT det mönster
+ * den delade handlern matchar — annars faller anropet igenom till normalläget
+ * utan att något fälls (den tysta felklassen, se `hermetic.ts` § Överskugga en
+ * delad handler). Skriver överskuggningen `EF('get-events')` i stället för en
+ * egen sträng kan mönstret per konstruktion inte drifta ifrån originalet.
+ */
+export const EF = (namn: string) => `*/functions/v1/${namn}`;
 
 /**
  * Cross-origin-svar kräver explicit CORS-huvud. MSW sätter det inte åt oss —
@@ -56,7 +65,14 @@ const CORS = { 'access-control-allow-origin': '*' };
  * gjordes. Återinför det inte utan att först mäta att preflight faktiskt sker.
  */
 
-const json = (data: JsonBodyType) => HttpResponse.json(data, { headers: CORS });
+/**
+ * EF-svar med CORS-huvudet på. EXPORTERAD SEDAN task-59.3 av samma skäl som
+ * `EF`: en överskuggning som bygger sitt svar för hand glömmer förr eller
+ * senare huvudet, och utan det blockerar webbläsaren svaret — vilket i vyn ser
+ * ut som ett trasigt EF, inte som ett trasigt test.
+ */
+export const json = (data: JsonBodyType, status = 200) =>
+  HttpResponse.json(data, { status, headers: CORS });
 
 export const handlers = [
   http.get(EF('get-events'), () => json(EVENTS_RESPONSE)),

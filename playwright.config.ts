@@ -42,6 +42,21 @@ const isA11yRun = process.env.PLAYWRIGHT_A11Y_DEV_SERVER === '1';
 const VISUAL_DEV_PORT = 5299;
 const isVisualRun = process.env.PLAYWRIGHT_VISUAL_DEV_SERVER === '1';
 
+// Acceptance-runnern (task-59.3, ADR-080): samma fixtur-env som visual — appen
+// binder mot den fiktiva visual-fixture-URL:en, aldrig staging — men på EGEN
+// port. Skälet är inte kosmetiskt: klasserna ska kunna köras SAMTIDIGT lokalt
+// utan att stale-server-vakten (reuseExistingServer: false + --strictPort) fäller
+// den ena, och delad port hade gjort det omöjligt.
+//
+// NAMN-RESIDU, MEDVETET LÄMNAD: konstanternas VÄRDEN bär fortfarande
+// `visual-fixture` (URL:en, och därmed supabase-js-härledda lagringsnyckeln
+// `sb-visual-fixture-auth-token`). Att döpa om dem vore en BETEENDEändring
+// förklädd till namnstädning — nyckeln härleds ur värdnamnet, inte ur en
+// konstant vi äger. Det läser skevt när acceptance-klassen hänger på dem; det
+// är priset för att flytten är ren.
+const ACCEPTANCE_DEV_PORT = 5399;
+const isAcceptanceRun = process.env.PLAYWRIGHT_ACCEPTANCE_DEV_SERVER === '1';
+
 // E2E-dev-servern är PORTLÅST till 5173: staging-CORS_ALLOWED_ORIGINS tillåter
 // exakt origin http://localhost:5173 (jfr tests/api/cors.staging.test.ts) — en
 // dedikerad e2e-port à la a11y-mönstret hade CORS-blockerat appens staging-anrop
@@ -79,7 +94,7 @@ const isPreviewRun = process.env.PLAYWRIGHT_STAGING_PREVIEW === '1';
 /**
  * Playwright — visuella regressionstester + API-säkerhetstester + e2e auth-flow.
  *
- * Nio projekt:
+ * Tio projekt:
  *   - setup       → tests/e2e/*.setup.ts (auth-fixture, kör en gång per testrun)
  *   - api-pure    → tests/api/*.test.ts (pure-logik, ingen staging-koppling)
  *   - api-setup   → tests/api/*.setup.ts (T24-b: loggar in user+admin en gång; api-staging beror på det)
@@ -87,6 +102,8 @@ const isPreviewRun = process.env.PLAYWRIGHT_STAGING_PREVIEW === '1';
  *   - kontraktsvakt → tests/kontraktsvakt/ (nattlig fixtur-mot-staging, ADR-080 beslut 3;
  *                   kör ENDAST via nightly.yml — aldrig i ci-suite.yml, se projektet)
  *   - chromium-authenticated → tests/e2e/*.staging.test.ts (e2e via storageState från setup)
+ *   - acceptance  → tests/acceptance/ (hermetiskt mot fixturvärlden, MUTEXFRITT
+ *                   och secret-fritt; ADR-080 — se projektet nedan)
  *   - a11y        → tests/a11y/ (axe-core mot /dev/primitives + /dev/patterns;
  *                   alltid-färsk dev-server på dedikerad port via test:a11y-
  *                   scriptets env-flagga — PLAYWRIGHT_TEST_BASE_URL lämnas osatt
@@ -202,14 +219,17 @@ export default defineConfig({
             reuseExistingServer: false,
             timeout: 60_000,
           }
-        : isVisualRun
+        : isVisualRun || isAcceptanceRun
           ? {
-              command: `npm run dev -- --port ${VISUAL_DEV_PORT} --strictPort`,
-              url: `http://localhost:${VISUAL_DEV_PORT}`,
+              command: `npm run dev -- --port ${isVisualRun ? VISUAL_DEV_PORT : ACCEPTANCE_DEV_PORT} --strictPort`,
+              url: `http://localhost:${isVisualRun ? VISUAL_DEV_PORT : ACCEPTANCE_DEV_PORT}`,
               reuseExistingServer: false,
               timeout: 60_000,
               // Fixtur-env:en vinner över .env-filer (Vites process-env-
-              // företräde) — appen binder mot den fiktiva URL:en.
+              // företräde) — appen binder mot den fiktiva URL:en. DELAD mellan
+              // visual och acceptance: båda klasserna hänger på SAMMA
+              // fixturvärld (ADR-080), så en egen env-uppsättning här hade varit
+              // första steget mot två världar som kan drifta isär.
               env: {
                 VITE_SUPABASE_URL: VISUAL_SUPABASE_URL,
                 VITE_SUPABASE_ANON_KEY: VISUAL_SUPABASE_ANON_KEY,
@@ -296,6 +316,33 @@ export default defineConfig({
         // artefakter (trace, screenshot, video) är credentials-fria.
         // T26: trace on-first-retry fångar trace exakt när en retry triggas →
         // diagnostik för Landning B (flaky-repro) utan att spara på varje run.
+        trace: 'on-first-retry',
+        screenshot: 'only-on-failure',
+        video: 'retain-on-failure',
+      },
+    },
+    {
+      // ACCEPTANCE-KLASSEN (task-59.3, ADR-080 beslut 1). Egen katalog, eget
+      // projekt, eget MUTEXFRITT CI-jobb — klassbytet är beslutet, hastigheten
+      // är följden. Vad den bevisar: att APPEN renderar och beter sig rätt givet
+      // ett svar av rätt form. Vad den INTE bevisar: att staging och Airtable
+      // producerar svar av den formen (det är api-staging, bakom mutexen).
+      //
+      // Kör hermetiskt mot fixturvärlden — noll staging-beroende, noll secrets,
+      // ingen `concurrency`-grupp någonstans i kedjan. Ett anrop som ingen
+      // handler täcker FÄLLER testet med adressen namngiven (hermetik-vakten i
+      // AVBRYTANDE läge, ADR-080 beslut 4).
+      //
+      // devices['Desktop Chrome'] ⇒ viewport 1280×720, och det är ett KRAV inte
+      // en smak: Hem-testet mäter 600px-kolumnens skärm-centrering mot exakt
+      // 1280 (`(1280 - 600) / 2`). Byts device-profilen faller den mätningen.
+      name: 'acceptance',
+      testDir: './tests/acceptance',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: `http://localhost:${ACCEPTANCE_DEV_PORT}`,
+        // T26-formen från chromium-authenticated: trace vid retry, artefakter
+        // endast vid rött.
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',

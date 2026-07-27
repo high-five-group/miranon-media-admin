@@ -20,6 +20,7 @@
     "test:api:pure": "PLAYWRIGHT_NO_WEB_SERVER=1 playwright test --project=api-pure",
     "test:api:staging": "PLAYWRIGHT_NO_WEB_SERVER=1 playwright test --project=api-staging",
     "test:e2e:staging": "playwright test --project=chromium-authenticated",
+    "test:acceptance": "PLAYWRIGHT_ACCEPTANCE_DEV_SERVER=1 playwright test --project=acceptance",
     "test:preview:staging": "npm run build:staging && npm run verify:staging-bundle && PLAYWRIGHT_STAGING_PREVIEW=1 playwright test --project=staging-preview",
     "test:a11y": "PLAYWRIGHT_A11Y_DEV_SERVER=1 playwright test --project=a11y",
     "vakt:kontrakt": "PLAYWRIGHT_NO_WEB_SERVER=1 playwright test --project=kontraktsvakt",

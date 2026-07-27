@@ -50,6 +50,7 @@ kanoniska kommandona separat:
 | `npm run test:api:pure` | Enbart pure-API |
 | `npm run test:api:staging` | Enbart staging-API (CI-formen) |
 | `npm run test:e2e:staging` | E2E mot staging (kräver ledig port 5173) |
+| `npm run test:acceptance` | Acceptance-klassen: hermetiskt mot fixturvärlden (egen dev-server på port 5399) — se § Acceptance-klassen |
 | `npm run test:a11y` | Axe-runner (egen dev-server på port 5199) |
 | `npm run test:visual` | Visuella regressionstester |
 | `npm run vakt:kontrakt` | Kontraktsvakten: fixturvärlden mot skarp staging (nattlig i CI, körbar lokalt med `.env.test` — se § Nattnätet) |
@@ -252,6 +253,63 @@ utanför GitHub.
 grundorsaken, eller (b) skrivs en öppen motivering ut i ärendet innan det
 stängs. Regeln är larmkedjans motgift mot kyrkogårdseffekten: ett larm ingen
 läser är värdelöst, och tyst stängning gör larmet till en kyrkogård.
+
+## Acceptance-klassen
+
+Termen bor här och i
+[ADR-080](docs/decisions/ADR-080-acceptance-klassen-hermetisk-utbrytning.md) —
+inte i `ORDLISTA.md`, som bara tar projektspecifika domänbegrepp.
+
+**Vad klassen bevisar:** att **appen** renderar och beter sig rätt givet ett
+svar av rätt form. **Vad den inte bevisar:** att staging och Airtable
+producerar svar av den formen — det är API-svitens uppgift, och den ligger
+kvar bakom staging-mutexen just därför. Fogen mellan klasserna är svarsformen,
+bevakad av att samma zod-scheman parsar fixturens svar som parsar skarpa svar.
+Tillåts ett schema och en fixtur någon gång divergera faller hela argumentet;
+den nattliga kontraktsvakten (§ Nattnätet) finns för att fånga det.
+
+Klassen mockar Edge-funktioner **vi själva äger**. Det är en dokumenterad
+kompromiss, inte förstahandsvalet: branschens väg ut — efemär skarp backend
+per körning — är delvis stängd så länge Airtable-basen varken är självhostbar
+eller klonbar. ADR-080 säger det rakt ut och ritar in omprövningen vid Fas E.
+
+**Var den bor:** `tests/acceptance/`, projektet `acceptance`, sömmen
+`tests/acceptance/support/acceptance-bas.ts` (komponerad med Playwrights
+`mergeTests` ur den **klassdelade** fixturvärlden `tests/support/fixturvarld/`
+— aldrig en egen kopia). Kör lokalt med `npm run test:acceptance`.
+
+**CI:** eget jobb i `ci-suite.yml`, **utan staging-mutex och utan secrets** —
+en PR som bara rör renderingen får svar utan att köa bakom `staging-tests`.
+Jobbet är blockerande, som alla andra jobb i sviten; `continue-on-error`
+används inte och ska inte införas (flaggan gör `needs`-resultatet till
+`success` och hade tystat paraply-checken).
+
+**Att skriva ett test i klassen:**
+
+- Normalläget — svaren varje test får utan att säga något — bor i
+  `tests/support/fixturvarld/handlers.ts`. Lägg bara till där när svaret ska
+  gälla ALLA tester.
+- Behöver ETT test ett annat svar: skriv **ingen** egen fixturvärld,
+  överskugga lokalt med `network.use(...)`. Bygg mönstret med `EF(namn)` och
+  svaret med `json(...)` ur `handlers.ts` — då kan överskuggningen inte drifta
+  ifrån det normalläget matchar, och CORS-huvudet kan inte glömmas.
+- **Den tysta fällan:** matchar överskuggningens mönster inte det faktiska
+  anropet fälls INGENTING — anropet faller igenom till normalläget och testet
+  ser det i stället för sitt specialfall. Ett överskuggat test som beter sig
+  precis som utan överskuggning ska misstänkas för det. Fullständig
+  beskrivning i `hermetic.ts` § Överskugga en delad handler.
+- Testa **externt beteende** — aldrig att en handler anropades eller hur många
+  gånger. Det vore att testa fixturen.
+
+**Vakten är avbrytande här.** Ett anrop som ingen handler täcker fäller testet
+med sin egen URL namngiven och instruktionstext i klartext. En fil som flyttats
+hit för tidigt ska bli röd, aldrig grön av fel skäl.
+
+**Att flytta en fil hit kräver tvåsidigt bevis:** att den passerar hermetiskt,
+OCH att vakten fäller när dess mockar tas bort. Utan det andra ledet är
+hermetiken en förhoppning. Klassningen ska dessutom vara HÄRLEDD ur
+hermetik-mätdatan (`PLAYWRIGHT_HERMETIK_RAPPORT=1`), inte handplockad —
+räkningen redovisas i PR:n.
 
 ## Visuell regression
 
