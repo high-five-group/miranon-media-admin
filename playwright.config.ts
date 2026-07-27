@@ -79,11 +79,13 @@ const isPreviewRun = process.env.PLAYWRIGHT_STAGING_PREVIEW === '1';
 /**
  * Playwright — visuella regressionstester + API-säkerhetstester + e2e auth-flow.
  *
- * Åtta projekt:
+ * Nio projekt:
  *   - setup       → tests/e2e/*.setup.ts (auth-fixture, kör en gång per testrun)
  *   - api-pure    → tests/api/*.test.ts (pure-logik, ingen staging-koppling)
  *   - api-setup   → tests/api/*.setup.ts (T24-b: loggar in user+admin en gång; api-staging beror på det)
  *   - api-staging → tests/api/*.staging.test.ts (HTTP mot deployad Supabase)
+ *   - kontraktsvakt → tests/kontraktsvakt/ (nattlig fixtur-mot-staging, ADR-080 beslut 3;
+ *                   kör ENDAST via nightly.yml — aldrig i ci-suite.yml, se projektet)
  *   - chromium-authenticated → tests/e2e/*.staging.test.ts (e2e via storageState från setup)
  *   - a11y        → tests/a11y/ (axe-core mot /dev/primitives + /dev/patterns;
  *                   alltid-färsk dev-server på dedikerad port via test:a11y-
@@ -262,6 +264,22 @@ export default defineConfig({
         extraHTTPHeaders: {
           'Content-Type': 'application/json',
         },
+      },
+    },
+    {
+      // Kontraktsvakten (task-59.2, ADR-080 beslut 3): jämför fixturvärldens
+      // svar mot skarp staging. EGET projekt — aldrig i api-staging — därför
+      // att api-staging kör i ci-suite.yml, som är delad mellan presubmit och
+      // natten: ett steg där hade gjort vakten BLOCKERANDE. Här körs den bara
+      // av nightly.yml:s egna jobb (`npm run vakt:kontrakt`).
+      // Samma api-setup-dependency som api-staging → EN inloggning per körning,
+      // ingen egen auth-väg (T24-b).
+      name: 'kontraktsvakt',
+      testDir: './tests/kontraktsvakt',
+      testMatch: '**/*.staging.test.ts',
+      dependencies: ['api-setup'],
+      use: {
+        baseURL: process.env.TEST_SUPABASE_URL,
       },
     },
     {

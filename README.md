@@ -83,6 +83,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
 | `npm run test:e2e:staging` | Playwright e2e mot staging (auth-fixture; alltid-färsk dev-server på 5173 — upptagen port ger hård vägran, stäng egen dev-server först; TASK-5) |
 | `npm run test:a11y` | Axe-runner mot `/dev/primitives` + `/dev/patterns` (alltid-färsk dev-server, ADR-045) |
 | `npm run test:preview:staging` | Byggt staging-bygge på 4173: bygge → bundelgrind → Playwright-bevis (runbook: `docs/reference/staging-verifiering-runbook.md`) |
+| `npm run vakt:kontrakt` | Kontraktsvakten: jämför fixturvärldens svar mot skarp staging (nattlig CI-vakt, ADR-080; kräver TEST_*-secrets) |
 
 ## Stack
 
