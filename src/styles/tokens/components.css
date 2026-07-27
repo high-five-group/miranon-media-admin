@@ -12,11 +12,25 @@
 :root {
   /* ── Button (Fas 3 K2 — stänger K1:s token-gap) ──
      Alias mot semantiska lagret. Pressed-nyanser via color-mix
-     eftersom semantiskt mörkare värde saknas för resp. roll. */
+     eftersom semantiskt mörkare värde saknas för resp. roll.
+
+     OBS: den motiveringen upphör att gälla när rollerna migreras till
+     tolvstegsskalorna — de har steg 10, 11 och 12 för varje kulör, och
+     mixarna nedan blir då teknisk skuld. Se fynd F13. */
   --mm-button-primary-bg: var(--mm-btn-primary-bg);
   --mm-button-primary-text: var(--mm-btn-primary-text);
   --mm-button-primary-bg-hover: var(--mm-btn-primary-hover);
-  --mm-button-primary-bg-pressed: color-mix(in srgb, var(--mm-btn-primary-hover), black 10%);
+  /* Pressed räknas på VILO-värdet, inte på hover-värdet (fynd F11, rättat
+     2026-07-27). Primärknappen är mörk och LJUSNAR vid hover — det är
+     konventionsenligt för mörka knappar. Men pressed räknades tidigare som
+     hover mörkad 10 %, vilket landade på L* 21,7 mot vilans 16,5: nedtryckt
+     knapp blev ljusare än orörd. Branschkonventionen är att en knapp vars
+     hover ljusnar ska MÖRKNA vid tryck, så att intrycket blir intryckning.
+
+     15 % mot vilo-värdet ger L* 13,6, alltså 2,9 enheter under vila —
+     urskiljbart — och är samma procent som danger och success redan använder
+     för pressed. Primary får därmed samma grammatik som de andra intents. */
+  --mm-button-primary-bg-pressed: color-mix(in srgb, var(--mm-btn-primary-bg), black 15%);
   --mm-button-secondary-bg: var(--mm-btn-secondary-bg);
   --mm-button-secondary-text: var(--mm-btn-secondary-text);
   --mm-button-secondary-border: var(--mm-btn-secondary-border);

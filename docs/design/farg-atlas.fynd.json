@@ -1,0 +1,155 @@
+{
+  "$kommentar": "Kurerade fynd från färgauditen 2026-07-26. Den enda handskrivna filen i atlasen — allt annat härleds ur src/. Varje fynd ska ha en verifiering som går att köra om.",
+  "granskat": {
+    "datum": "2026-07-26",
+    "omfattning": "src/ — komponenter, rutter, stilar",
+    "utanfor": "e2e-tester, Airtable-basens egna färgval, docs/ utöver DESIGN-SYSTEM-SPEC.md"
+  },
+  "rent": [
+    {
+      "kontroll": "Hårdkodade hex/rgb/hsl i komponenter",
+      "resultat": "0",
+      "not": "Samtliga träffar i src/ är kommentarstext, inte kod."
+    },
+    {
+      "kontroll": "Arbiträra Tailwind-värden (bg-[#fff])",
+      "resultat": "0"
+    },
+    {
+      "kontroll": "Inline style med färg",
+      "resultat": "0"
+    },
+    {
+      "kontroll": "Färgliteraler i SVG fill/stroke",
+      "resultat": "0"
+    }
+  ],
+  "fynd": [
+    {
+      "id": "F1",
+      "rubrik": "Två döda färgklasser i login",
+      "allvar": "hög",
+      "plats": ["src/routes/login.tsx:111", "src/routes/login.tsx:119"],
+      "vad": "text-red-600 och text-white genererar ingen CSS. src/styles/tailwind.css:12 nollställer Tailwinds defaultpalett med --color-*: initial, och ingen av klasserna finns i @theme.",
+      "verifiering": "grep -c '\\.text-white' dist/assets/*.css → 0, medan .text-text-muted och .bg-primary finns i samma fil.",
+      "foljd": "Felmeddelandet vid inloggning renderas inte rött. Skärmläsare når det ändå via role=alert + aria-live.",
+      "fallan": "text-white på bg-primary hade gett 2,57:1 — under AA. Som det faktiskt renderas ärver texten --mm-text och når 6,04:1. Den döda klassen räddar kontrasten. Rätt åtgärd är att ta bort raden, inte att ersätta den med text-text-inverse."
+    },
+    {
+      "id": "F2",
+      "rubrik": "Två parallella konsumtionsvägar för samma roller",
+      "allvar": "medel",
+      "vad": "@theme exponerar 35 färgroller medan semantic.css definierar 58. Resten konsumeras med arbitrary-property-syntax: bg-(--mm-input-bg), border-(--mm-border-field).",
+      "verifiering": "Samma roll förekommer i båda formerna: bg-text (8 träffar) och bg-(--mm-text) (1), border-text (4) och border-(--mm-text) (1).",
+      "foljd": "14 av 35 @theme-roller används aldrig som utility. Nio av dem lever ändå via var() i CSS-lagret — de är exponerade på fel väg, inte döda."
+    },
+    {
+      "id": "F3",
+      "rubrik": "Tre sätt att uttrycka svag avdelare",
+      "allvar": "medel",
+      "vad": "divide-border (28 träffar), border-text-muted/20 (11) och border-border-light (3) gör samma sak. Mittersta lånar en textroll som kantfärg.",
+      "foljd": "border-text-muted/20 är dessutom den enda alfa-användningen i utility-lagret, medan CSS-lagret bär åtta olika color-mix-procent (6, 8, 10, 12, 14, 15, 16, 22). Genomskinlighet uttrycks på två sätt i två lager utan gemensam skala."
+    },
+    {
+      "id": "F4",
+      "rubrik": "Kategorifärgerna är en död roll-grupp med kulörkollision",
+      "allvar": "låg",
+      "vad": "--mm-cat-personal, cat-event, cat-people, cat-comm, cat-system plus deras fem --color-cat-* i @theme: tio deklarationer, noll användningar i src/.",
+      "verifiering": "grep -rn 'mm-cat-\\|color-cat-' src/ utanför semantic.css och tailwind.css → tomt.",
+      "foljd": "cat-personal och cat-event pekar dessutom på samma primitiv (--p-gold-500). Två av fem kategorier hade inte gått att skilja åt."
+    },
+    {
+      "id": "F5",
+      "rubrik": "Specen har drivit isär från koden",
+      "allvar": "medel",
+      "plats": ["docs/specs/DESIGN-SYSTEM-SPEC.md §1"],
+      "vad": "Specen anger --mm-text-muted: var(--p-neutral-400) (3,50:1 mot vit). Koden har --p-neutral-500 (5,33:1).",
+      "foljd": "Koden är rätt och specen föråldrad. Rollen används 164 gånger — den mest använda färgrollen i appen. Hade specen följts vore 164 platser under AA.",
+      "ovrigt": "Specen listar också 25 komponent-tokens (--mm-stat-card-*, --mm-table-*, --mm-menu-*) som aldrig byggdes, och saknar --mm-state-hover i §1."
+    },
+    {
+      "id": "F6",
+      "rubrik": "Fem primitiver är definierade men aldrig använda",
+      "allvar": "låg",
+      "vad": "--p-gold-200, --p-gold-700, --p-copper-200, --p-copper-400 och --p-neutral-1000 förekommer bara på sin egen definitionsrad.",
+      "foljd": "gold-700 är den enda guldnyans som klarar AA för text (4,91:1 mot vit) — och den används inte. Guld kan därför i praktiken inte bära text någonstans i appen."
+    },
+    {
+      "id": "F7",
+      "rubrik": "Guldskalan är två kulörer hopfogade till en",
+      "allvar": "medel",
+      "vad": "Stegen 100–400 ligger på kulörton ~92° i CIE LCh, stegen 500–700 på ~78°. Ett brott på 13 grader mitt i skalan.",
+      "foljd": "--mm-primary-muted (gold-400) är inte en nedtonad primär utan en annan kulör — olivgul mot primärens amber. Ljushetsskillnaden dem emellan är bara 3,2 L*-enheter; det som skiljer är kulörtonen."
+    },
+    {
+      "id": "F8",
+      "rubrik": "Kopparskalan saknar hela sitt mellanband",
+      "allvar": "medel",
+      "vad": "Mellan copper-200 och copper-400 ligger 33,8 L*-enheter. Där ryms två till tre steg. Skalan saknar dessutom ett 300-steg helt.",
+      "foljd": "Koppar är CTA-färgen och har ingen användbar ton mellan nästan-vitt och mättat."
+    },
+    {
+      "id": "F9",
+      "rubrik": "Varumärkesguldet kan inte bära vit text eller vara UI-yta mot vitt",
+      "allvar": "hög",
+      "vad": "--p-gold-500 (#D4960A) mäter 2,57:1 mot vit yta. WCAG 1.4.11 kräver 3:1 för UI-komponenter och 4,5:1 för brödtext.",
+      "verifiering": "Guld vid kulörton 78,7° klarar 3:1 mot vitt först vid OKLCH-ljushet ≤ 0,67 (#C38900). Varumärkesguldet ligger på 0,715.",
+      "foljd": "Det är en fysisk egenskap hos en mättad gul-orange, inte ett fel i paletten. Guld kan vara yta under mörk text, men aldrig yta under vit text mot vit bakgrund. Det förklarar varför primärknappen är neutral-800 och inte guld."
+    },
+    {
+      "id": "F10",
+      "rubrik": "Info-blå och fokusringen var förväxlingsbara — löst 2026-07-26",
+      "allvar": "löst",
+      "atgard": "Marcus beslut: fokusringen står fast (lessons.md Session 25 — exklusiviteten är det som gör den igenkännbar), info-blå flyttar. Den nya blåskalans ankare är #1F6CB0: samma ljushet som den gamla (CIE L* 44,4 mot 44,0) och närmaste ton, men dubbla mättnaden (C 42,6 mot 21,0). Fokusringen är därmed den DOVA mörkblå och info den KLARA. Avståndet gick från 15,1 till 27,3 och hela skalan är fri från kollisioner. Rollernas kontrast är i praktiken oförändrad: 5,04:1 som text mot info-ytan (dagens 5,13), 5,48:1 som kursplatta under vit text (dagens 5,58). Kvar att göra: migrera --mm-info, --mm-cat-comm och --mm-kurs-fjarrskadning till den nya skalan — det ändrar appens utseende och hör till migreringen.",
+      "vad": "--p-blue-500 (#4A6B8A, som bär --mm-info, --mm-cat-comm och kursfärgen Fjärrskådning) ligger på perceptuellt avstånd 15,1 från fokusringens #1B4965. De har nästan identisk mättnad (21,0 mot 21,6) och nära kulörton (261,8° mot 255,4°) — det enda som skiljer dem är ljushet.",
+      "verifiering": "CIE LCh-avstånd mellan #4a6b8a och #1b4965 = 15,1. Till jämförelse ligger --p-blue-100 på 69,4 och --mm-text på 51,8 från samma färg.",
+      "foljd": "tasks/lessons.md (Session 25, UNIVERSAL) slår fast att fokusringen ska ha 'ingen relation till amber, copper, info eller text' — men den har relation till info. En fokusring runt ett info-element är svår att urskilja från elementet.",
+      "fallan": "Fyndet uppstod inte ur den genererade skalan; skalan avslöjade det bara. Konflikten finns i paletten som den ser ut nu, och den försvinner inte av att vi låter bli att generera. Marcus har beslutat att fokusringen står fast — då är det info-blå som behöver flytta, eller så accepteras närheten som ett medvetet undantag."
+    },
+    {
+      "id": "F11",
+      "rubrik": "Primärknappens pressed-läge var ljusare än vila — löst 2026-07-27",
+      "allvar": "löst",
+      "plats": ["src/styles/tokens/components.css:19"],
+      "vad": "--mm-button-primary-bg-pressed räknas som color-mix på HOVER-värdet, inte på vilo-värdet: color-mix(in srgb, var(--mm-btn-primary-hover), black 10%). Hover är ljusare än vila (neutral-700 mot neutral-800), så pressed hamnar över vilo-läget.",
+      "verifiering": "vila #282928 CIE L* 16,5 · hover #3a3a3a 24,4 · pressed #343434 21,7. Pressed ligger 5,2 L*-enheter ÖVER vila.",
+      "foljd": "Att trycka ner knappen gör den ljusare än den var innan man rörde den. Alla andra intents (danger, success) räknar pressed på sitt eget vilo-värde och mörknar korrekt — primary är den enda som ärver hoverns.",
+      "fallan": "Buggen finns i appen idag och har inget med migreringen att göra. Men den förvärras av den: med neutral-11 som hover växer inversionen från 5,2 till omkring 31 enheter. Rätta före migreringen, inte efter.",
+      "atgard": "Pressed räknas nu på VILO-värdet i stället för på hover-värdet: color-mix(in srgb, var(--mm-btn-primary-bg), black 15%). Resultatet är CIE L* 13,6 mot vilans 16,5 — 2,9 enheter under, alltså urskiljbart och konventionsenligt. Branschkonventionen är att en knapp vars hover LJUSNAR ska MÖRKNA vid tryck, så att intrycket blir intryckning; hover-ljusningen (neutral-800 → neutral-700) behålls eftersom den är rätt för en mörk knapp. 15 % är samma procent som danger och success redan använder för pressed, så primary får nu samma grammatik som de andra intents. DETTA ÄNDRAR APPENS UTSEENDE — nedtryckt primärknapp blir mörkare än förut. Vit text mot den nya pressed-ytan mäter 15,77:1."
+    },
+    {
+      "id": "F12",
+      "rubrik": "Rollen för hover-yta finns, är noga motiverad, och används av en enda komponent",
+      "allvar": "medel",
+      "vad": "--mm-state-hover infördes i S91 med elva rader motivering och uppmätt ΔE00 — genomskinliga skrim i stället för opaka plattor, just för att en opak platta kollapsar mot tonala bakgrunder. Den konsumeras av ToggleButtonGroup.tsx och ingen annan.",
+      "verifiering": "hover:bg-bg-emphasized 17 träffar · hover:bg-bg-muted 4 · hover:bg-bg-subtle 3 · bg-(--mm-state-hover) 1.",
+      "foljd": "17 av 25 hover-ytor använder --mm-bg-emphasized, som i sin egen kommentar är definierad som AKTIV-markering — alltså en annan tillståndsroll. Regeln bor i en CSS-kommentar som konsumenterna aldrig läser."
+    },
+    {
+      "id": "F13",
+      "rubrik": "Mix-lagrets egen motivering upphör att gälla med tolvstegsskalorna",
+      "allvar": "medel",
+      "plats": ["src/styles/tokens/components.css:13-15"],
+      "vad": "Kommentaren lyder: 'Pressed-nyanser via color-mix eftersom semantiskt mörkare värde saknas för resp. roll.' Det var sant med den gamla paletten.",
+      "foljd": "Tolvstegsskalorna har steg 10, 11 och 12 för varje kulör. Grunden för samtliga sju black-N%-mixar försvinner — efter migreringen är de inte längre nödvändiga utan teknisk skuld. De sju error-mixarna är redan idag redundanta på ett annat sätt: ankaret är oflyttat, så de ger byte-identiska resultat, men landar mellan steg 10 och 11 och matchar alltså inget steg."
+    },
+    {
+      "id": "F14",
+      "rubrik": "Primärknappens yta och brödtexten kollapsar till samma steg",
+      "allvar": "hög",
+      "vad": "--mm-btn-primary-bg pekar på neutral-800 och --mm-text på neutral-900. Båda mappar närmast till neutral-12 i den nya skalan.",
+      "verifiering": "neutral-800 CIE L* 16,5 och neutral-900 14,2 ligger 2,3 enheter isär; neutral-12 ligger på 14,6. Rollerna matar 9 respektive 7 komponent-tokens.",
+      "foljd": "Efter en naiv migrering är primärknappens yta exakt brödtextens färg. Två ramper som varit åtskilda smälter ihop, och dialog-overlayen (byggd på --mm-text) härrör då från samma källa som primary-subtle-plattorna (byggda på --mm-btn-primary-bg). Det är inget palettfel utan ett rollbeslut som måste fattas medvetet."
+    },
+    {
+      "id": "F15",
+      "rubrik": "Fem saknade lager-2-roller — två namngivna, tre kräver designval",
+      "allvar": "medel",
+      "vad": "Varje mönster där samma visuella syfte uttrycks på tre till fem sätt går tillbaka på en roll som inte finns: solid inverterad yta (14 förekomster via --mm-text), vald/selected-tillstånd (11 via fyra olika roller), mätarens track och fyllnad (12 via fem implementationer), osynlig-tills-kontrast-kant (11 via NavCard-tokens utanför NavCard), samt en gemensam alfaskala.",
+      "verifiering": "Svag avdelare uttrycks på fyra sätt: divide-border 28 · border-text-muted/20 11 · bg-border 5 · border-border-light 3.",
+      "foljd": "Där rollen SAKNAS improviserar varje komponent. Där rollen FINNS men bor i en CSS-kommentar (F12) uppstår samma spridning av motsatt skäl. Mätarens tokengap är redan öppet bokfört i två komponenter oberoende av varandra, vilket gör det starkare som fynd — två skivor stötte på samma vägg.",
+      "atgard": "NAMNGIVNA 2026-07-27, båda med värden härledda ur befintlig användning så att flytten blir visuellt neutral: --mm-surface-inverse (svärtan som YTA i stället för som text, 13 ställen lånade --mm-text) och --mm-border-quiet / --mm-border-quiet-contrast (kant som syns först under prefers-contrast, 54 ställen varav 12 lånade NavCards komponent-tokens utanför NavCard). Ingen komponent är migrerad till dem ännu.",
+      "oppet": "TRE KRÄVDE DESIGNVAL. Research mot branschledarna 2026-07-27 avgjorde två av dem och skärpte den tredje — se § Researchen i sessionsdoket för fullständigt underlag.\n\nVAL 1, urvalstillstånd — AVGJORT AV RESEARCHEN. Uppdelningen binärt av/på kontra urval ur flera bekräftas i sex av åtta system, ofta i själva tokennamnen (Primer har control-checked-* och control-transparent-bgColor-selected som SKILDA färgsystem; Atlassian har background.selected.bold för kryssrutor och background.selected för dropdowns). Det binära fallet är redan löst hos oss: --mm-surface-inverse är samma mönster som Carbons kryssruta ($icon-primary, nästan svart solid). Kvar är urvalsfallet, som ska bära NEUTRAL tonal yta. Min delhypotes att accent vore sämre FALSIFIERADES dock i sin formulering — invarianten är inte kulören utan att full accentstyrka PÅ EN YTA är reserverad för binärt av/på och primär handling. Guld får därför vara förgrund och indikator, men bara mörkat: gold-9 mäter 2,57:1 mot vitt och underkänns av WCAG 1.4.11, medan gold-10 (3,06:1) och gold-11 (4,91:1) duger.\n\nVAL 2, mätaren — AVGJORT AV RESEARCHEN. Beläggningsgrad är en <meter>, inte en <progress>: HTML-specens eget exempel är \"Tickets sold\". Fyllnaden ska vara ICKE-SEMANTISK (Adobe Spectrums default heter informative, \"a neutral or non-semantic value\"). Guld duger inte som fyllnad — gold-9 mäter 2,36:1 mot bg-muted, och NastaEventCards nuvarande primary-muted 2,33:1 mot vitt. Sage-9 (5,15:1) eller blue-9 (5,02:1) duger. Min hypotes att grön ska markera fullt håller INTE utan förbehåll: i Spectrums modell betyder positive \"mycket kvar\", så fullt är den begränsade änden. Grönt vid fullt är ett affärspåstående som får göras medvetet, och då alltid med ikon eller text (WCAG 1.4.1).\n\nVAL 3, alfaskalan — HYPOTESEN HÖLL. Konsolidera inte. Sex av sex system kör flera nivåuppsättningar; Radix varierar samma roll fyra gånger i alfa beroende på kulör för att effekten ska SE lika ut. Branschen förenar rollnamnen, aldrig talen. Carbon har 13 alfanivåer i ett tema, Primer 7 — åtta är inte för många, och felläget är onamngivna nivåer. Åtgärd: namnge de tre grammatikerna, förbjud rå alfa i komponenter, och assertera invarianten vila < hover < pressed inom varje grammatik."
+    }
+  ]
+}

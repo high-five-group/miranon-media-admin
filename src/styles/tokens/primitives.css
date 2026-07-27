@@ -1,4 +1,159 @@
 :root {
+  /* ═══════════════════════════════════════════════════════════════════════
+     TOLVSTEGSSKALORNA — materialet (2026-07-26)
+
+     Fullständiga skalor enligt Radix rollindelning: varje steg är en UI-roll,
+     inte en godtycklig nyans. 1–2 sidbakgrund · 3–5 komponentytor · 6–8 kanter
+     · 9–10 solida ytor · 11–12 text.
+
+     Genererade i OKLCH runt appens befintliga varumärkesfärger. ANKARET ÄR
+     ALDRIG FLYTTAT: steg 9 i varje skala är exakt den kulör appen redan bär,
+     så identiteten är oförändrad — det är stegen omkring den som är nya.
+
+     INGEN ROLL PEKAR HIT ÄNNU. Skalorna ligger bredvid den gamla paletten,
+     inte i stället för den, och appen renderar oförändrad. De finns för att
+     kunna prövas. Migreringen av --mm-*-rollerna är ett eget beslut.
+
+     Byggda av scripts/lib/skala.mjs, prövade mot Radix egna kontrakt.
+     Fullständig mätning och motivering: docs/design/farg-atlas.html.
+
+     Två saker att känna till innan du väljer ur dem:
+     · Guld steg 9 når 2,57:1 mot vit yta och klarar alltså inte WCAG 1.4.11
+       (3:1) som UI-yta. Det är fysiken hos en mättad gul-orange, inte ett fel
+       i skalan — behövs guld som yta mot vitt är steg 10 den ljusaste som
+       duger. Se fynd F9.
+     · Blå är den enda skala vars ankare är FLYTTAT. Se noten vid blåskalan
+       och fynd F10.
+     · Steg 12 fördjupades 2026-07-27 efter att mappningen mot den gamla
+       paletten mättes. Neutralernas steg 12 låg på CIE L* 18,4 medan
+       brödtexten (neutral-900) ligger på 14,2 — texten hade blivit LJUSARE
+       vid en migrering. Avvikelsen är nu 0,4. Samma fördjupning gäller alla
+       sex skalor och gav blåskalan ett djupblått steg 12 (#002546) där den
+       förut tvingades till grått för att undvika fokusringen.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* ── Guld ── ankare steg 9 = tidigare --p-gold-500 ── */
+  --p-gold-1: #fffcf8;
+  --p-gold-2: #fff6e8;
+  --p-gold-3: #ffecce;
+  --p-gold-4: #ffdfad;
+  --p-gold-5: #fcd08b;
+  --p-gold-6: #f2c16f;
+  --p-gold-7: #e5ae4e;
+  --p-gold-8: #dda12f;
+  --p-gold-9: #d4960a;
+  --p-gold-10: #c28900;
+  --p-gold-11: #966800;
+  --p-gold-12: #513700;
+
+  /* ── Koppar ── ankare steg 9 = tidigare --p-copper-500 ── */
+  --p-copper-1: #fffcfb;
+  --p-copper-2: #fff0e9;
+  --p-copper-3: #ffdccd;
+  --p-copper-4: #fdc3ab;
+  --p-copper-5: #efab8e;
+  --p-copper-6: #dd9170;
+  --p-copper-7: #c4724d;
+  --p-copper-8: #b45c33;
+  --p-copper-9: #a3491c;
+  --p-copper-10: #974012;
+  --p-copper-11: #7a2d00;
+  --p-copper-12: #401400;
+
+  /* ── Neutraler ── ankare steg 9 = tidigare --p-neutral-500 ──
+     Ton 100°, kroma 0,008 (Marcus-beslut 2026-07-26). Tonen följer Radix
+     natural pairing — välj gråskalan vars ton ligger närmast accenten; guldet
+     sitter på 78,7° och kopparn på 44°. Kroma är ungefär dubbelt den gamla
+     palettens 0,003, vilket ger märkbart varmare ytor utan att neutralen
+     börjar läsa som egen kulör (Radix egen sand ligger på 0,0013).
+
+     Den gamla skalans värme var inte för svag utan ojämn: tonen hoppade
+     mellan 106°, 116° och 146°, och fem av tretton steg var helt rena. Här är
+     den konsekvent genom alla tolv. */
+  --p-neutral-1: #fdfdfc;
+  --p-neutral-2: #f4f3f2;
+  --p-neutral-3: #e5e5e2;
+  --p-neutral-4: #d4d3d0;
+  --p-neutral-5: #c0bfbb;
+  --p-neutral-6: #a9a9a4;
+  --p-neutral-7: #8e8d89;
+  --p-neutral-8: #7c7b76;
+  --p-neutral-9: #6b6b6b;
+  --p-neutral-10: #62625d;
+  --p-neutral-11: #4c4c47;
+  --p-neutral-12: #252522;
+
+  /* ── Sage ── ankare steg 9 = tidigare --p-green-500 ──
+     Heter sage och inte green: det är vad kulören faktiskt är och vad
+     kommentaren på den gamla primitiven redan kallade den. Bär --mm-success
+     och därmed skapa-knappen — 33 användningar, och fram tills nu utan skala
+     att välja ur. */
+  --p-sage-1: #fcfdfa;
+  --p-sage-2: #f1f4ee;
+  --p-sage-3: #e1e6dd;
+  --p-sage-4: #ced5c8;
+  --p-sage-5: #b8c0b1;
+  --p-sage-6: #a0a999;
+  --p-sage-7: #848e7b;
+  --p-sage-8: #717c68;
+  --p-sage-9: #606b57;
+  --p-sage-10: #57614e;
+  --p-sage-11: #434c3b;
+  --p-sage-12: #1f2619;
+
+  /* ── Blå ── NYTT ankare, flyttat från --p-blue-500 (Marcus-beslut 2026-07-26) ──
+     Detta är den enda skala vars ankare INTE är den gamla palettens kulör, och
+     skälet är fynd F10: --p-blue-500 (#4A6B8A) låg på perceptuellt avstånd 15,1
+     från fokusringens #1B4965 — nästan identisk mättnad och ton, åtskilda bara
+     av ljushet. En fokusring runt ett info-element gick knappt att urskilja, och
+     varje blåskala byggd runt det ankaret blev antingen förväxlingsbar med
+     fokusringen eller inte längre blå i den mörka änden.
+
+     Fokusringen vinner och står fast (lessons.md Session 25, UNIVERSAL:
+     exklusiviteten är det som gör den igenkännbar). Info-blå flyttar i stället.
+
+     #1F6CB0 ligger på samma ljushet som den gamla (CIE L* 44,4 mot 44,0) och
+     närmaste ton, men med dubbla mättnaden (C 42,6 mot 21,0). Det ger den
+     skarpaste möjliga uppdelningen: fokusringen är den DOVA mörkblå, info är
+     den KLARA. Avståndet blev 27,3 och hela skalan är fri från kollisioner.
+
+     Rollernas kontrast är i praktiken oförändrad: som text mot info-ytan 5,04:1
+     (dagens 5,13), som kursplatta under vit text 5,48:1 (dagens 5,58). */
+  --p-blue-1: #fbfdff;
+  --p-blue-2: #ebf5ff;
+  --p-blue-3: #d1e7ff;
+  --p-blue-4: #b1d7ff;
+  --p-blue-5: #93c3f5;
+  --p-blue-6: #75ace5;
+  --p-blue-7: #5290ce;
+  --p-blue-8: #377dc0;
+  --p-blue-9: #1f6cb0;
+  --p-blue-10: #1462a4;
+  --p-blue-11: #004c85;
+  --p-blue-12: #002546;
+
+  /* ── Röd ── ankare steg 9 = tidigare --p-red-500 ── */
+  --p-red-1: #fffcfb;
+  --p-red-2: #ffeeeb;
+  --p-red-3: #ffd7d0;
+  --p-red-4: #ffbaaf;
+  --p-red-5: #fe9686;
+  --p-red-6: #ea7566;
+  --p-red-7: #cf4e3f;
+  --p-red-8: #bd2d22;
+  --p-red-9: #a90000;
+  --p-red-10: #9a0000;
+  --p-red-11: #790000;
+  --p-red-12: #3f0000;
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     DEN GAMLA PALETTEN — utgående
+
+     Allt nedanför är vad appens roller pekar på idag. Skalorna ovan är
+     tänkta att ersätta dem, men ingenting är migrerat och ingenting här är
+     ändrat. Rör dessa värden först när migreringen beslutas.
+     ═══════════════════════════════════════════════════════════════════════ */
+
   /* ── Guld/Amber-skala ── */
   --p-gold-100: #fbf3e0;
   --p-gold-200: #f5e6bc;

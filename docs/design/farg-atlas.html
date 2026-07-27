@@ -1,0 +1,2049 @@
+<title>Färgatlas — Miranon Media Admin</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    /* Atlasen är byggd i den palett den dokumenterar. Varje värde här är ett
+       levande Miranon-token — inklusive --p-gold-700, som appen definierar men
+       aldrig använder och som här får bära varningsgraden. Neutralerna är
+       husets egna svagt varma toner, inte inköpt grått. */
+    --yta: #ffffff;        /* --p-neutral-0   */
+    --yta2: #f5f5f3;       /* --p-neutral-50  */
+    --text: #242424;       /* --p-neutral-900 */
+    --tyst: #6b6b6b;       /* --p-neutral-500 */
+    --kant: #e1e3e1;       /* --p-neutral-200 */
+    --accent: #a3491c;     /* --p-copper-500  */
+    --ok: #606b57;         /* --p-green-500   */
+    --fel: #a90000;        /* --p-red-500     */
+    --varn: #956800;       /* --p-gold-700, en hårsmån mörkare — se noten nedan */
+    /* gold-700 rakt av mäter 4,49:1 mot --yta2 och missar AA med 0,01. Att
+       atlasens egen varningsfärg fick mörkas för att hålla är inte en
+       parentes: det är fynd F9 som inträffar i atlasen medan den skrivs. */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --yta: #1a1a1a;      /* --p-neutral-1000, appens andra oanvända token */
+      --yta2: #242424;     /* --p-neutral-900 */
+      --text: #edeee9;     /* --p-neutral-100 */
+      --tyst: #c4c4c2;     /* --p-neutral-300, ljusnad för läsbarhet mot mörk yta */
+      --kant: #3a3a3a;     /* --p-neutral-700 */
+      --accent: #e5ae4e;   /* guldskalans steg 7 — kopparn blir för tung mot mörkt */
+      --ok: #8f9b84;
+      --fel: #ff9a9a;
+      --varn: #e6aa3a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --yta: #1a1a1a; --yta2: #242424; --text: #edeee9; --tyst: #c4c4c2;
+    --kant: #3a3a3a; --accent: #e5ae4e; --ok: #8f9b84; --fel: #ff9a9a; --varn: #e6aa3a;
+  }
+  :root[data-theme="light"] {
+    --yta: #ffffff; --yta2: #f5f5f3; --text: #242424; --tyst: #6b6b6b;
+    --kant: #e1e3e1; --accent: #a3491c; --ok: #606b57; --fel: #a90000; --varn: #96680a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--yta); color: var(--text);
+         font: 16px/1.55 system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+  .omslag { max-width: 1180px; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; }
+  header { border-bottom: 2px solid var(--kant); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+  h1 { font-size: clamp(1.6rem, 4vw, 2.3rem); margin: 0 0 .4rem; letter-spacing: -.02em; }
+  h2 { font-size: 1.3rem; margin: 3rem 0 .5rem; padding-top: 1.5rem; border-top: 1px solid var(--kant); letter-spacing: -.01em; }
+  h3 { font-size: 1rem; margin: 1.75rem 0 .5rem; }
+  p { margin: .5rem 0; }
+  .lead { color: var(--tyst); max-width: 68ch; }
+  .meta { color: var(--tyst); font-size: .85rem; margin-top: .75rem; }
+  .ingress { color: var(--tyst); font-size: .9rem; max-width: 80ch; }
+  code { font: .8em ui-monospace, "JetBrains Mono", monospace;
+         background: var(--yta2); padding: .1em .35em; border-radius: 3px; }
+  code.tyst { background: none; color: var(--tyst); padding: 0; }
+
+  .rutor { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: .5rem; }
+  .prov { aspect-ratio: 3/2; border-radius: 6px 6px 0 0; display: flex; align-items: flex-end;
+          padding: .4rem .5rem; font-size: .8rem; font-weight: 600; border: 1px solid var(--kant); border-bottom: 0; }
+  .under { font-variant-numeric: tabular-nums;
+           border: 1px solid var(--kant); border-top: 0; border-radius: 0 0 6px 6px;
+           padding: .4rem .5rem; display: flex; flex-direction: column; gap: .1rem;
+           font-size: .7rem; color: var(--tyst); background: var(--yta2); }
+  .under code { background: none; padding: 0; font-size: .95em; color: var(--text); }
+  .under .roll { font-size: .95em; line-height: 1.3; }
+  .dod { color: var(--fel); font-weight: 600; }
+  .lev { color: var(--tyst); }
+  .delning { display: block; font-size: .9em; color: var(--tyst); }
+  .varn { color: var(--varn); font-weight: 600; }
+
+  .tabellyta { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--kant); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: .82rem; min-width: 720px;
+          font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--kant); vertical-align: middle; }
+  th { background: var(--yta2); font-weight: 600; position: sticky; top: 0; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .punkt { display: inline-block; width: .85em; height: .85em; border-radius: 3px;
+           border: 1px solid var(--kant); margin-right: .4em; vertical-align: -1px; }
+
+  .kontrakt { list-style: none; padding: 0; margin: .85rem 0 0; font-size: .82rem;
+              display: grid; gap: .25rem; }
+  .kontrakt li { padding: .3rem .55rem; border-radius: 4px; background: var(--yta2);
+                 font-variant-numeric: tabular-nums; }
+  .kontrakt .ok, li.ok { color: var(--ok); }
+  .kontrakt li.fel { color: var(--fel); background: color-mix(in srgb, var(--fel) 10%, transparent); }
+  .kontrakt li span:first-child { font-weight: 700; margin-right: .3rem; }
+
+  .fynd { border: 1px solid var(--kant); border-left: 4px solid var(--tyst);
+          border-radius: 6px; padding: .9rem 1.1rem; margin: 1rem 0; background: var(--yta2); }
+  .fynd.hög { border-left-color: var(--fel); }
+  .fynd.medel { border-left-color: var(--varn); }
+  .fynd.låg { border-left-color: var(--tyst); }
+  .fynd h3 { margin: 0 0 .5rem; font-size: .98rem; display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+  .fynd .id { font: .8rem ui-monospace, monospace; color: var(--tyst); }
+  .fynd .allvar { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em;
+                  color: var(--tyst); margin-left: auto; }
+  .fynd .atgard { border-left: 3px solid var(--ok); padding-left: .7rem; }
+  .fynd.löst { border-left-color: var(--ok); opacity: .85; }
+  .fynd.löst .allvar { color: var(--ok); }
+  .fynd p { font-size: .87rem; margin: .4rem 0; }
+  .fynd .plats code { font-size: .75rem; }
+  .fynd .verif { color: var(--tyst); }
+  .fynd .fallan { border-left: 3px solid var(--varn); padding-left: .7rem; }
+  .rent { list-style: none; padding: 0; font-size: .87rem; display: grid; gap: .3rem; }
+  .rent .ok { color: var(--ok); font-weight: 700; margin-right: .4rem; }
+  .noter { font-size: .85rem; color: var(--tyst); }
+  .noter li { margin: .25rem 0; }
+</style>
+<div class="omslag">
+<header>
+  <h1>Färgatlas</h1>
+  <p class="lead">Miranon Media Admins palett, mätt och renderad ur <code>src/</code> — inte
+     skriven för hand. Sex tolvstegsskalor ligger i appen som material; rollerna pekar
+     ännu på den gamla paletten.</p>
+  <p class="meta">Byggd 2026-07-27 · 104 primitiver ·
+     62 roller · 85 komponent-tokens · 38 utilities</p>
+</header>
+
+<h2>1. Paletten</h2>
+<p class="lead">Sex skalor om tolv steg enligt Radix rollindelning: varje steg är en UI-roll,
+   inte en godtycklig nyans. Genererade i OKLCH därför att lika stora ljushetssteg där också
+   ser lika stora ut. <strong>Steg 9 är ankaret</strong> — den kulör appen redan bär — och det
+   är flyttat i exakt en skala: blå, av skäl som står i fynd F10.</p>
+<p class="lead">Skalorna finns i <code>primitives.css</code> men ingen roll pekar på dem ännu.
+   Migreringen är ett eget beslut; det som står här är materialet, färdigt att väljas ur.</p>
+<section class="skala">
+  <h3>Guld — primärfärgen · 12 steg</h3>
+  <p class="ingress">Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fffcf8;color:#1a1a1a">1</div><div class="under"><code>#fffcf8</code>
+         <span class="roll">Sidbakgrund</span>
+         <span>L* 99.1</span>
+         <span>1.02:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fff6e8;color:#1a1a1a">2</div><div class="under"><code>#fff6e8</code>
+         <span class="roll">Subtil bakgrund</span>
+         <span>L* 97.2</span>
+         <span>1.07:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffecce;color:#1a1a1a">3</div><div class="under"><code>#ffecce</code>
+         <span class="roll">Komponentyta</span>
+         <span>L* 94.2</span>
+         <span>1.16:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffdfad;color:#1a1a1a">4</div><div class="under"><code>#ffdfad</code>
+         <span class="roll">Komponentyta, hover</span>
+         <span>L* 90.3</span>
+         <span>1.28:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fcd08b;color:#1a1a1a">5</div><div class="under"><code>#fcd08b</code>
+         <span class="roll">Komponentyta, aktiv</span>
+         <span>L* 85.8</span>
+         <span>1.44:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f2c16f;color:#1a1a1a">6</div><div class="under"><code>#f2c16f</code>
+         <span class="roll">Subtil kant</span>
+         <span>L* 80.8</span>
+         <span>1.66:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#e5ae4e;color:#1a1a1a">7</div><div class="under"><code>#e5ae4e</code>
+         <span class="roll">Kant och fokusring</span>
+         <span>L* 74.5</span>
+         <span>2.00:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#dda12f;color:#1a1a1a">8</div><div class="under"><code>#dda12f</code>
+         <span class="roll">Kant, hover</span>
+         <span>L* 70.2</span>
+         <span>2.28:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#d4960a;color:#1a1a1a">9</div><div class="under"><code>#d4960a</code>
+         <span class="roll">Solid yta</span>
+         <span>L* 66.4</span>
+         <span>2.57:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c28900;color:#1a1a1a">10</div><div class="under"><code>#c28900</code>
+         <span class="roll">Solid yta, hover</span>
+         <span>L* 61.1</span>
+         <span>3.06:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#966800;color:#ffffff">11</div><div class="under"><code>#966800</code>
+         <span class="roll">Text, låg kontrast</span>
+         <span>L* 47.5</span>
+         <span>4.91:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#513700;color:#ffffff">12</div><div class="under"><code>#513700</code>
+         <span class="roll">Text, hög kontrast</span>
+         <span>L* 25.2</span>
+         <span>11.07:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section><ul class="kontrakt"><li class="fel"><span>✗</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>2.57</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>4.58</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>10.34</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>10.83</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>1.87</strong> (golv 1.4)</li></ul>
+<section class="skala">
+  <h3>Koppar — accent och CTA · 12 steg</h3>
+  <p class="ingress">Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fffcfb;color:#1a1a1a">1</div><div class="under"><code>#fffcfb</code>
+         <span class="roll">Sidbakgrund</span>
+         <span>L* 99.2</span>
+         <span>1.02:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fff0e9;color:#1a1a1a">2</div><div class="under"><code>#fff0e9</code>
+         <span class="roll">Subtil bakgrund</span>
+         <span>L* 95.8</span>
+         <span>1.11:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffdccd;color:#1a1a1a">3</div><div class="under"><code>#ffdccd</code>
+         <span class="roll">Komponentyta</span>
+         <span>L* 90.3</span>
+         <span>1.28:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fdc3ab;color:#1a1a1a">4</div><div class="under"><code>#fdc3ab</code>
+         <span class="roll">Komponentyta, hover</span>
+         <span>L* 83.4</span>
+         <span>1.55:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#efab8e;color:#1a1a1a">5</div><div class="under"><code>#efab8e</code>
+         <span class="roll">Komponentyta, aktiv</span>
+         <span>L* 75.7</span>
+         <span>1.93:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#dd9170;color:#1a1a1a">6</div><div class="under"><code>#dd9170</code>
+         <span class="roll">Subtil kant</span>
+         <span>L* 67.1</span>
+         <span>2.51:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c4724d;color:#1a1a1a">7</div><div class="under"><code>#c4724d</code>
+         <span class="roll">Kant och fokusring</span>
+         <span>L* 56.4</span>
+         <span>3.58:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#b45c33;color:#ffffff">8</div><div class="under"><code>#b45c33</code>
+         <span class="roll">Kant, hover</span>
+         <span>L* 49.0</span>
+         <span>4.65:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a3491c;color:#ffffff">9</div><div class="under"><code>#a3491c</code>
+         <span class="roll">Solid yta</span>
+         <span>L* 42.2</span>
+         <span>5.95:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#974012;color:#ffffff">10</div><div class="under"><code>#974012</code>
+         <span class="roll">Solid yta, hover</span>
+         <span>L* 38.4</span>
+         <span>6.87:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#7a2d00;color:#ffffff">11</div><div class="under"><code>#7a2d00</code>
+         <span class="roll">Text, låg kontrast</span>
+         <span>L* 29.5</span>
+         <span>9.53:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#401400;color:#ffffff">12</div><div class="under"><code>#401400</code>
+         <span class="roll">Text, hög kontrast</span>
+         <span>L* 13.2</span>
+         <span>15.93:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section><ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.95</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>8.58</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>14.33</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>15.61</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.22</strong> (golv 1.4)</li></ul>
+<section class="skala">
+  <h3>Neutraler — ton 100°, kroma 0,008 · 12 steg</h3>
+  <p class="ingress">Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fdfdfc;color:#1a1a1a">1</div><div class="under"><code>#fdfdfc</code>
+         <span class="roll">Sidbakgrund</span>
+         <span>L* 99.3</span>
+         <span>1.02:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f4f3f2;color:#1a1a1a">2</div><div class="under"><code>#f4f3f2</code>
+         <span class="roll">Subtil bakgrund</span>
+         <span>L* 95.9</span>
+         <span>1.11:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#e5e5e2;color:#1a1a1a">3</div><div class="under"><code>#e5e5e2</code>
+         <span class="roll">Komponentyta</span>
+         <span>L* 90.9</span>
+         <span>1.26:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#d4d3d0;color:#1a1a1a">4</div><div class="under"><code>#d4d3d0</code>
+         <span class="roll">Komponentyta, hover</span>
+         <span>L* 84.6</span>
+         <span>1.50:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c0bfbb;color:#1a1a1a">5</div><div class="under"><code>#c0bfbb</code>
+         <span class="roll">Komponentyta, aktiv</span>
+         <span>L* 77.3</span>
+         <span>1.84:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a9a9a4;color:#1a1a1a">6</div><div class="under"><code>#a9a9a4</code>
+         <span class="roll">Subtil kant</span>
+         <span>L* 69.1</span>
+         <span>2.36:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#8e8d89;color:#1a1a1a">7</div><div class="under"><code>#8e8d89</code>
+         <span class="roll">Kant och fokusring</span>
+         <span>L* 58.6</span>
+         <span>3.32:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#7c7b76;color:#ffffff">8</div><div class="under"><code>#7c7b76</code>
+         <span class="roll">Kant, hover</span>
+         <span>L* 51.6</span>
+         <span>4.24:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">9</div><div class="under"><code>#6b6b6b</code>
+         <span class="roll">Solid yta</span>
+         <span>L* 45.2</span>
+         <span>5.33:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#62625d;color:#ffffff">10</div><div class="under"><code>#62625d</code>
+         <span class="roll">Solid yta, hover</span>
+         <span>L* 41.4</span>
+         <span>6.13:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#4c4c47;color:#ffffff">11</div><div class="under"><code>#4c4c47</code>
+         <span class="roll">Text, låg kontrast</span>
+         <span>L* 32.2</span>
+         <span>8.63:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#252522;color:#ffffff">12</div><div class="under"><code>#252522</code>
+         <span class="roll">Text, hög kontrast</span>
+         <span>L* 14.6</span>
+         <span>15.37:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section><ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.33</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>7.79</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>13.87</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>15.10</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.00</strong> (golv 1.4)</li></ul>
+<section class="skala">
+  <h3>Sage — success och skapa-knappen · 12 steg</h3>
+  <p class="ingress">Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fcfdfa;color:#1a1a1a">1</div><div class="under"><code>#fcfdfa</code>
+         <span class="roll">Sidbakgrund</span>
+         <span>L* 99.2</span>
+         <span>1.02:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f1f4ee;color:#1a1a1a">2</div><div class="under"><code>#f1f4ee</code>
+         <span class="roll">Subtil bakgrund</span>
+         <span>L* 95.8</span>
+         <span>1.11:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#e1e6dd;color:#1a1a1a">3</div><div class="under"><code>#e1e6dd</code>
+         <span class="roll">Komponentyta</span>
+         <span>L* 90.7</span>
+         <span>1.27:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ced5c8;color:#1a1a1a">4</div><div class="under"><code>#ced5c8</code>
+         <span class="roll">Komponentyta, hover</span>
+         <span>L* 84.4</span>
+         <span>1.50:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#b8c0b1;color:#1a1a1a">5</div><div class="under"><code>#b8c0b1</code>
+         <span class="roll">Komponentyta, aktiv</span>
+         <span>L* 76.7</span>
+         <span>1.87:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a0a999;color:#1a1a1a">6</div><div class="under"><code>#a0a999</code>
+         <span class="roll">Subtil kant</span>
+         <span>L* 68.1</span>
+         <span>2.43:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#848e7b;color:#1a1a1a">7</div><div class="under"><code>#848e7b</code>
+         <span class="roll">Kant och fokusring</span>
+         <span>L* 57.7</span>
+         <span>3.42:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#717c68;color:#ffffff">8</div><div class="under"><code>#717c68</code>
+         <span class="roll">Kant, hover</span>
+         <span>L* 50.6</span>
+         <span>4.39:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#606b57;color:#ffffff">9</div><div class="under"><code>#606b57</code>
+         <span class="roll">Solid yta</span>
+         <span>L* 43.8</span>
+         <span>5.62:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#57614e;color:#ffffff">10</div><div class="under"><code>#57614e</code>
+         <span class="roll">Solid yta, hover</span>
+         <span>L* 39.8</span>
+         <span>6.51:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#434c3b;color:#ffffff">11</div><div class="under"><code>#434c3b</code>
+         <span class="roll">Text, låg kontrast</span>
+         <span>L* 31.1</span>
+         <span>8.99:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#1f2619;color:#ffffff">12</div><div class="under"><code>#1f2619</code>
+         <span class="roll">Text, hög kontrast</span>
+         <span>L* 14.1</span>
+         <span>15.56:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section><ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.62</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>8.10</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>14.02</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>15.24</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.08</strong> (golv 1.4)</li></ul>
+<section class="skala">
+  <h3>Blå — info och Fjärrskådning. Ankaret flyttat, se F10 · 12 steg</h3>
+  <p class="ingress">Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fbfdff;color:#1a1a1a">1</div><div class="under"><code>#fbfdff</code>
+         <span class="roll">Sidbakgrund</span>
+         <span>L* 99.2</span>
+         <span>1.02:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ebf5ff;color:#1a1a1a">2</div><div class="under"><code>#ebf5ff</code>
+         <span class="roll">Subtil bakgrund</span>
+         <span>L* 96.1</span>
+         <span>1.10:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#d1e7ff;color:#1a1a1a">3</div><div class="under"><code>#d1e7ff</code>
+         <span class="roll">Komponentyta</span>
+         <span>L* 90.7</span>
+         <span>1.27:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#b1d7ff;color:#1a1a1a">4</div><div class="under"><code>#b1d7ff</code>
+         <span class="roll">Komponentyta, hover</span>
+         <span>L* 84.6</span>
+         <span>1.50:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#93c3f5;color:#1a1a1a">5</div><div class="under"><code>#93c3f5</code>
+         <span class="roll">Komponentyta, aktiv</span>
+         <span>L* 77.2</span>
+         <span>1.85:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#75ace5;color:#1a1a1a">6</div><div class="under"><code>#75ace5</code>
+         <span class="roll">Subtil kant</span>
+         <span>L* 68.7</span>
+         <span>2.39:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#5290ce;color:#1a1a1a">7</div><div class="under"><code>#5290ce</code>
+         <span class="roll">Kant och fokusring</span>
+         <span>L* 58.2</span>
+         <span>3.37:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#377dc0;color:#ffffff">8</div><div class="under"><code>#377dc0</code>
+         <span class="roll">Kant, hover</span>
+         <span>L* 51.0</span>
+         <span>4.32:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#1f6cb0;color:#ffffff">9</div><div class="under"><code>#1f6cb0</code>
+         <span class="roll">Solid yta</span>
+         <span>L* 44.4</span>
+         <span>5.48:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#1462a4;color:#ffffff">10</div><div class="under"><code>#1462a4</code>
+         <span class="roll">Solid yta, hover</span>
+         <span>L* 40.5</span>
+         <span>6.34:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#004c85;color:#ffffff">11</div><div class="under"><code>#004c85</code>
+         <span class="roll">Text, låg kontrast</span>
+         <span>L* 31.5</span>
+         <span>8.85:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#002546;color:#ffffff">12</div><div class="under"><code>#002546</code>
+         <span class="roll">Text, hög kontrast</span>
+         <span>L* 14.2</span>
+         <span>15.52:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section><ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>5.48</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>8.02</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>14.07</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>15.22</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.05</strong> (golv 1.4)</li></ul>
+<section class="skala">
+  <h3>Röd — fel · 12 steg</h3>
+  <p class="ingress">Steg 9 är ankaret — den kulör appen redan bär. Kontrakten under är Radix egna garantier, uppmätta.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fffcfb;color:#1a1a1a">1</div><div class="under"><code>#fffcfb</code>
+         <span class="roll">Sidbakgrund</span>
+         <span>L* 99.2</span>
+         <span>1.02:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffeeeb;color:#1a1a1a">2</div><div class="under"><code>#ffeeeb</code>
+         <span class="roll">Subtil bakgrund</span>
+         <span>L* 95.3</span>
+         <span>1.12:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffd7d0;color:#1a1a1a">3</div><div class="under"><code>#ffd7d0</code>
+         <span class="roll">Komponentyta</span>
+         <span>L* 89.1</span>
+         <span>1.32:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ffbaaf;color:#1a1a1a">4</div><div class="under"><code>#ffbaaf</code>
+         <span class="roll">Komponentyta, hover</span>
+         <span>L* 81.6</span>
+         <span>1.63:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#fe9686;color:#1a1a1a">5</div><div class="under"><code>#fe9686</code>
+         <span class="roll">Komponentyta, aktiv</span>
+         <span>L* 72.6</span>
+         <span>2.12:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#ea7566;color:#1a1a1a">6</div><div class="under"><code>#ea7566</code>
+         <span class="roll">Subtil kant</span>
+         <span>L* 62.7</span>
+         <span>2.90:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#cf4e3f;color:#ffffff">7</div><div class="under"><code>#cf4e3f</code>
+         <span class="roll">Kant och fokusring</span>
+         <span>L* 50.8</span>
+         <span>4.36:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#bd2d22;color:#ffffff">8</div><div class="under"><code>#bd2d22</code>
+         <span class="roll">Kant, hover</span>
+         <span>L* 42.5</span>
+         <span>5.90:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a90000;color:#ffffff">9</div><div class="under"><code>#a90000</code>
+         <span class="roll">Solid yta</span>
+         <span>L* 34.9</span>
+         <span>7.82:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#9a0000;color:#ffffff">10</div><div class="under"><code>#9a0000</code>
+         <span class="roll">Solid yta, hover</span>
+         <span>L* 31.5</span>
+         <span>8.85:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#790000;color:#ffffff">11</div><div class="under"><code>#790000</code>
+         <span class="roll">Text, låg kontrast</span>
+         <span>L* 23.9</span>
+         <span>11.58:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#3f0000;color:#ffffff">12</div><div class="under"><code>#3f0000</code>
+         <span class="roll">Text, hög kontrast</span>
+         <span>L* 9.5</span>
+         <span>17.34:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section><ul class="kontrakt"><li class="ok"><span>✓</span> Steg 9 mot vit yta (UI-komponent, WCAG 1.4.11) — <strong>7.82</strong> (golv 3)</li><li class="ok"><span>✓</span> Steg 11 mot steg 2 (brödtext, WCAG AA) — <strong>10.30</strong> (golv 4.5)</li><li class="ok"><span>✓</span> Steg 12 mot steg 2 (rubriktext, WCAG AAA) — <strong>15.42</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 12 mot steg 1 — <strong>16.98</strong> (golv 7)</li><li class="ok"><span>✓</span> Steg 7 mot steg 2 (kant urskiljbar) — <strong>3.88</strong> (golv 1.4)</li></ul>
+
+<h2>2. Den gamla paletten — utgående</h2>
+<p class="lead">Vad appens roller faktiskt pekar på idag. Ersätts av skalorna ovan när
+   migreringen görs. Kolumnen längst ner i varje ruta visar hur många gånger tokenet
+   används.</p>
+<section class="skala">
+  <h3>Guld/amber — primärfärgen · 7 steg</h3>
+  <p class="ingress"><strong>Största hål:</strong> --p-gold-300 → --p-gold-400, 16.7 L*-enheter.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fbf3e0;color:#1a1a1a">100</div><div class="under"><code>#fbf3e0</code>
+         
+         <span>L* 96.0</span>
+         <span>1.11:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#f5e6bc;color:#1a1a1a">200</div><div class="under"><code>#f5e6bc</code>
+         
+         <span>L* 91.5</span>
+         <span>1.24:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#f0d68a;color:#1a1a1a">300</div><div class="under"><code>#f0d68a</code>
+         
+         <span>L* 86.2</span>
+         <span>1.43:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#c4a840;color:#1a1a1a">400</div><div class="under"><code>#c4a840</code>
+         
+         <span>L* 69.5</span>
+         <span>2.33:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#d4960a;color:#1a1a1a">500</div><div class="under"><code>#d4960a</code>
+         
+         <span>L* 66.4</span>
+         <span>2.57:1</span>
+         <span class="lev">5×</span></div></div><div class="ruta"><div class="prov" style="background:#b8800a;color:#1a1a1a">600</div><div class="under"><code>#b8800a</code>
+         
+         <span>L* 57.7</span>
+         <span>3.43:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#96680a;color:#ffffff">700</div><div class="under"><code>#96680a</code>
+         
+         <span>L* 47.5</span>
+         <span>4.91:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section>
+<section class="skala">
+  <h3>Koppar — accent, CTA och varning · 5 steg</h3>
+  <p class="ingress"><strong>Största hål:</strong> --p-copper-200 → --p-copper-400, 33.8 L*-enheter.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fdf4ee;color:#1a1a1a">100</div><div class="under"><code>#fdf4ee</code>
+         
+         <span>L* 96.7</span>
+         <span>1.09:1</span>
+         <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#f5d8c4;color:#1a1a1a">200</div><div class="under"><code>#f5d8c4</code>
+         
+         <span>L* 88.2</span>
+         <span>1.35:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#c46a3a;color:#1a1a1a">400</div><div class="under"><code>#c46a3a</code>
+         
+         <span>L* 54.4</span>
+         <span>3.84:1</span>
+         <span class="dod">oanvänd</span></div></div><div class="ruta"><div class="prov" style="background:#a3491c;color:#ffffff">500</div><div class="under"><code>#a3491c</code>
+         
+         <span>L* 42.2</span>
+         <span>5.95:1</span>
+         <span class="lev">6×</span></div></div><div class="ruta"><div class="prov" style="background:#8a3d17;color:#ffffff">600</div><div class="under"><code>#8a3d17</code>
+         
+         <span>L* 35.6</span>
+         <span>7.61:1</span>
+         <span class="lev">2×</span></div></div></div>
+</section>
+<section class="skala">
+  <h3>Neutraler — bär omkring 450 av appens färganvändningar · 13 steg</h3>
+  <p class="ingress"><strong>Största hål:</strong> --p-neutral-300 → --p-neutral-400, 22.0 L*-enheter.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#ffffff;color:#1a1a1a">0</div><div class="under"><code>#ffffff</code>
+         
+         <span>L* 100.0</span>
+         <span>1.00:1</span>
+         <span class="lev">7×</span></div></div><div class="ruta"><div class="prov" style="background:#fafaf8;color:#1a1a1a">25</div><div class="under"><code>#fafaf8</code>
+         
+         <span>L* 98.2</span>
+         <span>1.05:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#f5f5f3;color:#1a1a1a">50</div><div class="under"><code>#f5f5f3</code>
+         
+         <span>L* 96.5</span>
+         <span>1.09:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#edeee9;color:#1a1a1a">100</div><div class="under"><code>#edeee9</code>
+         
+         <span>L* 93.9</span>
+         <span>1.17:1</span>
+         <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#e1e3e1;color:#1a1a1a">200</div><div class="under"><code>#e1e3e1</code>
+         
+         <span>L* 90.0</span>
+         <span>1.29:1</span>
+         <span class="lev">3×</span></div></div><div class="ruta"><div class="prov" style="background:#c4c4c2;color:#1a1a1a">300</div><div class="under"><code>#c4c4c2</code>
+         
+         <span>L* 79.1</span>
+         <span>1.75:1</span>
+         <span class="lev">3×</span></div></div><div class="ruta"><div class="prov" style="background:#898989;color:#1a1a1a">400</div><div class="under"><code>#898989</code>
+         
+         <span>L* 57.1</span>
+         <span>3.50:1</span>
+         <span class="lev">6×</span></div></div><div class="ruta"><div class="prov" style="background:#6b6b6b;color:#ffffff">500</div><div class="under"><code>#6b6b6b</code>
+         
+         <span>L* 45.2</span>
+         <span>5.33:1</span>
+         <span class="lev">3×</span></div></div><div class="ruta"><div class="prov" style="background:#525151;color:#ffffff">600</div><div class="under"><code>#525151</code>
+         
+         <span>L* 34.5</span>
+         <span>7.91:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#3a3a3a;color:#ffffff">700</div><div class="under"><code>#3a3a3a</code>
+         
+         <span>L* 24.4</span>
+         <span>11.37:1</span>
+         <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#282928;color:#ffffff">800</div><div class="under"><code>#282928</code>
+         
+         <span>L* 16.5</span>
+         <span>14.60:1</span>
+         <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#242424;color:#ffffff">900</div><div class="under"><code>#242424</code>
+         
+         <span>L* 14.2</span>
+         <span>15.52:1</span>
+         <span class="lev">2×</span></div></div><div class="ruta"><div class="prov" style="background:#1a1a1a;color:#ffffff">1000</div><div class="under"><code>#1a1a1a</code>
+         
+         <span>L* 9.3</span>
+         <span>17.40:1</span>
+         <span class="dod">oanvänd</span></div></div></div>
+</section>
+<section class="skala">
+  <h3>Blå — info, kommunikation, Fjärrskådning. Plus fokusringen, som är exklusiv · 3 steg</h3>
+  <p class="ingress"><strong>Största hål:</strong> --p-blue-100 → --p-blue-500, 52.7 L*-enheter.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#eff6ff;color:#1a1a1a">100</div><div class="under"><code>#eff6ff</code>
+         
+         <span>L* 96.6</span>
+         <span>1.09:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#4a6b8a;color:#ffffff">500</div><div class="under"><code>#4a6b8a</code>
+         
+         <span>L* 44.0</span>
+         <span>5.58:1</span>
+         <span class="lev">5×</span></div></div><div class="ruta"><div class="prov" style="background:#1b4965;color:#ffffff">700</div><div class="under"><code>#1b4965</code>
+         
+         <span>L* 29.3</span>
+         <span>9.60:1</span>
+         <span class="lev">2×</span></div></div></div>
+</section>
+<section class="skala">
+  <h3>Röd — fel och RIM 3 · 2 steg</h3>
+  <p class="ingress"><strong>Största hål:</strong> --p-red-100 → --p-red-500, 61.5 L*-enheter.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#fef2f2;color:#1a1a1a">100</div><div class="under"><code>#fef2f2</code>
+         
+         <span>L* 96.4</span>
+         <span>1.09:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#a90000;color:#ffffff">500</div><div class="under"><code>#a90000</code>
+         
+         <span>L* 34.9</span>
+         <span>7.82:1</span>
+         <span class="lev">2×</span></div></div></div>
+</section>
+<section class="skala">
+  <h3>Sage — success, skapa-knappen och RIM 1 · 2 steg</h3>
+  <p class="ingress"><strong>Största hål:</strong> --p-green-100 → --p-green-500, 54.4 L*-enheter.</p>
+  <div class="rutor"><div class="ruta"><div class="prov" style="background:#f0fdf4;color:#1a1a1a">100</div><div class="under"><code>#f0fdf4</code>
+         
+         <span>L* 98.2</span>
+         <span>1.05:1</span>
+         <span class="lev">1×</span></div></div><div class="ruta"><div class="prov" style="background:#606b57;color:#ffffff">500</div><div class="under"><code>#606b57</code>
+         
+         <span>L* 43.8</span>
+         <span>5.62:1</span>
+         <span class="lev">2×</span></div></div></div>
+</section>
+
+<h2>3. Semantiska roller</h2>
+<p class="lead">Lager 2. Kolumnen <em>i @theme</em> visar om rollen är exponerad som
+   Tailwind-utility eller bara nåbar via <code>var()</code> — de två konsumtionsvägarna i fynd F2.</p>
+<div class="tabellyta"><table>
+  <thead><tr><th>Roll</th><th>Löser till</th><th>Definition</th><th>i @theme</th><th>Användning</th></tr></thead>
+  <tbody><tr>
+      <td><code>--mm-primary</code></td>
+      <td><span class="punkt" style="background:#d4960a"></span><code>#d4960a</code></td>
+      <td><code class="tyst">var(--p-gold-500)</code></td>
+      <td>ja</td>
+      <td class="">2× <span class="delning">2 utility · 0 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-primary-hover</code></td>
+      <td><span class="punkt" style="background:#b8800a"></span><code>#b8800a</code></td>
+      <td><code class="tyst">var(--p-gold-600)</code></td>
+      <td>ja</td>
+      <td class="dod">oanvänd</td>
+    </tr><tr>
+      <td><code>--mm-primary-tint</code></td>
+      <td><span class="punkt" style="background:#fbf3e0"></span><code>#fbf3e0</code></td>
+      <td><code class="tyst">var(--p-gold-100)</code></td>
+      <td>ja</td>
+      <td class="">7× <span class="delning">6 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-primary-pale</code></td>
+      <td><span class="punkt" style="background:#f0d68a"></span><code>#f0d68a</code></td>
+      <td><code class="tyst">var(--p-gold-300)</code></td>
+      <td>ja</td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-primary-muted</code></td>
+      <td><span class="punkt" style="background:#c4a840"></span><code>#c4a840</code></td>
+      <td><code class="tyst">var(--p-gold-400)</code></td>
+      <td>ja</td>
+      <td class="">1× <span class="delning">1 utility · 0 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-accent</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td><code class="tyst">var(--p-copper-500)</code></td>
+      <td>ja</td>
+      <td class="">4× <span class="delning">4 utility · 0 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-accent-hover</code></td>
+      <td><span class="punkt" style="background:#8a3d17"></span><code>#8a3d17</code></td>
+      <td><code class="tyst">var(--p-copper-600)</code></td>
+      <td>ja</td>
+      <td class="dod">oanvänd</td>
+    </tr><tr>
+      <td><code>--mm-accent-tint</code></td>
+      <td><span class="punkt" style="background:#fdf4ee"></span><code>#fdf4ee</code></td>
+      <td><code class="tyst">var(--p-copper-100)</code></td>
+      <td>ja</td>
+      <td class="dod">oanvänd</td>
+    </tr><tr>
+      <td><code>--mm-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td><code class="tyst">var(--p-neutral-900)</code></td>
+      <td>ja</td>
+      <td class="">45× <span class="delning">30 utility · 15 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-text-secondary</code></td>
+      <td><span class="punkt" style="background:#525151"></span><code>#525151</code></td>
+      <td><code class="tyst">var(--p-neutral-600)</code></td>
+      <td>ja</td>
+      <td class="">99× <span class="delning">96 utility · 3 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-text-muted</code></td>
+      <td><span class="punkt" style="background:#6b6b6b"></span><code>#6b6b6b</code></td>
+      <td><code class="tyst">var(--p-neutral-500)</code></td>
+      <td>ja</td>
+      <td class="">177× <span class="delning">176 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-text-inverse</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td><code class="tyst">var(--p-neutral-0)</code></td>
+      <td>ja</td>
+      <td class="">13× <span class="delning">11 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-bg</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td><code class="tyst">var(--p-neutral-0)</code></td>
+      <td>ja</td>
+      <td class="">8× <span class="delning">4 utility · 4 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-bg-subtle</code></td>
+      <td><span class="punkt" style="background:#fafaf8"></span><code>#fafaf8</code></td>
+      <td><code class="tyst">var(--p-neutral-25)</code></td>
+      <td>ja</td>
+      <td class="">6× <span class="delning">6 utility · 0 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-bg-muted</code></td>
+      <td><span class="punkt" style="background:#f5f5f3"></span><code>#f5f5f3</code></td>
+      <td><code class="tyst">var(--p-neutral-50)</code></td>
+      <td>ja</td>
+      <td class="">65× <span class="delning">58 utility · 7 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-bg-emphasized</code></td>
+      <td><span class="punkt" style="background:#edeee9"></span><code>#edeee9</code></td>
+      <td><code class="tyst">var( --p-neutral-100 )</code></td>
+      <td>ja</td>
+      <td class="">31× <span class="delning">30 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-bg-placeholder</code></td>
+      <td><span class="punkt" style="background:#e1e3e1"></span><code>#e1e3e1</code></td>
+      <td><code class="tyst">var( --p-neutral-200 )</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-surface</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td><code class="tyst">var(--p-neutral-0)</code></td>
+      <td>ja</td>
+      <td class="">38× <span class="delning">38 utility · 0 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-surface-raised</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td><code class="tyst">var(--p-neutral-0)</code></td>
+      <td>ja</td>
+      <td class="dod">oanvänd</td>
+    </tr><tr>
+      <td><code>--mm-surface-overlay</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td><code class="tyst">var(--p-neutral-0)</code></td>
+      <td>ja</td>
+      <td class="">2× <span class="delning">0 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-state-hover</code></td>
+      <td><em>beräknad</em></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-text) 6%, transparent)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">2× <span class="delning">0 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-state-hover-contrast</code></td>
+      <td><em>beräknad</em></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-text) 12%, transparent)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">2× <span class="delning">0 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-surface-inverse</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td><code class="tyst">var(--p-neutral-900)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="dod">oanvänd</td>
+    </tr><tr>
+      <td><code>--mm-border</code></td>
+      <td><span class="punkt" style="background:#e1e3e1"></span><code>#e1e3e1</code></td>
+      <td><code class="tyst">var(--p-neutral-200)</code></td>
+      <td>ja</td>
+      <td class="">52× <span class="delning">51 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-border-light</code></td>
+      <td><span class="punkt" style="background:#edeee9"></span><code>#edeee9</code></td>
+      <td><code class="tyst">var(--p-neutral-100)</code></td>
+      <td>ja</td>
+      <td class="">3× <span class="delning">3 utility · 0 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-border-strong</code></td>
+      <td><span class="punkt" style="background:#c4c4c2"></span><code>#c4c4c2</code></td>
+      <td><code class="tyst">var(--p-neutral-300)</code></td>
+      <td>ja</td>
+      <td class="">38× <span class="delning">36 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-border-field</code></td>
+      <td><span class="punkt" style="background:#898989"></span><code>#898989</code></td>
+      <td><code class="tyst">var( --p-neutral-400 )</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">2× <span class="delning">0 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-border-focus</code></td>
+      <td><span class="punkt" style="background:#d4960a"></span><code>#d4960a</code></td>
+      <td><code class="tyst">var(--p-gold-500)</code></td>
+      <td>ja</td>
+      <td class="">1× <span class="delning">1 utility · 0 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-border-quiet</code></td>
+      <td><em>transparent</em></td>
+      <td><code class="tyst">transparent</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="dod">oanvänd</td>
+    </tr><tr>
+      <td><code>--mm-border-quiet-contrast</code></td>
+      <td><span class="punkt" style="background:#c4c4c2"></span><code>#c4c4c2</code></td>
+      <td><code class="tyst">var(--p-neutral-300)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="dod">oanvänd</td>
+    </tr><tr>
+      <td><code>--mm-scrollbar-thumb</code></td>
+      <td><span class="punkt" style="background:#898989"></span><code>#898989</code></td>
+      <td><code class="tyst">var( --p-neutral-400 )</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-success</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td><code class="tyst">var(--p-green-500)</code></td>
+      <td>ja</td>
+      <td class="">28× <span class="delning">8 utility · 20 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-success-bg</code></td>
+      <td><span class="punkt" style="background:#f0fdf4"></span><code>#f0fdf4</code></td>
+      <td><code class="tyst">var(--p-green-100)</code></td>
+      <td>ja</td>
+      <td class="">6× <span class="delning">2 utility · 4 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-error</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td><code class="tyst">var(--p-red-500)</code></td>
+      <td>ja</td>
+      <td class="">26× <span class="delning">11 utility · 15 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-error-bg</code></td>
+      <td><span class="punkt" style="background:#fef2f2"></span><code>#fef2f2</code></td>
+      <td><code class="tyst">var(--p-red-100)</code></td>
+      <td>ja</td>
+      <td class="">3× <span class="delning">0 utility · 3 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-info</code></td>
+      <td><span class="punkt" style="background:#4a6b8a"></span><code>#4a6b8a</code></td>
+      <td><code class="tyst">var(--p-blue-500)</code></td>
+      <td>ja</td>
+      <td class="">2× <span class="delning">0 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-info-bg</code></td>
+      <td><span class="punkt" style="background:#eff6ff"></span><code>#eff6ff</code></td>
+      <td><code class="tyst">var(--p-blue-100)</code></td>
+      <td>ja</td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-warning</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td><code class="tyst">var(--p-copper-500)</code></td>
+      <td>ja</td>
+      <td class="">11× <span class="delning">9 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-warning-bg</code></td>
+      <td><span class="punkt" style="background:#fdf4ee"></span><code>#fdf4ee</code></td>
+      <td><code class="tyst">var(--p-copper-100)</code></td>
+      <td>ja</td>
+      <td class="">4× <span class="delning">3 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-cat-personal</code></td>
+      <td><span class="punkt" style="background:#d4960a"></span><code>#d4960a</code></td>
+      <td><code class="tyst">var(--p-gold-500)</code></td>
+      <td>ja</td>
+      <td class="dod">oanvänd</td>
+    </tr><tr>
+      <td><code>--mm-cat-event</code></td>
+      <td><span class="punkt" style="background:#d4960a"></span><code>#d4960a</code></td>
+      <td><code class="tyst">var(--p-gold-500)</code></td>
+      <td>ja</td>
+      <td class="dod">oanvänd</td>
+    </tr><tr>
+      <td><code>--mm-cat-people</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td><code class="tyst">var(--p-copper-500)</code></td>
+      <td>ja</td>
+      <td class="dod">oanvänd</td>
+    </tr><tr>
+      <td><code>--mm-cat-comm</code></td>
+      <td><span class="punkt" style="background:#4a6b8a"></span><code>#4a6b8a</code></td>
+      <td><code class="tyst">var(--p-blue-500)</code></td>
+      <td>ja</td>
+      <td class="dod">oanvänd</td>
+    </tr><tr>
+      <td><code>--mm-cat-system</code></td>
+      <td><span class="punkt" style="background:#898989"></span><code>#898989</code></td>
+      <td><code class="tyst">var(--p-neutral-400)</code></td>
+      <td>ja</td>
+      <td class="dod">oanvänd</td>
+    </tr><tr>
+      <td><code>--mm-kurs-fjarrskadning</code></td>
+      <td><span class="punkt" style="background:#4a6b8a"></span><code>#4a6b8a</code></td>
+      <td><code class="tyst">var(--p-blue-500)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">2× <span class="delning">0 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-kurs-rim1</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td><code class="tyst">var(--p-green-500)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">2× <span class="delning">0 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-kurs-rim2</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td><code class="tyst">var(--p-copper-500)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">2× <span class="delning">0 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-kurs-rim3</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td><code class="tyst">var(--p-red-500)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">2× <span class="delning">0 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-kurs-annat</code></td>
+      <td><span class="punkt" style="background:#6b6b6b"></span><code>#6b6b6b</code></td>
+      <td><code class="tyst">var(--p-neutral-500)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">2× <span class="delning">0 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-erfarenhet-ny</code></td>
+      <td><span class="punkt" style="background:#c4c4c2"></span><code>#c4c4c2</code></td>
+      <td><code class="tyst">var(--p-neutral-300)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-erfarenhet-mellan</code></td>
+      <td><span class="punkt" style="background:#6b6b6b"></span><code>#6b6b6b</code></td>
+      <td><code class="tyst">var(--p-neutral-500)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-erfarenhet-erfaren</code></td>
+      <td><span class="punkt" style="background:#3a3a3a"></span><code>#3a3a3a</code></td>
+      <td><code class="tyst">var(--p-neutral-700)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td><code class="tyst">var(--p-neutral-800)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">10× <span class="delning">0 utility · 10 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-btn-primary-text</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td><code class="tyst">var(--p-neutral-0)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">2× <span class="delning">0 utility · 2 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-btn-primary-hover</code></td>
+      <td><span class="punkt" style="background:#3a3a3a"></span><code>#3a3a3a</code></td>
+      <td><code class="tyst">var(--p-neutral-700)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-btn-secondary-bg</code></td>
+      <td><em>transparent</em></td>
+      <td><code class="tyst">transparent</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-btn-secondary-text</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td><code class="tyst">var(--p-neutral-800)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-btn-secondary-border</code></td>
+      <td><span class="punkt" style="background:#e1e3e1"></span><code>#e1e3e1</code></td>
+      <td><code class="tyst">var(--p-neutral-200)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-btn-cta-bg</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td><code class="tyst">var(--p-copper-500)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-btn-cta-text</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td><code class="tyst">var(--p-neutral-0)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-btn-cta-hover</code></td>
+      <td><span class="punkt" style="background:#8a3d17"></span><code>#8a3d17</code></td>
+      <td><code class="tyst">var(--p-copper-600)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">1× <span class="delning">0 utility · 1 var()</span></td>
+    </tr><tr>
+      <td><code>--mm-focus-ring</code></td>
+      <td><span class="punkt" style="background:#1b4965"></span><code>#1b4965</code></td>
+      <td><code class="tyst">var(--p-blue-700)</code></td>
+      <td><span class="varn">nej</span></td>
+      <td class="">7× <span class="delning">0 utility · 7 var()</span></td>
+    </tr></tbody>
+</table></div>
+<ul class="noter">
+  <li><strong>77</strong> primitiver är oanvända: <code>--p-gold-1</code>, <code>--p-gold-2</code>, <code>--p-gold-3</code>, <code>--p-gold-4</code>, <code>--p-gold-5</code>, <code>--p-gold-6</code>, <code>--p-gold-7</code>, <code>--p-gold-8</code>, <code>--p-gold-9</code>, <code>--p-gold-10</code>, <code>--p-gold-11</code>, <code>--p-gold-12</code>, <code>--p-copper-1</code>, <code>--p-copper-2</code>, <code>--p-copper-3</code>, <code>--p-copper-4</code>, <code>--p-copper-5</code>, <code>--p-copper-6</code>, <code>--p-copper-7</code>, <code>--p-copper-8</code>, <code>--p-copper-9</code>, <code>--p-copper-10</code>, <code>--p-copper-11</code>, <code>--p-copper-12</code>, <code>--p-neutral-1</code>, <code>--p-neutral-2</code>, <code>--p-neutral-3</code>, <code>--p-neutral-4</code>, <code>--p-neutral-5</code>, <code>--p-neutral-6</code>, <code>--p-neutral-7</code>, <code>--p-neutral-8</code>, <code>--p-neutral-9</code>, <code>--p-neutral-10</code>, <code>--p-neutral-11</code>, <code>--p-neutral-12</code>, <code>--p-sage-1</code>, <code>--p-sage-2</code>, <code>--p-sage-3</code>, <code>--p-sage-4</code>, <code>--p-sage-5</code>, <code>--p-sage-6</code>, <code>--p-sage-7</code>, <code>--p-sage-8</code>, <code>--p-sage-9</code>, <code>--p-sage-10</code>, <code>--p-sage-11</code>, <code>--p-sage-12</code>, <code>--p-blue-1</code>, <code>--p-blue-2</code>, <code>--p-blue-3</code>, <code>--p-blue-4</code>, <code>--p-blue-5</code>, <code>--p-blue-6</code>, <code>--p-blue-7</code>, <code>--p-blue-8</code>, <code>--p-blue-9</code>, <code>--p-blue-10</code>, <code>--p-blue-11</code>, <code>--p-blue-12</code>, <code>--p-red-1</code>, <code>--p-red-2</code>, <code>--p-red-3</code>, <code>--p-red-4</code>, <code>--p-red-5</code>, <code>--p-red-6</code>, <code>--p-red-7</code>, <code>--p-red-8</code>, <code>--p-red-9</code>, <code>--p-red-10</code>, <code>--p-red-11</code>, <code>--p-red-12</code>, <code>--p-gold-200</code>, <code>--p-gold-700</code>, <code>--p-copper-200</code>, <code>--p-copper-400</code>, <code>--p-neutral-1000</code>
+      <em>(de nya skalorna ligger här tills rollerna migreras)</em></li>
+  <li><strong>12</strong> roller är oanvända: <code>--mm-primary-hover</code>, <code>--mm-accent-hover</code>, <code>--mm-accent-tint</code>, <code>--mm-surface-raised</code>, <code>--mm-surface-inverse</code>, <code>--mm-border-quiet</code>, <code>--mm-border-quiet-contrast</code>, <code>--mm-cat-personal</code>, <code>--mm-cat-event</code>, <code>--mm-cat-people</code>, <code>--mm-cat-comm</code>, <code>--mm-cat-system</code></li>
+  <li><strong>14</strong> av 38 <code>@theme</code>-utilities används aldrig i TSX
+      (flera lever ändå via <code>var()</code> i CSS-lagret)</li>
+</ul>
+
+<h2>4. Komponent-tokens — lager 3</h2>
+<p class="lead">Det lager som ligger mellan rollerna och komponenterna. Kolumnen <em>typ</em>
+   avgör vad som händer vid en migrering: <strong>alias</strong> följer med automatiskt när
+   lager 2 pekas om, medan <strong>mix</strong> räknar egen färgmatte på ingångsvärdet och
+   därför kan bete sig annorlunda när ingången byter mättnad eller ljushet.</p>
+<ul class="noter">
+  <li><strong>53</strong> rena alias · <strong>26</strong> color-mix ·
+      <strong>6</strong> transparent · <strong>0</strong> literala</li>
+  <li>Roller som matar flest komponent-tokens: <code>--mm-error</code> (15), <code>--mm-success</code> (13), <code>--mm-btn-primary-bg</code> (10), <code>--mm-text</code> (7)</li>
+</ul>
+<div class="tabellyta"><table>
+  <thead><tr><th>Token</th><th>Färg</th><th>Typ</th><th>Beror på</th><th>Definition</th><th>Anv.</th></tr></thead>
+  <tbody><tr>
+      <td><code>--mm-button-primary-bg</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">var(--mm-btn-primary-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-text</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-primary-text</code></td>
+      <td><code class="tyst">var(--mm-btn-primary-text)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-bg-hover</code></td>
+      <td><span class="punkt" style="background:#3a3a3a"></span><code>#3a3a3a</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-primary-hover</code></td>
+      <td><code class="tyst">var(--mm-btn-primary-hover)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#222322"></span><code>#222322</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-btn-primary-bg), black 15%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-secondary-bg</code></td>
+      <td><em>transparent</em></td>
+      <td>transparent</td>
+      <td><code>--mm-btn-secondary-bg</code></td>
+      <td><code class="tyst">var(--mm-btn-secondary-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-secondary-text</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-secondary-text</code></td>
+      <td><code class="tyst">var(--mm-btn-secondary-text)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-secondary-border</code></td>
+      <td><span class="punkt" style="background:#e1e3e1"></span><code>#e1e3e1</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-secondary-border</code></td>
+      <td><code class="tyst">var(--mm-btn-secondary-border)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-secondary-bg-hover</code></td>
+      <td><span class="punkt" style="background:#f5f5f3"></span><code>#f5f5f3</code></td>
+      <td>alias</td>
+      <td><code>--mm-bg-muted</code></td>
+      <td><code class="tyst">var(--mm-bg-muted)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-secondary-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#e1e1e0"></span><code>#e1e1e0</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-bg-muted</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-bg-muted), black 8%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-bg</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-text</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td>alias</td>
+      <td><code>--mm-text-inverse</code></td>
+      <td><code class="tyst">var(--mm-text-inverse)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-bg-hover</code></td>
+      <td><span class="punkt" style="background:#950000"></span><code>#950000</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error), black 12%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#900000"></span><code>#900000</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error), black 15%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-ghost-bg</code></td>
+      <td><em>transparent</em></td>
+      <td>transparent</td>
+      <td>—</td>
+      <td><code class="tyst">transparent</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-ghost-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td>alias</td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">var(--mm-text)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-ghost-bg-hover</code></td>
+      <td><span class="punkt" style="background:#f5f5f3"></span><code>#f5f5f3</code></td>
+      <td>alias</td>
+      <td><code>--mm-bg-muted</code></td>
+      <td><code class="tyst">var(--mm-bg-muted)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-ghost-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#e1e1e0"></span><code>#e1e1e0</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-bg-muted</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-bg-muted), black 8%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-bg</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td>alias</td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">var(--mm-success)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-text</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td>alias</td>
+      <td><code>--mm-text-inverse</code></td>
+      <td><code class="tyst">var(--mm-text-inverse)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-bg-hover</code></td>
+      <td><span class="punkt" style="background:#545e4d"></span><code>#545e4d</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success), black 12%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#525b4a"></span><code>#525b4a</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success), black 15%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-outline-text</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">var(--mm-btn-primary-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-outline-border</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">var(--mm-btn-primary-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-outline-bg</code></td>
+      <td><em>transparent</em></td>
+      <td>transparent</td>
+      <td>—</td>
+      <td><code class="tyst">transparent</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-outline-bg-hover</code></td>
+      <td><span class="punkt" style="background:#eeeeee"></span><code>#eeeeee</code> <span class="delning">alfa 0.08</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">color-mix( in srgb, var(--mm-btn-primary-bg) 8%, transparent )</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-outline-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#e1e1e1"></span><code>#e1e1e1</code> <span class="delning">alfa 0.14</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">color-mix( in srgb, var(--mm-btn-primary-bg) 14%, transparent )</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-subtle-text</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td>alias</td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">var(--mm-btn-primary-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-subtle-bg</code></td>
+      <td><span class="punkt" style="background:#eaeaea"></span><code>#eaeaea</code> <span class="delning">alfa 0.1</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-btn-primary-bg) 10%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-subtle-bg-hover</code></td>
+      <td><span class="punkt" style="background:#dddddd"></span><code>#dddddd</code> <span class="delning">alfa 0.16</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">color-mix( in srgb, var(--mm-btn-primary-bg) 16%, transparent )</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-primary-subtle-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#d0d0d0"></span><code>#d0d0d0</code> <span class="delning">alfa 0.22</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-btn-primary-bg</code></td>
+      <td><code class="tyst">color-mix( in srgb, var(--mm-btn-primary-bg) 22%, transparent )</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-outline-text</code></td>
+      <td><span class="punkt" style="background:#525b4a"></span><code>#525b4a</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success), black 15%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-outline-border</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td>alias</td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">var(--mm-success)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-outline-bg</code></td>
+      <td><em>transparent</em></td>
+      <td>transparent</td>
+      <td>—</td>
+      <td><code class="tyst">transparent</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-outline-bg-hover</code></td>
+      <td><span class="punkt" style="background:#f2f3f2"></span><code>#f2f3f2</code> <span class="delning">alfa 0.08</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success) 8%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-outline-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#e9eae7"></span><code>#e9eae7</code> <span class="delning">alfa 0.14</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success) 14%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-subtle-text</code></td>
+      <td><span class="punkt" style="background:#525b4a"></span><code>#525b4a</code></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success), black 15%)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-subtle-bg</code></td>
+      <td><span class="punkt" style="background:#eff0ee"></span><code>#eff0ee</code> <span class="delning">alfa 0.1</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success) 10%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-subtle-bg-hover</code></td>
+      <td><span class="punkt" style="background:#e6e7e4"></span><code>#e6e7e4</code> <span class="delning">alfa 0.16</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success) 16%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-success-subtle-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#dcdeda"></span><code>#dcdeda</code> <span class="delning">alfa 0.22</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-success) 22%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-outline-text</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-outline-border</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-outline-bg</code></td>
+      <td><em>transparent</em></td>
+      <td>transparent</td>
+      <td>—</td>
+      <td><code class="tyst">transparent</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-outline-bg-hover</code></td>
+      <td><span class="punkt" style="background:#f8ebeb"></span><code>#f8ebeb</code> <span class="delning">alfa 0.08</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error) 8%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-outline-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#f3dbdb"></span><code>#f3dbdb</code> <span class="delning">alfa 0.14</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error) 14%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-subtle-text</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-subtle-bg</code></td>
+      <td><span class="punkt" style="background:#f6e6e6"></span><code>#f6e6e6</code> <span class="delning">alfa 0.1</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error) 10%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-subtle-bg-hover</code></td>
+      <td><span class="punkt" style="background:#f1d6d6"></span><code>#f1d6d6</code> <span class="delning">alfa 0.16</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error) 16%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-button-danger-subtle-bg-pressed</code></td>
+      <td><span class="punkt" style="background:#ecc7c7"></span><code>#ecc7c7</code> <span class="delning">alfa 0.22</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-error) 22%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-input-bg</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td>alias</td>
+      <td><code>--mm-bg</code></td>
+      <td><code class="tyst">var(--mm-bg)</code></td>
+      <td class="">14</td>
+    </tr><tr>
+      <td><code>--mm-input-bg-disabled</code></td>
+      <td><span class="punkt" style="background:#f5f5f3"></span><code>#f5f5f3</code></td>
+      <td>alias</td>
+      <td><code>--mm-bg-muted</code></td>
+      <td><code class="tyst">var(--mm-bg-muted)</code></td>
+      <td class="">4</td>
+    </tr><tr>
+      <td><code>--mm-input-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td>alias</td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">var(--mm-text)</code></td>
+      <td class="">6</td>
+    </tr><tr>
+      <td><code>--mm-input-text-placeholder</code></td>
+      <td><span class="punkt" style="background:#6b6b6b"></span><code>#6b6b6b</code></td>
+      <td>alias</td>
+      <td><code>--mm-text-muted</code></td>
+      <td><code class="tyst">var(--mm-text-muted)</code></td>
+      <td class="">9</td>
+    </tr><tr>
+      <td><code>--mm-input-border</code></td>
+      <td><span class="punkt" style="background:#898989"></span><code>#898989</code></td>
+      <td>alias</td>
+      <td><code>--mm-border-field</code></td>
+      <td><code class="tyst">var(--mm-border-field)</code></td>
+      <td class="">16</td>
+    </tr><tr>
+      <td><code>--mm-input-border-invalid</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">4</td>
+    </tr><tr>
+      <td><code>--mm-input-label-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td>alias</td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">var(--mm-text)</code></td>
+      <td class="">8</td>
+    </tr><tr>
+      <td><code>--mm-input-description-text</code></td>
+      <td><span class="punkt" style="background:#525151"></span><code>#525151</code></td>
+      <td>alias</td>
+      <td><code>--mm-text-secondary</code></td>
+      <td><code class="tyst">var(--mm-text-secondary)</code></td>
+      <td class="">2</td>
+    </tr><tr>
+      <td><code>--mm-input-error-text</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">6</td>
+    </tr><tr>
+      <td><code>--mm-select-popover-bg</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td>alias</td>
+      <td><code>--mm-surface-overlay</code></td>
+      <td><code class="tyst">var(--mm-surface-overlay)</code></td>
+      <td class="">3</td>
+    </tr><tr>
+      <td><code>--mm-select-popover-border</code></td>
+      <td><span class="punkt" style="background:#e1e3e1"></span><code>#e1e3e1</code></td>
+      <td>alias</td>
+      <td><code>--mm-border</code></td>
+      <td><code class="tyst">var(--mm-border)</code></td>
+      <td class="">3</td>
+    </tr><tr>
+      <td><code>--mm-select-item-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td>alias</td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">var(--mm-text)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-select-item-bg-focused</code></td>
+      <td><span class="punkt" style="background:#fbf3e0"></span><code>#fbf3e0</code></td>
+      <td>alias</td>
+      <td><code>--mm-primary-tint</code></td>
+      <td><code class="tyst">var(--mm-primary-tint)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-select-item-bg-selected</code></td>
+      <td><span class="punkt" style="background:#f0d68a"></span><code>#f0d68a</code></td>
+      <td>alias</td>
+      <td><code>--mm-primary-pale</code></td>
+      <td><code class="tyst">var(--mm-primary-pale)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-info-bg</code></td>
+      <td><span class="punkt" style="background:#eff6ff"></span><code>#eff6ff</code></td>
+      <td>alias</td>
+      <td><code>--mm-info-bg</code></td>
+      <td><code class="tyst">var(--mm-info-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-info-border</code></td>
+      <td><span class="punkt" style="background:#4a6b8a"></span><code>#4a6b8a</code></td>
+      <td>alias</td>
+      <td><code>--mm-info</code></td>
+      <td><code class="tyst">var(--mm-info)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-info-text</code></td>
+      <td><span class="punkt" style="background:#4a6b8a"></span><code>#4a6b8a</code></td>
+      <td>alias</td>
+      <td><code>--mm-info</code></td>
+      <td><code class="tyst">var(--mm-info)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-success-bg</code></td>
+      <td><span class="punkt" style="background:#f0fdf4"></span><code>#f0fdf4</code></td>
+      <td>alias</td>
+      <td><code>--mm-success-bg</code></td>
+      <td><code class="tyst">var(--mm-success-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-success-border</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td>alias</td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">var(--mm-success)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-success-text</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td>alias</td>
+      <td><code>--mm-success</code></td>
+      <td><code class="tyst">var(--mm-success)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-warning-bg</code></td>
+      <td><span class="punkt" style="background:#fdf4ee"></span><code>#fdf4ee</code></td>
+      <td>alias</td>
+      <td><code>--mm-warning-bg</code></td>
+      <td><code class="tyst">var(--mm-warning-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-warning-border</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td>alias</td>
+      <td><code>--mm-warning</code></td>
+      <td><code class="tyst">var(--mm-warning)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-warning-text</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td>alias</td>
+      <td><code>--mm-warning</code></td>
+      <td><code class="tyst">var(--mm-warning)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-error-bg</code></td>
+      <td><span class="punkt" style="background:#fef2f2"></span><code>#fef2f2</code></td>
+      <td>alias</td>
+      <td><code>--mm-error-bg</code></td>
+      <td><code class="tyst">var(--mm-error-bg)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-error-border</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-error-text</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>alias</td>
+      <td><code>--mm-error</code></td>
+      <td><code class="tyst">var(--mm-error)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-messagebox-body-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td>alias</td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">var(--mm-text)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-dialog-overlay-bg</code></td>
+      <td><span class="punkt" style="background:#929292"></span><code>#929292</code> <span class="delning">alfa 0.5</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-text) 50%, transparent)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-dialog-bg</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td>alias</td>
+      <td><code>--mm-surface-overlay</code></td>
+      <td><code class="tyst">var(--mm-surface-overlay)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-navcard-bg</code></td>
+      <td><span class="punkt" style="background:#f5f5f3"></span><code>#f5f5f3</code></td>
+      <td>alias</td>
+      <td><code>--mm-bg-muted</code></td>
+      <td><code class="tyst">var(--mm-bg-muted)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-navcard-text</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td>alias</td>
+      <td><code>--mm-text</code></td>
+      <td><code class="tyst">var(--mm-text)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-navcard-icon</code></td>
+      <td><span class="punkt" style="background:#525151"></span><code>#525151</code></td>
+      <td>alias</td>
+      <td><code>--mm-text-secondary</code></td>
+      <td><code class="tyst">var(--mm-text-secondary)</code></td>
+      <td class="">2</td>
+    </tr><tr>
+      <td><code>--mm-navcard-border</code></td>
+      <td><em>transparent</em></td>
+      <td>transparent</td>
+      <td>—</td>
+      <td><code class="tyst">transparent</code></td>
+      <td class="">7</td>
+    </tr><tr>
+      <td><code>--mm-navcard-border-contrast</code></td>
+      <td><span class="punkt" style="background:#c4c4c2"></span><code>#c4c4c2</code></td>
+      <td>alias</td>
+      <td><code>--mm-border-strong</code></td>
+      <td><code class="tyst">var(--mm-border-strong)</code></td>
+      <td class="">6</td>
+    </tr><tr>
+      <td><code>--mm-skeleton-block</code></td>
+      <td><span class="punkt" style="background:#e1e3e1"></span><code>#e1e3e1</code></td>
+      <td>alias</td>
+      <td><code>--mm-bg-placeholder</code></td>
+      <td><code class="tyst">var(--mm-bg-placeholder)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-skeleton-block-contrast</code></td>
+      <td><span class="punkt" style="background:#525151"></span><code>#525151</code></td>
+      <td>alias</td>
+      <td><code>--mm-text-secondary</code></td>
+      <td><code class="tyst">var(--mm-text-secondary)</code></td>
+      <td class="">1</td>
+    </tr><tr>
+      <td><code>--mm-skeleton-shimmer</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code> <span class="delning">alfa 0.75</span></td>
+      <td><strong>mix</strong></td>
+      <td><code>--mm-bg</code></td>
+      <td><code class="tyst">color-mix(in srgb, var(--mm-bg) 75%, transparent)</code></td>
+      <td class="">1</td>
+    </tr></tbody>
+</table></div>
+
+<h2>5. Migreringens påverkan</h2>
+<p class="lead">Vad som händer med varje gammal primitiv om rollerna pekas om. <strong>ΔL*</strong>
+   är ljushetsskillnaden — den avgör om ytan flyttar sig. <strong>Avstånd</strong> är det fulla
+   perceptuella måttet och fångar också när en färg byter karaktär vid samma ljushet.</p>
+<div class="tabellyta"><table>
+  <thead><tr><th>Gammal</th><th></th><th>Närmast ny</th><th></th><th>ΔL*</th><th>Avstånd</th><th>Bedömning</th></tr></thead>
+  <tbody><tr>
+      <td><code>--p-gold-100</code></td>
+      <td><span class="punkt" style="background:#fbf3e0"></span><code>#fbf3e0</code></td>
+      <td><code>--p-gold-2</code></td>
+      <td><span class="punkt" style="background:#fff6e8"></span><code>#fff6e8</code></td>
+      <td>1.2</td>
+      <td>4.6</td>
+      <td class="varn">märkbar</td>
+    </tr><tr>
+      <td><code>--p-gold-200</code></td>
+      <td><span class="punkt" style="background:#f5e6bc"></span><code>#f5e6bc</code></td>
+      <td><code>--p-gold-4</code></td>
+      <td><span class="punkt" style="background:#ffdfad"></span><code>#ffdfad</code></td>
+      <td>1.2</td>
+      <td>8.7</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-gold-300</code></td>
+      <td><span class="punkt" style="background:#f0d68a"></span><code>#f0d68a</code></td>
+      <td><code>--p-gold-5</code></td>
+      <td><span class="punkt" style="background:#fcd08b"></span><code>#fcd08b</code></td>
+      <td>0.4</td>
+      <td>5.6</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-gold-400</code></td>
+      <td><span class="punkt" style="background:#c4a840"></span><code>#c4a840</code></td>
+      <td><code>--p-gold-8</code></td>
+      <td><span class="punkt" style="background:#dda12f"></span><code>#dda12f</code></td>
+      <td>0.7</td>
+      <td>11.3</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-gold-500</code></td>
+      <td><span class="punkt" style="background:#d4960a"></span><code>#d4960a</code></td>
+      <td><code>--p-gold-9</code></td>
+      <td><span class="punkt" style="background:#d4960a"></span><code>#d4960a</code></td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-gold-600</code></td>
+      <td><span class="punkt" style="background:#b8800a"></span><code>#b8800a</code></td>
+      <td><code>--p-gold-10</code></td>
+      <td><span class="punkt" style="background:#c28900"></span><code>#c28900</code></td>
+      <td>3.4</td>
+      <td>5.5</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-gold-700</code></td>
+      <td><span class="punkt" style="background:#96680a"></span><code>#96680a</code></td>
+      <td><code>--p-gold-11</code></td>
+      <td><span class="punkt" style="background:#966800"></span><code>#966800</code></td>
+      <td>0.0</td>
+      <td>2.2</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-copper-100</code></td>
+      <td><span class="punkt" style="background:#fdf4ee"></span><code>#fdf4ee</code></td>
+      <td><code>--p-copper-2</code></td>
+      <td><span class="punkt" style="background:#fff0e9"></span><code>#fff0e9</code></td>
+      <td>0.9</td>
+      <td>5.5</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-copper-200</code></td>
+      <td><span class="punkt" style="background:#f5d8c4"></span><code>#f5d8c4</code></td>
+      <td><code>--p-copper-3</code></td>
+      <td><span class="punkt" style="background:#ffdccd"></span><code>#ffdccd</code></td>
+      <td>2.0</td>
+      <td>6.6</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-copper-400</code></td>
+      <td><span class="punkt" style="background:#c46a3a"></span><code>#c46a3a</code></td>
+      <td><code>--p-copper-7</code></td>
+      <td><span class="punkt" style="background:#c4724d"></span><code>#c4724d</code></td>
+      <td>2.0</td>
+      <td>8.4</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-copper-500</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td><code>--p-copper-9</code></td>
+      <td><span class="punkt" style="background:#a3491c"></span><code>#a3491c</code></td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-copper-600</code></td>
+      <td><span class="punkt" style="background:#8a3d17"></span><code>#8a3d17</code></td>
+      <td><code>--p-copper-10</code></td>
+      <td><span class="punkt" style="background:#974012"></span><code>#974012</code></td>
+      <td>2.8</td>
+      <td>7.1</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-0</code></td>
+      <td><span class="punkt" style="background:#ffffff"></span><code>#ffffff</code></td>
+      <td><code>--p-neutral-1</code></td>
+      <td><span class="punkt" style="background:#fdfdfc"></span><code>#fdfdfc</code></td>
+      <td>0.7</td>
+      <td>117.2</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-25</code></td>
+      <td><span class="punkt" style="background:#fafaf8"></span><code>#fafaf8</code></td>
+      <td><code>--p-neutral-1</code></td>
+      <td><span class="punkt" style="background:#fdfdfc"></span><code>#fdfdfc</code></td>
+      <td>1.1</td>
+      <td>1.2</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-neutral-50</code></td>
+      <td><span class="punkt" style="background:#f5f5f3"></span><code>#f5f5f3</code></td>
+      <td><code>--p-neutral-2</code></td>
+      <td><span class="punkt" style="background:#f4f3f2"></span><code>#f4f3f2</code></td>
+      <td>0.6</td>
+      <td>17.4</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-100</code></td>
+      <td><span class="punkt" style="background:#edeee9"></span><code>#edeee9</code></td>
+      <td><code>--p-neutral-2</code></td>
+      <td><span class="punkt" style="background:#f4f3f2"></span><code>#f4f3f2</code></td>
+      <td>2.0</td>
+      <td>21.4</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-200</code></td>
+      <td><span class="punkt" style="background:#e1e3e1"></span><code>#e1e3e1</code></td>
+      <td><code>--p-neutral-3</code></td>
+      <td><span class="punkt" style="background:#e5e5e2"></span><code>#e5e5e2</code></td>
+      <td>0.8</td>
+      <td>17.2</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-300</code></td>
+      <td><span class="punkt" style="background:#c4c4c2"></span><code>#c4c4c2</code></td>
+      <td><code>--p-neutral-5</code></td>
+      <td><span class="punkt" style="background:#c0bfbb"></span><code>#c0bfbb</code></td>
+      <td>1.8</td>
+      <td>5.4</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-400</code></td>
+      <td><span class="punkt" style="background:#898989"></span><code>#898989</code></td>
+      <td><code>--p-neutral-7</code></td>
+      <td><span class="punkt" style="background:#8e8d89"></span><code>#8e8d89</code></td>
+      <td>1.5</td>
+      <td>122.3</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-500</code></td>
+      <td><span class="punkt" style="background:#6b6b6b"></span><code>#6b6b6b</code></td>
+      <td><code>--p-neutral-9</code></td>
+      <td><span class="punkt" style="background:#6b6b6b"></span><code>#6b6b6b</code></td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-neutral-600</code></td>
+      <td><span class="punkt" style="background:#525151"></span><code>#525151</code></td>
+      <td><code>--p-neutral-11</code></td>
+      <td><span class="punkt" style="background:#4c4c47"></span><code>#4c4c47</code></td>
+      <td>2.4</td>
+      <td>45.2</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-700</code></td>
+      <td><span class="punkt" style="background:#3a3a3a"></span><code>#3a3a3a</code></td>
+      <td><code>--p-neutral-11</code></td>
+      <td><span class="punkt" style="background:#4c4c47"></span><code>#4c4c47</code></td>
+      <td>7.7</td>
+      <td>117.7</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-800</code></td>
+      <td><span class="punkt" style="background:#282928"></span><code>#282928</code></td>
+      <td><code>--p-neutral-12</code></td>
+      <td><span class="punkt" style="background:#252522"></span><code>#252522</code></td>
+      <td>1.9</td>
+      <td>17.5</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-900</code></td>
+      <td><span class="punkt" style="background:#242424"></span><code>#242424</code></td>
+      <td><code>--p-neutral-12</code></td>
+      <td><span class="punkt" style="background:#252522"></span><code>#252522</code></td>
+      <td>0.4</td>
+      <td>117.5</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-neutral-1000</code></td>
+      <td><span class="punkt" style="background:#1a1a1a"></span><code>#1a1a1a</code></td>
+      <td><code>--p-neutral-12</code></td>
+      <td><span class="punkt" style="background:#252522"></span><code>#252522</code></td>
+      <td>5.3</td>
+      <td>117.6</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-blue-700</code></td>
+      <td><span class="punkt" style="background:#1b4965"></span><code>#1b4965</code></td>
+      <td><code>--p-blue-11</code></td>
+      <td><span class="punkt" style="background:#004c85"></span><code>#004c85</code></td>
+      <td>2.2</td>
+      <td>18.8</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-red-500</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td><code>--p-red-9</code></td>
+      <td><span class="punkt" style="background:#a90000"></span><code>#a90000</code></td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-red-100</code></td>
+      <td><span class="punkt" style="background:#fef2f2"></span><code>#fef2f2</code></td>
+      <td><code>--p-red-2</code></td>
+      <td><span class="punkt" style="background:#ffeeeb"></span><code>#ffeeeb</code></td>
+      <td>1.1</td>
+      <td>7.5</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-blue-500</code></td>
+      <td><span class="punkt" style="background:#4a6b8a"></span><code>#4a6b8a</code></td>
+      <td><code>--p-blue-9</code></td>
+      <td><span class="punkt" style="background:#1f6cb0"></span><code>#1f6cb0</code></td>
+      <td>0.5</td>
+      <td>22.3</td>
+      <td class="fel">synlig</td>
+    </tr><tr>
+      <td><code>--p-blue-100</code></td>
+      <td><span class="punkt" style="background:#eff6ff"></span><code>#eff6ff</code></td>
+      <td><code>--p-blue-2</code></td>
+      <td><span class="punkt" style="background:#ebf5ff"></span><code>#ebf5ff</code></td>
+      <td>0.5</td>
+      <td>3.3</td>
+      <td class="varn">märkbar</td>
+    </tr><tr>
+      <td><code>--p-green-500</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td><code>--p-sage-9</code></td>
+      <td><span class="punkt" style="background:#606b57"></span><code>#606b57</code></td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td class="">försumbar</td>
+    </tr><tr>
+      <td><code>--p-green-100</code></td>
+      <td><span class="punkt" style="background:#f0fdf4"></span><code>#f0fdf4</code></td>
+      <td><code>--p-sage-1</code></td>
+      <td><span class="punkt" style="background:#fcfdfa"></span><code>#fcfdfa</code></td>
+      <td>1.0</td>
+      <td>16.4</td>
+      <td class="fel">synlig</td>
+    </tr></tbody>
+</table></div>
+<ul class="noter">
+  <li><strong>Fokusringen migreras inte.</strong> <code>--p-blue-700</code> står i tabellen
+      eftersom den är en gammal primitiv, men den är exklusiv per
+      <code>lessons.md:298</code> och ska behålla <code>#1B4965</code>. En migrering som
+      pekar om den bryter fynd F10:s lösning.</li>
+  <li><code>--p-blue-500</code> → <code>--p-blue-9</code> är ingen mappning utan en avsiktlig
+      färgändring (fynd F10). Ljushetsskillnaden är liten, avståndet stort.</li>
+</ul>
+
+<h2>6. Vad som håller</h2>
+<ul class="rent"><li><span class="ok">✓</span> Hårdkodade hex/rgb/hsl i komponenter: <strong>0</strong> — Samtliga träffar i src/ är kommentarstext, inte kod.</li><li><span class="ok">✓</span> Arbiträra Tailwind-värden (bg-[#fff]): <strong>0</strong></li><li><span class="ok">✓</span> Inline style med färg: <strong>0</strong></li><li><span class="ok">✓</span> Färgliteraler i SVG fill/stroke: <strong>0</strong></li></ul>
+
+<h2>7. Brister</h2>
+<article class="fynd hög">
+      <h3><span class="id">F1</span> Två döda färgklasser i login <span class="allvar">hög</span></h3>
+      <p class="plats"><code>src/routes/login.tsx:111</code> · <code>src/routes/login.tsx:119</code></p>
+      <p>text-red-600 och text-white genererar ingen CSS. src/styles/tailwind.css:12 nollställer Tailwinds defaultpalett med --color-*: initial, och ingen av klasserna finns i @theme.</p>
+      <p class="verif"><strong>Verifiering:</strong> grep -c '\.text-white' dist/assets/*.css → 0, medan .text-text-muted och .bg-primary finns i samma fil.</p>
+      <p><strong>Följd:</strong> Felmeddelandet vid inloggning renderas inte rött. Skärmläsare når det ändå via role=alert + aria-live.</p>
+      
+      <p class="fallan"><strong>Fällan:</strong> text-white på bg-primary hade gett 2,57:1 — under AA. Som det faktiskt renderas ärver texten --mm-text och når 6,04:1. Den döda klassen räddar kontrasten. Rätt åtgärd är att ta bort raden, inte att ersätta den med text-text-inverse.</p>
+      
+    </article>
+<article class="fynd medel">
+      <h3><span class="id">F2</span> Två parallella konsumtionsvägar för samma roller <span class="allvar">medel</span></h3>
+      
+      <p>@theme exponerar 35 färgroller medan semantic.css definierar 58. Resten konsumeras med arbitrary-property-syntax: bg-(--mm-input-bg), border-(--mm-border-field).</p>
+      <p class="verif"><strong>Verifiering:</strong> Samma roll förekommer i båda formerna: bg-text (8 träffar) och bg-(--mm-text) (1), border-text (4) och border-(--mm-text) (1).</p>
+      <p><strong>Följd:</strong> 14 av 35 @theme-roller används aldrig som utility. Nio av dem lever ändå via var() i CSS-lagret — de är exponerade på fel väg, inte döda.</p>
+      
+      
+      
+    </article>
+<article class="fynd medel">
+      <h3><span class="id">F3</span> Tre sätt att uttrycka svag avdelare <span class="allvar">medel</span></h3>
+      
+      <p>divide-border (28 träffar), border-text-muted/20 (11) och border-border-light (3) gör samma sak. Mittersta lånar en textroll som kantfärg.</p>
+      
+      <p><strong>Följd:</strong> border-text-muted/20 är dessutom den enda alfa-användningen i utility-lagret, medan CSS-lagret bär åtta olika color-mix-procent (6, 8, 10, 12, 14, 15, 16, 22). Genomskinlighet uttrycks på två sätt i två lager utan gemensam skala.</p>
+      
+      
+      
+    </article>
+<article class="fynd låg">
+      <h3><span class="id">F4</span> Kategorifärgerna är en död roll-grupp med kulörkollision <span class="allvar">låg</span></h3>
+      
+      <p>--mm-cat-personal, cat-event, cat-people, cat-comm, cat-system plus deras fem --color-cat-* i @theme: tio deklarationer, noll användningar i src/.</p>
+      <p class="verif"><strong>Verifiering:</strong> grep -rn 'mm-cat-\|color-cat-' src/ utanför semantic.css och tailwind.css → tomt.</p>
+      <p><strong>Följd:</strong> cat-personal och cat-event pekar dessutom på samma primitiv (--p-gold-500). Två av fem kategorier hade inte gått att skilja åt.</p>
+      
+      
+      
+    </article>
+<article class="fynd medel">
+      <h3><span class="id">F5</span> Specen har drivit isär från koden <span class="allvar">medel</span></h3>
+      <p class="plats"><code>docs/specs/DESIGN-SYSTEM-SPEC.md §1</code></p>
+      <p>Specen anger --mm-text-muted: var(--p-neutral-400) (3,50:1 mot vit). Koden har --p-neutral-500 (5,33:1).</p>
+      
+      <p><strong>Följd:</strong> Koden är rätt och specen föråldrad. Rollen används 164 gånger — den mest använda färgrollen i appen. Hade specen följts vore 164 platser under AA.</p>
+      
+      
+      <p>Specen listar också 25 komponent-tokens (--mm-stat-card-*, --mm-table-*, --mm-menu-*) som aldrig byggdes, och saknar --mm-state-hover i §1.</p>
+    </article>
+<article class="fynd låg">
+      <h3><span class="id">F6</span> Fem primitiver är definierade men aldrig använda <span class="allvar">låg</span></h3>
+      
+      <p>--p-gold-200, --p-gold-700, --p-copper-200, --p-copper-400 och --p-neutral-1000 förekommer bara på sin egen definitionsrad.</p>
+      
+      <p><strong>Följd:</strong> gold-700 är den enda guldnyans som klarar AA för text (4,91:1 mot vit) — och den används inte. Guld kan därför i praktiken inte bära text någonstans i appen.</p>
+      
+      
+      
+    </article>
+<article class="fynd medel">
+      <h3><span class="id">F7</span> Guldskalan är två kulörer hopfogade till en <span class="allvar">medel</span></h3>
+      
+      <p>Stegen 100–400 ligger på kulörton ~92° i CIE LCh, stegen 500–700 på ~78°. Ett brott på 13 grader mitt i skalan.</p>
+      
+      <p><strong>Följd:</strong> --mm-primary-muted (gold-400) är inte en nedtonad primär utan en annan kulör — olivgul mot primärens amber. Ljushetsskillnaden dem emellan är bara 3,2 L*-enheter; det som skiljer är kulörtonen.</p>
+      
+      
+      
+    </article>
+<article class="fynd medel">
+      <h3><span class="id">F8</span> Kopparskalan saknar hela sitt mellanband <span class="allvar">medel</span></h3>
+      
+      <p>Mellan copper-200 och copper-400 ligger 33,8 L*-enheter. Där ryms två till tre steg. Skalan saknar dessutom ett 300-steg helt.</p>
+      
+      <p><strong>Följd:</strong> Koppar är CTA-färgen och har ingen användbar ton mellan nästan-vitt och mättat.</p>
+      
+      
+      
+    </article>
+<article class="fynd hög">
+      <h3><span class="id">F9</span> Varumärkesguldet kan inte bära vit text eller vara UI-yta mot vitt <span class="allvar">hög</span></h3>
+      
+      <p>--p-gold-500 (#D4960A) mäter 2,57:1 mot vit yta. WCAG 1.4.11 kräver 3:1 för UI-komponenter och 4,5:1 för brödtext.</p>
+      <p class="verif"><strong>Verifiering:</strong> Guld vid kulörton 78,7° klarar 3:1 mot vitt först vid OKLCH-ljushet ≤ 0,67 (#C38900). Varumärkesguldet ligger på 0,715.</p>
+      <p><strong>Följd:</strong> Det är en fysisk egenskap hos en mättad gul-orange, inte ett fel i paletten. Guld kan vara yta under mörk text, men aldrig yta under vit text mot vit bakgrund. Det förklarar varför primärknappen är neutral-800 och inte guld.</p>
+      
+      
+      
+    </article>
+<article class="fynd löst">
+      <h3><span class="id">F10</span> Info-blå och fokusringen var förväxlingsbara — löst 2026-07-26 <span class="allvar">löst</span></h3>
+      
+      <p>--p-blue-500 (#4A6B8A, som bär --mm-info, --mm-cat-comm och kursfärgen Fjärrskådning) ligger på perceptuellt avstånd 15,1 från fokusringens #1B4965. De har nästan identisk mättnad (21,0 mot 21,6) och nära kulörton (261,8° mot 255,4°) — det enda som skiljer dem är ljushet.</p>
+      <p class="verif"><strong>Verifiering:</strong> CIE LCh-avstånd mellan #4a6b8a och #1b4965 = 15,1. Till jämförelse ligger --p-blue-100 på 69,4 och --mm-text på 51,8 från samma färg.</p>
+      <p><strong>Följd:</strong> tasks/lessons.md (Session 25, UNIVERSAL) slår fast att fokusringen ska ha 'ingen relation till amber, copper, info eller text' — men den har relation till info. En fokusring runt ett info-element är svår att urskilja från elementet.</p>
+      <p class="atgard"><strong>Löst:</strong> Marcus beslut: fokusringen står fast (lessons.md Session 25 — exklusiviteten är det som gör den igenkännbar), info-blå flyttar. Den nya blåskalans ankare är #1F6CB0: samma ljushet som den gamla (CIE L* 44,4 mot 44,0) och närmaste ton, men dubbla mättnaden (C 42,6 mot 21,0). Fokusringen är därmed den DOVA mörkblå och info den KLARA. Avståndet gick från 15,1 till 27,3 och hela skalan är fri från kollisioner. Rollernas kontrast är i praktiken oförändrad: 5,04:1 som text mot info-ytan (dagens 5,13), 5,48:1 som kursplatta under vit text (dagens 5,58). Kvar att göra: migrera --mm-info, --mm-cat-comm och --mm-kurs-fjarrskadning till den nya skalan — det ändrar appens utseende och hör till migreringen.</p>
+      <p class="fallan"><strong>Fällan:</strong> Fyndet uppstod inte ur den genererade skalan; skalan avslöjade det bara. Konflikten finns i paletten som den ser ut nu, och den försvinner inte av att vi låter bli att generera. Marcus har beslutat att fokusringen står fast — då är det info-blå som behöver flytta, eller så accepteras närheten som ett medvetet undantag.</p>
+      
+    </article>
+<article class="fynd löst">
+      <h3><span class="id">F11</span> Primärknappens pressed-läge var ljusare än vila — löst 2026-07-27 <span class="allvar">löst</span></h3>
+      <p class="plats"><code>src/styles/tokens/components.css:19</code></p>
+      <p>--mm-button-primary-bg-pressed räknas som color-mix på HOVER-värdet, inte på vilo-värdet: color-mix(in srgb, var(--mm-btn-primary-hover), black 10%). Hover är ljusare än vila (neutral-700 mot neutral-800), så pressed hamnar över vilo-läget.</p>
+      <p class="verif"><strong>Verifiering:</strong> vila #282928 CIE L* 16,5 · hover #3a3a3a 24,4 · pressed #343434 21,7. Pressed ligger 5,2 L*-enheter ÖVER vila.</p>
+      <p><strong>Följd:</strong> Att trycka ner knappen gör den ljusare än den var innan man rörde den. Alla andra intents (danger, success) räknar pressed på sitt eget vilo-värde och mörknar korrekt — primary är den enda som ärver hoverns.</p>
+      <p class="atgard"><strong>Löst:</strong> Pressed räknas nu på VILO-värdet i stället för på hover-värdet: color-mix(in srgb, var(--mm-btn-primary-bg), black 15%). Resultatet är CIE L* 13,6 mot vilans 16,5 — 2,9 enheter under, alltså urskiljbart och konventionsenligt. Branschkonventionen är att en knapp vars hover LJUSNAR ska MÖRKNA vid tryck, så att intrycket blir intryckning; hover-ljusningen (neutral-800 → neutral-700) behålls eftersom den är rätt för en mörk knapp. 15 % är samma procent som danger och success redan använder för pressed, så primary får nu samma grammatik som de andra intents. DETTA ÄNDRAR APPENS UTSEENDE — nedtryckt primärknapp blir mörkare än förut. Vit text mot den nya pressed-ytan mäter 15,77:1.</p>
+      <p class="fallan"><strong>Fällan:</strong> Buggen finns i appen idag och har inget med migreringen att göra. Men den förvärras av den: med neutral-11 som hover växer inversionen från 5,2 till omkring 31 enheter. Rätta före migreringen, inte efter.</p>
+      
+    </article>
+<article class="fynd medel">
+      <h3><span class="id">F12</span> Rollen för hover-yta finns, är noga motiverad, och används av en enda komponent <span class="allvar">medel</span></h3>
+      
+      <p>--mm-state-hover infördes i S91 med elva rader motivering och uppmätt ΔE00 — genomskinliga skrim i stället för opaka plattor, just för att en opak platta kollapsar mot tonala bakgrunder. Den konsumeras av ToggleButtonGroup.tsx och ingen annan.</p>
+      <p class="verif"><strong>Verifiering:</strong> hover:bg-bg-emphasized 17 träffar · hover:bg-bg-muted 4 · hover:bg-bg-subtle 3 · bg-(--mm-state-hover) 1.</p>
+      <p><strong>Följd:</strong> 17 av 25 hover-ytor använder --mm-bg-emphasized, som i sin egen kommentar är definierad som AKTIV-markering — alltså en annan tillståndsroll. Regeln bor i en CSS-kommentar som konsumenterna aldrig läser.</p>
+      
+      
+      
+    </article>
+<article class="fynd medel">
+      <h3><span class="id">F13</span> Mix-lagrets egen motivering upphör att gälla med tolvstegsskalorna <span class="allvar">medel</span></h3>
+      <p class="plats"><code>src/styles/tokens/components.css:13-15</code></p>
+      <p>Kommentaren lyder: 'Pressed-nyanser via color-mix eftersom semantiskt mörkare värde saknas för resp. roll.' Det var sant med den gamla paletten.</p>
+      
+      <p><strong>Följd:</strong> Tolvstegsskalorna har steg 10, 11 och 12 för varje kulör. Grunden för samtliga sju black-N%-mixar försvinner — efter migreringen är de inte längre nödvändiga utan teknisk skuld. De sju error-mixarna är redan idag redundanta på ett annat sätt: ankaret är oflyttat, så de ger byte-identiska resultat, men landar mellan steg 10 och 11 och matchar alltså inget steg.</p>
+      
+      
+      
+    </article>
+<article class="fynd hög">
+      <h3><span class="id">F14</span> Primärknappens yta och brödtexten kollapsar till samma steg <span class="allvar">hög</span></h3>
+      
+      <p>--mm-btn-primary-bg pekar på neutral-800 och --mm-text på neutral-900. Båda mappar närmast till neutral-12 i den nya skalan.</p>
+      <p class="verif"><strong>Verifiering:</strong> neutral-800 CIE L* 16,5 och neutral-900 14,2 ligger 2,3 enheter isär; neutral-12 ligger på 14,6. Rollerna matar 9 respektive 7 komponent-tokens.</p>
+      <p><strong>Följd:</strong> Efter en naiv migrering är primärknappens yta exakt brödtextens färg. Två ramper som varit åtskilda smälter ihop, och dialog-overlayen (byggd på --mm-text) härrör då från samma källa som primary-subtle-plattorna (byggda på --mm-btn-primary-bg). Det är inget palettfel utan ett rollbeslut som måste fattas medvetet.</p>
+      
+      
+      
+    </article>
+<article class="fynd medel">
+      <h3><span class="id">F15</span> Fem saknade lager-2-roller — två namngivna, tre kräver designval <span class="allvar">medel</span></h3>
+      
+      <p>Varje mönster där samma visuella syfte uttrycks på tre till fem sätt går tillbaka på en roll som inte finns: solid inverterad yta (14 förekomster via --mm-text), vald/selected-tillstånd (11 via fyra olika roller), mätarens track och fyllnad (12 via fem implementationer), osynlig-tills-kontrast-kant (11 via NavCard-tokens utanför NavCard), samt en gemensam alfaskala.</p>
+      <p class="verif"><strong>Verifiering:</strong> Svag avdelare uttrycks på fyra sätt: divide-border 28 · border-text-muted/20 11 · bg-border 5 · border-border-light 3.</p>
+      <p><strong>Följd:</strong> Där rollen SAKNAS improviserar varje komponent. Där rollen FINNS men bor i en CSS-kommentar (F12) uppstår samma spridning av motsatt skäl. Mätarens tokengap är redan öppet bokfört i två komponenter oberoende av varandra, vilket gör det starkare som fynd — två skivor stötte på samma vägg.</p>
+      <p class="atgard"><strong>Löst:</strong> NAMNGIVNA 2026-07-27, båda med värden härledda ur befintlig användning så att flytten blir visuellt neutral: --mm-surface-inverse (svärtan som YTA i stället för som text, 13 ställen lånade --mm-text) och --mm-border-quiet / --mm-border-quiet-contrast (kant som syns först under prefers-contrast, 54 ställen varav 12 lånade NavCards komponent-tokens utanför NavCard). Ingen komponent är migrerad till dem ännu.</p>
+      
+      
+    </article>
+
+<h2>8. Så här är atlasen byggd</h2>
+<p class="lead">Tokens läses ur <code>src/styles/tokens/*.css</code>, användningen räknas i
+   <code>src/</code>, mätvärdena beräknas i <code>scripts/lib/farg.mjs</code> och skalorna
+   genereras i <code>scripts/lib/skala.mjs</code>. Det enda handskrivna är auditens fynd i
+   <code>docs/design/farg-atlas.fynd.json</code>.</p>
+<p class="lead"><code>npm run atlas</code> bygger om, formaterar och kör
+   <code>scripts/verifiera-farg-atlas.mjs</code> — drygt tusen kontroller som prövar varje
+   påstående här mot källkoden med egen, oberoende matematik. Atlasen kan inte tyst glida
+   isär från appen.</p>
+</div>
+<script>
+  // Respekterar en ev. temaväxlare i värdmiljön utan att kräva en.
+  const t = new URLSearchParams(location.search).get('theme');
+  if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+</script>

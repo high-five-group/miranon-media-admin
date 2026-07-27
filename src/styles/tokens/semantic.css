@@ -46,6 +46,18 @@
   --mm-state-hover: color-mix(in srgb, var(--mm-text) 6%, transparent);
   --mm-state-hover-contrast: color-mix(in srgb, var(--mm-text) 12%, transparent);
 
+  /* ── Solid inverterad yta (F15, 2026-07-27) ──
+     Svärtan när den bär något i stället för att BLI läst. Rollen fanns inte,
+     så tretton ställen lånade --mm-text: vald kryssruta, filtertrattens öppna
+     läge, datumintervallets ändpunkter, siffer-badgen, radio-punkten. Att en
+     textroll målar ytor är inte fel i utfallet men i betydelsen — det gör
+     varje framtida ändring av brödtextens färg till en ändring av fem
+     komponenters markeringar.
+
+     Samma värde som --mm-text idag, alltså ingen visuell skillnad när
+     komponenterna flyttas hit. Texten OVANPÅ ytan är --mm-text-inverse. */
+  --mm-surface-inverse: var(--p-neutral-900);
+
   /* ── Borders ── */
   --mm-border: var(--p-neutral-200);
   --mm-border-light: var(--p-neutral-100);
@@ -54,6 +66,20 @@
     --p-neutral-400
   ); /* Fältkanter — ≥3:1 mot vit yta (WCAG 1.4.11); neutral-300 ger bara 1,55:1 */
   --mm-border-focus: var(--p-gold-500);
+
+  /* ── Kant som finns men inte syns förrän den behövs (F15, 2026-07-27) ──
+     Tonala kort och rader saknar kantlinje i vila och får en först under
+     prefers-contrast: more. Idiomet används på 54 ställen och uttrycks på två
+     sätt: literalt (border-transparent + contrast-more:border-border-strong,
+     30 respektive 24 träffar) eller genom att låna NavCards komponent-tokens
+     i filer som inte är NavCards (6 + 6). Det andra är en lager-3-läcka —
+     komponent-tokens ska inte konsumeras utanför sin komponent.
+
+     Paret bor på lager 2 därför att idiomet är systemets, inte NavCards.
+     Värdena är exakt de NavCard redan använder, så flytten är visuellt
+     neutral. */
+  --mm-border-quiet: transparent;
+  --mm-border-quiet-contrast: var(--p-neutral-300);
   --mm-scrollbar-thumb: var(
     --p-neutral-400
   ); /* Scrollbar-tummen (styling = vårt kontrast-ansvar, samma 1.4.11-golv som fältkanter) */
