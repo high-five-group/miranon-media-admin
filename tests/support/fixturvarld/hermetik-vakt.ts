@@ -176,7 +176,7 @@ function byggMeddelande(request: Request, mockade: readonly string[]): string {
     ...mockade.map((header) => `  · ${header}`),
     '',
     'Ska svaret gälla ALLA tester: lägg till en handler i',
-    'tests/visual/support/handlers.ts. Ska det gälla bara detta test:',
+    'tests/support/fixturvarld/handlers.ts. Ska det gälla bara detta test:',
     'överskugga lokalt med network.use() — se hermetic.ts § Överskugga en',
     'delad handler.',
   );

@@ -1,7 +1,10 @@
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
-import { VISUAL_SUPABASE_ANON_KEY, VISUAL_SUPABASE_URL } from './tests/visual/support/fixture-data';
+import {
+  VISUAL_SUPABASE_ANON_KEY,
+  VISUAL_SUPABASE_URL,
+} from './tests/support/fixturvarld/fixture-data';
 
 // Ladda .env.test för LOKALA körningar (task-10 AC 3, officiella Playwright-
 // mönstret playwright.dev/docs/test-parameterize). Tre verifierade egenskaper
@@ -30,7 +33,7 @@ const isA11yRun = process.env.PLAYWRIGHT_A11Y_DEV_SERVER === '1';
 
 // Visual-runnern (task-36.7) kör mot en ALLTID-FÄRSK dev-server på dedikerad
 // port i a11y-mönstret — men med FIXTUR-ENV injicerad: servern binder mot den
-// fiktiva visual-fixture-URL:en (tests/visual/support/fixture-data.ts), aldrig
+// fiktiva visual-fixture-URL:en (tests/support/fixturvarld/fixture-data.ts), aldrig
 // staging (AC 4: noll staging-beroende — testerna mockar allt nätverk).
 // Dedikerad port behövs även lokalt: 5173 bär ofta en vanlig dev-server med
 // verklig env, och stale-server-vakten ska vägra den — inte tvinga fram att
@@ -292,7 +295,8 @@ export default defineConfig({
     },
     // Visual-projekten (task-36.7): kanoniskt anrop `npm run test:visual`
     // (env-flaggan startar fixtur-servern på dedikerad port — se webServer).
-    // Hermetiken bor i tests/visual/support/hermetic.ts; baselines föds i CI.
+    // Hermetiken bor i tests/support/fixturvarld/hermetic.ts (KLASSDELAD hemvist
+    // sedan task-59.1 — inte visual-ägd); baselines föds i CI.
     {
       name: 'visual-desktop',
       testDir: './tests/visual',

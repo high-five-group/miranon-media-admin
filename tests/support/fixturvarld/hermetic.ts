@@ -10,7 +10,15 @@ import { skapaHermetikVakt } from './hermetik-vakt';
 export { expect } from '@playwright/test';
 
 /**
- * Hermetisk test-ram för visuella regressionstester (task-36.7).
+ * Hermetisk test-ram för fixturvärlden (task-36.7).
+ *
+ * HEMVISTEN ÄR KLASSDELAD, INTE VISUAL-ÄGD (task-59.1). Modulen bodde till och
+ * med task-58 under `tests/visual/support/`, vilket lästes som att fixturvärlden
+ * tillhörde den visuella sviten. Den gör den inte: acceptance-klassen
+ * (ADR-080) hänger på SAMMA fixturvärld, och två parallella världar vore emot
+ * både MSW:s och Playwrights uttalade designavsikt — en enda sanning om
+ * nätverket, återanvänd tvärs testklasser. Flytten hit var därför ren: noll
+ * beteendeändring, noll baseline-avvikelse.
  *
  * Varje test i ramen kör i en förseglad värld: frusen klocka (AC 5), seedad
  * session (autentiserade vyer utan staging-login), pinnade typsnitt och
@@ -110,7 +118,7 @@ function buildSession() {
  * `network`-fixturen, som destruktureras ur testargumenten precis som `page`.
  *
  *     import { HttpResponse, http } from 'msw';
- *     import { expect, test } from './support/hermetic';
+ *     import { expect, test } from '../support/fixturvarld/hermetic';
  *
  *     test('visar felvyn när eventlistan fallerar', async ({ page, network }) => {
  *       network.use(

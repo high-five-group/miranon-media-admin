@@ -1,4 +1,4 @@
-import { expect, test } from './support/hermetic';
+import { expect, test } from '../support/fixturvarld/hermetic';
 
 /** Event-listan i den frusna fixturvärlden (task-36.7 steg 2). */
 test('event-listan — kommande och genomförda ur fixturvärlden', async ({ page }) => {
