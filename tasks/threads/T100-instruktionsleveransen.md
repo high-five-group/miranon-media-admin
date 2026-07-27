@@ -165,6 +165,34 @@ konsekvensen för hela konstitutionen större än denna tråds fyra filer.
 
 ## Trail
 
+- **2026-07-27 (S91-resumen): ÅTGÄRD 1 LEVERERAD — `InstructionsLoaded`-hooken.**
+  Marcus-kvitterad som första punkt av fyra ("vi tar en i taget"). Hub-PR #5,
+  **plugin 1.21.0**, reinstall körd i samma landning (S76-praxisen).
+  - **Formen:** plugin-hook (`hooks/hooks.json` + `hooks/log-instructions-loaded.sh`),
+    inte `~/.claude/settings.json` — versionshanterad i git, och hooks är en av de
+    tre mekanismer ett plugin *kan* bidra med kontext genom. Att använda den
+    mekanism som fungerar för att verifiera att mekanismerna fungerar.
+  - **Ren observation, aldrig en spärr.** Eventet saknar decision control; varje
+    felväg i skriptet är en tyst no-op. En trasig logg får aldrig bli en trasig
+    session.
+  - **Verifierat med kortets EGEN metod:** `find` över plugin-cachen ger nu träff
+    på hook-skriptet, och `hooks/` ligger bredvid `skills/` i 1.21.0 — exakt det
+    `templates/` aldrig gjorde. Den *distribuerade* artefakten kördes skarpt
+    (exit 0, korrekt JSONL-rad). Fem funktionstest före landning, alla exit 0.
+  - **Öppen rest:** hooken fires först efter omstart. `~/.claude/logs/instructions-loaded.jsonl`
+    är tom tills nästa sessionsstart — **det är där steg 3:s bevis landar.**
+    Första kommandot nästa session:
+    `tail -20 ~/.claude/logs/instructions-loaded.jsonl | jq -r '"\(.reason)\t\(.file)"'`
+  - **SIDOFYND (egen landning, hub-commit `9304773`):** `claude plugin validate`
+    avslöjade att **`/to-prd`:s frontmatter aldrig parsat** — kolon+mellanslag i en
+    ociterad YAML-sträng ⇒ *"loads with empty metadata (all frontmatter fields
+    silently dropped)"*. Utan `description` auto-upptäcks skillen aldrig; den har
+    bara fungerat när Marcus skrivit `/to-prd` explicit. Klass-svep kört över alla
+    19 skills — enda träffen. **Detta är T100:s klass i miniatyr**, med en skärpning:
+    här *fanns* verktyget som hade fångat det, det kördes bara aldrig.
+    → **Lesson-kandidat, EJ mintad** (numren låsta tills mekaniseringens punkt 6):
+    *ett valideringsverktyg som finns men inte körs är funktionellt frånvarande —
+    samma utfall som en artefakt som inte levereras.*
 - **2026-07-27 (S91-resumen):** **research-passet KÖRT** och landat i
   [`instruktionsleverans-branschpraxis-2026-07-27.md`](../../docs/research/instruktionsleverans-branschpraxis-2026-07-27.md)
   (641 rader). Passets bärande claims **efterverifierade av Code** mot
