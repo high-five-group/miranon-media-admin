@@ -1045,7 +1045,15 @@ test.describe('Filtervyn på event-listan + skriv ut (task-17.7)', () => {
 
     // Print-huvudet bär kontexten pappret annars tappar (facit k02-print):
     // "Event — {Period} · {aktiva filter} · {N} event · Utskrivet {långdatum}".
+    // timeZone är INTE valfri här (L264). Utan den byggs strängen i RUNNERNS
+    // zon (UTC på CI) medan sidan renderar i configens `timezoneId`
+    // Europe/Stockholm — och mellan 22:00 och 24:00 UTC är runnern ett dygn
+    // BAKOM browsern. Testet letade då efter gårdagens datum på en sida som
+    // skrev dagens: deterministiskt 3/3-fel i ett tvåtimmarsfönster per dygn,
+    // grönt alla andra timmar. Sex andra tidsformaterande tester i sviten bar
+    // redan denna option; detta var det enda som saknade den.
     const langdatum = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'Europe/Stockholm',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
