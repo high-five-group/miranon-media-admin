@@ -27,7 +27,7 @@
     "seed:review:clean": "node --env-file-if-exists=.env.seed scripts/seed-review-fixture.mjs --clean",
     "metrics:ci": "node scripts/ci-metrics.mjs",
     "postinstall": "git config core.hooksPath .githooks",
-    "atlas": "node scripts/build-farg-atlas.mjs && biome format --write docs/design/ && node scripts/verifiera-farg-atlas.mjs"
+    "atlas": "node scripts/build-farg-atlas.mjs && biome format --write docs/design/ && biome check docs/design/ && node scripts/verifiera-farg-atlas.mjs"
   },
   "dependencies": {
     "@internationalized/date": "3.12.2",

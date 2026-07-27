@@ -740,7 +740,7 @@ function byggHtml(modell, skalor, fynd) {
      skriven för hand. Sex tolvstegsskalor ligger i appen som material; rollerna pekar
      ännu på den gamla paletten.</p>
   <p class="meta">Byggd ${nu} · ${modell.primitivFarger.length} primitiver ·
-     ${modell.semantiskaRoller.length} roller · ${modell.komponentTokens.length} komponent-tokens · ${modell.temaRoller.length} utilities
+     ${modell.semantiskaRoller.length} roller · ${modell.komponentTokens.length} komponent-tokens · ${modell.temaRoller.length} utilities</p>
 </header>
 
 <h2>1. Paletten</h2>
