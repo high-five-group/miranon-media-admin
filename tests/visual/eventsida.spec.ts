@@ -1,5 +1,5 @@
-import { VISUAL_EVENT_ID } from './support/fixture-data';
-import { expect, test } from './support/hermetic';
+import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
+import { expect, test } from '../support/fixturvarld/hermetic';
 
 /** Eventsidan (aggregerande detaljen) i den frusna fixturvärlden
  *  (task-36.7 steg 2) — beläggning, arbetskö och anteckningar ur fixturen. */

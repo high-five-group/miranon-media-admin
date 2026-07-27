@@ -232,7 +232,7 @@ Codex-eftergranskningen 2026-07-24.
 
 Infrastrukturen: incheckade referensbilder (task-36.7) för sex
 facit-tunga vyer × två vyportar i en hermetisk fixturvärld
-(`tests/visual/support/` — mockade EF-svar, seedad session, pinnad Inter,
+(`tests/support/fixturvarld/` — mockade EF-svar, seedad session, pinnad Inter,
 frusen klocka; noll staging, noll mutex). Jämförelsen kör
 `--update-snapshots=none`: saknad eller avvikande baseline failar hårt.
 När grinden aktiveras (T87) gäller detta som blockerande CI-jobb för

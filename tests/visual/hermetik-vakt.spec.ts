@@ -1,6 +1,6 @@
-import { handlers } from './support/handlers';
-import { expect, test } from './support/hermetic';
-import { OmockadRequestError, skapaHermetikVakt } from './support/hermetik-vakt';
+import { handlers } from '../support/fixturvarld/handlers';
+import { expect, test } from '../support/fixturvarld/hermetic';
+import { OmockadRequestError, skapaHermetikVakt } from '../support/fixturvarld/hermetik-vakt';
 
 /**
  * Negativt self-test för hermetik-vakten (task-54.2).
@@ -90,7 +90,7 @@ test.describe('hermetik-vaktens beslut', () => {
     const meddelande = fanga('https://api.nagon-extern-tjanst.com/v2/track');
 
     expect(meddelande).toContain('utanför');
-    expect(meddelande).not.toContain('tests/visual/support/handlers.ts');
+    expect(meddelande).not.toContain('tests/support/fixturvarld/handlers.ts');
     expect(meddelande).not.toContain('Menade du:');
     for (const handler of handlers) {
       expect(meddelande).not.toContain(handler.info.header);

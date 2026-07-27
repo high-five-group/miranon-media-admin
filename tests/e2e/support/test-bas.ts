@@ -22,10 +22,10 @@
  *
  * RAPPORTERANDE, INTE AVBRYTANDE: anropet släpps igenom med `fallback()` efter
  * loggning. Sviten ska bete sig identiskt under mätningen — annars mäter vi en
- * annan svit än den vi vill flytta. Visual-ramens vakt
- * (`tests/visual/support/hermetic.ts`) `abort`:ar i stället; det är rätt läge
- * där, och det är läget steg 2 ska använda när filer faktiskt flyttas till ett
- * mutexfritt jobb.
+ * annan svit än den vi vill flytta. Fixturvärldens vakt
+ * (`tests/support/fixturvarld/hermetic.ts`) `abort`:ar i stället; det är rätt
+ * läge där, och det är läget steg 2 ska använda när filer faktiskt flyttas
+ * till ett mutexfritt jobb.
  *
  * Källa: docs/research/staging-svitens-tidsbudget-2026-07-26.md § 5 steg 1.
  */

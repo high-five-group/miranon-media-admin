@@ -4,6 +4,7 @@ title: 'Skiva: Prefaktorering — fixturvärlden till delad hemvist'
 status: To Do
 assignee: []
 created_date: '2026-07-27 20:40'
+updated_date: '2026-07-27 20:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,11 +28,65 @@ Täcker användarberättelser: 4
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Fixturvärldens stödmoduler bor i en hemvist som inte är visual-specifik, och namnet säger att den är delad
-- [ ] #2 Samtliga sju visuella spec-filer importerar från den nya hemvisten; ingen kvarvarande referens pekar på den gamla
-- [ ] #3 Den visuella sviten är GRÖN med NOLL baseline-avvikelse — mätt före och efter, inte antaget
-- [ ] #4 Referenser till den gamla sökvägen i konfiguration och docblock är uppdaterade, så nästa läsare inte skickas fel
+- [x] #1 Fixturvärldens stödmoduler bor i en hemvist som inte är visual-specifik, och namnet säger att den är delad
+- [x] #2 Samtliga sju visuella spec-filer importerar från den nya hemvisten; ingen kvarvarande referens pekar på den gamla
+- [x] #3 Den visuella sviten är GRÖN med NOLL baseline-avvikelse — mätt före och efter, inte antaget
+- [x] #4 Referenser till den gamla sökvägen i konfiguration och docblock är uppdaterade, så nästa läsare inte skickas fel
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+REN FLYTT — noll beteendeändring, bevisad med mätning före och efter.
+
+VALD HEMVIST: `tests/support/fixturvarld/`. Två skäl. (1) POSITIONEN säger
+delad: katalogen är syskon till testklasserna (`visual/`, `e2e/`, `a11y/`,
+`api/`, `preview/`), alltså finns inget klass-segment kvar i sökvägen som
+kan läsas som ägarskap — och den speglar repots egen `tests/e2e/support/`
+en nivå upp, där "en nivå upp" är precis vad klassdelad betyder strukturellt.
+(2) NAMNET namnger saken, inte konsumenten: "fixturvärlden" är termen ADR-080,
+PRD-59 och modulernas egna docblock redan använder. Alternativet
+`tests/fixturvarld/` förkastades — `tests/`-roten bär bara testklasser, och en
+katalog utan tester där hade läst som en klass till.
+
+FLYTTAT (git mv, historiken bevarad): fixture-data.ts, handlers.ts,
+hermetic.ts, hermetik-vakt.ts + assets/ (7 woff2 + inter.css).
+`tests/visual/support/` finns inte längre.
+
+SPECARNA FLYTTADE INTE — snapshot-mallen `{testDir}/__screenshots__/...`
+bygger på projektets testDir (`./tests/visual`), så de tolv bilderna behöll
+sina sökvägar. Verifierat mot mallen före flytt, och mätt efteråt.
+
+REFERENSER UPPDATERADE: playwright.config.ts (import + två kommentarer) ·
+sju visuella spec-filer · hermetik-vaktens felmeddelande (raden som pekar ut
+var handlers bor) + spec-assertionen som prövar att en FRÄMMANDE domän inte
+får den raden · hermetic.ts docblock-exempel · tests/e2e/support/test-bas.ts
+docblock · CONTRIBUTING.md § Visuell regression · T87:s aktiverings-YAML
+(kommentarrad i ett block som ska klistras in i ci-suite.yml — framåtriktad
+konfiguration, ej historik). Historiska poster (BUILD-LOG, sessionsdok,
+research, ADR-080, kort 57/58) lämnades ORÖRDA: de beskriver vad som var sant
+då. hermetic.ts bär i stället en bakåtpekare till den gamla hemvisten.
+
+MÄTNING FÖRE/EFTER (`npm run test:visual`):
+  före  — 28 passed (18,3 s)
+  efter — 28 passed (15,5 s)
+  NOLL baseline-avvikelse, bevisad tre vägar: identiskt testantal ·
+  md5 på samtliga 24 baseline-PNG oförändrade före/efter ·
+  `git status` på tests/visual/__screenshots__ = 0 rader.
+  (Tidsskillnaden är körningsbrus, inte en effekt av flytten.)
+
+ÖVRIGA GRINDAR: typecheck 0 fel · biome exit 0, 0 errors (6 warnings +
+26 infos, samtliga i orörda filer) · build grön · test:api:pure 208 passed ·
+check:docs 9/9 gröna · markdownlint 0 errors på de två rörda .md-filerna.
+
+DoD #5 (zod-fogen) HÅLLER OCH ÄR VERIFIERAD, inte antagen: AirtableAdapter
+anropar `.parse()` (kastande) på varje EF-svar via samma scheman som parsar
+skarpa svar. Ett fixtursvar som föll på schemat hade kastat och gett felvy
+i stället för facit-vy — alltså en baseline-avvikelse. Tolv oförändrade
+bilder är beviset. Fogen är dessutom orörd av flytten.
+
+DoD #3 (CI grön per jobb) återstår och ägs av orkestreraren.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

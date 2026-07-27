@@ -1,4 +1,4 @@
-import { expect, test } from './support/hermetic';
+import { expect, test } from '../support/fixturvarld/hermetic';
 
 /**
  * Hem-vyn i den frusna fixturvärlden (task-36.7 steg 1-spiken).

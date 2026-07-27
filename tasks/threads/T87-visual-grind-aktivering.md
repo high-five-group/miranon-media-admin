@@ -97,7 +97,7 @@ det**: hade vi aktiverat tidigt hade vi trott oss skyddade utan att vara det.
 ```yaml
   # Visuell regression (task-36.7, aktiverad via T87) — hermetisk
   # fixturvärld: alltid-färsk dev-server på dedikerad port med FIKTIV
-  # Supabase-URL, allt nätverk mockat (tests/visual/support/hermetic.ts)
+  # Supabase-URL, allt nätverk mockat (tests/support/fixturvarld/hermetic.ts)
   # → INGA secrets, INGEN staging, INGEN mutex. Körs därför ÄVEN för
   # dependabot (secrets-isolationen ADR-031 är irrelevant utan secrets —
   # medvetet INGEN actor-skip): en Playwright-/browser-bump ska få sin

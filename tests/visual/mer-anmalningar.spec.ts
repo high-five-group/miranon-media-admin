@@ -1,4 +1,4 @@
-import { expect, test } from './support/hermetic';
+import { expect, test } from '../support/fixturvarld/hermetic';
 
 /** Anmälningslistan under Mer i den frusna fixturvärlden (task-36.7 steg 2). */
 test('mer/anmälningar — hela anmälningslistan ur fixturvärlden', async ({ page }) => {
