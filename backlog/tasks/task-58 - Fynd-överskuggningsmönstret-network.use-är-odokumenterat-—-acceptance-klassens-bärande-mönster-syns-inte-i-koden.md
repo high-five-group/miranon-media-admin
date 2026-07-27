@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-27 18:07'
-updated_date: '2026-07-27 19:47'
+updated_date: '2026-07-27 19:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -39,8 +39,26 @@ Detta är dokumentationsskuld, inte en defekt: mekanismen fungerar och är bevis
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Överskuggnings-mönstret network.use(handler) är dokumenterat DÄR fixturen eller handlers definieras (hermetic.ts eller handlers.ts) — inte i en fristående fil — med ett kort exempel som visar hela anropet
-- [ ] #2 Dokumentationen slår fast att överskuggningen gäller PER TEST och namnger mekanismen som gör den det, så att läsaren slipper anta isoleringen
-- [ ] #3 network-fixturen är namngiven som den yta ett test når mönstret genom — TASK-54:s användarberättelse 5 går att läsa ut ur koden utan MSW:s egen dokumentation
-- [ ] #4 Exemplets form är verifierad mot bibliotekets faktiska typ (NetworkFixture) eller mot ett körande test — inte skriven ur minnet
+- [x] #1 Överskuggnings-mönstret network.use(handler) är dokumenterat DÄR fixturen eller handlers definieras (hermetic.ts eller handlers.ts) — inte i en fristående fil — med ett kort exempel som visar hela anropet
+- [x] #2 Dokumentationen slår fast att överskuggningen gäller PER TEST och namnger mekanismen som gör den det, så att läsaren slipper anta isoleringen
+- [x] #3 network-fixturen är namngiven som den yta ett test når mönstret genom — TASK-54:s användarberättelse 5 går att läsa ut ur koden utan MSW:s egen dokumentation
+- [x] #4 Exemplets form är verifierad mot bibliotekets faktiska typ (NetworkFixture) eller mot ett körande test — inte skriven ur minnet
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Dokumentationen lades i hermetic.ts som ny sektion "ÖVERSKUGGA EN DELAD HANDLER I ETT ENSKILT TEST" i den befintliga docblocken över network-fixturen — alltså där fixturen faktiskt definieras — plus en pekare i handlers.ts docblock så att en läsare som landar på "vad är mockat" hittar vidare till "hur ändrar jag det för ETT test".
+
+VERIFIERAT, EJ ANTAGET (fyra påståenden mot biblioteket):
+- Signaturen use(...runtimeHandlers: Array<AnyHandler>): void läst i msw/lib/core/experimental/setup-api.d.ts. NetworkFixture = Omit<SetupApi, dispose> & {enable, disable}, alltså ärvs use() från SetupApi.
+- PRECEDENSEN: handlers-controller.js rad 82 bygger [...overridesForKind, ...existingForKind] — overrides PREPEND:as, och första träffen vinner. Dokumentationen påstår därför precedens som är läst, inte gissad.
+- ISOLERINGEN är STRUKTURELL: network är test-scopad ({auto: true} styr bara autostart, inte scope), så defineNetworkFixture körs om per test och bygger ny handlers-controller ur delade handlers-arrayen via super(...options.initialHandlers). disable() -> super.dispose() + unroute är TEARDOWN, inte det som ger isoleringen. Den distinktionen står i texten eftersom fel orsak inbjuder till fel slutsats (t.ex. att ett städsteg kan glömmas).
+- EXEMPLET KÖRDES: kastbart spec-par (test A överskuggar get-events till 500 -> fixturens event renderas inte; test B direkt efter -> normalläget tillbaka). 2 passed. Enda skillnaden mellan A och B är use()-anropet, så precedensen OCH frånvaron av läckage är belagda i exakt den dokumenterade formen. Filen raderad per [DEBUG-]-kontraktet.
+
+EGET FEL FÅNGAT FÖRE LANDNING: första utkastet skrev mönstret som "/**" + "/functions/v1/get-events" för att undgå att */ stänger blockkommentaren — men den splitten gav ett ANNAT mönster än handlarnas */functions/v1/. Rättat till "*" + "/functions/v1/..." (filens eget idiom, samma som page.route("**" + "/*")), och varför strängen är delad står nu i texten så att ingen kopierar den delade formen in i en riktig testfil.
+
+UTÖVER AC:NA, medvetet: fällan där en överskuggning med felstavat mönster tyst gör INGENTING (handlern läggs först men matchar aldrig -> anropet faller igenom till den delade handlern -> testet ser normalläget och kan passera felaktigt). Hermetik-vakten kan strukturellt inte se detta, eftersom anropet ÄR mockat. Skrevs in eftersom nitton acceptance-filer ska luta sig mot mönstret och detta är dess enda tysta felläge.
+
+GRINDAR: typecheck 0 fel · biome rena på båda rörda filer (6 varningar finns identiskt på main, pre-existerande baslinje) · npm run test:visual 22 passed 17,9 s utan baseline-avvikelse.
+<!-- SECTION:NOTES:END -->
