@@ -3,10 +3,10 @@ id: TASK-58
 title: >-
   Fynd: överskuggningsmönstret network.use() är odokumenterat —
   acceptance-klassens bärande mönster syns inte i koden
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-27 18:07'
-updated_date: '2026-07-27 19:59'
+updated_date: '2026-07-27 20:11'
 labels:
   - ready-for-agent
 dependencies: []
