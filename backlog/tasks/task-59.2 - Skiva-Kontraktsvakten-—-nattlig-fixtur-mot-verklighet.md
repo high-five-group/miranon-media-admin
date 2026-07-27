@@ -1,10 +1,10 @@
 ---
 id: TASK-59.2
 title: 'Skiva: Kontraktsvakten — nattlig fixtur-mot-verklighet'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-27 20:40'
-updated_date: '2026-07-27 21:53'
+updated_date: '2026-07-27 22:42'
 labels:
   - ready-for-agent
 dependencies:
