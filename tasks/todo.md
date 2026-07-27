@@ -42,11 +42,30 @@ PROV ÄR KÖRT VID TREDJE RESUMEN — GRÖNT PÅ ALLA TRE KONTROLLER:**
 **Två mätta gap** (båda förväntade, nu mekaniskt belagda i stället för antagna):
 `IDENTITET.md` + `profile.md` står ALLTJÄMT ej i loggen (väntar Marcus-beslut 3)
 · hooken täcker CLAUDE.md-lagret men **inte** memory-lagret — `MEMORY.md`
-levererades i systemprompten utan att logga en rad. **NÄSTA: Marcus-beslut 1
-(Fas E) före all planering → verktygs-åtgärderna (punkt 3: MSW-bytet med
-`skipAssetRequests: false`).** **FEM MARCUS-BESLUT VÄNTAR** (Fas E-horisonten blockerar ·
+levererades i systemprompten utan att logga en rad. **REPOT ÄR ORG-ÄGT PÅ
+ENTERPRISE SEDAN 2026-07-27 kl 11:15:43Z** (org `high-five-group`, Marcus åtgärd i
+förebyggande syfte, syftet var merge queue) — **MERGE QUEUE ÄR DÄRMED ÖPPEN, MEN
+SLUTSATSEN STÅR:** research-passets nej kom i **två oberoende lager**, och lager 2
+skrevs uttryckligen som "det som gäller även efter en org-flytt". Lager 1
+(org-kravet) är **upphävt**; lager 2 håller, eftersom `merge_group`-bygg inte slås
+ihop mot en global mutex — **bästa fallet oförändrade ≈27 min, default-fallet ≈55
+min** om det tunga jobbet inte villkoras på `github.event_name`. Vinsten som
+FAKTISKT är köpt är BEHIND-cykeln (L328), i koordination och latens — ej
+väggklockan. **Materiellast:** öppen fråga 1 (`concurrency` × `merge_group`,
+odokumenterad hos GitHub) var stämplad "ingen sådan drift är möjlig att observera
+i dagens ägarform" — **den kan nu MÄTAS i stället för härledas.** Falsifieringen
+bokförd i tre artefakter (research-passet · ADR-076 · processgranskningen
+2026-07-23); eftergranskningen 2026-07-24 pekade själv ut org-flytten som rationell
+nästa åtgärd om BEHIND-svälten fortsatte. Överföringen verifierad ofarlig:
+ruleset `main-skydd` `enforcement=active` · 8 secrets · `marcus803` assignable
+(ADR-077-larmet) · CI 8/8. **Enda äkta skadan: 2 döda issue-länkar** i
+`session-89.md` (GitHub redirectar `/pull/N` men **inte** `/issues/N` efter
+ägarbyte; CI ser det ej — autentiserad lychee följer överföringen). **NÄSTA:
+Marcus-beslut 1 (Fas E) före all planering → verktygs-åtgärderna (punkt 3:
+MSW-bytet med `skipAssetRequests: false`); CI-/grind-arkitekturen som EGET pass
+med grillning — mätning före design.** **SEX MARCUS-BESLUT VÄNTAR** (Fas E-horisonten blockerar ·
 `--mm-btn` vs `--mm-button` · IDENTITET.md-destillatet · länkgrindens form ·
-grillningens fyra). Numrering: 91/**080**/L360 (LÅST till punkt 6)/T101/f46/task-53.
+grillningens fyra · **merge queue-aktiveringen**). Numrering: 91/**080**/L360 (LÅST till punkt 6)/T101/f46/task-53.
 Full narrativ: sessionsdok S91 **Del 8** + PAUSLÄGE. *(Föregående fokus-text
 nedan.)*
 
