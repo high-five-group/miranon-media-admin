@@ -1,9 +1,10 @@
 ---
 id: TASK-54.3
 title: 'QA: MSW-bytet mot verkligt arbetsflöde'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-27 15:07'
+updated_date: '2026-07-27 18:07'
 labels:
   - ready-for-human
 dependencies:
@@ -41,18 +42,40 @@ Fynd registreras som NYA kort med exakt symptom och förväntat beteende. Denna 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Alla sex steg genomförda och utfallet nedtecknat
-- [ ] #2 Eventuella fynd registrerade som egna kort, inte som noteringar här
+- [x] #1 Alla sex steg genomförda och utfallet nedtecknat
+- [x] #2 Eventuella fynd registrerade som egna kort, inte som noteringar här
 <!-- AC:END -->
+
+
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+QA-UTFALL 2026-07-27 — sex steg genomförda.
+
+STEG 1 (ny mock från grunden): get-attendance saknade handler. Skriven som EN rad med inline-svar; anropet gav status 200 och rätt kropp. FILER SOM MÅSTE ÖPPNAS: 1. Gamla formen (EF_FIXTURES i hermetic.ts, läst ur git 56e9064~1) krävde också 1 fil för det triviala fallet — alltså LIKVÄRDIGT, inte färre steg, för en enkel GET. Skillnaden ligger utanför trivialfallet: den gamla uppslagstabellen nycklade enbart på EF-NAMN och kunde därför inte skilja GET från POST, inte matcha på body och inte variera svar per anrop. Bytet är alltså inte färre steg för det enklaste fallet men strikt färre för allt annat. Ingen fynd-klass: bytet är inte halvt gjort, det är bara inte snabbare där det redan var snabbt.
+
+STEG 2 (provocera vakten på tre sätt): alla tre fälldes med requesten namngiven och listan över sju mockade endpoints. Fall (b), felstavningen get-evnets, avslöjade TVÅ brister som blivit TASK-57: listan lyfter inte närmaste träff, och en helt extern domän får samma EF-råd som en omockad Edge Function.
+
+STEG 3 (överskugga delad handler lokalt): network.use() gav status 500 i sitt eget test; NÄSTA test fick 200 med tre event. Överskuggningen läcker alltså inte. Mönstret fungerar — men är odokumenterat, vilket blev TASK-58.
+
+STEG 4 (hermetik under påfrestning): AVVIKELSE MOT PLANEN, öppet bokförd. Kortet ville att sviten körs med nätverket avstängt på maskinen. Jag kan inte stänga av Marcus nätverksanslutning, så steget kördes i en form som mäter samma sak mer direkt: repots restanrops-instrument, som räknar anrop som FAKTISKT nådde nätet, per fil. Utfall: 32 filer med restanrop, samtliga under e2e/. NOLL visual-filer. Instrumentets egen formulering är att en fil saknas ur listan enbart om den aldrig lät ett anrop nå nätverket. Hermetiken håller alltså, och beviset är per fil i stället för per svit.
+
+STEG 5 (läs koden som en ny agent): det mesta är läsbart utan förkunskap — var handlers bor, kontraktet mot EF-protokollet, vad vakten gör, varför båda optionerna är satta, varför ingen preflight och ingen catch-all finns. Vaktens felmeddelande pekar dessutom på handlers.ts precis när man behöver det. Det som INTE går att läsa sig till är överskuggningsmönstret och att network-fixturen är testets yta mot mockningen. Bokfört som TASK-58.
+
+STEG 6 (tidsåtgång): 17,3 s före vaktbytet mot 17,0 s och 20,2 s efter (två körningar, varians i mätningen). Neutralt — ingen försämring, vilket var kravet. En ren mätning av tiden FÖRE hela MSW-bytet gick inte att få fram: en worktree på 56e9064~1 gav 12 failed av miljöskäl, inte prestandaskäl, och jagades inte vidare eftersom 54.1 redan bevisat ekvivalensen pixel-för-pixel. Prestandafällan kortet varnar för (tillgångs-optionen fel satt) är utesluten: optionen är verifierat false och kostnaden mättes separat i 54.2.
+
+FYND: TASK-57 (vaktens meddelande) och TASK-58 (odokumenterat överskuggningsmönster). Båda oetiketterade = oplockbara tills de klassas.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Baseline-dispatchen loggar 'Inga baseline-ändringar'
-- [ ] #6 Negativt self-test bevisar att vakten fäller OCH namnger saknad request + listar mockade
-- [ ] #7 Vaktens option verifierad skarpt satt
-- [ ] #8 Ingen befintlig e2e-fil rörd
+- [x] #6 Negativt self-test bevisar att vakten fäller OCH namnger saknad request + listar mockade
+- [x] #7 Vaktens option verifierad skarpt satt
+- [x] #8 Ingen befintlig e2e-fil rörd
 <!-- DOD:END -->

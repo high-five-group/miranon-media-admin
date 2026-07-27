@@ -3,9 +3,10 @@ id: TASK-55
 title: >-
   Fynd: incheckade linux-baselines är stale sedan S90 — T87:s visual-grind
   skulle fälla direkt vid aktivering
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-27 15:35'
+updated_date: '2026-07-27 18:08'
 labels: []
 dependencies: []
 ordinal: 120000
