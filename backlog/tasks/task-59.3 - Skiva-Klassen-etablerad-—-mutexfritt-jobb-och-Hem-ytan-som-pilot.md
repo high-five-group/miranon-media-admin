@@ -1,10 +1,10 @@
 ---
 id: TASK-59.3
 title: 'Skiva: Klassen etablerad — mutexfritt jobb och Hem-ytan som pilot'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-27 20:41'
-updated_date: '2026-07-27 23:29'
+updated_date: '2026-07-27 23:41'
 labels:
   - ready-for-agent
 dependencies:
