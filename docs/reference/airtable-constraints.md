@@ -99,7 +99,9 @@ hanterar den i Airtable-eran — det Supabase-adaptern ska *ersätta*, inte åte
     tre ställen ([`airtable-client.ts:84`](../../supabase/functions/_shared/airtable-client.ts#L84),
     `:162`, `:189-ff`). Under taket spelar det ingen roll — men vid faktisk 429 är backoffen
     30× för kort, och omförsöken förlänger då lockouten i stället för att invänta den.
-    Upptäckt i S91:s research, **ej åtgärdad, ej trådförd** — bokförs här så den inte tappas.
+    Upptäckt i S91:s research. **Åtgärd: `TASK-53`** (Marcus order 2026-07-27) — kortet bär
+    valet fast 30 s kontra exponentiell backoff med jitter, kravet på mockat 429-enhetstest,
+    och ett tak på omförsöks-loopen som i dag saknas. Denna not uppdateras när kortet landar.
 - **v1-kompensation.** Synkron backoff: 429 → vänta 1s → försök igen
   ([`airtable-client.ts:84`](../../supabase/functions/_shared/airtable-client.ts#L84),
   `:162`, `:211`); polling-kadens 60s.
