@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-27 18:06'
-updated_date: '2026-07-27 19:47'
+updated_date: '2026-07-27 20:09'
 labels:
   - ready-for-agent
 dependencies: []
@@ -41,9 +41,31 @@ Vakten bor i tests/visual/support/hermetik-vakt.ts.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 När den saknade pathen ligger nära en registrerad handler lyfts den kandidaten fram EXPLICIT ovanför listan (formen "Menade du: GET /functions/v1/get-events?"), inte bara som en rad bland de andra
-- [ ] #2 Närhets-tröskeln är ett medvetet valt värde med motivering i koden; ingen kandidat lyfts fram när ingen är rimligt nära
-- [ ] #3 Meddelandet skiljer två fall: path under /functions/v1/ utan handler (åtgärd: lägg till handler) mot anrop till domän UTANFÖR fixturvärlden (åtgärd: undersök varför appen ringer dit). Externa domäner får inte EF-rådet som åtgärdsförslag
-- [ ] #4 Båda meddelandeformerna är enhetstestade mot OmockadRequestError — utfallet är mätt, inte visuellt granskat
-- [ ] #5 hermetik-vakt.spec.ts:s befintliga tvåsidiga bevis förblir grönt: vakten fäller fortfarande i båda fallen och hermetiken är oförändrad
+- [x] #1 När den saknade pathen ligger nära en registrerad handler lyfts den kandidaten fram EXPLICIT ovanför listan (formen "Menade du: GET /functions/v1/get-events?"), inte bara som en rad bland de andra
+- [x] #2 Närhets-tröskeln är ett medvetet valt värde med motivering i koden; ingen kandidat lyfts fram när ingen är rimligt nära
+- [x] #3 Meddelandet skiljer två fall: path under /functions/v1/ utan handler (åtgärd: lägg till handler) mot anrop till domän UTANFÖR fixturvärlden (åtgärd: undersök varför appen ringer dit). Externa domäner får inte EF-rådet som åtgärdsförslag
+- [x] #4 Båda meddelandeformerna är enhetstestade mot OmockadRequestError — utfallet är mätt, inte visuellt granskat
+- [x] #5 hermetik-vakt.spec.ts:s befintliga tvåsidiga bevis förblir grönt: vakten fäller fortfarande i båda fallen och hermetiken är oförändrad
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MEKANISM: Levenshtein-avstånd (egen tvåradsimplementation, ~20 rader) mot EF-NAMNET, inte mot hela mönstret — alla handlers delar prefixet */functions/v1/, så ett avstånd över hela strängen hade dränkts av det gemensamma och fått varje kandidat att se nära ut.
+
+TRÖSKELN ÄR LÅNAD, INTE PÅHITTAD (AC 2). TypeScripts getSpellingSuggestion utesluter kandidater vars avstånd överstiger 0,4 × det sökta namnets längd, och hoppar över avståndsberäkning för namn under 3 tecken (där bara skiftlägesokänslig likhet prövas). Kvoten tillåter ungefär en ersättning per fem tecken. Samma konstanter används här med källa angiven i koden (microsoft/TypeScript PR #15507). Verifierat via web-research mot primärkällans beskrivning; egen empiri räcker inte för ett tröskelvärde.
+
+KLASSDELNINGEN (AC 3): efNamn() på request-pathen avgör klass. Träff på /functions/v1/ -> EF-meddelande (Menade du + lista + hur man lägger till/överskuggar). Ingen träff -> extern-meddelande, som varken listar EF-mockar eller nämner handlers.ts. Motiveringen står i koden: rätt fråga för en främmande adress är inte vilken handler som saknas utan varför appen ringer dit, och en handler för en tredjepartstjänst gör beroendet permanent i stället för synligt.
+
+MEDDELANDENA LÄSTES, INTE BARA ASSERTADE. Assertions kan passera på ett fult meddelande, och kortet handlar om BRUKSVÄRDE — därför skrevs alla tre formerna ut och granskades som text före landning.
+
+EN BEFINTLIG TESTPREMISS ÄNDRADES MEDVETET: "listar vad som VAR mockat" använde en EXTERN URL och krävde att alla handler-headers stod i meddelandet. Det är precis beteendet AC 3 river. Testet pekar nu på en EF-URL, där listan hör hemma, och ett nytt test kräver motsatsen för extern domän. Ändringen är i AC:ns riktning, inte runt den.
+
+AC 5 HÅLLER: de två test.fail()-verkan-testerna är orörda och gröna — vakten fäller fortfarande i båda fallen och hermetiken är oförändrad.
+
+RENSAT UNDER ARBETET: första utkastet bar fyra non-null-assertions med biome-ignore-rader. noUncheckedIndexedAccess är AV i tsconfig och regeln fyrade aldrig — alltså spekulativt brus jag själv lagt in. Borttaget.
+
+GRINDAR: typecheck 0 fel · biome ren på rörda filer (6 varningar finns identiskt på main) · vakt-specen 8 passed · npm run test:visual 28 passed.
+
+ÖPPEN AVVIKELSE, EJ BORTFÖRKLARAD: i en av fyra fulla visual-körningar föll personer.spec.ts. Den passerade isolerat och i tre efterföljande fulla körningar (28 passed x3). Artefakten hann skrivas över innan den lästes, så orsaken är INTE diagnostiserad. Testet ligger inte på denna ändrings kodväg — vaktens meddelande byggs bara vid ett omockat anrop, vilket personer-testet inte gör — men de tre nya testerna x två vyportar ändrar svitens schemaläggning, och det kan inte uteslutas som utlösare.
+<!-- SECTION:NOTES:END -->

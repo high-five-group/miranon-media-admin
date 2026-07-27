@@ -22,40 +22,78 @@ import { OmockadRequestError, skapaHermetikVakt } from './support/hermetik-vakt'
  */
 
 const OMOCKAD_URL = 'https://omockad-av-vakten.example.com/api/data';
+const OMOCKAD_EF_URL = 'https://visual-fixture.supabase.co/functions/v1/finns-inte-alls';
+
+/** Kör vakten och returnerar meddelandet. Fäller den inte är testet fel. */
+function fanga(url: string, init?: RequestInit): string {
+  const vakt = skapaHermetikVakt(handlers);
+
+  try {
+    vakt(new Request(url, init));
+  } catch (kastat) {
+    expect(kastat).toBeInstanceOf(OmockadRequestError);
+    return (kastat as Error).message;
+  }
+
+  throw new Error(`Vakten släppte igenom ${url} — den skulle ha fällt.`);
+}
 
 test.describe('hermetik-vaktens beslut', () => {
   test('kastar för ett omockat anrop och namnger requesten', () => {
-    const vakt = skapaHermetikVakt(handlers);
-
-    let fel: unknown;
-    try {
-      vakt(new Request(OMOCKAD_URL, { method: 'POST' }));
-    } catch (kastat) {
-      fel = kastat;
-    }
-
-    expect(fel).toBeInstanceOf(OmockadRequestError);
     // AC 2: metoden OCH den fulla URL:en ska stå i klartext — utan dem måste
     // utvecklaren gissa vilket av sidans anrop som saknade handler.
-    expect((fel as Error).message).toContain('POST');
-    expect((fel as Error).message).toContain(OMOCKAD_URL);
+    const meddelande = fanga(OMOCKAD_URL, { method: 'POST' });
+
+    expect(meddelande).toContain('POST');
+    expect(meddelande).toContain(OMOCKAD_URL);
   });
 
-  test('listar vad som VAR mockat', () => {
-    const vakt = skapaHermetikVakt(handlers);
-
-    let fel: unknown;
-    try {
-      vakt(new Request(OMOCKAD_URL));
-    } catch (kastat) {
-      fel = kastat;
-    }
-
+  test('listar vad som VAR mockat när anropet gällde en Edge Function', () => {
     // AC 3: listan är skillnaden mellan "jag stavade fel" och "jag glömde
     // helt". Varje registrerad handler ska synas med metod + mönster.
-    const meddelande = (fel as Error).message;
+    //
+    // URL:en är en EF sedan task-57: listan hör till EF-klassen. En främmande
+    // domän får ett annat meddelande — se nedan.
+    const meddelande = fanga(OMOCKAD_EF_URL);
+
     for (const handler of handlers) {
       expect(meddelande).toContain(handler.info.header);
+    }
+  });
+
+  test('lyfter fram närmaste handler vid stavfel (task-57)', () => {
+    // QA:ns steg 2-fall: `get-evnets` mot registrerade `get-events`. Med sju
+    // handlers går det att ögna fram träffen; med acceptance-klassens nitton
+    // filer blir listan en vägg där rätt kandidat inte syns bättre än någon
+    // annan. Därför ska den lyftas ur listan, inte ingå i den.
+    const meddelande = fanga('https://visual-fixture.supabase.co/functions/v1/get-evnets');
+
+    expect(meddelande).toContain('Menade du:');
+    expect(meddelande).toContain('GET */functions/v1/get-events');
+  });
+
+  test('föreslår ingen kandidat när ingen är rimligt nära (task-57)', () => {
+    // Tröskeln är 0,4 × namnlängd (TypeScripts getSpellingSuggestion). Ett
+    // namn utan släktskap ska ge listan UTAN gissning — ett självsäkert fel
+    // förslag är sämre än inget, eftersom det leder felsökningen fel.
+    const meddelande = fanga('https://visual-fixture.supabase.co/functions/v1/xyzzy-plugh-frobozz');
+
+    expect(meddelande).not.toContain('Menade du:');
+    expect(meddelande).toContain('Ingen handler matchar denna Edge Function');
+  });
+
+  test('en främmande domän får INTE EF-rådet (task-57)', () => {
+    // QA:ns steg 2, symptom 2: en helt extern adress fick exakt samma
+    // meddelande som en omockad Edge Function — inklusive rådet att lägga
+    // till en handler. För en tredjepartstjänst är det nästan aldrig rätt
+    // åtgärd, och listan över EF-mockar är brus.
+    const meddelande = fanga('https://api.nagon-extern-tjanst.com/v2/track');
+
+    expect(meddelande).toContain('utanför');
+    expect(meddelande).not.toContain('tests/visual/support/handlers.ts');
+    expect(meddelande).not.toContain('Menade du:');
+    for (const handler of handlers) {
+      expect(meddelande).not.toContain(handler.info.header);
     }
   });
 

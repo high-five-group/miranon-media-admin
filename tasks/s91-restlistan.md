@@ -48,8 +48,8 @@ prioritering inom Spår A.
 |---|---|---|
 | 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | ✅ **KLART 2026-07-27** — `TASK-54.1` · `54.2` · `54.3` alla **Done** |
 | 1b | **`TASK-55` · Baselines regenererade** | ✅ **KLART 2026-07-27** — 6 bilder granskade + mergade; bevis-dispatch `30297097792` loggar *"Inga baseline-ändringar"* |
-| 2 | **`TASK-58` + `TASK-57` · Fixturens bruksvärde** | ⬜ **NÄST** — Marcus-beslut 2026-07-27: tas FÖRE de 19 filerna |
-| 3 | **A5 · De 19 acceptance-filerna** — här faller taket | ⬜ väntar på steg 2 |
+| 2 | **`TASK-58` + `TASK-57` · Fixturens bruksvärde** | ✅ **KLART 2026-07-27** — `TASK-58` **Done** (`#292`, grön 8/8); `TASK-57` levererad i `#293`. Båda klassades `ready-for-agent` samma dag |
+| 3 | **A5 · De 19 acceptance-filerna** — här faller taket | ⬜ **NÄST** — steg 2 avblockerat; mönstret (`TASK-58`) och felmeddelandet (`TASK-57`) står nu på plats |
 | 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ⬜ kan landa när som helst |
 | 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
 
@@ -477,7 +477,9 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-27 | **`TASK-55` löst** + Actions-flaggan satt enterprise→org→repo; workflowens filhuvud faktarättat; fragment *låst tre nivåer upp* | `ed984c1` · `#288` |
 | 2026-07-27 | **Sjätte pausen** — A3 stängd, lifecycle paused, VAR VI ÄR omskriven, `T87` avblockerad | `8ee8b34` · `#289` |
 | 2026-07-27 | Restlistan genomgången post för post mot resumens faktiska utfall (Marcus-order) | `c1ea2e3` · `#290` |
-| 2026-07-27 | Tillstånds-återställningen (resume 7) + **klassningen av `TASK-56`/`57`/`58`** — alla `ready-for-agent`, 13 AC skrivna mot läst kod | (denna PR) |
+| 2026-07-27 | Tillstånds-återställningen (resume 7) + **klassningen av `TASK-56`/`57`/`58`** — alla `ready-for-agent`, 13 AC skrivna mot läst kod | `a478d1b` · `#291` |
+| 2026-07-27 | **`TASK-58` DONE** — överskuggningsmönstret `network.use()` dokumenterat i fixturmodulen; precedens + isolering lästa ur biblioteket, exemplet kört som kastbart bevis | `6910d02` · `#292` |
+| 2026-07-27 | **`TASK-57`** — vakten lyfter närmaste träff (Levenshtein, TypeScripts 0,4-tröskel) och skiljer extern adress från omockad EF; **`T101`** registrerad | (denna PR) |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
