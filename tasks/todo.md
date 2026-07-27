@@ -15,8 +15,34 @@
 
 ## Aktuellt fokus
 
-**Session 91 🔄 ÅTERUPPTAGEN (2026-07-27 via `session-resume`, efter andra
-pausen)** — **RESUMEN GAV SEX RESEARCH-PASS, FYRA
+**Session 91 ⏸️ PAUSAD (2026-07-27, tredje pausen — efter
+instruktionsleverans-arbetet)** — **ANDRA RESUMEN LÖSTE INSTRUKTIONSLEVERANSEN I
+GRUNDEN.** `code-role-discipline.md` **AVVECKLAD** (ADR-079 river ADR-042 öppet):
+den levererades aldrig, formen saknar precedent (**0 av 9** undersökta
+uppsättningar), den bar en **död grind** (§3.3 kvittens-före-commit — hade
+STOPPAT arbetsflödet om leveransen börjat fungera) och ett **faktafel** (§6.4).
+Bäraren är nu en **output style** i pluginet (`force-for-plugin`, systemprompt,
+enda bäraren med inbyggd påminnelse). **Konstitutionen 217 → 192 rader** — under
+200-riktvärdet för första gången; **tre döda pekare** bort (roll-disciplinen ·
+`code-stoppa-format`-skillen som bott i tre-aktörs-arkivet sedan Chat-ytan
+avvecklades · Lovable-guarden per Marcus-beslut). **Fyra hooks byggda och
+testade** (`git add -A` 5/5 deny + 4/4 pass · AskUserQuestion · `backlog/tasks/**`
+3/3+3/3 · datum-som-faktum). **Plugin 1.22.0**, reinstall körd. Grunden: **tre
+parallella research-agenter** + en mätt inventering (158 regelpunkter: TVINGANDE
+65 / KUNSKAP 48 / OMDÖME 41 / DÖD 4) — **Codes egen dubblett-hypotes ~50 % mättes
+till 18 %** och redovisades öppet. `/to-prd`-sidofynd: frontmatter parsade aldrig,
+skillen auto-upptäcktes ALDRIG — T100:s klass i miniatyr, med skärpningen att
+verktyget som hade fångat det FANNS men aldrig kördes. **ALLT AKTIVERAS FÖRST VID
+OMSTART** — nästa sessionsstart är ADR-079:s första skarpa prov. **NÄSTA:
+`session-resume` av 91 → MÄT först (loggen `instructions-loaded.jsonl` samt
+att `/config` visar Code-rollen) → Marcus-beslut 1 (Fas E) före all planering →
+verktygs-åtgärderna.** **FEM MARCUS-BESLUT VÄNTAR** (Fas E-horisonten blockerar ·
+`--mm-btn` vs `--mm-button` · IDENTITET.md-destillatet · länkgrindens form ·
+grillningens fyra). Numrering: 91/**080**/L360 (LÅST till punkt 6)/T101/f46/task-53.
+Full narrativ: sessionsdok S91 **Del 8** + PAUSLÄGE. *(Föregående fokus-text
+nedan.)*
+
+**Session 91 (andra resumen, 2026-07-27)** — **RESUMEN GAV SEX RESEARCH-PASS, FYRA
 MEKANISERINGAR OCH TVÅ RIVNA EGNA SLUTSATSER.** Merge queue **STÄNGD** (batchar
 ej `merge_group`-bygg + kräver org-ägt repo). Shardning **blockerad** (Airtable
 ej klonbar). Push-kadensen **låg rätt**. **Hermetik-mätningen körd skarpt:** 865
