@@ -15,7 +15,41 @@
 
 ## Aktuellt fokus
 
-**Session 91 ▶️ AKTIV (fjärde resumen, 2026-07-27)** — **LESSON-SKULDEN BETALD.**
+**Session 91 ⏸️ PAUSAD (2026-07-27, femte pausen — efter A3:s första skiva)** —
+**MSW-BYTET SPECCAT OCH FÖRSTA SKIVAN LEVERERAD.** Marcus motto *"Bygg
+ordentligt eller bygg inte alls"* delegerade fyra designbeslut:
+`skipAssetRequests` **true** (passets slutsats, ej restlistans felläsning) ·
+handlers mot **EF-protokollet** · kort-med-skivor ej ad-hoc · två arbetsskivor
+ej PRD:ns gissade tre. **`TASK-54` + tre kort publicerade; `54.1` DONE**
+(`56e9064`, CI 8/8) — MSW 2.15.0 bär API-lagret, sju handlers, ekvivalens
+**pixel-bevisad A/B** mot baselines genererade av gamla mekanismen (12/12).
+**Route-precedensen mättes FÖRE bygget** (minimalt test: `page.route`-fallback
+når `context.route`) — hade den inte gjort det vore specen inte utförbar. **Tre
+avvikelser mot kortets ordalydelse bokförda**, varav en farlig: AC:t ville ta
+bort 501-fallbacken, men bindningens default är **tyst bypass** — bokstavlig
+följsamhet hade gett en nätverksläcka. **Ekvivalensbeviset gick nästan fel:**
+4/12 föll, kontrastkörning visade identiskt utfall med gamla mekanismen ⇒ stale
+baselines från S90, ej regression → **`TASK-55`**. **AIRTABLE-KOSTNADEN
+DOKUMENTERAD** på Marcus order: ADR-063 § S91-not + `airtable-constraints.md`
+**sektion F** (P26 bas-duplicering · P27 självhostning · P4-utvidgning);
+gränsdragningen tvång/eget val nedskriven, Fas E-kopplingen inlagd — Postgres
+upphäver alla tre tvången. **`TASK-53`** skapat för 429-backoffen (1 s där
+Airtable kräver 30 s — dagens enda defekt i produktionskod). **REVIEW-PASSET
+KÖRT** på Marcus begäran: 5 fynd, 1 falsifierat med mätning (noll `OPTIONS` —
+preflight-blocket var **död kod**, ärvd från gamla tabellen), 3 åtgärdade.
+**Tyngst: ADR-080 sa `skipAssetRequests` "måste sättas false" — motsatsen till
+koden.** Samma felläsning som restlistan bar; felet hade två hemvister, en känd.
+ADR riven med öppen not. **T86-FRIKTIONEN BOKFÖRD:** AgentTool-regeln
+verifierad till `~/.claude.json`/`tengu_heron_brook` (ej Marcus fil) —
+beslutskriterierna räknar **skivor, ej pass**, så uteblivna pass måste märkas.
+**Åtta PR:er, alla gröna per jobb första passet** (#273–#280). Pausen landar
+**MED** grönt bevis. **NÄSTA: `54.2`** (vakten → `onUnhandledRequest`, bär
+`skipAssetRequests`-omprövningen + WS-noten) **→ `54.3` QA → A5 de 19 filerna
+→ kadens-regeln.** Numrering: 91/082/L360 (17 fragment väntar)/T101/f46/task-56.
+Full narrativ: sessionsdok S91 **Del 11** + PAUSLÄGE. Karta:
+`tasks/s91-restlistan.md` § VAR VI ÄR. *(Föregående fokus-text nedan.)*
+
+**Session 91 (fjärde resumen, 2026-07-27)** — **LESSON-SKULDEN BETALD.**
 Tillstånds-återställningen körd (`lifecycle: paused → active`, paus-rubrik →
 historik-form, numreringen disk-verifierad **oförändrad** på samtliga sex axlar).
 **PR #273 GRÖN OCH MERGAD** (`043e4a0`, `ci-wait` 8/8 per jobb, staging 9 m 53 s)

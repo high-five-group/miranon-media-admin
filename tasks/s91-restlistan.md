@@ -260,14 +260,14 @@ kandidat som nummerlöst fragment i `tasks/lessons.d/`, konsolidera sedan.
       stikkord överlever pausen som ord, inte som innehåll* `[UNIVERSAL]`.
       Empirin är de två obelagda posterna direkt ovanför.
 - [ ] Hub-lyftet `L284–L359`
-- [ ] **Konsolideringen** — de **16** fragmenten flyttas in i `tasks/lessons.md`
+- [ ] **Konsolideringen** — de **17** fragmenten flyttas in i `tasks/lessons.md`
       med nummer från `L360` (disk-verifierat 2026-07-27: sista numrerade post
       är `L359`). Kräver `lessons-hub-sync`-skillens konsolideringssteg (öppen
       post i A2)
 
-**Utfall 2026-07-27: 15 nya fragment skrivna, grind-verifierade** (`check:docs`
-9/9, grinden räknar **16 nummerlösa fragment** = 15 nya plus det som landade
-i PR 273). Räkningen blev 15, inte elva — handoffen varnade uttryckligen
+**Utfall 2026-07-27: 16 nya fragment skrivna, grind-verifierade** (`check:docs`
+9/9, grinden räknar **17 nummerlösa fragment** = 16 nya plus det som landade
+i PR 273). Räkningen blev 16, inte elva — handoffen varnade uttryckligen
 *"summera dem inte i förväg, tre källor räknar olika"*, och det höll: Del 10.8:s
 kvarvarande punkt, en kandidat född vid skörden, och en som återuppstod samma
 dag tillkom alla utöver de elva.
