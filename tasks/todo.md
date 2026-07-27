@@ -15,6 +15,31 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ ÅTERUPPTAGEN (2026-07-27, sjunde resumen)** —
+**KLASSNINGEN GJORD PÅ MARCUS DELEGERING — OCH DEN AVTÄCKTE EN OSKRIVEN
+INVARIANT.** `TASK-56`, `TASK-57` och `TASK-58` klassade **`ready-for-agent`**
+(repots `ready-for-human` bär uteslutande QA-planer och PRD:er som kräver
+mänskligt omdöme; alla tre korten är avgränsad testinfrastruktur med mekaniskt
+verifierbart utfall). **Etiketten kunde inte sättas ensam:** en mätning visade
+att **alla 66 befintliga `ready-for-agent`-kort har AC — noll undantag** — och
+fynd-korten hade noll. Etikett utan AC hade gjort DoD 1 (*"alla
+acceptanskriterier avbockade"*) innehållslös och grinden grön ändå. **13 AC
+skrivna mot LÄST KOD** (`hermetic.ts` · `hermetik-vakt.ts` · `handlers.ts` lästa
+först), ej mot korttexten: `56`: 4 · `57`: 5 · `58`: 4. `TASK-56`:s
+källkodspåstående **verifierat om** — `@msw/playwright/src/fixture.ts` rad
+156–166 bär `route.connectToServer()` vid noll WS-handlers, ordagrant som kortet
+uppgav. **LÄS-fasen: numreringen oförändrad på samtliga sex axlar**; ingångsläget
+rent (`main` @ `5372c95`, båda CI-körningarna gröna, `audit-ci` grön). **Fyra
+divergenser flaggade:** dependabot-räkningen ofullständig (handoff 3, disk
+**6** — `#260`/`#162`/`#65` ospårade) · restlistan NYARE än `PAUSLÄGE`-blocket
+(`c1ea2e3` efter pauslandningen) · S92:s todo-kadensrad saknas fortfarande ·
+S92:s PR `#285` **landade** (`03d3a3f`), verifierat som deras pausblock bad om.
+**NÄSTA: `TASK-58`** (överskuggningsmönstret `network.use()` dokumenteras i
+fixturmodulen) **→ `TASK-57` → A5 de 19 filerna → kadens-regeln.** Numrering:
+91/082/L360 (19 fragment väntar)/T101/f46/**task-59**. Full narrativ: sessionsdok
+S91 **Del 13**. Karta: `tasks/s91-restlistan.md` § VAR VI ÄR.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-27, sjätte pausen — efter A3:s stängning)** —
 **A3:s MSW-PUNKT ÄR HELT STÄNGD: `TASK-54.1` + `54.2` + `54.3` alla Done, och
 `TASK-55` med dem.** **`54.2`:** vakten flyttad till MSW:s `onUnhandledRequest`;

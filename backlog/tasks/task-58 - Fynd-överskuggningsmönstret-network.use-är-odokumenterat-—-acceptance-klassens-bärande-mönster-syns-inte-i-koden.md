@@ -6,7 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-27 18:07'
-labels: []
+updated_date: '2026-07-27 19:47'
+labels:
+  - ready-for-agent
 dependencies: []
 ordinal: 123000
 ---
@@ -34,3 +36,11 @@ Detta är dokumentationsskuld, inte en defekt: mekanismen fungerar och är bevis
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 Överskuggnings-mönstret network.use(handler) är dokumenterat DÄR fixturen eller handlers definieras (hermetic.ts eller handlers.ts) — inte i en fristående fil — med ett kort exempel som visar hela anropet
+- [ ] #2 Dokumentationen slår fast att överskuggningen gäller PER TEST och namnger mekanismen som gör den det, så att läsaren slipper anta isoleringen
+- [ ] #3 network-fixturen är namngiven som den yta ett test når mönstret genom — TASK-54:s användarberättelse 5 går att läsa ut ur koden utan MSW:s egen dokumentation
+- [ ] #4 Exemplets form är verifierad mot bibliotekets faktiska typ (NetworkFixture) eller mot ett körande test — inte skriven ur minnet
+<!-- AC:END -->
