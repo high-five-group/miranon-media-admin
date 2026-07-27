@@ -46,17 +46,37 @@ prioritering inom Spår A.
 
 | # | Steg | Läge |
 |---|---|---|
-| 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | 🔵 **PÅGÅR** — `TASK-54.1` + **`54.2` Done**, `54.3` QA plockbar (`ready-for-human`) |
-| 2 | **A5 · De 19 acceptance-filerna** — här faller taket | ⬜ väntar på steg 1 |
-| 3 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ⬜ kan landa när som helst |
-| 4 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 2 | ⬜ medvetet sist |
+| 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | ✅ **KLART 2026-07-27** — `TASK-54.1` · `54.2` · `54.3` alla **Done** |
+| 1b | **`TASK-55` · Baselines regenererade** | ✅ **KLART 2026-07-27** — 6 bilder granskade + mergade; bevis-dispatch `30297097792` loggar *"Inga baseline-ändringar"* |
+| 2 | **`TASK-58` + `TASK-57` · Fixturens bruksvärde** | ⬜ **NÄST** — Marcus-beslut 2026-07-27: tas FÖRE de 19 filerna |
+| 3 | **A5 · De 19 acceptance-filerna** — här faller taket | ⬜ väntar på steg 2 |
+| 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ⬜ kan landa när som helst |
+| 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
 
-**Varför A3 är kritiska vägen och inte hygien:** staging-sviten tar 9,25 min
+**Varför A3 var kritiska vägen och inte hygien:** staging-sviten tar 9,25 min
 under global mutex, och **74 % (410 s)** bärs av tester som redan mockar sina
 EF:er. Bryts de ut faller sviten till **~2,4 min** — utan att täckning skärs.
 MSW är verktyget som gör de 19 filerna byggbara, alltså förkravet för hela
 vinsten. Per-körning-isolering är permanent stängd av Airtable (P26/P27), så
 detta är den enda öppna vägen att lyfta taket före Fas E.
+
+**Varför steg 2 sköts in före A5 (Marcus-beslut 2026-07-27):** båda fynden kom
+ur `TASK-54.3`:s QA och träffar precis den yta de 19 filerna ska byggas på.
+`TASK-58` är mönstret filerna ska luta sig mot — odokumenterat, alltså
+nitton chanser att göra fel på samma sätt. `TASK-57` är vaktens felmeddelande,
+som skalar dåligt just när handlers blir många, vilket är exakt vad A5 gör.
+Båda är billigare att laga före filerna än efter. Korten är **oetiketterade**
+och ska klassas innan de plockas.
+
+**Ärlighet om A5:s natur (Marcus fråga 2026-07-27, besvarad ur ADR-080 §
+Ärlighet om underlaget):** hermetisk utbrytning är **inte** branschens
+förstahandsval — Supabase, PostHog och cal.com mockar aldrig sina egna
+tjänster. Vår grund är att branschens väg ut, efemär skarp backend, är delvis
+stängd eftersom Airtable inte är självhostbar. A5 är alltså en dokumenterad
+**Airtable-kompromiss**, korrekt utförd enligt branschledarnas andrahandsval
+(Ghost, crates.io, Camunda, Coveo). Nuvarande topologi är samtidigt sämre än
+standard — Googles lägst rankade, Thoughtworks HOLD. Omprövning är inritad
+vid **Fas E**, när datakällan blir klonbar. Marcus kvitterade 2026-07-27.
 
 **Varför A2:7 medvetet ligger sist:** den är delvis en arbetsomgång runt ett
 problem steg 2 krymper. Två av dess fem axlar är redan lösta (lesson-nummer via
@@ -131,7 +151,9 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
       **`TASK-54.1` DONE** (`56e9064`, CI 8/8, ekvivalens pixel-bevisad A/B) ·
       **`54.2` DONE** (`a1c78f9`) — vakten sitter i `onUnhandledRequest`,
       sid-vakten OCH EF-catch-allen borttagna, tvåsidigt rött-först ·
-      **`54.3`** QA — `ready-for-human`, nu AVBLOCKAD.
+      **`54.3` DONE** — QA:ns sex steg körda av Code på Marcus delegering
+      2026-07-27; två fynd registrerade (`TASK-57`, `TASK-58`). **Hela A3:s
+      MSW-punkt är därmed stängd.**
 
       > **RÄTTELSE 2026-07-27.** Denna post sa tidigare att
       > **`skipAssetRequests: false` krävs**. Det är fel — posten bar passets
@@ -234,6 +256,9 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
 
 ### A5 · Efter grillningen
 
+- [ ] **`TASK-58` + `TASK-57` FÖRST** (Marcus-beslut 2026-07-27) — båda kom ur
+      `TASK-54.3`:s QA och träffar ytan de 19 filerna byggs på. Oetiketterade,
+      ska klassas före de plockas
 - [ ] De 19 acceptance-filerna, byggda med MSW
 - [ ] `TASK-36.8` — QA-vandringen (manuell testplan, riskanpassad CI)
 

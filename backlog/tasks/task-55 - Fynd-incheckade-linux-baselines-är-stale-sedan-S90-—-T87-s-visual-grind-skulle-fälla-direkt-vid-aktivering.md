@@ -3,10 +3,10 @@ id: TASK-55
 title: >-
   Fynd: incheckade linux-baselines är stale sedan S90 — T87:s visual-grind
   skulle fälla direkt vid aktivering
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-27 15:35'
-updated_date: '2026-07-27 19:12'
+updated_date: '2026-07-27 19:25'
 labels: []
 dependencies: []
 ordinal: 120000
@@ -32,6 +32,12 @@ RELATERAT: T87 (visual-grindens aktivering, medvetet parkerad) — detta kort ä
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit ed984c1 · CI-run 30297360652 per jobb (8/8, full staging-svit, noll skippade) · CI-grön-första-pass: ja · defekter under körning: 1 (dispatchen failade på can_approve_pull_request_reviews=false — orsak utanför skivan, ägarbytets missade städning; löst uppifrån och ned med Marcus kvittens) · TDD: ej tillämplig (infrastruktur + granskning) · Baselines: 6 bilder regenererade (run 30295150783), granskade och godkända av Marcus, mergade PR #287; bevis-dispatch 30297097792 loggar 'Inga baseline-ändringar'
+<!-- SECTION:FINAL_SUMMARY:END -->

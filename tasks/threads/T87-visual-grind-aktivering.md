@@ -190,3 +190,32 @@ och steget bör börja med en inventering av vilka fler som driftat under
 parkeringen — inte med en lista skriven före den.
 
 Fynd-källa: S90:s smoke-verifiering av prototyp-varianterna.
+
+## KRAVET ÄR BETALT (S91, 2026-07-27) — `TASK-55` Done
+
+Baselines är regenererade ur CI och granskade av Marcus (PR #287, grön per
+jobb 8/8). Bevis-dispatchen därefter loggar *"Inga baseline-ändringar —
+renderingen matchar incheckade bilder"* (run `30297097792`). Det som blockerade
+aktiveringen finns alltså inte längre: grinden skulle inte fälla på stale
+bilder i dag.
+
+**Inventeringen som sektionen efterlyste gjordes — och listan var längre än
+väntat.** Sektionen ovan förutsåg två vyer (personer + eventsida). Faktiskt
+utfall: **tre vyer × två vyportar = sex bilder**. Den tredje var
+`event-lista`, driftad av filterknappen ur `f11cc37` (task-17.7). Den stod
+inte i någon lista skriven i förväg — precis den poäng sektionen gjorde om att
+börja med en inventering i stället för med en lista.
+
+Varje ändrad bild spårades till en commit efter baseline-commiten `b9d3022`,
+och ingen var en regression. En felspårning gjordes på vägen och rättades:
+`event-lista` antogs först bero på hover-återkopplingen i `0f8860a` — men
+hover fotograferas inte, vilket syntes så snart bilderna faktiskt öppnades och
+jämfördes.
+
+**Vad som INTE ändras här:** triggern. Marcus-beslut A (S81) står — grinden
+aktiveras när UI-takten lugnar sig, inte för att blockeraren är borta. Denna
+sektion tar bort ett hinder, den flyttar inte beslutet.
+
+En sidopost föddes under arbetet: `TASK-56` (WebSocket-vägen går förbi
+hermetik-vakten). Den rör fixturvärldens täthet, inte grinden, och är
+oetiketterad tills Marcus klassar den.
