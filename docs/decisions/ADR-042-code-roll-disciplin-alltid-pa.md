@@ -1,6 +1,6 @@
 # ADR-042: Code-roll-disciplin levereras alltid-på, inte som skill
 
-- Status: Accepted (Session 10 — 2026-05-30)
+- Status: Superseded av ADR-079 (2026-07-27) — ursprungligen Accepted (Session 10, 2026-05-30)
 - Datum: 2026-05-30
 - Fas: Session 10 — process-fundament inför Fas 2.5
 
@@ -33,3 +33,30 @@ Code-roll-disciplinen prövad mot kriteriet: den gäller allt Code gör, kontinu
 ## Konsekvenser
 
 Code-roll-HUR får en sanningskälla, portabel över alla spokes via `templates/`. Hub-CLAUDE.md hålls tunn — princip inline, HUR delegerat, konsekvent med ADR-034:s anti-bloat-tes. Ingen trigger-tillförlitlighets-risk. Kostnaden: en alltid-på template auto-upptäcks inte som en skill — den pekas på från konstitutionen (hub-CLAUDE.md-pekaren, denna sessions edit) och refereras i arbetet, precis som `chat-prompt-design-checklist.md` refereras från Project Instructions. Leveransen spänner över båda repon: ADR-042, katalog och räkning i spoken (CI-grind-bunden via ADR-039), template och hub-CLAUDE.md-edit i hubben; separata commits per K0c.
+
+## Updates
+
+### 2026-07-27 — Superseded i sin helhet av ADR-079 (Session 91, T100)
+
+Beslut 1:s konstruktion — *"konstitutionen bär principen, templaten bär stegen"* —
+förutsätter att båda når fram. Stegen gjorde det aldrig. Verifierat i tre kontroller:
+filen finns i ingen plugin-cache, konstitutionen importerar den inte, och
+plugin-manifestet nämner inte `templates/`.
+
+Denna ADR:s egen konsekvens-rad (rad 35) formulerade kostnaden korrekt — *"en alltid-på
+template auto-upptäcks inte som en skill — den pekas på från konstitutionen … och
+refereras i arbetet"* — men antog att pekaren räcker. Det antagandet är falsifierat:
+filen underhölls v1.0 → v1.3 utan att läsas en enda gång.
+
+Två ytterligare fynd som beslutet inte kunde förutse:
+
+- Formen saknar precedent. Noll av nio undersökta agent-uppsättningar bär en separat,
+  alltid-gällande processfil utpekad i prosa.
+- Filen bar en **död grind** (§3.3, kvittens före varje commit) som hade stoppat
+  arbetsflödet om leveransen någonsin börjat fungera. Beslutet var alltså skyddat från
+  sin egen konsekvens av att det inte verkställdes.
+
+[ADR-079](ADR-079-instruktionsleverans-barare-per-lager.md) ersätter hela beslutet:
+leveransbärare väljs per innehållsklass, och roll-disciplin-filen avvecklas till
+`archive/code-roll-disciplinen/`. Rivningen är öppen med Marcus-kvittens, per principen
+att ett låst beslut inte är immunt mot evidens.
