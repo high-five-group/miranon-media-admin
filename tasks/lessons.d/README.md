@@ -18,9 +18,16 @@ antagandet är osäkert per konstruktion i ett parallellt arbetsflöde.
 
 1. **Skapa en fil här.** Beskrivande slug, inget nummer:
    `tasks/lessons.d/hover-assertioner-maste-kunna-hovra-om.md`
-2. **Skriv posten utan numrerad rubrik.** Börja direkt med den fetstilta
-   kärnsatsen, precis som en konsoliderad post gör efter sin rubrik. Flagga
-   `[UNIVERSAL]` där det gäller.
+2. **Ge filen en H1 med läsbar titel, utan nummer** — `# Verifiera med CI:s
+   exakta kommando`. Sedan den fetstilta kärnsatsen, precis som en konsoliderad
+   post gör efter sin rubrik. Flagga `[UNIVERSAL]` där det gäller.
+
+   H1:n är inte kosmetik: `markdownlint` MD041 kräver att första raden är en
+   topprubrik, och fragment lintas som all annan markdown. Att börja direkt med
+   fetstil fäller grinden — fångat skarpt när det första fragmentet skrevs.
+   Grinden nedan fäller på `### L<nnn>`, inte på en vanlig `#`-rubrik, så en
+   titel-H1 är helt förenlig med nummerlösheten. Vid konsolidering byts H1 mot
+   `### L<nnn>`.
 3. **Landa fragmentet** med det arbete som gav lärdomen. Fragmentet är en
    fullgod leverans — lärdomen är säkrad i fil, vilket är kravet.
 4. **Numret sätts vid konsolidering**, av den som flyttar posten in i

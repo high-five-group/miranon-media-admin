@@ -179,6 +179,10 @@ kandidat som nummerlöst fragment i `tasks/lessons.d/`, konsolidera sedan.
 - [ ] Andra pausens carry — fyra ur Del 6 plus två ur Del 7
 - [ ] Nya 2026-07-27 — tre: autofix förvärrar en falsk-positiv · husets
       `>`-separerade blockquote-stapling · `.claude/**`-luckan
+- [x] **FÖRSTA FRAGMENTET LANDAT** (2026-07-27) — *verifiera med CI:s exakta
+      kommando, inte en svagare lokal variant* `[UNIVERSAL]`. Skördat i samma PR
+      som byggde mekanismen; grinden räknade det korrekt (`1 nummerlösa
+      fragment`). Vägen är prövad skarpt, ej bara byggd.
 - [ ] Hub-lyftet `L284–L359`
 
 ## Spår D — App-arbetet (efter Spår A)
