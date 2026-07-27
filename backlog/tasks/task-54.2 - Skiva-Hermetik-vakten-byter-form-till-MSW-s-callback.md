@@ -4,7 +4,7 @@ title: 'Skiva: Hermetik-vakten byter form till MSW:s callback'
 status: In Progress
 assignee: []
 created_date: '2026-07-27 15:07'
-updated_date: '2026-07-27 16:52'
+updated_date: '2026-07-27 17:05'
 labels:
   - ready-for-agent
 dependencies:
@@ -42,11 +42,29 @@ Täcker användarberättelser: 2, 3, 12
 - [x] #5 Den gamla catch-all-routen är borta — hermetiken vaktas av en mekanism
 <!-- AC:END -->
 
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+DoD #7 STÅR ÖPPEN 2026-07-27 — motiverad, ej förbisedd.
+
+Punkten kräver att baseline-dispatchen loggar 'Inga baseline-ändringar'. TASK-55 bokför att de incheckade linux-baselines är stale sedan S90, så en dispatch skulle rapportera ändringar oavsett vad denna skiva gjorde — och riskera att öppna en baseline-PR som blandar S90:s drift med vaktbytet. En känt brusig mätning bevisar ingenting; den skulle bara se ut att göra det.
+
+Vad som ÄR bevisat lokalt: darwin-baselines helt orörda genom bytet (git status mot tests/visual/__screenshots__/ tom), och full visuell svit 22/22 grön. Renderingen är alltså identisk på den plattform som kunde mätas rent.
+
+Punkten kan bockas när TASK-55 är löst och dispatchen ger en ren signal. Kortet står därför In Progress i väntan på Marcus beslut om dispatch-körningen — Done-flippen hålls tillbaka hellre än att en obockad DoD-punkt döljs.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit a1c78f9 · CI-run 30286774918 per jobb (8/8, full staging-svit, noll skippade) · CI-grön-första-pass: ja · defekter under körning: 1 (självfångad före commit: */ i citerat glob-mönster stängde JSDoc-blocket → SyntaxError; skördad som fragment) · TDD: 2 cykler (rött 1: modul saknas · rött 2: 'Expected to fail, but passed' med vakten byggd men ej inkopplad → grönt 5/5) · review-pass: UTEBLEV (AgentTool-regeln, märkt i T86-loggen)
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Negativt self-test bevisar att vakten fäller OCH namnger saknad request + listar mockade
 - [x] #6 Vaktens option verifierad skarpt satt (bindningens default är tyst genomsläpp)

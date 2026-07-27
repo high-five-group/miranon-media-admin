@@ -46,7 +46,7 @@ prioritering inom Spår A.
 
 | # | Steg | Läge |
 |---|---|---|
-| 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | 🔵 **PÅGÅR** — `TASK-54.1` **Done**, `54.2` plockbar, `54.3` QA blockerad |
+| 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | 🔵 **PÅGÅR** — `TASK-54.1` + **`54.2` Done**, `54.3` QA plockbar (`ready-for-human`) |
 | 2 | **A5 · De 19 acceptance-filerna** — här faller taket | ⬜ väntar på steg 1 |
 | 3 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ⬜ kan landa när som helst |
 | 4 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 2 | ⬜ medvetet sist |
@@ -129,8 +129,9 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
 - [~] **MSW-bytet** (dom: BYT) — `msw` + `@msw/playwright` med
       `defineNetworkFixture`. Speccat som **`TASK-54`** + skivor 2026-07-27.
       **`TASK-54.1` DONE** (`56e9064`, CI 8/8, ekvivalens pixel-bevisad A/B) ·
-      **`54.2`** vakten till `onUnhandledRequest` — PLOCKBAR ·
-      **`54.3`** QA — `ready-for-human`, blockerad.
+      **`54.2` DONE** (`a1c78f9`) — vakten sitter i `onUnhandledRequest`,
+      sid-vakten OCH EF-catch-allen borttagna, tvåsidigt rött-först ·
+      **`54.3`** QA — `ready-for-human`, nu AVBLOCKAD.
 
       > **RÄTTELSE 2026-07-27.** Denna post sa tidigare att
       > **`skipAssetRequests: false` krävs**. Det är fel — posten bar passets
@@ -157,18 +158,28 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
       (passet uppgav 136/31 — sviten har växt). `msw` 2.15.0 +
       `@msw/playwright` 0.6.7 **installerade** i 54.1.
 
-      > **KRAV SOM MÅSTE FÖLJA MED TILL 54.2** (ur 54.1:s review-pass):
-      > `skipAssetRequests: true` är säkert **endast så länge sid-vakten
-      > abort:ar före context-nivån**. 54.2 flyttar vakten till
-      > `onUnhandledRequest` — en callback som optionen kör FÖRE — och måste
-      > därför ompröva den i samma skiva. Villkoret står i koden vid fixturen
-      > och i ADR-080:s rättelse-not. Missas det blir defaultvärdet exakt det
-      > tysta genomsläpp vakten finns för att stoppa.
+      > **KRAVET ÄR INFRIAT 2026-07-27 i `54.2` — och omprövningen vände
+      > beslutet.** `skipAssetRequests` står nu på **`false`**, inte default.
+      > Källkodsläsning (`@msw/playwright` `fixture.ts` rad 98–103) visade att
+      > optionen kortsluter tillgångs-formade anrop med `route.fallback()`
+      > FÖRE `handleRequest`, alltså före callbacken; en probe med `.txt`-URL
+      > nådde aldrig vakten och gick ut på nätet. Med sid-vakten borttagen var
+      > defaultvärdet därmed exakt det tysta genomsläpp vakten finns för att
+      > stoppa.
       >
-      > **Fynd att bära vidare:** WebSocket-vägen är oskyddad — bindningen
-      > `connectToServer()`:ar när inga WS-handlers finns. Ingen regression i
-      > dag (`page.route` fångade aldrig WS, appen saknar realtime), men vid
-      > vaktbytet går WS förbi vakten helt.
+      > **3x-kostnaden materialiserades inte:** sviten gick 17,3 s med
+      > defaultvärdet och 14,9 s utan det. Issue #13:s varning gäller
+      > Vite-projekt med fler moduler än fixturvärlden laddar — den ärvdes som
+      > premiss i PRD-beslut 1 och rivs här med mätning.
+      >
+      > **WebSocket-vägen är fortsatt oskyddad** — bindningen registrerar
+      > `context.routeWebSocket` med match-all och `connectToServer()`:ar när
+      > inga WS-handlers finns (`fixture.ts` rad 156–166). Sid-vakten skyddade
+      > den aldrig heller (`page.route` fångar inte WS), så det är ingen
+      > regression — men det är den enda kvarvarande vägen ut ur
+      > fixturvärlden. Ofarlig så länge appen saknar realtime; **blir skarp den
+      > dagen den får det.** Ej åtgärdad i 54.2: den kräver en WS-handler eller
+      > ett explicit avvisande, och ingendera bar kortets scope.
 - [ ] **Listparitets-grinden** (dom: LAGA) — ~20 rader skript + policy-fil.
       **Utvidgad räckvidd 2026-07-27:** samma klass gäller **lychee-globarna**,
       som står i BÅDA `ci.yml` och `scripts/check-docs.sh` och hålls synkade för
