@@ -338,6 +338,15 @@ jobs:
         # phase-end-verify.sh head -1:ar. Stänger K0a-driften (README 28 vs 38).
         run: bash scripts/check-adr-count.sh
 
+      - name: Check lesson numbering (ADR-081 gate)
+        # Per ADR-081: nummer tilldelas VID LANDNING, inte vid skrivning.
+        # Två invarianter — ingen duplicerad `### L<nnn>` i lessons.md, och
+        # inget fragment i tasks/lessons.d/ som bär ett nummer. Empirin är
+        # S91 2026-07-26: två parallella agenter mintade båda L354+L355,
+        # kollisionen löstes för hand. Frånvarande fragment-katalog är GRÖNT
+        # (vägen är tillgänglig, ej obligatorisk). Config: .lesson-policy.conf.
+        run: bash scripts/check-lesson-numbers.sh
+
       - name: Check fetch-depth invariant (ADR-039 gate)
         # Per ADR-039 + L50: de 6 LEVANDE fetch-depth-bärarna (ci.yml ×4 jobb +
         # .frontmatter-policy.conf + check-frontmatter.sh-default) hålls
@@ -372,6 +381,7 @@ jobs:
           bash scripts/test-check-public-checklists.sh
           bash scripts/test-pre-commit-hook.sh
           bash scripts/test-check-lifecycle.sh
+          bash scripts/test-check-lesson-numbers.sh
 
       - name: Test prod-deploy allowlist (fail-closed)
         # Bevisar fail-closed-egenskapen i scripts/deploy-prod-functions.sh
@@ -519,6 +529,7 @@ jobs:
             './tasks/*.md'
             './tasks/sessions/*.md'
             './tasks/threads/*.md'
+            './tasks/lessons.d/*.md'
             './*.md'
           fail: true
           token: ${{ secrets.GITHUB_TOKEN }}

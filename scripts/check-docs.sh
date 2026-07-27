@@ -6,7 +6,7 @@
 # tre kördes vid två separata tillfällen samma dag, av två olika aktörer, och
 # de missade grindarna föll först i CI — ~9 minuter per träff bakom
 # staging-låset. Ett kommando som kör allt är billigare än ett minne som ska
-# hålla åtta poster.
+# hålla nio poster.
 #
 # ÄRLIGHETS-KRAVET (L351-klassen: en guard som är fel i halva sitt område får
 # läsaren att sluta leta). Skriptet får ALDRIG rapportera grönt på ett sätt som
@@ -16,7 +16,7 @@
 #     aldrig grön), och den avslutande sammanfattningen räknar upp dem,
 #   - avslutningsraden säger uttryckligen om täckningen var fullständig.
 #
-# SCOPE — de åtta CI-grindar som kan gå fel för att dokumentation rörts:
+# SCOPE — de nio CI-grindar som kan gå fel för att dokumentation rörts:
 #   ci.yml docs-jobbet (villkorat på docs_changed):
 #     1. lychee link check          — kräver lychee-binär, SKIPPAS om den saknas
 #     2. markdownlint-cli2
@@ -27,6 +27,7 @@
 #     6. scripts/check-lifecycle.sh
 #     7. scripts/check-public-checklists.sh
 #     8. scripts/check-adr-count.sh
+#     9. scripts/check-lesson-numbers.sh
 #
 # Grindar som medvetet INTE ingår: Biome, typecheck, audit, actionlint,
 # yamllint, shellcheck, testsviten. De är kod-grindar — `npm run lint` +
@@ -82,7 +83,7 @@ if command -v lychee >/dev/null 2>&1; then
         lychee --no-progress --exclude-path docs/archive \
         --exclude-path docs/reference/pocock \
         './docs/**/*.md' './tasks/*.md' './tasks/sessions/*.md' \
-        './tasks/threads/*.md' './*.md'
+        './tasks/threads/*.md' './tasks/lessons.d/*.md' './*.md'
 else
     skip_gate "lychee link check" "lychee-binären saknas lokalt — CI kör den"
 fi
@@ -112,11 +113,12 @@ else
     skip_gate "Vale L_X.2-regressionssvit" "vale-binären saknas lokalt — CI kör den"
 fi
 
-# --- 5-8. De alltid-på grindarna i lint-jobbet ---------------------------
+# --- 5-9. De alltid-på grindarna i lint-jobbet ---------------------------
 run_gate "Frontmatter på styrande docs" bash scripts/check-frontmatter.sh
 run_gate "Lifecycle på sessionsdok + trådkort" bash scripts/check-lifecycle.sh
 run_gate "Publika docs — oavklarade checklist-poster" bash scripts/check-public-checklists.sh
 run_gate "ADR-räkningens konsistens" bash scripts/check-adr-count.sh
+run_gate "Lesson-numrering (nummer vid landning)" bash scripts/check-lesson-numbers.sh
 
 # --- Sammanfattning -------------------------------------------------------
 printf '\n\033[1m─────────── check:docs ───────────\033[0m\n'
@@ -149,5 +151,5 @@ if [[ ${#SKIPPED[@]} -gt 0 ]]; then
     exit 0
 fi
 
-printf '\n\033[32mcheck:docs grönt — samtliga åtta dokumentations-grindar körda.\033[0m\n'
+printf '\n\033[32mcheck:docs grönt — samtliga nio dokumentations-grindar körda.\033[0m\n'
 exit 0

@@ -58,9 +58,14 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
 
 ### A2 · Mekaniseringen (sessionsdok Del 4, punkt 1–4 klara)
 
-- [ ] **Punkt 6 — lesson-nummer måste RESERVERAS.** Spärrar hela Spår C.
-      Två agenter mintade båda `L354`/`L355` samma dag. Gäller även ADR-,
-      tråd- och kortnummer. **Högsta prioritet efter A1.**
+- [x] **Punkt 6 — LÖST 2026-07-27 (ADR-081).** Nummer tilldelas vid landning,
+      ej vid skrivning: nummerlösa fragment i `tasks/lessons.d/`, numret sätts
+      vid konsolidering — ett ögonblick merge-grinden redan serialiserar.
+      Grind + config + self-test-svit (6/6) + tvåsidigt rött-först-bevis.
+      **Spärren på Spår C är lyft.** Kort var redan löst (backlog-CLI:t äger
+      allokeringen); ADR/tråd omprövas OM en kollision faktiskt inträffar.
+- [ ] `lessons-hub-sync`-skillen (hub) uppdateras med konsolideringssteget —
+      kräver plugin-bump (öppen post ur ADR-081)
 - [ ] Punkt 7 — partitionerings-regeln (ADR-073 utsträckt till Marcus egna
       parallella sessioner, ej bara agenternas)
 - [ ] Punkt 5 — landnings-ordningen som regel, ej omdöme (tillämpad, ej kodad)
@@ -71,7 +76,11 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
       krävs; default `true` släpper igenom 86,4 % av mätt restrafik TYST.
       Räkna med ~3× slowdown (msw issue #13). Migrering går fil för fil.
 - [ ] Listparitets-grinden — behåll `tj-actions/changed-files`, bygg en
-      mekanisk paritets-grind mellan de två listorna
+      mekanisk paritets-grind mellan de två listorna. **Utvidgad räckvidd
+      2026-07-27:** samma klass gäller **lychee-globarna**, som står i BÅDA
+      `ci.yml` och `scripts/check-docs.sh` och hålls synkade för hand — ADR-081:s
+      landning ökade duplikationen med en rad (`tasks/lessons.d/*.md`).
+      Grinden ska täcka båda listparen, inte bara changed-files.
 - [ ] Dokumentera **varför** `check-docs.sh` + `ci-wait.sh` behålls, så nästa
       läsare inte återupptar samma kritik
 
@@ -105,10 +114,11 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
 - [ ] Hooken täcker CLAUDE.md-lagret men **inte** memory-lagret — `MEMORY.md`
       levererades utan att logga en rad (nytt fynd 2026-07-27)
 
-## Spår C — Lesson-skulden (SPÄRRAD av A2 punkt 6)
+## Spår C — Lesson-skulden (AVBLOCKERAD 2026-07-27 av ADR-081)
 
-Nästa lediga nummer är **L360**. Tre källor räknar olika; konsolideras när
-spärren är löst — summera dem inte i förväg.
+Nästa lediga nummer är **L360**. Tre källor räknar olika; konsolideras seriellt
+vid landning — summera dem inte i förväg. **Vägen är nu öppen:** skriv varje
+kandidat som nummerlöst fragment i `tasks/lessons.d/`, konsolidera sedan.
 
 - [ ] Sessionsdok Del 8.8 — fem kandidater
 - [ ] Andra pausens carry — fyra ur Del 6 plus två ur Del 7
@@ -160,3 +170,4 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-27 | Ägarbytets städning (länkar · origin · marketplace) | `49c615a` |
 | 2026-07-27 | Spår B åtgärd 1 + 2 + steg 3 | `#262` · `#263` · mätning |
 | 2026-07-27 | **A1 grillningen avslutad — ADR-080 mintad** | `#272` |
+| 2026-07-27 | **A2:6 nummer-tilldelningen löst — ADR-081; Spår C avblockerat** | `#273` |
