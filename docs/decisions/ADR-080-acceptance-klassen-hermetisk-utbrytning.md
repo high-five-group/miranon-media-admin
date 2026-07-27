@@ -191,6 +191,29 @@ och släpper igenom fonts **tyst**, alltså exakt det vakten finns för att se �
 måste sättas `false` · acceptance-klassen kan per definition inte fånga det som
 bara uppstår mot skarp backend (förlustlistan i branschpraxis-passet).
 
+> **RÄTTELSE 2026-07-27 (task-54.1) — `skipAssetRequests`-raden ovan är fel och
+> rivs öppet.** Raden säger att optionen *"måste sättas `false`"*. Den slutsatsen
+> är en felläsning av verktygsvals-passet: den tog passets **varning** för dess
+> **rekommendation**. Passets faktiska slutsats
+> ([`verktygsval-fyra-egenbyggen-2026-07-27.md`](../research/verktygsval-fyra-egenbyggen-2026-07-27.md)
+> rad 170–174) är motsatt — behåll typsnitts-routen som egen **page-route** och
+> låt MSW köra med default `true`, *"då undviks båda fällorna"*.
+>
+> **Varför det håller:** page-routes prövas före context-routes, så en egen
+> font-route lämnar ingen typsnitts-trafik kvar för optionen att släppa igenom.
+> `false` hade kostat ~3× körtid utan att köpa något.
+>
+> **Villkoret, som måste följa med:** defaultvärdet är säkert bara så länge
+> NÅGOT abort:ar innan context-nivån nås. I dag är det sid-vakten. **Task-54.2
+> flyttar vakten till `onUnhandledRequest` — en callback som
+> `skipAssetRequests: true` kör FÖRE — och måste därför ompröva optionen i samma
+> skiva.** Villkoret står även i koden, vid fixturen.
+>
+> Samma felläsning fanns i S91-restlistans A3-post och rättades där tidigare
+> samma dag; att den också bodde i denna ADR upptäcktes först vid task-54.1:s
+> review-pass. Beslutet rivs med kvittens i stället för tyst — ursprungstexten
+> ovan är bevarad, inte redigerad.
+
 ## Ärlighet om underlaget
 
 **Motiveringen är inte att mock är förstahandsvalet.** Litteraturen och all

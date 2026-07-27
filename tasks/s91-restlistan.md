@@ -38,6 +38,32 @@ testerna inom två veckor (sessionsdok Del 7 § Grillningens läge, rad 1098).
 Den premissen gäller inte längre, och 90/10-kravet fanns inte när grillningen
 kördes. Snittet ska därför **omprövas**, inte kvitteras.
 
+## VAR VI ÄR — den reviderade ordningen (2026-07-27)
+
+Ordningen fastställdes efter att merge queue-, push-kadens- och
+branschpraxis-passen lästs mot Marcus premisser. Den ersätter tidigare
+prioritering inom Spår A.
+
+| # | Steg | Läge |
+|---|---|---|
+| 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | 🔵 **PÅGÅR** — `TASK-54.1` **Done**, `54.2` plockbar, `54.3` QA blockerad |
+| 2 | **A5 · De 19 acceptance-filerna** — här faller taket | ⬜ väntar på steg 1 |
+| 3 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ⬜ kan landa när som helst |
+| 4 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 2 | ⬜ medvetet sist |
+
+**Varför A3 är kritiska vägen och inte hygien:** staging-sviten tar 9,25 min
+under global mutex, och **74 % (410 s)** bärs av tester som redan mockar sina
+EF:er. Bryts de ut faller sviten till **~2,4 min** — utan att täckning skärs.
+MSW är verktyget som gör de 19 filerna byggbara, alltså förkravet för hela
+vinsten. Per-körning-isolering är permanent stängd av Airtable (P26/P27), så
+detta är den enda öppna vägen att lyfta taket före Fas E.
+
+**Varför A2:7 medvetet ligger sist:** den är delvis en arbetsomgång runt ett
+problem steg 2 krymper. Två av dess fem axlar är redan lösta (lesson-nummer via
+ADR-081, kort-ID via backlog-CLI:t) och en tredje avlastas av merge queue.
+Designas regeln före steg 2 kodas den mot ett problem som håller på att ändra
+storlek.
+
 ## Spår A — CI-/grind-arkitekturen (AKTIVT)
 
 ### A1 · Grillningen — AVSLUTAD 2026-07-27 (ADR-080)
@@ -54,7 +80,14 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
 - [x] Klassen heter **acceptance**. Hemvist rättad: ADR-080 + `CONTRIBUTING.md`,
       **ej** `ORDLISTA.md` (produktdomän-avgränsningen utesluter testklasser)
 - [x] **ADR-080 mintad** — premisserna är öppen horisont + 90/10-kravet
-- [ ] `CONTRIBUTING.md` — acceptance-klassen skrivs in (termens andra hemvist)
+- [x] **ADR-080 RÄTTAD 2026-07-27** — § Konsekvenser bar samma
+      `skipAssetRequests`-felläsning som restlistans A3-post ("måste sättas
+      `false`"). Upptäckt vid `TASK-54.1`:s review-pass, alltså EFTER att
+      restlistan rättats — felet hade två hemvister och bara en var känd.
+      Riven med öppen rättelse-not; ursprungstexten bevarad. Villkoret som gör
+      defaultvärdet säkert står nu både i ADR:n och i koden
+- [ ] `CONTRIBUTING.md` — acceptance-klassen skrivs in (termens andra hemvist).
+      Verifierat öppen 2026-07-27: noll förekomster av "acceptance" i filen
 
 ### A2 · Mekaniseringen (sessionsdok Del 4, punkt 1–4 klara)
 
@@ -90,10 +123,14 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
 > [verktygsval-fyra-egenbyggen-2026-07-27.md](../docs/research/verktygsval-fyra-egenbyggen-2026-07-27.md)
 > § Beslutstabell + § Behåll ändå.
 >
-> **Ingen av de fyra åtgärderna är ännu utförd.** Punkterna nedan är dem.
+> **Status 2026-07-27:** punkt 1 är PÅBÖRJAD (`TASK-54.1` Done), punkt 2–4
+> ännu ej utförda.
 
-- [ ] **MSW-bytet** (dom: BYT) — `msw` + `@msw/playwright` med
+- [~] **MSW-bytet** (dom: BYT) — `msw` + `@msw/playwright` med
       `defineNetworkFixture`. Speccat som **`TASK-54`** + skivor 2026-07-27.
+      **`TASK-54.1` DONE** (`56e9064`, CI 8/8, ekvivalens pixel-bevisad A/B) ·
+      **`54.2`** vakten till `onUnhandledRequest` — PLOCKBAR ·
+      **`54.3`** QA — `ready-for-human`, blockerad.
 
       > **RÄTTELSE 2026-07-27.** Denna post sa tidigare att
       > **`skipAssetRequests: false` krävs**. Det är fel — posten bar passets
@@ -117,7 +154,21 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
       **EF-protokollet** per ADR-080:s snitt, vilket gör passets öppna fråga 2
       (dubbelportering vid Postgres-skiftet) obsolet i stället för uppskjuten.
       Omfattning mätt mot disk 2026-07-27: **141 route-anrop i 33 filer**
-      (passet uppgav 136/31 — sviten har växt); `msw` ej installerat.
+      (passet uppgav 136/31 — sviten har växt). `msw` 2.15.0 +
+      `@msw/playwright` 0.6.7 **installerade** i 54.1.
+
+      > **KRAV SOM MÅSTE FÖLJA MED TILL 54.2** (ur 54.1:s review-pass):
+      > `skipAssetRequests: true` är säkert **endast så länge sid-vakten
+      > abort:ar före context-nivån**. 54.2 flyttar vakten till
+      > `onUnhandledRequest` — en callback som optionen kör FÖRE — och måste
+      > därför ompröva den i samma skiva. Villkoret står i koden vid fixturen
+      > och i ADR-080:s rättelse-not. Missas det blir defaultvärdet exakt det
+      > tysta genomsläpp vakten finns för att stoppa.
+      >
+      > **Fynd att bära vidare:** WebSocket-vägen är oskyddad — bindningen
+      > `connectToServer()`:ar när inga WS-handlers finns. Ingen regression i
+      > dag (`page.route` fångade aldrig WS, appen saknar realtime), men vid
+      > vaktbytet går WS förbi vakten helt.
 - [ ] **Listparitets-grinden** (dom: LAGA) — ~20 rader skript + policy-fil.
       **Utvidgad räckvidd 2026-07-27:** samma klass gäller **lychee-globarna**,
       som står i BÅDA `ci.yml` och `scripts/check-docs.sh` och hålls synkade för
@@ -164,7 +215,9 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
       leveranstakt. Tystas EJ i `.lycheeignore` — Del 8.2 slog fast att
       retry-/scope-härdning är rätt verktyg, och uppdelningen är den härdningen.
 - [ ] `.claude/**` in i docs-allowlisten (`ci.yml`) — mätt 2026-07-27:
-      en URL-ändring i agentkonfig kostade full staging-svit
+      en URL-ändring i agentkonfig kostade full staging-svit.
+      Verifierat fortfarande öppen 2026-07-27: `.claude` förekommer inte i
+      `ci.yml`
 - [ ] Merge queue-aktiveringen — **lager 1 upphävt** 2026-07-27, lager 2 står.
       Aktivera ej före mätning av `concurrency` × `merge_group`
 
@@ -207,14 +260,17 @@ kandidat som nummerlöst fragment i `tasks/lessons.d/`, konsolidera sedan.
       stikkord överlever pausen som ord, inte som innehåll* `[UNIVERSAL]`.
       Empirin är de två obelagda posterna direkt ovanför.
 - [ ] Hub-lyftet `L284–L359`
-- [ ] **Konsolideringen** — de 15 fragmenten flyttas in i `tasks/lessons.md`
-      med nummer från `L360`. Kräver `lessons-hub-sync`-skillens
-      konsolideringssteg (öppen post i A2)
+- [ ] **Konsolideringen** — de **16** fragmenten flyttas in i `tasks/lessons.md`
+      med nummer från `L360` (disk-verifierat 2026-07-27: sista numrerade post
+      är `L359`). Kräver `lessons-hub-sync`-skillens konsolideringssteg (öppen
+      post i A2)
 
-**Utfall 2026-07-27: 14 nya fragment skrivna, grind-verifierade** (`check:docs`
-9/9, `15 nummerlösa fragment`). Räkningen blev 14, inte elva — handoffen varnade
-uttryckligen *"summera dem inte i förväg, tre källor räknar olika"*, och det
-höll: Del 10.8:s kvarvarande punkt och en ny kandidat tillkom vid skörden.
+**Utfall 2026-07-27: 15 nya fragment skrivna, grind-verifierade** (`check:docs`
+9/9, grinden räknar **16 nummerlösa fragment** = 15 nya plus det som landade
+i PR 273). Räkningen blev 15, inte elva — handoffen varnade uttryckligen
+*"summera dem inte i förväg, tre källor räknar olika"*, och det höll: Del 10.8:s
+kvarvarande punkt, en kandidat född vid skörden, och en som återuppstod samma
+dag tillkom alla utöver de elva.
 
 ### STOPP — två kandidater kunde inte beläggas
 
@@ -262,12 +318,28 @@ kostar att den måste återupptäckas genom att felet upprepas.
 
 - [ ] Byggplanen uppdateras med Fas E-horisonten enligt premiss 4 —
       **styrande dokument, ska göras före planering mot ny horisont**
-- [ ] 109 mergade fjärrgrenar på origin
+- [ ] 109 mergade fjärrgrenar på origin. **Även ~60 lokala grenar** ligger kvar
+      (mätt 2026-07-27) — samma klass, egen städning
 - [ ] `save-segment`-läckan — `app-segment-test+<uuid>` saknar target i
       `.purge-staging-policy.json`, städas aldrig
 - [ ] `ZZ-GRANSKNING-S91` lever i staging (ej självstädande):
-      `npm run seed:review:clean -- --ort ZZ-GRANSKNING-S91`
+      `npm run seed:review:clean -- --ort ZZ-GRANSKNING-S91`.
+      Verifierat 2026-07-27: `.purge-staging-policy.json` nämner den inte
 - [ ] `person-detail` kontra `TASK-52` — orsakskedjan ej verifierad
+
+## Kort födda i S91 — utanför spåren ovan
+
+Registrerade som backlog-kort, inte som restliste-poster. Här bara som index.
+
+- [ ] **`TASK-53`** — 429-backoffen väntar 1 s där Airtable kräver 30 s, tre
+      ställen i `airtable-client.ts`. MEDIUM. Enda posten i dag som är en defekt
+      i **produktionskod**, inte i dokumentation eller CI. Korsrefererad från
+      `airtable-constraints.md` P4
+- [ ] **`TASK-55`** — incheckade linux-baselines stale sedan S90.
+      **OETIKETTERAD = oplockbar** tills Marcus klassar. Blockerar `T87`:s
+      aktivering: grinden skulle fälla på fyra tester direkt. Kräver
+      **granskning**, inte bara en dispatch — varje bild i baseline-PR:en
+      definierar vad som hädanefter anses korrekt
 
 ## Beslut som väntar på Marcus
 
@@ -292,4 +364,9 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-27 | **A1 grillningen avslutad — ADR-080 mintad** | `#272` |
 | 2026-07-27 | **A2:6 nummer-tilldelningen löst — ADR-081; Spår C avblockerat** | `#273` |
 | 2026-07-27 | Tillstånds-återställningen (resume 4) + **Spår C: 14 fragment** | `8a79987` · `#274` |
-| 2026-07-27 | **Airtable-kostnaden dokumenterad** — ADR-063 § S91-not + `airtable-constraints.md` sektion F (P26/P27 + P4-utvidgning) | (denna PR) |
+| 2026-07-27 | **Airtable-kostnaden dokumenterad** — ADR-063 § S91-not + `airtable-constraints.md` sektion F (P26/P27 + P4-utvidgning) | `bc888d3` · `#275` |
+| 2026-07-27 | `CLAUDE.md`-pekare till constraints-katalogen + **`TASK-53`** för 429-backoffen | `8006d54` · `#276` |
+| 2026-07-27 | **A3 speccat** — `TASK-54` + två skivor + QA; restlistans `skipAssetRequests`-krav rättat | `920a3ef` · `#277` |
+| 2026-07-27 | **`TASK-54.1` levererad** — MSW bär API-lagret; ekvivalens pixel-bevisad A/B | `56e9064` · `#278` |
+| 2026-07-27 | `TASK-54.1` stängd (Done efter CI) + **`TASK-55`** registrerat | `34a3ea6` · `#279` |
+| 2026-07-27 | **T86-friktionen bokförd** + 54.1:s pilotrad + review-fixarna (ADR-080 rättad) | (denna PR) |

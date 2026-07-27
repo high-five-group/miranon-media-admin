@@ -18,7 +18,14 @@ test('omockad EF svarar 501 i klartext i stället för att nå nätet', async ({
   await page.goto('/');
 
   const utfall = await page.evaluate(async () => {
-    const res = await fetch('https://visual-fixture.supabase.co/functions/v1/finns-inte-alls');
+    // Samma headers som appens EF-klient skickar. BÅDA ligger utanför
+    // CORS-safelistan och tvingar därför fram en preflight — det är den formen
+    // appen faktiskt använder, och den enda som bevisar något. En naken fetch
+    // är en simple request utan preflight och kan vara grön medan appens väg
+    // är trasig.
+    const res = await fetch('https://visual-fixture.supabase.co/functions/v1/finns-inte-alls', {
+      headers: { Authorization: 'Bearer fixtur', 'Content-Type': 'application/json' },
+    });
     return { status: res.status, body: await res.text() };
   });
 
