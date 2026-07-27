@@ -49,7 +49,7 @@ prioritering inom Spår A.
 | 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | ✅ **KLART 2026-07-27** — `TASK-54.1` · `54.2` · `54.3` alla **Done** |
 | 1b | **`TASK-55` · Baselines regenererade** | ✅ **KLART 2026-07-27** — 6 bilder granskade + mergade; bevis-dispatch `30297097792` loggar *"Inga baseline-ändringar"* |
 | 2 | **`TASK-58` + `TASK-57` · Fixturens bruksvärde** | ✅ **KLART 2026-07-27** — båda **Done**, båda gröna per jobb 8/8 (`#292` · `#293`). Klassades `ready-for-agent` samma dag |
-| 3 | **A5 · De 19 acceptance-filerna** — här faller taket | ⬜ **NÄST** — steg 2 avblockerat; mönstret (`TASK-58`) och felmeddelandet (`TASK-57`) står på plats, och byggplan-grinden är lyft (v1.14). **Formen: spec-arbete via `/to-prd` → `/to-issues`, ej direkt bygge** (Marcus-kvittens 2026-07-27) |
+| 3 | **A5 · De 18 acceptance-filerna** — här faller taket | ✅ **SPECCAT 2026-07-27** — `TASK-59` (PRD) + **sju skivor + QA-kort**, publicerade i beroendeordning. Exekvering ej påbörjad; `TASK-59.1` är plockbar |
 | 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ⬜ kan landa när som helst |
 | 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
 
@@ -502,7 +502,8 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-27 | **`TASK-58` DONE** — överskuggningsmönstret `network.use()` dokumenterat i fixturmodulen; precedens + isolering lästa ur biblioteket, exemplet kört som kastbart bevis | `6910d02` · `#292` |
 | 2026-07-27 | **`TASK-57` DONE** — vakten lyfter närmaste träff (Levenshtein, TypeScripts 0,4-tröskel) och skiljer extern adress från omockad EF; **`T101`** registrerad | `59b8391` · `187d4e8` · `#293` |
 | 2026-07-27 | **Byggplanen v1.14** — Fas E-horisonten omankrad, Fas 6:s stängning medvetet hållen; **ADR-080:s `skipAssetRequests`-omprövning fick sitt utfall infört** | `277174e` · `ff179d8` · `#294` |
-| 2026-07-27 | **A5 SPECCAT — `TASK-59`** (PRD-kort, 14 användarberättelser, 9 DoD). Klassningen omräknad ur rådata → **18/14**, ADR-080 noterad; skarv-valet belagt mot MSW:s och Playwrights primärkällor | (denna PR) |
+| 2026-07-27 | **A5 SPECCAT — `TASK-59`** (PRD-kort, 14 användarberättelser, 9 DoD). Klassningen omräknad ur rådata → **18/14**, ADR-080 noterad; skarv-valet belagt mot MSW:s och Playwrights primärkällor | `b881c63` · `#295` |
+| 2026-07-27 | **A5 NEDBRUTET — sju skivor + QA** (`TASK-59.1`–`59.8`), vågorna delade efter YTA ej antal; linjär beroendekedja, Marcus delegerade uppdelningen | (denna PR) |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
