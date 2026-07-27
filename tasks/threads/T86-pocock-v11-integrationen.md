@@ -173,6 +173,52 @@ plugin 1.19.0 → 1.20.0, update + list verifierade —
 list-verifieringen från huvudkatalogen, L329). Första pilot-skivorna:
 nattbyggets kort (§ Körplanen nedan).
 
+### FRIKTION: piloten kan inte köras på Codes eget initiativ (upptäckt 2026-07-27, S91)
+
+**Piloten förutsätter en subagent. En Anthropic-levererad flagga kräver att
+Marcus begär varje sådant anrop.** De två står i direkt spänning, och det
+påverkar hur pilotens data ska läsas — därför bokfört här och inte bara nämnt i
+en rapport.
+
+**Regeln, verbatim:**
+
+```text
+Do not call the AgentTool unless the user requested it
+Do not use workflows or deep-research unless the user requested it
+```
+
+**Ursprunget är verifierat mot disk, inte antaget.** Strängen finns i
+`~/.claude.json` under nyckeln
+`clientDataCacheSlots.bi1-97380f58e9896982.data.tengu_heron_brook`. Den finns
+**inte** i hub-`CLAUDE.md`, `~/.claude/settings.json`, `settings.local.json`,
+repots `.claude/`, `marcus-system`-pluginet eller output-style-filen — samtliga
+genomsökta 2026-07-27 med noll träffar.
+
+**Tolkningen, öppet deklarerad som tolkning:** samma cache-slot bär
+`experimentKey: 'claude_code_vellum_thicket_experiment'` plus sju andra
+`tengu_*`-nycklar, och åtta av de nio slotarna saknar dem helt. Formen —
+server-cachad klientdata, en experimentnyckel, en avvikande slot — pekar mot en
+**fjärrstyrd flagga från Anthropic**, inte en användarinställning. Anthropics
+avsikt med den är inte läsbar härifrån, och påstås inte.
+
+**Tre konsekvenser för piloten:**
+
+1. **Den kan inte köras konsekvent utan att Marcus öppnar för det** — antingen
+   per skiva eller stående för en session. Ett utelämnat pass är därmed inte
+   nödvändigtvis slarv; det kan vara strukturellt.
+2. **Beslutskriterierna räknar skivor, inte pass.** Kriteriet "≥1/3 av skivorna
+   ger ≥1 åtgärdat fynd" förutsätter att passet faktiskt kördes på de skivor som
+   räknas. Skivor där passet uteblev av denna orsak måste därför märkas i
+   loggen, annars ser nämnaren större ut än den är och träffkvoten
+   underskattas.
+3. **Flaggan kan ändras eller försvinna utan förvarning** — den ligger i en
+   experiment-slot och är inte vår att styra. Piloten bör alltså inte designa
+   bort friktionen, bara bokföra när den slagit till.
+
+**Formen är inte ett hinder i sig:** regeln säger "unless the user requested
+it", och en begäran från Marcus upphäver den. Friktionen ligger i kadensen, inte
+i möjligheten.
+
 **Pilot-loggen (fylls per skiva under piloten):**
 
 | Skiva | Fynd (spec/std) | Åtgärdade | Avfärdade (skäl) | Routade | Klass | Tid (min) | Missar nedströms |
@@ -184,7 +230,27 @@ nattbyggets kort (§ Körplanen nedan).
 | 18.18 (träd 20525690 → ompass. 62203385) | 7+1 (2/5; ompass. 1 nit) | 8 (F1 komponentvals-bokföringen på kortet [spec-konflikt punkt 12 vs 3, Marcus-kvittens i morgonen] · F2 avslöjnings-avsikt → router-history-state [StrictMode-buggen] · F3 AT-kontrakts-e2e aria-activedescendant · F4 synkron utfalls-gating mutationEventIdRef · F5 en dl med dt+dd+dd · F6 SelectItem + BelaggningsStapel-lyft · F7 nyckelrotations-bevis i e2e · F8 reload-fallet i bokföringen) | 0 | 1 (task-45 kommande-filter/sort-dubbleringen) | 0 blocker / 2 spec / 1 struktur / 1 a11y / 3 kvalitet / 1 nit; 3 öppna Marcus-moment bokförda på kortet (F1-kvittens · VoiceOver-pass · bekräftelselägets eventidentitet) | ~7 (två pass) | **1 design-escape:** väljaren växer i bredd med innehållet → fast full blockbredd (Marcus-fångst, facit-komplettering; fix-vågen) |
 | 18.19 (träd f2cea1aa → ompass. 75f66211) | 7+3 (1/6; ompass. 3 nya i F1-omkretsen) | 10 (F1 prefetch-paret → delad useForberedEventDetalj + tangentbords-avsikt via AvsiktVidFokus [virtuell fokus avger inga DOM-event] + e2e-bevis för båda vägarna · F2 RouteAnnouncer-invariantdocen rättad, grundorsaken → task-46 · F3 valjar-lista-helpern + get-events-stub i 7 läckande sviter · F4 eventKey i listraderna + pill-assert före släppet · F5 kommentarstädning · F6 harFokuserat-ref i st.f. boolean-i-förklädnad · F7 kontrakts-defensiv-kommentaren · N1 sök-värmningens breddade avsikts-semantik öppet bokförd i kod · N2 fokus-invänta före ArrowDown i e2e · N3 useCallback-kedjan in i effekt-deps) | 0 | 2 (task-46 dynamisk sidtitel i route-lagret · task-47 e2e-fixture-konsolidering) | 0 blocker / 1 spec / 2 struktur / 4 kvalitet / 3 nit | ~9 (två pass) | **1 design-escape:** rubrik-triggern radbryts på långa eventnamn (Marcus-fångst) → nowrap-form (fix-vågen) |
 
+| task-54.1 (diff `56e9064`; **testinfrastruktur, ej produktkod** — se not) | 5 (3/2) | 3 (F3 `EF_NAMN`-dubbleringen + två osanna kommentarer · F4 vaktens EF-undantag snävat från substring till origin+prefix · **F5 ADR-080 § Konsekvenser sa `skipAssetRequests` "måste sättas `false`" — motsäger levererad kod**, amenderad med öppen rivning + villkoret som måste följa med till 54.2) | 1 (**F1 FALSIFIERAT MED MÄTNING**: agenten hävdade att preflight-svaret 501:ar OPTIONS så appen aldrig ser felet. `page.on('request')`-logg över omockad EF + full vy-laddning visade enbart `GET`, noll `OPTIONS` — route-interception ligger före webbläsarens CORS-logik. Fyndet var en rimlig hypotes ur koden men höll inte mot verkligheten) | 1 (WebSocket-vägen oskyddad vid vaktbytet → not på 54.2) | **1 blocker** (F5: styrande ADR mot kod, hade gett fel instruktion i 54.2) / 2 kvalitet / 1 brus / 1 routad | ~9 (ett pass) | _(öppet — skivan mergad före passet, se not)_ |
 | task-48 (arbetsträd 91a577d → ompass. efter fix) | 7 + 3 småfynd (2/5) | 10 (F1 fokus till `document.body` efter batch → ref + effekt som återlämnar till Markera-knappen · F2 icke-rent utfall rev urvalet → endast `'sent'` stänger läget, nytt partial-test · F3 läget överlevde filter-/vy-byte → `stang()` i `vaxlaFilter` + självstängning vid tom kö · F4 falsk-grön live-region → lokalisering via roll + `aria-live`/`aria-atomic`-assert · F5 Esc förbi pending-spärren → `isKeyboardDismissDisabled` + rivningsskydds-test · F6 `contrast-more` släckte success-kanten på valt kort → varianten flyttad in i grenarna · F7 §19:s Greta-rad stod i presens om riven knapp → rivnings-markör + levande exempel · S1 två döda `biome-ignore` · S2 hårdkodad rgb i axe-testet → `tokenColor` · S3 tabb-stopp på icke-rullande kö → villkorat på >3 rader) | 0 | 0 | 0 blocker / 2 a11y (F1, F4) / 1 korrekthet-i-arbetsflöde (F2) / 1 tillstånd (F3) / 2 kvalitet / 1 spec / 3 nit | ~12 (ett pass) | _(öppet — Marcus design-review kvarstår, DoD #5)_ |
+
+**Not till task-54.1-raden (2026-07-27):** två avvikelser mot pilotens form,
+båda öppet bokförda hellre än utjämnade.
+
+1. **Kortet är testinfrastruktur, inte produktkod.** Pilotens omfång säger
+   uttryckligen "10–15 produktkod-skivor (docs-/config-kort deltar inte)".
+   Testinfrastruktur är gränsfall — den är körbar kod med observerbart beteende,
+   men den levererar inget till Lotta. Raden bör räknas i nämnaren endast om
+   Marcus bedömer klassen som deltagande; annars står den som referensdata.
+2. **Passet kördes EFTER merge, inte före leverans-commiten.** Orsaken är
+   friktionen ovan: subagenten kräver Marcus begäran, och den kom när skivan
+   redan landat. Fynden åtgärdades därför i en följd-PR i stället för i
+   leveransen. Det gör raden svagare som pilotdata — den mäter inte
+   skarven do-work faktiskt specificerar (steg 4→5, före push) — men fångsten
+   är verklig: F5 var en konflikt mellan styrande ADR och levererad kod som
+   ingen grind kunde se, och som hade gett nästa skiva fel instruktion.
+
+Båda avvikelserna talar för samma sak: **piloten mäter något annat än den
+avsåg så länge passet inte kan köras på Codes eget initiativ.**
 
 ### Escapes-kolumnens kalibrering — OMTRIAGE 2026-07-25 (S86 → S87)
 

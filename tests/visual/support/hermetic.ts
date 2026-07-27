@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineNetworkFixture, type NetworkFixture } from '@msw/playwright';
 import { test as base } from '@playwright/test';
-import { FROZEN_NOW } from './fixture-data';
+import { FROZEN_NOW, VISUAL_SUPABASE_URL } from './fixture-data';
 import { handlers } from './handlers';
 
 export { expect } from '@playwright/test';
@@ -73,10 +73,19 @@ function buildSession() {
  * Registreringen sker på CONTEXT-nivå (bibliotekets design: en enda
  * `context.route` under huven, ingen service worker inblandad). Page-routes
  * vinner över context-routes, vilket är precis vad typsnitts-pinningen nedan
- * utnyttjar — den ligger kvar på sid-nivå och når därför MSW aldrig. Det är
- * skälet till att tillgångs-optionen kan stå på sitt defaultvärde: ingen
- * typsnitts-trafik existerar för den att släppa igenom. Att stänga av den hade
- * kostat omkring 3x körtid (msw/playwright issue #13) utan vinst.
+ * utnyttjar — den ligger kvar på sid-nivå och når därför MSW aldrig.
+ *
+ * `skipAssetRequests` står därför på sitt defaultvärde `true`. VILLKORET FÖR
+ * ATT DET ÄR SÄKERT ÄR SID-VAKTEN NEDAN: den abort:ar allt utom localhost och
+ * fixtur-originets EF-path, så ingen tillgångs-formad trafik kan nå
+ * context-nivån där optionen skulle kortsluta den. Att i stället sätta `false`
+ * hade kostat omkring 3x körtid (msw/playwright issue #13) utan vinst.
+ *
+ * ⚠️ OMPRÖVAS I TASK-54.2. Den skivan flyttar vakten till MSW:s
+ * `onUnhandledRequest` — en callback som `skipAssetRequests: true` kör FÖRE.
+ * Faller sid-vakten bort utan att optionen omprövas blir defaultvärdet exakt
+ * det tysta genomsläpp ADR-080 varnar för. Villkoret ovan är alltså inte
+ * evigt; det hänger på att något abort:ar först.
  *
  * `onUnhandledRequest` sätts INTE här — hermetiken vaktas alltjämt av
  * catch-all-routen nedan. Vaktens ombyggnad till MSW:s callback är task-54.2,
@@ -123,7 +132,14 @@ export const test = base.extend<{ network: NetworkFixture }>({
     await page.route('**/*', (route) => {
       const url = new URL(route.request().url());
       if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return route.fallback();
-      if (url.pathname.includes('/functions/v1/')) return route.fallback();
+      // Snävt: exakt fixtur-originet OCH pathens början. En bredare form
+      // (t.ex. substring-match på valfri host) skulle släppa igenom en
+      // tillgångs-formad URL till context-nivån, där MSW:s
+      // `skipAssetRequests`-default kortsluter den och låter den gå ut på
+      // riktiga nätet — tyst. Vakten ska hålla mot det som inte finns än.
+      if (url.origin === VISUAL_SUPABASE_URL && url.pathname.startsWith('/functions/v1/')) {
+        return route.fallback();
+      }
       return route.abort('blockedbyclient');
     });
 

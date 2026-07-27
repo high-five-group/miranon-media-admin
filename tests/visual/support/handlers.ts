@@ -13,8 +13,8 @@ import {
  * MSW-handlers för fixturvärldens Edge Function-svar (task-54.1).
  *
  * Ersätter den handskrivna uppslagstabell + route-hanterare som tidigare bodde
- * i `hermetic.ts`. Formen är biblioteksburen: matchning, metod-urval och
- * preflight sköts av MSW i stället för av egen kod.
+ * i `hermetic.ts`. Formen är biblioteksburen: request-matchning och metod-urval
+ * sköts av MSW i stället för av egen uppslagslogik.
  *
  * KONTRAKTET (ADR-080 § Snittet går vid protokollet): handlers uttrycks mot
  * EF-gränssnittet — path under `/functions/v1/` och svar i EF:ens egen form —
@@ -33,32 +33,25 @@ const EF = (namn: string) => `*/functions/v1/${namn}`;
  */
 const CORS = { 'access-control-allow-origin': '*' };
 
-const PREFLIGHT = {
-  ...CORS,
-  'access-control-allow-methods': 'GET, POST, OPTIONS',
-  'access-control-allow-headers': 'authorization, content-type',
-};
-
-/** Alla EF-namn som fixturvärlden svarar för — en enda sanningskälla. */
-const EF_NAMN = [
-  'get-events',
-  'get-registrations',
-  'get-event',
-  'get-event-notes',
-  'get-event-formats',
-  'get-persons',
-  'get-person',
-] as const;
+/**
+ * INGEN PREFLIGHT-HANTERING — och det är avsiktligt, inte en glömska.
+ *
+ * Appens EF-anrop bär `Authorization` + `Content-Type: application/json`, vilka
+ * båda ligger utanför CORS-safelistan och i en riktig webbläsarmiljö skulle
+ * tvinga fram en `OPTIONS`-preflight. I fixturvärlden sker den ALDRIG:
+ * route-interception ligger före webbläsarens CORS-logik, så requesten
+ * uppfylls innan någon preflight hinner uppstå.
+ *
+ * MÄTT, INTE ANTAGET (task-54.1, 2026-07-27): en `page.on('request')`-logg över
+ * både en omockad EF och en full vy-laddning visade enbart `GET` — noll
+ * `OPTIONS`. Den gamla uppslagstabellen bar ett `OPTIONS`-block med samma
+ * antagande; det var död kod och porterades inledningsvis hit innan mätningen
+ * gjordes. Återinför det inte utan att först mäta att preflight faktiskt sker.
+ */
 
 const json = (data: JsonBodyType) => HttpResponse.json(data, { headers: CORS });
 
 export const handlers = [
-  // Preflight först: Authorization/Content-Type i EF-anropen triggar OPTIONS,
-  // och utan svar faller anropet innan GET-handlern nås.
-  ...EF_NAMN.map((namn) =>
-    http.options(EF(namn), () => new HttpResponse(null, { status: 204, headers: PREFLIGHT })),
-  ),
-
   http.get(EF('get-events'), () => json(EVENTS_RESPONSE)),
 
   // Speglar EF:ens eventId-filter — utan det vore filtrerade vyer osynliga i
@@ -92,9 +85,10 @@ export const handlers = [
    * att MSW ska nå det alls. Den gamla uppslagstabellen svarade 501 här, och
    * det skyddet får inte försvinna i bytet.
    *
-   * Statuskod hellre än kastat fel: felet syns i appens egen felhantering och
-   * i testets nätverkslogg, med EF-namnet i klartext. Vaktens fulla form —
-   * fällning med lista över vad som VAR mockat — är task-54.2.
+   * Statuskod hellre än kastat fel: 501:an når appens egen felhantering med
+   * EF-namnet i klartext — verifierat skarpt, inte antaget, i
+   * `omockad-ef.spec.ts` med appens faktiska request-headers. Vaktens fulla
+   * form — fällning med lista över vad som VAR mockat — är task-54.2.
    */
   http.all('*/functions/v1/*', ({ request }) => {
     const namn = new URL(request.url).pathname.split('/functions/v1/')[1] ?? '(okänd)';
