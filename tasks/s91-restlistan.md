@@ -93,11 +93,31 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
 > **Ingen av de fyra åtgärderna är ännu utförd.** Punkterna nedan är dem.
 
 - [ ] **MSW-bytet** (dom: BYT) — `msw` + `@msw/playwright` med
-      `defineNetworkFixture`. **`skipAssetRequests: false`** krävs; default
-      `true` släpper igenom 86,4 % av mätt restrafik TYST — exakt det vakten
-      finns för att se. Räkna med ~3× slowdown (msw issue #13). Samexistens är
-      belagd, så migrering går fil för fil. Typsnitts-routen behålls som egen
-      route (passets öppna fråga 1: avgörs med **mätning**, ej resonemang).
+      `defineNetworkFixture`. Speccat som **`TASK-54`** + skivor 2026-07-27.
+
+      > **RÄTTELSE 2026-07-27.** Denna post sa tidigare att
+      > **`skipAssetRequests: false` krävs**. Det är fel — posten bar passets
+      > *varning* som om den vore dess *slutsats*, och stod dessutom i
+      > motsägelse mot sin egen andra mening. Passets faktiska rekommendation
+      > (`verktygsval-fyra-egenbyggen-2026-07-27.md` rad 170–174): behåll
+      > typsnitts-routen som **egen page-route** och låt MSW köra med **default
+      > `skipAssetRequests: true`** för API-lagret — *"då undviks båda
+      > fällorna"*. Page-routes vinner över context-routes, så en egen font-route
+      > lämnar ingen font-trafik kvar för optionen att släppa igenom. `false`
+      > hade kostat **~3× slowdown** (msw issue #13) utan vinst.
+      >
+      > Felet var mitt: posten skrevs samma dag som en sammanfattning av passet
+      > och drifade från källan. Fångad vid A3:s LÄS-fas, före kodskrivning.
+      > Klassen är skördad som fragment — *ett uppdrag kan peka på fel adress*.
+
+      Gäller: `skipAssetRequests` **true** · MSW bär endast API-lagret
+      (`**/functions/v1/**`) · font-routerna kvar som page-routes (de gör redan
+      rätt — `fulfill` ur incheckade filer, inte bara block) · vakten som
+      `onUnhandledRequest`-callback i Ghosts form · handlers mot
+      **EF-protokollet** per ADR-080:s snitt, vilket gör passets öppna fråga 2
+      (dubbelportering vid Postgres-skiftet) obsolet i stället för uppskjuten.
+      Omfattning mätt mot disk 2026-07-27: **141 route-anrop i 33 filer**
+      (passet uppgav 136/31 — sviten har växt); `msw` ej installerat.
 - [ ] **Listparitets-grinden** (dom: LAGA) — ~20 rader skript + policy-fil.
       **Utvidgad räckvidd 2026-07-27:** samma klass gäller **lychee-globarna**,
       som står i BÅDA `ci.yml` och `scripts/check-docs.sh` och hålls synkade för
