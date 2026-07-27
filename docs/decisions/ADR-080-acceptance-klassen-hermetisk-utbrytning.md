@@ -213,6 +213,35 @@ bara uppstår mot skarp backend (förlustlistan i branschpraxis-passet).
 > samma dag; att den också bodde i denna ADR upptäcktes först vid task-54.1:s
 > review-pass. Beslutet rivs med kvittens i stället för tyst — ursprungstexten
 > ovan är bevarad, inte redigerad.
+>
+> **UTFALLET AV DEN ANMODADE OMPRÖVNINGEN (task-54.2, infört 2026-07-27).**
+> Rättelsen ovan ålade task-54.2 att ompröva optionen i samma skiva. Det gjordes,
+> och **omprövningen vände rättelsens rekommendation**: optionen står i dag på
+> **`false`** (`tests/visual/support/hermetic.ts`).
+>
+> **Grunden är källkodsläsning, inte resonemang.** `@msw/playwright`
+> `fixture.ts` rad 98–103 kortsluter tillgångs-formade anrop med
+> `route.fallback()` **före** `handleRequest`, alltså före callbacken. Med
+> `true` når vakten aldrig en URL som slutar på `.png`, `.json`, `.css` … —
+> mätt med en probe: en `.txt`-URL nådde **aldrig** callbacken och gick ut på
+> nätet. Rättelsens villkor (*"defaultvärdet är säkert bara så länge NÅGOT
+> abort:ar innan context-nivån nås"*) föll alltså när sid-vakten togs bort:
+> ingenting abort:ar längre först.
+>
+> **Kostnadssiffran i rättelsen är också falsifierad.** Där står att `false`
+> *"hade kostat ~3× körtid utan att köpa något"*. Mätt i vår uppställning:
+> **17,3 s mot 14,9 s** — ingen mätbar kostnad. Issue #13:s 3×-varning gäller
+> Vite-projekt med långt fler moduler än fixturvärlden laddar, och ärvdes hit
+> utan att prövas.
+>
+> **Läget i dag** (verifierat mot koden 2026-07-27): sid-vakten är **borttagen**,
+> endast de två typsnitts-routerna ligger kvar på sid-nivå, hermetiken bärs av
+> **en** mekanism i `onUnhandledRequest`, och `skipAssetRequests: false` är
+> villkoret för att den ser allt. Villkoret står även i koden, vid fixturen.
+>
+> Noten är införd eftersom rättelsen ovan annars säger motsatsen till vad koden
+> gör — samma felklass som ADR:n redan drabbats av en gång: *felet hade två
+> hemvister och bara en var känd*.
 
 ## Ärlighet om underlaget
 

@@ -3,10 +3,10 @@ id: TASK-57
 title: >-
   Fynd: hermetik-vaktens felmeddelande skalar dåligt och ger fel råd för externa
   domäner
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-27 18:06'
-updated_date: '2026-07-27 20:09'
+updated_date: '2026-07-27 20:24'
 labels:
   - ready-for-agent
 dependencies: []
