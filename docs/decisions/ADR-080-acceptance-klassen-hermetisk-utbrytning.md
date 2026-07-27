@@ -1,0 +1,233 @@
+# ADR-080: Acceptance-klassen — hermetisk utbrytning ur e2e, med kontraktsvakt som villkor
+
+- Status: Accepted (Session 91 — 2026-07-27)
+- Datum: 2026-07-27
+- Fas: Session 91, CI-/grind-arkitekturspåret (processarbete, ej byggfas)
+
+> **Om beslutsvägen — bokförd öppet.** Grillningen fördes 2026-07-27 mot fem
+> öppna beslut. Marcus delegerade dem i klump: *"Du har all kontext samt målbild
+> från mig för att kunna ta rätt beslut. Kör på det du rekommenderar."* Besluten
+> nedan är därför **Codes, fattade på uttrycklig delegering** — inte Marcus egna
+> avvägningar. Det noteras här därför att fångst-empirin (ADR-041) säger att
+> extern granskning dominerar självgranskning: en framtida läsare ska kunna se
+> att just dessa fem inte passerade Marcus-grinden, och väga dem därefter.
+
+## Kontext
+
+Staging-sviten mäter **9,25 min**, varav e2e-steget är 84 %, och hela jobbet
+ligger bakom en global mutex `staging-tests`. Alla PR:er serialiseras därför:
+tre parallella kod-PR:er blir 9 + 9 + 9 minuter i serie. Mutexen finns för att
+staging är **en** delad muterbar Airtable-bas och **ett** delat Supabase-projekt.
+
+Fem research-pass (S91) mätte problemet och letade väg ut:
+
+- **Tidsbudgeten** visade att utbrytning av de hermetiska e2e-testerna tar
+  mutex-hållningen från 9,25 min till **~2,4 min** — faktor 3,8 på den enda
+  resurs som är knapp.
+- **Hermetik-mätningen** kördes skarpt: 865 restanrop, varav **86 % Google
+  Fonts**; font-pinning gör **19 av 32 filer** rena på egen hand. Samma pass
+  **falsifierade** påståendet att e2e aldrig skriver till staging —
+  `skapa-event` skriver skarpt.
+- **Branschpraxis-passet** läste sex projekt i källan och fann att vår topologi
+  är den lägst rankade i Googles egen ranking och står på Thoughtworks
+  HOLD-lista.
+- **Merge queue-passet** stängde kö-vägen: `merge_group`-bygg slås inte ihop, så
+  kön flyttar serialiseringen utan att upphäva den.
+- **Verktygsvals-passet** rev tre av fyra egenbyggs-anklagelser; bara MSW var en
+  äkta försummelse.
+
+Två premisser tillkom 2026-07-27 och **ersätter** den tvåveckorshorisont som bar
+det ursprungliga snittet:
+
+1. **Horisonten till Supabase är öppen.** Migreringen sker först när appens alla
+   sidor är byggda till Marcus facit — fem ytor saknar ännu facit-behandling.
+   Två veckor är önskan, inte deadline. Den ursprungliga motiveringen *"resten
+   löser migreringen"* håller därmed inte.
+2. **90/10-portabilitetskravet:** arkitekturen ska vara 110 % toppdesignad med
+   väl underbyggda Airtable-anpassningar, men **~90 % ska överleva
+   Airtable→Supabase-bytet** oförändrat och lika förstklassigt.
+
+Premiss 1 gör snittet **mer** värt, inte mindre: vinsten tas ut per körning under
+hela den längre perioden. Men den skärper också risken — se Beslut 3.
+
+## Beslut
+
+### 1. Klassbytet är beslutet, inte optimeringen
+
+De utbrutna testerna mockar Edge-funktioner **vi själva äger**. Det gör inte
+manövern fel — Ghost gör exakt detta — men resultatet är **inte längre e2e i
+precedentens mening**. Klassen får därför eget namn, egen katalog, egen config
+och eget jobb: **acceptance**.
+
+Kallas den fortfarande e2e kommer nästa läsare — och nästa agent — att tro att
+den bevisar saker den inte bevisar.
+
+**Hemvist för termen:** denna ADR plus `CONTRIBUTING.md`. **Inte** `ORDLISTA.md`
+— dess egen avgränsning lyder *"Endast projektspecifika domänbegrepp får post —
+allmänna programmeringsbegrepp exkluderas, hur ofta de än används"*, och
+acceptance är en testklass, inte ett produktdomänbegrepp. (Grillningsunderlaget
+föreslog ORDLISTA; det var fel hemvist och rättas här.)
+
+**Ghost-precedenten gäller formen, inte verktyget.** Ghost kör Vitest Browser
+Mode med MSW:s service worker. Playwright-precedenten för MSW är i stället
+rust-lang/crates.io, camunda/camunda och coveo/ui-kit.
+
+### 2. Snittet går vid protokollet — 19 hermetiska, 13 skarpa
+
+|Sida|Vad den bevisar|Var den kör|
+|---|---|---|
+|**Acceptance**|Att **appen** renderar och beter sig rätt givet ett svar av rätt form|Hermetiskt, mot fixtur, utan mutex|
+|**API**|Att **staging och Airtable** producerar svar av den formen|Mot staging, bakom mutexen|
+
+Fogen mellan dem är svarsformen, bevakad av att samma zod-schema parsar både
+fixtur och skarpt svar. **Tillåts ett schema och en fixtur någon gång divergera
+faller hela argumentet.**
+
+Vad som **inte** flyttas:
+
+- **API-sviten. Punkt.** 173 tester, 65 s, 11,7 % av jobbet — och repots enda
+  bevis för att Airtable beter sig som koden tror. En läsning mot en mock bevisar
+  att mocken stämmer med koden; en läsning mot basen bevisar att **basen** stämmer
+  med koden. Sviten är instrumentet för [ADR-063](ADR-063-airtable-bas-som-forstklassig-leverabel.md):s
+  leverabel och får inte trubbas av.
+- **`skapa-event`** — den skriver skarpt till staging, och det är dess syfte.
+- **Tre omvärldsytor:** `auth-flow` (riktig inloggning, riktiga 401:or),
+  `pwa-offline` (service worker mot verkliga svar), `css-cascade` (byggd kaskad).
+  Nio tester, tolv sekunder.
+
+Kvoten 19/13 (59 % hermetiskt) ligger mellan Ghosts 50 % och Grafanas 0,5 % och
+är alltså inom precedent-rymden — men **kvoten bär ingenting**. Kriteriet bär.
+
+### 3. Kontraktsvakten är VILLKOR för utbrytningen, inte ett senare tillägg
+
+Zod-schemana är **halva** kontraktet. De fångar form-drift (fält försvinner, typ
+ändras). De fångar inte:
+
+1. **Värde-drift** — fältet finns, semantiken har ändrats.
+2. **Schemats egen drift** — schemat är *vår bild* av funktionen, inte dess
+   deklaration. Ändras funktion och schema i samma commit av samma person är
+   fixturen fortfarande grön och ingen signal uppstår. Googles *"there is no
+   signal"*.
+
+Vakten: **nattlig, icke-blockerande**, kör fixturerna mot skarp staging och
+jämför. Fowlers kadens (*"once a day is plenty"*) och fail-semantik
+(*"shouldn't necessarily break the build"*) matchar `nightly.yml`, som redan
+finns och redan bär larmkedjan. Ytan är liten — tre endpoints
+(`get-event-notes`, `get-registrations`, `get-events`) bär 104 av 118 skarpa
+restanrop.
+
+**Varför villkor och inte rekommendation:** [ADR-063](ADR-063-airtable-bas-som-forstklassig-leverabel.md):s
+AT-Max-milstolpe kommer **aktivt att bygga om Airtable-basen**. Fixturer utan
+vakt driftar tyst under exakt den perioden, och med öppen horisont är perioden
+lång. Utan vakten är utbrytningen precis den tysta felklass Google beskriver.
+
+### 4. Vakten i avbrytande läge, skärpt till Ghost-mönstret
+
+Catch-all-vakten körs i **avbrytande** läge (`abort`), inte rapporterande — en
+fil som flyttas för tidigt ska bli röd, inte grön av fel skäl. Tyst fallthrough
+görs omöjlig.
+
+Formen skärps samtidigt: i stället för `route.abort('blockedbyclient')` svarar
+vakten som Ghosts — **statuskod med instruktionstext i klartext**, så ett
+läckande anrop säger *vad som ska göras*, inte bara att något gick fel. Halva
+mönstret finns redan i den visuella ramen, där omockade Edge-funktioner svarar
+501 med namnet utskrivet.
+
+### 5. Portabilitetsgränsen deklareras explicit (90/10)
+
+Vid Supabase-bytet gäller:
+
+**Överlever oförändrat (~90 %)** — hela acceptance-sidan (den bryr sig endast om
+svarsform) · kontraktet "varje körning får en isolerad datanamnrymd" ·
+mutex-avvecklingen · purge-/städgrinden · mätningen (`ci-metrics`) ·
+risk-klassningen D0/D1/full · merge-dedupen · nattnätet med larmkedja ·
+gate-proof-mekaniken · rött-först-kontraktet · kontraktsvaktens *form*.
+
+**Skrivs om (~10 %)** — hur datanamnrymden realiseras (i dag prefix- och
+sentinel-partitionering i en delad bas, med rate-limit-hänsyn; i Supabase
+branch-databas per körning) · API-sviten, som per konstruktion bevisar
+Airtables egenheter · kontraktsvaktens endpoint-lista.
+
+Halva Airtable-realiseringen finns redan byggd utan att ha kallats det:
+`.purge-staging-policy.json`, sentinel-klustret och
+`npm run seed:review -- --ort …` **är** namnrymds-partitionering. Den ska
+formuleras som kontrakt med utbytbar implementation — samma mönster som
+`DataSourceAdapter` redan bär för appen
+([ADR-056](ADR-056-list-paginerings-port-cursor-dubbel-kalla.md)).
+
+## Alternativ som övervägdes
+
+- **Behåll allt skarpt, lev med 9,25 min.** Förkastat: mutexen serialiserar
+  varje PR, och latensen träffar hårdast i exakt det multi-agent-arbetsmönster
+  som nu är normalformen. Kapabilitets-målbilden (frontier-klass) tolererar inte
+  nio minuter för en bash-skriptändring.
+- **Merge queue.** Verifierat omöjligt att lösa detta: `merge_group`-bygg slås
+  inte ihop, så kön flyttar serialiseringen. Se
+  [merge queue-passet](../research/merge-queue-mot-staging-mutex-2026-07-26.md)
+  med amendering 2026-07-27. Lager 1 (org-kravet) är sedan dess upphävt; lager 2
+  står.
+- **Shardning först.** Blockerad: shards skulle slåss om samma staging-data.
+  Blir gratis **efter** hermetiseringen, inte före.
+- **Efemär skarp backend per körning** — branschens faktiska svar, och det
+  starkaste alternativet. **Delvis stängt för oss:** Airtable-basen är inte
+  självhostbar och inte klonbar (beräknade fält read-only, `Delete base`
+  enterprise-only). Öppnas vid Fas E; då ska denna ADR omprövas.
+- **Pact eller motsvarande contract-testing-ramverk.** Förkastat som
+  överdimensionerat för tre endpoints med en konsument och en producent i samma
+  repo. Den nattliga vakten ger samma signal till en bråkdel av kostnaden.
+
+## Konsekvenser
+
+**Positiva:** mutex-hållningen 9,25 → ~2,4 min (faktor 3,8) · shardning blir
+möjlig (steg 3) · klassnamnet gör det omöjligt att förväxla vad sviten bevisar ·
+~90 % av arbetet överlever Supabase-bytet · font-pinningen följer Playwrights
+egen skrivna rekommendation om tredjepartsservrar.
+
+**Negativa / skuld:** 19 filer med fixturer måste hållas sanna mot en bas som
+AT-Max aktivt kommer att ändra — kontraktsvakten är motmedlet, men den är
+nattlig och därmed upp till ett dygn långsam · MSW-bytet kostar ~3× slowdown i
+ett mätt Vite-fall (msw issue #13) · `skipAssetRequests` är `true` som default
+och släpper igenom fonts **tyst**, alltså exakt det vakten finns för att se —
+måste sättas `false` · acceptance-klassen kan per definition inte fånga det som
+bara uppstår mot skarp backend (förlustlistan i branschpraxis-passet).
+
+## Ärlighet om underlaget
+
+**Motiveringen är inte att mock är förstahandsvalet.** Litteraturen och all
+verifierad precedent säger motsatsen — Supabase, PostHog och cal.com mockar
+aldrig sina egna tjänster. Den ärliga grunden är att branschens väg ut, efemär
+skarp backend, är **delvis stängd för oss** eftersom Airtable inte är
+självhostbar. Skulle denna ADR i stället påstå att "hermetisk är bäst praxis"
+vore den falsifierbar på fem minuter.
+
+**Evidensläget om mock-drift är tunt** och det sägs rakt ut i branschpraxis-passet
+— vi bygger vakten på ett resonemang om felklassen, inte på publicerad
+frekvensdata.
+
+**Steg 3:s skalningsprojektion antar linjär skalning i workers.** Det antagandet
+är inte verifierat för vår svit och ska mätas i steg 3, inte antas.
+
+## Uppföljning
+
+- Mät `concurrency` × `merge_group` skarpt när tillfälle finns — hela lager 2:s
+  kalkyl i merge queue-passet är en härledning, och sedan 2026-07-27 är den
+  mätbar. Aktivera inte merge queue före dess.
+- Ompröva denna ADR vid **Fas E**: när datakällan är klonbar öppnas den efemära
+  vägen, och då kan snittet flyttas närmare precedentens norm.
+- `T85` våg 3 (staging-per-run-isolering) och `T87` (visual-grinden) är
+  samdesignade med AT-Max per ADR-063:s S81-not och rörs inte här.
+
+## Relaterat
+
+- [ADR-063](ADR-063-airtable-bas-som-forstklassig-leverabel.md) — Airtable-basen
+  som förstklassig leverabel; API-sviten är instrumentet för den
+- [ADR-077](ADR-077-riskanpassad-ci-klassning-dedup-nightly.md) — risk-klassning,
+  dedup och nattnätet som vakten hänger i
+- [ADR-071](ADR-071-afk-batch-kontraktet.md) §2(iii) — tri-state-kravet som gör
+  `ci-wait.sh` och `check-docs.sh` obytbara
+- [ADR-056](ADR-056-list-paginerings-port-cursor-dubbel-kalla.md) —
+  dubbel-källa-/swappbarhetsmönstret som portabilitetsgränsen speglar
+- Research: [hermetisk kontra skarp](../research/hermetisk-vs-skarp-e2e-branschpraxis-2026-07-26.md) ·
+  [tidsbudgeten](../research/staging-svitens-tidsbudget-2026-07-26.md) ·
+  [parallell e2e](../research/parallell-e2e-mot-delad-backend-2026-07-26.md) ·
+  [merge queue](../research/merge-queue-mot-staging-mutex-2026-07-26.md)

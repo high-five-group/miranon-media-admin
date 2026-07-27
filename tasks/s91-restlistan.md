@@ -40,14 +40,21 @@ kördes. Snittet ska därför **omprövas**, inte kvitteras.
 
 ## Spår A — CI-/grind-arkitekturen (AKTIVT)
 
-### A1 · Grillningen — återupptas med nya premisser
+### A1 · Grillningen — AVSLUTAD 2026-07-27 (ADR-080)
 
-- [ ] Ompröva fråga 1: håller 19-filers-snittet när migreringen inte städar upp
-      resten inom överskådlig tid?
-- [ ] Avgör vad som är de portabla ~90 % och de Airtable-specifika ~10 %
-- [ ] Vakten i avbrytande läge (`abort`), ej rapporterande — *rek. ja*
-- [ ] Klassen heter **acceptance**, ej e2e — *rek. ja*, in i `ORDLISTA.md`
-- [ ] ADR mintas (ADR-080) — **utan** tvåveckorshorisonten som premiss
+Marcus delegerade de fem besluten i klump: *"Du har all kontext samt målbild
+från mig för att kunna ta rätt beslut. Kör på det du rekommenderar."* Besluten är
+därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
+
+- [x] Fråga 1 omprövad — snittet **står**, och den längre horisonten gör det
+      **mer** värt: vinsten tas ut per körning under hela perioden
+- [x] Portabilitetsgränsen deklarerad — snittet ÄR 90/10-snittet (gränsen går
+      vid protokollet, ej läs/skriv)
+- [x] Vakten i avbrytande läge, skärpt till Ghosts statuskod-med-instruktionstext
+- [x] Klassen heter **acceptance**. Hemvist rättad: ADR-080 + `CONTRIBUTING.md`,
+      **ej** `ORDLISTA.md` (produktdomän-avgränsningen utesluter testklasser)
+- [x] **ADR-080 mintad** — premisserna är öppen horisont + 90/10-kravet
+- [ ] `CONTRIBUTING.md` — acceptance-klassen skrivs in (termens andra hemvist)
 
 ### A2 · Mekaniseringen (sessionsdok Del 4, punkt 1–4 klara)
 
@@ -152,3 +159,4 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-27 | Merge queue-falsifieringen bokförd | `07d766d` |
 | 2026-07-27 | Ägarbytets städning (länkar · origin · marketplace) | `49c615a` |
 | 2026-07-27 | Spår B åtgärd 1 + 2 + steg 3 | `#262` · `#263` · mätning |
+| 2026-07-27 | **A1 grillningen avslutad — ADR-080 mintad** | `#272` |
