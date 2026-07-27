@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, type Route, test } from '@playwright/test';
+import { expect, type Page, type Route, test } from './support/test-bas';
 
 /**
  * Hem i Lugnt laddläge (task-8.4; princip: ORDLISTA "Lugnt laddläge" +

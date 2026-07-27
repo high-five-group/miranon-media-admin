@@ -1,7 +1,7 @@
 ---
 owner: marcus803
-updated: 2026-06-21
-review_by: 2026-12-21
+updated: 2026-07-27
+review_by: 2027-01-27
 status: stable
 ---
 
@@ -11,8 +11,8 @@ Auktoritativ katalog över Airtables **strukturella** begränsningar i detta pro
 Airtable-basen (`app8uGPrVCVOm6LfD`) är ett **medvetet valt v1-prototyp-datalager**
 bakom `DataSourceAdapter`-kontraktet ([ADR-057](../decisions/ADR-057-lager-oberoende-fitness-invariant.md))
 — noll arkitektonisk inlåsning. Dokumentet är **levande**: nya väggar läggs till när de
-upptäcks, det är inte en engångsinventering. Källa: Session 26 Pass 1-skörd (45 verifierade,
-fil:rad-belagda poster).
+upptäcks, det är inte en engångsinventering. Grundskörden: Session 26 Pass 1 (45 verifierade,
+fil:rad-belagda poster); sektion F tillkom S91. Se ändringsloggen sist för utvidgningarna.
 
 Dubbla syftet: (1) stenkoll på exakt vad vi medvetet betalar i v1; (2) **migrations-kravspec**
 för Supabase-adaptern — varje plattform-posts *Fas E-krav* är ett krav på Postgres-vägen, inte
@@ -87,11 +87,27 @@ hanterar den i Airtable-eran — det Supabase-adaptern ska *ersätta*, inte åte
   Källor: [ADR-056](../decisions/ADR-056-list-paginerings-port-cursor-dubbel-kalla.md) (rad ~26);
   gap-analysis rad 72; byggplan-revision-p1 rad 349 (60s-polling = 75× marginal);
   [`airtable-client.ts:84`](../../supabase/functions/_shared/airtable-client.ts#L84).
+  - **Andra manifestationen (S91, 2026-07-27) — taket är DELAT, vilket gör test-parallellisering
+    verkningslös.** 5 req/s gäller per bas, alltså för alla samtidiga klienter tillsammans.
+    Playwright-shardning multiplicerar antalet klienter som slåss om samma budget, inte
+    genomströmningen. För den Airtable-bundna delen av sviten är shardning därför verkningslös
+    **även med perfekt dataområdes-isolering** — en oberoende grind utöver P26. Källa:
+    [`parallell-e2e-mot-delad-backend-2026-07-26.md`](../research/parallell-e2e-mot-delad-backend-2026-07-26.md)
+    §5 + §Vad det betyder för OSS punkt 2 och 6.
+  - **⚠️ Öppen avvikelse mot dokumentationen.** Airtable anger att man efter 429 måste
+    *"wait 30 seconds before subsequent requests will succeed"*. Vår klient väntar **1 sekund** på
+    tre ställen ([`airtable-client.ts:84`](../../supabase/functions/_shared/airtable-client.ts#L84),
+    `:162`, `:189-ff`). Under taket spelar det ingen roll — men vid faktisk 429 är backoffen
+    30× för kort, och omförsöken förlänger då lockouten i stället för att invänta den.
+    Upptäckt i S91:s research. **Åtgärd: `TASK-53`** (Marcus order 2026-07-27) — kortet bär
+    valet fast 30 s kontra exponentiell backoff med jitter, kravet på mockat 429-enhetstest,
+    och ett tak på omförsöks-loopen som i dag saknas. Denna not uppdateras när kortet landar.
 - **v1-kompensation.** Synkron backoff: 429 → vänta 1s → försök igen
   ([`airtable-client.ts:84`](../../supabase/functions/_shared/airtable-client.ts#L84),
   `:162`, `:211`); polling-kadens 60s.
 - **Fas E-krav.** Postgres har ingen jämförbar per-bas-throttle; Supabase-adaptern MÅSTE inte
   längre kadens-budgetera mot 5 req/s. Connection-pool-gränser ersätter rate-limit-disciplinen.
+  Test-parallellisering blir därmed en fråga om maskinresurser, inte om en leverantörskvot.
 
 #### P5 · pageSize ≤ 100 records per svar
 
@@ -353,6 +369,74 @@ hanterar den i Airtable-eran — det Supabase-adaptern ska *ersätta*, inte åte
 - **Fas E-krav.** Supabase-adaptern MÅSTE backas av `supabase/migrations/` (versionerat schema-as-code);
   staging-sync blir en migration-apply, inte manuell replikering. Schemat hamnar i git — en länge saknad grund.
 
+### F. Testbarhet och miljö-isolering
+
+> Tillagd S91 (2026-07-27) på Marcus order: *"dokumentet måste ha ALLA begränsningar och
+> kompromisser som Airtable som datakälla har tvingat oss till i appen."* Klassen saknades helt —
+> beläggen fanns i tre research-pass men hade ingen katalogpost. Fullt beslutsunderlag och
+> gränsdragningen tvång/eget val: [ADR-063 § S91-not](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md).
+
+#### P26 · Ingen bas-duplicering via API — per-körning-isolering är strukturellt omöjlig
+
+- **Begränsning.** Webb-API:t har exakt tre bas-endpoints — `Create base`, `List bases`,
+  `Delete base` — samtliga från 2022-11-15. Ingen duplicerings-, kopierings- eller mall-endpoint
+  har någonsin skeppats. Två oberoende spärrar stänger vägen var för sig:
+  **(a)** `Create base` tar `name`, `workspaceId` och en `tables`-array och bygger från grunden,
+  men de beräknade fälttyperna (`formula`, `rollup`, `multipleLookupValues`, `count`,
+  `autoNumber`, `createdTime`, `lastModifiedTime`, `button`) saknar skrivformat och är read-only
+  — en API-klon av vår rollup-tunga bas vore strukturellt **icke-ekvivalent**, alltså skulle man
+  testa något annat än produkten. **(b)** `Delete base` är *"available to enterprise users on
+  request"* — utan det kan vi skapa baser men inte ta bort dem programmatiskt, så varje CI-körning
+  skulle läcka en bas in i workspacet.
+- **Kostnad/manifestation.** Hela staging-sviten delar **en** bas och måste därför serialiseras
+  under en global mutex (`concurrency: group: staging-tests, queue: max` i `ci-suite.yml`,
+  förstärkt av ADR-073:s semafor). Uppmätt: **9,25 min per körning**, varav E2E-steget är 84 %
+  (466 s), API-steget 11,7 % (65 s) och allt övrigt 4,3 % (24 s). Kollisionsklassen är bevisad,
+  inte teoretisk: `playwright.config.ts` § KÖRFORM (TASK-6) dokumenterar **sex deterministiska
+  kollisioner** när `api-staging` och `chromium-authenticated` kör samtidigt
+  (create-registration 89/129/160 · get-registrations väg D 86/132 · update-record 92). Den
+  formen — delad muterbar testmiljö — är **lägst rankad i Googles SUT-ranking och HOLD-listad hos
+  Thoughtworks**. Manuell UI-duplicering fungerar (ADR-050; S36 verifierade att tabell- och
+  fält-ID:n bevaras) men är oanvändbar per körning: den är manuell och varje schema-ändring måste
+  replikeras för hand — vilket dessutom kolliderar med P25.
+- **v1-kompensation.** Tre lager. **(1)** Global mutex + ADR-073-semaforen håller invarianten
+  "aldrig två samtidiga staging-rörande körningar". **(2)** Sentinel-UUID:er, `ZZ-`-prefix,
+  `.purge-staging-policy.json` med exakt-match och `linkGuard` ger namnrymd och städning inom den
+  delade basen — i praktiken Terraform-providrarnas mönster (slumpat namn + sweeper). **(3)**
+  [ADR-080](../decisions/ADR-080-acceptance-klassen-hermetisk-utbrytning.md) krymper den delade
+  ytan i stället för att dela upp den: **410 s (74 %)** bärs av tester som redan mockar sina Edge
+  Functions och flyttas till hermetisk acceptance-form, medan **~145 s (2,4 min)** genuint behöver
+  en verklig backend. Det är branschmönstret, inte en kompromiss — Ghost kör 81 hermetiska filer i
+  eget jobb plus 82 skarpa med en 418-vakt.
+- **Fas E-krav.** Supabase-adaptern MÅSTE kunna backas av en **per-körning-instansierad** databas:
+  Postgres klonas och seedas per CI-körning (schemat finns redan som schema-as-code, se P25:s
+  Fas E-krav), alternativt via Supabase branching för PR-previews — ADR-050:s redan öppna dörr
+  (*"kan adderas senare för PR-previews"*). När det är på plats **avvecklas den globala mutexen**
+  (T85 våg 3) och shardning blir meningsfull. Notera ordningen: branching ensamt räcker INTE så
+  länge Airtable är data of record, eftersom en branchad Edge Function pekar på samma enda
+  Airtable-bas — isoleringen måste omfatta datakällan, inte bara Postgres-lagret.
+
+#### P27 · Airtable är inte självhostbar — efemär backend är otillgänglig
+
+- **Begränsning.** Airtable kan inte köras lokalt, i container eller i CI. Det finns ingen
+  self-hosted-utgåva och ingen emulator. Branschens standardsvar på deterministisk e2e — att göra
+  backend **efemär** per körning — är därmed strukturellt otillgängligt för oss, oberoende av P26.
+- **Kostnad/manifestation.** Vi kan inte köpa determinism på det sätt jämförbara projekt gör.
+  Ghost, Supabase och cal.com kan alla duplicera sin backend gratis eftersom de äger den; vi kan
+  inte. Research-passet slår fast att **precedent för efemär backend mot icke-självhostbar SaaS är
+  genuint tom** — vi ärver alltså ingens mönster för just detta och deklarerar tomheten öppet i
+  stället för att fylla ut räkningen. Följdkostnaden är att den skarpa restmängden permanent måste
+  köras mot en delad, långlivad miljö, med allt vad P26 beskriver.
+- **v1-kompensation.** Samma som P26 lager 3 — krymp den skarpa ytan till det som genuint bär
+  integrationsbevis, och acceptera mutexen över resten öppet. Kontraktsvakten i ADR-080 är
+  villkoret som gör krympningen försvarbar: den fångar när en mock driftar från verkligt
+  API-kontrakt, vilket är den enda äkta risken med hermetisering.
+- **Fas E-krav.** Postgres **är** självhostbar — `supabase start` kör hela stacken i docker, och
+  CI kan resa en färsk instans per jobb. Supabase-adaptern MÅSTE därmed kunna peka på en
+  container-lokal instans utan kodändring (adaptern är redan swappbar per ADR-057). Först då är
+  branschens efemär-backend-mönster tillgängligt för oss överhuvudtaget, och den lägst rankade
+  SUT-formen kan lämnas helt.
+
 ---
 
 ## Allvarlighets-axel — synliga fel vs tyst korruption
@@ -406,3 +490,4 @@ detalj, åtgärds-rekommendation och live-stickprov.
 | Datum | Ändring |
 |---|---|
 | 2026-06-21 | **Session 26 — initial skörd.** Dokumentet skapat ur Pass 1-råskörden (45 verifierade, fil:rad-belagda poster): 25 plattform-poster (grupperade A–E) + 15 data-instans-fällor (sammanfattade, pekar till data-model) + allvarlighets-axel (3 tyst-korruption-poster märkta). Klassningsbeslut applicerade: O1 + O3 utelämnade, O2 → underrad P25, O4 → data-instans (hypotes-flagga bevarad), O5 → P19 ("kräver escaping"). |
+| 2026-07-27 | **Session 91 — sektion F, testbarhet och miljö-isolering** (Marcus order: dokumentet ska bära ALLA Airtable-tvingade kompromisser). Två nya plattform-poster: **P26** (ingen bas-duplicering via API — per-körning-isolering strukturellt omöjlig; två oberoende spärrar) och **P27** (icke-självhostbar — efemär backend otillgänglig; precedent-rymden tom). **P4 utvidgad** med två manifestationer: att 5 req/s-taket är DELAT och därmed gör test-shardning verkningslös även med perfekt isolering, samt en ⚠️ **öppen avvikelse** — klienten väntar 1 s efter 429 där dokumentationen kräver 30 s (tre ställen i `airtable-client.ts`; ej åtgärdad, ej trådförd). Beläggen fanns sedan 2026-07-26 i tre research-pass men saknade katalogpost; gränsdragningen tvång kontra eget val bor i [ADR-063 § S91-not](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md). Plattform-poster nu 27, grupperade A–F. |

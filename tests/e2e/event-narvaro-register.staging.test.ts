@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
 import { mockValjarLista } from './helpers/valjar-lista';
+import { expect, test } from './support/test-bas';
 
 /**
  * task-18.9 — Närvaro-REGISTRET på eventsidan (S73-facit K60).

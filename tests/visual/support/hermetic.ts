@@ -1,17 +1,11 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { defineNetworkFixture, type NetworkFixture } from '@msw/playwright';
 import { test as base } from '@playwright/test';
-import {
-  EVENT_DETAIL_RESPONSE,
-  EVENT_FORMATS_RESPONSE,
-  EVENT_NOTES_RESPONSE,
-  EVENTS_RESPONSE,
-  FROZEN_NOW,
-  REGISTRATIONS_RESPONSE,
-  resolvePersonResponse,
-  resolvePersonsResponse,
-} from './fixture-data';
+import { FROZEN_NOW } from './fixture-data';
+import { handlers } from './handlers';
+import { skapaHermetikVakt } from './hermetik-vakt';
 
 export { expect } from '@playwright/test';
 
@@ -21,8 +15,9 @@ export { expect } from '@playwright/test';
  * Varje test i ramen kör i en förseglad värld: frusen klocka (AC 5), seedad
  * session (autentiserade vyer utan staging-login), pinnade typsnitt och
  * mockade EF-svar. ALLT nätverk utanför localhost blockeras — hermetiken är
- * inte en konvention utan en vakt: ett anrop som slinker förbi mockarna
- * abort:as synligt i stället för att tyst göra pixlarna miljöberoende.
+ * inte en konvention utan en vakt: ett anrop som slinker förbi mockarna FÄLLER
+ * testet med sin egen URL namngiven, i stället för att tyst göra pixlarna
+ * miljöberoende. Vakten bor i `hermetik-vakt.ts` (task-54.2).
  */
 
 // supabase-js härleder lagringsnyckeln `sb-${hostname.split('.')[0]}-auth-token`
@@ -31,14 +26,9 @@ const AUTH_STORAGE_KEY = 'sb-visual-fixture-auth-token';
 
 const ASSETS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'assets');
 
-// CORS-huvuden för de mockade cross-origin-svaren (EF + typsnitt). Preflight
-// besvaras explicit — Authorization/Content-Type i EF-anropen triggar OPTIONS.
+// CORS-huvud för de mockade cross-origin-typsnitten. EF-svarens CORS bor hos
+// handlers-modulen sedan task-54.1.
 const CORS_HEADERS = { 'access-control-allow-origin': '*' };
-const PREFLIGHT_HEADERS = {
-  ...CORS_HEADERS,
-  'access-control-allow-methods': 'GET, POST, OPTIONS',
-  'access-control-allow-headers': 'authorization, content-type',
-};
 
 /** Base64url utan padding — JWT-segmentens form. */
 function b64url(value: object): string {
@@ -80,33 +70,57 @@ function buildSession() {
 }
 
 /**
- * EF-namn → fruset svar (objekt) eller param-medveten resolver (funktion —
- * speglar EF:ens query-param-beteende, t.ex. get-registrations eventId-
- * filter). En omockad EF svarar 501 med namnet i klartext (synligt fel,
- * aldrig tyst tom data).
+ * EF-lagret bärs av MSW sedan task-54.1 — handlers bor i `handlers.ts`.
+ * Hermetiken vaktas av MSW:s `onUnhandledRequest` sedan task-54.2.
+ *
+ * Registreringen sker på CONTEXT-nivå (bibliotekets design: en enda
+ * `context.route` under huven, ingen service worker inblandad). Page-routes
+ * vinner över context-routes, vilket är precis vad typsnitts-pinningen nedan
+ * utnyttjar — den ligger kvar på sid-nivå och når därför MSW aldrig.
+ *
+ * BÅDA OPTIONERNA ÄR SATTA EXPLICIT, OCH BÅDA MÅSTE VARA DET:
+ *
+ * `onUnhandledRequest` — bindningens default är `bypass` (tyst genomsläpp),
+ * INTE `warn` som i MSW:s kärna. Utelämnas optionen är vakten avstängd utan
+ * att något syns: sviten ser hermetisk ut medan den släpper igenom allt.
+ * `hermetik-vakt.spec.ts` bevisar fällningen negativt — en avstängd vakt kan
+ * inte se grön ut.
+ *
+ * `skipAssetRequests: false` — VILLKORET FÖR ATT VAKTEN SER ALLT. Bindningen
+ * kortsluter tillgångs-formade anrop med `route.fallback()` FÖRE
+ * `handleRequest` (`@msw/playwright` fixture.ts rad 98–103), alltså före
+ * callbacken. Med defaultvärdet `true` skulle varje URL som slutar på .png,
+ * .json, .css … gå rakt ut på nätet utan att vakten någonsin såg den. Mätt,
+ * ej antaget: en probe med `.txt`-URL nådde aldrig callbacken och gick ut.
+ *
+ * Kostnaden mättes i stället för att ärvas från issue #13:s 3x-varning —
+ * sviten gick 17,3 s med defaultvärdet och 14,9 s utan det, alltså ingen
+ * mätbar kostnad i vår uppställning. Varningen gäller Vite-projekt med
+ * betydligt fler moduler än fixturvärlden laddar.
+ *
+ * Sid-vakten som tidigare bar hermetiken (en `page.route('**' + '/*')` som
+ * abort:ade allt utom localhost och EF-pathen) är BORTTAGEN i task-54.2:
+ * hermetiken vaktas nu av EN mekanism, och den sitter där mockningen sker.
  */
-const EF_FIXTURES: Record<string, unknown | ((url: URL) => unknown)> = {
-  'get-events': EVENTS_RESPONSE,
-  'get-registrations': (url: URL) => {
-    const eventId = url.searchParams.get('eventId');
-    if (!eventId) return REGISTRATIONS_RESPONSE;
-    return {
-      registrations: REGISTRATIONS_RESPONSE.registrations.filter((r) => r.eventId === eventId),
-    };
-  },
-  'get-event': EVENT_DETAIL_RESPONSE,
-  'get-event-notes': EVENT_NOTES_RESPONSE,
-  'get-event-formats': EVENT_FORMATS_RESPONSE,
-  // Personer: BÅDA är resolvers — listan speglar EF:ens search/pageSize/cursor
-  // (annars vore sök och "Ladda fler" osynliga i fixturvärlden), detaljen
-  // slår upp `?id=` mot de kuraterade personerna med härledd stomme som
-  // fallback. Se fixture-data.ts §Personer-världen.
-  'get-persons': resolvePersonsResponse,
-  'get-person': resolvePersonResponse,
-};
+export const test = base.extend<{ network: NetworkFixture }>({
+  network: [
+    async ({ context }, use) => {
+      const network = defineNetworkFixture({
+        context,
+        handlers,
+        skipAssetRequests: false,
+        onUnhandledRequest: skapaHermetikVakt(handlers),
+      });
+      await network.enable();
+      await use(network);
+      await network.disable();
+    },
+    { auto: true },
+  ],
 
-export const test = base.extend({
-  page: async ({ page }, use) => {
+  // `network` deklareras som beroende — utan det är aktiveringsordningen
+  // odefinierad och sidan kan hinna göra sitt första anrop innan handlers står.
+  page: async ({ page, network: _network }, use) => {
     // Frusen klocka (AC 5): Date/new Date() fixeras vid FROZEN_NOW; timers
     // löper vidare så React/TanStack beter sig normalt.
     await page.clock.setFixedTime(FROZEN_NOW);
@@ -118,15 +132,6 @@ export const test = base.extend({
       },
       [AUTH_STORAGE_KEY, buildSession()] as const,
     );
-
-    // Hermetik-vakten. Registreras FÖRST = prövas SIST (Playwright matchar
-    // routes i omvänd registreringsordning): allt som ingen mock nedan
-    // fångade och inte är localhost blockeras hörbart.
-    await page.route('**/*', (route) => {
-      const { hostname } = new URL(route.request().url());
-      if (hostname === 'localhost' || hostname === '127.0.0.1') return route.fallback();
-      return route.abort('blockedbyclient');
-    });
 
     // Typsnitts-pinning: base.css @import:ar Inter från Google Fonts — CDN:en
     // är både ett externt beroende och en drift-källa (ny font-version = nya
@@ -148,27 +153,8 @@ export const test = base.extend({
       });
     });
 
-    // EF-mockarna: samma svar-form som skarpa EF:er, parsas av samma zod-
-    // scheman i adaptern. Host-agnostiskt mönster — pekar appen mot fel URL
-    // syns det som utloggat läge (lagringsnyckeln matchar inte), inte som
-    // tyst staging-trafik.
-    await page.route('**/functions/v1/**', (route) => {
-      if (route.request().method() === 'OPTIONS') {
-        return route.fulfill({ status: 204, headers: PREFLIGHT_HEADERS });
-      }
-      const url = new URL(route.request().url());
-      const efNamn = url.pathname.split('/functions/v1/')[1] ?? '(okänd)';
-      const fixtur = EF_FIXTURES[efNamn];
-      const svar = typeof fixtur === 'function' ? fixtur(url) : fixtur;
-      if (svar === undefined) {
-        return route.fulfill({
-          status: 501,
-          headers: CORS_HEADERS,
-          json: { error: `Omockad EF i visual-fixturvärlden: ${efNamn}` },
-        });
-      }
-      return route.fulfill({ headers: CORS_HEADERS, json: svar });
-    });
+    // EF-lagret ligger hos MSW (se `network`-fixturen ovan) — ingen
+    // route-registrering behövs här.
 
     await use(page);
   },

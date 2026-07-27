@@ -15,7 +15,193 @@
 
 ## Aktuellt fokus
 
-**Session 91 ▶️ ÅTERUPPTAGEN (2026-07-26, `session-resume`, N=91 bevarat)** —
+**Session 91 ▶️ ÅTERUPPTAGEN (2026-07-27, femte resumen — efter A3:s första
+skiva)** — **MSW-BYTET SPECCAT OCH FÖRSTA SKIVAN LEVERERAD.** Marcus motto *"Bygg
+ordentligt eller bygg inte alls"* delegerade fyra designbeslut:
+`skipAssetRequests` **true** (passets slutsats, ej restlistans felläsning) ·
+handlers mot **EF-protokollet** · kort-med-skivor ej ad-hoc · två arbetsskivor
+ej PRD:ns gissade tre. **`TASK-54` + tre kort publicerade; `54.1` DONE**
+(`56e9064`, CI 8/8) — MSW 2.15.0 bär API-lagret, sju handlers, ekvivalens
+**pixel-bevisad A/B** mot baselines genererade av gamla mekanismen (12/12).
+**Route-precedensen mättes FÖRE bygget** (minimalt test: `page.route`-fallback
+når `context.route`) — hade den inte gjort det vore specen inte utförbar. **Tre
+avvikelser mot kortets ordalydelse bokförda**, varav en farlig: AC:t ville ta
+bort 501-fallbacken, men bindningens default är **tyst bypass** — bokstavlig
+följsamhet hade gett en nätverksläcka. **Ekvivalensbeviset gick nästan fel:**
+4/12 föll, kontrastkörning visade identiskt utfall med gamla mekanismen ⇒ stale
+baselines från S90, ej regression → **`TASK-55`**. **AIRTABLE-KOSTNADEN
+DOKUMENTERAD** på Marcus order: ADR-063 § S91-not + `airtable-constraints.md`
+**sektion F** (P26 bas-duplicering · P27 självhostning · P4-utvidgning);
+gränsdragningen tvång/eget val nedskriven, Fas E-kopplingen inlagd — Postgres
+upphäver alla tre tvången. **`TASK-53`** skapat för 429-backoffen (1 s där
+Airtable kräver 30 s — dagens enda defekt i produktionskod). **REVIEW-PASSET
+KÖRT** på Marcus begäran: 5 fynd, 1 falsifierat med mätning (noll `OPTIONS` —
+preflight-blocket var **död kod**, ärvd från gamla tabellen), 3 åtgärdade.
+**Tyngst: ADR-080 sa `skipAssetRequests` "måste sättas false" — motsatsen till
+koden.** Samma felläsning som restlistan bar; felet hade två hemvister, en känd.
+ADR riven med öppen not. **T86-FRIKTIONEN BOKFÖRD:** AgentTool-regeln
+verifierad till `~/.claude.json`/`tengu_heron_brook` (ej Marcus fil) —
+beslutskriterierna räknar **skivor, ej pass**, så uteblivna pass måste märkas.
+**Åtta PR:er, alla gröna per jobb första passet** (#273–#280). Pausen landade
+**MED** grönt bevis. **FEMTE RESUMEN 2026-07-27:** numreringen disk-verifierad
+**oförändrad på samtliga sex axlar** — inga mellansessioner hade förbrukat
+nummer; ingångsläget rent (`main` @ `bbf0b6a`, CI grön, `audit-ci` grön).
+**NÄSTA: `54.2`** (vakten → `onUnhandledRequest`, bär
+`skipAssetRequests`-omprövningen + WS-noten) **→ `54.3` QA → A5 de 19 filerna
+→ kadens-regeln.** Numrering: 91/082/L360 (17 fragment väntar)/T101/f46/task-56.
+Full narrativ: sessionsdok S91 **Del 11** + paushistoriken. Karta:
+`tasks/s91-restlistan.md` § VAR VI ÄR. *(Föregående fokus-text nedan.)*
+
+**Session 91 (fjärde resumen, 2026-07-27)** — **LESSON-SKULDEN BETALD.**
+Tillstånds-återställningen körd (`lifecycle: paused → active`, paus-rubrik →
+historik-form, numreringen disk-verifierad **oförändrad** på samtliga sex axlar).
+**PR #273 GRÖN OCH MERGAD** (`043e4a0`, `ci-wait` 8/8 per jobb, staging 9 m 53 s)
+— handoffens *"landar utan grönt bevis"* var föråldrad: `30271719279` hade
+cancellats och en **femte** körning fanns på `e29673a`. `Docs link check` gick
+igenom ⇒ `cs.umd.edu`-timeouten var **transient som klassat**, tystades ej.
+**Landnings-ordningen valdes medvetet:** återställningen hölls tillbaka tills #273
+mergat — en commit till hade superseddat en 9/10-grön körning och kostat
+~10 min genom mutexen (A2:5 tillämpad som omdöme, ej kodad). **SPÅR C SKÖRDAT I
+SIN HELHET: 14 nya fragment** i `tasks/lessons.d/` (Del 6:s fyra · Del 7:s två ·
+Del 8.8:s fem · Del 10.8:s kvarvarande · `.claude/**`-luckan · en ny född vid
+skörden). Räkningen blev **14, inte elva** — handoffens varning *"summera dem
+inte i förväg"* höll. `check:docs` **9/9**, grinden räknar **15 nummerlösa
+fragment**. **STOPP — TVÅ KANDIDATER KUNDE INTE BELÄGGAS:** *autofix förvärrar
+en falsk-positiv* + *husets `>`-separerade blockquote-stapling* fanns enbart som
+stikkord i PAUSLÄGE; Del-text, dagens fem commits och configdiffarna genomsöktes
+utan träff. **De skrivs inte på gissning — Marcus avgör: skriv eller förkasta
+explicit** (ADR-053). Iakttagelsen skördad som eget fragment. **NÄSTA: A2:7
+partitionerings-regeln + A2:5 landnings-ordningen kodad → A3 MSW-bytet
+(`skipAssetRequests: false`) → konsolideringen av de 15 fragmenten från L360.
+Byggplanens Fas E-horisont före planering mot ny ordning.** Numrering:
+91/082/L360/T101/f46/task-53. Full narrativ: sessionsdok S91 **Del 11**.
+*(Föregående fokus-text nedan.)*
+
+**Session 91 ⏸️ PAUSAD (2026-07-27, fjärde pausen — inför fortsättning på ny
+yta)** — **TREDJE RESUMEN SATTE RIKTNINGEN OCH STÄNGDE GRILLNINGEN.** Marcus
+ordning: **Fas 6 stängs INTE** (appens sidor är inte byggda som han vill) →
+**alla fem facit-lösa ytor genom full kedja** (Personer · Hem ·
+Mer/Intresserade/Maillogg · Segment · Mail-handling) → **CI-arkitekturen FÖRST**
+→ Fas E när sidorna är klara (två veckor = önskan, ej deadline). **90/10-kravet:**
+~90 % av CI-arkitekturen ska överleva Supabase-bytet — och snittet fanns redan,
+tidsbudget-passets *"gränsen går vid protokollet, inte vid läs/skriv"* ÄR
+portabilitets-snittet. **ADR-080 mintad** (acceptance-klassen: klassbytet är
+beslutet ej optimeringen · 19/13 vid protokollet · API-sviten flyttas ALDRIG ·
+kontraktsvakten som VILLKOR · vakten i abort-läge). **ADR-081 mintad** (nummer
+tilldelas vid landning: nummerlösa fragment i `tasks/lessons.d/`, numret sätts
+där merge-grinden ändå serialiserar — **lesson-spärren LYFT**; grind + config +
+self-test 6/6 + tvåsidigt rött-först; `check:docs` 8 → 9 grindar). Nyckeln kom ur
+eget repo: **backlog-CLI:t hade redan mönstret.** **REPOT ÄR ORG-ÄGT PÅ
+ENTERPRISE** sedan 11:15:43Z — merge queue-spärrens lager 1 upphävt, lager 2 står
+(bokfört i tre artefakter); städningen klar (2 döda issue-länkar · origin ×2 ·
+marketplace-källan, uppdateringsvägen skarpt prövad). **RESTLISTAN ÄR KANONISK
+BÄRARE:** `tasks/s91-restlistan.md`, fem spår, avbockningsbar. **Marcus fråga
+avtäckte A3b:** verktygsvals-prövningen fanns bara som engångs-order, ej stående
+krav. **NÄSTA: `session-resume` av 91 → läs av PR #273:s CI (`ci-wait --pr 273`,
+named flags) → skörda lesson-fragmenten → A2:7 + A2:5 → A3 MSW-bytet.**
+Numrering: 91/**082**/L360/T101/f46/task-53. Full narrativ: sessionsdok S91
+**Del 9–10** + PAUSLÄGE. *(Föregående fokus-text nedan.)*
+
+**Session 91 (tredje resumen, 2026-07-27)** — **ANDRA RESUMEN LÖSTE
+INSTRUKTIONSLEVERANSEN I GRUNDEN.** `code-role-discipline.md` **AVVECKLAD** (ADR-079 river ADR-042 öppet):
+den levererades aldrig, formen saknar precedent (**0 av 9** undersökta
+uppsättningar), den bar en **död grind** (§3.3 kvittens-före-commit — hade
+STOPPAT arbetsflödet om leveransen börjat fungera) och ett **faktafel** (§6.4).
+Bäraren är nu en **output style** i pluginet (`force-for-plugin`, systemprompt,
+enda bäraren med inbyggd påminnelse). **Konstitutionen 217 → 192 rader** — under
+200-riktvärdet för första gången; **tre döda pekare** bort (roll-disciplinen ·
+`code-stoppa-format`-skillen som bott i tre-aktörs-arkivet sedan Chat-ytan
+avvecklades · Lovable-guarden per Marcus-beslut). **Fyra hooks byggda och
+testade** (`git add -A` 5/5 deny + 4/4 pass · AskUserQuestion · `backlog/tasks/**`
+3/3+3/3 · datum-som-faktum). **Plugin 1.22.0**, reinstall körd. Grunden: **tre
+parallella research-agenter** + en mätt inventering (158 regelpunkter: TVINGANDE
+65 / KUNSKAP 48 / OMDÖME 41 / DÖD 4) — **Codes egen dubblett-hypotes ~50 % mättes
+till 18 %** och redovisades öppet. `/to-prd`-sidofynd: frontmatter parsade aldrig,
+skillen auto-upptäcktes ALDRIG — T100:s klass i miniatyr, med skärpningen att
+verktyget som hade fångat det FANNS men aldrig kördes. **ADR-079:s FÖRSTA SKARPA
+PROV ÄR KÖRT VID TREDJE RESUMEN — GRÖNT PÅ ALLA TRE KONTROLLER:**
+`instructions-loaded.jsonl` bär två rader ur denna session (hub- + spoke-
+`CLAUDE.md`, `reason: session_start`) ⇒ hooken lever · output stylen
+**Code-rollen är aktiv i systemprompten utan att någon valt den**, och ingen
+`outputStyle`-nyckel finns i någon av de fyra settings-filerna ⇒ `force-for-plugin`
+är bäraren · transparens-rapporten skrevs i rätt form utan tillsägelse.
+**Två mätta gap** (båda förväntade, nu mekaniskt belagda i stället för antagna):
+`IDENTITET.md` + `profile.md` står ALLTJÄMT ej i loggen (väntar Marcus-beslut 3)
+· hooken täcker CLAUDE.md-lagret men **inte** memory-lagret — `MEMORY.md`
+levererades i systemprompten utan att logga en rad. **REPOT ÄR ORG-ÄGT PÅ
+ENTERPRISE SEDAN 2026-07-27 kl 11:15:43Z** (org `high-five-group`, Marcus åtgärd i
+förebyggande syfte, syftet var merge queue) — **MERGE QUEUE ÄR DÄRMED ÖPPEN, MEN
+SLUTSATSEN STÅR:** research-passets nej kom i **två oberoende lager**, och lager 2
+skrevs uttryckligen som "det som gäller även efter en org-flytt". Lager 1
+(org-kravet) är **upphävt**; lager 2 håller, eftersom `merge_group`-bygg inte slås
+ihop mot en global mutex — **bästa fallet oförändrade ≈27 min, default-fallet ≈55
+min** om det tunga jobbet inte villkoras på `github.event_name`. Vinsten som
+FAKTISKT är köpt är BEHIND-cykeln (L328), i koordination och latens — ej
+väggklockan. **Materiellast:** öppen fråga 1 (`concurrency` × `merge_group`,
+odokumenterad hos GitHub) var stämplad "ingen sådan drift är möjlig att observera
+i dagens ägarform" — **den kan nu MÄTAS i stället för härledas.** Falsifieringen
+bokförd i tre artefakter (research-passet · ADR-076 · processgranskningen
+2026-07-23); eftergranskningen 2026-07-24 pekade själv ut org-flytten som rationell
+nästa åtgärd om BEHIND-svälten fortsatte. Överföringen verifierad ofarlig:
+ruleset `main-skydd` `enforcement=active` · 8 secrets · `marcus803` assignable
+(ADR-077-larmet) · CI 8/8. **Enda äkta skadan: 2 döda issue-länkar** i
+`session-89.md` (GitHub redirectar `/pull/N` men **inte** `/issues/N` efter
+ägarbyte; CI ser det ej — autentiserad lychee följer överföringen). **ÄGARBYTETS
+STÄDNING KLAR** (Marcus order punkt 1–3, mätt före åtgärd): av 191
+`marcus803`-förekomster i md var bara **fyra** resurs-URL:er och **exakt två
+brutna** — alla path-typer utom `/issues/N` ger 301; de 163 bara-förekomsterna är
+`owner:`/`--assignee`/prosa som refererar PERSONEN och krävs av
+`.frontmatter-policy.conf`. Två issue-länkar ompekade (de två fungerande
+pull-länkarna lämnade — reparation ja, kosmetik i historiskt dok nej) · `origin`
+ompekad i BÅDA repona, verifierad mot rätt SHA · **hub-repot är också flyttat**
+(`high-five-group/marcus-system`, privat) och marketplace-källan ompekad via
+verktygets egen väg (`marketplace add`, state backad upp först) — redirect-risken
+mättes FÖRST och bar (`git ls-remote` mot gamla namnet gav `db645e7`), så
+omkopplingen är robusthet ej akut fix; **uppdateringsvägen skarpt prövad**
+(`marketplace update` exit 0, plugin 1.22.0 enabled + 17 skills + hooks +
+output style intakta efteråt). **`check:docs` 8 GRÖNA** — helt grön första gången
+denna dag. **NÄSTA:
+Marcus-beslut 1 (Fas E) före all planering → verktygs-åtgärderna (punkt 3:
+MSW-bytet med `skipAssetRequests: false`); CI-/grind-arkitekturen som EGET pass
+med grillning — mätning före design.** **SEX MARCUS-BESLUT VÄNTAR** (Fas E-horisonten blockerar ·
+`--mm-btn` vs `--mm-button` · IDENTITET.md-destillatet · länkgrindens form ·
+grillningens fyra · **merge queue-aktiveringen**). Numrering: 91/**080**/L360 (LÅST till punkt 6)/T101/f46/task-53.
+Full narrativ: sessionsdok S91 **Del 8** + PAUSLÄGE. *(Föregående fokus-text
+nedan.)*
+
+**Session 91 (andra resumen, 2026-07-27)** — **RESUMEN GAV SEX RESEARCH-PASS, FYRA
+MEKANISERINGAR OCH TVÅ RIVNA EGNA SLUTSATSER.** Merge queue **STÄNGD** (batchar
+ej `merge_group`-bygg + kräver org-ägt repo). Shardning **blockerad** (Airtable
+ej klonbar). Push-kadensen **låg rätt**. **Hermetik-mätningen körd skarpt:** 865
+restanrop, 86 % fonts, **19 av 32 filer rena enbart via font-pinning**; tre
+körningar gav 118/118/118 staging-anrop. **Falsifierat:** "e2e skriver aldrig
+till staging" — `skapa-event` skriver skarpt. **Branschpraxis-passet:** branschen
+köper determinism genom **efemär backend**, inte mockning; vår delade staging är
+lägst rankad hos Google + HOLD hos Thoughtworks; Ghost är vår manöver exakt —
+men precedent för efemär backend mot icke-självhostbar SaaS är **tomt**.
+**TVÅ EGNA SLUTSATSER RIVNA:** idempotens-fyndet föll när CI gav grönt (purge
+före körning) · fråga 1:s rekommendation byttes helt efter att Marcus uppgav
+Supabase-migrering **inom ett par veckor**. **VERKTYGS-LUCKAN AVTÄCKT (Marcus
+fråga):** arkitektur researchades, **verktygsval inte** — fyra egenbyggen där
+mogna verktyg finns (`npm-run-all` · `gh run watch` · MSW · Nx/`paths-filter`).
+**Marcus order: behåll men INAKTIVERA det byggda, bygg om som proffsen** —
+**scopet därefter KORRIGERAT** av verktygs-passet: tre av fyra egenbyggen var
+motiverade, kvar står MSW-bytet + listparitets-grinden. Mekanisering 1–4 klara
+(docs-klassning · `check:docs` · `ci-wait` exit 4 · hub §6 Delegering v1.3);
+6–7 öppna. **RESUME 2026-07-27:** numreringen disk-verifierad oförändrad ·
+T100:s research-pass startat (leverans-mekaniken, EJ samma fråga som det landade
+§6-passet) · **nx.dev-fallet utrett:** länkarna är GILTIGA (200 lokalt + 0 errors
+i grön CI-körning 30223666880), den röda main-körningen 30223287042 var
+**transient** och överlevde lychees tre default-retries — `.lycheeignore` vore
+fel verktyg, retry-härdning är rätt. **NÄSTA: T100-passets utfall → länkgrindens
+form (`--offline` finns inbyggt = uppdelningen kräver ingen egen konstruktion) →
+verktygs-åtgärderna → avsluta grillningen (4 obesvarade beslut) → de 19
+acceptance-filerna.** **AVVIKELSE ATT LÖSA:** byggplanens Fas E säger `DEFER`
+post-Fas 7, Marcus säger veckor — byggplanen är styrande och ska uppdateras
+först. Numrering: 91/079/L360/T101/f46/task-53. Full narrativ: sessionsdok S91
+Del 1–7 + Paushistorik. *(Föregående fokus-text för S91 nedan.)*
+
+**Session 91 (första passet, 2026-07-26)** —
 **DESIGN-REVIEWEN AV TASK-48, OCH DAGEN
 DÅ ARBETSFORMEN BLEV SITT EGET ÄMNE.** **`task-48` är `Done`** — Marcus
 granskade i webbläsaren och gav **fyra fynd**, alla åtgärdade i tre vågor:
@@ -44,13 +230,33 @@ serialiseras; ~20 av 30 min var spill. **MÅLBILDEN inskriven:** människan vän
 aldrig SYSSLOLÖS — skärpningen är avsiktlig, noll väntan leder till att skära i
 täckning. **Sju mekaniseringar** i Del 4, sex körbara direkt vid resume.
 **INGA lessons mintade av Code** (L354–L359 förbrukade av vågornas agenter).
-Ingen ADR (079 ledigt), inga fällor, inga trådar. **Resumen körd 2026-07-26** —
-numreringen omläst mot disk och oförändrad, HEAD `8e86aa8`, CI + audit +
-lifecycle-grind gröna. **NÄSTA: research-passet** (Del 4:s fem frågor; den
-avgörande är om merge queue löser serialiseringen eller bara flyttar kön)
-**→ mekaniseringen** (Del 4:s punkt 1–4 och 6–7 är oberoende av researchen).
-Numrering vid resume: 91/079/L360/T100/f46/task-53. Full narrativ: sessionsdok
-S91 Del 1–5.
+Ingen ADR (079 ledigt), inga fällor, inga trådar. **RESUMEN + DEL 6 KÖRDA
+2026-07-26.** **Researchen klar — fyra pass mot primärkälla.** Merge queue är
+**stängd** (batchar inte `merge_group`-bygg, och kräver org-ägt repo — vårt är
+användarägt). Shardning **blockerad** (`parallelIndex` kolliderar över shards;
+Airtables 5 anrop/s är per BAS; basen går ej att klona — beräknade fält read-only,
+`Delete base` enterprise-only). Push-kadensen **låg rätt hela tiden** och
+premissen bakom oron föll (worktree-svepet hoppar över träd med opushade
+commits). **MÄTNINGEN VÄNDER BILDEN:** E2E-steget är 84 % av 9,25 min och
+**skriver aldrig till staging** — 296 av 332 tester mockar redan. **74 % (6,8
+min) är flyttbart**; hållningen 9,25 → ~2,4 min utan att skära i täckning, för
+API-sviten står kvar och bär integrationsbeviset. **Mekaniserat:** punkt 1
+(docs-klassningen — uppdraget pekade på FEL lista, luckan var fyra filer plus ett
+befintligt fail-open i Vale-regressionssviten; kontrastbevis skarpt 14,3 min →
+35 s) · punkt 2 (`npm run check:docs`, åtta grindar inte tre, saknat verktyg =
+SKIPPAT aldrig grönt) · punkt 3 (`ci-wait` exit 4 = superseddad; v1 var grön mot
+stubben och föll mot skarpt API). **Tre fel gjorda och fångade** — alla av
+mekanisk verifiering, noll av eftertanke. PR #247–#250. **Punkt 4 LANDAD** (hub-PR #3+#4): `code-role-discipline.md`
+**v1.3** med ny **§6 Delegering till subagenter** — partition före start, HÅRDA
+FÖRBUD i briefen, **explicit gren-mutationsrätt**, ingen dubbelbevakning,
+mottagning som hypotes; `SYSTEMET.md` §4 + tillståndsrad + ändringslogg synkade.
+Ingen plugin-bump (`templates/` ligger utanför pluginet). **NÄSTA: punkt 6
+(nummer-reservation — GRILLNINGSKANDIDAT) · punkt 7 (partitionerings-regeln —
+rör Marcus eget arbetssätt, tas ej ensidigt) · E2E-utbrytningen ur mutexen
+(ARKITEKTUR → grillning; mät-först per passets rangordning).** Öppet: 109 mergade fjärrgrenar · `ZZ-GRANSKNING-S91` lever i staging ·
+`save-segment`-läckan saknar purge-target. Numrering: 91/079/L360/T100/f46/task-53
+(fyra lesson-kandidater i Del 6, EJ mintade — punkt 6 först). Full narrativ:
+sessionsdok S91 Del 1–6.
 
 **Session 90 ✅ AVSLUTAD (2026-07-26)** — **MARKERA-LÄGET SKARPT, OCH TRE YTOR
 SOM FICK SIN FORM.** **`task-48` levererad** (PR #226): byggt test-först,

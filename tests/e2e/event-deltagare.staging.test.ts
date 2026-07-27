@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
 import { mockValjarLista } from './helpers/valjar-lista';
+import { expect, type Page, test } from './support/test-bas';
 
 /**
  * task-18.4 — Anmälda deltagare som ARBETSKÖ (S73-facit K35–K58): summeringsrader

@@ -156,3 +156,34 @@
 ^https://events-support\.ringcentral\.com/.*$
 ^https://help\.tickettailor\.com/.*$
 ^https://sched\.com/.*$
+
+# dl.acm.org — ACM Digital Library bakom bot-skydd (S91, 2026-07-26).
+# Två instanser i PR-run 30206013619 (samma URL, två förekomster i
+# docs/research/push-kadens-agent-arbetstrad-2026-07-26.md). Klassbevis:
+#   dl.acm.org   CI 403 / lokalt 403 med Chrome-UA → UA/fingerprint-klassen,
+#                inte GHA-IP-klassen (jfr splashthat/ringcentral/tickettailor).
+# DOI-länken är den kanoniska referensen till Rigby & Bird, "Convergent
+# contemporary software peer review practices" (FSE 2013). Research-passet
+# kunde inte extrahera PDF:en och citerar siffrorna via sekundär återgivning —
+# det står öppet i forskningsdokumentet. Det är grindens hämtning som blockeras,
+# inte källans existens.
+^https://dl\.acm\.org/doi/.*$
+
+# uber.com — bot-skydd som svarar 406 Not Acceptable (S91, 2026-07-27).
+# Två instanser i docs/research/hermetisk-vs-skarp-e2e-branschpraxis-2026-07-26.md
+# (samma URL, brödtext + källförteckning). Klassbevis:
+#   uber.com   CI 406 / lokalt 406 BÅDE med och utan Chrome-UA → serverside
+#              content-negotiation-spärr, inte GHA-IP- eller UA-klassen.
+# Källan (Ubers SLATE-artikel om testning mot delade miljöer) är LÄST och citerad
+# i research-passet; det är grindens hämtning som avvisas, inte källans existens.
+^https://www\.uber\.com/.*$
+
+# www.npmjs.com — bot-skydd, 403 både med och utan Chrome-UA (S91, 2026-07-27).
+# Paketets EXISTENS är verifierad mot den auktoritativa källan i stället:
+# registry.npmjs.org/@msw%2Fplaywright svarar 200. Webb-frontend spärrar
+# automatiserad hämtning; registry-API:t gör det inte.
+# NOT: denna post är ett av de 19 externa undantag som motiverar
+# förbättringsspåret i sessionsdok S91 § "länkgrinden är fel designad" —
+# externa länkar bör flyttas till en nattlig icke-blockerande kontroll i
+# stället för att blockera PR:er och generera undantag som aldrig rensas.
+^https://www\.npmjs\.com/package/.*$
