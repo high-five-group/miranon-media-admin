@@ -15,9 +15,33 @@
 
 ## Aktuellt fokus
 
-**Session 91 ▶️ ÅTERUPPTAGEN (2026-07-27, tredje resumen — efter
-instruktionsleverans-arbetet)** — **ANDRA RESUMEN LÖSTE INSTRUKTIONSLEVERANSEN I
-GRUNDEN.** `code-role-discipline.md` **AVVECKLAD** (ADR-079 river ADR-042 öppet):
+**Session 91 ⏸️ PAUSAD (2026-07-27, fjärde pausen — inför fortsättning på ny
+yta)** — **TREDJE RESUMEN SATTE RIKTNINGEN OCH STÄNGDE GRILLNINGEN.** Marcus
+ordning: **Fas 6 stängs INTE** (appens sidor är inte byggda som han vill) →
+**alla fem facit-lösa ytor genom full kedja** (Personer · Hem ·
+Mer/Intresserade/Maillogg · Segment · Mail-handling) → **CI-arkitekturen FÖRST**
+→ Fas E när sidorna är klara (två veckor = önskan, ej deadline). **90/10-kravet:**
+~90 % av CI-arkitekturen ska överleva Supabase-bytet — och snittet fanns redan,
+tidsbudget-passets *"gränsen går vid protokollet, inte vid läs/skriv"* ÄR
+portabilitets-snittet. **ADR-080 mintad** (acceptance-klassen: klassbytet är
+beslutet ej optimeringen · 19/13 vid protokollet · API-sviten flyttas ALDRIG ·
+kontraktsvakten som VILLKOR · vakten i abort-läge). **ADR-081 mintad** (nummer
+tilldelas vid landning: nummerlösa fragment i `tasks/lessons.d/`, numret sätts
+där merge-grinden ändå serialiserar — **lesson-spärren LYFT**; grind + config +
+self-test 6/6 + tvåsidigt rött-först; `check:docs` 8 → 9 grindar). Nyckeln kom ur
+eget repo: **backlog-CLI:t hade redan mönstret.** **REPOT ÄR ORG-ÄGT PÅ
+ENTERPRISE** sedan 11:15:43Z — merge queue-spärrens lager 1 upphävt, lager 2 står
+(bokfört i tre artefakter); städningen klar (2 döda issue-länkar · origin ×2 ·
+marketplace-källan, uppdateringsvägen skarpt prövad). **RESTLISTAN ÄR KANONISK
+BÄRARE:** `tasks/s91-restlistan.md`, fem spår, avbockningsbar. **Marcus fråga
+avtäckte A3b:** verktygsvals-prövningen fanns bara som engångs-order, ej stående
+krav. **NÄSTA: `session-resume` av 91 → läs av PR #273:s CI (`ci-wait --pr 273`,
+named flags) → skörda lesson-fragmenten → A2:7 + A2:5 → A3 MSW-bytet.**
+Numrering: 91/**082**/L360/T101/f46/task-53. Full narrativ: sessionsdok S91
+**Del 9–10** + PAUSLÄGE. *(Föregående fokus-text nedan.)*
+
+**Session 91 (tredje resumen, 2026-07-27)** — **ANDRA RESUMEN LÖSTE
+INSTRUKTIONSLEVERANSEN I GRUNDEN.** `code-role-discipline.md` **AVVECKLAD** (ADR-079 river ADR-042 öppet):
 den levererades aldrig, formen saknar precedent (**0 av 9** undersökta
 uppsättningar), den bar en **död grind** (§3.3 kvittens-före-commit — hade
 STOPPAT arbetsflödet om leveransen börjat fungera) och ett **faktafel** (§6.4).
