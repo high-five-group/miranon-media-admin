@@ -15,8 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 91 ⏸️ PAUSAD (2026-07-27, femte pausen — efter A3:s första skiva)** —
-**MSW-BYTET SPECCAT OCH FÖRSTA SKIVAN LEVERERAD.** Marcus motto *"Bygg
+**Session 91 ▶️ ÅTERUPPTAGEN (2026-07-27, femte resumen — efter A3:s första
+skiva)** — **MSW-BYTET SPECCAT OCH FÖRSTA SKIVAN LEVERERAD.** Marcus motto *"Bygg
 ordentligt eller bygg inte alls"* delegerade fyra designbeslut:
 `skipAssetRequests` **true** (passets slutsats, ej restlistans felläsning) ·
 handlers mot **EF-protokollet** · kort-med-skivor ej ad-hoc · två arbetsskivor
@@ -42,11 +42,14 @@ koden.** Samma felläsning som restlistan bar; felet hade två hemvister, en kä
 ADR riven med öppen not. **T86-FRIKTIONEN BOKFÖRD:** AgentTool-regeln
 verifierad till `~/.claude.json`/`tengu_heron_brook` (ej Marcus fil) —
 beslutskriterierna räknar **skivor, ej pass**, så uteblivna pass måste märkas.
-**Åtta PR:er, alla gröna per jobb första passet** (#273–#280). Pausen landar
-**MED** grönt bevis. **NÄSTA: `54.2`** (vakten → `onUnhandledRequest`, bär
+**Åtta PR:er, alla gröna per jobb första passet** (#273–#280). Pausen landade
+**MED** grönt bevis. **FEMTE RESUMEN 2026-07-27:** numreringen disk-verifierad
+**oförändrad på samtliga sex axlar** — inga mellansessioner hade förbrukat
+nummer; ingångsläget rent (`main` @ `bbf0b6a`, CI grön, `audit-ci` grön).
+**NÄSTA: `54.2`** (vakten → `onUnhandledRequest`, bär
 `skipAssetRequests`-omprövningen + WS-noten) **→ `54.3` QA → A5 de 19 filerna
 → kadens-regeln.** Numrering: 91/082/L360 (17 fragment väntar)/T101/f46/task-56.
-Full narrativ: sessionsdok S91 **Del 11** + PAUSLÄGE. Karta:
+Full narrativ: sessionsdok S91 **Del 11** + paushistoriken. Karta:
 `tasks/s91-restlistan.md` § VAR VI ÄR. *(Föregående fokus-text nedan.)*
 
 **Session 91 (fjärde resumen, 2026-07-27)** — **LESSON-SKULDEN BETALD.**
