@@ -97,6 +97,26 @@ done
 [[ "${TIMEOUT}" =~ ^[0-9]+$ ]] || die "--timeout måste vara ett heltal (sekunder)"
 [[ "${INTERVAL}" =~ ^[1-9][0-9]*$ ]] || die "--interval måste vara ett positivt heltal"
 
+# --commit KRÄVER full 40-teckens SHA (S91, 2026-07-27).
+#
+# `gh run list --commit` matchar inte förkortade SHA:n. Den returnerar TOM
+# lista med exit 0 — inget fel, inget varsel. Vakten läser tomheten som "ingen
+# körning ännu", pollar hela budgeten och rapporterar sedan timeout, vilket
+# läses som ett CI-problem. Fällan kostade en hel vaktcykel innan orsaken var
+# hittad, och körningen fanns hela tiden.
+#
+# `--pr`-grenen är immun: den slår upp `headRefOid`, som alltid är full SHA.
+# Bara denna gren bär fällan, och därför fäller vi HÄR i stället för att låta
+# instrumentet tystna. Ett mätinstrument som går sönder ljudlöst är värre än
+# inget — samma princip som bär hermetik-rapportens en-källa-konstant.
+if [[ "${MODE}" == "commit" && ! "${TARGET}" =~ ^[0-9a-fA-F]{40}$ ]]; then
+    die "--commit kräver FULL 40-teckens SHA — fick '${TARGET}' (${#TARGET} tecken).
+   gh run list --commit matchar inte förkortade SHA:n: den ger TOM lista utan
+   felkod, så vakten hade pollat till timeout och rapporterat ett CI-problem
+   som inte finns.
+   Använd:  --commit \"\$(git rev-parse HEAD)\"   eller   --pr <nummer>"
+fi
+
 NOW="$(date +%s)"
 DEADLINE=$(( NOW + TIMEOUT ))
 
