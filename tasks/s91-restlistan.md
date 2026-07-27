@@ -175,15 +175,40 @@ Nästa lediga nummer är **L360**. Tre källor räknar olika; konsolideras serie
 vid landning — summera dem inte i förväg. **Vägen är nu öppen:** skriv varje
 kandidat som nummerlöst fragment i `tasks/lessons.d/`, konsolidera sedan.
 
-- [ ] Sessionsdok Del 8.8 — fem kandidater
-- [ ] Andra pausens carry — fyra ur Del 6 plus två ur Del 7
-- [ ] Nya 2026-07-27 — tre: autofix förvärrar en falsk-positiv · husets
-      `>`-separerade blockquote-stapling · `.claude/**`-luckan
+- [x] Sessionsdok Del 8.8 — **fem landade** som fragment (2026-07-27)
+- [x] Andra pausens carry — **fyra ur Del 6 + två ur Del 7 landade** (2026-07-27)
+- [x] Nya 2026-07-27 — **en av tre landad** (`.claude/**`-luckan). **De två
+      andra kunde INTE beläggas** — se stopp-posten nedan.
 - [x] **FÖRSTA FRAGMENTET LANDAT** (2026-07-27) — *verifiera med CI:s exakta
       kommando, inte en svagare lokal variant* `[UNIVERSAL]`. Skördat i samma PR
       som byggde mekanismen; grinden räknade det korrekt (`1 nummerlösa
       fragment`). Vägen är prövad skarpt, ej bara byggd.
+- [x] **Ny kandidat, född vid skörden** — *en lesson-kandidat som bokförs som
+      stikkord överlever pausen som ord, inte som innehåll* `[UNIVERSAL]`.
+      Empirin är de två obelagda posterna direkt ovanför.
 - [ ] Hub-lyftet `L284–L359`
+- [ ] **Konsolideringen** — de 15 fragmenten flyttas in i `tasks/lessons.md`
+      med nummer från `L360`. Kräver `lessons-hub-sync`-skillens
+      konsolideringssteg (öppen post i A2)
+
+**Utfall 2026-07-27: 14 nya fragment skrivna, grind-verifierade** (`check:docs`
+9/9, `15 nummerlösa fragment`). Räkningen blev 14, inte elva — handoffen varnade
+uttryckligen *"summera dem inte i förväg, tre källor räknar olika"*, och det
+höll: Del 10.8:s kvarvarande punkt och en ny kandidat tillkom vid skörden.
+
+### STOPP — två kandidater kunde inte beläggas
+
+Dessa två bokfördes i PAUSLÄGE **enbart som stikkord** och finns ingenstans
+annars. Sessionsdokets Del-text, dagens fem commit-meddelanden och
+configdiffarna för `.markdownlint-cli2.jsonc` genomsöktes utan träff.
+
+1. *"autofix förvärrar en falsk-positiv"*
+2. *"husets `>`-separerade blockquote-stapling"*
+
+De skrivs **inte** på gissning — det vore att uppfinna empiri. **Marcus avgör:**
+minns du vad de var, skrivs de; annars förkastas de explicit per ADR-053
+(registrera — förkasta aldrig tyst). Kandidaten *lesson-kandidat som stikkord*
+ovan är den skördade lärdomen av just detta.
 
 ## Spår D — App-arbetet (efter Spår A)
 
@@ -230,3 +255,4 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-27 | Spår B åtgärd 1 + 2 + steg 3 | `#262` · `#263` · mätning |
 | 2026-07-27 | **A1 grillningen avslutad — ADR-080 mintad** | `#272` |
 | 2026-07-27 | **A2:6 nummer-tilldelningen löst — ADR-081; Spår C avblockerat** | `#273` |
+| 2026-07-27 | Tillstånds-återställningen (resume 4) + **Spår C: 14 fragment** | (denna PR) |
