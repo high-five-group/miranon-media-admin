@@ -146,7 +146,7 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
 > **Status 2026-07-27:** punkt 1 är PÅBÖRJAD (`TASK-54.1` Done), punkt 2–4
 > ännu ej utförda.
 
-- [~] **MSW-bytet** (dom: BYT) — `msw` + `@msw/playwright` med
+- [x] **MSW-bytet — KLART 2026-07-27** (dom: BYT) — `msw` + `@msw/playwright` med
       `defineNetworkFixture`. Speccat som **`TASK-54`** + skivor 2026-07-27.
       **`TASK-54.1` DONE** (`56e9064`, CI 8/8, ekvivalens pixel-bevisad A/B) ·
       **`54.2` DONE** (`a1c78f9`) — vakten sitter i `onUnhandledRequest`,
@@ -265,7 +265,12 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
 ### A6 · Schemalagt till AT-Max (ADR-063 S81-not) — rör ej nu
 
 - [ ] `T85` våg 3 — staging-per-run-isolering. **Taket för allt annat.**
-- [ ] `T87` — visual-grindens aktivering
+- [ ] `T87` — visual-grindens aktivering. **Blockeraren är BORTA 2026-07-27**
+      (`TASK-55` Done: baselines regenererade, granskade, mergade; bevis-dispatch
+      `30297097792` loggar *"Inga baseline-ändringar"*). **Triggern står dock
+      kvar** — Marcus-beslut A från S81 flyttas inte av att ett hinder
+      försvinner; grinden aktiveras när UI-takten lugnar sig. Tråden uppdaterad
+      med den distinktionen
 
 ## Spår B — Instruktionsleveransen (`T100`)
 
@@ -296,10 +301,12 @@ kandidat som nummerlöst fragment i `tasks/lessons.d/`, konsolidera sedan.
       stikkord överlever pausen som ord, inte som innehåll* `[UNIVERSAL]`.
       Empirin är de två obelagda posterna direkt ovanför.
 - [ ] Hub-lyftet `L284–L359`
-- [ ] **Konsolideringen** — de **17** fragmenten flyttas in i `tasks/lessons.md`
+- [ ] **Konsolideringen** — de **19** fragmenten flyttas in i `tasks/lessons.md`
       med nummer från `L360` (disk-verifierat 2026-07-27: sista numrerade post
       är `L359`). Kräver `lessons-hub-sync`-skillens konsolideringssteg (öppen
-      post i A2)
+      post i A2). **Räkningen steg 17 → 19** under sjätte pausens resume: två
+      fragment tillkom (`*/` i citerat glob-mönster stänger blockkommentaren ·
+      en repo-inställning kan vara låst tre nivåer upp), båda `[UNIVERSAL]`
 
 **Utfall 2026-07-27: 16 nya fragment skrivna, grind-verifierade** (`check:docs`
 9/9, grinden räknar **17 nummerlösa fragment** = 16 nya plus det som landade
@@ -349,6 +356,14 @@ kostar att den måste återupptäckas genom att felet upprepas.
 - [ ] Eventinfo saknar motor — krysset skriver två fält ingen kod läser.
       **Kort ej skapat**
 - [ ] 31 övriga To Do-kort. HIGH: `TASK-24` · `TASK-25` · `TASK-27` · `TASK-28`
+- [ ] **Färgsystemets migrering ligger parkerad i S92** (egen session, eget dok,
+      `lifecycle: paused`). Grunden är landad och **additiv** — 72 nya
+      primitiver i `--p-*`-namnrymden utan konsumenter, appen renderar
+      oförändrad så när som på ett tokenvärde. **Migreringen (att låta
+      `--mm-*`-rollerna peka på skalorna) ÄNDRAR appens utseende** och har egna
+      steg A–E, varav steg C kräver Marcus-beslut. Noteras här enbart så att
+      Spår D:s app-arbete inte planeras som om färgsystemet vore orört —
+      arbetet ägs av S92, inte av denna lista
 
 ## Spår E — Hygien och skuld
 
@@ -382,16 +397,40 @@ Registrerade som backlog-kort, inte som restliste-poster. Här bara som index.
       ställen i `airtable-client.ts`. MEDIUM. Enda posten i dag som är en defekt
       i **produktionskod**, inte i dokumentation eller CI. Korsrefererad från
       `airtable-constraints.md` P4
-- [ ] **`TASK-55`** — incheckade linux-baselines stale sedan S90.
-      **OETIKETTERAD = oplockbar** tills Marcus klassar. Blockerar `T87`:s
-      aktivering: grinden skulle fälla på fyra tester direkt. Kräver
-      **granskning**, inte bara en dispatch — varje bild i baseline-PR:en
-      definierar vad som hädanefter anses korrekt
+- [x] **`TASK-55` — DONE 2026-07-27.** Baselines regenererade ur CI, **granskade
+      och godkända av Marcus** (PR #287, grön per jobb 8/8), bevis-dispatch
+      `30297097792` loggar *"Inga baseline-ändringar"*. Utfallet blev **tre vyer
+      × två vyportar = sex bilder**, inte de fyra kortet trodde: `personer`
+      (S90:s prototyp-pass), `eventsida` (task-48 rev per-kort-knapparna, därav
+      att filen KRYMPTE) och `event-lista` (filterknappen ur `f11cc37`,
+      task-17.7). Den sista feldiagnostiserades först som hover-ändringen
+      `0f8860a` — hover fotograferas inte, och felet syntes först när bilderna
+      faktiskt öppnades och jämfördes
+
+**Nya kort ur denna resumes QA + arbete — alla OETIKETTERADE = oplockbara:**
+
+- [ ] **`TASK-56`** — WebSocket-vägen går förbi hermetik-vakten; bindningen
+      `connectToServer()`:ar när inga WS-handlers finns. Ingen regression
+      (sid-vakten fångade aldrig WS heller), men den enda kvarvarande vägen ut
+      ur fixturvärlden. Latent tills appen får realtime
+- [ ] **`TASK-57`** — vaktens felmeddelande skalar dåligt: stavfel lyfts inte
+      fram ur listan, och en extern domän får EF-råd. **Steg 2 i VAR VI ÄR**
+- [ ] **`TASK-58`** — överskuggningsmönstret `network.use()` är odokumenterat.
+      Mönstret A5:s nitton filer ska luta sig mot. **Steg 2 i VAR VI ÄR**
 
 ## Beslut som väntar på Marcus
 
 - [ ] `--mm-btn-*` eller `--mm-button-*`? Nio oanvända tokens i `semantic.css`
-      mot 48 `--mm-button-*` i `components.css`
+      mot 48 `--mm-button-*` i `components.css`. **UNDERLAG FINNS NU:** den
+      parallella sessionen S92 mätte frågan under sitt färgsystem-arbete
+      (sessionsdok S92, sök `--mm-btn-`) — hämta deras räkning innan frågan
+      besvaras, gör inte om mätningen
+- [ ] **Klassning av `TASK-56`, `TASK-57`, `TASK-58`** — alla tre oetiketterade
+      och därmed oplockbara. `57` + `58` är beslutade som nästa arbete men kan
+      inte plockas förrän de klassats
+- [ ] **Review-pilotens kadens** (T86-friktionen) — passet uteblev även på
+      `TASK-54.2`, märkt i pilotloggen. Beslutskriterierna räknar skivor, inte
+      pass, så varje omärkt uteblivet pass underskattar träffkvoten
 - [ ] `IDENTITET.md`-destillatet (= Spår B steg 4)
 - [ ] Länkgrindens form (= A4)
 - [ ] Merge queue-aktiveringen (= A4)
@@ -416,4 +455,17 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-27 | **A3 speccat** — `TASK-54` + två skivor + QA; restlistans `skipAssetRequests`-krav rättat | `920a3ef` · `#277` |
 | 2026-07-27 | **`TASK-54.1` levererad** — MSW bär API-lagret; ekvivalens pixel-bevisad A/B | `56e9064` · `#278` |
 | 2026-07-27 | `TASK-54.1` stängd (Done efter CI) + **`TASK-55`** registrerat | `34a3ea6` · `#279` |
-| 2026-07-27 | **T86-friktionen bokförd** + 54.1:s pilotrad + review-fixarna (ADR-080 rättad) | (denna PR) |
+| 2026-07-27 | **T86-friktionen bokförd** + 54.1:s pilotrad + review-fixarna (ADR-080 rättad) | `c5c1dc0` · `#280` |
+| 2026-07-27 | Femte pausen — lifecycle paused, handoff, todo-kadens | `4b087bc` · `#281` |
+| 2026-07-27 | Tillstånds-återställningen (resume 5) | `85b7c07` · `#282` |
+| 2026-07-27 | **`TASK-54.2` levererad** — vakten till `onUnhandledRequest`; `skipAssetRequests` VÄND till `false` efter källkodsmätning; sid-vakt + EF-catch-all rivna; tvåsidigt rött-först | `a1c78f9` · `#283` |
+| 2026-07-27 | `TASK-54.2` stängd + **`TASK-56`** (WS-vägen) + fragment `*/`-i-blockkommentar | `d681f3e` · `#284` |
+| 2026-07-27 | **`TASK-54.3` QA körd av Code på Marcus delegering** — sex steg; **`TASK-57`** + **`TASK-58`** registrerade | `b31fc3b` · `#286` |
+| 2026-07-27 | **Baselines regenererade** — 6 bilder, Marcus-granskade och godkända | `37e638d` · `#287` |
+| 2026-07-27 | **`TASK-55` löst** + Actions-flaggan satt enterprise→org→repo; workflowens filhuvud faktarättat; fragment *låst tre nivåer upp* | `ed984c1` · `#288` |
+| 2026-07-27 | **Sjätte pausen** — A3 stängd, lifecycle paused, VAR VI ÄR omskriven, `T87` avblockerad | `8ee8b34` · `#289` |
+| 2026-07-27 | Restlistan genomgången post för post mot resumens faktiska utfall (Marcus-order) | (denna PR) |
+
+**Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
+bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
+stängde `TASK-54.2` DoD 7 och `TASK-54.3` DoD 5).
