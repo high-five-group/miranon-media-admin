@@ -44,6 +44,7 @@ source "${CONFIG}"
 
 HEADING_RE="^### ${LESSON_HEADING_PREFIX}[0-9]+"
 FAILED=0
+FRAG_COUNT=0
 
 # --- (a) Dubbletter i den konsoliderade filen -----------------------------
 if [[ ! -f "${LESSON_FILE}" ]]; then
@@ -58,7 +59,12 @@ if [[ -n "${DUPES}" ]]; then
     while IFS= read -r dupe; do
         [[ -z "${dupe}" ]] && continue
         num="${dupe##*"${LESSON_HEADING_PREFIX}"}"
-        echo "   ${LESSON_HEADING_PREFIX}${num} — rader: $(grep -nE "^### ${LESSON_HEADING_PREFIX}${num}\$" "${LESSON_FILE}" | cut -d: -f1 | paste -sd, -)"
+        # Pipe-kedjan bryts ut per husets idiom (check-adr-count.sh rad 44):
+        # command substitution med pipe maskerar returvärdet (SC2312).
+        hits=$(grep -nE "^### ${LESSON_HEADING_PREFIX}${num}\$" "${LESSON_FILE}" || true)
+        lines=$(echo "${hits}" | cut -d: -f1 || true)
+        lines=$(echo "${lines}" | paste -sd, - || true)
+        echo "   ${LESSON_HEADING_PREFIX}${num} — rader: ${lines}"
     done <<< "${DUPES}"
     echo "   Orsak: två aktörer antog samma nästa-lediga-nummer."
     echo "   Fix: numrera om den senast landade posten och lägg nya kandidater"
@@ -69,37 +75,36 @@ fi
 # --- (b) Fragment får inte bära nummer ------------------------------------
 # Frånvarande katalog är GRÖNT, inte rött: fragment-vägen är tillgänglig,
 # inte obligatorisk för en session som inte skördar något.
-if [[ -d "${LESSON_FRAGMENT_DIR}" ]]; then
-    while IFS= read -r frag; do
-        [[ -z "${frag}" ]] && continue
+# Glob-iteration per husets idiom (check-lifecycle.sh rad 37/82) i stället för
+# find-pipe i process substitution — samma SC2312-skäl som ovan.
+for frag in "${LESSON_FRAGMENT_DIR}"/*.md; do
+    [[ -e "${frag}" ]] || continue
 
-        base=$(basename "${frag}")
-        skip=0
-        for excluded in "${LESSON_EXCLUDE_BASENAMES[@]:-}"; do
-            [[ "${base}" == "${excluded}" ]] && skip=1 && break
-        done
-        [[ "${skip}" -eq 1 ]] && continue
+    base="${frag##*/}"
+    skip=0
+    for excluded in "${LESSON_EXCLUDE_BASENAMES[@]:-}"; do
+        [[ "${base}" == "${excluded}" ]] && skip=1 && break
+    done
+    [[ "${skip}" -eq 1 ]] && continue
 
-        if grep -qE "${HEADING_RE}" "${frag}"; then
-            echo "❌ ${frag} bär en numrerad rubrik."
-            grep -nE "${HEADING_RE}" "${frag}" | sed 's/^/     /'
-            echo "   Fragment är nummerlösa — numret tilldelas när posten"
-            echo "   konsolideras in i ${LESSON_FILE}, vilket merge-grinden"
-            echo "   serialiserar (ADR-076). Ta bort numret ur rubriken."
-            FAILED=1
-        fi
-    done < <(find "${LESSON_FRAGMENT_DIR}" -type f -name '*.md' | sort)
-fi
+    FRAG_COUNT=$((FRAG_COUNT + 1))
+
+    if grep -qE "${HEADING_RE}" "${frag}"; then
+        echo "❌ ${frag} bär en numrerad rubrik."
+        offenders=$(grep -nE "${HEADING_RE}" "${frag}" || true)
+        # shellcheck disable=SC2001  # sed på multi-line är klarast här
+        echo "${offenders}" | sed 's/^/     /'
+        echo "   Fragment är nummerlösa — numret tilldelas när posten"
+        echo "   konsolideras in i ${LESSON_FILE}, vilket merge-grinden"
+        echo "   serialiserar (ADR-076). Ta bort numret ur rubriken."
+        FAILED=1
+    fi
+done
 
 if [[ "${FAILED}" -ne 0 ]]; then
     exit 1
 fi
 
 total=$(grep -cE "${HEADING_RE}" "${LESSON_FILE}" || true)
-frag_count=0
-if [[ -d "${LESSON_FRAGMENT_DIR}" ]]; then
-    frag_count=$(find "${LESSON_FRAGMENT_DIR}" -type f -name '*.md' \
-        -not -name 'README.md' | wc -l | tr -d ' ')
-fi
 
-echo "✅ Lesson-numrering OK: ${total} unika poster i ${LESSON_FILE}, ${frag_count} nummerlösa fragment."
+echo "✅ Lesson-numrering OK: ${total} unika poster i ${LESSON_FILE}, ${FRAG_COUNT} nummerlösa fragment."

@@ -425,8 +425,10 @@ jobs:
         # --enable=all aktiverar optional checks (SC2250, SC2312,
         # SC2310, SC2311 m.fl. som är default-disabled).
         # Scope per ADR-033 § Del 3: scripts/*.sh + .githooks/* +
-        # 2 sourced-config-filer (.checklist-policy.conf +
-        # .frontmatter-policy.conf).
+        # 3 sourced-config-filer (.checklist-policy.conf +
+        # .frontmatter-policy.conf + .lesson-policy.conf, tillagd S91/ADR-081 —
+        # en sourced conf utanför scopet är samma lucka som de två övriga
+        # redan stänger).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -435,7 +437,8 @@ jobs:
             scripts/*.sh \
             .githooks/* \
             .checklist-policy.conf \
-            .frontmatter-policy.conf
+            .frontmatter-policy.conf \
+            .lesson-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml; task-36.2 / ADR-077). Villkorat på changed-
