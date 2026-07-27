@@ -233,6 +233,20 @@ i möjligheten.
 | task-54.1 (diff `56e9064`; **testinfrastruktur, ej produktkod** — se not) | 5 (3/2) | 3 (F3 `EF_NAMN`-dubbleringen + två osanna kommentarer · F4 vaktens EF-undantag snävat från substring till origin+prefix · **F5 ADR-080 § Konsekvenser sa `skipAssetRequests` "måste sättas `false`" — motsäger levererad kod**, amenderad med öppen rivning + villkoret som måste följa med till 54.2) | 1 (**F1 FALSIFIERAT MED MÄTNING**: agenten hävdade att preflight-svaret 501:ar OPTIONS så appen aldrig ser felet. `page.on('request')`-logg över omockad EF + full vy-laddning visade enbart `GET`, noll `OPTIONS` — route-interception ligger före webbläsarens CORS-logik. Fyndet var en rimlig hypotes ur koden men höll inte mot verkligheten) | 1 (WebSocket-vägen oskyddad vid vaktbytet → not på 54.2) | **1 blocker** (F5: styrande ADR mot kod, hade gett fel instruktion i 54.2) / 2 kvalitet / 1 brus / 1 routad | ~9 (ett pass) | _(öppet — skivan mergad före passet, se not)_ |
 | task-48 (arbetsträd 91a577d → ompass. efter fix) | 7 + 3 småfynd (2/5) | 10 (F1 fokus till `document.body` efter batch → ref + effekt som återlämnar till Markera-knappen · F2 icke-rent utfall rev urvalet → endast `'sent'` stänger läget, nytt partial-test · F3 läget överlevde filter-/vy-byte → `stang()` i `vaxlaFilter` + självstängning vid tom kö · F4 falsk-grön live-region → lokalisering via roll + `aria-live`/`aria-atomic`-assert · F5 Esc förbi pending-spärren → `isKeyboardDismissDisabled` + rivningsskydds-test · F6 `contrast-more` släckte success-kanten på valt kort → varianten flyttad in i grenarna · F7 §19:s Greta-rad stod i presens om riven knapp → rivnings-markör + levande exempel · S1 två döda `biome-ignore` · S2 hårdkodad rgb i axe-testet → `tokenColor` · S3 tabb-stopp på icke-rullande kö → villkorat på >3 rader) | 0 | 0 | 0 blocker / 2 a11y (F1, F4) / 1 korrekthet-i-arbetsflöde (F2) / 1 tillstånd (F3) / 2 kvalitet / 1 spec / 3 nit | ~12 (ett pass) | _(öppet — Marcus design-review kvarstår, DoD #5)_ |
 
+| task-54.2 (diff `a1c78f9`; **testinfrastruktur, ej produktkod**) | **PASSET UTEBLEV** | — | — | — | — | 0 | _(ej mätbar — se märkningen nedan)_ |
+
+**Märkning av task-54.2-raden (2026-07-27) — passet uteblev strukturellt.**
+Skivan kördes på Marcus order `Kör 54.2` utan begäran om subagent, och
+AgentTool-regeln kräver en sådan begäran per anrop. Raden står här enligt
+konsekvens 2 ovan: **skivan får inte tyst räknas i nämnaren.** Görs det ser
+underlaget större ut än det är, och pilotens träffkvot underskattas — vilket
+skulle riva piloten på fel grund.
+
+Skivan hade sannolikt gett passet något att bita i: den bar två
+biblioteks-optioner vars samspel var avgörande och en borttagen catch-all vars
+konsekvens (att en matchande handler DÖLJER vakten) inte var uppenbar. Det är
+en hypotes, inte ett fynd — den prövades aldrig.
+
 **Not till task-54.1-raden (2026-07-27):** två avvikelser mot pilotens form,
 båda öppet bokförda hellre än utjämnade.
 
