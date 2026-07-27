@@ -205,10 +205,26 @@ configdiffarna för `.markdownlint-cli2.jsonc` genomsöktes utan träff.
 1. *"autofix förvärrar en falsk-positiv"*
 2. *"husets `>`-separerade blockquote-stapling"*
 
-De skrivs **inte** på gissning — det vore att uppfinna empiri. **Marcus avgör:**
-minns du vad de var, skrivs de; annars förkastas de explicit per ADR-053
-(registrera — förkasta aldrig tyst). Kandidaten *lesson-kandidat som stikkord*
-ovan är den skördade lärdomen av just detta.
+De skrivs **inte** på gissning — det vore att uppfinna empiri. Kandidaten
+*lesson-kandidat som stikkord* ovan är den skördade lärdomen av just detta.
+
+**AVGJORT 2026-07-27.** Marcus: *"Jag minns inget om de obelagda kandidaterna,
+gör inte du det heller så får du väl låta dem hänga."* Ingen av oss minns, och
+sökningen var uttömmande. De **hänger som registrerad post** — inte förkastade,
+inte skrivna. Posten står kvar här som sitt eget kvitto: det som gick förlorat
+är synligt, vilket är hela poängen med ADR-053:s *registrera, förkasta aldrig
+tyst.* Dyker empirin upp i en framtida läsning kan de skrivas då.
+
+**KANDIDAT 2 ÅTERUPPSTOD SAMMA DAG — och är nu skriven.** Två timmar efter
+beskedet ovan fälldes `check:docs` på **MD028** i ADR-063: två blockquote-block
+separerade med en tom rad i stället för husets `>`-rad. Det var exakt vad
+stikkordet syftade på. Empirin kom alltså genom att **samma fel begicks igen**,
+nu med logg och regel-ID. Fragment:
+`blockquote-stapling-separeras-med-kolon-inte-tom-rad.md`. Kvar hängande: endast
+*"autofix förvärrar en falsk-positiv"*.
+
+Det gör bokföringen till sin egen empiri: en kandidat utan nedskriven empiri
+kostar att den måste återupptäckas genom att felet upprepas.
 
 ## Spår D — App-arbetet (efter Spår A)
 
@@ -255,4 +271,5 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-27 | Spår B åtgärd 1 + 2 + steg 3 | `#262` · `#263` · mätning |
 | 2026-07-27 | **A1 grillningen avslutad — ADR-080 mintad** | `#272` |
 | 2026-07-27 | **A2:6 nummer-tilldelningen löst — ADR-081; Spår C avblockerat** | `#273` |
-| 2026-07-27 | Tillstånds-återställningen (resume 4) + **Spår C: 14 fragment** | (denna PR) |
+| 2026-07-27 | Tillstånds-återställningen (resume 4) + **Spår C: 14 fragment** | `8a79987` · `#274` |
+| 2026-07-27 | **Airtable-kostnaden dokumenterad** — ADR-063 § S91-not + `airtable-constraints.md` sektion F (P26/P27 + P4-utvidgning) | (denna PR) |
