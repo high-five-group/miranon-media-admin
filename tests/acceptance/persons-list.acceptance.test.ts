@@ -1,23 +1,40 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from './support/test-bas';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, test } from './support/acceptance-bas';
 
 /**
  * Fas 6a — Personer-listan (cursor-paginerad, ADR-056).
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt, inte staging-exklusivt; jfr mark-paid.staging.test.ts).
+ * ACCEPTANCE-KLASSEN (task-59.4, ADR-080): filen flyttades hit ur e2e-sviten
+ * med hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade.
+ * Klassningen är HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 9
+ * restanrop, samtliga typsnitt, noll skarpa.
  *
- * **Deterministiska via `page.route`-interception** av get-persons — INTE
- * faktisk EF-deploy (det är Landning 4). Mocken speglar cursor-porten:
- * `{ persons, nextCursor }` per sida, och nästa anrop bär `?cursor=<förra
- * nextCursor>`. Cursorn är opak för klienten, så testet styr värdena fritt.
+ * **Deterministisk via `network.use()`** — en överskuggning på fixturvärldens
+ * delade normalläge, inte `page.route`. Skälet är inte smak: page-routes prövas
+ * FÖRE MSW:s context-routes, så en page.route-mock hade lagt en andra
+ * avlyssningsmekanism ovanpå den fixturvärlden bär — precis den tudelning
+ * task-54.2 tog bort. Mönstret byggs med `EF('get-persons')` ur
+ * handlers-modulen: en egenskriven sträng som inte matchar faller igenom till
+ * normalläget UTAN att något fälls, och testet ser då fixturens 17 personer i
+ * stället för sina egna fem (den tysta fällan, `hermetic.ts` § Överskugga en
+ * delad handler).
+ *
+ * VARFÖR EN ÖVERSKUGGNING ÖVER HUVUD TAGET, när normalläget redan bär en RIK
+ * get-persons-resolver (`fixture-data.ts` § Personer-världen speglar EF:ens
+ * search/pageSize/cursor mot 17 personer): testet asserterar EXAKTA
+ * sidstorlekar (2 + 2 + 1) och en exakt träffmängd per sökterm. Mot normalläget
+ * hade samma bevis blivit ett kopplat påstående om fixturens datamängd, och
+ * varje ny fixturperson hade brutit tester som inte handlar om personer utan om
+ * cursor-portens round-trip. Överskuggningen håller beviset vid BETEENDET.
+ * Formen den svarar i är dock oförändrat EF:ens (`{ persons, nextCursor }`) —
+ * snittet ligger kvar vid protokollet.
  *
  * Täckning: DoD 2 (vy mot data), DoD 3 (cursor-round-trip via "Ladda fler"),
  * DoD 4 (axe 0), DoD 5 (useInfiniteQuery + getNextPageParam), plus a11y bortom
  * axe: fokus-behållning på "Ladda fler" + aria-live-annonsering av antal nya rader.
  */
-
-const GET_PERSONS = '**/functions/v1/get-persons*';
 
 /** Komplett Person som passerar PersonSchema (.parse i adaptern). */
 function person(i: number) {
@@ -58,24 +75,21 @@ function respondPage(rawUrl: string) {
   if (search) {
     const all = [0, 1, 2, 3, 4].map(person);
     const persons = all.filter((p) => p.namn.toLowerCase().includes(search.toLowerCase()));
-    return JSON.stringify({ persons, nextCursor: null });
+    return { persons, nextCursor: null };
   }
 
-  if (!cursor) return JSON.stringify({ persons: [person(0), person(1)], nextCursor: 'c1' });
-  if (cursor === 'c1') return JSON.stringify({ persons: [person(2), person(3)], nextCursor: 'c2' });
-  if (cursor === 'c2') return JSON.stringify({ persons: [person(4)], nextCursor: null });
-  return JSON.stringify({ persons: [], nextCursor: null });
+  if (!cursor) return { persons: [person(0), person(1)], nextCursor: 'c1' };
+  if (cursor === 'c1') return { persons: [person(2), person(3)], nextCursor: 'c2' };
+  if (cursor === 'c2') return { persons: [person(4)], nextCursor: null };
+  return { persons: [], nextCursor: null };
 }
 
 test.describe('Personer-listan (Fas 6a — cursor-port)', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.route(GET_PERSONS, async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: respondPage(route.request().url()),
-      });
-    });
+  // Överskuggningen läggs per test. `network` är test-scopad och byggs om för
+  // varje test, så isoleringen är strukturell — inget städsteg krävs och nästa
+  // test ser aldrig denna handler.
+  test.beforeEach(async ({ network }) => {
+    network.use(http.get(EF('get-persons'), ({ request }) => json(respondPage(request.url))));
   });
 
   test('DoD 2+3+5 — cursor-round-trip via "Ladda fler"', async ({ page }) => {
