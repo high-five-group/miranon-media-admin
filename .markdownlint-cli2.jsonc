@@ -39,7 +39,14 @@
   // tasks/lessons.d/ = nummerlösa lesson-fragment (ADR-081). Måste lintas HÄR,
   // eftersom ett olintat fragment annars bär in sina fel i lessons.md vid
   // konsolideringen — då fälls grinden på en fil ingen just rörde.
-  "globs": ["docs/**/*.md", "tasks/*.md", "tasks/sessions/*.md", "tasks/threads/*.md", "tasks/lessons.d/*.md", "./*.md"],
+  "globs": [
+    "docs/**/*.md",
+    "tasks/*.md",
+    "tasks/sessions/*.md",
+    "tasks/threads/*.md",
+    "tasks/lessons.d/*.md",
+    "./*.md"
+  ],
 
   "ignores": [
     "tasks/sessions/archive/**",
