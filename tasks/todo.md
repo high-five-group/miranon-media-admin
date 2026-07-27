@@ -60,7 +60,21 @@ nästa åtgärd om BEHIND-svälten fortsatte. Överföringen verifierad ofarlig:
 ruleset `main-skydd` `enforcement=active` · 8 secrets · `marcus803` assignable
 (ADR-077-larmet) · CI 8/8. **Enda äkta skadan: 2 döda issue-länkar** i
 `session-89.md` (GitHub redirectar `/pull/N` men **inte** `/issues/N` efter
-ägarbyte; CI ser det ej — autentiserad lychee följer överföringen). **NÄSTA:
+ägarbyte; CI ser det ej — autentiserad lychee följer överföringen). **ÄGARBYTETS
+STÄDNING KLAR** (Marcus order punkt 1–3, mätt före åtgärd): av 191
+`marcus803`-förekomster i md var bara **fyra** resurs-URL:er och **exakt två
+brutna** — alla path-typer utom `/issues/N` ger 301; de 163 bara-förekomsterna är
+`owner:`/`--assignee`/prosa som refererar PERSONEN och krävs av
+`.frontmatter-policy.conf`. Två issue-länkar ompekade (de två fungerande
+pull-länkarna lämnade — reparation ja, kosmetik i historiskt dok nej) · `origin`
+ompekad i BÅDA repona, verifierad mot rätt SHA · **hub-repot är också flyttat**
+(`high-five-group/marcus-system`, privat) och marketplace-källan ompekad via
+verktygets egen väg (`marketplace add`, state backad upp först) — redirect-risken
+mättes FÖRST och bar (`git ls-remote` mot gamla namnet gav `db645e7`), så
+omkopplingen är robusthet ej akut fix; **uppdateringsvägen skarpt prövad**
+(`marketplace update` exit 0, plugin 1.22.0 enabled + 17 skills + hooks +
+output style intakta efteråt). **`check:docs` 8 GRÖNA** — helt grön första gången
+denna dag. **NÄSTA:
 Marcus-beslut 1 (Fas E) före all planering → verktygs-åtgärderna (punkt 3:
 MSW-bytet med `skipAssetRequests: false`); CI-/grind-arkitekturen som EGET pass
 med grillning — mätning före design.** **SEX MARCUS-BESLUT VÄNTAR** (Fas E-horisonten blockerar ·
