@@ -14,6 +14,73 @@
 > lugnar" sammanfaller naturligt med milstolpen). Motpekaren finns här för
 > att trådarnas framåt-pekare inte ska vara enda bäraren (kontinuitet:
 > dubbelriktad länkning; Marcus-fråga S81).
+>
+> **S91-not (2026-07-27, additiv — ursprungstexten orörd): vad valet kostar i
+> testbarhet.** Marcus fråga: *"Vi tvingas att frångå branschledande
+> mönster/config för att Airtable tvingar oss, är det rätt tolkat?"* Svaret är
+> delvis ja, och kostnaden fanns belagd i tre research-pass men stod inte i detta
+> ADR — den som läste beslutet fick inte veta vad det kostar. Noten stänger den
+> luckan. Katalogiserad form med `v1-kompensation` + `Fas E-krav` per post:
+> [`airtable-constraints.md`](../reference/airtable-constraints.md) **P26–P27**
+> (och P4:s utvidgade manifestation).
+>
+> **Tre tvång som inte går att designa bort så länge Airtable är datakälla:**
+>
+> 1. **Per-körning-isolering är omöjlig.** Webb-API:t har exakt tre
+>    bas-endpoints (`Create` / `List` / `Delete base`, samtliga 2022-11-15) och
+>    ingen duplicerings-endpoint har någonsin skeppats. Två oberoende spärrar:
+>    `Create base` kan inte skapa beräknade fälttyper (`formula`, `rollup`,
+>    `multipleLookupValues`, `count`, `autoNumber`, `createdTime`, `button`), så
+>    en API-klon vore strukturellt icke-ekvivalent med en rollup-tung bas · och
+>    `Delete base` är *"available to enterprise users on request"*, så varje
+>    körning skulle läcka en bas.
+> 2. **5 anrop/sekund per bas är ett delat tak.** Det gäller alla samtidiga
+>    klienter mot samma bas, så parallellisering av den Airtable-bundna delen är
+>    verkningslös **även med perfekt isolering**.
+> 3. **Efemär backend är otillgänglig.** Airtable är inte självhostbar. Branschen
+>    köper determinism genom att duplicera backend per körning — Ghost, Supabase
+>    och cal.com kan alla det gratis. Precedent för efemär backend mot
+>    **icke-självhostbar SaaS** är genuint tom.
+>
+> **Konsekvensen, mätt:** staging-sviten delar en bas under en global mutex
+> (`concurrency: staging-tests`, `queue: max`) och tar 9,25 min serialiserat.
+> `playwright.config.ts` bär sex deterministiska kollisioner (TASK-6) som
+> uppstår redan vid två samtidiga projekt. Den formen — delad muterbar
+> testmiljö — är **lägst rankad i Googles SUT-ranking och HOLD-listad hos
+> Thoughtworks**.
+>
+> **Vad som INTE är Airtables fel** (eget val, kan åtgärdas oberoende): den
+> globala mutexens utformning · det delade ankaret `TEST_REGISTRATION_RECORD_ID`
+> som muteras av tre tester · att `fullyParallel` inte är satt · att staging är
+> **en** långlivad bas (ADR-050:s val, motiverat av prod-spegel-kravet).
+>
+> **Och en viktig avgränsning: den hermetiska utbrytningen är INTE en
+> kompromiss — den ÄR branschmönstret.** Ghost kör 81 hermetiska
+> acceptance-filer i eget jobb plus 82 skarpa i docker-stack med en 418-vakt;
+> [ADR-080](ADR-080-acceptance-klassen-hermetisk-utbrytning.md) är byggd på den
+> precedenten. Mätningen visar att **410 s av 555 s (74 %)** bärs av tester som
+> redan mockar sina Edge Functions, medan **~145 s (2,4 min)** genuint behöver
+> en verklig backend. Vi når alltså branschmönstret för merparten av sviten. Det
+> vi inte kan nå är kompletteringen: branschen tar de sista 26 procenten med
+> efemär backend, och den dörren är stängd av tvång 1 och 3.
+>
+> **Fas E-kopplingen — samtliga tre tvång upphävs av Supabase.** Postgres är
+> självhostbar (docker i CI), klonbar och seedbar per körning, och har ingen
+> per-bas-throttle. Supabase branching ger dessutom isolerade preview-miljöer per
+> PR (ADR-050:s redan öppna dörr, *"kan adderas senare för PR-previews"*). Det
+> gör **testbarheten till ett självständigt argument för Fas E** som inte stod
+> skrivet någonstans före denna not. Argumentet ändrar INTE beslut 6: migrationen
+> förblir ett separat senare spår och basen maxas som egen leverabel oavsett
+> tajming. Det tillför en post till Fas E:s värde-sida, inte en deadline.
+>
+> **Detta är ett medvetet pris för ett medvetet val,** inte en olycka. Beslutets
+> skäl (räcker för v1 · mall för Passionslyftet · avtäcker kraven) står
+> oförändrade. Vad noten tillför är att priset nu är skrivet där beslutet bor.
+>
+> Belägg: [`parallell-e2e-mot-delad-backend-2026-07-26.md`](../research/parallell-e2e-mot-delad-backend-2026-07-26.md)
+> §5 (spärrarna) · [`staging-svitens-tidsbudget-2026-07-26.md`](../research/staging-svitens-tidsbudget-2026-07-26.md)
+> (fördelningen) · [`hermetisk-vs-skarp-e2e-branschpraxis-2026-07-26.md`](../research/hermetisk-vs-skarp-e2e-branschpraxis-2026-07-26.md)
+> (rankningarna + Ghost-precedenten).
 
 ## Kontext
 
