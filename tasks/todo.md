@@ -15,6 +15,31 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ AKTIV (fjärde resumen, 2026-07-27)** — **LESSON-SKULDEN BETALD.**
+Tillstånds-återställningen körd (`lifecycle: paused → active`, paus-rubrik →
+historik-form, numreringen disk-verifierad **oförändrad** på samtliga sex axlar).
+**PR #273 GRÖN OCH MERGAD** (`043e4a0`, `ci-wait` 8/8 per jobb, staging 9 m 53 s)
+— handoffens *"landar utan grönt bevis"* var föråldrad: `30271719279` hade
+cancellats och en **femte** körning fanns på `e29673a`. `Docs link check` gick
+igenom ⇒ `cs.umd.edu`-timeouten var **transient som klassat**, tystades ej.
+**Landnings-ordningen valdes medvetet:** återställningen hölls tillbaka tills #273
+mergat — en commit till hade superseddat en 9/10-grön körning och kostat
+~10 min genom mutexen (A2:5 tillämpad som omdöme, ej kodad). **SPÅR C SKÖRDAT I
+SIN HELHET: 14 nya fragment** i `tasks/lessons.d/` (Del 6:s fyra · Del 7:s två ·
+Del 8.8:s fem · Del 10.8:s kvarvarande · `.claude/**`-luckan · en ny född vid
+skörden). Räkningen blev **14, inte elva** — handoffens varning *"summera dem
+inte i förväg"* höll. `check:docs` **9/9**, grinden räknar **15 nummerlösa
+fragment**. **STOPP — TVÅ KANDIDATER KUNDE INTE BELÄGGAS:** *autofix förvärrar
+en falsk-positiv* + *husets `>`-separerade blockquote-stapling* fanns enbart som
+stikkord i PAUSLÄGE; Del-text, dagens fem commits och configdiffarna genomsöktes
+utan träff. **De skrivs inte på gissning — Marcus avgör: skriv eller förkasta
+explicit** (ADR-053). Iakttagelsen skördad som eget fragment. **NÄSTA: A2:7
+partitionerings-regeln + A2:5 landnings-ordningen kodad → A3 MSW-bytet
+(`skipAssetRequests: false`) → konsolideringen av de 15 fragmenten från L360.
+Byggplanens Fas E-horisont före planering mot ny ordning.** Numrering:
+91/082/L360/T101/f46/task-53. Full narrativ: sessionsdok S91 **Del 11**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-27, fjärde pausen — inför fortsättning på ny
 yta)** — **TREDJE RESUMEN SATTE RIKTNINGEN OCH STÄNGDE GRILLNINGEN.** Marcus
 ordning: **Fas 6 stängs INTE** (appens sidor är inte byggda som han vill) →
