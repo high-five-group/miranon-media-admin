@@ -327,6 +327,17 @@ kostar att den måste återupptäckas genom att felet upprepas.
 
 ## Spår E — Hygien och skuld
 
+- [x] **Actions-flaggan efter ägarbytet — LÖST 2026-07-27.** Ägarbytets
+      städning (sessionsdok Del 9.8) missade en post:
+      `can_approve_pull_request_reviews` stod `false` och blockerade
+      baseline-workflowen (`gh pr create` avvisad, run `30292488425`).
+      Låset satt på **enterprise**, inte repo — org-nivån gav
+      `409 Conflict: "The enterprise does not allow GitHub Actions to approve
+      pull requests"`. Satt uppifrån och ned (enterprise → org → repo ärver),
+      `default_workflow_permissions` kvar på `read` överallt. Workflowens
+      filhuvud kallade förutsättningen en *repo-inställning* — den
+      faktarättelsen är gjord i samma landning, så nästa läsare slipper
+      utredningen. Lesson-fragment skrivet
 - [ ] Byggplanen uppdateras med Fas E-horisonten enligt premiss 4 —
       **styrande dokument, ska göras före planering mot ny horisont**
 - [ ] 109 mergade fjärrgrenar på origin. **Även ~60 lokala grenar** ligger kvar

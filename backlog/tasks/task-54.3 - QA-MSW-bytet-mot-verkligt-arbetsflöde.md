@@ -1,10 +1,10 @@
 ---
 id: TASK-54.3
 title: 'QA: MSW-bytet mot verkligt arbetsflöde'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-27 15:07'
-updated_date: '2026-07-27 18:07'
+updated_date: '2026-07-27 19:12'
 labels:
   - ready-for-human
 dependencies:
@@ -46,8 +46,6 @@ Fynd registreras som NYA kort med exakt symptom och förväntat beteende. Denna 
 - [x] #2 Eventuella fynd registrerade som egna kort, inte som noteringar här
 <!-- AC:END -->
 
-
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -68,13 +66,19 @@ STEG 6 (tidsåtgång): 17,3 s före vaktbytet mot 17,0 s och 20,2 s efter (två 
 FYND: TASK-57 (vaktens meddelande) och TASK-58 (odokumenterat överskuggningsmönster). Båda oetiketterade = oplockbara tills de klassas.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · QA-utfall på kortet · commit b31fc3b + stängning · CI-run 30292561708 per jobb · sex steg genomförda, ett med öppet bokförd avvikelse (steg 4: nätverksavstängning ersatt av restanrops-mätning — 32 filer med restanrop, samtliga e2e, noll visual) · fynd: TASK-57 + TASK-58 · DoD 5 stängd av dispatch-run 30297097792: 'Inga baseline-ändringar'
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Baseline-dispatchen loggar 'Inga baseline-ändringar'
+- [x] #5 Baseline-dispatchen loggar 'Inga baseline-ändringar'
 - [x] #6 Negativt self-test bevisar att vakten fäller OCH namnger saknad request + listar mockade
 - [x] #7 Vaktens option verifierad skarpt satt
 - [x] #8 Ingen befintlig e2e-fil rörd

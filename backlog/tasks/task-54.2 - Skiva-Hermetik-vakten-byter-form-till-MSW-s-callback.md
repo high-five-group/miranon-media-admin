@@ -1,10 +1,10 @@
 ---
 id: TASK-54.2
 title: 'Skiva: Hermetik-vakten byter form till MSW:s callback'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-27 15:07'
-updated_date: '2026-07-27 17:05'
+updated_date: '2026-07-27 19:12'
 labels:
   - ready-for-agent
 dependencies:
@@ -57,7 +57,7 @@ Punkten kan bockas när TASK-55 är löst och dispatchen ger en ren signal. Kort
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Levererad · commit a1c78f9 · CI-run 30286774918 per jobb (8/8, full staging-svit, noll skippade) · CI-grön-första-pass: ja · defekter under körning: 1 (självfångad före commit: */ i citerat glob-mönster stängde JSDoc-blocket → SyntaxError; skördad som fragment) · TDD: 2 cykler (rött 1: modul saknas · rött 2: 'Expected to fail, but passed' med vakten byggd men ej inkopplad → grönt 5/5) · review-pass: UTEBLEV (AgentTool-regeln, märkt i T86-loggen)
+Levererad · commit a1c78f9 · CI-run 30286774918 per jobb (8/8, full staging-svit) · CI-grön-första-pass: ja · defekter under körning: 1 (självfångad före commit: */ i citerat glob-mönster stängde JSDoc-blocket) · TDD: 2 cykler (rött 1: modul saknas · rött 2: 'Expected to fail, but passed' med vakten byggd men ej inkopplad → grönt 5/5) · review-pass: UTEBLEV (AgentTool-regeln, märkt i T86-loggen) · DoD 7 stängd 2026-07-27 av dispatch-run 30297097792: 'Inga baseline-ändringar'
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
@@ -68,6 +68,6 @@ Levererad · commit a1c78f9 · CI-run 30286774918 per jobb (8/8, full staging-sv
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Negativt self-test bevisar att vakten fäller OCH namnger saknad request + listar mockade
 - [x] #6 Vaktens option verifierad skarpt satt (bindningens default är tyst genomsläpp)
-- [ ] #7 Baseline-dispatchen loggar fortfarande 'Inga baseline-ändringar'
+- [x] #7 Baseline-dispatchen loggar fortfarande 'Inga baseline-ändringar'
 - [x] #8 Ingen befintlig e2e-fil rörd — diffen visar det
 <!-- DOD:END -->
