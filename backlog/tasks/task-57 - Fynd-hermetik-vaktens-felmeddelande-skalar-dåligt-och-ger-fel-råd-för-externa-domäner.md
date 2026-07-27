@@ -6,7 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-27 18:06'
-labels: []
+updated_date: '2026-07-27 19:47'
+labels:
+  - ready-for-agent
 dependencies: []
 ordinal: 122000
 ---
@@ -36,3 +38,12 @@ Vakten bor i tests/visual/support/hermetik-vakt.ts.
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 När den saknade pathen ligger nära en registrerad handler lyfts den kandidaten fram EXPLICIT ovanför listan (formen "Menade du: GET /functions/v1/get-events?"), inte bara som en rad bland de andra
+- [ ] #2 Närhets-tröskeln är ett medvetet valt värde med motivering i koden; ingen kandidat lyfts fram när ingen är rimligt nära
+- [ ] #3 Meddelandet skiljer två fall: path under /functions/v1/ utan handler (åtgärd: lägg till handler) mot anrop till domän UTANFÖR fixturvärlden (åtgärd: undersök varför appen ringer dit). Externa domäner får inte EF-rådet som åtgärdsförslag
+- [ ] #4 Båda meddelandeformerna är enhetstestade mot OmockadRequestError — utfallet är mätt, inte visuellt granskat
+- [ ] #5 hermetik-vakt.spec.ts:s befintliga tvåsidiga bevis förblir grönt: vakten fäller fortfarande i båda fallen och hermetiken är oförändrad
+<!-- AC:END -->

@@ -407,7 +407,8 @@ Registrerade som backlog-kort, inte som restliste-poster. Här bara som index.
       `0f8860a` — hover fotograferas inte, och felet syntes först när bilderna
       faktiskt öppnades och jämfördes
 
-**Nya kort ur denna resumes QA + arbete — alla OETIKETTERADE = oplockbara:**
+**Nya kort ur sjätte resumens QA + arbete — alla KLASSADE `ready-for-agent`
+2026-07-27** (Code på Marcus delegering; se § Beslut som väntar):
 
 - [ ] **`TASK-56`** — WebSocket-vägen går förbi hermetik-vakten; bindningen
       `connectToServer()`:ar när inga WS-handlers finns. Ingen regression
@@ -425,9 +426,20 @@ Registrerade som backlog-kort, inte som restliste-poster. Här bara som index.
       parallella sessionen S92 mätte frågan under sitt färgsystem-arbete
       (sessionsdok S92, sök `--mm-btn-`) — hämta deras räkning innan frågan
       besvaras, gör inte om mätningen
-- [ ] **Klassning av `TASK-56`, `TASK-57`, `TASK-58`** — alla tre oetiketterade
-      och därmed oplockbara. `57` + `58` är beslutade som nästa arbete men kan
-      inte plockas förrän de klassats
+- [x] **Klassning av `TASK-56`, `TASK-57`, `TASK-58` — KLAR 2026-07-27**, av Code
+      på Marcus delegering (*"Klassa dem du är du snäll"*). Alla tre
+      **`ready-for-agent`**: samtliga är avgränsade ändringar i
+      testinfrastrukturen med mekaniskt verifierbart utfall, medan repots
+      `ready-for-human` uteslutande bär QA-planer och PRD:er som kräver
+      mänskligt omdöme (6 kort, samtliga av den formen). **Klassningen avtäckte
+      en invariant etiketten bär men ingen skrivit ner:** alla 66 befintliga
+      `ready-for-agent`-kort har acceptanskriterier — **noll undantag** — och de
+      tre fynd-korten hade noll. Etiketten utan AC hade gjort DoD 1 (*"alla
+      acceptanskriterier avbockade"*) innehållslös. AC skrevs därför mot **läst
+      kod**, inte mot korttexten: 13 kriterier totalt (`56`: 4 · `57`: 5 ·
+      `58`: 4). `TASK-56`:s källkodspåstående verifierades om i samma pass —
+      `@msw/playwright/src/fixture.ts` rad 156–166 bär `route.connectToServer()`
+      vid noll WS-handlers, ordagrant som kortet uppgav
 - [ ] **Review-pilotens kadens** (T86-friktionen) — passet uteblev även på
       `TASK-54.2`, märkt i pilotloggen. Beslutskriterierna räknar skivor, inte
       pass, så varje omärkt uteblivet pass underskattar träffkvoten
@@ -464,7 +476,8 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-27 | **Baselines regenererade** — 6 bilder, Marcus-granskade och godkända | `37e638d` · `#287` |
 | 2026-07-27 | **`TASK-55` löst** + Actions-flaggan satt enterprise→org→repo; workflowens filhuvud faktarättat; fragment *låst tre nivåer upp* | `ed984c1` · `#288` |
 | 2026-07-27 | **Sjätte pausen** — A3 stängd, lifecycle paused, VAR VI ÄR omskriven, `T87` avblockerad | `8ee8b34` · `#289` |
-| 2026-07-27 | Restlistan genomgången post för post mot resumens faktiska utfall (Marcus-order) | (denna PR) |
+| 2026-07-27 | Restlistan genomgången post för post mot resumens faktiska utfall (Marcus-order) | `c1ea2e3` · `#290` |
+| 2026-07-27 | Tillstånds-återställningen (resume 7) + **klassningen av `TASK-56`/`57`/`58`** — alla `ready-for-agent`, 13 AC skrivna mot läst kod | (denna PR) |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
