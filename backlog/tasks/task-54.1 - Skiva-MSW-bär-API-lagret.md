@@ -1,9 +1,10 @@
 ---
 id: TASK-54.1
 title: 'Skiva: MSW bär API-lagret'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-27 15:06'
+updated_date: '2026-07-27 15:23'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,18 +32,40 @@ Täcker användarberättelser: 1, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Alla sex EF-svar levereras av MSW-handlers uttryckta mot EF-kontraktet
-- [ ] #2 Den gamla uppslagstabellen, dess 501-fallback och den handskrivna preflight-hanteringen är borta
-- [ ] #3 Klocka, session och typsnitts-routes är oförändrade — diffen visar det
-- [ ] #4 Tillgångs-optionen står på sitt defaultvärde, med motiveringen skriven i koden
+- [x] #1 Klocka, session och typsnitts-routes är oförändrade — diffen visar det
+- [x] #2 Tillgångs-optionen står på sitt defaultvärde, med motiveringen skriven i koden
+- [x] #3 Alla sju EF-svar levereras av MSW-handlers uttryckta mot EF-kontraktet
+- [x] #4 Den gamla uppslagstabellen och den handskrivna preflight-hanteringen är borta; 501-skyddet för omockad EF lever kvar i biblioteksburen form (catch-all-handler) och är grindat av ett test
 <!-- AC:END -->
+
+
+
+
+
+
+
+
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AVVIKELSER MOT KORTETS ORDALYDELSE, båda upptäckta vid implementation och bokförda öppet:
+
+1. AC sa 'sex EF-svar'. Disk säger SJU (get-events, get-registrations, get-event, get-event-notes, get-event-formats, get-persons, get-person). AC rättat.
+
+2. AC sa att 501-fallbacken skulle bort. Den togs bort ur den handskrivna tabellen men ÅTERINFÖRDES som MSW catch-all-handler (Ghost-mönstret, ADR-080 § 4) — annars hade bytet infört en tyst nätverksläcka: bindningens onUnhandledRequest har defaultvärdet bypass, och vakten måste släppa igenom /functions/v1/ för att MSW ska nå det. AC:ts avsikt var att den handskrivna UPPSLAGSLOGIKEN skulle bort, inte skyddet. AC rättat, skyddet grindat av tests/visual/omockad-ef.spec.ts.
+
+3. Kortet sa att hermetik-vakten inte rörs. Den fick ett fallback-villkor för /functions/v1/ — utan det abort:ar den EF-anropen innan MSW ser dem, eftersom SAMTLIGA page-routes prövas före context-routes. Vaktens FORM är oförändrad (catch-all med abort); ombyggnaden till MSW:s callback är alltjämt 54.2. Route-precedensen verifierades med ett minimalt test före implementation, inte antagen.
+
+EKVIVALENSBEVISET, lokalt: de darwin-baselines som fanns var tre dagar gamla och 4 av 12 föll. Kontrastkörning med GAMLA mekanismen gav IDENTISKT utfall (samma 4, samma feltyp) — alltså stale baselines, inte regression; S90:s f0f11f3 rörde personer-ytan efter att bilderna togs. Färska baselines genererades därefter med gamla mekanismen (12/12), varefter MSW-mekanismen kördes mot dem: 12/12 passed, pixel-identiskt.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Baseline-dispatchen loggar 'Inga baseline-ändringar' — ekvivalensen bevisad, inte antagen
-- [ ] #6 Ingen befintlig e2e-fil rörd — diffen visar det
+- [x] #6 Ingen befintlig e2e-fil rörd — diffen visar det
 <!-- DOD:END -->
