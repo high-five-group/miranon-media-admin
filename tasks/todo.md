@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 91 ⏸️ PAUSAD (2026-07-27, tredje pausen — efter
+**Session 91 ▶️ ÅTERUPPTAGEN (2026-07-27, tredje resumen — efter
 instruktionsleverans-arbetet)** — **ANDRA RESUMEN LÖSTE INSTRUKTIONSLEVERANSEN I
 GRUNDEN.** `code-role-discipline.md` **AVVECKLAD** (ADR-079 river ADR-042 öppet):
 den levererades aldrig, formen saknar precedent (**0 av 9** undersökta
@@ -32,11 +32,19 @@ parallella research-agenter** + en mätt inventering (158 regelpunkter: TVINGAND
 65 / KUNSKAP 48 / OMDÖME 41 / DÖD 4) — **Codes egen dubblett-hypotes ~50 % mättes
 till 18 %** och redovisades öppet. `/to-prd`-sidofynd: frontmatter parsade aldrig,
 skillen auto-upptäcktes ALDRIG — T100:s klass i miniatyr, med skärpningen att
-verktyget som hade fångat det FANNS men aldrig kördes. **ALLT AKTIVERAS FÖRST VID
-OMSTART** — nästa sessionsstart är ADR-079:s första skarpa prov. **NÄSTA:
-`session-resume` av 91 → MÄT först (loggen `instructions-loaded.jsonl` samt
-att `/config` visar Code-rollen) → Marcus-beslut 1 (Fas E) före all planering →
-verktygs-åtgärderna.** **FEM MARCUS-BESLUT VÄNTAR** (Fas E-horisonten blockerar ·
+verktyget som hade fångat det FANNS men aldrig kördes. **ADR-079:s FÖRSTA SKARPA
+PROV ÄR KÖRT VID TREDJE RESUMEN — GRÖNT PÅ ALLA TRE KONTROLLER:**
+`instructions-loaded.jsonl` bär två rader ur denna session (hub- + spoke-
+`CLAUDE.md`, `reason: session_start`) ⇒ hooken lever · output stylen
+**Code-rollen är aktiv i systemprompten utan att någon valt den**, och ingen
+`outputStyle`-nyckel finns i någon av de fyra settings-filerna ⇒ `force-for-plugin`
+är bäraren · transparens-rapporten skrevs i rätt form utan tillsägelse.
+**Två mätta gap** (båda förväntade, nu mekaniskt belagda i stället för antagna):
+`IDENTITET.md` + `profile.md` står ALLTJÄMT ej i loggen (väntar Marcus-beslut 3)
+· hooken täcker CLAUDE.md-lagret men **inte** memory-lagret — `MEMORY.md`
+levererades i systemprompten utan att logga en rad. **NÄSTA: Marcus-beslut 1
+(Fas E) före all planering → verktygs-åtgärderna (punkt 3: MSW-bytet med
+`skipAssetRequests: false`).** **FEM MARCUS-BESLUT VÄNTAR** (Fas E-horisonten blockerar ·
 `--mm-btn` vs `--mm-button` · IDENTITET.md-destillatet · länkgrindens form ·
 grillningens fyra). Numrering: 91/**080**/L360 (LÅST till punkt 6)/T101/f46/task-53.
 Full narrativ: sessionsdok S91 **Del 8** + PAUSLÄGE. *(Föregående fokus-text
