@@ -2,7 +2,7 @@
 # scripts/test-ci-wait.sh
 #
 # Empirisk test-suite för scripts/ci-wait.sh (S87 städ-vågen; utökad S91).
-# 15 testfall:
+# 19 testfall:
 #   T1  terminal-kontroll FÖRE första sömnen  ← regressionsvakten för cykel-3-buggen
 #   T2  grön körning, alla jobb success → 0
 #   T3  failande jobb → 1 (fail-closed)
@@ -13,7 +13,9 @@
 #   T8  run saknas först, dyker upp: pollar upp den → 0
 #   T9  run dyker aldrig upp → 2
 #   T10 --pr-upplösning via headRefOid → 0
-#   T11 användningsfel (ingen/dubbel mode, ogiltigt intervall) → 3
+#   T11 användningsfel (ingen/dubbel mode, ogiltigt intervall, FÖRKORTAD SHA
+#       på --commit — d/e; gh ger tom lista utan felkod, så utan valideringen
+#       blir felet en timeout som pekar på CI i stället för på anropet) → 3
 #   T12 superseddad ≠ röd (S91), fyra fall:
 #       a topp-conclusion cancelled + nyare körning finns  → 4
 #       b cancelled UTAN nyare körning                     → 1  (fail-closed)
@@ -141,7 +143,7 @@ run_case() {
 }
 
 setup
-printf 'test-ci-wait: kör 15 testfall mot %s\n\n' "${GATE_SRC}"
+printf 'test-ci-wait: kör 19 testfall mot %s\n\n' "${GATE_SRC}"
 
 # T1 — REGRESSIONSVAKTEN. En redan avslutad körning får ALDRIG kosta en sömn.
 #      Cykel 3 i S86:s fix-våg sov bort nio minuter på exakt detta.
@@ -173,13 +175,20 @@ run_case "T7  aldrig terminal → 2 (timeout, ej hängning)" 2 6 \
     env GH_PENDING_READS=9999 GH_JOBS='Lint\tsuccess' \
     bash ./ci-wait.sh --run 4242 --interval 1 --timeout 3 --quiet
 
+# T8/T9 bar tidigare `--commit deadbeef` — en FÖRKORTAD SHA, som fungerade
+# enbart för att ingen validering fanns. När T11d/e infördes fälldes båda, och
+# det är valideringen som gör sitt jobb: den fångade två anropare som skickade
+# ett argument `gh run list` aldrig hade kunnat matcha mot verkligheten. SHA:t
+# nedan är fiktivt men FULLT — stubben bryr sig inte om värdet, bara vakten gör.
+readonly FULL_SHA='deadbeefcafe0123456789abcdef0123456789ab'
+
 run_case "T8  run saknas först, dyker upp → 0" 0 6 \
     env GH_RUNLIST_MISSES=2 GH_JOBS='Lint\tsuccess' \
-    bash ./ci-wait.sh --commit deadbeef --interval 1 --quiet
+    bash ./ci-wait.sh --commit "${FULL_SHA}" --interval 1 --quiet
 
 run_case "T9  run dyker aldrig upp → 2" 2 6 \
     env GH_RUNLIST_MISSES=9999 \
-    bash ./ci-wait.sh --commit deadbeef --interval 1 --timeout 3 --quiet
+    bash ./ci-wait.sh --commit "${FULL_SHA}" --interval 1 --timeout 3 --quiet
 
 run_case "T10 --pr-upplösning via headRefOid → 0" 0 - \
     env GH_JOBS='Lint\tsuccess' \
@@ -188,6 +197,17 @@ run_case "T10 --pr-upplösning via headRefOid → 0" 0 - \
 run_case "T11a användningsfel: ingen mode → 3" 3 - env bash ./ci-wait.sh --quiet
 run_case "T11b användningsfel: dubbel mode → 3" 3 - env bash ./ci-wait.sh --run 1 --pr 2
 run_case "T11c användningsfel: ogiltigt intervall → 3" 3 - env bash ./ci-wait.sh --run 1 --interval 0
+
+# T11d/e — FÖRKORTAD SHA PÅ --commit (S91, 2026-07-27). Fällan är att
+# `gh run list --commit` ger TOM lista utan felkod för en förkortad SHA, så
+# vakten pollade hela budgeten och rapporterade timeout — ett CI-problem som
+# inte fanns. Fallet måste fälla som ANVÄNDNINGSFEL (3), inte som timeout (2):
+# skillnaden är hela poängen, eftersom 2 skickar läsaren till CI och 3 till
+# anropet. Full SHA ska passera valideringen och nå den vanliga vägen.
+run_case "T11d användningsfel: förkortad SHA på --commit → 3" 3 - env \
+    bash ./ci-wait.sh --commit d52d6c8 --quiet
+run_case "T11e användningsfel: 39-teckens SHA på --commit → 3" 3 - env \
+    bash ./ci-wait.sh --commit d52d6c8b30b76f229e407057e9aff16677faea --quiet
 
 # T12 — SUPERSEDDAD ≠ RÖD (S91, mekaniserings-punkt 3).
 # cancel-in-progress avbryter föregående körning vid varje ny push, och en

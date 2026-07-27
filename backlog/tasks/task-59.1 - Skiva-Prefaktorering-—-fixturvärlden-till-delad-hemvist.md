@@ -1,10 +1,10 @@
 ---
 id: TASK-59.1
 title: 'Skiva: Prefaktorering — fixturvärlden till delad hemvist'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-27 20:40'
-updated_date: '2026-07-27 20:59'
+updated_date: '2026-07-27 21:12'
 labels:
   - ready-for-agent
 dependencies: []
