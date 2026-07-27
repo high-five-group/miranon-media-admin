@@ -1,0 +1,92 @@
+import { mergeTests } from '@playwright/test';
+import { test as matbas } from '../../e2e/support/test-bas';
+import { test as fixturvarld } from '../../support/fixturvarld/hermetic';
+
+/**
+ * Acceptance-klassens söm (task-59.3, ADR-080 beslut 1).
+ *
+ * ── VAD KLASSEN BEVISAR ──────────────────────────────────────────────────
+ *
+ * Att **appen** renderar och beter sig rätt GIVET ETT SVAR AV RÄTT FORM.
+ * Ingenting annat. Den bevisar INTE att staging eller Airtable producerar svar
+ * av den formen — det är API-svitens uppgift, och den ligger kvar bakom
+ * staging-mutexen just därför (ADR-080 beslut 2).
+ *
+ * Snittet går vid PROTOKOLLET: handlers uttrycks mot Edge Function-gränssnittet
+ * och svarar i EF:ens egen form, aldrig mot Airtables. Fogen mellan klasserna
+ * är svarsformen, bevakad av att samma zod-scheman parsar fixturens svar som
+ * parsar skarpa svar. Ett test som kringgår schemat kringgår hela argumentet
+ * för klassen.
+ *
+ * Klassen testar EXTERNT BETEENDE — aldrig att en handler anropades eller hur
+ * många gånger. Det vore att testa fixturen.
+ *
+ * ── VARFÖR mergeTests OCH INTE EN KOPIA ──────────────────────────────────
+ *
+ * Sömmen KOMPONERAS ur två befintliga fixturmoduler. Den ärver dem; den
+ * kopierar dem inte, och den ärver dem inte via `.extend()` heller — bägge
+ * vägarna hade skapat en andra sanning som kan drifta:
+ *
+ *   1. `tests/support/fixturvarld/hermetic.ts` — fixturvärlden. KLASSDELAD
+ *      hemvist sedan task-59.1: den visuella regressionssviten och
+ *      acceptance-klassen hänger på SAMMA värld. Två parallella fixturvärldar
+ *      vore emot MSW:s uttalade designavsikt ("a single source of truth for
+ *      your network across the entire stack") och emot ADR-080:s eget villkor
+ *      att en fixtur och ett schema aldrig får divergera.
+ *
+ *   2. `tests/e2e/support/test-bas.ts` — mätinstrumentet (S91 steg 1). Det är
+ *      en fullständig no-op utan `PLAYWRIGHT_HERMETIK_RAPPORT=1`. Att det följer
+ *      med hit gör att en fil som lämnar e2e-sviten inte lämnar instrumentets
+ *      räckvidd: klassningen av varje flyttad fil är HÄRLEDD ur mätdatan
+ *      (ADR-080 beslut 2-noten) och ska gå att kontrollera i efterhand.
+ *
+ *      MEN SIFFRAN BETYDER NÅGOT ANNAT HÄR, och det ska läsas rätt. I
+ *      e2e-klassen mockar varje test med page-routes, så instrumentets
+ *      catch-all — också en page-route, registrerad sist och därmed prövad
+ *      först — ser bara det som slank FÖRBI mockarna: restrafik. I
+ *      acceptance-klassen sitter all mockning på CONTEXT-nivå (MSW), alltså
+ *      UNDER catch-allen, som därför ser ALLT. Talet är en trafik-räkning, inte
+ *      en läckage-räkning. Mätt 2026-07-28 på Hem-ytans två filer: 162 anrop
+ *      fördelade på exakt två värdar — fixtur-originet och typsnitts-CDN:en —
+ *      båda mockade. Att inget tredje värdnamn finns i listan är det
+ *      instrumentet fortfarande bevisar; att inget anrop går ut är vaktens
+ *      besked, inte instrumentets.
+ *
+ *      (Instrumentet bor kvar under `tests/e2e/support/` av ren
+ *      omfattningsdisciplin: en flytt till klassdelad hemvist, som
+ *      fixturvärlden fick i task-59.1, hade rört ~30 e2e-filers importrader
+ *      och hör inte till denna skiva.)
+ *
+ * `mergeTests` är Playwrights egen mekanism för precis detta, verifierad som
+ * exporterad funktion i den installerade versionen (1.61.1) före beslutet.
+ *
+ * Ordningen mellan fixturerna är BEROENDE-BESTÄMD, inte argument-bestämd:
+ * `page` (fixturvärldens, som seedar session/klocka/typsnitt) kräver `network`,
+ * och `hermetikRapport` kräver `page`. Kedjan blir därför alltid
+ * network → page → hermetikRapport oavsett hur modulerna listas här.
+ *
+ * ── VAKTEN ÄR AVBRYTANDE HÄR ─────────────────────────────────────────────
+ *
+ * Ett anrop som ingen handler täcker FÄLLER testet med sin egen URL namngiven
+ * och instruktionstext i klartext (`hermetik-vakt.ts`, skärpt i task-57). Det
+ * är villkoret för att klassen betyder något: en fil som flyttats hit för
+ * tidigt ska bli RÖD, aldrig grön av fel skäl.
+ *
+ * ── SKRIVA ETT TEST I KLASSEN ────────────────────────────────────────────
+ *
+ * Normalläget — svaren varje test får utan att säga något — bor i
+ * `tests/support/fixturvarld/handlers.ts`. Behöver ETT test ett annat svar
+ * skrivs INGEN egen fixturvärld: testet destrukturerar `network` ur
+ * testargumenten och överskuggar lokalt med `network.use(...)`. Mönstret,
+ * isoleringen (strukturell — inget städsteg krävs) och den TYSTA FÄLLAN (en
+ * överskuggning vars mönster inte matchar faller igenom till normalläget utan
+ * att något fälls) är dokumenterade i `hermetic.ts` § Överskugga en delad
+ * handler. Läs den innan du skriver överskuggningen.
+ *
+ * Bygg alltid mönstret med `EF(namn)` och svaret med `json(...)` ur
+ * `handlers.ts` — då kan överskuggningen per konstruktion inte drifta ifrån
+ * det normalläget matchar, och CORS-huvudet kan inte glömmas.
+ */
+export const test = mergeTests(fixturvarld, matbas);
+
+export { expect, type Page } from '@playwright/test';

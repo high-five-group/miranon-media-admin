@@ -32,6 +32,15 @@ export { expect } from '@playwright/test';
 // — verifierad mot @supabase/supabase-js dist (defaultStorageKey, v2.110).
 const AUTH_STORAGE_KEY = 'sb-visual-fixture-auth-token';
 
+/**
+ * Fixtur-sessionens e-postadress. EXPORTERAD SEDAN task-59.3: acceptance-
+ * klassens Hem-test asserterar att appen ALDRIG faller tillbaka på e-posten som
+ * hälsning (Gunilla-principen), och den assertionen måste läsa adressen ur
+ * samma källa som sessionen byggs av — en handskriven litteral i testet hade
+ * kunnat drifta ifrån sessionen och tyst sluta bevisa något.
+ */
+export const FIXTUR_EPOST = 'lotta@visual-fixture.se';
+
 const ASSETS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'assets');
 
 // CORS-huvud för de mockade cross-origin-typsnitten. EF-svarens CORS bor hos
@@ -55,7 +64,7 @@ function buildSession() {
     id: '00000000-0000-4000-8000-000000000001',
     aud: 'authenticated',
     role: 'authenticated',
-    email: 'lotta@visual-fixture.se',
+    email: FIXTUR_EPOST,
     email_confirmed_at: '2026-01-01T00:00:00Z',
     app_metadata: { provider: 'email', providers: ['email'] },
     user_metadata: { display_name: 'Lotta' },

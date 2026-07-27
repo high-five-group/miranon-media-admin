@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, type Route, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { FIXTUR_EPOST } from '../support/fixturvarld/hermetic';
+import { expect, type Page, test } from './support/acceptance-bas';
 
 /**
  * Hem-vyn (task-1.3 A-skelettet → task-4.2 K10-facit-strukturen → task-4.3
@@ -19,13 +23,22 @@ import { expect, type Page, type Route, test } from './support/test-bas';
  * sidans h1 → h1-assertions matchar /^Hej/ (miljö-neutralt: namn-delen styrs
  * av sessionens display-namn, task-1.1).
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt, inte staging-exklusivt; jfr mer-vantelista.staging.test.ts).
+ * ACCEPTANCE-KLASSEN (task-59.3, ADR-080): filen flyttades hit ur e2e-sviten
+ * med hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade.
+ * Klassningen är HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 62
+ * restanrop, samtliga typsnitt, noll skarpa — filen bar FLEST restanrop av alla
+ * arton i klassen och är därmed den tyngsta lasten pilotvågen kunde pröva.
  *
- * **Deterministisk via `page.route`-mock** av EF:erna. Regex-matchare som inte
- * kolliderar: `get-registrations` och `get-events` är unika delsträngar
- * (get-events matchar inte get-event, get-registrations matchar inte
- * create-registration); `get-event\?` (klick-testet) matchar inte get-events.
+ * **Deterministisk via `network.use()`** — överskuggningar på fixturvärldens
+ * delade normalläge, inte `page.route`. Skälet är inte smak: page-routes prövas
+ * FÖRE MSW:s context-routes, så en page-route-mock hade lagt en andra
+ * avlyssningsmekanism ovanpå den fixturvärlden bär och gett EF-lagret en annan
+ * stränghet än allt annat nätverk — precis den tudelning task-54.2 tog bort.
+ * Mönstren byggs med `EF(namn)` ur handlers-modulen: en egenskriven sträng som
+ * inte matchar faller igenom till normalläget UTAN att något fälls, och testet
+ * ser då normalläget i stället för sitt eget fall (den tysta fällan,
+ * `hermetic.ts` § Överskugga en delad handler).
+ *
  * Mockarna speglar EF-svaren `{ registrations: [...] }` / `{ events: [...] }`
  * (Registration.schema / Event.schema-rader → adapterns `.parse()` passerar).
  *
@@ -38,9 +51,10 @@ import { expect, type Page, type Route, test } from './support/test-bas';
  * shell DoD 2).
  */
 
+// URL-matchare för `page.waitForResponse` (webbläsarsidans vy av anropet) —
+// INTE för mockning. Mockningen går via `EF(namn)` ur handlers-modulen.
 const GET_REGISTRATIONS = /\/functions\/v1\/get-registrations/;
 const GET_EVENTS = /\/functions\/v1\/get-events/;
-const GET_EVENT = /\/functions\/v1\/get-event\?/;
 
 /** Sidrubriken = hälsningen (AC #6) — namn-delen är miljöberoende → prefix-match. */
 const H1_HALSNING = /^Hej/;
@@ -99,9 +113,16 @@ function ev(overrides: Row = {}): Row {
   };
 }
 
-async function mock(
-  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-  page: any,
+/**
+ * Överskuggar Hem-vyns två EF-svar för ETT test. Isoleringen är strukturell —
+ * `network` byggs om per test, så nästa test ser aldrig dessa handlers.
+ *
+ * Anropas den flera gånger i samma test vinner det SENASTE anropet: MSW lägger
+ * `use()`-handlers först (`handlers-controller.js` rad 82) och första träffen
+ * vinner. Samma företräde som den tidigare page.route-formen hade.
+ */
+function mock(
+  network: NetworkFixture,
   {
     registrations = [],
     events = [],
@@ -109,25 +130,19 @@ async function mock(
     eventStatus = 200,
   }: { registrations?: Row[]; events?: Row[]; regStatus?: number; eventStatus?: number } = {},
 ) {
-  await page.route(GET_REGISTRATIONS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    await route.fulfill({
-      status: regStatus,
-      contentType: 'application/json',
-      body: regStatus === 200 ? JSON.stringify({ registrations }) : JSON.stringify({ error: 'x' }),
-    });
-  });
-  await page.route(GET_EVENTS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    await route.fulfill({
-      status: eventStatus,
-      contentType: 'application/json',
-      body: eventStatus === 200 ? JSON.stringify({ events }) : JSON.stringify({ error: 'x' }),
-    });
-  });
+  network.use(
+    http.get(EF('get-registrations'), () =>
+      regStatus === 200 ? json({ registrations }) : json({ error: 'x' }, regStatus),
+    ),
+    http.get(EF('get-events'), () =>
+      eventStatus === 200 ? json({ events }) : json({ error: 'x' }, eventStatus),
+    ),
+  );
 }
 
 test.describe('Hem — A-skelettet (task-1.3)', () => {
-  test('A-skelettet renderas: hälsnings-h1, kort med data, CTA', async ({ page }) => {
-    await mock(page, {
+  test('A-skelettet renderas: hälsnings-h1, kort med data, CTA', async ({ page, network }) => {
+    mock(network, {
       registrations: [
         reg({ fornamn: 'Carl', efternamn: 'Carlsson', inskickad: '2026-06-22T10:00:00.000Z' }),
         reg({ fornamn: 'Bo', efternamn: 'Bengtsson', inskickad: '2026-06-21T10:00:00.000Z' }),
@@ -189,19 +204,16 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
 
   test('AC 2 — klick var som helst på Nästa event-kortet → eventets detaljsida', async ({
     page,
+    network,
   }) => {
-    await mock(page, {
+    mock(network, {
       registrations: [reg()],
       events: [ev({ id: 'recEventNasta', eventNamn: 'Resor i medvetandet 1' })],
     });
-    // Detaljsidan hämtar get-event vid landning → mocka för deterministisk render.
-    await page.route(GET_EVENT, async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ event: ev({ id: 'recEventNasta' }) }),
-      });
-    });
+    // Detaljsidan hämtar get-event vid landning → överskugga för deterministisk
+    // render. `get-event` och `get-events` är skilda EF-namn: MSW matchar på
+    // hela sista path-segmentet, så överskuggningen kan inte träffa fel.
+    network.use(http.get(EF('get-event'), () => json({ event: ev({ id: 'recEventNasta' }) })));
     await page.goto('/hem');
 
     const kort = page.getByRole('region', { name: 'Nästa event' });
@@ -211,29 +223,26 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
     await expect(page).toHaveURL(/\/event\/recEventNasta/);
   });
 
-  test('task-4.4 AC 2 — klick på anmälningsrad → EVENTETS sida (B1)', async ({ page }) => {
+  test('task-4.4 AC 2 — klick på anmälningsrad → EVENTETS sida (B1)', async ({ page, network }) => {
     // B1 (öppen revidering av TASK-1 beslut 4/G1a): radklicket landar på
     // eventets DETALJSIDA — inte anmälda-undervyn.
-    await mock(page, {
+    mock(network, {
       registrations: [reg({ fornamn: 'Carl', efternamn: 'Carlsson', eventId: 'recEvent1' })],
       events: [ev({ id: 'recEvent1' })],
     });
-    // Detaljsidan hämtar get-event vid landning → mocka för deterministisk render.
-    await page.route(GET_EVENT, async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ event: ev({ id: 'recEvent1' }) }),
-      });
-    });
+    // Detaljsidan hämtar get-event vid landning → överskugga för deterministisk render.
+    network.use(http.get(EF('get-event'), () => json({ event: ev({ id: 'recEvent1' }) })));
     await page.goto('/hem');
 
     await page.getByRole('link', { name: /Carl Carlsson/ }).click();
     await expect(page).toHaveURL(/\/event\/recEvent1$/);
   });
 
-  test('task-1.4 AC 2 — Hem-CTA:n landar på samlade anmälningslistan', async ({ page }) => {
-    await mock(page, { registrations: [reg()], events: [ev()] });
+  test('task-1.4 AC 2 — Hem-CTA:n landar på samlade anmälningslistan', async ({
+    page,
+    network,
+  }) => {
+    mock(network, { registrations: [reg()], events: [ev()] });
     await page.goto('/hem');
 
     await page.getByRole('link', { name: 'Visa alla anmälningar' }).click();
@@ -244,8 +253,9 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
 
   test('task-4.4 AC 2 — rad utan event-koppling är olänkad och visar "Utan event"', async ({
     page,
+    network,
   }) => {
-    await mock(page, {
+    mock(network, {
       registrations: [reg({ fornamn: 'Eva', efternamn: 'Ek', eventId: null, eventNamn: null })],
       events: [ev()],
     });
@@ -257,8 +267,8 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
     await expect(lista.getByRole('link')).toHaveCount(0);
   });
 
-  test('tomma listor → vänliga tom-texter per card, inga fel', async ({ page }) => {
-    await mock(page, { registrations: [], events: [] });
+  test('tomma listor → vänliga tom-texter per card, inga fel', async ({ page, network }) => {
+    mock(network, { registrations: [], events: [] });
     await page.goto('/hem');
 
     await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
@@ -273,8 +283,8 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('endast dåtida event → "Inga kommande event"', async ({ page }) => {
-    await mock(page, {
+  test('endast dåtida event → "Inga kommande event"', async ({ page, network }) => {
+    mock(network, {
       registrations: [reg()],
       events: [ev({ startdatum: '2020-01-01' })],
     });
@@ -284,18 +294,19 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
 
   test('get-registrations 4xx → fel-UI (role=alert) i anmälnings-cards, event-card opåverkat', async ({
     page,
+    network,
   }) => {
     // 4xx = klient-fel → no-retry-grenen (speglar 6c). Båda anmälnings-cards delar
     // queryn → båda visar alert; event-cardet (separat query, 200) renderar fint.
-    await mock(page, { regStatus: 404, events: [ev({ eventNamn: 'Resor i medvetandet 1' })] });
+    mock(network, { regStatus: 404, events: [ev({ eventNamn: 'Resor i medvetandet 1' })] });
     await page.goto('/hem');
 
     await expect(page.getByRole('alert').first()).toContainText('Kunde inte hämta anmälningar');
     await expect(page.getByRole('link', { name: 'Resor i medvetandet 1' })).toBeVisible();
   });
 
-  test('axe 0 violations på den renderade Hem-vyn', async ({ page }) => {
-    await mock(page, {
+  test('axe 0 violations på den renderade Hem-vyn', async ({ page, network }) => {
+    mock(network, {
       registrations: [reg({ anmalningsavgift: 'Ej mottagen' }), reg()],
       events: [ev()],
     });
@@ -336,29 +347,30 @@ function patchStoredDisplayName(page: Page, displayName: string | null) {
 }
 
 test.describe('Hälsningen (task-1.1 — namnkällan ur kontots metadata)', () => {
-  test('display-namn i sessionen → h1 "Hej {namn}"', async ({ page }) => {
+  test('display-namn i sessionen → h1 "Hej {namn}"', async ({ page, network }) => {
     // 'Lotta' speglar staging-kontots faktiska display-namn — en (osannolik)
     // mitt-i-testet token-refresh, där server-sanningen ersätter patchen, kan
     // då inte flippa texten. Hälsningen är sidans h1 (task-1.3 AC #6);
     // UTAN utropstecken sedan K10-facitet (task-4.2).
     await patchStoredDisplayName(page, 'Lotta');
-    await mock(page);
+    mock(network);
     await page.goto('/hem');
     await expect(
       page.getByRole('heading', { level: 1, name: 'Hej Lotta', exact: true }),
     ).toBeVisible();
   });
 
-  test('utan display-namn → neutral hälsning, aldrig e-postadressen', async ({ page }) => {
+  test('utan display-namn → neutral hälsning, aldrig e-postadressen', async ({ page, network }) => {
     await patchStoredDisplayName(page, null);
-    await mock(page);
+    mock(network);
     await page.goto('/hem');
     await expect(page.getByRole('heading', { level: 1, name: 'Hej', exact: true })).toBeVisible();
-    // E-posten är ALDRIG fallback (AC 2, Gunilla-principen). auth.setup
-    // hard-failar utan TEST_USER_EMAIL → tom sträng här är ett riggfel.
-    const email = process.env.TEST_USER_EMAIL ?? '';
-    expect(email).not.toBe('');
-    await expect(page.getByText(email)).toHaveCount(0);
+    // E-posten är ALDRIG fallback (AC 2, Gunilla-principen). Adressen läses ur
+    // fixturvärldens session (task-59.3) i stället för ur en staging-credential
+    // i process.env — samma bevis, men utan miljöberoende. Riggkontrollen står
+    // kvar: en tom sträng hade gjort assertionen meningslös.
+    expect(FIXTUR_EPOST).not.toBe('');
+    await expect(page.getByText(FIXTUR_EPOST)).toHaveCount(0);
   });
 });
 
@@ -367,27 +379,26 @@ test.describe('Hem polling (Fas 6d L2 — ADR-017 + erratum)', () => {
   // manuella uppdatera-vägen finns inte längre — poll-lagret (testet nedan)
   // är färskhetens enda bärare (ADR-017 Updates-noten).
 
-  test('refetchInterval (60s) triggar polling-refetch — falsk klocka', async ({ page }) => {
+  test('refetchInterval (60s) triggar polling-refetch — falsk klocka', async ({
+    page,
+    network,
+  }) => {
     // page.clock fakar timers → vi kan avancera förbi 60s-intervallet deterministiskt
     // utan att vänta i realtid. refetchIntervalInBackground:false pausar bara när
     // fliken är dold; i testet är document synligt → intervallet är aktivt.
     await page.clock.install();
+    // Räknaren mäter APPENS beteende (att intervallet fyrar en ny hämtning),
+    // inte att en handler anropades — klassen testar aldrig fixturen. Utan
+    // räknaren finns ingen observerbar skillnad mellan "pollade" och "pollade
+    // inte", eftersom svaret är identiskt.
     let evCalls = 0;
-    await page.route(GET_REGISTRATIONS, async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ registrations: [reg()] }),
-      });
-    });
-    await page.route(GET_EVENTS, async (route) => {
-      evCalls += 1;
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ events: [ev()] }),
-      });
-    });
+    network.use(
+      http.get(EF('get-registrations'), () => json({ registrations: [reg()] })),
+      http.get(EF('get-events'), () => {
+        evCalls += 1;
+        return json({ events: [ev()] });
+      }),
+    );
     await page.goto('/hem');
     await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
     await expect.poll(() => evCalls).toBe(1); // initial hämtning
@@ -407,7 +418,10 @@ test.describe('Hem polling (Fas 6d L2 — ADR-017 + erratum)', () => {
  * vars andel matchar X/Y; Obetalda anmälningsavgifter BARA antalet text-3xl.
  */
 test.describe('Nästa event + Obetalda till facit (task-4.3)', () => {
-  test('AC 1 — dagar-kvar-pillen: tre exakta former, vit pill topp-höger', async ({ page }) => {
+  test('AC 1 — dagar-kvar-pillen: tre exakta former, vit pill topp-höger', async ({
+    page,
+    network,
+  }) => {
     // Fast klocka (setFixedTime): "idag" pinnas → datum-aritmetiken kan inte
     // glida över midnatt mitt i testet (TASK-3-klassen: inga lastkänsliga
     // tidsfönster). Timers löper vidare — bara Date.now/new Date() pinnas.
@@ -439,7 +453,7 @@ test.describe('Nästa event + Obetalda till facit (task-4.3)', () => {
 
     for (const { dagar, text } of fall) {
       // Senast registrerade route vinner → varje varv styr sitt eget EF-svar.
-      await mock(page, { registrations: [], events: [ev({ startdatum: datumOmDagar(dagar) })] });
+      mock(network, { registrations: [], events: [ev({ startdatum: datumOmDagar(dagar) })] });
       await page.goto('/hem');
       const kort = page.getByRole('region', { name: 'Nästa event' });
       const pill = kort.getByText(text, { exact: true });
@@ -464,8 +478,9 @@ test.describe('Nästa event + Obetalda till facit (task-4.3)', () => {
 
   test('AC 2+3 — metagrupp med ikoner + långdatum; EN länk-yta; kortrubriken text-xl semibold mörk RENDERAT', async ({
     page,
+    network,
   }) => {
-    await mock(page, {
+    mock(network, {
       registrations: [],
       events: [
         ev({
@@ -518,8 +533,9 @@ test.describe('Nästa event + Obetalda till facit (task-4.3)', () => {
 
   test('AC 4 — "X av Y platser reserverade" + beläggningsstapelns fyllnadsandel matchar X/Y (renderad mätning)', async ({
     page,
+    network,
   }) => {
-    await mock(page, {
+    mock(network, {
       registrations: [],
       events: [
         ev({
@@ -569,8 +585,9 @@ test.describe('Nästa event + Obetalda till facit (task-4.3)', () => {
 
   test('AC 5 — Obetalda anmälningsavgifter visar ENDAST antalet, text-3xl semibold', async ({
     page,
+    network,
   }) => {
-    await mock(page, {
+    mock(network, {
       registrations: [
         reg({ fornamn: 'Disa', efternamn: 'Dahl', anmalningsavgift: 'Ej mottagen' }),
         reg({ fornamn: 'Egon', efternamn: 'Ek', anmalningsavgift: 'Ej mottagen' }),
@@ -601,8 +618,9 @@ test.describe('Nästa event + Obetalda till facit (task-4.3)', () => {
 test.describe('Hem-strukturen till K10-facit (task-4.2)', () => {
   test('hälsningen utan utropstecken; återbesök i sessionen visar bara namnet (B2)', async ({
     page,
+    network,
   }) => {
-    await mock(page);
+    mock(network);
     await page.goto('/hem');
     const h1 = page.getByRole('heading', { level: 1 });
     // Första renderingen per session: "Hej {namn}" — UTAN utropstecken (facit).
@@ -616,8 +634,11 @@ test.describe('Hem-strukturen till K10-facit (task-4.2)', () => {
     await expect(h1).not.toHaveText('');
   });
 
-  test('kolumnen 600 px skärm-centrerad på desktop; headern borta (AC 1–2)', async ({ page }) => {
-    await mock(page);
+  test('kolumnen 600 px skärm-centrerad på desktop; headern borta (AC 1–2)', async ({
+    page,
+    network,
+  }) => {
+    mock(network);
     await page.goto('/hem');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(page.locator('header')).toHaveCount(0);
@@ -630,11 +651,12 @@ test.describe('Hem-strukturen till K10-facit (task-4.2)', () => {
 
   test('versionsraden nere till vänster endast desktop och matchar paketmanifestet (AC 5)', async ({
     page,
+    network,
   }) => {
     // Versionen läses ur paketmanifestet — ALDRIG hårdkodad i assertionen
     // (kortets AC: asserterad mot manifestet).
     const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
-    await mock(page);
+    mock(network);
     await page.goto('/hem');
     const rad = page.getByText(`Miranon Media Admin v${version}`, { exact: true });
     await expect(rad).toBeVisible();
@@ -662,6 +684,7 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
 
   test('AC 1 — raden: namn 16/600, joinad "kurs · ort · kortdatum" 14, relativ tid 12 muted (renderat, fast klocka)', async ({
     page,
+    network,
   }) => {
     // Fast klocka på ETT kontrollerat klockslag (idag 15:00 i RUNNERNS zon):
     // "för 2 tim sedan" kan inte glida över en dagsgräns oavsett när testet
@@ -689,7 +712,7 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
     // Join-beviset (B4): radens EGNA lookup-fält (eventNamn) divergerar
     // medvetet från eventlistans post — renderas eventlistans identitet är
     // joinen dataflödets källa, inte lookupen.
-    await mock(page, {
+    mock(network, {
       registrations: [
         reg({
           fornamn: 'Anna',
@@ -766,8 +789,9 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
 
   test('AC 4 — koppar-kontur runt kortet + koppar-varningsikon (20) vid rubriken (renderat)', async ({
     page,
+    network,
   }) => {
-    await mock(page, { registrations: [reg()], events: [ev()] });
+    mock(network, { registrations: [reg()], events: [ev()] });
     await page.goto('/hem');
     const kort = page.getByRole('region', { name: 'Nya anmälningar att hantera' });
     await expect(kort).toBeVisible();
@@ -809,8 +833,9 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
 
   test('AC 3 — zebra varannan rad utan skiljelinjer, rundade rader (renderat)', async ({
     page,
+    network,
   }) => {
-    await mock(page, {
+    mock(network, {
       registrations: [
         reg({ fornamn: 'Anna', efternamn: 'Andersson', inskickad: '2026-06-23T10:00:00.000Z' }),
         reg({ fornamn: 'Bo', efternamn: 'Bengtsson', inskickad: '2026-06-22T10:00:00.000Z' }),
@@ -850,6 +875,7 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
 
   test('AC 5 — ~25 rader i rullbar lista: maxhöjd, tunn centrerad rundad scrollmarkör, luft mot innehållet (renderat)', async ({
     page,
+    network,
   }) => {
     // 30 mockade anmälningar → listan cappas till de 25 SENASTE.
     const manga = Array.from({ length: 30 }, (_, i) =>
@@ -859,7 +885,7 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
         inskickad: new Date(Date.UTC(2026, 5, 1, 12, 0, 0) - i * 3_600_000).toISOString(),
       }),
     );
-    await mock(page, { registrations: manga, events: [ev({ id: 'recEvent1' })] });
+    mock(network, { registrations: manga, events: [ev({ id: 'recEvent1' })] });
     await page.goto('/hem');
     const lista = page.getByRole('region', { name: 'Nya anmälningar att hantera' });
     await expect(lista.getByRole('listitem')).toHaveCount(25);
@@ -897,6 +923,7 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
 
   test('AC 6 — rullningsområdet tangentbordsfokuserbart med begripligt namn; piltangent rullar; axe 0 med full lista', async ({
     page,
+    network,
   }) => {
     // Full lista (> maxhöjden) så axe:s scrollable-region-focusable-regel
     // prövas på riktigt OCH kb-rullningen har något att rulla.
@@ -910,7 +937,7 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
         eventId: i % 2 === 0 ? 'recEvent1' : null,
       }),
     );
-    await mock(page, { registrations: manga, events: [ev({ id: 'recEvent1' })] });
+    mock(network, { registrations: manga, events: [ev({ id: 'recEvent1' })] });
     await page.goto('/hem');
     const lista = page.getByRole('region', { name: 'Nya anmälningar att hantera' });
     const scroll = lista.getByRole('list', { name: 'Senaste anmälningarna' });
@@ -936,6 +963,7 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
 
   test('task-4.7 — radlänkens fokusring är inset i rullningsytan (klipps aldrig av overflow); containerns egen ring förblir utanpåliggande', async ({
     page,
+    network,
   }) => {
     // Samma fulla lista som AC 6 — klipprisken uppstår när raderna når
     // rullningsytans kant (0 vänster-padding; en utanpåliggande ring
@@ -948,7 +976,7 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
         eventId: i % 2 === 0 ? 'recEvent1' : null,
       }),
     );
-    await mock(page, { registrations: manga, events: [ev({ id: 'recEvent1' })] });
+    mock(network, { registrations: manga, events: [ev({ id: 'recEvent1' })] });
     await page.goto('/hem');
     const lista = page.getByRole('region', { name: 'Nya anmälningar att hantera' });
     const scroll = lista.getByRole('list', { name: 'Senaste anmälningarna' });
@@ -992,40 +1020,34 @@ test.describe('Anmälningslistan till facit (task-4.4)', () => {
  * border-boxar som diff-kanter.
  */
 test.describe('Osynliga uppdateringen (task-4.5)', () => {
-  /** Håll-bar mock: `hall = true` parkerar EF-anropen ofulfillade (bevisat
+  /** Håll-bar mock: `hall = true` parkerar EF-anropen obesvarade (bevisat
       aktiv omhämtning); `slappAlla` besvarar dem med AKTUELL `data` (som kan
-      bytas mellan pollarna — AC 2:s ändrat-data-väg). */
-  function hallbarMock(page: Page, data: { registrations: Row[]; events: Row[] }) {
+      bytas mellan pollarna — AC 2:s ändrat-data-väg).
+
+      Parkeringen bärs sedan task-59.3 av ett obesvarat löfte i MSW-resolvern i
+      stället för av ett uppskjutet Playwright-Route-objekt. Beviset är
+      oförändrat: `parkerade.length` räknar anrop som är MOTTAGNA men ännu inte
+      besvarade, alltså exakt "omhämtning i luften". */
+  function hallbarMock(network: NetworkFixture, data: { registrations: Row[]; events: Row[] }) {
     const st = {
       data,
       hall: false,
-      parkerade: [] as Route[],
-      async slappAlla() {
-        const rutter = this.parkerade.splice(0);
-        for (const rutt of rutter) await uppfyll(rutt);
+      parkerade: [] as Array<() => void>,
+      slappAlla() {
+        for (const slapp of this.parkerade.splice(0)) slapp();
       },
     };
-    const uppfyll = async (rutt: Route) => {
-      const arEvents = /get-events/.test(rutt.request().url());
-      await rutt.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: arEvents
-          ? JSON.stringify({ events: st.data.events })
-          : JSON.stringify({ registrations: st.data.registrations }),
-      });
+    const svara = (arEvents: boolean) =>
+      arEvents ? json({ events: st.data.events }) : json({ registrations: st.data.registrations });
+    const hanterare = (arEvents: boolean) => async () => {
+      if (st.hall) await new Promise<void>((slapp) => st.parkerade.push(slapp));
+      return svara(arEvents);
     };
-    const hanterare = async (rutt: Route) => {
-      if (st.hall) {
-        st.parkerade.push(rutt);
-        return;
-      }
-      await uppfyll(rutt);
-    };
-    return Promise.all([
-      page.route(GET_REGISTRATIONS, hanterare),
-      page.route(GET_EVENTS, hanterare),
-    ]).then(() => st);
+    network.use(
+      http.get(EF('get-registrations'), hanterare(false)),
+      http.get(EF('get-events'), hanterare(true)),
+    );
+    return st;
   }
 
   /** Stabil grunddata: fasta id:n + dagsgamla inskickad-tider (relativa
@@ -1072,10 +1094,11 @@ test.describe('Osynliga uppdateringen (task-4.5)', () => {
 
   test('AC 1 — identitetsbeviset: FÖRE == UNDER == EFTER byte-identiska under bevisat aktiv omhämtning', async ({
     page,
+    network,
   }) => {
     // Falsk klocka → poll-intervallet (60 s, ADR-017) triggas deterministiskt.
     await page.clock.install();
-    const mocken = await hallbarMock(page, grunddata());
+    const mocken = hallbarMock(network, grunddata());
     await page.goto('/hem');
 
     // Färdig-renderat utgångsläge: innehåll synligt, inga laddlägen kvar.
@@ -1087,6 +1110,27 @@ test.describe('Osynliga uppdateringen (task-4.5)', () => {
 
     // L246-mätfällan: neutralisera muspekaren — hover-tillstånd ger falsk diff.
     await page.mouse.move(0, 0);
+
+    // UPPVÄRMNINGSSKOTT (task-59.3) — kasseras, och det är ingen slapphet.
+    // `main#main` är 831 px högt mot en 720 px vyport, så skottet tas
+    // BORTOM vyporten. I acceptance-klassen är det FÖRSTA sådana skottet i en
+    // sida inte bit-stabilt: mätt över fem skott i rad skiljer sig #1 från
+    // #2–#5, medan #2–#5 är byte-identiska inbördes. Avvikelsen är 38 px av
+    // 498 600, samtliga ±1 i EN kanal och samtliga på den fasta tabbarens
+    // antialiasade rundade kant där den ligger över CTA:n.
+    //
+    // Det är inte något som händer i sidan: `document.getAnimations()` är tom
+    // före och efter, scrollpositionen står still, och varken dubbel-rAF eller
+    // `document.fonts.ready` ändrar utfallet. Kontrollprovet visar också att
+    // det inte är testets form som är fel — samma fil i e2e-klassen ger
+    // bit-identiska skott redan från det första (mätt före flytten).
+    //
+    // Uppvärmningen försvagar INGENTING: jämförelsen är fortfarande
+    // byte-identitet med noll tolerans, och alla tre jämförda skotten tas nu i
+    // samma regim i stället för att referensen ensam bära en engångsartefakt.
+    // Att i stället tillåta N avvikande pixlar hade gjort provet trubbigt för
+    // äkta regressioner — det som mäts här är just att INGENTING ändras.
+    await main.screenshot({ animations: 'disabled' });
     const fore = await main.screenshot({ animations: 'disabled' });
 
     // UNDER: parkera EF-svaren och avancera förbi poll-intervallet →
@@ -1122,7 +1166,7 @@ test.describe('Osynliga uppdateringen (task-4.5)', () => {
       page.waitForResponse(GET_EVENTS),
     ]);
     mocken.hall = false;
-    await mocken.slappAlla();
+    mocken.slappAlla();
     await svaren;
     // Deterministisk måla-klart-vänta (dubbel-rAF) — ingen fast delay.
     await page.evaluate(
@@ -1135,9 +1179,10 @@ test.describe('Osynliga uppdateringen (task-4.5)', () => {
 
   test('AC 2 — ändrat data byter endast berörda värden; containrarna mät-stilla', async ({
     page,
+    network,
   }) => {
     await page.clock.install();
-    const mocken = await hallbarMock(page, grunddata());
+    const mocken = hallbarMock(network, grunddata());
     await page.goto('/hem');
 
     const obetalda = page.getByRole('region', { name: 'Obetalda anmälningsavgifter' });
@@ -1185,10 +1230,11 @@ test.describe('Osynliga uppdateringen (task-4.5)', () => {
 
   test('AC 3 — kall första-laddning visar lugnt laddläge (robust vänte-strategi, ingen fast delay)', async ({
     page,
+    network,
   }) => {
     // TASK-3-fyndet: inget lastkänsligt delay-fönster — EF-svaren PARKERAS
     // från start, så laddläget står stabilt tills testet självt släpper dem.
-    const mocken = await hallbarMock(page, grunddata());
+    const mocken = hallbarMock(network, grunddata());
     mocken.hall = true;
     await page.goto('/hem');
 
@@ -1205,7 +1251,7 @@ test.describe('Osynliga uppdateringen (task-4.5)', () => {
 
     // Släpp svaren → innehållet ersätter laddläget; ingen status-yta kvar.
     mocken.hall = false;
-    await mocken.slappAlla();
+    mocken.slappAlla();
     await expect(page.getByRole('link', { name: /Anna Andersson/ })).toBeVisible();
     await expect(main.getByRole('status')).toHaveCount(0);
   });
