@@ -48,8 +48,8 @@ prioritering inom Spår A.
 |---|---|---|
 | 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | ✅ **KLART 2026-07-27** — `TASK-54.1` · `54.2` · `54.3` alla **Done** |
 | 1b | **`TASK-55` · Baselines regenererade** | ✅ **KLART 2026-07-27** — 6 bilder granskade + mergade; bevis-dispatch `30297097792` loggar *"Inga baseline-ändringar"* |
-| 2 | **`TASK-58` + `TASK-57` · Fixturens bruksvärde** | ✅ **KLART 2026-07-27** — `TASK-58` **Done** (`#292`, grön 8/8); `TASK-57` levererad i `#293`. Båda klassades `ready-for-agent` samma dag |
-| 3 | **A5 · De 19 acceptance-filerna** — här faller taket | ⬜ **NÄST** — steg 2 avblockerat; mönstret (`TASK-58`) och felmeddelandet (`TASK-57`) står nu på plats |
+| 2 | **`TASK-58` + `TASK-57` · Fixturens bruksvärde** | ✅ **KLART 2026-07-27** — båda **Done**, båda gröna per jobb 8/8 (`#292` · `#293`). Klassades `ready-for-agent` samma dag |
+| 3 | **A5 · De 19 acceptance-filerna** — här faller taket | ⬜ **NÄST** — steg 2 avblockerat; mönstret (`TASK-58`) och felmeddelandet (`TASK-57`) står på plats, och byggplan-grinden är lyft (v1.14). **Formen: spec-arbete via `/to-prd` → `/to-issues`, ej direkt bygge** (Marcus-kvittens 2026-07-27) |
 | 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ⬜ kan landa när som helst |
 | 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
 
@@ -489,7 +489,8 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-27 | Restlistan genomgången post för post mot resumens faktiska utfall (Marcus-order) | `c1ea2e3` · `#290` |
 | 2026-07-27 | Tillstånds-återställningen (resume 7) + **klassningen av `TASK-56`/`57`/`58`** — alla `ready-for-agent`, 13 AC skrivna mot läst kod | `a478d1b` · `#291` |
 | 2026-07-27 | **`TASK-58` DONE** — överskuggningsmönstret `network.use()` dokumenterat i fixturmodulen; precedens + isolering lästa ur biblioteket, exemplet kört som kastbart bevis | `6910d02` · `#292` |
-| 2026-07-27 | **`TASK-57`** — vakten lyfter närmaste träff (Levenshtein, TypeScripts 0,4-tröskel) och skiljer extern adress från omockad EF; **`T101`** registrerad | (denna PR) |
+| 2026-07-27 | **`TASK-57` DONE** — vakten lyfter närmaste träff (Levenshtein, TypeScripts 0,4-tröskel) och skiljer extern adress från omockad EF; **`T101`** registrerad | `59b8391` · `187d4e8` · `#293` |
+| 2026-07-27 | **Byggplanen v1.14** — Fas E-horisonten omankrad, Fas 6:s stängning medvetet hållen; **ADR-080:s `skipAssetRequests`-omprövning fick sitt utfall infört** | (denna PR) |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
