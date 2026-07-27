@@ -154,15 +154,68 @@ jobs:
           node scripts/ci-metrics.mjs --limit 50 | tee metrics-report.txt
           { echo '```'; cat metrics-report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
+  # Kontraktsvakten (task-59.2, ADR-080 beslut 3): jämför fixturvärldens svar
+  # mot SKARP staging och fäller när de glidit isär. Zod-schemana är halva
+  # kontraktet — de fångar form-drift men inte värde-drift, och inte schemats
+  # egen drift mot funktionen. Fowlers kadens ("once a day is plenty") och
+  # fail-semantik ("shouldn't necessarily break the build") är exakt nattens.
+  #
+  # ICKE-BLOCKERANDE PER PLACERING, INTE PER FLAGGA: jobbet finns bara här, och
+  # `kontraktsvakt`-projektet ingår inte i ci-suite.yml — därför kan det
+  # strukturellt inte fälla en PR. `continue-on-error` vore FEL väg: det gör
+  # needs-resultatet 'success' och larm-jobbet nedan hade aldrig fyrat.
+  #
+  # INGEN staging-tests-MUTEX: vakten gör tre GET och muterar ingenting.
+  # Sentinel-rader som suite-jobbet skapar samtidigt ändrar antalet poster men
+  # inte deras form, och form är allt som jämförs. Att ta mutexen hade
+  # serialiserat natten en gång till utan att köpa något.
+  kontraktsvakt:
+    name: Kontraktsvakt (fixtur mot skarp staging)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # STAGING_REQUIRED=1: saknade creds ska HARD-FAILA, aldrig skippa tyst.
+      # En vakt som skippar sig själv ser exakt likadan ut som en tyst natt.
+      # Samma secret-uppsättning som ci-suite.yml:s api-staging-steg — vakten
+      # återanvänder api-setup-projektet och behöver därför båda inloggningarna.
+      - name: Kontraktsvakt mot staging
+        run: npm run vakt:kontrakt
+        env:
+          STAGING_REQUIRED: '1'
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+
   # Larmkedjan: fyrar vid RÖD natt (eller simulate_failure-dispatch). Skapar
   # ett tilldelat, etiketterat ärende med körningslänk + commit-spann sedan
   # senaste GRÖNA natt. Grön natt ⇒ jobbet skippas ⇒ inget ärende, inga spår
   # (AC#4). issues:write endast här. nightly-metrics ingår i needs — röda
   # mätningar får aldrig vara tysta (L321-klassen: nightly saknar annan
-  # åskådare, rött utan larm vore en tyst permanent).
+  # åskådare, rött utan larm vore en tyst permanent). kontraktsvakt ingår av
+  # SAMMA skäl: en fixtur som glidit ifrån verkligheten ska nå en kedja som
+  # redan bevakas, inte bli ännu en signal ingen läser (ADR-080 beslut 3).
   alarm:
     name: Larm vid röd natt
-    needs: [suite, nightly-audit, nightly-links, nightly-metrics]
+    needs: [suite, nightly-audit, nightly-links, nightly-metrics, kontraktsvakt]
     if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || inputs.simulate_failure) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3

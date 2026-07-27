@@ -52,6 +52,7 @@ kanoniska kommandona separat:
 | `npm run test:e2e:staging` | E2E mot staging (kräver ledig port 5173) |
 | `npm run test:a11y` | Axe-runner (egen dev-server på port 5199) |
 | `npm run test:visual` | Visuella regressionstester |
+| `npm run vakt:kontrakt` | Kontraktsvakten: fixturvärlden mot skarp staging (nattlig i CI, körbar lokalt med `.env.test` — se § Nattnätet) |
 | `npm run test:preview:staging` | Byggt staging-bygge på preview-porten 4173: bygge → bundelgrind → login/Hem-bevis (TASK-10) |
 | `npm run purge:staging` | Sentinel-purge av staging-basen (setup-purge, ADR-060) — kräver `.env.seed`; `-- --dry-run` för plan utan radering |
 | `npm run seed:review` | Granskningsfixtur i staging: kommande event + bekräftade/obekräftade anmälningar för design-review — kräver `.env.seed`; `-- --dry-run` för plan utan skrivning |
@@ -179,6 +180,37 @@ fördröjning på högst ett dygn, aldrig ett permanent hål
 En röd nattkörning skapar automatiskt ett tilldelat ärende (etikett
 `ci-natt`) med länk till körningen och commit-spannet sedan senaste gröna
 natt.
+
+### Kontraktsvakten — fixturvärlden mot verkligheten
+
+Jobbet **Kontraktsvakt (fixtur mot skarp staging)** anropar varje natt de tre
+Edge Functions som bär 103 av 118 skarpa restanrop i testsviten
+(`get-event-notes`, `get-registrations`, `get-events` — urvalet är härlett ur
+hermetik-mätningen, inte handplockat), parsar **fixtursvaret och det skarpa
+svaret genom samma zod-schema** och jämför formen. Stämmer de händer
+ingenting; divergerar de fälls jobbet och larm-jobbet skapar samma
+`ci-natt`-ärende som en röd natt.
+
+**Varför den behövs:** zod-schemana är halva kontraktet. De fångar att ett
+fält byter typ, men inte att fältet betyder något annat — och inte att
+*schemat självt* glidit, eftersom schemat är vår bild av funktionen och inte
+dess deklaration. Ändras funktion och schema i samma commit finns ingen signal
+alls. Airtable-basen byggs dessutom aktivt om under AT-Max-milstolpen, vilket
+är precis den period fixturer driftar tyst
+([ADR-080](docs/decisions/ADR-080-acceptance-klassen-hermetisk-utbrytning.md)
+beslut 3).
+
+**Larmet blockerar ingen PR** — och det är en egenskap hos placeringen, inte
+en flagga: projektet `kontraktsvakt` körs bara av `nightly.yml` och ingår inte
+i `ci-suite.yml`, som är delad mellan natten och presubmit. Lägg det aldrig
+där. `continue-on-error` vore fel väg av motsatt skäl: det gör needs-resultatet
+grönt och larm-jobbet hade aldrig fyrat.
+
+Larmtexten namnger endpoint, avvikelseklass, de faktiska fältnamnen, vad
+följden är och vad man gör härnäst — den ska gå att agera på kl. 03 utan
+kontext. Att vakten faktiskt fäller bevisas av
+`tests/api/kontraktsvakt-jamforelse.test.ts`, som kör rent i varje PR: en grön
+nattkörning kan aldrig visa att en vakt larmar, bara ett medvetet fel kan det.
 
 ### Nattvakten — vad larm-jobbet inte kan se
 

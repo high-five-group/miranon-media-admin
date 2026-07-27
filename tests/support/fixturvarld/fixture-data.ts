@@ -109,6 +109,43 @@ export const EVENTS_RESPONSE = {
 } as const;
 
 /**
+ * De TOLV additiva fälten som `get-registrations` ALLTID skickar i den
+ * event-lösa grenen — och som fixturen saknade fram till task-59.2.
+ *
+ * KONTRAKTSVAKTENS FÖRSTA SKARPA FYND, inte en gissning. Vakten (ADR-080
+ * beslut 3) jämförde fixturen mot skarp staging första gången 2026-07-27 och
+ * larmade: `FIXTUREN-BAKOM — staging levererar 11 nycklar fixturen saknar`,
+ * var och en i 43/43 skarpa poster. Den tolfte, `kalla`, fanns i EN av sex
+ * fixtur-poster medan Edge Functionen skickar den i alla.
+ *
+ * VÄRDENA ÄR MAPPNINGENS, INTE VALDA: `supabase/functions/_shared/
+ * registration-read.ts` skriver `?? null` för samtliga och `=== true` för
+ * `Bor över`, och den event-lösa grenen kör aldrig `berikaPersonhistorik` —
+ * därför är `antalGenomfordaEvent`/`erfarenhetsbadge`/`kurshistorik` null
+ * där, dokumenterat i funktionens egen header.
+ *
+ * FORM-PARITET, INTE VÄRDE-TÄCKNING. Fälten läggs in med de värden som gör
+ * fixturen SANN om svarets form; att låta dem bära innehåll hade ändrat vad
+ * vyerna renderar och därmed de visuella baselines. Att acceptance-testerna
+ * ska prövas mot fältens ifyllda tillstånd hör till migrerings-skivorna, där
+ * varje flyttad fil får sitt eget tvåsidiga bevis — inte hit.
+ */
+const ADDITIVA_ANMALNINGSFALT = {
+  noteringAnmalningsavgift: null,
+  noteringSlutbetalning: null,
+  paminnelseAnmalningsavgiftSkickad: null,
+  paminnelseSlutbetalningSkickad: null,
+  kalla: null,
+  medfoljandeTill: null,
+  bekraftelseSkickad: null,
+  deltagarinfoSkickad: null,
+  antalGenomfordaEvent: null,
+  borOver: false,
+  erfarenhetsbadge: null,
+  kurshistorik: null,
+} as const;
+
+/**
  * `get-registrations`-svaret (event-lösa grenen — Hem-aggregeringen läser den
  * utan params). Mixen är vald så dashboard-korten får innehåll: två Ny
  * anmälan-flaggade (NyaAnmalningarCard), obetalda avgifter/slutbetalningar
@@ -137,6 +174,7 @@ export const REGISTRATIONS_RESPONSE = {
       notering: null,
       eventId: EVENT_SKOVDE,
       personId: 'recVisualPers00001',
+      ...ADDITIVA_ANMALNINGSFALT,
     },
     {
       id: 'recVisualReg000002',
@@ -159,6 +197,7 @@ export const REGISTRATIONS_RESPONSE = {
       notering: null,
       eventId: EVENT_SKOVDE,
       personId: 'recVisualPers00002',
+      ...ADDITIVA_ANMALNINGSFALT,
     },
     {
       id: 'recVisualReg000003',
@@ -181,6 +220,7 @@ export const REGISTRATIONS_RESPONSE = {
       notering: 'Vegetarisk kost.',
       eventId: EVENT_SKOVDE,
       personId: 'recVisualPers00003',
+      ...ADDITIVA_ANMALNINGSFALT,
     },
     {
       id: 'recVisualReg000004',
@@ -203,6 +243,7 @@ export const REGISTRATIONS_RESPONSE = {
       notering: null,
       eventId: EVENT_SKOVDE,
       personId: 'recVisualPers00004',
+      ...ADDITIVA_ANMALNINGSFALT,
     },
     {
       id: 'recVisualReg000005',
@@ -225,6 +266,7 @@ export const REGISTRATIONS_RESPONSE = {
       notering: null,
       eventId: EVENT_GBG,
       personId: 'recVisualPers00005',
+      ...ADDITIVA_ANMALNINGSFALT,
     },
     {
       id: 'recVisualReg000006',
@@ -247,6 +289,7 @@ export const REGISTRATIONS_RESPONSE = {
       notering: null,
       eventId: EVENT_SKOVDE,
       personId: 'recVisualPers00006',
+      ...ADDITIVA_ANMALNINGSFALT,
       kalla: 'Manuell',
     },
   ],

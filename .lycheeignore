@@ -187,3 +187,16 @@
 # externa länkar bör flyttas till en nattlig icke-blockerande kontroll i
 # stället för att blockera PR:er och generera undantag som aldrig rensas.
 ^https://www\.npmjs\.com/package/.*$
+
+# danger.systems — Connection reset by peer (os error 104) från GitHub-runners,
+# medan värden svarar 200 på 0,9 s från utvecklarmaskin. Alltså inte en rutten
+# länk utan ett värd-sidigt avvisande av CI-nätet, samma klass som
+# gitlab-429:an (S84) och digg.se-precedenten.
+# Mätt 2026-07-27: två oberoende körningar 13 minuter isär — nattkörning
+# 30309427472 (22:05Z) och PR-körning 30310189367 (22:18Z) — båda samma fel,
+# samma URL, i tasks/threads/T98-codex-pr-granskningslagret.md.
+# NOT: detta är det TJUGONDE externa undantaget. Se noten ovan om
+# länkgrindens form — varje ny post är ett argument till för att flytta
+# externa länkar till en nattlig icke-blockerande kontroll (restlistan A4,
+# Marcus-beslut). Undantagen rensas aldrig av sig själva.
+^https://danger\.systems/.*$
