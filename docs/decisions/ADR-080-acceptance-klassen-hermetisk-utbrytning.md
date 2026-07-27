@@ -98,6 +98,32 @@ Vad som **inte** flyttas:
 Kvoten 19/13 (59 % hermetiskt) ligger mellan Ghosts 50 % och Grafanas 0,5 % och
 är alltså inom precedent-rymden — men **kvoten bär ingenting**. Kriteriet bär.
 
+> **RÄKNINGEN KORRIGERAD 2026-07-27 (S91, vid A5:s spec-arbete): 19/13 → 18/14.**
+> Rådatan räknades om ur hermetik-mätningens JSONL (863 poster, 32 filer) i
+> stället för att ärvas. **Den mekaniska räkningen reproducerades exakt:** 19
+> filer är rena efter typsnitts-pinning, 13 har kvarvarande skarpa anrop.
+>
+> **Men de 19 mekaniskt rena är inte samma 19 som beslutet ovan menar.** Av de
+> fyra filer som undantas explicit faller tre ut som skarpa av mätningen ändå
+> (`skapa-event`, `auth-flow`, `css-cascade`). Den fjärde, **`pwa-offline`, är
+> mekaniskt REN** — två anrop, båda typsnitt.
+>
+> **Undantaget är ändå riktigt**, av ett skäl mätningen strukturellt inte kan
+> se: testet kräver **byggd preview** (service workern existerar inte i dev) och
+> är rent från EF-anrop enbart för att det kör oautentiserat mot login-sidan.
+> Dess bevis är bygg- och serve-kedjan, inte svarsformer — i en fixturvärld
+> bevisar det ingenting.
+>
+> Beslutet ovan tycks alltså ha tagit den mekaniska 19:an som beslutets 19:a
+> utan att dra av det egna undantaget. **Rätt tillämpning av kriteriet ger 18
+> hermetiska och 14 skarpa** (59 % → 56 %, fortfarande inom samma
+> precedent-rymd).
+>
+> Detta river inget beslut. ADR:n slår själv fast att kvoten inte bär något och
+> att kriteriet bär — och kriteriet är oförändrat. Noten finns för att den som
+> bygger klassen ska räkna filer mot rätt tal. Räkningen är återskapbar ur
+> mätdatan; siffran är inte handplockad.
+
 ### 3. Kontraktsvakten är VILLKOR för utbrytningen, inte ett senare tillägg
 
 Zod-schemana är **halva** kontraktet. De fångar form-drift (fält försvinner, typ
