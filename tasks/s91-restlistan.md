@@ -259,7 +259,18 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
 - [ ] **`TASK-58` + `TASK-57` FÖRST** (Marcus-beslut 2026-07-27) — båda kom ur
       `TASK-54.3`:s QA och träffar ytan de 19 filerna byggs på. Oetiketterade,
       ska klassas före de plockas
-- [ ] De 19 acceptance-filerna, byggda med MSW
+- [~] **De acceptance-filerna, byggda med MSW — SPECCAT 2026-07-27 som
+      `TASK-59`** (PRD-kort, ej bygge). **Antalet är 18, inte 19:** klassningen
+      räknades om ur hermetik-mätningens rådata (863 poster, 32 filer) i stället
+      för att ärvas. Den mekaniska räkningen reproducerar ADR-080 exakt (19 rena
+      / 13 skarpa), men `pwa-offline` är mekaniskt ren och doktrinärt undantagen
+      — riktigt undantag, eftersom testet kräver byggd preview och är EF-rent
+      bara för att det kör oautentiserat. ADR-080 noterad med korrigeringen.
+      **Skarven är belagd mot primärkälla:** EN delad hermetisk fixturvärld, per
+      MSW:s egen designavsikt (*"a single source of truth for your network
+      across the entire stack"*) och Playwrights fixtur-återanvändning
+      (`mergeTests`, verifierad exporterad i 1.61.1). Två fixturvärldar vore emot
+      båda bibliotekens uttalade avsikt OCH mot ADR-080:s eget divergens-villkor
 - [ ] `TASK-36.8` — QA-vandringen (manuell testplan, riskanpassad CI)
 
 ### A6 · Schemalagt till AT-Max (ADR-063 S81-not) — rör ej nu
@@ -490,7 +501,8 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-27 | Tillstånds-återställningen (resume 7) + **klassningen av `TASK-56`/`57`/`58`** — alla `ready-for-agent`, 13 AC skrivna mot läst kod | `a478d1b` · `#291` |
 | 2026-07-27 | **`TASK-58` DONE** — överskuggningsmönstret `network.use()` dokumenterat i fixturmodulen; precedens + isolering lästa ur biblioteket, exemplet kört som kastbart bevis | `6910d02` · `#292` |
 | 2026-07-27 | **`TASK-57` DONE** — vakten lyfter närmaste träff (Levenshtein, TypeScripts 0,4-tröskel) och skiljer extern adress från omockad EF; **`T101`** registrerad | `59b8391` · `187d4e8` · `#293` |
-| 2026-07-27 | **Byggplanen v1.14** — Fas E-horisonten omankrad, Fas 6:s stängning medvetet hållen; **ADR-080:s `skipAssetRequests`-omprövning fick sitt utfall infört** | (denna PR) |
+| 2026-07-27 | **Byggplanen v1.14** — Fas E-horisonten omankrad, Fas 6:s stängning medvetet hållen; **ADR-080:s `skipAssetRequests`-omprövning fick sitt utfall infört** | `277174e` · `ff179d8` · `#294` |
+| 2026-07-27 | **A5 SPECCAT — `TASK-59`** (PRD-kort, 14 användarberättelser, 9 DoD). Klassningen omräknad ur rådata → **18/14**, ADR-080 noterad; skarv-valet belagt mot MSW:s och Playwrights primärkällor | (denna PR) |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
