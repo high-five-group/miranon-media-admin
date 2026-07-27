@@ -22,6 +22,13 @@ import {
  * parsar skarpa svar; det är den fogen som gör att fixturvärlden bevisar något
  * om appen. Snittet är också portabilitets-snittet: byts datakällan behåller
  * dessa handlers sin form, eftersom EF-kontraktet är det som överlever.
+ *
+ * DESSA HANDLERS ÄR NORMALLÄGET, INTE HELA SANNINGEN. Ett enskilt test som
+ * behöver ett annat svar — felvy, tom lista, långsamt svar — lägger INTE till
+ * något här, utan överskuggar lokalt med `network.use(...)`. Mönstret,
+ * isoleringen och fällan som får en överskuggning att tyst göra ingenting är
+ * dokumenterade i `hermetic.ts` § Överskugga en delad handler (task-58).
+ * Lägg bara till här när svaret ska gälla ALLA tester.
  */
 
 /** Host-agnostiskt: appen kan peka på vilken fixtur-origin som helst. */

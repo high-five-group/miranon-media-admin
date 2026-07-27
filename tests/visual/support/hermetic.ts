@@ -101,6 +101,57 @@ function buildSession() {
  * Sid-vakten som tidigare bar hermetiken (en `page.route('**' + '/*')` som
  * abort:ade allt utom localhost och EF-pathen) är BORTTAGEN i task-54.2:
  * hermetiken vaktas nu av EN mekanism, och den sitter där mockningen sker.
+ *
+ * ── ÖVERSKUGGA EN DELAD HANDLER I ETT ENSKILT TEST (task-58) ──────────────
+ *
+ * `handlers.ts` bär fixturvärldens NORMALLÄGE — svaren varje test får om det
+ * inte säger något annat. Behöver ETT test ett annat svar (felvyn, tom lista,
+ * långsamt svar) skrivs INGEN egen fixturvärld: testet överskuggar lokalt via
+ * `network`-fixturen, som destruktureras ur testargumenten precis som `page`.
+ *
+ *     import { HttpResponse, http } from 'msw';
+ *     import { expect, test } from './support/hermetic';
+ *
+ *     test('visar felvyn när eventlistan fallerar', async ({ page, network }) => {
+ *       network.use(
+ *         http.get('*' + '/functions/v1/get-events', () =>
+ *           HttpResponse.json({ error: 'trasig' }, { status: 500 }),
+ *         ),
+ *       );
+ *
+ *       await page.goto('/event');
+ *       await expect(page.getByRole('alert')).toBeVisible();
+ *     });
+ *
+ * ÖVERSKUGGNINGEN GÄLLER ENDAST DET EGNA TESTET, och isoleringen är
+ * STRUKTURELL — inget städsteg krävs och inget får glömmas. `network` är en
+ * test-scopad Playwright-fixtur (default-scope; `{ auto: true }` styr bara att
+ * den startar av sig själv). `defineNetworkFixture` körs alltså om för VARJE
+ * test och bygger en ny handlers-controller ur den delade `handlers`-arrayen.
+ * Nästa test ser aldrig föregående tests `use()`. Teardownens
+ * `network.disable()` river context-routarna; den är inte det som ger
+ * isoleringen.
+ *
+ * PRECEDENSEN: `use()` lägger sina handlers FÖRST
+ * (`msw/lib/core/experimental/handlers-controller.js` rad 82:
+ * `[...overridesForKind, ...existingForKind]`), och första träffen vinner.
+ * Överskuggningen slår därför alltid den delade handlern — inte tvärtom.
+ *
+ * OBS ATT MÖNSTRET ÄR HOST-AGNOSTISKT och skrivs `'*' + '/functions/v1/…'` —
+ * strängen är delad för att en `*` följd av snedstreck skulle STÄNGA denna
+ * blockkommentar. Samma idiom bär `page.route('**' + '/*')` nedan. I en
+ * riktig testfil skrivs mönstret förstås i ett stycke.
+ *
+ * FÄLLAN VÄRD ATT KÄNNA TILL: matchar överskuggningens mönster inte det
+ * faktiska anropet (stavfel i pathen, glömt värd-jokern) fäller INGENTING.
+ * Handlern läggs först men matchar aldrig, anropet faller igenom till den
+ * delade handlern, och testet ser normalläget i stället för sitt specialfall.
+ * Hermetik-vakten kan inte se detta — anropet ÄR mockat, bara inte av den
+ * handler testet trodde. Ett överskuggat test som beter sig precis som utan
+ * överskuggning ska misstänkas för det, inte för att appen ignorerar svaret.
+ *
+ * Signaturen är `use(...runtimeHandlers)` — flera handlers kan skickas i ett
+ * anrop, och arrayer måste spridas.
  */
 export const test = base.extend<{ network: NetworkFixture }>({
   network: [
