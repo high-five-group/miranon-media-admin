@@ -15,8 +15,40 @@
 
 ## Aktuellt fokus
 
-**Session 91 ▶️ ÅTERUPPTAGEN (2026-07-27, femte resumen — efter A3:s första
-skiva)** — **MSW-BYTET SPECCAT OCH FÖRSTA SKIVAN LEVERERAD.** Marcus motto *"Bygg
+**Session 91 ⏸️ PAUSAD (2026-07-27, sjätte pausen — efter A3:s stängning)** —
+**A3:s MSW-PUNKT ÄR HELT STÄNGD: `TASK-54.1` + `54.2` + `54.3` alla Done, och
+`TASK-55` med dem.** **`54.2`:** vakten flyttad till MSW:s `onUnhandledRequest`;
+**omprövningen VÄNDE PRD-beslut 1** — källkodsläsning
+(`@msw/playwright` `fixture.ts` rad 98–103) visade att `skipAssetRequests`
+kortsluter tillgångs-anrop FÖRE callbacken, och en probe med `.txt`-URL nådde
+**aldrig** vakten utan gick ut på nätet. Optionen står nu **`false`**;
+3x-varningen materialiserades inte (17,3 s mot **14,9 s**). Sid-vakten OCH
+EF-catch-allen borttagna — catch-allen var **aktivt skadlig** (den matchar, så
+vakten fick aldrig se anropet). Tvåsidigt rött-först: `Expected to fail, but
+passed` med vakten ej inkopplad. **`54.3` QA körd av Code på Marcus delegering**
+— sex steg, ett med öppen avvikelse (nätverksavstängning ej möjlig → ersatt av
+restanrops-mätning: **32 filer med restanrop, samtliga e2e, noll visual**). Två
+fynd: **`TASK-57`** (vaktens meddelande skalar dåligt) + **`TASK-58`**
+(överskuggningsmönstret odokumenterat). **`TASK-55` LÖST:** sex baselines
+regenererade, **granskade och godkända av Marcus** (PR #287), bevis-dispatch
+`30297097792` loggar *"Inga baseline-ändringar"* → stänger `54.2` DoD 7 +
+`54.3` DoD 5. **Tre vyer ändrades, inte en** — `event-lista` bar filterknappen
+ur `f11cc37`, ej hover-ändringen som först antogs (rättat genom att öppna
+bilderna). **ACTIONS-FLAGGAN SATT PÅ TRE NIVÅER:** dispatchen failade först;
+låset satt på **enterprise**, belagt med `409 Conflict: "The enterprise does not
+allow GitHub Actions to approve pull requests"`. Workflowens filhuvud kallade
+förutsättningen en *repo-inställning* — **faktarättelsen gjord**. **S92
+(färgsystemet) landad parallellt och avstämd** — 72 nya primitiver utan
+konsumenter, EN ändrad tokenrad, noll baseline-påverkan (mätt, ej ärvt).
+**Sex PR:er (#282–#288), alla gröna per jobb första passet.** Pausen landar
+**MED** grönt bevis. **NÄSTA (Marcus-order): `TASK-58` → `TASK-57` → A5 de 19
+filerna → kadens-regeln.** Numrering: 91/082/L360 (**19** fragment
+väntar)/T101/f46/**task-59**. Full narrativ: sessionsdok S91 **Del 12** +
+PAUSLÄGE. Karta: `tasks/s91-restlistan.md` § VAR VI ÄR.
+*(Föregående fokus-text nedan.)*
+
+**Session 91 (femte resumen, 2026-07-27)** — **MSW-BYTET SPECCAT OCH FÖRSTA
+SKIVAN LEVERERAD.** Marcus motto *"Bygg
 ordentligt eller bygg inte alls"* delegerade fyra designbeslut:
 `skipAssetRequests` **true** (passets slutsats, ej restlistans felläsning) ·
 handlers mot **EF-protokollet** · kort-med-skivor ej ad-hoc · två arbetsskivor
