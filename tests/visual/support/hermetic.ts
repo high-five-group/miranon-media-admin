@@ -3,8 +3,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineNetworkFixture, type NetworkFixture } from '@msw/playwright';
 import { test as base } from '@playwright/test';
-import { FROZEN_NOW, VISUAL_SUPABASE_URL } from './fixture-data';
+import { FROZEN_NOW } from './fixture-data';
 import { handlers } from './handlers';
+import { skapaHermetikVakt } from './hermetik-vakt';
 
 export { expect } from '@playwright/test';
 
@@ -14,8 +15,9 @@ export { expect } from '@playwright/test';
  * Varje test i ramen kör i en förseglad värld: frusen klocka (AC 5), seedad
  * session (autentiserade vyer utan staging-login), pinnade typsnitt och
  * mockade EF-svar. ALLT nätverk utanför localhost blockeras — hermetiken är
- * inte en konvention utan en vakt: ett anrop som slinker förbi mockarna
- * abort:as synligt i stället för att tyst göra pixlarna miljöberoende.
+ * inte en konvention utan en vakt: ett anrop som slinker förbi mockarna FÄLLER
+ * testet med sin egen URL namngiven, i stället för att tyst göra pixlarna
+ * miljöberoende. Vakten bor i `hermetik-vakt.ts` (task-54.2).
  */
 
 // supabase-js härleder lagringsnyckeln `sb-${hostname.split('.')[0]}-auth-token`
@@ -69,33 +71,46 @@ function buildSession() {
 
 /**
  * EF-lagret bärs av MSW sedan task-54.1 — handlers bor i `handlers.ts`.
+ * Hermetiken vaktas av MSW:s `onUnhandledRequest` sedan task-54.2.
  *
  * Registreringen sker på CONTEXT-nivå (bibliotekets design: en enda
  * `context.route` under huven, ingen service worker inblandad). Page-routes
  * vinner över context-routes, vilket är precis vad typsnitts-pinningen nedan
  * utnyttjar — den ligger kvar på sid-nivå och når därför MSW aldrig.
  *
- * `skipAssetRequests` står därför på sitt defaultvärde `true`. VILLKORET FÖR
- * ATT DET ÄR SÄKERT ÄR SID-VAKTEN NEDAN: den abort:ar allt utom localhost och
- * fixtur-originets EF-path, så ingen tillgångs-formad trafik kan nå
- * context-nivån där optionen skulle kortsluta den. Att i stället sätta `false`
- * hade kostat omkring 3x körtid (msw/playwright issue #13) utan vinst.
+ * BÅDA OPTIONERNA ÄR SATTA EXPLICIT, OCH BÅDA MÅSTE VARA DET:
  *
- * ⚠️ OMPRÖVAS I TASK-54.2. Den skivan flyttar vakten till MSW:s
- * `onUnhandledRequest` — en callback som `skipAssetRequests: true` kör FÖRE.
- * Faller sid-vakten bort utan att optionen omprövas blir defaultvärdet exakt
- * det tysta genomsläpp ADR-080 varnar för. Villkoret ovan är alltså inte
- * evigt; det hänger på att något abort:ar först.
+ * `onUnhandledRequest` — bindningens default är `bypass` (tyst genomsläpp),
+ * INTE `warn` som i MSW:s kärna. Utelämnas optionen är vakten avstängd utan
+ * att något syns: sviten ser hermetisk ut medan den släpper igenom allt.
+ * `hermetik-vakt.spec.ts` bevisar fällningen negativt — en avstängd vakt kan
+ * inte se grön ut.
  *
- * `onUnhandledRequest` sätts INTE här — hermetiken vaktas alltjämt av
- * catch-all-routen nedan. Vaktens ombyggnad till MSW:s callback är task-54.2,
- * och den har eget rött-först-krav eftersom bibliotekets default är TYST
- * genomsläpp.
+ * `skipAssetRequests: false` — VILLKORET FÖR ATT VAKTEN SER ALLT. Bindningen
+ * kortsluter tillgångs-formade anrop med `route.fallback()` FÖRE
+ * `handleRequest` (`@msw/playwright` fixture.ts rad 98–103), alltså före
+ * callbacken. Med defaultvärdet `true` skulle varje URL som slutar på .png,
+ * .json, .css … gå rakt ut på nätet utan att vakten någonsin såg den. Mätt,
+ * ej antaget: en probe med `.txt`-URL nådde aldrig callbacken och gick ut.
+ *
+ * Kostnaden mättes i stället för att ärvas från issue #13:s 3x-varning —
+ * sviten gick 17,3 s med defaultvärdet och 14,9 s utan det, alltså ingen
+ * mätbar kostnad i vår uppställning. Varningen gäller Vite-projekt med
+ * betydligt fler moduler än fixturvärlden laddar.
+ *
+ * Sid-vakten som tidigare bar hermetiken (en `page.route('**' + '/*')` som
+ * abort:ade allt utom localhost och EF-pathen) är BORTTAGEN i task-54.2:
+ * hermetiken vaktas nu av EN mekanism, och den sitter där mockningen sker.
  */
 export const test = base.extend<{ network: NetworkFixture }>({
   network: [
     async ({ context }, use) => {
-      const network = defineNetworkFixture({ context, handlers });
+      const network = defineNetworkFixture({
+        context,
+        handlers,
+        skipAssetRequests: false,
+        onUnhandledRequest: skapaHermetikVakt(handlers),
+      });
       await network.enable();
       await use(network);
       await network.disable();
@@ -117,31 +132,6 @@ export const test = base.extend<{ network: NetworkFixture }>({
       },
       [AUTH_STORAGE_KEY, buildSession()] as const,
     );
-
-    // Hermetik-vakten. Registreras FÖRST = prövas SIST (Playwright matchar
-    // routes i omvänd registreringsordning): allt som ingen mock nedan
-    // fångade och inte är localhost blockeras hörbart.
-    //
-    // EF-undantaget (task-54.1): MSW registrerar sig på CONTEXT-nivå, och
-    // SAMTLIGA page-routes prövas före context-routes. Utan detta undantag
-    // skulle vakten alltså abort:a EF-anropen innan MSW någonsin ser dem —
-    // verifierat med ett minimalt route-precedenstest före bytet, inte antaget.
-    // `fallback()` når context-nivån (samma test), så MSW får trafiken.
-    // Vaktens FORM är oförändrad; ombyggnaden till MSW:s egen callback är
-    // task-54.2.
-    await page.route('**/*', (route) => {
-      const url = new URL(route.request().url());
-      if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return route.fallback();
-      // Snävt: exakt fixtur-originet OCH pathens början. En bredare form
-      // (t.ex. substring-match på valfri host) skulle släppa igenom en
-      // tillgångs-formad URL till context-nivån, där MSW:s
-      // `skipAssetRequests`-default kortsluter den och låter den gå ut på
-      // riktiga nätet — tyst. Vakten ska hålla mot det som inte finns än.
-      if (url.origin === VISUAL_SUPABASE_URL && url.pathname.startsWith('/functions/v1/')) {
-        return route.fallback();
-      }
-      return route.abort('blockedbyclient');
-    });
 
     // Typsnitts-pinning: base.css @import:ar Inter från Google Fonts — CDN:en
     // är både ett externt beroende och en drift-källa (ny font-version = nya

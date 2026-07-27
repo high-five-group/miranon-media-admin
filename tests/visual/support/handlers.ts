@@ -74,27 +74,20 @@ export const handlers = [
   // Se fixture-data.ts § Personer-världen.
   http.get(EF('get-persons'), ({ request }) => json(resolvePersonsResponse(new URL(request.url)))),
   http.get(EF('get-person'), ({ request }) => json(resolvePersonResponse(new URL(request.url)))),
-
-  /**
-   * SIST: catch-all för omockade Edge Functions (Ghost-mönstret, ADR-080 § 4).
-   *
-   * MSW matchar handlers i ordning, så denna fångar allt de specifika missade.
-   * Utan den vore en omockad EF en TYST NÄTVERKSLÄCKA: bindningens
-   * `onUnhandledRequest` har defaultvärdet `bypass` — inte `warn` som i MSW:s
-   * kärna — och hermetik-vakten släpper igenom `/functions/v1/`-mönstret för
-   * att MSW ska nå det alls. Den gamla uppslagstabellen svarade 501 här, och
-   * det skyddet får inte försvinna i bytet.
-   *
-   * Statuskod hellre än kastat fel: 501:an når appens egen felhantering med
-   * EF-namnet i klartext — verifierat skarpt, inte antaget, i
-   * `omockad-ef.spec.ts` med appens faktiska request-headers. Vaktens fulla
-   * form — fällning med lista över vad som VAR mockat — är task-54.2.
-   */
-  http.all('*/functions/v1/*', ({ request }) => {
-    const namn = new URL(request.url).pathname.split('/functions/v1/')[1] ?? '(okänd)';
-    return HttpResponse.json(
-      { error: `Omockad EF i visual-fixturvärlden: ${namn}` },
-      { status: 501, headers: CORS },
-    );
-  }),
 ];
+
+/**
+ * INGEN CATCH-ALL-HANDLER — borttagen i task-54.2, och frånvaron är avsiktlig.
+ *
+ * Task-54.1 lade en `http.all` sist som svarade 501 på omockade Edge
+ * Functions. Den var rätt då: `onUnhandledRequest` var ännu inte satt, och
+ * bindningens default är tyst genomsläpp, så utan catch-allen hade en glömd
+ * handler blivit en nätverksläcka.
+ *
+ * Nu bär `onUnhandledRequest` vakten (se `hermetik-vakt.ts`), och då blir
+ * catch-allen aktivt skadlig: den MATCHAR, vilket betyder att anropet räknas
+ * som hanterat och vakten aldrig får se det. EF-lagret hade därmed fått en
+ * svagare spärr (ett 501-svar appen renderar en felvy för) än allt annat
+ * nätverk (en fällning som namnger requesten). Två parallella mekanismer med
+ * olika stränghet — precis vad task-54.2 finns för att ta bort.
+ */

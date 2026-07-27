@@ -1,9 +1,10 @@
 ---
 id: TASK-54.2
 title: 'Skiva: Hermetik-vakten byter form till MSW:s callback'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-27 15:07'
+updated_date: '2026-07-27 16:52'
 labels:
   - ready-for-agent
 dependencies:
@@ -34,21 +35,21 @@ Täcker användarberättelser: 2, 3, 12
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Ohanterat anrop fäller testet — bevisat med rött-först, inte antaget
-- [ ] #2 Felmeddelandet namnger den saknade requesten
-- [ ] #3 Felmeddelandet listar vad som var mockat
-- [ ] #4 Vaktens option är verifierat satt; defaultens tysta genomsläpp kan inte inträffa
-- [ ] #5 Den gamla catch-all-routen är borta — hermetiken vaktas av en mekanism
+- [x] #1 Ohanterat anrop fäller testet — bevisat med rött-först, inte antaget
+- [x] #2 Felmeddelandet namnger den saknade requesten
+- [x] #3 Felmeddelandet listar vad som var mockat
+- [x] #4 Vaktens option är verifierat satt; defaultens tysta genomsläpp kan inte inträffa
+- [x] #5 Den gamla catch-all-routen är borta — hermetiken vaktas av en mekanism
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Negativt self-test bevisar att vakten fäller OCH namnger saknad request + listar mockade
-- [ ] #6 Vaktens option verifierad skarpt satt (bindningens default är tyst genomsläpp)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Negativt self-test bevisar att vakten fäller OCH namnger saknad request + listar mockade
+- [x] #6 Vaktens option verifierad skarpt satt (bindningens default är tyst genomsläpp)
 - [ ] #7 Baseline-dispatchen loggar fortfarande 'Inga baseline-ändringar'
-- [ ] #8 Ingen befintlig e2e-fil rörd — diffen visar det
+- [x] #8 Ingen befintlig e2e-fil rörd — diffen visar det
 <!-- DOD:END -->
