@@ -5,6 +5,18 @@
 > filer eller inställningar ändrades av analysen. Bedömningarna är analysens
 > egna och är INTE kvitterade som projektbeslut; upptag sker via ordinarie
 > triage (tråd/ADR).
+>
+> **AMENDERING 2026-07-27 (S91, tredje resumen) — punkt 9 i verifikationstabellen
+> gäller inte längre.** Raden lyder *"Merge queue — Ej tillgänglig: repot ägs av
+> ett User-konto och merge queue kräver org-ägt repo."* Marcus överförde repot
+> till organisationen `high-five-group` (skapad 2026-07-27 kl 11:15:43Z) på
+> enterprise-plan; verifierat `plan=enterprise`, ägartyp `Organization`,
+> synlighet `public`. **Merge queue är tillgänglig från detta datum.** Analysens
+> bedömning i sak — att required checks + up-to-date-krav ger huvudskyddet —
+> står oförändrad, och tillgänglighet är inte samma sak som lämplighet: se
+> [research-passet 2026-07-26](merge-queue-mot-staging-mutex-2026-07-26.md)
+> § Om vi ändå flyttade repot, som visar oförändrat bästa fall och dubblerat
+> default-fall. Övriga punkter i tabellen är opåverkade.
 
 ## Min raka bedömning
 

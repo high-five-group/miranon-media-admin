@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-26
+updated: 2026-07-27
 review_by: 2027-01-26
 status: stable
 ---
@@ -15,6 +15,57 @@ status: stable
 > `github/docs`-repots råa källfil, eftersom den renderade sidan är
 > versionsfiltrerad och därför utelämnar avgörande stycken beroende på vilken
 > plan-variant läsaren råkar hamna på.
+
+---
+
+> **AMENDERING 2026-07-27 (S91, tredje resumen) — LAGER 1 ÄR UPPHÄVT, LAGER 2 STÅR.**
+>
+> Marcus överförde repot till organisationen `high-five-group` (skapad
+> 2026-07-27 kl 11:15:43Z) på **enterprise-plan**, uttryckligen för att öppna
+> merge queue. Verifierat samma dag: `plan=enterprise` (1/50 seats), ägartyp
+> `Organization`, synlighet `public`. Åtgärden gjordes i förebyggande syfte,
+> före det CI-arkitekturarbete den betjänar.
+>
+> **Vad som faller.** Hela **Lager 1 — spärren** (§ Kort svar, § Spärren) samt
+> premiss-tabellens rad 2. Merge queue kan nu aktiveras i rulesetet
+> `main-skydd`. Meningarna "Vårt ägs av ett användarkonto", "ägaren är av typen
+> `User`" och "Kombinationen publikt men användarägt faller utanför båda de
+> tillåtna formerna" är från detta datum **historik, inte gällande läge**.
+> GitHubs citerade tillgänglighetsregel är oförändrad — det är vår ägarform som
+> flyttat sig in i den.
+>
+> **Vad som står.** **Lager 2 i sin helhet**, och det är avsiktligt skrivet så:
+> rubriken lyder "det som gäller även efter en org-flytt". Slutsatsen vilar inte
+> på ägarformen utan på att `merge_group`-bygg inte slås ihop (*"Merge limits do
+> not combine `merge_group` builds"*, GitHubs egen mening) mot en global mutex
+> som serialiserar exakt de byggena. Räknetabellen i § Om vi ändå flyttade
+> repot gäller därför oförändrad: **bästa fallet är oförändrade ≈27 min,
+> sämsta fallet ≈55 min.** Det sämsta fallet är default — det kräver att det
+> tunga jobbet villkoras på `github.event_name` för att undvikas. Även § Roten
+> står orörd: taket är `9,1 min × antal tunga körningar` så länge staging är en
+> delad muterbar Airtable-bas och ett delat Supabase-projekt.
+>
+> **Vad som nu är möjligt och inte var det.** Öppen fråga 1 (`concurrency` ×
+> `merge_group` dokumenteras inte alls) stämplades *"obekräftad tills den mätts
+> skarpt"*, och § Öppna frågor punkt 6 slog fast att *"ingen sådan drift är
+> möjlig att observera i dagens ägarform"*. Den meningen är inte längre sann.
+> Hela Lager 2:s kalkyl är en härledning ur två separata dokumentationsytor —
+> **den kan från och med nu mätas i stället för härledas**, och det är den mest
+> materiella konsekvensen av överföringen.
+>
+> **Precedent i eget underlag.** [Eftergranskningen
+> 2026-07-24](arbetsflode-processgranskning-eftergranskning-2026-07-24.md)
+> (rad 191 + rekommendation 10) pekade ut organisationsflytt för merge queue som
+> rationell nästa åtgärd *om BEHIND-svälten fortsatte* — och BEHIND-svälten är
+> skördad som lesson L328. Åtgärden följer alltså dokumenterad rekommendation,
+> och den vinst passet självt tillskriver merge queue — bortautomatiseringen av
+> BEHIND-cykeln, "en verklig och icke-trivial vinst" — är den vinst som faktiskt
+> är köpt. Den ligger i koordination och latens, inte i CI-väggklockan.
+>
+> **Status för slutsatsen som helhet:** oförändrad rekommendation, halverad
+> grund. Merge queue är inte längre stängd, men den löser fortfarande inte
+> serialiseringen. Beslutet om aktivering är Marcus och ännu inte taget;
+> CI-/grind-arkitekturen tas som eget pass.
 
 ---
 
