@@ -4,6 +4,7 @@ title: 'QA: Acceptance-klassen mot verkligt arbetsflöde'
 status: To Do
 assignee: []
 created_date: '2026-07-27 20:42'
+updated_date: '2026-07-28 12:52'
 labels:
   - ready-for-human
 dependencies:
@@ -44,10 +45,12 @@ Täcker användarberättelser: 2, 3, 9
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Samtliga sju steg körda och utfallet nedskrivet per steg — inklusive de som inte gav något fynd
-- [ ] #2 Varje fynd är registrerat som eget kort med symptom och förväntat beteende; inget fynd bor enbart i QA-anteckningen
-- [ ] #3 API-sviten verifierad orörd i omfattning och utfall
+- [x] #1 Samtliga sju steg körda och utfallet nedskrivet per steg — inklusive de som inte gav något fynd
+- [x] #2 Varje fynd är registrerat som eget kort med symptom och förväntat beteende; inget fynd bor enbart i QA-anteckningen
+- [x] #3 API-sviten verifierad orörd i omfattning och utfall
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
