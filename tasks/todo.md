@@ -15,6 +15,25 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-28, elfte pausen — efter kontraktsdriften och
+vakten till sju)** — **FEMTON PR:er landade (`#334`–`#348` utom `#340`), samtliga
+gröna per jobb, noll röda körningar.** **A5-FAMILJEN KOMPLETT** (`TASK-59.1`–`59.8`
+Done) · **`TASK-67` Done** (landnings-ordningen kodad, tillämpad på sin egen
+landning) · **`TASK-68` Done** (kontraktsvakten **tre → sju** handlers, `#346`
+grön på alla åtta jobb inkl. staging). **KONTRAKTSDRIFTEN KARTLAGD:** testerna
+KAN vara gröna medan en verklig EF svarar annorlunda — **det har hänt två
+gånger**, och `TASK-52` lever i produktion. **`TASK-62`:s hypotes FALSIFIERAD av
+research** (sex ekosystem): exakt-adress-jämförelse missar stavfelet och läser en
+förorenad flagga; branschens form är TVÅ mekanismer. Planen omskriven med fyra
+steg + mätning FÖRE bygge. **`#340` ligger öppen och OARMERAD med avsikt** — bär
+det gamla bygget. **STÅENDE ORDER: Code fortsätter som ORKESTRERARE** (Marcus
+2026-07-28). **SKÖRD: 4 fragment** [UNIVERSAL]. **NÄSTA RESUME:** (1) `TASK-62`
+mätning + ombyggnad (2) `TASK-69` felkontrakten (3) steg 5 A2:7 — Marcus startar.
+Numrering: 91/083/L360 (**33** fragment)/T107/f46/**task-70**. Karta:
+`tasks/s91-restlistan.md` § VAR VI ÄR. Full narrativ: sessionsdok **Del 17–18** +
+PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-28, tionde resumen forts. — KONTRAKTSDRIFTEN
 KARTLAGD)** — **Marcus fråga besvarad med mätning: JA, testerna KAN vara gröna
 medan en verklig EF svarar annorlunda — och det har hänt TVÅ gånger.** `TASK-52`
