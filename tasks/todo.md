@@ -45,8 +45,11 @@ dokument; skarpt utfall **289 s**, jobbet **6,5 min mot tak 8**. Rotorsak
 varje test kördes tre gånger med video (153 körningar för noll information).
 Orsaken BANDS via `CI=1` lokalt (297 s mot CI:s 289 s), gissades inte. Lagat i
 samma pass: `--retries=0` + artefakter av i regimen ⇒ **297 s → 73 s**, jobbet
-~2,5 min. Retries vore dessutom FEL, inte bara dyrt — ett test som fäller först
-och passerar sedan är inget hermetik-bevis. **`T105` FÖDD:**
+~2,5 min. **VERIFIERAT SKARPT I CI EFTER FIXEN:** steget `289 s → 75 s`,
+jobbet `6,5 → 2,8 min` mot tak 8, beviset oförändrat `51/51/51`. Retries vore
+dessutom FEL, inte bara dyrt — ett test som fäller först och passerar sedan är
+inget hermetik-bevis. **`TASK-60` Done**, CI grön per jobb 9/9 i båda
+landningarna (`#309` run `30320122732` · `#310` run `30321515947`). **`T105` FÖDD:**
 hermetik-rapporten skrivs ut ur en gammal mätning som om den vore färsk
 (`global-setup` flagg-vaktad, `global-teardown` inte) — verifierat i koden,
 deferat till `59.7` som äger instrumentet. **SKÖRD: 3 fragment** [UNIVERSAL ×3]
