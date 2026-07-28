@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 12:48'
-updated_date: '2026-07-28 15:19'
+updated_date: '2026-07-28 19:14'
 labels:
   - ready-for-agent
 dependencies:
@@ -63,9 +63,58 @@ AVGRÄNSNING MOT T106: T106 gäller självtestets race (onUnhandledRequest vs to
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-FJÄRDE DATAPUNKT, 2026-07-28 (biprodukt av TASK-62:s mätning, ej egen utredning): hela acceptance-sviten kördes med --retries=0 på grenen feat/task-62-overskuggnings-vakt. Utfall 152 passed / 1 failed. Det fallerande testet var event-ny-anmalan.acceptance.test.ts:641 ('AT-kontraktet: virtuell fokus — DOM-fokus i fältet, aria-activedescendant pekar på det aktiva alternativet').
+STEG 0 UTFÖRT 2026-07-28 (orkestreraren, egen hand). Talet finns: flakigheten är BÄRANDE, inte en spets.
 
-Det är en FJÄRDE fil utöver de tre kortet redan listar (event-anteckningar:142, mer-intresserade:95, person-detail:137). Fyra körningar har nu gett fyra olika uppsättningar fallerande tester, i fyra olika filer. Det talar för bred last-känslighet snarare än en lokaliserad rad — men OBS att denna körning inte var kontrollerad för workerlast och alltså inte ersätter kortets AC #1. Den räknas som ytterligare en observation, inte som diagnos.
+MÄTNINGEN. ci-metrics.mjs kan inte svara på frågan — den räknar jobb-omkörningar (rött som blev grönt vid rerun av samma kod), medan retries: 2 döljer flaken INUTI ett grönt jobb. Mätt i stället genom att läsa Playwrights egen "N flaky"-rad ur acceptance-jobbets logg för de 120 senaste CI-körningarna.
+
+  acceptance-jobb med läsbar logg : 22
+  MED flaky > 0                   : 14
+  utan flaky                      : 8
+  ANDEL                           : 63 %
+
+Alltid exakt "1 flaky" per körning. De 81 körningar utan acceptance-jobb är docs-klassade PR:er — klassningen fungerar, det är inte ett mätfel. Kommandot bor i sessionens scratchpad; formen är gh api repos/.../actions/jobs/<id>/logs + grep -oE "[0-9]+ flaky".
+
+VILKA TESTER. Sex körningar samplade på testidentitet. Exakt TVÅ tester återkommer:
+  tests/acceptance/event-anteckningar.acceptance.test.ts:142  (felrad :154-155)
+  tests/acceptance/event-ny-anmalan.acceptance.test.ts:641    (felrad :661-668)
+
+ORSAKEN ÄR LOKALISERAD TILL KOD — EN ENDA KLASS. Icke-auto-väntande query följd av icke-retrying assertion. Tre rader i hela sviten bär mönstret, och de sitter i exakt de två flaky-testerna:
+
+  1. event-anteckningar:154  allTextContents() + expect(array).toEqual([...])
+     allTextContents är en ögonblicksbild. Raden före väntar bara på rubriken "Anteckningar",
+     som kan vara synlig innan alla tre article-element renderats.
+  2. event-ny-anmalan:661    getAttribute('aria-activedescendant') direkt efter keyboard.press
+  3. event-ny-anmalan:666    samma mönster, andra ArrowDown
+
+KANONISK FIX (Playwright web-first assertions, auto-retryande):
+  rad 154 -> await expect(grupp.locator('article span.font-semibold')).toHaveText(['Roger','Lotta','Roger'])
+  rad 661/666 -> await expect(sok).toHaveAttribute('aria-activedescendant', /.+/) FÖRE getAttribute-hämtningen;
+                 värdet behövs för att bygga nästa locator, så hämtningen står kvar — men efter en väntan som retryar.
+
+FYND UTÖVER KORTET — ETT TEST SOM INTE KAN FÄLLA. event-anteckningar:163 skriver
+expect(await grupp.getByText('2026-06-01T10:00:00.000Z').count()).toBe(0). Samma klass, men
+den failar åt "säkert" håll: hinner elementet inte renderas blir count 0 och assertionen GRÖN
+på fel grund. Det är inte flakighet utan ett test som strukturellt inte kan fälla — allvarligare
+i tysthet. Bör lagas i samma svep (t.ex. toHaveCount(0) efter att strömmen bevisats renderad).
+
+TVÅ KLASSER, INTE EN. Ovanstående är klass A: CI-synlig, 63 %, tre rader. Klass B syns bara
+lokalt under full workerlast och har INTE detta mönster: hem:423, mer-intresserade:95,
+person-detail:137 (de två sista är kortets egen baseline; alla tre bekräftade av TASK-65:s
+agent 2026-07-28 i tre fulla lokala körningar, samtliga gröna isolerat). Gemensamt för dem är
+att de är fokus-tester (fokus -> <h1>). Klass B är INTE åtgärdad av klass A:s fix och ska
+mätas om efter den — annars tillskrivs fixen en effekt den inte haft.
+
+AVGRÄNSNING MOT T106 BESVARAD. T106:s mekanism kräver självtestläget (onUnhandledRequest-kastet
+mot toBeFocused-timeouten) och finns inte i normalläge. Orsaken är alltså INTE gemensam med
+klass A. Klass B delar dock symptomklass med T106 (fokus-assertion med fast timeout under last)
+och bör läsas ihop med den tråden, inte slås ihop.
+
+DELEGERINGSSPÄRREN HAR FALLIT. Kortets plan förbjöd delegering med skälet "orsaken är inte
+lokaliserad; en bygg-agent på ett odiagnostiserat race bygger fel sak". Orsaken ÄR nu lokaliserad
+till rad och mekanism, så spärren gäller inte längre för klass A. Klass B förblir diagnos.
+
+AC 3 KRÄVER FORTFARANDE EGEN MÄTNING: upprepade fulla svitkörningar UTAN retries, före och efter.
+Grönt med retries på är inte data. AC 4 (behålla eller ta bort retries: 2) avgörs av den mätningen.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
