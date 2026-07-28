@@ -49,7 +49,7 @@ prioritering inom Spår A.
 | 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | ✅ **KLART 2026-07-27** — `TASK-54.1` · `54.2` · `54.3` alla **Done** |
 | 1b | **`TASK-55` · Baselines regenererade** | ✅ **KLART 2026-07-27** — 6 bilder granskade + mergade; bevis-dispatch `30297097792` loggar *"Inga baseline-ändringar"* |
 | 2 | **`TASK-58` + `TASK-57` · Fixturens bruksvärde** | ✅ **KLART 2026-07-27** — båda **Done**, båda gröna per jobb 8/8 (`#292` · `#293`). Klassades `ready-for-agent` samma dag |
-| 3 | **A5 · De 18 acceptance-filerna** — här faller taket | ✅ **SPECCAT 2026-07-27** — `TASK-59` (PRD) + **sju skivor + QA-kort**, publicerade i beroendeordning. Exekvering ej påbörjad; `TASK-59.1` är plockbar |
+| 3 | **A5 · De 18 acceptance-filerna** — här faller taket | 🔄 **PÅGÅR 2026-07-28** — `TASK-59` (PRD) + sju skivor + QA publicerade. **`59.1`–`59.4` Done, 5 av 18 filer flyttade.** Acceptance-klassen LEVER som eget mutexfritt CI-jobb; kontraktsvakten i drift och larmkedjan bevisad. **NÄST: Marcus avgör `T104`-ordningen, sedan `59.5`** |
 | 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ⬜ kan landa när som helst |
 | 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
 
@@ -256,11 +256,17 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
 
 ### A5 · Efter grillningen
 
-- [ ] **`TASK-58` + `TASK-57` FÖRST** (Marcus-beslut 2026-07-27) — båda kom ur
-      `TASK-54.3`:s QA och träffar ytan de 19 filerna byggs på. Oetiketterade,
-      ska klassas före de plockas
-- [~] **De acceptance-filerna, byggda med MSW — SPECCAT 2026-07-27 som
-      `TASK-59`** (PRD-kort, ej bygge). **Antalet är 18, inte 19:** klassningen
+- [x] **`TASK-58` + `TASK-57` — BÅDA DONE 2026-07-27** (Marcus-beslut samma dag).
+      Klassades `ready-for-agent` av Code på delegering; klassningen avtäckte att
+      **alla 66 befintliga `ready-for-agent`-kort har AC — noll undantag** — och
+      att fynd-korten hade noll. 13 AC skrevs mot läst kod. `#292` · `#293`,
+      båda gröna per jobb 8/8
+- [~] **De acceptance-filerna, byggda med MSW — SPECCAT 2026-07-27 OCH PÅBÖRJAT
+      2026-07-27/28.** `TASK-59` (PRD) + sju skivor + QA-kort. **`59.1`
+      (prefaktorering) · `59.2` (kontraktsvakten) · `59.3` (klassen + Hem-piloten)
+      · `59.4` (Personer-ytan) alla Done — 5 av 18 filer flyttade.** Kvar: `59.5`
+      Mer (6) · `59.6` Event (7) · `59.7` mätningen · `59.8` QA.
+      **Antalet är 18, inte 19:** klassningen
       räknades om ur hermetik-mätningens rådata (863 poster, 32 filer) i stället
       för att ärvas. Den mekaniska räkningen reproducerar ADR-080 exakt (19 rena
       / 13 skarpa), men `pwa-offline` är mekaniskt ren och doktrinärt undantagen
@@ -461,11 +467,27 @@ Registrerade som backlog-kort, inte som restliste-poster. Här bara som index.
       `58`: 4). `TASK-56`:s källkodspåstående verifierades om i samma pass —
       `@msw/playwright/src/fixture.ts` rad 156–166 bär `route.connectToServer()`
       vid noll WS-handlers, ordagrant som kortet uppgav
+- [ ] **`T104` FÖRE `59.5` ELLER EJ — mest omedelbara beslutet 2026-07-28.**
+      Vaktens tvåsidiga bevis körs för hand: tre skivor i rad har patchat
+      källfiler, kört, läst utfallet och återställt ur en scratchpad-kopia.
+      **Beviset finns bara i agentens rapporttext; inget i repot kan köra om det.**
+      **Codes rekommendation: JA, ta `T104` som egen liten skiva nu.** `59.5`
+      flyttar sex filer = sex manuella cykler = sex tillfällen att återställa
+      fel; flaggan (`HERMETIK_SJALVTEST=1`) ger `59.5`+`59.6` — tretton filer —
+      ett permanent bevis i stället för noll. Precedent finns:
+      `tests/visual/hermetik-vakt.spec.ts` gör fällningen till leveransen med
+      `test.fail()`. **Kostnad:** en extra skiva mitt i vågen, kedjan pausar
 - [ ] **Review-pilotens kadens** (T86-friktionen) — passet uteblev även på
       `TASK-54.2`, märkt i pilotloggen. Beslutskriterierna räknar skivor, inte
       pass, så varje omärkt uteblivet pass underskattar träffkvoten
 - [ ] `IDENTITET.md`-destillatet (= Spår B steg 4)
-- [ ] Länkgrindens form (= A4)
+- [ ] **Länkgrindens form (= A4) — SKÄRPT 2026-07-28.** `danger.systems` blev
+      undantag **nummer 20**, och `.lycheeignore` bär redan husets egen dom att
+      grinden är fel designad. **Dagens tre länkfel hade tre olika rätta svar** —
+      `danger.systems` (värden avvisar CI-nätet → undantag) · `martinfowler.com`
+      (lycheens parallellism mot strypande värd → **ingenting**, CI var grön) ·
+      en död intern pekare efter filflytt (→ **laga**). Grinden fäller likadant
+      i alla tre. A5:s tre återstående skivor rör dokumentation i varje steg
 - [ ] Merge queue-aktiveringen (= A4)
 
 **Klartecken räcker — inga beslut:** komponent-token-grinden (R1:s dom C) ·
@@ -506,6 +528,8 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-27 | **A5 NEDBRUTET — sju skivor + QA** (`TASK-59.1`–`59.8`), vågorna delade efter YTA ej antal; linjär beroendekedja, Marcus delegerade uppdelningen | `b881c63` · `#296` |
 | 2026-07-27 | **`TASK-59.1` DONE** — fixturvärlden till delad hemvist `tests/support/fixturvarld/`; 24 baselines md5-oförändrade | `d52d6c8` · `#297` |
 | 2026-07-27 | **ci-wait härdad** — `--commit` kräver full SHA; fällde direkt två självtest-fall som anropat förkortat | `eaebec6` · `#298` |
+| 2026-07-28 | **Sjunde pausen** — `lifecycle: paused`, Del 14 (orkestreringen), HANDOFF, todo-kadens | `#306` |
+| 2026-07-28 | Restlistan ikapp pausen — steg 3 → PÅGÅR, A5-punkterna avbockade, `T104`-ordningen + A4 skärpta i § Beslut | (denna PR) |
 | 2026-07-28 | **`TASK-59.4` DONE — Personer-ytan** (3 filer, e2e 30→27). Tvåsidigt bevis per fil; agenten fann ett hål i sin EGEN bevismetod (vakten fäller på `get-person` innan `update-record` nås) och körde ett separat skrivvägs-prov. **`T104`** registrerad. Enabling-detour: död pekare i sessionsdok S23 efter flytten | `#304` |
 | 2026-07-27 | **`TASK-59.3` DONE — acceptance-klassen LEVER.** Eget projekt + mutexfritt jobb (placering, ej flagga) + `mergeTests`-komponerad söm; Hem-ytans två filer flyttade med tvåsidigt bevis (`hem` 28 fällda / 56 vakt-fel när mockarna neutraliserades). CI visar `Acceptance (hermetisk): success` som eget jobb. **`T102`** + **`T103`** registrerade | `#302` |
 | 2026-07-27 | **`TASK-59.2` DONE — kontraktsvakten i drift.** Larmkedjan bevisad skarpt (dispatch `30309427472`: `Kontraktsvakt: success` + `Larm: success`, ärende `#300` stängt med motivering). **Vakten larmade på RIKTIG drift vid första körningen** — 11 fält som `get-registrations` skickar i 43/43 poster saknades i fixturen. Tre enabling-detourer krävdes: fixturen ikapp · `L264`-tidszonsfixen · `danger.systems`-undantaget | `95157a5` · `4644041` · `8728e1f` · `#299` |
