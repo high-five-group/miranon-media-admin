@@ -159,8 +159,11 @@ villkor samtidigt:
 
 1. **Två eller fler PR:er är landningsklara samtidigt** — eller den ena landar
    medan den andra redan ligger i luften.
-2. **CI-tiderna är heterogena.** En docs-only-PR tar D0-lanen på ~1–2 min; en
-   PR som rör kod köar bakom staging-mutexen och tar ~10 min.
+2. **CI-tiderna är heterogena.** En docs-only-PR faller i klass `D0`
+   ([ADR-077](docs/decisions/ADR-077-riskanpassad-ci-klassning-dedup-nightly.md))
+   och är klar på omkring en minut; en PR som rör kod köar bakom
+   staging-mutexen och tar omkring tio. Siffrorna är `L328`:s mätning från S81
+   — storleksordningen är poängen, inte decimalen.
 3. **Required-checken är `strict`** (up-to-date-kravet ovan) — varje merge till
    `main` gör varje annan öppen PR `BEHIND`.
 
