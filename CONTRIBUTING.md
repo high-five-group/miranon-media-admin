@@ -201,7 +201,7 @@ varandra två gånger, en gång **12 minuter in i en grön körning**.
 slutrapport.
 
 **Agenterna armerar inte — det är andra halvan av samma kontrakt.**
-`.claude/agents/bygg-skiva.md` föreskriver att en bygg-agent öppnar sin PR och
+`.claude/agents/bygg-agent.md` föreskriver att en bygg-agent öppnar sin PR och
 lämnar armeringen ifrån sig, eftersom ordningen bara kan väljas av den som ser
 hela kön. Agenten avstår, orkestreraren sekvenserar.
 

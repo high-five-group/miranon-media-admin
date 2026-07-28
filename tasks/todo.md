@@ -167,7 +167,7 @@ trovärdigt, **RÖTT kan vara falskt**). **MARCUS-SEKVENS FÖR NÄSTA RESUME:**
 (1) **`TASK-59.8` QA-vandringen — DELEGERAD TILL CODE**, kortet är
 `ready-for-human` men delegeringen står över etiketten (2) steg 4 kadens-regeln
 (3) steg 5 A2:7 — **nu MER angelägen av isoleringen, inte mindre.**
-**Code fortsätter som ORKESTRERARE; spawna skrivande agenter som `bygg-skiva`**
+**Code fortsätter som ORKESTRERARE; spawna skrivande agenter som `bygg-agent`**
 (landad, självisolerande — men agent-typer laddas vid SESSIONSSTART).
 **Sessionen lever tills HELA restlistan är avklarad.** **SKÖRD denna resume:
 2 fragment** [UNIVERSAL]. Numrering: 91/**083**/L360 (**29** fragment)/**T107**/

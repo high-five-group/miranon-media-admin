@@ -16,7 +16,7 @@
 # parameter, och den är satt bara när anroparen skickar den explicit.
 # Isoleringen kommer i praktiken ur agentdefinitionens frontmatter —
 # `.claude/agents/<typ>.md` bär `isolation: worktree`. Följden: varje
-# `bygg-skiva`-rad bar `"isolation": null` trots att samtliga körde i egen
+# `bygg-agent`-rad bar `"isolation": null` trots att samtliga körde i egen
 # worktree. Mätaren rapporterade FRÅNVARO AV ISOLERING DÄR ISOLERING FANNS,
 # alltså fel åt det farliga hållet: den som läser loggen för att svara "körde
 # agenterna isolerat?" fick fel svar.

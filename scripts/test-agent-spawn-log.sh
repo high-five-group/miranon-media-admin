@@ -148,21 +148,21 @@ mark() {
 # ============================================================
 echo "═══ T1: typad agent med isolation: worktree → isolerad, källa frontmatter ═══"
 setup
-skriv_agent "bygg-skiva" "isolation: worktree
+skriv_agent "bygg-agent" "isolation: worktree
 "
-kor "bygg-skiva"
+kor "bygg-agent"
 ok=0
 check_exit "T1" 0 "${EC}" || ok=1
 check_falt "T1" "isolation" "worktree" || ok=1
 check_falt "T1" "isolation_kalla" "frontmatter" || ok=1
-check_falt "T1" "type" "bygg-skiva" || ok=1
+check_falt "T1" "type" "bygg-agent" || ok=1
 check_tyst_stdout "T1" || ok=1
 mark "${ok}"
 
 # ============================================================
 echo "═══ T2: inbyggd typ utan agentfil → oisolerad (andra riktningen) ═══"
 setup
-skriv_agent "bygg-skiva" "isolation: worktree
+skriv_agent "bygg-agent" "isolation: worktree
 "
 kor "general-purpose"
 ok=0
@@ -185,9 +185,9 @@ mark "${ok}"
 # ============================================================
 echo "═══ T4: parameter före frontmatter när båda finns ═══"
 setup
-skriv_agent "bygg-skiva" "isolation: worktree
+skriv_agent "bygg-agent" "isolation: worktree
 "
-kor "bygg-skiva" "remote"
+kor "bygg-agent" "remote"
 ok=0
 check_exit "T4" 0 "${EC}" || ok=1
 check_falt "T4" "isolation" "remote" || ok=1
@@ -256,14 +256,14 @@ mark "${ok}"
 # ============================================================
 echo "═══ T10: append-only — befintlig historik rörs aldrig ═══"
 setup
-skriv_agent "bygg-skiva" "isolation: worktree
+skriv_agent "bygg-agent" "isolation: worktree
 "
 {
     printf '{"ts":"2026-07-28T11:45:43Z","session":"1bd277c2","type":"Explore","isolation":null,"bg":false,"fran_worktree":false}\n'
-    printf '{"ts":"2026-07-28T12:16:33Z","session":"68a8e538","type":"bygg-skiva","isolation":null,"bg":true,"fran_worktree":false}\n'
+    printf '{"ts":"2026-07-28T12:16:33Z","session":"68a8e538","type":"bygg-agent","isolation":null,"bg":true,"fran_worktree":false}\n'
 } > "${LOGG}"
 cp "${LOGG}" "${TEST_DIR}/fore.jsonl"
-kor "bygg-skiva"
+kor "bygg-agent"
 ok=0
 check_exit "T10" 0 "${EC}" || ok=1
 check_radantal "T10" 3 || ok=1

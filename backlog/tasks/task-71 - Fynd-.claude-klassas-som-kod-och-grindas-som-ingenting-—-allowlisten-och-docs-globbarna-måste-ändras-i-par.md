@@ -3,10 +3,10 @@ id: TASK-71
 title: >-
   Fynd: .claude/** klassas som kod och grindas som ingenting — allowlisten och
   docs-globbarna måste ändras i par
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 18:23'
-updated_date: '2026-07-28 18:48'
+updated_date: '2026-07-28 20:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -46,16 +46,37 @@ Mätt 2026-07-27: en URL-ändring i agentkonfig kostade full staging-svit. Fyra 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Mekanismen omverifierad i CI, inte bara lokalt: ett run-ID redovisat där en PR som ENDAST rör en .claude/-fil klassas — före-talet (full svit) hämtat ur historiken, båda talen i PR-texten
+- [x] #1 Mekanismen omverifierad i CI, inte bara lokalt: ett run-ID redovisat där en PR som ENDAST rör en .claude/-fil klassas — före-talet (full svit) hämtat ur historiken, båda talen i PR-texten
 - [x] #2 .claude/-posterna tillagda i should_skip_tests-stegets allowlist i ci.yml
 - [x] #3 Samma poster tillagda i changed-docs-stegets lista — paret som ci.yml:s egen kommentar gör obligatoriskt
 - [x] #4 .claude/**/*.md täcks av ALLA tre docs-grindarna: markdownlint-cli2 globs, lint:prose och check-docs.sh — utdata som visar att filerna faktiskt lintas, inte bara att globben ändrats
 - [x] #5 Beslutet om .claude/settings.json (docs-klassad eller utelämnad) fattat och motiverat i PR-texten
-- [ ] #6 Kontrastbevis: en PR som endast rör .claude/ skippar Test suite OCH kör docs-jobbet grönt — run-ID redovisat
+- [x] #6 Kontrastbevis: en PR som endast rör .claude/ skippar Test suite OCH kör docs-jobbet grönt — run-ID redovisat
 - [x] #7 Inga filer utanför .claude/, ci.yml och docs-grindarnas config rörda
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererat i PR #366 (commit 681aa8e, merge 4543d18), CI grön per jobb. AC 1 och 6 stängda i PR #380, som är kontrastbeviset — de kan strukturellt inte tas av kortets egen PR, eftersom den ändrar ci.yml och därmed per definition faller ur docs-klassningen.
+
+KONTRASTBEVISET, MÄTT 2026-07-28 (körning 30397104750, PR #380 — en diff som rör ENBART .claude/):
+  Test suite     : SKIPPED   (.claude/** är docs-klassad — AC 1)
+  Docs link check: SUCCESS   (filen ligger innanför docs-grindarnas globbar — AC 6)
+Samma diff hade före denna skiva dragit hela staging-sviten, uppmätt till cirka 10 minuter genom den globala mutexen. Fyra historiska commits (ab52cd5, 7b60dc1, b48ece0, 8b98e95) rörde enbart .claude/settings.json och drog kodvägen var och en.
+
+FYNDET UNDER FYNDET: .claude/** matchar INTE .claude/.markdownlint.jsonc — dot-regeln biter en andra gång inuti katalogen. Med bara den ena posten hade agentens egen nya configfil legat utanför båda listorna, alltså samma fail-open återinfört av sin egen fix. Därför två poster: .claude/** och .claude/**/.*, den senare verifierad även mot nästlad dot-sökväg.
+
+PARET SOM VAR HELA POÄNGEN: posterna ligger i BÅDA listorna i ci.yml (should_skip_tests och changed-docs), enligt filens egen obligatoriska par-invariant. Utan paret hade en .md-fil där blivit både testsvit-skippad och docs-ovaliderad — tyst ovaliderad, L322-klassen. Par-invarianten maskinellt kontrollerad: alla åtta docs-verktygs-config-poster finns i båda listorna.
+
+TÄCKNING MÄTT, INTE ANTAGEN: markdownlint 306 -> 308 filer, Vale 435 -> 437. En planterad probe-fil under .claude/agents/ fällde alla tre grindarna samtidigt (check:docs exit 1); borttagen probe gav exit 0 och 9/9 gröna.
+
+WORKTREE-FÄLLAN: varken markdownlint-cli2 eller Vale läser .gitignore. Utan exkluderingarna hade .claude/** dragit in varje aktiv agent-worktrees hela .md-massa, och grinden hade fällt lokalt på en annan grens innehåll. Mätt: vale .claude 4 -> 2 filer.
+
+MD041 LÖSTES UTAN ATT RÖRA AGENTERNAS SYSTEMPROMPT: en H1 i en agentfil hade ändrat prompten för att blidka ett lint-verktyg. Regeln är ompekad till front_matter_title, inte avstängd.
+
+settings.json DOCS-KLASSAD, motiverat: den kan strukturellt inte påverka ett test (CI kör inte Claude Code), och den blir inte ogrindad — biome check . i det alltid-på lint-jobbet traverserar .claude/, bevisat med felformaterad probe-JSON.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
