@@ -101,3 +101,40 @@ export const ARBETSKO_EXPECTED = {
   kurshistorikDatum: '2025-10-20',
   kurshistorikSession: 'Dag 1',
 } as const;
+
+/**
+ * Permanent ANTECKNING-fixtur i staging-Anteckningar (TASK-61; seedad via MCP
+ * 2026-07-28, Författare `ZZ-anteckning-fixtur`). Kontraktsvaktens ankare för
+ * `get-event-notes` — den enda av vaktens tre endpoints som saknade en permanent
+ * fixtur att mäta mot. STÄDA INTE.
+ *
+ * BOR PÅ ARBETSKÖ-EVENTET, INTE PÅ BELÄGGNINGS-EVENTET — och det är hela poängen.
+ * `create-event-note`- och `get-event-notes`-sviterna skriver sina sentinel-
+ * anteckningar (`ZZ-note-test+<uuid>@sentinel`) mot BELAGGNING_EVENT_ID, och
+ * ADR-060-purgen är DESIGNAD att radera dem. Ett vakt-anrop mot det eventet mäter
+ * alltså mot data som purge tömmer: cykeln blev purge tömmer → vakten läser tomt →
+ * sviten fyller på igen, och utfallet avgjordes av vilken av dem som hann först
+ * (nightly 30328246805 föll på `[TOMT-UNDERLAG]` åtta sekunder efter purge; dispatch
+ * 30309427472 var grön av två sekunders marginal FÖRE den). Arbetskö-eventet får
+ * aldrig sentinel-anteckningar — vaktens svar är därför exakt denna fixtur, lika
+ * före som under som efter purge. Körordningen slutar spela roll.
+ *
+ * PURGE-IMMUNITETEN ÄR KONSTRUKTION, INTE TUR — och prövad mot policyn på disk,
+ * inte mot minnet av den. Två oberoende spärrar i `create-event-note-sentineler`:
+ *   1. Server-side-urvalet kräver att markören står FÖRST
+ *      (`FIND('ZZ-note-test+', {Anteckning}) = 1`). Fixturtexten inleds med
+ *      "PERMANENT test-fixtur (TASK-61)" och bär markören inte alls → FIND ger 0 →
+ *      raden listas aldrig ens som kandidat.
+ *   2. Exakt-matchen (`^ZZ-note-test\+<uuid>@sentinel$`) körs sedan per rad i kod.
+ *      Fixturen faller ut som `skippedMismatch` även med åldern satt till år 2020,
+ *      alltså utan hjälp av ålders-guarden.
+ * Samma medvetna avstånd till purge-markören som ZZ-belaggning-/ZZ-arbetsko-
+ * fixturerna håller i Ort-fältet.
+ *
+ * Konsumeras av kontraktsvakten (`tests/kontraktsvakt/kontraktsfall.ts`), som
+ * anropar `get-event-notes?eventId=${ARBETSKO_EVENT_ID}`. Record-ID:t nedan är
+ * registrets spår av VILKEN rad som är permanent — vakten adresserar eventet, inte
+ * anteckningen, så att en framtida andra fixtur-rad på samma event bara gör
+ * underlaget bredare.
+ */
+export const ANTECKNING_FIXTUR_NOTE_ID = 'recLcii847ZK7K6OY';
