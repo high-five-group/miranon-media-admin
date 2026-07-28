@@ -48,10 +48,27 @@ async function* walk(dir: string): AsyncGenerator<string> {
 /**
  * Hermetik-rapporten (S91, mätningens steg 1) — sammanställs hit och skrivs till
  * stdout, så utfallet hamnar direkt i CI-loggen utan artefakt-hantering.
- * No-op när mätläget inte körts och filen alltså saknas.
  *
  * Läser JSONL:en som `tests/e2e/support/test-bas.ts` skrivit under körningen.
  * Källa: docs/research/staging-svitens-tidsbudget-2026-07-26.md § 5 steg 1.
+ *
+ * FLAGG-VAKTAD, SYMMETRISKT MED `global-setup.ts` (tråd T105, task-59.7).
+ * Ursprungsformen prövade INTE flaggan och lutade sig på att filens FRÅNVARO
+ * var no-op-villkoret ("no-op när mätläget inte körts och filen alltså
+ * saknas"). Den premissen håller inte: `global-setup.ts` nollställer filen
+ * ENDAST i mätläget, så en fil från en tidigare mätning ligger kvar och
+ * presenterades då som den just körda svitens utfall.
+ *
+ * Så upptäcktes den: en HERMETISK acceptance-körning skrev ut anrop mot den
+ * skarpa staging-värden — strukturellt omöjligt i en hermetisk körning.
+ * Utskriften inbjöd till fel slutsats åt BÅDA håll: att hermetiken läcker (den
+ * gjorde inte det) eller att en färsk mätning fanns (den fanns inte).
+ * Reproducerat med `--grep` som inte matchade något: NOLL tester kördes, och
+ * rapporten skrevs ändå ut i sin helhet. Klassen är repots egen återkommande —
+ * frånvaro presenterad som data.
+ *
+ * Flaggan, inte filens existens, är därför villkoret. En kvarlämnad fil kan
+ * aldrig bli en rapport; en påslagen mätning skriver alltid sin.
  */
 const RAPPORT_FIL = HERMETIK_RAPPORT_FIL;
 
@@ -64,11 +81,15 @@ interface Restanrop {
 }
 
 async function rapporteraHermetik(): Promise<void> {
+  // T105: samma vakt som `global-setup.ts` rad 23. Utan den blir en kvarlämnad
+  // fil från en tidigare mätning utskriven som denna körnings utfall.
+  if (process.env.PLAYWRIGHT_HERMETIK_RAPPORT !== '1') return;
+
   let rader: string;
   try {
     rader = (await readFile(RAPPORT_FIL)).toString('utf-8');
   } catch {
-    return; // Mätläget kördes inte — inget att rapportera.
+    return; // Mätläget påslaget men inget skrevs — ingen rapport att ge.
   }
 
   const anrop: Restanrop[] = rader

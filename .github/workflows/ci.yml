@@ -36,6 +36,11 @@ jobs:
       # (stilmallar/CSS/publika statiska filer) OCH ingen exkluderad fil (samma
       # exkludering som docs-klassen) → staging skippas, a11y/pure/build kör.
       ui_low_risk: ${{ steps.changed-ui.outputs.only_changed == 'true' }}
+      # Acceptance-klassen (task-59.7 / ADR-080): true = ALLA ändrade filer bor
+      # i tests/acceptance/** → staging + purge skippas (ingen mutex) medan
+      # acceptance/a11y/pure/build kör. Samma LEVER som ui_low_risk, egen
+      # klassning — se steget för varför levern delas.
+      acceptance_local: ${{ steps.changed-acceptance.outputs.only_changed == 'true' }}
       # Merge-dedup (task-36.4 / ADR-077): true = main-push vars träd redan
       # bevisats grönt i PR:en → tunga jobb hoppas. Fail-closed (se steget).
       dedup_hit: ${{ steps.dedup.outputs.dedup_hit == 'true' }}
@@ -170,6 +175,67 @@ jobs:
             **/*.css
             src/styles/**
             public/**
+            !.github/workflows/**
+            !.github/dependabot.yml
+            !package.json
+            !package-lock.json
+            !audit-ci.jsonc
+            !tsconfig*.json
+            !biome.json
+            !vite.config.ts
+            !playwright.config.ts
+            !tsr.config.json
+            !.nvmrc
+            !.gitignore
+
+      - name: Get changed acceptance-class files (klass-lokal ändring)
+        id: changed-acceptance
+        # ACCEPTANCE-KLASSEN I RISK-KLASSNINGEN (task-59.7, AC#3 / ADR-080).
+        # Klassen fick eget mutexfritt jobb i task-59.3 men ingen plats i
+        # klassnings-mekaniken: en ändring som BARA rör tests/acceptance/**
+        # drog fortfarande med sig hela sviten, inklusive staging bakom den
+        # globala mutexen. Filerna som klassas här kan per konstruktion inte
+        # påverka staging — acceptance-projektet har egen testDir, körs mot
+        # fixturvärlden, och ingen fil under tests/e2e, tests/api eller
+        # tests/a11y importerar från katalogen (verifierat med grep 2026-07-28).
+        #
+        # SAMMA LEVER SOM D1, EGEN KLASSNING. Utfallet wiras till suite-jobbets
+        # run_staging-input, exakt som ui_low_risk — inte till en ny input.
+        # Skälet är att den dyra resursen är EN: staging-mutexen. En andra input
+        # hade gett två sätt att uttrycka samma sak och därmed en ny
+        # divergens-yta i precis den mekanik ADR-077 byggde för att slippa den.
+        #
+        # INGET NYTT D-NUMMER MINTAS HÄR. ADR-077 diskuterar D2-slotten
+        # explicit och lämnar den öppen för en framtida testgrafs-design;
+        # klassen tar därför ett beskrivande namn i stället för att beslagta ett
+        # nummer som är reserverat för en annan idé.
+        #
+        # ALLOWLIST, ALDRIG BLOCKLIST (ADR-077 §1). only_changed blir true
+        # ENDAST när VARENDA ändrad fil ligger under tests/acceptance/**. En
+        # commit som rör både klassen och något annat faller till full svit.
+        #
+        # DEN FARLIGA FRÅGAN, VERIFIERAD I KÄLLAN OCH INTE ANTAGEN: blir
+        # only_changed vakuöst `true` när INGEN fil matchar allowlisten? Det
+        # hade släckt staging för varenda PR som inte rör klassen — ett
+        # katastrofalt fail-open. Svaret är NEJ, läst i actionens källa vid
+        # EXAKT den pinnade SHA:n ovan (src/changedFilesOutput.ts):
+        #   onlyChanged = otherChangedFiles.length === 0
+        #              && allChangedFiles.paths.length > 0
+        #              && filePatterns.length > 0
+        # Andra ledet kräver minst EN matchande fil. Noll matchningar ⇒ false ⇒
+        # full svit. Kontrollera om vid varje SHA-bump av actionen.
+        # Exkluderingarna nedan är IDENTISKA med D0:s och D1:s. De är i dag
+        # REDUNDANTA — ingen av dem kan matcha under tests/acceptance/** — och
+        # står här som klassrymdens invariant, inte som bärande logik: skulle
+        # allowlisten någon gång vidgas är golvet redan på plats. Läs dem inte
+        # som att de gör något i nuvarande form.
+        #
+        # quotepath: false — samma invariant som de andra stegen (TASK-15).
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
+        with:
+          quotepath: false
+          files: |
+            tests/acceptance/**
             !.github/workflows/**
             !.github/dependabot.yml
             !package.json
@@ -466,11 +532,14 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/ci-suite.yml
-    # run_staging: false vid D1 (ren UI-ändring) → ci-suite skippar purge +
-    # staging (ingen mutex) men kör pure/build + a11y. Default i ci-suite är
-    # true, så nightly.yml (som ej skickar inputen) kör alltid full svit.
+    # run_staging: false vid D1 (ren UI-ändring, task-36.3) ELLER vid en
+    # klass-lokal acceptance-ändring (task-59.7) → ci-suite skippar purge +
+    # staging (ingen mutex) men kör pure/build + a11y + acceptance. Default i
+    # ci-suite är true, så nightly.yml (som ej skickar inputen) kör alltid full
+    # svit. Båda klasserna är allowlists och kan bara SLÄCKA staging för en
+    # commit vars varenda fil ligger i klassen — aldrig för en blandad commit.
     with:
-      run_staging: ${{ needs.changed.outputs.ui_low_risk != 'true' }}
+      run_staging: ${{ needs.changed.outputs.ui_low_risk != 'true' && needs.changed.outputs.acceptance_local != 'true' }}
     secrets: inherit
 
   # Job 4: Markdown link validation. Conditional på docs-changes.
