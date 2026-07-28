@@ -493,13 +493,6 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       allvarligaste av de fem.** Tas som DIAGNOS under egen hand, ej som
       delegerad skiva. Egen klass mot `T106` (självtestets race) — slå inte ihop
       utan att pröva om orsaken är gemensam
-- [ ] **`TASK-65`** — `event-anteckningar` bär 2,2 s marginal mot retrykedjans
-      konstruerade värsta fall
-- [ ] **`TASK-66`** — klassens tidsdimension är odokumenterad. **Väntar medvetet
-      på `TASK-62`: båda rör `acceptance-bas.ts`**
-- [ ] **`TASK-69`** — kontraktsvakten kortsluter på allt utom HTTP 200, så
-      felkontrakten 404 och 400 är osynliga. **`TASK-68` är förkrav och är
-      uppfyllt**
 
 ## Fynd-kedjans ordning — klassad och sekvenserad 2026-07-28
 
@@ -711,6 +704,11 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-28 | **`A7:2` KLAR** — spawn-loggen mäter **effektiv** isolering (frontmatter-uppslag), inte spawn-parametern; nytt fält `isolation_kalla`, tvåsidigt bevis, egen testsvit wirad i CI. Raderna före rättningen är korrekt historik och lagas inte | `#354` |
 | 2026-07-28 | **`TASK-70` mintat** — arbetsflödes-gapets PRD + sex skivor (`70.1`–`70.6`), deps `70.3`/`70.4` → `70.2` + `70.5` | `#355` |
 | 2026-07-28 | **Restlistan rättad mot disk** — tio inre motsägelser och tolv statusfel; avbockningsloggen lagad som avlastningsyta; *Senast verifierad mot disk*-raden + regeln att registret vinner vid konflikt införda | `a1d6301` · `#356` |
+| 2026-07-28 | **`TASK-66` DONE — tidsdimensionen i sömmen.** Agenten vägrade skriva av kortets `~8–10 s` och härledde talet ur källan, vilket avtäckte att **`TASK-65`:s kort räknade fel**: jittret är konstant 0–100 ms per sleep, inte skalat med delayen ⇒ tak **8200 ms**, ej 9800. Kortets egna fem mätningar bekräftade 8200-modellen | `#364` · `#365` |
+| 2026-07-28 | **`TASK-65` DONE — timeout-marginalen mot rättat tak.** 12 → 20 s, räkningen rättad **vid källan** i samma commit. Tvåsidigt bevis: negativkontroll fäller på assertionen efter 21,8 s. **Två av kortets påståenden falsifierade** (marginalen var 3,8 s ej 2,2 s; taket är ingen normalutfall utan kräver tolv höga jitter-drag) | `#368` · `#372` |
+| 2026-07-28 | **`TASK-71` byggt** — `.claude/**` docs-klassad OCH täckt av alla tre docs-grindarna, som ett par. **Fyndet under fyndet:** `.claude/**` matchar inte `.claude/.markdownlint.jsonc` — dot-regeln biter en andra gång inuti katalogen, så fixen hade återinfört sitt eget fail-open utan andra posten. AC 1 + 6 utestående: kontrastbeviset kräver en PR som rör enbart `.claude/` | `#366` |
+| 2026-07-28 | **Vägkartan in i filen** — ordningsraden gjord fullständig (nio steg), efter att en väg byggts som tappade tre poster trots att hela filen lästs. Formregel: steg, ID och pekare — aldrig beskrivning eller status | `#367` |
+| 2026-07-28 | **`TASK-64` steg 0 utfört** — flakigheten mätt till **63 %** (14 av 22 acceptance-jobb i 120 CI-körningar) och orsaken lokaliserad till **tre rader** med mönstret *icke-auto-väntande query + icke-retrying assertion*. `ci-metrics.mjs` kunde inte svara: den räknar jobb-omkörningar, och `retries: 2` döljer flaken inuti ett grönt jobb. Klass B (fokus-testerna) skild ut; `T106`-avgränsningen besvarad | `#369` |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
