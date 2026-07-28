@@ -16,6 +16,21 @@
 #     aldrig grön), och den avslutande sammanfattningen räknar upp dem,
 #   - avslutningsraden säger uttryckligen om täckningen var fullständig.
 #
+# VARFÖR BASH OCH INTE EN TASK-RUNNER (verktygspassets dom BEHÅLL, 2026-07-27 —
+# docs/research/verktygsval-fyra-egenbyggen-2026-07-27.md § 2). Sju kandidater
+# prövades: npm-run-all2, concurrently, Wireit, just, Task, GNU Make, npm självt.
+# INGEN kan uttrycka ärlighets-kravets TRI-STATE — grön, röd, SKIPPAD — och det
+# är hela poängen ovan. Samtliga är exit-kod-maskiner: 0 eller icke-0.
+#
+# Wireit var den seriösa kandidaten (`WIREIT_FAILURES=continue` kör vidare och
+# ger en samlad bild) men saknar också skippad-tillståndet. `command -v lychee`
+# måste bo någonstans; flyttas den till ett wrapper-script per grind har man
+# bara flyttat bash — och förlorat den samlade skippad-listan i slutet, som är
+# just det som gör rapporten ärlig.
+#
+# Detaljerna, inklusive att `npm --if-present` gäller ett saknat SCRIPT och
+# aldrig en saknad BINÄR, står i passets § "Varför tri-state-kravet fäller alla".
+#
 # SCOPE — de nio CI-grindar som kan gå fel för att dokumentation rörts:
 #   ci.yml docs-jobbet (villkorat på docs_changed):
 #     1. lychee link check          — kräver lychee-binär, SKIPPAS om den saknas
