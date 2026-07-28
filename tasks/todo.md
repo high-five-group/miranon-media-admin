@@ -15,6 +15,27 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-28, elfte resumen — fynd-kedjan klassad och
+sekvenserad)** — resumen kvitterad mot disk: numreringens **sju axlar
+oförändrade** sedan pausen (91/083/L360/**33** fragment/T107/f46/task-70 —
+ingen mellansession förbrukade nummer), `main` @ `50b2c5e` rent + i synk med
+origin, fem senaste main-körningarna **gröna**, `audit-ci` *"Passed"*, plugin
+**1.22.0**. **FYND VID INGÅNGEN: `S92` är också `lifecycle: paused`** — två
+pausade dok på disk; Marcus pekade ut S91, S92 har inte rört numreringen.
+**Marcus order: `TASK-63`–`66` + `69` ska ALLA klassas och tas itu med, i rätt
+ordning.** Relationen bekräftad — fem av sex är fynd ur `59.8`:s QA-vandring,
+det sjätte är kontraktsdriftens lager 2. **Samtliga fem klassade
+`ready-for-agent`** (alla bar redan AC — 13 st; till skillnad från
+`56`–`58`-klassningen behövde inga skrivas). **Ordningen: `62` → `69` → `65` →
+`66` → `64` → `63`**, med deps kodade **bara där beroendet är äkta** (`66→62`
+fil-kollision · `64→62` mätinstrument · `69→68` förkrav); `63`/`65` fick ingen
+dep — deras plats är schemaläggning, och en falsk dep blir skuld som ser ut som
+en invariant. **`TASK-64` spawnas INTE som skiva** trots etiketten — diagnos
+under egen hand, anvisningen skriven i kortets egen plan. **NU: `TASK-62`,
+mätningen före bygget.** Karta: `tasks/s91-restlistan.md` § Fynd-kedjans
+ordning.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-28, elfte pausen — efter kontraktsdriften och
 vakten till sju)** — **FEMTON PR:er landade (`#334`–`#348` utom `#340`), samtliga
 gröna per jobb, noll röda körningar.** **A5-FAMILJEN KOMPLETT** (`TASK-59.1`–`59.8`
