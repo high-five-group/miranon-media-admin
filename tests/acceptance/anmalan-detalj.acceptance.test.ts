@@ -1,6 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type {
+  EventSchema,
+  RegistrationDetailSchema,
+  RegistrationSchema,
+} from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, type Page, test } from './support/acceptance-bas';
 
@@ -53,9 +59,25 @@ import { expect, type Page, test } from './support/acceptance-bas';
 
 const EVENT_ID = 'recANMDETALJ00001';
 
+/**
+ * Härledda ur schemana, ej beskrivna bredvid dem (TASK-63) — se `acceptance-bas.ts`
+ * § fogen. Filen mockar TRE läs-EF:er med olika svarsform, så det tidigare
+ * gemensamma `Json`-aliaset delas. `DetaljRow` är `RegistrationDetailSchema`, som
+ * i sin tur EXTENDar list-shapen — spreaden `detalj() → listRad()` nedan bevisas
+ * därmed av kompilatorn i stället för att bara stämma i praktiken.
+ */
+type EventRow = z.infer<typeof EventSchema>;
+type ListRow = z.infer<typeof RegistrationSchema>;
+type DetaljRow = z.infer<typeof RegistrationDetailSchema>;
+
+/**
+ * `Json` finns KVAR — men bara för den infångade REQUEST-payloaden till
+ * send-registration-confirmation, aldrig för en fixturrad. Den är det appen
+ * SKICKAR, inte det EF:en svarar, och har därför inget läs-schema att härledas ur.
+ */
 type Json = Record<string, unknown>;
 
-function eventDetail(overrides: Json = {}): Json {
+function eventDetail(overrides: Partial<EventRow> = {}): EventRow {
   return {
     id: EVENT_ID,
     eventlabel: 'Skövde – Utbildning – RIM 2',
@@ -87,7 +109,7 @@ function eventDetail(overrides: Json = {}): Json {
 }
 
 /** List-shapens rad (get-registrations, RegistrationSchema) — arbetsköns kort. */
-function listRad(overrides: Json = {}): Json {
+function listRad(overrides: Partial<ListRow> = {}): ListRow {
   return {
     id: 'recAnna',
     namn: 'Anna Andersson',
@@ -130,7 +152,7 @@ function listRad(overrides: Json = {}): Json {
  * detaljfälten. Baslinjen speglar facit-bilagan k04 (Anna: bekräftad,
  * RIM 2-godkänd via RIM 1-deltagande, +1:an Björn, deadline om 3 dagar).
  */
-function detalj(overrides: Json = {}): Json {
+function detalj(overrides: Partial<DetaljRow> = {}): DetaljRow {
   return {
     ...listRad({
       status: 'Bekräftad (mail skickat)',
@@ -179,7 +201,7 @@ function detalj(overrides: Json = {}): Json {
 }
 
 /** Obekräftad +1:a (Björn — facit-bilagan k04-obekraftad). */
-function detaljObekraftad(): Json {
+function detaljObekraftad(): DetaljRow {
   return detalj({
     id: 'recBjorn',
     namn: 'Björn Berg',
@@ -221,10 +243,10 @@ function mocka(
     detaljer,
     listor = [],
     manualRelease = false,
-  }: { detaljer: Json[]; listor?: Json[]; manualRelease?: boolean },
+  }: { detaljer: DetaljRow[]; listor?: ListRow[]; manualRelease?: boolean },
 ): { confirmCalls: Json[]; release: () => void } {
   const confirmCalls: Json[] = [];
-  const perId = new Map(detaljer.map((d) => [d.id as string, d]));
+  const perId = new Map(detaljer.map((d) => [d.id, d]));
 
   let release = () => {};
   const gate = manualRelease ? new Promise<void>((resolve) => (release = resolve)) : null;

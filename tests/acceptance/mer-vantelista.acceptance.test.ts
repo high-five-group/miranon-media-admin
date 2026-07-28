@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { WaitlistEntrySchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from './support/acceptance-bas';
 
@@ -31,10 +33,11 @@ import { expect, test } from './support/acceptance-bas';
  * INGEN flytta-/write-affordans.
  */
 
-type Row = Record<string, unknown>;
+/** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
+type Row = z.infer<typeof WaitlistEntrySchema>;
 
 /** En komplett WaitlistEntry-rad (EF-svarets form, WaitlistEntrySchema). */
-function row(overrides: Row = {}): Row {
+function row(overrides: Partial<Row> = {}): Row {
   return {
     id: `recWL${Math.random().toString(36).slice(2, 10)}`,
     fornamn: 'Anna',

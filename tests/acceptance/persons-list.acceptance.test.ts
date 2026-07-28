@@ -1,5 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { PersonSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from './support/acceptance-bas';
 
@@ -36,7 +38,16 @@ import { expect, test } from './support/acceptance-bas';
  * axe: fokus-behållning på "Ladda fler" + aria-live-annonsering av antal nya rader.
  */
 
-/** Komplett Person som passerar PersonSchema (.parse i adaptern). */
+/**
+ * Komplett Person som passerar PersonSchema (.parse i adaptern).
+ *
+ * BUNDEN MED `satisfies`, inte med en returtyp (TASK-63) — se `acceptance-bas.ts`
+ * § fogen. Skälet är precision: `PersonSchema.namn` är nullable, så en explicit
+ * returtyp hade vidgat `namn` till `string | null` och tvingat fram en null-check
+ * i sök-filtret nedan — trots att fabriken alltid sätter en sträng. `satisfies`
+ * kontrollerar fältnamn och fälttyper mot schemat men behåller den snävare
+ * inferensen, så en glidning fälls utan att beviset görs luddigare.
+ */
 function person(i: number) {
   const namn = `Person ${String(i).padStart(2, '0')}`;
   return {
@@ -62,7 +73,7 @@ function person(i: number) {
     radSkapad: null,
     anmalningIds: [],
     deltagandeIds: [],
-  };
+  } satisfies z.infer<typeof PersonSchema>;
 }
 
 /** Cursor-paginerad mock: tre sidor (00–01 → c1 → 02–03 → c2 → 04 → null). */

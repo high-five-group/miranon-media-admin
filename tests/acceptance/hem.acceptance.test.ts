@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { EventSchema, RegistrationSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { FIXTUR_EPOST } from '../support/fixturvarld/hermetic';
 import { expect, type Page, test } from './support/acceptance-bas';
@@ -59,10 +61,17 @@ const GET_EVENTS = /\/functions\/v1\/get-events/;
 /** Sidrubriken = hälsningen (AC #6) — namn-delen är miljöberoende → prefix-match. */
 const H1_HALSNING = /^Hej/;
 
-type Row = Record<string, unknown>;
+/**
+ * Härledda ur schemana, ej beskrivna bredvid dem (TASK-63) — se `acceptance-bas.ts`
+ * § fogen. Vyn läser TVÅ EF:er med olika svarsform, så det tidigare gemensamma
+ * `Row`-aliaset delas: ett `Record<string, unknown>` kunde bära båda, en härledd
+ * typ kan inte — och ska inte.
+ */
+type RegRow = z.infer<typeof RegistrationSchema>;
+type EventRow = z.infer<typeof EventSchema>;
 
 /** En komplett Registration-rad (EF-svarets form, Registration.schema). */
-function reg(overrides: Row = {}): Row {
+function reg(overrides: Partial<RegRow> = {}): RegRow {
   return {
     id: `recR${Math.random().toString(36).slice(2, 10)}`,
     namn: null,
@@ -89,7 +98,7 @@ function reg(overrides: Row = {}): Row {
 }
 
 /** En komplett Event-rad (EF-svarets form, Event.schema). */
-function ev(overrides: Row = {}): Row {
+function ev(overrides: Partial<EventRow> = {}): EventRow {
   return {
     id: `recE${Math.random().toString(36).slice(2, 10)}`,
     eventlabel: 'RIM1',
@@ -128,7 +137,12 @@ function mock(
     events = [],
     regStatus = 200,
     eventStatus = 200,
-  }: { registrations?: Row[]; events?: Row[]; regStatus?: number; eventStatus?: number } = {},
+  }: {
+    registrations?: RegRow[];
+    events?: EventRow[];
+    regStatus?: number;
+    eventStatus?: number;
+  } = {},
 ) {
   network.use(
     http.get(EF('get-registrations'), () =>
@@ -1030,7 +1044,10 @@ test.describe('Osynliga uppdateringen (task-4.5)', () => {
       stället för av ett uppskjutet Playwright-Route-objekt. Beviset är
       oförändrat: `parkerade.length` räknar anrop som är MOTTAGNA men ännu inte
       besvarade, alltså exakt "omhämtning i luften". */
-  function hallbarMock(network: NetworkFixture, data: { registrations: Row[]; events: Row[] }) {
+  function hallbarMock(
+    network: NetworkFixture,
+    data: { registrations: RegRow[]; events: EventRow[] },
+  ) {
     const st = {
       data,
       hall: false,

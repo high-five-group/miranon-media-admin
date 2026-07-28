@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 12:47'
-updated_date: '2026-07-28 15:05'
+updated_date: '2026-07-28 21:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,9 +31,9 @@ UPPTÄCKT AV: färsk läsare utan tillgång till CONTRIBUTING/ADR, som noterade 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Fixturradernas typ är härledd ur respektive zod-schema, ej Record<string, unknown>
-- [ ] #2 En medvetet felaktig fixturrad fälls av npm run typecheck — bevisat i båda riktningar
-- [ ] #3 Kontraktsvakten orörd i omfattning och utfall
+- [x] #1 Fixturradernas typ är härledd ur respektive zod-schema, ej Record<string, unknown>
+- [x] #2 En medvetet felaktig fixturrad fälls av npm run typecheck — bevisat i båda riktningar
+- [x] #3 Kontraktsvakten orörd i omfattning och utfall
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -50,10 +50,29 @@ AVGRÄNSNING (står i beskrivningen, upprepas för att den är lätt att tappa):
 PLATS I KEDJAN: kontraktsdriftens lager 3. Lager 1 = TASK-68 (Done, 200-formen till alla sju), lager 2 = TASK-69 (felkontrakten), lager 4 = dual-run (ospeccat). Ingen teknisk låsning mot 69 — de rör olika filer — men lagerordningen är den logiska läsningen.
 <!-- SECTION:PLAN:END -->
 
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+GENOMFÖRT (S91, bygg-agent). Pilot på mer-maillogg.acceptance.test.ts först per planen; formen bar, därefter breddad till alla 18.
+
+RÄTTELSE AV KORTETS EGEN RÄKNING (mätt mot disk 2026-07-28, efter TASK-64/65-landningarna):
+Kortet skrev '17 av 18 deklarerar en lokal type Row = Record<string, unknown>'. Antalet 17 stämmer, men NAMNET gör det inte — och det leder fel vid sökning. Faktisk fördelning: 11 filer kallar den Row, 2 Json (anmalan-detalj, event-anteckningar), 2 PersonDetailMock (person-detail, person-note-edit), 2 EventRow (mer-segment, mer-segment-send). En grep på 'type Row' hittar alltså bara 11 av 17.
+
+Den 18:e filen (persons-list) saknade Record<string, unknown> och räknades därför utanför — men dess fixtur var lika obunden, bara via inferens i stället för via ett alias. Den är åtgärdad med 'satisfies z.infer<typeof PersonSchema>' i stället för en returtyp, eftersom PersonSchema.namn är nullable och en returtyp hade vidgat namn till string|null och tvingat fram en null-check i sök-filtret. satisfies binder mot schemat utan att göra beviset luddigare. Kortets 'alla 18' är därmed uppfyllt, inte 17.
+
+FYRA ALIAS BAR FLERA FORMER och gick inte att typa 1-till-1 — de delades: hem + hem-laddlage + event-ny-anmalan (Event + Registration), event-anteckningar (Event + EventNote), anmalan-detalj (Event + Registration + RegistrationDetail).
+
+TVÅ PARAMETRAR VAR FÖR VIDA och band inte fixturen till schemat: events-list-kalender och event-ny-anmalan deklarerade 'status?: string | null' medan EventSchema.status är en z.enum. Bundna till Row['status'].
+
+WRITE-PAYLOADS LÄMNADE MEDVETET OTYPADE — angränsande, ej åtgärdad yta: de infångade request-bodies i mer-segment-send (sentBody), event-ny-anmalan (createBodies), anmalan-detalj (confirmCalls) och event-anteckningar (capturedBody) står kvar som Record<string, unknown>. De är det appen SKICKAR, inte det EF:en svarar, och har inget läs-schema att härledas ur; att binda dem till läs-schemat vore att påstå att write-formen är läs-formen. MailPayloadSchema finns och skulle kunna bära mer-segment-send:s fall — men det är en annan fog än kortets och togs inte här.
+
+DOKTRINEN BOR I SÖMMEN: acceptance-bas.ts § fogen uppdaterad — det var dess egen text (rad 15-19) som hävdade den enkelriktade garantin kortet fann. Den skiljer nu de tre mekanismerna: typningen binder fixtur->schema (presubmit, blockerande), parsningen fixtur->schema (runtime), vakten schema->verkligheten (nattlig, icke-blockerande). Per-fil-kommentarerna är en rad som pekar dit.
+<!-- SECTION:NOTES:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

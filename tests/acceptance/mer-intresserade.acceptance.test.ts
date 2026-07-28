@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { IntresseradSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from './support/acceptance-bas';
 
@@ -32,12 +34,13 @@ import { expect, test } from './support/acceptance-bas';
  * LÄS-vy → INGEN write-affordans.
  */
 
-type Row = Record<string, unknown>;
+/** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
+type Row = z.infer<typeof IntresseradSchema>;
 
 /** En komplett Intresserad-rad (EF-svarets form, IntresseradSchema = PersonSchema
  * .extend + antalHamtningar/allaHamtningar). Alla fält närvarande — adaptern
  * .parse():ar mot z.array(IntresseradSchema), så en ofullständig rad → parse-fel. */
-function row(overrides: Row = {}): Row {
+function row(overrides: Partial<Row> = {}): Row {
   return {
     id: `recINT${Math.random().toString(36).slice(2, 10)}`,
     namn: 'Anna Andersson',

@@ -1,5 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { EventSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { medvetetOanvand } from '../support/fixturvarld/overskuggnings-vakt';
 import { expect, test } from './support/acceptance-bas';
@@ -43,7 +45,8 @@ import { expect, test } from './support/acceptance-bas';
  *   send-email     → BulkSendStatus (MailSendResultSchema) — happy path 'sent'.
  */
 
-type EventRow = Record<string, unknown>;
+/** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
+type EventRow = z.infer<typeof EventSchema>;
 
 /** En komplett Event-rad (EventSchema) — adaptern .parse():ar, så alla fält måste finnas. */
 function ev(eventNamn: string | null, typ: string | null): EventRow {
