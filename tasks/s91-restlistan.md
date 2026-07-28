@@ -68,6 +68,17 @@ tabellen bär bara det som är kvar.**
 | 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
 | 6 | **A7 · Arbetsflödes-gapet** ur [granskningen](../docs/research/arbetsflode-granskning-2026-07-28.md) 2026-07-28; domen **DELVIS**. Ordningen A7:4 → A7:5–6 är en invariant, se § A7 | ▶️ **PÅGÅR** — A7:1–2 klara (icke-kort-poster), `TASK-70`-familjen öppen |
 
+**STEG 5 OCH 6 ÄR TVÅ HALVOR AV SAMMA MÅL — och A7 ensamt stänger det inte.**
+Konsoliderat 2026-07-28 på Marcus fråga *"när vi har genomfört alla A7-punkter,
+kan vi jobba parallellt med subagenter utan att CI/grindvakterna stoppar oss?"*
+**A7 tar bort väntan på MASKINEN** (kritisk väg 7,4 min → under 4 min, mutexen
+ur PR-grinden, landnings-ordningen mekaniserad). **A2:7 tar bort krockarna
+mellan AKTÖRERNA** (delade filer, portar, nummerserier, staging, main).
+Målbilden — *människan väntar aldrig sysslolös* — kräver båda. Vad som
+bevisligen står kvar efter A7 står i § A2 punkt 7. Beslutsflaskhalsen och den
+seriella granskningen är **nya punkter 8 och 9** i samma sektion: de saknade
+hemvist helt, trots att målbilden namnger dem som två av sina tre hinder.
+
 **Varför A3 var kritiska vägen och inte hygien** (skälet som fattade beslutet,
 bevarat med sitt utfall): staging-sviten låg under global mutex med tre
 fjärdedelar av tiden buren av tester som redan mockade sina EF:er, och
@@ -134,7 +145,45 @@ också bär alla fem i sin § Beslut. **Inga öppna poster.**
       skriver i `todo.md` ser inte varandra alls — merge-konflikt, eller värre,
       tyst överskrivning vid sekventiell landning. Före isolering delade de
       åtminstone arbetsträd. Isoleringen löser alltså en del av A2:7 och
-      förvärrar en annan; det gör regeln mer angelägen, inte mindre
+      förvärrar en annan; det gör regeln mer angelägen, inte mindre.
+      **VAD SOM STÅR KVAR EFTER A7 — belagt 2026-07-28, inte antaget:**
+      (a) **staging-basen är EN delad resurs** — A7:5 flyttar mutexen ur
+      PR-grinden men avvecklar den inte; två parallella spår köar fortfarande,
+      bara inte i Marcus väntetid · (b) **`P4`:s 5 req/s-tak är delat per bas**,
+      så parallellitet mot samma bas är verkningslös även med perfekt isolering
+      (Fas E-fråga via A6/`T85` våg 3 — **inte** en A7-fråga) ·
+      (c) **`ACCEPTANCE_DEV_PORT = 5399` + `--strictPort`** ⇒ två agenter kan
+      inte köra acceptance-sviten samtidigt · (d) **delade statusfiler** ·
+      (e) **läsande agenter**. A7 avlastar alltså EN axel — main, via merge
+      queue — och lämnar fem
+- [ ] **Punkt 8 — beslutsklassningen: vilka beslut får köa, vilka avbryter
+      Marcus.** NY 2026-07-28; saknade hemvist helt. Målbildens punkt 2:
+      *"Marcus är enda beslutsfattaren. Sitter han i en annan session när en
+      agent behöver ett beslut, så antingen blockerar agenten eller beslutar
+      själv."* Det senare gav §19-kollisionen samma dag. **Varken A7 eller A2:7
+      rör den** — A7 är maskinlatens, A2:7 är resurskrockar; detta är
+      besluts-bandbredd. Hör ihop med målbildens punkt 3: granskning är seriell
+      av naturen, och optimeringen där är **förberett material innan Marcus
+      sätter sig**. Seed-vägen finns (`npm run seed:review`); vanan att köra den
+      före ett granskningsmoment finns inte. **Grillningsklassad ⇒ Marcus
+      startar**
+- [ ] **Punkt 9 — push-kadensens dom saknar hemvist i levande styrande fil.**
+      NY 2026-07-28.
+      [Passet](../docs/research/push-kadens-agent-arbetstrad-2026-07-26.md)
+      dömde vår kadens **rätt**: en commit per PR och 7–11 PR:er/dag är
+      branschrekommendationen med marginal (trunk-based sätter golvet vid en
+      integration per dygn; DORA-elit vid högst tre aktiva brancher), och det
+      gängse branch→flera-commits→push-flödet är en LÄGRE integrationsfrekvens
+      som Fowler klassar som *"semi-integration"*. **Domen bor bara i
+      research-doket.** Verifierat 2026-07-28: strängen `push-kadens` finns inte
+      i `CONTRIBUTING.md`, `CLAUDE.md`, någon ADR, `lessons.md` eller
+      fragmenten — enda träffen utanför passet är en rad i denna fil. Passets
+      egen huvudkritik var att regeln är oskriven och därför varken kan
+      försvaras när den ifrågasätts eller ärvas av en ny agent; den kritiken
+      står ännu obesvarad. Kärnan som ska skrivas ned är **separationen**:
+      commit-frekvens är gratis, push-frekvens kostar en full CI-körning plus en
+      plats i staging-mutexen. Rätt hemvist är `CONTRIBUTING.md`. **Buntas INTE**
+      med A7:7 (`TASK-70.5`) trots samma fil — kort mintas när posten plockas
 
 ### A3 · Verktygs-åtgärderna
 
@@ -185,8 +234,20 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
 
 - [ ] `.claude/**` in i docs-allowlisten (`ci.yml`) — mätt 2026-07-27:
       en URL-ändring i agentkonfig kostade full staging-svit.
-      Verifierat fortfarande öppen 2026-07-27: `.claude` förekommer inte i
-      `ci.yml`
+      Verifierat fortfarande öppen 2026-07-28: `.claude` förekommer inte i
+      `ci.yml`. **SKÄRPT 2026-07-28 — posten är en PARAD ändring, inte en rad.**
+      Mekanismen är belagd, inte antagen: D0-allowlistens `**/*.md` matchar
+      **inte** dot-kataloger (micromatch-default `dot: false`, prövat lokalt mot
+      `.claude/agents/bygg-skiva.md` — utan `dot` noll träffar, med `dot` full
+      träff). Det förklarar också varför `.github/PULL_REQUEST_TEMPLATE.md` och
+      `.github/ISSUE_TEMPLATE/**` står explicit i listan trots `**/*.md`; vore
+      dot-matchning på vore de raderna döda. **Men `.claude/**` ligger också
+      utanför SAMTLIGA docs-grindars globbar** — `.markdownlint-cli2.jsonc`
+      § globs, `lint:prose` (`vale docs tasks` + rot-filerna) och
+      `check-docs.sh` rad 96–97. Läggs den bara i allowlisten blir en `.md` där
+      **både testsvit-skippad och docs-ovaliderad**, alltså tyst ovaliderad —
+      exakt det fail-open som `ci.yml`:s egen kommentar kallar den obligatoriska
+      parade ändringen (L322-klassen). Kort: **`TASK-71`**
 
 **Länkgrinden är delad och verkställd** ([ADR-082](../docs/decisions/ADR-082-lankgrindens-form-presubmit-postsubmit.md),
 PR `#324`). Formen, de nio branschprojekten, de tre empiriska instanserna och de
@@ -279,6 +340,18 @@ kontroll bort utan att ersättas — precis det målbilden varnar för
       bekvämlighet snarare än kapacitet. Kortets steg 0 kräver att nyttan prövas
       mot faktiska blockeringar innan något byggs — är svaret noll är den ärliga
       rekommendationen att stänga kortet → **`TASK-70.7`**
+
+**`TASK-70.1` bär TVÅ skäl till `ready-for-human` — etikett-förslaget adresserade
+bara det ena.** Fångat 2026-07-28 vid genomläsning av kortet i sin helhet.
+**Skäl 1** (AC 6 kräver två samtidigt armerade PR:er, vilket ingen bygg-agent får
+göra) faller med noteringen att **orkestreraren** utför. **Skäl 2 rör inte
+armering alls och står kvar:** saknas `merge_group`-triggern kan ingen PR landa —
+inklusive fixen — så spärren ska sättas av den som kan ta bort den igen utan att
+först behöva landa något. **Etiketten ändrad till `ready-for-agent` 2026-07-28**
+per Marcus muntliga kvittens i elfte resumen, med skäl 2 bevarat i kortets plan
+som utförande-villkor (revert-vägen klar FÖRE aktivering). Precedenten är
+`TASK-64`: `ready-for-agent` betyder *kräver inte Marcus omdöme* — inte *ska
+spawnas som skiva*.
 
 **Granskningens tredje förbättring, `F3`, är RIVEN — ingen post.**
 `allow_update_branch: false` såg inkonsistent ut mot flödets bruk av
@@ -478,6 +551,20 @@ tyst — mekanismen står här även när räkningen bor någon annanstans):
 - [ ] **Review-pilotens kadens** (T86-friktionen) — passet uteblev även på
       `TASK-54.2`, märkt i pilotloggen. Beslutskriterierna räknar skivor, inte
       pass, så varje omärkt uteblivet pass underskattar träffkvoten
+- [ ] **Agent-namnet `bygg-skiva` → `bygg-agent`?** Väckt av Marcus 2026-07-28.
+      Namnet är **smalare än agentens egen räckvidd** — dess description säger
+      *"ALLT arbete som skriver till repot och landar i en commit — skivor,
+      fynd-kort, refaktoreringar, CI-ändringar"*, och den har byggt `TASK-62`
+      och `TASK-69`, båda fynd-kort, inga skivor. Det **kolliderar dessutom med
+      `/to-issues`-domänen**, där en *skiva* är ett barn-kort `task-N.M`.
+      `bygg-agent` är inget nytt ord: `CONTRIBUTING.md` rad 204 kallar den redan
+      så i löptext. **Bytkostnad mätt:** sju filer utanför sessionsdok; levande
+      ytor är agentfilen (namn + filnamn), `CONTRIBUTING.md:204`,
+      `tasks/todo.md:170`, `scripts/agent-spawn-log.sh` (kommentar) och
+      `scripts/test-agent-spawn-log.sh` (fixturdata). Frusna artefakter —
+      granskningsdoket, sessionsdok, `task-64`/`task-67`:s beslutstexter —
+      skrivs INTE om. **CI-bikostnaden (~10 min full svit för en
+      `.claude/`-touch) faller om A4-posten landar först**
 - [ ] `IDENTITET.md`-destillatet (= Spår B steg 4)
 - [ ] **Merge queue-aktiveringen (= A4 = A7:3).** **UNDERLAGET ÄR KOMPLETT
       2026-07-28** ([granskningen](../docs/research/arbetsflode-granskning-2026-07-28.md)):

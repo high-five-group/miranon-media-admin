@@ -4,8 +4,9 @@ title: 'Skiva: Aktivera merge queue — landnings-ordningen mekaniseras'
 status: To Do
 assignee: []
 created_date: '2026-07-28 16:31'
+updated_date: '2026-07-28 18:22'
 labels:
-  - ready-for-human
+  - ready-for-agent
 dependencies: []
 parent_task_id: TASK-70
 ordinal: 144000
@@ -64,15 +65,19 @@ VID FÖRSTA SKARPA LANDNINGEN EFTERÅT, OBSERVERA:
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
-KLASSNING: ready-for-human.
+OMKLASSAD 2026-07-28 (S91, tolfte resumen): ready-for-human -> ready-for-agent. Marcus kvitterade förslaget muntligt i elfte resumen; ändringen verkställdes i den tolfte. Etiketten säger "kräver inte Marcus omdöme" — den säger inte "ska spawnas som skiva". Precedent: TASK-64, som bär samma form.
 
-Två skäl, båda strukturella, inget av dem om svårighetsgrad.
+EXEKVERINGSFORM — LÄS FÖRE PLOCK: kortet tas av ORKESTRERAREN under egen hand, aldrig av en spawnad bygg-agent, och Marcus kvitterar FÖRE avfyrning.
 
-1. Kortets EGEN verifiering (AC 6) kräver att TVÅ PR:er ligger armerade samtidigt. Armering är uttryckligen inte en bygg-agents befogenhet: CONTRIBUTING.md § Landnings-ordningen slår fast att agenter öppnar sin PR och lämnar armeringen ifrån sig, eftersom ordningen bara kan väljas av den som ser hela kön. En agent kan alltså inte utföra sitt eget acceptanskriterium.
+De två skäl som motiverade den ursprungliga klassningen står kvar och avgör formen:
 
-2. Fellägets form. Saknas merge_group-triggern kan ingen PR landa, inklusive fixen. En spärr som kan låsa hela landningsvägen ska sättas av den som kan ta bort den igen utan att först behöva landa något.
+1. AC 6 kräver att TVÅ PR:er ligger armerade samtidigt. Armering är inte en bygg-agents befogenhet (CONTRIBUTING.md § Landnings-ordningen: agenten öppnar sin PR och lämnar armeringen ifrån sig, eftersom ordningen bara kan väljas av den som ser hela kön). LÖST av att orkestreraren utför — den ser kön.
 
-Repots precedens är TASK-36.7: ready-for-human används när utförandet kräver omdöme eller befogenhet agenten strukturellt saknar. Jämför A7:8, som också rör en GitHub-inställning men saknar båda dessa egenskaper och därför är agent-klassad.
+2. Fellägets form. Saknas merge_group-triggern kan ingen PR landa, inklusive fixen. STÅR KVAR OFÖRÄNDRAT och adresseras INTE av etikettbytet: vägen tillbaka — ta bort merge queue-regeln ur rulesetet — ska vara prövad och klar FÖRE aktiveringen. Det är ett utförande-villkor, inte ett acceptanskriterium bland andra.
+
+Repots precedens för den ursprungliga klassningen var TASK-36.7 (ready-for-human när utförandet kräver omdöme eller befogenhet agenten strukturellt saknar). Den precedensen gäller fortfarande för spawnade agenter — den gäller inte orkestreraren.
+
+ORDNINGSNOT (oförändrad): kortet har inga deps och kan tas när som helst, men landar det EFTER A7:5 är mutex-dubbleringen redan avväpnad. Landar det före måste villkoringen lösas här.
 <!-- SECTION:PLAN:END -->
 
 ## Definition of Done
