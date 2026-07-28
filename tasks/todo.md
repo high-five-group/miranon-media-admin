@@ -15,6 +15,26 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ ÅTERUPPTAGEN (2026-07-28, åttonde resumen)** — **`lifecycle`
+tillbaka i `active`; numreringen höll på alla sex axlar** (ADR `082` · `L360` +
+**23** fragment · `T105` · `f46` · `task-60`). Kortstatus läst via backlog-CLI:t:
+`59.1`–`59.4` **Done**, `TASK-59` + `59.5`–`59.8` **To Do**. Ingång: `main` @
+`61e7fdd`, rent träd, CI + CodeQL gröna, `audit-ci` grön, plugin **1.22.0**.
+**FYRA DIVERGENSER:** sessionsstartens git-snapshot var föråldrad (paus-landningen
+fullbordades via `#306`+`#307` efter att den togs) · `PAUSLÄGE`-blockets
+`c964fc0` mot faktisk HEAD `61e7fdd` (väntat — blocket skrevs före sin egen
+landning) · **grep på `lifecycle: paused` gav tre träffar men bara två är äkta**
+(`session-53` matchade brödtext, dess frontmatter är `closed` — verifierat före
+rapportering) · **S92:s todo-kadensrad saknas fortfarande** (obetald över två
+resumes). Dependabot-räkningen stämde denna gång: exakt de sex handoffen namngav.
+**MARCUS-BESLUT: `T104` FÖRE `59.5`** (*"Kör som du föreslår"*) — vaktens
+tvåsidiga bevis körs i dag för hand och finns bara i agentens rapporttext;
+skivan gör det till ett testfall så `59.5`+`59.6` — tretton filer — får ett
+permanent bevis i stället för noll. **NÄSTA: `T104`-skivan → `59.5` Mer-ytan (6
+filer) → `59.6` Event (7) → `59.7` mätningen → `59.8` QA.** Karta:
+`tasks/s91-restlistan.md` § VAR VI ÄR. Full narrativ: sessionsdok S91 **Del 15**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-28, sjunde pausen — mitt i A5:s migreringsvåg)**
 — **A5 SPECCAT OCH PÅBÖRJAT; ACCEPTANCE-KLASSEN LEVER I CI.** `TASK-59` (PRD,
 14 användarberättelser) + **sju skivor + QA-kort**, vågorna delade efter YTA ej
