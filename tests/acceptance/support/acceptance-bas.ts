@@ -86,6 +86,30 @@ import { test as fixturvarld } from '../../support/fixturvarld/hermetic';
  * Bygg alltid mönstret med `EF(namn)` och svaret med `json(...)` ur
  * `handlers.ts` — då kan överskuggningen per konstruktion inte drifta ifrån
  * det normalläget matchar, och CORS-huvudet kan inte glömmas.
+ *
+ * ── BEVISA ATT EN NY FIL FAKTISKT HÄNGER PÅ FIXTUREN (task-60) ────────────
+ *
+ * En grön svit visar att appen beter sig rätt GIVET fixturens svar. Den visar
+ * inte att svaren bär testet — ett test som aldrig konsumerar ett EF-svar är
+ * lika grönt, och bevisar inget om databeteendet. Det andra ledet körs med:
+ *
+ *     npm run test:acceptance:sjalvtest
+ *
+ * Regimen tömmer normalläget OCH gör testens egna `network.use()`
+ * verkningslösa, så att varje anrop når vakten. Villkoret är att ALLA tester
+ * fälls och att `OmockadRequestError` är orsaken i vart och ett — utfallet
+ * ensamt räcker inte, eftersom en trasig assertion också gör en svit röd.
+ *
+ * DETTA ERSÄTTER HANDRUTINEN. Till och med task-59.4 patchades källfiler för
+ * hand, kördes, lästes och återställdes ur en scratchpad-kopia; beviset levde
+ * bara i rapporttexten. Kör aldrig den rutinen igen — kör skriptet, och lägg
+ * dess utfall i skivans PR. Grinden kör steget i varje CI-körning
+ * (`ci-suite.yml`, acceptance-jobbet), så en fil som inte hänger på fixturen
+ * fälls när den migreras, inte långt senare.
+ *
+ * Att grinden själv kan fälla bevisas av `npm run
+ * test:acceptance:sjalvtest:negativ` — den kör utan regimen och kräver att
+ * bedömningen då faller.
  */
 export const test = mergeTests(fixturvarld, matbas);
 

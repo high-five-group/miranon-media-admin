@@ -49,7 +49,7 @@ prioritering inom Spår A.
 | 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | ✅ **KLART 2026-07-27** — `TASK-54.1` · `54.2` · `54.3` alla **Done** |
 | 1b | **`TASK-55` · Baselines regenererade** | ✅ **KLART 2026-07-27** — 6 bilder granskade + mergade; bevis-dispatch `30297097792` loggar *"Inga baseline-ändringar"* |
 | 2 | **`TASK-58` + `TASK-57` · Fixturens bruksvärde** | ✅ **KLART 2026-07-27** — båda **Done**, båda gröna per jobb 8/8 (`#292` · `#293`). Klassades `ready-for-agent` samma dag |
-| 3 | **A5 · De 18 acceptance-filerna** — här faller taket | 🔄 **PÅGÅR 2026-07-28** — `TASK-59` (PRD) + sju skivor + QA publicerade. **`59.1`–`59.4` Done, 5 av 18 filer flyttade.** Acceptance-klassen LEVER som eget mutexfritt CI-jobb; kontraktsvakten i drift och larmkedjan bevisad. **NÄST: Marcus avgör `T104`-ordningen, sedan `59.5`** |
+| 3 | **A5 · De 18 acceptance-filerna** — här faller taket | 🔄 **PÅGÅR 2026-07-28** — `TASK-59` (PRD) + sju skivor + QA publicerade. **`59.1`–`59.4` Done, 5 av 18 filer flyttade.** Acceptance-klassen LEVER som eget mutexfritt CI-jobb; kontraktsvakten i drift och larmkedjan bevisad. **`TASK-60` inskjutet och Done** (`T104`): hermetikens andra led är körbart, så `59.5`+`59.6` slipper tretton manuella cykler. **NÄST: `59.5` Mer-ytan** |
 | 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ⬜ kan landa när som helst |
 | 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
 
@@ -277,6 +277,11 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
       across the entire stack"*) och Playwrights fixtur-återanvändning
       (`mergeTests`, verifierad exporterad i 1.61.1). Två fixturvärldar vore emot
       båda bibliotekens uttalade avsikt OCH mot ADR-080:s eget divergens-villkor
+- [x] **`TASK-60` — hermetik-självtestet, KLART 2026-07-28** (`T104` åtgärdad).
+      Förkrav som sköts in före `59.5` på Marcus beslut: de tretton filer som
+      återstår i `59.5`+`59.6` får ett permanent tvåsidigt bevis i stället för
+      tretton manuella patcha-kör-återställ-cykler. Kör i CI, och grinden bevisar
+      själv att den kan fälla
 - [ ] `TASK-36.8` — QA-vandringen (manuell testplan, riskanpassad CI)
 
 ### A6 · Schemalagt till AT-Max (ADR-063 S81-not) — rör ej nu
@@ -415,6 +420,15 @@ kostar att den måste återupptäckas genom att felet upprepas.
       `npm run seed:review:clean -- --ort ZZ-GRANSKNING-S91`.
       Verifierat 2026-07-27: `.purge-staging-policy.json` nämner den inte
 - [ ] `person-detail` kontra `TASK-52` — orsakskedjan ej verifierad
+- [ ] **`T105` — hermetik-rapporten skrivs ut ur en gammal mätning som om den
+      vore färsk.** Upptäckt 2026-07-28 under `TASK-60`: en HERMETISK körning
+      skrev ut anrop mot skarpa staging-värden, vilket är strukturellt omöjligt.
+      Asymmetrin är verifierad i koden — `global-setup.ts` rad 23 nollställer
+      rapporten ENDAST i mätläge, `global-teardown.ts` skriver ut den UTAN att
+      pröva flaggan. Inbjuder till fel slutsats åt båda håll: att hermetiken
+      läcker, eller att en färsk mätning finns. **Fixen ser ut som en rad men
+      hör till `TASK-59.7`**, som äger mätinstrumentet — deferat medvetet ur
+      `TASK-60` per DoD 4 (inga orelaterade filer i diffen)
 
 ## Kort födda i S91 — utanför spåren ovan
 
@@ -467,16 +481,20 @@ Registrerade som backlog-kort, inte som restliste-poster. Här bara som index.
       `58`: 4). `TASK-56`:s källkodspåstående verifierades om i samma pass —
       `@msw/playwright/src/fixture.ts` rad 156–166 bär `route.connectToServer()`
       vid noll WS-handlers, ordagrant som kortet uppgav
-- [ ] **`T104` FÖRE `59.5` ELLER EJ — mest omedelbara beslutet 2026-07-28.**
-      Vaktens tvåsidiga bevis körs för hand: tre skivor i rad har patchat
-      källfiler, kört, läst utfallet och återställt ur en scratchpad-kopia.
-      **Beviset finns bara i agentens rapporttext; inget i repot kan köra om det.**
-      **Codes rekommendation: JA, ta `T104` som egen liten skiva nu.** `59.5`
-      flyttar sex filer = sex manuella cykler = sex tillfällen att återställa
-      fel; flaggan (`HERMETIK_SJALVTEST=1`) ger `59.5`+`59.6` — tretton filer —
-      ett permanent bevis i stället för noll. Precedent finns:
-      `tests/visual/hermetik-vakt.spec.ts` gör fällningen till leveransen med
-      `test.fail()`. **Kostnad:** en extra skiva mitt i vågen, kedjan pausar
+- [x] **`T104` FÖRE `59.5` — BESLUTAT OCH VERKSTÄLLT 2026-07-28.** Marcus tog
+      Codes rekommendation (*"Kör som du föreslår"*). Levererat som **`TASK-60`**:
+      `HERMETIK_SJALVTEST=1` bär **båda** leden — normalläget tömt OCH testens
+      egna `network.use()` verkningslösa; vartdera ensamt lämnar en klass av
+      tester obevisade, vilket `persons-list` (överskuggar allt den behöver)
+      visar konkret. `scripts/hermetik-sjalvtest.mjs` kräver att alla tester
+      fälls **med `OmockadRequestError` som orsak** — utfallet ensamt räcker
+      inte, eftersom en trasig assertion också gör en svit röd. **Mätt:
+      51/51 fällda, 51/51 av vakten, noll timeouts.** Negativ kontroll bevisar
+      att grinden kan fälla. Kör i CI:s acceptance-jobb (+~50 s mot uppmätta
+      1,2–1,4 min, tak 8). **`test.fail()`-formen förkastades aktivt** — den
+      kontrollerar att ett test fälls, aldrig varför, och hade i en delad modul
+      körts en enda gång av ESM-cachen. `59.5`/`59.6` har därmed ett permanent
+      bevis i stället för tretton manuella cykler
 - [ ] **Review-pilotens kadens** (T86-friktionen) — passet uteblev även på
       `TASK-54.2`, märkt i pilotloggen. Beslutskriterierna räknar skivor, inte
       pass, så varje omärkt uteblivet pass underskattar träffkvoten

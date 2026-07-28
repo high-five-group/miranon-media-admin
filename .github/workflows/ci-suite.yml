@@ -165,6 +165,21 @@ jobs:
       - name: Acceptance tests (hermetiska)
         run: npm run test:acceptance
 
+      # Tvåsidigt bevis, task-60 / T104. Den gröna sviten ovan visar att appen
+      # beter sig rätt GIVET fixturens svar; detta steg visar att svaren faktiskt
+      # BÄR testerna — normalläget töms, testens egna network.use() görs
+      # verkningslösa, och varje test måste då fällas AV VAKTEN. Ett test som
+      # överlever konsumerar inget EF-svar och bevisar inget om databeteendet.
+      #
+      # Kostnaden är en andra svitkörning: jobbet mättes till 1,2–1,4 min och
+      # landar runt 2,2 min, mot taket 8. Marginalen räknad, inte antagen.
+      #
+      # Steget körs EFTER den skarpa sviten med avsikt — är den röd stannar
+      # jobbet där, och ett självtest mot en redan trasig svit hade bara gett två
+      # röda besked om samma fel.
+      - name: Acceptance-klassens tvåsidiga bevis (hermetik-självtest)
+        run: npm run test:acceptance:sjalvtest
+
       - name: Ladda upp Playwright-artefakter vid rött
         if: failure()
         uses: actions/upload-artifact@v4
