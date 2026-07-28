@@ -1,10 +1,10 @@
 ---
 id: TASK-59.5
 title: 'Skiva: Mer-ytan till acceptance-klassen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-27 20:41'
-updated_date: '2026-07-28 08:45'
+updated_date: '2026-07-28 09:04'
 labels:
   - ready-for-agent
 dependencies:
@@ -220,13 +220,37 @@ finns inte i diffen. Staging-sviterna ej körda lokalt (mutexen) — CI är dera
 bevis.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Mer-ytans sex filer i acceptance-klassen. Sex git mv med bevarad historik; page.route → network.use() genomgående, mönster via EF(namn) och svar via json(...) — noll handskrivna path-strängar.
+
+KLASSNINGEN HÄRLEDD UR MÄTDATAN: 85 anrop över de sex filerna, samtliga mot typsnitts-CDN, noll skarpa. Diskriminatorn är mätdatans, inte ytans — Mer-ytans SJUNDE fil mer-index mäter 4 skarpa (get-events ×2 + get-registrations ×2) och stannar i e2e.
+
+BEVISET KÖRDES MED TASK-60:s GRIND, inte för hand: acceptance 90 passed (var 51), självtest 90 tester / 90 fällda / 90 med OmockadRequestError som orsak. Alla 39 nya tester hängde på fixturen direkt — ingen fil behövde skrivas om. Detta var självtestets första skarpa användning, en skiva efter att det byggdes.
+
+PRE-FLIGHT-LÄNKKONTROLLEN GAV ETT ÄKTA FYND: docs/research/verktygsval-fyra-egenbyggen-2026-07-27.md:206 var en levande pekare mot en form denna skiva ersatte. Lagad i samma commit med historiken bevarad. Daterad mätdata, BUILD-LOG:s historiska listor och sessionsdok lämnades orörda — rätt behandling per 59.3/59.4:s precedent.
+
+HTTP-VERBEN VAR EN FÄLLA AGENTEN VERIFIERADE I STÄLLET FÖR ATT GISSA: page.route matchar alla metoder, http.get/http.post gör det inte. compute-segment/save-segment/send-email är POST via postEdgeFunction, resten GET. Fel verb hade fallit igenom till normalläget eller till vakten. Lärdomen är inlagd i 59.6:s brief.
+
+INGET SKRIVBEVIS FLYTTAT: send-email är avlyssnat, payload-assertionerna följde med, skrivbeviset ligger kvar i tests/api/send-email.staging.test.ts som inte är i diffen.
+
+BOKFÖRD AVVIKELSE: delayMs-grenen i mockLeads/mockMailLog/mockWaitlist följde inte med — ingen caller använde den, och det är den race-benägna väg manualRelease ersatte. Samma beslutsklass som 59.4:s mockPerson.delayMs.
+
+ORKESTRERARENS GRANSKNING (verifierat, ej godtaget på rapport): sex renames bekräftade i git; page.route finns endast i förklarande kommentarer, noll anrop; skrivbevisen kvar i api-sviten; mer-index stannade; diffen är 8 filer utan strökar. En siffra skavde — agenten rapporterade 22 e2e-filer, git ger 21; förklaringen är att Playwright räknar auth.setup.ts. Olika räknesätt, inte olika verklighet.
+
+CI grön per jobb 9/9, körning 30344181005, PR #313 (merge 2bf23d9). PR:en fastnade först i BEHIND sedan TASK-61 landat under tiden — orkestrerarens sekvenseringsmiss, L328:s BEHIND-svält; löst med gh pr update-branch och omstartad vakt mot ny SHA.
+
+A5 står därmed på 11 av 18 filer.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Klassningen av varje flyttad fil är HÄRLEDD ur hermetik-mätdatan och räkningen redovisad — ingen handplockning
-- [ ] #6 Varje flyttad fil har tvåsidigt bevis: passerar hermetiskt OCH vakten fäller när dess mockar tas bort
-- [ ] #7 Samma zod-scheman parsar fixtursvar som parsar skarpa svar — fogen verifierad, ej antagen
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Klassningen av varje flyttad fil är HÄRLEDD ur hermetik-mätdatan och räkningen redovisad — ingen handplockning
+- [x] #6 Varje flyttad fil har tvåsidigt bevis: passerar hermetiskt OCH vakten fäller när dess mockar tas bort
+- [x] #7 Samma zod-scheman parsar fixtursvar som parsar skarpa svar — fogen verifierad, ej antagen
 <!-- DOD:END -->
