@@ -2,12 +2,18 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineNetworkFixture, type NetworkFixture } from '@msw/playwright';
-import { test as base } from '@playwright/test';
+import { test as base, type Request as PlaywrightRequest } from '@playwright/test';
 import type { AnyHandler } from 'msw';
+import { efNamn } from './ef-namnforslag';
 import { FROZEN_NOW } from './fixture-data';
 import { handlers } from './handlers';
 import { skapaHermetikVakt } from './hermetik-vakt';
-import { skapaOverskuggningsVakt } from './overskuggnings-vakt';
+import {
+  ANNOTATION_TYP,
+  type EfAnrop,
+  granskaRegistrering,
+  granskaTest,
+} from './overskuggnings-vakt';
 
 export { expect } from '@playwright/test';
 
@@ -168,11 +174,14 @@ function buildSession() {
  * normalläget i stället för sitt specialfall. Hermetik-vakten kan inte se detta
  * — anropet ÄR mockat, bara inte av den handler testet trodde.
  *
- * Det ser numera `overskuggnings-vakt.ts`, som körs i denna fixturs teardown och
- * fäller testet med det oanvända mönstret namngivet. Ett överskuggat test som
- * beter sig precis som utan överskuggning behöver alltså inte längre
- * MISSTÄNKAS för det — det får besked. Är överskuggningen legitimt oanvänd
- * märks den med `medvetetOanvand(handler, skäl)` ur samma modul.
+ * Det ser numera `overskuggnings-vakt.ts` i TVÅ steg: en IVRIG kontroll som
+ * fäller redan på `use()`-raden när mönstrets Edge Function inte finns, och en
+ * TRÖG som samlar hela körningen och rapporterar deklarationsställen ingen
+ * använde (`overskuggnings-rapport.ts`). Ett överskuggat test som beter sig
+ * precis som utan överskuggning behöver alltså inte längre MISSTÄNKAS för det —
+ * det får besked. Är överskuggningen legitimt oanvänd — en negativ sensor som
+ * bevisar att ett anrop ALDRIG sker — märks den med
+ * `medvetetOanvand(handler, skäl)` ur samma modul.
  *
  * Signaturen är `use(...runtimeHandlers)` — flera handlers kan skickas i ett
  * anrop, och arrayer måste spridas.
@@ -222,7 +231,33 @@ function utanOverskuggningar(network: NetworkFixture): NetworkFixture {
 }
 
 /**
- * ÖVERSKUGGNINGS-VAKTEN KÖRS I TEARDOWN (task-62), och de tre valen nedan är
+ * Vy över fixturen där varje `use()` först passerar den IVRIGA vakten. Samma
+ * Proxy-teknik och samma skäl som `utanOverskuggningar` ovan.
+ *
+ * VARFÖR VID `use()` OCH INTE VID TEARDOWN: att mönstrets Edge Function inte
+ * finns är sant oberoende av vad testet sedan gör. Fällningen kan därför ske på
+ * den tidigast möjliga punkten, och då pekar stack-tracen rakt på
+ * `network.use()`-raden i testfilen i stället för på en fixtur långt bort. Det
+ * är Mockitos `PotentialStubbingProblem`-position: fäll mitt i testet, på ett
+ * bevis som redan finns.
+ */
+function medIvrigVakt(network: NetworkFixture): NetworkFixture {
+  return new Proxy(network, {
+    get(mal, egenskap) {
+      if (egenskap === 'use') {
+        return (...overskuggningar: Parameters<NetworkFixture['use']>) => {
+          granskaRegistrering(overskuggningar);
+          mal.use(...overskuggningar);
+        };
+      }
+      const varde = Reflect.get(mal, egenskap);
+      return typeof varde === 'function' ? varde.bind(mal) : varde;
+    },
+  });
+}
+
+/**
+ * ÖVERSKUGGNINGS-VAKTEN INTEGRERAS I TVÅ PUNKTER (task-62), och valen nedan är
  * medvetna:
  *
  * URVALET GÖRS PÅ OBJEKT-IDENTITET, inte på position i listan. `listHandlers()`
@@ -244,12 +279,41 @@ function utanOverskuggningar(network: NetworkFixture): NetworkFixture {
  * normalläget tömt och `use()` verkningslös, så `listHandlers()` ger tom lista
  * och det finns ingen överskuggning att bedöma. En explicit `if (SJALVTEST)`
  * hade varit en andra sanning om samma sak.
+ *
+ * ── ANROPEN RÄKNAS AV PLAYWRIGHT, INTE AV MSW ────────────────────────────
+ *
+ * Den ivriga kontrollen behöver veta vilka Edge Functions testet FAKTISKT
+ * anropade. MSW:s livscykelhändelse `request:match` vore den naturliga källan
+ * och finns på fixturen via `network.events` — men den är OANVÄNDBAR i den
+ * installerade kombinationen, och det är mätt, inte antaget:
+ *
+ *   `SetupApi.emitter` är en `rettime`-Emitter (0.11.11) vars `emit(event)`
+ *   läser `event.type` på ETT argument, medan `msw`s `handleRequest` (2.15.0)
+ *   anropar den i den äldre formen `emit('request:start', { … })` med två.
+ *   Så länge emittern saknar lyssnare kortsluter `emit` på
+ *   `#listeners.size === 0` och inget märks. Registreras EN lyssnare — vilken
+ *   som helst, på vilken händelse som helst — kastar hela request-hanteringen
+ *   `TypeError: Cannot create property 'stopPropagation' on string
+ *   'request:start'`. Verifierat med en isolerad probe mot just `handleRequest`,
+ *   den kodväg `@msw/playwright` 0.6.7 använder (`build/index.mjs` rad 48):
+ *   ingen lyssnare → 200, en lyssnare → kast, oavsett händelsenamn.
+ *
+ * Typen `LifeCycleEventsMap` är dessutom `@deprecated` i 2.15.0 med hänvisning
+ * till `HttpNetworkFrameEventMap`, vars efterföljare bor under
+ * `msw/lib/core/experimental/` och INTE exponeras genom `@msw/playwright`
+ * (`NetworkFixture` typas mot `Omit<SetupApi<LifeCycleEventsMap>, 'dispose'>`).
+ * Båda formerna bär bara `{ request, requestId }` — ingen handler-koppling — så
+ * kopplingen anrop→handler hade fått räknas av oss ändå.
+ *
+ * Källan är därför Playwrights egen `context.on('request')`. Den ser varje
+ * request webbläsaren gör, inklusive dem `@msw/playwright` fångar med
+ * `context.route`, den är inte deprecerad, och den kan inte gå sönder av att
+ * MSW byter emitter-bibliotek. Samma mekanism som `handlers.ts`
+ * § "INGEN PREFLIGHT-HANTERING" en gång mätte preflight-frånvaron med.
  */
-const overskuggningsVakt = skapaOverskuggningsVakt(handlers);
-
 export const test = base.extend<{ network: NetworkFixture }>({
   network: [
-    async ({ context }, use) => {
+    async ({ context }, use, testInfo) => {
       const network = defineNetworkFixture({
         context,
         handlers: SJALVTEST ? [] : handlers,
@@ -260,10 +324,36 @@ export const test = base.extend<{ network: NetworkFixture }>({
 
       const normallage = new Set<AnyHandler>(network.listHandlers());
 
+      const anrop: EfAnrop[] = [];
+      const rakna = (request: PlaywrightRequest) => {
+        const url = new URL(request.url());
+        const namn = efNamn(url.pathname);
+        if (namn !== undefined) {
+          anrop.push({ metod: request.method(), namn, url: `${url.origin}${url.pathname}` });
+        }
+      };
+      context.on('request', rakna);
+
       try {
-        await use(SJALVTEST ? utanOverskuggningar(network) : network);
-        overskuggningsVakt(network.listHandlers().filter((handler) => !normallage.has(handler)));
+        await use(SJALVTEST ? utanOverskuggningar(network) : medIvrigVakt(network));
+
+        const { observationer, fel } = granskaTest({
+          overskuggningar: network.listHandlers().filter((handler) => !normallage.has(handler)),
+          anrop,
+        });
+
+        // BOKFÖR FÖRE FÄLLNING. Annoteringen är den tröga kontrollens enda
+        // underlag; kastar vi först försvinner testets ÖVRIGA observationer och
+        // ett fullt levande deklarationsställe kan se dött ut i rapporten.
+        if (observationer.length > 0) {
+          testInfo.annotations.push({
+            type: ANNOTATION_TYP,
+            description: JSON.stringify(observationer),
+          });
+        }
+        if (fel !== undefined) throw fel;
       } finally {
+        context.off('request', rakna);
         // Context-routarna rivs även när vakten fäller — annars hade en
         // fällning läckt en route in i nästa test i samma context.
         await network.disable();
