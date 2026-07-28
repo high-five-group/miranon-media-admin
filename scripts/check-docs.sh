@@ -71,16 +71,27 @@ skip_gate() {
     SKIPPED+=("${name} (${why})")
 }
 
-# --- 1. lychee link check -------------------------------------------------
+# --- 1. lychee link check (INTERN yta) ------------------------------------
 # CI kör lychee via lycheeverse/lychee-action med ett arg-block. Argumenten
-# nedan speglar det blocket i sak (cache-flaggorna utelämnas — de är
-# CI-cache-mekanik utan lokal motsvarighet). Saknas binären är det SKIPPAD,
-# inte grönt: länkkontrollen är den enda grind här som kan falla på något
-# utanför repot, och att låtsas ha kört den vore precis den lögn skriptets
-# ärlighets-krav förbjuder.
+# nedan speglar det blocket i sak.
+#
+# --offline SEDAN ADR-082 (2026-07-28): ci.yml:s docs-jobb kontrollerar bara
+# INTERN yta, och den lokala grinden måste spegla samma snitt. Gör den inte det
+# uppstår exakt den divergens beslutet ville ta bort — en död extern länk skulle
+# blockera commit lokalt medan CI släpper igenom den, alltså ett stopp i arbetet
+# orsakat av någon annans server, vilket är hela problemet ADR-082 löste.
+# Extern yta kontrolleras kallt varje natt (nightly.yml → nightly-links) med
+# egen ärende-kanal. Behöver du köra extern kontroll för hand: kör lychee utan
+# --offline mot samma scope.
+#
+# Cache-flaggorna utelämnas — de finns inte längre i CI heller (ADR-082 beslut 3:
+# en körning utan nätverk har inget att cacha).
+#
+# Saknas binären är det SKIPPAD, inte grönt: att låtsas ha kört den vore precis
+# den lögn skriptets ärlighets-krav förbjuder.
 if command -v lychee >/dev/null 2>&1; then
     run_gate "lychee link check" \
-        lychee --no-progress --exclude-path docs/archive \
+        lychee --offline --no-progress --exclude-path docs/archive \
         --exclude-path docs/reference/pocock \
         './docs/**/*.md' './tasks/*.md' './tasks/sessions/*.md' \
         './tasks/threads/*.md' './tasks/lessons.d/*.md' './*.md'
