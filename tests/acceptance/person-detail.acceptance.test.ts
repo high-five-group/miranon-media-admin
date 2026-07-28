@@ -1,23 +1,43 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, test } from './support/acceptance-bas';
 
 /**
  * Fas 6a L5a — Persondetalj (aggregerande get-person, full kurshistorik).
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt, inte staging-exklusivt; jfr persons-list.staging.test.ts).
+ * ACCEPTANCE-KLASSEN (task-59.4, ADR-080): filen flyttades hit ur e2e-sviten
+ * med hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade.
+ * Klassningen är HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 18
+ * restanrop, samtliga typsnitt, noll skarpa.
  *
- * **Deterministiska via `page.route`-mock** av get-person — INTE faktisk
- * EF-deploy (det är L5b). Regex-matchare (`/get-person\?/`) så mocken INTE
- * råkar fånga get-persons (prefix-kollision). Mocken speglar EF-svaret
- * `{ person }` (PersonDetailSchema-form, inkl. event-för-event-historik).
+ * **Deterministisk via `network.use()`** — en överskuggning på fixturvärldens
+ * delade normalläge, inte `page.route`. Page-routes prövas FÖRE MSW:s
+ * context-routes, så en page.route-mock hade lagt en andra avlyssningsmekanism
+ * ovanpå den fixturvärlden bär — precis den tudelning task-54.2 tog bort.
+ *
+ * PREFIX-KOLLISIONEN ÄR LÖST AV MÖNSTERFORMEN, INTE AV ETT FRÅGETECKEN. Den
+ * gamla regexen `/get-person\?/` bar frågetecknet enbart för att en `page.route`-
+ * substrängsmatchning annars hade svalt `get-persons`. `EF('get-person')` matchar
+ * hela sista path-segmentet (MSW/path-to-regexp) och kan därför per konstruktion
+ * inte träffa `get-persons` — samma sak som skiljer `get-event` från
+ * `get-events` i normalläget. En egenskriven sträng hade i stället kunnat drifta
+ * ifrån normalläget och tyst falla igenom till det (den tysta fällan,
+ * `hermetic.ts` § Överskugga en delad handler).
+ *
+ * ÖVERSKUGGNINGEN BEHÖVS trots att normalläget bär en `get-person`-resolver:
+ * dess kuraterade personer (`fixture-data.ts` § Personer-världen) är två fasta
+ * fall, medan denna fil prövar sex olika svarsformer — namnlös med och utan
+ * e-post, 404, 400, parkerat svar och glesa tomtillstånd. Svaren behåller
+ * EF:ens egen form (`{ person }`, PersonDetailSchema) — snittet ligger kvar vid
+ * protokollet.
  *
  * Täckning: full-historik-rendering, kontakt/leads/flaggor, namnlös-fallback,
  * loading aria-busy, fel-state, NOT-FOUND (404 → ej-funnen-UI), fokus→<h1> +
  * aria-live-annonsering, axe 0.
  */
 
-const GET_PERSON = /\/functions\/v1\/get-person\?/;
 const PERSON_ID = 'recDETAIL0000001';
 
 type PersonDetailMock = Record<string, unknown>;
@@ -83,37 +103,42 @@ function personDetail(overrides: PersonDetailMock = {}): PersonDetailMock {
   };
 }
 
-async function mockPerson(
-  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-  page: any,
+/**
+ * Överskuggar `get-person` för ETT test och returnerar gatens släpp-funktion.
+ *
+ * manualRelease (opt-in): håll EF-svaret öppet tills testet kallar release().
+ * Gör loading-fönstret DETERMINISTISKT i stället för att racea en fast delay mot
+ * realtid under parallell worker-last (T26 Landning B). Parkeringen bärs sedan
+ * task-59.4 av ett obesvarat löfte i MSW-resolvern i stället för av ett
+ * uppskjutet Playwright-Route-objekt — samma bevis, en avlyssningsmekanism.
+ * Callers utan flaggan är orörda: release() är då en no-op de ignorerar.
+ *
+ * (Den tidigare `delayMs`-grenen följde INTE med. Ingen caller använde den, och
+ * den var uttryckligen den race-benägna väg `manualRelease` ersatte — att bära
+ * den vidare in i en hermetisk klass hade varit att bevara en foot-gun.)
+ */
+function mockPerson(
+  network: NetworkFixture,
   body: PersonDetailMock,
-  {
-    status = 200,
-    delayMs = 0,
-    manualRelease = false,
-  }: { status?: number; delayMs?: number; manualRelease?: boolean } = {},
-): Promise<() => void> {
-  // manualRelease (opt-in): håll EF-svaret öppet tills testet kallar release().
-  // Gör loading-fönstret DETERMINISTISKT i stället för att racea en fast delayMs
-  // mot realtid under parallell worker-last (T26 Landning B). Befintliga callers
-  // (utan flaggan) är orörda — release() är då en no-op de ignorerar.
+  { status = 200, manualRelease = false }: { status?: number; manualRelease?: boolean } = {},
+): () => void {
   let release = () => {};
   const gate = manualRelease ? new Promise<void>((resolve) => (release = resolve)) : null;
-  await page.route(GET_PERSON, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    if (gate) await gate;
-    else if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
-    await route.fulfill({
-      status,
-      contentType: 'application/json',
-      body: status === 200 ? JSON.stringify({ person: body }) : JSON.stringify({ error: 'x' }),
-    });
-  });
+  network.use(
+    http.get(EF('get-person'), async () => {
+      if (gate) await gate;
+      return status === 200 ? json({ person: body }) : json({ error: 'x' }, status);
+    }),
+  );
   return release;
 }
 
 test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
-  test('full historik + kontakt/leads/flaggor renderas; fokus → <h1>', async ({ page }) => {
-    await mockPerson(page, personDetail());
+  test('full historik + kontakt/leads/flaggor renderas; fokus → <h1>', async ({
+    page,
+    network,
+  }) => {
+    mockPerson(network, personDetail());
     await page.goto(`/personer/${PERSON_ID}`);
 
     // <h1> = namn, fokuserad efter async-laddning.
@@ -142,8 +167,8 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
     await expect(page.getByText('Viktig kontakt — ring före nästa event.')).toBeVisible();
   });
 
-  test('namnlös person → e-post-särskiljd fallback, ingen krasch', async ({ page }) => {
-    await mockPerson(page, personDetail({ namn: null, fornamn: null, efternamn: null }));
+  test('namnlös person → e-post-särskiljd fallback, ingen krasch', async ({ page, network }) => {
+    mockPerson(network, personDetail({ namn: null, fornamn: null, efternamn: null }));
     await page.goto(`/personer/${PERSON_ID}`);
     // P4: e-post särskiljer namnlösa leads → unik h1/flik-titel.
     await expect(
@@ -151,34 +176,31 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
     ).toBeVisible();
   });
 
-  test('namnlös person UTAN e-post → generisk fallback', async ({ page }) => {
-    await mockPerson(
-      page,
-      personDetail({ namn: null, fornamn: null, efternamn: null, email: null }),
-    );
+  test('namnlös person UTAN e-post → generisk fallback', async ({ page, network }) => {
+    mockPerson(network, personDetail({ namn: null, fornamn: null, efternamn: null, email: null }));
     await page.goto(`/personer/${PERSON_ID}`);
     await expect(page.getByRole('heading', { level: 1, name: 'Namnlös person' })).toBeVisible();
   });
 
-  test('NOT-FOUND (404) → ej-funnen-UI via role=alert', async ({ page }) => {
-    await mockPerson(page, personDetail(), { status: 404 });
+  test('NOT-FOUND (404) → ej-funnen-UI via role=alert', async ({ page, network }) => {
+    mockPerson(network, personDetail(), { status: 404 });
     await page.goto(`/personer/${PERSON_ID}`);
     const alert = page.getByRole('alert');
     await expect(alert).toContainText('Personen hittades inte');
   });
 
-  test('övrigt fel (icke-404) → generisk fel-UI via role=alert', async ({ page }) => {
+  test('övrigt fel (icke-404) → generisk fel-UI via role=alert', async ({ page, network }) => {
     // 400 (klient-fel) → ingen retry (varken fetchWithRetry eller useQuery
     // retryar 4xx) → deterministiskt, snabbt fel. Skiljt från 404-grenen ovan.
-    await mockPerson(page, personDetail(), { status: 400 });
+    mockPerson(network, personDetail(), { status: 400 });
     await page.goto(`/personer/${PERSON_ID}`);
     await expect(page.getByRole('alert')).toContainText('Kunde inte hämta persondetaljer');
   });
 
-  test('loading-state är tillgängligt (aria-busy + status)', async ({ page }) => {
+  test('loading-state är tillgängligt (aria-busy + status)', async ({ page, network }) => {
     // Håll EF-svaret öppet → loading-tillståndet är deterministiskt synligt medan
     // route:n hålls (ingen realtids-race mot en fast delayMs under parallell last).
-    const release = await mockPerson(page, personDetail(), { manualRelease: true });
+    const release = mockPerson(network, personDetail(), { manualRelease: true });
     await page.goto(`/personer/${PERSON_ID}`);
     // Innan svaret släpps: synlig + sr-tillgänglig laddnings-status.
     await expect(page.getByText('Laddar persondetaljer…')).toBeVisible();
@@ -187,8 +209,8 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Anna Andersson' })).toBeVisible();
   });
 
-  test('axe 0 violations på den renderade detaljvyn', async ({ page }) => {
-    await mockPerson(page, personDetail());
+  test('axe 0 violations på den renderade detaljvyn', async ({ page, network }) => {
+    mockPerson(network, personDetail());
     await page.goto(`/personer/${PERSON_ID}`);
     await expect(page.getByRole('heading', { level: 1, name: 'Anna Andersson' })).toBeVisible();
 
@@ -201,13 +223,14 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
 
   test('GLES data (tom kontakt + inga leads) → axe 0 (empty-state UTANFÖR <dl>)', async ({
     page,
+    network,
   }) => {
     // Glest mock exercerar empty-state-vägarna i Kontakt + Leads. Tidigare låg
     // dessa <p> som direkta barn i <dl> → axe `definition-list`/`only-dlitems`
     // (dl får bara dt/dd/div). Rikt mock (ovan) dolde buggen; detta glesa
     // mock bevisar fixen i sin egen svit. Invers-komplement till L142.
-    await mockPerson(
-      page,
+    mockPerson(
+      network,
       personDetail({
         email: null,
         telefon: null,
