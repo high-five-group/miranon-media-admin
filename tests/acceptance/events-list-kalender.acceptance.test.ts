@@ -1,5 +1,9 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, type Page, test } from './support/acceptance-bas';
 
 /**
  * Kalendervyn till S72-facit (task-17.4).
@@ -21,15 +25,44 @@ import { expect, type Page, test } from './support/test-bas';
  * AC-mappning: AC#1 = plattor/legend/vald-dag computed (L245/L246/L272);
  * AC#2 = ?vy-kontraktet + dag-flödet i e2e, begriplig annonsering, axe-0.
  *
- * Determinism: klockan pinnas till verklig "nu" (setFixedTime — hem-svitens
- * TASK-3-mönster: datum-aritmetiken kan inte glida över midnatt mitt i
- * testet; auth-tokens förblir giltiga) och eventen läggs på dagarna 14–22 i
- * INNEVARANDE månad — bandet 14–22 är alltid unikt i månads-gridden (grannmånadens
- * outside-dagar är ≥23 respektive ≤13), så dag-text-locators aldrig dubblas.
+ * ACCEPTANCE-KLASSEN (task-59.6, ADR-080): filen flyttades hit ur e2e-sviten med
+ * hela sitt bevisinnehåll intakt — a11y-assertionen inkluderad. Klassningen är
+ * HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 25 restanrop,
+ * samtliga typsnitt, noll skarpa.
+ *
+ * NAMNGRANNEN STANNAR: `events-list.staging.test.ts` (listvyn) heter nästan samma
+ * sak men mäter 13 SKARPA anrop (get-event ×7 + get-registrations ×6) och hör
+ * därför till den skarpa klassen. Snittet är mätdatans, aldrig filnamnets.
+ *
+ * **Deterministisk via `network.use()`** — inte `page.route`: page-routes prövas
+ * FÖRE MSW:s context-routes och hade lagt en andra avlyssningsmekanism ovanpå
+ * fixturvärlden (tudelningen task-54.2 tog bort). Mönstret byggs med `EF(namn)`
+ * ur handlers-modulen och svaret med `json(...)`, aldrig som handskrivna strängar
+ * — en överskuggning vars mönster inte matchar faller igenom UTAN att något fälls
+ * (den tysta fällan, `hermetic.ts` § Överskugga en delad handler). `get-events`
+ * ligger i normalläget men överskuggas ändå: vyn asserterar EXAKTA dag-plattor,
+ * exakt månadssummering och exakta kursfärger — mot normalläget hade beviset
+ * blivit ett kopplat påstående om fixturens eventmängd. `callEdgeFunction` ⇒ GET,
+ * verifierat mot appens anropsväg.
+ *
+ * DETERMINISM — KLOCKAN BYTTE KÄLLA I FLYTTEN (avvikelse, bokförd i task-59.6):
+ * e2e-formen pinnade klockan till VERKLIG "nu" (`page.clock.setFixedTime(new
+ * Date())`). Det går inte att bära in i acceptance-klassen: fixturvärldens
+ * seedade session är en JWT som går ut FROZEN_NOW + 24 h, så en klocka satt till
+ * verklig tid hade — så snart kalendern passerat den utgången — fått supabase-js
+ * att försöka förnya sessionen, alltså ett nätverksanrop rakt in i hermetik-vakten.
+ * Testet hade blivit grönt nu och rött av sig självt senare. "Nu" är därför
+ * fixturvärldens `FROZEN_NOW` (2026-09-15), som klockan REDAN står på när testet
+ * börjar — ingen egen `setFixedTime` behövs, och datum-aritmetiken kan lika lite
+ * som förut glida över midnatt mitt i testet.
+ *
+ * Eventen läggs på dagarna 14–22 i FROZEN_NOW:s månad — bandet 14–22 är alltid
+ * unikt i månads-gridden (grannmånadens outside-dagar är ≥23 respektive ≤13), så
+ * dag-text-locators aldrig dubblas. Dag 19 (inte 15) är den tomma muted-referensen:
+ * FROZEN_NOW ÄR den 15:e, och idag-plattan bär ringmarkeringen — en tom
+ * referensdag som samtidigt är "idag" hade blandat två påståenden i en mätning.
  * Datumsträngar härleds i BROWSERNS zon (Europe/Stockholm per config).
  */
-
-const GET_EVENTS = '**/functions/v1/get-events*';
 
 type Row = Record<string, unknown>;
 
@@ -71,15 +104,9 @@ function ev(o: {
   };
 }
 
-/** Registrera events-mocken (senast registrerad route vinner). */
-function mockEvents(page: Page, events: Row[]) {
-  return page.route(GET_EVENTS, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ events }),
-    });
-  });
+/** Registrera events-överskuggningen (`use()` prepend:ar → senast registrerad vinner). */
+function mockEvents(network: NetworkFixture, events: Row[]) {
+  network.use(http.get(EF('get-events'), () => json({ events })));
 }
 
 /** Löser en CSS-custom-property till computed färg via DOM-probe (L272). */
@@ -95,14 +122,16 @@ async function resolvedTokenColor(page: Page, tokenNamn: string): Promise<string
 }
 
 /**
- * Kalender-fixturen: pinnad klocka + tre event i innevarande månad
- * (dag-bandet 14–22): RIM 1 (grön) dag 16 · Fjärrskådning (blå) SPANN
- * 17–18 · "Annat"-uppsamlingen dag 20. Dag 15 lämnas alltid tom
- * (muted-referensen).
+ * Kalender-fixturen: tre event i FROZEN_NOW:s månad (dag-bandet 14–22): RIM 1
+ * (grön) dag 16 · Fjärrskådning (blå) SPANN 17–18 · "Annat"-uppsamlingen dag 20.
+ * Dag 19 lämnas alltid tom (muted-referensen — se klock-noten i filhuvudet för
+ * varför den flyttades från 15).
+ *
+ * Ingen egen `setFixedTime`: fixturvärldens `page`-fixtur har redan frusit klockan
+ * vid FROZEN_NOW innan testet körs.
  */
-async function kalenderFixtur(page: Page) {
-  const nu = new Date();
-  await page.clock.setFixedTime(nu);
+function kalenderFixtur(network: NetworkFixture) {
+  const nu = FROZEN_NOW;
   const idagStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Stockholm' }).format(nu);
   const manadPrefix = idagStr.slice(0, 7); // YYYY-MM
   const ar = idagStr.slice(0, 4);
@@ -138,7 +167,7 @@ async function kalenderFixtur(page: Page) {
       antalAnmalda: 34,
     }),
   ];
-  await mockEvents(page, events);
+  mockEvents(network, events);
   return { nu, idagStr, ar, manadPrefix, manadNamn, dag };
 }
 
@@ -173,8 +202,9 @@ function summering(page: Page, manadNamn: string) {
 test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
   test('?vy-kontraktet: lista förvald med ren URL, toggeln skriver ?vy=kalender, direktnav + back fungerar', async ({
     page,
+    network,
   }) => {
-    await kalenderFixtur(page);
+    kalenderFixtur(network);
     await page.goto('/event');
 
     // Vy-ikon-toggeln: radiogroup med två ikon-piller, Listvy förvald.
@@ -213,8 +243,9 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
 
   test('månadsnavet: rubriken bär månaden, Nästa/Föregående bläddrar, summeringen följer fokusmånaden', async ({
     page,
+    network,
   }) => {
-    const { manadNamn, manadPrefix, ar } = await kalenderFixtur(page);
+    const { manadNamn, manadPrefix, ar } = kalenderFixtur(network);
     await page.goto('/event?vy=kalender');
 
     // Månadsrubriken i navet: "<månad> <år>" (sv-SE; versal via CSS).
@@ -246,8 +277,9 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
 
   test('AC#1 — dag-plattornas kulör == legendens EXAKT (computed); spannet färgas; tom dag muted', async ({
     page,
+    network,
   }) => {
-    const { manadNamn } = await kalenderFixtur(page);
+    const { manadNamn } = kalenderFixtur(network);
     await page.goto('/event?vy=kalender');
     await expect(summering(page, manadNamn).getByRole('listitem')).toHaveCount(3);
 
@@ -267,8 +299,9 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
     expect(await bg(18)).toBe(fjarr);
     // Uppsamlingen Annat (föreläsning utanför kurs-mappningen) — grå.
     expect(await bg(20)).toBe(annat);
-    // Tom dag: muted platta, aldrig en kurs-kulör.
-    expect(await bg(15)).toBe(muted);
+    // Tom dag: muted platta, aldrig en kurs-kulör. Dag 19, inte 15 — den 15:e är
+    // FROZEN_NOW och bär idag-ringen (se filhuvudets klock-not).
+    expect(await bg(19)).toBe(muted);
 
     // Plattans text: inverst vit + semibold (läsbarheten på solid 500).
     const plattStil = await platta(page, 16).evaluate((el) => {
@@ -300,8 +333,9 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
 
   test('månadssummeringen: kursfärgs-streck (computed), korta kursnamn, Annat bär eventnamnet, rader länkar', async ({
     page,
+    network,
   }) => {
-    const { manadNamn, dag } = await kalenderFixtur(page);
+    const { manadNamn, dag } = kalenderFixtur(network);
     await page.goto('/event?vy=kalender');
 
     // Summeringens rubrik är en riktig h2 med månadens namn.
@@ -342,8 +376,9 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
 
   test('AC#1+#2 — dag-flödet: dag-tryck visar dagens kort, vald dag bär mörk ram med plattans kulör kvar (computed), toggle-avval åter till månaden', async ({
     page,
+    network,
   }) => {
-    const { manadNamn } = await kalenderFixtur(page);
+    const { manadNamn } = kalenderFixtur(network);
     await page.goto('/event?vy=kalender');
     await expect(summering(page, manadNamn).getByRole('listitem')).toHaveCount(3);
 
@@ -383,8 +418,9 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
 
   test('tangentbord: pilnavigering flyttar fokus mellan dagar, Enter väljer; tom dag ger lugn text', async ({
     page,
+    network,
   }) => {
-    const { manadNamn } = await kalenderFixtur(page);
+    const { manadNamn } = kalenderFixtur(network);
     await page.goto('/event?vy=kalender');
     await expect(summering(page, manadNamn).getByRole('listitem')).toHaveCount(3);
 
@@ -397,9 +433,9 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
     const dagens = page.getByRole('list', { name: 'Valda dagens event' });
     await expect(dagens.getByRole('link', { name: 'Fjärrskådning' })).toBeVisible();
 
-    // Tom dag via tangentbord (17 → 15): lugn strukturerad text.
-    await page.keyboard.press('ArrowLeft');
-    await page.keyboard.press('ArrowLeft');
+    // Tom dag via tangentbord (17 → 19): lugn strukturerad text.
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Enter');
     await expect(page.getByText('Inga event denna dag.')).toBeVisible();
 
@@ -411,8 +447,9 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
 
   test('likbreda dag-kolumner: table-fixed ger sju kolumner med samma bredd (review-våg 1-defekten)', async ({
     page,
+    network,
   }) => {
-    const { manadNamn } = await kalenderFixtur(page);
+    const { manadNamn } = kalenderFixtur(network);
     await page.goto('/event?vy=kalender');
     await expect(summering(page, manadNamn).getByRole('listitem')).toHaveCount(3);
 
@@ -430,8 +467,9 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
 
   test('idag FK-ringmarkeras: tunn cirkel runt dagssiffran, oberoende av plattans kulör', async ({
     page,
+    network,
   }) => {
-    const { manadNamn, idagStr, ar } = await kalenderFixtur(page);
+    const { manadNamn, idagStr, ar } = kalenderFixtur(network);
     await page.goto('/event?vy=kalender');
     await expect(summering(page, manadNamn).getByRole('listitem')).toHaveCount(3);
 
@@ -454,8 +492,9 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
 
   test('AC#2 — kalenderns dagar annonseras begripligt: grid-namn, svenska veckodagar (mån först), datum-namn på cellerna', async ({
     page,
+    network,
   }) => {
-    const { manadNamn, ar } = await kalenderFixtur(page);
+    const { manadNamn, ar } = kalenderFixtur(network);
     await page.goto('/event?vy=kalender');
 
     // Gridden bär ett begripligt tillgängligt namn (Eventkalender + månad).
@@ -480,8 +519,8 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
     expect(namn).toMatch(new RegExp(`16 ${manadNamn} ${ar}`, 'i'));
   });
 
-  test('axe 0 violations på den renderade kalendervyn (facit-läget)', async ({ page }) => {
-    const { manadNamn } = await kalenderFixtur(page);
+  test('axe 0 violations på den renderade kalendervyn (facit-läget)', async ({ page, network }) => {
+    const { manadNamn } = kalenderFixtur(network);
     await page.goto('/event?vy=kalender');
     // Gate axe på FULLT renderad kalender (T26-mönstret): grid + summering.
     await expect(gridden(page)).toBeVisible();
@@ -496,6 +535,7 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
 
   test('review-våg 2: vy-växlingen flyttar INTE innehållet i sidled när sid-scrollbaren försvinner', async ({
     page,
+    network,
   }) => {
     // Marcus-vetot (2026-07-23): layout-hopp är absolut förbjudet — river
     // base.css:s öppet accepterade avvägning att klassisk-scrollbar-fönster
@@ -508,8 +548,9 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
     // miljö (CI:s ubuntu-chromium); i overlay-miljöer håller preconditions
     // men hoppet existerar inte.
     await page.setViewportSize({ width: 800, height: 1000 });
-    const nu = new Date();
-    await page.clock.setFixedTime(nu);
+    // "Nu" är fixturvärldens frusna klocka (redan satt av page-fixturen) — se
+    // filhuvudets klock-not för varför verklig tid inte kan bäras in hit.
+    const nu = FROZEN_NOW;
     const nastaManad = new Date(nu.getFullYear(), nu.getMonth() + 1, 15);
     const prefix = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Stockholm' })
       .format(nastaManad)
@@ -521,7 +562,7 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
         startdatum: `${prefix}-${String(i + 1).padStart(2, '0')}`,
       }),
     );
-    await mockEvents(page, events);
+    mockEvents(network, events);
     await page.goto('/event');
     await expect(vyToggle(page)).toBeVisible();
     // Gate på FULLT renderad lista (T26-mönstret): toggeln renderar före

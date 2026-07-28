@@ -1,5 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, type Route, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, type Page, test } from './support/acceptance-bas';
 
 /**
  * Manuell anmälan-sidan: task-18.12 (skarpa formen) + task-18.18 (eventväljaren).
@@ -13,18 +16,38 @@ import { expect, type Page, type Route, test } from './support/test-bas';
  * bor på tunna /anmalan/ny (samma komponent). Formulär-state BEHÅLLS vid byte
  * (beslut b/14 — ingen remount vid param-byte).
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt, inte staging-exklusivt). DETERMINISTISK via `page.route`:
- * get-event (sammanfattningen), get-events (väljarlistan) och create-registration
- * (201 / 409) mockas. Inga skarpa staging-skrivningar i e2e — server-write-
- * kontraktet bevisas av tests/api/create-registration.staging.test.ts.
+ * ACCEPTANCE-KLASSEN (task-59.6, ADR-080): filen flyttades hit ur e2e-sviten med
+ * hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade. Klassningen är
+ * HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 43 restanrop,
+ * samtliga typsnitt, noll skarpa. Filen är skivans anropstyngsta.
+ *
+ * **Deterministisk via `network.use()`** — inte `page.route`: page-routes prövas
+ * FÖRE MSW:s context-routes och hade lagt en andra avlyssningsmekanism ovanpå
+ * fixturvärlden (tudelningen task-54.2 tog bort). Mönstren byggs med `EF(namn)`
+ * ur handlers-modulen och svaren med `json(...)`, aldrig som handskrivna strängar
+ * — en överskuggning vars mönster inte matchar faller igenom UTAN att något fälls
+ * (den tysta fällan, `hermetic.ts` § Överskugga en delad handler). Att
+ * `EF('get-event')` och `EF('get-events')` är två SKILDA mönster är samma
+ * diskriminator som bär `get-person`/`get-persons` i normalläget: MSW matchar
+ * HELA sista path-segmentet, inte en prefix-substräng.
+ *
+ * VERBEN ÄR VERIFIERADE mot appens anropsväg, inte antagna: `get-event`/
+ * `get-events` går via `callEdgeFunction` (GET), `create-registration` via
+ * `postEdgeFunction` (POST). Ett fel verb här hade fallit igenom till normalläget
+ * (get-events finns där) eller till vakten (create-registration finns inte där).
+ *
+ * `create-registration` SKRIVER INTE SKARPT: anropet är avlyssnat, och det som
+ * bevisas är klientflödet plus PAYLOADEN appen skickar — fältuppsättningen,
+ * eventId-bytet och idempotensnyckelns rotation (ADR-059; F4/F7). Server-write-
+ * kontraktet bevisas av `tests/api/create-registration.staging.test.ts` och ligger
+ * kvar där — filen är INTE i denna diff. Handlern är AVSIKTLIGT inte i normalläget:
+ * en delad skrivväg hade gjort tyst lyckad mutation till default för hela klassen.
+ *
  * Listmockens datum ligger i 2099 (events-list-precedenten): kommande-filtret
- * jämför mot verklig klocka och testet får aldrig åldras till rött.
+ * jämför mot klockan — här fixturvärldens frusna FROZEN_NOW (2026-09-15) — och
+ * testet får aldrig åldras till rött.
  */
 
-const GET_EVENT = /\/functions\/v1\/get-event\?/;
-const GET_EVENTS = '**/functions/v1/get-events*';
-const CREATE_REGISTRATION = /\/functions\/v1\/create-registration/;
 const EVENT_ID = 'recNYANM0000001';
 const HOST_ID = 'recNYANMHOST0002';
 const FJARR_ID = 'recNYANMFJARR003';
@@ -147,67 +170,52 @@ interface MockOptions {
   eventOverrides?: Row;
 }
 
-async function mockEndpoints(
-  page: Page,
+function mockEndpoints(
+  network: NetworkFixture,
   { createStatus = 201, eventOverrides = {} }: MockOptions = {},
-): Promise<{
+): {
   /** Senaste POST-kroppen mot create-registration (null = aldrig nådd). */
   senaste: () => Record<string, unknown> | null;
   /** Samtliga POST-kroppar i ordning (nyckelrotations-beviset, F7). */
   alla: () => Record<string, unknown>[];
-}> {
+} {
   const createBodies: Record<string, unknown>[] = [];
 
-  await page.route(GET_EVENT, async (route: Route) => {
-    // Sammanfattningens detalj-svar per event-ID (bytet hämtar NYTT id).
-    const url = new URL(route.request().url());
-    const id = url.searchParams.get('id');
-    const rad =
-      id === HOST_ID
-        ? listRow({
-            id: HOST_ID,
-            namn: 'Höstretreat',
-            ort: 'Mullsjö',
-            startdatum: '2099-09-12',
-            slutdatum: '2099-09-13',
-          })
-        : eventRow(eventOverrides);
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ event: rad }),
-    });
-  });
+  network.use(
+    http.get(EF('get-event'), ({ request }) => {
+      // Sammanfattningens detalj-svar per event-ID (bytet hämtar NYTT id).
+      const id = new URL(request.url).searchParams.get('id');
+      const rad =
+        id === HOST_ID
+          ? listRow({
+              id: HOST_ID,
+              namn: 'Höstretreat',
+              ort: 'Mullsjö',
+              startdatum: '2099-09-12',
+              slutdatum: '2099-09-13',
+            })
+          : eventRow(eventOverrides);
+      return json({ event: rad });
+    }),
 
-  await page.route(GET_EVENTS, async (route: Route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ events: LIST_EVENTS }),
-    });
-  });
+    http.get(EF('get-events'), () => json({ events: LIST_EVENTS })),
 
-  await page.route(CREATE_REGISTRATION, async (route: Route) => {
-    createBodies.push(route.request().postDataJSON());
-    if (createStatus === 201) {
-      const created = registrationRow();
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify({ registration: created, record: { id: created.id, fields: {} } }),
-      });
-    } else {
-      await route.fulfill({
-        status: createStatus,
-        contentType: 'application/json',
-        body: JSON.stringify({
+    http.post(EF('create-registration'), async ({ request }) => {
+      createBodies.push((await request.json()) as Record<string, unknown>);
+      if (createStatus === 201) {
+        const created = registrationRow();
+        return json({ registration: created, record: { id: created.id, fields: {} } }, 201);
+      }
+      return json(
+        {
           error: 'Personen är redan anmäld till eventet',
           existingName: 'Ny Manuell',
           requestId: 'req_test_409',
-        }),
-      });
-    }
-  });
+        },
+        createStatus,
+      );
+    }),
+  );
 
   return {
     senaste: () => createBodies[createBodies.length - 1] ?? null,
@@ -223,8 +231,9 @@ function valjarTrigger(page: Page) {
 test.describe('Manuell anmälan-sidan — skarp (task-18.12)', () => {
   test('renderar per facit: formklassen + sex fält + väljaren i stället för eventlabel-raden', async ({
     page,
+    network,
   }) => {
-    await mockEndpoints(page);
+    mockEndpoints(network);
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     // h1 = sidrubriken (fokuserad efter mount).
@@ -263,8 +272,9 @@ test.describe('Manuell anmälan-sidan — skarp (task-18.12)', () => {
 
   test('fyll → submit 201 → bekräftelseläge (POST bär antalPlatser + notering)', async ({
     page,
+    network,
   }) => {
-    const skapade = await mockEndpoints(page, { createStatus: 201 });
+    const skapade = mockEndpoints(network, { createStatus: 201 });
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     await page.getByLabel('Förnamn', { exact: true }).fill('Ny');
@@ -303,8 +313,8 @@ test.describe('Manuell anmälan-sidan — skarp (task-18.12)', () => {
     expect(typeof body?.idempotencyKey).toBe('string');
   });
 
-  test('409 (dubblett) → inline-fel, formuläret kvar', async ({ page }) => {
-    await mockEndpoints(page, { createStatus: 409 });
+  test('409 (dubblett) → inline-fel, formuläret kvar', async ({ page, network }) => {
+    mockEndpoints(network, { createStatus: 409 });
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     await page.getByLabel('Förnamn', { exact: true }).fill('Ny');
@@ -318,8 +328,8 @@ test.describe('Manuell anmälan-sidan — skarp (task-18.12)', () => {
     await expect(page.getByTestId('bekraftelse')).toBeHidden();
   });
 
-  test('required-validering: tom e-post → fält-fel, ingen submit', async ({ page }) => {
-    const skapade = await mockEndpoints(page, { createStatus: 201 });
+  test('required-validering: tom e-post → fält-fel, ingen submit', async ({ page, network }) => {
+    const skapade = mockEndpoints(network, { createStatus: 201 });
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     await page.getByLabel('Förnamn', { exact: true }).fill('Ny');
@@ -333,8 +343,8 @@ test.describe('Manuell anmälan-sidan — skarp (task-18.12)', () => {
     expect(skapade.senaste()).toBeNull();
   });
 
-  test('axe 0 violations på den skarpa formen', async ({ page }) => {
-    await mockEndpoints(page);
+  test('axe 0 violations på den skarpa formen', async ({ page, network }) => {
+    mockEndpoints(network);
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
     await expect(
       page.getByRole('heading', { level: 1, name: 'Lägg till manuell anmälan' }),
@@ -351,8 +361,9 @@ test.describe('Manuell anmälan-sidan — skarp (task-18.12)', () => {
 test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
   test('förval från djuplänken: Eventet-blocket FÖRST med kontextrad + sammanfattning', async ({
     page,
+    network,
   }) => {
-    await mockEndpoints(page, { eventOverrides: { vantelista: 3 } });
+    mockEndpoints(network, { eventOverrides: { vantelista: 3 } });
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     // Väljaren är FÖRVALD med djuplänkens event: kontextraden bär namn +
@@ -413,11 +424,12 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
 
   test('fast bredd (facit-komplettering, Marcus-beslut 2026-07-25): stängda triggern spänner över hela blocket med symmetriska marginaler', async ({
     page,
+    network,
   }) => {
     // Bredden var aldrig låst i S83-facitet — triggern växte med innehållet.
     // Beslutet: full blockbredd, samma inset höger som vänster (kortets px-4);
     // chevronen står vid triggerns högerkant (ml-auto).
-    await mockEndpoints(page);
+    mockEndpoints(network);
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     const trigger = valjarTrigger(page);
@@ -450,12 +462,13 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
 
   test('sökfältet får fokus på BÅDA öppningsvägarna (Marcus våg 2-regression 2026-07-25): mus-klick och tangentbord', async ({
     page,
+    network,
   }) => {
     // Prototyp-regressionen: skarpa byggets rAF-fokus var ett race mot RAC:s
     // egen öppnings-fokusering (grönt i e2e, fokus-tapp i verkligheten).
     // Läkt med autoFocus-propen på SearchField (React Arias dokumenterade
     // Select+Autocomplete-form) — här låses BÅDA interaktionsvägarna.
-    await mockEndpoints(page);
+    mockEndpoints(network);
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     // Musvägen.
@@ -495,8 +508,9 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
 
   test('popovern matchar den fasta full-bredds-triggern (form B, Marcus 2026-07-25): bredd och vänsterkant', async ({
     page,
+    network,
   }) => {
-    await mockEndpoints(page);
+    mockEndpoints(network);
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     const trigger = valjarTrigger(page);
@@ -514,8 +528,11 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
     expect(popBox?.width ?? 0).toBeCloseTo(trigBox?.width ?? 0, 0);
   });
 
-  test('status ≠ Planerat får sitt märke; väntelista-raden borta vid 0', async ({ page }) => {
-    await mockEndpoints(page, { eventOverrides: { status: 'Flyttat' } });
+  test('status ≠ Planerat får sitt märke; väntelista-raden borta vid 0', async ({
+    page,
+    network,
+  }) => {
+    mockEndpoints(network, { eventOverrides: { status: 'Flyttat' } });
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     const block = page.getByTestId('eventet-block');
@@ -528,8 +545,9 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
 
   test('öppna väljaren: sökfältet får fokus, listan är månadsgrupperad kommande (närmast först)', async ({
     page,
+    network,
   }) => {
-    await mockEndpoints(page);
+    mockEndpoints(network);
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     await valjarTrigger(page).click();
@@ -557,8 +575,8 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
     await expect(options.nth(1)).toContainText('15–16 augusti 2099');
   });
 
-  test('sök matchar namn ELLER ort', async ({ page }) => {
-    await mockEndpoints(page);
+  test('sök matchar namn ELLER ort', async ({ page, network }) => {
+    mockEndpoints(network);
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
     await valjarTrigger(page).click();
 
@@ -575,8 +593,11 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
     await expect(page.getByRole('option').first()).toContainText('Fjärrskådning');
   });
 
-  test('byte navigerar URL:en och BEHÅLLER ifyllda personfält (beslut a + b)', async ({ page }) => {
-    await mockEndpoints(page);
+  test('byte navigerar URL:en och BEHÅLLER ifyllda personfält (beslut a + b)', async ({
+    page,
+    network,
+  }) => {
+    mockEndpoints(network);
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     // Fyll persondata FÖRE bytet — samma person till annat event är ett
@@ -599,8 +620,11 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
     await expect(page.getByLabel('E-post', { exact: true })).toHaveValue('lotta@example.se');
   });
 
-  test('tangentbordsvägen: pil ned + Enter väljer (AT-skärpan, punkt 8)', async ({ page }) => {
-    await mockEndpoints(page);
+  test('tangentbordsvägen: pil ned + Enter väljer (AT-skärpan, punkt 8)', async ({
+    page,
+    network,
+  }) => {
+    mockEndpoints(network);
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     await valjarTrigger(page).click();
@@ -616,11 +640,12 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
 
   test('AT-kontraktet: virtuell fokus — DOM-fokus i fältet, aria-activedescendant pekar på det aktiva alternativet (punkt 8)', async ({
     page,
+    network,
   }) => {
     // Mekaniska delen av facitets AT-krav (USWDS-fyndens riskyta är exakt
     // aria-activedescendant-wiringen — axe ser den inte). Det MANUELLA
     // VoiceOver-passet är bokfört som Marcus-moment på kortet.
-    await mockEndpoints(page);
+    mockEndpoints(network);
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     await valjarTrigger(page).click();
@@ -646,8 +671,9 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
 
   test('bytet nollställer mutations-utfall och roterar idempotensnyckeln (ADR-059; F4/F7)', async ({
     page,
+    network,
   }) => {
-    const skapade = await mockEndpoints(page, { createStatus: 409 });
+    const skapade = mockEndpoints(network, { createStatus: 409 });
     await page.goto(`/event/${EVENT_ID}/ny-anmalan`);
 
     await page.getByLabel('Förnamn', { exact: true }).fill('Ny');
@@ -677,8 +703,9 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
 
   test('tomt läge (/anmalan/ny): väljaren står FRISTÅENDE, formuläret renderas INTE (punkt 7 + 13)', async ({
     page,
+    network,
   }) => {
-    await mockEndpoints(page);
+    mockEndpoints(network);
     await page.goto('/anmalan/ny');
 
     await expect(
@@ -700,8 +727,11 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
     await expect(page.getByLabel('Förnamn', { exact: true })).toBeVisible();
   });
 
-  test('axe 0 violations: öppen väljare (scopat) + tomt läge (helsides)', async ({ page }) => {
-    await mockEndpoints(page);
+  test('axe 0 violations: öppen väljare (scopat) + tomt läge (helsides)', async ({
+    page,
+    network,
+  }) => {
+    mockEndpoints(network);
 
     // Tomt läge — helsidesskan.
     await page.goto('/anmalan/ny');

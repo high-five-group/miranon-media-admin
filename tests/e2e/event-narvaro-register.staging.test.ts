@@ -13,8 +13,11 @@ import { expect, test } from './support/test-bas';
  * förblir deterministisk — deras egna sviter bär deras kontrakt). Bevisar
  * KLIENTENS registerform mot facit utan att röra delad staging-data.
  *
- * Skild från event-narvaro.staging.test.ts (den STANDALONE /narvaro-routen, kvar
- * per RIV INGENTING) — detta är det INLINE registret på eventdetalj-sidan.
+ * Skild från `tests/acceptance/event-narvaro.acceptance.test.ts` (den STANDALONE
+ * /narvaro-routen, kvar per RIV INGENTING) — detta är det INLINE registret på
+ * eventdetalj-sidan. Den filen flyttade till acceptance-klassen i task-59.6 (noll
+ * skarpa anrop i mätdatan); DENNA stannar i den skarpa klassen — den mäter 8
+ * skarpa get-event-notes-anrop. Namnlikheten är alltså inte klassgemenskap.
  *
  * Täckning: genomfört event → LMS-register (rader × sessioner, bock ⟺ poäng,
  * Total närvaro %), poäng RÅ ur `narvaropoang` OCH status-fallback (deploy-gap),

@@ -1,16 +1,34 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, test } from './support/acceptance-bas';
 
 /**
  * Fas 6b L3 — Närvaro-vy (sessions-grupperad LÄS-vy via get-attendance).
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt, inte staging-exklusivt; jfr event-detail.staging.test.ts).
+ * ACCEPTANCE-KLASSEN (task-59.6, ADR-080): filen flyttades hit ur e2e-sviten med
+ * hela sitt bevisinnehåll intakt — a11y-assertionen inkluderad. Klassningen är
+ * HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 17 restanrop,
+ * samtliga typsnitt, noll skarpa.
  *
- * **Deterministisk via `page.route`-mock** av get-attendance. Regex-matchare
- * (`/get-attendance\?/`) som INTE kolliderar med andra mocks: `get-attendance`
- * är unikt (ingen substräng-krock med get-event/get-events/get-person). Mocken
- * speglar EF-svaret `{ attendance: [...] }` (AttendanceSchema-rader, INKL. personNamn).
+ * NAMNGRANNEN STANNAR: `event-narvaro-register.staging.test.ts` (det INLINE:ade
+ * registret på detaljsidan) heter nästan samma sak men mäter 8 SKARPA anrop
+ * (get-event-notes ×8) och hör därför till den skarpa klassen. Denna fil är den
+ * STANDALONE /narvaro-routen. Snittet är mätdatans, aldrig filnamnets.
+ *
+ * **Deterministisk via `network.use()`** — inte `page.route`: page-routes prövas
+ * FÖRE MSW:s context-routes och hade lagt en andra avlyssningsmekanism ovanpå
+ * fixturvärlden (tudelningen task-54.2 tog bort). Mönstret byggs med `EF(namn)`
+ * ur handlers-modulen och svaret med `json(...)`, aldrig som handskrivna strängar
+ * — en överskuggning vars mönster inte matchar faller igenom UTAN att något fälls
+ * (den tysta fällan, `hermetic.ts` § Överskugga en delad handler).
+ *
+ * Mocken speglar EF-svaret `{ attendance: [...] }` (AttendanceSchema-rader, INKL.
+ * personNamn). `get-attendance` ligger AVSIKTLIGT inte i normalläget: en delad
+ * läsväg hade gjort ett glömt `use()` osynligt — här överskuggas den per test, och
+ * ett test som glömmer sin överskuggning fälls av hermetik-vakten med adressen
+ * namngiven.
  *
  * Täckning: sessions-gruppering i fast ordning, närvarande-räkning (lynchpin
  * Närvarande+Deltog online), "Ej avstämt"-kommande-event (förväntat, ej fel),
@@ -18,7 +36,6 @@ import { expect, test } from './support/test-bas';
  * aria-live, loading aria-busy, axe 0. LÄS-vy → INGEN markera-knapp.
  */
 
-const GET_ATTENDANCE = /\/functions\/v1\/get-attendance\?/;
 const EVENT_ID = 'recNARVARO0000001';
 
 type Row = Record<string, unknown>;
@@ -39,37 +56,30 @@ function row(overrides: Row = {}): Row {
   };
 }
 
-async function mockAttendance(
-  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-  page: any,
+function mockAttendance(
+  network: NetworkFixture,
   rows: Row[],
-  {
-    status = 200,
-    delayMs = 0,
-    manualRelease = false,
-  }: { status?: number; delayMs?: number; manualRelease?: boolean } = {},
-): Promise<() => void> {
+  { status = 200, manualRelease = false }: { status?: number; manualRelease?: boolean } = {},
+): () => void {
   // manualRelease (opt-in): håll EF-svaret öppet tills testet kallar release().
   // Gör loading-fönstret DETERMINISTISKT i stället för att racea en fast delayMs
-  // mot realtid under parallell worker-last (T26 Landning B). Befintliga callers
-  // (utan flaggan) är orörda — release() är då en no-op de ignorerar.
+  // mot realtid under parallell worker-last (T26 Landning B). Bärs nu av ett
+  // obesvarat löfte i MSW-resolvern i stället för ett uppskjutet Route-objekt —
+  // samma bevis, en mekanism (task-59.4:s form).
   let release = () => {};
   const gate = manualRelease ? new Promise<void>((resolve) => (release = resolve)) : null;
-  await page.route(GET_ATTENDANCE, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    if (gate) await gate;
-    else if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
-    await route.fulfill({
-      status,
-      contentType: 'application/json',
-      body: status === 200 ? JSON.stringify({ attendance: rows }) : JSON.stringify({ error: 'x' }),
-    });
-  });
+  network.use(
+    http.get(EF('get-attendance'), async () => {
+      if (gate) await gate;
+      return status === 200 ? json({ attendance: rows }) : json({ error: 'x' }, status);
+    }),
+  );
   return release;
 }
 
 test.describe('Närvaro-vy (Fas 6b L3 — sessions-grupperad LÄS-vy)', () => {
-  test('sessions-gruppering + närvarande-räkning; fokus → <h1>', async ({ page }) => {
-    await mockAttendance(page, [
+  test('sessions-gruppering + närvarande-räkning; fokus → <h1>', async ({ page, network }) => {
+    mockAttendance(network, [
       row({ personNamn: 'Anna Andersson', session: 'Dag 1', status: 'Närvarande' }),
       row({ personNamn: 'Bo Bengtsson', session: 'Dag 1', status: 'Frånvarande' }),
       row({ personNamn: 'Cecilia Carlsson', session: 'Dag 1', status: 'Deltog online' }),
@@ -114,8 +124,9 @@ test.describe('Närvaro-vy (Fas 6b L3 — sessions-grupperad LÄS-vy)', () => {
 
   test('endast vissa sessioner: bara Föreläsning renderas (ingen tom Dag 1/Dag 2)', async ({
     page,
+    network,
   }) => {
-    await mockAttendance(page, [
+    mockAttendance(network, [
       row({ personNamn: 'Doris Dahl', session: 'Föreläsning', status: 'Närvarande' }),
     ]);
     await page.goto(`/event/${EVENT_ID}/narvaro`);
@@ -127,8 +138,9 @@ test.describe('Närvaro-vy (Fas 6b L3 — sessions-grupperad LÄS-vy)', () => {
 
   test('kommande event: allt "Ej avstämt" → visas rakt av, ingen varnings-/fel-yta', async ({
     page,
+    network,
   }) => {
-    await mockAttendance(page, [
+    mockAttendance(network, [
       row({ personNamn: 'Erik Ek', session: 'Dag 1', status: 'Ej avstämt' }),
       row({ personNamn: 'Frida Falk', session: 'Dag 1', status: 'Ej avstämt' }),
     ]);
@@ -141,8 +153,8 @@ test.describe('Närvaro-vy (Fas 6b L3 — sessions-grupperad LÄS-vy)', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('tomt event (inga deltaganden) → vänlig tom-text, ej fel', async ({ page }) => {
-    await mockAttendance(page, []);
+  test('tomt event (inga deltaganden) → vänlig tom-text, ej fel', async ({ page, network }) => {
+    mockAttendance(network, []);
     await page.goto(`/event/${EVENT_ID}/narvaro`);
 
     await expect(page.getByRole('heading', { level: 1, name: 'Närvaro' })).toBeVisible();
@@ -152,22 +164,25 @@ test.describe('Närvaro-vy (Fas 6b L3 — sessions-grupperad LÄS-vy)', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('personNamn null → "Namn saknas" (graciöst), aldrig krasch/tomt', async ({ page }) => {
-    await mockAttendance(page, [row({ personNamn: null, session: 'Dag 1', status: 'Närvarande' })]);
+  test('personNamn null → "Namn saknas" (graciöst), aldrig krasch/tomt', async ({
+    page,
+    network,
+  }) => {
+    mockAttendance(network, [row({ personNamn: null, session: 'Dag 1', status: 'Närvarande' })]);
     await page.goto(`/event/${EVENT_ID}/narvaro`);
     await expect(page.getByText('Namn saknas')).toBeVisible();
   });
 
-  test('fel (icke-2xx) → fel-UI via role=alert', async ({ page }) => {
-    await mockAttendance(page, [], { status: 404 });
+  test('fel (icke-2xx) → fel-UI via role=alert', async ({ page, network }) => {
+    mockAttendance(network, [], { status: 404 });
     await page.goto(`/event/${EVENT_ID}/narvaro`);
     await expect(page.getByRole('alert')).toContainText('Kunde inte hämta närvaron');
   });
 
-  test('loading-state är tillgängligt (aria-busy + status)', async ({ page }) => {
+  test('loading-state är tillgängligt (aria-busy + status)', async ({ page, network }) => {
     // Håll EF-svaret öppet → loading-tillståndet är deterministiskt synligt medan
-    // route:n hålls (ingen realtids-race mot en fast delayMs under parallell last).
-    const release = await mockAttendance(page, [row()], { manualRelease: true });
+    // handlern väntar (ingen realtids-race mot en fast delayMs under parallell last).
+    const release = mockAttendance(network, [row()], { manualRelease: true });
     await page.goto(`/event/${EVENT_ID}/narvaro`);
     await expect(page.getByText('Laddar närvaro…')).toBeVisible();
     // Släpp svaret → laddat tillstånd renderas.
@@ -175,8 +190,8 @@ test.describe('Närvaro-vy (Fas 6b L3 — sessions-grupperad LÄS-vy)', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Närvaro' })).toBeVisible();
   });
 
-  test('axe 0 violations på den renderade närvaro-vyn', async ({ page }) => {
-    await mockAttendance(page, [
+  test('axe 0 violations på den renderade närvaro-vyn', async ({ page, network }) => {
+    mockAttendance(network, [
       row({ personNamn: 'Anna Andersson', session: 'Dag 1', status: 'Närvarande' }),
       row({ personNamn: 'Bo Bengtsson', session: 'Föreläsning', status: 'Ej avstämt' }),
     ]);
