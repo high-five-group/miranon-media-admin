@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 12:47'
-updated_date: '2026-07-28 13:06'
+updated_date: '2026-07-28 13:45'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,16 +31,67 @@ ATT DESIGNA IN: en överskuggning kan legitimt vara oanvänd (registrerad för e
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 En överskuggning vars mönster aldrig matchar fäller testet med ett meddelande som namnger det oanvända mönstret
-- [ ] #2 Tvåsidigt bevis: vakten fäller på ett medvetet felstavat mönster OCH är tyst när mönstret matchar
-- [ ] #3 Legitim oanvänd överskuggning kan undantas explicit; undantaget syns i koden
+- [x] #1 En överskuggning vars mönster aldrig matchar fäller testet med ett meddelande som namnger det oanvända mönstret
+- [x] #2 Tvåsidigt bevis: vakten fäller på ett medvetet felstavat mönster OCH är tyst när mönstret matchar
+- [x] #3 Legitim oanvänd överskuggning kan undantas explicit; undantaget syns i koden
 - [ ] #4 Samtliga 18 befintliga acceptance-filer passerar med vakten på
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MEKANISMEN, VERIFIERAD MOT INSTALLERAD VERSION (msw 2.15.0 / @msw/playwright 0.6.7).
+RequestHandler.isUsed finns (lib/core/HttpResponse-DL-P1EeG.d.ts rad 218) och sätts i
+implementationen på rad 149 i RequestHandler.js, direkt efter att predikatet gett träff.
+Kortets hänvisning till listHandlers i lib/browser/index.d.ts rad 80 är setupWorker-ytan;
+den metod NetworkFixture faktiskt ärver ligger på SetupApi
+(lib/core/experimental/setup-api.d.ts rad 30) via Omit av dispose ur SetupApi
+(@msw/playwright build/index.d.mts rad 18). Samma metod, annan härkomst — verifierat, ej antaget.
+
+AC 1 UPPFYLLT. Vakten fäller och namnger mönstret. Bevis i båda riktningar: self-testet går
+14/14 expected med vakten på och 1 unexpected med den avstängd (det medvetet felstavade
+test.fail-testet rapporterar då "expected to fail but passed").
+
+AC 2 UPPFYLLT. Fäller på EF(get-persosn), tyst på EF(get-persons) — både som beslut
+(direkt anrop) och som verkan i den skarpa fixturen.
+
+AC 3 UPPFYLLT. medvetetOanvand(handler, skäl): per handler och inte per test, obligatoriskt
+skäl på minst 20 tecken prövat vid anropet, och en INAKTUELL märkning fäller
+(ts-expect-error-kontraktet) så undantaget inte kan ruttna tyst.
+
+AC 4 EJ UPPFYLLT — OCH DET ÄR FYNDET. 36 av 153 acceptance-tester i 8 av 18 filer fäller,
+samtliga på vakten (noll övriga fel). Identisk fällningsmängd i tre fulla körningar
+(36 / 36 / 36, 117 passed) — deterministiskt på darwin, 8 workers. Fyra klasser:
+
+1. BATCH-REGISTRERAD SKRIV-EF som bara en delmängd av testerna utlöser —
+   create-registration 18 tester (event-ny-anmalan 15, event-add-registration 3),
+   create-event-note 7 (event-anteckningar), send-registration-confirmation 5
+   (anmalan-detalj). Idiom, inte bugg.
+2. BATCH-REGISTRERAD LÄS-EF för en vy testet aldrig laddar — anmalan-detalj
+   get-event / get-registrations / get-event-notes i 5 tester.
+3. UTEBLIVEN MUTATION ÄR SJÄLVA BEVISET — person-note-edit "avbryt (Esc): ingen mutation"
+   (update-record) och mer-segment-send "0-mottagar-segment" (send-email +
+   compute-segment). Läroboksfall för medvetetOanvand.
+4. AVSIKTLIGT ÖVERSKUGGAD ÖVERSKUGGNING — mer-segment registrerar get-segments i
+   beforeEach och igen i testet; den första är död by design, och kommentaren säger det.
+
+TVÅ FALL DÄR KOMMENTAREN LOVAR MER ÄN TESTET KÖPER: hem.acceptance rad 205 + 226 överskuggar
+get-event med motiveringen "Detaljsidan hämtar get-event vid landning, överskugga för
+deterministisk render", men testet slutar vid toHaveURL — destinationens hämtning hinner
+aldrig ske. Determinismen kommentaren åberopar köps alltså aldrig.
+
+VARIANS: en fjärde körning (via sjalvtest --negativ-kontroll) gav 38 fällda i stället för 36.
+De två extra kunde inte attribueras i efterhand — skriptet raderar sin rapport. Konsistent med
+TASK-64:s kända flakighet, cirka 1,3 procent.
+
+INGET ÄR TYSTAT. Ingen opt-out lagd på de 18 filerna, ingen fil undantagen, vakten inte
+uppmjukad — per uppdragets instruktion. Vägvalet är Marcus.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

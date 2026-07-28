@@ -3,9 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineNetworkFixture, type NetworkFixture } from '@msw/playwright';
 import { test as base } from '@playwright/test';
+import type { AnyHandler } from 'msw';
 import { FROZEN_NOW } from './fixture-data';
 import { handlers } from './handlers';
 import { skapaHermetikVakt } from './hermetik-vakt';
+import { skapaOverskuggningsVakt } from './overskuggnings-vakt';
 
 export { expect } from '@playwright/test';
 
@@ -159,13 +161,18 @@ function buildSession() {
  * blockkommentar. Samma idiom bär `page.route('**' + '/*')` nedan. I en
  * riktig testfil skrivs mönstret förstås i ett stycke.
  *
- * FÄLLAN VÄRD ATT KÄNNA TILL: matchar överskuggningens mönster inte det
- * faktiska anropet (stavfel i pathen, glömt värd-jokern) fäller INGENTING.
- * Handlern läggs först men matchar aldrig, anropet faller igenom till den
- * delade handlern, och testet ser normalläget i stället för sitt specialfall.
- * Hermetik-vakten kan inte se detta — anropet ÄR mockat, bara inte av den
- * handler testet trodde. Ett överskuggat test som beter sig precis som utan
- * överskuggning ska misstänkas för det, inte för att appen ignorerar svaret.
+ * FÄLLAN ÄR MEKANISERAD SEDAN task-62 — men känn den ändå: matchar
+ * överskuggningens mönster inte det faktiska anropet (stavfel i pathen, glömt
+ * värd-jokern) fäller INGEN av mockarna. Handlern läggs först men matchar
+ * aldrig, anropet faller igenom till den delade handlern, och testet ser
+ * normalläget i stället för sitt specialfall. Hermetik-vakten kan inte se detta
+ * — anropet ÄR mockat, bara inte av den handler testet trodde.
+ *
+ * Det ser numera `overskuggnings-vakt.ts`, som körs i denna fixturs teardown och
+ * fäller testet med det oanvända mönstret namngivet. Ett överskuggat test som
+ * beter sig precis som utan överskuggning behöver alltså inte längre
+ * MISSTÄNKAS för det — det får besked. Är överskuggningen legitimt oanvänd
+ * märks den med `medvetetOanvand(handler, skäl)` ur samma modul.
  *
  * Signaturen är `use(...runtimeHandlers)` — flera handlers kan skickas i ett
  * anrop, och arrayer måste spridas.
@@ -214,6 +221,32 @@ function utanOverskuggningar(network: NetworkFixture): NetworkFixture {
   });
 }
 
+/**
+ * ÖVERSKUGGNINGS-VAKTEN KÖRS I TEARDOWN (task-62), och de tre valen nedan är
+ * medvetna:
+ *
+ * URVALET GÖRS PÅ OBJEKT-IDENTITET, inte på position i listan. `listHandlers()`
+ * ger `[...överskuggningar, ...normalläge]` (`handlers-controller.js` rad 82),
+ * men att lita på ordningen hade bundit vakten till en intern implementationsdetalj.
+ * Identitets-jämförelsen mot den normallägeslista fixturen SJÄLV matades med kan
+ * inte drifta. Den är dessutom det enda korrekta urvalet: `handlers.ts`
+ * exporterar modul-nivå-OBJEKT som delas av alla tester i samma worker, så deras
+ * `isUsed` ackumuleras tvärs tester och säger ingenting om DETTA test.
+ *
+ * DEN FÄLLER ÄVEN NÄR TESTET REDAN ÄR RÖTT. Frestelsen är att tiga vid ett
+ * misslyckat test för att slippa ett andra fel, men det hade tagit bort exakt
+ * den signal kortet finns för: i mätningen som avtäckte klassen föll 3 av 4
+ * tester med meddelanden som pekade mot testdata och paginering — mot fel
+ * ställe. Det fjärde blev grönt på fel data. Tystnad vid rött hade fångat ett av
+ * fyra. Playwright visar båda felen, så inget går förlorat.
+ *
+ * DEN ÄR EN NO-OP I SJÄLVTESTLÄGET, utan att villkoras på flaggan. Där är både
+ * normalläget tömt och `use()` verkningslös, så `listHandlers()` ger tom lista
+ * och det finns ingen överskuggning att bedöma. En explicit `if (SJALVTEST)`
+ * hade varit en andra sanning om samma sak.
+ */
+const overskuggningsVakt = skapaOverskuggningsVakt(handlers);
+
 export const test = base.extend<{ network: NetworkFixture }>({
   network: [
     async ({ context }, use) => {
@@ -224,8 +257,17 @@ export const test = base.extend<{ network: NetworkFixture }>({
         onUnhandledRequest: skapaHermetikVakt(handlers),
       });
       await network.enable();
-      await use(SJALVTEST ? utanOverskuggningar(network) : network);
-      await network.disable();
+
+      const normallage = new Set<AnyHandler>(network.listHandlers());
+
+      try {
+        await use(SJALVTEST ? utanOverskuggningar(network) : network);
+        overskuggningsVakt(network.listHandlers().filter((handler) => !normallage.has(handler)));
+      } finally {
+        // Context-routarna rivs även när vakten fäller — annars hade en
+        // fällning läckt en route in i nästa test i samma context.
+        await network.disable();
+      }
     },
     { auto: true },
   ],
