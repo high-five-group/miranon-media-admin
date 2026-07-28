@@ -263,23 +263,6 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
 
 ### A4 · Grindarnas form
 
-- [ ] `.claude/**` in i docs-allowlisten (`ci.yml`) — mätt 2026-07-27:
-      en URL-ändring i agentkonfig kostade full staging-svit.
-      Verifierat fortfarande öppen 2026-07-28: `.claude` förekommer inte i
-      `ci.yml`. **SKÄRPT 2026-07-28 — posten är en PARAD ändring, inte en rad.**
-      Mekanismen är belagd, inte antagen: D0-allowlistens `**/*.md` matchar
-      **inte** dot-kataloger (micromatch-default `dot: false`, prövat lokalt mot
-      `.claude/agents/bygg-skiva.md` — utan `dot` noll träffar, med `dot` full
-      träff). Det förklarar också varför `.github/PULL_REQUEST_TEMPLATE.md` och
-      `.github/ISSUE_TEMPLATE/**` står explicit i listan trots `**/*.md`; vore
-      dot-matchning på vore de raderna döda. **Men `.claude/**` ligger också
-      utanför SAMTLIGA docs-grindars globbar** — `.markdownlint-cli2.jsonc`
-      § globs, `lint:prose` (`vale docs tasks` + rot-filerna) och
-      `check-docs.sh` rad 96–97. Läggs den bara i allowlisten blir en `.md` där
-      **både testsvit-skippad och docs-ovaliderad**, alltså tyst ovaliderad —
-      exakt det fail-open som `ci.yml`:s egen kommentar kallar den obligatoriska
-      parade ändringen (L322-klassen). Kort: **`TASK-71`**
-
 **Länkgrinden är delad och verkställd** ([ADR-082](../docs/decisions/ADR-082-lankgrindens-form-presubmit-postsubmit.md),
 PR `#324`). Formen, de nio branschprojekten, de tre empiriska instanserna och de
 tre fynden utöver frågan bor i ADR:n och i
@@ -345,20 +328,12 @@ kontroll bort utan att ersättas — precis det målbilden varnar för
       Underlaget finns redan i
       [merge queue-passet](../docs/research/merge-queue-mot-staging-mutex-2026-07-26.md)
       → **`TASK-70.1`**
-- [ ] **A7:4 · Bygg post-merge-jobbet på `main`.** **FÖRKRAV FÖR 5–6.** I dag
-      finns inget andra skyddslager: `dedup_hit` gör att main-push kör *mindre*
-      än PR:en gjorde, så mellan merge och natten finns ingenting. Nytt
-      `post-merge.yml`; rött ⇒ auto-ärende + revert-förslag. Additivt, alltså
-      avbrottsfritt → **`TASK-70.2`**
 - [ ] **A7:5 · Flytta `Staging (API + E2E)` ur PR-grinden till post-merge.**
       −375 s och den globala mutexen ur kritiska vägen. Berör `ci-suite.yml` +
       rulesetets required check. **Ändrar beteende; kräver A7:4.**
       Detta är den enskilt största posten i hela spåret → **`TASK-70.3`**
 - [ ] **A7:6 · Flytta `A11y (axe-runner)` till post-merge.** −103 s. Samma
       förkrav som A7:5 → **`TASK-70.4`**
-- [ ] **A7:7 · Dokumentera revert-vägen i `CONTRIBUTING.md`.** Steg 5–6
-      förutsätter att fel kan backas snabbt, och den vägen är i dag oskriven.
-      Ska övas en gång, inte bara beskrivas → **`TASK-70.5`**
 - [ ] **A7:8 · `delete_branch_on_merge: true`.** Ren hygien; grenar ackumuleras i
       dag. Avbrottsfri → **`TASK-70.6`**
 - [ ] **A7:9 · Preview-miljö per PR.** Granskningens förbättring **F2** —
@@ -575,20 +550,6 @@ tyst — mekanismen står här även när räkningen bor någon annanstans):
 - [ ] **Review-pilotens kadens** (T86-friktionen) — passet uteblev även på
       `TASK-54.2`, märkt i pilotloggen. Beslutskriterierna räknar skivor, inte
       pass, så varje omärkt uteblivet pass underskattar träffkvoten
-- [ ] **Agent-namnet `bygg-skiva` → `bygg-agent`?** Väckt av Marcus 2026-07-28.
-      Namnet är **smalare än agentens egen räckvidd** — dess description säger
-      *"ALLT arbete som skriver till repot och landar i en commit — skivor,
-      fynd-kort, refaktoreringar, CI-ändringar"*, och den har byggt `TASK-62`
-      och `TASK-69`, båda fynd-kort, inga skivor. Det **kolliderar dessutom med
-      `/to-issues`-domänen**, där en *skiva* är ett barn-kort `task-N.M`.
-      `bygg-agent` är inget nytt ord: `CONTRIBUTING.md` rad 204 kallar den redan
-      så i löptext. **Bytkostnad mätt:** sju filer utanför sessionsdok; levande
-      ytor är agentfilen (namn + filnamn), `CONTRIBUTING.md:204`,
-      `tasks/todo.md:170`, `scripts/agent-spawn-log.sh` (kommentar) och
-      `scripts/test-agent-spawn-log.sh` (fixturdata). Frusna artefakter —
-      granskningsdoket, sessionsdok, `task-64`/`task-67`:s beslutstexter —
-      skrivs INTE om. **CI-bikostnaden (~10 min full svit för en
-      `.claude/`-touch) faller om A4-posten landar först**
 - [ ] `IDENTITET.md`-destillatet (= Spår B steg 4)
 - [ ] **Merge queue-aktiveringen (= A4 = A7:3).** **UNDERLAGET ÄR KOMPLETT
       2026-07-28** ([granskningen](../docs/research/arbetsflode-granskning-2026-07-28.md)):
@@ -709,6 +670,12 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-28 | **`TASK-71` byggt** — `.claude/**` docs-klassad OCH täckt av alla tre docs-grindarna, som ett par. **Fyndet under fyndet:** `.claude/**` matchar inte `.claude/.markdownlint.jsonc` — dot-regeln biter en andra gång inuti katalogen, så fixen hade återinfört sitt eget fail-open utan andra posten. AC 1 + 6 utestående: kontrastbeviset kräver en PR som rör enbart `.claude/` | `#366` |
 | 2026-07-28 | **Vägkartan in i filen** — ordningsraden gjord fullständig (nio steg), efter att en väg byggts som tappade tre poster trots att hela filen lästs. Formregel: steg, ID och pekare — aldrig beskrivning eller status | `#367` |
 | 2026-07-28 | **`TASK-64` steg 0 utfört** — flakigheten mätt till **63 %** (14 av 22 acceptance-jobb i 120 CI-körningar) och orsaken lokaliserad till **tre rader** med mönstret *icke-auto-väntande query + icke-retrying assertion*. `ci-metrics.mjs` kunde inte svara: den räknar jobb-omkörningar, och `retries: 2` döljer flaken inuti ett grönt jobb. Klass B (fokus-testerna) skild ut; `T106`-avgränsningen besvarad | `#369` |
+
+| 2026-07-28 | **`TASK-70.5` DONE — revert-vägen ÖVAD, inte bara beskriven.** Agenten körde git-mekaniken i egen worktree; orkestreraren körde kedjan skarpt mot `main` (no-op `#374`/`ed51b95` → revert `#375`/`894a3bd`). **Tre fall reproducerade mot en riktig landning:** utan `-m` exit 128 · `-m 2` exit 0 med NOLL rader stagade och filen kvar (tyst misslyckande) · `-m 1` träd-identiskt. **Mätt: 118 s till revert-commit, 25 min 16 s till landad revert** — det andra talet är mutex-väntan, inte vägens kostnad | `#370` · `#376` |
+| 2026-07-28 | **`TASK-70.2` DONE — post-merge-lagret (A7:4, förkrav för A7:5–6).** Alla åtta AC belagda, sex verifierade EFTER landning (dispatch kräver default-grenen). Självtest `30395621766` gav äkta `failure` i larmets needs, svit SKIPPED, ärende `#378` med korrekt `-m 1`-recept — stängt med motivering. **Exponeringsfönster mätt: 453 s** | `#371` |
+| 2026-07-28 | **`TASK-64` DONE för KLASS A.** Mätt med retries AV: **3/8 fällningar före → 0/8 efter** (2,3 % sannolikt under oförändrad rat). AC 2 bekräftad med belägg — lokatorn löste till noll element. **Orkestrerarens föreslagna fix var FEL** och rättades av agenten: `toHaveAttribute(…, /.+/)` är no-op eftersom attributet är satt redan före första `ArrowDown` | `#377` |
+| 2026-07-28 | **`TASK-71` DONE + agent-namnet utfört** (`bygg-skiva` → `bygg-agent`, Marcus beslut). **Kontrastbeviset mätt i `#380`**, en diff som rör ENBART `.claude/`: `Test suite` SKIPPED, `Docs link check` SUCCESS. Samma diff hade före skivan dragit hela staging-sviten. Referenserna i egen PR — en fil utanför `.claude/` hade upphävt beviset | `#366` · `#380` · `#381` |
+| 2026-07-28 | **Tre kort mintade ur dagens arbete, alla funna av mekanismer byggda för annat.** `TASK-72` (CI-vakten kan följa fel workflow och rapportera grönt utan att ha sett CI — funnen av `70.5`:s agent) · `TASK-73` (post-merge ärver inte klassningen; en 8-raders docs-landning blockerade revert-vägen 25 min — funnen av övningen) · `TASK-74` (klass B är sju tester och minst två mekanismer, inte de tre `TASK-64` listade — funnen av dess egen efter-serie) | `#376` · `#379` |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
