@@ -3,10 +3,10 @@ id: TASK-60
 title: >-
   Fynd: acceptance-klassens tvåsidiga bevis körs för hand och överlever inte
   körningen
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-28 01:15'
-updated_date: '2026-07-28 01:51'
+updated_date: '2026-07-28 02:02'
 labels:
   - ready-for-agent
 dependencies: []
@@ -83,10 +83,28 @@ PR 309 grön per jobb 9/9 (run 30320122732). Steget 'Acceptance-klassens tvåsid
 Hermetik-rapporten skrivs ut ur en gammal mätning som om den vore färsk: global-setup.ts rad 23 nollställer ENDAST i mätläge, global-teardown.ts skriver ut UTAN att pröva flaggan. Deferat till TASK-59.7 som äger instrumentet (DoD 4).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Hermetikens andra led är en körbar grind i stället för en handrutin. HERMETIK_SJALVTEST=1 tömmer normalläget OCH gör testens egna network.use() verkningslösa — båda leden krävs, eftersom vartdera ensamt lämnar en klass av tester obevisade. scripts/hermetik-sjalvtest.mjs kräver att alla tester fälls MED OmockadRequestError som orsak; utfallet ensamt räcker inte, då en trasig assertion också gör en svit röd.
+
+TRE BEVIS: positivt (51 tester · 51 fällda · 51 av vakten, exit 0) · negativ kontroll (51 · 0 fällda ⇒ bedömningen föll, exit 0) · målfallet (tillfällig överlevar-fil ⇒ 52 · 51 fällda, överlevaren namngiven, exit 1). Fail-closed på tomhet.
+
+test.fail() förkastades aktivt trots att T104 pekade dit: den kontrollerar att ett test fälls, aldrig varför, och hade i den delade sömmen körts en enda gång av ESM-cachen.
+
+KOSTNADSPROGNOSEN VAR FEL OCH LAGADES I SAMMA PASS. ~50 s var en lokal mätning projicerad till CI och utskriven som 'mätt, inte antagen'; skarpt utfall 289 s, jobbet 6,5 min mot tak 8. Rotorsak retries: CI ? 2 : 0 — i självtestläget är rött det förväntade utfallet, så varje test kördes tre gånger med video. Orsaken bands via CI=1 lokalt (297 s mot CI:s 289 s). Åtgärd: --retries=0 + artefakter av i regimen. Verifierat skarpt i CI efter fixen: steget 289 s → 75 s, jobbet 6,5 → 2,8 min, beviset oförändrat 51/51/51.
+
+CI grön per jobb i båda landningarna: PR 309 (run 30320122732, 9/9) och PR 310 (run 30321515947, 9/9). Självtest-steget verifierat som success i jobbets steglista med rätt utfall i steggloggen — inte bara jobbet grönt.
+
+TASK-59.5 och 59.6 har därmed ett permanent bevis för sina tretton filer i stället för tretton manuella patcha-kör-återställ-cykler.
+
+T105 född på vägen och deferad till TASK-59.7: hermetik-rapporten skrivs ut ur en gammal mätning som om den vore färsk (global-setup flagg-vaktad, global-teardown inte).
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
