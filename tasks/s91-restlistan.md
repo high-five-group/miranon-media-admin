@@ -53,7 +53,7 @@ prioritering inom Spår A.
 | 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ✅ **KLART 2026-07-28** som `TASK-67` (PR `#339`, grön per jobb). Posten visade sig vara A2 punkt 5 (landnings-ordningen/BEHIND), ej en fristående kadens-post — tabellens namn var det missvisande. Regeln bor i `CONTRIBUTING.md` § Landnings-ordningen med pekare i `CLAUDE.md`; agenten lade till en fjärde form (`update-branch` aldrig mot arbetande agent) som inte fanns i kortet |
 | 4b | **Fynd-kedjan** — `TASK-62` · `69` · `65` · `66` · `64` · `63`. Sex kort ur `59.8`:s QA-vandring och kontraktsdrifts-utredningen. **Alla klassade `ready-for-agent` 2026-07-28** (Marcus order: *"ska alla klassas och tas itu med, i rätt ordning"*); ordningen och dess skäl står i § Fynd-kedjans ordning nedan | ▶️ **PÅGÅR** — `TASK-62` är kvitterad ingång |
 | 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
-| 6 | **A7 · Arbetsflödes-gapet** — åtta poster ur [granskningen](../docs/research/arbetsflode-granskning-2026-07-28.md) 2026-07-28. Domen: **DELVIS**, och restlistan som den såg ut FÖRE denna rad stängde **inte** gapet. Integrations- och verifieringsläget är hoptryckta till en PR-grind; kod-PR:er bär **7,4 min** varav `Staging` ensamt **375 s** | ⬜ **NYTT** — A7:1–2 avbrottsfria och kan tas när som helst; A7:4 är förkrav för A7:5–6 |
+| 6 | **A7 · Arbetsflödes-gapet** — åtta poster ur [granskningen](../docs/research/arbetsflode-granskning-2026-07-28.md) 2026-07-28. Domen: **DELVIS**, och restlistan som den såg ut FÖRE denna rad stängde **inte** gapet. Integrations- och verifieringsläget är hoptryckta till en PR-grind; kod-PR:er bär **7,4 min** varav `Staging` ensamt **375 s** | ⬜ **NYTT** — mintat som `TASK-70` (PRD) + `TASK-70.1`–`70.6`. A7:1–2 avbrottsfria och kan tas när som helst; A7:4 är förkrav för A7:5–6 |
 
 **Varför A3 var kritiska vägen och inte hygien:** staging-sviten tar 9,25 min
 under global mutex, och **74 % (410 s)** bärs av tester som redan mockar sina
@@ -390,6 +390,10 @@ enda obligatorisk PR-grind. Mätt kritisk väg för en kod-PR är **7,4 min**, v
 `Staging (API + E2E)` ensamt bär **375 s** plus mutexkö. Docs-PR:er är redan
 snabba (**53–79 s**) — klassningen fungerar; det är kodvägen som bär allt.
 
+**Mintat 2026-07-28:** PRD `TASK-70` med sex skivor `TASK-70.1`–`TASK-70.6`,
+en per post A7:3–A7:8. A7:1 och A7:2 mintades medvetet **inte** — de tas utan
+kort. Korten bär kraven; posterna nedan står kvar som index.
+
 **ORDNINGEN ÄR EN INVARIANT, INTE EN PREFERENS:** steg 4 (post-merge-lagret) är
 förkrav för steg 5–6. Flyttas staging ur grinden innan lagret finns tas en
 kontroll bort utan att ersättas — precis det målbilden varnar för
@@ -415,22 +419,23 @@ kontroll bort utan att ersättas — precis det målbilden varnar för
       `main-skydd` (i dag fyra regler, ingen queue). **Ändrar beteende.**
       Underlaget finns redan i
       [merge queue-passet](../docs/research/merge-queue-mot-staging-mutex-2026-07-26.md)
+      → **`TASK-70.1`**
 - [ ] **A7:4 · Bygg post-merge-jobbet på `main`.** **FÖRKRAV FÖR 5–6.** I dag
       finns inget andra skyddslager: `dedup_hit` gör att main-push kör *mindre*
       än PR:en gjorde, så mellan merge och natten finns ingenting. Nytt
       `post-merge.yml`; rött ⇒ auto-ärende + revert-förslag. Additivt, alltså
-      avbrottsfritt
+      avbrottsfritt → **`TASK-70.2`**
 - [ ] **A7:5 · Flytta `Staging (API + E2E)` ur PR-grinden till post-merge.**
       −375 s och den globala mutexen ur kritiska vägen. Berör `ci-suite.yml` +
       rulesetets required check. **Ändrar beteende; kräver A7:4.**
-      Detta är den enskilt största posten i hela spåret
+      Detta är den enskilt största posten i hela spåret → **`TASK-70.3`**
 - [ ] **A7:6 · Flytta `A11y (axe-runner)` till post-merge.** −103 s. Samma
-      förkrav som A7:5
+      förkrav som A7:5 → **`TASK-70.4`**
 - [ ] **A7:7 · Dokumentera revert-vägen i `CONTRIBUTING.md`.** Steg 5–6
       förutsätter att fel kan backas snabbt, och den vägen är i dag oskriven.
-      Ska övas en gång, inte bara beskrivas
+      Ska övas en gång, inte bara beskrivas → **`TASK-70.5`**
 - [ ] **A7:8 · `delete_branch_on_merge: true`.** Ren hygien; grenar ackumuleras i
-      dag. Avbrottsfri
+      dag. Avbrottsfri → **`TASK-70.6`**
 
 **Kandidat, ej beslutad:** `Acceptance (hermetisk)` bär **346–421 s** och är näst
 tyngst i grinden trots att den är hermetisk och mutexfri. Urval (kör den delmängd
@@ -836,7 +841,12 @@ bakom en mutex de inte behöver ser fel ut för den som inte räknat andelen.
       visar att landnings-ordningen är **frivillig efterlevnad** utan mekanisk
       spärr, och att den brast två gånger under en och samma resume trots att den
       varit nedskriven sedan S81. Merge queue är dess mekaniska motsvarighet.
-      Beslutet är ditt eftersom det ändrar beteende i varje landning
+      Beslutet är ditt eftersom det ändrar beteende i varje landning.
+      **Beslutsläget ändrades 2026-07-28:** merge queue-passets spärr (repot
+      användarägt ⇒ går inte att aktivera alls) föll med ägarbytet — `gh api`
+      ger nu `owner.type: Organization` + publikt, vilket uppfyller kravet.
+      Frågan har alltså numera ett ja-alternativ. Vad som kvarstår står i
+      **`TASK-70.1`**
 
 **Klartecken räcker — inga beslut:** komponent-token-grinden (R1:s dom C) ·
 agentdefinitioner i `.claude/agents/` (plugin-agenter stödjer ej `hooks`) ·
