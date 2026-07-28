@@ -6,8 +6,11 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 12:48'
-labels: []
-dependencies: []
+updated_date: '2026-07-28 15:05'
+labels:
+  - ready-for-agent
+dependencies:
+  - TASK-62
 ordinal: 137000
 ---
 
@@ -40,6 +43,22 @@ VÄRT ATT MÄTA FÖRST: hur många körningar i CI-historiken som rapporterat fl
 - [ ] #3 Åtgärden bevisas genom upprepade fulla svitkörningar utan retries, inte genom en grön CI-körning med retries på
 - [ ] #4 Om retries: 2 behålls är skälet nedskrivet; annars är det borttaget för klassen
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+EXEKVERINGSFORM — LÄS FÖRE PLOCK: detta kort tas som DIAGNOS under orkestrerarens egen hand, INTE som delegerad bygg-skiva. Skälet är att orsaken inte är lokaliserad; en bygg-agent på ett odiagnostiserat race bygger fel sak. Etiketten ready-for-agent säger att kortet inte kräver Marcus omdöme — den säger inte att det ska spawnas som skiva.
+
+STEG 0 — MÄT FÖRE ALLT ANNAT. Räkna hur många körningar i CI-historiken som rapporterat flaky > 0 på acceptance-jobbet. Talet avgör om detta är en spets eller ett bärande problem, och därmed kortets storlek. Gör inte steg 1 innan talet finns.
+
+STEG 1 — reproducera under kontrollerad workerlast, med retries av. Grönt med retries på är inte data.
+
+STEG 2 — pröva allTextContents() på event-anteckningar:155 som orsak (den auto-väntar inte, till skillnad från expect-matchers). Bekräfta eller avfärda MED BELÄGG; avfärda inte genom att den inte föll den gången.
+
+BEROENDE PÅ TASK-62 (kodat som dep): vaktens per-fil-aggregering är sannolikt mätinstrument här — en överskuggning som aldrig matchar ger grönt på fel data, vilket är samma symptomklass som ett last-känsligt race. Kör 62 först och se vad instrumentet visar.
+
+AVGRÄNSNING MOT T106: T106 gäller självtestets race (onUnhandledRequest vs toBeFocused-timeout). Detta är huvudsviten under workerlast. Närliggande klass, annan yta — slå inte ihop utan att först pröva om orsaken är gemensam.
+<!-- SECTION:PLAN:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
