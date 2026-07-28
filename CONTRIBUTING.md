@@ -482,3 +482,7 @@ Axlarna och deras definitioner ägs av [`docs/specs/KVALITETSDEFINITIONER-11-REA
 - [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md) — kronologisk sessions-journal
 - [`tasks/lessons.md`](tasks/lessons.md) — universella lärdomar
 - [`tasks/todo.md`](tasks/todo.md) — aktuell todo-status
+
+<!-- TASK-70.5 ÖVNINGS-NO-OP: raden har ingen funktionell verkan och finns bara
+     för att revert-vägen ska övas mot ett ofarligt objekt. Den tas bort igen av
+     övningens revert-commit; syns den i main är reverten inte fullföljd. -->
