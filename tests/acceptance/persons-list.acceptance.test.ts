@@ -173,25 +173,34 @@ test.describe('Personer-listan — läs-fel (get-persons 500)', () => {
 
     // TIMEOUTEN ÄR RÄKNAD OCH MÄTT, INTE ÄRVD. 500 är retry-bart i BÅDA lagren:
     // `fetchWithRetry` gör 4 HTTP-försök per anrop (sleep 200/400/800 ms +
-    // jitter 0–baseDelay/2, `src/data/utils.ts`) och PersonsList ärver
-    // QueryClientens `retry: 3` + `retryDelay` 200/400/800 (`src/router.ts:18`).
+    // jitter, `src/data/utils.ts`) och PersonsList ärver QueryClientens
+    // `retry: 3` + `retryDelay` 200/400/800 (`src/router.ts:18`). Härledningen i
+    // sin helhet bor i `support/acceptance-bas.ts` § SKRIVA ETT TEST I KLASSEN.
     // PersonsList har INGEN egen 4xx-undantagsgren som Waitlist/Anteckningar —
     // ingen statuskod ger en genväg förbi kedjan. Felytan kan alltså först dyka
     // upp efter 16 förfrågningar.
     //
-    // KONSTRUERAT VÄRSTA FALL, enbart sömnerna: 4 × 2100 + 1400 = 9800 ms
+    // KONSTRUERAT VÄRSTA FALL, enbart sömnerna: 4 × 1700 + 1400 = 8200 ms
     // (bästa fall 4 × 1400 + 1400 = 7000 ms) — plus 16 round-trips. Jittret är
-    // `Math.random()`, så det övre talet kräver ingen otur utöver tre höga drag
-    // per försök; det är ett normalutfall, inte en svans.
+    // `Math.random() * (baseDelay / 2)` med `baseDelay = 200`, alltså KONSTANT
+    // 0–100 ms per sömn: det skalar INTE med den exponentiella delayen. Därav
+    // 1400 + 3 × 100 = 1700 ms per anrop.
+    //
+    // RÄTTAT (TASK-65): termen stod tidigare som 4 × 2100 + 1400 = 9800 ms —
+    // en jitter som antogs följa delayen (100+200+400). Mätningen av
+    // event-anteckningars identiska kedja falsifierade det: största uppmätta
+    // mellanrum på 800-sömnen var 883 ms, inte ~1200. Fyndkortet är rättat vid
+    // källan; talet nedan är oförändrat.
     //
     // MÄTT lokalt (darwin, 5 isolerade körningar): 7901 · 7904 · 7916 · 7941 ·
     // 8401 ms. Under full svit steg testets totaltid 9,3 → 10,2 s.
     //
-    // DÄRFÖR 20 s OCH INTE PRECEDENSENS 12 s (event-anteckningar rad 248): 12 s
-    // ligger bara 2,2 s över det konstruerade värsta fallet, före CI:s
-    // långsammare runner och parallell workerlast. Priset för ett för HÖGT tal
-    // betalas bara när testet ändå fäller; priset för ett för lågt är en falsk
-    // röd — samma signal-förstörelse som task-59.7 höjde jobbets tak för.
+    // DÄRFÖR 20 s OCH INTE 12 s: 12 s ligger bara 3,8 s över det konstruerade
+    // värsta fallet, före CI:s långsammare runner och parallell workerlast.
+    // (Precedensen på event-anteckningar rad 248 bar 12 s när raden här skrevs;
+    // TASK-65 satte den till 20 s — en kedja, ett tal.) Priset för ett för
+    // HÖGT tal betalas bara när testet ändå fäller; priset för ett för lågt är
+    // en falsk röd — samma signal-förstörelse som task-59.7 höjde jobbets tak för.
     // 20 s ryms med marginal under Playwrights test-timeout på 30 s (config
     // sätter ingen egen), så ett trasigt felläge fäller fortfarande på
     // assertionen och inte på testramen.
