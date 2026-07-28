@@ -1,0 +1,25 @@
+// .claude/.markdownlint.jsonc — scope-lokal markdownlint-config för
+// agentdefinitionerna. Etablerad: Session 91 (TASK-71).
+//
+// markdownlint-cli2 läser config per katalog och MERGAR uppåt: rot-configens
+// val (MD013 av, MD060 av, MD024 siblings_only) gäller fortfarande här.
+// Verifierat 2026-07-28 med en 220-teckens probe-rad under .claude/ — MD013
+// fyrade inte, alltså ärvs roten. Denna fil lägger bara till en post.
+//
+// MD041 (first-line-heading): en agentdefinition är ingen artikel. Filens
+// brödtext ÄR agentens systemprompt, och dess titel bor i frontmatterns
+// `name:` — det fält Claude Code självt läser som agentens identitet. Att
+// klistra in en `# Rubrik` överst enbart för att blidka regeln hade ändrat
+// promptens innehåll för att passa ett lint-verktyg, alltså låtit grinden
+// styra produkten.
+//
+// REGELN STÄNGS INTE AV — den pekas om till sin egen inbyggda escape-lucka
+// (front_matter_title). En .md-fil under .claude/ som varken har `name:` i
+// frontmatter eller en H1 fälls fortfarande. Verifierat i båda riktningarna
+// 2026-07-28: med denna fil passerar agents/*.md, medan en probe-fil utan
+// frontmatter-namn föll på MD041 som förut.
+{
+  "MD041": {
+    "front_matter_title": "^\\s*name\\s*[:=]"
+  }
+}

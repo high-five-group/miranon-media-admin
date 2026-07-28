@@ -92,6 +92,41 @@ jobs:
           # Det blocket är en YAML literal block scalar — en "#"-rad där blir en
           # literal glob-post, inte en kommentar. Felet gjordes och fångades
           # under bygget av just denna ändring (S91), därav noten.
+          #
+          # AGENT- OCH HARNESS-KONFIG (S91, TASK-71): .claude/**-raderna nedan.
+          # Katalogen kan per konstruktion inte påverka en testkörning — CI kör
+          # aldrig Claude Code. Grep över src, tests, scripts, .github och
+          # supabase 2026-07-28 gav tre träffar, alla ofarliga:
+          # scripts/agent-spawn-log.sh och scripts/agent-spawn-metrics.mjs läser
+          # katalogen via CLAUDE_PROJECT_DIR (körs bara av Claude Code självt),
+          # och scripts/test-agent-spawn-log.sh — den enda av de tre som CI kör —
+          # pekar CLAUDE_PROJECT_DIR på en /tmp-sandlåda och rör alltså aldrig
+          # repots .claude/.
+          #
+          # VARFÖR RADERNA BEHÖVS TROTS **/*.md OVAN: micromatch matchar inte
+          # dot-yta utan dot: true. Mätt mot node_modules/micromatch 4.0.8
+          # 2026-07-28: '**/*.md' ger NOLL träff på .claude/agents/bygg-skiva.md,
+          # '.claude/**' full träff. Samma skäl som .github/PULL_REQUEST_TEMPLATE.md
+          # och .github/ISSUE_TEMPLATE/** står explicit trots **/*.md — vore
+          # dot-matchning påslagen vore de raderna döda.
+          #
+          # DÄRFÖR ÄR POSTERNA TVÅ. Samma dot-regel biter en gång till INNE i
+          # katalogen: '.claude/**' matchar INTE .claude/.markdownlint.jsonc,
+          # eftersom filnamnet börjar med punkt (mätt, samma körning). Med bara
+          # den ena raden hade den nya markdownlint-configen legat utanför båda
+          # listorna — alltså exakt det fail-open kortet finns för att stänga,
+          # återinfört av sin egen fix. '.claude/**/.*' täcker dot-filer på alla
+          # nivåer under katalogen och är verifierad mot en nästlad probe-sökväg.
+          #
+          # .claude/settings.json INGÅR MEDVETET (TASK-71 AC#5). Den är JSON och
+          # kan inte grindas av markdownlint, Vale eller lychee — men den är inte
+          # ovaliderad: `npx @biomejs/biome check .` i lint-jobbet, som kör ALLTID
+          # (inget if-, inget needs-villkor), traverserar .claude/ och fäller på
+          # trasig eller ofärdig JSON. Verifierat med probe-fil 2026-07-28: en
+          # felformaterad .claude/-JSON rapporteras av `biome check .`. Filens
+          # grind byter alltså jobb, den försvinner inte. Empirin bakom valet:
+          # ab52cd5, 7b60dc1, b48ece0 och 8b98e95 rörde ENBART den filen och drog
+          # var och en full svit bakom staging-mutexen.
           quotepath: false
           files: |
             **/*.md
@@ -109,6 +144,8 @@ jobs:
             .vale.ini
             .vale/**
             .markdownlint-cli2.jsonc
+            .claude/**
+            .claude/**/.*
             !.github/workflows/**
             !.github/dependabot.yml
             !package.json
@@ -141,6 +178,24 @@ jobs:
         #       docs-jobbet är det enda som kör Vale-regressionssviten. Shellcheck i
         #       det alltid-på lint-jobbet gav syntaxtäckning men ingen funktionell.
         # Invarianten framåt: docs-verktygs-config hör hemma i BÅDA listorna.
+        #
+        # S91 forts. (TASK-71): .claude/** tillagt i BÅDA listorna i SAMMA
+        # ändring — den parade formen, inte en rad i taget. Docs-grindarnas
+        # scope utvidgades samtidigt så posten faktiskt validerar något:
+        # .claude/**/*.md lintas nu av markdownlint (.markdownlint-cli2.jsonc
+        # globs + .claude/.markdownlint.jsonc), av Vale (npm run lint:prose) och
+        # av lychee (arg-blocket i docs-jobbet nedan). Utan raden här hade
+        # skip-tests-tillägget gjort en agentfil BÅDE svit-skippad och
+        # docs-skippad — tyst ovaliderad, L322-klassen.
+        #
+        # POSTERNA ÄR .claude/** + .claude/**/.*, INTE .claude/**/*.md, och det
+        # är avsiktligt: listorna ska vara IDENTISKA post för post. En snävare
+        # post här hade lämnat .claude/settings.json ensam i skip-tests-listan
+        # och därmed återinfört precis den asymmetri paret finns för att
+        # förhindra. Att settings.json grindas av Biome i det alltid-på
+        # lint-jobbet (se skip-tests-steget) ändrar inte formen på invarianten.
+        # Varför dot-raden är en egen post: se samma steg — '.claude/**' missar
+        # dot-filer, och .claude/.markdownlint.jsonc är en av dem.
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
           # quotepath: false — samma invariant som changed-files-steget
@@ -157,6 +212,8 @@ jobs:
             tests/vale-regression/**
             scripts/test-vale-regression.sh
             .github/workflows/ci.yml
+            .claude/**
+            .claude/**/.*
 
       - name: Get changed UI files (D1-klassning)
         id: changed-ui
@@ -603,17 +660,27 @@ jobs:
           #            docs/reference/pocock/** (vendorerat externt Pocock-material, S47 Steg 0 —
           #            samma rationale som archive/: extern korpus, ej vår prosa)
           #            backlog/** (medvetet utanför — verktygsägd yta, L226; S48 Del 2 gren C)
+          #
+          # .claude/**/*.md TILLAGT S91 (TASK-71): agentdefinitionerna klassas nu
+          # som docs i changed-files-stegen ovan, och då måste grindarna faktiskt
+          # läsa dem. --exclude-path .claude/worktrees är no-op HÄR (worktrees är
+          # gitignorerade och checkas aldrig ut i CI) men står med för att
+          # scripts/check-docs.sh speglar detta block i sak — den lokala
+          # körningen behöver raden, och divergens mellan de två är felklassen
+          # skriptet finns för att stänga.
           args: >-
             --offline
             --no-progress
             --verbose
             --exclude-path docs/archive
             --exclude-path docs/reference/pocock
+            --exclude-path .claude/worktrees
             './docs/**/*.md'
             './tasks/*.md'
             './tasks/sessions/*.md'
             './tasks/threads/*.md'
             './tasks/lessons.d/*.md'
+            './.claude/**/*.md'
             './*.md'
           fail: true
           token: ${{ secrets.GITHUB_TOKEN }}

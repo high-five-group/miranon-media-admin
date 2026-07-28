@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 18:23'
+updated_date: '2026-07-28 18:48'
 labels:
   - ready-for-agent
 dependencies: []
@@ -46,13 +47,15 @@ Mätt 2026-07-27: en URL-ändring i agentkonfig kostade full staging-svit. Fyra 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Mekanismen omverifierad i CI, inte bara lokalt: ett run-ID redovisat där en PR som ENDAST rör en .claude/-fil klassas — före-talet (full svit) hämtat ur historiken, båda talen i PR-texten
-- [ ] #2 .claude/-posterna tillagda i should_skip_tests-stegets allowlist i ci.yml
-- [ ] #3 Samma poster tillagda i changed-docs-stegets lista — paret som ci.yml:s egen kommentar gör obligatoriskt
-- [ ] #4 .claude/**/*.md täcks av ALLA tre docs-grindarna: markdownlint-cli2 globs, lint:prose och check-docs.sh — utdata som visar att filerna faktiskt lintas, inte bara att globben ändrats
-- [ ] #5 Beslutet om .claude/settings.json (docs-klassad eller utelämnad) fattat och motiverat i PR-texten
+- [x] #2 .claude/-posterna tillagda i should_skip_tests-stegets allowlist i ci.yml
+- [x] #3 Samma poster tillagda i changed-docs-stegets lista — paret som ci.yml:s egen kommentar gör obligatoriskt
+- [x] #4 .claude/**/*.md täcks av ALLA tre docs-grindarna: markdownlint-cli2 globs, lint:prose och check-docs.sh — utdata som visar att filerna faktiskt lintas, inte bara att globben ändrats
+- [x] #5 Beslutet om .claude/settings.json (docs-klassad eller utelämnad) fattat och motiverat i PR-texten
 - [ ] #6 Kontrastbevis: en PR som endast rör .claude/ skippar Test suite OCH kör docs-jobbet grönt — run-ID redovisat
-- [ ] #7 Inga filer utanför .claude/, ci.yml och docs-grindarnas config rörda
+- [x] #7 Inga filer utanför .claude/, ci.yml och docs-grindarnas config rörda
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
