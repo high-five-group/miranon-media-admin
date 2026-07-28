@@ -120,6 +120,25 @@ här.
 tog 187 s ur det serialiserade e2e-steget och betalar 174 s för samma tester i
 en parallell körning som ingen annan väntar på.
 
+### 3.1 Efter takhöjningen — mätt på den commit som gjorde den
+
+Run **`30354520046`** (PR `#328`, den här skivans egen körning) är den första
+med taket på 12 min:
+
+|jobb|väggklocka|mot sitt tak|
+|---|---|---|
+|`Acceptance (hermetisk)`|**403 s = 6 min 43 s** (uppstart 20 s · skarp svit 176 s · självtest 203 s)|720 s — marginal **317 s / 44 %**|
+|`Staging (API + E2E)`|**358 s = 5,97 min**|720 s|
+
+Två saker bekräftas av den körningen. Dels att `#324`:s 452 s var
+uppstartsvarians och inte en ny normalnivå: uppstarten är tillbaka på 20 s och
+teststegen ligger på 176 + 203 s, alltså inom det spann § 3 mäter. Under det
+GAMLA taket hade marginalen varit 77 s.
+
+Dels att **acceptance-jobbet återigen avslutade sist av svitens tunga jobb**
+(11:29:24 mot stagings 11:28:53). Mutexen är inte längre svitens längsta stolpe
+— det hermetiska jobbet är det, i två av de fyra körningar som mätts.
+
 ## 4. Avvikelsen mot projektionen (AC #4)
 
 Avvikelsen är stor: lovat −74 %, levererat −33 %. Den redovisas som utfall, och
@@ -202,8 +221,11 @@ varningen förutsåg. Den delen av felet är liten. Populationsfelet är det sto
   (Uppdragsbeskrivningens formulering om *"62 färre e2e-tester"* går jag inte i
   god för — jag mäter 333 → 181 i e2e-projektet, alltså −152, och +152 i
   acceptance-projektet.)
-- **n är litet.** Tre EFTER-körningar. Spridningen är liten (391–411 s) men tre
-  punkter är tre punkter, och medianen ska läsas därefter.
+- **n är litet.** Tre EFTER-körningar i § 2. Spridningen är liten (391–411 s) men
+  tre punkter är tre punkter, och medianen ska läsas därefter. En fjärde punkt
+  tillkom efteråt (§ 3.1, run `30354520046`): staging **358 s**, alltså under
+  hela det tidigare spannet — den stärker riktningen men ingår inte i medianen,
+  eftersom fönstret var stängt när talet uppstod.
 - **Runner-varians ingår i jobb-talen.** FÖRE-fönstret ligger kvällen 2026-07-27,
   EFTER-fönstret förmiddagen 2026-07-28, och § 3 visar att uppstartssteg kan
   variera med tiotals sekunder mellan körningar. Därför bär e2e-STEGET
