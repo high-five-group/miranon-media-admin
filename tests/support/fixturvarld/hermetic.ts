@@ -170,17 +170,61 @@ function buildSession() {
  * Signaturen är `use(...runtimeHandlers)` — flera handlers kan skickas i ett
  * anrop, och arrayer måste spridas.
  */
+/**
+ * SJÄLVTESTLÄGET — `HERMETIK_SJALVTEST=1` (task-60, tråd `T104`).
+ *
+ * Fram till och med task-59.4 bevisades hermetiken för hand: neutralisera
+ * testets egna `network.use()`-överskuggningar, töm normalläget, kör, läs
+ * utfallet, återställ ur en scratchpad-kopia. Tre skivor i rad gjorde det, och
+ * **beviset fanns bara i agentens rapporttext** — inget i repot kunde köra om
+ * det. Flaggan gör den rutinen till en körbar regim.
+ *
+ * BÅDA LEDEN KRÄVS, och det är inte en dubblering. Att bara tömma normalläget
+ * räcker inte: en fil som överskuggar allt den behöver (`persons-list` gör det
+ * avsiktligt, för att assertera exakta sidstorlekar) hade fortsatt få sina svar
+ * ur sina egna handlers och passerat. Att bara neutralisera överskuggningarna
+ * räcker heller inte: de flesta tester faller då tillbaka på normalläget. Först
+ * med båda leden når anropen fram till vakten.
+ *
+ * VAKTEN BEHÅLLER DEN RIKTIGA LISTAN. `skapaHermetikVakt(handlers)` matas med
+ * det verkliga normalläget även i självtestläge — annars hade felmeddelandets
+ * "Mockat här (7)" krympt till noll och `task-57`:s stavfelsförslag tystnat,
+ * alltså hade beviset körts mot ett meddelande ingen någonsin ser skarpt.
+ *
+ * Regimen ändrar INTE typsnitts-pinningen: den ligger på `page.route`-nivå och
+ * prövas före MSW. Det är avsiktligt — annars hade varje test fällt på ett
+ * typsnitt i stället för på sin Edge Function, och beviset pekat åt fel håll.
+ */
+const SJALVTEST = process.env.HERMETIK_SJALVTEST === '1';
+
+/**
+ * Vy över fixturen där `use()` är verkningslös. Proxy, inte spread eller
+ * `Object.create`: `NetworkFixture` är en klassinstans (`SetupPlaywrightApi
+ * extends SetupApi`) vars metoder bor på prototypen och läser privata fält —
+ * en kopia hade tappat metoderna, och en prototypkedja hade bundit `this` till
+ * fel objekt. Metoderna binds därför uttryckligen till målet.
+ */
+function utanOverskuggningar(network: NetworkFixture): NetworkFixture {
+  return new Proxy(network, {
+    get(mal, egenskap) {
+      if (egenskap === 'use') return () => undefined;
+      const varde = Reflect.get(mal, egenskap);
+      return typeof varde === 'function' ? varde.bind(mal) : varde;
+    },
+  });
+}
+
 export const test = base.extend<{ network: NetworkFixture }>({
   network: [
     async ({ context }, use) => {
       const network = defineNetworkFixture({
         context,
-        handlers,
+        handlers: SJALVTEST ? [] : handlers,
         skipAssetRequests: false,
         onUnhandledRequest: skapaHermetikVakt(handlers),
       });
       await network.enable();
-      await use(network);
+      await use(SJALVTEST ? utanOverskuggningar(network) : network);
       await network.disable();
     },
     { auto: true },

@@ -27,13 +27,26 @@ landning) · **grep på `lifecycle: paused` gav tre träffar men bara två är �
 (`session-53` matchade brödtext, dess frontmatter är `closed` — verifierat före
 rapportering) · **S92:s todo-kadensrad saknas fortfarande** (obetald över två
 resumes). Dependabot-räkningen stämde denna gång: exakt de sex handoffen namngav.
-**MARCUS-BESLUT: `T104` FÖRE `59.5`** (*"Kör som du föreslår"*) — vaktens
-tvåsidiga bevis körs i dag för hand och finns bara i agentens rapporttext;
-skivan gör det till ett testfall så `59.5`+`59.6` — tretton filer — får ett
-permanent bevis i stället för noll. **NÄSTA: `T104`-skivan → `59.5` Mer-ytan (6
-filer) → `59.6` Event (7) → `59.7` mätningen → `59.8` QA.** Karta:
-`tasks/s91-restlistan.md` § VAR VI ÄR. Full narrativ: sessionsdok S91 **Del 15**.
-*(Föregående fokus-text nedan.)*
+**MARCUS-BESLUT: `T104` FÖRE `59.5`** (*"Kör som du föreslår"*) — **LEVERERAT
+SAMMA PASS som `TASK-60`.** `HERMETIK_SJALVTEST=1` +
+`scripts/hermetik-sjalvtest.mjs`, kopplat som steg i CI:s acceptance-jobb.
+**TRÅDENS FÖRESLAGNA FORM RÄCKTE INTE** — att bara tömma normalläget lämnar
+filer som överskuggar allt de behöver (`persons-list`) obevisade; regimen bär
+därför BÅDA leden. **`test.fail()` FÖRKASTADES AKTIVT:** den kontrollerar att ett
+test fälls, aldrig varför, och hade i en delad söm körts en enda gång av
+ESM-cachen. Grinden kräver i stället `OmockadRequestError` per test.
+**TVÅSIDIGT BEVISAT:** positivt `51 tester · 51 fällda · 51 av vakten` (exit 0)
+· negativ kontroll `51 · 0 fällda ⇒ bedömningen föll` (exit 0). Fail-closed på
+tomhet. **Kostnaden MÄTT:** acceptance-jobbet 1,2–1,4 min över fem CI-körningar,
++~50 s ⇒ ~2,2 min mot tak 8 — ingen timeout-höjning. **`T105` FÖDD:**
+hermetik-rapporten skrivs ut ur en gammal mätning som om den vore färsk
+(`global-setup` flagg-vaktad, `global-teardown` inte) — verifierat i koden,
+deferat till `59.7` som äger instrumentet. **SKÖRD: 2 fragment** [UNIVERSAL ×2]
+(grind som ej prövar orsaken · trådens föreslagna form är hypotes).
+**NÄSTA: `59.5` Mer-ytan (6 filer) → `59.6` Event (7) → `59.7` mätningen (tar
+`T105`) → `59.8` QA.** Numrering: 91/082/L360 (**25** fragment)/**T106**/f46/
+**task-61**. Karta: `tasks/s91-restlistan.md` § VAR VI ÄR. Full narrativ:
+sessionsdok S91 **Del 15**. *(Föregående fokus-text nedan.)*
 
 **Session 91 ⏸️ PAUSAD (2026-07-28, sjunde pausen — mitt i A5:s migreringsvåg)**
 — **A5 SPECCAT OCH PÅBÖRJAT; ACCEPTANCE-KLASSEN LEVER I CI.** `TASK-59` (PRD,
