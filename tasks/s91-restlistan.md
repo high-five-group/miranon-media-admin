@@ -82,7 +82,7 @@ tematiska; sekvensen över spårgränserna fanns ingenstans.
 | **3** | Flytten och kön — väntetiden faller | `TASK-70.3` · `TASK-70.1` · `TASK-76` · `TASK-70.4` · `TASK-75` | § A7 (A7:5, A7:3, A7:6, A7:10) · § Kort födda i S91 |
 | **4** | Landnings-hygien | `TASK-70.6` | § A7 (A7:8) |
 | **4b** | Verktygsskulden | A3 ×1 · A3b ×2 · A2:9 | § A3 · § A3b · § A2 |
-| **5** | Aktörerna slutar krocka | A2:7 · A2:8 · A2:11 · Spår B | § A2 · § Spår B |
+| **5** | Aktörerna slutar krocka | A2:7 · A2:8 · A2:11 · `TASK-77` · Spår B | § A2 · § Spår B · § Kort födda i S91 |
 | **6** | Kvar utanför räckhåll | `T85` våg 3 · `T87` · `TASK-70.7` | § A6 · § A7 (A7:9) |
 | **6b** | Skulden betalas | A2:10 → Spår C ×2 · Spår E ×4 | § Spår C · § Spår E · § A2 |
 | **7** | Appen | `TASK-53` · `TASK-56` · hållplats-grillningen · `TASK-18.20` · de tre app-besluten · resten | § Spår D · § Kort födda i S91 · § Beslut |
@@ -532,6 +532,17 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       det fallet, redan inträffat. **Tas i nära anslutning till `70.3`**, ej
       senare våg. Premissen `P26`/`P27` löses INTE här; kortet gör purge robust
       under den
+- [ ] **`TASK-77`** — `staging-tests`-mutexen binder bara CI; lokala
+      `test:api:staging` / `test:e2e:staging` / `vakt:kontrakt` går rakt förbi
+      den mot samma bas. Verifierat 2026-07-29: strängen finns **inte** i
+      `package.json` eller `scripts/*.mjs` — ingen mekanism, bara en outtalad
+      konvention. **Funnen 2026-07-29 av `TASK-70.3`:s agent, som bröt regeln
+      TVÅ gånger under ETT pass — andra gången med full kännedom om den.** Det
+      är kortets bärande argument: en regel som inte efterlevs av den som känner
+      till den saknar mekanism (samma slutsatsform som gjorde merge queue till
+      svaret på landnings-ordningen). Angränsar `TASK-76` men är en ANNAN
+      mekanism — `76` är CI mot CI, detta är CI mot lokalt, och `76`:s fix gör
+      inte detta ofarligt
 
 ## Fynd-kedjans ordning — klassad och sekvenserad 2026-07-28
 
