@@ -147,3 +147,71 @@ test.describe('Personer-listan (Fas 6a — cursor-port)', () => {
     expect(results.violations).toEqual([]);
   });
 });
+
+/**
+ * Läs-felet — EGEN describe, INTE en test i blocket ovan. Det blocket lägger sin
+ * lyckade sid-överskuggning i en `beforeEach` som gäller alla dess tester; en
+ * andra `network.use()` inuti testkroppen hade visserligen vunnit (`use()`
+ * prependar, första träffen vinner — `hermetic.ts` § PRECEDENSEN), men beviset
+ * hade då vilat på en ordningsregel i stället för på att bara EN handler finns.
+ */
+test.describe('Personer-listan — läs-fel (get-persons 500)', () => {
+  test('500 → felytan visas; varken laddläge eller falsk tom lista blir kvar', async ({
+    page,
+    network,
+  }) => {
+    // Kroppen är EF:ens felform (`{ error, requestId }`,
+    // supabase/functions/_shared/errors.ts) — samma form `edgeFunctionError`
+    // parsar skarpt. En rå sträng hade gett ett annat `message` än produktion.
+    network.use(
+      http.get(EF('get-persons'), () =>
+        json({ error: 'Internal error', requestId: 'req-personer-500' }, 500),
+      ),
+    );
+
+    await page.goto('/personer');
+
+    // TIMEOUTEN ÄR RÄKNAD OCH MÄTT, INTE ÄRVD. 500 är retry-bart i BÅDA lagren:
+    // `fetchWithRetry` gör 4 HTTP-försök per anrop (sleep 200/400/800 ms +
+    // jitter 0–baseDelay/2, `src/data/utils.ts`) och PersonsList ärver
+    // QueryClientens `retry: 3` + `retryDelay` 200/400/800 (`src/router.ts:18`).
+    // PersonsList har INGEN egen 4xx-undantagsgren som Waitlist/Anteckningar —
+    // ingen statuskod ger en genväg förbi kedjan. Felytan kan alltså först dyka
+    // upp efter 16 förfrågningar.
+    //
+    // KONSTRUERAT VÄRSTA FALL, enbart sömnerna: 4 × 2100 + 1400 = 9800 ms
+    // (bästa fall 4 × 1400 + 1400 = 7000 ms) — plus 16 round-trips. Jittret är
+    // `Math.random()`, så det övre talet kräver ingen otur utöver tre höga drag
+    // per försök; det är ett normalutfall, inte en svans.
+    //
+    // MÄTT lokalt (darwin, 5 isolerade körningar): 7901 · 7904 · 7916 · 7941 ·
+    // 8401 ms. Under full svit steg testets totaltid 9,3 → 10,2 s.
+    //
+    // DÄRFÖR 20 s OCH INTE PRECEDENSENS 12 s (event-anteckningar rad 248): 12 s
+    // ligger bara 2,2 s över det konstruerade värsta fallet, före CI:s
+    // långsammare runner och parallell workerlast. Priset för ett för HÖGT tal
+    // betalas bara när testet ändå fäller; priset för ett för lågt är en falsk
+    // röd — samma signal-förstörelse som task-59.7 höjde jobbets tak för.
+    // 20 s ryms med marginal under Playwrights test-timeout på 30 s (config
+    // sätter ingen egen), så ett trasigt felläge fäller fortfarande på
+    // assertionen och inte på testramen.
+    const alert = page.getByRole('alert').filter({ hasText: 'Kunde inte hämta personer' });
+    await expect(alert).toBeVisible({ timeout: 20_000 });
+    // Fel-ID:t når användaren → support kan binda vyn mot EF-loggen
+    // (EdgeFunctionError.requestId).
+    await expect(alert).toContainText('req-personer-500');
+
+    // Fastnade INTE i laddläget — den ena felformen felytan finns för att utesluta.
+    await expect(page.getByText('Laddar personer…')).toHaveCount(0);
+
+    // Ser INTE ut som "det finns inga personer" — den andra, farligare felformen:
+    // ett tomt svar och ett trasigt svar får aldrig se likadana ut för Lotta.
+    await expect(page.getByText('Inga personer ännu.')).toHaveCount(0);
+    await expect(page.getByRole('list', { name: 'Personer' })).toHaveCount(0);
+
+    // Felet bärs av KOMPONENTENS egen gren, inte av route-ErrorBoundaryn:
+    // sökfältet står kvar. Utan denna assertion vore testet grönt även om
+    // PersonsList kastade och SectionError tog över — en helt annan yta.
+    await expect(page.getByRole('searchbox', { name: 'Sök person' })).toBeVisible();
+  });
+});
