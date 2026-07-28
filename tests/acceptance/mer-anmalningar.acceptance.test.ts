@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { RegistrationSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from './support/acceptance-bas';
 
@@ -38,10 +40,11 @@ import { expect, test } from './support/acceptance-bas';
  * (mönstret är lastkänsligt — TASK-3).
  */
 
-type Row = Record<string, unknown>;
+/** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
+type Row = z.infer<typeof RegistrationSchema>;
 
 /** En komplett Registration-rad (EF-svarets form, Registration.schema). */
-function reg(overrides: Row = {}): Row {
+function reg(overrides: Partial<Row> = {}): Row {
   return {
     id: `recR${Math.random().toString(36).slice(2, 10)}`,
     namn: null,

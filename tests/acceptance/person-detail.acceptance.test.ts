@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { PersonDetailSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from './support/acceptance-bas';
 
@@ -40,9 +42,10 @@ import { expect, test } from './support/acceptance-bas';
 
 const PERSON_ID = 'recDETAIL0000001';
 
-type PersonDetailMock = Record<string, unknown>;
+/** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
+type PersonDetailMock = z.infer<typeof PersonDetailSchema>;
 
-function personDetail(overrides: PersonDetailMock = {}): PersonDetailMock {
+function personDetail(overrides: Partial<PersonDetailMock> = {}): PersonDetailMock {
   return {
     id: PERSON_ID,
     namn: 'Anna Andersson',

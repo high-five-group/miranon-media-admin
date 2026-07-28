@@ -1,5 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { PersonDetailSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { medvetetOanvand } from '../support/fixturvarld/overskuggnings-vakt';
 import { expect, test } from './support/acceptance-bas';
@@ -33,7 +35,8 @@ import { expect, test } from './support/acceptance-bas';
 
 const PERSON_ID = 'recNOTEEDIT000001';
 
-type PersonDetailMock = Record<string, unknown>;
+/** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
+type PersonDetailMock = z.infer<typeof PersonDetailSchema>;
 
 /** Komplett PersonDetail som passerar PersonDetailSchema (.parse i adaptern). */
 function personDetail(anteckningar: string | null): PersonDetailMock {

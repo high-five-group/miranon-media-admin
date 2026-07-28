@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { EventSchema, RegistrationSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, type Page, test } from './support/acceptance-bas';
 
@@ -52,9 +54,16 @@ const EVENT_ID = 'recNYANM0000001';
 const HOST_ID = 'recNYANMHOST0002';
 const FJARR_ID = 'recNYANMFJARR003';
 
-type Row = Record<string, unknown>;
+/**
+ * Härledda ur schemana, ej beskrivna bredvid dem (TASK-63) — se `acceptance-bas.ts`
+ * § fogen. Filen mockar TVÅ EF:er med olika svarsform, så det tidigare gemensamma
+ * `Row`-aliaset delas: ett `Record<string, unknown>` kunde bära båda, en härledd
+ * typ kan inte — och ska inte.
+ */
+type EventRow = z.infer<typeof EventSchema>;
+type RegRow = z.infer<typeof RegistrationSchema>;
 
-function eventRow(overrides: Row = {}): Row {
+function eventRow(overrides: Partial<EventRow> = {}): EventRow {
   return {
     id: EVENT_ID,
     eventlabel: 'RIM 1 (e2e)',
@@ -89,8 +98,10 @@ function listRow(o: {
   startdatum: string | null;
   slutdatum?: string | null;
   typ?: string | null;
-  status?: string | null;
-}): Row {
+  // Bunden till schemat, inte till `string` (TASK-63): EventSchema.status är en
+  // z.enum över EventStatus, så ett stavfel här fälls av typcheckaren.
+  status?: EventRow['status'];
+}): EventRow {
   return {
     id: o.id,
     eventlabel: `${o.namn} (label)`,
@@ -116,7 +127,7 @@ function listRow(o: {
 
 /** Väljarlistan: djuplänkens event (juli/aug 2099) + två bytesmål + ett
     passerat event (2000) som kommande-filtret ska sålla bort. */
-const LIST_EVENTS: Row[] = [
+const LIST_EVENTS: EventRow[] = [
   listRow({
     id: EVENT_ID,
     namn: 'Resor i medvetandet 1',
@@ -139,7 +150,7 @@ const LIST_EVENTS: Row[] = [
   listRow({ id: 'recGAMMAL0000004', namn: 'Passerat event', startdatum: '2000-01-15' }),
 ];
 
-function registrationRow(overrides: Row = {}): Row {
+function registrationRow(overrides: Partial<RegRow> = {}): RegRow {
   return {
     id: 'recANMSKAPAD0001',
     namn: 'Ny Manuell',
@@ -167,7 +178,7 @@ function registrationRow(overrides: Row = {}): Row {
 
 interface MockOptions {
   createStatus?: number;
-  eventOverrides?: Row;
+  eventOverrides?: Partial<EventRow>;
 }
 
 function mockEndpoints(

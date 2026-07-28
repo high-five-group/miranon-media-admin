@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { EventSchema, RegistrationSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, type Page, test } from './support/acceptance-bas';
 
@@ -50,10 +52,17 @@ import { expect, type Page, test } from './support/acceptance-bas';
 const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
 const H1_HALSNING = /^Hej/;
 
-type Row = Record<string, unknown>;
+/**
+ * Härledda ur schemana, ej beskrivna bredvid dem (TASK-63) — se `acceptance-bas.ts`
+ * § fogen. Vyn läser TVÅ EF:er med olika svarsform, så det tidigare gemensamma
+ * `Row`-aliaset delas: ett `Record<string, unknown>` kunde bära båda, en härledd
+ * typ kan inte — och ska inte.
+ */
+type RegRow = z.infer<typeof RegistrationSchema>;
+type EventRow = z.infer<typeof EventSchema>;
 
 /** En komplett Registration-rad (EF-svarets form, Registration.schema). */
-function reg(overrides: Row = {}): Row {
+function reg(overrides: Partial<RegRow> = {}): RegRow {
   return {
     id: `recR${Math.random().toString(36).slice(2, 10)}`,
     namn: null,
@@ -80,7 +89,7 @@ function reg(overrides: Row = {}): Row {
 }
 
 /** En komplett Event-rad (EF-svarets form, Event.schema). */
-function ev(overrides: Row = {}): Row {
+function ev(overrides: Partial<EventRow> = {}): EventRow {
   return {
     id: `recE${Math.random().toString(36).slice(2, 10)}`,
     eventlabel: 'RIM1',
@@ -149,7 +158,10 @@ function fulltData() {
     och en resolver som inte återvänder håller anropet i luften precis som en
     oparkerad rutt gjorde. `slappAlla` löser dem, och svaret läses ur `st.data`
     VID släppet — så data kan bytas mellan pollarna. */
-function hallbarMock(network: NetworkFixture, data: { registrations: Row[]; events: Row[] }) {
+function hallbarMock(
+  network: NetworkFixture,
+  data: { registrations: RegRow[]; events: EventRow[] },
+) {
   const st = {
     data,
     hall: true,
