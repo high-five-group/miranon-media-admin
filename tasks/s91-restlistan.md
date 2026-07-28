@@ -49,7 +49,7 @@ prioritering inom Spår A.
 | 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | ✅ **KLART 2026-07-27** — `TASK-54.1` · `54.2` · `54.3` alla **Done** |
 | 1b | **`TASK-55` · Baselines regenererade** | ✅ **KLART 2026-07-27** — 6 bilder granskade + mergade; bevis-dispatch `30297097792` loggar *"Inga baseline-ändringar"* |
 | 2 | **`TASK-58` + `TASK-57` · Fixturens bruksvärde** | ✅ **KLART 2026-07-27** — båda **Done**, båda gröna per jobb 8/8 (`#292` · `#293`). Klassades `ready-for-agent` samma dag |
-| 3 | **A5 · De 18 acceptance-filerna** — här faller taket | 🔄 **PÅGÅR 2026-07-28** — `TASK-59` (PRD) + sju skivor + QA publicerade. **`59.1`–`59.4` Done, 5 av 18 filer flyttade.** Acceptance-klassen LEVER som eget mutexfritt CI-jobb; kontraktsvakten i drift och larmkedjan bevisad. **`TASK-60` inskjutet och Done** (`T104`): hermetikens andra led är körbart, så `59.5`+`59.6` slipper tretton manuella cykler. **NÄST: `59.5` Mer-ytan** |
+| 3 | **A5 · De 18 acceptance-filerna** — här faller taket | 🔄 **PÅGÅR 2026-07-28** — `TASK-59` (PRD) + sju skivor + QA publicerade. **`59.1`–`59.5` Done, 11 av 18 filer flyttade.** Acceptance-klassen LEVER som eget mutexfritt CI-jobb; kontraktsvakten i drift. **`TASK-60` inskjutet och Done** (`T104`): hermetikens andra led körbart — och det bar sin första skarpa användning i `59.5` (90/90/90, ingen fil behövde skrivas om). **NÄST: `59.6` Event-ytan, de sista sju** |
 | 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ⬜ kan landa när som helst |
 | 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
 
@@ -234,7 +234,31 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
 ### A4 · Grindarnas form
 
 - [ ] Länkgrinden delas — interna blockerande, externa nattlig rapport.
-      `--offline` finns inbyggt; 17 av 19 undantag blir onödiga.
+      **RESEARCH KLAR 2026-07-28:**
+      [`docs/research/lankgrindens-form-2026-07-28.md`](../docs/research/lankgrindens-form-2026-07-28.md).
+      **Domen: formen är branschens mönster med marginal** — av nio projekt som
+      faktiskt öppnades låter **noll** externa länkar blockera en PR, och lychees
+      egen dokumentation rekommenderar exakt `schedule` + `fail: false` +
+      create-issue. `nuxt/nuxt` kör **samma pinnade SHA som vi** men exkluderar
+      `^https?://` i PR.
+      **MEN MOTIVERINGEN NEDAN VAR FEL OCH ÄR KORRIGERAD.** Påståendet *"17 av 19
+      undantag blir onödiga"* håller inte: `.lycheeignore` bär **22 mönster, 21
+      externa, 1 internt** (räknat mekaniskt mot disk, oberoende verifierat).
+      Under `--offline` blir alla 21 verkningslösa **i PR-grinden**, men **noll**
+      blir onödiga i repot om nattrapporten ska vara läsbar — `github/docs`
+      underhåller 155 rader och `nuxt` 31 poster FÖR SINA ICKE-BLOCKERANDE
+      körningar. **Uppdelningen tar bort PR-blockeringen, inte listan.**
+      **Tre fynd utöver frågan:** `--accept-timeouts` (lychee PR #2063) hade
+      lagat `cs.umd.edu`-instansen utan någon uppdelning alls · **två av våra
+      egna undantag vilar på ett faktafel** — felcachningen togs bort i lychee
+      v0.24.0 och vi kör v0.24.2 (verifierat mot den SHA-pinnade `action.yml`),
+      så sched.com-postens motivering är ogiltig och `--cache-exclude-status
+      '429'` är en no-op · 403 återförsöks **aldrig** (bara 5xx/408/429), vilket
+      förklarar varför merparten av listan är just den klassen.
+      **ADR-baren nås smalt** — inte för formen (den är ADR-077:s
+      presubmit/postsubmit-beslut) utan för att **ADR-029 § Medvetna
+      utelämningar punkt 2 (add-only-policyn) rivs öppet**. Marcus väljer mellan
+      kort ADR och `§`-not i ADR-077 med explicit *"ersatt av"*-rad.
       **Empirin är nu TRE oberoende instanser samma dag (2026-07-27)**, alla med
       samma form — extern yta fäller en PR som inte rör den:
       1. `nx.dev`-paret (Del 8.2) — giltiga länkar, transient, överlevde lychees
@@ -261,11 +285,15 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
       **alla 66 befintliga `ready-for-agent`-kort har AC — noll undantag** — och
       att fynd-korten hade noll. 13 AC skrevs mot läst kod. `#292` · `#293`,
       båda gröna per jobb 8/8
-- [~] **De acceptance-filerna, byggda med MSW — SPECCAT 2026-07-27 OCH PÅBÖRJAT
-      2026-07-27/28.** `TASK-59` (PRD) + sju skivor + QA-kort. **`59.1`
-      (prefaktorering) · `59.2` (kontraktsvakten) · `59.3` (klassen + Hem-piloten)
-      · `59.4` (Personer-ytan) alla Done — 5 av 18 filer flyttade.** Kvar: `59.5`
-      Mer (6) · `59.6` Event (7) · `59.7` mätningen · `59.8` QA.
+- [~] **De acceptance-filerna, byggda med MSW — SPECCAT 2026-07-27, PÅGÅR.**
+      `TASK-59` (PRD) + sju skivor + QA-kort. **`59.1` (prefaktorering) · `59.2`
+      (kontraktsvakten) · `59.3` (klassen + Hem-piloten) · `59.4` (Personer-ytan)
+      · `59.5` (Mer-ytan, sex filer) alla Done — 11 av 18 filer flyttade.**
+      Kvar: `59.6` Event (7, PÅGÅR) · `59.7` mätningen (tar `T105`) · `59.8` QA.
+      **`59.5` bar självtestets första skarpa användning:** 90 tester / 90 fällda
+      / 90 med vakten som orsak — alla 39 nya tester hängde på fixturen direkt.
+      Pre-flight-kontrollen gav ett äkta fynd: en levande pekare i ett
+      research-dokument mot den form skivan ersatte, lagad med historiken bevarad.
       **Antalet är 18, inte 19:** klassningen
       räknades om ur hermetik-mätningens rådata (863 poster, 32 filer) i stället
       för att ärvas. Den mekaniska räkningen reproducerar ADR-080 exakt (19 rena

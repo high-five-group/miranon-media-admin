@@ -15,6 +15,33 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-28, åttonde resumen — A5:s slutspurt)** —
+**`TASK-60` + `TASK-59.5` + `TASK-61` landade; A5 på 11 av 18 filer.**
+`TASK-60` (hermetik-självtestet, `T104`) gav A5 ett körbart tvåsidigt bevis, och
+**det bar sin första skarpa användning redan en skiva senare**: `59.5` gav
+`90 tester / 90 fällda / 90 av vakten` — alla 39 nya tester hängde på fixturen
+direkt, ingen fil behövde skrivas om. `59.5` fångade dessutom **HTTP-verb-fällan**
+(`page.route` matchar alla metoder, `http.get`/`http.post` inte) och en **levande
+länk-pekare** i ett research-dokument. **`59.6` PÅGÅR** — de sista sju, med
+checksumma i briefen: e2e ska landa på **14** filer, acceptance på **18**, de
+fjorton namngivna. **NATTNÄTET LARMADE** (`#312`): kontraktsvakten föll på
+`[TOMT-UNDERLAG]` — **race** mot purge (grön dispatch läste 2 s före, röd natt 8 s
+efter) men **rotorsaken är designluckan**: `get-event-notes` mäter mot sentinel-data
+som purge är designad att radera. Vaktens FÖRSTA schemalagda nattkörning; den
+tidigare "larmkedjan bevisad" var timing-tur. → **`TASK-61`**, tas efter `59.6`.
+**A4-RESEARCHEN KLAR:** uppdelningen är branschens mönster (9 projekt, noll låter
+externa länkar blockera PR), **men vår motivering "17 av 19" är fel** — 22 mönster,
+21 externa, och **noll** blir onödiga om nattrapporten ska vara läsbar. Två av våra
+undantag vilar på ett faktafel (felcachning borttagen i lychee v0.24.0, vi kör
+v0.24.2). ADR-baren nås smalt — **Marcus-beslut**. **TVÅ EGNA FEL:**
+kostnadsprognosen (lokal mätning projicerad till CI, 5,8× fel — lagad, `289 s → 75 s`)
+och **BEHIND-svälten** (`L328`, nedskriven sedan S81 — jag gick i den ändå).
+**SKÖRD: 4 fragment** [UNIVERSAL ×4]. **NÄSTA: `59.6` → `59.7` mätningen (tar
+`T105`) → `59.8` QA (`ready-for-human`, Marcus).** Numrering:
+91/082/L360 (**27** fragment)/**T106**/f46/**task-62**. Karta:
+`tasks/s91-restlistan.md` § VAR VI ÄR. Full narrativ: sessionsdok S91 **Del 15**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ ÅTERUPPTAGEN (2026-07-28, åttonde resumen)** — **`lifecycle`
 tillbaka i `active`; numreringen höll på alla sex axlar** (ADR `082` · `L360` +
 **23** fragment · `T105` · `f46` · `task-60`). Kortstatus läst via backlog-CLI:t:
