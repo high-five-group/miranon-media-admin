@@ -13,7 +13,7 @@
     "typecheck": "tsr generate && tsc -b --noEmit",
     "typecheck:tests": "tsc --noEmit -p tsconfig.tests.json",
     "lint": "biome check .",
-    "lint:prose": "vale docs tasks README.md CHANGELOG.md SECURITY.md CONTRIBUTING.md ORDLISTA.md",
+    "lint:prose": "vale --glob='!.claude/worktrees/**' docs tasks .claude README.md CHANGELOG.md SECURITY.md CONTRIBUTING.md ORDLISTA.md",
     "check:docs": "bash scripts/check-docs.sh",
     "format": "biome format --write .",
     "test:api": "PLAYWRIGHT_NO_WEB_SERVER=1 playwright test --project=api-pure --project=api-staging",

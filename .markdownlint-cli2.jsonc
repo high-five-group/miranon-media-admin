@@ -39,12 +39,23 @@
   // tasks/lessons.d/ = nummerlösa lesson-fragment (ADR-081). Måste lintas HÄR,
   // eftersom ett olintat fragment annars bär in sina fel i lessons.md vid
   // konsolideringen — då fälls grinden på en fil ingen just rörde.
+  //
+  // .claude/**/*.md tillagd S91 (TASK-71). Agentdefinitionerna är prosa som
+  // styr agenternas arbete och låg tidigare utanför SAMTLIGA docs-grindar.
+  // Posten hör ihop med .claude/**-raderna i ci.yml:s BÅDA changed-files-listor:
+  // klassningen gör filerna testsvit-skippade, och då måste någon grind faktiskt
+  // läsa dem — annars är de tyst ovaliderade (L322-klassen).
+  // Egen post krävs: ingen av globbarna ovan når katalogen, och ett blott '**'
+  // hade inte heller gjort det — dot-yta matchas inte utan dot: true.
+  // MD041 är scope-lokalt omkonfigurerad i .claude/.markdownlint.jsonc — inte
+  // avstängd; se den filen för varför.
   "globs": [
     "docs/**/*.md",
     "tasks/*.md",
     "tasks/sessions/*.md",
     "tasks/threads/*.md",
     "tasks/lessons.d/*.md",
+    ".claude/**/*.md",
     "./*.md"
   ],
 
@@ -52,6 +63,14 @@
     "tasks/sessions/archive/**",
     "docs/archive/**",
     "docs/reference/pocock/**",
+    // .claude/worktrees/ = Claude Code:s agent-worktrees, alltså KOMPLETTA
+    // checkouts av repot på andra grenar. De är gitignorerade, men
+    // markdownlint-cli2 läser inte .gitignore — mätt 2026-07-28: utan denna
+    // rad drar .claude/**/*.md in varje .md-fil i varje aktiv worktree, och
+    // grinden faller då på en annan grens innehåll. Samma klass som
+    // node_modules/**- och dist/**-raderna nedan: gitignorerad yta som ändå
+    // måste räknas upp för hand.
+    ".claude/worktrees/**",
     // Rå-transkript, vendoriserat 2026-07-25 (S87). Endast KÄLLFILEN exkluderas
     // — destillatet i samma katalog är vår egen prosa och grindas normalt.
     // Snävare än pocock-precedenten med avsikt: exkludera råmaterial, inte hyllan.
