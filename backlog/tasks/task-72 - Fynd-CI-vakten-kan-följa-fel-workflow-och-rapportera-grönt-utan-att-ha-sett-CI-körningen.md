@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 19:31'
+updated_date: '2026-07-28 21:13'
 labels:
   - ready-for-agent
 dependencies: []
@@ -49,13 +50,15 @@ Relaterat, EJ samma sak: restlistans A3 bär redan en post om att rätta en fela
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Defekten reproducerad före fix: en commit med både CI och CodeQL där vakten utan --workflow väljer fel körning — båda run-ID redovisade
-- [ ] #2 Formvalet fattat och motiverat i PR-texten mot repots config-driven-konvention (hårdkodat namn, policy-fil, härledning ur ruleset, eller alla-workflows)
-- [ ] #3 Vakten följer rätt körning i lägena --pr, --commit och --branch — ett run-ID per läge redovisat
-- [ ] #4 Tvåsidigt bevis: vakten rapporterar RÖTT när CI är röd men en annan workflow på samma commit är grön
-- [ ] #5 scripts/test-ci-wait.sh eller motsvarande täcker valet av körning, så defekten inte kan återuppstå tyst
-- [ ] #6 CONTRIBUTING.md:s DoD-rad uppdaterad om den anger en anropsform som inte längre är säker
+- [x] #1 Defekten reproducerad före fix: en commit med både CI och CodeQL där vakten utan --workflow väljer fel körning — båda run-ID redovisade
+- [x] #2 Formvalet fattat och motiverat i PR-texten mot repots config-driven-konvention (hårdkodat namn, policy-fil, härledning ur ruleset, eller alla-workflows)
+- [x] #3 Vakten följer rätt körning i lägena --pr, --commit och --branch — ett run-ID per läge redovisat
+- [x] #4 Tvåsidigt bevis: vakten rapporterar RÖTT när CI är röd men en annan workflow på samma commit är grön
+- [x] #5 scripts/test-ci-wait.sh eller motsvarande täcker valet av körning, så defekten inte kan återuppstå tyst
+- [x] #6 CONTRIBUTING.md:s DoD-rad uppdaterad om den anger en anropsform som inte längre är säker
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { EventNoteSchema, EventSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, type Page, test } from './support/acceptance-bas';
 
@@ -39,10 +41,25 @@ import { expect, type Page, test } from './support/acceptance-bas';
 
 const EVENT_ID = 'recNOTES000000001';
 
+/**
+ * Härledda ur schemana, ej beskrivna bredvid dem (TASK-63) — se `acceptance-bas.ts`
+ * § fogen. Filen mockar TVÅ läs-EF:er med olika svarsform, så det tidigare
+ * gemensamma `Json`-aliaset delas.
+ */
+type EventRow = z.infer<typeof EventSchema>;
+type NoteRow = z.infer<typeof EventNoteSchema>;
+
+/**
+ * `Json` finns KVAR — men bara för den infångade REQUEST-payloaden, aldrig för en
+ * fixturrad. Den är det appen SKICKAR till create-event-note, inte det EF:en
+ * svarar, och har därför inget läs-schema att härledas ur; att binda den till
+ * `EventNoteSchema` vore att påstå att write-formen är läs-formen. Testet
+ * asserterar payloaden strukturellt (`toEqual`), vilket är rätt fog för den.
+ */
 type Json = Record<string, unknown>;
 
 // Genomfört event 10–11 juni 2026 → fas-etiketterna kan bevisas (Under/Efter/Innan).
-function eventGenomfort(overrides: Json = {}): Json {
+function eventGenomfort(overrides: Partial<EventRow> = {}): EventRow {
   return {
     id: EVENT_ID,
     eventlabel: 'Skövde – RIM 1',
@@ -93,7 +110,7 @@ const NOTE_INNAN = {
 const DEMO_NOTES = [NOTE_EFTER, NOTE_UNDER, NOTE_INNAN];
 
 interface MockOpts {
-  notes?: Json[];
+  notes?: NoteRow[];
   notesStatus?: number;
 }
 
@@ -105,7 +122,7 @@ interface MockOpts {
  */
 function mockSidan(network: NetworkFixture, opts: MockOpts = {}): { captured: () => Json | null } {
   const notesStatus = opts.notesStatus ?? 200;
-  let notesList: Json[] = opts.notes ?? DEMO_NOTES;
+  let notesList: NoteRow[] = opts.notes ?? DEMO_NOTES;
   let capturedBody: Json | null = null;
 
   network.use(
@@ -118,7 +135,7 @@ function mockSidan(network: NetworkFixture, opts: MockOpts = {}): { captured: ()
     ),
     http.post(EF('create-event-note'), async ({ request }) => {
       capturedBody = (await request.json()) as Json;
-      const created = {
+      const created: NoteRow = {
         id: `recNew${notesList.length}`,
         forfattare: 'Lotta',
         text: String(capturedBody.text ?? ''),

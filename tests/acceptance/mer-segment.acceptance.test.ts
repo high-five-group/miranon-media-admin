@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { EventSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, type Page, test } from './support/acceptance-bas';
 
@@ -40,11 +42,16 @@ import { expect, type Page, test } from './support/acceptance-bas';
  * tangentbords-nav. LÄS-konsumtion → ingen write-affordans.
  */
 
-type EventRow = Record<string, unknown>;
+/** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
+type EventRow = z.infer<typeof EventSchema>;
 
 /** En komplett Event-rad (EF-svarets form, EventSchema). Alla fält närvarande —
  * adaptern .parse():ar mot z.array(EventSchema), så ofullständig rad → parse-fel. */
-function ev(eventNamn: string | null, typ: string | null, overrides: EventRow = {}): EventRow {
+function ev(
+  eventNamn: string | null,
+  typ: string | null,
+  overrides: Partial<EventRow> = {},
+): EventRow {
   return {
     id: `recEV${Math.random().toString(36).slice(2, 10)}`,
     eventlabel: eventNamn,
