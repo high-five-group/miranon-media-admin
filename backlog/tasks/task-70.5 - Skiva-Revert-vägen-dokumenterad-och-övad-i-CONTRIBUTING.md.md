@@ -1,10 +1,10 @@
 ---
 id: TASK-70.5
 title: 'Skiva: Revert-vägen dokumenterad och övad i CONTRIBUTING.md'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 16:33'
-updated_date: '2026-07-28 19:22'
+updated_date: '2026-07-28 20:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -41,8 +41,8 @@ CONTRIBUTING.md § Landnings-ordningen (rad 155-212) beskriver hur PR:er sekvens
 - [x] #1 CONTRIBUTING.md har en egen sektion för revert-vägen, skild från § Landnings-ordningen
 - [x] #2 Receptet använder git revert -m 1 mot merge-commits och motiverar varför — rulesetets allowed_merge_methods = merge citeras som skäl
 - [x] #3 Vägen går via PR, inte direktpush: receptet är förenligt med ADR-076 och med att required-checken är strict
-- [ ] #4 Reverten är ÖVAD skarpt mot en avsiktligt införd no-op — PR-nummer för landningen, PR-nummer för reverten och båda SHA:na redovisade
-- [ ] #5 Tiden från beslut till landad revert är MÄTT i den övningen och skriven i sektionen — det talet är exponeringsfönstret A7:5 och A7:6 lutar sig mot
+- [x] #4 Reverten är ÖVAD skarpt mot en avsiktligt införd no-op — PR-nummer för landningen, PR-nummer för reverten och båda SHA:na redovisade
+- [x] #5 Tiden från beslut till landad revert är MÄTT i den övningen och skriven i sektionen — det talet är exponeringsfönstret A7:5 och A7:6 lutar sig mot
 - [x] #6 Sektionen säger vad som INTE går att backa lika enkelt, om något sådant finns — exempelvis en landad datamigrering eller en ändrad GitHub-inställning
 - [x] #7 npm run check:docs grön efter ändringen (nio grindar; CONTRIBUTING.md ligger innanför både markdownlint- och vale-scopet)
 <!-- AC:END -->
@@ -82,6 +82,24 @@ AC 4 OCH 5 OBOCKADE — AVVIKELSE MOT KORTET, EJ UTJÄMNAD:
 Kortet kräver att no-op:en LANDAS i main via PR och revertas hela vägen, alltså två PR-nummer och en landad revert. Det kräver två merges till main. En bygg-agent mergar inte till main, och två landningar mitt i en parallell körning hade satt de två andra agenternas PR:er i BEHIND — precis den skada § Landnings-ordningen finns för att undvika. Övningen kördes därför på egen gren. Bevisat: hela git-mekaniken i båda riktningar plus fyra av fem tidsled. Omätt: armering -> landad merge-commit.
 ÅTERSTÅR för full AC 4/5: orkestreraren kör samma kedja skarpt mot main när PR-kön är tom (no-op-PR landas, revert-PR landas, två PR-nummer och tiden noteras) — eller så faller talet ut första gången vägen används på riktigt, vilket sektionen redan säger.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererat i PR #370 (commit 0bb1e53, merge 40b1c9f), CI grön per jobb i körning 30392878126. AC 4 och 5 stängda av orkestreraren i en skarp övning mot main efteråt (PR #374 + #375), eftersom de kräver två armeringar och en bygg-agent inte får armera.
+
+SEKTIONEN: CONTRIBUTING.md § Revert-vägen — utlösare, rollfördelning (Marcus beslutar, agenten förbereder, orkestreraren armerar), köordningen vid brådska (revert-PR först, form B), stegrecept med -m 1, motivering ur rulesetets allowed_merge_methods = merge, fyra poster om vad som INTE backas lika enkelt, och övningens utfall.
+
+ÖVNINGEN, TVÅ LED. Agenten körde git-mekaniken i egen worktree med träd-identitet som bevis. Orkestreraren körde sedan kedjan skarpt mot main: no-op landad i PR #374 (merge ed51b95), backad i PR #375 (revert-commit 745ec55, merge 894a3bd). Filen försvann ur main.
+
+TRE FALL REPRODUCERADE MOT EN RIKTIG MAIN-LANDNING: revert utan -m ger exit 128; -m 2 --no-commit ger exit 0 med NOLL rader stagade och filen kvar (tyst misslyckande); -m 1 ger exit 0 och 0 rader diff mot före-läget.
+
+MÄTNINGEN (AC 5): no-op påbörjad till revert-commit 118 s. Revert-commit till landad merge-commit 25 min 16 s. Det andra talet är INTE revert-vägens naturliga kostnad — CI för en docs-revert är under en minut. Nästan hela tiden var köväntan på staging-tests-mutexen, hållen av post-merge-lagrets körning på no-op:ens egen landning. Lagret ärver inte klassningen och körde full staging på åtta rader markdown.
+
+FYNDET SOM ÖVNINGEN GAV: TASK-73 mintat. En revert kan i dag ta ~25 minuter att landa i stället för ~1 minut, och just den siffran är exponeringsfönstret A7:5 och A7:6 lutar sig mot. TASK-73 bör därför landa före dem. Utan den skarpa övningen hade talet aldrig blivit synligt — agentens worktree-mätning gav 66 s till landningsklar PR, vilket är korrekt men inte hela vägen.
+
+KVARSTÅENDE, EJ DENNA SKIVA: ci-wait.sh kan följa fel workflow (TASK-72, upptäckt av samma agent under detta arbete).
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

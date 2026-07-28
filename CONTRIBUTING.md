@@ -391,9 +391,31 @@ Tre mätningar, alla mot `b9dada7`:
 **Övningens avgränsning, öppet bokförd.** No-op:en landade på övningsgrenen, inte
 i `main`, och steg 4 (armeringen) utfördes inte av bygg-agenten — det är
 orkestrerarens knapp, och kontraktet gäller även under en övning. Kedjans
-git-mekanik är därmed bevisad hela vägen; det led som återstår att mäta skarpt är
-armering → landad merge-commit, och det talet faller ut första gången vägen
-används på riktigt.
+git-mekanik är därmed bevisad hela vägen.
+
+**Det ledet är nu också mätt skarpt — och talet är sämre än väntat.** Samma dag
+kördes kedjan hela vägen mot `main` av orkestreraren: no-op:en landade i PR
+[#374](https://github.com/high-five-group/miranon-media-admin/pull/374)
+(merge-commit `ed51b95`) och backades i PR
+[#375](https://github.com/high-five-group/miranon-media-admin/pull/375)
+(revert-commit `745ec55`, merge-commit `894a3bd`). Filen försvann ur `main`;
+träd-identiteten höll. Alla tre kommandona ovan reproducerades mot en riktig
+`main`-landning, inklusive att `-m 2` gav `exit 0` med **noll** rader stagade och
+filen kvar.
+
+| Led | Mätt |
+|---|---|
+| No-op påbörjad → revert-commit skapad | **118 s** |
+| Revert-commit → **landad** merge-commit i `main` | **25 min 16 s** |
+
+**Läs det andra talet rätt: det är inte revert-vägens naturliga kostnad.** CI för
+en docs-revert är under en minut. Nästan hela tiden var köväntan på
+`staging-tests`-mutexen, som hölls av post-merge-lagrets körning på no-op:ens
+egen landning — lagret ärver inte klassningen och körde full staging-svit på en
+ändring om åtta rader markdown. Fyndet är registrerat som `TASK-73`, och tills
+det är löst gäller talet ovan: **en revert kan i dag ta ~25 minuter att landa,
+inte ~1 minut**. Just den siffran är exponeringsfönstret A7:5 och A7:6 lutar sig
+mot, och den är skälet att `TASK-73` bör landa före dem.
 
 **Varför sektionen står här.** A7:5 och A7:6 flyttar kontroller från den
 blockerande PR-grinden till `main` efter merge. Den flytten är försvarbar bara
