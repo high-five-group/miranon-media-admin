@@ -411,11 +411,20 @@ filen kvar.
 **Läs det andra talet rätt: det är inte revert-vägens naturliga kostnad.** CI för
 en docs-revert är under en minut. Nästan hela tiden var köväntan på
 `staging-tests`-mutexen, som hölls av post-merge-lagrets körning på no-op:ens
-egen landning — lagret ärver inte klassningen och körde full staging-svit på en
-ändring om åtta rader markdown. Fyndet är registrerat som `TASK-73`, och tills
-det är löst gäller talet ovan: **en revert kan i dag ta ~25 minuter att landa,
-inte ~1 minut**. Just den siffran är exponeringsfönstret A7:5 och A7:6 lutar sig
-mot, och den är skälet att `TASK-73` bör landa före dem.
+egen landning — lagret ärvde inte klassningen och körde full staging-svit på en
+ändring om åtta rader markdown.
+
+**Orsaken är åtgärdad — `TASK-73`.** `post-merge.yml` har sedan dess ett
+`klassning`-jobb som ÄRVER `ci.yml`:s D0-beslut för exakt det landade trädet och
+hoppar svit-anropet när PR-grinden redan skippade det. En docs-landning tar
+därmed inte längre `staging-tests`-mutexen, och blockerar inte revert-vägen.
+Kod-landningar kör full svit som förut: kontrollen är avgränsad, inte borttagen.
+
+**Talet 25 min 16 s står kvar som HISTORISK mätning av läget före fixen.** Det
+nya talet är inte mätt än och skrivs in här först när nästa skarpa revert ger
+det — ett projicerat tal är ingen mätning. Just den siffran är exponerings-
+fönstret A7:5 och A7:6 lutar sig mot, vilket var skälet att `TASK-73` landade
+före dem.
 
 **Varför sektionen står här.** A7:5 och A7:6 flyttar kontroller från den
 blockerande PR-grinden till `main` efter merge. Den flytten är försvarbar bara
