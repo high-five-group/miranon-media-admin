@@ -50,7 +50,7 @@ prioritering inom Spår A.
 | 1b | **`TASK-55` · Baselines regenererade** | ✅ **KLART 2026-07-27** — 6 bilder granskade + mergade; bevis-dispatch `30297097792` loggar *"Inga baseline-ändringar"* |
 | 2 | **`TASK-58` + `TASK-57` · Fixturens bruksvärde** | ✅ **KLART 2026-07-27** — båda **Done**, båda gröna per jobb 8/8 (`#292` · `#293`). Klassades `ready-for-agent` samma dag |
 | 3 | **A5 · De 18 acceptance-filerna** — här faller taket | ✅ **HELT KLART 2026-07-28 — `TASK-59.1`–`59.8` SAMTLIGA Done** (disk-verifierat) — `TASK-59` (PRD) + sju skivor + QA publicerade. **`59.1`–`59.6` Done — SAMTLIGA 18 filer ute.** Checksumman gick ihop exakt: e2e **14** / acceptance **18**, de fjorton mot namnlista. Staging-sviten **9,10 → 6,50 min** vid landning (formell mätning är `59.7`:s). **NY RISK: acceptance-jobbet 6,7 min mot tak 8** — sviten växte 51→152 tester och självtestet kör dem en gång till. Acceptance-klassen LEVER som eget mutexfritt CI-jobb; kontraktsvakten i drift. **`TASK-60` inskjutet och Done** (`T104`): hermetikens andra led körbart — och det bar sin första skarpa användning i `59.5` (90/90/90, ingen fil behövde skrivas om). **`TASK-61` DONE 2026-07-28** (PR `#323`) — kontraktsvaktens race stängt med permanent anteckning-fixtur på arbetskö-eventet; purge-immuniteten prövad mot policyns egna funktioner, ej antagen. Ärende `#312` stängt med åtgärd. Acceptance-jobbet mätt **6m47s** i den landningen — tak-risken bekräftad live. **⚠️ TAK-MARGINALEN HAR KRYMPT MÄTBART:** acceptance-jobbet `6m47s` (`#323`) → `7m32s` (`#324`) mot tak **8 min** — samma testmängd, 45 s skillnad mellan två körningar, marginal 28 s. ⚠️ **ORKESTRERARENS KARAKTÄRISERING "REN VARIANS" VAR FEL OCH RÄTTAS AV `59.7`:s MÄTNING NEDAN** — spridningen var inte diffust brus utan lokaliserbar till uppstarten (~80 % infrastruktur). Slutsatsen höll (marginalen låg inom spridningen, falsk röd var reell) och prioriteringen var rätt, men formuleringen antydde en oförklarlig varians där en mätbar orsak fanns. **`59.7` LEVERERAD 2026-07-28** — mätningen formell och CI-hämtad: mutex-hållningen **9,77 → 6,55 min** median (−32,9 %, faktor **1,49** mot projektionens 3,8), acceptance-jobbet **6,78 min** median. **Avvikelsen är räknad, inte gissad:** projektionens 410 s kom ur **296 tester som mockar**, men kriteriet är fil-nivå och flyttade **152 tester i 18 hela filer** — 147 mockande tester bor i filer med minst ett live-test och lämnade aldrig e2e. Modellen höll (inom 8 % på rätt population); populationen gjorde inte det. **Tak-marginalen åtgärdad:** `timeout-minutes` 8 → 12 på acceptance-jobbet — de 45 s mellan `#323` och `#324` mättes per steg och är **~80 % infrastruktur** (uppstart 24 → 60 s, varav browser-cachen ensamt 4 → 33 s), inte testvarians. **`T105` stängd** (flagg-vakt i teardown, prövad åt båda håll). **AC#3 wirad:** klass-lokal acceptance-ändring släcker staging via samma lever som D1. Fullt utfall: [mätningen](../docs/research/acceptance-utbrytningens-utfall-2026-07-28.md). **`59.8` QA-VANDRINGEN KLAR 2026-07-28** — sju steg körda på Marcus delegering, utfall nedskrivet per steg (sessionsdok Del 17). **Steg 1 levererade AC #3:s POSITIVA GREN som `59.7` inte kunde köra:** PR `#335` hade hela sin diff under `tests/acceptance/**` och gav `Staging sentinel purge` **skipped** + `Staging (API + E2E)` **skipped** + `Acceptance (hermetisk)` **grön** — exakt receptet i mätningen § 7. **Klassningen bekräftad korrekt, ej riven.** Återkoppling **7 min 33 s**, varav **noll väntan på annan körning**. Den äkta ändring `59.7` saknade blev steg 4:s eget test (personlistans 500-felläge). **Fem fynd → `TASK-62`–`66`;** steg 3 och 6 gav inget fynd, ett fynd förkastades explicit. **Steg 7:** API-sviten **397 passed exit 0**, omfattning bevisat orörd (18 filer ut ur `tests/e2e/`, **noll** ur `tests/api/`) |
-| 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | 🔄 **MINTAD SOM `TASK-67` 2026-07-28 och UNDER ARBETE.** Posten visade sig vara A2 punkt 5 (landnings-ordningen/BEHIND), ej en fristående kadens-post — se A2 nedan |
+| 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ✅ **KLART 2026-07-28** som `TASK-67` (PR `#339`, grön per jobb). Posten visade sig vara A2 punkt 5 (landnings-ordningen/BEHIND), ej en fristående kadens-post — tabellens namn var det missvisande. Regeln bor i `CONTRIBUTING.md` § Landnings-ordningen med pekare i `CLAUDE.md`; agenten lade till en fjärde form (`update-branch` aldrig mot arbetande agent) som inte fanns i kortet |
 | 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
 
 **Varför A3 var kritiska vägen och inte hygien:** staging-sviten tar 9,25 min
@@ -595,8 +595,28 @@ kom ur subagenter med genuint färska ögon, tre ur egna prövningar:
 
 **Skiva mintad ur restlistan 2026-07-28:**
 
-- [ ] **`TASK-67`** — landnings-ordningen som regel (= A2 punkt 5 = VAR VI
-      ÄR-tabellens steg 4). **UNDER ARBETE**, delegerad skiva
+- [x] **`TASK-67` — DONE 2026-07-28** (PR `#339`, CI grön per jobb).
+      Landnings-ordningen som regel (= A2 punkt 5 = VAR VI ÄR-tabellens steg 4),
+      hemvist `CONTRIBUTING.md` § Landnings-ordningen + pekare i `CLAUDE.md`
+      (`#341`). Agenten lade till **en fjärde form som inte fanns i kortet:**
+      `update-branch` får aldrig köras mot en gren vars bygg-agent arbetar —
+      varje push avbryter grenens körning. Empirin verifierad mot sessionsdok
+      rad 219 · 3102 · 3110. **Regeln tillämpades på sin egen landning.**
+
+**Kort ur kontraktsdrift-utredningen 2026-07-28** (Marcus beställde;
+tre parallella läs-pass; fullt utfall i
+[kartläggningen](../docs/research/kontraktsdrift-skyddet-2026-07-28.md)):
+
+- [ ] **`TASK-68`** — kontraktsvakten från **tre till sju** fixturhandlers.
+      Fyra GET i nattjobbet, alltså sekunder. **Hade fångat `TASK-52` första
+      natten.** Urvalet valdes ursprungligen på anropsvolym — men risken följer
+      inte volym: `get-person` har ETT anrop och bär den enda live-verifierade
+      produktionsdefekten. **UNDER ARBETE**, delegerad skiva
+- [ ] **`TASK-69`** — vakten kortsluter på allt utom HTTP 200, så felkontrakten
+      **404 och 400 är osynliga**. Redan glidit: fixturens `get-person` svarar
+      200 med tom kropp där EF:en har uttryckligt 404-kontrakt, och fixturens
+      egen kommentar beskriver ett beteende borttaget i `task-54.2`.
+      `TASK-68` är förkrav
 
 **Förkastat EXPLICIT under vandringen** (registreras, inte tyst): vaktens
 *"Menade du"* pekade på `get-person` när `get-persons` saknades — en ÄKTA annan
