@@ -263,7 +263,7 @@ jobs:
   # strukturellt inte fälla en PR. `continue-on-error` vore FEL väg: det gör
   # needs-resultatet 'success' och larm-jobbet nedan hade aldrig fyrat.
   #
-  # INGEN staging-tests-MUTEX: vakten gör tre GET och muterar ingenting.
+  # INGEN staging-tests-MUTEX: vakten gör sju GET och muterar ingenting.
   # Sentinel-rader som suite-jobbet skapar samtidigt ändrar antalet poster men
   # inte deras form, och form är allt som jämförs. Att ta mutexen hade
   # serialiserat natten en gång till utan att köpa något.

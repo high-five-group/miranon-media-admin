@@ -45,6 +45,10 @@ function kopia<T>(varde: T): T {
 const NOTES = KONTRAKTSFALL.find((f) => f.endpoint === 'get-event-notes');
 if (NOTES === undefined) throw new Error('get-event-notes saknas i KONTRAKTSFALL');
 
+/** Det verkliga get-person-fallet — vaktens djupaste enkelpost-kuvert (TASK-68). */
+const PERSON = KONTRAKTSFALL.find((f) => f.endpoint === 'get-person');
+if (PERSON === undefined) throw new Error('get-person saknas i KONTRAKTSFALL');
+
 /** Ett skarpt svar som är EXAKT fixturen — utgångsläget "allt stämmer". */
 function skarptLikaSomFixturen(fall: Kontraktsfall): SkarptSvar {
   return { status: 200, kropp: kopia(fall.fixtur) };
@@ -52,6 +56,11 @@ function skarptLikaSomFixturen(fall: Kontraktsfall): SkarptSvar {
 
 function poster(svar: SkarptSvar, nyckel: string): Record<string, unknown>[] {
   return (svar.kropp as Record<string, Record<string, unknown>[]>)[nyckel];
+}
+
+/** Enkelpost-kuvertets enda post — `{ person: {…} }` (TASK-68). */
+function enkelpost(svar: SkarptSvar, nyckel: string): Record<string, unknown> {
+  return (svar.kropp as Record<string, Record<string, unknown>>)[nyckel];
 }
 
 function klasser(fall: Kontraktsfall, skarpt: SkarptSvar): string[] {
@@ -171,6 +180,60 @@ test.describe('kontraktsvakten — larmar när STAGING glidit', () => {
   });
 });
 
+test.describe('kontraktsvakten — enkelpost-kuvert', () => {
+  /**
+   * `get-event` och `get-person` svarar med ETT objekt, inte en lista. Utan
+   * `enkelpost` hade `listaAvPoster` gett `undefined` och vakten larmat KUVERT
+   * varje natt om sin egen form i stället för om kontraktet — därför prövas
+   * wrappningen här, i den rena sviten, och inte först mot staging.
+   */
+
+  test('enkelpost går genom SAMMA jämförelse som en lista, inte en genväg', () => {
+    // Beviset att wrappningen matar hela kedjan: en okänd nyckel i staging ska
+    // ge exakt samma klass som den gör i ett listfall.
+    const skarpt = skarptLikaSomFixturen(PERSON);
+    enkelpost(skarpt, PERSON.kuvertnyckel).nyttFaltFranBasen = 'AT-Max';
+
+    expect(klasser(PERSON, skarpt)).toContain('OKÄND-NYCKEL-STAGING');
+    expect(larmtext(PERSON, skarpt)).toContain('nyttFaltFranBasen');
+  });
+
+  test('TASK-52:s form — motivering som ARRAY i staging → SCHEMA-STAGING', () => {
+    // DEN LIVE-VERIFIERADE PRODUKTIONSDEFEKTEN, spelad upp mot vakten utan
+    // staging: `Motivering (text)` är ett lookup i Airtable och returnerar en
+    // array, medan PersonDetail.schema.ts:44 kräver `z.string().nullable()`.
+    // Kartläggningen (§ 6, lager 1) säger att vakten hade fällt den FÖRSTA
+    // NATTEN om get-person stått i listan. Det påståendet är ett antagande så
+    // länge ingen prövat det — här prövas det.
+    const skarpt = skarptLikaSomFixturen(PERSON);
+    enkelpost(skarpt, PERSON.kuvertnyckel).motivering = ['Det är dags', null];
+    const utfall = klasser(PERSON, skarpt);
+
+    expect(utfall).toContain('SCHEMA-STAGING');
+    // Typdivergensen fyrar också: sträng i fixturen, lista i staging. Två
+    // oberoende signaler på samma drift.
+    expect(utfall).toContain('TYPDIVERGENS');
+    expect(larmtext(PERSON, skarpt)).toContain('motivering');
+  });
+
+  test('enkelpost-fall som får en LISTA → KUVERT och inget annat', () => {
+    // Kuvertet har bytt form från objekt till lista. Att tolerera det hade
+    // gjort vakten blind för precis den drift den finns för att se.
+    const avvikelser = granskaKontrakt(PERSON, { status: 200, kropp: { person: [] } });
+
+    expect(avvikelser.map((a) => a.klass)).toEqual(['KUVERT']);
+    expect(avvikelser[0].rubrik).toContain("posten 'person'");
+  });
+
+  test('listfall som får ett OBJEKT → KUVERT och inget annat', () => {
+    // Spegelvänt mot testet ovan — samma spärr åt andra hållet.
+    const avvikelser = granskaKontrakt(NOTES, { status: 200, kropp: { notes: {} } });
+
+    expect(avvikelser.map((a) => a.klass)).toEqual(['KUVERT']);
+    expect(avvikelser[0].rubrik).toContain("listan 'notes'");
+  });
+});
+
 test.describe('kontraktsvakten — typdivergens', () => {
   // Syntetiskt fall: `matt` är otypat i schemat, så sidorna kan skilja sig i
   // TYP utan att någon schema-parse fäller. Just den kombinationen går inte
@@ -222,7 +285,11 @@ test.describe('larmets form', () => {
     expect(text).toContain('VAD DU GÖR NU');
     expect(text).toContain('npm run vakt:kontrakt');
     expect(text).toContain('VAD VAKTEN INTE SER');
-    expect(text).toContain('103 av 118');
+    // Mätdata-motiveringen går genom larmets ordbrytare, så den prövas mot en
+    // whitespace-normaliserad kopia. Annars vore assertionen bunden till var
+    // just denna URVAL-text råkar brytas — och det är inte vad den vill bevisa
+    // (TASK-68: texten bröt mellan '103 av' och '118' när svansen togs med).
+    expect(text.replace(/\s+/g, ' ')).toContain('103 av 118');
   });
 
   test('felet bär larmet i sitt meddelande', () => {
