@@ -3,10 +3,10 @@ id: TASK-73
 title: >-
   Fynd: post-merge-lagret ärver inte klassningen — en 8-raders docs-landning
   drar full staging och blockerar revert-vägen
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-28 20:04'
-updated_date: '2026-07-28 21:21'
+updated_date: '2026-07-28 22:42'
 labels:
   - ready-for-agent
 dependencies:
@@ -54,10 +54,10 @@ Rör INTE ci.yml:s klassningslogik, dedup-grenen eller aggregatorn CI Passed or 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Post-merge-lagret ärver ci.yml:s klassning: en docs-only landning kör INTE Staging (API + E2E) — bevisat med ett run-ID för en docs-landning efter fixen
-- [ ] #2 En kod-landning kör fortfarande full svit i post-merge — bevisat med ett run-ID; kontrollen är flyttad, inte borttagen
-- [ ] #3 Mutex-takers per landad docs-PR mätt före och efter, båda talen redovisade
-- [ ] #4 Tvåsidigt bevis: lagret fäller fortfarande när det ska, prövat efter ändringen
+- [x] #1 Post-merge-lagret ärver ci.yml:s klassning: en docs-only landning kör INTE Staging (API + E2E) — bevisat med ett run-ID för en docs-landning efter fixen
+- [x] #2 En kod-landning kör fortfarande full svit i post-merge — bevisat med ett run-ID; kontrollen är flyttad, inte borttagen
+- [x] #3 Mutex-takers per landad docs-PR mätt före och efter, båda talen redovisade
+- [x] #4 Tvåsidigt bevis: lagret fäller fortfarande när det ska, prövat efter ändringen
 - [x] #5 Formvalet motiverat i PR:n mot A7:5 — hur lagret ska bete sig när staging flyttas dit, så fixen inte måste rivas upp av TASK-70.3
 <!-- AC:END -->
 
@@ -80,10 +80,26 @@ SKARPT TVÅSIDIGT BEVIS av klassningen mot verkligt API 2026-07-28:
 Fail-closed-grenar skarpt prövade: ej push-event, icke-merge-commit, okänt SHA (API-fel), saknat argument (exit 2), saknad REPO (exit 2).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+AC-SVANSEN TAGEN AV ORKESTRERAREN 2026-07-29 (S91, trettonde resumen). Fyra av fem AC kunde inte bockas av bygg-agenten — de krävde post-merge-körningar på main EFTER merge, en signal som inte finns när agenten är klar. Samma form som TASK-70.2:s sex AC-halvor.
+
+AC #1 — ÄRVD KLASSNING, docs-only kör INTE staging. Fyra oberoende bevis, alla med Verifierande svit på det mergade trädet = skipped: run 30403050623 (PR #387) · 30403151544 (#384) · 30403478649 (#388) · 30405223512 (#389, event-filtrerat på push).
+
+AC #2 — KOD-LANDNING KÖR FULL SVIT. Fixens egen landning 665abd0 är själv kod-klass (rörde .github/workflows/ci.yml + post-merge.yml + scripts/classify-post-merge.sh): run 30402869073 körde hela sviten inkl. Staging (API + E2E) = success. Kontrollen är flyttad, inte borttagen.
+
+AC #3 — MUTEX-TAKERS PER LANDAD DOCS-PR: 2 -> 0. FÖRE: ba3eab1 (PR #382, ren docs — EN .md-fil) -> run 30399334439 körde Staging (API + E2E) + Staging sentinel purge = 2 takers av staging-tests. EFTER: samtliga fyra docs-landningar ovan -> Verifierande svit skipped = 0 takers. Kontrastbeviset valdes medvetet på en ren docs-diff; PR #381 rörde .md + .sh och är därför en svagare bärare.
+
+AC #4 — TVÅSIDIGT BEVIS, LAGRET FÄLLER. workflow_dispatch simulate_failure=true -> run 30405347512: Självtest = failure (äkta exit 1), Larm vid rött post-merge = success. Larmet lästes alltså mot ett ÄKTA failure-resultat i needs, samma väg en röd svit tar — inte via kringgående if-uttryck. Ärende #392 skapades av larmet och stängdes med motivering (samma form som S79:s ärende #114).
+
+DoD #3 (CI grön per jobb): PR #386 run 30402036310, nio jobb, samtliga success.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
