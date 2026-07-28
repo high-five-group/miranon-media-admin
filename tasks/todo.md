@@ -15,6 +15,37 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-28, nionde resumen — A5 KLAR utom QA)** —
+**NIO PR:er landade, samtliga gröna per jobb, noll röda körningar** (`#321`–`#330`).
+**`TASK-61` Done** (kontraktsvaktens race stängt med oberoende data, ej körordning;
+purge-immuniteten prövad mot policyns EGNA funktioner; ärende `#312` stängt).
+**`TASK-59.7` Done ⇒ A5 är klar utom `59.8` QA** — mutex-hållningen mätt
+**9,77 → 6,55 min** (−32,9 %, faktor **1,49** mot projektionens 3,8);
+**avvikelsen RÄKNAD, ej bortförklarad**: projektionen räknade 296 mockande TESTER
+men kriteriet är FIL-nivå, och 147 av dem bor i filer med minst ett live-test.
+Samma modell på rätt population träffar inom **8 %**. ADR-080:s före-siffra `9,10`
+reproduceras INTE (mätt 9,77; härledningen okänd, ej gissad).
+**A4 AVGJORD PÅ DELEGERING → ADR-082:** extern länkyta lämnar presubmit
+(`--offline`), nattnätet bär den med egen stående `lankrota`-kanal,
+`.lycheeignore` roll-bytt till brusfilter och ADR-029:s add-only-policy **riven
+öppet**. Tvåsidigt bevisat: trasig intern länk → exit 2, död extern → exit 0.
+**Vår egen motivering rättad** — "17 av 19 undantag blir onödiga" höll inte;
+**noll** blir onödiga om nattrapporten ska vara läsbar.
+**WORKTREE-ISOLERINGEN MEKANISERAD** efter att Marcus stoppade förslaget och
+krävde research först: hooken FUNGERAR men är fel förstaval — Anthropic har en
+deklarativ plats ett lager under. Steg 1 `.claude/agents/` med
+`isolation: worktree` (`#327`, ingen plugin-bump) + steg 2 icke-blockerande
+mätning (`#330`, `npm run metrics:agents`), **bevisad i drift**.
+**TAKET 8 → 12 min** på acceptance; orkestrerarens "ren varians" var fel —
+~80 % infrastruktur, rättat i restlistan. **`T105` stängd · `T106` född**
+(självtestets race: grönt besked trovärdigt, RÖTT kan vara falskt).
+**NÄSTA: `59.8` QA-vandringen (DELEGERAD TILL CODE — kortet är `ready-for-human`,
+delegeringen står över etiketten) → steg 4 kadens-regeln → steg 5 A2:7.**
+Numrering: 91/**083**/L360 (**29** fragment)/**T107**/f46/**task-62**.
+Karta: `tasks/s91-restlistan.md` § VAR VI ÄR. Full narrativ: sessionsdok S91
+**Del 16**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ ÅTERUPPTAGEN (2026-07-28, nionde resumen)** — **`lifecycle`
 tillbaka i `active`; numreringen höll på alla sex axlar** (ADR `082` · `L360` +
 **27** fragment · `T106` · `f46` · `task-62`). Ingång: `main` @ `b4f61af`, rent
