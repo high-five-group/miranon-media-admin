@@ -460,6 +460,18 @@ Registrerade som backlog-kort, inte som restliste-poster. Här bara som index.
 - [ ] **`TASK-58`** — överskuggningsmönstret `network.use()` är odokumenterat.
       Mönstret A5:s nitton filer ska luta sig mot. **Steg 2 i VAR VI ÄR**
 
+- [ ] **`TASK-61`** — kontraktsvakten för `get-event-notes` mäter mot data som
+      purge raderar. Nattkörning `30328246805` föll på `[TOMT-UNDERLAG]`.
+      **Race bevisat med sekundprecision:** vakten har inget `needs:` och kör
+      parallellt med purge — grön dispatch läste 2 s FÖRE purge, röd natt läste
+      8 s EFTER. **Rotorsaken är dock designluckan:** `get-event-notes` mäter mot
+      sentinel-data som purge är designad att radera, medan `get-events` och
+      `get-registrations` har permanenta fixturer (`ZZ-belaggning-fixtur`,
+      *"STÄDA INTE"*). Ett `needs:` flyttar bara racet. Vaktens FÖRSTA
+      schemalagda nattkörning — dispatchen som bokfördes som *"larmkedjan
+      bevisad"* hade grön vakt på timing-tur. Ärende `#312` öppet med skriven
+      diagnos; tas efter `59.5` (rör `fixture-data.ts`)
+
 ## Beslut som väntar på Marcus
 
 - [ ] `--mm-btn-*` eller `--mm-button-*`? Nio oanvända tokens i `semantic.css`
