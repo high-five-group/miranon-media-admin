@@ -520,6 +520,26 @@ jobs:
           bash scripts/test-agent-spawn-log.sh
           bash scripts/test-ci-wait.sh
 
+      - name: Test post-merge-lagrets ärvda klassning (TASK-73)
+        # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
+        # dess fyrning FORTLÖPANDE verifieras. Sviten prövar
+        # scripts/classify-post-merge.sh i BÅDA riktningar (docs-landning hoppar
+        # sviten, kod-landning kör den) plus varje fail-closed-gren.
+        #
+        # T13 är skälet steget bor just HÄR och inte enbart i post-merge.yml:
+        # klassningen ÄRVER ci.yml:s beslut för att slippa en andra kopia av
+        # glob-listorna, och priset är EN koppling — att skriptets
+        # CI_SUITE_JOB_NAME är detta workflows `suite`-jobbnamn. Den kopplingen
+        # kan bara vaktas där ci.yml faktiskt läses. Driftar namnet utan att
+        # skriptet följer med blir utfallet fail-closed men TYST: full svit på
+        # varje landning, alltså exakt den defekt TASK-73 stängde, återinförd av
+        # sin egen fix.
+        #
+        # Hermetisk (gh-stub på PATH, ingen nätverkstrafik, ~1 s). Eget steg med
+        # ärligt namn per Session 17 K7-disciplinen — stegnamn ska inte ljuga om
+        # sitt innehåll.
+        run: bash scripts/test-classify-post-merge.sh
+
       - name: Test prod-deploy allowlist (fail-closed)
         # Bevisar fail-closed-egenskapen i scripts/deploy-prod-functions.sh
         # (ADR-050 steg 2 / Fas 7-skuld L115): test-* + nya funktioner

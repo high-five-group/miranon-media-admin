@@ -40,11 +40,11 @@ name: Post-merge
 #
 # ═══ MUTEX-KOSTNADEN, ÖPPET BOKFÖRD ═══
 # Anropet nedan skickar INGEN `run_staging`-input och får därmed ci-suite.yml:s
-# default `true` — samma form som nightly.yml. Konsekvens: varje push till main
-# tar den globala `staging-tests`-mutexen (ci-suite.yml, jobbet `test-staging`)
-# EN GÅNG TILL, utöver PR-körningen som redan tagit den. Mätt utgångsläge per
-# landad kod-PR: 1 körning före (PR-körningen; main-pushens svit var skippad),
-# 2 efter.
+# default `true` — samma form som nightly.yml. Konsekvens: varje KOD-landning på
+# main tar den globala `staging-tests`-mutexen (ci-suite.yml, jobbet
+# `test-staging`) EN GÅNG TILL, utöver PR-körningen som redan tagit den. Mätt
+# utgångsläge per landad kod-PR: 1 körning före (PR-körningen; main-pushens svit
+# var skippad), 2 efter.
 #
 # Kostnaden är ÖVERGÅNGSVIS OCH AVSIKTLIG: A7:5 flyttar staging ur PR-grinden,
 # och då är det en körning per landning igen — inte två. Vill man sänka den i
@@ -52,6 +52,38 @@ name: Post-merge
 # behåller acceptance + a11y + pure/build på det mergade trädet men avstår från
 # staging. Det är ett medvetet beslut, inte en detalj — därför står levern
 # skriven här i stället för att tyst utövas.
+#
+# ═══ DOCS-LANDNINGAR ÄR UNDANTAGNA — ÄRVD KLASSNING (TASK-73) ═══
+# Talen ovan gäller KOD-landningar. För DOCS-landningar var de andra och sämre:
+# 0 mutex-takers före lagret (PR-grindens svit skippad av D0, main-pushens av
+# dedupen) mot 1 efter — en ökning från noll, för en diff som strukturellt inte
+# kan påverka något testet mäter.
+#
+# Det var inte teori. Merge `ed51b95` landade ÅTTA rader i en enda `.md`-fil;
+# post-merge-körning 30393323548 körde full staging på den och tog mutexen.
+# Revert-PR #375 (körning 30393415005) låg `pending` på samma mutex och kunde
+# inte landa; `ci-wait.sh` timade ut efter 900 s. Revert-vägen — som finns till
+# för att vara SNABB — blockerades av en markdown-landning. Mätt: revert-commit
+# → landad merge 25 min 16 s, mot en CI-kostnad under en minut för en
+# docs-revert (CONTRIBUTING.md § Revert-vägen).
+#
+# `klassning`-jobbet nedan stänger det genom att ÄRVA ci.yml:s beslut om exakt
+# samma träd — det räknar aldrig om klassningen, och har därför ingen kopia av
+# glob-listorna som kan drifta (ADR-077 § Beslut 1 avvisar den formen; en andra
+# hemvist utan paritetsgrind är restlistans A3-skuld en gång till). Skriptets
+# enda koppling till ci.yml är jobbnamnet `Test suite`, och den grindas
+# mekaniskt av scripts/test-classify-post-merge.sh T13.
+#
+# ENDAST D0 ÄRVS. `ui_low_risk` (D1) och `acceptance_local` ärvs MEDVETET INTE:
+# de släcker staging som RISKREDUKTION, vilket är precis varför sådana träd
+# landar utan staging-täckning — punkt 2 i § VARFÖR FILEN FINNS ovan, alltså
+# halva skälet att lagret existerar. D0 säger något annat: diffen kan
+# STRUKTURELLT inte påverka sviten, så det finns ingen täckning som saknas.
+#
+# FORMEN BÄR ÖVER A7:5 (TASK-70.3) UTAN ATT RIVAS UPP. När staging flyttas ur
+# PR-grinden HIT fortsätter D0-landningar hoppas, medan allt annat — inklusive
+# D1 och acceptance_local — kör staging här. Det är exakt det beteende A7:5
+# behöver, och skälet att lagret ärver EN klassbit i stället för tre.
 #
 # ═══ ÖPPET BOKFÖRD BEGRÄNSNING ═══
 # Larm-jobbet bor INNE i den körning det bevakar och kan därför bara larma om
@@ -88,11 +120,57 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # ÄRVD KLASSNING (TASK-73). Besvarar EN fråga om det landade trädet: skippade
+  # PR-grinden HELA testsviten för det? Klassningen räknas inte om — den LÄSES
+  # ur ci.yml:s körning på samma träd (se § DOCS-LANDNINGAR i huvudet).
+  #
+  # Jobbet gör checkout men bär MEDVETET ingen fetch-depth-rad: skriptet utför
+  # noll git-operationer — föräldrar och träd hämtas ur commits-API:t. Det står
+  # därmed utanför fetch-depth-bärar-mängden by design (ADR-039), och
+  # invarianten (scripts/check-fetch-depth-invariant.sh) läser dessutom bara
+  # ci.yml. Lägg ALDRIG en fetch-depth-rad här utan att läsa den grinden först.
+  #
+  # FAIL-CLOSED HELA VÄGEN: varje avvikelse — API-fel, träd-avvikelse, ingen
+  # andra förälder, ingen grön PR-körning — ger docs_only=false, alltså full
+  # svit. En besparing får aldrig bli ett hål (ADR-077 § Beslut 2). Skulle
+  # jobbet självt FALLA hoppas sviten, men då är `klassning` med i larmets
+  # `needs` och ärendet skapas: en trasig klassning betyder att ingen svit kördes,
+  # och det får aldrig vara tyst (L321/L322-klassen).
+  klassning:
+    name: Ärvd klassning — körde PR-grinden sviten?
+    if: ${{ !inputs.simulate_failure }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      # contents: read — checkout + commits-API (föräldrar och träd-SHA).
+      contents: read
+      # actions: read — `gh run list` / `gh run view` mot ci.yml-körningen på
+      # PR-headen. Utan grantet får anropen 403 (samma fälla som TASK-51 fann i
+      # nightly.yml:s larm-jobb); skriptet fångar det och faller till full svit.
+      actions: read
+    outputs:
+      docs_only: ${{ steps.klassa.outputs.docs_only }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Ärv ci.yml:s klassning för det landade trädet
+        id: klassa
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          SHA: ${{ github.sha }}
+        run: bash scripts/classify-post-merge.sh "${SHA}"
+
   # Den tunga sviten via EN KÄLLA (ci-suite.yml, delad med ci.yml och
-  # nightly.yml). Hoppas ENDAST i självtest-läge — se `sjalvtest` nedan.
+  # nightly.yml). Hoppas i självtest-läge (se `sjalvtest` nedan) OCH när
+  # klassningen ärvt ett D0-beslut — då körde PR-grinden ingen svit heller,
+  # eftersom diffen strukturellt inte kan påverka den.
   suite:
     name: Verifierande svit på det mergade trädet
-    if: ${{ !inputs.simulate_failure }}
+    needs: [klassning]
+    if: ${{ !inputs.simulate_failure && needs.klassning.outputs.docs_only != 'true' }}
     # Permissions-taket för ci-suite.yml. Ett anropat workflow kan bara BEHÅLLA
     # eller MINSKA anroparens token-permissions, aldrig eskalera (L326; GitHub
     # Docs: "Permissions can only be maintained or reduced—not elevated—
@@ -139,7 +217,7 @@ jobs:
   # {}` och gör ingen checkout: hela mätningen finns i push-eventets nyttolast.
   exponeringsfonster:
     name: Exponeringsfönster (merge → svar)
-    needs: [suite, sjalvtest]
+    needs: [klassning, suite, sjalvtest]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -206,9 +284,16 @@ jobs:
   # mätningen sönder utan att någon får veta, fattas nästa beslut på en siffra
   # ingen längre producerar. Ärendets tolkningshjälp skiljer det fallet från
   # en äkta regression, så signalen inte devalveras.
+  #
+  # `klassning` INGÅR av ett skarpare skäl (TASK-73): faller det jobbet hoppas
+  # `suite` på sitt needs-villkor, och då kördes INGEN svit på det landade
+  # trädet. Utan posten i needs vore utfallet en grön post-merge utan täckning —
+  # fail-open i sin renaste form. Skriptet självt är fail-closed på varje
+  # API-avvikelse och faller till full svit; needs-posten täcker det som är kvar,
+  # alltså att jobbet inte kör alls.
   larm:
     name: Larm vid rött post-merge
-    needs: [suite, sjalvtest, exponeringsfonster]
+    needs: [klassning, suite, sjalvtest, exponeringsfonster]
     if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3

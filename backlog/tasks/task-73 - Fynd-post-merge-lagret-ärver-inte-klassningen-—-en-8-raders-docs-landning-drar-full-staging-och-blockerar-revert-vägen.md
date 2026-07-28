@@ -3,9 +3,10 @@ id: TASK-73
 title: >-
   Fynd: post-merge-lagret ärver inte klassningen — en 8-raders docs-landning
   drar full staging och blockerar revert-vägen
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-28 20:04'
+updated_date: '2026-07-28 21:21'
 labels:
   - ready-for-agent
 dependencies:
@@ -57,8 +58,27 @@ Rör INTE ci.yml:s klassningslogik, dedup-grenen eller aggregatorn CI Passed or 
 - [ ] #2 En kod-landning kör fortfarande full svit i post-merge — bevisat med ett run-ID; kontrollen är flyttad, inte borttagen
 - [ ] #3 Mutex-takers per landad docs-PR mätt före och efter, båda talen redovisade
 - [ ] #4 Tvåsidigt bevis: lagret fäller fortfarande när det ska, prövat efter ändringen
-- [ ] #5 Formvalet motiverat i PR:n mot A7:5 — hur lagret ska bete sig när staging flyttas dit, så fixen inte måste rivas upp av TASK-70.3
+- [x] #5 Formvalet motiverat i PR:n mot A7:5 — hur lagret ska bete sig när staging flyttas dit, så fixen inte måste rivas upp av TASK-70.3
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FORM: ärvd klassning via körnings-API:t, inte en andra glob-lista.
+
+post-merge.yml får ett `klassning`-jobb som kör scripts/classify-post-merge.sh. Skriptet klassar INTE diffen — det läser vad ci.yml redan beslutade om exakt samma träd: andra föräldern (PR-headen) → träd-identitet → grön pull_request-körning → finns ett jobb med EXAKT namnet `Test suite` med conclusion `skipped`? Ja ⇒ D0 ⇒ svit-anropet hoppas. Fail-closed på varje avvikelse.
+
+VARFÖR INTE DUPLICERAD GLOB-LISTA: ADR-077 § Beslut 1 avvisar formen rakt ut ("omimplementation av glob-semantik som actionen redan äger, med divergens-risk mot D0"), och en andra hemvist utan paritetsgrind är restlistans A3-skuld en gång till. Ärvd klassning har ingen kopia som kan drifta. Priset är EN koppling — jobbnamnet `Test suite` — och den grindas mekaniskt av test-classify-post-merge.sh T13a.
+
+SIGNALEN, VERIFIERAD: ett skippat reusable-anrop rapporteras som ETT jobb med anropets namn; ett kört anrop expanderas till inner-jobb prefixade "Test suite / ". 20 på varandra följande pull_request-körningar lästes 2026-07-28: 13 hade exakt ETT `Test suite` (skipped) + NOLL inner-jobb, 7 hade NOLL `Test suite` + FEM inner-jobb. Aldrig blandat. `--event pull_request` är bärande: på PR-körningar är dedup_hit alltid false, så `Test suite skipped` ⇔ should_skip_tests ⇔ D0 exakt.
+
+ENDAST D0 ÄRVS. ui_low_risk (D1) och acceptance_local ärvs MEDVETET INTE — de släcker staging som riskreduktion, vilket är precis varför sådana träd landar utan staging-täckning (post-merge.yml § VARFÖR FILEN FINNS punkt 2). D0 säger något annat: diffen kan strukturellt inte påverka sviten.
+
+SKARPT TVÅSIDIGT BEVIS av klassningen mot verkligt API 2026-07-28:
+  ed51b95 (docs-merge, PR #374, 8 rader .md) → docs_only=true  (läste körning 30393253176)
+  4543d18 (kod-merge)                        → docs_only=false (läste körning 30389547241)
+Fail-closed-grenar skarpt prövade: ej push-event, icke-merge-commit, okänt SHA (API-fel), saknat argument (exit 2), saknad REPO (exit 2).
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
