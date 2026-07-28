@@ -240,7 +240,7 @@ redan är känd OCH fixen är mindre än reverten.
 |---|---|
 | **Marcus** | Beslutar ATT backa. Beslutet behöver inte vänta på att orsaken är utredd. |
 | **Bygg-agent** | Förbereder gren, revert-commit och PR — och **armerar aldrig mergen**, samma kontrakt som i § Landnings-ordningen. |
-| **Orkestreraren** | Armerar mergen — slår på auto-merge med `gh pr merge --auto --merge`, så PR:n landar av sig själv i det ögonblick CI blir grön — sekvenserar kön och följer CI till grönt. |
+| **Orkestreraren** | Armerar mergen (slår på auto-merge med `gh pr merge --auto --merge`, så PR:n landar av sig själv när CI blir grön), sekvenserar kön och följer CI till grönt. |
 
 Vad brådskan däremot ändrar är **köordningen**: revert-PR:n armeras FÖRST, och
 andra landningsklara PR:er får vänta och uppdateras efteråt. Det är form B i
