@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 12:48'
-updated_date: '2026-07-28 19:14'
+updated_date: '2026-07-28 20:20'
 labels:
   - ready-for-agent
 dependencies:
@@ -38,10 +38,10 @@ VÄRT ATT MÄTA FÖRST: hur många körningar i CI-historiken som rapporterat fl
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Flakigheten är reproducerad under kontrollerad workerlast och orsaken lokaliserad till testkod, inte gissad
-- [ ] #2 allTextContents()-användningen på event-anteckningar:155 är prövad som orsak — bekräftad eller avfärdad med belägg
-- [ ] #3 Åtgärden bevisas genom upprepade fulla svitkörningar utan retries, inte genom en grön CI-körning med retries på
-- [ ] #4 Om retries: 2 behålls är skälet nedskrivet; annars är det borttaget för klassen
+- [x] #1 Flakigheten är reproducerad under kontrollerad workerlast och orsaken lokaliserad till testkod, inte gissad
+- [x] #2 allTextContents()-användningen på event-anteckningar:155 är prövad som orsak — bekräftad eller avfärdad med belägg
+- [x] #3 Åtgärden bevisas genom upprepade fulla svitkörningar utan retries, inte genom en grön CI-körning med retries på
+- [x] #4 Om retries: 2 behålls är skälet nedskrivet; annars är det borttaget för klassen
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -116,6 +116,67 @@ till rad och mekanism, så spärren gäller inte längre för klass A. Klass B f
 AC 3 KRÄVER FORTFARANDE EGEN MÄTNING: upprepade fulla svitkörningar UTAN retries, före och efter.
 Grönt med retries på är inte data. AC 4 (behålla eller ta bort retries: 2) avgörs av den mätningen.
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-28 20:20
+---
+KLASS A BYGGD OCH MÄTT 2026-07-28 (bygg-agent, gren test/task-64-webforsta-assertions). Klass B ej rörd — endast ommätt.
+
+ÅTGÄRDAT (4 rader, 2 filer):
+  event-anteckningar:154-155  allTextContents() + toEqual  -> await expect(...).toHaveText(['Roger','Lotta','Roger'])
+  event-anteckningar:163      expect(await ...count()).toBe(0) -> await expect(...).toHaveCount(0), med ordningsberoendet nedskrivet
+  event-ny-anmalan:661        getAttribute + toBeTruthy    -> toHaveAttribute mot det VÄNTADE alternativets id
+  event-ny-anmalan:666        samma mönster, andra ArrowDown
+
+AVVIKELSE MOT KORTETS FÖRESLAGNA FIX — MÄTT, INTE ANTAGET. Kortet föreslog toHaveAttribute('aria-activedescendant', /.+/) före getAttribute-hämtningen. Den formen hade INTE lagat något. Prob mot faktisk app (loggad): attributet är SATT REDAN FÖRE första ArrowDown och pekar då på djuplänkens eget alternativ.
+  fore ArrowDown   : ...-option-recNYANM0000001   (djuplänkens event)
+  efter ArrowDown 1: ...-option-recNYANMFJARR003
+  efter ArrowDown 2: ...-option-recNYANMHOST0002
+En narvaro-koll mot /.+/ hade alltså passerat direkt på det GAMLA värdet utan att vänta in flytten. Assertionen går därför mot det väntade alternativets faktiska DOM-id, vilket retryar tills wiringen flyttat. Id:t läses av (React Aria genererar det) — ger läsningen fel värde kan jämförelsen bara bli RÖD, aldrig falskt grön.
+
+AC 2 BEKRÄFTAD MED BELÄGG (inte avfärdad). Före-körning 2 föll på exakt rad 155 med
+  Expected: Array [Roger, Lotta, Roger]  /  Received: Array []
+Lokatorn löste till NOLL element vid läsningen: ögonblicksbilden togs innan korten renderats, och toEqual retryade inte. Det är precis den diagnostiserade mekanismen.
+
+MÄTSERIER — FULLA SVITKÖRNINGAR, --retries=0, workers=8 (Playwrights lokala default på maskinen; 16 logiska kärnor). Bas aa7524f. Identiska förhållanden i båda serierna.
+
+FÖRE (utan fix), n=8:
+  1  exit0  112s  153 passed
+  2  exit1  132s  1 failed  A: event-anteckningar:142
+  3  exit1  132s  1 failed  A: event-anteckningar:142
+  4  exit1  153s  1 failed  B: person-detail:137
+  5  exit0  152s  153 passed
+  6  exit0  128s  153 passed
+  7  exit1  135s  2 failed  A: event-anteckningar:142 + B: person-detail:137
+  8  exit0  129s  153 passed
+  KLASS A: 3/8 = 37,5 procent.  Klass B: 2/8.  Minst en fällning: 4/8.
+
+EFTER (med fix), n=8:
+  1  exit0  107s  153 passed
+  2  exit0  121s  153 passed
+  3  exit0  130s  153 passed
+  4  exit1  150s  2 failed  mer-segment-send:110 + B: person-detail:137
+  5  exit0  128s  153 passed
+  6  exit1  165s  2 failed  event-anteckningar:333 (axe) + event-narvaro:193 (axe)
+  7  exit1  173s  2 failed  B: person-detail:137 + persons-list:95
+  8  exit0  163s  153 passed
+  KLASS A: 0/8.
+
+Sannolikheten för 0 klass A-träffar på 8 körningar om raten vore oförändrad (0,375) är 0,625^8 = 2,3 procent. event-ny-anmalan:641 föll INTE lokalt i någon av de 16 körningarna — dess fix vilar på mekanismen (samma mönster, verifierad genom negativ kontroll) plus kortets CI-sampling, inte på lokal reproduktion. Det sägs rakt ut hellre än jämnas ut.
+
+BEVIS I BÅDA RIKTNINGAR. Negativ kontroll kördes: fel förväntad ordning respektive fel förväntat alternativ gav RÖTT i båda testerna, och felutskriften visade 14 omförsök före fällning — vilket bevisar att retry-beteendet är aktivt (den gamla formen fällde på ett enda skott).
+
+AC 4 — retries: 2 BEHÅLLS. Skälet, grundat på efter-serien: klass A är åtgärdad, men sviten är INTE stabil med retries=0. 3 av 8 efter-körningar hade fällningar från last-känsliga tester utanför klass A (person-detail:137 2/8 — oförändrat mot före, plus mer-segment-send:110, persons-list:95 och två axe-tester). Att ta bort retries för klassen nu hade bytt en maskerad flake mot återkommande RÖD CI. Omprövas när klass B är löst. playwright.config.ts är MEDVETET orörd: ingen beteendeändring krävdes, och en ändring där hade kostat PR:ens acceptance_local-klassning.
+
+VARNING OM EFTER-SERIENS BRUS: körtiden drev uppåt genom serien (107-130 s i början mot 163-173 s i slutet), vilket tyder på stigande maskinlast. Klass B-raten i efter-serien kan därför vara uppblåst och ska inte jämföras rakt av mot före-serien.
+
+KLASS B ÅTERSTÅR (ej rört, per uppdrag): person-detail:137 föll 2/8 både före och efter. hem:423 och mer-intresserade:95 föll inte i någon av de 16 körningarna. Efter-serien visade dessutom ytterligare tester i samma last-känsliga klass som inte står på kortet: mer-segment-send:110, persons-list:95, event-narvaro:193 (axe) och event-anteckningar:333 (axe). En separat körning vid --workers=100 procent (förkastad som mätläge, maskinen mättades) fällde fyra h1-timeouts i fyra andra filer. Klass B är alltså bredare än de tre kortet listar.
+
+FYND UTANFÖR SCOPE, EJ ÅTGÄRDAT: events-list-kalender.acceptance.test.ts:518 bär samma form (getAttribute + icke-retryande toMatch). Lägre risk — ingen tillståndsövergång omedelbart före, och en retryande toHaveText-rad ovanför bevisar att gridden renderats. Lämnad orörd eftersom den ligger utanför uppdragets uppräknade scope; scope-beslutet är inte mitt att ta.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

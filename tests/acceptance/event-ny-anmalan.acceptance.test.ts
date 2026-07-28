@@ -658,15 +658,34 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
     // Det virtuella fokuset annonseras via aria-activedescendant. Startpunkten
     // är det VALDA alternativet (combobox-mönstret) → första pil ned landar på
     // NÄSTA kommande event efter djuplänkens.
-    const aktivtId = await sok.getAttribute('aria-activedescendant');
-    expect(aktivtId).toBeTruthy();
-    await expect(page.locator(`[id="${aktivtId}"]`)).toContainText('Fjärrskådning');
+    //
+    // ASSERTIONEN GÅR MOT DET VÄNTADE ALTERNATIVETS ID (task-64) — inte mot att
+    // "något id finns". Skillnaden är hela poängen: `aria-activedescendant` är
+    // MÄTT SATT REDAN FÖRE pil ned (det pekar då på djuplänkens eget alternativ),
+    // så en `getAttribute` direkt efter tangenttrycket hinner läsa FÖREGÅENDE
+    // värde — och en ren närvaro-koll (t.ex. mot /.+/) hade passerat på det gamla
+    // värdet utan att vänta in att wiringen flyttat. Bara en assertion mot det
+    // väntade id:t retryar tills flytten faktiskt skett.
+    //
+    // Id:t LÄSES av, gissas inte: React Aria genererar det. Läsningen är säker
+    // eftersom listan redan är öppen och alternativet asserterat synligt — och
+    // skulle den ändå ge fel värde kan jämförelsen nedan bara bli RÖD, aldrig
+    // falskt grön. (Playwright: använd toHaveAttribute framför getAttribute.)
+    const fjarrAlternativ = page.getByRole('option', { name: /Fjärrskådning/ });
+    await expect(fjarrAlternativ).toBeVisible();
+    const fjarrId = (await fjarrAlternativ.getAttribute('id')) ?? '';
+    expect(fjarrId).toBeTruthy();
+    await expect(sok).toHaveAttribute('aria-activedescendant', fjarrId);
+
     // Pil ned igen → nästa alternativ (wiringen följer med).
     await page.keyboard.press('ArrowDown');
-    const aktivtId2 = await sok.getAttribute('aria-activedescendant');
-    expect(aktivtId2).toBeTruthy();
-    expect(aktivtId2).not.toBe(aktivtId);
-    await expect(page.locator(`[id="${aktivtId2}"]`)).toContainText('Höstretreat');
+    const hostAlternativ = page.getByRole('option', { name: /Höstretreat/ });
+    await expect(hostAlternativ).toBeVisible();
+    const hostId = (await hostAlternativ.getAttribute('id')) ?? '';
+    expect(hostId).toBeTruthy();
+    // Värdet FLYTTADE — samma påstående som den tidigare id-jämförelsen bar.
+    expect(hostId).not.toBe(fjarrId);
+    await expect(sok).toHaveAttribute('aria-activedescendant', hostId);
   });
 
   test('bytet nollställer mutations-utfall och roterar idempotensnyckeln (ADR-059; F4/F7)', async ({

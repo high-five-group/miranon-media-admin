@@ -151,8 +151,25 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
     await expect(grupp.getByRole('heading', { level: 2, name: 'Anteckningar' })).toBeVisible();
 
     // Nyast först: författarna i kort-ordning (Roger[efter] → Lotta[under] → Roger[innan]).
-    const forfattare = await grupp.locator('article span.font-semibold').allTextContents();
-    expect(forfattare).toEqual(['Roger', 'Lotta', 'Roger']);
+    //
+    // WEB-FIRST, INTE ÖGONBLICKSBILD (task-64): `allTextContents()` läser EN gång
+    // och auto-väntar inte. Raden ovan väntar bara in RUBRIKEN "Anteckningar", som
+    // kan vara synlig innan alla tre article-elementen renderats — läsningen såg
+    // därför listan i det skick den råkade ha, och jämförelsen efteråt (`toEqual`)
+    // retryar inte. Det gjorde testet last-känsligt: uppmätt 3 av 8 fulla lokala
+    // svitkörningar utan retries föll här (och 63 % av CI:s acceptance-jobb
+    // rapporterade flaky, maskerat av `retries: 2`).
+    //
+    // `toHaveText(array)` är Playwrights egen form för samma påstående och
+    // retryar tills BÅDE antalet element och texterna stämmer — dokumentationen
+    // rekommenderar den uttryckligen framför all*Contents() "to prevent
+    // flakiness". Att arrayen har tre poster bär dessutom antals-kravet: en
+    // halvrenderad ström kan inte passera.
+    await expect(grupp.locator('article span.font-semibold')).toHaveText([
+      'Roger',
+      'Lotta',
+      'Roger',
+    ]);
 
     // Texten renderad; radbrytningen bevarad (whitespace-pre-line).
     await expect(grupp.getByText('Uppföljningsmail skickat till alla deltagare.')).toBeVisible();
@@ -160,7 +177,15 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
 
     // Långdatum (Gunilla — aldrig rå ISO i läsytan).
     await expect(grupp.getByText(/1 juni 2026/)).toBeVisible();
-    expect(await grupp.getByText('2026-06-01T10:00:00.000Z').count()).toBe(0);
+    // FRÅNVARO-ASSERTIONEN ÄR ORDNINGSBEROENDE (task-64) — och ordningen är
+    // BÄRANDE, inte kosmetisk. Noll träffar är sant också på ett tomt DOM, så
+    // raden kan bara fälla när strömmen är BEVISAT renderad först. Beviset står
+    // ovan: `toHaveText`-raden kräver exakt tre kort, och långdatum-raden kräver
+    // att just detta datum renderats i läsbar form. Flyttas raden uppåt förbi
+    // dem slutar den kunna fälla — den blir grön på fel grund, vilket är
+    // allvarligare i tysthet än en flaky rad (den föregående formen,
+    // `expect(await …count()).toBe(0)`, hade samma brist).
+    await expect(grupp.getByText('2026-06-01T10:00:00.000Z')).toHaveCount(0);
   });
 
   test('fas-etiketterna härleds: Efter/Under markeras, Innan är omärkt (tysta normen)', async ({
