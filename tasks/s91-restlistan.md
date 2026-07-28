@@ -506,6 +506,18 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       allvarligaste av de fem.** Tas som DIAGNOS under egen hand, ej som
       delegerad skiva. Egen klass mot `T106` (självtestets race) — slå inte ihop
       utan att pröva om orsaken är gemensam
+- [ ] **`TASK-76`** — purge-jobbet är inte idempotent mot samtidiga körningar:
+      TOCTOU mellan `listSentinels()` och `deleteSentinels()` ⇒ 404 på redan
+      raderad post ⇒ falskt rött. **Funnen 2026-07-29 av `TASK-70.3`:s egna
+      mät-PR:er** (`#390` röd utan att något i diffen var fel); **tre
+      observationer**, i varje par faller den som DELETE:ar sist. Blir vanligare
+      i exakt takt med att parallelliteten ökar — alltså med A7:s målbild.
+      **Och dyrare efter `TASK-70.3`:** när post-merge blir primär staging-bärare
+      ger racet en röd post-merge, alltså ett tilldelat ärende med
+      revert-förslag på ett träd som redan ligger i `main` — observation 3 är
+      det fallet, redan inträffat. **Tas i nära anslutning till `70.3`**, ej
+      senare våg. Premissen `P26`/`P27` löses INTE här; kortet gör purge robust
+      under den
 
 ## Fynd-kedjans ordning — klassad och sekvenserad 2026-07-28
 
