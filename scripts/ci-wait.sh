@@ -14,6 +14,28 @@
 # KORREKT FORM (som samma agent använde felfritt i samma körning, 42 s och 132 s):
 #   bounded poll mot gh:s JSON-API, med terminal-kontroll FÖRE första sömnen.
 #
+# RÄTTELSE 2026-07-29 (S91, A3): raden ovan angav tidigare terminal-kontrollen
+#   som det som skiljer skriptet från `gh`. Det är FEL och togs bort som skäl.
+#   `gh run watch` har den kontrollen sedan cli/cli#3962 fixades 2021 —
+#   `if run.Status == shared.Completed` står före loopen. Empiriskt bekräftat
+#   2026-07-28: `gh run watch --exit-status` returnerade på 1,2 s mot en redan
+#   avslutad körning. Formen ovan är fortfarande rätt; motiveringen var det inte.
+#
+# VARFÖR SKRIPTET ÄNDÅ BEHÅLLS (verktygspassets dom BEHÅLL, 2026-07-27 —
+#   docs/research/verktygsval-fyra-egenbyggen-2026-07-27.md § 3). `gh run watch
+#   --exit-status` täcker TVÅ av skriptets sju uppgifter. Fem har ingen
+#   `gh`-yta alls:
+#     - per-jobb-verdikt (ADR-071 §2(iii)) — `--exit-status` läser topp-nivåns
+#       run-conclusion, inget jobb-anrop görs för verdiktet
+#     - `skipped` blockerar inte men bevisar inget (L322) — ingen gh-yta uttrycker det
+#     - superseddad ≠ röd (exit 4) — API:t bär inte informationen, kan inte byggas
+#     - tidsbudget — `gh run watch`:s loop saknar deadline och iterationstak;
+#       blir körningen aldrig klar hänger den för evigt
+#     - run-upplösning efter push — `watch` kräver ett run-ID man redan har
+#   `gh pr checks --watch` ser ut som svaret men är fail-open där det räknas:
+#   varken `Canceled` eller `Skipping` fäller, så en helt avbruten körning ger
+#   exit 0. Som merge-grind vore bytet en REGRESSION, rakt emot L322.
+#
 # ADR-071 §2(iii) kräver "CI grön PER JOBB" — därför är per-jobb-verdiktet
 #   skriptets utdata, inte topp-nivåns conclusion. En skippad required check är
 #   fail-open (L322): skippade jobb rapporteras explicit och räknas ALDRIG som

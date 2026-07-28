@@ -15,6 +15,28 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-29, trettonde resumen — tillstånds-
+återställning + merge queue framflyttad)** — resumen kördes **tio minuter efter**
+pausen (`b354d98` var 8 min gammal); midnattspassagen förklarar datumskiftet.
+Numreringens **sju axlar oförändrade** sedan pausen (91/083/L360/**37**
+fragment/T107/f46/**task-76**) — ingen mellansession har förbrukat nummer.
+**`TASK-74`: ingen PR, ingen branch, kortet `To Do`** — agenten lever (pid 14285,
+4 h 25 min, egen låst worktree) i parallell session; inget att ta över.
+**HEAD-avvikelsen fjärde förekomsten** (`PAUSLÄGE` sa `bcd9265`, disk `b354d98`
+— blocket skrivs före sin egen merge; nu ett mönster, ej ett misstag per gång →
+lesson-kandidat). **MARCUS-KORRIGERING:** schemaläggningen av `TASK-70.1` var
+Codes beslut, inte hans — kortets *"Marcus kvitterar före avfyrning"* är en
+utförande-form (orkestreraren, ej spawnad agent), inte ett beslutsmandat.
+**NY ORDNING I STEG 3: `70.3` → `70.1` → `70.4` → `75`.** Merge queue tas direkt
+efter staging-flytten: före den fördubblas väntan (27 → 55 min för tre parallella
+kod-PR:er, mutexen tas två gånger per PR), efter den är dubbleringen avväpnad
+utan villkorings-kod. Live-belagt före beslutet: `owner.type=Organization` ·
+`visibility=public` · **en enda** required check (`CI Passed or Skipped`) ·
+`allowed_merge_methods=["merge"]`. **NÄSTA: `TASK-70.3` (bygg-agent igång) →
+`70.1` under egen hand med revert-vägen prövad FÖRE aktivering → `70.4` → `75`.**
+Karta: `tasks/s91-restlistan.md` § VAR VI ÄR. Full narrativ: sessionsdok **Del 21**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-28, trettonde pausen — efter vägkartan och
 steg 1–2)** — **TJUGO PR:er landade (`#362`–`#387`), samtliga gröna per jobb,
 noll röda körningar.** **NIO KORT STÄNGDA** (`62` `64`-klass-A `65` `66` `69`

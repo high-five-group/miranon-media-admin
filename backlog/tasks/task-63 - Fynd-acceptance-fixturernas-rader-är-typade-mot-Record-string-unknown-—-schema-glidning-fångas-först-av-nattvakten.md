@@ -3,10 +3,10 @@ id: TASK-63
 title: >-
   Fynd: acceptance-fixturernas rader är typade mot Record<string, unknown> —
   schema-glidning fångas först av nattvakten
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 12:47'
-updated_date: '2026-07-28 21:22'
+updated_date: '2026-07-28 23:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -69,10 +69,20 @@ WRITE-PAYLOADS LÄMNADE MEDVETET OTYPADE — angränsande, ej åtgärdad yta: de
 DOKTRINEN BOR I SÖMMEN: acceptance-bas.ts § fogen uppdaterad — det var dess egen text (rad 15-19) som hävdade den enkelriktade garantin kortet fann. Den skiljer nu de tre mekanismerna: typningen binder fixtur->schema (presubmit, blockerande), parsningen fixtur->schema (runtime), vakten schema->verkligheten (nattlig, icke-blockerande). Per-fil-kommentarerna är en rad som pekar dit.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+STÄNGD 2026-07-29 (S91, trettonde resumen) — DoD #3 var den enda obockade posten och krävde CI-signal som inte finns när bygg-agenten är klar.
+
+CI grön per jobb på PR #385:s head 46d079a1: run 30400640305, NIO jobb, samtliga success (Lint + Audit + TypeCheck · Detect changed files · Docs link check · Staging sentinel purge · Acceptance (hermetisk) · A11y (axe-runner) · Pure + Build · Staging (API + E2E) · CI Passed or Skipped). PR mergad 2026-07-28T21:46:18Z.
+
+FYND VID STÄNGNINGEN: kortet stod kvar som To Do medan PAUSLÄGE, todo-kadensen och S91-restlistan alla påstod att det var stängt ('NIO KORT STÄNGDA … 63'). Disk vann. Samma klass som TASK-73:s AC-svans: agenten levererar och lämnar ifrån sig CI-signalen, orkestreraren äger stängningen — och vid en paus mitt i vågen tappas den. Att tre dokument bar samma felaktiga påstående gjorde det osynligt för läsning; bara en korsläsning mot backlog-CLI:t avslöjade det.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
