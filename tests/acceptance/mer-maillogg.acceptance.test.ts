@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { MailLogEntrySchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from './support/acceptance-bas';
 
@@ -31,11 +33,12 @@ import { expect, test } from './support/acceptance-bas';
  * fallback, fel (role=alert), loading (manualRelease), axe 0 på BÅDE tom + ifylld.
  */
 
-type Row = Record<string, unknown>;
+/** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
+type Row = z.infer<typeof MailLogEntrySchema>;
 
 /** En komplett MailLogEntry-rad (EF-svarets form, MailLogEntrySchema). oppningsgrad
  * är DECIMAL 0–1; utskicksIds/skickatTill är rec-ID-arrayer (länkfält). */
-function row(overrides: Row = {}): Row {
+function row(overrides: Partial<Row> = {}): Row {
   return {
     id: `recML${Math.random().toString(36).slice(2, 10)}`,
     utskicksNamn: 'Vårnyhetsbrev',

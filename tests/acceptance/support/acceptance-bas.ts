@@ -18,6 +18,22 @@ import { test as fixturvarld } from '../../support/fixturvarld/hermetic';
  * parsar skarpa svar. Ett test som kringgår schemat kringgår hela argumentet
  * för klassen.
  *
+ * DEN BEVAKNINGEN ÄR TVÅDELAD, och båda delarna behövs (TASK-63). Runtime-ledet
+ * är parsningen ovan: adaptern `.parse()`:ar fixturens svar, så en trasig fixtur
+ * ger rött när testet körs. Compile-ledet är att varje fils fixturrader TYPAS
+ * `z.infer<typeof XSchema>` — aldrig `Record<string, unknown>`. Utan det andra
+ * ledet fångas en fixtur som glider isär från schemat först av kontraktsvakten,
+ * som kör NATTLIGT och avsiktligt icke-blockerande (ADR-080 beslut 3); med det
+ * fälls glidningen av `npm run typecheck` i samma PR som orsakar den.
+ *
+ * DE TRE MEKANISMERNA BINDER OLIKA FOGAR — blanda inte ihop dem:
+ *   • typningen  binder fixtur → schema      (presubmit, blockerande)
+ *   • parsningen binder fixtur → schema      (runtime, vid testkörning)
+ *   • vakten     binder schema → verkligheten (nattlig, icke-blockerande)
+ * Ingen av dem ersätter någon annan. Skriver du en ny fil i klassen: härled
+ * radtypen ur schemat och låt overrides vara `Partial<…>` — då fälls både ett
+ * glidet fältnamn och en glidd fälttyp av kompilatorn, med förslag på rätt namn.
+ *
  * Klassen testar EXTERNT BETEENDE — aldrig att en handler anropades eller hur
  * många gånger. Det vore att testa fixturen.
  *

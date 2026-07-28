@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { EventSchema } from '../../src/domain/schemas';
 import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, type Page, test } from './support/acceptance-bas';
@@ -64,7 +66,8 @@ import { expect, type Page, test } from './support/acceptance-bas';
  * Datumsträngar härleds i BROWSERNS zon (Europe/Stockholm per config).
  */
 
-type Row = Record<string, unknown>;
+/** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
+type Row = z.infer<typeof EventSchema>;
 
 /** Komplett Event-rad (EF-svarets form — EventSchema .parse:as i adaptern). */
 function ev(o: {
@@ -76,7 +79,10 @@ function ev(o: {
   maxPlatser?: number | null;
   antalAnmalda?: number;
   platserKvar?: number | null;
-  status?: string | null;
+  // Bunden till schemat, inte till `string` (TASK-63): EventSchema.status är en
+  // z.enum över EventStatus, så ett stavfel här fälls av typcheckaren i stället
+  // för att nå adapterns .parse() först vid testkörning.
+  status?: Row['status'];
   borOverAntal?: number;
 }): Row {
   return {

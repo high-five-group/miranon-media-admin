@@ -74,7 +74,7 @@ tematiska; sekvensen över spårgränserna fanns ingenstans.
 |---|---|---|---|
 | **1** | Signalen går att lita på | `TASK-65` `66` `64` `63` · `TASK-71` · agent-namnet · `TASK-36.8` | § Fynd-kedjans ordning · § A4 · § A5 · § Beslut |
 | **2** | Skyddsnätet byggs | `TASK-70.2` · `TASK-70.5` | § A7 (A7:4, A7:7) |
-| **3** | Flytten — väntetiden faller | `TASK-70.3` · `TASK-70.4` | § A7 (A7:5, A7:6) |
+| **3** | Flytten — väntetiden faller | `TASK-70.3` · `TASK-70.4` · `TASK-75` | § A7 (A7:5, A7:6, A7:10) |
 | **4** | Kön mekaniseras | `TASK-70.1` · `TASK-70.6` | § A7 (A7:3, A7:8) |
 | **4b** | Verktygsskulden | A3 ×3 · A3b ×2 · A2:9 | § A3 · § A3b · § A2 |
 | **5** | Aktörerna slutar krocka | A2:7 · A2:8 · Spår B | § A2 · § Spår B |
@@ -367,11 +367,32 @@ gäller inte oss. Empiriskt kördes kommandot tre gånger 2026-07-28 med
 inställningen `false`, samtliga lyckades. Rivningen är bokförd i
 [granskningen](../docs/research/arbetsflode-granskning-2026-07-28.md) § Förbättringar.
 
-**Kandidat, ej beslutad:** `Acceptance (hermetisk)` bär i dag kritiska vägen —
-efter `TASK-62` mättes den till **436 s** mot Stagings 313 s (§ Avbockningslogg
-2026-07-28), trots att den är hermetisk och mutexfri. Urval (kör den delmängd
-diffen rör) är den naturliga fortsättningen efter A7:5 — men den ska inte
-designas förrän post-merge-lagret mätts skarpt, annars optimeras fel led.
+- [ ] **A7:10 · Urval i acceptance-sviten.** Var kandidat; **spärren föll
+      2026-07-28** när post-merge-lagret mättes skarpt (`TASK-70.2` landad,
+      exponeringsfönster 453 s). Marcus kvitterade att posten blir kort.
+      `Acceptance (hermetisk)` mäts till **422–433 s** mot Stagings 369–390 s och
+      blir **ensam bärare** av PR-grindens kritiska väg efter A7:5. **Dep på
+      `TASK-70.3`** — designas urvalet dessförinnan optimeras ett led som inte är
+      kritiskt → **`TASK-75`**
+
+**MUTEXEN SERIALISERAR — och kostnaden växer med antalet parallella PR:er.**
+Marcus observation på PR `#386`, verifierad mot jobb-API:t 2026-07-28. Två fulla
+körningar med identiskt svit-innehåll:
+
+| Körning | Acceptance | Staging | Total |
+|---|---|---|---|
+| `30400021534` | 21:17:47 → 21:24:49 | 21:18:06 → 21:24:15 | **7,8 min** |
+| `30400640305` | 21:26:40 → 21:33:46 | **21:39:22** → 21:46:09 | **20,3 min** |
+
+I den första startade jobben 19 s isär och kördes parallellt; i den andra
+startade staging **5 min 36 s efter** att acceptance var klar, köande i
+`staging-tests`. Hela skillnaden är kö. **Vinsten av A7:5 är därför inte bara de
+369–390 s jobbet tar, utan att kritiska vägen slutar VÄXA med antalet parallella
+PR:er** — den egenskap ett flöde med flera samtidiga agenter behöver mest, och
+den syns inte i en mätning av jobbtider. Noterat i `TASK-70.3`.
+
+**Förbehållet står kvar:** acceptance blir ensam bärare efter flytten, så taket
+landar kring 7 min även efteråt. `TASK-75` är det som sänker det.
 
 **Bekräftat starkt — rör inte i detta spår:** main-skyddet (tom bypass-lista,
 `strict` required check) · riskklassningen D0/D1/dedup · fail-closed-aggregatorn

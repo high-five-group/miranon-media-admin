@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
+import type { z } from 'zod';
+import type { AttendanceSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from './support/acceptance-bas';
 
@@ -38,10 +40,11 @@ import { expect, test } from './support/acceptance-bas';
 
 const EVENT_ID = 'recNARVARO0000001';
 
-type Row = Record<string, unknown>;
+/** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
+type Row = z.infer<typeof AttendanceSchema>;
 
 /** En komplett Attendance-rad (EF-svarets form, AttendanceSchema). */
-function row(overrides: Row = {}): Row {
+function row(overrides: Partial<Row> = {}): Row {
   return {
     id: `recATT${Math.random().toString(36).slice(2, 10)}`,
     anmalanId: 'recANM0000000001',

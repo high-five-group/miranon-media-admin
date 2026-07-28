@@ -109,7 +109,7 @@ admin-secrets — TASK-6-kortets notes bär hela beviskedjan.
 - [ ] `npm run typecheck` 0 fel
 - [ ] `npx @biomejs/biome check .` 0 fel
 - [ ] `npm run build` grön
-- [ ] CI grön **per jobb** på pushad commit — verifieras med `bash scripts/ci-wait.sh --commit "$(git rev-parse HEAD)"` (topp-nivåns `conclusion` är inte beviset; skippade jobb blockerar inte men bevisar ingenting, L322). Efter push: använd det lokala SHA:t, inte `--pr` — GitHubs PR-API kan returnera föregående head i sekunderna efter push. **Exit 4 = superseddad** (körningen avbröts och har en efterträdare på samma gren, typiskt av `cancel-in-progress` vid ny push): utfallet är inaktuellt, inte rött — men det är inte heller ett grönt bevis, så följ efterträdaren som skriptet pekar ut och kräv grönt av den. Endast exit 0 uppfyller denna punkt
+- [ ] CI grön **per jobb** på pushad commit — verifieras med `bash scripts/ci-wait.sh --commit "$(git rev-parse HEAD)"` (topp-nivåns `conclusion` är inte beviset; skippade jobb blockerar inte men bevisar ingenting, L322). Efter push: använd det lokala SHA:t, inte `--pr` — GitHubs PR-API kan returnera föregående head i sekunderna efter push. **Exit 4 = superseddad** (körningen avbröts och har en efterträdare på samma gren, typiskt av `cancel-in-progress` vid ny push): utfallet är inaktuellt, inte rött — men det är inte heller ett grönt bevis, så följ efterträdaren som skriptet pekar ut och kräv grönt av den. **Exit 3 = anropsfel**, numera även "workflow-namn saknas": vakten väljer aldrig körning på egen hand utan tar namnet ur `.ci-wait-policy.conf` (`CI_WAIT_WORKFLOW`, här `CI`) eller ur `--workflow`. Fram till 2026-07-28 saknades den kvalificeringen och formen ovan var **inte säker** — `gh run list --limit 1` returnerar senaste körningen för commiten oavsett workflow, och repot kör tre per push (CI, CodeQL, Post-merge) där bara CI bär required-checken; mätt på commit `03d18888` följde vakten Post-merge och rapporterade grönt utan att ha sett CI. Formen är säker igen, men bara så länge policy-filen finns — vakten skriver alltid ut vilken workflow den följer, läs den raden. Endast exit 0 uppfyller denna punkt
 - [ ] `docs/BUILD-LOG.md` uppdaterad med sessionens resultat (planerat vs faktiskt, avvikelser, verifieringsoutput)
 - [ ] ADR skapad i `docs/decisions/` för varje arkitekturbeslut
 - [ ] `tasks/lessons.md` uppdaterad (markera `[UNIVERSAL]` där tillämpligt; lyft till hub inom 7 dagar)
@@ -411,11 +411,20 @@ filen kvar.
 **Läs det andra talet rätt: det är inte revert-vägens naturliga kostnad.** CI för
 en docs-revert är under en minut. Nästan hela tiden var köväntan på
 `staging-tests`-mutexen, som hölls av post-merge-lagrets körning på no-op:ens
-egen landning — lagret ärver inte klassningen och körde full staging-svit på en
-ändring om åtta rader markdown. Fyndet är registrerat som `TASK-73`, och tills
-det är löst gäller talet ovan: **en revert kan i dag ta ~25 minuter att landa,
-inte ~1 minut**. Just den siffran är exponeringsfönstret A7:5 och A7:6 lutar sig
-mot, och den är skälet att `TASK-73` bör landa före dem.
+egen landning — lagret ärvde inte klassningen och körde full staging-svit på en
+ändring om åtta rader markdown.
+
+**Orsaken är åtgärdad — `TASK-73`.** `post-merge.yml` har sedan dess ett
+`klassning`-jobb som ÄRVER `ci.yml`:s D0-beslut för exakt det landade trädet och
+hoppar svit-anropet när PR-grinden redan skippade det. En docs-landning tar
+därmed inte längre `staging-tests`-mutexen, och blockerar inte revert-vägen.
+Kod-landningar kör full svit som förut: kontrollen är avgränsad, inte borttagen.
+
+**Talet 25 min 16 s står kvar som HISTORISK mätning av läget före fixen.** Det
+nya talet är inte mätt än och skrivs in här först när nästa skarpa revert ger
+det — ett projicerat tal är ingen mätning. Just den siffran är exponerings-
+fönstret A7:5 och A7:6 lutar sig mot, vilket var skälet att `TASK-73` landade
+före dem.
 
 **Varför sektionen står här.** A7:5 och A7:6 flyttar kontroller från den
 blockerande PR-grinden till `main` efter merge. Den flytten är försvarbar bara
