@@ -300,7 +300,9 @@ gh api repos/high-five-group/miranon-media-admin/rulesets/19627609
 **Steg 3 — öppna PR:n. Även en akut revert går via PR.** Direktpush till `main`
 avvisas av rulesetet, bypass-listan är tom och `current_user_can_bypass` är
 `never` (ADR-076 beslut 2) — det finns ingen gräddfil att ta till när det
-brådskar, för någon.
+brådskar, för någon. Nödvägen existerar men är Marcus beslut och ingen agents:
+att synligt inaktivera rulesetet, vilket syns i dess historik. En tyst gräddfil
+är den uttryckligen inte.
 
 ```bash
 git push -u origin revert/pr-<PR-nummer>
@@ -326,21 +328,28 @@ commits that are not ancestors of the previously reverted merge"* (`man
 git-revert`, `-m`-avsnittet, verifierat mot git 2.50.1). Vägen tillbaka är att
 revertera reverten (`git revert <revert-sha>`) och bygga vidare därifrån.
 
-**Exponeringsfönstret — hur länge ett fel kan ligga i `main`.** Talet är summan
-av tre led, mätta var för sig i övningen nedan:
+**Exponeringsfönstret — hur länge ett fel kan ligga i `main`.** Fyra led, vart
+och ett mätt i övningen nedan 2026-07-28:
 
 | Led | Mätt | Not |
 |---|---|---|
 | `git revert -m 1` | **under 1 s** | samma sekundslag in och ut |
-| `git push` | **3 s** | mätt över hemnätet |
-| `gh pr create` + CI grön | **se övningens rad** | docs-klass; kod-klass är den dyra |
+| `git push` | **3 s** | över hemnätet |
+| `gh pr create` | **3 s** | |
+| CI grön på revert-PR:n | **59 s** | run `30391389399`, docs-klass, grön per jobb |
 
-Klassen avgör allt: backas dokumentation kör CI docs-klass (ADR-077, omkring en
-minut), backas kod kör hela sviten — repots uppmätta kritiska väg för en kod-PR
-är **7,4 min**, varav `Staging (API + E2E)` ensamt bär 375 s plus mutexkö (mätt i
-S91:s arbetsflödes-granskning, inte i övningen nedan). Ett kod-fel i `main` kan
-alltså vara borta inom cirka tio minuter från beslut, ett docs-fel inom cirka
-fem. Det är fönstret restlistans steg A7:5 och A7:6 lutar sig mot.
+**Summa: 66 s från beslut till landningsklar revert-PR** — i docs-klass. Talet är
+summan av de fyra mätta leden, inte en obruten klockad sträcka: i övningen låg
+annat arbete mellan pushen och PR-öppningen, och den pausen är övningens
+arbetssätt, inte vägens kostnad.
+
+Klassen avgör resten. Backas dokumentation kör CI docs-klass (ADR-077); backas
+kod kör hela sviten, och repots uppmätta kritiska väg för en kod-PR är **7,4 min**
+varav `Staging (API + E2E)` ensamt bär 375 s plus mutexkö. Den siffran är mätt i
+S91:s arbetsflödes-granskning, inte här. Ett kod-fel kan alltså vara ute ur `main`
+inom omkring åtta minuter från beslut, ett docs-fel inom drygt en — plus
+armeringen, som är det enda led som ännu inte är mätt. Det är fönstret restlistans
+steg A7:5 och A7:6 lutar sig mot.
 
 **Vad en revert INTE tar tillbaka.** `git revert` ändrar bara filer i git.
 Allt som redan lämnat repot står kvar:
@@ -360,7 +369,7 @@ Allt som redan lämnat repot står kvar:
 
 **Övningen — vad som faktiskt kördes, 2026-07-28.** Vägen är övad skarpt mot en
 avsiktligt införd no-op (en HTML-kommentar utan funktionell verkan), aldrig mot
-verkligt innehåll. Kedjan ligger i denna grens historik och går att läsa om:
+verkligt innehåll. Kedjan ligger i **PR #370**:s historik och går att läsa om:
 
 | Steg | SHA | Utfall |
 |---|---|---|

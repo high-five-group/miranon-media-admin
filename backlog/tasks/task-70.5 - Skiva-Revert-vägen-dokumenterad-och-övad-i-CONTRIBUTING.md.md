@@ -4,7 +4,7 @@ title: 'Skiva: Revert-vägen dokumenterad och övad i CONTRIBUTING.md'
 status: To Do
 assignee: []
 created_date: '2026-07-28 16:33'
-updated_date: '2026-07-28 19:16'
+updated_date: '2026-07-28 19:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -47,8 +47,6 @@ CONTRIBUTING.md § Landnings-ordningen (rad 155-212) beskriver hur PR:er sekvens
 - [x] #7 npm run check:docs grön efter ändringen (nio grindar; CONTRIBUTING.md ligger innanför både markdownlint- och vale-scopet)
 <!-- AC:END -->
 
-
-
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
@@ -60,6 +58,30 @@ Allt övrigt är text plus mätning: en sektion i CONTRIBUTING.md, två PR-numme
 
 Skivan rör inga GitHub-inställningar och tar inte bort någon kontroll. Den ADDERAR den kontroll som gör A7:5 och A7:6 försvarbara.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+LEVERERAT: CONTRIBUTING.md § Revert-vägen — hur något som redan landat backas ut. H3 under ## Pull Request-flöde, syskon till § Landnings-ordningen. Gren docs/task-70-5-revert-vagen, PR #370.
+
+ÖVNINGEN (skarp, ej torrkörning), 2026-07-28:
+- utgångsläge 103e5f2 (main-spets), träd 4944e1d
+- no-op 5e6da95 (HTML-kommentar, ingen funktionell verkan)
+- merge-commit b9dada7 i GitHubs form: förälder 1 = 103e5f2, förälder 2 = 5e6da95
+- revert-commit 31c2146; git diff --stat 103e5f2 HEAD tomt och HEAD-trädet = 4944e1d, identiskt med utgångsläget
+
+BÅDA FELVÄGARNA MÄTTA:
+- git revert b9dada7 utan -m  ->  exit 128, is a merge but no -m option was given
+- git revert -m 2 --no-commit b9dada7  ->  exit 0, noll rader stagade, no-op kvar i filen (misslyckas TYST)
+
+MÄTT TID, fyra led: git revert -m 1 under 1 s · git push 3 s · gh pr create 3 s · CI grön 59 s (run 30391389399, docs-klass, grön per jobb). Summa 66 s från beslut till landningsklar revert-PR. Talet är summan av de mätta leden, inte en obruten klockad sträcka.
+
+GRINDAR: npm run check:docs exit 0, 9/9 gröna, 0 skippade (vale 3.14.1 + lychee 0.24.2 fanns lokalt). Grind-bevis i BÅDA riktningar: en probe i CONTRIBUTING.md (standalone Miranon + upprepat ord + trasig relativlänk + trailing spaces) fällde lychee + markdownlint + Vale, exit 1 — filen ligger alltså innanför alla tre scopen. Probe borttagen, åter exit 0. npx biome check . exit 0.
+
+AC 4 OCH 5 OBOCKADE — AVVIKELSE MOT KORTET, EJ UTJÄMNAD:
+Kortet kräver att no-op:en LANDAS i main via PR och revertas hela vägen, alltså två PR-nummer och en landad revert. Det kräver två merges till main. En bygg-agent mergar inte till main, och två landningar mitt i en parallell körning hade satt de två andra agenternas PR:er i BEHIND — precis den skada § Landnings-ordningen finns för att undvika. Övningen kördes därför på egen gren. Bevisat: hela git-mekaniken i båda riktningar plus fyra av fem tidsled. Omätt: armering -> landad merge-commit.
+ÅTERSTÅR för full AC 4/5: orkestreraren kör samma kedja skarpt mot main när PR-kön är tom (no-op-PR landas, revert-PR landas, två PR-nummer och tiden noteras) — eller så faller talet ut första gången vägen används på riktigt, vilket sektionen redan säger.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
