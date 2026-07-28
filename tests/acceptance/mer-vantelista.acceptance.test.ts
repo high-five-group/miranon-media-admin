@@ -145,8 +145,14 @@ test.describe('Väntelista-vy (Fas 6c L3 — LÄS-vy via get-waitlist)', () => {
 
   test('fel (4xx, klient-fel) → fel-UI via role=alert (ingen retry)', async ({ page, network }) => {
     // 4xx → no-retry-grenen (speglar event-anmalda 404): isError direkt, ingen
-    // backoff. 5xx vore fel testval — då retryar react-query korrekt och alerten
-    // dröjer förbi timeouten.
+    // backoff. Det gäller DEN HÄR vyn: `Waitlist.tsx` undantar 4xx i sitt
+    // `retry`-predikat, och `fetchWithRetry` returnerar 4xx utan omförsök — så
+    // båda lagren kortsluts och alerten hinner fram på default-timeouten.
+    //
+    // 5xx är alltså inte ett förbjudet testval i klassen — det betalar bara
+    // hela retrykedjan (~7–8 s; acceptance-bas.ts § SKRIVA ETT TEST I KLASSEN)
+    // och kräver då en räknad timeout på assertionen. Här köper det inget:
+    // testet mäter no-retry-grenen, och 404 är den grenen.
     mockWaitlist(network, [], { status: 404 });
     await page.goto('/mer/vantelista');
     await expect(page.getByRole('alert')).toContainText('Kunde inte hämta väntelistan');
