@@ -1,7 +1,7 @@
 ---
 owner: marcus803
-updated: 2026-07-24
-review_by: 2026-10-23
+updated: 2026-07-28
+review_by: 2026-10-28
 status: stable
 lifecycle: active
 ---
@@ -41,7 +41,7 @@ i samma kö.
 | 2a | D1-klassen + merge-dedup + nightly/larm + mätskript + gate-proof | ✅ KOMPLETT: **36.1 gate-proof** (S78) + **ci.yml-trion 36.2/36.3/36.4** (S79, ADR-077) + **36.5 mätskriptet** (S80: `scripts/ci-metrics.mjs` + nightly-metrics i larm-needs; utgångsvärde citerat på kortet; se BUILD-LOG S80) |
 | 2b | Visual regression från noll (CI-födda baselines) | ✅ BYGGD S81: **36.7** Done — hermetisk fixturvärld (`tests/visual/support/`) + 6 vyer × 2 vyportar (2x, Marcus-beslut) + `visual-baselines.yml` ände-till-ände (baseline-PR nr 140 Marcus-välsignad); GRIND-jobbet (AC 7–8) medvetet PARKERAT → [`T87`](T87-visual-grind-aktivering.md) (Marcus-beslut A: tidig UI-fas, aktiv grind mot batch-hastigheten); L327+L328 skördade |
 | 2c | Rött-först-bärarbytet (ADR-071-amendering) | ✅ VERKSTÄLLD S80: **36.6** Done — ADR-071 S80-amenderingen (lokalt körutdrag som bärare, rött+grönt ihop, grind-bevis via gate-proof) + CONTRIBUTING § Rött-först |
-| 3 | Staging-per-run-isolering (mutexen avvecklas) | riktning satt; samdesign med ADR-063 post-Fas-6; tangerar T27/T45 |
+| 3 | Staging-per-run-isolering (mutexen avvecklas) | ⚠️ **RIKTNINGEN DELVIS FALSIFIERAD 2026-07-28 — läs § Våg 3 nedan FÖRE planering.** Tidigare: riktning satt; samdesign med ADR-063 post-Fas-6; tangerar T27/T45 |
 
 ## Bevis-skulden (S77 end-pass-incidenten) — BETALD S78
 
@@ -205,6 +205,51 @@ grillas i sessionen, tas inte rakt av.
    Dedupen läser `HEAD^2` — squash/rebase ger ingen sådan förälder, och
    tidsvinsten hade försvunnit TYST. Låset kostar noll: merge var redan
    husets enda metod.
+
+## Våg 3 — riktningen delvis falsifierad (2026-07-28)
+
+**Läs detta före varje planering av våg 3.** Två dokument i repot beskriver
+våg 3 med samma namn men olika mekanism och olika tidpunkt, och ett tredje
+har sedan dess avgjort sakfrågan mot båda.
+
+**Divergensen.**
+[Design-doket](../../docs/research/riskanpassad-ci-design-2026-07-23.md) § Våg 3
+(2026-07-23) beskriver **run-ID-scoping i Airtable**, samdesignad med
+bas-maximeringen: *"varje run skapar/filtrerar/purgar sina egna poster …
+därefter avvecklas mutexen helt"*.
+[`airtable-constraints.md`](../../docs/reference/airtable-constraints.md) § P26
+Fas E-krav (2026-07-27) beskriver i stället **per-körning-instansierad
+Postgres**: *"När det är på plats avvecklas den globala mutexen (T85 våg 3)"*.
+Det första är en Airtable-lösning vid bas-maximeringen; det andra en
+Fas E-lösning. Samma etikett, olika planer.
+
+**Vad som avgör frågan — och det är ingendera.** `P4`:s andra manifestation
+(S91 2026-07-27): Airtables **5 req/s-tak är DELAT per bas**, alltså för alla
+samtidiga klienter tillsammans. Parallellisering är därför verkningslös
+*"även med perfekt dataområdes-isolering — en oberoende grind utöver P26"*.
+
+Följden är konkret: **run-ID-scoping löser kollisionerna men köper ingen
+genomströmning.** Två parallella körningar slutar trampa på varandras data men
+delar fortfarande samma anropsbudget och stryper varandra i stället. Att
+avveckla mutexen på enbart scoping vore att byta en synlig serialisering mot
+en osynlig — sämre, eftersom den osynliga inte syns i CI-tiden förrän någon
+mäter.
+
+**Vad som därmed gäller.** Mutexen kan meningsfullt avvecklas först när
+datakällan inte längre är Airtable (P26 Fas E-krav, med P26:s egen
+ordningsnot: branching ensamt räcker inte så länge Airtable är data of record).
+Run-scoping kan fortfarande vara värt att föra in som bas-designkrav — men
+för determinism och för att avveckla fasta delade poster
+(`TEST_REGISTRATION_RECORD_ID`, tangerar `T45`), **inte** som väg till
+parallellitet. Design-dokets formulering *"därefter avvecklas mutexen helt"*
+ska inte läsas som att scoping ensamt räcker.
+
+**Ursprung.** Marcus fråga 2026-07-28 (*"vad har basmaximeringen med
+klonbarheten att göra … klonbarheten sker ju i Supabase, eller vadå?"*) mot en
+sammanblandning Code gjort i ett svar. Frågan var berättigad — och läsningen
+den utlöste visade att sammanblandningen fanns i repots egna dokument, inte
+bara i svaret. Ingen kod ändrad; riktningen skrivs om här så att planeringen
+inte utgår från ett falsifierat antagande.
 
 ## Upptags-form
 
