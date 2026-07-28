@@ -55,20 +55,48 @@ testerna inom två veckor (sessionsdok Del 7 § Grillningens läge, rad 1098).
 Den premissen gäller inte längre, och 90/10-kravet fanns inte när grillningen
 kördes. Snittet ska därför **omprövas**, inte kvitteras.
 
-## VAR VI ÄR — den reviderade ordningen (2026-07-27)
+## VAR VI ÄR — vägen till nytt arbetssätt och tillbaka till appen
 
-Ordningen fastställdes efter att merge queue-, push-kadens- och
-branschpraxis-passen lästs mot Marcus premisser. Den ersätter tidigare
-prioritering inom Spår A. **Steg 1–4 är landade och bor i § Avbockningslogg;
-tabellen bär bara det som är kvar.**
+**Denna sektion äger ORDNINGEN och ingenting annat.** Varje rad bär steg, ID och
+pekare — aldrig beskrivning, aldrig status. Detaljen bor i spåren nedan; status
+i registren (backlog-CLI:t, `threads/README.md`, git). **Säger en rad här något
+som en annan sektion också säger är raden fel, inte den andra.** Regeln finns
+för att raderna annars driftar — det var precis felet auditen 2026-07-28 rättade
+på tolv ställen.
 
-| # | Steg | Läge |
-|---|---|---|
-| 4b | **Fynd-kedjan** — sex kort ur `TASK-59.8`:s QA-vandring och kontraktsdrifts-utredningen. **Alla klassade `ready-for-agent` 2026-07-28** (Marcus order: *"ska alla klassas och tas itu med, i rätt ordning"*); ordningen och dess skäl står i § Fynd-kedjans ordning nedan | ▶️ **PÅGÅR** |
-| 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
-| 6 | **A7 · Arbetsflödes-gapet** ur [granskningen](../docs/research/arbetsflode-granskning-2026-07-28.md) 2026-07-28; domen **DELVIS**. Ordningen A7:4 → A7:5–6 är en invariant, se § A7 | ▶️ **PÅGÅR** — A7:1–2 klara (icke-kort-poster), `TASK-70`-familjen öppen |
+Kartan skrevs 2026-07-28 på Marcus fråga *"måla ut hela vägen fram till att vi
+kan börja jobba med appen igen"*. Den ersätter den tidigare ordningsraden, som
+bara täckte Spår A. **Skälet att den behövdes:** hela filen lästes samma dag och
+en väg byggdes ändå som tappade tre poster (`TASK-36.8`, Spår B, A2:9). Spåren är
+tematiska; sekvensen över spårgränserna fanns ingenstans.
 
-**STEG 5 OCH 6 ÄR TVÅ HALVOR AV SAMMA MÅL — och A7 ensamt stänger det inte.**
+| # | Steg | Bärare | Pekare |
+|---|---|---|---|
+| **1** | Signalen går att lita på | `TASK-65` `66` `64` `63` · `TASK-71` · agent-namnet · `TASK-36.8` | § Fynd-kedjans ordning · § A4 · § A5 · § Beslut |
+| **2** | Skyddsnätet byggs | `TASK-70.2` · `TASK-70.5` | § A7 (A7:4, A7:7) |
+| **3** | Flytten — väntetiden faller | `TASK-70.3` · `TASK-70.4` | § A7 (A7:5, A7:6) |
+| **4** | Kön mekaniseras | `TASK-70.1` · `TASK-70.6` | § A7 (A7:3, A7:8) |
+| **4b** | Verktygsskulden | A3 ×3 · A3b ×2 · A2:9 | § A3 · § A3b · § A2 |
+| **5** | Aktörerna slutar krocka | A2:7 · A2:8 · Spår B | § A2 · § Spår B |
+| **6** | Kvar utanför räckhåll | `T85` våg 3 · `T87` · `TASK-70.7` | § A6 · § A7 (A7:9) |
+| **6b** | Skulden betalas | Spår C ×2 · Spår E ×4 | § Spår C · § Spår E |
+| **7** | Appen | `TASK-53` · hållplats-grillningen · `TASK-18.20` · resten | § Spår D · § Kort födda i S91 |
+
+**Invarianter i ordningen** (allt annat är schemaläggning): steg 1 före 2–3, för
+att en flaky svit gör post-merge-larmen otrovärdiga · A7:4 före A7:5–6, kodad som
+dep · `TASK-70.1` efter `TASK-70.3`, då är mutex-dubbleringen avväpnad ·
+`TASK-64` och `TASK-63` tas under egen hand respektive med pilot, se korten.
+
+**Steg 6 stängs inte av denna lista.** `T85` våg 3 väntar på Fas E, `T87` på
+Marcus trigger, `TASK-70.7` kan stängas av sitt eget steg 0. De står kvar som
+öppna för att en tom lista köpt genom förkastande vore en genväg, inte ett mål.
+
+**Steg 7 är inte hårt blockerat av steg 1–6.** Ordningen är en prioritering:
+app-arbetet fungerar redan, det är bara dyrt (7,4 min per kod-PR) och signalen
+går inte att lita på. Vi gör verktyget vasst innan vi använder det hårt.
+
+**STEG 2–4 OCH STEG 5 ÄR TVÅ HALVOR AV SAMMA MÅL — och A7 ensamt stänger det
+inte.**
 Konsoliderat 2026-07-28 på Marcus fråga *"när vi har genomfört alla A7-punkter,
 kan vi jobba parallellt med subagenter utan att CI/grindvakterna stoppar oss?"*
 **A7 tar bort väntan på MASKINEN** (kritisk väg 7,4 min → under 4 min, mutexen
@@ -92,7 +120,8 @@ modellen höll inom 8 % på rätt population, men populationen var fel (kriterie
 Per-körning-isolering är permanent stängd av Airtable (`P26`/`P27`), så
 utbrytningen var den enda öppna vägen att lyfta taket före Fas E.
 
-**Varför steg 2 sköts in före A5 (Marcus-beslut 2026-07-27):** båda fynden kom
+**Varför fynd-paret `TASK-57`/`TASK-58` sköts in före A5 (Marcus-beslut
+2026-07-27; stycket sa tidigare "steg 2" i den gamla numreringen):** båda fynden kom
 ur `TASK-54.3`:s QA och träffar precis den yta de arton filerna skulle byggas
 på. `TASK-58` är mönstret filerna ska luta sig mot — odokumenterat, alltså
 arton chanser att göra fel på samma sätt. `TASK-57` är vaktens felmeddelande,
@@ -108,10 +137,12 @@ Underlaget, precedenten och hur nuvarande topologi rankas står i
 blir klonbar. Marcus kvitterade 2026-07-27.
 
 **Varför A2:7 medvetet ligger sist:** den är delvis en arbetsomgång runt ett
-problem steg 2 krymper. Två av dess fem axlar är redan lösta (lesson-nummer via
-ADR-081, kort-ID via backlog-CLI:t) och en tredje avlastas av merge queue.
-Designas regeln före steg 2 kodas den mot ett problem som håller på att ändra
-storlek.
+problem ett tidigare landat steg krymper. Två av dess fem axlar är redan lösta
+(lesson-nummer via ADR-081, kort-ID via backlog-CLI:t) och en tredje avlastas av
+merge queue. Designas regeln för tidigt kodas den mot ett problem som håller på
+att ändra storlek. *(Stycket skrevs mot den gamla stegnumreringen och pekade på
+"steg 2"; vilket landat steg som avsågs går inte att belägga ur filen — se
+§ Filens egna fel post 6.)*
 
 ## Spår A — CI-/grind-arkitekturen (AKTIVT)
 
@@ -604,6 +635,20 @@ bantades bort. De raderas inte.
    och PRD:er"*.** Fel åt båda håll: `TASK-36.7` är en CI-skiva som bär
    etiketten, och PRD-korten `TASK-8`/`TASK-9` bär inga alls. Det gemensamma är
    att posten kräver Marcus omdöme, inte dess dokumentklass.
+
+5. **Ordningsraden kunde inte bära sin egen väg.** Hela filen lästes 2026-07-28
+   och en väg till app-arbetet byggdes ändå som tappade tre poster
+   (`TASK-36.8`, Spår B, A2:9 — den sista mintad samma dag av samma läsare).
+   Orsaken var strukturell, inte slarv: spåren A–E är tematiska, och § VAR VI ÄR
+   täckte bara Spår A. Åtgärdat samma dag genom att ordningsraden gjordes
+   fullständig — det är den nuvarande § VAR VI ÄR.
+6. **Två stycken bar referenser till en stegnumrering som inte längre finns.**
+   När kartan ersatte den gamla ordningsraden pekade de på "steg 2". Det ena
+   gick att belägga ur styckets egen text (`TASK-57`/`TASK-58`) och skrevs om.
+   Det andra — *"ett problem steg 2 krymper"* i A2:7-motiveringen — går **inte**
+   att belägga ur filen; formuleringen står därför kvar med referensen märkt som
+   otydlig i stället för att gissas rätt. En gissning här hade skrivit bort ett
+   skäl ingen längre kan rekonstruera.
 
 **Och felklassen som gav filen sin nuvarande form:** auditen 2026-07-28 fann
 tolv statusfel, samtliga kopior av register som redan hade rätt svar. Det är
