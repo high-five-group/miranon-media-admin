@@ -1,19 +1,44 @@
 import AxeBuilder from '@axe-core/playwright';
-import { mockValjarLista } from './helpers/valjar-lista';
-import { expect, type Page, type Route, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, type Page, test } from './support/acceptance-bas';
 
 /**
  * task-18.17 — Per-anmälan-detaljvyn (S83-facit, Marcus-låst 2026-07-24):
  * route + läs-shape + vy; Anmäld-radens no-op → Link.
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt, inte staging-exklusivt).
+ * ACCEPTANCE-KLASSEN (task-59.6, ADR-080): filen flyttades hit ur e2e-sviten med
+ * hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade. Klassningen är
+ * HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 16 restanrop,
+ * samtliga typsnitt, noll skarpa.
  *
- * **Deterministisk via `page.route`-mock** av get-event, get-registrations,
- * get-registration och send-registration-confirmation — samma split som
- * 18.4/18.5/18.6: SERVER-kontraktet (detaljshapen, medföljande-inversen,
- * 404/400/401) bevisas av `tests/api/get-registration.staging.test.ts` mot
- * skarp staging; dessa e2e bevisar KLIENTENS form och beteende flak-fritt.
+ * **Deterministisk via `network.use()`** — inte `page.route`: page-routes prövas
+ * FÖRE MSW:s context-routes och hade lagt en andra avlyssningsmekanism ovanpå
+ * fixturvärlden (tudelningen task-54.2 tog bort). Mönstren byggs med `EF(namn)`
+ * ur handlers-modulen och svaren med `json(...)`, aldrig som handskrivna strängar
+ * — en överskuggning vars mönster inte matchar faller igenom UTAN att något fälls
+ * (den tysta fällan, `hermetic.ts` § Överskugga en delad handler). Att
+ * `EF('get-event')` inte fångar `get-events` är samma diskriminator som bär
+ * `get-person`/`get-persons` i normalläget: MSW matchar HELA sista path-segmentet.
+ *
+ * VERBEN ÄR VERIFIERADE mot appens anropsväg, inte antagna: `get-event`/
+ * `get-registrations`/`get-registration`/`get-event-notes` går via
+ * `callEdgeFunction` (GET), `send-registration-confirmation` via
+ * `postEdgeFunction` (POST).
+ *
+ * `send-registration-confirmation` SKRIVER INTE SKARPT: anropet är avlyssnat, och
+ * det som bevisas är PAYLOADEN appen skickar (`registrationIds === ['recBjorn']`,
+ * exakt ett anrop) plus gränssnittets reaktion — den optimistiska flytten som
+ * överlever refetchen. Server-kontraktet bor i
+ * `tests/api/send-registration-confirmation.staging.test.ts` och ligger kvar där;
+ * läs-shapens server-kontrakt (detaljshapen, medföljande-inversen, 404/400/401) i
+ * `tests/api/get-registration.staging.test.ts`. Ingendera filen är i denna diff.
+ *
+ * VÄLJARENS LISTQUERY BÄRS AV NORMALLÄGET: e2e-formen stubbade `get-events` med
+ * `mockValjarLista` för att slippa läcka mot staging. I acceptance-klassen finns
+ * `get-events` redan i normalläget (`handlers.ts`), och denna fil asserterar
+ * ingenting om listan. Överskuggningen är därför borta, inte glömd.
  *
  * Täckning (AC #2): navigeringen personkortets Anmäld-rad → anmälans sida
  * (Link, inte no-op) med INSTANT-beviset (header ur list-cachen medan
@@ -26,11 +51,6 @@ import { expect, type Page, type Route, test } from './support/test-bas';
  * hårdkodade färger.
  */
 
-const GET_EVENT = /\/functions\/v1\/get-event\?/;
-const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
-const GET_REGISTRATION = /\/functions\/v1\/get-registration\?/;
-const GET_EVENT_NOTES = '**/functions/v1/get-event-notes*';
-const CONFIRM = '**/functions/v1/send-registration-confirmation';
 const EVENT_ID = 'recANMDETALJ00001';
 
 type Json = Record<string, unknown>;
@@ -195,66 +215,41 @@ function detaljObekraftad(): Json {
  * detaljen som get-registration serverar, så den optimistiska flytten bevisas
  * överleva onSettled-refetchen (annars hade badgen studsat tillbaka).
  */
-async function mocka(
-  page: Page,
+function mocka(
+  network: NetworkFixture,
   {
     detaljer,
     listor = [],
     manualRelease = false,
   }: { detaljer: Json[]; listor?: Json[]; manualRelease?: boolean },
-): Promise<{ confirmCalls: Json[]; release: () => void }> {
-  await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
+): { confirmCalls: Json[]; release: () => void } {
   const confirmCalls: Json[] = [];
   const perId = new Map(detaljer.map((d) => [d.id as string, d]));
 
   let release = () => {};
   const gate = manualRelease ? new Promise<void>((resolve) => (release = resolve)) : null;
 
-  await page.route(GET_EVENT, async (route: Route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ event: eventDetail() }),
-    });
-  });
-  await page.route(GET_REGISTRATIONS, async (route: Route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ registrations: listor }),
-    });
-  });
-  await page.route(GET_EVENT_NOTES, async (route: Route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ notes: [] }),
-    });
-  });
-  await page.route(GET_REGISTRATION, async (route: Route) => {
-    if (gate) await gate;
-    const id = new URL(route.request().url()).searchParams.get('id');
-    const hit = id ? perId.get(id) : undefined;
-    await route.fulfill({
-      status: hit ? 200 : 404,
-      contentType: 'application/json',
-      body: hit ? JSON.stringify({ registration: hit }) : JSON.stringify({ error: 'Not found' }),
-    });
-  });
-  await page.route(CONFIRM, async (route: Route) => {
-    const body = route.request().postDataJSON() as { registrationIds: string[] };
-    confirmCalls.push(body as unknown as Json);
-    const nu = '2026-07-25T08:00:00.000Z';
-    for (const id of body.registrationIds) {
-      const d = perId.get(id);
-      if (d) {
-        perId.set(id, { ...d, status: 'Bekräftad (mail skickat)', bekraftelseSkickad: nu });
+  network.use(
+    http.get(EF('get-event'), () => json({ event: eventDetail() })),
+    http.get(EF('get-registrations'), () => json({ registrations: listor })),
+    http.get(EF('get-event-notes'), () => json({ notes: [] })),
+    http.get(EF('get-registration'), async ({ request }) => {
+      if (gate) await gate;
+      const id = new URL(request.url).searchParams.get('id');
+      const hit = id ? perId.get(id) : undefined;
+      return hit ? json({ registration: hit }) : json({ error: 'Not found' }, 404);
+    }),
+    http.post(EF('send-registration-confirmation'), async ({ request }) => {
+      const body = (await request.json()) as { registrationIds: string[] };
+      confirmCalls.push(body as unknown as Json);
+      const nu = '2026-07-25T08:00:00.000Z';
+      for (const id of body.registrationIds) {
+        const d = perId.get(id);
+        if (d) {
+          perId.set(id, { ...d, status: 'Bekräftad (mail skickat)', bekraftelseSkickad: nu });
+        }
       }
-    }
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
+      return json({
         status: 'sent',
         requested: body.registrationIds.length,
         attempted: body.registrationIds.length,
@@ -262,9 +257,9 @@ async function mocka(
         skipped: [],
         failed: [],
         bekraftelseSkickad: nu,
-      }),
-    });
-  });
+      });
+    }),
+  );
   return { confirmCalls, release };
 }
 
@@ -283,9 +278,10 @@ async function tokenColor(page: Page, cssVar: string): Promise<string> {
 test.describe('Per-anmälan-detaljvyn (task-18.17)', () => {
   test('navigering: personkortets Anmäld-rad är en LINK — INSTANT-header ur list-cachen, detaljen fylls på', async ({
     page,
+    network,
   }) => {
     const lista = [listRad()]; // Obekräftad → kortet står i den ÖPPNA kön
-    const { release } = await mocka(page, {
+    const { release } = mocka(network, {
       detaljer: [detalj({ status: 'Obekräftad', bekraftelseSkickad: null })],
       listor: lista,
       manualRelease: true,
@@ -322,8 +318,9 @@ test.describe('Per-anmälan-detaljvyn (task-18.17)', () => {
 
   test('shapen mot facit (bekräftad): badge + tid, behörighet härledd, deadline-pill, relationer, formulär-chip, tidslinje senast överst', async ({
     page,
+    network,
   }, testInfo) => {
-    await mocka(page, { detaljer: [detalj()] });
+    mocka(network, { detaljer: [detalj()] });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/event/${EVENT_ID}/anmalan/recAnna`);
 
@@ -426,8 +423,9 @@ test.describe('Per-anmälan-detaljvyn (task-18.17)', () => {
 
   test('obekräftad +1:a: åtgärdsraden i Kontakt (grön 18.16-knapp) bekräftar optimistiskt; +1-formerna renderas ärligt', async ({
     page,
+    network,
   }, testInfo) => {
-    const { confirmCalls } = await mocka(page, { detaljer: [detaljObekraftad()] });
+    const { confirmCalls } = mocka(network, { detaljer: [detaljObekraftad()] });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/event/${EVENT_ID}/anmalan/recBjorn`);
 
@@ -485,11 +483,12 @@ test.describe('Per-anmälan-detaljvyn (task-18.17)', () => {
 
   test('avvikande status (Avbokad/Ombokad): RÅ statusen i neutral pill — aldrig falsk grön, aldrig skicka-knapp', async ({
     page,
+    network,
   }) => {
     // Review-fynd F1: basens sex statusvärden får inte kollapsas till två —
     // en avbokad anmälan (nåbar via URL/+1-länkar; arbetskön filtrerar bort
     // den men detaljvyn gör det inte) ska visa sanningen, inte "Bekräftad".
-    await mocka(page, {
+    mocka(network, {
       detaljer: [
         detalj({ status: 'Avbokad/Ombokad', bekraftelseSkickad: '2026-07-01T07:15:00.000Z' }),
       ],
@@ -503,8 +502,8 @@ test.describe('Per-anmälan-detaljvyn (task-18.17)', () => {
     await expect(page.getByRole('button', { name: 'Skicka bekräftelse' })).toHaveCount(0);
   });
 
-  test('okänd anmälan → 404-formen (MessageBox, aldrig krasch)', async ({ page }) => {
-    await mocka(page, { detaljer: [] });
+  test('okänd anmälan → 404-formen (MessageBox, aldrig krasch)', async ({ page, network }) => {
+    mocka(network, { detaljer: [] });
     await page.goto(`/event/${EVENT_ID}/anmalan/recFinnsInte`);
 
     await expect(page.getByText('Anmälan hittades inte')).toBeVisible();
@@ -513,8 +512,9 @@ test.describe('Per-anmälan-detaljvyn (task-18.17)', () => {
 
   test('axe 0 violations — båda statuslägena (nya mönster: badge, mini-kort, chip, fritext, tidslinje)', async ({
     page,
+    network,
   }) => {
-    await mocka(page, { detaljer: [detalj(), detaljObekraftad()] });
+    mocka(network, { detaljer: [detalj(), detaljObekraftad()] });
 
     await page.goto(`/event/${EVENT_ID}/anmalan/recAnna`);
     await expect(page.getByText('Anmälan #247')).toBeVisible();

@@ -1,23 +1,38 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, test } from './support/acceptance-bas';
 
 /**
  * Fas 6c L2 — Anmälda-vy (LÄS-vy via get-registrations, eventId-grenen, T15 väg D).
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt, inte staging-exklusivt; jfr event-narvaro.staging.test.ts).
+ * ACCEPTANCE-KLASSEN (task-59.6, ADR-080): filen flyttades hit ur e2e-sviten med
+ * hela sitt bevisinnehåll intakt — a11y-assertionen inkluderad. Klassningen är
+ * HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 13 restanrop,
+ * samtliga typsnitt, noll skarpa.
  *
- * **Deterministisk via `page.route`-mock** av get-registrations. Regex-matchare
- * (`/get-registrations\?/`) som INTE kolliderar med andra mocks: `get-registrations`
- * är unikt (ingen substräng-krock med get-event/get-events/get-person/get-attendance).
+ * NAMNGRANNEN STANNAR: `event-deltagare.staging.test.ts` heter nästan samma sak
+ * men mäter 12 SKARPA anrop (get-event-notes ×10 + get-events ×2) och hör därför
+ * till den skarpa klassen. Snittet är mätdatans, aldrig filnamnets.
+ *
+ * **Deterministisk via `network.use()`** — inte `page.route`: page-routes prövas
+ * FÖRE MSW:s context-routes och hade lagt en andra avlyssningsmekanism ovanpå
+ * fixturvärlden (tudelningen task-54.2 tog bort). Mönstret byggs med `EF(namn)`
+ * ur handlers-modulen och svaret med `json(...)`, aldrig som handskrivna strängar
+ * — en överskuggning vars mönster inte matchar faller igenom UTAN att något fälls
+ * (den tysta fällan, `hermetic.ts` § Överskugga en delad handler).
+ *
  * Mocken speglar EF-svaret `{ registrations: [...] }` (RegistrationSchema-rader).
+ * Normalläget BÄR en get-registrations-handler, men vyn asserterar exakt
+ * antal-summa och exakta rader — mot normalläget hade beviset blivit ett kopplat
+ * påstående om fixturens datamängd, så handlern överskuggas per test.
  *
  * Täckning: roster-rendering (namn + status-text + ort + antal + inskickad + kontakt),
  * antal-summa, fokus→<h1> + aria-live, tom-state, fel (role=alert), loading aria-busy,
  * namn-fallback ("Namn saknas"), axe 0. LÄS-vy → INGEN markera-betald-knapp.
  */
 
-const GET_REGISTRATIONS = /\/functions\/v1\/get-registrations\?/;
 const EVENT_ID = 'recANMALDA0000001';
 
 type Row = Record<string, unknown>;
@@ -49,38 +64,30 @@ function row(overrides: Row = {}): Row {
   };
 }
 
-async function mockRegistrations(
-  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-  page: any,
+function mockRegistrations(
+  network: NetworkFixture,
   rows: Row[],
-  {
-    status = 200,
-    delayMs = 0,
-    manualRelease = false,
-  }: { status?: number; delayMs?: number; manualRelease?: boolean } = {},
-): Promise<() => void> {
+  { status = 200, manualRelease = false }: { status?: number; manualRelease?: boolean } = {},
+): () => void {
   // manualRelease (opt-in): håll EF-svaret öppet tills testet kallar release().
   // Gör loading-fönstret DETERMINISTISKT i stället för att racea en fast delayMs
-  // mot realtid under parallell worker-last (T26 Landning B). Befintliga callers
-  // (utan flaggan) är orörda — release() är då en no-op de ignorerar.
+  // mot realtid under parallell worker-last (T26 Landning B). Bärs nu av ett
+  // obesvarat löfte i MSW-resolvern i stället för ett uppskjutet Route-objekt —
+  // samma bevis, en mekanism (task-59.4:s form).
   let release = () => {};
   const gate = manualRelease ? new Promise<void>((resolve) => (release = resolve)) : null;
-  await page.route(GET_REGISTRATIONS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    if (gate) await gate;
-    else if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
-    await route.fulfill({
-      status,
-      contentType: 'application/json',
-      body:
-        status === 200 ? JSON.stringify({ registrations: rows }) : JSON.stringify({ error: 'x' }),
-    });
-  });
+  network.use(
+    http.get(EF('get-registrations'), async () => {
+      if (gate) await gate;
+      return status === 200 ? json({ registrations: rows }) : json({ error: 'x' }, status);
+    }),
+  );
   return release;
 }
 
 test.describe('Anmälda-vy (Fas 6c L2 — LÄS-vy via get-registrations)', () => {
-  test('roster renderas (namn + fält) + antal-summa; fokus → <h1>', async ({ page }) => {
-    await mockRegistrations(page, [
+  test('roster renderas (namn + fält) + antal-summa; fokus → <h1>', async ({ page, network }) => {
+    mockRegistrations(network, [
       row({
         namn: 'Anna Andersson',
         ort: 'Skövde',
@@ -131,8 +138,8 @@ test.describe('Anmälda-vy (Fas 6c L2 — LÄS-vy via get-registrations)', () =>
     );
   });
 
-  test('tomt event (inga anmälda) → vänlig tom-text, ej fel', async ({ page }) => {
-    await mockRegistrations(page, []);
+  test('tomt event (inga anmälda) → vänlig tom-text, ej fel', async ({ page, network }) => {
+    mockRegistrations(network, []);
     await page.goto(`/event/${EVENT_ID}/anmalda`);
 
     await expect(page.getByRole('heading', { level: 1, name: 'Anmälda' })).toBeVisible();
@@ -141,22 +148,22 @@ test.describe('Anmälda-vy (Fas 6c L2 — LÄS-vy via get-registrations)', () =>
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('namn null → "Namn saknas" (graciöst), aldrig krasch/tomt', async ({ page }) => {
-    await mockRegistrations(page, [row({ namn: null, fornamn: null, efternamn: null })]);
+  test('namn null → "Namn saknas" (graciöst), aldrig krasch/tomt', async ({ page, network }) => {
+    mockRegistrations(network, [row({ namn: null, fornamn: null, efternamn: null })]);
     await page.goto(`/event/${EVENT_ID}/anmalda`);
     await expect(page.getByText('Namn saknas')).toBeVisible();
   });
 
-  test('fel (icke-2xx) → fel-UI via role=alert', async ({ page }) => {
-    await mockRegistrations(page, [], { status: 404 });
+  test('fel (icke-2xx) → fel-UI via role=alert', async ({ page, network }) => {
+    mockRegistrations(network, [], { status: 404 });
     await page.goto(`/event/${EVENT_ID}/anmalda`);
     await expect(page.getByRole('alert')).toContainText('Kunde inte hämta anmälda');
   });
 
-  test('loading-state är tillgängligt (aria-busy + status)', async ({ page }) => {
+  test('loading-state är tillgängligt (aria-busy + status)', async ({ page, network }) => {
     // Håll EF-svaret öppet → loading-tillståndet är deterministiskt synligt medan
-    // route:n hålls (ingen realtids-race mot en fast delayMs under parallell last).
-    const release = await mockRegistrations(page, [row()], { manualRelease: true });
+    // handlern väntar (ingen realtids-race mot en fast delayMs under parallell last).
+    const release = mockRegistrations(network, [row()], { manualRelease: true });
     await page.goto(`/event/${EVENT_ID}/anmalda`);
     await expect(page.getByText('Laddar anmälda…')).toBeVisible();
     // Släpp svaret → laddat tillstånd renderas.
@@ -164,8 +171,8 @@ test.describe('Anmälda-vy (Fas 6c L2 — LÄS-vy via get-registrations)', () =>
     await expect(page.getByRole('heading', { level: 1, name: 'Anmälda' })).toBeVisible();
   });
 
-  test('axe 0 violations på den renderade anmälda-vyn', async ({ page }) => {
-    await mockRegistrations(page, [
+  test('axe 0 violations på den renderade anmälda-vyn', async ({ page, network }) => {
+    mockRegistrations(network, [
       row({ namn: 'Anna Andersson', status: 'Bekräftad (mail skickat)' }),
       row({ namn: 'Bo Bengtsson', status: 'Obekräftad' }),
     ]);

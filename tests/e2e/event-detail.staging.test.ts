@@ -30,7 +30,8 @@ const EVENT_ID = 'recDETAIL0000001';
 /**
  * Anteckningar-gruppen (task-18.11) fetchar get-event-notes för VARJE event. Stubbas
  * tom här så eventsidans övriga sviter förblir deterministiska (antecknings-strömmens
- * egna beteenden bevisas i event-anteckningar.staging.test.ts).
+ * egna beteenden bevisas i `tests/acceptance/event-anteckningar.acceptance.test.ts`,
+ * dit filen flyttade i task-59.6).
  */
 async function mockNotes(
   // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.

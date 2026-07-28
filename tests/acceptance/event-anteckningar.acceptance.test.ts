@@ -1,25 +1,42 @@
 import AxeBuilder from '@axe-core/playwright';
-import { mockValjarLista } from './helpers/valjar-lista';
-import { expect, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, type Page, test } from './support/acceptance-bas';
 
 /**
  * task-18.11 — Anteckningar (S73-facit K66–K71, ADR-075): tidsstämplad ström
  * (composer överst, nyast först), server-satt författare, HÄRLEDD Under/Efter-fas
  * (Innan omärkt) och auto-grow-composern.
  *
- * Körs i chromium-authenticated-projektet. **Deterministisk via `page.route`-mock**
- * av get-event/get-event-notes/create-event-note (samma split som eventsidans övriga
- * e2e): SERVER-kontraktet (allowlist, faktisk skrivning, server-satt författare,
- * omläsning) bevisas av tests/api/*-event-note*.staging.test.ts mot skarp staging;
- * dessa e2e bevisar KLIENTENS form och beteende renderat (L245/L246) utan att mutera
- * delad staging-data.
+ * ACCEPTANCE-KLASSEN (task-59.6, ADR-080): filen flyttades hit ur e2e-sviten med
+ * hela sitt bevisinnehåll intakt — a11y-assertionen inkluderad. Klassningen är
+ * HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 17 restanrop,
+ * samtliga typsnitt, noll skarpa.
+ *
+ * **Deterministisk via `network.use()`** — inte `page.route`: page-routes prövas
+ * FÖRE MSW:s context-routes och hade lagt en andra avlyssningsmekanism ovanpå
+ * fixturvärlden (tudelningen task-54.2 tog bort). Mönstren byggs med `EF(namn)`
+ * ur handlers-modulen och svaren med `json(...)`, aldrig som handskrivna strängar
+ * — en överskuggning vars mönster inte matchar faller igenom UTAN att något fälls
+ * (den tysta fällan, `hermetic.ts` § Överskugga en delad handler). VERBEN ÄR
+ * VERIFIERADE mot appens anropsväg, inte antagna: `get-event`/`get-registrations`/
+ * `get-attendance`/`get-event-notes` går via `callEdgeFunction` (GET),
+ * `create-event-note` via `postEdgeFunction` (POST).
+ *
+ * `create-event-note` SKRIVER INTE SKARPT: anropet är avlyssnat, och det som bevisas
+ * är klientflödet plus PAYLOADEN appen skickar (server-side-författar-beviset nedan).
+ * SERVER-kontraktet (allowlist, faktisk skrivning, server-satt författare, omläsning)
+ * bevisas av `tests/api/create-event-note.staging.test.ts` mot skarp staging och
+ * ligger kvar där — filen är INTE i denna diff.
+ *
+ * VÄLJARENS LISTQUERY BÄRS AV NORMALLÄGET: e2e-formen stubbade `get-events` med
+ * `mockValjarLista` för att slippa läcka mot staging. I acceptance-klassen finns
+ * `get-events` redan i normalläget (`handlers.ts`), och denna fil asserterar
+ * ingenting om listan — den behöver bara ett deterministiskt svar. Överskuggningen
+ * är därför borta, inte glömd.
  */
 
-const GET_EVENT = /\/functions\/v1\/get-event\?/;
-const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
-const GET_ATTENDANCE = '**/functions/v1/get-attendance*';
-const GET_EVENT_NOTES = '**/functions/v1/get-event-notes*';
-const CREATE_EVENT_NOTE = '**/functions/v1/create-event-note';
 const EVENT_ID = 'recNOTES000000001';
 
 type Json = Record<string, unknown>;
@@ -86,49 +103,21 @@ interface MockOpts {
  * efterföljande refetchen (onSettled-invalidering) ser den. `captured` fångar
  * create-payloaden (för server-side-författar-beviset).
  */
-async function mockSidan(
-  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-  page: any,
-  opts: MockOpts = {},
-): Promise<{ captured: () => Json | null }> {
-  await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
+function mockSidan(network: NetworkFixture, opts: MockOpts = {}): { captured: () => Json | null } {
   const notesStatus = opts.notesStatus ?? 200;
   let notesList: Json[] = opts.notes ?? DEMO_NOTES;
   let capturedBody: Json | null = null;
 
-  await page.route(GET_EVENT, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ event: eventGenomfort() }),
-    });
-  });
-  // Betalningar/Deltagare/Gruppdynamik + Närvaro (genomfört) — stubbas tomma.
-  for (const pattern of [GET_REGISTRATIONS, GET_ATTENDANCE]) {
-    await page.route(pattern, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-      const key = pattern === GET_REGISTRATIONS ? 'registrations' : 'attendance';
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ [key]: [] }),
-      });
-    });
-  }
-  await page.route(GET_EVENT_NOTES, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    await route.fulfill({
-      status: notesStatus,
-      contentType: 'application/json',
-      body:
-        notesStatus === 200 ? JSON.stringify({ notes: notesList }) : JSON.stringify({ error: 'x' }),
-    });
-  });
-  await page.route(
-    CREATE_EVENT_NOTE,
-    async (route: {
-      request: () => { postDataJSON: () => Json };
-      fulfill: (r: unknown) => Promise<void>;
-    }) => {
-      capturedBody = route.request().postDataJSON();
+  network.use(
+    http.get(EF('get-event'), () => json({ event: eventGenomfort() })),
+    // Betalningar/Deltagare/Gruppdynamik + Närvaro (genomfört) — stubbas tomma.
+    http.get(EF('get-registrations'), () => json({ registrations: [] })),
+    http.get(EF('get-attendance'), () => json({ attendance: [] })),
+    http.get(EF('get-event-notes'), () =>
+      notesStatus === 200 ? json({ notes: notesList }) : json({ error: 'x' }, notesStatus),
+    ),
+    http.post(EF('create-event-note'), async ({ request }) => {
+      capturedBody = (await request.json()) as Json;
       const created = {
         id: `recNew${notesList.length}`,
         forfattare: 'Lotta',
@@ -137,28 +126,24 @@ async function mockSidan(
         eventId: EVENT_ID,
       };
       notesList = [created, ...notesList]; // nyast först
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          note: created,
-          record: { id: created.id, fields: {}, createdTime: created.tidpunkt },
-        }),
-      });
-    },
+      return json(
+        { note: created, record: { id: created.id, fields: {}, createdTime: created.tidpunkt } },
+        201,
+      );
+    }),
   );
 
   return { captured: () => capturedBody };
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-const gruppen = (page: any) => page.locator('section[aria-labelledby="grupp-anteckningar"]');
+const gruppen = (page: Page) => page.locator('section[aria-labelledby="grupp-anteckningar"]');
 
 test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
   test('strömmen renderas nyast först med författare + tidpunkt (aldrig rå ISO) + text', async ({
     page,
+    network,
   }) => {
-    await mockSidan(page);
+    mockSidan(network);
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
@@ -180,8 +165,9 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
 
   test('fas-etiketterna härleds: Efter/Under markeras, Innan är omärkt (tysta normen)', async ({
     page,
+    network,
   }) => {
-    await mockSidan(page);
+    mockSidan(network);
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
@@ -198,8 +184,9 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
 
   test('composern skriver via create-event-note: payloaden bär ENDAST eventId + text (författaren är server-side)', async ({
     page,
+    network,
   }) => {
-    const { captured } = await mockSidan(page);
+    const { captured } = mockSidan(network);
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
@@ -218,8 +205,9 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
 
   test('composern är auto-grow: field-sizing content + resize avstängd (facit-formen)', async ({
     page,
+    network,
   }) => {
-    await mockSidan(page);
+    mockSidan(network);
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
@@ -236,8 +224,8 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
     expect(stil.fieldSizing).toBe('content');
   });
 
-  test('tomt läge: lugn textrad när eventet saknar anteckningar', async ({ page }) => {
-    await mockSidan(page, { notes: [] });
+  test('tomt läge: lugn textrad när eventet saknar anteckningar', async ({ page, network }) => {
+    mockSidan(network, { notes: [] });
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     // Review-våg 2 (Marcus 2026-07-23): "Inga anteckningar ännu" och inget
@@ -247,8 +235,9 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
 
   test('läs-fel: get-event-notes 500 → role=alert i gruppen, resten av sidan intakt', async ({
     page,
+    network,
   }) => {
-    await mockSidan(page, { notesStatus: 500 });
+    mockSidan(network, { notesStatus: 500 });
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     // 500 är retry-bart (fetchWithRetry 5xx × React Query non-4xx-retry) → fel-ytan
@@ -261,8 +250,8 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
     );
   });
 
-  test('axe 0 violations — Anteckningar-gruppen (ström + composer)', async ({ page }) => {
-    await mockSidan(page);
+  test('axe 0 violations — Anteckningar-gruppen (ström + composer)', async ({ page, network }) => {
+    mockSidan(network);
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(
@@ -279,13 +268,14 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
 
   test('review-våg 3: composern — Spara + Rensa som visas först vid innehåll (CRM-formen)', async ({
     page,
+    network,
   }) => {
     // Marcus (2026-07-23): 'Lägg till anteckning' → 'Spara' + sekundär Rensa
     // som progressive disclosure vid dirty state (CRM-notes-klassens form —
     // HubSpot/Pipedrive-composern; K68–K71 revideras öppet). Rensa tömmer
     // fältet och fokus återförs till skrivrutan (knappen försvinner —
     // fokus får aldrig tappas till body).
-    await mockSidan(page, { notes: [] });
+    mockSidan(network, { notes: [] });
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
