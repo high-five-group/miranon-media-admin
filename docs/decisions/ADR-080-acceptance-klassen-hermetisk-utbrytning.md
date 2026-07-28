@@ -209,6 +209,25 @@ möjlig (steg 3) · klassnamnet gör det omöjligt att förväxla vad sviten bev
 ~90 % av arbetet överlever Supabase-bytet · font-pinningen följer Playwrights
 egen skrivna rekommendation om tredjepartsservrar.
 
+> **UTFALL 2026-07-28 (A5 klar, `task-59.1`–`59.6`) — projektionen ovan träffade
+> inte, och det noteras här hellre än att räknas om i tysthet.**
+>
+> | mått | ADR:ns projektion | faktiskt utfall |
+> |---|---|---|
+> | staging-sviten | 9,25 → **~2,4 min** | 9,10 → **6,50 min** |
+> | antal filer | 19 rena / 13 skarpa | **18 / 14** (se noten om `pwa-offline`) |
+>
+> Vinsten är verklig — cirka **29 %** — men långt från faktor 3,8. Varför
+> skillnaden uppstår är INTE utrett här; det är `task-59.7`:s uppgift, och den
+> ska mäta i stället för att härleda. En hypotes värd att pröva där: de arton
+> filerna bar en mindre andel av sviten än tidsbudget-passet uppskattade,
+> eftersom mätningen räknade ANROP och inte väggklocka.
+>
+> **En andra effekt som inte fanns i projektionen:** acceptance-jobbet växte
+> från 2,8 till **6,7 min mot ett tak på 8** när sviten gick 51 → 152 tester och
+> `task-60`:s självtest kör dem en gång till. Marginalen 1,3 min är en risk för
+> falsk röd och överlämnas till `task-59.7`.
+
 **Negativa / skuld:** 19 filer med fixturer måste hållas sanna mot en bas som
 AT-Max aktivt kommer att ändra — kontraktsvakten är motmedlet, men den är
 nattlig och därmed upp till ett dygn långsam · MSW-bytet kostar ~3× slowdown i

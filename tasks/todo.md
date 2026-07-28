@@ -15,6 +15,32 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-28, åttonde pausen — efter A5:s migrering)**
+— **A5:s MIGRERING ÄR KLAR: samtliga 18 filer ute.** `TASK-59.1`–`59.6` alla
+**Done**; checksumman gick ihop exakt (e2e **14** / acceptance **18**, de fjorton
+mot namnlista). **`TASK-60` byggd och Done** (`T104`): hermetikens andra led är en
+körbar grind i CI — bar 90/90/90 i `59.5` och 152/152/152 i `59.6`. **`TASK-61`
+registrerad och plockbar** (kontraktsvaktens race; `fixture-data.ts` orörd av
+`59.6` ⇒ fri sekvensering). **A4-RESEARCHEN LANDAD** — formen är branschens
+mönster (9 projekt), men vår motivering *"17 av 19"* var fel (22 mönster, 21
+externa) och två undantag vilar på ett faktafel. **ADR-baren nås smalt —
+Marcus-beslut.** **TVÅ SIFFROR TRÄFFADE INTE**, noterade i ADR-080 § UTFALL i
+stället för omräknade tyst: staging `9,25 → ~2,4` projicerat mot `9,10 → 6,50`
+faktiskt (≈29 %, ej faktor 3,8) · filantal 19/13 mot 18/14. **NY RISK som A5:s
+framgång skapade:** acceptance-jobbet **6,7 min mot tak 8** (sviten 51 → 152
+tester) — överlämnad till `59.7`. **ELVA PR:er `#308`–`#319`, samtliga gröna per
+jobb.** **FYRA EGNA FEL, alla bokförda:** kostnadsprognosen (lokal mätning
+projicerad till CI, 5,8× fel) · BEHIND-svälten (`L328`, nedskriven sedan S81) ·
+kort skapat på agentens gren · restliste-post som stått fel i tre dygn.
+**MARCUS-SEKVENS FÖR NÄSTA RESUME:** (1) `TASK-61` (2) `59.7` (3) **`59.8`
+QA-vandringen DELEGERAD TILL CODE** — kortet är `ready-for-human`, delegeringen
+står över etiketten (4) därefter enligt planen. **Code fortsätter som
+ORKESTRERARE med subagenter. Sessionen lever tills HELA restlistan är avklarad.**
+**SKÖRD: 4 fragment** [UNIVERSAL ×4]. Numrering: 91/082/L360 (**27**
+fragment)/**T106**/f46/**task-62**. Karta: `tasks/s91-restlistan.md` § VAR VI ÄR.
+Full narrativ: sessionsdok S91 **Del 15** + PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-28, åttonde resumen — A5:s slutspurt)** —
 **`TASK-60` + `TASK-59.5` + `TASK-61` landade; A5 på 11 av 18 filer.**
 `TASK-60` (hermetik-självtestet, `T104`) gav A5 ett körbart tvåsidigt bevis, och
