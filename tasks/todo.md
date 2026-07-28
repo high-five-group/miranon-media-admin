@@ -15,6 +15,27 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-28, trettonde pausen — efter vägkartan och
+steg 1–2)** — **TJUGO PR:er landade (`#362`–`#387`), samtliga gröna per jobb,
+noll röda körningar.** **NIO KORT STÄNGDA** (`62` `64`-klass-A `65` `66` `69`
+`70.2` `70.5` `71` `63`) och **FEM MINTADE** (`71` `72` `73` `74` `75`).
+**VÄGKARTAN IN I RESTLISTAN** — ordningsraden gjord fullständig i nio steg efter
+att en väg byggts som tappade tre poster trots att hela filen lästs; formregeln
+är *steg, ID och pekare — aldrig status*. **STEG 1 KLART** utom `TASK-36.8`
+(Marcus) · **STEG 2 KLART** (post-merge-lagret + revert-vägen **övad**).
+**REVERT-VÄGEN ÖVAD SKARPT:** 118 s till revert-commit, **25 min 16 s** till
+landad revert — nästan allt köväntan, vilket avtäckte `TASK-73`. **`TASK-64`
+KLASS A: 3/8 → 0/8** fällningar med retries av; flakigheten mättes till **63 %**
+av CI-körningarna. **MUTEXEN SERIALISERAR** (Marcus fångst): 7,8 mot 20,3 min för
+identiskt svit-innehåll ⇒ A7:5:s vinst är att kritiska vägen slutar VÄXA med
+antalet parallella PR:er. **Orkestrerarens "under 4 min" RÄTTAT** — acceptance
+(422–433 s) blir ensam bärare, `TASK-75` sänker taket. **TRE AGENT-RÄTTELSER av
+orkestreraren** (räknefelet · `toHaveAttribute`-no-open · `mer-vantelista`).
+**EN AGENT KÖR VID PAUSEN:** `TASK-74` — kontrollera dess PR-läge först vid
+resume. Numrering: 91/083/L360 (**37** fragment)/T107/f46/**task-76**. Karta:
+`tasks/s91-restlistan.md`. Full narrativ: sessionsdok **Del 20** + PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-28, tolfte resumen — tillstånds-
 återställning)** — resumen kvitterad mot disk: numreringens **sju axlar
 oförändrade** sedan pausen (91/083/L360/**33** fragment/T107/f46/**task-71** —
