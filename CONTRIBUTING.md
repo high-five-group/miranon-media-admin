@@ -161,9 +161,17 @@ villkor samtidigt:
    medan den andra redan ligger i luften.
 2. **CI-tiderna är heterogena.** En docs-only-PR faller i klass `D0`
    ([ADR-077](docs/decisions/ADR-077-riskanpassad-ci-klassning-dedup-nightly.md))
-   och är klar på omkring en minut; en PR som rör kod köar bakom
-   staging-mutexen och tar omkring tio. Siffrorna är `L328`:s mätning från S81
-   — storleksordningen är poängen, inte decimalen.
+   och är klar på omkring en minut; en PR som rör kod bär hela
+   `Acceptance (hermetisk)` och tar omkring sju. Storleksordningen är poängen,
+   inte decimalen.
+
+   **Kö-ledet är borta sedan `TASK-70.3`.** Fram till dess köade varje kod-PR
+   dessutom bakom den globala `staging-tests`-mutexen, och det ledet — inte
+   sviten — var det som gjorde spridningen oförutsägbar: två körningar med
+   identiskt svit-innehåll gav 7,8 respektive 20,3 min, där hela skillnaden var
+   väntan. Staging kör numera post-merge (§ Post-merge-lagret), så en PR-körnings
+   längd beror bara på dess egen svit. Villkoret ovan håller ändå: `D0` mot kod
+   är fortfarande en minut mot sju.
 3. **Required-checken är `strict`** (up-to-date-kravet ovan) — varje merge till
    `main` gör varje annan öppen PR `BEHIND`.
 
@@ -344,12 +352,17 @@ annat arbete mellan pushen och PR-öppningen, och den pausen är övningens
 arbetssätt, inte vägens kostnad.
 
 Klassen avgör resten. Backas dokumentation kör CI docs-klass (ADR-077); backas
-kod kör hela sviten, och repots uppmätta kritiska väg för en kod-PR är **7,4 min**
-varav `Staging (API + E2E)` ensamt bär 375 s plus mutexkö. Den siffran är mätt i
-S91:s arbetsflödes-granskning, inte här. Ett kod-fel kan alltså vara ute ur `main`
-inom omkring åtta minuter från beslut, ett docs-fel inom drygt en — plus
-armeringen, som är det enda led som ännu inte är mätt. Det är fönstret restlistans
-steg A7:5 och A7:6 lutar sig mot.
+kod bärs PR-grindens kritiska väg av `Acceptance (hermetisk)`, mätt till
+404–452 s. Ett kod-fel kan alltså vara ute ur `main` inom omkring åtta minuter
+från beslut, ett docs-fel inom drygt en — plus armeringen, som är det enda led
+som ännu inte är mätt.
+
+**Det talet blev förutsägbart med `TASK-70.3`, inte lägre.** Fram till dess bar
+en kod-PR även `Staging (API + E2E)` (375 s) *plus* kö på den globala
+`staging-tests`-mutexen, och det var kön som gjorde en brådskande revert
+oberäknelig. Staging kör numera post-merge (§ Post-merge-lagret), så en
+revert-PR:s väg genom grinden beror bara på dess egen svit. Taket ligger kvar
+kring sju minuter tills `TASK-75` sänker acceptance-sviten.
 
 **Vad en revert INTE tar tillbaka.** `git revert` ändrar bara filer i git.
 Allt som redan lämnat repot står kvar:
@@ -422,15 +435,18 @@ Kod-landningar kör full svit som förut: kontrollen är avgränsad, inte bortta
 
 **Talet 25 min 16 s står kvar som HISTORISK mätning av läget före fixen.** Det
 nya talet är inte mätt än och skrivs in här först när nästa skarpa revert ger
-det — ett projicerat tal är ingen mätning. Just den siffran är exponerings-
-fönstret A7:5 och A7:6 lutar sig mot, vilket var skälet att `TASK-73` landade
-före dem.
+det — ett projicerat tal är ingen mätning. `TASK-70.3` tar dessutom bort det
+andra ledet i samma väntan: en revert-PR köar inte längre bakom mutexen alls,
+eftersom ingen PR-körning tar den. Kvar som möjlig fördröjning är enbart
+post-merge-lagrets egen körning på en *föregående* landning, och den blockerar
+inte grinden.
 
-**Varför sektionen står här.** A7:5 och A7:6 flyttar kontroller från den
-blockerande PR-grinden till `main` efter merge. Den flytten är försvarbar bara
-om vägen tillbaka är kort, känd och prövad — annars byts en väntan mot en risk.
-En oskriven revert-väg prövas första gången under tidspress, av den som har minst
-marginal att lära sig den då.
+**Varför sektionen står här.** A7:5 (`TASK-70.3`, landad) och A7:6
+(`TASK-70.4`, öppen) flyttar kontroller från den blockerande PR-grinden till
+`main` efter merge. Den flytten är försvarbar bara om vägen tillbaka är kort,
+känd och prövad — annars byts en väntan mot en risk. En oskriven revert-väg
+prövas första gången under tidspress, av den som har minst marginal att lära sig
+den då.
 
 ## Rött-först — bevisformen
 
@@ -448,6 +464,64 @@ en röd körning i den delade CI-kön är INTE bevisformen.
 - **Grind-bevis** (att en CI-grind faktiskt fyrar) görs via den riktade
   avfyrningsformen `gate-proof.yml` (`workflow_dispatch`), som bevisar
   sig själv: en avfyrning som inte ger failure är ett underkänt bygge.
+
+## Post-merge-lagret — staging körs EFTER merge, inte före
+
+`.github/workflows/post-merge.yml` kör den tunga sviten på det **mergade** trädet
+vid varje push till `main`. Den är avsiktligt ingen required check och kan
+strukturellt inte blockera en landning: den triggar först när mergen redan skett.
+
+**Vad som flyttat hit.** `Staging (API + E2E)` och `Staging sentinel purge` kördes
+fram till `TASK-70.3` i den blockerande PR-grinden. Sedan dess skickar `ci.yml`
+`run_staging: false` villkorslöst, och de två jobben instansieras aldrig av en
+PR-körning. `post-merge.yml` och `nightly.yml` utelämnar inputen och får därför
+`ci-suite.yml`:s default `true` — samma svit, samma `EN KÄLLA`, annan tidpunkt.
+
+**Varför flytten gjordes, och vad den faktiskt köpte.** Inte jobbets 375 s, utan
+den globala `staging-tests`-mutexen. Den serialiserar över *alla* staging-rörande
+körningar, så kritiska vägen växte med antalet parallella PR:er: två körningar
+med identiskt svit-innehåll mätte 7,8 respektive 20,3 min, där hela skillnaden
+var kö. Ur PR-vägen slutar den växa. Väggklockan för en *ensam* kod-PR sjunker
+däremot knappt — `Acceptance (hermetisk)` blir ensam bärare och ligger kring
+7 min. Det är ett känt kvarvarande tak, inte en förbisedd besvikelse.
+
+**Priset: en kod-PR kan landa utan att staging någonsin körts mot dess innehåll.**
+Det är avsikten. Det gör revert-vägen (§ Revert-vägen) till den kontroll som bär
+risken, och den måste därför vara skriven och övad — vilket den är.
+
+### Exponeringsfönstret — hur länge ett fel kan ligga oupptäckt i `main`
+
+Fönstret är tiden från merge till post-merge-svar. Jobbet
+`Exponeringsfönster (merge → svar)` mäter det **varje körning** och skriver talet
+till körningens step-summary — det är alltså inte ett tal som mättes en gång vid
+bygget och sedan förfaller. Mätt ur skarpa körningar på `main` 2026-07-28:
+
+| Landningsklass | Uppmätt fönster | Körningar |
+|---|---|---|
+| Kod (full svit på det mergade trädet) | **452–463 s (~7,5–7,7 min)** | `30400572865` · `30402009647` · `30402869073` |
+| Docs (ärvd `D0` ⇒ svit-anropet hoppas) | **23–29 s** | `30403050623` · `30403151544` · `30403478649` |
+
+Läs talet rätt: det är **fönstret till upptäckt**, inte till åtgärd. Full tid från
+merge till ett rättat `main` är fönstret ovan plus revert-vägens led, som mäts
+för sig i § Revert-vägen.
+
+Talen är mätta under det gamla läget, då både PR-körningen och post-merge tog
+mutexen. Flytten tar bort den ena av de två — fönstret kan därför bara krympa,
+aldrig växa, av `TASK-70.3`. Ett projicerat tal skrivs inte in här; nästa
+uppmätning ersätter tabellen.
+
+**Blir post-merge röd** skapas automatiskt ett tilldelat ärende (etikett
+`ci-post-merge`) med de röda jobben, föregående post-merge-körnings utfall och
+ett revert-förslag med rätt `-m`-form. Samma stängningsregel som nattnätet
+nedan: åtgärd, genomförd revert eller öppet skriven motivering — aldrig tyst.
+Ärendet bär en tolkningshjälp som ska läsas FÖRE revert; en ensam röd
+`Acceptance (hermetisk)` kan vara `TASK-64`:s kända flake, och en ensam röd
+mätning betyder att mätningen gått sönder, inte `main`.
+
+**Öppet bokförd blind fläck:** larm-jobbet bor inne i den körning det bevakar. Ett
+`startup_failure` (noll jobb instansieras) lämnar därför inget spår — samma defekt
+som `nightly-watchdog.yml` byggdes för på nattsidan. Någon motsvarande vakt finns
+inte här, och det är ett medvetet öppet val, inte en förbiseelse.
 
 ## Nattnätet
 

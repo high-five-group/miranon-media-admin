@@ -55,7 +55,7 @@
 # helt olika påståenden.
 #
 # ═══ VAD SOM MEDVETET INTE ÄRVS: D1 OCH acceptance_local ═══
-# `ui_low_risk` (D1) och `acceptance_local` släcker staging i PR-grinden som
+# `ui_low_risk` (D1) och `acceptance_local` släckte staging i PR-grinden som
 # RISKREDUKTION. Ett sådant träd landar därmed i main med NOLL staging-täckning
 # — och det är, ordagrant, punkt 2 i post-merge.yml:s eget filhuvud och halva
 # skälet att lagret byggdes. Att ärva dem hade tagit bort just den kontroll
@@ -66,10 +66,13 @@
 # D0 här får vi inte lita på den i PR-grinden heller — där den är farligare,
 # eftersom den inte blockerar något.
 #
-# Skillnaden bär över A7:5 (TASK-70.3) UTAN att behöva rivas upp: när staging
-# flyttas UR PR-grinden hit fortsätter D0-landningar hoppas, och allt annat —
-# inklusive D1 och acceptance_local — kör staging här. Det är precis vad A7:5
-# behöver, och det är därför skriptet ärver EN klassbit och inte tre.
+# SEDAN A7:5 (TASK-70.3) ÄR SKILLNADEN ÄNNU SKARPARE, och skriptet behövde inte
+# röras för det: ci.yml skickar `run_staging: false` villkorslöst, så INGEN
+# PR-körning kör staging — inte bara D1- och acceptance_local-träden. Varje
+# icke-D0-träd landar utan staging-täckning, och det är här den ges. Att skriptet
+# ärver EN klassbit och inte tre är precis vad som gjorde formen stabil över
+# flytten: hade D1 eller acceptance_local ärvts hade lagret nu hoppat staging på
+# exakt de träd som ingen annan yta täcker.
 #
 # ═══ FAIL-CLOSED, UTAN UNDANTAG ═══
 # Varje avvikelse ger `docs_only=false`, alltså full svit: fel event, ingen
