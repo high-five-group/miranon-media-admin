@@ -15,6 +15,21 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-28, tolfte resumen — tillstånds-
+återställning)** — resumen kvitterad mot disk: numreringens **sju axlar
+oförändrade** sedan pausen (91/083/L360/**33** fragment/T107/f46/**task-71** —
+ingen mellansession förbrukade nummer), `main` @ `53e951b` rent + i synk med
+origin (paus-PR **`#361`** mergade EFTER att PAUSLÄGE skrevs, därav dess
+`b4cfbab`), fem senaste main-körningarna **gröna**, `audit-ci` *"Passed"*,
+plugin **1.22.0**. **`S92` är fortfarande `lifecycle: paused`** och har inte
+rört någon axel. Öppna PR:er: endast de sex dependabot-PR:erna. Worktrees:
+huvudkatalogen + `wt-s91`/`wt-atlas` som tillhör ANDRA sessioner — orörda.
+**NÄSTA per handoffen:** (1) `TASK-65` + `TASK-66` parallellt (två agenter, bara
+den ena rör acceptance-sviten) (2) `TASK-70.1`:s etikett `ready-for-human` →
+`ready-for-agent` med utförar-noteringen (3) `TASK-64` under egen hand, steg 0
+först. Karta: `tasks/s91-restlistan.md`.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-28, tolfte pausen — efter arbetsflödes-
 granskningen och restlistans audit)** — **NIO PR:er landade (`#340`, `#350`–
 `#360`), samtliga gröna per jobb, noll röda körningar.** **`TASK-62` Done**
