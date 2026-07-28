@@ -3,10 +3,10 @@ id: TASK-62
 title: >-
   Fynd: en överskuggning som aldrig matchar är omekaniserad — testet blir rött
   av fel skäl eller grönt på fel data
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 12:47'
-updated_date: '2026-07-28 15:18'
+updated_date: '2026-07-28 16:23'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,10 +31,10 @@ ATT DESIGNA IN: en överskuggning kan legitimt vara oanvänd (registrerad för e
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 En överskuggning vars mönster aldrig matchar fäller testet med ett meddelande som namnger det oanvända mönstret
-- [ ] #2 Tvåsidigt bevis: vakten fäller på ett medvetet felstavat mönster OCH är tyst när mönstret matchar
-- [ ] #3 Legitim oanvänd överskuggning kan undantas explicit; undantaget syns i koden
-- [ ] #4 Samtliga 18 befintliga acceptance-filer passerar med vakten på
+- [x] #1 En överskuggning vars mönster aldrig matchar fäller testet med ett meddelande som namnger det oanvända mönstret
+- [x] #2 Tvåsidigt bevis: vakten fäller på ett medvetet felstavat mönster OCH är tyst när mönstret matchar
+- [x] #3 Legitim oanvänd överskuggning kan undantas explicit; undantaget syns i koden
+- [x] #4 Samtliga 18 befintliga acceptance-filer passerar med vakten på
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -66,35 +66,103 @@ PR #340 bär det befintliga bygget och är oarmerad. Avgör vid ombyggnad om den
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-MÄTNINGEN KÖRD 2026-07-28 (planens 'MÄT FÖRE BYGGE'). Metod: fixturens teardown instrumenterad i en kastbar worktree att skriva JSONL per (test, överskuggning) i stället för att låta vakten fälla — vakten själv orörd. Hela acceptance-sviten körd med --retries=0. 321 observationer över 18 filer och 55 deklarationsställen.
+OMBYGGT 2026-07-28 på plats på feat/task-62-overskuggnings-vakt (PR #340), med main mergad in först.
 
-PLANENS SIFFRA BEKRÄFTAD, OCH FÖRKLARAD: 51 oanvända handler-instanser fördelade på exakt 36 distinkta tester i exakt 8 filer, av 153 tester. De 36 var alltså fällda TESTER (vakten kastar en gång per test), 51 är handler-instanserna bakom dem. Samma population, finare granularitet.
+FORM: vakten delad i TVÅ mekanismer efter Mockito, som researchen föreskrev.
 
-UTFALL — PER-FIL-AGGREGERING (Mockitos getUnusedStubbingsByLocation, aggregerat på handler.info.callFrame):
+IVRIG (äger stavfelsklassen, fäller det enskilda testet):
+  I1 — vid network.use(): mönstrets Edge Function måste finnas i supabase/functions/.
+       Fäller på use()-RADEN, så stack-tracen pekar på testfilen. OkantEfNamnError.
+  I2 — vid testets slut: oanvänd överskuggning vars EF ANROPADES och där ingen annan
+       av testets överskuggningar tog anropet. Metod-/mönsterfel. OmatchadOverskuggningError.
+  Plus InaktuellMarkeringError (märkt men använd) — oförändrat kontrakt.
 
-  fällningar        51 → 4      (7,8 % överlever, 92,2 % faller bort)
-  fällande filer     8 → 3
-  döda ställen       4 av 55
+TRÖG (steg 2, per deklarationsställe och FIL — Mockitos getUnusedStubbingsByLocation):
+  aggregeraDodaStallen() på handler.info.callFrame; verkan i en Playwright-REPORTER
+  (tests/support/fixturvarld/overskuggnings-rapport.ts) som fäller körningen via onEnd.
 
-SVARET PÅ PLANENS FRÅGA: steg 2 är nästan hela lösningen. medvetetOanvand behövs på 2 ställen, inte 36 — alltså ren undantagsventil, precis den kalibrering kortet efterfrågade ('Behövs ventilen på 36 ställen är vakten fel kalibrerad').
+VALD INTEGRATIONSMEKANISM: REPORTER. Tre former prövades. En WORKER-SCOPAD FIXTUR ser bara
+sin egen worker — retries: 2 i CI startar ny worker efter varje rött test, så en fil splittras
+och varje worker hade sett en ofullständig fil. TEST.AFTERALL I EN DELAD BAS registreras i den
+suite som laddas just då, och hermetic.ts evalueras EN gång per worker-process — hooken hade
+hamnat i den första filen som importerade modulen. JSONL VIA globalSetup/globalTeardown
+fungerar (repots befintliga mätmönster) men bär T105-fällan: filen överlever körningen och en
+kvarlämnad fil har redan en gång presenterats som körningens utfall. Reportern ser alla tester
+oavsett worker, ser planeringen via onBegin, har noll persistent state, och kan fälla via
+onEnd — verifierat både i typerna (testReporter.d.ts rad 160) och i implementationen
+(runner/index.js rad 1592–1596: if (outResult?.status) result.status = outResult.status).
 
-DE FYRA ÖVERLEVARNA DELAR SIG I TVÅ KLASSER — och den andra klassen förutsåg planen INTE:
+AVVIKELSE 1 — request:match ÄR OANVÄNDBAR, INTE BARA DEPRECERAD. Uppdraget angav den som källa
+för "anrop testet gjorde". Typen finns, men vid faktisk användning kraschar hela
+request-hanteringen: SetupApi.emitter är en rettime-Emitter (0.11.11) vars emit(event) läser
+event.type på ETT argument, medan msw 2.15.0:s handleRequest anropar emit('request:start', {…})
+med två. Utan lyssnare kortsluter emit på #listeners.size === 0 och inget märks; med EN
+lyssnare — vilken händelse som helst — kastar den TypeError: Cannot create property
+'stopPropagation' on string 'request:start'. Mätt med isolerad probe mot handleRequest, den
+kodväg @msw/playwright 0.6.7 använder: ingen lyssnare gav 200, en lyssnare gav kast, i tre
+fall. ERSATT MED Playwrights egen context.on('request'). Bokfört i hermetic.ts § "ANROPEN
+RÄKNAS AV PLAYWRIGHT, INTE AV MSW", tillsammans med deprecation-läget.
 
-(A) TVÅ ÄKTA DÖDA REGISTRERINGAR — hem.acceptance.test.ts:216 och :234. Båda överskuggar get-event med kommentaren 'Detaljsidan hämtar get-event vid landning → överskugga för deterministisk render', men testet assertar bara toHaveURL och navigerar aldrig så långt att anropet sker. Prövat mot race: tre isolerade körningar gav isUsed=false på båda, alla tre gånger. Stabilt döda, inte tajmingberoende. Detta är precis det fynd vakten finns för — kommentaren beskriver en avsikt testet inte fullföljer.
+AVVIKELSE 2 — NÄRHET DUGER INTE SOM FÄLLNINGSGRUND. Planens ivriga kriterium (oanvänd +
+nära-träff bland testets anrop) mättes före bygget och föll: närhetströskeln floor(0,4 × längd)
+parar ihop Edge Functions som båda är äkta — create-registration ~ get-registrations (avstånd
+5, tak 7), create-event-note ~ get-event-notes (5, tak 6), get-segments ~ get-events (3, tak
+4). Just de paren ÄR fixturvärldens vanligaste batch-registreringar, alltså exakt den
+population steg 2 finns för att tysta. Kriteriet byttes till EF-KATALOGEN (supabase/functions/,
+24 st) — skarpt, avståndsfritt, och avgörbart redan vid registreringen. Levenshtein-motorn
+behålls där den hör hemma: som "Menade du"-förslag i meddelandet, aldrig som fällningsgrund.
 
-(B) TVÅ LEGITIMA NEGATIVA SENSORER — mer-segment-send:207 (send-email) och person-note-edit:175 (update-record). Mönstret: 'let sendCalled = false' + handler som sätter flaggan + senare assertion att den är FALSE. Handlern registreras för att bevisa att anropet ALDRIG sker; att den förblir oanvänd ÄR testets resultat. Filernas egna kommentarer säger det rakt ut ('Flaggan mäter APPENS beteende — att 0 mottagare INTE utlöser ett utskick').
+AVVIKELSE 3 — EN TREDJE LEGITIM KLASS, MÄTT FRAM I FÖRSTA SVITKÖRNINGEN. I2 fällde två tester
+på ett idiom testfilerna själva beskriver i klartext: en beforeEach sätter ett grundsvar
+(POST compute-segment, GET get-segments) och ETT test registrerar sin egen variant i
+testkroppen. use() prepend:ar, så den senare vinner och beforeEach-handlern blir oanvänd trots
+att Edge Function:en anropades. Den är SKUGGAD, inte felskriven. Kriteriet skärptes med ett
+tredje led — ingen annan av testets överskuggningar för samma EF fick vara använd — och regeln
+är pinnad i självtestet.
 
-KLASS (B) ÄR VAKTENS FARLIGASTE FALSKA POSITIV: utan ventil fäller vakten exakt de tester vars korrekthet består i att handlern inte används. Nocks .optionally() och Mockitos lenient() finns för denna klass; researchens 'legitim oanvänd' var alltså inte en hypotetisk kategori utan har två skarpa instanser i repot i dag.
+DE FYRA ÖVERLEVARNA:
+  hem.acceptance.test.ts:216 + :234 — döda get-event-registreringar BORTTAGNA, tillsammans med
+    kommentaren som beskrev en avsikt testet inte fullföljer.
+  mer-segment-send.acceptance.test.ts:207 (send-email) och
+    person-note-edit.acceptance.test.ts:175 (update-record) — negativa sensorer, märkta med
+    medvetetOanvand() och ett skäl som säger att frånvaron av anropet ÄR testets resultat.
 
-KÄLLVERIFIERING FÖR STEG 1, GJORD I SAMMA PASS: request:match finns på fixturen (LifeCycleEventsMap, msw 2.15.0) — MEN den typen är @deprecated i installerad version, med hänvisning till HttpNetworkFrameEventMap. Efterföljaren bor under msw/lib/core/experimental/ och exponeras INTE genom @msw/playwright 0.6.7, vars NetworkFixture typas mot Omit<SetupApi<LifeCycleEventsMap>, 'dispose'>. Båda formerna bär dessutom bara { request, requestId } — ingen handler-koppling. Kopplingen anrop→närmaste-handler måste alltså räknas av oss, den fås inte gratis. Ej blockerande; bokförs så nästa läsare inte tror att den nyare formen missades.
+MÄTT UTFALL, EGNA KÖRNINGAR (darwin, --retries=0):
+  npm run test:acceptance                    153 passed / 0 failed              exit 0
+  självtestet (visual-desktop)                29 passed                         exit 0
+  npm run test:acceptance:sjalvtest          153 fällda, 153 OmockadRequestError exit 0
+  npm run test:acceptance:sjalvtest:negativ  0 fällda (bedömningen föll rätt)    exit 0
+  npm run typecheck                                                             exit 0
+  npx @biomejs/biome check .                                                    exit 0
+  npm run build                                                                 exit 0
+  npm run test:api                           405 passed                         exit 0
+  npm run check:docs                         9 gröna                            exit 0
 
-SIDOFYND FÖR TASK-64: mätkörningen (hela sviten, --retries=0) gav 152 passed / 1 failed — event-ny-anmalan.acceptance.test.ts:641 (virtuell fokus, aria-activedescendant). Det är en FJÄRDE fil utöver de tre TASK-64 listar (event-anteckningar:142, mer-intresserade:95, person-detail:137). Fjärde körningen, fjärde uppsättningen fallerande tester — stärker bilden av bred flakighet snarare än en lokaliserad rad.
+BEVIS I BÅDA RIKTNINGAR — att grinden fäller när den ska:
+  TRÖG: en död get-attendance-registrering lades tillbaka i hem.acceptance.test.ts och hela
+    filen kördes. Utfall: 28 passed MEN exit 1, med rapporten "tests/acceptance/
+    hem.acceptance.test.ts:235:22 / GET */functions/v1/get-attendance / registrerad av 1 av
+    28 körda tester i filen — använd av 0". Återställd.
+  IVRIG: test.fail() togs tillfälligt bort ur självtestets två skarpa fall. Utfall: exakt 2
+    failed — OkantEfNamnError (get-persosn, med "Menade du: get-person" och radnummer)
+    respektive OmatchadOverskuggningError (POST get-persons mot det faktiska GET-anropet).
+    Återställt.
+
+KÄND LUCKA, ÖPPET BOKFÖRD: den tröga kontrollen står över vid --grep, --grep-invert och
+--shard (de syns i FullConfig) och när inte alla planerade tester i filen rapporterade in.
+Positions-urvalet fil.ts:rad, --last-failed och UI-läget filtrerar suiten UTAN att synas i
+konfigurationen — där kan ett levande deklarationsställe se dött ut. Rapportens sista stycke
+säger det rakt ut till läsaren.
+
+STÄNGD 2026-07-28 av orkestreraren efter CI-verifiering. PR #340 mergad som 1bd4762f → ce5c070; samtliga tolv jobb gröna per jobb: Acceptance 7m16s · Staging (API+E2E) 5m13s · A11y 2m00s · Pure+Build 37s · Lint 38s · Docs 34s · purge 9s · CodeQL-paret · aggregatorn 4s.
+
+OBSERVATION SOM HÖR TILL A7, EJ TILL DETTA KORT: i denna körning var Acceptance (7m16s = 436 s) LÄNGRE än Staging (5m13s = 313 s). Kritiska vägen har därmed bytt bärare sedan granskningen mättes samma dag, där Staging bar 375 s mot Acceptance 346 s. Talet 436 s ligger i övre delen av tidigare observerat spann (346-421 s) men utanför det — orsaken är INTE mätt och ska inte gissas: den nya reportern kan bära en del, workerlast en annan (jfr TASK-64). Registrerat i restlistans A7 som mätpost före A7:5, eftersom staging-flytten ensam inte längre räcker för att komma under målet om acceptance bär mer än den.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
