@@ -1,10 +1,10 @@
 ---
 id: TASK-70.3
 title: 'Skiva: Staging (API + E2E) ur PR-grinden till post-merge'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-28 16:33'
-updated_date: '2026-07-28 23:36'
+updated_date: '2026-07-28 23:48'
 labels:
   - ready-for-agent
 dependencies:
@@ -144,10 +144,26 @@ FYND UTANFÖR SCOPET, EJ ÅTGÄRDAT — mintat som TASK-76 av orkestreraren: Sta
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+STÄNGD 2026-07-29 av orkestreraren. DoD #3: CI grön per jobb på 1cd94df (efter update-branch mot main) — run 30408622828, conclusion success, verifierad oberoende av bygg-agentens egen vakt. Mergad som 3358744.
+
+AC #1 — AVSTEG FRÅN BOKSTAVEN, GODKÄNT PÅ RATIONALE. Kriteriet krävde att jobben 'INTE förekommer i jobblistan'. De förekommer, som skippade placeholders: runner_id null, steps 0, completed_at 1 s FÖRE started_at. Literal frånvaro hade krävt radering ur ci-suite.yml — vilket kortet uttryckligen förbjuder, eftersom nightly.yml anropar samma källa utan run_staging-input och staging då försvunnit ur nattnätet. Kriteriets AVSIKT är att staging inte ska KÖRA och inte ta mutexen; ett jobb utan runner och utan steg gör varken. Kontrast på gamla ci.yml (30405315514): runner_name satt, steps 12, 367 s. Bedömningen är orkestrerarens, öppet bokförd — rationale styr över bokstaven vid divergens.
+
+Kritiska vägen bytte bärare utan att växa: staging 375 s -> Acceptance (hermetisk) 429 s, total 450 s mot tak 480 s och baslinje 445 s (+1,1 %). Det är kortets egen förutsägelse, bekräftad.
+
+Mutex-vinsten (AC #5): FÖRE 447/690 s med 283 s kö, EFTER 440/426 s med 0 s kö. Max 690 -> 440 s. Kön korroborerad av ett oberoende naturligt experiment samma kväll: 323 s. Det bärande är inte -36 % utan derivatan — FÖRE-talet växer ~360 s per ytterligare samtidig kod-PR eftersom de serialiseras, EFTER-talet är konstant.
+
+TVÅ POSTER SOM LÄMNAS ÖPPNA, EJ GLÖMSKA: (1) ui_low_risk och acceptance_local har efter denna skiva ingen konsument kvar i ci.yml. Ej rivna — markerade på tre ställen så det inte kan läsas som förbiseende; rivningen är ett scope-beslut och bärs vidare av restlistans A7-avsnitt. (2) Purge-racet som skivans mätningar avtäckte bärs av TASK-76, med sex observationer varav ett kontrastbevis.
+
+A11y (axe-runner) kör fortfarande i PR-grinden — den flyttas av TASK-70.4, nästa kort i steg 3.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
