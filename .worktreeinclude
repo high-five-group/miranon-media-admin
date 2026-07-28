@@ -1,0 +1,27 @@
+# .worktreeinclude — gitignorerade filer som kopieras in i varje ny worktree.
+#
+# Format: .gitignore-syntax. Endast filer som BÅDE matchar ett mönster här OCH
+# är gitignorerade kopieras — tracked filer dupliceras aldrig, så de behöver
+# inte listas (.env.development, .env.production, .env.staging och alla
+# .env.*.example följer med automatiskt eftersom de är incheckade).
+#
+# VARFÖR FILEN FINNS (ADR-082-passets § E.2, 2026-07-28): en worktree är en
+# färsk checkout. Utan dessa filer kan en isolerad byggagent inte köra repots
+# Definition of Done — `npm run test:api` saknar sina staging-credentials och
+# faller på ett sätt som ser ut som ett testfel men är en miljöbrist. Att göra
+# isolering till norm utan detta byter bara en felklass mot en annan.
+#
+# NODE_MODULES LIGGER MEDVETET INTE HÄR. Mönstret skulle KOPIERA katalogen
+# (~459 paket) till varje ny agent-worktree, inte länka den. Agent-typerna i
+# .claude/agents/ symlinkar den i stället som första steg — sekunder i stället
+# för minuter, och ingen diskdubblering per agent.
+#
+# .ENV.PROD-SMOKE LIGGER MEDVETET INTE HÄR — den är gitignorerad och skulle
+# alltså ha kopierats. En byggagent arbetar mot staging och ska inte bära
+# prod-credentials; minsta möjliga behörighet väger tyngre än bekvämligheten
+# att ha alla filer överallt. Behöver ett pass prod-smoken körs den från
+# huvudkatalogen under egen hand.
+
+.env.local
+.env.test
+.env.seed
