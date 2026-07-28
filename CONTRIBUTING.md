@@ -443,7 +443,19 @@ Svarar på hur ofta subagenter spawnas **utan** worktree-isolering, och därmed 
 de typade agenterna i `.claude/agents/` räcker som mekanism. Underlaget skrivs
 löpande av en icke-blockerande `PreToolUse`-hook till
 `.claude/agent-spawn-log.jsonl` (gitignorerad — den beskriver den lokala
-maskinens sessioner, inte repots tillstånd).
+maskinens sessioner, inte repots tillstånd). Hooken är
+[`scripts/agent-spawn-log.sh`](scripts/agent-spawn-log.sh); den får **aldrig**
+blockera en spawn, och dess testsvit är `scripts/test-agent-spawn-log.sh`.
+
+**Loggen bär två format, och brytpunkten är avsiktligt synlig.** Fram till
+2026-07-28 loggade hooken `isolation` = anropets parameter, som bara är satt när
+anroparen skickar den explicit. Eftersom isoleringen i praktiken kommer ur
+agentdefinitionens frontmatter fick varje typad agent `isolation: null` trots att
+den körde i egen worktree — mätaren pekade åt det farliga hållet. Från och med
+restlistans `A7:2` loggas den **effektiva** isoleringen, plus ett nytt fält
+`isolation_kalla` (`frontmatter` · `param` · `null`) som säger vilken av de två
+källorna som bar den. De äldre raderna står kvar som de är; `metrics:agents`
+räknar dem via en frontmatter-slagning och märker dem *äldre form* i utskriften.
 
 **Läs den innan `permissions.deny` eller en tvingande hook övervägs.** Hela
 poängen med steget är att beslutet ska vila på siffror i stället för åsikter;
