@@ -1,0 +1,355 @@
+---
+name: Post-merge
+
+# Post-merge-lagret (A7:4 / TASK-70.2). Det ANDRA skyddslagret: verifierar det
+# MERGADE trädet på main, efter att grinden redan släppt igenom det.
+#
+# ═══ VARFÖR FILEN FINNS — vad som saknades före den ═══
+# ci.yml kör visserligen på push till main (dess `on.push.branches: [main]`),
+# men två reduktioner staplas ovanpå varandra och lämnar ett hål:
+#   1. MERGE-DEDUPEN. `dedup_hit` (ci.yml, jobbet `changed`, steget
+#      "Merge-dedup") släcker HELA svit-anropet när merge-commitens träd redan
+#      bevisats grönt i PR:en. En main-push kör alltså MINDRE än PR:en gjorde.
+#      Mätt, inte antaget: körning 30390109862 (merge-commit 4543d186, en
+#      kod-PR) hade `Test suite = skipped`.
+#   2. RISKKLASSNINGEN. D1 (`ui_low_risk`) och `acceptance_local` kan ha släckt
+#      staging redan i PR-körningen. Ett sådant träd landar på main med NOLL
+#      staging-täckning — och punkt 1 gör att main-pushen inte heller kör den.
+# Mellan merge och nattkörningen (nightly.yml, 03:00) fanns därför ingenting.
+#
+# ═══ VAD DEN INTE GÖR — icke-dubblering är ett krav, inte en bonus ═══
+# ci.yml:s `lint`-jobb kör OVILLKORAT på varje main-push (inget if, inget
+# needs) och dess `docs`-jobb kör på docs-ändringar. Den här filen rör inget av
+# det: den kör ENBART den tunga sviten via samma EN KÄLLA (ci-suite.yml) —
+# alltså exakt det lager dedupen släcker, och ingenting annat.
+#
+# Den FÖRLITAR sig heller inte på ci.yml:s main-push-körning: sviten anropas
+# härifrån oavsett vad dedupen beslutade, eftersom det är just dedupen som
+# skapar hålet.
+#
+# ═══ ADDITIV OCH AVBROTTSFRI — per konstruktion, inte per löfte ═══
+# Workflowen triggar FÖRST EFTER att mergen skett. Den kan därför strukturellt
+# inte blockera en landning. Den är INTE och ska ALDRIG bli en required check:
+# rulesetet `main-skydd` (id 19627609) har exakt en — `CI Passed or Skipped` i
+# ci.yml — och hela poängen med det här lagret är att stå utanför den.
+#
+# ═══ FÖRKRAV FÖR A7:5–A7:6 (TASK-70.3 / TASK-70.4) ═══
+# När `Staging (API + E2E)` och `A11y (axe-runner)` flyttas UR PR-grinden är
+# det HIT de flyttas. Ordningen är en invariant: utan lagret tas kontrollen
+# bort i stället för väntan.
+#
+# ═══ MUTEX-KOSTNADEN, ÖPPET BOKFÖRD ═══
+# Anropet nedan skickar INGEN `run_staging`-input och får därmed ci-suite.yml:s
+# default `true` — samma form som nightly.yml. Konsekvens: varje push till main
+# tar den globala `staging-tests`-mutexen (ci-suite.yml, jobbet `test-staging`)
+# EN GÅNG TILL, utöver PR-körningen som redan tagit den. Mätt utgångsläge per
+# landad kod-PR: 1 körning före (PR-körningen; main-pushens svit var skippad),
+# 2 efter.
+#
+# Kostnaden är ÖVERGÅNGSVIS OCH AVSIKTLIG: A7:5 flyttar staging ur PR-grinden,
+# och då är det en körning per landning igen — inte två. Vill man sänka den i
+# förtid är levern ETT ord: `with: {run_staging: false}` på suite-jobbet, vilket
+# behåller acceptance + a11y + pure/build på det mergade trädet men avstår från
+# staging. Det är ett medvetet beslut, inte en detalj — därför står levern
+# skriven här i stället för att tyst utövas.
+#
+# ═══ ÖPPET BOKFÖRD BEGRÄNSNING ═══
+# Larm-jobbet bor INNE i den körning det bevakar och kan därför bara larma om
+# körningen faktiskt äger rum. Ett `startup_failure` (noll jobb instansieras)
+# lämnar inget spår — exakt den defekt nightly-watchdog.yml byggdes för på
+# nattsidan. Motsvarande vakt för denna workflow finns INTE och är medvetet
+# INTE byggd här: den hör till en egen avvägning om huruvida en andra vakt
+# tjänar mer än den kostar. Bokförd, inte antagen bort.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: >-
+          true = ett självtest-jobb failar MED AVSIKT så larmkedjan prövas mot
+          ett ÄKTA failure-resultat i larmets needs — inte via en bypass i dess
+          if-villkor. Sviten hoppas då över: beviset ska vara billigt och aldrig
+          ta staging-mutexen. Städa test-ärendet med motivering.
+        type: boolean
+        default: false
+
+# Least-privilege default (ADR-029 §4); jobben höjer själva där de måste.
+permissions: {}
+
+# Per-SHA-grupp, cancel-in-progress OSATT: en post-merge-körning avbryts
+# ALDRIG. En serialiserande grupp (som nightly.yml:s `nightly`) vore FEL här —
+# GitHubs default-concurrency håller bara EN väntande körning, så en tredje
+# landning hade avbrutit den andras väntande körning och tyst tappat dess
+# täckning. Per-SHA ger en körning per landat träd, alltid.
+concurrency:
+  group: post-merge-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  # Den tunga sviten via EN KÄLLA (ci-suite.yml, delad med ci.yml och
+  # nightly.yml). Hoppas ENDAST i självtest-läge — se `sjalvtest` nedan.
+  suite:
+    name: Verifierande svit på det mergade trädet
+    if: ${{ !inputs.simulate_failure }}
+    # Permissions-taket för ci-suite.yml. Ett anropat workflow kan bara BEHÅLLA
+    # eller MINSKA anroparens token-permissions, aldrig eskalera (L326; GitHub
+    # Docs: "Permissions can only be maintained or reduced—not elevated—
+    # throughout the chain"). Utan detta grant ärver jobbet topp-nivåns
+    # `permissions: {}`, och ci-suite:s `contents: read` för checkout blir en
+    # ESKALERING ⇒ startup_failure. Tredje anroparen; de två föregående
+    # (ci.yml, nightly.yml) fick var sin skarp startup_failure innan grantet satt.
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci-suite.yml
+    # INGEN `with:` — ci-suite.yml:s default `run_staging: true` gäller, samma
+    # form som nightly.yml. Se § MUTEX-KOSTNADEN i huvudet: talet är mätt, och
+    # levern för att sänka det står skriven där.
+    secrets: inherit
+
+  # Självtestet (tvåsidigt bevis, gate-proof.yml:s form). Normalt SKIPPAT — det
+  # instansieras bara av en dispatch med simulate_failure=true, och failar då
+  # genuint. Poängen: larmkedjan prövas mot ett ÄKTA `failure`-resultat i
+  # needs, genom exakt samma väg som en röd svit tar. nightly.yml:s
+  # `simulate_failure` går i stället runt sitt needs-villkor via larmets
+  # if-uttryck — det bevisar att ärendet KAN skapas, men inte att en röd svit
+  # faktiskt utlöser det. Här bevisas hela vägen.
+  sjalvtest:
+    name: Självtest — framkalla rött (endast simulate_failure)
+    if: ${{ inputs.simulate_failure }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    permissions: {}
+    steps:
+      - name: Fail on purpose
+        run: |
+          echo "Framkallar ett ÄKTA failure-resultat i larmets needs."
+          echo "Ingen bypass: larmet läser needs.*.result precis som vid en röd svit."
+          exit 1
+
+  # EXPONERINGSFÖNSTRET (kortets § VAD SOM MÅSTE MÄTAS). Tiden från merge till
+  # post-merge-svar är hur länge ett fel kan ligga oupptäckt i main, och det är
+  # siffran A7:5 och A7:6 lutar sig mot när de tar bort blockerande kontroller.
+  # Utan den mätningen är de två skivorna obelagda — därför mäts den VARJE
+  # körning och skrivs till körningens step-summary, inte en gång vid bygget.
+  #
+  # `if: always()` ENSAMT: fönstret ska mätas även när sviten är RÖD — en röd
+  # körning är precis den vars fönster betyder något. Jobbet har `permissions:
+  # {}` och gör ingen checkout: hela mätningen finns i push-eventets nyttolast.
+  exponeringsfonster:
+    name: Exponeringsfönster (merge → svar)
+    needs: [suite, sjalvtest]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - name: Mät fönstret och publicera det som tal
+        env:
+          MERGE_TS: ${{ github.event.head_commit.timestamp }}
+          NEEDS: ${{ toJSON(needs) }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "## Post-merge — exponeringsfönster"
+            echo ""
+            echo "| Vad | Värde |"
+            echo "|---|---|"
+            echo "| Mergat träd | \`${SHA:0:12}\` |"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          # Tomt MERGE_TS = workflow_dispatch (inget head_commit i nyttolasten).
+          # Rapportera det som EJ TILLÄMPLIGT, aldrig som noll: ett påhittat
+          # tal är värre än ett uteblivet (L322-klassen — frånvaro är inte data).
+          if [ -z "${MERGE_TS}" ]; then
+            echo "| Fönster | _ej tillämpligt — dispatch, inget \`head_commit\`_ |" >> "${GITHUB_STEP_SUMMARY}"
+            echo "Fönstret mäts bara på push-event. Detta är en dispatch."
+          else
+            merge_epoch=$(date -u -d "${MERGE_TS}" +%s)
+            now_epoch=$(date -u +%s)
+            window=$(( now_epoch - merge_epoch ))
+            {
+              echo "| Merge-commitens tidsstämpel | \`${MERGE_TS}\` |"
+              echo "| **Exponeringsfönster (merge → svar)** | **${window} s** |"
+            } >> "${GITHUB_STEP_SUMMARY}"
+            echo "Exponeringsfönster: ${window} s (merge ${MERGE_TS} → nu)."
+          fi
+
+          {
+            echo ""
+            echo "### Jobbresultat"
+            echo ""
+            echo '```'
+            jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<<"${NEEDS}"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  # LARMKEDJAN. Fyrar vid RÖTT (eller cancelled — utebliven dom är inte grön,
+  # L321/L322-klassen) och skapar ett TILLDELAT ärende med REVERT-FÖRSLAG.
+  # Grönt post-merge ⇒ jobbet skippas ⇒ inget ärende, inga spår.
+  #
+  # Ärendet bär medvetet MER än nattärendet, av ett skäl: en röd post-merge
+  # ställer EN fråga — ska den här landningen backas? — och den frågan kan inte
+  # besvaras utan (a) vilka jobb som föll, (b) om föregående post-merge var
+  # grön (⇒ den här landningen är misstänkt) eller redan röd (⇒ felet är äldre
+  # och en revert av DENNA commit är sannolikt fel åtgärd), och (c) ett
+  # revert-kommando med RÄTT form. Allt tre hämtas nedan, och varje hämtning
+  # som misslyckas rapporteras som OKÄND — aldrig som ett faktapåstående byggt
+  # på frånvaro av data.
+  #
+  # `exponeringsfonster` INGÅR i needs, av samma skäl som nightly.yml lägger
+  # sitt `nightly-metrics` i larmets needs: röda MÄTNINGAR får aldrig vara
+  # tysta (L321-klassen). Fönstret är talet A7:5 och A7:6 lutar sig mot — går
+  # mätningen sönder utan att någon får veta, fattas nästa beslut på en siffra
+  # ingen längre producerar. Ärendets tolkningshjälp skiljer det fallet från
+  # en äkta regression, så signalen inte devalveras.
+  larm:
+    name: Larm vid rött post-merge
+    needs: [suite, sjalvtest, exponeringsfonster]
+    if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      # contents: read — `gh api repos/.../commits/<sha>` för antalet föräldrar
+      # (avgör om revert-förslaget ska bära `-m 1` eller inte).
+      contents: read
+      issues: write
+      # actions: read — `gh run list` mot körnings-API:t för föregående
+      # post-merge-körnings utfall. Ospecificerade permissions sätts till none,
+      # så utan grantet får anropet 403 (samma fälla som TASK-51 fann i
+      # nightly.yml:s larm-jobb).
+      actions: read
+    steps:
+      - name: Skapa tilldelat ärende med revert-förslag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SERVER: ${{ github.server_url }}
+          RUN_ID: ${{ github.run_id }}
+          SHA: ${{ github.sha }}
+          NEEDS: ${{ toJSON(needs) }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          SIMULATED: ${{ inputs.simulate_failure }}
+        run: |
+          set -euo pipefail
+          run_url="${SERVER}/${REPO}/actions/runs/${RUN_ID}"
+          short="${SHA:0:12}"
+
+          # --- (a) Vilka jobb föll ------------------------------------------
+          roda=$(jq -r '[to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | "\(.key) (\(.value.result))"] | join(", ")' <<<"${NEEDS}")
+
+          # --- (b) Föregående post-merge-körning på main --------------------
+          # Exit-koden fångas SEPARAT från resultatet. Formen `$(gh … || echo "")`
+          # kollapsar "anropet gick fel" och "det finns inget svar" till samma
+          # tomma sträng, och då byggs ett faktapåstående på frånvaro av data
+          # (TASK-51, L322-klassen). --repo är OBLIGATORISK: jobbet gör ingen
+          # checkout, så gh kan inte härleda repot ur en git-remote.
+          gh_failed=""
+          forra=$(gh run list --repo "${REPO}" \
+            --workflow post-merge.yml --branch main --event push \
+            --limit 2 --json conclusion,databaseId \
+            --jq "[.[] | select(.databaseId != ${RUN_ID})][0].conclusion // \"\"") || gh_failed="1"
+
+          if [ -n "${gh_failed}" ]; then
+            historik="**OKÄND** — anropet mot körnings-API:t misslyckades. Detta är inte ett påstående om historiken; kontrollera att larm-jobbet har \`actions: read\`."
+          elif [ -z "${forra}" ]; then
+            historik="**Ingen tidigare post-merge-körning** på main — det här är den första. Ingen jämförelse att göra."
+          elif [ "${forra}" = "success" ]; then
+            historik="Föregående post-merge-körning var **GRÖN** ⇒ den här landningen är den primära misstänkta. Revert nedan är sannolikt rätt första åtgärd."
+          else
+            historik="Föregående post-merge-körning var **\`${forra}\`** ⇒ felet är sannolikt ÄLDRE än den här landningen. **Revertera inte reflexmässigt** — leta upp den första röda körningen först, annars backas fel commit."
+          fi
+
+          # --- (c) Revert-förslag med RÄTT form -----------------------------
+          # En merge-commit kräver `-m 1`; en enkel commit gör inte det, och fel
+          # form ger ett revert-kommando som bara failar när det behövs som mest.
+          # Föräldraantalet hämtas i stället för att gissas.
+          api_failed=""
+          parents=$(gh api "repos/${REPO}/commits/${SHA}" --jq '.parents | length') || api_failed="1"
+
+          if [ -n "${api_failed}" ]; then
+            revert_cmd="git revert -m 1 ${SHA}   # OBS: föräldraantalet kunde inte hämtas — utelämna '-m 1' om detta INTE är en merge-commit"
+          elif [ "${parents}" -gt 1 ]; then
+            revert_cmd="git revert -m 1 ${SHA}"
+          else
+            revert_cmd="git revert ${SHA}"
+          fi
+
+          # --- Dedup: en re-körning av samma röda körning ska inte ge två ---
+          # ärenden. Nyckeln är TRÄDET (kort SHA i rubriken), inte etiketten:
+          # varje rött träd är en egen incident med ett eget revert-beslut, så
+          # ett stående ärende (jfr `links-arende` i nightly.yml) vore fel form
+          # här. Dedupen gäller alltså per commit, inte per kanal.
+          list_failed=""
+          befintligt=$(gh issue list --repo "${REPO}" --label ci-post-merge \
+            --state open --limit 50 --json number,title \
+            --jq "[.[] | select(.title | contains(\"${short}\"))][0].number // \"\"") || list_failed="1"
+
+          if [ -n "${list_failed}" ]; then
+            echo "::error::Kunde inte läsa befintliga ci-post-merge-ärenden — kanalen är inte verifierbar denna körning."
+            exit 1
+          fi
+
+          note=""
+          if [ "${SIMULATED}" = "true" ]; then
+            note=$'\n> ⚠️ **SIMULERAT** via `simulate_failure`-dispatch — larmkedje-test, ingen äkta regression. Stäng med denna motivering.\n'
+          fi
+
+          cat > /tmp/post-merge-body.md <<EOF
+          Post-merge-lagret (\`post-merge.yml\`) blev rött på ett träd som redan ligger i \`main\`.
+          ${note}
+          | | |
+          |---|---|
+          | **Körning** | ${run_url} |
+          | **Mergat träd** | \`${SHA}\` |
+          | **Röda jobb** | ${roda:-_inga i needs — se körningen_} |
+
+          **Merge-commitens meddelande**
+
+          \`\`\`
+          ${COMMIT_MSG:-<ej tillgängligt — dispatch>}
+          \`\`\`
+
+          ## Är det den här landningen?
+
+          ${historik}
+
+          ## Revert-förslag
+
+          Direktpush till \`main\` avvisas av rulesetet (ADR-076) — reverten går via PR som allt annat:
+
+          \`\`\`bash
+          git fetch origin main
+          git checkout -b revert/${short} origin/main
+          ${revert_cmd}
+          git push -u origin revert/${short}
+          gh pr create --fill
+          \`\`\`
+
+          ## Stängningsregel
+
+          Ärendet stängs ENDAST med (a) en åtgärd som fixar grundorsaken, (b) en genomförd revert, eller (c) en öppet skriven motivering — aldrig tyst. Samma regel som nattnätet (\`CONTRIBUTING.md\` § Nattnätet).
+
+          ## Tolkningshjälp — läs FÖRE revert
+
+          - **Är \`Acceptance (hermetisk)\` det enda röda jobbet?** Sviten är känd flaky under full workerlast (\`TASK-64\`, öppen och obelagd: fyra körningar har gett fyra olika uppsättningar fallerande tester i fyra olika filer). En flake är då en reell möjlighet — kör om körningen innan du reverterar.
+          - **Är \`Exponeringsfönster (merge → svar)\` det enda röda jobbet?** Då är det MÄTNINGEN som gått sönder, inte \`main\`. Reverta ingenting; laga mät-steget i \`post-merge.yml\`.
+          - **Är staging, bygget, acceptance-självtestet eller a11y rött?** Ingen av brasklapparna ovan gäller — behandla det som en äkta regression.
+          EOF
+
+          if [ -n "${befintligt}" ]; then
+            gh issue comment "${befintligt}" --repo "${REPO}" \
+              --body-file /tmp/post-merge-body.md
+            echo "Kommenterade befintligt ärende #${befintligt} (samma träd ${short} — dedup)."
+          else
+            gh issue create \
+              --repo "${REPO}" \
+              --title "🔻 Post-merge rött — \`${short}\` ($(date -u +%F))" \
+              --body-file /tmp/post-merge-body.md \
+              --label ci-post-merge \
+              --assignee marcus803
+            echo "Skapade nytt post-merge-ärende för träd ${short}."
+          fi
