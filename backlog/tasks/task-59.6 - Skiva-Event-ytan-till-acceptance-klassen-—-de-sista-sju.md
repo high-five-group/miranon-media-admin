@@ -1,10 +1,10 @@
 ---
 id: TASK-59.6
 title: 'Skiva: Event-ytan till acceptance-klassen — de sista sju'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-27 20:42'
-updated_date: '2026-07-28 09:24'
+updated_date: '2026-07-28 09:38'
 labels:
   - ready-for-agent
 dependencies:
@@ -288,13 +288,37 @@ finns inte i diffen. Staging-sviterna ej körda lokalt (mutexen) — CI är dera
 bevis.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Event-ytans sju filer i acceptance-klassen. A5:s migreringsfas är därmed KLAR — samtliga arton filer ute.
+
+CHECKSUMMAN GICK IHOP EXAKT: e2e 14 / acceptance 18, och de fjorton kvarvarande matchar den namngivna listan med exakt strängjämförelse. Klassningen härledd ur mätdatan: 142 anrop över de sju, samtliga mot typsnitts-CDN, noll skarpa. Namnparen höll åt rätt håll — event-narvaro-register (8 skarpa), events-list (13), event-deltagare (12) ligger kvar, verifierade mot mätdatan och inte mot filnamnen.
+
+SJÄLVTESTET: 152 tester / 152 fällda / 152 med OmockadRequestError som orsak. Exakt 62 tester flyttade, inga tappade.
+
+AGENTEN HITTADE EN TIDSINSTÄLLD BOMB SOM INTE FANNS I BRIEFEN. events-list-kalender pinnade sin klocka till VERKLIG tid i e2e-formen. Fixtursessionens JWT byggs som FROZEN_NOW + 24h, och FROZEN_NOW är 2026-09-15 — alltså utgång 2026-09-16. Med verklig tid hade supabase-js efter det datumet sett en utgången session och försökt förnya den: ett nätverksanrop rakt in i hermetik-vakten. Testet hade varit grönt vid landning och rött av sig självt om sju veckor, och felet hade läst som ett hermetik-läckage i stället för ett datumproblem. Kedjan verifierad mot koden av orkestreraren innan beteendeändringen accepterades (referensdag 15→19, ArrowLeft→ArrowRight).
+
+PRE-FLIGHT GAV TVÅ LEVANDE PEKARE, båda i KOD och inte markdown: event-narvaro-register:16 och event-detail:33 korsrefererade flyttade filer vid gammal sökväg. Lagade. Noll markdown-länkar pekade på någon av de sju. Ett baseline-filnamn i tests/visual som liknar men inte är en pekare lämnades korrekt orört.
+
+INGET SKRIVBEVIS FLYTTAT: tre muterande EF:er (create-registration, create-event-note, send-registration-confirmation) är avlyssnade med payload-assertioner; skrivbevisen ligger kvar i tests/api/ och är inte i diffen.
+
+fixture-data.ts RÖRD EJ — endast importerad. TASK-61 kan därmed sekvenseras fritt.
+
+ORKESTRERARENS GRANSKNING (verifierat, ej godtaget på rapport): checksumman räknad mot git · sju renames bekräftade · fixture-data.ts:s frånvaro i diffen bekräftad · JWT-kedjan verifierad mot fixture-data.ts och hermetic.ts · de två kod-pekarna lästa i diffen.
+
+CI grön per jobb 9/9, körning 30346750369, PR #318 (merge e6a69a4). PR:en var BEHIND vid armering — uppdaterad FÖRE armering denna gång, till skillnad från 59.5 där det lagades efteråt.
+
+MÄTNING VID LANDNING (formell mätning är 59.7:s uppgift): staging-sviten 9,10 min (30320122732, före 59.5) → 8 min → 6,50 min (denna körning). Vinsten är verklig men mindre än de ~2,4 min som projicerades. SAMTIDIGT: acceptance-jobbet ligger nu på 6,7 min mot taket 8 — skarp svit 174 s plus självtest 202 s. Marginalen 1,3 min är en risk för falsk röd och överlämnas till 59.7.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Klassningen av varje flyttad fil är HÄRLEDD ur hermetik-mätdatan och räkningen redovisad — ingen handplockning
-- [ ] #6 Varje flyttad fil har tvåsidigt bevis: passerar hermetiskt OCH vakten fäller när dess mockar tas bort
-- [ ] #7 Samma zod-scheman parsar fixtursvar som parsar skarpa svar — fogen verifierad, ej antagen
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Klassningen av varje flyttad fil är HÄRLEDD ur hermetik-mätdatan och räkningen redovisad — ingen handplockning
+- [x] #6 Varje flyttad fil har tvåsidigt bevis: passerar hermetiskt OCH vakten fäller när dess mockar tas bort
+- [x] #7 Samma zod-scheman parsar fixtursvar som parsar skarpa svar — fogen verifierad, ej antagen
 <!-- DOD:END -->
