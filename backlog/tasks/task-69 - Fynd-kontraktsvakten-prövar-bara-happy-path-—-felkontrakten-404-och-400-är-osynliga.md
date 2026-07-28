@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 14:08'
-updated_date: '2026-07-28 15:04'
+updated_date: '2026-07-28 17:22'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,10 +30,12 @@ AVGRÄNSNING: detta är vaktens MEKANIK. Att fixturens resolvers glidit i beteen
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Ett kontraktsfall kan uttrycka förväntad statuskod och felkropp, inte bara 200
-- [ ] #2 get-person okänt ID och get-persons ogiltig cursor bevakas som felkontrakt
-- [ ] #3 Tvåsidigt bevis: vakten fäller när felkontraktet bryts OCH är tyst när det hålls
+- [x] #1 Ett kontraktsfall kan uttrycka förväntad statuskod och felkropp, inte bara 200
+- [x] #2 get-person okänt ID och get-persons ogiltig cursor bevakas som felkontrakt
+- [x] #3 Tvåsidigt bevis: vakten fäller när felkontraktet bryts OCH är tyst när det hålls
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
