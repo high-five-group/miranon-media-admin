@@ -49,7 +49,7 @@ prioritering inom Spår A.
 | 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | ✅ **KLART 2026-07-27** — `TASK-54.1` · `54.2` · `54.3` alla **Done** |
 | 1b | **`TASK-55` · Baselines regenererade** | ✅ **KLART 2026-07-27** — 6 bilder granskade + mergade; bevis-dispatch `30297097792` loggar *"Inga baseline-ändringar"* |
 | 2 | **`TASK-58` + `TASK-57` · Fixturens bruksvärde** | ✅ **KLART 2026-07-27** — båda **Done**, båda gröna per jobb 8/8 (`#292` · `#293`). Klassades `ready-for-agent` samma dag |
-| 3 | **A5 · De 18 acceptance-filerna** — här faller taket | ✅ **MIGRERINGEN KLAR 2026-07-28** (`59.7` mätning + `59.8` QA kvar) — `TASK-59` (PRD) + sju skivor + QA publicerade. **`59.1`–`59.6` Done — SAMTLIGA 18 filer ute.** Checksumman gick ihop exakt: e2e **14** / acceptance **18**, de fjorton mot namnlista. Staging-sviten **9,10 → 6,50 min** vid landning (formell mätning är `59.7`:s). **NY RISK: acceptance-jobbet 6,7 min mot tak 8** — sviten växte 51→152 tester och självtestet kör dem en gång till. Acceptance-klassen LEVER som eget mutexfritt CI-jobb; kontraktsvakten i drift. **`TASK-60` inskjutet och Done** (`T104`): hermetikens andra led körbart — och det bar sin första skarpa användning i `59.5` (90/90/90, ingen fil behövde skrivas om). **NÄST: `59.7` mätningen (tar `T105` + tak-marginalen)** |
+| 3 | **A5 · De 18 acceptance-filerna** — här faller taket | ✅ **MIGRERINGEN KLAR 2026-07-28** (`59.7` mätning + `59.8` QA kvar) — `TASK-59` (PRD) + sju skivor + QA publicerade. **`59.1`–`59.6` Done — SAMTLIGA 18 filer ute.** Checksumman gick ihop exakt: e2e **14** / acceptance **18**, de fjorton mot namnlista. Staging-sviten **9,10 → 6,50 min** vid landning (formell mätning är `59.7`:s). **NY RISK: acceptance-jobbet 6,7 min mot tak 8** — sviten växte 51→152 tester och självtestet kör dem en gång till. Acceptance-klassen LEVER som eget mutexfritt CI-jobb; kontraktsvakten i drift. **`TASK-60` inskjutet och Done** (`T104`): hermetikens andra led körbart — och det bar sin första skarpa användning i `59.5` (90/90/90, ingen fil behövde skrivas om). **`TASK-61` DONE 2026-07-28** (PR `#323`) — kontraktsvaktens race stängt med permanent anteckning-fixtur på arbetskö-eventet; purge-immuniteten prövad mot policyns egna funktioner, ej antagen. Ärende `#312` stängt med åtgärd. Acceptance-jobbet mätt **6m47s** i den landningen — tak-risken bekräftad live. **⚠️ TAK-MARGINALEN HAR KRYMPT MÄTBART:** acceptance-jobbet `6m47s` (`#323`) → `7m32s` (`#324`) mot tak **8 min** — samma testmängd, ~45 s varians mellan två körningar. Marginalen 28 s ligger INOM variansen; falsk röd är inte längre teoretisk. **NÄST: `59.7` mätningen (tar `T105` + tak-marginalen, nu högst prioriterad)** |
 | 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ⬜ kan landa när som helst |
 | 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
 
@@ -238,7 +238,18 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
 
 ### A4 · Grindarnas form
 
-- [ ] Länkgrinden delas — interna blockerande, externa nattlig rapport.
+- [x] **Länkgrinden delad — VERKSTÄLLT 2026-07-28 ([ADR-082](../docs/decisions/ADR-082-lankgrindens-form-presubmit-postsubmit.md), PR `#324`).**
+      Besluten Codes, på Marcus explicita delegering (*"du är den som sitter på
+      kompetensen … tar branschledande seniora beslut åt mig"*). `ci.yml` kör
+      `--offline` · nattnätet behåller full yta + `--accept-timeouts` ·
+      cache-maskineriet rivet ur presubmit · `nightly-links` UT ur `alarm.needs`
+      med **egen stående ärende-kanal** (etikett `lankrota`, byggd på repots
+      `gh issue`-mönster — att bara ta ut jobbet vore fail-open, L321/L322) ·
+      `.lycheeignore` roll-bytt till brusfilter, **add-only-policyn upphävd åt
+      båda håll** (ADR-029 amenderad) · två faktafel rättade.
+      **Tvåsidigt bevisat:** trasig INTERN länk → exit 2 (fäller) · död EXTERN
+      länk → exit 0 (släpps) · presubmit `1979 Total, 0 Errors, 36 ms`.
+      Underlaget och den korrigerade motiveringen står kvar nedan.
       **RESEARCH KLAR 2026-07-28:**
       [`docs/research/lankgrindens-form-2026-07-28.md`](../docs/research/lankgrindens-form-2026-07-28.md).
       **Domen: formen är branschens mönster med marginal** — av nio projekt som
@@ -549,7 +560,10 @@ Registrerade som backlog-kort, inte som restliste-poster. Här bara som index.
       `TASK-54.2`, märkt i pilotloggen. Beslutskriterierna räknar skivor, inte
       pass, så varje omärkt uteblivet pass underskattar träffkvoten
 - [ ] `IDENTITET.md`-destillatet (= Spår B steg 4)
-- [ ] **Länkgrindens form (= A4) — SKÄRPT 2026-07-28.** `danger.systems` blev
+- [x] **Länkgrindens form (= A4) — AVGJORD OCH VERKSTÄLLD 2026-07-28**
+      (ADR-082, PR `#324`). Marcus delegerade beslutet till Code i klartext;
+      utfallet står i A4-posten ovan. Ursprungstexten bevarad nedan.
+      **SKÄRPT 2026-07-28.** `danger.systems` blev
       undantag **nummer 20**, och `.lycheeignore` bär redan husets egen dom att
       grinden är fel designad. **Dagens tre länkfel hade tre olika rätta svar** —
       `danger.systems` (värden avvisar CI-nätet → undantag) · `martinfowler.com`
