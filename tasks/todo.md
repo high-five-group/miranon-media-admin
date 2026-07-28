@@ -15,6 +15,30 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ ÅTERUPPTAGEN (2026-07-28, nionde resumen)** — **`lifecycle`
+tillbaka i `active`; numreringen höll på alla sex axlar** (ADR `082` · `L360` +
+**27** fragment · `T106` · `f46` · `task-62`). Ingång: `main` @ `b4f61af`, rent
+träd, CI + CodeQL gröna per jobb på de tre senaste main-körningarna, `audit-ci`
+grön, plugin **1.22.0**. Kortstatus via backlog-CLI:t: `59.5` · `59.6` ·
+`TASK-60` **Done**; `TASK-59` + `59.7` + `59.8` + `TASK-61` **To Do**.
+**FYRA DIVERGENSER:** `PAUSLÄGE`-blockets `322a00e` mot faktisk HEAD `b4f61af`
+(väntat — blocket skrevs före sin egen landning via `#320`) · **två pausade
+sessionsdok** (`session-92`, färgsystemet i egen worktree — Marcus pekade ut
+S91, så vägvalet var fattat) · **S92:s todo-kadensrad saknas fortfarande**
+(obetald nu över TRE resumes) · dependabot-räkningen stämde (exakt de sex
+handoffen namngav). **Fälla-axeln krävde tre grep-försök** — de två första
+mönstren träffade fel form och gav `44`, vilket hade blivit en falsk divergens
+om siffran skickats vidare oprövad; posten är en numrerad listrad, `45` på rad
+182 i `data-model.md`. **INGÅNG KVITTERAD: `TASK-61`** (kontraktsvaktens race)
+— punkt 1 i Marcus beordrade sekvens; kärnan är att ett `needs:` bara flyttar
+racet medan kriteriet kräver en permanent fixtur purge-mönstret per
+konstruktion inte kan träffa. Arbetsformen är beordrad: **Code som
+orkestrerare**, subagent bygger + öppnar PR, orkestreraren granskar diffen,
+armerar auto-merge och äger CI-svansen. **Sessionen lever tills HELA restlistan
+är avklarad.** Karta: `tasks/s91-restlistan.md` § VAR VI ÄR. Full narrativ:
+sessionsdok S91 **Del 16**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-28, åttonde pausen — efter A5:s migrering)**
 — **A5:s MIGRERING ÄR KLAR: samtliga 18 filer ute.** `TASK-59.1`–`59.6` alla
 **Done**; checksumman gick ihop exakt (e2e **14** / acceptance **18**, de fjorton
