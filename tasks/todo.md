@@ -15,6 +15,29 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-28, tolfte pausen — efter arbetsflödes-
+granskningen och restlistans audit)** — **NIO PR:er landade (`#340`, `#350`–
+`#360`), samtliga gröna per jobb, noll röda körningar.** **`TASK-62` Done**
+(vakten ombyggd till två mekanismer efter att mätningen visade **51 → 4**
+fällningar vid per-fil-aggregering) · **`TASK-69` Done** (felkontrakten 404/400
+— kontraktsdriftens **lager 2 byggt**) · **`A7:1`+`A7:2` klara** utan kort.
+**ARBETSFLÖDET GRANSKAT PÅ MARCUS BESTÄLLNING — domen DELVIS:** kod-PR:er bär
+**7,4 min** kritisk väg mot docs-PR:ers 53–79 s, och **restlistan stängde inte
+gapet** (merge queue obeslutad, staging-flytten fanns inte alls). Åtgärdsplanen
+mintad som **`A7` + `TASK-70`-familjen** med ordningen kodad som invariant:
+**`A7:4` är förkrav för `A7:5`–`A7:6`**. **RESTLISTAN AUDITERAD OCH RÄTTAD:**
+**tio motsägelser + tolv statusfel** mot disk, **939 → 585 rader**; beslut **B**
+fattat — kanonisk status bor i registren, filen bär ordning och beroenden.
+**Marcus fångade en post som fallit ur planen** (preview-miljön → `TASK-70.7`);
+`F3` revs som falskt fynd med källa. **KRITISKA VÄGEN BYTTE BÄRARE:**
+`Acceptance` **410–452 s** mot `Staging` 313–381 s — staging-flytten räcker inte
+ensam, mät före `TASK-70.3`. **SEX AGENTER; fyra rapporterade avvikelser mot
+sina egna uppdrag, tre rättade orkestreraren.** **NÄSTA RESUME:** (1) `TASK-65`
+och `TASK-66` parallellt (2) `TASK-70.1`:s etikett rättas (3) `TASK-64` under
+egen hand. Numrering: 91/083/L360 (**33** fragment)/T107/f46/**task-71**. Karta:
+`tasks/s91-restlistan.md`. Full narrativ: sessionsdok **Del 19** + PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-28, elfte resumen — fynd-kedjan klassad och
 sekvenserad)** — resumen kvitterad mot disk: numreringens **sju axlar
 oförändrade** sedan pausen (91/083/L360/**33** fragment/T107/f46/task-70 —
