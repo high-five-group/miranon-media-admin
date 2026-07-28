@@ -4,6 +4,7 @@ title: 'Skiva: Revert-vägen dokumenterad och övad i CONTRIBUTING.md'
 status: To Do
 assignee: []
 created_date: '2026-07-28 16:33'
+updated_date: '2026-07-28 19:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -37,14 +38,16 @@ CONTRIBUTING.md § Landnings-ordningen (rad 155-212) beskriver hur PR:er sekvens
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 CONTRIBUTING.md har en egen sektion för revert-vägen, skild från § Landnings-ordningen
-- [ ] #2 Receptet använder git revert -m 1 mot merge-commits och motiverar varför — rulesetets allowed_merge_methods = merge citeras som skäl
-- [ ] #3 Vägen går via PR, inte direktpush: receptet är förenligt med ADR-076 och med att required-checken är strict
+- [x] #1 CONTRIBUTING.md har en egen sektion för revert-vägen, skild från § Landnings-ordningen
+- [x] #2 Receptet använder git revert -m 1 mot merge-commits och motiverar varför — rulesetets allowed_merge_methods = merge citeras som skäl
+- [x] #3 Vägen går via PR, inte direktpush: receptet är förenligt med ADR-076 och med att required-checken är strict
 - [ ] #4 Reverten är ÖVAD skarpt mot en avsiktligt införd no-op — PR-nummer för landningen, PR-nummer för reverten och båda SHA:na redovisade
 - [ ] #5 Tiden från beslut till landad revert är MÄTT i den övningen och skriven i sektionen — det talet är exponeringsfönstret A7:5 och A7:6 lutar sig mot
-- [ ] #6 Sektionen säger vad som INTE går att backa lika enkelt, om något sådant finns — exempelvis en landad datamigrering eller en ändrad GitHub-inställning
-- [ ] #7 npm run check:docs grön efter ändringen (nio grindar; CONTRIBUTING.md ligger innanför både markdownlint- och vale-scopet)
+- [x] #6 Sektionen säger vad som INTE går att backa lika enkelt, om något sådant finns — exempelvis en landad datamigrering eller en ändrad GitHub-inställning
+- [x] #7 npm run check:docs grön efter ändringen (nio grindar; CONTRIBUTING.md ligger innanför både markdownlint- och vale-scopet)
 <!-- AC:END -->
+
+
 
 ## Implementation Plan
 

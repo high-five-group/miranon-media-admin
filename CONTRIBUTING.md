@@ -220,6 +220,178 @@ lärdom i prosa skyddar bara den som råkar läsa den vid rätt tillfälle. Där
 står regeln vid sidan av armerings-kommandot den gäller, i den sektion som
 redan äger `gh pr merge --auto --merge`.
 
+### Revert-vägen — hur något som redan landat backas ut
+
+**Utlösaren först.** Något ligger redan i `main` och visar sig vara fel: en röd
+körning på `main`, ett nattärende, eller en yta som slutat fungera för Lotta.
+Sektionen ovan förebygger att två PR:er krockar på väg IN — den här beskriver
+vägen UT för något som redan är inne. Två olika lägen med två olika åtgärder;
+de ska inte blandas ihop.
+
+**Backa först, förstå sedan.** En revert är billig (siffrorna står nedan) och
+går själv att ångra. Ett fel som får ligga kvar i `main` under tiden orsaken
+utreds kostar mer, eftersom varje ny gren tas från det trasiga läget.
+Forward-fix — att laga framåt i stället för att backa — väljs bara när orsaken
+redan är känd OCH fixen är mindre än reverten.
+
+**Vem gör vad. Brådskan ändrar inte rollerna.**
+
+| Aktör | Ansvar i revert-vägen |
+|---|---|
+| **Marcus** | Beslutar ATT backa. Beslutet behöver inte vänta på att orsaken är utredd. |
+| **Bygg-agent** | Förbereder gren, revert-commit och PR — och **armerar aldrig mergen**, samma kontrakt som i § Landnings-ordningen. |
+| **Orkestreraren** | Armerar mergen, sekvenserar kön och följer CI till grönt. |
+
+Vad brådskan däremot ändrar är **köordningen**: revert-PR:n armeras FÖRST, och
+andra landningsklara PR:er får vänta och uppdateras efteråt. Det är form B i
+sektionen ovan, inte ett undantag från den. Att armera revert-PR:n samtidigt med
+en annan PR är precis den fälla § Landnings-ordningen beskriver — och den fällan
+kostar just den tid reverten skulle spara.
+
+**Steg 1 — hitta merge-commiten.** Varje landning i `main` är en
+*merge-commit*: en commit som knyter ihop två utvecklingslinjer i stället för
+att bära egna ändringar. Fråga PR:n direkt, hellre än att läsa loggen:
+
+```bash
+gh pr view <PR-nummer> --json mergeCommit --jq .mergeCommit.oid
+```
+
+Är PR-numret okänt går det att lista landningarna, men läs listan noga:
+
+```bash
+git log --oneline --merges -10 origin/main
+```
+
+**Fällan i den listan:** `main` innehåller TVÅ sorters merge-commits. Rader som
+lyder `Merge pull request #N from …` är landningar. Rader som lyder
+`Merge branch 'main' into <gren>` är branch-uppdateringar som följde med in i
+en PR (`gh pr update-branch`, § Landnings-ordningen) — de är inte landningen och
+ska inte revertas. Båda sorterna syns i loggen ovan just nu.
+
+**Steg 2 — skapa reverten på egen gren.**
+
+```bash
+git switch -c revert/pr-<PR-nummer> origin/main
+git revert -m 1 --no-edit <merge-sha>
+```
+
+**Varför `-m 1`, och varför kommandot inte går att köra utan flaggan.** En
+merge-commit har två föräldrar: den ena är `main`-linjen, den andra är den gren
+som landade. Git vägrar gissa vilken av dem som är "det normala tillståndet" att
+återvända till, så en revert utan flaggan avbryts direkt (`exit 128`,
+`is a merge but no -m option was given`). `-m 1` pekar ut förälder nummer 1 =
+`main`-linjen, alltså "ta bort det grenen förde in". `-m 2` betyder motsatsen
+och är tyst farlig: den lyckas ibland utan att ta bort någonting (uppmätt i
+övningen nedan — `exit 0`, noll rader ändrade, felet kvar).
+
+Flaggan behövs för att **varje** landning här blir en merge-commit. Rulesetet
+`main-skydd` tillåter exakt en merge-metod, `allowed_merge_methods: ["merge"]`
+([ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md) beslut 6) —
+squash och rebase är avstängda, eftersom merge-dedupen letar PR-trädet via
+merge-commitens andra förälder (`HEAD^2`). Ett revert-recept skrivet för
+squash-landningar är därför fel recept för detta repo. Ändras metoden någon gång
+faller `-m 1`-kravet med den; verifiera inställningen i stället för att lita på
+raden:
+
+```bash
+gh api repos/high-five-group/miranon-media-admin/rulesets/19627609
+```
+
+**Steg 3 — öppna PR:n. Även en akut revert går via PR.** Direktpush till `main`
+avvisas av rulesetet, bypass-listan är tom och `current_user_can_bypass` är
+`never` (ADR-076 beslut 2) — det finns ingen gräddfil att ta till när det
+brådskar, för någon.
+
+```bash
+git push -u origin revert/pr-<PR-nummer>
+gh pr create --title "revert: <vad som backas> (PR #<nummer>)" --body "<varför>"
+```
+
+Grinden blir ingen flaskhals, av tre skäl som alla är egenskaper hos
+konfigurationen: PR-regeln kräver **0 godkännanden**, så ingen väntan på review;
+docs-klassade PR:er är gröna på omkring en minut (ADR-077); och required-checken
+är `strict`, vilket bara betyder att grenen måste vara aktuell mot `main` när den
+landar. Blir revert-PR:n `BEHIND` gäller § Landnings-ordningens form B.
+
+**Steg 4 — armering och verifiering (orkestreraren).** Samma kommandon som varje
+annan landning; se § Pull Request-flöde för armeringen och Definition of Done för
+`scripts/ci-wait.sh`. Reverten är landad först när CI är grön **per jobb** på
+merge-commiten i `main`.
+
+**Steg 5 — att landa om det som revertades.** En revertad merge kan inte återföras
+genom att grenen mergas igen. Gits egen dokumentation är uttrycklig: *"Reverting a
+merge commit declares that you will never want the tree changes brought in by the
+merge. As a result, later merges will only bring in tree changes introduced by
+commits that are not ancestors of the previously reverted merge"* (`man
+git-revert`, `-m`-avsnittet, verifierat mot git 2.50.1). Vägen tillbaka är att
+revertera reverten (`git revert <revert-sha>`) och bygga vidare därifrån.
+
+**Exponeringsfönstret — hur länge ett fel kan ligga i `main`.** Talet är summan
+av tre led, mätta var för sig i övningen nedan:
+
+| Led | Mätt | Not |
+|---|---|---|
+| `git revert -m 1` | **under 1 s** | samma sekundslag in och ut |
+| `git push` | **3 s** | mätt över hemnätet |
+| `gh pr create` + CI grön | **se övningens rad** | docs-klass; kod-klass är den dyra |
+
+Klassen avgör allt: backas dokumentation kör CI docs-klass (ADR-077, omkring en
+minut), backas kod kör hela sviten — repots uppmätta kritiska väg för en kod-PR
+är **7,4 min**, varav `Staging (API + E2E)` ensamt bär 375 s plus mutexkö (mätt i
+S91:s arbetsflödes-granskning, inte i övningen nedan). Ett kod-fel i `main` kan
+alltså vara borta inom cirka tio minuter från beslut, ett docs-fel inom cirka
+fem. Det är fönstret restlistans steg A7:5 och A7:6 lutar sig mot.
+
+**Vad en revert INTE tar tillbaka.** `git revert` ändrar bara filer i git.
+Allt som redan lämnat repot står kvar:
+
+- **Utskickad e-post.** `send-email` och `send-registration-confirmation` har
+  redan levererat. Ett mail går inte att kalla tillbaka.
+- **Skrivningar i Airtable-basen.** En Edge Function som hunnit skriva har ändrat
+  rader; att backa koden stoppar bara framtida skrivningar. Rättning sker i
+  basen, enligt [ADR-063](docs/decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md).
+- **Deployade Edge Functions.** Deploy är manuell i dag (`scripts/deploy-prod-functions.sh`,
+  ingen CI-pipeline). En revert i git rör inte den funktion som körs — den måste
+  deployas om från det revertade läget.
+- **GitHub-inställningar.** Ruleset, secrets och repo-inställningar bor inte i
+  git alls. Rulesets saknar dessutom PATCH: `PUT` ersätter hela objektet, så en
+  återställning måste göras från ett komplett block — det ligger som
+  återskapnings-underlag i ADR-076 beslut 4.
+
+**Övningen — vad som faktiskt kördes, 2026-07-28.** Vägen är övad skarpt mot en
+avsiktligt införd no-op (en HTML-kommentar utan funktionell verkan), aldrig mot
+verkligt innehåll. Kedjan ligger i denna grens historik och går att läsa om:
+
+| Steg | SHA | Utfall |
+|---|---|---|
+| Utgångsläge (`main`-spets) | `103e5f2` | trädet `4944e1d` |
+| No-op-commit | `5e6da95` | +4 rader i `CONTRIBUTING.md` |
+| Merge-commit, GitHubs form | `b9dada7` | förälder 1 = `103e5f2`, förälder 2 = `5e6da95` |
+| Revert-commit | `31c2146` | −4 rader, trädet åter `4944e1d` |
+
+Tre mätningar, alla mot `b9dada7`:
+
+- `git revert b9dada7` (utan flaggan) → **exit 128**,
+  `error: … is a merge but no -m option was given` — kommandot går inte att köra fel av misstag.
+- `git revert -m 2 --no-commit b9dada7` → **exit 0**, noll rader stagade, no-op:en
+  kvar i filen. Fel förälder-nummer misslyckas alltså TYST och ser ut att ha lyckats.
+- `git revert -m 1 --no-edit b9dada7` → revert-commit `31c2146`;
+  `git diff --stat 103e5f2 HEAD` tomt och `HEAD^{tree}` = `4944e1d`, identiskt
+  med utgångsläget. Träd-identitet, inte bara "det såg rätt ut".
+
+**Övningens avgränsning, öppet bokförd.** No-op:en landade på övningsgrenen, inte
+i `main`, och steg 4 (armeringen) utfördes inte av bygg-agenten — det är
+orkestrerarens knapp, och kontraktet gäller även under en övning. Kedjans
+git-mekanik är därmed bevisad hela vägen; det led som återstår att mäta skarpt är
+armering → landad merge-commit, och det talet faller ut första gången vägen
+används på riktigt.
+
+**Varför sektionen står här.** A7:5 och A7:6 flyttar kontroller från den
+blockerande PR-grinden till `main` efter merge. Den flytten är försvarbar bara
+om vägen tillbaka är kort, känd och prövad — annars byts en väntan mot en risk.
+En oskriven revert-väg prövas första gången under tidspress, av den som har minst
+marginal att lära sig den då.
+
 ## Rött-först — bevisformen
 
 Rött-först är obligatoriskt för produktkod: testet skrivs och körs RÖTT
