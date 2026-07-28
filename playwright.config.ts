@@ -57,6 +57,12 @@ const isVisualRun = process.env.PLAYWRIGHT_VISUAL_DEV_SERVER === '1';
 const ACCEPTANCE_DEV_PORT = 5399;
 const isAcceptanceRun = process.env.PLAYWRIGHT_ACCEPTANCE_DEV_SERVER === '1';
 
+// Självtestläget (task-60, T104): normalläget töms och testens egna
+// network.use() görs verkningslösa, så att varje test MÅSTE fällas av
+// hermetik-vakten. Flaggan läses här enbart för att stänga av
+// failure-artefakter — regimen själv bor i tests/support/fixturvarld/hermetic.ts.
+const isHermetikSjalvtest = process.env.HERMETIK_SJALVTEST === '1';
+
 // E2E-dev-servern är PORTLÅST till 5173: staging-CORS_ALLOWED_ORIGINS tillåter
 // exakt origin http://localhost:5173 (jfr tests/api/cors.staging.test.ts) — en
 // dedikerad e2e-port à la a11y-mönstret hade CORS-blockerat appens staging-anrop
@@ -343,9 +349,15 @@ export default defineConfig({
         baseURL: `http://localhost:${ACCEPTANCE_DEV_PORT}`,
         // T26-formen från chromium-authenticated: trace vid retry, artefakter
         // endast vid rött.
-        trace: 'on-first-retry',
-        screenshot: 'only-on-failure',
-        video: 'retain-on-failure',
+        //
+        // UTOM I SJÄLVTESTLÄGET (task-60), där rött är det FÖRVÄNTADE utfallet
+        // för varje test. Artefakter "endast vid rött" betyder då artefakter för
+        // ALLTING: 51 videor och 51 skärmdumpar av fällningar vi bad om. De
+        // dokumenterar inget fel och kostar både tid och diskutrymme i en körning
+        // vars enda utdata är antalet fällda och deras orsak.
+        trace: isHermetikSjalvtest ? 'off' : 'on-first-retry',
+        screenshot: isHermetikSjalvtest ? 'off' : 'only-on-failure',
+        video: isHermetikSjalvtest ? 'off' : 'retain-on-failure',
       },
     },
     {

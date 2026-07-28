@@ -35,16 +35,25 @@ filer som överskuggar allt de behöver (`persons-list`) obevisade; regimen bär
 därför BÅDA leden. **`test.fail()` FÖRKASTADES AKTIVT:** den kontrollerar att ett
 test fälls, aldrig varför, och hade i en delad söm körts en enda gång av
 ESM-cachen. Grinden kräver i stället `OmockadRequestError` per test.
-**TVÅSIDIGT BEVISAT:** positivt `51 tester · 51 fällda · 51 av vakten` (exit 0)
-· negativ kontroll `51 · 0 fällda ⇒ bedömningen föll` (exit 0). Fail-closed på
-tomhet. **Kostnaden MÄTT:** acceptance-jobbet 1,2–1,4 min över fem CI-körningar,
-+~50 s ⇒ ~2,2 min mot tak 8 — ingen timeout-höjning. **`T105` FÖDD:**
+**TRESIDIGT BEVISAT:** positivt `51 · 51 fällda · 51 av vakten` (exit 0) ·
+negativ kontroll `51 · 0 fällda ⇒ bedömningen föll` (exit 0) · **målfallet** —
+tillfällig överlevar-fil ⇒ `52 · 51 fällda`, överlevaren namngiven (exit 1).
+Fail-closed på tomhet. **KOSTNADSPROGNOSEN VAR MITT EGET FEL:** ~50 s var en
+LOKAL mätning projicerad till CI och skrevs ut som *"mätt, inte antagen"* i tre
+dokument; skarpt utfall **289 s**, jobbet **6,5 min mot tak 8**. Rotorsak
+`retries: CI ? 2 : 0` — i självtestläget är rött det FÖRVÄNTADE utfallet, så
+varje test kördes tre gånger med video (153 körningar för noll information).
+Orsaken BANDS via `CI=1` lokalt (297 s mot CI:s 289 s), gissades inte. Lagat i
+samma pass: `--retries=0` + artefakter av i regimen ⇒ **297 s → 73 s**, jobbet
+~2,5 min. Retries vore dessutom FEL, inte bara dyrt — ett test som fäller först
+och passerar sedan är inget hermetik-bevis. **`T105` FÖDD:**
 hermetik-rapporten skrivs ut ur en gammal mätning som om den vore färsk
 (`global-setup` flagg-vaktad, `global-teardown` inte) — verifierat i koden,
-deferat till `59.7` som äger instrumentet. **SKÖRD: 2 fragment** [UNIVERSAL ×2]
-(grind som ej prövar orsaken · trådens föreslagna form är hypotes).
+deferat till `59.7` som äger instrumentet. **SKÖRD: 3 fragment** [UNIVERSAL ×3]
+(grind som ej prövar orsaken · trådens föreslagna form är hypotes · lokal
+mätning projicerad till CI är inte en mätning).
 **NÄSTA: `59.5` Mer-ytan (6 filer) → `59.6` Event (7) → `59.7` mätningen (tar
-`T105`) → `59.8` QA.** Numrering: 91/082/L360 (**25** fragment)/**T106**/f46/
+`T105`) → `59.8` QA.** Numrering: 91/082/L360 (**26** fragment)/**T106**/f46/
 **task-61**. Karta: `tasks/s91-restlistan.md` § VAR VI ÄR. Full narrativ:
 sessionsdok S91 **Del 15**. *(Föregående fokus-text nedan.)*
 
