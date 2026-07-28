@@ -87,6 +87,31 @@ import { test as fixturvarld } from '../../support/fixturvarld/hermetic';
  * `handlers.ts` — då kan överskuggningen per konstruktion inte drifta ifrån
  * det normalläget matchar, och CORS-huvudet kan inte glömmas.
  *
+ * TIDEN HÖR TILL KONTRAKTET — och till skillnad från fällorna ovan syns den
+ * inte i mönstret. Ett test som väntar på en FELYTA väntar bakom två lager
+ * retry, och båda bor UTANFÖR testfilen:
+ *
+ *   1. `src/data/utils.ts` — `fetchWithRetry`: 4 försök (`maxRetries = 3`) med
+ *      backoff `200 · 2^n` ms + jitter ⇒ 1,4–1,7 s per anrop.
+ *   2. `src/router.ts` — QueryClient-defaulten `retry: 3` med
+ *      `retryDelay = min(200 · 2^n, 2000)` ⇒ 0,2 + 0,4 + 0,8 s ovanpå, och
+ *      varje sådant försök kör om HELA lager 1.
+ *
+ * Räknat ur de konstanterna: ~7–8 s ren backoff innan en retryad felyta finns
+ * att assertera på. Playwrights default-timeout för `expect()` är 5 s, och det
+ * är DEN som biter — inte test-timeouten på 30 s. En felyte-assertion utan egen
+ * timeout hinner därför inte fram, och faller som om appen vore trasig. Ge den
+ * en timeout du kan räkna hem mot konstanterna ovan i stället för en rund
+ * gissning — och räkna om den här, inte i testfilen, när konstanterna ändras.
+ *
+ * VILKA fel som betalar den kostnaden är PER VY, inte en regel för klassen:
+ * 4xx kortsluter båda lagren (lager 1 returnerar dem direkt; lager 2 stängs av
+ * per komponent med ett `retry`-predikat som undantar 4xx), medan 5xx och
+ * nätverksfel går hela vägen. Vad som gäller för din vy står i vyns egen
+ * `useQuery` — läs den innan du väljer felstatus. Att per-fil-kommentarerna i
+ * klassen säger olika saker om 5xx följer av detta; de har rätt var för sig,
+ * om sin egen vy, och ingen av dem är en regel för klassen.
+ *
  * ── BEVISA ATT EN NY FIL FAKTISKT HÄNGER PÅ FIXTUREN (task-60) ────────────
  *
  * En grön svit visar att appen beter sig rätt GIVET fixturens svar. Den visar

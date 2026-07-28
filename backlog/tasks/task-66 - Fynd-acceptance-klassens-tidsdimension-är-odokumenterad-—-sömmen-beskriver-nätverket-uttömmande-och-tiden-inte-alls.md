@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 12:48'
-updated_date: '2026-07-28 15:04'
+updated_date: '2026-07-28 18:36'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,9 +30,11 @@ VARFÖR DET ÄR VÄRT EN RAD: klassen är annars ovanligt väldokumenterad, och 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 acceptance-bas.ts § SKRIVA ETT TEST I KLASSEN bär en rad om retrykedjans tidskostnad med pekare till källan
-- [ ] #2 mer-vantelista rad 148-149 är omformulerad så den inte läses som en allmän regel om 5xx
+- [x] #1 acceptance-bas.ts § SKRIVA ETT TEST I KLASSEN bär en rad om retrykedjans tidskostnad med pekare till källan
+- [x] #2 mer-vantelista rad 148-149 är omformulerad så den inte läses som en allmän regel om 5xx
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
