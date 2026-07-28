@@ -15,6 +15,33 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-28, nionde pausen — efter A5:s mätning och
+worktree-mekaniseringen)** — **A5 ÄR KLAR UTOM QA:** `TASK-59.1`–`59.7` alla
+**Done**, endast `TASK-59.8` återstår i familjen. **TIO PR:er landade
+(`#321`–`#331`), samtliga gröna per jobb, noll röda körningar.** Tre kort
+stängda (`TASK-60`, `TASK-61`, `TASK-59.7`). **TVÅ ARKITEKTURFRÅGOR AVGJORDA PÅ
+DELEGERING:** A4 → **ADR-082** (extern länkyta lämnar presubmit; ADR-029:s
+add-only-policy riven öppet) och worktree-mekaniseringen → typade agenter i
+`.claude/agents/` + icke-blockerande mätning, **båda efter att Marcus stoppade
+förslaget och krävde research först — hooken FUNGERAR men var fel förstaval.**
+**`59.7`:s mätning rättade tre siffror:** projektionen faktor 3,8 mot utfallet
+**1,49** (avvikelsen RÄKNAD — projektionen räknade 296 mockande TESTER medan
+kriteriet är FIL-nivå) · ADR-080:s före-siffra `9,10` reproduceras INTE (mätt
+9,77, härledningen okänd och ej gissad) · **orkestrerarens egen "ren varians"
+var fel** (~80 % infrastruktur, rättat vid källan). Taket **8 → 12 min** på
+acceptance. **`T105` stängd · `T106` FÖDD** (självtestets race — grönt besked
+trovärdigt, **RÖTT kan vara falskt**). **MARCUS-SEKVENS FÖR NÄSTA RESUME:**
+(1) **`TASK-59.8` QA-vandringen — DELEGERAD TILL CODE**, kortet är
+`ready-for-human` men delegeringen står över etiketten (2) steg 4 kadens-regeln
+(3) steg 5 A2:7 — **nu MER angelägen av isoleringen, inte mindre.**
+**Code fortsätter som ORKESTRERARE; spawna skrivande agenter som `bygg-skiva`**
+(landad, självisolerande — men agent-typer laddas vid SESSIONSSTART).
+**Sessionen lever tills HELA restlistan är avklarad.** **SKÖRD denna resume:
+2 fragment** [UNIVERSAL]. Numrering: 91/**083**/L360 (**29** fragment)/**T107**/
+f46/**task-62**. Karta: `tasks/s91-restlistan.md` § VAR VI ÄR. Full narrativ:
+sessionsdok S91 **Del 16** + PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-28, nionde resumen — A5 KLAR utom QA)** —
 **NIO PR:er landade, samtliga gröna per jobb, noll röda körningar** (`#321`–`#330`).
 **`TASK-61` Done** (kontraktsvaktens race stängt med oberoende data, ej körordning;
