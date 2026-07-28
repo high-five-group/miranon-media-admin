@@ -15,6 +15,37 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-28, sjunde pausen — mitt i A5:s migreringsvåg)**
+— **A5 SPECCAT OCH PÅBÖRJAT; ACCEPTANCE-KLASSEN LEVER I CI.** `TASK-59` (PRD,
+14 användarberättelser) + **sju skivor + QA-kort**, vågorna delade efter YTA ej
+antal. **`59.1`–`59.4` alla Done, 5 av 18 filer flyttade**, och
+`Test suite / Acceptance (hermetisk)` är ett eget **mutexfritt** jobb i CI.
+**KLASSNINGEN OMRÄKNAD UR RÅDATA → 18/14**, inte ADR-080:s 19/13: `pwa-offline`
+är mekaniskt ren men doktrinärt undantagen (kräver byggd preview), och ADR:n tog
+den mekaniska 19:an som beslutets. ADR noterad. **SKARV-VALET BELAGT MOT
+PRIMÄRKÄLLA** — EN delad fixturvärld per MSW:s *"single source of truth for your
+network across the entire stack"* + Playwrights `mergeTests` (verifierad
+exporterad i 1.61.1). **KONTRAKTSVAKTEN I DRIFT och larmkedjan bevisad skarpt**
+(dispatch `30309427472`: `Kontraktsvakt: success` + `Larm: success`; ärende
+`#300` stängt med motivering) — **vakten larmade på RIKTIG drift inom en timme**:
+11 fält som `get-registrations` skickar i 43/43 poster saknades i fixturen.
+**ORKESTRERAT MED SUBAGENTER** (Marcus order); workflow förkastat — skivorna är
+linjära och `L323` säger att subagent ej bär asynkron CI-svans. **FYRA LATENTA
+FEL TÄNDE, tre låg redan i repot:** `gh run list --commit` matchar ej förkortad
+SHA (tyst tom lista → falsk timeout; härdad, fällde direkt två självtest-fall) ·
+fixturen elva fält efter · **`L264`-tidszonsfelet** (deterministiskt 22–24 UTC;
+lärdomen tillämpad på 6 av 7 platser) · `danger.systems` avvisar runners
+(undantag nr **20**). **TRE LÄNKFEL, TRE OLIKA RÄTTA SVAR** — undantag ·
+ingenting · laga. **FYRA TRÅDAR FÖDDA:** `T101` (oreproducerat visual-fall) ·
+`T102` (raster-instabilitet i acceptance men ej e2e) · `T103` (`test-bas.ts`
+hemvist) · `T104` (vaktens bevis körs för hand, överlever ej körningen).
+**Fjorton PR:er `#291`–`#305`, samtliga gröna per jobb.** **MARCUS-BESLUT VÄNTAR:
+(1) `T104` före `59.5` eller ej — Codes rek: JA. (2) A4 länkgrindens form.**
+**NÄSTA: `59.5` Mer-ytan (6 filer) → `59.6` Event (7) → `59.7` mätningen →
+`59.8` QA.** Numrering: 91/082/L360 (**23** fragment)/**T105**/f46/**task-60**.
+Full narrativ: sessionsdok S91 **Del 13 + 14** + PAUSLÄGE. Karta:
+`tasks/s91-restlistan.md` § VAR VI ÄR. *(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ ÅTERUPPTAGEN (2026-07-27, sjunde resumen)** —
 **KLASSNINGEN GJORD PÅ MARCUS DELEGERING — OCH DEN AVTÄCKTE EN OSKRIVEN
 INVARIANT.** `TASK-56`, `TASK-57` och `TASK-58` klassade **`ready-for-agent`**
