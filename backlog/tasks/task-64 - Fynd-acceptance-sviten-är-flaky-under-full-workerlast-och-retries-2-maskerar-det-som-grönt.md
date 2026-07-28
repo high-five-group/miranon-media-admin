@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 12:48'
-updated_date: '2026-07-28 15:05'
+updated_date: '2026-07-28 15:19'
 labels:
   - ready-for-agent
 dependencies:
@@ -59,6 +59,14 @@ BEROENDE PÅ TASK-62 (kodat som dep): vaktens per-fil-aggregering är sannolikt 
 
 AVGRÄNSNING MOT T106: T106 gäller självtestets race (onUnhandledRequest vs toBeFocused-timeout). Detta är huvudsviten under workerlast. Närliggande klass, annan yta — slå inte ihop utan att först pröva om orsaken är gemensam.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FJÄRDE DATAPUNKT, 2026-07-28 (biprodukt av TASK-62:s mätning, ej egen utredning): hela acceptance-sviten kördes med --retries=0 på grenen feat/task-62-overskuggnings-vakt. Utfall 152 passed / 1 failed. Det fallerande testet var event-ny-anmalan.acceptance.test.ts:641 ('AT-kontraktet: virtuell fokus — DOM-fokus i fältet, aria-activedescendant pekar på det aktiva alternativet').
+
+Det är en FJÄRDE fil utöver de tre kortet redan listar (event-anteckningar:142, mer-intresserade:95, person-detail:137). Fyra körningar har nu gett fyra olika uppsättningar fallerande tester, i fyra olika filer. Det talar för bred last-känslighet snarare än en lokaliserad rad — men OBS att denna körning inte var kontrollerad för workerlast och alltså inte ersätter kortets AC #1. Den räknas som ytterligare en observation, inte som diagnos.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
