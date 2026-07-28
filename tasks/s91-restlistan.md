@@ -66,7 +66,7 @@ tabellen bär bara det som är kvar.**
 |---|---|---|
 | 4b | **Fynd-kedjan** — sex kort ur `TASK-59.8`:s QA-vandring och kontraktsdrifts-utredningen. **Alla klassade `ready-for-agent` 2026-07-28** (Marcus order: *"ska alla klassas och tas itu med, i rätt ordning"*); ordningen och dess skäl står i § Fynd-kedjans ordning nedan | ▶️ **PÅGÅR** |
 | 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
-| 6 | **A7 · Arbetsflödes-gapet** — åtta poster ur [granskningen](../docs/research/arbetsflode-granskning-2026-07-28.md) 2026-07-28; domen **DELVIS**. Ordningen A7:4 → A7:5–6 är en invariant, se § A7 | ▶️ **PÅGÅR** — A7:1–2 klara (icke-kort-poster), `TASK-70`-familjen öppen |
+| 6 | **A7 · Arbetsflödes-gapet** ur [granskningen](../docs/research/arbetsflode-granskning-2026-07-28.md) 2026-07-28; domen **DELVIS**. Ordningen A7:4 → A7:5–6 är en invariant, se § A7 | ▶️ **PÅGÅR** — A7:1–2 klara (icke-kort-poster), `TASK-70`-familjen öppen |
 
 **Varför A3 var kritiska vägen och inte hygien** (skälet som fattade beslutet,
 bevarat med sitt utfall): staging-sviten låg under global mutex med tre
@@ -269,6 +269,24 @@ kontroll bort utan att ersättas — precis det målbilden varnar för
       Ska övas en gång, inte bara beskrivas → **`TASK-70.5`**
 - [ ] **A7:8 · `delete_branch_on_merge: true`.** Ren hygien; grenar ackumuleras i
       dag. Avbrottsfri → **`TASK-70.6`**
+- [ ] **A7:9 · Preview-miljö per PR.** Granskningens förbättring **F2** —
+      utforskningsläget saknar delad yta. Posten **föll ur åtgärdsplanens åtta
+      steg** och fångades av Marcus 2026-07-28 när han läste förbättringslistan
+      mot A7. Glidningen var orkestrerarens, inte en avgränsning; raden står här
+      just för att en post utanför kartan är en post som tappas — vilket är exakt
+      vad som hände. **Medvetet sist och utan dep:** den ändrar inte den kritiska
+      vägen, och för en ensam granskare som redan kör lokalt är vinsten
+      bekvämlighet snarare än kapacitet. Kortets steg 0 kräver att nyttan prövas
+      mot faktiska blockeringar innan något byggs — är svaret noll är den ärliga
+      rekommendationen att stänga kortet → **`TASK-70.7`**
+
+**Granskningens tredje förbättring, `F3`, är RIVEN — ingen post.**
+`allow_update_branch: false` såg inkonsistent ut mot flödets bruk av
+`gh pr update-branch`, men fältet reglerar bara uppdatering *"even if it is not
+required to be up to date before merging"* och vårt ruleset har `strict` — så det
+gäller inte oss. Empiriskt kördes kommandot tre gånger 2026-07-28 med
+inställningen `false`, samtliga lyckades. Rivningen är bokförd i
+[granskningen](../docs/research/arbetsflode-granskning-2026-07-28.md) § Förbättringar.
 
 **Kandidat, ej beslutad:** `Acceptance (hermetisk)` bär i dag kritiska vägen —
 efter `TASK-62` mättes den till **436 s** mot Stagings 313 s (§ Avbockningslogg
