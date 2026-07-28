@@ -175,8 +175,30 @@ riskreduktionen i hela kartläggningen.
 **Lager 2 — låt vakten pröva felkontrakten, inte bara happy-path.** Statuskoder
 och felkroppar är kontrakt precis som svarsformen: `404` vid okänt ID, `400` vid
 ogiltig cursor och ogiltig filter-input. Kräver att vaktens fall kan bära
-förväntad statuskod, vilket i dag är hårdkodat till 200
-(`kontraktsjamforelse.ts:195-206`).
+förväntad statuskod, vilket i dag är hårdkodat till 200.
+
+> **AMENDERING 2026-07-28 — LAGER 2 ÄR BYGGT.** Levererat som `TASK-69`
+> (PR `#358`, tolv jobb gröna). `Felkontraktsfall` blev en **egen typ**, inte ett
+> fält på `Kontraktsfall` — en diskriminerad union hade tvingat narrowing i varje
+> befintlig användning och riskerat `TASK-68`:s nyss landade arbete. Två fall
+> bevakas: `get-person` okänt ID (404) och `get-persons` ogiltig cursor (400).
+> Tvåsidigt bevis mot skarp staging: tyst när kontraktet håller (exit 0), fäller
+> med `[FELSTATUS]` respektive `[FELKROPP]` när det bryts (exit 1).
+>
+> **Designbeslutet är värt att bära vidare till lager 3 och 4:** felkontraktet
+> jämför **EF:ens egen deklaration mot staging**, inte fixtur mot staging.
+> Fixturvärlden kan strukturellt inte svara annat än 200 (`json()` defaultar
+> dit), så en fixtur-mot-staging-jämförelse hade fällt på fixturens form i
+> stället för på kontraktet. Fixturens kända drift — `resolvePersonResponse`
+> svarar 200 med tom kropp där EF:en har ett uttryckligt 404-kontrakt — är
+> därmed **fortfarande obevakad och hör till lager 4**. Larmets text säger
+> uttryckligen att fixturen aldrig ska lappas för att tysta ett
+> felkontraktslarm.
+>
+> **Radhänvisningen som stod här var fel** (`kontraktsjamforelse.ts:195-206`
+> pekade på en kommentar om `listaAvPoster`; 200-kortslutningen låg på rad 239),
+> och filen ligger i `tests/kontraktsvakt/`, inte under `fixturvarld/`. Fångat av
+> bygg-agenten, som verifierade mot koden i stället för att lita på uppdraget.
 
 **Lager 3 — bind fixturraderna till schemat vid kompilering.** Redan mintat som
 `TASK-63`: 0 av 18 acceptance-filer typar med `z.infer`, 17 av 18 använder

@@ -3,10 +3,10 @@ id: TASK-69
 title: >-
   Fynd: kontraktsvakten prövar bara happy-path — felkontrakten 404 och 400 är
   osynliga
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 14:08'
-updated_date: '2026-07-28 17:22'
+updated_date: '2026-07-28 17:36'
 labels:
   - ready-for-agent
 dependencies:
@@ -35,12 +35,26 @@ AVGRÄNSNING: detta är vaktens MEKANIK. Att fixturens resolvers glidit i beteen
 - [x] #3 Tvåsidigt bevis: vakten fäller när felkontraktet bryts OCH är tyst när det hålls
 <!-- AC:END -->
 
+## Implementation Notes
 
+<!-- SECTION:NOTES:BEGIN -->
+STÄNGD 2026-07-28 av orkestreraren efter CI-verifiering. PR #358 mergad som fef0f3d; samtliga tolv jobb gröna per jobb (Staging 7m16s · Acceptance 6m38s · A11y 1m48s · Pure+Build 27s · Lint 43s · Docs 44s · purge 10s · CodeQL-paret · aggregatorn 3s).
+
+DoD #1/#2/#4 bockade av orkestreraren mot belägg, inte mot antagande: AC 1-3 avbockade i kortet · agentens uppmätta exitkoder (typecheck 0 · biome 0 · build 0 · test:api 0 med 419 passed · test:acceptance 0 med 153 passed · check:docs 0) · diffen fem filer, samtliga i scope (kortet + fyra under tests/), noll orelaterade.
+
+DESIGNBESLUTET SOM AVGJORDE KORTET: felkontraktet jämför EF:ens egen deklaration mot skarp staging, INTE fixtur mot staging. Fixturen är inte part i jämförelsen alls. Skälet är strukturellt — fixturvärlden kan inte svara annat än 200 (json() defaultar dit), så en fixtur-mot-staging-jämförelse hade fällt på fixturens form i stället för på kontraktet. Fixturens kända drift (resolvePersonResponse ger 200 + tom kropp där EF:en har 404) lämnas därför medvetet till lager 4 (dual-run), och larmets egen text säger uttryckligen att fixturen aldrig ska lappas för att tysta ett felkontraktslarm.
+
+ORKESTRERARENS UPPDRAG BAR FEL ADRESS — fångat av agenten. Uppdraget angav tests/support/fixturvarld/kontraktsjamforelse.ts; filen ligger i tests/kontraktsvakt/. Radhänvisningen 195-206 (ur kortet) pekade på en kommentar om listaAvPoster, inte på 200-kortslutningen, som låg på rad 239. Agenten verifierade mot koden i stället för att lita på uppdraget — exakt vad fragmentet uppdrag-kan-peka-pa-fel-adress-verifiera-mot-koden [UNIVERSAL] föreskriver. Samma klass av fel som fragmentet beskriver, begånget av orkestreraren.
+
+TÄCKNINGEN VAR OJÄMN, BOKFÖRT AV AGENTEN I STÄLLET FÖR UTJÄMNAT: get-persons 404-status prövades redan blockerande i tests/api/get-person.staging.test.ts:83, men bara som typeof body.error === 'string' — aldrig lydelsen. get-persons cursor-400 prövades ingenstans (noll träffar på 'Invalid cursor' i tests/). Nytt är alltså lydelsen som kontrakt, cursor-grenen alls, och att båda hamnar i kontraktsdrifts-mekanismen.
+
+TASK-68:s motivering-blindfläck är varken lättare eller svårare att stänga efter detta — felkontrakten rör inte typjämförelsen.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
