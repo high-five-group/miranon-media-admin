@@ -223,9 +223,32 @@ och mutexfri. Den är kandidat för urval (kör den delmängd diffen rör).
 förutsätter att fel kan backas snabbt; den vägen är inte skriven.
 
 **F2 — Ingen preview-miljö** — utforskningsläget saknar delad yta.
+**Åtgärdsplanen nedan missade denna post**, vilket Marcus fångade 2026-07-28
+genom att läsa förbättringslistan mot A7:s punkter. Glidningen var min, inte en
+avgränsning. Mintad i efterhand som **`TASK-70.7`**, medvetet klassad sist och
+utan dep: den ändrar inte den kritiska vägen, och för en ensam granskare som
+redan kör lokalt är vinsten bekvämlighet snarare än kapacitet. Kortets steg 0
+kräver att nyttan prövas innan något byggs.
 
-**F3 — `allow_update_branch: false`** i repo-inställningarna medan flödet
-förlitar sig på `gh pr update-branch` (form B i landnings-ordningen).
+**F3 — `allow_update_branch: false`. ⚠️ RIVEN SAMMA DAG — posten var fel.**
+Den påstod en inkonsistens mellan inställningen och flödets bruk av
+`gh pr update-branch` (form B i landnings-ordningen). Två saker motbevisar den.
+
+**Empirin:** `gh pr update-branch` kördes tre gånger 2026-07-28 (`#340`, `#354`,
+`#355`) med inställningen på `false`, och samtliga gav `✓ PR branch updated`.
+
+**Källan förklarar varför.** GitHubs REST-dokumentation definierar fältet som
+*"Either true to always allow a pull request head branch that is behind its base
+branch to be updated **even if it is not required to be up to date before
+merging**, or false otherwise."* Vårt ruleset har
+`strict_required_status_checks_policy: true` — grenen **är** krävd att vara
+up-to-date. Fältet reglerar alltså bara det fall som inte gäller oss.
+
+**Lärdomen:** posten skrevs på att två värden såg motsägelsefulla ut
+tillsammans, utan att fältets definition lästs. Det är samma klass som filen
+själv granskar — ett påstående utan källa. Ingen åtgärd behövs;
+`TASK-70.6` bär ett AC som håller inställningen oförändrad, vilket är rätt
+spärr och nu med rätt skäl.
 
 ## Det agentdrivna flödet — steg för steg
 
