@@ -2,9 +2,28 @@
 # Reguljära uttryck. En per rad. Tomma rader + #-kommentarer OK.
 # Etablerad: 2026-05-13 (Session 6 K1.D per ADR-029).
 #
-# Empirisk add-only-policy (K1.D §0 utelämning #2):
-# Lägg endast till mönster när dokumenterad-flaky behavior bevisats.
-# Preventiv exklusion tystar K18-signal — undviks.
+# ═══════════════════════════════════════════════════════════════════════
+# FILENS ROLL BYTTE 2026-07-28 — LÄS DETTA FÖRE DU LÄGGER TILL EN RAD
+# ═══════════════════════════════════════════════════════════════════════
+#
+# FÖRR var denna fil ett GRIND-TYSTARE: varje rad tog bort en PR-blockerare.
+# Därför gällde ADR-029 § Medvetna utelämningar punkt 2:s add-only-policy
+# ("lägg endast till när dokumenterad-flaky behavior bevisats; preventiv
+# exklusion tystar K18-signal").
+#
+# SEDAN ADR-082 är den ett BRUSFILTER FÖR NATTRAPPORTEN. ci.yml:s docs-jobb kör
+# med --offline och ser inga externa adresser alls, så en rad här kan inte
+# längre tysta någon blockerande grind — den håller en nattrapport läsbar.
+#
+# ADD-ONLY-POLICYN ÄR DÄRMED UPPHÄVD, åt båda håll: poster får läggas till utan
+# bevisad flakiness, och de får TAS BORT när de inte längre behövs. Det som
+# gäller i stället är ett MOTIVERINGSKRAV — varje post bär en rad om varför den
+# finns och ett datum. Det är formen github/docs (155 rader) och nuxt (31
+# poster) använder för sina icke-blockerande körningar.
+#
+# Konsekvensen att vara medveten om: en död extern länk kan nu landa i main och
+# stå upp till ett dygn innan nattkontrollen fångar den. Det är medvetet valt,
+# och skälet står i ADR-082 § Konsekvenser.
 #
 # Endast acceptable-patterns kvarstår (Session 6.5 2026-05-14: alla
 # DEFERRED-FIX-MARKER-rader eliminerade; A.2 flyttad till kategori 4
@@ -143,7 +162,19 @@
 # INTE support-subdomänen — därav egen rad.
 #
 # sched.com är GHA-IP-klassen (jfr tanstack/opentelemetry/digg/css-tricks).
-# EN-INSTANS-POST, öppet bokförd: 403 CACHAS av lychee (endast 429 exkluderas,
+# EN-INSTANS-POST, öppet bokförd.
+#
+# ⚠️ MOTIVERINGEN NEDAN VILAR PÅ ETT FAKTAFEL — RÄTTAT 2026-07-28 (ADR-082
+# beslut 6), ursprungstexten bevarad för trail-integritet. Påståendet att "403
+# CACHAS av lychee (endast 429 exkluderas)" var sant när posten skrevs, men
+# felcachningen togs bort i lychee v0.24.0 och vi kör v0.24.2 sedan 2026-07-19.
+# Flaggan --cache-exclude-status '429' var därmed redan en no-op, och är sedan
+# ADR-082 borttagen ur ci.yml tillsammans med hela cache-maskineriet.
+# Konsekvens: en omkörning KAN numera producera den andra instansen som
+# digg.se-precedenten kräver. Posten står kvar tills någon prövar den — men
+# skälet den lutar sig mot finns inte längre.
+#
+# Ursprungstext: 403 CACHAS av lychee (endast 429 exkluderas,
 # se css-tricks-posten), så en omkörning kan per konstruktion inte producera den
 # andra instansen som digg.se-precedenten annars kräver. Följer i stället
 # css-tricks-postens form: en instans med dokumenterat klassbevis.
@@ -182,10 +213,14 @@
 # Paketets EXISTENS är verifierad mot den auktoritativa källan i stället:
 # registry.npmjs.org/@msw%2Fplaywright svarar 200. Webb-frontend spärrar
 # automatiserad hämtning; registry-API:t gör det inte.
-# NOT: denna post är ett av de 19 externa undantag som motiverar
-# förbättringsspåret i sessionsdok S91 § "länkgrinden är fel designad" —
-# externa länkar bör flyttas till en nattlig icke-blockerande kontroll i
-# stället för att blockera PR:er och generera undantag som aldrig rensas.
+# NOT (uppdaterad 2026-07-28): posten var ett av de externa undantag som
+# motiverade förbättringsspåret i sessionsdok S91 § "länkgrinden är fel
+# designad". SPÅRET ÄR GENOMFÖRT — se ADR-082: externa länkar kontrolleras
+# numera nattligt och icke-blockerande.
+# Räkningen "19" som stod här är BORTTAGEN, inte uppdaterad: den gick inte att
+# härleda ur någon konvention (per rad ger 21 externa mönster, per
+# kommentarsblock 16 — varken 19 eller 20 faller ut ur någondera). En siffra
+# ingen kan räkna fram är sämre än ingen siffra.
 ^https://www\.npmjs\.com/package/.*$
 
 # danger.systems — Connection reset by peer (os error 104) från GitHub-runners,
@@ -195,8 +230,12 @@
 # Mätt 2026-07-27: två oberoende körningar 13 minuter isär — nattkörning
 # 30309427472 (22:05Z) och PR-körning 30310189367 (22:18Z) — båda samma fel,
 # samma URL, i tasks/threads/T98-codex-pr-granskningslagret.md.
-# NOT: detta är det TJUGONDE externa undantaget. Se noten ovan om
-# länkgrindens form — varje ny post är ett argument till för att flytta
-# externa länkar till en nattlig icke-blockerande kontroll (restlistan A4,
-# Marcus-beslut). Undantagen rensas aldrig av sig själva.
+# NOT (uppdaterad 2026-07-28): posten bokfördes som "det TJUGONDE externa
+# undantaget" och var den droppe som utlöste restlistans A4. Ordningstalet är
+# BORTTAGET av samma skäl som "19" ovan — det gick inte att härleda.
+# A4 ÄR AVGJORT (ADR-082): externa länkar blockerar inte längre PR:er. Denna
+# posts EGEN grund är dessutom osäker — om `Connection reset by peer` kom via
+# connect-fasen (aldrig omtag) eller hypers request-väg (omtag) är inte
+# fastställt, och felet har inte reproducerats. Kandidat för borttagning nu när
+# add-only-policyn är upphävd åt båda håll; prövas vid nästa nattröda körning.
 ^https://danger\.systems/.*$

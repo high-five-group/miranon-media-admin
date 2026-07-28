@@ -37,6 +37,33 @@ orkestrerare**, subagent bygger + öppnar PR, orkestreraren granskar diffen,
 armerar auto-merge och äger CI-svansen. **Sessionen lever tills HELA restlistan
 är avklarad.** Karta: `tasks/s91-restlistan.md` § VAR VI ÄR. Full narrativ:
 sessionsdok S91 **Del 16**.
+
+**Session 92 ⏸️ PAUSAD (2026-07-27) — PARALLELL SESSION, färgsystemet från
+audit till spikad palett.** Raden skriven av S91:s nionde resume på Marcus
+order 2026-07-28; S92 utelämnade den MEDVETET två gånger och bokförde avsteget
+öppet — `tasks/todo.md` ägdes av en pågående parallell session, och S92:s eget
+PAUSLÄGE pekade ut resumen som rätt aktör. Ingen skuld, en sekvensering.
+**ALLT ARBETE ÄR LANDAT I `main`** — verifierat, inte antaget: PR `#285` mergad
+2026-07-27 (`03d3a3f`), och `origin/docs/farg-atlas` @ `1e1c778` bär **noll**
+commits utanför `main`. **Paletten spikad:** sex tolvstegsskalor i OKLCH (104
+primitiver, varav **72 nya**) · **62** roller · **85** komponent-tokens ·
+`npm run atlas` verifierar med **1611** kontroller utan avvikelser (155 rader
+handskrivet fyndregister, allt annat härlett ur `src/`). **15 fynd, 2 lösta**
+(F10, F11). **Appens enda faktiska utseendeförändring är ETT tokenvärde**
+(`--mm-button-primary-bg-pressed`, F11) — allt annat additivt och utan
+konsumenter. **MIGRERINGEN ÄR INTE PÅBÖRJAD** — verifierat mot
+`primitives.css`, som säger det i klartext: *"INGEN ROLL PEKAR HIT ÄNNU …
+appen renderar oförändrad."* **VÄNTAR PÅ MARCUS:** val 2:s två delfrågor
+(mätarens fyllnadskulör `sage-9` mot `blue-9` · om fullt ska markeras
+semantiskt) · **F16** `--mm-btn-*` mot `--mm-button-*` (namnbeslutet är
+Marcus; S91:s formulering av frågan vilade på ett falsifierat påstående —
+korrigerat underlag i S92 § Ett S91-påstående som föll). **NÄSTA:** steg A
+(namnge de tre grammatikerna) · B (urvalsrollen) · D (resten av bristerna) —
+alla tre kan Code driva; C kräver Marcus; E (migreringen) sist.
+**7 lesson-kandidater, 4 [UNIVERSAL], ej hub-lyfta** (paus finaliserar inte).
+⚠️ **S92:s egen numreringsrad är FÖRÅLDRAD** (den anger nästa ADR `79`; disk
+säger `082`) — re-verifiera mot disk vid resume, dokets paus-tida värden är
+hypotes. Full narrativ: sessionsdok S92.
 *(Föregående fokus-text nedan.)*
 
 **Session 91 ⏸️ PAUSAD (2026-07-28, åttonde pausen — efter A5:s migrering)**

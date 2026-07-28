@@ -3,10 +3,10 @@ id: TASK-61
 title: >-
   Fynd: kontraktsvakten för get-event-notes mäter mot data som purge raderar —
   race ger slumpmässigt röd natt
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 08:45'
-updated_date: '2026-07-28 10:14'
+updated_date: '2026-07-28 10:33'
 labels:
   - ready-for-agent
 dependencies: []
@@ -50,6 +50,6 @@ VARFÖR DET BRÅDSKAR: vakten flippar slumpmässigt varje natt. En vakt som fäl
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

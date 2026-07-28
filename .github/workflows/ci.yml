@@ -494,19 +494,31 @@ jobs:
           # invarianten (ADR-039) hålls enhetlig över alla 5 bärare.
           fetch-depth: 0
 
-      - name: Restore lychee cache
-        id: restore-cache
-        uses: actions/cache/restore@v6.1.0
-        with:
-          path: .lycheecache
-          key: cache-lychee-v2-${{ github.sha }}
-          restore-keys: cache-lychee-v2-
-
-      - name: Run lychee link check
+      - name: Run lychee link check (INTERN yta — offline)
         # SHA-pin per ADR-029 §6.
         # lychee-action v2.8.0 verifierad 2026-05-13 (K1.C Block 2), Rust-baserad.
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8  # v2.9.0
         with:
+          # ═══ ADR-082 (2026-07-28): DENNA HALVA ÄR INTERN-ONLY ═══
+          # --offline byter ut lychees schema-filter till enbart "file", så varje
+          # http(s)-adress klassas Status::Excluded — inte fel, inte timeout.
+          # Verifierat i källkoden (lychee-bin/src/client.rs, taggen lychee-v0.24.2),
+          # inte antaget ur hjälptexten.
+          #
+          # VARFÖR: grinden blockerar PR:er, och 467 av scopets 903 unika länkar är
+          # externa, fördelade på 125 skilda värdar. Var och en kunde ensam rödmåla
+          # en PR som inte rör den. Av nio undersökta branschledande projekt låter
+          # NOLL externa länkar blockera en PR. Extern yta kontrolleras i stället
+          # kallt varje natt (nightly.yml → nightly-links) med egen ärende-kanal.
+          # Röd docs-grind betyder från och med nu "vår text pekar fel", aldrig
+          # "internet hade en dålig dag".
+          #
+          # CACHEN ÄR BORTTAGEN med samma ändring: en körning utan nätverk har
+          # ingenting att cacha. Mätt kostnad för hela den interna kontrollen är
+          # 31 ms. --cache-exclude-status '429' var dessutom redan en no-op —
+          # felcachning togs bort i lychee v0.24.0 och vi kör v0.24.2 sedan
+          # 2026-07-19. --header (User-Agent) föll av samma skäl: ingen begäran skickas.
+          #
           # Scope efter Marcus' Gate 2 anti-genväg-review + Commit 4a scope-konsistens:
           # INKLUDERAR: aktiva docs + aktiva tasks-dok + AKTIVA sessionsdok
           #             (tasks/sessions/*.md, Session 17 K7 — stänger L91/L97-
@@ -516,16 +528,10 @@ jobs:
           #            docs/reference/pocock/** (vendorerat externt Pocock-material, S47 Steg 0 —
           #            samma rationale som archive/: extern korpus, ej vår prosa)
           #            backlog/** (medvetet utanför — verktygsägd yta, L226; S48 Del 2 gren C)
-          # --cache-exclude-status '429': transient rate-limit ska ALDRIG cachas som fel
-          #   (klass-fix efter förgiftad cache på gitlab-429, röd run 28601497591). Cache-
-          #   nyckel bumpad cache-lychee- → cache-lychee-v2- nedan = deterministisk kallstart.
           args: >-
-            --cache
-            --max-cache-age 1d
-            --cache-exclude-status '429'
+            --offline
             --no-progress
             --verbose
-            --header "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
             --exclude-path docs/archive
             --exclude-path docs/reference/pocock
             './docs/**/*.md'
@@ -536,13 +542,6 @@ jobs:
             './*.md'
           fail: true
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Save lychee cache
-        uses: actions/cache/save@v6.1.0
-        if: always()
-        with:
-          path: .lycheecache
-          key: cache-lychee-v2-${{ github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v6.4.0
