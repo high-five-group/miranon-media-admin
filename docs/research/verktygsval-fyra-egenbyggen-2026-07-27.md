@@ -203,7 +203,13 @@ precis vad `tests/e2e/support/test-bas.ts` gör i dag.
 
 ### Så här ser skillnaden ut i vår kod
 
-Nuvarande form, hämtad ur `tests/e2e/mer-vantelista.staging.test.ts`:
+Formen nedan var den rådande när passet skrevs (2026-07-27), hämtad ur
+`tests/e2e/mer-vantelista.staging.test.ts`. **Rekommendationen är sedan dess
+verkställd:** filen flyttades i task-59.5 till
+[`tests/acceptance/mer-vantelista.acceptance.test.ts`](../../tests/acceptance/mer-vantelista.acceptance.test.ts)
+och bär i dag exakt den `network.use()`-form som visas längre ner. Kod-utdraget
+står kvar som historik — det är jämförelsen passet gjordes för, inte en levande
+pekare:
 
 ```ts
 const GET_WAITLIST = /\/functions\/v1\/get-waitlist/;
