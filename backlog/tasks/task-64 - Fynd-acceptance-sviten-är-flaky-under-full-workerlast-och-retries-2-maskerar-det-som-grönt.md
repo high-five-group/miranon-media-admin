@@ -3,10 +3,10 @@ id: TASK-64
 title: >-
   Fynd: acceptance-sviten är flaky under full workerlast och retries: 2 maskerar
   det som grönt
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 12:48'
-updated_date: '2026-07-28 20:20'
+updated_date: '2026-07-28 20:32'
 labels:
   - ready-for-agent
 dependencies:
@@ -177,6 +177,29 @@ KLASS B ÅTERSTÅR (ej rört, per uppdrag): person-detail:137 föll 2/8 både f�
 FYND UTANFÖR SCOPE, EJ ÅTGÄRDAT: events-list-kalender.acceptance.test.ts:518 bär samma form (getAttribute + icke-retryande toMatch). Lägre risk — ingen tillståndsövergång omedelbart före, och en retryande toHaveText-rad ovanför bevisar att gridden renderats. Lämnad orörd eftersom den ligger utanför uppdragets uppräknade scope; scope-beslutet är inte mitt att ta.
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+KLASS A levererad i PR #377 (commit 2d7e209, merge 990add4), CI grön per jobb i körning 30396110525. Steg 0 (diagnosen) landade separat i #369.
+
+MÄTNINGEN SOM AC 3 KRÄVDE — upprepade fulla svitkörningar med retries AV, workers=8:
+  FÖRE (n=8): 153 passed · A · A · B · 153 · 153 · A+B · 153   => 3/8 fällde (37,5 %)
+  EFTER (n=8): 0/8 för klass A
+Under oförändrad felrat är 0/8 endast 2,3 % sannolikt (0,625^8). Grönt med retries på användes aldrig som data.
+
+AC 2 BEKRÄFTAD MED BELÄGG: före-körning 2 föll på event-anteckningar rad 155 med 'Expected [Roger, Lotta, Roger] / Received Array []' — lokatorn löste till NOLL element. allTextContents() är alltså orsaken, inte en misstanke.
+
+AC 4 — retries: 2 BEHÅLLS, skälet nedskrivet i kortet: det absorberar infra-brus som inte är testkods-race. Men playwright.config.ts:176-178 bär nu ett FALSIFIERAT skäl — kommentaren säger att retries absorberar brus 'utan att maskera äkta fel', och TASK-64 visar att den maskerade ett äkta race i 63 % av CI-körningarna. Rättelsen bakas in i en landning som ändå rör config/docs; agenten rörde inte filen eftersom det hade kostat PR:ens acceptance_local-klassning utan beteendevinst.
+
+ORKESTRERARENS FÖRESLAGNA FIX VAR FEL OCH RÄTTADES AV AGENTEN: toHaveAttribute(..., /.+/) är en no-op på event-ny-anmalan, eftersom aria-activedescendant är MÄTT SATT redan före första ArrowDown (pekar då på djuplänkens eget alternativ) — närvaro-kollen hade passerat på det gamla värdet. Agenten gick i stället mot det väntade alternativets faktiska DOM-id. Uppdraget angav riktning, inte färdig kod, och krävde kontroll mot Playwrights dokumentation; det är den spärren som fångade felet.
+
+EJ REPRODUCERAT LOKALT, EJ UTJÄMNAT: event-ny-anmalan:641 föll aldrig i 16 lokala körningar. Dess fix vilar på mekanismen plus orkestrerarens CI-sampling (två av sex samplade flaky-körningar pekade på just den filen), inte på lokal reproduktion.
+
+KLASS B ÄR BREDARE ÄN KORTETS TRE POSTER och stängs INTE av denna skiva — se eget kort. person-detail:137 var 2/8 både före och efter (oförändrad); hem:423 och mer-intresserade:95 föll inte alls i 16 körningar; men efter-serien exponerade fyra tester i samma last-känsliga klass som inte står på kortet: mer-segment-send:110, persons-list:95, event-narvaro:193 (axe), event-anteckningar:333 (axe). Varning från agenten: körtiden drev 107 -> 173 s genom efter-serien, så klass B-raten där kan vara uppblåst av stigande maskinlast och ska inte jämföras rakt av.
+
+FEMTE FÖREKOMSTEN, SCOPE-BESLUT EJ AGENTENS: events-list-kalender.acceptance.test.ts:518 bär samma form (getAttribute + icke-retryande toMatch). Lägre risk, ej rörd.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
