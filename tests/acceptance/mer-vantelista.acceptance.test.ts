@@ -1,26 +1,35 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, test } from './support/acceptance-bas';
 
 /**
  * Fas 6c Leverabel 3 — Väntelista-vy (/mer/vantelista, LÄS-vy via get-waitlist,
  * GLOBAL lista, NOT Flyttad, createdTime desc).
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt, inte staging-exklusivt; jfr event-anmalda.staging.test.ts).
+ * ACCEPTANCE-KLASSEN (task-59.5, ADR-080): filen flyttades hit ur e2e-sviten
+ * med hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade.
+ * Klassningen är HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 13
+ * restanrop, samtliga typsnitt, noll skarpa.
  *
- * **Deterministisk via `page.route`-mock** av get-waitlist. Regex-matchare
- * (`/get-waitlist/`) som INTE kolliderar med andra mocks: `get-waitlist` är unikt
- * (ingen substräng-krock med get-event/get-events/get-person/get-attendance/
- * get-registrations). EF:en anropas UTAN query-params (global) → ingen `\?` i
- * matcharen. Mocken speglar EF-svaret `{ waitlist: [...] }` (WaitlistEntrySchema-rader).
+ * **Deterministisk via `network.use()`** — inte `page.route`: page-routes prövas
+ * FÖRE MSW:s context-routes och hade lagt en andra avlyssningsmekanism ovanpå
+ * fixturvärlden (tudelningen task-54.2 tog bort). Mönstret byggs med
+ * `EF('get-waitlist')` ur handlers-modulen, aldrig som handskriven sträng — en
+ * överskuggning vars mönster inte matchar faller igenom UTAN att något fälls
+ * (den tysta fällan, `hermetic.ts` § Överskugga en delad handler).
+ *
+ * `get-waitlist` LIGGER INTE I NORMALLÄGET: ett test här som glömmer sin
+ * överskuggning fälls av hermetik-vakten med adressen namngiven. Svarsformen är
+ * EF:ens egen (`{ waitlist }`, WaitlistEntrySchema-rader) — snittet ligger vid
+ * protokollet.
  *
  * Täckning: roster-rendering (namn + ställde-sig-datum + e-post + telefon +
  * informationsmail-status), antal-summa, fokus→<h1> + aria-live, tom-state, fel
  * (role=alert), loading aria-busy, namn-fallback ("Namn saknas"), axe 0. LÄS-vy →
  * INGEN flytta-/write-affordans.
  */
-
-const GET_WAITLIST = /\/functions\/v1\/get-waitlist/;
 
 type Row = Record<string, unknown>;
 
@@ -38,37 +47,29 @@ function row(overrides: Row = {}): Row {
   };
 }
 
-async function mockWaitlist(
-  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-  page: any,
+function mockWaitlist(
+  network: NetworkFixture,
   rows: Row[],
-  {
-    status = 200,
-    delayMs = 0,
-    manualRelease = false,
-  }: { status?: number; delayMs?: number; manualRelease?: boolean } = {},
-): Promise<() => void> {
+  { status = 200, manualRelease = false }: { status?: number; manualRelease?: boolean } = {},
+): () => void {
   // manualRelease (opt-in): håll EF-svaret öppet tills testet kallar release().
   // Gör loading-fönstret DETERMINISTISKT i stället för att racea en fast delayMs
-  // mot realtid under parallell worker-last (T26 Landning B). Befintliga callers
-  // (utan flaggan) är orörda — release() är då en no-op de ignorerar.
+  // mot realtid under parallell worker-last (T26 Landning B). Parkeringen bärs av
+  // ett obesvarat löfte i MSW-resolvern (task-59.4:s form).
   let release = () => {};
   const gate = manualRelease ? new Promise<void>((resolve) => (release = resolve)) : null;
-  await page.route(GET_WAITLIST, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    if (gate) await gate;
-    else if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
-    await route.fulfill({
-      status,
-      contentType: 'application/json',
-      body: status === 200 ? JSON.stringify({ waitlist: rows }) : JSON.stringify({ error: 'x' }),
-    });
-  });
+  network.use(
+    http.get(EF('get-waitlist'), async () => {
+      if (gate) await gate;
+      return status === 200 ? json({ waitlist: rows }) : json({ error: 'x' }, status);
+    }),
+  );
   return release;
 }
 
 test.describe('Väntelista-vy (Fas 6c L3 — LÄS-vy via get-waitlist)', () => {
-  test('roster renderas (namn + fält) + antal-summa; fokus → <h1>', async ({ page }) => {
-    await mockWaitlist(page, [
+  test('roster renderas (namn + fält) + antal-summa; fokus → <h1>', async ({ page, network }) => {
+    mockWaitlist(network, [
       row({
         fornamn: 'Anna',
         efternamn: 'Andersson',
@@ -126,8 +127,8 @@ test.describe('Väntelista-vy (Fas 6c L3 — LÄS-vy via get-waitlist)', () => {
     );
   });
 
-  test('tom väntelista → vänlig tom-text, ej fel', async ({ page }) => {
-    await mockWaitlist(page, []);
+  test('tom väntelista → vänlig tom-text, ej fel', async ({ page, network }) => {
+    mockWaitlist(network, []);
     await page.goto('/mer/vantelista');
 
     await expect(page.getByRole('heading', { level: 1, name: 'Väntelista' })).toBeVisible();
@@ -136,25 +137,25 @@ test.describe('Väntelista-vy (Fas 6c L3 — LÄS-vy via get-waitlist)', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('namn null → "Namn saknas" (graciöst), aldrig krasch/tomt', async ({ page }) => {
-    await mockWaitlist(page, [row({ fornamn: null, efternamn: null })]);
+  test('namn null → "Namn saknas" (graciöst), aldrig krasch/tomt', async ({ page, network }) => {
+    mockWaitlist(network, [row({ fornamn: null, efternamn: null })]);
     await page.goto('/mer/vantelista');
     await expect(page.getByText('Namn saknas')).toBeVisible();
   });
 
-  test('fel (4xx, klient-fel) → fel-UI via role=alert (ingen retry)', async ({ page }) => {
+  test('fel (4xx, klient-fel) → fel-UI via role=alert (ingen retry)', async ({ page, network }) => {
     // 4xx → no-retry-grenen (speglar event-anmalda 404): isError direkt, ingen
     // backoff. 5xx vore fel testval — då retryar react-query korrekt och alerten
     // dröjer förbi timeouten.
-    await mockWaitlist(page, [], { status: 404 });
+    mockWaitlist(network, [], { status: 404 });
     await page.goto('/mer/vantelista');
     await expect(page.getByRole('alert')).toContainText('Kunde inte hämta väntelistan');
   });
 
-  test('loading-state är tillgängligt (aria-busy + status)', async ({ page }) => {
+  test('loading-state är tillgängligt (aria-busy + status)', async ({ page, network }) => {
     // Håll EF-svaret öppet → loading-tillståndet är deterministiskt synligt medan
-    // route:n hålls (ingen realtids-race mot en fast delayMs under parallell last).
-    const release = await mockWaitlist(page, [row()], { manualRelease: true });
+    // resolvern hålls (ingen realtids-race mot en fast delayMs under parallell last).
+    const release = mockWaitlist(network, [row()], { manualRelease: true });
     await page.goto('/mer/vantelista');
     await expect(page.getByText('Laddar väntelistan…')).toBeVisible();
     // Släpp svaret → laddat tillstånd renderas.
@@ -162,8 +163,8 @@ test.describe('Väntelista-vy (Fas 6c L3 — LÄS-vy via get-waitlist)', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Väntelista' })).toBeVisible();
   });
 
-  test('axe 0 violations på den renderade väntelista-vyn', async ({ page }) => {
-    await mockWaitlist(page, [
+  test('axe 0 violations på den renderade väntelista-vyn', async ({ page, network }) => {
+    mockWaitlist(network, [
       row({ fornamn: 'Anna', efternamn: 'Andersson', email: 'anna@example.se' }),
       row({
         fornamn: 'Bo',

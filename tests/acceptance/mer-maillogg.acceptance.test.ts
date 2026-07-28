@@ -1,27 +1,35 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, test } from './support/acceptance-bas';
 
 /**
  * Fas 6e L2 Landning 2 — Maillogg-vy (/mer/maillogg, LÄS-vy via get-mail-log,
  * GLOBAL lista, hela Utskickslogg, createdTime desc).
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt, inte staging-exklusivt; jfr mer-vantelista.staging.test.ts).
+ * ACCEPTANCE-KLASSEN (task-59.5, ADR-080): filen flyttades hit ur e2e-sviten
+ * med hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade.
+ * Klassningen är HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 18
+ * restanrop, samtliga typsnitt, noll skarpa.
  *
- * **Deterministisk via `page.route`-mock** av get-mail-log. Regex-matchare
- * (`/get-mail-log/`) som INTE kolliderar med andra mocks: `get-mail-log` är unikt
- * (ingen substräng-krock med get-leads/get-waitlist/get-event(s)/get-person(s)/
- * get-attendance/get-registrations). EF:en anropas UTAN query-params (global) →
- * ingen `\?` i matcharen. Mocken speglar EF-svaret `{ maillog: [...] }`
- * (MailLogEntrySchema-rader — adaptern z.array().parse():ar vid datagränsen).
+ * **Deterministisk via `network.use()`** — inte `page.route`: page-routes prövas
+ * FÖRE MSW:s context-routes och hade lagt en andra avlyssningsmekanism ovanpå
+ * fixturvärlden (tudelningen task-54.2 tog bort). Mönstret byggs med
+ * `EF('get-mail-log')` ur handlers-modulen, aldrig som handskriven sträng — en
+ * överskuggning vars mönster inte matchar faller igenom UTAN att något fälls
+ * (den tysta fällan, `hermetic.ts` § Överskugga en delad handler).
+ *
+ * `get-mail-log` LIGGER INTE I NORMALLÄGET: ett test här som glömmer sin
+ * överskuggning fälls av hermetik-vakten med adressen namngiven i stället för
+ * att tyst rendera en främmande logg. Svarsformen är EF:ens egen
+ * (`{ maillog }`, MailLogEntrySchema-rader) — snittet ligger vid protokollet.
  *
  * TOM-TILLSTÅND ÄR PRIMÄRT: Utskickslogg är tom tills L3 send-email loggar utskick.
  * Tom-vyn måste vara ärlig (icke-alarmerande) OCH axe-ren. Täckning: tom-tillstånd,
  * roster, öppningsgrad-formatering (decimal→%, null→"—", aldrig NaN/null), namn-
  * fallback, fel (role=alert), loading (manualRelease), axe 0 på BÅDE tom + ifylld.
  */
-
-const GET_MAIL_LOG = /\/functions\/v1\/get-mail-log/;
 
 type Row = Record<string, unknown>;
 
@@ -42,38 +50,32 @@ function row(overrides: Row = {}): Row {
   };
 }
 
-async function mockMailLog(
-  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-  page: any,
+function mockMailLog(
+  network: NetworkFixture,
   rows: Row[],
-  {
-    status = 200,
-    delayMs = 0,
-    manualRelease = false,
-  }: { status?: number; delayMs?: number; manualRelease?: boolean } = {},
-): Promise<() => void> {
+  { status = 200, manualRelease = false }: { status?: number; manualRelease?: boolean } = {},
+): () => void {
   // manualRelease (opt-in): håll EF-svaret öppet tills testet kallar release() →
   // deterministiskt loading-fönster (ingen race mot fast delayMs / cold-chunk
   // lazy-load); speglar event-anmalda/mer-intresserade (T26 Landning B).
+  // Parkeringen bärs av ett obesvarat löfte i MSW-resolvern (task-59.4:s form).
   let release = () => {};
   const gate = manualRelease ? new Promise<void>((resolve) => (release = resolve)) : null;
-  await page.route(GET_MAIL_LOG, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    if (gate) await gate;
-    else if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
-    await route.fulfill({
-      status,
-      contentType: 'application/json',
-      body: status === 200 ? JSON.stringify({ maillog: rows }) : JSON.stringify({ error: 'x' }),
-    });
-  });
+  network.use(
+    http.get(EF('get-mail-log'), async () => {
+      if (gate) await gate;
+      return status === 200 ? json({ maillog: rows }) : json({ error: 'x' }, status);
+    }),
+  );
   return release;
 }
 
 test.describe('Maillogg-vy (Fas 6e L2 L2 — LÄS-vy via get-mail-log)', () => {
   test('tom-tillstånd (NORMALT): ärlig icke-alarmerande text, 0 utskick, ej fel, fokus→h1', async ({
     page,
+    network,
   }) => {
-    await mockMailLog(page, []);
+    mockMailLog(network, []);
     await page.goto('/mer/maillogg');
 
     // <h1> = "Maillogg", fokuserad efter async-laddning (tom är giltigt laddat).
@@ -89,8 +91,9 @@ test.describe('Maillogg-vy (Fas 6e L2 L2 — LÄS-vy via get-mail-log)', () => {
 
   test('roster renderas (namn + datum + mottagare + öppningsgrad) + summa; fokus → <h1>', async ({
     page,
+    network,
   }) => {
-    await mockMailLog(page, [
+    mockMailLog(network, [
       row({
         utskicksNamn: 'Vårnyhetsbrev',
         datum: '2026-05-02T10:00:00.000Z',
@@ -139,8 +142,9 @@ test.describe('Maillogg-vy (Fas 6e L2 L2 — LÄS-vy via get-mail-log)', () => {
 
   test('öppningsgrad-formatering: decimal → "%", null (0 skickade) → "—", aldrig NaN/null', async ({
     page,
+    network,
   }) => {
-    await mockMailLog(page, [
+    mockMailLog(network, [
       row({ utskicksNamn: 'Med öppningar', antalSkickade: 10, oppningsgrad: 0.5 }),
       // Div-by-zero: 0 skickade → Airtable ger null → vyn visar "—", ALDRIG "NaN %".
       row({ utskicksNamn: 'Inga skickade', antalSkickade: 0, oppningsgrad: null }),
@@ -157,22 +161,23 @@ test.describe('Maillogg-vy (Fas 6e L2 L2 — LÄS-vy via get-mail-log)', () => {
 
   test('namn-fallback: utskicksNamn=null + mailutskickCopy=null → "Namnlöst utskick"', async ({
     page,
+    network,
   }) => {
-    await mockMailLog(page, [row({ utskicksNamn: null, mailutskickCopy: null })]);
+    mockMailLog(network, [row({ utskicksNamn: null, mailutskickCopy: null })]);
     await page.goto('/mer/maillogg');
     await expect(page.getByText('Namnlöst utskick')).toBeVisible();
   });
 
-  test('fel (4xx, klient-fel) → fel-UI via role=alert (ingen retry)', async ({ page }) => {
+  test('fel (4xx, klient-fel) → fel-UI via role=alert (ingen retry)', async ({ page, network }) => {
     // 4xx → no-retry-grenen: isError direkt, ingen backoff.
-    await mockMailLog(page, [], { status: 404 });
+    mockMailLog(network, [], { status: 404 });
     await page.goto('/mer/maillogg');
     await expect(page.getByRole('alert')).toContainText('Kunde inte hämta maillogg');
   });
 
-  test('loading-state är tillgängligt (aria-busy + status)', async ({ page }) => {
+  test('loading-state är tillgängligt (aria-busy + status)', async ({ page, network }) => {
     // Håll EF-svaret öppet → loading deterministiskt synligt (ingen realtids-race).
-    const release = await mockMailLog(page, [row()], { manualRelease: true });
+    const release = mockMailLog(network, [row()], { manualRelease: true });
     await page.goto('/mer/maillogg');
     await expect(page.getByText('Laddar maillogg…')).toBeVisible();
     // Släpp svaret → laddat tillstånd renderas.
@@ -180,8 +185,8 @@ test.describe('Maillogg-vy (Fas 6e L2 L2 — LÄS-vy via get-mail-log)', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Maillogg' })).toBeVisible();
   });
 
-  test('axe 0 violations på TOM vy (primärt tillstånd)', async ({ page }) => {
-    await mockMailLog(page, []);
+  test('axe 0 violations på TOM vy (primärt tillstånd)', async ({ page, network }) => {
+    mockMailLog(network, []);
     await page.goto('/mer/maillogg');
     await expect(page.getByText('Inga mailutskick har loggats än.')).toBeVisible();
 
@@ -192,8 +197,8 @@ test.describe('Maillogg-vy (Fas 6e L2 L2 — LÄS-vy via get-mail-log)', () => {
     expect(results.violations).toEqual([]);
   });
 
-  test('axe 0 violations på IFYLLD vy', async ({ page }) => {
-    await mockMailLog(page, [
+  test('axe 0 violations på IFYLLD vy', async ({ page, network }) => {
+    mockMailLog(network, [
       row({ utskicksNamn: 'Vårnyhetsbrev', oppningsgrad: 0.5 }),
       row({ utskicksNamn: 'Inga skickade', antalSkickade: 0, oppningsgrad: null }),
     ]);
