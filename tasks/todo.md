@@ -15,6 +15,35 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-28, tionde resumen forts. — KONTRAKTSDRIFTEN
+KARTLAGD)** — **Marcus fråga besvarad med mätning: JA, testerna KAN vara gröna
+medan en verklig EF svarar annorlunda — och det har hänt TVÅ gånger.** `TASK-52`
+lever i produktion (`Motivering` är lookup ⇒ array, schemat kräver sträng;
+persondetaljen faller för varje person med motivering) och kortets egen mening
+säger varför: *"fixturvärlden använder schema-trogna strängar, så ingen grind ser
+den"*. **Vakten hade fällt första natten — men `get-person` står inte i dess
+lista.** Andra fallet upptäckt i utredningen: fixturens `get-person` svarar **200
+med tom kropp** där EF:en har uttryckligt 404-kontrakt, och fixturens kommentar
+beskriver ett beteende **borttaget i `task-54.2`**. Vaktens räckvidd mätt: **3 av
+7 handlers · 3 av 24 EF:er · toppnivå enbart · null-blind 29/32** ·
+ordning/antal/paginering/datumformat prövas inte. **De två EF:er som skickar mail
+till riktiga människor saknar positivt skrivbevis.** → **`TASK-68`** (vakten till
+alla sju, UNDER ARBETE) + **`TASK-69`** (felkontrakten 404/400). Fullt utfall:
+[kartläggningen](../docs/research/kontraktsdrift-skyddet-2026-07-28.md).
+**`TASK-67` DONE** (`#339`) — landnings-ordningen kodad, **tillämpad på sin egen
+landning**; agenten lade till en fjärde form som inte fanns i kortet.
+**`TASK-62` STOPPAD FÖR VÄGVAL:** vakten fäller **36 av 153 tester i 8 filer**,
+men 30 av dem är normalt batch-idiom ⇒ kriteriet är för trubbigt. **Orkestrerarens
+eget fel bokfört:** *"tysta ingenting"* + *"öppna PR"* är oförenliga när jobbet
+lyckas ⇒ avsiktligt röd PR i delad kö (avbruten före kön). **Marcus delegerade
+vägen med *"gör det som är seniort och BRANSCHLEDANDE"* ⇒ Codes beslut: research
+FÖRE ombyggnad** (obelagd hypotes ≠ branschledande); pass mot MSW/Nock/WireMock/
+gomock kör, **bygget nästa resume med belägg**. **`T85` våg 3 RÄTTAD** — två
+dokument bar samma etikett för olika planer, och `P4` (5 req/s delat per bas)
+avgjorde mot båda; **fångat av Marcus-pushback**. **SKÖRD: 4 fragment**
+[UNIVERSAL]. Numrering: 91/083/L360 (**33** fragment)/T107/f46/**task-70**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-28, tionde resumen — `TASK-59.8` QA-vandringen
 KÖRD, sju steg)** — resumen kvitterad mot disk: numreringens sju axlar var
 oförändrade sedan pausen. **`TASK-59.8` AC 1–3 avbockade; sju steg körda och
