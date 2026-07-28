@@ -244,11 +244,18 @@ också bär alla fem i sin § Beslut. **Inga öppna poster.**
       (`tasks/lessons.d/*.md`). Grinden ska täcka **båda** listparen.
       Passets öppna fråga 3: `PARITY_PATHS` är inte härledd ännu.
       **Ingen kort-hemvist — posten bor här.**
-- [ ] **Dokumentera varför** `check-docs.sh` + `ci-wait.sh` behålls (dom:
+- [x] **Dokumentera varför** `check-docs.sh` + `ci-wait.sh` behålls (dom:
       BEHÅLL ×2), så nästa läsare — eller nästa agent — inte återupptar samma
       kritik. Detta är den enda åtgärden som följer av de två BEHÅLL-domarna.
-- [ ] **Rätta en rad i `ci-wait.sh`:s filhuvud** — passet fann att
+      **Landat 2026-07-29** i respektive filhuvud: `check-docs.sh` bär
+      tri-state-argumentet (sju kandidater prövade, ingen uttrycker SKIPPAD),
+      `ci-wait.sh` bär de fem uppgifter som saknar `gh`-yta.
+- [x] **Rätta en rad i `ci-wait.sh`:s filhuvud** — passet fann att
       "terminal-kontroll före första sömnen" inte längre är något `gh` saknar.
+      **Landat 2026-07-29:** raden angav den kontrollen som skiljelinjen mot
+      `gh`; `gh run watch` har den sedan `cli/cli#3962` fixades 2021. Formen är
+      fortfarande rätt, motiveringen var det inte — skälet är utbytt, inte
+      struket.
 
 **A3:s MSW-punkt är stängd** (`TASK-54`-familjen). Öppen svans: WebSocket-vägen
 är oskyddad tills appen får realtime — bärs av **`TASK-56`**, indexerat under
@@ -711,3 +718,9 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
 stängde `TASK-54.2` DoD 7 och `TASK-54.3` DoD 5).
+
+| Datum | Post | Landning |
+|---|---|---|
+| 2026-07-29 | Tillstånds-återställningen (resume 13) + **merge queue flyttad till steg 3** — `70.3` → `70.1` → `70.4` → `75`; Marcus rev tillbaka schemaläggningen till Code | `#389` |
+| 2026-07-29 | **`TASK-73` DONE — AC-svansen tagen av orkestreraren.** Fyra AC krävde post-merge-körningar på `main` efter merge. Ärvd klassning bevisad **fyra gånger** (`Verifierande svit` skipped) · kod-landning kör full svit (`30402869073`) · **mutex-takers per docs-PR 2 → 0** (`ba3eab1`, en enda `.md`-fil, tog `staging-tests` två gånger) · larmet fäller mot ÄKTA `failure` i needs (`30405347512`, ärende `#392` stängt med motivering) | `#393` |
+| 2026-07-29 | **A3:s två BEHÅLL-poster stängda.** `ci-wait.sh`:s filhuvud rättat — terminal-kontrollen var FEL skiljelinje mot `gh` (finns sedan `cli/cli#3962`, 2021); skälet utbytt mot de fem uppgifter som saknar `gh`-yta. `check-docs.sh` bär tri-state-argumentet (sju kandidater prövade). Kvar i A3: **listparitets-grinden** | `#394` |
