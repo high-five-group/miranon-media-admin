@@ -152,6 +152,74 @@ mekaniska grinden gäller:
 - DoD-checklistan i PR-mallen är fylld
 - ADR refererad om arkitekturbeslut tagits
 
+### Landnings-ordningen — `BEHIND` förebyggs, det lagas inte
+
+**Utlösaren först. Känner du inte igen läget tillämpar du inte regeln.** Tre
+villkor samtidigt:
+
+1. **Två eller fler PR:er är landningsklara samtidigt** — eller den ena landar
+   medan den andra redan ligger i luften.
+2. **CI-tiderna är heterogena.** En docs-only-PR faller i klass `D0`
+   ([ADR-077](docs/decisions/ADR-077-riskanpassad-ci-klassning-dedup-nightly.md))
+   och är klar på omkring en minut; en PR som rör kod köar bakom
+   staging-mutexen och tar omkring tio. Siffrorna är `L328`:s mätning från S81
+   — storleksordningen är poängen, inte decimalen.
+3. **Required-checken är `strict`** (up-to-date-kravet ovan) — varje merge till
+   `main` gör varje annan öppen PR `BEHIND`.
+
+Håller alla tre är `BEHIND` inte otur utan följdriktigt: den långsamma PR:en
+förlorar racet mot varje snabb landning inom sitt svit-fönster, och
+`gh pr update-branch` startar en ny svit som hinner bli omsprungen igen. `L328`
+mätte tre sådana varv i S81 innan den parallella strömmen sinade.
+
+**Sekvensera FÖRE armering — en av två former, aldrig ingen.**
+
+- **Form A · tyngst först.** Armera den PR vars svit är längst, låt den landa,
+  armera nästa därefter. En kort svit hinner ikapp en lång; det omvända gäller
+  inte.
+- **Form B · `gh pr update-branch` före armering.** Ska en snabb PR ändå landa
+  först: uppdatera nästa PR:s gren mot `main` **och armera först därefter**.
+
+Armera aldrig två PR:er samtidigt i hopp om att de klarar sig. Att laga
+`BEHIND` i efterhand är inte formen — då har svit-fönstret redan öppnats en
+gång i onödan, och det är precis där racet förloras.
+
+**Bikostnad som hör till form B: CI-vakten måste startas om.** En vakt följer
+det SHA den startades mot. `update-branch` skriver en ny commit på grenen, och
+i samma stund vaktar den ett SHA som inte längre är HEAD; `cancel-in-progress:
+true` (`ci.yml`) avbryter dessutom den pågående körningen, som då rapporteras
+`cancelled`. **Stoppa vakten och starta om den mot det nya SHA:t** — annars
+byter regeln bara en felklass mot en annan. `scripts/ci-wait.sh` skiljer redan
+superseddad (`exit 4`) från röd (`exit 1`) för exakt detta fall: exit 4 är
+inget grönt bevis utan en hänvisning till efterträdaren.
+
+**Form B kräver att grenens agent är klar.** `update-branch` pushar till
+grenen, och varje push avbryter grenens pågående körning. Kör den aldrig mot en
+gren vars bygg-agent fortfarande arbetar — i S91 avbröt orkestrerare och agent
+varandra två gånger, en gång **12 minuter in i en grön körning**.
+`BEHIND`-hantering hör till orkestreraren, men först efter agentens
+slutrapport.
+
+**Agenterna armerar inte — det är andra halvan av samma kontrakt.**
+`.claude/agents/bygg-skiva.md` föreskriver att en bygg-agent öppnar sin PR och
+lämnar armeringen ifrån sig, eftersom ordningen bara kan väljas av den som ser
+hela kön. Agenten avstår, orkestreraren sekvenserar.
+
+**Avgränsning: detta är sekvensering för hand, ingen kö-automat.** GitHub merge
+queue är branschverktyget för just denna klass, men den är en egen öppen post
+(restlistan A4) och prövas mot vår staging-mutex separat. Den föregrips inte
+här — tills den finns är ordningen en aktörs ansvar, och formerna ovan är hela
+mekaniken.
+
+**Varför regeln står här och inte bara som lärdom.** `L328` har varit
+nedskriven sedan S81 och beskriver mekanismen korrekt. Ändå gick orkestreraren
+i samma fälla **två gånger under en och samma resume** 2026-07-28: `#313` gick
+`BEHIND` när `TASK-61` landades medan `59.5`:s PR låg i luften, och `#316`
+gjorde det igen — andra gången rättat före armering i stället för efter. En
+lärdom i prosa skyddar bara den som råkar läsa den vid rätt tillfälle. Därför
+står regeln vid sidan av armerings-kommandot den gäller, i den sektion som
+redan äger `gh pr merge --auto --merge`.
+
 ## Rött-först — bevisformen
 
 Rött-först är obligatoriskt för produktkod: testet skrivs och körs RÖTT
