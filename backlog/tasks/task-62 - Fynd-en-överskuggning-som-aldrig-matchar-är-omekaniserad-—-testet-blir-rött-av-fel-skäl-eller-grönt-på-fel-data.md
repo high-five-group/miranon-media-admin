@@ -3,10 +3,10 @@ id: TASK-62
 title: >-
   Fynd: en överskuggning som aldrig matchar är omekaniserad — testet blir rött
   av fel skäl eller grönt på fel data
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 12:47'
-updated_date: '2026-07-28 16:09'
+updated_date: '2026-07-28 16:23'
 labels:
   - ready-for-agent
 dependencies: []
@@ -153,12 +153,16 @@ KÄND LUCKA, ÖPPET BOKFÖRD: den tröga kontrollen står över vid --grep, --gr
 Positions-urvalet fil.ts:rad, --last-failed och UI-läget filtrerar suiten UTAN att synas i
 konfigurationen — där kan ett levande deklarationsställe se dött ut. Rapportens sista stycke
 säger det rakt ut till läsaren.
+
+STÄNGD 2026-07-28 av orkestreraren efter CI-verifiering. PR #340 mergad som 1bd4762f → ce5c070; samtliga tolv jobb gröna per jobb: Acceptance 7m16s · Staging (API+E2E) 5m13s · A11y 2m00s · Pure+Build 37s · Lint 38s · Docs 34s · purge 9s · CodeQL-paret · aggregatorn 4s.
+
+OBSERVATION SOM HÖR TILL A7, EJ TILL DETTA KORT: i denna körning var Acceptance (7m16s = 436 s) LÄNGRE än Staging (5m13s = 313 s). Kritiska vägen har därmed bytt bärare sedan granskningen mättes samma dag, där Staging bar 375 s mot Acceptance 346 s. Talet 436 s ligger i övre delen av tidigare observerat spann (346-421 s) men utanför det — orsaken är INTE mätt och ska inte gissas: den nya reportern kan bära en del, workerlast en annan (jfr TASK-64). Registrerat i restlistans A7 som mätpost före A7:5, eftersom staging-flytten ensam inte längre räcker för att komma under målet om acceptance bär mer än den.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
