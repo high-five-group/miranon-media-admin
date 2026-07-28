@@ -488,7 +488,7 @@ jobs:
           bash scripts/test-check-adr-count.sh
           bash scripts/test-check-fetch-depth-invariant.sh
 
-      - name: Test gatekeeper script suites (frontmatter / checklists / hook)
+      - name: Test gatekeeper script suites (frontmatter / checklists / hook / ci-wait)
         # Per K6-auditen (Session 17): 3 av 6 grindvakts-testsviter körs
         # tidigare endast manuellt — samma kadens-missmatch-felklass som
         # ADR-039 stänger. Kör varje push; snabba (~31 s summa, Grind B-mätt);
@@ -504,6 +504,13 @@ jobs:
         # den prövar Claude Code-hooken som skriver spawn-mätningens logg. Den
         # är en MÄTARE, inte en grind — men samma kadens-argument gäller, och
         # en testsvit som inte körs fortlöpande ruttnar. ~0,3 s.
+        #
+        # test-ci-wait.sh (TASK-72): sviten fanns sedan S87 men kördes ALDRIG av
+        # CI — exakt den kadens-missmatch raden ovan beskriver, på repots sista
+        # kontroll före armering. Utan detta steg kan urvalet-av-körning-defekten
+        # återuppstå tyst, vilket är vad TASK-72 AC 5 kräver stängt. Stubbad,
+        # ingen nätverkstrafik. ≈13 s LOKALT mätt (macOS, 2026-07-28) — CI-tiden
+        # är inte mätt av mig och kan avvika.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -511,6 +518,7 @@ jobs:
           bash scripts/test-check-lifecycle.sh
           bash scripts/test-check-lesson-numbers.sh
           bash scripts/test-agent-spawn-log.sh
+          bash scripts/test-ci-wait.sh
 
       - name: Test prod-deploy allowlist (fail-closed)
         # Bevisar fail-closed-egenskapen i scripts/deploy-prod-functions.sh
@@ -554,10 +562,10 @@ jobs:
         # --enable=all aktiverar optional checks (SC2250, SC2312,
         # SC2310, SC2311 m.fl. som är default-disabled).
         # Scope per ADR-033 § Del 3: scripts/*.sh + .githooks/* +
-        # 3 sourced-config-filer (.checklist-policy.conf +
-        # .frontmatter-policy.conf + .lesson-policy.conf, tillagd S91/ADR-081 —
-        # en sourced conf utanför scopet är samma lucka som de två övriga
-        # redan stänger).
+        # 4 sourced-config-filer (.checklist-policy.conf +
+        # .frontmatter-policy.conf + .lesson-policy.conf, tillagd S91/ADR-081 +
+        # .ci-wait-policy.conf, tillagd S91/TASK-72 — en sourced conf utanför
+        # scopet är samma lucka som de övriga redan stänger).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -567,7 +575,8 @@ jobs:
             .githooks/* \
             .checklist-policy.conf \
             .frontmatter-policy.conf \
-            .lesson-policy.conf
+            .lesson-policy.conf \
+            .ci-wait-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml; task-36.2 / ADR-077). Villkorat på changed-
