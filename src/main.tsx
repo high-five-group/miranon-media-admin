@@ -118,3 +118,5 @@ registerSW();
 
 // [GA] Rapportera Core Web Vitals
 reportWebVitals();
+
+// [PROOF a7-5-fore-1] Kastbar mätdiff — kod-klass (D3). Rivs efter mätning.
