@@ -1,5 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Route, test } from './support/test-bas';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, test } from './support/acceptance-bas';
 
 /**
  * Fas 6h L3 — Skicka-mail-på-segment-yta (compose-UI i SegmentBuilder, /mer/segment).
@@ -7,20 +9,38 @@ import { expect, type Route, test } from './support/test-bas';
  * BEKRÄFTAR i en modal och skickar. Send är oåterkalleligt → pessimistiskt + bekräftat
  * + idempotent (ADR-067).
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets testMatch-
- * kontrakt, ej staging-exklusivt). DETERMINISTISK via `page.route`-MOCK — den RIKTIGA
- * send-gränsen är L2d-staging-bevisad; här verifieras KLIENT-flödet + resultat-rendering,
- * INGEN riktig mail skickas. Fixtur-formerna speglar EF:ernas riktiga svar:
+ * ACCEPTANCE-KLASSEN (task-59.5, ADR-080): filen flyttades hit ur e2e-sviten
+ * med hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade.
+ * Klassningen är HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 6
+ * restanrop, samtliga typsnitt, noll skarpa.
+ *
+ * INGEN RIKTIG MAIL SKICKAS, OCH DET ÄR HELA POÄNGEN MED KLASSNINGEN.
+ * `send-email` är muterande, men anropet är avlyssnat av fixturvärlden: det som
+ * bevisas här är PAYLOADEN appen skickar (segmentIds, ämne, mailtext,
+ * UUID-idempotensnyckel) plus hur gränssnittet reagerar på svaret — låst
+ * faro-knapp, skriv-för-att-bekräfta-grinden, ärlig icke-success-rendering.
+ * SKRIVBEVISET LIGGER KVAR I API-SVITEN (`tests/api/send-email.staging.test.ts`,
+ * L2d-staging-bevisad) och ska inte flyttas hit; flyttades det vore klassningen
+ * fel.
+ *
+ * **Deterministisk via `network.use()`** — inte `page.route`: page-routes prövas
+ * FÖRE MSW:s context-routes och hade lagt en andra avlyssningsmekanism ovanpå
+ * fixturvärlden (tudelningen task-54.2 tog bort). Mönstren byggs med `EF(namn)`
+ * ur handlers-modulen och svaren med `json(...)` — en handskriven sträng som inte
+ * matchar faller igenom UTAN att något fälls (den tysta fällan, `hermetic.ts`
+ * § Överskugga en delad handler).
+ *
+ * `send-email`, `compute-segment` och `get-segments` ligger AVSIKTLIGT INTE i
+ * normalläget: en delad skrivväg hade gjort tyst lyckat utskick till default för
+ * hela klassen. De överskuggas per test, och ett test som skickar utan
+ * överskuggning fälls av hermetik-vakten med adressen namngiven.
+ *
+ * Fixtur-formerna speglar EF:ernas riktiga svar:
  *   get-events     → { events: EventSchema[] } (SegmentBuilder-taxonomi)
  *   get-segments   → { segments: SavedSegmentSchema[] } (compose-Select + sparade-listan)
  *   compute-segment→ { members, count } (mottagar-antal före send)
  *   send-email     → BulkSendStatus (MailSendResultSchema) — happy path 'sent'.
  */
-
-const GET_EVENTS = /\/functions\/v1\/get-events/;
-const GET_SEGMENTS = /\/functions\/v1\/get-segments/;
-const COMPUTE_SEGMENT = /\/functions\/v1\/compute-segment/;
-const SEND_EMAIL = /\/functions\/v1\/send-email/;
 
 type EventRow = Record<string, unknown>;
 
@@ -72,47 +92,32 @@ const SEND_SENT = {
 };
 
 test.describe('Skicka mail på segment (Fas 6h L3)', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.route(GET_EVENTS, async (route: Route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ events: TAXONOMY_EVENTS }),
-      });
-    });
-    await page.route(GET_SEGMENTS, async (route: Route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ segments: [SAVED_SEGMENT] }),
-      });
-    });
-    await page.route(COMPUTE_SEGMENT, async (route: Route) => {
-      const members = Array.from({ length: 3 }, (_, i) => ({
-        id: `recM${i}`,
-        namn: `Person ${i}`,
-        email: `person${i}@example.se`,
-        ejGodkandMail: false,
-      }));
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ members, count: 3 }),
-      });
-    });
+  test.beforeEach(async ({ network }) => {
+    const members = Array.from({ length: 3 }, (_, i) => ({
+      id: `recM${i}`,
+      namn: `Person ${i}`,
+      email: `person${i}@example.se`,
+      ejGodkandMail: false,
+    }));
+    network.use(
+      http.get(EF('get-events'), () => json({ events: TAXONOMY_EVENTS })),
+      http.get(EF('get-segments'), () => json({ segments: [SAVED_SEGMENT] })),
+      http.post(EF('compute-segment'), () => json({ members, count: 3 })),
+    );
   });
 
-  test('happy path: välj segment → antal → komponera → bekräfta → skickat', async ({ page }) => {
+  test('happy path: välj segment → antal → komponera → bekräfta → skickat', async ({
+    page,
+    network,
+  }) => {
     // Fånga send-email-anropet (verifiera body-kontraktet), svara 'sent'.
     let sentBody: Record<string, unknown> | null = null;
-    await page.route(SEND_EMAIL, async (route: Route) => {
-      sentBody = route.request().postDataJSON() as Record<string, unknown>;
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(SEND_SENT),
-      });
-    });
+    network.use(
+      http.post(EF('send-email'), async ({ request }) => {
+        sentBody = (await request.json()) as Record<string, unknown>;
+        return json(SEND_SENT);
+      }),
+    );
 
     await page.goto('/mer/segment');
     await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
@@ -158,7 +163,7 @@ test.describe('Skicka mail på segment (Fas 6h L3)', () => {
     await confirmField.fill('99');
     await expect(sendBtn).toBeDisabled();
 
-    // Rätt antal → upplåst (aviseras i aria-live) → klick skickar (MOCKAT send).
+    // Rätt antal → upplåst (aviseras i aria-live) → klick skickar (AVLYSSNAT send).
     await confirmField.fill('3');
     await expect(dialog.getByText(/är nu upplåst/)).toBeVisible();
     await expect(sendBtn).toBeEnabled();
@@ -186,22 +191,24 @@ test.describe('Skicka mail på segment (Fas 6h L3)', () => {
 
   test('0-mottagar-segment → Skicka client-blockerad + "Inga mottagare"-notis', async ({
     page,
+    network,
   }) => {
     // 6h arch-audit-fix Del A: ett segment vars regel beräknar 0 medlemmar → ingen
-    // round-trip. Override compute-segment till count=0 (sist registrerad vinner).
-    await page.route(COMPUTE_SEGMENT, async (route: Route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ members: [], count: 0 }),
-      });
-    });
-    // send-email MÅSTE aldrig anropas — fångar en ev. läckande sändning.
+    // round-trip. Överskugga compute-segment till count=0 (prepend → vinner över
+    // beforeEach-handlern).
+    //
+    // Flaggan mäter APPENS beteende — att 0 mottagare INTE utlöser ett utskick —
+    // inte att en handler anropades; klassen testar aldrig fixturen. Den är
+    // nödvändig här eftersom ett uteblivet utskick saknar varje annan observerbar
+    // effekt: vyn ser likadan ut vare sig anropet gick iväg eller ej.
     let sendCalled = false;
-    await page.route(SEND_EMAIL, async (route: Route) => {
-      sendCalled = true;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
-    });
+    network.use(
+      http.post(EF('compute-segment'), () => json({ members: [], count: 0 })),
+      http.post(EF('send-email'), () => {
+        sendCalled = true;
+        return json({});
+      }),
+    );
 
     await page.goto('/mer/segment');
     await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
@@ -219,15 +226,14 @@ test.describe('Skicka mail på segment (Fas 6h L3)', () => {
 
   test('accepted===0 (alla undertryckta) → ärlig icke-success-rendering + breakdown', async ({
     page,
+    network,
   }) => {
     // compute=3 (beforeEach) → användaren ser "3 personer" och kan skicka; servern
     // undertrycker alla (consent/e-post) → status 'skipped', accepted=0. UI:t får ALDRIG
     // visa grön "Utskicket skickades" — neutral "Inga mottagare fick mailet" + breakdown.
-    await page.route(SEND_EMAIL, async (route: Route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
+    network.use(
+      http.post(EF('send-email'), () =>
+        json({
           status: 'skipped',
           requested: 3,
           suppressedConsent: 2,
@@ -239,8 +245,8 @@ test.describe('Skicka mail på segment (Fas 6h L3)', () => {
           rejections: [],
           logRecordId: null,
         }),
-      });
-    });
+      ),
+    );
 
     await page.goto('/mer/segment');
     await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();

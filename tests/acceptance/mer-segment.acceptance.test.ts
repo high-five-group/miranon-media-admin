@@ -1,16 +1,35 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Route, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, type Page, test } from './support/acceptance-bas';
 
 /**
  * Fas 6g L2 — Segment-byggar-yta (/mer/segment). Bygger include/exclude-regel
  * över event-domänens taxonomi (deriveTaxonomy(get-events)) och räknar matchande
  * personer on-demand via compute-segment (L1, strikt Närvaropoäng=1).
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt, ej staging-exklusivt; jfr mer-intresserade.staging.test.ts).
+ * ACCEPTANCE-KLASSEN (task-59.5, ADR-080): filen flyttades hit ur e2e-sviten
+ * med hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade.
+ * Klassningen är HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 22
+ * restanrop, samtliga typsnitt, noll skarpa.
  *
- * DETERMINISTISK via `page.route`-MOCK av get-events (taxonomi-källa) + compute-
- * segment (antal). Fixtur-formerna speglar EF:ernas RIKTIGA svar: get-events →
+ * **Deterministisk via `network.use()`** — inte `page.route`: page-routes prövas
+ * FÖRE MSW:s context-routes och hade lagt en andra avlyssningsmekanism ovanpå
+ * fixturvärlden (tudelningen task-54.2 tog bort). Mönstren byggs med `EF(namn)`
+ * ur handlers-modulen och svaren med `json(...)`, aldrig som handskrivna
+ * strängar — en överskuggning vars mönster inte matchar faller igenom UTAN att
+ * något fälls (den tysta fällan, `hermetic.ts` § Överskugga en delad handler).
+ *
+ * `save-segment` SKRIVER INTE SKARPT. Anropet är avlyssnat av fixturvärlden;
+ * det som bevisas är klientflödet (regel → namn → spara → invalidate/refetch →
+ * segmentet syns i listan). Server-write-kontraktet för sparade segment bevisas
+ * i API-sviten och ligger kvar där. Handlern är AVSIKTLIGT inte i normalläget:
+ * en delad skrivväg hade gjort tyst lyckad mutation till default för hela
+ * klassen — här överskuggas den per test, och ett test som sparar utan
+ * överskuggning fälls av hermetik-vakten.
+ *
+ * Fixtur-formerna speglar EF:ernas RIKTIGA svar: get-events →
  * `{ events: EventSchema[] }` (adaptern z.array(EventSchema).parse), compute-segment
  * → `{ members: SegmentMemberSchema[], count }` (SegmentResultSchema.parse). Ofullständig
  * rad → parse-fel, så fixturerna är kompletta.
@@ -20,11 +39,6 @@ import { expect, type Route, test } from './support/test-bas';
  * tomt-resultat→neutral text (ej alert), fokus→<h1> + aria-live, axe 0, RadioGroup
  * tangentbords-nav. LÄS-konsumtion → ingen write-affordans.
  */
-
-const GET_EVENTS = /\/functions\/v1\/get-events/;
-const COMPUTE_SEGMENT = /\/functions\/v1\/compute-segment/;
-const GET_SEGMENTS = /\/functions\/v1\/get-segments/;
-const SAVE_SEGMENT = /\/functions\/v1\/save-segment/;
 
 type EventRow = Record<string, unknown>;
 
@@ -65,26 +79,22 @@ const TAXONOMY_EVENTS = [
   ev('Psionautics', 'Utbildning'),
 ];
 
-async function mockEvents(
-  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-  page: any,
+/** Överskuggar get-events. Normalläget bär en get-events-handler, men denna yta
+ * asserterar EXAKTA par-grupper ur taxonomin — mot normalläget hade beviset
+ * blivit ett kopplat påstående om fixturens eventmängd. */
+function mockEvents(
+  network: NetworkFixture,
   events: EventRow[],
   { status = 200 }: { status?: number } = {},
-): Promise<void> {
-  await page.route(GET_EVENTS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    await route.fulfill({
-      status,
-      contentType: 'application/json',
-      body: status === 200 ? JSON.stringify({ events }) : JSON.stringify({ error: 'x' }),
-    });
-  });
+): void {
+  network.use(
+    http.get(EF('get-events'), () =>
+      status === 200 ? json({ events }) : json({ error: 'x' }, status),
+    ),
+  );
 }
 
-async function mockCompute(
-  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-  page: any,
-  count: number,
-): Promise<void> {
+function mockCompute(network: NetworkFixture, count: number): void {
   // members-formen speglar SegmentMemberSchema; för count-vyn räcker count, men
   // members måste parsa (adaptern .parse():ar hela svaret).
   const members = Array.from({ length: count }, (_, i) => ({
@@ -93,28 +103,15 @@ async function mockCompute(
     email: `person${i}@example.se`,
     ejGodkandMail: false,
   }));
-  await page.route(COMPUTE_SEGMENT, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ members, count }),
-    });
-  });
+  network.use(http.post(EF('compute-segment'), () => json({ members, count })));
 }
 
 /** Som mockCompute men med EXPLICITA members (L4-export: e-post/namn-form styr CSV:n). */
-async function mockComputeMembers(
-  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-  page: any,
+function mockComputeMembers(
+  network: NetworkFixture,
   members: Array<{ id: string; namn: string | null; email: string | null; ejGodkandMail: boolean }>,
-): Promise<void> {
-  await page.route(COMPUTE_SEGMENT, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ members, count: members.length }),
-    });
-  });
+): void {
+  network.use(http.post(EF('compute-segment'), () => json({ members, count: members.length })));
 }
 
 /**
@@ -122,8 +119,7 @@ async function mockComputeMembers(
  * react-aria Radio lägger `role="radio"` på en visuellt dold input → klick går
  * på den synliga LABEL-texten (exact), inte rollen.
  */
-// biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-function choosePar(page: any, groupName: string, choice: 'Inkludera' | 'Exkludera') {
+function choosePar(page: Page, groupName: string, choice: 'Inkludera' | 'Exkludera') {
   return page
     .getByRole('radiogroup', { name: groupName })
     .getByText(choice, { exact: true })
@@ -133,20 +129,18 @@ function choosePar(page: any, groupName: string, choice: 'Inkludera' | 'Exkluder
 test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
   // SavedSegmentsList (L3) hämtar get-segments vid varje /mer/segment-load → mocka
   // default tom så de count-fokuserade L2-testerna förblir deterministiska. Spara-testet
-  // registrerar sin egen (stateful) get-segments-route i test-kroppen (vinner: senast
-  // registrerad matchas först).
-  test.beforeEach(async ({ page }) => {
-    await page.route(GET_SEGMENTS, async (route: Route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ segments: [] }),
-      });
-    });
+  // registrerar sin egen (stateful) get-segments-handler i test-kroppen och vinner:
+  // `use()` lägger sina handlers FÖRST (msw handlers-controller: `[...overrides,
+  // ...existing]`) och första träffen vinner, så det SENARE anropet slår detta.
+  test.beforeEach(async ({ network }) => {
+    network.use(http.get(EF('get-segments'), () => json({ segments: [] })));
   });
 
-  test('taxonomi renderas (inkl. fälla-35-etikett distinkt) + fokus → <h1>', async ({ page }) => {
-    await mockEvents(page, TAXONOMY_EVENTS);
+  test('taxonomi renderas (inkl. fälla-35-etikett distinkt) + fokus → <h1>', async ({
+    page,
+    network,
+  }) => {
+    mockEvents(network, TAXONOMY_EVENTS);
     await page.goto('/mer/segment');
 
     const heading = page.getByRole('heading', { level: 1, name: 'Bygg segment' });
@@ -173,8 +167,11 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     ).toBeVisible();
   });
 
-  test('tom-regel-grind: include=[] → "Räkna antal" disabled + ledtext', async ({ page }) => {
-    await mockEvents(page, TAXONOMY_EVENTS);
+  test('tom-regel-grind: include=[] → "Räkna antal" disabled + ledtext', async ({
+    page,
+    network,
+  }) => {
+    mockEvents(network, TAXONOMY_EVENTS);
     await page.goto('/mer/segment');
     await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
 
@@ -182,8 +179,8 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     await expect(page.getByText('Välj minst en kurs att inkludera.')).toBeVisible();
   });
 
-  test('include/exclude uppdaterar klartext-speglingen', async ({ page }) => {
-    await mockEvents(page, TAXONOMY_EVENTS);
+  test('include/exclude uppdaterar klartext-speglingen', async ({ page, network }) => {
+    mockEvents(network, TAXONOMY_EVENTS);
     await page.goto('/mer/segment');
     await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
 
@@ -195,9 +192,9 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     await expect(page.getByText('Utan: deltog i')).toBeVisible();
   });
 
-  test('"Räkna antal" → count visas; aria-live', async ({ page }) => {
-    await mockEvents(page, TAXONOMY_EVENTS);
-    await mockCompute(page, 3);
+  test('"Räkna antal" → count visas; aria-live', async ({ page, network }) => {
+    mockEvents(network, TAXONOMY_EVENTS);
+    mockCompute(network, 3);
     await page.goto('/mer/segment');
     await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
 
@@ -208,9 +205,9 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     await expect(page.getByText(/3 personer matchar den här regeln\./)).toBeVisible();
   });
 
-  test('tomt resultat (count===0) → NEUTRAL text, ej role=alert', async ({ page }) => {
-    await mockEvents(page, TAXONOMY_EVENTS);
-    await mockCompute(page, 0);
+  test('tomt resultat (count===0) → NEUTRAL text, ej role=alert', async ({ page, network }) => {
+    mockEvents(network, TAXONOMY_EVENTS);
+    mockCompute(network, 0);
     await page.goto('/mer/segment');
     await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
 
@@ -224,8 +221,8 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('axe 0 violations på den renderade byggar-vyn', async ({ page }) => {
-    await mockEvents(page, TAXONOMY_EVENTS);
+  test('axe 0 violations på den renderade byggar-vyn', async ({ page, network }) => {
+    mockEvents(network, TAXONOMY_EVENTS);
     await page.goto('/mer/segment');
     await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
 
@@ -241,9 +238,10 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
 
   test('export (L4): räkna → exportera till SKOOL → nedladdning + bekräftelse + axe 0', async ({
     page,
+    network,
   }) => {
-    await mockEvents(page, TAXONOMY_EVENTS);
-    await mockComputeMembers(page, [
+    mockEvents(network, TAXONOMY_EVENTS);
+    mockComputeMembers(network, [
       { id: 'recM0', namn: 'Anna A', email: 'anna@example.se', ejGodkandMail: false },
       { id: 'recM1', namn: 'Bo B', email: 'bo@example.se', ejGodkandMail: true }, // consent-false → MED
       { id: 'recM2', namn: 'Cia C', email: 'cia@example.se', ejGodkandMail: false },
@@ -278,9 +276,10 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
 
   test('export (L4): vissa saknar e-post → räknas synligt; tomt segment → ingen tyst fil', async ({
     page,
+    network,
   }) => {
-    await mockEvents(page, TAXONOMY_EVENTS);
-    await mockComputeMembers(page, [
+    mockEvents(network, TAXONOMY_EVENTS);
+    mockComputeMembers(network, [
       { id: 'recM0', namn: 'Anna A', email: 'anna@example.se', ejGodkandMail: false },
       { id: 'recM1', namn: 'Utan Epost', email: null, ejGodkandMail: false }, // exkluderas
     ]);
@@ -301,9 +300,10 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
 
   test('export (L4): tomt segment → export disabled + "inga personer än", ingen fil', async ({
     page,
+    network,
   }) => {
-    await mockEvents(page, TAXONOMY_EVENTS);
-    await mockCompute(page, 0);
+    mockEvents(network, TAXONOMY_EVENTS);
+    mockCompute(network, 0);
     await page.goto('/mer/segment');
     await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
 
@@ -317,8 +317,11 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     await expect(page.getByText('Det här segmentet har inga personer än.')).toBeVisible();
   });
 
-  test('spara (L3): bygg regel → namnge → spara → syns i sparade-listan', async ({ page }) => {
-    await mockEvents(page, TAXONOMY_EVENTS);
+  test('spara (L3): bygg regel → namnge → spara → syns i sparade-listan', async ({
+    page,
+    network,
+  }) => {
+    mockEvents(network, TAXONOMY_EVENTS);
 
     const savedSeg = {
       id: 'recSAVED1',
@@ -326,24 +329,20 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
       rule: { include: [{ kurs: 'Fjärrskådning', modalitet: 'Utbildning' }], exclude: [] },
       definition: 'Med: deltog i Fjärrskådning (utbildning).',
     };
-    // Stateful get-segments: tomt tills save POST observerats, sedan listan med det sparade
-    // (speglar invalidate→refetch-flödet). Registrerad EFTER beforeEach → vinner.
+    // Stateful get-segments: tomt tills save POST observerats, sedan listan med det
+    // sparade (speglar invalidate→refetch-flödet). Registrerad EFTER beforeEach →
+    // prepend-ordningen gör att denna prövas först.
+    //
+    // `save-segment` SKRIVER INTE SKARPT: anropet är avlyssnat, och det som bevisas
+    // är klientflödet. Server-write-kontraktet bor i API-sviten.
     let saved = false;
-    await page.route(GET_SEGMENTS, async (route: Route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ segments: saved ? [savedSeg] : [] }),
-      });
-    });
-    await page.route(SAVE_SEGMENT, async (route: Route) => {
-      saved = true;
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify({ segment: savedSeg, record: { id: savedSeg.id, fields: {} } }),
-      });
-    });
+    network.use(
+      http.get(EF('get-segments'), () => json({ segments: saved ? [savedSeg] : [] })),
+      http.post(EF('save-segment'), () => {
+        saved = true;
+        return json({ segment: savedSeg, record: { id: savedSeg.id, fields: {} } }, 201);
+      }),
+    );
 
     await page.goto('/mer/segment');
     await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();

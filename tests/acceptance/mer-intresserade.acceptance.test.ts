@@ -1,28 +1,36 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from './support/test-bas';
+import type { NetworkFixture } from '@msw/playwright';
+import { http } from 'msw';
+import { EF, json } from '../support/fixturvarld/handlers';
+import { expect, test } from './support/acceptance-bas';
 
 /**
  * Fas 6e L1 Landning 3 — Intresserade-vy (/mer/intresserade, LÄS-vy via get-leads,
  * GLOBAL lista, strikt lead-formel, Senaste interaktion desc).
  *
- * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt, inte staging-exklusivt; jfr mer-vantelista.staging.test.ts).
+ * ACCEPTANCE-KLASSEN (task-59.5, ADR-080): filen flyttades hit ur e2e-sviten
+ * med hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade.
+ * Klassningen är HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 15
+ * restanrop, samtliga typsnitt, noll skarpa.
  *
- * **Deterministisk via `page.route`-mock** av get-leads. Regex-matchare
- * (`/get-leads/`) som INTE kolliderar med andra mocks: `get-leads` är unikt
- * (ingen substräng-krock med get-event/get-events/get-person/get-persons/
- * get-attendance/get-registrations/get-waitlist). EF:en anropas UTAN query-params
- * (global första sida) → ingen `\?` i matcharen. Mocken speglar EF-svaret
- * `{ intresserade: [...] }` (IntresseradSchema-rader — adaptern z.array().parse():ar
- * vid datagränsen, så varje mock-rad måste vara komplett mot schemat).
+ * **Deterministisk via `network.use()`** — inte `page.route`: page-routes prövas
+ * FÖRE MSW:s context-routes och hade lagt en andra avlyssningsmekanism ovanpå
+ * fixturvärlden (tudelningen task-54.2 tog bort). Mönstret byggs med
+ * `EF('get-leads')` ur handlers-modulen, aldrig som handskriven sträng — en
+ * överskuggning vars mönster inte matchar faller igenom UTAN att något fälls
+ * (den tysta fällan, `hermetic.ts` § Överskugga en delad handler).
+ *
+ * `get-leads` LIGGER INTE I NORMALLÄGET, och det är avsiktligt: fixturvärldens
+ * delade handlers bär de vägar flera vyer delar. Ett test här som glömmer sin
+ * överskuggning fälls därför av hermetik-vakten med adressen namngiven, i
+ * stället för att tyst rendera en främmande datamängd. Svarsformen är EF:ens
+ * egen (`{ intresserade, nextCursor }`) — snittet ligger vid protokollet.
  *
  * Täckning: roster-rendering (namn + nappat-på/allaHamtningar + antalHamtningar +
  * senaste interaktion), antal-summa, fokus→<h1> + aria-live, tom-state, fel
  * (role=alert), loading aria-busy, namnlös-fallback (MED + UTAN e-post), axe 0.
  * LÄS-vy → INGEN write-affordans.
  */
-
-const GET_LEADS = /\/functions\/v1\/get-leads/;
 
 type Row = Record<string, unknown>;
 
@@ -59,43 +67,36 @@ function row(overrides: Row = {}): Row {
   };
 }
 
-async function mockLeads(
-  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-  page: any,
+function mockLeads(
+  network: NetworkFixture,
   rows: Row[],
-  {
-    status = 200,
-    delayMs = 0,
-    manualRelease = false,
-  }: { status?: number; delayMs?: number; manualRelease?: boolean } = {},
-): Promise<() => void> {
+  { status = 200, manualRelease = false }: { status?: number; manualRelease?: boolean } = {},
+): () => void {
   // manualRelease (opt-in): håll EF-svaret öppet tills testet kallar release().
   // Gör loading-fönstret DETERMINISTISKT i stället för att racea en fast delayMs
   // mot realtid (cold-chunk lazy-load under autoCodeSplitting); speglar
-  // event-anmalda manualRelease (T26 Landning B). Callers utan flaggan är orörda —
-  // release() är då en no-op de ignorerar.
+  // event-anmalda manualRelease (T26 Landning B). Parkeringen bärs nu av ett
+  // OBESVARAT LÖFTE i MSW-resolvern i stället för av ett uppskjutet Route-objekt
+  // — samma bevis, en mekanism (task-59.4:s form).
   let release = () => {};
   const gate = manualRelease ? new Promise<void>((resolve) => (release = resolve)) : null;
-  await page.route(GET_LEADS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    if (gate) await gate;
-    else if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
-    await route.fulfill({
-      status,
-      contentType: 'application/json',
-      body:
-        status === 200
-          ? JSON.stringify({ intresserade: rows, nextCursor: null })
-          : JSON.stringify({ error: 'x' }),
-    });
-  });
+  network.use(
+    http.get(EF('get-leads'), async () => {
+      if (gate) await gate;
+      return status === 200
+        ? json({ intresserade: rows, nextCursor: null })
+        : json({ error: 'x' }, status);
+    }),
+  );
   return release;
 }
 
 test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => {
   test('roster renderas (namn + nappat-på + antal + senaste interaktion) + summa; fokus → <h1>', async ({
     page,
+    network,
   }) => {
-    await mockLeads(page, [
+    mockLeads(network, [
       row({
         namn: 'Anna Andersson',
         email: 'anna@example.se',
@@ -152,8 +153,8 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
     );
   });
 
-  test('tom lista → vänlig tom-text, ej fel', async ({ page }) => {
-    await mockLeads(page, []);
+  test('tom lista → vänlig tom-text, ej fel', async ({ page, network }) => {
+    mockLeads(network, []);
     await page.goto('/mer/intresserade');
 
     await expect(page.getByRole('heading', { level: 1, name: 'Intresserade' })).toBeVisible();
@@ -164,32 +165,36 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
 
   test('namnlös lead MED e-post → "Namnlös person — …" (graciöst, aldrig krasch/tomt)', async ({
     page,
+    network,
   }) => {
-    await mockLeads(page, [
+    mockLeads(network, [
       row({ namn: null, fornamn: null, efternamn: null, email: 'namnlos@example.se' }),
     ]);
     await page.goto('/mer/intresserade');
     await expect(page.getByText('Namnlös person — namnlos@example.se')).toBeVisible();
   });
 
-  test('namnlös lead UTAN e-post → "Namnlös person" (generisk fallback)', async ({ page }) => {
-    await mockLeads(page, [row({ namn: null, fornamn: null, efternamn: null, email: null })]);
+  test('namnlös lead UTAN e-post → "Namnlös person" (generisk fallback)', async ({
+    page,
+    network,
+  }) => {
+    mockLeads(network, [row({ namn: null, fornamn: null, efternamn: null, email: null })]);
     await page.goto('/mer/intresserade');
     await expect(page.getByText('Namnlös person', { exact: true })).toBeVisible();
   });
 
-  test('fel (4xx, klient-fel) → fel-UI via role=alert (ingen retry)', async ({ page }) => {
+  test('fel (4xx, klient-fel) → fel-UI via role=alert (ingen retry)', async ({ page, network }) => {
     // 4xx → no-retry-grenen: isError direkt, ingen backoff. 5xx vore fel testval —
     // då retryar react-query korrekt och alerten dröjer förbi timeouten.
-    await mockLeads(page, [], { status: 404 });
+    mockLeads(network, [], { status: 404 });
     await page.goto('/mer/intresserade');
     await expect(page.getByRole('alert')).toContainText('Kunde inte hämta intresserade');
   });
 
-  test('loading-state är tillgängligt (aria-busy + status)', async ({ page }) => {
+  test('loading-state är tillgängligt (aria-busy + status)', async ({ page, network }) => {
     // Håll EF-svaret öppet → loading-tillståndet är deterministiskt synligt medan
-    // route:n hålls (ingen realtids-race mot en fast delayMs / cold-chunk lazy-load).
-    const release = await mockLeads(page, [row()], { manualRelease: true });
+    // resolvern hålls (ingen realtids-race mot en fast delayMs / cold-chunk lazy-load).
+    const release = mockLeads(network, [row()], { manualRelease: true });
     await page.goto('/mer/intresserade');
     await expect(page.getByText('Laddar intresserade…')).toBeVisible();
     // Släpp svaret → laddat tillstånd renderas.
@@ -197,8 +202,8 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
     await expect(page.getByRole('heading', { level: 1, name: 'Intresserade' })).toBeVisible();
   });
 
-  test('axe 0 violations på den renderade intresserade-vyn', async ({ page }) => {
-    await mockLeads(page, [
+  test('axe 0 violations på den renderade intresserade-vyn', async ({ page, network }) => {
+    mockLeads(network, [
       row({ namn: 'Anna Andersson', email: 'anna@example.se' }),
       row({
         namn: 'Bo Bengtsson',
