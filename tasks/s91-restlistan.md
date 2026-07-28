@@ -106,8 +106,13 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
       restlistan rättats — felet hade två hemvister och bara en var känd.
       Riven med öppen rättelse-not; ursprungstexten bevarad. Villkoret som gör
       defaultvärdet säkert står nu både i ADR:n och i koden
-- [ ] `CONTRIBUTING.md` — acceptance-klassen skrivs in (termens andra hemvist).
-      Verifierat öppen 2026-07-27: noll förekomster av "acceptance" i filen
+- [x] **`CONTRIBUTING.md` — acceptance-klassen inskriven. KLART 2026-07-28** i
+      `TASK-59.3` (commit `109f846`), inte som egen post. Filen bär nu
+      `## Acceptance-klassen` med ADR-080-referens, hemvist, söm och
+      körkommando — sju förekomster totalt. **Posten stod kvar som öppen i tre
+      dygn efter att den stängts**, eftersom skivan som stängde den inte var den
+      som ägde raden. Fångat vid dok-genomgången 2026-07-28; värt att veta att
+      restlistans poster kan stängas av arbete på annat håll
 
 ### A2 · Mekaniseringen (sessionsdok Del 4, punkt 1–4 klara)
 
