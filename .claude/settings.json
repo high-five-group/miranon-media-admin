@@ -11,6 +11,17 @@
             "statusMessage": "CI-vakt-grinden (S76)"
           }
         ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{ D=\"${CLAUDE_PROJECT_DIR:-.}\"; mkdir -p \"$D/.claude\" && jq -c '{ts:(now|todate),session:((.session_id//\"\")[0:8]),type:(.tool_input.subagent_type//\"okänd\"),isolation:(.tool_input.isolation//null),bg:(.tool_input.run_in_background//false),fran_worktree:((.cwd//\"\")|test(\"/\\\\.claude/worktrees/\"))}' >> \"$D/.claude/agent-spawn-log.jsonl\"; } 2>/dev/null || true",
+            "timeout": 5,
+            "statusMessage": "Agent-spawn-mätning (ADR-082-passet steg 2)"
+          }
+        ]
       }
     ]
   },

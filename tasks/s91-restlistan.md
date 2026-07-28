@@ -124,6 +124,14 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
       allokeringen); ADR/tråd omprövas OM en kollision faktiskt inträffar.
 - [ ] `lessons-hub-sync`-skillen (hub) uppdateras med konsolideringssteget —
       kräver plugin-bump (öppen post ur ADR-081)
+- [ ] **Steg 3-beslutet om agent-isolering — VILAR PÅ MÄTNING, ej åsikt.**
+      Steg 1 (typade agenter, `#327`) och steg 2 (icke-blockerande mätning,
+      `npm run metrics:agents`) är byggda 2026-07-28. **Läs mätningen efter ~en
+      vecka skarpt bruk** och avgör då om `permissions.deny` (steg 3) eller en
+      korrigerande `updatedInput`-hook (steg 4) behövs — eller om steg 1 räckte.
+      Hooken är BEVISAD att fungera (research-passet), så steg 4 är en
+      verkställighetsfråga, inte en osäkerhet. Faller mätningen ut som
+      "inget läckage" är rätt åtgärd att INTE bygga mer.
 - [ ] Punkt 7 — partitionerings-regeln (ADR-073 utsträckt till Marcus egna
       parallella sessioner, ej bara agenternas).
       **KONVERGERAR DELVIS med worktree-isoleringen (`#327`, 2026-07-28) — men
