@@ -1,10 +1,10 @@
 ---
 id: TASK-59.7
 title: 'Skiva: Mätningen — den nya mutexhållningen, mätt och inte projicerad'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-27 20:42'
-updated_date: '2026-07-28 11:20'
+updated_date: '2026-07-28 11:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -41,7 +41,7 @@ Täcker användarberättelser: 1, 10, 12, 14
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Acceptance-jobbet kör utan staging-mutex och den nya mutexhållningen är MÄTT, ej projicerad
 <!-- DOD:END -->
