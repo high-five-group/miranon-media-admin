@@ -118,3 +118,5 @@ registerSW();
 
 // [GA] Rapportera Core Web Vitals
 reportWebVitals();
+
+// [PROOF a7-5-efter-2] Kastbar maetdiff — kod-klass (D3). Rivs efter maetning.
