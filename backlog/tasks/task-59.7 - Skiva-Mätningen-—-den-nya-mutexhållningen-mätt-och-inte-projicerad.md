@@ -4,6 +4,7 @@ title: 'Skiva: Mätningen — den nya mutexhållningen, mätt och inte projicera
 status: To Do
 assignee: []
 created_date: '2026-07-27 20:42'
+updated_date: '2026-07-28 11:20'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,17 +31,17 @@ Täcker användarberättelser: 1, 10, 12, 14
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Staging-mutexens nya hållning är MÄTT per körning och jämförd mot projektionen 9,25 min till cirka 2,4 — utfallet redovisat oavsett riktning
-- [ ] #2 Acceptance-jobbets egen körtid är mätt och redovisad
-- [ ] #3 Acceptance-klassen är inwirad i den befintliga risk-klassnings-mekaniken; en klass-lokal ändring drar inte med sig hela sviten
-- [ ] #4 Avviker utfallet från projektionen står avvikelsen skriven som utfall, med hypotes om orsak — inte bortförklarad
+- [x] #1 Staging-mutexens nya hållning är MÄTT per körning och jämförd mot projektionen 9,25 min till cirka 2,4 — utfallet redovisat oavsett riktning
+- [x] #2 Acceptance-jobbets egen körtid är mätt och redovisad
+- [x] #3 Acceptance-klassen är inwirad i den befintliga risk-klassnings-mekaniken; en klass-lokal ändring drar inte med sig hela sviten
+- [x] #4 Avviker utfallet från projektionen står avvikelsen skriven som utfall, med hypotes om orsak — inte bortförklarad
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Acceptance-jobbet kör utan staging-mutex och den nya mutexhållningen är MÄTT, ej projicerad
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Acceptance-jobbet kör utan staging-mutex och den nya mutexhållningen är MÄTT, ej projicerad
 <!-- DOD:END -->

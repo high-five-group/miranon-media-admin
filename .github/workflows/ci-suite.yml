@@ -128,7 +128,38 @@ jobs:
   acceptance:
     name: Acceptance (hermetisk)
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    # TAKET 8 → 12 (task-59.7). Talet är inte plockat: det är test-stagings tak,
+    # och de två jobben har efter A5:s migrering i praktiken samma väggklocka
+    # (acceptance 407 s median, staging 393 s median — mätt i CI 2026-07-28).
+    # Samma längd ska ha samma tak; annat vore två mått på samma sak.
+    #
+    # VARFÖR TAKET MÅSTE UPP. Mätt över de tre körningarna efter att alla 18
+    # filer var ute: 404 s (`#318`) · 407 s (`#323`) · 452 s (`#324`) mot ett tak
+    # på 480 s. Marginalen vid värsta observationen var 28 s — 5,8 %. Samma
+    # testmängd i `#323` och `#324`, och de 45 sekundernas skillnad är MÄTT per
+    # steg: uppstarten gick 24 → 60 s (varav "Cache Playwright browsers" ensamt
+    # 4 → 33 s), medan de två teststegen rörde sig 378 → 384 s. Alltså ~80 %
+    # infrastruktur-varians. En enda uppstartsstegs observerade spridning är
+    # större än hela den kvarvarande marginalen — nästa körning kan slå i taket
+    # utan att någonting har ändrats.
+    #
+    # KOSTNADEN AV ATT HÖJA, ÄRLIGT. Ett `timeout-minutes` är ett skyddsnät mot
+    # en HÄNGD körning, inte ett prestandamål. Höjningens enda pris är att en
+    # hängning brinner upp till fyra minuter längre innan den dödas — på ett
+    # jobb som varken håller mutex eller blockerar något annat. Priset för att
+    # låta taket ligga kvar är en falsk röd på timeout, alltså exakt den
+    # signal-förstörelse som parkerade `T87` och motiverade `TASK-61`. Repots
+    # egna marginaler säger detsamma: test-staging 12 min / 6,6 min ≈ 1,8× ·
+    # a11y 8 min / 1,8 min ≈ 4,4× · Pure + Build 8 min / 0,5 min ≈ 16×.
+    # Acceptance låg på 1,18× och var därmed ensam om att sakna marginal.
+    #
+    # HÖJNINGEN ÄR INTE FIXEN, DEN ÄR ANDRUMMET. Jobbet växte 2,8 → 6,8 min när
+    # sviten gick 51 → 152 tester, och den kurvan följer antalet byggda ytor.
+    # Den varaktiga häven är parallellisering (workers/shards), som ADR-080 och
+    # TASK-59-kortet deferar MED AVSIKT: den linjära skalningen i workers är ett
+    # ANTAGANDE som ska mätas när den aktiveras, inte ärvas härifrån. Taket
+    # köper tid till den mätningen; det ersätter den inte.
+    timeout-minutes: 12
     permissions:
       contents: read
     steps:

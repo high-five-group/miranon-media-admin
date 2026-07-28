@@ -227,6 +227,20 @@ egen skrivna rekommendation om tredjepartsservrar.
 > från 2,8 till **6,7 min mot ett tak på 8** när sviten gick 51 → 152 tester och
 > `task-60`:s självtest kör dem en gång till. Marginalen 1,3 min är en risk för
 > falsk röd och överlämnas till `task-59.7`.
+>
+> **STÄNGD 2026-07-28 av `task-59.7` — den formella mätningen:**
+> [`acceptance-utbrytningens-utfall-2026-07-28.md`](../research/acceptance-utbrytningens-utfall-2026-07-28.md).
+> Mutex-hållningen mätt till **9,77 → 6,55 min** (median över namngivna
+> run-ID:n; efter-siffran reproducerar 6,50, före-siffran 9,10 gör den inte).
+> **Avvikelsen är räknad, inte gissad:** projektionens 410 s härleddes ur
+> **296 tester som mockar**, men klassnings-kriteriet är fil-nivå och flyttade
+> **152 tester i 18 hela filer** — 147 mockande tester bor i filer med minst ett
+> live-test och lämnade aldrig e2e. Tidsbudgetens fördelningsmodell träffar inom
+> 8 % när den tillämpas på den population som faktiskt flyttades; felet var
+> populationen, inte modellen. Hypotesen ovan (*"räknade ANROP och inte
+> väggklocka"*) pekar rätt håll men namnger fel mekanism — mätningens § 4.3.
+> Tak-marginalen åtgärdad: `timeout-minutes` 8 → 12 på acceptance-jobbet, med
+> prislapp och mätdata utskrivna vid jobbet i `ci-suite.yml`.
 
 **Negativa / skuld:** 19 filer med fixturer måste hållas sanna mot en bas som
 AT-Max aktivt kommer att ändra — kontraktsvakten är motmedlet, men den är
