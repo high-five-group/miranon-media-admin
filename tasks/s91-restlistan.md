@@ -49,8 +49,9 @@ prioritering inom Spår A.
 | 1 | **A3 · MSW-bytet** — kritiska vägen, ej sidopost | ✅ **KLART 2026-07-27** — `TASK-54.1` · `54.2` · `54.3` alla **Done** |
 | 1b | **`TASK-55` · Baselines regenererade** | ✅ **KLART 2026-07-27** — 6 bilder granskade + mergade; bevis-dispatch `30297097792` loggar *"Inga baseline-ändringar"* |
 | 2 | **`TASK-58` + `TASK-57` · Fixturens bruksvärde** | ✅ **KLART 2026-07-27** — båda **Done**, båda gröna per jobb 8/8 (`#292` · `#293`). Klassades `ready-for-agent` samma dag |
-| 3 | **A5 · De 18 acceptance-filerna** — här faller taket | ✅ **MIGRERINGEN + MÄTNINGEN KLARA 2026-07-28** (endast `59.8` QA kvar) — `TASK-59` (PRD) + sju skivor + QA publicerade. **`59.1`–`59.6` Done — SAMTLIGA 18 filer ute.** Checksumman gick ihop exakt: e2e **14** / acceptance **18**, de fjorton mot namnlista. Staging-sviten **9,10 → 6,50 min** vid landning (formell mätning är `59.7`:s). **NY RISK: acceptance-jobbet 6,7 min mot tak 8** — sviten växte 51→152 tester och självtestet kör dem en gång till. Acceptance-klassen LEVER som eget mutexfritt CI-jobb; kontraktsvakten i drift. **`TASK-60` inskjutet och Done** (`T104`): hermetikens andra led körbart — och det bar sin första skarpa användning i `59.5` (90/90/90, ingen fil behövde skrivas om). **`TASK-61` DONE 2026-07-28** (PR `#323`) — kontraktsvaktens race stängt med permanent anteckning-fixtur på arbetskö-eventet; purge-immuniteten prövad mot policyns egna funktioner, ej antagen. Ärende `#312` stängt med åtgärd. Acceptance-jobbet mätt **6m47s** i den landningen — tak-risken bekräftad live. **⚠️ TAK-MARGINALEN HAR KRYMPT MÄTBART:** acceptance-jobbet `6m47s` (`#323`) → `7m32s` (`#324`) mot tak **8 min** — samma testmängd, 45 s skillnad mellan två körningar, marginal 28 s. ⚠️ **ORKESTRERARENS KARAKTÄRISERING "REN VARIANS" VAR FEL OCH RÄTTAS AV `59.7`:s MÄTNING NEDAN** — spridningen var inte diffust brus utan lokaliserbar till uppstarten (~80 % infrastruktur). Slutsatsen höll (marginalen låg inom spridningen, falsk röd var reell) och prioriteringen var rätt, men formuleringen antydde en oförklarlig varians där en mätbar orsak fanns. **`59.7` LEVERERAD 2026-07-28** — mätningen formell och CI-hämtad: mutex-hållningen **9,77 → 6,55 min** median (−32,9 %, faktor **1,49** mot projektionens 3,8), acceptance-jobbet **6,78 min** median. **Avvikelsen är räknad, inte gissad:** projektionens 410 s kom ur **296 tester som mockar**, men kriteriet är fil-nivå och flyttade **152 tester i 18 hela filer** — 147 mockande tester bor i filer med minst ett live-test och lämnade aldrig e2e. Modellen höll (inom 8 % på rätt population); populationen gjorde inte det. **Tak-marginalen åtgärdad:** `timeout-minutes` 8 → 12 på acceptance-jobbet — de 45 s mellan `#323` och `#324` mättes per steg och är **~80 % infrastruktur** (uppstart 24 → 60 s, varav browser-cachen ensamt 4 → 33 s), inte testvarians. **`T105` stängd** (flagg-vakt i teardown, prövad åt båda håll). **AC#3 wirad:** klass-lokal acceptance-ändring släcker staging via samma lever som D1. Fullt utfall: [mätningen](../docs/research/acceptance-utbrytningens-utfall-2026-07-28.md). **NÄST: `59.8` QA** |
-| 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ⬜ kan landa när som helst |
+| 3 | **A5 · De 18 acceptance-filerna** — här faller taket | ✅ **HELT KLART 2026-07-28 — `TASK-59.1`–`59.8` SAMTLIGA Done** (disk-verifierat) — `TASK-59` (PRD) + sju skivor + QA publicerade. **`59.1`–`59.6` Done — SAMTLIGA 18 filer ute.** Checksumman gick ihop exakt: e2e **14** / acceptance **18**, de fjorton mot namnlista. Staging-sviten **9,10 → 6,50 min** vid landning (formell mätning är `59.7`:s). **NY RISK: acceptance-jobbet 6,7 min mot tak 8** — sviten växte 51→152 tester och självtestet kör dem en gång till. Acceptance-klassen LEVER som eget mutexfritt CI-jobb; kontraktsvakten i drift. **`TASK-60` inskjutet och Done** (`T104`): hermetikens andra led körbart — och det bar sin första skarpa användning i `59.5` (90/90/90, ingen fil behövde skrivas om). **`TASK-61` DONE 2026-07-28** (PR `#323`) — kontraktsvaktens race stängt med permanent anteckning-fixtur på arbetskö-eventet; purge-immuniteten prövad mot policyns egna funktioner, ej antagen. Ärende `#312` stängt med åtgärd. Acceptance-jobbet mätt **6m47s** i den landningen — tak-risken bekräftad live. **⚠️ TAK-MARGINALEN HAR KRYMPT MÄTBART:** acceptance-jobbet `6m47s` (`#323`) → `7m32s` (`#324`) mot tak **8 min** — samma testmängd, 45 s skillnad mellan två körningar, marginal 28 s. ⚠️ **ORKESTRERARENS KARAKTÄRISERING "REN VARIANS" VAR FEL OCH RÄTTAS AV `59.7`:s MÄTNING NEDAN** — spridningen var inte diffust brus utan lokaliserbar till uppstarten (~80 % infrastruktur). Slutsatsen höll (marginalen låg inom spridningen, falsk röd var reell) och prioriteringen var rätt, men formuleringen antydde en oförklarlig varians där en mätbar orsak fanns. **`59.7` LEVERERAD 2026-07-28** — mätningen formell och CI-hämtad: mutex-hållningen **9,77 → 6,55 min** median (−32,9 %, faktor **1,49** mot projektionens 3,8), acceptance-jobbet **6,78 min** median. **Avvikelsen är räknad, inte gissad:** projektionens 410 s kom ur **296 tester som mockar**, men kriteriet är fil-nivå och flyttade **152 tester i 18 hela filer** — 147 mockande tester bor i filer med minst ett live-test och lämnade aldrig e2e. Modellen höll (inom 8 % på rätt population); populationen gjorde inte det. **Tak-marginalen åtgärdad:** `timeout-minutes` 8 → 12 på acceptance-jobbet — de 45 s mellan `#323` och `#324` mättes per steg och är **~80 % infrastruktur** (uppstart 24 → 60 s, varav browser-cachen ensamt 4 → 33 s), inte testvarians. **`T105` stängd** (flagg-vakt i teardown, prövad åt båda håll). **AC#3 wirad:** klass-lokal acceptance-ändring släcker staging via samma lever som D1. Fullt utfall: [mätningen](../docs/research/acceptance-utbrytningens-utfall-2026-07-28.md). **`59.8` QA-VANDRINGEN KLAR 2026-07-28** — sju steg körda på Marcus delegering, utfall nedskrivet per steg (sessionsdok Del 17). **Steg 1 levererade AC #3:s POSITIVA GREN som `59.7` inte kunde köra:** PR `#335` hade hela sin diff under `tests/acceptance/**` och gav `Staging sentinel purge` **skipped** + `Staging (API + E2E)` **skipped** + `Acceptance (hermetisk)` **grön** — exakt receptet i mätningen § 7. **Klassningen bekräftad korrekt, ej riven.** Återkoppling **7 min 33 s**, varav **noll väntan på annan körning**. Den äkta ändring `59.7` saknade blev steg 4:s eget test (personlistans 500-felläge). **Fem fynd → `TASK-62`–`66`;** steg 3 och 6 gav inget fynd, ett fynd förkastades explicit. **Steg 7:** API-sviten **397 passed exit 0**, omfattning bevisat orörd (18 filer ut ur `tests/e2e/`, **noll** ur `tests/api/`) |
+| 4 | **Kadens-regeln (A2:5)** — sju färdiga rader, billig | ✅ **KLART 2026-07-28** som `TASK-67` (PR `#339`, grön per jobb). Posten visade sig vara A2 punkt 5 (landnings-ordningen/BEHIND), ej en fristående kadens-post — tabellens namn var det missvisande. Regeln bor i `CONTRIBUTING.md` § Landnings-ordningen med pekare i `CLAUDE.md`; agenten lade till en fjärde form (`update-branch` aldrig mot arbetande agent) som inte fanns i kortet |
+| 4b | **Fynd-kedjan** — `TASK-62` · `69` · `65` · `66` · `64` · `63`. Sex kort ur `59.8`:s QA-vandring och kontraktsdrifts-utredningen. **Alla klassade `ready-for-agent` 2026-07-28** (Marcus order: *"ska alla klassas och tas itu med, i rätt ordning"*); ordningen och dess skäl står i § Fynd-kedjans ordning nedan | ▶️ **PÅGÅR** — `TASK-62` är kvitterad ingång |
 | 5 | **A2:7 · Partitionerings-regeln** — grillas, EFTER steg 3 | ⬜ medvetet sist |
 
 **Varför A3 var kritiska vägen och inte hygien:** staging-sviten tar 9,25 min
@@ -144,7 +145,10 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
       tyst överskrivning vid sekventiell landning. Före isolering delade de
       åtminstone arbetsträd. Isoleringen löser alltså en del av A2:7 och
       förvärrar en annan; det gör regeln mer angelägen, inte mindre
-- [ ] Punkt 5 — landnings-ordningen som regel, ej omdöme (tillämpad, ej kodad).
+- [~] **Punkt 5 — landnings-ordningen. MINTAD SOM `TASK-67` 2026-07-28, UNDER
+      ARBETE** (delegerad skiva). Detta är VAR VI ÄR-tabellens "steg 4"; posten
+      hette "kadens-regeln" där, men innehållet är denna. Regeln är tillämpad,
+      ej kodad —
       **KONVERGERAR INTE med worktree-isoleringen** — `BEHIND` är en annan
       felmekanism och `#327` rör den inte alls. Regeln blir tvärtom VIKTIGARE:
       fler isolerade agenter ⇒ fler parallella PR:er ⇒ mer BEHIND-tryck.
@@ -329,11 +333,12 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
       **alla 66 befintliga `ready-for-agent`-kort har AC — noll undantag** — och
       att fynd-korten hade noll. 13 AC skrevs mot läst kod. `#292` · `#293`,
       båda gröna per jobb 8/8
-- [~] **De acceptance-filerna, byggda med MSW — SPECCAT 2026-07-27, PÅGÅR.**
-      `TASK-59` (PRD) + sju skivor + QA-kort. **`59.1` (prefaktorering) · `59.2`
-      (kontraktsvakten) · `59.3` (klassen + Hem-piloten) · `59.4` (Personer-ytan)
-      · `59.5` (Mer-ytan, sex filer) alla Done — 11 av 18 filer flyttade.**
-      Kvar: `59.6` Event (7, PÅGÅR) · `59.7` mätningen (tar `T105`) · `59.8` QA.
+- [x] **De acceptance-filerna, byggda med MSW — HELT KLART 2026-07-28.**
+      `TASK-59` (PRD) + sju skivor + QA-kort, **samtliga åtta Done**
+      (disk-verifierat 2026-07-28): `59.1` prefaktorering · `59.2`
+      kontraktsvakten · `59.3` klassen + Hem-piloten · `59.4` Personer-ytan ·
+      `59.5` Mer-ytan (sex filer) · `59.6` Event (sju filer) · `59.7` mätningen
+      (tog `T105`) · `59.8` QA-vandringen. **Alla 18 filer ute.**
       **`59.5` bar självtestets första skarpa användning:** 90 tester / 90 fällda
       / 90 med vakten som orsak — alla 39 nya tester hängde på fixturen direkt.
       Pre-flight-kontrollen gav ett äkta fynd: en levande pekare i ett
@@ -532,7 +537,11 @@ Registrerade som backlog-kort, inte som restliste-poster. Här bara som index.
 - [ ] **`TASK-58`** — överskuggningsmönstret `network.use()` är odokumenterat.
       Mönstret A5:s nitton filer ska luta sig mot. **Steg 2 i VAR VI ÄR**
 
-- [ ] **`TASK-61`** — kontraktsvakten för `get-event-notes` mäter mot data som
+- [x] **`TASK-61` — DONE 2026-07-28** (PR `#323`); ärende `#312` **stängt med
+      åtgärd** samma dag. Åtgärden blev permanent anteckning-fixtur på
+      arbetskö-eventet, och purge-immuniteten prövades mot policyns EGNA
+      funktioner i stället för att antas. Ursprungstexten bevarad nedan.
+      Kontraktsvakten för `get-event-notes` mätte mot data som
       purge raderar. Nattkörning `30328246805` föll på `[TOMT-UNDERLAG]`.
       **Race bevisat med sekundprecision:** vakten har inget `needs:` och kör
       parallellt med purge — grön dispatch läste 2 s FÖRE purge, röd natt läste
@@ -544,6 +553,142 @@ Registrerade som backlog-kort, inte som restliste-poster. Här bara som index.
       bevisad"* hade grön vakt på timing-tur. Ärende `#312` öppet med skriven
       diagnos; tas efter `59.5` (rör `fixture-data.ts`)
 
+**Nya kort ur `TASK-59.8`:s QA-vandring — fem fynd, 2026-07-28** (Code på
+Marcus delegering; sju steg, utfall per steg i sessionsdok Del 17). Två av dem
+kom ur subagenter med genuint färska ögon, tre ur egna prövningar:
+
+- [ ] **`TASK-62`** — en överskuggning vars mönster aldrig matchar är
+      **omekaniserad**. Framkallat: ett tecken fel gav **3 röda vars
+      felmeddelanden aldrig nämner orsaken** ("Expected: 2, Received: 10") plus
+      **1 grönt på fel data**. Fällan är dokumenterad i `hermetic.ts` rad
+      162–168, som själv skriver *"Hermetik-vakten kan inte se detta"* — alltså
+      känd men utan grind. MSW bär mekanismen (`isUsed` + `listHandlers`,
+      källverifierat i `node_modules`, ej antaget). **KLASSAD
+      `ready-for-agent`, UNDER ARBETE 2026-07-28** — och den är sannolikt
+      **mätinstrument för `TASK-64`**, se nedan
+- [ ] **`TASK-63`** — fixturraderna saknar kompileringstidsbindning till
+      zod-schemat: **0 av 18** filer typar med `z.infer`, **17 av 18** använder
+      lokal `Record<string, unknown>`. Glidning fångas därmed först av
+      nattvakten, inte av `npm run typecheck`. Ersätter INTE kontraktsvakten —
+      typningen binder fixtur→schema, vakten binder schema→verkligheten.
+      **Bredast av de fem; kräver pilot på EN fil först**, eftersom den kan
+      avslöja att fixtur och schema faktiskt divergerar (annat jobb)
+- [ ] **`TASK-64`** — acceptance-sviten är **flaky under full workerlast**, och
+      **baseline UTAN den nya filen fällde MEST** (2 failed mot 1). Olika tester
+      varje körning. `retries: 2` gör det till "flaky" i stället för "failed",
+      så CI ser grönt ut. **Rör signalens trovärdighet, inte dess ergonomi —
+      det allvarligaste av de fem.** Tas som DIAGNOS under egen hand, ej som
+      delegerad skiva: orsaken är inte lokaliserad, och en bygg-agent på ett
+      odiagnostiserat race bygger fel sak. Egen klass mot `T106` (självtestets
+      race) — slå inte ihop utan att pröva om orsaken är gemensam
+- [ ] **`TASK-65`** — `event-anteckningar` rad 248 bär **2,2 s marginal** mot
+      retrykedjans konstruerade värsta fall (9800 ms mot 12 s tak), räknat ur
+      källan (`utils.ts` 4 försök + `router.ts:18` retry 3). Upptäckt genom att
+      en agent MÄTTE i stället för att lita på grönt — **grönt första försöket
+      dolde att taket var nära**, samma klass av dold marginal som `59.7` fann
+      på jobbets tak
+- [ ] **`TASK-66`** — klassens **tidsdimension är odokumenterad**. Sömmen
+      beskriver nätverket uttömmande och tiden inte alls; att felytor kostar
+      ~8–10 s bakom dubbla retrylager bor bara i per-fil-kommentarer som säger
+      olika saker. **Den enda fälla en färsk agent var på väg in i var den som
+      inte stod någonstans centralt** — de tre dokumenterade undveks i förväg.
+      Väntar medvetet på `TASK-62`: båda rör `acceptance-bas.ts`
+
+**Skiva mintad ur restlistan 2026-07-28:**
+
+- [x] **`TASK-67` — DONE 2026-07-28** (PR `#339`, CI grön per jobb).
+      Landnings-ordningen som regel (= A2 punkt 5 = VAR VI ÄR-tabellens steg 4),
+      hemvist `CONTRIBUTING.md` § Landnings-ordningen + pekare i `CLAUDE.md`
+      (`#341`). Agenten lade till **en fjärde form som inte fanns i kortet:**
+      `update-branch` får aldrig köras mot en gren vars bygg-agent arbetar —
+      varje push avbryter grenens körning. Empirin verifierad mot sessionsdok
+      rad 219 · 3102 · 3110. **Regeln tillämpades på sin egen landning.**
+
+**Kort ur kontraktsdrift-utredningen 2026-07-28** (Marcus beställde;
+tre parallella läs-pass; fullt utfall i
+[kartläggningen](../docs/research/kontraktsdrift-skyddet-2026-07-28.md)):
+
+- [ ] **`TASK-68`** — kontraktsvakten från **tre till sju** fixturhandlers.
+      Fyra GET i nattjobbet, alltså sekunder. **Hade fångat `TASK-52` första
+      natten.** Urvalet valdes ursprungligen på anropsvolym — men risken följer
+      inte volym: `get-person` har ETT anrop och bär den enda live-verifierade
+      produktionsdefekten. **UNDER ARBETE**, delegerad skiva
+- [ ] **`TASK-69`** — vakten kortsluter på allt utom HTTP 200, så felkontrakten
+      **404 och 400 är osynliga**. Redan glidit: fixturens `get-person` svarar
+      200 med tom kropp där EF:en har uttryckligt 404-kontrakt, och fixturens
+      egen kommentar beskriver ett beteende borttaget i `task-54.2`.
+      `TASK-68` är förkrav
+
+## Fynd-kedjans ordning — klassad och sekvenserad 2026-07-28
+
+Marcus order: *"Relaterar task-63-66 och task-69 till det arbete vi gör här så
+ska alla klassas och tas itu med, i rätt ordning."*
+
+**Relationen är bekräftad, inte antagen.** Fem av de sex korten är direkta fynd
+ur `TASK-59.8`:s QA-vandring av acceptance-klassen; det sjätte (`TASK-69`) är
+nästa lager i den kontraktsdrifts-kedja som `TASK-68` just stängde lager 1 av.
+Alla sex rör samma yta — acceptance-klassen och de grindar som ska bevaka den.
+
+**Klassningen:** samtliga fem oetiketterade kort (`63`, `64`, `65`, `66`, `69`)
+fick **`ready-for-agent`**. Etikett-rymden i repot är binär — 87
+`ready-for-agent` mot 13 `ready-for-human`, där den senare uteslutande bär
+QA-planer och PRD:er som kräver **Marcus** omdöme. Inget av de fem gör det.
+Till skillnad från `TASK-56`–`58`-klassningen behövde inga AC skrivas: alla fem
+bar redan acceptanskriterier (13 st totalt).
+
+| # | Kort | Varför här | Dep (kodad) |
+|---|---|---|---|
+| 1 | **`TASK-62`** | Marcus kvitterade ingång. Mätning FÖRE bygge. Är dessutom mätinstrument för `64` och delar fil med `66` — den blockerar två andra kort och måste därför gå först | — |
+| 2 | **`TASK-69`** | Kontraktsdriftens **lager 2**. Förkravet (`TASK-68`) är uppfyllt. Egen yta (`kontraktsjamforelse.ts`) — stör inget annat kort | `TASK-68` ✓ |
+| 3 | **`TASK-65`** | Kirurgisk och räknad ur källan (9800 ms konstruerat värsta fall mot 12 s tak). Tar bort en **känd** marginal-brist ur brusrymden innan `64` mäter bruset | — |
+| 4 | **`TASK-66`** | Skriver ner tidsregeln i sömmen. Väntar på `62` (samma fil, `acceptance-bas.ts`) och läses bäst efter `65` — då är räkningen tillämpad, inte bara beskriven | `TASK-62` |
+| 5 | **`TASK-64`** | Diagnosen. Vill ha `62`:s vakt som instrument och `65`:s kända brist undanröjd först. **Allvarligast av de fem** — rör signalens trovärdighet | `TASK-62` |
+| 6 | **`TASK-63`** | Bredast (18 filer), kräver pilot på EN fil först. Sist för att inte konflikta med `64`/`65`, som rör samma filer på andra rader | — |
+
+**Deps är kodade bara där beroendet är ÄKTA.** `66→62` (fil-kollision) och
+`64→62` (mätinstrument) är tekniska låsningar; `69→68` är förkravet kortet
+själv skriver ut. `63` och `65` fick **ingen** dep — deras plats i ordningen är
+schemaläggning, inte beroende, och en falsk dep hade blivit skuld som ser ut
+som en invariant.
+
+**`TASK-64` är klassad `ready-for-agent` men ska INTE spawnas som skiva** —
+den tas som diagnos under orkestrerarens egen hand, eftersom orsaken inte är
+lokaliserad och en bygg-agent på ett odiagnostiserat race bygger fel sak.
+Anvisningen är skriven i kortets egen plan, inte bara här, så den följer med
+kortet när det plockas isolerat. Samma sak för `63`:s pilot-krav.
+
+**Förkastat EXPLICIT under vandringen** (registreras, inte tyst): vaktens
+*"Menade du"* pekade på `get-person` när `get-persons` saknades — en ÄKTA annan
+EF, inte en felstavning. Tröskeln är lånad och källbelagd (TypeScripts
+`getSpellingSuggestion`, Levenshtein ≤ 0,4·längd), raden är formulerad som
+fråga, och hela listan över mockade står under. Utvecklaren har full
+information.
+
+**Förkastat EXPLICIT — uppdelning av `api-staging` efter data-beroende**
+(Marcus fråga 2026-07-28: *"Har vi sett till att vi ENDAST gör det när vi
+måste?"*). Ett stickprov visade att minst **23 tester** i `api-staging` avvisas
+av Edge-funktionen innan Airtable nås — 15 × `anon (ingen JWT) → 401`, plus
+`deny`-fall på ogiltig JWT, anon-key, ogiltig eventId-form och fält utanför
+allowlist. De tar staging-mutexen utan att kunna kollidera med något, eftersom
+mutexen finns för att skydda **Airtable-data** mot parallella skrivningar.
+Observationen är korrekt i sak.
+
+**Den förkastas ändå, på proportion.** ADR-080 mätte api-steget till **65 s,
+11,7 %** av ett staging-jobb på ~393 s — E2E-steget bär 84 %. De 23 testerna är
+en bråkdel av de 65 sekunderna; en uppdelning sparar **sekunder** och kostar en
+permanent klassgräns att underhålla. Det är spekulativ komplexitet ovanför
+golvet, och över-engineering-vakten skär den.
+
+**Och den riktiga vägen är en annan:** mutexen avvecklas inte genom att flytta
+fler tester ut ur den, utan genom att göra den onödig — se
+[`T85` § Våg 3](threads/T85-riskanpassad-ci.md), där riktningen dessutom
+korrigerades 2026-07-28. Rör inte denna post igen utan att först läsa `P4`:s
+andra manifestation: **5 req/s-taket är delat per bas**, så parallellitet är
+verkningslös även med perfekt isolering.
+
+Noteras här just för att den annars återkommer som en "ny idé" — 23 tester
+bakom en mutex de inte behöver ser fel ut för den som inte räknat andelen.
+
 ## Beslut som väntar på Marcus
 
 - [ ] `--mm-btn-*` eller `--mm-button-*`? Nio oanvända tokens i `semantic.css`
@@ -551,6 +696,23 @@ Registrerade som backlog-kort, inte som restliste-poster. Här bara som index.
       parallella sessionen S92 mätte frågan under sitt färgsystem-arbete
       (sessionsdok S92, sök `--mm-btn-`) — hämta deras räkning innan frågan
       besvaras, gör inte om mätningen
+- [ ] **Två namn-/strukturfrågor ur `TASK-59.8`:s QA-vandring 2026-07-28.**
+      Lyfta som beslut, INTE mintade som kort: båda är omdöpningar som rör många
+      importrader, alltså scope-beslut och inte QA-fynd.
+      **(a) Dubbla `support`-kataloger.** `tests/support/fixturvarld/` mot
+      `tests/acceptance/support/` — skiljs av ett punkttecken i importraden.
+      **Två oberoende färska läsare snubblade på exakt samma sten** under
+      vandringen; den ena antog att båda låg under `tests/acceptance/support/`
+      och fick backa. `acceptance-bas.ts` rad 77 räddar det genom att skriva
+      full sökväg, men kollisionen är en onödig kostnad för varje nykomling.
+      **(b) Ordet "acceptance" självt.** I ATDD-/Fowler-traditionen betyder det
+      normalt *kör mot ett riktigt deployat system* — motsatsen till vad vår
+      klass gör. Läsaren utan tillgång till `CONTRIBUTING.md` uppgav att en
+      gissning på enbart katalognamnet hade blivit DATAKÄLLA; det som räddade
+      steget var grannkatalogerna och `package.json`, inte namnet.
+      **Motargument som hör till beslutet:** namnet är redan inskrivet i
+      ADR-080, `CONTRIBUTING.md` (sju förekomster), CI-jobbets namn och
+      klassnings-mekaniken i `ci.yml` — ett byte är inte gratis
 - [x] **Klassning av `TASK-56`, `TASK-57`, `TASK-58` — KLAR 2026-07-27**, av Code
       på Marcus delegering (*"Klassa dem du är du snäll"*). Alla tre
       **`ready-for-agent`**: samtliga är avgränsade ändringar i
@@ -643,6 +805,11 @@ kontext-statuslinjen · de 18 återstående snitten.
 | 2026-07-28 | **`TASK-59.4` DONE — Personer-ytan** (3 filer, e2e 30→27). Tvåsidigt bevis per fil; agenten fann ett hål i sin EGEN bevismetod (vakten fäller på `get-person` innan `update-record` nås) och körde ett separat skrivvägs-prov. **`T104`** registrerad. Enabling-detour: död pekare i sessionsdok S23 efter flytten | `#304` |
 | 2026-07-27 | **`TASK-59.3` DONE — acceptance-klassen LEVER.** Eget projekt + mutexfritt jobb (placering, ej flagga) + `mergeTests`-komponerad söm; Hem-ytans två filer flyttade med tvåsidigt bevis (`hem` 28 fällda / 56 vakt-fel när mockarna neutraliserades). CI visar `Acceptance (hermetisk): success` som eget jobb. **`T102`** + **`T103`** registrerade | `#302` |
 | 2026-07-27 | **`TASK-59.2` DONE — kontraktsvakten i drift.** Larmkedjan bevisad skarpt (dispatch `30309427472`: `Kontraktsvakt: success` + `Larm: success`, ärende `#300` stängt med motivering). **Vakten larmade på RIKTIG drift vid första körningen** — 11 fält som `get-registrations` skickar i 43/43 poster saknades i fixturen. Tre enabling-detourer krävdes: fixturen ikapp · `L264`-tidszonsfixen · `danger.systems`-undantaget | `95157a5` · `4644041` · `8728e1f` · `#299` |
+
+| 2026-07-28 | **Tionde resumen** — `lifecycle: paused → active`, nionde pausens rubrik till historik-form, todo-kadens | `#334` |
+| 2026-07-28 | **`TASK-59.8` DONE — QA-vandringen.** Sju steg på Marcus delegering; steg 2 och 4 delegerade till subagenter med genuint färska ögon. Steg 1 gav **AC #3:s positiva gren** som `59.7` inte kunde köra (purge + staging `skipped`, acceptance grön) — **klassningen bekräftad korrekt**. Steg 4:s test blev den äkta ändring `59.7` saknade. **A5-familjen därmed komplett.** Fem fynd → `TASK-62`–`66`; steg 3 och 6 gav inget fynd; ett fynd förkastat explicit | `#335` · `#336` · `#337` |
+| 2026-07-28 | **`TASK-67` mintad** ur restlistans steg 4 + `TASK-62` klassad `ready-for-agent`. Ordningsbeslutet (fynden före steg 5; `62` före `64` eftersom vakten sannolikt är diagnosinstrumentet) är Codes, fattat på Marcus delegering: *"Du är senior och vet vad som blir bäst."* | `#338` |
+| 2026-07-28 | Restlistan ikapp tionde resumen — steg 3 → HELT KLART, steg 4 → `TASK-67`, A2 punkt 5 + `TASK-61` avbockade, fem fynd-kort indexerade, namn-/strukturfrågorna lyfta till § Beslut | (denna PR) |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som

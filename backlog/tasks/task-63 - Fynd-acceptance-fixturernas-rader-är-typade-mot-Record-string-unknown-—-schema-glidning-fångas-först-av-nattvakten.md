@@ -6,7 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 12:47'
-labels: []
+updated_date: '2026-07-28 15:05'
+labels:
+  - ready-for-agent
 dependencies: []
 ordinal: 136000
 ---
@@ -33,6 +35,20 @@ UPPTÄCKT AV: färsk läsare utan tillgång till CONTRIBUTING/ADR, som noterade 
 - [ ] #2 En medvetet felaktig fixturrad fälls av npm run typecheck — bevisat i båda riktningar
 - [ ] #3 Kontraktsvakten orörd i omfattning och utfall
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+PILOT PÅ EN FIL FÖRST — bygg inte alla 18 i ett svep. Piloten kan avslöja att fixturen och schemat faktiskt DIVERGERAR, och det är ett annat jobb än att typa om raderna: en divergens ska rapporteras, inte tystas genom att typen böjs efter fixturen.
+
+STEG 1 — välj EN fil och härled dess Row ur z.infer<typeof XSchema>. Faller typecheck: läs vad den säger. Är det en glidning mellan fixtur och schema, STOPPA och rapportera — det är fynd, inte friktion.
+
+STEG 2 — först när piloten gått ren, rulla ut mönstret över resterande filer.
+
+AVGRÄNSNING (står i beskrivningen, upprepas för att den är lätt att tappa): detta ERSÄTTER INTE kontraktsvakten. Typningen binder fixtur→schema; vakten binder schema→verkligheten. AC #3 finns för att vaktens omfattning och utfall ska vara bevisat orörda efteråt.
+
+PLATS I KEDJAN: kontraktsdriftens lager 3. Lager 1 = TASK-68 (Done, 200-formen till alla sju), lager 2 = TASK-69 (felkontrakten), lager 4 = dual-run (ospeccat). Ingen teknisk låsning mot 69 — de rör olika filer — men lagerordningen är den logiska läsningen.
+<!-- SECTION:PLAN:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

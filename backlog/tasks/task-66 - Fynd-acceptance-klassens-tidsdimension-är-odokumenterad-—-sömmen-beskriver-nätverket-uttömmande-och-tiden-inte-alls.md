@@ -6,8 +6,11 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 12:48'
-labels: []
-dependencies: []
+updated_date: '2026-07-28 15:04'
+labels:
+  - ready-for-agent
+dependencies:
+  - TASK-62
 ordinal: 139000
 ---
 

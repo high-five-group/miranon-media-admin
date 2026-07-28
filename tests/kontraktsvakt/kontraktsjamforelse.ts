@@ -58,6 +58,31 @@ export interface Kontraktsfall {
   sokvag: string;
   /** Kuvertets nyckel — `{ events: [...] }` ⇒ `'events'`. */
   kuvertnyckel: string;
+  /**
+   * Kuvertnyckeln bär EN post, inte en lista: `{ event: {…} }` i stället för
+   * `{ events: [...] }`.
+   *
+   * MÄTT, INTE ANTAGET (TASK-68): av fixturvärldens sju handlers svarar fem med
+   * en lista och TVÅ med ett enskilt objekt — `get-event/index.ts:227` skickar
+   * `{ event }` och `get-person/index.ts:215` skickar `{ person }`, och
+   * adaptern parsar dem med `EventSchema.parse` respektive
+   * `PersonDetailSchema.parse` (INTE `z.array`, `AirtableAdapter.ts:110` och
+   * `:131`). Utan detta stöd hade de två fallen inte gått att bevaka alls:
+   * `listaAvPoster` kräver `Array.isArray`, så varje natt hade gett ett
+   * KUVERT-larm om att fixturen "saknar listan" — ett strukturellt falsklarm om
+   * vaktens egen form, inte ett fynd om kontraktet. Precis det anonyma larm
+   * modulen finns för att undvika.
+   *
+   * Posten wrappas till en ettpostslista och går sedan genom EXAKT samma
+   * jämförelse som övriga fall — schemaparse, formprofil, alla sju
+   * avvikelseklasser. Ingen egen kodväg, ingen egen semantik.
+   *
+   * FLAGGAN ÄR OCKSÅ ETT KONTRAKT I SIG. Ett enkelpost-fall som får en lista —
+   * eller ett listfall som får ett objekt — är en kuvertform som bytt skepnad,
+   * och båda fälls som KUVERT. Att tolerera bådadera hade gjort vakten blind
+   * för just den drift den ska se.
+   */
+  enkelpost?: true;
   /** Schemat som parsar EN post. Samma objekt används på båda sidor. */
   schema: z.ZodObject;
   /** Schemats namn + fil, för larmets adressering. */
@@ -166,10 +191,29 @@ function likaMangder(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
   return true;
 }
 
-function listaAvPoster(kuvert: unknown, kuvertnyckel: string): unknown[] | undefined {
+/**
+ * Posterna bakom kuvertnyckeln, eller `undefined` när kuvertet inte bär den
+ * form fallet deklarerar. `undefined` ÄR svaret "kuvertet har bytt form" och
+ * blir ett KUVERT-larm hos anroparen — aldrig en tyst tom lista.
+ */
+function listaAvPoster(
+  kuvert: unknown,
+  kuvertnyckel: string,
+  enkelpost: boolean,
+): unknown[] | undefined {
   if (!arPost(kuvert)) return undefined;
-  const lista = kuvert[kuvertnyckel];
-  return Array.isArray(lista) ? lista : undefined;
+  const varde = kuvert[kuvertnyckel];
+  // Enkelpost-fall: ETT objekt wrappas till en ettpostslista så resten av
+  // jämförelsen är identisk. En lista här vore en verklig kuvertändring.
+  if (enkelpost) return arPost(varde) ? [varde] : undefined;
+  return Array.isArray(varde) ? varde : undefined;
+}
+
+/** Larmets ord för underlaget — 'listan' respektive 'posten'. */
+function underlagsord(fall: Kontraktsfall): string {
+  return fall.enkelpost === true
+    ? `posten '${fall.kuvertnyckel}'`
+    : `listan '${fall.kuvertnyckel}'`;
 }
 
 /** Zod-fel som `sökväg: meddelande`-rader, max fem så larmet inte blir en vägg. */
@@ -205,13 +249,14 @@ export function granskaKontrakt(fall: Kontraktsfall, skarpt: SkarptSvar): Avvike
     return avvikelser;
   }
 
-  const skarpLista = listaAvPoster(skarpt.kropp, fall.kuvertnyckel);
-  const fixturLista = listaAvPoster(fall.fixtur, fall.kuvertnyckel);
+  const enkelpost = fall.enkelpost === true;
+  const skarpLista = listaAvPoster(skarpt.kropp, fall.kuvertnyckel, enkelpost);
+  const fixturLista = listaAvPoster(fall.fixtur, fall.kuvertnyckel, enkelpost);
 
   if (fixturLista === undefined) {
     avvikelser.push({
       klass: 'KUVERT',
-      rubrik: `Fixturen saknar listan '${fall.kuvertnyckel}' i sitt kuvert`,
+      rubrik: `Fixturen saknar ${underlagsord(fall)} i sitt kuvert`,
       detaljer: [`fixturens rotnycklar: ${JSON.stringify(rotnycklar(fall.fixtur))}`],
       foljd:
         'Fixturen är felformad — jämförelsen kunde inte göras. Fixturen och kontraktsfallet ' +
@@ -223,7 +268,7 @@ export function granskaKontrakt(fall: Kontraktsfall, skarpt: SkarptSvar): Avvike
   if (skarpLista === undefined) {
     avvikelser.push({
       klass: 'KUVERT',
-      rubrik: `Staging svarar inte längre med listan '${fall.kuvertnyckel}'`,
+      rubrik: `Staging svarar inte längre med ${underlagsord(fall)}`,
       detaljer: [
         `fixturens rotnycklar: ${JSON.stringify(rotnycklar(fall.fixtur))}`,
         `stagings rotnycklar: ${JSON.stringify(rotnycklar(skarpt.kropp))}`,
@@ -391,8 +436,9 @@ export function byggLarm(
   avvikelser: readonly Avvikelse[],
   nu: Date = new Date(),
 ): string {
-  const skarpLista = listaAvPoster(skarpt.kropp, fall.kuvertnyckel);
-  const fixturLista = listaAvPoster(fall.fixtur, fall.kuvertnyckel);
+  const enkelpost = fall.enkelpost === true;
+  const skarpLista = listaAvPoster(skarpt.kropp, fall.kuvertnyckel, enkelpost);
+  const fixturLista = listaAvPoster(fall.fixtur, fall.kuvertnyckel, enkelpost);
 
   const rader: string[] = [
     LINJE,
@@ -440,8 +486,9 @@ export function byggLarm(
     'Den jämför FORM, inte värden: att ett tal byter betydelse (andel → procent)',
     'syns inte här. Den kan inte skilja "fältet är tomt i staging" från "fältet',
     'har slutat fyllas", eftersom schemat tillåter null — därför är null bortsett',
-    'i typjämförelsen. Nästlade objekt prövas bara av schemat. Och urvalet är',
-    'tre endpoints, inte alla:',
+    'i typjämförelsen. Nästlade objekt prövas bara av schemat. Och räckvidden är',
+    'fixturvärldens sju handlers i sin 200-form — inte alla 24 Edge Functions,',
+    'och inte felkontrakten:',
     ...brytRad(fall.urval, 68).map((r) => `  ${r}`),
     '',
     LINJE,

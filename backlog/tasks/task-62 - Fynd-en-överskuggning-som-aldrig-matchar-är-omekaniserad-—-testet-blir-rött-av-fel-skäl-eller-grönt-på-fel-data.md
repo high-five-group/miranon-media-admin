@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 12:47'
-updated_date: '2026-07-28 13:45'
+updated_date: '2026-07-28 15:18'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,61 +31,64 @@ ATT DESIGNA IN: en överskuggning kan legitimt vara oanvänd (registrerad för e
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [x] #1 En överskuggning vars mönster aldrig matchar fäller testet med ett meddelande som namnger det oanvända mönstret
-- [x] #2 Tvåsidigt bevis: vakten fäller på ett medvetet felstavat mönster OCH är tyst när mönstret matchar
-- [x] #3 Legitim oanvänd överskuggning kan undantas explicit; undantaget syns i koden
+- [ ] #1 En överskuggning vars mönster aldrig matchar fäller testet med ett meddelande som namnger det oanvända mönstret
+- [ ] #2 Tvåsidigt bevis: vakten fäller på ett medvetet felstavat mönster OCH är tyst när mönstret matchar
+- [ ] #3 Legitim oanvänd överskuggning kan undantas explicit; undantaget syns i koden
 - [ ] #4 Samtliga 18 befintliga acceptance-filer passerar med vakten på
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+OMDESIGNAD 2026-07-28 efter research-pass — docs/research/oanvand-mock-branschpraxis-2026-07-28.md. Sex ekosystem undersökta, fem med relevant mekanism i källkod. Orkestrerarens ursprungliga hypotes ('oanvänd + adressen trafikerades ändå') är FALSIFIERAD och ska INTE byggas: den missar stavfelet (med EF('get-persosn') trafikeras den adressen aldrig — det var hela felet) och den läser en flagga som är förorenad på modulnivå-delade handlers.
+
+BRANSCHENS FORM: problemet delas i TVÅ mekanismer med olika trigger, inte ett skarpare oanvänd-kriterium. Mockito är enda ekosystemet med båda namngivna och åtskilda (PotentialStubbingProblem = ivrig, UnnecessaryStubbingException = trög). Pact har taxonomin tredelad.
+
+STEG 1 — dela vakten i två. Behåll denna vakt som TRÖG oanvänd-kontroll vid teardown. Lägg till en IVRIG nära-träff-kontroll som äger stavfelsklassen. Motorn finns redan på grenen: narmasteHandler()/levenshteinAvstand() i ef-namnforslag.ts, i dag riktad omatchat anrop -> närmaste handler. Rikta den även åt andra hållet: oanvänd överskuggning -> närmaste anrop testet faktiskt gjorde. Underlaget får INTE hämtas ur isUsed på delade handlers — rätt källa är MSW:s request:match-händelse per test.
+
+Klassning blir tredelad: (a) oanvänd + nära-träff finns = sannolikt felskriven, fäll högt med BÅDA ställena namngivna; (b) oanvänd + ingen nära-träff = sannolikt legitim, fäll milt eller inte alls; (c) anrop utan handler = hermetik-vakten, oförändrad.
+
+STEG 2 — vidga oanvänd-kontrollens scope från TEST till FIL. Aggregera på handler.info.callFrame och rapportera bara deklarationsställen som INGEN test i filen använde. Det är Mockitos getUnusedStubbingsByLocation portad rakt av, och det enda steget som adresserar beforeEach-fallet vid roten.
+
+MÄT FÖRE BYGGE: kör vakten med per-fil-aggregering över de 8 fällande filerna och räkna hur många av de 36 som överlever. Faller siffran mot noll är steg 2 hela lösningen och medvetetOanvand blir ren undantagsventil.
+
+STEG 3 — behåll medvetetOanvand som VENTIL, inte primär dämpare. Formen konvergerar oberoende med Nocks .optionally(), testifys .Maybe() och Mockitos lenient(); kravet på nedskrivet skäl går utöver alla tre. Behövs ventilen på 36 ställen är vakten fel kalibrerad — steg 2 före steg 3.
+
+STEG 4 — felmeddelandets form från Mockito: båda ställena namngivna, det faktiska anropet OCH registreringen som var nära. callFrame gör det möjligt.
+
+AVRÅDS EXPLICIT AV RESEARCHEN: att bygga hypotesen som den var formulerad, och att göra registreringen smalare för att blidka vakten (Mockito avråder uttryckligen).
+
+ÖPPET FYND ATT KÄNNA TILL: isUsed nollställs INTE av resetHandlers() och läcker mellan tester för handler-objekt delade på modulnivå (RequestHandler.js rad 64-73 rör inte flaggan). Vakten på feat/task-62 är redan på rätt sida, men egenskapen är odokumenterad hos MSW och kostar ett fel om vakten vidgas till normalläget.
+
+PR #340 bär det befintliga bygget och är oarmerad. Avgör vid ombyggnad om den byggs om på plats eller ersätts.
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-MEKANISMEN, VERIFIERAD MOT INSTALLERAD VERSION (msw 2.15.0 / @msw/playwright 0.6.7).
-RequestHandler.isUsed finns (lib/core/HttpResponse-DL-P1EeG.d.ts rad 218) och sätts i
-implementationen på rad 149 i RequestHandler.js, direkt efter att predikatet gett träff.
-Kortets hänvisning till listHandlers i lib/browser/index.d.ts rad 80 är setupWorker-ytan;
-den metod NetworkFixture faktiskt ärver ligger på SetupApi
-(lib/core/experimental/setup-api.d.ts rad 30) via Omit av dispose ur SetupApi
-(@msw/playwright build/index.d.mts rad 18). Samma metod, annan härkomst — verifierat, ej antaget.
+MÄTNINGEN KÖRD 2026-07-28 (planens 'MÄT FÖRE BYGGE'). Metod: fixturens teardown instrumenterad i en kastbar worktree att skriva JSONL per (test, överskuggning) i stället för att låta vakten fälla — vakten själv orörd. Hela acceptance-sviten körd med --retries=0. 321 observationer över 18 filer och 55 deklarationsställen.
 
-AC 1 UPPFYLLT. Vakten fäller och namnger mönstret. Bevis i båda riktningar: self-testet går
-14/14 expected med vakten på och 1 unexpected med den avstängd (det medvetet felstavade
-test.fail-testet rapporterar då "expected to fail but passed").
+PLANENS SIFFRA BEKRÄFTAD, OCH FÖRKLARAD: 51 oanvända handler-instanser fördelade på exakt 36 distinkta tester i exakt 8 filer, av 153 tester. De 36 var alltså fällda TESTER (vakten kastar en gång per test), 51 är handler-instanserna bakom dem. Samma population, finare granularitet.
 
-AC 2 UPPFYLLT. Fäller på EF(get-persosn), tyst på EF(get-persons) — både som beslut
-(direkt anrop) och som verkan i den skarpa fixturen.
+UTFALL — PER-FIL-AGGREGERING (Mockitos getUnusedStubbingsByLocation, aggregerat på handler.info.callFrame):
 
-AC 3 UPPFYLLT. medvetetOanvand(handler, skäl): per handler och inte per test, obligatoriskt
-skäl på minst 20 tecken prövat vid anropet, och en INAKTUELL märkning fäller
-(ts-expect-error-kontraktet) så undantaget inte kan ruttna tyst.
+  fällningar        51 → 4      (7,8 % överlever, 92,2 % faller bort)
+  fällande filer     8 → 3
+  döda ställen       4 av 55
 
-AC 4 EJ UPPFYLLT — OCH DET ÄR FYNDET. 36 av 153 acceptance-tester i 8 av 18 filer fäller,
-samtliga på vakten (noll övriga fel). Identisk fällningsmängd i tre fulla körningar
-(36 / 36 / 36, 117 passed) — deterministiskt på darwin, 8 workers. Fyra klasser:
+SVARET PÅ PLANENS FRÅGA: steg 2 är nästan hela lösningen. medvetetOanvand behövs på 2 ställen, inte 36 — alltså ren undantagsventil, precis den kalibrering kortet efterfrågade ('Behövs ventilen på 36 ställen är vakten fel kalibrerad').
 
-1. BATCH-REGISTRERAD SKRIV-EF som bara en delmängd av testerna utlöser —
-   create-registration 18 tester (event-ny-anmalan 15, event-add-registration 3),
-   create-event-note 7 (event-anteckningar), send-registration-confirmation 5
-   (anmalan-detalj). Idiom, inte bugg.
-2. BATCH-REGISTRERAD LÄS-EF för en vy testet aldrig laddar — anmalan-detalj
-   get-event / get-registrations / get-event-notes i 5 tester.
-3. UTEBLIVEN MUTATION ÄR SJÄLVA BEVISET — person-note-edit "avbryt (Esc): ingen mutation"
-   (update-record) och mer-segment-send "0-mottagar-segment" (send-email +
-   compute-segment). Läroboksfall för medvetetOanvand.
-4. AVSIKTLIGT ÖVERSKUGGAD ÖVERSKUGGNING — mer-segment registrerar get-segments i
-   beforeEach och igen i testet; den första är död by design, och kommentaren säger det.
+DE FYRA ÖVERLEVARNA DELAR SIG I TVÅ KLASSER — och den andra klassen förutsåg planen INTE:
 
-TVÅ FALL DÄR KOMMENTAREN LOVAR MER ÄN TESTET KÖPER: hem.acceptance rad 205 + 226 överskuggar
-get-event med motiveringen "Detaljsidan hämtar get-event vid landning, överskugga för
-deterministisk render", men testet slutar vid toHaveURL — destinationens hämtning hinner
-aldrig ske. Determinismen kommentaren åberopar köps alltså aldrig.
+(A) TVÅ ÄKTA DÖDA REGISTRERINGAR — hem.acceptance.test.ts:216 och :234. Båda överskuggar get-event med kommentaren 'Detaljsidan hämtar get-event vid landning → överskugga för deterministisk render', men testet assertar bara toHaveURL och navigerar aldrig så långt att anropet sker. Prövat mot race: tre isolerade körningar gav isUsed=false på båda, alla tre gånger. Stabilt döda, inte tajmingberoende. Detta är precis det fynd vakten finns för — kommentaren beskriver en avsikt testet inte fullföljer.
 
-VARIANS: en fjärde körning (via sjalvtest --negativ-kontroll) gav 38 fällda i stället för 36.
-De två extra kunde inte attribueras i efterhand — skriptet raderar sin rapport. Konsistent med
-TASK-64:s kända flakighet, cirka 1,3 procent.
+(B) TVÅ LEGITIMA NEGATIVA SENSORER — mer-segment-send:207 (send-email) och person-note-edit:175 (update-record). Mönstret: 'let sendCalled = false' + handler som sätter flaggan + senare assertion att den är FALSE. Handlern registreras för att bevisa att anropet ALDRIG sker; att den förblir oanvänd ÄR testets resultat. Filernas egna kommentarer säger det rakt ut ('Flaggan mäter APPENS beteende — att 0 mottagare INTE utlöser ett utskick').
 
-INGET ÄR TYSTAT. Ingen opt-out lagd på de 18 filerna, ingen fil undantagen, vakten inte
-uppmjukad — per uppdragets instruktion. Vägvalet är Marcus.
+KLASS (B) ÄR VAKTENS FARLIGASTE FALSKA POSITIV: utan ventil fäller vakten exakt de tester vars korrekthet består i att handlern inte används. Nocks .optionally() och Mockitos lenient() finns för denna klass; researchens 'legitim oanvänd' var alltså inte en hypotetisk kategori utan har två skarpa instanser i repot i dag.
+
+KÄLLVERIFIERING FÖR STEG 1, GJORD I SAMMA PASS: request:match finns på fixturen (LifeCycleEventsMap, msw 2.15.0) — MEN den typen är @deprecated i installerad version, med hänvisning till HttpNetworkFrameEventMap. Efterföljaren bor under msw/lib/core/experimental/ och exponeras INTE genom @msw/playwright 0.6.7, vars NetworkFixture typas mot Omit<SetupApi<LifeCycleEventsMap>, 'dispose'>. Båda formerna bär dessutom bara { request, requestId } — ingen handler-koppling. Kopplingen anrop→närmaste-handler måste alltså räknas av oss, den fås inte gratis. Ej blockerande; bokförs så nästa läsare inte tror att den nyare formen missades.
+
+SIDOFYND FÖR TASK-64: mätkörningen (hela sviten, --retries=0) gav 152 passed / 1 failed — event-ny-anmalan.acceptance.test.ts:641 (virtuell fokus, aria-activedescendant). Det är en FJÄRDE fil utöver de tre TASK-64 listar (event-anteckningar:142, mer-intresserade:95, person-detail:137). Fjärde körningen, fjärde uppsättningen fallerande tester — stärker bilden av bred flakighet snarare än en lokaliserad rad.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
@@ -93,5 +96,5 @@ uppmjukad — per uppdragets instruktion. Vägvalet är Marcus.
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

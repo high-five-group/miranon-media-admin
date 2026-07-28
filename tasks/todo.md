@@ -15,6 +15,75 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-28, elfte resumen — fynd-kedjan klassad och
+sekvenserad)** — resumen kvitterad mot disk: numreringens **sju axlar
+oförändrade** sedan pausen (91/083/L360/**33** fragment/T107/f46/task-70 —
+ingen mellansession förbrukade nummer), `main` @ `50b2c5e` rent + i synk med
+origin, fem senaste main-körningarna **gröna**, `audit-ci` *"Passed"*, plugin
+**1.22.0**. **FYND VID INGÅNGEN: `S92` är också `lifecycle: paused`** — två
+pausade dok på disk; Marcus pekade ut S91, S92 har inte rört numreringen.
+**Marcus order: `TASK-63`–`66` + `69` ska ALLA klassas och tas itu med, i rätt
+ordning.** Relationen bekräftad — fem av sex är fynd ur `59.8`:s QA-vandring,
+det sjätte är kontraktsdriftens lager 2. **Samtliga fem klassade
+`ready-for-agent`** (alla bar redan AC — 13 st; till skillnad från
+`56`–`58`-klassningen behövde inga skrivas). **Ordningen: `62` → `69` → `65` →
+`66` → `64` → `63`**, med deps kodade **bara där beroendet är äkta** (`66→62`
+fil-kollision · `64→62` mätinstrument · `69→68` förkrav); `63`/`65` fick ingen
+dep — deras plats är schemaläggning, och en falsk dep blir skuld som ser ut som
+en invariant. **`TASK-64` spawnas INTE som skiva** trots etiketten — diagnos
+under egen hand, anvisningen skriven i kortets egen plan. **NU: `TASK-62`,
+mätningen före bygget.** Karta: `tasks/s91-restlistan.md` § Fynd-kedjans
+ordning.
+*(Föregående fokus-text nedan.)*
+
+**Session 91 ⏸️ PAUSAD (2026-07-28, elfte pausen — efter kontraktsdriften och
+vakten till sju)** — **FEMTON PR:er landade (`#334`–`#348` utom `#340`), samtliga
+gröna per jobb, noll röda körningar.** **A5-FAMILJEN KOMPLETT** (`TASK-59.1`–`59.8`
+Done) · **`TASK-67` Done** (landnings-ordningen kodad, tillämpad på sin egen
+landning) · **`TASK-68` Done** (kontraktsvakten **tre → sju** handlers, `#346`
+grön på alla åtta jobb inkl. staging). **KONTRAKTSDRIFTEN KARTLAGD:** testerna
+KAN vara gröna medan en verklig EF svarar annorlunda — **det har hänt två
+gånger**, och `TASK-52` lever i produktion. **`TASK-62`:s hypotes FALSIFIERAD av
+research** (sex ekosystem): exakt-adress-jämförelse missar stavfelet och läser en
+förorenad flagga; branschens form är TVÅ mekanismer. Planen omskriven med fyra
+steg + mätning FÖRE bygge. **`#340` ligger öppen och OARMERAD med avsikt** — bär
+det gamla bygget. **STÅENDE ORDER: Code fortsätter som ORKESTRERARE** (Marcus
+2026-07-28). **SKÖRD: 4 fragment** [UNIVERSAL]. **NÄSTA RESUME:** (1) `TASK-62`
+mätning + ombyggnad (2) `TASK-69` felkontrakten (3) steg 5 A2:7 — Marcus startar.
+Numrering: 91/083/L360 (**33** fragment)/T107/f46/**task-70**. Karta:
+`tasks/s91-restlistan.md` § VAR VI ÄR. Full narrativ: sessionsdok **Del 17–18** +
+PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
+**Session 91 ▶️ PÅGÅENDE (2026-07-28, tionde resumen forts. — KONTRAKTSDRIFTEN
+KARTLAGD)** — **Marcus fråga besvarad med mätning: JA, testerna KAN vara gröna
+medan en verklig EF svarar annorlunda — och det har hänt TVÅ gånger.** `TASK-52`
+lever i produktion (`Motivering` är lookup ⇒ array, schemat kräver sträng;
+persondetaljen faller för varje person med motivering) och kortets egen mening
+säger varför: *"fixturvärlden använder schema-trogna strängar, så ingen grind ser
+den"*. **Vakten hade fällt första natten — men `get-person` står inte i dess
+lista.** Andra fallet upptäckt i utredningen: fixturens `get-person` svarar **200
+med tom kropp** där EF:en har uttryckligt 404-kontrakt, och fixturens kommentar
+beskriver ett beteende **borttaget i `task-54.2`**. Vaktens räckvidd mätt: **3 av
+7 handlers · 3 av 24 EF:er · toppnivå enbart · null-blind 29/32** ·
+ordning/antal/paginering/datumformat prövas inte. **De två EF:er som skickar mail
+till riktiga människor saknar positivt skrivbevis.** → **`TASK-68`** (vakten till
+alla sju, UNDER ARBETE) + **`TASK-69`** (felkontrakten 404/400). Fullt utfall:
+[kartläggningen](../docs/research/kontraktsdrift-skyddet-2026-07-28.md).
+**`TASK-67` DONE** (`#339`) — landnings-ordningen kodad, **tillämpad på sin egen
+landning**; agenten lade till en fjärde form som inte fanns i kortet.
+**`TASK-62` STOPPAD FÖR VÄGVAL:** vakten fäller **36 av 153 tester i 8 filer**,
+men 30 av dem är normalt batch-idiom ⇒ kriteriet är för trubbigt. **Orkestrerarens
+eget fel bokfört:** *"tysta ingenting"* + *"öppna PR"* är oförenliga när jobbet
+lyckas ⇒ avsiktligt röd PR i delad kö (avbruten före kön). **Marcus delegerade
+vägen med *"gör det som är seniort och BRANSCHLEDANDE"* ⇒ Codes beslut: research
+FÖRE ombyggnad** (obelagd hypotes ≠ branschledande); pass mot MSW/Nock/WireMock/
+gomock kör, **bygget nästa resume med belägg**. **`T85` våg 3 RÄTTAD** — två
+dokument bar samma etikett för olika planer, och `P4` (5 req/s delat per bas)
+avgjorde mot båda; **fångat av Marcus-pushback**. **SKÖRD: 4 fragment**
+[UNIVERSAL]. Numrering: 91/083/L360 (**33** fragment)/T107/f46/**task-70**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-28, tionde resumen — `TASK-59.8` QA-vandringen
 KÖRD, sju steg)** — resumen kvitterad mot disk: numreringens sju axlar var
 oförändrade sedan pausen. **`TASK-59.8` AC 1–3 avbockade; sju steg körda och
