@@ -1,5 +1,5 @@
 ---
-name: bygg-skiva
+name: bygg-agent
 description: Bygger en backlog-skiva eller ett fynd-kort till pushad PR med gröna grindar. Använd för ALLT arbete som skriver till repot och landar i en commit — skivor, fynd-kort, refaktoreringar, CI-ändringar. Kör alltid i egen git-worktree.
 isolation: worktree
 ---
