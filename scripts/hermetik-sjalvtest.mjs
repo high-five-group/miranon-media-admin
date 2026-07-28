@@ -71,9 +71,20 @@ function korSvit({ sjalvtest }) {
   if (sjalvtest) miljo.HERMETIK_SJALVTEST = '1';
   else delete miljo.HERMETIK_SJALVTEST;
 
+  // `--retries=0` ÄR INTE EN OPTIMERING UTAN EN KORREKTHETSFRÅGA. Config sätter
+  // `retries: process.env.CI ? 2 : 0` för att en flaky körning ska få en andra
+  // chans. I självtestläget är en fällning det FÖRVÄNTADE utfallet, så varje
+  // test kördes tre gånger och spelades in på video — 153 körningar i stället
+  // för 51, för noll extra information. Mätt skarpt: CI-jobbets steg tog 289 s
+  // med retries, och samma körning lokalt med CI=1 tog 297 s, vilket band
+  // orsaken till retries och inte till runner-hastighet.
+  //
+  // Skärpan är dessutom en annan: ett test som fäller vid första försöket men
+  // passerar vid andra är per definition INTE ett hermetik-bevis. Med retries
+  // hade en sådan halv fällning räknats som grön.
   const utfall = spawnSync(
     'npx',
-    ['playwright', 'test', `--project=${PROJEKT}`, '--reporter=json'],
+    ['playwright', 'test', `--project=${PROJEKT}`, '--reporter=json', '--retries=0'],
     { env: miljo, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] },
   );
 

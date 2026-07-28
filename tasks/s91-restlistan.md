@@ -490,8 +490,13 @@ Registrerade som backlog-kort, inte som restliste-poster. Här bara som index.
       fälls **med `OmockadRequestError` som orsak** — utfallet ensamt räcker
       inte, eftersom en trasig assertion också gör en svit röd. **Mätt:
       51/51 fällda, 51/51 av vakten, noll timeouts.** Negativ kontroll bevisar
-      att grinden kan fälla. Kör i CI:s acceptance-jobb (+~50 s mot uppmätta
-      1,2–1,4 min, tak 8). **`test.fail()`-formen förkastades aktivt** — den
+      att grinden kan fälla, och ett prov med en avsiktlig överlevare bevisar
+      att den fångar sitt målfall. **KOSTNADEN BLEV FEL FÖRST:** prognosen ~50 s
+      var en LOKAL mätning projicerad till CI; skarpt utfall 289 s, jobbet 6,5
+      min mot tak 8. Rotorsak `retries: CI ? 2 : 0` — i självtestläget är rött
+      det förväntade utfallet, så varje test kördes tre gånger med video.
+      Lagat i samma pass (`--retries=0` + artefakter av i regimen): **297 s →
+      73 s**, jobbet ~2,5 min. **`test.fail()`-formen förkastades aktivt** — den
       kontrollerar att ett test fälls, aldrig varför, och hade i en delad modul
       körts en enda gång av ESM-cachen. `59.5`/`59.6` har därmed ett permanent
       bevis i stället för tretton manuella cykler

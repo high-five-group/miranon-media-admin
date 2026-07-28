@@ -171,8 +171,18 @@ jobs:
       # verkningslösa, och varje test måste då fällas AV VAKTEN. Ett test som
       # överlever konsumerar inget EF-svar och bevisar inget om databeteendet.
       #
-      # Kostnaden är en andra svitkörning: jobbet mättes till 1,2–1,4 min och
-      # landar runt 2,2 min, mot taket 8. Marginalen räknad, inte antagen.
+      # KOSTNADEN, MÄTT I CI OCH INTE PROJICERAD FRÅN LOKALT. Första skarpa
+      # körningen tog 289 s för detta steg mot ~50 s lokalt, och drev jobbet till
+      # 6,5 min mot taket 8. Orsaken var `retries: CI ? 2 : 0`: i självtestläget
+      # är en fällning det FÖRVÄNTADE utfallet, så varje test kördes tre gånger
+      # och spelades in på video — 153 körningar för noll extra information.
+      # Skriptet kör därför `--retries=0` och config stänger av
+      # failure-artefakter i regimen. Efter fixen: 73 s (mätt med CI=1 lokalt,
+      # 297 s → 73 s i samma uppställning), alltså ~2,5 min totalt mot taket 8.
+      #
+      # Retries vore dessutom FEL här, inte bara dyrt: ett test som fäller vid
+      # första försöket men passerar vid andra är per definition inget
+      # hermetik-bevis, och hade räknats som grönt.
       #
       # Steget körs EFTER den skarpa sviten med avsikt — är den röd stannar
       # jobbet där, och ett självtest mot en redan trasig svit hade bara gett två
