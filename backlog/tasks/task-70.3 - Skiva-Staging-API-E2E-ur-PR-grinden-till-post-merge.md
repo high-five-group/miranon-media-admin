@@ -1,10 +1,10 @@
 ---
 id: TASK-70.3
 title: 'Skiva: Staging (API + E2E) ur PR-grinden till post-merge'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-28 16:33'
-updated_date: '2026-07-28 21:52'
+updated_date: '2026-07-28 22:49'
 labels:
   - ready-for-agent
 dependencies:
@@ -69,6 +69,21 @@ Skivan tar visserligen bort en blockerande kontroll, vilket är den tyngsta rör
 
 Den enda fällan är delningen av ci-suite.yml med natten, och den är utskriven med radhänvisning i beskrivningen.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FORM: ci.yml suite-jobbet skickar `with: run_staging: false` VILLKORSLÖST. Jobben Staging (API + E2E) och Staging sentinel purge instansieras därmed aldrig av ci.yml — varken på pull_request eller push till main. ci-suite.yml och nightly.yml är ORÖRDA; post-merge.yml och nightly.yml utelämnar inputen och får default true. Fällan i kortets beskrivning (ci-suite.yml delas med natten) är därmed undviken per konstruktion: ingenting raderas, endast presubmit-anroparen släcker jobben via den input som redan fanns.
+
+VARFÖR LITTERALT false OCH INTE ETT UTTRYCK: staging ska efter denna skiva inte finnas i PR-grinden att villkora. Ett uttryck hade dessutom behövt rivas igen när merge queue (TASK-70.1) lägger merge_group bredvid pull_request.
+
+FÖLJD SOM BOKFÖRS ÖPPET — EJ ÅTGÄRDAD, EJ TYST: ui_low_risk (D1, task-36.3) och acceptance_local (task-59.7) hade run_staging som sin ENDA konsument. Båda beräknas fortfarande i changed-jobbet men styr efter denna skiva ingenting. Stegen står kvar medvetet: ADR-077 § Beslut 1 äger klassrymden och S91:s arbetsflödes-granskning listar riskklassningen under "ska behållas orört". Om de ska avvecklas, återanvändas av A7:6 eller bevaras som klassrymdens invariant är ett eget beslut — det fattas inte som sidoeffekt här. Markerat i ci.yml på tre ställen så det inte kan läsas som glömska.
+
+FÖLJDÄNDRINGAR (påståenden som skivan gör FALSKA, rättade i samma landning):
+- post-merge.yml filhuvud: § VARFÖR FILEN FINNS punkt 2, § FÖRKRAV→§ MÅLET, § MUTEX-KOSTNADEN (nu betald), § FORMEN BÄR ÖVER A7:5, samt suite-jobbets "INGEN with:"-not.
+- scripts/classify-post-merge.sh § VAD SOM MEDVETET INTE ÄRVS.
+- CONTRIBUTING.md § Landnings-ordningen villkor 2, § Revert-vägen (två stycken), samt NY § Post-merge-lagret med det mätta exponeringsfönstret (AC#7).
+<!-- SECTION:NOTES:END -->
 
 ## Comments
 

@@ -32,14 +32,21 @@ jobs:
     outputs:
       should_skip_tests: ${{ steps.changed-files.outputs.only_changed == 'true' }}
       docs_changed: ${{ steps.changed-docs.outputs.any_changed == 'true' }}
+      # ═══ UTAN KONSUMENT SEDAN A7:5 (TASK-70.3) — LÄS DE TVÅ NÄSTA SOM HISTORIK
+      # De beskriver vad klasserna GJORDE när staging låg i PR-grinden. Sedan
+      # `suite`-jobbet skickar `run_staging: false` villkorslöst styr ingen av
+      # dem längre någonting; de beräknas, exponeras och läses av noll jobb.
+      # Varför de ändå står kvar — och vem beslutet tillhör — står vid
+      # `with: run_staging:` i `suite`-jobbet nedan. ═══
+      #
       # D1-klassen (task-36.3 / ADR-077): true = ALLA ändrade filer är ren UI-yta
       # (stilmallar/CSS/publika statiska filer) OCH ingen exkluderad fil (samma
-      # exkludering som docs-klassen) → staging skippas, a11y/pure/build kör.
+      # exkludering som docs-klassen). Släckte staging, körde a11y/pure/build.
       ui_low_risk: ${{ steps.changed-ui.outputs.only_changed == 'true' }}
       # Acceptance-klassen (task-59.7 / ADR-080): true = ALLA ändrade filer bor
-      # i tests/acceptance/** → staging + purge skippas (ingen mutex) medan
-      # acceptance/a11y/pure/build kör. Samma LEVER som ui_low_risk, egen
-      # klassning — se steget för varför levern delas.
+      # i tests/acceptance/**. Släckte staging + purge (ingen mutex) medan
+      # acceptance/a11y/pure/build kördes. Samma LEVER som ui_low_risk, egen
+      # klassning — se steget för varför levern delades.
       acceptance_local: ${{ steps.changed-acceptance.outputs.only_changed == 'true' }}
       # Merge-dedup (task-36.4 / ADR-077): true = main-push vars träd redan
       # bevisats grönt i PR:en → tunga jobb hoppas. Fail-closed (se steget).
@@ -256,11 +263,13 @@ jobs:
         # fixturvärlden, och ingen fil under tests/e2e, tests/api eller
         # tests/a11y importerar från katalogen (verifierat med grep 2026-07-28).
         #
-        # SAMMA LEVER SOM D1, EGEN KLASSNING. Utfallet wiras till suite-jobbets
+        # SAMMA LEVER SOM D1, EGEN KLASSNING. Utfallet wirades till suite-jobbets
         # run_staging-input, exakt som ui_low_risk — inte till en ny input.
-        # Skälet är att den dyra resursen är EN: staging-mutexen. En andra input
+        # Skälet var att den dyra resursen är EN: staging-mutexen. En andra input
         # hade gett två sätt att uttrycka samma sak och därmed en ny
         # divergens-yta i precis den mekanik ADR-077 byggde för att slippa den.
+        # SEDAN A7:5 (TASK-70.3) HAR LEVERN INGEN KONSUMENT — se outputs-blocket
+        # ovan och `with: run_staging:` i suite-jobbet.
         #
         # INGET NYTT D-NUMMER MINTAS HÄR. ADR-077 diskuterar D2-slotten
         # explicit och lämnar den öppen för en framtida testgrafs-design;
@@ -599,8 +608,8 @@ jobs:
             .ci-wait-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
-  # delad med nightly.yml; task-36.2 / ADR-077). Villkorat på changed-
-  # detection: HELA svit-anropet skippas på doc-only-commits
+  # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
+  # changed-detection: HELA svit-anropet skippas på doc-only-commits
   # (should_skip_tests) → aggregatorn ser 'suite: skipped' (tolererat).
   # secrets: inherit → staging-secrets når inner-jobben (bevisat via spike
   # 2026-07-23, run 30036119790). Dependabot-hanteringen bor INNE i
@@ -624,14 +633,61 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/ci-suite.yml
-    # run_staging: false vid D1 (ren UI-ändring, task-36.3) ELLER vid en
-    # klass-lokal acceptance-ändring (task-59.7) → ci-suite skippar purge +
-    # staging (ingen mutex) men kör pure/build + a11y + acceptance. Default i
-    # ci-suite är true, så nightly.yml (som ej skickar inputen) kör alltid full
-    # svit. Båda klasserna är allowlists och kan bara SLÄCKA staging för en
-    # commit vars varenda fil ligger i klassen — aldrig för en blandad commit.
+    # ═══ STAGING LIGGER INTE LÄNGRE I PR-GRINDEN (A7:5 / TASK-70.3) ═══
+    # `run_staging: false` är VILLKORSLÖST. `Staging (API + E2E)` och
+    # `Staging sentinel purge` instansieras därmed aldrig av ci.yml — varken på
+    # `pull_request` eller på `push` till main.
+    #
+    # KONTROLLEN ÄR FLYTTAD, INTE BORTTAGEN. Båda jobben körs oförändrat på de
+    # två andra anropar-ytorna, som medvetet INTE skickar inputen och därför får
+    # ci-suite.yml:s default `true`:
+    #   · post-merge.yml — varje kod-landning på main, direkt efter merge.
+    #   · nightly.yml    — full bredd varje natt.
+    # Ordningen var en invariant, inte en preferens: post-merge-lagret
+    # (TASK-70.2) och den skrivna revert-vägen (TASK-70.5) landade FÖRE denna
+    # rad. Utan bådadera hade raden tagit bort en kontroll i stället för väntan.
+    #
+    # VARFÖR — MUTEXEN, INTE SEKUNDERNA. Jobbet självt bär 375 s (run
+    # 30369011230), men den kostnad som faktiskt växer är den globala
+    # `staging-tests`-mutexen (ci-suite.yml, jobbet `test-staging`): den
+    # serialiserar över ALLA staging-rörande körningar — PR ∥ PR, PR ∥ main-push,
+    # PR ∥ natt. Mätt 2026-07-28 på två fulla körningar med IDENTISKT
+    # svit-innehåll: run 30400021534 = 7,8 min (jobben startade 19 s isär och
+    # kördes parallellt) mot run 30400640305 = 20,3 min (staging startade
+    # 5 min 36 s EFTER att acceptance var klar — den stod i kö). Hela skillnaden
+    # var kötid. Ur PR-vägen slutar kritiska vägen alltså VÄXA med antalet
+    # parallella PR:er, och det är den egenskap ett flöde med flera samtidiga
+    # agenter behöver mest.
+    #
+    # VARFÖR LITTERALT `false` OCH INTE ETT UTTRYCK. Ett villkor är en fråga om
+    # NÄR staging ska köras här — och svaret är aldrig. En villkorings-mekanism
+    # hade beskrivit en grind som inte längre finns, och hade dessutom behövt
+    # rivas igen när merge queue (TASK-70.1) lägger `merge_group` bredvid
+    # `pull_request`: två ytor som båda måste minnas att släcka samma sak.
+    #
+    # ÄRLIGT OM VAD SOM VINNS. Väggklockan för EN ensam kod-PR sjunker knappt:
+    # `Acceptance (hermetisk)` blir ensam bärare av kritiska vägen och är mätt
+    # till 404 s (`#318`), 407 s (`#323`) och 452 s (`#324`). Taket ligger därför
+    # kvar kring 7 min även efter denna rad. TASK-75 är kortet som sänker det;
+    # denna rad tar bort kön, inte sviten.
+    #
+    # FÖLJD SOM BOKFÖRS ÖPPET: `ui_low_risk` (D1, task-36.3) och
+    # `acceptance_local` (task-59.7) hade `run_staging` som sin ENDA konsument.
+    # De beräknas fortfarande i `changed`-jobbet men styr efter denna rad
+    # ingenting. Stegen står kvar MEDVETET — de är inte glömda, och de rivs inte
+    # på vägen förbi: ADR-077 § Beslut 1 äger klassrymden, och S91:s
+    # arbetsflödes-granskning listar riskklassningen under "ska behållas orört".
+    # Frågan om de ska avvecklas, återanvändas av A7:6 (a11y, TASK-70.4) eller
+    # bevaras som klassrymdens invariant är ett eget beslut — den fattas inte
+    # som sidoeffekt här.
+    #
+    # OFÖRÄNDRAT AV DENNA RAD: `ci-passed` behåller sin needs-lista och sin
+    # fail-closed-gren, och rulesetets enda required check heter fortfarande
+    # `CI Passed or Skipped`. Aggregatorn ser numera `suite`-anropet utan sina
+    # två staging-jobb — en ändrad jobb-mängd INUTI ett anrop som fortfarande
+    # rapporterar sitt resultat uppåt.
     with:
-      run_staging: ${{ needs.changed.outputs.ui_low_risk != 'true' && needs.changed.outputs.acceptance_local != 'true' }}
+      run_staging: false
     secrets: inherit
 
   # Job 4: Markdown link validation. Conditional på docs-changes.
