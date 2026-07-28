@@ -1,10 +1,10 @@
 ---
 id: TASK-70.2
 title: 'Skiva: Post-merge-lagret på main — förkrav för att flytta något ur PR-grinden'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 16:32'
-updated_date: '2026-07-28 19:20'
+updated_date: '2026-07-28 20:32'
 labels:
   - ready-for-agent
 dependencies: []
@@ -40,14 +40,14 @@ Tiden från merge till post-merge-svar. Det talet är exponeringsfönstret — h
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 .github/workflows/post-merge.yml finns, triggar på push till main och kör grönt — run-ID redovisat
-- [ ] #2 Jobbet är INTE listat i required_status_checks för ruleset 19627609 — verifierat mot gh api EFTER landning, utdata redovisat
-- [ ] #3 PR-grinden är ORÖRD av denna skiva: en kod-PR:s jobblista är identisk före och efter, och CI Passed or Skipped har oförändrade needs
-- [ ] #4 Tvåsidigt bevis: lagret är visat FÄLLA på en avsiktligt bruten commit — i gate-proof.yml:s form — inte bara visat grönt
-- [ ] #5 Rött post-merge öppnar ett tilldelat ärende med revert-förslag, bevisat skarpt med ärendenummer redovisat
+- [x] #1 .github/workflows/post-merge.yml finns, triggar på push till main och kör grönt — run-ID redovisat
+- [x] #2 Jobbet är INTE listat i required_status_checks för ruleset 19627609 — verifierat mot gh api EFTER landning, utdata redovisat
+- [x] #3 PR-grinden är ORÖRD av denna skiva: en kod-PR:s jobblista är identisk före och efter, och CI Passed or Skipped har oförändrade needs
+- [x] #4 Tvåsidigt bevis: lagret är visat FÄLLA på en avsiktligt bruten commit — i gate-proof.yml:s form — inte bara visat grönt
+- [x] #5 Rött post-merge öppnar ett tilldelat ärende med revert-förslag, bevisat skarpt med ärendenummer redovisat
 - [x] #6 nightly.yml är orörd: dess anrop av ci-suite.yml utan run_staging-input kör fortfarande full svit
-- [ ] #7 Tiden från merge till post-merge-svar är mätt i CI och redovisad som tal — det är exponeringsfönstret A7:5 och A7:6 lutar sig mot
-- [ ] #8 Antalet körningar som tar concurrency-gruppen staging-tests per landad kod-PR är mätt före och efter, och ökningen redovisad
+- [x] #7 Tiden från merge till post-merge-svar är mätt i CI och redovisad som tal — det är exponeringsfönstret A7:5 och A7:6 lutar sig mot
+- [x] #8 Antalet körningar som tar concurrency-gruppen staging-tests per landad kod-PR är mätt före och efter, och ökningen redovisad
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -110,6 +110,26 @@ KAN INTE VERIFIERAS FÖRE LANDNING — workflow_dispatch kräver att workflowen 
   4. AC#4+#5 — gh workflow run post-merge.yml -f simulate_failure=true; körningen ska bli RÖD, larmet fyra på ett äkta failure-resultat och ett tilldelat ci-post-merge-ärende skapas. Redovisa ärendenumret och städa det med motivering.
   5. AC#2 — gh api repos/high-five-group/miranon-media-admin/rulesets/19627609; required_status_checks ska fortfarande innehålla exakt "CI Passed or Skipped".
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererat i PR #371 (commit ed282fc, merge a67669a), CI grön per jobb i körning 30392298300. De sex AC-halvor som strukturellt inte kan verifieras före landning stängdes av orkestreraren efteråt — workflow_dispatch kräver att workflowen ligger på default-grenen.
+
+VERIFIERAT EFTER LANDNING:
+AC 1 — post-merge-körning 30392843071 på a67669a: Pure+Build, Staging sentinel purge, A11y, Acceptance och Staging (API + E2E) samtliga gröna. Lagret prövade sig självt på sin egen landnings-commit.
+AC 2 — gh api rulesets/19627609 ger exakt EN required context: 'CI Passed or Skipped'. Post-merge är inte required.
+AC 3 — PR #377:s jobblista bär ingen post-merge-check; PR-ytan är orörd.
+AC 4 + 5 — självtest-dispatch 30395621766 med simulate_failure=true: sjalvtest-jobbet failure, verifierande svit SKIPPED (beviset tog aldrig staging-mutexen), larm-jobbet success och öppnade ärende #378 tilldelat marcus803, med röda jobb, körningslänk, föregående körnings utfall som misstankegrund och revert-recept med korrekt -m 1. Ärendet stängt med motivering per dess egen stängningsregel (alternativ c).
+AC 7 — exponeringsfönstret mätt till 453 s (merge till post-merge-svar).
+AC 8 — kod-PR: 1 taker före, 2 efter (+100 %), agentens mätning på #366 och #368.
+
+UTVIDGNING AV AC 8 SOM AGENTEN INTE KUNDE SE: för DOCS-landningar är talen 0 -> 1, eftersom PR-grindens svit skippas av D0-klassningen och main-pushens av dedupen. Docs-landningar var tio av tolv PR:er under S91:s tolfte resume. Konsekvensen observerades skarpt: post-merge-körning 30393323548 på en 8-raders .md-landning tog staging-mutexen och blockerade revert-PR #375 i över 25 minuter — och en dispatch på samma SHA köade dessutom bakom push-körningen (concurrency: post-merge-${{ github.sha }}). Registrerat som TASK-73, som bör landa FÖRE A7:5/A7:6 eftersom talet är deras exponeringsfönster.
+
+ÖPPET BOKFÖRT AV AGENTEN, EJ ÅTGÄRDAT HÄR: ingen startup_failure-vakt för post-merge (samma blindfläck som nightly-watchdog täcker på nattsidan) · ci-metrics.mjs läser endast ci.yml-körningar, så post-merge syns inte i ledtidsmätningen · CONTRIBUTING.md saknar ett § för post-merge-lagret (filen ägdes av TASK-70.5 under bygget) · exponeringsfönstret överskattar marginellt eftersom mätjobbets uppstart ligger efter sviten — konservativ riktning · GNU date -d kunde inte prövas lokalt på macOS; ett parsningsfel ger rött exponeringsfonster-jobb, inte en tyst felaktig siffra.
+
+FYND UTANFÖR PARTITIONEN: acceptance_local-klassen kan ha nära noll praktisk träffkvot, eftersom repots konvention lägger kortfilen i samma commit som koden och backlog/ ligger utanför allowlisten tests/acceptance/**. Angränsar A7.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
