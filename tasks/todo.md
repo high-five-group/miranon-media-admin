@@ -15,6 +15,19 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-28, tionde resumen — `TASK-59.8`
+QA-vandringen)** — resumen kvitterad mot disk: numreringens **sju axlar
+oförändrade** (91/083/L360/**29** fragment/T107/f46/task-62 — ingen
+mellansession förbrukade nummer), main `6ae5a7f` rent + i synk med origin, CI
+**grön per jobb**. **Handoffens enda blockerare har UPPHÖRT:** `bygg-skiva` +
+`research-pass` är laddade denna session, alltså är orkestrerar-formen körbar
+från första spawn. **Marcus kvitterade `TASK-59.8`** — QA-vandringen utförd av
+Code på delegering, `ready-for-human`-etiketten står orörd per handoffens
+uttryckliga rad — och ställde samtidigt en klartext-fråga om acceptance/
+staging-topologin (kör vi båda på varje PR, och varför?), som besvaras med
+vandringens empiri i stället för config-läsning.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-28, nionde pausen — efter A5:s mätning och
 worktree-mekaniseringen)** — **A5 ÄR KLAR UTOM QA:** `TASK-59.1`–`59.7` alla
 **Done**, endast `TASK-59.8` återstår i familjen. **TIO PR:er landade
