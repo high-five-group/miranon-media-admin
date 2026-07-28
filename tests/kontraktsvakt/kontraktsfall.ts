@@ -17,7 +17,7 @@ import {
   REGISTRATIONS_RESPONSE,
   VISUAL_PERSON_RIK_ID,
 } from '../support/fixturvarld/fixture-data';
-import type { Kontraktsfall } from './kontraktsjamforelse';
+import type { Felkontraktsfall, Kontraktsfall } from './kontraktsjamforelse';
 
 /**
  * De bevakade kontrakten (task-59.2, ADR-080 beslut 3; utökad i TASK-68).
@@ -84,7 +84,8 @@ const URVAL =
   'restanrop (hermetik-mätningen, S91), men svansen togs med ändå: kontraktsrisk ' +
   'följer inte anropsvolym. TASK-52:s live-verifierade defekt sitter i get-person, ' +
   'som bar ETT anrop. Utanför bevakningen står de 17 Edge Functions fixturvärlden ' +
-  'inte mockar, samt felkontrakten (404/400) — de senare är TASK-69.';
+  'inte mockar. Felkontrakten (404/400) bevakas sedan TASK-69 av FELKONTRAKTSFALL ' +
+  'nedan — en egen jämförelse med egna parter, inte en gren av denna.';
 
 export const KONTRAKTSFALL: readonly Kontraktsfall[] = [
   {
@@ -270,5 +271,104 @@ export const KONTRAKTSFALL: readonly Kontraktsfall[] = [
     fixturkalla:
       'tests/support/fixturvarld/fixture-data.ts → PERSON_DETAIL_RESPONSE[VISUAL_PERSON_RIK_ID].person',
     urval: URVAL,
+  },
+];
+
+/**
+ * De bevakade FELkontrakten (TASK-69, lager 2 i
+ * `docs/research/kontraktsdrift-skyddet-2026-07-28.md` § 6).
+ *
+ * VAD SOM JÄMFÖRS ÄR INTE VAD `KONTRAKTSFALL` JÄMFÖR. Ovan står fixtur mot
+ * staging. Här står FUNKTIONENS EGEN DEKLARATION mot staging — fixturvärlden är
+ * inte part, eftersom den strukturellt inte kan svara annat än 200. Hela
+ * resonemanget bor i `Felkontraktsfall`s doc-block; det som betyder något här är
+ * följden: ett larm härifrån ska ALDRIG stängas genom att röra fixturen.
+ *
+ * VÄRDENA ÄR MÄTTA MOT STAGING, INTE LÄSTA UR KODEN. Båda fallen anropades
+ * skarpt 2026-07-28 innan de skrevs in:
+ *
+ *     GET /functions/v1/get-person?id=recZZZZZZZZZZZZZZ
+ *       → HTTP 404  {"error":"Person not found"}
+ *     GET /functions/v1/get-persons?cursor=inte-en-cursor
+ *       → HTTP 400  {"error":"Invalid cursor"}
+ *
+ * Skälet att mäta i stället för att härleda: `get-person`s 404 går via
+ * `fetchAirtableRecord`, som översätter BÅDE Airtables 404 OCH en 403 med
+ * `INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND` till `null` (`airtable-client.ts:216-228`).
+ * Vilken av grenarna ett påhittat ID faktiskt träffar syns inte i vår kod — och
+ * ett fall byggt på fel antagande hade larmat första natten om vaktens egen
+ * gissning i stället för om kontraktet.
+ *
+ * TÄCKNINGEN ÄR INTE NY PÅ BÅDA PUNKTERNA, OCH DET SKA SÄGAS RAKT UT.
+ * `get-person`s 404-STATUS prövas redan blockerande av
+ * `tests/api/get-person.staging.test.ts:83` (som dock bara kräver
+ * `typeof body.error === 'string'`, aldrig lydelsen). `get-persons`
+ * cursor-400 prövas INGENSTANS i repot före detta kort — noll träffar på
+ * 'Invalid cursor' i `tests/`. Nytt här är alltså: felkroppens LYDELSE som
+ * kontrakt, cursor-grenen över huvud taget, och att båda nu bevakas av den
+ * mekanism vars uppgift är kontraktsdrift.
+ *
+ * VID SUPABASE-BYTET skrivs denna lista om tillsammans med KONTRAKTSFALL
+ * (ADR-080 beslut 5). Felkoderna är EF-kontrakt, inte Airtable-kontrakt, så
+ * formen överlever — det är sökvägarna som byts.
+ */
+
+/**
+ * Ett välformat men obefintligt Airtable-record-ID. Repots etablerade sentinel
+ * (samma sträng i tio api-sviter, bl.a. `get-person.staging.test.ts:86`).
+ *
+ * VÄLFORMAT ÄR POÄNGEN: ett skräp-ID hade kunnat träffa en helt annan felgren
+ * (422 från Airtable → 500 hos oss) och därmed prövat något annat än
+ * 404-kontraktet.
+ */
+const OBEFINTLIGT_REC_ID = 'recZZZZZZZZZZZZZZ';
+
+const FEL_RACKVIDD =
+  'Två felkontrakt bevakas (TASK-69): get-person 404 vid okänt ID och get-persons ' +
+  '400 vid trasig cursor. Obevakade: get-persons 400 vid ogiltig filter-input, ' +
+  'samtliga 401/403-grenar, och felkontrakten i de 22 Edge Functions som saknar ' +
+  'fall här. Att fixturvärlden svarar 200 där EF:en svarar 404/400 är en KÄND ' +
+  'divergens som denna vakt per konstruktion inte ser — den kräver dual-run ' +
+  '(lager 4 i kontraktsdrift-kartläggningen).';
+
+export const FELKONTRAKTSFALL: readonly Felkontraktsfall[] = [
+  {
+    // DET LIVE-BELAGDA FALLET. Funktionen kommenterar sitt eget kontrakt:
+    // '404-KONTRAKT … icke-existerande ID → 404, aldrig 500/tomt 200'.
+    // Fixturens `resolvePersonResponse` returnerar `undefined` för okänt ID,
+    // vilket via `json(undefined)` blir 200 med tom kropp — precis den
+    // fail-open-form kontraktet finns för att förbjuda. Att fixturen har fel
+    // lagas INTE här (dual-run, lager 4); det som bevakas är att FUNKTIONEN
+    // fortsätter ha rätt.
+    endpoint: 'get-person',
+    sokvag: `/functions/v1/get-person?id=${OBEFINTLIGT_REC_ID}`,
+    forvantadStatus: 404,
+    felnyckel: 'error',
+    felmeddelande: 'Person not found',
+    anropet: `okänt men välformat record-ID (${OBEFINTLIGT_REC_ID})`,
+    kontraktskalla: 'supabase/functions/get-person/index.ts:172-180',
+    rackvidd: FEL_RACKVIDD,
+  },
+  {
+    // Cursorn är opak för klienten, så EF:en är enda stället som kan avgöra om
+    // den är giltig. `decodeCursor` (cursor.ts:23-38) kastar både på trasig
+    // base64 och på giltig base64 med fel kuvertform; båda mynnar i samma 400.
+    // Värdet nedan träffar den FÖRSTA grenen (bindestreck är inte base64) —
+    // mätt, inte antaget.
+    //
+    // FAIL-OPEN-RISKEN ÄR KONKRET HÄR: fixturen svarar i dag 200 + SIDA 1 på en
+    // trasig cursor (`resolvePersonsResponse` gör `cursor ? decode : 0` och
+    // dess `decodeFixtureCursor` är inte EF:ens). En EF som gled åt samma håll
+    // hade gett "Ladda fler" som tyst börjar om från början i stället för ett
+    // synligt fel — och ingen zod-parse i världen ser det, eftersom sida 1 är
+    // ett fullt giltigt svar.
+    endpoint: 'get-persons',
+    sokvag: '/functions/v1/get-persons?cursor=inte-en-cursor',
+    forvantadStatus: 400,
+    felnyckel: 'error',
+    felmeddelande: 'Invalid cursor',
+    anropet: "cursor som inte är giltig base64 ('inte-en-cursor')",
+    kontraktskalla: 'supabase/functions/get-persons/index.ts:74-85',
+    rackvidd: FEL_RACKVIDD,
   },
 ];

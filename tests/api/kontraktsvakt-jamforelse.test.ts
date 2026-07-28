@@ -1,8 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { z } from 'zod';
-import { KONTRAKTSFALL } from '../kontraktsvakt/kontraktsfall';
+import { FELKONTRAKTSFALL, KONTRAKTSFALL } from '../kontraktsvakt/kontraktsfall';
 import {
+  byggFellarm,
   byggLarm,
+  type Felkontraktsfall,
+  granskaFelkontrakt,
   granskaKontrakt,
   KontraktsavvikelseError,
   type Kontraktsfall,
@@ -300,5 +303,195 @@ test.describe('larmets form', () => {
     expect(fel).toBeInstanceOf(Error);
     expect(fel.name).toBe('KontraktsavvikelseError');
     expect(fel.message).toContain('KONTRAKTSVAKTEN LARMAR');
+  });
+});
+
+/**
+ * FELKONTRAKTEN (TASK-69) — det tvåsidiga beviset.
+ *
+ * En vakt som aldrig setts fälla är inte verifierad, och en som aldrig setts
+ * tiga är inte användbar. Båda riktningarna prövas därför här, i den RENA
+ * sviten: `granskaFelkontrakt` gör inga anrop, så beviset kräver ingen staging
+ * och körs vid varje PR — till skillnad från själva vakten, som bara går på
+ * natten.
+ *
+ * KONTRAKTSVÄRDENA I FALLEN ÄR MÄTTA MOT STAGING (se `kontraktsfall.ts` §
+ * VÄRDENA ÄR MÄTTA). Testerna nedan spelar upp avvikelser FRÅN den mätta
+ * sanningen — de hittar alltså inte på vad kontraktet är.
+ */
+
+/** get-person-felfallet — 404-kontraktet som kortet är skrivet om. */
+const FEL_PERSON = FELKONTRAKTSFALL.find((f) => f.endpoint === 'get-person');
+if (FEL_PERSON === undefined) throw new Error('get-person saknas i FELKONTRAKTSFALL');
+
+/** get-persons-felfallet — cursor-400, obevakat i repot före detta kort. */
+const FEL_PERSONS = FELKONTRAKTSFALL.find((f) => f.endpoint === 'get-persons');
+if (FEL_PERSONS === undefined) throw new Error('get-persons saknas i FELKONTRAKTSFALL');
+
+/** Svaret kontraktet föreskriver — utgångsläget "funktionen håller ordning". */
+function svarEnligtKontrakt(fall: Felkontraktsfall): SkarptSvar {
+  return {
+    status: fall.forvantadStatus,
+    kropp: { [fall.felnyckel]: fall.felmeddelande },
+  };
+}
+
+test.describe('felkontrakten — TYST när kontraktet hålls', () => {
+  for (const fall of FELKONTRAKTSFALL) {
+    test(`${fall.endpoint}: ${fall.forvantadStatus} + rätt felkropp ger NOLL avvikelser`, () => {
+      expect(granskaFelkontrakt(fall, svarEnligtKontrakt(fall))).toEqual([]);
+    });
+  }
+
+  test('extra nycklar i felkroppen larmar INTE', () => {
+    // Vakten prövar det DEKLARERADE kontraktet, inte hela kuvertet. En
+    // funktion som börjar skicka `requestId` bredvid `error` har inte brutit
+    // något löfte — och att larma på det hade gjort varje berikning till en
+    // natt med brus.
+    const skarpt: SkarptSvar = {
+      status: FEL_PERSON.forvantadStatus,
+      kropp: { [FEL_PERSON.felnyckel]: FEL_PERSON.felmeddelande, requestId: 'abc-123' },
+    };
+
+    expect(granskaFelkontrakt(FEL_PERSON, skarpt)).toEqual([]);
+  });
+});
+
+test.describe('felkontrakten — FÄLLER när kontraktet bryts', () => {
+  test('FAIL-OPEN: 200 där kontraktet säger 404 → FELSTATUS med fail-open-följden', () => {
+    // DEN FARLIGA RIKTNINGEN, och exakt den form fixturvärlden redan har:
+    // `resolvePersonResponse` ger `undefined` för okänt ID, vilket via
+    // `json(undefined)` blir HTTP 200 med tom kropp. Skulle EF:en glida dit
+    // vore spärren borta utan en enda röd signal någon annanstans — ingen
+    // zod-parse kan se ett kontrakt som ligger i STATUSKODEN.
+    const skarpt: SkarptSvar = { status: 200, kropp: null, ratext: '' };
+    const avvikelser = granskaFelkontrakt(FEL_PERSON, skarpt);
+
+    expect(avvikelser.map((a) => a.klass)).toEqual(['FELSTATUS']);
+    expect(avvikelser[0].foljd).toContain('FAIL-OPEN');
+    expect(avvikelser[0].rubrik).toContain('Staging svarade 200, inte 404');
+  });
+
+  test('200 + en riktig person där 404 väntades → fortfarande FELSTATUS', () => {
+    // Samma fail-open, men med en kropp som PARSAR. Poängen: det är statusen
+    // som bär kontraktet, så ett välformat svar gör avvikelsen värre — inte
+    // mindre.
+    const skarpt: SkarptSvar = { status: 200, kropp: { person: { id: 'recX', namn: 'Ingen' } } };
+    const avvikelser = granskaFelkontrakt(FEL_PERSON, skarpt);
+
+    expect(avvikelser.map((a) => a.klass)).toEqual(['FELSTATUS']);
+    expect(avvikelser[0].foljd).toContain('FAIL-OPEN');
+  });
+
+  test('500 där 404 väntades → FELSTATUS UTAN fail-open-påståendet', () => {
+    // Fortfarande avvisat, men i fel gren. Följden ska inte överdriva: en 500
+    // är illa, men den är inte fail-open, och ett larm som blandar ihop de två
+    // lär läsaren att misstro texten.
+    const skarpt: SkarptSvar = { status: 500, kropp: { error: 'Internal error' } };
+    const avvikelser = granskaFelkontrakt(FEL_PERSON, skarpt);
+
+    expect(avvikelser.map((a) => a.klass)).toEqual(['FELSTATUS']);
+    expect(avvikelser[0].foljd).not.toContain('FAIL-OPEN');
+    expect(avvikelser[0].foljd).toContain('fel gren');
+  });
+
+  test('rätt status men felkroppen saknar nyckeln → FELKROPP', () => {
+    const skarpt: SkarptSvar = { status: 404, kropp: { message: 'Person not found' } };
+    const avvikelser = granskaFelkontrakt(FEL_PERSON, skarpt);
+
+    expect(avvikelser.map((a) => a.klass)).toEqual(['FELKROPP']);
+    expect(avvikelser[0].rubrik).toContain("saknar nyckeln 'error'");
+    // Larmet ska namnge vad som fanns i stället — inte bara att något saknades.
+    expect(avvikelser[0].detaljer.join('\n')).toContain('message');
+  });
+
+  test('rätt status men felkroppen är inget objekt → FELKROPP', () => {
+    const skarpt: SkarptSvar = { status: 404, kropp: null, ratext: 'Not Found' };
+    const avvikelser = granskaFelkontrakt(FEL_PERSON, skarpt);
+
+    expect(avvikelser.map((a) => a.klass)).toEqual(['FELKROPP']);
+    expect(avvikelser[0].detaljer.join('\n')).toContain('Not Found');
+  });
+
+  test('felnyckeln har bytt typ → FELKROPP med typen utskriven', () => {
+    const skarpt: SkarptSvar = { status: 404, kropp: { error: { code: 'NOT_FOUND' } } };
+    const avvikelser = granskaFelkontrakt(FEL_PERSON, skarpt);
+
+    expect(avvikelser.map((a) => a.klass)).toEqual(['FELKROPP']);
+    expect(avvikelser[0].rubrik).toContain('objekt, inte en sträng');
+  });
+
+  test('felmeddelandet har bytt lydelse → FELKROPP med båda texterna', () => {
+    const skarpt: SkarptSvar = { status: 404, kropp: { error: 'Not found' } };
+    const avvikelser = granskaFelkontrakt(FEL_PERSON, skarpt);
+
+    expect(avvikelser.map((a) => a.klass)).toEqual(['FELKROPP']);
+    const detaljer = avvikelser[0].detaljer.join('\n');
+    expect(detaljer).toContain('"Not found"');
+    expect(detaljer).toContain('"Person not found"');
+  });
+
+  test('cursor-fallet: 200 + sida 1 där 400 väntades → FELSTATUS fail-open', () => {
+    // Fixturens FAKTISKA beteende i dag: `resolvePersonsResponse` gör
+    // `cursor ? decodeFixtureCursor(cursor) : 0` med sin EGEN avkodare, så en
+    // trasig cursor ger tyst sida 1 i stället för ett fel. Glider EF:en dit
+    // börjar "Ladda fler" tyst om från början — ett fullt giltigt svar, och
+    // därför osynligt för varje schema vi har.
+    const skarpt: SkarptSvar = { status: 200, kropp: { persons: [], nextCursor: null } };
+    const avvikelser = granskaFelkontrakt(FEL_PERSONS, skarpt);
+
+    expect(avvikelser.map((a) => a.klass)).toEqual(['FELSTATUS']);
+    expect(avvikelser[0].foljd).toContain('FAIL-OPEN');
+  });
+});
+
+test.describe('felkontrakten — larmets form', () => {
+  test('bär endpoint, kontraktskälla, icke-blockerande, nästa steg och gränsen', () => {
+    const skarpt: SkarptSvar = { status: 200, kropp: null, ratext: '' };
+    const avvikelser = granskaFelkontrakt(FEL_PERSON, skarpt);
+    const text = byggFellarm(FEL_PERSON, skarpt, avvikelser);
+
+    expect(text).toContain('KONTRAKTSVAKTEN LARMAR — get-person');
+    // Adressering: den som väcks kl. 03 ska hitta grenen utan att leta.
+    expect(text).toContain(FEL_PERSON.kontraktskalla);
+    expect(text).toContain('HTTP 404');
+    expect(text).toContain('Person not found');
+
+    expect(text).toContain('BLOCKERAR INGEN PR');
+    expect(text).toContain('VAD DU GÖR NU');
+    expect(text).toContain('npm run vakt:kontrakt');
+    expect(text).toContain('VAD VAKTEN INTE SER');
+
+    // DEN AVGÖRANDE INSTRUKTIONEN: fixturen är inte part i denna jämförelse,
+    // så att "laga" den vore att byta en synlig avvikelse mot en tyst.
+    expect(text).toContain('Lappa ALDRIG fixturvärlden');
+
+    // Räckvidden går genom larmets ordbrytare — prövas whitespace-normaliserat
+    // så assertionen inte binds till var just denna text råkar brytas.
+    expect(text.replace(/\s+/g, ' ')).toContain('Två felkontrakt bevakas');
+  });
+
+  test('felkontraktets larm bärs av samma feltyp som formkontraktets', () => {
+    // Larmkedjan i nightly.yml grenar inte på feltyp — men en avvikande klass
+    // hade gjort en röd natt svårare att söka i loggen, inte lättare.
+    const skarpt: SkarptSvar = { status: 200, kropp: null, ratext: '' };
+    const fel = new KontraktsavvikelseError(
+      byggFellarm(FEL_PERSON, skarpt, granskaFelkontrakt(FEL_PERSON, skarpt)),
+    );
+
+    expect(fel.name).toBe('KontraktsavvikelseError');
+    expect(fel.message).toContain('KONTRAKTSVAKTEN LARMAR');
+  });
+
+  test('200-larmet säger numera att felkontrakten prövas separat', () => {
+    // Sanningskravet på "VAD VAKTEN INTE SER": texten påstod före TASK-69 att
+    // felkontrakten var obevakade. Den meningen får inte bli kvar och ljuga åt
+    // andra hållet heller — grönt på 200-formen säger fortfarande inget om dem.
+    const skarpt = skarptLikaSomFixturen(NOTES);
+    for (const post of poster(skarpt, NOTES.kuvertnyckel)) post.nyttFaltFranBasen = 'AT-Max';
+    const text = larmtext(NOTES, skarpt).replace(/\s+/g, ' ');
+
+    expect(text).toContain('Felkontrakten (404/400) har EGNA fall sedan TASK-69');
+    expect(text).toContain('ett grönt utfall här säger alltså inget om dem');
   });
 });

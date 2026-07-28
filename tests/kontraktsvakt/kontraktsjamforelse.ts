@@ -28,6 +28,22 @@ import { z } from 'zod';
  * ett anonymt larm tvingar fram exakt den utredning vakten finns för att göra.
  * Texten skrivs för någon som väcks kl. 03 utan kontext: vad som glidit, vad
  * följden är, vad man gör nu, och vad vakten INTE ser.
+ *
+ * TVÅ SORTERS KONTRAKT, TVÅ JÄMFÖRELSER (TASK-69). `granskaKontrakt` prövar
+ * 200-FORMEN och jämför FIXTUR mot STAGING. `granskaFelkontrakt` prövar
+ * FELKONTRAKTEN — statuskod och felkropp — och jämför FUNKTIONENS EGEN
+ * DEKLARATION mot staging. Skillnaden i parter är inte en detalj utan skälet
+ * till att de är två funktioner: fixturvärlden kan strukturellt inte svara
+ * annat än 200 (`handlers.ts` § `json`), så den har ingen röst i den andra
+ * frågan. Se `Felkontraktsfall` för hela resonemanget.
+ *
+ * VARFÖR FELKONTRAKTEN BEHÖVER EN EGEN VAKT. Ett brutet felkontrakt är osynligt
+ * för allt annat vi har: zod parsar bara 200-kroppen, och en funktion som
+ * slutar avvisa ett ogiltigt anrop svarar per definition något som PARSAR.
+ * `get-person` deklarerar 404 vid okänt ID (`get-person/index.ts:172-180`) och
+ * `get-persons` deklarerar 400 vid trasig cursor (`get-persons/index.ts:74-85`);
+ * går någon av dem över till att svara 200 är spärren borta utan en enda röd
+ * signal någonstans.
  */
 
 /** JSON-typerna ett fältvärde kan anta. `null` bärs som egen token. */
@@ -96,6 +112,58 @@ export interface Kontraktsfall {
   urval: string;
 }
 
+/**
+ * Ett bevakat FELkontrakt: ett anrop som SKA avvisas, och hur (TASK-69).
+ *
+ * VARFÖR DETTA ÄR EN EGEN TYP OCH INTE ETT FÄLT PÅ `Kontraktsfall`. De två
+ * frågorna har olika PARTER, inte bara olika värden. `Kontraktsfall` jämför
+ * FIXTUR mot STAGING: två sidor, samma schema, och avvikelsen betyder "de har
+ * glidit isär". Ett felkontrakt har ingen fixtursida alls — fixturvärlden
+ * svarar 200 på allt (`json()` i handlers.ts har `status = 200` som default),
+ * så en fixtur-mot-staging-jämförelse hade fällt på fixturens form i stället
+ * för på kontraktet. Det jämförda är i stället EF:ENS DEKLARERADE KONTRAKT mot
+ * VAD STAGING FAKTISKT SVARAR: ett påstående ur funktionens egen kod, prövat
+ * mot verkligheten.
+ *
+ * ATT FIXTUREN INTE KAN SVARA 404 ÄR ETT KÄNT, SEPARAT PROBLEM. `get-person`
+ * har ett uttryckligt 404-kontrakt (`get-person/index.ts:172-180`) medan
+ * `resolvePersonResponse` returnerar `undefined` för okänt ID, vilket via
+ * `json(undefined)` blir HTTP 200 med tom kropp — fail-closed mot fail-open.
+ * Att laga DET kräver dual-run (lager 4 i
+ * `docs/research/kontraktsdrift-skyddet-2026-07-28.md` § 6) och ligger utanför
+ * TASK-69, som bygger MEKANIKEN. Fixturen är därför medvetet inte part här.
+ *
+ * ETT SNÄVARE KONTRAKT ÄN 200-FALLENS, OCH DET RÄCKER. Formprofil och
+ * zod-parse har inget att göra på en felkropp: den är ett kuvert med EN nyckel
+ * och ett meddelande. Att låta felfallen gå genom `granskaKontrakt` hade
+ * krävt ett syntetiskt schema per felkropp — abstraktion utan användare.
+ */
+export interface Felkontraktsfall {
+  /** Edge Function-namnet. Står först i larmet. */
+  endpoint: string;
+  /** Sökvägen INKLUSIVE den parameter som gör anropet ogiltigt. */
+  sokvag: string;
+  /** Statuskoden funktionen deklarerar för detta anrop, t.ex. 404. */
+  forvantadStatus: number;
+  /** Felkroppens nyckel — `{ error: '…' }` ⇒ `'error'`. */
+  felnyckel: string;
+  /**
+   * Meddelandet funktionen skickar, jämfört EXAKT.
+   *
+   * Exakt och inte "innehåller": ett felmeddelande byter inte lydelse av sig
+   * självt, så en ändring ÄR drift värd att veta om. En lös matchning hade
+   * dessutom gjort vakten blind för precis den sortens tysta omformulering som
+   * bryter en klient som grenar på texten.
+   */
+  felmeddelande: string;
+  /** Vad som gör anropet ogiltigt, i klartext. Återges i larmet. */
+  anropet: string;
+  /** Var kontraktet står deklarerat i funktionen — larmets adressering. */
+  kontraktskalla: string;
+  /** Vaktens räckvidd på felsidan, återgiven i larmets gräns-avsnitt. */
+  rackvidd: string;
+}
+
 /** Det skarpa svaret, normaliserat till vad jämförelsen behöver. */
 export interface SkarptSvar {
   status: number;
@@ -107,6 +175,8 @@ export interface SkarptSvar {
 
 export type Avvikelseklass =
   | 'HTTP-STATUS'
+  | 'FELSTATUS'
+  | 'FELKROPP'
   | 'KUVERT'
   | 'TOMT-UNDERLAG'
   | 'SCHEMA-STAGING'
@@ -413,6 +483,120 @@ export function granskaKontrakt(fall: Kontraktsfall, skarpt: SkarptSvar): Avvike
   return avvikelser;
 }
 
+/** Kroppen som kort text i ett larm — råtexten först, annars serialiserad JSON. */
+function kroppstext(skarpt: SkarptSvar): string {
+  const text = skarpt.ratext ?? JSON.stringify(skarpt.kropp) ?? '';
+  return text.length > 300 ? `${text.slice(0, 300)}…` : text;
+}
+
+/**
+ * Granskar ett FELkontrakt (TASK-69). Tom lista = funktionen avvisar fortfarande
+ * anropet precis som den deklarerar.
+ *
+ * SAMMA KORTSLUTNINGS-DOKTRIN SOM `granskaKontrakt`: fel statuskod gör
+ * kroppsjämförelsen meningslös. Svarar staging 200 med en person där kontraktet
+ * säger 404 är felkroppens lydelse ointressant — det som hänt är att
+ * avvisningen upphört, och ett andra larm om en saknad `error`-nyckel hade bara
+ * spätt ut det. Den observerade kroppen följer därför med i FELSTATUS-larmets
+ * detaljer i stället för att bli en egen avvikelse.
+ */
+export function granskaFelkontrakt(fall: Felkontraktsfall, skarpt: SkarptSvar): Avvikelse[] {
+  if (skarpt.status !== fall.forvantadStatus) {
+    // Ett 2xx där kontraktet säger fel är den FARLIGA riktningen: spärren har
+    // gått från fail-closed till fail-open, och en klient som litar på
+    // avvisningen får nu ett svar den tolkar som giltigt.
+    const failOpen = skarpt.status >= 200 && skarpt.status < 300;
+    return [
+      {
+        klass: 'FELSTATUS',
+        rubrik: `Staging svarade ${skarpt.status}, inte ${fall.forvantadStatus} som kontraktet säger`,
+        detaljer: [`anropet: ${fall.anropet}`, `kropp: ${kroppstext(skarpt)}`],
+        foljd: failOpen
+          ? 'FAIL-OPEN: funktionen AVVISAR INTE LÄNGRE ett anrop den deklarerar som ogiltigt, ' +
+            'utan svarar som om det vore giltigt. Appen får ett svar den tolkar som data — ' +
+            'i värsta fall en tom vy där en tydlig felvy skulle stått. Detta är den allvarligaste ' +
+            'klassen vakten känner: en spärr har slutat spärra, och ingen zod-parse kan se det ' +
+            'eftersom kontraktet ligger i STATUSKODEN, inte i formen.'
+          : 'Funktionen avvisar fortfarande anropet, men med en annan statuskod än den ' +
+            'deklarerar. Klienter som grenar på koden (401 → logga in om, 404 → "finns inte", ' +
+            '400 → visa fel) hamnar i fel gren. Antingen har funktionen ändrats med avsikt och ' +
+            'kontraktsfallet ska följa med, eller så är detta en regression.',
+      },
+    ];
+  }
+
+  const kropp = skarpt.kropp;
+  if (!arPost(kropp)) {
+    return [
+      {
+        klass: 'FELKROPP',
+        rubrik: `Felkroppen är inget JSON-objekt (status ${skarpt.status} stämmer)`,
+        detaljer: [`anropet: ${fall.anropet}`, `kropp: ${kroppstext(skarpt)}`],
+        foljd:
+          'Statuskoden håller men kroppen bär inget maskinläsbart fel. Klienten kan visa att ' +
+          'något gick fel, men inte VAD — och en felvy utan orsak är en felvy ingen kan agera på.',
+      },
+    ];
+  }
+
+  const varde = kropp[fall.felnyckel];
+  if (varde === undefined) {
+    return [
+      {
+        klass: 'FELKROPP',
+        rubrik: `Felkroppen saknar nyckeln '${fall.felnyckel}'`,
+        detaljer: [
+          `anropet: ${fall.anropet}`,
+          `kroppens rotnycklar: ${JSON.stringify(Object.keys(kropp))}`,
+          `förväntat: ${fall.felnyckel} = ${JSON.stringify(fall.felmeddelande)}`,
+        ],
+        foljd:
+          'Felkuvertet har bytt form. Varje klient som läser felet på den gamla nyckeln får ' +
+          '`undefined` och visar antingen ingenting eller ett tomt felmeddelande.',
+      },
+    ];
+  }
+
+  if (typeof varde !== 'string') {
+    return [
+      {
+        klass: 'FELKROPP',
+        rubrik: `'${fall.felnyckel}' är ${typtoken(varde)}, inte en sträng`,
+        detaljer: [
+          `anropet: ${fall.anropet}`,
+          `observerat: ${JSON.stringify(varde)}`,
+          `förväntat: ${JSON.stringify(fall.felmeddelande)}`,
+        ],
+        foljd:
+          'Feltexten har bytt typ. En klient som renderar den rakt av visar "[object Object]" ' +
+          'eller tomt — samma klass av tyst fel som en glidande svarsform.',
+      },
+    ];
+  }
+
+  if (varde !== fall.felmeddelande) {
+    return [
+      {
+        klass: 'FELKROPP',
+        rubrik: `'${fall.felnyckel}' har bytt lydelse`,
+        detaljer: [
+          `anropet: ${fall.anropet}`,
+          `staging:   ${JSON.stringify(varde)}`,
+          `kontrakt:  ${JSON.stringify(fall.felmeddelande)}`,
+        ],
+        foljd:
+          'Statuskoden håller, men meddelandet är inte det funktionen deklarerar. Det är ' +
+          'ofarligt om texten bara skrivits om — och en verklig regression om felet nu ' +
+          'kommer från en ANNAN gren än den kontraktet pekar ut (t.ex. ett generiskt ' +
+          '500-meddelande som råkar ha rätt statuskod). Läs vilken gren som svarat innan ' +
+          'du uppdaterar fallet.',
+      },
+    ];
+  }
+
+  return [];
+}
+
 function rotnycklar(kuvert: unknown): string[] {
   return arPost(kuvert) ? Object.keys(kuvert) : [];
 }
@@ -424,6 +608,62 @@ const LINJE = '═'.repeat(BREDD);
 function avsnittsrad(rubrik: string): string {
   const inledning = `── ${rubrik} `;
   return inledning + '─'.repeat(Math.max(3, BREDD - inledning.length));
+}
+
+/**
+ * Larmets gemensamma stomme. Rubrik, avvikelselista och avsnittsordning är
+ * IDENTISKA för form- och felkontrakt — det är innehållet som skiljer, inte
+ * formen. Att låta de två larmen drifta isär i utseende hade tvingat den som
+ * väcks kl. 03 att lära sig två format i stället för ett.
+ */
+interface Larmavsnitt {
+  endpoint: string;
+  /** Vad som hänt, i klartext — inklusive att larmet inte blockerar. */
+  intro: string[];
+  /** Var sakerna bor: anrop, källa, schema, körtid. */
+  adressering: string[];
+  avvikelser: readonly Avvikelse[];
+  /** Handling framför diagnos. */
+  vadDuGorNu: string[];
+  /** Den ärliga gränsen — vad ett grönt utfall INTE betyder. */
+  vadVaktenInteSer: string[];
+}
+
+function byggLarmskelett(avsnitt: Larmavsnitt): string {
+  const rader: string[] = [
+    LINJE,
+    `KONTRAKTSVAKTEN LARMAR — ${avsnitt.endpoint}`,
+    LINJE,
+    '',
+    ...avsnitt.intro,
+    '',
+    ...avsnitt.adressering,
+    '',
+    avsnittsrad(`VAD SOM GLIDIT (${avsnitt.avvikelser.length})`),
+    '',
+  ];
+
+  avsnitt.avvikelser.forEach((avvikelse, index) => {
+    rader.push(`${index + 1}. [${avvikelse.klass}] ${avvikelse.rubrik}`);
+    rader.push(...avvikelse.detaljer.map((d) => `     · ${d}`));
+    rader.push('');
+    rader.push(...brytRad(`Följd: ${avvikelse.foljd}`, 70).map((r) => `   ${r}`));
+    rader.push('');
+  });
+
+  rader.push(
+    avsnittsrad('VAD DU GÖR NU'),
+    '',
+    ...avsnitt.vadDuGorNu,
+    '',
+    avsnittsrad('VAD VAKTEN INTE SER'),
+    '',
+    ...avsnitt.vadVaktenInteSer,
+    '',
+    LINJE,
+  );
+
+  return rader.join('\n');
 }
 
 /**
@@ -440,61 +680,96 @@ export function byggLarm(
   const skarpLista = listaAvPoster(skarpt.kropp, fall.kuvertnyckel, enkelpost);
   const fixturLista = listaAvPoster(fall.fixtur, fall.kuvertnyckel, enkelpost);
 
-  const rader: string[] = [
-    LINJE,
-    `KONTRAKTSVAKTEN LARMAR — ${fall.endpoint}`,
-    LINJE,
-    '',
-    'En fixtur i testernas fixturvärld speglar inte längre vad den skarpa Edge',
-    'Functionen svarar. LARMET BLOCKERAR INGEN PR. Det säger att ett test som',
-    'läser fixturen kan vara grönt av fel skäl.',
-    '',
-    `  Skarpt anrop   GET ${fall.sokvag}`,
-    `                 staging · HTTP ${skarpt.status} · ${skarpLista?.length ?? 0} poster`,
-    `  Fixtur         ${fall.fixturkalla}`,
-    `                 ${fixturLista?.length ?? 0} poster`,
-    `  Delat schema   ${fall.schemanamn} — ${fall.schemakalla}`,
-    `  Kört           ${nu.toISOString()}`,
-    '',
-    avsnittsrad(`VAD SOM GLIDIT (${avvikelser.length})`),
-    '',
-  ];
-
-  avvikelser.forEach((avvikelse, index) => {
-    rader.push(`${index + 1}. [${avvikelse.klass}] ${avvikelse.rubrik}`);
-    rader.push(...avvikelse.detaljer.map((d) => `     · ${d}`));
-    rader.push('');
-    rader.push(...brytRad(`Följd: ${avvikelse.foljd}`, 70).map((r) => `   ${r}`));
-    rader.push('');
+  return byggLarmskelett({
+    endpoint: fall.endpoint,
+    avvikelser,
+    intro: [
+      'En fixtur i testernas fixturvärld speglar inte längre vad den skarpa Edge',
+      'Functionen svarar. LARMET BLOCKERAR INGEN PR. Det säger att ett test som',
+      'läser fixturen kan vara grönt av fel skäl.',
+    ],
+    adressering: [
+      `  Skarpt anrop   GET ${fall.sokvag}`,
+      `                 staging · HTTP ${skarpt.status} · ${skarpLista?.length ?? 0} poster`,
+      `  Fixtur         ${fall.fixturkalla}`,
+      `                 ${fixturLista?.length ?? 0} poster`,
+      `  Delat schema   ${fall.schemanamn} — ${fall.schemakalla}`,
+      `  Kört           ${nu.toISOString()}`,
+    ],
+    vadDuGorNu: [
+      '1. Avgör vilken sida som har rätt. Staging är facit om Edge Functionen',
+      '   ändrats med avsikt; fixturen är facit om staging-basen gått sönder.',
+      '2. Ändrad med avsikt ⇒ uppdatera fixturen, och schemat i',
+      '   src/domain/schemas/ om nyckeln är ny för oss.',
+      '3. Staging trasig ⇒ laga basen. Lappa ALDRIG fixturen bara för att larmet',
+      '   ska tystna — då byter du en synlig avvikelse mot en tyst.',
+      '4. Kör om lokalt när du tror det är löst:  npm run vakt:kontrakt',
+      '5. Stäng nattärendet med åtgärd eller öppen motivering — aldrig tyst',
+      '   (CONTRIBUTING § Nattnätet).',
+    ],
+    vadVaktenInteSer: [
+      'Den jämför FORM, inte värden: att ett tal byter betydelse (andel → procent)',
+      'syns inte här. Den kan inte skilja "fältet är tomt i staging" från "fältet',
+      'har slutat fyllas", eftersom schemat tillåter null — därför är null bortsett',
+      'i typjämförelsen. Nästlade objekt prövas bara av schemat. Och räckvidden är',
+      'fixturvärldens sju handlers i sin 200-form — inte alla 24 Edge Functions.',
+      'Felkontrakten (404/400) har EGNA fall sedan TASK-69 och prövas separat —',
+      'ett grönt utfall här säger alltså inget om dem:',
+      ...brytRad(fall.urval, 68).map((r) => `  ${r}`),
+    ],
   });
+}
 
-  rader.push(
-    avsnittsrad('VAD DU GÖR NU'),
-    '',
-    '1. Avgör vilken sida som har rätt. Staging är facit om Edge Functionen',
-    '   ändrats med avsikt; fixturen är facit om staging-basen gått sönder.',
-    '2. Ändrad med avsikt ⇒ uppdatera fixturen, och schemat i',
-    '   src/domain/schemas/ om nyckeln är ny för oss.',
-    '3. Staging trasig ⇒ laga basen. Lappa ALDRIG fixturen bara för att larmet',
-    '   ska tystna — då byter du en synlig avvikelse mot en tyst.',
-    '4. Kör om lokalt när du tror det är löst:  npm run vakt:kontrakt',
-    '5. Stäng nattärendet med åtgärd eller öppen motivering — aldrig tyst',
-    '   (CONTRIBUTING § Nattnätet).',
-    '',
-    avsnittsrad('VAD VAKTEN INTE SER'),
-    '',
-    'Den jämför FORM, inte värden: att ett tal byter betydelse (andel → procent)',
-    'syns inte här. Den kan inte skilja "fältet är tomt i staging" från "fältet',
-    'har slutat fyllas", eftersom schemat tillåter null — därför är null bortsett',
-    'i typjämförelsen. Nästlade objekt prövas bara av schemat. Och räckvidden är',
-    'fixturvärldens sju handlers i sin 200-form — inte alla 24 Edge Functions,',
-    'och inte felkontrakten:',
-    ...brytRad(fall.urval, 68).map((r) => `  ${r}`),
-    '',
-    LINJE,
-  );
-
-  return rader.join('\n');
+/**
+ * FELkontraktets larm (TASK-69). Samma stomme, andra parter: här jämförs inte
+ * fixtur mot staging utan FUNKTIONENS DEKLARERADE AVVISNING mot vad staging
+ * faktiskt svarar. Åtgärdsstegen skiljer sig därför i sak — "uppdatera
+ * fixturen" är aldrig svaret på ett brutet felkontrakt.
+ */
+export function byggFellarm(
+  fall: Felkontraktsfall,
+  skarpt: SkarptSvar,
+  avvikelser: readonly Avvikelse[],
+  nu: Date = new Date(),
+): string {
+  return byggLarmskelett({
+    endpoint: fall.endpoint,
+    avvikelser,
+    intro: [
+      'En Edge Function avvisar inte längre ett ogiltigt anrop så som den själv',
+      'deklarerar. LARMET BLOCKERAR INGEN PR. Statuskoden och felkroppen är',
+      'kontrakt precis som svarsformen — och till skillnad från formen kan ingen',
+      'zod-parse se när de glider.',
+    ],
+    adressering: [
+      `  Skarpt anrop   GET ${fall.sokvag}`,
+      `                 ${fall.anropet}`,
+      `  Kontrakt       HTTP ${fall.forvantadStatus} · ${fall.felnyckel} = ${JSON.stringify(fall.felmeddelande)}`,
+      `                 ${fall.kontraktskalla}`,
+      `  Staging svarade HTTP ${skarpt.status}`,
+      `  Kört           ${nu.toISOString()}`,
+    ],
+    vadDuGorNu: [
+      '1. Läs funktionens felgren och avgör om ändringen var AVSIKTLIG.',
+      '2. Avsiktlig ⇒ uppdatera fallet i tests/kontraktsvakt/kontraktsfall.ts,',
+      '   och kontrollera att appens felhantering grenar på den NYA koden.',
+      '3. Oavsiktlig ⇒ detta är en regression i funktionen. Ett anrop som slutat',
+      '   avvisas är fail-open: laga funktionen, tysta aldrig fallet.',
+      '4. Lappa ALDRIG fixturvärlden för att larmet ska tystna — fixturen är',
+      '   inte part i denna jämförelse (se Felkontraktsfall § VARFÖR EGEN TYP).',
+      '5. Kör om lokalt när du tror det är löst:  npm run vakt:kontrakt',
+      '6. Stäng nattärendet med åtgärd eller öppen motivering — aldrig tyst',
+      '   (CONTRIBUTING § Nattnätet).',
+    ],
+    vadVaktenInteSer: [
+      'Den prövar EN ogiltig variant per fall — inte hela felrymden. Att 404',
+      'håller för ett påhittat ID säger inget om 401, 403 eller 500-grenarna,',
+      'och inget om att RÄTT anrop fortfarande svarar rätt (det är 200-fallens',
+      'jobb). Den läser statuskod och en felnyckel; övriga huvuden, felkoder och',
+      'retry-semantik är obevakade. Räckvidden på felsidan:',
+      ...brytRad(fall.rackvidd, 68).map((r) => `  ${r}`),
+    ],
+  });
 }
 
 /** Ordbryter en löptext så larmet håller sig inom terminalbredd. */
