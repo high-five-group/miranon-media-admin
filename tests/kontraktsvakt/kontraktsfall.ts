@@ -1,5 +1,5 @@
 import { EventNoteSchema, EventSchema, RegistrationSchema } from '../../src/domain/schemas';
-import { BELAGGNING_EVENT_ID } from '../api/fixtures';
+import { ARBETSKO_EVENT_ID } from '../api/fixtures';
 import {
   EVENT_NOTES_RESPONSE,
   EVENTS_RESPONSE,
@@ -75,13 +75,28 @@ export const KONTRAKTSFALL: readonly Kontraktsfall[] = [
     urval: URVAL,
   },
   {
-    // eventId krävs (utan den svarar EF:en 400). Ankaret är den PERMANENTA
-    // beläggnings-fixturen i staging — samma record som api-sviten läser, så
-    // vakten ärver dess "STÄDA INTE"-skydd i stället för att införa ett eget.
-    // Att fixturens anteckningar hör till ett ANNAT event spelar ingen roll:
-    // jämförelsen gäller form, inte innehåll.
+    // eventId krävs (utan den svarar EF:en 400). Ankaret är ARBETSKÖ-eventet, som
+    // bär den permanenta anteckning-fixturen (ANTECKNING_FIXTUR_NOTE_ID, TASK-61).
+    //
+    // TIDIGARE PEKADE DEN PÅ BELÄGGNINGS-EVENTET, OCH DET VAR EN DESIGNLUCKA. De
+    // enda anteckningarna på det eventet är api-svitens sentineler, som ADR-060-
+    // purgen är designad att radera. Vakten mätte alltså mot data som en annan
+    // nattjobb-gren tömmer, och eftersom `kontraktsvakt` inte har något `needs:`
+    // avgjordes utfallet av sekunder: nightly 30328246805 läste åtta sekunder EFTER
+    // purge och föll på `[TOMT-UNDERLAG]`; dispatch 30309427472 läste två sekunder
+    // FÖRE och var grön. Skillnaden var timing, inte kontrakt.
+    //
+    // ETT `needs:` HADE BARA FLYTTAT RACET. Fixen är oberoende data: arbetskö-eventet
+    // får aldrig sentinel-anteckningar (create-event-note/get-event-notes skriver
+    // uteslutande mot beläggnings-eventet), och fixturtexten kan per konstruktion
+    // inte matcha purge-mönstret. Vakten ger därmed samma utfall före, under och
+    // efter purge — utan att natten behöver serialiseras en gång till. Beviskedjan
+    // och de två spärrarna: se fixturens doc-block i tests/api/fixtures.ts.
+    //
+    // Att fixturens anteckningar hör till ett ANNAT event spelar fortsatt ingen
+    // roll: jämförelsen gäller form, inte innehåll.
     endpoint: 'get-event-notes',
-    sokvag: `/functions/v1/get-event-notes?eventId=${BELAGGNING_EVENT_ID}`,
+    sokvag: `/functions/v1/get-event-notes?eventId=${ARBETSKO_EVENT_ID}`,
     kuvertnyckel: 'notes',
     schema: EventNoteSchema,
     schemanamn: 'EventNoteSchema',
