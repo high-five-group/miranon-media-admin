@@ -442,12 +442,18 @@ jobs:
         # STOPPA-beslut B (Session 17 K7): eget steg med ärligt namn i
         # stället för att utöka ADR-039-stegets — stegnamn ska inte ljuga
         # om sitt innehåll.
+        #
+        # test-agent-spawn-log.sh (S91/A7:2) hör hit under stegets hook-hälft:
+        # den prövar Claude Code-hooken som skriver spawn-mätningens logg. Den
+        # är en MÄTARE, inte en grind — men samma kadens-argument gäller, och
+        # en testsvit som inte körs fortlöpande ruttnar. ~0,3 s.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
           bash scripts/test-pre-commit-hook.sh
           bash scripts/test-check-lifecycle.sh
           bash scripts/test-check-lesson-numbers.sh
+          bash scripts/test-agent-spawn-log.sh
 
       - name: Test prod-deploy allowlist (fail-closed)
         # Bevisar fail-closed-egenskapen i scripts/deploy-prod-functions.sh

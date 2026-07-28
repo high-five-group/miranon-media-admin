@@ -10,15 +10,29 @@
  * i stället för åsikter.
  *
  * Källa: `.claude/agent-spawn-log.jsonl`, skriven av den icke-blockerande
- * `PreToolUse`-hooken i `.claude/settings.json`.
+ * `PreToolUse`-hooken i `.claude/settings.json` via
+ * `scripts/agent-spawn-log.sh`. Skrivare och läsare hör ihop — ändras fältformen
+ * där måste den ändras här.
+ *
+ * BRYTPUNKT I SERIEN (S91, restlistans A7:2). Loggen bär två format:
+ *
+ *   Före: `isolation` speglade ANROPETS parameter, som bara är satt när
+ *         anroparen skickar den explicit. Varje typad agent fick därför
+ *         `isolation: null` trots att den körde i egen worktree.
+ *   Efter: `isolation` är den EFFEKTIVA isoleringen (parameter, annars
+ *         frontmatter), och `isolation_kalla` säger vilken av de två som bar
+ *         den.
+ *
+ * De äldre raderna är korrekt historik och lagas inte. Frontmatter-slagningen
+ * nedan är kvar som LEGACY-väg för dem: utan den hade varje typad spawn före
+ * brytpunkten räknats som ett falskt läckage. Notera dess svaghet — den läser
+ * frontmatter som den ser ut IDAG, så en borttagen `isolation:`-rad hade
+ * retroaktivt gjort historiken oisolerad. Det är precis den svagheten det nya
+ * fältet stänger: från brytpunkten och framåt bär raden sin egen sanning.
  *
  * KONFIG-DRIVEN, INTE HÅRDKODAD: vilka agenttyper som är självisolerande läses
  * ur `.claude/agents/*.md`-frontmatter. Läggs en ny typ till behöver detta
  * skript inte röras — samma princip som repots övriga grindvakter.
- *
- * En rad i loggen bär `isolation: null` även för en typad agent, eftersom
- * fältet speglar ANROPETS parameter och isoleringen kommer från frontmatter.
- * Att blanda ihop de två skulle göra varje typad spawn till ett falskt läckage.
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -28,7 +42,11 @@ const ROT = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
 const LOGG = join(ROT, '.claude', 'agent-spawn-log.jsonl');
 const AGENTKATALOG = join(ROT, '.claude', 'agents');
 
-/** Agenttyper vars frontmatter bär `isolation: worktree` — de isolerar sig själva. */
+/**
+ * Agenttyper vars frontmatter bär `isolation: worktree` — de isolerar sig själva.
+ * LEGACY-väg: används bara för rader från före brytpunkten, som saknar
+ * `isolation_kalla` och därför inte bär sin egen isoleringssanning.
+ */
 function sjalvisolerandeTyper() {
   if (!existsSync(AGENTKATALOG)) return new Set();
   const typer = new Set();
@@ -66,7 +84,14 @@ if (rader.length === 0) {
   process.exit(0);
 }
 
-const isolerad = (r) => r.isolation != null || sjalvisolerande.has(r.type);
+/** Rader utan `isolation_kalla` är skrivna av hook-formen före brytpunkten. */
+const aldreForm = (r) => r.isolation_kalla === undefined;
+
+/**
+ * Den nya formens `isolation` är redan effektiv, så den räcker ensam.
+ * Frontmatter-slagningen är enbart till för de äldre raderna.
+ */
+const isolerad = (r) => r.isolation != null || (aldreForm(r) && sjalvisolerande.has(r.type));
 
 const perTyp = new Map();
 for (const r of rader) {
@@ -90,6 +115,28 @@ console.log(`Ej isolerade         ${lackage.length}`);
 console.log(
   `Självisolerande typer: ${sjalvisolerande.size ? [...sjalvisolerande].join(', ') : '(inga)'}`,
 );
+
+// Källan är svaret på ADR-082-passets steg 2-fråga: räcker de typade agenterna,
+// eller hänger isoleringen på att anroparen kom ihåg parametern? `param` som
+// dominerande källa betyder att mekaniseringen INTE bär — den efterlevs.
+const kalla = { frontmatter: 0, param: 0, ingen: 0, aldre: 0 };
+for (const r of rader) {
+  if (aldreForm(r)) kalla.aldre += 1;
+  else if (r.isolation_kalla === 'frontmatter') kalla.frontmatter += 1;
+  else if (r.isolation_kalla === 'param') kalla.param += 1;
+  else kalla.ingen += 1;
+}
+
+console.log('\nISOLERINGENS KÄLLA');
+console.log('─'.repeat(64));
+console.log(`  frontmatter (agenttypen bär den)   ${String(kalla.frontmatter).padStart(3)}`);
+console.log(`  param (anroparen kom ihåg)         ${String(kalla.param).padStart(3)}`);
+console.log(`  ingen                              ${String(kalla.ingen).padStart(3)}`);
+if (kalla.aldre > 0) {
+  console.log(`  äldre form (fältet fanns inte)     ${String(kalla.aldre).padStart(3)}`);
+  console.log('    ↑ rader före A7:2. Deras isolerad-status härleds ur frontmatter');
+  console.log('      som den ser ut IDAG — historik, inte mätdata att lita blint på.');
+}
 
 console.log('\nPER TYP');
 console.log('─'.repeat(64));

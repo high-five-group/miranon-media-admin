@@ -210,10 +210,12 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
       registrations: [reg()],
       events: [ev({ id: 'recEventNasta', eventNamn: 'Resor i medvetandet 1' })],
     });
-    // Detaljsidan hämtar get-event vid landning → överskugga för deterministisk
-    // render. `get-event` och `get-events` är skilda EF-namn: MSW matchar på
-    // hela sista path-segmentet, så överskuggningen kan inte träffa fel.
-    network.use(http.get(EF('get-event'), () => json({ event: ev({ id: 'recEventNasta' }) })));
+    // INGEN get-event-överskuggning: testet asserterar bara URL:en och navigerar
+    // aldrig så långt att detaljsidan hämtar något. Registreringen fanns här
+    // fram till task-62 med kommentaren "överskugga för deterministisk render" —
+    // den beskrev en avsikt testet inte fullföljer, och tre isolerade körningar
+    // gav isUsed=false varje gång. Överskuggnings-vaktens tröga kontroll pekade
+    // ut den; detta är precis det fynd vakten finns för.
     await page.goto('/hem');
 
     const kort = page.getByRole('region', { name: 'Nästa event' });
@@ -230,8 +232,8 @@ test.describe('Hem — A-skelettet (task-1.3)', () => {
       registrations: [reg({ fornamn: 'Carl', efternamn: 'Carlsson', eventId: 'recEvent1' })],
       events: [ev({ id: 'recEvent1' })],
     });
-    // Detaljsidan hämtar get-event vid landning → överskugga för deterministisk render.
-    network.use(http.get(EF('get-event'), () => json({ event: ev({ id: 'recEvent1' }) })));
+    // INGEN get-event-överskuggning — samma skäl som i testet ovan: assertionen
+    // är toHaveURL, och detaljsidans hämtning sker aldrig. Borttagen i task-62.
     await page.goto('/hem');
 
     await page.getByRole('link', { name: /Carl Carlsson/ }).click();

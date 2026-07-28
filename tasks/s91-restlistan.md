@@ -406,12 +406,26 @@ kontroll bort utan att ersättas — precis det målbilden varnar för
       **obevisad i skarp miljö** och ingen har noterat det i ärendet. Ett
       larmsystem vars ärenden ligger obehandlade slutar fungera som larmsystem.
       Billig, avbrottsfri, görs först
-- [ ] **A7:2 · Rätta spawn-loggens fält.** `.claude/agent-spawn-log.jsonl` loggar
-      `"isolation": null` på **varje** `bygg-skiva`-rad trots att samtliga kördes
-      isolerat — hooken läser `tool_input.isolation` (spawn-parametern) medan
-      isoleringen kommer ur agentdefinitionens frontmatter. Felet pekar åt det
-      farliga hållet: det ser ut som att isolering saknas där den finns.
-      Mätaren mäter inte det den utger sig för att mäta. Avbrottsfri
+- [x] **A7:2 · Rätta spawn-loggens fält.** ✅ **KLAR 2026-07-28.**
+      `.claude/agent-spawn-log.jsonl` loggade `"isolation": null` på **varje**
+      `bygg-skiva`-rad trots att samtliga kördes isolerat — hooken läste
+      `tool_input.isolation` (spawn-parametern) medan isoleringen kommer ur
+      agentdefinitionens frontmatter. Felet pekade åt det farliga hållet: det såg
+      ut som att isolering saknades där den fanns.
+      **Åtgärd:** hookens jq-ettradare i `.claude/settings.json` ersatt av
+      `scripts/agent-spawn-log.sh`, som loggar den EFFEKTIVA isoleringen
+      (parameter → annars frontmatter i `.claude/agents/<typ>.md` → annars
+      `null`) plus ett nytt fält `isolation_kalla` (`frontmatter` · `param` ·
+      `null`). Skript i stället för ettradare eftersom jq inte kan läsa en fil
+      vars namn först är känt efter att stdin tolkats; skriptet får därmed också
+      CI:s shellcheck-strict och en egen svit
+      (`scripts/test-agent-spawn-log.sh`, 10 testfall, wirad i `ci.yml`).
+      Aldrig-blockera-egenskapen behållen och testad (`exec 1>&2`, ovillkorlig
+      exit 0, `2>/dev/null || true`, `timeout: 5`).
+      **Brytpunkt i serien:** raderna före rättningen saknar
+      `isolation_kalla` och bär `isolation: null` även för typade agenter. De är
+      korrekt historik och lagas inte — `agent-spawn-metrics.mjs` räknar dem via
+      en frontmatter-slagning märkt *äldre form* i utskriften
 - [ ] **A7:3 · Aktivera merge queue.** Ersätter landnings-ordningen
       (`CONTRIBUTING.md` § Landnings-ordningen) med mekanik. Regeln är korrekt
       skriven men är **frivillig efterlevnad** — den brast två gånger under en

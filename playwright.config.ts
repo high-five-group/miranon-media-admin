@@ -5,6 +5,7 @@ import {
   VISUAL_SUPABASE_ANON_KEY,
   VISUAL_SUPABASE_URL,
 } from './tests/support/fixturvarld/fixture-data';
+import { PLAYWRIGHT_DEFAULT_REPORTER } from './tests/support/fixturvarld/overskuggnings-rapport';
 
 // Ladda .env.test för LOKALA körningar (task-10 AC 3, officiella Playwright-
 // mönstret playwright.dev/docs/test-parameterize). Tre verifierade egenskaper
@@ -152,6 +153,19 @@ export default defineConfig({
   // S91 steg 1: nollställer hermetik-rapportens JSONL före körningen så mätningar
   // inte ackumulerar över varandra. No-op utan PLAYWRIGHT_HERMETIK_RAPPORT=1.
   globalSetup: './tests/global-setup.ts',
+  // task-62: den TRÖGA överskuggnings-vakten. Den aggregerar per
+  // deklarationsställe och FIL, vilket bara reportern kan göra — den ser
+  // samtliga tester i en fil även när en retry splittrar dem över workers, och
+  // den kan fälla körningen via onEnd. Motivering i sin helhet:
+  // tests/support/fixturvarld/overskuggnings-rapport.ts § Varför en reporter.
+  //
+  // Default-reportern måste räknas upp explicit: sätts `reporter` alls faller
+  // Playwrights egen default bort (`common/index.js` rad 584 + 753), och
+  // CI hade tappat sitt dot-format. Konstanten speglar den raden.
+  reporter: [
+    [PLAYWRIGHT_DEFAULT_REPORTER],
+    ['./tests/support/fixturvarld/overskuggnings-rapport.ts'],
+  ],
   // task-36.7: {projectName} skiljer vyport-projekten åt (samma spec-fil, två
   // skott — utan den kolliderar filnamnen) och {platform} bär AC 3: endast
   // -linux checkas in (baselines föds i CI), -darwin/-win32 är gitignorerade
