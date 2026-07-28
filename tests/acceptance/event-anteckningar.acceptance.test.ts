@@ -240,12 +240,67 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
     mockSidan(network, { notesStatus: 500 });
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    // 500 är retry-bart (fetchWithRetry 5xx × React Query non-4xx-retry) → fel-ytan
-    // dyker upp först när retry-kedjan uttömts; timeout rymmer den (app-retry-kontraktet).
+
+    // TIMEOUTEN ÄR RÄKNAD OCH MÄTT, INTE ÄRVD. 500 är retry-bart i BÅDA lagren
+    // — kedjan och pekarna till källan står i `acceptance-bas.ts`
+    // § SKRIVA ETT TEST I KLASSEN (härledningen bor där, inte här). `Strommen`s
+    // retry-predikat undantar bara 4xx, så 500 går hela vägen: 4 query-försök ×
+    // 4 HTTP-försök = 16 förfrågningar innan felytan finns att assertera på.
+    //
+    // KONSTRUERAT VÄRSTA FALL, enbart sömnerna: 4 × 1700 + 1400 = 8200 ms.
+    // Termerna, kontrollräkningsbara: `fetchWithRetry` sover 200 + 400 + 800 =
+    // 1400 ms per anrop, och jittret är `Math.random() * (baseDelay / 2)` med
+    // `baseDelay = 200` (`src/data/utils.ts:60`) — alltså KONSTANT 0–100 ms per
+    // sömn. Det skalar INTE med den exponentiella delayen; just det är felet som
+    // är lätt att göra (fyndkortets ursprungliga 4 × 2100 + 1400 = 9800 ms antog
+    // jitter = delay/2 och är rättat vid källan). Per anrop: 1400 + 3 × 100 =
+    // 1700 ms. Ovanpå de fyra anropen lägger QueryClientens `retryDelay`
+    // 200 + 400 + 800 = 1400 ms (`src/router.ts:19`, ingen jitter).
+    // Bästa fall: 4 × 1400 + 1400 = 7000 ms.
+    //
+    // MÄTT lokalt (darwin), tiden från expect-anropet till alerten: 7902 · 7916
+    // · 7927 · 7931 · 7948 ms i fem isolerade körningar av hela filen, och
+    // 7756 ms i en FULL svit med CI-paritet (`CI=1`, retries 2, parallella
+    // workers). Att lasten inte syns i talet är väntat och inte tur: kedjan är
+    // wall-clock-sömner, inte CPU-arbete. Testets TOTALTID steg däremot
+    // 9,7 → 15,1 s under samma last — det är navigering och uppstart, inte
+    // kedjan. H1:an köper heller ingen tid: notes-anropet går i samma ögonblick
+    // som rubriken finns (mätt: båda ≈ 0,9 s), så assertionen bär hela kedjan.
+    //
+    // Kedjans FORM är mätt, inte antagen: 16 anrop med mellanrummen
+    // 284·403·801 | 206 | 250·500·846 | 406 | 218·475·883 | 806 | 230·436·860 ms
+    // — tre sömnar per anrop plus en retryDelay emellan, och varje jitter under
+    // 100 ms. Ett jitter som följde delayen hade gett upp mot 1200 ms på
+    // 800-sömnen; störst uppmätt är 883. Efter sista anropet gick 346 ms till
+    // svarshantering + render.
+    //
+    // VARFÖR TAKET ÄNDÅ ÄR MÅTTET OCH INTE MÄTNINGEN. Spridningen är liten (sex
+    // körningar inom 200 ms) därför att tolv oberoende jitter-drag medelvärdar
+    // ut sig — sd ≈ 100 ms kring ~7,6 s sömn. 8200 ms kräver att ALLA tolv
+    // landar högt och är därmed en svans, inte ett normalutfall (fyndkortet
+    // påstod motsatsen; rättat vid källan). Men ett tak man sällan ser är ändå
+    // det tal en timeout ska dimensioneras mot: en timeout är ett skyddsnät, och
+    // asymmetrin avgör — för HÖGT tal kostar noll på grönt, för LÅGT ger en
+    // falsk röd på en obesläktad commit (samma signal-förstörelse som task-59.7
+    // höjde jobbets tak för).
+    //
+    // DÄRFÖR 20 s OCH INTE 12. 12 s låg 3,8 s över det konstruerade taket
+    // (8200 + ~350 ms svarshantering ≈ 8,55 s), före CI:s långsammare runner.
+    // 20 s ger ~2,3× och ryms med marginal under Playwrights test-timeout på
+    // 30 s (config sätter ingen egen), så ett trasigt felläge fäller fortfarande
+    // på assertionen och inte på testramen. Samma tal som
+    // `persons-list.acceptance.test.ts` — en kedja, ett tal.
+    //
+    // KOSTNADEN, ÄRLIGT MÄRKT. På GRÖNT kostar höjningen noll: assertionen
+    // löser ut när alerten dyker upp (~7,9 s lokalt mätt). På RÖTT kostar den
+    // 8 s extra per försök, och med `retries: 2` i CI upp till 24 s — ARITMETIK
+    // på timeout-deltat, inte en CI-mätning. Att den ryms är däremot CI-mätt:
+    // acceptance-jobbets median är 407 s mot taket 12 min (`ci-suite.yml`,
+    // mätt i CI 2026-07-28).
     await expect(gruppen(page).getByRole('alert')).toContainText(
       'Kunde inte hämta anteckningarna',
       {
-        timeout: 12_000,
+        timeout: 20_000,
       },
     );
   });

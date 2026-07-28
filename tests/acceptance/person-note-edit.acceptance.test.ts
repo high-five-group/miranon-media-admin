@@ -152,6 +152,14 @@ test.describe('Persondetalj — edit-in-place Anteckningar (Fas 6a L6c)', () => 
     const textarea = page.getByRole('textbox', { name: 'Anteckning' });
     await expect(textarea).toHaveValue('Misslyckad ändring');
     // Fel-yta som role=alert med Fel-ID (support-referens).
+    // TIMEOUTEN: default (5 s) RÄCKER OCH ÄR RÄKNAD (TASK-65 AC 2-svepet).
+    // Mutationer ärver INTE QueryClientens `retry: 3` — router.ts sätter bara
+    // `networkMode` för `mutations`, och TanStacks default är `retry: 0`. Kvar
+    // blir därför bara lager 1: `fetchWithRetry` 4 försök = 1400–1700 ms sömn.
+    // Mätt lokalt (darwin, 3 körningar, från `releaseUpdate()` till alerten):
+    // 1815 · 1819 · 1824 ms — 2,7× under default-timeouten. Blir detta en
+    // QUERY-felyta i stället multipliceras kedjan med fyra och raden behöver en
+    // räknad timeout (se `event-anteckningar` rad 248 / `persons-list` rad 199).
     const alert = page.getByRole('alert').filter({ hasText: 'Kunde inte spara anteckningen' });
     await expect(alert).toBeVisible();
     await expect(alert).toContainText('req-note-xyz789');
