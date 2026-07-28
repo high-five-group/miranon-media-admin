@@ -15,6 +15,18 @@ dist-ssr
 !.env.staging
 !.env.production
 
+# Spawn-loggen från agent-mätningens PreToolUse-hook (ADR-082-passets steg 2).
+# Lokal mätdata, inte delad artefakt: den beskriver hur DENNA maskins sessioner
+# spawnat agenter. Läses med `npm run metrics:agents`.
+.claude/agent-spawn-log.jsonl
+
+# Agent-worktrees (Claude Code skapar dem under .claude/worktrees/ för
+# isolerade subagenter). Exkluderingen fanns tidigare ENDAST i
+# .git/info/exclude, som är lokal och odelad — den överlevde alltså inte en ny
+# klon. Flyttad hit 2026-07-28 så att den följer med repot, per
+# code.claude.com/docs/en/worktrees.
+.claude/worktrees/
+
 # macOS / editor
 .DS_Store
 .vscode/*

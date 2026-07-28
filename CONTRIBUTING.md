@@ -365,6 +365,28 @@ push:
 typos övervägdes men avvisades per K3-baseline 2026-05-14
 (tool-uppgift-mismatch; stavnings-substans flyttades till Vale).
 
+### Agent-spawn-mätningen
+
+```bash
+npm run metrics:agents
+```
+
+Svarar på hur ofta subagenter spawnas **utan** worktree-isolering, och därmed om
+de typade agenterna i `.claude/agents/` räcker som mekanism. Underlaget skrivs
+löpande av en icke-blockerande `PreToolUse`-hook till
+`.claude/agent-spawn-log.jsonl` (gitignorerad — den beskriver den lokala
+maskinens sessioner, inte repots tillstånd).
+
+**Läs den innan `permissions.deny` eller en tvingande hook övervägs.** Hela
+poängen med steget är att beslutet ska vila på siffror i stället för åsikter;
+mätningen är beställd av
+[ADR-082-passet](docs/research/hook-mekanisering-worktree-isolering-2026-07-28.md)
+som steg 2 av fyra.
+
+En oisolerad spawn är **inte** automatiskt ett fel — en rent läsande agent
+behöver ingen worktree. Skriptet skiljer därför på spawns från huvudkatalogen
+(där kollisionsrisken finns) och spawns som redan sker inifrån en worktree.
+
 ## Kvalitetsribba
 
 Detta projekt arbetar mot **11/11/11**: 11/10 på de tre kanoniska axlarna

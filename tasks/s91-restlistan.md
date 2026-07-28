@@ -124,9 +124,37 @@ därmed Codes, fattade på delegering — öppet bokfört i ADR-080:s ingress.
       allokeringen); ADR/tråd omprövas OM en kollision faktiskt inträffar.
 - [ ] `lessons-hub-sync`-skillen (hub) uppdateras med konsolideringssteget —
       kräver plugin-bump (öppen post ur ADR-081)
+- [ ] **Steg 3-beslutet om agent-isolering — VILAR PÅ MÄTNING, ej åsikt.**
+      Steg 1 (typade agenter, `#327`) och steg 2 (icke-blockerande mätning,
+      `npm run metrics:agents`) är byggda 2026-07-28. **Läs mätningen efter ~en
+      vecka skarpt bruk** och avgör då om `permissions.deny` (steg 3) eller en
+      korrigerande `updatedInput`-hook (steg 4) behövs — eller om steg 1 räckte.
+      Hooken är BEVISAD att fungera (research-passet), så steg 4 är en
+      verkställighetsfråga, inte en osäkerhet. Faller mätningen ut som
+      "inget läckage" är rätt åtgärd att INTE bygga mer.
 - [ ] Punkt 7 — partitionerings-regeln (ADR-073 utsträckt till Marcus egna
-      parallella sessioner, ej bara agenternas)
-- [ ] Punkt 5 — landnings-ordningen som regel, ej omdöme (tillämpad, ej kodad)
+      parallella sessioner, ej bara agenternas).
+      **KONVERGERAR DELVIS med worktree-isoleringen (`#327`, 2026-07-28) — men
+      bockas INTE av mot den.** Fil- och gren-partitionen är nu mekanisk
+      (`isolation: worktree` i `.claude/agents/`-frontmatter). Kvar står
+      nummerserier, delade statusfiler och LÄSANDE agenter (fragmentet
+      `partition-maste-omfatta-lasande-agenter`).
+      **Och regeln VÄXER i en dimension:** två isolerade agenter som båda
+      skriver i `todo.md` ser inte varandra alls — merge-konflikt, eller värre,
+      tyst överskrivning vid sekventiell landning. Före isolering delade de
+      åtminstone arbetsträd. Isoleringen löser alltså en del av A2:7 och
+      förvärrar en annan; det gör regeln mer angelägen, inte mindre
+- [ ] Punkt 5 — landnings-ordningen som regel, ej omdöme (tillämpad, ej kodad).
+      **KONVERGERAR INTE med worktree-isoleringen** — `BEHIND` är en annan
+      felmekanism och `#327` rör den inte alls. Regeln blir tvärtom VIKTIGARE:
+      fler isolerade agenter ⇒ fler parallella PR:er ⇒ mer BEHIND-tryck.
+      Empiri 2026-07-28: orkestreraren gick i fällan TVÅ gånger under samma
+      resume, trots att `L328` varit nedskriven sedan S81.
+      Formen som fungerade när den tillämpades: låt den tyngre PR:en landa
+      först, eller kör `gh pr update-branch` på nästa FÖRE armering i stället
+      för att laga `BEHIND` efteråt. Bikostnad: en CI-vakt startad mot en SHA
+      blir felaktig i samma stund grenen uppdateras — stoppa och starta om
+      mot den nya SHA:n
 
 ### A3 · Verktygs-åtgärderna
 
