@@ -4,7 +4,7 @@ title: 'Skiva: Staging (API + E2E) ur PR-grinden till post-merge'
 status: To Do
 assignee: []
 created_date: '2026-07-28 16:33'
-updated_date: '2026-07-28 16:34'
+updated_date: '2026-07-28 21:52'
 labels:
   - ready-for-agent
 dependencies:
@@ -69,6 +69,28 @@ Skivan tar visserligen bort en blockerande kontroll, vilket är den tyngsta rör
 
 Den enda fällan är delningen av ci-suite.yml med natten, och den är utskriven med radhänvisning i beskrivningen.
 <!-- SECTION:PLAN:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-28 21:52
+---
+MÄTNING 2026-07-28 SOM STÄRKER KORTETS VÄRDE — mutexen serialiserar, och kostnaden växer med antalet parallella PR:er.
+
+Två fulla körningar med identiskt svit-innehåll, mätt ur GitHubs jobb-API:
+
+  run 30400021534: Acceptance 21:17:47->21:24:49 · Staging 21:18:06->21:24:15  => total 7,8 min
+  run 30400640305: Acceptance 21:26:40->21:33:46 · Staging 21:39:22->21:46:09  => total 20,3 min
+
+I den första startade jobben 19 s isär och kördes parallellt. I den andra startade staging 5 min 36 s EFTER att acceptance var klar — den stod i concurrency-gruppen staging-tests bakom en annan körning. Samma svit, 20,3 mot 7,8 minuter; hela skillnaden är kö.
+
+KONSEKVENS FÖR KORTETS MOTIVERING: vinsten av A7:5 är inte bara de 369-390 s staging-jobbet självt tar, utan att den kritiska vägen slutar VÄXA med antalet parallella PR:er. Det är den egenskap ett flöde med flera samtidiga agenter behöver mest, och den syns inte alls i en mätning av jobbtider — bara i en mätning av kötid.
+
+Observationen gjordes av Marcus på PR #386 (total duration 14 min 16 s) och verifierades av orkestreraren mot API:t. Orkestrerarens tidigare analys byggde på jobbtider och missade köväntan.
+
+FÖRBEHÅLLET I KORTET STÅR KVAR OFÖRÄNDRAT: Acceptance (422-433 s) blir ensam bärare efter flytten, så taket landar kring 7 min även efteråt. Urvalet som sänker det är TASK-75, som har dep på detta kort.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
