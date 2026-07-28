@@ -86,10 +86,19 @@ jobs:
       - name: Audit dependencies (moderate — bredare än dagsvitens high)
         run: npx audit-ci --moderate
 
-  # Länkkontroll UTAN cache — dagsviten cachar (cache-lychee-v2) för fart;
-  # natten kör kall för att fånga länk-röta som en varm cache skulle dölja.
-  # Scopet är AVSIKTLIGT identiskt med ci.yml:s docs-jobb (lychee-args); en
-  # framtida konsolidering till lychee-konfigfil är noterad men ej byggd (YAGNI).
+  # Länkkontroll UTAN cache, över BÅDE intern och extern yta — natten kör kall
+  # för att fånga länk-röta som en varm cache skulle dölja.
+  #
+  # ═══ ADR-082 (2026-07-28): DENNA HALVA ÄR DEN ENDA SOM SER EXTERNA LÄNKAR ═══
+  # ci.yml:s docs-jobb kör sedan dess med --offline och kontrollerar bara intern
+  # yta. Scopen är därmed AVSIKTLIGT INTE längre identiska — det är hela poängen
+  # med uppdelningen, inte en drift att konsolidera bort. En framtida
+  # lychee-konfigfil skulle dölja precis den skillnaden (YAGNI kvarstår).
+  #
+  # Jobbet står MEDVETET UTANFÖR alarm.needs och har en egen, mildare kanal
+  # (links-arende nedan). Skälet: nattärendet är tilldelat och ska betyda "något
+  # är akut fel"; en extern värds dåliga dag hör inte dit. Att bara ta ut jobbet
+  # utan kanal vore fail-open — L321/L322-klassen — därav den egna kanalen.
   nightly-links:
     name: Länkkontroll (utan cache)
     runs-on: ubuntu-latest
@@ -106,7 +115,16 @@ jobs:
         # SHA-pin per ADR-029 §6 — samma pin som ci.yml docs-jobbet.
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8  # v2.9.0
         with:
+          # --accept-timeouts (ADR-082 beslut 2): lychee för timeouts i en EGEN
+          # karta, men lyckat-villkoret krävde att både error_map OCH timeout_map
+          # var tomma — därav det förvirrande "🚫 Errors 0" på en körning som ändå
+          # föll med exit 2 (ADR-081:s PR). Flaggan (lychee PR #2063, merged
+          # 2026-03-04) byter till is_success_ignoring_timeouts. Den stänger INTE
+          # av grinden: mätt ger enbart-timeout exit 0, men timeout PLUS ett äkta
+          # trasigt mål ger fortfarande exit 2. Timeout degraderas till rapport,
+          # allt annat hålls kvar.
           args: >-
+            --accept-timeouts
             --no-progress
             --verbose
             --header "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
@@ -119,6 +137,86 @@ jobs:
             './*.md'
           fail: true
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Länkrötans egen kanal (ADR-082 beslut 4). Fyrar ENDAST när nightly-links är
+  # röd, och håller ETT stående ärende i stället för ett nytt per natt — en död
+  # extern länk som står i en vecka ska ge ett ärende, inte sju. Det är precis
+  # den skillnaden som avgör om kanalen läses eller filtreras bort.
+  #
+  # Byggd på repots BEFINTLIGA gh issue-mönster (se alarm nedan), inte på en ny
+  # third-party Action. Lychees dokumenterade mönster använder
+  # peter-evans/create-issue-from-file, men det vore en ny supply-chain-yta att
+  # SHA-pinna och bevaka under ADR-029 §6 för en förmåga vi redan har i huset.
+  links-arende:
+    name: Länkröta — stående ärende
+    needs: [nightly-links]
+    if: ${{ always() && needs.nightly-links.result == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Skapa eller uppdatera det stående länkröte-ärendet
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SERVER: ${{ github.server_url }}
+          RUN_ID: ${{ github.run_id }}
+          CURRENT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          run_url="${SERVER}/${REPO}/actions/runs/${RUN_ID}"
+
+          # Exit-koden fångas SEPARAT från resultatet — samma disciplin som
+          # alarm-jobbet lärde sig den hårda vägen (TASK-51): formen
+          # `$(gh ... || echo "")` kollapsar "anropet gick fel" och "det finns
+          # inget svar" till samma tomma sträng, och då byggs ett faktapåstående
+          # på frånvaro av data. Signalen ska vara success ELLER failure, aldrig
+          # frånvaro (L322-klassen).
+          # --repo är OBLIGATORISK: jobbet gör ingen checkout, så gh kan inte
+          # härleda repot ur en git-remote.
+          gh_failed=""
+          existing=$(gh issue list --repo "${REPO}" --label lankrota \
+            --state open --limit 1 --json number \
+            --jq '.[0].number // ""') || gh_failed="1"
+
+          if [ -n "${gh_failed}" ]; then
+            echo "::error::Kunde inte läsa befintliga lankrota-ärenden — kanalen är inte verifierbar denna natt."
+            exit 1
+          fi
+
+          body="Den nattliga länkkontrollen (\`nightly-links\`) föll.
+
+          - **Körning:** ${run_url}
+          - **HEAD:** \`${CURRENT_SHA}\`
+
+          Kontrollen täcker BÅDE intern och extern yta; PR-grinden ser sedan
+          ADR-082 bara den interna. Ett fynd här är därför antingen extern
+          länkröta (någon annans sida har flyttat eller dött) eller en intern
+          pekare som ruttnat mellan två PR:er.
+
+          **Detta ärende är icke-blockerande och STÅENDE** — nya fynd läggs som
+          kommentarer i stället för nya ärenden. Stäng det när körningen är grön
+          igen, eller med en öppet skriven motivering (t.ex. att mönstret lagts i
+          \`.lycheeignore\` med motivering och datum, per ADR-082 beslut 5)."
+
+          if [ -n "${existing}" ]; then
+            gh issue comment "${existing}" --repo "${REPO}" --body "🔗 **Ny röd länkkontroll $(date -u +%F)**
+
+          - **Körning:** ${run_url}
+          - **HEAD:** \`${CURRENT_SHA}\`
+
+          _(Stående ärende — kommentar i stället för nytt ärende, per ADR-082 beslut 4.)_"
+            echo "Uppdaterade stående ärende #${existing}."
+          else
+            gh issue create \
+              --repo "${REPO}" \
+              --title "🔗 Länkröta — nattlig kontroll röd" \
+              --label lankrota \
+              --body "${body}"
+            echo "Skapade nytt stående länkröte-ärende."
+          fi
 
   # Mätskriptet (task-36.5 / ADR-077): CI-hastighet som siffror — ledtid,
   # mutex-kötid, röd-orsak, flaky-frekvens, dedup-träffkvot ur körnings-API:t.
@@ -208,14 +306,22 @@ jobs:
   # Larmkedjan: fyrar vid RÖD natt (eller simulate_failure-dispatch). Skapar
   # ett tilldelat, etiketterat ärende med körningslänk + commit-spann sedan
   # senaste GRÖNA natt. Grön natt ⇒ jobbet skippas ⇒ inget ärende, inga spår
-  # (AC#4). issues:write endast här. nightly-metrics ingår i needs — röda
-  # mätningar får aldrig vara tysta (L321-klassen: nightly saknar annan
-  # åskådare, rött utan larm vore en tyst permanent). kontraktsvakt ingår av
-  # SAMMA skäl: en fixtur som glidit ifrån verkligheten ska nå en kedja som
-  # redan bevakas, inte bli ännu en signal ingen läser (ADR-080 beslut 3).
+  # (AC#4). nightly-metrics ingår i needs — röda mätningar får aldrig vara tysta
+  # (L321-klassen: nightly saknar annan åskådare, rött utan larm vore en tyst
+  # permanent). kontraktsvakt ingår av SAMMA skäl: en fixtur som glidit ifrån
+  # verkligheten ska nå en kedja som redan bevakas, inte bli ännu en signal
+  # ingen läser (ADR-080 beslut 3).
+  #
+  # nightly-links ingår MEDVETET INTE sedan ADR-082 (2026-07-28). Detta ärende är
+  # tilldelat och ska betyda "något är akut fel"; en extern värds dåliga dag hör
+  # inte dit och devalverar signalen. Länkrötan har i stället en egen, mildare
+  # kanal (links-arende ovan) — utelämnandet är alltså inte fail-open, vilket är
+  # hela skillnaden mot L321/L322-fällan.
+  #
+  # issues:write finns numera på TVÅ jobb (detta + links-arende), inte bara här.
   alarm:
     name: Larm vid röd natt
-    needs: [suite, nightly-audit, nightly-links, nightly-metrics, kontraktsvakt]
+    needs: [suite, nightly-audit, nightly-metrics, kontraktsvakt]
     if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || inputs.simulate_failure) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
