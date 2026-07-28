@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { http } from 'msw';
 import { EF, json } from '../support/fixturvarld/handlers';
+import { medvetetOanvand } from '../support/fixturvarld/overskuggnings-vakt';
 import { expect, test } from './support/acceptance-bas';
 
 /**
@@ -204,10 +205,13 @@ test.describe('Skicka mail på segment (Fas 6h L3)', () => {
     let sendCalled = false;
     network.use(
       http.post(EF('compute-segment'), () => json({ members: [], count: 0 })),
-      http.post(EF('send-email'), () => {
-        sendCalled = true;
-        return json({});
-      }),
+      medvetetOanvand(
+        http.post(EF('send-email'), () => {
+          sendCalled = true;
+          return json({});
+        }),
+        'Negativ sensor: att send-email ALDRIG anropas är testets resultat, så handlern ska förbli oanvänd. Matchar den fälls testet på inaktuell märkning — vilket är rätt, för då har appen börjat skicka vid 0 mottagare.',
+      ),
     );
 
     await page.goto('/mer/segment');

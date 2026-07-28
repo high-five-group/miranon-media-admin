@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { http } from 'msw';
 import { EF, json } from '../support/fixturvarld/handlers';
+import { medvetetOanvand } from '../support/fixturvarld/overskuggnings-vakt';
 import { expect, test } from './support/acceptance-bas';
 
 /**
@@ -172,10 +173,13 @@ test.describe('Persondetalj — edit-in-place Anteckningar (Fas 6a L6c)', () => 
 
     network.use(
       http.get(EF('get-person'), () => json({ person: personDetail('Ursprunglig not') })),
-      http.post(EF('update-record'), () => {
-        updateCalled = true;
-        return json({});
-      }),
+      medvetetOanvand(
+        http.post(EF('update-record'), () => {
+          updateCalled = true;
+          return json({});
+        }),
+        'Negativ sensor: att update-record ALDRIG anropas är testets resultat, så handlern ska förbli oanvänd. Matchar den fälls testet på inaktuell märkning — vilket är rätt, för då har Esc börjat skriva.',
+      ),
     );
 
     await page.goto(`/personer/${PERSON_ID}`);
