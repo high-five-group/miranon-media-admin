@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-27
+updated: 2026-07-28
 review_by: 2026-11-15
 status: stable
 ---
@@ -96,6 +96,24 @@ rollup-fixturerna, och ett datumval utanför sentinel-klustret. Detaljer +
 **Varför raden står här och inte bara i runbooken:** samma jobb gjordes för hand
 två gånger (2026-07-22 och 2026-07-26) innan skriptet fanns, och ett verktyg som
 inte ligger i sessionsstartens läs-ordning hittas inte när det behövs.
+
+### Landning sker i SEKVENS — aldrig två armerade PR:er samtidigt
+
+All landning går via branch + PR (direktpush till `main` avvisas av ruleset,
+[ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md)). Ligger två PR:er
+landningsklara samtidigt **armeras de en i taget**: tyngst svit först, eller
+`gh pr update-branch` på nästa **före** armering. Aldrig båda på en gång, och
+aldrig `update-branch` mot en gren vars bygg-agent fortfarande arbetar.
+
+Formerna, utlösaren och CI-vaktens SHA-bikostnad:
+[`CONTRIBUTING.md`](CONTRIBUTING.md) § Landnings-ordningen.
+
+**Varför raden står här och inte bara i CONTRIBUTING:** regeln gäller i
+armerings-ögonblicket, och `CONTRIBUTING.md` auto-laddas inte i en
+Code-session — bara denna fil gör det. `L328` har varit nedskriven sedan S81
+och beskrev mekanismen korrekt; ändå gick orkestreraren i fällan två gånger
+under en och samma resume 2026-07-28. Samma skäl som granskningsdata-raden
+ovan: en regel utanför läs-ordningen tillämpas inte när den behövs.
 
 ---
 
