@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 12:47'
-updated_date: '2026-07-28 14:30'
+updated_date: '2026-07-28 15:18'
 labels:
   - ready-for-agent
 dependencies: []
@@ -62,6 +62,34 @@ AVRÅDS EXPLICIT AV RESEARCHEN: att bygga hypotesen som den var formulerad, och 
 
 PR #340 bär det befintliga bygget och är oarmerad. Avgör vid ombyggnad om den byggs om på plats eller ersätts.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MÄTNINGEN KÖRD 2026-07-28 (planens 'MÄT FÖRE BYGGE'). Metod: fixturens teardown instrumenterad i en kastbar worktree att skriva JSONL per (test, överskuggning) i stället för att låta vakten fälla — vakten själv orörd. Hela acceptance-sviten körd med --retries=0. 321 observationer över 18 filer och 55 deklarationsställen.
+
+PLANENS SIFFRA BEKRÄFTAD, OCH FÖRKLARAD: 51 oanvända handler-instanser fördelade på exakt 36 distinkta tester i exakt 8 filer, av 153 tester. De 36 var alltså fällda TESTER (vakten kastar en gång per test), 51 är handler-instanserna bakom dem. Samma population, finare granularitet.
+
+UTFALL — PER-FIL-AGGREGERING (Mockitos getUnusedStubbingsByLocation, aggregerat på handler.info.callFrame):
+
+  fällningar        51 → 4      (7,8 % överlever, 92,2 % faller bort)
+  fällande filer     8 → 3
+  döda ställen       4 av 55
+
+SVARET PÅ PLANENS FRÅGA: steg 2 är nästan hela lösningen. medvetetOanvand behövs på 2 ställen, inte 36 — alltså ren undantagsventil, precis den kalibrering kortet efterfrågade ('Behövs ventilen på 36 ställen är vakten fel kalibrerad').
+
+DE FYRA ÖVERLEVARNA DELAR SIG I TVÅ KLASSER — och den andra klassen förutsåg planen INTE:
+
+(A) TVÅ ÄKTA DÖDA REGISTRERINGAR — hem.acceptance.test.ts:216 och :234. Båda överskuggar get-event med kommentaren 'Detaljsidan hämtar get-event vid landning → överskugga för deterministisk render', men testet assertar bara toHaveURL och navigerar aldrig så långt att anropet sker. Prövat mot race: tre isolerade körningar gav isUsed=false på båda, alla tre gånger. Stabilt döda, inte tajmingberoende. Detta är precis det fynd vakten finns för — kommentaren beskriver en avsikt testet inte fullföljer.
+
+(B) TVÅ LEGITIMA NEGATIVA SENSORER — mer-segment-send:207 (send-email) och person-note-edit:175 (update-record). Mönstret: 'let sendCalled = false' + handler som sätter flaggan + senare assertion att den är FALSE. Handlern registreras för att bevisa att anropet ALDRIG sker; att den förblir oanvänd ÄR testets resultat. Filernas egna kommentarer säger det rakt ut ('Flaggan mäter APPENS beteende — att 0 mottagare INTE utlöser ett utskick').
+
+KLASS (B) ÄR VAKTENS FARLIGASTE FALSKA POSITIV: utan ventil fäller vakten exakt de tester vars korrekthet består i att handlern inte används. Nocks .optionally() och Mockitos lenient() finns för denna klass; researchens 'legitim oanvänd' var alltså inte en hypotetisk kategori utan har två skarpa instanser i repot i dag.
+
+KÄLLVERIFIERING FÖR STEG 1, GJORD I SAMMA PASS: request:match finns på fixturen (LifeCycleEventsMap, msw 2.15.0) — MEN den typen är @deprecated i installerad version, med hänvisning till HttpNetworkFrameEventMap. Efterföljaren bor under msw/lib/core/experimental/ och exponeras INTE genom @msw/playwright 0.6.7, vars NetworkFixture typas mot Omit<SetupApi<LifeCycleEventsMap>, 'dispose'>. Båda formerna bär dessutom bara { request, requestId } — ingen handler-koppling. Kopplingen anrop→närmaste-handler måste alltså räknas av oss, den fås inte gratis. Ej blockerande; bokförs så nästa läsare inte tror att den nyare formen missades.
+
+SIDOFYND FÖR TASK-64: mätkörningen (hela sviten, --retries=0) gav 152 passed / 1 failed — event-ny-anmalan.acceptance.test.ts:641 (virtuell fokus, aria-activedescendant). Det är en FJÄRDE fil utöver de tre TASK-64 listar (event-anteckningar:142, mer-intresserade:95, person-detail:137). Fjärde körningen, fjärde uppsättningen fallerande tester — stärker bilden av bred flakighet snarare än en lokaliserad rad.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
