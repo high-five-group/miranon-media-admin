@@ -28,7 +28,7 @@ import {
  * en divergens skapar samma tilldelade nattärende som en röd natt — samma
  * kedja som redan bevakas, ingen ny kanal ingen läser (ADR-077).
  *
- * INGEN STAGING-MUTEX. Vakten LÄSER bara (tre GET). Den kan därför köra
+ * INGEN STAGING-MUTEX. Vakten LÄSER bara (sju GET). Den kan därför köra
  * parallellt med nattens `suite`-jobb, som håller `staging-tests` och skapar
  * och raderar sentinel-rader medan den kör: de raderna ändrar antalet poster
  * i svaret men inte deras FORM, och form är allt vakten jämför. Tar man

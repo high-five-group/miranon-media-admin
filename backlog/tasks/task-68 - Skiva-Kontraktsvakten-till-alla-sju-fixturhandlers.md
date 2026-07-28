@@ -4,6 +4,7 @@ title: 'Skiva: Kontraktsvakten till alla sju fixturhandlers'
 status: To Do
 assignee: []
 created_date: '2026-07-28 14:07'
+updated_date: '2026-07-28 14:29'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,11 +31,13 @@ AVGRÄNSNING: felkontrakten (404/400) är TASK-69, inte denna skiva. Här bevaka
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 get-event, get-event-formats, get-persons och get-person har var sitt kontraktsfall med rätt schema, kuvertnyckel och fixturkälla
-- [ ] #2 Vakten körd skarpt mot staging; utfallet per endpoint redovisat i PR:n
-- [ ] #3 Ett larm som uppstår rapporteras med endpoint och avvikelseklass — varken fixtur eller schema lappas för att tysta det
-- [ ] #4 Vakten är fortsatt enbart nattlig och icke-blockerande; ci-suite.yml orörd
+- [x] #1 get-event, get-event-formats, get-persons och get-person har var sitt kontraktsfall med rätt schema, kuvertnyckel och fixturkälla
+- [x] #2 Vakten körd skarpt mot staging; utfallet per endpoint redovisat i PR:n
+- [x] #3 Ett larm som uppstår rapporteras med endpoint och avvikelseklass — varken fixtur eller schema lappas för att tysta det
+- [x] #4 Vakten är fortsatt enbart nattlig och icke-blockerande; ci-suite.yml orörd
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
