@@ -74,8 +74,8 @@ tematiska; sekvensen över spårgränserna fanns ingenstans.
 |---|---|---|---|
 | **1** | Signalen går att lita på | `TASK-65` `66` `64` `63` · `TASK-71` · agent-namnet · `TASK-36.8` | § Fynd-kedjans ordning · § A4 · § A5 · § Beslut |
 | **2** | Skyddsnätet byggs | `TASK-70.2` · `TASK-70.5` | § A7 (A7:4, A7:7) |
-| **3** | Flytten — väntetiden faller | `TASK-70.3` · `TASK-70.4` · `TASK-75` | § A7 (A7:5, A7:6, A7:10) |
-| **4** | Kön mekaniseras | `TASK-70.1` · `TASK-70.6` | § A7 (A7:3, A7:8) |
+| **3** | Flytten och kön — väntetiden faller | `TASK-70.3` · `TASK-70.1` · `TASK-70.4` · `TASK-75` | § A7 (A7:5, A7:3, A7:6, A7:10) |
+| **4** | Landnings-hygien | `TASK-70.6` | § A7 (A7:8) |
 | **4b** | Verktygsskulden | A3 ×3 · A3b ×2 · A2:9 | § A3 · § A3b · § A2 |
 | **5** | Aktörerna slutar krocka | A2:7 · A2:8 · Spår B | § A2 · § Spår B |
 | **6** | Kvar utanför räckhåll | `T85` våg 3 · `T87` · `TASK-70.7` | § A6 · § A7 (A7:9) |
@@ -86,6 +86,16 @@ tematiska; sekvensen över spårgränserna fanns ingenstans.
 att en flaky svit gör post-merge-larmen otrovärdiga · A7:4 före A7:5–6, kodad som
 dep · `TASK-70.1` efter `TASK-70.3`, då är mutex-dubbleringen avväpnad ·
 `TASK-64` och `TASK-63` tas under egen hand respektive med pilot, se korten.
+
+**`TASK-70.1` flyttad in i steg 3 — Marcus-korrigering 2026-07-29.** Kortet låg i
+steg 4 som schemaläggning, inte som invariant. Det tas nu **direkt efter
+`TASK-70.3` och före `TASK-70.4`**: efter `70.3` är mutex-dubbleringen avväpnad
+utan att en rad villkorings-kod skrivs, och `70.1` är det enda kortet i spåret som
+tar bort ett *mänskligt* seriellt moment i stället för maskintid — det momentet
+växer med antalet parallella agenter. Att `70.4` kan följa efter en aktiverad kö
+belades live: rulesetet bär **en enda** required check (`CI Passed or Skipped`),
+så flytten av a11y ändrar inte required-listan. Skälen i sin helhet: sessionsdok
+S91 **Del 21.5**.
 
 **Steg 6 stängs inte av denna lista.** `T85` våg 3 väntar på Fas E, `T87` på
 Marcus trigger, `TASK-70.7` kan stängas av sitt eget steg 0. De står kvar som
