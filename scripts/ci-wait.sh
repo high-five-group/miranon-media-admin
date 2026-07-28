@@ -29,6 +29,27 @@
 #   --interval <sek>   pollintervall (default 20)
 #   --quiet            bara slutverdikt
 #
+# VILKEN WORKFLOW FÖLJS (TASK-72, 2026-07-28)
+#   `gh run list <selektor> --limit 1` UTAN `--workflow` returnerar senaste
+#   körningen för selektorn OAVSETT workflow. Repot kör TRE workflows per push
+#   till main — CI, CodeQL och Post-merge — och bara CI bär required-checken
+#   "CI Passed or Skipped". Mätt 2026-07-28 på commit 03d18888: okvalificerat
+#   valdes Post-merge (30398517485), inte CI (30398517346). Fyndets empiri var
+#   commit 148f6766, där vakten följde CodeQL (30391886253) och rapporterade
+#   "GRÖN per jobb" utan att någonsin ha sett CI-körningen (30391891964).
+#
+#   Workflow-namnet är därför OBLIGATORISKT i lägena --pr/--commit/--branch och
+#   tas i ordningen:
+#       --workflow <namn>  >  CI_WAIT_WORKFLOW i .ci-wait-policy.conf  >  exit 3
+#   Fail-closed framför tyst gissning — samma princip som full-SHA-kravet
+#   nedan: ett mätinstrument som går sönder ljudlöst är värre än inget.
+#   Värdet bor i config, inte hårdkodat i skriptet, eftersom grindvakts-logik
+#   är universell och värden är per-projekt (Lesson #6, UNIVERSAL). Filen söks
+#   via CI_WAIT_POLICY, annars <skriptkatalog>/../.ci-wait-policy.conf.
+#
+#   `--run <id>` är undantaget: ett run-ID är entydigt och behöver ingen
+#   workflow. Det är också vägen exit 4 pekar ut för att följa en efterträdare.
+#
 # EFTER EN PUSH: använd `--commit "$(git rev-parse HEAD)"`, inte `--pr`.
 #   GitHubs PR-API kan returnera FÖREGÅENDE head-SHA i sekunderna efter en push
 #   (empiriskt fångat 2026-07-25: --pr latchade på den gamla, röda körningen och
@@ -58,7 +79,11 @@
 #   1  minst ett jobb failade, eller          3  användningsfel / kunde ej lösa run
 #      avbröts utan nyare körning             4  superseddad av en nyare körning
 #
-# gh-binären kan överstyras med GH_BIN (testsvitens stub-väg).
+#   Exit 3 täcker även saknat workflow-namn i --pr/--commit/--branch. Skillnaden
+#   mot 2 är avsiktlig och hela poängen: 3 skickar läsaren till ANROPET, 2 till CI.
+#
+# gh-binären kan överstyras med GH_BIN (testsvitens stub-väg), policy-filen
+# med CI_WAIT_POLICY (samma syfte: testbarhet utan att röra repo-roten).
 #
 # Källa: tasks/sessions/2026-07-25-session-86.md Del 4 (tidsforensiken)
 #        tasks/lessons.md L340 (amenderad) · L322 (skippbar check är fail-open)
@@ -88,7 +113,9 @@ while [[ $# -gt 0 ]]; do
         --timeout)  TIMEOUT="${2:-}";  shift 2 ;;
         --interval) INTERVAL="${2:-}"; shift 2 ;;
         --quiet)    QUIET=1; shift ;;
-        -h|--help)  sed -n '22,38p' "$0"; exit 0 ;;
+        # Radintervallet är ANVÄNDNING t.o.m. § EFTER EN PUSH. Ändras huvudet
+        # ovan måste det följa med — annars ljuger --help tyst.
+        -h|--help)  sed -n '22,58p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
@@ -117,6 +144,34 @@ if [[ "${MODE}" == "commit" && ! "${TARGET}" =~ ^[0-9a-fA-F]{40}$ ]]; then
    Använd:  --commit \"\$(git rev-parse HEAD)\"   eller   --pr <nummer>"
 fi
 
+# --- Workflow-urvalet: obligatoriskt utom i --run (TASK-72) ----------------
+# Se § VILKEN WORKFLOW FÖLJS i huvudet. Utan namn väljer `gh run list --limit 1`
+# senaste körningen för selektorn oavsett workflow, och vaktens gröna besked
+# kan då gälla en helt annan workflow än den som bär required-checken.
+#
+# Ordningen är --workflow > config > fällning. Config-filen läses bara när
+# flaggan saknas: en explicit flagga ska aldrig kunna överröstas av en fil.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CI_WAIT_POLICY="${CI_WAIT_POLICY:-${SCRIPT_DIR}/../.ci-wait-policy.conf}"
+
+if [[ -z "${WORKFLOW}" && -f "${CI_WAIT_POLICY}" ]]; then
+    # shellcheck source=/dev/null
+    source "${CI_WAIT_POLICY}"
+    WORKFLOW="${CI_WAIT_WORKFLOW:-}"
+fi
+
+# --run är undantaget: ett run-ID är entydigt, och det är formen exit 4 pekar
+# ut för att följa en efterträdare. Övriga lägen fäller hellre än gissar.
+if [[ "${MODE}" != "run" && -z "${WORKFLOW}" ]]; then
+    die "workflow-namn saknas för --${MODE}.
+   Utan namn returnerar 'gh run list --limit 1' senaste körningen för
+   selektorn OAVSETT workflow — repot kör flera per push och bara en bär
+   required-checken. Vakten hade då kunnat rapportera GRÖN på en körning
+   den aldrig skulle ha följt.
+   Sätt CI_WAIT_WORKFLOW i ${CI_WAIT_POLICY}
+   eller ange:  --workflow <namn>"
+fi
+
 NOW="$(date +%s)"
 DEADLINE=$(( NOW + TIMEOUT ))
 
@@ -130,14 +185,13 @@ DEADLINE=$(( NOW + TIMEOUT ))
 # budgeten tar slut — men vi SOVER ALDRIG före första försöket.
 list_run() {
     local out rc
+    # `--workflow` är ALLTID med: valideringen ovan garanterar att WORKFLOW är
+    # satt för varje läge som når hit (--run går aldrig via list_run). Grenen
+    # UTAN flaggan var defekten — den lät gh välja senaste körningen för
+    # selektorn oavsett workflow.
     set +e
-    if [[ -n "${WORKFLOW}" ]]; then
-        out="$("${GH}" run list "$1" "$2" --workflow "${WORKFLOW}" --limit 1 \
-              --json databaseId -q '.[0].databaseId' 2>/dev/null)"
-    else
-        out="$("${GH}" run list "$1" "$2" --limit 1 \
-              --json databaseId -q '.[0].databaseId' 2>/dev/null)"
-    fi
+    out="$("${GH}" run list "$1" "$2" --workflow "${WORKFLOW}" --limit 1 \
+          --json databaseId -q '.[0].databaseId' 2>/dev/null)"
     rc=$?
     set -e
     [[ "${rc}" -eq 0 && -n "${out}" && "${out}" != "null" ]] || return 1
@@ -186,16 +240,20 @@ while :; do
     sleep "${INTERVAL}"
 done
 
-# Visa vilket SHA körningen tillhör — gör API-drift (stale headRefOid) synlig
-# i stället för tyst. Se § EFTER EN PUSH i huvudet.
+# Visa vilket SHA OCH VILKEN WORKFLOW körningen tillhör — gör både API-drift
+# (stale headRefOid, § EFTER EN PUSH) och fel-workflow-valet (§ VILKEN WORKFLOW
+# FÖLJS) synliga i stället för tysta. Workflow-namnet kostar inget extra anrop:
+# det hämtas i samma `run view` som SHA:t.
 set +e
-RUN_SHA="$("${GH}" run view "${RUN_ID}" --json headSha -q '.headSha' 2>/dev/null)"
-SHA_RC=$?
+RUN_INFO="$("${GH}" run view "${RUN_ID}" --json headSha,workflowName \
+    -q '.headSha + "\t" + .workflowName' 2>/dev/null)"
+INFO_RC=$?
 set -e
-if [[ "${SHA_RC}" -eq 0 && -n "${RUN_SHA}" ]]; then
-    say "ci-wait: följer körning ${RUN_ID} (commit ${RUN_SHA:0:8})"
+if [[ "${INFO_RC}" -eq 0 && -n "${RUN_INFO}" ]]; then
+    IFS=$'\t' read -r RUN_SHA RUN_WORKFLOW <<<"${RUN_INFO}"
+    say "ci-wait: följer körning ${RUN_ID} — workflow '${RUN_WORKFLOW}', commit ${RUN_SHA:0:8}"
 else
-    say "ci-wait: följer körning ${RUN_ID} (commit okänd)"
+    say "ci-wait: följer körning ${RUN_ID} (workflow/commit okänd)"
 fi
 
 # --- Steg 2: vänta till terminal-state -------------------------------------
