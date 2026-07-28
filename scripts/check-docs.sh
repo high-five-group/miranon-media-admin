@@ -89,12 +89,20 @@ skip_gate() {
 #
 # Saknas binären är det SKIPPAD, inte grönt: att låtsas ha kört den vore precis
 # den lögn skriptets ärlighets-krav förbjuder.
+#
+# .claude/**/*.md TILLAGT S91 (TASK-71) i samma ändring som ci.yml:s arg-block —
+# spegling i sak är hela poängen med detta skript och får inte glida isär.
+# --exclude-path .claude/worktrees är no-op i CI (worktrees är gitignorerade och
+# checkas aldrig ut där) men bärande lokalt: katalogen innehåller kompletta
+# checkouts av repot på andra grenar, och utan raden länk-kontrolleras de.
 if command -v lychee >/dev/null 2>&1; then
     run_gate "lychee link check" \
         lychee --offline --no-progress --exclude-path docs/archive \
         --exclude-path docs/reference/pocock \
+        --exclude-path .claude/worktrees \
         './docs/**/*.md' './tasks/*.md' './tasks/sessions/*.md' \
-        './tasks/threads/*.md' './tasks/lessons.d/*.md' './*.md'
+        './tasks/threads/*.md' './tasks/lessons.d/*.md' \
+        './.claude/**/*.md' './*.md'
 else
     skip_gate "lychee link check" "lychee-binären saknas lokalt — CI kör den"
 fi
