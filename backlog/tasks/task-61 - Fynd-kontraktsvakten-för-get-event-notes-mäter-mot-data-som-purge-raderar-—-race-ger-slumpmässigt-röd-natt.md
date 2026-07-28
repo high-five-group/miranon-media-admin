@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 08:45'
+updated_date: '2026-07-28 10:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -37,18 +38,18 @@ VARFÖR DET BRÅDSKAR: vakten flippar slumpmässigt varje natt. En vakt som fäl
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 En permanent anteckning-fixtur finns i staging som purge-mönstret PER KONSTRUKTION inte kan träffa — verifierat mot regexen i .purge-staging-policy.json, inte antaget
-- [ ] #2 Kontraktsvaktens get-event-notes-kontroll mäter mot den permanenta fixturen, aldrig mot sentinel-data
-- [ ] #3 Vakten ger samma utfall oavsett om den kör före, under eller efter purge — race-fönstret är stängt genom oberoende data, inte enbart genom körordning
-- [ ] #4 TVÅSIDIGT BEVIS: vakten grön mot den permanenta fixturen OCH fäller fortfarande vid äkta drift (prövat, inte antaget)
-- [ ] #5 Fixturens permanens är dokumenterad där den seedas, i samma form som ZZ-belaggning-fixturens STÄDA INTE
-- [ ] #6 Ärende #312 stängt med åtgärd och hänvisning till denna skiva — aldrig tyst
+- [x] #1 En permanent anteckning-fixtur finns i staging som purge-mönstret PER KONSTRUKTION inte kan träffa — verifierat mot regexen i .purge-staging-policy.json, inte antaget
+- [x] #2 Kontraktsvaktens get-event-notes-kontroll mäter mot den permanenta fixturen, aldrig mot sentinel-data
+- [x] #3 Vakten ger samma utfall oavsett om den kör före, under eller efter purge — race-fönstret är stängt genom oberoende data, inte enbart genom körordning
+- [x] #4 TVÅSIDIGT BEVIS: vakten grön mot den permanenta fixturen OCH fäller fortfarande vid äkta drift (prövat, inte antaget)
+- [x] #5 Fixturens permanens är dokumenterad där den seedas, i samma form som ZZ-belaggning-fixturens STÄDA INTE
+- [x] #6 Ärende #312 stängt med åtgärd och hänvisning till denna skiva — aldrig tyst
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
