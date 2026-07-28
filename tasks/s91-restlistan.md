@@ -233,10 +233,11 @@ enda obligatorisk PR-grind. Mätt kritisk väg för en kod-PR är **7,4 min**, v
 `Staging (API + E2E)` ensamt bär **375 s** plus mutexkö — det är kodvägen som
 bär allt; docs-klassningen fungerar redan.
 
-**Mintat 2026-07-28:** PRD `TASK-70` med sex skivor `TASK-70.1`–`TASK-70.6`,
-en per post A7:3–A7:8. **A7:1 och A7:2 mintades medvetet inte** — de togs utan
-kort och är klara (§ Avbockningslogg). Korten bär kraven; posterna nedan står
-kvar som index.
+**Mintat 2026-07-28:** PRD `TASK-70`, med en skiva per post A7:3–A7:8
+(`TASK-70.1`–`TASK-70.6`). **Familjens fulla omfattning räknas i backlog, inte
+här** — den har redan växt utöver de sex. **A7:1 och A7:2 mintades medvetet
+inte** — de togs utan kort och är klara (§ Avbockningslogg). Korten bär kraven;
+posterna nedan står kvar som index.
 
 **ORDNINGEN ÄR EN INVARIANT, INTE EN PREFERENS:** steg 4 (post-merge-lagret) är
 förkrav för steg 5–6. Flyttas staging ur grinden innan lagret finns tas en
