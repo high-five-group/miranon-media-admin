@@ -1,10 +1,10 @@
 ---
 id: TASK-59.4
 title: 'Skiva: Personer-ytan till acceptance-klassen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-27 20:41'
-updated_date: '2026-07-27 23:59'
+updated_date: '2026-07-28 00:21'
 labels:
   - ready-for-agent
 dependencies:
