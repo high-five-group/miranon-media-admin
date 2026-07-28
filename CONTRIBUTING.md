@@ -240,7 +240,7 @@ redan är känd OCH fixen är mindre än reverten.
 |---|---|
 | **Marcus** | Beslutar ATT backa. Beslutet behöver inte vänta på att orsaken är utredd. |
 | **Bygg-agent** | Förbereder gren, revert-commit och PR — och **armerar aldrig mergen**, samma kontrakt som i § Landnings-ordningen. |
-| **Orkestreraren** | Armerar mergen, sekvenserar kön och följer CI till grönt. |
+| **Orkestreraren** | Armerar mergen — slår på auto-merge med `gh pr merge --auto --merge`, så PR:n landar av sig själv i det ögonblick CI blir grön — sekvenserar kön och följer CI till grönt. |
 
 Vad brådskan däremot ändrar är **köordningen**: revert-PR:n armeras FÖRST, och
 andra landningsklara PR:er får vänta och uppdateras efteråt. Det är form B i
@@ -381,7 +381,7 @@ verkligt innehåll. Kedjan ligger i **PR #370**:s historik och går att läsa om
 Tre mätningar, alla mot `b9dada7`:
 
 - `git revert b9dada7` (utan flaggan) → **exit 128**,
-  `error: … is a merge but no -m option was given` — kommandot går inte att köra fel av misstag.
+  `error: … is a merge but no -m option was given` — utan flaggan går kommandot inte igenom alls.
 - `git revert -m 2 --no-commit b9dada7` → **exit 0**, noll rader stagade, no-op:en
   kvar i filen. Fel förälder-nummer misslyckas alltså TYST och ser ut att ha lyckats.
 - `git revert -m 1 --no-edit b9dada7` → revert-commit `31c2146`;
