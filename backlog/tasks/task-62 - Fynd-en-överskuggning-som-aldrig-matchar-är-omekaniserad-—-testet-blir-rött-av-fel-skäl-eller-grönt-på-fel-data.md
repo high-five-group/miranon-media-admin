@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 12:47'
-updated_date: '2026-07-28 13:06'
+updated_date: '2026-07-28 14:30'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,6 +36,32 @@ ATT DESIGNA IN: en överskuggning kan legitimt vara oanvänd (registrerad för e
 - [ ] #3 Legitim oanvänd överskuggning kan undantas explicit; undantaget syns i koden
 - [ ] #4 Samtliga 18 befintliga acceptance-filer passerar med vakten på
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+OMDESIGNAD 2026-07-28 efter research-pass — docs/research/oanvand-mock-branschpraxis-2026-07-28.md. Sex ekosystem undersökta, fem med relevant mekanism i källkod. Orkestrerarens ursprungliga hypotes ('oanvänd + adressen trafikerades ändå') är FALSIFIERAD och ska INTE byggas: den missar stavfelet (med EF('get-persosn') trafikeras den adressen aldrig — det var hela felet) och den läser en flagga som är förorenad på modulnivå-delade handlers.
+
+BRANSCHENS FORM: problemet delas i TVÅ mekanismer med olika trigger, inte ett skarpare oanvänd-kriterium. Mockito är enda ekosystemet med båda namngivna och åtskilda (PotentialStubbingProblem = ivrig, UnnecessaryStubbingException = trög). Pact har taxonomin tredelad.
+
+STEG 1 — dela vakten i två. Behåll denna vakt som TRÖG oanvänd-kontroll vid teardown. Lägg till en IVRIG nära-träff-kontroll som äger stavfelsklassen. Motorn finns redan på grenen: narmasteHandler()/levenshteinAvstand() i ef-namnforslag.ts, i dag riktad omatchat anrop -> närmaste handler. Rikta den även åt andra hållet: oanvänd överskuggning -> närmaste anrop testet faktiskt gjorde. Underlaget får INTE hämtas ur isUsed på delade handlers — rätt källa är MSW:s request:match-händelse per test.
+
+Klassning blir tredelad: (a) oanvänd + nära-träff finns = sannolikt felskriven, fäll högt med BÅDA ställena namngivna; (b) oanvänd + ingen nära-träff = sannolikt legitim, fäll milt eller inte alls; (c) anrop utan handler = hermetik-vakten, oförändrad.
+
+STEG 2 — vidga oanvänd-kontrollens scope från TEST till FIL. Aggregera på handler.info.callFrame och rapportera bara deklarationsställen som INGEN test i filen använde. Det är Mockitos getUnusedStubbingsByLocation portad rakt av, och det enda steget som adresserar beforeEach-fallet vid roten.
+
+MÄT FÖRE BYGGE: kör vakten med per-fil-aggregering över de 8 fällande filerna och räkna hur många av de 36 som överlever. Faller siffran mot noll är steg 2 hela lösningen och medvetetOanvand blir ren undantagsventil.
+
+STEG 3 — behåll medvetetOanvand som VENTIL, inte primär dämpare. Formen konvergerar oberoende med Nocks .optionally(), testifys .Maybe() och Mockitos lenient(); kravet på nedskrivet skäl går utöver alla tre. Behövs ventilen på 36 ställen är vakten fel kalibrerad — steg 2 före steg 3.
+
+STEG 4 — felmeddelandets form från Mockito: båda ställena namngivna, det faktiska anropet OCH registreringen som var nära. callFrame gör det möjligt.
+
+AVRÅDS EXPLICIT AV RESEARCHEN: att bygga hypotesen som den var formulerad, och att göra registreringen smalare för att blidka vakten (Mockito avråder uttryckligen).
+
+ÖPPET FYND ATT KÄNNA TILL: isUsed nollställs INTE av resetHandlers() och läcker mellan tester för handler-objekt delade på modulnivå (RequestHandler.js rad 64-73 rör inte flaggan). Vakten på feat/task-62 är redan på rätt sida, men egenskapen är odokumenterad hos MSW och kostar ett fel om vakten vidgas till normalläget.
+
+PR #340 bär det befintliga bygget och är oarmerad. Avgör vid ombyggnad om den byggs om på plats eller ersätts.
+<!-- SECTION:PLAN:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
