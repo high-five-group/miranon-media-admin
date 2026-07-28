@@ -17,6 +17,14 @@ status: stable
 
 **Ja. Det har redan hänt, och det är dokumenterat i repot.**
 
+> **FAKTARÄTTELSE 2026-07-28** — verifierad direkt mot staging-schemat sedan
+> `TASK-68` byggts. Fältet är **inte ett lookup**: `Motivering (text)`
+> (`fld4ENxbma679wvcC`) är en **formula** över **rollupen** `Motivering (från
+> anmälningsformulär)` (`fldIuuv4orI0DyLro`). Symptomet är oförändrat, men
+> åtgärden påverkas — värdet kan inte skrivas på personen, det måste sättas på
+> en länkad Anmälan. Samma fel stod i `TASK-52`-kortet och är rättat där.
+> Ursprungstexten står kvar nedan; läs rutan som facit.
+
 `TASK-52`: Airtables `Motivering (text)` är ett lookup-fält och returnerar en
 **array**. `get-person` skickar det rått, `PersonDetail.schema.ts:44` kräver
 `z.string().nullable()`, zod fäller — och persondetaljen visar felvy för varje
