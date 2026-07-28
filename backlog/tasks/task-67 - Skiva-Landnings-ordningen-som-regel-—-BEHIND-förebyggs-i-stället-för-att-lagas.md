@@ -3,10 +3,10 @@ id: TASK-67
 title: >-
   Skiva: Landnings-ordningen som regel — BEHIND förebyggs i stället för att
   lagas
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 13:06'
-updated_date: '2026-07-28 13:14'
+updated_date: '2026-07-28 13:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -57,10 +57,24 @@ SÖMMEN MOT AGENTFILEN: agentfilens befintliga rad lämnades ORÖRD, och regeln 
 ÖPPEN SVAGHET, EJ ÅTGÄRDAD HÄR: `CONTRIBUTING.md` auto-laddas inte i en Code-session (till skillnad från `CLAUDE.md`). Regelns räckvidd vilar därför på att läsaren öppnar filen. En rad i `CLAUDE.md` som pekar hit hade stängt glappet, men `CLAUDE.md` stod inte i kortets kandidat-lista och lades inte till på eget bevåg.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Regeln landad i CONTRIBUTING.md § Landnings-ordningen (PR #339, mergad 2026-07-28, CI grön per jobb: Detect/Lint+Audit+TypeCheck/Docs link check success, Test suite skipped per docs-klassning).
+
+HEMVIST-VALET: CONTRIBUTING.md ensam. .claude/agents/ valdes bort medvetet — en bygg-agent sekvenserar per definition aldrig kön (bygg-skiva.md föreskriver att den avstår), så regeln hade bott i en fil som inte läses vid det ögonblick AC #4 pekar ut. Dessutom: en kopia där blir en andra hemvist utan paritetsgrind, och .claude/** står inte i ci.yml:s docs-allowlist — en touch hade dragit hela staging-sviten.
+
+AGENTEN LADE TILL EN FJÄRDE FORM som inte fanns i kortet och som är korrekt: update-branch får aldrig köras mot en gren vars bygg-agent fortfarande arbetar, eftersom varje push avbryter grenens pågående körning. Empirin verifierad mot sessionsdok S91 rad 219 (körning 30201694815, 11,9 min, avbruten 12 min in) och rad 3102/3110 (#313 respektive #316 gick BEHIND).
+
+ORKESTRERAREN LADE TILL EN PEKARE I CLAUDE.md (PR #341) efter agentens rapport om ett glapp den avstod från att stänga själv: CONTRIBUTING.md auto-laddas inte i en Code-session, bara CLAUDE.md gör det, så regelns räckvidd vilade på att läsaren öppnade filen. Precedent: § Granskningsdata i staging bär samma motivering av samma skäl.
+
+Regeln tillämpades skarpt samma dag: #339 hölls oarmerad medan TASK-62 byggde (Form A, tyngst först), och landades först när det stod klart att TASK-62 inte skulle öppna PR inom rimlig tid.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
