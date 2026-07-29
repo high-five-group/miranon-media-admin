@@ -15,6 +15,27 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-29, femtonde resumen — STEG 3 STÄNGT, tjugo
+PR:er, fyra research-pass)** — **ÅTTA KORT STÄNGDA:** `TASK-70.6` `72` `75` `76`
+`77` `78` `81` `82`. **TRE MINTADE:** `82` `83` `84`. **EN TRÅD:** `T107`.
+**STEG 3 STÄNGT** — `TASK-75` sänkte PR-grindens kritiska väg **411 s → 57 s**
+(`−86 %`), båda talen CI-mätta och oberoende verifierade. **GRENSKULDEN STÄDAD:
+282 → 17 fjärr, 222 → 17 lokalt** (263 raderade, var och en verifierad som
+förfader till `main` före radering). **BACKLOG-STÄNGNINGEN MEKANISERAD** efter
+att tre kort landat gröna och stått kvar som `To Do` — ny grind, 10 testfall i
+par, skarp körning **21 → 1**; Marcus avvisade baslinje-formen så alla 20
+historiska utreddes individuellt. **TRE AC OMFORMULERADE PÅ EN DAG**, gemensam
+rot: ett AC ska beskriva EGENSKAPEN som ska hålla, aldrig MEKANISMEN som ska bära
+den. **GOVERNANCE-RESEARCHEN FALSIFIERADE VÅR EGEN MODELL:** reversibilitet är
+den MINSTA axeln (9 %) i Claude Codes egen regeluppsättning och svarar fel på
+vårt eget incidentfall; låst-beslut-golvet höll och finns redan hos Anthropic som
+*"manufactured user intent"*. **ÖPPET:** `TASK-36.8` (kräver Marcus) · `T107`
+(CI-wiringen, research-runda) · testgraf-beslutet (rek: bygg miss-rate-mätningen
+först) · grillningen pausad vid fråga 1 · `TASK-79`/`80` väntar på tyst maskin.
+Numrering: 91/083/L360 (**47** fragment)/T108/f46/**task-85**. Full narrativ:
+sessionsdok **Del 25**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-29, femtonde resumen — restlistan mosas med
 tre parallella agenter)** — Marcus kvitterade hela den föreslagna planen och gav
 **autonomt orkestrerings-mandat** (*"du tar över som chef"*). **Ingångsläget

@@ -27,7 +27,9 @@
 > **kroppen bär bara öppna `[ ]`.** Filen dör när alla spår är stängda; den är
 > en arbetsyta, inte en permanent artefakt.
 >
-> **Senast verifierad mot disk: 2026-07-29** (femtonde resumen — kontrollen nedan
+> **Senast verifierad mot disk: 2026-07-29** (femtonde resumen, ANDRA passet — kroppen
+> rensad mot verkligt läge efter dagens åtta kort-stängningar och grenstädningen;
+> kontrollen nedan
 > LAGAD efter att den visat sig ha en blind fläck, och två inaktuella A7-rader
 > rättade som den blinda fläcken dolt. Föregående pass: trettonde resumen — audit
 > med tre läsande agenter plus en mekanisk statuskontroll som fångade två fel
@@ -512,11 +514,6 @@ nedskriven empiri kostar att den måste återupptäckas genom att felet upprepas
 
 ## Spår E — Hygien och skuld
 
-- [ ] **Grenskulden** — mergade fjärrgrenar på origin **och** lokala grenar,
-      samma klass men egen städning vardera. Mätt 2026-07-29: **263 fjärr**,
-      **191 lokala** (2026-07-28 var talen 206/128 — **+28 % resp. +49 % på ett
-      dygn**; skulden växer snabbare än den städas). **Ingen kort-hemvist — posten bor här;** siffrorna är en
-      mätning med datum, inte ett register att kopiera
 - [ ] `save-segment`-läckan — `app-segment-test+<uuid>` saknar target i
       `.purge-staging-policy.json`, städas aldrig
 - [ ] `ZZ-GRANSKNING-S91` lever i staging (ej självstädande):
@@ -532,19 +529,28 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
 
 - [ ] **`TASK-53`** — 429-backoffen väntar 1 s där Airtable kräver 30 s. Enda
       posten i S91 som är en defekt i **produktionskod**
+- [ ] **`TASK-83`** — två curl-hämtade verktyg (`shellcheck`, `actionlint`) är
+      enskild felkälla i det ALLTID-PÅ `lint`-jobbet: `curl -sL` utan `--retry`,
+      ingen cache. Mätt 2026-07-29 på `#430`: exit **35** (`CURLE_SSL_CONNECT_ERROR`)
+      efter **0,13 s** — `sha256sum -c` hann aldrig köra, vilket är diskriminanten
+      mot en supply-chain-signal. Träffar den grind som ALDRIG skippas, alltså
+      även en revert. **`sha256sum`-verifieringen är inte upp för diskussion.**
+      AC #1 kräver att frekvensen MÄTS före form väljs → **`TASK-83`**
+- [ ] **`TASK-84`** — tre lokala staging-vägar går förbi `TASK-77`:s preflight:
+      `purge:staging`, `seed:review`, `test:preview:staging` saknar setup-projekt
+      att haka i. Rapporterat av `TASK-77`:s egen agent, som dokumenterade luckan
+      i `CONTRIBUTING` i stället för att tiga. `purge:staging` är skarpast — en
+      lokal purge mot en pågående CI-purge är exakt `TASK-76`:s race, med en
+      aktör mekanismen inte ser → **`TASK-84`**
+- [ ] **`T107`** (tråd, ej kort) — **backlog-CLI:t är odokumenterat förkrav som
+      CI inte har.** `backlog.md@1.47.1` är globalt installerad på Marcus maskin,
+      varken dependency eller i `node_modules`, nämns i ingen fil. **Blockerar
+      CI-wiringen av `scripts/check-backlog-closure.sh`** (byggd, 10/10 tester,
+      shellcheck 0/0/0/0, körd skarpt 21→1 — men ej wirad). Marcus 2026-07-29:
+      *"Det är inte mitt beslut. Det är ett beslut vi ska ta efter research-runda
+      och utforskning."* Fyra former att utforska, se tråd-registret
 - [ ] **`TASK-56`** — WebSocket-vägen går förbi hermetik-vakten. Latent tills
       appen får realtime; den enda kvarvarande vägen ut ur fixturvärlden
-- [ ] **`TASK-77`** — `staging-tests`-mutexen binder bara CI; lokala
-      `test:api:staging` / `test:e2e:staging` / `vakt:kontrakt` går rakt förbi
-      den mot samma bas. Verifierat 2026-07-29: strängen finns **inte** i
-      `package.json` eller `scripts/*.mjs` — ingen mekanism, bara en outtalad
-      konvention. **Funnen 2026-07-29 av `TASK-70.3`:s agent, som bröt regeln
-      TVÅ gånger under ETT pass — andra gången med full kännedom om den.** Det
-      är kortets bärande argument: en regel som inte efterlevs av den som känner
-      till den saknar mekanism (samma slutsatsform som gjorde merge queue till
-      svaret på landnings-ordningen). Angränsar `TASK-76` men är en ANNAN
-      mekanism — `76` är CI mot CI, detta är CI mot lokalt, och `76`:s fix gör
-      inte detta ofarligt
 - [ ] **`TASK-79`** — `hem:1097`: byte-identisk skärmdump efter dubbel-rAF.
       **Fjärde flake-formen**, och den ENDA klass-B-liknande som CI faktiskt
       fäller på efter klass A (1/14 jobb efter mot 6/14 före). Så länge den
@@ -555,93 +561,6 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       orsak till `TASK-74`:s B3** (test-budget vid mättnad) — vi betalar CPU för
       diagnostik av ett fel betalningen bidrar till. Rek. `on-first-retry`, men
       ska prövas mot vad diagnostiken förlorar
-- [ ] **`TASK-82`** — två av femton guard-testsviter körs av **inget** CI-jobb:
-      `test-purge-staging-sentinels.mjs` och `test-seed-review-fixture.mjs`.
-      Blev bärande 2026-07-29 när `TASK-76` lade sin **fail-open-vakt** i den
-      förstnämnda. Purge-koden har därmed noll automatisk täckning på PR-nivå —
-      varken sitt jobb (`run_staging: false` sedan `TASK-70.3`) eller sin svit.
-      Mönstret finns redan (`nightly.yml` kör `test-ci-metrics.mjs`, och
-      `TASK-81` lade `test-flake-matserie.mjs` på samma ställe) — det är en
-      utelämnad rad, inte ett designval → **`TASK-82`**
-- [ ] **`TASK-78`** — merge queue bryter `TASK-73`:s ärvda klassning **i
-      post-merge**: kön bygger posten mot `main`s aktuella spets, så
-      merge-commitens träd avviker från PR-headens och klassningen fail-closar
-      till full svit. Mätt 2026-07-29: `d9f095b` (först i kön) träd `373455a` ==
-      `373455a` → skipped · `934188e` (andra) `89000ee` ≠ `ce04838` → full svit.
-      **VILLKORET SKÄRPT 2026-07-29 (femtonde resumen), tredje datapunkten:**
-      `#423` låg **ensam** i kön och träden avvek ändå (`c89df4b` ≠ `efc0154`)
-      → full svit trots att PR-grinden skippat den (run `30437803614`).
-      Villkoret är alltså inte *"inte först i kön"* utan **"`main` har rört sig
-      sedan PR-headen skrevs"** — normalfallet i ett aktivt repo, inte ett
-      specialfall. Kostnaden är därmed högre än kortet först antog.
-      **PR-grinden och kö-ytan är ORÖRDA** — båda klassade rätt; enbart
-      efterkontrollen på `main` blir dyrare. Interaktion mellan två korrekta
-      skivor som landade samma dag, inget fel i någon av dem. Förstärker
-      `TASK-76`: fler staging-körningar i post-merge = fler
-      purge-race-tillfällen
-
-## Fynd-kedjans ordning — klassad och sekvenserad 2026-07-28
-
-Marcus order: *"Relaterar task-63-66 och task-69 till det arbete vi gör här så
-ska alla klassas och tas itu med, i rätt ordning."*
-
-**Relationen är bekräftad, inte antagen.** Fem av de sex korten är direkta fynd
-ur `TASK-59.8`:s QA-vandring av acceptance-klassen; det sjätte (`TASK-69`) är
-nästa lager i den kontraktsdrifts-kedja som `TASK-68` just stängde lager 1 av.
-Alla sex rör samma yta — acceptance-klassen och de grindar som ska bevaka den.
-
-**Klassningen:** samtliga fem oetiketterade kort (`63`, `64`, `65`, `66`, `69`)
-fick **`ready-for-agent`**. Etikett-rymden i repot är binär; fördelningen räknas
-i backlog vid behov och citeras inte här. Kriteriet är att posten kräver
-**Marcus** omdöme, inte dess dokumentklass — inget av de fem gör det. Till
-skillnad från `TASK-56`–`58`-klassningen behövde inga AC skrivas: alla fem bar
-redan acceptanskriterier.
-
-| # | Kort | Varför här | Dep (kodad) |
-|---|---|---|---|
-| 1 | **`TASK-62`** | Marcus kvitterade ingång. Mätning FÖRE bygge. Är dessutom mätinstrument för `64` och delar fil med `66` — den blockerar två andra kort och måste därför gå först | — |
-| 2 | **`TASK-69`** | Kontraktsdriftens **lager 2**. Förkravet (`TASK-68`) är uppfyllt. Egen yta (`kontraktsjamforelse.ts`) — stör inget annat kort | `TASK-68` ✓ |
-| 3 | **`TASK-65`** | Kirurgisk och räknad ur källan (9800 ms konstruerat värsta fall mot 12 s tak). Tar bort en **känd** marginal-brist ur brusrymden innan `64` mäter bruset | — |
-| 4 | **`TASK-66`** | Skriver ner tidsregeln i sömmen. Väntar på `62` (samma fil, `acceptance-bas.ts`) och läses bäst efter `65` — då är räkningen tillämpad, inte bara beskriven | `TASK-62` |
-| 5 | **`TASK-64`** | Diagnosen. Vill ha `62`:s vakt som instrument och `65`:s kända brist undanröjd först. **Allvarligast av de fem** — rör signalens trovärdighet | `TASK-62` |
-| 6 | **`TASK-63`** | Bredast (18 filer), kräver pilot på EN fil först. Sist för att inte konflikta med `64`/`65`, som rör samma filer på andra rader | — |
-
-**Deps är kodade bara där beroendet är ÄKTA.** `66→62` (fil-kollision) och
-`64→62` (mätinstrument) är tekniska låsningar; `69→68` är förkravet kortet
-själv skriver ut. `63` och `65` fick **ingen** dep — deras plats i ordningen är
-schemaläggning, inte beroende, och en falsk dep hade blivit skuld som ser ut
-som en invariant.
-
-**`TASK-64` är klassad `ready-for-agent` men ska INTE spawnas som skiva** —
-den tas som diagnos under orkestrerarens egen hand, eftersom orsaken inte är
-lokaliserad och en bygg-agent på ett odiagnostiserat race bygger fel sak.
-Anvisningen är skriven i kortets egen plan, inte bara här, så den följer med
-kortet när det plockas isolerat. Samma sak för `63`:s pilot-krav.
-
-**Två förkastanden registrerade EXPLICIT** (ADR-053: registrera, förkasta aldrig
-tyst — mekanismen står här även när räkningen bor någon annanstans):
-
-1. **Vaktens *"Menade du"*-träff** pekade på `get-person` när `get-persons`
-   saknades — en ÄKTA annan EF, inte en felstavning. Tröskeln är lånad och
-   källbelagd; utvecklaren har full information. Räkningen: sessionsdok Del 17
-   § Fynd.
-2. **Uppdelning av `api-staging` efter data-beroende** (Marcus fråga 2026-07-28:
-   *"Har vi sett till att vi ENDAST gör det när vi måste?"*). Observationen är
-   korrekt i sak — minst 23 tester avvisas av EF:en innan Airtable nås — men
-   **förkastas på proportion:** api-steget är ~12 % av ett staging-jobb, så en
-   uppdelning sparar sekunder och kostar en permanent klassgräns att underhålla.
-   Över-engineering-vakten skär den. Räkningen: sessionsdok Del 18.
-   **Den riktiga vägen är en annan:** mutexen avvecklas inte genom att flytta
-   fler tester ut ur den, utan genom att göra den onödig — se
-   [`T85` § Våg 3](threads/T85-riskanpassad-ci.md), där riktningen dessutom
-   korrigerades 2026-07-28. **Rör inte posten igen** utan att först läsa `P4`:s
-   andra manifestation: 5 req/s-taket är delat per bas, så parallellitet är
-   verkningslös även med perfekt isolering. Noteras just för att den annars
-   återkommer som en "ny idé" — 23 tester bakom en mutex de inte behöver ser
-   fel ut för den som inte räknat andelen.
-
-## Beslut som väntar på Marcus
-
 - [ ] `--mm-btn-*` eller `--mm-button-*`? Nio tokens i `semantic.css` mot 48
       `--mm-button-*` i `components.css`. **RÄTTAT 2026-07-29 — de nio är INTE
       oanvända**, vilket posten påstod till i dag och som ramade in beslutet som
@@ -864,6 +783,11 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-29 | Tillstånds-återställningen (resume 15) + **kontrollens blinda fläck LAGAD.** Kontrollen matchade kort-ID:t först på raden; A7-raderna bär det sist, så hela A7-klassen var osynlig. Tre fel låg och väntade: `A7:3`, `A7:5` öppna trots Done, och `A7:6` avbockad i kroppen i strid med filens egen regel. Nya formen tvåsidigt bevisad FÖRE den skrevs in (tre FEL mot `02a9517`, tomt mot rättad, ingen falsk positiv på `A7:10`:s Done-beroende). § Filens egna fel post 8 | `#418` |
 | 2026-07-29 | **`TASK-70.6` DONE — `delete_branch_on_merge` (A7:8).** Tagen under orkestrerarens egen hand: skivan ändrar noll filer, och `ready-for-agent` betyder *kräver inte Marcus omdöme*, inte *ska spawnas som skiva* (precedent `TASK-64`). **AC #2 bevisad med KONTRASTGRUPP:** `#418`:s gren borta efter merge, medan `#417`:s gren från före inställningen ligger kvar på `b5b2bed`. Grannvärdena verifierade oförändrade före/efter. **De 263 redan ackumulerade grenarna raderas INTE** — retroaktiv städning är Marcus beslut | inställning, ingen fil |
 | 2026-07-29 | **`CONTRIBUTING.md` rad 95 rättad** — pekade på `ci.yml` `test-staging`; jobbet bor i `ci-suite.yml` sedan S79:s reusable-extraktion (verifierat mot workflow-filerna, inte mot posten). Registrerad av `TASK-70.4`:s agent som medvetet lät bli att laga den | `#422` |
+| 2026-07-29 | **`TASK-77` DONE — staging-preflighten (resurskrocken).** Form (b) fail-closed preflight i den BEFINTLIGA semaforen; ingen ny sanningskälla — GitHub Actions är redan auktoritet på sitt eget körningsläge. Wiringen i Playwrights setup-projekt, INTE `package.json` (täcker även rå `--project`-anrop). AC #1 bevisat mot äkta post-merge `30443445340`: lokal körning i purge-fönstret gav `NPM_EXIT=1`, `172 did not run`. Ärlig gräns skriven i CONTRIBUTING: kontroll vid START, inte hållet lås. Tre otäckta ytor → **`TASK-84`** | `#435` |
+| 2026-07-29 | **`TASK-78` DONE — kö-körningens klassning ärvs via SHA-IDENTITET.** Kön kör `ci.yml` med `event=merge_group` på EXAKT den commit som landar (verifierat: `30438569547` headSha == `58a1a10` == `#423`:s merge-commit). Den gamla vägen måste BEVISA med träd-jämförelse; VÄG A har det gratis. **Villkoret skärpt: 6 av 14 landningar vänder `false`→`true`, 0 tillbaka.** Bevisat EFTER landning under kötryck: post-merge `30445111977` skrev `docs_only=true`, sviten **skipped** | `#433` |
+| 2026-07-29 | **`TASK-82` DONE — de två owirade guard-sviterna wirade.** Hemvisten MÄTTES (båda kördes utan secrets och med `fetch` överskriven till throw → exit 0 ×4), inte antogs. Tvåsidigt bevis med run-ID per svit: `30442765425` RÖTT (purge-vakt inverterad) · `30443253072` RÖTT (seed-guard inverterad) · `30443850689` GRÖNT. **Kortet bar ett faktafel orkestreraren skrivit** — `test-classify-post-merge.sh` är wirad i EN workflow, inte två; `post-merge.yml:101` är en kommentar. En namn-grep räknar omnämnanden som wiring | `#432` |
+| 2026-07-29 | **GRENSKULDEN STÄDAD — 282 → 17 fjärr, 222 → 17 lokalt.** 263 mergade fjärrgrenar raderade, var och en maskinellt verifierad som förfader till `main` FÖRE radering med stopp om någon fallerade. Lokalt `git branch -d` (inte `-D`) — sex vägrades av git själv, utcheckade i levande worktrees; säkerheten låg i verktyget, inte i listan. **De sex omergade `proto/`-grenarna orörda.** Ingen återkommande mekanism byggd: `delete_branch_on_merge` täcker framtiden, en cron för ett engångsproblem vore spekulativ komplexitet | inställning + engångsoperation |
+| 2026-07-29 | **BACKLOG-STÄNGNINGEN MEKANISERAD + hela drift-skulden städad.** `scripts/check-backlog-closure.sh` + config + 10 testfall i PAR. Två fällande invarianter, fail-closed (noll kort ⇒ exit 2). Skarp körning **21 → 1**. Marcus avvisade baslinje-formen, så alla 20 historiska utreddes individuellt — sex med obockade AC visade sig lösta i sak, två sade det redan själva. **Standarden: en obockad ruta på ett stängt kort är tvetydig för alltid; en bockad ruta med skrivet skäl är entydig.** CI-wiringen blockerad av **`T107`** | `#440` |
 | 2026-07-29 | **`TASK-75` DONE — urval i acceptance-sviten (A7:10). STEG 3 STÄNGT.** Kritisk väg **411 s → 57 s** (`−86 %`), båda talen mätta i CI (`30438285427` / `30440413603`) — inget lokalt tal jämfört mot ett CI-tal. Kontrastbevis i båda riktningar. Urvalet är fail-closed per klass (`T5`–`T12`): en giltig spec räcker INTE om sällskapet är kod. **AC #4 omformulerat** — det beskrev en design vi inte byggde; agenten vägrade konstruera ett artificiellt hål för att kunna bocka det, vilket var rätt. Playwrights `--only-changed` förkastad EMPIRISKT (`0 tests in 0 files`) | `#424` · `#430` |
 | 2026-07-29 | **`TASK-81` DONE — mätriggen är ett verktyg, `npm run metrics:flake`.** Riggen HÄMTAD ur `TASK-74`-agentens scratchpad, ej omskriven ur minnet. Interfolieringen är KODAD (`byggPlan()` enda vägen till en plan), loadavg skiljer OKÄND från noll, 918 rådata-rader, ingen tröskel kodad. 25 testfall, fällande bevisad med fyra mutationer. **AC #4 stängt av orkestreraren mot agentens medvetna öppna-lämning** — kriteriet bar två skyldigheter med olika ägare; konsumentens halva överlämnad i skrift till `TASK-79`. Riggens hemvist + n-reservationen inskrivna i `CLAUDE.md` | `#420` · `#426` |
 | 2026-07-29 | **`TASK-76` DONE — purge-idempotensen.** Form (a) skript-fix; mutex-formen förkastad på tre grunder (täcker ej CI↔lokal · river medvetet designval `L348` · serialiserar). Klassificeraren fail-closed i FEM led och korsläser rec-ID:t mot batchen vi bad om. **AC #4 stängt på rationale: ytan finns inte längre** — kod-PR:er kör inte purge sedan `TASK-70.3` (verifierat i källan). Avsikten bevisad av ett STARKARE test: äkta race mot skarpa API:t, B förlorade alla fyra poster och överlevde. Fyra gröna post-fix-purger i CI | `#421` · `#427` |
