@@ -3,10 +3,10 @@ id: TASK-75
 title: >-
   Skiva: Urval i acceptance-sviten — kör den delmängd diffen rör, efter att
   staging lämnat PR-grinden
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 21:52'
-updated_date: '2026-07-29 09:41'
+updated_date: '2026-07-29 10:25'
 labels:
   - ready-for-agent
 dependencies:
@@ -56,7 +56,7 @@ Post-merge-lagret är dessutom skyddsnätet: efter A7:5 kör det full svit på m
 - [x] #1 Urvalsmekanismen är en ALLOWLIST, aldrig blocklist — vid minsta osäkerhet faller körningen till full svit; formen motiverad mot ci.yml:s D1-klass som precedent
 - [x] #2 Kritisk väg för en kod-PR mätt före och efter, båda talen redovisade i PR-texten
 - [x] #3 Kontrastbevis: en PR som rör EN acceptance-fil kör den delmängden — run-ID redovisat; en PR som rör delad kod kör full svit — run-ID redovisat
-- [ ] #4 Falsk-grön-risken prövad skarpt: en plantad regression i en fil som urvalet hoppar över fångas av post-merge-lagret — run-ID redovisat
+- [x] #4 Falsk-grön-risken prövad skarpt: en plantad regression i en fil som urvalet hoppar över fångas av post-merge-lagret — run-ID redovisat
 - [x] #5 Retry-tunga tester lämnade orörda: ingen timeout kortas och ingen retry-kedja trimmas för att vinna tid (det vore att testa något annat än appen)
 <!-- AC:END -->
 
@@ -102,12 +102,56 @@ ADR-077 § Beslut 1 deferar, och som är ett arkitekturbeslut för Marcus.
 SKYDDSNÄTET: post-merge.yml och nightly.yml skickar ingen input och kör hela
 klassen. scripts/test-acceptance-urval.sh T15f grindar att defaulten förblir
 tom sträng.
+
+AC #4 OMFORMULERAT AV ORKESTRERAREN 2026-07-29 (femtonde resumen), på Marcus godkännande av det föreslagna. Agenten lämnade det obockat och vägrade uttryckligen konstruera ett artificiellt hål för att kunna bocka rutan. Den vägran var RÄTT och är skälet till att kriteriet granskades i stället för att kringgås.
+
+ORIGINALTEXTEN STÅR KVAR OVAN MED FLIT. Att radera den hade dolt att vi skrev fel kriterium — och just det är lärdomen värd att behålla.
+
+### VARFÖR PREMISSEN INTE FINNS I DEN BYGGDA DESIGNEN
+
+Kriteriet lyder: "en plantad regression i en fil som urvalet HOPPAR ÖVER fångas av post-merge-lagret". Det förutsätter ett urval som KAN missa. Denna design har ingen sådan lucka, och det är verifierat i källan av orkestreraren — inte övertaget ur agentens rapport:
+
+`scripts/acceptance-urval.sh` rad 154-155: så snart NÅGON post utanför D0-klassen inte matchar spec-mönstret töms urvalet och körningen faller till full klass. Rad 96 slår dessutom fast att `tests/acceptance/support/` — sömmen — också faller till full klass.
+
+Konsekvensen är att en plantad regression bara kan hamna på två ställen:
+(a) i en ÄNDRAD spec-fil — den väljs alltid, per konstruktion;
+(b) i vad som helst annat — vilket gör urvalet tomt och kör hela klassen.
+
+En icke-ändrad spec-fil kan per definition inte bära en NY regression. Det finns alltså ingen tredje plats att plantera på. Kriteriet är inte svårt att uppfylla; det är otillämpligt.
+
+### VAD KRITERIET BORDE HA LYTT — OCH DET ÄR REDAN BEVISAT
+
+Rätt fråga för denna design är inte "fångas det urvalet missar?" utan "kan urvalet falla ut när det inte borde?". Alltså fail-closed-egenskapen, per klass.
+
+`scripts/test-acceptance-urval.sh` bevisar exakt det, klass för klass:
+  T5  källfil                    -> full klass
+  T6  sömmen support/            -> full klass
+  T7  giltig spec + källfil      -> full klass   (den bärande: en spec RÄCKER INTE om sällskapet är kod)
+  T8  sökvägs-traversal          -> full klass
+  T9  fel suffix                 -> full klass
+  T10 nästlad spec               -> full klass
+  T11 spec saknas på disk        -> full klass
+  T12 workflow-fil               -> full klass
+  T3/T4 enbart spec-filer        -> urval
+Plus T15f som grindar defaulten. 22 av 22 gröna, och fällning bevisad i andra riktningen med tre mutationsprov.
+
+Skyddsnätet AC #4 åberopar finns dessutom kvar oberoende av allt detta: post-merge kör full klass på varje mergat träd, och `post-merge.yml` skickar medvetet ingen `acceptance_selection`.
+
+### TREDJE GÅNGEN SAMMA ROT PÅ EN DAG
+
+`TASK-76`:s AC #4 namngav en CI-yta som en senare skiva flyttade. `TASK-81`:s AC #4 lade en skyldighet på ett kort som inte ägde den. Detta AC beskriver en design vi inte byggde.
+
+Gemensam rot: **kriteriet skrevs mot en föreställning om lösningen, innan lösningen fanns.** Det är inte ett fel i något av korten — det är en egenskap hos att skriva AC före design. Formregeln som faller ut: **ett AC ska beskriva den EGENSKAP som ska hålla, aldrig den mekanism som ska bära den.** "Urvalet kan inte falla ut för en icke-spec-diff" åldras inte; "en plantad regression i en överhoppad fil" gör det.
+
+### FÖRBEHÅLL SOM SKA FÖLJA MED VIDARE
+
+Talen 411 s -> 57 s gäller den KLASS-LOKALA diffen, inte varje kod-PR: en `src/**`-PR faller till full klass och betalar fortfarande ~411 s. Cirka 40 av de 57 sekunderna är fast uppstart. Agenten valde `mer-vantelista` (6 tester) mot klassens median 7, spann 3-28 — medvetet inte den smickrande ytterligheten.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
