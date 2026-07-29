@@ -6,15 +6,43 @@ on:
     branches: [main]
   push:
     branches: [main]
+  # MERGE QUEUE (A7:3 / TASK-70.1). GitHub är kategorisk: "You MUST use the
+  # `merge_group` event to trigger your GitHub Actions workflow when a pull
+  # request is added to a merge queue" — utan den startar de required checkarna
+  # ALDRIG på kö-ytan, och mergen failar på en check som aldrig rapporteras.
+  #
+  # `checks_requested` är i skrivande stund den ENDA aktivitetstypen eventet
+  # har. Den skrivs ändå ut: en tom `merge_group:` är ekvivalent i dag men
+  # tyst om vad den lyssnar på, och en framtida andra typ skulle då tas in
+  # utan beslut.
+  #
+  # Check-NAMNET måste vara identiskt på båda ytorna, annars matchar rulesetets
+  # required check inte kö-körningen. Vi rapporterar `CI Passed or Skipped`
+  # från samma aggregator-jobb oavsett event — se jobbet längst ned.
+  merge_group:
+    types: [checks_requested]
+    branches: [main]
 
 # Security hardening: least-privilege default per ADR-029 §4.
 # GITHUB_TOKEN får endast contents:read via explicit grant i jobs.
 permissions: {}
 
 # Auto-cancel in-progress runs på samma branch/PR per ADR-029 §4.
+#
+# MERGE QUEUE-SKYDDET (TASK-70.1) — cancel-in-progress är AVSTÄNGT för
+# `merge_group`, och det är inte en detalj. Att avbryta en kö-körning gör att
+# dess required check aldrig rapporteras, PR:en faller ur kön, och i värsta
+# fall fälls hela kön. Det är en dokumenterad merge queue-fälla
+# (community-discussion #137976), inte en teoretisk risk.
+#
+# Nyckeln bär `merge_group.head_sha` EXPLICIT. Utan den raden hade uttrycket
+# fallit till `github.sha`, som råkar vara unik per merge group — alltså rätt
+# beteende av en slump, buret av att `event.number` är tom på kö-ytan. Ett
+# skydd ingen skrivit medvetet är ett skydd nästa refaktor tar bort utan att
+# veta om det.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.number || github.event.merge_group.head_sha || github.sha }}
+  cancel-in-progress: ${{ github.event_name != 'merge_group' }}
 
 jobs:
   # Job 1: Detect changed files — sets should_skip_tests + docs_changed
