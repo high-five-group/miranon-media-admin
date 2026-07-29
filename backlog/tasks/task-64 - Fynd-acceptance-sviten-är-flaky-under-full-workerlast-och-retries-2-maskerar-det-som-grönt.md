@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-28 12:48'
-updated_date: '2026-07-28 20:32'
+updated_date: '2026-07-29 00:57'
 labels:
   - ready-for-agent
 dependencies:
@@ -199,6 +199,18 @@ EJ REPRODUCERAT LOKALT, EJ UTJÄMNAT: event-ny-anmalan:641 föll aldrig i 16 lok
 KLASS B ÄR BREDARE ÄN KORTETS TRE POSTER och stängs INTE av denna skiva — se eget kort. person-detail:137 var 2/8 både före och efter (oförändrad); hem:423 och mer-intresserade:95 föll inte alls i 16 körningar; men efter-serien exponerade fyra tester i samma last-känsliga klass som inte står på kortet: mer-segment-send:110, persons-list:95, event-narvaro:193 (axe), event-anteckningar:333 (axe). Varning från agenten: körtiden drev 107 -> 173 s genom efter-serien, så klass B-raten där kan vara uppblåst av stigande maskinlast och ska inte jämföras rakt av.
 
 FEMTE FÖREKOMSTEN, SCOPE-BESLUT EJ AGENTENS: events-list-kalender.acceptance.test.ts:518 bär samma form (getAttribute + icke-retryande toMatch). Lägre risk, ej rörd.
+
+DIAGNOSEN DELVIS FALSIFIERAD 2026-07-29 av TASK-74:s mätning — kortet förblir Done, fixen står, men SKÄLET var delvis fel.
+
+Kortet tillskrev flakigheten mönstret 'icke-auto-väntande query följd av icke-retrying assertion', med fokus-assertionen som bärare. TASK-74:s baslinje (10 körningar, --workers=8 --retries=0, 1530 testresultat) visar att den bilden inte håller för klass B, och en observation träffar klass A direkt:
+
+person-detail:140 föll på RAD 149 — sex rader FÖRE den data-grind T26 lade in mot exakt den flakighet detta kort tillskrev fokus-assertionen. Fällningen sker alltså på 'await expect(heading).toBeVisible()', innan grinden, inte på fokus-assertionen efter den.
+
+KONSEKVENSEN: grinden vaktar rätt sak av fel skäl. Den skyddar fokus-assertionen mot ett fel som uppstår innan den nås. Fixen mätte 3/8 -> 0/8 och det talet står — men den som läser kortet för att förstå MEKANISMEN får en felaktig modell, och skulle applicera samma mönster-jakt på nästa flake utan att träffa.
+
+Den sannolika verkliga mekanismen bärs av TASK-74:s B1: page.goto() returnerar innan route-chunken hämtats, så första testet i en fil möter en kall chunk och äter av expect-budgeten. 95 av 156 goto-anrop har den formen; först startade test i en fil är långsammare än medianen i 144 av 180 fil-körningar, median +1 643 ms.
+
+Kortet stängs INTE upp igen: åtgärden är riktig och mätt, och klass B har egen bärare i TASK-74. Noteringen står här för att en stängd diagnos som är fel är farligare än en öppen fråga — den ärvs utan att prövas.
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
