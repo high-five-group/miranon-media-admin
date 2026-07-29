@@ -27,7 +27,15 @@
 > **kroppen bär bara öppna `[ ]`.** Filen dör när alla spår är stängda; den är
 > en arbetsyta, inte en permanent artefakt.
 >
-> **Senast verifierad mot disk: 2026-07-29** (sextonde resumen, TREDJE passet —
+> **Senast verifierad mot disk: 2026-07-29** (sextonde resumen, FJÄRDE passet —
+> **de fem bärarlösa posterna placerade** på Marcus delegering: `TASK-83` + `T107`
+> i steg 4b, `TASK-84` + `T108` + `T109` i steg 5; skälen i noten under kartan.
+> `T109` saknades helt i § Kort födda i S91 och är tillagd. **Kontroll 2 utökad
+> till att räkna trådar** — den var blind för `T107`/`T108`/`T109`, alltså tre av
+> de fem poster den skulle ha fångat. Trefaldigt bevisad: ren när allt är
+> placerat, fäller när ett KORT tas ur kartan, fäller när en TRÅD tas ur den.
+> Trådregistrets tabell lagad: `T74`/`T73` och `T79`/`T78` stod i omkastad
+> ordning. TREDJE passet —
 > **kontroll 2 byggd och tvåsidigt bevisad** efter att ha stått som en kommentar
 > utan kod sedan kartan skrevs; loggens tabell lagad — den var splittrad i SJU
 > fragment av tabellbrytande tomrader, och endast det första hade rubrikrad;
@@ -88,10 +96,17 @@
 > # loopen kör ETT varv med hela listan som en sträng och kontrollen blir TYST
 > # GRÖN. Fällan bet tre gånger under S91 (Del 25.11 punkt 3, samt denna
 > # kontrolls första utkast). `while IFS= read -r` kör i båda skalen.
+> #
+> # TRÅDAR RÄKNAS MED. Sektionen bär både kort och trådar ("(tråd, ej kort)"),
+> # och trådarna driftar likadant — T107/T108/T109 var alla bärarlösa 2026-07-29.
+> # Kartan bär redan trådar i steg 6 (T85, T87), så formen är etablerad.
+> # En tråd är aldrig "Done" i kort-registret; DONE-filtret nedan träffar den
+> # därför aldrig, vilket är rätt — trådens stängning bor i threads/README.md.
+> MONSTER='\*\*`(TASK-[0-9.]+|T[0-9]+)`'
 > FODDA=$(awk '/^## Kort födda i S91/{f=1;next} /^## /{f=0} f' tasks/s91-restlistan.md \
->   | grep -oE '\*\*`TASK-[0-9.]+`' | grep -oE 'TASK-[0-9.]+' | sort -u)
+>   | grep -oE "${MONSTER}" | grep -oE '(TASK-[0-9.]+|T[0-9]+)' | sort -u)
 > KARTAN=$(sed -n '/^| # | Steg | Bärare | Pekare |/,/^$/p' tasks/s91-restlistan.md \
->   | grep -oE 'TASK-[0-9.]+' | sort -u)
+>   | grep -oE '(TASK-[0-9.]+|T[0-9]+)' | sort -u)
 >
 > comm -23 <(printf '%s\n' "${FODDA}") <(printf '%s\n' "${KARTAN}") | grep -v '^$' \
 >   | while IFS= read -r id; do
@@ -157,8 +172,8 @@ tematiska; sekvensen över spårgränserna fanns ingenstans.
 | **2** | Skyddsnätet byggs | `TASK-70.2` · `TASK-70.5` | § A7 (A7:4, A7:7) |
 | **3** | Flytten och kön — väntetiden faller | `TASK-75` · `TASK-76` · `TASK-78` | § A7 (A7:10) · § Kort födda i S91 |
 | **4** | Landnings-hygien | `TASK-70.6` | § A7 (A7:8) |
-| **4b** | Verktygsskulden | A3 ×1 · A3b ×2 · A2:9 | § A3 · § A3b · § A2 |
-| **5** | Aktörerna slutar krocka | A2:7 · A2:8 · A2:11 · `TASK-77` · Spår B | § A2 · § Spår B · § Kort födda i S91 |
+| **4b** | Verktygsskulden | A3 ×1 · A3b ×2 · A2:9 · `TASK-83` · `T107` | § A3 · § A3b · § A2 · § Kort födda i S91 |
+| **5** | Aktörerna slutar krocka | A2:7 · A2:8 · A2:11 · `TASK-77` · `TASK-84` · `T108` · `T109` · Spår B | § A2 · § Spår B · § Kort födda i S91 |
 | **6** | Kvar utanför räckhåll | `T85` våg 3 · `T87` · `TASK-70.7` | § A6 · § A7 (A7:9) |
 | **6b** | Skulden betalas | A2:10 → Spår C ×2 · Spår E ×3 | § Spår C · § Spår E · § A2 |
 | **7** | Appen | `TASK-53` · `TASK-56` · hållplats-grillningen · `TASK-18.20` · de tre app-besluten · resten | § Spår D · § Kort födda i S91 · § Beslut |
@@ -177,6 +192,29 @@ rad 31 säger att registret vinner. Skälet är starkt men är ett val: efter `7
 enda kortet i spåret som tar bort ett *mänskligt* seriellt moment i stället för
 maskintid. Marcus flyttade kortet till steg 3 den 2026-07-29; skälen i sin helhet
 bor i **`TASK-70.1`** och i sessionsdok S91 **Del 21.5**.
+
+**PLACERINGEN AV DE FEM BÄRARLÖSA POSTERNA** (2026-07-29, Marcus-delegerad:
+*"Vi kan ju inte ha massa saker utan plats"*). De föll i två familjer, och
+familjen — inte födelsedatumet — avgjorde steget:
+
+- **Steg 4b, verktygsförsörjning:** `TASK-83` (`shellcheck`/`actionlint` hämtas
+  med `curl` utan `--retry` i den grind som ALDRIG skippas — exit 35 mätt i
+  `#430`, `sha256sum` hann aldrig köra, så det är nätverk och inte
+  leverantörskedja) och `T107` (backlog-CLI:t odeklarerat förkrav). Båda är
+  samma sak: **ett verktyg vars tillgänglighet inte är säkrad.** De hör ihop
+  med A3:s listparitets-grind och A3b:s verktygsvals-krav.
+- **Steg 5, aktörs-koordinering:** `TASK-84` (tre lokala staging-vägar går förbi
+  `TASK-77`:s preflight — och `TASK-77` bor redan i detta steg, så kortet är
+  dess otäckta yta), `T108` (notifieringar som aldrig kommer) och `T109` (två
+  aktörer i samma sessionsdok). Alla tre är **samma fråga ur olika håll: vad
+  händer när mer än en aktör rör samma yta.** De hör ihop med A2:7:s
+  partitionerings-regel, som `T109` uttryckligen anger som släkting.
+
+`TASK-83` övervägdes för steg 1, eftersom ett falskt rött i en alltid-på grind
+gör signalen otrovärdig. Det förkastades: steg 1 är flake-karaktäriseringen av
+SVITEN, och dess invariant handlar om att post-merge-larm ska betyda något. En
+opålitlig verktygsnedladdning är verktygsskuld, inte svit-flakighet — att lägga
+den i steg 1 hade suddat ut vad steget mäter.
 
 **Steg 6 stängs inte av denna lista.** `T85` våg 3 väntar på Fas E, `T87` på
 Marcus trigger, `TASK-70.7` kan stängas av sitt eget steg 0. De står kvar som
@@ -586,6 +624,16 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       shellcheck 0/0/0/0, körd skarpt 21→1 — men ej wirad). Marcus 2026-07-29:
       *"Det är inte mitt beslut. Det är ett beslut vi ska ta efter research-runda
       och utforskning."* Fyra former att utforska, se tråd-registret
+
+- [ ] **`T109`** (tråd, ej kort) — **kan två aktörer arbeta i samma sessionsdok?**
+      Marcus fråga 2026-07-29. Det kördes skarpt samma dag och fungerade — men
+      bara för att partitionen sattes för hand. **Fyra strukturella hinder,
+      verifierade mot disk:** `lifecycle:` bär ETT värde · grindens paus-markör
+      är prefix-förankrad · Del-numreringen antar EN berättare · paus/resume-verben
+      antar en aktör. Femte instansen hittades vid själva registreringen: `#446`
+      och `#447` redigerar samma kortfil och `#447` står `CONFLICTING` med
+      auto-merge armerad. Besläktad `A2:7` + `T108`, se tråd-registret
+
 - [ ] **`TASK-79`** — `hem:1097`: byte-identisk skärmdump efter dubbel-rAF.
       **Fjärde flake-formen**, och den ENDA klass-B-liknande som CI faktiskt
       fäller på efter klass A (1/14 jobb efter mot 6/14 före). Så länge den
