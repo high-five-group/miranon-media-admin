@@ -350,6 +350,12 @@ export default defineConfig({
         // diagnostik för Landning B (flaky-repro) utan att spara på varje run.
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
+        // Samma form och samma skäl som acceptance-projektet nedan — motiveringen
+        // i sin helhet (TASK-80: mätt egenlast, falsifierad flake-hypotes, varför
+        // inte 'on-first-retry') står där. Egenlasten är INTE mätt för DENNA svit:
+        // den kör mot skarp staging bakom mutexen, där en fällning oftare är
+        // nätverksbunden och därmed svårare att reproducera — vilket gör videon av
+        // första fällningen mer värd här, inte mindre.
         video: 'retain-on-failure',
       },
     },
@@ -435,6 +441,38 @@ export default defineConfig({
         // ALLTING: 51 videor och 51 skärmdumpar av fällningar vi bad om. De
         // dokumenterar inget fel och kostar både tid och diskutrymme i en körning
         // vars enda utdata är antalet fällda och deras orsak.
+        //
+        // VIDEO-FORMEN ÄR PRÖVAD OCH MEDVETET BEHÅLLEN (TASK-80).
+        //
+        // Egenlasten är REAL och mätt. `retain-on-failure` spelar in VARJE test
+        // och kastar filen vid grönt (playwright/lib/index.js:464 — 'retain'
+        // styr behållningen, inte inspelningen). Mätt över 5 körningar med
+        // --workers=8: ffmpeg närvarande i 95 % av samplingarna, upp till 10
+        // samtidiga processer, 415 % summerad CPU som topp (≈4,2 av 16 kärnor),
+        // loadavg-median 42,5 mot 22,1 utan inspelning.
+        //
+        // MEN HYPOTESEN ATT DEN FÖRVÄRRAR FLAKIGHETEN ÄR FALSIFIERAD. Kortet
+        // misstänkte att egenlasten driver TASK-74:s mekanism B3 (test-budgeten
+        // vid mättnad). Interfolierad A/B via `npm run metrics:flake`, 5 varv,
+        // 765 testresultat per arm: körtidsmedian 162 s MED inspelning mot
+        // 163 s UTAN — diff −1 s mot ett brusgolv på ±72 s. Fällningar 3 mot 1,
+        // och hem:437 föll i BÅDA armarna. Ingen effekt kan hävdas; n räcker
+        // inte för att utesluta en liten sådan, men det finns inget stöd för en.
+        //
+        // DÄRFÖR INTE `on-first-retry`: den spelar in enbart retry 1 och behåller
+        // den ALLTID, oavsett utfall (index.js:464 + 470-472). Mätt reproducerar
+        // 10 av 13 fällningar INTE vid retry (framkallad mättnad, load 99-175),
+        // och 0 av 32 acceptance-jobb i CI har blivit röda. Formen skulle alltså
+        // i ~77 % av fallen spara en video av en GRÖN omkörning medan fällningen
+        // själv är obevakad — diagnostiken bytt mot en artefakt som inte visar
+        // felet. Att sänka `workers` förkastades av samma skäl: det offrar
+        // genomströmning för en körtidsvinst mätningen inte hittar.
+        //
+        // VAD SOM BÄR DIAGNOSTIKEN VID EN FÖRSTA FÄLLNING ÄVEN UTAN VIDEO:
+        // error-context.md (hela call-loggen, t.ex. "33 × locator resolved to
+        // 0 elements") och skärmdumpen — båda skrivs vid VARJE fällning
+        // (index.js:545). Videon är komplementet som visar FÖRLOPP; den behålls
+        // för att den är det enda som gör det, inte för att den bär grundfallet.
         trace: isHermetikSjalvtest ? 'off' : 'on-first-retry',
         screenshot: isHermetikSjalvtest ? 'off' : 'only-on-failure',
         video: isHermetikSjalvtest ? 'off' : 'retain-on-failure',
