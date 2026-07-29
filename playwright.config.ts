@@ -173,8 +173,20 @@ export default defineConfig({
   // före CI-födda-baselines-principen och antog global testDir.
   snapshotPathTemplate:
     '{testDir}/__screenshots__/{testFileName}/{arg}-{projectName}-{platform}{ext}',
-  // T26: 0 lokalt (se flakes direkt) / 2 i CI (absorbera infra-brus utan
-  // att maskera äkta fel — Playwright rapporterar flaky ≠ failed).
+  // T26: 0 lokalt (se flakes direkt) / 2 i CI.
+  //
+  // SKÄLET ÄR RÄTTAT (TASK-74). Raden bar tidigare motiveringen "absorbera
+  // infra-brus utan att maskera äkta fel". Andra ledet är FALSIFIERAT: retries
+  // maskerade ett äkta testkods-race. TASK-64 mätte 14 av 22 acceptance-jobb
+  // med läsbar logg som rapporterade flaky > 0 utan att jobbet blev rött, och
+  // en oberoende omräkning i TASK-74 över de 70 senaste CI-körningarna delar
+  // talet vid klass A:s fix: 6/14 acceptance-jobb FÖRE, 1/14 EFTER.
+  //
+  // De behålls ändå, men som ett medvetet val med känd kostnad: en röd CI på
+  // infra-brus förstör signalen på samma sätt som en dold flake, och flaken är
+  // inte längre osedd — flaky-raden går att läsa per körning (formen i
+  // TASK-64:s kort). 0 lokalt står kvar oförändrat: lokalt SKA en flake synas
+  // direkt, och det är därför TASK-74:s mätserier kördes med --retries=0.
   retries: process.env.CI ? 2 : 0,
   expect: {
     toHaveScreenshot: {
@@ -358,6 +370,60 @@ export default defineConfig({
       // 1280 (`(1280 - 600) / 2`). Byts device-profilen faller den mätningen.
       name: 'acceptance',
       testDir: './tests/acceptance',
+      // TIDSBUDGETARNA ÄR HÄRLEDDA, INTE VALDA (TASK-74, klass B).
+      //
+      // Fram till TASK-74 körde klassen på Playwrights stock-budgetar — 30 s per
+      // test, 5 s per expect. Ingen hade valt dem för DEN HÄR sviten, och
+      // mätningen visade att 5 s ligger under svitens egen arbetskostnad.
+      //
+      // MEKANISMEN, MÄTT: `page.goto()` returnerar när load-eventet gått, men
+      // route-chunken hämtas av app-JS EFTER det (autoCodeSplitting, vite.config).
+      // Den FÖRSTA web-first-assertionen efter en goto bär därför hela
+      // kall-laddningen — Vites transform av chunken, EF-hämtningen och första
+      // renderingen — inom EN expect-budget. 95 av sviten 156 goto-anrop har den
+      // formen. Kall-kostnaden är mätt, ej antagen: över 180 fil-körningar var
+      // filens FÖRST startade test långsammare än filens egen median i 144 fall
+      // (80 %), med medianskillnad +1,6 s och största +6,9 s.
+      //
+      // FÄLLNINGARNA SÅG UT SÅ HÄR (baslinje 10 fulla körningar, --workers=8
+      // --retries=0, 1530 testresultat):
+      //   mer-maillogg:77        toBeVisible  · Timeout: 5000ms · element(s) not found
+      //   mer-segment-send:113   toBeFocused  · Timeout: 5000ms · element(s) not found
+      // Båda är FÖRSTA testet i sin fil, och båda säger "element(s) not found" —
+      // elementet fanns aldrig, det var inte fokus som missades. Assertionerna
+      // retryar alltså korrekt; de får inte tid. Det är INTE klass A:s fel (en
+      // ögonblicksbild-query följd av en icke-retryande assertion, TASK-64) och
+      // kan inte lagas med samma grepp.
+      //
+      // VARFÖR DETTA INTE ÄR MASKERING. En retry kastar en signal som redan
+      // inträffat. En timeout DEFINIERAR vad "för långsamt" betyder — är
+      // definitionen under den legitima variationen tillverkar den falska
+      // signaler. 15 s fäller fortfarande en app som blivit verkligt långsam;
+      // 5 s fällde en app som var normal på en belastad maskin.
+      //
+      // TALEN:
+      //   expect 15_000 — 3x stock. De två fällda testerna går END-TO-END på
+      //     högst 14,6 s i gröna körningar, vilket är en LÖS övre gräns för
+      //     enbart deras första assertion; den sanna latensen ligger klart under.
+      //     15 s lämnar dessutom de två explicita 20 s-överskuggningarna
+      //     (event-anteckningar:345, persons-list:219) meningsfulla — de täcker
+      //     retry-backoff-kedjan, ett längre och annat fenomen.
+      //   timeout 60_000 — 2,8x det tyngsta GRÖNA testet i serien (21,2 s,
+      //     anmalan-detalj:535, en axe-körning). Måste rymma expect-budgeten
+      //     ovan plus resten av testet. Axe-testernas marginal mot stock-30 s var
+      //     29 % i värsta gröna observationen; ingen test-timeout observerades i
+      //     de 10 körningarna, så den delen är förebyggande och sägs rakt ut.
+      timeout: 60_000,
+      // OBS — PROJEKT-`expect` ERSÄTTER, DEN MERGAR INTE. Läst i källan, ej
+      // antaget: `playwright/lib/common/index.js:663` gör
+      // `this.expect = takeFirst(projectConfig.expect, config.expect, {})`, så
+      // blocket här SKUGGAR hela top-nivåns `expect` för detta projekt —
+      // inklusive TASK-49:s `toHaveScreenshot`-trösklar. Ofarligt i dag: ingen
+      // fil under tests/acceptance/ använder toHaveScreenshot eller
+      // toMatchSnapshot (grep 2026-07-29). Skriver du en skärmdumps-assertion i
+      // klassen får den Playwrights defaultvärden — lägg då till toHaveScreenshot
+      // här också.
+      expect: { timeout: 15_000 },
       use: {
         ...devices['Desktop Chrome'],
         baseURL: `http://localhost:${ACCEPTANCE_DEV_PORT}`,
