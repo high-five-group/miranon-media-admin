@@ -79,7 +79,7 @@ tematiska; sekvensen över spårgränserna fanns ingenstans.
 |---|---|---|---|
 | **1** | Signalen går att lita på | `TASK-65` `66` `64` `63` `69` · `TASK-72` · `TASK-74` · `TASK-71` · agent-namnet · `TASK-36.8` | § Fynd-kedjans ordning · § A4 · § A5 |
 | **2** | Skyddsnätet byggs | `TASK-70.2` · `TASK-70.5` | § A7 (A7:4, A7:7) |
-| **3** | Flytten och kön — väntetiden faller | `TASK-70.3` · `TASK-70.1` · `TASK-76` · `TASK-70.4` · `TASK-75` | § A7 (A7:5, A7:3, A7:6, A7:10) · § Kort födda i S91 |
+| **3** | Flytten och kön — väntetiden faller | `TASK-70.3` · `TASK-70.1` · `TASK-76` · `TASK-78` · `TASK-70.4` · `TASK-75` | § A7 (A7:5, A7:3, A7:6, A7:10) · § Kort födda i S91 |
 | **4** | Landnings-hygien | `TASK-70.6` | § A7 (A7:8) |
 | **4b** | Verktygsskulden | A3 ×1 · A3b ×2 · A2:9 | § A3 · § A3b · § A2 |
 | **5** | Aktörerna slutar krocka | A2:7 · A2:8 · A2:11 · `TASK-77` · Spår B | § A2 · § Spår B · § Kort födda i S91 |
@@ -543,6 +543,16 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       svaret på landnings-ordningen). Angränsar `TASK-76` men är en ANNAN
       mekanism — `76` är CI mot CI, detta är CI mot lokalt, och `76`:s fix gör
       inte detta ofarligt
+- [ ] **`TASK-78`** — merge queue bryter `TASK-73`:s ärvda klassning **i
+      post-merge** för varje PR som inte är först i sin kögrupp: kön bygger post
+      N ovanpå posterna före den, så merge-commitens träd avviker från
+      PR-headens och klassningen fail-closar till full svit. Mätt 2026-07-29:
+      `d9f095b` (först) träd `373455a` == `373455a` → skipped · `934188e`
+      (andra) `89000ee` ≠ `ce04838` → full svit. **PR-grinden och kö-ytan är
+      ORÖRDA** — båda klassade rätt; enbart efterkontrollen på `main` blir
+      dyrare. Interaktion mellan två korrekta skivor som landade samma dag,
+      inget fel i någon av dem. Förstärker `TASK-76`: fler staging-körningar i
+      post-merge = fler purge-race-tillfällen
 
 ## Fynd-kedjans ordning — klassad och sekvenserad 2026-07-28
 
@@ -780,6 +790,10 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-29 | **`TASK-76` mintat — purge-racet.** TOCTOU mellan `listSentinels()` och `deleteSentinels()`; 404 på redan raderad sentinel fäller jobbet. Funnen av `TASK-70.3`:s egna mät-PR:er. **Fem observationer + ett kontrastbevis** (purge ensam = grön). Blir DYRARE efter `70.3`: post-merge blir primär staging-bärare, så racet ger då ett tilldelat revert-ärende på ett träd som redan ligger i `main` | `#399` |
 | 2026-07-29 | **`TASK-63` stängd — fanns kvar som `To Do` medan tre dokument påstod motsatsen.** `PAUSLÄGE`, todo-kadensen och denna fil sade alla "nio kort stängda … 63". DoD #3 (CI grön per jobb) var obockad. CI-belägg: run `30400640305`, nio jobb, samtliga `success`. Bara korsläsning mot registret avslöjade det — tre samstämmiga kopior är osynliga för läsning | — |
 | 2026-07-29 | **AUDIT — tre läsande agenter, disjunkta linser** (kort-påståenden · externa referenser · intern koherens). **~20 fynd rättade**, varav **fem skapade samma kväll** av rättelsearbetet självt: `TASK-76` utan bärare i steg 3 · stegkollisionen i A7 efter omnumreringen · `A3 ×3` stale · två `[x]` kvar i kroppen · loggen splittrad i tre tabeller. Tyngsta externa fynd: `--mm-btn-*` var INTE oanvända (`CTA.tsx` använder Tailwind-syntax, inte `var()`) och `TASK-18.20` blockeras av fyra Marcus-beslut, inte av hållplats-frågan | `#400` |
+
+| 2026-07-29 | **`TASK-70.3` DONE — A7-spårets största post.** AC #1 godkänd på RATIONALE, ej bokstav: staging-jobben förekommer som skippade placeholders (`runner_id: null`, `steps: 0`), och literal frånvaro hade krävt radering ur `ci-suite.yml` som kortet förbjuder. Kritiska vägen bytte bärare utan att växa: 375 s staging → 429 s Acceptance, total 450 s mot tak 480 | `#395` · `#402` |
+| 2026-07-29 | **`TASK-70.1` DONE — MERGE QUEUE AKTIV.** Revert-vägen prövad SKARPT före aktivering med tom kö (på → verifierad → av → verifierad); `PUT` ersätter hela rules-arrayen, så vägen tillbaka är en FIL. Triggern landad separat FÖRE regeln, eftersom ingen PR annars kan landa — inklusive fixen. **AC #6 bevisad genom att göra det gamla förbudet:** `#404` och `#405` armerades SAMTIDIGT och båda landade. Aggregatorn rapporterar identiskt namn på båda ytorna (`30410841005` PR / `30410861975`+`30410912068` kö) | `#403` · `#404` · `#405` |
+| 2026-07-29 | **`TASK-77` + `TASK-78` mintade.** `77`: staging-mutexen binder bara CI, lokala script går förbi — funnen av en agent som bröt regeln två gånger under ett pass, andra gången med full kännedom. `78`: kön bryter post-merge-klassningen för PR:er som inte är först i kögruppen — **PR-grinden orörd**, Marcus fångade att första formuleringen inte sade var felet satt | `#406` |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
