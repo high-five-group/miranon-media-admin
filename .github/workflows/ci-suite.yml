@@ -2,12 +2,22 @@
 name: CI Suite (reusable)
 
 # Reusable tung testsvit (task-36.2 / T85 våg 2a, ADR-077). EN KÄLLA för de
-# fem tunga jobben (fyra + acceptance sedan task-59.3) — anropad av både ci.yml
-# (presubmit, villkorat på should_skip_tests) och nightly.yml (schemalagd
-# fullsvit). Extraherad ur
+# fem tunga jobben (fyra + acceptance sedan task-59.3) — anropad av TRE
+# workflows, och vilken av dem som anropar avgör numera vad som faktiskt körs:
+#   · ci.yml       — presubmit, villkorat på should_skip_tests. Skickar
+#                    `run_staging: false` (A7:5) och `run_a11y: false` (A7:6),
+#                    båda VILLKORSLÖST ⇒ endast TVÅ av de fem instansieras här
+#                    (`Pure + Build` och `Acceptance (hermetisk)`).
+#   · post-merge.yml — det mergade trädet på main. Skickar INGA inputs.
+#   · nightly.yml  — schemalagd fullsvit. Skickar INGA inputs.
+# De två sistnämnda får därmed defaulterna (allt true) och är de ytor där
+# staging och a11y faktiskt körs. Inputarna finns för att STYRA anropar-ytan —
+# raderas ett jobb här försvinner det ur ALLA tre samtidigt.
+#
+# Extraherad ur
 # ci.yml S79 (verbatim steg); villkoren flyttade: caller-jobbet i ci.yml
 # gatar HELA anropet på should_skip_tests, så inner-jobben bär ENDAST sina
-# dependabot-/purge-villkor. github.actor-uttrycket fungerar i båda
+# dependabot-/purge-/input-villkor. github.actor-uttrycket fungerar i alla
 # kontexterna (schedule/dispatch är aldrig dependabot).
 #
 # INGA fetch-depth-bärare bor här: de tre bärarna (changed/lint/docs) stannar
@@ -24,9 +34,25 @@ on:
       run_staging:
         description: >-
           true (default) = kör staging-stegen (purge + test-staging). false =
-          D1-klassen (ren UI-ändring, task-36.3): staging + purge skippas
-          (ingen mutex) medan pure/build + a11y kör. Default true ⇒ nightly.yml,
-          som ej skickar inputen, kör alltid full svit.
+          de två jobben instansieras inte alls (ingen mutex). ci.yml skickar
+          false VILLKORSLÖST sedan A7:5 (TASK-70.3); post-merge.yml och
+          nightly.yml skickar ingen input och får därför defaulten. Inputen
+          styr ENBART purge + test-staging — vad de tre övriga jobben gör
+          avgörs av sina egna villkor, aldrig av detta ord. (Formuleringen
+          nämnde tidigare D1-klassen som enda avsändare av false; den
+          beskrivningen slutade gälla med TASK-70.3.)
+        type: boolean
+        default: true
+      run_a11y:
+        description: >-
+          true (default) = kör A11y (axe-runner). false = jobbet instansieras
+          inte alls. ci.yml skickar false VILLKORSLÖST sedan A7:6
+          (TASK-70.4) — a11y ligger inte längre i den blockerande PR-grinden.
+          post-merge.yml och nightly.yml skickar INGEN input och får defaulten
+          true; kontrollen är alltså FLYTTAD, aldrig borttagen. Att i stället
+          radera jobbet ur denna fil hade tagit bort det ur nattnätet OCH
+          post-merge-lagret — därför en flagga hos anroparen och inte en
+          radering här.
         type: boolean
         default: true
 
@@ -235,9 +261,21 @@ jobs:
   # A11y (axe-runner) — rör ALDRIG staging (egen alltid-färsk dev-server på
   # dedikerad port, ADR-045 beslut 1+3) → ingen mutex. Dependabot-skip på
   # JOBB-nivå (ADR-031 Lager 3, secrets-isolation).
+  #
+  # `inputs.run_a11y` (A7:6 / TASK-70.4) — ci.yml skickar false villkorslöst, så
+  # jobbet instansieras aldrig av PR-grinden. Villkoret står BREDVID
+  # dependabot-skippet, inte i stället för det: de stänger olika saker — det ena
+  # en ANROPAR-YTA, det andra en aktör vars körningar saknar Actions-secrets.
+  # Slås de ihop tappas den ena betydelsen tyst.
+  #
+  # ADR-045 § Beslut 3 ("test:a11y hör till Test+Build-jobbets sfär, kod-grindad")
+  # står ORÖRD av flaggan: jobbet bor kvar i den delade tunga sviten och är
+  # fortfarande kod-grindat — på post-merge-ytan via `klassning`-jobbets ärvda
+  # D0-beslut (post-merge.yml). Det som ändrats är VILKEN anropare som kör det,
+  # inte vilken sfär det tillhör.
   a11y:
     name: A11y (axe-runner)
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ inputs.run_a11y && github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:

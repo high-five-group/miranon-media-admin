@@ -39,14 +39,27 @@ name: Post-merge
 # rulesetet `main-skydd` (id 19627609) har exakt en — `CI Passed or Skipped` i
 # ci.yml — och hela poängen med det här lagret är att stå utanför den.
 #
-# ═══ MÅLET FÖR A7:5–A7:6 (TASK-70.3 / TASK-70.4) ═══
-# När `Staging (API + E2E)` och `A11y (axe-runner)` flyttas UR PR-grinden är
-# det HIT de flyttas. Ordningen är en invariant: utan lagret tas kontrollen
+# ═══ MÅLET FÖR A7:5–A7:6 (TASK-70.3 / TASK-70.4) — BÅDA LANDADE ═══
+# När `Staging (API + E2E)` och `A11y (axe-runner)` flyttades UR PR-grinden var
+# det HIT de flyttades. Ordningen var en invariant: utan lagret tas kontrollen
 # bort i stället för väntan.
 #
-# A7:5 ÄR LANDAD. `Staging (API + E2E)` + `Staging sentinel purge` körs sedan
-# TASK-70.3 inte längre av ci.yml (`with: run_staging: false`, villkorslöst).
-# A11y ligger kvar i PR-grinden tills A7:6 flyttar den.
+# A7:5 (TASK-70.3): `Staging (API + E2E)` + `Staging sentinel purge` körs inte
+# längre av ci.yml (`with: run_staging: false`, villkorslöst).
+# A7:6 (TASK-70.4): `A11y (axe-runner)` likaså (`with: run_a11y: false`,
+# villkorslöst). ci.yml instansierar därmed två av ci-suite.yml:s fem tunga
+# jobb; de tre övriga instansieras HÄR och i nightly.yml.
+#
+# SKILLNADEN MELLAN DE TVÅ FLYTTARNA, ÖPPET: staging FLYTTADE hit. A11y kördes
+# redan här före A7:6 (anropet nedan skickar inga inputs och fick defaulten
+# `true` även då — post-merge-körning 30402869073, a11y 119 s grön). A7:6 tog
+# alltså bort PR-sidans DUBBLETT, inte en kontroll som saknade hemvist. Denna
+# fil blev därför primär bärare av staging-signalen med A7:5, men var redan
+# bärare av a11y-signalen före A7:6.
+#
+# RIBBAN ÄR ORÖRD. Tillgänglighet är 11 utan undantag (CLAUDE.md
+# § Kvalitetsribba) och 0-violations-regeln (ADR-045 § Beslut 2) står kvar.
+# Det som ändrades var när den mäts, inte hur högt den ligger.
 #
 # ═══ MUTEX-KOSTNADEN, ÖPPET BOKFÖRD — OCH BETALD ═══
 # Anropet nedan skickar INGEN `run_staging`-input och får därmed ci-suite.yml:s
@@ -195,12 +208,15 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/ci-suite.yml
-    # INGEN `with:` — ci-suite.yml:s default `run_staging: true` gäller, samma
-    # form som nightly.yml. Se § MUTEX-KOSTNADEN i huvudet: talet är mätt, och
-    # levern för att sänka det står skriven där. Sedan A7:5 (TASK-70.3) är detta
-    # anrop den ENDA ytan som kör staging på ett landat träd före natten —
-    # utelämnandet av `with:` är alltså inte längre en default man ärver, utan
-    # den rad som bär kontrollen.
+    # INGEN `with:` — ci-suite.yml:s defaulter gäller (`run_staging: true` OCH
+    # `run_a11y: true`), samma form som nightly.yml. Se § MUTEX-KOSTNADEN i
+    # huvudet: talet är mätt, och levern för att sänka det står skriven där.
+    # Sedan A7:5 (TASK-70.3) är detta anrop den ENDA ytan som kör staging på ett
+    # landat träd före natten, och sedan A7:6 (TASK-70.4) gäller detsamma för
+    # a11y. Utelämnandet av `with:` är alltså inte längre en default man ärver,
+    # utan den rad som bär BÅDA kontrollerna. Att lägga till en `with:` här —
+    # oavsett vilken input — släcker ett jobb som ingen annan yta kör förrän
+    # natten.
     secrets: inherit
 
   # Självtestet (tvåsidigt bevis, gate-proof.yml:s form). Normalt SKIPPAT — det

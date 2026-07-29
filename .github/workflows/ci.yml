@@ -705,17 +705,46 @@ jobs:
     # ingenting. Stegen står kvar MEDVETET — de är inte glömda, och de rivs inte
     # på vägen förbi: ADR-077 § Beslut 1 äger klassrymden, och S91:s
     # arbetsflödes-granskning listar riskklassningen under "ska behållas orört".
-    # Frågan om de ska avvecklas, återanvändas av A7:6 (a11y, TASK-70.4) eller
-    # bevaras som klassrymdens invariant är ett eget beslut — den fattas inte
-    # som sidoeffekt här.
+    # A7:6 (a11y, TASK-70.4) ÅTERANVÄNDE DEM INTE — den skickar `run_a11y: false`
+    # villkorslöst av samma skäl som raden ovan, så levrarna är fortfarande utan
+    # konsument. Frågan om de ska avvecklas eller bevaras som klassrymdens
+    # invariant är ett eget beslut och fattas inte som sidoeffekt här.
+    #
+    # ═══ A11Y LIGGER INTE HELLER I PR-GRINDEN (A7:6 / TASK-70.4) ═══
+    # `run_a11y: false` är VILLKORSLÖST. `A11y (axe-runner)` instansieras därmed
+    # aldrig av ci.yml — inte på `pull_request`, inte på `merge_group` (kö-ytan,
+    # TASK-70.1) och inte på `push` till main. Samma tre ytor, samma ord: ett
+    # yt-villkorat uttryck hade varit tre ställen att minnas i stället för ett.
+    #
+    # KONTROLLEN ÄR FLYTTAD, INTE BORTTAGEN — och den fanns redan på andra
+    # sidan: post-merge.yml och nightly.yml utelämnar inputen, får defaulten
+    # `true` och körde a11y även FÖRE denna rad (post-merge-körning 30402869073,
+    # a11y 119 s grön). Det denna rad tar bort är alltså PR-sidans DUBBLETT av
+    # ett jobb som ändå körs på det landade trädet.
+    #
+    # RIBBAN ÄNDRAS INTE — MÄTPUNKTEN GÖR DET. Repots kvalitetsribba säger
+    # tillgänglighet 11 utan undantag (CLAUDE.md § Kvalitetsribba) och
+    # 0-violations-regeln (ADR-045 § Beslut 2) står orörd. Skillnaden är NÄR den
+    # mäts: efter merge i stället för före. Läser någon senare denna rad som en
+    # sänkt ribba är det en felläsning — inget i toleransen, måltavlan eller
+    # sviten är rört.
+    #
+    # ÄRLIGT OM VAD SOM VINNS — INTE VÄGGKLOCKA. A11y bär 103–104 s (run
+    # 30369011230; 104 s i 30408622828) men kör PARALLELLT med `Acceptance
+    # (hermetisk)`, som är kritiska vägen med 424 s i samma körning. Väggklockan
+    # för en kod-PR sjunker därför inte alls av denna rad — den väntade
+    # besparingen är NOLL sekunder, och det är det förväntade utfallet, inte ett
+    # misslyckande. Vinsten mäts i runner-minuter: ~1,7 min per kod-PR-körning,
+    # plus lika mycket per merge_group-körning av samma PR.
     #
     # OFÖRÄNDRAT AV DENNA RAD: `ci-passed` behåller sin needs-lista och sin
     # fail-closed-gren, och rulesetets enda required check heter fortfarande
     # `CI Passed or Skipped`. Aggregatorn ser numera `suite`-anropet utan sina
-    # två staging-jobb — en ändrad jobb-mängd INUTI ett anrop som fortfarande
-    # rapporterar sitt resultat uppåt.
+    # två staging-jobb och utan a11y — en ändrad jobb-mängd INUTI ett anrop som
+    # fortfarande rapporterar sitt resultat uppåt.
     with:
       run_staging: false
+      run_a11y: false
     secrets: inherit
 
   # Job 4: Markdown link validation. Conditional på docs-changes.

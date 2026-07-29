@@ -494,7 +494,7 @@ en röd körning i den delade CI-kön är INTE bevisformen.
   avfyrningsformen `gate-proof.yml` (`workflow_dispatch`), som bevisar
   sig själv: en avfyrning som inte ger failure är ett underkänt bygge.
 
-## Post-merge-lagret — staging körs EFTER merge, inte före
+## Post-merge-lagret — staging och a11y körs EFTER merge, inte före
 
 `.github/workflows/post-merge.yml` kör den tunga sviten på det **mergade** trädet
 vid varje push till `main`. Den är avsiktligt ingen required check och kan
@@ -503,20 +503,46 @@ strukturellt inte blockera en landning: den triggar först när mergen redan ske
 **Vad som flyttat hit.** `Staging (API + E2E)` och `Staging sentinel purge` kördes
 fram till `TASK-70.3` i den blockerande PR-grinden. Sedan dess skickar `ci.yml`
 `run_staging: false` villkorslöst, och de två jobben instansieras aldrig av en
-PR-körning. `post-merge.yml` och `nightly.yml` utelämnar inputen och får därför
-`ci-suite.yml`:s default `true` — samma svit, samma `EN KÄLLA`, annan tidpunkt.
+PR-körning. `A11y (axe-runner)` följde med `TASK-70.4` på exakt samma form
+(`run_a11y: false`, villkorslöst). `post-merge.yml` och `nightly.yml` utelämnar
+inputarna och får därför `ci-suite.yml`:s defaulter `true` — samma svit, samma
+`EN KÄLLA`, annan tidpunkt. Av de fem tunga jobben instansierar PR-grinden efter
+detta två: `Pure + Build` och `Acceptance (hermetisk)`.
 
-**Varför flytten gjordes, och vad den faktiskt köpte.** Inte jobbets 375 s, utan
-den globala `staging-tests`-mutexen. Den serialiserar över *alla* staging-rörande
-körningar, så kritiska vägen växte med antalet parallella PR:er: två körningar
-med identiskt svit-innehåll mätte 7,8 respektive 20,3 min, där hela skillnaden
-var kö. Ur PR-vägen slutar den växa. Väggklockan för en *ensam* kod-PR sjunker
-däremot knappt — `Acceptance (hermetisk)` blir ensam bärare och ligger kring
-7 min. Det är ett känt kvarvarande tak, inte en förbisedd besvikelse.
+**Varför staging-flytten gjordes, och vad den faktiskt köpte.** Inte jobbets
+375 s, utan den globala `staging-tests`-mutexen. Den serialiserar över *alla*
+staging-rörande körningar, så kritiska vägen växte med antalet parallella PR:er:
+två körningar med identiskt svit-innehåll mätte 7,8 respektive 20,3 min, där hela
+skillnaden var kö. Ur PR-vägen slutar den växa. Väggklockan för en *ensam* kod-PR
+sjunker däremot knappt — `Acceptance (hermetisk)` blir ensam bärare och ligger
+kring 7 min. Det är ett känt kvarvarande tak, inte en förbisedd besvikelse.
 
-**Priset: en kod-PR kan landa utan att staging någonsin körts mot dess innehåll.**
-Det är avsikten. Det gör revert-vägen (§ Revert-vägen) till den kontroll som bär
-risken, och den måste därför vara skriven och övad — vilket den är.
+**Priset: en kod-PR kan landa utan att staging eller a11y någonsin körts mot dess
+innehåll.** Det är avsikten. Det gör revert-vägen (§ Revert-vägen) till den
+kontroll som bär risken, och den måste därför vara skriven och övad — vilket den
+är.
+
+**A11y-flytten är inte samma rörelse som staging-flytten.** Staging *flyttade*
+hit. A11y kördes redan här — anropet i `post-merge.yml` skickar inga inputs och
+fick defaulten `true` även före `TASK-70.4` (post-merge-körning `30402869073`,
+a11y grön på 119 s). Det `TASK-70.4` tog bort var PR-sidans **dubblett**, inte en
+kontroll utan hemvist. Därför står vinsten i runner-minuter, inte i väggklocka:
+a11y bär 103–104 s men kör parallellt med `Acceptance (hermetisk)` (424 s i samma
+körning), som är kritiska vägen både före och efter. Väggklockan för en kod-PR
+sjunker alltså **noll sekunder** — det är det förväntade utfallet, inte en
+utebliven vinst. Sparat: ~1,7 runner-minuter per kod-PR-körning, och lika mycket
+per `merge_group`-körning av samma PR. Av samma skäl rör `TASK-70.4` inte
+exponeringsfönstret nedan: post-merge-körningen är exakt lika lång som förut.
+
+**Ribban är orörd — mätpunkten flyttade.** Tillgänglighet är 11 utan undantag
+(`CLAUDE.md` § Kvalitetsribba) och axe-runnerns 0-violations-regel
+([ADR-045](docs/decisions/ADR-045-a11y-runner-arkitektur.md) § Beslut 2) står
+kvar oförändrad. Det enda som ändrats är **när** den mäts: efter merge i stället
+för före. Läser någon `TASK-70.4` som en sänkt tillgänglighetsribba är det en
+felläsning — varken tolerans, måltavla eller svit är rörd. ADR-045 § Beslut 3
+(`test:a11y` hör till den tunga svitens sfär, kod-grindad) håller likaså: jobbet
+bor kvar i `ci-suite.yml` och är kod-grindat på post-merge-ytan via
+`klassning`-jobbets ärvda `D0`-beslut.
 
 ### Exponeringsfönstret — hur länge ett fel kan ligga oupptäckt i `main`
 
