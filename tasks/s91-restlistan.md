@@ -27,13 +27,25 @@
 > **kroppen bär bara öppna `[ ]`.** Filen dör när alla spår är stängda; den är
 > en arbetsyta, inte en permanent artefakt.
 >
-> **Senast verifierad mot disk: 2026-07-29** (femtonde resumen, ANDRA passet — kroppen
-> rensad mot verkligt läge efter dagens åtta kort-stängningar och grenstädningen;
-> kontrollen nedan
-> LAGAD efter att den visat sig ha en blind fläck, och två inaktuella A7-rader
-> rättade som den blinda fläcken dolt. Föregående pass: trettonde resumen — audit
-> med tre läsande agenter plus en mekanisk statuskontroll som fångade två fel
-> auditen lämnat kvar, varav ett den själv infört).
+> **Senast verifierad mot disk: 2026-07-29** (sextonde resumen, FJÄRDE passet —
+> **de fem bärarlösa posterna placerade** på Marcus delegering: `TASK-83` + `T107`
+> i steg 4b, `TASK-84` + `T108` + `T109` i steg 5; skälen i noten under kartan.
+> `T109` saknades helt i § Kort födda i S91 och är tillagd. **Kontroll 2 utökad
+> till att räkna trådar** — den var blind för `T107`/`T108`/`T109`, alltså tre av
+> de fem poster den skulle ha fångat. Trefaldigt bevisad: ren när allt är
+> placerat, fäller när ett KORT tas ur kartan, fäller när en TRÅD tas ur den.
+> Trådregistrets tabell lagad: `T74`/`T73` och `T79`/`T78` stod i omkastad
+> ordning. TREDJE passet —
+> **kontroll 2 byggd och tvåsidigt bevisad** efter att ha stått som en kommentar
+> utan kod sedan kartan skrevs; loggens tabell lagad — den var splittrad i SJU
+> fragment av tabellbrytande tomrader, och endast det första hade rubrikrad;
+> `Spår E ×4` rättad till `×3` [grenskulden bockades av och flyttades till loggen
+> utan att räkningen följde med]. Samtliga övriga räkningar omprövade och
+> korrekta: `A3 ×1` · `A3b ×2` · `Spår C ×2`. Noll döda kort- eller
+> trådreferenser. Föregående pass: femtonde resumen, ANDRA passet — kroppen
+> rensad efter åtta kort-stängningar och grenstädningen; kontroll 1 LAGAD efter
+> att den visat sig ha en blind fläck, och två inaktuella A7-rader rättade som
+> den blinda fläcken dolt).
 > **Uppdatera raden vid varje verifieringspass.**
 >
 > **Kontrollen som ska köras före varje uppdatering av denna fil** — den tar
@@ -70,6 +82,37 @@
 >   done
 > done
 > # 2. Har varje öppet kort en bärare i kartans nio steg?
+> #
+> # Stod som EN KOMMENTAR UTAN KOD från 2026-07-28 till 2026-07-29 — och under
+> # tiden driftade precis den klass den var skriven för: TASK-83 och TASK-84
+> # mintades 2026-07-29, registrerades i § Kort födda i S91 och kom aldrig in i
+> # sekvensen. En deklarerad kontroll som inte kan köra är frånvarande.
+> #
+> # YTAN ÄR § "Kort födda i S91", inte hela registret. Ryggsäcken (TASK-20…47)
+> # nämns aldrig individuellt — den bärs KOLLEKTIVT av Spår D:s post
+> # "To Do-ryggsäcken i backlog", och den posten ÄR bäraren.
+> #
+> # INGEN `for id in $LISTA` — zsh word-splittar inte oquoterade expansioner, så
+> # loopen kör ETT varv med hela listan som en sträng och kontrollen blir TYST
+> # GRÖN. Fällan bet tre gånger under S91 (Del 25.11 punkt 3, samt denna
+> # kontrolls första utkast). `while IFS= read -r` kör i båda skalen.
+> #
+> # TRÅDAR RÄKNAS MED. Sektionen bär både kort och trådar ("(tråd, ej kort)"),
+> # och trådarna driftar likadant — T107/T108/T109 var alla bärarlösa 2026-07-29.
+> # Kartan bär redan trådar i steg 6 (T85, T87), så formen är etablerad.
+> # En tråd är aldrig "Done" i kort-registret; DONE-filtret nedan träffar den
+> # därför aldrig, vilket är rätt — trådens stängning bor i threads/README.md.
+> MONSTER='\*\*`(TASK-[0-9.]+|T[0-9]+)`'
+> FODDA=$(awk '/^## Kort födda i S91/{f=1;next} /^## /{f=0} f' tasks/s91-restlistan.md \
+>   | grep -oE "${MONSTER}" | grep -oE '(TASK-[0-9.]+|T[0-9]+)' | sort -u)
+> KARTAN=$(sed -n '/^| # | Steg | Bärare | Pekare |/,/^$/p' tasks/s91-restlistan.md \
+>   | grep -oE '(TASK-[0-9.]+|T[0-9]+)' | sort -u)
+>
+> comm -23 <(printf '%s\n' "${FODDA}") <(printf '%s\n' "${KARTAN}") | grep -v '^$' \
+>   | while IFS= read -r id; do
+>       printf '%s\n' "${DONE}" | grep -qx "${id}" \
+>         || echo "FEL: ${id} är öppet, står i § Kort födda i S91, men saknar steg i kartan"
+>     done
 > ```
 >
 > **Formen är tvåsidigt bevisad, inte antagen** (femtonde resumen): mot filen som
@@ -129,10 +172,10 @@ tematiska; sekvensen över spårgränserna fanns ingenstans.
 | **2** | Skyddsnätet byggs | `TASK-70.2` · `TASK-70.5` | § A7 (A7:4, A7:7) |
 | **3** | Flytten och kön — väntetiden faller | `TASK-75` · `TASK-76` · `TASK-78` | § A7 (A7:10) · § Kort födda i S91 |
 | **4** | Landnings-hygien | `TASK-70.6` | § A7 (A7:8) |
-| **4b** | Verktygsskulden | A3 ×1 · A3b ×2 · A2:9 | § A3 · § A3b · § A2 |
-| **5** | Aktörerna slutar krocka | A2:7 · A2:8 · A2:11 · `TASK-77` · Spår B | § A2 · § Spår B · § Kort födda i S91 |
+| **4b** | Verktygsskulden | A3 ×1 · A3b ×2 · A2:9 · `TASK-83` · `T107` | § A3 · § A3b · § A2 · § Kort födda i S91 |
+| **5** | Aktörerna slutar krocka | A2:7 · A2:8 · A2:11 · `TASK-77` · `TASK-84` · `T108` · `T109` · Spår B | § A2 · § Spår B · § Kort födda i S91 |
 | **6** | Kvar utanför räckhåll | `T85` våg 3 · `T87` · `TASK-70.7` | § A6 · § A7 (A7:9) |
-| **6b** | Skulden betalas | A2:10 → Spår C ×2 · Spår E ×4 | § Spår C · § Spår E · § A2 |
+| **6b** | Skulden betalas | A2:10 → Spår C ×2 · Spår E ×3 | § Spår C · § Spår E · § A2 |
 | **7** | Appen | `TASK-53` · `TASK-56` · hållplats-grillningen · `TASK-18.20` · de tre app-besluten · resten | § Spår D · § Kort födda i S91 · § Beslut |
 
 **Invarianter i ordningen** (allt annat är schemaläggning): steg 1 före 2–3, för
@@ -149,6 +192,29 @@ rad 31 säger att registret vinner. Skälet är starkt men är ett val: efter `7
 enda kortet i spåret som tar bort ett *mänskligt* seriellt moment i stället för
 maskintid. Marcus flyttade kortet till steg 3 den 2026-07-29; skälen i sin helhet
 bor i **`TASK-70.1`** och i sessionsdok S91 **Del 21.5**.
+
+**PLACERINGEN AV DE FEM BÄRARLÖSA POSTERNA** (2026-07-29, Marcus-delegerad:
+*"Vi kan ju inte ha massa saker utan plats"*). De föll i två familjer, och
+familjen — inte födelsedatumet — avgjorde steget:
+
+- **Steg 4b, verktygsförsörjning:** `TASK-83` (`shellcheck`/`actionlint` hämtas
+  med `curl` utan `--retry` i den grind som ALDRIG skippas — exit 35 mätt i
+  `#430`, `sha256sum` hann aldrig köra, så det är nätverk och inte
+  leverantörskedja) och `T107` (backlog-CLI:t odeklarerat förkrav). Båda är
+  samma sak: **ett verktyg vars tillgänglighet inte är säkrad.** De hör ihop
+  med A3:s listparitets-grind och A3b:s verktygsvals-krav.
+- **Steg 5, aktörs-koordinering:** `TASK-84` (tre lokala staging-vägar går förbi
+  `TASK-77`:s preflight — och `TASK-77` bor redan i detta steg, så kortet är
+  dess otäckta yta), `T108` (notifieringar som aldrig kommer) och `T109` (två
+  aktörer i samma sessionsdok). Alla tre är **samma fråga ur olika håll: vad
+  händer när mer än en aktör rör samma yta.** De hör ihop med A2:7:s
+  partitionerings-regel, som `T109` uttryckligen anger som släkting.
+
+`TASK-83` övervägdes för steg 1, eftersom ett falskt rött i en alltid-på grind
+gör signalen otrovärdig. Det förkastades: steg 1 är flake-karaktäriseringen av
+SVITEN, och dess invariant handlar om att post-merge-larm ska betyda något. En
+opålitlig verktygsnedladdning är verktygsskuld, inte svit-flakighet — att lägga
+den i steg 1 hade suddat ut vad steget mäter.
 
 **Steg 6 stängs inte av denna lista.** `T85` våg 3 väntar på Fas E, `T87` på
 Marcus trigger, `TASK-70.7` kan stängas av sitt eget steg 0. De står kvar som
@@ -558,6 +624,16 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       shellcheck 0/0/0/0, körd skarpt 21→1 — men ej wirad). Marcus 2026-07-29:
       *"Det är inte mitt beslut. Det är ett beslut vi ska ta efter research-runda
       och utforskning."* Fyra former att utforska, se tråd-registret
+
+- [ ] **`T109`** (tråd, ej kort) — **kan två aktörer arbeta i samma sessionsdok?**
+      Marcus fråga 2026-07-29. Det kördes skarpt samma dag och fungerade — men
+      bara för att partitionen sattes för hand. **Fyra strukturella hinder,
+      verifierade mot disk:** `lifecycle:` bär ETT värde · grindens paus-markör
+      är prefix-förankrad · Del-numreringen antar EN berättare · paus/resume-verben
+      antar en aktör. Femte instansen hittades vid själva registreringen: `#446`
+      och `#447` redigerar samma kortfil och `#447` står `CONFLICTING` med
+      auto-merge armerad. Besläktad `A2:7` + `T108`, se tråd-registret
+
 - [ ] **`TASK-79`** — `hem:1097`: byte-identisk skärmdump efter dubbel-rAF.
       **Fjärde flake-formen**, och den ENDA klass-B-liknande som CI faktiskt
       fäller på efter klass A (1/14 jobb efter mot 6/14 före). Så länge den
@@ -768,23 +844,18 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-28 | **`TASK-64` DONE för KLASS A.** Mätt med retries AV: **3/8 fällningar före → 0/8 efter** (2,3 % sannolikt under oförändrad rat). AC 2 bekräftad med belägg — lokatorn löste till noll element. **Orkestrerarens föreslagna fix var FEL** och rättades av agenten: `toHaveAttribute(…, /.+/)` är no-op eftersom attributet är satt redan före första `ArrowDown` | `#377` |
 | 2026-07-28 | **`TASK-71` DONE + agent-namnet utfört** (`bygg-skiva` → `bygg-agent`, Marcus beslut). **Kontrastbeviset mätt i `#380`**, en diff som rör ENBART `.claude/`: `Test suite` SKIPPED, `Docs link check` SUCCESS. Samma diff hade före skivan dragit hela staging-sviten. Referenserna i egen PR — en fil utanför `.claude/` hade upphävt beviset | `#366` · `#380` · `#381` |
 | 2026-07-28 | **Tre kort mintade ur dagens arbete, alla funna av mekanismer byggda för annat.** `TASK-72` (CI-vakten kan följa fel workflow och rapportera grönt utan att ha sett CI — funnen av `70.5`:s agent) · `TASK-73` (post-merge ärver inte klassningen; en 8-raders docs-landning blockerade revert-vägen 25 min — funnen av övningen) · `TASK-74` (klass B är sju tester och minst två mekanismer, inte de tre `TASK-64` listade — funnen av dess egen efter-serie) | `#376` · `#379` |
-
 | 2026-07-29 | Tillstånds-återställningen (resume 13) + **merge queue flyttad till steg 3** — `70.3` → `70.1` → `70.4` → `75`; Marcus rev tillbaka schemaläggningen till Code | `#389` |
 | 2026-07-29 | **`TASK-73` DONE — AC-svansen tagen av orkestreraren.** Fyra AC krävde post-merge-körningar på `main` efter merge. Ärvd klassning bevisad **fyra gånger** (`Verifierande svit` skipped) · kod-landning kör full svit (`30402869073`) · **mutex-takers per docs-PR 2 → 0** (`ba3eab1`, en enda `.md`-fil, tog `staging-tests` två gånger) · larmet fäller mot ÄKTA `failure` i needs (`30405347512`, ärende `#392` stängt med motivering) | `#393` |
 | 2026-07-29 | **A3:s två BEHÅLL-poster stängda.** `ci-wait.sh`:s filhuvud rättat — terminal-kontrollen var FEL skiljelinje mot `gh` (finns sedan `cli/cli#3962`, 2021); skälet utbytt mot de fem uppgifter som saknar `gh`-yta. `check-docs.sh` bär tri-state-argumentet (sju kandidater prövade). Kvar i A3: **listparitets-grinden** | `#394` |
 | 2026-07-29 | **`TASK-76` mintat — purge-racet.** TOCTOU mellan `listSentinels()` och `deleteSentinels()`; 404 på redan raderad sentinel fäller jobbet. Funnen av `TASK-70.3`:s egna mät-PR:er. **Fem observationer + ett kontrastbevis** (purge ensam = grön). Blir DYRARE efter `70.3`: post-merge blir primär staging-bärare, så racet ger då ett tilldelat revert-ärende på ett träd som redan ligger i `main` | `#399` |
 | 2026-07-29 | **`TASK-63` stängd — fanns kvar som `To Do` medan tre dokument påstod motsatsen.** `PAUSLÄGE`, todo-kadensen och denna fil sade alla "nio kort stängda … 63". DoD #3 (CI grön per jobb) var obockad. CI-belägg: run `30400640305`, nio jobb, samtliga `success`. Bara korsläsning mot registret avslöjade det — tre samstämmiga kopior är osynliga för läsning | — |
 | 2026-07-29 | **AUDIT — tre läsande agenter, disjunkta linser** (kort-påståenden · externa referenser · intern koherens). **~20 fynd rättade**, varav **fem skapade samma kväll** av rättelsearbetet självt: `TASK-76` utan bärare i steg 3 · stegkollisionen i A7 efter omnumreringen · `A3 ×3` stale · två `[x]` kvar i kroppen · loggen splittrad i tre tabeller. Tyngsta externa fynd: `--mm-btn-*` var INTE oanvända (`CTA.tsx` använder Tailwind-syntax, inte `var()`) och `TASK-18.20` blockeras av fyra Marcus-beslut, inte av hållplats-frågan | `#400` |
-
 | 2026-07-29 | **`TASK-70.3` DONE — A7-spårets största post (A7:5).** AC #1 godkänd på RATIONALE, ej bokstav: staging-jobben förekommer som skippade placeholders (`runner_id: null`, `steps: 0`), och literal frånvaro hade krävt radering ur `ci-suite.yml` som kortet förbjuder. Kritiska vägen bytte bärare utan att växa: 375 s staging → 429 s Acceptance, total 450 s mot tak 480 | `#395` · `#402` |
 | 2026-07-29 | **`TASK-70.1` DONE — MERGE QUEUE AKTIV (A7:3).** Revert-vägen prövad SKARPT före aktivering med tom kö (på → verifierad → av → verifierad); `PUT` ersätter hela rules-arrayen, så vägen tillbaka är en FIL. Triggern landad separat FÖRE regeln, eftersom ingen PR annars kan landa — inklusive fixen. **AC #6 bevisad genom att göra det gamla förbudet:** `#404` och `#405` armerades SAMTIDIGT och båda landade. Aggregatorn rapporterar identiskt namn på båda ytorna (`30410841005` PR / `30410861975`+`30410912068` kö) | `#403` · `#404` · `#405` |
 | 2026-07-29 | **`TASK-77` + `TASK-78` mintade.** `77`: staging-mutexen binder bara CI, lokala script går förbi — funnen av en agent som bröt regeln två gånger under ett pass, andra gången med full kännedom. `78`: kön bryter post-merge-klassningen för PR:er som inte är först i kögruppen — **PR-grinden orörd**, Marcus fångade att första formuleringen inte sade var felet satt | `#406` |
-
 | 2026-07-29 | **`TASK-74` klar i parallell session — kortets KÄRNPREMISS falsifierad.** Fokus-tesen håller inte (`hem:437` är inget fokus-test; fällningarna säger *element(s) not found*), och "de sju" stämmer inte (sex av sju gav 0/10 i baslinjen). **Tre mekanismer med belägg:** B1 kall route-chunk mot expect-budgeten · B2 vaktens två observatörer · B3 test-budget vid mättnad. Agenten **deflaterade sitt eget tal**: 12 av arm A:s 13 fällningar kom ur EN körning vid loadavg 125. **`TASK-64`:s diagnos delvis falsifierad** — `person-detail:140` föll sex rader FÖRE `T26`:s data-grind, så grinden vaktar rätt sak av fel skäl; noterat i det stängda kortet. **Tre kort mintade ur rapporten:** `79` `80` `81` | — |
-
 | 2026-07-29 | **`TASK-74` DONE — klass B, tre mekanismer.** Kortets kärnpremiss falsifierad av dess EGET AC om kontrollerad last. Agenten deflaterade sitt eget tal (12 av arm A:s 13 fällningar ur EN körning vid loadavg 125). Betalade dessutom carry-posten om `playwright.config.ts`:s falsifierade retries-skäl — skälet utbytt, beslutet behållet | `#411` |
 | 2026-07-29 | **Statusrättelse i denna fil.** `TASK-63` (stängd samma dag) och **`TASK-69`** (stängd redan 2026-07-28 via `#360`) stod som öppna `[ ]` i kroppen. `69`-felet **infördes av auditen samma kväll**: agenten skrev *"ingen DONE-rad finns"* — härlett ur FILEN, inte ur registret — och orkestreraren lade in posten utan att slå upp kortet. Se § Filens egna fel post 7 | `#413` |
-
 | 2026-07-29 | **`TASK-70.4` DONE — a11y ur PR-grinden (A7:6).** Första kod-skivan genom merge queue. Verifierad på BÅDA ytorna: PR (`30412877347`) och `merge_group` (`30413468345`), a11y `skipped` i båda. **AC #1 godkänd på RATIONALE — andra gången i rad**, vilket i sig är ett resultat: formuleringen *"förekommer inte i jobblistan"* är fel för en villkorad reusable-workflow och bör vara *"instansieras inte"* i nästa kort av klassen. Vinsten redovisad i rätt enhet (1,73 runner-min/körning), och de −49 s väggklocka som syntes tillskrevs INTE flytten | `#409` · `#414` |
 | 2026-07-29 | **`TASK-74` DONE + ärende `#398` stängt.** Ärendet var `TASK-76`:s purge-race — posten `recidhmfxau0lPUUt` är observation 3, och allt som prövade trädet var grönt. Stängt med belägg i stället för lämnat: ett obesvarat larm devalverar nästa | `#411` · `#414` |
 | 2026-07-29 | Tillstånds-återställningen (resume 15) + **kontrollens blinda fläck LAGAD.** Kontrollen matchade kort-ID:t först på raden; A7-raderna bär det sist, så hela A7-klassen var osynlig. Tre fel låg och väntade: `A7:3`, `A7:5` öppna trots Done, och `A7:6` avbockad i kroppen i strid med filens egen regel. Nya formen tvåsidigt bevisad FÖRE den skrevs in (tre FEL mot `02a9517`, tomt mot rättad, ingen falsk positiv på `A7:10`:s Done-beroende). § Filens egna fel post 8 | `#418` |
