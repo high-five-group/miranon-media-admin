@@ -498,11 +498,17 @@ jobs:
         # 2026-05-07; runtimen accepterar nyckeln — Test+Build grön i run
         # 29200533939 med den aktiv). LIFT: ta bort flaggan när actionlint
         # stödjer nyckeln (regexen blir då vestigial, matchar inget).
+        #
+        # TILLGÄNGLIGHET (TASK-83, 2026-07-29) — curl-flaggorna bär samma
+        # rationale som `Install shellcheck (pinned v0.11.0)` nedan, där den är
+        # skriven i sin helhet: --retry ensam täcker inte connect-fel, och
+        # --retry-all-errors (curl 7.71.0+) är flaggan som gör det.
+        # sha256sum-verifieringen nedan är ORÖRD.
         run: |
           AL_VERSION="1.7.12"
           AL_SHA256="8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
           AL_URL="https://github.com/rhysd/actionlint/releases/download/v${AL_VERSION}/actionlint_${AL_VERSION}_linux_amd64.tar.gz"
-          curl -sL "${AL_URL}" -o /tmp/actionlint.tar.gz
+          curl -fsSL --retry 5 --retry-all-errors --retry-max-time 60 "${AL_URL}" -o /tmp/actionlint.tar.gz
           echo "${AL_SHA256}  /tmp/actionlint.tar.gz" | sha256sum -c
           tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint
           /tmp/actionlint -color -ignore 'unexpected key "queue" for "concurrency" section'
@@ -736,11 +742,35 @@ jobs:
         # För re-verifikation: ladda ned samma URL + sha256sum lokalt;
         # SHA-match bevisar release-asset oförändrad. Konsekvent med
         # ADR-029 § Medvetna utelämningar #3 actionlint-precedent.
+        #
+        # TILLGÄNGLIGHET (TASK-83, 2026-07-29) — --retry-all-errors, inte bara
+        # --retry. curl:s "transient" är EXAKT {timeout, FTP 4xx, HTTP 408, 429,
+        # 500, 502, 503, 504, 522, 524}; ett TLS-connect-fel (exit 35) ingår
+        # INTE, och --retry-connrefused adderar bara ECONNREFUSED. Den uppmätta
+        # fällningen (PR #430, exit 35 efter 0,13 s) hade alltså överlevt både
+        # --retry och --retry-connrefused — --retry-all-errors (curl 7.71.0+) är
+        # den enda av dem som täcker den. `-o` är förutsättningen: curl
+        # nollställer en FIL-destination mellan försöken, en shell-redirect
+        # inte. `-f` gör HTTP-fel till curl-fel — annars skrivs felsidan till
+        # fil och en 503 maskerar sig som checksummeavvikelse, alltså en
+        # nätverksstörning förklädd till supply-chain-signal. `-S` gör felet
+        # synligt trots `-s` (fällningen ovan skrev ingen utdata alls).
+        # sha256sum-verifieringen nedan är ORÖRD: kortet rör tillgänglighet,
+        # inte pinning.
+        #
+        # FREKVENSEN ÄR MÄTT, INTE GISSAD (2026-07-22..29, 1000 ci.yml-runs):
+        # detta steg 1 fällning på 988 avgjorda exekveringar, actionlint-steget
+        # 0 på 995. Räknat över ALLA attempts (`jobs?filter=all`) — en omkörd
+        # fällning syns inte annars, och just denna kördes om till grönt.
+        # Punktskattningen ~0,1 % motsvarar ungefär en fällning i veckan vid
+        # takten ~145 lint-jobb/dygn, men n=1 ger ett brett intervall. Formen
+        # valdes för att den kostar en flagga — inte för att takten var
+        # säkerställd.
         run: |
           SC_VERSION="v0.11.0"
           SC_SHA256="8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
           SC_URL="https://github.com/koalaman/shellcheck/releases/download/${SC_VERSION}/shellcheck-${SC_VERSION}.linux.x86_64.tar.xz"
-          curl -sL "${SC_URL}" -o /tmp/sc.tar.xz
+          curl -fsSL --retry 5 --retry-all-errors --retry-max-time 60 "${SC_URL}" -o /tmp/sc.tar.xz
           echo "${SC_SHA256}  /tmp/sc.tar.xz" | sha256sum -c
           tar -xJf /tmp/sc.tar.xz -C /tmp
           sudo mv "/tmp/shellcheck-${SC_VERSION}/shellcheck" /usr/local/bin/shellcheck
