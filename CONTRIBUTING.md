@@ -103,6 +103,61 @@ Serialisering via projekt-dependencies i `playwright.config.ts` förkastades:
 e2e-stegs testmängd (bevisat 148 → 259 tester) och fällt steget på saknade
 admin-secrets — TASK-6-kortets notes bär hela beviskedjan.
 
+### Staging-preflighten — lokala körningar frågar CI först (`TASK-77`)
+
+De två mutexarna ovan bevakar var sin sida och såg länge inte varandra.
+`concurrency: staging-tests` serialiserar CI-run mot CI-run och binder
+ingenting lokalt; staging-semaforens fillås serialiserar lokala pipelines mot
+varandra och binder ingenting i CI. Mellan dem gick ett hål rakt igenom: en
+lokal `npm run test:api:staging` kunde stå i samma Airtable-bas som ett
+CI-jobb, eftersom staging är EN delad bas (`airtable-constraints.md` P26/P27 —
+per-run-isolering är en plattformsvägg, inte ett designval här).
+
+Hålet var inte teoretiskt. `TASK-70.3`:s bygg-agent gick i det TVÅ gånger under
+ett och samma pass — andra gången efter att själv ha flaggat det första. En
+regel som inte efterlevs av den som känner till den behöver en mekanism, samma
+slutsatsform som gjorde landnings-ordningen till en merge queue.
+
+**Mekanismen:** `scripts/staging-semaphore.sh preflight <ägare>` frågar
+GitHubs körnings-API om ett staging-rörande jobb är igång eller köat, och
+fäller med exit 76 om svaret är ja. Den är wirad i Playwrights setup-projekt
+(`tests/api/auth.setup.ts` för `api-staging` + `kontraktsvakt`,
+`tests/e2e/auth.setup.ts` för `chromium-authenticated`), så den bärs av de
+kanoniska kommandona OCH av rå `npx playwright test --project=api-staging`.
+Den är tyst under `GITHUB_ACTIONS` — CI äger redan sin egen serialisering, och
+en preflight där hade sett CI:s eget jobb som hållare.
+
+Vilka workflows och jobbnamn som räknas bor i
+`.staging-semaphore-policy.conf`; testsviten är
+`scripts/test-staging-semaphore.sh`. Sonden svarar aldrig med gissning:
+misslyckas anropet blir det exit 77, inte grönt ljus.
+
+**Vägen förbi är ett aktivt val, aldrig default:**
+
+```bash
+MM_STAGING_PREFLIGHT=off npm run test:api:staging
+```
+
+Använd den när du vet vad du gör — t.ex. när `gh` saknas på maskinen, eller när
+CI-jobbet bevisligen rör en annan yta än din körning. Valet skrivs ut i loggen
+med flit, så att en kollision i efterhand går att härleda till valet i stället
+för till mekanismen.
+
+Två ytor bär den MEDVETET inte: `npm run purge:staging` och `npm run
+seed:review` går via egna Node-script utan Playwright-vägen, och
+`test:preview:staging` har inget setup-projekt. Kör dem inte parallellt med en
+landning utan att först titta — eller kör preflighten för hand:
+`bash scripts/staging-semaphore.sh preflight "seed"`.
+
+**Den ärliga gränsen: preflighten är en kontroll vid START, inte ett hållet
+lås.** Startar din lokala körning när CI är tyst, och en landning drar igång
+post-merge-lagret en minut senare, kolliderar de ändå — preflighten har redan
+sagt sitt. Formen krymper fönstret kraftigt (från "hela körningen" till "det
+som hinner starta efter din start"), men stänger det inte. Ett verkligt lås
+över CI/lokal-gränsen kräver en gemensam sanningskälla utanför både GitHub
+Actions och maskinen, vilket är ett större arkitektur-val och inte fattat här.
+Vill du ha noll fönster: vänta ut den pågående landningen innan du startar.
+
 ## Definition of Done — per session
 
 - [ ] `npm run test:api` grön (eller motsvarande relevant test-svit)

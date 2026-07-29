@@ -1,4 +1,5 @@
 import { expect, test as setup } from '@playwright/test';
+import { kravStagingLedigt } from '../support/staging-preflight';
 
 /**
  * Auth setup-step. Loggar in TEST_USER en gång per testrun, sparar storageState
@@ -28,6 +29,11 @@ setup('authenticate as TEST_USER', async ({ page }) => {
         'pattern from K0åc.2.',
     );
   }
+
+  // TASK-77: EFTER creds-kontrollen ovan — saknas env är det felet som ska
+  // synas, inte preflightens. Projektet är dependency för
+  // chromium-authenticated, så hela e2e-sviten mot staging bär preflighten här.
+  kravStagingLedigt('lokal Playwright-körning (e2e setup)');
 
   // Navigera till login. baseURL från playwright.config.ts (localhost:5173 lokalt,
   // staging-URL på CI via TEST_BASE_URL eller webServer-config).

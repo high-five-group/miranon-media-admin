@@ -16,10 +16,17 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { test as setup } from '@playwright/test';
+import { kravStagingLedigt } from '../support/staging-preflight';
 import { API_TOKENS_PATH, getApiConfig, loginUser } from './helpers';
 
 setup('authenticate api user + admin once (T24-b)', async ({ request }) => {
   const config = getApiConfig();
+
+  // TASK-77: EFTER getApiConfig med flit. Saknas creds skippar/kastar den
+  // redan, och en körning som ändå inte når staging ska inte betala för ett
+  // API-anrop mot GitHub. Projektet är dependency för api-staging OCH
+  // kontraktsvakt, så båda sviterna bär preflighten via denna rad.
+  kravStagingLedigt('lokal Playwright-körning (api-setup)');
 
   const userJwt = await loginUser(
     request,
