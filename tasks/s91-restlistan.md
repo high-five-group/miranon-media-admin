@@ -77,7 +77,7 @@ tematiska; sekvensen över spårgränserna fanns ingenstans.
 
 | # | Steg | Bärare | Pekare |
 |---|---|---|---|
-| **1** | Signalen går att lita på | `TASK-65` `66` `64` `63` `69` · `TASK-72` · `TASK-74` · `TASK-71` · agent-namnet · `TASK-36.8` | § Fynd-kedjans ordning · § A4 · § A5 |
+| **1** | Signalen går att lita på | `TASK-65` `66` `64` `63` `69` · `TASK-72` · `TASK-74` · `TASK-79` · `TASK-80` · `TASK-81` · `TASK-71` · agent-namnet · `TASK-36.8` | § Fynd-kedjans ordning · § A4 · § A5 · § Kort födda i S91 |
 | **2** | Skyddsnätet byggs | `TASK-70.2` · `TASK-70.5` | § A7 (A7:4, A7:7) |
 | **3** | Flytten och kön — väntetiden faller | `TASK-70.3` · `TASK-70.1` · `TASK-76` · `TASK-78` · `TASK-70.4` · `TASK-75` | § A7 (A7:5, A7:3, A7:6, A7:10) · § Kort födda i S91 |
 | **4** | Landnings-hygien | `TASK-70.6` | § A7 (A7:8) |
@@ -543,6 +543,20 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       svaret på landnings-ordningen). Angränsar `TASK-76` men är en ANNAN
       mekanism — `76` är CI mot CI, detta är CI mot lokalt, och `76`:s fix gör
       inte detta ofarligt
+- [ ] **`TASK-79`** — `hem:1097`: byte-identisk skärmdump efter dubbel-rAF.
+      **Fjärde flake-formen**, och den ENDA klass-B-liknande som CI faktiskt
+      fäller på efter klass A (1/14 jobb efter mot 6/14 före). Så länge den
+      lever kan ingen säga att sviten är ren — alltså steg 1:s mål
+- [ ] **`TASK-80`** — videoinspelningen är mätbar egenlast: `retain-on-failure`
+      startar en ffmpeg PER TEST, åtta på 39–47 % CPU = **~3 av 16 kärnor** för
+      artefakter som kastas i 153 av 153 gröna fall. **Misstänkt som bidragande
+      orsak till `TASK-74`:s B3** (test-budget vid mättnad) — vi betalar CPU för
+      diagnostik av ett fel betalningen bidrar till. Rek. `on-first-retry`, men
+      ska prövas mot vad diagnostiken förlorar
+- [ ] **`TASK-81`** — mätriggen till `scripts/`-verktyg (interfolierad A/B,
+      loadavg per körning, `--retries=0`, rådata sparad). **Fyra kort behöver
+      den inom kort** (`77` `78` `79` `80`); utan verktyg bygger var och en sin
+      variant och talen blir ojämförbara — precis det fel riggen finns för
 - [ ] **`TASK-78`** — merge queue bryter `TASK-73`:s ärvda klassning **i
       post-merge** för varje PR som inte är först i sin kögrupp: kön bygger post
       N ovanpå posterna före den, så merge-commitens träd avviker från
@@ -794,6 +808,8 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-29 | **`TASK-70.3` DONE — A7-spårets största post.** AC #1 godkänd på RATIONALE, ej bokstav: staging-jobben förekommer som skippade placeholders (`runner_id: null`, `steps: 0`), och literal frånvaro hade krävt radering ur `ci-suite.yml` som kortet förbjuder. Kritiska vägen bytte bärare utan att växa: 375 s staging → 429 s Acceptance, total 450 s mot tak 480 | `#395` · `#402` |
 | 2026-07-29 | **`TASK-70.1` DONE — MERGE QUEUE AKTIV.** Revert-vägen prövad SKARPT före aktivering med tom kö (på → verifierad → av → verifierad); `PUT` ersätter hela rules-arrayen, så vägen tillbaka är en FIL. Triggern landad separat FÖRE regeln, eftersom ingen PR annars kan landa — inklusive fixen. **AC #6 bevisad genom att göra det gamla förbudet:** `#404` och `#405` armerades SAMTIDIGT och båda landade. Aggregatorn rapporterar identiskt namn på båda ytorna (`30410841005` PR / `30410861975`+`30410912068` kö) | `#403` · `#404` · `#405` |
 | 2026-07-29 | **`TASK-77` + `TASK-78` mintade.** `77`: staging-mutexen binder bara CI, lokala script går förbi — funnen av en agent som bröt regeln två gånger under ett pass, andra gången med full kännedom. `78`: kön bryter post-merge-klassningen för PR:er som inte är först i kögruppen — **PR-grinden orörd**, Marcus fångade att första formuleringen inte sade var felet satt | `#406` |
+
+| 2026-07-29 | **`TASK-74` klar i parallell session — kortets KÄRNPREMISS falsifierad.** Fokus-tesen håller inte (`hem:437` är inget fokus-test; fällningarna säger *element(s) not found*), och "de sju" stämmer inte (sex av sju gav 0/10 i baslinjen). **Tre mekanismer med belägg:** B1 kall route-chunk mot expect-budgeten · B2 vaktens två observatörer · B3 test-budget vid mättnad. Agenten **deflaterade sitt eget tal**: 12 av arm A:s 13 fällningar kom ur EN körning vid loadavg 125. **`TASK-64`:s diagnos delvis falsifierad** — `person-detail:140` föll sex rader FÖRE `T26`:s data-grind, så grinden vaktar rätt sak av fel skäl; noterat i det stängda kortet. **Tre kort mintade ur rapporten:** `79` `80` `81` | — |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
