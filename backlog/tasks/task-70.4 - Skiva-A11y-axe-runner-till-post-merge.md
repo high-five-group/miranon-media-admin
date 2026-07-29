@@ -1,10 +1,10 @@
 ---
 id: TASK-70.4
 title: 'Skiva: A11y (axe-runner) till post-merge'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 16:33'
-updated_date: '2026-07-29 01:00'
+updated_date: '2026-07-29 01:22'
 labels:
   - ready-for-agent
 dependencies:
@@ -100,6 +100,26 @@ LOKALA GRINDAR, rörd fil-klass + kod-klassen som kontroll: actionlint med CI:s 
 FYND UTANFÖR SCOPET — redan bokfört, ej nytt: purge-racet (TASK-76) fällde TASK-70.3:s post-merge-dispatch (run 30406325230, Airtable DELETE 404) och öppnade ärende #398, som fortfarande är öppet. Denna skivas två dispatchar kördes därför SEKVENTIELLT, med noll överlappande purge — båda gröna. Racet är oförändrat av denna skiva.
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+STÄNGD 2026-07-29 av orkestreraren. PR #409 mergad som 3510fbe GENOM MERGE QUEUE — första kod-skivan som landade via kön, aktiverad samma kväll av TASK-70.1.
+
+CI verifierad oberoende av agentens egen vakt, på BÅDA ytorna: PR-ytan run 30412877347 (A11y skipped, CI Passed or Skipped success) och merge_group-ytan run 30413468345 (samma signatur). Att flytten håller även i kön var inte självklart och är därmed belagt, inte antaget.
+
+AC #1 — AVGÖRANDET SOM AGENTEN LÄMNADE: RATIONALE STYR, samma precedent som TASK-70.3 fick fyra timmar tidigare. Kriteriet krävde att jobbet 'INTE förekommer i jobblistan'. Det förekommer, som skippad placeholder (conclusion=skipped, runner_id=null, steps=0, started_at == completed_at; kontrast före ändringen 30408622828: runner_name satt, steps=11, 104 s). Literal frånvaro hade krävt radering ur ci-suite.yml — den form kortet förbjuder, eftersom nightly.yml och post-merge.yml anropar samma källa utan inputs. Avsikten är att a11y inte ska KÖRA i PR-grinden; ett jobb utan runner och utan steg gör det inte. Bedömningen är orkestrerarens och öppet bokförd, precis som 70.3:s.
+
+Att två skivor i rad krävde samma avgörande är i sig ett resultat: AC-formuleringen 'förekommer inte i jobblistan' är fel formulerad för en villkorad reusable-workflow, och nästa kort av samma klass bör skriva 'instansieras inte' i stället.
+
+VINSTEN I RÄTT ENHET, som kortet krävde: 104 s = 1,73 runner-minuter per ci.yml-körning som annars instansierat jobbet. Väggklockan är OFÖRÄNDRAD — bäraren är fortfarande Acceptance (424 -> 410 s, inom dess egen spridning 404/407/452). Agenten skrev ut att de -49 s som syns INTE går på flyttens konto. Det är rätt hantering: en mätning som inte kan tillskrivas ändringen ska inte bokföras som dess vinst.
+
+DEKLARERAT, EJ MÄTT: merge_group-multiplikatorn (2x) är härledd ur villkoret, inte observerad — ingen kod-PR hade passerat kön när agenten skrev. Den observationen finns NU i run 30413468345 ovan, som är just en kod-PR på kö-ytan med a11y skipped.
+
+ÄRLIG LUCKA som agenten redovisade: dependabot-halvan av villkoret är verifierad genom inspektion, inte körning.
+
+REGISTRERAT, EJ LAGAT: CONTRIBUTING.md rad 95 pekar på ci.yml test-staging, men jobbet bor i ci-suite.yml sedan S79. Preexisterande; agenten avstod som scope-krypning och posten bor nu i restlistans Spår E.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
