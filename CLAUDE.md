@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-28
+updated: 2026-07-29
 review_by: 2026-11-15
 status: stable
 ---
@@ -97,23 +97,36 @@ rollup-fixturerna, och ett datumval utanför sentinel-klustret. Detaljer +
 två gånger (2026-07-22 och 2026-07-26) innan skriptet fanns, och ett verktyg som
 inte ligger i sessionsstartens läs-ordning hittas inte när det behövs.
 
-### Landning sker i SEKVENS — aldrig två armerade PR:er samtidigt
+### Landning sker via MERGE QUEUE — maskinen äger ordningen sedan 2026-07-29
 
 All landning går via branch + PR (direktpush till `main` avvisas av ruleset,
-[ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md)). Ligger två PR:er
-landningsklara samtidigt **armeras de en i taget**: tyngst svit först, eller
-`gh pr update-branch` på nästa **före** armering. Aldrig båda på en gång, och
-aldrig `update-branch` mot en gren vars bygg-agent fortfarande arbetar.
+[ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md)). Armera med
+`gh pr merge --auto --merge`; **kön sköter sekvenseringen**. Den bygger varje
+post mot `main` plus posterna före den, så `BEHIND` uppstår inte längre av att
+två PR:er landar nära varandra.
 
-Formerna, utlösaren och CI-vaktens SHA-bikostnad:
+**Den gamla regeln — *"armera aldrig två samtidigt"* — är UPPHÄVD.** Den var
+korrekt så länge sekvenseringen var en mänsklig hand. Den handen är nu
+mekaniserad (`TASK-70.1`, A7:3): kön är en `merge_queue`-regel i rulesetet
+`main-skydd`, `min_entries_to_merge: 1` så en ensam PR landar direkt utan att
+vänta på sällskap.
+
+**Vad som fortfarande gäller:** armera aldrig en PR vars bygg-agent fortfarande
+arbetar, och kör aldrig `update-branch` mot en sådan gren.
+
+**Om kön går sönder:** vägen tillbaka är att ta bort `merge_queue`-regeln ur
+rulesetet via `gh api` — den kräver ingen landning och är därför oberoende av
+felläget. Den är prövad skarpt (på → verifierad → av → verifierad) före
+aktiveringen, inte efter. Formerna och kö-parametrarna:
 [`CONTRIBUTING.md`](CONTRIBUTING.md) § Landnings-ordningen.
 
 **Varför raden står här och inte bara i CONTRIBUTING:** regeln gäller i
 armerings-ögonblicket, och `CONTRIBUTING.md` auto-laddas inte i en
-Code-session — bara denna fil gör det. `L328` har varit nedskriven sedan S81
-och beskrev mekanismen korrekt; ändå gick orkestreraren i fällan två gånger
-under en och samma resume 2026-07-28. Samma skäl som granskningsdata-raden
-ovan: en regel utanför läs-ordningen tillämpas inte när den behövs.
+Code-session — bara denna fil gör det. Historiken är värd att minnas: `L328`
+var nedskriven sedan S81 och beskrev mekanismen korrekt, ändå gick
+orkestreraren i fällan två gånger under en och samma resume 2026-07-28. Det
+var beviset för att en regel utan mekanism inte efterlevs — och skälet till att
+den nu har en.
 
 ---
 
