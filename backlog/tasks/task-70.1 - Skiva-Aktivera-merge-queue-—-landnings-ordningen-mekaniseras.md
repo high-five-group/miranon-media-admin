@@ -1,10 +1,10 @@
 ---
 id: TASK-70.1
 title: 'Skiva: Aktivera merge queue — landnings-ordningen mekaniseras'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-28 16:31'
-updated_date: '2026-07-29 00:19'
+updated_date: '2026-07-29 00:30'
 labels:
   - ready-for-agent
 dependencies: []
@@ -55,14 +55,12 @@ VID FÖRSTA SKARPA LANDNINGEN EFTERÅT, OBSERVERA:
 <!-- AC:BEGIN -->
 - [x] #1 Ägarformen omverifierad live FÖRE arbetet: owner.type = Organization och visibility = public, utdata ur gh api redovisat i PR:n
 - [x] #2 ci.yml lyssnar på merge_group med aktivitetstyp checks_requested, utöver pull_request och push
-- [ ] #3 CI Passed or Skipped rapporteras med samma namn på både PR-ytan och merge_group-ytan — ett run-ID per yta redovisat
+- [x] #3 CI Passed or Skipped rapporteras med samma namn på både PR-ytan och merge_group-ytan — ett run-ID per yta redovisat
 - [x] #4 Merge queue-regeln är satt i repository-rulesetet main-skydd (19627609) med merge_method som stämmer med allowed_merge_methods — verifierat mot gh api efter landning
-- [ ] #5 Staging (API + E2E) kör INTE på båda ytorna: antalet körningar som tar concurrency-gruppen staging-tests per landad kod-PR är oförändrat eller lägre, mätt före och efter med båda talen redovisade
-- [ ] #6 Tvåsidigt bevis: två PR:er armerade samtidigt landar båda utan att någon går BEHIND, OCH vägen tillbaka är prövad — regeln kan tas bort ur rulesetet varefter landningen fungerar som före
+- [x] #5 Staging (API + E2E) kör INTE på båda ytorna: antalet körningar som tar concurrency-gruppen staging-tests per landad kod-PR är oförändrat eller lägre, mätt före och efter med båda talen redovisade
+- [x] #6 Tvåsidigt bevis: två PR:er armerade samtidigt landar båda utan att någon går BEHIND, OCH vägen tillbaka är prövad — regeln kan tas bort ur rulesetet varefter landningen fungerar som före
 - [x] #7 CONTRIBUTING.md § Landnings-ordningen uppdaterad eller avvecklad så den inte beskriver en ordning som maskinen numera äger
 <!-- AC:END -->
-
-
 
 ## Implementation Plan
 
@@ -82,10 +80,32 @@ Repots precedens för den ursprungliga klassningen var TASK-36.7 (ready-for-huma
 ORDNINGSNOT (oförändrad): kortet har inga deps och kan tas när som helst, men landar det EFTER A7:5 är mutex-dubbleringen redan avväpnad. Landar det före måste villkoringen lösas här.
 <!-- SECTION:PLAN:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+AKTIVERAD OCH BEVISAD 2026-07-29 (S91). Utförd av orkestreraren under egen hand enligt kortets exekveringsform.
+
+UTFÖRANDE-VILLKORET FÖRST: revert-vägen prövad SKARPT före aktivering, med tom kö. PUT ersätter hela rules-arrayen (GitHub REST), så vägen tillbaka är en FIL — rulesetets exakta tillstånd sparades innan något rördes. Sekvens: regel PÅ (exit 0, parametrar verifierade) -> VERIFIERAD -> AV (exit 0, noll merge_queue-regler kvar) -> VERIFIERAD, med enforcement/bypass/required check oförändrade genom hela provet. Först därefter sattes regeln på riktigt.
+
+ORDNINGEN LANDADE I TVÅ STEG av samma skäl: merge_group-triggern (PR #403) landades FÖRE regeln. Utan triggern kan ingen PR landa när regeln väl är satt — inklusive den PR som lägger till triggern.
+
+AC #1: owner.type=Organization, visibility=public, omverifierat live.
+AC #2: ci.yml lyssnar på merge_group types: [checks_requested].
+AC #3: 'CI Passed or Skipped' rapporterad med IDENTISKT namn på båda ytorna — PR-ytan run 30410841005 (event=pull_request) och merge_group-ytan run 30410861975 + 30410912068 (event=merge_group), samtliga success.
+AC #4: merge_queue-regeln i ruleset 19627609, merge_method=MERGE matchar allowed_merge_methods.
+AC #5: NOLL staging-jobb på båda ytorna. Strukturellt garanterat efter TASK-70.3, där run_staging: false är villkorslöst i ci.yml — staging instansieras aldrig av ci.yml oavsett event. Mutex-takers per landad PR från ci.yml: 0 före, 0 efter.
+AC #6: TVÅSIDIGT. Första halvan: PR #404 och #405 armerades SAMTIDIGT — förbjudet under den gamla regeln — och båda landade (d9f095b, 934188e), ingen gick BEHIND. Andra halvan: revert-vägen, prövad före aktivering enligt ovan.
+AC #7: CLAUDE.md + CONTRIBUTING.md omskrivna; den manuella sekvenseringen upphävd, historiken bevarad genomstruken.
+
+TVÅ SAKER SOM ÄNDRADE BETEENDE OCH BÖR VETAS: (1) 'gh pr merge --auto --merge' varnar nu 'The merge strategy for main is set by the merge queue' — flaggan ignoreras, kön äger strategin. Därför MÅSTE regelns merge_method matcha allowed_merge_methods. (2) Samma kommando ger två olika lägen: grön PR går direkt IN i kön (auto=EJ, mergeState=CLEAN), ogrön armeras och väntar.
+
+FYND SOM SKIVAN AVTÄCKTE, EJ ETT FEL I DEN: merge queue bryter TASK-73:s ärvda post-merge-klassning för varje PR som inte är först i sin kögrupp — kön bygger post N ovanpå posterna före den, så merge-commitens träd avviker från PR-headens och klassningen fail-closar till full svit. Mätt: d9f095b (först i kön) träd 373455a == 373455a -> skipped; 934188e (andra) träd 89000ee != ce04838 -> full svit. Bärs av TASK-78.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
