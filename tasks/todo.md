@@ -15,6 +15,27 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-29, sextonde pausen — städpasset som dukade för
+nästa resume)** — **TIO PR:er landade, noll röda körningar.** **MARCUS FÄLLDE SEX
+AV CODES PÅSTÅENDEN:** port 5399 binder inte (agenter kör aldrig sviterna lokalt)
+· talet 3 var aritmetik medan loggen bar 6 · staging-taket binder inte oss (noll
+av åtta kort rörde `src/`) · 28-kort-förslaget var scope-creep · tre av fyra
+spärrar motiverade med *"gratis"*, vilket inte är ett skäl · `Install Vale`
+ligger inte utanför exponeringen. **INGET AGENT-TAK ÄR FUNNET** — belagt är sex
+läsande; siffran får inte bli en norm. **RESTLISTAN LAGAD:** kontroll 2 byggd ur
+en kommentar utan kod (trefaldigt bevisad) · loggens tabell sju fragment → en ·
+`Spår E ×4→×3` · fem bärarlösa poster placerade. **TRÅDREGISTRET:** `T74`/`T73`
+och `T79`/`T78` stod omkastade — osynligt för varje strukturell kontroll.
+**FYND:** `CLAUDE.md` påstod två mekaniserade spärrar som **inte finns**.
+**ÅTTA KORT MINTADE** (`TASK-85`–`92`), pool `ready-for-agent` **3 → 9**.
+**TVÅ KORT BYGGDA AV AGENTER:** `TASK-83` (agenten räddade kortet från sin egen
+rekommendation — `--retry` täcker inte exit 35) · `TASK-84` **DONE**.
+**GRILLNINGEN:** `A2:8` avgjord (default-neka mot lista); `A2:7` skriven som
+design, **inte kortad** — Marcus: *"Vänta."* **SKÖRD: 5 fragment** [UNIVERSAL ×5].
+Numrering: 91/083/L360 (**53** fragment)/T110/f46/**task-93**. Full narrativ:
+sessionsdok **Del 27–30** + PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-29, femtonde pausen — efter steg 3:s stängning
 och backlog-grinden)** — **TJUGOSEX PR:er landade (`#418`–`#443`), NOLL röda
 körningar.** **NIO KORT STÄNGDA:** `TASK-70.6` `72` `75` `76` `77` `78` `81`

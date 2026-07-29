@@ -602,12 +602,6 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       mot en supply-chain-signal. Träffar den grind som ALDRIG skippas, alltså
       även en revert. **`sha256sum`-verifieringen är inte upp för diskussion.**
       AC #1 kräver att frekvensen MÄTS före form väljs → **`TASK-83`**
-- [ ] **`TASK-84`** — tre lokala staging-vägar går förbi `TASK-77`:s preflight:
-      `purge:staging`, `seed:review`, `test:preview:staging` saknar setup-projekt
-      att haka i. Rapporterat av `TASK-77`:s egen agent, som dokumenterade luckan
-      i `CONTRIBUTING` i stället för att tiga. `purge:staging` är skarpast — en
-      lokal purge mot en pågående CI-purge är exakt `TASK-76`:s race, med en
-      aktör mekanismen inte ser → **`TASK-84`**
 - [ ] **`T108`** (tråd, ej kort) — **MÅSTE LÖSAS (Marcus 2026-07-29).**
       Orkestreraren väntar på notifieringar som strukturellt aldrig kommer:
       **PR-landningar notifierar ingen.** Inträffade TVÅ gånger samma dag, och
@@ -866,6 +860,7 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-29 | **`TASK-76` DONE — purge-idempotensen.** Form (a) skript-fix; mutex-formen förkastad på tre grunder (täcker ej CI↔lokal · river medvetet designval `L348` · serialiserar). Klassificeraren fail-closed i FEM led och korsläser rec-ID:t mot batchen vi bad om. **AC #4 stängt på rationale: ytan finns inte längre** — kod-PR:er kör inte purge sedan `TASK-70.3` (verifierat i källan). Avsikten bevisad av ett STARKARE test: äkta race mot skarpa API:t, B förlorade alla fyra poster och överlevde. Fyra gröna post-fix-purger i CI | `#421` · `#427` |
 | 2026-07-29 | **`TASK-72` DONE — men arbetet var landat sedan 2026-07-28.** Kortet stod `To Do` med samtliga sex AC bockade och DoD obockad, medan disken bar hela lösningen (PR `#383`, `a264a16`, `.ci-wait-policy.conf` config-driven per Lesson #6). Upptäckt när kortet lästes INFÖR EN SPAWN — hade det spawnats hade en agent byggt om det som redan fanns. Alla AC omverifierade mot disk; `test-ci-wait.sh` 27/27 grön, `#383` tolv checkar `pass`. **Samma klass som `TASK-63`** | `#383` (arbetet) · stängning nedan |
 | 2026-07-29 | **`TASK-80` DONE — kortets KÄRNPREMISS falsifierad.** Egenlasten är verklig och oberoende replikerad (ffmpeg i 95 % av samplingarna, ≈4,2 av 16 kärnor) — men den **förvärrar inte flakigheten**: körtidsmedian −1 s mot ett brusgolv på ±72 s, och arm A nådde loadavg 105,7 UTAN fällning medan en fällning kom vid 18,5. Form **(c) behåll** vald MOT kortets egen rekommendation, på källbelägg: `shouldPreserveVideo` returnerar ovillkorligt `true` för `on-first-retry`, så en retry som PASSERAR sparar video — och 10 av 13 fällningar reproducerade inte vid retry. Noll beteendeändring; 38 rader kommentar som skriver den mätta kostnaden på raden den gäller. **Stängningen blockerad i sex timmar** av att `#446` och `#447` redigerade samma kortfil — konflikten additiv, löst av orkestreraren med båda sektionerna bevarade | `#446` · `#447` |
+| 2026-07-29 | **`TASK-84` DONE — preflighten täcker de tre otäckta ytorna.** `TASK-77`:s form UTVIDGAD, inte en andra mekanism: både Node-haken och Playwright-haken anropar samma `staging-semaphore.sh preflight`, semaforen orörd. `test:preview:staging` fick ett setup-projekt (täcker PROJEKTET, så en ny fil ärver preflighten); `purge:staging` och `seed:review` fick anrop i `main()` — ett kommandonamns-prefix bevakar namnet, inte kodvägen. **Bevis 3 ytor × 4 fall, exitkoder mätta separat:** kollision 76/76/1 · rent 0/0/0 · preflight av 0/0/0 · i CI 0/0/0. Att fällningen sker FÖRE basen nås är mätt — bannern saknas helt i utdatan. **Noll destruktiva staging-operationer** under verifieringen. Agenten rapporterade sin egen lucka (wiringen har inget test) → **`TASK-91`** | `#456` |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
