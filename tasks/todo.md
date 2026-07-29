@@ -15,6 +15,21 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-29, femtonde pausen — efter steg 3:s stängning
+och backlog-grinden)** — **TJUGOSEX PR:er landade (`#418`–`#443`), NOLL röda
+körningar.** **NIO KORT STÄNGDA:** `TASK-70.6` `72` `75` `76` `77` `78` `81`
+`82` `56`. **TRE MINTADE:** `82` `83` `84`. **TVÅ TRÅDAR:** `T107` `T108`.
+**STEG 3 STÄNGT.** **GRENSKULDEN STÄDAD** 282→17 fjärr, 222→17 lokalt.
+**NY GRIND I DRIFT:** `check-backlog-closure.sh` — läget 1 inkonsistent kort av
+160. **EN AGENT ARBETAR VID PAUSEN AVSIKTLIGT:** `TASK-80`:s mätserie är
+CPU-exklusiv; kontrollera PR-läge FÖRST vid resume. **MARCUS FYRA FÅNGSTER:**
+grenskulden var Codes beslut · arkitektur kräver alltid research · en rättelse är
+ingen lösning · notifierings-blindheten (två gånger). **VÄNTAR PÅ MARCUS:**
+`TASK-36.8` · `T107` · testgraf-beslutet · grillningens fråga 1. Numrering:
+91/083/L360 (**48** fragment)/T109/f46/**task-85**. Full narrativ: sessionsdok
+**Del 25–26** + PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-29, femtonde resumen — STEG 3 STÄNGT, tjugo
 PR:er, fyra research-pass)** — **ÅTTA KORT STÄNGDA:** `TASK-70.6` `72` `75` `76`
 `77` `78` `81` `82`. **TRE MINTADE:** `82` `83` `84`. **EN TRÅD:** `T107`.
