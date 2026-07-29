@@ -36,8 +36,15 @@ import { efKandidater, efNamn, narmasteHandler } from './ef-namnforslag';
  * task-62 i `ef-namnforslag.ts`.
  */
 
-/** Fixtur-serverns egna värdar — appen själv, aldrig ett omockat beroende. */
-const LOKALA_VARDAR = new Set(['localhost', '127.0.0.1']);
+/**
+ * Fixtur-serverns egna värdar — appen själv, aldrig ett omockat beroende.
+ *
+ * EXPORTERAD SEDAN task-56: WebSocket-vakten (`websocket-vakt.ts`) måste göra
+ * exakt samma undantag, och två handskrivna listor hade kunnat drifta isär —
+ * varvid den ena vakten börjat fälla fixtur-serverns egen trafik medan den
+ * andra släppte igenom. Symmetrin är därför strukturell, inte en konvention.
+ */
+export const LOKALA_VARDAR: ReadonlySet<string> = new Set(['localhost', '127.0.0.1']);
 
 function byggMeddelande(request: Request, mockade: readonly string[]): string {
   const rader = [
