@@ -72,6 +72,14 @@
 # (kön avstängd, admin-merge) — då gäller den gamla vägen oförändrat. Ändringen
 # är additiv: den lägger en bättre källa framför, den river ingen.
 #
+# KÄND BEGRÄNSNING, ÖPPET SKRIVEN: tvåförälder-kravet i steg (2) gäller BÅDA
+# vägarna, men VÄG A behöver egentligen bara första föräldern. Byter repot
+# merge-metod i kön till squash eller rebase får merge-commiten EN förälder, och
+# klassningen faller ut före VÄG A — fail-closed, alltså full svit på varje
+# landning. Kravet står kvar oförändrat eftersom repot landar med merge-commit
+# (ADR-076, `gh pr merge --merge`), och att bygga för en metod repot inte använder
+# vore spekulativ komplexitet. Byts metoden är detta raden att lyfta.
+#
 # FÖRKASTADE FORMER (TASK-78 § Vägval):
 #  (b) Klassa om från grunden mot merge-commitens diff mot första föräldern.
 #      Avvisad av ADR-077 § Beslut 1 rakt ut: det kräver en andra kopia av
@@ -227,7 +235,7 @@ fi
 
 parent_count=$(jq -r '.parents | length' <<<"${commit_json}")
 if [[ "${parent_count}" -lt 2 ]]; then
-    skal="ingen andra förälder (${parent_count} förälder/föräldrar) — ej en merge-commit, ingen PR-körning att ärva (full svit)."
+    skal="ingen andra förälder (${parent_count} förälder/föräldrar) — ej en merge-commit, ingen körning att ärva (full svit)."
     emit
 fi
 
