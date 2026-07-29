@@ -3,10 +3,10 @@ id: TASK-72
 title: >-
   Fynd: CI-vakten kan följa fel workflow och rapportera grönt utan att ha sett
   CI-körningen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 19:31'
-updated_date: '2026-07-28 21:13'
+updated_date: '2026-07-29 08:56'
 labels:
   - ready-for-agent
 dependencies: []
@@ -58,12 +58,38 @@ Relaterat, EJ samma sak: restlistans A3 bär redan en post om att rätta en fela
 - [x] #6 CONTRIBUTING.md:s DoD-rad uppdaterad om den anger en anropsform som inte längre är säker
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+STÄNGT 2026-07-29 (femtonde resumen). Arbetet var LEVERERAT OCH LANDAT sedan 2026-07-28 via PR #383 (`a264a16`, merge `049d8d9`) — kortet var bara aldrig flippat. Detta är alltså inte en leverans utan en bokförings-rättning.
+
+FYNDET: kortet stod `To Do` med samtliga sex AC redan bockade och DoD obockad, medan disken bar hela lösningen. Exakt samma klass som `TASK-63` bar tidigare i denna session, där tre dokument påstod motsatsen till registret. Upptäckt när kortet lästes inför en spawn — hade det spawnats hade en agent byggt om något som redan fanns.
+
+VAD SOM FAKTISKT LIGGER PÅ DISK, verifierat post för post 2026-07-29:
+
+AC #1 — defekten reproducerad och run-ID:na bevarade i `.ci-wait-policy.conf`:s kommentar: på commit `03d18888` valde den okvalificerade formen Post-merge (`30398517485`) i stället för CI (`30398517346`).
+
+AC #2 — formvalet blev alternativ (a), config-driven policy-fil, och motiveringen står i filen själv: logiken är universell och duplicerbar till andra spokes, värdet är projekt-specifikt. Samma hub-spoke-portabilitet som `.checklist-policy.conf`, `.frontmatter-policy.conf` och `.lesson-policy.conf` (Lesson #6, UNIVERSAL). Ett hårdkodat "CI" hade brutit den konventionen.
+
+AC #3 — alla tre lägen täckta: `T13a` (--commit), `T13b` (--pr via headRefOid), `T13c` (--branch). Dessutom `T13d` (flaggan slår policy-värdet) och `T13e` (--run fungerar utan policy).
+
+AC #4 — det tvåsidiga beviset är `T14`: "CI röd + annan workflow grön → 1 (RÖTT, inte falskt grönt)". Körd om 2026-07-29: grön.
+
+AC #5 — `scripts/test-ci-wait.sh` kör 27 fall, samtliga passerade vid omkörning 2026-07-29.
+
+AC #6 — `CONTRIBUTING.md` rad 112 skriver ut både den nya semantiken (exit 3 täcker saknat workflow-namn) OCH att formen fram till 2026-07-28 inte var säker. Den bokför alltså sin egen tidigare osäkerhet i stället för att tyst skrivas om.
+
+DoD #3 verifierad om 2026-07-29: PR #383 bär tolv checkar, samtliga `pass`, inklusive `CI Passed or Skipped`, `Test suite / Acceptance (hermetisk)` 7m2s och `Test suite / Staging (API + E2E)` 6m9s.
+
+DoD #4: PR #383 rörde sex filer, samtliga inom kortets yta (policy-filen, `ci.yml`, `CONTRIBUTING.md`, vakten, dess testsvit, kortet).
+
+VAD FYNDET SÄGER OM VÅRA KONTROLLER: restlistans mekaniska kontroll — lagad tidigare denna resume — jämför KARTAN mot REGISTRET. Här var kartan och registret ENIGA (båda sade öppen) och båda hade fel mot DISKEN. Ingen mekanism jämför registret mot disk, och den axeln är därmed obevakad. `TASK-63` och detta kort är två observationer av samma lucka.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
