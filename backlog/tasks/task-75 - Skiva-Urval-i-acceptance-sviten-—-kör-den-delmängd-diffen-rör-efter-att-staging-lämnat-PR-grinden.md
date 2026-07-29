@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 21:52'
-updated_date: '2026-07-29 08:58'
+updated_date: '2026-07-29 09:41'
 labels:
   - ready-for-agent
 dependencies:
@@ -54,13 +54,55 @@ Post-merge-lagret är dessutom skyddsnätet: efter A7:5 kör det full svit på m
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Urvalsmekanismen är en ALLOWLIST, aldrig blocklist — vid minsta osäkerhet faller körningen till full svit; formen motiverad mot ci.yml:s D1-klass som precedent
-- [ ] #2 Kritisk väg för en kod-PR mätt före och efter, båda talen redovisade i PR-texten
-- [ ] #3 Kontrastbevis: en PR som rör EN acceptance-fil kör den delmängden — run-ID redovisat; en PR som rör delad kod kör full svit — run-ID redovisat
+- [x] #2 Kritisk väg för en kod-PR mätt före och efter, båda talen redovisade i PR-texten
+- [x] #3 Kontrastbevis: en PR som rör EN acceptance-fil kör den delmängden — run-ID redovisat; en PR som rör delad kod kör full svit — run-ID redovisat
 - [ ] #4 Falsk-grön-risken prövad skarpt: en plantad regression i en fil som urvalet hoppar över fångas av post-merge-lagret — run-ID redovisat
 - [x] #5 Retry-tunga tester lämnade orörda: ingen timeout kortas och ingen retry-kedja trimmas för att vinna tid (det vore att testa något annat än appen)
 <!-- AC:END -->
 
+## Implementation Notes
 
+<!-- SECTION:NOTES:BEGIN -->
+BEVISKEDJAN — run-ID per riktning (mätt i CI, aldrig projicerat)
+
+MEKANIKEN: scripts/acceptance-urval.sh + ci.yml-steget "Acceptance-urval" +
+ci-suite.yml-inputen acceptance_selection. Landad i PR #424 (merge c3d134a).
+Skriptet äger NOLL globar — det läser D0-stegets egen other_changed_files, så
+docs-klassningen har fortsatt en enda hemvist (ADR-077 § Beslut 1).
+
+AC#3 KONTRASTBEVIS, BÅDA RIKTNINGAR
+  delad kod -> FULL KLASS   run 30438285427 (PR #424)
+    other_changed_files bar workflows + skript; urvalet blev tomt.
+    153 tester i 18 filer.
+  en spec-fil -> DELMÄNGD   run 30440413603 (PR #428, kastbar, stängd)
+    "Acceptance-urval: varje ändrad fil utanför D0-klassen är en
+     acceptance-spec (1 st) — klass-lokal diff, urval tillämpas."
+    "Running 6 tests using 1 worker" -> "6 passed (12.9s)".
+    Självtestet följde urvalet: 6 tester, 6 fällda av vakten.
+
+AC#2 KRITISK VÄG, BÅDA TALEN I CI (jobbet Acceptance (hermetisk))
+  FÖRE  411 s  full klass, 153 tester   run 30438285427
+  EFTER  57 s  1 spec vald, 6 tester    run 30440413603
+  -354 s, -86 %. Historiska före-tal: 422/433/422 s (2026-07-28).
+  Talet gäller den klass-lokala diffen, INTE varje kod-PR: en PR som rör src/**
+  faller till full klass och betalar fortfarande ~411 s (CONTRIBUTING.md
+  § Revert-vägen säger det rakt ut). ~40 s av de 57 är fast uppstart.
+  Vald spec: mer-vantelista (6 tester) mot klassens median 7 — representativ,
+  varken minsta (3) eller största (28).
+
+AC#4 — SE PR #424 § Sekvensberoende. Kriteriet förutsätter ett urval som KAN
+missa en regression. Denna design har ingen sådan lucka: urvalet väljer varje
+ÄNDRAD spec, en icke-ändrad spec kan inte bära ny regression, klassens enda
+readFileSync (hem.acceptance.test.ts:674) läser package.json som är
+!-exkluderad ur D0, och tests/support/**, playwright.config.ts samt all src/**
+ligger utanför D0 -> full klass. Inget artificiellt hål konstruerades för att
+kunna bocka rutan. Kriteriet hör till ett källkodsdrivet urval — den testgraf
+ADR-077 § Beslut 1 deferar, och som är ett arkitekturbeslut för Marcus.
+
+SKYDDSNÄTET: post-merge.yml och nightly.yml skickar ingen input och kör hela
+klassen. scripts/test-acceptance-urval.sh T15f grindar att defaulten förblir
+tom sträng.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
