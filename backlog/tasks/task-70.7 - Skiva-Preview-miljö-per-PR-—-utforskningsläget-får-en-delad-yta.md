@@ -4,9 +4,8 @@ title: 'Skiva: Preview-miljö per PR — utforskningsläget får en delad yta'
 status: To Do
 assignee: []
 created_date: '2026-07-28 17:13'
-updated_date: '2026-07-28 17:13'
-labels:
-  - ready-for-agent
+updated_date: '2026-07-29 19:15'
+labels: []
 dependencies: []
 parent_task_id: TASK-70
 ordinal: 150000
@@ -61,3 +60,30 @@ STEG 3 — bygg det valda, med AC 3-6 som kontrakt.
 
 ORDNING I FAMILJEN: sist, utan dep. Kortet blockerar ingenting och blockeras av ingenting — men det ska inte konkurrera ut 70.1-70.6, som alla rör den kritiska vägen.
 <!-- SECTION:PLAN:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-29 19:15
+---
+ETIKETTEN BORTTAGEN 2026-07-29 (S91 sjuttonde resumen, Marcus delegering). Kortet bar `ready-for-agent` men är inte plockbart i etikettens mening.
+
+GRUNDEN, mot kontraktet — inte mot omdöme:
+- ADR-071 beslut 1: `ready-for-agent`-etiketten + batch-ordern ÄR förhandskvittot för commit + push inom kortets scope.
+- ADR-071 beslut 3: etiketten flippas FÖRST på Marcus designbeslut.
+- triage-labels.md: etiketten betyder 'Fullt specificerat och redo för en AFK-agent'.
+- Detta korts AC #2 är en STOPP-grind: 'Marcus har kvitterat plattform och kostnadsbild innan något byggs.'
+
+De två kan inte båda hålla. Ett kort vars eget AC förbjuder bygge före ett ännu ofattat Marcus-beslut är per definition inte fullt specificerat. Mätt kontrast: av de tio kort som bar etiketten var detta det ENDA med en Marcus-STOPP i sitt AC — de nio övriga hade noll träffar på STOPP-grind/kvittens-krav.
+
+Kortet är därmed oetiketterat, och oetiketterat plockas aldrig (18.19/18.20-precedenten). Det är inte en nedprioritering: kortets innehåll är oförändrat och dess steg 0 står kvar.
+
+VÄGEN TILLBAKA, i ordning:
+1. Steg 0 besvaras med DATA — hur många granskningar blockerades faktiskt av avsaknad preview de senaste två veckorna? Är svaret noll är kortets egen ärliga rekommendation att STÄNGA det med motivering, inte att bygga.
+2. Ger steg 0 ett skäl att gå vidare: research per AC #1 (tre alternativ, primärkällor) + datafrågan (fixturvärlden vs staging).
+3. Marcus kvitterar plattform + kostnad (AC #2).
+4. FÖRST DÅ flippas `ready-for-agent` tillbaka, och kortet blir plockbart i etikettens fulla mening.
+
+Poolen är därmed NIO plockbara kort, vilket är exakt vad sextonde resumens dukning sade. Dukningens lista var korrekt; etiketten på detta kort var det inte.
+---
+<!-- COMMENTS:END -->
