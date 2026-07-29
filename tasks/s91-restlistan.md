@@ -595,13 +595,6 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
 
 - [ ] **`TASK-53`** — 429-backoffen väntar 1 s där Airtable kräver 30 s. Enda
       posten i S91 som är en defekt i **produktionskod**
-- [ ] **`TASK-83`** — två curl-hämtade verktyg (`shellcheck`, `actionlint`) är
-      enskild felkälla i det ALLTID-PÅ `lint`-jobbet: `curl -sL` utan `--retry`,
-      ingen cache. Mätt 2026-07-29 på `#430`: exit **35** (`CURLE_SSL_CONNECT_ERROR`)
-      efter **0,13 s** — `sha256sum -c` hann aldrig köra, vilket är diskriminanten
-      mot en supply-chain-signal. Träffar den grind som ALDRIG skippas, alltså
-      även en revert. **`sha256sum`-verifieringen är inte upp för diskussion.**
-      AC #1 kräver att frekvensen MÄTS före form väljs → **`TASK-83`**
 - [ ] **`T108`** (tråd, ej kort) — **MÅSTE LÖSAS (Marcus 2026-07-29).**
       Orkestreraren väntar på notifieringar som strukturellt aldrig kommer:
       **PR-landningar notifierar ingen.** Inträffade TVÅ gånger samma dag, och
@@ -861,6 +854,7 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-29 | **`TASK-72` DONE — men arbetet var landat sedan 2026-07-28.** Kortet stod `To Do` med samtliga sex AC bockade och DoD obockad, medan disken bar hela lösningen (PR `#383`, `a264a16`, `.ci-wait-policy.conf` config-driven per Lesson #6). Upptäckt när kortet lästes INFÖR EN SPAWN — hade det spawnats hade en agent byggt om det som redan fanns. Alla AC omverifierade mot disk; `test-ci-wait.sh` 27/27 grön, `#383` tolv checkar `pass`. **Samma klass som `TASK-63`** | `#383` (arbetet) · stängning nedan |
 | 2026-07-29 | **`TASK-80` DONE — kortets KÄRNPREMISS falsifierad.** Egenlasten är verklig och oberoende replikerad (ffmpeg i 95 % av samplingarna, ≈4,2 av 16 kärnor) — men den **förvärrar inte flakigheten**: körtidsmedian −1 s mot ett brusgolv på ±72 s, och arm A nådde loadavg 105,7 UTAN fällning medan en fällning kom vid 18,5. Form **(c) behåll** vald MOT kortets egen rekommendation, på källbelägg: `shouldPreserveVideo` returnerar ovillkorligt `true` för `on-first-retry`, så en retry som PASSERAR sparar video — och 10 av 13 fällningar reproducerade inte vid retry. Noll beteendeändring; 38 rader kommentar som skriver den mätta kostnaden på raden den gäller. **Stängningen blockerad i sex timmar** av att `#446` och `#447` redigerade samma kortfil — konflikten additiv, löst av orkestreraren med båda sektionerna bevarade | `#446` · `#447` |
 | 2026-07-29 | **`TASK-84` DONE — preflighten täcker de tre otäckta ytorna.** `TASK-77`:s form UTVIDGAD, inte en andra mekanism: både Node-haken och Playwright-haken anropar samma `staging-semaphore.sh preflight`, semaforen orörd. `test:preview:staging` fick ett setup-projekt (täcker PROJEKTET, så en ny fil ärver preflighten); `purge:staging` och `seed:review` fick anrop i `main()` — ett kommandonamns-prefix bevakar namnet, inte kodvägen. **Bevis 3 ytor × 4 fall, exitkoder mätta separat:** kollision 76/76/1 · rent 0/0/0 · preflight av 0/0/0 · i CI 0/0/0. Att fällningen sker FÖRE basen nås är mätt — bannern saknas helt i utdatan. **Noll destruktiva staging-operationer** under verifieringen. Agenten rapporterade sin egen lucka (wiringen har inget test) → **`TASK-91`** | `#456` |
+| 2026-07-29 | **`TASK-83` DONE — och agenten räddade kortet från sin EGEN rekommendation.** Kortet föreslog `--retry N --retry-connrefused`. curls "transient" är en UPPRÄKNAD mängd, och **exit 35 `CURLE_SSL_CONNECT_ERROR` ingår inte** — kortets bokstavliga fix hade landat grönt, stängt kortet och lämnat felläget intakt. Vald form `--retry-all-errors`. **Mätt:** 1 fällning på 988 avgjorda exekveringar (~0,1 %), n=1 och det breda intervallet utskrivet i kort, PR OCH `ci.yml`. **Tvåsidigt bevis mot lokal TLS-server som bryter handskakningen** — äkta exit 35: dåvarande form fäller · kortets (a) fäller · vald form passerar · korrupt nyttolast fäller ⇒ `sha256sum` intakt. Agentens FÖRSTA falsifieringsförsök gav grönt; den bytte sond i stället för att ta det som kvitto. Tredje instansen (`Install Vale`) rapporterad, ej tyst åtgärdad → **`TASK-92`** | `#457` |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som

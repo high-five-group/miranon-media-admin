@@ -3,10 +3,10 @@ id: TASK-83
 title: >-
   Fynd: två curl-hämtade verktyg är enskild felkälla i den alltid-på
   lint-grinden — ingen retry, ingen cache
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 09:50'
-updated_date: '2026-07-29 17:46'
+updated_date: '2026-07-29 18:04'
 labels:
   - ready-for-agent
 dependencies: []
@@ -140,10 +140,47 @@ beslutet är ändå inskrivna i ci.yml intill steget, vilket är den plats näst
 läsare når.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+DONE 2026-07-29 (S91, sextonde resumen). PR #457, landad 18:03:51Z genom merge queue, CI grön per jobb.
+
+AGENTEN RÄDDADE KORTET FRÅN SIN EGEN REKOMMENDATION. Kortet föreslog `--retry N --retry-connrefused --retry-delay S`. curls "transient" är en UPPRÄKNAD mängd — timeout, FTP 4xx, HTTP 408/429/500/502/503/504/522/524 — och exit 35 CURLE_SSL_CONNECT_ERROR ingår INTE. `--retry-connrefused` adderar bara ECONNREFUSED. Kortets bokstavliga fix hade landat grönt, stängt kortet och lämnat felläget HELT INTAKT.
+
+VALD FORM: curl -fsSL --retry 5 --retry-all-errors --retry-max-time 60 "${URL}" -o FIL. `--retry-all-errors` kräver curl 7.71.0+; runnern kör 8.5.0. `-o` är förutsättningen — curl nollställer en fildestination mellan försök, en shell-redirect inte.
+
+MÄTNINGEN (AC#1). Enumererade ci.yml-runs via `gh api .../runs/<id>/jobs?filter=all`. filter=all var avgörande: #430:s fällning kördes om till grönt, så en mätning på run.conclusion hade missat exakt det fall kortet bygger på. Riggen validerades mot #430 FÖRE bred körning och återfann fällningen.
+
+  fönster 2026-07-22T17:10:39Z → 2026-07-29T17:26:38Z (7,01 dygn), n = 1000 runs
+  Install shellcheck  1014 exekveringar → 1 failure, 987 success, 26 utan verdikt
+  Check workflow files 1014 exekveringar → 0 failure, 995 success, 19 utan verdikt
+
+1 fällning på 988 avgjorda ≈ 0,1 %, ungefär en i veckan vid ~145 lint-jobb/dygn. n=1 ⇒ brett intervall, utskrivet i kort, PR OCH ci.yml. Fönstret blev 7 dygn och inte 30 för att GitHubs list-API returnerar max 1000 poster — de 1000 nyaste är sammanhängande, alltså en fullständig uppräkning av just det fönstret, inte ett stickprov.
+
+TVÅSIDIGT BEVIS (AC#4), mot en lokal TLS-server som bryter handskakningen ⇒ ÄKTA exit 35, samma kod som #430:
+
+  -sL (dåvarande)                        nätfel → 35, fäller
+  -sL --retry 5 --retry-connrefused      nätfel → 35, fäller   ← kortets egen (a)
+  vald form                              nätfel → 0, passerar (2 brott, leverans på tredje, dl.bin: OK)
+  vald form                              korrupt nyttolast → 1, fäller (dl.bin: FAILED)
+
+Rad 3-4 är de tvåsidiga; rad 1-2 visar att flaggvalet avgjorde. Rad 3 visar att sha256sum kör och passerar i lyckad väg — verifieringen intakt, inte kringgången.
+
+FÖRKASTADE: (b) cache tar inte bort felläget (miss ⇒ nät ändå) och cachad UPPACKAD binär skulle hoppa över sha256 · (c) river ADR-029 § Third-party Actions-policy och återinför klassen korrigeringen 2026-07-23 tog bort · (d) faller på kostnadsasymmetri.
+
+AC#5 var villkorat på form (d), som inte valdes. Bockat med skälet skrivet i ci.yml intill steget — per husets standard är en bockad ruta med skrivet skäl entydig, medan en obockad ruta på ett stängt kort är tvetydig för alltid.
+
+FALSIFIERING ÅT ANDRA HÅLLET: en införd SC2086 i det redigerade run-blocket FÄLLDES av actionlint (exit 1, ci.yml:760); återställd exit 0. Agentens FÖRSTA falsifieringsförsök gav exit 0 — den tolkade det inte som ett grönt kvitto utan bytte sond.
+
+REGISTRERAT, EJ TYST ÅTGÄRDAT: en tredje instans av mönstret finns — Install Vale (ci.yml:1015), curl+sha256 utan retry i docs-jobbet. Mintad som TASK-92 efter mätning: docs-jobbet är villkorat på docs_changed men körde på SAMTLIGA SEX PR:er samma dag, så exponeringen är jämförbar och inte lägre.
+
+Lesson-fragment: retry-flaggan-tacker-en-uppraknad-felmangd-las-den.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
