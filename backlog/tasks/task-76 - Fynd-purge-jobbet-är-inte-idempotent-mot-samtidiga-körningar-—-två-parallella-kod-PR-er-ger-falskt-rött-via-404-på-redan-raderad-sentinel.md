@@ -3,10 +3,10 @@ id: TASK-76
 title: >-
   Fynd: purge-jobbet är inte idempotent mot samtidiga körningar — två parallella
   kod-PR:er ger falskt rött via 404 på redan raderad sentinel
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 22:59'
-updated_date: '2026-07-29 08:45'
+updated_date: '2026-07-29 09:33'
 labels:
   - ready-for-agent
 dependencies: []
@@ -65,7 +65,7 @@ Två former är möjliga och ska vägas mot varandra, inte antas: (a) behandla 4
 - [x] #1 404 på DELETE av en redan raderad sentinel fäller INTE jobbet — bevisat med ett rött-först-test som failar före fixen och passerar efter
 - [x] #2 Valet mellan skript-fix och mutex motiverat i PR:n mot båda alternativen; det förkastade alternativet bär sitt skäl
 - [x] #3 404 som beror på fel bas eller fel tabell fäller FORTFARANDE — negativt self-test redovisat, annars är fixen fail-open
-- [ ] #4 Två samtidiga kod-PR:er kör purge utan att någon blir röd — bevisat med två run-ID:n körda i överlappande fönster, tidsstämplar redovisade
+- [x] #4 Två samtidiga kod-PR:er kör purge utan att någon blir röd — bevisat med två run-ID:n körda i överlappande fönster, tidsstämplar redovisade
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -86,6 +86,46 @@ PAGINERINGEN FÖRVÄRRAR MEN ORSAKAR INTE: listSentinels() är offset-paginerad 
 RACET BLIR DYRARE EFTER TASK-70.3, INTE BILLIGARE — agentens fynd, och det som gör kortet brådskande. Efter A7:5 är post-merge den PRIMÄRA staging-bäraren. Ett purge-race där ger inte längre en röd PR utan en RÖD POST-MERGE, vilket automatiskt öppnar ett tilldelat ärende med REVERT-FÖRSLAG på ett träd som redan ligger i main. Observation 3 ovan är exakt det fallet och har alltså redan inträffat en gång.
 
 Konsekvens för prioriteringen: kortet bör tas i nära anslutning till att TASK-70.3 landar, inte skjutas till en senare våg.
+
+AC #4 STÄNGT PÅ RATIONALE, EJ BOKSTAV — orkestrerarens beslut 2026-07-29 (femtonde resumen). Agenten lämnade det medvetet öppet och bad om två CI-run-ID:n; beslutet att inte producera dem är mitt, och skälet skrivs ut här i sin helhet.
+
+### 1. AC:ns BOKSTAV är otagbar — ytan finns inte längre
+
+Kriteriet lyder "två samtidiga KOD-PR:er kör purge". Kod-PR:er kör inte purge alls sedan `TASK-70.3`. Verifierat i källan av orkestreraren, inte antaget ur agentens rapport:
+
+  ci.yml:746           run_staging: false   (VILLKORSLÖST)
+  ci-suite.yml:73      purge gatad på `if: inputs.run_staging && …`
+  post-merge.yml:210   INGEN `with:` -> ci-suite:s defaulter -> run_staging: true
+
+Purge kör alltså numera enbart i post-merge och natten. Kortets observationer 1-2 togs på PR-ytan innan raden blev villkorslös; observation 3 (nightly x post-merge) ligger på den yta som finns kvar. Agentens egen PR bevisar det: `Staging sentinel purge: skipping`.
+
+### 2. AC:ns AVSIKT är bevisad — och av ett STARKARE test än det begärda
+
+Agenten mätte ett äkta race mot SKARPA Airtable-API:t med den fixade koden: två processer, fullt överlappande fönster.
+
+  A: 08:40:38 -> 08:40:44Z  exit 0
+  B: 08:40:38 -> 08:40:44Z  exit 0
+  B förlorade racet på ALLA FYRA poster i första målet, loggade
+  post-för-post-fallbacken och överlevde. Före fixen: exit 2.
+
+Ett CI-buret race hade prövat samma script mot samma API. Enda skillnaden är exekveringsmiljön — och felläget (TOCTOU på Airtable DELETE) är miljöoberoende, det bestäms av API-svaret. Den lokala formen är dessutom STARKARE på en punkt: överlappningen var garanterad, inte hoppfull, och förloraren förlorade alla fyra posterna.
+
+### 3. Jobb-omslaget är bevisat separat — fyra gröna post-fix-körningar
+
+Det enda CI-ytan hade lagt till är att jobb-omslaget fungerar. Det är redan belagt, fyra gånger samma förmiddag:
+
+  dbe1c0db  09:06:20 -> 09:06:28Z  success
+  58a1a104  09:12:36 -> 09:12:50Z  success
+  c3d134a7  09:26:25 -> 09:26:35Z  success
+  04a58780  09:27:30 -> 09:27:39Z  success
+
+De två sista ligger 53 s isär — närmast en naturlig överlappning kom, och inte nära nog. Purge-fönstret är 8-14 s, medan kön lägger landningar minuter isär. En naturlig överlappning uppstår alltså inte, och en framtvingad hade krävt två dispatchade fullsviter (~20 min runner + staging-mutex-kontention + risk för larm-ärende) för noll ny information.
+
+### 4. Varför detta inte är att bocka rutan
+
+Agenten vägrade uttryckligen bocka på sitt lokala bevis, och det var rätt av den — den äger inte omformuleringen av ett AC. Beslutet att omformulera hör orkestreraren till, och det fattas här ÖPPET i stället för tyst: **AC #4:s yta är obsolet, dess avsikt är uppfylld, och kriteriet borde ha lytt "två samtidiga purge-KÖRNINGAR" i stället för "två samtidiga kod-PR:er".**
+
+Detta är tredje gången på två dygn ett AC godkänns på rationale (`TASK-70.3`, `TASK-70.4`, nu detta) och ANDRA gången orsaken är att kriteriet beskriver en yta som en senare skiva flyttade. Mönstret är värt en formregel: **ett AC som namnger en CI-yta åldras med den ytan.** Skriv avsikten, inte adressen.
 <!-- SECTION:NOTES:END -->
 
 ## Comments
@@ -222,10 +262,39 @@ OFULLSTÄNDIG: den förklarar in-flight-skyddet utan att nämna att idempotensen
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+DONE 2026-07-29 (femtonde resumen). Levererad av bygg-agent i egen worktree; PR #421 (`796fffd`, merge `dbe1c0d`). AC #4 stängt av orkestreraren på RATIONALE — se Implementation Notes för hela skälet.
+
+VALD FORM: (a) skript-fix i `scripts/purge-staging-sentinels.mjs`. `ci-suite.yml` rördes ALDRIG av denna skiva.
+
+Form (b) — purge under `staging-tests`-mutexen — förkastades på tre grunder, och samordnings-spärren mot `TASK-75` var uttryckligen INTE en av dem:
+
+1. Den täcker inte alla racande par. Mutexen är CI<->CI; `npm run purge:staging` är en dokumenterad lokal väg och racet hade överlevt.
+2. Den river ett medvetet designval utan att göra skriptet korrekt (`L348`, ur `TASK-50`, där samma mutex föreslogs och förkastades).
+3. Den serialiserar: purge mäts till 8-14 s, och den tiden hade lagts på staging-kön för allt annat.
+
+MEKANISMEN: `isAlreadyDeletedError()` + post-för-post-fallback i `deleteRecords`. `ApiError` bär nu `status`/`body` separat, så klassificeringen aldrig parsar en formaterad sträng.
+
+FAIL-CLOSED I FEM LED, verifierat i källan av orkestreraren och inte bara i rapporten: status måste vara exakt 404 · kroppen måste parsa som JSON · `error` måste vara ett objekt (ej array) · `error.type` måste vara exakt `NOT_FOUND` · meddelandet måste matcha mönstret MED ett fångat rec-ID — och det ID:t måste finnas i den batch vi faktiskt bad om. En 404 från fel bas skulle behöva nämna ett av VÅRA egna rec-ID:n för att svaljas.
+
+BEVIS I BÅDA RIKTNINGAR: rött-först i två former (ofixad kod -> exit 1 med `SyntaxError`; kastrerad klassificerare -> exit 1, mekanismtestet föll med EXAKT kortets produktionsfel). Grönt: exit 0, 47 gröna (32 -> 47 fall). Under kastreringen förblev ALLA negativa test gröna — kastrering gör klassificeraren mer fail-closed, inte mindre. Fallbacken bevisas dessutom inte vara en 404-svälj: ett fatalt fel mitt i fallbacken kastar vidare.
+
+FELFORMERNA ÄR MÄTTA, INTE ANTAGNA (live mot staging, inget muterat, alla rec-ID:n fabricerade): okänd post -> `404 NOT_FOUND`; okänd tabell / okänd bas / prod-basen -> `403`.
+
+CI PER JOBB på PR #421: `CI Passed or Skipped` pass, tolv checkar totalt. Tre jobb `skipping` (A11y, Staging, purge) — normalt urval för diffen, och `L322` gäller: ett skippat jobb bevisar ingenting. Fixen är därför bevisad på post-merge-ytan i stället, fyra gröna körningar samma förmiddag: `dbe1c0db` 09:06:20-28 · `58a1a104` 09:12:36-50 · `c3d134a7` 09:26:25-35 · `04a58780` 09:27:30-39.
+
+TVÅ SAKER SOM LÄMNADE KORTET SOM EGNA POSTER:
+
+1. `TASK-82` mintat — `scripts/test-purge-staging-sentinels.mjs` körs av INGET CI-jobb. Denna skivas fail-open-vakt (AC #3) bor alltså helt i en svit ingen kör automatiskt. Agenten eskalerade, fattade inget beslut; orkestreraren verifierade och fann att 13 av 15 guard-sviter ÄR wirade — de två som inte är det är undantagen, inte normen.
+2. `ci-suite.yml`:s kommentar om ålders-guarden preciserad i denna commit: raden var SANN men OFULLSTÄNDIG (den förklarade in-flight-skyddet utan att nämna att det är idempotensen som bär samtidigheten). Agenten rörde den inte — delad yta med `TASK-75` — och överlämnade den.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
