@@ -224,6 +224,15 @@ jobs:
   # `npm run metrics:ci`. Testsviten (fixtur-data) körs som första steg så
   # test-ci-metrics.mjs har en återkommande CI-bärare utan att ci.yml rörs.
   # Skriptet är beroendefritt (node + gh) — inget npm ci behövs.
+  #
+  # Jobbet bär sedan TASK-81 testsviten för ÄNNU ett mätverktyg
+  # (scripts/flake-matserie.mjs). Skälet det bor här och inte i ci.yml:s
+  # grindvakts-steg är att ingendera är en GRIND — de är mätare, och ci.yml:s
+  # steg heter "Test gatekeeper script suites". Kadens-argumentet (L43 /
+  # ADR-039 § lesson→grind: en testsvit som inte körs fortlöpande ruttnar —
+  # TASK-72:s empiri) gäller ändå, och nattlig kadens räcker för en mätare.
+  # Även flake-riggens testsvit är beroendefri (node, fixtur-data, startar
+  # aldrig Playwright).
   nightly-metrics:
     name: CI-mätning (siffror, ej känsla)
     runs-on: ubuntu-latest
@@ -244,6 +253,14 @@ jobs:
 
       - name: Metrics-testsvit (fixtur-data, aldrig levande API)
         run: node scripts/test-ci-metrics.mjs
+
+      - name: Flake-riggens testsvit (fixtur-data, startar aldrig Playwright)
+        # TASK-81: scripts/flake-matserie.mjs bär de fyra egenskaper TASK-74:s
+        # mätning visade bärande (interfoliering, loadavg per körning,
+        # retries=0, rådata per testresultat). Sviten prövar att de är KODADE
+        # och inte bara beskrivna — bl.a. att byggPlan inte kan producera en
+        # blockad serie och att en oläsbar loadavg blir OKÄND, aldrig 0.
+        run: node scripts/test-flake-matserie.mjs
 
       - name: CI-mätning (fönster 50 runs) → logg + step-summary
         env:

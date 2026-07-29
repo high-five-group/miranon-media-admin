@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-29 00:57'
+updated_date: '2026-07-29 08:43'
 labels:
   - ready-for-agent
 dependencies: []
@@ -46,12 +47,14 @@ Riggen finns i TASK-74:s agents arbete; hämta den därifrån i stället för at
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Verktyget kör interfolierad A/B med godtyckligt antal varv, och blockad körning är INTE möjlig — formen är kodad, inte en instruktion att följa
-- [ ] #2 loadavg loggas per körning och finns i rådatan; en körning utan loadavg-värde rapporteras som OKÄND, aldrig som noll
-- [ ] #3 Rådata sparas per testresultat, inte bara aggregat — en efterhandsdeflatering av typen TASK-74 gjorde ska vara möjlig utan omkörning
+- [x] #1 Verktyget kör interfolierad A/B med godtyckligt antal varv, och blockad körning är INTE möjlig — formen är kodad, inte en instruktion att följa
+- [x] #2 loadavg loggas per körning och finns i rådatan; en körning utan loadavg-värde rapporteras som OKÄND, aldrig som noll
+- [x] #3 Rådata sparas per testresultat, inte bara aggregat — en efterhandsdeflatering av typen TASK-74 gjorde ska vara möjlig utan omkörning
 - [ ] #4 Verkligt bruk bevisat: verktyget kört skarpt på ETT av TASK-79/80 och talen redovisade i det kortets PR
-- [ ] #5 Ingen tröskel för 'acceptabel flakighet' kodad i verktyget — bedömningen hör till korten som använder det, och det ska stå i filhuvudet
+- [x] #5 Ingen tröskel för 'acceptabel flakighet' kodad i verktyget — bedömningen hör till korten som använder det, och det ska stå i filhuvudet
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
