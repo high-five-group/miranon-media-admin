@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 23:39'
+updated_date: '2026-07-29 10:25'
 labels:
   - ready-for-agent
 dependencies: []
@@ -53,16 +54,36 @@ Rekommendationen ska motiveras mot alla tre, och det förkastade bära sitt skä
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Mekanismen fäller eller varnar när ett lokalt staging-script startas medan CI håller staging-tests — bevisat skarpt med en avsiktligt framkallad kollision
-- [ ] #2 Valet motiverat mot alla tre formerna (a/b/c) i PR:n; de förkastade bär sina skäl
-- [ ] #3 Mekanismen blockerar INTE en legitim lokal körning när CI är tyst — negativt self-test redovisat, annars byter vi en tyst risk mot en ständig broms
-- [ ] #4 Vägen förbi mekanismen är dokumenterad och medveten (en utvecklare måste kunna köra ändå när hen vet vad hen gör) — men den ska kräva ett aktivt val, inte vara default
+- [x] #1 Mekanismen fäller eller varnar när ett lokalt staging-script startas medan CI håller staging-tests — bevisat skarpt med en avsiktligt framkallad kollision
+- [x] #2 Valet motiverat mot alla tre formerna (a/b/c) i PR:n; de förkastade bär sina skäl
+- [x] #3 Mekanismen blockerar INTE en legitim lokal körning när CI är tyst — negativt self-test redovisat, annars byter vi en tyst risk mot en ständig broms
+- [x] #4 Vägen förbi mekanismen är dokumenterad och medveten (en utvecklare måste kunna köra ändå när hen vet vad hen gör) — men den ska kräva ett aktivt val, inte vara default
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+VÄGVAL: (b) preflight — FAIL-CLOSED, inte rådgivande. Mekanismen är ett nytt subkommando i den befintliga semaforen: `bash scripts/staging-semaphore.sh preflight <ägare>` frågar GitHubs körnings-API om ett staging-rörande jobb är igång/köat och fäller med exit 76. Wirad i Playwrights setup-projekt (tests/api/auth.setup.ts → api-staging + kontraktsvakt; tests/e2e/auth.setup.ts → chromium-authenticated). Värden i .staging-semaphore-policy.conf, testsvit scripts/test-staging-semaphore.sh (19 fall).
+
+(a) DISTRIBUERAT LÅS I BASEN — FÖRKASTAD. Den kräver en gemensam sanningskälla och att BÅDA sidor tar/släpper låset, alltså en ändring i ci-suite.yml + varje lokal väg. Tre skäl: (1) det är ett arkitektur-val, inte en avgränsad rättning — ägs av Marcus, inte av detta kort; (2) ett kvarglömt lås blockerar allt, och en trasig städning i testvägen är en ny felkälla i just det led som ska bevisa att systemet fungerar; (3) den lägger skrivningar i den bas den skyddar, mot Airtables P26/P27-vägg (samma bas, ingen per-run-isolering). Riktningen ägs redan av T85 våg 3.
+
+(c) ACCEPTERA OCH DOKUMENTERA — FÖRKASTAD, och kortets eget skäl står: repot har precedent för att rådgivande lägen inte efterlevs. Fyndet ÄR det beviset — TASK-70.3:s agent kände till regeln vid tillfälle 2 och bröt den ändå. En rad till i CONTRIBUTING hade lagt en femte regel ovanpå en fjärde som inte höll.
+
+LÄGET OMMÄTT 2026-07-29, inte ärvt från kortskrivningen: ci.yml skickar `run_staging: false` VILLKORSLÖST (rad 829), så PR-grinden tar inte mutexen alls. Bärarna är post-merge.yml och nightly.yml. Preflighten pekar därför på de två — med lift-villkor skrivet i conf-filen om ci.yml åter börjar köra staging.
+
+PRECISION FRAMFÖR RUN-NIVÅ (AC#3): jobb-nivå, inte körnings-nivå. En docs-landning ärver D0 och ger `completed/skipped` på svit-raden (verifierat mot körning 30440662509) — den fäller inte. Run-nivå hade blockerat lokalt arbete vid VARJE landning, vilket är den ständiga broms AC#3 varnar för. Anropar-raden räknas dock som hållare tills den är completed: innan reusable-jobben expanderats finns bara den raden, och att läsa den frånvaron som grönt ljus vore L322-klassen.
+
+ÄRLIG GRÄNS, skriven i CONTRIBUTING: preflighten är en kontroll vid START, inte ett hållet lås. En CI-körning som startar EFTER din lokala start fångas inte. Fönstret krymper kraftigt men stängs inte — det kräver (a). Två ytor bär medvetet inte mekanismen: purge:staging och seed:review (egna Node-script) samt test:preview:staging (inget setup-projekt); de har manuell preflight dokumenterad.
+
+BEVIS. Skarpt, mot ÄKTA CI: körning 30443445340 (post-merge) med `Staging sentinel purge` queued→in_progress medan `npm run test:api:staging` startades → NPM_EXIT=1, "172 did not run", noll begäran mot staging. Sonden ensam mot körning 30442315955 med `Staging (API + E2E)` in_progress → exit 76; samma körning completed → exit 0. Negativt självtest (AC#3): npm run test:api med CI tyst → 419 passed, exit 0, hela vägen genom preflighten. Förbi-vägen (AC#4) i identiska betingelser: utan flagga exit 1, med MM_STAGING_PREFLIGHT=off exit 0. Testsviten 19/19; mutationsprov i båda riktningar — nästlad namnmatchning borttagen ⇒ 3 fall faller, fail-closed→fail-open ⇒ 2 fall faller.
+
+RÖRD YTA UTANFÖR KORTET, öppet: .github/workflows/ci.yml rad ~690 — shellcheck-grindens scope räknar upp sourcade conf-filer en och en, och ADR-033 § Del 3 säger att en conf utanför scopet är samma lucka. Den nya conf-filen lades därför till (en rad). package.json rördes INTE.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
