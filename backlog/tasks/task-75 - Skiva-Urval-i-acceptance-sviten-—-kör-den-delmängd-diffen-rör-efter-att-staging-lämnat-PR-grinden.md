@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 21:52'
+updated_date: '2026-07-29 08:58'
 labels:
   - ready-for-agent
 dependencies:
@@ -52,12 +53,14 @@ Post-merge-lagret är dessutom skyddsnätet: efter A7:5 kör det full svit på m
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Urvalsmekanismen är en ALLOWLIST, aldrig blocklist — vid minsta osäkerhet faller körningen till full svit; formen motiverad mot ci.yml:s D1-klass som precedent
+- [x] #1 Urvalsmekanismen är en ALLOWLIST, aldrig blocklist — vid minsta osäkerhet faller körningen till full svit; formen motiverad mot ci.yml:s D1-klass som precedent
 - [ ] #2 Kritisk väg för en kod-PR mätt före och efter, båda talen redovisade i PR-texten
 - [ ] #3 Kontrastbevis: en PR som rör EN acceptance-fil kör den delmängden — run-ID redovisat; en PR som rör delad kod kör full svit — run-ID redovisat
 - [ ] #4 Falsk-grön-risken prövad skarpt: en plantad regression i en fil som urvalet hoppar över fångas av post-merge-lagret — run-ID redovisat
-- [ ] #5 Retry-tunga tester lämnade orörda: ingen timeout kortas och ingen retry-kedja trimmas för att vinna tid (det vore att testa något annat än appen)
+- [x] #5 Retry-tunga tester lämnade orörda: ingen timeout kortas och ingen retry-kedja trimmas för att vinna tid (det vore att testa något annat än appen)
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
