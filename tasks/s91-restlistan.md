@@ -368,8 +368,9 @@ posterna nedan står kvar som index.
 **Stängda A7-poster och var de bokförts** (kroppen bär bara öppna, per filens
 underhållsregel) — samtliga har en rad i § Avbockningslogg, kort-nycklad:
 `A7:1` · `A7:2` (båda utan kort) · `A7:3` (`TASK-70.1`) · `A7:4` (`TASK-70.2`) ·
-`A7:5` (`TASK-70.3`) · `A7:6` (`TASK-70.4`) · `A7:7` (`TASK-70.5`).
-**Kvar öppna nedan: `A7:8` · `A7:9` · `A7:10`.**
+`A7:5` (`TASK-70.3`) · `A7:6` (`TASK-70.4`) · `A7:7` (`TASK-70.5`) ·
+`A7:8` (`TASK-70.6`).
+**Kvar öppna nedan: `A7:9` · `A7:10`.**
 
 **ORDNINGEN ÄR EN INVARIANT, INTE EN PREFERENS:** **A7:4** (post-merge-lagret) är
 förkrav för **A7:5–A7:6**. Flyttas staging ur grinden innan lagret finns tas en
@@ -384,8 +385,6 @@ kontroll bort utan att ersättas — precis det målbilden varnar för
 > uppstod av omnumreringen, alltså efter att posten skrevs. Prefixet `A7:` är nu
 > explicit så att kollisionen inte kan återuppstå.
 
-- [ ] **A7:8 · `delete_branch_on_merge: true`.** Ren hygien; grenar ackumuleras i
-      dag. Avbrottsfri → **`TASK-70.6`**
 - [ ] **A7:9 · Preview-miljö per PR.** Granskningens förbättring **F2** —
       utforskningsläget saknar delad yta. Posten **föll ur åtgärdsplanens åtta
       steg** och fångades av Marcus 2026-07-28 när han läste förbättringslistan
@@ -532,11 +531,6 @@ nedskriven empiri kostar att den måste återupptäckas genom att felet upprepas
       `npm run seed:review:clean -- --ort ZZ-GRANSKNING-S91`.
       Verifierat 2026-07-27: `.purge-staging-policy.json` nämner den inte
 - [ ] `person-detail` kontra `TASK-52` — orsakskedjan ej verifierad
-- [ ] **`CONTRIBUTING.md` rad 95 pekar på fel fil** — den anger
-      `.github/workflows/ci.yml` `test-staging`, men jobbet bor i
-      `ci-suite.yml` sedan S79:s reusable-extraktion. Preexisterande;
-      registrerad av `TASK-70.4`:s agent 2026-07-29, som medvetet lät bli att
-      laga den (scope-krypning). **Ingen kort-hemvist — posten bor här**
 
 ## Kort födda i S91 — utanför spåren ovan
 
@@ -880,6 +874,9 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 
 | 2026-07-29 | **`TASK-70.4` DONE — a11y ur PR-grinden (A7:6).** Första kod-skivan genom merge queue. Verifierad på BÅDA ytorna: PR (`30412877347`) och `merge_group` (`30413468345`), a11y `skipped` i båda. **AC #1 godkänd på RATIONALE — andra gången i rad**, vilket i sig är ett resultat: formuleringen *"förekommer inte i jobblistan"* är fel för en villkorad reusable-workflow och bör vara *"instansieras inte"* i nästa kort av klassen. Vinsten redovisad i rätt enhet (1,73 runner-min/körning), och de −49 s väggklocka som syntes tillskrevs INTE flytten | `#409` · `#414` |
 | 2026-07-29 | **`TASK-74` DONE + ärende `#398` stängt.** Ärendet var `TASK-76`:s purge-race — posten `recidhmfxau0lPUUt` är observation 3, och allt som prövade trädet var grönt. Stängt med belägg i stället för lämnat: ett obesvarat larm devalverar nästa | `#411` · `#414` |
+| 2026-07-29 | Tillstånds-återställningen (resume 15) + **kontrollens blinda fläck LAGAD.** Kontrollen matchade kort-ID:t först på raden; A7-raderna bär det sist, så hela A7-klassen var osynlig. Tre fel låg och väntade: `A7:3`, `A7:5` öppna trots Done, och `A7:6` avbockad i kroppen i strid med filens egen regel. Nya formen tvåsidigt bevisad FÖRE den skrevs in (tre FEL mot `02a9517`, tomt mot rättad, ingen falsk positiv på `A7:10`:s Done-beroende). § Filens egna fel post 8 | `#418` |
+| 2026-07-29 | **`TASK-70.6` DONE — `delete_branch_on_merge` (A7:8).** Tagen under orkestrerarens egen hand: skivan ändrar noll filer, och `ready-for-agent` betyder *kräver inte Marcus omdöme*, inte *ska spawnas som skiva* (precedent `TASK-64`). **AC #2 bevisad med KONTRASTGRUPP:** `#418`:s gren borta efter merge, medan `#417`:s gren från före inställningen ligger kvar på `b5b2bed`. Grannvärdena verifierade oförändrade före/efter. **De 263 redan ackumulerade grenarna raderas INTE** — retroaktiv städning är Marcus beslut | inställning, ingen fil |
+| 2026-07-29 | **`CONTRIBUTING.md` rad 95 rättad** — pekade på `ci.yml` `test-staging`; jobbet bor i `ci-suite.yml` sedan S79:s reusable-extraktion (verifierat mot workflow-filerna, inte mot posten). Registrerad av `TASK-70.4`:s agent som medvetet lät bli att laga den | `#422` |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
