@@ -598,6 +598,16 @@ jobs:
         # återuppstå tyst, vilket är vad TASK-72 AC 5 kräver stängt. Stubbad,
         # ingen nätverkstrafik. ≈13 s LOKALT mätt (macOS, 2026-07-28) — CI-tiden
         # är inte mätt av mig och kan avvika.
+        #
+        # test-staging-semaphore.sh (TASK-77) hör hit av EXAKT samma skäl som
+        # raden ovan bokför: sviten vaktar preflighten som hindrar lokala
+        # staging-körningar från att kollidera med CI, och den vakten sitter i
+        # Playwrights setup-projekt — en yta ingen annan grind rör. Utan detta
+        # steg kan namn-matchningen mot jobbnamnen drifta tyst, och utfallet av
+        # en tyst drift är att mekanismen slutar fälla utan att någon ser det.
+        # Stubbad, ingen nätverkstrafik. 7,6 s LOKALT mätt (macOS, 2026-07-29,
+        # `time bash scripts/test-staging-semaphore.sh`) — CI-tiden är INTE mätt
+        # av mig och kan avvika åt båda håll.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -606,6 +616,7 @@ jobs:
           bash scripts/test-check-lesson-numbers.sh
           bash scripts/test-agent-spawn-log.sh
           bash scripts/test-ci-wait.sh
+          bash scripts/test-staging-semaphore.sh
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
