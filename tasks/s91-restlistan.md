@@ -542,9 +542,6 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       posten i S91 som är en defekt i **produktionskod**
 - [ ] **`TASK-56`** — WebSocket-vägen går förbi hermetik-vakten. Latent tills
       appen får realtime; den enda kvarvarande vägen ut ur fixturvärlden
-- [ ] **`TASK-72`** — CI-vakten kan följa fel workflow och rapportera GRÖNT utan
-      att ha sett CI-körningen. Rör signalens trovärdighet direkt. **Saknade
-      hemvist till 2026-07-29** — fanns bara som text i en avbockningsloggrad
 - [ ] **`TASK-76`** — purge-jobbet är inte idempotent mot samtidiga körningar:
       TOCTOU mellan `listSentinels()` och `deleteSentinels()` ⇒ 404 på redan
       raderad post ⇒ falskt rött. **Funnen 2026-07-29 av `TASK-70.3`:s egna
@@ -877,6 +874,7 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-29 | Tillstånds-återställningen (resume 15) + **kontrollens blinda fläck LAGAD.** Kontrollen matchade kort-ID:t först på raden; A7-raderna bär det sist, så hela A7-klassen var osynlig. Tre fel låg och väntade: `A7:3`, `A7:5` öppna trots Done, och `A7:6` avbockad i kroppen i strid med filens egen regel. Nya formen tvåsidigt bevisad FÖRE den skrevs in (tre FEL mot `02a9517`, tomt mot rättad, ingen falsk positiv på `A7:10`:s Done-beroende). § Filens egna fel post 8 | `#418` |
 | 2026-07-29 | **`TASK-70.6` DONE — `delete_branch_on_merge` (A7:8).** Tagen under orkestrerarens egen hand: skivan ändrar noll filer, och `ready-for-agent` betyder *kräver inte Marcus omdöme*, inte *ska spawnas som skiva* (precedent `TASK-64`). **AC #2 bevisad med KONTRASTGRUPP:** `#418`:s gren borta efter merge, medan `#417`:s gren från före inställningen ligger kvar på `b5b2bed`. Grannvärdena verifierade oförändrade före/efter. **De 263 redan ackumulerade grenarna raderas INTE** — retroaktiv städning är Marcus beslut | inställning, ingen fil |
 | 2026-07-29 | **`CONTRIBUTING.md` rad 95 rättad** — pekade på `ci.yml` `test-staging`; jobbet bor i `ci-suite.yml` sedan S79:s reusable-extraktion (verifierat mot workflow-filerna, inte mot posten). Registrerad av `TASK-70.4`:s agent som medvetet lät bli att laga den | `#422` |
+| 2026-07-29 | **`TASK-72` DONE — men arbetet var landat sedan 2026-07-28.** Kortet stod `To Do` med samtliga sex AC bockade och DoD obockad, medan disken bar hela lösningen (PR `#383`, `a264a16`, `.ci-wait-policy.conf` config-driven per Lesson #6). Upptäckt när kortet lästes INFÖR EN SPAWN — hade det spawnats hade en agent byggt om det som redan fanns. Alla AC omverifierade mot disk; `test-ci-wait.sh` 27/27 grön, `#383` tolv checkar `pass`. **Samma klass som `TASK-63`** | `#383` (arbetet) · stängning nedan |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
