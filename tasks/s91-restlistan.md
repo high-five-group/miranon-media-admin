@@ -345,7 +345,7 @@ också bär alla fem i sin § Beslut. **Inga öppna poster.**
 > [verktygsval-fyra-egenbyggen-2026-07-27.md](../docs/research/verktygsval-fyra-egenbyggen-2026-07-27.md)
 > § Beslutstabell + § Behåll ändå.
 
-- [ ] **Listparitets-grinden** (dom: LAGA) — ~20 rader skript + policy-fil.
+- [ ] **Listparitets-grinden** (dom: LAGA) — **kortad som `TASK-85`** — ~20 rader skript + policy-fil.
       **Utvidgad räckvidd 2026-07-27:** samma klass gäller **lychee-globarna**,
       som står i BÅDA `ci.yml` och `scripts/check-docs.sh` och hålls synkade för
       hand — ADR-081:s landning ökade duplikationen med en rad
@@ -371,7 +371,7 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
 - [ ] **Skriv in kravet durabelt:** innan ett nytt skript/verktyg byggs ska
       verktygsvals-prövningen göras och **utfallet redovisas** — även när domen
       blir "bygg eget". Hör sannolikt i `CONTRIBUTING.md` eller som hub-regel.
-- [ ] **Retroaktiv redovisning för `check-lesson-numbers.sh`** (byggd i ADR-081).
+- [ ] **Retroaktiv redovisning för `check-lesson-numbers.sh`** — **kortad som `TASK-86`**. (Byggd i ADR-081.)
       Prövningen gjordes delvis: towncrier, MADR #28 och Rust RFC 0002 lästes,
       och **mönstret** lånades — men ADR:n redovisar inte explicit varför
       towncrier inte togs som *verktyg*. De ärliga skälen (Python-verktyg i ett
@@ -580,12 +580,12 @@ nedskriven empiri kostar att den måste återupptäckas genom att felet upprepas
 
 ## Spår E — Hygien och skuld
 
-- [ ] `save-segment`-läckan — `app-segment-test+<uuid>` saknar target i
+- [ ] `save-segment`-läckan (**`TASK-87`**) — `app-segment-test+<uuid>` saknar target i
       `.purge-staging-policy.json`, städas aldrig
-- [ ] `ZZ-GRANSKNING-S91` lever i staging (ej självstädande):
+- [ ] `ZZ-GRANSKNING-S91` lever i staging (**`TASK-88`**, ej självstädande):
       `npm run seed:review:clean -- --ort ZZ-GRANSKNING-S91`.
       Verifierat 2026-07-27: `.purge-staging-policy.json` nämner den inte
-- [ ] `person-detail` kontra `TASK-52` — orsakskedjan ej verifierad
+- [ ] `person-detail` kontra `TASK-52` — orsakskedjan ej verifierad (**`TASK-89`**)
 
 ## Kort födda i S91 — utanför spåren ovan
 
@@ -638,12 +638,6 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       **Fjärde flake-formen**, och den ENDA klass-B-liknande som CI faktiskt
       fäller på efter klass A (1/14 jobb efter mot 6/14 före). Så länge den
       lever kan ingen säga att sviten är ren — alltså steg 1:s mål
-- [ ] **`TASK-80`** — videoinspelningen är mätbar egenlast: `retain-on-failure`
-      startar en ffmpeg PER TEST, åtta på 39–47 % CPU = **~3 av 16 kärnor** för
-      artefakter som kastas i 153 av 153 gröna fall. **Misstänkt som bidragande
-      orsak till `TASK-74`:s B3** (test-budget vid mättnad) — vi betalar CPU för
-      diagnostik av ett fel betalningen bidrar till. Rek. `on-first-retry`, men
-      ska prövas mot vad diagnostiken förlorar
 - [ ] `--mm-btn-*` eller `--mm-button-*`? Nio tokens i `semantic.css` mot 48
       `--mm-button-*` i `components.css`. **RÄTTAT 2026-07-29 — de nio är INTE
       oanvända**, vilket posten påstod till i dag och som ramade in beslutet som
@@ -871,6 +865,7 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-29 | **`TASK-81` DONE — mätriggen är ett verktyg, `npm run metrics:flake`.** Riggen HÄMTAD ur `TASK-74`-agentens scratchpad, ej omskriven ur minnet. Interfolieringen är KODAD (`byggPlan()` enda vägen till en plan), loadavg skiljer OKÄND från noll, 918 rådata-rader, ingen tröskel kodad. 25 testfall, fällande bevisad med fyra mutationer. **AC #4 stängt av orkestreraren mot agentens medvetna öppna-lämning** — kriteriet bar två skyldigheter med olika ägare; konsumentens halva överlämnad i skrift till `TASK-79`. Riggens hemvist + n-reservationen inskrivna i `CLAUDE.md` | `#420` · `#426` |
 | 2026-07-29 | **`TASK-76` DONE — purge-idempotensen.** Form (a) skript-fix; mutex-formen förkastad på tre grunder (täcker ej CI↔lokal · river medvetet designval `L348` · serialiserar). Klassificeraren fail-closed i FEM led och korsläser rec-ID:t mot batchen vi bad om. **AC #4 stängt på rationale: ytan finns inte längre** — kod-PR:er kör inte purge sedan `TASK-70.3` (verifierat i källan). Avsikten bevisad av ett STARKARE test: äkta race mot skarpa API:t, B förlorade alla fyra poster och överlevde. Fyra gröna post-fix-purger i CI | `#421` · `#427` |
 | 2026-07-29 | **`TASK-72` DONE — men arbetet var landat sedan 2026-07-28.** Kortet stod `To Do` med samtliga sex AC bockade och DoD obockad, medan disken bar hela lösningen (PR `#383`, `a264a16`, `.ci-wait-policy.conf` config-driven per Lesson #6). Upptäckt när kortet lästes INFÖR EN SPAWN — hade det spawnats hade en agent byggt om det som redan fanns. Alla AC omverifierade mot disk; `test-ci-wait.sh` 27/27 grön, `#383` tolv checkar `pass`. **Samma klass som `TASK-63`** | `#383` (arbetet) · stängning nedan |
+| 2026-07-29 | **`TASK-80` DONE — kortets KÄRNPREMISS falsifierad.** Egenlasten är verklig och oberoende replikerad (ffmpeg i 95 % av samplingarna, ≈4,2 av 16 kärnor) — men den **förvärrar inte flakigheten**: körtidsmedian −1 s mot ett brusgolv på ±72 s, och arm A nådde loadavg 105,7 UTAN fällning medan en fällning kom vid 18,5. Form **(c) behåll** vald MOT kortets egen rekommendation, på källbelägg: `shouldPreserveVideo` returnerar ovillkorligt `true` för `on-first-retry`, så en retry som PASSERAR sparar video — och 10 av 13 fällningar reproducerade inte vid retry. Noll beteendeändring; 38 rader kommentar som skriver den mätta kostnaden på raden den gäller. **Stängningen blockerad i sex timmar** av att `#446` och `#447` redigerade samma kortfil — konflikten additiv, löst av orkestreraren med båda sektionerna bevarade | `#446` · `#447` |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
