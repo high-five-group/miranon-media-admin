@@ -579,16 +579,30 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       loadavg per körning, `--retries=0`, rådata sparad). **Fyra kort behöver
       den inom kort** (`77` `78` `79` `80`); utan verktyg bygger var och en sin
       variant och talen blir ojämförbara — precis det fel riggen finns för
+- [ ] **`TASK-82`** — två av femton guard-testsviter körs av **inget** CI-jobb:
+      `test-purge-staging-sentinels.mjs` och `test-seed-review-fixture.mjs`.
+      Blev bärande 2026-07-29 när `TASK-76` lade sin **fail-open-vakt** i den
+      förstnämnda. Purge-koden har därmed noll automatisk täckning på PR-nivå —
+      varken sitt jobb (`run_staging: false` sedan `TASK-70.3`) eller sin svit.
+      Mönstret finns redan (`nightly.yml` kör `test-ci-metrics.mjs`, och
+      `TASK-81` lade `test-flake-matserie.mjs` på samma ställe) — det är en
+      utelämnad rad, inte ett designval → **`TASK-82`**
 - [ ] **`TASK-78`** — merge queue bryter `TASK-73`:s ärvda klassning **i
-      post-merge** för varje PR som inte är först i sin kögrupp: kön bygger post
-      N ovanpå posterna före den, så merge-commitens träd avviker från
-      PR-headens och klassningen fail-closar till full svit. Mätt 2026-07-29:
-      `d9f095b` (först) träd `373455a` == `373455a` → skipped · `934188e`
-      (andra) `89000ee` ≠ `ce04838` → full svit. **PR-grinden och kö-ytan är
-      ORÖRDA** — båda klassade rätt; enbart efterkontrollen på `main` blir
-      dyrare. Interaktion mellan två korrekta skivor som landade samma dag,
-      inget fel i någon av dem. Förstärker `TASK-76`: fler staging-körningar i
-      post-merge = fler purge-race-tillfällen
+      post-merge**: kön bygger posten mot `main`s aktuella spets, så
+      merge-commitens träd avviker från PR-headens och klassningen fail-closar
+      till full svit. Mätt 2026-07-29: `d9f095b` (först i kön) träd `373455a` ==
+      `373455a` → skipped · `934188e` (andra) `89000ee` ≠ `ce04838` → full svit.
+      **VILLKORET SKÄRPT 2026-07-29 (femtonde resumen), tredje datapunkten:**
+      `#423` låg **ensam** i kön och träden avvek ändå (`c89df4b` ≠ `efc0154`)
+      → full svit trots att PR-grinden skippat den (run `30437803614`).
+      Villkoret är alltså inte *"inte först i kön"* utan **"`main` har rört sig
+      sedan PR-headen skrevs"** — normalfallet i ett aktivt repo, inte ett
+      specialfall. Kostnaden är därmed högre än kortet först antog.
+      **PR-grinden och kö-ytan är ORÖRDA** — båda klassade rätt; enbart
+      efterkontrollen på `main` blir dyrare. Interaktion mellan två korrekta
+      skivor som landade samma dag, inget fel i någon av dem. Förstärker
+      `TASK-76`: fler staging-körningar i post-merge = fler
+      purge-race-tillfällen
 
 ## Fynd-kedjans ordning — klassad och sekvenserad 2026-07-28
 
