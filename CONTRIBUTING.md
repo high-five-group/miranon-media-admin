@@ -152,7 +152,7 @@ mekaniska grinden gäller:
 - DoD-checklistan i PR-mallen är fylld
 - ADR refererad om arkitekturbeslut tagits
 
-### Landnings-ordningen — `BEHIND` förebyggs, det lagas inte
+### Landnings-ordningen — mekaniserad som merge queue sedan 2026-07-29
 
 **Utlösaren först. Känner du inte igen läget tillämpar du inte regeln.** Tre
 villkor samtidigt:
@@ -180,17 +180,46 @@ förlorar racet mot varje snabb landning inom sitt svit-fönster, och
 `gh pr update-branch` startar en ny svit som hinner bli omsprungen igen. `L328`
 mätte tre sådana varv i S81 innan den parallella strömmen sinade.
 
-**Sekvensera FÖRE armering — en av två former, aldrig ingen.**
+**MEKANISERAD 2026-07-29 (`TASK-70.1`, A7:3) — den manuella sekvenseringen
+nedan är UPPHÄVD.** `main-skydd` bär numera en `merge_queue`-regel. Kön bygger
+varje post mot `main` plus posterna före den, alltså exakt den sekvensering
+formerna A och B utförde för hand. **Armera med `gh pr merge --auto --merge`
+och sluta tänka på ordningen.**
 
-- **Form A · tyngst först.** Armera den PR vars svit är längst, låt den landa,
+Kö-parametrarna, med skälen:
+
+| Parameter | Värde | Varför |
+|---|---|---|
+| `merge_method` | `MERGE` | måste matcha rulesetets `allowed_merge_methods` |
+| `min_entries_to_merge` | `1` | en ensam PR landar direkt; vore den 2 väntade varje PR på sällskap |
+| `grouping_strategy` | `ALLGREEN` | varje PR i gruppen måste vara grön, inte bara gruppens head |
+| `max_entries_to_build` | `3` | satt efter uppmätt parallellitet, inte efter optimism |
+| `check_response_timeout_minutes` | `60` | kritiska vägen är ~7,5 min — åtta gångers marginal |
+
+**Vägen tillbaka, prövad FÖRE aktivering:** ta bort `merge_queue`-regeln ur
+rulesetet med `gh api --method PUT … --input <sparad-array>`. `PUT` **ersätter**
+hela `rules`-arrayen, så vägen tillbaka är en fil, inte en procedur — rulesetets
+tillstånd sparades innan något rördes. Sekvensen på → verifierad → av →
+verifierad kördes skarpt med tom kö innan regeln sattes på riktigt, eftersom
+felläget annars är att ingen PR kan landa, inklusive den som fixar felet.
+
+**Vad som fortfarande gäller:** armera aldrig en PR vars bygg-agent fortfarande
+arbetar, och kör aldrig `update-branch` mot en sådan gren. Kön löser
+maskin-ordningen, inte aktörs-krockar.
+
+**Den upphävda manuella formen bevaras nedan** — inte som instruktion, utan för
+att den förklarar varför kön behövdes. Följ den inte; den är historik.
+
+- ~~**Form A · tyngst först.**~~ Armera den PR vars svit är längst, låt den landa,
   armera nästa därefter. En kort svit hinner ikapp en lång; det omvända gäller
   inte.
-- **Form B · `gh pr update-branch` före armering.** Ska en snabb PR ändå landa
-  först: uppdatera nästa PR:s gren mot `main` **och armera först därefter**.
+- ~~**Form B · `gh pr update-branch` före armering.**~~ Ska en snabb PR ändå
+  landa först: uppdatera nästa PR:s gren mot `main` och armera först därefter.
 
-Armera aldrig två PR:er samtidigt i hopp om att de klarar sig. Att laga
-`BEHIND` i efterhand är inte formen — då har svit-fönstret redan öppnats en
-gång i onödan, och det är precis där racet förloras.
+Den gamla regeln löd: *armera aldrig två PR:er samtidigt i hopp om att de klarar
+sig; att laga `BEHIND` i efterhand är inte formen, då har svit-fönstret redan
+öppnats en gång i onödan.* Resonemanget var riktigt — det är just det arbetet
+kön nu utför utan att någon behöver minnas det.
 
 **Bikostnad som hör till form B: CI-vakten måste startas om.** En vakt följer
 det SHA den startades mot. `update-branch` skriver en ny commit på grenen, och
