@@ -91,9 +91,9 @@ tematiska; sekvensen över spårgränserna fanns ingenstans.
 
 | # | Steg | Bärare | Pekare |
 |---|---|---|---|
-| **1** | Signalen går att lita på | `TASK-72` · `TASK-74` · `TASK-79` · `TASK-80` · `TASK-81` · `TASK-36.8` | § Fynd-kedjans ordning · § A5 · § Kort födda i S91 |
+| **1** | Signalen går att lita på | `TASK-72` · `TASK-79` · `TASK-80` · `TASK-81` · `TASK-36.8` | § Fynd-kedjans ordning · § A5 · § Kort födda i S91 |
 | **2** | Skyddsnätet byggs | `TASK-70.2` · `TASK-70.5` | § A7 (A7:4, A7:7) |
-| **3** | Flytten och kön — väntetiden faller | `TASK-70.3` · `TASK-70.1` · `TASK-76` · `TASK-78` · `TASK-70.4` · `TASK-75` | § A7 (A7:5, A7:3, A7:6, A7:10) · § Kort födda i S91 |
+| **3** | Flytten och kön — väntetiden faller | `TASK-75` · `TASK-76` · `TASK-78` | § A7 (A7:10) · § Kort födda i S91 |
 | **4** | Landnings-hygien | `TASK-70.6` | § A7 (A7:8) |
 | **4b** | Verktygsskulden | A3 ×1 · A3b ×2 · A2:9 | § A3 · § A3b · § A2 |
 | **5** | Aktörerna slutar krocka | A2:7 · A2:8 · A2:11 · `TASK-77` · Spår B | § A2 · § Spår B · § Kort födda i S91 |
@@ -359,8 +359,11 @@ kontroll bort utan att ersättas — precis det målbilden varnar för
       −375 s och den globala mutexen ur kritiska vägen. Berör `ci-suite.yml` +
       rulesetets required check. **Ändrar beteende; kräver A7:4.**
       Detta är den enskilt största posten i hela spåret → **`TASK-70.3`**
-- [ ] **A7:6 · Flytta `A11y (axe-runner)` till post-merge.** −103 s. Samma
-      förkrav som A7:5 → **`TASK-70.4`**
+- [x] **A7:6 · Flytta `A11y (axe-runner)` till post-merge.** Landad 2026-07-29
+      (`#409`, `3510fbe`) — **första kod-skivan som gick genom merge queue**.
+      Vinsten är **1,73 runner-minuter** per `ci.yml`-körning, INTE väggklocka:
+      bäraren är fortfarande `Acceptance`, och agenten skrev explicit ut att de
+      −49 s som syntes inte går på flyttens konto → **`TASK-70.4`**
 - [ ] **A7:8 · `delete_branch_on_merge: true`.** Ren hygien; grenar ackumuleras i
       dag. Avbrottsfri → **`TASK-70.6`**
 - [ ] **A7:9 · Preview-miljö per PR.** Granskningens förbättring **F2** —
@@ -528,11 +531,6 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
 - [ ] **`TASK-72`** — CI-vakten kan följa fel workflow och rapportera GRÖNT utan
       att ha sett CI-körningen. Rör signalens trovärdighet direkt. **Saknade
       hemvist till 2026-07-29** — fanns bara som text i en avbockningsloggrad
-- [ ] **`TASK-74`** — klass B-flakigheten är bredare än `TASK-64` antog: sju
-      tester, minst två mekanismer, ingen med klass A:s kodform. **Detta är
-      RESTEN av `TASK-64`**, som bara stängdes för klass A — alltså kärnan i
-      steg 1. Saknade hemvist till 2026-07-29. Spärr: kontrollerad last måste
-      etableras FÖRE mätning, annars mäts maskinen och inte testerna
 - [ ] **`TASK-76`** — purge-jobbet är inte idempotent mot samtidiga körningar:
       TOCTOU mellan `listSentinels()` och `deleteSentinels()` ⇒ 404 på redan
       raderad post ⇒ falskt rött. **Funnen 2026-07-29 av `TASK-70.3`:s egna
@@ -837,6 +835,9 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 
 | 2026-07-29 | **`TASK-74` DONE — klass B, tre mekanismer.** Kortets kärnpremiss falsifierad av dess EGET AC om kontrollerad last. Agenten deflaterade sitt eget tal (12 av arm A:s 13 fällningar ur EN körning vid loadavg 125). Betalade dessutom carry-posten om `playwright.config.ts`:s falsifierade retries-skäl — skälet utbytt, beslutet behållet | `#411` |
 | 2026-07-29 | **Statusrättelse i denna fil.** `TASK-63` (stängd samma dag) och **`TASK-69`** (stängd redan 2026-07-28 via `#360`) stod som öppna `[ ]` i kroppen. `69`-felet **infördes av auditen samma kväll**: agenten skrev *"ingen DONE-rad finns"* — härlett ur FILEN, inte ur registret — och orkestreraren lade in posten utan att slå upp kortet. Se § Filens egna fel post 7 | `#413` |
+
+| 2026-07-29 | **`TASK-70.4` DONE — a11y ur PR-grinden (A7:6).** Första kod-skivan genom merge queue. Verifierad på BÅDA ytorna: PR (`30412877347`) och `merge_group` (`30413468345`), a11y `skipped` i båda. **AC #1 godkänd på RATIONALE — andra gången i rad**, vilket i sig är ett resultat: formuleringen *"förekommer inte i jobblistan"* är fel för en villkorad reusable-workflow och bör vara *"instansieras inte"* i nästa kort av klassen. Vinsten redovisad i rätt enhet (1,73 runner-min/körning), och de −49 s väggklocka som syntes tillskrevs INTE flytten | `#409` · `#414` |
+| 2026-07-29 | **`TASK-74` DONE + ärende `#398` stängt.** Ärendet var `TASK-76`:s purge-race — posten `recidhmfxau0lPUUt` är observation 3, och allt som prövade trädet var grönt. Stängt med belägg i stället för lämnat: ett obesvarat larm devalverar nästa | `#411` · `#414` |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
