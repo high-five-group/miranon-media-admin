@@ -305,11 +305,41 @@ function medIvrigVakt(network: NetworkFixture): NetworkFixture {
  * Båda formerna bär bara `{ request, requestId }` — ingen handler-koppling — så
  * kopplingen anrop→handler hade fått räknas av oss ändå.
  *
- * Källan är därför Playwrights egen `context.on('request')`. Den ser varje
- * request webbläsaren gör, inklusive dem `@msw/playwright` fångar med
- * `context.route`, den är inte deprecerad, och den kan inte gå sönder av att
- * MSW byter emitter-bibliotek. Samma mekanism som `handlers.ts`
+ * Källan är därför Playwrights egen context-händelse. Den ser varje request
+ * webbläsaren gör, inklusive dem `@msw/playwright` fångar med `context.route`,
+ * den är inte deprecerad, och den kan inte gå sönder av att MSW byter
+ * emitter-bibliotek. Samma mekanism som `handlers.ts`
  * § "INGEN PREFLIGHT-HANTERING" en gång mätte preflight-frånvaron med.
+ *
+ * ── MEN DET MÅSTE VARA `requestfinished`, INTE `request` (TASK-74) ────────
+ *
+ * Vaktens bedömning ställer TVÅ observatörer mot varandra, och de mäter vid
+ * olika tidpunkter: Playwrights `request` fyrar när webbläsaren SKICKAR
+ * anropet, medan MSW sätter `handler.isUsed` när handlern KÖRS. Ett anrop som
+ * fortfarande är i flykten när testkroppen tar slut har därför räknats av den
+ * ena men inte av den andra — och `granskaTest`, som kör i teardown direkt
+ * efter `await use(...)`, läser då ett falskt "EF:en anropades men
+ * överskuggningen matchade inte".
+ *
+ * MÄTT, EJ ANTAGET: TASK-74:s baslinje (10 fulla körningar, `--workers=8`,
+ * `--retries=0`) fällde `event-ny-anmalan.acceptance.test.ts:734` på exakt den
+ * formen i 2 av 10 körningar. Testets SISTA handling väljer ett event, vilket
+ * utlöser `get-event`; formuläret renderas ur routen, så assertionerna passerar
+ * medan svaret ännu är i flykten. Fönstret vidgas med maskinlast — alltså
+ * samma last-känsliga symptomklass som resten av klass B, men en annan orsak.
+ *
+ * `requestfinished` stänger racet MED BEVIS, inte med en förhoppning:
+ * `msw/lib/core/handlers/RequestHandler.js:149` sätter `isUsed = true` FÖRE
+ * resolvern körs, och svaret kan per konstruktion inte levereras förrän
+ * resolvern returnerat. Ett AVSLUTAT anrop implicerar därmed `isUsed === true`.
+ *
+ * PRISET, ÖPPET REDOVISAT: ett AVBRUTET anrop räknas inte längre. Vore just det
+ * anropets överskuggning felskriven fälls den inte av det anropet. Det är rätt
+ * avvägning — ett avbrutet anrop bevisar inte att överskuggningen BORDE ha
+ * matchat — men det är en verklig känslighetsförlust, inte en gratis skärpning.
+ * `granskaTest` självt är orört; enhetsspecen `tests/visual/
+ * overskuggnings-vakt.spec.ts` matar den syntetiska anrops-listor och bevakar
+ * fortfarande bedömningen, inte händelsevalet.
  */
 export const test = base.extend<{ network: NetworkFixture }>({
   network: [
@@ -332,7 +362,7 @@ export const test = base.extend<{ network: NetworkFixture }>({
           anrop.push({ metod: request.method(), namn, url: `${url.origin}${url.pathname}` });
         }
       };
-      context.on('request', rakna);
+      context.on('requestfinished', rakna);
 
       try {
         await use(SJALVTEST ? utanOverskuggningar(network) : medIvrigVakt(network));
@@ -353,7 +383,7 @@ export const test = base.extend<{ network: NetworkFixture }>({
         }
         if (fel !== undefined) throw fel;
       } finally {
-        context.off('request', rakna);
+        context.off('requestfinished', rakna);
         // Context-routarna rivs även när vakten fäller — annars hade en
         // fällning läckt en route in i nästa test i samma context.
         await network.disable();
