@@ -15,6 +15,28 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-29, fjortonde pausen — efter merge queue och
+steg 3 ned till en post)** — **TJUGOTVÅ PR:er landade (`#389`–`#416`), NOLL röda
+körningar.** **SEX KORT STÄNGDA:** `TASK-73` `63` `70.3` `70.1` `74` `70.4`.
+**SEX MINTADE:** `76` `77` `78` `79` `80` `81`. **MERGE QUEUE AKTIV** — elva
+landningar genom kön, alla gröna; regeln *"armera aldrig två samtidigt"* UPPHÄVD
+och ersatt av mekanik. **Revert-vägen prövad SKARPT före aktivering** (på →
+verifierad → av → verifierad med tom kö); `PUT` ersätter hela rules-arrayen, så
+vägen tillbaka är en FIL. **STEG 3 HAR EN POST KVAR: `TASK-75`** (avblockerad).
+**Noll öppna ärenden** — `#392` och `#398` stängda med belägg. **Restlistan har
+nu en MEKANISK KONTROLL i filhuvudet** som körs FÖRE varje uppdatering; den
+fångade två fel denna resume, varav ett infört av auditen själv och ett fångat
+före landning. **TRE AGENTER ARGUMENTERADE MOT SINA EGNA TAL** (`70.3` +1,1 % ·
+`70.4` −49 s tillskrevs inte flytten · `74` deflaterade 13→1 till 1-mot-1) — utan
+det hade `TASK-75` planerats mot ett tak som inte finns. **MARCUS TRE FÅNGSTER:**
+`70.1`-schemaläggningen var Codes beslut · ett fynd måste säga VAR felet sitter ·
+`nohup &` ger noll notifieringar. **NÄSTA: `TASK-81` (mätriggen — fyra kort
+väntar på den) → `TASK-75` (stänger steg 3) → `TASK-76` (brådskar: racet blir
+dyrare efter `70.3`) → steg 4 `TASK-70.6`.** Numrering: 91/083/L360 (**43**
+fragment)/T107/f46/**task-82**. Karta: `tasks/s91-restlistan.md`. Full narrativ:
+sessionsdok **Del 21–23** + PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-29, trettonde resumen — MERGE QUEUE AKTIV,
 steg 3 till tre fjärdedelar)** — **TOLV PR:er landade (`#389`–`#408`), noll röda
 körningar.** **FYRA KORT STÄNGDA:** `TASK-73` (AC-svansen, fyra oberoende bevis)
