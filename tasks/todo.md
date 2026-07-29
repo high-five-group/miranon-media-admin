@@ -15,6 +15,27 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-29, sjuttonde resumen — fyra flaggor, en
+äkta)** — LÄS-fasen rapporterade fyra divergenser; **utredningen visade att TRE
+INTE VAR STÄDFEL.** Fragment-talet var **Codes eget fel** (`README.md` räknad som
+fragment — disk har 54, precis vad PAUSLÄGE sade); dagens **fjärde instans** av
+*overifierat påstående skrivet som fakta*, begången i rapporten vars uppgift var
+att kontrollera den. `TASK-83`-flaggan var en tidsordnings-artefakt (Del 30 skrevs
+`20:01:39`, stängningen kom `20:06:12`). HEAD-SHA:t är **strukturellt** — sjätte
+förekomsten; raden kan inte skrivas rätt, eftersom mergen som publicerar den
+ändrar det värde den påstår. **ETT ÄKTA FEL: `TASK-70.7`** bar `ready-for-agent`
+trots att dess **AC #2 är en STOPP-grind mot Marcus** — och etiketten ÄR
+förhandskvittot för commit + push (`ADR-071` beslut 1). Av tio etiketterade kort
+var det **enda** med en Marcus-STOPP i sitt AC. Etiketten borttagen via CLI:t med
+grund + väg tillbaka på kortet; innehållet orört. **Poolen är NIO — dukningens
+lista var korrekt, etiketten var det inte.** Kontroll-lucka funnen: ingen
+mekanism prövar att pool-listningar stämmer mot etiketterna på disk — hör till
+grillningens `A2:7` och kortas inte före den. Tillstånd återställt
+(`active`, paus-rubrik → historik-form). Numrering: 91/083/L360 (**55**
+fragment)/T110/f46/**task-93**. **NÄSTA: grillningens `A2:7`-halva** (Marcus
+beslut). Full narrativ: sessionsdok **Del 31**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-29, sextonde pausen — städpasset som dukade för
 nästa resume)** — **TIO PR:er landade, noll röda körningar.** **MARCUS FÄLLDE SEX
 AV CODES PÅSTÅENDEN:** port 5399 binder inte (agenter kör aldrig sviterna lokalt)
