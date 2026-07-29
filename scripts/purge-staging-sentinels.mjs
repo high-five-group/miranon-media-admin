@@ -35,6 +35,15 @@
 //      undantar konstruktions-kända utgående referens-länkar som sitter på
 //      varje sentinel by design (Eventtyp, ADR-066 b5 — skarp-belagt S71).
 //
+// IDEMPOTENS MOT SAMTIDIGA KÖRNINGAR (TASK-76): en DELETE av en post som en
+// ANNAN purge redan hunnit radera har uppnått sitt mål och får inte fälla
+// jobbet. Skriptets två faser — listSentinels() sedan deleteSentinels() — är
+// ett TOCTOU-fönster: två samtidiga purges ser samma sentinel, båda kör DELETE,
+// den som kommer sist får 404. Ålders-guarden skyddar mot att radera FÖR
+// TIDIGT; den skyddar INTE mot att två körningar tävlar om SAMMA post.
+// Se isAlreadyDeletedError() för klassificeringen — den är fail-closed, så en
+// 404 från fel bas eller fel tabell fäller fortfarande.
+//
 // Flaggor: --dry-run (planera + rapportera, radera inget).
 // Exit: 0 = OK (även "inget att purga"), 1 = guard-/konfigurationsfel,
 //       2 = Airtable-API-fel.
@@ -50,6 +59,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const AIRTABLE_API_URL = 'https://api.airtable.com/v0';
 const BASE_ID_PATTERN = /^app[A-Za-z0-9]{14}$/;
 const REC_ID_PATTERN = /^rec[A-Za-z0-9]{14}$/;
+
+/**
+ * Airtables ENDA formulering för "posten finns inte" — live-mätt mot staging
+ * 2026-07-29 (se isAlreadyDeletedError). Mönstret binder rec-ID:t så det kan
+ * korsläsas mot batchen vi faktiskt bad om.
+ */
+const RECORD_NOT_FOUND_PATTERN = /^Could not find a record with ID "(rec[A-Za-z0-9]{14})"\.$/;
 
 // ---------------------------------------------------------------------------
 // Pura funktioner (exporterade för scripts/test-purge-staging-sentinels.mjs)
@@ -178,6 +194,56 @@ export function backoffMs(attempt) {
   return 1000 * 2 ** (attempt - 1);
 }
 
+/**
+ * Skiljer "posten är REDAN raderad" från varje annan 404 (TASK-76).
+ *
+ * En DELETE av en redan raderad post har uppnått sitt mål — den är succé, inte
+ * fel. Men 404 får ALDRIG bli ett generellt tyst-svälj: en 404 som beror på fel
+ * bas eller fel tabell betyder att purgen sopar fel yta, och den måste fälla
+ * jobbet. Fixen vore annars fail-open, samma klass som L322.
+ *
+ * FELFORMERNA ÄR MÄTTA, INTE ANTAGNA (live mot staging apphjj8Q7lkXCMsL4,
+ * 2026-07-29, med den skarpa least-privilege-PAT:en; inget muterades — alla
+ * rec-ID:n var fabricerade):
+ *
+ *   okänd post, rätt bas + tabell → 404 {"error":{"type":"NOT_FOUND",
+ *                                   "message":"Could not find a record with
+ *                                   ID \"recZZZZZZZZZZZZZZ\"."}}
+ *   okänd TABELL, rätt bas        → 403 INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND
+ *   okänd BAS                     → 403 INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND
+ *   PROD-basen (utan scope)       → 403 INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND
+ *
+ * Att fel-bas/fel-tabell i dag råkar bli 403 och inte 404 är INTE det som bär
+ * säkerheten — det är en egenskap hos den nuvarande token-scopen, och en
+ * bredare token kan ge 404 i stället. Därför klassar funktionen på POSITIV
+ * matchning av räkna-som-succé-formen, aldrig på frånvaro av felform. Fyra
+ * oberoende villkor måste ALLA hålla; faller ett är svaret false (= fällande):
+ *
+ *   1. statuskoden är exakt 404
+ *   2. kroppen är JSON med ett error-OBJEKT (bas-nivåns {"error":"NOT_FOUND"}
+ *      är en STRÄNG och faller därmed här)
+ *   3. error.type är exakt "NOT_FOUND"
+ *   4. meddelandet namnger ett rec-ID som finns i den batch vi bad om
+ *
+ * Villkor 4 är den bärande: en 404 som namnger en post vi aldrig frågade om är
+ * inte vårt race, och behandlas som fel.
+ */
+export function isAlreadyDeletedError(status, body, requestedIds) {
+  if (status !== 404) return false;
+  let parsed;
+  try {
+    parsed = JSON.parse(body ?? '');
+  } catch {
+    return false; // oparsbar kropp ⇒ vi vet inget ⇒ fail-closed
+  }
+  const error = parsed?.error;
+  if (!error || typeof error !== 'object' || Array.isArray(error)) return false;
+  if (error.type !== 'NOT_FOUND') return false;
+  const match = RECORD_NOT_FOUND_PATTERN.exec(error.message ?? '');
+  if (!match) return false;
+  return Array.isArray(requestedIds) && requestedIds.includes(match[1]);
+}
+
 const NETWORK_ATTEMPTS = 3;
 
 /**
@@ -224,12 +290,25 @@ async function airtableRequest(url, token, throttleMs, init = {}) {
   }
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new ApiError(`Airtable ${init.method ?? 'GET'} ${res.status}: ${body.slice(0, 300)}`);
+    throw new ApiError(`Airtable ${init.method ?? 'GET'} ${res.status}: ${body.slice(0, 300)}`, {
+      status: res.status,
+      body,
+    });
   }
   return res.json();
 }
 
-class ApiError extends Error {}
+/**
+ * Airtable-fel med statuskod. Bär status + rå kropp SEPARAT från meddelandet:
+ * klassificering ska aldrig behöva parsa en formaterad sträng (TASK-76).
+ */
+class ApiError extends Error {
+  constructor(message, { status, body } = {}) {
+    super(message);
+    this.status = status;
+    this.body = body;
+  }
+}
 
 async function listSentinels(baseId, target, token, throttleMs) {
   const records = [];
@@ -246,15 +325,71 @@ async function listSentinels(baseId, target, token, throttleMs) {
   return records;
 }
 
-async function deleteRecords(baseId, target, ids, token, throttleMs, batchSize) {
+/** DELETE-URL för en batch (Airtable: ?records[]=…, ≤10 id:n per anrop). */
+function deleteUrl(baseId, target, ids) {
+  const url = new URL(`${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(target.table)}`);
+  for (const id of ids) url.searchParams.append('records[]', id);
+  return url;
+}
+
+/**
+ * Ta om en batch EN POST I TAGET och räkna de som redan var borta som succé.
+ *
+ * Varför post för post och inte "svälj felet och gå vidare": batch-svaret
+ * namnger bara EN post (live-mätt — två okända id:n i samma anrop gav ändå
+ * bara det första i meddelandet), så ett svalt batch-fel lämnar oss utan
+ * kunskap om vilka av de övriga som faktiskt raderades. Att ta om batchen post
+ * för post ger ett entydigt svar per post och är därmed korrekt OAVSETT om
+ * Airtables batch-delete är atomär eller delvis utförande — en egenskap vi
+ * medvetet inte behöver lita på.
+ */
+async function deleteOneByOne(baseId, target, ids, token, throttleMs) {
   let deleted = 0;
-  for (const batch of chunk(ids, batchSize)) {
-    const url = new URL(`${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(target.table)}`);
-    for (const id of batch) url.searchParams.append('records[]', id);
-    const result = await airtableRequest(url, token, throttleMs, { method: 'DELETE' });
-    deleted += (result.records ?? []).filter((r) => r.deleted).length;
+  let alreadyGone = 0;
+  for (const id of ids) {
+    try {
+      const result = await airtableRequest(deleteUrl(baseId, target, [id]), token, throttleMs, {
+        method: 'DELETE',
+      });
+      deleted += (result.records ?? []).filter((r) => r.deleted).length;
+    } catch (err) {
+      if (!(err instanceof ApiError) || !isAlreadyDeletedError(err.status, err.body, [id]))
+        throw err;
+      alreadyGone += 1;
+    }
   }
-  return deleted;
+  return { deleted, alreadyGone };
+}
+
+/**
+ * Radera i batchar. Faller tillbaka till post-för-post NÄR OCH ENDAST NÄR
+ * batchen fällde på "posten finns inte" — alltså när en samtidig purge hann
+ * före (TASK-76). Varje annat fel kastas vidare orört.
+ *
+ * Kostnaden bärs bara på race-vägen: en drabbad batch ger ≤10 extra anrop.
+ */
+export async function deleteRecords(baseId, target, ids, token, throttleMs, batchSize) {
+  let deleted = 0;
+  let alreadyGone = 0;
+  for (const batch of chunk(ids, batchSize)) {
+    try {
+      const result = await airtableRequest(deleteUrl(baseId, target, batch), token, throttleMs, {
+        method: 'DELETE',
+      });
+      deleted += (result.records ?? []).filter((r) => r.deleted).length;
+    } catch (err) {
+      if (!(err instanceof ApiError) || !isAlreadyDeletedError(err.status, err.body, batch)) {
+        throw err;
+      }
+      console.log(
+        '   ⓘ  en samtidig purge hann före på minst en post i batchen — tar om batchen post för post',
+      );
+      const outcome = await deleteOneByOne(baseId, target, batch, token, throttleMs);
+      deleted += outcome.deleted;
+      alreadyGone += outcome.alreadyGone;
+    }
+  }
+  return { deleted, alreadyGone };
 }
 
 // ---------------------------------------------------------------------------
@@ -311,7 +446,7 @@ async function main() {
       }
       if (dryRun || plan.toDelete.length === 0) continue;
 
-      const deleted = await deleteRecords(
+      const { deleted, alreadyGone } = await deleteRecords(
         expectedBaseId,
         target,
         plan.toDelete,
@@ -319,7 +454,12 @@ async function main() {
         requestThrottleMs,
         deleteBatchSize,
       );
-      console.log(`   🗑  ${deleted}/${plan.toDelete.length} raderade`);
+      console.log(
+        `   🗑  ${deleted}/${plan.toDelete.length} raderade` +
+          (alreadyGone > 0
+            ? ` (+${alreadyGone} redan borta — samtidig purge hann före, räknas som utfört)`
+            : ''),
+      );
 
       // Efter-verifiering (S52/S69-formen): inga radera-bara sentineler kvar.
       const remaining = planPurge(

@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 22:59'
-updated_date: '2026-07-28 23:00'
+updated_date: '2026-07-29 08:45'
 labels:
   - ready-for-agent
 dependencies: []
@@ -62,9 +62,9 @@ Två former är möjliga och ska vägas mot varandra, inte antas: (a) behandla 4
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 404 på DELETE av en redan raderad sentinel fäller INTE jobbet — bevisat med ett rött-först-test som failar före fixen och passerar efter
-- [ ] #2 Valet mellan skript-fix och mutex motiverat i PR:n mot båda alternativen; det förkastade alternativet bär sitt skäl
-- [ ] #3 404 som beror på fel bas eller fel tabell fäller FORTFARANDE — negativt self-test redovisat, annars är fixen fail-open
+- [x] #1 404 på DELETE av en redan raderad sentinel fäller INTE jobbet — bevisat med ett rött-först-test som failar före fixen och passerar efter
+- [x] #2 Valet mellan skript-fix och mutex motiverat i PR:n mot båda alternativen; det förkastade alternativet bär sitt skäl
+- [x] #3 404 som beror på fel bas eller fel tabell fäller FORTFARANDE — negativt self-test redovisat, annars är fixen fail-open
 - [ ] #4 Två samtidiga kod-PR:er kör purge utan att någon blir röd — bevisat med två run-ID:n körda i överlappande fönster, tidsstämplar redovisade
 <!-- AC:END -->
 
@@ -88,10 +88,144 @@ RACET BLIR DYRARE EFTER TASK-70.3, INTE BILLIGARE — agentens fynd, och det som
 Konsekvens för prioriteringen: kortet bör tas i nära anslutning till att TASK-70.3 landar, inte skjutas till en senare våg.
 <!-- SECTION:NOTES:END -->
 
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-29 08:44
+---
+LEVERANS (form (a) — skript-fix; form (b) förkastad).
+
+VALET, MOTIVERAT MOT BÅDA (AC #2). Form (a) valdes för att racet är en defekt i
+skriptets DELETE-semantik, inte i CI:s schemaläggning. En DELETE av en redan
+raderad post har uppnått sitt mål; att den fällde jobbet var skriptet som kallade
+ett uppnått mål för ett fel.
+
+Form (b) — purge under staging-tests-mutexen — förkastades på tre grunder, i
+fallande vikt:
+  1. Den täcker inte alla racande par. Mutexen är CI↔CI. Skriptets egen header
+     bär redan gränsen ordagrant ("staging-mutexen täcker CI↔CI men inte
+     CI↔lokal"), och `npm run purge:staging` är en dokumenterad väg. Racet hade
+     överlevt i den formen.
+  2. Den river ett medvetet designval utan att göra skriptet korrekt.
+     ci-suite.yml rad 64-65 svarar redan på exakt frågan; L348 kodar den
+     lärdomen ur TASK-50, där samma mutex föreslogs och förkastades.
+  3. Den serialiserar. Purge mättes till 6 s i denna körning; den tiden hade
+     lagts på staging-mutex-kön för allt annat.
+Precedenten är dessutom denna kortets egen förhistoria: TASK-50 bokförde öppet
+att "delete per post är idempotent" och att den enda teoretiska skadan vore ett
+HTTP-fel om två körningar tar samma post. Det är precis vad som inträffade.
+TASK-50:s slutsats — "robusthet i skriptet slår serialisering" — bär även här.
+
+FIXEN. isAlreadyDeletedError(status, body, requestedIds) klassar EN felform som
+succé, med fyra oberoende fail-closed-villkor: status exakt 404; kropp är JSON
+med error-OBJEKT (bas-nivåns {"error":"NOT_FOUND"} är en STRÄNG och faller
+här); error.type exakt "NOT_FOUND"; meddelandet namnger ett rec-ID som finns i
+den batch vi bad om. Faller ett villkor är svaret fällande.
+
+deleteRecords tar om en drabbad batch POST FÖR POST i stället för att svälja
+batch-felet. Skälet är mätt: ett batch-svar med två okända id:n namngav ändå
+bara det första, så ett svalt batch-fel lämnar oss utan kunskap om vilka övriga
+som raderades. Post-för-post ger entydigt svar per post och är korrekt oavsett
+om Airtables batch-delete är atomär eller delvis — en egenskap vi därmed inte
+behöver lita på. Kostnad bara på race-vägen: ≤10 extra anrop per drabbad batch.
+
+FELFORMERNA ÄR MÄTTA, INTE ANTAGNA (live mot staging apphjj8Q7lkXCMsL4
+2026-07-29, skarp least-privilege-PAT, inget muterat — alla rec-ID:n fabricerade):
+  okänd post, rätt bas+tabell -> 404 NOT_FOUND "Could not find a record with ID ..."
+  okänd TABELL, rätt bas      -> 403 INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND
+  okänd BAS                   -> 403 INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND
+  PROD-basen (utan scope)     -> 403 INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND
+Att fel bas/tabell i dag blir 403 och inte 404 är en egenskap hos token-scopen,
+INTE det som bär säkerheten. Klassificeraren matchar därför POSITIVT på
+succé-formen, aldrig på frånvaro av felform — en bredare token som ger 404 för
+fel bas fälls fortfarande (testat).
+
+AC #4 KAN INTE TAS SOM FORMULERAT — STRUKTURELL AVVIKELSE, EJ BOCKAD.
+Kortet förutsätter att kod-PR:er kör purge. Det slutade gälla med TASK-70.3:
+ci.yml rad 746 skickar `run_staging: false` VILLKORSLÖST, och purge-jobbet är
+gatat på `if: inputs.run_staging`. INGEN PR-körning och ingen merge_group-körning
+instansierar purge-jobbet längre. Kortets observationer 1-2 (#390/#391, #394/#390)
+togs på PR-ytan innan den raden blev villkorslös; observation 3 (nightly vs
+post-merge) ligger på den yta som finns kvar.
+Kvarvarande race-ytor i dag: post-merge x post-merge (concurrency-gruppen är
+per-SHA, `post-merge-${{ github.sha }}`, så två landningar överlappar by design),
+post-merge x nightly, samt CI x lokal purge.
+---
+
+created: 2026-07-29 08:45
+---
+BEVIS PER AC.
+
+AC #1 — rött-först, TVÅ steg (exitkoder mätta separat, ej via pipe):
+  RÖTT-1, mot ofixad kod (git stash på skriptet, testfilen kvar):
+    exit 1 — SyntaxError: The requested module './purge-staging-sentinels.mjs'
+    does not provide an export named 'deleteRecords'
+    (samma precedent-form som TASK-50:s backoffMs-röda)
+  RÖTT-2, klassificeraren avsiktligt kastrerad till `return false` — detta är
+    det MENINGSFULLA röda, för det isolerar toleransen från exportens blotta
+    existens: exit 1, 3 röda, varav mekanismtestet föll med EXAKT kortets
+    produktionsfel:
+      "RACET: batch-404 tas om post för post": Airtable DELETE 404:
+      {"error":{"type":"NOT_FOUND","message":"Could not find a record with ID
+      \"recEEEEFFFFGGGGHH\"."}}
+  GRÖNT efter fix: exit 0, 47 gröna (från 32 — 15 nya fall).
+  Noterbart i rätt riktning: under kastreringen förblev ALLA negativa test
+  gröna. Kastrering gör klassificeraren MER fail-closed, inte mindre — precis
+  vad man vill se.
+
+AC #3 — negativt self-test, 9 fall, alla gröna, byggda på de MÄTTA kropparna:
+  403 fel bas/fel tabell fäller · fel statuskod-klass (500/422) fäller ·
+  bas-nivåns {"error":"NOT_FOUND"} som STRÄNG fäller · 404 som namnger en post
+  vi aldrig bad om fäller · 404 utan rec-ID i meddelandet fäller ·
+  TABLE_NOT_FOUND med 404 fäller · oparsbar/tom/undefined kropp fäller ·
+  tom eller undefined lista av begärda id:n kan aldrig ge succé.
+  Mekanism-negativa: 403 kastar utan fallback (1 anrop, ej 3) · 404 med
+  främmande post kastar (1 anrop) · fatalt fel MITT I fallbacken kastar vidare
+  (3 anrop). Fallbacken är alltså inte en 404-svälj.
+
+AC #4 — EJ BOCKAD. Det jag FAKTISKT mätte, och det som saknas:
+  MÄTT — äkta samtidigt race mot skarpa Airtable-API:t med den FIXADE koden,
+  två processer, fullt överlappande fönster:
+    A: START 08:40:38Z  SLUT 08:40:44Z  EXITKOD=0
+    B: START 08:40:38Z  SLUT 08:40:44Z  EXITKOD=0
+    B loggade: "en samtidig purge hann före på minst en post i batchen — tar om
+    batchen post för post" och "0/4 raderade (+4 redan borta — samtidig purge
+    hann före, räknas som utfört)". Båda efter-verifieringarna gröna.
+    17 raderbara sentineler fanns (4 Anmälningar / 9 Eventplanering / 4
+    Anteckningar); A tog dem, B förlorade racet på alla fyra i första målet och
+    överlevde. Före fixen hade B exit 2. Det är exakt kortets mekanism, mot
+    riktiga 404-kroppar, inte mockar.
+  SAKNAS — samma bevis på CI-YTAN med två run-ID:n. Det kan inte tas från en
+  PR, eftersom PR-ytan inte längre kör purge alls (se avvikelsen ovan). Den
+  behöver två post-merge-körningar i överlappande fönster, dvs två landningar
+  tätt efter varandra, ELLER en landning som överlappar nightly.
+  Bevisningen måste dessutom vara av den FIXADE purgen — alltså efter att
+  denna PR själv landat.
+
+GRINDAR (exitkoder mätta separat):
+  node scripts/test-purge-staging-sentinels.mjs -> 0 (47 gröna)
+  npx @biomejs/biome check .                    -> 0 (0 errors; 6 warnings +
+                                                   26 infos är pre-existerande
+                                                   i orörda filer)
+  npm run typecheck                             -> 0
+  npm run build                                 -> 0
+  npm run test:api                              -> 1 vid första körningen, på
+    get-registration.staging.test.ts "okänt ID → 404" med "Request context
+    disposed" efter 30 s timeout. TRANSIENT: omkörning av hela filen grön,
+    6/6 på 7,1 s. Orörd av diffen — ingen Playwright-test importerar
+    purge-skriptet; diffen är två scripts/*.mjs.
+
+ci-suite.yml RÖRDES INTE (delad yta med TASK-75). Rad 64-65 blir inte fel av
+denna fix — ålders-guarden gör fortfarande mutexen onödig — men den är nu
+OFULLSTÄNDIG: den förklarar in-flight-skyddet utan att nämna att idempotensen
+är det som bär samtidigheten. Överlämnas till orkestreraren, ändras inte här.
+---
+<!-- COMMENTS:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
