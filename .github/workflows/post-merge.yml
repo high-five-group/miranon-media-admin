@@ -208,15 +208,26 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/ci-suite.yml
-    # INGEN `with:` — ci-suite.yml:s defaulter gäller (`run_staging: true` OCH
-    # `run_a11y: true`), samma form som nightly.yml. Se § MUTEX-KOSTNADEN i
-    # huvudet: talet är mätt, och levern för att sänka det står skriven där.
+    # INGEN `with:` — ci-suite.yml:s defaulter gäller (`run_staging: true`,
+    # `run_a11y: true` OCH `acceptance_selection: ''`), samma form som
+    # nightly.yml. Se § MUTEX-KOSTNADEN i huvudet: talet är mätt, och levern för
+    # att sänka det står skriven där.
     # Sedan A7:5 (TASK-70.3) är detta anrop den ENDA ytan som kör staging på ett
     # landat träd före natten, och sedan A7:6 (TASK-70.4) gäller detsamma för
     # a11y. Utelämnandet av `with:` är alltså inte längre en default man ärver,
-    # utan den rad som bär BÅDA kontrollerna. Att lägga till en `with:` här —
-    # oavsett vilken input — släcker ett jobb som ingen annan yta kör förrän
-    # natten.
+    # utan den rad som bär ALLA TRE kontrollerna.
+    #
+    # DEN TREDJE KOM MED TASK-75 och är av en annan sort än de två andra. Där
+    # `run_staging`/`run_a11y` styr OM ett jobb instansieras, styr
+    # `acceptance_selection` HUR MYCKET `Acceptance (hermetisk)` kör: tom sträng
+    # = hela klassens 18 spec-filer. PR-grinden kan skicka ett urval när diffen
+    # rör enbart spec-filer, och det urvalet är försvarbart ENDAST för att denna
+    # rad kör full klass på det mergade trädet (ADR-077 § Kontext,
+    # Google-modellen). scripts/test-acceptance-urval.sh T15f grindar defaulten.
+    #
+    # Att lägga till en `with:` här släcker alltså antingen ett jobb som ingen
+    # annan yta kör förrän natten, eller — för den tredje inputen — smalnar av
+    # det enda stället där hela acceptance-klassen möter ett landat träd.
     secrets: inherit
 
   # Självtestet (tvåsidigt bevis, gate-proof.yml:s form). Normalt SKIPPAT — det
