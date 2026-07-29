@@ -400,8 +400,7 @@ t('redan raderad post: 404 NOT_FOUND som namnger en post VI bad om ⇒ succé', 
 // --- NEGATIVT SELF-TEST (AC #3): fixen får inte vara fail-open ---
 
 t('NEGATIVT: 403 för fel bas/fel tabell fäller fortfarande (mätt felform)', () => {
-  // TASK-82 AC #3 TVÅSIDIGT BEVIS — TILLFÄLLIGT BRUTEN, ÅTERSTÄLLS.
-  assert.equal(isAlreadyDeletedError(403, BODY_MODEL_NOT_FOUND, [ID_A]), true);
+  assert.equal(isAlreadyDeletedError(403, BODY_MODEL_NOT_FOUND, [ID_A]), false);
 });
 
 t(

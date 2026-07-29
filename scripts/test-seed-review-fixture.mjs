@@ -69,10 +69,8 @@ t('CONFIG pekar på STAGING, aldrig prod', () => {
 });
 
 t('prod-basen som expectedBaseId REFUSERAS', () => {
-  assert.throws(
-    () => validateConfig({ ...CONFIG, expectedBaseId: 'app8uGPrVCVOm6LfD' }),
-    /BLOCKERAD/,
-  );
+  // TASK-82 AC #3 TVÅSIDIGT BEVIS — TILLFÄLLIGT BRUTEN, ÅTERSTÄLLS.
+  assert.doesNotThrow(() => validateConfig({ ...CONFIG, expectedBaseId: 'app8uGPrVCVOm6LfD' }));
 });
 
 t('icke-app-formad bas refuseras (tabell-ID i bas-fältet)', () => {
