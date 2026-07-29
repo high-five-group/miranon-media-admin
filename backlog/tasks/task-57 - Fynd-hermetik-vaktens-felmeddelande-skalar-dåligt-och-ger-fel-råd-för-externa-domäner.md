@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-27 18:06'
-updated_date: '2026-07-27 20:24'
+updated_date: '2026-07-29 11:35'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,10 +33,10 @@ Vakten bor i tests/visual/support/hermetik-vakt.ts.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Acceptance Criteria
@@ -68,4 +68,12 @@ RENSAT UNDER ARBETET: första utkastet bar fyra non-null-assertions med biome-ig
 GRINDAR: typecheck 0 fel · biome ren på rörda filer (6 varningar finns identiskt på main) · vakt-specen 8 passed · npm run test:visual 28 passed.
 
 ÖPPEN AVVIKELSE, EJ BORTFÖRKLARAD: i en av fyra fulla visual-körningar föll personer.spec.ts. Den passerade isolerat och i tre efterföljande fulla körningar (28 passed x3). Artefakten hann skrivas över innan den lästes, så orsaken är INTE diagnostiserad. Testet ligger inte på denna ändrings kodväg — vaktens meddelande byggs bara vid ett omockat anrop, vilket personer-testet inte gör — men de tre nya testerna x två vyportar ändrar svitens schemaläggning, och det kan inte uteslutas som utlösare.
+
+BOKFÖRINGS-RÄTTNING 2026-07-29 (S91 femtonde resumen). Kortet stod `Done` med obockad DoD — arbetet var gjort men rutorna aldrig satta.
+
+VERIFIERAT: arbetet är landat på `main`; 12 commits refererar kortet, senast `7ca0926`. Landningen gick genom merge-grinden, vilket förutsätter grön required check.
+
+INTE OMVERIFIERAT: DoD-posterna om lokala grindar och diff-omfång bockas som BOKFÖRING, inte som ny mätning. De var uppfyllda i sak när kortet stängdes; det som saknades var kvittensen. Att påstå en färsk verifiering hade varit oärligt.
+
+VARFÖR NU: `scripts/check-backlog-closure.sh` grindar från i dag invarianten `Done ⟹ allt avbockat`. Obockad DoD på ett stängt kort är därefter en fällning, inte en tyst avvikelse.
 <!-- SECTION:NOTES:END -->

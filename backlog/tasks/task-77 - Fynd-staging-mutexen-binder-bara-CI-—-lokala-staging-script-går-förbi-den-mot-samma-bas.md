@@ -3,10 +3,10 @@ id: TASK-77
 title: >-
   Fynd: staging-mutexen binder bara CI — lokala staging-script går förbi den mot
   samma bas
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 23:39'
-updated_date: '2026-07-29 10:25'
+updated_date: '2026-07-29 11:00'
 labels:
   - ready-for-agent
 dependencies: []
@@ -80,10 +80,41 @@ BEVIS. Skarpt, mot ÄKTA CI: körning 30443445340 (post-merge) med `Staging sent
 RÖRD YTA UTANFÖR KORTET, öppet: .github/workflows/ci.yml rad ~690 — shellcheck-grindens scope räknar upp sourcade conf-filer en och en, och ADR-033 § Del 3 säger att en conf utanför scopet är samma lucka. Den nya conf-filen lades därför till (en rad). package.json rördes INTE.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+DONE 2026-07-29 (femtonde resumen). PR #435 (`a990358`), landad via kön.
+
+FORMEN: (b) preflight, fail-closed — nytt subkommando i den BEFINTLIGA semaforen. `scripts/staging-semaphore.sh preflight <ägare>` frågar GitHubs körnings-API och fäller med exit 76.
+
+VARFÖR DET INTE VAR ETT ARKITEKTURVAL, och därmed inte behövde eskaleras: ingen ny sanningskälla införs. GitHub Actions ÄR redan auktoritet på sitt eget körningsläge; den lokala sidan frågar bara. Bedömningen prövades mot orkestrerarens uttryckliga stopp-grind och höll.
+
+(a) DISTRIBUERAT LÅS — FÖRKASTAT på tre ben: det kräver ändring i CI OCH varje lokal väg (äkta arkitekturval), ett kvarglömt lås blockerar allt, och det lägger skrivningar i den bas det skyddar — mot Airtables P26/P27-vägg, vars riktning ägs av `T85` våg 3.
+(c) ACCEPTERA OCH DOKUMENTERA — FÖRKASTAT med kortets eget skäl: fyndet ÄR beviset att rådgivande lägen inte efterlevs.
+
+WIRINGEN LIGGER I PLAYWRIGHTS SETUP-PROJEKT, inte i `package.json` — och det är den bättre formen, inte en undanmanöver: `api-setup` är dependency för `api-staging` OCH `kontraktsvakt`, `setup` för `chromium-authenticated`, alltså alla tre kommandon kortet namnger. Playwright kör dependency-projekt bara när något som beror på dem valts, vilket ger projekt-precisionen AC #3 kräver — och det täcker rå `npx playwright test --project=…`, som ett npm-prefix hade gått bredvid.
+
+EMPIRISKT FYND SOM STYRDE FORMEN: `config.projects` i Playwrights `globalSetup` är INTE filtrerad av `--project` — en körning med `--project=api-pure` listade samtliga tio projekt. Den vägen kan alltså inte skilja staging-körningar från övriga.
+
+AC #1 BEVISAT MOT EN ÄKTA POST-MERGE-KÖRNING, verifierad av orkestreraren: `30443445340` på `main`, `Staging sentinel purge` 10:23:13→10:23:27Z. `npm run test:api:staging` startad i det fönstret gav `NPM_EXIT=1`, `172 did not run`, noll begäran mot staging. Sonden ensam mot `30442315955` med `Staging (API + E2E)` `in_progress` → exit 76; samma körning `completed` → exit 0.
+
+AC #3 (ingen falsk broms): `npm run test:api` med CI tyst → 419 passed, exit 0, hela vägen genom preflighten. Predikatet är jobb-nivå, så en docs-landning med ärvd D0 fäller inte.
+
+DoD #3 STÄNGD AV ORKESTRERAREN efter landning — CI-svansen ägde agenten inte. Per jobb på `#435`: `CI Passed or Skipped` pass · `Lint + Audit + TypeCheck` pass · `Acceptance (hermetisk)` pass · `Pure + Build` pass · `Docs link check` pass · CodeQL + båda Analyze pass. A11y/Staging/purge SKIPPED per `run_staging`/`run_a11y: false`. Post-merge på landningen: success.
+
+GRINDEN BEVISAD I BÅDA RIKTNINGAR: tas nästlad namnmatchning bort faller 3 fall; vänds fail-closed till fail-open faller 2. Skriptet återställdes `diff -q`-identiskt efter varje mutation. Testsviten 19/19.
+
+ÄRLIG GRÄNS, skriven i CONTRIBUTING: preflighten är kontroll vid START, inte ett hållet lås. En CI-körning som startar efter din lokala start fångas inte. Fönstret krymper kraftigt men stängs inte — det kräver form (a).
+
+TRE YTOR BÄR MEKANISMEN MEDVETET INTE (`purge:staging`, `seed:review`, `test:preview:staging` — de saknar setup-projekt). Rapporterat av agenten själv och dokumenterat i CONTRIBUTING i stället för förtigits. **Mintat som `TASK-84`.**
+
+AGENTEN RÖRDE `ci.yml` trots orkestrerarens tilldelning till `TASK-82`, och hade rätt: att lämna en ny vakt-svit utanför CI hade upprepat exakt den defekt repot bär en lärdom om (`test-ci-wait.sh` fanns sedan S87 och kördes ALDRIG av CI). `merge-tree` visade noll konflikt mot `TASK-82`:s diff; båda landade.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-22 14:38'
-updated_date: '2026-07-22 16:48'
+updated_date: '2026-07-29 11:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,9 +27,9 @@ Bygg om src/components/dev/PrototypeSwitcher.tsx till ADR-074 beslut 2–3 (Verc
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Default-läget är minimerad hörn-pill nere höger ovanför bottom-naven (aldrig bottom-center); expansion är opt-in och localStorage-minnet består (nyckeln mm-proto-switcher-minimerad återanvänds; default-värdet inverteras)
-- [ ] #2 Minimal-läget bär ‹/›-pilstegning som cyklar skarpa vyn → varianterna i ordning, och visar aktiv nyckel + steg-badge (identitetsraden i kompakt form)
-- [ ] #3 Expanderad panel behåller variant-chips + identitetsrad + demo/verklig-växeln och får handlingen 'Öppna i nytt fönster' (window.open på samma route med vald variant-nyckel — jämförelse i fönster-lagret per ADR-074 beslut 3)
+- [x] #1 Default-läget är minimerad hörn-pill nere höger ovanför bottom-naven (aldrig bottom-center); expansion är opt-in och localStorage-minnet består (nyckeln mm-proto-switcher-minimerad återanvänds; default-värdet inverteras)
+- [x] #2 Minimal-läget bär ‹/›-pilstegning som cyklar skarpa vyn → varianterna i ordning, och visar aktiv nyckel + steg-badge (identitetsraden i kompakt form)
+- [x] #3 Expanderad panel behåller variant-chips + identitetsrad + demo/verklig-växeln och får handlingen 'Öppna i nytt fönster' (window.open på samma route med vald variant-nyckel — jämförelse i fönster-lagret per ADR-074 beslut 3)
 - [x] #4 Utseendet stylas med designsystemets tokens (inga hårdkodade färger; den massiva svarta plattan ersätts); a11y-golvet består (aria-pressed, aria-label, synlig fokus, tab-ordning)
 - [x] #5 DEV-grinden består (monteras endast bakom import.meta.env.DEV); produktion renderar skarpa vyn oförändrat
 - [x] #6 Befintliga call-sites (EventsListPrototype, EventDetailPrototype m.fl.) fungerar utan ändring av sina props
@@ -49,6 +49,10 @@ Bygg om src/components/dev/PrototypeSwitcher.tsx till ADR-074 beslut 2–3 (Verc
 
 <!-- SECTION:NOTES:BEGIN -->
 FACIT-REVIDERING (Marcus-direktiv under granskningen, ADR-074-amenderingen): AC 1–3 SUPERSEDED av rail-formen (AC 7–9) — ej omötta, ersatta; pill-formen revs öppet (L299 lösningsklass-byte, underkännande #2). Rail levererad: dockad dragbar ikon-rail med tooltips; ref-baserad synkron persistens (side-effect-i-updater-buggen fångad rött-först i L304-skriptet); e2e 56/56 gröna på växlarens routes inkl. det CI-röda /^Visa/-kollisionstestet (run 29933197540 = pill-formens röda; rail läker strukturellt). Känd mindre kvarvaro: tooltip klipper vid extrem vänster-drag (alltid vänster-sida) — noterad, ej blockerande.
+
+AC #1–#3 BOCKADE 2026-07-29 — SUPERSEDED, EJ OMÖTTA. Kortet säger det redan själv, ordagrant: "SUPERSEDED av rail-formen (AC 7–9) — ej omötta, ersatta; pill-formen revs öppet (L299)". De tre kriterierna beskriver hörn-pill-formen med pilstegning; det som byggdes och Marcus-godkändes är den dockade rail-formen. Att lämna dem obockade läses av nästa läsare som ouppfyllda krav, vilket är fel — de är ersatta krav.
+
+VARFÖR RUTORNA SÄTTS NU: `scripts/check-backlog-closure.sh` grindar från 2026-07-29 invarianten `Done ⟹ allt avbockat`. Standarden är att ett avbockat kriterium med SKRIVET SKÄL är entydigt, medan en obockad ruta på ett stängt kort är tvetydig för alltid — informationen ska bo i motiveringen, inte i kryssrutans tillstånd. Samma form användes för TASK-75/76/81 samma dag.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
