@@ -1,10 +1,10 @@
 ---
 id: TASK-70.1
 title: 'Skiva: Aktivera merge queue — landnings-ordningen mekaniseras'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-28 16:31'
-updated_date: '2026-07-28 18:22'
+updated_date: '2026-07-29 00:19'
 labels:
   - ready-for-agent
 dependencies: []
@@ -53,14 +53,16 @@ VID FÖRSTA SKARPA LANDNINGEN EFTERÅT, OBSERVERA:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Ägarformen omverifierad live FÖRE arbetet: owner.type = Organization och visibility = public, utdata ur gh api redovisat i PR:n
-- [ ] #2 ci.yml lyssnar på merge_group med aktivitetstyp checks_requested, utöver pull_request och push
+- [x] #1 Ägarformen omverifierad live FÖRE arbetet: owner.type = Organization och visibility = public, utdata ur gh api redovisat i PR:n
+- [x] #2 ci.yml lyssnar på merge_group med aktivitetstyp checks_requested, utöver pull_request och push
 - [ ] #3 CI Passed or Skipped rapporteras med samma namn på både PR-ytan och merge_group-ytan — ett run-ID per yta redovisat
-- [ ] #4 Merge queue-regeln är satt i repository-rulesetet main-skydd (19627609) med merge_method som stämmer med allowed_merge_methods — verifierat mot gh api efter landning
+- [x] #4 Merge queue-regeln är satt i repository-rulesetet main-skydd (19627609) med merge_method som stämmer med allowed_merge_methods — verifierat mot gh api efter landning
 - [ ] #5 Staging (API + E2E) kör INTE på båda ytorna: antalet körningar som tar concurrency-gruppen staging-tests per landad kod-PR är oförändrat eller lägre, mätt före och efter med båda talen redovisade
 - [ ] #6 Tvåsidigt bevis: två PR:er armerade samtidigt landar båda utan att någon går BEHIND, OCH vägen tillbaka är prövad — regeln kan tas bort ur rulesetet varefter landningen fungerar som före
-- [ ] #7 CONTRIBUTING.md § Landnings-ordningen uppdaterad eller avvecklad så den inte beskriver en ordning som maskinen numera äger
+- [x] #7 CONTRIBUTING.md § Landnings-ordningen uppdaterad eller avvecklad så den inte beskriver en ordning som maskinen numera äger
 <!-- AC:END -->
+
+
 
 ## Implementation Plan
 
@@ -83,7 +85,7 @@ ORDNINGSNOT (oförändrad): kortet har inga deps och kan tas när som helst, men
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
