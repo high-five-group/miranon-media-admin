@@ -3,7 +3,9 @@
 #
 # Empirisk test-suite för scripts/classify-post-merge.sh (TASK-73).
 #
-# 13 testfall — ett per gren i klassningen, båda riktningarna:
+# 21 testfall — ett per gren i klassningen, båda riktningarna.
+#
+# VÄG B — PR-ytan (ursprunglig form, TASK-73):
 #   T1  docs-landning: `Test suite` skipped i PR-körningen        → true
 #   T2  kod-landning: inner-jobb i stället för `Test suite`       → false
 #   T3  event != push (dispatch)                                  → false
@@ -17,6 +19,21 @@
 #   T11 `Test suite` med oväntad conclusion (failure)             → false
 #   T12 användningsfel (saknat SHA / saknad REPO)                 → exit 2
 #   T13 KOPPLINGSGRINDEN — se nedan
+#
+# VÄG A — kö-ytan (TASK-78). T1–T13 kör med tom kö-lista och bevisar därmed
+# samtidigt att den gamla vägen är ORÖRD:
+#   T14 kö-docs TROTS träd-avvikelse                              → true
+#   T15 kögrupp med kod slår PR:ens docs-klassning (AC#3)         → false
+#   T16 kö-basen != merge-commitens första förälder               → false
+#   T17 körnings-API-fel på kö-ytan                               → false
+#   T18 jobblist-fel på kö-körningen                              → false
+#   T19 kö-körning med `Test suite` failure                       → false
+#   T20 cancelled kö-körning → faller till VÄG B                  → true
+#   T21 kö-frågans form: --event merge_group mot MERGE-sha:t
+#
+# T14 ÄR TVÅSIDIGHETSBEVISET: den fäller mot skriptet FÖRE TASK-78-fixen
+# (träd-avvikelse ⇒ fail-closed ⇒ false) och passerar efter. Mätt, inte antaget
+# — se PR-beskrivningen för körningen mot den ofixade kopian.
 #
 # ═══ VARFÖR T13 FINNS: PARITETEN ÄR EN STRÄNG, OCH DEN GRINDAS ═══
 # Klassningen ärver ci.yml:s beslut i stället för att räkna om det, just för att
@@ -92,12 +109,16 @@ printf '%s\n' "$*" >> "${GH_CALL_LOG:-/dev/null}"
 
 fail_on="${GH_FAIL_ON:-}"
 
-# Plocka ut --jq-uttrycket ur argumenten.
+# Plocka ut --jq-uttrycket och --event-värdet ur argumenten.
 jq_expr=""
+event_arg=""
 prev=""
 for a in "$@"; do
     if [[ "${prev}" == "--jq" ]]; then
         jq_expr="${a}"
+    fi
+    if [[ "${prev}" == "--event" ]]; then
+        event_arg="${a}"
     fi
     prev="${a}"
 done
@@ -122,11 +143,24 @@ case "${sub}" in
     run)
         case "${2:-}" in
             list)
+                # VÄG A (kö-ytan) och VÄG B (PR-ytan) frågar samma subkommando;
+                # de skiljs på --event, precis som skriptet gör.
+                if [[ "${event_arg}" == "merge_group" ]]; then
+                    [[ "${fail_on}" == "runlist_mg" ]] && exit 1
+                    printf '%s' "${GH_RUNLIST_MG_JSON:-[]}" | jq -r "${jq_expr}"
+                    exit $?
+                fi
                 [[ "${fail_on}" == "runlist" ]] && exit 1
                 printf '%s' "${GH_RUNLIST_JSON:-[]}" | jq -r "${jq_expr}"
                 exit $?
                 ;;
             view)
+                # Kö-körningen har id 7777, PR-körningen 4242 (se scenariona).
+                if [[ "${3:-}" == "7777" ]]; then
+                    [[ "${fail_on}" == "runview_mg" ]] && exit 1
+                    printf '%s' "${GH_RUNVIEW_MG_JSON:-{\}}" | jq -r "${jq_expr}"
+                    exit $?
+                fi
                 [[ "${fail_on}" == "runview" ]] && exit 1
                 printf '%s' "${GH_RUNVIEW_JSON:-{\}}" | jq -r "${jq_expr}"
                 exit $?
@@ -156,6 +190,11 @@ scenario_defaults() {
     export GH_COMMIT_HEAD_JSON='{"commit":{"tree":{"sha":"t1"}}}'
     export GH_RUNLIST_JSON='[{"databaseId":4242,"status":"completed","conclusion":"success"}]'
     export GH_RUNVIEW_JSON='{"jobs":[{"name":"Detect changed files","conclusion":"success"},{"name":"Test suite","conclusion":"skipped"}]}'
+    # VÄG A tom som DEFAULT — landningen gick inte via kön. Det gör att T1–T13
+    # kör exakt den väg de alltid kört, och deras oförändrade utfall är
+    # bakåtkompatibilitets-beviset för TASK-78. Kö-scenariona sätter den själva.
+    export GH_RUNLIST_MG_JSON='[]'
+    export GH_RUNVIEW_MG_JSON='{"jobs":[{"name":"Detect changed files","conclusion":"success"},{"name":"Test suite","conclusion":"skipped"}]}'
     export GH_FAIL_ON=""
     export GH_CALL_LOG="${TEST_DIR}/calls.log"
     : > "${GH_CALL_LOG}"
@@ -269,6 +308,92 @@ if grep -q -- "--event pull_request" "${GH_CALL_LOG}"; then
     pass "T12c run list frågar med --event pull_request"
 else
     fel "T12c run list saknar --event pull_request — dedup-skippade körningar kan läsas som D0"
+fi
+
+# ═══ VÄG A — KÖ-YTAN (TASK-78) ═══════════════════════════════════════════════
+# Kö-körningen (`event=merge_group`) kördes på EXAKT den commit som landar, så
+# den ärvs före PR-körningen. Scenariona nedan sätter GH_RUNLIST_MG_JSON;
+# grennamnet måste sluta på merge-commitens FÖRSTA förälder, som i
+# scenario_defaults är `cccc`.
+echo "── VÄG A: kö-ytan (TASK-78) ──"
+
+MG_OK='[{"databaseId":7777,"status":"completed","conclusion":"success","headBranch":"gh-readonly-queue/main/pr-99-cccc"}]'
+
+# --- T14: KORTETS DEFEKT — kö-docs trots träd-avvikelse → true ---------------
+# DETTA ÄR TESTET SOM FÄLLER FÖRE FIXEN. Träden avviker (main har rört sig sedan
+# PR-headen skrevs — `#423`-fallet), vilket är precis vad VÄG B fail-closar på.
+# Kö-körningen klassade samma träd som docs, och den gäller det som landar.
+scenario_defaults
+export GH_RUNLIST_MG_JSON="${MG_OK}"
+export GH_COMMIT_HEAD_JSON='{"commit":{"tree":{"sha":"MAIN-HAR-ROORT-SIG"}}}'
+run_case "T14 kö-docs trots träd-avvikelse (TASK-78-fallet)" "true"
+
+# --- T15: kö-körningens KOD-utfall har företräde → false ---------------------
+# PRIORITETS-ASSERTION, inte ett fysiskt scenario — sagt rakt ut hellre än
+# överdrivet: med `min_entries_to_merge: 1` får varje post en egen kö-körning på
+# sin egen commit, så "kö säger kod medan PR säger docs" är svårt att framkalla
+# skarpt. Testet låser ORDNINGEN: kö-körningen vinner, alltid. Kastas den om så
+# PR-vägen får företräde, fäller detta test — och först då kan en kod-bärande
+# landning ärva en docs-klassning.
+#
+# AC#3:s SUBSTANS vilar inte här utan på härledningen ur källan: ci.yml:s D0-steg
+# är en ALLOWLIST där only_changed blir true ENDAST när VARENDA ändrad fil
+# matchar (tj-actions/changed-files @ pinnad SHA, src/changedFilesOutput.ts:
+# `onlyChanged = otherChangedFiles.length === 0 && …`). En kögrupp som blandar
+# docs och kod har minst en icke-matchande fil ⇒ only_changed=false ⇒ KOD.
+# Skarp empiri i samma riktning: kö-körning 30439086378 (`#424`, bas = `#423`:s
+# merge-commit) klassade KOD och instansierade inner-jobben.
+scenario_defaults
+export GH_RUNLIST_MG_JSON="${MG_OK}"
+export GH_RUNVIEW_MG_JSON='{"jobs":[{"name":"Test suite / Pure + Build","conclusion":"success"},{"name":"Test suite / Staging (API + E2E)","conclusion":"success"}]}'
+run_case "T15 kögrupp med kod slår PR:ens docs-klassning" "false"
+
+# --- T16: kö-basen är inte första föräldern → false --------------------------
+# Utan bas-kontrollen hade detta gett `true` på en klassning av FEL diff.
+scenario_defaults
+export GH_RUNLIST_MG_JSON='[{"databaseId":7777,"status":"completed","conclusion":"success","headBranch":"gh-readonly-queue/main/pr-99-ETTHELTANNATSHA"}]'
+run_case "T16 kö-bas != merge-commitens första förälder" "false"
+
+# --- T17: run list-fel på kö-ytan → false ------------------------------------
+# PR-vägen hade gett `true` här; ett API-fel får inte tyst degradera till den.
+scenario_defaults
+export GH_FAIL_ON="runlist_mg"
+run_case "T17 körnings-API-fel på kö-ytan" "false"
+
+# --- T18: jobblist-fel på kö-körningen → false -------------------------------
+scenario_defaults
+export GH_RUNLIST_MG_JSON="${MG_OK}"
+export GH_FAIL_ON="runview_mg"
+run_case "T18 jobblist-fel på kö-körningen" "false"
+
+# --- T19: `Test suite` med oväntad conclusion i kö-körningen → false ---------
+scenario_defaults
+export GH_RUNLIST_MG_JSON="${MG_OK}"
+export GH_RUNVIEW_MG_JSON='{"jobs":[{"name":"Test suite","conclusion":"failure"}]}'
+run_case "T19 kö-körning med Test suite failure" "false"
+
+# --- T20: icke-grön kö-körning ignoreras → VÄG B gäller ----------------------
+# En cancelled kö-körning är ingen klassning; skriptet ska falla till PR-vägen,
+# inte fail-closa. Här är PR-vägen docs och träden lika ⇒ true.
+scenario_defaults
+export GH_RUNLIST_MG_JSON='[{"databaseId":7777,"status":"completed","conclusion":"cancelled","headBranch":"gh-readonly-queue/main/pr-99-cccc"}]'
+run_case "T20 cancelled kö-körning → faller till VÄG B" "true"
+
+# --- T21: kö-frågan ställs mot MERGE-sha:t, inte PR-headen -------------------
+# Frågas fel SHA hittas aldrig någon kö-körning och hela VÄG A blir död kod —
+# en tyst fail-closed, alltså samma L322-klass T13 vaktar.
+scenario_defaults
+export GH_RUNLIST_MG_JSON="${MG_OK}"
+run_case "T21 (uppvärmning för kö-frågans form)" "true"
+if grep -q -- "--event merge_group" "${GH_CALL_LOG}"; then
+    pass "T21a run list frågar kö-ytan med --event merge_group"
+else
+    fel "T21a run list saknar --event merge_group — VÄG A är frånkopplad"
+fi
+if grep -E -- "--event merge_group" "${GH_CALL_LOG}" | grep -q -- "--commit ${MERGE_SHA}"; then
+    pass "T21b kö-frågan ställs mot merge-commitens egen SHA"
+else
+    fel "T21b kö-frågan ställs inte mot merge-SHA:t — klassningen läser fel commit"
 fi
 
 # --- T13: KOPPLINGSGRINDEN ---------------------------------------------------
