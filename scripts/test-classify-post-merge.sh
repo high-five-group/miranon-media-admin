@@ -325,7 +325,7 @@ MG_OK='[{"databaseId":7777,"status":"completed","conclusion":"success","headBran
 # Kö-körningen klassade samma träd som docs, och den gäller det som landar.
 scenario_defaults
 export GH_RUNLIST_MG_JSON="${MG_OK}"
-export GH_COMMIT_HEAD_JSON='{"commit":{"tree":{"sha":"MAIN-HAR-ROORT-SIG"}}}'
+export GH_COMMIT_HEAD_JSON='{"commit":{"tree":{"sha":"MAIN-HAR-RORT-SIG"}}}'
 run_case "T14 kö-docs trots träd-avvikelse (TASK-78-fallet)" "true"
 
 # --- T15: kö-körningens KOD-utfall har företräde → false ---------------------
