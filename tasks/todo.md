@@ -15,6 +15,43 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-29, trettonde resumen — MERGE QUEUE AKTIV,
+steg 3 till tre fjärdedelar)** — **TOLV PR:er landade (`#389`–`#408`), noll röda
+körningar.** **FYRA KORT STÄNGDA:** `TASK-73` (AC-svansen, fyra oberoende bevis)
+· `TASK-63` (stod `To Do` medan TRE dokument påstod motsatsen — DoD #3 obockad;
+bara korsläsning mot registret avslöjade det) · **`TASK-70.3`** (A7-spårets
+största post) · **`TASK-70.1`** (merge queue). **FYRA MINTADE:** `76` `77` `78`.
+**`TASK-70.3`:** staging ur PR-grinden. Väggklockan för en ensam PR står still
+(+1,1 %) — **godkänt utfall per kortet självt**; vinsten är derivatan: FÖRE-talet
+växer ~360 s per ytterligare samtidig kod-PR, EFTER-talet är konstant. Kötid
+**283 → 0 s**, mätt två gånger oberoende (283 s kontrollerat, 323 s naturligt
+experiment). AC #1 godkänt på **rationale, ej bokstav** (skippade placeholders;
+literal frånvaro hade krävt radering som kortet förbjuder — nattnätet delar
+källan). **`TASK-70.1`:** triggern landad SEPARAT och FÖRE regeln (annars kan
+ingen PR landa, inklusive fixen) · **revert-vägen prövad SKARPT med tom kö** (på
+→ verifierad → av → verifierad; `PUT` ersätter hela rules-arrayen, så vägen
+tillbaka är en FIL) · **AC #6 bevisad genom att göra det gamla förbudet** — `#404`
+och `#405` armerade SAMTIDIGT, båda landade. **Research avvärjde två risker
+kortet inte nämner:** `changed-files` hanterar `merge_group` (verifierat i koden
+vid vår SHA-pin, ej i dokumentationen) · `cancel-in-progress: true` var en
+dokumenterad kö-fälla vi undgick **av en slump** — nu explicit.
+**RESTLISTANS AUDIT** (tre läsagenter, disjunkta linser): **~20 fynd**, varav
+**FEM skapade samma kväll av rättelsearbetet självt**. Tyngsta: `--mm-btn-*` var
+INTE oanvända (`CTA.tsx` använder Tailwind-syntax) · `TASK-18.20` blockeras av
+fyra Marcus-beslut, ej hållplats-frågan · nio poster saknade bärare i kartan
+(orsak: A2:s två första punkter saknade NUMMER, och kartan pekar per nummer → nu
+`A2:10`/`A2:11`). **SKÖRD: sex fragment (37 → 43)** — fyra ur Marcus eller
+agenternas fångster, ett ur egen reflektion. **MARCUS TRE FÅNGSTER:**
+schemaläggningen av `70.1` var Codes beslut · ett fynd måste säga VAR felet sitter
+(`#405` rörde ALDRIG PR-grinden) · bakgrundsvakter startade med `nohup &` ger
+NOLL notifieringar. **NÄSTA: `TASK-70.4` (bygg-agent arbetar) → `TASK-75`
+(avblockerad, samma filer — ej parallellt) → steg 3 STÄNGT. Sedan steg 4
+(`70.6`, `delete_branch_on_merge`) som också stoppar grenskulden från att växa —
+nu 263 fjärr/191 lokala, +28 % på ett dygn.** Numrering: 91/083/L360 (**43**
+fragment)/T107/f46/**task-79**. Karta: `tasks/s91-restlistan.md`. Full narrativ:
+sessionsdok **Del 21–22**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-29, trettonde resumen — tillstånds-
 återställning + merge queue framflyttad)** — resumen kördes **tio minuter efter**
 pausen (`b354d98` var 8 min gammal); midnattspassagen förklarar datumskiftet.
