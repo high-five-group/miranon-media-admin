@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-29 09:02'
+updated_date: '2026-07-29 10:28'
 labels:
   - ready-for-agent
 dependencies: []
@@ -46,12 +47,14 @@ Var hör de hemma? `ci.yml` (som de tretton andra), `nightly.yml` (som `test-ci-
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Båda sviterna körs av minst ett CI-jobb — jobbnamn och run-ID redovisat per svit
-- [ ] #2 Placeringen motiverad per svit mot deras faktiska krav (hermetisk vs secrets-beroende); en svit som kräver staging-secrets hamnar INTE i PR-grinden
-- [ ] #3 Tvåsidigt bevis: en medvetet bruten assertion i vardera sviten gör CI-jobbet RÖTT — run-ID per svit, sedan återställt
-- [ ] #4 Ingen ny testfil och ingen ändring i purge-koden eller seed-skriptet — diffen rör wiring, inget annat
-- [ ] #5 Kontroll att inga FLER scripts/test-*-sviter saknar hemvist efter ändringen — korsningen körd om och redovisad
+- [x] #1 Båda sviterna körs av minst ett CI-jobb — jobbnamn och run-ID redovisat per svit
+- [x] #2 Placeringen motiverad per svit mot deras faktiska krav (hermetisk vs secrets-beroende); en svit som kräver staging-secrets hamnar INTE i PR-grinden
+- [x] #3 Tvåsidigt bevis: en medvetet bruten assertion i vardera sviten gör CI-jobbet RÖTT — run-ID per svit, sedan återställt
+- [x] #4 Ingen ny testfil och ingen ändring i purge-koden eller seed-skriptet — diffen rör wiring, inget annat
+- [x] #5 Kontroll att inga FLER scripts/test-*-sviter saknar hemvist efter ändringen — korsningen körd om och redovisad
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

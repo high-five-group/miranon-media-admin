@@ -666,6 +666,59 @@ jobs:
         run: |
           bash scripts/test-deploy-prod-functions.sh
 
+      - name: Test purge-vaktens 404-diskriminering (TASK-82)
+        # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän dess
+        # fyrning FORTLÖPANDE verifieras. Sviten var wirad i INGET jobb fram till
+        # TASK-82. TASK-50 bokförde den frånvaron medvetet, två gånger — och det
+        # var försvarbart så länge sviten bar beskrivande mekanism-tester. Det som
+        # ändrades är inte formen utan LASTEN: TASK-76 lade sin fail-open-vakt
+        # (AC #3 — "404 som beror på fel bas eller fel tabell fäller FORTFARANDE")
+        # här, alltså den enda kontroll som skiljer purge-idempotensen från ett
+        # tyst hål. Ett medvetet designval fattat under andra förutsättningar är
+        # inte automatiskt giltigt under de nya; TASK-50:s beslut rivs öppet, inte
+        # tyst.
+        #
+        # Extra vikt: ci.yml skickar sedan TASK-70.3 `run_staging: false`
+        # villkorslöst, så purge-JOBBET (ci-suite.yml `staging-purge`) kör inte på
+        # PR-ytan. Utan detta steg har purge-koden noll automatisk täckning på
+        # PR-nivå — varken sitt jobb eller sin testsvit.
+        #
+        # HEMVIST-VAL — PR-grinden, inte natten (nightly.yml bär MÄTARE:
+        # test-ci-metrics.mjs, test-flake-matserie.mjs; detta är en GRIND).
+        # Sviten är hermetisk: den mockar globalThis.fetch med save/restore och
+        # läser i övrigt bara .purge-staging-policy.json ur checkouten. Verifierat
+        # 2026-07-29 genom körning utan STAGING_AIRTABLE_TOKEN i miljön OCH med
+        # globalThis.fetch spärrad till throw — exit 0 i båda fallen, alltså inga
+        # secrets och noll nätverkstrafik. Den validerar dessutom policy-filen PÅ
+        # DISK, så en PR som ändrar .purge-staging-policy.json måste kunna fällas
+        # av den FÖRE landning; nattlig kadens hade sett det först efteråt.
+        #
+        # ≈4 s LOKALT mätt (macOS, 2026-07-29) — CI-tiden är inte mätt av mig.
+        run: node scripts/test-purge-staging-sentinels.mjs
+
+      - name: Test seed-fixturens guard-funktioner (TASK-82)
+        # Samma kadens-argument (L43), samma tidigare frånvaro. Sviten prövar de
+        # pura guards i scripts/seed-review-fixture.mjs: bas-guarden som refuserar
+        # prod-basen som expectedBaseId, länk-guarden runt de permanenta
+        # rollup-fixturerna (TASK-31), och korsläsningen av granskningsfixturens
+        # markörer mot den SKARPA .purge-staging-policy.json.
+        #
+        # HEMVIST-VAL — PR-grinden, men först efter separat kontroll. Villkoret
+        # var att en svit som kräver staging-secrets INTE hör i PR-grinden.
+        # Kontrollerat 2026-07-29: seed-skriptets enda process.env-läsning
+        # (STAGING_AIRTABLE_TOKEN) ligger inuti main(), som körs endast som CLI —
+        # testsviten importerar de pura funktionerna och rör aldrig fetch. Körd
+        # utan token och med globalThis.fetch spärrad till throw: exit 0 båda
+        # gångerna. Villkoret faller alltså inte ut — sviten är hermetisk och hör
+        # i den billiga klassen.
+        #
+        # Korsläsningen mot policy-filen bär samma PR-argument som steget ovan: en
+        # PR som breddar purge-mönstret kan få granskningsfixturen att städas bort
+        # mitt under en pågående granskning, och det ska fällas före landning.
+        #
+        # ≈0,1 s LOKALT mätt (macOS, 2026-07-29) — CI-tiden är inte mätt av mig.
+        run: node scripts/test-seed-review-fixture.mjs
+
       - name: Install shellcheck (pinned v0.11.0)
         # Per ADR-033 § Säkerhet + ADR-029 § Third-party Actions-policy.
         # ubuntu-latest har shellcheck 0.9.0-1 pre-installerat (Image
