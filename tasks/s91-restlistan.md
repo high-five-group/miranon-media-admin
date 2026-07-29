@@ -542,6 +542,15 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       i `CONTRIBUTING` i stället för att tiga. `purge:staging` är skarpast — en
       lokal purge mot en pågående CI-purge är exakt `TASK-76`:s race, med en
       aktör mekanismen inte ser → **`TASK-84`**
+- [ ] **`T108`** (tråd, ej kort) — **MÅSTE LÖSAS (Marcus 2026-07-29).**
+      Orkestreraren väntar på notifieringar som strukturellt aldrig kommer:
+      **PR-landningar notifierar ingen.** Inträffade TVÅ gånger samma dag, och
+      båda gångerna var det Marcus som fångade det — den dyraste fångst-mekanismen
+      vi har. Klassen är bredare än PR:er: **vilka tillstånd antar jag att någon
+      berättar om för mig?** En lesson räcker inte — dagen bevisade två gånger att
+      en regel utan mekanism inte efterlevs. Fyra former att utforska, se
+      tråd-registret
+
 - [ ] **`T107`** (tråd, ej kort) — **backlog-CLI:t är odokumenterat förkrav som
       CI inte har.** `backlog.md@1.47.1` är globalt installerad på Marcus maskin,
       varken dependency eller i `node_modules`, nämns i ingen fil. **Blockerar
@@ -549,8 +558,6 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       shellcheck 0/0/0/0, körd skarpt 21→1 — men ej wirad). Marcus 2026-07-29:
       *"Det är inte mitt beslut. Det är ett beslut vi ska ta efter research-runda
       och utforskning."* Fyra former att utforska, se tråd-registret
-- [ ] **`TASK-56`** — WebSocket-vägen går förbi hermetik-vakten. Latent tills
-      appen får realtime; den enda kvarvarande vägen ut ur fixturvärlden
 - [ ] **`TASK-79`** — `hem:1097`: byte-identisk skärmdump efter dubbel-rAF.
       **Fjärde flake-formen**, och den ENDA klass-B-liknande som CI faktiskt
       fäller på efter klass A (1/14 jobb efter mot 6/14 före). Så länge den
@@ -783,6 +790,7 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-29 | Tillstånds-återställningen (resume 15) + **kontrollens blinda fläck LAGAD.** Kontrollen matchade kort-ID:t först på raden; A7-raderna bär det sist, så hela A7-klassen var osynlig. Tre fel låg och väntade: `A7:3`, `A7:5` öppna trots Done, och `A7:6` avbockad i kroppen i strid med filens egen regel. Nya formen tvåsidigt bevisad FÖRE den skrevs in (tre FEL mot `02a9517`, tomt mot rättad, ingen falsk positiv på `A7:10`:s Done-beroende). § Filens egna fel post 8 | `#418` |
 | 2026-07-29 | **`TASK-70.6` DONE — `delete_branch_on_merge` (A7:8).** Tagen under orkestrerarens egen hand: skivan ändrar noll filer, och `ready-for-agent` betyder *kräver inte Marcus omdöme*, inte *ska spawnas som skiva* (precedent `TASK-64`). **AC #2 bevisad med KONTRASTGRUPP:** `#418`:s gren borta efter merge, medan `#417`:s gren från före inställningen ligger kvar på `b5b2bed`. Grannvärdena verifierade oförändrade före/efter. **De 263 redan ackumulerade grenarna raderas INTE** — retroaktiv städning är Marcus beslut | inställning, ingen fil |
 | 2026-07-29 | **`CONTRIBUTING.md` rad 95 rättad** — pekade på `ci.yml` `test-staging`; jobbet bor i `ci-suite.yml` sedan S79:s reusable-extraktion (verifierat mot workflow-filerna, inte mot posten). Registrerad av `TASK-70.4`:s agent som medvetet lät bli att laga den | `#422` |
+| 2026-07-29 | **`TASK-56` DONE — WebSocket-vägen stängd ur den hermetiska världen.** Vakten fäller nu med adressen namngiven och egen felklass. **Agenten korrigerade orkestreraren på TRE punkter**, alla verifierade i efterhand (`TASK-57` var Done, inte öppet · vakten bor i `tests/support/fixturvarld/` · `test:visual` körs inte i PR-CI, så AC #4 saknar CI-verifiering). Kortet pekade dessutom på en fil som inte körs — `main` är `build/index.mjs`; agenten verifierade båda. Tvåsidigt bevis i TVÅ oberoende former; baselines **12/12 bitidentiska**. **Riggens första bruk utanför `TASK-79`/`80`:** ett fällt test utreddes med 5 varv / 1 530 resultat och föll i BÅDA armarna → inte ändringens fel, belagt | `#439` · `#442` |
 | 2026-07-29 | **`TASK-77` DONE — staging-preflighten (resurskrocken).** Form (b) fail-closed preflight i den BEFINTLIGA semaforen; ingen ny sanningskälla — GitHub Actions är redan auktoritet på sitt eget körningsläge. Wiringen i Playwrights setup-projekt, INTE `package.json` (täcker även rå `--project`-anrop). AC #1 bevisat mot äkta post-merge `30443445340`: lokal körning i purge-fönstret gav `NPM_EXIT=1`, `172 did not run`. Ärlig gräns skriven i CONTRIBUTING: kontroll vid START, inte hållet lås. Tre otäckta ytor → **`TASK-84`** | `#435` |
 | 2026-07-29 | **`TASK-78` DONE — kö-körningens klassning ärvs via SHA-IDENTITET.** Kön kör `ci.yml` med `event=merge_group` på EXAKT den commit som landar (verifierat: `30438569547` headSha == `58a1a10` == `#423`:s merge-commit). Den gamla vägen måste BEVISA med träd-jämförelse; VÄG A har det gratis. **Villkoret skärpt: 6 av 14 landningar vänder `false`→`true`, 0 tillbaka.** Bevisat EFTER landning under kötryck: post-merge `30445111977` skrev `docs_only=true`, sviten **skipped** | `#433` |
 | 2026-07-29 | **`TASK-82` DONE — de två owirade guard-sviterna wirade.** Hemvisten MÄTTES (båda kördes utan secrets och med `fetch` överskriven till throw → exit 0 ×4), inte antogs. Tvåsidigt bevis med run-ID per svit: `30442765425` RÖTT (purge-vakt inverterad) · `30443253072` RÖTT (seed-guard inverterad) · `30443850689` GRÖNT. **Kortet bar ett faktafel orkestreraren skrivit** — `test-classify-post-merge.sh` är wirad i EN workflow, inte två; `post-merge.yml:101` är en kommentar. En namn-grep räknar omnämnanden som wiring | `#432` |
