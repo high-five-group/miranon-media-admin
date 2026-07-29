@@ -97,6 +97,31 @@ rollup-fixturerna, och ett datumval utanför sentinel-klustret. Detaljer +
 två gånger (2026-07-22 och 2026-07-26) innan skriptet fanns, och ett verktyg som
 inte ligger i sessionsstartens läs-ordning hittas inte när det behövs.
 
+### Flakighet mäts med riggen — bygg ALDRIG en egen mätserie
+
+Ska ett test bedömas som flakigt, eller en ändring mätas mot en flake-rat:
+
+```bash
+npm run metrics:flake            # scripts/flake-matserie.mjs
+```
+
+Riggen kodar de egenskaper som gjorde `TASK-74`:s mätning ärlig: **interfolierad**
+A/B (`A,B,A,B,…`, aldrig blockad — blockade armar mäter tidsfönstret lika mycket
+som ändringen), **loadavg per körning** i rådatan så ett utfall kan deflateras i
+efterhand, `--retries=0` (retries döljer flaken inuti ett grönt jobb), och
+**rådata per testresultat** så en efterhandsanalys inte kräver omkörning. Den
+mäter — den dömer inte, och bär medvetet ingen tröskel för "acceptabel" flakighet.
+
+**Varför raden står här:** fyra kort (`TASK-77`–`80`) behöver riggen, och bygger
+var och en sin egen variant blir talen ojämförbara — vilket är precis det fel
+riggen finns för att förhindra. Samma skäl som `seed:review` ovan: ett verktyg
+utanför läs-ordningen hittas inte när det behövs.
+
+**Läs alltid ut n innan ett noll-resultat tolkas.** `TASK-74` mätte 1 fällning av
+14 CI-*jobb*; noll fällningar på sex lokala körningar är förenligt med den raten
+och bevisar ingenting. Och klass B är övervägande **lokal** — för en flake som
+bara CI ser kan en lokal serie vara fel instrument helt och hållet.
+
 ### Landning sker via MERGE QUEUE — maskinen äger ordningen sedan 2026-07-29
 
 All landning går via branch + PR (direktpush till `main` avvisas av ruleset,
