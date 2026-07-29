@@ -3,10 +3,10 @@ id: TASK-74
 title: >-
   Fynd: klass B-flakigheten är bredare än TASK-64 antog — sju tester, minst två
   mekanismer, ingen delar klass A:s kodform
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-28 20:33'
-updated_date: '2026-07-29 00:57'
+updated_date: '2026-07-29 01:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -499,10 +499,32 @@ BEVIS I BÅDA RIKTNINGAR FÖR DEN RÖRDA GRINDEN (B2)
       överskuggnings-vakten. Noteras hellre än döljs.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+STÄNGD 2026-07-29 av orkestreraren. Byggd i parallell session; PR #411 mergad som 89daf31 genom merge queue.
+
+DoD #3: CI grön per jobb på 30412687656 (PR-ytan) och 30413076145 (merge_group-ytan). Acceptance (hermetisk) SUCCESS på båda — de nya härledda tidsbudgetarna passerade alltså sin egen grind i CI, inte bara agentens mätrigg.
+
+KORTETS EGEN KÄRNPREMISS FALSIFIERAD AV DESS EGET AC. AC #1 krävde kontrollerad last FÖRE mätning. Det kravet avtäckte att den ursprungliga bilden byggde på TASK-64:s efter-serie, vars körtid drev 107 -> 173 s och därmed delvis mätte maskinen. Tre delpåståenden föll: (a) 'fokus-tester' — hem:437 är inget fokus-test och fällningarna säger element(s) not found, inte not focused; (b) 'de sju' — baslinjen (10 körningar, workers=8, retries=0, 1530 testresultat) gav 0/10 för SEX av de sju; (c) 'minst två mekanismer' — det är tre.
+
+DE TRE MEKANISMERNA, var och en med belägg: B1 kall route-chunk mot expect-budgeten (page.goto() returnerar före route-chunken hämtas; 95 av 156 goto-anrop har formen; först startade test i en fil långsammare än medianen i 144 av 180 fil-körningar, median +1 643 ms) · B2 vaktens två observatörer (handler.isUsed mot Playwrights request -> falsk OmatchadOverskuggningError) · B3 test-budget vid mättnad.
+
+AGENTEN DEFLATERADE SITT EGET BEVIS, och det är kortets viktigaste kvalitet: 13 -> 1 fällningar i interfolierad A/B, men '12 av arm A:s 13 kom ur en enda körning vid loadavg 125. Utan den är ställningen 1 mot 1 i rat — skillnaden ligger i formen (5000 ms mot 15000 ms), inte i antalet.' Beviset bärs av mekanismen och felutskrifterna, inte av talet.
+
+KVARVARANDE RAT, ÄRLIGT REDOVISAD: 1 fällning på 765 resultat i arm B (hem:437 mot den nya budgeten). Vid tillräcklig mättnad räcker inte 15 s heller.
+
+TASK-64:s DIAGNOS DELVIS FALSIFIERAD som sidoresultat — person-detail:140 föll sex rader FÖRE T26:s data-grind, alltså på toBeVisible() och inte på fokus-assertionen. Noterat i det stängda kortet; grinden vaktar rätt sak av fel skäl.
+
+CARRY-POST BETALD utan att någon bad om det: playwright.config.ts:s falsifierade retries-skäl ('absorbera infra-brus utan att maskera äkta fel') är rättat. Skälet utbytt, beslutet behållet — retries står kvar som ett medvetet val med känd kostnad.
+
+TRE KORT MINTADE UR RAPPORTEN av orkestreraren: TASK-79 (hem:1097, fjärde formen) · TASK-80 (videoinspelningen som egenlast) · TASK-81 (mätriggen till scripts/-verktyg).
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
