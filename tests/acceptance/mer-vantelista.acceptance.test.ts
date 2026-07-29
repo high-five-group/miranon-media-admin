@@ -31,6 +31,12 @@ import { expect, test } from './support/acceptance-bas';
  * informationsmail-status), antal-summa, fokus→<h1> + aria-live, tom-state, fel
  * (role=alert), loading aria-busy, namn-fallback ("Namn saknas"), axe 0. LÄS-vy →
  * INGEN flytta-/write-affordans.
+ *
+ * KASTBAR DEMO-RAD (TASK-75 AC#2+#3) — denna PR ska STÄNGAS, aldrig mergas.
+ * Raden finns för att göra diffen klass-lokal: enda ändrade filen utanför
+ * D0-klassen är denna spec, vilket är exakt villkoret för att PR-grindens
+ * acceptance-urval ska falla ut. Kontrastbeviset åt andra hållet (delad kod →
+ * full klass) togs i körning 30438285427 på TASK-75:s egen PR.
  */
 
 /** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
