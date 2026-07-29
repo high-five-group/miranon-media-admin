@@ -3,10 +3,10 @@ id: TASK-84
 title: >-
   Fynd: tre lokala staging-vägar går förbi preflighten — mekanismen täcker inte
   de ytor som saknar setup-projekt
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 10:34'
-updated_date: '2026-07-29 17:41'
+updated_date: '2026-07-29 17:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -98,10 +98,39 @@ AC#5: CONTRIBUTING.md § Staging-preflighten omskriven. Stycket "Två ytor bär 
 INGEN NY TESTSVIT BYGGD, medvetet: semaforens logik är redan täckt av scripts/test-staging-semaphore.sh (19 fall, kördes grön). Den nya koden är wiring, och TASK-77 bevisade sin wiring empiriskt av samma skäl. Registrerat som avvikelse att en refaktorering som tappar anropsraden i main() inte fångas av någon grind — samma sak gäller TASK-77:s setup-filer.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+DONE 2026-07-29 (S91, sextonde resumen). PR #456, landad 17:56:51Z genom merge queue, CI grön per jobb.
+
+FORMEN: TASK-77:s, UTVIDGAD — inte en andra mekanism. Både Node-haken (scripts/lib/staging-preflight.mjs) och den befintliga Playwright-haken anropar samma scripts/staging-semaphore.sh preflight, som förblir enda sanningskällan. Semaforen och .staging-semaphore-policy.conf ORÖRDA.
+
+De tre ytorna: test:preview:staging fick ett nytt setup-projekt (preview-setup), precis som api-setup/setup — dependency-vägen täcker PROJEKTET, så en ny fil i tests/preview/ ärver preflighten utan att någon behöver minnas den. purge:staging och seed:review fick anrop i main(), av TASK-77:s eget skäl: ett kommandonamns-prefix bevakar kommandonamnet, inte kodvägen, och `node scripts/purge-staging-sentinels.mjs` är formen CI självt använder.
+
+BEVIS — 3 ytor x 4 fall, exitkoder mätta separat, aldrig via pipe:
+
+  kollision                     purge 76 · seed 76 · preview 1
+  rent (ÄKTA gh)                0 · 0 · 0
+  MM_STAGING_PREFLIGHT=off      0 · 0 · 0
+  GITHUB_ACTIONS=true           0 · 0 · 0
+
+Att fällningen sker FÖRE basen nås är mätt, inte antaget: skriptens banner-rad ("Sentinel-purge mot apphjj8Q7lkXCMsL4", "Granskningsfixtur mot …") saknas helt i utdatan, 0 träffar — bannern skrivs före första list-anropet.
+
+TVÅ VAL VÄRDA GRANSKNING, båda godkända av orkestreraren: exitkoden propageras ORÖRD (76/77) i stället för att kollapsa till skriptens 1, som redan betyder guard-fel — annars blir felet tvetydigt i loggen. Och GITHUB_ACTIONS-no-op:en är skarpare här än på Playwright-sidan eftersom purge-scriptet ÄR CI-jobbet "Staging sentinel purge"; utan den hade preflighten fällt purge-jobbet varje körning.
+
+VERIFIERINGEN RÖRDE ALDRIG BASENS DATA. Inga destruktiva staging-operationer. Kollisionsfallen fäller före första Airtable-anropet; de rena kördes med --dry-run.
+
+AC#5: stycket "Två ytor bär den MEDVETET inte …" är borttaget ur CONTRIBUTING.md och ersatt av en per-yta-tabell över samtliga fem ytor.
+
+ÖPPEN LUCKA, RAPPORTERAD AV AGENTEN OM SIG SJÄLV: ingen ny testsvit byggd (semaforens logik täcks av 19 befintliga fall, och den nya koden är wiring). Konsekvensen står utskriven: en refaktorering som tappar anropsraden i main() fångas inte av någon grind — och samma gap finns i TASK-77:s setup-filer. Mintat som TASK-91 med GitLab-skälet: frånvaron av en säkerhetsmekanism syns inte.
+
+NYUPPTÄCKT GRÄNS, inskriven i CONTRIBUTING: en fällning på preview-ytan kommer EFTER det lokala bygget, eftersom bundeln byggs och grindas innan Playwright startar. Den sparar noll begäran mot staging men inte byggtiden.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
