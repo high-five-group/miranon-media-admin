@@ -62,6 +62,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
+import { kravStagingLedigt } from './lib/staging-preflight.mjs';
 
 // ---------------------------------------------------------------------------
 // CONFIG — allt projekt-specifikt bor här. Logiken nedanför är universell.
@@ -965,6 +966,14 @@ async function main() {
     );
     process.exit(1);
   }
+
+  // TASK-84: EFTER guard-, argument- och token-kontrollerna, FÖRE första
+  // begäran mot Airtable. Kolliderar en seed-körning med CI:s staging-purge
+  // kan granskningsdata försvinna mitt i Marcus pågående granskning — precis
+  // det korsläsningen mot .purge-staging-policy.json finns för att förhindra,
+  // fast från den aktör ingen av mutexarna såg. Gäller båda vägarna (create
+  // och --clean) och även --dry-run, som läser basen.
+  kravStagingLedigt('lokal seed:review');
 
   try {
     const kod = args.clean
