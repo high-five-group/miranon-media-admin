@@ -519,8 +519,23 @@ export default defineConfig({
     ...(isPreviewRun
       ? [
           {
+            // TASK-84: staging-preflighten. `staging-preview` var det enda
+            // staging-rörande Playwright-projektet utan setup-projekt att haka
+            // i, och gick därför förbi TASK-77:s mekanism helt. Formen är
+            // TASK-77:s — dependency-projekt, inte npm-prefix — så att även rå
+            // `npx playwright test --project=staging-preview` bär den.
+            name: 'preview-setup',
+            testDir: './tests/preview',
+            testMatch: /.*\.setup\.ts$/,
+          },
+          {
             name: 'staging-preview',
             testDir: './tests/preview',
+            // Explicit: setup-filen är preflighten, inte ett test. Playwrights
+            // default-testMatch skulle inte ta den ändå, men att luta sig mot
+            // en default är att luta sig mot något som kan ändras.
+            testIgnore: ['**/*.setup.ts'],
+            dependencies: ['preview-setup'],
             use: {
               ...devices['Desktop Chrome'],
               baseURL: `http://localhost:${PREVIEW_PORT}`,

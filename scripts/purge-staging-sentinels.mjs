@@ -55,6 +55,7 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { kravStagingLedigt } from './lib/staging-preflight.mjs';
 
 const AIRTABLE_API_URL = 'https://api.airtable.com/v0';
 const BASE_ID_PATTERN = /^app[A-Za-z0-9]{14}$/;
@@ -418,6 +419,14 @@ async function main() {
     );
     process.exit(1);
   }
+
+  // TASK-84: EFTER policy- och token-guarderna, FÖRE första begäran mot
+  // Airtable. En lokal purge samtidigt med CI:s `Staging sentinel purge` är
+  // exakt TASK-76:s race, bara med en aktör som varken concurrency-gruppen
+  // eller fillåset ser. No-op under GITHUB_ACTIONS — detta script ÄR det
+  // CI-jobbet. Gäller även --dry-run: en dry run läser basen och delar dess
+  // 5 req/s-budget.
+  kravStagingLedigt('lokal purge:staging');
 
   const { expectedBaseId, minAgeMinutes, requestThrottleMs, deleteBatchSize } = policy;
   const nowMs = Date.now();

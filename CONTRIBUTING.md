@@ -103,7 +103,7 @@ Serialisering via projekt-dependencies i `playwright.config.ts` förkastades:
 e2e-stegs testmängd (bevisat 148 → 259 tester) och fällt steget på saknade
 admin-secrets — TASK-6-kortets notes bär hela beviskedjan.
 
-### Staging-preflighten — lokala körningar frågar CI först (`TASK-77`)
+### Staging-preflighten — lokala körningar frågar CI först (`TASK-77`, `TASK-84`)
 
 De två mutexarna ovan bevakar var sin sida och såg länge inte varandra.
 `concurrency: staging-tests` serialiserar CI-run mot CI-run och binder
@@ -120,12 +120,36 @@ slutsatsform som gjorde landnings-ordningen till en merge queue.
 
 **Mekanismen:** `scripts/staging-semaphore.sh preflight <ägare>` frågar
 GitHubs körnings-API om ett staging-rörande jobb är igång eller köat, och
-fäller med exit 76 om svaret är ja. Den är wirad i Playwrights setup-projekt
-(`tests/api/auth.setup.ts` för `api-staging` + `kontraktsvakt`,
-`tests/e2e/auth.setup.ts` för `chromium-authenticated`), så den bärs av de
-kanoniska kommandona OCH av rå `npx playwright test --project=api-staging`.
-Den är tyst under `GITHUB_ACTIONS` — CI äger redan sin egen serialisering, och
-en preflight där hade sett CI:s eget jobb som hållare.
+fäller med exit 76 om svaret är ja. Den är tyst under `GITHUB_ACTIONS` — CI
+äger redan sin egen serialisering, och en preflight där hade sett CI:s eget
+jobb som hållare. Det sista är skarpast för `purge:staging`, som SJÄLVT är
+CI-jobbet `Staging sentinel purge`.
+
+**Var haken sitter, per yta.** Samtliga staging-rörande vägar bär den. Fram
+till `TASK-84` gjorde tre av dem inte det, vilket är den klass som gör partiell
+täckning farlig: en mekanism som täcker de flesta vägar läses som att den
+täcker alla.
+
+| Yta | Hake |
+|---|---|
+| `test:api:staging` + `vakt:kontrakt` | setup-projektet `api-setup` (`tests/api/auth.setup.ts`) |
+| `test:e2e:staging` | setup-projektet `setup` (`tests/e2e/auth.setup.ts`) |
+| `test:preview:staging` | setup-projektet `preview-setup` (`tests/preview/preflight.setup.ts`) |
+| `purge:staging` | `main()` i `scripts/purge-staging-sentinels.mjs` |
+| `seed:review` + `seed:review:clean` | `main()` i `scripts/seed-review-fixture.mjs` |
+
+Haken sitter i KODVÄGEN, aldrig i kommandonamnet. Playwright-ytorna bär den via
+projekt-dependencies, vilket täcker även rå
+`npx playwright test --project=api-staging`; Node-ytorna bär den i `main()`,
+vilket täcker även rå `node scripts/purge-staging-sentinels.mjs` — den form CI
+självt använder. Ett `&&`-prefix i `package.json` hade gått bredvid båda.
+Node-ytorna avslutar med semaforens EGEN exit-kod (76 eller 77) i stället för
+skriptens `1`, som redan betyder guard-fel.
+
+Node-sidans hake bor i `scripts/lib/staging-preflight.mjs` och
+Playwright-sidans i `tests/support/staging-preflight.ts`. Ingen av dem
+implementerar logiken: båda anropar samma `staging-semaphore.sh preflight`, som
+förblir enda sanningskällan för vad "staging är upptaget" betyder.
 
 Vilka workflows och jobbnamn som räknas bor i
 `.staging-semaphore-policy.conf`; testsviten är
@@ -143,11 +167,14 @@ CI-jobbet bevisligen rör en annan yta än din körning. Valet skrivs ut i logge
 med flit, så att en kollision i efterhand går att härleda till valet i stället
 för till mekanismen.
 
-Två ytor bär den MEDVETET inte: `npm run purge:staging` och `npm run
-seed:review` går via egna Node-script utan Playwright-vägen, och
-`test:preview:staging` har inget setup-projekt. Kör dem inte parallellt med en
-landning utan att först titta — eller kör preflighten för hand:
-`bash scripts/staging-semaphore.sh preflight "seed"`.
+Flaggan gäller hela tabellen ovan — den läses av semaforen själv, inte av
+någon av anroparna, så alla fem ytorna svarar likadant på den.
+
+**Vad en fällning INTE sparar.** `test:preview:staging` bygger och grindar
+bundeln innan Playwright ens startar, så en fällning där kommer efter det
+lokala bygget. Den sparar det som räknas — noll begäran mot staging — men inte
+byggtiden. Att flytta haken före bygget hade krävt just det prefix i
+`package.json` som går bredvid rå `--project`-anrop.
 
 **Den ärliga gränsen: preflighten är en kontroll vid START, inte ett hållet
 lås.** Startar din lokala körning när CI är tyst, och en landning drar igång
