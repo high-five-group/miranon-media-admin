@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-28 18:23'
-updated_date: '2026-07-28 20:39'
+updated_date: '2026-07-29 11:43'
 labels:
   - ready-for-agent
 dependencies: []
@@ -55,6 +55,18 @@ Mätt 2026-07-27: en URL-ändring i agentkonfig kostade full staging-svit. Fyra 
 - [x] #7 Inga filer utanför .claude/, ci.yml och docs-grindarnas config rörda
 <!-- AC:END -->
 
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BOKFÖRINGS-RÄTTNING 2026-07-29 (S91 femtonde resumen). Kortet stod `Done` med obockad DoD — arbetet var gjort men rutorna aldrig satta.
+
+VERIFIERAT: arbetet är landat på `main`; 11 commits refererar kortet, senast `a702c61`. Landningen gick genom merge-grinden, vilket förutsätter grön required check.
+
+INTE OMVERIFIERAT: DoD-posterna om lokala grindar och diff-omfång bockas som BOKFÖRING, inte som ny mätning. De var uppfyllda i sak när kortet stängdes; det som saknades var kvittensen. Att påstå en färsk verifiering hade varit oärligt.
+
+VARFÖR NU: `scripts/check-backlog-closure.sh` grindar från i dag invarianten `Done ⟹ allt avbockat`. Obockad DoD på ett stängt kort är därefter en fällning, inte en tyst avvikelse.
+<!-- SECTION:NOTES:END -->
+
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
@@ -80,8 +92,8 @@ settings.json DOCS-KLASSAD, motiverat: den kan strukturellt inte påverka ett te
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

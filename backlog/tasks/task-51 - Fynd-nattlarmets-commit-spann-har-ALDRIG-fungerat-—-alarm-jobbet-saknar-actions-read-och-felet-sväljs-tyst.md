@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-25 19:11'
-updated_date: '2026-07-25 20:58'
+updated_date: '2026-07-29 11:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,8 +36,8 @@ FÖRVÄNTAT BETEENDE: (1) alarm-jobbet får 'actions: read'. (2) Ett misslyckat 
 - [x] #1 alarm-jobbet har actions: read; gh run list returnerar en SHA i skarp körning
 - [x] #2 Rött-först: larm-ärende med KORREKT compare-länk framkallat via simulate_failure, länken klickad och verifierad
 - [x] #3 Misslyckat gh-anrop ger egen text ('kunde inte hämta spannet') — aldrig grenen 'ingen tidigare grön'
-- [ ] #4 Ingen annan tyst '|| echo' i nightly.yml eller nightly-watchdog.yml maskerar ett API-fel — hela filerna genomsökta
-- [ ] #5 Ärende #114 och #210 refereras i lösningen som de två historiska bevisen
+- [x] #4 Ingen annan tyst '|| echo' i nightly.yml eller nightly-watchdog.yml maskerar ett API-fel — hela filerna genomsökta
+- [x] #5 Ärende #114 och #210 refereras i lösningen som de två historiska bevisen
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -59,6 +59,10 @@ BREDARE FYND (bäring utanför detta kort): en fix byggd enbart på kortets diag
 TILLÄGG UTÖVER KORTET: fältnamnet 'Commit-spann sedan senaste gröna natt' rättat till '...senaste gröna körning av nattsviten'. Anropet returnerar senaste gröna körning av nightly.yml inklusive dagtids-dispatcher (empiriskt: eed4927, dispatch 18:56 2026-07-25), inte senaste gröna natt. Fältet påstod något smalare än det mätte — samma ärlighetsklass som buggen självt. Underlaget behölls (bredare underlag ger snävare, mer användbart spann); namnet gjordes sant.
 
 Test-ärenden att stänga med motivering per CONTRIBUTING § Nattnätet: #216 (rött-först, ofixad kod).
+
+AC #4 + #5 BOCKADE 2026-07-29 — BÅDA OMVERIFIERADE MOT DISK I DAG, inte antagna. AC #4 (ingen annan tyst '|| echo'): genomsökning av `nightly.yml` och `nightly-watchdog.yml` ger två träffar, och BÅDA är KOMMENTARER som dokumenterar det borttagna mönstret — noll levande förekomster. AC #5 (ärende #114 och #210 refereras): båda finns i kortet.
+
+VARFÖR RUTORNA SÄTTS NU: `scripts/check-backlog-closure.sh` grindar från 2026-07-29 invarianten `Done ⟹ allt avbockat`. Standarden är att ett avbockat kriterium med SKRIVET SKÄL är entydigt, medan en obockad ruta på ett stängt kort är tvetydig för alltid — informationen ska bo i motiveringen, inte i kryssrutans tillstånd. Samma form användes för TASK-75/76/81 samma dag.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -85,8 +89,8 @@ BOKFÖRING: #216 och #217 stängda med motivering per CONTRIBUTING § Nattnätet
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

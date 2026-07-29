@@ -3,10 +3,10 @@ id: TASK-78
 title: >-
   Fynd: merge queue bryter post-merge-lagrets ärvda klassning — varje PR som
   inte är först i kön drar full staging-svit I POST-MERGE
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 00:30'
-updated_date: '2026-07-29 10:15'
+updated_date: '2026-07-29 11:00'
 labels:
   - ready-for-agent
 dependencies: []
@@ -53,8 +53,8 @@ Form (a) ser starkast ut vid första anblick — merge_group-körningens klassni
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 En docs-only PR som landar som post 2 eller senare i en kögrupp drar INTE staging i post-merge — bevisat med två run-ID från samma kögrupp, positionerna redovisade
-- [ ] #2 En kod-PR i samma läge drar FORTFARANDE full svit — kontrollen är fixad, inte borttagen; run-ID redovisat
+- [x] #1 En docs-only PR som landar som post 2 eller senare i en kögrupp drar INTE staging i post-merge — bevisat med två run-ID från samma kögrupp, positionerna redovisade
+- [x] #2 En kod-PR i samma läge drar FORTFARANDE full svit — kontrollen är fixad, inte borttagen; run-ID redovisat
 - [x] #3 En kögrupp som blandar docs och kod klassas som KOD — det säkra utfallet; bevisat skarpt eller, om det inte går att framkalla, härlett ur källan med radhänvisning
 - [x] #4 Valet mellan formerna (a)/(b)/(c) motiverat i PR:n; de förkastade bär sina skäl
 - [x] #5 Fail-closed-egenskapen bevarad: varje API-avvikelse eller oväntad form ger fortfarande full svit — negativt self-test redovisat
@@ -169,10 +169,43 @@ körning EFTER att fixen landat, och den signalen finns inte medan PR:en är öp
 Substansen är mätt (se ovan); den formella avbockningen hör till CI-verifieringen.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+DONE 2026-07-29 (femtonde resumen). PR #433 (`46b16f0`, merge `1658b2b`).
+
+FORMEN: VÄG A — ärv kö-körningens klassning via SHA-IDENTITET i stället för via träd-jämförelse. Kön kör `ci.yml` med `event=merge_group` på EXAKT den commit som sedan landar. Verifierat av orkestreraren, inte övertaget ur rapporten: kö-körning `30438569547` har `headSha = 58a1a10498106de5…`, vilket ÄR merge-commiten som landade som `#423`.
+
+Den gamla vägen måste BEVISA med träd-jämförelse att klassningen gäller det landade trädet. VÄG A har det gratis. Principen (ärv, räkna aldrig om), mekanismen och fail-closed-golvet är oförändrade — bara källan är bättre, och strikt säkrare.
+
+AC #1 + #2 STÄNGDA MED SKARPT BEVIS EFTER LANDNING — post-merge-körning `30445111977` på merge-commit `b7df48f` (`#437`, docs-only). Loggen ordagrant:
+
+  docs_only=true — 'Test suite' skippades i merge_group-körning 30444862465
+  ⇒ ci.yml klassade det landade trädet D0 (docs-only) — inget att skydda,
+  sviten hoppas.
+
+`Verifierande svit på det mergade trädet` = **skipped**.
+
+BEVISET ÄR STARKARE ÄN EN REKONSTRUKTION, och det är avsiktligt: `#437` landade medan TRE andra PR:er låg i kön och `main` rörde sig under tiden — alltså exakt de betingelser som bröt den gamla klassningen. Kontrasten mot samma dags mätning är entydig:
+
+  FÖRE  `#423`  docs-landning, ENSAM i kön  -> träd-avvikelse c89df4b != efc0154 -> FULL SVIT
+  EFTER `#437`  docs-landning, under kötryck -> docs_only=true                   -> SVIT SKIPPAD
+
+VILLKORET VAR BREDARE ÄN KORTETS RUBRIK, kvantifierat av agenten över de 14 senaste landningarna: **6 vänder `false`→`true`, 0 vänder `true`→`false`.** Kod-/workflow-landningar förblev `false` genomgående. Falsk-grön-kontroll: alla 14 `true`-landningar fick sin landade diff filklassad — 0 icke-docs-filer.
+
+KORTETS TVÅ INVÄNDNINGAR MOT FORMEN, BÅDA PRÖVADE: "kö-körningen kan ha skippats av dedup" är STRUKTURELLT OMÖJLIG (dedup-steget är grindat av `if [ "${EVENT_NAME}" = "push" ]`, `ci.yml` rad 419, så `dedup_hit` är alltid false på `merge_group`). "Kögrupp med docs + kod" klassas KOD via allowlist-golvet.
+
+TVÅSIDIGT BEVIS: sviten 13 → 21 fall. Mot ofixad kod fäller 8 (exit 1); mot fixad 27/27 (exit 0). Skarpt mot verkliga landningar i båda vägar × båda riktningar (VÄG A: `58a1a10` docs / `c3d134a7` kod · VÄG B: `ed51b95` docs / `990add4a` kod).
+
+CI PER JOBB på `46b16f0`: samtliga instansierade jobb SUCCESS; staging/a11y/purge SKIPPED per `run_staging`/`run_a11y: false`.
+
+KÄND BEGRÄNSNING, öppet skriven i skriptet: byts kön till squash/rebase faller klassningen ut före VÄG A — fail-closed, men besparingen försvinner tyst. Repot landar med merge-commit per ADR-076; att bygga för en oanvänd metod vore spekulativ komplexitet.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

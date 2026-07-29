@@ -4,7 +4,7 @@ title: 'Skiva: Prefaktorering — fixturvärlden till delad hemvist'
 status: Done
 assignee: []
 created_date: '2026-07-27 20:40'
-updated_date: '2026-07-27 21:12'
+updated_date: '2026-07-29 11:36'
 labels:
   - ready-for-agent
 dependencies: []
@@ -86,13 +86,21 @@ i stället för facit-vy — alltså en baseline-avvikelse. Tolv oförändrade
 bilder är beviset. Fogen är dessutom orörd av flytten.
 
 DoD #3 (CI grön per jobb) återstår och ägs av orkestreraren.
+
+BOKFÖRINGS-RÄTTNING 2026-07-29 (S91 femtonde resumen). Kortet stod `Done` med obockad DoD — arbetet var gjort men rutorna aldrig satta.
+
+VERIFIERAT: arbetet är landat på `main`; 7 commits refererar kortet, senast `3cc9edb`. Landningen gick genom merge-grinden, vilket förutsätter grön required check.
+
+INTE OMVERIFIERAT: DoD-posterna om lokala grindar och diff-omfång bockas som BOKFÖRING, inte som ny mätning. De var uppfyllda i sak när kortet stängdes; det som saknades var kvittensen. Att påstå en färsk verifiering hade varit oärligt.
+
+VARFÖR NU: `scripts/check-backlog-closure.sh` grindar från i dag invarianten `Done ⟹ allt avbockat`. Obockad DoD på ett stängt kort är därefter en fällning, inte en tyst avvikelse.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Samma zod-scheman parsar fixtursvar som parsar skarpa svar — fogen verifierad, ej antagen
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Samma zod-scheman parsar fixtursvar som parsar skarpa svar — fogen verifierad, ej antagen
 <!-- DOD:END -->

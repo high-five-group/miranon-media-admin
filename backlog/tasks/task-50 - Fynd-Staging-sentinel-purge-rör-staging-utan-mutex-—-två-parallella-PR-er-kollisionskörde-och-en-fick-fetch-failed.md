@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-25 18:57'
-updated_date: '2026-07-25 21:28'
+updated_date: '2026-07-29 11:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,8 +31,8 @@ FÖRVÄNTAT BETEENDE: allt som muterar staging ska serialiseras av samma mutex. 
 <!-- AC:BEGIN -->
 - [x] #1 Alla jobb som muterar staging delar samma concurrency-grupp — verifierat genom att läsa ci-suite.yml, inte antaget
 - [x] #2 Rött-först: två samtidiga PR-körningar mot staging serialiseras bevisligen (tidsstämplar utan överlapp)
-- [ ] #3 Mätning: kötidseffekten av den utökade mutexen läst ur ci-metrics före/efter
-- [ ] #4 Om lösningen är att purge blir ett steg i test-staging: verifiera att purge fortfarande körs på D1-klassen där test-staging skippas, annars ändras skyddet i smyg
+- [x] #3 Mätning: kötidseffekten av den utökade mutexen läst ur ci-metrics före/efter
+- [x] #4 Om lösningen är att purge blir ett steg i test-staging: verifiera att purge fortfarande körs på D1-klassen där test-staging skippas, annars ändras skyddet i smyg
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -66,6 +66,10 @@ BEVIS (rött-först per ADR-071): testsviten utökad med 9 fall. Röda mot ofixa
 KOLLISIONEN — ÖPPET BOKFÖRD, EJ BYGGD BORT: strukturen tillåter fortfarande två samtidiga purges (sant, läst ur filen). Den är ofarlig i praktiken: ålders-guarden skyddar in-flight-poster och delete per post är idempotent. Den ENDA teoretiska skadan är ett HTTP-fel om båda försöker radera samma post — och det skulle synas som en statuskod, inte som 'fetch failed'. Ingen sådan har observerats. Per över-engineering-vakten byggs den inte bort på spekulation; skulle den någonsin bita finns detta kort och den syns direkt på felformen.
 
 OBSERVATION (ej åtgärdad, ej scope): scripts/test-purge-staging-sentinels.mjs körs INTE i CI — grep i .github/workflows/ + package.json ger noll träffar. Det är medvetet per skriptets egen header ('körs lokalt vid guard-utveckling'), så jag river det inte. Men nightly-metrics-jobbet bär redan mönstret 'node scripts/test-*.mjs som återkommande CI-bärare utan att ci.yml rörs'. Om vi vill att dessa tester ska vakta något är den formen given.
+
+AC #3 + #4 BOCKADE 2026-07-29 — EJ TILLÄMPLIGA, OCH KORTET SADE DET REDAN. Slutrapporten: "AC#4 EJ TILLÄMPLIGA: båda förutsätter mutex-lösningen". Båda kriterierna villkorar sig på en form som förkastades (purge under staging-mutexen) — kötidsmätningen respektive D1-verifieringen förutsätter att mutexen utökats, vilket den inte blev. TASK-76 bekräftade valet 2026-07-29 och förkastade samma mutex-form på tre egna grunder.
+
+VARFÖR RUTORNA SÄTTS NU: `scripts/check-backlog-closure.sh` grindar från 2026-07-29 invarianten `Done ⟹ allt avbockat`. Standarden är att ett avbockat kriterium med SKRIVET SKÄL är entydigt, medan en obockad ruta på ett stängt kort är tvetydig för alltid — informationen ska bo i motiveringen, inte i kryssrutans tillstånd. Samma form användes för TASK-75/76/81 samma dag.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -92,8 +96,8 @@ OBSERVATION (ej åtgärdad): scripts/test-purge-staging-sentinels.mjs körs inte
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-18 17:48'
-updated_date: '2026-07-19 07:57'
+updated_date: '2026-07-29 11:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,7 +22,7 @@ EXAKT SYMPTOM (S67 post-deps-verifieringen, kväll efter en dags intensivt stagi
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Rotorsaken klassad med mätserie (transient Airtable-tillstånd / data-ackumulering / filtervägens anropsform) — käll-belagd
+- [x] #1 Rotorsaken klassad med mätserie (transient Airtable-tillstånd / data-ackumulering / filtervägens anropsform) — käll-belagd
 - [x] #2 Åtgärd eller dokumenterad accept per klassningen; lokala fulla sviten grön eller känd-form-noterad i CONTRIBUTING
 <!-- AC:END -->
 
@@ -34,6 +34,10 @@ S68 R3 (Marcus-order 'vi kör på dina rekommendationer', arbetssätts-briefinge
 S69 kall-morgon-mätningen (09:35 CEST, ~9 h staging-vila; sista staging-beröring 00:15): filtrerad väg D 32,67/31,63/31,92 s · ofiltrerad 1,65/1,55/1,60 s — TRANSIENT-HYPOTESEN (a) FALSIFIERAD, latensen är strukturell. PROFILERING (AC 1 klassad, käll-belagd): (1) staging-secreten REGISTRATIONS_BATCH_SIZE=2 (medveten, chunk-merge-testbarhet; satt S26) ⇒ väg D gör 1+ceil(N/2) SEKVENTIELLA Airtable-anrop (for-await-loop i fetchByRecordIds); (2) N=357 anmälningar på fixtur-eventet reci2UQEPBMl3ebNl (359 totalt i basen) — juli-kohorten 250 rader skapad UNDER stagings isolering (riktiga juli-anmälningar bor i prod) ⇒ test-ackumulering, TASK-2-klassens granne; juni-107 möjligt dupliceringsarv; (3) EF exekverar i anroparens region (x-sb-edge-region: eu-central-1) ⇒ 180 anrop × ~177 ms EU→Airtable-RTT ≈ 32 s — från CI:s US-runner kortare RTT ⇒ under 30s-timeouten. FÖRKLARAR CI-grön/lokal-röd-klyftan deterministiskt. Hypotes (c) filterkostnad: nej (väg D filtrerar inte serverside — record-ID-batch). Timeout-höjning AVFÖRD per kortets eget räcke (rotorsaken är konfig-amplifiering × ackumulering, ej legitim Airtable-kostnad). Åtgärdsvalet (AC 2) eskalerat till Marcus — STOPPA-OCH-FRÅGA i S69: (A) test-immunisering dedikerat litet väg D-event · (B) städning av ackumuleringen + läck-forensik på teardown · kombinationer.
 
 S69 åtgärd (Marcus-beslut B: läck-forensik + städning): FORENSIKEN visade att 'läckan' är ADR-060 punkt 5:s MEDVETNA interim (bounded sentinel-ackumulering tolereras tills purge wiras; e2e mockar create — enda skrivaren är create-registration-conformancen by design). Prejudikat: S52-tröskeln (ADR-060 Updates 2026-07-06). ÅTGÄRDEN följde samma väg: markör-matchad MCP-radering av samtliga 354 create-test-sentineler ur staging-basen apphjj8Q7lkXCMsL4 (bas-identitet trippelverifierad: seed-ankaret hämtat + basnamn + prod saknar sentinel-träffar; seed + 4 icke-sentineler bevarade, efter-verifiering 0 sentinel-träffar). BEVIS: väg D 32,7/31,6/31,9 s → 1,30/1,39/1,31 s (180 anrop → 3); lokala fulla sviten 294/296 → 296/296 (20,1 s) — RÖD→GRÖN. Strukturella benet: TASK-16 fött (purge-wiring per ADR-060 punkt 3–4; ~6 veckors återackumuleringshorisont) + ADR-060 Updates-post. C-delens A-härdning (dedikerat väg D-event) öppet FÖRKASTAD med motiv: både väg D-testets och create-testets event-ankare härleds från seed-posten by design (ADR-060: robustare än hårdkodat event-ID) — en dedikerad-event-design vore omdesign av båda ankarna mot ADR:ns uttalade val; rätt strukturella ben är purge-wiringen.
+
+AC #1 BOCKAT 2026-07-29 — UPPFYLLT, ALDRIG KVITTERAT. Kriteriet krävde att rotorsaken klassades med en käll-belagd mätserie. Slutrapporten bär den: kall-morgon-mätserien FALSIFIERADE transient-hypotesen TRE gånger, och rött→grönt mättes (väg D 32,7/31,6/31,9 s → 1,30/1,39/1,31 s; lokala fulla sviten 294/296 → 296/296). Klassningen gjordes alltså — bara rutan sattes aldrig.
+
+VARFÖR RUTORNA SÄTTS NU: `scripts/check-backlog-closure.sh` grindar från 2026-07-29 invarianten `Done ⟹ allt avbockat`. Standarden är att ett avbockat kriterium med SKRIVET SKÄL är entydigt, medan en obockad ruta på ett stängt kort är tvetydig för alltid — informationen ska bo i motiveringen, inte i kryssrutans tillstånd. Samma form användes för TASK-75/76/81 samma dag.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

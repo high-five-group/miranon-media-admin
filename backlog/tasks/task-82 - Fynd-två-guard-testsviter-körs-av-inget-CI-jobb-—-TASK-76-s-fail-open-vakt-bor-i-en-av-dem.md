@@ -3,10 +3,10 @@ id: TASK-82
 title: >-
   Fynd: två guard-testsviter körs av inget CI-jobb — TASK-76:s fail-open-vakt
   bor i en av dem
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 09:02'
-updated_date: '2026-07-29 10:28'
+updated_date: '2026-07-29 11:01'
 labels:
   - ready-for-agent
 dependencies: []
@@ -54,12 +54,45 @@ Var hör de hemma? `ci.yml` (som de tretton andra), `nightly.yml` (som `test-ci-
 - [x] #5 Kontroll att inga FLER scripts/test-*-sviter saknar hemvist efter ändringen — korsningen körd om och redovisad
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+DONE 2026-07-29 (femtonde resumen). PR #432 (`dada5c5`), landad via kön.
+
+BÅDA SVITERNA WIRADE I `ci.yml` / `lint`, eget steg var — insatta mellan `Test prod-deploy allowlist` och `Install shellcheck`. `+53 rader, −0`. `scripts/` byte-identiskt med `main`; `package.json` orörd (ingen kollision med `TASK-77`).
+
+HEMVISTEN MÄTTES, ANTOGS INTE. Kortets villkor var att en secrets-beroende svit inte hör i PR-grinden. Agenten körde varje svit (a) utan `STAGING_AIRTABLE_TOKEN` i miljön och (b) med `globalThis.fetch` överskriven till `throw` via `node --import`. Exit 0 i samtliga fyra körningar — inga secrets, noll nätverkstrafik. `test-seed-review-fixture.mjs` föll inte ut som secrets-beroende eftersom seed-skriptets enda `process.env`-läsning ligger INUTI `main()`, som bara körs som CLI; testet importerar de pura funktionerna.
+
+INTE `nightly.yml`: nattjobbet bär MÄTARE (`test-ci-metrics.mjs`, `test-flake-matserie.mjs`); dessa två är GRINDAR, och båda validerar `.purge-staging-policy.json` PÅ DISK — vilket bara är meningsfullt före landning. `TASK-50`:s tidigare beslut revs ÖPPET i både commit-meddelande och `ci.yml`-kommentar, inte tyst.
+
+AC #3 — TVÅSIDIGT BEVIS MED RUN-ID PER SVIT, verifierat av orkestreraren:
+
+  bas  3ed4623  inget brutet                          30442166453  GRÖNT
+  A    c9b774b  purge: TASK-76:s fail-open-vakt inverterad  30442765425  RÖTT
+  B    f250dc2  seed: bas-guarden inverterad               30443253072  RÖTT
+  slut dada5c5  inget brutet                          30443850689  GRÖNT
+
+Bevis B kördes med purge redan återställd — `lint` stannar på första felande steg och purge ligger först, så seed-steget hade annars aldrig fällt något. Stegvisa utfall verifierade med `gh run view --job`, inte bara jobbets rollup.
+
+CI-MÄTT KOSTNAD ur `30443850689`: purge-steget 4,07 s, seed-steget 0,05 s, summa ≈4,1 s. Jobbet gick på 1 min 1 s mot `timeout-minutes: 5`. CI-mätt, inte projicerat från de lokala talen.
+
+AC #5: korsningen omkörd — 17 av 17 sviter har hemvist, 0 saknar.
+
+DoD #3 stängd av orkestreraren efter landning: alla instansierade jobb pass på `#432`; A11y/Staging/purge SKIPPED per `run_staging`/`run_a11y: false`.
+
+═══ KORTET SJÄLVT BAR ETT FEL, OCH AGENTEN FÅNGADE DET ═══
+
+Kortet (mintat av orkestreraren) påstod att `test-classify-post-merge.sh` är "wirad i TVÅ workflows". FEL. Verifierat: `ci.yml:628` kör den; `post-merge.yml:101` är en KOMMENTAR.
+
+Orsaken är värd att bära vidare: orkestreraren använde `grep -rl <skriptnamn>` och räknade OMNÄMNANDEN som wiring. Det är samma felklass som restlistans kontroll hade i morse — ett mönster som matchar fel sak och vars gröna svar därför inte betyder det man tror. Begången av orkestreraren fyra timmar efter att den lagat exakt den klassen hos någon annan.
+
+Agenten byggde sin egen AC #5-korsning på faktiska körrader (`bash`/`node`/`sh` + skriptnamn) med kommentar-rader filtrerade, och noterade att en ren namn-grep ger tre falska träffar bara på `test-vale-regression.sh`. Den korsningen ligger i scratchpad, inte i repot (AC #4 förbjuder nya filer) — **kandidat för eget kort om den ska bli stående grind.**
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

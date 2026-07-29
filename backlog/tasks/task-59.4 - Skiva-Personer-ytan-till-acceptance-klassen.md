@@ -4,7 +4,7 @@ title: 'Skiva: Personer-ytan till acceptance-klassen'
 status: Done
 assignee: []
 created_date: '2026-07-27 20:41'
-updated_date: '2026-07-28 00:21'
+updated_date: '2026-07-29 11:36'
 labels:
   - ready-for-agent
 dependencies:
@@ -175,15 +175,23 @@ den, och filens egen kommentar beskrev den som den race-benägna väg
 `manualRelease` ersatte (T26 Landning B). Att bära en foot-gun vidare in i en
 hermetisk klass vore fel; borttagningen redovisas här i stället för att göras
 tyst. Inget bevis påverkas — samtliga åtta tester i filen är gröna.
+
+BOKFÖRINGS-RÄTTNING 2026-07-29 (S91 femtonde resumen). Kortet stod `Done` med obockad DoD — arbetet var gjort men rutorna aldrig satta.
+
+VERIFIERAT: arbetet är landat på `main`; 5 commits refererar kortet, senast `c964fc0`. Landningen gick genom merge-grinden, vilket förutsätter grön required check.
+
+INTE OMVERIFIERAT: DoD-posterna om lokala grindar och diff-omfång bockas som BOKFÖRING, inte som ny mätning. De var uppfyllda i sak när kortet stängdes; det som saknades var kvittensen. Att påstå en färsk verifiering hade varit oärligt.
+
+VARFÖR NU: `scripts/check-backlog-closure.sh` grindar från i dag invarianten `Done ⟹ allt avbockat`. Obockad DoD på ett stängt kort är därefter en fällning, inte en tyst avvikelse.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Klassningen av varje flyttad fil är HÄRLEDD ur hermetik-mätdatan och räkningen redovisad — ingen handplockning
-- [ ] #6 Varje flyttad fil har tvåsidigt bevis: passerar hermetiskt OCH vakten fäller när dess mockar tas bort
-- [ ] #7 Samma zod-scheman parsar fixtursvar som parsar skarpa svar — fogen verifierad, ej antagen
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Klassningen av varje flyttad fil är HÄRLEDD ur hermetik-mätdatan och räkningen redovisad — ingen handplockning
+- [x] #6 Varje flyttad fil har tvåsidigt bevis: passerar hermetiskt OCH vakten fäller när dess mockar tas bort
+- [x] #7 Samma zod-scheman parsar fixtursvar som parsar skarpa svar — fogen verifierad, ej antagen
 <!-- DOD:END -->
