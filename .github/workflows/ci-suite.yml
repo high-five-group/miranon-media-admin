@@ -55,6 +55,26 @@ on:
           radering här.
         type: boolean
         default: true
+      acceptance_selection:
+        description: >-
+          Blankstegsseparerad lista med spec-filer som `Acceptance (hermetisk)`
+          ska köra I STÄLLET för hela klassen. TOM STRÄNG (default) = hela
+          klassen. Till skillnad från de två flaggorna ovan är detta ingen
+          på/av-lever utan ett UTFALL: ci.yml fyller den ur `changed`-jobbets
+          `acceptance_urval` (TASK-75), som är tom i varje läge utom när varenda
+          ändrad fil utanför D0-klassen är en acceptance-spec-fil som finns på
+          disk.
+
+          DEFAULTEN ÄR SJÄLVA SKYDDSNÄTET, inte en bekvämlighet.
+          `post-merge.yml` och `nightly.yml` skickar INGEN input och kör därför
+          hela klassen på varje mergat träd respektive varje natt. Det är den
+          arbetsdelning hela A7 vilar på (ADR-077 § Kontext, Google-modellen: en
+          riskanpassad presubmit är försvarbar ENDAST med ett post-submit-nät
+          under sig). Byts defaulten mot något annat än tom sträng ärver de två
+          ytorna ett urval, och nätet upphör att finnas — scripts/
+          test-acceptance-urval.sh T15f grindar just den raden.
+        type: string
+        default: ''
 
 permissions: {}
 
@@ -219,8 +239,30 @@ jobs:
       # INGEN `env:` — och det är hela poängen. Scriptets env-flagga startar
       # dev-servern med fixtur-env ur playwright.config.ts; PLAYWRIGHT_TEST_BASE_URL
       # lämnas osatt eftersom acceptance-projektet aldrig kör mot en deployad URL.
+      # URVALET (TASK-75). Tomt `ACCEPTANCE_URVAL` ⇒ hela klassen, vilket är vad
+      # post-merge.yml och nightly.yml alltid får. Är den satt har ci.yml:s
+      # `acceptance-urval`-steg redan validerat varje post mot mönstret OCH mot
+      # disken; steget nedan gör ingen egen bedömning och ska inte börja göra
+      # det — två ställen som klassar är två ställen som kan drifta isär.
+      #
+      # `read -r -a` och inte oskyddad ordsplittring: listan går in i en array
+      # och expanderas citerad, så en post med oväntat innehåll blir ETT
+      # argument i stället för ett skal-uttryck. Angriparstyrbarheten är reell —
+      # posterna härrör ur filnamn i en PR.
       - name: Acceptance tests (hermetiska)
-        run: npm run test:acceptance
+        env:
+          ACCEPTANCE_URVAL: ${{ inputs.acceptance_selection }}
+        run: |
+          set -euo pipefail
+          if [ -n "${ACCEPTANCE_URVAL}" ]; then
+            read -r -a urval <<< "${ACCEPTANCE_URVAL}"
+            echo "▶ URVAL — ${#urval[@]} av klassens spec-filer: ${ACCEPTANCE_URVAL}"
+            echo "  Full klass körs på det mergade trädet av post-merge.yml."
+            npm run test:acceptance -- "${urval[@]}"
+          else
+            echo "▶ FULL ACCEPTANCE-KLASS — inget urval."
+            npm run test:acceptance
+          fi
 
       # Tvåsidigt bevis, task-60 / T104. Den gröna sviten ovan visar att appen
       # beter sig rätt GIVET fixturens svar; detta steg visar att svaren faktiskt
@@ -244,8 +286,22 @@ jobs:
       # Steget körs EFTER den skarpa sviten med avsikt — är den röd stannar
       # jobbet där, och ett självtest mot en redan trasig svit hade bara gett två
       # röda besked om samma fel.
+      #
+      # URVALET GÄLLER ÄVEN HÄR (TASK-75), och det är ingen detalj: kördes den
+      # skarpa sviten på EN spec-fil men beviset på arton, blev beviset jobbets
+      # nya kritiska väg och urvalet en halv besparing. Steget bär samma
+      # `read -r -a`-form och samma tomma default som steget ovan.
       - name: Acceptance-klassens tvåsidiga bevis (hermetik-självtest)
-        run: npm run test:acceptance:sjalvtest
+        env:
+          ACCEPTANCE_URVAL: ${{ inputs.acceptance_selection }}
+        run: |
+          set -euo pipefail
+          if [ -n "${ACCEPTANCE_URVAL}" ]; then
+            read -r -a urval <<< "${ACCEPTANCE_URVAL}"
+            npm run test:acceptance:sjalvtest -- "${urval[@]}"
+          else
+            npm run test:acceptance:sjalvtest
+          fi
 
       - name: Ladda upp Playwright-artefakter vid rött
         if: failure()

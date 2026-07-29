@@ -390,8 +390,15 @@ som ännu inte är mätt.
 en kod-PR även `Staging (API + E2E)` (375 s) *plus* kö på den globala
 `staging-tests`-mutexen, och det var kön som gjorde en brådskande revert
 oberäknelig. Staging kör numera post-merge (§ Post-merge-lagret), så en
-revert-PR:s väg genom grinden beror bara på dess egen svit. Taket ligger kvar
-kring sju minuter tills `TASK-75` sänker acceptance-sviten.
+revert-PR:s väg genom grinden beror bara på dess egen svit.
+
+**Och taket ligger kvar kring sju minuter — `TASK-75` sänkte det inte för denna
+väg.** Urvalet (§ Acceptance-klassen → Urvalet i PR-grinden) fäller ut endast
+när diffen rör *enbart* acceptance-spec-filer. En revert av en kodändring rör
+per definition källkod, faller därför till full klass, och betalar samma
+422–433 s som förut. Backas i stället en acceptance-spec landar reverten på
+delmängden. Skillnaden är värd att veta i förväg: den avgör om du ska räkna med
+en minut eller sju när något brådskar.
 
 **Vad en revert INTE tar tillbaka.** `git revert` ändrar bara filer i git.
 Allt som redan lämnat repot står kvar:
@@ -692,6 +699,37 @@ en PR som bara rör renderingen får svar utan att köa bakom `staging-tests`.
 Jobbet är blockerande, som alla andra jobb i sviten; `continue-on-error`
 används inte och ska inte införas (flaggan gör `needs`-resultatet till
 `success` och hade tystat paraply-checken).
+
+### Urvalet i PR-grinden (`TASK-75`)
+
+Klassen kör **alla 18 spec-filer** i normalfallet. Rör din diff **enbart
+acceptance-spec-filer** — plus filer i docs-klassen, till exempel kortet du
+bockar av — kör PR-grinden i stället **bara de spec-filer du ändrat**.
+
+Mekaniken är `scripts/acceptance-urval.sh`, kallad av `ci.yml`:s
+`acceptance-urval`-steg och skickad vidare som `acceptance_selection` till
+`ci-suite.yml`. Tre saker är värda att veta om den:
+
+- **Den äger noll globar.** Den läser `changed-files`-stegets egen
+  `other_changed_files`, alltså "de ändrade filer som inte matchade D0-listan".
+  D0:s lista förblir enda hemvist för docs-klassningen — det finns ingen tredje
+  kopia som kan drifta ([ADR-077](docs/decisions/ADR-077-riskanpassad-ci-klassning-dedup-nightly.md)
+  § Beslut 1).
+- **Allowlist, aldrig blocklist.** Urvalet tillämpas endast när *varenda* post
+  är en spec-fil som finns på disk. En källfil, den delade sömmen
+  `tests/acceptance/support/**`, en workflow eller en okänd filtyp ⇒ **full
+  klass**. Vid minsta osäkerhet körs allt.
+- **Post-merge är nätet.** `post-merge.yml` och `nightly.yml` skickar ingen
+  input och kör därför hela klassen på varje mergat träd. Ett urval som missar
+  något fångas där, inom minuter — inte aldrig.
+
+**Urval på källkod finns inte, och det är ett medvetet val.** Att mappa
+`src/**` till spec-filer kräver en testgraf, och ADR-077 § Beslut 1 lämnar den
+slotten öppen med avsikt. Playwrights inbyggda `--only-changed` duger inte som
+genväg: dess graf är testfilernas modulgraf, inte appens. Mätt 2026-07-29 på
+`playwright 1.61.1` — en ändrad `src/routes/_authenticated/hem.tsx` gav
+`Total: 0 tests in 0 files`, alltså exakt den falska grönt-klassen urvalet
+finns för att undvika.
 
 **Att skriva ett test i klassen:**
 

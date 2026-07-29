@@ -59,7 +59,7 @@ const PROJEKT = 'acceptance';
  * stdout oanvändbart som JSON-kanal. `PLAYWRIGHT_JSON_OUTPUT_FILE` har högsta
  * prioritet i Playwrights `resolveOutputFile` och tar en explicit sökväg.
  */
-function korSvit({ sjalvtest }) {
+function korSvit({ sjalvtest, filter = [] }) {
   const katalog = mkdtempSync(path.join(tmpdir(), 'hermetik-sjalvtest-'));
   const rapportFil = path.join(katalog, 'rapport.json');
 
@@ -82,9 +82,23 @@ function korSvit({ sjalvtest }) {
   // Skärpan är dessutom en annan: ett test som fäller vid första försöket men
   // passerar vid andra är per definition INTE ett hermetik-bevis. Med retries
   // hade en sådan halv fällning räknats som grön.
+  // FILTER = PR-GRINDENS URVAL (TASK-75), aldrig en egen bedömning. Posterna
+  // kommer från ci-suite.yml:s `acceptance_selection`, som ci.yml redan
+  // validerat mot mönster och disk. Tomt filter = hela klassen, vilket är vad
+  // post-merge.yml och nightly.yml alltid kör.
+  //
+  // Beviset följer med urvalet av en anledning: körs den skarpa sviten på EN
+  // spec-fil men självtestet på arton, blir självtestet jobbets nya kritiska
+  // väg och urvalet en halv besparing. Att beviset därmed gäller delmängden och
+  // inte hela klassen är samma arbetsdelning som sviten själv — hela klassens
+  // tvåsidiga bevis körs på det mergade trädet.
+  //
+  // FAIL-CLOSED PÅ TOMHET GÄLLER FORTFARANDE: träffar filtret ingenting blir
+  // testmängden tom, och `bedomPositivt` avvisar en tom svit uttryckligen. Ett
+  // trasigt filter kan alltså inte ge grönt besked.
   const utfall = spawnSync(
     'npx',
-    ['playwright', 'test', `--project=${PROJEKT}`, '--reporter=json', '--retries=0'],
+    ['playwright', 'test', `--project=${PROJEKT}`, '--reporter=json', '--retries=0', ...filter],
     { env: miljo, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] },
   );
 
@@ -171,6 +185,14 @@ export function bedomPositivt(tester) {
 
 function main(argv) {
   const negativKontroll = argv.includes('--negativ-kontroll');
+  // Allt som inte är en flagga är ett fil-filter som skickas vidare till
+  // Playwright ordagrant (TASK-75). Skriptet tolkar dem aldrig — validering av
+  // formen bor på ETT ställe, i scripts/acceptance-urval.sh.
+  const filter = argv.filter((a) => !a.startsWith('--'));
+
+  if (filter.length > 0) {
+    console.log(`▶ URVAL — beviset körs på ${filter.length} spec-fil(er): ${filter.join(' ')}\n`);
+  }
 
   if (negativKontroll) {
     console.log('▶ NEGATIV KONTROLL — kör UTAN HERMETIK_SJALVTEST. Sviten ska bli grön,');
@@ -180,7 +202,7 @@ function main(argv) {
     console.log('  testens egna network.use()-överskuggningar verkningslösa.\n');
   }
 
-  const rapport = korSvit({ sjalvtest: !negativKontroll });
+  const rapport = korSvit({ sjalvtest: !negativKontroll, filter });
   const tester = plattaTester(rapport);
   const { hallbart, avvikelser } = bedomPositivt(tester);
 

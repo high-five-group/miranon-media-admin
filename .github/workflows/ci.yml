@@ -79,6 +79,11 @@ jobs:
       # Merge-dedup (task-36.4 / ADR-077): true = main-push vars träd redan
       # bevisats grönt i PR:en → tunga jobb hoppas. Fail-closed (se steget).
       dedup_hit: ${{ steps.dedup.outputs.dedup_hit == 'true' }}
+      # ACCEPTANCE-URVALET (TASK-75). Blankstegsseparerad lista med de
+      # spec-filer `Acceptance (hermetisk)` ska köra i stället för hela klassen,
+      # eller TOM STRÄNG för full klass. Tomt är defaulten i varje osäkert läge
+      # — se `acceptance-urval`-steget nedan och scripts/acceptance-urval.sh.
+      acceptance_urval: ${{ steps.acceptance-urval.outputs.acceptance_urval }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -343,6 +348,51 @@ jobs:
             !.nvmrc
             !.gitignore
 
+      - name: Acceptance-urval — kör den delmängd diffen rör
+        id: acceptance-urval
+        # TASK-75 / ADR-077 §§ 1+3. Efter A7:5 (TASK-70.3) är `Acceptance
+        # (hermetisk)` ENSAM bärare av PR-grindens kritiska väg — mätt till
+        # 422/433/422 s över tre fulla körningar 2026-07-28, alltså cirka 50 s
+        # LÅNGSAMMARE än den staging-svit som flyttades bort. Klassen kör alla
+        # 18 spec-filer oavsett vad diffen rör; detta steg väljer delmängden.
+        #
+        # STEGET ÄGER NOLL GLOBAR, OCH DET ÄR HELA FORMEN. Det läser
+        # `changed-files`-stegets EGEN `other_changed_files` — per actionens
+        # källa vid den pinnade SHA:n exakt "de ändrade filer som inte matchade
+        # D0-listan", inklusive dem som slogs ut av `!`-exkluderingarna. D0:s
+        # lista förblir därmed ENDA hemvist för docs-klassningen. En TREDJE
+        # hand-hållen kopia (filen bär redan två, med uttrycklig varning om att
+        # paret hålls för hand) vore precis den divergens-skuld ADR-077
+        # § Beslut 1 avvisar när den slår fast att klassningen "förblir
+        # deklarativ i changed-files-steget".
+        #
+        # VARFÖR D0-LISTAN DUGER SOM NEUTRAL GRUND: den är redan betrodd för ett
+        # STARKARE påstående — att hoppa HELA testsviten. Att här bara låta dess
+        # filer vara neutralt sällskap åt en spec-ändring är strikt svagare än
+        # vad repot redan gör. Och det är inte akademiskt: repots arbetsregel
+        # lägger kortändringen i SAMMA commit som koden, så varje verklig
+        # spec-PR bär en `backlog/**`-fil. Mätt på de två faktiska spec-PR:erna
+        # i historiken — `#377` (`990add4a2`) och `#368` (`d7b9558b2`) — bestod
+        # bådas diff av exakt ett kort plus 2 respektive 3 spec-filer. Utan
+        # docs-klassen som neutralt sällskap hade urvalet aldrig kunnat falla ut
+        # en enda gång, och mekaniken varit en tyst nolla.
+        #
+        # ALLOWLIST, ALDRIG BLOCKLIST: skriptet ger urval ENDAST när VARENDA
+        # post är en acceptance-spec-fil som finns på disk. En källfil, den
+        # delade sömmen under tests/acceptance/support/, en workflow eller en
+        # okänd filtyp ⇒ tomt ⇒ full klass. Okänt givet faller till full svit.
+        #
+        # SKYDDSNÄTET: post-merge.yml skickar ingen input och kör därmed full
+        # klass på varje mergat träd (ADR-077 § Kontext, Google-modellen).
+        env:
+          # Karantän i env, aldrig interpolerat in i skalet: `other_changed_files`
+          # är angriparstyrbar via filnamn i en PR (ADR-029 § script injection).
+          OVRIGA_ANDRADE: ${{ steps.changed-files.outputs.other_changed_files }}
+        run: |
+          set -euo pipefail
+          urval=$(bash scripts/acceptance-urval.sh "${OVRIGA_ANDRADE}")
+          echo "acceptance_urval=${urval}" >> "${GITHUB_OUTPUT}"
+
       - name: Merge-dedup — hoppa tungt om trädet redan bevisats grönt
         id: dedup
         # task-36.4 / ADR-077. Innehållsadresserad dedup UTAN ny lagringsyta:
@@ -577,6 +627,25 @@ jobs:
         # sitt innehåll.
         run: bash scripts/test-classify-post-merge.sh
 
+      - name: Test PR-grindens acceptance-urval (TASK-75)
+        # Per ADR-039 § lesson→grind (L43), samma kadens-argument som stegen
+        # ovan. Sviten prövar scripts/acceptance-urval.sh i BÅDA riktningar: att
+        # urvalet TILLÄMPAS på en klass-lokal diff, och att det FALLER till full
+        # klass på källfil, delad söm, traversal, saknad fil och workflow.
+        #
+        # T14 och T15 är skälet steget bor just HÄR. T14 kör klassens FAKTISKA
+        # spec-filer genom mönstret — håller mönstret men matchar det inte
+        # disken blir utfallet tyst full klass på varje PR, alltså en mekanik
+        # som ser installerad ut och gör ingenting. T15 vaktar att ci.yml och
+        # ci-suite.yml faktiskt är inkopplade, inklusive att ci-suite.yml:s
+        # default är TOM STRÄNG — vore den något annat hade post-merge.yml och
+        # nightly.yml ärvt ett urval, och skyddsnätet under PR-grinden upphört
+        # att finnas. Båda kopplingarna kan bara vaktas där filerna faktiskt
+        # läses.
+        #
+        # Hermetisk (riggat filträd i /tmp, ingen nätverkstrafik, ~1 s).
+        run: bash scripts/test-acceptance-urval.sh
+
       - name: Test prod-deploy allowlist (fail-closed)
         # Bevisar fail-closed-egenskapen i scripts/deploy-prod-functions.sh
         # (ADR-050 steg 2 / Fas 7-skuld L115): test-* + nya funktioner
@@ -742,9 +811,24 @@ jobs:
     # `CI Passed or Skipped`. Aggregatorn ser numera `suite`-anropet utan sina
     # två staging-jobb och utan a11y — en ändrad jobb-mängd INUTI ett anrop som
     # fortfarande rapporterar sitt resultat uppåt.
+    #
+    # ═══ ACCEPTANCE-URVALET (TASK-75) ═══
+    # Till skillnad från de två raderna ovan är detta INTE ett villkorslöst ord
+    # utan ett UTFALL: `changed`-jobbets `acceptance_urval` är tom sträng i
+    # varje läge utom ett — när varenda ändrad fil utanför D0-klassen är en
+    # acceptance-spec-fil som finns på disk. Tomt = full klass, och tomt är
+    # defaulten vid minsta osäkerhet (scripts/acceptance-urval.sh).
+    #
+    # VARFÖR EN INPUT OCH INTE EN RADERING: exakt samma skäl som `run_a11y`.
+    # `post-merge.yml` och `nightly.yml` utelämnar inputen, får ci-suite.yml:s
+    # default (tom) och kör därmed HELA klassen på varje mergat träd. Urvalet
+    # existerar alltså bara på PR-ytan, och post-merge-lagret är det nät som gör
+    # det försvarbart (ADR-077 § Kontext: en riskanpassad presubmit är
+    # försvarbar ENDAST med ett post-submit-nät under sig).
     with:
       run_staging: false
       run_a11y: false
+      acceptance_selection: ${{ needs.changed.outputs.acceptance_urval }}
     secrets: inherit
 
   # Job 4: Markdown link validation. Conditional på docs-changes.
