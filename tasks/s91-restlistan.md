@@ -369,8 +369,8 @@ posterna nedan står kvar som index.
 underhållsregel) — samtliga har en rad i § Avbockningslogg, kort-nycklad:
 `A7:1` · `A7:2` (båda utan kort) · `A7:3` (`TASK-70.1`) · `A7:4` (`TASK-70.2`) ·
 `A7:5` (`TASK-70.3`) · `A7:6` (`TASK-70.4`) · `A7:7` (`TASK-70.5`) ·
-`A7:8` (`TASK-70.6`).
-**Kvar öppna nedan: `A7:9` · `A7:10`.**
+`A7:8` (`TASK-70.6`) · `A7:10` (`TASK-75`).
+**Kvar öppna nedan: `A7:9`.**
 
 **ORDNINGEN ÄR EN INVARIANT, INTE EN PREFERENS:** **A7:4** (post-merge-lagret) är
 förkrav för **A7:5–A7:6**. Flyttas staging ur grinden innan lagret finns tas en
@@ -415,14 +415,6 @@ required to be up to date before merging"* och vårt ruleset har `strict` — s�
 gäller inte oss. Empiriskt kördes kommandot tre gånger 2026-07-28 med
 inställningen `false`, samtliga lyckades. Rivningen är bokförd i
 [granskningen](../docs/research/arbetsflode-granskning-2026-07-28.md) § Förbättringar.
-
-- [ ] **A7:10 · Urval i acceptance-sviten.** Var kandidat; **spärren föll
-      2026-07-28** när post-merge-lagret mättes skarpt (`TASK-70.2` landad,
-      exponeringsfönster 453 s). Marcus kvitterade att posten blir kort.
-      `Acceptance (hermetisk)` mäts till **422–433 s** mot Stagings 369–390 s och
-      blir **ensam bärare** av PR-grindens kritiska väg efter A7:5. **Dep på
-      `TASK-70.3`** — designas urvalet dessförinnan optimeras ett led som inte är
-      kritiskt → **`TASK-75`**
 
 **MUTEXEN SERIALISERAR — och kostnaden växer med antalet parallella PR:er.**
 Marcus gjorde observationen medan PR `#386` låg i kön; de två körningarna nedan
@@ -542,18 +534,6 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       posten i S91 som är en defekt i **produktionskod**
 - [ ] **`TASK-56`** — WebSocket-vägen går förbi hermetik-vakten. Latent tills
       appen får realtime; den enda kvarvarande vägen ut ur fixturvärlden
-- [ ] **`TASK-76`** — purge-jobbet är inte idempotent mot samtidiga körningar:
-      TOCTOU mellan `listSentinels()` och `deleteSentinels()` ⇒ 404 på redan
-      raderad post ⇒ falskt rött. **Funnen 2026-07-29 av `TASK-70.3`:s egna
-      mät-PR:er** (`#390` röd utan att något i diffen var fel); **tre
-      observationer**, i varje par faller den som DELETE:ar sist. Blir vanligare
-      i exakt takt med att parallelliteten ökar — alltså med A7:s målbild.
-      **Och dyrare efter `TASK-70.3`:** när post-merge blir primär staging-bärare
-      ger racet en röd post-merge, alltså ett tilldelat ärende med
-      revert-förslag på ett träd som redan ligger i `main` — observation 3 är
-      det fallet, redan inträffat. **Tas i nära anslutning till `70.3`**, ej
-      senare våg. Premissen `P26`/`P27` löses INTE här; kortet gör purge robust
-      under den
 - [ ] **`TASK-77`** — `staging-tests`-mutexen binder bara CI; lokala
       `test:api:staging` / `test:e2e:staging` / `vakt:kontrakt` går rakt förbi
       den mot samma bas. Verifierat 2026-07-29: strängen finns **inte** i
@@ -884,6 +864,7 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-29 | Tillstånds-återställningen (resume 15) + **kontrollens blinda fläck LAGAD.** Kontrollen matchade kort-ID:t först på raden; A7-raderna bär det sist, så hela A7-klassen var osynlig. Tre fel låg och väntade: `A7:3`, `A7:5` öppna trots Done, och `A7:6` avbockad i kroppen i strid med filens egen regel. Nya formen tvåsidigt bevisad FÖRE den skrevs in (tre FEL mot `02a9517`, tomt mot rättad, ingen falsk positiv på `A7:10`:s Done-beroende). § Filens egna fel post 8 | `#418` |
 | 2026-07-29 | **`TASK-70.6` DONE — `delete_branch_on_merge` (A7:8).** Tagen under orkestrerarens egen hand: skivan ändrar noll filer, och `ready-for-agent` betyder *kräver inte Marcus omdöme*, inte *ska spawnas som skiva* (precedent `TASK-64`). **AC #2 bevisad med KONTRASTGRUPP:** `#418`:s gren borta efter merge, medan `#417`:s gren från före inställningen ligger kvar på `b5b2bed`. Grannvärdena verifierade oförändrade före/efter. **De 263 redan ackumulerade grenarna raderas INTE** — retroaktiv städning är Marcus beslut | inställning, ingen fil |
 | 2026-07-29 | **`CONTRIBUTING.md` rad 95 rättad** — pekade på `ci.yml` `test-staging`; jobbet bor i `ci-suite.yml` sedan S79:s reusable-extraktion (verifierat mot workflow-filerna, inte mot posten). Registrerad av `TASK-70.4`:s agent som medvetet lät bli att laga den | `#422` |
+| 2026-07-29 | **`TASK-75` DONE — urval i acceptance-sviten (A7:10). STEG 3 STÄNGT.** Kritisk väg **411 s → 57 s** (`−86 %`), båda talen mätta i CI (`30438285427` / `30440413603`) — inget lokalt tal jämfört mot ett CI-tal. Kontrastbevis i båda riktningar. Urvalet är fail-closed per klass (`T5`–`T12`): en giltig spec räcker INTE om sällskapet är kod. **AC #4 omformulerat** — det beskrev en design vi inte byggde; agenten vägrade konstruera ett artificiellt hål för att kunna bocka det, vilket var rätt. Playwrights `--only-changed` förkastad EMPIRISKT (`0 tests in 0 files`) | `#424` · `#430` |
 | 2026-07-29 | **`TASK-81` DONE — mätriggen är ett verktyg, `npm run metrics:flake`.** Riggen HÄMTAD ur `TASK-74`-agentens scratchpad, ej omskriven ur minnet. Interfolieringen är KODAD (`byggPlan()` enda vägen till en plan), loadavg skiljer OKÄND från noll, 918 rådata-rader, ingen tröskel kodad. 25 testfall, fällande bevisad med fyra mutationer. **AC #4 stängt av orkestreraren mot agentens medvetna öppna-lämning** — kriteriet bar två skyldigheter med olika ägare; konsumentens halva överlämnad i skrift till `TASK-79`. Riggens hemvist + n-reservationen inskrivna i `CLAUDE.md` | `#420` · `#426` |
 | 2026-07-29 | **`TASK-76` DONE — purge-idempotensen.** Form (a) skript-fix; mutex-formen förkastad på tre grunder (täcker ej CI↔lokal · river medvetet designval `L348` · serialiserar). Klassificeraren fail-closed i FEM led och korsläser rec-ID:t mot batchen vi bad om. **AC #4 stängt på rationale: ytan finns inte längre** — kod-PR:er kör inte purge sedan `TASK-70.3` (verifierat i källan). Avsikten bevisad av ett STARKARE test: äkta race mot skarpa API:t, B förlorade alla fyra poster och överlevde. Fyra gröna post-fix-purger i CI | `#421` · `#427` |
 | 2026-07-29 | **`TASK-72` DONE — men arbetet var landat sedan 2026-07-28.** Kortet stod `To Do` med samtliga sex AC bockade och DoD obockad, medan disken bar hela lösningen (PR `#383`, `a264a16`, `.ci-wait-policy.conf` config-driven per Lesson #6). Upptäckt när kortet lästes INFÖR EN SPAWN — hade det spawnats hade en agent byggt om det som redan fanns. Alla AC omverifierade mot disk; `test-ci-wait.sh` 27/27 grön, `#383` tolv checkar `pass`. **Samma klass som `TASK-63`** | `#383` (arbetet) · stängning nedan |
