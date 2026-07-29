@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-28 20:33'
-updated_date: '2026-07-29 00:39'
+updated_date: '2026-07-29 00:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -16,42 +16,47 @@ ordinal: 154000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-TASK-64 lagade klass A: tre rader med mönstret "icke-auto-väntande query följd av icke-retrying assertion", mätt från 3/8 fällningar till 0/8. Klass B är en ANNAN mekanism och står kvar — den föll inte med klass A:s fix, och den är bredare än TASK-64:s beskrivning påstod.
+KORTETS URSPRUNGLIGA PREMISS ÄR FALSIFIERAD AV SIN EGEN MÄTNING (2026-07-29). Rättat här, i kortet självt, så att nästa läsare inte ärver den — en beskrivning som motsägs av kortets egen leverans är en fälla.
 
-### VAD SOM ÄR MÄTT, INTE ANTAGET
+Klass B är verklig, men den är varken "sju tester" eller "fokus-tester". Den är TRE MEKANISMER, och de flesta av de sju föll inte alls när de mättes kontrollerat.
 
-TASK-64:s efter-serie (n=8, workers=8, retries=0, körd 2026-07-28 av bygg-agenten):
+### VAD SOM FALSIFIERADES
 
-  person-detail:137        2/8 före, 2/8 efter — OFÖRÄNDRAD av klass A:s fix
-  hem:423                  föll inte alls i 16 körningar
-  mer-intresserade:95      föll inte alls i 16 körningar
+1. "De sju testerna." Baslinjen (10 körningar, workers=8, retries=0, 1530 testresultat) gav 0/10 för SEX av de sju. Endast mer-segment-send:113 föll (1/10). Två tester som INTE stod på kortet föll i stället: mer-maillogg:77 (1/10) och event-ny-anmalan:734 (2/10).
 
-Efter-serien exponerade dessutom FYRA tester som inte står i TASK-64 alls:
+2. "Fokus-tester." Motbevisad två gånger om: hem:437 är inget fokus-test, och fällningarna säger "element(s) not found" — inte "not focused". Tesen kom ur att tre av de ursprungliga tre råkade bära "fokus -> <h1>" i sina namn, inte ur felutskrifterna.
 
-  mer-segment-send:110
-  persons-list:95
-  event-narvaro:193       (axe)
-  event-anteckningar:333  (axe)
+3. "Minst två mekanismer." Det är tre, och ingen av dem är den som antogs.
 
-Klass B omfattar därmed minst sju tester, inte de tre TASK-64 listade.
+Skälet till att den ursprungliga bilden var fel är instruktivt: den byggdes på TASK-64:s efter-serie, vars körtid drev 107 -> 173 s. Den serien mätte delvis maskinen. Kortets AC 1 krävde därför kontrollerad last FÖRE mätning, och det kravet är vad som avtäckte felet.
 
-### VARNING FRÅN MÄTNINGEN — LÄS FÖRE DU JÄMFÖR TAL
+### DE TRE MEKANISMERNA — MÄTTA, INTE GISSADE
 
-Bygg-agenten rapporterade att svitens körtid drev 107 -> 173 s genom efter-serien. Klass B-raten i den serien kan alltså vara uppblåst av stigande maskinlast snarare än av ett verkligt mönster. Talen ovan får INTE jämföras rakt av mot en ny mätning som körs på en vilande maskin. Första steget i detta kort är att etablera en mätform där lasten är kontrollerad, annars mäts maskinen och inte testerna.
+B1 — KALL ROUTE-CHUNK MOT EXPECT-BUDGETEN (5000 ms). page.goto() returnerar innan route-chunken hämtats (autoCodeSplitting), så första assertionen efter en goto bär hela kall-laddningen. 95 av 156 goto-anrop i sviten har den formen. Kall-kostnaden mätt: 144 av 180 fil-körningar hade filens först startade test långsammare än filens median, median +1643 ms, max +6902 ms. Tre olika vyer, två olika matchers, samma svans.
 
-### VAD SOM SKILJER KLASS B FRÅN KLASS A
+B2 — VAKTENS TVÅ OBSERVATÖRER. Överskuggnings-vakten räknar med handler.isUsed (sätts när handlern KÖRS) medan Playwrights request-event fyrar när anropet SKICKAS. Avläst i teardown ger det en falsk OmatchadOverskuggningError.
 
-Klass A var en identifierbar kodform som gick att grepa fram: allTextContents(), getAttribute() och count() följda av assertions som inte retryar. Klass B-testerna bär INTE det mönstret — sökningen över hela tests/acceptance/ gav bara klass A:s förekomster.
+B3 — TEST-BUDGETEN (30000 ms). Kortets axe-hypotes BEKRÄFTAD, men först vid mättnad: vid loadavg 125 föll tre tester på "Test timeout of 30000ms exceeded" (35,2 / 38,7 / 26,4 s).
 
-Gemensamt för de ursprungliga tre är att de är fokus-tester (fokus -> <h1>), vilket pekar mot assertion-timeout under last snarare än mot en ögonblicksbild-query. Två av de fyra nya är axe-körningar, vilket är en tredje form igen. Klass B kan därför vara flera mekanismer som delar symptom, och det är kortets första fråga att avgöra.
+### DEN SKARPASTE ENSKILDA DATAPUNKTEN
 
-### AVGRÄNSNING MOT T106 — ÄRVD FRÅN TASK-64, GÄLLER FORTFARANDE
+person-detail:140 föll på rad 149 — sex rader FÖRE den data-grind T26 lade in mot exakt den flakighet TASK-64 tillskrev fokus-assertionen. Grinden vaktar rätt sak av fel skäl.
 
-T106 (hermetik-självtestets race) kräver självtestläget: onUnhandledRequest-kastet mot toBeFocused-timeouten. Den mekanismen finns inte i normalläge. Orsaken är alltså inte gemensam — men symptomklassen (fokus-assertion med fast timeout under last) delas, och trådarna bör läsas ihop. Slå INTE ihop dem utan att först pröva om orsaken är gemensam.
+### T106-AVGRÄNSNINGEN, OMPRÖVAD MED BELÄGG
 
-### VARFÖR KORTET FINNS I STÄLLET FÖR ATT STÄNGAS IN I TASK-64
+Orsakerna är INTE gemensamma. I självtestläget är normalläget tömt, så h1 kan aldrig renderas — timeouten är garanterad, inte lastberoende. I normalläge anländer data men för sent. Parametern (5000 ms på samma assertion) delas däremot, så åtgärden predikterades minska T106:s felrapportering. Prediktionen prövades i stället för att påstås: fyra interfolierade självtest-körningar gav 153/153/153 i alla fyra och kostnad 235,5 -> 239,5 s (+1,7 %, inom bruset). T106:s feltillstånd inträffade inte, så prediktionen är varken bekräftad eller motbevisad.
 
-TASK-64 stängdes för klass A med mätning som håller. Att låta klass B följa med in i den stängningen hade dolt fyra tester som mätningen just avtäckt, bakom ett kort som säger sig vara klart. Registrera, förkasta aldrig tyst — och stäng aldrig något som inte är löst.
+### ÅTGÄRDEN OCH DESS ÄRLIGA TAL
+
+Interfolierad A/B, 5+5 körningar, 765 testresultat per arm: klass B gick från 13 fällningar (2/5 körningar) till 1 (1/5).
+
+TALET ÄR INFLATERAT OCH SÄGS VARA DET: 12 av arm A:s 13 kom ur en enda körning vid loadavg 125. Utan den är ställningen 1 mot 1 i rat. Skillnaden ligger i FORMEN — 5000 ms mot 15000 ms i felutskrifterna — inte i antalet. Beviset bärs av mekanismen, inte av raterna.
+
+### KVARVARANDE RAT
+
+Klass B är inte borta: 1 fällning på 765 resultat i arm B, hem:437 med "Timeout: 15000ms" — samma mekanism mot den nya budgeten. Vid tillräcklig mättnad räcker inte 15 s heller.
+
+En ÅTTONDE form finns kvar och är inte lagad här: hem:1097 (byte-identisk skärmdump efter dubbel-rAF), den enda klass-B-liknande flaken CI faktiskt ser efter klass A:s fix (1/14 jobb efter, mot 6/14 före). Eget kort, orkestrerarens beslut.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
@@ -63,8 +68,6 @@ TASK-64 stängdes för klass A med mätning som håller. Att låta klass B följ
 - [x] #5 Åtgärd bevisad med före/efter-mätning i samma kontrollerade form, inte med en grön CI-körning
 - [x] #6 Kvarvarande rat redovisad ärligt — om något inte gick att laga står det, med vad som skulle krävas
 <!-- AC:END -->
-
-
 
 ## Implementation Notes
 
