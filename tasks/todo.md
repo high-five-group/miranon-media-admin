@@ -15,6 +15,29 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-29, femtonde resumen — restlistan mosas med
+tre parallella agenter)** — Marcus kvitterade hela den föreslagna planen och gav
+**autonomt orkestrerings-mandat** (*"du tar över som chef"*). **Ingångsläget
+verifierat mot disk:** HEAD `02a9517` (PAUSLÄGE sade `f3a2a11` — **femte
+förekomsten** av att paus-blocket skrivs före sin egen merge landar; disk vinner),
+rent träd, sex dependabot-PR:er, noll ärenden, all CI grön inkl. natten
+`30421871553`, `audit-ci` grön. **Alla sju numrerings-axlar oförändrade** — ingen
+mellansession har förbrukat nummer. **TRE BYGG-AGENTER I LUFTEN:** `TASK-81`
+(mätriggen — fyra kort väntar) · `TASK-76` (purge-racet — brådskar, blev dyrare
+när `70.3` landade) · `TASK-75` (acceptance-urvalet — stänger steg 3). **`TASK-70.6`
+tagen under egen hand** (ändrar noll filer; `ready-for-agent` ≠ *ska spawnas*):
+`delete_branch_on_merge` **false → true**, granne-värdena `allow_update_branch`
+(false) och `allow_auto_merge` (true) verifierat orörda; AC #2 väntar på nästa
+merge. **DIVERGENS FUNNEN I RESTLISTAN:** `A7:3` och `A7:5` står `- [ ]` i kroppen
+medan `TASK-70.1` och `TASK-70.3` är Done och korrekt bokförda i
+Avbockningsloggen — och **filens egen mekaniska kontroll kan inte se dem**, för
+dess regex ankrar kort-ID:t först på raden medan A7-raderna bär det sist. Alla
+A7-poster är därmed en blind fläck. **Historik-lucka noterad:** tionde pausens
+`Paushistorik`-rubrik saknas i sessionsdoket trots att Del 17 heter *Tionde
+resumen* — ordinalerna renumreras INTE, luckan bokförs. Numrering: 91/083/L360
+(**43** fragment)/T107/f46/**task-82**. Karta: `tasks/s91-restlistan.md`.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-29, fjortonde pausen — efter merge queue och
 steg 3 ned till en post)** — **TJUGOTVÅ PR:er landade (`#389`–`#416`), NOLL röda
 körningar.** **SEX KORT STÄNGDA:** `TASK-73` `63` `70.3` `70.1` `74` `70.4`.
