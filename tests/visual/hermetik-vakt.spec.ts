@@ -1,6 +1,8 @@
+import { ws } from 'msw';
 import { handlers } from '../support/fixturvarld/handlers';
 import { expect, test } from '../support/fixturvarld/hermetic';
 import { OmockadRequestError, skapaHermetikVakt } from '../support/fixturvarld/hermetik-vakt';
+import { bedomWebSocket, byggWebSocketMeddelande } from '../support/fixturvarld/websocket-vakt';
 
 /**
  * Negativt self-test för hermetik-vakten (task-54.2).
@@ -132,5 +134,71 @@ test.describe('hermetik-vaktens verkan i den skarpa fixturen', () => {
         }).catch(() => undefined),
       'https://visual-fixture.supabase.co/functions/v1/finns-inte-alls',
     );
+  });
+});
+
+/**
+ * WebSocket-vakten (task-56).
+ *
+ * Fyndet var LATENT när det stängdes: appen saknar realtime-funktioner, så
+ * ingen kod öppnar en WebSocket mot en främmande adress. Det gör beviset
+ * viktigare, inte mindre viktigt — utan ett test som medvetet öppnar en sådan
+ * uppkoppling finns ingenting som skulle märka om vakten kopplades ur, och den
+ * dag appen får realtime hade luckan upptäckts genom ett test som tyst gick på
+ * nätet.
+ */
+const OMOCKAD_WS_URL = 'wss://omockad-ws.example.com/realtime';
+
+test.describe('websocket-vaktens beslut', () => {
+  test('bedömer en otäckt adress som omockad och namnger den', () => {
+    // AC 1: adressen ska stå i klartext. Ett test som faller med "något gick
+    // fel" är en sämre vakt än ingen — det lär läsaren att felmeddelandet inte
+    // är värt att läsa.
+    expect(bedomWebSocket(new URL(OMOCKAD_WS_URL), [])).toBe('omockad');
+
+    const meddelande = byggWebSocketMeddelande(new URL(OMOCKAD_WS_URL));
+    expect(meddelande).toContain(OMOCKAD_WS_URL);
+    expect(meddelande).toContain('WebSocket');
+  });
+
+  test('släpper igenom fixtur-serverns egen värd — symmetriskt med HTTP-vakten', () => {
+    // AC 3. Undantaget är inte en artighet: Vites HMR-socket går mot
+    // ws://localhost:<port> i VARJE visuellt test, så utan denna gren hade
+    // sviten fällt på sig själv. Båda värdformerna prövas, och listan är
+    // fysiskt delad med HTTP-vakten (LOKALA_VARDAR) så de inte kan drifta isär.
+    expect(bedomWebSocket(new URL('ws://localhost:5299/?token=abc'), [])).toBe('lokal');
+    expect(bedomWebSocket(new URL('ws://127.0.0.1:5299/'), [])).toBe('lokal');
+  });
+
+  test('håller sig undan när en annan handler täcker adressen', () => {
+    // Utan detta hade vakten fällt varje framtida WS-mock — ett falskt positivt
+    // som hade gjort vakten till ett hinder någon river i stället för lagar.
+    const tackande = ws
+      .link('wss://omockad-ws.example.com/realtime')
+      .addEventListener('connection', () => undefined);
+
+    expect(bedomWebSocket(new URL(OMOCKAD_WS_URL), [tackande])).toBe('tackt');
+    // En handler för en ANNAN adress räddar den inte.
+    expect(bedomWebSocket(new URL('wss://nagon-annan.example.com/ws'), [tackande])).toBe('omockad');
+  });
+});
+
+test.describe('websocket-vaktens verkan i den skarpa fixturen', () => {
+  test('en omockad WebSocket-uppkoppling FÄLLER testet', async ({ page }) => {
+    // AC 2, den tvåsidiga formen: samma `test.fail()`-mekanik som HTTP-vaktens
+    // verkans-test ovan. Kopplas vakten ur når uppkopplingen
+    // route.connectToServer(), testet passerar, och Playwright rapporterar
+    // "expected to fail but passed" — alltså kan en avstängd vakt inte se grön
+    // ut. Att den formen fångar just detta är MÄTT: utan vakten nådde ett
+    // verkligt `GET /realtime upgrade=websocket` en lyssnare utanför
+    // fixturvärlden, medan testet var grönt.
+    test.fail();
+
+    await page.goto('/');
+    await page.evaluate((url) => {
+      new WebSocket(url);
+      return new Promise((klar) => setTimeout(klar, 1500));
+    }, OMOCKAD_WS_URL);
+    // Ingen assertion: fällningen ska komma från VAKTEN, inte härifrån.
   });
 });

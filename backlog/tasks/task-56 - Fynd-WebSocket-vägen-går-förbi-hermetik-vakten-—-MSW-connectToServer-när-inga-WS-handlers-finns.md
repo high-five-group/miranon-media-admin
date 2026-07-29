@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-27 16:56'
-updated_date: '2026-07-27 19:47'
+updated_date: '2026-07-29 10:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -37,8 +37,8 @@ Upptäckt vid källkodsläsning av bindningen under task-54.2, 2026-07-27.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 En WebSocket-uppkoppling som ingen handler täcker FÄLLER testet med adressen namngiven, i stället för att tyst nå route.connectToServer() — bindningens väg vid noll WS-handlers (@msw/playwright/src/fixture.ts rad 156-166, verifierad mot node_modules)
-- [ ] #2 Fällningen är bevisad TVÅSIDIGT: ett test som öppnar en WS-uppkoppling fäller med åtgärden inkopplad, och gick igenom utan den
-- [ ] #3 Localhost-undantaget gäller symmetriskt med HTTP-vakten — fixtur-serverns egen värd fäller inte
-- [ ] #4 De tolv baseline-bilderna är oförändrade: npm run test:visual grön utan baseline-diff
+- [x] #1 En WebSocket-uppkoppling som ingen handler täcker FÄLLER testet med adressen namngiven, i stället för att tyst nå route.connectToServer() — bindningens väg vid noll WS-handlers (@msw/playwright/src/fixture.ts rad 156-166, verifierad mot node_modules)
+- [x] #2 Fällningen är bevisad TVÅSIDIGT: ett test som öppnar en WS-uppkoppling fäller med åtgärden inkopplad, och gick igenom utan den
+- [x] #3 Localhost-undantaget gäller symmetriskt med HTTP-vakten — fixtur-serverns egen värd fäller inte
+- [x] #4 De tolv baseline-bilderna är oförändrade: npm run test:visual grön utan baseline-diff
 <!-- AC:END -->

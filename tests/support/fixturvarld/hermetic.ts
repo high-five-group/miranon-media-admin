@@ -14,6 +14,7 @@ import {
   granskaRegistrering,
   granskaTest,
 } from './overskuggnings-vakt';
+import { skapaWebSocketVakt } from './websocket-vakt';
 
 export { expect } from '@playwright/test';
 
@@ -33,7 +34,19 @@ export { expect } from '@playwright/test';
  * mockade EF-svar. ALLT nätverk utanför localhost blockeras — hermetiken är
  * inte en konvention utan en vakt: ett anrop som slinker förbi mockarna FÄLLER
  * testet med sin egen URL namngiven, i stället för att tyst göra pixlarna
- * miljöberoende. Vakten bor i `hermetik-vakt.ts` (task-54.2).
+ * miljöberoende.
+ *
+ * VAKTEN ÄR TVÅ MODULER, EN PER PROTOKOLL — inte för att det är vackert, utan
+ * för att MSW och Playwright hanterar protokollen på skilda vägar:
+ *
+ *   `hermetik-vakt.ts`   HTTP, via MSW:s `onUnhandledRequest` (task-54.2).
+ *   `websocket-vakt.ts`  WebSocket, via en catch-all WS-handler (task-56).
+ *
+ * WS-vägen såg INGEN vakt förrän task-56: `onUnhandledRequest` gäller bara
+ * HTTP, och den sid-vakt som bar hermetiken före task-54.2 kunde heller inte se
+ * WebSocket — `page.route` fångar den inte. Luckan var alltså lika gammal som
+ * fixturvärlden, och latent bara så länge appen saknar realtime-funktioner.
+ * Localhost-undantaget delas strukturellt mellan modulerna (`LOKALA_VARDAR`).
  */
 
 // supabase-js härleder lagringsnyckeln `sb-${hostname.split('.')[0]}-auth-token`
@@ -344,9 +357,24 @@ function medIvrigVakt(network: NetworkFixture): NetworkFixture {
 export const test = base.extend<{ network: NetworkFixture }>({
   network: [
     async ({ context }, use, testInfo) => {
-      const network = defineNetworkFixture({
+      // WS-VAKTEN LIGGER UTANFÖR `handlers` OCH ÖVERLEVER SJÄLVTESTLÄGET (task-56).
+      //
+      // Två val, båda medvetna. Den läggs SIST i fixturens lista i stället för i
+      // `handlers.ts`, eftersom `skapaHermetikVakt(handlers)` bygger sitt
+      // "Mockat här (N)" ur just den listan — en WS-catch-all där hade blivit
+      // brus i varje HTTP-felmeddelande, för en handler som aldrig kan vara
+      // svaret på ett omockat HTTP-anrop.
+      //
+      // Och den töms INTE av `SJALVTEST`: självtestläget river normalläget för
+      // att bevisa att testerna hänger på fixturens svar, men ett tömt WS-lager
+      // hade ÖPPNAT `connectToServer()`-grenen igen — alltså gjort just den
+      // regim som ska bevisa hermetiken till den enda som läcker.
+      let network: NetworkFixture;
+      const wsVakt = skapaWebSocketVakt(() => network.listHandlers());
+
+      network = defineNetworkFixture({
         context,
-        handlers: SJALVTEST ? [] : handlers,
+        handlers: [...(SJALVTEST ? [] : handlers), wsVakt],
         skipAssetRequests: false,
         onUnhandledRequest: skapaHermetikVakt(handlers),
       });
