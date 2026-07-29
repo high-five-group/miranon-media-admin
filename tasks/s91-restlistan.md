@@ -27,9 +27,23 @@
 > **kroppen bär bara öppna `[ ]`.** Filen dör när alla spår är stängda; den är
 > en arbetsyta, inte en permanent artefakt.
 >
-> **Senast verifierad mot disk: 2026-07-29** (audit i trettonde resumen — tre
-> läsande agenter med disjunkta linser: kort-påståenden, externa referenser,
-> intern koherens). **Uppdatera raden vid varje verifieringspass.**
+> **Senast verifierad mot disk: 2026-07-29** (trettonde resumen — audit med tre
+> läsande agenter, följd av en MEKANISK statuskontroll mot backlog-CLI:t som
+> fångade två fel auditen lämnat kvar, varav ett den själv infört).
+> **Uppdatera raden vid varje verifieringspass.**
+>
+> **Kontrollen som ska köras före varje uppdatering av denna fil** — den tar
+> sekunder och ersätter ett auditpass:
+>
+> ```bash
+> # 1. Står något Done-kort som öppen [ ] i kroppen?
+> for t in $(npx backlog task list --plain | grep -oE 'TASK-[0-9.]+' | sed 's/TASK-//'); do
+>   st=$(npx backlog task "$t" --plain 2>/dev/null | grep -m1 '^Status:')
+>   case "$st" in *Done*) grep -qE "^- \[ \] \*\*\\`TASK-$t\\`" tasks/s91-restlistan.md \
+>     && echo "FEL: TASK-$t öppen i kroppen men Done";; esac
+> done
+> # 2. Har varje öppet kort en bärare i kartans nio steg?
+> ```
 >
 > **Vid konflikt vinner registret, inte denna fil.**
 
@@ -77,7 +91,7 @@ tematiska; sekvensen över spårgränserna fanns ingenstans.
 
 | # | Steg | Bärare | Pekare |
 |---|---|---|---|
-| **1** | Signalen går att lita på | `TASK-65` `66` `64` `63` `69` · `TASK-72` · `TASK-74` · `TASK-79` · `TASK-80` · `TASK-81` · `TASK-71` · agent-namnet · `TASK-36.8` | § Fynd-kedjans ordning · § A4 · § A5 · § Kort födda i S91 |
+| **1** | Signalen går att lita på | `TASK-72` · `TASK-74` · `TASK-79` · `TASK-80` · `TASK-81` · `TASK-36.8` | § Fynd-kedjans ordning · § A5 · § Kort födda i S91 |
 | **2** | Skyddsnätet byggs | `TASK-70.2` · `TASK-70.5` | § A7 (A7:4, A7:7) |
 | **3** | Flytten och kön — väntetiden faller | `TASK-70.3` · `TASK-70.1` · `TASK-76` · `TASK-78` · `TASK-70.4` · `TASK-75` | § A7 (A7:5, A7:3, A7:6, A7:10) · § Kort födda i S91 |
 | **4** | Landnings-hygien | `TASK-70.6` | § A7 (A7:8) |
@@ -495,6 +509,11 @@ nedskriven empiri kostar att den måste återupptäckas genom att felet upprepas
       `npm run seed:review:clean -- --ort ZZ-GRANSKNING-S91`.
       Verifierat 2026-07-27: `.purge-staging-policy.json` nämner den inte
 - [ ] `person-detail` kontra `TASK-52` — orsakskedjan ej verifierad
+- [ ] **`CONTRIBUTING.md` rad 95 pekar på fel fil** — den anger
+      `.github/workflows/ci.yml` `test-staging`, men jobbet bor i
+      `ci-suite.yml` sedan S79:s reusable-extraktion. Preexisterande;
+      registrerad av `TASK-70.4`:s agent 2026-07-29, som medvetet lät bli att
+      laga den (scope-krypning). **Ingen kort-hemvist — posten bor här**
 
 ## Kort födda i S91 — utanför spåren ovan
 
@@ -506,12 +525,6 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       posten i S91 som är en defekt i **produktionskod**
 - [ ] **`TASK-56`** — WebSocket-vägen går förbi hermetik-vakten. Latent tills
       appen får realtime; den enda kvarvarande vägen ut ur fixturvärlden
-- [ ] **`TASK-63`** — fixturraderna saknar kompileringstidsbindning till
-      zod-schemat. **Bredast av fynd-kedjan; kräver pilot på EN fil först**
-- [ ] **`TASK-69`** — kontraktsvakten prövar bara happy-path; felkontrakten
-      404 och 400 är osynliga. Fynd-kedjans position 2, förkravet `TASK-68` är
-      uppfyllt. **Saknade hemvist här till 2026-07-29** trots att fem av sex
-      syskon stod uppräknade
 - [ ] **`TASK-72`** — CI-vakten kan följa fel workflow och rapportera GRÖNT utan
       att ha sett CI-körningen. Rör signalens trovärdighet direkt. **Saknade
       hemvist till 2026-07-29** — fanns bara som text i en avbockningsloggrad
@@ -726,6 +739,17 @@ bantades bort. De raderas inte.
    otydlig i stället för att gissas rätt. En gissning här hade skrivit bort ett
    skäl ingen längre kan rekonstruera.
 
+7. **Auditen 2026-07-29 införde ett eget statusfel — samma klass den skulle
+   rätta.** Lins 3 rapporterade `TASK-69` som en öppen post utan bärare, med
+   motiveringen *"Rad 706 mintar den, ingen DONE-rad finns"*. Slutsatsen var
+   **härledd ur denna fil**, inte slagen upp i registret — och kortet var
+   `Done` sedan 2026-07-28 17:36 (`#360`). Orkestreraren lade in posten som
+   öppen utan att kontrollera. **Två aktörer, samma fel:** frånvaron av en
+   DONE-rad i en karta är inte ett påstående om ett korts status; bara
+   backlog-CLI:t är det. Fångat 2026-07-29 av en mekanisk kontroll som kördes
+   FÖRE nästa uppdatering i stället för efter — vilket är den enda skillnaden
+   mot hur det upptäcktes förra gången.
+
 **Och felklassen som gav filen sin nuvarande form:** auditen 2026-07-28 fann
 tolv statusfel, samtliga kopior av register som redan hade rätt svar. Det är
 skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
@@ -810,6 +834,9 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 | 2026-07-29 | **`TASK-77` + `TASK-78` mintade.** `77`: staging-mutexen binder bara CI, lokala script går förbi — funnen av en agent som bröt regeln två gånger under ett pass, andra gången med full kännedom. `78`: kön bryter post-merge-klassningen för PR:er som inte är först i kögruppen — **PR-grinden orörd**, Marcus fångade att första formuleringen inte sade var felet satt | `#406` |
 
 | 2026-07-29 | **`TASK-74` klar i parallell session — kortets KÄRNPREMISS falsifierad.** Fokus-tesen håller inte (`hem:437` är inget fokus-test; fällningarna säger *element(s) not found*), och "de sju" stämmer inte (sex av sju gav 0/10 i baslinjen). **Tre mekanismer med belägg:** B1 kall route-chunk mot expect-budgeten · B2 vaktens två observatörer · B3 test-budget vid mättnad. Agenten **deflaterade sitt eget tal**: 12 av arm A:s 13 fällningar kom ur EN körning vid loadavg 125. **`TASK-64`:s diagnos delvis falsifierad** — `person-detail:140` föll sex rader FÖRE `T26`:s data-grind, så grinden vaktar rätt sak av fel skäl; noterat i det stängda kortet. **Tre kort mintade ur rapporten:** `79` `80` `81` | — |
+
+| 2026-07-29 | **`TASK-74` DONE — klass B, tre mekanismer.** Kortets kärnpremiss falsifierad av dess EGET AC om kontrollerad last. Agenten deflaterade sitt eget tal (12 av arm A:s 13 fällningar ur EN körning vid loadavg 125). Betalade dessutom carry-posten om `playwright.config.ts`:s falsifierade retries-skäl — skälet utbytt, beslutet behållet | `#411` |
+| 2026-07-29 | **Statusrättelse i denna fil.** `TASK-63` (stängd samma dag) och **`TASK-69`** (stängd redan 2026-07-28 via `#360`) stod som öppna `[ ]` i kroppen. `69`-felet **infördes av auditen samma kväll**: agenten skrev *"ingen DONE-rad finns"* — härlett ur FILEN, inte ur registret — och orkestreraren lade in posten utan att slå upp kortet. Se § Filens egna fel post 7 | `#413` |
 
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
