@@ -92,7 +92,7 @@ varje körning, så vakten inte kan drifta ifrån den purge som faktiskt körs.
 Recept, parametrar och de fyra fällorna: runbookens § Granskningsfixtur.
 
 CI drabbas aldrig av kollisionen — den kör staging-projekten som separata
-sekventiella steg (`.github/workflows/ci.yml` `test-staging`; Test+Build
+sekventiella steg (`.github/workflows/ci-suite.yml` `test-staging`; Test+Build
 splittades S77 i `test-fast`/`a11y`/`test-staging` där ENDAST
 `test-staging` bär staging-mutexen); samma
 kollisionsklass hanteras mellan CI-runs av `concurrency: staging-tests` och
