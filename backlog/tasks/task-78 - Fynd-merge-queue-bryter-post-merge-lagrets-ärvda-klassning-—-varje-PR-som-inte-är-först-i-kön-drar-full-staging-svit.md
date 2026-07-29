@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-29 00:30'
-updated_date: '2026-07-29 09:18'
+updated_date: '2026-07-29 10:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -55,9 +55,9 @@ Form (a) ser starkast ut vid första anblick — merge_group-körningens klassni
 <!-- AC:BEGIN -->
 - [ ] #1 En docs-only PR som landar som post 2 eller senare i en kögrupp drar INTE staging i post-merge — bevisat med två run-ID från samma kögrupp, positionerna redovisade
 - [ ] #2 En kod-PR i samma läge drar FORTFARANDE full svit — kontrollen är fixad, inte borttagen; run-ID redovisat
-- [ ] #3 En kögrupp som blandar docs och kod klassas som KOD — det säkra utfallet; bevisat skarpt eller, om det inte går att framkalla, härlett ur källan med radhänvisning
-- [ ] #4 Valet mellan formerna (a)/(b)/(c) motiverat i PR:n; de förkastade bär sina skäl
-- [ ] #5 Fail-closed-egenskapen bevarad: varje API-avvikelse eller oväntad form ger fortfarande full svit — negativt self-test redovisat
+- [x] #3 En kögrupp som blandar docs och kod klassas som KOD — det säkra utfallet; bevisat skarpt eller, om det inte går att framkalla, härlett ur källan med radhänvisning
+- [x] #4 Valet mellan formerna (a)/(b)/(c) motiverat i PR:n; de förkastade bär sina skäl
+- [x] #5 Fail-closed-egenskapen bevarad: varje API-avvikelse eller oväntad form ger fortfarande full svit — negativt self-test redovisat
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -110,6 +110,63 @@ förlorad så fort någon annan landning hunnit emellan — alltså nästan allt
 BERÖR TASK-76: samma körning gav ett purge-jobb som inte skulle ha funnits
 (09:06-klassen). Kortets egen punkt 2 — fler post-merge-körningar med staging ger
 fler purge-jobb — är därmed också belagd av denna observation.
+
+VALD FORM: (a) — ÄRV KÖ-KÖRNINGENS KLASSNING. Landad i scripts/classify-post-merge.sh
+som VÄG A, med den befintliga PR-vägen kvar som VÄG B.
+
+MEKANISMEN, MÄTT: merge queue kör ci.yml med `event=merge_group` på EXAKT den
+commit som sedan landar — kön skapar merge-commiten i förväg i
+`gh-readonly-queue/…` och flyttar `main` dit vid grönt. Ingen ny commit mintas.
+Bevis: kö-körning 30438569547 har `headSha` = `58a1a10498106de5…`, vilket ÄR
+merge-commiten för `#423` på main.
+
+Det gör VÄG A till en STRIKT BÄTTRE källa än VÄG B, inte en genväg: VÄG B måste
+BEVISA med träd-jämförelse att klassningen gäller det landade trädet — VÄG A har
+det gratis, av SHA-identitet.
+
+KORTETS TVÅ INVÄNDNINGAR MOT (a), BÅDA PRÖVADE:
+1. "kö-körningen kan ha skippats av dedup" — NEJ, strukturellt omöjligt.
+   Dedup-steget är grindat av `if [ "${EVENT_NAME}" = "push" ]` (ci.yml rad 419)
+   och skriver annars "Dedup ej tillämplig … → full svit" (rad 441). `dedup_hit`
+   är därför alltid false på merge_group, precis som på pull_request. Kö-ytan bär
+   samma exakta ekvivalens `Test suite skipped` ⇔ should_skip_tests ⇔ D0.
+2. "kögrupp med både docs och kod" — klassas som KOD. ci.yml:s D0-steg är en
+   ALLOWLIST där only_changed blir true ENDAST när VARENDA ändrad fil matchar
+   (tj-actions/changed-files @ pinnad SHA, src/changedFilesOutput.ts:
+   `onlyChanged = otherChangedFiles.length === 0 && …`). Minst en icke-matchande
+   fil ⇒ false ⇒ full svit.
+
+KÖ-BASEN VERIFIERAS, ANTAS INTE. Klassningen gäller diffen mot kö-basen, så den
+är sund endast om basen ÄR merge-commitens första förälder. Basen står kodad sist
+i grennamnet och jämförs mekaniskt; avvikelse ⇒ full svit. Detta är VÄG A:s
+motsvarighet till VÄG B:s träd-identitet. Empiri:
+  `pr-423-dbe1c0dbb2bfa…` ↔ första föräldern `dbe1c0dbb2bfa…`
+  `pr-424-58a1a10498106…` ↔ första föräldern `58a1a10498106…`
+
+FÖRKASTADE:
+ (b) Klassa om mot merge-commitens diff mot första föräldern — avvisad av
+     ADR-077 § Beslut 1 rakt ut: kräver en andra kopia av ci.yml:s glob-listor,
+     alltså ny hemvist utan paritetsgrind (restlistans A3-skuld igen).
+ (c) Acceptera kostnaden — förkastad av storleken, se mätserien nedan.
+
+MÄTSERIE, fixad vs ofixad över de 14 senaste merge-landningarna på main:
+  6 av 14 VÄNDER false → true (43 %). Ingen enda vänder true → false.
+  Kod- och workflow-landningar förblev false genomgående (#420, #421, #424;
+  #427 rörde .github/workflows/ci-suite.yml ⇒ korrekt exkluderad från D0).
+
+FALSK-GRÖN-KONTROLL: för samtliga 14 landningar som den fixade klassningen
+släpper som docs_only=true lästes den faktiskt landade diffen ut och varje fil
+klassades mot D0-listan. Utfall: 0 icke-docs-filer. Ingen falsk grön.
+
+SKARPT KONTRASTBEVIS på kortets tredje datapunkt (`#423`, merge-commit 58a1a10):
+  ofixad: docs_only=false — träd-avvikelse (c89df4bc1d98 != efc0154ab5b6)
+  fixad:  docs_only=true  — 'Test suite' skippades i merge_group-körning 30438569547
+Och i kod-riktningen (`#424`, c3d134a7):
+  fixad:  docs_only=false — 'Test suite' saknas som eget jobb i kö-körning 30439086378
+
+AC#1 och AC#2 ÄR MEDVETET INTE AVBOCKADE. Båda kräver run-ID från en post-merge-
+körning EFTER att fixen landat, och den signalen finns inte medan PR:en är öppen.
+Substansen är mätt (se ovan); den formella avbockningen hör till CI-verifieringen.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done

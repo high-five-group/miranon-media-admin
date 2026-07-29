@@ -112,6 +112,21 @@ name: Post-merge
 # det beteende A7:5 behövde, och skälet att lagret ärver EN klassbit i stället
 # för tre.
 #
+# MEN FORMEN BAR INTE ÖVER MERGE QUEUE (TASK-70.1) — den bröts samma dag kön
+# landade, och lagningen är TASK-78. Kön bygger varje post mot `main`s AKTUELLA
+# spets, så merge-commitens träd bär mer än PR:ens egen diff så snart `main` rört
+# sig sedan PR-headen skrevs. Träd-identiteten mot PR-headen fällde då till full
+# svit — inklusive staging — på rena docs-landningar. Villkoret var INTE "inte
+# först i kön": `#423` låg ensam i kön och drabbades ändå. Mätt: 6 av de 14
+# senaste landningarna drog full svit i onödan.
+#
+# SKRIPTET LÄSER DÄRFÖR KÖ-KÖRNINGEN FÖRST. Kön kör ci.yml med
+# `event=merge_group` på EXAKT den commit som landar (kö-körning 30438569547 har
+# `headSha` = merge-commiten `58a1a10` för `#423`), så klassningen finns redan,
+# på rätt träd — och behöver ingen träd-jämförelse, eftersom identiteten är SHA:t
+# självt. PR-vägen står kvar för landningar utanför kön. Formerna, de förkastade
+# alternativen och kö-basens verifiering: se skriptets § TVÅ KÄLLOR.
+#
 # ═══ ÖPPET BOKFÖRD BEGRÄNSNING ═══
 # Larm-jobbet bor INNE i den körning det bevakar och kan därför bara larma om
 # körningen faktiskt äger rum. Ett `startup_failure` (noll jobb instansieras)
