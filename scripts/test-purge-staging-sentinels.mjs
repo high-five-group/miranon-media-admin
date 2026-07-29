@@ -16,7 +16,9 @@ import { readFileSync } from 'node:fs';
 import {
   backoffMs,
   chunk,
+  deleteRecords,
   fetchWithNetworkRetry,
+  isAlreadyDeletedError,
   isExactSentinel,
   isOldEnough,
   isTransientNetworkError,
@@ -357,6 +359,217 @@ await tAsync('HTTP-fel retry:as ALDRIG — ett anrop, svaret returneras orört',
     assert.equal(calls, 1, 'HTTP-fel är inte transient — exakt ett anrop');
   } finally {
     globalThis.fetch = orig;
+  }
+});
+
+// --- idempotens mot samtidiga purges (TASK-76) ---
+//
+// Racet: listSentinels() och deleteRecords() är två faser. Två samtidiga
+// purges ser samma sentinel, båda kör DELETE, den som kommer sist får 404.
+// Observerat tre gånger 2026-07-28 (#390 vs #391, #394 vs #390, nightly vs
+// post-merge) — i varje par föll exakt EN. En DELETE av en redan raderad post
+// har uppnått sitt mål och ska räknas som succé.
+//
+// FELKROPPARNA NEDAN ÄR LIVE-MÄTTA mot staging (apphjj8Q7lkXCMsL4,
+// 2026-07-29) med den skarpa least-privilege-PAT:en. Inget muterades — alla
+// rec-ID:n var fabricerade och existerade aldrig.
+
+const BODY_RECORD_NOT_FOUND = (id) =>
+  JSON.stringify({
+    error: { type: 'NOT_FOUND', message: `Could not find a record with ID "${id}".` },
+  });
+
+// Mätt svar för BÅDE okänd tabell, okänd bas och prod-basen utan scope.
+const BODY_MODEL_NOT_FOUND = JSON.stringify({
+  error: {
+    type: 'INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND',
+    message:
+      'Invalid permissions, or the requested model was not found. Check that both your user ' +
+      'and your token have the required permissions, and that the model names and/or ids are correct.',
+  },
+});
+
+const ID_A = 'recAAAABBBBCCCCDD';
+const ID_B = 'recEEEEFFFFGGGGHH';
+const ID_C = 'recIIIIJJJJKKKKLL';
+
+t('redan raderad post: 404 NOT_FOUND som namnger en post VI bad om ⇒ succé', () => {
+  assert.equal(isAlreadyDeletedError(404, BODY_RECORD_NOT_FOUND(ID_A), [ID_A, ID_B]), true);
+});
+
+// --- NEGATIVT SELF-TEST (AC #3): fixen får inte vara fail-open ---
+
+t('NEGATIVT: 403 för fel bas/fel tabell fäller fortfarande (mätt felform)', () => {
+  assert.equal(isAlreadyDeletedError(403, BODY_MODEL_NOT_FOUND, [ID_A]), false);
+});
+
+t(
+  'NEGATIVT: 404 med samma kropp men fel statuskod-klass fäller — status måste vara exakt 404',
+  () => {
+    assert.equal(isAlreadyDeletedError(500, BODY_RECORD_NOT_FOUND(ID_A), [ID_A]), false);
+    assert.equal(isAlreadyDeletedError(422, BODY_RECORD_NOT_FOUND(ID_A), [ID_A]), false);
+  },
+);
+
+t('NEGATIVT: bas-nivåns {"error":"NOT_FOUND"} (STRÄNG, inte objekt) fäller', () => {
+  // Airtables dokumenterade form när själva BASEN inte hittas. Vår
+  // least-privilege-PAT ger i dag 403 för det fallet (mätt), men en bredare
+  // token kan ge denna 404 — och då ska den fälla, inte sväljas.
+  assert.equal(isAlreadyDeletedError(404, JSON.stringify({ error: 'NOT_FOUND' }), [ID_A]), false);
+});
+
+t('NEGATIVT: 404 som namnger en post vi ALDRIG bad om fäller (det är inte vårt race)', () => {
+  assert.equal(isAlreadyDeletedError(404, BODY_RECORD_NOT_FOUND(ID_C), [ID_A, ID_B]), false);
+});
+
+t('NEGATIVT: 404 med rätt type men utan rec-ID i meddelandet fäller', () => {
+  const body = JSON.stringify({
+    error: { type: 'NOT_FOUND', message: 'Could not find what you are looking for' },
+  });
+  assert.equal(isAlreadyDeletedError(404, body, [ID_A]), false);
+});
+
+t('NEGATIVT: TABLE_NOT_FOUND med 404 fäller — fel tabell är aldrig "redan raderad"', () => {
+  const body = JSON.stringify({
+    error: { type: 'TABLE_NOT_FOUND', message: `Could not find a record with ID "${ID_A}".` },
+  });
+  assert.equal(isAlreadyDeletedError(404, body, [ID_A]), false);
+});
+
+t('NEGATIVT: oparsbar eller tom kropp fäller (fail-closed default)', () => {
+  assert.equal(isAlreadyDeletedError(404, 'inte json', [ID_A]), false);
+  assert.equal(isAlreadyDeletedError(404, '', [ID_A]), false);
+  assert.equal(isAlreadyDeletedError(404, undefined, [ID_A]), false);
+});
+
+t('NEGATIVT: tom lista av begärda id:n kan aldrig ge succé', () => {
+  assert.equal(isAlreadyDeletedError(404, BODY_RECORD_NOT_FOUND(ID_A), []), false);
+  assert.equal(isAlreadyDeletedError(404, BODY_RECORD_NOT_FOUND(ID_A), undefined), false);
+});
+
+// Mekanismen, inte bara klassificeringen: att deleteRecords FAKTISKT tar om
+// batchen post för post och överlever racet. Samma form som nätverks-retryns
+// mekanism-tester (TASK-50) — mockad fetch, räknade anrop.
+
+const DELETE_TARGET = { name: 'test', table: 'Eventplanering' };
+
+function fakeResponse(status, body) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => body,
+    json: async () => JSON.parse(body),
+  };
+}
+
+/** Mocka fetch och svara per anrop utifrån vilka records[] som begärdes. */
+function mockFetch(handler) {
+  const calls = [];
+  const orig = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const ids = url.searchParams.getAll('records[]');
+    calls.push(ids);
+    return handler(ids, calls.length);
+  };
+  return {
+    calls,
+    restore: () => {
+      globalThis.fetch = orig;
+    },
+  };
+}
+
+const okDelete = (ids) =>
+  fakeResponse(200, JSON.stringify({ records: ids.map((id) => ({ id, deleted: true })) }));
+
+await tAsync('RACET: batch-404 tas om post för post — jobbet överlever, inget kastas', async () => {
+  const m = mockFetch((ids, n) => {
+    if (n === 1) return fakeResponse(404, BODY_RECORD_NOT_FOUND(ID_B)); // batchen
+    if (ids[0] === ID_B) return fakeResponse(404, BODY_RECORD_NOT_FOUND(ID_B)); // redan borta
+    return okDelete(ids);
+  });
+  try {
+    const out = await deleteRecords(
+      'apphjj8Q7lkXCMsL4',
+      DELETE_TARGET,
+      [ID_A, ID_B, ID_C],
+      'tok',
+      0,
+      10,
+    );
+    assert.deepEqual(out, { deleted: 2, alreadyGone: 1 });
+    assert.equal(m.calls.length, 4, 'ett batch-anrop + tre post-för-post-anrop');
+    assert.deepEqual(m.calls[0], [ID_A, ID_B, ID_C]);
+    assert.deepEqual(m.calls.slice(1), [[ID_A], [ID_B], [ID_C]]);
+  } finally {
+    m.restore();
+  }
+});
+
+await tAsync('utan race: EN batch, ingen fallback — den vanliga vägen är orörd', async () => {
+  const m = mockFetch((ids) => okDelete(ids));
+  try {
+    const out = await deleteRecords(
+      'apphjj8Q7lkXCMsL4',
+      DELETE_TARGET,
+      [ID_A, ID_B, ID_C],
+      'tok',
+      0,
+      10,
+    );
+    assert.deepEqual(out, { deleted: 3, alreadyGone: 0 });
+    assert.equal(m.calls.length, 1, 'ingen fallback får ske utan race');
+  } finally {
+    m.restore();
+  }
+});
+
+await tAsync(
+  'NEGATIVT: 403 fel-bas/fel-tabell kastar — ingen fallback, jobbet fäller',
+  async () => {
+    const m = mockFetch(() => fakeResponse(403, BODY_MODEL_NOT_FOUND));
+    try {
+      await assert.rejects(
+        () => deleteRecords('apphjj8Q7lkXCMsL4', DELETE_TARGET, [ID_A, ID_B], 'tok', 0, 10),
+        /Airtable DELETE 403/,
+      );
+      assert.equal(m.calls.length, 1, 'fatalt fel får ALDRIG ge post-för-post-fallback');
+    } finally {
+      m.restore();
+    }
+  },
+);
+
+await tAsync(
+  'NEGATIVT: 404 som namnger främmande post kastar — fallbacken är inte en 404-svälj',
+  async () => {
+    const m = mockFetch(() => fakeResponse(404, BODY_RECORD_NOT_FOUND(ID_C)));
+    try {
+      await assert.rejects(
+        () => deleteRecords('apphjj8Q7lkXCMsL4', DELETE_TARGET, [ID_A, ID_B], 'tok', 0, 10),
+        /Airtable DELETE 404/,
+      );
+      assert.equal(m.calls.length, 1);
+    } finally {
+      m.restore();
+    }
+  },
+);
+
+await tAsync('NEGATIVT: fatalt fel MITT I fallbacken kastar vidare', async () => {
+  const m = mockFetch((ids, n) => {
+    if (n === 1) return fakeResponse(404, BODY_RECORD_NOT_FOUND(ID_A)); // batchen ⇒ fallback
+    if (ids[0] === ID_A) return fakeResponse(404, BODY_RECORD_NOT_FOUND(ID_A)); // redan borta
+    return fakeResponse(403, BODY_MODEL_NOT_FOUND); // …och sedan ett äkta fel
+  });
+  try {
+    await assert.rejects(
+      () => deleteRecords('apphjj8Q7lkXCMsL4', DELETE_TARGET, [ID_A, ID_B], 'tok', 0, 10),
+      /Airtable DELETE 403/,
+    );
+    assert.equal(m.calls.length, 3, 'batch + två post-för-post innan det fatala felet');
+  } finally {
+    m.restore();
   }
 });
 
