@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-29 00:30'
-updated_date: '2026-07-29 00:32'
+updated_date: '2026-07-29 09:18'
 labels:
   - ready-for-agent
 dependencies: []
@@ -76,6 +76,40 @@ VAD SOM ALLTSÅ INTE PÅVERKAS: PR-grindens hastighet är orörd. Klassningen fu
 VAD SOM PÅVERKAS: enbart efterkontrollen på main. Den blir dyrare än den behöver vara för PR:er som inte är först i kön, och varje sådan extra staging-körning är ett nytt tillfälle för TASK-76:s purge-race. Det är kostnaden — inte en trasig grind.
 
 Distinktionen är inte kosmetisk: en läsare som tror att PR-grinden är trasig prioriterar kortet som akut och letar i fel fil.
+
+TREDJE DATAPUNKTEN, 2026-07-29 (femtonde resumen) — och den första som inträffade UTANFÖR en kögrupp med flera poster.
+
+PR `#423` (stängningen av `TASK-72`) rörde TRE filer, samtliga markdown:
+`backlog/tasks/task-72 - ….md`, `tasks/lessons.d/registret-mot-disk-….md`,
+`tasks/s91-restlistan.md`.
+
+PR-grinden klassade den korrekt: run `30437803614` visar `Test suite: skipped`.
+
+Post-merge för merge-commiten `58a1a10` körde ändå **hela sviten** — `Staging
+sentinel purge` success, `Acceptance (hermetisk)` och `Staging (API + E2E)` båda
+instansierade.
+
+Träd-jämförelsen bekräftar mekanismen exakt som kortet beskriver den:
+
+  merge-träd (58a1a10^{tree})    c89df4bc1d985e1417032823f80613588f78156e
+  head-träd  (58a1a10^2^{tree}) efc0154ab5b6d8c668e4f0b57c576d17a16358fe
+  -> AVVIKER -> fail-closed -> full svit
+
+VAD DENNA OBSERVATION LÄGGER TILL kortets två föregående: de mättes på en kväll
+med flera poster i kön samtidigt, vilket gjorde det naturligt att läsa felet som
+"gäller PR:er som inte är först i kön". `#423` låg ensam i kön. Träden avviker
+ändå, eftersom kön bygger posten mot `main`s aktuella spets — och `main` hade
+rört sig sedan PR:en skapades. **Villkoret är alltså inte "inte först i kön" utan
+"main har rört sig sedan PR-headen skrevs"**, vilket är det normala fallet i ett
+aktivt repo, inte ett specialfall.
+
+KOSTNADEN ÄR DÄRMED HÖGRE ÄN KORTET ANTAR. Kortets punkt 1 säger att `TASK-73`:s
+vinst går förlorad "så fort två PR:er köar ihop". Rätt formulering är att den går
+förlorad så fort någon annan landning hunnit emellan — alltså nästan alltid.
+
+BERÖR TASK-76: samma körning gav ett purge-jobb som inte skulle ha funnits
+(09:06-klassen). Kortets egen punkt 2 — fler post-merge-körningar med staging ger
+fler purge-jobb — är därmed också belagd av denna observation.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
