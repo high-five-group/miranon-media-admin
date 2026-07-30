@@ -2,7 +2,7 @@
 owner: marcus803
 updated: 2026-07-29
 review_by: 2027-01-29
-status: draft
+status: stable
 ---
 
 # Nummerallokering i en delad serie när flera aktörer arbetar parallellt (Code, 2026-07-29)
@@ -26,7 +26,29 @@ status: draft
 
 ## Kort svar
 
-(ej besvarad än)
+**Den dominerande branschformen är ingen av våra tre — den är att låta en extern,
+kollisionsfri räknare som redan finns göra jobbet (forge:ns issue- eller PR-nummer), eller
+att avskaffa den delade räknaren helt.** Rust, Kubernetes och towncrier-projekten
+återanvänder forge-numret; Rails, Django, changesets och Linux-kernelns patch-flöde har
+ingen delad räknare att kollidera i. Block-reservation **(ii)** hittade jag i noll av sju
+flöden. "En aktör mintar" **(i)** är etablerat hos PEP och EIP, men som en *roll skild från
+skribenten med flera innehavare* — och Python **tog bort** just det steget som onödig
+latens. Tilldelning vid landning **(iii)** har starkast stöd, men på annan grund än
+[ADR-081](../decisions/ADR-081-nummer-tilldelas-vid-landning.md) angav: mätningen visar att
+towncrier aldrig tilldelar ett nummer, så den precedenten bär bara halva formen.
+
+**Ja, svaret ändras med autonoma agenter — åt motsatt håll mot väntat.** ID-allokering i en
+delad serie är **oadresserad i 0 av 5** leverantörers primärdokumentation, och Cursor
+rapporterar att den mänskliga lösningen kollapsade i praktiken: agenter höll lås för länge
+eller glömde släppa dem, och tjugo agenter sjönk till genomströmningen av två eller tre.
+Branschens agent-mönster är att **isolera fysiskt och tilldela ägandeskap i förväg** — inte
+att låta aktörer förhandla om ett nummer.
+
+**Passets viktigaste fynd stod inte i uppdraget.** Jag mätte ADR-081:s eget undantag och
+det håller inte: två arbetsträd med vår `backlog`-konfiguration allokerade **båda
+`task-4`**. Kort är inte lösta. Men CLI:t bär redan mekanismen — med
+`check_active_branches: true` hoppade det till `task-5`. **Den billigaste åtgärden i hela
+materialet är en config-rad, inte en ny form.**
 
 ## Delfråga 1 — Vad gör stora OSS-projekt faktiskt?
 
@@ -830,12 +852,209 @@ svagaste. ADR-081 byggde på rätt serie först.
 
 ## Vad detta betyder för (i), (ii), (iii) — och en eventuell fjärde form
 
-(ej besvarad än)
+### Formerna, vägda mot vad passet faktiskt fann
+
+**(i) En aktör mintar — etablerad i en form vi inte har.**
+PEP och EIP bär formen, men med två egenskaper vår kandidat saknar: mintaren är en **roll
+skild från skribenten**, och rollen har **flera innehavare**. Vår (i) är "en av 2–3
+parallella orkestrerare mintar den här gången" — jämlikar som måste komma överens. Det är
+närmare det steg Python **tog bort** som onödig latens, och exakt den klass Cursor mätte
+som flaskhals när aktörerna blev autonoma. **Svagast stöd av de tre.**
+
+**(ii) Block-reservation — teoretiskt grundad, precedent-mässigt tom.**
+Noll av sju dokumentationsflöden använder den. Den har däremot formell grund: den är
+Interval Tree Clocks' `fork` i enkel form. Men priset är namngivet i PostgreSQL:s egen
+dokumentation — *"holes in the sequence"* och *"you should only assume that the nextval
+values are all distinct, not that they are generated purely sequentially"*. Luckor och
+förlorad allokeringsordning är precis de två egenskaper som gör `L359` citerbart i prosa.
+**Formen köper mekanisk säkerhet med den valuta vi minst kan avvara.**
+
+**(iii) Tilldelning vid landning — starkast stöd, men på annan grund än ADR-081 angav.**
+EIP gör det explicit. Pythons *faktiska praxis* gör det också — `9999` under skrivandet,
+riktigt nummer vid PR-öppning. Rust och Kubernetes gör en variant: numret **är** forge-
+räknarens. Men **towncrier är inte precedent för tilldelningssteget** — mätningen visar att
+towncrier aldrig tilldelar något nummer alls. ADR-081:s tre precedenter är i praktiken
+två för själva tilldelningen, och det bör stå rätt.
+
+**(iv) Grennamn som allokator — idé värd att känna, verktyg utan bärkraft.**
+`branchnews` är ett enmansprojekt med 0 stjärnor, och dess `rename`-steg kräver GitHub:s
+standard-merge-commit-meddelande — vilket vår merge queue inte garanterar. **Kan inte
+citeras som precedent.**
+
+### Den femte formen, som ingen av kandidaterna var
+
+Django är den enda källan i passet som löser vårt problem **utan** att röra referensnätet:
+
+> *"the numbers are just there for developers' reference, Django just cares that each
+> migration has a different name."*
+
+Numret behålls litet och läsbart; det slutar bara vara **identitet**. En dubblett blir då
+en olägenhet som ska upptäckas och rätas ut, inte en korruption. Rails går ett steg
+längre och avskaffar räknaren helt — men det är ADR-081:s förkastade datum-form, och samma
+referensnät-argument gäller.
+
+### Min rekommendation — och beslutet är Marcus
+
+**1. Vänd `check_active_branches` till `true`. Detta är passets enskilt starkaste
+rekommendation.** Det är den billigaste åtgärden i hela materialet: en config-rad i ett
+verktyg som redan äger substratet, leverantörsstödd, ingen ny form, ingen ny kod. Mätning 2
+visar att den fungerar. **Villkor:** flaggan styr enligt `--help` *"task states across
+active branches"*, alltså mer än ID-allokering, och `active_branch_days: 30` gör äldre
+grenar osynliga. **Vad den gör med kort-statusar i vårt 168-kortsträd är obelagt av mig**
+och bör prövas i en engångsgren före landning.
+
+**2. Rätta ADR-081 § 4 oavsett vad som beslutas om räckvidden.** Påståendet *"Kort: redan
+löst"* är mätt falskt under vår konfiguration. Det står i en Accepted ADR och kommer att
+läsas som fakta. ADR-081:s omprövningsvillkor gällde en *inträffad* kollision — men detta
+är inte en inträffad kollision, det är en **falsifierad premiss**, och den klassen väntar
+inte på ett villkor.
+
+**3. Utvidga inte fragment-vägen till ADR och tråd nu. Utvidga validatorn i stället.**
+Litteraturens rangordning är tydlig: gör kollisionen omöjlig genom konstruktion, annars gör
+den högljutt detekterbar **vid varje skrivning**. Vi har redan `check-adr-count.sh` och
+`check-lesson-numbers.sh`. En dubblett-kontroll för ADR- och trådnummer är samma klass
+validator — kontinuerligt exercerad, alltså på rätt sida av SRE:s bräcklighets-varning —
+och den är billig. Att bygga fragment-vägar för två serier som mintas av orkestreraren är
+det ADR-081 med rätta kallade spekulativ komplexitet.
+
+**4. Bygg inte (ii).** Tom precedent-rymd i domänen, och priset är luckor och förlorad
+ordning i serier vars värde ligger i att vara täta och citerbara.
+
+**5. Behåll (iii) för lessons, men lägg om dess motivering.** Formen är rätt; grunden ska
+vara merge-grindens serialisering plus EIP och Pythons praxis — inte towncrier, som inte
+gör det ADR-081 tillskriver den.
+
+**Den obekväma delen av rekommendationen:** rekommendation 1 och 3 löser inte problemet
+helt. Båda lämnar Pythons "couple of minutes" — fönstret mellan skapande och commit. Ingen
+källa i passet stänger det fönstret utan att betala i storlek, luckor eller infrastruktur.
+**Att det fönstret kvarstår bör bokföras öppet snarare än designas bort.**
 
 ## Vad som INTE gick att belägga
 
-(ej besvarad än)
+Denna sektion är passets näst viktigaste, eftersom den visar var nästa beslut vilar på
+antaganden.
+
+**Om vår egen konfiguration:**
+
+- **Vad `check_active_branches: true` gör med kort-*statusar* i vårt 168-kortsträd är
+  obelagt.** Jag mätte ID-allokering i engångsprojekt, inte statushantering i vårt repo.
+  Flaggan gör mer än jag prövade, och `active_branch_days: 30` har en effekt jag inte mätte.
+- **Om `remote_operations: true` / `--include-remote` skulle täcka pushade grenar i andra
+  sessioner** — inte mätt.
+- **Om det ocommitterade fönstret (Mätning 3) faktiskt är den väg en kollision skulle ske
+  hos oss** — obelagt. Det kräver kunskap om hur nära i tid två `task create` faktiskt
+  hamnar, och det har jag inte mätt.
+
+**Om precedenten:**
+
+- **Flaskhals-kritiken mot EIP-editorerna kunde inte beläggas i förstapartskälla.**
+  `ethereum/EIPs` issue #2173 bär enbart två bot-kommentarer. ERC-utbrytningen är belagd som
+  faktum men **utan angivet skäl** i Ethereums eget repo. Att skälet var editor-brist finns
+  bara i tredjepartsrapportering och används inte som belägg.
+- **Ingen primärkälla kopplar migrations-numrering — eller någon annan löpnummer-serie —
+  till AI-agenter specifikt.** Django/Rails-precedenten gäller mänsklig parallellism.
+  Översättningen till agenter är vår, inte källornas.
+- **Rails 2.1 release notes**, den historiska rationalen bakom timestamp-bytet, ger 404.
+  Belagt i stället normativt via nuvarande Configuring-guide.
+- **`pip`:s `news/`-katalog var tom** vid mätningen (nyligen släppt version). Fragment-
+  räkningen 49/49 vilar därför på tre projekt, inte fyra.
+- Hur GitHubs `/fleet`-subagenter isoleras, och Devins grennamngivning och eventuella
+  lås — **odokumenterat** i leverantörernas egen dokumentation.
+
+**Om teorin:**
+
+- **Ingen enskild primärkälla formulerar tre-vägs-avvägningen litet / monotont /
+  okoordinerat som ett samlat omöjlighetsresultat.** Delarna finns i RFC 9562 § 6.4 och
+  § 6.8, PostgreSQL:s Notes och Lamport 1978. Sammanfogningen är **vår slutledning** och är
+  märkt som sådan.
+- **Ingen auktoritativ källa adresserar kategorin "strukturellt möjlig men aldrig
+  inträffad".** SRE:s riskkalkyl förutsätter en *mätt* frekvens. Detta är ett verkligt hål i
+  litteraturen, inte en utebliven sökning — och det betyder att beslutet om ADR- och
+  trådnummer inte kan lutas mot en etablerad tröskel. Den finns inte.
+- **SRE-boken innehåller ingen frekvens- eller repetitionströskel per uppgift.** Verifierat
+  frånvarande i båda kapitlen, inte bara ohittat.
+- **Knuths eventuella korsattribution till Hoare** är inte verifierad; 1974-texten
+  tillskriver ingen.
+- **Levesons "Engineering a Safer World"** lästes inte (404 på MIT-servern). Leveson-citat
+  kommer uteslutande ur Safety Science 2004.
+
+**Om metoden:**
+
+- Delfrågorna 3, 4 och 5 samlades in av **underagenter** med bindande primärkälle-krav. Jag
+  verifierade själv om de två mest bärande citaten — Cursors lås-passage och Django-passagen
+  — och **båda återgavs korrekt ordagrant**. Övriga citat i de tre avsnitten vilar på
+  delegerad hämtning och är inte oberoende dubbelkontrollerade av mig.
+- Mätningarna av towncrier, `human-id` och `backlog`-CLI:t gjorde jag själv, mot versioner
+  som står utskrivna: towncrier `24.8.0`, `backlog` `1.47.1`.
 
 ## Källförteckning
 
-(ej besvarad än)
+### Egna mätningar (2026-07-29, versioner utskrivna)
+
+- towncrier `24.8.0` via `uvx` — orphan-fragment-allokering (20/20 unika) och
+  `build --draft`-rendering (orphan renderas nummerlöst)
+- `human-id` — namnrymd 200 × 300 × 250 = 15 000 000; 1 kollision på 5 000 dragningar
+- `backlog` CLI `1.47.1` — tre mätningar av ID-allokering mellan arbetsträd
+
+### Numreringsflöden i primärkälla
+
+- [rust-lang/rfcs README](https://github.com/rust-lang/rfcs/blob/master/README.md)
+- [PEP 1 — PEP Purpose and Guidelines](https://peps.python.org/pep-0001/)
+- [discuss.python.org — Confusion about assignment of PEP numbers](https://discuss.python.org/t/confusion-about-assignment-of-pep-numbers/38481)
+- [hugovk/pepotron](https://github.com/hugovk/pepotron)
+- [kubernetes/enhancements — keps/README.md](https://github.com/kubernetes/enhancements/blob/master/keps/README.md)
+- [EIP-1](https://eips.ethereum.org/EIPS/eip-1) · [ethereum/ERCs](https://github.com/ethereum/ERCs)
+- [towncrier tutorial](https://towncrier.readthedocs.io/en/stable/tutorial.html) ·
+  [towncrier CLI-referens](https://towncrier.readthedocs.io/en/stable/cli.html) ·
+  [`create.py` @ 24.8.0](https://github.com/twisted/towncrier/blob/24.8.0/src/towncrier/create.py)
+- [changesets `packages/write/src/index.ts`](https://github.com/changesets/changesets/blob/main/packages/write/src/index.ts)
+- [Linux — Submitting patches](https://www.kernel.org/doc/html/latest/process/submitting-patches.html)
+- [skieffer/branchnews](https://github.com/skieffer/branchnews)
+- [Django — Migrations](https://docs.djangoproject.com/en/stable/topics/migrations/) ·
+  [Rails — Configuring](https://guides.rubyonrails.org/configuring.html)
+
+### Distribuerade ID-mönster
+
+- [RFC 9562 — UUIDs](https://www.rfc-editor.org/rfc/rfc9562.html)
+- [ulid/spec](https://github.com/ulid/spec)
+- [twitter-archive/snowflake @ `snowflake-2010`](https://github.com/twitter-archive/snowflake/blob/snowflake-2010/src/main/scala/com/twitter/service/snowflake/SnowflakeServer.scala)
+- [Hibernate 6.6 User Guide](https://docs.hibernate.org/orm/6.6/userguide/html_single/Hibernate_User_Guide.html)
+- [PostgreSQL — CREATE SEQUENCE](https://www.postgresql.org/docs/17/sql-createsequence.html)
+- [Lamport 1978 — Time, Clocks, and the Ordering of Events](https://lamport.azurewebsites.net/pubs/time-clocks.pdf)
+- [Almeida, Baquero, Fonte — Interval Tree Clocks, OPODIS 2008](https://gsd.di.uminho.pt/members/cbm/ps/itc2008.pdf)
+
+### Agentiska system
+
+- [Claude Code — worktrees](https://code.claude.com/docs/en/worktrees) ·
+  [agent teams](https://code.claude.com/docs/en/agent-teams) ·
+  [sub-agents](https://code.claude.com/docs/en/sub-agents)
+- [Anthropic Engineering — multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system)
+- [Cursor — Scaling agents](https://cursor.com/blog/scaling-agents) ·
+  [worktrees](https://cursor.com/docs/configuration/worktrees)
+- [GitHub Copilot coding agent](https://docs.github.com/en/copilot/concepts/coding-agent/coding-agent) ·
+  [`/fleet`](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/fleet)
+- [OpenAI Codex — git worktrees](https://learn.chatgpt.com/docs/environments/git-worktrees)
+- [Devin — advanced capabilities](https://docs.devin.ai/work-with-devin/advanced-capabilities)
+- [arXiv:2607.04697](https://arxiv.org/html/2607.04697v2) ·
+  [arXiv:2604.03551 (AgenticFlict)](https://arxiv.org/html/2604.03551v1) ·
+  [arXiv:2606.15376 (CoAgent)](https://arxiv.org/abs/2606.15376) ·
+  [arXiv:2510.18893 (CodeCRDT)](https://arxiv.org/abs/2510.18893)
+
+### När något ska mekaniseras
+
+- [Fowler — Yagni](https://martinfowler.com/bliki/Yagni.html) ·
+  [Jeffries — You're NOT gonna need it!](https://ronjeffries.com/xprog/articles/practices/pracnotneed/)
+- [Knuth 1974 — Structured Programming with go to Statements (PDF)](https://pic.plover.com/knuth-GOTO.pdf) ·
+  [ACM-post](https://dl.acm.org/doi/10.1145/356635.356640)
+- [SRE — Eliminating Toil](https://sre.google/sre-book/eliminating-toil/) ·
+  [Automation at Google](https://sre.google/sre-book/automation-at-google/) ·
+  [Embracing Risk](https://sre.google/sre-book/embracing-risk/)
+- [Reason — Human error: models and management, BMJ 2000](https://pmc.ncbi.nlm.nih.gov/articles/PMC1117770/)
+- [Cook — How Complex Systems Fail](https://how.complexsystems.fail/)
+- [Leveson — A New Accident Model for Engineering Safer Systems, Safety Science 2004 (PDF)](http://sunnyday.mit.edu/accidents/safetyscience-single.pdf)
+
+### Internt
+
+- [ADR-081 — Nummer tilldelas vid landning](../decisions/ADR-081-nummer-tilldelas-vid-landning.md)
+- [ADR-076 — Merge-grinden](../decisions/ADR-076-merge-grinden-ruleset-pr-flode.md)
+- [ADR-079 — Instruktionsleverans, bärare per lager](../decisions/ADR-079-instruktionsleverans-barare-per-lager.md)
