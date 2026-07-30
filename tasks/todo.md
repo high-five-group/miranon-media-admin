@@ -15,6 +15,30 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-30, sjuttonde pausen — dukat för
+tio-agents-vågen)** — **SEX PR:er landade** (`#463` `#465` `#466` `#467` `#468`
+`#470`) plus `#471` armerad; hub `#7` (`000ceab`). **`A2:7` DELAD på Marcus
+beslut, båda halvorna besvarade:** nummerhalvan → `TASK-93` (`ADR-081` beslut 4:s
+*"Kort: redan löst"* **mätt falskt** — två arbetsträd fick båda `task-4`;
+verktygets skydd `check_active_branches` står `false` mot tillverkarens `true`
+sedan instansens födelse) · filnamnshalvan **framkallad** (två agenter, samma
+sökväg, tyst överskrivning; `Write` skyddas per agent-kontext, **skalet inte**).
+**`A2:8` KLAR:** grinden byggd (self-test **7/7**, fäller mot hub-filens faktiska
+innehåll inkl. det radbrutna), **`ADR-083` mintad**, hub-`CLAUDE.md` rad 106+129
+säger nu PROSA. **`TASK-36.8` STÄNGD** — beslutet fattades för tre dygn sedan och
+verkställdes aldrig; backlog-grinden **RENT för första gången** (169 kort, 0
+inkonsistenta). **HARNESS-GENOMGÅNGEN:** Del 29.3:s *"inget tak"* är **falskt** —
+taket är **20 samtidiga**, verifierat mot docs på 2.1.220; `metrics:agents` hade
+aldrig körts (frontmatter-isolering fyrar 100 % för egna typer). **MARCUS FÄLLDE
+CODE TRE GÅNGER:** slutsatsen att skyddet ej kan mekaniseras · bokföringen av
+`TASK-36.8` · `src/`-argumentet (mekanismerna hanterar redan fallet).
+**DUKNING KLAR — partition i Del 33.5:** våg 1 = åtta agenter
+(`86` `87` `88` `89` `90` `91` `93` + EN av `85`/`92`) · våg 2 = den andra ·
+**`79` separat, tyst maskin**. Numrering: 91/**084**/L360 (**55**
+fragment)/T110/f46/**task-94**. Full narrativ: sessionsdok **Del 31–33** +
+PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-29, sjuttonde resumen — fyra flaggor, en
 äkta)** — LÄS-fasen rapporterade fyra divergenser; **utredningen visade att TRE
 INTE VAR STÄDFEL.** Fragment-talet var **Codes eget fel** (`README.md` räknad som
