@@ -265,7 +265,102 @@ precedent. Det vore precis den fejkade räkningen käll-hierarkin förbjuder.
 
 ## Delfråga 2 — Är "en aktör mintar" etablerat mönster eller anti-pattern?
 
-(ej besvarad än)
+**Etablerat mönster — men Python har aktivt övergett det, och skälet är precis den
+flaskhals uppdraget bad mig söka.**
+
+### Att det är etablerat
+
+Två av världens mest långlivade tekniska governance-processer bygger på formen. PEP
+har en editor-roll som *"reserve the right to reject PEP proposals"* och vars plikt är
+att tilldela eller validera numret. EIP:s editorer tilldelar numret vid merge.
+
+En egenskap är värd att lyfta, för den adresserar bus factor **i designen**: auktoriteten
+är en **roll med flera innehavare**, inte en person. PEP 1: *"PEP editorship is by
+invitation of the current editors, and they can be contacted by mentioning
+`@python/pep-editors` on GitHub."* ([PEP 1](https://peps.python.org/pep-0001/))
+
+Det är ett mönster, inte ett anti-pattern. Men det som gör det bärbart är att rollen är
+**skild från skribenten** och har **flera innehavare**.
+
+### Att Python övergav det — belagt av en editor själv
+
+I tråden *"Confusion about assignment of PEP numbers"* på Pythons eget forum skriver
+Hugo van Kemenade, PEP-editor:
+
+> *"Some background: it used to be that PEPs were opened as 9999, then a PEP editor
+> would come along later and assign the number. But we can skip that and let the author
+> take the next available right away."*
+
+([discuss.python.org/t/38481](https://discuss.python.org/t/confusion-about-assignment-of-pep-numbers/38481))
+
+Det är flaskhals-kritiken som vinner, i förstapartskälla, uttalad av auktoriteten själv.
+Steget "en aktör mintar" togs bort därför att det bara var **latens** — editorn tillförde
+inget utöver ett nummer författaren kunde hämta själv.
+
+**Vad som ersatte det är intressantare än att det togs bort.** Inte en mekanism, utan
+ett *uppslagsverktyg* som gör gissningen till en läsning. Samma editor, samma tråd:
+*"my little PEP CLI can help find the next available number"* — verktyget är `pepotron`,
+och dess `pep next` gör exakt ett: *"Check published PEPs and open PRs to find the next
+available PEP number."* ([hugovk/pepotron](https://github.com/hugovk/pepotron))
+
+**Verktyget reserverar ingenting.** Det läser publicerade PEP:ar *och öppna PR:er* och
+föreslår nästa lediga. Precis den operation vår nuvarande form gör för hand.
+
+### Den skarpaste formuleringen i hela passet
+
+Python löser inte kollisionen. De **krymper fönstret** och accepterar resten öppet. Hugo,
+samma tråd, om arbetsgången:
+
+> *"Use 9999 when drafting. When they're happy it's ready for submission, check the next
+> available number, rename, and open the PR. It's unlikely for that number to be taken by
+> someone else during those couple of minutes."*
+
+Och tidigare i tråden, som varning:
+
+> *"So to avoid confusion, I suggest avoiding using 735 [...] until that time, as another
+> PEP may claim the number first."*
+
+Det är en explicit, medveten **risk-acceptans från en aktiv auktoritet i ett 25-årigt
+flöde**: tilldela numret så sent som möjligt, håll fönstret till minuter, och lev med
+resten. Formen är alltså inte (i), (ii) eller (iii) i renodling — den är *(iii) utan
+mekanism*: sen tilldelning som **disciplin**, med en risk som bedöms försumbar därför
+att fönstret är kort.
+
+EIP behåller auktoriteten och ger den i stället makt att **rätta i efterhand**: *"editors
+can reassign if number sniping is suspected"* ([EIP-1](https://eips.ethereum.org/EIPS/eip-1)).
+Två olika svar på samma restrisk — krympa fönstret, eller behåll rätten att rätta.
+
+### Kritiken mot den centrala auktoriteten — och vad jag inte kunde belägga
+
+Jag sökte aktivt efter dokumenterad flaskhals-kritik mot EIP-editorerna och **nådde inte
+en användbar förstapartskälla**. Läget rakt:
+
+- `ethereum/EIPs` issue #2173, *"EIP Editor Criteria (process for new editors)"*, öppnades
+  med konstaterandet att *"There have been discussions about adding more people as
+  editors, but there is no PR with a process proposal in this repository, at this time."*
+  Jag hämtade kommentarerna via GitHub:s API: **de innehåller enbart två inlägg från
+  `github-actions[bot]`** om inaktivitet, och issuen stängdes av bristande aktivitet. Den
+  bär alltså ingen substantiell diskussion.
+- ERC-utbrytningen ur EIPs-repot är **belagd som faktum** i Ethereums eget repo — *"Please
+  note that ERCs were recently separated from the EIPs repo"*
+  ([ethereum/ERCs](https://github.com/ethereum/ERCs)) — men repot anger **inget skäl**.
+- Att skälet var editor-brist och PR-volym förekommer i tredjepartsrapportering
+  ([etherworld.co](https://etherworld.co/eip-repository-faces-impending-division-a-split-on-the-horizon/)),
+  attribuerat till Pooja Ranjan. **Jag kunde inte belägga det i förstapartskälla och
+  bokför det därför som obelagt.**
+
+### Domen, och varför den inte översätts rakt till oss
+
+"En aktör mintar" är **etablerat, inte anti-pattern** — men i en form vår kandidat (i)
+inte har. Hos PEP och EIP är mintaren en **separat roll utanför skrivflödet, med flera
+innehavare**. Vår (i) är "en av 2–3 parallella orkestrerar-sessioner mintar, övriga
+rapporterar behov" — alltså en mintare som **samtidigt är skribent**, utvald ad hoc per
+tillfälle, utan roll-kontinuitet.
+
+Det är inte PEP-mönstret. Det är närmare det steg Python **tog bort**, plus ett
+samordningskrav mellan jämlikar som PEP aldrig hade. Precedenten stödjer alltså formen
+*auktoritet skild från skribent*; den stödjer inte formen *en av de parallella
+skribenterna är auktoritet den här gången*.
 
 ## Delfråga 3 — Vad säger distribuerade system, och var slutar de hjälpa?
 
