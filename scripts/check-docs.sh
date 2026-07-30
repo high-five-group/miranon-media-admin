@@ -6,7 +6,7 @@
 # tre kördes vid två separata tillfällen samma dag, av två olika aktörer, och
 # de missade grindarna föll först i CI — ~9 minuter per träff bakom
 # staging-låset. Ett kommando som kör allt är billigare än ett minne som ska
-# hålla nio poster.
+# hålla tio poster.
 #
 # ÄRLIGHETS-KRAVET (L351-klassen: en guard som är fel i halva sitt område får
 # läsaren att sluta leta). Skriptet får ALDRIG rapportera grönt på ett sätt som
@@ -31,7 +31,7 @@
 # Detaljerna, inklusive att `npm --if-present` gäller ett saknat SCRIPT och
 # aldrig en saknad BINÄR, står i passets § "Varför tri-state-kravet fäller alla".
 #
-# SCOPE — de nio CI-grindar som kan gå fel för att dokumentation rörts:
+# SCOPE — de tio CI-grindar som kan gå fel för att dokumentation rörts:
 #   ci.yml docs-jobbet (villkorat på docs_changed):
 #     1. lychee link check          — kräver lychee-binär, SKIPPAS om den saknas
 #     2. markdownlint-cli2
@@ -43,6 +43,7 @@
 #     7. scripts/check-public-checklists.sh
 #     8. scripts/check-adr-count.sh
 #     9. scripts/check-lesson-numbers.sh
+#    10. scripts/check-permissions-claims.sh
 #
 # Grindar som medvetet INTE ingår: Biome, typecheck, audit, actionlint,
 # yamllint, shellcheck, testsviten. De är kod-grindar — `npm run lint` +
@@ -153,6 +154,7 @@ run_gate "Lifecycle på sessionsdok + trådkort" bash scripts/check-lifecycle.sh
 run_gate "Publika docs — oavklarade checklist-poster" bash scripts/check-public-checklists.sh
 run_gate "ADR-räkningens konsistens" bash scripts/check-adr-count.sh
 run_gate "Lesson-numrering (nummer vid landning)" bash scripts/check-lesson-numbers.sh
+run_gate "Permissions-påståenden (prosa som påstår mekanism)" bash scripts/check-permissions-claims.sh
 
 # --- Sammanfattning -------------------------------------------------------
 printf '\n\033[1m─────────── check:docs ───────────\033[0m\n'
@@ -185,5 +187,5 @@ if [[ ${#SKIPPED[@]} -gt 0 ]]; then
     exit 0
 fi
 
-printf '\n\033[32mcheck:docs grönt — samtliga nio dokumentations-grindar körda.\033[0m\n'
+printf '\n\033[32mcheck:docs grönt — samtliga tio dokumentations-grindar körda.\033[0m\n'
 exit 0
