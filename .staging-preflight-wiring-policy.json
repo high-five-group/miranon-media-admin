@@ -1,0 +1,99 @@
+{
+  "preflightSymbol": "kravStagingLedigt",
+  "playwrightConfig": "playwright.config.ts",
+  "playwrightCli": "node_modules/@playwright/test/cli.js",
+  "playwrightProjekt": [
+    {
+      "namn": "api-setup",
+      "klass": "bärare",
+      "skäl": "Setup-projektet som bär TASK-77:s hake. Dependency för api-staging OCH kontraktsvakt — båda sviterna ärver preflighten härifrån."
+    },
+    {
+      "namn": "setup",
+      "klass": "bärare",
+      "skäl": "E2E-auth-setupen. Dependency för chromium-authenticated — hela e2e-sviten mot staging bär preflighten härifrån."
+    },
+    {
+      "namn": "preview-setup",
+      "klass": "bärare",
+      "skäl": "TASK-84:s tillskott. staging-preview var det enda staging-rörande projektet utan setup-förälder och fick en, i stället för en andra hake-form."
+    },
+    {
+      "namn": "api-staging",
+      "klass": "konsument",
+      "viaSetupProjekt": "api-setup"
+    },
+    {
+      "namn": "kontraktsvakt",
+      "klass": "konsument",
+      "viaSetupProjekt": "api-setup"
+    },
+    {
+      "namn": "chromium-authenticated",
+      "klass": "konsument",
+      "viaSetupProjekt": "setup"
+    },
+    {
+      "namn": "staging-preview",
+      "klass": "konsument",
+      "viaSetupProjekt": "preview-setup",
+      "env": { "PLAYWRIGHT_STAGING_PREVIEW": "1" }
+    },
+    {
+      "namn": "api-pure",
+      "klass": "undantagen",
+      "skäl": "Creds-fria enhetstester. testIgnore:ar både *.staging.test.ts och setup-filen — når aldrig staging-basen."
+    },
+    {
+      "namn": "acceptance",
+      "klass": "undantagen",
+      "skäl": "Hermetisk fixturvärld (ADR-080): appen binder mot den fiktiva fixtur-URL:en och hermetik-vakten fäller varje otäckt nätverksanrop."
+    },
+    {
+      "namn": "a11y",
+      "klass": "undantagen",
+      "skäl": "Kör axe mot DEV-guardade demoytor (/dev/primitives, /dev/patterns) — komponentrendering utan data-anrop mot staging-basen. Samma domslut som .staging-semaphore-policy.conf gör om CI-jobbet \"A11y (axe-runner)\"."
+    },
+    {
+      "namn": "visual-desktop",
+      "klass": "undantagen",
+      "skäl": "Fixturvärld med mockat nätverk (task-36.7 AC 4: noll staging-beroende)."
+    },
+    {
+      "namn": "visual-mobile",
+      "klass": "undantagen",
+      "skäl": "Fixturvärld med mockat nätverk (task-36.7 AC 4: noll staging-beroende)."
+    }
+  ],
+  "nodeSkript": [
+    {
+      "sökväg": "scripts/purge-staging-sentinels.mjs",
+      "funktion": "main",
+      "skäl": "Purge-jobbets kodväg. En lokal purge samtidigt med CI:s \"Staging sentinel purge\" är TASK-76:s race med en aktör ingen av mutexarna ser."
+    },
+    {
+      "sökväg": "scripts/seed-review-fixture.mjs",
+      "funktion": "main",
+      "skäl": "Granskningsfixturen (seed:review + seed:review:clean). En CI-purge mitt i körningen städar bort data Marcus granskar."
+    }
+  ],
+  "nodeSkriptUpptäckt": {
+    "kataloger": ["scripts"],
+    "filändelser": [".mjs", ".sh"],
+    "markörer": ["STAGING_AIRTABLE_TOKEN", "apphjj8Q7lkXCMsL4", "api.airtable.com"],
+    "undantagna": [
+      {
+        "sökväg": "scripts/test-purge-staging-sentinels.mjs",
+        "skäl": "Hermetisk testsvit — mockar globalThis.fetch med save/restore och når aldrig basen. Verifierad utan token och med fetch spärrad till throw (TASK-82)."
+      },
+      {
+        "sökväg": "scripts/test-seed-review-fixture.mjs",
+        "skäl": "Hermetisk testsvit — importerar de pura guard-funktionerna; skriptets enda env-läsning ligger i main(), som bara körs som CLI (TASK-82)."
+      },
+      {
+        "sökväg": "scripts/test-check-staging-preflight-wiring.mjs",
+        "skäl": "Vaktens egen testsvit. Skriver markör-bärande fixturfiler till en sandlåda i /tmp för att pröva upptäckten; öppnar ingen förbindelse."
+      }
+    ]
+  }
+}
