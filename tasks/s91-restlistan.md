@@ -271,14 +271,25 @@ också bär alla fem i sin § Beslut. **Inga öppna poster.**
 - [ ] **A2:10 ·** `lessons-hub-sync`-skillen (hub) uppdateras med
       konsolideringssteget — kräver plugin-bump (öppen post ur ADR-081).
       **Förkrav för Spår C:s konsolidering** (steg 6b), som annars inte är körbar
-- [ ] **A2:11 · Steg 3-beslutet om agent-isolering — VILAR PÅ MÄTNING, ej åsikt.**
+- [ ] **A2:11 · Steg 3-beslutet om agent-isolering — MÄTNINGEN ÄR LÄST 2026-07-30.**
       Steg 1 (typade agenter, `#327`) och steg 2 (icke-blockerande mätning,
-      `npm run metrics:agents`) är byggda 2026-07-28. **Läs mätningen efter ~en
-      vecka skarpt bruk** och avgör då om `permissions.deny` (steg 3) eller en
-      korrigerande `updatedInput`-hook (steg 4) behövs — eller om steg 1 räckte.
-      Hooken är BEVISAD att fungera (research-passet), så steg 4 är en
-      verkställighetsfråga, inte en osäkerhet. Faller mätningen ut som
-      "inget läckage" är rätt åtgärd att INTE bygga mer.
+      `npm run metrics:agents`) är byggda 2026-07-28. **Mätningen kördes
+      2026-07-30** — tidigare än den "~en vecka" posten föreskrev, men efter ett
+      tiotal spawns, och utfallet är entydigt: **`bygg-agent` 16/16 isolerade ·
+      `research-pass` 8/8 isolerade** (frontmatter fyrar 100 % för de typer vi
+      själva definierat). Allt läckage sitter i **inbyggda** typer utan vår
+      frontmatter: `general-purpose` 0/18 · `Explore` 0/5 ·
+      `claude-code-guide` 0/5.
+      **Slutsatsen är att steg 1 RÄCKTE, och steg 3/4 är fel hävstång** — de
+      skulle tvinga isolering på övervägande läsande agenter. Men posten stängs
+      INTE mot den slutsatsen ännu, av ett skäl mätningen själv avtäckte:
+      **skriptets klassning "en rent läsande agent behöver ingen worktree" är
+      sann om repot och missvisande om scratchpad.** Våra två mätagenter var
+      `general-purpose`, de skrev, och de kolliderade — i scratchpad, inte i
+      repot. Worktree-isolering är **ortogonal** mot den kollisionen och hade
+      inte hjälpt. Se punkt 7 nedan; besluta posterna tillsammans.
+      *(`permissions.deny` nämns här som PLANERAD åtgärd — den finns inte i
+      någon settings-fil, och har aldrig påstått göra det.)*
 - [ ] **Punkt 7 — partitionerings-regeln** (ADR-073 utsträckt till Marcus egna
       parallella sessioner, ej bara agenternas).
       **KONVERGERAR DELVIS med worktree-isoleringen (`#327`, 2026-07-28) — men
@@ -291,6 +302,26 @@ också bär alla fem i sin § Beslut. **Inga öppna poster.**
       tyst överskrivning vid sekventiell landning. Före isolering delade de
       åtminstone arbetsträd. Isoleringen löser alltså en del av A2:7 och
       förvärrar en annan; det gör regeln mer angelägen, inte mindre.
+      **A2:7 DELAD 2026-07-30 på Marcus beslut — och båda halvorna har svar:**
+      *Nummerhalvan* är `TASK-93`: `ADR-081` beslut 4:s påstående *"Kort: redan
+      löst"* är **mätt falskt** (två arbetsträd allokerade båda `task-4`), och
+      verktyget bär redan skyddet — `check_active_branches` står `false` hos oss
+      mot tillverkarens `true`, satt som init-default vid instansens födelse och
+      aldrig omprövat. *Filnamnshalvan* är **framkallad och avgränsad**: sökvägen
+      är härledd ur `CLAUDE_CODE_SESSION_ID` och ärvs av subagenter
+      (strukturell design — *"Subagents run in the same process as the parent
+      session"*), `Write` skyddas av en read-before-write-spärr som gäller
+      **per agent-kontext**, men skalomdirigering går rakt igenom tyst.
+      **Ordentlig mekanism finns bara där agenten inte behöver Bash** (`tools`
+      som allowlist, `sub-agents.md` rad 279–280/340) — vilket utesluter
+      `bygg-agent` och `research-pass`. För dem är konventionen allt vi har, och
+      den är landad i `bygg-agent.md` **deklarerad som konvention**.
+      En `updatedInput`-hook som omdirigerar sökvägar är **medvetet EJ byggd**:
+      den måste parsa skal, och Anthropics egen kommandoanalys i
+      `isolation: worktree` failar stängt på det den inte kan analysera
+      (*"A command too complex to check also fails"*) — vilket skulle bryta våra
+      egna mätskript. Belägg:
+      `docs/research/harness-namnrymd-agenter-2026-07-30.md`.
       **VAD SOM STÅR KVAR EFTER A7 — belagt 2026-07-28, inte antaget:**
       (a) **staging-basen är EN delad resurs** — A7:5 flyttar mutexen ur
       PR-grinden men avvecklar den inte; två parallella spår köar fortfarande,

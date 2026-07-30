@@ -60,9 +60,22 @@ Lokal exit 0 garanterar inte grön CI. Svagare lokal variant är inte verifierin
 verktygets:
 
 ```bash
-verktyg > /tmp/ut.txt 2>&1; KOD=$?     # rätt
-verktyg | tail -5; echo "exit=$?"      # fel — läser tail
+verktyg > ut-$KORT_ID.txt 2>&1; KOD=$?   # rätt
+verktyg | tail -5; echo "exit=$?"        # fel — läser tail
 ```
+
+**Namnge varje temporärfil med ditt kort-ID.** Scratchpad-katalogen är härledd ur
+sessions-ID:t och **delas med alla agenter din session startar** — mätt
+2026-07-30: två parallella agenter fick identisk sökväg, och den ena skrev över
+den andras fil. `Write`-verktyget har en read-before-write-spärr som fångar det,
+men **skalomdirigering har ingen** — den skriver över tyst, exit 0. Den farliga
+varianten är mätdata: skriver du `matning.json` och läser tillbaka den efter att
+en annan agent skrivit sin, får du fel tal utan felmeddelande.
+
+Detta är en **konvention, inte en mekanism** — inget hindrar dig från att bryta
+den. Skälet att den ändå står här: den enda kanal som saknar spärr är också den
+här filens eget exempel, och tidigare löd exemplet `> /tmp/ut.txt`.
+Belägg: `docs/research/harness-namnrymd-agenter-2026-07-30.md`.
 
 **En lokal mätning projicerad till CI är inte en mätning.** Påstå aldrig en
 CI-kostnad du inte mätt i CI; skriv annars explicit att talet är lokalt.
