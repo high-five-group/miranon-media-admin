@@ -50,6 +50,13 @@ Delfråga 2 gav dessutom den strukturella förklaringen till att sökvägen dela
 den är inte en bugg: subagenter **kör i samma process** som föräldersessionen och
 har därför per konstruktion samma sessions-temp-katalog.
 
+**Den starkaste mekanismen kom med tilläggsuppdraget och är inte alls den vi
+letade efter.** `disallowedTools` och `tools` i subagent-frontmatter finns,
+är dokumenterade, och jag **mätte** att de tar bort verktyg helt. En läsagent kan
+alltså fråntas `Bash` — då är överskrivning inte avrådd utan omöjlig. Det är
+`ADR-079`-formen (borttagen möjlighet slår skriven regel), och den gör frågan om
+scratchpad-sökvägen mindre viktig än den såg ut.
+
 ## Våra fem påståenden — dom per rad
 
 | # | Påstående (vår formulering) | Dom | Grund |
@@ -62,6 +69,10 @@ har därför per konstruktion samma sessions-temp-katalog.
 
 Raden som avgör beslutet är **3**, inte 5. Påstående 5 höll — men det var aldrig
 det som bar slutsatsen.
+
+Den andra uppsättningen påståenden — de från claude.ai-konversationen — har sin
+egen tabell under § Andra uppsättningen påståenden. **Prioritet 1 där håller, och
+väger tyngre än något i tabellen ovan.**
 
 ## Delfråga 1 — kan scratchpad-sökvägen sättas eller påverkas?
 
@@ -293,7 +304,73 @@ Ordningen som följer av delfrågan är alltså: **`permissions.deny` och
 
 ## Delfråga 5 — rekommenderar Anthropic något mönster för parallella agenters temporärfiler?
 
-(ej besvarad än — pass pågår)
+**Ja för isolering, nej för namndisciplin.** Anthropic har ett tydligt, upprepat
+mönster för parallella agenter — men det är *isolering av arbetsyta*, inte
+namnkonventioner. Jag hittade **ingen** förstapartsvägledning som säger "namnge
+agent-artefakter per agent-ID för att undvika överskrivning". Den tomma delen är
+ett förstaparts-negativ efter en bred sökning, inte ett glapp i sökrymden.
+
+**Beslutsregeln, ordagrant** ([agents](https://code.claude.com/docs/en/agents)):
+
+> *"**Do the tasks touch the same files?** Isolate the work with worktrees.
+> Subagents and sessions you run yourself can each use a separate worktree. Agent
+> teams don't isolate teammates in worktrees, so partition the work so each
+> teammate owns a different set of files."*
+
+**Det enda stället där Anthropic uttryckligen kopplar en temp-sökväg till
+kollisionsundvikande** är bakgrundssessioners scratch-katalog
+([agent-view](https://code.claude.com/docs/en/agent-view) § Where state is stored):
+
+> *"Each background session has the `CLAUDE_JOB_DIR` environment variable set to
+> its `~/.claude/jobs/<id>` directory, so shell commands the session runs can
+> write temporary files to `$CLAUDE_JOB_DIR/tmp` **without colliding with parallel
+> sessions**."*
+
+Det är formen vi föreslår i delfråga 6 — per-ID-katalog, motiverad med just
+kollision — men den gäller *bakgrundssessioner*, inte subagenter, och erbjuds som
+en miljövariabel vi inte får för subagenter.
+
+**Och när isolering inte är möjlig** är hela vägledningen
+([agent-teams](https://code.claude.com/docs/en/agent-teams) § Avoid file conflicts):
+
+> *"Two teammates editing the same file leads to overwrites. Break the work so
+> each teammate owns a different set of files."*
+
+Ingen låsning, inga suffix, inga namnregler. **Agent SDK:t** är mer explicit om
+*varför* ([agent-sdk/hosting](https://code.claude.com/docs/en/agent-sdk/hosting)):
+
+> *"Give each agent its own working directory so they do not overwrite each
+> other's files, and isolate settings loading so per-agent `CLAUDE.md` files do
+> not leak across agents."*
+
+**Precedens för ID-nycklad namngivning finns — men i Anthropics egna system, inte
+som råd till oss.** Två fall, som måste citeras som *observerad praxis*:
+
+- Agent teams-arkitekturen: *"Each agent's mailbox is a JSON file at
+  `~/.claude/teams/{team-name}/inboxes/{agent-name}.json`"*, med team-namn
+  härlett ur sessions-ID
+  ([agent-teams](https://code.claude.com/docs/en/agent-teams) § Architecture).
+- C-kompilator-posten, där **git är kollisionsdomaren**
+  ([building-c-compiler](https://www.anthropic.com/engineering/building-c-compiler)):
+  *"Claude takes a 'lock' on a task by writing a text file to `current_tasks/`…
+  If two agents try to claim the same task, git's synchronization forces the
+  second agent to pick a different one."*
+
+**Två negativa fynd värda att registrera.** Multi-agent-research-posten
+rekommenderar filsystemet för artefakter — *"Subagent output to a filesystem to
+minimize the 'game of telephone'"*
+([multi-agent-research-system](https://www.anthropic.com/engineering/multi-agent-research-system))
+— men är tyst om temporärfiler, namngivning och kollisioner; delpasset
+grep-verifierade det mot rå HTML. Och Anthropics *egna* publicerade
+multi-agent-prompter i `claude-cookbooks` har noll filartefakt-hantering:
+subagent-resultat returneras via kontext. Blogginläggets rekommendation är alltså
+inte implementerad i deras egen publicerade referens.
+
+**Slutsats för vår del:** vår föreslagna form har **ingen publicerad
+förstapartsrekommendation** bakom sig. Den har däremot leverantörens egen praxis
+på tre ställen (`tasks/<agentId>.output`, `$CLAUDE_JOB_DIR/tmp`,
+`inboxes/{agent-name}.json`). **Precedens-rymden för "namnge per agent-ID" som
+publicerat råd är tom — det deklareras öppet här snarare än att räknas upp.**
 
 ## Delfråga 6 — om påstående 5 faller, vad blir den ordentliga formen?
 
@@ -359,7 +436,143 @@ en agent faktiskt observeras skriva utanför sitt prefix. Bygg **ingen hook** f�
 detta: Anthropic avråder uttryckligen från hooks som hård grind, och en hook som
 ska fånga `tee` och `python -c` syntaktiskt kommer att läcka.
 
-## Vad detta betyder för beslutet
+## Andra uppsättningen påståenden — från claude.ai-konversationen
+
+Prövade som hypoteser, bedömda mot **2.1.220**.
+
+### Prioritet 1 — verktygsåtkomst kan begränsas i frontmatter: **HÅLLER**
+
+**Båda fälten finns, och de gör precis vad påståendet säger.** Ordagrant ur
+[sub-agents.md](https://code.claude.com/docs/en/sub-agents.md):
+
+- rad 279, `tools`: *"Tools the subagent can use. Inherits every tool available to
+  subagents if omitted."*
+- rad 280, `disallowedTools`: *"Tools to deny, removed from inherited or specified
+  list."*
+- rad 340: *"To restrict tools, use the `tools` field as an allowlist or the
+  `disallowedTools` field as a denylist. This example uses `tools` to allow only
+  Read, Grep, Glob, and Bash. The subagent can't edit files, write files, or use
+  any MCP tools."*
+- rad 360, samspelet: *"If both are set, `disallowedTools` is applied first, then
+  `tools` is resolved against the remaining pool. A tool listed in both is
+  removed."*
+- rad 364, MCP-mönster: `mcp__<server>` och `mcp__<server>__*` fungerar i båda
+  fälten; i `disallowedTools` tar `mcp__*` bort **alla** MCP-verktyg.
+
+**Vad händer med verktyg agenten ändå försöker anropa?** Verktyget finns inte i
+dess uppsättning — det är inte en avvisning vid anrop, utan en frånvaro. Och om
+`tools` tömmer uppsättningen helt (rad 362): *"Claude Code usually refuses to
+launch the subagent and the Agent tool returns an error naming the unresolved
+entries."*
+
+**Mätt, inte bara citerat.** Jag körde en CLI-definierad agent mot vår faktiska
+version:
+
+```bash
+claude -p "…" --agents '{"nobash":{…,"disallowedTools":["Bash","Write","Edit"]}}' \
+  --agent nobash
+```
+
+Utfall (exit 0): agenten svarade **`SAKNAR-BASH`** och verifierade självt att Bash
+inte fanns ens som deferred verktyg via `ToolSearch`. Dess faktiska uppsättning
+var `Agent, Read, Skill, ToolSearch, Workflow, ReportFindings, ScheduleWakeup`.
+**Möjligheten var borta, inte avrådd** — exakt den distinktion `ADR-079` mätte.
+
+**Men mätningen avslöjade två fällor som gör en naiv konfiguration otillräcklig.**
+
+1. **`disallowedTools: Edit` tar inte bort `NotebookEdit`.** Den låg kvar bland
+   agentens deferred verktyg. Verktygsnamnen är distinkta, så en "läsagent" som
+   nekar `Bash`, `Write` och `Edit` kan **fortfarande skriva filer** via
+   `NotebookEdit`. Det måste anges separat.
+2. **En agent utan Bash kan spawna en agent med Bash.** Mätagenten behöll
+   `Agent`-verktyget och konstaterade det självt: den kunde nå filsystemet
+   *"endast via subagenter (t.ex. `bygg-agent`, som har alla verktyg)"*. Utan att
+   också stänga `Agent` är begränsningen ett staket med grind i.
+
+Den andra fällan har en dokumenterad motmekanism (rad 862): *"At the depth limit,
+Claude Code withholds the `Agent` tool from every subagent except a fork."* Men
+vårt default-djup är 3, så gränsen nås inte av en agent på nivå 1.
+
+### Prioritet 2 — vad worktree-isoleringen delar: sektionen finns, och temp nämns inte
+
+Sektionen orkestreraren mindes finns, och den är uttömmande uppräknad
+([worktrees.md](https://code.claude.com/docs/en/worktrees.md) § What worktrees
+share with the main checkout):
+
+> *"A worktree gets its own files and branch, but it shares the repository's
+> `.git` directory, project-scope plugins, and saved permission approvals with the
+> main checkout."*
+
+Tre poster: `.git`, project-scope-plugins, permission-approvals.
+**Temporär- eller scratchpad-kataloger nämns inte — varken som delade eller som
+isolerade.** Det är svaret på delfråga 1:s kärna: dokumentationen *deklarerar
+aldrig* scratchpad-delningen. Den följer i stället av processmodellen
+(sandboxing.md § Scope), och den kopplingen får läsaren göra själv.
+
+Om läckaget: changelog-raden om att `isolation: worktree` kunde köra
+git-muterande kommandon mot huvudcheckouten är åtgärdad, och skyddet är i dag
+dokumenterat i tre lager (rad 265, 267, 269) — arbetskatalogkontroll, kontroll
+över hela repot, och sedan **2.1.216** en inspektion av Bash-kommandots innehåll.
+Det är den grind jag utlöste tre gånger under passet. Dessutom
+([worktrees.md](https://code.claude.com/docs/en/worktrees.md)): *"While an agent
+is running, Claude runs `git worktree lock` on its worktree so that concurrent
+cleanup cannot remove it."*
+
+### Prioritet 3 — övriga påståenden
+
+| Påstående | Dom | Källa |
+|---|---|---|
+| Subagenter kör i bakgrunden **som standard** sedan v2.1.198 | **HÅLLER** | *"As of v2.1.198, subagents run in the background by default. Claude runs a subagent in the foreground when it needs the result before continuing."* (sub-agents.md rad 770) |
+| Bakgrundssubagenter får en **mindre** verktygsuppsättning | **HÅLLER** — och listan är exakt | Rad 336: bakgrundssubagent behåller alla MCP-verktyg men bara `Read`, `Grep`, `Glob`, `Bash`, `PowerShell`, `Edit`, `Write`, `NotebookEdit`, `WebFetch`, `WebSearch`, `TodoWrite`, `Skill`, `ToolSearch`, `EnterWorktree`, `ExitWorktree`, `Monitor`, `TaskStop`, `SendMessage`, `Artifact`. Gäller *"whether inherited or listed in the `tools` field"* |
+| Nästling: default djup 3 | **HÅLLER** | `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`, *"Set `1` to turn nesting off"* (rad 866–876) |
+| Vid djupgränsen **undanhålls** `Agent`-verktyget | **HÅLLER** | *"At the depth limit, Claude Code withholds the `Agent` tool from every subagent except a fork"* (rad 862). Undantaget för forks är värt att notera |
+| Tredelningen subagent · bakgrunds-subagent · bakgrundssession | **HÅLLER** — tre distinkta begrepp | sub-agents.md + [agent-view.md](https://code.claude.com/docs/en/agent-view.md) |
+| Bakgrundssessioner flyttar sig automatiskt till worktree före filredigering, committar, öppnar draft-PR, pushar aldrig till `main` | **HÅLLER** | [agent-view.md](https://code.claude.com/docs/en/agent-view.md): *"Before editing files, Claude moves the session into an isolated git worktree under `.claude/worktrees/`"* |
+| Subagenter listas **inte** som egna rader i agent view | **OBELAGT** | Varken bekräftat eller dementerat i dokumentationen. Not: subagent-panelen under prompten visar hela trädet (rad 880) — men det är inte agent view |
+| Subagenters utdata **skannas** före huvudkonversationen | **HÅLLER** | sub-agents.md rad 794–805; kräver v2.1.210+. Skanningen markerar men *dömer inte* om innehållet är skadligt |
+| `Explore` och `Plan` hoppar över CLAUDE.md och git-status | **HÅLLER** | *"Explore and Plan skip your CLAUDE.md files and the parent session's git status… Every other built-in and custom subagent loads both."* (rad 33) |
+| Frontmatter-fälten `model` (inkl. `inherit`, `haiku`), `isolation`, `memory: project`, `skills`, `background` finns | **HÅLLER, alla fem** | rad 281 (`model`, *"Defaults to `inherit`"*), 284, 287, 288, 290 |
+| `/fork` kopierar konversationen till ny bakgrundssession från v2.1.212; tidigare beteende flyttat till `/subtask` | **HÅLLER** | sub-agents.md rad 994–1002 |
+| Tio parallella bakgrundssessioner drar kvot ~tio gånger snabbare | **OBELAGT** | Ingen dokumentation hittad om kvotförbrukning för parallella sessioner. Rimligt men obelagt |
+| Ett inbyggt `/deep-research`-workflow finns | **HÅLLER** | [commands.md](https://code.claude.com/docs/en/commands.md): *"A bundled workflow that fans out web searches, fetches sources, and synthesizes a cited report"* |
+| En `PreToolUse`-hook på Bash kan blockera eller **serialisera** dyra kommandon, och är "det dokumenterade mönstret när `tools` är för grovhugget" | **DELVIS — blockera HÅLLER, resten OBELAGT** | Blockering är dokumenterad. Ordet *serialisera* hittade jag inte, och Anthropic säger tvärtom *"use the permission system rather than a hook to enforce a hard allow or deny"* ([hooks.md](https://code.claude.com/docs/en/hooks.md)) |
+
+## Den konkreta konfigurationen för vårt fall
+
+Prioritet 1 höll, så här är formen — **förslag, inte beslut**, och de mätta
+fällorna ovan är inbakade.
+
+Vår `research-pass`-agent (den som skrev denna fil) behöver `Bash` för att köra
+`npm run check:docs` och `git`, så den kan inte tappa Bash. **Men den behöver
+aldrig `NotebookEdit`, och den behöver inte spawna skrivande agenter.** En ren
+läsagent — den klass mina fem delpass tillhörde — behöver varken `Bash`, `Write`,
+`Edit` eller `NotebookEdit`:
+
+```yaml
+---
+name: kall-lasare
+description: Läser primärkällor och returnerar destillat. Skriver aldrig.
+tools: Read, Grep, Glob, WebFetch, WebSearch
+model: haiku
+---
+```
+
+`tools` som **allowlist** är här att föredra framför `disallowedTools`, eftersom
+allowlisten är stängd som standard: ett nytt skrivande verktyg i en framtida
+version hamnar inte automatiskt i uppsättningen. En denylist måste underhållas
+varje gång Anthropic lägger till ett verktyg — och `NotebookEdit`-fällan visar
+att den underhållsskulden är verklig, inte teoretisk.
+
+**Vad detta skulle ha förhindrat i dagens mätta kollision.** Den tysta
+överskrivningen skedde via Bash-omdirigering (steg 4 i experimentet: exit 0, ingen
+prompt, ingen spärr). En läsagent utan `Bash` **kan inte utföra den operationen
+alls**. `Write`-vägen var redan blockerad av read-before-write (steg 5), så med
+`Bash` borta hade agenten haft noll vägar att skriva över en annan agents fil.
+Kollisionen hade varit strukturellt omöjlig, inte avrådd.
+
+Notera vad detta *inte* löser: agenter som **måste** ha Bash (bygg-agent,
+research-pass) står kvar oskyddade. För dem gäller namnkonventionen i delfråga 6,
+och i sista hand `sandbox.filesystem.denyWrite`.
 
 **Beslutet `"bygg inte alls"` bör omprövas, men inte av det skäl frågan förutsåg.**
 
@@ -381,9 +594,28 @@ Vad som *inte* ändrats: Bash-omdirigering är fortfarande oskyddad i vårt
 nuvarande läge, och nya filer är undantagna från read-before-write. Risken är
 alltså verklig — den är bara billig att stänga.
 
+**Tilläggsuppdraget flyttade rekommendationen ett steg längre.** Innan prioritet 1
+prövades var det minsta bygget en namnkonvention. Nu finns en billigare och
+starkare åtgärd: **ta bort `Bash` från agenter som inte behöver det.** Den kräver
+fyra rader frontmatter, inget underhåll av glob-mönster, ingen sandbox, ingen
+hook — och den gör dagens mätta kollision strukturellt omöjlig för hela den klass
+agenter som bara läser.
+
+Ordningen jag rekommenderar, billigast först:
+
+1. **`tools` som allowlist på rena läsagenter.** Löser klassen helt. Använd
+   allowlist, inte denylist — `NotebookEdit`-fällan visar varför.
+2. **Namnkonvention per agent-ID** för agenter som *måste* ha `Bash`
+   (`bygg-agent`, `research-pass`). Konventionen harnesset självt använder.
+3. **`sandbox.filesystem.denyWrite`** endast om steg 1–2 mätbart läcker.
+
+**Bygg ingen hook för detta.** Anthropic avråder uttryckligen från hooks som hård
+grind, och en hook som ska fånga `tee` och `python -c` syntaktiskt kommer att
+läcka.
+
 Min rekommendation är därför att vända beslutet från *"bygg inte alls"* till
-*"bygg det minsta: en namnkonvention per agent-ID"*, och att uttryckligen avstå
-från hook-vägen. **Beslutet är Marcus.**
+*"ta bort möjligheten där den inte behövs, och namnrymda där den behövs"*.
+**Beslutet är Marcus.**
 
 ## Vad jag inte kunde belägga
 
@@ -409,7 +641,18 @@ från hook-vägen. **Beslutet är Marcus.**
   strängen `scratchpad` inte förekommer i binären. Binären är 266 MB kompilerad
   (`claude.exe`), och jag verifierade inte greppet självständigt. Behandla det
   som obekräftat — inte som bevis för att sökvägen är hårdkodad utanför räckhåll.
-- **Delfråga 5 var vid denna revision inte stängd.** Se dess avsnitt.
+- **Om subagenter visas som egna rader i agent view.** Varken bekräftat eller
+  dementerat i dokumentationen.
+- **Kvotförbrukning för parallella bakgrundssessioner.** Påståendet om ~tiofaldig
+  förbrukning vid tio sessioner är rimligt men jag hittade ingen dokumentation.
+- **Varför `Grep` och `Glob` saknades i min mätagent** trots att de inte låg i
+  `disallowedTools`. Uppsättningen jag mätte var mindre än väntat. Jag har ingen
+  belagd förklaring; troligen ett filter kopplat till `--agent` som huvudsessions-agent,
+  men det är en hypotes och inte prövad.
+- **Att `tools`-allowlisten i § Den konkreta konfigurationen ger exakt den
+  uppsättningen.** Formen är dokumenterad och besläktad med den jag mätte, men
+  just den YAML-blocket är inte körd.
+- **Om "serialisera" är ett dokumenterat hook-mönster.** Hittade det inte.
 
 ## Källförteckning
 
@@ -432,7 +675,26 @@ Förstapartskällor, alla lästa som faktisk sida (inte via referat):
   [Environment variables](https://code.claude.com/docs/en/env-vars.md),
   [CLI reference](https://code.claude.com/docs/en/cli-reference.md) — genomgångna
   för scratchpad-nyckel, utan träff
+- [Run parallel sessions with worktrees](https://code.claude.com/docs/en/worktrees.md) —
+  § What worktrees share with the main checkout (tre poster, temp ej nämnd),
+  subagent-worktrees, `git worktree lock`
+- [Run agents in parallel](https://code.claude.com/docs/en/agents) — beslutsregeln
+  "isolera arbetsytan"
+- [Agent view](https://code.claude.com/docs/en/agent-view.md) —
+  `$CLAUDE_JOB_DIR/tmp` "without colliding with parallel sessions",
+  bakgrundssessioners worktree-flytt
+- [Agent teams](https://code.claude.com/docs/en/agent-teams) — partitionera
+  filägande; mailbox-layout per agent-namn
+- [Agent SDK hosting](https://code.claude.com/docs/en/agent-sdk/hosting) — egen
+  arbetskatalog per agent mot överskrivning
+- [Slash commands](https://code.claude.com/docs/en/commands.md) — `/deep-research`
+- [Building a C compiler](https://www.anthropic.com/engineering/building-c-compiler) —
+  git som kollisionsdomare
+- [Multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system) —
+  filsystem-artefakter; tyst om temp/namn/kollision
 
 Mätningar: Claude Code **2.1.220**, macOS, 2026-07-30. Kollisionsexperimentet
-(fem steg) och katalogkartläggningen (21 UUID-kataloger) kördes av mig; steg 2–4
-kördes av en subagent på mitt uppdrag och rapporterades ordagrant.
+(fem steg), katalogkartläggningen (21 UUID-kataloger) och `disallowedTools`-mätningen
+(`claude -p --agents … --agent nobash`, exit 0) kördes av mig; steg 2–4 i
+kollisionsexperimentet kördes av en subagent på mitt uppdrag och rapporterades
+ordagrant. Bash-worktree-grinden utlöstes skarpt tre gånger under passet, oavsiktligt.
