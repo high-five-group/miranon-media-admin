@@ -4,6 +4,7 @@ title: 'Skiva: worktree-städning in i avslutsrutinerna — session-paus och ses
 status: To Do
 assignee: []
 created_date: '2026-07-30 19:11'
+updated_date: '2026-07-30 21:32'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,13 +28,15 @@ En hub-ändring kräver plugin-bump + `claude plugin update` i samma landning (m
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Formen VALD och motiverad: rutin-steg i session-paus/session-end, mekanisk grind, eller båda — förkastade alternativ bär sina skäl
-- [ ] #2 Städningen är SÄKER per konstruktion: endast worktrees vars gren är verifierad förfader till main och vars träd är rent tas bort — verifierat per worktree, aldrig svepande
-- [ ] #3 Andra sessioners och andra aktörers worktrees rörs ALDRIG — regeln är utskriven och dess mekanism visad, inte antagen
-- [ ] #4 Tvåsidigt bevis: rutinen tar bort en landad worktree, och lämnar en olandad eller smutsig orörd
-- [ ] #5 Hub-ändringen landad med plugin-bump OCH claude plugin update körd i samma landning — versionen före och efter redovisad
-- [ ] #6 Grenar som frigörs av borttagen worktree hanteras eller lämnas medvetet — utfallet utskrivet, inte tyst
+- [x] #1 Formen VALD och motiverad: rutin-steg i session-paus/session-end, mekanisk grind, eller båda — förkastade alternativ bär sina skäl
+- [x] #2 Städningen är SÄKER per konstruktion: endast worktrees vars gren är verifierad förfader till main och vars träd är rent tas bort — verifierat per worktree, aldrig svepande
+- [x] #3 Andra sessioners och andra aktörers worktrees rörs ALDRIG — regeln är utskriven och dess mekanism visad, inte antagen
+- [x] #4 Tvåsidigt bevis: rutinen tar bort en landad worktree, och lämnar en olandad eller smutsig orörd
+- [x] #5 Hub-ändringen landad med plugin-bump OCH claude plugin update körd i samma landning — versionen före och efter redovisad
+- [x] #6 Grenar som frigörs av borttagen worktree hanteras eller lämnas medvetet — utfallet utskrivet, inte tyst
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
