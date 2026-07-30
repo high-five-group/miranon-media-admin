@@ -408,7 +408,7 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
 - [ ] **Skriv in kravet durabelt:** innan ett nytt skript/verktyg byggs ska
       verktygsvals-prövningen göras och **utfallet redovisas** — även när domen
       blir "bygg eget". Hör sannolikt i `CONTRIBUTING.md` eller som hub-regel.
-- [ ] **Retroaktiv redovisning för `check-lesson-numbers.sh`** — **kortad som `TASK-86`**. (Byggd i ADR-081.)
+- [x] **Retroaktiv redovisning för `check-lesson-numbers.sh`** — **`TASK-86` DONE 2026-07-30** (`#474`, ren addition 41/0). Gav ett nytt kort: `TASK-97` — agenten fann att `ADR-081`:s precedent-anspråk *"vår form exakt"* bara håller för **halva** formen, och deklarerade det öppet i stället för att tiga, men fick inte röra sektionen (dess AC #3 förbjöd det). (Byggd i ADR-081.)
       Prövningen gjordes delvis: towncrier, MADR #28 och Rust RFC 0002 lästes,
       och **mönstret** lånades — men ADR:n redovisar inte explicit varför
       towncrier inte togs som *verktyg*. De ärliga skälen (Python-verktyg i ett
@@ -430,7 +430,7 @@ Villkoret som föddes i A4 följer med: **lager 1 upphävt 2026-07-27, lager 2 s
 
 ### A5 · Efter grillningen
 
-- [ ] `TASK-36.8` — QA-vandringen (manuell testplan, riskanpassad CI)
+- [x] `TASK-36.8` — QA-vandringen (manuell testplan, riskanpassad CI). **Stängd 2026-07-30** på noteringarna; vandringen genomfördes 2026-07-25 (S88) men stängningen verkställdes aldrig. **Föräldern `TASK-36` stängd samma dag** — den var en fjärde, tidigare okänd träff i förälder/barn-klassen, funnen av `TASK-90`:s nya invariant och inte av något fyndkort. `T87`:s parkerade AC 7–8 i `36.7` följer med som öppen bokföring, ej dold av stängningen.
 
 Acceptance-klassens arton filer, kontraktsvakten och hermetik-självtestet är
 landade (`TASK-59`-familjen + `TASK-60`); utfallet med alla siffror står i
@@ -617,12 +617,46 @@ nedskriven empiri kostar att den måste återupptäckas genom att felet upprepas
 
 ## Spår E — Hygien och skuld
 
-- [ ] `save-segment`-läckan (**`TASK-87`**) — `app-segment-test+<uuid>` saknar target i
-      `.purge-staging-policy.json`, städas aldrig
-- [ ] `ZZ-GRANSKNING-S91` lever i staging (**`TASK-88`**, ej självstädande):
-      `npm run seed:review:clean -- --ort ZZ-GRANSKNING-S91`.
-      Verifierat 2026-07-27: `.purge-staging-policy.json` nämner den inte
-- [ ] `person-detail` kontra `TASK-52` — orsakskedjan ej verifierad (**`TASK-89`**)
+- [x] `save-segment`-läckan (**`TASK-87`**) — `app-segment-test+<uuid>` saknar target i
+      `.purge-staging-policy.json`, städas aldrig. **DONE 2026-07-30** (`#477`).
+      **665 poster räknade via två oberoende vägar före något rördes; inget
+      raderades i skivan.** Target ankrad i båda ändar, `linkGuard: true`
+      live-motiverad (0 av 665 bar länken — ingen no-op-broms). Testet läser
+      targeten **ur policyn på disk**, inte som kopia: en kopia hade gått grön
+      även mot en tom `targets`-lista. Läckan bekräftad i realtid — agentens
+      egen `test:api` skapade post 666 under mätningen.
+- [ ] `ZZ-GRANSKNING-S91` lever i staging (**`TASK-88`**, ej självstädande).
+      Verifierat 2026-07-27: `.purge-staging-policy.json` nämner den inte.
+      ⚠️ **STÄDKOMMANDOT OVAN FUNGERAR INTE — raden bar en osann åtgärd fram
+      till 2026-07-30.** `npm run seed:review:clean -- --ort ZZ-GRANSKNING-S91`
+      ger **exit 0 och *"Inget att städa"*** medan fixturen står kvar.
+      Rotorsak: `ZZ-GRANSKNING-S91` byggdes **för hand** 2026-07-26 — händelsen
+      som föranledde skriptet — och bär därför inte skriptets markörer, medan
+      skriptet identifierar fixturer enbart via sina egna (fail-safe).
+      **Fixturen är immun mot BÅDE purgen och sitt eget städkommando;
+      33 poster kvar, räknade mot basen.** Marcus godkände 2026-07-30 **att**
+      den får städas — vägen höll inte. Agenten vägrade handradering via MCP
+      (antimönstret skriptet finns för att avskaffa, utan bas-guard,
+      `protectedRecordIds`-spärr och länk-guard) och mintade **`TASK-95`** för
+      fixturens livstidsavslutning, sju former vägda, ingen vald.
+      **`TASK-88` STANNAR ÖPPEN med AC #2 obockad. Bocka INTE av denna rad
+      förrän fixturen faktiskt är borta ur basen.**
+      ⚠️ **Klassvarning:** denna post och `save-segment`-läckan ovan står
+      bokförda som samma klass av lucka i purge-policyn. **De har motsatta
+      rätta svar** — `app-segment-test` SKA ha en target, `ZZ-GRANSKNING-*`
+      ska ALDRIG ha en (skyddsräcke 2 är avsiktligt). En purge-target som
+      "fix" här hade rivit skyddet.
+- [x] `person-detail` kontra `TASK-52` — orsakskedjan ej verifierad (**`TASK-89`**).
+      **DONE 2026-07-30** (`#476`). Kedjan reproducerad med rad-referenser mot
+      deployad EF och repots eget schema. **`TASK-52`:s diagnos FALSIFIERAD i
+      motsatt riktning:** arrayen uppstår vid FÖRSTA motiveringen, inte vid
+      flera anmälningar — båda observerade personerna har `Antal anmälningar
+      (totalt)` = 1. Roten är att formelns ELSE-gren returnerar
+      rollup-referensen orörd medan fältet deklarerar `singleLineText`.
+      Registrerad som **fälla 46** i `data-model.md` (bas-maximeringens
+      kravspec, ej app-lapp). **Omätt led:** flerhet (>1 element) är inte
+      observerad någonstans, så varje rekommendation om "bevarad flerhet" vilar
+      på ett antagande; tre syskonfält bär samma formelmönster.
 
 ## Kort födda i S91 — utanför spåren ovan
 
@@ -900,3 +934,17 @@ skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
 **Två dispatcher utöver PR-raderna:** `30295150783` (genererade de sex
 bilderna) och `30297097792` (**beviset** — *"Inga baseline-ändringar"*, som
 stängde `TASK-54.2` DoD 7 och `TASK-54.3` DoD 5).
+
+### Artonde resumen — vågen (2026-07-30)
+
+| Datum | Vad | Ref |
+|---|---|---|
+| 2026-07-30 | **Worktree-skulden städad.** 16 avställda agent-worktrees borttagna, var och en verifierad som förfader till `main` och `dirty=0` före borttagning; lokala grenar **32 → 5**. Roten: städ-disciplinen skrevs för GRENAR, medan worktreen är en harness-artefakt vi aldrig modellerade — harnesset tar bara bort en **oförändrad** worktree, och en agent som levererat har per definition ändrat filer. Rutin-ändringen till `session-paus`/`session-end` kortad som **`TASK-94`** på Marcus beslut | `#473` |
+| 2026-07-30 | **`bygg-agent.md`:s motivering rättad på Marcus delegering** (*"DU avgör"*). Instruktionen *"armera INTE auto-merge"* står kvar; skälet `BEHIND` var upphävt av vår egen `CLAUDE.md` sedan kön mekaniserades — **en motsägelse inuti agentens egen läs-ordning**. Ny grund: diffen granskas före köning, kön ser inte två diffar som mergar rent men är fel tillsammans, agenten är blind för sina syskon | `#475` |
+| 2026-07-30 | **`autoMergeRequest`-regeln skriven fel och rättad öppet.** Påståendet *"alltid `null`"* generaliserades ur två avläsningar som båda mätte fel sak (den ena togs post-merge, då fältet nollas oavsett). Motbevisad av `#475` — PR:en som BAR texten. Svaret stod i `gh pr merge --help` hela tiden. Tillagt i samma sektion: **en köad gren kan inte uppdateras** (`GH006`; `--disable-auto` släpper inte låset, `gh` har ingen dequeue) | `#478` |
+| 2026-07-30 | **VÅG 1: sju bygg-agenter, noll röda körningar.** `TASK-86` `87` `89` `91` `92` **DONE**; `TASK-88` öppen med redovisat skäl. Ingen kollision mellan agenterna — `ci.yml` rördes av två kort på hunkar 286 rader isär, purge-policyn av ett enda | `#474` `#476` `#477` `#479` `#480` `#481` |
+| 2026-07-30 | **Fälla 46 registrerad** ur `TASK-89` + **tre lesson-fragment** [UNIVERSAL ×3], samtliga ur orkestrerarens egna fel: fail-open-vakten på ett påhittat SHA · regeln ur två felmätningar · ospårad bokföring som delad tillståndsyta. Fragment **55 → 58** | `#482` |
+| 2026-07-30 | **Nummerkollision, framkallad skarpt.** Orkestrerarens `TASK-95`/`96` låg **ospårade** medan en bygg-agent räknade från `main` — båda landade på `task-95`. Agenten gjorde allt rätt (upptäckte föråldrad worktree, ff:ade) och fick ändå ett upptaget nummer. Omnumrerat till **`TASK-97` via CLI:t**, inte för hand. Verktygets skydd hade **inte** hjälpt: konflikten låg mellan huvudträdet och en gren | `#482` |
+| 2026-07-30 | **`TASK-90` DONE — och grinden fällde sin egen orkestrerare.** Dess FÖRSTA skarpa körning efter landning fällde `TASK-17`/`19`/`36`, stängda en timme tidigare på en läsning av deras egna AC (noll) **utan att DoD-blocket lästes** — två punkter per kort är Marcus design-review. Substansen höll (samtliga 18 barn: DoD komplett, Done, verifierat mot disk), bokföringen inte. Efter kvittens: **173 kort, 0 inkonsistenta** | `#483` `#484` `#485` |
+| 2026-07-30 | **`.backlog-closure-policy.conf` lagd i CI:s shellcheck-scope** med fyrcellsbevis att raden bär (gammalt scope + trasig conf = **exit 0**, nytt scope + trasig conf = **exit 1**). Sidofynd rättat: scope-kommentaren sade *"5 sourced-config-filer"* medan listan bar sex — falsk räkning i just den kommentar som dokumenterar scopet, `ADR-083`-klassen | `#483` |
+| 2026-07-30 | **VÅG 2 utskickad:** `TASK-85` (listparitets-grinden, med ett tredje listpar registrerat som kandidat under dess AC #1) + `TASK-93` (kortnummer-kollisionen, nu med tre skarpa instanser bakom sig) | *(pågår)* |
