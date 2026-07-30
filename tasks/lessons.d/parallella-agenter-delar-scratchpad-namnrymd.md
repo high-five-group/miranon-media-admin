@@ -33,6 +33,42 @@ hade formen stått kvar orörd till nästa gång.
    Agenten kan inte veta att den har sällskap; bara den som spawnar vet.
 3. **Egen underkatalog per agent** om volymen växer.
 
+## Skärpt 2026-07-30 — framkallat i kontrollerat försök
+
+Fragmentet skrevs på ett andrahandsvittne. Felläget är sedan dess **framkallat**:
+två agenter med identiskt uppdrag fick samma sökväg och den ena skrev över den
+andra. Tre saker blev skarpare, och de ändrar var motmedlet ska sitta.
+
+**Sökvägen är härledd ur sessions-ID:t.** `CLAUDE_CODE_SESSION_ID` är exakt
+scratchpad-katalogens namn, och en subagent ärver den — *"Subagents run in the
+same process as the parent session"* (`code.claude.com/docs/en/sandboxing.md`).
+Delningen är alltså **strukturell design, inte en bugg**. Worktree-sidans sektion
+om delat tillstånd räknar upp `.git`, project-scope-plugins och
+permission-approvals; **temp-kataloger nämns inte alls**.
+
+**`Write` är skyddat — skalet är inte.** Harnessets read-before-write-spärr är
+**per agent-kontext**, alltså ett reellt cross-agent-skydd: en agent nekas skriva
+en fil den inte själv läst, även om en annan agent läst och skrivit den. Men
+`echo … > fil` från Bash går rakt igenom, exit 0, ingen varning. **Den tysta
+varianten kan bara uppstå via skalet** — och det är precis kanalen mätdata skrivs
+i (`flake-matserie.mjs`, `ci-metrics.mjs` tar alla `--utdir` från anroparen).
+
+**Punkt 3 ovan är prosa, inte mekanism.** Vi äger inte katalogen och kan inte
+konfigurera den; en egen underkatalog kräver att agenten skapar den, alltså att
+den följer en instruktion. Att kalla det mekanism är felklassen
+[[en-regel-som-pastas-mekaniserad-granskas-inte]].
+
+**Vad som DÄREMOT är mekanism, och var den biter:** `tools` som allowlist i
+agent-frontmatter tar bort verktyg helt (`sub-agents.md` rad 279–280, 340).
+Två fällor mätta: `disallowedTools: Edit` tar **inte** bort `NotebookEdit`, så
+använd allowlist aldrig denylist; och en agent utan Bash kan **spawna** en agent
+med Bash så länge den behåller `Agent`. Mekanismen hjälper alltså läsande
+agenttyper — men inte `bygg-agent` eller `research-pass`, som båda behöver Bash
+för att göra sitt jobb. Där är konventionen allt vi har, och den ska heta
+konvention.
+
+Belägg: `docs/research/harness-namnrymd-agenter-2026-07-30.md`.
+
 **Den generella formen:** när en isoleringsmekanism införs, fråga vad den
 FAKTISKT isolerar. Worktree-isoleringen löser filkonflikter i repot och läser
 därför som "agenterna är isolerade". Den säger ingenting om `/tmp`, om

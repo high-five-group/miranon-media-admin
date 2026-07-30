@@ -164,7 +164,14 @@ if (lackage.length > 0) {
     '\n  OBS: en ej isolerad spawn är INTE automatiskt ett fel. En rent\n' +
       '  läsande agent behöver ingen worktree. Siffran är underlag för\n' +
       '  bedömning, inte en domslut — läs typ och sammanhang innan steg 3\n' +
-      '  övervägs.',
+      '  övervägs.\n' +
+      '\n  MEN: "läsande" gäller REPOT, inte scratchpad. Worktree-isolering är\n' +
+      '  ORTOGONAL mot scratchpad-kollisioner — sökvägen är härledd ur\n' +
+      '  CLAUDE_CODE_SESSION_ID och ärvs av subagenter, så isolerade och\n' +
+      '  oisolerade agenter delar den lika. Mätt 2026-07-30: två läsande\n' +
+      '  general-purpose-agenter kolliderade i scratchpad. Denna kolumn kan\n' +
+      '  alltså inte användas för att bedöma den risken — se\n' +
+      '  docs/research/harness-namnrymd-agenter-2026-07-30.md.',
   );
 } else {
   console.log('\nInga oisolerade spawns i loggen.');
