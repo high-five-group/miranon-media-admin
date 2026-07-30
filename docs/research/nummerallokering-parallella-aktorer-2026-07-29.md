@@ -362,13 +362,331 @@ samordningskrav mellan jämlikar som PEP aldrig hade. Precedenten stödjer allts
 *auktoritet skild från skribent*; den stödjer inte formen *en av de parallella
 skribenterna är auktoritet den här gången*.
 
+## Mätning mot vårt eget substrat — ADR-081:s kort-undantag är FALSKT
+
+Detta stod inte i uppdraget. Det kom ur att jag vägrade citera ett påstående jag kunde
+pröva. **ADR-081 § 4 skriver: *"Kort: redan löst. `backlog`-CLI:t äger allokeringen."***
+Jag mätte det. Det håller inte under vår konfiguration.
+
+**Rigg:** `backlog` CLI `1.47.1`, körd 2026-07-29 i engångsprojekt i scratchpad. Vår
+`backlog/config.yml` speglades exakt: `check_active_branches: false`,
+`remote_operations: false`. Projektets egen `backlog/` rördes aldrig och inga kort
+mintades.
+
+### Mätning 1 — två arbetsträd, vår konfiguration
+
+Gemensam historik `task-1..3`. Två kopior som inte ser varandra. Vardera skapar ett kort:
+
+```text
+A: task-4 - A-agent-ett-landar-sitt-fynd.md
+B: task-4 - B-agent-tva-landar-sitt-fynd.md
+```
+
+**Båda fick `task-4`.** Två skilda kort, samma ID. CLI:t skannar det lokala
+filsystemet efter högsta ID och har under denna konfiguration ingen kunskap om något
+annat arbetsträd. Kollisionen är alltså inte hypotetisk för kort — den är
+**reproducerbar på kommando**.
+
+Det förklarar också det empiriska läget i uppdraget: *tre parallella worktrees stod
+samtidigt på högsta kortnummer 82.* Det var inte ett kuriosum. Det var tre aktörer som
+alla var en `task create` från samma nummer.
+
+### Mätning 2 — samma CLI, med `check_active_branches: true`
+
+Samma rigg, en flagga vänd. `main` har `task-1..3`; grenen `grenA` skapar `task-4` och
+**committar**; därefter skapas ett kort från `main`:
+
+```text
+main ser i filsystemet: task-1  task-2  task-3
+skapat:                 task-5 - main-kort-efter-grenA.md
+```
+
+**CLI:t hoppade över `task-4`** — det läste grenen och undvek kollisionen. Mekanismen
+finns redan i verktyget, är leverantörsstödd, och är **avstängd i vårt repo**.
+
+### Mätning 3 — gränsen för den mekanismen
+
+Två **äkta** git-worktrees, `check_active_branches: true`. A skapar ett kort men
+committar **inte**. B skapar ett kort:
+
+```text
+A: task-4 - A-ocommittat.md
+B: task-4 - B-efter-A-ocommittat.md        ← kollision
+```
+
+Därefter committar A, och B skapar ytterligare ett:
+
+```text
+B: task-5 - B-efter-A-committat.md          ← ingen kollision
+```
+
+**Skyddet gäller committat arbete, inte ocommitterat.** Det är exakt Pythons "couple of
+minutes" igen, i vårt eget verktyg: fönstret mellan `task create` och `git commit`.
+
+### Vad de tre mätningarna betyder
+
+1. **ADR-081:s ena uttalade undantag är empiriskt falskt** i vår konfiguration. Kort är
+   inte lösta; de är osäkrade på samma sätt som lessons var, med skillnaden att
+   kollisionen ännu inte råkat inträffa. Noll kollisioner på 168 kort mätte turen och
+   den seriella arbetsformen — inte en mekanism.
+2. **Den billigaste kandidaten i hela passet stod inte på uppdragets lista:** vänd
+   `check_active_branches` till `true`. Ingen kod, ingen ny form, en config-rad i ett
+   verktyg som redan äger substratet. Det är husets config-driven-konvention rakt av.
+3. **Den fixen är inte total, och ska inte säljas som total.** Den krymper fönstret till
+   tiden mellan skapande och commit. Det är en storleksordning bättre än idag, och det är
+   allt.
+
+**Reservation, uttalad:** jag mätte i engångsprojekt som speglar vår konfiguration, inte
+i repots egen `backlog/`. Att sätta flaggan i vårt repo kan ha följder jag inte mätt —
+`check_active_branches` styr enligt `--help` *"check task states across active branches"*,
+alltså mer än ID-allokering, och `active_branch_days: 30` gör en gren äldre än 30 dagar
+osynlig. **Vad flaggan gör med kort-*statusar* i vårt 168-kortsträd är obelagt av mig.**
+Den prövningen hör till ett beslut, inte till detta pass.
+
 ## Delfråga 3 — Vad säger distribuerade system, och var slutar de hjälpa?
 
-(ej besvarad än)
+**Inget av mönstren är tillämpligt, och orsaken är räknings-mässig, inte teknisk.**
+Insamlingen delegerades till en underagent med bindande krav på primärkälla och
+`EJ BELAGD`-märkning; specifikationerna nedan lästes i original.
+
+| Mönster | Längd | Monotonicitet — vad garanteras exakt | Kräver | Tillämpligt |
+|---|---|---|---|---|
+| UUIDv4 | 36 tecken | ingen | — | nej |
+| UUIDv7 | 36 tecken | endast **single-node** | node-ID eller register för cross-node | nej |
+| ULID | 26 tecken | endast inom **en generator-instans** | delad process-state | nej |
+| Snowflake | upp till 19 siffror | k-sorterad, ej totalordnad | ZooKeeper + NTP + nätverkstjänst | nej |
+| Hi/Lo | litet | per allokerande klient | databas-sekvens (central allokator) | nej |
+| Sekvensblock | litet | **uttryckligen inte sekventiell** | databas-sekvens | nej |
+
+Jämförelsetalet som avgör saken: `ADR-081` är **7 tecken**, `L359` är **4**. Det
+kortaste av de okoordinerade mönstren är 26.
+
+### Var gränsen går, i specifikationernas egna ord
+
+RFC 9562 § 6.2 lägger UUIDv7:s garanti innanför en enda nod: *"For single-node UUID
+implementations that do not need to create batches of UUIDs, the embedded timestamp
+within UUIDv6 and UUIDv7 can provide sufficient monotonicity guarantees [...] Distributed
+nodes are discussed in Section 6.4."* Och § 6.4 erbjuder bara två utvägar, båda dyra: ett
+inbäddat node-ID, där *"the creation and negotiation of unique node ids among nodes is
+also out of scope"*, eller ett centralt register som *"could become a bottleneck [...] are
+NOT RECOMMENDED"*. ([RFC 9562](https://www.rfc-editor.org/rfc/rfc9562.html))
+
+ULID:s sorterbarhet är en egenskap hos en **stateful generator**, inte hos kodningen:
+*"if the same millisecond is detected, the `random` component is incremented by 1 bit"* —
+och detektionen sker i `monotonicFactory()`. Två parallella sessioner detekterar
+ingenting av varandra. ([ulid/spec](https://github.com/ulid/spec))
+
+PostgreSQL formulerar blockreservationens pris exakt, och det är våra två bärande
+egenskaper som betalar: *"with a cache setting greater than one you should only assume
+that the nextval values are all distinct, not that they are generated purely
+sequentially"*, och *"any numbers allocated but not used within a session will be lost
+when that session ends, resulting in "holes" in the sequence."*
+([CREATE SEQUENCE, Notes](https://www.postgresql.org/docs/17/sql-createsequence.html))
+
+Samma avsnitt namnger också vad tätheten kostar: *"It is possible to build gapless
+assignment by using exclusive locking of a table containing a counter; but this solution
+is much more expensive than sequence objects."* Tätt medför exklusivt lås medför
+koordination.
+
+Hibernate avråder från sitt eget hi/lo: *"These optimizers are not recommended for use.
+They are maintained (and mentioned) here simply for use by legacy applications."*
+([Hibernate 6.6 User Guide](https://docs.hibernate.org/orm/6.6/userguide/html_single/Hibernate_User_Guide.html))
+
+**En korrigering av en vanlig bild:** Snowflakes README nämner aldrig ZooKeeper — bara
+"configured machine id". Kravet ligger i källkoden på taggen `snowflake-2010`, där
+`registerWorkerId` skapar en ephemeral znode per worker-ID och kastar vid
+`NodeExistsException`. README:ns rubrik *"Uncoordinated"* gäller **hot-pathen för
+ID-generering**, inte worker-ID-tilldelningen — den är hårt koordinerad.
+([SnowflakeServer.scala](https://github.com/twitter-archive/snowflake/blob/snowflake-2010/src/main/scala/com/twitter/service/snowflake/SnowflakeServer.scala))
+
+### Den principiella orsaken
+
+Lamport 1978 ger varför en totalordning över oberoende genererade händelser kräver ett
+per-process-fält: *"To break ties, we use any arbitrary total ordering < of the
+processes"*, och *"It is only the partial ordering which is uniquely determined by the
+system of events."*
+([time-clocks.pdf](https://lamport.azurewebsites.net/pubs/time-clocks.pdf))
+
+Tiebreaker-fältet är precis det som gör ID:t större eller icke-tätt — `L359-a` / `L359-b`.
+
+Det starkaste motexemplet prövades och föll: **Interval Tree Clocks** avskaffar
+faktiskt ID-registret — *"It does not require global ids but is able to create, retire and
+reuse them autonomously, with no need for global coordination; any entity can fork a new
+one"* — men ID:t är ett intervallträd, inte ett litet tal, och `fork` är definierad som en
+**delning av ett befintligt ID**. Barnet får sitt rum från en förälder.
+([Almeida, Baquero, Fonte, OPODIS 2008](https://gsd.di.uminho.pt/members/cbm/ps/itc2008.pdf))
+
+**Slutledningen, märkt som slutledning och inte som citat** (ingen enskild källa
+formulerar den samlat): "litet" betyder få bitar betyder litet adressrum, och unikhet i
+ett litet rum kan inte vila på entropi. Då återstår två vilopunkter — **partition** (ett
+nod-fält, som bryter tätheten) eller **serialisering** (ett lås, som är koordination).
+Tätt plus monotont plus delat medför en skrivare i taget. De sex mönstren är
+optimeringar av *var* den enda skrivaren sitter, inte bevis på att den kan tas bort.
+
+**Konsekvensen för oss är befriande:** frågan är inte vilket distribuerat mönster vi ska
+välja. Inget av dem gäller. Frågan är bara **var vår enda skrivare ska sitta** — och vi
+har redan en serialiserare i huset. Merge queue mot en enda `main` *är* ömsesidig
+uteslutning.
+
+**Vad ITC däremot visar:** form (ii) block-reservation är inte ad hoc. Den är
+ITC:s `fork` i enkel form, och PostgreSQL:s "holes" är dess kända pris. Formen har
+teoretisk grund — den saknar bara, som delfråga 1 visade, precedent i
+dokumentationsflöden.
 
 ## Delfråga 4 — Ändras svaret med autonoma agenter?
 
-(ej besvarad än)
+**Ja — men inte genom att någon löste allokeringsproblemet. Mönstret ändras genom att
+branschen slutade försöka koordinera och började isolera i stället.** Insamlingen
+delegerades till en underagent med bindande primärkälle-krav.
+
+### ID- och namnallokering i en delad serie är en OADRESSERAD yta
+
+**Noll av fem** leverantörers primärdokumentation beskriver någon mekanism för att dela
+ut löpnummer eller namn i en delad serie i användarens repo. Det är passets tydligaste
+tomma precedent-rymd, och den ska läsas som ett fynd.
+
+| Yta | Status i leverantörernas primärdokumentation |
+|---|---|
+| **ID-/namnallokering i delad serie** | **oadresserad** — 0 av 5 |
+| Filkollisioner | delvis löst — 5 av 5 via worktree- eller VM-isolering |
+| Uppgiftsallokering | delvis löst — 4 av 5 dokumenterar en orkestrerare som äger fördelningen |
+| Grennamn | delvis — namespace-prefix, gits en-gren-per-worktree-invariant |
+
+### Anthropic kommer närmast — och undviker löpnummer systematiskt
+
+Claude Codes worktree-dokumentation har en egen sektion om vad worktrees **delar** med
+huvudcheckouten (`.git`, project-scope-plugins, permission-approvals) — delat tillstånd
+är alltså en designad yta, inte en olycka. Namnallokering sker med **slumpnamn, aldrig
+en räknare**: utan `--worktree`-namn *"Claude generates one such as `bright-running-fox`"*.
+Namnkollision hanteras idempotent: *"Passing `--worktree` a name whose directory already
+exists opens that existing worktree instead of creating a new one."* Och ett riktigt lås
+finns: *"While an agent is running, Claude runs `git worktree lock` on its worktree so
+that concurrent cleanup cannot remove it."*
+([worktrees](https://code.claude.com/docs/en/worktrees))
+
+Agent teams bär den **enda kodade ömsesidiga uteslutningen** jag hittade hos någon
+leverantör: *"Task claiming uses file locking to prevent race conditions when multiple
+teammates try to claim the same task simultaneously."* Teamnamn härleds ur unik identitet
+i stället för ur en räknare — *"The name is `session-` followed by the first eight
+characters of the session ID."* Men låset ligger i verktygets egen store
+(`~/.claude/tasks/`), aldrig i repot, och delade filer förklaras uttryckligen olösta:
+*"Avoid file conflicts. Two teammates editing the same file leads to overwrites. Break
+the work so each teammate owns a different set of files."*
+([agent teams](https://code.claude.com/docs/en/agent-teams))
+
+Mönstret är genomgående: slumpnamn, identitets-härledda namn, partitionerat ägandeskap.
+**Ingenstans en delad räknare.** Samma strategi Rails valde 2008.
+
+### Det tyngsta fyndet i passet är negativt — låsning kollapsade i praktiken
+
+Cursor rapporterar i förstapartskälla att det *mänskliga* mönstret — låsa en delad
+resurs — empiriskt misslyckades med autonoma agenter:
+
+> *"Agents would hold locks for too long, or forget to release them entirely. Even when
+> locking worked correctly, it became a bottleneck."* … *"Twenty agents would slow down to
+> the effective throughput of two or three, with most time spent waiting."*
+
+Lösningen blev rollhierarki, inte bättre lås: planners skapar uppgifter, workers plockar
+dem, och workers koordinerar inte med varandra. Och en dedikerad konfliktlösar-roll
+prövades och **togs bort**: *"We initially built an integrator role for quality control
+and conflict resolution, but found it created more bottlenecks than it solved."*
+([cursor.com/blog/scaling-agents](https://cursor.com/blog/scaling-agents))
+
+Det är den enda källan där en branschledare medger att de byggde koordinations-lagret och
+backade. **Det är direkt relevant för form (i):** en aktör som mintar är ett
+koordinationskrav mellan jämlikar, och det är precis den klass Cursor mätte som
+flaskhals.
+
+### Övriga leverantörer
+
+**GitHub Copilot** har namespace-prefix som skyddsräcke, inte kollisionsundvikande: *"It
+can only push to a single branch: the existing pull request branch when triggered via
+`@copilot`, or otherwise to a new `copilot/` branch."* `/fleet` beskriver en orkestrerare
+som *"orchestrator, managing the workflow and dependencies between the subtasks"* — en
+roll, ingen mekanism. Hur två samtidiga `copilot/`-grenar undviker namnkollision
+adresseras inte. ([coding agent](https://docs.github.com/en/copilot/concepts/coding-agent/coding-agent))
+
+**OpenAI Codex** är den enda som resonerar om en concurrency-invariant från första
+principer — men den är gits, inte deras: *"Git prevents the same branch from being checked
+out in more than one worktree at a time because a branch represents a single mutable
+reference"*, annars uppstår *"ambiguity and race conditions"*. Om parallella skrivningar
+viker de undan i stället för att lösa: *"Be more careful with parallel write-heavy
+workflows."* ([git-worktrees](https://learn.chatgpt.com/docs/environments/git-worktrees))
+
+**Devin** kör *"each running in its own isolated VM"* med en coordinator som *"resolves
+conflicts, and compiles results"*; kollisionsstrategin är förhandsanalys — gruppera i
+*"independent work packages that won't conflict"*. Grennamngivning, lås och ID-allokering
+är odokumenterade.
+([advanced capabilities](https://docs.devin.ai/work-with-devin/advanced-capabilities))
+
+### Litteraturen: problemet är mätt, inte löst
+
+Fyra arbeten, räknade och inte avrundade:
+
+- **19,8 % textuell konfliktrat** (95 % CI [16,8; 23,2]) mellan **två PR från samma
+  agent**: *"Agents operate independently and in isolation, without knowledge that other
+  agents of the same type are simultaneously accessing and altering the same files."*
+  ([arXiv:2607.04697](https://arxiv.org/html/2607.04697v2)) — kollisionen kräver inte ens
+  olika aktörer.
+- **AgenticFlict**: 142 000+ agentiska PR, konfliktrat 27,67 % totalt; per agent Copilot
+  15,24 %, Cursor 19,75 %, Devin 22,85 %, Claude Code 25,93 %, Codex 31,85 %.
+  ([arXiv:2604.03551](https://arxiv.org/html/2604.03551v1))
+- **CoAgent** är närmast en designad svar på just vår fråga: *"As soon as two of them
+  mutate shared state, they enter the regime classical concurrency control has studied for
+  decades, but classical mechanisms fit LLM agents poorly."* Deras svar fastställer en
+  serialiseringsordning **vid launch** och ersätter lås med notifiera-och-reparera.
+  ([arXiv:2606.15376](https://arxiv.org/abs/2606.15376))
+- **CodeCRDT** löser konflikterna helt — *"lock-free, conflict-free concurrent code
+  generation with strong eventual consistency"*, 100 % konvergens — men kostar upp till
+  **39,4 % slowdown** på vissa uppgifter. Koordinationsfrihet är inte gratis.
+  ([arXiv:2510.18893](https://arxiv.org/abs/2510.18893))
+
+### Den mänskliga precedenten som ändå bär bäst: migrations-numrering
+
+Två solida precedenter, och de är de mest närbesläktade i hela passet — en delad
+löpnummer-serie med parallella skribenter i ett versionshanterat träd:
+
+**Django demoterar numret till en mänsklig etikett** och flyttar den maskin-auktoritativa
+ordningen till en beroendegraf på *namn*:
+
+> *"you and another developer have both committed a migration to the same app at the same
+> time, resulting in two migrations with the same number. Don't worry - the numbers are
+> just there for developers' reference, Django just cares that each migration has a
+> different name."*
+
+([Django migrations](https://docs.djangoproject.com/en/stable/topics/migrations/))
+
+**Rails avskaffar räknaren**, och anger flerskrivar-fallet som skälet i klartext:
+
+> *"Controls whether migrations are numbered with serial integers or with timestamps. The
+> default is `true`, to use timestamps, which are preferred if there are multiple
+> developers working on the same application."*
+
+([Rails configuring](https://guides.rubyonrails.org/configuring.html))
+
+Båda löser samma problem på samma sätt: **ta bort den delade räknaren.** Django genom att
+göra numret icke-auktoritativt, Rails genom att göra värdet lokalt genererbart.
+
+**Django-formen är den enda i hela passet som är förenlig med vårt referensnät.** Den
+behåller ett litet läsbart nummer *och* tillåter kollision — därför att numret inte bär
+identiteten. ADR-081 förkastade datum-baserade ID:n med argumentet att ett ID-byte river
+korsreferenserna. Django-formen kräver inget ID-byte. Den säger bara att en dubblett inte
+är en katastrof.
+
+### Domen på delfrågan
+
+Svaret ändras, åt motsatt håll mot väntat. Det mänskliga mönstret är *koordinera i förväg
+eller merga i efterhand*. Agent-mönstret som faktiskt levereras är **isolera fysiskt och
+tilldela ägandeskap i förväg** — och den auktoritativa allokeringen flyttas till en
+orkestrerare, precis som vår `bygg-agent.md` redan gör.
+
+**Ingen leverantör låter agenter förhandla om ett nummer i en serie.** Cursors post visar
+varför: när de försökte kollapsade genomströmningen.
+
+Att vår arkitektur redan låter orkestreraren minta är alltså **branschmönstret, korrekt
+identifierat**. Problemet ligger inte där. Det ligger i att vi har 2–3 *parallella*
+orkestrerare — alltså flera "planners" som var och en tror sig äga allokeringen. Det är
+ett läge ingen av de fem leverantörerna dokumenterar.
 
 ## Delfråga 5 — Finns argument för att INTE bygga något?
 
