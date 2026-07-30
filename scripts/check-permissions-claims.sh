@@ -33,12 +33,20 @@ CONFIG=".permissions-claims-policy.conf"
 
 die() { printf 'check-permissions-claims: %s\n' "$1" >&2; exit "${2:-3}"; }
 
+# Deklarera FÖRE source. shellcheck kan inte spåra variabler över filgränser
+# (SC2154), och husets övriga grindar löser samma sak med `: "${VAR:?}"` för
+# skalärer. Arrayer behöver en tom deklaration i stället.
+declare -a GOVERNING_FILES=() SETTINGS_FILES=() CLAIMED_KEYS=() CLAIM_MARKERS=()
+CLAIM_WINDOW=0
+
 [[ -f "${CONFIG}" ]] || die "config saknas: ${CONFIG} (kör från repo-roten)"
 # shellcheck source=/dev/null
 source "${CONFIG}"
 
 [[ ${#GOVERNING_FILES[@]} -gt 0 ]] || die "GOVERNING_FILES är tom i ${CONFIG}"
 [[ ${#CLAIMED_KEYS[@]} -gt 0 ]] || die "CLAIMED_KEYS är tom i ${CONFIG}"
+[[ ${#CLAIM_MARKERS[@]} -gt 0 ]] || die "CLAIM_MARKERS är tom i ${CONFIG}"
+[[ ${CLAIM_WINDOW} -ge 0 ]] || die "CLAIM_WINDOW är ogiltig i ${CONFIG}"
 
 # --- Steg 1: vilka nycklar finns FAKTISKT, och är de icke-tomma? ------------
 #
@@ -100,15 +108,26 @@ for key in "${CLAIMED_KEYS[@]}"; do
 
       claims_found=$((claims_found + 1))
 
-      if ! key_exists "${key}"; then
+      # key_exists anropas separat i stället för direkt i villkoret: en funktion
+      # i `if`/`!` stänger av set -e i sitt anrop (SC2310), och här ÄR
+      # returkoden svaret vi vill ha — inte ett fel som ska propagera.
+      key_present=0
+      # shellcheck disable=SC2310  # returkoden ÄR svaret, inte ett fel att propagera
+      if key_exists "${key}"; then key_present=1; fi
+
+      if [[ ${key_present} -eq 0 ]]; then
         if [[ ${violations} -eq 0 ]]; then
           printf '\n❌ Styrande fil påstår en permissions-mekanism som inte finns:\n\n'
         fi
         violations=$((violations + 1))
+        # Trimma och korta i separata steg — en pipe i en command substitution
+        # maskerar returvärdet (SC2312).
+        excerpt="${text#"${text%%[![:space:]]*}"}"
+        excerpt="${excerpt:0:100}"
         printf '  %s:%s\n' "${file}" "${lineno}"
         printf '    påstår: %s\n' "${key}"
         printf '    men:    nyckeln saknas eller är tom i %s\n' "${SETTINGS_FILES[*]}"
-        printf '    rad:    %s\n\n' "$(printf '%s' "${text}" | sed 's/^[[:space:]]*//' | cut -c1-100)"
+        printf '    rad:    %s\n\n' "${excerpt}"
       fi
     done < <(grep -nEi "${pattern}" "${file}" 2>/dev/null || true)
   done

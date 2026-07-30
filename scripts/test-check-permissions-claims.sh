@@ -71,26 +71,30 @@ printf '%.0s─' {1..70}; printf '\n'
 # T1 — styrande fil utan permissions-påstående: grönt.
 build_world "# Regler
 Alla svar på svenska. Ingen lathet." '{}' ja
-report "T1 inga påståenden → grönt" 0 "$(run_gate)"
+ec=$(run_gate)
+report "T1 inga påståenden → grönt" 0 "${ec}"
 
 # T2 — påstår deny som inte finns: FÄLLER. Detta är det skarpa fallet, och
 # exakt det verkliga felet i hub-CLAUDE.md 2026-07-29.
 build_world "# Regler
 STOPPA-OCH-FRÅGA skrivs som text — mekaniserad som spärr, se
 \`settings.json\` \`permissions.deny\`." '{}' ja
-report "T2 påstående utan täckning → fäller" 1 "$(run_gate)"
+ec=$(run_gate)
+report "T2 påstående utan täckning → fäller" 1 "${ec}"
 
 # T3 — samma påstående, men regeln finns: grönt.
 build_world "# Regler
 Mekaniserad som spärr — se \`permissions.deny\`." \
   '{"permissions":{"deny":["Bash(rm -rf /)"]}}' ja
-report "T3 påstående MED täckning → grönt" 0 "$(run_gate)"
+ec=$(run_gate)
+report "T3 påstående MED täckning → grönt" 0 "${ec}"
 
 # T4 — tom array. En tom deny stoppar inget; påståendet är lika falskt.
 build_world "# Regler
 Mekaniserad som spärr — se \`permissions.deny\`." \
   '{"permissions":{"deny":[]}}' ja
-report "T4 tom deny-array räknas som frånvaro → fäller" 1 "$(run_gate)"
+ec=$(run_gate)
+report "T4 tom deny-array räknas som frånvaro → fäller" 1 "${ec}"
 
 # T5 — beskrivande fil utanför GOVERNING_FILES. Ett sessionsdok måste kunna
 # konstatera att en mekanism SAKNAS utan att fällas för att ha sagt ordet.
@@ -99,12 +103,14 @@ Inget att se här." '{}' ja
 mkdir -p "${TEST_DIR}/tasks/sessions"
 printf 'Fyndet: filen påstod permissions.deny men ingen deny-lista finns.\n' \
   > "${TEST_DIR}/tasks/sessions/dok.md"
-report "T5 beskrivande fil utanför listan → grönt" 0 "$(run_gate)"
+ec=$(run_gate)
+report "T5 beskrivande fil utanför listan → grönt" 0 "${ec}"
 
 # T6 — config saknas: konfigurationsfel (3), inte falskt grönt.
 build_world "# Regler
 Mekaniserad via \`permissions.deny\`." '{}' nej
-report "T6 config saknas → exit 3" 3 "$(run_gate)"
+ec=$(run_gate)
+report "T6 config saknas → exit 3" 3 "${ec}"
 
 # T7 — REGRESSIONSTEST. Ett OMNÄMNANDE är inte ett påstående. Detta är ordagrant
 # den mening grindens första skarpa körning fällde (CONTRIBUTING.md:921) innan
@@ -113,7 +119,8 @@ report "T6 config saknas → exit 3" 3 "$(run_gate)"
 build_world "# Regler
 **Läs den innan \`permissions.deny\` eller en tvingande hook övervägs.** Hela
 poängen är att beslutet ska vila på siffror i stället för åsikter." '{}' ja
-report "T7 omnämnande utan påstående → grönt (regression)" 0 "$(run_gate)"
+ec=$(run_gate)
+report "T7 omnämnande utan påstående → grönt (regression)" 0 "${ec}"
 
 printf '%.0s─' {1..70}; printf '\n'
 printf '  %d godkända, %d underkända\n\n' "${pass}" "${fail}"

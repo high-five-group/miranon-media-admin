@@ -786,7 +786,8 @@ jobs:
         # 5 sourced-config-filer (.checklist-policy.conf +
         # .frontmatter-policy.conf + .lesson-policy.conf, tillagd S91/ADR-081 +
         # .ci-wait-policy.conf, tillagd S91/TASK-72 +
-        # .staging-semaphore-policy.conf, tillagd S91/TASK-77 — en sourced conf
+        # .staging-semaphore-policy.conf, tillagd S91/TASK-77 +
+        # .permissions-claims-policy.conf, tillagd S91/ADR-083 — en sourced conf
         # utanför scopet är samma lucka som de övriga redan stänger).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
@@ -799,7 +800,8 @@ jobs:
             .frontmatter-policy.conf \
             .lesson-policy.conf \
             .ci-wait-policy.conf \
-            .staging-semaphore-policy.conf
+            .staging-semaphore-policy.conf \
+            .permissions-claims-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
