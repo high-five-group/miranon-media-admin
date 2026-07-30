@@ -29,6 +29,14 @@
       "exactMatchField": "Anteckning",
       "exactMatchPattern": "^ZZ-note-test\\+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}@sentinel$",
       "linkGuard": false
+    },
+    {
+      "name": "save-segment-sentineler",
+      "table": "Segment",
+      "filterByFormula": "FIND('app-segment-test+', {Namn på segment}) = 1",
+      "exactMatchField": "Namn på segment",
+      "exactMatchPattern": "^app-segment-test\\+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "linkGuard": true
     }
   ]
 }

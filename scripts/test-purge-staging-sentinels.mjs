@@ -12,6 +12,7 @@
 // e-post och får aldrig matchas).
 
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import {
   backoffMs,
@@ -216,6 +217,154 @@ t('linkGuard: false (Anmälningar) raderar trots Event-länken — länken är b
   ];
   const plan = planPurge(records, REG_TARGET, 60, NOW);
   assert.deepEqual(plan.toDelete, ['rec5']);
+});
+
+// --- save-segment-targeten (TASK-87) ---
+//
+// TREDJE INSTANSEN av ADR-060:s wiring-klass: en ny sentinel-form föds med sitt
+// test men får ingen target i policyn, och raderna ackumulerar i staging tills
+// någon råkar titta. S52 var create-event, S69 create-registration — den här
+// gången `save-segment`, med 665 rader i staging-Segment när kortet skrevs
+// (räknat mot apphjj8Q7lkXCMsL4 2026-07-30, före något ändrades).
+//
+// DÄRFÖR LÄSES TARGETEN UR POLICYN PÅ DISK, INTE SOM EN KOPIA.
+// REG_TARGET/EVENT_TARGET ovan är kopior, och det är rätt för dem: de bevisar
+// att MOTORN klassar rätt. TASK-87:s fråga är en annan — bär POLICYN en target
+// som fångar formen? En kopia kan aldrig svara på det. Den hade gått grön med
+// en tom targets-lista, vilket är exakt felläget klassen består av.
+
+const POLICY_PA_DISK = JSON.parse(
+  readFileSync(new URL('../.purge-staging-policy.json', import.meta.url), 'utf8'),
+);
+
+const SEGMENT_TARGET = POLICY_PA_DISK.targets.find((x) => x.name === 'save-segment-sentineler');
+
+/**
+ * Ett VERKLIGT post-namn, avläst ur staging-Segment 2026-07-30
+ * (`rec07tynH900d4wzL`, en av de 665). Det ligger här som ett AVLÄST DATUM, inte
+ * som en levande referens: testerna nedan gör inga Airtable-anrop, och posten
+ * får mycket gärna vara raderad av purgen när du läser detta.
+ */
+const VERKLIGT_SEGMENTNAMN = 'app-segment-test+51c071b1-2130-4d86-a526-030cdd834b77';
+
+t('policyn på disk BÄR save-segment-targeten (klassens rot: den saknades helt)', () => {
+  assert.ok(
+    SEGMENT_TARGET,
+    'targeten "save-segment-sentineler" saknas i .purge-staging-policy.json',
+  );
+  assert.equal(SEGMENT_TARGET.table, 'Segment');
+  assert.equal(SEGMENT_TARGET.exactMatchField, 'Namn på segment');
+});
+
+t('AC#2: mönstret matchar ett VERKLIGT post-namn ur staging', () => {
+  const rec = {
+    id: 'recSeg1',
+    createdTime: OLD,
+    fields: { 'Namn på segment': VERKLIGT_SEGMENTNAMN },
+  };
+  assert.equal(isExactSentinel(rec, SEGMENT_TARGET), true);
+});
+
+t('mönstret matchar det save-segment-testet FAKTISKT genererar (randomUUID)', () => {
+  // Samma uttryck som sentinelName() i tests/api/save-segment.staging.test.ts.
+  // Bindningen till producenten är avsiktlig: byter testet form blir detta rött
+  // i stället för att targeten tyst slutar fånga. 50 varv täcker UUID v4:ns
+  // varians-position, som mönstret läser som vanlig hex.
+  for (let i = 0; i < 50; i += 1) {
+    const namn = `app-segment-test+${randomUUID()}`;
+    const rec = { id: 'recSegN', createdTime: OLD, fields: { 'Namn på segment': namn } };
+    assert.equal(isExactSentinel(rec, SEGMENT_TARGET), true, `matchade inte: ${namn}`);
+  }
+});
+
+t('AC#3 sida A: purgen FÅNGAR en planterad sentinel', () => {
+  const rec = {
+    id: 'recSegA',
+    createdTime: OLD,
+    fields: {
+      'Namn på segment': VERKLIGT_SEGMENTNAMN,
+      Segmentdefinition: 'Med: deltog i Fjärrskådning (utbildning).',
+      'App-segmentregel':
+        '{"include":[{"kurs":"Fjärrskådning","modalitet":"Utbildning"}],"exclude":[]}',
+    },
+  };
+  const plan = planPurge([rec], SEGMENT_TARGET, 60, NOW);
+  assert.deepEqual(plan.toDelete, ['recSegA']);
+});
+
+t('AC#3 sida B: poster UTANFÖR mönstret rörs ALDRIG', () => {
+  const utanfor = [
+    // Ett människo-namngivet segment — formen de nio legacy-raderna bär.
+    { id: 'recMan', createdTime: OLD, fields: { 'Namn på segment': 'Tidigare deltagare' } },
+    // Nästan-sentinel utan UUID: träffar formeln, missar exakt-matchen (S69-formen).
+    { id: 'recNara', createdTime: OLD, fields: { 'Namn på segment': 'app-segment-test+hejsan' } },
+    // Suffix efter UUID:t — $-ankaret bär.
+    {
+      id: 'recSuffix',
+      createdTime: OLD,
+      fields: { 'Namn på segment': `${VERKLIGT_SEGMENTNAMN}-kopia` },
+    },
+    // Markören i mitten i stället för först — ^-ankaret bär. (Server-side kräver
+    // formeln dessutom position 1; exakt-matchen står ensam här.)
+    {
+      id: 'recMitten',
+      createdTime: OLD,
+      fields: { 'Namn på segment': `kopia av ${VERKLIGT_SEGMENTNAMN}` },
+    },
+  ];
+  const plan = planPurge(utanfor, SEGMENT_TARGET, 60, NOW);
+  assert.deepEqual(plan.toDelete, []);
+  assert.deepEqual(plan.skippedMismatch, ['recMan', 'recNara', 'recSuffix', 'recMitten']);
+});
+
+t('färsk segment-sentinel skyddas av ålders-guarden (in-flight-körning)', () => {
+  const rec = {
+    id: 'recFarsk',
+    createdTime: FRESH,
+    fields: { 'Namn på segment': VERKLIGT_SEGMENTNAMN },
+  };
+  const plan = planPurge([rec], SEGMENT_TARGET, 60, NOW);
+  assert.deepEqual(plan.skippedYoung, ['recFarsk']);
+  assert.deepEqual(plan.toDelete, []);
+});
+
+t('linkGuard: ett segment kopplat till ett Mailutskick lämnas kvar (fail-safe)', () => {
+  // `Mailutskick` (fldjUIp0iqRpJWgem) är multipleRecordLinks → Bulkutskick
+  // (tblWarzSse85NI1Zx), live-avläst mot staging 2026-07-30. save-segment sätter
+  // aldrig fältet, så guarden är en spärr för framtiden: kopplar någon en testrad
+  // till ett verkligt utskick är den inte längre skräp.
+  const rec = {
+    id: 'recKopplad',
+    createdTime: OLD,
+    fields: { 'Namn på segment': VERKLIGT_SEGMENTNAMN, Mailutskick: ['recAAAABBBBCCCCDD'] },
+  };
+  const plan = planPurge([rec], SEGMENT_TARGET, 60, NOW);
+  assert.deepEqual(plan.skippedLinked, [{ id: 'recKopplad', fields: ['Mailutskick'] }]);
+  assert.deepEqual(plan.toDelete, []);
+});
+
+t('L288-kontrollen: rad-formens objekt-fält gör INTE länk-guarden till en no-op', () => {
+  // Varje Segment-rad bär `Beräkna antal i segment` (Make-webhook-knappen) som
+  // ett OBJEKT {label, url}, och `Senast uppdaterad av` som ett användar-objekt.
+  // Hade någon av dem trippat guarden vore targeten en no-op på precis alla 665
+  // raderna — S71:s L288-fälla, där en 100 %-guard ser ut som ett skyddsräcke men
+  // är en tyst broms. Formen är live-avläst 2026-07-30, inte antagen.
+  const rec = {
+    id: 'recKnapp',
+    createdTime: OLD,
+    fields: {
+      'Namn på segment': VERKLIGT_SEGMENTNAMN,
+      'Beräkna antal i segment': {
+        label: 'Beräkna',
+        url: 'https://hook.eu2.make.com/7zb62cph1ykf37pegomxshqw2tcwg2uc?recordId=rec07tynH900d4wzL',
+      },
+      'Senast uppdaterad av': { id: 'usr4xVlqcZ2qSOMmh', name: 'Marcus Johansson' },
+      'Senast uppdaterad': '2026-07-12T18:36:42.000Z',
+    },
+  };
+  assert.deepEqual(linkGuardTrips(rec), []);
+  const plan = planPurge([rec], SEGMENT_TARGET, 60, NOW);
+  assert.deepEqual(plan.toDelete, ['recKnapp']);
 });
 
 // --- Bas-guard (skyddsräcke 1) ---
