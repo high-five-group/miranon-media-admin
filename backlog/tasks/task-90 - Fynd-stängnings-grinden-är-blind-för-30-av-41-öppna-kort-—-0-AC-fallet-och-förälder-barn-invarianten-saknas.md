@@ -3,10 +3,10 @@ id: TASK-90
 title: >-
   Fynd: stängnings-grinden är blind för 30 av 41 öppna kort — 0-AC-fallet och
   förälder/barn-invarianten saknas
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 17:36'
-updated_date: '2026-07-30 20:09'
+updated_date: '2026-07-30 20:35'
 labels:
   - ready-for-agent
 dependencies: []
@@ -141,10 +141,16 @@ eftersom en ommätning mot en annan bas hade blandat ihop min ändring med regis
 ---
 <!-- COMMENTS:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängnings-grinden ser nu 0-AC-fallet och förälder/barn-invarianten. 10 → 30 testfall, alla i par. FORMEN VALD OCH MOTIVERAD: fäll på bevis, redovisa frånvaron — 5 alternativ förkastade med mätta skäl. Avsiktligt öppna kort deklarerar sig med etiketten intentionally-open PÅ kortet, inte via en ID-lista i configen: en lista hade blivit en andra sanningskälla som driftar, och deklarationen hade bott borta från kortet. Variabeln är OBLIGATORISK (exit 2 vid frånvaro) eftersom tomt inte är ett ärligt värde här — utan den blir varje avsiktligt öppen förälder ett falskt rött. TVÅ DEFEKTER SJÄLVFÅNGADE: barn-uppslaget jämförde ID numeriskt, så awk läste 18.2 och 18.20 som samma tal och rapporterade TASK-18 som komplett medan 18.20 stod öppen — ett falskt rött i den grind vars kort säger att falskt rött är dyrast, fångat bara för att barnstatusarna mätts oberoende FÖRE bygget. Och ofullständig policy gav exit 1 i stället för 2, osynligt eftersom testfallet prövade att FILEN saknades, aldrig att en VARIABEL gjorde det. SEX MUTATIONER PRÖVADE, samtliga fällda; grinden återställd bit-identiskt. SKARP TÄCKNING: 16 av 46 utvärderade före, 20 av 46 plus 2 deklarerade plus 24 explicit redovisade efter. Fann tre öppna föräldrakort ingen visste om — TASK-17, 19 och 36 — varav TASK-36 var en fjärde träff fyndkortet inte kände till; samtliga stängda 2026-07-30. AC #5-talen står stämplade vid b8ca291 och mättes MOT ETT STILLASTÅENDE REGISTER; agenten vägrade mäta om mot en flyttad bas eftersom det hade blandat ihop ändringen med registerdriften. EFTERARBETE I SAMMA PR: .backlog-closure-policy.conf lagd i CI:s shellcheck-scope med fyrcellsbevis att raden bär (gammalt scope + trasig conf = exit 0, nytt scope + trasig conf = exit 1), plus rättad falsk räkning i scope-kommentaren som sade 5 medan listan bar 6. PR #483, CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
