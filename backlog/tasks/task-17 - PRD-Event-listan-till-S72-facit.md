@@ -1,9 +1,10 @@
 ---
 id: TASK-17
 title: 'PRD: Event-listan till S72-facit'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-21 07:56'
+updated_date: '2026-07-30 20:07'
 labels: []
 dependencies: []
 ordinal: 39000
@@ -94,3 +95,9 @@ ADR-055 (data via router-context-DI) · ADR-057 (lager-oberoende) · ADR-072 + A
 - [ ] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
 - [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PRD-behållare utan egna AC — fullbordan definieras av barnen, och samtliga SEX är Done: 17.1 ToggleButtonGroup-primitiven, 17.2 listvyn till S72-facit, 17.3 kursfärgs-tokensen (ADR-064-mappningen), 17.4 kalendervyn till S72-facit, 17.5 läs-shape-utökningen + bor över-raden, 17.7 filtervyn + skriv ut (review-iteration 1). Stängd 2026-07-30 (S91 artonde resumen) sedan TASK-90:s nya förälder/barn-invariant fällde den. Kortet var osynligt för den gamla grinden av TVÅ skäl samtidigt — noll egna AC och ingen förälder/barn-kontroll — vilket är exakt den blindhet TASK-90 byggdes för att stänga. Ingen kod rörd vid stängningen; kortet bar ingen kvarvarande bokföring.
+<!-- SECTION:FINAL_SUMMARY:END -->

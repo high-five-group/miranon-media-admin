@@ -3,10 +3,10 @@ id: TASK-91
 title: >-
   Fynd: staging-preflightens wiring har noll test — fem ytor vars frånvaro inte
   syns
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 17:49'
-updated_date: '2026-07-30 19:37'
+updated_date: '2026-07-30 20:01'
 labels:
   - ready-for-agent
 dependencies: []
@@ -51,12 +51,16 @@ Detta är en **deletion-vakt**, inte en ny funktionstest. Den ska svara på frå
 - [x] #5 Formen tål att en sjätte yta tillkommer — en ny yta ska antingen fångas automatiskt eller ge ett tydligt fel om den saknas i vaktens lista
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Deletion-vakt för staging-preflightens wiring: scripts/check-staging-preflight-wiring.mjs + 21 testfall + .staging-preflight-wiring-policy.json (config-driven per Lesson #6) + två CI-steg i lint-jobbet. Alla fem ytor täckta — 4 Playwright-konsumenter över 3 setup-projekt + 2 main()-anrop. TVÅSIDIGT BEVIS PER YTA, fem par: sandlådan är en KOPIA av det riktiga trädet (playwright.config.ts, tests/, src/, supabase/, båda Node-skripten), inte en syntetisk mini-config — och den skillnaden var inte kosmetisk: den avslöjade att tests/ ensamt inte räcker för att lista Playwright-projekt, eftersom testfilerna importerar ur src/ och supabase/. AC #3 verifierad mekaniskt: grep efter semaforens egna markörer i vakten ger 2 träffar, båda i kommentarsprosa, noll i kod — de 19 befintliga fallen orörda. AC #5: oklassat projekt fäller, inklusive projekt bakom odeklarerad env-flagga (samma form staging-preview föddes i), och markör-bärande Node-skript fångas automatiskt. CI-AVLÄSNING GJORD AV ORKESTRERAREN (agenten avstod medvetet från att projicera): båda stegen success i första skarpa körningen, Lint + Audit + TypeCheck 1 min 41 s mot timeout-minutes 5 — cirka 34 procent av taket, marginal 3 min 19 s. PR #481, CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

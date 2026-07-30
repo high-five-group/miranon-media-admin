@@ -1,9 +1,10 @@
 ---
 id: TASK-19
 title: 'PRD: Skapa nytt event till facit'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-21 07:57'
+updated_date: '2026-07-30 20:07'
 labels: []
 dependencies: []
 ordinal: 41000
@@ -84,3 +85,9 @@ ADR-066 (styrande skapa-kontraktet) · ADR-063 (flaggan additiv; resolution i ba
 - [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [ ] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PRD-behållare utan egna AC — fullbordan definieras av barnen, och samtliga FYRA är Done: 19.1 SlideToConfirm-primitiven, 19.2 skapa-ingången + hemvist-flytten + Mer-rivningen, 19.3 skapa-sidan till facit, 19.4 publiceringsflaggan. Stängd 2026-07-30 (S91 artonde resumen) sedan TASK-90:s nya förälder/barn-invariant fällde den. Samma dubbla blindhet som TASK-17: noll egna AC och ingen förälder/barn-kontroll. Ingen kod rörd vid stängningen; kortet bar ingen kvarvarande bokföring.
+<!-- SECTION:FINAL_SUMMARY:END -->
