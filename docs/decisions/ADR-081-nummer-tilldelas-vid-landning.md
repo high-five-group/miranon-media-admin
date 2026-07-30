@@ -108,6 +108,47 @@ verifieras*.
   något som inte kan kollidera — men inte den konkreta formen: PR-nummer är inte
   monotona i lesson-ordning, och samma referensnät-argument gäller.
 
+## Verktygsvalet: towncrier som VERKTYG — retroaktiv redovisning
+
+> **Tillagt 2026-07-30 (`TASK-86`), inte skrivet vid beslutet.** Ingenting ovan
+> ändras; ett hål fylls. Verktygsvals-prövningen blev ett **stående** krav först
+> 2026-07-27 (restlistans § A3b): innan ett nytt skript byggs ska prövningen göras
+> och **utfallet redovisas** — även när domen blir "bygg eget". ADR-081 byggdes
+> samma dag, före kravet.
+
+Prövningen gjordes **delvis**. towncrier lästes, och dess *mönster* lånades — det
+står i § Ärlighet om underlaget nedan. Vad som aldrig skrevs ned var domen i den
+andra frågan: varför towncrier inte togs som **verktyg**. Två skilda frågor, en
+besvarad.
+
+**Skälen nedan är ett RESONEMANG, inte en mätning.** De rekonstruerades i
+efterhand; ingen av dem prövades empiriskt 2026-07-27. Det skrivs ut hellre än att
+formen kläs som en prövning som inte gjordes:
+
+- **Körtidsberoendet.** towncrier är ett Python-verktyg; detta är ett
+  Node-projekt. Att dra in en Python-körtid i grind-kedjan för vad som i vårt fall
+  är en filnamnskonvention är en kostnad utan motsvarande vinst.
+- **Livscykeln matchar inte.** towncrier bygger en changelog-sektion ur fragmenten
+  vid **release** och tömmer katalogen. `tasks/lessons.md` har inga releaser — den
+  är en löpande fil som konsolideras när en post landar, inte när en version
+  klipps.
+- **Verktyget gör inte vårt jobb.** towncrier tilldelar inget nummer; det undviker
+  numret. Undvikandet *är* mönstret vi lånade — och ett mönster är gratis att låna.
+  Tilldelningssteget, som är hela beslut 1 ovan, har towncrier inget stöd för.
+
+**Vad som senare faktiskt mättes — av någon annan, i efterhand.** Den tredje
+punkten fick empiriskt stöd först två dagar senare:
+[nummerallokerings-passet 2026-07-29](../research/nummerallokering-parallella-aktorer-2026-07-29.md)
+§ Fynd 1b körde towncrier `24.8.0` och fann att ett orphan-fragment renderas
+**nummerlöst** vid `build` — verktyget tilldelar aldrig ett nummer. Det bekräftar
+domen ovan. Det gör den **inte** till en mätning: passet hade ett annat syfte, kom
+efter beslutet, och 2026-07-27 fanns bara resonemanget.
+
+Samma pass bär också en korrigering av **precedent-anspråket** i § Ärlighet om
+underlaget — att towncriers `+`-form är *"vår form exakt"* håller bara för halva
+formen. Den korrigeringen rör mönster-lånet, inte verktygsvalet, och ligger utanför
+denna amendering.
+
 ## Konsekvenser
 
 **Positiva:** kollisionen blir strukturellt omöjlig för nya lessons, inte bara
