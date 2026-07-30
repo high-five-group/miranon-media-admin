@@ -88,9 +88,14 @@ Egen gren, beskrivande namn. Direktpush till `main` avvisas av ruleset (ADR-076)
 `git add` är **path-scopad**, alltid. `git commit` committar hela indexet, och
 DoD kräver noll orelaterade filer i diffen.
 
-Öppna PR med `gh pr create`. **Armera INTE auto-merge** — orkestreraren
-sekvenserar PR-kön; repot kör strict required checks, så två PR:er som landar
-parallellt sätter den andra i BEHIND.
+Öppna PR med `gh pr create`. **Armera INTE auto-merge** — orkestreraren granskar
+din diff innan den köas.
+
+Skälet är inte längre `BEHIND`. Kön bygger varje post mot `main` plus posterna
+före den, så mekaniska konflikter mellan parallella landningar är lösta
+(`CLAUDE.md` § Landning). Vad kön inte ser är två diffar som mergar rent och
+ändå är fel tillsammans — och du kan inte se dina syskonagenter. Det kan
+orkestreraren.
 
 ## När något oväntat dyker upp
 
