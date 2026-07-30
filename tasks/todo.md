@@ -15,6 +15,27 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-30, artonde resumen — vågen ute)** —
+Ingångsläget rent: HEAD `b8ca291`, `#471` landad `17:34:21Z`, tre körningar
+`success`, `audit-ci` grön (752 deps), registret **169** kort (123 Done / 46
+To Do / **0 In Progress**), restlistan **34** obockade — samtliga tal exakt
+`PAUSLÄGE`:s. Numreringen oförändrad på alla sex axlar. **FILYTAS-KONTROLLEN
+KÖRD** — den lucka Del 31 lämnade öppen — och gav **två fynd**: `TASK-88` bär en
+**Marcus-STOPP i AC #1**, vilket **falsifierar Del 31:s påstående** att
+`TASK-70.7` var det enda sådana kortet · `87` och `88` delar
+`.purge-staging-policy.json`, som partitionen klassat som semafor-hanterad
+(semaforen serialiserar körningar, inte fil-redigeringar). Marcus svar på
+ZZ-frågan blev *"Ingen aning"* → **`88` drogs ur vågen** (frånvaro av
+auktorisation är inte auktorisation). **WORKTREE-SKULDEN STÄDAD:** 16 avställda
+agent-worktrees borttagna (var och en verifierad som förfader till `main`, 0
+vägrade), lokala grenar **32 → 5**; rutin-ändringen till `session-paus`/
+`session-end` är Marcus beslut och kortas. **VÅG 1 UTE: sex agenter** — `86`
+`87` `89` `90` `91` `92`. Våg 2 bär `85` (delar `ci.yml` med `92`) och `93`
+(dess AC #3 hade alltid stängt som blockerat under en våg). `TASK-79` separat på
+tyst maskin. Numrering: 91/084/L360 (**55** fragment)/T110/f46/**task-94**.
+Full narrativ: sessionsdok **Del 34**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-30, sjuttonde pausen — dukat för
 tio-agents-vågen)** — **SEX PR:er landade** (`#463` `#465` `#466` `#467` `#468`
 `#470`) plus `#471` armerad; hub `#7` (`000ceab`). **`A2:7` DELAD på Marcus
