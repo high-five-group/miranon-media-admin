@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-29
+updated: 2026-07-30
 review_by: 2026-11-15
 status: stable
 ---
@@ -138,6 +138,13 @@ vänta på sällskap.
 
 **Vad som fortfarande gäller:** armera aldrig en PR vars bygg-agent fortfarande
 arbetar, och kör aldrig `update-branch` mot en sådan gren.
+
+**`autoMergeRequest` är INTE armerings-signalen.** Under aktiv merge queue köar
+`gh pr merge --auto --merge` PR:en direkt, och fältet förblir `null` — även för
+en korrekt köad PR. Läser du det som "ej armerad" jagar du ett spöke. Signalen
+som betyder något är att ett andra anrop svarar `already queued to merge`.
+Belagt 2026-07-30: `#473` hade `autoMergeRequest: null` **och landade**; `#474`
+rapporterades av Code som "EJ ARMERAD" på samma fält och var köad hela tiden.
 
 **Om kön går sönder:** vägen tillbaka är att ta bort `merge_queue`-regeln ur
 rulesetet via `gh api` — den kräver ingen landning och är därför oberoende av
