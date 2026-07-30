@@ -111,7 +111,16 @@ skip_gate() {
 # --exclude-path .claude/worktrees är no-op i CI (worktrees är gitignorerade och
 # checkas aldrig ut där) men bärande lokalt: katalogen innehåller kompletta
 # checkouts av repot på andra grenar, och utan raden länk-kontrolleras de.
+#
+# SPEGLINGEN ÄR GRINDAD SEDAN TASK-85. Raden ovan — "får inte glida isär" — var
+# fram till dess ett löfte utan mekanism, och ADR-081:s landning bevisade att
+# löftet inte räcker: den lade `./tasks/lessons.d/*.md` i BÅDA listorna och
+# ökade därmed duplikationen med en rad utan att någon grind såg det. Markörerna
+# nedan avgränsar blocket för scripts/check-listparitet.sh, som jämför det mot
+# ci.yml:s `paritet:start lychee-ci`-block. Kommentarer måste stå OVANFÖR
+# start-markören — regionen mellan markörerna läses som data.
 if command -v lychee >/dev/null 2>&1; then
+    # paritet:start lychee-lokal
     run_gate "lychee link check" \
         lychee --offline --no-progress --exclude-path docs/archive \
         --exclude-path docs/reference/pocock \
@@ -119,6 +128,7 @@ if command -v lychee >/dev/null 2>&1; then
         './docs/**/*.md' './tasks/*.md' './tasks/sessions/*.md' \
         './tasks/threads/*.md' './tasks/lessons.d/*.md' \
         './.claude/**/*.md' './*.md'
+    # paritet:slut lychee-lokal
 else
     skip_gate "lychee link check" "lychee-binären saknas lokalt — CI kör den"
 fi

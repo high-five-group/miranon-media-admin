@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-29 17:35'
-updated_date: '2026-07-30 19:32'
+updated_date: '2026-07-30 21:32'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,13 +31,15 @@ Källa: restlistans § A3, posten "Listparitets-grinden (dom: LAGA)". Utvidgad r
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 PARITY_PATHS är HÄRLEDD ur faktiska filer, inte antagen — redovisa hur listparen hittades och varför just de
-- [ ] #2 Grinden täcker BÅDA listparen, inte bara lychee-globarna
-- [ ] #3 Tvåsidigt bevis: grinden är GRÖN mot nuvarande träd, och RÖD mot ett träd där ett listpar medvetet desynkats
-- [ ] #4 Config-driven per Lesson #6 — logiken i skriptet, värdena i .<grind>-policy.conf; skriptet ska kunna dupliceras till annat spoke utan refactor
-- [ ] #5 Fail-closed: kan grinden inte läsa ett listpar är det exit≠0, aldrig tyst grönt
-- [ ] #6 Wirad i CI, eller så är skälet till att den inte är det utskrivet
+- [x] #1 PARITY_PATHS är HÄRLEDD ur faktiska filer, inte antagen — redovisa hur listparen hittades och varför just de
+- [x] #2 Grinden täcker BÅDA listparen, inte bara lychee-globarna
+- [x] #3 Tvåsidigt bevis: grinden är GRÖN mot nuvarande träd, och RÖD mot ett träd där ett listpar medvetet desynkats
+- [x] #4 Config-driven per Lesson #6 — logiken i skriptet, värdena i .<grind>-policy.conf; skriptet ska kunna dupliceras till annat spoke utan refactor
+- [x] #5 Fail-closed: kan grinden inte läsa ett listpar är det exit≠0, aldrig tyst grönt
+- [x] #6 Wirad i CI, eller så är skälet till att den inte är det utskrivet
 <!-- AC:END -->
+
+
 
 ## Implementation Notes
 
