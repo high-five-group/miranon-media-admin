@@ -139,12 +139,24 @@ vänta på sällskap.
 **Vad som fortfarande gäller:** armera aldrig en PR vars bygg-agent fortfarande
 arbetar, och kör aldrig `update-branch` mot en sådan gren.
 
-**`autoMergeRequest` är INTE armerings-signalen.** Under aktiv merge queue köar
-`gh pr merge --auto --merge` PR:en direkt, och fältet förblir `null` — även för
-en korrekt köad PR. Läser du det som "ej armerad" jagar du ett spöke. Signalen
-som betyder något är att ett andra anrop svarar `already queued to merge`.
-Belagt 2026-07-30: `#473` hade `autoMergeRequest: null` **och landade**; `#474`
-rapporterades av Code som "EJ ARMERAD" på samma fält och var köad hela tiden.
+**`autoMergeRequest: null` betyder INTE "ej armerad".** Fältet beror på PR:ens
+tillstånd i armerings-ögonblicket. `gh pr merge --help` säger det rakt ut:
+*"If required checks have not yet passed, auto-merge will be enabled. If
+required checks have passed, the pull request will be added to the merge queue."*
+
+| Läge vid armering | Fältet | Vad det betyder |
+|---|---|---|
+| Checks körs — nypushad PR, normalfallet | **satt** | fältet ÄR signalen |
+| PR:en redan `CLEAN` | `null` | köades direkt; inget `autoMergeRequest` skapas någonsin |
+| Efter merge | `null` | nollas oavsett — säger ingenting om armeringen |
+
+Disambiguera med ett andra `gh pr merge --auto --merge`: svaret
+`already queued to merge` betyder köad.
+
+**En köad gren kan inte uppdateras.** Push avvisas med `GH006` så länge PR:en
+står i kön, och `--disable-auto` släpper inte låset — `gh` har ingen dequeue.
+Konsekvens: köa inte förrän diffen är den du vill landa, för möjligheten att
+ändra försvinner i samma ögonblick.
 
 **Om kön går sönder:** vägen tillbaka är att ta bort `merge_queue`-regeln ur
 rulesetet via `gh api` — den kräver ingen landning och är därför oberoende av
