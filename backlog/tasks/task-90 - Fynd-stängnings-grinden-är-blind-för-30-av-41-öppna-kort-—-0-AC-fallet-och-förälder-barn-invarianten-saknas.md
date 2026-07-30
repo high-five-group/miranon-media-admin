@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-29 17:36'
-updated_date: '2026-07-30 20:00'
+updated_date: '2026-07-30 20:09'
 labels:
   - ready-for-agent
 dependencies: []
@@ -45,8 +45,6 @@ Källa: sessionsdok S91 Del 27 § 27.2 punkt 5.
 - [x] #6 Fail-closed bevarat: noll kort ur CLI:t ⇒ exit 2, saknad policy ⇒ exit 2
 - [x] #7 shellcheck rent på ändrade skript
 <!-- AC:END -->
-
-
 
 ## Implementation Notes
 
@@ -111,6 +109,37 @@ MÄTNING AV KÖRKOSTNAD (relevant för T107): 170 CLI-anrop per körning (1 list
 oförändrat av denna ändring — barn-uppslaget sker mot insamlad data i minnet, inte via nya anrop.
 Väggtid lokalt 154-155 s vid loadavg 3.9-5.1 (2 körningar). LOKALA TAL — ingen CI-mätning gjord.
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-07-30 20:09
+---
+UPPFÖLJNING (orkestrerarens uppdrag, efter vågens slut): .backlog-closure-policy.conf tillagd i ci.yml:s shellcheck-scope.
+
+Avstod i första landningen eftersom ci.yml var delad yta under vågen. Vågen är slut, TASK-91/92 landade, och filen är fri — därför utfört nu i samma kort.
+
+BEVIS I BÅDA RIKTNINGAR (CI:s exakta kommando, shellcheck 0.11.0):
+- nytt scope + ren conf     -> exit 0
+- GAMMALT scope + trasig conf -> exit 0   <- luckan, demonstrerad
+- NYTT scope + trasig conf    -> exit 1   <- grindar nu
+- conf återställd bit-identiskt efteråt
+Defekten som återinfördes i provet är den äkta: en kommentarsrad vars första ord är
+verktygsnamnet tolkas som direktiv och ger SC1072/SC1073. Den fanns i filen fram till
+denna landning och syntes aldrig, just för att filen låg utanför scopet.
+
+Övriga grindar på workflow-ändringen: actionlint -color -ignore (CI:s exakta form) exit 0;
+yamllint .github/ exit 0.
+
+SIDOFYND, rättat i samma andetag: scope-kommentaren sade "5 sourced-config-filer" medan
+listan bar sex. Räkningen var alltså osann redan före mitt tillägg. Nu 7 och korrekt.
+
+BAS FLYTTAD: grenen rebasades medvetet från b8ca291 till 31b12bb för att ci.yml hade ändrats
+på main (3796b5b, TASK-92). Inga av mina filer berördes av rebasen. AC #5:s före/efter-tal
+står kvar stämplade vid b8ca291 — de mättes mot ett stillastående register och räknas inte om,
+eftersom en ommätning mot en annan bas hade blandat ihop min ändring med registerdrift.
+---
+<!-- COMMENTS:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
