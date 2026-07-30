@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-30 05:00'
-updated_date: '2026-07-30 05:01'
+updated_date: '2026-07-30 21:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -41,12 +41,12 @@ Underlag: `docs/research/nummerallokering-parallella-aktorer-2026-07-29.md` (PR 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 RÖTT-FÖRST: kollisionen reproducerad och dokumenterad med körutdrag — två arbetsträd, samma nästa-nummer, med `check_active_branches: false`. Utan detta bevis vet vi inte att vi mätt rätt sak
-- [ ] #2 STATUS-MÄTNINGEN (den blockerande): alla 168 korts `status:` avlästa FÖRE och EFTER flaggan satts `true`, som maskinell diff — inte stickprov, inte ögonmått. Research-passet lämnade detta obelagt och det är kortets tyngsta uppgift
-- [ ] #3 FLIPP-KRITERIET ÄR DETERMINISTISKT: flaggan sätts `true` OM OCH ENDAST OM status-diffen är TOM. Är en enda status ändrad flippas den INTE — fyndet rapporteras i stället, och kortet stängs som blockerat på Marcus-beslut. Ingen omdömesbedömning i stunden
-- [ ] #4 GRÖNT-EFTER: med flaggan `true` verifieras att kollisionen från AC #1 UTEBLIR — samma två-träds-uppställning, olika nummer. Tvåsidigt bevis, per husets grind-praxis
-- [ ] #5 TIDSKOSTNADEN MÄTT och nedskriven: `backlog task list` och `task create` före/efter, i sekunder. Den styr INTE flippen (AC #3 äger det) men tillverkaren varnar för stora repon, så talet ska finnas för Marcus avvägning
-- [ ] #6 GRÄNSEN SKRIVEN DÄR DEN GÄLLER: skyddet ser committat arbete; ocommitterade kort i ett systerträd är osynliga. Detta är en riskMINSKNING, inte en garanti — formuleras i `CONTRIBUTING.md` eller `CLAUDE.md` så nästa aktör inte tror att krocken är omöjlig
-- [ ] #7 ADR-081 AMENDERAS ÖPPET: beslut 4:s påstående "Kort: redan löst — `backlog`-CLI:t äger allokeringen" är falsifierat med mätning och ska rättas i ADR:n med hänvisning till detta kort. Öppen rivning, aldrig tyst omskrivning
-- [ ] #8 `remote_operations: false` RÖRS INTE av detta kort — den är också avstängd mot tillverkarens default och är en egen fråga (nätanrop per CLI-körning). Noteras som öppen post, ändras inte här
+- [x] #1 RÖTT-FÖRST: kollisionen reproducerad och dokumenterad med körutdrag — två arbetsträd, samma nästa-nummer, med `check_active_branches: false`. Utan detta bevis vet vi inte att vi mätt rätt sak
+- [x] #2 STATUS-MÄTNINGEN (den blockerande): alla 168 korts `status:` avlästa FÖRE och EFTER flaggan satts `true`, som maskinell diff — inte stickprov, inte ögonmått. Research-passet lämnade detta obelagt och det är kortets tyngsta uppgift
+- [x] #3 FLIPP-KRITERIET ÄR DETERMINISTISKT: flaggan sätts `true` OM OCH ENDAST OM status-diffen är TOM. Är en enda status ändrad flippas den INTE — fyndet rapporteras i stället, och kortet stängs som blockerat på Marcus-beslut. Ingen omdömesbedömning i stunden
+- [x] #4 GRÖNT-EFTER: med flaggan `true` verifieras att kollisionen från AC #1 UTEBLIR — samma två-träds-uppställning, olika nummer. Tvåsidigt bevis, per husets grind-praxis
+- [x] #5 TIDSKOSTNADEN MÄTT och nedskriven: `backlog task list` och `task create` före/efter, i sekunder. Den styr INTE flippen (AC #3 äger det) men tillverkaren varnar för stora repon, så talet ska finnas för Marcus avvägning
+- [x] #6 GRÄNSEN SKRIVEN DÄR DEN GÄLLER: skyddet ser committat arbete; ocommitterade kort i ett systerträd är osynliga. Detta är en riskMINSKNING, inte en garanti — formuleras i `CONTRIBUTING.md` eller `CLAUDE.md` så nästa aktör inte tror att krocken är omöjlig
+- [x] #7 ADR-081 AMENDERAS ÖPPET: beslut 4:s påstående "Kort: redan löst — `backlog`-CLI:t äger allokeringen" är falsifierat med mätning och ska rättas i ADR:n med hänvisning till detta kort. Öppen rivning, aldrig tyst omskrivning
+- [x] #8 `remote_operations: false` RÖRS INTE av detta kort — den är också avstängd mot tillverkarens default och är en egen fråga (nätanrop per CLI-körning). Noteras som öppen post, ändras inte här
 <!-- AC:END -->
