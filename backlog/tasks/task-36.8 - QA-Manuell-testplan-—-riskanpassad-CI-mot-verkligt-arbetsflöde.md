@@ -1,10 +1,10 @@
 ---
 id: TASK-36.8
 title: 'QA: Manuell testplan — riskanpassad CI mot verkligt arbetsflöde'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-23 17:15'
-updated_date: '2026-07-25 19:12'
+updated_date: '2026-07-30 16:51'
 labels:
   - ready-for-human
 dependencies:
@@ -58,8 +58,6 @@ TESTPLAN
 - [x] #3 Eventuella fynd har blivit EGNA kort med exakt symptom och förväntat beteende — planen retuscheras aldrig i efterhand
 <!-- AC:END -->
 
-
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -85,10 +83,26 @@ FYND SOM BLEV EGNA KORT (AC #3): TASK-49 (visual-tröskelns vyport-asymmetri) ·
 Ingen punkt retuscherades i efterhand. Två av tolv punkter är öppet oavklarade med skäl.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+STÄNGD 2026-07-30 på noteringarna. Vandringen GENOMFÖRD 2026-07-25 (S88) av Code på Marcus delegation — "utför C åt mig som om du vore mig" — med utfall per punkt. Marcus bekräftade delegationen i S91 Del 27.4: "Det står ju i anteckningarna att jag delegerat till dig att utföra vandringen."
+
+TRE FYND BLEV EGNA KORT: TASK-49, TASK-50, TASK-51. Planen retuscherades aldrig i efterhand (AC #3).
+
+TVÅ PUNKTER ÖPPET OAVKLARADE MED SKÄL — bokförda, inte bortstädade:
+- Punkt 5 kräver en icke-up-to-date merge, vilket är omöjligt utan att försvaga merge-grinden. Priset togs inte.
+- Punkt 12 ("känns flödet snabbare efter en veckas normalt arbete") är en genuin Marcus-fråga som kräver kalendertid, inte en körning.
+
+Stängningen var beslutad och dokumenterad i S91 Del 27.5 steg 0 ("TASK-36.8 stängd på noteringarna — backlog-grindens enda fällning borta") men VERKSTÄLLDES ALDRIG. Kortet stod därför kvar som registrets enda inkonsistenta post i tre dygn, och rapporterades felaktigt som "väntar på Marcus" i fyra transparens-rapporter 2026-07-30 av en orkestrerare som läst PAUSLÄGE men inte Del 27.4.
+
+DoD #2-#4: kortet ändrar ingen kod; grindarna gäller stängnings-commiten och verifieras på den.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
