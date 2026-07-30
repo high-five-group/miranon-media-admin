@@ -172,6 +172,45 @@ orkestreraren i fällan två gånger under en och samma resume 2026-07-28. Det
 var beviset för att en regel utan mekanism inte efterlevs — och skälet till att
 den nu har en.
 
+### Kortnummer — verktyget skyddar, men bara halva vägen
+
+`backlog/config.yml` har `check_active_branches: true` sedan `TASK-93`
+(2026-07-30). CLI:t läser andra aktiva grenar före det allokerar ett kort-ID och
+hoppar över nummer som redan är tagna där.
+
+**Det är en riskMINSKNING, inte en garanti.** Skyddet ser bara **committat**
+arbete. Tre hål är mätta och kända:
+
+| Läge | Skyddar flaggan? |
+|---|---|
+| Kortet är committat på en annan gren | **Ja** — numret hoppas över |
+| Kortet är skapat men **inte committat** i ett systerträd | **Nej** — osynligt |
+| Kortet ligger **ospårat i huvudträdet** medan en agent räknar från `main` | **Nej** |
+| Grenen är äldre än `active_branch_days` (30) | **Nej** |
+
+Praktiskt, i den ordningen:
+
+1. **`git fetch` + fast-forwarda före `task create`.** En föråldrad worktree ger
+   dig ett nummer som redan är taget i merge-kön.
+2. **Committa kortet i samma andetag som du skapar det.** Uppskjuten bokföring är
+   inte neutral väntan — den är en osynlig reservation av en delad resurs.
+3. **Krockar det ändå: rätta via CLI:t, aldrig för hand.** Parkera kortet utanför
+   registret och återskapa det med `task create` när den andra posten landat. En
+   handredigerad `id:`-rad löser symptomet och bryter den regel som gör registret
+   trovärdigt.
+
+**Kostnaden är mätt, och den träffar smalare än man tror:** `task list` går från
+~0,52 s till ~6,50 s och `task create` från ~0,69 s till ~7,09 s, men
+`task <id>` (view) är **opåverkad** (~0,52 → ~0,55 s). Kostnaden är per
+`list`/`create` — inte per CLI-anrop. Därför tog `check-backlog-closure.sh`
+164,60 s med flaggan på, trots sina ~173 anrop: den gör ett `list` och resten
+`view`. Multiplicera inte per-anropstalet; mät.
+
+**Varför raden står här:** den gäller i `task create`-ögonblicket, och en agent
+som ska minta ett kort läser inte en ADR först. `ADR-081` påstod i tre månader att
+kortnumren *"redan är lösta"* — det var falskt hela tiden, och kostade en skarp
+kollision 2026-07-30 innan någon mätte efter. Rättelsen: `ADR-081` § Updates.
+
 ---
 
 ## Filstruktur

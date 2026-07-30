@@ -77,6 +77,8 @@ verifieras*.
 ### 4. Räckvidden är lessons — de tre andra serierna åtgärdas inte här
 
 - **Kort:** redan löst. `backlog`-CLI:t äger allokeringen.
+  **Detta påstående är FALSIFIERAT — se [§ Updates](#updates).** Raden står kvar
+  fryst (L53); rättelsen och mätningen finns där.
 - **ADR och tråd:** mintas nästan uteslutande av orkestreraren, alltså redan
   seriellt i praktiken, och ADR-räknings-grinden fäller på drift. Risken är reell
   men obeprövad. Att bygga fragment-vägar för dem nu vore spekulativ komplexitet
@@ -206,3 +208,94 @@ Efterlevnaden bör läsas av i praktiken innan formen utsträcks till fler serie
   delegerings-bokföring, samma spår
 - [`tasks/lessons.d/README.md`](../../tasks/lessons.d/README.md) — konventionen i
   bruksform
+
+## Updates
+
+### 2026-07-30 — Beslut 4:s kort-undantag är falsifierat; omprövningsvillkoret har utlösts (`TASK-93`)
+
+Beslut 4 skrev: *"**Kort:** redan löst. `backlog`-CLI:t äger allokeringen."*
+**Det är falskt under vår konfiguration**, och rättas här öppet i stället för att
+skrivas om ovan (besluts-texten är fryst, L53).
+
+**Vad som var fel i resonemanget.** Premissen — CLI:t äger allokeringen — gäller
+inom **ett** arbetsträd. Varje git-worktree har en egen `backlog/tasks/`, och
+allokatorn läser det lokala filsystemet. Sedan worktree-isoleringen mekaniserades
+2026-07-28 är "ett träd" inte längre normalfallet. ADR:n mätte alltså inte en
+mekanism utan en arbetsform som just höll på att bytas ut.
+
+**Mätt, inte resonerat.** Tre körningar i äkta git-worktrees, CLI `1.47.1`,
+identisk uppställning, en variabel i taget (`TASK-93` AC #1/#4):
+
+| Fall | `check_active_branches` | A:s kort | Utfall |
+|---|---|---|---|
+| Rött | `false` | committat | **kollision** — A och B fick båda `task-4` |
+| Grönt | `true` | committat | ingen kollision — A `task-4`, B `task-5` |
+| Gräns | `true` | **ocommitterat** | **kollision kvar** — båda `task-4` |
+
+Noll kollisioner på 168 kort mätte alltså turen och den seriella arbetsformen,
+inte en mekanism.
+
+**Vad skyddet täcker — och vad det inte täcker.** Detta är amenderingens kärna,
+eftersom en riskminskning som läses som en garanti är farligare än ingen alls:
+
+- **Täcks:** ett kort som är **committat** på en annan aktiv gren (inom
+  `active_branch_days: 30`). CLI:t läser grenen och hoppar över numret.
+- **Täcks INTE — ocommitterat arbete.** Fönstret mellan `task create` och
+  `git commit` är osynligt för allokatorn i varje annat träd (fall "Gräns" ovan).
+- **Täcks INTE — huvudträdet mot en gren.** 2026-07-30 mintade orkestreraren två
+  kort som låg **ospårade** i huvudträdet; en bygg-agent räknade från `main` och
+  landade på samma `task-95`. Påslagen flagga hade **inte** hjälpt: konflikten låg
+  mellan huvudträdet och en gren, inte mellan två grenar. Löstes genom att parkera
+  kortet och återskapa det via CLI:t → `TASK-97`.
+- **Täcks INTE — grenar äldre än `active_branch_days`.** 30 dagar är gränsen.
+
+Flaggan är därmed en **riskminskning, inte en garanti**. Den formuleringen bor i
+[`CLAUDE.md`](../../CLAUDE.md) § Kortnummer, där den gäller i handlings-ögonblicket
+— en ADR läses inte före ett `task create`.
+
+**Åtgärd.** `check_active_branches` satt till `true` i `backlog/config.yml`.
+Flipp-kriteriet var deterministiskt och avgjordes av mätning, inte omdöme: alla
+173 korts status avlästes före och efter, på två axlar (CLI-rapporterad status och
+frontmatterns `status:` på disk), och **båda diffarna var tomma**. Instrumentet
+kontrastbevisades — en enda framtvingad statusändring fick båda axlarna att fälla
+och peka ut rätt kort — så nollresultatet är äkta, inte blindhet.
+
+**Vad det kostar — och vad det INTE kostar.** Flaggan är inte gratis, men
+kostnaden träffar smalare än väntat. Mätt lokalt, 173 kort, 28 lokala + 16
+fjärrgrenar (median av fem varv):
+
+| Anrop | `false` | `true` | Slutsats |
+|---|---|---|---|
+| `task list --plain` | ~0,52 s | ~6,50 s | **~12× dyrare** |
+| `task create` | ~0,69 s | ~7,09 s | **~10× dyrare** |
+| `task <id> --plain` (view) | ~0,52 s | ~0,55 s | **opåverkad** |
+
+Det närliggande felslutet vore att multiplicera: `check-backlog-closure.sh` gör
+~173 CLI-anrop, alltså ~+1 000 s. **Så blev det inte, och det mättes i stället
+för att antas.** Grinden gör *ett* `list`-anrop plus ~173 `view`-anrop, och view
+rör inte gren-skanningen. Skarp körning med flaggan `true`: **164,60 s** — inom
+det intervall grinden låg på före (154–165 s). Kostnaden är alltså per
+`list`/`create`, inte per CLI-anrop.
+
+Talet är lastberoende: `list` med `true` mättes till ~6,5 s vid loadavg 3,2 och
+~10–12 s vid loadavg 5,4. Det är lokala tal, inte CI-tal.
+
+**Raden var oskyldig när den skrevs.** `check_active_branches: false` sattes vid
+instansens födelse (`e106e7f`, S48) och ändrades aldrig. Commit-meddelandet listar
+`integration none` och `autoCommit false` som medvetna val; flaggan nämns inte —
+den är ett init-default ingen valde. Samma klass som ADR-083:s fynd: rätt när den
+skrevs, fel när förutsättningarna flyttade, ogranskad för att ingen visste att den
+fanns.
+
+**Omprövningsvillkoret är utlöst — för kort.** Beslut 4 skrev: *"**Omprövas om en
+kollision faktiskt inträffar** — det är villkoret, inte en känsla."* Villkoret är
+uppfyllt för kort-serien (tre instanser 2026-07-29/30: en reproducerad i rigg, en
+skarp, en nästan-kollision). **För ADR- och tråd-serierna är det inte utlöst** —
+ingen kollision har inträffat där, och beslut 4:s andra punkt står därför orörd.
+
+**Öppen post, medvetet orörd:** `remote_operations: false` är också avstängd mot
+tillverkarens default. Den är en egen fråga — den lägger nätanrop på varje
+CLI-körning — och rördes inte av `TASK-93`.
+
+Underlag: [`docs/research/nummerallokering-parallella-aktorer-2026-07-29.md`](../research/nummerallokering-parallella-aktorer-2026-07-29.md)
+· [`tasks/lessons.d/osparad-bokforing-ar-en-delad-tillstandsyta.md`](../../tasks/lessons.d/osparad-bokforing-ar-en-delad-tillstandsyta.md)
