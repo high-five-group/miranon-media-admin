@@ -168,6 +168,21 @@ jobs:
           # ab52cd5, 7b60dc1, b48ece0 och 8b98e95 rörde ENBART den filen och drog
           # var och en full svit bakom staging-mutexen.
           quotepath: false
+          # ═══ PARITETS-MARKÖRER (TASK-85) ═══
+          # Raderna `# paritet:start …` / `# paritet:slut …` avgränsar en LISTA
+          # som scripts/check-listparitet.sh läser och jämför mot sin motpart.
+          # Vilka par som finns, och varför, står i .listparitet-policy.conf.
+          #
+          # MARKÖRERNA MÅSTE STÅ UTANFÖR `files: |`, aldrig inne i blocket. Det
+          # är samma regel som "NOT OM FORMEN" ovan slår fast: en `#`-rad inne i
+          # en literal block scalar blir en literal glob-post, inte en kommentar.
+          # Verifierat efter placeringen med js-yaml, yamllint och actionlint —
+          # blockets värde är oförändrat med markörerna på plats.
+          #
+          # DENNA LISTA BÄR TVÅ PAR PÅ EN GÅNG: `!`-raderna jämförs mot D1:s och
+          # acceptance-klassens (kommentarerna i de stegen säger IDENTISKA), och
+          # de positiva raderna mot changed-docs-stegets (PARAD ÄNDRING ovan).
+          # paritet:start klassning-d0
           files: |
             **/*.md
             LICENSE
@@ -198,6 +213,7 @@ jobs:
             !tsr.config.json
             !.nvmrc
             !.gitignore
+          # paritet:slut klassning-d0
 
       - name: Get changed docs files
         id: changed-docs
@@ -243,6 +259,7 @@ jobs:
           # docs_changed=false → Docs link check TYST SKIPPAD på en äkta
           # docs-ändring (allvarligare granne till only_changed-symptomet).
           quotepath: false
+          # paritet:start klassning-docs (se markör-noten i changed-files-steget)
           files: |
             **/*.md
             .lycheeignore
@@ -254,6 +271,7 @@ jobs:
             .github/workflows/ci.yml
             .claude/**
             .claude/**/.*
+          # paritet:slut klassning-docs
 
       - name: Get changed UI files (D1-klassning)
         id: changed-ui
@@ -268,6 +286,7 @@ jobs:
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
           quotepath: false
+          # paritet:start klassning-d1 (se markör-noten i changed-files-steget)
           files: |
             **/*.css
             src/styles/**
@@ -284,6 +303,7 @@ jobs:
             !tsr.config.json
             !.nvmrc
             !.gitignore
+          # paritet:slut klassning-d1
 
       - name: Get changed acceptance-class files (klass-lokal ändring)
         id: changed-acceptance
@@ -333,6 +353,7 @@ jobs:
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
           quotepath: false
+          # paritet:start klassning-acceptance (se markör-noten i changed-files-steget)
           files: |
             tests/acceptance/**
             !.github/workflows/**
@@ -347,6 +368,7 @@ jobs:
             !tsr.config.json
             !.nvmrc
             !.gitignore
+          # paritet:slut klassning-acceptance
 
       - name: Acceptance-urval — kör den delmängd diffen rör
         id: acceptance-urval
@@ -571,6 +593,27 @@ jobs:
         # bärar-platser). L50:s obyggda test-hälft.
         run: bash scripts/check-fetch-depth-invariant.sh
 
+      - name: Check list parity (TASK-85 gate)
+        # Repot bär flera invarianter som står på TVÅ ställen och som filerna
+        # SJÄLVA säger ska hållas i synk: "PARAD ÄNDRING (obligatorisk)",
+        # "Exkluderingarna är IDENTISKA med should_skip_tests-stegets", "speglar
+        # det blocket i sak … får inte glida isär". ci.yml skrev till och med ut
+        # att mekaniken saknades: "ingen grind håller dem synkade — paret hålls
+        # för hand". Fem par vaktas nu; vilka, och varför just de, står härlett i
+        # .listparitet-policy.conf.
+        #
+        # HÄR OCH INTE I DOCS-JOBBET, trots att ett av paren läser CONTRIBUTING.md:
+        # tre av fem par bor i DENNA fil, och docs-jobbet är villkorat på
+        # docs_changed. En ci.yml-only-ändring hade då kunnat drifta klassnings-
+        # listorna utan att grinden kördes. Lint-jobbet kör alltid.
+        #
+        # Ren textläsning, inget nätverk. 1,15–1,28 s väggtid över tre körningar,
+        # LOKALT mätt (macOS, 2026-07-30, loadavg 3,97–4,13,
+        # `time bash scripts/check-listparitet.sh`). CI-TIDEN ÄR INTE MÄTT AV MIG
+        # och kan avvika åt båda håll — en lokal mätning projicerad till CI är
+        # ingen mätning.
+        run: bash scripts/check-listparitet.sh
+
       - name: Test consistency gates (truth-table self-verification)
         # Per ADR-039 § lesson→grind: en grind är inte en grind förrän dess
         # fyrning FORTLÖPANDE verifieras (L43). Kontrast-testet bevisade dem
@@ -614,6 +657,14 @@ jobs:
         # Stubbad, ingen nätverkstrafik. 7,6 s LOKALT mätt (macOS, 2026-07-29,
         # `time bash scripts/test-staging-semaphore.sh`) — CI-tiden är INTE mätt
         # av mig och kan avvika åt båda håll.
+        #
+        # test-check-listparitet.sh (TASK-85) hör hit av samma kadens-skäl.
+        # Sviten prövar listparitets-grinden i BÅDA riktningar (post borttagen ur
+        # den ena listan, post tillagd i den andra) plus elva fail-closed-grenar.
+        # Den viktigaste av dem är NOLL EXTRAHERADE POSTER: två tomma mängder är
+        # lika, alltså grönt, alltså en grind som rapporterar paritet på ett par
+        # den inte längre läser. Det felläget inträffade skarpt under bygget.
+        # Sandboxad i egen mktemp-katalog med trap-cleanup, ingen nätverkstrafik.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -624,6 +675,7 @@ jobs:
           bash scripts/test-agent-spawn-log.sh
           bash scripts/test-ci-wait.sh
           bash scripts/test-staging-semaphore.sh
+          bash scripts/test-check-listparitet.sh
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
@@ -837,15 +889,17 @@ jobs:
         # --enable=all aktiverar optional checks (SC2250, SC2312,
         # SC2310, SC2311 m.fl. som är default-disabled).
         # Scope per ADR-033 § Del 3: scripts/*.sh + .githooks/* +
-        # 7 sourced-config-filer (.checklist-policy.conf +
+        # 8 sourced-config-filer (.checklist-policy.conf +
         # .frontmatter-policy.conf + .lesson-policy.conf, tillagd S91/ADR-081 +
         # .ci-wait-policy.conf, tillagd S91/TASK-72 +
         # .staging-semaphore-policy.conf, tillagd S91/TASK-77 +
         # .permissions-claims-policy.conf, tillagd S91/ADR-083 +
-        # .backlog-closure-policy.conf, tillagd S91/TASK-90 — en sourced conf
+        # .backlog-closure-policy.conf, tillagd S91/TASK-90 +
+        # .listparitet-policy.conf, tillagd S91/TASK-85 — en sourced conf
         # utanför scopet är samma lucka som de övriga redan stänger).
         # Räkningen sade "5" medan listan bar sex filer fram till TASK-90;
-        # rättad i samma andetag som den sjunde lades till.
+        # rättad i samma andetag som den sjunde lades till, och räknad om till
+        # åtta i TASK-85.
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -859,7 +913,8 @@ jobs:
             .ci-wait-policy.conf \
             .staging-semaphore-policy.conf \
             .permissions-claims-policy.conf \
-            .backlog-closure-policy.conf
+            .backlog-closure-policy.conf \
+            .listparitet-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
@@ -1051,6 +1106,13 @@ jobs:
           # scripts/check-docs.sh speglar detta block i sak — den lokala
           # körningen behöver raden, och divergens mellan de två är felklassen
           # skriptet finns för att stänga.
+          #
+          # SPEGLINGEN ÄR SEDAN TASK-85 GRINDAD, inte längre bara utlovad:
+          # markörerna nedan avgränsar blocket för scripts/check-listparitet.sh,
+          # som jämför det mot check-docs.sh:s motsvarande markerade block. Alla
+          # kommentarer måste stå OVANFÖR start-markören — regionen mellan
+          # markörerna läses som data.
+          # paritet:start lychee-ci
           args: >-
             --offline
             --no-progress
@@ -1065,6 +1127,7 @@ jobs:
             './tasks/lessons.d/*.md'
             './.claude/**/*.md'
             './*.md'
+          # paritet:slut lychee-ci
           fail: true
           token: ${{ secrets.GITHUB_TOKEN }}
 

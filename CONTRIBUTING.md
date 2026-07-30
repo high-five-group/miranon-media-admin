@@ -73,9 +73,13 @@ seed-ankaret är dokumenterat i `docs/BUILD-LOG.md`, sök på variabelnamnet).
 Skilj symptomen åt innan felklassning.
 
 **Sentinel-städning (ADR-060, wirad via TASK-16):** create-conformance-
-testerna lämnar markör-märkta rader i staging-basen
-(`create-test+…@staging.test` i Anmälningar, `Ort='ZZ-create-event-test'` i
-Eventplanering). CI städar dem automatiskt i jobbet **Staging sentinel
+testerna lämnar markör-märkta rader i staging-basen. Markörerna är fyra:
+`create-test+` … `@staging.test` i Anmälningars e-postfält,
+`ZZ-create-event-test` i Eventplaneringens `Ort`, `ZZ-note-test+` …
+`@sentinel` i Anteckningar, och `app-segment-test+` i Segment.
+Uppräkningen hålls komplett mot `.purge-staging-policy.json` av
+`scripts/check-listparitet.sh` (paret `sentinel-markorer`) — den stod med
+två av fyra tills den grinden byggdes. CI städar dem automatiskt i jobbet **Staging sentinel
 purge** FÖRE Test + Build (setup-purge, ADR-060 punkt 3–4; separat jobb med
 egen least-privilege-token scopad till enbart staging-basen — test-env bär
 ALDRIG Airtable-cred, EF-only-gränsen). Lokalt: `npm run purge:staging`
