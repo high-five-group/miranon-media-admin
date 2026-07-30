@@ -1,7 +1,7 @@
 project_name: "miranon-media-admin"
 default_status: "To Do"
 statuses: ["To Do", "In Progress", "Done"]
-labels: ["ready-for-agent", "ready-for-human", "wontfix"]
+labels: ["ready-for-agent", "ready-for-human", "wontfix", "intentionally-open"]
 date_format: yyyy-mm-dd
 max_column_width: 20
 auto_open_browser: false

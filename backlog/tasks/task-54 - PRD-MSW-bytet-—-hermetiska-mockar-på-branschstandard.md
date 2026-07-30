@@ -4,7 +4,9 @@ title: 'PRD: MSW-bytet — hermetiska mockar på branschstandard'
 status: To Do
 assignee: []
 created_date: '2026-07-27 15:02'
-labels: []
+updated_date: '2026-07-30 19:45'
+labels:
+  - intentionally-open
 dependencies: []
 ordinal: 116000
 ---
