@@ -4,6 +4,7 @@ title: 'Fynd: check-lesson-numbers.sh saknar retroaktiv verktygsvals-redovisning
 status: To Do
 assignee: []
 created_date: '2026-07-29 17:35'
+updated_date: '2026-07-30 19:13'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,10 +28,12 @@ Källa: restlistans § A3b, posten "Retroaktiv redovisning för check-lesson-num
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ADR-081 bär en redovisning av varför towncrier valdes bort som VERKTYG, skild från att dess mönster lånades
-- [ ] #2 Redovisningen är märkt som RESONEMANG, inte som mätning — den fejkar ingen prövning som inte gjordes
-- [ ] #3 Ingen annan del av ADR-081 ändras — detta är en tillägg, inte en omskrivning
+- [x] #1 ADR-081 bär en redovisning av varför towncrier valdes bort som VERKTYG, skild från att dess mönster lånades
+- [x] #2 Redovisningen är märkt som RESONEMANG, inte som mätning — den fejkar ingen prövning som inte gjordes
+- [x] #3 Ingen annan del av ADR-081 ändras — detta är en tillägg, inte en omskrivning
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
