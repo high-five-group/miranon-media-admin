@@ -189,6 +189,33 @@ kvar. Den är lika hårt guardad som create-läget och rapporterar varje rad den
 LÄMNAR kvar, med orsak. En rad utan fixtur-markör rörs aldrig; fail-safe-
 riktningen är alltid "hellre lämna kvar och rapportera".
 
+### Fixturens livstid — den tar aldrig slut av sig själv
+
+Fixturen är immun mot CI-purgen med flit (fälla 1 nedan). Det skyddet svarar på
+frågan *"vem får INTE radera fixturen medan granskningen pågår"*. **Ingenting
+svarar på "vem raderar den när granskningen är slut."** Det finns ingen TTL,
+ingen påminnelse och inget CI-steg som listar kvarlämnade fixturer — och
+purge-policyns `minAgeMinutes` gäller bara dess egna targets, som fixturen
+medvetet inte är. Städningen är alltså ett mänskligt moment, och raden skriptet
+skriver ut på slutet är en **uppmaning, inte en mekanism**.
+
+Vad det kostar, mätt: `ZZ-GRANSKNING-S91` bär noteringen "Raderas efter
+granskning." och `Event-796` (Ort `Skövde`) bär "GRANSKNINGSDATA … Städas efter
+review-vågen" sedan 2026-07-22. Båda står kvar i staging. Två fixturer, två
+skrivna uppmaningar, noll efterlevnad. Mekaniseringen ägs av `TASK-95` — tills
+den landat är städningen din att komma ihåg.
+
+**Legacy-fällan: `clean` tar bara fixturer skriptet självt skapat.** Den
+identifierar via sina egna markörer — `[SEED-REVIEW-FIXTUR]` först i eventets
+`Notering`, och e-post på formen `seed-review+<slug>-NN@granskning.test`. En
+fixtur byggd för hand bär ingen av dem. `clean` rapporterar då `Inget att
+städa` **med exit 0** medan fixturen står kvar; det enda som röjer den är
+`⚠️ … lämnas kvar — saknar fixtur-sentinel i Notering`. Mätt 2026-07-30 mot
+`ZZ-GRANSKNING-S91`: noll poster raderade, 33 kvar (1 event + 16 anmälningar +
+16 personer). Fail-safe-riktningen fungerar precis som avsett — men den betyder
+också att en handbyggd fixtur inte går att städa med det verktyg som finns.
+Läs alltid `▸ Raderas:`-raden, aldrig bara exitkoden.
+
 ### De fyra fällorna i skriptet
 
 Fällorna nedan kostade tid när fixturen byggdes för hand. Skriptet kodar bort
