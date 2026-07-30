@@ -620,6 +620,7 @@ jobs:
           bash scripts/test-pre-commit-hook.sh
           bash scripts/test-check-lifecycle.sh
           bash scripts/test-check-lesson-numbers.sh
+          bash scripts/test-check-permissions-claims.sh
           bash scripts/test-agent-spawn-log.sh
           bash scripts/test-ci-wait.sh
           bash scripts/test-staging-semaphore.sh
