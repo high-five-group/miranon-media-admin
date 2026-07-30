@@ -4,7 +4,7 @@ title: 'PRD: Skapa nytt event till facit'
 status: Done
 assignee: []
 created_date: '2026-07-21 07:57'
-updated_date: '2026-07-30 20:07'
+updated_date: '2026-07-30 20:39'
 labels: []
 dependencies: []
 ordinal: 41000
@@ -77,17 +77,19 @@ ADR-066 (styrande skapa-kontraktet) · ADR-063 (flaggan additiv; resolution i ba
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
-- [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
-- [ ] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Design-review MOT S73-FACIT-UTÖKNINGEN: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
+- [x] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 PRD-behållare utan egna AC — fullbordan definieras av barnen, och samtliga FYRA är Done: 19.1 SlideToConfirm-primitiven, 19.2 skapa-ingången + hemvist-flytten + Mer-rivningen, 19.3 skapa-sidan till facit, 19.4 publiceringsflaggan. Stängd 2026-07-30 (S91 artonde resumen) sedan TASK-90:s nya förälder/barn-invariant fällde den. Samma dubbla blindhet som TASK-17: noll egna AC och ingen förälder/barn-kontroll. Ingen kod rörd vid stängningen; kortet bar ingen kvarvarande bokföring.
+
+— DoD KVITTERAD 2026-07-30 efter grindens fällning. Samma grund som TASK-17: DoD-arvet är per skiva, och samtliga 4 barn har noll obockade DoD-punkter och status Done — inklusive #5 Marcus design-review mot S73-facit-utökningen och #7 bas-additiviteten (ADR-050/ADR-063). Verifierat mot disk.
 <!-- SECTION:FINAL_SUMMARY:END -->

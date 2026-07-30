@@ -4,7 +4,7 @@ title: 'PRD: Riskanpassad CI — T85 våg 2'
 status: Done
 assignee: []
 created_date: '2026-07-23 17:08'
-updated_date: '2026-07-30 20:07'
+updated_date: '2026-07-30 20:39'
 labels: []
 dependencies: []
 ordinal: 89000
@@ -245,17 +245,19 @@ committad ⇒ rent additiv rad. Denna gång är bäraren ett acceptanskriterium.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Statiska workflow-grindar gröna på ändrad CI-konfiguration (actionlint, yamllint, shellcheck strict)
-- [ ] #6 Kontrastbevis körda och körnings-ID:n citerade på kortet — ett bevis utan ID räknas inte
-- [ ] #7 L322-invarianten oregresserad: paraply-checken har alltid-kör-villkoret ENSAMT och exit:ar 1 vid failure/cancelled
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Statiska workflow-grindar gröna på ändrad CI-konfiguration (actionlint, yamllint, shellcheck strict)
+- [x] #6 Kontrastbevis körda och körnings-ID:n citerade på kortet — ett bevis utan ID räknas inte
+- [x] #7 L322-invarianten oregresserad: paraply-checken har alltid-kör-villkoret ENSAMT och exit:ar 1 vid failure/cancelled
 <!-- DOD:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 PRD-behållare utan egna AC — fullbordan definieras av barnen, och samtliga ÅTTA är Done: 36.1 gate-proof-workflowen, 36.2 nattnätet, 36.3 D1-klassen, 36.4 merge-dedupen, 36.5 mätskriptet, 36.6 rött-först-bärarbytet, 36.7 visuell regression från noll, 36.8 QA-vandringen. Stängd 2026-07-30 (S91 artonde resumen) sedan TASK-90:s nya förälder/barn-invariant fällde den — TASK-36 var den FJÄRDE, tidigare okända träffen i klassen, funnen av agenten och inte av fyndkortet. ÖPPEN BOKFÖRING SOM FÖLJER MED, ej dold av stängningen: 36.7 stängdes med AC 7-8 (grind-jobbet + nightly) medvetet PARKERADE i tråd T87 på Marcus beslut A — aktiveringsjobbet är komplett i barnkortet, triggern är att UI-takten lugnar sig. Förälderns stängning ändrar inte det; T87 är fortfarande vilande och ägs av Marcus trigger.
+
+— DoD KVITTERAD 2026-07-30 efter grindens fällning. Samtliga 8 barn har noll obockade DoD-punkter och status Done — inklusive #6 kontrastbevis med citerade körnings-ID:n och #7 L322-invarianten oregresserad. Verifierat mot disk. NOTERA: T87:s parkerade AC 7-8 i 36.7 är oberörda av detta — de är parkerade PÅ ett Done-kort med öppen bokföring, inte ett obockat krav.
 <!-- SECTION:FINAL_SUMMARY:END -->

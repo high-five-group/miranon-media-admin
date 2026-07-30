@@ -4,7 +4,7 @@ title: 'PRD: Event-listan till S72-facit'
 status: Done
 assignee: []
 created_date: '2026-07-21 07:56'
-updated_date: '2026-07-30 20:07'
+updated_date: '2026-07-30 20:39'
 labels: []
 dependencies: []
 ordinal: 39000
@@ -88,16 +88,18 @@ ADR-055 (data via router-context-DI) · ADR-057 (lager-oberoende) · ADR-072 + A
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
-- [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Design-review MOT S72-FACIT: Marcus-granskning i webbläsaren godkänd mot facit-bilagorna (per skiva med UI-yta; L220)
+- [x] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 <!-- DOD:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 PRD-behållare utan egna AC — fullbordan definieras av barnen, och samtliga SEX är Done: 17.1 ToggleButtonGroup-primitiven, 17.2 listvyn till S72-facit, 17.3 kursfärgs-tokensen (ADR-064-mappningen), 17.4 kalendervyn till S72-facit, 17.5 läs-shape-utökningen + bor över-raden, 17.7 filtervyn + skriv ut (review-iteration 1). Stängd 2026-07-30 (S91 artonde resumen) sedan TASK-90:s nya förälder/barn-invariant fällde den. Kortet var osynligt för den gamla grinden av TVÅ skäl samtidigt — noll egna AC och ingen förälder/barn-kontroll — vilket är exakt den blindhet TASK-90 byggdes för att stänga. Ingen kod rörd vid stängningen; kortet bar ingen kvarvarande bokföring.
+
+— DoD KVITTERAD 2026-07-30 efter att stängnings-grinden fällde kortet på obockade krav. Föräldern bär det DoD-arv skivorna ärvde, och punkternas egen text säger PER SKIVA (L220/L245/L246). Verifierat mot disk, inte antaget: samtliga 6 barn har noll obockade DoD-punkter och status Done — inklusive #5 Marcus design-review mot S72-facit och #6 facit-avprickningen. Kraven är alltså infriade på den nivå där de var ställda. Grinden hade rätt att fälla: en Done-förälder med obockat DoD är oläsbar för nästa läsare, oavsett var kvittensen faktiskt bor.
 <!-- SECTION:FINAL_SUMMARY:END -->
