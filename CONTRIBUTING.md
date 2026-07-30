@@ -156,6 +156,23 @@ Vilka workflows och jobbnamn som räknas bor i
 `scripts/test-staging-semaphore.sh`. Sonden svarar aldrig med gissning:
 misslyckas anropet blir det exit 77, inte grönt ljus.
 
+**Att tabellen ovan fortfarande stämmer är grindat** (`TASK-91`).
+`scripts/check-staging-preflight-wiring.mjs` prövar att haken faktiskt sitter
+kvar på alla fem ytorna, och körs av `ci.yml`-jobbet `Lint + Audit + TypeCheck`.
+Playwright-ytorna prövas mot Playwrights EGEN dependency-upplösning
+(`--list`), inte mot en regex över configen; Node-ytorna mot att anropet ligger
+i `main()`. Vad som räknas som yta — och vilka projekt som är undantagna, med
+skäl — bor i `.staging-preflight-wiring-policy.json`; ett nytt Playwright-projekt
+eller ett nytt `scripts/`-skript som rör staging fäller vakten tills det
+klassats. Tvåsidigt bevis per yta:
+`scripts/test-check-staging-preflight-wiring.mjs`.
+
+Skälet att just detta grindas, trots att felet aldrig inträffat: **frånvaron
+syns inte.** Tappas en anropsrad märks det först vid en kollision — och ser då
+ut som ett slumpmässigt staging-fel, inte som en saknad mekanism. Vakten prövar
+ATT wiringen finns; att semaforen FUNGERAR är en annan fråga, besvarad av de 19
+fallen i `scripts/test-staging-semaphore.sh`.
+
 **Vägen förbi är ett aktivt val, aldrig default:**
 
 ```bash

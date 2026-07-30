@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-29 17:49'
+updated_date: '2026-07-30 19:37'
 labels:
   - ready-for-agent
 dependencies: []
@@ -43,12 +44,14 @@ Detta är en **deletion-vakt**, inte en ny funktionstest. Den ska svara på frå
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Vakten täcker SAMTLIGA fem ytor — de tre Playwright-dependencyn och de två main()-anropen
-- [ ] #2 Tvåsidigt bevis PER YTA: vakten är grön mot nuvarande träd, och RÖD när anropet/dependencyn tas bort — fem par, inte ett stickprov
-- [ ] #3 Vakten prövar ATT wiringen finns, inte att semaforen fungerar — ingen duplicering av de 19 befintliga fallen
-- [ ] #4 Vakten körs av ett CI-jobb, eller så är skälet till att den inte gör det utskrivet (jfr TASK-82: en guard-svit utan CI-bärare bevisar ingenting)
-- [ ] #5 Formen tål att en sjätte yta tillkommer — en ny yta ska antingen fångas automatiskt eller ge ett tydligt fel om den saknas i vaktens lista
+- [x] #1 Vakten täcker SAMTLIGA fem ytor — de tre Playwright-dependencyn och de två main()-anropen
+- [x] #2 Tvåsidigt bevis PER YTA: vakten är grön mot nuvarande träd, och RÖD när anropet/dependencyn tas bort — fem par, inte ett stickprov
+- [x] #3 Vakten prövar ATT wiringen finns, inte att semaforen fungerar — ingen duplicering av de 19 befintliga fallen
+- [x] #4 Vakten körs av ett CI-jobb, eller så är skälet till att den inte gör det utskrivet (jfr TASK-82: en guard-svit utan CI-bärare bevisar ingenting)
+- [x] #5 Formen tål att en sjätte yta tillkommer — en ny yta ska antingen fångas automatiskt eller ge ett tydligt fel om den saknas i vaktens lista
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

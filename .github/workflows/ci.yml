@@ -726,6 +726,60 @@ jobs:
         # ≈0,1 s LOKALT mätt (macOS, 2026-07-29) — CI-tiden är inte mätt av mig.
         run: node scripts/test-seed-review-fixture.mjs
 
+      - name: Check staging-preflightens wiring (TASK-91 deletion-vakt)
+        # Staging-preflighten (TASK-77 + TASK-84) hänger på FEM ytor: tre
+        # Playwright-dependencies och två anrop i main(). Semaforens LOGIK är väl
+        # täckt — scripts/test-staging-semaphore.sh har 19 fall — men WIRINGEN
+        # hade noll. TASK-84:s agent rapporterade det om sig själv: "en
+        # refaktorering som tappar anropsraden i main() fångas inte av någon
+        # grind".
+        #
+        # VARFÖR EN GRIND FÖR ETT FEL SOM ALDRIG INTRÄFFAT. Huset mekaniserar
+        # normalt när felet HAR inträffat, eller när det FÖRSTA felet vore
+        # oacceptabelt; ingetdera gäller här. Skälet är en tredje egenskap:
+        # FRÅNVARON SYNS INTE. GitLabs postmortem 2017-01-31 är det dokumenterade
+        # fallet — fyra återställningsmekanismer fanns på papperet, backuperna
+        # hade aldrig körts, och felrapporteringen var också trasig. Tappas en
+        # anropsrad här märks det först vid en kollision, och ser då ut som ett
+        # slumpmässigt staging-fel i stället för som en saknad mekanism.
+        #
+        # HEMVIST-VAL — PR-grinden, som de tretton andra grindarna. Vakten läser
+        # Playwrights EGEN dependency-upplösning (`--list`, ingen browser-start,
+        # ingen nätverkstrafik, inga secrets) plus källkod på disk. Den måste
+        # kunna fälla FÖRE landning: det den vaktar är just en refaktorering som
+        # råkar tappa en rad, och en sådan landar i en PR.
+        #
+        # ≈1,7 s LOKALT mätt (macOS 16 kärnor, 2026-07-30, loadavg ≈7). De fyra
+        # `--list`-anropen körs parallellt. CI-tiden är INTE mätt av mig och kan
+        # avvika åt båda håll — runnern har färre kärnor, vilket träffar just
+        # parallelliteten.
+        run: node scripts/check-staging-preflight-wiring.mjs
+
+      - name: Test wiring-vaktens fyrning (TASK-91, tvåsidigt bevis)
+        # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän dess
+        # fyrning FORTLÖPANDE verifieras. TASK-82 är den skarpare precedenten —
+        # en guard-svit utan CI-bärare bevisar ingenting — och den gäller lika
+        # mycket för en vakt vars enda uppgift är att märka en RADERING.
+        #
+        # Sviten bygger en sandlåda av det RIKTIGA trädet (playwright.config.ts,
+        # tests/, src/, supabase/, de två Node-skripten) och skär i den: 21 fall,
+        # ett par per yta plus näten. Röd-sidan bevisar att vakten fäller när
+        # anropet eller dependencyn tas bort; grön-sidan (G1, G2) bevisar att den
+        # INTE fäller på varje ändring — utan den halvan vore röd-sidan förenlig
+        # med en vakt som alltid är röd.
+        #
+        # Hermetisk: /tmp-sandlåda med symlänkat node_modules, ingen
+        # nätverkstrafik, inga secrets, rör aldrig repots eget träd.
+        #
+        # 25–42 s LOKALT mätt över fyra körningar (macOS 16 kärnor, 2026-07-30;
+        # spannet är maskinlast — fem parallella agenter, loadavg ~2 → ~9 mellan
+        # körningarna). CI-tiden är INTE mätt av mig. Kostnaden är medveten: den
+        # bärande delen är att Playwrights faktiska dependency-upplösning körs
+        # per fall i stället för att efterliknas. `lint` hade timeout-minutes: 5
+        # mot ~1 min jobbtid före detta steg (TASK-82:s CI-mätning) — marginalen
+        # bör läsas av på den första skarpa körningen, inte projiceras härifrån.
+        run: node scripts/test-check-staging-preflight-wiring.mjs
+
       - name: Install shellcheck (pinned v0.11.0)
         # Per ADR-033 § Säkerhet + ADR-029 § Third-party Actions-policy.
         # ubuntu-latest har shellcheck 0.9.0-1 pre-installerat (Image
