@@ -1,10 +1,10 @@
 ---
 id: TASK-89
 title: 'Fynd: person-detail-fallets orsakskedja mot TASK-52 är ej verifierad'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 17:36'
-updated_date: '2026-07-30 19:17'
+updated_date: '2026-07-30 19:49'
 labels:
   - ready-for-agent
 dependencies: []
@@ -68,10 +68,16 @@ MEKANISM SOM SAKNADES I KORTET: formelns ELSE-gren returnerar rollup-referensen 
 DETTA KORT FIXAR INGENTING. Ingen produktionskod rörd; leveransen är belägget.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Orsakskedjan reproducerad med rad-referenser: get-person/index.ts:128 → EF HTTP 200 med array orörd → AirtableAdapter.ts:131 → PersonDetail.schema.ts:44 avvisar med invalid_type, expected string received array. Verifierat mot deployad EF med giltig user-JWT och mot repots EGET schema importerat från källfilen. TASK-52:s not FALSIFIERAD i motsatt riktning: arrayen uppstår vid FÖRSTA motiveringen, inte vid flera anmälningar — båda observerade personerna har Antal anmälningar totalt = 1. Mekanismen: formelns ELSE-gren returnerar rollup-referensen orörd medan Airtable deklarerar result: singleLineText, alltså schema mot API-form. Utfallet skrivet i TASK-52 och registrerat som fälla 46 i data-model.md. PR #476, CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

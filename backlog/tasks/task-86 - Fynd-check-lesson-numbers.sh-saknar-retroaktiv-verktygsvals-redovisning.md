@@ -1,10 +1,10 @@
 ---
 id: TASK-86
 title: 'Fynd: check-lesson-numbers.sh saknar retroaktiv verktygsvals-redovisning'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 17:35'
-updated_date: '2026-07-30 19:13'
+updated_date: '2026-07-30 19:49'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,12 +33,16 @@ Källa: restlistans § A3b, posten "Retroaktiv redovisning för check-lesson-num
 - [x] #3 Ingen annan del av ADR-081 ändras — detta är en tillägg, inte en omskrivning
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+ADR-081 bär nu en retroaktiv redovisning av varför towncrier valdes bort som VERKTYG, skild från att dess mönster lånades. Ren addition: 41 rader tillagda, 0 borttagna (git show --numstat), så AC #3 är mekaniskt bevisat och inte bedömt. Redovisningen är märkt som RESONEMANG, inte mätning, och attribuerar öppet att den tredje punkten fick empiriskt stöd först två dagar senare av nummerallokerings-passet — utan att därför kalla sig mätning. PR #474, merge e6fa6e6-kedjan, CI grön per jobb. Agenten fann att ADR-081:s precedent-anspråk om towncriers +-form bara håller för halva formen och deklarerade det öppet i stället för att tiga, men fick inte röra sektionen — registrerat som TASK-97.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

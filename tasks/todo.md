@@ -15,6 +15,26 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-30, artonde resumen — vågen hemma)** — **SJU
+BYGG-AGENTER, NIO PR:er, NOLL RÖDA KÖRNINGAR.** **Fyra kort stängda:** `TASK-86`
+`87` `89` `92`. **`TASK-88` stannar ÖPPEN** — dess anvisade städkommando
+**raderar noll poster**: `ZZ-GRANSKNING-S91` byggdes för hand och bär inte
+skriptets markörer, alltså immun mot **både** purgen och sitt eget städkommando
+(33 poster kvar). Agenten vägrade handradering via MCP och hade rätt.
+**AGENTERNAS FYND:** `TASK-52`:s diagnos **falsifierad i motsatt riktning**
+(arrayen uppstår vid FÖRSTA motiveringen → **fälla 46**) · `-o`-premissen **mätt**
+(382 byte OK mot 764 byte FAILED med curl-exit 0) · stängnings-grinden fäller på
+**varje kort en agent just fullföljt**. **TRE FEL ORKESTRERAREN GJORDE SJÄLV,
+samtliga självfångade:** ett påhittat SHA gjorde en vakt **fail-open** · en regel
+skriven ur två observationer som mätte fel sak, motbevisad av PR:en som bar den ·
+en **nummerkollision** orsakad av uppskjuten bokföring (omnumrerat via CLI:t →
+`TASK-97`). **WORKTREE-SKULDEN STÄDAD** (16 borttagna, grenar 32 → 5) och
+**`bygg-agent.md`-motiveringen rättad** på Marcus delegering. **SKÖRD: 3
+fragment** [UNIVERSAL ×3]. Numrering: 91/084/L360 (**58** fragment)/T110/**f47**/
+**task-98**. **NÄSTA: `TASK-90` landar · våg 2 = `85` + `93` · `79` på tyst
+maskin.** Full narrativ: sessionsdok **Del 34–35**.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-30, artonde resumen — vågen ute)** —
 Ingångsläget rent: HEAD `b8ca291`, `#471` landad `17:34:21Z`, tre körningar
 `success`, `audit-ci` grön (752 deps), registret **169** kort (123 Done / 46
