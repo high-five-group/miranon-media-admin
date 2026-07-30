@@ -1039,13 +1039,33 @@ jobs:
         # och Releases-API:ts digest-fält — identiska. Releases är immutabla;
         # re-verifiering: ladda samma URL + sha256sum lokalt.
         # NOT: errata-ai/vale är omdöpt till vale-cli/vale — URL:en nedan lever
-        # på GitHub-redirect (curl -sL). Byte av org-namn görs vid nästa
-        # versions-bump, inte här (URL + checksumma hör ihop).
+        # på GitHub-redirect (`-L` i curl-formen nedan). Byte av org-namn görs
+        # vid nästa versions-bump, inte här (URL + checksumma hör ihop).
+        #
+        # TILLGÄNGLIGHET (TASK-92, 2026-07-30) — curl-flaggorna bär samma
+        # rationale som `Install shellcheck (pinned v0.11.0)` i lint-jobbet, där
+        # den är skriven i sin helhet: `--retry` ensam täcker en UPPRÄKNAD
+        # felmängd som INTE rymmer exit 35 (CURLE_SSL_CONNECT_ERROR), och
+        # --retry-all-errors (curl 7.71.0+; runnern kör 8.5.0) är flaggan som
+        # täcker den. `-o` är förutsättningen — curl nollställer en
+        # fildestination mellan försöken, en shell-omdirigering inte.
+        # Detta var mönstrets TREDJE instans; TASK-83 åtgärdade de två i
+        # lint-jobbet och RAPPORTERADE denna i stället för att tyst fixa den.
+        #
+        # EXPONERINGEN ÄR MÄTT, INTE ANTAGEN (2026-07-30): att docs-jobbet är
+        # villkorat på `docs_changed` gör den INTE lägre. Över 300 ci.yml-runs
+        # (2026-07-28T19:23Z→2026-07-30T19:15Z, `jobs?filter=all` så alla
+        # attempts räknas) kördes detta steg 289 gånger, mot 305 för det
+        # alltid-på lint-jobbets två steg — 95 %. Villkoret tar bort en
+        # tjugondel av exekveringarna, inte en storleksordning, och därför
+        # bär steget samma flaggor och inte en svagare variant.
+        # sha256sum-verifieringen nedan är ORÖRD: kortet rör tillgänglighet,
+        # inte pinning.
         run: |
           VALE_VERSION="3.14.1"
           VALE_SHA256="ff2b49ffaa9dcd246fd5008f03ff67746d2790b75bf4d3657e2fb9530fb96db3"
           VALE_URL="https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
-          curl -sL "${VALE_URL}" -o /tmp/vale.tar.gz
+          curl -fsSL --retry 5 --retry-all-errors --retry-max-time 60 "${VALE_URL}" -o /tmp/vale.tar.gz
           echo "${VALE_SHA256}  /tmp/vale.tar.gz" | sha256sum -c
           tar -xzf /tmp/vale.tar.gz -C /tmp
           sudo mv /tmp/vale /usr/local/bin/vale
