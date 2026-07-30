@@ -3,10 +3,10 @@ id: TASK-87
 title: >-
   Fynd: save-segment-läckan städas aldrig — app-segment-test+<uuid> saknar
   target i purge-policyn
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 17:35'
-updated_date: '2026-07-30 19:26'
+updated_date: '2026-07-30 19:49'
 labels:
   - ready-for-agent
 dependencies: []
@@ -57,10 +57,16 @@ AC #5 MÄTT FÖRE OCH EFTER, identiskt: ZZ-History Person 01 (recqxaFNwHAdQlAqb)
 NOTERAT: npm run test:api (DoD-kommandot) kör api-staging och skapade EN ny sentinel-rad under verifieringen (recWjXKwK2vuc6Pv5) — 665 blev 666. Läckan i realtid, ~1 rad per körning, precis den takt kortet beskriver.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Target save-segment-sentineler tillagd i .purge-staging-policy.json, ankrad i båda ändar, linkGuard: true. 665 befintliga poster RÄKNADE via två oberoende vägar som gav samma tal (Airtable-MCP och purge-skriptets dry-run) — inget raderades i skivan. Testsviten 47 to 55 fall, och targeten LÄSES UR POLICYN PÅ DISK i stället för att dupliceras som de befintliga targetsen: en kopia hade gått grön även mot en tom targets-lista, vilket är exakt felläget klassen består av. Fällande riktning bevisad i tre riktningar mot en kopia av policyn, som återställdes byte-identisk. linkGuard live-motiverad: 0 av 665 bar Mailutskick-länk, alltså ingen no-op-broms. Läckan bekräftades i realtid — agentens egen test:api-körning skapade post 666 under mätningen. PR #477, CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

@@ -3,10 +3,10 @@ id: TASK-92
 title: >-
   Fynd: Install Vale är tredje curl-hämtade verktyget utan retry — docs-jobbet
   körde på alla sex PR:er i dag
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 17:53'
-updated_date: '2026-07-30 19:28'
+updated_date: '2026-07-30 19:49'
 labels:
   - ready-for-agent
 dependencies: []
@@ -151,10 +151,16 @@ CI:s API; bevisriggens exitkoder är körda lokalt (curl 8.7.1 mot runnerns
 8.5.0 — båda >= 7.71.0 som --retry-all-errors kräver).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Install Vale bär nu samma curl-form som husets två andra pinnade verktyg — uniq -c över ci.yml:s tre curl-anrop ger EN grupp om 3, alltså mekaniskt bevisad paritet. sha256sum-verifieringen orörd. -o-premissen MÄTT och inte antagen: en sond som bryter överföringen mitt i kroppen ger -o FIL = 382 byte OK mot > FIL = 764 byte FAILED med curl-exit 0 — shell-omdirigering förkläder alltså en nätstörning till supply-chain-signal. Exit 35 bevisad skarpt mot TLS-server som bryter handskakningen: --retry 5 --retry-connrefused fäller fortfarande, --retry-all-errors passerar, och korrupt nedladdning fäller ändå på checksumman. Fjärde instans av mönstret: NOLL, sökt över fem axlar. Exponeringen mätt till 95 % av lint-jobbets takt. Ingen Vale-fällning har observerats — ändringen vilar på mönstret och kostnadsasymmetrin, utskrivet så ingen läser in motsatsen. PR #479, CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

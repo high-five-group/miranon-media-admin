@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-29 17:35'
+updated_date: '2026-07-30 19:32'
 labels:
   - ready-for-agent
 dependencies: []
@@ -37,6 +38,18 @@ Källa: restlistans § A3, posten "Listparitets-grinden (dom: LAGA)". Utvidgad r
 - [ ] #5 Fail-closed: kan grinden inte läsa ett listpar är det exit≠0, aldrig tyst grönt
 - [ ] #6 Wirad i CI, eller så är skälet till att den inte är det utskrivet
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TREDJE LISTPARET FUNNET 2026-07-30 (S91 artonde resumen, ur TASK-87:s agentrapport) — kandidat, ej beslutad scope-utvidgning.
+
+CONTRIBUTING.md rad 76-78 räknar upp sentinel-markörerna som .purge-staging-policy.json äger. Listan är ofullständig: den saknar ZZ-note-test+ sedan tidigare, och saknar nu app-segment-test+ som TASK-87 lade till. Två omissioner har alltså ackumulerat utan att någon mekanism sett dem.
+
+Formen är exakt kortets: en invariant som står på två ställen och synkas för hand. Skillnaden mot par 1 och 2 är att CONTRIBUTING-listan är EXEMPLIFIERANDE och pekar på policyn som sanningskälla — det kan vara ett skäl att lämna den utanför PARITY_PATHS, eller ett skäl att kräva att den är komplett. Den avvägningen hör till AC #1, som redan kräver att paren HÄRLEDS ur faktiska filer och att förkastade kandidater bär sina skäl.
+
+Noteras här i stället för att mintas som eget kort, eftersom AC #1 redan äger frågan. Bygg-agenten avgör — men ska redovisa utfallet även om domen blir att paret lämnas utanför.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
