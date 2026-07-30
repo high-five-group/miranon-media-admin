@@ -690,7 +690,143 @@ ett läge ingen av de fem leverantörerna dokumenterar.
 
 ## Delfråga 5 — Finns argument för att INTE bygga något?
 
-(ej besvarad än)
+**Ja, ett starkt — men det är villkorat på en egenskap vi själva väljer, och de två
+citat man normalt griper efter gäller inte frågan.** Insamlingen delegerades med krav på
+ordagranna citat ur original.
+
+### YAGNI och Knuth styr inte denna fråga
+
+**Attributionsrättelse först:** YAGNI kommer inte från Ron Jeffries. Fowlers egen fotnot:
+*"The origin of the phrase is an early conversation between Kent Beck and Chet Hendrickson
+on the C3 project."* Jeffries skrev den kanoniska essän, inte frasen.
+([Fowler, Yagni](https://martinfowler.com/bliki/Yagni.html))
+
+Och Fowler avgränsar YAGNI själv, tvåfaldigt:
+
+> *"Yagni only applies to capabilities built into the software to support a presumptive
+> feature, it does not apply to effort to make the software easier to modify."*
+
+Och, i samma text, komplexitets-undantaget:
+
+> *"I also argue that yagni only applies when you introduce extra complexity now that you
+> won't take advantage of until later. If you do something for a future need that doesn't
+> actually increase the complexity of the software, then there's no reason to invoke
+> yagni."*
+
+En nummerkollisionsvakt är ingen presumptive feature — den stödjer ingen framtida
+användarfunktion. Att citera YAGNI mot en billig integritetskontroll är en felapplicering
+av Fowlers egen text.
+
+**Knuth är ännu tydligare fel verktyg.** Originalet lästes (ACM Computing Surveys 6(4),
+1974, s. 268). Den citerade meningen står i ett stycke om *hastighet*: *"We should forget
+about small efficiencies, say about 97% of the time: premature optimization is the root of
+all evil."* Nästa stycke, som nästan alltid klipps bort, vänder riktningen:
+
+> *"Yet we should not pass up our opportunities in that critical 3%. A good programmer
+> will not be lulled into complacency by such reasoning, he will be wise to look carefully
+> at the critical code; but only after that code has been identified."*
+
+Och samma sida argumenterar uttryckligen **mot** svepande avskrivning: *"In established
+engineering disciplines a 12% improvement, easily obtained, is never considered marginal."*
+([Knuth 1974, PDF](https://pic.plover.com/knuth-GOTO.pdf))
+
+Knuths poäng är *mät först*. Som stöd för att inte bygga en korrekthetskontroll är citatet
+oanvändbart — ämnet är fel och riktningen är motsatt.
+
+### SRE ger det starkaste anti-argumentet — och den avgörande asymmetrin
+
+Toil-definitionen utesluter vår risk från automatiseringens motivering, per bokens egen
+underpunkt:
+
+> *"**Repetitive** — If you're performing a task for the first time ever, or even the
+> second time, this work is not toil. Toil is work you do over and over."*
+
+([Eliminating Toil](https://sre.google/sre-book/eliminating-toil/))
+
+En nollfrekvent händelse är per definition inte toil. Och boken går längre — den namnger
+precis vårt felläge:
+
+> *"Secondly, automation that is crucial but only executed at infrequent intervals and
+> therefore difficult to test is often particularly fragile because of the extended
+> feedback cycle."*
+
+Hierarkin slutar dessutom inte i "automatisera": *"better than either option is a
+higher-level system design requiring neither of them—an autonomous system"*, och det
+femte och högsta steget är **"Systems that don't need any automation"**.
+([Automation at Google](https://sre.google/sre-book/automation-at-google/))
+
+**Här ligger passets skarpaste distinktion, och den är vår att välja.** Bräcklighets-
+invändningen gäller en **reparatör** — något som fyrar *när* en kollision uppstått, körs
+nästan aldrig, testas därför aldrig skarpt. Den gäller **inte** en **validator** som körs
+vid varje skrivning: den är kontinuerligt exercerad, och hela invändningen faller. Det är
+en designparameter, inte ett faktum om risken.
+
+Vår `check-lesson-numbers.sh` är redan en validator, med sex self-test-fall i CI. Den är
+alltså på rätt sida av SRE:s egen varning.
+
+Riskkalkylen finns också auktoritativt formulerad — förväntat värde av den undvikna skadan
+sätter budgeten för kontrollen: *"if the cost of improving availability by one nine is less
+than $900, it is worth the investment."*
+([Embracing Risk](https://sre.google/sre-book/embracing-risk/))
+**Men den förutsätter en mätt frekvens.** Vår är noll på tre serier, vilket avgränsar
+raten utan att skilja "säker" från "hittills tursam".
+
+### Motvikten: självcensur är den svagaste klassen av åtgärd
+
+James Reason klassar uttryckligen "skriv en till procedur" bland person-approachens svaga
+motåtgärder:
+
+> *"These methods include poster campaigns that appeal to people's sense of fear,
+> **writing another procedure (or adding to existing ones)**, disciplinary measures, threat
+> of litigation, retraining, naming, blaming, and shaming."*
+
+Och han träffar antagandet att en kompetent aktör noterar sin egen osäkerhet:
+
+> *"it is often the best people who make the worst mistakes—error is not the monopoly of
+> an unfortunate few."*
+
+Systemalternativet, hans kursiverade kärnmening: *"though we cannot change the human
+condition, we can change the conditions under which humans work."* Och det direkta stödet
+för att agera före händelsen: *"Unlike active failures, whose specific forms are often hard
+to foresee, latent conditions can be identified and remedied before an adverse event
+occurs."* ([Reason, BMJ 2000](https://pmc.ncbi.nlm.nih.gov/articles/PMC1117770/))
+
+**Det underminerar motargumentet direkt.** "Självcensur — aktören avstår i osäkerhet och
+rapporterar behovet" *är* en person-approach-motåtgärd. Den kräver att aktören *upptäcker*
+tvetydigheten, och skyddar inte mot fallet där hon inte ser den. Det är samma sak
+[ADR-079](../decisions/ADR-079-instruktionsleverans-barare-per-lager.md) mätte hos oss:
+skriven regel ~0 % efterlevnad mot 75 % när möjligheten att göra fel togs bort.
+
+Richard Cook ger den n-disciplin uppdraget bad om, och skär ärligt åt båda håll:
+
+> *"there are many more failure opportunities than overt system accidents. Most initial
+> failure trajectories are blocked by designed system safety components."*
+
+Och åt andra hållet, i samma text:
+
+> *"Eradication of all latent failures is limited primarily by economic cost."*
+
+([How Complex Systems Fail](https://how.complexsystems.fail/))
+
+Noll observerade kollisioner på 82 ADR:er är förenligt med en låg men icke-noll rat.
+Samtidigt legitimerar Cook själv att kostnad får begränsa åtgärden.
+
+### Domen på delfrågan
+
+**Det finns inget auktoritativt stöd för principen "det har aldrig hänt, alltså lämna
+det".** Den formuleringen finns inte i någon källa. Det finns lika lite stöd för
+"mekanisera varje strukturell möjlighet". Vad litteraturen licensierar är en **rangordning**:
+
+1. gör kollisionen omöjlig genom konstruktion (SRE:s högsta steg; Fowlers
+   komplexitets-undantag; Reasons latenta tillstånd),
+2. gör den högljutt detekterbar vid **varje** skrivning — en validator, kontinuerligt
+   exercerad,
+3. skriven självcensur-regel (Reasons svaga klass),
+4. sällan-fyrande automatisk reparatör — **sämst**, per SRE:s bräcklighets-varning.
+
+Och en detalj värd att notera: **lessons-serien är den enda med empiriskt belagd rat**
+(1 av 342). Den har alltså det starkaste egna warrantet för sin mekanism — inte det
+svagaste. ADR-081 byggde på rätt serie först.
 
 ## Vad detta betyder för (i), (ii), (iii) — och en eventuell fjärde form
 
