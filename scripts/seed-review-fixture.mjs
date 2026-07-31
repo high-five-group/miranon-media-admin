@@ -33,6 +33,14 @@
 // CONFIG.legacy är ett slutet register över dem, med mätt räkning per post.
 // Dry-run är default; radering kräver --bekrafta.
 //
+// AVSLUTNINGEN (TASK-101): en post vars fixtur faktiskt STÄDATS bär
+// `stadad: { datum, av }` och raderar aldrig mer. Registret skiljer därmed
+// "fixturen ligger kvar" från "fixturen är städad" I KODEN — läsbart utan att
+// skriptet körs, och utan att `kalla`-proveniensen kastas. Utan det fältet
+// beskriver en städad post ett tillstånd basen inte har, och guardens egen
+// instruktion ("mät om, uppdatera forvantat") leder till `{0,0,0}` — en post
+// som ser aktiv ut men aldrig kan göra något.
+//
 // Token: STAGING_AIRTABLE_TOKEN ur gitignorade .env.seed (se
 // .env.seed.example), laddad av npm-skriptet via
 // `node --env-file-if-exists=.env.seed` — samma mekanism som
@@ -67,6 +75,11 @@
 //   6. Legacy-registrets räknings-guard (TASK-95): varje post bär sin MÄTTA
 //      räkning, och avviker basen från den vägrar skriptet och raderar
 //      ingenting. Registret är slutet — inga mönster från kommandoraden.
+//   7. Legacy-registrets avslutning (TASK-101): en post märkt `stadad` får en
+//      TOM raderingsplan per konstruktion, oavsett vad basen innehåller. Ser
+//      den ändå rader är det NY data på ett gammalt ankare — Airtable
+//      återanvänder inte record-ID:n — och skriptet vägrar i stället för att
+//      radera någon annans arbete.
 //
 // SKYDDSRÄCKE 2 ÄR OFÖRÄNDRAT OCH SKA FÖRBLI DET: en granskningsfixtur får
 // ALDRIG bli purge-bar. Att lösa livstidsfrågan med en target i
@@ -238,6 +251,35 @@ export const CONFIG = {
    *   4. `forvantat` — räkningen från mätningen. Avviker basen från den
    *      VÄGRAR skriptet. Det gör "räkna FÖRE du raderar" mekaniskt i stället
    *      för en uppmaning till människan (TASK-76:s lärdom).
+   *
+   * AVSLUTNINGEN — `stadad: { datum, av }` (TASK-101). En post vars fixtur
+   * städats bär fältet och raderar aldrig mer. Två tillstånd, båda läsbara här
+   * i koden utan att skriptet körs:
+   *
+   *   AKTIV   (inget `stadad`)  fixturen ligger kvar i basen; `forvantat` är
+   *                             guarden före radering
+   *   AVSLUTAD (`stadad` satt)  fixturen är städad; `forvantat` är HISTORIK —
+   *                             vad som fanns när posten mättes
+   *
+   * VARFÖR `forvantat` INTE NOLLSTÄLLS: guardens felmeddelande instruerar
+   * "mät om, uppdatera forvantat", vilket för en städad post betyder `{0,0,0}`.
+   * Det är ingen avslutning — det är en post som ser aktiv ut men aldrig kan
+   * göra något, och som dessutom har kastat den mätta räkningen. Klassen är
+   * repots egen återkommande: ett värde som ser verifierat ut men inte är det.
+   *
+   * VARFÖR POSTEN STÅR KVAR HÄR I STÄLLET FÖR I EN EGEN `legacyStadade`-lista:
+   * `--legacy <namn>` slår upp i denna lista. En flyttad post hade svarat
+   * "finns inte i registret" — missvisande, för den fanns; den är städad. En
+   * andra lista med samma postform hade dessutom kunnat drifta (en post i fel
+   * lista fäller ingenting), och `kalla`-proveniensen hade lämnat den
+   * validering som håller den läsbar.
+   *
+   * VARFÖR INTE ENBART ETT TYDLIGARE FELMEDDELANDE I GUARDEN: guarden talar
+   * bara när skriptet KÖRS, och kravet är att skillnaden syns utan det. Den
+   * kan dessutom inte SKILJA fallen utan detta fält — noll träffar mot
+   * `forvantat: {1,16,16}` är formmässigt identiskt med "basen har ändrats
+   * oväntat". Klartexten i guarden är alltså en FÖLJD av fältet, inte ett
+   * alternativ till det.
    */
   legacy: [
     {
@@ -249,9 +291,14 @@ export const CONFIG = {
       emailSokPrefix: 'zz-granskning-',
       emailPattern: '^zz-granskning-\\d{2}@staging\\.test$',
       forvantat: { event: 1, anmalningar: 16, personer: 16 },
+      stadad: { datum: '2026-07-31', av: 'TASK-95 (PR #493)' },
       kalla:
         'Handbyggd 2026-07-26 (S91, task-48 design-review). Mätt av TASK-88, ' +
-        'omräknad av TASK-95 2026-07-30. Marcus godkände städning 2026-07-30.',
+        'omräknad av TASK-95 2026-07-30. Marcus godkände städning 2026-07-30. ' +
+        'STÄDAD 2026-07-31 av TASK-95: 33 poster raderade (1 event + 16 ' +
+        'anmälningar + 16 personer), efter-verifiering 0 kvar, oberoende ' +
+        'bekräftat mot basen. De permanenta rollup-fixturerna byte-identiska ' +
+        'före och efter.',
     },
     {
       namn: 'Skovde-S75',
@@ -262,10 +309,18 @@ export const CONFIG = {
       emailSokPrefix: 'granskning-',
       emailPattern: '^granskning-[a-z0-9-]+@example\\.com$',
       forvantat: { event: 1, anmalningar: 6, personer: 3 },
+      stadad: {
+        datum: '2026-07-31',
+        av: 'TASK-101 (Marcus-mandat; TASK-95 AC #5 lämnade raderingen öppen)',
+      },
       kalla:
         'Handbyggd 2026-07-22 (S75 review-våg 1, betalningsvy-granskningen). ' +
         'Mätt av TASK-95 2026-07-30. Event-796, Ort "Skövde" — ett RIKTIGT ' +
-        'ortsnamn, därav record-ID-ankaret.',
+        'ortsnamn, därav record-ID-ankaret. STÄDAD 2026-07-31 på Marcus ' +
+        'uttryckliga mandat (TASK-95 lämnade raderingen öppen eftersom ' +
+        'godkännandet 2026-07-30 löd ordagrant "Angående task-88", alltså ' +
+        'endast S91): 6/6 anmälningar, 3/3 personer, 1/1 event raderade, ' +
+        'efter-verifiering 0 radera-bara rader kvar (10 raderade).',
     },
   ],
 
@@ -347,6 +402,40 @@ const ORT_PATTERN = /^[A-Za-z0-9ÅÄÖåäöÉé _.:-]{3,60}$/;
 // Pura funktioner (exporterade för scripts/test-seed-review-fixture.mjs)
 // ---------------------------------------------------------------------------
 
+/**
+ * Är strängen ett GILTIGT ISO-datum (YYYY-MM-DD)? Kalender-validerat, inte
+ * bara formmässigt: `2026-02-31` passerar regexen men finns inte, och Date
+ * normaliserar den tyst till 2026-03-03 — jämförelsen fångar det.
+ */
+export function arIsoDatum(varde) {
+  if (typeof varde !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(varde)) return false;
+  const d = new Date(`${varde}T00:00:00.000Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === varde;
+}
+
+/**
+ * Avslutningens klartext för en städad post — EN formulering, tre konsumenter
+ * (skipped-orsaken i planen, korLegacys utskrift, registrets översikt). Att
+ * den bor på ett ställe är poängen: en avslutad post får aldrig beskrivas som
+ * aktiv i någon av dem.
+ */
+export function avslutningsOrsak(post) {
+  return `posten är AVSLUTAD — fixturen städades ${post.stadad.datum} (${post.stadad.av})`;
+}
+
+/**
+ * Registrets poster med sitt TILLSTÅND utskrivet. Används i felmeddelandet för
+ * ett okänt `--legacy`-namn: en lista som räknar upp avslutade poster utan att
+ * märka dem hade fått en läsare att tro att fixturerna ligger kvar.
+ */
+export function legacyRegisterOversikt(config) {
+  const poster = config?.legacy ?? [];
+  if (poster.length === 0) return '(registret är tomt)';
+  return poster
+    .map((p) => (p.stadad ? `${p.namn} (AVSLUTAD ${p.stadad.datum})` : `${p.namn} (aktiv)`))
+    .join(', ');
+}
+
 /** Skyddsräcke 1: bas-guarden + CONFIG-formen. Kastar vid fel. */
 export function validateConfig(config) {
   if (!config || typeof config !== 'object') throw new Error('config: förväntade ett objekt');
@@ -426,10 +515,35 @@ export function validateConfig(config) {
         `legacy[${namn}].emailSokPrefix saknas eller bär otillåtna tecken (värdet går in i filterByFormula)`,
       );
     }
+    // KRAVET STÅR OFÖRÄNDRAT och gäller ÄVEN avslutade poster (TASK-101). För
+    // en aktiv post är räkningen guarden; för en avslutad är den historiken —
+    // vad som fanns när posten mättes. Att nollställa den vid avslutning hade
+    // kastat mätningen och gjort posten oläsbar som historik.
     for (const nyckel of ['event', 'anmalningar', 'personer']) {
       if (!Number.isInteger(post?.forvantat?.[nyckel]) || post.forvantat[nyckel] < 0) {
         throw new Error(
           `legacy[${namn}].forvantat.${nyckel} saknas — räkningen är guarden, inte en anteckning`,
+        );
+      }
+    }
+    // Avslutningen (TASK-101). Fältet är valfritt — men finns det måste BÅDA
+    // halvorna hålla. En avslutning utan datum eller landnings-referens är en
+    // PÅSTÅDD avslutning, alltså exakt den klass av värde detta fält finns för
+    // att avskaffa.
+    if (post?.stadad !== undefined) {
+      if (post.stadad === null || typeof post.stadad !== 'object') {
+        throw new Error(
+          `legacy[${namn}].stadad måste vara ett objekt { datum, av } — utelämna fältet för en aktiv post`,
+        );
+      }
+      if (!arIsoDatum(post.stadad.datum)) {
+        throw new Error(
+          `legacy[${namn}].stadad.datum "${post.stadad.datum}" är inget giltigt ISO-datum (YYYY-MM-DD)`,
+        );
+      }
+      if (typeof post.stadad.av !== 'string' || post.stadad.av.trim().length === 0) {
+        throw new Error(
+          `legacy[${namn}].stadad.av saknas — en avslutning utan landnings-referens går inte att spåra tillbaka`,
         );
       }
     }
@@ -499,8 +613,7 @@ export function parseArgs(argv, config) {
       case '--legacy': {
         const post = (config.legacy ?? []).find((p) => p.namn === varde);
         if (!post) {
-          const kanda =
-            (config.legacy ?? []).map((p) => p.namn).join(', ') || '(registret är tomt)';
+          const kanda = legacyRegisterOversikt(config);
           throw new Error(
             `--legacy "${varde}" finns inte i registret. Kända poster: ${kanda}. ` +
               'Registret är avsiktligt slutet — en handbyggd fixtur läggs till i CONFIG.legacy ' +
@@ -636,12 +749,9 @@ export function parseUtgangsdatum(notering, config) {
   const slut = notering.indexOf(']', start + prefix.length);
   if (slut === -1) return null;
   const ravarde = notering.slice(start + prefix.length, slut).trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(ravarde)) return null;
-  // Kalender-validering: 2026-02-31 passerar regexen men finns inte. Date
-  // normaliserar den tyst till 2026-03-03 — jämförelsen fångar det.
-  const d = new Date(`${ravarde}T00:00:00.000Z`);
-  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== ravarde) return null;
-  return ravarde;
+  // Kalender-valideringen bor i arIsoDatum — samma prövning som avslutningens
+  // datum, så de två kan inte drifta isär.
+  return arIsoDatum(ravarde) ? ravarde : null;
 }
 
 /**
@@ -689,10 +799,35 @@ export function planSweep({ events, idag, config }) {
  * matchar registrets, INTE bara Orten. Det är bärande för `Skovde-S75`, vars
  * Ort (`Skövde`) är ett riktigt ortsnamn — ett framtida verkligt Skövde-event
  * skulle träffas av ort-filtret men aldrig av ID-ankaret.
+ *
+ * En post märkt `stadad` (TASK-101) ger ALLTID en tom raderingsplan — se
+ * skyddsräcke 7 i kroppen.
  */
 export function planLegacyClean({ events, registrations, persons, post, config }) {
   const pattern = new RegExp(post.emailPattern);
   const plan = { events: [], registrations: [], persons: [], skipped: [] };
+
+  /*
+   * SKYDDSRÄCKE 7 (TASK-101) — en AVSLUTAD post får en TOM raderingsplan, och
+   * spärren sitter HÄR i stället för i korLegacy med flit: varje väg till en
+   * legacy-radering går genom denna funktion, så en framtida anropare kan
+   * inte råka kringgå avslutningen.
+   *
+   * Att en avslutad post ändå ser rader betyder INTE att den gamla fixturen
+   * återuppstått — Airtable återanvänder inte record-ID:n. Det betyder att
+   * någon skapat NY data som råkar matcha ett gammalt ankare, och att radera
+   * den vore att radera någon annans arbete med ett ankare som inte längre
+   * beskriver något. Fail-safe-riktningen är densamma som resten av skriptets:
+   * hellre lämna kvar.
+   */
+  if (post?.stadad) {
+    const orsak = avslutningsOrsak(post);
+    for (const rec of [...events, ...registrations, ...persons]) {
+      plan.skipped.push({ id: rec.id, orsak });
+    }
+    return plan;
+  }
+
   for (const rec of events) {
     if (config.protectedRecordIds.includes(rec.id)) {
       plan.skipped.push({ id: rec.id, orsak: 'skyddad record-ID' });
@@ -746,6 +881,12 @@ export function planLegacyClean({ events, registrations, persons, post, config }
  * massradering mot en delad bas är det farliga. Räkningen gör "räkna FÖRE du
  * raderar" till en mekanism i stället för en uppmaning — avviker basen från
  * mätningen har något ändrats sedan dess, och då ska en människa titta.
+ *
+ * GÄLLER ENDAST AKTIVA POSTER (TASK-101). korLegacy returnerar före denna
+ * guard för en `stadad` post: där är noll träffar det väntade utfallet, och
+ * fällningen hade beskrivit ett normaltillstånd som ett fel. Funktionen är
+ * ren och räknar på det den får — spärren sitter hos anroparen och i
+ * planLegacyClean, inte här.
  */
 export function legacyRakningsavvikelser(plan, post) {
   const faktiskt = {
@@ -1404,6 +1545,11 @@ async function korSweep({ config, token, dryRun, idag = new Date() }) {
  *
  * Dry-run är DEFAULT; radering kräver `--bekrafta`. Räkningen mot registrets
  * mätta `forvantat` är hård: avviker basen vägrar skriptet och raderar inget.
+ *
+ * En AVSLUTAD post (TASK-101) raderar aldrig, och räknings-guarden gäller inte
+ * den: noll träffar mot en städad fixtur är det VÄNTADE utfallet, inte en
+ * avvikelse. Att låta guarden fälla där hade gett exakt det missvisande
+ * meddelande kortet finns för att avskaffa.
  */
 async function korLegacy({ args, config, token }) {
   const { expectedBaseId, tables, requestThrottleMs, batchSize } = config;
@@ -1411,9 +1557,19 @@ async function korLegacy({ args, config, token }) {
   const skarp = args.bekrafta;
   const emailFormula = legacyEmailFormula(post);
 
+  const lagesText = post.stadad
+    ? ' — AVSLUTAD post, raderar aldrig'
+    : skarp
+      ? ' — SKARPT, rader raderas'
+      : ' — DRY RUN (lägg till --bekrafta för att radera)';
+  console.log(`Legacy-städning av "${post.namn}" i ${expectedBaseId}${lagesText}`);
+  // Tillståndet FÖRST: det avgör hur allt nedanför ska läsas.
   console.log(
-    `Legacy-städning av "${post.namn}" i ${expectedBaseId}` +
-      `${skarp ? ' — SKARPT, rader raderas' : ' — DRY RUN (lägg till --bekrafta för att radera)'}`,
+    `▸ Status: ${
+      post.stadad
+        ? `AVSLUTAD — fixturen städades ${post.stadad.datum} (${post.stadad.av})`
+        : 'AKTIV — fixturen ligger kvar i basen'
+    }`,
   );
   console.log(`▸ Källa: ${post.kalla}`);
   console.log(`▸ Ankare: Ort "${post.ort}" + record-ID ${post.eventRecordId}`);
@@ -1449,6 +1605,30 @@ async function korLegacy({ args, config, token }) {
     `▸ Planerade: ${plan.events.length} event, ${plan.registrations.length} anmälningar, ${plan.persons.length} personer`,
   );
   for (const s of plan.skipped) console.log(`   ⚠️  ${s.id} lämnas kvar — ${s.orsak}`);
+
+  // AVSLUTAD POST (TASK-101): returnera FÖRE räknings-guarden. För en städad
+  // fixtur är noll träffar det väntade, och att fälla på "förväntade 16, fann
+  // 0" hade beskrivit ett normaltillstånd som ett fel.
+  if (post.stadad) {
+    const traffar = events.length + registrations.length + persons.length;
+    if (traffar > 0) {
+      throw new GuardError(
+        `"${post.namn}" är AVSLUTAD (städad ${post.stadad.datum}, ${post.stadad.av}) men basen ` +
+          `bär ${traffar} rad(er) som matchar dess ankare. INGET raderades, och posten KAN inte ` +
+          'radera något. Airtable återanvänder inte record-ID:n — detta är alltså NY data, inte ' +
+          'den gamla fixturen. Låt en människa titta innan något tas bort.',
+      );
+    }
+    console.log(
+      `   ✅ 0 rader kvar i basen — det VÄNTADE utfallet för en avslutad post ` +
+        `(mätningen ${post.forvantat.event}/${post.forvantat.anmalningar}/` +
+        `${post.forvantat.personer} är historik, inte ett krav på basen)`,
+    );
+    console.log(
+      '\nInget att göra. En avslutad post raderar aldrig; räknings-guarden gäller bara aktiva poster.',
+    );
+    return 0;
+  }
 
   const avvikelser = legacyRakningsavvikelser(plan, post);
   if (avvikelser.length > 0) {

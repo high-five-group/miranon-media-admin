@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-29 17:36'
-updated_date: '2026-07-30 19:31'
+updated_date: '2026-07-31 08:09'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,7 +33,7 @@ Källa: restlistans § Spår E.
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Marcus tillfrågad om ZZ-GRANSKNING-S91 får städas — svaret citerat i kortet, inte antaget
-- [ ] #2 Städningen körd med preflighten respekterad, och utfallet verifierat mot basen
+- [x] #2 Städningen körd med preflighten respekterad, och utfallet verifierat mot basen
 - [x] #3 Frågan besvarad i skrift: lämnar nästa granskningsfixtur samma spår, och är det avsiktligt?
 - [x] #4 Om svaret är att det INTE är avsiktligt: eget kort mintat för mekaniseringen — denna skiva lappar inte
 <!-- AC:END -->
@@ -121,6 +121,27 @@ AC-STATUS
 #3 UPPFYLLT. Svaret ovan, plus § Fixturens livstid i docs/reference/staging-verifiering-runbook.md.
 
 #4 UPPFYLLT. Svaret på (2) och (3) är att spåret INTE är avsiktligt → TASK-95 mintat med båda delarna. Denna skiva lappar inte: seed-review-fixture.mjs, .purge-staging-policy.json och purge-staging-sentinels.mjs är samtliga ORÖRDA i denna PR.
+
+────────────────────────────────────────────────────────────
+AC #2 — UPPFYLLT 2026-07-31, verifierat av TASK-101 mot basen (egen mätning, inte övertaget påstående)
+
+STÄDNINGEN ÄR KÖRD. Den utfördes av TASK-95 (PR #493, landad 2026-07-31 08:50) via det legacy-läge TASK-95 byggde — inte via det kommando detta kort ursprungligen anvisade, som mätte 0 raderade poster. TASK-95 redovisar 33 poster raderade och PREFLIGHT OK med exitkod per körning (dess AC #6, sex körningar).
+
+UTFALLET VERIFIERAT MOT BASEN av TASK-101, två oberoende vägar, staging apphjj8Q7lkXCMsL4:
+
+1. Skriptets legacy-läge (Airtable REST, PREFLIGHT OK):
+     npm run seed:review -- --legacy ZZ-GRANSKNING-S91
+     ▸ Träffar: 0 event, 0 anmälningar, 0 personer
+
+2. Airtable-MCP, oberoende av skriptet:
+     Eventplanering  filterByFormula {Ort} = "ZZ-GRANSKNING-S91"        → 0 records
+     Anmälningar     filterByFormula FIND("zz-granskning-", LOWER({E-post})) = 1 → 0 records
+
+Räkningen FÖRE var 33 poster (1 event recBepsw4Qy9scfoj + 16 anmälningar + 16 personer), mätt av detta kort 2026-07-30. EFTER: 0. Fixturen finns inte kvar i staging.
+
+PREFLIGHTEN RESPEKTERAD i varje körning TASK-101 gjorde: samtliga rapporterade "PREFLIGHT OK — inget staging-rörande CI-jobb igång (lokal seed:review)".
+
+BOCKNINGEN GÖRS PÅ EGEN MÄTNING. Kortet sätts INTE till Done här — DoD kräver CI grön per jobb, och den signalen finns inte vid bockningstillfället.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
