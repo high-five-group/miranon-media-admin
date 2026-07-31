@@ -13,8 +13,25 @@
 //   npm run seed:review                       # default-fixtur, 8 + 8
 //   npm run seed:review -- --ort ZZ-X --dagar 5 --bekraftade 4 --obekraftade 12
 //   npm run seed:review -- --dry-run          # planera, skriv inget
+//   npm run seed:review -- --livstid 30       # längre granskningsfönster
 //   npm run seed:review:clean                 # radera default-fixturen
 //   npm run seed:review:clean -- --ort ZZ-X --dry-run
+//   npm run seed:review -- --sweep            # ENDAST förfallo-svepet
+//   npm run seed:review -- --sweep --dry-run  # visa vad svepet skulle ta
+//   npm run seed:review -- --legacy <namn>              # dry-run, alltid
+//   npm run seed:review -- --legacy <namn> --bekrafta   # radera på riktigt
+//
+// LIVSTIDEN (TASK-95 del A): create stämplar ett utgångsdatum i eventets
+// Notering. Förfallo-svepet läser stämpeln och städar det som passerat — det
+// körs automatiskt i create och clean (stäng av med --ingen-svep) och kan
+// köras ensamt med --sweep. En fixtur vars datum inte passerat rörs ALDRIG:
+// det är "granskningen pågår". Svepet är ingen tidsdriven automat — det körs
+// när skriptet körs; se CONFIG.livstid för hela avvägningen.
+//
+// LEGACY-LÄGET (TASK-95 del B): handbyggda fixturer från tiden före skriptet
+// bär inte dess markörer och är osynliga för både clean och svepet.
+// CONFIG.legacy är ett slutet register över dem, med mätt räkning per post.
+// Dry-run är default; radering kräver --bekrafta.
 //
 // Token: STAGING_AIRTABLE_TOKEN ur gitignorade .env.seed (se
 // .env.seed.example), laddad av npm-skriptet via
@@ -44,6 +61,19 @@
 //   4. Länk-guard vid clean: en person med data-länkar (Deltaganden) lämnas
 //      kvar och rapporteras i stället för att raderas. Fail-safe-riktning,
 //      samma form som purge-skriptets skyddsräcke 4.
+//   5. Utgångsstämpeln (TASK-95): svepet raderar ENDAST en fixtur vars stämpel
+//      passerat. Saknad, trasig eller framtida stämpel ⇒ rörs aldrig. Det är
+//      den halva som gör att en pågående granskning inte kan städas bort.
+//   6. Legacy-registrets räknings-guard (TASK-95): varje post bär sin MÄTTA
+//      räkning, och avviker basen från den vägrar skriptet och raderar
+//      ingenting. Registret är slutet — inga mönster från kommandoraden.
+//
+// SKYDDSRÄCKE 2 ÄR OFÖRÄNDRAT OCH SKA FÖRBLI DET: en granskningsfixtur får
+// ALDRIG bli purge-bar. Att lösa livstidsfrågan med en target i
+// .purge-staging-policy.json vore att riva skyddet, inte att laga det —
+// setup-purgen kör före varje staging-CI-jobb och hade raderat fixturen mitt
+// under granskningen. Restlistan bokförde en gång ZZ-GRANSKNING-* och
+// app-segment-test som samma klass av lucka; de har MOTSATTA rätta svar.
 //
 // Logiken är universell (kan bära ett annat projekt utan refactor); ALLA
 // projekt-värden bor i CONFIG högst upp. Medvetet avsteg från
@@ -150,6 +180,94 @@ export const CONFIG = {
 
   /** Anmälnings-taket är en rimlighetsspärr, inte en Airtable-gräns. */
   limits: { maxAnmalningar: 60 },
+
+  /**
+   * FIXTURENS LIVSTID (TASK-95 del A). Skapandet stämplar ett utgångsdatum i
+   * eventets Notering; förfallo-svepet (korSweep) läser stämpeln och städar
+   * det som passerat, via exakt samma planClean-väg och samma skyddsräcken.
+   *
+   * VAD STÄMPELN LÖSER, OCH VARFÖR DEN BEHÖVS FÖR ATT ÖVERHUVUDTAGET KUNNA
+   * SKILJA FALLEN: skyddsräcke 2 svarar på "vem får INTE radera fixturen
+   * medan granskningen pågår". Ingenting svarade på "vem raderar den när
+   * granskningen är slut" — och ingen mekanism KUNDE svara, eftersom
+   * "granskningen pågår" inte var uttryckt någonstans i datan. Stämpeln gör
+   * det uttryckbart. Utan den är varje automatisk städning en gissning.
+   *
+   * TRE FAIL-SAFE-RIKTNINGAR, alla åt samma håll (hellre lämna kvar):
+   *   - fixtur UTAN stämpel rörs ALDRIG (t.ex. en handbyggd, eller en skapad
+   *     före denna landning) — det är legacy-registrets område, inte svepets
+   *   - fixtur vars datum INTE passerat rörs ALDRIG — det ÄR "granskningen
+   *     pågår", och det är den halvan som gör mekanismen säker
+   *   - ogiltigt/oparsbart datum rörs ALDRIG — en trasig stämpel läses aldrig
+   *     som "förfallen"
+   *
+   * ÄRLIG GRÄNS, utskriven i stället för dold: svepet körs NÄR SKRIPTET KÖRS
+   * (create, clean eller --sweep). Det är ingen tidsdriven automat. En fixtur
+   * vars stämpel passerat ligger kvar tills någon kör skriptet igen. Det är
+   * ett medvetet val — alternativet (ett raderande CI-jobb mot staging)
+   * återinför precis den risk skyddsräcke 2 finns för att stänga, med en
+   * aktör ingen ser innan den fyrar. Avvägningen i sin helhet, inklusive de
+   * tre förkastade formerna, står i TASK-95:s PR — den är INTE ADR-fäst.
+   */
+  livstid: {
+    dagarDefault: 14,
+    maxDagar: 365,
+    /** Stämpelns form i Noteringen. Läses av parseUtgangsdatum. */
+    stampelPrefix: '[UTGÅR:',
+  },
+
+  /**
+   * LEGACY-REGISTRET (TASK-95 del B) — handbyggda granskningsfixturer från
+   * tiden FÖRE skriptet. De bär inte skriptets markörer och är därför
+   * osynliga för både clean och svepet (fail-safe: "en rad utan fixtur-markör
+   * rörs aldrig"). Registret är den enda vägen till dem.
+   *
+   * VARFÖR ETT REGISTER OCH INTE EN FRI `--legacy-monster <regex>`: ett
+   * mönster som skrivs på kommandoraden i stunden flyttar hela skyddet till
+   * den som skriver det. Det är prosa som utger sig för att vara mekanism —
+   * ADR-083:s synd, i kodform. Registret flyttar skyddet till kodgranskning
+   * och testsvit: varje post är granskad, testad mot riktiga adresser den
+   * INTE får matcha, och bär sin egen räkning.
+   *
+   * FYRA ANKARE PER POST, alla måste hålla:
+   *   1. `ort` — grovsorterar server-side
+   *   2. `eventRecordId` — EXAKT record-ID. Bärande för `Skövde`, som är ett
+   *      RIKTIGT ortsnamn: utan ID-ankaret hade en framtida verklig Skövde-rad
+   *      kunnat matchas av ort-filtret.
+   *   3. `emailPattern` — ankrat (^…$), aldrig delsträng
+   *   4. `forvantat` — räkningen från mätningen. Avviker basen från den
+   *      VÄGRAR skriptet. Det gör "räkna FÖRE du raderar" mekaniskt i stället
+   *      för en uppmaning till människan (TASK-76:s lärdom).
+   */
+  legacy: [
+    {
+      namn: 'ZZ-GRANSKNING-S91',
+      ort: 'ZZ-GRANSKNING-S91',
+      eventRecordId: 'recBepsw4Qy9scfoj',
+      // Grovfilter server-side (måste stå FÖRST i adressen, därav `= 1`);
+      // emailPattern är finfiltret som avgör.
+      emailSokPrefix: 'zz-granskning-',
+      emailPattern: '^zz-granskning-\\d{2}@staging\\.test$',
+      forvantat: { event: 1, anmalningar: 16, personer: 16 },
+      kalla:
+        'Handbyggd 2026-07-26 (S91, task-48 design-review). Mätt av TASK-88, ' +
+        'omräknad av TASK-95 2026-07-30. Marcus godkände städning 2026-07-30.',
+    },
+    {
+      namn: 'Skovde-S75',
+      ort: 'Skövde',
+      eventRecordId: 'recigcY12dDllUkYt',
+      // `= 1` gör att detta prefix INTE fångar S91:s `zz-granskning-…`,
+      // där `granskning-` står på position 4.
+      emailSokPrefix: 'granskning-',
+      emailPattern: '^granskning-[a-z0-9-]+@example\\.com$',
+      forvantat: { event: 1, anmalningar: 6, personer: 3 },
+      kalla:
+        'Handbyggd 2026-07-22 (S75 review-våg 1, betalningsvy-granskningen). ' +
+        'Mätt av TASK-95 2026-07-30. Event-796, Ort "Skövde" — ett RIKTIGT ' +
+        'ortsnamn, därav record-ID-ankaret.',
+    },
+  ],
 
   /** Inskickad-spridning bakåt i tiden (kön sorteras äldst först). */
   inskickadSpann: { aldstDagar: 35, senasteDagar: 2 },
@@ -267,6 +385,55 @@ export function validateConfig(config) {
   if (!(config.belaggning?.maxKvot > 0) || config.belaggning.maxKvot >= 1) {
     throw new Error('belaggning.maxKvot måste ligga i (0, 1) — A6 larmar vid 100 %');
   }
+  const { dagarDefault, maxDagar, stampelPrefix } = config.livstid ?? {};
+  if (!Number.isInteger(dagarDefault) || dagarDefault < 1 || dagarDefault > (maxDagar ?? 0)) {
+    throw new Error(
+      `livstid.dagarDefault måste vara ett heltal 1–${maxDagar} — utan livstid har fixturen ingen avslutning`,
+    );
+  }
+  if (typeof stampelPrefix !== 'string' || !stampelPrefix.startsWith('[')) {
+    throw new Error('livstid.stampelPrefix måste vara en [-inledd sträng (läses ur Noteringen)');
+  }
+  // Legacy-registret: varje post måste bära alla fyra ankarna, och mönstret
+  // måste vara ankrat i BÅDA ändar. Ett oankrat mönster matchar delsträngar
+  // och kunde träffa en riktig adress — det är hela skälet posterna finns i
+  // kod i stället för på kommandoraden.
+  for (const post of config.legacy ?? []) {
+    const namn = post?.namn ?? '(namnlös)';
+    if (!ORT_PATTERN.test(post?.ort ?? '')) {
+      throw new Error(
+        `legacy[${namn}].ort "${post?.ort}" avvisas — värdet går in i filterByFormula`,
+      );
+    }
+    if (!REC_ID_PATTERN.test(post?.eventRecordId ?? '')) {
+      throw new Error(
+        `legacy[${namn}].eventRecordId saknas eller är inte rec-formad — record-ID-ankaret är obligatoriskt`,
+      );
+    }
+    if (
+      typeof post?.emailPattern !== 'string' ||
+      !post.emailPattern.startsWith('^') ||
+      !post.emailPattern.endsWith('$')
+    ) {
+      throw new Error(
+        `legacy[${namn}].emailPattern måste vara ankrat i BÅDA ändar (^…$) — ett oankrat mönster matchar delsträngar`,
+      );
+    }
+    // Grovfiltret går in i filterByFormula — citattecken och backslash är
+    // bannlysta av samma skäl som i ORT_PATTERN.
+    if (!/^[a-z0-9+._-]{3,40}$/.test(post?.emailSokPrefix ?? '')) {
+      throw new Error(
+        `legacy[${namn}].emailSokPrefix saknas eller bär otillåtna tecken (värdet går in i filterByFormula)`,
+      );
+    }
+    for (const nyckel of ['event', 'anmalningar', 'personer']) {
+      if (!Number.isInteger(post?.forvantat?.[nyckel]) || post.forvantat[nyckel] < 0) {
+        throw new Error(
+          `legacy[${namn}].forvantat.${nyckel} saknas — räkningen är guarden, inte en anteckning`,
+        );
+      }
+    }
+  }
   return config;
 }
 
@@ -275,10 +442,23 @@ export function parseArgs(argv, config) {
   const args = {
     clean: argv.includes('--clean'),
     dryRun: argv.includes('--dry-run'),
+    /** Kör ENDAST förfallo-svepet — inget skapas, ingen namngiven ort städas. */
+    sweep: argv.includes('--sweep'),
+    /** Stäng av det automatiska svepet i create/clean. */
+    ingenSvep: argv.includes('--ingen-svep'),
+    /**
+     * Legacy-läget raderar först med --bekrafta. Utan den är det dry-run.
+     * Kortets krav "aktivt val och dry-run först" mekaniseras därmed i stället
+     * för att stå som en uppmaning: den farliga vägen kräver ETT extra ord,
+     * och den ofarliga är default.
+     */
+    bekrafta: argv.includes('--bekrafta'),
+    legacy: null,
     ort: config.defaults.ort,
     bekraftade: config.defaults.bekraftade,
     obekraftade: config.defaults.obekraftade,
     dagar: config.defaults.dagar,
+    livstid: config.livstid.dagarDefault,
   };
   const tal = (namn, ravarde, { min, max }) => {
     const n = Number(ravarde);
@@ -312,12 +492,43 @@ export function parseArgs(argv, config) {
         args.dagar = tal('dagar', varde, { min: 0, max: 365 });
         i += 1;
         break;
+      case '--livstid':
+        args.livstid = tal('livstid', varde, { min: 1, max: config.livstid.maxDagar });
+        i += 1;
+        break;
+      case '--legacy': {
+        const post = (config.legacy ?? []).find((p) => p.namn === varde);
+        if (!post) {
+          const kanda =
+            (config.legacy ?? []).map((p) => p.namn).join(', ') || '(registret är tomt)';
+          throw new Error(
+            `--legacy "${varde}" finns inte i registret. Kända poster: ${kanda}. ` +
+              'Registret är avsiktligt slutet — en handbyggd fixtur läggs till i CONFIG.legacy ' +
+              'med mätt räkning, aldrig som ett mönster på kommandoraden.',
+          );
+        }
+        args.legacy = post;
+        i += 1;
+        break;
+      }
       default:
         break;
     }
   }
+  // Lägena är ömsesidigt uteslutande — annars blir det tvetydigt vad --ort styr.
+  const lagen = [
+    args.clean && '--clean',
+    args.sweep && '--sweep',
+    args.legacy && '--legacy',
+  ].filter(Boolean);
+  if (lagen.length > 1) {
+    throw new Error(`${lagen.join(' och ')} kan inte kombineras — välj ETT läge`);
+  }
+  // Fail-safe: --dry-run vinner ALLTID över --bekrafta. Anges båda är avsikten
+  // att titta, inte att radera.
+  if (args.dryRun) args.bekrafta = false;
   const totalt = args.bekraftade + args.obekraftade;
-  if (!args.clean && totalt === 0) {
+  if (!args.clean && !args.sweep && !args.legacy && totalt === 0) {
     throw new Error('--bekraftade + --obekraftade är 0 — inget att skapa');
   }
   if (totalt > config.limits.maxAnmalningar) {
@@ -356,6 +567,19 @@ export function fixtureEmailFormula(slug, marker) {
 }
 
 /**
+ * filterByFormula som hämtar ALLA event skriptet självt skapat — svepets
+ * ingång. Sentineln står först i Noteringen, därav `= 1`.
+ */
+export function sweepEventFormula(marker) {
+  return `FIND('${marker.noteringSentinel}', {Notering}) = 1`;
+}
+
+/** filterByFormula som grovsorterar en legacy-posts rader server-side. */
+export function legacyEmailFormula(post) {
+  return `FIND('${post.emailSokPrefix}', LOWER({E-post} & '')) = 1`;
+}
+
+/**
  * Skyddsräcke 2 (fälla 1): korsläs fixturens markörer mot den SKARPA
  * purge-policyn. Träff = fixturen skulle raderas av setup-purgen mitt under
  * granskningen. Returnerar kollisionerna; tom lista = säkert.
@@ -378,6 +602,160 @@ export function isoDatum(fran, dagar) {
   const d = new Date(fran);
   d.setUTCDate(d.getUTCDate() + dagar);
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Utgångsstämpelns text för ett givet datum: `[UTGÅR: 2026-08-13]`.
+ *
+ * Kastar vid ogiltigt datum i stället för att foga in det. En stämpel som
+ * lyder `[UTGÅR: undefined]` är oläsbar för parseUtgangsdatum, och en oläsbar
+ * stämpel betyder "rör aldrig" — fixturen hade alltså blivit odödlig, tyst.
+ * Det är precis det felet denna funktion finns för att göra omöjligt.
+ */
+export function utgangsstampel(datum, livstid) {
+  if (typeof datum !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(datum)) {
+    throw new Error(`utgangsstampel: "${datum}" är inte ett ISO-datum (YYYY-MM-DD)`);
+  }
+  return `${livstid.stampelPrefix} ${datum}]`;
+}
+
+/**
+ * Läs utgångsdatumet ur en Notering. Returnerar `'YYYY-MM-DD'` eller `null`.
+ *
+ * `null` betyder ALLTID "rör aldrig" för svepet, och täcker tre skilda fall
+ * med samma svar: ingen stämpel alls (handbyggd fixtur, eller en skapad före
+ * TASK-95), en trasig stämpel, och ett formmässigt korrekt men obefintligt
+ * datum (`2026-02-31`). Ett oläsbart datum får ALDRIG tolkas som förfallet —
+ * fail-safe-riktningen är densamma som resten av skriptets.
+ */
+export function parseUtgangsdatum(notering, config) {
+  if (typeof notering !== 'string') return null;
+  const prefix = config.livstid.stampelPrefix;
+  const start = notering.indexOf(prefix);
+  if (start === -1) return null;
+  const slut = notering.indexOf(']', start + prefix.length);
+  if (slut === -1) return null;
+  const ravarde = notering.slice(start + prefix.length, slut).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ravarde)) return null;
+  // Kalender-validering: 2026-02-31 passerar regexen men finns inte. Date
+  // normaliserar den tyst till 2026-03-03 — jämförelsen fångar det.
+  const d = new Date(`${ravarde}T00:00:00.000Z`);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== ravarde) return null;
+  return ravarde;
+}
+
+/**
+ * Klassa fixtur-event mot dagens datum. Tre utfall — och bara ETT av dem
+ * leder till radering.
+ *
+ * Detta är den tvåsidiga halvan AC #3 kräver: `forfallna` är "städar när den
+ * ska", `aktiva` är "rör INTE en fixtur vars granskning pågår". Att båda
+ * listorna returneras i stället för bara den första är med flit — anroparen
+ * ska kunna RAPPORTERA vad den lät stå, inte bara vad den tog.
+ *
+ * Jämförelsen är strikt (`idag > utgår`): en fixtur som går ut IDAG får dagen
+ * ut. Granskningen kan pågå just nu.
+ */
+export function planSweep({ events, idag, config }) {
+  const plan = { forfallna: [], aktiva: [], utanStampel: [] };
+  const idagIso = idag.toISOString().slice(0, 10);
+  for (const rec of events) {
+    const notering = rec.fields?.Notering;
+    const ort = rec.fields?.Ort;
+    // Sentineln är förutsättningen: svepet rör ALDRIG något utanför skriptets
+    // egna fixturer. En handbyggd fixtur är legacy-registrets område.
+    if (typeof notering !== 'string' || !notering.startsWith(config.marker.noteringSentinel)) {
+      continue;
+    }
+    if (config.protectedRecordIds.includes(rec.id)) {
+      plan.utanStampel.push({ id: rec.id, ort, orsak: 'skyddad record-ID' });
+      continue;
+    }
+    const utgar = parseUtgangsdatum(notering, config);
+    if (utgar === null) {
+      plan.utanStampel.push({ id: rec.id, ort, orsak: 'ingen läsbar utgångsstämpel' });
+      continue;
+    }
+    if (idagIso > utgar) plan.forfallna.push({ id: rec.id, ort, utgar });
+    else plan.aktiva.push({ id: rec.id, ort, utgar });
+  }
+  return plan;
+}
+
+/**
+ * Klassa rader mot EN legacy-registerpost.
+ *
+ * Skillnaden mot planClean är eventets ankring: här krävs att record-ID:t
+ * matchar registrets, INTE bara Orten. Det är bärande för `Skovde-S75`, vars
+ * Ort (`Skövde`) är ett riktigt ortsnamn — ett framtida verkligt Skövde-event
+ * skulle träffas av ort-filtret men aldrig av ID-ankaret.
+ */
+export function planLegacyClean({ events, registrations, persons, post, config }) {
+  const pattern = new RegExp(post.emailPattern);
+  const plan = { events: [], registrations: [], persons: [], skipped: [] };
+  for (const rec of events) {
+    if (config.protectedRecordIds.includes(rec.id)) {
+      plan.skipped.push({ id: rec.id, orsak: 'skyddad record-ID' });
+    } else if (rec.id !== post.eventRecordId) {
+      plan.skipped.push({
+        id: rec.id,
+        orsak: `record-ID matchar inte registrets ankare ${post.eventRecordId}`,
+      });
+    } else if (rec.fields?.Ort !== post.ort) {
+      plan.skipped.push({
+        id: rec.id,
+        orsak: `Ort "${rec.fields?.Ort}" matchar inte registrets "${post.ort}"`,
+      });
+    } else {
+      plan.events.push(rec.id);
+    }
+  }
+  for (const rec of registrations) {
+    if (config.protectedRecordIds.includes(rec.id)) {
+      plan.skipped.push({ id: rec.id, orsak: 'skyddad record-ID' });
+    } else if (!isFixtureEmailRecord(rec, pattern)) {
+      plan.skipped.push({ id: rec.id, orsak: 'e-post matchar inte registrets mönster' });
+    } else {
+      plan.registrations.push(rec.id);
+    }
+  }
+  for (const rec of persons) {
+    if (config.protectedRecordIds.includes(rec.id)) {
+      plan.skipped.push({ id: rec.id, orsak: 'skyddad record-ID (permanent fixtur)' });
+      continue;
+    }
+    if (!isFixtureEmailRecord(rec, pattern)) {
+      plan.skipped.push({ id: rec.id, orsak: 'e-post matchar inte registrets mönster' });
+      continue;
+    }
+    const lankar = personLinkGuardTrips(rec, config.personDataLinkFields);
+    if (lankar.length > 0) {
+      plan.skipped.push({ id: rec.id, orsak: `länk-guard: ${lankar.join(', ')}` });
+      continue;
+    }
+    plan.persons.push(rec.id);
+  }
+  return plan;
+}
+
+/**
+ * Jämför en legacy-plan mot registrets mätta räkning. Returnerar en lista
+ * avvikelser; tom lista = basen ser ut som när posten mättes.
+ *
+ * Detta är legacy-lägets skarpaste guard, och skälet är TASK-76: en oräknad
+ * massradering mot en delad bas är det farliga. Räkningen gör "räkna FÖRE du
+ * raderar" till en mekanism i stället för en uppmaning — avviker basen från
+ * mätningen har något ändrats sedan dess, och då ska en människa titta.
+ */
+export function legacyRakningsavvikelser(plan, post) {
+  const faktiskt = {
+    event: plan.events.length,
+    anmalningar: plan.registrations.length,
+    personer: plan.persons.length,
+  };
+  return Object.entries(post.forvantat)
+    .filter(([nyckel, vantat]) => faktiskt[nyckel] !== vantat)
+    .map(([nyckel, vantat]) => `${nyckel}: förväntade ${vantat}, fann ${faktiskt[nyckel]}`);
 }
 
 /** ISO-timestamp `dagar` dagar före `fran`, klockslaget stabilt per index. */
@@ -408,7 +786,7 @@ export function kapacitetFor(totaltAntal, belaggning) {
  * läsa utan schema-scope, och en gissad option ger 422 (ingen typecast).
  * Det befintliga granskningseventet bär fältet tomt och renderar rätt.
  */
-export function buildEvent({ ort, startdatum, slutdatum, maxPlatser, config }) {
+export function buildEvent({ ort, startdatum, slutdatum, maxPlatser, utgangsdatum, config }) {
   return {
     'Event (source)': config.select.eventSource,
     Typ: config.select.eventTyp,
@@ -418,10 +796,14 @@ export function buildEvent({ ort, startdatum, slutdatum, maxPlatser, config }) {
     Status: config.select.eventStatus,
     'Max antal platser': maxPlatser,
     Eventtyp: [config.eventformatRecordId],
+    // Sentineln FÖRST (isFixtureEvent kräver det), stämpeln direkt efter.
+    // Stämpeln är maskinläsbar och står före prosan med flit: den är det enda
+    // i strängen någon mekanism läser.
     Notering:
-      `${config.marker.noteringSentinel} Granskningsfixtur skapad av scripts/seed-review-fixture.mjs. ` +
-      'Syntetisk data i staging — raderas med `npm run seed:review:clean -- --ort ' +
-      `${ort}\`.`,
+      `${config.marker.noteringSentinel} ${utgangsstampel(utgangsdatum, config.livstid)} ` +
+      'Granskningsfixtur skapad av scripts/seed-review-fixture.mjs. Syntetisk data i ' +
+      `staging — städas av förfallo-svepet vid nästa körning efter ${utgangsdatum}, ` +
+      `eller nu med \`npm run seed:review:clean -- --ort ${ort}\`.`,
   };
 }
 
@@ -698,7 +1080,15 @@ async function korCreate({ args, config, token, purgePolicy }) {
   const startdatum = isoDatum(nu, args.dagar);
   const slutdatum = isoDatum(nu, args.dagar + 1); // Eventformatet är Dag 1 + Dag 2.
   const maxPlatser = kapacitetFor(totalt, config.belaggning);
-  const eventFalt = buildEvent({ ort: args.ort, startdatum, slutdatum, maxPlatser, config });
+  const utgangsdatum = isoDatum(nu, args.livstid);
+  const eventFalt = buildEvent({
+    ort: args.ort,
+    startdatum,
+    slutdatum,
+    maxPlatser,
+    utgangsdatum,
+    config,
+  });
 
   console.log(
     `Granskningsfixtur mot ${expectedBaseId}${args.dryRun ? ' — DRY RUN, inget skrivs' : ''}`,
@@ -715,6 +1105,14 @@ async function korCreate({ args, config, token, purgePolicy }) {
     `▸ Markör: Ort "${args.ort}" + Notering-sentinel + ${fixtureEmail(slug, 0, config.marker)} …`,
   );
   console.log('▸ Purge-kollisionsvakt: ren mot .purge-staging-policy.json');
+  console.log(
+    `▸ Livstid: ${args.livstid} dagar — utgångsstämpel ${utgangsstampel(utgangsdatum, config.livstid)} ` +
+      'i Noteringen. Förfallo-svepet städar fixturen vid första körningen därefter.',
+  );
+
+  // Svepet FÖRE dubbelkörnings-guarden: en förfallen fixtur på samma Ort ska
+  // städas bort, inte blockera skapandet av den nya.
+  if (!args.ingenSvep) await korSweep({ config, token, dryRun: args.dryRun, idag: nu });
 
   if (args.dryRun) {
     console.log('\nDry run klar — inget skrevs. Kör utan --dry-run för att skapa.');
@@ -816,20 +1214,30 @@ async function korCreate({ args, config, token, purgePolicy }) {
     'Ser appen gammal data ut? Kör `localStorage.clear()` i konsolen — query-cachen\n' +
       'persistas i localStorage och överlever hårdladdning (staleTime 5 min).',
   );
-  console.log(`Städa efteråt: npm run seed:review:clean -- --ort ${args.ort}`);
+  // Raden är INTE längre mekanismen — utgångsstämpeln är. Den står kvar som
+  // genväg för den som vill städa före förfallodagen.
+  console.log(
+    `Livstid: fixturen utgår ${utgangsdatum} och städas då av förfallo-svepet vid ` +
+      `nästa körning.\nStäda tidigare: npm run seed:review:clean -- --ort ${args.ort}`,
+  );
   return 0;
 }
 
-async function korClean({ args, config, token }) {
+/**
+ * Städa EN fixtur-ort via skriptets egna markörer.
+ *
+ * Delad av `--clean` och förfallo-svepet. Att svepet går genom EXAKT denna
+ * funktion — i stället för en egen raderings-väg — är avsiktligt: det ärver
+ * därmed skyddade record-ID:n, länk-guarden, raderings-ORDNINGEN (anmälningar
+ * → personer → event) och efter-verifieringen utan att någon av dem kan
+ * drifta isär mellan de två vägarna.
+ */
+async function stadaOrt({ ort, config, token, dryRun }) {
   const { expectedBaseId, tables, requestThrottleMs, batchSize } = config;
+  const args = { ort, dryRun };
   const slug = slugify(args.ort);
   const pattern = fixtureEmailPattern(slug, config.marker);
   const emailFormula = fixtureEmailFormula(slug, config.marker);
-
-  console.log(
-    `Städning av granskningsfixtur "${args.ort}" i ${expectedBaseId}` +
-      `${args.dryRun ? ' — DRY RUN, inget raderas' : ''}`,
-  );
 
   // Sekventiellt, inte parallellt: throttlen räknar per anrop och 5 req/s
   // per bas är en delad budget.
@@ -867,11 +1275,12 @@ async function korClean({ args, config, token }) {
   }
   if (plan.events.length === 0 && plan.registrations.length === 0 && plan.persons.length === 0) {
     console.log('\nInget att städa.');
-    return 0;
+    return { raderade: 0, planerade: 0 };
   }
+  const planerade = plan.events.length + plan.registrations.length + plan.persons.length;
   if (args.dryRun) {
     console.log('\nDry run klar — inget raderades.');
-    return 0;
+    return { raderade: 0, planerade };
   }
 
   // Ordningen är bärande: anmälningarna först (då släpper personernas
@@ -934,6 +1343,189 @@ async function korClean({ args, config, token }) {
   const rest = kvar.events.length + kvar.registrations.length + kvar.persons.length;
   if (rest > 0) throw new ApiError(`efter-verifiering: ${rest} radera-bara fixtur-rader kvarstår`);
   console.log('   ✅ efter-verifiering: 0 radera-bara fixtur-rader kvar');
+  return { raderade: rAnm + rPers + rEv, planerade };
+}
+
+async function korClean({ args, config, token }) {
+  console.log(
+    `Städning av granskningsfixtur "${args.ort}" i ${config.expectedBaseId}` +
+      `${args.dryRun ? ' — DRY RUN, inget raderas' : ''}`,
+  );
+  await stadaOrt({ ort: args.ort, config, token, dryRun: args.dryRun });
+  return 0;
+}
+
+/**
+ * FÖRFALLO-SVEPET (TASK-95 del A) — fixturens livstidsavslutning.
+ *
+ * Listar varje event skriptet självt skapat, läser utgångsstämpeln, och
+ * städar det som passerat via stadaOrt. Rapporterar BÅDA sidorna: vad som
+ * togs, och vad som medvetet lämnades (aktiv granskning, eller ingen stämpel).
+ *
+ * Att den rapporterar det den lämnar är inte kosmetik. En städmekanism som
+ * bara redovisar sina raderingar är omöjlig att granska — man ser att den
+ * gjorde något, aldrig att den lät bli det den skulle låta bli.
+ */
+async function korSweep({ config, token, dryRun, idag = new Date() }) {
+  const { expectedBaseId, tables, requestThrottleMs } = config;
+  const events = await listRecords(
+    expectedBaseId,
+    tables.eventplanering.id,
+    sweepEventFormula(config.marker),
+    token,
+    requestThrottleMs,
+  );
+  const plan = planSweep({ events, idag, config });
+
+  console.log(
+    `\n▸ Förfallo-svep (${idag.toISOString().slice(0, 10)})${dryRun ? ' — DRY RUN' : ''}: ` +
+      `${plan.forfallna.length} förfallna, ${plan.aktiva.length} aktiva, ` +
+      `${plan.utanStampel.length} utan läsbar stämpel`,
+  );
+  for (const a of plan.aktiva) {
+    console.log(`   ⏳ ${a.ort} (${a.id}) lämnas — granskning pågår, utgår ${a.utgar}`);
+  }
+  for (const u of plan.utanStampel) {
+    console.log(`   ⚠️  ${u.ort} (${u.id}) lämnas — ${u.orsak}`);
+  }
+
+  let raderade = 0;
+  for (const f of plan.forfallna) {
+    console.log(`   🕓 ${f.ort} (${f.id}) förföll ${f.utgar} — städas`);
+    const utfall = await stadaOrt({ ort: f.ort, config, token, dryRun });
+    raderade += utfall.raderade;
+  }
+  if (plan.forfallna.length === 0) console.log('   ✅ inget förfallet att städa');
+  return { plan, raderade };
+}
+
+/**
+ * LEGACY-LÄGET (TASK-95 del B) — den enda vägen till en handbyggd fixtur.
+ *
+ * Dry-run är DEFAULT; radering kräver `--bekrafta`. Räkningen mot registrets
+ * mätta `forvantat` är hård: avviker basen vägrar skriptet och raderar inget.
+ */
+async function korLegacy({ args, config, token }) {
+  const { expectedBaseId, tables, requestThrottleMs, batchSize } = config;
+  const post = args.legacy;
+  const skarp = args.bekrafta;
+  const emailFormula = legacyEmailFormula(post);
+
+  console.log(
+    `Legacy-städning av "${post.namn}" i ${expectedBaseId}` +
+      `${skarp ? ' — SKARPT, rader raderas' : ' — DRY RUN (lägg till --bekrafta för att radera)'}`,
+  );
+  console.log(`▸ Källa: ${post.kalla}`);
+  console.log(`▸ Ankare: Ort "${post.ort}" + record-ID ${post.eventRecordId}`);
+  console.log(`▸ E-postmönster: ${post.emailPattern}`);
+
+  const events = await listRecords(
+    expectedBaseId,
+    tables.eventplanering.id,
+    `{Ort} = '${post.ort}'`,
+    token,
+    requestThrottleMs,
+  );
+  const registrations = await listRecords(
+    expectedBaseId,
+    tables.anmalningar.id,
+    emailFormula,
+    token,
+    requestThrottleMs,
+  );
+  const persons = await listRecords(
+    expectedBaseId,
+    tables.personer.id,
+    emailFormula,
+    token,
+    requestThrottleMs,
+  );
+
+  const plan = planLegacyClean({ events, registrations, persons, post, config });
+  console.log(
+    `▸ Träffar: ${events.length} event, ${registrations.length} anmälningar, ${persons.length} personer`,
+  );
+  console.log(
+    `▸ Planerade: ${plan.events.length} event, ${plan.registrations.length} anmälningar, ${plan.persons.length} personer`,
+  );
+  for (const s of plan.skipped) console.log(`   ⚠️  ${s.id} lämnas kvar — ${s.orsak}`);
+
+  const avvikelser = legacyRakningsavvikelser(plan, post);
+  if (avvikelser.length > 0) {
+    throw new GuardError(
+      `räkningen avviker från registrets mätning för "${post.namn}" — ${avvikelser.join('; ')}. ` +
+        'Basen har ändrats sedan posten mättes. INGET raderades. Mät om, uppdatera ' +
+        'CONFIG.legacy[].forvantat i en granskad ändring, och kör igen.',
+    );
+  }
+  console.log(
+    `   ✅ räkning stämmer mot registret (${post.forvantat.event} event, ` +
+      `${post.forvantat.anmalningar} anmälningar, ${post.forvantat.personer} personer)`,
+  );
+
+  if (!skarp) {
+    console.log('\nDry run klar — inget raderades. Kör med --bekrafta för att radera.');
+    return 0;
+  }
+
+  // Samma ordning som stadaOrt: anmälningar → personer → event.
+  const rAnm = await deleteRecords(
+    expectedBaseId,
+    tables.anmalningar.id,
+    plan.registrations,
+    token,
+    requestThrottleMs,
+    batchSize,
+  );
+  console.log(`   🗑  ${rAnm}/${plan.registrations.length} anmälningar raderade`);
+  const rPers = await deleteRecords(
+    expectedBaseId,
+    tables.personer.id,
+    plan.persons,
+    token,
+    requestThrottleMs,
+    batchSize,
+  );
+  console.log(`   🗑  ${rPers}/${plan.persons.length} personer raderade`);
+  const rEv = await deleteRecords(
+    expectedBaseId,
+    tables.eventplanering.id,
+    plan.events,
+    token,
+    requestThrottleMs,
+    batchSize,
+  );
+  console.log(`   🗑  ${rEv}/${plan.events.length} event raderade`);
+
+  // Efter-verifiering mot basen, samma form som stadaOrt.
+  const kvarPlan = planLegacyClean({
+    events: await listRecords(
+      expectedBaseId,
+      tables.eventplanering.id,
+      `{Ort} = '${post.ort}'`,
+      token,
+      requestThrottleMs,
+    ),
+    registrations: await listRecords(
+      expectedBaseId,
+      tables.anmalningar.id,
+      emailFormula,
+      token,
+      requestThrottleMs,
+    ),
+    persons: await listRecords(
+      expectedBaseId,
+      tables.personer.id,
+      emailFormula,
+      token,
+      requestThrottleMs,
+    ),
+    post,
+    config,
+  });
+  const rest = kvarPlan.events.length + kvarPlan.registrations.length + kvarPlan.persons.length;
+  if (rest > 0) throw new ApiError(`efter-verifiering: ${rest} radera-bara legacy-rader kvarstår`);
+  console.log(`   ✅ efter-verifiering: 0 radera-bara rader kvar (${rAnm + rPers + rEv} raderade)`);
   return 0;
 }
 
@@ -976,9 +1568,21 @@ async function main() {
   kravStagingLedigt('lokal seed:review');
 
   try {
-    const kod = args.clean
-      ? await korClean({ args, config: CONFIG, token })
-      : await korCreate({ args, config: CONFIG, token, purgePolicy });
+    let kod;
+    if (args.legacy) {
+      // Legacy-läget kör ALDRIG svepet: det rör en fixtur utanför skriptets
+      // markörer, och att blanda de två vägarna i en körning gör utfallet
+      // svårläst i loggen.
+      kod = await korLegacy({ args, config: CONFIG, token });
+    } else if (args.sweep) {
+      await korSweep({ config: CONFIG, token, dryRun: args.dryRun });
+      kod = 0;
+    } else if (args.clean) {
+      kod = await korClean({ args, config: CONFIG, token });
+      if (!args.ingenSvep) await korSweep({ config: CONFIG, token, dryRun: args.dryRun });
+    } else {
+      kod = await korCreate({ args, config: CONFIG, token, purgePolicy });
+    }
     process.exit(kod);
   } catch (err) {
     if (err instanceof GuardError) {

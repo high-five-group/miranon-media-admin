@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-30 19:30'
+updated_date: '2026-07-31 06:49'
 labels:
   - ready-for-agent
 dependencies: []
@@ -66,14 +67,85 @@ Källa: `TASK-88` (mätningen), restlistans § Spår E.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Del B: de 33 uppräknade posterna städade — räkning FÖRE, verifiering mot basen EFTER, och de permanenta rollup-fixturerna (rec7F8jYc7rczwwkM, recqxaFNwHAdQlAqb) bevisat orörda
-- [ ] #2 Del B: formen vald bland (e)/(f)/(g) och motiverad i PR:n; de förkastade bär sina skäl
-- [ ] #3 Del A: fixturens livstid har en avslutning som INTE är prosa — tvåsidigt bevis: den städar när den ska, och rör INTE en fixtur vars granskning pågår
-- [ ] #4 Skyddsräcke 2 intakt efter ändringen: en granskningsfixtur får ALDRIG bli purge-bar — verifierat mekaniskt mot .purge-staging-policy.json, inte antaget
-- [ ] #5 Event-796 (Ort Skövde, kvar sedan 2026-07-22) räknad och hanterad av samma mekanism — eller skälet till att den undantas utskrivet
-- [ ] #6 Preflighten (TASK-77/TASK-84) respekterad i varje staging-körning — exitkod redovisad per körning
-- [ ] #7 Marcus godkännande för S91-städningen citerat och verifierat fortfarande giltigt vid utförandet — en fixtur som hunnit bli föremål för en NY granskning städas aldrig tyst
+- [x] #1 Del B: de 33 uppräknade posterna städade — räkning FÖRE, verifiering mot basen EFTER, och de permanenta rollup-fixturerna (rec7F8jYc7rczwwkM, recqxaFNwHAdQlAqb) bevisat orörda
+- [x] #2 Del B: formen vald bland (e)/(f)/(g) och motiverad i PR:n; de förkastade bär sina skäl
+- [x] #3 Del A: fixturens livstid har en avslutning som INTE är prosa — tvåsidigt bevis: den städar när den ska, och rör INTE en fixtur vars granskning pågår
+- [x] #4 Skyddsräcke 2 intakt efter ändringen: en granskningsfixtur får ALDRIG bli purge-bar — verifierat mekaniskt mot .purge-staging-policy.json, inte antaget
+- [x] #5 Event-796 (Ort Skövde, kvar sedan 2026-07-22) räknad och hanterad av samma mekanism — eller skälet till att den undantas utskrivet
+- [x] #6 Preflighten (TASK-77/TASK-84) respekterad i varje staging-körning — exitkod redovisad per körning
+- [x] #7 Marcus godkännande för S91-städningen citerat och verifierat fortfarande giltigt vid utförandet — en fixtur som hunnit bli föremål för en NY granskning städas aldrig tyst
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FORMVAL — DEL A: (a) TTL i fixturen själv, verkställd av ett förfallo-svep i skriptets egna lägen.
+
+Create stämplar `[UTGÅR: YYYY-MM-DD]` i eventets Notering (14 dagar default, `--livstid N`). Svepet läser stämpeln och städar det som passerat via EXAKT samma planClean-väg, raderings-ordning och skyddsräcken som manuell clean. Kör automatiskt i create + clean (`--ingen-svep` stänger av), ensamt med `--sweep`.
+
+Varför stämpeln var nödvändig oavsett verkställare: "granskningen pågår" var inte uttryckt NÅGONSTANS i datan. Utan den är varje automatisk städning en gissning. Det är den irreducibla luckan, och (b)/(c) löser den inte — de förutsätter den.
+
+FÖRKASTADE, DEL A:
+(b) Rapporterande CI-vakt — AC #3 kräver att avslutningen STÄDAR. En vakt som bara listar avslutar ingenting; den flyttar uppmaningen från skriptets sista rad till en CI-logg. L321-klassen: rådgivande lägen efterlevs inte.
+(c) Raderande CI-vakt med lång TTL — återinför precis den risk skyddsräcke 2 stänger, med en aktör ingen ser innan den fyrar. Kräver dessutom write-scopad STAGING_AIRTABLE_TOKEN i ett nytt jobb plus semafor-koordinering mot purge-jobbet (TASK-76:s race). Fel proportion mot ett ackumulerande skräpproblem.
+(d) Acceptera och skriv ned — vägd sist per kortets krav, och faller: två fixturer hade två skrivna uppmaningar och noll efterlevnad. Att skriva en tredje är samma sak igen.
+
+ÄRLIG GRÄNS, utskriven i kod + runbook: svepet körs NÄR SKRIPTET KÖRS. Ingen tidsdriven automat. En förfallen fixtur ligger kvar tills någon kör skriptet igen.
+
+FORMVAL — DEL B: (e) explicit legacy-läge, i "eller motsvarande"-formen: ett SLUTET REGISTER i CONFIG, inte en fri `--legacy-monster <regex>`.
+
+En regex på kommandoraden flyttar hela skyddet till den som skriver den i stunden — prosa som utger sig för att vara mekanism (ADR-083) i kodform. Registret flyttar skyddet till kodgranskning + testsvit. Fyra ankare per post: ort, eventRecordId, `^…$`-ankrat emailPattern, och `forvantat` (mätt räkning). Avviker basen VÄGRAR skriptet. Dry-run default; radering kräver `--bekrafta`, och `--dry-run` vinner alltid.
+
+FÖRKASTADE, DEL B:
+(f) Märk om fixturen i basen — 33 skrivningar som ÄNDRAR data i stället för att ta bort den, förfalskar historik ([SEED-REVIEW-FIXTUR] på ett event skriptet aldrig skapade), och lämnar ett trasigt mellanläge om körningen avbryts. Löser dessutom inte Event-796: dess sex anmälningar saknar gemensam slug och bara tre av dem har person.
+(g) Engångsskript — lämnar Event-796 olöst (AC #5) och nästa handbyggda fixtur likaså. Hårdkodade record-ID:n har noll återanvändning och skulle behöva egen bas-guard, protected-spärr och länk-guard — en andra, sämre kopia av det som redan finns.
+
+MÄTNING — S91, räknad mot basen, aldrig uppskattad
+FÖRE:  1 event (recBepsw4Qy9scfoj, Event-2249) + 16 anmälningar (zz-granskning-01..16@staging.test, 8 Obekräftad + 8 Bekräftad) + 16 personer = 33 poster
+EFTER: 0 kvar. Verifierat oberoende via Airtable-MCP, inte bara ur skriptets egen efter-verifiering.
+
+PERMANENTA ROLLUP-FIXTURERNA — före/efter byte-identiska:
+  rec7F8jYc7rczwwkM  Deltaganden ["recQWjimysYJrkY0n"], Totala deltaganden 1
+  recqxaFNwHAdQlAqb  Deltaganden ["recbfLxgzWw7FpO6W","recVFG03E9dihNFiA","reclwCtXanlSqRR0c"], Totala deltaganden 2
+Även de permanenta EVENT-fixturerna orörda: Event-681 (ZZ-belaggning-fixtur), Event-845 (ZZ-arbetsko-fixtur). Notera: dessa två EVENT står INTE i protectedRecordIds — den listan bär bara de två PERSONERNA. De skyddades här av registrets record-ID-ankare.
+
+AC #5 — EVENT-796: RÄKNAD OCH HANTERAD, RADERING EJ UTFÖRD
+Räknad mot basen: 1 event (recigcY12dDllUkYt, Event-796, Ort Skövde) + 6 anmälningar (granskning-*@example.com, samtliga Efternamn "Granskning") + 3 personer = 10 poster. Bara 3 av 6 anmälningar har Person-länk — den handbyggda asymmetrin.
+Hanterad av samma mekanism: registerposten `Skovde-S75`. Dry-run mot basen, exit 0: räkningen stämmer exakt (1/6/3).
+RADERINGEN UTFÖRD: NEJ. Marcus godkännande 2026-07-30 gällde ordagrant TASK-88, alltså ZZ-GRANSKNING-S91. Event-796 har inget citerat godkännande. Att radera 10 poster på eget bevåg vore ett scope-beslut, inte ett utförandeval. Ett kommando bort när Marcus säger till:
+  npm run seed:review -- --legacy Skovde-S75 --bekrafta
+
+AC #7 — GODKÄNNANDET, CITERAT OCH AKTUALITETS-PRÖVAT
+Marcus 2026-07-30, ordagrant: "Angående task-88. Om det är så lätt att återskapa så lägg med task-88 i denna våg också då. Jag godkänner."
+Verifierat vid utförandet (2026-07-31, före den skarpa körningen): sökning över Eventplanering på GRANSKNING i Ort/Notering samt SEED-REVIEW-sentinel gav exakt TVÅ rader — S91 och Skövde, båda kända sedan mätningen. Ingen ny granskningsfixtur hade tillkommit, ingen skript-skapad fixtur existerade. Godkännandet gällde alltså exakt det som togs bort.
+
+AC #6 — PREFLIGHT + EXITKOD PER STAGING-KÖRNING (sex körningar, alla PREFLIGHT OK)
+  1. --legacy ZZ-GRANSKNING-S91 (dry-run)          exit 0   räkning 1/16/16 stämmer
+  2. --legacy Skovde-S75 (dry-run)                 exit 0   räkning 1/6/3 stämmer
+  3. --legacy ZZ-GRANSKNING-S91 --bekrafta         exit 0   33 raderade, efter-verifiering 0 kvar
+  4. --sweep (skarpt, tom bas)                     exit 0   0 förfallna
+  5. seed:review --ort ZZ-GRANSKNING-T95 --livstid 14  exit 0   fixtur skapad, stämpel [UTGÅR: 2026-08-14]
+  6. --sweep (grön sida) / --sweep (röd sida)      exit 0 / exit 0
+
+AC #3 — TVÅSIDIGT BEVIS, BÅDE ENHET OCH SKARPT
+Enhet: 96 tester gröna (baseline 60 → +36). RÖD/GRÖN-par genom hela sviten.
+SKARPT END-TO-END mot staging, samma fixtur:
+  GRÖN: stämpel [UTGÅR: 2026-08-14] ⇒ "1 aktiva" — "ZZ-GRANSKNING-T95 lämnas — granskning pågår, utgår 2026-08-14". Noll rader rörda.
+  RÖD:  stämpeln åldrad till 2026-07-20 ⇒ "1 förfallna" — 4 anmälningar + 4 personer + 1 event raderade, efter-verifiering 0 kvar.
+MUTATIONSRUNDA (engångs, ej committad): 12 mutationer som river varsin bärande guard. 12/12 fäller sviten. Tre krävde riktad omkörning — två perl-fel i mutations-skriptet och ett falskt "lucka"-fynd orsakat av att `grep -qF false` alltid matchar; samtliga tre fäller korrekt med entydig kvittering.
+
+AC #4 — SKYDDSRÄCKE 2 MEKANISKT VERIFIERAT
+.purge-staging-policy.json är ORÖRD i diffen. Tre tester läser den skarpa filen direkt:
+  - purgeCollisions ger 0 träffar för skript-markörer OCH båda legacy-fixturernas markörer
+  - ingen target åberopar ZZ-GRANSKNING i vare sig exactMatchPattern eller filterByFormula
+  - ingen target läser fältet Notering — utgångsstämpeln kan alltså inte göra fixturen purge-bar
+Klassvarningen från kortet står nu i CLAUDE.md och i skriptets header: ZZ-GRANSKNING-* och app-segment-test har MOTSATTA rätta svar.
+
+OVÄNTAT — REGISTRERAT, EJ TYST FÖRKASTAT (ADR-053)
+1. Min ursprungliga worktree auto-städades under ett API-avbrott (inga ändringar fanns i den — bara läsningar). Ny worktree skapades i scratchpad. Huvudkatalogen var då utcheckad på TASK-94:s gren och rördes aldrig.
+2. protectedRecordIds bär bara de två PERSONERNA. De två PERMANENTA EVENT-fixturerna (Event-681, Event-845, båda med "STÄDA INTE bort den" i Notering) står inte i listan. De var aldrig i fara här — svepet kräver fixtur-sentineln och legacy kräver record-ID-ankaret — men luckan är värd ett eget kort om någon framtida mekanism börjar radera event på bredare grund. Blockerar ej, utanför scope.
+3. Ett befintligt test dolde en lucka: buildEvent anropades utan utgangsdatum och gav [UTGÅR: undefined], vilket är OLÄSBART och därmed skulle gjort fixturen ODÖDLIG. Stängt i koden (utgangsstampel kastar), inte bara i testet.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

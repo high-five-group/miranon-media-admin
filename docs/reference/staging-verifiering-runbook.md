@@ -189,32 +189,86 @@ kvar. Den är lika hårt guardad som create-läget och rapporterar varje rad den
 LÄMNAR kvar, med orsak. En rad utan fixtur-markör rörs aldrig; fail-safe-
 riktningen är alltid "hellre lämna kvar och rapportera".
 
-### Fixturens livstid — den tar aldrig slut av sig själv
+### Fixturens livstid — utgångsstämpeln och förfallo-svepet
 
 Fixturen är immun mot CI-purgen med flit (fälla 1 nedan). Det skyddet svarar på
-frågan *"vem får INTE radera fixturen medan granskningen pågår"*. **Ingenting
-svarar på "vem raderar den när granskningen är slut."** Det finns ingen TTL,
-ingen påminnelse och inget CI-steg som listar kvarlämnade fixturer — och
-purge-policyns `minAgeMinutes` gäller bara dess egna targets, som fixturen
-medvetet inte är. Städningen är alltså ett mänskligt moment, och raden skriptet
-skriver ut på slutet är en **uppmaning, inte en mekanism**.
+frågan *"vem får INTE radera fixturen medan granskningen pågår"*. Fram till
+`TASK-95` svarade **ingenting** på "vem raderar den när granskningen är slut" —
+och ingen mekanism KUNDE svara, eftersom "granskningen pågår" inte var uttryckt
+någonstans i datan.
 
-Vad det kostar, mätt: `ZZ-GRANSKNING-S91` bär noteringen "Raderas efter
-granskning." och `Event-796` (Ort `Skövde`) bär "GRANSKNINGSDATA … Städas efter
-review-vågen" sedan 2026-07-22. Båda står kvar i staging. Två fixturer, två
-skrivna uppmaningar, noll efterlevnad. Mekaniseringen ägs av `TASK-95` — tills
-den landat är städningen din att komma ihåg.
+**Utgångsstämpeln gör det uttryckbart.** Vid skapandet skriver skriptet ett
+datum i eventets `Notering`, direkt efter sentineln:
 
-**Legacy-fällan: `clean` tar bara fixturer skriptet självt skapat.** Den
-identifierar via sina egna markörer — `[SEED-REVIEW-FIXTUR]` först i eventets
-`Notering`, och e-post på formen `seed-review+<slug>-NN@granskning.test`. En
-fixtur byggd för hand bär ingen av dem. `clean` rapporterar då `Inget att
+```text
+[SEED-REVIEW-FIXTUR] [UTGÅR: 2026-08-14] Granskningsfixtur skapad av …
+```
+
+Livstiden är 14 dagar som default och styrs med `--livstid N`. **Förfallo-svepet**
+läser stämpeln och städar det som passerat — via exakt samma `planClean`-väg,
+samma raderings-ordning och samma skyddsräcken som den manuella `clean`. Svepet
+körs automatiskt i `seed:review` och `seed:review:clean` (stäng av med
+`--ingen-svep`) och kan köras ensamt:
+
+```bash
+npm run seed:review -- --sweep             # städa det som förfallit
+npm run seed:review -- --sweep --dry-run   # visa vad svepet skulle ta
+```
+
+**Tre saker rörs ALDRIG av svepet**, alla åt samma fail-safe-håll:
+
+| Läge | Vad svepet gör |
+|---|---|
+| Stämpeln har inte passerat | lämnar — **det ÄR "granskningen pågår"** |
+| Stämpeln utgår i dag | lämnar — utgångsdagen själv är giltig (strikt `>`) |
+| Ingen/trasig/omöjlig stämpel | lämnar — en oläsbar stämpel läses aldrig som förfallen |
+
+Svepet rapporterar båda sidorna: vad det tog **och** vad det lät stå, med skäl.
+En städmekanism som bara redovisar sina raderingar går inte att granska — man
+ser att den gjorde något, aldrig att den lät bli det den skulle låta bli.
+
+**Ärlig gräns:** svepet körs när skriptet körs. Det är ingen tidsdriven automat,
+och en förfallen fixtur ligger kvar tills någon kör skriptet igen. Det är ett
+medvetet val — ett raderande CI-jobb mot staging hade återinfört precis den risk
+skyddsräcke 2 finns för att stänga, med en aktör ingen ser innan den fyrar.
+
+### Legacy-registret — handbyggda fixturer från tiden före skriptet
+
+**`clean` och svepet tar bara fixturer skriptet självt skapat.** Båda
+identifierar via skriptets egna markörer — `[SEED-REVIEW-FIXTUR]` först i
+eventets `Notering`, och e-post på formen `seed-review+<slug>-NN@granskning.test`.
+En fixtur byggd för hand bär ingen av dem. `clean` rapporterar då `Inget att
 städa` **med exit 0** medan fixturen står kvar; det enda som röjer den är
 `⚠️ … lämnas kvar — saknar fixtur-sentinel i Notering`. Mätt 2026-07-30 mot
-`ZZ-GRANSKNING-S91`: noll poster raderade, 33 kvar (1 event + 16 anmälningar +
-16 personer). Fail-safe-riktningen fungerar precis som avsett — men den betyder
-också att en handbyggd fixtur inte går att städa med det verktyg som finns.
-Läs alltid `▸ Raderas:`-raden, aldrig bara exitkoden.
+`ZZ-GRANSKNING-S91`: noll poster raderade, 33 kvar. Fail-safe-riktningen
+fungerar precis som avsett — men den betyder också att en handbyggd fixtur inte
+går att städa med de vanliga lägena. **Läs alltid `▸ Raderas:`-raden, aldrig
+bara exitkoden.**
+
+`CONFIG.legacy` i skriptet är ett **slutet register** över de handbyggda
+fixturerna, en post per fixtur:
+
+```bash
+npm run seed:review -- --legacy ZZ-GRANSKNING-S91              # dry-run, alltid
+npm run seed:review -- --legacy ZZ-GRANSKNING-S91 --bekrafta   # radera
+```
+
+Dry-run är default; radering kräver `--bekrafta`, och `--dry-run` vinner alltid
+över den. Varje post bär **fyra ankare** som alla måste hålla: `ort`,
+`eventRecordId` (exakt record-ID), ett `^…$`-ankrat `emailPattern`, och
+`forvantat` — den räkning fixturen hade när den mättes. **Avviker basen från
+räkningen vägrar skriptet och raderar ingenting.** Det gör "räkna före du
+raderar" till en mekanism i stället för en uppmaning.
+
+Registret är avsiktligt slutet: inga mönster från kommandoraden. Ett mönster som
+skrivs i stunden flyttar hela skyddet till den som skriver det — prosa som utger
+sig för att vara mekanism, [ADR-083](../decisions/ADR-083-prosa-som-pastar-mekanism.md):s
+synd i kodform. Record-ID-ankaret är bärande för posten `Skovde-S75`, vars Ort
+(`Skövde`) är ett **riktigt ortsnamn**: utan ID:t hade ett framtida verkligt
+Skövde-event fångats av ort-filtret.
+
+En ny handbyggd fixtur ska inte uppstå — men uppstår den, läggs den till i
+registret med mätt räkning i en granskad ändring, aldrig städas ad hoc.
 
 ### De fyra fällorna i skriptet
 
