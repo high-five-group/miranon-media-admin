@@ -3,10 +3,10 @@ id: TASK-96
 title: >-
   Fynd: CONTRIBUTING § Revert-vägen instruerar enligt formerna som §
   Landnings-ordningen förklarat upphävda
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-30 19:22'
-updated_date: '2026-07-31 07:47'
+updated_date: '2026-07-31 08:00'
 labels:
   - ready-for-agent
 dependencies: []
@@ -79,10 +79,16 @@ träffar, samtliga inuti det bevarade historik-blocket.
 Grind: npm run check:docs → exit 0, 10/10 gröna, noll skippade.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Revert-vägen följer kön. Frågan besvarad FÖRE omskrivningen: behovet av kö-företräde är BORTA. Kö-väntan median 16 s / p90 27 s / max 5 min 8 s (n=30), och straffet är INVERTERAT mot brådskan — de tre posterna över 240 s var samtliga docs grupperade med kod-PR, medan kod-grannarna passerade på 14-23 s och ingen kod-post låg över 30 s. jump omordnar bara kön, kan inte förarmeras och saknas i gh 2.96.0; --admin är stängd (current_user_can_bypass: never). SVEPET GAV SEX STÄLLEN, inte fyra: fyra läste som gällande instruktion och åtgärdades, två är avsiktlig historik och lämnades. STÖRRE FYND än frågan: exponeringsfönstret var DUBBELT så långt som filen påstod — mätt kod 435+449 s = ca 15 min och docs 73+75 s = ca 3 min över 45 landade PR:er, mot filens påstådda 8 respektive drygt 1. Rättelsen öppet bokförd, inte tyst utbytt. Landad #498 (49e7916), merge_group grön.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
