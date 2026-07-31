@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-30 21:38'
+updated_date: '2026-07-31 07:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -38,12 +39,16 @@ Kortet är HIGH för att luckan är aktiv: varje styrande fil kan i dag få ett 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Formen VALD och motiverad: wira grinden i ci.yml lint-jobbet, ELLER rätta prosan i check-docs.sh till var den faktiskt körs — förkastat alternativ bär sitt skäl
-- [ ] #2 Väljs wiring: grinden körs av ett jobb som kör ALLTID, inte ett villkorat på docs_changed — annars kan en kod-PR införa ett falskt påstående utan att fällas
-- [ ] #3 Tvåsidigt bevis i CI: grinden fäller skarpt mot ett planterat falskt permissions-påstående, och är grön mot repots faktiska innehåll
-- [ ] #4 Räkningen i check-docs.sh stämmer med verkligheten efter ändringen — verifierad mekaniskt med grep, inte läst
-- [ ] #5 Sökt efter FLER grindar med samma drift mellan check-docs.sh:s uppräkning och ci.yml — utfallet redovisat även om det är noll
+- [x] #1 Formen VALD och motiverad: wira grinden i ci.yml lint-jobbet, ELLER rätta prosan i check-docs.sh till var den faktiskt körs — förkastat alternativ bär sitt skäl
+- [x] #2 Väljs wiring: grinden körs av ett jobb som kör ALLTID, inte ett villkorat på docs_changed — annars kan en kod-PR införa ett falskt påstående utan att fällas
+- [x] #3 Tvåsidigt bevis i CI: grinden fäller skarpt mot ett planterat falskt permissions-påstående, och är grön mot repots faktiska innehåll
+- [x] #4 Räkningen i check-docs.sh stämmer med verkligheten efter ändringen — verifierad mekaniskt med grep, inte läst
+- [x] #5 Sökt efter FLER grindar med samma drift mellan check-docs.sh:s uppräkning och ci.yml — utfallet redovisat även om det är noll
 <!-- AC:END -->
+
+
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

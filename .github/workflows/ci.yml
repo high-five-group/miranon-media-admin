@@ -585,6 +585,68 @@ jobs:
         # (vägen är tillgänglig, ej obligatorisk). Config: .lesson-policy.conf.
         run: bash scripts/check-lesson-numbers.sh
 
+      - name: Check permissions claims (ADR-083 gate)
+        # Per ADR-083: en styrande fil får inte påstå en permissions-mekanism
+        # som inte finns. Nämner CLAUDE.md / CONTRIBUTING.md / agentdefinitionerna
+        # `permissions.deny` eller `permissions.ask` tillsammans med en
+        # påstående-markör, ska nyckeln finnas och vara icke-tom i en
+        # settings-fil. Config: .permissions-claims-policy.conf.
+        #
+        # WIRAD FÖRST I TASK-98, och frånvaron dessförinnan är hela poängen.
+        # ADR-083 mintades 2026-07-30 för prosa som påstår sig vara mekanism.
+        # Grinden byggdes samma dag, kopplades in i `npm run check:docs` och
+        # fick sin self-test körd här — men grinden SJÄLV wirades aldrig.
+        # check-docs.sh:34-46 räknade ändå upp den under rubriken "ci.yml
+        # lint-jobbet (kör alltid, även på kod-PR:er)". Mätt 2026-07-30 med
+        # `grep -c 'bash scripts/<grind>.sh' ci.yml`: de fem syskongrindarna 1
+        # var, denna 0. Alltså prosa som påstod en mekanism som inte fanns —
+        # ADR-083:s egen felklass, i ADR-083:s egen grind. Funnen av TASK-85:s
+        # agent, som klassade den som ett sjätte listparitets-par med faktisk
+        # drift och eskalerade i stället för att bygga (CI-verkan = scope-beslut).
+        #
+        # HÄR OCH INTE I DOCS-JOBBET, och skälet är smalare än det först ser ut.
+        # Lint-jobbet har varken `if:` eller `needs:` och kör alltså alltid;
+        # docs-jobbet är villkorat på `docs_changed`.
+        #
+        # Det NAIVA argumentet håller inte, och står här för att ingen ska bygga
+        # om det: de filer grinden LÄSER — de fyra styrande .md-filerna och
+        # `.claude/settings.json` — ligger under `**/*.md` respektive `.claude/**`
+        # i `klassning-docs`. En ändring av dem sätter alltså `docs_changed`, och
+        # docs-jobbet hade kört i just de fallen.
+        #
+        # Det argument som FAKTISKT bär är grindens EGNA in-filer. Varken
+        # `.permissions-claims-policy.conf` (GOVERNING_FILES, CLAIM_MARKERS,
+        # CLAIM_WINDOW) eller `scripts/check-permissions-claims.sh` står i
+        # `klassning-docs`-listan ovan. En PR som lägger till en styrande fil som
+        # redan bär ett falskt påstående, stryker en markör, eller försvagar
+        # skriptet, hade med grinden i docs-jobbet landat UTAN att grinden kördes.
+        # Verifierat 2026-07-31: `grep -n 'permissions-claims' ci.yml` ger noll
+        # träffar i klassnings-blocken.
+        #
+        # Andra halvan är kopplingens SKÖRHET. Att grinden körs på sin lästa yta
+        # skulle bero på att `klassning-docs` råkar innehålla `.claude/**` — en
+        # koppling ingen fil deklarerar och ingen grind vaktar. Att listan är
+        # levande är mätbart: paret `klassning-docs-config` bär nio deklarerade
+        # asymmetrier i .listparitet-policy.conf (åtta på D0-sidan, en på
+        # changed-docs-sidan). Driftar `.claude/**` bort ur den upphör grinden
+        # tyst att köra på sin egen lästa yta. Ett alltid-på jobb har ingen sådan
+        # beroendekedja.
+        #
+        # FÖRKASTAT ALTERNATIV — rätta prosan i check-docs.sh i stället, alltså
+        # flytta posten ur lint-rubriken och skriva att grinden bara körs lokalt.
+        # Det hade gjort texten sann och lämnat hålet kvar. ADR-083 dömer den
+        # utvägen i sin egen alternativ-sektion, om hub-repot: "En grind som
+        # ingen kör är inte en grind, utan just den sortens artefakt denna ADR
+        # handlar om." Samma mening gäller spoke-sidan. Prosa-rättning hade
+        # dessutom sänkt skyddet till noll för `CLAUDE.md` och `CONTRIBUTING.md`
+        # på varje PR där ingen råkar köra `npm run check:docs` för hand.
+        #
+        # Ren textläsning plus `jq` mot två settings-filer. Inget nätverk, inga
+        # secrets. 0,066–0,079 s LOKALT mätt över tre körningar (macOS,
+        # 2026-07-31, loadavg 3,6–3,9). CI-TIDEN ÄR INTE MÄTT AV MIG och kan
+        # avvika åt båda håll.
+        run: bash scripts/check-permissions-claims.sh
+
       - name: Check fetch-depth invariant (ADR-039 gate)
         # Per ADR-039 + L50: de 6 LEVANDE fetch-depth-bärarna (ci.yml ×4 jobb +
         # .frontmatter-policy.conf + check-frontmatter.sh-default) hålls
