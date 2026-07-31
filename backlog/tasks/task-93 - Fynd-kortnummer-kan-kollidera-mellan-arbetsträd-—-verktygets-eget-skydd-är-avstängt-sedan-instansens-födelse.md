@@ -3,10 +3,10 @@ id: TASK-93
 title: >-
   Fynd: kortnummer kan kollidera mellan arbetsträd — verktygets eget skydd är
   avstängt sedan instansens födelse
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-30 05:00'
-updated_date: '2026-07-30 21:12'
+updated_date: '2026-07-31 06:38'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,10 +33,10 @@ Underlag: `docs/research/nummerallokering-parallella-aktorer-2026-07-29.md` (PR 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Acceptance Criteria
@@ -50,3 +50,9 @@ Underlag: `docs/research/nummerallokering-parallella-aktorer-2026-07-29.md` (PR 
 - [x] #7 ADR-081 AMENDERAS ÖPPET: beslut 4:s påstående "Kort: redan löst — `backlog`-CLI:t äger allokeringen" är falsifierat med mätning och ska rättas i ADR:n med hänvisning till detta kort. Öppen rivning, aldrig tyst omskrivning
 - [x] #8 `remote_operations: false` RÖRS INTE av detta kort — den är också avstängd mot tillverkarens default och är en egen fråga (nätanrop per CLI-körning). Noteras som öppen post, ändras inte här
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+check_active_branches satt till true i backlog/config.yml — verktygets eget skydd var avstängt sedan instansens födelse (e106e7f, S48), ett init-default ingen valde. FLIPP-KRITERIET VAR DETERMINISTISKT och avgjordes av mätning: alla 173 korts status avlästa före och efter på TVÅ oberoende axlar (CLI-rapporterad status + frontmatterns status: på disk), båda diffarna tomma, diff exit 0. Instrumentet KONTRASTBEVISADES — en framtvingad statusändring fick båda axlarna att fälla och peka ut rätt kort; nollresultatet är alltså äkta och inte ett blint instrument. TRE FALL MÄTTA i identisk uppställning, en variabel i taget: false + committat = KOLLISION (båda arbetsträden fick task-4) · true + committat = ingen kollision (task-4 / task-5) · true + OCOMMITTERAT = KOLLISION KVAR. Det tredje fallet är gränsen och den är utskriven i CLAUDE.md § Kortnummer: riskMINSKNING, ej garanti — skyddet ser committat arbete på andra grenar, men inte ocommitterat, inte ospårade kort i huvudträdet, inte grenar äldre än 30 dagar. TIDSKOSTNAD: list 0,52 to 6,50 s, create 0,69 to 7,09 s, view 0,52 to 0,55 s (opåverkad). Agenten höll på att skicka en projicering som fakta (naiv multiplikation gav +1000 s) och mätte i stället: 164,60 s, inom gamla intervallet — kostnaden är per list/create, inte per CLI-anrop. ADR-081 beslut 4 AMENDERAT ÖPPET i § Updates plus ADR-README; remote_operations orörd, config-diffen exakt en rad. PR #487, CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->

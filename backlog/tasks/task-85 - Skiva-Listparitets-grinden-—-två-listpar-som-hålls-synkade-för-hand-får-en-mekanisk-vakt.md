@@ -3,10 +3,10 @@ id: TASK-85
 title: >-
   Skiva: Listparitets-grinden — två listpar som hålls synkade för hand får en
   mekanisk vakt
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 17:35'
-updated_date: '2026-07-30 21:32'
+updated_date: '2026-07-31 06:38'
 labels:
   - ready-for-agent
 dependencies: []
@@ -39,8 +39,6 @@ Källa: restlistans § A3, posten "Listparitets-grinden (dom: LAGA)". Utvidgad r
 - [x] #6 Wirad i CI, eller så är skälet till att den inte är det utskrivet
 <!-- AC:END -->
 
-
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -53,10 +51,16 @@ Formen är exakt kortets: en invariant som står på två ställen och synkas f�
 Noteras här i stället för att mintas som eget kort, eftersom AC #1 redan äger frågan. Bygg-agenten avgör — men ska redovisa utfallet även om domen blir att paret lämnas utanför.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Listparitets-grinden byggd: scripts/check-listparitet.sh (universell logik) + .listparitet-policy.conf (projektvärden) + 18 testfall + wirad i lint-jobbet, som kör ALLTID — inte docs-jobbet, som är villkorat på docs_changed. AC #1 HÄRLEDD, inte listad: grep över grind-ytan gav 50 rader i 19 filer som löste upp sig i 10 distinkta synk-plikter; 13 kandidater prövade, 5 intagna, 8 förkastade med skäl i conf:en. TVÅSIDIGT BEVIS skarpt mot verkliga trädet: alla fem par desynkade ETT I TAGET (exit 1 var gång), baslinjen 0 efter varje återställning, och återställningen verifierad BIT-IDENTISKT med sha256 före==efter. Nio fail-closed-vägar bevisade. TREDJE PARET TOGS IN på agentens eget avgörande: CONTRIBUTING-listan påstods exemplifierande, men parentesen läser som uttömmande och två läsare läste den så — sentinel-markörerna 2 av 4 hade drivit isär. Nu kompletta. TVÅ TYSTA-GRÖNA-FÄLLOR inträffade skarpt under bygget och fångades av fail-closed: ett uttryck som börjar med -- lästes som grep-flagga (tom==tom==grönt), och awk -v med flerradigt värde fäller med newline in string (tom differens==grönt). Båda hårdgjorda. Agenten självrättade dessutom ett tal den skrivit innan det räknats. PR #489, CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
