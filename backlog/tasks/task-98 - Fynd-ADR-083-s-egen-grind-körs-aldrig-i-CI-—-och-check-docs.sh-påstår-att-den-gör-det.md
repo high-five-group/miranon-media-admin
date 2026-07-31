@@ -3,10 +3,10 @@ id: TASK-98
 title: >-
   Fynd: ADR-083:s egen grind körs aldrig i CI — och check-docs.sh påstår att den
   gör det
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-30 21:38'
-updated_date: '2026-07-31 07:57'
+updated_date: '2026-07-31 08:58'
 labels:
   - ready-for-agent
 dependencies: []
@@ -46,14 +46,16 @@ Kortet är HIGH för att luckan är aktiv: varje styrande fil kan i dag få ett 
 - [x] #5 Sökt efter FLER grindar med samma drift mellan check-docs.sh:s uppräkning och ci.yml — utfallet redovisat även om det är noll
 <!-- AC:END -->
 
+## Final Summary
 
-
-
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+ADR-083:s egen grind wirad i CI. Den kördes 0 gånger i ci.yml medan de fem syskongrindarna kördes 1 var — och check-docs.sh påstod att den kördes. Formvalet: WIRING, inte prosa-rättning; det förkastade alternativet bär sitt skäl på fyra ställen, med ADR-083:s egen dom citerad ("En grind som ingen kör är inte en grind, utan just den sortens artefakt denna ADR handlar om"). Wirad i lint-jobbet, som saknar BÅDE if: och needs: — verifierat mot ci.yml:469-475, till skillnad från docs-jobbet (1094) som är villkorat på docs_changed. TVÅSIDIGT BEVIS I CI, inte lokalt: planterat falskt permissions-påstående gav steg 16 failure med grindens egen logg (.claude/agents/bygg-agent.md:109 / påstår: permissions.deny / men: nyckeln saknas eller är tom, exit 1), revert gav success. Agenten landade själv ett felaktigt argument i första commiten och rättade det öppet: docs_changed-motiveringen höll inte, eftersom de styrande .md-filerna redan ligger under klassning-docs. Det argument som FAKTISKT bär: grindens egna in-filer står inte i klassningen, så en PR som stryker en CLAIM_MARKER hade landat okontrollerad. AC #5 riktning B gav två grindar till som saknas i check-docs.sh:s uppräkning — check-fetch-depth-invariant.sh och check-listparitet.sh; eget kort (TASK-106). Landad #496 (dc25cc8), merge_group grön (ca3c7741) efter att kön hängt sig på en cancelled gruppombildning och körts om.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
