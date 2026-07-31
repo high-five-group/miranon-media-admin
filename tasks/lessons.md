@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-26
+updated: 2026-07-31
 review_by: 2026-11-15
 status: stable
 ---
@@ -3065,6 +3065,17 @@ version). Code planerade mot rapporten/trailen, inte bokstaven, och utökade ÖP
 Code-riktningen. Regeln: när en prompt räknar upp filer i en mekaniskt sammanhängande operation
 (manifest-par, grind+fixtur, config+testsvit) anges KLUSTRET och dess invariant — fil-listan är
 re-deriverbar ur trail, invarianten är det som bär.
+
+> **Rättelse (2026-07-31, S91 nittonde pausen):** instansens bärande premiss — att version-bumpen
+> *mekaniskt* kräver båda manifesten atomiskt ("utan marketplace-bumpen hittar ritualen ingen ny
+> version") — är mätt falsk. Hubbens `marketplace.json` har stått still på `1.12.0` sedan
+> 2026-07-07 (hub `1f45767`) medan `plugin.json` gått `1.12.0` → `1.24.0` (tolv minor-steg);
+> plugin-uppdateringen fungerade skarpt genom hela driften, senast 2026-07-31
+> (`installed_plugins.json`: version `1.24.0`, installPath `…/cache/marcus-hub/marcus-system/1.24.0`,
+> `lastUpdated 08:41Z`). Marketplace-bumpen är alltså konvention, inte mekanism. Regeln ovan står —
+> kluster + invariant, inte fil-lista — men manifest-paret är ett falsifierat exempel på mekanisk
+> atomicitet. Samma premiss bärs av [[L79]] här och av hub-kopiorna K49.1/K12.3 — denna not rättar
+> endast L228.
 
 ### L229 [UNIVERSAL] — Form som ska överleva ett externt verktygs round-trip bevisas i sandbox FÖRE bygget
 
