@@ -33,6 +33,16 @@ Deno.serve(async (req) => {
   const corsHeaders = corsHeadersFor(req);
   const requestId = generateRequestId();
 
+  // 0. Metod-vakt FÖRE auth (TASK-38): fel metod är ett kontraktsfel, inte ett
+  //    auth-fel — 405 ska svara oavsett vem som frågar. Samma form som
+  //    create-event/update-record. OPTIONS fångas redan av handleCors ovan.
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   // 1. Auth-gate: caller måste vara en inloggad user (inte anon-key,
   //    inte saknad header).
   const auth = await requireUser(req, corsHeaders);

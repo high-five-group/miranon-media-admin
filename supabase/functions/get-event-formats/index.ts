@@ -30,6 +30,13 @@ Deno.serve(async (req) => {
   const corsHeaders = corsHeadersFor(req);
   const requestId = generateRequestId();
 
+  if (req.method !== 'GET') {
+    return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   const auth = await requireUser(req, corsHeaders);
   if (auth instanceof Response) return auth;
 
