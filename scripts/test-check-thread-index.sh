@@ -1,0 +1,280 @@
+#!/usr/bin/env bash
+# scripts/test-check-thread-index.sh
+#
+# Empirisk test-suite för scripts/check-thread-index.sh (ADR-053-grind).
+#
+# VARFÖR SVITEN FINNS OCH INTE BARA EN ENGÅNGSKÖRNING:
+#   Restlistans lärdom om den brustna regexen är uttrycklig — "lärdomen är inte
+#   att regexen var slarvig utan att den aldrig prövades mot ett känt fel".
+#   En grind som bara visats grön har inte bevisat något; grönt är förenligt
+#   med att grinden inte gör någonting alls. T104/TASK-60 etablerade formen:
+#   beviset ska vara körbart i repot, inte en mening i en agentrapport.
+#
+# 17 testfall, varav 15 planterar ett känt fel och 2 prövar att grinden är grön
+# på korrekt indata (utan de sista två mäter fällnings-testerna ingenting):
+#   T1     — ren fixtur passerar (annars mäter resten ingenting)
+#   T2–T4  — enum + tillstånds-KOLUMN (T4 är falskpositiv-regressionen: ordet
+#            "paused" i prosan får aldrig räknas som radens tillstånd)
+#   T5–T7  — numrering: dubblett, omkastad ordning, lucka
+#   T8     — kolumnstruktur (oescapad pipe förskjuter tillstånds-kolumnen)
+#   T9–T11 — index↔fil åt båda håll; T11 är TÄCKNINGS-REGRESSIONEN: en trådfil
+#            UTAN lifecycle:-fält, alltså exakt den klass check-lifecycle.sh
+#            tyst hoppar över
+#   T12–T14— degenererade indata: tomt index, saknat index, saknad policy
+#   T16–T17— policy som sourcar men tappat en nyckel (farligare än en som
+#            saknas: utan tomhetskontroll validerar grinden mot tom sträng och
+#            rapporterar grönt)
+#   T15    — ledande nollor (T01→T02) läses som 1→2, inte som en lucka
+#
+# Test-isolering: skapar sandbox under /tmp med egna fixturer och en KOPIA av
+# grinden + policyn. Återställer (rm -rf) via trap. INGEN ändring av real-repo.
+#
+# Användning: bash scripts/test-check-thread-index.sh
+# Exit 0 om alla testfall passerar. Exit 1 om någon failar.
+#
+# Källa: docs/decisions/ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md
+# Etablerad: TASK-108 (2026-07-31)
+
+set -uo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+TEST_DIR="/tmp/task-108-test-thread-index"
+GATE_SRC="${REPO_ROOT}/scripts/check-thread-index.sh"
+POLICY_SRC="${REPO_ROOT}/.thread-index-policy.conf"
+
+PASSED=0
+FAILED=0
+
+# shellcheck disable=SC2329  # invoked via trap
+cleanup() {
+    cd / || true
+    rm -rf "${TEST_DIR}"
+}
+trap cleanup EXIT
+
+setup() {
+    rm -rf "${TEST_DIR}"
+    mkdir -p "${TEST_DIR}/tasks/threads" "${TEST_DIR}/scripts"
+    cp "${GATE_SRC}" "${TEST_DIR}/scripts/check-thread-index.sh"
+    cp "${POLICY_SRC}" "${TEST_DIR}/.thread-index-policy.conf"
+    chmod +x "${TEST_DIR}/scripts/check-thread-index.sh"
+}
+
+# index — skriver stdin till sandboxens tasks/threads/README.md
+index() {
+    cat > "${TEST_DIR}/tasks/threads/README.md"
+}
+
+# card <filnamn> — skriver stdin till sandboxens tasks/threads/<filnamn>
+card() {
+    cat > "${TEST_DIR}/tasks/threads/$1"
+}
+
+run_gate() {
+    ( cd "${TEST_DIR}" && bash scripts/check-thread-index.sh 2>&1 )
+}
+
+gate_exit() {
+    ( cd "${TEST_DIR}" && bash scripts/check-thread-index.sh >/dev/null 2>&1 )
+    echo $?
+}
+
+# assert <namn> <förväntad exit> <förväntat delsträngs-fragment i utdata>
+assert() {
+    local name="$1" want_exit="$2" want_text="${3:-}"
+    local out code
+    out=$(run_gate)
+    code=$(gate_exit)
+    if [[ "${code}" != "${want_exit}" ]]; then
+        echo "❌ ${name}: exit ${code}, förväntat ${want_exit}"
+        echo "   utdata: ${out}"
+        FAILED=$((FAILED + 1))
+        return
+    fi
+    if [[ -n "${want_text}" ]] && [[ "${out}" != *"${want_text}"* ]]; then
+        echo "❌ ${name}: exit ${code} korrekt MEN utdata saknar '${want_text}'"
+        echo "   utdata: ${out}"
+        FAILED=$((FAILED + 1))
+        return
+    fi
+    echo "✅ ${name}"
+    PASSED=$((PASSED + 1))
+}
+
+# Ren tabell-header som varje fixtur delar.
+HEADER='| Tråd | Titel | Tillstånd | Ingång |
+|---|---|---|---|'
+
+# ── T1: ren fixtur passerar ──────────────────────────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första tråden | \`active\` | [T01-slug.md](T01-slug.md) |
+| \`T02\` | Andra tråden | \`paused\` | _(inget kort än)_ |
+| \`T03\` | Tredje tråden | \`closed\` | _Löst_ |
+EOF
+card "T01-slug.md" <<'EOF'
+# T01
+EOF
+assert "T1 ren fixtur passerar" 0 "tråd-index OK"
+
+# ── T2: ogiltigt tillstånd fälls ─────────────────────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`done\` | _x_ |
+EOF
+assert "T2 ogiltigt tillstånd fälls" 1 "har tillstånd 'done'"
+
+# ── T3: tillstånd helt saknat i kolumn 3 ─────────────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | | _x_ |
+EOF
+assert "T3 tomt tillstånd fälls" 1 "kolumn 3"
+
+# ── T4: FALSKPOSITIV-REGRESSION — tillstånds-ordet i prosan, ej i kolumnen ───
+# En bar substrängs-matchning på raden hade sett \`paused\` i ingångs-texten
+# och godkänt raden. Tillståndet MÅSTE läsas ur sin kolumn.
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`nonsens\` | _tidigare \`paused\`, se noten_ |
+EOF
+assert "T4 tillstånds-ord i prosa räknas inte som tillstånd" 1 "har tillstånd 'nonsens'"
+
+# ── T5: dubblett-nummer fälls ────────────────────────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+| \`T01\` | Kopia | \`paused\` | _x_ |
+EOF
+assert "T5 dubblett fälls" 1 "DUBBLETT"
+
+# ── T6: omkastad ordning fälls (T74/T73-mönstret) ────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+| \`T03\` | Tredje | \`paused\` | _x_ |
+| \`T02\` | Andra | \`paused\` | _x_ |
+EOF
+assert "T6 omkastad ordning fälls" 1 "omkastad ordning"
+
+# ── T7: lucka i numreringen fälls ────────────────────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+| \`T04\` | Fjärde | \`paused\` | _x_ |
+EOF
+assert "T7 lucka fälls" 1 "LUCKA"
+
+# ── T8: oescapad pipe förskjuter kolumnerna ──────────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Titel med | pipe | \`active\` | _x_ |
+EOF
+assert "T8 extra pipe fälls" 1 "pipe-tecken"
+
+# ── T9: index länkar en trådfil som inte finns ───────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | [T01-saknas.md](T01-saknas.md) |
+EOF
+assert "T9 länk till saknad trådfil fälls" 1 "som inte finns"
+
+# ── T10: trådfil utan indexrad ───────────────────────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+EOF
+card "T02-foraldralos.md" <<'EOF'
+---
+lifecycle: paused
+---
+# T02
+EOF
+assert "T10 föräldralös trådfil fälls" 1 "föräldralös trådfil"
+
+# ── T11: TÄCKNINGS-REGRESSIONEN ──────────────────────────────────────────────
+# Trådfil UTAN lifecycle:-frontmatter och utan indexrad. check-lifecycle.sh
+# hoppar tyst över den (frånvaro=skip, dess rad 94). Mätt i real-repot vid
+# byggtillfället: 8 av 21 trådfiler saknar fältet. Denna grind måste se den.
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+EOF
+card "T02-utan-frontmatter.md" <<'EOF'
+# T02 — en trådfil helt utan frontmatter
+EOF
+assert "T11 föräldralös trådfil UTAN lifecycle-fält fälls" 1 "föräldralös trådfil"
+
+# ── T12: tomt index (noll trådrader) ─────────────────────────────────────────
+setup
+index <<EOF
+${HEADER}
+EOF
+assert "T12 noll trådrader fälls" 1 "noll trådrader"
+
+# ── T13: indexet saknas helt ─────────────────────────────────────────────────
+setup
+rm -f "${TEST_DIR}/tasks/threads/README.md"
+assert "T13 saknat index fälls" 1 "bruten ryggrad"
+
+# ── T14: policy-filen saknas ─────────────────────────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+EOF
+rm -f "${TEST_DIR}/.thread-index-policy.conf"
+assert "T14 saknad policy fälls" 1 "config-driven"
+
+# ── T16: policy finns men har tappat en nyckel ───────────────────────────────
+# En conf som sourcar utan fel men saknar ett värde är farligare än en som
+# saknas helt: utan tomhetskontrollen hade grinden validerat mot tom sträng och
+# rapporterat grönt. Samma klass som lärdomen kortet bär.
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+EOF
+grep -v '^THREAD_INDEX=' "${POLICY_SRC}" > "${TEST_DIR}/.thread-index-policy.conf"
+assert "T16 policy utan THREAD_INDEX fälls" 1 "THREAD_INDEX är tom"
+
+# ── T17: policy med tom tillstånds-lista ─────────────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+EOF
+sed 's/^    "active"$//; s/^    "paused"$//; s/^    "closed"$//' "${POLICY_SRC}" \
+    > "${TEST_DIR}/.thread-index-policy.conf"
+assert "T17 policy med tom THREAD_VALID_STATES fälls" 1 "THREAD_VALID_STATES är tom"
+
+# ── T15: ledande nollor läses som bas 10 ─────────────────────────────────────
+# T08→T09 får inte tolkas som oktal (08/09 är ogiltiga oktaltal och hade
+# gjort grinden röd på ett korrekt register).
+setup
+index <<EOF
+${HEADER}
+| \`T07\` | Sju | \`active\` | _x_ |
+| \`T08\` | Åtta | \`paused\` | _x_ |
+| \`T09\` | Nio | \`paused\` | _x_ |
+| \`T10\` | Tio | \`closed\` | _x_ |
+EOF
+assert "T15 ledande nollor läses som bas 10" 0 "tråd-index OK"
+
+echo
+echo "── Resultat ──"
+echo "Passerade: ${PASSED}"
+echo "Failade:   ${FAILED}"
+[[ "${FAILED}" -eq 0 ]] && exit 0
+exit 1

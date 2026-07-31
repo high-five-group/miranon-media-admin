@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-27
+updated: 2026-07-31
 review_by: 2026-10-27
 status: stable
 lifecycle: active
@@ -45,8 +45,18 @@ Claude Code-session.**
 |`templates/code-role-discipline.md`|249|*"Full code-roll-disciplin (handover-protokoll, transparens-rapport-format, STOPPA-grindar som procedursteg) bor i `templates/code-role-discipline.md`; denna sektion bär principen, templaten bär stegen (ADR-042)."* (rad 53)|
 |`schema_reference.md`|—|*"Formler och fält → läs `schema_reference.md` + `field_lookup.json` innan du säger 'fältet verkar bruten'"*. **Ligger dessutom i det FRYSTA Vue-repot** (`~/Repon/miranon-media-os/docs/`), inte i marcus-system.|
 
-Samtliga filer **existerar** — det är inte döda referenser. De når bara aldrig
-fram av sig själva.
+Samtliga filer **existerade vid registreringen** — det var inte döda referenser.
+De nådde bara aldrig fram av sig själva.
+
+> **RÄTTAT 2026-07-31 (`TASK-108`, verifierat mot båda repona):** tre av fyra finns
+> kvar (`IDENTITET.md` · `profile.md` · Vue-repots `schema_reference.md`). Den
+> fjärde, `templates/code-role-discipline.md`, finns **inte längre** — den
+> arkiverades till `archive/code-roll-disciplinen/` av **denna tråds eget arbete**
+> (hub `32db353`, commit-taggad `[T100]`) när
+> [ADR-079](../../docs/decisions/ADR-079-instruktionsleverans-barare-per-lager.md)
+> supersederade ADR-042 helt och flyttade roll-disciplinen till en output style.
+> Tabellraden ovan står kvar som registreringens ögonblicksbild; den är inte
+> längre en beskrivning av disken.
 
 ## Verifieringsmetod (reproducerbar)
 
@@ -155,16 +165,38 @@ konsekvensen för hela konstitutionen större än denna tråds fyra filer.
 
 ## Nästa steg
 
-1. Kör research-passet enligt frågan ovan.
-2. Värdera alternativen mot passets fynd.
-3. Åtgärda, och verifiera **mekaniskt** att artefakterna faktiskt når en session
-   — samma tre kontroller som i verifieringsmetoden ovan, som grind eller manuell
-   checklista.
+> **AVSTÄMT 2026-07-31 (`TASK-108`).** Punkt 1 och 2 var redan gjorda när listan
+> lästes — den motsade avsnittet "Åtgärdsalternativ" tolv rader upp, som sedan
+> 2026-07-27 säger att passet är KÖRT. Listan bar alltså trådens födelseläge
+> medan resten av filen bar dess nuläge. Strukna punkter står kvar överstrukna,
+> inte borttagna: vad som var nästa steg är en del av trådens historik.
+
+1. ~~Kör research-passet enligt frågan ovan.~~ **KLART** — tre pass plus en mätt
+   regelinventering, samtliga i `docs/research/` daterade 2026-07-27.
+2. ~~Värdera alternativen mot passets fynd.~~ **KLART** —
+   [ADR-079](../../docs/decisions/ADR-079-instruktionsleverans-barare-per-lager.md)
+   beslut 1 väljer bärare per innehållsklass, och river alternativ 1 explicit.
+3. Åtgärda **de tre kvarvarande artefakterna** (den fjärde är avvecklad per
+   ADR-079), och verifiera **mekaniskt** att de faktiskt når en session — samma
+   tre kontroller som i verifieringsmetoden ovan, som grind eller manuell
+   checklista. `InstructionsLoaded`-hooken är landad och är bäraren av det beviset.
 4. Väg in om `IDENTITET.md` bör vara alltid-laddad (den är ett beslutsfilter, inte
    uppslagsverk) medan övriga blir on-demand.
 
 ## Trail
 
+- **2026-07-31 (`TASK-108`): TRÅDEN HADE DRIFTAT IFRÅN SIN EGEN LEVERANS.** En
+  integritetskontroll av trådregistret fann tre poster där kortet och indexraden
+  beskrev ett läge trådens eget arbete redan passerat: (a)
+  [ADR-079](../../docs/decisions/ADR-079-instruktionsleverans-barare-per-lager.md)
+  är `Accepted` sedan 2026-07-27 ur detta spår men nämndes varken i kortet eller i
+  indexraden; (b) `templates/code-role-discipline.md` är **avvecklad och arkiverad**
+  av trådens eget hub-arbete (`32db353`, taggad `[T100]`) medan båda ytorna
+  fortsatte påstå att alla fyra artefakter existerar; (c) "Nästa steg" bad om ett
+  research-pass som avsnittet tolv rader ovanför redan bokfört som kört — en
+  motsägelse inuti samma fil. Ingen av posterna var dold; ingen hade lästs efter.
+  **Klassen är trådens egen i miniatyr:** en artefakt som inte når fram gör ingen
+  skada förrän någon handlar på den, och en tråd-rad läses som nuläge.
 - **2026-07-27 (S91-resumen): ÅTGÄRD 1 LEVERERAD — `InstructionsLoaded`-hooken.**
   Marcus-kvitterad som första punkt av fyra ("vi tar en i taget"). Hub-PR #5,
   **plugin 1.21.0**, reinstall körd i samma landning (S76-praxisen).
