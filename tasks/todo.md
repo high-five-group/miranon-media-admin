@@ -15,6 +15,25 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-07-31, tjugonde resumen — tillstånd
+återställt)** — Tillstånds-återställningen utförd som resumens enda
+dok-skrivning: `lifecycle: paused → active`, nittonde pausens
+`PAUSLÄGE`-rubrik bruten till `Paushistorik`-form (grindens prefix-regex
+kräver brottet, inte ett appendat tillägg). **Del 39 skrivs av orkestreraren
+senare** — ingångsläge, PR-verifikat och numrerings-re-verifiering bor där.
+Vid fortsättning gäller Paushistorikens ordning: **de tre ⛔
+Marcus-frågorna** (`T87`:s trigger · `T100` steg 4 · hub-`lessons.md`-
+uppdelningen `TASK-105`) besvaras före `T87`-beroende arbete · **fem kort i
+luften** (`#504` `#505` `#506` `#511` `#514`) stängs först efter
+`merge_group`-verifikat **per jobb** · **CI-wiringarna** (`TASK-102` `108`
+`109`) tas i EN hand — `ci.yml` är fri. Numrering re-verifieras i Del 39;
+fragment-talet är dock **mätt vid återställningen**: grinden räknar **72**
+nummerlösa fragment mot Paushistorikens 70, och `lessons.md` är oförändrad
+sedan pauscommiten — 70 var fel redan när det skrevs. Övriga axlar per
+Paushistoriken: 91/085/L360/T112/f47/task-110. Full narrativ: sessionsdok
+**Del 38** + Paushistorik.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-31, nittonde pausen — femtonvågen och två
 betalda skulder)** — **NITTON PR:er i spoken + TVÅ i hubben.** **HUB-SKULDEN
 BETALD:** `L284–L359` lyfta (72 poster, 22 sessions-H2:er, verbatim-verifierat)
