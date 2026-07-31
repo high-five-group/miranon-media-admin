@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-31 08:26'
-updated_date: '2026-07-31 08:35'
+updated_date: '2026-07-31 08:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -77,11 +77,26 @@ Gränsen går inte mellan `supabase/functions/` och resten av repot. Den går me
 
 Landad förbättring i stället: `tsconfig.edge-shared.json` gör den befintliga, oavsiktliga täckningen **avsiktlig och deklarerad**, och utökar den från 9 till 11 moduler — `cursor.ts` och `errors.ts` hade ingen täckning alls, och `errors.ts` används av samtliga Edge Functions. Grinden körs av `npm run typecheck`, som redan går i CI: **ingen ny CI-wiring krävs.**
 
+## Research-passet — mönstret är bekräftat, och hålet har en botten jag inte kunde se
+
+Ett avgränsat research-pass mot primärkällor kördes parallellt: [`docs/research/task-103-deno-verktygskedjan-i-node-repo-2026-07-31.md`](../../docs/research/task-103-deno-verktygskedjan-i-node-repo-2026-07-31.md). Det **bekräftar vägvalet** och lägger till evidens mina instrument strukturellt inte kunde nå.
+
+**Mönstret är etablerat, inte avvikande.** `supabase init` skriver själv in skiljelinjen i projektet — CLI-mallen innehåller ordagrant `"deno.enablePaths": ["supabase/functions"]`. Supabase docs säger explicit att den setupen *"works perfectly for projects where your Edge Functions live alongside your main application code"*. Fem precedent-repon kör alla Denos verktyg i en egen, path-filtrerad workflow; `hero-org/herocast` har **exakt samma** `"!supabase/functions"` i sin `biome.json`.
+
+**Men: `deno check` med `@ts-nocheck` borttaget hittar 2 VERKLIGA typfel.** Min mening ovan om "noll äkta defekter" gäller de instrument jag körde — Node-tsc och Biome. Med rätt verktyg finns det defekter: `batchValidation: 'permissive'` skickas till `resend.batch.send()` i `send-email/index.ts:87` och `send-registration-confirmation/index.ts:92`, men optionen finns varken i typerna eller i runtime hos `resend@4.8.0`. Den når sannolikt aldrig Resend. Ej skarpt verifierad — hör till eget kort.
+
+**`@ts-nocheck`-motiveringen är falsifierad.** Kommentaren säger *"typas vid deploy, ej av Node-tsc"*. Deno typkontrollerar inte vid körning (negativ kontroll: typfel-fil kördes med exit 0), och `supabase functions deploy` bundlar via `edge-runtime bundle` till eszip utan typkontroll. **Ingenting typkontrollerar de två filerna någonstans.**
+
+**Två av ADR-010:s premisser håller inte på dagens versioner.** Biome 2.5.4 kvävs inte av `https:`-imports (noll diagnostiker på dem), och `overrides` fungerar — alternativ 2 avfärdades med *"inte lika mogen som ESLints"*. Beslutet står; skälen behöver rättas.
+
 ## Rekommendationer (ej byggda här)
 
-1. **`ADR-010` bör få en `Updates`-not** som skriver in att Fas 7-åtagandets pre-commit-rad är överspelad av ADR-036 (CI är grinden), och att `tsconfig.edge-shared.json` nu täcker den Deno-fria delmängden. Kortet rör inte `docs/decisions/**`.
-2. **Fas 7 bör betala åtagandet med `denoland/setup-deno` + `deno check`/`deno lint`** mot de 29 Deno-rörande filerna. Det är den enda vägen som ger dem äkta täckning — Node-tsc kan strukturellt inte göra det.
-3. **De två `// @ts-nocheck` bör omprövas** när Deno-verktygen finns; de döljer i dag två URL-import-filer helt.
+1. **Fas 7 bör betala ADR-010:s åtagande** med en egen, path-filtrerad workflow: `denoland/setup-deno@v2` (verifierad förstaparts-action) med **pinnad** version, plus `deno check` + `deno lint`. Det är snittet fem av fem precedent-repon valt. Kostnad lokalt mätt: `deno lint` ~0,3 s, `deno check` ~1,5 s varmt — **ingen CI-mätning gjord**, talen är lokala.
+2. **`supabase/functions/deno.json`** är deploy-neutral (bevisat ur CLI-källan: top-level-filen ligger inte i deploy-kedjan) och kan därför bäras enbart för lint/check/LSP.
+3. **Ta bort de två `// @ts-nocheck` i samma landning som grinden** och åtgärda de 2 typfelen — annars startar grinden röd, och en grind som startar röd blir avstängd.
+4. **`ADR-010` bör få en `Updates`-not**: Fas 7-åtagandets pre-commit-rad är överspelad av ADR-036 (CI är grinden), två premisser är mätt falsifierade, och `tsconfig.edge-shared.json` täcker nu den Deno-fria delmängden. Kortet rör inte `docs/decisions/**`.
+5. **`deno fmt` bör skjutas till eget beslut** — 21 av 39 filer skulle skrivas om även med config matchad mot Biomes stil.
+6. **Möjlig produktionsdefekt bör få eget kort:** `batchValidation`-fyndet ovan.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Definition of Done
