@@ -3,10 +3,10 @@ id: TASK-97
 title: >-
   Fynd: ADR-081:s precedent-anspråk håller bara för halva formen — motiveringen
   bör läggas om
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-30 19:48'
-updated_date: '2026-07-31 07:48'
+updated_date: '2026-07-31 07:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,12 +36,16 @@ NUMRERINGSHISTORIK: kortet mintades först som TASK-95 2026-07-30 och kolliderad
 - [x] #4 ADR-081:s Updates-sektion bär rättelsen öppet — en rättad ADR som inte visar att den rättats är en tyst rivning
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+ADR-081:s precedent-anspråk rättat, grunden omlagd. towncrier bär HALVA formen — skriv utan nummer — men har inget tilldelningssteg, och tilldelningen är hela beslut 1. Grunden står nu på merge-grindens serialisering plus EIP-1 och Rust RFC 0002; sju källor hämtade i förstahandskälla 2026-07-31, inte återanvända ur passets sammanfattning. ANDRA FELET, funnet under arbetet: "tre solida precedenter" stod efter TVÅ uppräknade poster — sedan första commiten (40e79e1), genom tre månader, två amenderingar och ett research-pass som läste sektionen och upprepade talet utan att räkna om. Räkningen står nu per halva med posterna utskrivna. Beslut 1 byte-orört (första ändrade rad 151; besluts-sektionen 36-87). Sidofynd: max_entries_to_merge=3, så "en PR i taget" är en förenkling — grinden gör LANDNINGEN seriell, inte tilldelningen. Landad #497 (558a3ba), merge_group grön.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
