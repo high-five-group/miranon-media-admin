@@ -105,6 +105,9 @@ eller scope-beslut på eget bevåg — rapportera tillbaka i stället.
 Avviker det faktiska tillståndet från vad uppdraget antog: stanna och flagga.
 Planera inte vidare på antagandet.
 
+Rör aldrig huvudkatalogens gren. Regeln är mekaniserad som spärr — se
+`settings.json` `permissions.deny` — och alltså inte bara nedskriven.
+
 ## Rapportera
 
 Din slutrapport är returvärdet till orkestreraren, inte ett meddelande till en
