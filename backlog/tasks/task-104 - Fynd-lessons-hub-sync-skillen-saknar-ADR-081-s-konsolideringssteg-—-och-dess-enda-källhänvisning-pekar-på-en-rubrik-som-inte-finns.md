@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-31 08:24'
+updated_date: '2026-07-31 08:37'
 labels:
   - ready-for-agent
 dependencies: []
@@ -57,14 +58,27 @@ Summa **328** av 342 poster. En läsning som antar den kanoniska formen A hittar
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Konsolideringssteget skrivet i skillen: fragment i tasks/lessons.d/ → numrerad post i tasks/lessons.md, med H1→### L<nnn>-bytet utskrivet
-- [ ] #2 Skillen säger att nästa lediga nummer läses ur tasks/lessons.md (högsta + 1) och ALDRIG ur grindens post-räkning — med det mätta motexemplet 342 vs L360 utskrivet
-- [ ] #3 Skillen slår fast att fragmentets text BEVARAS vid konsolidering — numret tilldelas, texten skrivs inte om
-- [ ] #4 Alla fyra [UNIVERSAL]-markörformer utskrivna i skillen med ett läsmönster som fångar samtliga 328 — inte bara den kanoniska formen
-- [ ] #5 Källhänvisningen rättad: valet mellan att återuppliva rubriken i hub-CLAUDE.md och att peka på det som faktiskt bär formen är motiverat, och det förkastade alternativet rivet öppet med skäl
-- [ ] #6 Verbatim-vs-kondenserat avgjort och utskrivet i skillen för framtida lyft — praxis på disk (historiska lyft kondenserade) vs 2026-07-31 (verbatim) får ett uttalat framåt-svar
+- [x] #1 Konsolideringssteget skrivet i skillen: fragment i tasks/lessons.d/ → numrerad post i tasks/lessons.md, med H1→### L<nnn>-bytet utskrivet
+- [x] #2 Skillen säger att nästa lediga nummer läses ur tasks/lessons.md (högsta + 1) och ALDRIG ur grindens post-räkning — med det mätta motexemplet 342 vs L360 utskrivet
+- [x] #3 Skillen slår fast att fragmentets text BEVARAS vid konsolidering — numret tilldelas, texten skrivs inte om
+- [x] #4 Alla fyra [UNIVERSAL]-markörformer utskrivna i skillen med ett läsmönster som fångar samtliga 328 — inte bara den kanoniska formen
+- [x] #5 Källhänvisningen rättad: valet mellan att återuppliva rubriken i hub-CLAUDE.md och att peka på det som faktiskt bär formen är motiverat, och det förkastade alternativet rivet öppet med skäl
+- [x] #6 Verbatim-vs-kondenserat avgjort och utskrivet i skillen för framtida lyft — praxis på disk (historiska lyft kondenserade) vs 2026-07-31 (verbatim) får ett uttalat framåt-svar
 - [ ] #7 Plugin-bumpad enligt husets praxis och claude plugin update kört i SAMMA landning — version före och efter redovisad, verifierad mot install-recordet
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Hub-ändringen landad som PR #10 i marcus-system (gren skill/task-104-lessons-hub-sync-konsolideringssteget, commit fb01767). Plugin bumpad 1.23.0 → 1.24.0.
+
+AC #7 är MEDVETET OBOCKAD. Den kräver 'claude plugin update kört i SAMMA landning'. Marketplacen marcus-hub hämtar från GitHub-repot high-five-group/marcus-system default branch — verifierat i ~/.claude/plugins/known_marketplaces.json. Marketplace-cachen står därför på 1.23.0 så länge PR #10 inte är mergad, och en update nu skulle bara re-installera 1.23.0 och ge en falsk klar-signal.
+
+ÅTGÄRD FÖR ORKESTRERAREN efter merge av hub-PR #10:
+  claude plugin update marcus-system@marcus-hub
+  claude plugin list   # ska visa 1.24.0 enabled
+Bocka därefter AC #7.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
