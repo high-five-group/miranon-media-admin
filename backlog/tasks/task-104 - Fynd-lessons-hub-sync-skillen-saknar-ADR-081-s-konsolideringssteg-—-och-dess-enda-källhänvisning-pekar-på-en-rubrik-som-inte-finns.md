@@ -3,10 +3,10 @@ id: TASK-104
 title: >-
   Fynd: lessons-hub-sync-skillen saknar ADR-081:s konsolideringssteg — och dess
   enda källhänvisning pekar på en rubrik som inte finns
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 08:24'
-updated_date: '2026-07-31 08:37'
+updated_date: '2026-07-31 10:44'
 labels:
   - ready-for-agent
 dependencies: []
@@ -64,7 +64,7 @@ Summa **328** av 342 poster. En läsning som antar den kanoniska formen A hittar
 - [x] #4 Alla fyra [UNIVERSAL]-markörformer utskrivna i skillen med ett läsmönster som fångar samtliga 328 — inte bara den kanoniska formen
 - [x] #5 Källhänvisningen rättad: valet mellan att återuppliva rubriken i hub-CLAUDE.md och att peka på det som faktiskt bär formen är motiverat, och det förkastade alternativet rivet öppet med skäl
 - [x] #6 Verbatim-vs-kondenserat avgjort och utskrivet i skillen för framtida lyft — praxis på disk (historiska lyft kondenserade) vs 2026-07-31 (verbatim) får ett uttalat framåt-svar
-- [ ] #7 Plugin-bumpad enligt husets praxis och claude plugin update kört i SAMMA landning — version före och efter redovisad, verifierad mot install-recordet
+- [x] #7 Plugin-bumpad enligt husets praxis och claude plugin update kört i SAMMA landning — version före och efter redovisad, verifierad mot install-recordet
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -78,12 +78,20 @@ AC #7 är MEDVETET OBOCKAD. Den kräver 'claude plugin update kört i SAMMA land
   claude plugin update marcus-system@marcus-hub
   claude plugin list   # ska visa 1.24.0 enabled
 Bocka därefter AC #7.
+
+AC #7 uppfylld och bockad 2026-07-31 av räddningsagenten för PR #506: hub-PR #10 mergad 08:41:07Z (merge-commit 7b084a2fc91edac3a1b22c6d0913cd858217999c), claude plugin update kört i samma landning — install-recordet (~/.claude/plugins/installed_plugins.json) visar version 1.24.0, lastUpdated 2026-07-31T08:41:23.705Z, gitCommitSha exakt lika med hubbens merge-commit. claude plugin list visar 1.24.0 enabled (user-scope).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Skillen plugins/marcus-system/skills/lessons-hub-sync/SKILL.md fick ADR-081:s konsolideringssteg (AC 1: fragment i tasks/lessons.d/ till numrerad post, H1-till-### L<nnn>-bytet utskrivet), nästa-lediga-nummer-regeln med det mätta motexemplet 342 poster vs L360 (AC 2), verbatim-bevarandet vid konsolidering (AC 3), alla fyra UNIVERSAL-markörformerna med läsmönster som fångar samtliga 328 (AC 4), rättad källhänvisning med det förkastade alternativet rivet öppet (AC 5) och verbatim-vs-kondenserat avgjort framåt (AC 6). Hub-ändringen landade som PR #10 i marcus-system (merge-commit 7b084a2), plugin bumpad 1.23.0 till 1.24.0; claude plugin update kört i samma landning och verifierat mot install-recordet — gitCommitSha 7b084a2fc91edac3a1b22c6d0913cd858217999c, lastUpdated 2026-07-31T08:41:23Z, claude plugin list visar 1.24.0 enabled (AC 7). Spoke-kortet bar registrering + AC-bokföring och landade via PR #506 (merge-SHA 57c61ac80a42a3bf28f48153b9f4c746046bf469); PR:ns röda Docs link check var en infra-flake (curl exit 35 vid nedladdning av lychee-binären — ingen bruten länk; lokal lychee 0.24.2 med CI:s exakta argument: 2490 länkar, 0 fel, exit 0), löst med re-run. merge_group-run 30624359219 grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
