@@ -727,6 +727,18 @@ jobs:
         # lika, alltså grönt, alltså en grind som rapporterar paritet på ett par
         # den inte längre läser. Det felläget inträffade skarpt under bygget.
         # Sandboxad i egen mktemp-katalog med trap-cleanup, ingen nätverkstrafik.
+        #
+        # test-check-backlog-closure.sh (TASK-102, wirad T107) hör hit av samma
+        # kadens-skäl — grinden själv kör i NATTEN (nightly.yml, jobbet
+        # backlog-closure: en inaktuellt-tillstånd-kontroll hör inte i
+        # PR-grinden, se grindens huvud § VARFÖR NATTEN), men dess testsvit ska
+        # fälla FÖRE landning när någon försvagar grindens logik. Sviten kör mot
+        # STUBBAT backlog-CLI (fixtur-data i mktemp-sandlåda), aldrig mot repots
+        # kort — ingen nätverkstrafik, inget beroende av node_modules/.bin.
+        # 50 fall, varav T49/T50 vaktar att npx-namnkollisionen (fel paket
+        # `backlog` i registret) inte återinförs som default eller åtgärds-tips.
+        # 24,7 s LOKALT mätt (macOS, 2026-07-31, loadavg 5,1) — CI-tiden är INTE
+        # mätt av mig och kan avvika åt båda håll.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -738,6 +750,7 @@ jobs:
           bash scripts/test-ci-wait.sh
           bash scripts/test-staging-semaphore.sh
           bash scripts/test-check-listparitet.sh
+          bash scripts/test-check-backlog-closure.sh
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän

@@ -320,6 +320,83 @@ jobs:
           TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
 
+  # Backlog-stängningsgrinden (TASK-102-wiringen, T107): fångar kort vars ARBETE
+  # är klart men vars STATUS inte är det. Hela varför-blocket bor i grindens eget
+  # huvud (scripts/check-backlog-closure.sh) — kortversionen: repots stängning är
+  # TVÅSTEGS (ADR-073 beslut 5), så ett obockat kort direkt efter landning är
+  # NORMALT; felet är när det FÖRBLIR obockat. Det är en
+  # inaktuellt-tillstånd-kontroll och hör därför i NATTEN, aldrig i PR-grinden,
+  # där den hade fällt varje korrekt leverans-commit (karensen 24 h är mätt på
+  # n=91 kort, se grindens § KARENSEN).
+  #
+  # npm ci ÄR FÖRUTSÄTTNINGEN, inte en vana: grindens default är
+  # node_modules/.bin/backlog — den pinnade devDependencyn backlog.md@1.47.1
+  # (TASK-102). `npx backlog` är förbjudet som form: paketet `backlog` i
+  # registret är ETT ANNAT paket av en annan författare, och npx
+  # auto-installerar det utan att fråga när stdin inte är en TTY — vilket den
+  # aldrig är här. Se grindens huvud § DEFAULTEN.
+  #
+  # EXIT-KODERNA BÄR TVÅ OLIKA BUDSKAP och får inte kollapsas: exit 1 = DRIFT
+  # (kort som glömts öppna — åtgärda korten), exit 2 = ANROPSFEL (CLI:t,
+  # policyn eller utdataformatet svarade inte som väntat — åtgärda grinden,
+  # korten är oprövade). Steget klassar koden till en output som larm-jobbet
+  # nedan skriver in i nattärendet; loggen bär samma klassning som ::error::.
+  # Kollapsade man dem hade ett trasigt CLI öppnat ett ärende som skickar
+  # läsaren att jaga kort som ingen prövat — fel ärende, samma natt (jfr
+  # links-arende-jobbets separation av "anropet gick fel" från "inget svar").
+  #
+  # Körtid: grinden är LOKALT mätt till ~139 s (TASK-102, efter dess
+  # 34 %-förbättring) — CI-tiden är INTE mätt och kan avvika åt båda håll,
+  # bl.a. för att backlog/config.yml:s check_active_branches läser grenar som
+  # en CI-checkout med fetch-depth: 1 inte har. timeout-minutes: 10 rymmer
+  # npm ci + grinden med marginal; första skarpa natten är mätpunkten.
+  backlog-closure:
+    name: Backlog-stängning (natt-grind)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      utfall: ${{ steps.grind.outputs.utfall }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backlog-stängningsgrinden (exit 1 = drift, exit 2 = anropsfel)
+        id: grind
+        # Exitkoden fångas SEPARAT (KOD=$?-disciplinen) och klassas INNAN
+        # steget faller: en output som skrivs efter `exit` skrivs aldrig.
+        # `okand-…`-grenen är fail-closed åt rätt håll — en exitkod grinden
+        # inte dokumenterar rapporteras som sig själv, aldrig som drift.
+        run: |
+          set -uo pipefail
+          KOD=0
+          bash scripts/check-backlog-closure.sh || KOD=$?
+          case "${KOD}" in
+            0) utfall="gron" ;;
+            1) utfall="drift" ;;
+            2) utfall="anropsfel" ;;
+            *) utfall="okand-exitkod-${KOD}" ;;
+          esac
+          echo "utfall=${utfall}" >> "${GITHUB_OUTPUT}"
+          if [ "${KOD}" -eq 1 ]; then
+            echo "::error::Backlog-DRIFT (exit 1): kort vars arbete är bevisat klart står öppna bortom karensen. Åtgärd: stäng korten — se loggen ovan för vilka."
+          elif [ "${KOD}" -ne 0 ]; then
+            echo "::error::ANROPSFEL i grinden (exit ${KOD}): korten är OPRÖVADE. Åtgärd: laga grinden/miljön, inte korten."
+          fi
+          exit "${KOD}"
+
   # Larmkedjan: fyrar vid RÖD natt (eller simulate_failure-dispatch). Skapar
   # ett tilldelat, etiketterat ärende med körningslänk + commit-spann sedan
   # senaste GRÖNA natt. Grön natt ⇒ jobbet skippas ⇒ inget ärende, inga spår
@@ -335,10 +412,16 @@ jobs:
   # kanal (links-arende ovan) — utelämnandet är alltså inte fail-open, vilket är
   # hela skillnaden mot L321/L322-fällan.
   #
+  # backlog-closure ingår i needs av samma L321-skäl som nightly-metrics: natten
+  # saknar annan åskådare, och en röd grind utan larm vore en tyst permanent.
+  # Ärendets text SKILJER exit 1 från exit 2 via jobbets utfall-output — de två
+  # koderna kräver motsatta åtgärder (stäng korten respektive laga grinden),
+  # och ett ärende som inte säger vilken devalverar sig självt.
+  #
   # issues:write finns numera på TVÅ jobb (detta + links-arende), inte bara här.
   alarm:
     name: Larm vid röd natt
-    needs: [suite, nightly-audit, nightly-metrics, kontraktsvakt]
+    needs: [suite, nightly-audit, nightly-metrics, kontraktsvakt, backlog-closure]
     if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || inputs.simulate_failure) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -365,9 +448,33 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           CURRENT_SHA: ${{ github.sha }}
           SIMULATED: ${{ inputs.simulate_failure }}
+          # Outputs från ett FALLET jobb är läsbara i needs — steget som skrev
+          # utfall körde klart innan jobbet föll (klassningen sker före exit).
+          BACKLOG_RESULT: ${{ needs.backlog-closure.result }}
+          BACKLOG_UTFALL: ${{ needs.backlog-closure.outputs.utfall }}
         run: |
           set -euo pipefail
           run_url="${SERVER}/${REPO}/actions/runs/${RUN_ID}"
+
+          # Backlog-grindens två felkoder kräver MOTSATTA åtgärder och får
+          # aldrig kollapsas i ärendetexten (se backlog-closure-jobbets huvud).
+          # Tom/okänd output med result=failure betyder att jobbet dog FÖRE
+          # klassningen (timeout, npm ci, infra) — det redovisas som sig
+          # självt, aldrig som drift.
+          backlog_sektion=""
+          if [ "${BACKLOG_RESULT}" = "failure" ]; then
+            case "${BACKLOG_UTFALL}" in
+              drift)
+                backlog_sektion=$'\n\n**Backlog-stängningsgrinden: DRIFT (exit 1).** Kort vars arbete är bevisat klart står öppna bortom karensen. Åtgärd: stäng korten via CLI:t (`node_modules/.bin/backlog task edit <id> --check-dod … -s Done`) — körningsloggen listar vilka.'
+                ;;
+              anropsfel)
+                backlog_sektion=$'\n\n**Backlog-stängningsgrinden: ANROPSFEL (exit 2).** Grinden kunde inte pröva korten (CLI-, policy- eller formatfel). Detta är INTE ett påstående om kortens tillstånd — åtgärda grinden/miljön, inte korten.'
+                ;;
+              *)
+                backlog_sektion=$'\n\n**Backlog-stängningsgrinden föll utan läsbart utfall** — jobbet dog före klassningen (timeout/npm ci/infra) eller gav en odokumenterad exitkod. Se körningsloggen; korten är oprövade.'
+                ;;
+            esac
+          fi
 
           # Senaste GRÖNA körningen av nightly.yml på main (exkl. denna).
           #
@@ -417,7 +524,7 @@ jobs:
           - **Commit-spann sedan senaste gröna körning av nattsviten:** ${span}
           - **HEAD:** \`${CURRENT_SHA}\`
 
-          Stängningsregel (CONTRIBUTING § Nattnätet): detta ärende stängs ENDAST med (a) en åtgärd som fixar grundorsaken eller (b) en öppet skriven motivering — aldrig tyst.${note}"
+          Stängningsregel (CONTRIBUTING § Nattnätet): detta ärende stängs ENDAST med (a) en åtgärd som fixar grundorsaken eller (b) en öppet skriven motivering — aldrig tyst.${backlog_sektion}${note}"
 
           gh issue create \
             --repo "${REPO}" \
