@@ -106,6 +106,70 @@
 # fel"-kontroll. Den hör i natten, där larmkedjan redan öppnar ett tilldelat
 # ärende — inte i PR-grinden, där den hade fällt varje korrekt leverans-commit.
 #
+# ═══ KARENSEN — VARFÖR INVARIANT 1 OCH 3 HAR ETT TIDSFÖNSTER ═══
+#
+# Invariant 1 fäller på tillståndet "alla AC bockade + öppet status". Det är
+# EXAKT det tillstånd varje bygg-agents kontrakt KRÄVER: agenten bockar AC men
+# får inte sätta Done, eftersom DoD kräver "CI grön per jobb" och den signalen
+# inte finns när agenten är klar. Utan karens fäller grinden alltså på KORREKTA
+# kort — under en niovåg på nio stycken samtidigt.
+#
+# Lokalt är det ofarligt och närmast en arbetslista. CI-wirad blir det en falsk
+# röd i en required check, och ett falskt larm devalverar nästa (T87).
+#
+# FÖNSTRETS LÄNGD ÄR MÄTT, INTE BEDÖMD. Metod: rekonstruera varje korts tillstånd
+# vid varje commit som rörde dess fil, ur git-historiken, och mät tiden från
+# INTRÄDET i det fällande tillståndet till den commit som satte Done. Mellan två
+# commits är tillståndet per definition oförändrat, så observationerna är
+# fullständiga — inte stickprov. MÄTT 2026-07-31 (TASK-102) över hela historiken:
+#
+#   n = 91 kort som legat i tillståndet och sedan stängts korrekt
+#   min 0,03 h · median 0,73 h · p75 9,5 h · p90 29,6 h · max 117,7 h
+#
+# Fördelningen är inte en klocka utan tre klasser, och det är klasserna som
+# avgör talet — inte percentilen:
+#
+#   ~0,03–2,3 h   normal tvåstegsstängning (agenten landar, CI verifierar,
+#                 orkestreraren stänger). Merparten.
+#   ~7–10 h       över natten: kortet landar på kvällen, stängs på morgonen.
+#                 Största observation i NUVARANDE våg-regim är 9,55 h.
+#   ~10–41 h      2026-07-23 stängdes TASK-17.x/18.x/19.x i en klumpstängning
+#                 (allt landar på två commits: 1cb85c5e och 7d35948e). Det är
+#                 DRIFTEN grinden finns för att fånga, inte flygtid.
+#   117,7 h       TASK-36.8, ensam ytterlighet.
+#
+# VALT: 24 h. Skälen, i fallande styrka:
+#
+#   * Det ligger på en PLATÅ. Svepet ger IDENTISKT utfall för varje värde mellan
+#     19 h och 28 h — 11 av 91 kort fälls, och det är precis de två drift-
+#     händelserna. Ett tröskelvärde som tål att vara några timmar fel är ett
+#     tröskelvärde som inte behöver träffas exakt.
+#   * Marginalen räcker till BÅDA rimliga läsningar av var flygtiden slutar.
+#     Största observation i nuvarande våg-regim är 9,55 h (2,5× marginal).
+#     Räknar man i stället största observation UTANFÖR de två klumpstängningarna
+#     är den 14,73 h (TASK-48, stängd ensam 2026-07-26) — fortfarande 1,6×.
+#     Talet är alltså inte beroende av vilken av gränserna man väljer.
+#   * Grinden behåller sitt syfte: den fäller fortfarande på båda drift-
+#     händelserna i historiken.
+#
+# FÖRKASTAT — 12 h: bara 2,4 h marginal till den längsta korrekta natten. En
+# leverans 22:00 som stängs 10:00 hade fällts falskt.
+# FÖRKASTAT — 48 h: hade fångat 1 av 91, alltså missat hela klumpstängningen
+# 2026-07-23. Det neutraliserar grinden i stället för att kalibrera den.
+# FÖRKASTAT — percentil rakt av (p90 = 29,6 h): percentilen räknar drift och
+# flygtid i samma fördelning och kalibrerar därför grinden mot sitt eget fel.
+#
+# Talen är mätta i DETTA repo, av EN operatör, över ~4 veckor, och 22 av de 91
+# punkterna kommer från en enda klumpstängning — de är alltså inte oberoende.
+# Byter arbetssättet karaktär ska talet mätas om, inte ärvas.
+#
+# Karensen gäller BÅDA öppet-kort-invarianterna (1 och 3), samma snitt som
+# etiketten ovan gör. Invariant 2 (Done + obockat) har MED FLIT ingen karens:
+# det tillståndet produceras inte av något korrekt flöde — stängningen bockar
+# DoD och sätter Done i samma CLI-anrop — så en karens där hade bara fördröjt
+# upptäckten av ett äkta fel. Fönstrets längd är mätt för invariant 1; för
+# invariant 3 är den ÖVERFÖRD, inte mätt.
+#
 # ═══ L226 OCH VERKTYGSÄGD YTA ═══
 #
 # `backlog/` är medvetet undantagen från PROSA-lintning (markdownlint/Vale) —
@@ -122,7 +186,30 @@
 set -uo pipefail
 
 POLICY_FIL="${BACKLOG_CLOSURE_POLICY:-.backlog-closure-policy.conf}"
-BACKLOG_CMD="${BACKLOG_CMD:-npx backlog}"
+
+# ═══ DEFAULTEN ÄR DEN DEKLARERADE LOKALA BINÄREN — ALDRIG `npx backlog` ═══
+#
+# Paketet heter `backlog.md`. Binären heter `backlog`. Det finns ett ANNAT,
+# orelaterat npm-paket som heter just `backlog` — annan författare, egen
+# `bin: {"backlog": …}`, ingen provenance. `npx backlog` löser upp BARA NAMNET
+# som ett paketnamn och hittar därför fel paket i varje miljö som inte råkar ha
+# `backlog.md` globalt installerad. Mätt i isolerad miljö 2026-07-30 (tom cache,
+# tomt prefix, ingen global installation):
+#
+#     npm error npx canceled due to missing packages and no YES option:
+#     ["backlog@1.4.56"]
+#
+# npx auto-installerar utan att fråga när stdin inte är en TTY — vilket den
+# aldrig är i CI. Den gamla defaulten var alltså inte "ett opinnat paket" utan
+# en namnkollision med tyst exekvering av främmande kod.
+#
+# En lokal bin kan inte förväxlas med ett registerpaket. Formen är därför
+# STRUKTURELL, inte en varning som ska efterlevas — samma skäl som gör
+# `node_modules/.bin` rätt även när den globala installationen finns.
+#
+# Belägg: docs/research/node-cli-deklaration-och-pinning-2026-07-30.md.
+# Deklarationen: `backlog.md` som pinnad devDependency i package.json.
+BACKLOG_CMD="${BACKLOG_CMD:-node_modules/.bin/backlog}"
 
 if [[ ! -f "${POLICY_FIL}" ]]; then
     echo "❌ policy-fil saknas: ${POLICY_FIL}" >&2
@@ -155,11 +242,75 @@ if [[ -z "${BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT:-}" ]]; then
     echo "   avsiktligt öppen förälder blir ett återkommande falskt larm." >&2
     exit 2
 fi
+# Karensen är OBLIGATORISK av exakt samma skäl som etiketten ovan: dess frånvaro
+# ger falskt rött, inte tyst grönt. Utan karens fäller invariant 1 på varje
+# korrekt agent-leverans i samma stund den landar — se KARENS-sektionen i
+# huvudet. Ett default på 0 hade alltså gjort den farligaste konfigurationen till
+# den tysta.
+#
+# 0 ÄR ETT GILTIGT VÄRDE, men bara UTSKRIVET: ett repo utan tvåstegsstängning kan
+# genuint vilja ha noll karens, och då ska den siffran stå i policy-filen där en
+# läsare ser den.
+if [[ -z "${BACKLOG_KARENS_TIMMAR:-}" ]]; then
+    echo "❌ BACKLOG_KARENS_TIMMAR saknas i ${POLICY_FIL}" >&2
+    echo "   Utan karens fäller invariant 1 på varje korrekt leverans i samma" >&2
+    echo "   stund den landar — bygg-agenten bockar AC men får inte sätta Done." >&2
+    exit 2
+fi
+case "${BACKLOG_KARENS_TIMMAR}" in
+    ''|*[!0-9]*)
+        echo "❌ BACKLOG_KARENS_TIMMAR måste vara ett heltal timmar, fick '${BACKLOG_KARENS_TIMMAR}'" >&2
+        exit 2
+        ;;
+    *) ;;
+esac
+
 BACKLOG_UNDANTAGNA_STATUSAR="${BACKLOG_UNDANTAGNA_STATUSAR-}"
+
+# ═══ KARENSENS BRYTPUNKT — RÄKNAS I UTC, EN GÅNG ═══
+#
+# Kortens tidsstämplar skrivs av backlog-CLI:t i UTC. MÄTT 2026-07-31 över 12
+# kort: kortets `Updated:` ligger 2–26 minuter FÖRE samma commits UTC-tid, aldrig
+# ~120 minuter före — vilket det hade gjort om fältet vore lokal tid (CEST=UTC+2).
+# Därför räknas brytpunkten med `date -u`, och karensen blir då exakt både
+# lokalt och på en UTC-runner. En lokal brytpunkt hade gett två timmars skev.
+#
+# JÄMFÖRELSEN GÖRS PÅ SIFFROR, INTE PÅ STRÄNGAR: `YYYYMMDDHHMM` är monotont, så
+# heltalsjämförelse är exakt kronologisk och helt oberoende av locale-collation
+# (som kan ignorera bindestreck och blanksteg och därmed jämföra fel).
+#
+# ORDNINGEN `-d` FÖRE `-r` ÄR AVSIKTLIG. GNU date tar `-d @EPOCH`; BSD/macOS
+# saknar `-d` helt och fäller direkt ("illegal option -- d", mätt). BSD tar
+# `-r EPOCH`, men GNU:s `-r` betyder "läs en FILS mtime" — hade `-r` prövats
+# först och en fil råkat heta som epok-talet, hade GNU tyst gett fel brytpunkt.
+# Omvänd ordning har ingen sådan gren.
+KARENS_BRYTPUNKT=""
+if [[ "${BACKLOG_KARENS_TIMMAR}" -gt 0 ]]; then
+    nu_epok=""
+    nu_epok="$(date -u +%s 2>/dev/null)" || nu_epok=""
+    case "${nu_epok}" in
+        ''|*[!0-9]*)
+            echo "❌ kunde inte läsa aktuell tid (date -u +%s)" >&2
+            echo "   Karensen kan inte bedömas, och en grind som gissar tid är värdelös." >&2
+            exit 2
+            ;;
+        *) ;;
+    esac
+    brytpunkt_epok=$(( nu_epok - BACKLOG_KARENS_TIMMAR * 3600 ))
+    KARENS_BRYTPUNKT="$(date -u -d "@${brytpunkt_epok}" +%Y%m%d%H%M 2>/dev/null)" \
+        || KARENS_BRYTPUNKT="$(date -u -r "${brytpunkt_epok}" +%Y%m%d%H%M 2>/dev/null)" \
+        || KARENS_BRYTPUNKT=""
+    if [[ ! "${KARENS_BRYTPUNKT}" =~ ^[0-9]{12}$ ]]; then
+        echo "❌ kunde inte beräkna karensens brytpunkt med vare sig GNU- eller BSD-date" >&2
+        echo "   Fail-closed: grinden kör hellre inte alls än med en gissad karens." >&2
+        exit 2
+    fi
+fi
 
 EXIT_CODE=0
 antal_kort=0
 antal_fel=0
+antal_med_tid=0
 
 # Insamlad kort-data för andra passet. Förälder/barn-invarianten behöver
 # barnens STATUS, och den får aldrig kosta ett extra CLI-anrop per barn: varje
@@ -255,6 +406,44 @@ for id in "${KORT[@]}"; do
         [[ "${tok}" == "${BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT}" ]] && deklarerad=1
     done
 
+    # ── Karensens tidsstämpel ────────────────────────────────────────────────
+    #
+    # `Updated:` är kortets senaste ändring och därmed den tidpunkt då det gick
+    # in i sitt nuvarande tillstånd. Saknas fältet har kortet ALDRIG redigerats
+    # efter skapandet — och då ÄR `Created:` den tidpunkten. Fallbacken är
+    # alltså inte en approximation utan det korrekta värdet för just de korten.
+    #
+    # Att fallbacken dessutom är ofarlig går att härleda: tillståndet invariant 1
+    # fäller på kräver bockade AC, och AC bockas med `task edit --check-ac`, som
+    # SKRIVER `updated_date`. Ett kort utan fältet kan därför inte ha nått
+    # tillståndet via arbetsflödet.
+    #
+    # FÖRKASTAT — låta avsaknad av `Updated:` betyda "utanför karens" (bedöm
+    # direkt). Det hade gjort ett saknat fält till en fällande signal, vilket är
+    # att gissa åt det dyraste hållet.
+    # FÖRKASTAT — tyst hoppa över kort utan tidsstämpel. Det är exakt TASK-90:s
+    # defekt: en blind fläck som utskriften inte redovisar. De räknas i stället
+    # öppet i täcknings-blocket.
+    tid_rad=""
+    tid_rad="$(grep -m1 '^Updated:' <<< "${utdata}")" || true
+    [[ -z "${tid_rad}" ]] && { tid_rad="$(grep -m1 '^Created:' <<< "${utdata}")" || true; }
+    tid_siffror=""
+    if [[ -n "${tid_rad}" ]]; then
+        tid_siffror="$(tr -cd '0-9' <<< "${tid_rad#*:}")" || tid_siffror=""
+        tid_siffror="${tid_siffror:0:12}"          # YYYYMMDDHHMM, sekunder ignoreras
+    fi
+
+    # 0 = bedömbar, 1 = inom karens, 2 = ingen läsbar tidsstämpel
+    karens_lage=0
+    if [[ "${#tid_siffror}" -ne 12 ]]; then
+        karens_lage=2
+    else
+        antal_med_tid=$((antal_med_tid + 1))
+        if [[ -n "${KARENS_BRYTPUNKT}" && "${tid_siffror}" -gt "${KARENS_BRYTPUNKT}" ]]; then
+            karens_lage=1
+        fi
+    fi
+
     ar_klar=0
     case "${status}" in *"${BACKLOG_KLAR_STATUS}"*) ar_klar=1 ;; *) ;; esac
 
@@ -271,18 +460,29 @@ for id in "${KORT[@]}"; do
 
     # Endast de fält pass 2 faktiskt använder sparas. ac_obockat och dod_obockat
     # är förbrukade här nere i invariant 1 och 2 och följer därför inte med.
+    #
+    # karens_lage ligger FÖRE status, eftersom status läses som sista fältet med
+    # `IFS='|' read` och därför får svälja allt som återstår på raden.
     rad_data=""
-    rad_data="$(printf '%s|%s|%s|%s|%s|%s|%s|%s' \
+    rad_data="$(printf '%s|%s|%s|%s|%s|%s|%s|%s|%s' \
         "${id}" "${ar_klar}" "${ar_oppet}" "${undantagen_status}" "${deklarerad}" \
-        "${ac_totalt}" "${barn_ids}" "${status}")"
+        "${ac_totalt}" "${barn_ids}" "${karens_lage}" "${status}")"
     KORT_RADER="${KORT_RADER}${KORT_RADER:+
 }${rad_data}"
 
     # Invariant 1 — arbetet bevisat klart, kortet inte stängt.
-    if [[ "${ar_oppet}" -eq 1 && "${ac_totalt}" -gt 0 && "${ac_obockat}" -eq 0 ]]; then
+    #
+    # KARENSEN GÄLLER HÄR: tillståndet "alla AC bockade + öppet" är EXAKT det en
+    # korrekt bygg-agent lämnar efter sig. Utan karens fäller grinden på varje
+    # korrekt leverans i det ögonblick den landar.
+    if [[ "${ar_oppet}" -eq 1 && "${ac_totalt}" -gt 0 && "${ac_obockat}" -eq 0 \
+          && "${karens_lage}" -eq 0 ]]; then
         echo "❌ TASK-${id} — samtliga ${ac_totalt} AC avbockade men status är '${status}'"
         echo "   Arbetet är gjort och bevisat; kortet är aldrig stängt."
-        echo "   Fix: npx backlog task edit ${id} --check-dod … -s Done --final-summary '…'"
+        # Åtgärds-tipset visar KOMMANDOT GRINDEN SJÄLV ANVÄNDE, aldrig `npx
+        # backlog`: den formen är namnkollisionen ovan, och en grind som skriver
+        # ut en landmina som åtgärd hade lärt ut felet den finns för att stänga.
+        echo "   Fix: ${BACKLOG_CMD} task edit ${id} --check-dod … -s Done --final-summary '…'"
         antal_fel=$((antal_fel + 1))
         EXIT_CODE=1
     fi
@@ -296,6 +496,19 @@ for id in "${KORT[@]}"; do
     fi
 done
 
+# Fail-closed mot TYST FORMAT-DRIFT. Karensen läser `Updated:`/`Created:` ur
+# CLI:ts utdata. Byter verktyget namn på de fälten skulle VARJE kort hamna i
+# karens_lage 2 — och grinden gå grön utan att ha prövat någonting. Att noll av
+# N kort bar en läsbar tidsstämpel är därför ett anropsfel, aldrig "allt är bra".
+# Samma resonemang som "noll kort hittades" ovan, tillämpat på ett fält i
+# stället för på listan.
+if [[ -n "${KARENS_BRYTPUNKT}" && "${antal_kort}" -gt 0 && "${antal_med_tid}" -eq 0 ]]; then
+    echo "❌ inget av ${antal_kort} kort bar en läsbar tidsstämpel (Updated:/Created:)" >&2
+    echo "   Karensen kan inte bedömas för något kort — troligen har CLI:ts" >&2
+    echo "   utdataformat ändrats. Fail-closed: detta är ett anropsfel." >&2
+    exit 2
+fi
+
 # ═══ PASS 2 — invariant 3 (förälder/barn) och täcknings-redovisningen ═══
 
 antal_oppna=0                 # allt som inte är KLAR, före undantag
@@ -305,8 +518,10 @@ antal_pruvat_ac=0
 antal_pruvat_barn=0
 antal_okant_barn=0
 antal_utan_signal=0
+antal_inom_karens=0
+antal_utan_tid=0
 
-while IFS='|' read -r r_id r_klar r_oppet r_undantag r_dekl r_act r_barn r_status; do
+while IFS='|' read -r r_id r_klar r_oppet r_undantag r_dekl r_act r_barn r_karens r_status; do
     [[ -z "${r_id}" ]] && continue
     [[ "${r_klar}" -eq 1 ]] && continue
     antal_oppna=$((antal_oppna + 1))
@@ -320,6 +535,19 @@ while IFS='|' read -r r_id r_klar r_oppet r_undantag r_dekl r_act r_barn r_statu
         continue
     fi
     [[ "${r_oppet}" -eq 1 ]] || continue
+
+    # Karensen klassas FÖRE AC/barn-uppdelningen: ett kort som nyss ändrats är
+    # inte "prövat mot AC" eller "prövat mot barn" — det är ännu inte bedömt
+    # alls, och att räkna det som prövat hade blåst upp täckningen. Samma fel
+    # som TASK-90 lagade.
+    if [[ "${r_karens}" -eq 1 ]]; then
+        antal_inom_karens=$((antal_inom_karens + 1))
+        continue
+    fi
+    if [[ "${r_karens}" -eq 2 ]]; then
+        antal_utan_tid=$((antal_utan_tid + 1))
+        continue
+    fi
 
     # Kortet har egna AC → invariant 1 äger bedömningen. Invariant 3 håller sig
     # borta med FLIT: ett obockat eget AC är genuint återstående arbete och
@@ -375,7 +603,7 @@ while IFS='|' read -r r_id r_klar r_oppet r_undantag r_dekl r_act r_barn r_statu
         echo "❌ TASK-${r_id} — samtliga ${antal_barn} barn är '${BACKLOG_KLAR_STATUS}' men status är '${r_status}'"
         echo "   Arbetet är bevisat i barnen; föräldern är aldrig stängd."
         echo "   Är kortet öppet med FLIT? Deklarera det:"
-        echo "   npx backlog task edit ${r_id} --add-label ${BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT}"
+        echo "   ${BACKLOG_CMD} task edit ${r_id} --add-label ${BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT}"
         antal_fel=$((antal_fel + 1))
         EXIT_CODE=1
     fi
@@ -400,10 +628,16 @@ echo "  ${antal_pruvat_barn} prövade mot barn-relationen (invariant 3)"
 echo "  ${antal_deklarerad} deklarerat avsiktligt öppna (etikett '${BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT}')"
 echo "  ${antal_undantagen_status} undantagen status"
 echo "  ${antal_okant_barn} obedömbara: barn i Subtasks saknas i listningen"
+echo "  ${antal_inom_karens} inom karens (ändrade senaste ${BACKLOG_KARENS_TIMMAR} h) — ännu inte bedömda"
+echo "  ${antal_utan_tid} utan läsbar tidsstämpel — karensen kunde inte bedömas"
 echo "  ${antal_utan_signal} UTAN STÄNGNINGS-SIGNAL: noll egna AC och inga barn"
 if [[ "${antal_utan_signal}" -gt 0 ]]; then
     echo "     Grinden kan inte uttala sig om dessa. Siffran står här därför att"
     echo "     utskriften annars läses som full täckning."
+fi
+if [[ "${antal_inom_karens}" -gt 0 ]]; then
+    echo "     Korten inom karens är INTE friskförklarade — de är för nya för att"
+    echo "     kunna skiljas från en pågående leverans. De prövas i nästa körning."
 fi
 
 exit "${EXIT_CODE}"
