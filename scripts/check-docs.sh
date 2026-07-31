@@ -6,7 +6,7 @@
 # tre kördes vid två separata tillfällen samma dag, av två olika aktörer, och
 # de missade grindarna föll först i CI — ~9 minuter per träff bakom
 # staging-låset. Ett kommando som kör allt är billigare än ett minne som ska
-# hålla tio poster.
+# hålla hela listan nedan.
 #
 # ÄRLIGHETS-KRAVET (L351-klassen: en guard som är fel i halva sitt område får
 # läsaren att sluta leta). Skriptet får ALDRIG rapportera grönt på ett sätt som
@@ -31,7 +31,22 @@
 # Detaljerna, inklusive att `npm --if-present` gäller ett saknat SCRIPT och
 # aldrig en saknad BINÄR, står i passets § "Varför tri-state-kravet fäller alla".
 #
-# SCOPE — de tio CI-grindar som kan gå fel för att dokumentation rörts:
+# SCOPE-KRITERIET, UTSKRIVET (TASK-106, 2026-07-31). En CI-grind hör hit om en
+# REN dokumentations-ändring kan fälla den. Kriteriet är KAUSALT, inte
+# natur-baserat: frågan är vad som kan gå sönder av att någon redigerat en
+# .md-fil — aldrig om grinden "känns som" dokumentations-lint.
+#
+# Varför kriteriet står skrivet i stället för underförstått: fram till TASK-106
+# saknade uppräkningen två grindar som CI kör och som en docs-ändring fäller
+# (11 och 12 nedan). INOM filen var allt konsekvent — tio poster, tio uppräknade,
+# tio körda, och slutraden sade tio — så den felklass
+# `en-rakning-utan-utskrivna-poster-granskas-aldrig` beskriver fångade den inte.
+# En LISTA kan bara granskas för fullständighet mot ett kriterium, och ett
+# kriterium som ingen skrivit ned kan ingen pröva mot. (Talet var däremot fel
+# MELLAN filer: `.claude/agents/bygg-agent.md` sade "nio". Den halvan är löst
+# genom att slutradens tal nu är härlett och kopian borttagen.)
+#
+# DE TOLV:
 #   ci.yml docs-jobbet (villkorat på docs_changed):
 #     1. lychee link check          — kräver lychee-binär, SKIPPAS om den saknas
 #     2. markdownlint-cli2
@@ -44,21 +59,47 @@
 #     8. scripts/check-adr-count.sh
 #     9. scripts/check-lesson-numbers.sh
 #    10. scripts/check-permissions-claims.sh
+#    11. scripts/check-fetch-depth-invariant.sh — läser ADR-029 + ADR-030 och
+#        kräver att erratum-noten finns. Mätt 2026-07-31 mot fixtur: struken
+#        erratum-rad i ADR-029 ⇒ exit 1. Ingenting utom en .md-ändring behövdes.
+#    12. scripts/check-listparitet.sh — paret `sentinel-markorer` läser
+#        CONTRIBUTING.md, paret `lychee-scope` läser DENNA fil. Mätt samma dag:
+#        en struken sentinel-backtick i CONTRIBUTING.md ⇒ exit 1.
 #
-# RUBRIKEN OVAN VAR FALSK FÖR POST 10 FRÅN ADR-083:s LANDNING TILL TASK-98
+# POST 10 VAR ETT FALSKT PÅSTÅENDE FRÅN ADR-083:s LANDNING TILL TASK-98
 # (2026-07-30 → 2026-07-31). Grinden var inkopplad här och dess self-test kördes
 # i ci.yml, men grinden själv kördes där noll gånger medan de fem syskonen kördes
 # en var. Denna fil påstod alltså en mekanism som inte fanns — vilket är exakt
 # den felklass ADR-083 mintades för. TASK-98 wirade grinden i lint-jobbet i
 # stället för att skriva om rubriken: en grind som ingen kör är inte en grind.
 #
-# Räkningen verifieras mekaniskt, inte genom läsning:
-#   grep -c 'bash scripts/<grind>.sh' .github/workflows/ci.yml   # ska ge 1
-# Mätt 2026-07-31 efter wiringen: samtliga sex posterna 5-10 ger 1.
+# RÄKNINGEN VERIFIERAS MEKANISKT, INTE GENOM LÄSNING — men formen spelar roll:
+#   grep -cE '^[[:space:]]+run: bash scripts/<grind>\.sh$' .github/workflows/ci.yml
+# Den okvalificerade formen `grep -c 'bash scripts/<grind>.sh'` räcker INTE.
+# Den råkade ge 1 för posterna 5-10, men mätt 2026-07-31 ger den 2 för post 12:
+# ci.yml rad 612 är en KOMMENTAR som nämner `bash scripts/check-listparitet.sh`
+# bredvid körningen på rad 615. En räkning som inte skiljer körning från
+# omnämnande är fail-open i exakt den riktning TASK-98 lagade.
 #
-# Grindar som medvetet INTE ingår: Biome, typecheck, audit, actionlint,
-# yamllint, shellcheck, testsviten. De är kod-grindar — `npm run lint` +
-# `npm run typecheck` är deras väg. Skriptet lovar dokumentation, inget annat.
+# INTE INGÅR — bokfört per post, aldrig underförstått:
+#   · Biome · typecheck · audit · actionlint · yamllint · shellcheck ·
+#     testsviten — kod-grindar. Ingen av dem läser en .md-fil, alltså kan ingen
+#     ren dokumentations-ändring fälla dem. `npm run lint` + `npm run typecheck`
+#     är deras väg. Skriptet lovar dokumentation, inget annat.
+#   · scripts/check-staging-preflight-wiring.mjs — kör i SAMMA alltid-på
+#     lint-jobb som 5-12 och är därför den enda kandidat kriteriet måste prövas
+#     mot uttryckligen i stället för att avfärdas som "kod-grind". Dess indata är
+#     playwright.config.ts och scripts/*.mjs; ingen .md-fil ingår. Utanför, med
+#     skäl.
+#
+# INGEN GRIND HÅLLER DENNA LISTA MOT ci.yml — luckan är känd och bokförd.
+# Paret check-docs.sh ↔ ci.yml är härlett i .listparitet-policy.conf men obyggt:
+# en robust B-sida kräver `# paritet:start`-markörer i ci.yml, och en
+# hela-filen-region är fail-open av samma skäl som grep-formen ovan — mätt
+# 2026-07-31: med körningen på rad 615 borttagen plockas posten ändå ur
+# kommentaren på rad 612, så paret hade rapporterat synk på en avwirad grind.
+# Markörerna hör till .github/workflows/** och är en CI-ändring. Kortet som bär
+# bygget: TASK-109.
 #
 # Som check-skripten i detta repo förlitar sig grinden på cwd=repo-root
 # (ingen cd) — CI och lokala anrop kör från repo-roten.
@@ -169,13 +210,21 @@ else
     skip_gate "Vale L_X.2-regressionssvit" "vale-binären saknas lokalt — CI kör den"
 fi
 
-# --- 5-9. De alltid-på grindarna i lint-jobbet ---------------------------
+# --- 5-12. De alltid-på grindarna i lint-jobbet --------------------------
 run_gate "Frontmatter på styrande docs" bash scripts/check-frontmatter.sh
 run_gate "Lifecycle på sessionsdok + trådkort" bash scripts/check-lifecycle.sh
 run_gate "Publika docs — oavklarade checklist-poster" bash scripts/check-public-checklists.sh
 run_gate "ADR-räkningens konsistens" bash scripts/check-adr-count.sh
 run_gate "Lesson-numrering (nummer vid landning)" bash scripts/check-lesson-numbers.sh
 run_gate "Permissions-påståenden (prosa som påstår mekanism)" bash scripts/check-permissions-claims.sh
+# 11-12 tillagda TASK-106. Båda är INVARIANT-vakter till sin natur, och det var
+# skälet de stod utanför — men scope-kriteriet ovan är kausalt, inte
+# natur-baserat, och båda fäller på en ren .md-ändring. Kostnaden är mätt lokalt
+# (macOS 2026-07-31, loadavg 3,4-4,8, tre körningar var): 0,052-0,066 s
+# respektive 0,847-0,874 s, mot 19,27 s för hela skriptet före tillägget —
+# alltså ~+4,8 %. CI-TIDEN ÄR INTE MÄTT AV MIG.
+run_gate "fetch-depth-invarianten (ADR-029/030 erratum)" bash scripts/check-fetch-depth-invariant.sh
+run_gate "Listparitet (CONTRIBUTING ↔ purge-policy, lychee-scopen)" bash scripts/check-listparitet.sh
 
 # --- Sammanfattning -------------------------------------------------------
 printf '\n\033[1m─────────── check:docs ───────────\033[0m\n'
@@ -208,5 +257,14 @@ if [[ ${#SKIPPED[@]} -gt 0 ]]; then
     exit 0
 fi
 
-printf '\n\033[32mcheck:docs grönt — samtliga tio dokumentations-grindar körda.\033[0m\n'
+# TALET ÄR HÄRLETT, INTE SKRIVET (TASK-106). Raden sade tidigare "samtliga tio"
+# som en literal, och literalen är ADR-083:s felklass i miniatyr: den påstår en
+# täckning ingen kontrollerar. Den divergerade också skarpt —
+# `.claude/agents/bygg-agent.md` sade "nio" mot skriptets "tio", och TRE
+# oberoende agenter rapporterade avvikelsen samma dag utan att någon kunde
+# åtgärda den. Räknar raden i stället ${#PASSED[@]} kan den aldrig ljuga om
+# antalet: grenen nås bara när SKIPPED är tom, alltså är PASSED hela mängden.
+# Kvar att bevaka är LISTANS fullständighet — det är vad scope-kriteriet överst
+# i filen finns för.
+printf '\n\033[32mcheck:docs grönt — samtliga %d dokumentations-grindar körda.\033[0m\n' "${#PASSED[@]}"
 exit 0

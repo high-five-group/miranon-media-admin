@@ -52,7 +52,11 @@ Lokal exit 0 garanterar inte grön CI. Svagare lokal variant är inte verifierin
 - `actionlint` körs i CI som
   `actionlint -color -ignore 'unexpected key "queue" for "concurrency" section'`.
   Utan `-ignore` får du ett falskt fynd på `ci-suite.yml`.
-- `npm run check:docs` för dokumentationsändringar (nio grindar).
+- `npm run check:docs` för dokumentationsändringar. Skriptet räknar upp sina
+  grindar själv och skriver ut hur många som faktiskt kördes — talet stod
+  tidigare även här ("nio") och var fel mot skriptets egen slutrad ("tio").
+  Skriv aldrig av det hit igen; en kopia av ett tal blir fel utan att någon
+  märker det (`TASK-106`).
 - `npm run typecheck` · `npx @biomejs/biome check .` · `npm run build` ·
   `npm run test:api` enligt `CONTRIBUTING.md`.
 
