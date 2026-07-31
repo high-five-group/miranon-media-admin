@@ -4,6 +4,7 @@ title: 'Fynd: 429-backoffen i airtable-client väntar 1 s där Airtable kräver 
 status: To Do
 assignee: []
 created_date: '2026-07-27 14:52'
+updated_date: '2026-07-31 07:55'
 labels: []
 dependencies: []
 priority: medium
@@ -32,11 +33,13 @@ RELATERAT: airtable-constraints.md P4 (posten bokförs som åtgärdad när detta
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Alla tre 429-hanterare i airtable-client.ts väntar enligt Airtables dokumenterade krav (>= 30 s för första omförsöket)
-- [ ] #2 Backoff-strategin är enhetstestad med mockad 429 — väntetid verifierad, inte antagen
-- [ ] #3 Omförsöks-loopen har ett explicit tak; oändlig retry är borta
-- [ ] #4 airtable-constraints.md P4:s öppna-avvikelse-not uppdaterad till åtgärdad med commit-referens
+- [x] #1 Alla tre 429-hanterare i airtable-client.ts väntar enligt Airtables dokumenterade krav (>= 30 s för första omförsöket)
+- [x] #2 Backoff-strategin är enhetstestad med mockad 429 — väntetid verifierad, inte antagen
+- [x] #3 Omförsöks-loopen har ett explicit tak; oändlig retry är borta
+- [x] #4 airtable-constraints.md P4:s öppna-avvikelse-not uppdaterad till åtgärdad med commit-referens
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

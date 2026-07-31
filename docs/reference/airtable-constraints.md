@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-27
+updated: 2026-07-31
 review_by: 2027-01-27
 status: stable
 ---
@@ -86,7 +86,8 @@ hanterar den i Airtable-eran — det Supabase-adaptern ska *ersätta*, inte åte
 - **Kostnad/manifestation.** Polling-kadens och full-walk-hämtningar måste hålla sig under taket.
   Källor: [ADR-056](../decisions/ADR-056-list-paginerings-port-cursor-dubbel-kalla.md) (rad ~26);
   gap-analysis rad 72; byggplan-revision-p1 rad 349 (60s-polling = 75× marginal);
-  [`airtable-client.ts:84`](../../supabase/functions/_shared/airtable-client.ts#L84).
+  [`airtable-client.ts:81`](../../supabase/functions/_shared/airtable-client.ts#L81)
+  (429-hanteringen flyttad till `airtable-retry.ts` i `TASK-53` — radnumret uppdaterat därefter).
   - **Andra manifestationen (S91, 2026-07-27) — taket är DELAT, vilket gör test-parallellisering
     verkningslös.** 5 req/s gäller per bas, alltså för alla samtidiga klienter tillsammans.
     Playwright-shardning multiplicerar antalet klienter som slåss om samma budget, inte
@@ -94,17 +95,25 @@ hanterar den i Airtable-eran — det Supabase-adaptern ska *ersätta*, inte åte
     **även med perfekt dataområdes-isolering** — en oberoende grind utöver P26. Källa:
     [`parallell-e2e-mot-delad-backend-2026-07-26.md`](../research/parallell-e2e-mot-delad-backend-2026-07-26.md)
     §5 + §Vad det betyder för OSS punkt 2 och 6.
-  - **⚠️ Öppen avvikelse mot dokumentationen.** Airtable anger att man efter 429 måste
-    *"wait 30 seconds before subsequent requests will succeed"*. Vår klient väntar **1 sekund** på
-    tre ställen ([`airtable-client.ts:84`](../../supabase/functions/_shared/airtable-client.ts#L84),
-    `:162`, `:189-ff`). Under taket spelar det ingen roll — men vid faktisk 429 är backoffen
-    30× för kort, och omförsöken förlänger då lockouten i stället för att invänta den.
-    Upptäckt i S91:s research. **Åtgärd: `TASK-53`** (Marcus order 2026-07-27) — kortet bär
-    valet fast 30 s kontra exponentiell backoff med jitter, kravet på mockat 429-enhetstest,
-    och ett tak på omförsöks-loopen som i dag saknas. Denna not uppdateras när kortet landar.
-- **v1-kompensation.** Synkron backoff: 429 → vänta 1s → försök igen
-  ([`airtable-client.ts:84`](../../supabase/functions/_shared/airtable-client.ts#L84),
-  `:162`, `:211`); polling-kadens 60s.
+  - **✅ Avvikelsen mot dokumentationen är ÅTGÄRDAD (`TASK-53`, commit `123dbca`, 2026-07-31).**
+    Airtable anger att
+    man efter 429 måste *"wait 30 seconds before subsequent requests will succeed"*. Klienten
+    väntade **1 sekund** på tre ställen — 30× för kort, så omförsöken föll inom lockout-fönstret
+    och förlängde lockouten i stället för att invänta den. Loopen saknade dessutom tak.
+    Backoffen bor nu i [`_shared/airtable-retry.ts`](../../supabase/functions/_shared/airtable-retry.ts)
+    som **en** mekanism för alla tre call-sites: exponentiellt från 30 s (30 s → 60 s) med
+    **additiv** jitter (0–25 % uppåt, aldrig under golvet — subtraktiv jitter hade återinfört
+    defekten) och tak på 2 omförsök. Taket är härlett, inte valt: värsta totala väntan 112,5 s
+    ryms i Supabase Edge Functions `Request idle timeout: 150s`, medan ett tredje omförsök hade
+    gett 262,5 s → 504 i stället för ett ärligt fel. Verifierad med mockat 429-enhetstest som
+    mäter den faktiska väntetiden ([`tests/api/airtable-retry.test.ts`](../../tests/api/airtable-retry.test.ts),
+    10 fall) — skarp 429-framkallning valdes bort eftersom den bränner den DELADE kvoten för alla
+    parallella körningar (se andra manifestationen ovan + P26).
+- **v1-kompensation.** Synkron backoff enligt Airtables dokumenterade kontrakt: 429 → vänta
+  >= 30 s (exponentiellt, jitter uppåt) → försök igen, tak 2 omförsök
+  ([`airtable-retry.ts`](../../supabase/functions/_shared/airtable-retry.ts); call-sites
+  [`airtable-client.ts`](../../supabase/functions/_shared/airtable-client.ts) `fetchFromAirtable`,
+  `fetchAirtablePage`, `fetchAirtableRecord`); polling-kadens 60s.
 - **Fas E-krav.** Postgres har ingen jämförbar per-bas-throttle; Supabase-adaptern MÅSTE inte
   längre kadens-budgetera mot 5 req/s. Connection-pool-gränser ersätter rate-limit-disciplinen.
   Test-parallellisering blir därmed en fråga om maskinresurser, inte om en leverantörskvot.
@@ -491,3 +500,4 @@ detalj, åtgärds-rekommendation och live-stickprov.
 |---|---|
 | 2026-06-21 | **Session 26 — initial skörd.** Dokumentet skapat ur Pass 1-råskörden (45 verifierade, fil:rad-belagda poster): 25 plattform-poster (grupperade A–E) + 15 data-instans-fällor (sammanfattade, pekar till data-model) + allvarlighets-axel (3 tyst-korruption-poster märkta). Klassningsbeslut applicerade: O1 + O3 utelämnade, O2 → underrad P25, O4 → data-instans (hypotes-flagga bevarad), O5 → P19 ("kräver escaping"). |
 | 2026-07-27 | **Session 91 — sektion F, testbarhet och miljö-isolering** (Marcus order: dokumentet ska bära ALLA Airtable-tvingade kompromisser). Två nya plattform-poster: **P26** (ingen bas-duplicering via API — per-körning-isolering strukturellt omöjlig; två oberoende spärrar) och **P27** (icke-självhostbar — efemär backend otillgänglig; precedent-rymden tom). **P4 utvidgad** med två manifestationer: att 5 req/s-taket är DELAT och därmed gör test-shardning verkningslös även med perfekt isolering, samt en ⚠️ **öppen avvikelse** — klienten väntar 1 s efter 429 där dokumentationen kräver 30 s (tre ställen i `airtable-client.ts`; ej åtgärdad, ej trådförd). Beläggen fanns sedan 2026-07-26 i tre research-pass men saknade katalogpost; gränsdragningen tvång kontra eget val bor i [ADR-063 § S91-not](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md). Plattform-poster nu 27, grupperade A–F. |
+| 2026-07-31 | **`TASK-53` (commit `123dbca`) — P4:s öppna avvikelse STÄNGD.** 1 s-backoffen efter 429 ersatt av Airtable-konform väntan i en egen mekanism ([`_shared/airtable-retry.ts`](../../supabase/functions/_shared/airtable-retry.ts)), delad av alla tre call-sites: exponentiellt från 30 s med additiv jitter och tak på 2 omförsök (härlett ur Supabase Edge Functions 150 s idle timeout — ett tredje omförsök hade gett 504). Verifierad med mockat 429-enhetstest som mäter faktisk väntetid; skarp framkallning valdes bort eftersom kvoten är delad (P26). Posten är därmed den första i katalogen som gått från öppen avvikelse till åtgärdad — noten behålls som historik, inte som skuld. |
