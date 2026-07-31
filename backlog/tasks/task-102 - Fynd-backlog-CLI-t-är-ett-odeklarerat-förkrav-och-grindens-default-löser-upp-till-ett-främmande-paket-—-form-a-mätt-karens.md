@@ -3,10 +3,10 @@ id: TASK-102
 title: >-
   Fynd: backlog-CLI:t är ett odeklarerat förkrav och grindens default löser upp
   till ett främmande paket — form (a) + mätt karens
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 08:21'
-updated_date: '2026-07-31 08:36'
+updated_date: '2026-07-31 08:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -57,12 +57,16 @@ CI-wiringen av grinden ingår INTE — `.github/workflows/**` ägs av en systera
 - [x] #9 Ställningstagande till --ignore-scripts och min-release-age redovisat med utfall, även där svaret blir nej
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+T107 löst på Marcus beslut 2026-07-31: "Kör (a), och mät karens-fönstret i samma pass." backlog.md@1.47.1 pinnad som devDependency, BACKLOG_CMD pekad på node_modules/.bin/backlog. NAMNKOLLISIONEN LÖST STRUKTURELLT: npx backlog löste inte upp till backlog.md utan till backlog@1.4.56 — ett annat paket av en annan författare, som npx auto-installerar utan att fråga när stdin inte är en TTY, vilket den aldrig är i CI. Lockfilen bär äkta integrity (sha512) och samtliga sex plattformsvarianter, linux-x64 inkluderad. audit-ci exit 0 på alla tre nivåer. Grinden blev 34 procent snabbare (211,8 s -> 139,4 s). KARENSEN 24 h är MÄTT, inte härledd: n=91 kort ur git-historiken, och 24 h är inte en percentil utan mitt på en platå där 19-28 h ger identiskt utfall (11 av 91 fälls). 12 h fäller 20/91; 48 h fäller 1/91 och neutraliserar grinden. Underlagets svaghet står öppet: 22 av 91 punkter kommer ur EN klumpstängning och är inte oberoende. TVÅ KORRIGERINGAR AV RESEARCH-PASSET, båda mätta: --ignore-scripts är INTE gratis (repots postinstall wirar pre-commit-hooken via core.hooksPath; en repo-vid .npmrc hade tyst slutat göra det) och min-release-age FINNS INTE i npm 11.8.0. Tidszonen mätt: updated_date skrivs i UTC, brytpunkten räknas med date -u — sätt inte TZ i workflowen. AGENTENS EGET MÄTFEL, fångat: git log --name-status citerar sökvägar med icke-ASCII, vilket tappade 145 av 179 kort — och utfallet SÅG trovärdigt ut (n=23, rimlig fördelning). Rättat med core.quotePath=false. CI-wiringen kräver TVÅ tillägg och ingår INTE här: sviten till ci.yml, grinden till nightly.yml med npm ci, plus att larmkedjan skiljer exit 1 (drift) från exit 2 (anropsfel). T107 får därför INTE stängas på detta kort ensamt. Landad #509 (154acca), merge_group grön (30b09422).
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

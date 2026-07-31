@@ -3,10 +3,10 @@ id: TASK-100
 title: >-
   Fynd: restlistans kontroll 1 ger falska statuspåståenden — DONE-listan
   förorenas och blockets bärare härleds fel
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 07:50'
-updated_date: '2026-07-31 08:07'
+updated_date: '2026-07-31 08:58'
 labels:
   - ready-for-agent
 dependencies: []
@@ -116,10 +116,16 @@ fungerar inte inuti kod-spans; stycket omskrivet). check-backlog-closure.sh
 exit 0, 173 kort, 0 inkonsistenta.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Restlistans kontroll 1 lagad — den gav falska statuspåståenden om kort. FEM defekter, inte de tre orkestreraren rapporterade: (1) DONE-listan förorenades av kort-ID:n som bara NÄMNS i andra korts titlar — TASK-89:s rubrik gjorde TASK-52 "Done" fast den är To Do; (2) varje fet kod-span i ett block antogs vara blockets bärare, så TASK-88:s post fälldes för att den nämner TASK-95; (3) formen såg BARA fet kod-span, vilket gjorde TASK-36.8 och TASK-85 HELT OSYNLIGA — tredje instansen av § Filens egna fel post 8:s klass, där lagningen 2026-07-29 införde en ny blind fläck i samma operation som stängde den förra. Tvåsidigt bevis: noll falska positiva (TASK-52 och TASK-95 borta ur utdatan), fortsatt fällning av TASK-36.8 som ÄKTA fel — inget planterat behövdes — och mutation per bärargren, alla tre fäller. OKLAR-klassen införd hellre än en bredare regex: TASK-85:s form är syntaktiskt IDENTISK med en post där ID:t är ett rent nämnande, så räckvidden redovisas i stället för att gissas. Kroppen städad (TASK-86/87/89 flyttade); TASK-36.8 och TASK-85 lämnade agenten medvetet åt orkestreraren eftersom deras sakinnehåll kräver bedömning — flyttade 2026-07-31 i #512. Landad #503 (1c51a5a), merge_group grön (01935f7e).
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

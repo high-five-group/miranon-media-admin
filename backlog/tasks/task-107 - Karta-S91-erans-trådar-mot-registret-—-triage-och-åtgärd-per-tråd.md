@@ -1,10 +1,10 @@
 ---
 id: TASK-107
 title: 'Karta: S91-erans trådar mot registret — triage och åtgärd per tråd'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 08:36'
-updated_date: '2026-07-31 08:46'
+updated_date: '2026-07-31 08:59'
 labels: []
 dependencies: []
 ordinal: 180000
@@ -51,10 +51,16 @@ MOOT-BELAGG (rapporterade, ej andrade - registret ar forbjuden fil):
 - T64: TASK-16 Done 2026-07-19 med egen secret STAGING_AIRTABLE_TOKEN least-privilege scopad till staging - det ar exakt tradens Marcus-vagval; ADR-060 p5 ERSATT.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Trådregistret kartlagt mot S91-scopet på Marcus order ("Detta behöver vara kartlagt innan nästa resume"). Kartan bor i tasks/threads/S91-tradkarta-2026-07-31.md. S91-ERAN ÄR T100-T109, TIO TRÅDAR — inte T90-T109 som orkestreraren gissade. Härledd ur två oberoende källor: sessionsdokets ingångstillstånd (som räknar T100 som nästa lediga och bokför T99 som redan förbrukad) plus introducerande commit per registerrad via git log -S. T99 mintades 11:38, i glappet mellan S90:s stängning och S91:s sessionsdok. Ingen tidigare tråd fick innehåll i S91 — de tolv plus-raderna i registerdiffen är T74/T79 som bara flyttades vid en sortering. ÅTGÄRDSKLASSER: minta kort 1 (T103) · behöver research 2 (T108, T109) · väntar på Marcus 1 (T100) · vilande med skäl 4 (T101, T102, T106, T107) · redan stängd och verifierad 2 (T104, T105) · STÄNG: NOLL. Ingen S91-tråd är färdig-och-verkställd. T87 är kartans nav — T101, T102 och T106 pekar alla på den; blockeraren TASK-55 är Done, triggern är Marcus. DE 68 PAUSADE: 16 relevanta för S91, 3 MOOT belagt mot disk (T14, T37, T64), 49 levande utanför S91. AGENTEN RÄTTADE SIN EGEN SLUTSATS: T102 såg ut som stäng-kandidat eftersom tre kort rapporterar att instabiliteten uteblev — men skälet är strukturellt i alla tre, ingen av deras filer bär en skärmdumps-jämförelse (toHaveScreenshot i NOLL acceptance-filer). Fenomenet är lika oprövat som vid registreringen. Egna luckor deklarerade i § 6 i stället för gissade. Landad #510 (78e08b8), merge_group grön (3657f105).
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
