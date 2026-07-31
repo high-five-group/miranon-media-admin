@@ -1,0 +1,197 @@
+#!/usr/bin/env bash
+# check-thread-index.sh — validerar tråd-registrets INDEX (tabellen i
+# tasks/threads/README.md). Komplement till scripts/check-lifecycle.sh.
+#
+# VARFÖR DEN FINNS — TÄCKNINGS-LUCKAN, MÄTT (TASK-108, 2026-07-31):
+#   check-lifecycle.sh validerar tråd-KORT (tasks/threads/T*.md) och deras
+#   fält↔index-konsistens. Den loopar över FILER och hoppar tyst över varje
+#   fil som saknar lifecycle:-fältet (dess rad 94, frånvaro=skip per ADR-052
+#   beslut 6 — korrekt för sin egen invariant, men konsekvensen är en lucka).
+#   Mätt vid byggtillfället: 21 trådfiler varav 8 saknar fältet, och 88 av
+#   109 trådar har ingen fil alls. Faktisk täckning: 13 av 109 = 11,9 %.
+#   Registrets EGEN integritet — numrering, radform, tillstånds-kolumn —
+#   validerades av ingenting.
+#   Det är restlistans farligaste klass: en kontroll som tyst inte täcker en
+#   radklass läses som täckande. check-docs.sh kallar grinden "Lifecycle på
+#   sessionsdok + trådkort" och skriptets header säger "validerar även
+#   tråd-kort" — båda sanna, båda smalare än de låter.
+#
+# GRINDEN VALIDERAR (fyra invarianter, ingen överlappar check-lifecycle.sh):
+#   1. RADFORM — varje trådrad har rätt antal kolumner och ett enum-giltigt
+#      tillstånd i tillstånds-kolumnen. Gäller ALLA rader, med eller utan fil.
+#   2. NUMRERING — stigande, inga dubbletter, inga luckor. Registret har
+#      historik av omkastade rader (T74/T73 + T79/T78, rättade 2026-07-29).
+#   3. INDEX → FIL — en rad som länkar en trådfil pekar på en fil som finns.
+#   4. FIL → INDEX — varje trådfil har en rad i indexet. Detta är den klass
+#      check-lifecycle.sh ser för 13 filer och missar för 8.
+#
+# MEDVETET UTANFÖR SCOPE (ej glömda kontroller):
+#   (a) TILLSTÅNDSDRIFT fil↔index — ägs av check-lifecycle.sh rad 108–129.
+#       Att duplicera den vore två grindar med rätt att säga emot varandra.
+#   (b) updated:-stämpelns färskhet mot git-historik — T20:s domän, och den
+#       kräver git-historik som en shallow CI-checkout inte garanterat har.
+#       En grind vars utfall beror på klon-djup är en falsk-röd-fabrik.
+#   (c) Innehållets SANNING (att ett stängningsskäl håller, att ett
+#       kort-påstående stämmer mot backlog-CLI:t) — det är omdöme mot en
+#       extern källa, inte en filinvariant. Bärs av kort, inte av grind.
+#
+# Idiom speglar scripts/check-lifecycle.sh (EXIT_CODE-ackumulering,
+# set -euo pipefail, explicit exit). Som check-skripten i detta repo förlitar
+# sig grinden på cwd=repo-root (ingen cd) — CI kör från repo-roten; testsviten
+# cd:ar in i sin sandbox före anrop.
+#
+# Exit 0 om indexet passerar alla fyra invarianter. Exit 1 vid drift.
+#
+# Källa: docs/decisions/ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md
+# Etablerad: TASK-108 (2026-07-31)
+
+set -euo pipefail
+
+POLICY_FILE="${THREAD_INDEX_POLICY_FILE:-.thread-index-policy.conf}"
+if [[ ! -f "${POLICY_FILE}" ]]; then
+    echo "❌ policy-filen ${POLICY_FILE} saknas — grinden är config-driven (Lesson #6)"
+    echo "   Fix: återställ ${POLICY_FILE} i repo-roten."
+    exit 1
+fi
+
+# Deklarera FÖRE source. shellcheck kan inte spåra variabler över filgränser
+# (SC2154); husets mönster är förhandsdeklaration plus explicit tomhetskontroll
+# efteråt — se scripts/check-permissions-claims.sh rad 36–50. Kontrollen är inte
+# bara shellcheck-kosmetik: en conf som tappat en nyckel ska fälla med ett tydligt
+# besked, inte tyst validera mot en tom sträng och rapportera grönt.
+THREAD_INDEX=""
+THREAD_CARD_GLOB=""
+THREAD_ID_PREFIX=""
+THREAD_COLUMN_COUNT=0
+THREAD_STATE_COLUMN=0
+declare -a THREAD_VALID_STATES=()
+
+# shellcheck source=/dev/null
+source "${POLICY_FILE}"
+
+die_conf() { echo "❌ ${POLICY_FILE}: $1"; exit 1; }
+[[ -n "${THREAD_INDEX}" ]] || die_conf "THREAD_INDEX är tom"
+[[ -n "${THREAD_CARD_GLOB}" ]] || die_conf "THREAD_CARD_GLOB är tom"
+[[ -n "${THREAD_ID_PREFIX}" ]] || die_conf "THREAD_ID_PREFIX är tom"
+[[ "${THREAD_COLUMN_COUNT}" -gt 0 ]] || die_conf "THREAD_COLUMN_COUNT måste vara > 0"
+[[ "${THREAD_STATE_COLUMN}" -gt 0 ]] || die_conf "THREAD_STATE_COLUMN måste vara > 0"
+[[ "${#THREAD_VALID_STATES[@]}" -gt 0 ]] || die_conf "THREAD_VALID_STATES är tom"
+
+EXIT_CODE=0
+BT='`'  # backtick-token för förankrad (ej bar-substräng) matchning
+
+if [[ ! -f "${THREAD_INDEX}" ]]; then
+    echo "❌ indexet ${THREAD_INDEX} saknas (bruten ryggrad)"
+    echo "   Fix: återställ ${THREAD_INDEX} (registrets navigerbara ryggrad)."
+    exit 1
+fi
+
+# Pipe-antal = kolumner + 1 (tabellraden inleds OCH avslutas med pipe).
+EXPECTED_PIPES=$((THREAD_COLUMN_COUNT + 1))
+# awk -F'|' på "| a | b |" ger $1="" → innehålls-kolumn N ligger i fält N+1.
+STATE_FIELD=$((THREAD_STATE_COLUMN + 1))
+# Länkarna i indexet är relativa indexfilens katalog. Beräknas EN gång här och
+# inte per rad: värdet beror inte på loopvariabeln, och shellcheck läser dessutom
+# en kommandosubstitution på indexfilen inuti dess egen läs-loop som möjlig
+# samtidig skrivning (SC2094).
+INDEX_DIR="$(dirname "${THREAD_INDEX}")"
+
+# ── Inv 1 + 2: radform, enum, numrering ──────────────────────────────────────
+PREV_NUM=0
+PREV_ID=""
+SEEN_ANY=0
+LINE_NO=0
+
+while IFS= read -r line; do
+    LINE_NO=$((LINE_NO + 1))
+
+    # En trådrad känns igen på backtickat ID i kolumn 1. Rader som inte
+    # matchar är rubriker, prosa eller not-blockquotes → ej vår yta.
+    if [[ ! "${line}" =~ ^\|[[:space:]]*${BT}${THREAD_ID_PREFIX}([0-9]+)${BT}[[:space:]]*\| ]]; then
+        continue
+    fi
+    TID="${THREAD_ID_PREFIX}${BASH_REMATCH[1]}"
+    # Ledande nollor bort så T01 jämförs som 1 (10#-prefix = tvinga bas 10).
+    NUM=$((10#${BASH_REMATCH[1]}))
+    SEEN_ANY=1
+
+    # (1a) kolumnantal — en extra pipe i titeln förskjuter tillstånds-kolumnen
+    PIPES="${line//[^|]/}"
+    if [[ "${#PIPES}" -ne "${EXPECTED_PIPES}" ]]; then
+        echo "❌ ${THREAD_INDEX}:${LINE_NO} — ${TID} har ${#PIPES} pipe-tecken (förväntat ${EXPECTED_PIPES}, dvs ${THREAD_COLUMN_COUNT} kolumner)"
+        echo "   Fix: escapa pipe-tecken i titel/ingång som \\| — annars läser varje maskinell läsare fel kolumn."
+        EXIT_CODE=1
+        continue
+    fi
+
+    # (1b) enum-giltigt tillstånd i RÄTT kolumn (ej var som helst på raden —
+    #      prosan nämner tillstånds-orden ofta, och en bar substrängs-matchning
+    #      hade räknat dem som tillstånd).
+    STATE_RAW=$(printf '%s' "${line}" | cut -d'|' -f"${STATE_FIELD}")
+    STATE="${STATE_RAW//[[:space:]]/}"
+    STATE="${STATE//${BT}/}"
+    state_ok=0
+    for v in "${THREAD_VALID_STATES[@]}"; do
+        [[ "${STATE}" == "${v}" ]] && state_ok=1
+    done
+    if [[ "${state_ok}" -eq 0 ]]; then
+        echo "❌ ${THREAD_INDEX}:${LINE_NO} — ${TID} har tillstånd '${STATE}' i kolumn ${THREAD_STATE_COLUMN} (förväntat: ${THREAD_VALID_STATES[*]})"
+        echo "   Fix: sätt ett enum-giltigt tillstånd, backtickat: ${BT}paused${BT}"
+        EXIT_CODE=1
+    fi
+    # Tillstånds-token får inte stå backtickad i kolumn 3 mer än en gång
+    if [[ "${STATE_RAW}" != "${STATE_RAW/${BT}${STATE}${BT}*${BT}${STATE}${BT}/}" ]]; then
+        echo "❌ ${THREAD_INDEX}:${LINE_NO} — ${TID} har flera tillstånds-token i kolumn ${THREAD_STATE_COLUMN}"
+        EXIT_CODE=1
+    fi
+
+    # (2) numrering: stigande, ingen dubblett, ingen lucka
+    if [[ "${NUM}" -eq "${PREV_NUM}" ]]; then
+        echo "❌ ${THREAD_INDEX}:${LINE_NO} — ${TID} är en DUBBLETT av föregående rad"
+        echo "   Fix: två trådar kan inte dela nummer — ge den senare ett eget."
+        EXIT_CODE=1
+    elif [[ "${NUM}" -lt "${PREV_NUM}" ]]; then
+        echo "❌ ${THREAD_INDEX}:${LINE_NO} — ${TID} står EFTER ${PREV_ID} (omkastad ordning)"
+        echo "   Fix: sortera raderna stigande. Precedent: T74/T73 + T79/T78, rättade 2026-07-29."
+        EXIT_CODE=1
+    elif [[ "${NUM}" -gt $((PREV_NUM + 1)) ]] && [[ "${PREV_NUM}" -ne 0 ]]; then
+        echo "❌ ${THREAD_INDEX}:${LINE_NO} — LUCKA mellan ${PREV_ID} och ${TID}"
+        echo "   Fix: ett hoppat nummer betyder antingen en förlorad rad eller en felnumrerad tråd. Avgör vilket."
+        EXIT_CODE=1
+    fi
+    PREV_NUM="${NUM}"
+    PREV_ID="${TID}"
+
+    # (3) index → fil: en länkad trådfil måste finnas
+    if [[ "${line}" =~ \(([^\)]*${THREAD_ID_PREFIX}[0-9]+-[^\)]*\.md)\) ]]; then
+        TARGET="${BASH_REMATCH[1]}"
+        if [[ "${TARGET}" != */* ]] && [[ ! -f "${INDEX_DIR}/${TARGET}" ]]; then
+            echo "❌ ${THREAD_INDEX}:${LINE_NO} — ${TID} länkar ${TARGET} som inte finns"
+            echo "   Fix: skapa filen, eller ersätt länken med radens egen text."
+            EXIT_CODE=1
+        fi
+    fi
+done < "${THREAD_INDEX}"
+
+if [[ "${SEEN_ANY}" -eq 0 ]]; then
+    echo "❌ ${THREAD_INDEX} — noll trådrader hittades (indexet är tomt eller tabellformen har ändrats)"
+    echo "   Fix: en tom tabell är alltid ett fel här; registret är systemets ryggrad."
+    EXIT_CODE=1
+fi
+
+# ── Inv 4: fil → index ───────────────────────────────────────────────────────
+# Detta är klassen check-lifecycle.sh ser för filer MED lifecycle:-fält och
+# tyst hoppar över för filer utan. Här gäller den varje trådfil.
+for file in ${THREAD_CARD_GLOB}; do
+    [[ -e "${file}" ]] || continue
+    TID=$(basename "${file}" | grep -oE "^${THREAD_ID_PREFIX}[0-9]+" || echo "")
+    [[ -z "${TID}" ]] && continue
+    if ! grep -qF "${BT}${TID}${BT}" "${THREAD_INDEX}"; then
+        echo "❌ ${file} — ${TID} saknas i indexet ${THREAD_INDEX} (föräldralös trådfil, ej navigerbar)"
+        echo "   Fix: lägg en rad för ${TID} i indexet (Tråd-ID | Titel | Tillstånd | Ingång)."
+        EXIT_CODE=1
+    fi
+done
+
+[[ "${EXIT_CODE}" -eq 0 ]] && echo "✅ tråd-index OK (radform + enum + numrering + index↔fil)"
+exit "${EXIT_CODE}"
