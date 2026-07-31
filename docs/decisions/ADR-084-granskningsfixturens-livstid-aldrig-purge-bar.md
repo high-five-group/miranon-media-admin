@@ -276,9 +276,13 @@ tidigt" till "städas för sent", och det senare valdes medvetet · beslut 1 är
 **prosa, inte mekanism** i denna ADR:s mening: ingen grind hindrar någon från att
 lägga targeten i policyfilen. Det som fångar felet är att `seed:review` slutar
 fungera vid nästa körning — en indirekt, fördröjd signal, inte en spärr ·
-`Event-796` (10 poster, Ort `Skövde`) står kvar i staging: den är räknad,
-dry-run-verifierad och ett kommando bort, men Marcus godkännande 2026-07-30 löd
-ordagrant *"Angående task-88"* och täcker den inte.
+`Event-796` (10 poster, Ort `Skövde`) bar samma skuld och **städades 2026-07-31**,
+medan denna ADR skrevs: Marcus utvidgade mandatet samma dag (*"I staging-basen
+kan du göra vad du vill"*), och legacy-registrets väg raderade 6 anmälningar,
+3 personer och 1 event med efter-verifiering **0 radera-bara rader kvar**. Den
+skuld beslutet adresserar är inte att fixturen gick att städa — det gick den hela
+tiden — utan att den låg kvar i **nio dygn** utan att någon mekanism kunde veta
+att granskningen var slut.
 
 ## Ärlighet om underlaget
 
