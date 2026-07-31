@@ -121,3 +121,43 @@ Noteringar om syntax: Biome 2.2+ vill ha `!supabase/functions` utan trailing `/*
 - `supabase/functions/**` — Deno-kod (kopierad rakt av från Vue-repot)
 - [ADR-001](ADR-001-biome-over-eslint-stylelint-prettier.md) — kontext för Biome-valet
 - Biome `useBiomeIgnoreFolder` rule (nursery) — syntaxvägledningen
+
+## Updates
+
+### 2026-07-31 — Två premisser mätt falska; beslutet står, på andra ben (S91 Del 38, `TASK-103`)
+
+`TASK-103`-researchen körde repots egen Biome **2.5.4** mot de 39 Deno-filerna
+med exkluderingen borttagen (scratchpad-config; `biome.json` orörd). Två
+påståenden i texten ovan höll inte mot mätningen, och rivs här öppet i stället
+för tyst:
+
+**Premiss 1 — att Biome tolkar `https:`-imports som relativa paths och
+försöker resolva på disk (Kontext punkt 1).** Falsifierad för Biome: alla 39
+filer parsades utan ett enda fel, och **inga** diagnostiker gällde
+`https:`-importerna eller `Deno`-globalen — Biome resolvar inte imports alls i
+det här läget. TypeScript-halvan av samma mening står däremot kvar:
+`airtable-client.ts` utanför alla `tsconfig`-program ger 7×
+`TS2304: Cannot find name 'Deno'`, mätt med sond. Om påståendet höll för
+beslutsdagens Biome-version är inte omprövat; för 2.5.4 är det falskt.
+
+**Premiss 2 — att alternativ 2 föll på att "Biome 2.x `overrides`-syntax är
+inte lika mogen som ESLints".** Falsifierad: en `overrides`-post med
+`includes: ["**/supabase/functions/**"]` som stänger `useLiteralKeys` +
+`noNonNullAssertion` tar bort 143 infos och 2 warnings, exakt som avsett.
+Avfärdandets andra halva står: Biome typkontrollerar inte, så
+`Cannot find name 'Deno'`-klassen löses inte av `overrides` — den löses av att
+`deno check` gör jobbet.
+
+**Beslutet rivs INTE — men det bär idag på andra ben än de två ovan.** Samma
+pass belade att exkluderingen är det etablerade mönstret (Supabase CLI
+scaffoldar själv skiljelinjen vid `supabase init`; samtliga fem precedent-repon
+i passet gör samma sak), och att Biome strukturellt saknar Deno-domänen: ingen
+typkontroll, ingen modulgraf, inga Deno-specifika regler. Det öppna hålet är
+oförändrat Fas 7-åtagandet — Denos halva av grinden (`deno lint` +
+`deno check`) är fortfarande inte kopplad, så de 39 filerna grindas av
+ingenting.
+
+Mätningarna och precedenterna:
+[`task-103-deno-verktygskedjan-i-node-repo-2026-07-31.md`](../research/task-103-deno-verktygskedjan-i-node-repo-2026-07-31.md)
+§ 5 (landad `4181cbe`); falsifieringen bokförd i S91:s nittonde paus-block.
+Beslutstexten ovan bevaras oförändrad (immutabilitet).
