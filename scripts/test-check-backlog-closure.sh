@@ -25,6 +25,17 @@ trap 'rm -rf "${TMP}"' EXIT
 # projektets etikettnamn tyst ändrat vad testerna påstår sig bevisa.
 ETIKETT="intentionally-open"
 
+# Karensen som fixtur-policyn deklarerar. Sviten sätter den SJÄLV av samma skäl
+# som etiketten: ärvdes den från repots policy hade ett byte av projektets
+# karens tyst ändrat vad testerna påstår sig bevisa.
+KARENS_H=24
+
+# Tidsstämplar för karens-fallen. Kortens tidsstämplar skrivs i UTC, så FARSK
+# räknas i UTC — annars hade en maskin i CEST fått en "färsk" stämpel som ligger
+# två timmar i framtiden och testet blivit sant av fel skäl.
+GAMMAL="2020-01-01 00:00"
+FARSK="$(date -u +'%Y-%m-%d %H:%M')"
+
 PASS=0
 FAIL=0
 
@@ -51,12 +62,28 @@ STUB
     chmod +x "${dir}/backlog"
 }
 
+# Ger en fixtur en GAMMAL tidsstämpel om den inte redan bär en egen.
+#
+# VARFÖR DEFAULTEN ÄR GAMMAL OCH INTE FÄRSK: varje test som fanns före karensen
+# prövar en invariant, inte ett tidsfönster. En färsk default hade satt dem alla
+# innanför karensen och gjort dem gröna av fel skäl — sviten hade fortsatt visa
+# 30 gröna medan den slutat pröva det den påstår. En gammal default håller varje
+# äldre test på exakt den fråga det ställdes för, och karens-fallen nedan sätter
+# sin stämpel explicit.
+med_tid() {
+    if grep -qE '^(Updated|Created):' <<< "$1"; then
+        printf '%s\n' "$1"
+    else
+        printf 'Updated: %s\n%s\n' "${GAMMAL}" "$1"
+    fi
+}
+
 # Bygger fixtur-katalog + stub + policy. $1 = katalog, därefter PAR av: id innehåll
 bygg_fixturer() {
     local d="$1"; shift
     mkdir -p "${d}/fixturer"
     while [[ "$#" -ge 2 ]]; do
-        printf '%s\n' "$2" > "${d}/fixturer/$1.txt"
+        med_tid "$2" > "${d}/fixturer/$1.txt"
         shift 2
     done
     skapa_stub "${d}"
@@ -64,6 +91,7 @@ bygg_fixturer() {
         printf 'BACKLOG_KLAR_STATUS="Done"\n'
         printf 'BACKLOG_UNDANTAGNA_STATUSAR=""\n'
         printf 'BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="%s"\n' "${ETIKETT}"
+        printf 'BACKLOG_KARENS_TIMMAR="%s"\n' "${KARENS_H}"
     } > "${d}/policy.conf"
 }
 
@@ -113,8 +141,8 @@ prova_policy() {
     local namn="$1" policy="$2" vantad="$3" monster="$4"
     local d="${TMP}/policy-$$-${RANDOM}"
     mkdir -p "${d}/fixturer"
-    printf 'Status: ✔ Done\n%s\n- [x] #1 ett\n%s\n- [x] #1 dod\n' \
-        "${AC_HDR}" "${DOD_HDR}" > "${d}/fixturer/1.txt"
+    printf 'Updated: %s\nStatus: ✔ Done\n%s\n- [x] #1 ett\n%s\n- [x] #1 dod\n' \
+        "${GAMMAL}" "${AC_HDR}" "${DOD_HDR}" > "${d}/fixturer/1.txt"
     skapa_stub "${d}"
     printf '%s\n' "${policy}" > "${d}/policy.conf"
     kor_fixtur "${d}"
@@ -229,10 +257,11 @@ ${DOD_HDR}
 # ── Undantagna statusar ──────────────────────────────────────────────────────
 d="${TMP}/undantag"
 mkdir -p "${d}/fixturer"
-printf 'Status: ✖ Cancelled\n%s\n- [x] #1 ett\n%s\n- [x] #1 dod\n' "${AC_HDR}" "${DOD_HDR}" > "${d}/fixturer/1.txt"
+printf 'Updated: %s\nStatus: ✖ Cancelled\n%s\n- [x] #1 ett\n%s\n- [x] #1 dod\n' \
+    "${GAMMAL}" "${AC_HDR}" "${DOD_HDR}" > "${d}/fixturer/1.txt"
 skapa_stub "${d}"
-printf 'BACKLOG_KLAR_STATUS="Done"\nBACKLOG_UNDANTAGNA_STATUSAR="Cancelled"\nBACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="%s"\n' \
-    "${ETIKETT}" > "${d}/policy.conf"
+printf 'BACKLOG_KLAR_STATUS="Done"\nBACKLOG_UNDANTAGNA_STATUSAR="Cancelled"\nBACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="%s"\nBACKLOG_KARENS_TIMMAR="%s"\n' \
+    "${ETIKETT}" "${KARENS_H}" > "${d}/policy.conf"
 if BACKLOG_CMD="${d}/backlog" BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" >/dev/null 2>&1; then
     echo "  ✓ T8  undantagen status fäller inte invariant 1"
     PASS=$((PASS + 1))
@@ -248,8 +277,8 @@ fi
 d="${TMP}/tomt"
 mkdir -p "${d}/fixturer"
 skapa_stub "${d}"
-printf 'BACKLOG_KLAR_STATUS="Done"\nBACKLOG_UNDANTAGNA_STATUSAR=""\nBACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="%s"\n' \
-    "${ETIKETT}" > "${d}/policy.conf"
+printf 'BACKLOG_KLAR_STATUS="Done"\nBACKLOG_UNDANTAGNA_STATUSAR=""\nBACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="%s"\nBACKLOG_KARENS_TIMMAR="%s"\n' \
+    "${ETIKETT}" "${KARENS_H}" > "${d}/policy.conf"
 kod=0
 ut=""
 ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
@@ -415,11 +444,16 @@ ${DOD_HDR}
 # hade alltså rapporterat en trasig konfiguration som ett inkonsistent KORT.
 POLICY_FULL='BACKLOG_KLAR_STATUS="Done"
 BACKLOG_UNDANTAGNA_STATUSAR=""
-BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="'"${ETIKETT}"'"'
+BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="'"${ETIKETT}"'"
+BACKLOG_KARENS_TIMMAR="24"'
 
+# Varje ofullständig policy nedan bär ALLA ÖVRIGA variabler. Annars hade testet
+# kunnat passera på fel grund: två saknade variabler ger också exit 2, och
+# mönster-kontrollen är det enda som skiljer orsakerna åt.
 prova_policy "T23 policy utan etikett-variabeln -> exit 2 (anropsfel)" \
     'BACKLOG_KLAR_STATUS="Done"
-BACKLOG_UNDANTAGNA_STATUSAR=""' \
+BACKLOG_UNDANTAGNA_STATUSAR=""
+BACKLOG_KARENS_TIMMAR="24"' \
     2 'BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT'
 
 prova_policy "T24 samma fixtur med FULLSTÄNDIG policy -> exit 0" \
@@ -427,14 +461,32 @@ prova_policy "T24 samma fixtur med FULLSTÄNDIG policy -> exit 0" \
 
 prova_policy "T25 policy utan BACKLOG_KLAR_STATUS -> exit 2, inte exit 1" \
     'BACKLOG_UNDANTAGNA_STATUSAR=""
-BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="x"' \
+BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="x"
+BACKLOG_KARENS_TIMMAR="24"' \
     2 'BACKLOG_KLAR_STATUS'
 
 prova_policy "T26 policy med TOM etikett-variabel -> exit 2 (tomt är inte ett val)" \
     'BACKLOG_KLAR_STATUS="Done"
 BACKLOG_UNDANTAGNA_STATUSAR=""
-BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT=""' \
+BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT=""
+BACKLOG_KARENS_TIMMAR="24"' \
     2 'BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT'
+
+# Karensen är obligatorisk av SAMMA skäl som etiketten: dess frånvaro ger falskt
+# rött, inte tyst grönt. Ett tyst default på 0 hade gjort den farligaste
+# konfigurationen till den som inte syns.
+prova_policy "T31 policy utan BACKLOG_KARENS_TIMMAR -> exit 2 (anropsfel)" \
+    'BACKLOG_KLAR_STATUS="Done"
+BACKLOG_UNDANTAGNA_STATUSAR=""
+BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="'"${ETIKETT}"'"' \
+    2 'BACKLOG_KARENS_TIMMAR'
+
+prova_policy "T32 karens som inte är ett heltal -> exit 2, aldrig tyst 0" \
+    'BACKLOG_KLAR_STATUS="Done"
+BACKLOG_UNDANTAGNA_STATUSAR=""
+BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="'"${ETIKETT}"'"
+BACKLOG_KARENS_TIMMAR="24h"' \
+    2 'BACKLOG_KARENS_TIMMAR'
 
 # ── Täcknings-redovisningen — den VALDA formen för 0-AC-utan-barn ────────────
 # Kortet utan AC och utan barn fälls INTE, men får inte heller försvinna tyst:
@@ -469,6 +521,260 @@ ${AC_HDR}
 - [x] #1 ett
 ${DOD_HDR}
 - [x] #1 dod"
+
+# ── KARENSEN — det tvåsidiga beviset (TASK-102) ──────────────────────────────
+#
+# Grinden fäller på "alla AC bockade + öppet status". Det är EXAKT det tillstånd
+# varje bygg-agents kontrakt KRÄVER: agenten bockar AC men får inte sätta Done,
+# eftersom DoD kräver "CI grön per jobb" och den signalen saknas när agenten är
+# klar. Utan karens fäller grinden alltså på korrekta kort — under en niovåg på
+# nio samtidigt.
+#
+# Paret T33/T34 är hela poängen, och det måste vara ett PAR: ett grönt utfall
+# ensamt bevisar ingenting, eftersom en grind som aldrig fäller också är grön.
+
+# $1=namn $2=policy $3=förväntad exit $4=mönster ('' = ingen kontroll)
+#                                     därefter PAR av: id innehåll
+prova_policy_flera() {
+    local namn="$1" policy="$2" vantad="$3" monster="$4"; shift 4
+    local d="${TMP}/pf-$$-${RANDOM}"
+    bygg_fixturer "${d}" "$@"
+    printf '%s\n' "${policy}" > "${d}/policy.conf"   # ersätter default-policyn
+    kor_fixtur "${d}"
+    local ok=0
+    if [[ "${SISTA_KOD}" -eq "${vantad}" ]]; then
+        if [[ -z "${monster}" ]] || grep -qE "${monster}" <<< "${SISTA_UT}"; then ok=1; fi
+    fi
+    rapportera "${ok}" "${namn}" "väntade exit ${vantad} + /${monster}/, fick exit ${SISTA_KOD}"
+}
+
+LEVERERAT="Status: ○ To Do
+${AC_HDR}
+- [x] #1 ett
+- [x] #2 två
+${DOD_HDR}
+- [ ] #1 dod"
+
+prova "T33 nyss levererat kort (alla AC bockade, INOM karens) -> passerar" 0 \
+"Updated: ${FARSK}
+${LEVERERAT}"
+
+prova "T34 SAMMA kort men bortom karensen -> FÄLLER (det är glömt)" 1 \
+"Updated: ${GAMMAL}
+${LEVERERAT}"
+
+# Karensen undantar BÅDA öppet-kort-invarianterna, precis som etiketten gör.
+prova_flera "T35 förälder + alla barn Done men föräldern INOM karens -> passerar" 0 \
+    1 "Updated: ${FARSK}
+${FORALDER_UTAN_AC}" \
+    1.1 "${BARN_KLART}" \
+    1.2 "${BARN_KLART}"
+
+prova_flera "T36 samma förälder bortom karensen -> FÄLLER" 1 \
+    1 "Updated: ${GAMMAL}
+${FORALDER_UTAN_AC}" \
+    1.1 "${BARN_KLART}" \
+    1.2 "${BARN_KLART}"
+
+# Invariant 2 har MED FLIT ingen karens: "Done + obockat krav" produceras inte av
+# något korrekt flöde — stängningen bockar DoD och sätter Done i SAMMA CLI-anrop.
+# En karens där hade bara fördröjt upptäckten av ett äkta fel.
+prova "T37 Done + obockat AC INOM karens -> FÄLLER ändå (invariant 2 har ingen karens)" 1 \
+"Updated: ${FARSK}
+Status: ✔ Done
+${AC_HDR}
+- [ ] #1 ett
+${DOD_HDR}
+- [x] #1 dod"
+
+# Karens 0 är ett giltigt val — men bara utskrivet. Då ska ett färskt kort fällas.
+prova_policy_flera "T38 karens=0 -> färskt kort fälls (karensen är avstängbar)" \
+    'BACKLOG_KLAR_STATUS="Done"
+BACKLOG_UNDANTAGNA_STATUSAR=""
+BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="'"${ETIKETT}"'"
+BACKLOG_KARENS_TIMMAR="0"' \
+    1 'TASK-1' \
+    1 "Updated: ${FARSK}
+${LEVERERAT}"
+
+# `Created:`-fallbacken för kort som aldrig redigerats efter skapandet. Paret
+# visar att fallbacken är en RIKTIG tidsstämpel, inte ett tyst undantag.
+prova "T39 endast Created:, gammalt -> bedöms och FÄLLER" 1 \
+"Created: ${GAMMAL}
+${LEVERERAT}"
+
+prova "T40 endast Created:, färskt -> inom karens, passerar" 0 \
+"Created: ${FARSK}
+${LEVERERAT}"
+
+# Ett kort utan läsbar tidsstämpel fälls inte — men får inte försvinna tyst.
+# Samma val som 0-AC-utan-barn: redovisa frånvaron av bevis.
+#
+# FIXTUREN BYGGS FÖR HAND. `bygg_fixturer` ger varje fixtur en gammal tidsstämpel
+# om den saknar egen, vilket är rätt för alla andra test — men hade tagit bort
+# precis det detta test finns för att pröva.
+d="${TMP}/utan-tid-blandat"
+mkdir -p "${d}/fixturer"
+printf 'Updated: %s\nStatus: ✔ Done\n%s\n- [x] #1 ett\n%s\n- [x] #1 dod\n' \
+    "${GAMMAL}" "${AC_HDR}" "${DOD_HDR}" > "${d}/fixturer/1.txt"
+printf 'Status: ○ To Do\n%s\n- [x] #1 ett\n%s\n- [ ] #1 dod\n' \
+    "${AC_HDR}" "${DOD_HDR}" > "${d}/fixturer/2.txt"
+skapa_stub "${d}"
+printf 'BACKLOG_KLAR_STATUS="Done"\nBACKLOG_UNDANTAGNA_STATUSAR=""\nBACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="%s"\nBACKLOG_KARENS_TIMMAR="%s"\n' \
+    "${ETIKETT}" "${KARENS_H}" > "${d}/policy.conf"
+kor_fixtur "${d}"
+if [[ "${SISTA_KOD}" -eq 0 ]] && grep -qE '^  1 utan läsbar tidsstämpel' <<< "${SISTA_UT}"; then
+    echo "  ✓ T41 kort utan tidsstämpel -> fälls inte, redovisas i täckningen"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T41 kort utan tidsstämpel gav inte exit 0 + redovisning (kod=${SISTA_KOD})"
+    while IFS= read -r r; do echo "      ${r}"; done <<< "${SISTA_UT}"
+    FAIL=$((FAIL + 1))
+fi
+
+# Men om INGET kort bär en tidsstämpel har CLI:ts format troligen ändrats, och då
+# hade grinden gått grön utan att pröva någonting. Fail-closed: exit 2.
+d="${TMP}/ingen-tid"
+mkdir -p "${d}/fixturer"
+printf 'Status: ○ To Do\n%s\n- [x] #1 ett\n%s\n- [ ] #1 dod\n' "${AC_HDR}" "${DOD_HDR}" \
+    > "${d}/fixturer/1.txt"
+skapa_stub "${d}"
+printf 'BACKLOG_KLAR_STATUS="Done"\nBACKLOG_UNDANTAGNA_STATUSAR=""\nBACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="%s"\nBACKLOG_KARENS_TIMMAR="%s"\n' \
+    "${ETIKETT}" "${KARENS_H}" > "${d}/policy.conf"
+kod=0
+ut=""
+ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
+if [[ "${kod}" -eq 2 ]] && grep -q 'läsbar tidsstämpel' <<< "${ut}"; then
+    echo "  ✓ T42 inget kort med tidsstämpel -> exit 2 (format-drift), inte tyst grönt"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T42 inget kort med tidsstämpel gav inte exit 2 av rätt orsak (kod=${kod})"
+    FAIL=$((FAIL + 1))
+fi
+
+prova_utskrift "T43 kort inom karens redovisas öppet, aldrig som 'prövat'" 0 \
+    '^  1 inom karens' \
+    1 "Updated: ${FARSK}
+${LEVERERAT}"
+
+# ── date-fallbacken måste hålla i BÅDA formerna (TASK-102) ──────────────────
+#
+# Karensens brytpunkt räknas med `date -u -d @EPOCH` (GNU) och faller tillbaka
+# på `date -u -r EPOCH` (BSD/macOS). Varje maskin kör bara EN av grenarna:
+# macOS tar alltid fallbacken, en ubuntu-runner alltid förstahandsformen. Utan
+# stubbe prövar alltså ingen miljö den gren den inte själv använder — och ett
+# fel i den andra grenen hade synts först i CI, eller aldrig.
+#
+# Stubben tvingar grinden ned i en bestämd gren. Den räknar inte tid själv utan
+# delegerar till /bin/date i den form som råkar finnas, eftersom det som ska
+# bevisas är grindens GRENVAL, inte datumaritmetiken.
+# Stubbarna skrivs med CITERAD heredoc (<<'X'), samma form som skapa_stub ovan.
+# Innehållet ska nå filen ORÖRT — `$1` i stubben är stubbens eget argument, inte
+# sviten. En ociterad heredoc (eller printf med dubbla citattecken) hade expanderat
+# dem här och skrivit en stubbe som läser sviten argument.
+skapa_date_stubbe() {
+    local dir="$1" stil="$2"
+    mkdir -p "${dir}"
+    cat > "${dir}/date" <<'HUVUD'
+#!/usr/bin/env bash
+stampel() { /bin/date -u -d "@$1" +%Y%m%d%H%M 2>/dev/null || /bin/date -u -r "$1" +%Y%m%d%H%M; }
+if [[ "$1" == "-u" && "$2" == "+%s" ]]; then exec /bin/date -u +%s; fi
+HUVUD
+    if [[ "${stil}" == "gnu" ]]; then
+        # GNU: -d @EPOCH fungerar; -r betyder "läs en FILS mtime" och fäller här.
+        cat >> "${dir}/date" <<'GNUGREN'
+if [[ "$1" == "-u" && "$2" == "-d" ]]; then e="${3#@}"; stampel "$e"; exit $?; fi
+if [[ "$1" == "-u" && "$2" == "-r" ]]; then exit 1; fi
+GNUGREN
+    else
+        # BSD: -d finns inte alls ("illegal option -- d"); -r EPOCH fungerar.
+        cat >> "${dir}/date" <<'BSDGREN'
+if [[ "$1" == "-u" && "$2" == "-d" ]]; then exit 1; fi
+if [[ "$1" == "-u" && "$2" == "-r" ]]; then stampel "$3"; exit $?; fi
+BSDGREN
+    fi
+    cat >> "${dir}/date" <<'SVANS'
+exec /bin/date "$@"
+SVANS
+    chmod +x "${dir}/date"
+}
+
+# $1=stil  $2=fixtur-innehåll  $3=förväntad exit  $4=namn
+prova_date_gren() {
+    local stil="$1" innehall="$2" vantad="$3" namn="$4"
+    local d="${TMP}/date-${stil}-$$-${RANDOM}"
+    bygg_fixturer "${d}" 1 "${innehall}"
+    skapa_date_stubbe "${d}/datebin" "${stil}"
+    local kod=0 ut=""
+    ut="$(PATH="${d}/datebin:${PATH}" BACKLOG_CMD="${d}/backlog" \
+          BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
+    SISTA_UT="${ut}"; SISTA_KOD="${kod}"
+    local ok=0
+    [[ "${kod}" -eq "${vantad}" ]] && ok=1
+    rapportera "${ok}" "${namn}" "väntade exit ${vantad}, fick ${kod}"
+}
+
+prova_date_gren gnu "Updated: ${FARSK}
+${LEVERERAT}" 0 "T44 GNU-grenen (date -d @EPOCH): färskt kort -> passerar"
+
+prova_date_gren gnu "Updated: ${GAMMAL}
+${LEVERERAT}" 1 "T45 GNU-grenen: gammalt kort -> FÄLLER"
+
+prova_date_gren bsd "Updated: ${FARSK}
+${LEVERERAT}" 0 "T46 BSD-grenen (date -r EPOCH): färskt kort -> passerar"
+
+prova_date_gren bsd "Updated: ${GAMMAL}
+${LEVERERAT}" 1 "T47 BSD-grenen: gammalt kort -> FÄLLER"
+
+# Faller BÅDA formerna kan brytpunkten inte beräknas. Då kör grinden hellre inte
+# alls än med en gissad karens.
+d="${TMP}/date-trasig"
+bygg_fixturer "${d}" 1 "Updated: ${GAMMAL}
+${LEVERERAT}"
+mkdir -p "${d}/datebin"
+cat > "${d}/datebin/date" <<'TRASIG'
+#!/usr/bin/env bash
+if [[ "$1" == "-u" && "$2" == "+%s" ]]; then exec /bin/date -u +%s; fi
+exit 1
+TRASIG
+chmod +x "${d}/datebin/date"
+kod=0
+ut=""
+ut="$(PATH="${d}/datebin:${PATH}" BACKLOG_CMD="${d}/backlog" \
+      BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
+if [[ "${kod}" -eq 2 ]] && grep -q 'brytpunkt' <<< "${ut}"; then
+    echo "  ✓ T48 ingen date-form fungerar -> exit 2, aldrig en gissad karens"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T48 trasig date gav inte exit 2 av rätt orsak (kod=${kod})"
+    FAIL=$((FAIL + 1))
+fi
+
+# ── Namnkollisionen får aldrig krypa tillbaka in i defaulten (TASK-102) ──────
+#
+# `npx backlog` löser upp till paketet `backlog` — ett ANNAT paket av en annan
+# författare — och npx auto-installerar det utan att fråga när stdin inte är en
+# TTY, vilket den aldrig är i CI. Defaulten måste peka på den deklarerade lokala
+# binären. Detta är en käll-assertion och inte ett beteendetest, eftersom
+# felläget bara uppstår i en miljö utan global installation.
+standard_cmd=""
+standard_cmd="$(grep -m1 '^BACKLOG_CMD=' "${GRIND}")" || true
+if [[ -n "${standard_cmd}" ]] && ! grep -q 'npx' <<< "${standard_cmd}"; then
+    echo "  ✓ T49 BACKLOG_CMD-defaulten löser inte upp via npx"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T49 BACKLOG_CMD-defaulten är tillbaka på en npx-form: ${standard_cmd}"
+    FAIL=$((FAIL + 1))
+fi
+
+if ! grep -nE '^[[:space:]]*echo .*npx ' "${GRIND}" > /dev/null; then
+    echo "  ✓ T50 grinden skriver aldrig ut ett npx-kommando som åtgärd"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T50 grinden lär ut namnkollisionen i sin egen åtgärds-utskrift:"
+    grep -nE '^[[:space:]]*echo .*npx ' "${GRIND}" | while IFS= read -r r; do echo "      ${r}"; done
+    FAIL=$((FAIL + 1))
+fi
 
 echo ""
 echo "test-check-backlog-closure: ${PASS} passerade, ${FAIL} failade"
