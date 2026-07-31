@@ -249,63 +249,111 @@ innehåller därmed även tiden tills posten armerades. För en revert är den t
 
 ## 3. Hur hanterar jämförbara projekt akuta reverts under merge queue?
 
-**Precedent-rymden är delad, och det ena halvan är tunn. Det deklareras öppet.**
+**Precedent-rymden är delad: mekanism-precedent är stark, policy-precedent
+saknas helt. Båda halvorna redovisas med siffror.**
 
-### 3.1 Mekanism-precedent: stark och bred (fyra system)
+### 3.1 Mekanism-precedent: sex system, och de konvergerar
 
 Att köer bär ett företrädes-begrepp är etablerad praxis, inte en GitHub-egenhet:
 
-| System | Mekanism | Verifierat citat |
+| System | Mekanism | Stödjer |
 |---|---|---|
-| **Rust — bors/homu** | `p=`-parameter på godkännande | Rollup-proceduren använder `@bors r+ p=5`; kön filtrerar på `^p=[1-9]` |
-| **Mergify** | `priority_rules` (top-level) | *"Priority rules in Mergify are a set of guidelines that determine the order of pull requests within a merge queue."* Värden `low`/`medium`/`high` eller 1–10 000 |
-| **GitLab — merge trains** | *Merge immediately* | *"Merging immediately can use a lot of CI/CD resources. Use this option only in critical situations."* |
-| **GitHub — native** | `jump` vid enqueue | § 1.1 ovan |
+| **bors-ng** | `bors r+ p=[priority]` | omordning |
+| **Rust — bors/homu** | `p=<priority>`, `treeclosed=<priority>` | omordning |
+| **Mergify** | `priority_rules` (top-level), `low`/`medium`/`high` eller 1–10 000 | omordning |
+| **Graphite** | fast-track | omordning |
+| **GitLab — merge trains** | *Merge immediately*, `skip_merge_train` | bypass |
+| **trunk.io** | priority **och** emergency merge, som skilda mekanismer | båda |
+| **GitHub — native** | `jump` vid enqueue | omordning |
 
-**Det mest upplysande fyndet är Mergifys default.** Deras
-`allow_checks_interruption` — *"Allow interrupting the ongoing checks when the
-pull request entering the queue has a higher priority than the queued one(s)"* —
-har defaultvärdet **`false`**, och konsekvensen är dokumenterad: *"a pull request
-with higher priority will be inserted just after the pull requests that have
-checks running."*
+**Det konvergenta fyndet, oberoende bekräftat hos tre leverantörer: företräde
+omordnar kön — det hoppar inte över CI.** Graphite skriver ut det rakast:
 
-Alltså: den mest konfigurerbara köprodukten i urvalet låter som standard **inte**
-ens en högprioriterad PR avbryta pågående bygg. GitHubs `jump` motsvarar
-`allow_checks_interruption: true` — det läge Mergify gjort till opt-in därför att
-ombyggnads-kostnaden sällan är värd den.
+> When you queue a PR as a fast-track, your PR will automatically jump to the
+> front of the queue. Note that it will **still wait to rebase and rerun CI**,
+> but will merge next in line.
 
-GitLab bekräftar samma avvägning från andra hållet, och erbjuder dessutom en
-*billigare* utväg än GitHub: `skip_merge_train: true` via API:t, där *"the merge
-request merges, and the existing merge train pipelines are not canceled or
-restarted"* — med den dokumenterade risken att *"the changes in the merge request
-that skipped the train are not verified against any of the other merge requests
-in the train."* Någon motsvarighet finns inte i GitHubs native-kö.
+Det är exakt vår § 2.3: hoppet rör kö-*ordningen*, inte kö-*bygget*.
 
-### 3.2 Policy-precedent: jag hittade ingen — och så här sökte jag
+**trunk.io är den mest användbara precedenten**, eftersom den ensam dokumenterar
+båda mekanismerna och tar uttrycklig ställning mellan dem:
 
-Jag letade efter konkreta `CONTRIBUTING`-/runbook-texter hos projekt på GitHubs
-**nativa** merge queue som skriver ut hur en brådskande revert ska hanteras. Jag
-**hittade inga**. För att frånvaron ska vara mätbar och inte bara oredovisad —
-här är vad sökningen faktiskt bestod av:
+> Instead of bypassing the queue entirely (risky!), use priority merging to
+> maintain safety while getting urgent PRs through fast. All PRs still get
+> tested, but yours goes first.
 
-| Vad jag sökte | Hur | Utfall |
+Och om bypass-vägen:
+
+> Emergency merges bypass all safety checks. […] the most disruptive action you
+> can take and should be reserved for true emergencies only.
+
+trunk.io skiljer dessutom på *att gå först i kön* och *att avbryta pågående
+bygg* — och gör det senare till ett eget, snävare läge:
+
+> Merge will explicitly **not interrupt** any currently testing PR, as restarting
+> testing on PRs is usually costly, even if you want another PR to be sooner.
+
+Undantaget är en egen prioritetsnivå, `urgent`: *"This is the only time Merge
+will reschedule a PR that is already in testing."*
+
+**Mergify har samma gränsdragning som default.** `allow_checks_interruption` —
+*"Allow interrupting the ongoing checks when the pull request entering the queue
+has a higher priority than the queued one(s)"* — har defaultvärdet **`false`**,
+och konsekvensen är dokumenterad: *"a pull request with higher priority will be
+inserted just after the pull requests that have checks running."*
+
+**Det är den avgörande observationen för vårt beslut.** Två av branschens
+dedikerade merge-queue-produkter låter, *som standard*, inte ens en
+högprioriterad PR avbryta pågående bygg — trunk.io kräver en särskild
+`urgent`-nivå för det, Mergify ett explicit opt-in. GitHubs `jump` har ingen
+sådan gradering: den ÄR det avbrytande läget, med dokumenterad *"full rebuild of
+all in-progress pull requests"*. Vi skulle alltså ta det dyraste läget i en
+produkt som saknar det billiga.
+
+**Rust bär en inverterad mekanism värd att känna till.** Utöver `p=` finns
+`treeclosed=<priority>`, som **höjer golvet** så att bara tillräckligt
+högprioriterat arbete alls landar under en incident — i stället för att lyfta en
+enskild PR förbi de andra. Det är en annan lösning på samma problem, och den
+skalar bättre när flera saker brinner samtidigt.
+
+**GitLab är den enda som erbjuder en billig bypass:** `skip_merge_train: true`
+via API:t, där *"the merge request merges, and the existing merge train pipelines
+are not canceled or restarted"* — med den dokumenterade risken att *"the changes
+in the merge request that skipped the train are not verified against any of the
+other merge requests in the train."* Någon motsvarighet finns inte i GitHubs
+native-kö.
+
+### 3.2 Policy-precedent: noll av fem — och så mättes det
+
+Frågan är **odokumenterad, inte besvarad-och-förkastad**. Det är ett starkare
+påstående än "hittade inget", och det vilar på en räknad svepning:
+
+**Metod.** GitHubs kod-sök efter `merge_group` i `.github/workflows` över **19
+kandidat-repon**, därefter `gh api contents` + grep efter
+`merge queue|merge_group|revert` i varje bekräftad användares `CONTRIBUTING.md`,
+`docs/CONTRIBUTING.md`, `.github/CONTRIBUTING.md` och `docs/development.md`.
+
+| Utfall | Antal | Repon |
 |---|---|---|
-| `"merge queue"` + `revert` + `merge_group` i contributing-guider | webbsök, öppen | endast leverantörs- och blogg-material, ingen projekt-policy |
-| Kö-företräde vid revert, GitHub-domäner | webbsök begränsat till `docs.github.com`, `github.blog`, `github.com` | GitHubs egen dokumentation + två community-trådar; ingen projekt-policy |
-| `"Jump the merge queue"` / `"solo merge"` i `github/docs` | GitHubs kod-sök-API mot repot | träff endast i rättighetslistan (§ 1.3) |
+| Bekräftat PÅ nativ merge queue | **5** | `bevyengine/bevy`, `zed-industries/zed`, `withastro/astro`, `rust-lang/rust-analyzer`, `shopify/cli` |
+| Bekräftat EJ på nativ merge queue | 12 | `home-assistant/core`, `nodejs/node`, `denoland/deno`, `grafana/grafana`, `remix-run/react-router`, `cli/cli`, `vercel/next.js`, `vercel/turborepo`, `oxc-project/oxc`, `tokio-rs/tokio`, `astral-sh/ruff`, `pola-rs/polars` |
+| Inkonklusiv | 1 | `elastic/elasticsearch` — inkonklusiv, ej negativ |
 
-**Vad jag INTE gjorde, och som skulle behövas för ett hållbart negativt
-resultat:** en systematisk svepning av repon som faktiskt kör `merge_group` i
-sina workflows — via kod-sök över många organisationer — följt av läsning av
-deras contributing-texter. Det ligger utanför detta pass omfång.
+**Av de fem som bevisligen kör nativ merge queue nämner NOLL reverts under kön i
+sina bidragsdokument.** Enda `revert`-träffen (astro, rad 195) är orelaterad.
 
-**Räkningen fejkas inte:** för delfråga 3 landar jag på **noll verifierade
-projekt-policyer** och **fyra** verifierade mekanism-precedenter. Slutsatsen i
-§ 4 vilar därför på våra egna mätningar och på leverantörernas egna
+**Räkningen fejkas inte:** delfråga 3 landar på **noll av fem** verifierade
+projekt-policyer och **sex** verifierade mekanism-precedenter. Slutsatsen i § 4
+vilar därför på våra egna mätningar och på leverantörernas egna
 kostnadsvarningar — inte på att någon jämförbar organisation gjort samma val.
 Skulle ett framtida beslut med ADR-permanens vilja åberopa precedent för
-*policyn* är underlaget för tunt som det står, och det ska då sägas rakt ut i
-ADR:n snarare än fyllas ut.
+*policyn* är underlaget tunt, och det ska sägas rakt ut i ADR:n snarare än
+fyllas ut.
+
+**Deklarerade luckor i svepningen:** Uber SubmitQueue och Shopify Shipit hanns
+inte med. Kubernetes kör Tide/Prow, inte nativ kö, och är därmed ett eget spår
+snarare än ett negativt utfall. Nitton repon är ett litet urval — det utesluter
+inte att en policy finns någon annanstans.
 
 ---
 
@@ -323,6 +371,13 @@ läge där reverten är docs-klassad *och* råkar ligga bakom en kod-PR. Kostnad
 betalas alltid: upp till tre pågående poster byggs om från grunden, vilket
 försenar dem med ~7 min var. I varje uppmätt konfiguration hos oss är väg A
 netto-negativ.
+
+**Och branschen har redan dragit samma gräns** (§ 3.1). Både trunk.io och
+Mergify skiljer *gå först i kön* från *avbryt pågående bygg*, och gör det senare
+till ett särskilt läge man måste be om — trunk.io via en egen `urgent`-nivå,
+Mergify via ett opt-in vars default är `false`. GitHubs `jump` erbjuder ingen
+sådan gradering: den är enbart det avbrytande läget. Att välja väg A vore därför
+att ta branschens dyraste alternativ i den produkt som saknar det billiga.
 
 ---
 
@@ -376,6 +431,13 @@ vårt repo.
 6. **Talet 5 min 8 s är ett uppmätt max, inte ett tak.** Det är största straffet
    i 30 landningar. Ett djupare kö-läge eller en långsammare svit ger ett större
    tal.
+7. **Repo-svepningen i § 3.2 är delegerad och liten.** Nitton kandidat-repon,
+   varav fem bekräftat på nativ kö, är tillräckligt för att säga *"frågan är
+   odokumenterad hos dessa fem"* — men inte för att säga något om branschen som
+   helhet. Uber SubmitQueue och Shopify Shipit är osökta; `elastic/elasticsearch`
+   blev inkonklusiv och räknas varken som positiv eller negativ. Sidorna från
+   kö-leverantörerna i § 3.1 är däremot hämtade och verifierade var för sig i
+   detta pass.
 
 ---
 
@@ -447,6 +509,22 @@ vårt repo.
   — on-call-användningsfallet, 2024-08-29
 - [cli/cli#8746 — `gh pr merge --admin` Does not circumvent merge queue as documented](https://github.com/cli/cli/issues/8746)
 
+**Förstapartskällor — andra kö-leverantörer (mekanism-precedent, § 3.1):**
+
+- [trunk.io — Priority merging](https://docs.trunk.io/merge-queue/concepts-and-optimizations/pr-prioritization)
+  — *"not interrupt"*-defaulten, `urgent`-undantaget, och rekommendationen att
+  välja omordning framför bypass
+- [trunk.io — Emergency pull requests](https://docs.trunk.io/merge-queue/using-the-queue/emergency-pull-requests)
+  — *"bypass all safety checks"*, *"reserved for true emergencies only"*
+- [Mergify — Using Priorities](https://docs.mergify.com/merge-queue/priority/)
+  — `priority_rules`, `allow_checks_interruption` med default `false`
+- [Graphite — Merge queue](https://graphite.com/docs/get-started-merge-queue)
+  — fast-track *"will still wait to rebase and rerun CI"*
+- [GitLab — Merge trains](https://docs.gitlab.com/ci/pipelines/merge_trains/)
+  — *Merge immediately* och `skip_merge_train`
+- [Rust Forge — Rollup Procedure](https://forge.rust-lang.org/release/rollups.html)
+  — `@bors r+ p=5`
+
 **Tredjepart / obekräftat:**
 
 - [community-diskussion #65496 — Permissions required to jump the queue](https://github.com/orgs/community/discussions/65496)
@@ -461,6 +539,10 @@ vårt repo.
 - `gh pr merge --help` på `gh` 2.96.0
 - 84 `merge_group`-körningar och 45 landade PR:er via
   `gh api .../actions/runs` och `gh pr list`
+- Repo-svepningen i § 3.2: kod-sök efter `merge_group` i `.github/workflows` över
+  19 kandidat-repon + `gh api contents`-grep i deras bidragsdokument (delegerad
+  sökning; de citerade leverantörssidorna i § 3.1 är därefter hämtade och
+  verifierade var för sig i detta pass)
 
 **Internt:**
 
