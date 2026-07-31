@@ -3,10 +3,10 @@ id: TASK-38
 title: >-
   Fynd: sju EF:er saknar egen metod-vakt — fel metod ger 401 i stället för
   kontraktets 405
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-24 19:41'
-updated_date: '2026-07-31 07:54'
+updated_date: '2026-07-31 08:15'
 labels: []
 dependencies: []
 priority: medium
@@ -39,10 +39,16 @@ AC #2 — vad som faktiskt gick att ta bort: S84:s källkods-klassning var aldri
 INGEN DEPLOY utförd. Källan bär nu kontraktet; staging- och prod-artefakterna gör det först vid nästa deploy av respektive miljö.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Metod-vakten till alla tretton allowlistade EF:er — 405 före auth. Sju saknade den (sex GET-läs-EF:er + create-admin-user) och fick create-events exakta form; de sex befintliga verifierades i källan i stället för att antas, och ALLA SEX satt korrekt (efter handleCors, före requireUser) — ingen fel-placering fanns. Grind byggd: tests/api/ef-metod-vakt.test.ts, 14 gröna (13 per-EF + 1 fail-closed), allowlist-driven så att en framtida EF utan vakt fälls automatiskt när T46 utvidgar listan. Fyra negativa kontroller, alla exit 1 med rätt felmeddelande: vakt borttagen, vakt efter auth, vakt före CORS, allowlist tömd. test:api 433 passed (pure + staging). RÄTTELSE MOT UPPDRAGET: orkestreraren pekade ut en deny-smoke-testfil som ALDRIG existerat — git log --all --diff-filter=A över hela historiken ger noll träffar. S84:s deny-smoke var ad-hoc-prober; klassningen levde i narrativ. Inget raderades. ÖPPET, ej i AC: verify_jwt=true gör "405 före auth" delvis oobserverbart utifrån (gatewayen svarar 401 före funktionens kod); RFC 9110 kräver Allow-header på 405 och ingen av de tretton emitterar den; sju icke-allowlistade läs-EF:er saknar fortfarande vakten. Landad #499 (418cb13), merge_group grön (8628fbc7). NOT: kortet är ett S84-fynd, alltså utanför S91-scopet — skickat före Marcus scope-besked samma dag och slutfört hellre än kastat.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
