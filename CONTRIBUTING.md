@@ -257,8 +257,12 @@ mekaniska grinden gäller:
 
 ### Landnings-ordningen — mekaniserad som merge queue sedan 2026-07-29
 
-**Utlösaren först. Känner du inte igen läget tillämpar du inte regeln.** Tre
-villkor samtidigt:
+**Behöver du bara veta vad du ska göra: armera med `gh pr merge --auto --merge`
+och låt kön välja ordningen.** Resten av sektionen förklarar vilket problem kön
+löser och vad som återstår för en människa; ingenting nedanför är en ordning du
+själv ska välja.
+
+**Läget som utlöste den gamla, upphävda regeln.** Tre villkor samtidigt:
 
 1. **Två eller fler PR:er är landningsklara samtidigt** — eller den ena landar
    medan den andra redan ligger i luften.
@@ -310,8 +314,34 @@ felläget annars är att ingen PR kan landa, inklusive den som fixar felet.
 arbetar, och kör aldrig `update-branch` mot en sådan gren. Kön löser
 maskin-ordningen, inte aktörs-krockar.
 
+**Varför den sista raden överlevde upphävandet.** `update-branch` pushar till
+grenen, och varje push till en PR-gren avbryter grenens pågående körning:
+`ci.yml` nycklar sin concurrency-grupp på PR-numret och sätter
+`cancel-in-progress` för allt utom `merge_group`. I S91 avbröt orkestrerare och
+agent varandra två gånger på just den mekaniken, en gång **12 minuter in i en
+grön körning**. Gren-uppdatering hör till orkestreraren, men först efter
+agentens slutrapport.
+
+**Samma push startar om CI-vakten.** En vakt följer det SHA den startades mot;
+en ny commit på grenen gör att den vaktar ett SHA som inte längre är HEAD, och
+den avbrutna körningen rapporteras `cancelled`. **Stoppa vakten och starta om
+den mot det nya SHA:t.** `scripts/ci-wait.sh` skiljer redan superseddad
+(`exit 4`) från röd (`exit 1`) för exakt detta fall: exit 4 är inget grönt bevis
+utan en hänvisning till efterträdaren.
+
+**Agenterna armerar inte — men skälet är inte längre ordningen.**
+`.claude/agents/bygg-agent.md` föreskriver att en bygg-agent öppnar sin PR och
+lämnar armeringen ifrån sig. **Instruktionen står kvar, motiveringen rättades
+2026-07-30:** den gamla löd `BEHIND`, och `BEHIND` av parallella landningar är
+just det kön gjort omöjligt. Kvar står det kön INTE ser — två diffar som mergar
+rent var för sig och ändå är fel tillsammans. Agenten kan inte se sina
+syskonagenter; orkestreraren kan, och granskar därför diffen innan den köas.
+
 **Den upphävda manuella formen bevaras nedan** — inte som instruktion, utan för
-att den förklarar varför kön behövdes. Följ den inte; den är historik.
+att den förklarar varför kön behövdes. Följ den inte; den är historik. Här stod
+fram till `TASK-96` också en avgränsning om att merge queue var en egen öppen
+post (restlistan A4) som inte fick föregripas *"tills den finns"* — den finns
+sedan 2026-07-29, och raden är därför struken i stället för bevarad.
 
 - ~~**Form A · tyngst först.**~~ Armera den PR vars svit är längst, låt den landa,
   armera nästa därefter. En kort svit hinner ikapp en lång; det omvända gäller
@@ -324,41 +354,16 @@ sig; att laga `BEHIND` i efterhand är inte formen, då har svit-fönstret redan
 öppnats en gång i onödan.* Resonemanget var riktigt — det är just det arbetet
 kön nu utför utan att någon behöver minnas det.
 
-**Bikostnad som hör till form B: CI-vakten måste startas om.** En vakt följer
-det SHA den startades mot. `update-branch` skriver en ny commit på grenen, och
-i samma stund vaktar den ett SHA som inte längre är HEAD; `cancel-in-progress:
-true` (`ci.yml`) avbryter dessutom den pågående körningen, som då rapporteras
-`cancelled`. **Stoppa vakten och starta om den mot det nya SHA:t** — annars
-byter regeln bara en felklass mot en annan. `scripts/ci-wait.sh` skiljer redan
-superseddad (`exit 4`) från röd (`exit 1`) för exakt detta fall: exit 4 är
-inget grönt bevis utan en hänvisning till efterträdaren.
-
-**Form B kräver att grenens agent är klar.** `update-branch` pushar till
-grenen, och varje push avbryter grenens pågående körning. Kör den aldrig mot en
-gren vars bygg-agent fortfarande arbetar — i S91 avbröt orkestrerare och agent
-varandra två gånger, en gång **12 minuter in i en grön körning**.
-`BEHIND`-hantering hör till orkestreraren, men först efter agentens
-slutrapport.
-
-**Agenterna armerar inte — det är andra halvan av samma kontrakt.**
-`.claude/agents/bygg-agent.md` föreskriver att en bygg-agent öppnar sin PR och
-lämnar armeringen ifrån sig, eftersom ordningen bara kan väljas av den som ser
-hela kön. Agenten avstår, orkestreraren sekvenserar.
-
-**Avgränsning: detta är sekvensering för hand, ingen kö-automat.** GitHub merge
-queue är branschverktyget för just denna klass, men den är en egen öppen post
-(restlistan A4) och prövas mot vår staging-mutex separat. Den föregrips inte
-här — tills den finns är ordningen en aktörs ansvar, och formerna ovan är hela
-mekaniken.
-
 **Varför regeln står här och inte bara som lärdom.** `L328` har varit
 nedskriven sedan S81 och beskriver mekanismen korrekt. Ändå gick orkestreraren
 i samma fälla **två gånger under en och samma resume** 2026-07-28: `#313` gick
 `BEHIND` när `TASK-61` landades medan `59.5`:s PR låg i luften, och `#316`
 gjorde det igen — andra gången rättat före armering i stället för efter. En
-lärdom i prosa skyddar bara den som råkar läsa den vid rätt tillfälle. Därför
-står regeln vid sidan av armerings-kommandot den gäller, i den sektion som
-redan äger `gh pr merge --auto --merge`.
+lärdom i prosa skyddar bara den som råkar läsa den vid rätt tillfälle, och det
+var beviset för att den behövde en mekanism i stället för en läsare. Kön är den
+mekanismen. Kvar i prosa står bara aktörs-krocken ovan, och den står vid sidan
+av armerings-kommandot den gäller, i den sektion som redan äger
+`gh pr merge --auto --merge`.
 
 ### Revert-vägen — hur något som redan landat backas ut
 
@@ -379,14 +384,40 @@ redan är känd OCH fixen är mindre än reverten.
 | Aktör | Ansvar i revert-vägen |
 |---|---|
 | **Marcus** | Beslutar ATT backa. Beslutet behöver inte vänta på att orsaken är utredd. |
-| **Bygg-agent** | Förbereder gren, revert-commit och PR — och **armerar aldrig mergen**, samma kontrakt som i § Landnings-ordningen. |
-| **Orkestreraren** | Armerar mergen (slår på auto-merge med `gh pr merge --auto --merge`, så PR:n landar av sig själv när CI blir grön), sekvenserar kön och följer CI till grönt. |
+| **Bygg-agent** | Förbereder gren, revert-commit och PR — och **armerar aldrig mergen**, samma kontrakt som i § Landnings-ordningen: orkestreraren granskar diffen innan den köas. |
+| **Orkestreraren** | Granskar diffen och armerar mergen (`gh pr merge --auto --merge`, så PR:n landar av sig själv när CI blir grön), följer CI till grönt per jobb. Ordningen väljs inte här — den ägs av kön. |
 
-Vad brådskan däremot ändrar är **köordningen**: revert-PR:n armeras FÖRST, och
-andra landningsklara PR:er får vänta och uppdateras efteråt. Det är form B i
-sektionen ovan, inte ett undantag från den. Att armera revert-PR:n samtidigt med
-en annan PR är precis den fälla § Landnings-ordningen beskriver — och den fällan
-kostar just den tid reverten skulle spara.
+**Brådskan ändrar inte heller ordningen.** Revert-PR:n armeras som vilken
+landning som helst: `gh pr merge --auto --merge`, inga andra PR:er hålls
+tillbaka, ingen gren uppdateras i efterhand. Det är samma mening som
+§ Landnings-ordningen redan bär, och den gäller även när det brinner.
+
+Frågan avgjordes med mätning FÖRE den här sektionen skrevs om
+([`docs/research/kohopp-bradskande-revert-2026-07-30.md`](docs/research/kohopp-bradskande-revert-2026-07-30.md),
+2026-07-30). **Behovet av kö-företräde är borta**, av fyra skäl som alla är
+mätta:
+
+- **Kö-väntan är försumbar.** Efter eget grönt kö-bygg landar en post på median
+  **16 s** (p90 27 s), mätt över 30 landningar. Uppmätt värsta fall: 5 min 8 s.
+- **Straffet är inverterat mot brådskan.** De tre poster som betalade mer än
+  240 s var samtliga docs-klassade och grupperade med en kod-PR; deras
+  kod-grannar betalade 14–23 s. Ingen kod-klassad post har någonsin betalat mer
+  än 30 s. En revert av *kod* — den dyra sorten — passerar alltså praktiskt
+  taget obehindrat, medan bara en docs-revert kan fördröjas nämnvärt.
+- **Företräde finns, men biter inte på kostnaden.** GitHubs `jump` omordnar kön
+  och hoppar inte över kö-bygget; den kan inte förarmeras (`--auto` köar utan
+  den) och saknas i `gh` 2.96.0. Vinsten vore de ~20 sekunderna ovan, priset en
+  *"full rebuild of all in-progress pull requests"* — GitHubs egen varning —
+  alltså upp till tre poster om ~450 s var. Medvetet vald bort, inte förbisedd:
+  ompröva om kö-djupet regelmässigt överstiger `max_entries_to_build` (3),
+  eftersom poster bortom taket slutar byggas parallellt.
+- **`--admin` förbi kön är stängd för alla, med avsikt.** Bypass-listan är tom
+  och GitHubs eget beräknade `current_user_can_bypass` säger `never` även för
+  repo-admin (ADR-076 beslut 2). `gh`:s hjälptext påstår motsatsen och är fel
+  för det här repot.
+
+Nödvägen är oförändrad och står i steg 3: att synligt inaktivera rulesetet, och
+det är Marcus beslut.
 
 **Steg 1 — hitta merge-commiten.** Varje landning i `main` är en
 *merge-commit*: en commit som knyter ihop två utvecklingslinjer i stället för
@@ -453,7 +484,9 @@ Grinden blir ingen flaskhals, av tre skäl som alla är egenskaper hos
 konfigurationen: PR-regeln kräver **0 godkännanden**, så ingen väntan på review;
 docs-klassade PR:er är gröna på omkring en minut (ADR-077); och required-checken
 är `strict`, vilket bara betyder att grenen måste vara aktuell mot `main` när den
-landar. Blir revert-PR:n `BEHIND` gäller § Landnings-ordningens form B.
+landar. Det kravet uppfyller kön själv — den bygger posten mot `main` plus
+posterna före den — så `BEHIND` uppstår inte längre av att en annan PR landar
+medan reverten är i luften.
 
 **Steg 4 — armering och verifiering (orkestreraren).** Samma kommandon som varje
 annan landning; se § Pull Request-flöde för armeringen och Definition of Done för
@@ -468,8 +501,8 @@ commits that are not ancestors of the previously reverted merge"* (`man
 git-revert`, `-m`-avsnittet, verifierat mot git 2.50.1). Vägen tillbaka är att
 revertera reverten (`git revert <revert-sha>`) och bygga vidare därifrån.
 
-**Exponeringsfönstret — hur länge ett fel kan ligga i `main`.** Fyra led, vart
-och ett mätt i övningen nedan 2026-07-28:
+**Exponeringsfönstret — hur länge ett fel kan ligga i `main`.** De fyra första
+leden, vart och ett mätt i övningen nedan 2026-07-28:
 
 | Led | Mätt | Not |
 |---|---|---|
@@ -483,11 +516,30 @@ summan av de fyra mätta leden, inte en obruten klockad sträcka: i övningen l�
 annat arbete mellan pushen och PR-öppningen, och den pausen är övningens
 arbetssätt, inte vägens kostnad.
 
-Klassen avgör resten. Backas dokumentation kör CI docs-klass (ADR-077); backas
-kod bärs PR-grindens kritiska väg av `Acceptance (hermetisk)`, mätt till
-404–452 s. Ett kod-fel kan alltså vara ute ur `main` inom omkring åtta minuter
-från beslut, ett docs-fel inom drygt en — plus armeringen, som är det enda led
-som ännu inte är mätt.
+**Men "landningsklar" är inte "landad", och sedan 2026-07-29 ligger två CI-lopp
+emellan.** Under merge queue passerar varje PR först PR-grinden — som måste bli
+grön innan `--auto` köar posten — och därefter kö-bygget på `merge_group`-ytan.
+Det andra ledet fanns inte när talen ovan mättes. Mätt över 45 landade PR:er
+2026-07-29 → 2026-07-31 (samma research-pass som ovan, § 2.3):
+
+| Klass | Median PR-CI | Median kö-CI | Beslut → landad |
+|---|---|---|---|
+| **Kod** (n = 11) | 435 s | 449 s | **≈ 15 min** |
+| **Docs** (n = 34) | 73 s | 75 s | **≈ 3 min** |
+
+Sista kolumnen är de två CI-loppen plus mätt merge-overhead (≈ 16 s), inte en
+projektion. Ett konkret genomlopp: PR #483 (kod) tog **16 min 22 s** från
+PR-CI-start till landad merge-commit.
+
+**Rättelsen bokförs öppet.** Fram till `TASK-96` stod här att ett kod-fel är ute
+ur `main` *"inom omkring åtta minuter från beslut, ett docs-fel inom drygt en"*.
+De talen mättes 2026-07-28, före kön, och saknade kö-bygget helt — verkligheten
+är ungefär den dubbla i båda klasserna. Det är siffran någon förlitar sig på när
+något brinner, och därför den som måste stämma.
+
+Klassen avgör vilken rad som gäller: backas dokumentation kör CI docs-klass
+(ADR-077); backas kod bärs PR-grindens kritiska väg av `Acceptance (hermetisk)`,
+mätt till 404–452 s.
 
 **Det talet blev förutsägbart med `TASK-70.3`, inte lägre.** Fram till dess bar
 en kod-PR även `Staging (API + E2E)` (375 s) *plus* kö på den globala
@@ -495,13 +547,14 @@ en kod-PR även `Staging (API + E2E)` (375 s) *plus* kö på den globala
 oberäknelig. Staging kör numera post-merge (§ Post-merge-lagret), så en
 revert-PR:s väg genom grinden beror bara på dess egen svit.
 
-**Och taket ligger kvar kring sju minuter — `TASK-75` sänkte det inte för denna
-väg.** Urvalet (§ Acceptance-klassen → Urvalet i PR-grinden) fäller ut endast
-när diffen rör *enbart* acceptance-spec-filer. En revert av en kodändring rör
-per definition källkod, faller därför till full klass, och betalar samma
-422–433 s som förut. Backas i stället en acceptance-spec landar reverten på
-delmängden. Skillnaden är värd att veta i förväg: den avgör om du ska räkna med
-en minut eller sju när något brådskar.
+**Och PR-grindens kod-led ligger kvar kring sju minuter — `TASK-75` sänkte det
+inte för denna väg.** Urvalet (§ Acceptance-klassen → Urvalet i PR-grinden)
+fäller ut endast när diffen rör *enbart* acceptance-spec-filer. En revert av en
+kodändring rör per definition källkod, faller därför till full klass, och betalar
+samma 422–433 s som förut. Backas i stället en acceptance-spec landar reverten på
+delmängden. Skillnaden är värd att veta i förväg — och den betalas två gånger:
+kö-bygget kostade i mätningen ungefär detsamma som PR-grinden i samma klass
+(449 s mot 435 s för kod, 75 s mot 73 s för docs).
 
 **Vad en revert INTE tar tillbaka.** `git revert` ändrar bara filer i git.
 Allt som redan lämnat repot står kvar:
@@ -573,12 +626,16 @@ därmed inte längre `staging-tests`-mutexen, och blockerar inte revert-vägen.
 Kod-landningar kör full svit som förut: kontrollen är avgränsad, inte borttagen.
 
 **Talet 25 min 16 s står kvar som HISTORISK mätning av läget före fixen.** Det
-nya talet är inte mätt än och skrivs in här först när nästa skarpa revert ger
-det — ett projicerat tal är ingen mätning. `TASK-70.3` tar dessutom bort det
-andra ledet i samma väntan: en revert-PR köar inte längre bakom mutexen alls,
-eftersom ingen PR-körning tar den. Kvar som möjlig fördröjning är enbart
-post-merge-lagrets egen körning på en *föregående* landning, och den blockerar
-inte grinden.
+skrivs inte om från en projektion — ett projicerat tal är ingen mätning.
+`TASK-70.3` tar dessutom bort det andra ledet i samma väntan: en revert-PR köar
+inte längre bakom mutexen alls, eftersom ingen PR-körning tar den. Kvar som
+möjlig fördröjning är enbart post-merge-lagrets egen körning på en *föregående*
+landning, och den blockerar inte grinden.
+
+**Vad som ÄR mätt sedan dess** är hela landningsvägens kostnad under kön —
+tabellen med de två CI-loppen ovan, 45 landade PR:er. Den mätningen är gjord på
+vanliga landningar, inte på en skarp revert; att en revert följer samma väg är
+en följd av att den är en PR som alla andra, inte ett eget mätvärde.
 
 **Varför sektionen står här.** A7:5 (`TASK-70.3`, landad) och A7:6
 (`TASK-70.4`, öppen) flyttar kontroller från den blockerande PR-grinden till
