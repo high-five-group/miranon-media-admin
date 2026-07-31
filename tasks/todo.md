@@ -15,6 +15,32 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-31, nittonde pausen — femtonvågen och två
+betalda skulder)** — **NITTON PR:er i spoken + TVÅ i hubben.** **HUB-SKULDEN
+BETALD:** `L284–L359` lyfta (72 poster, 22 sessions-H2:er, verbatim-verifierat)
+— Spår C:s största uppskjutna post, öppen sedan 2026-07-27. Plugin **1.23.0 →
+1.24.0**, reinstallerat i samma landning. **WORKTREE-SKULDEN BETALD:** 20
+borttagna, grenar **69 → 32**; `TASK-94`:s mekanism kördes **skarpt för första
+gången**. **ÅTTA KORT STÄNGDA** (`TASK-96` `97` `38` `53` `98` `100` `102`
+`107`), **tio mintade** (`task-100`–`109`), **`ADR-084` mintad.**
+**TRÅDREGISTRET KARTLAGT** på Marcus order — S91-eran är `T100`–`T109` (inte
+`T90`–`T109` som orkestreraren gissade), **noll trådar stängbara**, `T87` är
+navet. Registret självt rättat: sju falska statuspåståenden, och
+lifecycle-grinden visade sig se **11,9 %** av registret medan den presenterades
+som täckande. **STAGING STÄDAT** på utvidgat mandat (`Skovde-S75`, 10 poster, 0
+kvar). **KÖN HÄNGDE SIG** — en `cancelled` kö-körning som GitHub aldrig startar
+om; löst med `gh run rerun`, inte rulesetets nödväg. **ORKESTRERAREN GJORDE FEM
+FEL, samtliga fångade av agenter och noll av Marcus:** en filadress som aldrig
+funnits · `[UNIVERSAL]`-räkningen 59 mot 72 · "tre äkta fel" som var fem · "nio
+grindar" i fel fil · trådregistrets grovmätning fel på två av tre.
+**⛔ VÄNTAR PÅ MARCUS: (1)** `T87`:s trigger — tre trådar hänger på den;
+**(2)** `T100` steg 4 (`IDENTITET.md`-destillatet); **(3)** hub-`lessons.md`
+passerade 5000-radersgränsen (3744 → 5507) — uppdelningsformen är ditt beslut,
+registrerat som `TASK-105`. **SKÖRD: 10 fragment.** Numrering:
+91/**085**/L360 (**70** fragment)/T110/**f47**/**task-110**. Full narrativ:
+sessionsdok **Del 38** + PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-07-31, artonde pausen — tvåvågen och fyra
 research-pass)** — **NITTON PR:er landade, NOLL röda körningar.** Weekly limit
 slog i **två gånger**; sju respektive fyra agenter återupptogs och **ingen
