@@ -128,3 +128,43 @@ man kör på.
 (hook-familjen och dess distributionshinder) · `work-batch`-skillen (AFK-batch,
 den befintliga formen närmast detta) · `ADR-069` (lifecycle-verbens
 Code-körbarhet, som gör halva A möjlig alls).
+
+## Docs-utredningen: vägen finns (2026-07-31)
+
+**Utredningens första fråga är besvarad** (docs-utredning via
+`claude-code-guide` mot officiella Claude Code-docs, 2026-07-31): **en
+routine-körning (cloud) startar ALLTID i färsk session — ingen historik ärvs.**
+`routines.md` säger det rakt ut: *"Routines run autonomously as full Claude
+Code cloud sessions"*, och varje körning gör en fresh clone: *"Each repository
+is cloned at the start of a run, starting from the default branch."*
+
+Kontrasten bekräftar samtidigt trådens tidigare beläggning: headless `claude -p`
+med `--continue`/`--resume` ärver däremot hela historiken — *"A resumed session
+restores the conversation along with the state saved in it: Conversation
+history: the full history, including tool calls and results."* (`sessions.md`).
+NEJ-tabellen under halva B står alltså kvar oförändrad — den beskriver
+sessions-mekaniken, och routines är inte den mekaniken.
+
+En routine är heller ingen ren väckarklocka — den kan ta en prompt och arbeta
+agentiskt: *"The session can run shell commands, use skills committed to the
+cloned repository, and call any connectors you include."* (`routines.md`)
+
+**Stafettväxlingen är alltså built-in — ingen mekanism behöver byggas.** Kedjan:
+sessionen träffar tröskeln → pausar durabelt mot disk (`session-paus` är redan
+Code-körbar, se halva A) → routine-triggern startar en färsk cloud-session →
+den clonar repot → läser läget ur disk-artefakterna → fortsätter. Per
+`scheduled-tasks.md`-jämförelsen: cloud-routines kräver varken påslagen maskin
+eller öppen session, men har INGEN tillgång till lokala filer (fresh clone från
+default branch), och MCP-connectors väljs per routine.
+
+**Kvarstående ledtrådar, öppet bokförda:**
+
+1. **Den LOKALA cron-vägen** — harnessets `CronCreate` på Marcus maskin — fick
+   inget direkt dokumentsvar. Cloud-routines är den belagda vägen.
+2. **Interaktivt autentiserade MCP-servrar** (t.ex. claude.ai-connectorerna)
+   kan saknas i sådana körningar — känd caveat sedan tidigare.
+3. **Fresh clone betyder att ALLT tillstånd måste vara committat** — vilket
+   vårt arbetssätt redan kräver.
+
+Källor: `code.claude.com/docs/en/routines.md` · `sessions.md` ·
+`scheduled-tasks.md` · `headless.md`.
