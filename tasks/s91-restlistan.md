@@ -27,7 +27,20 @@
 > **kroppen bär bara öppna `[ ]`.** Filen dör när alla spår är stängda; den är
 > en arbetsyta, inte en permanent artefakt.
 >
-> **Senast verifierad mot disk: 2026-07-31** (`TASK-100` — **kontroll 1 lagad
+> **Senast verifierad mot disk: 2026-07-31, NITTONDE resumen** — kroppens sista
+> två kvarlämnade poster flyttade: `TASK-85` (A3) och `TASK-36.8` (A5), båda
+> `Done` och båda verifierade mot backlog-CLI:t före flytten. **A3 och A5 har
+> därmed inga öppna poster kvar.** `T87`:s parkerade AC 7–8 i `36.7` följer med
+> som öppen bokföring. Elva rader tillagda i § Avbockningslogg för resumens
+> landningar.
+>
+> **Trådregistret är kartlagt** — se
+> [`threads/S91-tradkarta-2026-07-31.md`](threads/S91-tradkarta-2026-07-31.md)
+> (`TASK-107`). S91-eran är `T100`–`T109`, härledd ur två oberoende källor och
+> **inte** ur den numeriska gräns orkestreraren gissade. Noll trådar är
+> stängbara; `T87` är kartans nav och väntar på Marcus trigger.
+>
+> Föregående pass samma dag: `TASK-100` — **kontroll 1 lagad
 > efter att ha gett två falska statuspåståenden**, `TASK-52` och `TASK-95`; se
 > § Filens egna fel post 9. Lagningen avtäckte en tredje defekt: två ÄKTA fel
 > (`TASK-36.8`, `TASK-85`) var osynliga för formen, tredje gången samma klass.
@@ -445,13 +458,12 @@ också bär alla fem i sin § Beslut. **Inga öppna poster.**
 > [verktygsval-fyra-egenbyggen-2026-07-27.md](../docs/research/verktygsval-fyra-egenbyggen-2026-07-27.md)
 > § Beslutstabell + § Behåll ändå.
 
-- [ ] **Listparitets-grinden** (dom: LAGA) — **kortad som `TASK-85`** — ~20 rader skript + policy-fil.
-      **Utvidgad räckvidd 2026-07-27:** samma klass gäller **lychee-globarna**,
-      som står i BÅDA `ci.yml` och `scripts/check-docs.sh` och hålls synkade för
-      hand — ADR-081:s landning ökade duplikationen med en rad
-      (`tasks/lessons.d/*.md`). Grinden ska täcka **båda** listparen.
-      Passets öppna fråga 3: `PARITY_PATHS` är inte härledd ännu.
-      **Ingen kort-hemvist — posten bor här.**
+**A3 har inga öppna poster.** Listparitets-grinden (`TASK-85`) landade 2026-07-30
+och är flyttad till § Avbockningslogg 2026-07-31 — den stod kvar i kroppen som
+`- [ ]` i ett dygn, osynlig för kontroll 1 eftersom dess form
+(`**kortad som \`TASK-85\`**`) inte matchade bärar-mönstret. Det var den tredje
+instansen av § Filens egna fel post 8:s klass, och den är bokförd som post 9.
+
 *(De två BEHÅLL-posterna landade 2026-07-29 och är flyttade till
 § Avbockningslogg. De stod kvar som `[x]` i kroppen ett par timmar, vilket bryter
 underhållsregeln i ingressen — fångat av samma audit.)*
@@ -496,7 +508,10 @@ Villkoret som föddes i A4 följer med: **lager 1 upphävt 2026-07-27, lager 2 s
 
 ### A5 · Efter grillningen
 
-- [x] `TASK-36.8` — QA-vandringen (manuell testplan, riskanpassad CI). **Stängd 2026-07-30** på noteringarna; vandringen genomfördes 2026-07-25 (S88) men stängningen verkställdes aldrig. **Föräldern `TASK-36` stängd samma dag** — den var en fjärde, tidigare okänd träff i förälder/barn-klassen, funnen av `TASK-90`:s nya invariant och inte av något fyndkort. `T87`:s parkerade AC 7–8 i `36.7` följer med som öppen bokföring, ej dold av stängningen.
+**A5 har inga öppna poster.** `TASK-36.8` (QA-vandringen) stängdes 2026-07-30 och
+är flyttad till § Avbockningslogg 2026-07-31. **`T87`:s parkerade AC 7–8 i `36.7`
+följer med som öppen bokföring** — de är inte dolda av vare sig stängningen eller
+flytten, och `T87` bär dem vidare.
 
 Acceptance-klassens arton filer, kontraktsvakten och hermetik-självtestet är
 landade (`TASK-59`-familjen + `TASK-60`); utfallet med alla siffror står i
@@ -1060,3 +1075,14 @@ stängde `TASK-54.2` DoD 7 och `TASK-54.3` DoD 5).
 | 2026-07-31 | **`TASK-96`-passet: behovet av kö-företräde är BORTA.** Kö-straffet är **inverterat mot brådskan** — median 16 s, de tre som betalade över 240 s var samtliga docs medan kod-grannarna passerade på 14 till 23 s. **Fynd större än frågan:** § Revert-vägens exponeringsfönster är **dubbelt** så långt som filen påstår — två CI-lopp, kod cirka 15 min mot 8 | `#492` |
 | 2026-07-31 | **Två kort mintade ur nattens fynd:** `TASK-98` (HIGH — `ADR-083`:s egen grind körs **0** gånger i `ci.yml` medan de fem syskongrindarna körs 1 var) · `TASK-99` (`CLAUDE.md`:s dequeue-slutsats är för stark; mönstret är **plattformsslutsatser dragna ur CLI-begränsningar**) | — |
 | 2026-07-31 | **Fem subagent-rapporter blev hemlösa** — `T108`-passets barn levererade till orkestreraren när föräldern dött. Vidarebefordrat fem gånger för hand. Passet noterade det om sig självt: **samma felklass som det utredde, en nivå ned** | `#494` |
+| 2026-07-31 | **`TASK-97` — `ADR-081`:s precedent-anspråk rättat.** towncrier bär HALVA formen (skriv utan nummer) men saknar tilldelningssteget, som är hela beslut 1. Grunden omlagd till merge-grindens serialisering + EIP-1 + Rust RFC 0002, sju källor i förstahandskälla. **Andra felet:** *"tre solida precedenter"* stod efter TVÅ uppräknade poster sedan första commiten — tre månader, två amenderingar och ett research-pass som upprepade talet utan att räkna om | `#497` |
+| 2026-07-31 | **`TASK-96` — revert-vägen följer kön.** Behovet av kö-företräde BORTA. Svepet gav **sex** ställen, inte fyra. Exponeringsfönstret var **dubbelt** så långt som filen påstod: kod ≈ 15 min mot påstådda 8, mätt över 45 landade PR:er | `#498` |
+| 2026-07-31 | **`TASK-38` — metod-vakt i alla tretton EF:er.** 6 av 13 bar den redan, alla korrekt placerade. Grind byggd, allowlist-driven; fyra negativa kontroller fäller. *(S84-fynd, utanför S91-scopet — slutfört hellre än kastat)* | `#499` |
+| 2026-07-31 | **`TASK-53` — 429-backoffen.** S91:s ENDA defekt i produktionskod. 30 s golv, jitter additiv **uppåt** (AWS equal jitter hade kunnat gå under golvet och återinfört defekten). Taket **härlett** ur Supabases 150 s idle-timeout, ej valt. Latent resursläcka lagad på köpet | `#500` |
+| 2026-07-31 | **`ADR-084` mintad** — granskningsfixturer blir ALDRIG purge-bara; livstiden bärs av fixturen själv. Agenten prövade ADR-baren och fann villkor 1 felformulerat; det bärs i stället av en kaskad verifierad i kod: en target får `seed:review` att kasta `GuardError` och vägra SKAPA fixturen. **En rad river två.** Precedent: fyra projekt, gränsen utskriven (fyra för principen, noll för domänen) | `#502` |
+| 2026-07-31 | **HUB-LYFTET `L284–L359` LANDAT** — Spår C:s största uppskjutna post. 72 poster, 22 sessions-H2:er (S69–S91), verbatim tecken-för-tecken med två negativa kontroller. **Orkestrerarens tal 59 var fel — 13 poster bär markören på egen rad.** Agenten följde regeln i stället för talet | hub `#9` |
+| 2026-07-31 | **Staging städat på utvidgat mandat.** Marcus: *"I staging-basen kan du göra vad du vill."* `Skovde-S75` raderad — 6 anmälningar, 3 personer, 1 event, efter-verifiering **0 kvar**. `ZZ-GRANSKNING-S91` verifierad tom | — |
+| 2026-07-31 | **`TASK-98` — `ADR-083`:s grind wirad i lint-jobbet.** Kördes **0** gånger, körs nu 1. Tvåsidigt bevis **i CI**: planterat falskt påstående ⇒ steg 16 `failure` med grindens egen logg, revert ⇒ `success`. Fann två grindar till som saknas i uppräkningen | `#496` |
+| 2026-07-31 | **`TASK-100` — restlistans kontroll 1 lagad.** Fem defekter, inte tre: DONE-listan förorenades av ID:n i andra korts titlar · varje fet kod-span antogs vara bärare · **och formen såg bara FET kod-span, så `TASK-36.8` och `TASK-85` var helt osynliga**. Tredje instansen av post 8:s klass | `#503` |
+| 2026-07-31 | **`TASK-85` och `TASK-36.8` flyttade ur kroppen till denna logg.** Båda `Done`, båda kvarlämnade i strid med underhållsregeln — och båda osynliga för den gamla kontrollen. `T87`:s parkerade AC 7–8 i `36.7` följer med som öppen bokföring | — |
+| 2026-07-31 | **Kön hängde sig, och rotorsaken är bokförd.** #496:s kö-ref-körning (`ca3c7741`) blev `cancelled` när kön ombildade gruppen 24 s senare; GitHub startar aldrig om en sådan, så posten väntade på en check som aldrig kom — medan gruppen som innehöll den redan var grön. Löst med `gh run rerun`, **inte** rulesetets nödväg. Åtta PR:er stod bakom | — |
