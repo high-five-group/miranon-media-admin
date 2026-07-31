@@ -1,0 +1,63 @@
+{
+  // Node-typkollbar delmängd av Edge Function-koden.
+  //
+  // `supabase/functions/` kör DENO, resten av repot kör Node — en äkta
+  // runtime-skillnad, inte ett förbiseende. ADR-010 exkluderade hela mappen
+  // ur Biome av det skälet, och det beslutet står orört. Ingen tsconfig har
+  // någonsin täckt mappen.
+  //
+  // MEN GRÄNSEN GÅR INTE VID MAPPEN — den går vid vad som RÖR Deno.
+  // Av 16 `_shared`-moduler rör 4 Deno direkt (`airtable-client`, `auth`,
+  // `cors`, `registration-read`). Av de 12 återstående är 11 dessutom
+  // TRANSITIVT fria; den tolfte, `segment-resolution.ts`, importerar
+  // `airtable-client.ts` och drar därmed in Deno-globalen ändå.
+  //
+  // Just dessa 11 är ren logik som Node-tsc kollar utan ett enda falskt
+  // positivt — mätt mot repots faktiska innehåll, ej antaget: 0 fel.
+  //
+  // VARFÖR FILEN FINNS: 9 av modulerna typkollades redan, men BARA som
+  // sidoeffekt av att tester råkade importera dem. Den täckningen var
+  // odeklarerad och försvann tyst om ett test slutade importera. Här blir
+  // den avsiktlig, och `cursor.ts` + `errors.ts` tillkommer — de hade ingen
+  // täckning alls, och `errors.ts` används av samtliga Edge Functions.
+  //
+  // VARFÖR EN ENUMERERAD LISTA OCH INTE `exclude`: `exclude` filtrerar bara
+  // glob-träffar, den stoppar INTE transitiva importer. `include` på hela
+  // `_shared` med `exclude` på de Deno-rörande drar ändå in
+  // `airtable-client.ts` via `segment-resolution.ts` — mätt: 7× TS2304,
+  // samma sju fel TASK-53 rapporterade. Listan är därför explicit.
+  //
+  // LÄGGER DU TILL EN MODUL HÄR: den måste vara transitivt Deno-fri. Rör den
+  // `Deno.` direkt eller via en import fäller `npm run typecheck` med TS2304
+  // — det är avsikten, inte ett fel att kringgå.
+  //
+  // De 29 filer som rör Deno (direkt eller transitivt) täcks medvetet INTE.
+  // De typas av Deno vid deploy; ADR-010 § Fas 7-åtagande äger
+  // `deno check`/`deno lint` i deploy-pipelinen.
+  //
+  // `lib` INKLUDERAR DOM MEN `types` ÄR TOM: modulerna använder
+  // webbstandard-globaler som Deno har inbyggt (`Response`, `crypto`,
+  // `atob`/`btoa`, `console`). Node-sidans närmaste motsvarighet är DOM-libet
+  // — samma val som `tsconfig.tests.json` redan gör för nio av filerna.
+  // `types: []` håller Node-typer UTE: detta är Deno-kod, och @types/node
+  // skulle tysta fel som Deno-runtimen faktiskt har.
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.edge-shared.tsbuildinfo",
+    "lib": ["ES2023", "DOM"],
+    "types": []
+  },
+  "include": [
+    "supabase/functions/_shared/airtable-filter.ts",
+    "supabase/functions/_shared/airtable-retry.ts",
+    "supabase/functions/_shared/coerce.ts",
+    "supabase/functions/_shared/confirm-registrations.ts",
+    "supabase/functions/_shared/cursor.ts",
+    "supabase/functions/_shared/errors.ts",
+    "supabase/functions/_shared/field-allowlists.ts",
+    "supabase/functions/_shared/prepare-bulk-send.ts",
+    "supabase/functions/_shared/resend-batch.ts",
+    "supabase/functions/_shared/segment-membership.ts",
+    "supabase/functions/_shared/send-bulk.ts"
+  ]
+}
