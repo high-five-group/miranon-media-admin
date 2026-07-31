@@ -3,10 +3,10 @@ id: TASK-106
 title: >-
   Fynd: check:docs uppräkning saknar två grindar som en docs-ändring fäller —
   och scope-kriteriet är oskrivet
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 08:43'
-updated_date: '2026-07-31 08:45'
+updated_date: '2026-07-31 10:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -43,10 +43,10 @@ Riktning B ur `TASK-98`:s AC #5, rapporterad som scope-beslut utanför dess AC.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Acceptance Criteria
@@ -60,3 +60,9 @@ Riktning B ur `TASK-98`:s AC #5, rapporterad som scope-beslut utanför dess AC.
 - [x] #7 Uppräkningen verifierad mekaniskt mot ci.yml med run:-ankrad grep — den okvalificerade formen redovisad där den skiljer sig
 - [x] #8 Paret check-docs.sh <-> ci.yml: byggt med tvåsidigt bevis, ELLER eget kort mintat med mätt skäl till varför det inte byggdes här
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Scope-beslutet: BÅDA grindarna IN. check-fetch-depth-invariant.sh och check-listparitet.sh tillagda i check-docs.sh (rad 226-227), tvåsidigt fixtur-mätta i bygget: gröna mot repots faktiska innehåll (exit 0) och fällda på en ren .md-ändring (exit 1 — struken erratum-rad i ADR-029 respektive struken sentinel-backtick i CONTRIBUTING.md). Inklusions-kriteriet utskrivet i skriptets huvud, operativt prövbart; undantagslistan bär skäl per post. Slutradens grind-antal HÄRLETT ur PASSED-arrayens längd (rad 269) i stället för skrivet — talet ändras när listan ändras, divergensen kan inte återuppstå. Det felaktiga talet nio grindar i .claude/agents/bygg-agent.md borttaget som kopia, inte uppdaterat. Paret check-docs.sh mot ci.yml byggdes INTE här: eget kort TASK-109 mintat med mätt skäl (kommentar-fällan — hela-filen-varianten plockar grind-namn ur kommentarer och hade återinfört TASK-98:s felklass). Landad i PR #511, merge 4b2d88ca 2026-07-31T09:13:50Z. STÄNGNINGSVERIFIKAT per jobb, merge_group-körning 30618643037 på 4b2d88ca: Lint + Audit + TypeCheck success · Detect changed files success · Docs link check success · Test suite / Pure + Build success · Test suite / Acceptance (hermetisk) success · Test suite / A11y (axe-runner) skipped · Test suite / Staging sentinel purge skipped · Test suite / Staging (API + E2E) skipped (villkorade, ej triggade av diffen) · CI Passed or Skipped success. Diffen sex filer, samtliga TASK-106-relaterade (path-scopad add).
+<!-- SECTION:FINAL_SUMMARY:END -->
