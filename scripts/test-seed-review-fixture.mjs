@@ -18,6 +18,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  arIsoDatum,
+  avslutningsOrsak,
   betalstatusFor,
   buildEvent,
   buildRegistrations,
@@ -34,6 +36,7 @@ import {
   kapacitetFor,
   legacyEmailFormula,
   legacyRakningsavvikelser,
+  legacyRegisterOversikt,
   parseArgs,
   parseUtgangsdatum,
   personLinkGuardTrips,
@@ -825,6 +828,20 @@ t('DEL A: livstids-konfigurationen är giltig och tvingas fram', () => {
 const S91 = CONFIG.legacy.find((p) => p.namn === 'ZZ-GRANSKNING-S91');
 const SKOVDE = CONFIG.legacy.find((p) => p.namn === 'Skovde-S75');
 
+/**
+ * Samma post som registret bär, fast UTAN avslutningen — den aktiva formen.
+ *
+ * Bägge registerposterna är avslutade sedan TASK-101, och en avslutad post ger
+ * per konstruktion en tom raderingsplan. Ankar-testerna nedan måste därför
+ * köras mot den aktiva formen: annars blir de gröna för att posten är
+ * avslutad, inte för att record-ID-ankaret eller länk-guarden håller — ett
+ * grönt test som bevisar något helt annat än det påstår.
+ */
+const somAktiv = (post) => {
+  const { stadad, ...aktiv } = post;
+  return aktiv;
+};
+
 t('DEL B: registret bär de två uppmätta fixturerna med sina räkningar', () => {
   assert.ok(S91 && SKOVDE, 'båda posterna måste finnas');
   assert.deepEqual(S91.forvantat, { event: 1, anmalningar: 16, personer: 16 });
@@ -848,7 +865,7 @@ t('DEL B: ett oankrat legacy-mönster REFUSERAS av validateConfig', () => {
   );
 });
 
-t('DEL B · RÖD SIDA: S91:s faktiska rader klassas för radering', () => {
+t('DEL B · RÖD SIDA: en AKTIV S91-posts faktiska rader klassas för radering', () => {
   const plan = planLegacyClean({
     events: [{ id: 'recBepsw4Qy9scfoj', fields: { Ort: 'ZZ-GRANSKNING-S91' } }],
     registrations: [
@@ -856,7 +873,7 @@ t('DEL B · RÖD SIDA: S91:s faktiska rader klassas för radering', () => {
       { id: 'recA2', fields: { 'E-post': 'zz-granskning-16@staging.test' } },
     ],
     persons: [{ id: 'recP1', fields: { 'E-post': 'zz-granskning-01@staging.test' } }],
-    post: S91,
+    post: somAktiv(S91),
     config: CONFIG,
   });
   assert.deepEqual(plan.events, ['recBepsw4Qy9scfoj']);
@@ -864,7 +881,7 @@ t('DEL B · RÖD SIDA: S91:s faktiska rader klassas för radering', () => {
   assert.deepEqual(plan.persons, ['recP1']);
 });
 
-t('DEL B · RÖD SIDA: Skövdes faktiska rader klassas för radering', () => {
+t('DEL B · RÖD SIDA: en AKTIV Skövde-posts faktiska rader klassas för radering', () => {
   const plan = planLegacyClean({
     events: [{ id: 'recigcY12dDllUkYt', fields: { Ort: 'Skövde' } }],
     registrations: [
@@ -872,7 +889,7 @@ t('DEL B · RÖD SIDA: Skövdes faktiska rader klassas för radering', () => {
       { id: 'recB2', fields: { 'E-post': 'granskning-scroll-3@example.com' } },
     ],
     persons: [{ id: 'recP2', fields: { 'E-post': 'granskning-review-plus1@example.com' } }],
-    post: SKOVDE,
+    post: somAktiv(SKOVDE),
     config: CONFIG,
   });
   assert.deepEqual(plan.events, ['recigcY12dDllUkYt']);
@@ -888,7 +905,7 @@ t('DEL B · GRÖN SIDA: ett ANNAT event med Ort "Skövde" skyddas av record-ID-a
     events: [{ id: 'recVerkligtSkovde', fields: { Ort: 'Skövde' } }],
     registrations: [],
     persons: [],
-    post: SKOVDE,
+    post: somAktiv(SKOVDE),
     config: CONFIG,
   });
   assert.deepEqual(plan.events, [], 'ett verkligt Skövde-event får ALDRIG raderas');
@@ -900,7 +917,7 @@ t('DEL B · GRÖN SIDA: rätt record-ID men FEL Ort skyddas också', () => {
     events: [{ id: 'recigcY12dDllUkYt', fields: { Ort: 'Göteborg' } }],
     registrations: [],
     persons: [],
-    post: SKOVDE,
+    post: somAktiv(SKOVDE),
     config: CONFIG,
   });
   assert.deepEqual(plan.events, []);
@@ -939,7 +956,7 @@ t('DEL B · GRÖN SIDA: länk-guarden och protectedRecordIds gäller även i leg
       },
       { id: 'rec7F8jYc7rczwwkM', fields: { 'E-post': 'zz-granskning-03@staging.test' } },
     ],
-    post: S91,
+    post: somAktiv(S91),
     config: CONFIG,
   });
   assert.deepEqual(plan.persons, [], 'ingen av de två får raderas');
@@ -954,12 +971,12 @@ t('DEL B: räknings-guarden är TYST när basen stämmer mot mätningen', () => 
     registrations: Array.from({ length: 16 }, (_, i) => `a${i}`),
     persons: Array.from({ length: 16 }, (_, i) => `p${i}`),
   };
-  assert.deepEqual(legacyRakningsavvikelser(plan, S91), []);
+  assert.deepEqual(legacyRakningsavvikelser(plan, somAktiv(S91)), []);
 });
 
 t('DEL B · RÖD SIDA: räknings-guarden FÄLLER när basen avviker från mätningen', () => {
   const plan = { events: ['e'], registrations: ['a1'], persons: [] };
-  const avvikelser = legacyRakningsavvikelser(plan, S91);
+  const avvikelser = legacyRakningsavvikelser(plan, somAktiv(S91));
   assert.equal(avvikelser.length, 2);
   assert.match(avvikelser[0], /anmalningar: förväntade 16, fann 1/);
   assert.match(avvikelser[1], /personer: förväntade 16, fann 0/);
@@ -971,6 +988,250 @@ t('DEL B: legacy-grovfiltret ankras server-side och fångar inte den andra poste
     "FIND('granskning-', LOWER({E-post} & '')) = 1",
     'position 1 utesluter zz-granskning-… där prefixet står på position 4',
   );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TASK-101 — LEGACY-REGISTRETS AVSLUTNING
+//
+// Två tillstånd ska gå att skilja åt: "fixturen ligger kvar" och "fixturen är
+// städad". Sviten nedan är tvåsidig av samma skäl som DEL A: en avslutning som
+// bara bevisas HINDRA radering är förenlig med en som hindrar ALLT — och då
+// vore registret värdelöst för nästa handbyggda fixtur. Varje spärr-test har
+// därför en motpart som bevisar att den AKTIVA vägen fortfarande fungerar, och
+// att räknings-guarden fortfarande fäller.
+// ═══════════════════════════════════════════════════════════════════════════
+
+t('TASK-101: båda registerposterna bär en avslutning med datum OCH referens', () => {
+  for (const post of [S91, SKOVDE]) {
+    assert.ok(post.stadad, `${post.namn} måste bära stadad`);
+    assert.ok(arIsoDatum(post.stadad.datum), `${post.namn}.stadad.datum måste vara ISO`);
+    assert.ok(post.stadad.av.length > 0, `${post.namn}.stadad.av måste peka någonstans`);
+  }
+  assert.equal(S91.stadad.datum, '2026-07-31');
+  assert.match(S91.stadad.av, /TASK-95/);
+  assert.equal(SKOVDE.stadad.datum, '2026-07-31');
+  assert.match(SKOVDE.stadad.av, /TASK-101/);
+});
+
+t('TASK-101: kalla-proveniensen är BEVARAD ordagrant — avslutningen kastar inte historiken', () => {
+  // Vem byggde fixturen, när, och vem mätte den. Texten är hela skälet till att
+  // posten står kvar i registret i stället för att raderas ur det.
+  assert.match(S91.kalla, /Handbyggd 2026-07-26 \(S91, task-48 design-review\)/);
+  assert.match(S91.kalla, /Mätt av TASK-88, omräknad av TASK-95 2026-07-30/);
+  assert.match(S91.kalla, /Marcus godkände städning 2026-07-30/);
+  assert.match(SKOVDE.kalla, /Handbyggd 2026-07-22 \(S75 review-våg 1, betalningsvy/);
+  assert.match(SKOVDE.kalla, /ett RIKTIGT\s+ortsnamn, därav record-ID-ankaret/);
+  // …och städningens utfall är TILLAGT, inte ersättande.
+  assert.match(S91.kalla, /STÄDAD 2026-07-31 av TASK-95: 33 poster raderade/);
+  assert.match(SKOVDE.kalla, /STÄDAD 2026-07-31 .*6\/6 anmälningar, 3\/3 personer/s);
+});
+
+t('TASK-101: forvantat står KVAR på en avslutad post — räkningen är historik, inte skräp', () => {
+  // Guardens egen instruktion ("mät om, uppdatera forvantat") hade gett {0,0,0}
+  // och kastat mätningen. Att den står kvar är formens kärna.
+  assert.deepEqual(S91.forvantat, { event: 1, anmalningar: 16, personer: 16 });
+  assert.deepEqual(SKOVDE.forvantat, { event: 1, anmalningar: 6, personer: 3 });
+});
+
+t('TASK-101: validateConfig KRÄVER forvantat även på en avslutad post', () => {
+  assert.throws(
+    () =>
+      validateConfig({
+        ...CONFIG,
+        legacy: [{ ...S91, forvantat: { event: 1, anmalningar: 16 } }],
+      }),
+    /forvantat\.personer saknas — räkningen är guarden/,
+  );
+});
+
+t('TASK-101 · RÖD SIDA: en AVSLUTAD post kan INTE radera något — basen till trots', () => {
+  // Exakt de rader som den aktiva formen klassar för radering (testet ovan).
+  const plan = planLegacyClean({
+    events: [{ id: 'recBepsw4Qy9scfoj', fields: { Ort: 'ZZ-GRANSKNING-S91' } }],
+    registrations: [
+      { id: 'recA1', fields: { 'E-post': 'zz-granskning-01@staging.test' } },
+      { id: 'recA2', fields: { 'E-post': 'zz-granskning-16@staging.test' } },
+    ],
+    persons: [{ id: 'recP1', fields: { 'E-post': 'zz-granskning-01@staging.test' } }],
+    post: S91,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.events, [], 'en avslutad post raderar aldrig ett event');
+  assert.deepEqual(plan.registrations, [], 'en avslutad post raderar aldrig en anmälan');
+  assert.deepEqual(plan.persons, [], 'en avslutad post raderar aldrig en person');
+  assert.equal(plan.skipped.length, 4, 'varje rad ska redovisas, inte tyst släppas');
+  for (const s of plan.skipped) assert.match(s.orsak, /posten är AVSLUTAD/);
+});
+
+t('TASK-101 · RÖD SIDA: avslutningen håller även när räkningen stämmer EXAKT mot forvantat', () => {
+  // Det starkaste fallet: allt en aktiv post kräver är uppfyllt — rätt
+  // record-ID, rätt Ort, matchande adresser, räkningen 1/6/3 exakt. Ändå tom
+  // plan. Spärren kan alltså inte kringgås genom att återskapa fixturen.
+  const plan = planLegacyClean({
+    events: [{ id: 'recigcY12dDllUkYt', fields: { Ort: 'Skövde' } }],
+    registrations: Array.from({ length: 6 }, (_, i) => ({
+      id: `recB${i}`,
+      fields: { 'E-post': `granskning-rad-${i}@example.com` },
+    })),
+    persons: Array.from({ length: 3 }, (_, i) => ({
+      id: `recP${i}`,
+      fields: { 'E-post': `granskning-person-${i}@example.com` },
+    })),
+    post: SKOVDE,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.events, []);
+  assert.deepEqual(plan.registrations, []);
+  assert.deepEqual(plan.persons, []);
+  assert.equal(plan.skipped.length, 10);
+});
+
+t('TASK-101 · GRÖN SIDA: den AKTIVA vägen är oförändrad — spärren gäller bara avslutade', () => {
+  // Motparten. Utan detta vore "avslutningen hindrar radering" förenligt med
+  // "registret kan inte längre radera någonting alls".
+  const indata = {
+    events: [{ id: 'recBepsw4Qy9scfoj', fields: { Ort: 'ZZ-GRANSKNING-S91' } }],
+    registrations: [{ id: 'recA1', fields: { 'E-post': 'zz-granskning-01@staging.test' } }],
+    persons: [{ id: 'recP1', fields: { 'E-post': 'zz-granskning-01@staging.test' } }],
+    config: CONFIG,
+  };
+  const aktiv = planLegacyClean({ ...indata, post: somAktiv(S91) });
+  const avslutad = planLegacyClean({ ...indata, post: S91 });
+  assert.deepEqual(aktiv.events, ['recBepsw4Qy9scfoj'], 'aktiv post raderar fortfarande');
+  assert.deepEqual(aktiv.registrations, ['recA1']);
+  assert.deepEqual(aktiv.persons, ['recP1']);
+  assert.deepEqual(avslutad.events, [], 'samma indata, avslutad post ⇒ ingenting');
+});
+
+t('TASK-101 · GRÖN SIDA: räknings-guarden FÄLLER fortfarande för en aktiv post', () => {
+  // Guarden är TASK-95:s skarpaste, och den ska inte försvagas av detta kort.
+  const plan = planLegacyClean({
+    events: [{ id: 'recigcY12dDllUkYt', fields: { Ort: 'Skövde' } }],
+    registrations: [{ id: 'recB1', fields: { 'E-post': 'granskning-review@example.com' } }],
+    persons: [],
+    post: somAktiv(SKOVDE),
+    config: CONFIG,
+  });
+  const avvikelser = legacyRakningsavvikelser(plan, somAktiv(SKOVDE));
+  assert.equal(avvikelser.length, 2, 'anmälningar 1≠6 och personer 0≠3 ska båda fällas');
+  assert.match(avvikelser[0], /anmalningar: förväntade 6, fann 1/);
+  assert.match(avvikelser[1], /personer: förväntade 3, fann 0/);
+});
+
+// --- Avslutningens form valideras ---
+
+t('TASK-101: en avslutning UTAN datum refuseras', () => {
+  assert.throws(
+    () => validateConfig({ ...CONFIG, legacy: [{ ...S91, stadad: { av: 'TASK-95' } }] }),
+    /stadad\.datum "undefined" är inget giltigt ISO-datum/,
+  );
+});
+
+t('TASK-101: en avslutning med OMÖJLIGT kalenderdatum refuseras', () => {
+  // 2026-02-31 passerar en ren regex men finns inte — samma kalender-prövning
+  // som utgångsstämpeln, via arIsoDatum.
+  for (const trasigt of ['2026-02-31', '2026-13-01', '31 juli 2026', '2026-7-31', '']) {
+    assert.throws(
+      () =>
+        validateConfig({
+          ...CONFIG,
+          legacy: [{ ...S91, stadad: { datum: trasigt, av: 'TASK-95' } }],
+        }),
+      /stadad\.datum/,
+      `"${trasigt}" måste refuseras`,
+    );
+  }
+});
+
+t('TASK-101: en avslutning utan landnings-referens refuseras', () => {
+  for (const tom of [undefined, '', '   ', 42]) {
+    assert.throws(
+      () =>
+        validateConfig({
+          ...CONFIG,
+          legacy: [{ ...S91, stadad: { datum: '2026-07-31', av: tom } }],
+        }),
+      /stadad\.av saknas/,
+      `av=${JSON.stringify(tom)} måste refuseras`,
+    );
+  }
+});
+
+t('TASK-101: en stadad som inte är ett objekt refuseras', () => {
+  for (const fel of ['2026-07-31', true, 17, null]) {
+    assert.throws(
+      () => validateConfig({ ...CONFIG, legacy: [{ ...S91, stadad: fel }] }),
+      /stadad måste vara ett objekt/,
+      `stadad=${JSON.stringify(fel)} måste refuseras`,
+    );
+  }
+});
+
+t('TASK-101 · GRÖN SIDA: en post UTAN stadad passerar — fältet är valfritt', () => {
+  assert.doesNotThrow(() => validateConfig({ ...CONFIG, legacy: [somAktiv(S91)] }));
+});
+
+// --- Läsbarhet utan att köra skriptet ---
+
+t('TASK-101: avslutningsOrsak nämner både datum och landnings-referens', () => {
+  const orsak = avslutningsOrsak(S91);
+  assert.match(orsak, /AVSLUTAD/);
+  assert.match(orsak, /2026-07-31/);
+  assert.match(orsak, /TASK-95/);
+});
+
+t('TASK-101: registeröversikten kan ALDRIG visa en avslutad post som aktiv', () => {
+  const oversikt = legacyRegisterOversikt(CONFIG);
+  assert.equal(
+    oversikt,
+    'ZZ-GRANSKNING-S91 (AVSLUTAD 2026-07-31), Skovde-S75 (AVSLUTAD 2026-07-31)',
+  );
+  // …och en aktiv post märks som aktiv, annars vore märkningen meningslös.
+  assert.equal(legacyRegisterOversikt({ legacy: [somAktiv(S91)] }), 'ZZ-GRANSKNING-S91 (aktiv)');
+  assert.equal(legacyRegisterOversikt({ legacy: [] }), '(registret är tomt)');
+});
+
+t('TASK-101: felmeddelandet för okänt --legacy-namn bär tillståndet, inte bara namnen', () => {
+  assert.throws(
+    () => parseArgs(['--legacy', 'ZZ-HITTEPÅ'], CONFIG),
+    /ZZ-GRANSKNING-S91 \(AVSLUTAD 2026-07-31\)/,
+  );
+});
+
+t('TASK-101 · GRÖN SIDA: en avslutad post GÖMS inte — --legacy hittar den fortfarande', () => {
+  // Formen "flytta posten till en egen legacyStadade-lista" hade gett
+  // "finns inte i registret", vilket är missvisande: posten fanns, den är städad.
+  const a = parseArgs(['--legacy', 'ZZ-GRANSKNING-S91'], CONFIG);
+  assert.equal(a.legacy.namn, 'ZZ-GRANSKNING-S91');
+  assert.ok(a.legacy.stadad, 'uppslagningen ska bära avslutningen så korLegacy kan rapportera den');
+});
+
+// --- arIsoDatum, delad av avslutningen och utgångsstämpeln ---
+
+t('TASK-101: arIsoDatum är kalender-validerad, inte bara formmässig', () => {
+  for (const giltigt of ['2026-07-31', '2024-02-29', '2026-12-31']) {
+    assert.equal(arIsoDatum(giltigt), true, `${giltigt} är ett verkligt datum`);
+  }
+  for (const ogiltigt of [
+    '2026-02-31',
+    '2025-02-29',
+    '2026-13-01',
+    '2026-00-10',
+    '26-07-31',
+    '2026-7-31',
+    '',
+    undefined,
+    null,
+    20260731,
+  ]) {
+    assert.equal(arIsoDatum(ogiltigt), false, `${ogiltigt} måste avvisas`);
+  }
+});
+
+t('TASK-101: utgångsstämpelns parser delar kalender-prövning med avslutningen', () => {
+  // Refaktoreringen får inte ha ändrat svepets beteende.
+  assert.equal(parseUtgangsdatum('[SEED-REVIEW-FIXTUR] [UTGÅR: 2026-08-13]', CONFIG), '2026-08-13');
+  assert.equal(parseUtgangsdatum('[SEED-REVIEW-FIXTUR] [UTGÅR: 2026-02-31]', CONFIG), null);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
