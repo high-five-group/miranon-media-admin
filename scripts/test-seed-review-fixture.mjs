@@ -32,11 +32,18 @@ import {
   isoDatum,
   isoTidBakat,
   kapacitetFor,
+  legacyEmailFormula,
+  legacyRakningsavvikelser,
   parseArgs,
+  parseUtgangsdatum,
   personLinkGuardTrips,
   planClean,
+  planLegacyClean,
+  planSweep,
   purgeCollisions,
   slugify,
+  sweepEventFormula,
+  utgangsstampel,
   validateConfig,
 } from './seed-review-fixture.mjs';
 
@@ -336,6 +343,7 @@ t('eventet bär Eventtyp-länken (ADR-066 b5) och sätter ALDRIG Månad/år', ()
     startdatum: '2026-08-03',
     slutdatum: '2026-08-04',
     maxPlatser: 30,
+    utgangsdatum: '2026-08-13',
     config: CONFIG,
   });
   assert.deepEqual(e.Eventtyp, ['recclDd7hUQsfxoVs']);
@@ -352,6 +360,7 @@ t('eventet sätter inga formel-/system-fält', () => {
     startdatum: '2026-08-03',
     slutdatum: '2026-08-04',
     maxPlatser: 30,
+    utgangsdatum: '2026-08-13',
     config: CONFIG,
   });
   for (const forbjudet of ['EventKey', 'Event-nr', 'Eventlabel', 'Event (text)', 'Säsong']) {
@@ -613,6 +622,435 @@ t('slutraden är den direkta event-URL:en', () => {
   assert.equal(
     eventUrl(CONFIG.appBaseUrl, 'recBepsw4Qy9scfoj'),
     'http://localhost:5173/event/recBepsw4Qy9scfoj',
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TASK-95 DEL A — FIXTURENS LIVSTID
+//
+// Kärnan i sviten nedan är TVÅSIDIG med flit. En städmekanism som bara
+// bevisas radera är förenlig med en som raderar ALLT — och det felet vore
+// värre än det den lagar, eftersom det tar granskningsdata mitt under en
+// pågående granskning. Varje rad-test har därför en motpart som bevisar att
+// mekanismen HÅLLER SIG BORTA.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const IDAG = new Date('2026-08-01T09:00:00.000Z');
+
+t('DEL A: utgangsstampel bygger stämpeln och REFUSERAR allt som inte är ISO-datum', () => {
+  assert.equal(utgangsstampel('2026-08-14', CONFIG.livstid), '[UTGÅR: 2026-08-14]');
+  for (const trasigt of [undefined, null, '', '14 aug', '2026-8-14', 20260814]) {
+    assert.throws(() => utgangsstampel(trasigt, CONFIG.livstid), /inte ett ISO-datum/);
+  }
+});
+
+t('DEL A: stämpeln som buildEvent skriver är läsbar av parsern (rundgång)', () => {
+  const e = buildEvent({
+    ort: 'ZZ-GRANSKNING-FIXTUR',
+    startdatum: '2026-08-03',
+    slutdatum: '2026-08-04',
+    maxPlatser: 30,
+    utgangsdatum: '2026-08-13',
+    config: CONFIG,
+  });
+  assert.ok(e.Notering.startsWith(CONFIG.marker.noteringSentinel), 'sentineln måste stå först');
+  assert.equal(parseUtgangsdatum(e.Notering, CONFIG), '2026-08-13');
+});
+
+t(
+  'DEL A: buildEvent utan giltigt utgångsdatum KASTAR — en odödlig fixtur får aldrig skapas tyst',
+  () => {
+    const bas = {
+      ort: 'ZZ-X',
+      startdatum: '2026-08-03',
+      slutdatum: '2026-08-04',
+      maxPlatser: 30,
+      config: CONFIG,
+    };
+    assert.throws(() => buildEvent(bas), /inte ett ISO-datum/);
+    assert.throws(() => buildEvent({ ...bas, utgangsdatum: '13 aug' }), /inte ett ISO-datum/);
+  },
+);
+
+t('DEL A: parsern läser stämpeln oavsett var i noteringen den står', () => {
+  const n = `${CONFIG.marker.noteringSentinel} [UTGÅR: 2026-09-01] blabla`;
+  assert.equal(parseUtgangsdatum(n, CONFIG), '2026-09-01');
+});
+
+t(
+  'DEL A: parsern ger null för ingen/trasig/omöjlig stämpel — null betyder ALLTID "rör aldrig"',
+  () => {
+    const fall = [
+      ['Granskningsfixtur S91 — task-48. Raderas efter granskning.', 'handbyggd, ingen stämpel'],
+      ['[SEED-REVIEW-FIXTUR] [UTGÅR: ] tom', 'tomt datum'],
+      ['[SEED-REVIEW-FIXTUR] [UTGÅR: 2026-13-01] ogiltig månad', 'månad 13'],
+      ['[SEED-REVIEW-FIXTUR] [UTGÅR: 2026-02-31] finns inte', 'kalenderdatum som inte finns'],
+      ['[SEED-REVIEW-FIXTUR] [UTGÅR: 26-08-13] kort år', 'tvåsiffrigt år'],
+      ['[SEED-REVIEW-FIXTUR] [UTGÅR: 2026-08-13 oavslutad', 'ingen stängande klammer'],
+      [undefined, 'inget Notering-fält alls'],
+    ];
+    for (const [notering, vad] of fall) {
+      assert.equal(parseUtgangsdatum(notering, CONFIG), null, `${vad} måste ge null`);
+    }
+  },
+);
+
+/** Bygg ett fixtur-event med given stämpel — svepets indata. */
+const sweepEvent = (id, ort, utgar) => ({
+  id,
+  fields: {
+    Ort: ort,
+    Notering: `${CONFIG.marker.noteringSentinel} [UTGÅR: ${utgar}] Granskningsfixtur.`,
+  },
+});
+
+t('DEL A · RÖD SIDA: en fixtur vars stämpel PASSERAT klassas som förfallen', () => {
+  const plan = planSweep({
+    events: [sweepEvent('recGammal', 'ZZ-GRANSKNING-GAMMAL', '2026-07-20')],
+    idag: IDAG,
+    config: CONFIG,
+  });
+  assert.equal(plan.forfallna.length, 1);
+  assert.equal(plan.forfallna[0].id, 'recGammal');
+  assert.equal(plan.forfallna[0].utgar, '2026-07-20');
+  assert.deepEqual(plan.aktiva, []);
+});
+
+t('DEL A · GRÖN SIDA: en fixtur vars granskning PÅGÅR rörs ALDRIG', () => {
+  const plan = planSweep({
+    events: [sweepEvent('recAktiv', 'ZZ-GRANSKNING-AKTIV', '2026-08-20')],
+    idag: IDAG,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.forfallna, [], 'en aktiv granskning får ALDRIG städas');
+  assert.equal(plan.aktiva.length, 1);
+  assert.equal(plan.aktiva[0].utgar, '2026-08-20');
+});
+
+t('DEL A · GRÖN SIDA: en fixtur som utgår IDAG får dagen ut (strikt >)', () => {
+  const plan = planSweep({
+    events: [sweepEvent('recIdag', 'ZZ-GRANSKNING-IDAG', '2026-08-01')],
+    idag: IDAG,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.forfallna, [], 'utgångsdagen själv är fortfarande giltig');
+  assert.equal(plan.aktiva.length, 1);
+});
+
+t(
+  'DEL A · GRÖN SIDA: en fixtur UTAN läsbar stämpel rörs aldrig (handbyggd = legacy-registrets område)',
+  () => {
+    const plan = planSweep({
+      events: [
+        {
+          id: 'recBepsw4Qy9scfoj',
+          fields: {
+            Ort: 'ZZ-GRANSKNING-S91',
+            Notering: `${CONFIG.marker.noteringSentinel} utan stämpel`,
+          },
+        },
+      ],
+      idag: IDAG,
+      config: CONFIG,
+    });
+    assert.deepEqual(plan.forfallna, []);
+    assert.equal(plan.utanStampel[0].orsak, 'ingen läsbar utgångsstämpel');
+  },
+);
+
+t('DEL A · GRÖN SIDA: ett RIKTIGT event utan fixtur-sentinel ignoreras helt av svepet', () => {
+  const plan = planSweep({
+    events: [
+      { id: 'recRiktigt', fields: { Ort: 'Skövde', Notering: 'GRANSKNINGSDATA (S75) …' } },
+      { id: 'recTomt', fields: { Ort: 'Göteborg' } },
+    ],
+    idag: IDAG,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.forfallna, []);
+  assert.deepEqual(plan.aktiva, []);
+  assert.deepEqual(plan.utanStampel, [], 'utan sentinel ska raden inte ens klassas');
+});
+
+t('DEL A · GRÖN SIDA: ett skyddat record-ID städas aldrig, ens med passerad stämpel', () => {
+  const plan = planSweep({
+    events: [sweepEvent(CONFIG.protectedRecordIds[0], 'ZZ-X', '2026-01-01')],
+    idag: IDAG,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.forfallna, []);
+  assert.equal(plan.utanStampel[0].orsak, 'skyddad record-ID');
+});
+
+t('DEL A: svepet skiljer flera fixturer åt i samma körning', () => {
+  const plan = planSweep({
+    events: [
+      sweepEvent('recA', 'ZZ-A', '2026-07-01'),
+      sweepEvent('recB', 'ZZ-B', '2026-09-01'),
+      sweepEvent('recC', 'ZZ-C', '2026-07-31'),
+    ],
+    idag: IDAG,
+    config: CONFIG,
+  });
+  assert.deepEqual(
+    plan.forfallna.map((f) => f.id),
+    ['recA', 'recC'],
+  );
+  assert.deepEqual(
+    plan.aktiva.map((a) => a.id),
+    ['recB'],
+  );
+});
+
+t('DEL A: svepets filterByFormula ankrar sentineln FÖRST i Noteringen', () => {
+  assert.equal(sweepEventFormula(CONFIG.marker), "FIND('[SEED-REVIEW-FIXTUR]', {Notering}) = 1");
+});
+
+t('DEL A: livstids-konfigurationen är giltig och tvingas fram', () => {
+  assert.ok(CONFIG.livstid.dagarDefault >= 1);
+  assert.throws(
+    () => validateConfig({ ...CONFIG, livstid: { ...CONFIG.livstid, dagarDefault: 0 } }),
+    /dagarDefault/,
+  );
+  assert.throws(
+    () => validateConfig({ ...CONFIG, livstid: { ...CONFIG.livstid, stampelPrefix: 'UTGÅR' } }),
+    /stampelPrefix/,
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TASK-95 DEL B — LEGACY-REGISTRET
+// ═══════════════════════════════════════════════════════════════════════════
+
+const S91 = CONFIG.legacy.find((p) => p.namn === 'ZZ-GRANSKNING-S91');
+const SKOVDE = CONFIG.legacy.find((p) => p.namn === 'Skovde-S75');
+
+t('DEL B: registret bär de två uppmätta fixturerna med sina räkningar', () => {
+  assert.ok(S91 && SKOVDE, 'båda posterna måste finnas');
+  assert.deepEqual(S91.forvantat, { event: 1, anmalningar: 16, personer: 16 });
+  assert.deepEqual(SKOVDE.forvantat, { event: 1, anmalningar: 6, personer: 3 });
+  assert.equal(S91.eventRecordId, 'recBepsw4Qy9scfoj');
+  assert.equal(SKOVDE.eventRecordId, 'recigcY12dDllUkYt');
+});
+
+t('DEL B: ett oankrat legacy-mönster REFUSERAS av validateConfig', () => {
+  assert.throws(
+    () => validateConfig({ ...CONFIG, legacy: [{ ...S91, emailPattern: 'zz-granskning-' }] }),
+    /ankrat i BÅDA ändar/,
+  );
+  assert.throws(
+    () => validateConfig({ ...CONFIG, legacy: [{ ...S91, eventRecordId: '' }] }),
+    /rec-formad/,
+  );
+  assert.throws(
+    () => validateConfig({ ...CONFIG, legacy: [{ ...S91, forvantat: { event: 1 } }] }),
+    /forvantat\.anmalningar/,
+  );
+});
+
+t('DEL B · RÖD SIDA: S91:s faktiska rader klassas för radering', () => {
+  const plan = planLegacyClean({
+    events: [{ id: 'recBepsw4Qy9scfoj', fields: { Ort: 'ZZ-GRANSKNING-S91' } }],
+    registrations: [
+      { id: 'recA1', fields: { 'E-post': 'zz-granskning-01@staging.test' } },
+      { id: 'recA2', fields: { 'E-post': 'zz-granskning-16@staging.test' } },
+    ],
+    persons: [{ id: 'recP1', fields: { 'E-post': 'zz-granskning-01@staging.test' } }],
+    post: S91,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.events, ['recBepsw4Qy9scfoj']);
+  assert.deepEqual(plan.registrations, ['recA1', 'recA2']);
+  assert.deepEqual(plan.persons, ['recP1']);
+});
+
+t('DEL B · RÖD SIDA: Skövdes faktiska rader klassas för radering', () => {
+  const plan = planLegacyClean({
+    events: [{ id: 'recigcY12dDllUkYt', fields: { Ort: 'Skövde' } }],
+    registrations: [
+      { id: 'recB1', fields: { 'E-post': 'granskning-review@example.com' } },
+      { id: 'recB2', fields: { 'E-post': 'granskning-scroll-3@example.com' } },
+    ],
+    persons: [{ id: 'recP2', fields: { 'E-post': 'granskning-review-plus1@example.com' } }],
+    post: SKOVDE,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.events, ['recigcY12dDllUkYt']);
+  assert.equal(plan.registrations.length, 2);
+  assert.deepEqual(plan.persons, ['recP2']);
+});
+
+t('DEL B · GRÖN SIDA: ett ANNAT event med Ort "Skövde" skyddas av record-ID-ankaret', () => {
+  // Skövde är ett RIKTIGT ortsnamn. Utan ID-ankaret hade ett verkligt
+  // Skövde-event fångats av ort-filtret och raderats. Detta är registrets
+  // enskilt viktigaste guard.
+  const plan = planLegacyClean({
+    events: [{ id: 'recVerkligtSkovde', fields: { Ort: 'Skövde' } }],
+    registrations: [],
+    persons: [],
+    post: SKOVDE,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.events, [], 'ett verkligt Skövde-event får ALDRIG raderas');
+  assert.match(plan.skipped[0].orsak, /record-ID matchar inte registrets ankare/);
+});
+
+t('DEL B · GRÖN SIDA: rätt record-ID men FEL Ort skyddas också', () => {
+  const plan = planLegacyClean({
+    events: [{ id: 'recigcY12dDllUkYt', fields: { Ort: 'Göteborg' } }],
+    registrations: [],
+    persons: [],
+    post: SKOVDE,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.events, []);
+  assert.match(plan.skipped[0].orsak, /Ort "Göteborg" matchar inte/);
+});
+
+t('DEL B · GRÖN SIDA: legacy-mönstren matchar ALDRIG riktiga eller permanenta adresser', () => {
+  const forbjudna = [
+    'lotta@miranon.se',
+    'roger@miranon.se',
+    'zz-arbetsko-person01@staging.test',
+    'create-test+01234567-89ab-4cde-8f01-23456789abcd@staging.test',
+    'seed-review+zz-granskning-fixtur-01@granskning.test',
+  ];
+  for (const post of CONFIG.legacy) {
+    const p = new RegExp(post.emailPattern);
+    for (const adress of forbjudna) {
+      assert.ok(!p.test(adress), `${post.namn} får aldrig matcha ${adress}`);
+    }
+  }
+});
+
+t('DEL B · GRÖN SIDA: de två legacy-posterna kan aldrig matcha varandras rader', () => {
+  assert.ok(!new RegExp(S91.emailPattern).test('granskning-review@example.com'));
+  assert.ok(!new RegExp(SKOVDE.emailPattern).test('zz-granskning-01@staging.test'));
+});
+
+t('DEL B · GRÖN SIDA: länk-guarden och protectedRecordIds gäller även i legacy-läget', () => {
+  const plan = planLegacyClean({
+    events: [],
+    registrations: [],
+    persons: [
+      {
+        id: 'recLankad',
+        fields: { 'E-post': 'zz-granskning-02@staging.test', Deltaganden: ['recX'] },
+      },
+      { id: 'rec7F8jYc7rczwwkM', fields: { 'E-post': 'zz-granskning-03@staging.test' } },
+    ],
+    post: S91,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.persons, [], 'ingen av de två får raderas');
+  const orsak = (id) => plan.skipped.find((s) => s.id === id)?.orsak ?? '';
+  assert.match(orsak('rec7F8jYc7rczwwkM'), /skyddad record-ID/);
+  assert.match(orsak('recLankad'), /länk-guard: Deltaganden/);
+});
+
+t('DEL B: räknings-guarden är TYST när basen stämmer mot mätningen', () => {
+  const plan = {
+    events: ['e'],
+    registrations: Array.from({ length: 16 }, (_, i) => `a${i}`),
+    persons: Array.from({ length: 16 }, (_, i) => `p${i}`),
+  };
+  assert.deepEqual(legacyRakningsavvikelser(plan, S91), []);
+});
+
+t('DEL B · RÖD SIDA: räknings-guarden FÄLLER när basen avviker från mätningen', () => {
+  const plan = { events: ['e'], registrations: ['a1'], persons: [] };
+  const avvikelser = legacyRakningsavvikelser(plan, S91);
+  assert.equal(avvikelser.length, 2);
+  assert.match(avvikelser[0], /anmalningar: förväntade 16, fann 1/);
+  assert.match(avvikelser[1], /personer: förväntade 16, fann 0/);
+});
+
+t('DEL B: legacy-grovfiltret ankras server-side och fångar inte den andra posten', () => {
+  assert.equal(
+    legacyEmailFormula(SKOVDE),
+    "FIND('granskning-', LOWER({E-post} & '')) = 1",
+    'position 1 utesluter zz-granskning-… där prefixet står på position 4',
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AC #4 — SKYDDSRÄCKE 2 INTAKT EFTER ÄNDRINGEN
+//
+// Mekaniskt mot den SKARPA .purge-staging-policy.json, aldrig antaget. En
+// granskningsfixtur får ALDRIG bli purge-bar; att lägga en target hade varit
+// att riva skyddet, inte att laga det.
+// ═══════════════════════════════════════════════════════════════════════════
+
+t('AC #4: purge-policyn har NOLL target som kan matcha en granskningsfixtur', () => {
+  const slug = slugify(CONFIG.defaults.ort);
+  const samples = [
+    { table: 'Eventplanering', field: 'Ort', value: CONFIG.defaults.ort },
+    ...Array.from({ length: 16 }, (_, i) => ({
+      table: 'Anmälningar',
+      field: 'E-post',
+      value: fixtureEmail(slug, i, CONFIG.marker),
+    })),
+    // Legacy-fixturernas markörer måste vara lika immuna.
+    ...CONFIG.legacy.map((p) => ({ table: 'Eventplanering', field: 'Ort', value: p.ort })),
+    { table: 'Anmälningar', field: 'E-post', value: 'zz-granskning-01@staging.test' },
+    { table: 'Anmälningar', field: 'E-post', value: 'granskning-review@example.com' },
+  ];
+  assert.deepEqual(purgeCollisions(samples, PURGE_POLICY), []);
+});
+
+t('AC #4: ingen purge-target nämner ZZ-GRANSKNING — direkt mot policy-filen', () => {
+  for (const target of PURGE_POLICY.targets) {
+    assert.ok(
+      !/ZZ-GRANSKNING/i.test(target.exactMatchPattern) &&
+        !/ZZ-GRANSKNING/i.test(target.filterByFormula),
+      `target "${target.name}" åberopar ZZ-GRANSKNING — skyddsräcke 2 är rivet`,
+    );
+  }
+});
+
+t('AC #4: utgångsstämpeln ligger i Notering, ett fält ingen purge-target läser', () => {
+  const lastaFalt = new Set(PURGE_POLICY.targets.map((t2) => t2.exactMatchField));
+  assert.ok(!lastaFalt.has('Notering'), 'stämpeln får aldrig bli purge-bar via Notering');
+});
+
+// --- Argument-tolkning för de nya lägena ---
+
+t('TASK-95: de nya flaggorna tolkas', () => {
+  assert.equal(parseArgs(['--sweep'], CONFIG).sweep, true);
+  assert.equal(parseArgs(['--ingen-svep'], CONFIG).ingenSvep, true);
+  assert.equal(parseArgs(['--livstid', '30'], CONFIG).livstid, 30);
+  assert.equal(parseArgs([], CONFIG).livstid, CONFIG.livstid.dagarDefault);
+  assert.equal(parseArgs(['--legacy', 'Skovde-S75'], CONFIG).legacy.namn, 'Skovde-S75');
+});
+
+t('TASK-95: legacy-läget är DRY RUN tills --bekrafta ges', () => {
+  assert.equal(parseArgs(['--legacy', 'Skovde-S75'], CONFIG).bekrafta, false);
+  assert.equal(parseArgs(['--legacy', 'Skovde-S75', '--bekrafta'], CONFIG).bekrafta, true);
+});
+
+t('TASK-95 · fail-safe: --dry-run vinner ALLTID över --bekrafta', () => {
+  const a = parseArgs(['--legacy', 'Skovde-S75', '--bekrafta', '--dry-run'], CONFIG);
+  assert.equal(a.bekrafta, false, 'anges båda är avsikten att titta, inte radera');
+});
+
+t('TASK-95: ett okänt legacy-namn refuseras med registret utskrivet', () => {
+  assert.throws(() => parseArgs(['--legacy', 'ZZ-HITTEPÅ'], CONFIG), /finns inte i registret/);
+});
+
+t('TASK-95: lägena kan inte kombineras', () => {
+  assert.throws(() => parseArgs(['--clean', '--sweep'], CONFIG), /kan inte kombineras/);
+  assert.throws(() => parseArgs(['--sweep', '--legacy', 'Skovde-S75'], CONFIG), /ETT läge/);
+});
+
+t('TASK-95: --livstid utanför spannet refuseras', () => {
+  assert.throws(() => parseArgs(['--livstid', '0'], CONFIG), /heltal/);
+  assert.throws(() => parseArgs(['--livstid', '999'], CONFIG), /heltal/);
+});
+
+t('TASK-95: --sweep och --legacy kräver inga anmälningar (0 + 0 är giltigt)', () => {
+  assert.equal(
+    parseArgs(['--sweep', '--bekraftade', '0', '--obekraftade', '0'], CONFIG).sweep,
+    true,
   );
 });
 

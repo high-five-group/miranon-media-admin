@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-30
+updated: 2026-07-31
 review_by: 2026-11-15
 status: stable
 ---
@@ -92,6 +92,20 @@ bort mitt i en pågående granskning, förbud mot att röra de permanenta
 rollup-fixturerna, och ett datumval utanför sentinel-klustret. Detaljer +
 `localStorage`-fällan: [`docs/reference/staging-verifiering-runbook.md`](docs/reference/staging-verifiering-runbook.md)
 § Granskningsfixtur.
+
+**Fixturen har en livstid sedan `TASK-95`.** Skapandet stämplar ett utgångsdatum
+i eventets `Notering` (14 dagar som default, `--livstid N`), och förfallo-svepet
+städar det som passerat — automatiskt i båda lägena, eller ensamt med
+`npm run seed:review -- --sweep`. En fixtur vars stämpel INTE passerat rörs
+aldrig: det är "granskningen pågår". Svepet är ingen tidsdriven automat — det
+körs när skriptet körs.
+
+**`ZZ-GRANSKNING-*` får ALDRIG bli purge-bar.** Att lösa en kvarlämnad fixtur med
+en target i `.purge-staging-policy.json` river skyddsräcke 2 i stället för att
+laga något — setup-purgen kör före varje staging-CI-jobb och hade raderat datan
+mitt under granskningen. Restlistan bokförde en gång `ZZ-GRANSKNING-*` och
+`app-segment-test` som samma klass av lucka; de har **motsatta** rätta svar
+(`app-segment-test` fick sin target i `TASK-87`). Gör inte analogin.
 
 **Varför raden står här och inte bara i runbooken:** samma jobb gjordes för hand
 två gånger (2026-07-22 och 2026-07-26) innan skriptet fanns, och ett verktyg som
