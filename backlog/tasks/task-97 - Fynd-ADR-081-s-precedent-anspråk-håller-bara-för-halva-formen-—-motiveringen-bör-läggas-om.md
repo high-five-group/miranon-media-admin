@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-30 19:48'
+updated_date: '2026-07-31 07:48'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,11 +30,13 @@ NUMRERINGSHISTORIK: kortet mintades först som TASK-95 2026-07-30 och kolliderad
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Precedent-anspråket i § Ärlighet om underlaget rättat så det säger vad towncrier faktiskt bär — och vad det inte bär
-- [ ] #2 Den omlagda motiveringen bär sina egna källor: merge-grindens serialisering och EIP/Python-precedenten verifierade mot primärkälla, inte återanvända på minnet
-- [ ] #3 Beslut 1 självt är oförändrat — detta rättar MOTIVERINGEN, inte beslutet; håller beslutet inte utan towncrier-anspråket ska det sägas rakt ut i stället för att döljas
-- [ ] #4 ADR-081:s Updates-sektion bär rättelsen öppet — en rättad ADR som inte visar att den rättats är en tyst rivning
+- [x] #1 Precedent-anspråket i § Ärlighet om underlaget rättat så det säger vad towncrier faktiskt bär — och vad det inte bär
+- [x] #2 Den omlagda motiveringen bär sina egna källor: merge-grindens serialisering och EIP/Python-precedenten verifierade mot primärkälla, inte återanvända på minnet
+- [x] #3 Beslut 1 självt är oförändrat — detta rättar MOTIVERINGEN, inte beslutet; håller beslutet inte utan towncrier-anspråket ska det sägas rakt ut i stället för att döljas
+- [x] #4 ADR-081:s Updates-sektion bär rättelsen öppet — en rättad ADR som inte visar att den rättats är en tyst rivning
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

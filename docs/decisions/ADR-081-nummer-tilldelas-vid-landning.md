@@ -148,8 +148,9 @@ efter beslutet, och 2026-07-27 fanns bara resonemanget.
 
 Samma pass bär också en korrigering av **precedent-anspråket** i § Ärlighet om
 underlaget — att towncriers `+`-form är *"vår form exakt"* håller bara för halva
-formen. Den korrigeringen rör mönster-lånet, inte verktygsvalet, och ligger utanför
-denna amendering.
+formen. Den korrigeringen rör mönster-lånet, inte verktygsvalet, och låg utanför
+denna amendering. **Den är landad separat 2026-07-31 (`TASK-97`)** — se
+[§ Updates](#updates).
 
 ## Konsekvenser
 
@@ -169,19 +170,82 @@ konsoliderats.
 
 ## Ärlighet om underlaget
 
+> **Precedent-uppräkningen är RÄTTAD 2026-07-31 (`TASK-97`).** Den tidigare
+> lydelsen kallade towncriers `+`-form *"vår form exakt"* och summerade till
+> *"tre solida precedenter"* efter två uppräknade poster. Båda påståendena var
+> fel. Vad som var fel, och vad som mättes i stället, står i
+> [§ Updates](#updates). Beslut 1 är oförändrat.
+
 **Precedent-rymden för just ADR-/lesson-numrering är tunn**, och det fejkas inte:
 MADR issue #28 är **öppen och obesvarad** — ADR-communityn har problemet utan
-etablerat svar. Vad som däremot är väl belagt är det generella mönstret:
+etablerat svar. Vad som däremot är väl belagt är det generella mönstret — men det
+måste räknas i **två halvor**, eftersom vår form är två steg och inte ett: *skriv
+utan nummer i den parallella fasen* och *tilldela numret vid landningen*. En källa
+som bär den ena halvan bär inte automatiskt den andra, och det var precis det fel
+den tidigare lydelsen gjorde.
+
+**Halva 1 — skriv utan nummer i den parallella fasen.**
 
 - **towncrier** (Twisted, pytest, pip, BuildBot, attrs) löser samma
-  delade-fil-konflikt för changelogs. Dokumentationen: *"the filename consists of
-  the issue/ticket ID (or some other unique identifier)"*, och verktyget stödjer
-  uttryckligen fragment **utan** ID via `+`-prefix — vår form exakt.
-- **Rust RFC 0002** flyttar nummertilldelningen till en allokator som inte kan
-  kollidera.
+  delade-fil-konflikt för changelogs: *"the filename consists of the issue/ticket
+  ID (or some other unique identifier) as well as the 'type'"*, och för fragment
+  utan sådan identitet — *"For orphan news fragments (those that don't need to be
+  linked to any issue ID or other identifier), start the file name with `+`."*
+  ([tutorial](https://towncrier.readthedocs.io/en/stable/tutorial.html)). Är `+`
+  hela namnet lägger verktyget till en slumphash: *"If that is the entire fragment
+  name, a random hash will be added for you"*
+  ([CLI-referensen](https://towncrier.readthedocs.io/en/stable/cli.html)).
+- **Rust RFC** säger det om filen: *"Copy `0000-template.md` to
+  `text/0000-my-feature.md` […] Don't assign an RFC number yet; This is going to
+  be the PR number and we'll rename the file accordingly if the RFC is accepted."*
+  ([`rust-lang/rfcs` README](https://github.com/rust-lang/rfcs/blob/master/README.md))
+- **Pythons praxis** gör samma sak utan verktyg: ett utkast bär `9999` tills det
+  är redo för PR.
 
-Alltså: **tre solida precedenter för principen, noll för vår exakta domän.** Det
-är läget, och det skrivs ut hellre än att räknas upp.
+**Halva 2 — tilldela numret vid landningen. Belagd, men INTE av towncrier.**
+
+towncrier tilldelar aldrig ett nummer — varken vid `create` eller vid `build`. Ett
+orphan-fragment renderas nummerlöst och `+`-hashen kastas bort; den var ett
+filnamn, aldrig en identitet. Mätt på towncrier `24.8.0`
+([nummerallokerings-passet](../research/nummerallokering-parallella-aktorer-2026-07-29.md)
+§ Fynd 1b), och verktygets egen dokumentation gör inget motsatt anspråk. Stödet
+för denna halva kommer från annat håll:
+
+- **Ethereum EIP-1** lägger tilldelningen i själva merge-ritualen. När en EIP är
+  redo ska editorn *"Assign an EIP number (generally incremental; editors can
+  reassign if number sniping is suspected)"* och därefter *"Merge the corresponding
+  pull request"* ([EIP-1](https://eips.ethereum.org/EIPS/eip-1)).
+- **Rust RFC 0002** bär denna halva också, inte bara den första: *"Whomever merges
+  the RFC should do the following: Assign an id, using the PR number of the RFC
+  pull request."*
+  ([`text/0002-rfc-process.md`](https://github.com/rust-lang/rfcs/blob/master/text/0002-rfc-process.md))
+- **Python** har formen utan mekanism, som uttalad risk-acceptans från en aktiv
+  auktoritet: *"Use 9999 when drafting. When they're happy it's ready for
+  submission, check the next available number, rename, and open the PR. It's
+  unlikely for that number to be taken by someone else during those couple of
+  minutes."* (PEP-editor Hugo van Kemenade,
+  [discuss.python.org](https://discuss.python.org/t/confusion-about-assignment-of-pep-numbers/38481)).
+  Editor-rollens formella plikt står i [PEP 1](https://peps.python.org/pep-0001/):
+  *"Check that the author has selected a valid PEP number or assign them a number
+  if they have not"*.
+
+En skillnad som inte ska slätas över: hos EIP och PEP **tilldelar** en utsedd
+auktoritet numret vid landningen. Hos oss gör ingen det — vår grind **avvisar** en
+dubblett i stället. Placeringen är precedentens; aktören är den inte.
+
+Alltså, räknat per halva med posterna utskrivna så räkningen går att göra om:
+**tre för halva 1** (towncrier, Rust RFC:s README, Pythons `9999`-praxis) · **tre
+för halva 2** (EIP-1, Rust RFC 0002, Pythons sena tilldelning) · **noll för vår
+exakta domän**, där MADR #28 fortfarande är obesvarad. Det är läget, och det
+skrivs ut hellre än att räknas upp.
+
+**Vad som faktiskt bär beslutet är inte precedenten — det är vår egen grind.**
+Serialiseringen kommer från merge-grinden
+([ADR-076](ADR-076-merge-grinden-ruleset-pr-flode.md)), och den är verifierad mot
+rulesetet självt: se [§ Updates](#updates) för vad kön garanterar, vad den inte
+gör, och vilken restrisk som blir kvar. Precedenten säger att *placeringen* vid
+landningen är en beprövad form — den ersätter inte mätningen av vår egen
+mekanism.
 
 **Vad som inte är mätt:** att fragment-vägen faktiskt följs av agenter. Grinden
 gör den felaktiga vägen omöjlig, men den kan inte tvinga någon att skörda alls.
@@ -210,6 +274,98 @@ Efterlevnaden bör läsas av i praktiken innan formen utsträcks till fler serie
   bruksform
 
 ## Updates
+
+### 2026-07-31 — Precedent-anspråket är rättat och grunden omlagd (`TASK-97`)
+
+§ Ärlighet om underlaget kallade towncriers `+`-form *"vår form exakt"* och
+summerade till *"tre solida precedenter för principen"*. **Två fel, båda av den
+klass web-research-disciplinen namnger — *räkningen fejkas aldrig*.** Till
+skillnad från besluts-texten (fryst, L53) är underlags-sektionen inget beslut, så
+den är rättad **på plats**; rättelsen deklareras här så att den inte blir en tyst
+rivning.
+
+**Fel 1 — towncrier bär halva formen.** Vår form är två steg: skriv utan nummer i
+den parallella fasen, och tilldela numret vid landningen. towncrier bär det
+första. Det andra bär det inte alls — verktyget tilldelar aldrig ett nummer, och
+ett orphan-fragment renderas nummerlöst vid `build`. Mätt på towncrier `24.8.0`
+([passets Fynd 1b](../research/nummerallokering-parallella-aktorer-2026-07-29.md)).
+Tilldelningssteget är hela beslut 1, och det saknade alltså stöd i den citerade
+källan.
+
+**Fel 2 — räkningen stämde inte med sin egen uppräkning.** *"Tre solida
+precedenter"* stod efter **två** uppräknade poster (towncrier, Rust RFC 0002).
+Talet gick alltså inte att kontrollera mot texten det sammanfattade. Det överlevde
+tre månader, två amenderingar och ett research-pass som läste sektionen och
+upprepade *"tre"* utan att räkna om. Räkningen står nu **per halva, med posterna
+utskrivna**.
+
+**Källorna är hämtade i förstahandskälla 2026-07-31**, inte återanvända ur
+passets sammanfattning: [EIP-1](https://eips.ethereum.org/EIPS/eip-1) ·
+[PEP 1](https://peps.python.org/pep-0001/) ·
+[discuss.python.org t/38481](https://discuss.python.org/t/confusion-about-assignment-of-pep-numbers/38481)
+· `rust-lang/rfcs` README och `text/0002-rfc-process.md` (rå-hämtade) ·
+towncriers tutorial och CLI-referens.
+
+**Merge-grindens serialisering — mätt mot rulesetet, inte ihågkommen.** Beslut 1
+lutar sig på att landnings-ögonblicket är seriellt. Det håller, men formuleringen
+*"släpper in en PR i taget"* är en **förenkling**, och det syns först när
+konfigurationen läses i stället för att minnas. Rulesetet `main-skydd`, hämtat via
+`gh api repos/high-five-group/miranon-media-admin/rulesets/19627609` 2026-07-31:
+
+| Parameter | Värde |
+|---|---|
+| `merge_method` | `MERGE` |
+| `min_entries_to_merge` | `1` |
+| `max_entries_to_merge` | **`3`** |
+| `max_entries_to_build` | `3` |
+| `grouping_strategy` | `ALLGREEN` |
+
+**Upp till tre poster kan alltså landa i samma operation.** Egenskapen beslut 1
+behöver håller ändå — men av ett annat skäl än "en i taget". GitHub bygger varje
+kö-post *"with the latest version of the `base_branch` as well as changes from
+pull requests ahead of it in the queue"* och landar dem *"in a first-in-first-out
+order where the required checks are always satisfied"*
+([GitHub-dokumentationen](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue)).
+Den obligatoriska checken är `CI Passed or Skipped`, `ci.yml` triggar på
+`merge_group`, och `scripts/check-lesson-numbers.sh` körs i den kedjan. En
+dubblett mellan två poster i **samma** grupp prövas därför mot det kombinerade
+tillståndet, inte var för sig.
+
+**Vad det betyder rakt:** grinden gör inte *tilldelningen* seriell — numret väljs
+fortfarande i skribentens arbetsträd. Den gör *landningen* seriell och prövar
+tilldelningen fail-closed när den landar. Restrisken är exakt Pythons fönster
+(*"those couple of minutes"*), hos oss flyttat till sträckan mellan
+konsoliderings-commit och landning, och den fångas av beslut 2:s
+dubblett-invariant. Det bokförs öppet i stället för att designas bort.
+
+**Håller beslut 1 utan towncrier-anspråket? Ja — och frågan förtjänar ett rakt
+svar i stället för tystnad.** Beslut 1 vilar redan i sin egen text på
+merge-grindens serialisering, inte på towncrier; towncrier förekom enbart i
+underlags-sektionen, som precedent för mönstret. Den halva towncrier faktiskt bär
+är den halva lånet gällde, och den står obruten. Tilldelnings-halvan står nu på
+EIP-1 och Rust RFC 0002 — båda lägger den i merge-ögonblicket — plus Pythons sena
+tilldelning som disciplin. **Beslut 1 är oförändrat av denna rättelse.**
+
+**Samma klass som posten nedan.** `TASK-93` rättade beslut 4:s *"Kort: redan
+löst"*; detta rättar precedent-räkningen. Båda var påståenden som skrevs som
+fakta utan mätning, i samma ADR, och båda upptäcktes av någon annan än den som
+skrev dem. Kopplingen är dessutom bokstavlig: kortet som bär denna rättelse är det
+`TASK-97` som posten nedan namnger i sin tredje punkt — det fick sitt nummer när
+en kollision mellan huvudträdet och en gren tvingade fram en omnumrering.
+
+**Kopior som INTE är rättade här** — deklarerade i stället för att lämnas tysta:
+
+- [`tasks/lessons.d/README.md`](../../tasks/lessons.d/README.md) § "Formen är
+  lånad, inte påhittad" bär samma påstående (*"vilket är exakt vår form"*) och
+  samma kö-förenkling.
+- [`docs/decisions/README.md`](README.md):s ADR-081-rad bär *"tre solida
+  precedenter"* med samma två uppräknade poster.
+
+**Funnet, inte rättat:** § Alternativ tillskriver **Rust RFC 0002** citatet *"don't
+assign an RFC number yet; this is going to be the PR number"*. Den formuleringen
+står i `rust-lang/rfcs` **`README.md`**; RFC 0002 har en egen, kortare lydelse och
+bär tilldelningssteget separat. Substansen håller — källhänvisningen pekar på fel
+dokument. Båda punkterna ligger utanför detta korts filyta respektive AC.
 
 ### 2026-07-30 — Beslut 4:s kort-undantag är falsifierat; omprövningsvillkoret har utlösts (`TASK-93`)
 
