@@ -15,6 +15,27 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-07-31, artonde pausen — tvåvågen och fyra
+research-pass)** — **NITTON PR:er landade, NOLL röda körningar.** Weekly limit
+slog i **två gånger**; sju respektive fyra agenter återupptogs och **ingen
+behövde börja om** — disken lästes före varje väckning. **FYRA KORT:** `TASK-85`
+`93` `94` stängda, `95` väntar på `#493`. **TVÅ MINTADE:** `TASK-98` (HIGH) ·
+`TASK-99`. **FYRA RESEARCH-PASS landade.** **TRE FYND STÖRRE ÄN SINA FRÅGOR:**
+`npx backlog` kan **exekvera främmande kod** (paketet `backlog` ≠ `backlog.md`,
+npx auto-installerar i CI) · § Revert-vägens exponeringsfönster är **dubbelt** så
+långt som filen påstår (två CI-lopp, kod ~15 min mot dokumenterade ~8) ·
+`Stop`-hooken **mätt** skarpt mot v2.1.220 och kan vägra ett turavslut.
+**KLASSEN DÖK UPP I VÅRT EGET MASKINERI TVÅ GÅNGER:** en isolerings-spärr som
+**upphör med det den skyddar** (`TASK-94`-agentens worktree auto-städades under
+arbetet) · **fem subagent-rapporter blev hemlösa** när deras förälder dog.
+**TRE GÅNGER STANNADE EN AGENT VID SCOPE-GRÄNSEN** i stället för att lösa
+uppgiften snyggt. **⛔ VÄNTAR PÅ MARCUS: (1)** får `Event-796` städas — 10 poster,
+godkännandet gällde ordagrant bara `task-88`; **(2)** når `TASK-95`:s beslut
+ADR-baren (blir `ADR-084`)? **SKÖRD: 2 fragment** [UNIVERSAL ×2]. Numrering:
+91/**084**/L360 (**60** fragment)/T110/**f47**/**task-100**. Full narrativ:
+sessionsdok **Del 37** + PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-30, artonde resumen — vågen hemma)** — **SJU
 BYGG-AGENTER, NIO PR:er, NOLL RÖDA KÖRNINGAR.** **Fyra kort stängda:** `TASK-86`
 `87` `89` `92`. **`TASK-88` stannar ÖPPEN** — dess anvisade städkommando

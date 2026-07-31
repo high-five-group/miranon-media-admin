@@ -1,10 +1,10 @@
 ---
 id: TASK-94
 title: 'Skiva: worktree-städning in i avslutsrutinerna — session-paus och session-end'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-30 19:11'
-updated_date: '2026-07-30 21:32'
+updated_date: '2026-07-31 06:38'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,12 +36,16 @@ En hub-ändring kräver plugin-bump + `claude plugin update` i samma landning (m
 - [x] #6 Grenar som frigörs av borttagen worktree hanteras eller lämnas medvetet — utfallet utskrivet, inte tyst
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Worktree-städningen mekaniserad i hub-pluginet: scripts/stada-worktrees.sh (322 rader) + scripts/test-stada-worktrees.sh (187 rader) + steg i BÅDA avslutsrutinerna (session-paus steg 5 med STOPPA-grind, session-end do-confirm-post 12). Plugin 1.22.0 to 1.23.0, claude plugin update kört i SAMMA landning och verifierat (exit 0, list visar 1.23.0 enabled) — hub-PR #8 mergad, spoke-PR #488. FEM GRINDAR PER WORKTREE: scope, självskydd, lås, förfader, rent träd; git worktree remove utan --force, git branch -d aldrig -D. MUTATIONSRUNDA: varje grind riven en i taget fäller testet (scope 4 fallna påståenden, förfader 2, självskydd 3, renhet 1, lås 1) — 22/22 gröna både i arbetskopian och ur installerade 1.23.0. Första mutationsförsöket gav falskt grönt (perl interpolerade variabeln i mönstret) och agenten hårdgjorde riggen med kontroll att exakt ett villkor patchades. AC #3:s bärare är SCOPE-grinden, inte förfader+renhet: torrkörningen mot verkliga repot höll tillbaka båda parallella sessioners worktrees på exakt den. Torrkörning: 17 worktrees, 7 kandidater, 10 behållna — inget utfört, det är Marcus beslut. AGENTEN BRÖT SITT EGET KONTRAKT och utredde det: dess worktree togs bort av harnesset MEDAN den arbetade, eftersom allt filarbete skedde i hub-repot och worktreen därför förblev oförändrad; efter API-avbrottet föll cwd till huvudkatalogen och isolerings-spärren slutade fälla i samma stund worktreen försvann. Exponering 4 min 13 s, mätt ur reflogen. Tre fynd om formen: spärren är FAIL-OPEN och upphör precis när den behövs · en agent vars kod bor i ett annat repo är maximalt utsatt för auto-borttagning, vilket är kortets egen premiss inverterad · efter en borttagen worktree finns ingen signal alls. PR #488, CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
