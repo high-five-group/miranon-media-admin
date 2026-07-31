@@ -3,10 +3,10 @@ id: TASK-95
 title: >-
   Fynd: granskningsfixturen har ingen livstidsavslutning — och den handbyggda
   S91-fixturen är ostädbar med befintligt verktyg
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-30 19:30'
-updated_date: '2026-07-31 06:49'
+updated_date: '2026-07-31 07:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -147,10 +147,16 @@ OVÄNTAT — REGISTRERAT, EJ TYST FÖRKASTAT (ADR-053)
 3. Ett befintligt test dolde en lucka: buildEvent anropades utan utgangsdatum och gav [UTGÅR: undefined], vilket är OLÄSBART och därmed skulle gjort fixturen ODÖDLIG. Stängt i koden (utgangsstampel kastar), inte bara i testet.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Granskningsfixturen har nu en livstidsavslutning som INTE är prosa. Formen: create stämplar [UTGÅR: YYYY-MM-DD] i eventets Notering (14 dagar default, --livstid N), och ett svep läser stämpeln och städar det som passerat via EXAKT samma planClean-väg, raderings-ordning och skyddsräcken som manuell clean. Kör automatiskt i create och clean, --ingen-svep stänger av, ensamt med --sweep. DIAGNOSEN SOM BAR FORMEN: granskningen pågår var inte uttryckt NÅGONSTANS i datan — utan stämpeln är varje automatisk städning en gissning, och det är den irreducibla luckan som formerna (b) och (c) förutsätter i stället för att lösa. DEL B: (e) valt i register-form — ett SLUTET register i config, inte en fri --legacy-monster regex; (f) och (g) förkastade med skäl. ZZ-GRANSKNING-S91 STÄDAD: 33 poster före (1 event + 16 anmälningar + 16 personer), 0 kvar efter, oberoende bekräftat mot basen; rollup-fixturerna byte-identiska före och efter. SKYDDSRÄCKE 2 VERIFIERAT MEKANISKT mot den skarpa policyfilen: 0 kollisioner, ingen target åberopar ZZ-GRANSKNING, och INGEN TARGET LÄSER Notering — stämpeln kan alltså inte göra fixturen purge-bar. TVÅSIDIGT BEVIS: enhet 96 gröna (från 60); skarpt end-to-end på samma fixtur gav aktiv stämpel = lämnad med skäl och noll rader rörda, åldrad stämpel = 9 poster städade. Mutationsrunda 12/12 fäller sviten. Sex staging-körningar, alla PREFLIGHT OK och exit 0. AC #7: godkännandet citerat och färsk kontroll 2026-07-31 gav exakt de två kända fixturerna, ingen ny. TVÅ SAKER AGENTEN LÄMNADE TILL MARCUS i stället för att avgöra: Event-796 raderades INTE (godkännandet löd ordagrant Angående task-88, alltså endast S91 — att utvidga är scope-beslut; 10 poster räknade, dry-run grön, ett kommando bort), och ADR-bar-frågan för beslutet att granskningsfixturer aldrig får purge-target eller raderande CI-vakt. PR #493, CI grön per jobb på 7109cc5.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
