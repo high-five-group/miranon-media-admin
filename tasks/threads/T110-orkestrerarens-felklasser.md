@@ -124,3 +124,171 @@ Det är inte oberoende data.
 `ADR-083` (prosa som påstår mekanism — klass B är dess syskon) ·
 `TASK-90` (stängnings-grinden, den enda mekanism som hittills fällt
 orkestreraren) · `L328` (en regel utan mekanism efterlevs inte).
+
+## Extern prövning (2026-07-31)
+
+> Utförd av en granskare som inte skrev klassningen, på uppdragets uttryckliga
+> premiss att den ska **prövas, inte ärvas**. Metod: de tre källsektionerna
+> (Del 35.4, 36.2, 38.6) lästa i sin helhet, och varje påstående som gick att
+> mäta om har mätts om mot disk. Ingen mekanism byggd — Marcus beslutar.
+
+### Vad som mättes om, och höll
+
+| Trådens påstående | Oberoende mätning | Utfall |
+|---|---|---|
+| `[UNIVERSAL]` 59 mot 72 | rubrikrads-grep över `L284–L359` → **59** · per-post-räkning oavsett radform → **72** av 76 poster | **Exakt reproducerad, båda talen.** Och blindheten är värre än exemplet: av de 13 räddade bär bara **3** ren egen-rad-backtickform (`L347` `L353` `L355`) — markören har fler former än två |
+| Skill-pekare till rad 507–526 i en 196-radersfil | `wc -l` hub-`CLAUDE.md` | **196** — stämmer |
+| `TASK-98`-kortet *"rad 623"* | kortfilen på disk | Kortet bär *"rad 623"* — och kortet är en **committad** artefakt; se tes-prövningen |
+| Stängnings-grinden som fällt orkestreraren | `scripts/check-backlog-closure.sh` | Finns — och är **commit-sidig**; se tes-prövningen |
+| Bokföringsfelets mekanism | `backlog/config.yml` rad 13 | `check_active_branches: true` — klassen har redan en partiell mekanism |
+
+**Empirin är äkta.** Där den gick att mäta om håller den, siffra för siffra.
+Bokföringen KRING den gör det inte — vilket är prövningens första fynd.
+
+### 1. Klassindelningen: användbar mnemonik, ingen partition
+
+Avstämningen instans ↔ klass ↔ källa går inte ihop åt något håll:
+
+| # | Instans | I källsektionerna? | Trådens klass |
+|---|---|---|---|
+| 1 | Påhittat SHA → vakt fail-open | 35.4:1 / 36.2:1 | B |
+| 2 | `autoMergeRequest`-regeln | 35.4:2 / 36.2:2 | D |
+| 3 | Nummerkollisionen (uppskjuten bokföring) | 35.4:3 / 36.2:3 | **oklassad** |
+| 4 | Grind körd röd, committad utan gren på exitkoden | 36.2:4 | **oklassad** |
+| 5 | Stängning utan DoD-läsning | 36.2:5 | C |
+| 6 | Del 34-påståendet — sant när det skrevs, inte när det lästes | 36.2:6 | **oklassad** |
+| 7 | Deny-smoke-fil som aldrig funnits | 38.6:1 | B |
+| 8 | `[UNIVERSAL]` 59 mot 72 | 38.6:2 | A |
+| 9 | *"Tre äkta fel"* var fem | 38.6:3 | C |
+| 10 | Trådregistret 110/14 mot 109/13 | **nej** | A |
+| 11 | *"Nio grindar"* tillskrivet `CLAUDE.md` | **nej** | B |
+| 12 | `TASK-98`-kortet *"rad 623"* | **nej** | B |
+| 13 | Skill-pekaren *"rad 507–526"* | **nej** | B |
+
+Tre fynd:
+
+1. **Tre belagda instanser är oklassade** (#3, #4, #6) — och ingen av de fyra
+   klasserna rymmer dem. Bokföringsfel av delat tillstånd, oläst exitkod och
+   temporal ogiltighet är egna mekanismer. En taxonomi som inte täcker sitt
+   eget källmaterial retrodiktivt är gruppering, inte partition.
+2. **Fyra klassade instanser saknar källa i de tre utpekade sektionerna**
+   (#10–#13). De är sannolikt äkta — #12 och #13 verifierade här mot disk —
+   men trådens käll-rad täcker dem inte. Det är i miniatyr klass B:s eget
+   mönster, i artefakten om klass B.
+3. **Huvudtalen reconcilerar inte.** Belagda unika instanser: **13** — *"cirka
+   fjorton"* håller inom sin tilde men går inte att härleda ur någon delmängd.
+   Skarpare: trådens ingress säger **fem** fel nittonde resumen, Del 38.6:s
+   rubrik säger **tre**. Talen möts endast om #12/#13 räknas till nittonde
+   resumen, vilket inget dok säger explicit.
+
+Klasserna är inte heller ömsesidigt uteslutande: #9 (*"en rapport i handen,
+misläst"*) passar B:s definition minst lika väl som C:s, och #2 är samtidigt
+ett A-fel (post-merge-avläsningen var ett instrument som såg fel form).
+Klassningen skär efter **felets psykologi**. För mekaniserings-frågan är det
+fel snitt — skär efter **vilken grind som skulle ha fällt**:
+
+| Omklassning | Instanser | Grind-yta |
+|---|---|---|
+| **I. Oläst källa i handen** — sanningen fanns i en redan tillgänglig artefakt (fil, rapport, hjälptext, exitkod, DoD-block) och lästes inte eller lästes fel | #1 #4 #5 #7 #9 #11 #12 #13 | Deterministiskt prövbar: referens-mot-disk, kvitto-mot-exitkod, strukturerade returformat |
+| **II. Instrumentblindhet** — ärlig mätning, instrumentet såg en delmängd | #8 #10 | Endast per återkommande mätklass med dedikerat skript (jfr `check:docs` som räknar sina egna grindar); generell korsmätningsregel är `L328`-klass |
+| **III. Inducerad regel** — sann observation generaliserad bortom sitt giltighetsområde, i antal (#2) eller i tid (#6) | #2 #6 | Ingen grind — kontraktsdesign: proveniens + giltighetsvillkor obligatoriska när en regel landar i styrande prosa |
+| **IV. Delat tillstånd utan synkron bokföring** | #3 | Redan delvis mekaniserad (`TASK-93`); resten är konvention |
+
+Notera att tre av fyra omklasser **redan har påbörjade mekanismer** (`TASK-90`
+för #5, `TASK-93` för #3, `autoMergeRequest`-tabellen som rättad prosa för #2).
+Mekanisering har hittills lyckats **per skarpt definierad felinstans**, aldrig
+som generell vakt — det är ett empiriskt argument i sig.
+
+### 2. Nämnaren: inte enhetligt okänd — olika mätbar per klass
+
+Trådens varning håller: fångade fel ger existensbevis och kostnadsdata, aldrig
+rater, och inget effektpåstående får byggas på dem. Men prövningen skärper den
+i en riktning tråden missar: **nämnaren är inte en, den är fyra.**
+
+- **Klass I:s nämnare är väldefinierad och ändligt uppräknelig:** antalet
+  verifierbara referenser (fil, rad, SHA, tal, citat) i samtliga
+  uppdragstexter. Den är inte omätbar — den är **ologgad**. Och
+  uppdragstexterna finns redan: orkestrerarens transcript-JSONL bär dem
+  (samma källa `T111`-passet läste `usage` ur). En retrospektiv revision av
+  EN resumes samtliga uppdrag är görbar i dag utan någon ny mekanism:
+  extrahera uppdragen, räkna referenserna (nämnare), pröva var och en mot
+  disk (täljare). Det ger den första äkta felfrekvensen.
+- **Fångst-sensitiviteten** skattas med två oberoende detektorer
+  (capture-recapture): agenterna är detektor 1, en post-hoc-revisionsagent
+  detektor 2, överlappet ger Lincoln-Petersen-skattningen av det ofångade.
+- **Seeding** (planterade kända fel) mäter sensitivitet direkt men **avråds i
+  uppdragskanalen**: en orkestrerare som medvetet ljuger i uppdrag förgiftar
+  exakt den kanal mekanismen ska skydda. Görs den alls: öppet deklarerad,
+  utanför skarpa uppdrag.
+- **Klass II–III:s nämnare förblir genuint suddig** ("antal mätningar",
+  "antal generaliseringar" saknar naturlig enhet) — därför ska effektanspråk
+  begränsas till klass I även efter att loggen finns.
+- **n = 1 kvarstår och är det hårdaste taket:** en orkestrerare, en session.
+  Mönstret *"felen sitter i orkestreringen"* är tre gånger bokfört men noll
+  gånger oberoende — det ska mätas om över minst en session till innan något
+  dyrt byggs på det.
+
+### 3. Strukturella tesen: håller till hälften — och slutsatsen överlever
+
+*"Grindarna kör på commits men orkestrerarens fel sitter i uppdragstexten som
+aldrig committas."* Prövad mot de tretton: **fem satt i committade
+artefakter** — #2 (`CLAUDE.md`), #5 (kortens statusändringar), #6
+(sessionsdoket), #12 (kortfilen), #13 (skill-filen i hubben). Och den enda
+mekanism som hittills fällt orkestreraren (`TASK-90`) är **commit-sidig**.
+Tesen som diagnos av hela felmängden är alltså för stark.
+
+Det som överlever är viktigare: **luckorna är två, inte en.**
+
+1. **Committad prosa grindas på form, inte på fakta.** #2, #6, #12, #13
+   passerade alla sina grindar eftersom ingen grind prövar *påståenden*.
+   Repo-precedenten finns redan i miniatyr — listparitets-grinden och
+   `check:docs`-mönstret prövar prosa mekaniskt mot verklighet — och
+   generaliseras **per påstående-klass**, aldrig som universalgrind.
+2. **Uppdrags-ögonblicket saknar yta helt.** Här håller tesen fullt ut, och
+   här sitter de fel som är dyrast (#7 kostade en diagnosrunda, #1 gjorde en
+   vakt fail-open).
+
+**Principskiss för uppdrags-grinden** (byggs ej nu):
+
+- **Källkrav i uppdragsformatet** — varje fil-/rad-/SHA-/tal-påstående bär
+  kommandot som producerade det, annars märks det `HYPOTES`. Kontraktsdesign,
+  ingen mekanism; träffar klass III på köpet.
+- **Agent-sidigt premiss-pass** — mottagarens obligatoriska FÖRSTA handling:
+  pröva varje referens i uppdraget mot disk; avvikelse → stanna och
+  rapportera strukturerat. Detta mekaniserar exakt det beteende som stod för
+  samtliga agent-fångster (*"följde regeln i stället för talet"*), och
+  embryot finns redan i agent-kontraktet (*"avviker det faktiska tillståndet
+  från vad uppdraget antog: stanna och flagga"*) — steget är från reaktiv
+  regel till obligatoriskt pass. Formen bor i `.claude/agents/bygg-agent.md`
+  som redan lever per repo: **`T108`:s distributionshinder gäller inte här.**
+- **Uppdragslogg per spawn** — uppdraget skrivs till fil och blir artefakt:
+  revisionsbart, nämnarbärande, och på sikt grindbart. Retrospektivt räcker
+  transcript-JSONL redan i dag.
+- **Kostnaden** (trådens fråga 6) landar i agentens tid, parallellt — inte i
+  orkestrerarens latens. Men den är **omätt** och ska mätas i första skarpa
+  användning, inte antas.
+
+### 4. Slutsats och rekommendation
+
+**Empirin räcker för EN smal mekanism och EN mätåtgärd. Den räcker inte för
+mer, och det den inte räcker till ska inte byggas.**
+
+| Vad | Dom | Grund |
+|---|---|---|
+| Agent-sidigt premiss-pass + källkrav i uppdragsformatet (klass I) | **JA NU** | 8 av 13 instanser; deterministisk; nära nollkostnad; distributionshindret gäller inte; existensbevis räcker för billiga deterministiska kontroller — nämnarkravet gäller *effektpåståenden*, inte dem |
+| Retrospektiv uppdrags-revision av en resume ur transcript-JSONL | **JA NU** | Kräver ingen mekanism; ger första äkta felfrekvensen + capture-recapture-baslinje; förutsättning för varje framtida effektanspråk |
+| Generell korsmätningsregel (klass II) | **NEJ** | Regel utan mekanism — `L328`-klassen; mekaniseras endast per återkommande mätklass när en sådan identifierats |
+| Hook-baserad orkestrerar-grind (`T108`-familjen) | **NEJ** | Fel yta (landning, inte uppdrag) + känt distributionshinder |
+| Effektpåståenden, alla slag | **NEJ** | Nämnaren omätt tills loggen/revisionen finns; n = 1 orkestrerare, 1 session |
+| Klass III–IV | **Ingen ny mekanism** | III är kontraktsdesign (källkravet täcker den); IV har redan `TASK-93` + konvention |
+
+**Samlas först, i ordning:** (1) uppdragslogg per spawn — gör klass I:s
+nämnare mätbar i stället för skattbar; (2) revisionen ovan; (3) kostnadsmätning
+av premiss-passet i första skarpa användning; (4) minst en session till innan
+mönstret behandlas som stabilt.
+
+**Prövningens facit i en mening:** empirins *data* höll för extern ommätning
+siffra för siffra, men dess *bokföring* (huvudtal, källhänvisningar,
+klasstäckning) gjorde det inte — och det är själv den starkaste illustrationen
+av tesen: även artefakten om orkestrerarens fel bär orkestrerarens felklasser,
+och det som fällde dem var en extern läsning mot disk, inte självgranskning.
