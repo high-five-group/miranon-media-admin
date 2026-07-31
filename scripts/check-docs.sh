@@ -45,6 +45,17 @@
 #     9. scripts/check-lesson-numbers.sh
 #    10. scripts/check-permissions-claims.sh
 #
+# RUBRIKEN OVAN VAR FALSK FÖR POST 10 FRÅN ADR-083:s LANDNING TILL TASK-98
+# (2026-07-30 → 2026-07-31). Grinden var inkopplad här och dess self-test kördes
+# i ci.yml, men grinden själv kördes där noll gånger medan de fem syskonen kördes
+# en var. Denna fil påstod alltså en mekanism som inte fanns — vilket är exakt
+# den felklass ADR-083 mintades för. TASK-98 wirade grinden i lint-jobbet i
+# stället för att skriva om rubriken: en grind som ingen kör är inte en grind.
+#
+# Räkningen verifieras mekaniskt, inte genom läsning:
+#   grep -c 'bash scripts/<grind>.sh' .github/workflows/ci.yml   # ska ge 1
+# Mätt 2026-07-31 efter wiringen: samtliga sex posterna 5-10 ger 1.
+#
 # Grindar som medvetet INTE ingår: Biome, typecheck, audit, actionlint,
 # yamllint, shellcheck, testsviten. De är kod-grindar — `npm run lint` +
 # `npm run typecheck` är deras väg. Skriptet lovar dokumentation, inget annat.
