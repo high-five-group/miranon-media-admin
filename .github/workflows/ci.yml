@@ -625,9 +625,11 @@ jobs:
         #
         # Andra halvan är kopplingens SKÖRHET. Att grinden körs på sin lästa yta
         # skulle bero på att `klassning-docs` råkar innehålla `.claude/**` — en
-        # koppling ingen fil deklarerar och ingen grind vaktar. Den listan ändras
-        # (den bär nio deklarerade asymmetrier i .listparitet-policy.conf); driftar
-        # den upphör grinden tyst att köra. Ett alltid-på jobb har ingen sådan
+        # koppling ingen fil deklarerar och ingen grind vaktar. Att listan är
+        # levande är mätbart: paret `klassning-docs-config` bär nio deklarerade
+        # asymmetrier i .listparitet-policy.conf (åtta på D0-sidan, en på
+        # changed-docs-sidan). Driftar `.claude/**` bort ur den upphör grinden
+        # tyst att köra på sin egen lästa yta. Ett alltid-på jobb har ingen sådan
         # beroendekedja.
         #
         # FÖRKASTAT ALTERNATIV — rätta prosan i check-docs.sh i stället, alltså
