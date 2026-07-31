@@ -1,3 +1,5 @@
+import { withAirtable429Retry } from './airtable-retry.ts';
+
 // Airtable REST-API-host (samma för alla baser/miljöer — ej prod-bindning).
 const AIRTABLE_API_URL = 'https://api.airtable.com/v0';
 
@@ -74,18 +76,16 @@ export async function fetchFromAirtable(
       url.searchParams.set('offset', offset);
     }
 
-    const res = await fetch(url.toString(), {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (res.status === 429) {
-      console.warn('Airtable rate limit hit — waiting 1s');
-      await new Promise((r) => setTimeout(r, 1000));
-      continue;
-    }
+    // 429 → Airtable-konform backoff (>= 30s, tak på omförsöken) i _shared/airtable-retry.ts.
+    // Uttömt tak returnerar 429-svaret → faller genom !res.ok nedan och kastar som vanligt.
+    const res = await withAirtable429Retry(() =>
+      fetch(url.toString(), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+    );
 
     if (!res.ok) {
       const body = await res.text();
@@ -115,8 +115,9 @@ interface AirtablePageOptions {
  * callern kan wrappa den till en opak klient-cursor. Lägger TILL bredvid
  * full-walk-varianten — get-events/get-registrations rörs inte.
  *
- * 5 req/sek respekteras automatiskt (ett anrop per sida). 429 → vänta 1s och
- * försök igen (samma backoff-form som full-walk, men utan att gå vidare).
+ * 5 req/sek respekteras automatiskt (ett anrop per sida). 429 → Airtable-konform
+ * backoff (>= 30s, ändligt tak) via `_shared/airtable-retry.ts` — samma mekanism
+ * som full-walk och single-get delar, så alla tre kan inte glida isär.
  */
 export async function fetchAirtablePage(
   tableIdOrName: string,
@@ -128,51 +129,46 @@ export async function fetchAirtablePage(
   }
   const baseId = getAirtableBaseId();
 
-  for (;;) {
-    const url = new URL(`${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}`);
+  const url = new URL(`${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}`);
 
-    if (options.fields) {
-      for (const field of options.fields) {
-        url.searchParams.append('fields[]', field);
-      }
+  if (options.fields) {
+    for (const field of options.fields) {
+      url.searchParams.append('fields[]', field);
     }
-    if (options.filterByFormula) {
-      url.searchParams.set('filterByFormula', options.filterByFormula);
+  }
+  if (options.filterByFormula) {
+    url.searchParams.set('filterByFormula', options.filterByFormula);
+  }
+  if (options.sort) {
+    for (let i = 0; i < options.sort.length; i++) {
+      url.searchParams.set(`sort[${i}][field]`, options.sort[i].field);
+      url.searchParams.set(`sort[${i}][direction]`, options.sort[i].direction);
     }
-    if (options.sort) {
-      for (let i = 0; i < options.sort.length; i++) {
-        url.searchParams.set(`sort[${i}][field]`, options.sort[i].field);
-        url.searchParams.set(`sort[${i}][direction]`, options.sort[i].direction);
-      }
-    }
-    if (options.pageSize) {
-      url.searchParams.set('pageSize', String(options.pageSize));
-    }
-    if (options.offset) {
-      url.searchParams.set('offset', options.offset);
-    }
+  }
+  if (options.pageSize) {
+    url.searchParams.set('pageSize', String(options.pageSize));
+  }
+  if (options.offset) {
+    url.searchParams.set('offset', options.offset);
+  }
 
-    const res = await fetch(url.toString(), {
+  // Den tidigare `for(;;)`-loopen fanns ENBART för 429-omförsöken; retry-modulen äger den nu.
+  const res = await withAirtable429Retry(() =>
+    fetch(url.toString(), {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-    });
+    }),
+  );
 
-    if (res.status === 429) {
-      console.warn('Airtable rate limit hit — waiting 1s');
-      await new Promise((r) => setTimeout(r, 1000));
-      continue;
-    }
-
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Airtable ${res.status}: ${body}`);
-    }
-
-    const data: AirtableResponse = await res.json();
-    return { records: data.records, nextOffset: data.offset ?? null };
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Airtable ${res.status}: ${body}`);
   }
+
+  const data: AirtableResponse = await res.json();
+  return { records: data.records, nextOffset: data.offset ?? null };
 }
 
 /**
@@ -186,7 +182,8 @@ export async function fetchAirtablePage(
  * 403 `INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND` — record-GET konflerar medvetet
  * "saknas" och "ingen behörighet" till 403 (läcker inte existens). Eftersom
  * token-scopet redan ger bas-access (verifierat L4/L5b) betyder en 403 med den
- * typen i praktiken "record saknas" → null. Andra fel kastas. 429 → vänta 1s.
+ * typen i praktiken "record saknas" → null. Andra fel kastas. 429 → Airtable-konform
+ * backoff (>= 30s, ändligt tak) via `_shared/airtable-retry.ts`.
  */
 export async function fetchAirtableRecord(
   tableIdOrName: string,
@@ -200,35 +197,30 @@ export async function fetchAirtableRecord(
 
   const url = `${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}/${recordId}`;
 
-  for (;;) {
-    const res = await fetch(url, {
+  // Den tidigare `for(;;)`-loopen fanns ENBART för 429-omförsöken; retry-modulen äger den nu.
+  const res = await withAirtable429Retry(() =>
+    fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-    });
+    }),
+  );
 
-    if (res.status === 429) {
-      console.warn('Airtable rate limit hit — waiting 1s');
-      await new Promise((r) => setTimeout(r, 1000));
-      continue;
-    }
+  if (res.status === 404) {
+    return null;
+  }
 
-    if (res.status === 404) {
+  if (!res.ok) {
+    const body = await res.text();
+    // 403 med model-not-found-typen = record saknas (se doc ovan) → null.
+    if (res.status === 403 && body.includes('INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND')) {
       return null;
     }
-
-    if (!res.ok) {
-      const body = await res.text();
-      // 403 med model-not-found-typen = record saknas (se doc ovan) → null.
-      if (res.status === 403 && body.includes('INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND')) {
-        return null;
-      }
-      throw new Error(`Airtable ${res.status}: ${body}`);
-    }
-
-    return (await res.json()) as AirtableRecord;
+    throw new Error(`Airtable ${res.status}: ${body}`);
   }
+
+  return (await res.json()) as AirtableRecord;
 }
 
 export async function updateAirtableRecord(
