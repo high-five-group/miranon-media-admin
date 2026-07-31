@@ -27,7 +27,13 @@
 > **kroppen bär bara öppna `[ ]`.** Filen dör när alla spår är stängda; den är
 > en arbetsyta, inte en permanent artefakt.
 >
-> **Senast verifierad mot disk: 2026-07-30** (SJUTTONDE resumen — `A2:7`
+> **Senast verifierad mot disk: 2026-07-31** (`TASK-100` — **kontroll 1 lagad
+> efter att ha gett två falska statuspåståenden**, `TASK-52` och `TASK-95`; se
+> § Filens egna fel post 9. Lagningen avtäckte en tredje defekt: två ÄKTA fel
+> (`TASK-36.8`, `TASK-85`) var osynliga för formen, tredje gången samma klass.
+> Kroppen städad — `TASK-86`, `TASK-87` och `TASK-89` flyttade till
+> § Avbockningslogg med sitt sakinnehåll, `TASK-88` står kvar öppen med AC #2
+> obockad. **Kontroll 2 körd, ren.** Föregående pass: 2026-07-30 (SJUTTONDE resumen — `A2:7`
 > DELAD på Marcus beslut och båda halvorna besvarade · `A2:8` KLAR (grind +
 > `ADR-083` + hub-raderna) · `TASK-36.8` stängd, backlog-grinden RENT för första
 > gången (169 kort, 0 inkonsistenta) · `A2:11` avgjord av en mätning som legat
@@ -58,35 +64,83 @@
 > sekunder och ersätter ett auditpass:
 >
 > ```bash
+> # 1. Done-kort som ligger kvar i kroppen.
+> #
 > # Registret läses EN gång — inte ett npx-anrop per kort (den gamla formen
 > # timade ut på två minuter när kortmängden vuxit).
+> #
+> # ID:t måste stå i radens LEDANDE position. Utan den förankringen drar grepen
+> # in varje ID som bara NÄMNS i en ANNAN posts titel: raden
+> # "TASK-89 - … orsakskedja mot TASK-52 …" bokförde `TASK-52` som Done, fast
+> # den står i To Do. Mätt 2026-07-31: 137 ID:n mot 136, och hela skillnaden var
+> # det falska. Se § Filens egna fel post 9.
 > DONE=$(npx backlog task list --plain \
 >   | awk '/^Done:/{f=1;next} /^[A-Za-z ]+:$/{f=0} f' \
+>   | grep -oE '^ +(\[[A-Z]+\] )?TASK-[0-9.]+' \
 >   | grep -oE 'TASK-[0-9.]+' | sort -u)
+>
+> # FAIL-CLOSED. Byter CLI:t utdataformat blir DONE tom, och en tom lista matchar
+> # ingenting — kontrollen hade då rapporterat RENT på en trasig avläsning.
+> # Mätt: den gamla formen gör precis det, tyst och med exit 0.
+> #
+> # Raden börjar med FEL: med flit. Utfallet läses genom att man letar efter
+> # "FEL:" — en avbrytsrad under ett eget nyckelord hade varit osynlig för precis
+> # den läsningen, alltså tyst grön en gång till. Inget `exit` här: blocket
+> # klistras ibland rakt in i ett skal, och `exit` stänger då terminalen.
+> if [ -z "$DONE" ]; then
+>   echo "FEL (AVBRYT): DONE-listan är tom — 'task list --plain' har bytt format; kontrollen kan inte avgöra någonting"
+> else
 >
 > # Kroppen = allt före Avbockningsloggen. Flerradiga block slås ihop till en rad,
 > # annars ses bara första raden av en post som sträcker sig över flera.
+> # `@@R1@@` märker ut var rad 1 slutar — bäraren står där, nämnandena i svansen.
 > awk '/^## Avbockningslogg/{exit} {print}' tasks/s91-restlistan.md | awk '
->   /^- \[[ x]\]/ { if (b != "") print b; b = $0; next }
+>   /^- \[[ x]\]/ { if (b != "") print b; b = $0 "@@R1@@"; next }
 >   /^ +/         { if (b != "") b = b " " $0; next }
 >                 { if (b != "") print b; b = "" }
 >   END           { if (b != "") print b }
 > ' | while IFS= read -r block; do
->   # Bäraren är kort-ID i FET kod-span: **`TASK-N`** — oavsett VAR på raden den
->   # står. Det är hela poängen: A7-raderna bär sitt ID sist (`… → **`TASK-N`**`),
->   # och den gamla formen ankrade det först, så HELA A7-klassen var osynlig.
->   # Kort som bara NÄMNS ("Dep på `TASK-70.3`") saknar ** intill backticken och
->   # matchar därför inte — verifierat mot A7:10-raden, som nämner ett Done-beroende.
->   for id in $(printf '%s' "$block" | grep -oE '\*\*`TASK-[0-9.]+`' \
->                 | grep -oE 'TASK-[0-9.]+' | sort -u); do
->     if printf '%s\n' "$DONE" | grep -qx "$id"; then
->       case "$block" in
->         '- [ ]'*) echo "FEL: $id är Done men står som öppen [ ] i kroppen" ;;
->         '- [x]'*) echo "FEL: $id är Done och avbockad men ligger kvar i kroppen — flytta till loggen" ;;
->       esac
->     fi
->   done
+>   rad1=${block%%@@R1@@*}
+>   hela=${block/@@R1@@/}
+>
+>   # ETT block har EN bärare — inte varje ID i det. Det var defekt B: Spår E:s
+>   # ZZ-GRANSKNING-post bärs av **`TASK-88`** (öppen) men nämner **`TASK-95`**
+>   # i sin brödtext, och den gamla formen fällde blocket på nämnandet.
+>   # Grenarna är fallande, och var och en har en verklig radklass i filen:
+>   #  (a) fet kod-span på rad 1  — **`TASK-53`** — …   ·   (**`TASK-88`**, …)
+>   #  (b) ledande kod-span rad 1 — `TASK-36.8` — …     ·   `T87` — …
+>   #  (c) fet kod-span sist      — A7-klassen: … → **`TASK-70.7`**
+>   barare=$(printf '%s' "$rad1" | grep -oE '\*\*`(TASK-[0-9.]+|T[0-9]+)`' \
+>              | grep -oE '(TASK-[0-9.]+|T[0-9]+)' | head -1)
+>   [ -z "$barare" ] && barare=$(printf '%s' "$rad1" \
+>              | grep -oE '^- \[[ x]\] `(TASK-[0-9.]+|T[0-9]+)`' \
+>              | grep -oE '(TASK-[0-9.]+|T[0-9]+)')
+>   [ -z "$barare" ] && barare=$(printf '%s' "$hela" \
+>              | grep -oE '\*\*`(TASK-[0-9.]+|T[0-9]+)`' \
+>              | grep -oE '(TASK-[0-9.]+|T[0-9]+)' | tail -1)
+>
+>   if [ -n "$barare" ]; then
+>     printf '%s\n' "$DONE" | grep -qx "$barare" || continue
+>     case "$block" in
+>       '- [ ]'*) echo "FEL: $barare är Done men står som öppen [ ] i kroppen" ;;
+>       '- [x]'*) echo "FEL: $barare är Done och avbockad men ligger kvar i kroppen — flytta till loggen" ;;
+>     esac
+>   else
+>     # RÄCKVIDDEN REDOVISAS, DEN DÖLJS INTE. En bärare som står i fet span utan
+>     # asterisk intill backticken — A3-postens "**kortad som `TASK-85`**" — är
+>     # syntaktiskt IDENTISK med ett rent nämnande i samma form: posten "Två
+>     # namn-/strukturfrågor ur `TASK-59.8`:s QA-vandring" säger uttryckligen att
+>     # inget kort bär den. Ingen regex kan skilja dem, så kontrollen gissar inte
+>     # — den ber om en mänsklig blick. Post 8:s lärdom, kodad: en radklass som
+>     # tyst inte täcks är farligare än ingen kontroll alls.
+>     for id in $(printf '%s' "$hela" | grep -oE '(TASK-[0-9.]+|T[0-9]+)' | sort -u); do
+>       printf '%s\n' "$DONE" | grep -qx "$id" \
+>         && echo "OKLAR: \"$(printf '%s' "$rad1" | cut -c7-50)\" saknar entydig bärare men nämner Done-kortet $id — läs posten"
+>     done
+>   fi
 > done
+>
+> fi
 > # 2. Har varje öppet kort en bärare i kartans nio steg?
 > #
 > # Stod som EN KOMMENTAR UTAN KOD från 2026-07-28 till 2026-07-29 — och under
@@ -127,6 +181,15 @@
 > det talande fallet: den stod `- [x]` **i kroppen** i strid med filens egen regel
 > att kroppen bara bär öppna poster, och varken den gamla kontrollen eller någon
 > läsare hade fångat det.
+>
+> **Bärar-formen ovan är prövad om 2026-07-31** (`TASK-100`), efter att den
+> föregående gett två falska statuspåståenden. Beviset går åt båda håll:
+> **noll** falska positiva på `TASK-52` och `TASK-95` mot dagens fil, och
+> **fortsatt fällning** — fyra äkta FEL, varav `TASK-36.8` var osynligt för den
+> gamla formen. Varje bärar-gren är dessutom mutationsprövad var för sig: ett
+> `Done`-kort planterat som bärare i (a) fet kod-span på rad 1, (b) ledande
+> kod-span och (c) fet kod-span sist i blocket ger FEL i samtliga tre.
+> Identiskt utfall i `bash` och `zsh`.
 >
 > **Vid konflikt vinner registret, inte denna fil.**
 
@@ -178,10 +241,10 @@ tematiska; sekvensen över spårgränserna fanns ingenstans.
 | **2** | Skyddsnätet byggs | `TASK-70.2` · `TASK-70.5` | § A7 (A7:4, A7:7) |
 | **3** | Flytten och kön — väntetiden faller | `TASK-75` · `TASK-76` · `TASK-78` | § A7 (A7:10) · § Kort födda i S91 |
 | **4** | Landnings-hygien | `TASK-70.6` | § A7 (A7:8) |
-| **4b** | Verktygsskulden | A3 ×1 · A3b ×2 · A2:9 · `TASK-83` · `T107` | § A3 · § A3b · § A2 · § Kort födda i S91 |
+| **4b** | Verktygsskulden | A3 ×1 · A3b ×1 · A2:9 · `TASK-83` · `T107` | § A3 · § A3b · § A2 · § Kort födda i S91 |
 | **5** | Aktörerna slutar krocka | A2:7 · A2:8 · A2:11 · `TASK-77` · `TASK-84` · `T108` · `T109` · Spår B | § A2 · § Spår B · § Kort födda i S91 |
 | **6** | Kvar utanför räckhåll | `T85` våg 3 · `T87` · `TASK-70.7` | § A6 · § A7 (A7:9) |
-| **6b** | Skulden betalas | A2:10 → Spår C ×2 · Spår E ×3 | § Spår C · § Spår E · § A2 |
+| **6b** | Skulden betalas | A2:10 → Spår C ×2 · Spår E ×1 | § Spår C · § Spår E · § A2 |
 | **7** | Appen | `TASK-53` · `TASK-56` · hållplats-grillningen · `TASK-18.20` · de tre app-besluten · resten | § Spår D · § Kort födda i S91 · § Beslut |
 
 **Invarianter i ordningen** (allt annat är schemaläggning): steg 1 före 2–3, för
@@ -408,14 +471,17 @@ Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkomma
 - [ ] **Skriv in kravet durabelt:** innan ett nytt skript/verktyg byggs ska
       verktygsvals-prövningen göras och **utfallet redovisas** — även när domen
       blir "bygg eget". Hör sannolikt i `CONTRIBUTING.md` eller som hub-regel.
-- [x] **Retroaktiv redovisning för `check-lesson-numbers.sh`** — **`TASK-86` DONE 2026-07-30** (`#474`, ren addition 41/0). Gav ett nytt kort: `TASK-97` — agenten fann att `ADR-081`:s precedent-anspråk *"vår form exakt"* bara håller för **halva** formen, och deklarerade det öppet i stället för att tiga, men fick inte röra sektionen (dess AC #3 förbjöd det). (Byggd i ADR-081.)
-      Prövningen gjordes delvis: towncrier, MADR #28 och Rust RFC 0002 lästes,
-      och **mönstret** lånades — men ADR:n redovisar inte explicit varför
-      towncrier inte togs som *verktyg*. De ärliga skälen (Python-verktyg i ett
-      Node-projekt · genererar changelogs vid release, vår `lessons.md` har inga
-      releaser · löser inte kollisionen utan undviker nummer helt, vilket ÄR
-      mönstret vi lånade) är ett **resonemang, inte en mätning** — och det ska
-      stå i ADR-081 hellre än att antas. Amendera ADR:n.
+
+**Den retroaktiva redovisningen för `check-lesson-numbers.sh` är landad**
+(`TASK-86`, § Avbockningslogg). **Öppen svans som INTE följde med kortet:**
+prövningen gjordes bara delvis. Towncrier, MADR #28 och Rust RFC 0002 lästes och
+**mönstret** lånades, men ADR-081 redovisar fortfarande inte varför towncrier
+valdes bort som *verktyg*. De ärliga skälen (Python-verktyg i ett Node-projekt ·
+genererar changelogs vid release, vår `lessons.md` har inga releaser · löser
+inte kollisionen utan undviker nummer helt, vilket ÄR mönstret vi lånade) är ett
+**resonemang, inte en mätning**, och ska stå i ADR:n hellre än antas. Frågan
+gränsar till **`TASK-97`** men är inte samma: `97` rättar *precedent-anspråket*,
+detta är *verktygsvalet*. Bärs av A3b:s öppna post ovan tills någon tar den.
 
 ### A4 · Grindarnas form
 
@@ -617,14 +683,6 @@ nedskriven empiri kostar att den måste återupptäckas genom att felet upprepas
 
 ## Spår E — Hygien och skuld
 
-- [x] `save-segment`-läckan (**`TASK-87`**) — `app-segment-test+<uuid>` saknar target i
-      `.purge-staging-policy.json`, städas aldrig. **DONE 2026-07-30** (`#477`).
-      **665 poster räknade via två oberoende vägar före något rördes; inget
-      raderades i skivan.** Target ankrad i båda ändar, `linkGuard: true`
-      live-motiverad (0 av 665 bar länken — ingen no-op-broms). Testet läser
-      targeten **ur policyn på disk**, inte som kopia: en kopia hade gått grön
-      även mot en tom `targets`-lista. Läckan bekräftad i realtid — agentens
-      egen `test:api` skapade post 666 under mätningen.
 - [ ] `ZZ-GRANSKNING-S91` lever i staging (**`TASK-88`**, ej självstädande).
       Verifierat 2026-07-27: `.purge-staging-policy.json` nämner den inte.
       ⚠️ **STÄDKOMMANDOT OVAN FUNGERAR INTE — raden bar en osann åtgärd fram
@@ -641,22 +699,21 @@ nedskriven empiri kostar att den måste återupptäckas genom att felet upprepas
       fixturens livstidsavslutning, sju former vägda, ingen vald.
       **`TASK-88` STANNAR ÖPPEN med AC #2 obockad. Bocka INTE av denna rad
       förrän fixturen faktiskt är borta ur basen.**
-      ⚠️ **Klassvarning:** denna post och `save-segment`-läckan ovan står
-      bokförda som samma klass av lucka i purge-policyn. **De har motsatta
+      ⚠️ **MOTSÄGELSE MOT LOGGEN, oavgjord 2026-07-31.** Raden ovan säger *"33
+      poster kvar"*, medan § Avbockningslogg för `TASK-95` säger att fixturen är
+      **städad: 33 poster före, 0 efter**. `TASK-88` står ändå `To Do` med AC #2
+      obockad — verifierat mot registret, inte ur denna fil. **Ingen av
+      uppgifterna avfärdas här:** en mätning mot basen avgör, och den som gör
+      den bockar AC #2 eller rättar loggen. Noterad hellre än gissad; det är
+      post 7:s regel.
+      ⚠️ **Klassvarning — gäller även efter att grannposten flyttats.** Denna
+      post och `save-segment`-läckan (`TASK-87`, landad, § Avbockningslogg) stod
+      bokförda som **samma klass** av lucka i purge-policyn. **De har motsatta
       rätta svar** — `app-segment-test` SKA ha en target, `ZZ-GRANSKNING-*`
       ska ALDRIG ha en (skyddsräcke 2 är avsiktligt). En purge-target som
-      "fix" här hade rivit skyddet.
-- [x] `person-detail` kontra `TASK-52` — orsakskedjan ej verifierad (**`TASK-89`**).
-      **DONE 2026-07-30** (`#476`). Kedjan reproducerad med rad-referenser mot
-      deployad EF och repots eget schema. **`TASK-52`:s diagnos FALSIFIERAD i
-      motsatt riktning:** arrayen uppstår vid FÖRSTA motiveringen, inte vid
-      flera anmälningar — båda observerade personerna har `Antal anmälningar
-      (totalt)` = 1. Roten är att formelns ELSE-gren returnerar
-      rollup-referensen orörd medan fältet deklarerar `singleLineText`.
-      Registrerad som **fälla 46** i `data-model.md` (bas-maximeringens
-      kravspec, ej app-lapp). **Omätt led:** flerhet (>1 element) är inte
-      observerad någonstans, så varje rekommendation om "bevarad flerhet" vilar
-      på ett antagande; tre syskonfält bär samma formelmönster.
+      "fix" här hade rivit skyddet. Analogin får alltså inte göras om, och
+      varningen står kvar här just för att den andra posten är borta ur kroppen:
+      ett stängt kort tar sin lärdom med sig om ingen skriver ner den.
 
 ## Kort födda i S91 — utanför spåren ovan
 
@@ -825,6 +882,43 @@ bantades bort. De raderas inte.
    på `A7:10`-raden som nämner ett `Done`-beroende. **En kontroll som tyst inte
    täcker en radklass är farligare än ingen kontroll — den läses som täckande.**
 
+9. **Den lagade kontrollen bar TVÅ nya defekter — och gjorde ett falskt
+   påstående om ett korts status, exakt post 7:s felklass.** Körd skarpt
+   2026-07-31 gav den **fem FEL**, varav **två falska**. Kortat som
+   **`TASK-100`**.
+
+   **Defekt A — DONE-listan förorenades av kort som bara NÄMNS i andra korts
+   titlar.** Extraktionen var `grep -oE 'TASK-[0-9.]+'` över hela Done-blockets
+   rader, utan förankring. Raden `TASK-89 - … orsakskedja mot TASK-52 …` lade
+   därför in **båda** ID:na, och `TASK-52` — som står i `To Do` — rapporterades
+   som Done. Mätt: 137 ID:n mot 136 med ledande-position-förankring, och hela
+   skillnaden var det falska. Att filen påstår ett korts status *är* det post 7
+   bokför; här gjorde **kontrollen som skulle förhindra felklassen** det själv.
+
+   **Defekt B — varje fet kod-span antogs vara blockets bärare.** Spår E:s
+   `ZZ-GRANSKNING`-post bärs av **`TASK-88`** (öppen) men nämner **`TASK-95`**
+   (Done) i sin brödtext, och blocket fälldes på nämnandet. Ingressens egen
+   kommentar hävdade att kort som *"bara NÄMNS"* inte matchar — sant bara för
+   nämnanden utan fetstil.
+
+   **Defekt C, funnen först under lagningen: två ÄKTA fel var osynliga.** Formen
+   såg bara bärare i FET kod-span. A5-posten bär sitt ID som en **vanlig**
+   kod-span först på raden (`TASK-36.8`), och A3-posten bär sitt inuti en fet
+   span men utan asterisk intill backticken (`TASK-85`). Båda korten är `Done`,
+   och `TASK-36.8` stod dessutom avbockad i kroppen i strid med filens egen
+   underhållsregel. **Tredje gången samma klass** — post 8 handlade om precis
+   detta, och lagningen som skrevs då införde en ny blind fläck av samma sort.
+
+   **Vad som faktiskt ändrades i tänkandet:** att jaga en regex som *verkar*
+   täcka allt är själva felmönstret. `TASK-85`-formen går bevisligen **inte** att
+   skilja syntaktiskt från ett rent nämnande — posten *"Två namn-/strukturfrågor
+   ur `TASK-59.8`:s QA-vandring"* bär ID:t i identisk form och säger uttryckligen
+   att **inget kort bär den**. Kontrollen gissar därför inte längre: den
+   rapporterar `OKLAR` för block vars bärare den inte kan avgöra, och redovisar
+   sin räckvidd i stället för att dölja den. Den fick också en fail-closed-vakt —
+   den gamla formen gick **tyst grön med exit 0** när DONE-listan var tom, alltså
+   grönt på en trasig avläsning.
+
 **Och felklassen som gav filen sin nuvarande form:** auditen 2026-07-28 fann
 tolv statusfel, samtliga kopior av register som redan hade rätt svar. Det är
 skälet till att kort-, tråd- och landningsstatus nu bara pekas ut härifrån.
@@ -943,6 +1037,9 @@ stängde `TASK-54.2` DoD 7 och `TASK-54.3` DoD 5).
 | 2026-07-30 | **`bygg-agent.md`:s motivering rättad på Marcus delegering** (*"DU avgör"*). Instruktionen *"armera INTE auto-merge"* står kvar; skälet `BEHIND` var upphävt av vår egen `CLAUDE.md` sedan kön mekaniserades — **en motsägelse inuti agentens egen läs-ordning**. Ny grund: diffen granskas före köning, kön ser inte två diffar som mergar rent men är fel tillsammans, agenten är blind för sina syskon | `#475` |
 | 2026-07-30 | **`autoMergeRequest`-regeln skriven fel och rättad öppet.** Påståendet *"alltid `null`"* generaliserades ur två avläsningar som båda mätte fel sak (den ena togs post-merge, då fältet nollas oavsett). Motbevisad av `#475` — PR:en som BAR texten. Svaret stod i `gh pr merge --help` hela tiden. Tillagt i samma sektion: **en köad gren kan inte uppdateras** (`GH006`; `--disable-auto` släpper inte låset, `gh` har ingen dequeue) | `#478` |
 | 2026-07-30 | **VÅG 1: sju bygg-agenter, noll röda körningar.** `TASK-86` `87` `89` `91` `92` **DONE**; `TASK-88` öppen med redovisat skäl. Ingen kollision mellan agenterna — `ci.yml` rördes av två kort på hunkar 286 rader isär, purge-policyn av ett enda | `#474` `#476` `#477` `#479` `#480` `#481` |
+| 2026-07-30 | **`TASK-87` DONE — `save-segment`-läckan** (kroppens post flyttad hit 2026-07-31). `app-segment-test+<uuid>` saknade target i `.purge-staging-policy.json` och städades aldrig. **665 poster räknade via två oberoende vägar innan något rördes; inget raderades i skivan.** Target ankrad i båda ändar, `linkGuard: true` live-motiverad (0 av 665 bar länken — ingen no-op-broms). Testet läser targeten **ur policyn på disk**, inte som kopia: en kopia hade gått grön även mot en tom `targets`-lista. Läckan bekräftad i realtid — agentens egen `test:api` skapade post 666 under mätningen. **Klassvarningen mot `ZZ-GRANSKNING-*` bor kvar i Spår E**, eftersom svaren är motsatta | `#477` |
+| 2026-07-30 | **`TASK-89` DONE — `person-detail`-kedjan mot `TASK-52`** (kroppens post flyttad hit 2026-07-31). Kedjan reproducerad med rad-referenser mot deployad EF och repots eget schema. **`TASK-52`:s diagnos FALSIFIERAD i motsatt riktning:** arrayen uppstår vid FÖRSTA motiveringen, inte vid flera anmälningar — båda observerade personerna har `Antal anmälningar (totalt)` = 1. Roten är att formelns ELSE-gren returnerar rollup-referensen orörd medan fältet deklarerar `singleLineText`. Registrerad som **fälla 46** i `data-model.md` (bas-maximeringens kravspec, ej app-lapp). **Omätt led som INTE stängdes:** flerhet (>1 element) är inte observerad någonstans, så varje rekommendation om "bevarad flerhet" vilar på ett antagande; tre syskonfält bär samma formelmönster. `TASK-52` är fortfarande `To Do` | `#476` |
+| 2026-07-30 | **`TASK-86` DONE — retroaktiv verktygsvals-redovisning för `check-lesson-numbers.sh`** (kroppens post flyttad hit 2026-07-31). Ren addition 41/0, byggd i ADR-081. Gav ett nytt kort: **`TASK-97`** — agenten fann att `ADR-081`:s precedent-anspråk *"vår form exakt"* bara håller för **halva** formen, och deklarerade det öppet i stället för att tiga, men fick inte röra sektionen (dess AC #3 förbjöd det). **Öppen svans kvar i § A3b:** varför towncrier valdes bort som *verktyg* står fortfarande inte i ADR:n — en annan fråga än `97`:s precedent-anspråk | `#474` |
 | 2026-07-30 | **Fälla 46 registrerad** ur `TASK-89` + **tre lesson-fragment** [UNIVERSAL ×3], samtliga ur orkestrerarens egna fel: fail-open-vakten på ett påhittat SHA · regeln ur två felmätningar · ospårad bokföring som delad tillståndsyta. Fragment **55 → 58** | `#482` |
 | 2026-07-30 | **Nummerkollision, framkallad skarpt.** Orkestrerarens `TASK-95`/`96` låg **ospårade** medan en bygg-agent räknade från `main` — båda landade på `task-95`. Agenten gjorde allt rätt (upptäckte föråldrad worktree, ff:ade) och fick ändå ett upptaget nummer. Omnumrerat till **`TASK-97` via CLI:t**, inte för hand. Verktygets skydd hade **inte** hjälpt: konflikten låg mellan huvudträdet och en gren | `#482` |
 | 2026-07-30 | **`TASK-90` DONE — och grinden fällde sin egen orkestrerare.** Dess FÖRSTA skarpa körning efter landning fällde `TASK-17`/`19`/`36`, stängda en timme tidigare på en läsning av deras egna AC (noll) **utan att DoD-blocket lästes** — två punkter per kort är Marcus design-review. Substansen höll (samtliga 18 barn: DoD komplett, Done, verifierat mot disk), bokföringen inte. Efter kvittens: **173 kort, 0 inkonsistenta** | `#483` `#484` `#485` |
