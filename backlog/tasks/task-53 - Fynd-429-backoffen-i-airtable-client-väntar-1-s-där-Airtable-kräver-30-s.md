@@ -1,10 +1,10 @@
 ---
 id: TASK-53
 title: 'Fynd: 429-backoffen i airtable-client väntar 1 s där Airtable kräver 30 s'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-27 14:52'
-updated_date: '2026-07-31 07:55'
+updated_date: '2026-07-31 08:15'
 labels: []
 dependencies: []
 priority: medium
@@ -39,12 +39,16 @@ RELATERAT: airtable-constraints.md P4 (posten bokförs som åtgärdad när detta
 - [x] #4 airtable-constraints.md P4:s öppna-avvikelse-not uppdaterad till åtgärdad med commit-referens
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+429-backoffen väntar nu 30 s enligt Airtables dokumenterade krav — den enda defekten i PRODUKTIONSKOD som Session 91 öppnade. Alla tre 429-hanterare i airtable-client.ts delar en ny, Deno-fri mekanism (airtable-retry.ts): 30 000 ms första omförsöket, 60 000 ms andra, jitter-tak 37 500 / 75 000. Symptomet var latent — under 5 req/s-taket manifesteras det aldrig, vilket är varför det kunnat leva; vid faktisk 429 föll omförsöken INOM lockout-fönstret och förlängde det. DESIGNVAL: rekommendationen (b) följdes men SKÄRPTES — jittern är additiv uppåt. AWS klassiska equal jitter kan ge väntan UNDER basen, vilket hade brutit 30 s-kontraktet och återinfört exakt defekten. TAKET ÄR HÄRLETT, INTE VALT: Supabase EF har Request idle timeout 150 s (primärkälla); värsta väntan 112,5 s ryms, ett tredje omförsök gav 262,5 s och därmed 504 i stället för ett ärligt fel. Testet asserterar härledningen. Tvåsidigt bevis: basen återställd till 1 s → 4 av 10 fäller inkl. regressionsvakten; taket höjt till 3 → idle-timeout-härledningen fäller. 10 fall gröna, väntetid mätt via injicerad sleep. Latent bugg lagad på köpet: gamla loopen konsumerade aldrig 429-svarets body före omförsök — resursläcka i Deno, nu annullerad. P4-noten i airtable-constraints.md uppdaterad till åtgärdad med commit 123dbca. ÖPPET, större än kortet: airtable-client.ts är HELT otypkollad (utanför alla tsconfig-program, 7x TS2304 Deno vid sond) och hela supabase/functions/ är exkluderad ur Biome — EF-koden har varken typecheck eller lint. Registrerat, eget kort. Fixen är inte skarp förrän någon deployar; EF-deploy sker via skript, inte CI. Landad #500 (123dbca + d3242c6), merge_group grön (e17b8f88).
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
