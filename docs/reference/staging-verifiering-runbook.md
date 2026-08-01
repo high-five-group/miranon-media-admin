@@ -288,9 +288,12 @@ dem — de står här för den som ändrar skriptet eller bygger något liknande
 2. **De permanenta fixturerna rörs aldrig.** Personerna `rec7F8jYc7rczwwkM`
    (ZZ-Arbetsko Person 01) och `recqxaFNwHAdQlAqb` (ZZ-History Person 01) bär
    exakta rollup-assertions i testsviten (TASK-31) — att länka nya anmälningar
-   till dem, eller råka radera dem, fäller tester. Skriptet skapar EGNA
-   personer, och båda record-ID:na står i `protectedRecordIds` och kan aldrig
-   raderas ens vid markör-träff.
+   till dem, eller råka radera dem, fäller tester. Detsamma gäller de
+   permanenta eventen `recIFrxHZw165ycXk` (ZZ-belaggning-fixtur, EventKey
+   Event-681) och `recZyRIzbqWSifAQO` (ZZ-arbetsko-fixtur, EventKey Event-845),
+   vars conformance-facit bor i `tests/api/fixtures.ts`. Skriptet skapar EGNA
+   personer och event, och alla fyra record-ID:na står i `protectedRecordIds`
+   (TASK-114) och kan aldrig raderas ens vid markör-träff.
 3. **Datumvalet.** Ett kluster på ~15 identiska sentinel-event ligger på
    `2026-09-15`; en fixtur där är omöjlig att hitta i listan. Default är därför
    `--dagar 8` — nära i tiden, alltså överst i "Kommande".

@@ -64,7 +64,8 @@
 //      matchas av setup-purgen. Policyn LÄSES — mönstren dupliceras aldrig
 //      hit, så vakten kan inte drifta ifrån den purge som faktiskt körs.
 //   3. Skyddade record-ID:n (fälla 2): de permanenta assertion-fixturerna
-//      (ZZ-Arbetsko / ZZ-History) står i CONFIG.protectedRecordIds och kan
+//      (personerna ZZ-Arbetsko / ZZ-History + eventen ZZ-belaggning-fixtur /
+//      ZZ-arbetsko-fixtur, TASK-114) står i CONFIG.protectedRecordIds och kan
 //      aldrig raderas — inte ens om de mot förmodan matchar en markör.
 //   4. Länk-guard vid clean: en person med data-länkar (Deltaganden) lämnas
 //      kvar och rapporteras i stället för att raderas. Fail-safe-riktning,
@@ -161,12 +162,22 @@ export const CONFIG = {
   },
 
   /**
-   * Permanenta fixturer som bär exakta rollup-assertions i testsviten
-   * (TASK-31): ZZ-Arbetsko Person 01 + ZZ-History Person 01. Att länka nya
-   * anmälningar till dem — eller radera dem — fäller tester (fälla 2).
-   * Skriptet skapar därför EGNA personer och kan aldrig röra dessa.
+   * Permanenta fixturer som bär exakta assertions i testsviten: personerna
+   * ZZ-Arbetsko Person 01 + ZZ-History Person 01 (rollup-assertions, TASK-31)
+   * och eventen ZZ-belaggning-fixtur (EventKey Event-681, task-18.2) +
+   * ZZ-arbetsko-fixtur (EventKey Event-845, task-18.4) — alla fyra med facit
+   * i tests/api/fixtures.ts. Att länka nya anmälningar till dem — eller
+   * radera dem — fäller tester (fälla 2). Skriptet skapar därför EGNA
+   * personer och event och kan aldrig röra dessa. Ordningen är bärande:
+   * personerna står först (testsviten adresserar index 0), eventen efter
+   * (TASK-114).
    */
-  protectedRecordIds: ['rec7F8jYc7rczwwkM', 'recqxaFNwHAdQlAqb'],
+  protectedRecordIds: [
+    'rec7F8jYc7rczwwkM',
+    'recqxaFNwHAdQlAqb',
+    'recIFrxHZw165ycXk',
+    'recZyRIzbqWSifAQO',
+  ],
 
   /** Länkfält på Personer vars närvaro blockerar radering (skyddsräcke 4). */
   personDataLinkFields: ['Deltaganden'],

@@ -10,8 +10,10 @@
 // Testfallen kodar de fyra dyrköpta fällorna:
 //   1. Purge-kollisionen — en fixtur som matchar setup-purgens mönster
 //      försvinner mitt under granskningen. Korsläses mot den SKARPA policyn.
-//   2. De permanenta fixturerna (ZZ-Arbetsko / ZZ-History) bär exakta
-//      rollup-assertions (TASK-31) och får aldrig raderas eller länkas till.
+//   2. De permanenta fixturerna — personerna ZZ-Arbetsko / ZZ-History
+//      (TASK-31) och eventen ZZ-belaggning-fixtur / ZZ-arbetsko-fixtur
+//      (Event-681 / Event-845, TASK-114) — bär exakta assertions och får
+//      aldrig raderas eller länkas till.
 //   3. Datumvalet — fixturen ska ligga nära i tiden, inte i 2026-09-15-klustret.
 //   4. Beläggningen — `Anmäld beläggning (%)` får aldrig nå 100 % (A6).
 
@@ -196,6 +198,48 @@ t('FÄLLA 2: skriptet skapar EGNA personer — ingen anmälan pekar på en skydd
     assert.ok(rad.person['E-post'].startsWith(CONFIG.marker.emailPrefix));
     assert.ok(!CONFIG.protectedRecordIds.includes(rad.person['E-post']));
   }
+});
+
+t('FÄLLA 2: event-fixturerna Event-681 och Event-845 står i protectedRecordIds (TASK-114)', () => {
+  assert.ok(
+    CONFIG.protectedRecordIds.includes('recIFrxHZw165ycXk'),
+    'ZZ-belaggning-fixtur (EventKey Event-681)',
+  );
+  assert.ok(
+    CONFIG.protectedRecordIds.includes('recZyRIzbqWSifAQO'),
+    'ZZ-arbetsko-fixtur (EventKey Event-845)',
+  );
+});
+
+t('FÄLLA 2: ett skyddat event raderas ALDRIG — inte ens med matchande Ort + sentinel', () => {
+  // Planterat kollisionsfall: det permanenta beläggnings-eventet bär här (mot
+  // förmodan) BÅDE clean-ortens Ort och Notering-sentinelen. Utan record-ID-
+  // skyddet hade isFixtureEvent klassat det för radering — exakt det läge
+  // skyddsräcke 3 lovar bort ("inte ens om de mot förmodan matchar en markör").
+  const pattern = fixtureEmailPattern('zz-granskning-fixtur', CONFIG.marker);
+  const plan = planClean({
+    events: [
+      {
+        id: 'recIFrxHZw165ycXk',
+        fields: {
+          Ort: 'ZZ-GRANSKNING-FIXTUR',
+          Notering: `${CONFIG.marker.noteringSentinel} planterat kollisionsfall`,
+        },
+      },
+    ],
+    registrations: [],
+    persons: [],
+    ort: 'ZZ-GRANSKNING-FIXTUR',
+    pattern,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.events, []);
+  assert.equal(plan.skippedEvents[0].orsak, 'skyddad record-ID');
+});
+
+t('FÄLLA 2: listans ordning är bärande — personerna står först (index 0 adresseras)', () => {
+  assert.equal(CONFIG.protectedRecordIds[0], 'rec7F8jYc7rczwwkM');
+  assert.equal(CONFIG.protectedRecordIds[1], 'recqxaFNwHAdQlAqb');
 });
 
 // --- FÄLLA 3: datumvalet ---
