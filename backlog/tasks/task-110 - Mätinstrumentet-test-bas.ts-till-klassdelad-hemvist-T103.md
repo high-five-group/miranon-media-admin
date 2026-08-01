@@ -1,10 +1,10 @@
 ---
 id: TASK-110
 title: Mätinstrumentet test-bas.ts till klassdelad hemvist (T103)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 10:40'
-updated_date: '2026-08-01 22:00'
+updated_date: '2026-08-01 22:26'
 labels:
   - ready-for-agent
 dependencies: []
@@ -38,8 +38,6 @@ Underlag: `tasks/threads/README.md` T103-raden · `tasks/threads/S91-tradkarta-2
 - [x] #6 Trådregistrets T103-rad uppdaterad i samma landning: `closed` + pekare till detta kort
 <!-- AC:END -->
 
-
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -67,10 +65,16 @@ GRINDAR (mätta exitkoder, samtliga från denna workingtree):
 TRÅDREGISTRET (AC #6): tasks/threads/README.md T103-raden satt till closed, pekar till TASK-110, bär det uppmätta 15-talet och länken till mätbeviset.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PR #564 (merge 57238a19bdf71d706f3d71a97732bc18a30745ce, merge queue): merge_group-run 30720679764 grön per jobb — Lint+Audit+TypeCheck: success, Detect changed files: success, Docs link check: success, Test suite/Pure+Build: success, Test suite/Acceptance (hermetisk): success, Test suite/Staging sentinel purge: skipped, Test suite/A11y (axe-runner): skipped, Test suite/Staging (API+E2E): skipped, CI Passed or Skipped: success. DoD#4 diff-scope verifierad: gh pr diff 564 --name-only gav 21 filer — task-110-kortet, tasks/threads/README.md, tests/acceptance/support/acceptance-bas.ts, 14 tests/e2e/*.staging.test.ts, tests/global-setup.ts, tests/global-teardown.ts, tests/support/hermetik-rapport-fil.ts, tests/support/test-bas.ts — matchar exakt agentens rapporterade fillista i implementation notes (inklusive det där bokförda 14-mot-kortets-15-talet-divergensen). Inga orelaterade filer. Lokala grindar redan mätta av byggagenten (typecheck/biome/build/test:api samtliga exit 0, PLAYWRIGHT_HERMETIK_RAPPORT-bevis 9/9) och avbockade DoD#1-2 i tidigare landning. DoD 3-4 avbockade här av stängningsbatchen.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

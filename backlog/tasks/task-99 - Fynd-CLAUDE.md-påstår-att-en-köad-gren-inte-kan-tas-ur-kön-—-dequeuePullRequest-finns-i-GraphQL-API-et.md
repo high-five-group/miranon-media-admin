@@ -3,10 +3,10 @@ id: TASK-99
 title: >-
   Fynd: CLAUDE.md påstår att en köad gren inte kan tas ur kön —
   dequeuePullRequest finns i GraphQL-API:et
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 06:43'
-updated_date: '2026-08-01 22:00'
+updated_date: '2026-08-01 22:26'
 labels:
   - ready-for-agent
 dependencies: []
@@ -50,10 +50,16 @@ AC3 — enqueuePullRequest(jump:true): fungerar, testat i samma pass. Kräver at
 AC4 — sökt (grep) i CLAUDE.md, CONTRIBUTING.md, .claude/agents/*.md, docs/decisions/*.md efter fler CLI-begränsning->plattformsslutsats-mönster. Noll ytterligare träffar. CONTRIBUTING.md:s --admin-stycke ser liknande ut ytligt men är INTE samma fel: den är verifierad mot faktisk config (current_user_can_bypass: never), inte gissad ur gh:s hjälptext — rört ej.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PR #565 (merge 76432065bb5a373bb8365ffcbe4755878f3a6667, merge queue): merge_group-run 30720763372 grön per jobb — Detect changed files: success, Lint+Audit+TypeCheck: success, Docs link check: success, Test suite: skipped (korrekt, docs-klassad diff), CI Passed or Skipped: success. DoD#4 diff-scope: gh pr diff 565 --name-only gav 3 filer — CLAUDE.md, task-99-kortet, docs/research/task-99-dequeue-enqueue-live-test-2026-08-01.md — samtliga relaterade, inga orelaterade. DoD#2 (rörd fil-klass = docs, L147): npm run check:docs kört av stängningsbatchen på aktuell HEAD (efter fast-forward till origin/main) → exit 0, 13/13 dokumentationsgrindar gröna (markdownlint/vale/frontmatter/lifecycle/ADR-räkning/lesson-numrering/listparitet m.fl.). AC 1-4 avbockade av byggagenten (dequeue+enqueue(jump:) skarpt provade mot kastbar test-PR #561, se implementation notes); DoD 1-4 avbockade här av stängningsbatchen.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
