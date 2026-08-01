@@ -3,10 +3,10 @@ id: TASK-103
 title: >-
   Fynd: Edge-Function-koden har ingen typkontroll och ingen lint — men hålet är
   mindre och annorlunda än det ser ut
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 08:26'
-updated_date: '2026-07-31 08:40'
+updated_date: '2026-08-01 13:04'
 labels:
   - ready-for-agent
 dependencies: []
@@ -101,10 +101,10 @@ Ett avgränsat research-pass mot primärkällor kördes parallellt: [`docs/resea
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Acceptance Criteria
@@ -118,3 +118,9 @@ Ett avgränsat research-pass mot primärkällor kördes parallellt: [`docs/resea
 - [x] #7 Bevisat att samma planterade fel passerar UTAN grinden — annars är täckningen inte ny utan bara omformulerad
 - [x] #8 Ingen ny CI-wiring införd: grinden körs av ett kommando CI redan kör (npm run typecheck)
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Nattgrindens drift-fynd (nattärende #541): alla åtta AC bockade men kortet stod To Do bortom karensen. Leveransen (PR #507, commits d5707b2 EF-typecheck + 4181cbe research-passet, merge e7c418b, mergad 2026-07-31 08:59): hålet mätt (31 filer utanför alla tsconfig-program; 67 tsc-fel i tre klasser varav TS7006 härledd; 237 Biome-diagnoser, noll äkta funktionella defekter för de körda instrumenten), forensiken visade medvetet val (ADR-010 Accepted, biome-exkluderingen c91bfa0) — ADR-010 rivs INTE; i stället tsconfig.edge-shared.json som gör den oavsiktliga test-sidoeffekt-täckningen avsiktlig och deklarerad, 9 → 11 Deno-fria moduler (cursor.ts + errors.ts nya), gräns bestämd transitivt (AC#5), grind via befintligt npm run typecheck — ingen ny CI-wiring (AC#8). Tvåsidigt bevis: planterat Deno-anrop i otäckt modul fäller MED grinden och passerar UTAN (AC#6+#7). Research-passet bekräftade mönstret mot fem precedent-repon och fann två verkliga typfel bakom @ts-nocheck (batchValidation permissive — eget kort TASK-111, redan landat #523). DoD#3 verifierad per jobb: merge_group-run 30617779264 på merge-SHA e7c418b — Detect changed files success · Lint + Audit + TypeCheck success · Docs link check success · Test suite / Pure + Build success · Test suite / Acceptance (hermetisk) success · Staging + A11y skipped by-design · CI Passed or Skipped success. Stängd 2026-08-01 i svans-passet efter nattgrindens fynd.
+<!-- SECTION:FINAL_SUMMARY:END -->
