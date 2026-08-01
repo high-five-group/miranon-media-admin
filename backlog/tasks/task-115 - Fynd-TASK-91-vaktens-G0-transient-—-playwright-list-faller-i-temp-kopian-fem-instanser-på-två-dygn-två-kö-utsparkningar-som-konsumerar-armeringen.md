@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-01 12:30'
+updated_date: '2026-08-01 21:01'
 labels:
   - ready-for-agent
 dependencies: []
@@ -59,6 +60,12 @@ Fail-closed-designen är **RÄTT** och får inte försvagas — vaktens egen for
 - [ ] #4 CLAUDE.md § Landning-tabellens fjärde läge (failed_checks konsumerar armeringen) dokumenterat, eller vägen explicit avstådd med skäl i kortet
 - [ ] #5 Instansregistret i kortet uppdaterat med utfall efter åtgärden
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+**Instans 6** (2026-08-01 ~20:37Z, PR #557, merge_group-run 30717361846, headBranch gh-readonly-queue/main/pr-557-4d0a60d33dfdbf3bbb7060467aa6aa56fac6d1f6): steget "Check staging-preflightens wiring (TASK-91 deletion-vakt)" fail-closed — "playwright --list kunde inte köras: Command failed" → "Process completed with exit code 64." Dequeue (failed_checks), konsumerad armering. **Instans 7** (samma PR, ~20:43Z, merge_group-run 30717544509): G0 i "Test wiring-vaktens fyrning (TASK-91, tvåsidigt bevis)" — "G0 orörd kopia av trädet → GRÖN, och namnger alla fem ytor: exit 64, förväntat 0" + samma "playwright --list kunde inte köras: Command failed"-signatur i sandlådekopian. Andra utsparkningen i rad på SAMMA PR. Tredje försöket (merge_group-run 30717774404) grönt — PR:n landade som aac16c757ce9319b4d5a3db7cfc790187c8e867e. PR #557:s diff var uteslutande .claude/agents/bygg-agent.md + .claude/agents/research-pass.md (bekräftat: gh pr diff 557 --name-only) — två agent-frontmatter-filer som inte kan påverka playwright-listningen i en cpSync:ad sandlåda. **Eskalation:** frekvensen har gått från spridda enstaka instanser (1-5, över flera PR:er och dagar) till BACK-TO-BACK på samma PR inom sex minuter (20:37Z → 20:43Z) — det stärker transient/last-hypotesen (§ Belägg för transient) men skärper samtidigt kostnaden: två konsumerade armeringar på en enda PR-landning.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
