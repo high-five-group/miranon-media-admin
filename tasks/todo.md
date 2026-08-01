@@ -15,6 +15,21 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-08-01, tjugoförsta pausen — planerad, efter
+Sonnet-omställningen)** — Fyra landningar denna period, alla
+merge_group-verifierade per jobb: `#556` (resume-återställningen) · `#557`
+(**`model: sonnet`** i bygg-agent + research-pass, Marcus GO — subagenterna
+ärvde tidigare `claude-fable-5[1m]`+xhigh) · `#551` (Stop-vakten/ADR-087,
+rebasen löste räknar-dedup-fällan → 88) · `#558` (stängningspaketet via
+**första Sonnet-agenten**: TASK-113 Done · TASK-115 instans 6+7 · **T113
+mintad** — mätuppföljningen; agentens premiss-pass fångade ett
+orkestrerar-hash-fel = mätpunkt 1). Worktree-städning: 32 bort, 8 kvar.
+Numrering: 91/ADR-089/L433/T114/f47/task-117. **NÄSTA (resume):
+restlista-passet · uppdragsrevisionen · Stop-vaktens svit → ci.yml ·
+dependabot #65→#162→#260 · TASK-99/79/110.** VÄNTAR PÅ MARCUS: TASK-111 ·
+TASK-115 åtgärdsväg (SJU instanser, eskalerande) · TASK-116. Full narrativ:
+sessionsdok Del 40 + PAUSLÄGE (tjugoförsta). *(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-08-01, tjugoförsta resumen — tillstånd
 återställt)** — Tjugonde pausen (2026-08-01, current-session-limit vid 96 %,
 kontext 41 %) lämnade fyra öppna luckor bokförda i Paushistoriken — denna
