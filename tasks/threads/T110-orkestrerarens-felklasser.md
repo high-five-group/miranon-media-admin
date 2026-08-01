@@ -343,7 +343,7 @@ Alla sex i bygg-agent-uppdrag (6/28 uppdrag = 21 % bar ≥1 fel):
 cancelled run) · "ci.yml rad 897" (varningen står ~961) · "14 cachade
 versioner" (13 vid mättillfället) · "i går" om volym-proceduren (samma dag) ·
 "första skarpa natten grön run 30683902551" (run-nivå failure, jobb-nivå
-success). Gränsfall: tanstack "enbart patch" (query var minor) ·
+success). Gränsfall: TanStack "enbart patch" (query var minor) ·
 "konsolideringssteget i #506" (landade i hubben `fb01767`) · instrument-
 referens före landning.
 
