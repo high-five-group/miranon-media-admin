@@ -454,4 +454,5 @@ tillverkarens default. Den är en egen fråga — den lägger nätanrop på varj
 CLI-körning — och rördes inte av `TASK-93`.
 
 Underlag: [`docs/research/nummerallokering-parallella-aktorer-2026-07-29.md`](../research/nummerallokering-parallella-aktorer-2026-07-29.md)
-· [`tasks/lessons.d/osparad-bokforing-ar-en-delad-tillstandsyta.md`](../../tasks/lessons.d/osparad-bokforing-ar-en-delad-tillstandsyta.md)
+· `tasks/lessons.d/osparad-bokforing-ar-en-delad-tillstandsyta.md` —
+konsoliderad som [`L416`](../../tasks/lessons.md)

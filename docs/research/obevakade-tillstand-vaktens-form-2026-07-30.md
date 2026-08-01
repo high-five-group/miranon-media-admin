@@ -180,8 +180,9 @@ en notifierare som sköt för tidigt — vi har ingen notifierare. **Fixen från
 litteraturen är ändå identisk och 30+ år gammal:** vänta aldrig naket; loopa på ett
 predikat du själv kan omvärdera, med timeout.
 
-Rad 3 är det andra felläget tråden måste bära — fragmentet
-[`en-vakt-vars-villkor-matchar-noll-objekt-ar-fail-open`](../../tasks/lessons.d/en-vakt-vars-villkor-matchar-noll-objekt-ar-fail-open.md).
+Rad 3 är det andra felläget tråden måste bära — lärdomen
+[`en-vakt-vars-villkor-matchar-noll-objekt-ar-fail-open`](../../tasks/lessons.md)
+(konsoliderad som `L415`).
 Det är inte en variant av rad 2 utan dess spegel: rad 2 ger tystnad, rad 3 ger ett
 falskt grönt besked. **Tystnad väcker till slut misstanke; ett grönt besked gör det
 aldrig.** En form som bara adresserar rad 2 löser halva tråden.
@@ -298,7 +299,8 @@ Ur Temporal/Step Functions/LangGraph-mönstret: **uttryck varje väntan som ett
 harness-spårat objekt vars *avslut* producerar notifieringen**, aldrig som prosa i en
 tur. Vårt repo har redan halva den formen mekaniserad (`PreToolUse` nekar
 förgrunds-`gh run watch`) och hela den nedskriven i
-[`bakgrundsprocess-utan-harness-sparning-notifierar-aldrig`](../../tasks/lessons.d/bakgrundsprocess-utan-harness-sparning-notifierar-aldrig.md).
+[`bakgrundsprocess-utan-harness-sparning-notifierar-aldrig`](../../tasks/lessons.md)
+(konsoliderad som `L397`).
 
 Den lärdomen bär passets skarpaste mening om varför fel aktör är detektor:
 
@@ -548,8 +550,8 @@ Rangordnat, med skäl:
 - **Hemvisten är låst till repot, och det är en verklig kostnad.** Hooken fungerar
   från `settings.json` oavsett hur agenten distribuerats — mätt: den fyrade för en
   subagent utan egen hook-nyckel. Men
-  [`plugin-agenter-stodjer-inte-hooks`](../../tasks/lessons.d/plugin-agenter-stodjer-inte-hooks.md)
-  gäller åt andra hållet: **formen kan inte distribueras hub-brett via pluginet.**
+  [`plugin-agenter-stodjer-inte-hooks`](../../tasks/lessons.md) (konsoliderad
+  som `L370`) gäller åt andra hållet: **formen kan inte distribueras hub-brett via pluginet.**
   Den måste dupliceras per repo, och driva isär över tid — precis det som
   config-driven grindvakts-praxis finns för att undvika. Precedent för att bära det
   ändå finns i samma fil (`matcher: "Agent"` → `scripts/agent-spawn-log.sh`).
@@ -601,10 +603,14 @@ bakgrunden. Utförda i scratchpad, inga repo-filer rörda.
 **Lokala källor:**
 
 - [`tasks/threads/README.md`](../../tasks/threads/README.md) — tråd `T108` (och `T109`)
-- [`tasks/lessons.d/en-vakt-vars-villkor-matchar-noll-objekt-ar-fail-open.md`](../../tasks/lessons.d/en-vakt-vars-villkor-matchar-noll-objekt-ar-fail-open.md)
-- [`tasks/lessons.d/bakgrundsprocess-utan-harness-sparning-notifierar-aldrig.md`](../../tasks/lessons.d/bakgrundsprocess-utan-harness-sparning-notifierar-aldrig.md)
-- [`tasks/lessons.d/plugin-agenter-stodjer-inte-hooks.md`](../../tasks/lessons.d/plugin-agenter-stodjer-inte-hooks.md)
-- [`tasks/lessons.d/lardom-utan-grind-tillampas-inkonsekvent.md`](../../tasks/lessons.d/lardom-utan-grind-tillampas-inkonsekvent.md)
+- `tasks/lessons.d/en-vakt-vars-villkor-matchar-noll-objekt-ar-fail-open.md` —
+  konsoliderad som [`L415`](../../tasks/lessons.md)
+- `tasks/lessons.d/bakgrundsprocess-utan-harness-sparning-notifierar-aldrig.md` —
+  konsoliderad som [`L397`](../../tasks/lessons.md)
+- `tasks/lessons.d/plugin-agenter-stodjer-inte-hooks.md` — konsoliderad som
+  [`L370`](../../tasks/lessons.md)
+- `tasks/lessons.d/lardom-utan-grind-tillampas-inkonsekvent.md` — konsoliderad
+  som [`L382`](../../tasks/lessons.md)
 - [`scripts/ci-wait.sh`](../../scripts/ci-wait.sh) — fail-closed vaktkontrakt, exit 0/1/2/3/4
 - [`scripts/check-backlog-closure.sh`](../../scripts/check-backlog-closure.sh) — form (c), inkl. 0-AC-fallet
 - [`.ci-wait-policy.conf`](../../.ci-wait-policy.conf) — `CI_WAIT_WORKFLOW`, TASK-72-motiveringen
