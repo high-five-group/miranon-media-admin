@@ -27,7 +27,19 @@
 > **kroppen bär bara öppna `[ ]`.** Filen dör när alla spår är stängda; den är
 > en arbetsyta, inte en permanent artefakt.
 >
-> **Senast verifierad mot disk: 2026-07-31, NITTONDE resumen** — kroppens sista
+> **Senast verifierad mot disk: 2026-08-01, TJUGONDE resumen** — kontrollerna
+> körda före uppdateringen: **kontroll 1 fällde `TASK-53`** (Done i registret,
+> kvarlämnad som öppen `[ ]` i kroppen — flyttad till loggen), kontroll 2 ren.
+> Fyra OKLAR-rader lästa per kontrollens egen instruktion; samtliga fyra poster
+> är genuint öppna och rätt placerade — Done-korten de nämner är nämnanden,
+> inte bärare. `TASK-110` och `TASK-111` registrerade i § Kort födda i S91 med
+> bärare i kartan (steg 4b respektive steg 7). Parallellitets-försöket AVSTÅTT
+> på Codes rekommendation (Marcus-beslut 2026-08-01, sessionsdok Del 39.3) —
+> det bar ingen egen kroppsrad, så inget flyttas för det. `TASK-112`
+> (testgraf-kortet) registrerat med bärare i steg 6: PR `#532` stod öppen i
+> kön när passet började och landade mitt under det (11:18Z) — läst mot `gh`
+> före commit, inte gissat. Föregående pass:
+> 2026-07-31, NITTONDE resumen — kroppens sista
 > två kvarlämnade poster flyttade: `TASK-85` (A3) och `TASK-36.8` (A5), båda
 > `Done` och båda verifierade mot backlog-CLI:t före flytten. **A3 och A5 har
 > därmed inga öppna poster kvar.** `T87`:s parkerade AC 7–8 i `36.7` följer med
@@ -254,11 +266,11 @@ tematiska; sekvensen över spårgränserna fanns ingenstans.
 | **2** | Skyddsnätet byggs | `TASK-70.2` · `TASK-70.5` | § A7 (A7:4, A7:7) |
 | **3** | Flytten och kön — väntetiden faller | `TASK-75` · `TASK-76` · `TASK-78` | § A7 (A7:10) · § Kort födda i S91 |
 | **4** | Landnings-hygien | `TASK-70.6` | § A7 (A7:8) |
-| **4b** | Verktygsskulden | A3 ×1 · A3b ×1 · A2:9 · `TASK-83` · `T107` | § A3 · § A3b · § A2 · § Kort födda i S91 |
+| **4b** | Verktygsskulden | A3 ×1 · A3b ×1 · A2:9 · `TASK-83` · `T107` · `TASK-110` | § A3 · § A3b · § A2 · § Kort födda i S91 |
 | **5** | Aktörerna slutar krocka | A2:7 · A2:8 · A2:11 · `TASK-77` · `TASK-84` · `T108` · `T109` · Spår B | § A2 · § Spår B · § Kort födda i S91 |
-| **6** | Kvar utanför räckhåll | `T85` våg 3 · `T87` · `TASK-70.7` | § A6 · § A7 (A7:9) |
+| **6** | Kvar utanför räckhåll | `T85` våg 3 · `T87` · `TASK-70.7` · `TASK-112` | § A6 · § A7 (A7:9) · § Kort födda i S91 |
 | **6b** | Skulden betalas | A2:10 → Spår C ×2 · Spår E ×1 | § Spår C · § Spår E · § A2 |
-| **7** | Appen | `TASK-53` · `TASK-56` · hållplats-grillningen · `TASK-18.20` · de tre app-besluten · resten | § Spår D · § Kort födda i S91 · § Beslut |
+| **7** | Appen | `TASK-53` · `TASK-56` · `TASK-111` · hållplats-grillningen · `TASK-18.20` · de tre app-besluten · resten | § Spår D · § Kort födda i S91 · § Beslut |
 
 **Invarianter i ordningen** (allt annat är schemaläggning): steg 1 före 2–3, för
 att en flaky svit gör post-merge-larmen otrovärdiga · A7:4 före A7:5–6, kodad som
@@ -299,7 +311,8 @@ opålitlig verktygsnedladdning är verktygsskuld, inte svit-flakighet — att l�
 den i steg 1 hade suddat ut vad steget mäter.
 
 **Steg 6 stängs inte av denna lista.** `T85` våg 3 väntar på Fas E, `T87` på
-Marcus trigger, `TASK-70.7` kan stängas av sitt eget steg 0. De står kvar som
+Marcus trigger, `TASK-70.7` kan stängas av sitt eget steg 0, `TASK-112` på
+S91:s slut (Marcus-beslut, sessionsdok Del 39.3 punkt 5). De står kvar som
 öppna för att en tom lista köpt genom förkastande vore en genväg, inte ett mål.
 
 **Steg 7 är inte hårt blockerat av steg 1–6.** Ordningen är en prioritering:
@@ -736,8 +749,6 @@ Registrerade som backlog-kort. **Här bara som index — status, plan och
 acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
 § Fynd-kedjans ordning.
 
-- [ ] **`TASK-53`** — 429-backoffen väntar 1 s där Airtable kräver 30 s. Enda
-      posten i S91 som är en defekt i **produktionskod**
 - [ ] **`T108`** (tråd, ej kort) — **MÅSTE LÖSAS (Marcus 2026-07-29).**
       Orkestreraren väntar på notifieringar som strukturellt aldrig kommer:
       **PR-landningar notifierar ingen.** Inträffade TVÅ gånger samma dag, och
@@ -796,6 +807,18 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       `TASK-54.2`, märkt i pilotloggen. Beslutskriterierna räknar skivor, inte
       pass, så varje omärkt uteblivet pass underskattar träffkvoten
 - [ ] `IDENTITET.md`-destillatet (= Spår B steg 4)
+- [ ] **`TASK-110`** — mätinstrumentet `test-bas.ts` till klassdelad hemvist;
+      `T103`:s kort, mintat 2026-07-31 ur trådkartans enda *"minta kort"*-post.
+      Precedent `TASK-59.1` (fixturvärlden); mätunderlaget bor på kortet
+- [ ] **`TASK-111`** — `batchValidation: 'permissive'` når aldrig
+      Resend-API:et: EF:erna importerar `resend@4` medan optionen finns först i
+      `6.1.0`, så API:et kör strict och `errors`-parsningsvägen är onåbar i
+      produktion. En defekt i **produktionskod**, samma klass som `TASK-53`
+      (§ Avbockningslogg); tre åtgärdsvägar öppna, beslutet hör till kortet
+- [ ] **`TASK-112`** — testgraf-mätningen: källkods-rotad skuggmätning av
+      acceptance-urvalet i post-merge (`ADR-077`-slotten). Mätningen byggs,
+      inte urvalet; exekvering efter S91 (Marcus-beslut, sessionsdok Del 39.3
+      punkt 5) — därför bärare i steg 6, inte i steg 1
 
 > **Merge queue-posten STRUKEN 2026-07-29 — den var inte längre Marcus beslut.**
 > Posten stod som öppet Marcus-beslut med motiveringen *"Beslutet är ditt
@@ -1086,3 +1109,9 @@ stängde `TASK-54.2` DoD 7 och `TASK-54.3` DoD 5).
 | 2026-07-31 | **`TASK-100` — restlistans kontroll 1 lagad.** Fem defekter, inte tre: DONE-listan förorenades av ID:n i andra korts titlar · varje fet kod-span antogs vara bärare · **och formen såg bara FET kod-span, så `TASK-36.8` och `TASK-85` var helt osynliga**. Tredje instansen av post 8:s klass | `#503` |
 | 2026-07-31 | **`TASK-85` och `TASK-36.8` flyttade ur kroppen till denna logg.** Båda `Done`, båda kvarlämnade i strid med underhållsregeln — och båda osynliga för den gamla kontrollen. `T87`:s parkerade AC 7–8 i `36.7` följer med som öppen bokföring | — |
 | 2026-07-31 | **Kön hängde sig, och rotorsaken är bokförd.** #496:s kö-ref-körning (`ca3c7741`) blev `cancelled` när kön ombildade gruppen 24 s senare; GitHub startar aldrig om en sådan, så posten väntade på en check som aldrig kom — medan gruppen som innehöll den redan var grön. Löst med `gh run rerun`, **inte** rulesetets nödväg. Åtta PR:er stod bakom | — |
+
+### Tjugonde resumen (2026-08-01)
+
+| Datum | Vad | Ref |
+|---|---|---|
+| 2026-08-01 | **`TASK-53` flyttad ur kroppen till denna logg.** `Done` i registret — landningen har egen rad ovan (2026-07-31, `#500`) — men kvarlämnad som öppen `[ ]` i strid med underhållsregeln; fälld av kontroll 1 vid tjugonde resumens pass. Kroppsradens anspråk *"enda posten i S91 som är en defekt i produktionskod"* följer med hit som historik: `TASK-111`, registrerad i samma pass, är en andra av samma klass | — |
