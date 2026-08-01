@@ -323,6 +323,7 @@ och det som fällde dem var en extern läsning mot disk, inte självgranskning.
 Kvar ur prövningens ordning: (2) revisionen av en hel resume, (4) minst en
 session till innan mönstret behandlas som stabilt. Effektpåståenden förblir
 förbjudna tills båda finns.
+
 ## Första uppdragsrevisionen (2026-08-01) — nämnaren mätt
 
 > Körd med det landade instrumentet mot session `fd0eef00` (S91:s tjugonde
@@ -354,6 +355,7 @@ preliminära "fynd" föll vid prövning (kö-commit-tid ≠ `mergedAt`) och bokf
 öppet: revisorns första intryck är också en hypotes.
 
 **Slutsats i fem punkter (revisorns, nära verbatim):**
+
 1. Nämnaren är ~6 prövbara påståenden per uppdrag — en storleksordning de 13
    kända fångade felen aldrig visade.
 2. Felraten i uppdragstexter: ~ett fel per femte–sjätte uppdrag, inte ett per
