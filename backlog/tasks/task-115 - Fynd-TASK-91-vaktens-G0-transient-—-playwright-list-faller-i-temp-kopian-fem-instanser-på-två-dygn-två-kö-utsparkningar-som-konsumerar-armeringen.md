@@ -3,10 +3,10 @@ id: TASK-115
 title: >-
   Fynd: TASK-91-vaktens G0-transient — playwright --list faller i temp-kopian,
   fem instanser på två dygn, två kö-utsparkningar som konsumerar armeringen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-01 12:30'
-updated_date: '2026-08-01 23:08'
+updated_date: '2026-08-01 23:23'
 labels:
   - ready-for-agent
 dependencies: []
@@ -61,8 +61,6 @@ Fail-closed-designen är **RÄTT** och får inte försvagas — vaktens egen for
 - [x] #5 Instansregistret i kortet uppdaterat med utfall efter åtgärden
 <!-- AC:END -->
 
-
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -90,12 +88,14 @@ Fail-closed-designen är **RÄTT** och får inte försvagas — vaktens egen for
 **Rättar ovanstående AC #5-notering:** "Inga nya instanser observerade vid tidpunkten för denna landning" avsåg vad som var känt när AC #5-texten skrevs (samma dag som instans 6/7). En åttonde instans hade i verkligheten redan inträffat strax innan, men blev inte känd/bokförd förrän efteråt — se nedan.
 
 **Instans 8** (2026-08-01T22:33:46Z, PR #572 — research-pass-agentens docs-only-PR, INTE en kö-post: run 30721492383, attempt 1, headBranch worktree-agent-a801961afd0ae8cc3): samma signatur — "G0  orörd kopia av trädet → GRÖN, och namnger alla fem ytor: exit 64, förväntat 0" + "playwright --list kunde inte köras: Command failed" i steget "Test wiring-vaktens fyrning (TASK-91, tvåsidigt bevis)" (job 91425921457, jobbet "Lint + Audit + TypeCheck" fällt). Bekräftat rad-för-rad ur job-loggen (samma vakt, samma exit 64, samma trunkerings-symptom som instans 1-7). **Skiljer sig strukturellt från instans 1-7:** PR:n stod ALDRIG i merge-kön (mergeStateStatus vid feltillfället var pre-queue — autoMergeRequest.enabledAt 22:32:39Z, checks fortfarande igång) — ingen kö-utsparkning, ingen konsumerad armering; skadan är begränsad till en röd förstakörning på huvud-PR-flödet. **Fix-PR #569 (bounded retry) hade INTE landat** när denna instans inträffade (merge `f0c94e73`, mergedAt 2026-08-01T22:42:38Z — nio minuter EFTER instans 8) — förväntat sista instansen av det opatchade beteendet. Orkestreraren körde om (`gh run rerun`) de fallerade jobben efter fyndet. Källa: verifierad direkt av mottagande agent mot gh api job-loggen 2026-08-02 (denna landning), efter att orkestreraren själv flaggat instansen som en korrigering av ett tidigare uppdrag som felaktigt hävdat "noll nya instanser under vågen".
+
+**Stängning (orkestreraren, 2026-08-02):** DoD #3 bockad mot merge_group-verifikat för #569 (merge-SHA `f0c94e734485a285402b2236dd06f1acbde2e4ee`, run `30721577206`, CI success — inget jobb med annan conclusion än success/skipped). Instans 8 (PR #572, pre-fix) rerun-räddad samma kväll; retryn är därefter i drift på main. Eftermätning av transient-klassen ägs av T113-uppföljningen.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
