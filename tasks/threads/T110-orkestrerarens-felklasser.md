@@ -323,3 +323,46 @@ och det som fällde dem var en extern läsning mot disk, inte självgranskning.
 Kvar ur prövningens ordning: (2) revisionen av en hel resume, (4) minst en
 session till innan mönstret behandlas som stabilt. Effektpåståenden förblir
 förbjudna tills båda finns.
+## Första uppdragsrevisionen (2026-08-01) — nämnaren mätt
+
+> Körd med det landade instrumentet mot session `fd0eef00` (S91:s tjugonde
+> resume) av extern revisor-agent; rapporten landad av orkestreraren vid
+> session-limit. Supersederar PAUSLÄGE-punkt 3 (tjugonde pausen) — revisionen
+> behöver INTE köras om; detta är dess resultat.
+
+**Korpus:** 34 uppdrag (28 bygg · 4 general-purpose · 1 guide · 1 research),
+1 132 rader, 0 trasiga. **192 prövbara faktapåståenden** (~5,6/uppdrag);
+**64 % källmärkta** (baslinje FÖRE ADR-086-kravet). Prövning i praktiken
+census: 156 avgjorda, 11 oprövbara (ögonblickstillstånd), 25 oprövade
+(externa käll-citat + lågriskdetaljer).
+
+**Utfall: 6 hårda fel (3,8 % av avgjorda), 3 gränsfall (5,8 % med dem).**
+Alla sex i bygg-agent-uppdrag (6/28 uppdrag = 21 % bar ≥1 fel):
+"arton Paushistorik-rubriker" (17) · "natten gick sönder två gånger" (EN
+cancelled run) · "ci.yml rad 897" (varningen står ~961) · "14 cachade
+versioner" (13 vid mättillfället) · "i går" om volym-proceduren (samma dag) ·
+"första skarpa natten grön run 30683902551" (run-nivå failure, jobb-nivå
+success). Gränsfall: tanstack "enbart patch" (query var minor) ·
+"konsolideringssteget i #506" (landade i hubben `fb01767`) · instrument-
+referens före landning.
+
+**Kalibrering:** 2 av 4 kända fel fanns i spawn-korpusen — båda återfanns.
+De två övriga begicks i andra artefakter (Del-texter/rapporter) —
+**instrumentets täckning är uppdragstexterna, inte orkestrerarens hela
+produktion**; mätbar täckningsgräns för ADR-086. Revisorns två egna
+preliminära "fynd" föll vid prövning (kö-commit-tid ≠ `mergedAt`) och bokförs
+öppet: revisorns första intryck är också en hypotes.
+
+**Slutsats i fem punkter (revisorns, nära verbatim):**
+1. Nämnaren är ~6 prövbara påståenden per uppdrag — en storleksordning de 13
+   kända fångade felen aldrig visade.
+2. Felraten i uppdragstexter: ~ett fel per femte–sjätte uppdrag, inte ett per
+   uppdrag.
+3. Felen koncentreras HELT till räknade tal och tidsord; fil-adresser,
+   radnummer och SHA:n gick 0 fel på ~60 prövade — orkestrerarens adresser
+   håller, dess huvudräkning gör det inte.
+4. Revisionen fann 4 nya hårda fel + 3 gränsfall som ingen tidigare mekanism
+   fångat — mätåtgärden betalade sig vid första körningen.
+5. Källmärkning hindrar inte fel, men gjorde varje fel avgörbart på under en
+   minut med källan i hand — exakt ADR-086:s poäng. Effektpåståenden om
+   premiss-passet förblir förbjudna tills revision n≥2 (post-ADR-086-session).
