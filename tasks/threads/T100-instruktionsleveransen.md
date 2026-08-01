@@ -183,6 +183,50 @@ konsekvensen för hela konstitutionen större än denna tråds fyra filer.
 4. Väg in om `IDENTITET.md` bör vara alltid-laddad (den är ett beslutsfilter, inte
    uppslagsverk) medan övriga blir on-demand.
 
+## Steg 3 utfört — mätningen (2026-08-01)
+
+> READ-ONLY-mätning körd 2026-08-01 av separat agent mot
+> `~/.claude/logs/instructions-loaded.jsonl` — hookens logg, den bevisbärare
+> steg 3 pekade ut. Ingen fil rördes; detta avsnitt är landningen av utfallet.
+
+**Huvudfyndet: de tre kvarvarande artefakterna (`IDENTITET.md` · `profile.md` ·
+`schema_reference.md`) når fortfarande ALDRIG en session — nu mekaniskt bevisat,
+inte härlett.** Loggen bär 132 händelser över 24 sessioner, tidsspann
+2026-07-27T11:39:29Z → 2026-08-01T10:48:02Z (~5 dygn); första raden är sessionen
+direkt efter 1.21.0-landningen — "fires efter omstart" höll. Grep mot loggen på
+de tre filnamnen: **0 träffar.** Det enda som levereras är CLAUDE.md-klassen:
+användar-scope 24 (symlänken till hub-`CLAUDE.md` verifierad), projektets 21,
+worktree-kopior 87.
+
+Steg 3:s tre kontroller — anpassade från den avvecklade fjärde artefakten per
+[ADR-079](../../docs/decisions/ADR-079-instruktionsleverans-barare-per-lager.md)
+— utföll så här:
+
+|#|Kontroll|Utfall|
+|--:|---|---|
+|1|Levereras filerna med pluginet? `find` över cachen på de tre filnamnen|**FALLER** för steg 3:s mål — noll träffar över samtliga 14 cachade versioner, inkl. 1.24.0|
+|2|Vad levererar pluginet faktiskt?|**FALLER** — 1.24.0 levererar `.claude-plugin/`, `skills/`, `hooks/`, `output-styles/`, `scripts/`; trådens egna leveranser nådde alltså cachen, men fortfarande ingen `templates/`, inga rot-md|
+|3|Importerar hub-`CLAUDE.md` dem?|**FALLER** — ingen `@`-import, referenserna är prosa; korroborerat av loggen: 0 `include`-händelser av 132, trots att hookens matchers täcker alla fem load_reasons|
+
+`reason`-fördelningen i sin helhet: `nested_traversal` 84 · `session_start` 46 ·
+`compact` 2 · `include` 0 · `path_glob_match` 0 — den sista är en **verklig
+nolla, inte en blind fläck**: `~/.claude/rules/` existerar inte.
+
+**Bäraren fungerar.** Välformad JSONL, fälten `ts,file,reason,cwd,session` på
+alla 132 rader, samtliga observerade reason-klasser rimliga. Mätningen etablerar
+därmed BASLINJEN som steg 4-beslutet — Marcus: vad kärnan/destillatet är — ska
+värderas mot. Per kortets egen ram är det fallande utfallet ett **FYND, inte ett
+misstag**.
+
+Två bifynd, antecknade utan åtgärdsförslag:
+
+- **`nested_traversal` dominerar** (84/132, 64 %): varje agent-worktrees
+  CLAUDE.md-kopia bokförs under FÖRÄLDRA-sessionens id, så per-session-tal
+  överskattar huvudsessioners leverans om de läses ofiltrerat.
+- **`compact` om-levererar båda CLAUDE.md-filerna** (2 händelser, ett par):
+  kontexten efter compact får konstitutionen igen — vilket hittills bara varit
+  antaget.
+
 ## Trail
 
 - **2026-07-31 (`TASK-108`): TRÅDEN HADE DRIFTAT IFRÅN SIN EGEN LEVERANS.** En
