@@ -178,9 +178,20 @@ required checks have passed, the pull request will be added to the merge queue."
 | Checks körs — nypushad PR, normalfallet | **satt** | fältet ÄR signalen |
 | PR:en redan `CLEAN` | `null` | köades direkt; inget `autoMergeRequest` skapas någonsin |
 | Efter merge | `null` | nollas oavsett — säger ingenting om armeringen |
+| PR:en sparkas ur kön (`failed_checks`-utsparkning) | `null` | **KONSUMERAD armering** — PR:en ser identisk ut med en aldrig armerad; kräver ett NYTT `gh pr merge --auto --merge` |
 
 Disambiguera med ett andra `gh pr merge --auto --merge`: svaret
 `already queued to merge` betyder köad.
+
+**Det fjärde läget är dyrast, inte bara ett fjärde alternativ.** En
+`failed_checks`-dequeue konsumerar armeringen tyst — ingen signal skiljer
+PR:en från en som aldrig armerats. Utan ett svep som armerar om den står en
+färdig PR still på obestämd tid (`T108`-klassen: ett tillstånd utan
+bevakare). Mätt två gånger 2026-08-01 på samma dag (#527 12:24, #539 12:33),
+och två gånger till på SAMMA PR inom sex minuter (#557, TASK-115 instans 6+7)
+— i samtliga fall en falsk röd från G0-transienten (se
+`scripts/check-staging-preflight-wiring.mjs` § bounded retry), inte ett
+verkligt trädfel. Källa: `backlog/tasks/task-115` + `tasks/sessions/2026-07-26-session-91.md` rad ~7908–7909.
 
 **En köad gren kan inte uppdateras via `gh`.** Push avvisas med `GH006` så
 länge PR:en står i kön, och `--disable-auto` släpper inte låset — `gh` 2.96.0
