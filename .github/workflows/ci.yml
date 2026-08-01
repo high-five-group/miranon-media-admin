@@ -545,6 +545,18 @@ jobs:
           pip install --quiet yamllint
           yamllint .github/
 
+      # ═══ PARITETS-MARKÖRER (TASK-109) ═══
+      # Regionen från start-markören på nästa rad till dess slut-markör (efter
+      # listparitets-steget) är B-SIDAN i
+      # paret `docs-grindar` (.listparitet-policy.conf): lint-jobbets
+      # `bash scripts/check-*.sh`-körningar hålls mängd-lika med
+      # scripts/check-docs.sh:s run_gate-lista (post 5–13). Driftar de isär —
+      # en grind CI kör men listan saknar, eller en listan har men CI inte
+      # kör — fäller scripts/check-listparitet.sh. Det var TASK-98:s och
+      # TASK-106:s felklass, funnen två gånger av manuell grep, aldrig av en
+      # grind. REGIONEN LÄSES SOM DATA: en kommentar här inne får aldrig bära
+      # frasen "bash scripts/check-<namn>.sh" (se noten i listparitets-steget).
+      # paritet:start docs-grindar-ci
       - name: Check public docs for unchecked items
         # Per ADR-030 § Del 1 (position #5): scripted-checklist-check fångar
         # oavslutade `- [ ]` i publika docs (README/CHANGELOG/SECURITY/
@@ -701,11 +713,22 @@ jobs:
         # listorna utan att grinden kördes. Lint-jobbet kör alltid.
         #
         # Ren textläsning, inget nätverk. 1,15–1,28 s väggtid över tre körningar,
-        # LOKALT mätt (macOS, 2026-07-30, loadavg 3,97–4,13,
-        # `time bash scripts/check-listparitet.sh`). CI-TIDEN ÄR INTE MÄTT AV MIG
+        # LOKALT mätt (macOS, 2026-07-30, loadavg 3,97–4,13, `time` på
+        # skriptet). CI-TIDEN ÄR INTE MÄTT AV MIG
         # och kan avvika åt båda håll — en lokal mätning projicerad till CI är
         # ingen mätning.
+        #
+        # ORDALYDELSEN OVAN ÄR MEDVETET INDIREKT (TASK-109): raden skrev
+        # tidigare ut kommandot med bakåtfnuttar, och den frasen matchade
+        # paret `docs-grindar`-uttrycket `bash scripts/check-[a-z0-9-]+\.sh`.
+        # Detta är regionens ENDA kommentar som matchade — mätt 2026-08-01:
+        # med körnings-raden nedan borttagen gav hela-filen-extraktionen ändå
+        # posten ur just denna kommentar, dvs paret hade rapporterat synk på en
+        # avwirad grind (TASK-98:s felklass). Skriv ALDRIG frasen
+        # "bash scripts/check-<namn>.sh" i en kommentar mellan
+        # paritet-markörerna — grinden läser regionen som data.
         run: bash scripts/check-listparitet.sh
+      # paritet:slut docs-grindar-ci
 
       - name: Test consistency gates (truth-table self-verification)
         # Per ADR-039 § lesson→grind: en grind är inte en grind förrän dess

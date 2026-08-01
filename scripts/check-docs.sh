@@ -96,14 +96,18 @@
 #     playwright.config.ts och scripts/*.mjs; ingen .md-fil ingår. Utanför, med
 #     skäl.
 #
-# INGEN GRIND HÅLLER DENNA LISTA MOT ci.yml — luckan är känd och bokförd.
-# Paret check-docs.sh ↔ ci.yml är härlett i .listparitet-policy.conf men obyggt:
-# en robust B-sida kräver `# paritet:start`-markörer i ci.yml, och en
-# hela-filen-region är fail-open av samma skäl som grep-formen ovan — mätt
-# 2026-07-31: med körningen på rad 615 borttagen plockas posten ändå ur
-# kommentaren på rad 612, så paret hade rapporterat synk på en avwirad grind.
-# Markörerna hör till .github/workflows/** och är en CI-ändring. Kortet som bär
-# bygget: TASK-109.
+# LISTAN HÅLLS MOT ci.yml AV PARET `docs-grindar` SEDAN TASK-109 (2026-08-01).
+# Markör-paren (paritet-start/-slut med namnen `docs-grindar-lokal` nedan
+# respektive `docs-grindar-ci` i ci.yml:s lint-jobb) avgränsar de två
+# regionerna — markör-literalen skrivs MEDVETET inte ut här: grinden tar
+# FÖRSTA raden som bär strängen, så ett omnämnande före den riktiga markören
+# flyttar regionsgränsen (fångat av mig själv 2026-08-01, fail-closed exit 2
+# på B-sidan och tyst fel regionstart på A-sidan).
+# scripts/check-listparitet.sh kräver mängd-LIKHET (riktning bada)
+# på uttrycket `bash scripts/check-[a-z0-9-]+\.sh`. Hela-filen-varianten var
+# bevisat fail-open (kommentarer donerade fantom-poster — mätt 2026-07-31 och
+# re-mätt 2026-08-01), därför markörer: regionen mellan dem läses som DATA,
+# och en kommentar där inne får aldrig bära frasen "bash scripts/check-…".
 #
 # Som check-skripten i detta repo förlitar sig grinden på cwd=repo-root
 # (ingen cd) — CI och lokala anrop kör från repo-roten.
@@ -215,6 +219,11 @@ else
 fi
 
 # --- 5-13. De alltid-på grindarna i lint-jobbet --------------------------
+# Blocket är A-SIDAN i paret `docs-grindar` (.listparitet-policy.conf, TASK-109)
+# och hålls mängd-likt med ci.yml:s lint-jobb av scripts/check-listparitet.sh.
+# Regionen mellan markörerna läses som data — inga kommentarer med frasen
+# "bash scripts/check-…" här inne.
+# paritet:start docs-grindar-lokal
 run_gate "Frontmatter på styrande docs" bash scripts/check-frontmatter.sh
 run_gate "Lifecycle på sessionsdok + trådkort" bash scripts/check-lifecycle.sh
 run_gate "Tråd-registrets index (radform + enum + numrering + index↔fil)" bash scripts/check-thread-index.sh
@@ -230,6 +239,7 @@ run_gate "Permissions-påståenden (prosa som påstår mekanism)" bash scripts/c
 # alltså ~+4,8 %. CI-TIDEN ÄR INTE MÄTT AV MIG.
 run_gate "fetch-depth-invarianten (ADR-029/030 erratum)" bash scripts/check-fetch-depth-invariant.sh
 run_gate "Listparitet (CONTRIBUTING ↔ purge-policy, lychee-scopen)" bash scripts/check-listparitet.sh
+# paritet:slut docs-grindar-lokal
 
 # --- Sammanfattning -------------------------------------------------------
 printf '\n\033[1m─────────── check:docs ───────────\033[0m\n'

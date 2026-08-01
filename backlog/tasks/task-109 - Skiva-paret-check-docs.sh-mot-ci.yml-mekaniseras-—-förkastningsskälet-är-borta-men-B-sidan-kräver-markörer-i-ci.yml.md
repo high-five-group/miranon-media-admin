@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-31 08:54'
-updated_date: '2026-07-31 08:54'
+updated_date: '2026-08-01 12:34'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,18 +32,20 @@ Markörer i `ci.yml` är alltså inte en bekvämlighet utan förutsättningen �
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 paritet-markörer satta i ci.yml runt lint-jobbets check-grindar, verifierat att yamllint + actionlint är gröna och att blockets värden är oförändrade
-- [ ] #2 Par-posten skriven i .listparitet-policy.conf med riktning som fångar drift i BÅDA riktningarna — en grind CI kör men listan saknar, och en listan har men CI inte kör
-- [ ] #3 Tvåsidigt bevis: paret är grönt när listorna är i synk, och FÄLLER när en grind tas bort ur endera sidan — båda mätta, inte resonerade
-- [ ] #4 Kommentar-fällan bevisligen stängd: med en run:-rad borttagen ur ci.yml FÄLLER paret, till skillnad från hela-filen-varianten som rapporterade synk (mätt 2026-07-31)
-- [ ] #5 FÖRKASTADE-sektionens post för detta par borttagen ur .listparitet-policy.conf — ett förkastningsskäl som överlevt sin orsak maskerar nästa drift
-- [ ] #6 check-docs.sh:s not 'INGEN GRIND HÅLLER DENNA LISTA MOT ci.yml' borttagen eller omskriven, så filen inte påstår en lucka som stängts
+- [x] #1 paritet-markörer satta i ci.yml runt lint-jobbets check-grindar, verifierat att yamllint + actionlint är gröna och att blockets värden är oförändrade
+- [x] #2 Par-posten skriven i .listparitet-policy.conf med riktning som fångar drift i BÅDA riktningarna — en grind CI kör men listan saknar, och en listan har men CI inte kör
+- [x] #3 Tvåsidigt bevis: paret är grönt när listorna är i synk, och FÄLLER när en grind tas bort ur endera sidan — båda mätta, inte resonerade
+- [x] #4 Kommentar-fällan bevisligen stängd: med en run:-rad borttagen ur ci.yml FÄLLER paret, till skillnad från hela-filen-varianten som rapporterade synk (mätt 2026-07-31)
+- [x] #5 FÖRKASTADE-sektionens post för detta par borttagen ur .listparitet-policy.conf — ett förkastningsskäl som överlevt sin orsak maskerar nästa drift
+- [x] #6 check-docs.sh:s not 'INGEN GRIND HÅLLER DENNA LISTA MOT ci.yml' borttagen eller omskriven, så filen inte påstår en lucka som stängts
 <!-- AC:END -->
