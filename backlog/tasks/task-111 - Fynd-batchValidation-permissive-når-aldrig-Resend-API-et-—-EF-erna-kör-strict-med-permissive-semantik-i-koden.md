@@ -6,9 +6,16 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-31 10:46'
+updated_date: '2026-08-01 22:17'
 labels:
   - ready-for-agent
 dependencies: []
+modified_files:
+  - supabase/functions/send-email/index.ts
+  - supabase/functions/send-registration-confirmation/index.ts
+  - supabase/functions/_shared/resend-batch.ts
+  - tests/api/resend-batch.test.ts
+  - tests/api/confirm-registrations.test.ts
 priority: medium
 ordinal: 184000
 ---
@@ -31,11 +38,107 @@ ordinal: 184000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Åtgärdsväg VALD och motiverad — (a) bump ≥6.1.0, (b) manuell x-batch-validation-header i 4.x, eller (c) acceptera strict och rätta kod/kommentarer/fixturer till strict-semantik; förkastade alternativ bär sina skäl
-- [ ] #2 Vald semantik bevisad i det avvikande fallet (batch med ≥1 ogiltig rad) — normalfallet är identiskt i båda lägena och bevisar ingenting (STEG 0-fällan)
-- [ ] #3 Den falsifierade kommentaren i send-email/index.ts:47–48 rättad, och STEG 2-fixturen låser en svarsform den valda vägen faktiskt kan producera
-- [ ] #4 Rör åtgärden Airtable-/mail-skrivytan: docs/reference/data-model.md konsulterad före write-design
+- [x] #1 Åtgärdsväg VALD och motiverad — (a) bump ≥6.1.0, (b) manuell x-batch-validation-header i 4.x, eller (c) acceptera strict och rätta kod/kommentarer/fixturer till strict-semantik; förkastade alternativ bär sina skäl
+- [x] #2 Vald semantik bevisad i det avvikande fallet (batch med ≥1 ogiltig rad) — normalfallet är identiskt i båda lägena och bevisar ingenting (STEG 0-fällan)
+- [x] #3 Den falsifierade kommentaren i send-email/index.ts:47–48 rättad, och STEG 2-fixturen låser en svarsform den valda vägen faktiskt kan producera
+- [x] #4 Rör åtgärden Airtable-/mail-skrivytan: docs/reference/data-model.md konsulterad före write-design
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Åtgärdsväg (AC1): (a) bump resend@4 → resend@6 — vald och verkställd
+
+Marcus-GO 2026-08-01 (villkorat på underbyggnad). Underbyggnaden, källverifierad
+(ej doc-trott — packade ned tarballs och läste dist-koden direkt):
+
+- resend@4.8.0 dist (index.js/index.d.ts): 0 träffar på batchValidation/
+  x-batch-validation — optionen finns inte, bekräftar TASK-111:s grundfynd.
+- resend@6.1.0 dist: batchValidation?: "strict" | "permissive" i typerna,
+  och implementationen sätter faktiskt headern:
+  "x-batch-validation": options?.batchValidation ?? "strict" (index.js).
+  Samma rad finns oförändrad i resend@6.18.1 (senaste stabila).
+- GitHub-releasen v6.1.0 (2025-09-15): feat: adds permissive mode for batch
+  API (#599) — bekräftar introduktions-versionen.
+- Breaking-changes-genomgång 4→6 (GitHub Releases, resend/resend-node):
+  - v5.0.0: @react-email/render blir optional peerDependency. Berör ENDAST
+    kod som använder react-optionen — våra EF:er bygger html/text manuellt
+    (renderHtml/mall-rendering), rör aldrig react-fältet. EJ berörda.
+  - v6.0.0: contentId-namnbyte på attachment-schemat (preview-fält). Våra
+    EF:er skickar inga attachments. EJ berörda.
+  - v6.1.0 → v6.18.1 (38 stabila releaser): 0 releaser taggade BREAKING.
+    resend.batch.send()-signaturen, replyTo-fältnamnet och {data,error}-
+    svarsformen är oförändrade genom hela spannet.
+- Pinnform: flytande majorpin esm.sh/resend@6 (samma konvention som den
+  gamla @4-pinnen — roten var version-MISSMATCH, inte pin-formen). Resolverar
+  idag 6.18.1.
+
+Förkastade vägar: (b) manuell header i 4.x hade permanentat fel major utan att
+lösa STEG 0-fällans falska trygghet; (c) strict ger sämre produktbeteende (en
+ogiltig rad fäller hela batchen) och matchar inte den redan byggda
+permissive-apparaten (resend-batch.ts/confirm-registrations.ts).
+
+## AC2 — avvikande-fall-beviset (hermetiskt)
+
+parseBatchOutcome/parseConfirmOutcome var redan korrekt implementerade och
+redan täckta av fixtur-tester som EXAKT motsvarar Resends dokumenterade
+permissive-partial-form (verifierad live mot
+resend.com/changelog/batch-validation-modes: data = kompakterade GILTIGA,
+errors[].index/message = OGILTIGA, nollbaserat mot originalpayloaden). Ingen
+kodändring krävdes i parsningslagret — bugghärden var uteslutande i Deno-EF:ens
+SDK-import (untestbar i Node/CI; existerande, dokumenterad arkitekturgräns, se
+resend-batch.ts:s egen REN/lager-oberoende-docstring), inte i parsningslogiken.
+
+Det som VAR falskt var STEG 0:s tolkning: den "levande" observationen kördes
+mot den trasiga resend@4-pinnen, där API:et alltid körde strict — en
+2/2-giltig-batch ser identisk ut i båda lägena, så STEG 0 bekräftade aldrig
+permissive-semantik, bara strict-defaultet (STEG 0-fällan, nu explicit
+namngiven i koden och testerna).
+
+Levererat: (1) käll-verifiering (ovan) att SDK:n nu genuint sätter headern —
+beviset att permissive GENUINT begärs av produktionskoden; (2) befintliga
+hermetiska fixtur-tester omdöpta/omdokumenterade för att explicit separera
+normalfallet (bevisar inget — STEG-0-fällan) från AVVIKANDE FALLET (≥1 ogiltig
+rad → partiell leverans via errors[].index, tests/api/resend-batch.test.ts +
+tests/api/confirm-registrations.test.ts, båda mail-vertikalerna). Ingen skarp
+Resend-anrop gjordes eller behövs — icke-prod-spärren (send-bulk.ts) gör en
+valideringsfel-triggande live-batch strukturellt omöjlig i icke-prod oavsett
+SDK-version (de fyra Resend-test-adresserna är alla välformade), så fixtur
+förblir rätt bevisform.
+
+## AC3 — falsifierad kommentar rättad + STEG 2-fixturen
+
+send-email/index.ts (makeRealBatchSender-header) och _shared/resend-batch.ts
+(modul-header): "L2c-PIN UPPLÖST"-påståendet rättat — det var falskt (se
+STEG-0-fällan ovan). Ny kommentar källmärker den faktiska lösningen (dist-
+kod-citat, GitHub-releaser, changelog-exempel) i stället för att upprepa ett
+obelagt påstående. STEG 2-fixturen (resend-batch.test.ts) låser Resends
+DOKUMENTERADE + SDK-typ-bekräftade permissive-partial-form — den formen som
+resend@6 faktiskt producerar, inte en form prod aldrig kunde nå (som var
+fallet under resend@4).
+
+## AC4 — Airtable-skrivyta
+
+Konsulterad (docs/reference/data-model.md, Utskickslogg/Anmälningar-
+sektionerna). Ingen fältoperation ändrad av detta kort — allowlistade fält
+(MERGE_FIELD, FALT_STATUS, FALT_BEKRAFTELSE_SKICKAD) orörda.
+
+## Kvarvarande: prod-deploy (EGET moment — INTE utfört av detta kort)
+
+Prod-synkad senast T39 (2026-07-24, tråden STÄNGD). Denna fix ändrar KÄLLKOD i
+send-email + send-registration-confirmation (SDK-importraden + doc-
+kommentarer) — prod kör fortfarande föregående deploy tills en ny körning
+görs. Deploy-formen (ej utförd här):
+
+  bash scripts/deploy-prod-functions.sh --list   # verifiera deploy-set
+  # scoped variant (mirroring T39:s override-mönster, minimal diff):
+  ALLOWLIST_FILE=<temp-fil-med-endast-de-2> bash scripts/deploy-prod-functions.sh --project-ref <prod-ref>
+  # ELLER kanoniska full-allowlist-formen (T39 stängd → tillåten sedan 2026-07-24):
+  bash scripts/deploy-prod-functions.sh --project-ref <prod-ref>
+
+Efter deploy: smoke mot prod (T39-runbook-mönstret) innan Lotta skickar ett
+skarpt utskick som förlitar sig på permissive-läget.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

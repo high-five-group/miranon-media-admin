@@ -4,12 +4,26 @@
 // Resend-form-specifika mappningen i en egen testbar modul (lager-oberoende): EF:ens sender
 // gör nätverksanropet, denna modul tolkar formen.
 //
-// Förstaparts-form (resend-node CreateBatchSuccessResponse, permissive — L2d STEG 0 + SDK-typ):
-//   { data: { id: string }[]                         // de GILTIGA raderna (kompakterade)
-//     errors?: { index: number; message: string }[]  // de OGILTIGA, NOLLBASERAT index + skäl }
-// `errors` är FRÅNVARANDE (undefined), ej tom array, när inget rad-fel finns (STEG 0-observerat).
-// errors = VALIDERINGSfel, ej leverans-utfall; ej live-framkallbart i icke-prod (spärren
-// blockerar utlösande input) → låses med fixtur (STEG 2), schema-bekräftad mot Resend-doc.
+// TASK-111 (2026-08-02): "STEG 0"-observationen nedan kördes mot den då-okända trasiga pinnen
+// `esm.sh/resend@4` (→4.8.0), som saknar `batchValidation` helt (0 dist-träffar) — optionen
+// nådde aldrig API:et, som därför alltid körde strict. STEG 0 observerade alltså strict-svaret
+// för en allt-giltig batch, inte ett genuint permissive-svar. SDK:n bumpad till `resend@6`
+// (→6.18.1; optionen finns sedan 6.1.0) löser pin-defekten — källkods-verifierat mot 6.1.0/
+// 6.18.1 dist: `"x-batch-validation": options?.batchValidation ?? "strict"`.
+//
+// Förstaparts-form (resend-node CreateBatchSuccessResponse, permissive — SDK-typ 6.1.0/6.18.1
+// + verifierad mot resend.com/changelog/batch-validation-modes exempel):
+//   { data: { id: string }[]                        // de GILTIGA raderna (kompakterade)
+//     errors: { index: number; message: string }[]  // de OGILTIGA, NOLLBASERAT index + skäl }
+// SDK-typen deklarerar `errors` som OBLIGATORISKT (ej `errors?:`) när batchValidation='permissive'
+// — STEG 0:s "errors FRÅNVARANDE (undefined), ej tom array" var en övertolkning av ett fönster
+// som aldrig körde permissive. `parseBatchOutcome` nedan behandlar `undefined`/`[]` identiskt
+// (se `errors = Array.isArray(...) ? ... : []`), så invarianten håller oavsett faktisk form.
+// errors = VALIDERINGSfel, ej leverans-utfall; ej live-framkallbart i icke-prod — INTE p.g.a.
+// SDK-pinnen (den var separat och nu löst), utan p.g.a. icke-prod-spärren (send-bulk.ts): de
+// fyra Resend-test-adresserna är alla välformade och kan aldrig trigga ett `to`-valideringsfel.
+// Låses därför fortsatt med fixtur (STEG 2, denna moduls test), nu bevisat mot den väg som
+// faktiskt levererar (TASK-111 AC2) — inte längre bara schema-gissad.
 
 import type { BatchOutcome } from './send-bulk.ts';
 

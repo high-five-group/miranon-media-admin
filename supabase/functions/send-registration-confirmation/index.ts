@@ -1,6 +1,6 @@
 // @ts-nocheck — Deno Edge Function (esm.sh-import + Deno-globaler; typas vid deploy,
 // ej av Node-tsc). Mönster: send-email (6h) + update-event (task-18.1).
-import { Resend } from 'https://esm.sh/resend@4';
+import { Resend } from 'https://esm.sh/resend@6';
 import { fetchAirtableRecord, updateAirtableRecord } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { scalarString, selectName } from '../_shared/coerce.ts';
@@ -63,6 +63,10 @@ function badRequest(message: string, corsHeaders: Record<string, string>): Respo
  * finns, annars distinkt 503-väg). Till skillnad mot bulk-sändningen är VARJE rad sin
  * egen payload med sitt EGET ämne och sin egen text (bekräftelsen är personlig).
  * Svaret tolkas RAD-EXAKT via `parseConfirmOutcome` (api-pure-testad).
+ *
+ * `batchValidation: 'permissive'` delar send-emails SDK-pin-historia (TASK-111, 2026-08-02):
+ * fullständig genomgång + källverifiering av `resend@4`→`resend@6`-bumpen bor i
+ * send-email/index.ts:s `makeRealBatchSender`-header — duplicerad inte här.
  */
 function makeRealSender(): ConfirmationSender {
   return async (specs, ctx) => {
