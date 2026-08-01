@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-01 11:55'
+updated_date: '2026-08-01 12:58'
 labels:
   - ready-for-agent
 dependencies: []
@@ -48,7 +49,7 @@ Logiken config-driven per Lesson #6: universellt skript, värden i policy-conf.
 
 ## Två kända kostnader, ur passet — bärs in i beslutet
 
-1. **Formen kan inte distribueras via pluginet** — `hooks`-nyckeln tappas tyst ([`plugin-agenter-stodjer-inte-hooks`](../tasks/lessons.d/plugin-agenter-stodjer-inte-hooks.md)). Den bor per repo och driver isär över tid; precedent för att bära det ändå finns i samma lesson.
+1. **Formen kan inte distribueras via pluginet** — `hooks`-nyckeln tappas tyst ([`L370` i `tasks/lessons.md`](../tasks/lessons.md)). Den bor per repo och driver isär över tid; precedent för att bära det ändå finns i samma lesson.
 2. **Detektionen är heuristisk med falska negativ.** Verkställigheten (blockeringen) är mekanisk och mätt skarp; upptäckten vilar på prosa-matchning och på kanaler som mätningarna ovan visat ofullständiga. Strikt bättre än nuläget, där detektorn är Marcus — men aldrig ett täckningsanspråk.
 
 ## ADR-baren
