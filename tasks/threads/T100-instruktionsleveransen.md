@@ -1,9 +1,9 @@
 ---
 owner: marcus803
-updated: 2026-07-31
+updated: 2026-08-01
 review_by: 2026-10-27
 status: stable
-lifecycle: active
+lifecycle: paused
 ---
 
 # T100 — Instruktionsleveransen: fyra artefakter konstitutionen bygger på men aldrig får
@@ -180,8 +180,12 @@ konsekvensen för hela konstitutionen större än denna tråds fyra filer.
    ADR-079), och verifiera **mekaniskt** att de faktiskt når en session — samma
    tre kontroller som i verifieringsmetoden ovan, som grind eller manuell
    checklista. `InstructionsLoaded`-hooken är landad och är bäraren av det beviset.
-4. Väg in om `IDENTITET.md` bör vara alltid-laddad (den är ett beslutsfilter, inte
-   uppslagsverk) medan övriga blir on-demand.
+   — **AVGJORD I DELAR 2026-08-01 (se § Steg 4):** `schema_reference.md`
+   levererad projektnära; `IDENTITET.md` + `profile.md` medvetet parkerade tills
+   beskrivningarna gjorts om.
+4. ~~Väg in om `IDENTITET.md` bör vara alltid-laddad (den är ett beslutsfilter, inte
+   uppslagsverk) medan övriga blir on-demand.~~ **AVGJORT 2026-08-01 — inget
+   destillat nu (se § Steg 4).**
 
 ## Steg 3 utfört — mätningen (2026-08-01)
 
@@ -226,6 +230,39 @@ Två bifynd, antecknade utan åtgärdsförslag:
 - **`compact` om-levererar båda CLAUDE.md-filerna** (2 händelser, ett par):
   kontexten efter compact får konstitutionen igen — vilket hittills bara varit
   antaget.
+
+## Steg 4 avgjort (2026-08-01)
+
+> Marcus-beslut 2026-08-01, ordagrant: *"Jag är inte nöjd med hur identitet.md
+> och profile.md beskriver mig och de känns inte så relevant just nu i detta
+> projekt. schema_reference.md är dock ett dokument med värde för det här
+> projektet, så vore ju bra om det refereras eller finns tillgängligt på samma
+> sätt som data-model.md."*
+
+Beslutet värderades mot baslinjen ovan (Steg 3: 132 händelser, 0 träffar på de
+tre filnamnen) och landar per artefakt:
+
+- **`IDENTITET.md` · `profile.md` — inget destillat nu.** De är inte relevanta
+  för detta projekt, och beskrivningen ska göras om innan den destilleras.
+  Leverans-frågan för de två är därmed **medvetet parkerad, inte löst** — den
+  återupptas när beskrivningarna är omgjorda.
+- **`schema_reference.md` — projektnära tillgång enligt data-model-mönstret.**
+  Kopierad ur frysta Vue-repot till `docs/reference/schema_reference.md` med
+  proveniens-banner och auktoritets-gräns (fält-data ägs av `data-model.md`;
+  kopians värde är interfaces/vyer/formulär/Zapier/Make/automations-
+  genomgångarna), refererad ur `data-model.md` §Karta + auktoritets-noten och
+  en rad i projektets `CLAUDE.md`. Landning: **PR #533** (head-commit
+  `6e301d3`). Not: hub-`CLAUDE.md` refererar sedan tidigare inte längre
+  `schema_reference.md` (grep verifierad 2026-08-01, noll träffar) —
+  leveransfrågan för den artefakten var alltså redan projekt-sidig, och det är
+  där den nu är löst.
+
+**Trådens enda "väntar på Marcus"-post är därmed löst.** Ingen aktiv rest
+återstår; kvarvarande fråga (IDENTITET/profile-leveransen) väntar på att Marcus
+gör om beskrivningarna. Tråden sätts **`paused`** (durabelt parkerad) — inte
+`closed`: fyndets kärna står för två av tre artefakter medvetet oåtgärdad tills
+omskrivningen är gjord, och baslinjen ovan är måttet en framtida leverans
+verifieras mot.
 
 ## Trail
 
