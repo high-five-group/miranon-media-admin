@@ -3,9 +3,10 @@ id: TASK-105
 title: >-
   Hubbens tasks/lessons.md passerade ~5000-radersgränsen — filen är oindexerbar
   i claude.ai och uppdelningen är ett Marcus-beslut
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 08:26'
+updated_date: '2026-08-01 11:27'
 labels:
   - ready-for-human
 dependencies: []
@@ -61,16 +62,33 @@ Gränsen passerades alltså i **ett** lyft, inte gradvis — Spår C:s hub-lyft 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Synk-frågan avgjord FÖRST: ingår marcus-system/tasks/lessons.md i claude.ai-projektkunskapens synk? Mätt, inte antaget — är svaret nej faller resten av kortet och det skrivs ut
-- [ ] #2 Alternativ VALT av Marcus bland de fem registrerade (eller ett sjätte) — valet och dess skäl nedskrivna, förkastade alternativ rivna öppet
-- [ ] #3 Korsreferensnätet bevarat eller medvetet brutet: de 40 [[Lnnn]]- och 500 Knn.n-referenserna är verifierade efter ändringen, inte antagna intakta
-- [ ] #4 Hubbens CLAUDE.md-påstående om ~5000-radersgränsen stämmer med vad som faktiskt gäller efter beslutet — rättas om alternativ 5 väljs
+- [x] #1 Synk-frågan avgjord FÖRST: ingår marcus-system/tasks/lessons.md i claude.ai-projektkunskapens synk? Mätt, inte antaget — är svaret nej faller resten av kortet och det skrivs ut
+- [x] #2 Alternativ VALT av Marcus bland de fem registrerade (eller ett sjätte) — valet och dess skäl nedskrivna, förkastade alternativ rivna öppet
+- [x] #3 Korsreferensnätet bevarat eller medvetet brutet: de 40 [[Lnnn]]- och 500 Knn.n-referenserna är verifierade efter ändringen, inte antagna intakta
+- [x] #4 Hubbens CLAUDE.md-påstående om ~5000-radersgränsen stämmer med vad som faktiskt gäller efter beslutet — rättas om alternativ 5 väljs
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FINAL SUMMARY (2026-08-01, stängning efter hub-landning)
+
+VAL: Alternativ 4 i volymform — tunt index + 4 frysta volymer + aktiv vol-05 (Node.js-changelog-modellen). Marcus beordrade uppdelningen 2026-08-01 och delegerade formvalet explicit ("Du avgör vad som blir bäst och mest branschledarmässigt"); formvalet prövades mot web-researchade precedenter (Node.js CHANGELOG index+volymer; ADR-praxis en-fil-per-record — prövad, förkastad: append-enheten är H2-sessionsblocket; Keep a Changelog #529/Symfony/GitLab). Fullt beslut + rivna alternativ: ADR-085 (docs/decisions/, denna PR).
+
+AC #1 (synk-frågan): mätt mot disk — hub-README § Två läsare utpekar claude.ai-projektkunskapen som Marcus läsyta för hubben; hub-CLAUDE.md bär ~5000-regeln som hub-fakta; ingen ADR-048-motsvarande exkluderingshorisont finns i hubben. Mätningens gräns utskriven: live-fillistan i claude.ai-projektet är onåbar från byggmiljön. Marcus beslut 2026-08-01 stängde nej-grenen oavsett.
+AC #2: valet + skälen + förkastade alternativ (kortets fem + en-fil-per-lesson) rivna öppet i ADR-085.
+AC #3 (referensnätet): volymkropparna byte-identiska med källutdragen (diff grönt per volym); 110 H2 + 342 H3 + 40 [[Lnnn]] + 500 Knn.n summerar EXAKT per volymkropp mot källfilens totaler. Uppslag är grep-baserade och fil-oberoende — inga pekare brutna.
+AC #4: hubbens CLAUDE.md-påstående står oförändrat och hubben UPPFYLLER det igen — största fil 1890 rader. Ingen rättelse behövdes (alternativ 5 valdes inte).
+
+HUB-LEVERANS: PR high-five-group/marcus-system#11, merge-SHA f3ab954caa1282304d5e5623e28e8cf0fe2a107c. tasks/lessons.md (5507 r) → index (62 r) + vol-01 775 / vol-02 1890 / vol-03 1126 / vol-04 1782 / vol-05 16 r (aktiv). Rotation: >3000 rader vid lyft-start ⇒ ny volym FÖRE lyftet (värsta mätta lyft +1764 ⇒ max ~4800 < ~5000; normaltakt 400-800 r/mån mätt ur git-historiken). lessons-hub-sync + phase-end-verify uppdaterade mot aktiv volym; plugin 1.24.0 → 1.25.0, claude plugin update körd och verifierad i samma landning. OBS: hubben saknar CI/ruleset/merge-kö (mätt: rulesets=[], branch not protected) — hub-landningen är PR + direkt merge; DoD #3 avser spoke-PR:erna.
+
+SPOKE-LEVERANS (denna PR): ADR-085 + ADR-indexrad + README-räkning 84→85 (check-adr-count-grinden) + CONTRIBUTING fas-avsluts-raden → aktiv volym + detta kort.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
