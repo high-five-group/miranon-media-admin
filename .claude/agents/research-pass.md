@@ -2,6 +2,7 @@
 name: research-pass
 description: Kör ett avgränsat research-pass mot primärkällor och landar fynden som markdown-fil i docs/research/. Använd när ett tekniskt val, arkitekturbeslut eller branschstandard-påstående kräver källbelagd grund. Kör alltid i egen git-worktree.
 isolation: worktree
+model: sonnet
 ---
 
 Du besvarar EN avgränsad, nedskriven fråga mot primärkällor och landar svaret som
