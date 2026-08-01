@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-01
+updated: 2026-08-02
 review_by: 2026-10-31
 status: stable
 lifecycle: paused
@@ -368,3 +368,76 @@ preliminära "fynd" föll vid prövning (kö-commit-tid ≠ `mergedAt`) och bokf
 5. Källmärkning hindrar inte fel, men gjorde varje fel avgörbart på under en
    minut med källan i hand — exakt ADR-086:s poäng. Effektpåståenden om
    premiss-passet förblir förbjudna tills revision n≥2 (post-ADR-086-session).
+
+## Andra uppdragsrevisionen (2026-08-02) — n=2, fortfarande pre-Sonnet
+
+> Körd mot sessionerna `f1ff4bcd…` (artonde resumen) + `ae112ab2…` (nittonde
+> resumen). Rapport: `docs/research/uppdragsrevision-korning-2-2026-08-02.md`,
+> **OLANDAD vid denna landning** — verifierat 2026-08-02 via `gh pr view 573`
+> (`state: OPEN`) och läst direkt ur grenen `docs/uppdragsrevision-korning-2-t110-t113`
+> med `git show`, inte via `main`.
+
+**Korpus:** 30 uppdrag (26 bygg-agent · 3 research-pass · 1 claude-code-guide),
+3 004 rader, 0 trasiga. **188 prövbara påståenden** (~6,3/uppdrag); **56,9 %
+källmärkta**. **11 hårda fel (6,25 % av 176 avgjorda), 5 gränsfall (9,09 %
+med dem).**
+
+| Mätvärde | Körning #1 (baslinje) | Körning #2 (denna) |
+|---|---:|---:|
+| Uppdrag | 34 | 30 |
+| Hårda fel | 6 (3,8 %) | 11 (6,25 %) |
+| Hårda fel + gränsfall | 9 (5,8 %) | 16 (9,09 %) |
+| Källmärkning | 64 % | 56,9 % |
+| Modell | pre-Sonnet | pre-Sonnet (SAMMA regim) |
+
+**Ingen effektslutsats dras.** Rapporten är uttrycklig: båda körningarna
+föregår Sonnet-omställningen (samtliga 30 Agent-anrop `modell: null`) — n=2
+här mäter bakgrundsvarians inom SAMMA pre-Sonnet-regim, inte ett före/efter.
+`T113`:s Sonnet-jämförelse väntar fortfarande på sin FÖRSTA datapunkt.
+**7 distinkta sakfel bakom de 11 instanserna**, varav 4 upprepades oförändrat
+i 2–3 uppdrag samma dag (repetitions-mönstret är klass B, nu räknat i stället
+för anekdotiskt) — inklusive "nio grindar" (rätt tal: tio) som visar sig ha
+upprepats **tre** gånger samma dag, mer än den enskilda instans denna tråd
+ursprungligen bokförde.
+
+## Nya instanser — S91:s tjugoandra resume (2026-08-02)
+
+Fångade under detta synteskorts eget uppdrag. (i)–(iii) är orkestrerar-empiri
+(märkta som sådan i uppdragstexten); (iv) fångades av mottagaren via
+premiss-passet mot SAMMA uppdrag.
+
+- **(i) Rad-referens fel mot fel fil.** Ett tidigare uppdrag i vågen angav
+  *"sessionsdok rad 813–817"* — raderna bor i restlistan, inte sessionsdoket.
+  Fångat av mottagande agents (beslutsunderlags-agenten) premiss-pass.
+  Verifierat mot `tasks/sessions/2026-07-26-session-91.md:8130`, som bokför
+  fyndet i klartext: *"…klass B-fel fångat av mottagaren per ADR-086; andra
+  mätpunkten i följd där ett premiss-pass fäller en orkestrerar-referens."*
+  Klass B.
+- **(ii) Hypotes om flera öppna Done-kort, falsifierad genom mätning.**
+  Orkestrerarens hypotes *"flera av sex Done-kort öppna i kroppen"* höll inte:
+  restlista-agenten mätte `TASK-56`/`88`/`93`/`95`/`97`/`113` mot
+  `tasks/s91-restlistan.md` — endast `TASK-88` hade en egen kroppsrad,
+  `TASK-113` fanns inte i filen alls (verifierat: rad 38 säger uttryckligen
+  *"bara **`TASK-88`** hade en"*, och ingen träff på `TASK-113` utanför
+  loggraderna). Klass D (slutsats/hypotes ur för få observationer,
+  självfalsifierad innan den byggdes på).
+- **(iii) Stängningsbatch-agenten dead-parkade på egen bakgrundsgrind.**
+  Bokförd i `T112` (§ Mätt, ny instans 2026-08-02) i stället för här — kortets
+  form passar bättre (T112 äger exakt denna vakt-klass).
+- **(iv) SJÄLVFÅNGAD, denna landning: en tvåstegs källkedja inom SAMMA
+  uppdrag.** Detta synteskorts ursprungstext hävdade *"samtliga [åtta PR:er]
+  landade first-pass … noll nya TASK-115-instanser under hela vågen"*.
+  Falskt på två axlar: (a) 2 av 8 PR:er (`#569`, `#574`) var fortfarande
+  `OPEN`, inte landade, vid verifieringstillfället; (b) en åttonde
+  G0-transient-instans inträffade (PR `#572`, se `TASK-115` instans 8 +
+  `T113` § Mätpunkt 2 axel 3). Orkestreraren självrättade (b) i en
+  uppföljande korrigering SAMMA dag — men korrigeringens EGEN premiss
+  (*"task-115-kortet är Done"*) var i sin tur felaktig: verifierat via
+  `npx backlog task 115 --plain` → `Status: ○ To Do`, inte `Done`. Fångat av
+  mottagarens premiss-pass mot korrigeringen, innan kortet byggdes vidare på
+  det falska antagandet (instansen lades i stället i kortets öppna
+  instansregister). **Klass B, dubbel instans i en enda kedja:** en
+  korrigering av ett klass B-fel bar själv ett nytt klass B-fel — samma
+  mönster § Extern prövning redan dokumenterade (*"även artefakten om
+  orkestrerarens fel bär orkestrerarens felklasser"*), nu observerat i en
+  korrigering snarare än i originaluppdraget.
