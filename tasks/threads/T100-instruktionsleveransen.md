@@ -3,7 +3,7 @@ owner: marcus803
 updated: 2026-08-01
 review_by: 2026-10-27
 status: stable
-lifecycle: paused
+lifecycle: closed
 ---
 
 # T100 — Instruktionsleveransen: fyra artefakter konstitutionen bygger på men aldrig får
@@ -264,7 +264,25 @@ gör om beskrivningarna. Tråden sätts **`paused`** (durabelt parkerad) — int
 omskrivningen är gjord, och baslinjen ovan är måttet en framtida leverans
 verifieras mot.
 
-## Trail
+## Stängd (2026-08-01)
+
+Marcus-beslut 2026-08-01 (rekommendation a): **tråden stängs permanent i detta
+repo.** Grunden, per led:
+
+- **Trådens fråga är besvarad och mätt.** Når instruktionerna en session? —
+  mekaniskt avgjort av steg 3-baslinjen ovan (132 händelser över 24 sessioner,
+  0 träffar på de tre filnamnen).
+- **Projekthalvan är löst.** `schema_reference.md` är levererad per
+  data-model-mönstret (`docs/reference/schema_reference.md`, PR #533), och
+  destillat av `IDENTITET.md`/`profile.md` är inte relevant för detta projekt
+  (Marcus 2026-08-01).
+- **Resten är inte detta repos tråd.** Omgörningen av
+  `IDENTITET.md`/`profile.md` är ett hub-/personspår som Marcus initierar i
+  marcus-system när han vill. Steg 4-sektionens avslut ("`paused` tills
+  beskrivningarna är omgjorda") supersederas därmed öppet: väntposten hör
+  hemma hos hubben, inte i detta register, och en stängd tråd här tappar
+  ingenting — steg 3-baslinjen förblir måttet en framtida leverans verifieras
+  mot, var den än utförs.
 
 - **2026-07-31 (`TASK-108`): TRÅDEN HADE DRIFTAT IFRÅN SIN EGEN LEVERANS.** En
   integritetskontroll av trådregistret fann tre poster där kortet och indexraden
