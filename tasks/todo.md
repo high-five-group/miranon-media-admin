@@ -15,6 +15,20 @@
 
 ## Aktuellt fokus
 
+**Session 91 ⏸️ PAUSAD (2026-08-02, tjugoandra pausen — planerad,
+beslutsbordet dukat, natt-mätning igång)** — Vågen landad: 18 spoke-PR:er
+(#560–575 + dependabot ×3) + #576 i kön + hub-PR #13 (SYSTEMET §0).
+Kort Done: 99/110/115/117 · 111 väntar enbart prod-deploy (Marcus GO) ·
+79 karaktäriserad, mätserie kör i natt (ensam maskin, caffeinate) ·
+118/119 mintade. G0-retryn i drift (#569). Heartbeat → trevägs
+(main/rött/DIRTY), mekanisering = TASK-119. Uppdragsrevision #2: 30/188/11,
+båda körningarna pre-Sonnet — T113 väntar första Sonnet-datapunkten (denna
+sessions transcript). **NÄSTA RESUME (förmodligen sista): svep natt-agentens
+utfall FÖRST → beslutsbordet (8 punkter, PAUSLÄGE § MARCUS-SEKVENS) →
+exekveringsrester (A2:9/A3b/PreToolUse-klassning) → DoD-avstämning →
+session-end → appen i S93.** Full narrativ: sessionsdok Del 41 + PAUSLÄGE
+(tjugoandra). *(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-08-01, tjugoandra resumen — tillstånd
 återställt, orkestrerad slutspurt mot appen)** — Resume på Marcus order:
 orkestrera, delegera allt delegerbart. Numrering re-verifierad
