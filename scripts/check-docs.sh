@@ -46,7 +46,7 @@
 # MELLAN filer: `.claude/agents/bygg-agent.md` sade "nio". Den halvan är löst
 # genom att slutradens tal nu är härlett och kopian borttagen.)
 #
-# DE TOLV:
+# DE TRETTON:
 #   ci.yml docs-jobbet (villkorat på docs_changed):
 #     1. lychee link check          — kräver lychee-binär, SKIPPAS om den saknas
 #     2. markdownlint-cli2
@@ -65,6 +65,10 @@
 #    12. scripts/check-listparitet.sh — paret `sentinel-markorer` läser
 #        CONTRIBUTING.md, paret `lychee-scope` läser DENNA fil. Mätt samma dag:
 #        en struken sentinel-backtick i CONTRIBUTING.md ⇒ exit 1.
+#    13. scripts/check-thread-index.sh — trådregistrets index (radform, enum i
+#        rätt kolumn, numrering, index↔fil). Wirad i lint-jobbet i
+#        TASK-108-wiringen; rubriken ovan blev sann i SAMMA commit som denna
+#        rad skrevs — ADR-083 förbjuder ordningen "lista först, mekanism sen".
 #
 # POST 10 VAR ETT FALSKT PÅSTÅENDE FRÅN ADR-083:s LANDNING TILL TASK-98
 # (2026-07-30 → 2026-07-31). Grinden var inkopplad här och dess self-test kördes
@@ -210,9 +214,10 @@ else
     skip_gate "Vale L_X.2-regressionssvit" "vale-binären saknas lokalt — CI kör den"
 fi
 
-# --- 5-12. De alltid-på grindarna i lint-jobbet --------------------------
+# --- 5-13. De alltid-på grindarna i lint-jobbet --------------------------
 run_gate "Frontmatter på styrande docs" bash scripts/check-frontmatter.sh
 run_gate "Lifecycle på sessionsdok + trådkort" bash scripts/check-lifecycle.sh
+run_gate "Tråd-registrets index (radform + enum + numrering + index↔fil)" bash scripts/check-thread-index.sh
 run_gate "Publika docs — oavklarade checklist-poster" bash scripts/check-public-checklists.sh
 run_gate "ADR-räkningens konsistens" bash scripts/check-adr-count.sh
 run_gate "Lesson-numrering (nummer vid landning)" bash scripts/check-lesson-numbers.sh

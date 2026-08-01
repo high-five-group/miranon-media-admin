@@ -569,6 +569,37 @@ jobs:
         # skild från frontmatter-governing-regimen (immutabilitets-skäl, ADR-023).
         run: bash scripts/check-lifecycle.sh
 
+      - name: Validate thread index integrity (TASK-108 gate)
+        # Komplement till check-lifecycle.sh, som loopar över trådFILER och tyst
+        # hoppar varje fil utan lifecycle:-fält — mätt täckning 13 av 109 trådar
+        # (11,9 %) när grinden byggdes. Denna grind validerar INDEXET självt
+        # (tasks/threads/README.md): radform + kolumnantal, enum-giltigt
+        # tillstånd i RÄTT kolumn, numreringens integritet (dubblett/lucka/
+        # omkastning) och index↔fil åt båda håll. Ingen invariant överlappar
+        # lifecycle-grinden — två grindar med rätt att säga emot varandra är
+        # värre än en (skriptets § MEDVETET UTANFÖR SCOPE).
+        #
+        # EGET STEG HÄR ÄR NÖDVÄNDIGT, INTE EN DUBBLERING: TASK-108:s
+        # wiring-beskrivning antog att grinden "följer med automatiskt via
+        # check-docs.sh", men check-docs.sh körs INTE av CI (verifierat
+        # 2026-07-31: noll run-träffar i något workflow — den är den LOKALA
+        # samlaren som speglar detta jobb). Utan detta steg hade check-docs.sh
+        # räknat upp grinden under rubriken "ci.yml lint-jobbet" medan CI körde
+        # den noll gånger — exakt ADR-083-felklassen som TASK-98 lagade för
+        # check-permissions-claims.sh.
+        #
+        # Ren textläsning (policy-driven, .thread-index-policy.conf — som sedan
+        # denna ändring står i shellcheck-scopet nedan). Inget nätverk, inga
+        # secrets. KOSTNADEN ÄR INTE FÖRSUMBAR: 41,0 respektive 43,4 s LOKALT
+        # mätt (två körningar, macOS 2026-08-01, 98 % CPU — beräkningsbunden
+        # bash-regex över registrets långa rader, inte maskinlast). CI-tiden är
+        # INTE mätt av mig; jobbet bar 83–103 s mot taket 300 s före detta steg
+        # (tre gröna main-körningar 2026-07-31), så marginalen bär steget även
+        # om CI-talet blir högre än det lokala. Läs av den första skarpa
+        # körningen; krymper marginalen är grindens regex (inv 3-länkmatchningen
+        # mot långa rader) första optimeringskandidat — inte avwiring.
+        run: bash scripts/check-thread-index.sh
+
       - name: Check ADR count consistency (ADR-039 gate)
         # Per ADR-039 § kadens-principen: deterministisk konsistens-check vid
         # VARJE push (ej bara fas-avslut). ADR-fil-antal == README:s kanoniska
@@ -720,6 +751,16 @@ jobs:
         # `time bash scripts/test-staging-semaphore.sh`) — CI-tiden är INTE mätt
         # av mig och kan avvika åt båda håll.
         #
+        # test-check-thread-index.sh (TASK-108) hör hit av samma kadens-skäl.
+        # 17 fall: 15 planterar ett känt fel per invariant (T4 är
+        # falskpositiv-regressionen — ordet "paused" i prosan får aldrig räknas
+        # som radens tillstånd; T11 är täcknings-regressionen — trådfil UTAN
+        # lifecycle:-fält, exakt klassen check-lifecycle.sh tyst hoppar) och 2
+        # prövar grönt på korrekt indata. Sandboxad i mktemp, ingen
+        # nätverkstrafik. 1,1 s LOKALT mätt (fixturerna är små — det är
+        # registrets verkliga rader som är dyra, se grind-steget ovan).
+        # CI-tiden är inte mätt av mig.
+        #
         # test-check-listparitet.sh (TASK-85) hör hit av samma kadens-skäl.
         # Sviten prövar listparitets-grinden i BÅDA riktningar (post borttagen ur
         # den ena listan, post tillagd i den andra) plus elva fail-closed-grenar.
@@ -744,6 +785,7 @@ jobs:
           bash scripts/test-check-public-checklists.sh
           bash scripts/test-pre-commit-hook.sh
           bash scripts/test-check-lifecycle.sh
+          bash scripts/test-check-thread-index.sh
           bash scripts/test-check-lesson-numbers.sh
           bash scripts/test-check-permissions-claims.sh
           bash scripts/test-agent-spawn-log.sh
@@ -964,17 +1006,18 @@ jobs:
         # --enable=all aktiverar optional checks (SC2250, SC2312,
         # SC2310, SC2311 m.fl. som är default-disabled).
         # Scope per ADR-033 § Del 3: scripts/*.sh + .githooks/* +
-        # 8 sourced-config-filer (.checklist-policy.conf +
+        # 9 sourced-config-filer (.checklist-policy.conf +
         # .frontmatter-policy.conf + .lesson-policy.conf, tillagd S91/ADR-081 +
         # .ci-wait-policy.conf, tillagd S91/TASK-72 +
         # .staging-semaphore-policy.conf, tillagd S91/TASK-77 +
         # .permissions-claims-policy.conf, tillagd S91/ADR-083 +
         # .backlog-closure-policy.conf, tillagd S91/TASK-90 +
-        # .listparitet-policy.conf, tillagd S91/TASK-85 — en sourced conf
-        # utanför scopet är samma lucka som de övriga redan stänger).
+        # .listparitet-policy.conf, tillagd S91/TASK-85 +
+        # .thread-index-policy.conf, tillagd i TASK-108-wiringen — en sourced
+        # conf utanför scopet är samma lucka som de övriga redan stänger).
         # Räkningen sade "5" medan listan bar sex filer fram till TASK-90;
-        # rättad i samma andetag som den sjunde lades till, och räknad om till
-        # åtta i TASK-85.
+        # rättad i samma andetag som den sjunde lades till, räknad om till
+        # åtta i TASK-85 och till nio i TASK-108-wiringen.
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -989,7 +1032,8 @@ jobs:
             .staging-semaphore-policy.conf \
             .permissions-claims-policy.conf \
             .backlog-closure-policy.conf \
-            .listparitet-policy.conf
+            .listparitet-policy.conf \
+            .thread-index-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
