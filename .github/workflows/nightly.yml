@@ -262,6 +262,17 @@ jobs:
         # blockad serie och att en oläsbar loadavg blir OKÄND, aldrig 0.
         run: node scripts/test-flake-matserie.mjs
 
+      - name: Uppdragsrevisionens testsvit (T110/ADR-086)
+        # ADR-086: scripts/uppdragsrevision.mjs extraherar en sessions
+        # Agent-spawns ur transcript-JSONL (read-only, fail-loud) — en mätare,
+        # inte en grind, därav bäraren här och inte i ci.yml (samma
+        # kadens-argument som grannstegen: en testsvit som inte körs
+        # fortlöpande ruttnar). Sviten är beroendefri (node + fixtur-data,
+        # enbart node:-builtins — inget npm ci) och prövar båda riktningarna:
+        # att extraktionen träffar facit och att skriptet FÄLLER på saknad
+        # session, tvetydigt prefix och fil utan giltig JSON.
+        run: node scripts/test-uppdragsrevision.mjs
+
       - name: CI-mätning (fönster 50 runs) → logg + step-summary
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
