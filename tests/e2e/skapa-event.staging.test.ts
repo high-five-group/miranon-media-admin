@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
+import { expect, type Page, type Route, test } from '../support/test-bas';
 import { loggaInFristaende } from './helpers/fristaende-session';
-import { expect, type Page, type Route, test } from './support/test-bas';
 
 /**
  * Skapa nytt event — event-familjens skapa-sida mot S73-FACIT-UTÖKNINGEN

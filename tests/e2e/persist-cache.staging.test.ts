@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, type Page, type Route, test } from './support/test-bas';
+import { expect, type Page, type Route, test } from '../support/test-bas';
 
 /**
  * Persist-lagret (task-8.3, ADR-072): query-cachen persistas synkront till

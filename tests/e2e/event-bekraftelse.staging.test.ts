@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
+import { expect, type Page, type Route, test } from '../support/test-bas';
 import { mockValjarLista } from './helpers/valjar-lista';
-import { expect, type Page, type Route, test } from './support/test-bas';
 
 /**
  * task-48 — MARKERA-LÄGET i Anmälda deltagare (S86-prototypens facit).

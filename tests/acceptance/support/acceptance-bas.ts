@@ -1,6 +1,6 @@
 import { mergeTests } from '@playwright/test';
-import { test as matbas } from '../../e2e/support/test-bas';
 import { test as fixturvarld } from '../../support/fixturvarld/hermetic';
+import { test as matbas } from '../../support/test-bas';
 
 /**
  * Acceptance-klassens söm (task-59.3, ADR-080 beslut 1).
@@ -50,7 +50,7 @@ import { test as fixturvarld } from '../../support/fixturvarld/hermetic';
  *      your network across the entire stack") och emot ADR-080:s eget villkor
  *      att en fixtur och ett schema aldrig får divergera.
  *
- *   2. `tests/e2e/support/test-bas.ts` — mätinstrumentet (S91 steg 1). Det är
+ *   2. `tests/support/test-bas.ts` — mätinstrumentet (S91 steg 1). Det är
  *      en fullständig no-op utan `PLAYWRIGHT_HERMETIK_RAPPORT=1`. Att det följer
  *      med hit gör att en fil som lämnar e2e-sviten inte lämnar instrumentets
  *      räckvidd: klassningen av varje flyttad fil är HÄRLEDD ur mätdatan
@@ -68,10 +68,10 @@ import { test as fixturvarld } from '../../support/fixturvarld/hermetic';
  *      instrumentet fortfarande bevisar; att inget anrop går ut är vaktens
  *      besked, inte instrumentets.
  *
- *      (Instrumentet bor kvar under `tests/e2e/support/` av ren
- *      omfattningsdisciplin: en flytt till klassdelad hemvist, som
- *      fixturvärlden fick i task-59.1, hade rört ~30 e2e-filers importrader
- *      och hör inte till denna skiva.)
+ *      (Instrumentet flyttade till klassdelad hemvist `tests/support/`,
+ *      liksom fixturvärlden i task-59.1, i task-110 — tråd T103. Vid flytten
+ *      var 15 importrader berörda (14 e2e-specfiler + denna fil), inte de
+ *      ~30 som ursprungligen antogs innan task-59.6 stabiliserade antalet.)
  *
  * `mergeTests` är Playwrights egen mekanism för precis detta, verifierad som
  * exporterad funktion i den installerade versionen (1.61.1) före beslutet.

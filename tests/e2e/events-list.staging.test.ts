@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, type Route, test } from './support/test-bas';
+import { expect, type Page, type Route, test } from '../support/test-bas';
 
 /**
  * Event-listan till S72-facit (task-17.2) — listvyn ände-till-ände.

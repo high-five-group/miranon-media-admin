@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from './support/test-bas';
+import { expect, test } from '../support/test-bas';
 
 /**
  * App-skalets varaktiga DoD-tester (Fas 5, Session 16 K5) — kodifierar

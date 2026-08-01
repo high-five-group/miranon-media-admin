@@ -15,7 +15,7 @@
 import type { Dirent } from 'node:fs';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { HERMETIK_RAPPORT_FIL } from './e2e/support/hermetik-rapport-fil';
+import { HERMETIK_RAPPORT_FIL } from './support/hermetik-rapport-fil';
 
 const OUTPUT_DIR = 'test-results';
 const REDACTION = '<REDACTED (ADR-061 Pelare 3 / T29)>';
@@ -49,7 +49,7 @@ async function* walk(dir: string): AsyncGenerator<string> {
  * Hermetik-rapporten (S91, mätningens steg 1) — sammanställs hit och skrivs till
  * stdout, så utfallet hamnar direkt i CI-loggen utan artefakt-hantering.
  *
- * Läser JSONL:en som `tests/e2e/support/test-bas.ts` skrivit under körningen.
+ * Läser JSONL:en som `tests/support/test-bas.ts` skrivit under körningen.
  * Källa: docs/research/staging-svitens-tidsbudget-2026-07-26.md § 5 steg 1.
  *
  * FLAGG-VAKTAD, SYMMETRISKT MED `global-setup.ts` (tråd T105, task-59.7).

@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from './support/test-bas';
+import { expect, test } from '../support/test-bas';
 
 /**
  * Fas 6e L2 — Mer-landningen (/mer, statiskt skal). Täcker logout-golvet som

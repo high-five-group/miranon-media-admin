@@ -1,4 +1,4 @@
-import { expect, test } from './support/test-bas';
+import { expect, test } from '../support/test-bas';
 
 /**
  * PWA-offline-test (Fas 5, ADR-047 B3b / byggplan DoD 5): första besök

@@ -17,7 +17,7 @@
  */
 
 import { rmSync } from 'node:fs';
-import { HERMETIK_RAPPORT_FIL } from './e2e/support/hermetik-rapport-fil';
+import { HERMETIK_RAPPORT_FIL } from './support/hermetik-rapport-fil';
 
 export default function globalSetup(): void {
   if (process.env.PLAYWRIGHT_HERMETIK_RAPPORT !== '1') return;

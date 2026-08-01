@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
+import { expect, type Page, test } from '../support/test-bas';
 import { mockValjarLista } from './helpers/valjar-lista';
-import { expect, type Page, test } from './support/test-bas';
 
 /**
  * task-18.7 — Bor över: summeringsraden + KRYSS-LÄGET (S73-facit K50/K52).
