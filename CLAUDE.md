@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-01
+updated: 2026-08-02
 review_by: 2026-11-15
 status: stable
 ---
@@ -182,10 +182,29 @@ required checks have passed, the pull request will be added to the merge queue."
 Disambiguera med ett andra `gh pr merge --auto --merge`: svaret
 `already queued to merge` betyder köad.
 
-**En köad gren kan inte uppdateras.** Push avvisas med `GH006` så länge PR:en
-står i kön, och `--disable-auto` släpper inte låset — `gh` har ingen dequeue.
-Konsekvens: köa inte förrän diffen är den du vill landa, för möjligheten att
-ändra försvinner i samma ögonblick.
+**En köad gren kan inte uppdateras via `gh`.** Push avvisas med `GH006` så
+länge PR:en står i kön, och `--disable-auto` släpper inte låset — `gh` 2.96.0
+har ingen dequeue-flagga. Det är fortfarande sant och oförändrat.
+
+**Men CLI:ts yta är smalare än plattformens — en väg ur finns.** GraphQL-
+mutationen `dequeuePullRequest(input: {id: <PR:ens GraphQL-nod-ID>})` tar
+bort posten ur kön direkt, och kräver inga rättigheter utöver ett vanligt
+repo-admin-token. Mätt skarpt 2026-08-01 mot en genuint köad, kastbar test-PR:
+armerad 21:57:38 UTC, `dequeuePullRequest` lyckades 21:57:43 UTC, kön
+bekräftat tom 21:57:49 UTC — 11 sekunder totalt, `main` opåverkad. Samma pass
+prövade `enqueuePullRequest(input: {pullRequestId, jump: true})`: fungerar
+också, men kräver att PR:ens egna required checks redan är gröna (den råa
+mutationen kringgår inte den grinden — mätt: ett försök före grön status gav
+`"Required status check ... is expected"`). Fullt underlag inklusive alla
+kommandon och tidsstämplar:
+[`docs/research/task-99-dequeue-enqueue-live-test-2026-08-01.md`](docs/research/task-99-dequeue-enqueue-live-test-2026-08-01.md).
+
+**Den operativa regeln kvarstår ändå, med rätt skäl den här gången:** köa
+inte förrän diffen är den du vill landa. Skälet är inte längre att
+möjligheten att ändra "försvinner" — den gör inte det. Skälet är att den enda
+vägen ur går via en handskriven GraphQL-mutation utanför `gh`, vår vanliga
+verktygsyta, och att förlita sig på den som daglig rutin (i stället för ett
+medvetet, mätt undantag) är en väg dit vi inte har anledning att gå.
 
 **Om kön går sönder:** vägen tillbaka är att ta bort `merge_queue`-regeln ur
 rulesetet via `gh api` — den kräver ingen landning och är därför oberoende av
