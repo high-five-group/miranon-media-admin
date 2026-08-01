@@ -803,6 +803,22 @@ jobs:
         # `backlog` i registret) inte återinförs som default eller åtgärds-tips.
         # 24,7 s LOKALT mätt (macOS, 2026-07-31, loadavg 5,1) — CI-tiden är INTE
         # mätt av mig och kan avvika åt båda håll.
+        #
+        # test-stop-vakt.sh (TASK-113/ADR-087, wirad TASK-117) hör hit av samma
+        # kadens-skäl. Vakten (scripts/stop-vakt.sh) själv är en Stop/
+        # SubagentStop-HOOK som körs live vid varje turavslut, aldrig i CI — den
+        # kan alltså inte "köras i natten" som backlog-closure-grinden ovan; det
+        # ENDA som hör hemma i en pipeline är sviten som skyddar hookens LOGIK
+        # mot regression innan landning. ADR-087 § Ärliga svagheter punkt 8
+        # bokförde owiring som öppen uppföljning ("ci.yml var upptagen" — se
+        # tasks/sessions/2026-07-26-session-91.md rad 7973-7974); TASK-117
+        # stänger den. 16 fall, tvåsidigt bevis (planterat väntepåstående-fel
+        # FÄLLS, korrekt avslut GRÖNT) + fail-closed-grenar + stop_hook_active-
+        # genomsläpp. Sandboxad under /tmp/task-113-test-stop-vakt med
+        # trap-cleanup, rör aldrig repo-rotens .stop-vakt-policy.json, ingen
+        # nätverkstrafik. 1,31 s LOKALT mätt (macOS, 2026-08-01, loadavg 4,21,
+        # `time bash scripts/test-stop-vakt.sh`) — CI-tiden är INTE mätt av mig
+        # och kan avvika åt båda håll.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -816,6 +832,7 @@ jobs:
           bash scripts/test-staging-semaphore.sh
           bash scripts/test-check-listparitet.sh
           bash scripts/test-check-backlog-closure.sh
+          bash scripts/test-stop-vakt.sh
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
