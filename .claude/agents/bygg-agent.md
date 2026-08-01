@@ -125,14 +125,36 @@ Egen gren, beskrivande namn. Direktpush till `main` avvisas av ruleset (ADR-076)
 `git add` är **path-scopad**, alltid. `git commit` committar hela indexet, och
 DoD kräver noll orelaterade filer i diffen.
 
-Öppna PR med `gh pr create`. **Armera INTE auto-merge** — orkestreraren granskar
-din diff innan den köas.
+Öppna PR med `gh pr create`. **Armeringen ägs av uppdraget.** Säger uppdraget
+inget om armering: armera INTE auto-merge — orkestreraren granskar din diff
+och armerar i sitt svep. Lägger uppdraget armeringen hos dig:
+`gh pr merge --auto --merge`, därefter slutrapport direkt.
 
-Skälet är inte längre `BEHIND`. Kön bygger varje post mot `main` plus posterna
-före den, så mekaniska konflikter mellan parallella landningar är lösta
-(`CLAUDE.md` § Landning). Vad kön inte ser är två diffar som mergar rent och
-ändå är fel tillsammans — och du kan inte se dina syskonagenter. Det kan
-orkestreraren.
+Skälet för diff-granskningen är inte längre `BEHIND`. Kön bygger varje post mot
+`main` plus posterna före den, så mekaniska konflikter mellan parallella
+landningar är lösta (`CLAUDE.md` § Landning). Vad kön inte ser är två diffar
+som mergar rent och ändå är fel tillsammans — och du kan inte se dina
+syskonagenter. Det kan orkestreraren.
+
+## Parkera aldrig på en landnings-vakt
+
+Din slutrapport lämnas när PR:en är armerad — eller öppnad, när armeringen
+ligger hos orkestreraren — med PR-nummer + commit-SHA. Vänta ALDRIG in
+kö-fasen: landnings- och merge_group-verifikat ägs av orkestrerarens svep
+(`CLAUDE.md` § Landning), inte av dig.
+
+Skälet är mätt, inte befarat (`T112`, Marcus GO 2026-08-01): en bakgrundsvakts
+fullbordan får aldrig ANTAS väcka någon — en vakt (`gh pr checks --watch`)
+fullföljde med exit 0 utan att agentens återupptagning nådde sessionen, och
+elva agenter stod en hel natt parkerade med färdigt, oredovisat arbete. En
+parkerad agent med färdig leverans är exakt den obevakade tillståndsklass
+`T108`/`T112` beskriver — formen designar bort den.
+
+Sätter du en vakt under pågående arbete (t.ex. CI på din egen PR medan du
+fortsätter bygga): dess event är en VÄCKARKLOCKA, aldrig fakta.
+Förgrundsverifiera mot git/REST innan du bygger vidare på det — falska
+terminal-signaler är belagda (tomma bakgrunds-exits, "MERGED" vars SHA aldrig
+nådde `main`; S91 Del 39.5).
 
 ## När något oväntat dyker upp
 
@@ -149,7 +171,7 @@ avvikelsen råkar upptäckas.
 Din slutrapport är returvärdet till orkestreraren, inte ett meddelande till en
 människa. Ta med:
 
-- gren, commit-SHA, PR-nummer
+- gren, commit-SHA, PR-nummer + armeringsstatus
 - premiss-passets utfall: vilka premisser som prövades och varje divergens —
   "inga divergenser" är ett mätt resultat och skrivs ut, aldrig antas
 - rörda filer och varför var och en rördes

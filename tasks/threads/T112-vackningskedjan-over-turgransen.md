@@ -82,6 +82,40 @@ riktningar, öppet bokförda utan val:
    huvudsession utan användarinteraktion? Bryts kedjan vid agent-resume eller
    vid notifikations-leverans?
 
+## Åtgärdsval (2026-08-01)
+
+Marcus GO 2026-08-01 (klass A): riktningarna **(ii)** och **(iii)** är LÅSTA
+som stabil åtgärd — de var i drift sedan 2026-08-01 ~12:15 (S91 Del 39.5) och
+är nu kodifierade i denna landning:
+
+- **(ii) Orkestrerar-svep vid varje väckning + persistent heartbeat** —
+  kodifierad i `CLAUDE.md` § Landning, stycket *"Svep vid varje väckning —
+  passiv väntan är avskaffad som arbetsläge"*: notifikation eller
+  heartbeat-event → verifiera mot git/REST → armera oarmerat → väck
+  ägar-agenter → starta nästa post.
+- **(iii) Vakt-design-regeln** — kodifierad i `.claude/agents/bygg-agent.md`
+  § *"Parkera aldrig på en landnings-vakt"*: agenter parkerar aldrig på
+  landnings-vakter, slutrapporten lämnas vid armerad PR (PR-nummer + SHA),
+  landnings-/merge_group-verifikat ägs av orkestrerarens svep, och vakt-event
+  är väckarklocka — aldrig fakta.
+- **(iv) Harness-mätningen** — KVARSTÅR ÖPPEN; kort-kandidat post-S91.
+- **(i) Cron-heartbeat** — VILANDE tills `T111`-bygget.
+
+**ADR-bar-prövningen, bokförd:** UNDER baren. Villkor 1 (svårt att återställa
+i kod eller koherens) håller inte — åtgärden är en operativ rutin, reverterbar
+med en diff, och skälet bärs durabelt av detta kort + S91 Del 39.5 +
+registerraden, så koherensen överlever en revert. Villkor 3 är dessutom svagt:
+(i) och (iv) förkastades inte utan står vilande/öppna — ingen options-rymd
+stängdes. Ingen ADR mintas; under-bar-ADR kräver explicit Marcus-beslut.
+
+**Lifecycle-prövning mot registrets regler:** tråden stängs INTE — `closed`
+betyder avslutad, och (iv) är oprövad samt (i) vilande. Tråden förblir
+`paused` med uppdaterad registerrad.
+
+Sandbox-observationen i § Mätt (2) fick f.ö. en ny instans vid själva
+kodifieringen: även en enkel `gh pr view`-poll-loop i bakgrund avvisades för
+en worktree-isolerad agent (*"too complex to verify"*), 2026-08-01.
+
 ## Släktskap
 
 `T108` (orkestreraren väntar på notifieringar som strukturellt aldrig kommer —

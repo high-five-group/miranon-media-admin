@@ -32,6 +32,7 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 - Testa nytt bibliotek/approach med minimalt test (1 komponent, 1 hook) innan full implementation
 - Verifiera per komponent: 11/11/11 (bibliotek) eller 11/10/10 (vyer). Bevisa att det fungerar — "det funkar" ≠ "det är rätt".
 - Fånga lärdomar i `tasks/lessons.md` efter varje korrigering. Markera universella med `[UNIVERSAL]`.
+- **Uppdrag till agenter källmärker varje faktapåstående** (fil/commit/kommando) — obelagda påståenden behandlas av mottagaren som HYPOTES ([ADR-086](docs/decisions/ADR-086-uppdragets-premisser-provas-av-mottagaren.md)).
 
 ---
 
@@ -153,6 +154,19 @@ vänta på sällskap.
 
 **Vad som fortfarande gäller:** armera aldrig en PR vars bygg-agent fortfarande
 arbetar, och kör aldrig `update-branch` mot en sådan gren.
+
+**Svep vid varje väckning — passiv väntan är avskaffad som arbetsläge
+(`T112`, Marcus GO 2026-08-01).** Orkestreraren äger landnings- och
+merge_group-verifikaten: agenters vakter väcker ingen över turgränsen
+(`T112` § Mätt), och agenter parkerar inte längre på landnings-vakter
+(`.claude/agents/bygg-agent.md` § Parkera aldrig på en landnings-vakt).
+Stående form: en persistent heartbeat-monitor pollar PR-läget (~90 s)
+oberoende av agenternas vakter, och varje väckning — notifikation ELLER
+heartbeat-event — utlöser samma svep: verifiera faktiskt läge mot git/REST →
+armera det som står oarmerat → väck ägar-agenter → starta nästa post.
+Vakt-event är väckarklocka, aldrig fakta: förgrundsverifiera före varje
+handling — fem falska terminal-signaler i ett enda pass är belagda
+(S91 Del 39.5), inklusive ett "MERGED med SHA" vars SHA aldrig nådde `main`.
 
 **`autoMergeRequest: null` betyder INTE "ej armerad".** Fältet beror på PR:ens
 tillstånd i armerings-ögonblicket. `gh pr merge --help` säger det rakt ut:
