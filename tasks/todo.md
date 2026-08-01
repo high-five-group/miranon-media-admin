@@ -15,6 +15,19 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-08-01, tjugoandra resumen — tillstånd
+återställt, orkestrerad slutspurt mot appen)** — Resume på Marcus order:
+orkestrera, delegera allt delegerbart. Numrering re-verifierad
+(91/ADR-089/L433/T114/task-117; f47 ej mekaniskt avläsbar ur data-model.md —
+hypotes tills minting). Divergens bekräftad: restlista-kroppen släpar efter
+registret (TASK-88/56/93/95/97/113 Done). **Våg 1 (åtta agenter):**
+restlista-pass + lesson-fragment · uppdragsrevision #2 · Stop-vakt-svit →
+ci.yml · TASK-99 · TASK-110 · TASK-79 · DoD-rekonstruktion (read-only) ·
+beslutsunderlag TASK-115/116/111 (read-only). Våg 2: dependabot #65→#162→#260 ·
+hub §0 + plugin-bump · Marcus-beslut · Del 39-komplettering · DoD-avstämning →
+session-end. Våg 3: appen (18.20:s fyra beslut · hållplats-grillningen · fem
+ytor). Full narrativ: sessionsdok Del 41. *(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-08-01, tjugoförsta pausen — planerad, efter
 Sonnet-omställningen)** — Fyra landningar denna period, alla
 merge_group-verifierade per jobb: `#556` (resume-återställningen) · `#557`
