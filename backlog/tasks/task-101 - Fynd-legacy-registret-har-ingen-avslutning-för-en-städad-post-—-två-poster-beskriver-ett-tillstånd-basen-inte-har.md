@@ -3,10 +3,10 @@ id: TASK-101
 title: >-
   Fynd: legacy-registret har ingen avslutning för en städad post — två poster
   beskriver ett tillstånd basen inte har
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 07:56'
-updated_date: '2026-07-31 08:11'
+updated_date: '2026-08-01 10:46'
 labels:
   - ready-for-agent
 dependencies: []
@@ -118,10 +118,16 @@ GRINDAR, mätta med CI:s kommandon (exitkod fångad separat, aldrig efter en pip
 DRY-RUN FÖRBLIR DEFAULT (AC #7): `parseArgs` är orörd i det avseendet, och testerna "legacy-läget är DRY RUN tills --bekrafta ges" samt "--dry-run vinner ALLTID över --bekrafta" är gröna.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+CONFIG.legacy i scripts/seed-review-fixture.mjs fick en avslutningsform: stadad { datum, av } på posten som står KVAR i registret — namn, forvantat och kalla-proveniensen orörda, städningens utfall TILLAGT i kalla, aldrig ersättande (AC 1–2). En läsare ser skillnaden aktiv/städad direkt i registret utan att köra skriptet, och planLegacyClean ger tom raderingsplan för en städad post per konstruktion — spärren sitter i plan-funktionen så ingen anropare kan kringgå den (AC 3). Tvåsidigt bevis: 115 gröna tester (baseline 96, +19), en avslutad post kan inte radera (bekrafta-körning mot staging: noll raderingsrader, exit 0) och räknings-guarden fäller fortfarande en aktiv post med avvikande räkning; mutationsrunda 9/9 fäller, där M9 (somAktiv strippar inte avslutningen) fäller 8 tester — beviset för att de fem omförankrade ankar-testerna var nödvändiga, inte kosmetik: utan somAktiv hade de blivit gröna av fel skäl (tom plan pga avslutningen, inte record-ID-ankaret). DEL B-svitens två legacy-poster (ZZ-GRANSKNING-S91 städad av TASK-95/PR #493; Skovde-S75 städad på Marcus uttryckliga mandat 2026-07-31) blev därmed avslutade i samma ändring (AC 4). validateConfig kräver fortfarande forvantat av samtliga poster — räkningen är historik på en avslutad post, aldrig nollställd (AC 5). .purge-staging-policy.json orörd, verifierat med git diff --name-only (AC 6). Egen basmätning staging apphjj8Q7lkXCMsL4 redovisad med exitkoder före (exit 1, guard fäller) och efter (exit 0, AVSLUTAD-rad); dry-run förblir default (AC 7). LANDNING: PR #504, merge-SHA 938b58e6a133a998e9fe700f2244557c8ff4e336, mergad 2026-07-31T10:53:55Z via merge-kön. Första pull_request-körningens Acceptance-jobb dödades mitt i körningen av runner-infra — verbatim: "The runner has received a shutdown signal. This can happen when the runner service is stopped, or a manually started runner is canceled." — ingen testfällning; räddad med gh run rerun 30615635147 --failed, därefter grön per jobb. merge_group-run 30624656579 (gh-readonly-queue/main/pr-504, head = merge-SHA:n) grön per jobb: Detect changed files, Lint + Audit + TypeCheck, Docs link check, Pure + Build, Acceptance (hermetisk, full klass 7m31s) success; Staging/A11y korrekt skippade; CI Passed or Skipped success. Post-merge på main täckt av run 30625128495 (head d634557, innehåller 938b58e), success. DoD 3 därmed uppfylld.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
