@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-24
+updated: 2026-08-01
 review_by: 2026-10-24
 status: stable
 lifecycle: paused
@@ -219,3 +219,11 @@ sektion tar bort ett hinder, den flyttar inte beslutet.
 En sidopost föddes under arbetet: `TASK-56` (WebSocket-vägen går förbi
 hermetik-vakten). Den rör fixturvärldens täthet, inte grinden, och är
 oetiketterad tills Marcus klassar den.
+
+## Parkeringen bekräftad på nytt (2026-08-01)
+
+S91:s trådkarta prövade frågan aktivt, och Marcus bekräftade parkeringen,
+ordagrant: *"T87 ska INTE aktiveras. Det är mycket visuellt arbete kvar i
+appen."* Detta är en FÖRNYAD bekräftelse av Marcus-beslut A (S81), inte en ny
+trigger — trigger-formuleringen ovan ("grinden aktiveras när
+UI-iterationstakten lugnat") står oförändrad, liksom `lifecycle: paused`.
