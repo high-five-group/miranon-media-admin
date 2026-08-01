@@ -15,6 +15,25 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-08-01, tjugoförsta resumen — tillstånd
+återställt)** — Tjugonde pausen (2026-08-01, current-session-limit vid 96 %,
+kontext 41 %) lämnade fyra öppna luckor bokförda i Paushistoriken — denna
+kadensrad betalar lucka 2 (todo-synken). Tillstånds-återställningen utförd
+som resumens enda dok-skrivning: `lifecycle: paused → active`, tjugonde
+pausens `PAUSLÄGE`-rubrik bruten till `Paushistorik`-form. Sedan pausen har
+kön landat `#552`–`#555`: `origin/main` = `1ffcafde` (#555), ADR-088 inne,
+lessons-konsolideringen inne (0 fragment). **#551 (TASK-113/ADR-087) står
+kvar OPEN med den kända räknar-konflikten** — rebase till 88 + åter-armering
+är Paushistorikens första kodåtgärd. Numrering re-verifierad mot disk:
+91/ADR-089 (087 reserverad i #551, 088 landad)/L433 (0 fragment)/T113/f47/
+task-117. **Aktuellt scope (Marcus-order vid resumen):
+subagent-modellkonfigurationen** — `bygg-agent.md` + `research-pass.md`
+saknar `model:`-fält och ärver huvudloopens `claude-fable-5[1m]` +
+`effortLevel: xhigh`; analys + rekommendation levererad i chatten, väntar
+Marcus-beslut. Övriga steg per Paushistorikens NÄSTA-lista (restlista-pass ·
+uppdragsrevisionen · Stop-vaktens svit → ci.yml · dependabot #65→#162→#260 ·
+TASK-99/79/110). *(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-07-31, tjugonde resumen — tillstånd
 återställt)** — Tillstånds-återställningen utförd som resumens enda
 dok-skrivning: `lifecycle: paused → active`, nittonde pausens
