@@ -76,6 +76,7 @@
 
 import { execFile } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import os from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -85,6 +86,74 @@ const execFileAsync = promisify(execFile);
 const EXIT_OK = 0;
 const EXIT_WIRING_SAKNAS = 1;
 const EXIT_POLICYFEL = 64;
+
+/**
+ * G0-stegets bounded retry kring `playwright --list` (TASK-115).
+ *
+ * ═══ VARFÖR ═══
+ * Sju instanser 2026-07-31 → 2026-08-01 (senast #557: två utsparkningar på
+ * SEX MINUTER, samma PR, diff = två agent-frontmatter-filer som inte kan
+ * påverka playwright-listningen). Signaturen är alltid densamma: FÖRSTA
+ * `--list`-anropet i sandlådekopian faller — "Command failed" eller
+ * trunkerad JSON — medan 15+ efterföljande playwright-anrop i SAMMA sandlåda
+ * (R-fallens RÖD-utfall) körde utan fel. Det pekar mot buffert/last vid
+ * parallell CI-körning, inte mot trädinnehållet: hela sviten kördes lokalt
+ * mot det exakta felande kö-trädet och gav exit 0 varje gång. Källa:
+ * backlog/tasks/task-115 …-fem-instanser-…-två-kö-utsparkningar-…, § Belägg
+ * för transient.
+ *
+ * ═══ VARFÖR DET INTE FÖRSVAGAR FAIL-CLOSED ═══
+ * Ett DETERMINISTISKT fel (trasig wiring, trasig Playwright-installation,
+ * trasig policy) läser om exakt samma träd, samma config, samma installation
+ * på varje försök — det faller identiskt varje gång och når fortsatt
+ * EXIT_POLICYFEL efter uttömda försök. Bounded retry ger bara ett TRANSIENT
+ * fel en andra chans; den granskningen är kortets AC #2 och bevisas i
+ * scripts/test-check-staging-preflight-wiring.mjs (G3 = läks, R16 = uttöms).
+ *
+ * ═══ GRATIS-INSTRUMENTERING (väg 2, utan egen mekanism) ═══
+ * Varje misslyckat försök loggar RÅ stdout + `os.loadavg()` — data åt
+ * rotorsaksspåret utan att bygga ett separat mätverktyg (kortets väg 3
+ * avstås öppet: transient-beviset är redan starkt, se kortet § Belägg).
+ */
+export const PLAYWRIGHT_LIST_FORSOK = 3;
+
+/** Kort, linjär-dubblerande backoff — detta är lokal buffert/last-contention,
+ * inte nätverkslatens: 200 ms, 400 ms. Två väntor för tre försök. */
+function retryBackoffMs(forsok) {
+  return 200 * 2 ** (forsok - 1);
+}
+
+function sleep(ms) {
+  return new Promise((res) => setTimeout(res, ms));
+}
+
+/** `listaProjekt` med bounded retry — se doc-blocket ovan konstanten. */
+export async function listaProjektMedRetry(repo, cli, projekt) {
+  let sistaFel;
+  for (let forsok = 1; forsok <= PLAYWRIGHT_LIST_FORSOK; forsok += 1) {
+    try {
+      return await listaProjekt(repo, cli, projekt);
+    } catch (fel) {
+      sistaFel = fel;
+      const load = os
+        .loadavg()
+        .map((n) => n.toFixed(2))
+        .join(', ');
+      console.error(
+        `⚠️  ${projekt.namn}: playwright --list försök ${forsok}/${PLAYWRIGHT_LIST_FORSOK} ` +
+          `misslyckades (${fel.message}). loadavg [1m, 5m, 15m]: ${load}.`,
+      );
+      const rastdout = `${fel.stdout ?? ''}`.trim();
+      if (rastdout) {
+        console.error(`   rå stdout (${rastdout.length} tecken):\n${rastdout.slice(0, 4000)}`);
+      }
+      if (forsok < PLAYWRIGHT_LIST_FORSOK) {
+        await sleep(retryBackoffMs(forsok));
+      }
+    }
+  }
+  throw sistaFel;
+}
 
 const STANDARD_POLICY = '.staging-preflight-wiring-policy.json';
 
@@ -313,7 +382,10 @@ async function main() {
   let listningar;
   try {
     listningar = await Promise.all(
-      konsumenter.map(async (k) => ({ konsument: k, rapport: await listaProjekt(repo, cli, k) })),
+      konsumenter.map(async (k) => ({
+        konsument: k,
+        rapport: await listaProjektMedRetry(repo, cli, k),
+      })),
     );
   } catch (listFel) {
     // Verktygets EGET utdata återges. En fail-closed-rapport som bara säger
@@ -496,4 +568,15 @@ async function main() {
   return EXIT_OK;
 }
 
-process.exit(await main());
+// Kör endast som CLI — inte vid import från test-skriptet (TASK-115, för att
+// kunna importera listaProjektMedRetry utan att trigga en full main()-
+// körning). `import.meta.main` (Node 24+, repots engines-golv) i stället för
+// purge-staging-sentinels.mjs:s `import.meta.url === pathToFileURL(argv[1])`:
+// den formen jämför STRÄNGAR, och testsviten kör just DENNA vakt-kopia från
+// /tmp — på macOS är /tmp en symlink till /private/tmp, och
+// `import.meta.url` realpath-upplöses medan `pathToFileURL(process.argv[1])`
+// inte gör det. Mätt: strängformen gav tyst false-negativ (main() körde
+// aldrig, exit 0 utan utdata) under exakt detta scenario.
+if (import.meta.main) {
+  process.exit(await main());
+}

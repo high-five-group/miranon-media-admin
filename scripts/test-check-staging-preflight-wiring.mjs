@@ -42,6 +42,16 @@
 //   R12    policy-filen borta                                      → 64
 //   R13    tom policy                                              → 64
 //
+// Plus TASK-115 — G0-stegets bounded retry kring playwright --list:
+//   G3     TRANSIENT fel: 1:a försöket faller, 2:a lyckas            → GRÖN,
+//          exakt 2 anrop (inte 1, inte 3)
+//   R16    fel VARJE försök (deterministiskt/uttömt)                 → kastar
+//          efter PLAYWRIGHT_LIST_FORSOK anrop, fail-closed bevarat
+// Dessa två testar listaProjektMedRetry() DIREKT (importerad, inte
+// spawnSync:ad) mot en minimal fejk-CLI i /tmp — retry-mekanismen är
+// parametriserad över (repo, cli, projekt) och oberoende av sandlådans
+// wiring-läsning, så den prövas isolerat i stället för genom hela G0-kedjan.
+//
 // ═══ SANDLÅDAN ÄR EN KOPIA AV DET RIKTIGA TRÄDET ═══
 // Inte en syntetisk mini-config: `/tmp/t91-check-staging-preflight-wiring/` får
 // repots FAKTISKA playwright.config.ts, tests/, de två Node-skripten och
@@ -57,10 +67,12 @@
 // Kör: node scripts/test-check-staging-preflight-wiring.mjs
 // Exit 0 = alla gröna, 1 = minst ett rött.
 
+import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { listaProjektMedRetry, PLAYWRIGHT_LIST_FORSOK } from './check-staging-preflight-wiring.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SANDLADA = '/tmp/t91-check-staging-preflight-wiring';
@@ -429,6 +441,92 @@ fall('R13 tom policy → 64, aldrig grön', {
   kod: 64,
   kravText: ['ofullständig'],
 });
+
+/* ── TASK-115: G0-stegets bounded retry (listaProjektMedRetry) ───────────
+ *
+ * Tvåsidigt bevis (kortets AC #2), mot listaProjektMedRetry() DIREKT — inte
+ * spawnSync mot sandlådan, eftersom funktionen är parametriserad över
+ * (repo, cli, projekt) och därmed oberoende av wiring-läsningen G0–R15
+ * prövar. En minimal fejk-CLI i /tmp ersätter playwright: den ignorerar sina
+ * argv (samma anropsform vakten faktiskt använder: `test --project=X --list
+ * --reporter=json`) och styrs enbart av en räknarfil.
+ */
+
+/** Skriver en fejk-"playwright"-CLI som faller på de `falliaForsok` första
+ * anropen och därefter svarar med ett tomt men GILTIGT --list-svar. Sätt
+ * `falliaForsok` >= PLAYWRIGHT_LIST_FORSOK för att simulera ett
+ * deterministiskt/uttömt fel som aldrig läks. */
+function skrivFejkCli(sokvag, falliaForsok) {
+  const raknarfil = `${sokvag}.raknare`;
+  rmSync(raknarfil, { force: true });
+  writeFileSync(
+    sokvag,
+    [
+      "import { existsSync, readFileSync, writeFileSync } from 'node:fs';",
+      `const RAKNARFIL = ${JSON.stringify(raknarfil)};`,
+      "let n = existsSync(RAKNARFIL) ? Number(readFileSync(RAKNARFIL, 'utf-8')) : 0;",
+      'n += 1;',
+      'writeFileSync(RAKNARFIL, String(n));',
+      `if (n <= ${falliaForsok}) {`,
+      "  process.stderr.write('[testfixtur T115] simulerat playwright --list-fel, försök ' + n + '\\n');",
+      '  process.exit(1);',
+      '}',
+      "process.stdout.write(JSON.stringify({ config: { rootDir: '/tmp', projects: [] }, suites: [], errors: [] }));",
+      'process.exit(0);',
+      '',
+    ].join('\n'),
+  );
+  return raknarfil;
+}
+
+async function tAsync(namn, fn) {
+  try {
+    await fn();
+    console.log(`✅ ${namn}`);
+  } catch (fel) {
+    rott += 1;
+    console.error(`❌ ${namn}: ${fel.message}`);
+  }
+}
+
+await tAsync(
+  'G3  TASK-115: playwright --list TRANSIENT fel (1:a försöket faller, 2:a lyckas) → grönt, exakt 2 anrop',
+  async () => {
+    const cli = '/tmp/t115-fake-playwright-cli-transient.mjs';
+    const raknarfil = skrivFejkCli(cli, 1);
+    try {
+      const rapport = await listaProjektMedRetry('/tmp', cli, { namn: 'test-transient' });
+      assert.deepEqual(rapport.suites, []);
+      assert.equal(
+        Number(readFileSync(raknarfil, 'utf-8')),
+        2,
+        'ska ha gjort exakt två anrop (1 fel + 1 lyckat) — inte 1, inte 3',
+      );
+    } finally {
+      rmSync(cli, { force: true });
+      rmSync(raknarfil, { force: true });
+    }
+  },
+);
+
+await tAsync(
+  'R16 TASK-115: playwright --list faller VARJE försök (deterministiskt/uttömt) → kastar, aldrig grönt',
+  async () => {
+    const cli = '/tmp/t115-fake-playwright-cli-persistent.mjs';
+    const raknarfil = skrivFejkCli(cli, 99); // 99 >> PLAYWRIGHT_LIST_FORSOK — faller ALLTID inom bounded retry
+    try {
+      await assert.rejects(() => listaProjektMedRetry('/tmp', cli, { namn: 'test-persistent' }));
+      assert.equal(
+        Number(readFileSync(raknarfil, 'utf-8')),
+        PLAYWRIGHT_LIST_FORSOK,
+        `ska ha gjort exakt PLAYWRIGHT_LIST_FORSOK (${PLAYWRIGHT_LIST_FORSOK}) anrop — bounded, inte oändligt`,
+      );
+    } finally {
+      rmSync(cli, { force: true });
+      rmSync(raknarfil, { force: true });
+    }
+  },
+);
 
 /* ── Summering ──────────────────────────────────────────────────────────── */
 
