@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-01
+updated: 2026-08-02
 review_by: 2026-11-01
 status: stable
 lifecycle: paused
@@ -115,6 +115,28 @@ betyder avslutad, och (iv) är oprövad samt (i) vilande. Tråden förblir
 Sandbox-observationen i § Mätt (2) fick f.ö. en ny instans vid själva
 kodifieringen: även en enkel `gh pr view`-poll-loop i bakgrund avvisades för
 en worktree-isolerad agent (*"too complex to verify"*), 2026-08-01.
+
+## Ny instans, § Mätt (1) — stängningsbatch-agenten (2026-08-02)
+
+> Orkestrerar-empiri, märkt som sådan — inte oberoende verifierad av
+> mottagaren mot en loggartefakt (skiljer sig därmed från kortets övriga
+> § Mätt-poster, som samtliga är förloppsbokförda). Registreras ändå per
+> ADR-053 (registrera, förkasta aldrig tyst) och för att den är ytterligare
+> en instans av EXAKT § Mätt (1):s mönster, om den håller.
+
+Stängningsbatch-agenten (PR #574, `stangning/s91-tjugoandra-fyra-pr-batch-done`)
+dead-parkade på sin egen bakgrundsgrind: grinden fullbordades utan att väcka
+agenten (`SendMessage` gav *"no active task"* vid orkestrerarens första
+väckningsförsök). Agenten återupptogs korrekt från transcript via ett andra
+`SendMessage`, med bevarad kontext — samma räddningsmönster som § Mätt (1):s
+fyra tidigare instanser (*"alla fyra väckta agenter återupptogs då korrekt med
+bevarad kontext"*). **Skärpning:** detta inträffade EFTER (ii)/(iii) i
+§ Åtgärdsval låstes i drift (2026-08-01 ~12:15) — vakt-design-regeln
+(iii, "parkera aldrig på en landnings-vakt") var alltså redan kodifierad i
+`.claude/agents/bygg-agent.md` när detta hände, vilket antingen betyder att
+regeln inte hann verka för just denna agent-spawn, eller att kedjebrottet satt
+någon annanstans än i agentens egen vakt-vana. Ingen av dessa två möjligheter
+är prövad här — nästa läsare bör avgöra vilken.
 
 ## Släktskap
 

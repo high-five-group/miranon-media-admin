@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-01 12:30'
-updated_date: '2026-08-01 22:20'
+updated_date: '2026-08-01 23:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -84,6 +84,12 @@ Fail-closed-designen är **RÄTT** och får inte försvagas — vaktens egen for
 **AC #5 — instansregistret, utfall efter åtgärden:** Instans 1–7 (ovan) predaterar denna landning. Bounded retry (väg 1) landar i samma PR som denna notering; framtida instanser av G0-transienten förväntas nu självläka inom G0-steget (transient första-försöks-fel → tyst grönt efter retry, synligt endast som en `⚠️`-rad i CI-loggen) utan att konsumera armeringen eller trigga en `failed_checks`-dequeue. Ett DETERMINISTISKT wiring-fel fortsätter fälla identiskt (exit 64) efter uttömda försök — ingen regression i vaktens kärnsyfte. Inga nya instanser observerade vid tidpunkten för denna landning (samma dag som instans 6/7).
 
 **Sidoeffekt, dokumenterad öppet (inte en avvikelse i sak):** `listaProjektMedRetry()`/`main()`-gränsen i `check-staging-preflight-wiring.mjs` fick en import-säkerhetsguard (`import.meta.main`, ej `import.meta.url === pathToFileURL(...)` — den senare formen jämför strängar och gav en TYST false-negativ (`main()` körde aldrig, exit 0 utan utdata) när testsviten körde just DENNA vakt-kopia från `/tmp` på macOS, där `/tmp` är en symlink till `/private/tmp` och `import.meta.url` realpath-upplöses medan `pathToFileURL(process.argv[1])` inte gör det. Mätt under bygget av G3/R16 — hela den befintliga G0–R15-sviten föll tyst (exit 0/"utdata saknar X") innan felet spårades och guarden byttes. Ingen funktionell ändring för normal CLI-körning (`node scripts/check-staging-preflight-wiring.mjs`), verifierad oförändrad.
+
+## Instans 8 — upptäckt efter landningen ovan (tillägg 2026-08-02)
+
+**Rättar ovanstående AC #5-notering:** "Inga nya instanser observerade vid tidpunkten för denna landning" avsåg vad som var känt när AC #5-texten skrevs (samma dag som instans 6/7). En åttonde instans hade i verkligheten redan inträffat strax innan, men blev inte känd/bokförd förrän efteråt — se nedan.
+
+**Instans 8** (2026-08-01T22:33:46Z, PR #572 — research-pass-agentens docs-only-PR, INTE en kö-post: run 30721492383, attempt 1, headBranch worktree-agent-a801961afd0ae8cc3): samma signatur — "G0  orörd kopia av trädet → GRÖN, och namnger alla fem ytor: exit 64, förväntat 0" + "playwright --list kunde inte köras: Command failed" i steget "Test wiring-vaktens fyrning (TASK-91, tvåsidigt bevis)" (job 91425921457, jobbet "Lint + Audit + TypeCheck" fällt). Bekräftat rad-för-rad ur job-loggen (samma vakt, samma exit 64, samma trunkerings-symptom som instans 1-7). **Skiljer sig strukturellt från instans 1-7:** PR:n stod ALDRIG i merge-kön (mergeStateStatus vid feltillfället var pre-queue — autoMergeRequest.enabledAt 22:32:39Z, checks fortfarande igång) — ingen kö-utsparkning, ingen konsumerad armering; skadan är begränsad till en röd förstakörning på huvud-PR-flödet. **Fix-PR #569 (bounded retry) hade INTE landat** när denna instans inträffade (merge `f0c94e73`, mergedAt 2026-08-01T22:42:38Z — nio minuter EFTER instans 8) — förväntat sista instansen av det opatchade beteendet. Orkestreraren körde om (`gh run rerun`) de fallerade jobben efter fyndet. Källa: verifierad direkt av mottagande agent mot gh api job-loggen 2026-08-02 (denna landning), efter att orkestreraren själv flaggat instansen som en korrigering av ett tidigare uppdrag som felaktigt hävdat "noll nya instanser under vågen".
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done

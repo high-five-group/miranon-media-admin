@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-01
+updated: 2026-08-02
 review_by: 2026-09-01
 status: stable
 lifecycle: active
@@ -78,15 +78,85 @@ vid start av detta uppdrag.
 - **Eskalation:** 0 vid skrivandets tillfälle (första mätpunkten i serien; ingen
   tidigare Sonnet-skiva att jämföra mot inom denna tråd).
 
+## Mätpunkt 2 — S91:s tjugoandra resume (2026-08-02)
+
+### Axel 2 (`uppdragsrevision`-körning #2) — KORRIGERING: fortfarande ingen Sonnet-datapunkt
+
+Uppdragsrevisionens körning #2 (`docs/research/uppdragsrevision-korning-2-2026-08-02.md`,
+PR [#573](https://github.com/high-five-group/miranon-media-admin/pull/573),
+verifierat **OLANDAD** 2026-08-02 — grenen `docs/uppdragsrevision-korning-2-t110-t113`
+läst direkt via `git show`) mätte session `f1ff4bcd…` (artonde resumen) +
+`ae112ab2…` (nittonde resumen): **30 uppdrag, 188 prövbara påståenden, 11
+hårda fel (6,25 % av avgjorda), 56,9 % källmärkta** — mot baslinjens
+`fd0eef00…` (34 uppdrag, 192 påståenden, 6 hårda fel = 3,8 %, 64 %
+källmärkta).
+
+**Kritisk korrigering mot vad som troddes vara läget:** rapporten verifierar
+själv (`modell: null` på samtliga 30 Agent-anrop) att **BÅDA** de mätta
+sessionerna föregår Sonnet-omställningen (PR #557). T113:s axel 2 väntar
+alltså fortfarande på sin **FÖRSTA** Sonnet-datapunkt, inte sin andra — n=2
+är en pre-Sonnet-mot-pre-Sonnet-jämförelse (bakgrundsvarians inom samma
+regim), och bär **noll** information om Sonnet-effekten. Ingen
+effektslutsats dras här, i linje med rapportens egen disciplin.
+
+**Nästa revision** ska riktas mot transcriptet för S91:s tjugoandra resume
+(session `a964302a-1c0e-4bb6-ad0f-f6842bb80a21`, 2026-08-01→02) — den bär
+vågens Sonnet-bygguppdrag (#563–570, 574 nedan) och är den första
+transcript-källan där `model: sonnet` faktiskt var satt vid spawn-tillfället.
+
+### Axel 1 (first-pass-grönt) — vågens Sonnet-bygg-PR:er
+
+Verifierat 2026-08-02 via `gh pr view <N> --json ...mergeCommit,commits` +
+`gh api .../attempts/1/jobs` mot samtliga åtta PR:er ur tjugoandra resumens
+byggvåg: `#563` (TASK-117, stop-vakt-wiring) · `#564` (TASK-110,
+test-bas-flytt) · `#565` (TASK-99, dequeue/enqueue-fynd) · `#566` (restlista)
+· `#567` (TASK-111, resend-bump) · `#569` (TASK-115, G0-retry) · `#570`
+(TASK-79, flake-karakterisering) · `#574` (stängningsbatch).
+
+- **Commit-form:** samtliga åtta bär **exakt 1 commit** — inga
+  fixup-/iterations-pushar, konsekvent med "grönt på första försöket".
+- **Check-utfall:** samtliga status-checks på samtliga åtta PR:er är
+  `SUCCESS`/`SKIPPED` — noll `FAILURE`-conclusions bland dem själva.
+- **Landningsstatus, korrigerad mot uppdragets påstående:** uppdraget angav
+  *"samtliga landade first-pass"*. Vid verifieringstillfället (2026-08-02) var
+  **6 av 8 `MERGED`** (#563 `9f45d3c0`, #564 `57238a19`, #565 `76432065`,
+  #566 `b2f02a5d`, #567 `4499635f`, #570 `56f50632`) och **2 av 8 fortfarande
+  `OPEN`** med gröna checks men `autoMergeRequest: null` (#569, #574) — inte
+  ännu armerade/köade. "Samtliga landade" höll alltså inte bokstavligt vid
+  läsningens tidpunkt; CI-grönheten (den egentliga axel-1-mätningen) höll för
+  samtliga åtta.
+
+### Axel 3 (eskalationsfrekvens) — noll eskaleringar, men en näraliggande instans bokförd separat
+
+**Ingen skiva föll CI eller queue två gånger** i denna våg — eskalationsregeln
+(§ ovan) utlöstes alltså inte. **Men uppdragets ursprungliga premiss "noll nya
+TASK-115-instanser under hela vågen" var FEL:** en åttonde G0-transient-instans
+inträffade på PR #572 (`run 30721492383`, 2026-08-01T22:33:46Z) — verifierat
+rad-för-rad mot job-loggen (samma `playwright --list kunde inte köras: Command
+failed` / exit 64-signatur som instans 1–7). Bokförd som **Instans 8** i
+`TASK-115`:s eget instansregister (kortet är `○ To Do`, öppet för tillägg —
+INTE `Done` som en efterföljande uppdragskorrigering felaktigt hävdade, se
+`T110` § Nya instanser nedan). Instansen skiljer sig strukturellt från
+1–7: PR #572 stod **aldrig i merge-kön** (checks fortfarande igång när felet
+inträffade) — så "noll kö-utsparkningar" är en SEPARAT påstående som fortsatt
+höll, medan "noll nya instanser" inte gjorde det. Fix-PR `#569` (bounded
+retry) hade inte landat när instansen inträffade — förväntad sista instansen
+av det opatchade beteendet.
+
 ## Vad som saknas för att tråden ska bära en riktig jämförelse
 
-- Ett mätbart "cirka 10 skivor byggda på Sonnet" — denna tråd registrerar
-  serien, den utför inte en retrospektiv räkning av hur många skivor som redan
-  gått genom Sonnet sedan #557 landade. Det är nästa läsares första uppgift
-  om axel 1–2 ska fyllas i med riktiga tal.
-- En andra `uppdragsrevision`-körning (axel 2) — `T110` var tydlig: "Effektpåståenden
-  förblir förbjudna tills revision n≥2". Den här tråden ÄR den andra körningens
-  hemvist när den görs.
+- Ett mätbart "cirka 10 skivor byggda på Sonnet" — Mätpunkt 2 § Axel 1 ovan
+  ger en första riktig delmängd (8 PR:er, samtliga CI-gröna första gången),
+  men är inte en fullständig retrospektiv räkning av samtliga Sonnet-skivor
+  sedan #557 landade.
+- **En Sonnet-datapunkt för axel 2 (`uppdragsrevision`).** Körning #2 (Mätpunkt
+  2 ovan) landade, men mäter **fortfarande pre-Sonnet**-sessioner — den fyller
+  n=2 för instrumentets egen bakgrundsvarians, inte T113:s Sonnet-fråga.
+  Nästa körning måste rikta sig mot session `a964302a-1c0e-4bb6-ad0f-f6842bb80a21`
+  (S91:s tjugoandra resume) för att ge den FÖRSTA Sonnet-datapunkten.
+  `T110`:s regel gäller fortsatt: "Effektpåståenden förblir förbjudna tills
+  revision n≥2" — och den n=2 som räknar måste vara Sonnet-mot-baslinje, inte
+  pre-Sonnet-mot-pre-Sonnet.
 
 ## Släktskap
 
