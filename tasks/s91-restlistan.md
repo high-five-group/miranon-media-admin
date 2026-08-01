@@ -27,7 +27,28 @@
 > **kroppen bär bara öppna `[ ]`.** Filen dör när alla spår är stängda; den är
 > en arbetsyta, inte en permanent artefakt.
 >
-> **Senast verifierad mot disk: 2026-08-01, TJUGONDE resumen** — kontrollerna
+> **Senast verifierad mot disk: 2026-08-01, TJUGOANDRA resumen** —
+> kontrollerna körda FÖRE uppdateringen: **kontroll 1 fällde `TASK-88`** (Done
+> sedan `#558`, kvarlämnad som öppen `[ ]` i Spår E — flyttad till loggen med
+> motsägelsen mot `TASK-95`:s logg-rad upplöst genom att läsa kortets eget
+> final-summary), kontroll 2 ren. Fyra OKLAR-rader lästa per kontrollens egen
+> instruktion — samtliga genuint öppna och rätt placerade, oförändrade sedan
+> föregående pass. **Uppdragets hypotes prövad mot registret** (`npx backlog
+> task list --plain`): `TASK-56` · `TASK-88` · `TASK-93` · `TASK-95` ·
+> `TASK-97` · `TASK-113` är samtliga `Done`, men bara **`TASK-88`** hade en
+> egen öppen kroppsrad — `TASK-56` var stale prosa i en sektion som redan
+> deklarerade sig stängd (A3, rättad), `TASK-93`/`TASK-97` är nämnanden inuti
+> ANDRA, fortsatt öppna poster (A2 Punkt 7 respektive A3b — lämnade orörda),
+> `TASK-95` låg inuti `TASK-88`:s block och flyttade med det, och `TASK-113`
+> förekommer **inte alls** i filen (ingen kroppsrad att flytta — noterat, inte
+> uppfunnet). Utöver hypotesen: Spår C:s båda kroppsposter (Hub-lyftet
+> `L284–L359` — redan loggat 2026-07-31 men kvarlämnat som duplicerad öppen
+> rad — och Konsolideringen, `#545`) samt A2:10 (löst i `#506`) verifierades
+> Done mot sessionsdoket och flyttades. Källor: sessionsdok Del 38.3
+> (rad ~7442, ~7447–7449), Del 39.6 (rad ~7892–7894), rad ~7676–7678. Kontroll
+> 1/2 körda EFTER uppdateringen också: kontroll 1 samma fyra OKLAR och noll
+> FEL, kontroll 2 ren. Föregående pass:
+> 2026-08-01, TJUGONDE resumen — kontrollerna
 > körda före uppdateringen: **kontroll 1 fällde `TASK-53`** (Done i registret,
 > kvarlämnad som öppen `[ ]` i kroppen — flyttad till loggen), kontroll 2 ren.
 > Fyra OKLAR-rader lästa per kontrollens egen instruktion; samtliga fyra poster
@@ -363,9 +384,11 @@ också bär alla fem i sin § Beslut. **Inga öppna poster.**
 > De har därför fått **A2:10** och **A2:11** (nästa lediga; de behåller sin plats
 > i listan — numret är en adress, inte en ordning).
 
-- [ ] **A2:10 ·** `lessons-hub-sync`-skillen (hub) uppdateras med
-      konsolideringssteget — kräver plugin-bump (öppen post ur ADR-081).
-      **Förkrav för Spår C:s konsolidering** (steg 6b), som annars inte är körbar
+**A2:10 löst i `#506`** (nittonde resumen, 2026-07-31) — `lessons-hub-sync`-
+skillen (hub) bär nu konsolideringssteget och plugin-bumpen är landad. Flyttad
+till § Avbockningslogg 2026-08-01; se den raden för källan
+(sessionsdok Del 38, "Fragment: 70"-noten).
+
 - [ ] **A2:11 · Steg 3-beslutet om agent-isolering — MÄTNINGEN ÄR LÄST 2026-07-30.**
       Steg 1 (typade agenter, `#327`) och steg 2 (icke-blockerande mätning,
       `npm run metrics:agents`) är byggda 2026-07-28. **Mätningen kördes
@@ -484,9 +507,12 @@ underhållsregeln i ingressen — fångat av samma audit.)*
 **A3:s MSW-punkt är stängd** — alla tre skivorna `TASK-54.1`–`54.3` är Done.
 *(PRD-kortet `TASK-54` står kvar som `To Do` tills familjen bokförs, precis som
 `TASK-59`; status läses ur backlog. Förbehållet tillagt 2026-07-29 — posten sade
-tidigare "stängd" platt, vilket motsades av registret.)* Öppen svans: WebSocket-vägen
-är oskyddad tills appen får realtime — bärs av **`TASK-56`**, indexerat under
-§ Kort födda i S91.
+tidigare "stängd" platt, vilket motsades av registret.)* Svansen är också stängd:
+WebSocket-vägen skyddades av **`TASK-56`** (Done, § Avbockningslogg 2026-07-29
+· `#439`/`#442`) — vakten fäller nu med adressen namngiven. *(Rättat
+2026-08-01: raden påstod tidigare att svansen var öppen och "indexerad under
+§ Kort födda i S91" — TASK-56 har aldrig stått där; kortet lever bara som
+denna prosareferens.)*
 
 ### A3b · Verktygsvals-prövningen som STÅENDE krav (ny 2026-07-27)
 
@@ -662,10 +688,11 @@ kontinuerlig numrering). Rättat 2026-07-29; läs nästa lediga ur filen. **Summ
 källor i förväg; de räknar olika.** Skörden 2026-07-27 landade sina fragment
 (§ Avbockningslogg); utfallet per källa står i sessionsdok Del 11.
 
-- [ ] Hub-lyftet `L284–L359`
-- [ ] **Konsolideringen** — fragmenten flyttas in i `tasks/lessons.md` med
-      nummer från nästa lediga. Kräver `lessons-hub-sync`-skillens
-      konsolideringssteg (öppen post i A2)
+**Spår C:s båda kroppsposter är landade och flyttade till § Avbockningslogg
+2026-08-01** — Hub-lyftet `L284–L359` (nittonde resumen, sessionsdok Del 38.3)
+och Konsolideringen (`#545`, tjugoförsta resumen, sessionsdok Del 39.6). **Spår
+C har inga öppna poster kvar** utöver STOPP-sektionen nedan, som är en
+registrerad-men-obelagd post, inte en öppen åtgärd.
 
 ### STOPP — en kandidat kunde inte beläggas
 
@@ -711,37 +738,9 @@ nedskriven empiri kostar att den måste återupptäckas genom att felet upprepas
 
 ## Spår E — Hygien och skuld
 
-- [ ] `ZZ-GRANSKNING-S91` lever i staging (**`TASK-88`**, ej självstädande).
-      Verifierat 2026-07-27: `.purge-staging-policy.json` nämner den inte.
-      ⚠️ **STÄDKOMMANDOT OVAN FUNGERAR INTE — raden bar en osann åtgärd fram
-      till 2026-07-30.** `npm run seed:review:clean -- --ort ZZ-GRANSKNING-S91`
-      ger **exit 0 och *"Inget att städa"*** medan fixturen står kvar.
-      Rotorsak: `ZZ-GRANSKNING-S91` byggdes **för hand** 2026-07-26 — händelsen
-      som föranledde skriptet — och bär därför inte skriptets markörer, medan
-      skriptet identifierar fixturer enbart via sina egna (fail-safe).
-      **Fixturen är immun mot BÅDE purgen och sitt eget städkommando;
-      33 poster kvar, räknade mot basen.** Marcus godkände 2026-07-30 **att**
-      den får städas — vägen höll inte. Agenten vägrade handradering via MCP
-      (antimönstret skriptet finns för att avskaffa, utan bas-guard,
-      `protectedRecordIds`-spärr och länk-guard) och mintade **`TASK-95`** för
-      fixturens livstidsavslutning, sju former vägda, ingen vald.
-      **`TASK-88` STANNAR ÖPPEN med AC #2 obockad. Bocka INTE av denna rad
-      förrän fixturen faktiskt är borta ur basen.**
-      ⚠️ **MOTSÄGELSE MOT LOGGEN, oavgjord 2026-07-31.** Raden ovan säger *"33
-      poster kvar"*, medan § Avbockningslogg för `TASK-95` säger att fixturen är
-      **städad: 33 poster före, 0 efter**. `TASK-88` står ändå `To Do` med AC #2
-      obockad — verifierat mot registret, inte ur denna fil. **Ingen av
-      uppgifterna avfärdas här:** en mätning mot basen avgör, och den som gör
-      den bockar AC #2 eller rättar loggen. Noterad hellre än gissad; det är
-      post 7:s regel.
-      ⚠️ **Klassvarning — gäller även efter att grannposten flyttats.** Denna
-      post och `save-segment`-läckan (`TASK-87`, landad, § Avbockningslogg) stod
-      bokförda som **samma klass** av lucka i purge-policyn. **De har motsatta
-      rätta svar** — `app-segment-test` SKA ha en target, `ZZ-GRANSKNING-*`
-      ska ALDRIG ha en (skyddsräcke 2 är avsiktligt). En purge-target som
-      "fix" här hade rivit skyddet. Analogin får alltså inte göras om, och
-      varningen står kvar här just för att den andra posten är borta ur kroppen:
-      ett stängt kort tar sin lärdom med sig om ingen skriver ner den.
+**Spår E har inga öppna poster.** `TASK-88` (ZZ-GRANSKNING-S91-fixturen) är
+`Done` och flyttad till § Avbockningslogg 2026-08-01 — se loggen för
+motsägelsens upplösning och den kvarvarande klassvarningen mot `TASK-87`.
 
 ## Kort födda i S91 — utanför spåren ovan
 
@@ -1115,3 +1114,11 @@ stängde `TASK-54.2` DoD 7 och `TASK-54.3` DoD 5).
 | Datum | Vad | Ref |
 |---|---|---|
 | 2026-08-01 | **`TASK-53` flyttad ur kroppen till denna logg.** `Done` i registret — landningen har egen rad ovan (2026-07-31, `#500`) — men kvarlämnad som öppen `[ ]` i strid med underhållsregeln; fälld av kontroll 1 vid tjugonde resumens pass. Kroppsradens anspråk *"enda posten i S91 som är en defekt i produktionskod"* följer med hit som historik: `TASK-111`, registrerad i samma pass, är en andra av samma klass | — |
+
+### Tjugoandra resumen (2026-08-01)
+
+| Datum | Vad | Ref |
+|---|---|---|
+| 2026-08-01 | **`TASK-88` flyttad ur kroppen till denna logg — motsägelsen upplöst.** `Done` sedan `#558`. Kroppens rad 726 (*"33 poster kvar"*) och loggens `TASK-95`-rad (*"33 poster före, 0 efter"*) var **båda sanna vid sin egen tidpunkt** — 33 var mätningen 2026-07-30, FÖRE städningen; 0 är utfallet EFTER. AC #2 bockades 2026-07-31 (verifierat av `TASK-101` mot basen, två oberoende vägar: skriptets legacy-läge + Airtable-MCP, 0 träffar). Kortet stängdes 2026-08-01 i svans-passet efter nattgrindens första äkta drift-fynd. **Rotorsak bevarad:** `ZZ-GRANSKNING-S91` byggdes för hand 2026-07-26 och bär därför inte skriptets fixtur-markörer — det anvisade städkommandot raderade 0 poster (mätt), fixturen var immun mot BÅDE CI-purgen och sitt eget städkommando. Städningen utfördes i stället av `TASK-95`:s legacy-läge (`#493`). **Klassvarning bevarad:** denna post och `save-segment`-läckan (`TASK-87`, § Avbockningslogg) stod tidigare bokförda som samma klass av lucka i purge-policyn — de har **motsatta** rätta svar. `app-segment-test` SKA ha en purge-target (`TASK-87`); `ZZ-GRANSKNING-*` ska **ALDRIG** ha en (skyddsräcke 2 i `seed-review-fixture.mjs` är avsiktligt — en target som matchade granskningsfixturens markörer hade avvisat dess skapande). En framtida "fix" som ger `ZZ-GRANSKNING-*` en purge-target river skyddet i stället för att laga något | `#480` · `#493` · `#504` · `TASK-88`:s final-summary |
+| 2026-08-01 | **Spår C — Konsolideringen landad, flyttad ur kroppen till denna logg.** `#545`: **73 fragment → `tasks/lessons.md` `L360`–`L432`**, **69 UNIVERSAL-flaggade lyfta till hub vol-05 K91.7–K91.75** (hub-PR `#12`, `43e90fb`), byte-diff-verifierat i båda riktningar med fällande negativa kontroller. Källa: sessionsdok Del 39.6 (rad ~7892–7894). **Hub-lyftet `L284–L359` var redan landat och loggat** (2026-07-31, se raden ovan i Artonde resumen-blocket) men kvarlämnat som öppen `[ ]` i kroppen — samma underhållsregel-brott som `TASK-53`; städat i samma pass. **Spår C har nu inga öppna poster** utöver STOPP-sektionens registrerad-men-obelagd-kandidat | `#545` |
+| 2026-08-01 | **`A2:10` löst, flyttad ur kroppen till denna logg.** `lessons-hub-sync`-skillen (hub) bär nu konsolideringssteget och plugin-bumpen är landad — `#506`, landat under nittonde resumen (2026-07-31). Källa: sessionsdok rad ~7676–7678 (*"Konsolideringen är fortfarande blockerad — men `A2:10` är löst i `#506`"*). Posten var kroppens uttalade förkrav för Spår C:s konsolidering (steg 6b) — konsolideringen själv (`#545`) landade senare samma resume-kedja, se raden ovan | `#506` |
