@@ -23,6 +23,30 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/stop-vakt.sh\"",
+            "timeout": 10,
+            "statusMessage": "Stop-vakten (T108/ADR-087)"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/stop-vakt.sh\"",
+            "timeout": 10,
+            "statusMessage": "Stop-vakten (T108/ADR-087)"
+          }
+        ]
+      }
     ]
   },
   "worktree": {

@@ -3,10 +3,10 @@ id: TASK-113
 title: >-
   T108: Stop/SubagentStop-vakten — avslutspåståendet stäms av mot observerat
   tillstånd
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-01 11:55'
-updated_date: '2026-08-01 12:58'
+updated_date: '2026-08-01 13:23'
 labels:
   - ready-for-agent
 dependencies: []
@@ -59,14 +59,16 @@ Passet: formen når ADR-baren och *"bör beslutas som ADR, inte glida in via ett
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Stop- och SubagentStop-hook registrerad i .claude/settings.json; detektorlogik i config-drivet skript (Lesson #6), inte hårdkodad inline
-- [ ] #2 Detektorn prövar avslutspåståendet mot observerat tillstånd i hook-indatan och blockerar avslut när ett väntepåstående inte bärs; exit 0 direkt när inget väntepåstående matchar (billig i normalfallet)
-- [ ] #3 stop_hook_active respekteras: genomsläpp vid true, mätt — taket på 8 nås aldrig i normal drift
-- [ ] #4 Fail-closed verifierat: oavgörbart tillstånd ger blockering/larm, aldrig tyst släpp
-- [ ] #5 Hooken levererar avstämningens resultat (tillstånd), inte en förmaning — per passets mätning 5b
-- [ ] #6 Tvåsidigt bevis körbart i repot: detektorn fäller mot planterat känt väntepåstående-fel OCH är grön mot korrekt avslut
-- [ ] #7 ADR skriven med de ärliga svagheterna utskrivna: heuristisk detektion med falska negativ, per-repo-hemvist (hooks tappas tyst av pluginet), och T112-hålet — task-notifikationskedjan mot idle huvudsession täcks INTE av detektorn
+- [x] #1 Stop- och SubagentStop-hook registrerad i .claude/settings.json; detektorlogik i config-drivet skript (Lesson #6), inte hårdkodad inline
+- [x] #2 Detektorn prövar avslutspåståendet mot observerat tillstånd i hook-indatan och blockerar avslut när ett väntepåstående inte bärs; exit 0 direkt när inget väntepåstående matchar (billig i normalfallet)
+- [x] #3 stop_hook_active respekteras: genomsläpp vid true, mätt — taket på 8 nås aldrig i normal drift
+- [x] #4 Fail-closed verifierat: oavgörbart tillstånd ger blockering/larm, aldrig tyst släpp
+- [x] #5 Hooken levererar avstämningens resultat (tillstånd), inte en förmaning — per passets mätning 5b
+- [x] #6 Tvåsidigt bevis körbart i repot: detektorn fäller mot planterat känt väntepåstående-fel OCH är grön mot korrekt avslut
+- [x] #7 ADR skriven med de ärliga svagheterna utskrivna: heuristisk detektion med falska negativ, per-repo-hemvist (hooks tappas tyst av pluginet), och T112-hålet — task-notifikationskedjan mot idle huvudsession täcks INTE av detektorn
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
