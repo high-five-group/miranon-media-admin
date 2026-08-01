@@ -3,10 +3,10 @@ id: TASK-109
 title: >-
   Skiva: paret check-docs.sh mot ci.yml mekaniseras — förkastningsskälet är
   borta, men B-sidan kräver markörer i ci.yml
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 08:54'
-updated_date: '2026-08-01 12:34'
+updated_date: '2026-08-01 12:56'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,11 +34,9 @@ Markörer i `ci.yml` är alltså inte en bekvämlighet utan förutsättningen �
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
-
-
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
@@ -49,3 +47,9 @@ Markörer i `ci.yml` är alltså inte en bekvämlighet utan förutsättningen �
 - [x] #5 FÖRKASTADE-sektionens post för detta par borttagen ur .listparitet-policy.conf — ett förkastningsskäl som överlevt sin orsak maskerar nästa drift
 - [x] #6 check-docs.sh:s not 'INGEN GRIND HÅLLER DENNA LISTA MOT ci.yml' borttagen eller omskriven, så filen inte påstår en lucka som stängts
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Leveransen (PR #542, head 6cfa9e2, merge 1877c84 via merge queue): wiring 3 — sjätte listparitets-paret `docs-grindar` mekaniserat. Paritet-markörer i ci.yml runt lint-jobbets nio check-grindar + A-markörer runt check-docs.sh:s run_gate-block (post 5–13) + par-post i .listparitet-policy.conf med riktning `bada` (SUMMA 5/8 → 6/7); FÖRKASTADE-posten ersatt med flytt-notis och INGEN-GRIND-noten omskriven (AC#6). Tvåsidigt bevis mätt, inte resonerat: baslinje 6 par i synk exit 0 · A-borttag (check-adr-count) exit 1 · B-borttag (check-listparitet-körningen) exit 1 — samma borttag som hela-filen-varianten bevisligen missade (fantom-post ur kommentar, re-mätt 2026-08-01 mot aktuell fil). Parsad ci.yml värde-identisk mot origin/main (js-yaml, 12176 tecken JSON) — markör-kommentarerna ändrar ingen semantik. DoD#3 verifierad per jobb: merge_group-run 30700260450 på merge-SHA 1877c84 — Detect changed files: success · Lint + Audit + TypeCheck: success · Docs link check: success · Test suite / Pure + Build: success · Test suite / Acceptance (hermetisk): success · A11y + Staging-jobben: skipped by-design · CI Passed or Skipped: success. ci.yml-ändringen körde alltså den bredare sviten, som väntat. Stängd 2026-08-01 efter CI-verifikat.
+<!-- SECTION:FINAL_SUMMARY:END -->

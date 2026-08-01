@@ -3,10 +3,10 @@ id: TASK-114
 title: >-
   Fynd: skyddslistan protectedRecordIds saknar de permanenta event-fixturerna —
   Event-681 och Event-845 kan raderas vid markör-träff
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-01 12:04'
-updated_date: '2026-08-01 12:08'
+updated_date: '2026-08-01 12:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -87,10 +87,16 @@ Record-ID:na hämtade ur `tests/api/fixtures.ts` (`BELAGGNING_EVENT_ID`, `ARBETS
 Inget exekverings-rest. DoD #3 (CI grön per jobb) verifieras efter push; stängningen ägs av orkestreraren.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Leveransen (PR #539, commits 441d106 kort-minting + 4d46bba fix, merge bf1791b via merge queue): skyddslistan protectedRecordIds i scripts/seed-review-fixture.mjs utökad 2 → 4 ID:n — personerna kvar på index 0–1, eventen recIFrxHZw165ycXk (ZZ-belaggning-fixtur, EventKey Event-681) och recZyRIzbqWSifAQO (ZZ-arbetsko-fixtur, EventKey Event-845) tillagda. ID-proveniens: tests/api/fixtures.ts (BELAGGNING_EVENT_ID, ARBETSKO_EVENT_ID), staging-verifierade 2026-08-01 via två read-only get_record-uppslag (PERMANENT test-fixtur … STÄDA INTE i Notering). Tvåsidigt bevis mätt: röd sida FÖRE fixen exit 1 — planClean klassade det permanenta eventet FÖR RADERING vid planterad markör-träff; grön sida EFTER exit 0, 118 gröna inkl. beteendetestet (skippedEvents med orsak skyddad record-ID) och ordnings-regressionen. Ingen purge-/seed-körning — kontentionsregeln hölls. DoD#3 verifierad per jobb: merge_group-run 30699765485 på merge-SHA bf1791b — Detect changed files: success · Lint + Audit + TypeCheck: success · Docs link check: success · Test suite / Pure + Build: success · Test suite / Acceptance (hermetisk): success · A11y + Staging-jobben: skipped by-design · CI Passed or Skipped: success. Stängd 2026-08-01 efter CI-verifikat.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
