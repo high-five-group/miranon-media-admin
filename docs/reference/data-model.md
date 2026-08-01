@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-30
+updated: 2026-08-01
 review_by: 2026-11-15
 status: stable
 ---
@@ -27,7 +27,7 @@ En **navigations- och förståelsekarta** över datamodellen. Det här dokumente
 
 Läses av Claude Code (vid strategi, analys och implementation). Människor — Marcus, Roger, Lotta — läser [`hur-systemet-funkar.md`](./hur-systemet-funkar.md) istället.
 
-Detta dokument är **AUKTORITATIV** för datamodellen. `~/Repon/miranon-media-os/docs/schema_reference.md` är arkiverad för historik (1 845 rader, senaste git-uppdatering 2026-04-03) — den saknar 5 fält som lagts till i april och är inte längre korrekt sanningskälla.
+Detta dokument är **AUKTORITATIV** för datamodellen. `schema_reference.md` är arkiverad för historik (1 845 rader, senaste git-uppdatering i källrepot 2026-04-03) — den saknar 5 fält som lagts till i april samt prod-speglingen 2026-07-23 och är inte längre korrekt sanningskälla för fält. Sedan 2026-08-01 finns den som projektnära kopia i [`docs/reference/schema_reference.md`](./schema_reference.md) (Marcus-beslut; original i frysta Vue-repot, käll-commit `42e32fe`): dess kvarvarande värde är ytorna detta dokument medvetet inte täcker — interfaces, vyer, formulär, Zapier/Make och automationerna A1–A11 i läsbar form med skriptkod.
 
 ### Principer
 
@@ -47,6 +47,7 @@ Detta dokument är **AUKTORITATIV** för datamodellen. `~/Repon/miranon-media-os
 | Källextraktion + datamodell-skuldlista (under detta projekts gång) | `~/Repon/miranon-media-admin/docs/research/datamodell-research/` (manifest, extraktion, live-state, gap-analys) |
 | Maskinläsbar fält-ID → namn-mapping | `~/Repon/miranon-media-os/docs/field_lookup.json` (genererad 2026-03, verifiera aktualitet vid behov) |
 | Rå automation-JSON (triggers, actions, scripts) | `~/Repon/miranon-media-os/docs/miranon_automations_COMPLETE.json` (15 741 rader, export 2026-03-16) |
+| Interfaces, vyer, formulär (Elfsight), Zapier-mappningar, Make.com-scenarier och automationerna A1–A11 i läsbar form med skriptkod | [`docs/reference/schema_reference.md`](./schema_reference.md) — frusen prod-ögonblicksbild mars 2026, projektnära kopia 2026-08-01 (original i frysta Vue-repot). Fält-data däri är superseded av detta dokument. |
 | Sammanfattning med TypeScript-interfaces och HAR-metoden | `~/Repon/miranon-media-os/docs/AIRTABLE-REFERENS.md` (298 rader, arkiverad — historik) |
 | TypeScript-domänmodeller för React-appen | `~/Repon/miranon-media-admin/src/domain/models/` och `src/domain/schemas/` |
 | Förstå *varför* och *hur* systemet fungerar, utan jargong | `~/Repon/miranon-media-admin/docs/reference/hur-systemet-funkar.md` |
