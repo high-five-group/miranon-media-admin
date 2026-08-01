@@ -3,10 +3,10 @@ id: TASK-88
 title: >-
   Fynd: ZZ-GRANSKNING-S91 lever kvar i staging — granskningsfixturen är inte
   självstädande
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 17:36'
-updated_date: '2026-07-31 08:09'
+updated_date: '2026-08-01 13:04'
 labels:
   - ready-for-agent
 dependencies: []
@@ -144,10 +144,16 @@ PREFLIGHTEN RESPEKTERAD i varje körning TASK-101 gjorde: samtliga rapporterade 
 BOCKNINGEN GÖRS PÅ EGEN MÄTNING. Kortet sätts INTE till Done här — DoD kräver CI grön per jobb, och den signalen finns inte vid bockningstillfället.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Nattgrindens första äkta drift-fynd (nattärende #541): alla fyra AC bockade men kortet stod To Do bortom karensen. Leveransen i tre led, alla CI-verifierade per jobb: (1) Kortets eget pass — PR #480 (head 3578b75, merge 86453d3): rotorsaken mätt (handbyggd fixtur utan skriptets markörer är immun mot BÅDE CI-purgen och sitt eget städkommando — 0 raderade av anvisat kommando, mätt), AC#3-svaret skrivet (spåret är inte avsiktligt: skyddet mot radering under granskning är kodat, avslutningen saknas), AC#4 uppfyllt via mintade TASK-95. merge_group-run 30575907834: Detect changed files success · Lint + Audit + TypeCheck success · Docs link check success · Test suite skipped by-design · CI Passed or Skipped success. (2) Städningen — TASK-95 del B (PR #493) via legacy-läget: 33 poster raderade med PREFLIGHT OK per körning. (3) AC#2-verifikatet — TASK-101 (PR #504, merge 938b58e) mätte utfallet mot basen två oberoende vägar (skriptets legacy-läge + Airtable-MCP: 0 träffar) och bockade AC#2; merge_group-run 30624656579 alla körda jobb success. DoD#2 avser docs-klassen: Docs link check grön i samtliga tre runs. Ingen rest: fixturen borta ur staging (33 → 0, räknat), livstidsmekaniken ägs av TASK-95 (Done). Stängd 2026-08-01 i svans-passet efter nattgrindens fynd.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
