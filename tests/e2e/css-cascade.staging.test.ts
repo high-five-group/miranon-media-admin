@@ -1,4 +1,4 @@
-import { expect, test } from './support/test-bas';
+import { expect, test } from '../support/test-bas';
 
 /**
  * CSS-kaskad-invarianten (task-4.1, byggkrav B-NYTT ur S55 Del 12):

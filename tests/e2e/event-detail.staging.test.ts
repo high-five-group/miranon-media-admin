@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
+import { expect, type Page, type Route, test } from '../support/test-bas';
 import { mockValjarLista, type ValjarRad, valjarRad } from './helpers/valjar-lista';
-import { expect, type Page, type Route, test } from './support/test-bas';
 
 /**
  * task-18.1 — Eventsidans grundform (S73-facit) + Om eventet-morfen +

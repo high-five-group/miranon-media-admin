@@ -1,4 +1,4 @@
-import { expect, type Request, test } from './support/test-bas';
+import { expect, type Request, test } from '../support/test-bas';
 
 /**
  * K3-arkitektur-verifikation via automatiserad regression-test.
