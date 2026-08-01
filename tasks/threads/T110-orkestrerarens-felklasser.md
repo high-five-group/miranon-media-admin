@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-31
+updated: 2026-08-01
 review_by: 2026-10-31
 status: stable
 lifecycle: paused
@@ -292,3 +292,34 @@ siffra för siffra, men dess *bokföring* (huvudtal, källhänvisningar,
 klasstäckning) gjorde det inte — och det är själv den starkaste illustrationen
 av tesen: även artefakten om orkestrerarens fel bär orkestrerarens felklasser,
 och det som fällde dem var en extern läsning mot disk, inte självgranskning.
+
+## Implementation (2026-08-01) — prövningens två JA NU landade
+
+> Marcus GO 2026-08-01. Byggt: exakt det § Extern prövning dömde att empirin
+> räcker för — inget ur NEJ-kolumnen. Beslut: `ADR-086`.
+
+1. **Agent-sidigt premiss-pass + källkrav** — `.claude/agents/bygg-agent.md`
+   bär nu ett obligatoriskt pass (§ Premiss-pass): varje verifierbar premiss i
+   uppdraget prövas mot disk före design, `git fetch` ingår, divergens
+   rapporteras i stället för att byggas på, och obelagda påståenden behandlas
+   som HYPOTES. Slutrapporten bär passets utfall obligatoriskt. Formen bor per
+   repo — `T108`:s distributionshinder gäller inte.
+2. **Mätåtgärden som extraktion, inte ny logg** — `scripts/uppdragsrevision.mjs`
+   (`npm run revision:uppdrag`) drar en sessions samtliga Agent-spawns med full
+   uppdragstext ur transcript-JSONL. Prövningens premiss verifierad mot disk
+   före bygget: spawn-loggen (`agent-spawn-log.sh`) bär enbart metadata, aldrig
+   prompten; transcripten bär allt. Skriptet räknar medvetet INTE referenser —
+   det vore klass A-instrumentblindhet i mätinstrumentet. Provkörning mot den
+   levande orkestrerar-sessionen (`fd0eef00`, ögonblicksbild 2026-08-01):
+   **31 uppdrag** (bygg-agent 26 · general-purpose 3 · claude-code-guide 1 ·
+   research-pass 1), 0 sidechain-exkluderade, 1 062 rader, 0 trasiga.
+   Nämnaren är därmed extraherbar — själva revisionen (räkna referenser, pröva
+   mot disk) är beställbar som eget arbete och är INTE utförd här.
+3. **Kostnadsmätningens första punkt** (prövningens samlingspunkt 3): denna
+   landnings eget premiss-pass kostade ~7 verktygsanrop och fångade en skarp
+   divergens — bygg-worktreen var bakom `main` och saknade § Extern prövning
+   tills `git fetch` hämtade den. En observation, lokal; ingen rat hävdas.
+
+Kvar ur prövningens ordning: (2) revisionen av en hel resume, (4) minst en
+session till innan mönstret behandlas som stabilt. Effektpåståenden förblir
+förbjudna tills båda finns.
