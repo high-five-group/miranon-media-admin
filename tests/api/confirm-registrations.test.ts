@@ -252,12 +252,14 @@ test.describe('confirmRegistrations — bekräftelse-orkestratorn (task-18.6)', 
     expect(farligt.html).not.toContain('<script>');
   });
 
-  test('svars-parsningen är RAD-EXAKT via index — två anmälningar med SAMMA e-post skiljs åt', () => {
+  test('svars-parsningen är RAD-EXAKT via index — två anmälningar med SAMMA e-post skiljs åt (TASK-111 AC2-bevis, repots andra mail-vertikal)', () => {
     const specs = [
       { registrationId: 'recHuvud', email: TEST_ADDR, subject: 's', html: 'h', text: 't' },
       { registrationId: 'recPlusEtt', email: TEST_ADDR, subject: 's', html: 'h', text: 't' },
     ];
-    // Resend permissive: errors[].index är NOLLBASERAT mot originalpayloaden.
+    // AVVIKANDE FALLET (≥1 ogiltig index) — normalfallet (rad 268 nedan) bevisar ingen
+    // semantik-skillnad (STEG-0-fällan, se resend-batch.ts-headern). Resend permissive:
+    // errors[].index är NOLLBASERAT mot originalpayloaden.
     const outcome = parseConfirmOutcome(specs, {
       data: [{ id: 'e1' }],
       errors: [{ index: 1, message: 'invalid' }],

@@ -5,11 +5,22 @@
 // asserteras mot ADR-067:s definitioner (accepted = batch MINUS errors[].index; rejected =
 // errors[].index → batch[index].email + message), EJ mot fixturens form (L193).
 //
-// ⚠️ PARTIAL-FORMEN (errors-grenen) är SCHEMA-BEKRÄFTAD mot Resend-doc, EJ LIVE-FRAMKALLBAR:
-// icke-prod-spärren (send-bulk.ts) blockerar varje icke-test-adress FÖRE Resend-anropet, så
-// en valideringsfel-utlösande input når aldrig den riktiga gränsen i staging. STEG 0 observerade
-// happy-path-formen live (data.data[] + errors FRÅNVARANDE vid 2/2 giltiga); partial-grenen låses
-// därför här med fixtur. errors = VALIDERINGSfel (ej leverans-utfall).
+// TASK-111 AC2-BEVIS (2026-08-02): describe-blocket "partial (errors med NOLLBASERAT index,
+// schema-bekräftad)" nedan ÄR det avvikande-fall-beviset kortet kräver — normalfallet
+// ("full-accept") bevisar ingenting eftersom strict och permissive ger IDENTISKT resultat när
+// alla rader är giltiga (STEG 0-fällan: den gamla `resend@4`-pinnen gjorde att API:et alltid
+// körde strict, så ett tidigare "live"-observerat 2/2-giltiga-svar såg ut att bekräfta permissive
+// men bekräftade i själva verket bara strict-defaultet). Batchen med ≥1 ogiltig rad nedan visar
+// den GENUINA semantiken: partiell leverans, errors[].index-vägen levande i parsningen.
+//
+// ⚠️ PARTIAL-FORMEN (errors-grenen) är SCHEMA-BEKRÄFTAD mot Resend-doc OCH käll-verifierad mot
+// resend-node 6.1.0/6.18.1:s SDK-typ (`CreateBatchSuccessResponse`) — EJ LIVE-FRAMKALLBAR, men av
+// en ANNAN anledning än pin-defekten (som är löst, se resend-batch.ts-headern): icke-prod-spärren
+// (send-bulk.ts) blockerar varje icke-test-adress FÖRE Resend-anropet, och de fyra Resend-test-
+// adresserna är alla välformade — en valideringsfel-utlösande input kan alltså aldrig nå den
+// riktiga gränsen i icke-prod, oavsett SDK-version. Partial-grenen låses därför med fixtur, nu
+// bevisad mot den väg (bumpad SDK) som faktiskt kan producera den i produktion. errors =
+// VALIDERINGSfel (ej leverans-utfall).
 
 import { expect, test } from '@playwright/test';
 import {
@@ -20,10 +31,11 @@ import {
 
 const batchOf = (...emails: string[]) => emails.map((email) => ({ email }));
 
-test.describe('parseBatchOutcome — full-accept (errors FRÅNVARANDE, STEG-0-observerad form)', () => {
+test.describe('parseBatchOutcome — normalfallet (alla giltiga, bevisar INGET om semantik — STEG-0-fällan)', () => {
   test('alla giltiga → accepted=alla, rejected=tom (errors undefined)', () => {
     const batch = batchOf('delivered@resend.dev', 'bounced@resend.dev');
-    // STEG 0-observerad form: { data: [{id},{id}] }, INGET errors-fält.
+    // Denna form är IDENTISK i strict och permissive — TASK-111:s STEG-0-fälla. Beviset för
+    // vald semantik ligger i describe-blocket nedan (≥1 ogiltig rad), inte här.
     const data: ResendBatchData = { data: [{ id: 'a' }, { id: 'b' }] };
     const out = parseBatchOutcome(batch, data);
     expect(out.accepted).toEqual([
@@ -41,7 +53,7 @@ test.describe('parseBatchOutcome — full-accept (errors FRÅNVARANDE, STEG-0-ob
   });
 });
 
-test.describe('parseBatchOutcome — partial (errors med NOLLBASERAT index, schema-bekräftad)', () => {
+test.describe('parseBatchOutcome — AVVIKANDE FALLET, TASK-111 AC2-bevis (errors med NOLLBASERAT index)', () => {
   test('en ogiltig rad (index 1) → korrekt accepted/rejected-split per index', () => {
     // 3 rader; index 1 ogiltig. data.data bär de 2 GILTIGA (kompakterat), errors bär rad 1.
     const batch = batchOf('a@resend.dev', 'trasig', 'c@resend.dev');

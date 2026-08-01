@@ -1,6 +1,6 @@
 // @ts-nocheck — Deno Edge Function (esm.sh-import + Deno-globaler; typas vid deploy,
 // ej av Node-tsc). Mönster: create-event (6f) säkerhets-/idempotens-kontrakt.
-import { Resend } from 'https://esm.sh/resend@4';
+import { Resend } from 'https://esm.sh/resend@6';
 import { upsertAirtableRecord } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
@@ -44,16 +44,40 @@ function badRequest(message: string, corsHeaders: Record<string, string>): Respo
  * finns — annars distinkt 503-väg (läge 1: ingen nyckel). batch.send([...], { idempotencyKey,
  * batchValidation: 'permissive' }).
  *
- * L2c-PIN UPPLÖST (L2d, STEG 0 strukturobservation mot resolverad resend@4 + förstaparts-
- * SDK-typ CreateBatchSuccessResponse):
+ * L2c-PIN-KOMMENTAREN HÄR VAR FALSIFIERAD (TASK-111, 2026-08-02) — RÄTTAD:
+ * "UPPLÖST" var fel. STEG 0 observerade `resolverad resend@4` (→4.8.0), och 4.8.0 saknar
+ * `batchValidation` HELT (0 träffar i dist-typer/js/README) — optionen spreadas in i
+ * fetch-init där okända medlemmar släpps tyst, når aldrig headern. API:et körde alltså
+ * ALLTID strict, oavsett vad koden bad om; STEG 0:s "permissive-svar" var i själva verket
+ * default-strict-svaret för en allt-giltig batch — identiskt i båda lägena (samma fälla
+ * `resend-batch.ts` beskriver). `errors`-parsningsvägen nedan var därför onåbar i produktion.
+ *
+ * FAKTISK LÖSNING: SDK-importen bumpad `resend@4` → `resend@6` (esm.sh flytande major-pin,
+ * resolverar idag 6.18.1; `batchValidation` introducerades i 6.1.0 2025-09-15, GitHub-release
+ * `resend/resend-node#599`). Källkods-verifierat (ej bara doc-trott) genom att packa ned och
+ * läsa `dist/index.js` för 6.1.0 OCH 6.18.1: `"x-batch-validation": options?.batchValidation ??
+ * "strict"` — optionen sätter nu genuint headern. 4.8.0 packad och läst parallellt: 0 träffar,
+ * bekräftar den gamla defekten. Breaking-changes-genomgång 4→6 (GitHub releases v5.0.0/v6.0.0):
+ * endast `react`-options-peer-dep (v5) och attachment-`contentId`-namnbyte (v6, preview-fält) —
+ * ingen av EF:ens ytor (`batch.send`, `replyTo`, `{data,error}`-svaret) berörs. 6.1.0→6.18.1
+ * innehåller noll BREAKING-märkta releaser (endast additiva: tags/scheduledAt i batch-options,
+ * suppressions-API).
+ *
+ * PERMISSIVE-SVARSFORMEN (verifierad mot resend.com/changelog/batch-validation-modes exempel +
+ * SDK-typen `CreateBatchSuccessResponse` i 6.1.0/6.18.1, ej längre bara "schema-bekräftad"):
  *   permissive-svaret = { data: { id }[]  (de GILTIGA, kompakterade)
- *                         errors?: { index: number; message: string }[]  (de OGILTIGA, med
- *                                  NOLLBASERAT index i originalpayloaden + skäl) }
- *   — `errors` är FRÅNVARANDE (undefined), ej tom array, när inget rad-fel finns
- *   (STEG 0-observerat: dataKeys=["data"], errorsValue=undefined vid 2/2 giltiga).
- *   errors-fel = VALIDERINGSfel (ej leverans-utfall); de är ej live-framkallbara i icke-prod
- *   (spärren blockerar utlösande input) → branschen låses med fixtur (L2d STEG 2), schema-
- *   bekräftad mot Resend-doc.
+ *                         errors: { index: number; message: string }[]  (de OGILTIGA, med
+ *                                 NOLLBASERAT index i originalpayloaden + skäl) }
+ *   SDK-TYPEN deklarerar `errors` som OBLIGATORISKT fält (ej `errors?:`) när `batchValidation`
+ *   är `'permissive'` — STEG 0:s tolkning ("errors FRÅNVARANDE, ej tom array") var därför också
+ *   en övertolkning av ett observationsfönster som aldrig körde permissive på riktigt.
+ *   `resend-batch.ts#parseBatchOutcome` behandlar redan `undefined` och `[]` identiskt (ingen
+ *   kodändring krävdes), så invarianten håller oavsett vilken av de två formerna API:et ger.
+ *   errors-fel = VALIDERINGSfel (ej leverans-utfall); de är ej live-framkallbara i icke-prod —
+ *   INTE p.g.a. SDK-pinnen (den var separat), utan p.g.a. icke-prod-spärren (send-bulk.ts): varje
+ *   upplöst adress måste vara en Resend-test-adress, och de fyra är alla välformade → kan aldrig
+ *   trigga en `to`-fält-valideringsfel. Branschen låses därför fortsatt med fixtur (L2d STEG 2,
+ *   tests/api/resend-batch.test.ts), nu bevisat mot den väg som faktiskt levererar (TASK-111 AC2).
  *
  * Parsning är RAD-EXAKT via index (ej via data.data-ordningen — den är kompakterad och bär
  * bara id, ej e-post): rejected härleds ur errors[].index → batch[index].email; accepted är
