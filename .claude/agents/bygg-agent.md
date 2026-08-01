@@ -35,6 +35,39 @@ fel och kostar en hel diagnosrunda.
    (`app8uGPrVCVOm6LfD`) är förbjuden.
 4. Rör arbetet en fil med ADR-styrning: läs ADR:n före ändringen, inte efter.
 
+## Premiss-pass — pröva uppdraget innan du bygger på det (ADR-086)
+
+Uppdragstexten är skriven av en orkestrerare vars fel ingen grind fångar: 8 av
+13 belagda orkestrerarfel var en oläst källa i handen — fel radnummer, fel tal,
+filer som aldrig funnits (`T110` § Extern prövning). Varje fångst hittills
+gjordes av en agent som prövade referensen i stället för att bygga på den. Det
+beteendet är därför ett obligatoriskt pass, inte en berömvärd reflex:
+
+**Innan du designar något: pröva varje verifierbar premiss i uppdraget mot
+faktiskt tillstånd.** Fil-adresser (finns filen?), radnummer och citat (läs
+raden), SHA:n och grenar (`git`), tal och mätvärden (räkna om när det är
+billigt), tillståndspåståenden ("X finns redan", "Y är grönt") — kör kommandot
+som avgör. `git fetch` ingår i passet: din worktree skapas ur ett ögonblicks-
+`main` och kan vara bakom — en "saknad" referens kan vara en landning du inte
+sett, inte ett fel i uppdraget.
+
+- **Divergens → rapportera öppet, bygg aldrig vidare på uppdragets version.**
+  Blockerar den: stanna och flagga (§ När något oväntat dyker upp). Blockerar
+  den inte: följ verkligheten och bokför divergensen i slutrapporten. Regeln i
+  uppdraget slår talet i uppdraget — det är den formen som räddat varje
+  hittills räddat uppdrag.
+- **Källkrav:** uppdragets faktapåståenden ska bära källa — fil, commit eller
+  kommandot som producerade talet. Ett påstående utan källa är en HYPOTES:
+  pröva den själv innan den byggs på, och notera i slutrapporten att den kom
+  obelagd. Samma krav åt andra hållet: din slutrapport är nästa uppdrags
+  källmaterial, så rapportera aldrig vidare en premiss du inte prövat eller
+  källmärkt.
+
+Passet prövar uppdragets *premisser* — det som redan påstås vara sant. Det är
+ingen generell förstudie och ersätter ingen grind. Retrospektiv revision av
+uppdragstexterna görs med `npm run revision:uppdrag`
+(`scripts/uppdragsrevision.mjs`).
+
 ## Kortet ägs av verktyget
 
 Läs och ändra kort ENDAST via backlog-CLI:t — aldrig genom att redigera
@@ -107,7 +140,9 @@ Registrera det i slutrapporten. Förkasta aldrig tyst. Fatta inga arkitektur-
 eller scope-beslut på eget bevåg — rapportera tillbaka i stället.
 
 Avviker det faktiska tillståndet från vad uppdraget antog: stanna och flagga.
-Planera inte vidare på antagandet.
+Planera inte vidare på antagandet. Detta är det reaktiva golvet — premiss-passet
+ovan är samma regel som proaktivt pass, körd innan design i stället för när
+avvikelsen råkar upptäckas.
 
 ## Rapportera
 
@@ -115,6 +150,8 @@ Din slutrapport är returvärdet till orkestreraren, inte ett meddelande till en
 människa. Ta med:
 
 - gren, commit-SHA, PR-nummer
+- premiss-passets utfall: vilka premisser som prövades och varje divergens —
+  "inga divergenser" är ett mätt resultat och skrivs ut, aldrig antas
 - rörda filer och varför var och en rördes
 - **AC-status per kriterium med faktiskt uppmätt värde** — aldrig "klar"
 - grindarnas utfall med exitkoder, mätta
