@@ -223,6 +223,43 @@
 # ingen kan räkna fram är sämre än ingen siffra.
 ^https://www\.npmjs\.com/package/.*$
 
+# journals.sagepub.com — SAGE Journals bakom bot-skydd (2026-08-01, diagnos av
+# tre nattröda länkkörningar i rad: 30513174298, 30604250952, 30683902551 —
+# samma sex sagepub-403:or alla tre nätter, första natten direkt efter att
+# docs/research/agent-autonomi-eskaleringsdesign-2026-07-29.md landade).
+# Sex DOI-citat i källförteckningen: fem direkta + ett via doi.org-redirect
+# till samma värd. Klassbevis, mätt lokalt 2026-08-01:
+#   journals.sagepub.com   CI 403 / lokalt 403 BÅDE plain och Chrome-UA
+#                          → UA/fingerprint-klassen (jfr dl.acm.org,
+#                            help.shopify.com), inte GHA-IP-klassen.
+# Källornas EXISTENS är verifierad mot auktoritativ källa i stället:
+# api.crossref.org/works/<doi> svarar 200 för alla sex DOI:erna (samma mönster
+# som www.npmjs.com-posten — registry-API:t i stället för webb-frontenden).
+# Det är grindens hämtning som blockeras, inte källornas existens. Permanent
+# bot-block — läker aldrig, ingen re-utvärdering behövs.
+^https://journals\.sagepub\.com/doi/.*$
+
+# doi.org-formen av samma klass (2026-08-01): 10.1177 är SAGE:s
+# registrant-prefix, och lychee följer redirecten till journals.sagepub.com
+# som svarar 403. Exclude-matchningen sker mot dokumentets URL (doi.org-
+# formen), inte redirect-målet — därav egen rad. Instansen:
+# doi.org/10.1177/0018720820904623 (Crossref 200, se posten ovan).
+^https://doi\.org/10\.1177/.*$
+
+# www.sec.gov — SEC:s åtkomstpolicy kräver DEKLARERAD User-Agent; odeklarerade
+# klienter avvisas (2026-08-01, samma tre nattröda körningar som
+# sagepub-posten). Ett PDF-citat (Knight Capital-ordern 34-70694) i
+# docs/research/reversibilitet-som-delegeringsaxel-2026-07-29.md.
+# Klassbevis, mätt lokalt 2026-08-01:
+#   www.sec.gov   CI 403 / lokalt 403 plain OCH Chrome-UA, men 200 med
+#                 deklarerad UA-form ("MiranonMediaAdmin/1.0 (mail)") —
+#                 UA-POLICY-block, inte länkröta; dokumentet finns bevisat.
+# Grindens UA är browser-formen (krävs av UA/WAF-406/415-klassen sedan S11)
+# och lychee bär bara EN User-Agent — sec.gov:s krav på deklarerad klient är
+# inkompatibelt med den. Domän-brett: policyn är systemisk för hela sajten
+# (jfr help.shopify.com-posten).
+^https://www\.sec\.gov/.*$
+
 # danger.systems — Connection reset by peer (os error 104) från GitHub-runners,
 # medan värden svarar 200 på 0,9 s från utvecklarmaskin. Alltså inte en rutten
 # länk utan ett värd-sidigt avvisande av CI-nätet, samma klass som
