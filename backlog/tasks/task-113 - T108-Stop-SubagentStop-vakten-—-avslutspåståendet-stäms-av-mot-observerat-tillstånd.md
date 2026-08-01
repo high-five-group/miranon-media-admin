@@ -3,10 +3,10 @@ id: TASK-113
 title: >-
   T108: Stop/SubagentStop-vakten — avslutspåståendet stäms av mot observerat
   tillstånd
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-01 11:55'
-updated_date: '2026-08-01 13:23'
+updated_date: '2026-08-01 21:00'
 labels:
   - ready-for-agent
 dependencies: []
@@ -68,12 +68,16 @@ Passet: formen når ADR-baren och *"bör beslutas som ADR, inte glida in via ett
 - [x] #7 ADR skriven med de ärliga svagheterna utskrivna: heuristisk detektion med falska negativ, per-repo-hemvist (hooks tappas tyst av pluginet), och T112-hålet — task-notifikationskedjan mot idle huvudsession täcks INTE av detektorn
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Leveransen (PR #551, merge 65dc67ed via merge queue): Stop/SubagentStop-vakten (ADR-087) levererad — hook i .claude/settings.json + detektorskript, config-driven (Lesson #6), avstämmer avslutspåståendet mot last_assistant_message + background_tasks + väntepåstående-matchning, fail-closed, stop_hook_active respekterad, tvåsidigt bevis i repot. AC#1-7 avbockade i tidigare landning. DoD#3 verifierad per jobb: merge_group-run 30717774528 (headBranch gh-readonly-queue/main/pr-551-...) — Lint + Audit + TypeCheck: success · Test suite / Acceptance (hermetisk): success · Test suite / Pure + Build: success · Test suite / Staging sentinel purge, A11y (axe-runner), Staging (API+E2E): skipped (korrekt för diffens klass — inga staging-berörande filer) · Docs link check: success · CI Passed or Skipped: success. Lokala grindar körda i rebasen (orkestrerarens förgrundsverifikat): npm run check:docs exit 0 (13/13 grindar), bash scripts/test-stop-vakt.sh exit 0 (16/16 PASS), biome exit 0 på .claude/settings.json + .stop-vakt-policy.json. Stängd 2026-08-01 efter CI-verifikat.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
