@@ -3,10 +3,10 @@ id: TASK-108
 title: >-
   Fynd: trådregistrets integritet — falska statuspåståenden, ruttna radnummer
   och en grind som ser 12 % av registret
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 08:38'
-updated_date: '2026-07-31 09:05'
+updated_date: '2026-08-01 12:35'
 labels:
   - ready-for-agent
 dependencies: []
@@ -72,7 +72,7 @@ Sökt systematiskt, noll fynd: ADR-referenser (29 unika, 0 döda) · TASK-refere
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -131,3 +131,9 @@ Registret återställdes bit-identiskt efteråt (`diff` rent) och grinden är gr
 
 Utan steg 2 är den nya conf-filen den nionde sourcade conf:en utanför en grind som finns för att täcka just dem.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Leveransen (PR #514, head 26b3af4, merge ab73dfa): grinden scripts/check-thread-index.sh + .thread-index-policy.conf + testsvit 17/17, fyra falska statuspåståenden rättade, T25:s ruttna radnummer rättade, täckningen mätt till 13/109 = 11,9 procent. DoD#3 verifierad i efterhand: run 30618762741 alla körda jobb success (skips by-design), landad via merge queue. CI-WIRINGEN (AC#9 beskriven, ej byggd här) är nu BYGGD av ci.yml-agenten i PR #529 (merge c717c3c, merge_group-run 30696934638 alla jobb gröna): eget steg i lint-jobbet + test-check-thread-index.sh i gatekeeper-steget + .thread-index-policy.conf som nionde conf i shellcheck-scopet. AVVIKELSE mot kortets wiring-beskrivning, bokförd i #529: antagandet att grinden 'följer med automatiskt via check-docs.sh' var falskt — CI kör inte check-docs.sh (noll run-träffar), så ett eget lint-jobb-steg krävdes; utan det hade check-docs.sh:s rubrik påstått en mekanism som inte finns (ADR-083-felklassen). Grindens CI-kostnad mätt: 2 s i CI mot 41-43 s lokalt (macOS bash 3.2 är den långsamma parten). Kortets tre-ändringar blev fyra.
+<!-- SECTION:FINAL_SUMMARY:END -->
