@@ -722,46 +722,38 @@ acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
       och `#447` redigerar samma kortfil och `#447` står `CONFLICTING` med
       auto-merge armerad. Besläktad `A2:7` + `T108`, se tråd-registret
 
-- [ ] **`TASK-79`** — `hem:1097`: byte-identisk skärmdump efter dubbel-rAF.
-      **Fjärde flake-formen**, och den ENDA klass-B-liknande som CI faktiskt
-      fäller på efter klass A (1/14 jobb efter mot 6/14 före). Så länge den
-      lever kan ingen säga att sviten är ren — alltså steg 1:s mål
-- [ ] `--mm-btn-*` eller `--mm-button-*`? Nio tokens i `semantic.css` mot 48
-      `--mm-button-*` i `components.css`. **RÄTTAT 2026-07-29 — de nio är INTE
-      oanvända**, vilket posten påstod till i dag och som ramade in beslutet som
-      en gratis strykning. Samtliga nio konsumeras: **sex** via `components.css`
-      (15 `var(--mm-btn-*)`-referenser, t.ex. rad 20
-      `--mm-button-primary-bg: var(--mm-btn-primary-bg);`) och **tre** via
-      `src/components/hem/CTA.tsx` rad 20, som använder Tailwind-4-syntaxen
-      `bg-(--mm-btn-cta-bg)` i stället för `var()` — därför syns de inte i en
-      naiv `var(`-sökning. Ett byte går alltså inte gratis; `components.css` och
-      `CTA.tsx` följer med. **UNDERLAG FINNS NU:** den parallella sessionen S92
-      mätte frågan under sitt färgsystem-arbete (sessionsdok S92, sök
-      `--mm-btn-`) — hämta deras räkning innan frågan besvaras, gör inte om
-      mätningen
-- [ ] **Två namn-/strukturfrågor ur `TASK-59.8`:s QA-vandring 2026-07-28.**
-      Lyfta som beslut, INTE mintade som kort: båda är omdöpningar som rör många
-      importrader, alltså scope-beslut och inte QA-fynd. **Posterna bor därför
-      här — inget kort bär dem.** **(a) Dubbla `support`-kataloger:**
-      `tests/support/fixturvarld/` mot `tests/acceptance/support/`, som skiljs
-      av ett punkttecken i importraden. **(b) Ordet "acceptance" självt:** i
-      ATDD-/Fowler-traditionen betyder det normalt *kör mot ett riktigt deployat
-      system* — motsatsen till vad vår klass gör. Empirin bakom båda står i
-      sessionsdok Del 17. **Motargument som hör till beslutet:** namnet är redan
-      inskrivet i ADR-080, `CONTRIBUTING.md`, CI-jobbets namn och
-      klassnings-mekaniken i `ci.yml` — ett byte är inte gratis
-- [ ] **Review-pilotens kadens** (T86-friktionen) — passet uteblev även på
-      `TASK-54.2`, märkt i pilotloggen. Beslutskriterierna räknar skivor, inte
-      pass, så varje omärkt uteblivet pass underskattar träffkvoten
+**`TASK-79` Done 2026-08-02** (beslutsbordet punkt 2, vägval c på Marcus GO):
+residualrisken accepterad mot karaktäriseringen; natt-serien 20/20 PASSED +
+CI-basen n=65 med 1 fällning. Nattens två nya former → `task-121`. Fullt
+facit på kortet.
+**`--mm-btn`-frågan AVGJORD 2026-08-02** (beslutsbordet punkt 7, Marcus):
+ägs av S92-spåret. S92:s mätning (alla nio tokens konsumeras — sex via
+`components.css`, tre via `CTA.tsx`:s Tailwind-4-syntax; kvarfrågan är
+namnklyvningen `btn`/`button`, F16-kandidaten) görs inte om och bor i
+S92-doket. Ingen åtgärd i S91.
+**Namn-/strukturfrågorna AVGJORDA 2026-08-02** (beslutsbordet punkt 5, Marcus
+mot research-underlaget
+`docs/research/testklass-namn-och-support-kataloger-2026-08-02.md`):
+**(a) GO** — utplattningen kortad som `task-123` (ready-for-agent,
+exekvering efter S91 per gränsregeln); **(b) defer** — "acceptance" byts
+inte (kostnadsasymmetrin ~255 förekomster/45 filer, ingen kollisionsfri
+kandidat; invändningens källstöd öppet redovisat i doket; framtida kandidat
+"application", Ember-precedenten).
+**Review-pilotens kadens AVGJORD 2026-08-02** (beslutsbordet punkt 6, Marcus):
+STÅENDE ORDER — passet körs automatiskt på varje produktkod-skiva under
+piloten (Sonnet-subagent); friktionens user-requested-villkor uppfyllt
+stående, inte per anrop. Bokfört i `T86`-kortet; uteblivna pass märks
+fortsatt i pilotloggen (konsekvens 2).
+
 - [ ] `IDENTITET.md`-destillatet (= Spår B steg 4)
-- [ ] **`TASK-110`** — mätinstrumentet `test-bas.ts` till klassdelad hemvist;
-      `T103`:s kort, mintat 2026-07-31 ur trådkartans enda *"minta kort"*-post.
-      Precedent `TASK-59.1` (fixturvärlden); mätunderlaget bor på kortet
-- [ ] **`TASK-111`** — `batchValidation: 'permissive'` når aldrig
-      Resend-API:et: EF:erna importerar `resend@4` medan optionen finns först i
-      `6.1.0`, så API:et kör strict och `errors`-parsningsvägen är onåbar i
-      produktion. En defekt i **produktionskod**, samma klass som `TASK-53`
-      (§ Avbockningslogg); tre åtgärdsvägar öppna, beslutet hör till kortet
+**`TASK-110` Done 2026-08-01** (S91-vågen, merge_group-verifierad per jobb):
+mätinstrumentet till klassdelad hemvist landat; facit på kortet.
+
+**`TASK-111` Done 2026-08-02** (beslutsbordet punkt 1): rotorsaken åtgärdad
+(resend@6-bumpen, käll-verifierad; avvikande-fallet hermetiskt bevisat);
+prod-deployen DEFERRAD till go-live → `task-120` (INGEN ready-etikett —
+Marcus GO sätter den).
+
 - [ ] **`TASK-112`** — testgraf-mätningen: källkods-rotad skuggmätning av
       acceptance-urvalet i post-merge (`ADR-077`-slotten). Mätningen byggs,
       inte urvalet; exekvering efter S91 (Marcus-beslut, sessionsdok Del 39.3
@@ -1080,3 +1072,4 @@ stängde `TASK-54.2` DoD 7 och `TASK-54.3` DoD 5).
 | 2026-08-02 | **`A2:8`-kroppsraden bruten i efterhand — bokföringsdriften rättad.** Beslutet fanns sedan 2026-07-29 (Del 28: default-neka mot uppräknad lista · defera+informationsplikt vid låst beslut · ADR-083) och loggen bokförde KLAR 2026-07-30, men kroppens checkbox stod kvar öppen — posten återuppstod som beslutsbords-punkt 4 tills Marcus kände igen den (*"jag har svaret på denna fråga tidigare"*). Ingen ny grillning behövdes. Fragment: `stangning-i-en-yta-utan-att-bryta-den-andra` | Del 28 · ADR-083 · denna rättelse |
 | 2026-08-02 | **`A2:9` (Punkt 9) STÄNGD — push-kadensens dom har hemvist.** `TASK-122` mintat vid plock (postens egen regel); domen (en commit per PR · 7–11 PR/dag, rätt mot branschgolven) + separationen (commit-frekvens gratis, push-frekvens kostar CI + mutexplats) inskriven i `CONTRIBUTING.md` § Push-kadensen med källpekare till passet. Kortet stängs i stängningsbatchen efter merge_group-verifikat | `TASK-122` · CONTRIBUTING § Push-kadensen · [passet](../docs/research/push-kadens-agent-arbetstrad-2026-07-26.md) |
 | 2026-08-02 | **`A3b` STÄNGD — verktygsvals-kravet durabelt.** `CONTRIBUTING.md` § Verktygsval före nybygge bär det stående kravet (prövning + skriftlig redovisning även vid "bygg eget"). Svansen (ADR-081/towncrier) var redan landad sedan 2026-07-30 (`TASK-86`, ADR-081 § Verktygsvalet, verifierat mot ADR-texten) — kropps-texten hade aldrig brutits: andra driftinstansen samma dag, klassen bärs av fragmentet `stangning-i-en-yta-utan-att-bryta-den-andra` | CONTRIBUTING § Verktygsval · ADR-081 § Verktygsvalet |
+| 2026-08-02 | **Stängningsbatchen — beslutsbordets sex kropps-rader brutna.** `TASK-79` (vägval c, Done) · `TASK-110`/`TASK-111` (Done i vågen resp. bordet; 111:s deploy-moment → `task-120`) · `--mm-btn` (S92/F16 äger frågan) · namn-/strukturfrågorna ((a) GO → `task-123` · (b) defer) · review-kadensen (stående order, `T86`). `task-122` Done efter `#583`:s merge_group-verifikat per jobb. Besluten i fulltext: sessionsdok Del 42.2 · 42.4 · 42.5 | Del 42 · korten |
