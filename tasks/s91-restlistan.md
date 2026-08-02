@@ -423,6 +423,7 @@ pekare, inte tillstånd (fragmentet
 `stangning-i-en-yta-utan-att-bryta-den-andra`). Seed-vane-residualen
 (förberett granskningsmaterial) bärs av review-kadensens stående order
 (`T86`, 2026-08-02).
+
 - [ ] **Punkt 9 — push-kadensens dom saknar hemvist i levande styrande fil.**
       NY 2026-07-28.
       [Passet](../docs/research/push-kadens-agent-arbetstrad-2026-07-26.md)
