@@ -744,6 +744,7 @@ STÅENDE ORDER — passet körs automatiskt på varje produktkod-skiva under
 piloten (Sonnet-subagent); friktionens user-requested-villkor uppfyllt
 stående, inte per anrop. Bokfört i `T86`-kortet; uteblivna pass märks
 fortsatt i pilotloggen (konsekvens 2).
+
 - [ ] `IDENTITET.md`-destillatet (= Spår B steg 4)
 **`TASK-110` Done 2026-08-01** (S91-vågen, merge_group-verifierad per jobb):
 mätinstrumentet till klassdelad hemvist landat; facit på kortet.
