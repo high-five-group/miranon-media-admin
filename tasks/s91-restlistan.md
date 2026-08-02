@@ -389,78 +389,41 @@ skillen (hub) bär nu konsolideringssteget och plugin-bumpen är landad. Flyttad
 till § Avbockningslogg 2026-08-01; se den raden för källan
 (sessionsdok Del 38, "Fragment: 70"-noten).
 
-- [ ] **A2:11 · Steg 3-beslutet om agent-isolering — MÄTNINGEN ÄR LÄST 2026-07-30.**
-      Steg 1 (typade agenter, `#327`) och steg 2 (icke-blockerande mätning,
-      `npm run metrics:agents`) är byggda 2026-07-28. **Mätningen kördes
-      2026-07-30** — tidigare än den "~en vecka" posten föreskrev, men efter ett
-      tiotal spawns, och utfallet är entydigt: **`bygg-agent` 16/16 isolerade ·
-      `research-pass` 8/8 isolerade** (frontmatter fyrar 100 % för de typer vi
-      själva definierat). Allt läckage sitter i **inbyggda** typer utan vår
-      frontmatter: `general-purpose` 0/18 · `Explore` 0/5 ·
-      `claude-code-guide` 0/5.
-      **Slutsatsen är att steg 1 RÄCKTE, och steg 3/4 är fel hävstång** — de
-      skulle tvinga isolering på övervägande läsande agenter. Men posten stängs
-      INTE mot den slutsatsen ännu, av ett skäl mätningen själv avtäckte:
-      **skriptets klassning "en rent läsande agent behöver ingen worktree" är
-      sann om repot och missvisande om scratchpad.** Våra två mätagenter var
-      `general-purpose`, de skrev, och de kolliderade — i scratchpad, inte i
-      repot. Worktree-isolering är **ortogonal** mot den kollisionen och hade
-      inte hjälpt. Se punkt 7 nedan; besluta posterna tillsammans.
-      *(`permissions.deny` nämns här som PLANERAD åtgärd — den finns inte i
-      någon settings-fil, och har aldrig påstått göra det.)*
-- [ ] **Punkt 7 — partitionerings-regeln** (ADR-073 utsträckt till Marcus egna
-      parallella sessioner, ej bara agenternas).
-      **KONVERGERAR DELVIS med worktree-isoleringen (`#327`, 2026-07-28) — men
-      bockas INTE av mot den.** Fil- och gren-partitionen är nu mekanisk
-      (`isolation: worktree` i `.claude/agents/`-frontmatter). Kvar står
-      nummerserier, delade statusfiler och LÄSANDE agenter (fragmentet
-      `partition-maste-omfatta-lasande-agenter`).
-      **Och regeln VÄXER i en dimension:** två isolerade agenter som båda
-      skriver i `todo.md` ser inte varandra alls — merge-konflikt, eller värre,
-      tyst överskrivning vid sekventiell landning. Före isolering delade de
-      åtminstone arbetsträd. Isoleringen löser alltså en del av A2:7 och
-      förvärrar en annan; det gör regeln mer angelägen, inte mindre.
-      **A2:7 DELAD 2026-07-30 på Marcus beslut — och båda halvorna har svar:**
-      *Nummerhalvan* är `TASK-93`: `ADR-081` beslut 4:s påstående *"Kort: redan
-      löst"* är **mätt falskt** (två arbetsträd allokerade båda `task-4`), och
-      verktyget bär redan skyddet — `check_active_branches` står `false` hos oss
-      mot tillverkarens `true`, satt som init-default vid instansens födelse och
-      aldrig omprövat. *Filnamnshalvan* är **framkallad och avgränsad**: sökvägen
-      är härledd ur `CLAUDE_CODE_SESSION_ID` och ärvs av subagenter
-      (strukturell design — *"Subagents run in the same process as the parent
-      session"*), `Write` skyddas av en read-before-write-spärr som gäller
-      **per agent-kontext**, men skalomdirigering går rakt igenom tyst.
-      **Ordentlig mekanism finns bara där agenten inte behöver Bash** (`tools`
-      som allowlist, `sub-agents.md` rad 279–280/340) — vilket utesluter
-      `bygg-agent` och `research-pass`. För dem är konventionen allt vi har, och
-      den är landad i `bygg-agent.md` **deklarerad som konvention**.
-      En `updatedInput`-hook som omdirigerar sökvägar är **medvetet EJ byggd**:
-      den måste parsa skal, och Anthropics egen kommandoanalys i
-      `isolation: worktree` failar stängt på det den inte kan analysera
-      (*"A command too complex to check also fails"*) — vilket skulle bryta våra
-      egna mätskript. Belägg:
-      `docs/research/harness-namnrymd-agenter-2026-07-30.md`.
-      **VAD SOM STÅR KVAR EFTER A7 — belagt 2026-07-28, inte antaget:**
-      (a) **staging-basen är EN delad resurs** — A7:5 flyttar mutexen ur
-      PR-grinden men avvecklar den inte; två parallella spår köar fortfarande,
-      bara inte i Marcus väntetid · (b) **`P4`:s 5 req/s-tak är delat per bas**,
-      så parallellitet mot samma bas är verkningslös även med perfekt isolering
-      (Fas E-fråga via A6/`T85` våg 3 — **inte** en A7-fråga) ·
-      (c) **`ACCEPTANCE_DEV_PORT = 5399` + `--strictPort`** ⇒ två agenter kan
-      inte köra acceptance-sviten samtidigt · (d) **delade statusfiler** ·
-      (e) **läsande agenter**. A7 avlastar alltså EN axel — main, via merge
-      queue — och lämnar fem
-- [ ] **Punkt 8 — beslutsklassningen: vilka beslut får köa, vilka avbryter
-      Marcus.** NY 2026-07-28; saknade hemvist helt. Målbildens punkt 2:
-      *"Marcus är enda beslutsfattaren. Sitter han i en annan session när en
-      agent behöver ett beslut, så antingen blockerar agenten eller beslutar
-      själv."* Det senare gav §19-kollisionen samma dag. **Varken A7 eller A2:7
-      rör den** — A7 är maskinlatens, A2:7 är resurskrockar; detta är
-      besluts-bandbredd. Hör ihop med målbildens punkt 3: granskning är seriell
-      av naturen, och optimeringen där är **förberett material innan Marcus
-      sätter sig**. Seed-vägen finns (`npm run seed:review`); vanan att köra den
-      före ett granskningsmoment finns inte. **Grillningsklassad ⇒ Marcus
-      startar**
+**A2:11 STÄNGD 2026-08-02 på Marcus kvittens (beslutsbordet punkt 3) — mot den
+bokförda slutsatsen:** steg 1 räckte (`bygg-agent` 16/16 · `research-pass` 8/8;
+allt läckage i inbyggda, övervägande läsande typer), steg 3/4 är fel hävstång
+och byggs INTE (över-engineering-vakten). Scratchpad-kollisionen är ortogonal
+mot worktree-isolering och bärs av lesson-fragmentet
+`parallella-agenter-delar-scratchpad-namnrymd` + konventionen i `bygg-agent.md`;
+kortas vid behov. Flyttad till § Avbockningslogg; fullt underlag: sessionsdok
+Del 32.4 + `docs/research/harness-namnrymd-agenter-2026-07-30.md`.
+**A2:7 (Punkt 7) STÄNGD 2026-08-02 på Marcus kvittens (beslutsbordet punkt 3).**
+Båda halvorna hade svar sedan 2026-07-30: *nummerhalvan* `TASK-93` →
+`check_active_branches: true` i drift, dokumenterad i spoke-`CLAUDE.md`
+§ Kortnummer; *filnamnshalvan* framkallad, avgränsad och landad som
+**deklarerad konvention** i `bygg-agent.md` (ordentlig mekanism finns bara för
+Bash-lösa agenttyper — inte våra). Residualerna är dokumenterade väggar med
+egna bärare, inte olösta frågor: delade statusfiler + läsande agenter
+(fragmentet `partition-maste-omfatta-lasande-agenter`, `T108`/`T109`) ·
+staging-basen, `P4`-taket och acceptance-porten (Fas E-frågor via `T85` våg 3).
+Kortas vid behov, byggs inte nu (över-engineering-vakten). Flyttad till
+§ Avbockningslogg; fullt underlag: sessionsdok Del 32 +
+`docs/research/harness-namnrymd-agenter-2026-07-30.md`.
+**A2:8 (Punkt 8) — VAR REDAN AVGJORD 2026-07-29; kroppsraden var drift, bruten
+2026-08-02.** Grillningens A2:8-halva stängdes i sessionsdok Del 28:
+**default-neka mot en uppräknad LISTA**, inte mot en genererande princip
+(`ready-for-agent`-etiketten ÄR det namngivna upplåsandet) · vid låst beslut:
+**defera och fortsätt, med informationsplikt som villkor** (subagenter kan
+strukturellt inte avbryta; ett tyst mellanläge saknar stöd) · ADR-083 + tionde
+kontrollen i `check:docs` vaktar prosa-som-påstår-mekanism. § Avbockningslogg
+bokförde KLAR 2026-07-30 — men denna checkbox bröts aldrig, och posten
+återuppstod därför som beslutsbords-punkt 4 (tjugoandra pausen) tills Marcus
+kände igen att beslutet redan fanns. Status bor i EN yta; kroppen bär nu
+pekare, inte tillstånd (fragmentet
+`stangning-i-en-yta-utan-att-bryta-den-andra`). Seed-vane-residualen
+(förberett granskningsmaterial) bärs av review-kadensens stående order
+(`T86`, 2026-08-02).
+
 - [ ] **Punkt 9 — push-kadensens dom saknar hemvist i levande styrande fil.**
       NY 2026-07-28.
       [Passet](../docs/research/push-kadens-agent-arbetstrad-2026-07-26.md)
@@ -1122,3 +1085,11 @@ stängde `TASK-54.2` DoD 7 och `TASK-54.3` DoD 5).
 | 2026-08-01 | **`TASK-88` flyttad ur kroppen till denna logg — motsägelsen upplöst.** `Done` sedan `#558`. Kroppens rad 726 (*"33 poster kvar"*) och loggens `TASK-95`-rad (*"33 poster före, 0 efter"*) var **båda sanna vid sin egen tidpunkt** — 33 var mätningen 2026-07-30, FÖRE städningen; 0 är utfallet EFTER. AC #2 bockades 2026-07-31 (verifierat av `TASK-101` mot basen, två oberoende vägar: skriptets legacy-läge + Airtable-MCP, 0 träffar). Kortet stängdes 2026-08-01 i svans-passet efter nattgrindens första äkta drift-fynd. **Rotorsak bevarad:** `ZZ-GRANSKNING-S91` byggdes för hand 2026-07-26 och bär därför inte skriptets fixtur-markörer — det anvisade städkommandot raderade 0 poster (mätt), fixturen var immun mot BÅDE CI-purgen och sitt eget städkommando. Städningen utfördes i stället av `TASK-95`:s legacy-läge (`#493`). **Klassvarning bevarad:** denna post och `save-segment`-läckan (`TASK-87`, § Avbockningslogg) stod tidigare bokförda som samma klass av lucka i purge-policyn — de har **motsatta** rätta svar. `app-segment-test` SKA ha en purge-target (`TASK-87`); `ZZ-GRANSKNING-*` ska **ALDRIG** ha en (skyddsräcke 2 i `seed-review-fixture.mjs` är avsiktligt — en target som matchade granskningsfixturens markörer hade avvisat dess skapande). En framtida "fix" som ger `ZZ-GRANSKNING-*` en purge-target river skyddet i stället för att laga något | `#480` · `#493` · `#504` · `TASK-88`:s final-summary |
 | 2026-08-01 | **Spår C — Konsolideringen landad, flyttad ur kroppen till denna logg.** `#545`: **73 fragment → `tasks/lessons.md` `L360`–`L432`**, **69 UNIVERSAL-flaggade lyfta till hub vol-05 K91.7–K91.75** (hub-PR `#12`, `43e90fb`), byte-diff-verifierat i båda riktningar med fällande negativa kontroller. Källa: sessionsdok Del 39.6 (rad ~7892–7894). **Hub-lyftet `L284–L359` var redan landat och loggat** (2026-07-31, se raden ovan i Artonde resumen-blocket) men kvarlämnat som öppen `[ ]` i kroppen — samma underhållsregel-brott som `TASK-53`; städat i samma pass. **Spår C har nu inga öppna poster** utöver STOPP-sektionens registrerad-men-obelagd-kandidat | `#545` |
 | 2026-08-01 | **`A2:10` löst, flyttad ur kroppen till denna logg.** `lessons-hub-sync`-skillen (hub) bär nu konsolideringssteget och plugin-bumpen är landad — `#506`, landat under nittonde resumen (2026-07-31). Källa: sessionsdok rad ~7676–7678 (*"Konsolideringen är fortfarande blockerad — men `A2:10` är löst i `#506`"*). Posten var kroppens uttalade förkrav för Spår C:s konsolidering (steg 6b) — konsolideringen själv (`#545`) landade senare samma resume-kedja, se raden ovan | `#506` |
+
+### Tjugotredje resumen (2026-08-02)
+
+| Datum | Vad | Ref |
+|---|---|---|
+| 2026-08-02 | **`A2:11` STÄNGD på Marcus kvittens (beslutsbordet punkt 3) mot bokförd slutsats.** Steg 1 räckte — mätningen 2026-07-30: `bygg-agent` 16/16 · `research-pass` 8/8 isolerade; allt läckage i inbyggda, övervägande läsande typer (`general-purpose` 0/18 · `Explore` 0/5 · `claude-code-guide` 0/5). Steg 3/4 fel hävstång — byggs INTE (över-engineering-vakten). Scratchpad-kollisionen ortogonal mot worktree-isolering; bärs av fragmentet `parallella-agenter-delar-scratchpad-namnrymd` + `bygg-agent.md`-konventionen, kortas vid behov | sessionsdok Del 32.4 · `docs/research/harness-namnrymd-agenter-2026-07-30.md` |
+| 2026-08-02 | **`A2:7` (Punkt 7) STÄNGD på Marcus kvittens (beslutsbordet punkt 3).** Båda halvorna besvarade sedan 2026-07-30 (`TASK-93` → `check_active_branches: true` i drift + filnamnshalvans deklarerade konvention i `bygg-agent.md`). Residualerna — delade statusfiler · läsande agenter · staging-basen/`P4`-taket/acceptance-porten — är dokumenterade väggar med egna bärare (`T108`/`T109` · fragment · Fas E/`T85` våg 3), kortas vid behov | sessionsdok Del 32 · loggens 2026-07-30-rader |
+| 2026-08-02 | **`A2:8`-kroppsraden bruten i efterhand — bokföringsdriften rättad.** Beslutet fanns sedan 2026-07-29 (Del 28: default-neka mot uppräknad lista · defera+informationsplikt vid låst beslut · ADR-083) och loggen bokförde KLAR 2026-07-30, men kroppens checkbox stod kvar öppen — posten återuppstod som beslutsbords-punkt 4 tills Marcus kände igen den (*"jag har svaret på denna fråga tidigare"*). Ingen ny grillning behövdes. Fragment: `stangning-i-en-yta-utan-att-bryta-den-andra` | Del 28 · ADR-083 · denna rättelse |
