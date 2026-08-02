@@ -1,0 +1,379 @@
+#!/usr/bin/env bash
+# scripts/test-heartbeat-svep.sh
+#
+# Empirisk testsvit för scripts/heartbeat-svep.sh (TASK-119). 22 testfall —
+# tyngdpunkt på AC#1:s krav: tvåsidigt bevis per väg (planterat fall fälls,
+# rent fall släpps), för VAR OCH EN av de tre namngivna vägarna plus den
+# fjärde (armerings-kandidat) ur samma tabell:
+#
+#   T1  RÖTT planterat (check-rollup FAILURE)              → bit 1 satt
+#   T2  RÖTT rent (samma PR, rollup SUCCESS)                → bit 1 EJ satt
+#   T3  DIRTY planterat (mergeStateStatus DIRTY)            → bit 2 satt
+#   T4  DIRTY rent (mergeStateStatus CLEAN, armerad)         → bit 2 EJ satt
+#   T5  KANDIDAT planterat (CLEAN, ej armerad, ej draft)     → bit 4 satt
+#   T6  KANDIDAT rent — redan ARMERAD                        → bit 4 EJ satt
+#   T7  KANDIDAT rent — DRAFT                                 → bit 4 EJ satt
+#   T8  KANDIDAT rent — BLOCKED (varken CLEAN eller UNSTABLE) → bit 4 EJ satt
+#   T9  KANDIDAT planterat — UNSTABLE räknas också             → bit 4 satt
+#   T10 KOMBINERAT — en RÖD-PR + en DIRTY-PR samtidigt         → bitmask 3
+#   T11 main-SHA AVANCERAR mellan två sopningar (delat state)  → larmrad
+#   T12 main-SHA OFÖRÄNDRAD mellan två sopningar               → ingen larmrad
+#   T13 fail-closed: gh-anropet för main-SHA misslyckas        → 77
+#   T14 fail-closed: gh-anropet för pr-listan misslyckas       → 77
+#   T15 användningsfel: REPO saknas (ingen config, ingen flagga) → 64
+#   T16 användningsfel: ogiltigt --interval (0)                  → 64
+#   T17 användningsfel: ogiltigt --timeout (icke-numeriskt)      → 64
+#   T18 --once loopar ALDRIG (även med stort --interval)         → snabb
+#   T19 loop-läge, --timeout-bundet, flera iterationer            → sista verdikt
+#   T20 tom PR-lista → 0 granskade, ALLT LUGNT                    → 0
+#   T21 --quiet dämpar rutin-rader men ALDRIG larm-rader (L443)    → RÖTT syns
+#   T22 --quiet vid rent läge → helt tyst stdout                   → tomt
+#
+# Test-isolering: /tmp/task119-test-heartbeat-svep/ med en gh-stub som svarar
+# ur ett scenario-katalog (main-sha / rows / fail-mainsha / fail-prlist).
+# INGEN nätverkstrafik, inget riktigt gh-anrop, ingen ändring i real-repot,
+# eget HEARTBEAT_STATE_DIR (rör aldrig det riktiga tillståndet).
+#
+# LAYOUTEN SPEGLAR PRODUKTIONEN: skriptet kopieras till
+# ${TEST_DIR}/scripts/heartbeat-svep.sh och den RIKTIGA policy-filen till
+# ${TEST_DIR}/.heartbeat-svep-policy.conf — samma relation som i repot, så
+# den FAKTISKA default-upplösningen av policy-sökvägen provas (T15 är
+# undantaget: den pekar HEARTBEAT_SVEP_POLICY på en sökväg som inte finns).
+#
+# STUBBENS GRÄNS, öppet skriven (samma disciplin som test-staging-semaphore.sh
+# § "STUBBENS GRÄNS"): gh:s `--jq`/`-f query=` körs INNE i den riktiga `gh`-
+# binären, så stubben här levererar redan färdig, förberäknad TSV-utdata —
+# den kör aldrig det verkliga GraphQL-uttrycket. Sviten bevisar därmed
+# SKRIPTETS EGEN klassningslogik (RÖTT/DIRTY/KANDIDAT-besluten i bash), inte
+# att GraphQL-frågan matchar det verkliga API:t. Den kopplingen är i stället
+# verifierad SKARPT mot live-API:t under TASK-119-bygget 2026-08-02:
+#   - `gh api graphql` med exakt samma fråga kördes mot
+#     high-five-group/miranon-media-admin (PR #611, ett stängt ärende) och
+#     gav `{"number":611,"red":false,"verdicts":["OK","OK",...]}` — alla åtta
+#     jobb SUCCESS, korrekt klassat som icke-rött.
+#   - `commits(last:1).commit.statusCheckRollup.state` verifierades via
+#     introspektion vara ett NON_NULL StatusState-enum med exakt fem värden
+#     (SUCCESS, FAILURE, ERROR, PENDING, EXPECTED) — den uttömmande listan
+#     bash-klassningen nedan (T1/T2 m.fl.) bygger på.
+#   - `gh api repos/<repo>/commits/<branch> --jq .sha` kördes skarpt mot
+#     samma repo och gav samma SHA som `git fetch` redan visat lokalt.
+# Ändras GraphQL-frågan eller fält-antagandena ska en ny skarp körning göras.
+#
+# Användning: bash scripts/test-heartbeat-svep.sh
+# Exit 0 om alla testfall passerar, 1 annars.
+#
+# Källa: CLAUDE.md § Landning · tasks/lessons.md L443 · TASK-119
+# Etablerad: TASK-119, 2026-08-02
+
+set -uo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TEST_DIR="/tmp/task119-test-heartbeat-svep"
+SKRIPT_SRC="${REPO_ROOT}/scripts/heartbeat-svep.sh"
+POLICY_SRC="${REPO_ROOT}/.heartbeat-svep-policy.conf"
+
+SKRIPT="${TEST_DIR}/scripts/heartbeat-svep.sh"
+SCEN="${TEST_DIR}/scenario"
+STATE_DIR="${TEST_DIR}/state"
+
+PASSED=0
+FAILED=0
+
+# shellcheck disable=SC2329  # anropas via trap
+cleanup() {
+    cd / || true
+    rm -rf "${TEST_DIR}"
+}
+trap cleanup EXIT
+
+setup() {
+    rm -rf "${TEST_DIR}"
+    mkdir -p "${TEST_DIR}/bin" "${TEST_DIR}/scripts" "${SCEN}" "${STATE_DIR}"
+    cp "${SKRIPT_SRC}" "${SKRIPT}"
+    chmod +x "${SKRIPT}"
+    cp "${POLICY_SRC}" "${TEST_DIR}/.heartbeat-svep-policy.conf"
+
+    # gh-stub. Svarar ur ${SCEN}:
+    #   main-sha       en rad, SHA:t "commits/<branch>"-anropet ska returnera
+    #   rows           förberäknade TSV-rader, som gh:s --jq redan hade gjort
+    #   fail-mainsha   NÄRVARO ⇒ main-SHA-anropet misslyckas (exit 1)
+    #   fail-prlist    NÄRVARO ⇒ pr-lista-anropet (graphql) misslyckas (exit 1)
+    cat > "${TEST_DIR}/bin/gh" <<'STUB'
+#!/usr/bin/env bash
+SCEN="${T119_SCEN}"
+if [ "${1:-}" = "api" ]; then
+    if [ "${2:-}" = "graphql" ]; then
+        if [ -f "${SCEN}/fail-prlist" ]; then exit 1; fi
+        [ -f "${SCEN}/rows" ] && cat "${SCEN}/rows"
+        exit 0
+    fi
+    # övriga `gh api`-anrop i detta skript är alla main-SHA-uppslaget:
+    # "repos/<repo>/commits/<branch>" --jq .sha
+    if [ -f "${SCEN}/fail-mainsha" ]; then exit 1; fi
+    [ -f "${SCEN}/main-sha" ] && cat "${SCEN}/main-sha"
+    exit 0
+fi
+exit 0
+STUB
+    chmod +x "${TEST_DIR}/bin/gh"
+
+    # Baseline-scenario: inga fel, inga PR:ar, ett stabilt SHA.
+    printf 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' > "${SCEN}/main-sha"
+    : > "${SCEN}/rows"
+    rm -f "${SCEN}/fail-mainsha" "${SCEN}/fail-prlist"
+}
+
+# reset_scen: återställ scenariot till en ren baseline MELLAN testfall, utan
+# att riva hela TEST_DIR (state-katalogen ska normalt nollställas per fall
+# så main-SHA-baseline inte läcker mellan oberoende testfall — T11/T12
+# hanterar sitt eget delade state explicit och anropar INTE denna).
+reset_scen() {
+    printf 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' > "${SCEN}/main-sha"
+    : > "${SCEN}/rows"
+    rm -f "${SCEN}/fail-mainsha" "${SCEN}/fail-prlist"
+    rm -rf "${STATE_DIR}"
+    mkdir -p "${STATE_DIR}"
+}
+
+set_rows() { printf '%b' "$1" > "${SCEN}/rows"; }
+
+# EXPECT_OUT sätts FÖRE ett run_case-anrop för att dessutom kräva en sträng i
+# utdatan. NOT_EXPECT_OUT sätts för att kräva att en sträng SAKNAS (används
+# för T2/T4/T6/T7/T8/T12/T21/T22 — "rent fall släpps" bevisas genom att
+# larmraden INTE finns, inte bara av exit-koden). Båda nollställs av
+# run_case så de aldrig läcker till nästa fall.
+EXPECT_OUT=""
+NOT_EXPECT_OUT=""
+
+# run_case <namn> <förväntad exit> <max sekunder eller "-"> <env-tilldelningar...> -- <args...>
+run_case() {
+    local name="$1" want="$2" maxsec="$3"; shift 3
+    local start elapsed got expect="${EXPECT_OUT}" nexpect="${NOT_EXPECT_OUT}"
+    EXPECT_OUT=""
+    NOT_EXPECT_OUT=""
+    start="$(date +%s)"
+    ( cd "${TEST_DIR}" && env PATH="${TEST_DIR}/bin:${PATH}" T119_SCEN="${SCEN}" \
+        HEARTBEAT_STATE_DIR="${STATE_DIR}" \
+        "$@" ) >"${TEST_DIR}/out.txt" 2>&1
+    got=$?
+    elapsed=$(( $(date +%s) - start ))
+
+    if [[ "${got}" -ne "${want}" ]]; then
+        printf '  ✗ %s — exit %s, väntade %s\n' "${name}" "${got}" "${want}"
+        sed 's/^/      /' "${TEST_DIR}/out.txt" | head -10
+        FAILED=$(( FAILED + 1 )); return
+    fi
+    if [[ "${maxsec}" != "-" && "${elapsed}" -gt "${maxsec}" ]]; then
+        printf '  ✗ %s — tog %ss, max %ss\n' "${name}" "${elapsed}" "${maxsec}"
+        FAILED=$(( FAILED + 1 )); return
+    fi
+    if [[ -n "${expect}" ]] && ! grep -qF -- "${expect}" "${TEST_DIR}/out.txt"; then
+        printf '  ✗ %s — utdatan saknade "%s"\n' "${name}" "${expect}"
+        sed 's/^/      /' "${TEST_DIR}/out.txt" | head -10
+        FAILED=$(( FAILED + 1 )); return
+    fi
+    if [[ -n "${nexpect}" ]] && grep -qF -- "${nexpect}" "${TEST_DIR}/out.txt"; then
+        printf '  ✗ %s — utdatan innehöll oväntat "%s"\n' "${name}" "${nexpect}"
+        sed 's/^/      /' "${TEST_DIR}/out.txt" | head -10
+        FAILED=$(( FAILED + 1 )); return
+    fi
+    printf '  ✓ %s\n' "${name}"
+    PASSED=$(( PASSED + 1 ))
+}
+
+setup
+printf 'test-heartbeat-svep: kör 22 testfall mot %s\n\n' "${SKRIPT_SRC}"
+
+# ============================================================
+# T1/T2 — RÖTT: tvåsidigt bevis (planterat fälls, rent släpps).
+# mergeStateStatus=BLOCKED här medvetet: isolerar RÖTT-vägen från
+# KANDIDAT-vägen (som kräver CLEAN/UNSTABLE), så testet bara mäter EN sak.
+reset_scen
+set_rows '572\tfalse\tBLOCKED\ttrue\tFAILURE\n'
+EXPECT_OUT="RÖTT — PR #572"
+run_case "T1  RÖTT planterat (check-rollup FAILURE) → bit 1" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+set_rows '572\tfalse\tBLOCKED\ttrue\tSUCCESS\n'
+NOT_EXPECT_OUT="RÖTT"
+run_case "T2  RÖTT rent (samma PR, rollup SUCCESS) → bit 1 EJ satt" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# ============================================================
+# T3/T4 — DIRTY: tvåsidigt bevis. automerge=true här medvetet: isolerar
+# DIRTY-vägen från KANDIDAT-vägen (som kräver automerge=false).
+reset_scen
+set_rows '575\tfalse\tDIRTY\ttrue\tSUCCESS\n'
+EXPECT_OUT="DIRTY — PR #575"
+run_case "T3  DIRTY planterat (mergeStateStatus DIRTY) → bit 2" 2 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+set_rows '575\tfalse\tCLEAN\ttrue\tSUCCESS\n'
+NOT_EXPECT_OUT="DIRTY"
+run_case "T4  DIRTY rent (CLEAN, armerad) → bit 2 EJ satt" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# ============================================================
+# T5–T9 — ARMERINGS-KANDIDAT: fjärde vägen (§ Landning-tabellen,
+# "armering-är-inte-minne"). Fem fall: ett planterat, tre rena varianter
+# (armerad / draft / fel mergeStateStatus) och ett andra planterat fall
+# (UNSTABLE räknas också, inte bara CLEAN).
+reset_scen
+set_rows '565\tfalse\tCLEAN\tfalse\tSUCCESS\n'
+EXPECT_OUT="ARMERINGS-KANDIDAT — PR #565"
+run_case "T5  KANDIDAT planterat (CLEAN, ej armerad, ej draft) → bit 4" 4 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+set_rows '565\tfalse\tCLEAN\ttrue\tSUCCESS\n'
+NOT_EXPECT_OUT="KANDIDAT"
+run_case "T6  KANDIDAT rent — redan armerad → bit 4 EJ satt" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+set_rows '565\ttrue\tCLEAN\tfalse\tSUCCESS\n'
+NOT_EXPECT_OUT="KANDIDAT"
+run_case "T7  KANDIDAT rent — draft → bit 4 EJ satt" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+set_rows '565\tfalse\tBLOCKED\tfalse\tSUCCESS\n'
+NOT_EXPECT_OUT="KANDIDAT"
+run_case "T8  KANDIDAT rent — BLOCKED (ej CLEAN/UNSTABLE) → bit 4 EJ satt" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+set_rows '565\tfalse\tUNSTABLE\tfalse\tSUCCESS\n'
+EXPECT_OUT="ARMERINGS-KANDIDAT — PR #565"
+run_case "T9  KANDIDAT planterat — UNSTABLE räknas också → bit 4" 4 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# ============================================================
+# T10 — KOMBINERAT. En RÖD PR och en DIRTY PR samtidigt, olika PR-nummer.
+# Bitmask-summering: 1 (RÖTT) | 2 (DIRTY) = 3. Båda larmraderna ska synas.
+reset_scen
+set_rows '572\tfalse\tBLOCKED\ttrue\tFAILURE\n575\tfalse\tDIRTY\ttrue\tSUCCESS\n'
+run_case "T10 KOMBINERAT — RÖD + DIRTY samtidigt → bitmask 3" 3 - \
+    bash ./scripts/heartbeat-svep.sh --once
+if grep -qF "RÖTT — PR #572" "${TEST_DIR}/out.txt" && grep -qF "DIRTY — PR #575" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T10b  båda larmraderna syns i samma svep\n'; PASSED=$(( PASSED + 1 ))
+else
+    printf '  ✗ T10b  saknar en av larmraderna\n'; FAILED=$(( FAILED + 1 ))
+fi
+
+# ============================================================
+# T11/T12 — main-SHA: AVANCEMANG är edge-triggered (en landning är en
+# diskret händelse, inte ett ihållande larm-tillstånd) — till skillnad från
+# RÖTT/DIRTY ovan som är level-triggered (L443). Två sopningar i SAMMA
+# testfall, delat state, för att mäta övergången.
+echo ""
+reset_scen
+printf 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' > "${SCEN}/main-sha"
+( cd "${TEST_DIR}" && env PATH="${TEST_DIR}/bin:${PATH}" T119_SCEN="${SCEN}" \
+    HEARTBEAT_STATE_DIR="${STATE_DIR}" bash ./scripts/heartbeat-svep.sh --once ) >/dev/null 2>&1
+printf 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' > "${SCEN}/main-sha"
+EXPECT_OUT="main AVANCERADE aaaaaaaa → bbbbbbbb"
+run_case "T11 main-SHA AVANCERAR mellan två sopningar → larmrad" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+printf 'cccccccccccccccccccccccccccccccccccccccc' > "${SCEN}/main-sha"
+( cd "${TEST_DIR}" && env PATH="${TEST_DIR}/bin:${PATH}" T119_SCEN="${SCEN}" \
+    HEARTBEAT_STATE_DIR="${STATE_DIR}" bash ./scripts/heartbeat-svep.sh --once ) >/dev/null 2>&1
+NOT_EXPECT_OUT="AVANCERADE"
+run_case "T12 main-SHA OFÖRÄNDRAD mellan två sopningar → ingen larmrad" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# ============================================================
+# T13/T14 — FAIL-CLOSED. Ett obesvarat instrument är farligare tystnat än
+# fällt (samma princip och samma exit-kod, 77, som staging-semaphore.sh).
+echo ""
+reset_scen
+touch "${SCEN}/fail-mainsha"
+EXPECT_OUT="SONDEN KUNDE INTE SVARA — main-SHA"
+run_case "T13 fail-closed: main-SHA-anropet misslyckas → 77" 77 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+touch "${SCEN}/fail-prlist"
+EXPECT_OUT="SONDEN KUNDE INTE SVARA — pr-lista"
+run_case "T14 fail-closed: pr-lista-anropet misslyckas → 77" 77 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# ============================================================
+# T15–T17 — ANVÄNDNINGSFEL (config/flagga saknas eller ogiltig) → 64,
+# sysexits EX_USAGE, samma konvention som staging-semaphore.sh.
+echo ""
+reset_scen
+run_case "T15 användningsfel: REPO saknas (ingen config, ingen flagga) → 64" 64 - \
+    env HEARTBEAT_SVEP_POLICY=/finns/inte.conf \
+    bash ./scripts/heartbeat-svep.sh --once
+
+run_case "T16 användningsfel: ogiltigt --interval (0) → 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --interval 0
+
+run_case "T17 användningsfel: ogiltigt --timeout (icke-numeriskt) → 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --timeout abc
+
+# ============================================================
+# T18 — --once LOOPAR ALDRIG. Ett stort --interval (50s) skulle avslöja en
+# regression direkt: om --once av misstag går in i loop-grenen hänger
+# testet i minst 50s. Bunden till 5s ger bred marginal utan att vara skör.
+echo ""
+reset_scen
+run_case "T18 --once loopar aldrig (stort --interval, ändå snabb)" 0 5 \
+    bash ./scripts/heartbeat-svep.sh --once --interval 50
+
+# ============================================================
+# T19 — LOOP-LÄGE, --timeout-bundet. interval=1, timeout=3 ⇒ flera
+# iterationer inom en kort, deterministisk budget. Sista sopningens verdikt
+# (RÖTT planterat i scenariot) ska vara skriptets slutliga exit-kod.
+reset_scen
+set_rows '572\tfalse\tBLOCKED\ttrue\tFAILURE\n'
+run_case "T19 loop-läge, --timeout-bundet, sista verdikt vinner → 1" 1 8 \
+    bash ./scripts/heartbeat-svep.sh --interval 1 --timeout 3
+if [[ "$(grep -c 'RÖTT — PR #572' "${TEST_DIR}/out.txt" 2>/dev/null || true)" -ge 2 ]]; then
+    printf '  ✓ T19b  minst två sopningar hann köras inom loop-fönstret\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T19b  färre än två sopningar sågs — loopen körde inte\n'; FAILED=$((FAILED+1))
+fi
+
+# ============================================================
+# T20 — TOM PR-lista. Grundfallet: inga öppna PR:ar alls ska vara ALLT
+# LUGNT, inte ett fel.
+echo ""
+reset_scen
+EXPECT_OUT="0 öppna PR:ar granskade"
+run_case "T20 tom PR-lista → 0 granskade, ALLT LUGNT" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# ============================================================
+# T21/T22 — --quiet dämpar RUTIN-rader men ALDRIG larm-rader (L443: ett
+# tillstånd som håller i ska synas lika tydligt varje gång — att låta
+# --quiet tysta det vore att återintroducera exakt den envägs-blindheten
+# kortet finns för att åtgärda).
+echo ""
+reset_scen
+set_rows '572\tfalse\tBLOCKED\ttrue\tFAILURE\n'
+EXPECT_OUT="RÖTT — PR #572"
+NOT_EXPECT_OUT="öppna PR:ar granskade"
+run_case "T21 --quiet dämpar rutin men ALDRIG larm (RÖTT syns ändå)" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --quiet
+
+reset_scen
+run_case "T22 --quiet vid rent läge → helt tyst stdout" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --quiet
+if [[ -s "${TEST_DIR}/out.txt" ]]; then
+    printf '  ✗ T22b  förväntade tom utdata, fick:\n'
+    sed 's/^/      /' "${TEST_DIR}/out.txt" | head -5
+    FAILED=$(( FAILED + 1 ))
+else
+    printf '  ✓ T22b  stdout helt tomt vid rent, tyst läge\n'
+    PASSED=$(( PASSED + 1 ))
+fi
+
+printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
+[[ "${FAILED}" -eq 0 ]] || exit 1
+exit 0
