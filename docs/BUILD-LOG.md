@@ -3138,7 +3138,14 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Orkestrering:** research delegerad (2× Sonnet@xhigh research-pass,
   modell-identitet rapporterad), spec-syntesen i huvudloopen med Marcus
   kvittenser (skarv-val + skivnings-mandat), agent-worktrees städade (2).
-  Inga nya lessons — sessionen krävde ingen korrigering; nästa förblir L443.
+- **End-passets incidenter (rättar postens ursprungliga "inga nya
+  lessons"-rad, skriven före stängningen):** #609 fälldes av
+  ADR-count-grinden (rot-README-raden 90→91 missad) och den state-pollande
+  vakten var blind för rött — Marcus fångade externt. **L443 mintad
+  [UNIVERSAL]** (vakta utfallsklasser grönt/rött/timeout, aldrig bara
+  tillståndsbyte) + Marcus mekaniserings-order → `TASK-119` priority high,
+  först i S96-batchen. Alla tio PR:er (#601–#610) MERGED git-verifierade;
+  nästa lesson L444.
 - Full narrativ: sessionsdok S95 Del 1–4.
 
 ## Session-modellen

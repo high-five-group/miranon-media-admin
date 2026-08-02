@@ -15,9 +15,10 @@
 
 ## Aktuellt fokus
 
-**Session 95 🔚 SESSION-END UTFÖRD (2026-08-02) — VÄNTAR MARCUS
-COVERAGE-KVITTENS** — **T95 ROGER & LOTTA-SPÅRET: PARKERAD TRÅD →
-EXEKVERBAR SPEC** (endagssession, egen worktree per ADR-090, parallell med
+**Session 95 ✅ AVSLUTAD (2026-08-02, `lifecycle: closed` på Marcus
+coverage-kvittens "Jag kvitterar!" — post 3 inget-att-säkra i samma
+kvittens, S91/S94-prejudikatformen)** — **T95 ROGER & LOTTA-SPÅRET:
+PARKERAD TRÅD → EXEKVERBAR SPEC** (endagssession, egen worktree per ADR-090, parallell med
 S93): grillning 9/9 Marcus-kvitterad (deploy framdragen ur Fas 7 öppet ·
 Vercel Pro · `admin.`/`send.miranon.dev` · DMARC `p=reject` · invite-EF ·
 lösenord+passkey-erbjudande · TTL 24 h [7-dagars-idén plattforms-falsifierad]
@@ -28,16 +29,21 @@ Add to Dock Gatekeeper-fri, brytpunkt→Tauri) → **PRD `TASK-126`+`TASK-127` +
 ready-for-human) → **ADR-091** (hosting; nummer disk-verifierat) →
 bokföringen (byggplan-avvikelsen · T44 AVGJORD · T46 Grind 0-paketet 7 p ·
 T47-aktivering · T95 `active` · ordlist-post *Användarinbjudan*). PR
-`#601`/`#602`/`#604`–`#608` MERGED verifierade; `#609` i kön vid end-passet.
-Worktree-städning: R1/R2-agentträden bort (2). Inga nya lessons (ingen
-korrigering krävdes). **Numrering efter S95: 96/ADR-092/L443/T114/f47
-(hypotes)/task-128.** **NÄSTA (Marcus-kvitterat vägval): work-batch på
-startkedjorna — 7 kort körbara utan Marcus-moment; prototyp-passet
-`TASK-127.2` är Spår B:s grind (HITL, körs bredvid batchen); Grind
-0-panelen: Vercel-konto + DNS-trion när som helst, SMTP/OTP EFTER `127.4`
-(panel-checklistan) · Marcus-moment: Update-klicket i claude.ai.** Full
-narrativ: sessionsdok S95 Del 1–4 + BUILD-LOG S95-post. *(Föregående
-fokus-text nedan.)*
+Samtliga tio PR:er `#601`–`#610` MERGED git-verifierade (`#609` gick RÖD på
+ADR-count-grinden [rot-README-raden 90→91 missad], Marcus fångade externt —
+den state-pollande vakten var blind för rött → **SKÖRD L443 [UNIVERSAL]**:
+vakta utfallsklasser grönt/rött/timeout, aldrig tillståndsbyte; **Marcus
+mekaniserings-order** → `TASK-119` priority high FÖRST i S96-batchen).
+Worktree-städning: R1/R2-agentträden bort (2). **Numrering efter S95:
+96/ADR-092/L444/T114/f47 (hypotes)/task-128.** **NÄSTA (Marcus-kvitterat
+vägval): NY session S96 via session-start → work-batch: `TASK-119`
+(trevägs-heartbeaten, Marcus-order) FÖRST + de 7 T95-korten
+(126.1+126.2+127.1 → 126.3/126.4/127.4/127.5); prototyp-passet `TASK-127.2`
+är Spår B:s grind (HITL, körs bredvid batchen); Grind 0-panelen:
+Vercel-konto + DNS-trion när som helst, SMTP/OTP EFTER `127.4`
+(panel-checklistan) · hub-lyftet L433–L443 vid hub-sync-moment ·
+Marcus-moment: Update-klicket i claude.ai.** Full narrativ: sessionsdok S95
+Del 1–4 + BUILD-LOG S95-post. *(Föregående fokus-text nedan.)*
 
 **Session 94 ✅ AVSLUTAD (2026-08-02, `lifecycle: closed` på Marcus
 coverage-kvittens "Inget att säkra, kvitterar coverage" — post 3
