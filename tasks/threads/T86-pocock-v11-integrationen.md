@@ -1,7 +1,7 @@
 ---
 owner: marcus803
-updated: 2026-07-25
-review_by: 2026-10-22
+updated: 2026-08-02
+review_by: 2026-11-02
 status: stable
 lifecycle: active
 ---
@@ -265,6 +265,19 @@ båda öppet bokförda hellre än utjämnade.
 
 Båda avvikelserna talar för samma sak: **piloten mäter något annat än den
 avsåg så länge passet inte kan köras på Codes eget initiativ.**
+
+**STÅENDE ORDER 2026-08-02 (beslutsbordet S91 punkt 6, Marcus):**
+granskningspasset körs **automatiskt på varje produktkod-skiva/kort** under
+piloten — docs-/config-kort deltar inte (pilotens omfång oförändrat). Ordern
+är Marcus egen begäran i AgentTool-regelns mening: konsekvens 1:s
+"user requested"-villkor är därmed uppfyllt STÅENDE, inte per anrop, och
+friktionen ovan är stängd för pilotens återstod. Subagenten kör Sonnet
+(kostnadsläget vägdes i beslutet; eskalering till Fable tillåten för
+bedömningstunga fynd per Marcus-defaulten 2026-08-02). Uteblivna pass märks
+fortsatt i pilot-loggen (konsekvens 2 gäller oförändrad); utvärdering per
+pilotplanen efter 10–15 produktkod-skivor. Rekommendationen var Codes med
+branschgrund (obligatorisk granskning per ändring är norm — Google Engineering
+Practices kräver granskning av varje CL); beslutet Marcus.
 
 ### Escapes-kolumnens kalibrering — OMTRIAGE 2026-07-25 (S86 → S87)
 
