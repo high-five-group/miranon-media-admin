@@ -424,27 +424,14 @@ pekare, inte tillstånd (fragmentet
 (förberett granskningsmaterial) bärs av review-kadensens stående order
 (`T86`, 2026-08-02).
 
-- [ ] **Punkt 9 — push-kadensens dom saknar hemvist i levande styrande fil.**
-      NY 2026-07-28.
-      [Passet](../docs/research/push-kadens-agent-arbetstrad-2026-07-26.md)
-      dömde vår kadens **rätt**: en commit per PR och 7–11 PR:er/dag är
-      branschrekommendationen med marginal (trunk-based sätter golvet vid en
-      integration per dygn; DORA-elit vid högst tre aktiva brancher), och det
-      gängse branch→flera-commits→push-flödet är en LÄGRE integrationsfrekvens
-      som Fowler klassar som *"semi-integration"*. **Domen bor bara i
-      research-doket.** Verifierat 2026-07-28: strängen `push-kadens` finns inte
-      i `CONTRIBUTING.md`, `CLAUDE.md`, någon ADR, `lessons.md` eller
-      fragmenten. **Slutklämmen rättad 2026-07-29:** posten sade att enda träffen
-      utanför passet var en rad i denna fil. `git grep` ger fler — tio rader i
-      S91:s sessionsdok, `scripts/check-adr-count.sh` rad 10, `.lycheeignore`
-      rad 193 och **tre** rader här. Postens poäng överlever oskadd: ingen av
-      dem är en levande STYRANDE fil. Passets
-      egen huvudkritik var att regeln är oskriven och därför varken kan
-      försvaras när den ifrågasätts eller ärvas av en ny agent; den kritiken
-      står ännu obesvarad. Kärnan som ska skrivas ned är **separationen**:
-      commit-frekvens är gratis, push-frekvens kostar en full CI-körning plus en
-      plats i staging-mutexen. Rätt hemvist är `CONTRIBUTING.md`. **Buntas INTE**
-      med A7:7 (`TASK-70.5`) trots samma fil — kort mintas när posten plockas
+**A2:9 (Punkt 9) STÄNGD 2026-08-02 — domen har hemvist.** Kort `TASK-122`
+mintat när posten plockades (postens egen regel); domen + separationen
+(commit-frekvens gratis, push-frekvens kostar en full CI-körning plus en
+plats i staging-mutexen) inskriven i `CONTRIBUTING.md` § Push-kadensen med
+källpekare till
+[passet](../docs/research/push-kadens-agent-arbetstrad-2026-07-26.md).
+Kortet stängs i stängningsbatchen efter merge_group-verifikat. Flyttad till
+§ Avbockningslogg.
 
 ### A3 · Verktygs-åtgärderna
 
@@ -482,20 +469,18 @@ denna prosareferens.)*
 Marcus fråga avtäckte att kravet inte var inskrivet någonstans som återkommande
 — bara som en engångs-order mot fyra namngivna egenbyggen.
 
-- [ ] **Skriv in kravet durabelt:** innan ett nytt skript/verktyg byggs ska
-      verktygsvals-prövningen göras och **utfallet redovisas** — även när domen
-      blir "bygg eget". Hör sannolikt i `CONTRIBUTING.md` eller som hub-regel.
+**A3b STÄNGD 2026-08-02:** kravet inskrivet i `CONTRIBUTING.md` § Verktygsval
+före nybygge (spoke-hemvist valdes — kravet är formulerat mot repots egna
+byggen; hub-lyft prövas vid hub-sync om klassen visar sig universell).
+Flyttad till § Avbockningslogg.
 
-**Den retroaktiva redovisningen för `check-lesson-numbers.sh` är landad**
-(`TASK-86`, § Avbockningslogg). **Öppen svans som INTE följde med kortet:**
-prövningen gjordes bara delvis. Towncrier, MADR #28 och Rust RFC 0002 lästes och
-**mönstret** lånades, men ADR-081 redovisar fortfarande inte varför towncrier
-valdes bort som *verktyg*. De ärliga skälen (Python-verktyg i ett Node-projekt ·
-genererar changelogs vid release, vår `lessons.md` har inga releaser · löser
-inte kollisionen utan undviker nummer helt, vilket ÄR mönstret vi lånade) är ett
-**resonemang, inte en mätning**, och ska stå i ADR:n hellre än antas. Frågan
-gränsar till **`TASK-97`** men är inte samma: `97` rättar *precedent-anspråket*,
-detta är *verktygsvalet*. Bärs av A3b:s öppna post ovan tills någon tar den.
+**Svansen var redan landad när posten plockades (verifierat mot ADR-texten
+2026-08-02):** ADR-081 bär sedan 2026-07-30 (`TASK-86`) § *"Verktygsvalet:
+towncrier som VERKTYG — retroaktiv redovisning"* med exakt de tre skälen,
+öppet klassade som resonemang, plus den senare empiriska bekräftelsen
+(nummerallokerings-passet § Fynd 1b). Denna kropps-text fortsatte ändå påstå
+att redovisningen saknades — samma driftklass som `A2:8`-raden (fragmentet
+`stangning-i-en-yta-utan-att-bryta-den-andra`), andra instansen samma dag.
 
 ### A4 · Grindarnas form
 
@@ -1093,3 +1078,5 @@ stängde `TASK-54.2` DoD 7 och `TASK-54.3` DoD 5).
 | 2026-08-02 | **`A2:11` STÄNGD på Marcus kvittens (beslutsbordet punkt 3) mot bokförd slutsats.** Steg 1 räckte — mätningen 2026-07-30: `bygg-agent` 16/16 · `research-pass` 8/8 isolerade; allt läckage i inbyggda, övervägande läsande typer (`general-purpose` 0/18 · `Explore` 0/5 · `claude-code-guide` 0/5). Steg 3/4 fel hävstång — byggs INTE (över-engineering-vakten). Scratchpad-kollisionen ortogonal mot worktree-isolering; bärs av fragmentet `parallella-agenter-delar-scratchpad-namnrymd` + `bygg-agent.md`-konventionen, kortas vid behov | sessionsdok Del 32.4 · `docs/research/harness-namnrymd-agenter-2026-07-30.md` |
 | 2026-08-02 | **`A2:7` (Punkt 7) STÄNGD på Marcus kvittens (beslutsbordet punkt 3).** Båda halvorna besvarade sedan 2026-07-30 (`TASK-93` → `check_active_branches: true` i drift + filnamnshalvans deklarerade konvention i `bygg-agent.md`). Residualerna — delade statusfiler · läsande agenter · staging-basen/`P4`-taket/acceptance-porten — är dokumenterade väggar med egna bärare (`T108`/`T109` · fragment · Fas E/`T85` våg 3), kortas vid behov | sessionsdok Del 32 · loggens 2026-07-30-rader |
 | 2026-08-02 | **`A2:8`-kroppsraden bruten i efterhand — bokföringsdriften rättad.** Beslutet fanns sedan 2026-07-29 (Del 28: default-neka mot uppräknad lista · defera+informationsplikt vid låst beslut · ADR-083) och loggen bokförde KLAR 2026-07-30, men kroppens checkbox stod kvar öppen — posten återuppstod som beslutsbords-punkt 4 tills Marcus kände igen den (*"jag har svaret på denna fråga tidigare"*). Ingen ny grillning behövdes. Fragment: `stangning-i-en-yta-utan-att-bryta-den-andra` | Del 28 · ADR-083 · denna rättelse |
+| 2026-08-02 | **`A2:9` (Punkt 9) STÄNGD — push-kadensens dom har hemvist.** `TASK-122` mintat vid plock (postens egen regel); domen (en commit per PR · 7–11 PR/dag, rätt mot branschgolven) + separationen (commit-frekvens gratis, push-frekvens kostar CI + mutexplats) inskriven i `CONTRIBUTING.md` § Push-kadensen med källpekare till passet. Kortet stängs i stängningsbatchen efter merge_group-verifikat | `TASK-122` · CONTRIBUTING § Push-kadensen · [passet](../docs/research/push-kadens-agent-arbetstrad-2026-07-26.md) |
+| 2026-08-02 | **`A3b` STÄNGD — verktygsvals-kravet durabelt.** `CONTRIBUTING.md` § Verktygsval före nybygge bär det stående kravet (prövning + skriftlig redovisning även vid "bygg eget"). Svansen (ADR-081/towncrier) var redan landad sedan 2026-07-30 (`TASK-86`, ADR-081 § Verktygsvalet, verifierat mot ADR-texten) — kropps-texten hade aldrig brutits: andra driftinstansen samma dag, klassen bärs av fragmentet `stangning-i-en-yta-utan-att-bryta-den-andra` | CONTRIBUTING § Verktygsval · ADR-081 § Verktygsvalet |
