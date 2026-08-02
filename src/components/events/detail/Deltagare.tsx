@@ -1052,17 +1052,22 @@ function MarkerbartKort({
 function BorOverRad({
   reg,
   onToggle,
+  disabled = false,
 }: {
   reg: Registration;
   onToggle: (reg: Registration, borOver: boolean) => void;
+  /** [PROTOTYPE] [S93] review-fix — `?data=proto`: kontrollen görs read-only
+      (native disabled-semantik), ingen mutation avfyras (se toggleBorOver). */
+  disabled?: boolean;
 }) {
   const pill = KATEGORI_PILL[kategori(reg)];
   return (
     <Checkbox
       data-testid="bor-over-rad"
       isSelected={reg.borOver === true}
+      isDisabled={disabled}
       onChange={(v) => onToggle(reg, v)}
-      className="group flex cursor-pointer items-center gap-3 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
+      className="group flex cursor-pointer items-center gap-3 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60 contrast-more:border-(--mm-navcard-border-contrast)"
     >
       <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
         <Check
@@ -1304,8 +1309,14 @@ function ArbetsKo({
     setHallplatsFilter((nu) => (nu === steg ? null : steg));
   };
 
-  const toggleBorOver = (reg: Registration, borOver: boolean) =>
+  // [PROTOTYPE] [S93] review-fix (uppdraget § FYND 2) — `?data=proto`:
+  // stubbad, samma read-only-förstärkning som bekraftaMarkerade ovan.
+  // Kontrollen (BorOverRad) görs redan `disabled` nedan — denna guard är
+  // försvar-i-djup, inte den enda spärren.
+  const toggleBorOver = (reg: Registration, borOver: boolean) => {
+    if (protoDataMode) return;
     lodging.mutate({ registration: reg, borOver });
+  };
 
   // Kryss-lägets lista: ALLA visade anmälda (arbetsrad, inte filterlista) med
   // ikryssade — enligt snapshoten — överst. Array.sort är stabil (ES2019) så
@@ -1590,13 +1601,30 @@ function ArbetsKo({
               // KRYSS-LÄGET (K52): ALLA visade anmälda i EN kolumn, säng-kryss
               // per rad, ikryssade (snapshot) överst. Ersätter personkorten helt.
               markeringsLista.length > 0 ? (
-                <ul className="flex flex-col gap-2.5">
-                  {markeringsLista.map((reg) => (
-                    <li key={reg.id}>
-                      <BorOverRad reg={reg} onToggle={toggleBorOver} />
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  {/* [PROTOTYPE] [S93] review-fix — delad förklaringstext
+                      (uppdraget § FYND 2): "liten text"-delen; per-rad `title`
+                      (BorOverRad) bär hover-formen. */}
+                  {protoDataMode && (
+                    <p className="pb-1 text-caption text-text-muted">
+                      Förhandsvisning (proto) — Bor över är inaktiverad nedan, inget sparas.
+                    </p>
+                  )}
+                  <ul className="flex flex-col gap-2.5">
+                    {markeringsLista.map((reg) => (
+                      <li
+                        key={reg.id}
+                        title={
+                          protoDataMode
+                            ? 'Inaktiverad i förhandsvisningen (proto) — inget sparas'
+                            : undefined
+                        }
+                      >
+                        <BorOverRad reg={reg} onToggle={toggleBorOver} disabled={protoDataMode} />
+                      </li>
+                    ))}
+                  </ul>
+                </>
               ) : (
                 <p className="py-2 text-small text-text-secondary">
                   Inga deltagare i denna kategori.

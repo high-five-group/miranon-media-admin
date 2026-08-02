@@ -181,3 +181,57 @@ stegen — värt att väga in i valet.
 Del 7 var C (starkast branschstöd + billigast strukturellt), men det valet
 gjordes FÖRE denna byggda jämförelse — de tre bilderna ovan är underlaget
 för det faktiska valet, inte en förhandsdom.
+
+---
+
+## Review-fix (PR #603, 2026-08-02) — read-only-stubben täckte inte alla skrivvägar
+
+Granskningsfynd mot den pushade grenen: read-only-förstärkningen ("UI-varianter
+kopplas aldrig till verkliga mutationer") höll bara för Variant C:s
+bekräfta-genväg. Två vägar avfyrade RIKTIGA `?data=proto`-mutationer:
+
+1. **Betalningar.tsx** (`BetalningsDetaljer`/`BetalningsLinje`): kryss, notering
+   och Påminn byggde en delad `ArbetsytansMutationer` och kallade `.mutate()`
+   oavsett dataläge — ett klick på en fixtur-rad avfyrade ett skarpt EF-anrop
+   mot staging med ett ID som inte finns där.
+2. **Deltagare.tsx** (`toggleBorOver`/`BorOverRad`): Bor över-kryssets
+   `lodging.mutate(...)` var ogrindat i proto-läget (endast bekräfta-genvägen
+   var stubbad).
+
+**Fixens form (minsta ärliga, per uppdraget — inte kvittens-UI):** disablade
+kontroller, inte tyst no-op. `protoDataMode` trädd hela vägen ned till varje
+kontroll (`BetalKryss`/`Input`/Påminn-elementet i Betalningar; `BorOverRad` i
+Deltagare):
+
+- **Kryss** (betalning + Bor över): `isDisabled` (native RAC-semantik — AT
+  läser "avstängd/otillgänglig") + `data-[disabled]:cursor-not-allowed
+  data-[disabled]:opacity-60` (samma data-attribut-mönster som `Input`s egen
+  disabled-styling). Anropsfunktionerna (`onChange`/`toggleBorOver`) guardar
+  ÄVEN explicit på `protoDataMode` — försvar-i-djup, inte den enda spärren.
+- **Noteringsfältet:** `isDisabled` på `Input` (blockerar inmatning helt;
+  `sparaNotering` guardar också explicit).
+- **Påminn:** `<a href="mailto:…">` (med onClick-mutation) byts mot en inert
+  `<span aria-disabled="true">` i proto-läge — ingen `mailto:`-navigation,
+  ingen onClick, samma ikon/yta (K33: slotten alltid samma bredd).
+- **Title/aria + liten text:** EN delad förklaringsrad per arbetsyta
+  (`text-caption text-text-muted`, t.ex. "Förhandsvisning (proto) — kryss,
+  notering och påminn är inaktiverade nedan, inget sparas") + `title` på
+  radens/kortets DOM-wrapper (inte på RAC-komponenten själv — `Checkbox`s
+  props-kontrakt saknar `title`, verifierat mot `@react-types/shared`s
+  `GlobalDOMAttributes`/`DOMProps`/`InputDOMProps`).
+
+**Default-läget och skarpa vyn (utan `?variant`) står ORÖRDA** — `protoDataMode`
+defaultar till `false` i varje ny prop, så oförändrat beteende utanför
+prototypen är strukturellt garanterat, inte bara testat.
+
+**Verifiering:** fristående Playwright-skript (L304-formen: e2e-svitens
+`playwright/.auth/user.json`, mockad `get-event`/`get-registrations` via
+`page.route` + en catch-all-abort på alla ANDRA `/functions/v1/*`-anrop som
+säkerhetsnät) mot en dev-server på port 5187. Alla fem skrivvägar klickade i
+`?data=proto&variant=c`: betalnings-kryss, noteringsfält-commit, Påminn,
+Bor över-kryss, bekräfta-genvägen (två-stegs-dialogen: trigger + "Skicka
+N bekräftelse(r)") — **noll mutations-anrop fångade** på samtliga. Skarpa
+vyn (utan `?variant`) omkörd separat: `data-disabled` förekommer EN gång i
+DOM (en orelaterad "Spara"-knapp i Ändra-morfen, inte Betalningar/Deltagare),
+ingen proto-förklaringstext, kryss/notering odisabled, Påminn-länkarna
+(mailto) intakta.
