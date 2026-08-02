@@ -7,7 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 17:26'
-updated_date: '2026-08-02 17:35'
+updated_date: '2026-08-02 17:44'
 labels: []
 dependencies: []
 ordinal: 217000
@@ -54,4 +54,12 @@ PR #628 är sedan 2026-08-02 ~17:33 UTC inte bara RÖD utan DIRTY. Main har avan
 #628 kräver alltså TVÅ åtgärder, inte en: (1) klassbeslutet i detta kort, och (2) en kortfils-konfliktlösning.
 
 ORSAKEN ÄR ORKESTRERARENS EGEN: att skriva bokföring till ett kort vars ändringar ligger olandade i en öppen PR skapar garanterat en konflikt i just den filen. Noten hade kunnat bo enbart här och i sessionsdokets Del 4, som inte finns på grenen. Fångad som lessons-fragment.
+
+PRECISERING av rättelsen ovan (orkestreraren, samma natt). Rättelsens EGEN attribution var fel och rättas här — sista ledet, ingen vidare kedja.
+
+Rättelsen skrev: 'Kortets och sessionsdokets ursprungliga formulering — att PR #628 kan landa av sig själv när klassfrågan är avgjord — är FEL.' Det stämmer inte. Verifierat mot disk: sessionsdokets Del 4 säger endast 'står öppen, röd och armerad', och TASK-126.2:s not säger 'den kan inte landa röd, och armeringen behöver inte återställas när felet är löst'. Båda var korrekta när de skrevs; de var OFULLSTÄNDIGA eftersom DIRTY inte hade inträffat ännu.
+
+Det direkt felaktiga påståendet — 'den landar av sig själv när klassfrågan är avgjord' — gjordes i orkestrerarens rapport till Marcus, alltså i sessionens efemära trail och inte i någon artefakt.
+
+SAKINNEHÅLLET I RÄTTELSEN STÅR OFÖRÄNDRAT: #628 är röd OCH dirty, kräver klassbeslut plus kortfils-konfliktlösning, och konflikten orsakades av att bokföring skrevs till ett kort med olandade ändringar. Endast attributionen var fel.
 <!-- SECTION:NOTES:END -->
