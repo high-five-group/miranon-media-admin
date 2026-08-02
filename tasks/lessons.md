@@ -8464,3 +8464,23 @@ Empiri (S94, 2026-08-02): granskningen av research-PR #593 visade 4 filer /
 kvar på worktreens födelse-SHA (`5d6f05f8`) medan origin hunnit fem
 landningar längre. Nära släkt med L435 (tredot-brus vid inbakade merges) —
 annan mekanism, samma symptom: lita på fjärrens fillista före lokal diff.
+
+### L443 — Vakter som pollar tillståndsbyte är blinda för rött — vakta utfallsklasser
+
+**En PR-vakt som väntar på "state ≠ OPEN" kan aldrig se en fälld körning:
+en röd check lämnar PR:en OPEN, så vakten snurrar förbi exakt det läge den
+behövdes för och dör sedan tyst på timeout. Vakta UTFALLSKLASSER med
+explicit terminal för varje: grönt-mergat / RÖTT (räkna faktiska
+check-fail) / TIMEOUT — aldrig tyst, oavsett utfall.** `[UNIVERSAL]`
+
+Empiri (S95, 2026-08-02): end-passets ad-hoc-vakt på PR #608/#609 pollade
+enbart state; #609 fälldes av ADR-count-grinden (rot-README:s kanoniska rad
+90 ≠ 91 filer) och stod röd i ~20 minuter tills MARCUS flaggade den —
+extern fångst, precis som fångst-raterna förutsäger (~9 % self-review).
+Felklassen var dessutom redan bokförd som kort: `TASK-119` (S91) heter
+ordagrant "heartbeat-svepet är handstartad konvention med ENVÄGS-historik —
+mekanisera med trevägs-terminalvillkor"; sessionen rullade en egen sämre
+vakt i stället för att köra den stående formen (T112-svepet). Marcus-order
+vid kvittensen: regeln SKA mekaniseras — `TASK-119` prioriterad high, först
+i S96-batchen. Tills skriptet finns: varje handrullad vakt bär trevägs-
+villkoren själv.
