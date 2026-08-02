@@ -13,6 +13,8 @@ import {
   TriangleAlert,
   X,
 } from 'lucide-react';
+// [PROTOTYPE] [S93] hållplats-pass — kastbar wiring (throwaway-kontraktet):
+import { useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
@@ -30,8 +32,24 @@ import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
+// [PROTOTYPE] [S93] hållplats-pass — se DeltagareHallplatsPrototyp.tsx (frågan,
+// huvudprototypfilen) + hallplats-steg-prototyp.ts (delad logik/fixturer).
+import {
+  AvbokadeRad,
+  type HallplatsCounts,
+  HallplatsHarnastPanel,
+  HallplatsMarke,
+  HallplatsToppA,
+  HallplatsToppB,
+} from './DeltagareHallplatsPrototyp';
 import { DetaljGrupp } from './DetaljGrupp';
 import { DAGMANAD } from './datumSpann';
+import {
+  HALLPLATS_PROTO_FIXTURES,
+  type HallplatsVariant,
+  hallplatsSteg,
+  isHallplatsVariant,
+} from './hallplats-steg-prototyp';
 
 /**
  * Anmälda deltagare som ARBETSKÖ — skelettet (task-18.4; S73-facit K35–K58).
@@ -759,11 +777,15 @@ function KortInnehall({
   eventId,
   lankat,
   vald,
+  hallplatsMarke,
 }: {
   reg: Registration;
   eventId: string;
   lankat: boolean;
   vald: boolean;
+  /** [PROTOTYPE] [S93] Steg-märket — undefined utanför hållplats-prototypen
+      (default, zero-behaviour-change; se DeltagareHallplatsPrototyp.tsx). */
+  hallplatsMarke?: React.ReactNode;
 }) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
@@ -862,6 +884,9 @@ function KortInnehall({
         data-testid="deltagar-metayta"
         className="flex flex-col gap-1 px-4 pt-2.5 pb-3 text-caption text-text-muted"
       >
+        {/* [PROTOTYPE] [S93] Steg-märket — GEMENSAMT-kravet: diskret, i
+            metaytan (inte pill-slotten uppe till höger). */}
+        {hallplatsMarke}
         {anmald &&
           (lankat ? (
             <Link
@@ -909,13 +934,28 @@ function KortInnehall({
  * länk med prefetch på avsikt (18.17/ADR-078), historikraden (K45), pillar och
  * metayta. Prototypens avsaknad av dem var en förenkling, inte facit.
  */
-function DeltagarKort({ reg, eventId }: { reg: Registration; eventId: string }) {
+function DeltagarKort({
+  reg,
+  eventId,
+  hallplatsMarke,
+}: {
+  reg: Registration;
+  eventId: string;
+  /** [PROTOTYPE] [S93] — se KortInnehall. */
+  hallplatsMarke?: React.ReactNode;
+}) {
   return (
     <div
       data-testid="deltagar-kort"
       className="flex flex-col rounded-xl border border-(--mm-navcard-border) bg-surface contrast-more:border-(--mm-navcard-border-contrast)"
     >
-      <KortInnehall reg={reg} eventId={eventId} lankat vald={false} />
+      <KortInnehall
+        reg={reg}
+        eventId={eventId}
+        lankat
+        vald={false}
+        hallplatsMarke={hallplatsMarke}
+      />
     </div>
   );
 }
@@ -958,11 +998,14 @@ function MarkerbartKort({
   eventId,
   vald,
   onChange,
+  hallplatsMarke,
 }: {
   reg: Registration;
   eventId: string;
   vald: boolean;
   onChange: (vald: boolean) => void;
+  /** [PROTOTYPE] [S93] — se KortInnehall. */
+  hallplatsMarke?: React.ReactNode;
 }) {
   return (
     <Checkbox
@@ -979,7 +1022,13 @@ function MarkerbartKort({
           : 'border-(--mm-navcard-border) bg-surface contrast-more:border-(--mm-navcard-border-contrast)'
       }`}
     >
-      <KortInnehall reg={reg} eventId={eventId} lankat={false} vald={vald} />
+      <KortInnehall
+        reg={reg}
+        eventId={eventId}
+        lankat={false}
+        vald={vald}
+        hallplatsMarke={hallplatsMarke}
+      />
     </Checkbox>
   );
 }
@@ -1003,17 +1052,22 @@ function MarkerbartKort({
 function BorOverRad({
   reg,
   onToggle,
+  disabled = false,
 }: {
   reg: Registration;
   onToggle: (reg: Registration, borOver: boolean) => void;
+  /** [PROTOTYPE] [S93] review-fix — `?data=proto`: kontrollen görs read-only
+      (native disabled-semantik), ingen mutation avfyras (se toggleBorOver). */
+  disabled?: boolean;
 }) {
   const pill = KATEGORI_PILL[kategori(reg)];
   return (
     <Checkbox
       data-testid="bor-over-rad"
       isSelected={reg.borOver === true}
+      isDisabled={disabled}
       onChange={(v) => onToggle(reg, v)}
-      className="group flex cursor-pointer items-center gap-3 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)"
+      className="group flex cursor-pointer items-center gap-3 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60 contrast-more:border-(--mm-navcard-border-contrast)"
     >
       <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
         <Check
@@ -1056,6 +1110,7 @@ function DeltagarListan({
   rullande = false,
   testId,
   markering,
+  hallplatsMarke,
 }: {
   rader: Registration[];
   /** Eventets record-ID — kortens Anmäld-rad länkar till anmälans sida (18.17). */
@@ -1068,6 +1123,8 @@ function DeltagarListan({
     valda: ReadonlySet<string>;
     vaxla: (id: string, vald: boolean) => void;
   } | null;
+  /** [PROTOTYPE] [S93] Per-rad steg-märke; undefined = ingen (skarpa vyn). */
+  hallplatsMarke?: (reg: Registration) => React.ReactNode;
 }) {
   const rullKlasser = rullande
     ? 'focus-ring-inset scrollbar-inline max-h-[25.5rem] overflow-y-auto pr-2.5'
@@ -1091,9 +1148,10 @@ function DeltagarListan({
               eventId={eventId}
               vald={markering.valda.has(reg.id)}
               onChange={(vald) => markering.vaxla(reg.id, vald)}
+              hallplatsMarke={hallplatsMarke?.(reg)}
             />
           ) : (
-            <DeltagarKort reg={reg} eventId={eventId} />
+            <DeltagarKort reg={reg} eventId={eventId} hallplatsMarke={hallplatsMarke?.(reg)} />
           )}
         </li>
       ))}
@@ -1101,12 +1159,54 @@ function DeltagarListan({
   );
 }
 
-function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Registration[] }) {
+function ArbetsKo({
+  event,
+  registreringar,
+  protoVariant = null,
+  protoDataMode = false,
+}: {
+  event: Event;
+  registreringar: Registration[];
+  /** [PROTOTYPE] [S93] hållplats-pass — null = skarpa vyn, orörd. */
+  protoVariant?: HallplatsVariant | null;
+  /** [PROTOTYPE] [S93] `?data=proto` — stubbar bekräfta-mutationen (§ DATA). */
+  protoDataMode?: boolean;
+}) {
   const panelId = useId();
   const [flik, setFlik] = useState<FlikNyckel>('alla');
   const [filter, setFilter] = useState<SummeringsFilter | null>(null);
+  // [PROTOTYPE] [S93] hållplats-filtret — EGET state, parallellt med `filter`
+  // (aldrig i FILTER_TEST/SummeringsFilter — de tre hållplats-hinken existerar
+  // bara i denna DEV-gren). Ömsesidigt uteslutande med `filter` (se
+  // vaxlaFilter/vaxlaHallplatsFilter nedan): endast ETT filter i taget.
+  const [hallplatsFilter, setHallplatsFilter] = useState<keyof HallplatsCounts | null>(null);
 
   const aktiva = useMemo(() => registreringar.filter(arAktiv), [registreringar]);
+
+  // [PROTOTYPE] [S93] GEMENSAMT — avbokade (Del 3 fall C): tysta idag, en
+  // diskret rad längst ned under hållplats-prototypen. Läser HELA
+  // `registreringar` (inte `aktiva`, som redan exkluderar dem).
+  const protoAvbokade = useMemo(
+    () => registreringar.filter((r) => r.status === RegistrationStatus.AVBOKAD),
+    [registreringar],
+  );
+  // [PROTOTYPE] [S93] De tre stegräknarna — EXKLUDERAR 'installt'/'till-vantelista'
+  // (de får egna ärliga märken på kortet, se research-doken Del 6C, men räknas
+  // inte in i huvud-pipelinens tre hinkar; snitt bokfört i slutrapporten).
+  const hallplatsCounts: HallplatsCounts = useMemo(() => {
+    const counts: HallplatsCounts = { 'vantar-bekraftelse': 0, 'vantar-betalning': 0, klar: 0 };
+    for (const r of aktiva) {
+      const steg = hallplatsSteg(r);
+      if (steg === 'vantar-bekraftelse' || steg === 'vantar-betalning' || steg === 'klar') {
+        counts[steg] += 1;
+      }
+    }
+    return counts;
+  }, [aktiva]);
+  const hallplatsMarkeFn =
+    protoVariant != null
+      ? (r: Registration) => <HallplatsMarke steg={hallplatsSteg(r)} />
+      : undefined;
 
   // Summeringarna räknar ALLTID hela eventet (K38) — flikvalet påverkar bara
   // listorna under, aldrig "hur många".
@@ -1160,7 +1260,17 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
   const [bekraftadeVal, setBekraftadeVal] = useState<boolean | null>(null);
   const bekraftadeOppen = bekraftadeVal ?? obekraftadeTotalt === 0;
 
-  const traffar = filter == null ? null : visade.filter(FILTER_TEST[filter]);
+  // [PROTOTYPE] [S93] `traffar` bär NU båda filtren (verkliga `filter` +
+  // hållplats-prototypens `hallplatsFilter`) — ömsesidigt uteslutande (se
+  // vaxlaFilter/vaxlaHallplatsFilter), så den befintliga filtrerings-grenen
+  // nedan (Rensa filtret, borOver-specialfallet, DeltagarListan) återanvänds
+  // OFÖRÄNDRAD för hållplats-filtret också.
+  const traffar =
+    filter != null
+      ? visade.filter(FILTER_TEST[filter])
+      : hallplatsFilter != null
+        ? visade.filter((r) => hallplatsSteg(r) === hallplatsFilter)
+        : null;
 
   // Kryss-lägets STABILA sorterings-snapshot (K52): fångas när läget ÖPPNAS så
   // att en nykryssad rad inte hoppar upp under fingret — omsorteringen sker
@@ -1177,6 +1287,10 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
     markering.stang();
     // Nytt arbetssteg ⇒ förra batchens kvittens är förbrukad (fynd (c)).
     setUtfall(null);
+    // [PROTOTYPE] [S93] Ett verkligt filter ERSÄTTER hållplats-filtret (samma
+    // ömsesidiga uteslutning som gäller `filter` sinsemellan) — no-op utanför
+    // prototypen (hallplatsFilter är alltid null där).
+    setHallplatsFilter(null);
     setFilter((nu) => {
       const next = nu === f ? null : f;
       if (f === 'borOver' && next === 'borOver') {
@@ -1186,8 +1300,23 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
     });
   };
 
-  const toggleBorOver = (reg: Registration, borOver: boolean) =>
+  /** [PROTOTYPE] [S93] Hållplats-räknarnas klick — se vaxlaFilter ovan för
+      den ömsesidiga uteslutningen. */
+  const vaxlaHallplatsFilter = (steg: keyof HallplatsCounts) => {
+    markering.stang();
+    setUtfall(null);
+    setFilter(null);
+    setHallplatsFilter((nu) => (nu === steg ? null : steg));
+  };
+
+  // [PROTOTYPE] [S93] review-fix (uppdraget § FYND 2) — `?data=proto`:
+  // stubbad, samma read-only-förstärkning som bekraftaMarkerade ovan.
+  // Kontrollen (BorOverRad) görs redan `disabled` nedan — denna guard är
+  // försvar-i-djup, inte den enda spärren.
+  const toggleBorOver = (reg: Registration, borOver: boolean) => {
+    if (protoDataMode) return;
     lodging.mutate({ registration: reg, borOver });
+  };
 
   // Kryss-lägets lista: ALLA visade anmälda (arbetsrad, inte filterlista) med
   // ikryssade — enligt snapshoten — överst. Array.sort är stabil (ES2019) så
@@ -1233,6 +1362,19 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
   const bekraftaMarkerade = async () => {
     setUtfall(null);
     const ids = [...markering.valda];
+    // [PROTOTYPE] [S93] `?data=proto` — READ-ONLY FÖRSTÄRKT (uppdraget § DATA):
+    // mutationen STUBBAS, inget nätverksanrop. Samma kvittens-UI som skarpt —
+    // c-variantens genväg ska visa HELA flödet, bara utan att skriva.
+    if (protoDataMode) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      setUtfall({
+        ton: 'success',
+        titel: SKICKAT_TITEL,
+        text: skickatKvittens(ids.length),
+      });
+      markering.stang();
+      return;
+    }
     try {
       const result = await bulk.mutateAsync({ registrationIds: ids });
       // Aldrig binärt: allt annat än rent skickat visas som det ÄR (K53-ärligheten).
@@ -1268,75 +1410,147 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
     markering.oppna();
   };
 
+  /**
+   * [PROTOTYPE] [S93] Variant C:s genväg ("Öppna och markera" i
+   * Härnäst-panelen) — TASK-18.20 A3b-genvägsformen: öppnar det ORÖRDA
+   * markera-läget (samma `useMarkeringsLage`/batch-bar som Obekräftade alltid
+   * haft) och förmarkerar ALLA kandidater. Kandidatlistan är `obekraftadeIds`
+   * — real eller fixtur beroende på `?data`, samma mekanik oavsett.
+   * Bekräfta-mutationen stubbas separat (se bekraftaMarkerade ovan) när
+   * `?data=proto`; denna funktion självt gör ingen skillnad på datamode.
+   */
+  const oppnaOchMarkeraGenvag = () => {
+    oppnaMarkering();
+    markering.markeraAlla();
+  };
+
   // Signalen tänds bara när det finns något ATT skicka (K44).
   const signalText =
     totalt - eventinfoSkickade > 0 ? eventinfoSignal(event.startdatum ?? null) : null;
 
   return (
     <>
-      <div className="divide-y divide-border">
-        <SummeringsRad
-          term="Obekräftade anmälningar"
-          aktiv={filter === 'obekraftade'}
-          onClick={() => vaxlaFilter('obekraftade')}
-        >
-          {obekraftadeTotalt > 0 ? (
-            <span className="font-medium text-error tabular-nums">{obekraftadeTotalt}</span>
-          ) : (
-            '0'
-          )}
-        </SummeringsRad>
-        {/* K42 — raderna i LOTTAS UTSKICKSORDNING: bekräftelsen (mail 1, bär
-            betalningsinstruktionerna) → ev. betalningspåminnelse → eventinfo
-            (mail 2, två veckor före). */}
-        <SummeringsRad
-          term="Anmälningsbekräftelse skickad"
-          aktiv={filter === 'bekraftelse'}
-          onClick={() => vaxlaFilter('bekraftelse')}
-        >
-          <AvDelta klara={bekraftelseSkickade} totalt={totalt} />
-        </SummeringsRad>
-        <SummeringsRad
-          term="Betalningspåminnelse skickad"
-          aktiv={filter === 'paminda'}
-          onClick={() => vaxlaFilter('paminda')}
-        >
-          <span className="tabular-nums">{pamindaTotalt}</span>
-        </SummeringsRad>
-        <SummeringsRad
-          term="Eventinfo skickad"
-          aktiv={filter === 'saknarEventinfo'}
-          onClick={() => vaxlaFilter('saknarEventinfo')}
-          signalSlot
-          signal={
-            // K44: slotten ALLTID reserverad — dags-att-skicka-signalen när den är
-            // tänd, annars auto-utskicks-krysset (task-18.6). Aldrig båda: när det
-            // är dags att skicka NU är schemat inte längre frågan.
-            signalText ? (
-              <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 font-medium text-small text-warning">
-                <Clock aria-hidden="true" size={14} className="shrink-0" />
-                {signalText}
-              </span>
+      {protoVariant == null ? (
+        <div className="divide-y divide-border">
+          <SummeringsRad
+            term="Obekräftade anmälningar"
+            aktiv={filter === 'obekraftade'}
+            onClick={() => vaxlaFilter('obekraftade')}
+          >
+            {obekraftadeTotalt > 0 ? (
+              <span className="font-medium text-error tabular-nums">{obekraftadeTotalt}</span>
             ) : (
-              <AutoKryss event={event} />
-            )
-          }
-        >
-          <AvDelta klara={eventinfoSkickade} totalt={totalt} />
-        </SummeringsRad>
-        {/* K50: Bor över SIST — universell rad på ALLA event (hemma-hos-eventen
-            är normalfallet med sovande gäster); säng-glyfen bär radens identitet.
-            Radens SIFFRA är de ikryssade (härledd live); radens KLICK öppnar
-            KRYSS-LÄGET (K52 — arbetsrad, inte filterlista). */}
-        <SummeringsRad
-          term="Bor över"
-          ikon={BedDouble}
-          aktiv={filter === 'borOver'}
-          onClick={() => vaxlaFilter('borOver')}
-        >
-          <span className="tabular-nums">{borOverTotalt}</span>
-        </SummeringsRad>
-      </div>
+              '0'
+            )}
+          </SummeringsRad>
+          {/* K42 — raderna i LOTTAS UTSKICKSORDNING: bekräftelsen (mail 1, bär
+              betalningsinstruktionerna) → ev. betalningspåminnelse → eventinfo
+              (mail 2, två veckor före). */}
+          <SummeringsRad
+            term="Anmälningsbekräftelse skickad"
+            aktiv={filter === 'bekraftelse'}
+            onClick={() => vaxlaFilter('bekraftelse')}
+          >
+            <AvDelta klara={bekraftelseSkickade} totalt={totalt} />
+          </SummeringsRad>
+          <SummeringsRad
+            term="Betalningspåminnelse skickad"
+            aktiv={filter === 'paminda'}
+            onClick={() => vaxlaFilter('paminda')}
+          >
+            <span className="tabular-nums">{pamindaTotalt}</span>
+          </SummeringsRad>
+          <SummeringsRad
+            term="Eventinfo skickad"
+            aktiv={filter === 'saknarEventinfo'}
+            onClick={() => vaxlaFilter('saknarEventinfo')}
+            signalSlot
+            signal={
+              // K44: slotten ALLTID reserverad — dags-att-skicka-signalen när den är
+              // tänd, annars auto-utskicks-krysset (task-18.6). Aldrig båda: när det
+              // är dags att skicka NU är schemat inte längre frågan.
+              signalText ? (
+                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 font-medium text-small text-warning">
+                  <Clock aria-hidden="true" size={14} className="shrink-0" />
+                  {signalText}
+                </span>
+              ) : (
+                <AutoKryss event={event} />
+              )
+            }
+          >
+            <AvDelta klara={eventinfoSkickade} totalt={totalt} />
+          </SummeringsRad>
+          {/* K50: Bor över SIST — universell rad på ALLA event (hemma-hos-eventen
+              är normalfallet med sovande gäster); säng-glyfen bär radens identitet.
+              Radens SIFFRA är de ikryssade (härledd live); radens KLICK öppnar
+              KRYSS-LÄGET (K52 — arbetsrad, inte filterlista). */}
+          <SummeringsRad
+            term="Bor över"
+            ikon={BedDouble}
+            aktiv={filter === 'borOver'}
+            onClick={() => vaxlaFilter('borOver')}
+          >
+            <span className="tabular-nums">{borOverTotalt}</span>
+          </SummeringsRad>
+        </div>
+      ) : (
+        // [PROTOTYPE] [S93] Alternativ C — hållplatsen som ETIKETT. De TRE
+        // stegräknarna ersätter de fem summeringsraderna (A′ inbakat:
+        // "Betalningspåminnelse skickad" flyttar till Betalningar, se
+        // Betalningar.tsx:s DEV-gren); Eventinfo + Bor över står KVAR som
+        // utskicksrad/kryss-läge, visuellt AVSKILDA (egen divide-y-grupp,
+        // gap-2 mellan grupperna — research-doken Del 6C).
+        <div className="flex flex-col gap-2">
+          {protoVariant === 'c' && (
+            <HallplatsHarnastPanel
+              counts={hallplatsCounts}
+              onOppnaOchMarkera={oppnaOchMarkeraGenvag}
+            />
+          )}
+          {protoVariant === 'b' ? (
+            <HallplatsToppB
+              counts={hallplatsCounts}
+              filter={hallplatsFilter}
+              onFilterClick={vaxlaHallplatsFilter}
+            />
+          ) : (
+            <HallplatsToppA
+              counts={hallplatsCounts}
+              filter={hallplatsFilter}
+              onFilterClick={vaxlaHallplatsFilter}
+            />
+          )}
+          <div className="divide-y divide-border">
+            <SummeringsRad
+              term="Eventinfo skickad"
+              aktiv={filter === 'saknarEventinfo'}
+              onClick={() => vaxlaFilter('saknarEventinfo')}
+              signalSlot
+              signal={
+                signalText ? (
+                  <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 font-medium text-small text-warning">
+                    <Clock aria-hidden="true" size={14} className="shrink-0" />
+                    {signalText}
+                  </span>
+                ) : (
+                  <AutoKryss event={event} />
+                )
+              }
+            >
+              <AvDelta klara={eventinfoSkickade} totalt={totalt} />
+            </SummeringsRad>
+            <SummeringsRad
+              term="Bor över"
+              ikon={BedDouble}
+              aktiv={filter === 'borOver'}
+              onClick={() => vaxlaFilter('borOver')}
+            >
+              <span className="tabular-nums">{borOverTotalt}</span>
+            </SummeringsRad>
+          </div>
+        </div>
+      )}
 
       {utfall != null && (
         <div data-testid="bekraftelse-utfall" className="pt-3">
@@ -1387,20 +1601,41 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
               // KRYSS-LÄGET (K52): ALLA visade anmälda i EN kolumn, säng-kryss
               // per rad, ikryssade (snapshot) överst. Ersätter personkorten helt.
               markeringsLista.length > 0 ? (
-                <ul className="flex flex-col gap-2.5">
-                  {markeringsLista.map((reg) => (
-                    <li key={reg.id}>
-                      <BorOverRad reg={reg} onToggle={toggleBorOver} />
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  {/* [PROTOTYPE] [S93] review-fix — delad förklaringstext
+                      (uppdraget § FYND 2): "liten text"-delen; per-rad `title`
+                      (BorOverRad) bär hover-formen. */}
+                  {protoDataMode && (
+                    <p className="pb-1 text-caption text-text-muted">
+                      Förhandsvisning (proto) — Bor över är inaktiverad nedan, inget sparas.
+                    </p>
+                  )}
+                  <ul className="flex flex-col gap-2.5">
+                    {markeringsLista.map((reg) => (
+                      <li
+                        key={reg.id}
+                        title={
+                          protoDataMode
+                            ? 'Inaktiverad i förhandsvisningen (proto) — inget sparas'
+                            : undefined
+                        }
+                      >
+                        <BorOverRad reg={reg} onToggle={toggleBorOver} disabled={protoDataMode} />
+                      </li>
+                    ))}
+                  </ul>
+                </>
               ) : (
                 <p className="py-2 text-small text-text-secondary">
                   Inga deltagare i denna kategori.
                 </p>
               )
             ) : traffar.length > 0 ? (
-              <DeltagarListan rader={traffar} eventId={event.id} />
+              <DeltagarListan
+                rader={traffar}
+                eventId={event.id}
+                hallplatsMarke={hallplatsMarkeFn}
+              />
             ) : (
               <p className="py-2 text-small text-text-secondary">Inga träffar i denna kategori.</p>
             )}
@@ -1477,6 +1712,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                     markering={
                       markering.aktivt ? { valda: markering.valda, vaxla: markering.vaxla } : null
                     }
+                    hallplatsMarke={hallplatsMarkeFn}
                   />
                 </div>
               </div>
@@ -1495,12 +1731,18 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                   {`Bekräftade (${bekraftade.length})`}
                 </GruppRubrik>
                 <div id={`${panelId}-bekraftade`} hidden={!bekraftadeOppen} className="pt-1.5">
-                  <DeltagarListan rader={bekraftade} eventId={event.id} />
+                  <DeltagarListan
+                    rader={bekraftade}
+                    eventId={event.id}
+                    hallplatsMarke={hallplatsMarkeFn}
+                  />
                 </div>
               </div>
             )}
           </>
         )}
+        {/* [PROTOTYPE] [S93] GEMENSAMT — avbokade synliga (fråga 6). */}
+        {protoVariant != null && <AvbokadeRad avbokade={protoAvbokade} />}
       </div>
     </>
   );
@@ -1512,6 +1754,30 @@ export function Deltagare({ event }: { event: Event }) {
     queryKey: queryKeys.registrations.byEvent(event.id),
     queryFn: () => dataSource.fetchRegistrations({ eventId: event.id }),
   });
+  // [PROTOTYPE] [S93] hållplats-pass — DEV-grindad ?variant=a|b|c + ?data=proto
+  // (underform A, S86-mekaniken). Utan ?variant renderas EXAKT dagens träd:
+  // `protoVariant` är null, och varje gren nedan faller igenom till den
+  // OFÖRÄNDRADE isPending/isError/ArbetsKo-kedjan.
+  const [variantParam] = useQueryState('variant');
+  const [dataParam] = useQueryState('data');
+  const protoVariant: HallplatsVariant | null =
+    import.meta.env.DEV && isHallplatsVariant(variantParam) ? variantParam : null;
+  // `?data=proto` bypassar den riktiga hämtningen helt (in-memory fixtur,
+  // ADR-061 rörs aldrig — default-läget använder alltid `data` oförändrat).
+  const protoDataMode = protoVariant != null && dataParam === 'proto';
+
+  if (protoDataMode) {
+    return (
+      <DetaljGrupp id="grupp-deltagare" rubrik="Anmälda deltagare">
+        <ArbetsKo
+          event={event}
+          registreringar={HALLPLATS_PROTO_FIXTURES}
+          protoVariant={protoVariant}
+          protoDataMode
+        />
+      </DetaljGrupp>
+    );
+  }
 
   return (
     <DetaljGrupp id="grupp-deltagare" rubrik="Anmälda deltagare">
@@ -1529,7 +1795,7 @@ export function Deltagare({ event }: { event: Event }) {
           </MessageBox>
         </div>
       ) : (
-        <ArbetsKo event={event} registreringar={data} />
+        <ArbetsKo event={event} registreringar={data} protoVariant={protoVariant} />
       )}
     </DetaljGrupp>
   );

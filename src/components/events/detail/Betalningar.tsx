@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Check, ChevronDown, Clock, Mail, MailCheck } from 'lucide-react';
+// [PROTOTYPE] [S93] hållplats-pass — kastbar wiring (throwaway-kontraktet):
+import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { Input } from '@/components/primitives/Input';
@@ -23,6 +25,14 @@ import { PaymentStatus, RegistrationStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
 import { DetaljGrupp, EtikettVardeRad } from './DetaljGrupp';
 import { DAGMANAD } from './datumSpann';
+// [PROTOTYPE] [S93] hållplats-pass — se Deltagare.tsx:s motsvarande gren +
+// DeltagareHallplatsPrototyp.tsx (frågan, huvudprototypfilen).
+import {
+  HALLPLATS_PROTO_FIXTURES,
+  harPaminnelse,
+  isHallplatsVariant,
+  kategoriPillText,
+} from './hallplats-steg-prototyp';
 
 /**
  * Betalningar-gruppen med inline-ARBETSYTAN (task-18.8; S73-facit K27–K34).
@@ -145,6 +155,7 @@ function BetalKryss({
   namn,
   vald,
   onChange,
+  disabled = false,
 }: {
   /** Synlig etikett (betalningsordet — facit-formen). */
   text: string;
@@ -152,13 +163,17 @@ function BetalKryss({
   namn: string;
   vald: boolean;
   onChange: (v: boolean) => void;
+  /** [PROTOTYPE] [S93] review-fix — `?data=proto`: kontrollen görs read-only
+      (native disabled-semantik), ingen mutation avfyras (se BetalningsLinje). */
+  disabled?: boolean;
 }) {
   return (
     <Checkbox
       isSelected={vald}
+      isDisabled={disabled}
       onChange={onChange}
       aria-label={`${text} för ${namn}`}
-      className="group flex cursor-pointer items-center gap-2 text-small"
+      className="group flex cursor-pointer items-center gap-2 text-small data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60"
     >
       <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
         <Check
@@ -200,6 +215,7 @@ function BetalningsLinje({
   vald,
   notering,
   mutationer,
+  protoDataMode = false,
 }: {
   registration: Registration;
   betalning: Betalning;
@@ -207,6 +223,11 @@ function BetalningsLinje({
   vald: boolean;
   notering: string | null;
   mutationer: ArbetsytansMutationer;
+  /** [PROTOTYPE] [S93] review-fix — `?data=proto`: raden read-only-förstärkt
+      (uppdraget § FYND 1). Kryss, notering och Påminn stubbas — INGEN mutation
+      avfyras; `title` på raden + kort text i arbetsytan förklarar varför
+      (se BetalningsDetaljer). */
+  protoDataMode?: boolean;
 }) {
   const namn = displayName(registration);
   const label = BETALNING_LABEL[betalning];
@@ -214,6 +235,7 @@ function BetalningsLinje({
   const [utkast, setUtkast] = useState<string | null>(null);
 
   const sparaNotering = () => {
+    if (protoDataMode) return;
     if (utkast === null) return;
     const trimmat = utkast.trim();
     setUtkast(null);
@@ -222,25 +244,35 @@ function BetalningsLinje({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+    <div
+      className="flex flex-wrap items-center gap-x-3 gap-y-1.5"
+      title={
+        protoDataMode
+          ? 'Förhandsvisning (proto) — kryss, notering och påminn är inaktiverade, inget sparas'
+          : undefined
+      }
+    >
       <div className="w-40 shrink-0">
         <BetalKryss
           text={label}
           namn={namn}
           vald={vald}
-          onChange={(v) =>
+          disabled={protoDataMode}
+          onChange={(v) => {
+            if (protoDataMode) return;
             mutationer.status.mutate({
               registration,
               betalning,
               value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
-            })
-          }
+            });
+          }}
         />
       </div>
       <Input
         size="sm"
         label={`Notering ${label.toLowerCase()} för ${namn}`}
         hideLabel
+        isDisabled={protoDataMode}
         className="min-w-44 flex-1"
         value={utkast ?? notering ?? ''}
         onChange={setUtkast}
@@ -249,22 +281,33 @@ function BetalningsLinje({
       {/* K33: ikon-SLOTTEN alltid renderad (likbredds-läxan) — alla
           notisrutor exakt samma bredd, med eller utan ikon. */}
       <div className="size-8 shrink-0">
-        {!vald && (
-          <a
-            href={`mailto:${registration.email ?? ''}?subject=${encodeURIComponent(`Påminnelse: ${label.toLowerCase()} för ${eventNamn}`)}`}
-            aria-label={`Påminn ${namn} om ${label.toLowerCase()} via mail`}
-            onClick={() =>
-              mutationer.paminnelse.mutate({
-                registration,
-                betalning,
-                tidpunkt: new Date().toISOString(),
-              })
-            }
-            className="flex size-8 items-center justify-center rounded-full text-text-secondary hover:text-text"
-          >
-            <Mail aria-hidden="true" size={16} />
-          </a>
-        )}
+        {!vald &&
+          (protoDataMode ? (
+            // [PROTOTYPE] [S93] review-fix — `<span>`, inte `<a>`: ingen
+            // `mailto:`-navigation, ingen onClick, ingen mutation. Samma
+            // yta/ikon (K33), visuellt dämpad (data-disabled-mönstret ovan).
+            <span
+              aria-disabled="true"
+              className="flex size-8 items-center justify-center rounded-full text-text-muted opacity-60"
+            >
+              <Mail aria-hidden="true" size={16} />
+            </span>
+          ) : (
+            <a
+              href={`mailto:${registration.email ?? ''}?subject=${encodeURIComponent(`Påminnelse: ${label.toLowerCase()} för ${eventNamn}`)}`}
+              aria-label={`Påminn ${namn} om ${label.toLowerCase()} via mail`}
+              onClick={() =>
+                mutationer.paminnelse.mutate({
+                  registration,
+                  betalning,
+                  tidpunkt: new Date().toISOString(),
+                })
+              }
+              className="flex size-8 items-center justify-center rounded-full text-text-secondary hover:text-text"
+            >
+              <Mail aria-hidden="true" size={16} />
+            </a>
+          ))}
       </div>
     </div>
   );
@@ -292,12 +335,23 @@ function BetalningsPersonRad({
   registration,
   eventNamn,
   mutationer,
+  protoAktiv = false,
+  protoDataMode = false,
 }: {
   registration: Registration;
   eventNamn: string;
   mutationer: ArbetsytansMutationer;
+  /** [PROTOTYPE] [S93] fråga 7 — bekräftelseläge- + kategori-pill. Prövas
+      ja/nej i ALLA varianter (a/b/c), inte som ett variantval i sig. */
+  protoAktiv?: boolean;
+  /** [PROTOTYPE] [S93] review-fix — se BetalningsLinje. */
+  protoDataMode?: boolean;
 }) {
   const namn = displayName(registration);
+  // [PROTOTYPE] [S93] fråga 7 (research-doken Del 1.5, fynd 1+2): Betalningar
+  // visar idag varken bekräftelseläge eller kategori. Två pillar räcker.
+  const protoKategoriPill = protoAktiv ? kategoriPillText(registration) : null;
+  const protoObekraftad = protoAktiv && registration.status === RegistrationStatus.OBEKRAFTAD;
   const historik = [
     registration.paminnelseAnmalningsavgiftSkickad
       ? paminnelseText('avgift', registration.paminnelseAnmalningsavgiftSkickad)
@@ -320,6 +374,22 @@ function BetalningsPersonRad({
       ) : (
         <span className="self-start font-medium text-body">{namn}</span>
       )}
+      {/* [PROTOTYPE] [S93] fråga 7 — bekräftelseläge + kategori, samma
+          pill-form som Anmälda deltagares kort (KATEGORI_PILL-formen). */}
+      {(protoObekraftad || protoKategoriPill) && (
+        <span className="flex flex-wrap items-center gap-1.5">
+          {protoObekraftad && (
+            <span className="rounded-full bg-error-bg px-2 py-0.5 font-medium text-caption text-error">
+              Obekräftad
+            </span>
+          )}
+          {protoKategoriPill && (
+            <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+              {protoKategoriPill}
+            </span>
+          )}
+        </span>
+      )}
       <BetalningsLinje
         registration={registration}
         betalning="avgift"
@@ -327,6 +397,7 @@ function BetalningsPersonRad({
         vald={avgiftKlar(registration)}
         notering={registration.noteringAnmalningsavgift ?? null}
         mutationer={mutationer}
+        protoDataMode={protoDataMode}
       />
       {registration.slutbetalning === PaymentStatus.EJ_RELEVANT ? (
         <p className="text-small text-text-muted">Slutbetalning · Ej relevant (föreläsning)</p>
@@ -338,6 +409,7 @@ function BetalningsPersonRad({
           vald={registration.slutbetalning === PaymentStatus.MOTTAGEN}
           notering={registration.noteringSlutbetalning ?? null}
           mutationer={mutationer}
+          protoDataMode={protoDataMode}
         />
       )}
       {historik.length > 0 && (
@@ -363,9 +435,16 @@ function BetalningsPersonRad({
 function BetalningsDetaljer({
   event,
   registreringar,
+  protoAktiv = false,
+  protoDataMode = false,
 }: {
   event: Event;
   registreringar: Registration[];
+  /** [PROTOTYPE] [S93] — se BetalningsPersonRad. */
+  protoAktiv?: boolean;
+  /** [PROTOTYPE] [S93] review-fix — `?data=proto`: arbetsytans skrivvägar
+      (kryss/notering/påminn) stubbas hela vägen ned till BetalningsLinje. */
+  protoDataMode?: boolean;
 }) {
   const [flik, setFlik] = useState<'saknar' | 'klara'>('saknar');
   const deadline = deadlineStatus(event.startdatum);
@@ -440,6 +519,14 @@ function BetalningsDetaljer({
           Försök igen.{fel.id ? ` Fel-ID: ${fel.id}.` : ''}
         </MessageBox>
       )}
+      {/* [PROTOTYPE] [S93] review-fix — EN delad förklaringstext för hela
+          arbetsytan (uppdraget § FYND 1): "liten text"-delen av
+          disabled-mönstret; per-rad `title` (BetalningsLinje) bär hover-formen. */}
+      {protoDataMode && (
+        <p className="text-caption text-text-muted">
+          Förhandsvisning (proto) — kryss, notering och påminn är inaktiverade nedan, inget sparas.
+        </p>
+      )}
       {lista.length > 0 ? (
         <ul className="divide-y divide-border">
           {lista.map((r) => (
@@ -448,6 +535,8 @@ function BetalningsDetaljer({
               registration={r}
               eventNamn={eventNamn}
               mutationer={mutationer}
+              protoAktiv={protoAktiv}
+              protoDataMode={protoDataMode}
             />
           ))}
         </ul>
@@ -473,9 +562,15 @@ function BetalningsDetaljer({
 function BetalningsInnehall({
   event,
   registreringar,
+  protoAktiv = false,
+  protoDataMode = false,
 }: {
   event: Event;
   registreringar: Registration[];
+  /** [PROTOTYPE] [S93] — se BetalningsPersonRad + A′-räkneraden nedan. */
+  protoAktiv?: boolean;
+  /** [PROTOTYPE] [S93] review-fix — se BetalningsDetaljer. */
+  protoDataMode?: boolean;
 }) {
   const [oppen, setOppen] = useState(false);
   const aktiva = registreringar.filter(arAktiv);
@@ -483,6 +578,10 @@ function BetalningsInnehall({
   const avgifterSaknas = aktiva.length - avgifterMottagna;
   const slutMottagna = aktiva.filter((r) => r.slutbetalning === PaymentStatus.MOTTAGEN).length;
   const slutSaknasAntal = aktiva.filter(slutSaknas).length;
+  // [PROTOTYPE] [S93] A′ inbakat (research-doken Del 6, alternativ A′):
+  // "Betalningspåminnelse skickad" flyttar hit från Anmälda deltagare —
+  // räknaren hamnar hos påminnelse-HANDLINGEN och -HISTORIKEN (Del 1.5 fynd 3).
+  const pamindaTotalt = protoAktiv ? aktiva.filter(harPaminnelse).length : 0;
 
   return (
     <>
@@ -495,6 +594,13 @@ function BetalningsInnehall({
           {`${slutMottagna} mottagna`}
           <SaknasDelta antal={slutSaknasAntal} testid="delta-slutbetalningar" />
         </EtikettVardeRad>
+        {protoAktiv && (
+          <EtikettVardeRad term="Betalningspåminnelse skickad">
+            <span data-testid="proto-hallplats-paminda" className="tabular-nums">
+              {pamindaTotalt}
+            </span>
+          </EtikettVardeRad>
+        )}
       </dl>
       {aktiva.length > 0 && (
         /* K28: toggeln + regionen i EN wrapper — detaljerna hör till toggeln
@@ -506,7 +612,12 @@ function BetalningsInnehall({
             onToggle={() => setOppen((v) => !v)}
           />
           <div id="betalningsdetaljer" hidden={!oppen}>
-            <BetalningsDetaljer event={event} registreringar={aktiva} />
+            <BetalningsDetaljer
+              event={event}
+              registreringar={aktiva}
+              protoAktiv={protoAktiv}
+              protoDataMode={protoDataMode}
+            />
           </div>
         </div>
       )}
@@ -520,6 +631,26 @@ export function Betalningar({ event }: { event: Event }) {
     queryKey: queryKeys.registrations.byEvent(event.id),
     queryFn: () => dataSource.fetchRegistrations({ eventId: event.id }),
   });
+  // [PROTOTYPE] [S93] hållplats-pass — samma DEV-grindade läsning som
+  // Deltagare.tsx (oberoende `useQueryState`, samma URL-nyckel — nuqs
+  // synkar de två). Utan ?variant renderas EXAKT dagens träd.
+  const [variantParam] = useQueryState('variant');
+  const [dataParam] = useQueryState('data');
+  const protoAktiv = import.meta.env.DEV && isHallplatsVariant(variantParam);
+  const protoDataMode = protoAktiv && dataParam === 'proto';
+
+  if (protoDataMode) {
+    return (
+      <DetaljGrupp id="grupp-betalningar" rubrik="Betalningar">
+        <BetalningsInnehall
+          event={event}
+          registreringar={HALLPLATS_PROTO_FIXTURES}
+          protoAktiv
+          protoDataMode
+        />
+      </DetaljGrupp>
+    );
+  }
 
   return (
     <DetaljGrupp id="grupp-betalningar" rubrik="Betalningar">
@@ -536,7 +667,7 @@ export function Betalningar({ event }: { event: Event }) {
           </MessageBox>
         </div>
       ) : (
-        <BetalningsInnehall event={event} registreringar={data} />
+        <BetalningsInnehall event={event} registreringar={data} protoAktiv={protoAktiv} />
       )}
     </DetaljGrupp>
   );
