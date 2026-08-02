@@ -1,9 +1,9 @@
 ---
 owner: marcus803
-updated: 2026-07-07
+updated: 2026-08-02
 review_by: 2026-10-07
 status: stable
-lifecycle: active
+lifecycle: paused
 ---
 
 # T67 — Parallella aktiva sessioner (arbetssätts-pilot)
@@ -59,3 +59,48 @@ per-fil-add, aldrig `-A`/katalog (delad checkout).
 - Web-research-krav vid designen (3+ precedent): Anthropics
   parallel-agents-mönster (git worktrees per agent), trunk-based
   development-praxis, distribuerad ID-allokering.
+
+## Designsteget VERKSTÄLLT (2026-08-02, S94) — mekaniseringen kvarstår
+
+**Web-research-kravet uppfyllt** (S94, spawnat MITT I grillningen på Marcus
+uttryckliga villkor — Del 3 punkt 6):
+[`sessions-parallellitet-frontier-praxis-2026-08-02.md`](../../docs/research/sessions-parallellitet-frontier-praxis-2026-08-02.md)
+levererade 3+ precedent för mekanismen (worktree per session — Anthropic,
+JetBrains, GitHub Copilot-appen, Cursor, OpenAI Codex) och **fällde halva det
+ursprungliga förslaget**: den specifika triggerformen denna tråd länge
+föreslagit — session A detekterar session B och isolerar sig SJÄLV, tyst,
+utan att fråga — har tunt-till-inget direkt precedent. Etablerade mönster i
+samma problemklass (vim swap-filer, tmux nästlad-blockering, GitHub
+Codespaces) landar alla på **detektera + fråga**, aldrig detektera + agera
+tyst.
+
+**Grillad samsyn 7/7, Marcus-kvitterad 2026-08-02** (S94 Del 3 punkt 6):
+reviderat beslut = **detektera + fråga**, inte tyst auto-isolering. Bokfört i
+[ADR-090](../../docs/decisions/ADR-090-sessions-parallellitet-detektera-och-fraga.md):
+session-start får ett detektionssteg (annat sessionsdoks `lifecycle: active` ·
+`git worktree list` · smutsigt huvudträd) → FYND i RAPPORTERA → Marcus
+kvitterar i sessionsstartens befintliga utbyte (noll extra rundor). Senare
+session tar worktreen; först startad behåller sin plats. Ovillkorad worktree
+per session (Anthropics desktop-mönster) är öppet bokförd som framtida väg
+"när formen bevisat sig" (Marcus 2026-08-02) — ingen ny grillning krävs för
+det bytet, men det bokförs då som en Update i ADR-090.
+
+**Räknar-/ID-allokeringen och merge-kön kräver ingen ändring** — redan
+branschmässigt grundade (research-filen § Delfråga 4–5): trunk-based
+development (Google, Uber SubmitQueue) för kön, Rails/Django/git-
+mönsterfamiljen för räknarna.
+
+**Lifecycle-prövning mot `tasks/threads/README.md`-reglerna (frontmatter
+ändrad `active` → `paused` i denna landning):** designbeslutet är fattat och
+bokfört (ADR-090), men den FAKTISKA mekaniseringen — detektionssteget skrivet
+in i hub-skillen `session-start`/`session-resume` — är HUB-arbete som landar
+i en separat hub-PR, utanför denna spoke-landnings räckvidd. Tråden är alltså
+varken `active` (inget arbete på den pågår just nu, i DENNA landning) eller
+`closed` (det underliggande problemet är inte löst förrän mekaniseringen
+faktiskt finns) — `paused` med ett namngivet, externt väntevillkor är formen
+`README.md`-reglerna själva definierar för det läget (samma mönster som
+`T113` använder för "väntar på en framtida session"). **Väntar nu på:**
+hub-PR:n som skriver in detektionssteget i `session-start`/`session-resume`
+(orkestrerarens ägande, per ADR-089/ADR-090 § Verkställande). Återupptas
+(`paused` → `closed`, eller `active` om mekaniseringen kräver spoke-uppföljning)
+när den hub-landningen är verifierad.

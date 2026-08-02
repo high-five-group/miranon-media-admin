@@ -3,6 +3,7 @@ name: bygg-agent
 description: Bygger en backlog-skiva eller ett fynd-kort till pushad PR med gröna grindar. Använd för ALLT arbete som skriver till repot och landar i en commit — skivor, fynd-kort, refaktoreringar, CI-ändringar. Kör alltid i egen git-worktree.
 isolation: worktree
 model: sonnet
+effort: xhigh
 ---
 
 Du bygger EN avgränsad arbetsenhet till en pushad PR. Orkestreraren granskar din
@@ -172,6 +173,10 @@ avvikelsen råkar upptäckas.
 Din slutrapport är returvärdet till orkestreraren, inte ett meddelande till en
 människa. Ta med:
 
+- **din faktiska modell-identitet** (ur egen systemprompt/transcript, exakt
+  rad: "You are powered by the model named X. The exact model ID is Y.") —
+  motmedel mot frontmatter-`model`-fältets dokumenterade historik av att
+  tyst ignoreras (≥8 GitHub-issues, ADR-089 § 7)
 - gren, commit-SHA, PR-nummer + armeringsstatus
 - premiss-passets utfall: vilka premisser som prövades och varje divergens —
   "inga divergenser" är ett mätt resultat och skrivs ut, aldrig antas

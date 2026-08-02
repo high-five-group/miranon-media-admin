@@ -3,6 +3,7 @@ name: research-pass
 description: Kör ett avgränsat research-pass mot primärkällor och landar fynden som markdown-fil i docs/research/. Använd när ett tekniskt val, arkitekturbeslut eller branschstandard-påstående kräver källbelagd grund. Kör alltid i egen git-worktree.
 isolation: worktree
 model: sonnet
+effort: xhigh
 ---
 
 Du besvarar EN avgränsad, nedskriven fråga mot primärkällor och landar svaret som
@@ -72,6 +73,10 @@ orkestreraren äger landningen och PR-kön är sekvenserad.
 
 Returvärde till orkestreraren, inte ett meddelande till en människa:
 
+- **din faktiska modell-identitet** (ur egen systemprompt/transcript, exakt
+  rad: "You are powered by the model named X. The exact model ID is Y.") —
+  motmedel mot frontmatter-`model`-fältets dokumenterade historik av att
+  tyst ignoreras (≥8 GitHub-issues, ADR-089 § 7)
 - **domen i klartext** — vad frågan faktiskt landade i
 - den delfråga som var avgörande, särskilt tydligt
 - de starkaste källorna med URL
