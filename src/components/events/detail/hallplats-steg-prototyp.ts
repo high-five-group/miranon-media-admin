@@ -17,6 +17,7 @@
  * KASTBAR (throwaway-kontraktet): rivs med hela S93-hållplats-passet.
  */
 import type { Registration } from '@/domain/models/Registration';
+import type { PersonHistoryEntry } from '@/domain/schemas';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 
 /** Divergens-variantens stabila nycklar (ADR-074 beslut 1). */
@@ -202,6 +203,37 @@ export const HALLPLATS_PROTO_FIXTURES: Registration[] = [
     anmalningsavgift: PaymentStatus.MOTTAGEN,
     slutbetalning: PaymentStatus.MOTTAGEN,
     antalGenomfordaEvent: 2,
+    // [PROTOTYPE] [S93] review-fix-våg 2 (uppdraget § FYND 1, defekt 1):
+    // Gruppdynamik bucketar denna person under "1–2 tidigare event" ur
+    // `antalGenomfordaEvent`, men läste innan denna rad `kurshistorik: null`
+    // (bas()-defaulten) — kortet visade då "Inga tidigare event" mitt i
+    // "återkommande"-bucketen, en självmotsägelse INOM samma block. Två
+    // GENOMFÖRDA rader (arGenomford: narvaro && session ∈ {Dag 1,
+    // Föreläsning}) håller kurshistorik-antalet i synk med räknaren.
+    kurshistorik: [
+      {
+        id: 'proto-hallplats-05-hist-1',
+        kursnamn: 'Resor i medvetandet 1',
+        eventLabel: 'Resor i medvetandet 1',
+        datum: '2025-11-10',
+        session: 'Dag 1',
+        status: 'Bekräftad (mail skickat)',
+        narvaro: true,
+        ort: 'Stockholm',
+        typ: 'Kurs',
+      },
+      {
+        id: 'proto-hallplats-05-hist-2',
+        kursnamn: 'Fjärrskådning',
+        eventLabel: 'Fjärrskådning',
+        datum: '2026-02-14',
+        session: 'Dag 1',
+        status: 'Bekräftad (mail skickat)',
+        narvaro: true,
+        ort: 'Stockholm',
+        typ: 'Kurs',
+      },
+    ] satisfies PersonHistoryEntry[],
   }),
   bas({
     id: 'proto-hallplats-06',

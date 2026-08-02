@@ -1,11 +1,17 @@
+// [PROTOTYPE] [S93] hållplats-pass review-fix-våg 2 (uppdraget § FYND 1,
+// defekt 1) — kastbar wiring, samma mönster som Deltagare.tsx/Betalningar.tsx:
+import { useQueryState } from 'nuqs';
 import { useEffect, useRef, useState } from 'react';
 import { I18nProvider } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { useUpdateEvent } from '@/data/mutations/useUpdateEvent';
 import type { Event } from '@/domain/models/Event';
+import type { Registration } from '@/domain/models/Registration';
+import { RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 import { AntalFalt } from './AntalFalt';
 import { AndraRad, DetaljGrupp, EtikettVardeRad, RedigeringsRad } from './DetaljGrupp';
+import { HALLPLATS_PROTO_FIXTURES, isHallplatsVariant } from './hallplats-steg-prototyp';
 
 /**
  * Kategorifärgerna för beläggnings-kompositionen (task-18.2; S73-facit K16 —
@@ -50,6 +56,37 @@ function belaggningsDelar(e: Event) {
 }
 
 /**
+ * [PROTOTYPE] [S93] review-fix-våg 2 (uppdraget § FYND 1, defekt 1) —
+ * Beläggningens fixtur-härledda tal. Granskningsfynd: sidan visade
+ * "Anmälda deltagare 0 · 0 av 20 · 0 %" i `?data=proto` medan Deltagare
+ * samtidigt visade fixturernas 12 personer — Beläggning läste ALLTID de
+ * riktiga event-aggregaten, oavsett `?data`.
+ *
+ * K16-kategorierna (delade med Deltagare.tsx:s lokala `kategori()`, samma
+ * `Källa`-fält) räknas om ur fixturerna i stället: `formular` = TOM Källa,
+ * `manuell` = Källa='Manuell', `medfoljande` = Källa='+1'.
+ *
+ * ÖPPET BOKFÖRT SNITT: fixtur 14 (Gustav Wik, Källa='Väntelista' — en
+ * uppflyttad, redan vanlig anmälan) faller i `formular`-bucketen. Beläggningens
+ * komposition har INGEN egen "från väntelistan"-del (bara
+ * formulär/manuell/medfoljande/reserverad), och utan denna hade summan
+ * landat på 11 i stället för de 12 Deltagare visar — en NY självmotsägelse.
+ * `reserverade` ("Extra platser") och `event.vantelista` (en HELT ANNAN
+ * tabell, `tbl2VxMx7JMkIxD4Q` — data-model.md) saknar båda en
+ * anmälnings-motsvarighet och kan därför INTE härledas ur fixturerna;
+ * dimmas i stället med en explicit proto-not i `Belaggning` nedan, i stället
+ * för att antingen visa en osann fixtur-noll eller läcka in eventets RIKTIGA
+ * värden (vilket instruktionen bara gör undantag för på Max antal platser).
+ */
+function protoBelaggningsDelar(fixtures: Registration[]) {
+  const aktiva = fixtures.filter((r) => r.status !== RegistrationStatus.AVBOKAD);
+  const manuell = aktiva.filter((r) => r.kalla === RegistrationSource.MANUELL).length;
+  const medfoljande = aktiva.filter((r) => r.kalla === RegistrationSource.MEDFOLJANDE).length;
+  const formular = aktiva.length - manuell - medfoljande;
+  return { formular, manuell, medfoljande, total: aktiva.length };
+}
+
+/**
  * Beläggnings-MÄTAREN (S73-facit K15/K16): caption vänster ("X av Y platser
  * upptagna"), procent höger, segmenterad stapel under (GitHub-storage-klassen)
  * — segmenten == radernas streck, samma ordning som delarna fyller taket.
@@ -58,9 +95,26 @@ function belaggningsDelar(e: Event) {
  * klipps av spåret (överbokning). Utan satt tak står spåret tomt.
  * Delad mellan visnings- och Ändra-läget (morf-pariteten).
  */
-function BelaggningsMatare({ event }: { event: Event }) {
+function BelaggningsMatare({
+  event,
+  protoDelar,
+}: {
+  event: Event;
+  /** [PROTOTYPE] [S93] review-fix-våg 2 — mätarens delar härledda ur
+      fixturerna (se `protoBelaggningsDelar`); `max` (Max antal platser)
+      förblir eventets RIKTIGA värde, instruktionens enda uttryckliga
+      undantag. `reserverad` sätts till 0 här (dimmas i radvisningen). */
+  protoDelar?: ReturnType<typeof protoBelaggningsDelar>;
+}) {
   const max = event.maxPlatser;
-  const delar = belaggningsDelar(event);
+  const delar = protoDelar
+    ? [
+        { nyckel: 'formular', klass: KATEGORI.formular, antal: protoDelar.formular },
+        { nyckel: 'manuell', klass: KATEGORI.manuell, antal: protoDelar.manuell },
+        { nyckel: 'medfoljande', klass: KATEGORI.medfoljande, antal: protoDelar.medfoljande },
+        { nyckel: 'reserverad', klass: KATEGORI.reserverad, antal: 0 },
+      ]
+    : belaggningsDelar(event);
   const upptagna = delar.reduce((summa, del) => summa + del.antal, 0);
   const full = max != null && max > 0 && upptagna >= max;
   const procent = max != null && max > 0 ? Math.round((upptagna / max) * 100) : null;
@@ -208,6 +262,16 @@ export function Belaggning({ event }: { event: Event }) {
   const andraKnappRef = useRef<HTMLButtonElement>(null);
   const varRedigerad = useRef(false);
 
+  // [PROTOTYPE] [S93] hållplats-pass review-fix-våg 2 (uppdraget § FYND 1,
+  // defekt 1) — samma DEV-grindade, oberoende `useQueryState`-läsning som
+  // Deltagare.tsx/Betalningar.tsx/Gruppdynamik.tsx (nuqs synkar). Utan
+  // ?variant renderas EXAKT dagens träd.
+  const [variantParam] = useQueryState('variant');
+  const [dataParam] = useQueryState('data');
+  const protoDataMode =
+    import.meta.env.DEV && isHallplatsVariant(variantParam) && dataParam === 'proto';
+  const protoDelar = protoDataMode ? protoBelaggningsDelar(HALLPLATS_PROTO_FIXTURES) : null;
+
   // Fokus-retur: när morfen just stängts (redigerar true → false) fokuseras
   // Ändra-knappen — utan detta tappas tangentbordsfokus till <body>.
   useEffect(() => {
@@ -219,33 +283,63 @@ export function Belaggning({ event }: { event: Event }) {
 
   return (
     <DetaljGrupp id="grupp-belaggning" rubrik="Beläggning">
-      {redigerar ? (
+      {redigerar && !protoDataMode ? (
         <BelaggningForm event={event} onStang={() => setRedigerar(false)} />
       ) : (
         <>
+          {protoDataMode && (
+            <p className="pt-3 text-caption text-text-muted">
+              Förhandsvisning (proto) — talen nedan (utom Max antal platser, eventets riktiga värde)
+              är härledda ur fixturunderlaget; Ändra är inaktiverad, inget sparas.
+            </p>
+          )}
           <dl className="divide-y divide-border">
             <EtikettVardeRad term="Max antal platser">
               {event.maxPlatser != null ? String(event.maxPlatser) : null}
             </EtikettVardeRad>
+            {/* [PROTOTYPE] [S93] "Extra platser" är ett rent admin-satt tal
+                (basens 'Reserverade av Roger och Lotta') utan anmälnings-
+                motsvarighet — se `protoBelaggningsDelar`s docblock för varför
+                det INTE går att härleda ur fixturerna. Dimmas i stället för
+                att antingen visa en osann fixtur-noll eller läcka in eventets
+                riktiga värde (instruktionens enda uttryckliga undantag är
+                Max antal platser). */}
             <EtikettVardeRad term="Extra platser" streck={KATEGORI.reserverad}>
-              {event.reserverade != null ? String(event.reserverade) : null}
+              {protoDataMode ? (
+                <span className="text-text-muted">Ej i fixturunderlaget (proto)</span>
+              ) : event.reserverade != null ? (
+                String(event.reserverade)
+              ) : null}
             </EtikettVardeRad>
             <EtikettVardeRad term="Anmälda deltagare" streck={KATEGORI.formular}>
-              {String(event.viaFormular ?? 0)}
+              {String(protoDelar ? protoDelar.formular : (event.viaFormular ?? 0))}
             </EtikettVardeRad>
             <EtikettVardeRad term="Manuellt tillagda" streck={KATEGORI.manuell}>
-              {event.manuelltTillagda != null ? String(event.manuelltTillagda) : null}
+              {String(protoDelar ? protoDelar.manuell : (event.manuelltTillagda ?? 0))}
             </EtikettVardeRad>
             <EtikettVardeRad term="Medföljande" streck={KATEGORI.medfoljande}>
-              {event.medfoljande != null ? String(event.medfoljande) : null}
+              {String(protoDelar ? protoDelar.medfoljande : (event.medfoljande ?? 0))}
             </EtikettVardeRad>
             {/* K22: Väntelistan ALLTID med — det är alternativet när taket är
                 nått. UTAN streck: väntande upptar inga platser (aldrig segment
-                i mätaren) — streck-grammatiken bär innanför/utanför-taket. */}
-            <EtikettVardeRad term="Väntelista">{String(event.vantelista ?? 0)}</EtikettVardeRad>
+                i mätaren) — streck-grammatiken bär innanför/utanför-taket.
+                [PROTOTYPE] [S93]: basens 'Väntelista' är en HELT ANNAN tabell
+                (tbl2VxMx7JMkIxD4Q) utan motsvarighet i Anmälnings-fixturerna
+                — samma "genuint orimlig"-dimning som Extra platser ovan. */}
+            <EtikettVardeRad term="Väntelista">
+              {protoDataMode ? (
+                <span className="text-text-muted">Ej i fixturunderlaget (proto)</span>
+              ) : (
+                String(event.vantelista ?? 0)
+              )}
+            </EtikettVardeRad>
           </dl>
-          <BelaggningsMatare event={event} />
-          <AndraRad buttonRef={andraKnappRef} onPress={() => setRedigerar(true)} />
+          <BelaggningsMatare event={event} protoDelar={protoDelar ?? undefined} />
+          <AndraRad
+            buttonRef={andraKnappRef}
+            onPress={() => setRedigerar(true)}
+            disabled={protoDataMode}
+          />
         </>
       )}
     </DetaljGrupp>

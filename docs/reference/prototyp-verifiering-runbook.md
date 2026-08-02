@@ -91,6 +91,51 @@ med Supabase-sessionen), producerad av `tests/e2e/auth.setup.ts`.
 (fyll `#login-email` / `#login-password`, invänta `/hem`, spara
 `context.storageState()`).
 
+## När det INTE är 5173:s kod som ska verifieras — en egen ports CORS-vägg
+
+Bootstrappen ovan förutsätter att koden som ska synas ÄR den som redan körs
+på 5173. Det håller inte när ett pass sitter i en EGEN worktree (annan
+filsystems-sökväg) och 5173 tillhör huvudträdet på en ANNAN cwd — att koppla
+upp mot 5173 hade då visat FEL kod (S93 review-fix-våg 2, 2026-08-02).
+
+En egen dev-server på en ANNAN port är i sig ofarlig (`vite --port <N>
+--strictPort`, plain node-skript, rör aldrig 5173) — men § Portkartans skäl
+gäller fortfarande: `CORS_ALLOWED_ORIGINS` allowlistar exakt 5173/4173, så
+ALLA `get-event`/`get-registrations`-fetchar från den nya porten blockeras
+(`ERR_FAILED`, "blocked by CORS policy" — mätt, inte antaget). En prototyp-
+sida som beror på riktig backend-data (Beläggning/Gruppdynamik i skarpt läge,
+t.ex.) blir därför tom/trasig, oavsett att appen i övrigt fungerar.
+
+**Kringgången:** `page.route()` fångar de två läsvägarna INNAN webbläsarens
+CORS-kontroll appliceras på svaret, och fyller dem med data hämtad
+SERVER-SIDAN (Node, i Playwright-skriptets egen process) — Node har ingen
+CORS-policy, den är en browser-specifik regel. Svaret är därför RIKTIG
+staging-data, inte en syntetisk mock:
+
+```js
+const { status, body } = await (async () => {
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}`, apikey: anonKey },
+  });
+  return { status: res.status, body: await res.text() };
+})();
+await page.route('https://<project>.supabase.co/functions/v1/get-event**', async (route) => {
+  await route.fulfill({ status, contentType: 'application/json', body });
+});
+```
+
+`accessToken` läses ur samma `playwright/.auth/user.json` som Auth-state-
+avsnittet ovan (`origins[].localStorage[]`, nyckeln `sb-<ref>-auth-token`,
+fältet `access_token` i dess JSON-värde) — ingen extra inloggning behövs.
+`anonKey` är `VITE_SUPABASE_ANON_KEY` ur `.env.development` (publik, säker att
+läsa in i ett skript per samma fils egen kommentar).
+
+Intercepta ENDAST läsvägarna (`get-event`/`get-registrations`/
+`get-event-notes`) — mutations-endpoints ska INTE mockas: lämnas de orörda
+syns en missad skrivväg i proto-läget fortfarande som ett riktigt (om än
+CORS-blockerat) nätverksanrop, vilket är precis den signalen ett
+interceptions-pass (0 mutations-anrop) behöver.
+
 ## Prototypytorna är DEV-gejtade
 
 - `src/routes/dev/prototyper.tsx` returnerar tidigt om `!import.meta.env.DEV`.

@@ -868,7 +868,14 @@ function KortInnehall({
             rad — facit-formen på breda ytor — utan att identitetskolumnen blir
             trång (mätt: ingen sågtand på 768/1280 varken före eller efter). */}
         <span className="flex w-30 shrink-0 flex-wrap items-center justify-end gap-1.5 sm:w-[45%]">
-          {!arBekraftad(reg) && !vald && (
+          {/* [PROTOTYPE] [S93] review-fix-våg 2 (defekt 3) — i en hållplats-
+              variant BÄR steg-märket (`hallplatsMarke`, metaytan nedan)
+              redan exakt samma information ("Väntar på bekräftelse") som
+              denna röda status-pill. Två märken på samma axel för samma
+              person var dubbel-etikettering (granskningsfynd); steg-märket
+              ERSÄTTER pillen i variant-läge — kategori-pillen (`pill`
+              nedan) är en ANNAN axel och står kvar i båda lägena. */}
+          {!arBekraftad(reg) && !vald && !hallplatsMarke && (
             <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
               Obekräftad
             </span>
@@ -1499,8 +1506,9 @@ function ArbetsKo({
         // stegräknarna ersätter de fem summeringsraderna (A′ inbakat:
         // "Betalningspåminnelse skickad" flyttar till Betalningar, se
         // Betalningar.tsx:s DEV-gren); Eventinfo + Bor över står KVAR som
-        // utskicksrad/kryss-läge, visuellt AVSKILDA (egen divide-y-grupp,
-        // gap-2 mellan grupperna — research-doken Del 6C).
+        // utskicksrad/kryss-läge, visuellt AVSKILDA under en egen "Utskick"-
+        // rubrik + kant (review-fix-våg 2, defekt 5 — se docblocket vid
+        // wrappern nedan; research-doken Del 6C).
         <div className="flex flex-col gap-2">
           {protoVariant === 'c' && (
             <HallplatsHarnastPanel
@@ -1521,33 +1529,42 @@ function ArbetsKo({
               onFilterClick={vaxlaHallplatsFilter}
             />
           )}
-          <div className="divide-y divide-border">
-            <SummeringsRad
-              term="Eventinfo skickad"
-              aktiv={filter === 'saknarEventinfo'}
-              onClick={() => vaxlaFilter('saknarEventinfo')}
-              signalSlot
-              signal={
-                signalText ? (
-                  <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 font-medium text-small text-warning">
-                    <Clock aria-hidden="true" size={14} className="shrink-0" />
-                    {signalText}
-                  </span>
-                ) : (
-                  <AutoKryss event={event} />
-                )
-              }
-            >
-              <AvDelta klara={eventinfoSkickade} totalt={totalt} />
-            </SummeringsRad>
-            <SummeringsRad
-              term="Bor över"
-              ikon={BedDouble}
-              aktiv={filter === 'borOver'}
-              onClick={() => vaxlaFilter('borOver')}
-            >
-              <span className="tabular-nums">{borOverTotalt}</span>
-            </SummeringsRad>
+          {/* [PROTOTYPE] [S93] review-fix-våg 2 (defekt 5) — Eventinfo+Bor
+              över stod bara ETT `gap-2` ifrån steg-räknarna: en osynlig
+              luft-skillnad läste inte som "annan datadomän" (granskningsfynd:
+              "fjärde raden bland steg-räknarna"). En kant (`border-t`) + en
+              diskret grupprubrik gör skillnaden SYNLIG: dessa två rader är
+              per EVENT (utskick/logistik), inte per PERSON som stegen ovan. */}
+          <div className="flex flex-col border-border border-t pt-1">
+            <p className="px-2 pt-1 pb-0.5 font-medium text-caption text-text-muted">Utskick</p>
+            <div className="divide-y divide-border">
+              <SummeringsRad
+                term="Eventinfo skickad"
+                aktiv={filter === 'saknarEventinfo'}
+                onClick={() => vaxlaFilter('saknarEventinfo')}
+                signalSlot
+                signal={
+                  signalText ? (
+                    <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 font-medium text-small text-warning">
+                      <Clock aria-hidden="true" size={14} className="shrink-0" />
+                      {signalText}
+                    </span>
+                  ) : (
+                    <AutoKryss event={event} />
+                  )
+                }
+              >
+                <AvDelta klara={eventinfoSkickade} totalt={totalt} />
+              </SummeringsRad>
+              <SummeringsRad
+                term="Bor över"
+                ikon={BedDouble}
+                aktiv={filter === 'borOver'}
+                onClick={() => vaxlaFilter('borOver')}
+              >
+                <span className="tabular-nums">{borOverTotalt}</span>
+              </SummeringsRad>
+            </div>
           </div>
         </div>
       )}
