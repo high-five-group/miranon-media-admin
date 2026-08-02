@@ -1,10 +1,10 @@
 ---
 id: TASK-127.1
 title: 'Skiva: ADR-paret — invite-/identitetsmodellen + auth-faktor-strategin'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-02 14:32'
-updated_date: '2026-08-02 16:20'
+updated_date: '2026-08-02 16:32'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,6 +33,16 @@ Täcker användarberättelser: 10, 14.
 - [x] #3 ADR-nummer disk-verifierade i mintings-ögonblicket (parallell session mintar också)
 <!-- AC:END -->
 
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+GRANSKNINGSFÄRDIG (S96-natten 2026-08-02, orkestreraren). Kod/ADR:er landade: commit 6fbb6290, merge c39ff5d3 (PR #620). CI grön per jobb — merge_group success, push CI success, Post-merge success, CodeQL success (headSha-match per L265, ej --commit-filtret). AC #1-3 och DoD #1-4 bockade.
+
+DONE-FLIPPEN ÄR MARCUS. DoD #5/#6/#7 är spår-nivå-grindar som denna skiva strukturellt inte kan uppfylla: #5 kräver Marcus prototyp-godkännande (TASK-127.2, HITL), #6 kräver rundturs-e2e mot staging (TASK-127.9:s leverabel), #7 är en operativ go-live-grind för hela spåret. Samma mönster på samtliga syskonkort i båda spåren — /to-issues stämplade PRD:ns grindar på varje barn. Detta är work-batch-skillens granskningsvåg-mekanik som avsedd, inte en defekt.
+
+FÖLJD: TASK-127.4 och TASK-127.5 är EJ plockbara i natt (dependencies kräver 127.1 Done). Kedjan parkerad för Marcus morgongranskning, ej pga fel.
+<!-- SECTION:NOTES:END -->
+
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
@@ -43,7 +53,7 @@ ADR-092 (invite-/identitetsmodellen) + ADR-093 (auth-faktor-strategin) mintade, 
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Prototyp-pass (tvåfas, T66-formen) Marcus-godkänt FÖRE login- och accept-skivornas bygge
 - [ ] #6 Rundturs-e2e (inbjudan → accept → inloggning) grön mot staging före kortets Done
