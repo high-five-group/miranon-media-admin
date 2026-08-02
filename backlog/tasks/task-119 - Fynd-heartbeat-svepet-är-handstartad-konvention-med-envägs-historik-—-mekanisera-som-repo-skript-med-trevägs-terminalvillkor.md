@@ -3,10 +3,10 @@ id: TASK-119
 title: >-
   Fynd: heartbeat-svepet är handstartad konvention med envägs-historik —
   mekanisera som repo-skript med trevägs-terminalvillkor
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-01 23:23'
-updated_date: '2026-08-02 15:54'
+updated_date: '2026-08-02 16:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -44,14 +44,20 @@ CLAUDE.md § Landning rad ~163 uppdaterad att peka på skriptet; ci.yml shellche
 Grindar: shellcheck --severity=style --enable=all (CI-scope inkl. nya filer) 0/0/0/0. actionlint -color -ignore 'unexpected key "queue" for "concurrency" section' rent. npm run check:docs → 13 gröna. Live-verifierat (ej stub) mot high-five-group/miranon-media-admin: main-SHA-uppslag, tom PR-lista, och en genuint öppen PR (#613, öppnad av en syskon-agent under bygget) korrekt klassad som ren.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 89fa7587 (merge 1b79220f) · CI-run 30755771428 merge_group per jobb (success) · CI-grön-första-pass: ja (12/12 checks första passet, inga röda) · defekter under körning: 1 — set -e-läcka i loop-läget, självfångad av testfall T19 före push, minimal repro + regressionstest skrivet · TDD: ej tillämplig (tooling-kort; AC#1:s tvåsidiga bevis bär 22 namngivna fall i stället)
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Alla AC avbockade
 - [x] #6 Lokala grindar gröna för rörd fil-klass
-- [ ] #7 CI grön per jobb på pushad commit
+- [x] #7 CI grön per jobb på pushad commit
 - [x] #8 Inga orelaterade filer i diffen
 <!-- DOD:END -->
