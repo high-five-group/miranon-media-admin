@@ -752,6 +752,7 @@ mätinstrumentet till klassdelad hemvist landat; facit på kortet.
 (resend@6-bumpen, käll-verifierad; avvikande-fallet hermetiskt bevisat);
 prod-deployen DEFERRAD till go-live → `task-120` (INGEN ready-etikett —
 Marcus GO sätter den).
+
 - [ ] **`TASK-112`** — testgraf-mätningen: källkods-rotad skuggmätning av
       acceptance-urvalet i post-merge (`ADR-077`-slotten). Mätningen byggs,
       inte urvalet; exekvering efter S91 (Marcus-beslut, sessionsdok Del 39.3
