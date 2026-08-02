@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 16:16'
+updated_date: '2026-08-02 16:45'
 labels: []
 dependencies: []
 ordinal: 215000
@@ -34,3 +35,13 @@ VARFÖR DET SPELAR ROLL: falsklarm på den viktigaste signalen är hur larm slut
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+EVIDENS FÖRSTÄRKT (S96-natten 2026-08-02, orkestreraren). Falsklarmet mättes SJU gånger under mekanismens första skarpa natt, inte två: PR #614, #617, och därefter #621, #623, #624 i ett enda svep (plus #617 upprepat två gånger till, level-triggered var 300:e sekund). Samtliga disambiguerade med 'already queued to merge'.
+
+FIXEN VERIFIERAD MOT ALLA INSTANSER: gh api graphql mot PullRequest.isInMergeQueue gav true för #621, #623 och #624 samtidigt som autoMergeRequest var null och mergeStateStatus CLEAN. Fältet hade alltså tystat varje falsklarm korrekt utan att röra de äkta vägarna.
+
+OPERATIV KOSTNAD MÄTT: bruset tvingade orkestreraren att höja svep-intervallet från 90 s till 300 s (skriptets dokumenterade --interval-flagga, mekanismen orörd) för att inte riskera att monitorn stängs av för många events. Det är en reell försämring av vaktens upplösning som fixen skulle återställa.
+<!-- SECTION:NOTES:END -->
