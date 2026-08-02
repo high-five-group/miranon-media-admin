@@ -48,14 +48,57 @@ export default defineConfig(({ mode }) => {
         },
         // Manifest per ADR-047 B4. Färger ur design-tokens:
         // theme = --mm-primary (--p-gold-500), background = --mm-bg (--p-neutral-0).
+        //
+        // TASK-126.1 (app-butiks-känsla): id + scope, description, categories,
+        // launch_handler och shortcuts kompletterar den rika installations-
+        // dialogen. Verifierat mekaniskt av scripts/check-manifest-fields.mjs
+        // mot den byggda dist/manifest.webmanifest (se npm run verify:manifest).
         manifest: {
           name: 'Miranon Media Admin',
           short_name: 'Miranon',
+          // Stabil identitet (AC #1): `id` gör app-identiteten oberoende av
+          // ev. framtida query-parametrar på start_url (t.ex. install-
+          // tracking) — utan explicit id räknar OS:et annars en ändrad
+          // start_url som en NY app. `scope` matchar hela SPA:t under roten.
+          id: '/',
+          scope: '/',
+          description:
+            'Adminverktyget för Miranon Media — event, anmälningar och personer samlat på ett ställe.',
           lang: 'sv',
           start_url: '/',
           display: 'standalone',
           theme_color: '#d4960a',
           background_color: '#ffffff',
+          // W3C manifest-kategorier (github.com/w3c/manifest/wiki/Categories):
+          // adminverktyg för en verksamhet — närmast 'business'/'productivity'.
+          categories: ['business', 'productivity'],
+          // Fokusera-befintligt-fönster (AC #1, användarberättelse 7): ett
+          // klick på en app-länk fokuserar redan öppet fönster i stället för
+          // att öppna ett till.
+          launch_handler: { client_mode: 'focus-existing' },
+          // 2–3 genvägar mot BEFINTLIGA routes (AC #2) — de vanligaste
+          // handlingarna ur appens nuvarande tabb-/route-struktur
+          // (src/routeTree.gen.ts, TabBar.tsx). Mekaniskt korsläst mot
+          // registrerade routes av scripts/check-manifest-fields.mjs.
+          shortcuts: [
+            {
+              name: 'Skapa nytt event',
+              short_name: 'Nytt event',
+              description: 'Starta ett nytt event direkt från appikonen.',
+              url: '/event/skapa',
+            },
+            {
+              name: 'Ny anmälan',
+              short_name: 'Anmälan',
+              description: 'Lägg till en anmälan utan att först öppna ett event.',
+              url: '/anmalan/ny',
+            },
+            {
+              name: 'Personer',
+              description: 'Hoppa direkt till personregistret.',
+              url: '/personer',
+            },
+          ],
           icons: [
             { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
             { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

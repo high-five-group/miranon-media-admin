@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "preview:staging": "vite preview --port 4173 --strictPort",
     "verify:staging-bundle": "bash scripts/check-staging-bundle.sh",
+    "verify:manifest": "node scripts/check-manifest-fields.mjs",
     "typecheck": "tsr generate && tsc -b --noEmit",
     "typecheck:tests": "tsc --noEmit -p tsconfig.tests.json",
     "lint": "biome check .",
