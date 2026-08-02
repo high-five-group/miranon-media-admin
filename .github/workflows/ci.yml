@@ -1046,18 +1046,21 @@ jobs:
         # --enable=all aktiverar optional checks (SC2250, SC2312,
         # SC2310, SC2311 m.fl. som är default-disabled).
         # Scope per ADR-033 § Del 3: scripts/*.sh + .githooks/* +
-        # 9 sourced-config-filer (.checklist-policy.conf +
+        # 10 sourced-config-filer (.checklist-policy.conf +
         # .frontmatter-policy.conf + .lesson-policy.conf, tillagd S91/ADR-081 +
         # .ci-wait-policy.conf, tillagd S91/TASK-72 +
         # .staging-semaphore-policy.conf, tillagd S91/TASK-77 +
         # .permissions-claims-policy.conf, tillagd S91/ADR-083 +
         # .backlog-closure-policy.conf, tillagd S91/TASK-90 +
         # .listparitet-policy.conf, tillagd S91/TASK-85 +
-        # .thread-index-policy.conf, tillagd i TASK-108-wiringen — en sourced
-        # conf utanför scopet är samma lucka som de övriga redan stänger).
+        # .thread-index-policy.conf, tillagd i TASK-108-wiringen +
+        # .heartbeat-svep-policy.conf, tillagd i TASK-119-wiringen — en
+        # sourced conf utanför scopet är samma lucka som de övriga redan
+        # stänger).
         # Räkningen sade "5" medan listan bar sex filer fram till TASK-90;
         # rättad i samma andetag som den sjunde lades till, räknad om till
-        # åtta i TASK-85 och till nio i TASK-108-wiringen.
+        # åtta i TASK-85, till nio i TASK-108-wiringen och till tio i
+        # TASK-119-wiringen.
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -1073,7 +1076,8 @@ jobs:
             .permissions-claims-policy.conf \
             .backlog-closure-policy.conf \
             .listparitet-policy.conf \
-            .thread-index-policy.conf
+            .thread-index-policy.conf \
+            .heartbeat-svep-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på

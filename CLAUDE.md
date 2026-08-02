@@ -160,10 +160,18 @@ arbetar, och kör aldrig `update-branch` mot en sådan gren.
 merge_group-verifikaten: agenters vakter väcker ingen över turgränsen
 (`T112` § Mätt), och agenter parkerar inte längre på landnings-vakter
 (`.claude/agents/bygg-agent.md` § Parkera aldrig på en landnings-vakt).
-Stående form: en persistent heartbeat-monitor pollar PR-läget (~90 s)
-oberoende av agenternas vakter, och varje väckning — notifikation ELLER
-heartbeat-event — utlöser samma svep: verifiera faktiskt läge mot git/REST →
-armera det som står oarmerat → väck ägar-agenter → starta nästa post.
+Stående form: `scripts/heartbeat-svep.sh` (mekaniserad ur `TASK-119`, config-driven
+via `.heartbeat-svep-policy.conf`) — en persistent heartbeat-monitor som var
+~90:e sekund (branschbelagt intervall,
+`docs/research/orkestrerar-vackning-polling-vs-event-driven-2026-08-02.md`)
+tar en TREVÄGS-snapshot — main-SHA · röda check-rollups · DIRTY-mängd — plus
+en fjärde väg (armerings-kandidater, se tabellen nedan). RÖTT och DIRTY
+rapporteras level-triggered: varje svep tillståndet håller, inte bara vid
+övergången (`L443`) — samma familj som Kubernetes' watch+resync-mönster,
+immun mot exakt den envägs-blindhet som missade PR #572. Oberoende av
+agenternas vakter, och varje väckning — notifikation ELLER heartbeat-event —
+utlöser samma svep: verifiera faktiskt läge mot git/REST → armera det som
+står oarmerat → väck ägar-agenter → starta nästa post.
 Vakt-event är väckarklocka, aldrig fakta: förgrundsverifiera före varje
 handling — fem falska terminal-signaler i ett enda pass är belagda
 (S91 Del 39.5), inklusive ett "MERGED med SHA" vars SHA aldrig nådde `main`.
