@@ -15,6 +15,24 @@
 
 ## Aktuellt fokus
 
+**Session 91 ✅ AVSLUTAD (2026-08-02, `lifecycle: closed` på Marcus
+coverage-kvittens "Kvitterar" — post 3 inget-att-säkra i samma kvittens,
+S74-precedentens form)** — S91: 22 pauser/23 resumer, Del 1–42, restlistans
+spår A–E genomarbetade. Sista dagen: beslutsbordet 8/8 (varav TVÅ punkter
+visade sig redan beslutade — L437-klassen) · `TASK-79` vägval c på natt-datan
+(20/20 lokalt, CI n=65) · exekveringsresterna (A2:9/A3b → CONTRIBUTING ·
+PreToolUse-rättelsen hub-PR #14) · **SKÖRD L433–L440** (hub-lyft väntar
+hub-sync) · BUILD-LOG S91-post · `task-120`–`124` mintade · trådlägen satta
+(T108/T113 `paused` m. skäl+trigger) · worktree-städning (2 bort, grenar
+55→51). Kort Done i dag: 79/111/122 (+99/110/115/117 under vågen).
+Leverans-facit per spår: `tasks/s91-restlistan.md` § Avbockningslogg; full
+narrativ: sessionsdok Del 1–42. **Numrering efter S91:
+93/ADR-089/L441/T114/f47 (hypotes)/task-125.** **NÄSTA (NY session S93 via
+session-start): APPEN — TASK-18.20:s fyra beslut + hållplats-grillningen +
+fem facit-lösa ytor · S92 (färgsystemet) pausad parallell · hub-lyftet
+L433–L440 vid hub-sync-moment · task-120 väntar Marcus GO (go-live) ·
+Marcus-moment: Update-klicket i claude.ai.** *(Föregående fokus-text nedan.)*
+
 **Session 91 🔚 SESSION-END UTFÖRD (2026-08-02) — VÄNTAR MARCUS
 COVERAGE-KVITTENS** — Beslutsbordet exekverat 8/8 (Del 42.2; punkt 4 + 5-
 destillatet visade sig REDAN beslutade — L437-klassen, stale rader brutna) ·
