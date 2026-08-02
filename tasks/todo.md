@@ -15,6 +15,26 @@
 
 ## Aktuellt fokus
 
+**Session 91 ▶️ PÅGÅENDE (2026-08-02, tjugotredje resumen — tillstånd
+återställt, natt-utfallet svept, beslutsbordet står)** — Resume på Marcus
+order. Svepet FÖRST per paus-blocket: **#576/#577/#578 alla MERGED med
+merge_group-verifikat per jobb** · **inga öppna PR:er, inget rött/DIRTY** ·
+natt-agentens leverans landad som PR #578 (rapport + rådata,
+`docs/research/task-79-flake-baslinje-2026-08-02.md`). Natt-utfallet:
+identitetsbeviset **20/20 PASSED lokalt** (0 fällningar, n=20) · CI-basen
+n=65, 1 fällning (~1,5 %) · loadavg-kravet <2 EJ uppfyllt (start ≈4,0,
+öppet bokfört, Backblaze-fullsynk rotorsakad) · **TVÅ NYA oväntade
+fällningar i samma testfil** (hem:437 dagar-kvar-pillen + hem:398
+refetchInterval — femte/sjätte flake-form-kandidater, registrerade för
+ADR-053-triage, EJ diagnostiserade) · vägvalet EJ föregripet. Numrering
+re-verifierad mot disk: 91/ADR-089/L433 (4 fragment)/T114/task-120/f47
+(hypotes). Tillstånds-återställningen = resumens enda dok-skrivning
+(`lifecycle: paused → active`, PAUSLÄGE-rubriken bruten till
+Paushistorik-form). **NÄSTA: beslutsbordet (8 punkter, Paushistorikens
+MARCUS-SEKVENS, i ordning) → exekveringsresterna (A2:9 · A3b ·
+PreToolUse-klassningen) → DoD-avstämning (41.2) → session-end → appen i
+S93.** *(Föregående fokus-text nedan.)*
+
 **Session 91 ⏸️ PAUSAD (2026-08-02, tjugoandra pausen — planerad,
 beslutsbordet dukat, natt-mätning igång)** — Vågen landad: 18 spoke-PR:er
 (#560–575 + dependabot ×3) + #576 i kön + hub-PR #13 (SYSTEMET §0).
