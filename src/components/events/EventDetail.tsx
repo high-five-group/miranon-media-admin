@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
+// [PROTOTYPE] [S93] hållplats-pass — kastbar wiring (throwaway-kontraktet):
+import { PrototypeSwitcher } from '@/components/dev/PrototypeSwitcher';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
@@ -23,6 +25,19 @@ import { EventValjare } from './EventValjare';
 function eventName(e: Event): string {
   return e.eventNamn ?? e.eventlabel ?? 'Namnlöst event';
 }
+
+/**
+ * [PROTOTYPE] [S93] hållplats-pass — divergens-varianterna (ADR-074 beslut 1:
+ * stabila nycklar a/b/c). Railen monteras HÄR (enda platsen på sidan) så
+ * Deltagare.tsx OCH Betalningar.tsx — båda DEV-grindat läsande samma
+ * `?variant=`/`?data=` via oberoende `useQueryState` (nuqs synkar) — inte
+ * vardera monterar sin egen rail (en dubblerad flytande rail vore fel).
+ */
+const HALLPLATS_PROTO_VARIANTS = [
+  { key: 'a', label: 'A — Radbytet', steg: 1, stegLabel: 'Divergens' },
+  { key: 'b', label: 'B — Stations-railen', steg: 1, stegLabel: 'Divergens' },
+  { key: 'c', label: 'C — Nästa steg-panelen', steg: 1, stegLabel: 'Divergens' },
+];
 
 /**
  * Eventsidan — S73-facitets grundform (task-18.1). Toppraden bär identiteten
@@ -303,6 +318,11 @@ export function EventDetail({ eventId }: { eventId: string }) {
           tidsstämplad ström (composer överst, nyast först) med server-satt författare
           och härledd Under/Efter-fas. Egen get-event-notes-fetch (events.notes-cachen). */}
       <Anteckningar event={event} />
+
+      {/* [PROTOTYPE] [S93] hållplats-pass — DEV-grindad divergens-växlare
+          (ADR-044-mekaniken). Se Deltagare.tsx/Betalningar.tsx för de
+          faktiska ?variant=a|b|c/?data=proto-grenarna. */}
+      {import.meta.env.DEV && <PrototypeSwitcher variants={HALLPLATS_PROTO_VARIANTS} />}
     </>,
   );
 }

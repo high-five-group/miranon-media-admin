@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Check, ChevronDown, Clock, Mail, MailCheck } from 'lucide-react';
+// [PROTOTYPE] [S93] hållplats-pass — kastbar wiring (throwaway-kontraktet):
+import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { Input } from '@/components/primitives/Input';
@@ -23,6 +25,14 @@ import { PaymentStatus, RegistrationStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
 import { DetaljGrupp, EtikettVardeRad } from './DetaljGrupp';
 import { DAGMANAD } from './datumSpann';
+// [PROTOTYPE] [S93] hållplats-pass — se Deltagare.tsx:s motsvarande gren +
+// DeltagareHallplatsPrototyp.tsx (frågan, huvudprototypfilen).
+import {
+  HALLPLATS_PROTO_FIXTURES,
+  harPaminnelse,
+  isHallplatsVariant,
+  kategoriPillText,
+} from './hallplats-steg-prototyp';
 
 /**
  * Betalningar-gruppen med inline-ARBETSYTAN (task-18.8; S73-facit K27–K34).
@@ -292,12 +302,20 @@ function BetalningsPersonRad({
   registration,
   eventNamn,
   mutationer,
+  protoAktiv = false,
 }: {
   registration: Registration;
   eventNamn: string;
   mutationer: ArbetsytansMutationer;
+  /** [PROTOTYPE] [S93] fråga 7 — bekräftelseläge- + kategori-pill. Prövas
+      ja/nej i ALLA varianter (a/b/c), inte som ett variantval i sig. */
+  protoAktiv?: boolean;
 }) {
   const namn = displayName(registration);
+  // [PROTOTYPE] [S93] fråga 7 (research-doken Del 1.5, fynd 1+2): Betalningar
+  // visar idag varken bekräftelseläge eller kategori. Två pillar räcker.
+  const protoKategoriPill = protoAktiv ? kategoriPillText(registration) : null;
+  const protoObekraftad = protoAktiv && registration.status === RegistrationStatus.OBEKRAFTAD;
   const historik = [
     registration.paminnelseAnmalningsavgiftSkickad
       ? paminnelseText('avgift', registration.paminnelseAnmalningsavgiftSkickad)
@@ -319,6 +337,22 @@ function BetalningsPersonRad({
         </Link>
       ) : (
         <span className="self-start font-medium text-body">{namn}</span>
+      )}
+      {/* [PROTOTYPE] [S93] fråga 7 — bekräftelseläge + kategori, samma
+          pill-form som Anmälda deltagares kort (KATEGORI_PILL-formen). */}
+      {(protoObekraftad || protoKategoriPill) && (
+        <span className="flex flex-wrap items-center gap-1.5">
+          {protoObekraftad && (
+            <span className="rounded-full bg-error-bg px-2 py-0.5 font-medium text-caption text-error">
+              Obekräftad
+            </span>
+          )}
+          {protoKategoriPill && (
+            <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+              {protoKategoriPill}
+            </span>
+          )}
+        </span>
       )}
       <BetalningsLinje
         registration={registration}
@@ -363,9 +397,12 @@ function BetalningsPersonRad({
 function BetalningsDetaljer({
   event,
   registreringar,
+  protoAktiv = false,
 }: {
   event: Event;
   registreringar: Registration[];
+  /** [PROTOTYPE] [S93] — se BetalningsPersonRad. */
+  protoAktiv?: boolean;
 }) {
   const [flik, setFlik] = useState<'saknar' | 'klara'>('saknar');
   const deadline = deadlineStatus(event.startdatum);
@@ -448,6 +485,7 @@ function BetalningsDetaljer({
               registration={r}
               eventNamn={eventNamn}
               mutationer={mutationer}
+              protoAktiv={protoAktiv}
             />
           ))}
         </ul>
@@ -473,9 +511,12 @@ function BetalningsDetaljer({
 function BetalningsInnehall({
   event,
   registreringar,
+  protoAktiv = false,
 }: {
   event: Event;
   registreringar: Registration[];
+  /** [PROTOTYPE] [S93] — se BetalningsPersonRad + A′-räkneraden nedan. */
+  protoAktiv?: boolean;
 }) {
   const [oppen, setOppen] = useState(false);
   const aktiva = registreringar.filter(arAktiv);
@@ -483,6 +524,10 @@ function BetalningsInnehall({
   const avgifterSaknas = aktiva.length - avgifterMottagna;
   const slutMottagna = aktiva.filter((r) => r.slutbetalning === PaymentStatus.MOTTAGEN).length;
   const slutSaknasAntal = aktiva.filter(slutSaknas).length;
+  // [PROTOTYPE] [S93] A′ inbakat (research-doken Del 6, alternativ A′):
+  // "Betalningspåminnelse skickad" flyttar hit från Anmälda deltagare —
+  // räknaren hamnar hos påminnelse-HANDLINGEN och -HISTORIKEN (Del 1.5 fynd 3).
+  const pamindaTotalt = protoAktiv ? aktiva.filter(harPaminnelse).length : 0;
 
   return (
     <>
@@ -495,6 +540,13 @@ function BetalningsInnehall({
           {`${slutMottagna} mottagna`}
           <SaknasDelta antal={slutSaknasAntal} testid="delta-slutbetalningar" />
         </EtikettVardeRad>
+        {protoAktiv && (
+          <EtikettVardeRad term="Betalningspåminnelse skickad">
+            <span data-testid="proto-hallplats-paminda" className="tabular-nums">
+              {pamindaTotalt}
+            </span>
+          </EtikettVardeRad>
+        )}
       </dl>
       {aktiva.length > 0 && (
         /* K28: toggeln + regionen i EN wrapper — detaljerna hör till toggeln
@@ -506,7 +558,7 @@ function BetalningsInnehall({
             onToggle={() => setOppen((v) => !v)}
           />
           <div id="betalningsdetaljer" hidden={!oppen}>
-            <BetalningsDetaljer event={event} registreringar={aktiva} />
+            <BetalningsDetaljer event={event} registreringar={aktiva} protoAktiv={protoAktiv} />
           </div>
         </div>
       )}
@@ -520,6 +572,21 @@ export function Betalningar({ event }: { event: Event }) {
     queryKey: queryKeys.registrations.byEvent(event.id),
     queryFn: () => dataSource.fetchRegistrations({ eventId: event.id }),
   });
+  // [PROTOTYPE] [S93] hållplats-pass — samma DEV-grindade läsning som
+  // Deltagare.tsx (oberoende `useQueryState`, samma URL-nyckel — nuqs
+  // synkar de två). Utan ?variant renderas EXAKT dagens träd.
+  const [variantParam] = useQueryState('variant');
+  const [dataParam] = useQueryState('data');
+  const protoAktiv = import.meta.env.DEV && isHallplatsVariant(variantParam);
+  const protoDataMode = protoAktiv && dataParam === 'proto';
+
+  if (protoDataMode) {
+    return (
+      <DetaljGrupp id="grupp-betalningar" rubrik="Betalningar">
+        <BetalningsInnehall event={event} registreringar={HALLPLATS_PROTO_FIXTURES} protoAktiv />
+      </DetaljGrupp>
+    );
+  }
 
   return (
     <DetaljGrupp id="grupp-betalningar" rubrik="Betalningar">
@@ -536,7 +603,7 @@ export function Betalningar({ event }: { event: Event }) {
           </MessageBox>
         </div>
       ) : (
-        <BetalningsInnehall event={event} registreringar={data} />
+        <BetalningsInnehall event={event} registreringar={data} protoAktiv={protoAktiv} />
       )}
     </DetaljGrupp>
   );
