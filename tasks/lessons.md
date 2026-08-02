@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-01
+updated: 2026-08-02
 review_by: 2026-11-15
 status: stable
 ---
@@ -8314,3 +8314,124 @@ Praktiskt, i den ordningen:
    grön bevisar inget om nästa ändring. `TASK-108`:s grind fick 15 testfall varav
    13 planterar ett känt fel — plus sex skarpa planteringar i det verkliga
    registret, en per invariant.
+
+### L433 — Heartbeaten: nyckla på målsignalen, re-armera vid varje väckning, den startar inte av sig själv
+
+**En landningssvep-heartbeat är bara så bra som den tillståndsändring den
+nycklas mot — poll en proxy och vakten väcker på brus eller missar helt det
+den finns för att upptäcka. En armering är inte ett minne mellan två
+väckningar: kommandot är billigt och idempotent, så kör det igen i stället
+för att lita på gårdagens svar. Och vakten själv är konvention, inte
+mekanism — ingen hook eller cron startar den åt dig.** `[UNIVERSAL]`
+
+Tre iterationer mätta samma kväll (S91, 2026-08-01→02): nycklad på
+`mergeStateStatus` → brus (dependabot-PR:er flappade `UNKNOWN`→`CLEAN`) · på
+öppna PR-mängden → redundant mot task-notifikationer · på main-toppens SHA
+(`git ls-remote origin main`) → väcker exakt på landningar. `#565`:s
+armeringssvar såg lyckat ut men PR:en var inte köad vid nästa svep —
+re-armering är den enda pålitliga läsningen (andra bekräftelsen av
+`TASK-115`-klassens tysta armeringskonsumtion). Mekaniseringen är kortad
+(`TASK-119`); cron-beslutet vilar på `T111`-bygget.
+
+### L434 — En obligatorisk referens-skill kostar hela sin korpus, inte delen man behöver
+
+**En skill med brett, alltid-på-triggerkontrakt laddar sin fulla korpus vid
+varje triggning — inte den delsektion uppgiften behövde. Bredden köper
+täckning; priset betalas i kontext per triggning, även där en rad hade
+räckt.** `[UNIVERSAL]`
+
+Empiri (S91, tjugoförsta resumen): `claude-api`-referensskillen triggade
+obligatoriskt i kontext-42-%-episoden. Motmedlet är inte att smalna
+triggerkontraktet (det återinför missad-täckning-risken skillen finns för att
+stänga) utan att räkna in korpus-kostnaden när kontexttak och skill-triggrar
+designas tillsammans — nära ett kontexttak kan en obligatorisk triggning vara
+marginalen som tvingar en paus.
+
+### L435 — PR-fillistor bär tredot-brus när grenen har inbakade merges
+
+**En PR:s fillista räknas mot tredot-diffen (`branchA...branchB`) — skillnaden
+sedan merge-base, inte sedan spetsen. En gren med inbakade merges kan visa
+filer som redan landat på `main` via en helt annan väg, utan verklig
+innehållskonflikt. Verifiera mot `git merge-base` innan en överlappning
+tolkas som konflikt.** `[UNIVERSAL]`
+
+Empiri (S91, 2026-08-01): `#551`/`#553` visade samma tre filer + samma
+räknar-bump 86→87 — vid första anblick en rak innehållskonflikt. Lösningen
+var `git rebase --onto` över brus-grenen mot härledd fakta (rätt facit 88 på
+första försöket), inte rad-för-rad-lösning mot vad den råa fillistan påstod.
+Särskilt relevant i merge-queue-flöden med många kortlivade grenar (ADR-076).
+
+### L436 — En vakt som bara pollar efter LYCKAT terminalläge är blind för rött
+
+**Ett terminalvillkor som bara känner igen framgång ("är den mergad än?") ser
+aldrig ett misslyckande — det pollar vidare, tyst, tills någon annan märker
+att inget händer. Terminalvillkoret måste täcka BÅDA utfallen: lyckat OCH
+fällt, annars är vakten strukturellt blind för halva de tillstånd den finns
+för att upptäcka.** `[UNIVERSAL]`
+
+Empiri (S91, `TASK-115` instans 6+7): `#557` föll ur kön två gånger på sex
+minuter med konsumerad armering; orkestrerarens vakter pollade enbart
+`MERGED`, så båda passerade osedda tills Marcus frågade varför PR:en stod
+stilla. Fixen samma stund: tvåvägs-vaktsformen (landat OCH utsparkat/fällt
+som terminala tillstånd). Tillämpad genomgående vid session-end-dagens
+landningsvakter — fångade `#581`:s MD032-röda direkt.
+
+### L437 — En stängning som inte bryter ALLA ytor som bär posten återuppstår som öppen
+
+**När en post bokförs stängd i en yta (logg, register, tråd) men dess
+tillstånds-rad i en annan yta (kroppens checkbox, NÄSTA-lista, beslutsbord)
+lämnas obruten, återuppstår posten som öppet arbete — och kostar ett helt
+besluts-/utredningsvarv innan någon känner igen den. Status ska bo i EN yta;
+övriga ytor bär pekare, inte tillstånd.** `[UNIVERSAL]`
+
+Empiri (S91, 2026-08-02): `A2:8` avgjordes 2026-07-29 (Del 28) och
+§ Avbockningslogg bokförde KLAR 2026-07-30 — kroppens checkbox bröts aldrig,
+och frågan återuppstod som beslutsbords-punkt 4 tills Marcus kände igen den
+(*"jag har svaret på denna fråga tidigare"*). Samma dag föll fler instanser:
+A3b-svansen (ADR-081-sektionen fanns sedan `TASK-86`) · `TASK-79`/`110`/
+`111`-raderna · destillat-raderna (avgjort 2026-08-01, T100 § Steg 4) — och
+Codes eget DoD-svep ställde destillat-frågan till Marcus IGEN ur den stale
+raden. Motmedlet är mekaniskt, inte minne: grep postens ID i HELA filen före
+stängnings-commiten, och låt status bo i EN utpekad yta.
+
+### L438 — En rättelse är en premiss, inte ett facit — verifiera korrigeringar som allt annat
+
+**En rättelse av ett fel kan själv bära ett nytt fel. Att något är formulerat
+som korrigering ger det ingen sanningsrabatt: pröva rättelsens påståenden mot
+disk som vilken premiss som helst.** `[UNIVERSAL]`
+
+Instans 1 (S91, tjugoandra resumen): orkestrerarens korrigering av ett
+task-115-påstående bar själv ett fel ("Done" — kortet stod `To Do`), fångat
+av mottagarens premiss-pass (ADR-086). Instans 2 (2026-08-02):
+konstitutionsradens rättelse 2026-07-29 (*"PROSA, inte en spärr —
+`permissions.deny` har aldrig funnits"*) var till hälften själv fel: spärren
+fanns sedan 2026-07-27 som plugin-PreToolUse-hook
+(`deny-backlog-direct-edit.sh`, 1.22.0/T100) — sökningen täckte
+settings-filer, inte pluginets `hooks.json`. Rättad med full radhistorik
+(hub-PR #14).
+
+### L439 — Transcript-mtime är falsk signal — identifiera sessionsfiler via radernas timestamps
+
+**En transcript-JSONL:s mtime säger när filen senast RÖRDES, inte vilken
+session den bär eller när innehållet skrevs — harnesset kan röra filer långt
+efter sessionsslut. Identifiera sessionsfiler via radernas egna timestamps
+(första/sista event-raden), aldrig via filsystemets metadata.** `[UNIVERSAL]`
+
+Empiri: uppdragsrevision #2:s metodfynd (S91, tjugoandra resumen) —
+fil-urval på mtime gav fel sessionsmängd; rad-timestamps gav rätt. Samma
+klass som memory-posten om live-JSONL som ögonblicksbild.
+
+### L440 — En grinds exitkod genom en pipe är pipens sista led — kör grinden naken
+
+**`grind | tail` returnerar tail:s exit, inte grindens; `grind ; echo $? &&
+nästa` kedjar på echo:t. Båda formerna gör en röd grind grön för skalet. Kör
+grinden som eget kommando (if-form eller naken), eller läs `PIPESTATUS`
+explicit.** `[UNIVERSAL]`
+
+Empiri (S91, 2026-08-02, två instanser inom en timme, båda orkestrerarens):
+(1) `markdownlint-cli2 | tail -1` svalde exit 1 → röd grind följdes av
+commit + push + armering; fångades först av CI:s Docs link check
+(`#584`-kedjan). (2) Rättelsekommandot självt kedjade `&&` på ett
+`echo "exit=$?"` och committade trots kvarvarande rött. Klassen är L436 i
+kommandoform — en form som bara kan rapportera framgång. Motmedlet användes
+direkt efteråt: `if grind; then committa; else stanna; fi`.

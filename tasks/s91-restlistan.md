@@ -558,16 +558,11 @@ kontroll bort utan att ersättas — precis det målbilden varnar för
 > uppstod av omnumreringen, alltså efter att posten skrevs. Prefixet `A7:` är nu
 > explicit så att kollisionen inte kan återuppstå.
 
-- [ ] **A7:9 · Preview-miljö per PR.** Granskningens förbättring **F2** —
-      utforskningsläget saknar delad yta. Posten **föll ur åtgärdsplanens åtta
-      steg** och fångades av Marcus 2026-07-28 när han läste förbättringslistan
-      mot A7. Glidningen var orkestrerarens, inte en avgränsning; raden står här
-      just för att en post utanför kartan är en post som tappas — vilket är exakt
-      vad som hände. **Medvetet sist och utan dep:** den ändrar inte den kritiska
-      vägen, och för en ensam granskare som redan kör lokalt är vinsten
-      bekvämlighet snarare än kapacitet. Kortets steg 0 kräver att nyttan prövas
-      mot faktiska blockeringar innan något byggs — är svaret noll är den ärliga
-      rekommendationen att stänga kortet → **`TASK-70.7`**
+**A7:9 BRUTEN SOM RESTLISTE-POST 2026-08-02 (session-end):** posten bärs i
+sin helhet av kortet **`TASK-70.7`** (steg 0 prövar nyttan mot faktiska
+blockeringar — är svaret noll stängs kortet; exekvering efter S91). Raden var
+kortets dubblett; historiken (F2-glidningen, Marcus-fångsten 2026-07-28) står
+kvar i kortet + Del-narrativet.
 
 **`TASK-70.1` bär TVÅ skäl till `ready-for-human` — etikett-förslaget adresserade
 bara det ena.** Fångat 2026-07-28 vid genomläsning av kortet i sin helhet.
@@ -620,10 +615,15 @@ acceptance-klassens utbrytning ur mutexen.
 Åtgärd 1–2 och steg 3 är landade (se § Avbockningslogg); tråden bär hela
 diagnosen.
 
-- [ ] Steg 4 — `IDENTITET.md`-destillatet. **Marcus-beslut.** Vad kärnan är kan
-      bara han avgöra
-- [ ] Hooken täcker CLAUDE.md-lagret men **inte** memory-lagret — `MEMORY.md`
-      levererades utan att logga en rad (nytt fynd 2026-07-27)
+**Steg 4 var AVGJORT AV MARCUS 2026-08-01** (T100-kortet § Steg 4, ordagrant
+beslut): inget destillat nu — IDENTITET/profile ska göras om först;
+omgörningen är ett hub-/personspår Marcus initierar när han vill; T100
+stängd. Raden var stale (L437-klassen) och lurade in beslutsbords-frågan
+2026-08-02 en andra gång — fälld av T100-läsningen, inte av minnet.
+
+**Memory-lager-hålet KORTAT → `task-124`** (session-end 2026-08-02,
+gränsregeln): hook-täckningen för `MEMORY.md`-leverans prövas som eget kort —
+över-engineering-vakten prövas där skarpt (bygg, eller avstå öppet).
 
 ## Spår C — Lesson-skulden (AVBLOCKERAD 2026-07-27 av ADR-081)
 
@@ -696,31 +696,22 @@ Registrerade som backlog-kort. **Här bara som index — status, plan och
 acceptanskriterier bor på korten.** Ordningen för fynd-kedjan står i
 § Fynd-kedjans ordning.
 
-- [ ] **`T108`** (tråd, ej kort) — **MÅSTE LÖSAS (Marcus 2026-07-29).**
-      Orkestreraren väntar på notifieringar som strukturellt aldrig kommer:
-      **PR-landningar notifierar ingen.** Inträffade TVÅ gånger samma dag, och
-      båda gångerna var det Marcus som fångade det — den dyraste fångst-mekanismen
-      vi har. Klassen är bredare än PR:er: **vilka tillstånd antar jag att någon
-      berättar om för mig?** En lesson räcker inte — dagen bevisade två gånger att
-      en regel utan mekanism inte efterlevs. Fyra former att utforska, se
-      tråd-registret
+**`T108`-raden UPPDATERAD 2026-08-02 (session-end):** form (d) mekaniserad
+(`TASK-113`/ADR-087 — Stop-vakten i drift) · heartbeat-mekaniseringen kortad
+(`TASK-119`) · trevägs-heartbeaten + svep-vid-väckning i drift (T112-formen,
+`CLAUDE.md` § Landning). Tråden satt `paused` med trigger
+(TASK-119-exekvering · `T111`-bygget för cron-beslutet); T112-hålet öppet
+bokfört i registret.
 
-- [ ] **`T107`** (tråd, ej kort) — **backlog-CLI:t är odokumenterat förkrav som
-      CI inte har.** `backlog.md@1.47.1` är globalt installerad på Marcus maskin,
-      varken dependency eller i `node_modules`, nämns i ingen fil. **Blockerar
-      CI-wiringen av `scripts/check-backlog-closure.sh`** (byggd, 10/10 tester,
-      shellcheck 0/0/0/0, körd skarpt 21→1 — men ej wirad). Marcus 2026-07-29:
-      *"Det är inte mitt beslut. Det är ett beslut vi ska ta efter research-runda
-      och utforskning."* Fyra former att utforska, se tråd-registret
+**`T107`-raden STALE — tråden är STÄNGD** (trådregistret): förkravet är i dag
+pinnad devDependency (`backlog.md@1.47.1` i `package.json`), och den
+kvarvarande CI-ytan (fail-closed utan `BACKLOG_CMD` när `node_modules`
+saknar binären) bärs av `TASK-118`.
 
-- [ ] **`T109`** (tråd, ej kort) — **kan två aktörer arbeta i samma sessionsdok?**
-      Marcus fråga 2026-07-29. Det kördes skarpt samma dag och fungerade — men
-      bara för att partitionen sattes för hand. **Fyra strukturella hinder,
-      verifierade mot disk:** `lifecycle:` bär ETT värde · grindens paus-markör
-      är prefix-förankrad · Del-numreringen antar EN berättare · paus/resume-verben
-      antar en aktör. Femte instansen hittades vid själva registreringen: `#446`
-      och `#447` redigerar samma kortfil och `#447` står `CONFLICTING` med
-      auto-merge armerad. Besläktad `A2:7` + `T108`, se tråd-registret
+**`T109`-raden STALE — tråden STÄNGD 2026-08-01** mot
+[ADR-088](../docs/decisions/ADR-088-sessionsdok-single-writer-leveransvag.md)
+(single-writer per era med definierad leveransväg) + options-rymds-passet;
+hela facit i trådregistrets T109-rad.
 
 **`TASK-79` Done 2026-08-02** (beslutsbordet punkt 2, vägval c på Marcus GO):
 residualrisken accepterad mot karaktäriseringen; natt-serien 20/20 PASSED +
@@ -745,7 +736,9 @@ piloten (Sonnet-subagent); friktionens user-requested-villkor uppfyllt
 stående, inte per anrop. Bokfört i `T86`-kortet; uteblivna pass märks
 fortsatt i pilotloggen (konsekvens 2).
 
-- [ ] `IDENTITET.md`-destillatet (= Spår B steg 4)
+**`IDENTITET.md`-destillatet — AVGJORT 2026-08-01** (T100 § Steg 4: inget
+destillat nu; hub-spår Marcus initierar). Dubblettrad av Spår B-brytningen
+ovan, bruten vid session-end.
 **`TASK-110` Done 2026-08-01** (S91-vågen, merge_group-verifierad per jobb):
 mätinstrumentet till klassdelad hemvist landat; facit på kortet.
 
@@ -1073,3 +1066,4 @@ stängde `TASK-54.2` DoD 7 och `TASK-54.3` DoD 5).
 | 2026-08-02 | **`A2:9` (Punkt 9) STÄNGD — push-kadensens dom har hemvist.** `TASK-122` mintat vid plock (postens egen regel); domen (en commit per PR · 7–11 PR/dag, rätt mot branschgolven) + separationen (commit-frekvens gratis, push-frekvens kostar CI + mutexplats) inskriven i `CONTRIBUTING.md` § Push-kadensen med källpekare till passet. Kortet stängs i stängningsbatchen efter merge_group-verifikat | `TASK-122` · CONTRIBUTING § Push-kadensen · [passet](../docs/research/push-kadens-agent-arbetstrad-2026-07-26.md) |
 | 2026-08-02 | **`A3b` STÄNGD — verktygsvals-kravet durabelt.** `CONTRIBUTING.md` § Verktygsval före nybygge bär det stående kravet (prövning + skriftlig redovisning även vid "bygg eget"). Svansen (ADR-081/towncrier) var redan landad sedan 2026-07-30 (`TASK-86`, ADR-081 § Verktygsvalet, verifierat mot ADR-texten) — kropps-texten hade aldrig brutits: andra driftinstansen samma dag, klassen bärs av fragmentet `stangning-i-en-yta-utan-att-bryta-den-andra` | CONTRIBUTING § Verktygsval · ADR-081 § Verktygsvalet |
 | 2026-08-02 | **Stängningsbatchen — beslutsbordets sex kropps-rader brutna.** `TASK-79` (vägval c, Done) · `TASK-110`/`TASK-111` (Done i vågen resp. bordet; 111:s deploy-moment → `task-120`) · `--mm-btn` (S92/F16 äger frågan) · namn-/strukturfrågorna ((a) GO → `task-123` · (b) defer) · review-kadensen (stående order, `T86`). `task-122` Done efter `#583`:s merge_group-verifikat per jobb. Besluten i fulltext: sessionsdok Del 42.2 · 42.4 · 42.5 | Del 42 · korten |
+| 2026-08-02 | **Session-end-svepet.** L433–L440 konsoliderade (5 fragment + 3 kandidater; hub-lyft väntar hub-sync) · BUILD-LOG S91-post · sex stale rader brutna (A7:9 → `TASK-70.7` · destillat ×2 → T100 § Steg 4 AVGJORT 2026-08-01 · T107/T109 → stängda trådar) · memory-hålet → `task-124` · T108/T113 → `paused` med skäl+trigger · worktree-städning 2 borttagna, grenar 55→51 · Codes egna fel bokförda öppet (destillat-frågan omställd ur stale rad [L437] · tråd-svepets instrumentfel [T110 klass A] · pipe-exit ×2 [L440]) | Del 42.6 · `tasks/lessons.md` L433–L440 |
