@@ -15,8 +15,9 @@
 
 ## Aktuellt fokus
 
-**Session 94 ✅ AVSLUTAD (2026-08-02, session-end utförd — `lifecycle:
-closed` flippas på Marcus coverage-kvittens)** — **ORKESTRERINGS-UTREDNINGEN
+**Session 94 ✅ AVSLUTAD (2026-08-02, `lifecycle: closed` på Marcus
+coverage-kvittens "Inget att säkra, kvitterar coverage" — post 3
+inget-att-säkra i samma kvittens)** — **ORKESTRERINGS-UTREDNINGEN
 → TIER-POLICY I DRIFT** (endagssession, egen worktree, parallell med S93):
 research ×3 + T113:s FÖRSTA Sonnet-datapunkt (16 uppdrag/88 påståenden/4
 hårda fel 4,60 % — inom pre-Sonnet-bandet; 14/16 spawns bevisade på
