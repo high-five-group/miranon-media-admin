@@ -3088,6 +3088,29 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 **Sessionsdok-trail:** [`tasks/sessions/2026-07-26-session-91.md`](../tasks/sessions/2026-07-26-session-91.md)
 (Del 1–42 + Paushistorik ×22). Transcript-referens för stängningsdagen: Del 42.6.
 
+## Session 94 — Orkestrerings-utredningen: från spridda trådfynd till tier-policy i drift (2026-08-02)
+
+- **Commit-range:** `dc821ec3` (sessionsdok-födelse) → session-end-batchen
+  2026-08-02; spoke-PR `#587`–`#596` + hub-PR `#15` (plugin 1.26.0,
+  installerad i samma landning). Endagssession, parallell med S93 (appen,
+  huvudträdet) — S94 körde hela vägen i egen worktree, ADR-090-formen
+  levd innan den var beslutad.
+- **Mål:** Marcus öppning — orkestrerar-rollen och modellvalet ska bo i
+  arbetssättet, inte i muntliga sessionstart-instruktioner; modell per
+  processteg med branschbelägg.
+- **Leverans:** utredning (research ×3 mot förstapartskällor + frontier,
+  T113:s första Sonnet-datapunkt, docs-verifierad styrmekanik) →
+  beslutsunderlag (`docs/research/modell-policy-underlag-2026-08-02.md`) →
+  grillning 7/7 (en fällning: tyst auto-isolering revs på research-belägg)
+  → **ADR-089** (tier-policyn: Haiku hittar · Sonnet utför · Opus
+  avgör/felsöker · Fable orkestrerar; effort explicit; eskalering
+  Opus-default) + **ADR-090** (sessions-parallellitet: detektera+fråga) +
+  `TASK-125` (effort-mätkort) + hub-mekanisering (output-style,
+  session-start/resume, SYSTEMET §4).
+- **Trådar:** T67 designsteg verkställt (`paused`) · T113 eskalationsregel
+  öppet riven · T111 fråga 3 stängd (läsdisciplinen).
+- Full narrativ: sessionsdok S94 Del 1–4 + session-end-blocket.
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

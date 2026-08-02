@@ -15,6 +15,30 @@
 
 ## Aktuellt fokus
 
+**Session 94 ✅ AVSLUTAD (2026-08-02, session-end utförd — `lifecycle:
+closed` flippas på Marcus coverage-kvittens)** — **ORKESTRERINGS-UTREDNINGEN
+→ TIER-POLICY I DRIFT** (endagssession, egen worktree, parallell med S93):
+research ×3 + T113:s FÖRSTA Sonnet-datapunkt (16 uppdrag/88 påståenden/4
+hårda fel 4,60 % — inom pre-Sonnet-bandet; 14/16 spawns bevisade på
+`claude-sonnet-5`) → underlag → grillning 7/7 (tyst auto-isolering FÄLLD på
+research-belägg → detektera+fråga) → **ADR-089** (Haiku hittar · Sonnet
+utför · Opus avgör/felsöker · Fable orkestrerar; effort explicit i
+frontmatter; eskalering 2× fälld → Opus-default, fable-regeln 2026-08-01
+öppet riven; routing-regeln "adress→Haiku, omdöme→minst Sonnet, tvekan
+uppåt") + **ADR-090** (sessions-parallellitet: detektera+fråga i
+sessionsstartens kvittens-utbyte; ovillkorad worktree öppet bokförd som
+framtida väg) + **hub-PR #15/plugin 1.26.0 INSTALLERAD** (orkestrerar-rollen
+i output-stylen + start/resume-skillsen + SYSTEMET §4 — Marcus behöver
+aldrig mer säga "du är orkestrerare") + `TASK-125` (mät Sonnet@high mot
+@xhigh; nivåbyte endast på data). Spoke-PR #587–#596 + hub #15, samtliga
+merge_group-verifierade. **SKÖRD L441–L442** [UNIVERSAL ×2] (regel utan
+bärare på egen yta · fjärr-ref-diff i worktrees). Trådar: T67 verkställd
+(`paused`) · T113 eskalationsregel riven · T111 fråga 3 stängd.
+Worktree-städning: 5 agent-träd + 7 landade grenar bort. **Numrering efter
+S94: 95/ADR-091/L443/T114/f47 (hypotes)/task-126.** **NÄSTA: appen i S93
+(parallell) · task-125 plockbar · hub-lyftet L433–L442 vid hub-sync-moment ·
+Marcus-moment: Update-klicket i claude.ai.** *(Föregående fokus-text nedan.)*
+
 **Session 91 ✅ AVSLUTAD (2026-08-02, `lifecycle: closed` på Marcus
 coverage-kvittens "Kvitterar" — post 3 inget-att-säkra i samma kvittens,
 S74-precedentens form)** — S91: 22 pauser/23 resumer, Del 1–42, restlistans
