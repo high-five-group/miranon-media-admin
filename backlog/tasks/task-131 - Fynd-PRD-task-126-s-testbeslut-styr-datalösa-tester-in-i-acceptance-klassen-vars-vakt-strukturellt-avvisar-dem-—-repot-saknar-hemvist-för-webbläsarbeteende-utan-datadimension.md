@@ -7,6 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 17:26'
+updated_date: '2026-08-02 17:35'
 labels: []
 dependencies: []
 ordinal: 217000
@@ -42,3 +43,15 @@ INGET FEL HOS AGENTEN: den följde PRD:ns testbeslut exakt, körde npm run test:
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+RÄTTELSE (orkestreraren, samma natt). Kortets och sessionsdokets ursprungliga formulering — att PR #628 'kan landa av sig själv när klassfrågan är avgjord' — är FEL och rättas här.
+
+PR #628 är sedan 2026-08-02 ~17:33 UTC inte bara RÖD utan DIRTY. Main har avancerat 27 commits sedan grenens bas (d5aed8d1). Enda konfliktande filen är 'backlog/tasks/task-126.2 - ...md': grenen bär agentens AC/DoD-bockningar, main bär den parkerings-not orkestreraren skrev efter stoppet. Båda sidor är rena tillägg i olika sektioner — resolutionen är 'behåll båda', men den måste göras för hand.
+
+#628 kräver alltså TVÅ åtgärder, inte en: (1) klassbeslutet i detta kort, och (2) en kortfils-konfliktlösning.
+
+ORSAKEN ÄR ORKESTRERARENS EGEN: att skriva bokföring till ett kort vars ändringar ligger olandade i en öppen PR skapar garanterat en konflikt i just den filen. Noten hade kunnat bo enbart här och i sessionsdokets Del 4, som inte finns på grenen. Fångad som lessons-fragment.
+<!-- SECTION:NOTES:END -->
