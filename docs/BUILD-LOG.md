@@ -3057,6 +3057,37 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 
 **Sessionsdok-trail:** [`tasks/sessions/2026-07-26-session-90.md`](../tasks/sessions/2026-07-26-session-90.md) (Del 1–2) + fyra bilagemappar ([task-48](../tasks/sessions/bilagor/s90-task48-markeringslaget/), [personlistan](../tasks/sessions/bilagor/s90-personlistan-konvergens/README.md), [persondetalj](../tasks/sessions/bilagor/s90-persondetalj-divergens/README.md), [check-in](../tasks/sessions/bilagor/s90-checkin-divergens/README.md)). **EJ fas-avslut.** Kvar: **Marcus design-review av `task-48`** (DoD #5) och Done-flippen · **variantvalen** — persondetalj A/B/C, check-in A/B/C och listans tonal/zebra-fork, samtliga Marcus beslut per L237 · därefter **PRD + skivor per yta**, där check-in-kartans kort 1–3 är variant-oberoende och kan börja direkt. **`TASK-52`** plockbart. Bakgrund: hub-lyftet L284–L353 · `TASK-27` (tidszons-klassen, nu med skarp träff) · T87-aktiveringen · escapes-räkne-regeln · konventions-grillningen · arkitektur-placeringens epok-grillning (T93/T79) · dependabot #162/#65 · Marcus-moment: Update-klicket i claude.ai.
 
+## Session 91 — Härdningssessionen: 22 pauser, restlistan genomarbetad, beslutsbordet stängt (2026-07-26 → 2026-08-02)
+
+- **Commit-range:** `fc3b3da5` (sessionsdok-födelse 2026-07-26 13:56) →
+  session-end-batchen 2026-08-02 (PR-kedjan `#579`–`#585`). **22 pauser /
+  23 resumer** — sessionsmodellens längsta; paus/resume-kadensen
+  (ADR-051/ADR-069) bar den hela vägen.
+- **Mål:** född som design-review av `task-48`; växte på Marcus order till
+  spårhärdning (restlistans Spår A–E: CI-/grind-arkitekturen,
+  aktörs-koordineringen, lesson-skulden, verktygsskulden) med appen medvetet
+  parkerad till S93.
+- **Leverans-facit per spår:** [`tasks/s91-restlistan.md`](../tasks/s91-restlistan.md)
+  § Avbockningslogg (dag-för-dag med refs) — återberättas inte här. Full
+  narrativ: sessionsdok Del 1–42.
+- **Mätbara spann under S91:** ADR-079–088 mintade (tio; nästa 089) · trådar
+  T99–T113 födda + T85/T86/T87-uppdateringar (nästa T114) · backlog-substratet
+  task-53 → task-124 (nästa 125) · **SKÖRD L354–L440** (L360–L432 via Spår
+  C-konsolideringen + hub-lyft vol-05; **L433–L440 vid session-end** — hub-lyft
+  väntar nästa hub-sync-moment).
+- **Sista dagen (Del 41–42):** natt-mätningen `TASK-79` (20/20 lokalt, CI
+  n=65) → vägval c · beslutsbordet 8/8 exekverat (Del 42.2) ·
+  exekveringsresterna (A2:9/A3b → CONTRIBUTING · PreToolUse-rättelsen hub-PR
+  #14) · sex+ stale kropps-rader brutna (L437-klassen) · `task-120`–`124`
+  mintade · T108/T113 → `paused` med skäl+trigger.
+- **EJ fas-avslut** — ingen fas stängdes; CHANGELOG orörd (fas-bunden per
+  phase-end-verify).
+- **Numrering efter S91:** nästa session **93** (S92 = färgsystemets pausade
+  parallellsession) / ADR 089 / L441 / T114 / f47 (hypotes) / task-125.
+
+**Sessionsdok-trail:** [`tasks/sessions/2026-07-26-session-91.md`](../tasks/sessions/2026-07-26-session-91.md)
+(Del 1–42 + Paushistorik ×22). Transcript-referens för stängningsdagen: Del 42.6.
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

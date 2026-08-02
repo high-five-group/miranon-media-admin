@@ -3,7 +3,7 @@ owner: marcus803
 updated: 2026-08-02
 review_by: 2026-09-01
 status: stable
-lifecycle: active
+lifecycle: paused
 ---
 
 # T113 — Sonnet-subagent-mätuppföljningen
@@ -165,3 +165,10 @@ källan till premiss-pass-disciplinen som ADR-086 mekaniserade) ·
 `ADR-086` (uppdragets premisser prövas av mottagaren — mekanismen § Mätpunkt 1
 tillämpar) · `TASK-115` (G0-transienten — måste uteslutas manuellt vid
 eskalationsbedömning, se § Eskalationsregel).
+
+## Pausad (2026-08-02, session-end S91)
+
+Väntar sin första Sonnet-datapunkt: nästa `revision:uppdrag` riktas mot
+tjugoandra resumens transcript (`a964302a-…`, ~15 Sonnet-bygguppdrag).
+Återupptas i den framtida session som kör revisionen — era-jämförelser
+förblir förbjudna tills datapunkten finns (T110-effektregeln).

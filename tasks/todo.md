@@ -15,6 +15,24 @@
 
 ## Aktuellt fokus
 
+**Session 91 🔚 SESSION-END UTFÖRD (2026-08-02) — VÄNTAR MARCUS
+COVERAGE-KVITTENS** — Beslutsbordet exekverat 8/8 (Del 42.2; punkt 4 + 5-
+destillatet visade sig REDAN beslutade — L437-klassen, stale rader brutna) ·
+natt-facit: `TASK-79` Done vägval c, nya former → `task-121` ·
+exekveringsresterna körda (A2:9 → CONTRIBUTING + `TASK-122` Done · A3b →
+CONTRIBUTING · PreToolUse-rättelsen hub-PR #14 MERGED) · **L433–L440
+konsoliderade** (5 fragment + 3 kandidater; hub-lyft väntar hub-sync) ·
+BUILD-LOG S91-post · trådlägen satta (T108/T113 `paused` m. skäl+trigger;
+T100/103/107/109 var redan `closed`) · `task-120`–`124` mintade ·
+worktree-städning (2 bort, grenar 55→51) · kort Done i dag:
+79/111/122 (+99/110/115/117 tidigare). Numrering efter S91:
+**93**/ADR-089/L441/T114/f47 (hypotes)/task-125. **NÄSTA: Marcus
+coverage-kvittens → `lifecycle: closed` (stängnings-commit) → appen öppnar i
+NY session S93 via session-start (TASK-18.20:s fyra beslut +
+hållplats-grillningen); S92 (färgsystemet) pausad parallell. Marcus-moment:
+Update-klicket i claude.ai.** Full narrativ: sessionsdok Del 42.
+*(Föregående fokus-text nedan.)*
+
 **Session 91 ▶️ PÅGÅENDE (2026-08-02, tjugotredje resumen — tillstånd
 återställt, natt-utfallet svept, beslutsbordet står)** — Resume på Marcus
 order. Svepet FÖRST per paus-blocket: **#576/#577/#578 alla MERGED med
