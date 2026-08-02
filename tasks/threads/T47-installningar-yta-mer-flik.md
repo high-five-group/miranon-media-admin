@@ -19,6 +19,12 @@ fann att skalet saknade BÅDA (fynd iv-1, golv-lucka). Marcus beslutade **Väg 1
 
 ## Vad som väntar
 
+> **BEHOVET KOM — S95 (2026-08-02):** "Installera appen"-ytan (T95 Spår A) är
+> det konkreta inställnings-behovet; ytan byggs i skiva `TASK-126.3` som
+> aktiverar denna hemvist. Konto-uppgifts-visningen (T69-B2-deferralen nedan)
+> följer med om skivningen finner den billig — annars kvarstår den här.
+> Tråden stängs när ytan är byggd och Marcus-godkänd (QA `TASK-126.5`).
+
 Byggs när ett **konkret inställnings-behov** uppstår (t.ex. notis-preferenser,
 default-vyer, tema, konto-uppgifter). Då:
 

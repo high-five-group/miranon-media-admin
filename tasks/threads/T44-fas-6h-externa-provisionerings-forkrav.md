@@ -43,10 +43,16 @@ hela förkravs-mängden till standard.
     (Marcus). Avsedd som verifierad avsändardomän för prod-Resend — `RESEND_FROM`
     byter från `onboarding@resend.dev` (staging/läge-1) till en `miranon.dev`-adress
     **vid prod-deploy, EJ före** (staging fortsätter på `onboarding@resend.dev`).
-  - **ÖPPEN FRÅGA (avgörs FÖRE DNS-setup):** skicka från root (`miranon.dev`) eller
-    subdomän (t.ex. `mail.miranon.dev` / `send.miranon.dev`)? Avgörs mot
-    psionautics-repots fungerande Resend-setup (korsjämför: from-konvention + de
-    exakta SPF/DKIM/DMARC-records den använder).
+  - **FRÅGAN AVGJORD (S95 2026-08-02, T95-grillningen beslut 3+4): SUBDOMÄN.**
+    Utskick sker från `send.miranon.dev`; DMARC på `miranon.dev` sätts till
+    `p=reject` + rua direkt (Marcus-sakuppgift S95: inget skickas från domänen
+    i dag, `send-email` sövd ⇒ noll historik att bryta). Psionautics-korsläsningen
+    gjordes och gav MOTSATT vägledning än raden antog: deras root-setup
+    (`noreply@h5gruppen.se`) är per deras egen lesson ett erkänt provisorium,
+    inte ett mönster. Resends förstapartsrekommendation (sändande subdomän för
+    reputation-isolering) styrde. Beslut + underlag: sessionsdok S95 Del 2;
+    operativ checklista: T46-kartans Grind 0-paket. `RESEND_FROM`-bytet från
+    root utförs vid SMTP-/DNS-momentet, ej före.
   - **TIMING:** åtgärd vid M3 / prod-deploy efter L3 + 6h arch-audit; faktumet
     registreras NU (durabilitet — Chat-minne efemärt), inte väntande på avslut.
 
