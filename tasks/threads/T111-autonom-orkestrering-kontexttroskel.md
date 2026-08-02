@@ -168,3 +168,15 @@ default branch), och MCP-connectors väljs per routine.
 
 Källor: `code.claude.com/docs/en/routines.md` · `sessions.md` ·
 `scheduled-tasks.md` · `headless.md`.
+
+## Fråga 3 STÄNGD (2026-08-02, S94)
+
+Utredningsfrågan 3 ("formalisera det tredje spåret som regel — vilka ytor
+får orkestreraren läsa själv?") är besvarad och mekaniserad av S94:s
+tier-policy: läsdisciplinen **"läs själv för att BESLUTA och GRANSKA;
+delegera för att PRODUCERA"** är beslutad i
+[ADR-089](../../docs/decisions/ADR-089-modell-effort-policy-per-processteg.md)
+(beslut 6) och buren i hub-plugin 1.26.0 (output-stylens
+§ Orkestrerar-rollen + session-start/resume-skillsen). Frågorna 1–2 och
+4–5 (cron-formen, halva A-bygget, skill-formen, mätkostnaden) står kvar
+öppna — trådens trigger oförändrad (`TASK-119` + cron-beslutet).
