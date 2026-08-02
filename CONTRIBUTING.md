@@ -255,6 +255,22 @@ mekaniska grinden gäller:
 - DoD-checklistan i PR-mallen är fylld
 - ADR refererad om arkitekturbeslut tagits
 
+### Push-kadensen — commit är gratis, push kostar (`TASK-122`)
+
+Kadensen **en commit per PR, och 7–11 PR:er per dag** är rätt, inte en
+kompromiss —
+[push-kadens-passet](docs/research/push-kadens-agent-arbetstrad-2026-07-26.md)
+dömde den mot branschgolven: trunk-based sätter golvet vid minst en
+integration per dygn, DORA-elit vid högst tre aktiva brancher, och det gängse
+branch→flera-commits→sen-push-flödet är en LÄGRE integrationsfrekvens
+(Fowlers *"semi-integration"*).
+
+Regeln att hålla i är **separationen**: commit-frekvens är gratis (lokal
+historik — committa så ofta du vill), medan push-frekvens kostar en full
+CI-körning plus en plats i staging-mutexen. Pusha därför när en arbetsenhet
+är landningsklar — inte per commit, och inte som slut-dump efter en dags
+lokalt arbete.
+
 ### Landnings-ordningen — mekaniserad som merge queue sedan 2026-07-29
 
 **Behöver du bara veta vad du ska göra: armera med `gh pr merge --auto --merge`
@@ -1005,6 +1021,22 @@ som steg 2 av fyra.
 En oisolerad spawn är **inte** automatiskt ett fel — en rent läsande agent
 behöver ingen worktree. Skriptet skiljer därför på spawns från huvudkatalogen
 (där kollisionsrisken finns) och spawns som redan sker inifrån en worktree.
+
+## Verktygsval före nybygge — stående krav (`A3b`)
+
+Innan ett nytt skript eller verktyg byggs i repot: gör
+verktygsvals-prövningen — *"hur löser branschledarna detta?"* — och
+**redovisa utfallet skriftligt även när domen blir "bygg eget"** (i kortet,
+ADR:n eller research-doket som bär bygget). En dom utan nedskrivna skäl kan
+varken försvaras när den ifrågasätts eller ärvas av nästa agent.
+
+Kravet är stående sedan 2026-07-27 (S91, restlistans § A3b). Formerna att
+härma:
+[verktygsvals-passet](docs/research/verktygsval-fyra-egenbyggen-2026-07-27.md)
+(fyra prövningar med domar och motiv) och
+[ADR-081 § Verktygsvalet](docs/decisions/ADR-081-nummer-tilldelas-vid-landning.md)
+(retroaktiv redovisning som öppet klassar sina skäl som resonemang, inte
+mätning).
 
 ## Kvalitetsribba
 
