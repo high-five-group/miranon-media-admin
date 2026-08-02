@@ -8325,7 +8325,7 @@ för att lita på gårdagens svar. Och vakten själv är konvention, inte
 mekanism — ingen hook eller cron startar den åt dig.** `[UNIVERSAL]`
 
 Tre iterationer mätta samma kväll (S91, 2026-08-01→02): nycklad på
-`mergeStateStatus` → brus (dependabot-PR:er flappade `UNKNOWN`→`CLEAN`) · på
+`mergeStateStatus` → brus (Dependabot-PR:er flappade `UNKNOWN`→`CLEAN`) · på
 öppna PR-mängden → redundant mot task-notifikationer · på main-toppens SHA
 (`git ls-remote origin main`) → väcker exakt på landningar. `#565`:s
 armeringssvar såg lyckat ut men PR:en var inte köad vid nästa svep —
