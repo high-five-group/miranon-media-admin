@@ -143,20 +143,64 @@ höll, medan "noll nya instanser" inte gjorde det. Fix-PR `#569` (bounded
 retry) hade inte landat när instansen inträffade — förväntad sista instansen
 av det opatchade beteendet.
 
+## Mätpunkt 3 — uppdragsrevision körning #3, FÖRSTA Sonnet-datapunkten (2026-08-02)
+
+Körd mot exakt den session Mätpunkt 2 pekade ut: `a964302a-1c0e-4bb6-ad0f-f6842bb80a21`
+(S91:s tjugoandra resume). Full rapport:
+[`docs/research/uppdragsrevision-korning-3-2026-08-02.md`](../../docs/research/uppdragsrevision-korning-3-2026-08-02.md).
+
+**Modell-kvalificeringen krävde en strängare metod än föreslaget — bokförd
+som divergens, inte bara en bekräftelse.** Instrumentets `input.model`-fält
+(den explicita override:en i orkestrerarens `Agent`-anrop) var `null` på 15
+av 16 uppdrag — en bokstavlig läsning av "`modell: null` ⇒ pre-Sonnet"
+(körning #2:s regel) hade alltså gett 1/16 Sonnet-spawns och en oberättigad
+STOPP. Grundsanningen (subagent-transcripternas egna `message.model`-fält,
+`~/.claude/projects/…/a964302a…/subagents/agent-<id>.jsonl`) visar i stället
+**14 av 16 spawns (87,5 %) på `claude-sonnet-5`** — samtliga 12 `bygg-agent`
+plus det enda `research-pass`-uppdraget körde Sonnet trots `input.model:
+null`, eftersom PR #557 redan hade satt `model: sonnet` i respektive
+agentdefinition INNAN denna session startade; `input.model: null` betydde
+här "ärvt Sonnet", inte "ärvt huvudloopens modell" som i körning #2:s
+pre-#557-sessioner. Skälet regeln höll där men inte här: proxyn
+(`input.model`) mäter overriden, inte den faktiska ärvda modellen — och den
+skillnaden aktiverades exakt av PR #557. Kvalificeringen HÖLL (sessionen bär
+verkligen Sonnet-spawns), men via grundsanning, inte proxyn.
+
+**Resultat (16 uppdrag, 12 bygg-agent · 3 general-purpose · 1 research-pass):
+88 prövade påståenden, 4 hårda fel (4,60 % av 87 avgjorda), 3 gränsfall
+(8,05 % med dem), 77,3 % källmärkta** — bättre på samtliga fyra axlar än
+BÅDA de pre-Sonnet-körningarna (baslinje 3,8 %/64 %; körning #2 6,25 %/56,9 %).
+**Ingen slutsats dras av det** — n=1 för Sonnet-mot-baslinje (T110-regeln
+kräver n≥2 för effektpåståenden), mindre korpus, annan uppdragsblandning.
+
+**Fångst-rate-fynd (n=4, T110-trådens egen "systematiska lucka" — mäter för
+första gången BÅDA sidor på samma urval):** av de fyra hårda felen var 2
+redan självupptäckta och rättade i realtid av mottagande agenter under samma
+våg (ett av dem är exakt `task-115` Instans 8, redan bokförd nedan i § Axel
+3); 2 slank igenom oupptäckta in i landade artefakter (ett står ännu
+oförändrat i det landade `task-115`-kortet — en radintervall-approximation
+mot restlistan).
+
+**Instrumentets egen felklass (självrapporterade totaler som svagaste länk)
+upprepades en TREDJE gång:** en av de två delegerade verifieringsbatcharna
+angav fel källmärkningstal i sin egen sammanfattningsrad (4/4 där
+detaljtabellen visade 6/2) — rättat genom omräkning direkt ur tabellen, inte
+genom att lita på sammanfattningen.
+
 ## Vad som saknas för att tråden ska bära en riktig jämförelse
 
-- Ett mätbart "cirka 10 skivor byggda på Sonnet" — Mätpunkt 2 § Axel 1 ovan
-  ger en första riktig delmängd (8 PR:er, samtliga CI-gröna första gången),
-  men är inte en fullständig retrospektiv räkning av samtliga Sonnet-skivor
-  sedan #557 landade.
-- **En Sonnet-datapunkt för axel 2 (`uppdragsrevision`).** Körning #2 (Mätpunkt
-  2 ovan) landade, men mäter **fortfarande pre-Sonnet**-sessioner — den fyller
-  n=2 för instrumentets egen bakgrundsvarians, inte T113:s Sonnet-fråga.
-  Nästa körning måste rikta sig mot session `a964302a-1c0e-4bb6-ad0f-f6842bb80a21`
-  (S91:s tjugoandra resume) för att ge den FÖRSTA Sonnet-datapunkten.
-  `T110`:s regel gäller fortsatt: "Effektpåståenden förblir förbjudna tills
-  revision n≥2" — och den n=2 som räknar måste vara Sonnet-mot-baslinje, inte
-  pre-Sonnet-mot-pre-Sonnet.
+- **n≥2 Sonnet-ankrade `uppdragsrevision`-körningar** för att T110-regeln
+  ("effektpåståenden förbjudna tills revision n≥2") ska kunna tillämpas på
+  SONNET-frågan specifikt. Mätpunkt 3 ger n=1; nästa körning måste riktas mot
+  en YTTERLIGARE Sonnet-dominerad session (efter `a964302a`, t.ex. en framtida
+  S92-resume) för att ge n=2 och göra en verklig Sonnet-mot-baslinje-jämförelse
+  möjlig. Ingen effektslutsats förrän dess.
+- **En fullständig retrospektiv räkning av samtliga Sonnet-byggda skivor
+  sedan #557 landade** (inte bara denna enda sessions 16 uppdrag) — Mätpunkt
+  2 § Axel 1 + Mätpunkt 3 tillsammans täcker samma åtta vågs-PR:er
+  (`#563`–`#570`, `#574`) plus resten av `a964302a`:s korpus, men Sonnet-byggt
+  arbete i SENARE sessioner (t.ex. S92, om sådant existerar) är ännu inte
+  räknat.
 
 ## Släktskap
 
@@ -166,9 +210,20 @@ källan till premiss-pass-disciplinen som ADR-086 mekaniserade) ·
 tillämpar) · `TASK-115` (G0-transienten — måste uteslutas manuellt vid
 eskalationsbedömning, se § Eskalationsregel).
 
-## Pausad (2026-08-02, session-end S91)
+## Pausad (2026-08-02, körning #3 landad)
 
-Väntar sin första Sonnet-datapunkt: nästa `revision:uppdrag` riktas mot
-tjugoandra resumens transcript (`a964302a-…`, ~15 Sonnet-bygguppdrag).
-Återupptas i den framtida session som kör revisionen — era-jämförelser
-förblir förbjudna tills datapunkten finns (T110-effektregeln).
+**Föregående pausnings-villkor uppfyllt:** körning #3 (Mätpunkt 3 ovan) gav
+T113 sin FÖRSTA Sonnet-datapunkt, riktad mot exakt den session förra
+pausningen pekade ut. Tråden återgår till `paused` med ett NYTT väntevillkor
+— den fortsätter inte som `active` eftersom inget omedelbart
+uppföljningsarbete är schemalagt i denna landning, och mönstret från
+Mätpunkt 1/2 (parkera med explicit nästa-trigger snarare än hålla tråden
+öppen mellan mätvågor) upprepas medvetet.
+
+**Väntar nu på:** en YTTERLIGARE Sonnet-dominerad session (efter `a964302a`)
+att rikta en fjärde `uppdragsrevision`-körning mot — det ger n=2 för
+Sonnet-mot-baslinje-jämförelsen och gör T110-effektregeln ("förbjudna tills
+revision n≥2") tillämpbar på Sonnet-frågan specifikt. Sekundärt: en
+fullständig retrospektiv räkning av Sonnet-byggda skivor bortom denna enda
+sessions korpus (§ Vad som saknas). Återupptas i den framtida session som
+identifierar en sådan session och kör revisionen.
