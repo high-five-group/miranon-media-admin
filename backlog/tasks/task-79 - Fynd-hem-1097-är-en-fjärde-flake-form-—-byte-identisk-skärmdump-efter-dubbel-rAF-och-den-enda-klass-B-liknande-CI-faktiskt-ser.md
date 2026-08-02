@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-29 00:56'
-updated_date: '2026-08-01 22:24'
+updated_date: '2026-08-02 01:24'
 labels:
   - ready-for-agent
 dependencies: []
@@ -231,6 +231,23 @@ körningar skedde 2026-08-02 med loadavg 6-8 (måttlig, ej "tyst maskin", notera
 som brus-marginal — effektstorlekarna (40-60x, respektive 0ms mot 2000ms) är
 för stora för att rimligen vara en artefakt av den lasten, men absoluta
 millisekundtal ovan ska INTE tolkas som CI-representativa).
+
+---
+NATTKÖRNING 2026-08-02 (T112-läge, orkestrerar-svep) — AC 2-mätplanen exekverad, VÄGVAL EJ TAGET.
+
+Rigg: npm run metrics:flake (scripts/flake-matserie.mjs), hela acceptance-sviten, --workers=8 --retries=0, ren baslinjeserie (armarna identiska, ingen fix att jämföra mot). 10 varv/20 körningar planerade i EN invokering; harnesset avslutade processen efter 16/20 (körning 1-16, 01:37-02:35, ingen synlig systemorsak — caffeinate aktiv, inga sleep/wake-händelser) utan slutsummering. Toppades upp med en andra invokering (--varv 2, 4 körningar, EXIT=0) för att nå mätplanens "minst 10 per arm". Kombinerat: 20 körningar, 10 A + 10 B.
+
+RESULTAT — "identitetsbeviset"-testet (hem.acceptance.test.ts:1114, TASK-79:s mål): 20/20 PASSED, 0 fällningar. Varaktighet 1379-1592ms (del 1) / 1400-1471ms (del 2), stabilt.
+
+n-läsning INNAN noll-resultat tolkas: n=20 lokalt (upp från n=6 i TASK-81:s baslinje) + n=65 CI-jobb sedan klass A:s fix (48 tidigare + 17 nya, kompletterande CI-artefakt-svep 2026-08-01T22:08-23:32Z, samma steg-7-metod som tidigare) — fortsatt EXAKT 1 fällning totalt (2026-07-28), nu 4+ dygn utan ny observation. Ingendera nämnare räcker för att skilja "borta" från "kvar på ursprunglig, mycket låg rat" — kortets Chromium-kompositor-hypotes varken falsifieras eller bekräftas av detta.
+
+LOADAVG-DIVERGENS: mätplanens "uptime under 2 före första körningen" uppfylldes INTE (uppmätt 7,11 fallande till ~4,0 vid start, pga Backblaze completesync + normal skrivbordslast — INGA konkurrerande agent/testprocesser verifierade). Dokumenterad öppet, inte tyst ignorerad — se analysfilen.
+
+OVÄNTAT FYND (registrerat, EJ diagnostiserat — utanför denna mätplans scope): 2 fällningar i del 1 (av 3060 testresultat totalt), BÅDA arm B, BÅDA i hem.acceptance.test.ts men på ANDRA rader än 1114 — hem:437 ("dagar-kvar-pillen", toBeVisible-timeout) och hem:398 ("refetchInterval falsk klocka", polling-assertion). Delar INTE identitetsbeviset-testets felsignatur och är inte TASK-74:s B1/B2/B3. Vidrör möjligen samma dagsgräns/nuMs-mekanismer TASK-79:s eget karaktäriserings-avsnitt (punkt 5) redan diskuterade för ANDRA tester i samma fil — sammanslagning ej bevisad, ej gjord här.
+
+Full analys, premiss-pass och rådata: docs/research/task-79-flake-baslinje-2026-08-02.md + docs/research/task-79-flake-baslinje-2026-08-02-data(-del2)/ (serie.jsonl + resultat.jsonl; riggens råa run-NN-X.json uteslöts — bröt biome check, se analysfilens § Källor).
+
+VÄGVAL (a)/(b)/(c) ur "NÄSTA STEG" INTE TAGET HÄR — beslutsbordets punkt 2, Marcus.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
