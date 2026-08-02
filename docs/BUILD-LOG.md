@@ -3111,6 +3111,36 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
   öppet riven · T111 fråga 3 stängd (läsdisciplinen).
 - Full narrativ: sessionsdok S94 Del 1–4 + session-end-blocket.
 
+## Session 95 — T95 Roger & Lotta-spåret: från parkerad tråd till exekverbar spec (2026-08-02)
+
+- **Commit-range:** `92cd3e54` (sessionsdok-födelse, PR `#601`) →
+  stängningsbatchen 2026-08-02; spoke-PR `#601`/`#602`/`#604`–`#609`.
+  Endagssession, parallell med S93 (appen, huvudträdet) — S95 i egen
+  worktree per ADR-090:s detektera+fråga, kvitterat i startutbytet.
+- **Mål:** Marcus öppning — utreda T95 ("riktig app" + professionell
+  inbjudan för Roger & Lotta), ta reda på allt som behöver göras och i
+  vilken ordning, via standardproceduren grillning → kort → skivor.
+- **Leverans:** grillning 9/9 Marcus-kvitterad (fas-framdragning av deploy ·
+  Vercel · domänschema `admin.`/`send.miranon.dev` · DMARC `p=reject` ·
+  invite-EF · lösenord+passkey-erbjudande · TTL 24 h [plattformstaket
+  webbverifierat under grillningen — bilagans 7 dagar omöjlig] · login-vyn
+  i Spår B · "riktig app" = B2) → research R1 (Vercel STÅR, Pro-krav;
+  **SECURITY-SPEC:s CSP-nonce-mönster empiriskt falsifierat** → hash/self)
+  + R2 (ingen wrapper — Add to Dock Gatekeeper-fri; brytpunkt → Tauri) →
+  **PRD `TASK-126` + `TASK-127` + 15 skivor** i beroendeordning (tre
+  parallella startkedjor; prototyp-pass + QA ready-for-human) →
+  **ADR-091** (hosting) → bokföringen (byggplan-avvikelsen öppen ·
+  T44-avgörandet · T46 Grind 0-paketet 7 punkter · T47-aktivering · T95
+  `active` · ordlist-posten *Användarinbjudan*).
+- **Trådar:** T95 `paused → active` (kort + spec) · T44:s root-vs-subdomän
+  AVGJORD (psionautics-korsläsningen gav motsatt vägledning än T44 antog) ·
+  T47 aktiverad via `TASK-126.3` · T46 fick tredje leverans-vägen.
+- **Orkestrering:** research delegerad (2× Sonnet@xhigh research-pass,
+  modell-identitet rapporterad), spec-syntesen i huvudloopen med Marcus
+  kvittenser (skarv-val + skivnings-mandat), agent-worktrees städade (2).
+  Inga nya lessons — sessionen krävde ingen korrigering; nästa förblir L443.
+- Full narrativ: sessionsdok S95 Del 1–4.
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
