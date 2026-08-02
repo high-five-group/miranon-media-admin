@@ -48,10 +48,32 @@ Tre axlar, jämfört löpande mot läget FÖRE bytet:
 3. **Eskalationsfrekvens** — hur ofta en skiva träffar eskalationsregeln
    nedan, som andel av byggda skivor.
 
-## Eskalationsregel (beslutad 2026-08-01, Marcus GO)
+## Eskalationsregel (beslutad 2026-08-01, Marcus GO) — RIVEN ÖPPET 2026-08-02
 
-**Fäller en skiva två gånger → respawn med `model: fable` via Agent-anropets
-`model`-parameter** (inte genom att ändra agentdefinitionens frontmatter — den
+> **Amendering (2026-08-02, S94, Marcus-kvittens, grillad samsyn 7/7):** regeln
+> nedan är RIVEN ÖPPET och ERSATT av
+> [ADR-089](../../docs/decisions/ADR-089-modell-effort-policy-per-processteg.md)
+> § Beslut 5. Ursprungstexten bevaras oförändrad nedan (samma
+> korrigerings-konvention som `docs/decisions/README.md` § Korrigering vs
+> supersedering: additiv not, aldrig tyst radering) — den nya regeln gäller
+> från och med denna landning.
+>
+> **Ny regel:** fäller en skiva två gånger → respawn på **Opus som DEFAULT**
+> (inte `fable`); orkestreraren får välja Fable direkt när felbilden själv är
+> Fable-klassad, och det valet bokförs i uppdraget, inte tyst.
+> `TASK-115`-klassens transienter utesluts fortfarande manuellt vid bedömning
+> före räkning.
+>
+> **Skäl till rivningen:** Marcus-input 2026-08-02 (hårdkoda inte Fable; Opus
+> är giltig OCH obligatorisk fallback vid Fable-kvottak) + Anthropics egen
+> svårighets-baserade linje (en signal om STYRKA, inte om en specifik
+> namngiven modell). Talet "2 fällningar" är, precis som i den ursprungliga
+> regeln, deklarerat valt för enkelhet — INTE branschbelagt som optimum
+> (CodeRescue, arxiv 2607.19338, se ADR-089 § Beslut 5 för siffrorna).
+
+**Ursprunglig regel (2026-08-01, historisk — se amenderingen ovan):** fäller
+en skiva två gånger → respawn med `model: fable` via Agent-anropets
+`model`-parameter (inte genom att ändra agentdefinitionens frontmatter — den
 förblir `sonnet` som default för nästa skiva). "Fäller" avser CI-röd eller
 avvisad kö-post på samma skiva, oavsett orsak (för att skilja modell-relaterade
 fel från miljöbrus krävs `T115`-klassens transienter uteslutas manuellt vid
