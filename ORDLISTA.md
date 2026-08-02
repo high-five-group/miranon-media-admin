@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-23
+updated: 2026-08-02
 review_by: 2027-01-02
 status: stable
 ---
@@ -44,6 +44,15 @@ följer Roger & Lotta; mappningen är PRD-materia.
 **Anmälan** — en persons begäran att delta i ett specifikt event.
 *Undvik:* bokning, registrering.
 *I koden:* `Registration`.
+
+**Användarinbjudan** — en engångs- och tidsbegränsad inbjudan som ger en
+människa ett konto i appen, med roll och e-postadress låsta av inbjudan
+(mottagaren väljer inget själv). Skild från *Anmälan*, som gäller deltagande
+i ett event — en person kan ha båda utan samband. Kanoniserad S95
+(T95-grillningen, sessionsdok Del 2 beslut 5).
+*Undvik:* invite (engelska i UI-text), inbjudan (ensamt, där förväxling med
+event-sammanhang är möjlig).
+*I koden:* `invite` (EF + routes, byggs under T95 Spår B).
 
 **Deltagande** — en persons närvaropost för ett event; bär närvarostatusen som
 driver Insiktskedjan.
