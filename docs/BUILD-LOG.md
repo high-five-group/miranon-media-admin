@@ -3126,7 +3126,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
   webbverifierat under grillningen — bilagans 7 dagar omöjlig] · login-vyn
   i Spår B · "riktig app" = B2) → research R1 (Vercel STÅR, Pro-krav;
   **SECURITY-SPEC:s CSP-nonce-mönster empiriskt falsifierat** → hash/self)
-  + R2 (ingen wrapper — Add to Dock Gatekeeper-fri; brytpunkt → Tauri) →
+  och R2 (ingen wrapper — Add to Dock Gatekeeper-fri; brytpunkt → Tauri) →
   **PRD `TASK-126` + `TASK-127` + 15 skivor** i beroendeordning (tre
   parallella startkedjor; prototyp-pass + QA ready-for-human) →
   **ADR-091** (hosting) → bokföringen (byggplan-avvikelsen öppen ·

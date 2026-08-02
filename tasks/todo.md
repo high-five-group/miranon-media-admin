@@ -28,7 +28,7 @@ Add to Dock Gatekeeper-fri, brytpunkt→Tauri) → **PRD `TASK-126`+`TASK-127` +
 ready-for-human) → **ADR-091** (hosting; nummer disk-verifierat) →
 bokföringen (byggplan-avvikelsen · T44 AVGJORD · T46 Grind 0-paketet 7 p ·
 T47-aktivering · T95 `active` · ordlist-post *Användarinbjudan*). PR
-#601/#602/#604–#608 MERGED verifierade; #609 i kön vid end-passet.
+`#601`/`#602`/`#604`–`#608` MERGED verifierade; `#609` i kön vid end-passet.
 Worktree-städning: R1/R2-agentträden bort (2). Inga nya lessons (ingen
 korrigering krävdes). **Numrering efter S95: 96/ADR-092/L443/T114/f47
 (hypotes)/task-128.** **NÄSTA (Marcus-kvitterat vägval): work-batch på
