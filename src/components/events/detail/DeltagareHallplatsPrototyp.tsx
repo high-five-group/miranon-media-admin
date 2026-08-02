@@ -148,10 +148,47 @@ export function HallplatsToppA({
 }
 
 /**
- * VARIANT B — STATIONS-RAILEN. Horisontell rail, tre stationer numrerade
- * 1·2·3 i Marcus ordning. "Tyngdpunkten" (första station med count > 0)
- * bär den tydligaste markeringen — det ÄR svaret på "vad gör jag härnäst":
- * ögat ska landa där utan att läsa siffrorna först.
+ * Variant B:s KORTA stationsetiketter (review-fix-våg 2, defekt 4). Railen
+ * är smal (tre lika breda stationer på mobilbredd, appens primära yta) — de
+ * fulla `HALLPLATS_LABEL`-orden ("Väntar på bekräftelse") radbröt inuti
+ * stationen. Uppdragets egna facit-ord ("Bekräftelse"/"Betalning"/"Klara")
+ * ersätter dem HÄR ENDAST; `HALLPLATS_LABEL` (kortens steg-märke, variant A)
+ * rörs inte.
+ */
+const STATION_LABEL: Record<keyof HallplatsCounts, string> = {
+  'vantar-bekraftelse': 'Bekräftelse',
+  'vantar-betalning': 'Betalning',
+  klar: 'Klara',
+};
+
+/**
+ * VARIANT B — STATIONS-RAILEN (review-fix-våg 2, defekt 4: den förra
+ * versionen var tre halvstylade chips utan sammanbindande form — ingen
+ * linje band ihop dem, och de fulla etiketterna radbröt). Byggd om till en
+ * RIKTIG stepper: en horisontell linje löper genom de tre lika breda
+ * stationerna (nummer-i-cirkel + kort namn + count), sammanhängande i
+ * stället för tre fristående lådor.
+ *
+ * Linje-segmenten (vänster/höger om varje cirkel) ligger i SAMMA flex-rad
+ * som cirkeln (`items-center`) — de centreras därför alltid mot cirkelns
+ * mitt oavsett radhöjd, i stället för att absolut-positioneras mot en gissad
+ * pixel-offset. Yttersta segmenten (före station 1, efter station 3) är
+ * `invisible` (upptar sin plats, syns aldrig) så alla tre stationer förblir
+ * EXAKT lika breda (`flex-1`) — en synlig halv-linje i kanten hade gjort
+ * ytterstationerna smalare än den mellersta.
+ *
+ * "Tyngdpunkten" (första station med count > 0, Marcus ordning) får den
+ * FYLLDA cirkeln (`bg-primary`/`text-inverse` — appens gulddragna accent-
+ * token, samma familj som fokusringen) i stället för den neutrala
+ * kontur-cirkeln — det ÄR svaret på "vad gör jag härnäst": ögat ska landa
+ * där utan att läsa någon siffra först. Linjen SELV är medvetet neutral
+ * (`bg-border`) hela vägen — en färgad "hittills"-sträcka hade antytt att
+ * detta är EN persons sekventiella resa genom stegen, vilket det inte är
+ * (tre oberoende populations-räknare, inte en enda persons färdväg).
+ *
+ * Hela stationen (cirkel-rad + etikett + count) är EN knapp — samma
+ * `aria-pressed`-filter-klick som förut; linjerna är `aria-hidden` (rent
+ * dekorativa, texten/cirkeln bär semantiken).
  */
 export function HallplatsToppB({
   counts,
@@ -164,7 +201,7 @@ export function HallplatsToppB({
 }) {
   const tyngdpunkt = STEG_ORDNING.find((steg) => counts[steg] > 0) ?? null;
   return (
-    <fieldset data-testid="hallplats-rail" className="flex items-stretch gap-2 border-none py-2">
+    <fieldset data-testid="hallplats-rail" className="flex items-stretch border-none py-2">
       <legend className="sr-only">Hållplatser</legend>
       {STEG_ORDNING.map((steg, i) => {
         const arTyngdpunkt = steg === tyngdpunkt;
@@ -175,21 +212,29 @@ export function HallplatsToppB({
             type="button"
             aria-pressed={aktiv}
             onClick={() => onFilterClick(steg)}
-            className={`flex flex-1 flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left motion-safe:transition-colors ${
-              aktiv
-                ? 'border-primary bg-primary-tint'
-                : arTyngdpunkt
-                  ? 'border-(--mm-navcard-border) bg-bg-emphasized contrast-more:border-border-strong'
-                  : 'border-transparent bg-bg-muted contrast-more:border-border-strong'
+            className={`flex flex-1 flex-col items-center gap-1 rounded-lg py-1.5 motion-safe:transition-colors ${
+              aktiv ? 'bg-bg-emphasized' : 'hover:bg-bg-emphasized'
             }`}
           >
-            <span className="flex items-center gap-1.5">
-              <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-text font-semibold text-[10px] text-text-inverse">
+            {/* Cirkel-raden BÄR linjen — se docblocket ovan för varför
+                linje-segmenten sitter i samma flex-rad som cirkeln. */}
+            <span className="flex w-full items-center" aria-hidden="true">
+              <span className={`h-0.5 flex-1 bg-border ${i === 0 ? 'invisible' : ''}`} />
+              <span
+                className={`flex size-6 shrink-0 items-center justify-center rounded-full font-semibold text-[11px] motion-safe:transition-colors ${
+                  arTyngdpunkt
+                    ? 'bg-primary text-text-inverse'
+                    : 'border border-border-strong bg-surface text-text-secondary contrast-more:border-2'
+                }`}
+              >
                 {i + 1}
               </span>
-              <span className="text-caption text-text-muted">
-                {steg === 'klar' ? 'Klara' : HALLPLATS_LABEL[steg]}
-              </span>
+              <span
+                className={`h-0.5 flex-1 bg-border ${i === STEG_ORDNING.length - 1 ? 'invisible' : ''}`}
+              />
+            </span>
+            <span className="whitespace-nowrap text-caption text-text-muted">
+              {STATION_LABEL[steg]}
             </span>
             <span
               className={`text-lg tabular-nums ${arTyngdpunkt ? 'font-semibold text-text' : 'text-text-secondary'}`}

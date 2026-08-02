@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown } from 'lucide-react';
+// [PROTOTYPE] [S93] hållplats-pass review-fix-våg 2 (uppdraget § FYND 1,
+// defekt 1) — kastbar wiring, samma mönster som Deltagare.tsx/Betalningar.tsx:
+import { useQueryState } from 'nuqs';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
@@ -13,6 +16,7 @@ import { arGenomford } from '@/lib/genomford';
 import { kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
 import { DetaljGrupp } from './DetaljGrupp';
+import { HALLPLATS_PROTO_FIXTURES, isHallplatsVariant } from './hallplats-steg-prototyp';
 
 /**
  * Gruppdynamik (task-18.10; S73-facit K63–K65). Lottas "vilka är i rummet?" —
@@ -250,8 +254,19 @@ export function Gruppdynamik({ event }: { event: Event }) {
     queryKey: queryKeys.registrations.byEvent(event.id),
     queryFn: () => dataSource.fetchRegistrations({ eventId: event.id }),
   });
+  // [PROTOTYPE] [S93] review-fix-våg 2 (uppdraget § FYND 1, defekt 1):
+  // Gruppdynamik läste tidigare ALLTID den riktiga (i regel tomma) queryn —
+  // granskningsfynd: "Gruppdynamik läser den riktiga (tomma) queryn" medan
+  // Deltagare/Betalningar redan speglade fixturerna. Samma DEV-grindade,
+  // oberoende `useQueryState`-läsning som de (nuqs synkar). Utan ?variant
+  // renderas EXAKT dagens träd — hooken ovan körs oförändrat, bara `data`
+  // ersätts av fixturerna nedan.
+  const [variantParam] = useQueryState('variant');
+  const [dataParam] = useQueryState('data');
+  const protoDataMode =
+    import.meta.env.DEV && isHallplatsVariant(variantParam) && dataParam === 'proto';
 
-  if (isPending) {
+  if (!protoDataMode && isPending) {
     return (
       <DetaljGrupp id="grupp-gruppdynamik" rubrik="Gruppdynamik">
         <div role="status" aria-busy="true" className="flex flex-col gap-2.5 py-3">
@@ -264,7 +279,7 @@ export function Gruppdynamik({ event }: { event: Event }) {
     );
   }
 
-  if (isError) {
+  if (!protoDataMode && isError) {
     return (
       <DetaljGrupp id="grupp-gruppdynamik" rubrik="Gruppdynamik">
         <div className="py-3">
@@ -276,7 +291,12 @@ export function Gruppdynamik({ event }: { event: Event }) {
     );
   }
 
-  const aktiva = data.filter(arAktiv);
+  // `data` är garanterat satt här när !protoDataMode (isPending/isError-
+  // grindarna ovan har redan returnerat); `?? []` är bara typ-säkerheten för
+  // TS:s kontrollflödesanalys, som inte känner samband mellan protoDataMode
+  // och de tidigare returnerna.
+  const registreringar = protoDataMode ? HALLPLATS_PROTO_FIXTURES : (data ?? []);
+  const aktiva = registreringar.filter(arAktiv);
   // Erfarenhetsmixen går över den KLASSIFICERBARA populationen (känd räknare).
   const klassificerbara = aktiva.filter((r) => r.antalGenomfordaEvent != null);
   const totalt = klassificerbara.length;
@@ -303,6 +323,11 @@ export function Gruppdynamik({ event }: { event: Event }) {
 
   return (
     <DetaljGrupp id="grupp-gruppdynamik" rubrik="Gruppdynamik">
+      {protoDataMode && (
+        <p className="pt-3 text-caption text-text-muted">
+          Förhandsvisning (proto) — talen nedan är härledda ur fixturunderlaget.
+        </p>
+      )}
       {/* Summeringsrad + sekventiell mätare (streck-segment per nivå). */}
       <div className="flex flex-col gap-1.5 py-3">
         <div className="flex items-baseline justify-between gap-4">

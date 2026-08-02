@@ -235,3 +235,125 @@ vyn (utan `?variant`) omkörd separat: `data-disabled` förekommer EN gång i
 DOM (en orelaterad "Spara"-knapp i Ändra-morfen, inte Betalningar/Deltagare),
 ingen proto-förklaringstext, kryss/notering odisabled, Påminn-länkarna
 (mailto) intakta.
+
+---
+
+## Review-fix-våg 2 (2026-08-02) — sex granskningsfynd, orkestrerarens ord "slarvigt byggd"
+
+Marcus underkände hela ytan i granskning ("slarvigt byggd, under all kritik").
+Orkestreraren verifierade defekterna mot snapshotsen och gav sex punkter,
+åtgärdade punkt för punkt. Prototyp-kontraktet (kastbar kod) står — men
+"kastbar" är inte samma sak som "slarvig".
+
+### 1. Sidan motsäger sig själv i `?data=proto` (Beläggning + Gruppdynamik läste RIKTIGA data)
+
+`Belaggning.tsx` och `Gruppdynamik.tsx` läste tidigare ALLTID event-aggregaten
+respektive `get-registrations` — oavsett `?data=proto`. Sidan visade därför
+"Anmälda deltagare 0 · 0 av 20 · 0 %" (Beläggning) medan Deltagare/Betalningar
+samtidigt visade fixturernas 12 personer.
+
+**Fix:** samma DEV-grindade `useQueryState('variant'|'data')`-läsning som
+Deltagare.tsx/Betalningar.tsx (nuqs synkar), tillagd i BÅDA filerna.
+Beläggning härleder nu `Anmälda deltagare`/`Manuellt tillagda`/`Medföljande`
+ur fixturuppsättningens `Källa`-fält (samma K16-kategorier som
+Deltagare.tsx:s `kategori()`); Max antal platser förblir eventets RIKTIGA
+värde (uppdragets uttryckliga undantag). `Extra platser` och `Väntelista` kan
+INTE härledas ärligt ur fixturerna (rent admin-satt tal respektive en HELT
+ANNAN Airtable-tabell, `tbl2VxMx7JMkIxD4Q`) — dimmas med en explicit
+"Ej i fixturunderlaget (proto)"-not i stället för en osann nolla eller ett
+läckt riktigt värde. Gruppdynamik härleder nivåbucketarna ur fixturernas
+`antalGenomfordaEvent` (redan satt per fixtur); en sekundär självmotsägelse
+hittades och fixades i samma svep — Karin Ström (fixtur 05) bucketades
+"1–2 tidigare event" men bar `kurshistorik: null` och hade därför visat
+"Inga tidigare event" på sitt eget kort. Två genomförda kurshistorik-rader
+lades till hennes fixtur så korten och bucketen säger samma sak.
+
+**Öppet bokfört snitt (fixtur 14, Gustav Wik, Källa='Väntelista'):** faller i
+`formulär`-bucketen i Beläggningens härledning eftersom kompositionen saknar
+en egen "från väntelistan"-del — utan det snittet hade summan blivit 11 i
+stället för de 12 Deltagare visar.
+
+**Ny upptäckt defekt av samma klass (öppet bokförd, inte i den ursprungliga
+listan men samma FYND-1-mönster):** Beläggningens "Ändra"-knapp var HELT
+ogrindad — ett klick hade öppnat `BelaggningForm` och ett Spara skrivit en
+RIKTIG `useUpdateEvent`-mutation, oavsett `?data=proto`. Fixad: `AndraRad`
+(`DetaljGrupp.tsx`) fick ett `disabled`-stöd (native `disabled`-attribut);
+Beläggning skickar `disabled={protoDataMode}` — morfen kan då aldrig öppnas.
+
+### 2. Anteckningar-composern skrev på RIKTIGA eventet i proto-läget
+
+`Composer` (`Anteckningar.tsx`) hade inget `protoDataMode` alls — samma
+FYND-1-mönster som PR #603:s Betalningar/Deltagare-fynd, i en fil ingen
+tidigare pass rört. Fix: samma mönster (isDisabled på `TextArea` + Spara/Rensa,
+explicit guard i `spara`/`rensa`, delad förklaringsrad).
+
+### 3. Dubbel-etikettering (röd "Obekräftad"-pill + steg-märke samtidigt)
+
+`KortInnehall` (Deltagare.tsx) renderade alltid den röda statuspillen
+OBEROENDE av `hallplatsMarke` — i variant-läge visade ett obekräftat kort
+därför BÅDE "Obekräftad" (pill) och "Väntar på bekräftelse" (steg-märke) för
+samma axel. Fix: pillen villkoras nu även på `!hallplatsMarke` — steg-märket
+ERSÄTTER statuspillen i variant-läge; kategori-pillen (Manuellt tillagd m.fl.)
+är opåverkad (annan axel).
+
+### 4. Variant B var ingen rail — tre halvstylade chips
+
+`HallplatsToppB` byggdes om till en riktig stations-rail: en horisontell linje
+löper GENOM tre lika breda stationer (nummer-i-cirkel + kort etikett + count),
+tyngdpunkt-stationen (första med count > 0) får en fylld gulddragen cirkel
+(`bg-primary`) i stället för outline-cirkeln. Korta facit-etiketter
+("Bekräftelse"/"Betalning"/"Klara") ersätter de fulla `HALLPLATS_LABEL`-orden
+ENDAST i denna komponent — ingen radbrytning på smal bredd.
+
+### 5. Eventinfo-raden oavskild bland steg-räknarna
+
+Eventinfo+Bor över-gruppen fick en `border-t` + en diskret grupprubrik
+("Utskick") i alla tre varianter — synlig avgränsning i stället för bara ett
+`gap-2`.
+
+### 6. Allmän finish
+
+Spacing/typografi i variant B:s nya rail följer SummeringsRad-grammatikens
+tokens (`text-caption`/`text-small`/`bg-border`/`bg-primary` — inga
+hårdkodade färger). Övriga varianter oförändrade i sin egen finish (redan
+byggda mot samma grammatik i PR #603).
+
+### Verifiering (samma rigor, ny metod för nätverks-genvägen)
+
+**CORS-fyndet:** en egen dev-server på en ANNAN port än 5173/4173 blockeras
+helt av stagings `CORS_ALLOWED_ORIGINS` (`docs/reference/prototyp-verifiering-runbook.md`
+§ Portkartan) — mätt här: samtliga `get-event`/`get-registrations`-anrop gav
+`ERR_FAILED`/"blocked by CORS policy" mot en server på port 5195. 5173 är
+Marcus levande dev-server (huvudträdet, en ANNAN cwd) och får inte röras eller
+användas för att visa DENNA worktrees kod. Lösning: `page.route()` fångar
+`get-event`/`get-registrations` INNAN webbläsarens CORS-kontroll appliceras
+och fyller dem med RIKTIG data hämtad server-sidan (Node, i
+Playwright-processen — Node har ingen CORS-policy). Datan är därför ÄKTA
+staging-data för ZZ-GRANSKNING-FIXTUR, inte en syntetisk mock. Metoden är
+generell nog att vara värd en framtida runbook-not (se separat commit i
+`prototyp-verifiering-runbook.md`).
+
+- Samtliga 7 grund-snapshots (skarp + a/b/c × default/proto) togs om mot
+  `reco44UBx6GXcxwu5` (ZZ-GRANSKNING-FIXTUR): **0 console-fel, 0 pageerrors**
+  på samtliga sju.
+- Interceptions-passet (AC #5), `?data=proto&variant=a|c`: betalnings-kryss
+  (`isDisabled` bekräftat true), noteringsfält (Playwright `fill()` kastade
+  `TimeoutError` — fältet är native `disabled`, inte bara visuellt dämpat),
+  Påminn-spannet (inert, `aria-disabled`), Bor över-kryss (`data-disabled="true"`
+  på wrapper-label, `aria-checked` oförändrat före/efter klick), Anteckningar
+  (textarea `disabled`, Spara-knappen `isDisabled` true, `fill()` kastade
+  samma TimeoutError), bekräfta-genvägens FULLA klick-igenom (öppna → trigger
+  → "Skicka 4 bekräftelser" → kvittensen renderar) — **0 nya
+  `/functions/v1/*`-anrop efter VARJE steg**, mätt genom att logga ALLA
+  (inte bara de mockade läsvägarna) anrop per sida.
+- Variant C:s genväg i DEFAULT-läge (riktig data): endast "Öppna och
+  markera" klickad (INTE "Skicka" — hade muterat det seedade eventet på
+  riktigt), 0 nya icke-GET-anrop, skärmdump tagen.
+- Skarpa vyn (`skarp-utan-variant.png`) mot samma riktiga event: Beläggning
+  visar 8/30 (27 %), Deltagare "Alla (16)"/"Obekräftade (8)" — matchar
+  Airtable (live-verifierat, se slutrapporten), fem-summeringsrad-grammatiken
+  orörd, Anteckningar-composern INTE inaktiverad (som förväntat utanför
+  prototypen).
+
+Alla tio snapshots i katalogen är omtagna (samma filnamn, samma
+Playwright-metod).

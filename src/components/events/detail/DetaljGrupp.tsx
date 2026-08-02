@@ -130,18 +130,25 @@ export function RedigeringsRad({
 export function AndraRad({
   onPress,
   buttonRef,
+  disabled = false,
 }: {
   onPress: () => void;
   /** Fokus-retur-mål när morfen stängs (Avbryt/Spara) — tangentbordskontinuitet. */
   buttonRef?: Ref<HTMLButtonElement>;
+  /** [PROTOTYPE] [S93] hållplats-pass review-fix-våg 2 — `?data=proto`:
+      native `disabled` (samma read-only-förstärkning som Betalningar.tsx/
+      Deltagare.tsx) — morfen kan då aldrig öppnas, så det bakomliggande
+      Spara/`useUpdateEvent` aldrig blir nåbart (se Belaggning.tsx). */
+  disabled?: boolean;
 }) {
   return (
     <div className="py-3">
       <button
         ref={buttonRef}
         type="button"
+        disabled={disabled}
         onClick={onPress}
-        className="flex w-full items-center justify-center gap-2 font-medium text-body"
+        className="flex w-full items-center justify-center gap-2 font-medium text-body disabled:cursor-not-allowed disabled:opacity-60"
       >
         <Pencil aria-hidden="true" size={16} />
         Ändra
