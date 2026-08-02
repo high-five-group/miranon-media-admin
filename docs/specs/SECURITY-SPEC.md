@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-20
+updated: 2026-08-02
 review_by: 2026-11-15
 status: stable
 ---
@@ -787,56 +787,31 @@ export function clearCachedAuth() {
 4. När uppkoppling återupprättas: auth refreshas automatiskt, köade mutationer
    skickas, bannern försvinner.
 
-### Passkey-roadmap (Fas 8)
+### Passkey- och auth-faktor-strategin
 
-**Varför passkeys:** Lotta ska aldrig behöva komma ihåg ett lösenord.
-FaceID/TouchID och sedan inne. Inget lösenord, inget "jag glömde".
-
-**Supabase WebAuthn-status (2026):** Experimentellt stöd via
-`supabase.auth.signInWithPasskey()`. Inte produktionsredo för alla providers.
-
-**SimpleWebAuthn-plan:**
-
-```bash
-npm install @simplewebauthn/browser @simplewebauthn/server
-```
-
-**Migrationväg lösenord till passkey:**
-
-| Steg | Vad | När |
-|------|-----|-----|
-| 1 | Lotta loggar in med lösenord (som nu) | Fas 2 |
-| 2 | "Inställningar: Lägg till passkey" erbjuds i Mer-fliken | Fas 8 |
-| 3 | Lotta registrerar passkey via FaceID/TouchID | Fas 8 |
-| 4 | Nästa inloggning: "Logga in med passkey" visas som förstaval | Fas 8 |
-| 5 | Lösenord behålls som fallback | Permanent |
-
-**Edge Function för passkey-registrering:**
-
-```typescript
-// supabase/functions/register-passkey/index.ts (utkast)
-import {
-  generateRegistrationOptions,
-  verifyRegistrationResponse,
-} from '@simplewebauthn/server';
-
-// 1. Generera registreringsalternativ
-const options = await generateRegistrationOptions({
-  rpName: 'Miranon Media Admin',
-  rpID: 'admin.miranon.se',
-  userID: user.id,
-  userName: user.email,
-  attestationType: 'none', // Enklast — ingen attestering krävs
-  authenticatorSelection: {
-    residentKey: 'preferred',
-    userVerification: 'preferred',
-  },
-});
-
-// 2. Skicka till klienten --> klienten anropar navigator.credentials.create()
-// 3. Klienten skickar tillbaka --> verifyRegistrationResponse()
-// 4. Spara credential i Supabase-tabell
-```
+> **Riven öppet, inte tyst raderad (T95 Spår B, `TASK-127.1`,
+> 2026-08-02).** Avsnittet nedan (rader 790–839 i denna fil, före denna
+> landning) beskrev en "Passkey-roadmap (Fas 8)" som var föråldrad på tre
+> skilda axlar: (1) föreslog `@simplewebauthn/browser` +
+> `@simplewebauthn/server` och en egen `register-passkey`-Edge Function,
+> medan Supabase Auth Passkeys gick i BETA maj 2026 med NATIVE stöd
+> (`supabase.auth.signInWithPasskey()`) som redan är tillgängligt med
+> repots `supabase-js`-version — ingen separat klientbibliotek eller egen
+> Edge Function krävs; (2) hårdkodade `rpID: 'admin.miranon.se'`, fel
+> domän efter [ADR-091](../decisions/ADR-091-hosting-deploy-vercel-pro.md)s
+> `admin.miranon.dev`-schema; (3) ramade in passkey som en flerstegs
+> "Fas 8"-migration i stället för det faktiska beslutet — ett frivilligt
+> erbjudande direkt efter FÖRSTA inloggningen, oavsett fas-nummer.
+>
+> Den fullständiga strategin — lösenord enligt ASVS 5.0 V6-golvet vid
+> accept, passkey som erbjudande efter första inloggningen via Supabases
+> native API, TOTP-MFA öppet skjuten med uttalad omprövningstrigger — är
+> nu ett minat beslut:
+> [**ADR-093: Auth-faktor-strategin — lösenord vid accept, passkey som
+> erbjudande**](../decisions/ADR-093-auth-faktor-strategin-losenord-passkey.md).
+> Se även [ADR-092](../decisions/ADR-092-invite-identitetsmodellen-anvandarinbjudan.md)
+> för invite-/identitetsmodellen som avgör VEM som sätter denna
+> auth-faktor och VAR (`/valkommen`, `TASK-127.6`/`TASK-127.8`).
 
 ---
 
