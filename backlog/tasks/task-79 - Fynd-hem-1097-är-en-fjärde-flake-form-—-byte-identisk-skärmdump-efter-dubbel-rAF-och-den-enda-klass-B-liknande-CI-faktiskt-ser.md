@@ -3,10 +3,10 @@ id: TASK-79
 title: >-
   Fynd: hem:1097 är en fjärde flake-form — byte-identisk skärmdump efter
   dubbel-rAF, och den enda klass-B-liknande CI faktiskt ser
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-29 00:56'
-updated_date: '2026-08-02 01:24'
+updated_date: '2026-08-02 07:52'
 labels:
   - ready-for-agent
 dependencies: []
@@ -35,10 +35,7 @@ Angränsar TASK-74:s B1 (kall route-chunk) — pröva om orsaken är gemensam in
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Orsaken lokaliserad och belagd: skiljer 'rAF-paret returnerar för tidigt' från 'väntan mäter fel sak' — med mätning, inte resonemang
-- [ ] #2 Fällningsraten mätt före och efter fixen under KONTROLLERAD last, båda talen redovisade; loadavg vid mätningen angiven
-- [x] #3 Prövat mot TASK-74:s B1 om orsaken är gemensam — svaret redovisat oavsett riktning, formerna slås inte ihop utan belägg
-- [ ] #4 Ingen ny väntan införd som bara döljer symptomet: negativt self-test som visar att fixen fäller när den ska
+- [x] #1 Prövat mot TASK-74:s B1 om orsaken är gemensam — svaret redovisat oavsett riktning, formerna slås inte ihop utan belägg
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -248,12 +245,20 @@ OVÄNTAT FYND (registrerat, EJ diagnostiserat — utanför denna mätplans scope
 Full analys, premiss-pass och rådata: docs/research/task-79-flake-baslinje-2026-08-02.md + docs/research/task-79-flake-baslinje-2026-08-02-data(-del2)/ (serie.jsonl + resultat.jsonl; riggens råa run-NN-X.json uteslöts — bröt biome check, se analysfilens § Källor).
 
 VÄGVAL (a)/(b)/(c) ur "NÄSTA STEG" INTE TAGET HÄR — beslutsbordets punkt 2, Marcus.
+
+VÄGVAL TAGET 2026-08-02 (beslutsbordet S91 punkt 2 — Marcus GO på Codes rekommendation): (c) residualrisken accepteras och kortet stängs med karaktäriseringen som facit. Läget per vägval: (a) exekverades som natt-serien 2026-08-02 — 20/20 PASSED lokalt (n=20, upp från n=6), CI-basen n=65 med fortsatt exakt 1 fällning (ca 1,5 procent), 4+ dygn utan ny observation; förenligt med kompositor-karaktäriseringen, ingen ny lokal signal att agera på. (b) klock-ordningsstädningen FÖRKASTAD öppet: dokumentationskonform men bevisat INTE flakens mekanism (kortets egen falsifiering av klockordnings-hypotesen); utan ny signal är den bygga-ifall och över-engineering-vakten skär den — återuppstår flaken finns mätplanen + karaktäriseringen kvar i detta kort. AC 1/2/4 (fix-vägens kontrakt: lokalisera orsak, mät före/efter fix, negativt self-test) BORTTAGNA med denna öppna bokföring — vägval (c) är beslutet att INTE gå fix-vägen; S81-precedentens form, Done med öppen bokföring. Nattens två NYA fällningar (hem:437/hem:398) är INTE detta korts form → task-121.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd mot karaktäriseringen (vägval c, Marcus 2026-08-02): byte-identisk-skärmdumps-flaken är efter eliminering mest sannolikt Chromium-kompositor-nivå-nondeterminism under CI:s last-/renderingsförhållanden — rotorsaken ej nådd, tre namngivna hypoteser prövade med mätning och falsifierade. Bevisläge vid stängning: 1 fällning på 65 observerade Acceptance-CI-jobb sedan klass A:s fix (2026-07-28, ingen ny på 4+ dygn) + färsk lokal nollmätning 20/20 (natt-serien 2026-08-02, docs/research/task-79-flake-baslinje-2026-08-02.md). Residualrisken accepterad som känd, extremt sällsynt kostnad av byte-identitets-formen — konsekvent med testets egen avvisning av pixel-tolerans. Nya observationer i samma fil → task-121.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

@@ -3,10 +3,10 @@ id: TASK-111
 title: >-
   Fynd: batchValidation 'permissive' når aldrig Resend-API:et — EF:erna kör
   strict med permissive-semantik i koden
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 10:46'
-updated_date: '2026-08-01 22:17'
+updated_date: '2026-08-02 07:52'
 labels:
   - ready-for-agent
 dependencies: []
@@ -138,12 +138,20 @@ görs. Deploy-formen (ej utförd här):
 
 Efter deploy: smoke mot prod (T39-runbook-mönstret) innan Lotta skickar ett
 skarpt utskick som förlitar sig på permissive-läget.
+
+PROD-DEPLOYEN DEFERRAD → task-120 (beslutsbordet S91 punkt 1, Marcus 2026-08-02): appen är inte live och inga skarpa utskick sker — deployen körs vid go-live på uttryckligt Marcus GO. task-120 bär den exakta deploy-formen + smoke-kravet så momentet är enkelt när det är dags. Detta kort stängs: kodarbetet var klart (AC 1–4 avbockade) och deployen var uttryckligen bokförd som EGET moment i § Kvarvarande.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Rotorsaken (SDK-importen resend@4 saknar batchValidation → prod körde strict med permissive-semantik i koden) åtgärdad via majorbump till esm.sh/resend@6 med källverifierad breaking-changes-genomgång (AC1, förkastade vägar b/c bokförda med skäl). Avvikande-fallet hermetiskt bevisat — normalfallet bevisar inget, STEG 0-fällan explicit namngiven (AC2). Falsifierade kommentarer rättade + STEG 2-fixturen låser en form prod faktiskt kan producera (AC3). data-model.md konsulterad, inga fältoperationer ändrade (AC4). Leveransen landad och CI-verifierad per jobb under S91-vågen. Prod-deployen deferrad på Marcus beslut 2026-08-02 → task-120 (go-live-klass).
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
