@@ -8435,3 +8435,32 @@ commit + push + armering; fångades först av CI:s Docs link check
 `echo "exit=$?"` och committade trots kvarvarande rött. Klassen är L436 i
 kommandoform — en form som bara kan rapportera framgång. Motmedlet användes
 direkt efteråt: `if grind; then committa; else stanna; fi`.
+
+### L441 — En regel utan bärare på DIN yta skyddar inte, oavsett hur färsk kunskapen är
+
+**Regler binder per bärare (kontrakt, skill-text, hook), inte per kunskap.
+En regel mekaniserad för en roll-yta lämnar de andra ytorna oskyddade —
+inventera vilka ytor som saknar bäraren, i stället för att anta att en
+landad lesson täcker alla.** `[UNIVERSAL]`
+
+Empiri (S94, 2026-08-02): orkestreraren körde `check:docs | tail` och
+armerade en PR trots röd grind — L440 hade landat på main SAMMA morgon och
+formen står ordagrant i bygg-agent-kontraktet, men ingen bärare binder
+orkestrerar-ytan; klassens tredje orkestrerar-instans på två dygn (L440
+§ Empiri bar de två första). Samma mönster som S94:s policy-huvudfynd:
+`model: sonnet` reglerade agent-frontmattern medan default-agenter och
+orkestrerare stod oreglerade tills tier-policyn (ADR-089) gav varje yta sin
+bärare. Fångst: transparens-läsning av grind-utfallet, rättad före kö-fällning.
+
+### L442 — Diffa mot fjärr-refen i långlivade worktrees — lokala refs åldras tyst
+
+**`git diff main..gren` i en worktree jämför mot worktreens FÖDELSE-main,
+inte dagens. Diffa mot `origin/<bas>` efter färsk fetch, eller läs PR:ns
+egen fillista — en flerfils-diff där bara en fil väntades är signalen,
+inte facit.** `[UNIVERSAL]`
+
+Empiri (S94, 2026-08-02): granskningen av research-PR #593 visade 4 filer /
+1 618 rader lokalt medan GitHub-PR:n bar exakt 1 fil — lokal `main` stod
+kvar på worktreens födelse-SHA (`5d6f05f8`) medan origin hunnit fem
+landningar längre. Nära släkt med L435 (tredot-brus vid inbakade merges) —
+annan mekanism, samma symptom: lita på fjärrens fillista före lokal diff.
