@@ -4,6 +4,7 @@ title: 'PRD: Riktig app-känslan — PWA maxad (T95 Spår A)'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:15'
+updated_date: '2026-08-03 12:28'
 labels: []
 dependencies: []
 ordinal: 198000
@@ -82,13 +83,35 @@ som aktiverar tråd T47:s vilande Inställnings-hemvist.
 
 ### Testbeslut
 
-- Install-ytans externa beteende (rätt väg per plattform, prompt-flödet,
-  instruktionens tillstånd) testas i acceptance-skarven — hermetiskt,
-  utan staging.
+- **RÄTTAT 2026-08-03 (TASK-131).** Install-ytans externa beteende UTAN
+  databeteende — rätt plattformsväg, prompt-flödet, redan-installerad-
+  övergången — testas i **webbläsarbeteende-klassen**
+  (`tests/webblasarbeteende/`, projektet `webblasarbeteende`; TASK-131/
+  ADR-094), hermetiskt, utan staging och utan fixturvärld. Raden pekade
+  ursprungligen mot "acceptance-skarven"; `scripts/hermetik-sjalvtest.mjs`
+  (ADR-080 beslut 3, VILLKOR för den klassens existens) fällde alla 11
+  tester som landade där (TASK-126.2, PR #628) eftersom `InstallPrompt`/
+  `useInstallPrompt` saknar databeteende att bevisa formen av — vakten
+  gjorde rätt, denna rad styrde fel. ADR-080:s vakt och acceptance-klassens
+  kontrakt är ORÖRDA av rättelsen.
 - Tillgängligheten testas i a11y-skarven; ribban är 11, inga undantag.
-- Manifest-fälten verifieras i preview-skarven som redan bygger appen och
-  granskar bundlen — fälten är byggda artefakter och testas där de uppstår.
-- Förebild: Mer-flikens befintliga acceptance-/a11y-mönster.
+- **RÄTTAT 2026-08-03 (TASK-130).** Manifest-fälten verifieras i
+  `.github/workflows/ci-suite.yml`:s **Pure + Build**-jobb, direkt efter
+  Build, i det jobb som redan producerar `dist/` ovillkorligt. Raden pekade
+  ursprungligen mot "preview-skarven som redan bygger appen och granskar
+  bundlen" — verifierat (TASK-130) att den skarven ALDRIG anropas av CI
+  (noll träffar i samtliga `.github/workflows/*.yml` på
+  `test:preview:staging`, `staging-preview` eller `verify:staging-bundle`);
+  tests/preview/ + scripts/check-staging-bundle.sh är ett lokalt
+  verifieringsverktyg, inte en grind, och en grind som aldrig körs är ingen
+  grind. TASK-126.1:s agent placerade manifest-fältgrinden i Pure+Build i
+  stället, motiverat i en kommentar på plats i ci-suite.yml; detta beslut
+  (TASK-130, på Marcus breda delegation) bokför Pure+Build som STÅENDE
+  hemvist för mekaniska manifest-/bundle-grindar framåt, så nästa skiva i
+  detta spår inte möter samma vägg.
+- Förebild: Mer-flikens befintliga acceptance-/a11y-mönster; install-ytans
+  plattformsdetektering har dessutom webbläsarbeteende-klassen som egen
+  förebild (TASK-131/ADR-094) för framtida datalösa beteendetester.
 
 ### Utanför omfattningen
 
@@ -110,8 +133,10 @@ skärmbilds-runda; PWA-grunden (ADR-047) är redan betald.
 - Styrande: ADR-047 (PWA-arkitekturen — detta kort fullbordar dess
   användarupplevelse, ändrar inte dess arkitektur).
 - Samsynen: sessionsdok S95 Del 2 (nio beslut + enhetsprofilen).
-- Ingen ny ADR ur detta kort. R2-researchen kan föda en desktop-form-ADR —
-  den refereras då härifrån, mintas aldrig inline.
+- Denna PRD myntar ingen egen ny ADR. Testbeslut-raden ovan refererar två:
+  ADR-094 (ny, TASK-131) och ADR-080 (redan myntad av ett systerspår,
+  oförändrad av denna rättelse). R2-researchen kan föda en desktop-form-ADR
+  — den refereras då härifrån, mintas aldrig inline.
 
 ### Ytterligare anteckningar
 

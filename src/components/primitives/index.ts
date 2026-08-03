@@ -1,6 +1,7 @@
 export { Button, type ButtonProps } from './Button';
 export { Dialog, type DialogProps, DialogTrigger } from './Dialog';
 export { Input, type InputProps } from './Input';
+export { InstallPrompt, type InstallPromptProps } from './InstallPrompt';
 export { MessageBox, type MessageBoxProps } from './MessageBox';
 export { Modal, type ModalProps } from './Modal';
 export { NavCard, type NavCardIcon } from './NavCard';
@@ -15,3 +16,4 @@ export {
   type ToggleButtonGroupProps,
   type ToggleButtonProps,
 } from './ToggleButtonGroup';
+export { type InstallPath, type InstallPromptState, useInstallPrompt } from './useInstallPrompt';

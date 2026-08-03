@@ -55,6 +55,11 @@
       "skäl": "Kör axe mot DEV-guardade demoytor (/dev/primitives, /dev/patterns) — komponentrendering utan data-anrop mot staging-basen. Samma domslut som .staging-semaphore-policy.conf gör om CI-jobbet \"A11y (axe-runner)\"."
     },
     {
+      "namn": "webblasarbeteende",
+      "klass": "undantagen",
+      "skäl": "Noll nätverksanrop, per konstruktion (TASK-131, ADR-094): plattformsdetektering läser navigator/matchMedia, prompt-flödet lyssnar på webbläsar-events — aldrig ett HTTP-anrop, inte ens mot en fixturvärld. Appen bootar mot samma fiktiva fixtur-URL som acceptance/visual enbart för att src/env.ts:s URL-format-krav ska vara uppfyllt (z.string().url()); ingen skarp/staging-koppling finns att preflighta."
+    },
+    {
       "namn": "visual-desktop",
       "klass": "undantagen",
       "skäl": "Fixturvärld med mockat nätverk (task-36.7 AC 4: noll staging-beroende)."

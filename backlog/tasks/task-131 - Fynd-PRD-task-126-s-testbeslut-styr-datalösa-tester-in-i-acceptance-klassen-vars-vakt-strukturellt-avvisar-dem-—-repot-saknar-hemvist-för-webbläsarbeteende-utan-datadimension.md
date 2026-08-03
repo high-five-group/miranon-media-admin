@@ -7,7 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 17:26'
-updated_date: '2026-08-03 10:01'
+updated_date: '2026-08-03 12:37'
 labels:
   - ready-for-agent
 dependencies: []
@@ -40,10 +40,10 @@ INGET FEL HOS AGENTEN: den följde PRD:ns testbeslut exakt, körde npm run test:
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -81,3 +81,29 @@ ARBETET SOM ÅTERSTÅR (utförs i nästa resume, Marcus order):
 5. Rätta PRD task-126 § Testbeslut, som styrde testerna fel från början (TASK-130 bär den posten).
 6. ADR-bar prövas: klassbytet är svårt att återställa i koherens och resultatet av en verklig avvägning — sannolikt ÖVER baren. Avgörs vid utförandet, inte här.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+ALTERNATIV A UTFÖRT. Ny testklass `webblasarbeteende` (`tests/webblasarbeteende/`, Playwright-projektet `webblasarbeteende`, eget mutexfritt/secret-fritt CI-jobb `Webblasarbeteende` i `ci-suite.yml`) för datalösa Playwright-tester. `scripts/hermetik-sjalvtest.mjs` och acceptance-klassens kontrakt (ADR-080 beslut 3) lämnade ORÖRDA — verifierat: `npm run test:acceptance:sjalvtest` grönt på de kvarvarande 153 testerna (var 164 före flytten; -11 matchar exakt).
+
+ARBETET (de sex punkterna):
+1. Klassen skapad: `tests/webblasarbeteende/`, projektet i `playwright.config.ts` (dedikerad dev-server port 5499, samma alltid-färsk-mönster som a11y/visual/acceptance), npm-script `test:webblasarbeteende`.
+2. TASK-126.2:s 11 tester flyttade ur `tests/acceptance/` till `tests/webblasarbeteende/install-prompt.test.ts`, plockade ur commit `5b28b6ca` (PR #628) via `git cherry-pick -n`. Import bytt från `./support/acceptance-bas` till plain `@playwright/test` (klassen har ingen fixturvärld). Header-kommentar omskriven för ny hemvist; RUNDA 1–4-historiken (TDD-bevisraden) bevarad oförändrad.
+3. Wirad i CI, ANROP BEVISAT: `npm run test:webblasarbeteende` kört lokalt = 11/11 gröna (18,1 s). Jobbet i `ci-suite.yml` är VILLKORSLÖST (inget `run_x`, inget dependabot-skip) och instansieras därför i ALLA tre anropar-ytor via `ci-suite.yml`s reusable-workflow-mekanik (`suite`-jobbets conclusion aggregerar hela den anropade workflowen — samma mekanik som redan bär `Pure + Build`/`Acceptance`, verifierat mot `ci.yml`s `suite`-jobb och `ci-passed`s `needs: [..., suite]`). TASK-130-lärdomen (en grind som aldrig körs är ingen grind — preview-skarvens fall) tillämpad: ingen ny skarv byggd utan bevisad anropskedja.
+4. #628 STÄNGS UTAN MERGE (denna kommentar/PR-länk sätts vid PR-öppning). Kortfilskonflikten (grenen bar AC/DoD-bockningar, main bar parkerings-noten) löstes genom att INTE rebasa/merga #628 — i stället grenades färskt från `origin/main` och kod-/testfilerna plockades över. `task-126.2` uppdaterat: AC #1–#3 checkade (sant oavsett testklass), AC #4 lämnat OKRYSSAT med avsikt (ordalydelsen "Acceptance- och a11y-sviterna..." åldrades med flytten — samma "adress kontra avsikt"-lärdom TASK-130 bokförde för 126.4 AC#3); fullständig not tillagd via `--append-notes`.
+5. PRD `task-126` § Testbeslut RÄTTAD (denna agents arbetspunkt enligt TASK-130s arbetsfördelning): pekar nu på webbläsarbeteende-klassen (TASK-131/ADR-094) i stället för "acceptance-skarven", och på `ci-suite.yml` Pure+Build i stället för "preview-skarven" (TASK-130s beslut, bokfört där — denna agent utförde bara TASK-126-halvan, rörde INTE `task-126.4`).
+6. ADR-bar PRÖVAD ÄRLIGT mot de tre villkoren — samtliga höll: (a) svårt att återställa i KOHERENS (en tredje hermetisk Playwright-klass är en permanent gränsdragning framtida agenter navigerar efter), (b) överraskande utan kontext (tre hermetiska klasser utan en skriven boundary-regel hade varit gissningsarbete), (c) resultat av en verklig avvägning (A mot B mot C, med B:s urholkning av ADR-080 som den verkliga kostnaden). ADR-094 myntad, nummer re-deriverat mot disk vid `origin/main` `e2515cac` (94:e filen — bekräftat fritt, ingen kollision med parallella sessioner). `docs/decisions/README.md`-index och rot-`README.md`s räkneton (93→94) synkade i samma commit (fångat av `check:docs`s ADR-räkningsgrind, som fällde EN gång innan detta fixades — se premiss-avsnittet).
+
+BEVIS I BÅDA RIKTNINGAR: en regression injicerades skarpt i `useInstallPrompt.ts` (iOS-detekteringsgrenen villkorad bort med `false &&`), `npm run test:webblasarbeteende` fällde 2/11 med rätt felsignatur (`toHaveText` väntat 'ios-manuell', fick 'chromium-prompt'), reverten (från scratchpad-backup) gav 11/11 grönt igen. Klassen fäller alltså på riktigt, inte bara vacuöst.
+
+GRINDAR, MÄTTA: `npx @biomejs/biome check .` exit 0 (0 errors, 6 pre-existing warnings/27 infos, orörda av denna diff) · `npm run typecheck` exit 0 · `npm run build` exit 0 · `npm run test:webblasarbeteende` 11/11 grönt (18,1 s) · `npm run test:acceptance` 153/153 grönt (2,6 min) · `npm run test:acceptance:sjalvtest` 153/153 fällda med OmockadRequestError (vakten HÅLLER) · `npm run test:a11y` 79/79 grönt (inkl. 3 nya InstallPrompt-tester) · `npm run test:api` 443/443 grönt · `npm run check:docs` 13/13 gröna (fällde EN gång på ADR-räknings-drift 93≠94, fixat i README.md) · `npm run lint:prose` (Vale) 0 errors (fällde EN gång på 3 st 'dependabot'→'Dependabot', fixat) · `actionlint -color -ignore 'unexpected key "queue" for "concurrency" section'` exit 0 · `yamllint .github/` exit 0.
+
+PREMISS-PASSET (ADR-086): alla fyra uppdragspremisser prövade mot disk.
+1. Vakten konstitutiv (ADR-080 beslut 3) — HÖLL, läst i sin helhet.
+2. PR #628/gren/commit 5b28b6ca — HÖLL, verifierat med `gh pr view` + `git log`.
+3. tests/a11y/ kör fixturfria tester — HÖLL, verifierat (a11y-projektets `fixtures.ts` har ingen route-interception).
+4. #628 RÖD och DIRTY, main avancerad sedan noten — HÖLL, och FÖRSTÄRKT: main hade avancerat ÄNNU LÄNGRE än uppdragets 426e6b9e (till e2515cac vid arbetets start, sedan vidare till PR #644 mitt i arbetet) — task-126.2s DoD #5/#6 var redan borttagna av #642 (TASK-132s rättning), och #644 hade redan bokfört TASK-130s arbetsfördelning (Testbeslut-radens ägarskap: task-126 = denna agent, task-126.4 = parallell agent — exakt matchande uppdragets delegation, oberoende bekräftat). Ingen divergens som blockerade; allt bokfört ovan i stället för antaget.
+
+INGET AVVIKANDE FRÅN UPPDRAGET UTÖVER DET SOM STÅR OVAN.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogTrigger,
   Input,
+  InstallPrompt,
   MessageBox,
   Modal,
   NavCard,
@@ -377,6 +378,60 @@ function PrimitivesPage() {
             defaultSelected
             sound={false}
           />
+        </div>
+      </section>
+      <section aria-labelledby="rubrik-installprompt" className="mt-8 max-w-md">
+        <h2 id="rubrik-installprompt" className="text-xl">
+          InstallPrompt
+        </h2>
+        <p className="mt-2 text-small text-text-secondary">
+          Bibliotekskomponent + hook (task-126.2): default-läget nedan renderar en knapp ENDAST när
+          Chromiums installationshändelse faktiskt fångats (AC 2 — strukturellt omöjlig död knapp).
+          Inspektions-läget använder render-prop-formen för att exponera hela plattformstillståndet
+          — den väg Mer-flikens install-yta (task-126.3) bygger sin pedagogik ovanpå.
+        </p>
+        <div className="mt-4 flex flex-col gap-4">
+          <div data-testid="installprompt-default">
+            <InstallPrompt
+              onInstalled={() => setSenastTryckt('installprompt: installerad')}
+              onDismissed={() => setSenastTryckt('installprompt: avvisad')}
+            />
+          </div>
+          <div data-testid="installprompt-inspect">
+            <InstallPrompt>
+              {(state) => (
+                <div className="flex flex-col gap-2">
+                  <p aria-live="polite" className="text-small">
+                    Väg:{' '}
+                    <span data-testid="installprompt-path-value" className="font-semibold">
+                      {state.path}
+                    </span>{' '}
+                    ({state.promptAvailable ? 'prompt tillgänglig' : 'ingen prompt tillgänglig'})
+                  </p>
+                  {/* Render-prop-läget lämnar ALLA renderingsbeslut till
+                      konsumenten (se InstallPrompt.tsx-kommentaren) — denna
+                      knapp anropar promptToInstall() OVILLKORLIGT, utan att
+                      kolla promptAvailable, för att bevisa kontraktets båda
+                      försvarslinjer: (a) invariant-kastet när ingen händelse
+                      någonsin fångats, och (b) det graciösa 'dismissed'-
+                      fallet när en syskoninstans redan konsumerat samma
+                      engångshändelse (review-fynd, task-126.2). */}
+                  <Button
+                    intent="secondary"
+                    size="sm"
+                    onPress={() => {
+                      state
+                        .promptToInstall()
+                        .then((utfall) => setSenastTryckt(`installprompt: direkt-anrop ${utfall}`))
+                        .catch(() => setSenastTryckt('installprompt: direkt-anrop kastade'));
+                    }}
+                  >
+                    Testa promptToInstall() direkt (bibliotekskontraktet)
+                  </Button>
+                </div>
+              )}
+            </InstallPrompt>
+          </div>
         </div>
       </section>
     </main>

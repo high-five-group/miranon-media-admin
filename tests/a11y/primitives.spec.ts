@@ -69,6 +69,45 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
     await checkA11y({ include: ['[aria-labelledby="rubrik-slidetoconfirm"]'] });
   });
 
+  test('InstallPrompt — sektion (default: ingen knapp innan händelsen fångats)', async ({
+    checkA11y,
+  }) => {
+    // AC 2 sedd genom axe: default-instansen renderar `null` innan
+    // Chromiums installationshändelse fångats — noll interaktiva element,
+    // noll violations att ens ha.
+    await checkA11y({ include: ['[aria-labelledby="rubrik-installprompt"]'] });
+  });
+
+  test('InstallPrompt — sektion (chromium-prompt fångad: knappen synlig)', async ({
+    page,
+    checkA11y,
+  }) => {
+    // Skjuter UPPREPAT (samma robusta mönster som webbläsarbeteende-klassen,
+    // `tests/webblasarbeteende/install-prompt.test.ts` — TASK-131/ADR-094;
+    // tidigare `tests/acceptance/install-prompt.acceptance.test.ts`) tills
+    // knappen syns — ett enda synkront dispatch-anrop kan racea mot Reacts
+    // useEffect-mount.
+    await page.waitForFunction(
+      () => {
+        if (document.querySelector('[data-testid="installprompt-default"] button')) return true;
+        const event = new Event('beforeinstallprompt', { cancelable: true }) as Event & {
+          prompt: () => Promise<void>;
+          userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+        };
+        event.prompt = () => Promise.resolve();
+        event.userChoice = Promise.resolve({ outcome: 'dismissed', platform: 'web' });
+        window.dispatchEvent(event);
+        return false;
+      },
+      undefined,
+      { timeout: 15_000, polling: 50 },
+    );
+    await expect(
+      page.locator('[data-testid="installprompt-default"]').getByRole('button'),
+    ).toHaveCount(1);
+    await checkA11y({ include: ['[aria-labelledby="rubrik-installprompt"]'] });
+  });
+
   test('Skeleton — sektion (Roselli-markupen i laddläge)', async ({ page, checkA11y }) => {
     // Sektionen renderar laddläget statiskt (aria-busy-container med
     // aria-hidden-block + sr-only-besked) — skannas i exakt det tillstånd
