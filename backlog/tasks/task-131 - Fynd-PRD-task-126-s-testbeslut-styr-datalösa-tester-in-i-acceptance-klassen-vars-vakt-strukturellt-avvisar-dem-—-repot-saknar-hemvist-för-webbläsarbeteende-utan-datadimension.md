@@ -7,9 +7,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 17:26'
-updated_date: '2026-08-03 09:43'
+updated_date: '2026-08-03 10:01'
 labels:
-  - ready-for-human
+  - ready-for-agent
 dependencies: []
 priority: high
 ordinal: 217000
@@ -66,4 +66,18 @@ Det direkt felaktiga påståendet — 'den landar av sig själv när klassfråga
 SAKINNEHÅLLET I RÄTTELSEN STÅR OFÖRÄNDRAT: #628 är röd OCH dirty, kräver klassbeslut plus kortfils-konfliktlösning, och konflikten orsakades av att bokföring skrevs till ett kort med olandade ändringar. Endast attributionen var fel.
 
 KLASSAD ready-for-human / high (orkestreraren, 2026-08-03, på Marcus delegation). SKÄL: HIGH eftersom det är enda kortet som håller färdigt arbete parkerat — PR #628 bär en komplett, granskad bibliotekskomponent som inte kan landa förrän klassfrågan är avgjord. ready-for-human eftersom båda utgångarna är kontraktsbeslut: A flyttar en testklass-gräns, B urholkar en vakt ADR-080 gjorde konstitutiv. Ingen agent kan välja mellan dem utan att besluta åt Marcus.
+
+BESLUT: ALTERNATIV A (Marcus, 2026-08-03). Datalösa webbläsartester får en EGEN, explicit namngiven klass. Vakten i scripts/hermetik-sjalvtest.mjs och acceptance-klassens kontrakt lämnas ORÖRDA — ADR-080 byggde vakten som villkor, inte rekommendation, och ett undantag i den vakten är ett undantag i klassens definition.
+
+Alternativ B (undantagslista i vakten) och C (koppla testerna till fixturdata) är därmed FÖRKASTADE, öppet och med skäl.
+
+OMKLASSAD ready-for-human → ready-for-agent: den mänskliga grinden var valet mellan A/B/C, och det är taget. Kvarvarande arbete är specificerbart.
+
+ARBETET SOM ÅTERSTÅR (utförs i nästa resume, Marcus order):
+1. Skapa den nya klassen — katalog + Playwright-projekt + namn som säger vad den prövar (webbläsarbeteende utan datadimension), inte var den råkar bo.
+2. Flytta TASK-126.2:s 11 tester dit ur tests/acceptance/. De ligger i PR #628, gren task-126.2-install-prompt-bibliotekskomponent, commit 5b28b6ca.
+3. Wira klassen i CI. OBS lärdomen ur TASK-130: verifiera att den nya klassen FAKTISKT anropas av .github/workflows/ — preview-skarven är precedensfallet på en skarv som finns men aldrig körs.
+4. Lös kortfils-konflikten i #628 (backlog/tasks/task-126.2-...md — grenen bär AC-bockningar, main bär parkerings-noten; resolutionen är behåll båda).
+5. Rätta PRD task-126 § Testbeslut, som styrde testerna fel från början (TASK-130 bär den posten).
+6. ADR-bar prövas: klassbytet är svårt att återställa i koherens och resultatet av en verklig avvägning — sannolikt ÖVER baren. Avgörs vid utförandet, inte här.
 <!-- SECTION:NOTES:END -->
