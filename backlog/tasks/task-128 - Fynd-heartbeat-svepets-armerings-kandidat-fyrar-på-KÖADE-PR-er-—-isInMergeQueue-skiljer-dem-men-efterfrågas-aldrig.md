@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 16:16'
-updated_date: '2026-08-03 09:43'
+updated_date: '2026-08-03 12:03'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,10 +32,10 @@ VARFÖR DET SPELAR ROLL: falsklarm på den viktigaste signalen är hur larm slut
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -48,4 +48,14 @@ FIXEN VERIFIERAD MOT ALLA INSTANSER: gh api graphql mot PullRequest.isInMergeQue
 OPERATIV KOSTNAD MÄTT: bruset tvingade orkestreraren att höja svep-intervallet från 90 s till 300 s (skriptets dokumenterade --interval-flagga, mekanismen orörd) för att inte riskera att monitorn stängs av för många events. Det är en reell försämring av vaktens upplösning som fixen skulle återställa.
 
 KLASSAD ready-for-agent / medium (orkestreraren, 2026-08-03, på Marcus delegation). SKÄL: inget beslut återstår. Fixen är specificerad och empiriskt verifierad — GraphQL-fältet isInMergeQueue finns på PullRequest-typen och gav true för #621/#623/#624 samtidigt som autoMergeRequest var null. Arbetet är mekaniskt: lägg fältet i queryn, exkludera köade PR:er ur kandidat-klassen, lägg två testfall (köad → EJ kandidat, oarmerad → kandidat) i den befintliga 22-fallssviten. Ingen ADR rörs, inget kontrakt ändras. MEDIUM och inte high: vakten fungerar, den är bara brusig — bruset tvingade fram en upplösnings-sänkning 90→300 s, vilket är en reell men inte blockerande försämring.
+
+BYGG-AGENT (Sonnet 5, claude-sonnet-5), 2026-08-03. Fix implementerad exakt enligt ÅTGÄRDSRIKTNING: isInMergeQueue tillagd i GraphQL-queryn (scripts/heartbeat-svep.sh) och som 6:e TSV-kolumn i --jq-tupeln; KANDIDAT-villkoret kräver nu även inqueue==false. Skriptets header-kommentar (§ fjärde vägen, § EXIT-KODER) och CLAUDE.md § Landning (raden efter "Disambiguera med ett andra...") uppdaterade att beskriva den nya diskriminatorn utan att röra den kvarvarande ambiguiteten (aldrig-armerad vs. utsparkad).
+
+TESTSVIT utökad 22→24 namngivna fall (27 assertions inkl. sub-checks): T9b (KÖAD, isInMergeQueue=true, PR #617-mönstret → EJ kandidat) och T9c (genuint UTSPARKAD, isInMergeQueue=false, i övrigt identiskt → FORTFARANDE kandidat). Alla 15 set_rows-anrop i test-heartbeat-svep.sh fick en 6:e TSV-kolumn (isInMergeQueue) för att matcha skriptets nya read-signatur.
+
+TVÅSIDIGT BEVIS (mot ORÖRD kod före fixen): T9b/T9c + 8 andra fall körda mot det ursprungliga (ofixade) skriptet gav 10 failade av 24 — bl.a. T9b exit 5 (väntade 0) och T9c exit 5 (väntade 4), eftersom den gamla 5-fälts-read-satsen svalde den 6:e TSV-kolumnen in i "rollup"-variabeln och triggade falsk RÖTT. Efter fixen: 27/27 gröna, 0 failade.
+
+GRINDAR: shellcheck --severity=style --enable=all (CI:s exakta flaggor) på båda skripten + .heartbeat-svep-policy.conf → 0/0/0/0. npm run check:docs → 13/13 gröna (CLAUDE.md-frontmatter opåverkad, pre-commit-hooket bumpar updated: automatiskt vid commit). npx biome check . → 0 errors (repo-brett existerande 6 warnings/27 infos, orörda av denna diff, ingen av mina tre filer bland dem — biome lintar inte .sh/.md).
+
+AVVIKELSE MOT UPPDRAGET: uppdraget angav "åtta mätta instanser"; kortets egna Implementation Notes säger uttryckligen SJU (#614, #617, #621, #623, #624, plus #617 två gånger till = 7). Jag har utgått från kortets tal (sju), inte uppdragets (åtta), per ADR-086 — kortet är den primära källan.
 <!-- SECTION:NOTES:END -->
