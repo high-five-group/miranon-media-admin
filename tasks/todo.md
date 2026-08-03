@@ -15,6 +15,25 @@
 
 ## Aktuellt fokus
 
+**Session 93 ⏸️ PAUSAD (2026-08-03 — konvergens-prototypen handövad,
+Marcus itererar)** — APPEN ÅTERUPPTAGEN: hållplats-spåret från research till
+färdig konvergens-prototyp på EN dag + Roger & Lottas nya produktkrav
+(bilagor/utskick) grillat till samsyn 8/8. Levererat: prototyp-kedjan
+PR #603→#613→#639→#660→#667 (divergens a/b/c → kvalitetsfix → natt-rött-fixar →
+byggkrav + betalningsSplit-PRODUKTIONSBUGGFIX → konvergens: ett block,
+steg-räknare, EN lista, integrerad arbetsyta, B/C rivna) · grillningen Del 3
+(8/8: utskick/avprickning-snittet · raduppsättningen · registret ·
+ENHETLIGA server-utskick · åtgärds-sidans v1 · delad bilage-hemvist ·
+dokumentklasserna A/B/C · 3 PRD-kort) · research #661 (KRITISKT: Resend
+batch tar EJ bilagor, tyst ⇒ grenad sändväg) · ORDLISTA +4 termer ·
+seed-eventet reco44UBx6GXcxwu5 (livstid 2026-08-16) · dev-server 5173
+omstartad. Kvitterat: variant A vald · kvittoserien egen räknare ·
+tre-veckor (−21). **NÄSTA (resume): Marcus iterations-feedback →
+iterationsvågor → facit → /to-prd × 3 · åtgärds-sidans divergens-pass ·
+Roger-avstämning kvitto-gränsen.** Numrering: ALLT re-deriveras mot disk
+(S95/S96 mintar parallellt). Full handoff: sessionsdok S93 § PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 96 ⏸️ PAUSAD IGEN (2026-08-03 kväll, `lifecycle: paused` — andra
 pausen samma dag; återupptas via `session-resume` med BEHÅLLET nummer)** —
 **RESUMEN LANDADE T95-VÅGEN OCH INLEDDE PROTOTYP-KONVERGENSEN.** Fjorton PR:er:
