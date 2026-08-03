@@ -61,16 +61,74 @@ export function harPaminnelse(r: Registration): boolean {
 }
 
 /**
+ * Anmälningsavgiften Mottagen (delad formel — se `betalningsSplit` nedan för
+ * varför `Betalningar.tsx` sedan S96-granskningen ANROPAR denna modul i
+ * stället för att hålla en egen parallell kopia).
+ */
+export function avgiftKlar(r: Registration): boolean {
+  return r.anmalningsavgift === PaymentStatus.MOTTAGEN;
+}
+
+/**
+ * Slutbetalningen kräver inget mer: Mottagen ELLER Ej relevant (föreläsningar
+ * saknar slutbetalning helt — Del 3 fall F). Delad formel, se `betalningsSplit`
+ * nedan.
+ */
+export function slutKlar(r: Registration): boolean {
+  return (
+    r.slutbetalning === PaymentStatus.MOTTAGEN || r.slutbetalning === PaymentStatus.EJ_RELEVANT
+  );
+}
+
+/**
  * Betalningen KLAR (delad formel med `Betalningar.tsx`:s `avgiftKlar`/`slutKlar`
  * — förenklad kopia, kastbar precedent ur S86:s `DeltagareBekraftaPrototyp.tsx`):
  * anmälningsavgiften Mottagen OCH slutbetalningen Mottagen ELLER Ej relevant
- * (föreläsningar saknar slutbetalning helt — Del 3 fall F).
+ * (föreläsningar saknar slutbetalning helt — Del 3 fall F). Skriven i termer av
+ * `avgiftKlar`/`slutKlar` ovan — EN formel, inte två (byggkrav-2-passet, S96).
  */
 export function betalKlar(r: Registration): boolean {
-  const avgift = r.anmalningsavgift === PaymentStatus.MOTTAGEN;
-  const slut =
-    r.slutbetalning === PaymentStatus.MOTTAGEN || r.slutbetalning === PaymentStatus.EJ_RELEVANT;
-  return avgift && slut;
+  return avgiftKlar(r) && slutKlar(r);
+}
+
+/** Aggregat-formen `betalningsSplit` producerar — se docblocket nedan. */
+export type BetalningsSplit = {
+  avgifterMottagna: number;
+  avgifterTotalt: number;
+  avgifterSaknas: number;
+  slutMottagna: number;
+  slutSaknas: number;
+};
+
+/**
+ * Betalnings-splitten DELAD mellan `Betalningar.tsx`s egna räknerader och
+ * `Deltagare.tsx`:s hållplats-topp (byggkrav 2, variant A, S96) — EN
+ * beräkning på `aktiva`, anropad från BÅDA i stället för två separata
+ * implementationer som kan divergera.
+ *
+ * S96 REVIEW-FIX (Marcus granskning av PR #660, `variant-a-proto.png`):
+ * innan denna funktion fanns räknade `Betalningar.tsx`s egen `slutMottagna`
+ * strikt `PaymentStatus.MOTTAGEN` inline — INTE modulens `slutKlar` (Mottagen
+ * ELLER Ej relevant), fast dess EGEN `slutSaknasAntal` redan använde
+ * `slutKlar`. En "Ej relevant"-registrering (föreläsning, ingen
+ * slutbetalning) föll därför ur BÅDA talen samtidigt (varken mottagen eller
+ * saknad), medan `Deltagare.tsx`:s topprad — som redan använde `slutKlar`
+ * korrekt — räknade den registreringen som mottagen. Resultat i
+ * fixtur-fixturen (12 aktiva, en `EJ_RELEVANT`-post): toppen visade
+ * "3 mottagna −9", blocket "2 mottagna −9" — samma sida, olika tal, trots
+ * att BÅDA delta-talen (−9) redan var lika (det var bara `slutMottagna` som
+ * drev isär). Riktig-datan i samma granskning saknade en `EJ_RELEVANT`-post
+ * bland sina aktiva och dolde därför felet (3/−13 i båda). Fixat genom att
+ * BÅDA ställena nu anropar denna enda funktion — drift kan inte uppstå igen
+ * utan att ändra HÄR.
+ */
+export function betalningsSplit(aktiva: Registration[]): BetalningsSplit {
+  const avgifterMottagna = aktiva.filter(avgiftKlar).length;
+  const avgifterTotalt = aktiva.length;
+  const avgifterSaknas = avgifterTotalt - avgifterMottagna;
+  const slutMottagna = aktiva.filter(slutKlar).length;
+  const slutSaknas = aktiva.filter((r) => !slutKlar(r)).length;
+  return { avgifterMottagna, avgifterTotalt, avgifterSaknas, slutMottagna, slutSaknas };
 }
 
 /**
