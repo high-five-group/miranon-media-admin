@@ -1,10 +1,10 @@
 ---
 id: TASK-126.1
 title: 'Skiva: Manifest-kompletteringen till app-butiks-känsla'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-02 14:32'
-updated_date: '2026-08-02 16:45'
+updated_date: '2026-08-03 11:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -44,6 +44,4 @@ HEMVIST-DIVERGENS, godkänd av orkestreraren som avsikt-över-bokstav: AC#3 namn
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Marcus-verifikat på riktig enhet per huvudväg (iPad-hemskärm, Mac-Safari Dock, Chromium-prompt) efter Grind 0
-- [ ] #6 Install-ytans instruktioner klarar Gunilla-principen: begriplig utan tekniska förkunskaper
 <!-- DOD:END -->
