@@ -142,20 +142,42 @@ function KontextSpalt({ children, fotnot }: { children?: ReactNode; fotnot?: Rea
   // och ordmärket flyttar in hit eftersom det tidigare flöt ovanpå bilden.
   // FotoHalva/InnehallHalva-tvådelningen utgår med bilden; kvar är en spalt.
   return (
-    <div className="flex flex-col justify-between gap-10 bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint) p-8 lg:p-12">
-      <div className="flex flex-col gap-10">
+    <div
+      className={`relative flex flex-col justify-between gap-10 bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint) p-8 lg:justify-start lg:p-12 ${RUBRIKLINJE}`}
+    >
+      {/* DESKTOP: ordmärke och fotnot lyfts UR flödet (absolut i spaltens
+          hörn) och innehållet startar på RUBRIKLINJE — samma konstant som
+          formulärspalten. Mätt, inte gissat: en tidigare omgång centrerade
+          båda spalterna vertikalt, vilket gav 77 px missmatchning eftersom
+          centrering placerar blockets MITT och blocken är olika höga. En
+          delad startlinje håller oavsett hur texten ändras.
+          MOBIL: spalterna staplas och en delad linje finns inte att linjera
+          mot — där gäller vanligt flöde uppifrån och ner. */}
+      <div className="lg:absolute lg:top-12 lg:left-12">
         <Ordmarke />
-        <div className="flex flex-col gap-6">{children}</div>
       </div>
-      <div className="text-caption text-text-muted">{fotnot}</div>
+      <div className="flex flex-col gap-6">{children}</div>
+      <div className="text-caption text-text-muted lg:absolute lg:right-12 lg:bottom-12 lg:left-12">
+        {fotnot}
+      </div>
     </div>
   );
 }
 
+/**
+ * DELAD RUBRIKLINJE (konvergens-omgång 6, Marcus): båda spalternas
+ * textinnehåll startar på samma vertikala linje på desktop, så H1
+ * ("Välkommen, Lotta") och H2 ("Sätt ditt lösenord") möts. Värdet rymmer
+ * ordmärket som ligger absolut vid `top-12` och är 48 px högt (48 + 48 +
+ * 48 luft = 144 px = `pt-36`). Konstanten bor på ETT ställe — ändras den
+ * följer båda spalterna med, och linjeringen kan inte glida isär.
+ */
+const RUBRIKLINJE = 'lg:pt-36';
+
 /** Neutral formulär-spalt (höger/under) — bär sidans `<h1>` och all handling. */
 function FormSpalt({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-center justify-center bg-bg p-8 lg:p-12">
+    <div className={`flex justify-center bg-bg p-8 lg:items-start lg:p-12 ${RUBRIKLINJE}`}>
       <div className="w-full max-w-sm">{children}</div>
     </div>
   );
