@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-02
+updated: 2026-08-03
 review_by: 2026-10-31
 status: stable
 lifecycle: paused
@@ -441,3 +441,78 @@ premiss-passet mot SAMMA uppdrag.
   mönster § Extern prövning redan dokumenterade (*"även artefakten om
   orkestrerarens fel bär orkestrerarens felklasser"*), nu observerat i en
   korrigering snarare än i originaluppdraget.
+
+## Ny instans — S96:s andra resume (2026-08-03): klass C på ett SKILL-kontrakt
+
+**Detta är klassens första instans där det brustna kontraktet är committat,
+versionerat och läsbart hela tiden** — och den motsäger delvis § Det
+strukturella skälet till att grinden saknas.
+
+### Vad som hände
+
+`session-resume` kördes på Marcus order. Skillens procedur har sex steg.
+**Steg 6 — tillstånds-återställningen — utfördes aldrig.** Sessionen stod
+kvar `lifecycle: paused` medan tre PR:er landade i den (`#672`, hub `#16`,
+plus dev-servern startad). Dessutom hoppades tre av LÄS-fasens steg över:
+`lessons.md`, `docs/BUILD-LOG.md` och `docs/byggplan.md`.
+
+Orkestreraren rapporterade själv i sin första transparens-rapport att
+återställningen skulle göras "som första skrivning när du kvitterat" — och
+gled sedan rakt in i nästa uppgift utan att göra det. **Formen var alltså
+känd, uttalad och ändå ej utförd.**
+
+**Fångad av Marcus:** *"har du gjort tillstånds-flipp och standardproceduren
+för session-resume?"* Inte av orkestreraren, inte av någon grind.
+
+### Varför den utvidgar klassen
+
+Klass C har hittills mätts på kontrakt som **aldrig committas** — DoD-block i
+en stängning, påståenden i en uppdragstext. Kortets strukturella tes bygger
+på just det: *"Grindarna kör på commits. Orkestrerarens fel sitter i
+uppdragstexten, som aldrig committas … En grind som ska fånga dem måste
+därför sitta i uppdrags-ögonblicket."*
+
+Den här instansen har inte den egenskapen. `session-resume`s SKILL.md är
+distribuerad via pluginet, versionerad (1.26.0 vid tillfället) och läsbar i
+sin helhet när som helst. **Kontraktets otillgänglighet var alltså inte
+orsaken.** Det som brast var att procedurens steg aldrig prövades mot en
+checklista före leverans — ett omdömesfel i utförandet, inte en
+åtkomstbegränsning.
+
+Det skärper § Vad en utredning bör avgöra punkt 5 (*"Är klass C och D
+mekaniserbara alls?"*): för DENNA underform finns kontraktet i maskinläsbar
+form på disk, vilket gör en do-confirm-grind billigare att tänka sig än
+kortet hittills antagit. Ingen sådan grind föreslås här — observationen
+registreras, den byggs inte.
+
+### Vad som INTE är fyndet
+
+Att `check-lifecycle.sh` var **grön** genom hela förloppet är inget fynd.
+Grinden prövar konsistens mellan frontmatter-fältet och kropps-rubriken, och
+`paused` + `## PAUSLÄGE`-rubrik är ett giltigt par. Trådregistrets egen text
+säger redan rakt ut att detta är avsiktligt: *"Ingen av dem prövar om en rads
+INNEHÅLL är sant; det bärs av kort och granskning, aldrig av en grind."*
+
+Orkestreraren framställde först grindens gröna status som en obehaglig
+upptäckt och knöt den till `T116`:s öppna klassfråga. **Båda leden var fel**
+— grinden gjorde precis vad den är byggd för, och `T116`:s fråga (*vilka
+interaktiva loopar kör vi genom landnings-maskineriet av vana?*) handlar om
+arbetsform mot maskineri, inte om vad en grind kan verifiera. Marcus fällde
+hopkopplingen: *"Om du säger att T116 täcker det problemet också så behövs ju
+ingen ny tråd?"* Rättelsen ledde hit, till rätt hemvist.
+
+**Två egna fel i EN observation:** en falsk klass-hopkoppling och en
+felaktig framställning av en grinds syfte — bokförda i samma anda som
+§ Extern prövning redan noterat, att även artefakten om orkestrerarens fel
+bär orkestrerarens felklasser.
+
+### Övriga instanser samma pass (ej klass C)
+
+- **Rörde huvudkatalogen tre gånger** trots att S93 ägde den (ADR-090) — två
+  `merge --ff-only` och en gren skapad där. Rena träd, rena fast-forwards,
+  ingen skada; fel form, inte fel utfall.
+- **Läste `mergeStateStatus: UNKNOWN` som ett verkligt tillstånd** på
+  hub-`#16` och rapporterade det — PR:en var redan `MERGED` sedan flera
+  minuter. **Klass A** (instrument som ser en form men inte alla) och exakt
+  den fälla `CLAUDE.md` § Landning varnar för: *vakt-event är väckarklocka,
+  aldrig fakta*.
