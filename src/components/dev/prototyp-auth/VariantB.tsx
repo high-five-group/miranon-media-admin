@@ -74,15 +74,7 @@
  * - Endast design-tokens (`--mm-*` via Tailwind-temat eller arbiträr
  *   `(--mm-*)`-syntax) — inga hårdkodade färger.
  */
-import {
-  CircleCheck,
-  Clock,
-  KeyRound,
-  Loader2,
-  Lock,
-  type LucideIcon,
-  ShieldCheck,
-} from 'lucide-react';
+import { Clock, Loader2, Lock } from 'lucide-react';
 import { type FormEvent, type ReactNode, useId, useState } from 'react';
 import { Button, Input, MessageBox } from '@/components/primitives';
 
@@ -116,16 +108,6 @@ function Ordmarke() {
         <p className="text-caption text-text uppercase tracking-wide">Admin</p>
       </div>
     </div>
-  );
-}
-
-/** En rad i kontext-spaltens punktlista: ikon + varm, konkret mening. */
-function KontextRad({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
-  return (
-    <li className="flex items-start gap-3">
-      <Icon aria-hidden="true" className="text-(color:--mm-accent) mt-0.5 size-5 shrink-0" />
-      <span className="text-body text-text-secondary">{children}</span>
-    </li>
   );
 }
 
@@ -330,15 +312,19 @@ export function AcceptVariantB() {
   const emailFaltId = useId();
   const emailBeskrivningId = useId();
   const [losenord, setLosenord] = useState('');
-  const [bekrafta, setBekrafta] = useState('');
+  const [visaLosenord, setVisaLosenord] = useState(false);
   const [status, setStatus] = useState<'vila' | 'sparar' | 'fel'>('vila');
 
+  // ETT lösenordsfält, inte två (konvergens-omgång 7, research-grundad).
+  // NN/g avråder uttryckligen från bekräftelsefält, och GitLabs skarpa
+  // produktionskod för invite-accept använder ett enda fält — mottagaren
+  // verifierar sin inmatning genom att SE den, inte genom att skriva om den.
+  // Valideringen enkelspåras därmed till en enda regel.
   const langdOk = losenord.length >= 8;
-  const matchar = bekrafta.length === 0 || bekrafta === losenord;
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!langdOk || losenord !== bekrafta) {
+    if (!langdOk) {
       setStatus('fel');
       return;
     }
@@ -369,13 +355,11 @@ export function AcceptVariantB() {
             <strong className="font-semibold text-text">{TILLDELAD_ROLL.toLowerCase()}</strong>.
           </p>
         </div>
-        <ol className="flex flex-col gap-4">
-          <KontextRad icon={KeyRound}>Sätt ett lösenord här bredvid</KontextRad>
-          <KontextRad icon={CircleCheck}>Logga in och upptäck ditt nya verktyg</KontextRad>
-          <KontextRad icon={ShieldCheck}>
-            Senare kan du frivilligt lägga till ett ännu enklare sätt att logga in
-          </KontextRad>
-        </ol>
+        {/* PUNKTLISTAN BORTTAGEN (konvergens-omgång 7, research-grundad):
+            ingen av sex live-mätta sidor har en "vad händer nu"-lista, och
+            våra tre punkter vägde 25 av sidans 95 ord — den enskilt tyngsta
+            posten. Punkt 1 upprepade dessutom formulärets egen rubrik.
+            Källa: docs/research/aktiveringssida-branschmonster-2026-08-03.md */}
       </KontextSpalt>
 
       <FormSpalt>
@@ -408,28 +392,30 @@ export function AcceptVariantB() {
             </p>
           </div>
 
-          <Input
-            label="Lösenord"
-            type="password"
-            autoComplete="new-password"
-            value={losenord}
-            onChange={setLosenord}
-            isRequired
-            isDisabled={status === 'sparar'}
-            description="Minst 8 tecken. Vi rekommenderar 15 eller fler för extra trygghet."
-          />
-
-          <Input
-            label="Bekräfta lösenord"
-            type="password"
-            autoComplete="new-password"
-            value={bekrafta}
-            onChange={setBekrafta}
-            isRequired
-            isDisabled={status === 'sparar'}
-            isInvalid={!matchar}
-            errorMessage="Lösenorden stämmer inte överens."
-          />
+          <div className="flex flex-col gap-1.5">
+            <Input
+              label="Lösenord"
+              type={visaLosenord ? 'text' : 'password'}
+              autoComplete="new-password"
+              value={losenord}
+              onChange={setLosenord}
+              isRequired
+              isDisabled={status === 'sparar'}
+              description="Minst 8 tecken. Vi rekommenderar 15 eller fler för extra trygghet."
+            />
+            {/* Ersätter bekräftelsefältet: mottagaren kontrollerar sin
+                inmatning genom att se den. `aria-pressed` bär tillståndet;
+                knappen ligger UNDER fältet i stället för inuti, så den aldrig
+                överlappar text eller krymper träffytan. */}
+            <button
+              type="button"
+              aria-pressed={visaLosenord}
+              onClick={() => setVisaLosenord((v) => !v)}
+              className="text-(color:--mm-accent) self-end rounded text-small underline-offset-2 hover:underline focus-visible:outline-(--mm-focus-ring) focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              {visaLosenord ? 'Dölj lösenord' : 'Visa lösenord'}
+            </button>
+          </div>
 
           {status === 'fel' && (
             <MessageBox
@@ -437,7 +423,7 @@ export function AcceptVariantB() {
               title="Något stämmer inte"
               className="motion-safe:animate-mm-avsloj"
             >
-              Kontrollera att lösenordet är minst 8 tecken och att båda fälten är lika.
+              Lösenordet behöver vara minst 8 tecken.
             </MessageBox>
           )}
 
