@@ -61,3 +61,81 @@ verify_jwt = true
 
 [functions.create-event-note]
 verify_jwt = true
+
+# ─────────────────────────────────────────────────────────────────────────
+# AUTH — Användarinbjudan + auth-mail (T95 Spår B, TASK-127.4)
+#
+# Versionerar de delar av auth-mall-konfigurationen som plattformen faktiskt
+# exponerar via config.toml + `supabase config push` — verifierat mot
+# installerad CLI 2.111.0:s egen scaffold (`supabase init`) och
+# `cli_v1_config.yaml`-specen (context7 /supabase/supabase, 2026-08-03).
+# TRE saker är MEDVETET inte här:
+#
+#   1. SMTP-lösenordet (Resend API-nyckel) — secret, refereras via env(),
+#      värdet lever ALDRIG i repot (CLAUDE.md: Chat rör ALDRIG secret).
+#      Rekommendation: en EGEN Resend-nyckel för SMTP-relän, skild från
+#      RESEND_API_KEY (bulk-mail-vägen, T55/Grind F) — PRD:n kräver att
+#      auth-mail och bulk-mail aldrig blandas ihop; samma princip bör gälla
+#      credentials, inte bara kod-vägen.
+#   2. DNS-poster (MX/SPF/DKIM för send.miranon.dev, DMARC på miranon.dev)
+#      — lever i GoDaddy, utanför Supabase/repo-domänen helt. Exakt form:
+#      T46-kartans Grind 0-checklista.
+#   3. Återställnings-sidans redirect-URL — TASK-127.7 (glömt lösenord) är
+#      obyggd och har inte valt sin route ännu. Läggs till i
+#      additional_redirect_urls när den skivan landar.
+#
+# ⚠️ ÖPPEN FRÅGA, DOKUMENTERAD INTE GISSAD BORT — push-semantik: CLI:t har
+# `supabase config push` men INGET `config pull`. Det finns alltså inget
+# sätt att synka nuvarande fjärr-state till denna fil FÖRE en första push,
+# och "Config as Code"-modellen (CLI v2) är deklarativ till sin natur — git
+# är tänkt som sanningskälla. Det talar för att fält som INTE står i denna
+# fil kan nollställas till CLI-scaffoldens default vid push (t.ex.
+# enable_signup, minimum_password_length, rate limits) snarare än lämnas
+# orörda. INTE bekräftat mot en skarp push — ingen sådan har körts i detta
+# kort. Säker exekveringsordning (T46-kartan): STAGING FÖRST, en
+# dashboard-ögonblicksbild TAGEN FÖRE första push, diff mot den EFTER.
+# ─────────────────────────────────────────────────────────────────────────
+
+[auth]
+# Enda fältet detta kort sätter i [auth]-roten: redirect-målet för
+# Användarinbjudans accept-sida, fixerad av ADR-092 (`/valkommen`).
+additional_redirect_urls = ["https://admin.miranon.dev/valkommen"]
+
+[auth.email]
+# 24 timmar — plattformens verifierade TAK (inte ett önskat värde). Detta
+# ÄR dashboardens "Email OTP Expiration" — EN global inställning för ALLA
+# e-postlänkar (invite, recovery, magic link m.fl.), verifierat mot
+# supabase.com/docs/guides/auth/auth-email-passwordless och matchande
+# CLI-defaultens dokumenterade betydelse (3600s = "1 timme" = samma
+# semantik som dashboardens defaultvärde). Se ADR-092 § Kontext + S95 Del 2
+# beslut 7.
+otp_expiry = 86400
+
+# Custom SMTP mot Resend, sändande subdomän send.miranon.dev (S95 Del 2
+# beslut 3+4; T46-kartans Grind 0-paket punkt 6). Endast lösenordet är
+# hemligt — host/port/avsändare är offentlig konfiguration (mottagaren ser
+# dem ändå i mailhuvudet) och versioneras här. Kräver att send.miranon.dev
+# är verifierad i Resend FÖRST (Grind 0-paketets punkt 4) — Resend
+# avvisar leverans utan verifierad domän oavsett SMTP-uppgifter.
+[auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(AUTH_SMTP_PASS)"
+admin_email = "konto@send.miranon.dev"
+sender_name = "Miranon Media"
+
+# Användarinbjudan (ORDLISTA.md § Användarinbjudan — "invite" undviks
+# medvetet i UI-/mailtext). Copy + tillgänglighets-/färgmotivering:
+# supabase/templates/invite.html.
+[auth.email.template.invite]
+subject = "Ditt konto hos Miranon Media"
+content_path = "./supabase/templates/invite.html"
+
+# Glömt lösenord / återställning. TASK-127.7 bygger själva flödet men
+# mallen hör till repo-sidan och AC#1 omfattar den uttryckligen — förbereds
+# här. Copy: supabase/templates/recovery.html.
+[auth.email.template.recovery]
+subject = "Återställ ditt lösenord — Miranon Media"
+content_path = "./supabase/templates/recovery.html"
