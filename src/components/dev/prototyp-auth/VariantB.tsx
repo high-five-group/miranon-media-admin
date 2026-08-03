@@ -69,7 +69,7 @@
  *   `(--mm-*)`-syntax) — inga hårdkodade färger.
  */
 import { Clock, Loader2, Lock } from 'lucide-react';
-import { type FormEvent, type ReactNode, useId, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useId, useState } from 'react';
 import { Button, Input, MessageBox } from '@/components/primitives';
 
 /* ────────────────────────────────────────────────────────────────
@@ -115,19 +115,28 @@ function Ordmarke() {
  * `varm` styr fonden: login står på appens vita bakgrund, inbjudan på den
  * varma toningen över HELA ytan med formuläret i ett eget vitt kort.
  *
- * FULL-BLEED (`w-[100vw]` + negativ margin): appen reserverar en symmetrisk
- * scrollbar-ränna på ≥640 px — `scrollbar-gutter: stable both-edges
- * !important` i `src/styles/base.css`. Den regeln är ett Marcus-veto-grundat
- * beslut med CI-bevis åt båda hållen (layout-hopp vid vy-växling är
- * förbjudet) och RÖRS INTE. Men rännan gav den varma fonden 11 px vita
- * fält per sida (mätt: 1578 av 1600), och auth-vyerna ligger utanför
- * AppShell där ingen vy-växling finns att skydda. Full-bleed löser det
- * lokalt: mätt 1578 → 1600, vänsterkant 11 → 0, ingen horisontell scroll.
+ * FULL BREDD: appen reserverar en symmetrisk scrollbar-ränna på ≥640 px
+ * (`scrollbar-gutter: stable both-edges !important`, `src/styles/base.css`)
+ * som syntes som två vita spalter tvärs fonden. Vyn sätter därför markören
+ * `data-full-bredd` på `<html>` vid mount — base.css bär undantaget och
+ * motiveringen. Ett tidigare `w-[100vw]`-hack är RIVET: det gav rätt mått
+ * i headless men löste inte det Marcus faktiskt såg, eftersom det kringgick
+ * rännan i stället för att ta bort den.
+ *
+ * Markören städas vid unmount så resten av appen behåller sin symmetri.
  */
 function EnSpalt({ children, varm = false }: { children: ReactNode; varm?: boolean }) {
+  useEffect(() => {
+    const rot = document.documentElement;
+    rot.dataset.fullBredd = 'true';
+    return () => {
+      delete rot.dataset.fullBredd;
+    };
+  }, []);
+
   return (
     <div
-      className={`ml-[calc(50%-50vw)] flex min-h-dvh w-[100vw] items-center justify-center p-6 sm:p-8 lg:p-12 ${
+      className={`flex min-h-dvh w-full items-center justify-center p-6 sm:p-8 lg:p-12 ${
         varm ? 'bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint)' : 'bg-bg'
       }`}
     >

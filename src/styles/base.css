@@ -90,9 +90,31 @@ html {
 }
 
 @media (min-width: 640px) {
-  html {
-    /* !important: se punkt 3 ovan — försvarar symmetrin mot React Arias
-       inline scrollbar-gutter: stable vid overlay-öppning. */
+  /* UNDANTAGET LEVER I SELEKTORN, inte i en andra !important-regel
+     (Marcus-beslut S96, 2026-08-03). `:not([data-full-bredd])` gör
+     rännstenen frånvarande för full-bredds-vyerna utan att någon regel
+     behöver besegra en annan — antalet !important i filen är oförändrat.
+
+     VARFÖR undantaget finns: rännstenen är rätt för APPEN och skyddar mot
+     vy-växlings-hopp inuti AppShell, vilket är hela poängen med
+     Marcus-vetot i S72:s review-våg 2. Men login och inbjudan är de enda
+     två vyerna som lägger en bakgrundstoning kant i kant, och de ligger
+     UTANFÖR AppShell — där finns ingen vy-växling att skydda, och
+     rännstenen syns i stället som två vita spalter tvärs fonden
+     (Marcus-fångst två gånger; mätt 11 px per sida, 1578 av 1600).
+
+     Varför inte full-bleed i komponenten: `w-[100vw]` + negativ margin gav
+     rätt mått i headless (1578 → 1600) men löste inte det Marcus faktiskt
+     såg — hacket kringgår rännstenen i stället för att ta bort den. Rivet.
+
+     Kostnaden, öppet bokförd: övergången auth → app byter rännstens-läge
+     och hoppar en gång. Det är en INLOGGNINGS-övergång, inte en
+     vy-växling, och därmed utanför det Marcus-vetot skyddar.
+     Markören sätts av vyn vid mount och städas vid unmount.
+
+     !important: se punkt 3 ovan — försvarar symmetrin mot React Arias
+     inline scrollbar-gutter: stable vid overlay-öppning. */
+  html:not([data-full-bredd]) {
     scrollbar-gutter: stable both-edges !important;
   }
 }
