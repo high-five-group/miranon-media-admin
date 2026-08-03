@@ -66,6 +66,27 @@ export function HallplatsMarke({ steg }: { steg: HallplatsSteg }) {
  * (samma klasser/struktur, L303-disciplinen: raden är EN knapp, ingen
  * interaktivt-i-interaktivt). Duplicerad hellre än exporterad ur skarpa
  * filen (S86-precedenten: egna märkta prototypfiler där det går).
+ *
+ * BYGGKRAV 4 (S96, Marcus 2026-08-03) — RADHÖJDS-FYND: `font-medium` sattes
+ * tidigare ENDAST via `tonKlass` (error/warning) — "Klara"-radens värde-span
+ * (`ton` default `'neutral'` ⇒ tom klass) fick därför font-weight 400 medan
+ * de brådskande raderna fick 500, en genuin, ORIENTAD strukturell
+ * inkonsekvens i komponentens EGEN klasslogik (inte innehållet). FIXAT:
+ * `font-medium` är nu OVILLKORLIG på värde-spannet; `tonKlass` bär ENDAST
+ * färgen. Alla värde-siffror i rad-familjen — nuvarande OCH byggkrav 2:s
+ * avgifter/slutbetalning nedan — har därmed samma font-vikt, oavsett ton.
+ *
+ * ÖPPET BOKFÖRT RESTFYND (S96 slutrapport): en separat ~1 px
+ * `getBoundingClientRect()`-skillnad kvarstår mellan sista raden i en
+ * `divide-y`-stack och raderna ovanför — men den är POSITIONS-bunden, inte
+ * innehålls- eller klass-bunden (mätt: flyttar man vilken rad som helst till
+ * sista platsen får DEN 1px mindre i stället) och finns IDENTISKT i den
+ * redan skarpa, oberörda `Betalningar.tsx`s egen `EtikettVardeRad`-lista. En
+ * app-bred, förbefintlig sub-pixel-renderingsartefakt — inte en
+ * hållplats-prototyp-bugg, och inte åtgärdad här (hade krävt antingen en
+ * `min-height`-gissning, som byggkravet uttryckligen förbjuder, eller att
+ * röra `Betalningar.tsx`, utanför detta pass mandat). Se bilage-READMEs
+ * § Byggkravs-våg punkt 4 för mätningarna.
  */
 export function HallplatsRad({
   term,
@@ -81,12 +102,7 @@ export function HallplatsRad({
   ton?: 'error' | 'warning' | 'neutral';
   children: React.ReactNode;
 }) {
-  const tonKlass =
-    ton === 'error'
-      ? 'font-medium text-error'
-      : ton === 'warning'
-        ? 'font-medium text-warning'
-        : '';
+  const tonKlass = ton === 'error' ? 'text-error' : ton === 'warning' ? 'text-warning' : '';
   return (
     <div className="flex flex-col gap-1.5 py-2">
       <button
@@ -98,11 +114,43 @@ export function HallplatsRad({
         }`}
       >
         <span className="flex items-center gap-1.5 text-small text-text-muted">{term}</span>
-        <span className={`text-right text-body tabular-nums ${tonKlass}`}>{children}</span>
+        <span className={`text-right font-medium text-body tabular-nums ${tonKlass}`}>
+          {children}
+        </span>
       </button>
     </div>
   );
 }
+
+/**
+ * Röd saknas-delta i EXAKT Betalningar-blockets grammatik (`SaknasDelta`-
+ * kopia, kastbar — samma tvärimport-skäl som `betalKlar`/`harPaminnelse` i
+ * hallplats-steg-prototyp.ts: Betalningar.tsx är en ANNAN skarp fil och rörs
+ * inte av detta pass). Byggkrav 2 (S96).
+ */
+function HallplatsSaknasDelta({ antal }: { antal: number }) {
+  if (antal <= 0) return null;
+  return <span className="ml-2 font-medium text-error tabular-nums">{`−${antal}`}</span>;
+}
+
+/**
+ * Byggkrav 2:s split-data (S96, variant A ENDAST) — "Väntar på betalning"
+ * ersätts av två räknerader i Betalningar-blockets EGNA grammatik
+ * ("Anmälningsavgifter — x av y mottagna −n" / "Slutbetalningar — x mottagna
+ * −n"). Siffrorna är Deltagare.tsx:s ansvar (härledda ur samma
+ * `avgiftKlar`/`slutKlar` som Betalningar.tsx använder, se
+ * hallplats-steg-prototyp.ts) — denna komponent lägger bara ut dem i
+ * radgrammatiken.
+ */
+export type HallplatsBetalningsSplit = {
+  avgifterMottagna: number;
+  avgifterTotalt: number;
+  avgifterSaknas: number;
+  slutMottagna: number;
+  slutSaknas: number;
+  aktivFilter: 'avgift' | 'slut' | null;
+  onFilterClick: (typ: 'avgift' | 'slut') => void;
+};
 
 export type HallplatsCounts = {
   'vantar-bekraftelse': number;
@@ -112,15 +160,27 @@ export type HallplatsCounts = {
 
 const STEG_ORDNING: (keyof HallplatsCounts)[] = ['vantar-bekraftelse', 'vantar-betalning', 'klar'];
 
-/** VARIANT A — tre rader, exakt SummeringsRad-grammatiken. */
+/**
+ * VARIANT A — tre rader, exakt SummeringsRad-grammatiken.
+ *
+ * `betalning` (byggkrav 2, S96, VARIANT A ENDAST): när satt ERSÄTTS den
+ * mittersta "Väntar på betalning"-raden av TVÅ rader (Anmälningsavgifter/
+ * Slutbetalningar) i Betalningar-blockets egen grammatik. Propen är OPTIONAL
+ * och variant C:s anrop (`ArbetsKo` i Deltagare.tsx) utelämnar den helt —
+ * den grenen får därför EXAKT samma tre rader som innan denna byggkravs-våg.
+ * Variant B/C rörs inte (mission-scope); ENDAST variant A:s eget anrop
+ * skickar `betalning`.
+ */
 export function HallplatsToppA({
   counts,
   filter,
   onFilterClick,
+  betalning,
 }: {
   counts: HallplatsCounts;
   filter: HallplatsSteg | null;
   onFilterClick: (steg: keyof HallplatsCounts) => void;
+  betalning?: HallplatsBetalningsSplit;
 }) {
   return (
     <div className="divide-y divide-border">
@@ -132,14 +192,35 @@ export function HallplatsToppA({
       >
         {counts['vantar-bekraftelse']}
       </HallplatsRad>
-      <HallplatsRad
-        term={HALLPLATS_LABEL['vantar-betalning']}
-        aktiv={filter === 'vantar-betalning'}
-        onClick={() => onFilterClick('vantar-betalning')}
-        ton={counts['vantar-betalning'] > 0 ? 'warning' : 'neutral'}
-      >
-        {counts['vantar-betalning']}
-      </HallplatsRad>
+      {betalning ? (
+        <>
+          <HallplatsRad
+            term="Anmälningsavgifter"
+            aktiv={betalning.aktivFilter === 'avgift'}
+            onClick={() => betalning.onFilterClick('avgift')}
+          >
+            {`${betalning.avgifterMottagna} av ${betalning.avgifterTotalt} mottagna`}
+            <HallplatsSaknasDelta antal={betalning.avgifterSaknas} />
+          </HallplatsRad>
+          <HallplatsRad
+            term="Slutbetalningar"
+            aktiv={betalning.aktivFilter === 'slut'}
+            onClick={() => betalning.onFilterClick('slut')}
+          >
+            {`${betalning.slutMottagna} mottagna`}
+            <HallplatsSaknasDelta antal={betalning.slutSaknas} />
+          </HallplatsRad>
+        </>
+      ) : (
+        <HallplatsRad
+          term={HALLPLATS_LABEL['vantar-betalning']}
+          aktiv={filter === 'vantar-betalning'}
+          onClick={() => onFilterClick('vantar-betalning')}
+          ton={counts['vantar-betalning'] > 0 ? 'warning' : 'neutral'}
+        >
+          {counts['vantar-betalning']}
+        </HallplatsRad>
+      )}
       <HallplatsRad term="Klara" aktiv={filter === 'klar'} onClick={() => onFilterClick('klar')}>
         {counts.klar}
       </HallplatsRad>

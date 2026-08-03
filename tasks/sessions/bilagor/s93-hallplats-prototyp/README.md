@@ -415,3 +415,107 @@ hopfälld direkt under — den fasta scrollhöjden (task-48 byggkrav 4) syns
 alltså i skärmdumpen. 0 sidfel, 0 console-fel. Ingen `PrototypeSwitcher`-rail
 i bild (bekräftar samtidigt § Rail-gating ovan — skarpa vyn är fri från
 railen även i DEV).
+
+---
+
+## Byggkravs-våg — Variant A (S96, 2026-08-03, Marcus verbatim-kvitterade byggkrav)
+
+Marcus valde Variant A (Radbytet). Fyra byggkrav landade på DENNA variant
+ENDAST — variant B/C rörs inte (förkastade, rivs i ett senare konvergens-pass)
+och Betalningar-blocket rörs inte (integrationsfrågan är grillningsmateria).
+Samtliga fyra är gated på `protoVariant === 'a'` i `Deltagare.tsx` — variant
+B/C:s anrop till samma delade komponenter (`HallplatsToppA`, `AvbokadeRad`)
+är oförändrade och renderar EXAKT som innan denna våg.
+
+### 1. Avbokade-rad i summeringsblocket
+
+Den gamla `<details>`-raden ("N har avbokat", `AvbokadeRad`-komponenten)
+längst ned i registret är ERSATT för variant A av en riktig `SummeringsRad`
+(samma grammatik/komponent som "Bor över" — inte `HallplatsRad`, eftersom
+raden bor i det SKARPA summeringsblocket, inte i prototypens egen
+toppkomponent) längst ner i "Utskick"-gruppen, under "Bor över".
+
+**Formvalet ("Avbokade — N" vs "N har avbokat"), bokfört:** `SummeringsRad`s
+grammatik är ALLTID term-vänster/värde-höger (`"Bor över" · 3`, `"Väntar på
+bekräftelse" · 4` osv) — aldrig en hel mening i värde-slotten. "Avbokade — N"
+är den formen (term="Avbokade", värde=N); "N har avbokat" hade varit den ENDA
+raden i hela blocket som bröt grammatiken med en inbäddad sats. Valt: term +
+värde, exakt som alla andra rader.
+
+Klick filtrerar registret på de avbokade (`registreringar.filter(status ===
+Avbokad)`, samma källa som den gamla `protoAvbokade`-arrayen, oberoende av
+flik-valet — avbokade är i övrigt bortfiltrerade ur `aktiva` och därmed ur
+`visade` helt, precis som förut). Variant B/C behåller den gamla
+`<details>`-raden orörd.
+
+Bevis: `variant-a-avbokade-oppnad.png` — raden aktiv, registret visar Lisa
+Fransson + Tomas Berggren (fixturens två avbokade) med "Avbokad"-märket i
+metaytan, "Rensa filtret" synlig, 0 sidfel, 0 nya `/functions/v1/*`-anrop.
+
+### 2. "Väntar på betalning" delas i Anmälningsavgifter/Slutbetalningar
+
+`HallplatsToppA` fick en ny OPTIONAL `betalning`-prop (typ
+`HallplatsBetalningsSplit`) som — när satt — ersätter mittraden med två
+rader i EXAKT Betalningar-blockets grammatik: "Anmälningsavgifter — x av y
+mottagna −n" / "Slutbetalningar — x mottagna −n". Variant C:s anrop till
+samma komponent utelämnar propen helt och får därför BOKSTAVLIGEN samma tre
+rader som innan denna våg — ingen villkorsgren i `HallplatsToppA` läser
+`protoVariant`, bara närvaron av propen avgör.
+
+Siffrorna ÅTERANVÄNDER `avgiftKlar`/`slutKlar` — två nya exporter i
+`hallplats-steg-prototyp.ts` (samma predikat som `Betalningar.tsx`s privata
+funktioner; den filen är oförändrad, `betalKlar` skrevs om i termer av de två
+nya funktionerna i stället för sin egen inline-formel). Räknat på
+`ArbetsKo`s egen `aktiva` — samma bas som `hallplatsCounts`, ingen delad
+state med Betalningar-blockets egen `useQuery`-instans. Verifierat: siffrorna
+är IDENTISKA med Betalningar-blockets egna ("5 av 12 mottagna −7" / "3
+mottagna −9" i fixturläget; "9 av 16 mottagna −7" / "3 mottagna −13" mot
+`reco44UBx6GXcxwu5`) — samma formel, oberoende beräknad.
+
+Klick filtrerar registret på respektive saknar-mängd (`!avgiftKlar(r)` /
+`!slutKlar(r)`, på `visade` — flik-valet gäller precis som övriga
+hållplats-filter). Bevis: `variant-a-avgifter-oppnad.png` — 7 kort (alla utan
+mottagen avgift, inkl. Inställt/Väntelista-fallen som Betalningar-blockets
+egen formel också räknar in).
+
+### 3. "Utskick"-rubriken borttagen (variant A)
+
+`<p>Utskick</p>` renderas nu villkorat på `protoVariant !== 'a'` — texten är
+borta för variant A, `border-t`-kanten på wrappern är OFÖRÄNDRAD (byggkravet
+gällde texten, "ser hemskt ut designmässigt", inte avdelar-linjen). Variant
+B/C behåller rubriken.
+
+### 4. Klara-radens höjd
+
+**Rotorsak funnen och fixad:** `HallplatsRad`s `tonKlass` satte `font-medium`
+ENDAST tillsammans med färgen (`ton === 'error' | 'warning'`) — "Klara" (och
+nu även de nya Anmälningsavgifter/Slutbetalningar-raderna, `ton` default
+`'neutral'`) fick därför font-weight 400 på värdet medan "Väntar på
+bekräftelse"/"Väntar på betalning" fick 500. Fixat: `font-medium` är nu
+OVILLKORLIG på värde-spannet; `tonKlass` bär bara färgen. Alla värden i
+rad-familjen har nu identisk font-vikt, oavsett brådska-ton — en strukturell
+fix (komponentens EGEN klasslogik), inte en höjd-hack.
+
+**Öppet bokfört restfynd (INTE fixat, utanför scope):** en separat, ~1 px
+sub-pixel-skillnad i `getBoundingClientRect()`-höjd kvarstår mellan sista
+raden i EN `divide-y`-stack och raderna ovanför — men den är POSITIONS-bunden,
+inte innehålls-bunden (flyttas "Klara" till första platsen i stacken flyttar
+1px-avvikelsen till den nya sista raden i stället, mätt med Playwright
+DOM-manipulation) och existerar IDENTISKT i den helt orörda, redan skarpa
+`Betalningar.tsx`s egen `EtikettVardeRad`-`<dl>` (mätt mot `reco44UBx6GXcxwu5`:
+"Anmälningsavgifter" 49 px mot "Slutbetalningar" 48 px, exakt samma mönster).
+Det är alltså en app-bred, förbefintlig sub-pixel-renderingsartefakt — inte
+en hållplats-prototyp-bugg — och att jaga bort den hade krävt antingen en
+explicit `min-height` (exakt den höjd-hack byggkravet uttryckligen förbjuder)
+eller att röra `Betalningar.tsx` (förbjudet av uppdraget). Kvarstår öppet,
+inte tystat.
+
+### Verifiering (samma metod, samma seed-event)
+
+Samma Playwright-proxy-metod som review-fix-vågorna ovan (`page.route()`
+fångar `get-event`/`get-registrations` med RIKTIG server-hämtad data mot
+`reco44UBx6GXcxwu5`). `variant-a-proto.png`/`variant-a-default.png` omtagna;
+`0` mutations-anrop mätt i samtliga fyra körningar (proto, default,
+avbokade-öppnad, avgifter-öppnad) genom att logga alla icke-GET
+`/functions/v1/*`-anrop per sida. `npm run test:visual`: 94/94 (den skarpa
+vyn, som inte läser `?variant=`, opåverkad).

@@ -61,16 +61,36 @@ export function harPaminnelse(r: Registration): boolean {
 }
 
 /**
+ * Anmälningsavgiften Mottagen (delad formel med `Betalningar.tsx`:s privata
+ * `avgiftKlar` — samma predikat, egen exporterad kopia i DENNA delade modul
+ * så `Deltagare.tsx`:s byggkrav-2-split (variant A, S96) kan återanvända den
+ * utan tvärimport mellan skarpa filer — Betalningar.tsx självt rörs inte).
+ */
+export function avgiftKlar(r: Registration): boolean {
+  return r.anmalningsavgift === PaymentStatus.MOTTAGEN;
+}
+
+/**
+ * Slutbetalningen kräver inget mer: Mottagen ELLER Ej relevant (föreläsningar
+ * saknar slutbetalning helt — Del 3 fall F). Samma predikat som
+ * `Betalningar.tsx`:s privata `slutKlar` (se `avgiftKlar` ovan för skälet till
+ * den egna exporterade kopian här).
+ */
+export function slutKlar(r: Registration): boolean {
+  return (
+    r.slutbetalning === PaymentStatus.MOTTAGEN || r.slutbetalning === PaymentStatus.EJ_RELEVANT
+  );
+}
+
+/**
  * Betalningen KLAR (delad formel med `Betalningar.tsx`:s `avgiftKlar`/`slutKlar`
  * — förenklad kopia, kastbar precedent ur S86:s `DeltagareBekraftaPrototyp.tsx`):
  * anmälningsavgiften Mottagen OCH slutbetalningen Mottagen ELLER Ej relevant
- * (föreläsningar saknar slutbetalning helt — Del 3 fall F).
+ * (föreläsningar saknar slutbetalning helt — Del 3 fall F). Skriven i termer av
+ * `avgiftKlar`/`slutKlar` ovan — EN formel, inte två (byggkrav-2-passet, S96).
  */
 export function betalKlar(r: Registration): boolean {
-  const avgift = r.anmalningsavgift === PaymentStatus.MOTTAGEN;
-  const slut =
-    r.slutbetalning === PaymentStatus.MOTTAGEN || r.slutbetalning === PaymentStatus.EJ_RELEVANT;
-  return avgift && slut;
+  return avgiftKlar(r) && slutKlar(r);
 }
 
 /**

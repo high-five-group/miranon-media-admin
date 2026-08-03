@@ -45,10 +45,12 @@ import {
 import { DetaljGrupp } from './DetaljGrupp';
 import { DAGMANAD } from './datumSpann';
 import {
+  avgiftKlar,
   HALLPLATS_PROTO_FIXTURES,
   type HallplatsVariant,
   hallplatsSteg,
   isHallplatsVariant,
+  slutKlar,
 } from './hallplats-steg-prototyp';
 
 /**
@@ -1187,6 +1189,17 @@ function ArbetsKo({
   // bara i denna DEV-gren). Ömsesidigt uteslutande med `filter` (se
   // vaxlaFilter/vaxlaHallplatsFilter nedan): endast ETT filter i taget.
   const [hallplatsFilter, setHallplatsFilter] = useState<keyof HallplatsCounts | null>(null);
+  // [PROTOTYPE] [S93] byggkrav 2 (variant A ENDAST) — vilken av de två
+  // betalnings-split-raderna som är aktiv; ömsesidigt uteslutande med
+  // `filter`/`hallplatsFilter` (se vaxlaBetalningsFilter nedan).
+  const [protoBetalningsFilter, setProtoBetalningsFilter] = useState<'avgift' | 'slut' | null>(
+    null,
+  );
+  // [PROTOTYPE] [S93] byggkrav 1 (variant A ENDAST) — Avbokade-radens filter.
+  // Boolean (inte en nyckel i hallplatsFilter/HallplatsCounts): avbokade är
+  // INTE en av de tre stegen och läser HELA `registreringar`, inte `visade`
+  // (se `protoAvbokade` nedan — samma källa som förr, ny klick-yta).
+  const [protoAvbokadeAktiv, setProtoAvbokadeAktiv] = useState(false);
 
   const aktiva = useMemo(() => registreringar.filter(arAktiv), [registreringar]);
 
@@ -1214,6 +1227,19 @@ function ArbetsKo({
     protoVariant != null
       ? (r: Registration) => <HallplatsMarke steg={hallplatsSteg(r)} />
       : undefined;
+
+  // [PROTOTYPE] [S93] byggkrav 2 (variant A ENDAST, S96) — "Väntar på
+  // betalning" delas i två räknerader i Betalningar-blockets EGNA grammatik.
+  // Formlerna ÅTERANVÄNDER `avgiftKlar`/`slutKlar` ur hallplats-steg-prototyp.ts
+  // (samma predikat som Betalningar.tsx:s privata funktioner — den filen rörs
+  // inte, se dess docblock för tvärimport-skälet). Räknat på `aktiva` (samma
+  // bas som hallplatsCounts ovan), oberoende av Betalningar-blockets EGEN
+  // useQuery-instans (ingen state delas mellan de två skarpa filerna).
+  const avgifterMottagna = aktiva.filter(avgiftKlar).length;
+  const avgifterTotalt = aktiva.length;
+  const avgifterSaknas = avgifterTotalt - avgifterMottagna;
+  const slutMottagna = aktiva.filter(slutKlar).length;
+  const slutSaknas = aktiva.filter((r) => !slutKlar(r)).length;
 
   // Summeringarna räknar ALLTID hela eventet (K38) — flikvalet påverkar bara
   // listorna under, aldrig "hur många".
@@ -1267,17 +1293,30 @@ function ArbetsKo({
   const [bekraftadeVal, setBekraftadeVal] = useState<boolean | null>(null);
   const bekraftadeOppen = bekraftadeVal ?? obekraftadeTotalt === 0;
 
-  // [PROTOTYPE] [S93] `traffar` bär NU båda filtren (verkliga `filter` +
-  // hållplats-prototypens `hallplatsFilter`) — ömsesidigt uteslutande (se
-  // vaxlaFilter/vaxlaHallplatsFilter), så den befintliga filtrerings-grenen
-  // nedan (Rensa filtret, borOver-specialfallet, DeltagarListan) återanvänds
-  // OFÖRÄNDRAD för hållplats-filtret också.
-  const traffar =
-    filter != null
-      ? visade.filter(FILTER_TEST[filter])
-      : hallplatsFilter != null
-        ? visade.filter((r) => hallplatsSteg(r) === hallplatsFilter)
-        : null;
+  // [PROTOTYPE] [S93] `traffar` bär NU FYRA filter (verkliga `filter` +
+  // hållplats-prototypens `hallplatsFilter` + byggkrav 1/2:s
+  // `protoAvbokadeAktiv`/`protoBetalningsFilter`, variant A ENDAST) —
+  // ömsesidigt uteslutande (se vaxlaFilter/vaxlaHallplatsFilter/
+  // vaxlaBetalningsFilter/vaxlaAvbokadeFilter), så den befintliga
+  // filtrerings-grenen nedan (Rensa filtret, borOver-specialfallet,
+  // DeltagarListan) återanvänds OFÖRÄNDRAD för alla fyra.
+  //
+  // Avbokade-filtret (byggkrav 1) läser `protoAvbokade` (HELA `registreringar`)
+  // i stället för `visade` — avbokade är i övrigt bortfiltrerade ur `aktiva`
+  // och därmed ur `visade` helt, så flik-valet (Alla/Manuella/Medföljande)
+  // gäller inte för denna rad (samma disconnect som den gamla `AvbokadeRad`
+  // redan hade mot `visade`).
+  const traffar = protoAvbokadeAktiv
+    ? protoAvbokade
+    : protoBetalningsFilter === 'avgift'
+      ? visade.filter((r) => !avgiftKlar(r))
+      : protoBetalningsFilter === 'slut'
+        ? visade.filter((r) => !slutKlar(r))
+        : filter != null
+          ? visade.filter(FILTER_TEST[filter])
+          : hallplatsFilter != null
+            ? visade.filter((r) => hallplatsSteg(r) === hallplatsFilter)
+            : null;
 
   // Kryss-lägets STABILA sorterings-snapshot (K52): fångas när läget ÖPPNAS så
   // att en nykryssad rad inte hoppar upp under fingret — omsorteringen sker
@@ -1298,6 +1337,10 @@ function ArbetsKo({
     // ömsesidiga uteslutning som gäller `filter` sinsemellan) — no-op utanför
     // prototypen (hallplatsFilter är alltid null där).
     setHallplatsFilter(null);
+    // [PROTOTYPE] [S93] byggkrav 1/2 (variant A) — samma ömsesidiga
+    // uteslutning; no-op utanför variant A (båda alltid null/false där).
+    setProtoBetalningsFilter(null);
+    setProtoAvbokadeAktiv(false);
     setFilter((nu) => {
       const next = nu === f ? null : f;
       if (f === 'borOver' && next === 'borOver') {
@@ -1313,7 +1356,32 @@ function ArbetsKo({
     markering.stang();
     setUtfall(null);
     setFilter(null);
+    setProtoBetalningsFilter(null);
+    setProtoAvbokadeAktiv(false);
     setHallplatsFilter((nu) => (nu === steg ? null : steg));
+  };
+
+  /** [PROTOTYPE] [S93] byggkrav 2 (variant A ENDAST) — Anmälningsavgifter/
+      Slutbetalningar-radernas klick. Samma ömsesidiga uteslutning som
+      vaxlaFilter/vaxlaHallplatsFilter ovan. */
+  const vaxlaBetalningsFilter = (typ: 'avgift' | 'slut') => {
+    markering.stang();
+    setUtfall(null);
+    setFilter(null);
+    setHallplatsFilter(null);
+    setProtoAvbokadeAktiv(false);
+    setProtoBetalningsFilter((nu) => (nu === typ ? null : typ));
+  };
+
+  /** [PROTOTYPE] [S93] byggkrav 1 (variant A ENDAST) — Avbokade-radens klick.
+      Samma ömsesidiga uteslutning som ovan. */
+  const vaxlaAvbokadeFilter = () => {
+    markering.stang();
+    setUtfall(null);
+    setFilter(null);
+    setHallplatsFilter(null);
+    setProtoBetalningsFilter(null);
+    setProtoAvbokadeAktiv((nu) => !nu);
   };
 
   // [PROTOTYPE] [S93] review-fix (uppdraget § FYND 2) — `?data=proto`:
@@ -1527,6 +1595,24 @@ function ArbetsKo({
               counts={hallplatsCounts}
               filter={hallplatsFilter}
               onFilterClick={vaxlaHallplatsFilter}
+              // [PROTOTYPE] [S93] byggkrav 2 — ENDAST variant A skickar denna
+              // prop. Variant C:s samma anrop (protoVariant === 'c' faller
+              // också igenom till denna gren) utelämnar den helt och får
+              // därför EXAKT samma tre rader som innan byggkravs-vågen —
+              // variant B/C rörs inte.
+              betalning={
+                protoVariant === 'a'
+                  ? {
+                      avgifterMottagna,
+                      avgifterTotalt,
+                      avgifterSaknas,
+                      slutMottagna,
+                      slutSaknas,
+                      aktivFilter: protoBetalningsFilter,
+                      onFilterClick: vaxlaBetalningsFilter,
+                    }
+                  : undefined
+              }
             />
           )}
           {/* [PROTOTYPE] [S93] review-fix-våg 2 (defekt 5) — Eventinfo+Bor
@@ -1534,9 +1620,16 @@ function ArbetsKo({
               luft-skillnad läste inte som "annan datadomän" (granskningsfynd:
               "fjärde raden bland steg-räknarna"). En kant (`border-t`) + en
               diskret grupprubrik gör skillnaden SYNLIG: dessa två rader är
-              per EVENT (utskick/logistik), inte per PERSON som stegen ovan. */}
+              per EVENT (utskick/logistik), inte per PERSON som stegen ovan.
+              BYGGKRAV 3 (S96, variant A ENDAST, Marcus: "ser hemskt ut
+              designmässigt") — "Utskick"-TEXTEN rivs för variant A; kanten
+              (`border-t` på wrappern) står kvar OFÖRÄNDRAD (byggkravet gäller
+              texten, inte avdelar-linjen). Variant B/C behåller rubriken
+              exakt som innan — variant B/C rörs inte. */}
           <div className="flex flex-col border-border border-t pt-1">
-            <p className="px-2 pt-1 pb-0.5 font-medium text-caption text-text-muted">Utskick</p>
+            {protoVariant !== 'a' && (
+              <p className="px-2 pt-1 pb-0.5 font-medium text-caption text-text-muted">Utskick</p>
+            )}
             <div className="divide-y divide-border">
               <SummeringsRad
                 term="Eventinfo skickad"
@@ -1564,6 +1657,21 @@ function ArbetsKo({
               >
                 <span className="tabular-nums">{borOverTotalt}</span>
               </SummeringsRad>
+              {/* BYGGKRAV 1 (S96, variant A ENDAST) — Avbokade-rad LÄNGST NER
+                  under "Bor över", samma SummeringsRad-grammatik. Ersätter
+                  den gamla `<AvbokadeRad>`-detaljen längst ned i registret
+                  (se den villkorade renderingen efter registret nedan,
+                  `protoVariant !== null && protoVariant !== 'a'`) — variant
+                  B/C behåller den gamla formen OFÖRÄNDRAD. */}
+              {protoVariant === 'a' && (
+                <SummeringsRad
+                  term="Avbokade"
+                  aktiv={protoAvbokadeAktiv}
+                  onClick={vaxlaAvbokadeFilter}
+                >
+                  <span className="tabular-nums">{protoAvbokade.length}</span>
+                </SummeringsRad>
+              )}
             </div>
           </div>
         </div>
@@ -1758,8 +1866,12 @@ function ArbetsKo({
             )}
           </>
         )}
-        {/* [PROTOTYPE] [S93] GEMENSAMT — avbokade synliga (fråga 6). */}
-        {protoVariant != null && <AvbokadeRad avbokade={protoAvbokade} />}
+        {/* [PROTOTYPE] [S93] avbokade synliga (fråga 6) — variant B/C ENDAST.
+            Variant A ersatte denna `<details>`-rad med en riktig
+            SummeringsRad i summeringsblocket (byggkrav 1, S96, se ovan);
+            variant B/C behåller den gamla formen orörd (variant B/C rörs
+            inte, mission-scope). */}
+        {protoVariant != null && protoVariant !== 'a' && <AvbokadeRad avbokade={protoAvbokade} />}
       </div>
     </>
   );
