@@ -28,6 +28,7 @@ import { DAGMANAD } from './datumSpann';
 // [PROTOTYPE] [S93] hållplats-pass — se Deltagare.tsx:s motsvarande gren +
 // DeltagareHallplatsPrototyp.tsx (frågan, huvudprototypfilen).
 import {
+  betalningsSplit,
   HALLPLATS_PROTO_FIXTURES,
   harPaminnelse,
   isHallplatsVariant,
@@ -574,10 +575,16 @@ function BetalningsInnehall({
 }) {
   const [oppen, setOppen] = useState(false);
   const aktiva = registreringar.filter(arAktiv);
-  const avgifterMottagna = aktiva.filter(avgiftKlar).length;
-  const avgifterSaknas = aktiva.length - avgifterMottagna;
-  const slutMottagna = aktiva.filter((r) => r.slutbetalning === PaymentStatus.MOTTAGEN).length;
-  const slutSaknasAntal = aktiva.filter(slutSaknas).length;
+  // [PROTOTYPE] [S93] S96 review-fix — aggregatet kommer nu ur den DELADE
+  // `betalningsSplit` (hallplats-steg-prototyp.ts), samma funktion
+  // `Deltagare.tsx`:s hållplats-topp anropar. Se funktionens docblock för
+  // rotorsaken till varför `slutMottagna` tidigare kunde divergera härifrån.
+  const {
+    avgifterMottagna,
+    avgifterSaknas,
+    slutMottagna,
+    slutSaknas: slutSaknasAntal,
+  } = betalningsSplit(aktiva);
   // [PROTOTYPE] [S93] A′ inbakat (research-doken Del 6, alternativ A′):
   // "Betalningspåminnelse skickad" flyttar hit från Anmälda deltagare —
   // räknaren hamnar hos påminnelse-HANDLINGEN och -HISTORIKEN (Del 1.5 fynd 3).

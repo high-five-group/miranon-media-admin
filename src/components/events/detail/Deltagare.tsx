@@ -46,6 +46,7 @@ import { DetaljGrupp } from './DetaljGrupp';
 import { DAGMANAD } from './datumSpann';
 import {
   avgiftKlar,
+  betalningsSplit,
   HALLPLATS_PROTO_FIXTURES,
   type HallplatsVariant,
   hallplatsSteg,
@@ -1230,16 +1231,16 @@ function ArbetsKo({
 
   // [PROTOTYPE] [S93] byggkrav 2 (variant A ENDAST, S96) — "Väntar på
   // betalning" delas i två räknerader i Betalningar-blockets EGNA grammatik.
-  // Formlerna ÅTERANVÄNDER `avgiftKlar`/`slutKlar` ur hallplats-steg-prototyp.ts
-  // (samma predikat som Betalningar.tsx:s privata funktioner — den filen rörs
-  // inte, se dess docblock för tvärimport-skälet). Räknat på `aktiva` (samma
-  // bas som hallplatsCounts ovan), oberoende av Betalningar-blockets EGEN
-  // useQuery-instans (ingen state delas mellan de två skarpa filerna).
-  const avgifterMottagna = aktiva.filter(avgiftKlar).length;
-  const avgifterTotalt = aktiva.length;
-  const avgifterSaknas = avgifterTotalt - avgifterMottagna;
-  const slutMottagna = aktiva.filter(slutKlar).length;
-  const slutSaknas = aktiva.filter((r) => !slutKlar(r)).length;
+  // S96 review-fix: talen kommer nu ur den DELADE `betalningsSplit`
+  // (hallplats-steg-prototyp.ts) — SAMMA funktion `Betalningar.tsx`s eget
+  // block anropar för sina motsvarande räknerader, i stället för en egen
+  // parallell uträkning här. Räknat på `aktiva` (samma bas som
+  // hallplatsCounts ovan), oberoende av Betalningar-blockets EGEN
+  // useQuery-instans (ingen state delas mellan de två skarpa filerna) — men
+  // samma FORMEL, mekaniskt garanterad av det delade anropet i stället för
+  // konvention.
+  const { avgifterMottagna, avgifterTotalt, avgifterSaknas, slutMottagna, slutSaknas } =
+    betalningsSplit(aktiva);
 
   // Summeringarna räknar ALLTID hela eventet (K38) — flikvalet påverkar bara
   // listorna under, aldrig "hur många".

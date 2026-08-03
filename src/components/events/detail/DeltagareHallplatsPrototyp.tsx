@@ -137,10 +137,12 @@ function HallplatsSaknasDelta({ antal }: { antal: number }) {
  * Byggkrav 2:s split-data (S96, variant A ENDAST) — "Väntar på betalning"
  * ersätts av två räknerader i Betalningar-blockets EGNA grammatik
  * ("Anmälningsavgifter — x av y mottagna −n" / "Slutbetalningar — x mottagna
- * −n"). Siffrorna är Deltagare.tsx:s ansvar (härledda ur samma
- * `avgiftKlar`/`slutKlar` som Betalningar.tsx använder, se
- * hallplats-steg-prototyp.ts) — denna komponent lägger bara ut dem i
- * radgrammatiken.
+ * −n"). Siffrorna är Deltagare.tsx:s ansvar, härledda ur `betalningsSplit()`
+ * (hallplats-steg-prototyp.ts) — SAMMA funktion `Betalningar.tsx`s eget block
+ * anropar för sina motsvarande rader (S96 review-fix, se funktionens
+ * docblock för rotorsaksfyndet: en tidigare egen inline-uträkning i
+ * `Betalningar.tsx` divergerade tyst från denna sidas tal). Denna komponent
+ * lägger bara ut dem i radgrammatiken.
  */
 export type HallplatsBetalningsSplit = {
   avgifterMottagna: number;
