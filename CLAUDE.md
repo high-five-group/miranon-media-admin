@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-02
+updated: 2026-08-03
 review_by: 2026-11-15
 status: stable
 ---
@@ -190,6 +190,20 @@ required checks have passed, the pull request will be added to the merge queue."
 
 Disambiguera med ett andra `gh pr merge --auto --merge`: svaret
 `already queued to merge` betyder köad.
+
+**Automatiserad klassning ska fråga `isInMergeQueue` i SAMMA GraphQL-query,
+inte bara `autoMergeRequest`.** Tabellrad 2 ovan — en PR som var `CLEAN` vid
+armeringen köas direkt utan att `autoMergeRequest` någonsin sätts — är den
+VANLIGA vägen genom kön, inte ett undantag. Ett skript som bara läser
+`autoMergeRequest == null` kan därför inte skilja "korrekt köad" (tyst) från
+"aldrig armerad"/"utsparkad med konsumerad armering" (larma) — precis den
+förväxlingen som fick `scripts/heartbeat-svep.sh`s armerings-kandidat att
+falsklarma sju gånger på en enda natt (PR #614, #617×3, #621, #623, #624,
+2026-08-02). `isInMergeQueue` skiljer dem åt utan att röra den ursprungliga
+ambiguiteten i raden ovan: `isInMergeQueue: true` ⇒ tyst, `false` ⇒ larma
+(kan fortfarande vara ANTINGEN aldrig-armerad ELLER utsparkad — den
+skillnaden kräver fortfarande det andra `gh pr merge --auto --merge`).
+Fixad i `TASK-128`.
 
 **Det fjärde läget är dyrast, inte bara ett fjärde alternativ.** En
 `failed_checks`-dequeue konsumerar armeringen tyst — ingen signal skiljer
