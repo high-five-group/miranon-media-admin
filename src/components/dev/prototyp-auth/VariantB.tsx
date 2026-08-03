@@ -57,15 +57,17 @@
  *   `(--mm-*)`-syntax) — inga hårdkodade färger.
  */
 import {
-  CalendarDays,
   CircleCheck,
   Clock,
+  ImagePlus,
   KeyRound,
+  LifeBuoy,
   Loader2,
   Lock,
   type LucideIcon,
   ShieldCheck,
-  Users,
+  SlidersHorizontal,
+  UsersRound,
 } from 'lucide-react';
 import { type FormEvent, type ReactNode, useId, useState } from 'react';
 import { Button, Input, MessageBox } from '@/components/primitives';
@@ -76,16 +78,41 @@ import { Button, Input, MessageBox } from '@/components/primitives';
    dem, per kontraktet ovan).
    ──────────────────────────────────────────────────────────────── */
 
-/** Textbaserat ordmärke — inget bildasset finns/behövs för en kastbar prototyp. */
+/**
+ * Platshållare för Roger och Lottas porträttbild — rund, i den storlek och
+ * position ett riktigt foto ska ha. Fotot finns inte i repot (`public/`
+ * innehåller endast `miranon-logo.svg`, PWA-ikonerna, favicon och
+ * `screenshots/` — verifierat, TASK-127.2); var det ska komma ifrån är
+ * obesvarat när denna kod skrivs.
+ *
+ * BYTE TILL RIKTIGT FOTO: ersätt hela `<div>`-elementet nedan med en enda
+ * rad, t.ex. `<img src="/roger-och-lotta.jpg" alt="" className="size-20
+ * shrink-0 rounded-full object-cover" />` — samma `alt=""` som idag, eftersom
+ * bilden fortsatt är kompletterande (ordmärkets text bär namnet).
+ *
+ * Dekorativ tills fotot finns: `aria-hidden` håller platshållaren osynlig
+ * för assisterande teknik i stället för att annonseras som ett meningsfullt
+ * foto — samma mönster som gårdagens bokstavs-badge redan bar.
+ */
+function ProfilPlatshallare() {
+  return (
+    <div
+      aria-hidden="true"
+      className="relative flex size-20 shrink-0 items-center justify-center rounded-full border-(--mm-border-strong) border-2 border-dashed bg-(--mm-accent-tint)"
+    >
+      <UsersRound className="text-(color:--mm-accent) size-9" />
+      <span className="text-(color:--mm-text-inverse) absolute -right-1 -bottom-1 flex size-6 items-center justify-center rounded-full bg-(--mm-accent) ring-(--mm-primary-tint) ring-2">
+        <ImagePlus className="size-3.5" />
+      </span>
+    </div>
+  );
+}
+
+/** Ordmärke: platshållarfoto (väntar på Roger + Lotta) + textlogotyp. */
 function Ordmarke() {
   return (
     <div className="flex items-center gap-3">
-      <span
-        aria-hidden="true"
-        className="text-(color:--mm-text-inverse) flex size-10 shrink-0 items-center justify-center rounded-full bg-(--mm-accent) font-semibold text-xl"
-      >
-        M
-      </span>
+      <ProfilPlatshallare />
       <div className="leading-tight">
         <p className="font-semibold text-lg text-text">Miranon Media</p>
         <p className="text-caption text-text-muted uppercase tracking-wide">Admin</p>
@@ -169,16 +196,18 @@ export function LoginVariantB() {
       <KontextSpalt fotnot="Något krångligt? Hör av dig till Marcus, så löser vi det tillsammans.">
         <div className="flex flex-col gap-2">
           <h2 className="font-semibold text-2xl text-text">
-            Ditt verktyg för event, anmälningar och gäster
+            Ditt verktyg för event, anmälningar och deltagare
           </h2>
           <p className="text-body text-text-secondary">
-            Allt som rör Miranon Medias event samlat på ett ställe, så att du slipper leta.
+            Skräddarsytt efter hur du vill jobba - inte tvärtom.
           </p>
         </div>
         <ul className="flex flex-col gap-4">
-          <KontextRad icon={CalendarDays}>Håll koll på kommande event och datum</KontextRad>
-          <KontextRad icon={Users}>Se direkt vilka som anmält sig</KontextRad>
-          <KontextRad icon={ShieldCheck}>Din inloggning är skyddad, alltid</KontextRad>
+          <KontextRad icon={SlidersHorizontal}>
+            Utveckla verktyget hur du vill i din egen takt
+          </KontextRad>
+          <KontextRad icon={LifeBuoy}>24/7 support</KontextRad>
+          <KontextRad icon={ShieldCheck}>Alltid säker inloggning</KontextRad>
         </ul>
       </KontextSpalt>
 
@@ -224,7 +253,7 @@ export function LoginVariantB() {
                 className="text-caption text-text-secondary motion-safe:animate-mm-avsloj"
               >
                 Klicka "skicka" nästa gång, så mejlar vi dig en länk för att sätta ett nytt
-                lösenord. (Byggs i TASK-127.7 — prototypen visar bara texten.)
+                lösenord. (Byggs i TASK-127.7 - prototypen visar bara texten.)
               </p>
             )}
           </div>
@@ -312,13 +341,13 @@ export function AcceptVariantB() {
             {INBJUDEN_AV} har bjudit in dig till Miranon Media Admin
           </h2>
           <p className="text-body text-text-secondary">
-            Du får rollen <strong className="text-text">{TILLDELAD_ROLL.toLowerCase()}</strong> —
+            Du får rollen <strong className="text-text">{TILLDELAD_ROLL.toLowerCase()}</strong> -
             sätt ett lösenord här bredvid, så är du igång direkt.
           </p>
         </div>
         <ol className="flex flex-col gap-4">
           <KontextRad icon={KeyRound}>Sätt ett lösenord här bredvid</KontextRad>
-          <KontextRad icon={CircleCheck}>Logga in direkt efteråt — klart</KontextRad>
+          <KontextRad icon={CircleCheck}>Logga in och upptäck ditt nya verktyg</KontextRad>
           <KontextRad icon={ShieldCheck}>
             Senare kan du frivilligt lägga till ett ännu enklare sätt att logga in
           </KontextRad>
@@ -329,7 +358,7 @@ export function AcceptVariantB() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
           <div className="flex flex-col gap-1">
             <h1 className="font-semibold text-3xl text-text">Välkommen, {MOTTAGARENS_FORNAMN}</h1>
-            <p className="text-body text-text-secondary">Ditt konto väntar — sätt ett lösenord.</p>
+            <p className="text-body text-text-secondary">Ditt konto väntar - sätt ett lösenord.</p>
           </div>
 
           <div className="flex flex-col gap-1">
