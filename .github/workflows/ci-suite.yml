@@ -154,25 +154,29 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Manifest-fältgrinden (TASK-126.1, AC #3) — HEMVIST-VALET, skrivet:
-      # PRD-textens ordval pekade mot "preview-skarven" (tests/preview/ +
-      # scripts/check-staging-bundle.sh, `npm run test:preview:staging`).
-      # Verifierat mot samtliga `.github/workflows/*.yml`: den kedjan är
-      # ALDRIG anropad av CI (noll träffar på "test:preview:staging",
-      # "staging-preview" eller "verify:staging-bundle") — den är ett lokalt
-      # verifieringsverktyg (docs/reference/staging-verifiering-runbook.md),
-      # inte en CI-grind. Manifestfälten är mode-oberoende byggda artefakter
-      # och kräver inget nätverk, så de prövas här — direkt efter Build, i
-      # jobbet som redan producerar `dist/` OVILLKORLIGT (även för
-      # dependabot). Se scripts/check-manifest-fields.mjs för full motivering.
-      - name: Verify manifest fields (TASK-126.1 gate)
+      # Manifest-fältgrinden (TASK-126.1 AC #3 + TASK-126.4 AC #1) —
+      # HEMVIST-VALET, skrivet: PRD-textens ordval pekade mot "preview-skarven"
+      # (tests/preview/ + scripts/check-staging-bundle.sh,
+      # `npm run test:preview:staging`). Verifierat mot samtliga
+      # `.github/workflows/*.yml`: den kedjan är ALDRIG anropad av CI (noll
+      # träffar på "test:preview:staging", "staging-preview" eller
+      # "verify:staging-bundle") — den är ett lokalt verifieringsverktyg
+      # (docs/reference/staging-verifiering-runbook.md), inte en CI-grind.
+      # Manifestfälten (INKLUSIVE TASK-126.4:s screenshots-fält) är
+      # mode-oberoende byggda artefakter och kräver inget nätverk, så de
+      # prövas här — direkt efter Build, i jobbet som redan producerar
+      # `dist/` OVILLKORLIGT (även för dependabot). Beslutet att detta är den
+      # STÅENDE hemvisten för mekaniska manifest-/bundle-grindar (inte bara ett
+      # engångsval för 126.1) är bokfört i TASK-130 § Implementation Notes.
+      # Se scripts/check-manifest-fields.mjs för full motivering.
+      - name: Verify manifest fields (TASK-126.1 + TASK-126.4 gate)
         run: npm run verify:manifest
 
       # Tvåsidigt bevis samlokaliserat med grinden ovan (samma skäl som
       # dist/-beroendet: guarden och dess test hör ihop, och test-fast är
       # jobbet som redan bygger). Testar PURA funktioner (ingen disk, inget
       # bygge) — kostnaden är miliskunder, inte jobbets tidsbudget värd.
-      - name: Test manifest-fältvaktens fyrning (TASK-126.1, tvåsidigt bevis)
+      - name: Test manifest-fältvaktens fyrning (TASK-126.1 + TASK-126.4, tvåsidigt bevis)
         run: node scripts/test-check-manifest-fields.mjs
 
   # Acceptance (hermetisk) — task-59.3, ADR-080. MUTEXFRITT, och mutexfriheten

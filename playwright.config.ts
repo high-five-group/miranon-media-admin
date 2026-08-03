@@ -43,6 +43,15 @@ const isA11yRun = process.env.PLAYWRIGHT_A11Y_DEV_SERVER === '1';
 const VISUAL_DEV_PORT = 5299;
 const isVisualRun = process.env.PLAYWRIGHT_VISUAL_DEV_SERVER === '1';
 
+// Manifest-skärmbilds-runden (TASK-126.4, npm run generate:manifest-screenshots)
+// återanvänder VISUAL-fixturvärlden rakt av — SAMMA port, SAMMA hermetiska env
+// (mockat nätverk, seedad session, frusen klocka, pinnade typsnitt). Egen
+// runtime-flagga ändå: `manifest-screenshots`-projektet (se villkorat block i
+// `projects` nedan) ska INTE instansieras under en vanlig `npm run test:visual`
+// eller CI-körning — det skriver PNG-filer till public/screenshots/ som
+// sidoeffekt, vilket ingen annan Playwright-körning ska göra.
+const isManifestScreenshotsRun = process.env.PLAYWRIGHT_MANIFEST_SCREENSHOTS === '1';
+
 // Acceptance-runnern (task-59.3, ADR-080): samma fixtur-env som visual — appen
 // binder mot den fiktiva visual-fixture-URL:en, aldrig staging — men på EGEN
 // port. Skälet är inte kosmetiskt: klasserna ska kunna köras SAMTIDIGT lokalt
@@ -251,17 +260,18 @@ export default defineConfig({
             reuseExistingServer: false,
             timeout: 60_000,
           }
-        : isVisualRun || isAcceptanceRun
+        : isVisualRun || isAcceptanceRun || isManifestScreenshotsRun
           ? {
-              command: `npm run dev -- --port ${isVisualRun ? VISUAL_DEV_PORT : ACCEPTANCE_DEV_PORT} --strictPort`,
-              url: `http://localhost:${isVisualRun ? VISUAL_DEV_PORT : ACCEPTANCE_DEV_PORT}`,
+              command: `npm run dev -- --port ${isVisualRun || isManifestScreenshotsRun ? VISUAL_DEV_PORT : ACCEPTANCE_DEV_PORT} --strictPort`,
+              url: `http://localhost:${isVisualRun || isManifestScreenshotsRun ? VISUAL_DEV_PORT : ACCEPTANCE_DEV_PORT}`,
               reuseExistingServer: false,
               timeout: 60_000,
               // Fixtur-env:en vinner över .env-filer (Vites process-env-
               // företräde) — appen binder mot den fiktiva URL:en. DELAD mellan
-              // visual och acceptance: båda klasserna hänger på SAMMA
-              // fixturvärld (ADR-080), så en egen env-uppsättning här hade varit
-              // första steget mot två världar som kan drifta isär.
+              // visual, acceptance OCH manifest-screenshots: samtliga tre
+              // hänger på SAMMA fixturvärld (ADR-080 + TASK-126.4), så en egen
+              // env-uppsättning här hade varit första steget mot flera världar
+              // som kan drifta isär.
               env: {
                 VITE_SUPABASE_URL: VISUAL_SUPABASE_URL,
                 VITE_SUPABASE_ANON_KEY: VISUAL_SUPABASE_ANON_KEY,
@@ -539,6 +549,28 @@ export default defineConfig({
             use: {
               ...devices['Desktop Chrome'],
               baseURL: `http://localhost:${PREVIEW_PORT}`,
+            },
+          },
+        ]
+      : []),
+    // Villkorat i SAMMA mönster som staging-preview ovan (task-10): existerar
+    // ENDAST under PLAYWRIGHT_MANIFEST_SCREENSHOTS=1, så plain
+    // `npx playwright test` och CI:s vanliga projekt-urval aldrig drar igång
+    // genereringen — kanoniska anropet är
+    // `npm run generate:manifest-screenshots` (TASK-126.4). Inget `viewport`
+    // här: varje spec-fil under tests/manifest-screenshots/ sätter sin egen
+    // via `test.use({ viewport, deviceScaleFactor })` (narrow vs wide), så
+    // formatet bor i den fil som faktiskt genererar bilden — inte gissat på
+    // två ställen.
+    ...(isManifestScreenshotsRun
+      ? [
+          {
+            name: 'manifest-screenshots',
+            testDir: './tests/manifest-screenshots',
+            use: {
+              colorScheme: 'light' as const,
+              baseURL:
+                process.env.PLAYWRIGHT_TEST_BASE_URL || `http://localhost:${VISUAL_DEV_PORT}`,
             },
           },
         ]
