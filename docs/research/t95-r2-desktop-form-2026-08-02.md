@@ -74,7 +74,7 @@ själv på sin egen dator.
 Chrome 73+ (2019) och Edge stödjer PWA-installation på macOS, Windows,
 Linux och ChromeOS via install-ikonen i adressfältet eller menyn — den
 installerade appen körs som egen process med eget Dock-ikon, oberoende av
-Safari. [Chrome for Developers dokumenterar](https://web.dev/patterns/web-apps/richer-install-ui)
+Safari. [Chrome for Developers dokumenterar](https://developer.chrome.com/blog/richer-install-ui-desktop)
 att en "richer install"-dialog (app-butiks-liknande, med skärmdumpar och
 beskrivning) kräver `description` + minst en `screenshots`-post med
 `form_factor: "wide"` för desktop — exakt de manifestfält bilagan
@@ -363,7 +363,7 @@ beslutet.
 - [webkit.org/blog/16993](https://webkit.org/blog/16993/news-from-wwdc25-web-technology-coming-this-fall-in-safari-26-beta/) — WebKit-bloggen, Safari 26-nyheter (webbapp-som-default)
 - [webkit.org/blog/13878](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/) — WebKit-bloggen, Web Push för hemskärms-webbappar
 - [webkit.org/blog/14112](https://webkit.org/blog/14112/badging-for-home-screen-web-apps/) — WebKit-bloggen, Badging API
-- [web.dev/patterns/web-apps/richer-install-ui](https://web.dev/patterns/web-apps/richer-install-ui) — Chrome for Developers/web.dev, richer install UI-krav
+- [web.dev/patterns/web-apps/richer-install-ui](https://developer.chrome.com/blog/richer-install-ui-desktop) — Chrome for Developers/web.dev, richer install UI-krav
 - [v2.tauri.app/distribute/sign/macos/](https://v2.tauri.app/distribute/sign/macos/) — Tauri, officiell macOS-signeringsguide
 - [v2.tauri.app/plugin/updater/](https://v2.tauri.app/plugin/updater/) — Tauri, officiell updater-dokumentation
 - [v2.tauri.app/start/prerequisites/](https://v2.tauri.app/start/prerequisites/) — Tauri, officiella förkrav (macOS-minimiversion)

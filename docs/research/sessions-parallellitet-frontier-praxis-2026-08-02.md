@@ -254,7 +254,7 @@ mekanisk kö som det extra lagret vår situation faktiskt matchar
 - **Uber** byggde **SubmitQueue**, en spekulativ merge-kö, sedan mätningar
   visade att iOS-monorepots trunk bara var grön 52 % av tiden under en
   uppmätt vecka. Med SubmitQueue i drift steg success-raten till 99 %.
-  Källa: [eng.uber.com](https://eng.uber.com/ios-monorepo/) +
+  Källa: [eng.uber.com](https://web.archive.org/web/20230605070547/https://www.uber.com/blog/ios-monorepo/) +
   [`github.com/uber/submitqueue`](https://github.com/uber/submitqueue)
   ("SubmitQueue speculatively rebases and validates multiple changes in
   parallel against predicted future states of HEAD. When validations pass,
@@ -435,7 +435,7 @@ valet.
 - [code.claude.com/docs/en/best-practices](https://code.claude.com/docs/en/best-practices) — Claude Code-dokumentation, "Best practices for agentic coding" (redirect-mål från `anthropic.com/engineering/claude-code-best-practices`, hämtad 2026-08-02)
 - [code.claude.com/docs/en/agents](https://code.claude.com/docs/en/agents) — Claude Code-dokumentation, "Run agents in parallel" (hämtad 2026-08-02)
 - [abseil.io/resources/swe-book/html/ch16.html](https://abseil.io/resources/swe-book/html/ch16.html) — *Software Engineering at Google*, kapitel 16, Googles egen open-source-sajt
-- [eng.uber.com/ios-monorepo/](https://eng.uber.com/ios-monorepo/) — Uber Engineering, iOS-monorepo + SubmitQueue
+- [eng.uber.com/ios-monorepo/](https://web.archive.org/web/20230605070547/https://www.uber.com/blog/ios-monorepo/) — Uber Engineering, iOS-monorepo + SubmitQueue
 - [`github.com/uber/submitqueue`](https://github.com/uber/submitqueue) — Ubers öppen källkods-repo för SubmitQueue
 - [`github.blog/news-insights/product-news/github-copilot-app-the-agent-native-desktop-experience`](https://github.blog/news-insights/product-news/github-copilot-app-the-agent-native-desktop-experience/) — GitHub Blog, Copilot app-lanseringen (juni 2026)
 - [blog.jetbrains.com/idea/2026/03/intellij-idea-2026-1](https://blog.jetbrains.com/idea/2026/03/intellij-idea-2026-1/) — JetBrains officiella blogg, IntelliJ IDEA 2026.1
