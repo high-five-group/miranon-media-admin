@@ -108,3 +108,47 @@ branschpraxis annars säger.
 - [ADR-091](ADR-091-hosting-deploy-vercel-pro.md) — domänschemat
   (`admin.miranon.dev`) invite-länken pekar mot.
 - `ORDLISTA.md` § Användarinbjudan.
+
+## Updates
+
+### 2026-08-03 (S96) — Beslut 2 preciseras: rollen låses i `app_metadata`, aldrig `user_metadata`
+
+**Vad som var otillräckligt.** Beslut 2 sade *"Roll och e-postadress låses av
+inbjudan. Mottagaren väljer inget själv"* utan att namnge det Supabase-fält
+låsningen sker i. Formuleringen var korrekt som avsikt men **operativt
+underspecificerad på en säkerhetskritisk punkt** — och den naiva
+implementationen leder rakt in i en account-takeover-väg, alltså exakt det
+denna ADR finns för att stänga.
+
+**Fyndet.** `supabase.auth.admin.inviteUserByEmail(email, { data })` skriver
+sin `data`-param till **`user_metadata`**, som är **redigerbart av mottagaren
+själv** via `auth.updateUser()`. En roll lagd där kan alltså höjas av den
+inbjudne — AC#2 på `TASK-127.5` (*"roll och e-post låsta i metadata;
+mottagaren kan inte ändra dem"*) hade varit falskt trots grön testsvit.
+
+**Belägget är plattformens eget, inte vår tolkning.** Supabases
+databas-linter klassar `user_metadata` i säkerhetskontext som **`SECURITY`
+`ERROR`** (`rls_references_user_metadata`), med motiveringen *"user_metadata
+is editable by end users and should never be used in a security context"*.
+Dokumentationen säger samma sak i klartext: *"user_metadata for user-editable
+data and app_metadata for admin-controlled data"*, och *"user_metadata should
+never be used for security-sensitive logic … because it can be modified by
+the user without validation"*.
+
+**Preciseringen.** Rollen sätts i **`app_metadata`** (endast skrivbart med
+service-role-nyckel). `user_metadata` får bära icke-säkerhetsbärande
+uppgifter, aldrig behörighet. Detta gäller lika för den framtida
+`tenant_memberships`-modellen i beslut 4: bytet av behörighetskälla ändrar
+inte var behörighet får bo under tiden.
+
+**Konsekvens för nedströms-skivorna.** `TASK-127.6` (accept-sidan),
+`TASK-127.8` (passkey-erbjudandet) och varje senare yta som läser roll ska
+läsa den ur `app_metadata` — och ingen RLS-policy eller behörighetskontroll
+får någonsin referera `user_metadata`.
+
+**Hur det fångades.** Av `TASK-127.5`:s bygg-agent i dess premiss-pass
+(ADR-086): den läste ADR:n, såg att fältet inte var namngivet, verifierade
+mot Supabase-dokumentationen och valde `app_metadata` — i stället för att
+implementera den bokstavliga men osäkra läsningen. Orkestreraren
+verifierade fyndet mot förstapartskällan före denna amendering. Ingen ny ADR
+mintas: detta preciserar ett befintligt beslut, det river det inte.

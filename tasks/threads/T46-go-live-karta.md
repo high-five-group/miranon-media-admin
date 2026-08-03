@@ -18,7 +18,7 @@ byggt, vad gatear prod, vem äger grinden, hur nära är användaren.
 | **Mail (6h)** — consent-gatead | ✅ L0–L3 (S39–S41, arch-audit ren, avvikelse-fix) + T50 UI-härdning (S45, arch-audit ren) | ⚠️ **DEPLOYAD MEN SÖVD (S44)** — send-email i allowlist (11) + prod-deployad, prod-`Idempotensnyckel`-kolumn satt, MEN `ENVIRONMENT` ej satt → fail-closed (`!== 'production'` → 422), noll skickat | **Grind F** (`ENVIRONMENT=production`, sista flippen) + **T51** Marcus-självtest (Reply-To live, första skarpa utskicket) → spårat som **T55** | Marcus/Code i prod-panelen (Chat rör ALDRIG secret) |
 | **Frontend/appen (T95)** — publik PWA + inbjudan | Spec klar S95: PRD `TASK-126`/`TASK-127` + 15 skivor; PWA-grund ADR-047 | ❌ **INGEN FRONTEND-DEPLOY FINNS** (bekräftat S95) | **Grind 0-paketet** (nedan) — blockerar T95:s QA-kort och hela inbjudningsvägen | Marcus i paneler + Code på repo-sidan (se paketet) |
 
-## Grind 0-paketet (T95, S95-beslutat — operativ lista, förfinas av skiva TASK-127.4)
+## Grind 0-paketet (T95, S95-beslutat — operativ lista, förfinad av TASK-127.4)
 
 Ordningen är den naturliga exekveringsordningen; inget momentet kräver att
 skivbyggena väntar (de kör hermetiskt), men QA-korten `TASK-126.5`/`TASK-127.10`
@@ -33,12 +33,69 @@ och rundturen `TASK-127.9` grindas av paketet.
    Code-at-prod under Marcus-auktorisation (annars deployad men datalös app).
 4. **Sändande subdomän `send.miranon.dev`** verifieras i Resend + SPF/DKIM —
    Marcus i Resend + GoDaddy (T44 M3-vägen; `RESEND_FROM` byts i samma moment).
+
+   Exakt checklista (TASK-127.4, verifierat mot Resends dashboard-dokumentation,
+   context7 `/websites/resend`, 2026-08-03 — **DNS-poströrelserna nedan är
+   MALLFORM**; Resend genererar det unika DKIM-värdet först när domänen läggs
+   till, det går inte att förbereda i förväg):
+
+   - a. Resend-dashboard → Domains → Add Domain → `send.miranon.dev`.
+   - b. Resend visar tre DNS-poster att lägga i GoDaddy-zonen för `miranon.dev`:
+     - MX: namn `send`, värde `feedback-smtp.<region>.amazonses.com`, prioritet 10
+       (`<region>` beror på Resend-kontots valda region, t.ex. `eu-west-1`).
+     - TXT (SPF): namn `send`, värde `v=spf1 include:amazonses.com ~all`
+     - TXT (DKIM): namn `resend._domainkey.send`, värde = Resend-genererat
+       unikt publikt nyckelvärde (syns först i dashboarden efter steg a).
+   - c. Verifiera i Resend-dashboarden — kan ta upp till 72 h DNS-propagering,
+     oftast klart inom minuter.
+   - d. `RESEND_FROM` (bulk-mail-vägen, `send-email`-EF:en, T55/Grind F) byts
+     från root (`miranon.dev`) till en `send.miranon.dev`-adress i SAMMA
+     moment — **skild adress/nyckel från auth-mailets `konto@send.miranon.dev`**
+     (PRD:n kräver att auth-mail och bulk-mail aldrig blandas ihop; samma
+     princip bör hållas för avsändaradresser).
+
 5. **DMARC `p=reject` + rua** på `miranon.dev` — Marcus i GoDaddy (S95 beslut 4;
    inget legitimt root-utskick existerar — bytet är riskfritt i dag).
-6. **Supabase custom SMTP** mot Resend — Marcus i Supabase-dashboarden
-   (default-SMTP:n kan bevisligen inte leverera till Roger/Lotta).
+
+   Exakt post (verifierat mot Resends DMARC-guide, context7 `/websites/resend`):
+   TXT-post, namn `_dmarc`, värde `v=DMARC1; p=reject; rua=mailto:<Marcus
+   rapport-adress>` — satt DIREKT (ingen `p=none`-uppvärmningsfas, till
+   skillnad från Resends normalrekommendation för domäner med befintlig
+   utskicks-historik; `miranon.dev` har ingen sådan att skydda).
+
+6. **Supabase custom SMTP** mot Resend — **delvis versionerat i repot sedan
+   TASK-127.4** (`supabase/config.toml` § `[auth.email.smtp]` +
+   `supabase/templates/{invite,recovery}.html`), delvis kvar som Marcus/Code-moment:
+
+   | Del | Var | Ägare |
+   |---|---|---|
+   | host/port/user/avsändaradress/avsändarnamn | `supabase/config.toml` (committat) | Versionerat — TASK-127.4 |
+   | Mallarnas subjekt + HTML-innehåll (svensk brandad copy) | `supabase/templates/*.html` (committat) | Versionerat — TASK-127.4 |
+   | SMTP-lösenordet (Resend API-nyckel, dedikerad — ej `RESEND_API_KEY`) | Supabase secret, aldrig i repo/chatt | Marcus/Code-at-prod |
+   | Faktisk `supabase config push --project-ref <ref>` mot STAGING resp. PROD | Terminal-kommando, kräver `SUPABASE_ACCESS_TOKEN` | Code, Marcus-auktoriserad, EFTER punkt 4 (domänverifiering) |
+
+   **Säkerhetsnot (ny, TASK-127.4):** `supabase config push` saknar en
+   motsvarande `config pull` — inget sätt att synka nuvarande fjärr-state
+   till `config.toml` före FÖRSTA push på detta projekt (som idag har ett
+   helt dashboard-styrt auth-lager; `config.toml` bar noll `[auth]`-rader
+   före detta kort). "Config as Code"-modellen är deklarativ till sin natur,
+   vilket talar för att ospecificerade fält kan nollställas till
+   CLI-scaffoldens default vid push — INTE bekräftat mot en skarp push (ingen
+   sådan är körd). **Exekvera i denna ordning:** (1) STAGING först, aldrig
+   PROD först, (2) ta en manuell skärmdump/anteckning av nuvarande
+   Authentication-inställningar i dashboarden FÖRE första push (rollback-
+   referens), (3) kör push, (4) verifiera direkt efteråt att ospecificerade
+   fält (`enable_signup`, lösenordslängd, rate limits, ev. externa
+   OAuth-providers) är oförändrade — annars återställ manuellt i dashboarden.
+
 7. **Email OTP Expiration → 24 h** + redirect-URL:er för accept/reset —
-   Marcus i Supabase-dashboarden (plattformstaket, S95 beslut 7).
+   **versionerat i repot sedan TASK-127.4** (`otp_expiry = 86400` +
+   `additional_redirect_urls` i `supabase/config.toml`), samma
+   push-mekanism och säkerhetsnot som punkt 6. Två delar kvarstår utanför
+   repot: (a) själva push-exekveringen (Marcus/Code, se punkt 6:s tabell),
+   (b) återställnings-sidans redirect-URL — `/valkommen` (accept, ADR-092)
+   är satt, men reset-lösenord-sidans path väljs först av `TASK-127.7` (ännu
+   obyggd) och läggs till i arrayen då.
 
 ### 6g-grenens leverans-bevis (S43)
 
