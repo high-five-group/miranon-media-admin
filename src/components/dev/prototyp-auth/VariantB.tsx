@@ -173,15 +173,25 @@ export function LoginVariantB() {
   };
 
   return (
-    <EnSpalt>
-      <div className="flex w-full max-w-sm flex-col gap-8">
+    // SPEGLAR INBJUDAN EXAKT (Marcus, konvergens-omgång 10): samma varma
+    // fond kant i kant, samma `max-w-xl`, samma ordning ordmärke → hälsning
+    // → vitt kort, samma `gap-8`-rytm och samma kort-stil. De två skärmarna
+    // är samma familj och ska kännas som ett par, inte som två sidor byggda
+    // vid olika tillfällen.
+    <EnSpalt varm>
+      <div className="flex w-full max-w-xl flex-col gap-8">
         <Ordmarke />
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
-          <div className="flex flex-col gap-1">
-            <h1 className="font-semibold text-3xl text-text">Välkommen tillbaka</h1>
-            <p className="text-body text-text-secondary">Logga in och kolla läget.</p>
-          </div>
 
+        <div className="flex flex-col gap-3">
+          <h1 className="font-semibold text-3xl text-text">Välkommen tillbaka</h1>
+          <p className="text-lg text-text-secondary">Logga in och kolla läget.</p>
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8"
+          noValidate
+        >
           <Input
             label="E-postadress"
             type="email"
