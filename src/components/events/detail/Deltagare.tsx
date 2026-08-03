@@ -1779,9 +1779,13 @@ export function Deltagare({ event }: { event: Event }) {
   const [dataParam] = useQueryState('data');
   const protoVariant: HallplatsVariant | null =
     import.meta.env.DEV && isHallplatsVariant(variantParam) ? variantParam : null;
-  // `?data=proto` bypassar den riktiga hämtningen helt (in-memory fixtur,
-  // ADR-061 rörs aldrig — default-läget använder alltid `data` oförändrat).
-  const protoDataMode = protoVariant != null && dataParam === 'proto';
+  // [PROTOTYPE] [S93] fix-våg (uppdraget § D, Marcus punkt 3 — knappen gjorde
+  // inget): PrototypeSwitcher togglar `?data=` mellan null och 'verklig'
+  // (S90-kontraktet) — i variant-läge är FIXTURERNA default (bypassar den
+  // riktiga hämtningen, in-memory fixtur; ADR-061 rörs aldrig), `?data=verklig`
+  // ger riktig hämtning. Den tidigare `=== 'proto'`-kontrollen läste ett
+  // värde växlaren aldrig satte.
+  const protoDataMode = protoVariant != null && dataParam !== 'verklig';
 
   if (protoDataMode) {
     return (

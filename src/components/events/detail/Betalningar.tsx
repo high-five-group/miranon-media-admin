@@ -637,7 +637,12 @@ export function Betalningar({ event }: { event: Event }) {
   const [variantParam] = useQueryState('variant');
   const [dataParam] = useQueryState('data');
   const protoAktiv = import.meta.env.DEV && isHallplatsVariant(variantParam);
-  const protoDataMode = protoAktiv && dataParam === 'proto';
+  // [PROTOTYPE] [S93] fix-våg (uppdraget § D, Marcus punkt 3 — knappen gjorde
+  // inget): PrototypeSwitcher togglar `?data=` mellan null och 'verklig'
+  // (S90-kontraktet) — i variant-läge är FIXTURERNA default, `?data=verklig`
+  // ger riktig data. Den inverterade `=== 'proto'`-kontrollen läste ett
+  // värde växlaren aldrig satte.
+  const protoDataMode = protoAktiv && dataParam !== 'verklig';
 
   if (protoDataMode) {
     return (

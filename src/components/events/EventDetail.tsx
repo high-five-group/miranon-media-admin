@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
-import { useCallback, useEffect, useRef } from 'react';
 // [PROTOTYPE] [S93] hållplats-pass — kastbar wiring (throwaway-kontraktet):
+import { useQueryState } from 'nuqs';
+import { useCallback, useEffect, useRef } from 'react';
 import { PrototypeSwitcher } from '@/components/dev/PrototypeSwitcher';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
@@ -16,6 +17,7 @@ import { Belaggning } from './detail/Belaggning';
 import { Betalningar } from './detail/Betalningar';
 import { Deltagare } from './detail/Deltagare';
 import { Gruppdynamik } from './detail/Gruppdynamik';
+import { isHallplatsVariant } from './detail/hallplats-steg-prototyp';
 import { Narvaro } from './detail/Narvaro';
 import { OmEventet } from './detail/OmEventet';
 import { useForberedEventDetalj } from './EventCard';
@@ -69,6 +71,12 @@ export function EventDetail({ eventId }: { eventId: string }) {
   const navigate = useNavigate();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const harFokuserat = useRef(false);
+
+  // [PROTOTYPE] [S93] hållplats-pass fix-våg (uppdraget § C) — railen ska
+  // ENDAST monteras när URL:en faktiskt är prototyp-läget (?variant=a|b|c),
+  // inte för varje DEV-render. Samma oberoende `useQueryState`-läsning som
+  // Belaggning.tsx/Deltagare.tsx/Betalningar.tsx (nuqs synkar).
+  const [variantParam] = useQueryState('variant');
 
   const {
     data: event,
@@ -321,8 +329,12 @@ export function EventDetail({ eventId }: { eventId: string }) {
 
       {/* [PROTOTYPE] [S93] hållplats-pass — DEV-grindad divergens-växlare
           (ADR-044-mekaniken). Se Deltagare.tsx/Betalningar.tsx för de
-          faktiska ?variant=a|b|c/?data=proto-grenarna. */}
-      {import.meta.env.DEV && <PrototypeSwitcher variants={HALLPLATS_PROTO_VARIANTS} />}
+          faktiska ?variant=a|b|c/?data=proto-grenarna. Railen monteras ENDAST
+          i prototyp-läget (fix-våg § C): URL:en (?variant=a|b|c) är ingången,
+          inte DEV allena — annars läcker den in på den SKARPA vyns pixlar. */}
+      {import.meta.env.DEV && isHallplatsVariant(variantParam) && (
+        <PrototypeSwitcher variants={HALLPLATS_PROTO_VARIANTS} />
+      )}
     </>,
   );
 }

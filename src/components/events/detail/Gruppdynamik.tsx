@@ -263,8 +263,13 @@ export function Gruppdynamik({ event }: { event: Event }) {
   // ersätts av fixturerna nedan.
   const [variantParam] = useQueryState('variant');
   const [dataParam] = useQueryState('data');
+  // [PROTOTYPE] [S93] fix-våg (uppdraget § D, Marcus punkt 3 — knappen gjorde
+  // inget): PrototypeSwitcher togglar `?data=` mellan null och 'verklig'
+  // (S90-kontraktet) — i variant-läge är FIXTURERNA default, `?data=verklig`
+  // ger riktig data. Den inverterade `=== 'proto'`-kontrollen läste ett
+  // värde växlaren aldrig satte.
   const protoDataMode =
-    import.meta.env.DEV && isHallplatsVariant(variantParam) && dataParam === 'proto';
+    import.meta.env.DEV && isHallplatsVariant(variantParam) && dataParam !== 'verklig';
 
   if (!protoDataMode && isPending) {
     return (

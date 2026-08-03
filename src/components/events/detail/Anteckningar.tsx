@@ -224,8 +224,13 @@ export function Anteckningar({ event }: { event: Event }) {
   // synkar). Utan ?variant renderas EXAKT dagens träd.
   const [variantParam] = useQueryState('variant');
   const [dataParam] = useQueryState('data');
+  // [PROTOTYPE] [S93] fix-våg (uppdraget § D, Marcus punkt 3 — knappen gjorde
+  // inget): PrototypeSwitcher togglar `?data=` mellan null och 'verklig'
+  // (S90-kontraktet) — i variant-läge är FIXTURERNA default, `?data=verklig`
+  // ger riktig data. Den inverterade `=== 'proto'`-kontrollen läste ett
+  // värde växlaren aldrig satte.
   const protoDataMode =
-    import.meta.env.DEV && isHallplatsVariant(variantParam) && dataParam === 'proto';
+    import.meta.env.DEV && isHallplatsVariant(variantParam) && dataParam !== 'verklig';
 
   return (
     <DetaljGrupp id="grupp-anteckningar" rubrik="Anteckningar">
