@@ -119,9 +119,21 @@ html {
    OFÖRÄNDRAD i båda lägena — samma `stable both-edges` på auth-vyn som i
    appen — så ingenting kan hoppa vid övergången.
 
+   BÅDA reglerna behövs. `body` bär en egen ogenomskinlig `background:
+   var(--mm-bg)` längre ner i filen, och body-boxen är exakt den 1578 px
+   breda yta som rännstenen lämnar — så body målade toningen vit igen och
+   lämnade den synlig ENDAST i rännstenen. Att sätta fonden på `<html>`
+   räcker alltså inte; body måste släppa igenom. (Mätt fel en gång: en
+   kontroll av `getComputedStyle(html).backgroundImage` sa "toning" och var
+   sann, men mätte fel sak — det som avgör är den målade pixeln.)
+
    Markören sätts av vyn vid mount och städas vid unmount. */
 html[data-auth-fond="true"] {
   background: linear-gradient(to bottom right, var(--mm-primary-tint), var(--mm-accent-tint));
+}
+
+html[data-auth-fond="true"] body {
+  background: transparent;
 }
 
 body {
