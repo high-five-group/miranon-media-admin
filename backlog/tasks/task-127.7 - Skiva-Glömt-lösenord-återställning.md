@@ -4,6 +4,7 @@ title: 'Skiva: Glömt lösenord + återställning'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:33'
+updated_date: '2026-08-03 11:38'
 labels:
   - ready-for-agent
 dependencies:
@@ -34,7 +35,4 @@ Täcker användarberättelser: 5, 8.
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Prototyp-pass (tvåfas, T66-formen) Marcus-godkänt FÖRE login- och accept-skivornas bygge
-- [ ] #6 Rundturs-e2e (inbjudan → accept → inloggning) grön mot staging före kortets Done
-- [ ] #7 Ingen skarp inbjudan till Roger/Lotta före login-omskrivningen är landad och DMARC-posten satt
 <!-- DOD:END -->

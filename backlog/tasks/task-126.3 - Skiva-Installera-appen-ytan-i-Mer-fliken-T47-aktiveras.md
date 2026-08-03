@@ -4,6 +4,7 @@ title: 'Skiva: Installera appen-ytan i Mer-fliken (T47 aktiveras)'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:32'
+updated_date: '2026-08-03 11:38'
 labels:
   - ready-for-agent
 dependencies:
@@ -35,6 +36,5 @@ Täcker användarberättelser: 1, 2, 3, 4, 8.
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Marcus-verifikat på riktig enhet per huvudväg (iPad-hemskärm, Mac-Safari Dock, Chromium-prompt) efter Grind 0
-- [ ] #6 Install-ytans instruktioner klarar Gunilla-principen: begriplig utan tekniska förkunskaper
+- [ ] #5 Install-ytans instruktioner klarar Gunilla-principen: begriplig utan tekniska förkunskaper
 <!-- DOD:END -->

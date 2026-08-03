@@ -4,6 +4,7 @@ title: 'QA: Installationsvandringen på riktiga enheter (Spår A)'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:32'
+updated_date: '2026-08-03 11:38'
 labels:
   - ready-for-human
 dependencies:
@@ -40,5 +41,4 @@ Täcker användarberättelse: 9 + manuell helhet.
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Marcus-verifikat på riktig enhet per huvudväg (iPad-hemskärm, Mac-Safari Dock, Chromium-prompt) efter Grind 0
-- [ ] #6 Install-ytans instruktioner klarar Gunilla-principen: begriplig utan tekniska förkunskaper
 <!-- DOD:END -->

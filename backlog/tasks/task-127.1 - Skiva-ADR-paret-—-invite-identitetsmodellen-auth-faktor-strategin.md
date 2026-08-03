@@ -1,10 +1,10 @@
 ---
 id: TASK-127.1
 title: 'Skiva: ADR-paret — invite-/identitetsmodellen + auth-faktor-strategin'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-02 14:32'
-updated_date: '2026-08-02 16:32'
+updated_date: '2026-08-03 11:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -55,7 +55,4 @@ ADR-092 (invite-/identitetsmodellen) + ADR-093 (auth-faktor-strategin) mintade, 
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Prototyp-pass (tvåfas, T66-formen) Marcus-godkänt FÖRE login- och accept-skivornas bygge
-- [ ] #6 Rundturs-e2e (inbjudan → accept → inloggning) grön mot staging före kortets Done
-- [ ] #7 Ingen skarp inbjudan till Roger/Lotta före login-omskrivningen är landad och DMARC-posten satt
 <!-- DOD:END -->
