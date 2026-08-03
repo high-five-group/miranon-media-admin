@@ -8,10 +8,15 @@
  * NUVARANDE FORM (konvergens-omgång 8) — divergensens tvåspalts-hållning
  * är RIVEN, i steg och på Marcus beslut. Kvar är EN spalt för båda
  * skärmarna:
- * - LOGIN: bara formuläret, centrerat på appens vita bakgrund.
- * - INBJUDAN: varm toning över hela ytan, ordmärke + hälsning + roll,
- *   formuläret i ett eget vitt kort (`rounded-2xl`, appens kort-standard),
- *   fotnot om länkens giltighet sist.
+ * BÅDA skärmarna har samma form (omgång 10): varm toning över hela ytan,
+ * hälsning, formuläret i ett eget vitt kort (`rounded-2xl`, appens
+ * kort-standard). Inbjudan bär dessutom roll-raden och fotnoten om
+ * länkens giltighet.
+ *
+ * LOGOTYPEN ÄR BORTTAGEN på båda (omgång 14, Marcus: "det är inte viktigt
+ * just nu"). Tre former prövades och förkastades: favicon + textrader,
+ * fri logotyp mot fonden, logotyp i pill. Filen
+ * `public/miranon-media-ordmarke.svg` ligger kvar oanvänd.
  *
  * Vad som revs på vägen och varför: fotot (omgång 5, "testa hur det blir
  * och rensa bort saker") · punktlistan och bekräftelse-lösenordsfältet
@@ -77,57 +82,6 @@ import { Button, Input, MessageBox } from '@/components/primitives';
    Accept i DENNA FIL ENDAST (ingen export — skarven känner inte till
    dem, per kontraktet ovan).
    ──────────────────────────────────────────────────────────────── */
-
-/**
- * Ordmärket är Marcus riktiga logotyp (konvergens-omgång 9) — EN bild, ingen
- * satt text bredvid. Den tidigare formen (favicon-ikon + "Miranon Media" +
- * "ADMIN" i två textrader) är riven: logotypen bär redan ordmärket, så
- * texten var samma information en gång till.
- *
- * `alt=""` eftersom logotypen är dekorativ HÄR — sidans identitet bärs av
- * `<h1>` och av innehållet. Vore den enda avsändar-signalen skulle den
- * behövt en riktig alt-text.
- *
- * Höjden styr, bredden följer bildförhållandet (626×118,88 ≈ 5,3:1).
- * POSITIONSNEUTRALT — föräldern bestämmer var det sitter.
- */
-function Ordmarke() {
-  return (
-    // PILL I TONINGENS EGEN FAMILJ (Marcus, konvergens-omgång 13). Vit pill
-    // var fel: den bröt mot fonden i stället för att sitta i den, och den
-    // tävlade med formulär-kortet som redan äger det vita.
-    //
-    // Färgvalet är S92:s tolvstegsskala, inte en gissad nyans. Toningen går
-    // `--p-gold-100` (#fbf3e0) → `--p-copper-100` och ligger därmed mellan
-    // steg 2 och 3 i den nya guldskalan. Pillen tar STEG 3 (#ffecce) — en
-    // nyans djupare, samma familj — och steg 6 som kant.
-    //
-    // Det är inte bara "en nyans ner" visuellt utan Radix ROLLINDELNING:
-    // steg 3 ÄR komponentytan och steg 6 ÄR dess subtila kant
-    // (docs/design/README.md § Hur skalorna är gjorda). Pillen är en
-    // komponentyta — den ska bära exakt de stegen.
-    //
-    // Ingen skugga: en skugga lyfter märket från fonden, vilket motverkar
-    // hela poängen med att lägga det i toningens familj.
-    //
-    // `rounded-full` — inte kortets `rounded-2xl`: pillen är ett litet
-    // fristående märke, inte ett innehållskort, och full radie skiljer de
-    // två rollerna åt i stället för att låta dem tävla.
-    //
-    // `self-start` krymper pillen till innehållet. Utan den sträcker
-    // flex-kolumnens `align-items: stretch` den till spaltens fulla bredd
-    // (mätt 576 px mot naturliga ~211 för bilden).
-    <span className="inline-flex self-start rounded-full border border-(--p-gold-6) bg-(--p-gold-3) px-5 py-3">
-      <img
-        src="/miranon-media-ordmarke.svg"
-        alt=""
-        className="h-7 w-auto"
-        width={626}
-        height={119}
-      />
-    </span>
-  );
-}
 
 /**
  * EN-spalts skal — BÅDA skärmarnas enda layout sedan konvergens-omgång 8.
@@ -201,14 +155,12 @@ export function LoginVariantB() {
 
   return (
     // SPEGLAR INBJUDAN EXAKT (Marcus, konvergens-omgång 10): samma varma
-    // fond kant i kant, samma `max-w-xl`, samma ordning ordmärke → hälsning
-    // → vitt kort, samma `gap-8`-rytm och samma kort-stil. De två skärmarna
-    // är samma familj och ska kännas som ett par, inte som två sidor byggda
+    // fond kant i kant, samma `max-w-xl`, samma ordning hälsning → vitt
+    // kort, samma `gap-8`-rytm och samma kort-stil. De två skärmarna är
+    // samma familj och ska kännas som ett par, inte som två sidor byggda
     // vid olika tillfällen.
     <EnSpalt varm>
       <div className="flex w-full max-w-xl flex-col gap-8">
-        <Ordmarke />
-
         <div className="flex flex-col gap-3">
           <h1 className="font-semibold text-3xl text-text">Välkommen tillbaka</h1>
           <p className="text-lg text-text-secondary">Logga in och kolla läget.</p>
@@ -334,8 +286,6 @@ export function AcceptVariantB() {
   return (
     <EnSpalt varm>
       <div className="flex w-full max-w-xl flex-col gap-8">
-        <Ordmarke />
-
         {/* H1 → BRÖDTEXT, inte H1 → H2 (Marcus: "kaka på kaka"). Meningen är
             information, inte en rubrik — den behöver ingen rubrikvikt för att
             läsas först. Som ledande brödtext får hälsningen andas, och ögat
