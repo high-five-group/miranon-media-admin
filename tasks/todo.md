@@ -15,8 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 96 ⏸️ PAUSAD (2026-08-03, `lifecycle: paused` — parkerad, ej
-avslutad; återupptas via `session-resume` med BEHÅLLET nummer)** —
+**Session 96 🔄 ÅTERUPPTAGEN (2026-08-03, `lifecycle: active` — pausad och
+återupptagen samma dag via `session-resume`, BEHÅLLET nummer)** —
 **AFK-BATCHEN + MORGONENS GENOMGÅNG** (egen worktree per ADR-090, parallell med
 aktiva S93 som äger huvudkatalogen): `TASK-119` **Done** (heartbeat-svepet
 mekaniserat, config-driven, 22 tvåsidiga testfall — i skarp drift samma natt och
@@ -40,12 +40,25 @@ staging-jobbet (rättad i `T114`). Staging-regressionen överlämnad till S93 so
 hypotes → **de fixade den** (`ca350397`, post-merge grön 10:48Z); larm-ärendena
 `#616`/`#619`/`#636` står dock kvar öppna. 22 PR:er landade, samtliga
 merge_group-verifierade. Worktree-städning: 3 agent-träd bort, grenar 93→87.
-**Numrering efter pausen: S96 behålls/ADR-094/L444 (+1 nummerlöst
-fragment)/T115/task-133/f47 (hypotes).** **NÄSTA (Marcus-sekvens): `TASK-132`
-FÖRST — den låser upp fyra kort · sedan `TASK-131`:s klassbygge (löser ut `#628`)
-· Grind 0 (Vercel + DNS) parallellt · `TASK-127.2` sist, full effekt först efter
-132. Fyra dependabot-PR:er `#632`–`#635` öppna och oarmerade.** Full narrativ:
-sessionsdok S96 Del 1–5 + PAUSLÄGE-blocket. *(Föregående fokus-text nedan.)*
+**RESUMEN (Del 6): `TASK-132` LÖST — deadlocken bruten.** Spår-grindarna
+borttagna från 15 barnkort (PRD-korten bar dem redan — ingreppet blev en
+borttagning, ingen flytt); fyra genuina skiv-grindar behållna (Gunilla på
+`126.3` · enhetsverifikatet på `126.5` · skarp-inbjudan-spärren på `127.10`).
+`127.1` + `126.1` **Done** → `127.4`, `127.5`, `126.4` plockbara. **Kortets
+räkning rättad: TRE kort låses upp, inte fyra** (`126.3` hänger på `TASK-131`).
+**Rotorsaken var inte stämplingen** — den är designat beteende och bar tio
+tidigare PRD-familjer (`task-1/4/8/9/17/18/19/36/54/59`, alla med identiska
+extra-DoD på barnen). Skillnaden är grindarnas GRAMMATIK: tidigare grindar är
+predikat över skivans eget arbete, T95:s refererar systerskivors leverabler
+(`#6` ÄR `127.9` = cykeln) och händelser utanför repot (Grind 0, DMARC).
+**Tråd `T115` registrerad** med åtgärdsriktningen (regel om vad en spår-grind
+får referera — INTE "sluta stämpla"). **Numrering: S96 behålls/ADR-094/L444
+(+1 nummerlöst fragment)/T116/task-133/f47 (hypotes).** **NÄSTA:
+`TASK-131`:s klassbygge (löser ut `#628`) · `TASK-127.4`/`127.5`/`126.4`
+plockbara · Grind 0 (Vercel + DNS) parallellt · `TASK-127.2` prototyp-passet ·
+`TASK-129`/`130` väntar beslut · `#616`/`#619`/`#636` fortfarande öppna (S93:s
+yta) · fyra dependabot-PR:er `#632`–`#635` oarmerade.** Full narrativ:
+sessionsdok S96 Del 1–6. *(Föregående fokus-text nedan.)*
 
 **Session 95 ✅ AVSLUTAD (2026-08-02, `lifecycle: closed` på Marcus
 coverage-kvittens "Jag kvitterar!" — post 3 inget-att-säkra i samma
