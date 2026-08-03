@@ -15,8 +15,30 @@
 
 ## Aktuellt fokus
 
-**Session 96 🔄 ÅTERUPPTAGEN (2026-08-03, `lifecycle: active` — pausad och
-återupptagen samma dag via `session-resume`, BEHÅLLET nummer)** —
+**Session 96 ⏸️ PAUSAD IGEN (2026-08-03 kväll, `lifecycle: paused` — andra
+pausen samma dag; återupptas via `session-resume` med BEHÅLLET nummer)** —
+**RESUMEN LANDADE T95-VÅGEN OCH INLEDDE PROTOTYP-KONVERGENSEN.** Fjorton PR:er:
+`TASK-132` (deadlocken bruten, spår-grindarna av 15 barnkort) · `TASK-128`
+(heartbeat-larmets falskpositiv, `isInMergeQueue`) · `TASK-131` (egen
+testklass för datalöst webbläsarbeteende + **`ADR-094`**, `#628` stängd utan
+kodförlust) · `TASK-127.4` (auth-mallarna + Grind 0-checklistan) ·
+`TASK-127.5` (invite-EF:en) · `TASK-126.4` (skärmbilderna) · `TASK-130`-beslutet
+(Pure+Build som stående hemvist) · **`ADR-092`-amendering: rollen låses i
+`app_metadata`, ALDRIG `user_metadata`** — fångat av en agents premiss-pass,
+verifierat mot Supabases egen linter som klassar det som SECURITY ERROR ·
+`ADR-091`-domännot · scroll-byggkravet · tre prototyp-varianter + skarven.
+**Prototypen: divergens klar, Marcus valde variant B för båda skärmarna**,
+konvergensen tre omgångar in. **Formbyte mitt i:** konvergens görs nu DIREKT i
+prototypkoden — agent-varv tog 10–30 min för tio sekunders arbete, och Marcus
+underkände tempot. **Fyra egna fel bokförda** (två källmärkningsfel i
+uppdragstexter, `autoMergeRequest`-läsning utan disambiguering, delade ytor
+bara för kortfiler → två merge-konflikter). **Numrering: S96
+behålls/ADR-095/L444 (+2 fragment)/T116/task-133/f47.** **NÄSTA: avsluta
+konvergensvarvet (fotnots-texten saknar hemvist) · Grind 0 (Vercel + DNS) kan
+köras PARALLELLT · `TASK-126.2` är plockbart NU utan Grind 0.** Full narrativ:
+sessionsdok S96 Del 1–7 + PAUSLÄGE-blocket. *(Föregående kadensrad nedan.)*
+
+**Session 96 🔄 ÅTERUPPTOGS (2026-08-03 förmiddag)** —
 **AFK-BATCHEN + MORGONENS GENOMGÅNG** (egen worktree per ADR-090, parallell med
 aktiva S93 som äger huvudkatalogen): `TASK-119` **Done** (heartbeat-svepet
 mekaniserat, config-driven, 22 tvåsidiga testfall — i skarp drift samma natt och
