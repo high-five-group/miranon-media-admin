@@ -1,0 +1,159 @@
+<!--
+  Användarinbjudan — Supabase Auth "invite"-mallen (TASK-127.4, ADR-092).
+
+  Skickas av inviteUserByEmail (TASK-127.5, egen skiva) via custom SMTP mot
+  Resend från send.miranon.dev (S95 Del 2 beslut 3+4). Mottagaren är Roger
+  eller Lotta själva — mailet är INTE riktat till ett event-deltagande
+  ("Anmälan"), utan ger dem ett konto i appen (ORDLISTA.md §
+  Användarinbjudan — "invite" undviks medvetet i all synlig text).
+
+  Format: transaktions-mail-standard (inline CSS, tabell-layout,
+  role="presentation" på layout-tabeller så skärmläsare inte läser upp dem
+  som datatabeller — WCAG/e-postbranschens etablerade mönster, eftersom
+  <style>-block i <head> stripas av flera mailklienter). Ingen logotyp-bild:
+  appen har ingen publik URL ännu (T46 Grind 0, ingen frontend-deploy) och
+  en bruten bildikon är sämre för Gunilla-läsbarheten än en textwordmark.
+
+  Färgerna är medvetet HÅRDKODADE (inte CSS custom properties) — detta är
+  transaktions-e-post, inte en React-komponent, och mailklienter saknar
+  tillförlitligt stöd för CSS-variabler. Värdena är tagna direkt ur
+  src/styles/tokens/primitives.css: --p-neutral-25 (#fafaf8, sidbakgrund),
+  --p-neutral-900 (#242424, brödtext), --p-neutral-600 (#525151, sidnot),
+  --p-copper-500 (#a3491c, CTA-knapp — semantiskt "Accent (CTA/handling)"
+  i semantic.css). Knappens vit-på-koppar kontrast är räknad för hand mot
+  WCAG-formeln: 5,96:1 — klarar AA (≥4,5:1) med marginal.
+
+  Variabler (Supabase Auth Go-template-syntax): {{ .ConfirmationURL }} är
+  den fullständiga, färdigsignerade länken — se
+  supabase.com/docs/guides/auth/users (invite-flödet) och
+  cli_v1_config.yaml. Länktexten upprepas som synlig URL under knappen: om
+  knappen av någon anledning inte går att klicka (bildblockering av CSS,
+  vissa mailklienter) ska mottagaren ändå kunna kopiera länken för hand —
+  samma redundans-princip som repots övriga mailmallar.
+-->
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ditt konto hos Miranon Media</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #fafaf8;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #fafaf8"
+    >
+      <tr>
+        <td align="center" style="padding: 32px 16px">
+          <table
+            role="presentation"
+            width="480"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+              max-width: 480px;
+              width: 100%;
+              background-color: #ffffff;
+              border-radius: 8px;
+              overflow: hidden;
+            "
+          >
+            <tr>
+              <td style="padding: 32px 32px 8px 32px">
+                <p
+                  style="
+                    margin: 0 0 24px 0;
+                    font-size: 15px;
+                    font-weight: 700;
+                    letter-spacing: 0.02em;
+                    color: #a3491c;
+                    text-transform: uppercase;
+                  "
+                >
+                  Miranon Media
+                </p>
+                <h1
+                  style="
+                    margin: 0 0 16px 0;
+                    font-size: 22px;
+                    line-height: 1.35;
+                    color: #242424;
+                  "
+                >
+                  Du har fått ett konto
+                </h1>
+                <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #242424">
+                  Hej!
+                </p>
+                <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #242424">
+                  Du har blivit inbjuden att skapa ett konto i
+                  <strong>Miranon Media Admin</strong> — appen där Roger och Lotta sköter
+                  event, anmälningar och mail.
+                </p>
+                <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: #242424">
+                  Klicka på knappen nedan för att välja ditt lösenord och komma igång.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding: 0 32px 24px 32px">
+                <a
+                  href="{{ .ConfirmationURL }}"
+                  style="
+                    display: inline-block;
+                    padding: 14px 32px;
+                    background-color: #a3491c;
+                    color: #ffffff;
+                    font-size: 16px;
+                    font-weight: 600;
+                    text-decoration: none;
+                    border-radius: 6px;
+                  "
+                  >Skapa mitt lösenord</a
+                >
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 0 32px 32px 32px">
+                <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #525151">
+                  Fungerar inte knappen? Kopiera i stället in den här länken i din webbläsare:<br />
+                  <a href="{{ .ConfirmationURL }}" style="color: #a3491c; word-break: break-all"
+                    >{{ .ConfirmationURL }}</a
+                  >
+                </p>
+                <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #525151">
+                  Länken är personlig och slutar gälla efter 24 timmar. Har den hunnit gå ut
+                  går det bra att höra av sig till Roger eller Lotta för en ny inbjudan.
+                </p>
+                <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #525151">
+                  Det här mailet går inte att svara på.<br />
+                  Vänliga hälsningar,<br />
+                  Miranon Media
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

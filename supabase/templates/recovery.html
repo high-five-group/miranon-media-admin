@@ -1,0 +1,143 @@
+<!--
+  Återställning — Supabase Auth "recovery"-mallen (TASK-127.4, ADR-093 § ASVS
+  6.3.8 enumeration-neutralitet).
+
+  Skickas av Supabase Auth när "glömt lösenord"-flödet (TASK-127.7, egen
+  skiva, ännu obyggd) begär en återställningslänk via custom SMTP mot
+  Resend från send.miranon.dev (samma avsändarväg som invite.html — se den
+  filens header för fullständig motivering av layout/färg/tillgänglighet,
+  ej upprepad här).
+
+  ENUMERATION-NEUTRALITET (ADR-093, ASVS 6.3.8) är EF:ens/routens ansvar,
+  inte mallens: appen ska svara identiskt oavsett om adressen finns i
+  systemet. Denna mall skickas bara när Supabase Auth faktiskt beslutat att
+  skicka ett mail (adressen finns) — texten nedan får därför vara ärlig om
+  VARFÖR mailet kom, medan "vänligt ignorera"-raden skyddar mot
+  konsekvenserna om någon annan råkat skriva in adressen.
+-->
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Återställ ditt lösenord — Miranon Media</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #fafaf8;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #fafaf8"
+    >
+      <tr>
+        <td align="center" style="padding: 32px 16px">
+          <table
+            role="presentation"
+            width="480"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+              max-width: 480px;
+              width: 100%;
+              background-color: #ffffff;
+              border-radius: 8px;
+              overflow: hidden;
+            "
+          >
+            <tr>
+              <td style="padding: 32px 32px 8px 32px">
+                <p
+                  style="
+                    margin: 0 0 24px 0;
+                    font-size: 15px;
+                    font-weight: 700;
+                    letter-spacing: 0.02em;
+                    color: #a3491c;
+                    text-transform: uppercase;
+                  "
+                >
+                  Miranon Media
+                </p>
+                <h1
+                  style="
+                    margin: 0 0 16px 0;
+                    font-size: 22px;
+                    line-height: 1.35;
+                    color: #242424;
+                  "
+                >
+                  Återställ ditt lösenord
+                </h1>
+                <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #242424">
+                  Hej!
+                </p>
+                <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #242424">
+                  Vi har fått en begäran om att återställa lösenordet för ditt konto i
+                  <strong>Miranon Media Admin</strong>.
+                </p>
+                <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: #242424">
+                  Klicka på knappen nedan för att välja ett nytt lösenord.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding: 0 32px 24px 32px">
+                <a
+                  href="{{ .ConfirmationURL }}"
+                  style="
+                    display: inline-block;
+                    padding: 14px 32px;
+                    background-color: #a3491c;
+                    color: #ffffff;
+                    font-size: 16px;
+                    font-weight: 600;
+                    text-decoration: none;
+                    border-radius: 6px;
+                  "
+                  >Välj nytt lösenord</a
+                >
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 0 32px 32px 32px">
+                <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #525151">
+                  Fungerar inte knappen? Kopiera i stället in den här länken i din webbläsare:<br />
+                  <a href="{{ .ConfirmationURL }}" style="color: #a3491c; word-break: break-all"
+                    >{{ .ConfirmationURL }}</a
+                  >
+                </p>
+                <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #525151">
+                  Länken är personlig och slutar gälla efter 24 timmar, eller så fort den
+                  använts en gång. Har du inte bett om detta själv kan du bortse från mailet
+                  — inget ändras förrän du klickar och väljer ett nytt lösenord.
+                </p>
+                <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #525151">
+                  Det här mailet går inte att svara på.<br />
+                  Vänliga hälsningar,<br />
+                  Miranon Media
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
