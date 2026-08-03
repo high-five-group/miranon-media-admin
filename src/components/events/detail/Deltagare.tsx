@@ -32,16 +32,12 @@ import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
+// [PROTOTYPE] [S93] konvergens-pass (Del 3 beslut 1): Betalningars arbetsyta
+// flyttar in i Anmälda deltagare — se ArbetsKo:s "Öppna detaljer" nedan.
+import { BetalningsDetaljer, DetaljRad } from './Betalningar';
 // [PROTOTYPE] [S93] hållplats-pass — se DeltagareHallplatsPrototyp.tsx (frågan,
 // huvudprototypfilen) + hallplats-steg-prototyp.ts (delad logik/fixturer).
-import {
-  AvbokadeRad,
-  type HallplatsCounts,
-  HallplatsHarnastPanel,
-  HallplatsMarke,
-  HallplatsToppA,
-  HallplatsToppB,
-} from './DeltagareHallplatsPrototyp';
+import { type HallplatsCounts, HallplatsMarke, HallplatsToppA } from './DeltagareHallplatsPrototyp';
 import { DetaljGrupp } from './DetaljGrupp';
 import { DAGMANAD } from './datumSpann';
 import {
@@ -51,6 +47,7 @@ import {
   type HallplatsVariant,
   hallplatsSteg,
   isHallplatsVariant,
+  registerOrdning,
   slutKlar,
 } from './hallplats-steg-prototyp';
 
@@ -365,6 +362,50 @@ function GruppRubrik({
   );
 }
 
+/**
+ * MARKERA/AVBRYT-KNAPPEN (task-48 byggkrav 1, EMPHASIS-PARET från S91) —
+ * utbruten till en egen funktion sedan konvergens-passet (S93 Del 3 beslut 3)
+ * eftersom den nu har TVÅ anropsplatser: skarpa vyns `GruppRubrik`-handling
+ * (oförändrad) OCH variant A:s egna högerställda rad ovanför det enade
+ * registret (registret saknar sektionsrubriker att fästa knappen vid — se
+ * `ArbetsKo`). Ren extraktion, ingen beteendeändring.
+ */
+function MarkeraKnapp({
+  aktivt,
+  onOppna,
+  onStang,
+  buttonRef,
+}: {
+  aktivt: boolean;
+  onOppna: () => void;
+  onStang: () => void;
+  buttonRef: React.RefObject<HTMLButtonElement | null>;
+}) {
+  return aktivt ? (
+    <Button
+      ref={buttonRef}
+      intent="primary"
+      emphasis="subtle"
+      size="sm"
+      aria-label="Avbryt markering"
+      onPress={onStang}
+    >
+      <X aria-hidden="true" size={14} className="shrink-0" />
+      Avbryt
+    </Button>
+  ) : (
+    <Button
+      ref={buttonRef}
+      intent="primary"
+      size="sm"
+      aria-label="Markera anmälningar"
+      onPress={onOppna}
+    >
+      Markera
+    </Button>
+  );
+}
+
 /** Böjer "anmälan/anmälningar" efter antal — svenskan har ingen 0-singular. */
 function anmalanOrd(antal: number): string {
   return antal === 1 ? 'anmälan' : 'anmälningar';
@@ -516,6 +557,14 @@ function useMarkeringsLage(kandidatIds: readonly string[]) {
  * bekräfta-knappen: massmutationer passerar alltid en confirm-grind. Bulken är
  * pessimistisk — knappen står i "Skickar…" tills servern svarat, så ett halvt
  * utfall aldrig visas som helt.
+ *
+ * [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 1/4/5) — `onBekrafta`
+ * satt ⇒ SKARPA vyns oförändrade "Bekräfta"-flöde (ovan, DialogTrigger +
+ * kontrollfråga). `onBekrafta` utelämnad (variant A ENDAST) ⇒ primärknappen
+ * byter text till "Åtgärder": utskicket flyttar till åtgärds-sidan (byggs i
+ * ett eget senare pass), så DENNA knapp öppnar bara en inline-platshållare
+ * (litet kort, INTE en riktig sida) — bekräfta-mutationen och kontrollfrågan
+ * är rivna ur variant-läget, inte bara dolda.
  */
 function MarkeringsBatchBar({
   antal,
@@ -525,91 +574,138 @@ function MarkeringsBatchBar({
   onBekrafta,
   onMarkeraAlla,
   onRensa,
+  valdaNamn,
 }: {
   antal: number;
   totalt: number;
   allaValda: boolean;
   pending: boolean;
-  onBekrafta: () => Promise<void>;
+  /** Skarpa vyn: bekräfta-mutationen bakom kontrollfrågan. Utelämnad ⇒
+      variant-A-läget (se `valdaNamn`) — exakt en av de två är alltid satt. */
+  onBekrafta?: () => Promise<void>;
   onMarkeraAlla: () => void;
   onRensa: () => void;
+  /** [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST: satt ⇒ "Åtgärder"-
+      läget. De markerades namn, i visningsordning — visas i platshållaren. */
+  valdaNamn?: string[];
 }) {
+  const [visaPlatshallare, setVisaPlatshallare] = useState(false);
+  const platshallareId = useId();
+  const atgarderLage = valdaNamn != null;
+
   return (
-    <div data-testid="markering-batchbar" className="flex flex-wrap items-center gap-2 pb-2.5">
-      <DialogTrigger>
-        <Button intent="success" size="sm" isDisabled={antal === 0 || pending}>
-          <Mail aria-hidden="true" size={14} className="shrink-0" />
-          <span className="grid">
-            {/* Breddlåsets platshållare — tvåsiffrig maxform, aldrig läst av AT. */}
-            <span
-              aria-hidden="true"
-              className="invisible col-start-1 row-start-1 whitespace-nowrap"
-            >
-              Bekräfta 99 anmälningar
-            </span>
-            <span className="col-start-1 row-start-1 whitespace-nowrap tabular-nums">
-              {`Bekräfta ${antal} ${anmalanOrd(antal)}`}
-            </span>
-          </span>
-        </Button>
-        {/* isKeyboardDismissDisabled under sändning (review-fynd 5): båda
-            dialogknapparna är isDisabled={pending} för att skydda en pågående
-            batch — utan detta gick Escape förbi spärren, dialogen försvann mitt
-            i "Skickar…" och Lotta stod utan återkoppling. */}
-        <Modal isDismissable isKeyboardDismissDisabled={pending}>
-          <Dialog
-            title="Skicka bekräftelse?"
-            actions={({ close }) => (
-              <>
-                <Button intent="ghost" onPress={close} isDisabled={pending}>
-                  Avbryt
-                </Button>
-                <Button
-                  intent="success"
-                  isDisabled={pending}
-                  onPress={async () => {
-                    await onBekrafta();
-                    close();
-                  }}
+    <>
+      <div data-testid="markering-batchbar" className="flex flex-wrap items-center gap-2 pb-2.5">
+        {onBekrafta ? (
+          <DialogTrigger>
+            <Button intent="success" size="sm" isDisabled={antal === 0 || pending}>
+              <Mail aria-hidden="true" size={14} className="shrink-0" />
+              <span className="grid">
+                {/* Breddlåsets platshållare — tvåsiffrig maxform, aldrig läst av AT. */}
+                <span
+                  aria-hidden="true"
+                  className="invisible col-start-1 row-start-1 whitespace-nowrap"
                 >
-                  {pending
-                    ? 'Skickar…'
-                    : `Skicka ${antal} ${antal === 1 ? 'bekräftelse' : 'bekräftelser'}`}
-                </Button>
-              </>
-            )}
+                  Bekräfta 99 anmälningar
+                </span>
+                <span className="col-start-1 row-start-1 whitespace-nowrap tabular-nums">
+                  {`Bekräfta ${antal} ${anmalanOrd(antal)}`}
+                </span>
+              </span>
+            </Button>
+            {/* isKeyboardDismissDisabled under sändning (review-fynd 5): båda
+                dialogknapparna är isDisabled={pending} för att skydda en pågående
+                batch — utan detta gick Escape förbi spärren, dialogen försvann mitt
+                i "Skickar…" och Lotta stod utan återkoppling. */}
+            <Modal isDismissable isKeyboardDismissDisabled={pending}>
+              <Dialog
+                title="Skicka bekräftelse?"
+                actions={({ close }) => (
+                  <>
+                    <Button intent="ghost" onPress={close} isDisabled={pending}>
+                      Avbryt
+                    </Button>
+                    <Button
+                      intent="success"
+                      isDisabled={pending}
+                      onPress={async () => {
+                        await onBekrafta();
+                        close();
+                      }}
+                    >
+                      {pending
+                        ? 'Skickar…'
+                        : `Skicka ${antal} ${antal === 1 ? 'bekräftelse' : 'bekräftelser'}`}
+                    </Button>
+                  </>
+                )}
+              >
+                {`Bekräftelsemailet skickas till ${antal} obekräftad${antal === 1 ? '' : 'a'} ${anmalanOrd(
+                  antal,
+                )}, och ${antal === 1 ? 'anmälan blir Bekräftad' : 'anmälningarna blir Bekräftade'}. Det går inte att ångra.`}
+              </Dialog>
+            </Modal>
+          </DialogTrigger>
+        ) : (
+          <Button
+            intent="primary"
+            size="sm"
+            isDisabled={antal === 0}
+            aria-expanded={visaPlatshallare}
+            aria-controls={platshallareId}
+            onPress={() => setVisaPlatshallare((v) => !v)}
           >
-            {`Bekräftelsemailet skickas till ${antal} obekräftad${antal === 1 ? '' : 'a'} ${anmalanOrd(
-              antal,
-            )}, och ${antal === 1 ? 'anmälan blir Bekräftad' : 'anmälningarna blir Bekräftade'}. Det går inte att ångra.`}
-          </Dialog>
-        </Modal>
-      </DialogTrigger>
-      <Button
-        intent="secondary"
-        size="sm"
-        isDisabled={allaValda || pending}
-        onPress={onMarkeraAlla}
-      >
-        Markera alla
-      </Button>
-      {antal > 0 && (
-        <Button intent="ghost" size="sm" isDisabled={pending} onPress={onRensa}>
-          Rensa
+            Åtgärder
+          </Button>
+        )}
+        <Button
+          intent="secondary"
+          size="sm"
+          isDisabled={allaValda || pending}
+          onPress={onMarkeraAlla}
+        >
+          Markera alla
         </Button>
+        {antal > 0 && (
+          <Button intent="ghost" size="sm" isDisabled={pending} onPress={onRensa}>
+            Rensa
+          </Button>
+        )}
+        {/* Live-räknaren: seende ser antalet i knappen, skärmläsaren får det här.
+            `polite` — urvalet är löpande arbete, aldrig ett avbrott värt assertive. */}
+        <span
+          data-testid="markering-live"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {`${antal} av ${totalt} markerade`}
+        </span>
+      </div>
+      {/* [PROTOTYPE] [S93] konvergens-pass, "Åtgärder"-platshållaren (Del 3
+          beslut 5) — litet kort, INTE en riktig sida. Renderas som EGEN
+          syskon-div (inte inuti raden ovan) så skarpa vyns DOM (onBekrafta
+          satt) är BYTE-IDENTISK med före denna ändring. */}
+      {atgarderLage && visaPlatshallare && (
+        <div
+          id={platshallareId}
+          data-testid="atgarder-platshallare"
+          className="mb-2.5 rounded-xl border border-(--mm-navcard-border) bg-surface p-3 text-small contrast-more:border-(--mm-navcard-border-contrast)"
+        >
+          <p className="font-medium">
+            {`Åtgärds-sidan — eget prototyp-pass; ${antal} mottagare medtagna`}
+          </p>
+          {(valdaNamn?.length ?? 0) > 0 && (
+            <ul className="mt-1.5 flex flex-col gap-0.5 text-text-secondary">
+              {(valdaNamn ?? []).map((namn) => (
+                <li key={namn}>{namn}</li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
-      {/* Live-räknaren: seende ser antalet i knappen, skärmläsaren får det här.
-          `polite` — urvalet är löpande arbete, aldrig ett avbrott värt assertive. */}
-      <span
-        data-testid="markering-live"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
-        {`${antal} av ${totalt} markerade`}
-      </span>
-    </div>
+    </>
   );
 }
 
@@ -1105,6 +1201,67 @@ function BorOverRad({
   );
 }
 
+/** K57: högerställd "Rensa filtret"-rad. Utbruten sedan konvergens-passet
+    (S93 Del 3): TVÅ anropsplatser (skarpa vyns/`filter`-drivna branch,
+    oförändrad · variant A:s enade register, som måste nolla FLER filter-
+    states — se `ArbetsKo`s `rensaAllaFilterA`). Ren extraktion. */
+function RensaFiltretKnapp({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="mt-1.5 flex justify-end">
+      <button
+        type="button"
+        onClick={onClick}
+        className="font-medium text-small underline-offset-2 hover:underline"
+      >
+        Rensa filtret
+      </button>
+    </div>
+  );
+}
+
+/** KRYSS-LÄGET (K52): ALLA visade anmälda i EN kolumn, säng-kryss per rad.
+    Utbruten sedan konvergens-passet (S93 Del 3): TVÅ anropsplatser (skarpa
+    vyns/`filter`-drivna branch, oförändrad · variant A:s enade register —
+    "Bor över"-raden är delad, oförändrad, mellan varianterna). Ren
+    extraktion, ingen beteendeändring. */
+function BorOverKrysslage({
+  lista,
+  protoDataMode,
+  onToggle,
+}: {
+  lista: Registration[];
+  protoDataMode: boolean;
+  onToggle: (reg: Registration, borOver: boolean) => void;
+}) {
+  if (lista.length === 0) {
+    return <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>;
+  }
+  return (
+    <>
+      {/* [PROTOTYPE] [S93] review-fix — delad förklaringstext (uppdraget
+          § FYND 2): "liten text"-delen; per-rad `title` (BorOverRad) bär
+          hover-formen. */}
+      {protoDataMode && (
+        <p className="pb-1 text-caption text-text-muted">
+          Förhandsvisning (proto) — Bor över är inaktiverad nedan, inget sparas.
+        </p>
+      )}
+      <ul className="flex flex-col gap-2.5">
+        {lista.map((reg) => (
+          <li
+            key={reg.id}
+            title={
+              protoDataMode ? 'Inaktiverad i förhandsvisningen (proto) — inget sparas' : undefined
+            }
+          >
+            <BorOverRad reg={reg} onToggle={onToggle} disabled={protoDataMode} />
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
 /**
  * Kortlistan. `markering` != null ⇒ markera-läget: korten blir kryssrutor.
  *
@@ -1121,6 +1278,7 @@ function DeltagarListan({
   testId,
   markering,
   hallplatsMarke,
+  ariaLabel = 'Obekräftade anmälningar',
 }: {
   rader: Registration[];
   /** Eventets record-ID — kortens Anmäld-rad länkar till anmälans sida (18.17). */
@@ -1135,6 +1293,11 @@ function DeltagarListan({
   } | null;
   /** [PROTOTYPE] [S93] Per-rad steg-märke; undefined = ingen (skarpa vyn). */
   hallplatsMarke?: (reg: Registration) => React.ReactNode;
+  /** Tab-stoppets aria-label när `rullande` faktiskt klipper (kanRulla).
+      [PROTOTYPE] [S93] konvergens-passet lade till propen (default =
+      skarpa vyns oförändrade text) — variant A:s enade register skickar en
+      egen etikett, se `ArbetsKo`. */
+  ariaLabel?: string;
 }) {
   const rullKlasser = rullande
     ? 'focus-ring-inset scrollbar-inline max-h-[25.5rem] overflow-y-auto pr-2.5'
@@ -1147,7 +1310,7 @@ function DeltagarListan({
     <ul
       data-testid={testId}
       tabIndex={kanRulla ? 0 : undefined}
-      aria-label={kanRulla ? 'Obekräftade anmälningar' : undefined}
+      aria-label={kanRulla ? ariaLabel : undefined}
       className={`flex flex-col gap-2.5 ${rullKlasser}`}
     >
       {rader.map((reg) => (
@@ -1270,6 +1433,23 @@ function ArbetsKo({
     [visade],
   );
 
+  // [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 2/3) — variant A ENDAST:
+  // registret blir EN lista, steg-ordning (ogjort överst) + anmälningsordning
+  // (ÄLDST FÖRST — samma FIFO-semantik som den gamla Obekräftade-kön, nu
+  // tillämpad enhetligt över samtliga steg i stället för bara kön) inom varje
+  // steg. `registerOrdning` (hallplats-steg-prototyp.ts) är den finmaskigare
+  // fyra-hinks-sorteringen (delar "väntar på betalning" i avgift/slut, samma
+  // delning som byggkrav 2:s summeringsrader). No-op utanför variant A
+  // (unifiedSorted beräknas men används aldrig — se render nedan).
+  const unifiedSorted = useMemo(
+    () =>
+      [...visade].sort((a, b) => {
+        const diff = registerOrdning(a) - registerOrdning(b);
+        return diff !== 0 ? diff : inskickadTid(a) - inskickadTid(b);
+      }),
+    [visade],
+  );
+
   /**
    * Inbox-fokus (K40): kön öppen, arkivet ett klick bort — är kön tom fälls
    * arkivet ut i stället. Endast Bekräftade är fällbar (se GruppRubrik):
@@ -1293,6 +1473,11 @@ function ArbetsKo({
    */
   const [bekraftadeVal, setBekraftadeVal] = useState<boolean | null>(null);
   const bekraftadeOppen = bekraftadeVal ?? obekraftadeTotalt === 0;
+
+  // [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST (Del 3 beslut 1) —
+  // den INFLYTTADE betalnings-arbetsytans K27-disclosure (se render, "Öppna
+  // detaljer"). Egen lokal state, precis som Betalningar.tsx:s egen `oppen`.
+  const [betalningOppen, setBetalningOppen] = useState(false);
 
   // [PROTOTYPE] [S93] `traffar` bär NU FYRA filter (verkliga `filter` +
   // hållplats-prototypens `hallplatsFilter` + byggkrav 1/2:s
@@ -1318,6 +1503,22 @@ function ArbetsKo({
           : hallplatsFilter != null
             ? visade.filter((r) => hallplatsSteg(r) === hallplatsFilter)
             : null;
+
+  // [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST (Del 3 beslut 3):
+  // "registret ... markera-läget verkar över visad lista" — den visade listan
+  // är ANTINGEN ett aktivt steg-räknar-/logistik-filter (traffar) ELLER, om
+  // inget är valt, HELA den enade steg-sorterade listan (unifiedSorted). Den
+  // generiska "Rensa filtret" ovan nollar bara `filter` (korrekt DÄR —
+  // hallplatsFilter/protoBetalningsFilter/protoAvbokadeAktiv är alltid
+  // null/false utanför variant A); variant A:s EGEN Rensa-knapp (se render
+  // nedan) måste nolla alla fyra, därav `rensaAllaFilterA`.
+  const registerListaA = traffar ?? unifiedSorted;
+  const rensaAllaFilterA = () => {
+    setFilter(null);
+    setHallplatsFilter(null);
+    setProtoBetalningsFilter(null);
+    setProtoAvbokadeAktiv(false);
+  };
 
   // Kryss-lägets STABILA sorterings-snapshot (K52): fångas när läget ÖPPNAS så
   // att en nykryssad rad inte hoppar upp under fingret — omsorteringen sker
@@ -1411,9 +1612,15 @@ function ArbetsKo({
   const bulk = useConfirmAll(event.id);
   const [utfall, setUtfall] = useState<Utfall | null>(null);
 
-  // Markera-lägets kandidater = kön så som den visas (flikvalet gäller).
+  // Markera-lägets kandidater: skarpa vyn = kön så som den visas (flikvalet
+  // gäller, oförändrat). [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST
+  // (Del 3 beslut 3, "markera-läget verkar över visad lista"): kandidaterna
+  // är i stället `registerListaA` — den aktuella filtrerade vyn, eller HELA
+  // den enade listan när inget filter är valt.
   const obekraftadeIds = useMemo(() => obekraftade.map((r) => r.id), [obekraftade]);
-  const markering = useMarkeringsLage(obekraftadeIds);
+  const markeringKandidatIds =
+    protoVariant === 'a' ? registerListaA.map((r) => r.id) : obekraftadeIds;
+  const markering = useMarkeringsLage(markeringKandidatIds);
 
   /**
    * FOKUS-ÅTERLÄMNINGEN när läget stängs (review-fynd 1).
@@ -1484,20 +1691,6 @@ function ArbetsKo({
   const oppnaMarkering = () => {
     setUtfall(null);
     markering.oppna();
-  };
-
-  /**
-   * [PROTOTYPE] [S93] Variant C:s genväg ("Öppna och markera" i
-   * Härnäst-panelen) — TASK-18.20 A3b-genvägsformen: öppnar det ORÖRDA
-   * markera-läget (samma `useMarkeringsLage`/batch-bar som Obekräftade alltid
-   * haft) och förmarkerar ALLA kandidater. Kandidatlistan är `obekraftadeIds`
-   * — real eller fixtur beroende på `?data`, samma mekanik oavsett.
-   * Bekräfta-mutationen stubbas separat (se bekraftaMarkerade ovan) när
-   * `?data=proto`; denna funktion självt gör ingen skillnad på datamode.
-   */
-  const oppnaOchMarkeraGenvag = () => {
-    oppnaMarkering();
-    markering.markeraAlla();
   };
 
   // Signalen tänds bara när det finns något ATT skicka (K44).
@@ -1571,66 +1764,31 @@ function ArbetsKo({
           </SummeringsRad>
         </div>
       ) : (
-        // [PROTOTYPE] [S93] Alternativ C — hållplatsen som ETIKETT. De TRE
-        // stegräknarna ersätter de fem summeringsraderna (A′ inbakat:
-        // "Betalningspåminnelse skickad" flyttar till Betalningar, se
-        // Betalningar.tsx:s DEV-gren); Eventinfo + Bor över står KVAR som
-        // utskicksrad/kryss-läge, visuellt AVSKILDA under en egen "Utskick"-
-        // rubrik + kant (review-fix-våg 2, defekt 5 — se docblocket vid
-        // wrappern nedan; research-doken Del 6C).
+        // [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 § Valet) — variant A
+        // vann divergensen; B (Stations-railen)/C (Nästa steg-panelen) är
+        // FÖRKASTADE och RIVNA (se DeltagareHallplatsPrototyp.tsx). Enda
+        // kvarvarande gren: `HallplatsToppA` (TRE steg-räknare, mittraden
+        // ALLTID delad i Anmälningsavgifter/Slutbetalningar, byggkrav 2) +
+        // Eventinfo/Bor över/Avbokade som en visuellt avskild "logistik"-grupp
+        // (border-t) UTAN rubrik-text (byggkrav 3 rev — "Utskick"-texten fanns
+        // bara för att skilja variant A från B/C; de är borta, så det finns
+        // inget kvar att skilja mot).
         <div className="flex flex-col gap-2">
-          {protoVariant === 'c' && (
-            <HallplatsHarnastPanel
-              counts={hallplatsCounts}
-              onOppnaOchMarkera={oppnaOchMarkeraGenvag}
-            />
-          )}
-          {protoVariant === 'b' ? (
-            <HallplatsToppB
-              counts={hallplatsCounts}
-              filter={hallplatsFilter}
-              onFilterClick={vaxlaHallplatsFilter}
-            />
-          ) : (
-            <HallplatsToppA
-              counts={hallplatsCounts}
-              filter={hallplatsFilter}
-              onFilterClick={vaxlaHallplatsFilter}
-              // [PROTOTYPE] [S93] byggkrav 2 — ENDAST variant A skickar denna
-              // prop. Variant C:s samma anrop (protoVariant === 'c' faller
-              // också igenom till denna gren) utelämnar den helt och får
-              // därför EXAKT samma tre rader som innan byggkravs-vågen —
-              // variant B/C rörs inte.
-              betalning={
-                protoVariant === 'a'
-                  ? {
-                      avgifterMottagna,
-                      avgifterTotalt,
-                      avgifterSaknas,
-                      slutMottagna,
-                      slutSaknas,
-                      aktivFilter: protoBetalningsFilter,
-                      onFilterClick: vaxlaBetalningsFilter,
-                    }
-                  : undefined
-              }
-            />
-          )}
-          {/* [PROTOTYPE] [S93] review-fix-våg 2 (defekt 5) — Eventinfo+Bor
-              över stod bara ETT `gap-2` ifrån steg-räknarna: en osynlig
-              luft-skillnad läste inte som "annan datadomän" (granskningsfynd:
-              "fjärde raden bland steg-räknarna"). En kant (`border-t`) + en
-              diskret grupprubrik gör skillnaden SYNLIG: dessa två rader är
-              per EVENT (utskick/logistik), inte per PERSON som stegen ovan.
-              BYGGKRAV 3 (S96, variant A ENDAST, Marcus: "ser hemskt ut
-              designmässigt") — "Utskick"-TEXTEN rivs för variant A; kanten
-              (`border-t` på wrappern) står kvar OFÖRÄNDRAD (byggkravet gäller
-              texten, inte avdelar-linjen). Variant B/C behåller rubriken
-              exakt som innan — variant B/C rörs inte. */}
+          <HallplatsToppA
+            counts={hallplatsCounts}
+            filter={hallplatsFilter}
+            onFilterClick={vaxlaHallplatsFilter}
+            betalning={{
+              avgifterMottagna,
+              avgifterTotalt,
+              avgifterSaknas,
+              slutMottagna,
+              slutSaknas,
+              aktivFilter: protoBetalningsFilter,
+              onFilterClick: vaxlaBetalningsFilter,
+            }}
+          />
           <div className="flex flex-col border-border border-t pt-1">
-            {protoVariant !== 'a' && (
-              <p className="px-2 pt-1 pb-0.5 font-medium text-caption text-text-muted">Utskick</p>
-            )}
             <div className="divide-y divide-border">
               <SummeringsRad
                 term="Eventinfo skickad"
@@ -1638,14 +1796,18 @@ function ArbetsKo({
                 onClick={() => vaxlaFilter('saknarEventinfo')}
                 signalSlot
                 signal={
+                  // [PROTOTYPE] [S93] konvergens-pass (Del 3 beslut 2-rivning
+                  // 1): Auto-kryssen ("AutoKryss", task-18.6) RIVS ur
+                  // variant-läget — eventinfo-raden bär endast räknaren +
+                  // signal-badgen. Skarpa vyns egen SummeringsRad ovan
+                  // (protoVariant == null-grenen) behåller AutoKryss-fallbacken
+                  // OFÖRÄNDRAD.
                   signalText ? (
                     <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 font-medium text-small text-warning">
                       <Clock aria-hidden="true" size={14} className="shrink-0" />
                       {signalText}
                     </span>
-                  ) : (
-                    <AutoKryss event={event} />
-                  )
+                  ) : undefined
                 }
               >
                 <AvDelta klara={eventinfoSkickade} totalt={totalt} />
@@ -1658,21 +1820,16 @@ function ArbetsKo({
               >
                 <span className="tabular-nums">{borOverTotalt}</span>
               </SummeringsRad>
-              {/* BYGGKRAV 1 (S96, variant A ENDAST) — Avbokade-rad LÄNGST NER
-                  under "Bor över", samma SummeringsRad-grammatik. Ersätter
-                  den gamla `<AvbokadeRad>`-detaljen längst ned i registret
-                  (se den villkorade renderingen efter registret nedan,
-                  `protoVariant !== null && protoVariant !== 'a'`) — variant
-                  B/C behåller den gamla formen OFÖRÄNDRAD. */}
-              {protoVariant === 'a' && (
-                <SummeringsRad
-                  term="Avbokade"
-                  aktiv={protoAvbokadeAktiv}
-                  onClick={vaxlaAvbokadeFilter}
-                >
-                  <span className="tabular-nums">{protoAvbokade.length}</span>
-                </SummeringsRad>
-              )}
+              {/* BYGGKRAV 1 (S96) — Avbokade-rad LÄNGST NER under "Bor över",
+                  samma SummeringsRad-grammatik (ersatte den gamla
+                  `<details>`-formen, riven ur filen i konvergens-passet). */}
+              <SummeringsRad
+                term="Avbokade"
+                aktiv={protoAvbokadeAktiv}
+                onClick={vaxlaAvbokadeFilter}
+              >
+                <span className="tabular-nums">{protoAvbokade.length}</span>
+              </SummeringsRad>
             </div>
           </div>
         </div>
@@ -1709,53 +1866,80 @@ function ArbetsKo({
           </ToggleButton>
         </ToggleButtonGroup>
 
-        {traffar != null ? (
+        {protoVariant === 'a' ? (
+          // [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 3) — registret
+          // är EN lista, ingen sektionsrubrik: Steg-märkena (befintliga, se
+          // HallplatsMarke) ÄR grupperingen. Visad lista = `registerListaA`
+          // (traffar när ett steg-räknar-/logistik-filter är valt, annars
+          // HELA den enade steg-sorterade listan) — "markera-läget verkar
+          // över visad lista".
+          visade.length === 0 ? (
+            <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>
+          ) : (
+            <>
+              {traffar != null && <RensaFiltretKnapp onClick={rensaAllaFilterA} />}
+              {filter === 'borOver' ? (
+                <BorOverKrysslage
+                  lista={markeringsLista}
+                  protoDataMode={protoDataMode}
+                  onToggle={toggleBorOver}
+                />
+              ) : (
+                <>
+                  <div className="flex justify-end pb-1.5">
+                    <MarkeraKnapp
+                      aktivt={markering.aktivt}
+                      onOppna={oppnaMarkering}
+                      onStang={markering.stang}
+                      buttonRef={markeraKnappRef}
+                    />
+                  </div>
+                  {markering.aktivt && (
+                    <MarkeringsBatchBar
+                      antal={markering.antal}
+                      totalt={registerListaA.length}
+                      allaValda={markering.allaValda}
+                      pending={false}
+                      onMarkeraAlla={markering.markeraAlla}
+                      onRensa={markering.rensa}
+                      valdaNamn={registerListaA
+                        .filter((r) => markering.valda.has(r.id))
+                        .map(displayName)}
+                    />
+                  )}
+                  {registerListaA.length > 0 ? (
+                    <DeltagarListan
+                      rader={registerListaA}
+                      eventId={event.id}
+                      rullande
+                      testId="deltagar-register"
+                      ariaLabel="Deltagarregister"
+                      markering={
+                        markering.aktivt ? { valda: markering.valda, vaxla: markering.vaxla } : null
+                      }
+                      hallplatsMarke={hallplatsMarkeFn}
+                    />
+                  ) : (
+                    <p className="py-2 text-small text-text-secondary">
+                      Inga träffar i denna kategori.
+                    </p>
+                  )}
+                </>
+              )}
+            </>
+          )
+        ) : traffar != null ? (
           <>
             {/* K57: "Visar:"-raden och instruktionstexten RIVNA — man har ju
                 tryckt på raden. Rensa-knappen står ensam, högerställd på
                 kortets inner-inset. */}
-            <div className="mt-1.5 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setFilter(null)}
-                className="font-medium text-small underline-offset-2 hover:underline"
-              >
-                Rensa filtret
-              </button>
-            </div>
+            <RensaFiltretKnapp onClick={() => setFilter(null)} />
             {filter === 'borOver' ? (
-              // KRYSS-LÄGET (K52): ALLA visade anmälda i EN kolumn, säng-kryss
-              // per rad, ikryssade (snapshot) överst. Ersätter personkorten helt.
-              markeringsLista.length > 0 ? (
-                <>
-                  {/* [PROTOTYPE] [S93] review-fix — delad förklaringstext
-                      (uppdraget § FYND 2): "liten text"-delen; per-rad `title`
-                      (BorOverRad) bär hover-formen. */}
-                  {protoDataMode && (
-                    <p className="pb-1 text-caption text-text-muted">
-                      Förhandsvisning (proto) — Bor över är inaktiverad nedan, inget sparas.
-                    </p>
-                  )}
-                  <ul className="flex flex-col gap-2.5">
-                    {markeringsLista.map((reg) => (
-                      <li
-                        key={reg.id}
-                        title={
-                          protoDataMode
-                            ? 'Inaktiverad i förhandsvisningen (proto) — inget sparas'
-                            : undefined
-                        }
-                      >
-                        <BorOverRad reg={reg} onToggle={toggleBorOver} disabled={protoDataMode} />
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : (
-                <p className="py-2 text-small text-text-secondary">
-                  Inga deltagare i denna kategori.
-                </p>
-              )
+              <BorOverKrysslage
+                lista={markeringsLista}
+                protoDataMode={protoDataMode}
+                onToggle={toggleBorOver}
+              />
             ) : traffar.length > 0 ? (
               <DeltagarListan
                 rader={traffar}
@@ -1792,28 +1976,12 @@ function ArbetsKo({
                 <GruppRubrik
                   varning
                   handling={
-                    markering.aktivt ? (
-                      <Button
-                        intent="primary"
-                        emphasis="subtle"
-                        size="sm"
-                        aria-label="Avbryt markering"
-                        onPress={markering.stang}
-                      >
-                        <X aria-hidden="true" size={14} className="shrink-0" />
-                        Avbryt
-                      </Button>
-                    ) : (
-                      <Button
-                        ref={markeraKnappRef}
-                        intent="primary"
-                        size="sm"
-                        aria-label="Markera anmälningar"
-                        onPress={oppnaMarkering}
-                      >
-                        Markera
-                      </Button>
-                    )
+                    <MarkeraKnapp
+                      aktivt={markering.aktivt}
+                      onOppna={oppnaMarkering}
+                      onStang={markering.stang}
+                      buttonRef={markeraKnappRef}
+                    />
                   }
                 >
                   {`Obekräftade (${obekraftade.length})`}
@@ -1867,13 +2035,32 @@ function ArbetsKo({
             )}
           </>
         )}
-        {/* [PROTOTYPE] [S93] avbokade synliga (fråga 6) — variant B/C ENDAST.
-            Variant A ersatte denna `<details>`-rad med en riktig
-            SummeringsRad i summeringsblocket (byggkrav 1, S96, se ovan);
-            variant B/C behåller den gamla formen orörd (variant B/C rörs
-            inte, mission-scope). */}
-        {protoVariant != null && protoVariant !== 'a' && <AvbokadeRad avbokade={protoAvbokade} />}
       </div>
+      {/* [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 1) — Betalningars
+          avpricknings-arbetsyta FLYTTAR IN här, fällbar UNDER registret, bakom
+          samma K27-form (`DetaljRad`, återanvänd oförändrad ur Betalningar.tsx
+          — "flytta montering, skriv inte om"). Deadline-badgen renderas INUTI
+          `BetalningsDetaljer` och följer därmed automatiskt med. Samma
+          `aktiva.length > 0`-vakt och wrapper-form som Betalningar.tsx:s egen
+          K28-kommentar (toggeln + regionen i EN wrapper, ingen divide-y
+          mellan dem). */}
+      {protoVariant === 'a' && aktiva.length > 0 && (
+        <div>
+          <DetaljRad
+            oppen={betalningOppen}
+            kontrollerarId="deltagare-betalningsdetaljer"
+            onToggle={() => setBetalningOppen((v) => !v)}
+          />
+          <div id="deltagare-betalningsdetaljer" hidden={!betalningOppen}>
+            <BetalningsDetaljer
+              event={event}
+              registreringar={aktiva}
+              protoAktiv
+              protoDataMode={protoDataMode}
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -1884,10 +2071,12 @@ export function Deltagare({ event }: { event: Event }) {
     queryKey: queryKeys.registrations.byEvent(event.id),
     queryFn: () => dataSource.fetchRegistrations({ eventId: event.id }),
   });
-  // [PROTOTYPE] [S93] hållplats-pass — DEV-grindad ?variant=a|b|c + ?data=proto
-  // (underform A, S86-mekaniken). Utan ?variant renderas EXAKT dagens träd:
-  // `protoVariant` är null, och varje gren nedan faller igenom till den
-  // OFÖRÄNDRADE isPending/isError/ArbetsKo-kedjan.
+  // [PROTOTYPE] [S93] hållplats-pass — DEV-grindad ?variant=a + ?data=proto
+  // (underform A, S86-mekaniken). B/C är rivna i konvergens-passet (Del 3
+  // § Valet) — `isHallplatsVariant` känner numera bara igen `a`. Utan
+  // ?variant renderas EXAKT dagens träd: `protoVariant` är null, och varje
+  // gren nedan faller igenom till den OFÖRÄNDRADE
+  // isPending/isError/ArbetsKo-kedjan.
   const [variantParam] = useQueryState('variant');
   const [dataParam] = useQueryState('data');
   const protoVariant: HallplatsVariant | null =

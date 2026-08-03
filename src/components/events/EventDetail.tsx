@@ -29,16 +29,21 @@ function eventName(e: Event): string {
 }
 
 /**
- * [PROTOTYPE] [S93] hållplats-pass — divergens-varianterna (ADR-074 beslut 1:
- * stabila nycklar a/b/c). Railen monteras HÄR (enda platsen på sidan) så
- * Deltagare.tsx OCH Betalningar.tsx — båda DEV-grindat läsande samma
- * `?variant=`/`?data=` via oberoende `useQueryState` (nuqs synkar) — inte
- * vardera monterar sin egen rail (en dubblerad flytande rail vore fel).
+ * [PROTOTYPE] [S93] hållplats-pass — KONVERGENS-PASSET (Del 3 § Valet, ADR-074
+ * beslut 1: stabila nycklar). Divergensens B (Stations-railen)/C (Nästa
+ * steg-panelen) är FÖRKASTADE och RIVNA — vinnaren `a` behåller sin nyckel
+ * (Marcus beslut). Enda kvarvarande post ⇒ `PrototypeSwitcher`s
+ * ensam-variant-form (prototyp-ikonen i stället för bokstavsknappar).
+ * `steg`/`stegLabel` bumpat till konvergens-axelns nästa steg (S72-
+ * identitetsmodellen: VARIANT = divergens-axeln · STEG = konvergens-axeln).
+ *
+ * Railen monteras HÄR (enda platsen på sidan) så Deltagare.tsx OCH
+ * Betalningar.tsx — båda DEV-grindat läsande samma `?variant=`/`?data=` via
+ * oberoende `useQueryState` (nuqs synkar) — inte vardera monterar sin egen
+ * rail (en dubblerad flytande rail vore fel).
  */
 const HALLPLATS_PROTO_VARIANTS = [
-  { key: 'a', label: 'A — Radbytet', steg: 1, stegLabel: 'Divergens' },
-  { key: 'b', label: 'B — Stations-railen', steg: 1, stegLabel: 'Divergens' },
-  { key: 'c', label: 'C — Nästa steg-panelen', steg: 1, stegLabel: 'Divergens' },
+  { key: 'a', label: 'A — Radbytet', steg: 2, stegLabel: 'Konvergens' },
 ];
 
 /**
