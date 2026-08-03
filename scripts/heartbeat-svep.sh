@@ -103,12 +103,30 @@
 #   autonomt köa om en PR utan mänsklig granskning vore en ny, oprövad
 #   risk-yta ingen del av kortet efterfrågar.
 #
+#   TASK-128 (2026-08-03): den ursprungliga formuleringen ovan missade en
+#   TREDJE möjlighet bakom `autoMergeRequest: null` — PR:en är redan
+#   FRAMGÅNGSRIKT KÖAD. Tabellrad 2 (§ Landning): en PR som var `CLEAN` vid
+#   armeringen köas direkt och `autoMergeRequest` sätts ALDRIG — det är
+#   normalfallet, inte ett undantag. Den koden fanns inte urskiljbar när
+#   kommentaren skrevs, men fältet `isInMergeQueue` på `PullRequest`-typen
+#   GÖR den urskiljbar: hämtat i samma GraphQL-query nedan och exkluderat ur
+#   kandidat-villkoret. Mätt sju gånger under mekanismens första skarpa natt
+#   (2026-08-02): PR #614, #617 (×3), #621, #623, #624 — samtliga
+#   `isInMergeQueue: true`, `autoMergeRequest: null`, `mergeStateStatus:
+#   CLEAN`, samtliga falsklarm. `isInMergeQueue` löser INTE den ursprungliga
+#   ambiguiteten (aldrig-armerad vs. utsparkad-med-konsumerad-armering) —
+#   båda de fallen har `isInMergeQueue: false` och ska, korrekt, FORTFARANDE
+#   flaggas som kandidat. Vad fältet gör är att ta bort en TREDJE, felaktigt
+#   inkluderad grupp (redan köad) ur kandidat-mängden helt.
+#
 # EXIT-KODER (fail-closed, bitmask i --once/slutläge)
 #   0   inga LARM — main ev. oförändrad, inga PR:ar RÖDA/DIRTY/kandidater
 #   1   RÖTT      — minst en öppen PR har FAILURE/ERROR i sin check-rollup
 #   2   DIRTY     — minst en öppen PR har mergeStateStatus DIRTY
 #   4   KANDIDAT  — minst en öppen, icke-draft PR är CLEAN/UNSTABLE utan
-#                   aktiv auto-merge-begäran (möjlig konsumerad armering)
+#                   aktiv auto-merge-begäran OCH inte redan köad
+#                   (isInMergeQueue=false) — möjlig konsumerad armering
+#                   eller aldrig-armerad (TASK-128)
 #       (bitmask-summerade, 1..7 vid flera samtidiga larm)
 #  64   användningsfel — config/flagga saknas eller ogiltig (sysexits
 #       EX_USAGE, samma konvention som staging-semaphore.sh)
@@ -235,6 +253,7 @@ sweep_once() {
                 isDraft
                 mergeStateStatus
                 autoMergeRequest { enabledAt }
+                isInMergeQueue
                 commits(last: 1) {
                   nodes { commit { statusCheckRollup { state } } }
                 }
@@ -246,7 +265,8 @@ sweep_once() {
         --jq '.data.repository.pullRequests.nodes[] | [
                 .number, .isDraft, .mergeStateStatus,
                 (.autoMergeRequest != null),
-                (.commits.nodes[0].commit.statusCheckRollup.state // "NONE")
+                (.commits.nodes[0].commit.statusCheckRollup.state // "NONE"),
+                .isInMergeQueue
               ] | @tsv' 2>/dev/null)"
     rc=$?
     set -e
@@ -256,7 +276,7 @@ sweep_once() {
     fi
 
     local granskade=0 antal_rott=0 antal_dirty=0 antal_kandidat=0
-    while IFS=$'\t' read -r nr draft mss automerge rollup; do
+    while IFS=$'\t' read -r nr draft mss automerge rollup inqueue; do
         [[ -n "${nr}" ]] || continue
         granskade=$(( granskade + 1 ))
 
@@ -283,12 +303,17 @@ sweep_once() {
         fi
 
         # ARMERINGS-KANDIDAT — CLEAN/UNSTABLE, icke-draft, utan aktiv
-        # auto-merge-begäran. Kan vara ALDRIG ARMERAD eller en
-        # `failed_checks`-utsparkning som konsumerat sin armering — de två
-        # är, per CLAUDE.md § Landning, INTE urskiljbara ur statiskt svar.
-        # Flaggas som kandidat, disambiguering är orkestrerarens steg.
+        # auto-merge-begäran, OCH INTE redan köad. Kan vara ALDRIG ARMERAD
+        # eller en `failed_checks`-utsparkning som konsumerat sin armering —
+        # de två är, per CLAUDE.md § Landning, INTE urskiljbara ur statiskt
+        # svar. Flaggas som kandidat, disambiguering är orkestrerarens steg.
+        # `isInMergeQueue=true` (TASK-128) skiljer däremot ut en TREDJE,
+        # felaktigt inkluderad grupp: en korrekt armerad PR som redan köats
+        # (autoMergeRequest nollas vid köning, se CLAUDE.md § Landning
+        # tabellrad 2) — den ska INTE larma alls.
         if [[ "${automerge}" == "false" && "${draft}" == "false" \
-              && ( "${mss}" == "CLEAN" || "${mss}" == "UNSTABLE" ) ]]; then
+              && ( "${mss}" == "CLEAN" || "${mss}" == "UNSTABLE" ) \
+              && "${inqueue}" == "false" ]]; then
             alarm "heartbeat-svep: ARMERINGS-KANDIDAT — PR #${nr} är ${mss} utan aktiv auto-merge-begäran. Kan vara ALDRIG ARMERAD eller UTSPARKAD med konsumerad armering (CLAUDE.md § Landning). Disambiguera: gh pr merge ${nr} --auto --merge"
             antal_kandidat=$(( antal_kandidat + 1 ))
         fi
