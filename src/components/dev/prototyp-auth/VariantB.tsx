@@ -10,6 +10,15 @@
  * tydligt skild från en minimal "en sak i taget"-hållning (ingen
  * berättande text, ett fält synligt åt gången).
  *
+ * KONVERGENS-OMGÅNG 2 (Marcus facit): kontext-spalten delas i sin tur i två
+ * EXAKT lika höga halvor på desktop (`grid-rows-2` — den faktiska
+ * spalthöjden, ingen gissad pixelhöjd) — en bild-halva (Roger och Lottas
+ * foto, platshållare tills fotot finns) med logotyp + ordmärke flytande
+ * OVANPÅ bilden, och en text-halva därunder med rubrik, brödtext och
+ * punktlistan. Vid smal vy (< lg) ersätts halva-höjden-regeln av ett fast
+ * bildförhållande så bilden inte blir absurd hög eller platt när
+ * kolumnerna staplas.
+ *
  * THROWAWAY-KONTRAKT: koden befordras ALDRIG till skarp implementation.
  * Vinnaren (Marcus väljer EN variant per skärm) byggs om nyskriven i
  * TASK-127.3/TASK-127.6 genom leverans-grindarna. Ingen produktions-
@@ -53,6 +62,15 @@
  * - `prefers-contrast: more`: panel-avdelaren mellan kontext- och
  *   formulär-spalten är osynlig i vila och tänds via `contrast-more:`
  *   (samma border-transparent-idiom som DashboardCard/NastaEventCard).
+ * - Logotyp + namn flyter på en OPAK yta (`--mm-surface-inverse`, samma
+ *   par som VariantC:s Märkespanel) ovanpå bild-halvan — kontrasten mot
+ *   vit text (`--mm-text-inverse`) beror därför ALDRIG på fotots ljushet,
+ *   till skillnad från en transparent gradient-scrim. Uppmätt:
+ *   `#ffffff` mot `#242424` (`--p-neutral-0` mot `--p-neutral-900`) ⇒
+ *   kontrastkvot ≈15,52:1 (mätt i webbläsaren mot renderade
+ *   `rgb(36,36,36)`/`rgb(255,255,255)`) — WCAG AA-golvet för normal text är
+ *   4,5:1,
+ *   AAA-golvet 7:1. Se PR-beskrivningen för uträkningen.
  * - Endast design-tokens (`--mm-*` via Tailwind-temat eller arbiträr
  *   `(--mm-*)`-syntax) — inga hårdkodade färger.
  */
@@ -79,44 +97,73 @@ import { Button, Input, MessageBox } from '@/components/primitives';
    ──────────────────────────────────────────────────────────────── */
 
 /**
- * Platshållare för Roger och Lottas porträttbild — rund, i den storlek och
- * position ett riktigt foto ska ha. Fotot finns inte i repot (`public/`
- * innehåller endast `miranon-logo.svg`, PWA-ikonerna, favicon och
- * `screenshots/` — verifierat, TASK-127.2); var det ska komma ifrån är
- * obesvarat när denna kod skrivs.
+ * Full-bredd platshållare för Roger och Lottas foto — fyller HELA
+ * bild-halvan (i stället för omgång 1:s runda badge). Fotot finns inte i
+ * repot (`public/` innehåller endast `miranon-logo.svg`, PWA-ikonerna,
+ * favicon och `screenshots/` — verifierat, TASK-127.2); var det ska komma
+ * ifrån är obesvarat när denna kod skrivs. Samma "väntar på foto"-språk som
+ * omgång 1 (streckad ram + `UsersRound`-ikon + `ImagePlus`-badge), nu i den
+ * ytfyllande formen.
  *
- * BYTE TILL RIKTIGT FOTO: ersätt hela `<div>`-elementet nedan med en enda
- * rad, t.ex. `<img src="/roger-och-lotta.jpg" alt="" className="size-20
- * shrink-0 rounded-full object-cover" />` — samma `alt=""` som idag, eftersom
- * bilden fortsatt är kompletterande (ordmärkets text bär namnet).
+ * BYTE TILL RIKTIGT FOTO: ta bort raden `<FotoPlatshallare />` i
+ * `FotoHalva` nedan och ersätt den med EN rad, t.ex.
+ * `<img src="/roger-och-lotta.webp" alt="" className="absolute inset-0
+ * size-full object-cover" />` (byt filändelsen om Marcus levererar ett
+ * annat bildformat än `.webp` — resten av raden är oberoende av
+ * filändelsen). `alt=""` eftersom bilden fortsatt är dekorativ: ordmärket
+ * bär namnet, och formuläret behöver ingen bildinformation.
  *
  * Dekorativ tills fotot finns: `aria-hidden` håller platshållaren osynlig
  * för assisterande teknik i stället för att annonseras som ett meningsfullt
- * foto — samma mönster som gårdagens bokstavs-badge redan bar.
+ * foto.
  */
-function ProfilPlatshallare() {
+function FotoPlatshallare() {
   return (
     <div
       aria-hidden="true"
-      className="relative flex size-20 shrink-0 items-center justify-center rounded-full border-(--mm-border-strong) border-2 border-dashed bg-(--mm-accent-tint)"
+      className="absolute inset-0 flex items-center justify-center border-(--mm-border-strong) border-2 border-dashed bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint)"
     >
-      <UsersRound className="text-(color:--mm-accent) size-9" />
-      <span className="text-(color:--mm-text-inverse) absolute -right-1 -bottom-1 flex size-6 items-center justify-center rounded-full bg-(--mm-accent) ring-(--mm-primary-tint) ring-2">
-        <ImagePlus className="size-3.5" />
-      </span>
+      <div className="relative flex size-20 shrink-0 items-center justify-center rounded-full border-(--mm-border-strong) border-2 border-dashed bg-(--mm-accent-tint)">
+        <UsersRound className="text-(color:--mm-accent) size-9" />
+        <span className="text-(color:--mm-text-inverse) absolute -right-1 -bottom-1 flex size-6 items-center justify-center rounded-full bg-(--mm-accent) ring-(--mm-primary-tint) ring-2">
+          <ImagePlus className="size-3.5" />
+        </span>
+      </div>
     </div>
   );
 }
 
-/** Ordmärke: platshållarfoto (väntar på Roger + Lotta) + textlogotyp. */
+/**
+ * Ordmärke: logotyp (`/miranon-logo.svg`, finns redan i `public/` — ersätter
+ * omgång 1:s runda profilplatshållare per Marcus instruktion) + textnamn,
+ * på en OPAK mörk yta som flyter ovanpå foto-halvan. Kontrasten mot ytan är
+ * därför oberoende av fotots ljushet — se A11Y-GOLVET-kommentaren ovan för
+ * den uppmätta kontrastkvoten.
+ */
 function Ordmarke() {
   return (
-    <div className="flex items-center gap-3">
-      <ProfilPlatshallare />
+    <div className="absolute top-4 left-4 flex items-center gap-3 rounded-xl bg-(--mm-surface-inverse) px-4 py-3 shadow-lg lg:top-6 lg:left-6">
+      <img src="/miranon-logo.svg" alt="" className="size-8 shrink-0" />
       <div className="leading-tight">
-        <p className="font-semibold text-lg text-text">Miranon Media</p>
-        <p className="text-caption text-text-muted uppercase tracking-wide">Admin</p>
+        <p className="font-semibold text-lg text-text-inverse">Miranon Media</p>
+        <p className="text-caption text-text-inverse uppercase tracking-wide">Admin</p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Bild-halva: exakt övre hälften av kontext-spaltens höjd på desktop
+ * (förälderns `grid-rows-2` delar den faktiska spalthöjden — ingen gissad
+ * pixelhöjd). Vid smal vy (< lg) styr i stället ett fast bildförhållande
+ * (`aspect-video`) höjden, så halva-höjden-regeln inte gör bilden absurd
+ * hög eller platt när kolumnerna staplas (verifierat 390×844).
+ */
+function FotoHalva() {
+  return (
+    <div className="relative aspect-video w-full overflow-hidden lg:aspect-auto lg:h-full">
+      <FotoPlatshallare />
+      <Ordmarke />
     </div>
   );
 }
@@ -132,16 +179,31 @@ function KontextRad({ icon: Icon, children }: { icon: LucideIcon; children: Reac
 }
 
 /**
+ * Text-halva: nedre hälften av kontext-spalten (rubrik, brödtext,
+ * punktlista, fotnot) — exakt lika hög som `FotoHalva` på desktop via
+ * förälderns `grid-rows-2`.
+ */
+function InnehallHalva({ children, fotnot }: { children: ReactNode; fotnot: ReactNode }) {
+  return (
+    <div className="flex flex-col justify-between gap-10 bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint) p-8 lg:h-full lg:p-12">
+      <div className="flex flex-col gap-6">{children}</div>
+      <div className="text-caption text-text-muted">{fotnot}</div>
+    </div>
+  );
+}
+
+/**
  * Varm kontext-spalt (vänster/topp). Bär ALDRIG den enda vägen till
  * information den innehåller är kompletterande — och innehåller inga
- * interaktiva element (tabbordningen ska gå rakt in i formuläret).
+ * interaktiva element (tabbordningen ska gå rakt in i formuläret). Delas i
+ * två exakt lika höga halvor på desktop (`lg:grid-rows-2`, samma faktiska
+ * spalthöjd — inte en gissad pixelhöjd); staplas normalt på smal vy.
  */
 function KontextSpalt({ children, fotnot }: { children: ReactNode; fotnot: ReactNode }) {
   return (
-    <div className="flex flex-col justify-between gap-10 bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint) p-8 lg:p-12">
-      <Ordmarke />
-      <div className="flex flex-col gap-6">{children}</div>
-      <div className="text-caption text-text-muted">{fotnot}</div>
+    <div className="flex flex-col lg:grid lg:grid-rows-2">
+      <FotoHalva />
+      <InnehallHalva fotnot={fotnot}>{children}</InnehallHalva>
     </div>
   );
 }
