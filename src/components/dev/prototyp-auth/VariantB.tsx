@@ -115,29 +115,33 @@ function Ordmarke() {
  * `varm` styr fonden: login står på appens vita bakgrund, inbjudan på den
  * varma toningen över HELA ytan med formuläret i ett eget vitt kort.
  *
- * FULL BREDD: appen reserverar en symmetrisk scrollbar-ränna på ≥640 px
- * (`scrollbar-gutter: stable both-edges !important`, `src/styles/base.css`)
- * som syntes som två vita spalter tvärs fonden. Vyn sätter därför markören
- * `data-full-bredd` på `<html>` vid mount — base.css bär undantaget och
- * motiveringen. Ett tidigare `w-[100vw]`-hack är RIVET: det gav rätt mått
- * i headless men löste inte det Marcus faktiskt såg, eftersom det kringgick
- * rännan i stället för att ta bort den.
+ * FULL BREDD: den varma fonden sätts på `<html>` via markören
+ * `data-auth-fond`, INTE på div:en här. Skälet är appens scrollbar-ränna
+ * (`scrollbar-gutter: stable both-edges`, `src/styles/base.css`): den gör
+ * `<body>` 11 px smalare per sida, så en bakgrund inuti body kan aldrig nå
+ * ut i rännstenen. `<html>`s bakgrund propagerar däremot till hela canvas.
  *
- * Markören städas vid unmount så resten av appen behåller sin symmetri.
+ * Rännstenen är OFÖRÄNDRAD — inget hopp är möjligt vid någon övergång.
+ * Två tidigare försök är rivna och bokförda i base.css-kommentaren:
+ * `w-[100vw]`-hacket (kringgick rännstenen) och `scrollbar-gutter: auto`
+ * för auth-vyerna (tog bort den och införde ett hopp).
+ *
+ * Markören städas vid unmount så appen aldrig ärver auth-fonden.
  */
 function EnSpalt({ children, varm = false }: { children: ReactNode; varm?: boolean }) {
   useEffect(() => {
+    if (!varm) return;
     const rot = document.documentElement;
-    rot.dataset.fullBredd = 'true';
+    rot.dataset.authFond = 'true';
     return () => {
-      delete rot.dataset.fullBredd;
+      delete rot.dataset.authFond;
     };
-  }, []);
+  }, [varm]);
 
   return (
     <div
       className={`flex min-h-dvh w-full items-center justify-center p-6 sm:p-8 lg:p-12 ${
-        varm ? 'bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint)' : 'bg-bg'
+        varm ? '' : 'bg-bg'
       }`}
     >
       {children}
