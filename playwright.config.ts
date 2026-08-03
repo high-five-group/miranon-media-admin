@@ -58,6 +58,31 @@ const isVisualRun = process.env.PLAYWRIGHT_VISUAL_DEV_SERVER === '1';
 const ACCEPTANCE_DEV_PORT = 5399;
 const isAcceptanceRun = process.env.PLAYWRIGHT_ACCEPTANCE_DEV_SERVER === '1';
 
+// Webbläsarbeteende-klassen (TASK-131, ADR-094): fixturfria Playwright-tester
+// som prövar WEBBLÄSARBETEENDE utan datadimension — plattformsdetektering,
+// events, DOM/tangentbord — aldrig ett nätverkssvar. Samma alltid-färsk-
+// dev-server-på-dedikerad-port-mönster som a11y/visual/acceptance (Session 15
+// K2: en återanvänd server på en delad port ger tyst stale-state), men EGEN
+// port: klassen ska kunna köras SAMTIDIGT som acceptance/a11y/visual lokalt
+// utan att stale-server-vakten (reuseExistingServer: false + --strictPort)
+// fäller den ena.
+//
+// FIXTUR-ENV, INGEN MSW. Appen binder mot samma fiktiva `visual-fixture`-URL
+// som acceptance/visual (src/env.ts validerar bara `z.string().url()` — den
+// GÖR aldrig ett nätverksanrop dit: `AuthProvider.getSession()` läser enbart
+// local storage vid mount, se auth/AuthProvider.tsx). Klassens tester gör per
+// definition noll nätverksanrop, så MSW/hermetic.ts (acceptance-klassens
+// maskineri, ADR-080) vore ren over-engineering här — ingen fixturvärld att
+// hänga på, och ingen hermetik-vakt att bevisa mot (jfr `hermetik-sjalvtest.mjs`,
+// PROJEKT = 'acceptance' — orört, ser inte denna klass).
+//
+// FONT-CDN:N PINNAS INTE, MEDVETET, SAMMA VAL SOM a11y (tests/a11y/fixtures.ts
+// saknar all route-interception). a11y har kört så sedan Fas 3.5 utan att det
+// kostat CI-tillförlitlighet; att bygga font-pinning här hade varit en andra,
+// oberoende hemvist för samma egenskap a11y redan bevisat vara onödig.
+const WEBBLASARBETEENDE_DEV_PORT = 5499;
+const isWebblasarbeteendeRun = process.env.PLAYWRIGHT_WEBBLASARBETEENDE_DEV_SERVER === '1';
+
 // Självtestläget (task-60, T104): normalläget töms och testens egna
 // network.use() görs verkningslösa, så att varje test MÅSTE fällas av
 // hermetik-vakten. Flaggan läses här enbart för att stänga av
@@ -101,7 +126,7 @@ const isPreviewRun = process.env.PLAYWRIGHT_STAGING_PREVIEW === '1';
 /**
  * Playwright — visuella regressionstester + API-säkerhetstester + e2e auth-flow.
  *
- * Tio projekt:
+ * Elva projekt:
  *   - setup       → tests/e2e/*.setup.ts (auth-fixture, kör en gång per testrun)
  *   - api-pure    → tests/api/*.test.ts (pure-logik, ingen staging-koppling)
  *   - api-setup   → tests/api/*.setup.ts (T24-b: loggar in user+admin en gång; api-staging beror på det)
@@ -111,6 +136,13 @@ const isPreviewRun = process.env.PLAYWRIGHT_STAGING_PREVIEW === '1';
  *   - chromium-authenticated → tests/e2e/*.staging.test.ts (e2e via storageState från setup)
  *   - acceptance  → tests/acceptance/ (hermetiskt mot fixturvärlden, MUTEXFRITT
  *                   och secret-fritt; ADR-080 — se projektet nedan)
+ *   - webblasarbeteende → tests/webblasarbeteende/ (fixturfritt webbläsarbeteende
+ *                   UTAN datadimension — plattformsdetektering, DOM/tangentbord,
+ *                   events; MUTEXFRITT och secret-fritt; TASK-131/ADR-094 — se
+ *                   projektet nedan. Skiljer sig från acceptance genom att INTE
+ *                   hänga på fixturvärlden/MSW: klassens tester rör sig aldrig
+ *                   över nätverket alls, så det finns ingen fixtur att bevisa
+ *                   beroendet av)
  *   - a11y        → tests/a11y/ (axe-core mot /dev/primitives + /dev/patterns;
  *                   alltid-färsk dev-server på dedikerad port via test:a11y-
  *                   scriptets env-flagga — PLAYWRIGHT_TEST_BASE_URL lämnas osatt
@@ -251,17 +283,37 @@ export default defineConfig({
             reuseExistingServer: false,
             timeout: 60_000,
           }
-        : isVisualRun || isAcceptanceRun
+        : isVisualRun || isAcceptanceRun || isWebblasarbeteendeRun
           ? {
-              command: `npm run dev -- --port ${isVisualRun ? VISUAL_DEV_PORT : ACCEPTANCE_DEV_PORT} --strictPort`,
-              url: `http://localhost:${isVisualRun ? VISUAL_DEV_PORT : ACCEPTANCE_DEV_PORT}`,
+              // EN beräkning av porten, inte en ternary duplicerad i command
+              // OCH url — annars kan de två glida isär (en skriven om utan
+              // den andra) och servern startar på fel port jämfört med den
+              // Playwright väntar på.
+              command: `npm run dev -- --port ${
+                isVisualRun
+                  ? VISUAL_DEV_PORT
+                  : isAcceptanceRun
+                    ? ACCEPTANCE_DEV_PORT
+                    : WEBBLASARBETEENDE_DEV_PORT
+              } --strictPort`,
+              url: `http://localhost:${
+                isVisualRun
+                  ? VISUAL_DEV_PORT
+                  : isAcceptanceRun
+                    ? ACCEPTANCE_DEV_PORT
+                    : WEBBLASARBETEENDE_DEV_PORT
+              }`,
               reuseExistingServer: false,
               timeout: 60_000,
               // Fixtur-env:en vinner över .env-filer (Vites process-env-
               // företräde) — appen binder mot den fiktiva URL:en. DELAD mellan
-              // visual och acceptance: båda klasserna hänger på SAMMA
-              // fixturvärld (ADR-080), så en egen env-uppsättning här hade varit
-              // första steget mot två världar som kan drifta isär.
+              // visual, acceptance OCH webblasarbeteende: alla tre klasserna
+              // hänger på SAMMA fixturvärld för APP-BOOT (ADR-080), så en egen
+              // env-uppsättning här hade varit första steget mot två världar
+              // som kan drifta isär. webblasarbeteende-klassen gör ALDRIG ett
+              // nätverksanrop dit (se konstantens kommentar ovan) — den delar
+              // bara URL-VÄRDET som platshållare, inte en fixturvärld den
+              // faktiskt konsumerar.
               env: {
                 VITE_SUPABASE_URL: VISUAL_SUPABASE_URL,
                 VITE_SUPABASE_ANON_KEY: VISUAL_SUPABASE_ANON_KEY,
@@ -476,6 +528,33 @@ export default defineConfig({
         trace: isHermetikSjalvtest ? 'off' : 'on-first-retry',
         screenshot: isHermetikSjalvtest ? 'off' : 'only-on-failure',
         video: isHermetikSjalvtest ? 'off' : 'retain-on-failure',
+      },
+    },
+    {
+      // WEBBLÄSARBETEENDE-KLASSEN (TASK-131, ADR-094). Eget projekt, egen
+      // katalog, eget MUTEXFRITT och secret-fritt CI-jobb — samma
+      // klassbytes-motivering som acceptance-projektet ovan (ADR-080 beslut
+      // 1), tillämpad på en ANNAN gräns: inte "kräver fixturvärlden" mot
+      // "kräver staging", utan "har ett databeteende att bevisa" mot "har
+      // inget". Vad klassen bevisar: att en bibliotekskomponent detekterar
+      // plattform/tillstånd och beter sig rätt givet webbläsar-API:er och
+      // -events (navigator, matchMedia, beforeinstallprompt, tangentbord,
+      // ARIA). Vad den INTE bevisar, och aldrig ska försöka bevisa: något om
+      // ett nätverkssvar — då hör testet hemma i acceptance (kräver ett svar
+      // av rätt FORM) eller a11y (kräver en axe-scan), inte här.
+      //
+      // INGEN hermetik-vakt här, MEDVETET. `hermetik-sjalvtest.mjs` bevisar
+      // att acceptance-klassens tester HÄNGER PÅ fixturvärlden — ett bevis
+      // som förutsätter att det finns en fixturvärld att hänga på. Den här
+      // klassens definierande egenskap är motsatsen (noll nätverksanrop), så
+      // samma bevisform hade varit meningslös: det finns inget att ta bort
+      // för att visa att testet fäller. Se hermetik-sjalvtest.mjs — PROJEKT
+      // är hårdkodat till 'acceptance' och rör aldrig denna klass.
+      name: 'webblasarbeteende',
+      testDir: './tests/webblasarbeteende',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: `http://localhost:${WEBBLASARBETEENDE_DEV_PORT}`,
       },
     },
     {
