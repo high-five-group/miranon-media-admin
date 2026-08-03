@@ -93,11 +93,22 @@ import { Button, Input, MessageBox } from '@/components/primitives';
  */
 function Ordmarke() {
   return (
-    // PILL (Marcus, konvergens-omgång 12): logotypen svävade fritt mot den
-    // varma fonden utan förankring, och dess tunna streck blev för lätta
-    // mot toningen. En vit pill ger den en egen yta att stå på, binder den
-    // till kortet längre ner via samma vita fond, och gör kontrasten
-    // oberoende av var i toningen den råkar hamna.
+    // PILL I TONINGENS EGEN FAMILJ (Marcus, konvergens-omgång 13). Vit pill
+    // var fel: den bröt mot fonden i stället för att sitta i den, och den
+    // tävlade med formulär-kortet som redan äger det vita.
+    //
+    // Färgvalet är S92:s tolvstegsskala, inte en gissad nyans. Toningen går
+    // `--p-gold-100` (#fbf3e0) → `--p-copper-100` och ligger därmed mellan
+    // steg 2 och 3 i den nya guldskalan. Pillen tar STEG 3 (#ffecce) — en
+    // nyans djupare, samma familj — och steg 6 som kant.
+    //
+    // Det är inte bara "en nyans ner" visuellt utan Radix ROLLINDELNING:
+    // steg 3 ÄR komponentytan och steg 6 ÄR dess subtila kant
+    // (docs/design/README.md § Hur skalorna är gjorda). Pillen är en
+    // komponentyta — den ska bära exakt de stegen.
+    //
+    // Ingen skugga: en skugga lyfter märket från fonden, vilket motverkar
+    // hela poängen med att lägga det i toningens familj.
     //
     // `rounded-full` — inte kortets `rounded-2xl`: pillen är ett litet
     // fristående märke, inte ett innehållskort, och full radie skiljer de
@@ -106,7 +117,7 @@ function Ordmarke() {
     // `self-start` krymper pillen till innehållet. Utan den sträcker
     // flex-kolumnens `align-items: stretch` den till spaltens fulla bredd
     // (mätt 576 px mot naturliga ~211 för bilden).
-    <span className="inline-flex self-start rounded-full border border-border-light bg-surface px-5 py-3 shadow-sm">
+    <span className="inline-flex self-start rounded-full border border-(--p-gold-6) bg-(--p-gold-3) px-5 py-3">
       <img
         src="/miranon-media-ordmarke.svg"
         alt=""
