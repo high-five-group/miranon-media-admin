@@ -93,16 +93,28 @@ import { Button, Input, MessageBox } from '@/components/primitives';
  */
 function Ordmarke() {
   return (
-    // `self-start` är INTE kosmetik: föräldern är en flex-kolumn, vars
-    // default `align-items: stretch` sträckte bilden till spaltens fulla
-    // bredd (mätt 576 px mot naturliga ~211) och förvrängde ordmärket.
-    <img
-      src="/miranon-media-ordmarke.svg"
-      alt=""
-      className="h-10 w-auto self-start"
-      width={626}
-      height={119}
-    />
+    // PILL (Marcus, konvergens-omgång 12): logotypen svävade fritt mot den
+    // varma fonden utan förankring, och dess tunna streck blev för lätta
+    // mot toningen. En vit pill ger den en egen yta att stå på, binder den
+    // till kortet längre ner via samma vita fond, och gör kontrasten
+    // oberoende av var i toningen den råkar hamna.
+    //
+    // `rounded-full` — inte kortets `rounded-2xl`: pillen är ett litet
+    // fristående märke, inte ett innehållskort, och full radie skiljer de
+    // två rollerna åt i stället för att låta dem tävla.
+    //
+    // `self-start` krymper pillen till innehållet. Utan den sträcker
+    // flex-kolumnens `align-items: stretch` den till spaltens fulla bredd
+    // (mätt 576 px mot naturliga ~211 för bilden).
+    <span className="inline-flex self-start rounded-full border border-border-light bg-surface px-5 py-3 shadow-sm">
+      <img
+        src="/miranon-media-ordmarke.svg"
+        alt=""
+        className="h-7 w-auto"
+        width={626}
+        height={119}
+      />
+    </span>
   );
 }
 
