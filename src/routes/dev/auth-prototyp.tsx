@@ -2,14 +2,9 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import type { ComponentType } from 'react';
 import { PrototypeSwitcher, type PrototypeVariant } from '@/components/dev/PrototypeSwitcher';
-// SKARV — när VariantB.tsx/VariantC.tsx landar: byt de TVÅ raderna längst
-// ned i den här import-gruppen (de som anropar `skapaPlatshallare`) mot:
-//   import { AcceptVariantB, LoginVariantB } from '@/components/dev/prototyp-auth/VariantB';
-//   import { AcceptVariantC, LoginVariantC } from '@/components/dev/prototyp-auth/VariantC';
-// Exakt en rad byts per variant — resten av filen (VARIANTER, SKARMAR,
-// AuthPrototypPage) rörs inte.
 import { AcceptVariantA, LoginVariantA } from '@/components/dev/prototyp-auth/VariantA';
 import { AcceptVariantB, LoginVariantB } from '@/components/dev/prototyp-auth/VariantB';
+import { AcceptVariantC, LoginVariantC } from '@/components/dev/prototyp-auth/VariantC';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 
 export const Route = createFileRoute('/dev/auth-prototyp')({
@@ -45,29 +40,9 @@ export const Route = createFileRoute('/dev/auth-prototyp')({
  * vice versa — Marcus ska kunna se login OCH accept i alla tre varianter
  * utan att lämna routen (kortets AC#1).
  *
- * B och C existerar inte när detta skrivs — parallella agenter bygger dem
- * (TASK-127.2:s tre delade divergens-spår). Platshållarna nedan renderas
- * inline tills dess; se SKARV-kommentaren vid importerna ovan för den
- * exakta tvåradersbytet per variant.
+ * Alla tre varianterna är byggda av var sin oberoende agent (TASK-127.2:s
+ * divergens-pass) och inkopplade här.
  */
-
-function skapaPlatshallare(bokstav: 'B' | 'C') {
-  const Platshallare = ({ skarm }: { skarm: 'login' | 'accept' }) => (
-    <div className="flex w-full max-w-sm flex-col items-center gap-3 rounded-2xl border border-border-strong border-dashed p-10 text-center">
-      <p className="font-semibold text-lg text-text">Variant {bokstav}</p>
-      <p className="max-w-[26ch] text-body text-text-secondary">
-        Byggs av en annan agent. {skarm === 'login' ? 'Login-vyn' : 'Accept-sidan'} landar här när
-        filen finns.
-      </p>
-    </div>
-  );
-  return {
-    Login: () => <Platshallare skarm="login" />,
-    Accept: () => <Platshallare skarm="accept" />,
-  };
-}
-
-const { Login: LoginVariantC, Accept: AcceptVariantC } = skapaPlatshallare('C');
 
 const VARIANTER: PrototypeVariant[] = [
   { key: 'a', label: 'Variant A', steg: 1, stegLabel: 'Steg 1 — divergens' },
