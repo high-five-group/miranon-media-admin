@@ -6,9 +6,11 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 16:16'
-updated_date: '2026-08-02 16:45'
-labels: []
+updated_date: '2026-08-03 09:43'
+labels:
+  - ready-for-agent
 dependencies: []
+priority: medium
 ordinal: 215000
 ---
 
@@ -44,4 +46,6 @@ EVIDENS FÖRSTÄRKT (S96-natten 2026-08-02, orkestreraren). Falsklarmet mättes 
 FIXEN VERIFIERAD MOT ALLA INSTANSER: gh api graphql mot PullRequest.isInMergeQueue gav true för #621, #623 och #624 samtidigt som autoMergeRequest var null och mergeStateStatus CLEAN. Fältet hade alltså tystat varje falsklarm korrekt utan att röra de äkta vägarna.
 
 OPERATIV KOSTNAD MÄTT: bruset tvingade orkestreraren att höja svep-intervallet från 90 s till 300 s (skriptets dokumenterade --interval-flagga, mekanismen orörd) för att inte riskera att monitorn stängs av för många events. Det är en reell försämring av vaktens upplösning som fixen skulle återställa.
+
+KLASSAD ready-for-agent / medium (orkestreraren, 2026-08-03, på Marcus delegation). SKÄL: inget beslut återstår. Fixen är specificerad och empiriskt verifierad — GraphQL-fältet isInMergeQueue finns på PullRequest-typen och gav true för #621/#623/#624 samtidigt som autoMergeRequest var null. Arbetet är mekaniskt: lägg fältet i queryn, exkludera köade PR:er ur kandidat-klassen, lägg två testfall (köad → EJ kandidat, oarmerad → kandidat) i den befintliga 22-fallssviten. Ingen ADR rörs, inget kontrakt ändras. MEDIUM och inte high: vakten fungerar, den är bara brusig — bruset tvingade fram en upplösnings-sänkning 90→300 s, vilket är en reell men inte blockerande försämring.
 <!-- SECTION:NOTES:END -->

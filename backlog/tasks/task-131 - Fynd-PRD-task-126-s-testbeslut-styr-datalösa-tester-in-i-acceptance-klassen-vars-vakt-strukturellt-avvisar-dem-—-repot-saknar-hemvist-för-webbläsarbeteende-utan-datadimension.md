@@ -7,9 +7,11 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 17:26'
-updated_date: '2026-08-02 17:44'
-labels: []
+updated_date: '2026-08-03 09:43'
+labels:
+  - ready-for-human
 dependencies: []
+priority: high
 ordinal: 217000
 ---
 
@@ -62,4 +64,6 @@ Rättelsen skrev: 'Kortets och sessionsdokets ursprungliga formulering — att P
 Det direkt felaktiga påståendet — 'den landar av sig själv när klassfrågan är avgjord' — gjordes i orkestrerarens rapport till Marcus, alltså i sessionens efemära trail och inte i någon artefakt.
 
 SAKINNEHÅLLET I RÄTTELSEN STÅR OFÖRÄNDRAT: #628 är röd OCH dirty, kräver klassbeslut plus kortfils-konfliktlösning, och konflikten orsakades av att bokföring skrevs till ett kort med olandade ändringar. Endast attributionen var fel.
+
+KLASSAD ready-for-human / high (orkestreraren, 2026-08-03, på Marcus delegation). SKÄL: HIGH eftersom det är enda kortet som håller färdigt arbete parkerat — PR #628 bär en komplett, granskad bibliotekskomponent som inte kan landa förrän klassfrågan är avgjord. ready-for-human eftersom båda utgångarna är kontraktsbeslut: A flyttar en testklass-gräns, B urholkar en vakt ADR-080 gjorde konstitutiv. Ingen agent kan välja mellan dem utan att besluta åt Marcus.
 <!-- SECTION:NOTES:END -->
