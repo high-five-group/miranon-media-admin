@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # scripts/test-heartbeat-svep.sh
 #
-# Empirisk testsvit för scripts/heartbeat-svep.sh (TASK-119). 22 testfall —
-# tyngdpunkt på AC#1:s krav: tvåsidigt bevis per väg (planterat fall fälls,
-# rent fall släpps), för VAR OCH EN av de tre namngivna vägarna plus den
-# fjärde (armerings-kandidat) ur samma tabell:
+# Empirisk testsvit för scripts/heartbeat-svep.sh (TASK-119 + TASK-128). 24
+# testfall — tyngdpunkt på AC#1:s krav: tvåsidigt bevis per väg (planterat
+# fall fälls, rent fall släpps), för VAR OCH EN av de tre namngivna vägarna
+# plus den fjärde (armerings-kandidat) ur samma tabell:
 #
 #   T1  RÖTT planterat (check-rollup FAILURE)              → bit 1 satt
 #   T2  RÖTT rent (samma PR, rollup SUCCESS)                → bit 1 EJ satt
@@ -15,6 +15,10 @@
 #   T7  KANDIDAT rent — DRAFT                                 → bit 4 EJ satt
 #   T8  KANDIDAT rent — BLOCKED (varken CLEAN eller UNSTABLE) → bit 4 EJ satt
 #   T9  KANDIDAT planterat — UNSTABLE räknas också             → bit 4 satt
+#   T9b KANDIDAT rent — KÖAD (isInMergeQueue=true), PR #617-mönstret,   (TASK-128)
+#       annars identisk med T5 — en armerad OCH köad PR ska INTE larma  → bit 4 EJ satt
+#   T9c KANDIDAT planterat — genuint UTSPARKAD (isInMergeQueue=false,   (TASK-128)
+#       i övrigt identiskt med T9b) → ska FORTFARANDE larma             → bit 4 satt
 #   T10 KOMBINERAT — en RÖD-PR + en DIRTY-PR samtidigt         → bitmask 3
 #   T11 main-SHA AVANCERAR mellan två sopningar (delat state)  → larmrad
 #   T12 main-SHA OFÖRÄNDRAD mellan två sopningar               → ingen larmrad
@@ -182,20 +186,20 @@ run_case() {
 }
 
 setup
-printf 'test-heartbeat-svep: kör 22 testfall mot %s\n\n' "${SKRIPT_SRC}"
+printf 'test-heartbeat-svep: kör 24 testfall mot %s\n\n' "${SKRIPT_SRC}"
 
 # ============================================================
 # T1/T2 — RÖTT: tvåsidigt bevis (planterat fälls, rent släpps).
 # mergeStateStatus=BLOCKED här medvetet: isolerar RÖTT-vägen från
 # KANDIDAT-vägen (som kräver CLEAN/UNSTABLE), så testet bara mäter EN sak.
 reset_scen
-set_rows '572\tfalse\tBLOCKED\ttrue\tFAILURE\n'
+set_rows '572\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\n'
 EXPECT_OUT="RÖTT — PR #572"
 run_case "T1  RÖTT planterat (check-rollup FAILURE) → bit 1" 1 - \
     bash ./scripts/heartbeat-svep.sh --once
 
 reset_scen
-set_rows '572\tfalse\tBLOCKED\ttrue\tSUCCESS\n'
+set_rows '572\tfalse\tBLOCKED\ttrue\tSUCCESS\tfalse\n'
 NOT_EXPECT_OUT="RÖTT"
 run_case "T2  RÖTT rent (samma PR, rollup SUCCESS) → bit 1 EJ satt" 0 - \
     bash ./scripts/heartbeat-svep.sh --once
@@ -204,57 +208,76 @@ run_case "T2  RÖTT rent (samma PR, rollup SUCCESS) → bit 1 EJ satt" 0 - \
 # T3/T4 — DIRTY: tvåsidigt bevis. automerge=true här medvetet: isolerar
 # DIRTY-vägen från KANDIDAT-vägen (som kräver automerge=false).
 reset_scen
-set_rows '575\tfalse\tDIRTY\ttrue\tSUCCESS\n'
+set_rows '575\tfalse\tDIRTY\ttrue\tSUCCESS\tfalse\n'
 EXPECT_OUT="DIRTY — PR #575"
 run_case "T3  DIRTY planterat (mergeStateStatus DIRTY) → bit 2" 2 - \
     bash ./scripts/heartbeat-svep.sh --once
 
 reset_scen
-set_rows '575\tfalse\tCLEAN\ttrue\tSUCCESS\n'
+set_rows '575\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\n'
 NOT_EXPECT_OUT="DIRTY"
 run_case "T4  DIRTY rent (CLEAN, armerad) → bit 2 EJ satt" 0 - \
     bash ./scripts/heartbeat-svep.sh --once
 
 # ============================================================
-# T5–T9 — ARMERINGS-KANDIDAT: fjärde vägen (§ Landning-tabellen,
-# "armering-är-inte-minne"). Fem fall: ett planterat, tre rena varianter
-# (armerad / draft / fel mergeStateStatus) och ett andra planterat fall
-# (UNSTABLE räknas också, inte bara CLEAN).
+# T5–T9c — ARMERINGS-KANDIDAT: fjärde vägen (§ Landning-tabellen,
+# "armering-är-inte-minne"). Sju fall: ett planterat, tre rena varianter
+# (armerad / draft / fel mergeStateStatus), ett andra planterat fall
+# (UNSTABLE räknas också, inte bara CLEAN), och TASK-128:s par — köad
+# (isInMergeQueue=true) som INTE ska larma vs. genuint utsparkad
+# (isInMergeQueue=false) som FORTFARANDE ska larma. Alla T1–T9 sätter
+# isInMergeQueue=false explicit (6:e TSV-kolumnen) — den dimensionen
+# ska inte påverka RÖTT/DIRTY/de äldre KANDIDAT-varianterna.
 reset_scen
-set_rows '565\tfalse\tCLEAN\tfalse\tSUCCESS\n'
+set_rows '565\tfalse\tCLEAN\tfalse\tSUCCESS\tfalse\n'
 EXPECT_OUT="ARMERINGS-KANDIDAT — PR #565"
 run_case "T5  KANDIDAT planterat (CLEAN, ej armerad, ej draft) → bit 4" 4 - \
     bash ./scripts/heartbeat-svep.sh --once
 
 reset_scen
-set_rows '565\tfalse\tCLEAN\ttrue\tSUCCESS\n'
+set_rows '565\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\n'
 NOT_EXPECT_OUT="KANDIDAT"
 run_case "T6  KANDIDAT rent — redan armerad → bit 4 EJ satt" 0 - \
     bash ./scripts/heartbeat-svep.sh --once
 
 reset_scen
-set_rows '565\ttrue\tCLEAN\tfalse\tSUCCESS\n'
+set_rows '565\ttrue\tCLEAN\tfalse\tSUCCESS\tfalse\n'
 NOT_EXPECT_OUT="KANDIDAT"
 run_case "T7  KANDIDAT rent — draft → bit 4 EJ satt" 0 - \
     bash ./scripts/heartbeat-svep.sh --once
 
 reset_scen
-set_rows '565\tfalse\tBLOCKED\tfalse\tSUCCESS\n'
+set_rows '565\tfalse\tBLOCKED\tfalse\tSUCCESS\tfalse\n'
 NOT_EXPECT_OUT="KANDIDAT"
 run_case "T8  KANDIDAT rent — BLOCKED (ej CLEAN/UNSTABLE) → bit 4 EJ satt" 0 - \
     bash ./scripts/heartbeat-svep.sh --once
 
 reset_scen
-set_rows '565\tfalse\tUNSTABLE\tfalse\tSUCCESS\n'
+set_rows '565\tfalse\tUNSTABLE\tfalse\tSUCCESS\tfalse\n'
 EXPECT_OUT="ARMERINGS-KANDIDAT — PR #565"
 run_case "T9  KANDIDAT planterat — UNSTABLE räknas också → bit 4" 4 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# T9b/T9c (TASK-128) — isInMergeQueue är den enda skillnaden mellan raderna:
+# samma nummer (#617, det verkligt mätta PR:et), samma CLEAN/ej-draft/
+# ej-automerge-villkor. Det ISOLERAR exakt den nya diskriminatorn.
+reset_scen
+set_rows '617\tfalse\tCLEAN\tfalse\tSUCCESS\ttrue\n'
+NOT_EXPECT_OUT="KANDIDAT"
+run_case "T9b KANDIDAT rent — KÖAD (isInMergeQueue=true, PR #617-mönstret) → bit 4 EJ satt" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+set_rows '617\tfalse\tCLEAN\tfalse\tSUCCESS\tfalse\n'
+EXPECT_OUT="ARMERINGS-KANDIDAT — PR #617"
+run_case "T9c KANDIDAT planterat — genuint UTSPARKAD (isInMergeQueue=false) → bit 4 fortfarande satt" 4 - \
     bash ./scripts/heartbeat-svep.sh --once
 
 # ============================================================
 # T10 — KOMBINERAT. En RÖD PR och en DIRTY PR samtidigt, olika PR-nummer.
 # Bitmask-summering: 1 (RÖTT) | 2 (DIRTY) = 3. Båda larmraderna ska synas.
 reset_scen
-set_rows '572\tfalse\tBLOCKED\ttrue\tFAILURE\n575\tfalse\tDIRTY\ttrue\tSUCCESS\n'
+set_rows '572\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\n575\tfalse\tDIRTY\ttrue\tSUCCESS\tfalse\n'
 run_case "T10 KOMBINERAT — RÖD + DIRTY samtidigt → bitmask 3" 3 - \
     bash ./scripts/heartbeat-svep.sh --once
 if grep -qF "RÖTT — PR #572" "${TEST_DIR}/out.txt" && grep -qF "DIRTY — PR #575" "${TEST_DIR}/out.txt"; then
@@ -331,7 +354,7 @@ run_case "T18 --once loopar aldrig (stort --interval, ändå snabb)" 0 5 \
 # iterationer inom en kort, deterministisk budget. Sista sopningens verdikt
 # (RÖTT planterat i scenariot) ska vara skriptets slutliga exit-kod.
 reset_scen
-set_rows '572\tfalse\tBLOCKED\ttrue\tFAILURE\n'
+set_rows '572\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\n'
 run_case "T19 loop-läge, --timeout-bundet, sista verdikt vinner → 1" 1 8 \
     bash ./scripts/heartbeat-svep.sh --interval 1 --timeout 3
 if [[ "$(grep -c 'RÖTT — PR #572' "${TEST_DIR}/out.txt" 2>/dev/null || true)" -ge 2 ]]; then
@@ -356,7 +379,7 @@ run_case "T20 tom PR-lista → 0 granskade, ALLT LUGNT" 0 - \
 # kortet finns för att åtgärda).
 echo ""
 reset_scen
-set_rows '572\tfalse\tBLOCKED\ttrue\tFAILURE\n'
+set_rows '572\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\n'
 EXPECT_OUT="RÖTT — PR #572"
 NOT_EXPECT_OUT="öppna PR:ar granskade"
 run_case "T21 --quiet dämpar rutin men ALDRIG larm (RÖTT syns ändå)" 1 - \
