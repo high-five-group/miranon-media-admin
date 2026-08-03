@@ -14,9 +14,24 @@
  * (S76-polervågen: "vad betyder K?"); flera varianter →
  * bokstavs-knappar (särskiljbarhet kräver dem).
  *
- * URL-kontraktet (ADR-074 beslut 1): `?variant=<nyckel>` (null = skarpa
- * vyn) · `?data=verklig`. Stabila nycklar; `aliases` är ENBART
- * legacy-inmappning för historiska URL:er.
+ * TREDJE AXELN — VY (S96): en prototyp-familj kan bära flera SKÄRMAR i
+ * samma variant (auth: login + inbjudan). Axeln är valfri: utan `vyer`
+ * renderas ingenting och railen är oförändrad.
+ *
+ * Knapparna är NUMRERADE (1..N), inte ikoner. Skälet är
+ * generaliserbarhet: en ikon kräver att varje framtida prototyp hittar
+ * semantik för sina skärmar, och ett flöde med "steg 1/2/3" har ingen
+ * naturlig ikon alls. Ordningstal fungerar för varje tänkbar familj.
+ * Numret krockar INTE med steg-badgen på variant-knapparna — de skiljs av
+ * grupp-avdelare och av formen (vy = rundad rektangel, variant = cirkel),
+ * samma gruppering en verktygsrad använder. Semantiken bär `aria-label`
+ * ur `label`, så skärmläsaren hör "Logga in", inte "1".
+ *
+ * URL-kontraktet (ADR-074 beslut 1 + S96-utvidgningen): `?variant=<nyckel>`
+ * (null = skarpa vyn) · `?data=verklig` · `?<vyParam>=<vy-nyckel>`.
+ * Vy-nycklarna är SEMANTISKA i URL:en (`?skarm=login`) även om knappen
+ * visar ordningstalet — läsbar URL, generiskt UI. Stabila nycklar;
+ * `aliases` är ENBART legacy-inmappning för historiska URL:er.
  *
  * Rail-formen: alltid kompakt, KONSTANT höjd (data-knappen har
  * reserverad plats även utan aktiv variant — höjd-hopp är förbjudna);
@@ -41,6 +56,13 @@ export type PrototypeVariant = {
   stegLabel: string;
 };
 
+export type PrototypeVy = {
+  /** URL-nyckeln i `?<vyParam>=` — semantisk och stabil (`login`, `accept`). */
+  key: string;
+  /** Skärmens namn; bär a11y-semantiken när knappen visar ordningstalet. */
+  label: string;
+};
+
 type Pos = { x: number; y: number };
 
 function lasPos(): Pos | null {
@@ -57,13 +79,20 @@ function lasPos(): Pos | null {
 export function PrototypeSwitcher({
   variants,
   aliases = {},
+  vyer = [],
+  vyParam = 'vy',
 }: {
   variants: PrototypeVariant[];
   /** Legacy-/familje-URL-värden → variant-nyckel (se URL-kontraktet ovan). */
   aliases?: Record<string, string>;
+  /** Valfri tredje axel: skärmarna i familjen. Tom lista = axeln renderas ej. */
+  vyer?: PrototypeVy[];
+  /** URL-parametern vy-axeln äger. Default `vy`; auth-familjen kör `skarm`. */
+  vyParam?: string;
 }) {
   const [variantParam, setVariant] = useQueryState('variant');
   const [dataMode, setDataMode] = useQueryState('data');
+  const [vyValue, setVy] = useQueryState(vyParam);
   const [pos, setPos] = useState<Pos | null>(lasPos);
   // Positionen speglas i en ref (L300/L307) så persistensen sker SYNKRONT
   // i event-handlern — aldrig som side effect i setState-updatern.
@@ -74,6 +103,10 @@ export function PrototypeSwitcher({
   const resolved = variantParam == null ? null : (aliases[variantParam] ?? variantParam);
   const active = variants.find((v) => v.key === resolved) ?? null;
   const endaVarianten = variants.length === 1;
+  // Vy-axeln faller tillbaka på FÖRSTA vyn när parametern saknas eller är
+  // okänd — samma default som routen renderar, så knapp och yta aldrig
+  // pekar åt olika håll.
+  const aktivVy = vyer.find((v) => v.key === vyValue) ?? vyer[0] ?? null;
 
   const sattPos = (p: Pos | null) => {
     posRef.current = p;
@@ -141,6 +174,15 @@ export function PrototypeSwitcher({
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus';
   const knapp = (isActive: boolean) =>
     `relative flex h-9 w-9 items-center justify-center rounded-full text-small transition-colors ${fokus} ${
+      isActive
+        ? 'border border-primary bg-primary-tint font-semibold text-text'
+        : 'border border-transparent text-text-secondary hover:bg-bg-subtle'
+    }`;
+  // Vy-knappen är en RUNDAD REKTANGEL mot variant-knappens cirkel. Formen
+  // bär skillnaden mellan axlarna, så ordningstalet aldrig läses som ett
+  // steg-nummer — grupp-avdelaren ensam räcker inte när båda är siffror.
+  const vyKnapp = (isActive: boolean) =>
+    `flex h-8 w-9 items-center justify-center rounded-md text-small transition-colors ${fokus} ${
       isActive
         ? 'border border-primary bg-primary-tint font-semibold text-text'
         : 'border border-transparent text-text-secondary hover:bg-bg-subtle'
@@ -256,6 +298,23 @@ export function PrototypeSwitcher({
           <path d="M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2" />
         </svg>
       </button>
+      {vyer.length > 1 ? (
+        <>
+          <span aria-hidden="true" className="h-px w-6 bg-border" />
+          {vyer.map((v, i) => (
+            <button
+              key={v.key}
+              type="button"
+              onClick={() => setVy(v.key)}
+              aria-pressed={aktivVy?.key === v.key}
+              aria-label={v.label}
+              className={vyKnapp(aktivVy?.key === v.key)}
+            >
+              <span className="font-mono">{i + 1}</span>
+            </button>
+          ))}
+        </>
+      ) : null}
       <span aria-hidden="true" className="h-px w-6 bg-border" />
       <button
         type="button"
