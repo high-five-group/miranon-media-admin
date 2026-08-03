@@ -47,8 +47,11 @@ name: Post-merge
 # A7:5 (TASK-70.3): `Staging (API + E2E)` + `Staging sentinel purge` körs inte
 # längre av ci.yml (`with: run_staging: false`, villkorslöst).
 # A7:6 (TASK-70.4): `A11y (axe-runner)` likaså (`with: run_a11y: false`,
-# villkorslöst). ci.yml instansierar därmed två av ci-suite.yml:s fem tunga
-# jobb; de tre övriga instansieras HÄR och i nightly.yml.
+# villkorslöst). ci.yml instansierar därmed tre av ci-suite.yml:s sex tunga
+# jobb (`Pure + Build`, `Acceptance (hermetisk)`, `Webblasarbeteende` —
+# TASK-131 lade den sjätte utan eget villkor, av samma skäl som de andra två:
+# inga secrets, ingen staging-beröring); de tre övriga instansieras HÄR och i
+# nightly.yml.
 #
 # SKILLNADEN MELLAN DE TVÅ FLYTTARNA, ÖPPET: staging FLYTTADE hit. A11y kördes
 # redan här före A7:6 (anropet nedan skickar inga inputs och fick defaulten

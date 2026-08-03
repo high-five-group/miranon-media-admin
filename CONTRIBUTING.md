@@ -51,6 +51,7 @@ kanoniska kommandona separat:
 | `npm run test:api:staging` | Enbart staging-API (CI-formen) |
 | `npm run test:e2e:staging` | E2E mot staging (kräver ledig port 5173) |
 | `npm run test:acceptance` | Acceptance-klassen: hermetiskt mot fixturvärlden (egen dev-server på port 5399) — se § Acceptance-klassen |
+| `npm run test:webblasarbeteende` | Webbläsarbeteende-klassen: fixturfritt, noll nätverksanrop (egen dev-server på port 5499) — se § Webbläsarbeteende-klassen |
 | `npm run test:a11y` | Axe-runner (egen dev-server på port 5199) |
 | `npm run test:visual` | Visuella regressionstester |
 | `npm run vakt:kontrakt` | Kontraktsvakten: fixturvärlden mot skarp staging (nattlig i CI, körbar lokalt med `.env.test` — se § Nattnätet) |
@@ -689,8 +690,11 @@ fram till `TASK-70.3` i den blockerande PR-grinden. Sedan dess skickar `ci.yml`
 PR-körning. `A11y (axe-runner)` följde med `TASK-70.4` på exakt samma form
 (`run_a11y: false`, villkorslöst). `post-merge.yml` och `nightly.yml` utelämnar
 inputarna och får därför `ci-suite.yml`:s defaulter `true` — samma svit, samma
-`EN KÄLLA`, annan tidpunkt. Av de fem tunga jobben instansierar PR-grinden efter
-detta två: `Pure + Build` och `Acceptance (hermetisk)`.
+`EN KÄLLA`, annan tidpunkt. Av de sex tunga jobben instansierar PR-grinden efter
+detta tre: `Pure + Build`, `Acceptance (hermetisk)` och `Webblasarbeteende`
+(TASK-131 — se § Webbläsarbeteende-klassen; jobbet bär inget eget `run_x`-
+villkor, av samma skäl som `Pure + Build`: det behöver inga secrets och rör
+aldrig staging).
 
 **Varför staging-flytten gjordes, och vad den faktiskt köpte.** Inte jobbets
 375 s, utan den globala `staging-tests`-mutexen. Den serialiserar över *alla*
@@ -933,6 +937,84 @@ OCH att vakten fäller när dess mockar tas bort. Utan det andra ledet är
 hermetiken en förhoppning. Klassningen ska dessutom vara HÄRLEDD ur
 hermetik-mätdatan (`PLAYWRIGHT_HERMETIK_RAPPORT=1`), inte handplockad —
 räkningen redovisas i PR:n.
+
+## Webbläsarbeteende-klassen
+
+Termen bor här och i
+[ADR-094](docs/decisions/ADR-094-webblasarbeteende-testklass.md) — inte i
+`ORDLISTA.md`, av samma skäl som acceptance-klassen (§ ovan): en testklass är
+inte ett projektspecifikt domänbegrepp.
+
+**Bakgrund (TASK-131):** PRD task-126 § Testbeslut skickade `InstallPrompt`s
+11 tester till acceptance-klassen. `scripts/hermetik-sjalvtest.mjs` (ADR-080
+beslut 3, VILLKOR för klassens existens) fällde alla 11 — de överlever utan
+fixturvärldens svar, eftersom komponenten har **noll databeteende**: hooken
+läser `navigator.userAgent`/`platform`/`maxTouchPoints`, `matchMedia` och
+lyssnar på `beforeinstallprompt`/`appinstalled`, aldrig ett nätverkssvar.
+Vakten gjorde rätt; placeringen var fel. Marcus beslut (TASK-131, alternativ
+A): en egen klass för den sortens test, i stället för ett undantag i vakten
+(alternativ B, förkastat — det hade urholkat exakt det ADR-080 gjorde
+konstitutivt) eller en konstlad koppling till fixturdata komponenten inte rör
+(alternativ C, förkastat).
+
+**Vad klassen bevisar:** att en komponent detekterar plattform/tillstånd och
+beter sig rätt givet webbläsar-API:er och -events — `navigator`, `matchMedia`,
+DOM-events, tangentbord, ARIA. **Vad den inte bevisar, och aldrig ska försöka
+bevisa:** något om ett nätverkssvar. Ett test som behöver ett svar av rätt
+FORM hör hemma i acceptance-klassen (§ ovan); ett test som behöver en axe-scan
+hör hemma i a11y.
+
+**Skillnaden mot acceptance-klassen är gränsen den dras vid, inte hermetiken.**
+Båda klasserna är MUTEXFRIA och secret-fria. Acceptance kräver fixturvärlden
+(MSW) eftersom dess tester **har** ett databeteende att bevisa formen av.
+Webbläsarbeteende-klassen har inget sådant beroende — dess tester rör sig
+ALDRIG över nätverket, per konstruktion — och bär därför **ingen**
+hermetik-vakt-motsvarighet: `hermetik-sjalvtest.mjs` bevisar att acceptance-
+testerna hänger på fixturvärlden, ett bevis som förutsätter att det finns en
+fixturvärld att hänga på. Att bygga samma bevisform här hade varit teater —
+det finns inget att ta bort för att visa att ett test fäller. (`PROJEKT` i
+`hermetik-sjalvtest.mjs` är hårdkodat till `'acceptance'` och rör aldrig denna
+klass — oförändrat av TASK-131.)
+
+**Var den bor:** `tests/webblasarbeteende/`, projektet `webblasarbeteende`,
+egen alltid-färsk dev-server på dedikerad port 5499 (samma stale-server-skydd
+som a11y/visual/acceptance: `reuseExistingServer: false` + `--strictPort`, så
+klassen kan köras SAMTIDIGT som de andra tre lokalt). Kör lokalt med
+`npm run test:webblasarbeteende`.
+
+**Appen bootar mot samma fiktiva `visual-fixture`-URL som acceptance/visual**
+(`src/env.ts` kräver bara ett giltigt URL-format; `AuthProvider.getSession()`
+läser enbart local storage vid mount och gör aldrig ett nätverksanrop dit på
+en fräsch sida) — men klassen har INGEN MSW och ingen fixturvärld att
+komponera med. URL-värdet är en platshållare för app-boot, inte en fixtur
+klassens tester konsumerar.
+
+**Google Fonts pinnas inte.** Samma val som a11y (`tests/a11y/fixtures.ts` har
+ingen route-interception alls) — a11y har kört så sedan Fas 3.5 utan att det
+kostat CI-tillförlitlighet. Att bygga font-pinning bara för denna klass hade
+varit en andra, oberoende hemvist för en egenskap a11y redan bevisat vara
+onödig.
+
+**CI:** eget jobb i `ci-suite.yml`, **utan staging-mutex och utan secrets** —
+exakt samma motivering som Acceptance-jobbet. Jobbet är blockerande, som alla
+andra jobb i sviten (inget `run_x`-villkor, inget Dependabot-skip — jobbet
+kräver inga secrets och rör aldrig staging, samma logik som `Pure + Build`).
+Mätt LOKALT (macOS, 11 tester): 18,1–29,2 s helsvit — ingen CI-mätning
+projicerad, se § Flakighet mäts med riggen ovan för varför den skillnaden
+hålls isär. Klassen är i skrivande stund långt under både acceptance (~400 s)
+och a11y (~100 s) och ligger därmed inte på kritiska vägen — men ingen A7:6-
+liknande flytt till post-merge görs utan samma mätta process TASK-70.4
+gjorde: att flytta en ny klass ur presubmit UTAN den mätningen vore att göra
+halva A7:6:s jobb utan halva dess bevis.
+
+**Bevis i båda riktningar (TASK-131):** att klassen fångar en regression
+verifierades skarpt genom att tillfälligt bryta plattformsdetekteringen
+(`detectBasePath` i `useInstallPrompt.ts`, iOS-grenen villkorad bort) och köra
+`npm run test:webblasarbeteende` — 2 av 11 tester föll med rätt
+felsignatur (`toHaveText` väntat `'ios-manuell'`, fick `'chromium-prompt'`),
+ändringen reverterades, sviten grön igen (11/11). Ett grönt jobb utan den
+kontrollen bevisar bara att inget rört komponenten sedan sist, aldrig att
+jobbet KAN se ett fel.
 
 ## Visuell regression
 

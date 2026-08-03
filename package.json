@@ -25,6 +25,7 @@
     "test:acceptance:sjalvtest": "node scripts/hermetik-sjalvtest.mjs",
     "test:acceptance:sjalvtest:negativ": "node scripts/hermetik-sjalvtest.mjs --negativ-kontroll",
     "test:preview:staging": "npm run build:staging && npm run verify:staging-bundle && PLAYWRIGHT_STAGING_PREVIEW=1 playwright test --project=staging-preview",
+    "test:webblasarbeteende": "PLAYWRIGHT_WEBBLASARBETEENDE_DEV_SERVER=1 playwright test --project=webblasarbeteende",
     "test:a11y": "PLAYWRIGHT_A11Y_DEV_SERVER=1 playwright test --project=a11y",
     "vakt:kontrakt": "PLAYWRIGHT_NO_WEB_SERVER=1 playwright test --project=kontraktsvakt",
     "test:visual": "PLAYWRIGHT_VISUAL_DEV_SERVER=1 playwright test --project=visual-desktop --project=visual-mobile",
