@@ -9,6 +9,7 @@ import { PrototypeSwitcher, type PrototypeVariant } from '@/components/dev/Proto
 // Exakt en rad byts per variant — resten av filen (VARIANTER, SKARMAR,
 // AuthPrototypPage) rörs inte.
 import { AcceptVariantA, LoginVariantA } from '@/components/dev/prototyp-auth/VariantA';
+import { AcceptVariantB, LoginVariantB } from '@/components/dev/prototyp-auth/VariantB';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 
 export const Route = createFileRoute('/dev/auth-prototyp')({
@@ -66,7 +67,6 @@ function skapaPlatshallare(bokstav: 'B' | 'C') {
   };
 }
 
-const { Login: LoginVariantB, Accept: AcceptVariantB } = skapaPlatshallare('B');
 const { Login: LoginVariantC, Accept: AcceptVariantC } = skapaPlatshallare('C');
 
 const VARIANTER: PrototypeVariant[] = [
