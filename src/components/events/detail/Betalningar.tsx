@@ -29,7 +29,6 @@ import { DAGMANAD } from './datumSpann';
 // DeltagareHallplatsPrototyp.tsx (frågan, huvudprototypfilen).
 import {
   betalningsSplit,
-  HALLPLATS_PROTO_FIXTURES,
   harPaminnelse,
   isHallplatsVariant,
   kategoriPillText,
@@ -117,8 +116,11 @@ function SaknasDelta({ antal, testid }: { antal: number; testid: string }) {
 }
 
 /** K27-disclosure: "Öppna/Stäng detaljer" centrerad rad; chevron-down roterar
-    (disclosure-branschformen — skild från navigationsradernas höger-chevron). */
-function DetaljRad({
+    (disclosure-branschformen — skild från navigationsradernas höger-chevron).
+    EXPORTERAD sedan konvergens-passet (S93 Del 3 beslut 1): återanvänds av
+    `Deltagare.tsx`s DEV-gren för den INFLYTTADE arbetsytan (samma K27-form,
+    inte en kopia — se `Deltagare.tsx`s `ArbetsKo` för montering). */
+export function DetaljRad({
   oppen,
   kontrollerarId,
   onToggle,
@@ -432,8 +434,16 @@ function BetalningsPersonRad({
  * räknarna följer kryssen live) + deadline-STATUS-BADGEN (listkortens
  * status-slot-form: bg-surface-pill + statusfärgad text) + person-listan.
  * Kryssen flyttar personen mellan flikarna direkt (optimistisk cache).
+ *
+ * EXPORTERAD sedan konvergens-passet (S93 Del 3 beslut 1): Betalningar som
+ * TOPPNIVÅ-block försvinner i variant-läge — denna arbetsyta (oförändrad;
+ * "Återanvänd befintliga komponenter — flytta montering, skriv inte om")
+ * monteras i stället inuti Anmälda deltagare (`Deltagare.tsx`s `ArbetsKo`),
+ * fällbar under registret, bakom samma `DetaljRad`. Deadline-badgen ovan
+ * följer därmed automatiskt med — den renderas HÄR, oberoende av vem som
+ * monterar komponenten.
  */
-function BetalningsDetaljer({
+export function BetalningsDetaljer({
   event,
   registreringar,
   protoAktiv = false,
@@ -642,27 +652,15 @@ export function Betalningar({ event }: { event: Event }) {
   // Deltagare.tsx (oberoende `useQueryState`, samma URL-nyckel — nuqs
   // synkar de två). Utan ?variant renderas EXAKT dagens träd.
   const [variantParam] = useQueryState('variant');
-  const [dataParam] = useQueryState('data');
   const protoAktiv = import.meta.env.DEV && isHallplatsVariant(variantParam);
-  // [PROTOTYPE] [S93] fix-våg (uppdraget § D, Marcus punkt 3 — knappen gjorde
-  // inget): PrototypeSwitcher togglar `?data=` mellan null och 'verklig'
-  // (S90-kontraktet) — i variant-läge är FIXTURERNA default, `?data=verklig`
-  // ger riktig data. Den inverterade `=== 'proto'`-kontrollen läste ett
-  // värde växlaren aldrig satte.
-  const protoDataMode = protoAktiv && dataParam !== 'verklig';
 
-  if (protoDataMode) {
-    return (
-      <DetaljGrupp id="grupp-betalningar" rubrik="Betalningar">
-        <BetalningsInnehall
-          event={event}
-          registreringar={HALLPLATS_PROTO_FIXTURES}
-          protoAktiv
-          protoDataMode
-        />
-      </DetaljGrupp>
-    );
-  }
+  // [PROTOTYPE] [S93] konvergens-pass (Del 3 beslut 1): Betalningar FÖRSVINNER
+  // som eget toppnivå-block i variant-läge — dess arbetsyta (`BetalningsDetaljer`,
+  // oförändrad) monteras i stället INUTI Anmälda deltagare, se
+  // `Deltagare.tsx`s `ArbetsKo` ("Öppna detaljer", fällbar under registret).
+  // Skarpa vyn (`protoAktiv` alltid false här) är helt opåverkad av detta —
+  // returnen träffar bara variant-läget.
+  if (protoAktiv) return null;
 
   return (
     <DetaljGrupp id="grupp-betalningar" rubrik="Betalningar">
@@ -679,7 +677,7 @@ export function Betalningar({ event }: { event: Event }) {
           </MessageBox>
         </div>
       ) : (
-        <BetalningsInnehall event={event} registreringar={data} protoAktiv={protoAktiv} />
+        <BetalningsInnehall event={event} registreringar={data} />
       )}
     </DetaljGrupp>
   );

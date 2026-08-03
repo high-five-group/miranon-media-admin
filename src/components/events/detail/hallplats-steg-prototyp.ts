@@ -14,17 +14,25 @@
  * staging) visar därför "Väntar på bekräftelse", inte "Klar": märket visar
  * det längst bak liggande OFÄRDIGA steget.
  *
+ * KONVERGENS-PASSET (S93 Del 3, 2026-08-03, 8/8 Marcus-kvitterade beslut):
+ * variant A vann divergensen (B/C förkastade och rivna — se
+ * `DeltagareHallplatsPrototyp.tsx`), och byggs nu ut till HELA den grillade
+ * strukturen. `HallplatsVariant` bär därför bara den vinnande nyckeln;
+ * `registerOrdning()` nedan är NY (Del 3 beslut 2/3 — registrets fyra
+ * sorterings-hinkar, finmaskigare än `hallplatsSteg()`s tre).
+ *
  * KASTBAR (throwaway-kontraktet): rivs med hela S93-hållplats-passet.
  */
 import type { Registration } from '@/domain/models/Registration';
 import type { PersonHistoryEntry } from '@/domain/schemas';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 
-/** Divergens-variantens stabila nycklar (ADR-074 beslut 1). */
-export type HallplatsVariant = 'a' | 'b' | 'c';
+/** Den vinnande variantens stabila nyckel (ADR-074 beslut 1; konvergens-passet
+    S93 Del 3 § Valet — B/C rivna, `a` behåller sin nyckel per Marcus beslut). */
+export type HallplatsVariant = 'a';
 
 export function isHallplatsVariant(v: string | null): v is HallplatsVariant {
-  return v === 'a' || v === 'b' || v === 'c';
+  return v === 'a';
 }
 
 /** Tillståndsmodellen — se docblocket ovan för prioritetsordningen. */
@@ -129,6 +137,35 @@ export function betalningsSplit(aktiva: Registration[]): BetalningsSplit {
   const slutMottagna = aktiva.filter(slutKlar).length;
   const slutSaknas = aktiva.filter((r) => !slutKlar(r)).length;
   return { avgifterMottagna, avgifterTotalt, avgifterSaknas, slutMottagna, slutSaknas };
+}
+
+/**
+ * REGISTRETS sorterings-hinkar (konvergens-passet, Del 3 beslut 2/3): "EN
+ * lista, steg-ordning (ogjort överst), anmälningsordning inom steg."
+ * Finmaskigare än `hallplatsSteg()`s tre huvudsteg — delar "väntar på
+ * betalning" i AVGIFT/SLUT (SAMMA delning som `betalningsSplit`s två
+ * räknerader, byggkrav 2), eftersom Del 3s raduppsättning explicit räknar upp
+ * fyra rader (Väntar på bekräftelse · Anmälningsavgifter · Slutbetalningar ·
+ * Klara), inte tre.
+ *
+ * Talet är ENDAST en sorterings-nyckel (lägre = högre upp i listan) — samma
+ * prioritetsordning som `hallplatsSteg()` (Inställt/Väntelista före
+ * Obekräftad-kollen; Avbokad förekommer aldrig här, redan bortfiltrerad ur
+ * `aktiva`), men med betalningsledet uppdelat i två.
+ *
+ * ÖPPET BOKFÖRT DESIGNVAL (ospecat av grillningen): Inställt/Flytta till
+ * väntelista placeras EFTER Klara (4/5) — de är sällsynta administrativa
+ * undantag, inte del av Del 3s fyra-stegslista, och en placering FÖRE Klara
+ * hade blandat administrativa flaggor med betalningsframsteg. Se
+ * slutrapporten.
+ */
+export function registerOrdning(r: Registration): number {
+  if (r.status === RegistrationStatus.INSTALLT) return 4;
+  if (r.status === RegistrationStatus.FLYTTA_TILL_VANTELISTA) return 5;
+  if (r.status === RegistrationStatus.OBEKRAFTAD) return 0;
+  if (!avgiftKlar(r)) return 1;
+  if (!slutKlar(r)) return 2;
+  return 3;
 }
 
 /**

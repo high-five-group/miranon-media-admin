@@ -1,13 +1,39 @@
-# Hållplatsen som ETIKETT — DIVERGENS-passet (S93, 2026-08-02)
+# Hållplatsen som ETIKETT — DIVERGENS + KONVERGENS (S93, 2026-08-02 → 2026-08-03)
 
-> **Frågan som prototypen besvarar (throwaway-kontraktet klausul i, verbatim
-> ur uppdraget):**
+> **Frågan DIVERGENS-passet besvarade (throwaway-kontraktet klausul i,
+> verbatim ur uppdraget):**
 >
 > **"Hur ska alternativ C — hållplatsen som ETIKETT — bäras på eventsidans
 > Anmälda deltagare-block: vilken av tre strukturella utföranden (a
 > Radbytet, b Stations-railen, c Nästa steg-panelen) gör 'vad gör jag
 > härnäst' och 'hitta Anna utan förkunskap' självklara för Lotta, och vilka
 > delval låser Marcus?"**
+>
+> **Svar (Marcus, 2026-08-03): Variant A — Radbytet.** B och C är förkastade
+> och RIVNA ur koden i konvergens-passet — se § KONVERGENS-PASSET nedan,
+> som är den AKTUELLA, byggda strukturen. Resten av detta dokument ovanför
+> den sektionen är DIVERGENSENS historik, bevarad som provenance men inte
+> längre den körbara ytan.
+
+## Iterationspunkter för Marcus (valfas-materia — INTE byggda i detta pass)
+
+Tre öppna frågor, itereras live med Marcus i browsern efter landning:
+
+1. **Semantiken "mottagna" vs "klara" på slutbetalnings-raden.** Sedan
+   `betalningsSplit()`-enandet (§ KONVERGENS-PASSET, betalningsSplit-fixen)
+   räknar `slutMottagna` numera in "Ej relevant"-poster (föreläsningar utan
+   slutbetalning) som klara — raden säger fortfarande "mottagna", vilket är
+   en term-drift som fanns redan innan detta pass men blir mer synlig nu när
+   talen är enade. Ordvalet ("mottagna" kontra "klara"/"färdiga") är inte
+   låst.
+2. **Utskickshistorikens visning på korten.** Den moved-in arbetsytans
+   per-person-historik ("Påminnelse om X skickad …") är återanvänd oförändrad
+   — om/hur den ska synas även på REGISTRETS kort (inte bara i den fällda
+   arbetsytan) är öppet.
+3. **Avbokade-radens exakta form.** Byggkrav 1 (S96) gav den en egen
+   `SummeringsRad` i termen "Avbokade" — om det är den slutgiltiga formen,
+   eller om avbokade ska synas på annat sätt (t.ex. i registret self, inte
+   bara som filter), är öppet.
 
 Underlag: `docs/research/hallplats-modellen-eventsidan-2026-07-26.md`
 (Del 6 alternativ C, Del 3 sex undantagsfall, Del 8 åtta öppna frågor).
@@ -24,14 +50,14 @@ frågan som toppkommentar) + `hallplats-steg-prototyp.ts` (delad logik +
 fixturer) + minimala hook-punkter i `Deltagare.tsx`/`Betalningar.tsx`/
 `EventDetail.tsx`.
 
-## Så här kör du dem
+## Så här kör du dem (DIVERGENSENS ursprungliga form — se § KONVERGENS-PASSET för AKTUELL form)
 
 ```bash
 npm run dev
-# och sedan i webbläsaren, på valfritt event:
+# och sedan i webbläsaren, på valfritt event (DIVERGENSEN, HISTORISK — b/c finns inte längre):
 #   /event/<eventId>?variant=a                ← RADBYTET, IN-MEMORY-fixtur (default i variant-läge)
-#   /event/<eventId>?variant=b                ← STATIONS-RAILEN, fixtur
-#   /event/<eventId>?variant=c                ← NÄSTA STEG-PANELEN, fixtur
+#   /event/<eventId>?variant=b                ← STATIONS-RAILEN, fixtur (RIVEN — se § KONVERGENS-PASSET)
+#   /event/<eventId>?variant=c                ← NÄSTA STEG-PANELEN, fixtur (RIVEN — se § KONVERGENS-PASSET)
 #   /event/<eventId>?variant=a&data=verklig   ← samma variant, RIKTIG staging-data
 #   /event/<eventId>                          ← skarpa vyn, orörd
 ```
@@ -39,13 +65,23 @@ npm run dev
 **Data-kontraktet (S93 fix-våg, 2026-08-03):** fixturerna är DEFAULT i
 variant-läge — `?data=verklig` växlar TILL riktig staging-data (S90-
 kontraktet, PrototypeSwitcher-railens egen `?data=` null↔'verklig'-toggel).
-Se § Review-fix-våg 3 nedan för varför raden ovan bytte riktning.
+Se § Review-fix-våg 3 nedan för varför raden ovan bytte riktning. Kontraktet
+är OFÖRÄNDRAT i konvergens-passet — bara `b`/`c` slutade svara.
 
 Växlaren (ikon-railen) finns i vyn som vanligt, monterad EN gång i
 `EventDetail.tsx` (både Deltagare- och Betalningar-blocket lyssnar
 oberoende på samma `?variant=`/`?data=` via `nuqs`).
 
-## Bilderna
+## Bilderna (DIVERGENSENS, HISTORISK — filerna nedan RADERADE ur bilagan)
+
+> **Konvergens-passet raderade `variant-b-*.png`, `variant-c-*.png`,
+> `variant-a-default.png`, `variant-a-proto.png`, `variant-a-avbokade-
+> oppnad.png` och `variant-a-avgifter-oppnad.png`** (git rm, samma commit
+> som koden) — de visar B/C (rivna) respektive PRE-FIX-tal för variant A
+> (byggd ut sedan dess till HELA strukturen). `skarp-utan-variant.png` och
+> `betalningar-fraga7-oppnad.png` finns kvar (den förra RETAGEN mot den
+> aktuella koden, se § KONVERGENS-PASSET). De AKTUELLA bilderna för variant A
+> heter `konvergens-a-*.png`, se § KONVERGENS-PASSET § Bilderna.
 
 Tagna med Playwright (fristående script, L304-formen, e2e-svitens
 `playwright/.auth/user.json`) mot en dev-server på port 5183 med
@@ -474,9 +510,30 @@ mottagna −9" i fixturläget; "9 av 16 mottagna −7" / "3 mottagna −13" mot
 
 Klick filtrerar registret på respektive saknar-mängd (`!avgiftKlar(r)` /
 `!slutKlar(r)`, på `visade` — flik-valet gäller precis som övriga
-hållplats-filter). Bevis: `variant-a-avgifter-oppnad.png` — 7 kort (alla utan
-mottagen avgift, inkl. Inställt/Väntelista-fallen som Betalningar-blockets
-egen formel också räknar in).
+hållplats-filter). Bevis: `variant-a-avgifter-oppnad.png` (RADERAD i
+konvergens-passet — se § KONVERGENS-PASSET för nya bilder) — 7 kort (alla
+utan mottagen avgift, inkl. Inställt/Väntelista-fallen som
+Betalningar-blockets egen formel också räknar in).
+
+**README-raden för `betalningsSplit`-fixen (saknades — konvergens-passets
+hygien-punkt 7):** Marcus granskning av PR #660 (`variant-a-proto.png`) fann
+att toppraden ovan och Betalningar-blockets egna räknerader visade OLIKA
+"mottagna"-tal på SAMMA sida trots samma underliggande data. **Rotorsak:**
+task-18.8 (2026-07-22, Betalningar-blockets ursprungsbygge) skrev
+`slutMottagna` som en EGEN inline-formel i `Betalningar.tsx`
+(`PaymentStatus.MOTTAGEN` strikt) — en ANNAN fysisk beräkning än
+`Deltagare.tsx`s hållplats-topp, som redan (korrekt) räknade "Mottagen ELLER
+Ej relevant" via den delade `slutKlar()`. En "Ej relevant"-registrering
+(föreläsning, ingen slutbetalning) föll därför ur BÅDA Betalningar-blockets
+tal (varken mottagen eller saknad) samtidigt som Deltagare.tsx:s topprad
+räknade den som mottagen — samma sida, olika tal, av en ren
+duplicerings-defekt (två ställen som RÄKNAR SAMMA SAK på olika sätt), inte
+en avsiktlig skillnad. **Fixen:** `betalningsSplit()` (`hallplats-steg-
+prototyp.ts`) är NU den enda fysiska beräkningen — båda ställena anropar
+den, så drift mellan dem är strukturellt omöjligt (kräver att ändra på ETT
+ställe för att ändra för BÅDA), inte bara konventionellt undvikt. Fullt
+rotorsaksresonemang: funktionens eget docblock i
+`src/components/events/detail/hallplats-steg-prototyp.ts`.
 
 ### 3. "Utskick"-rubriken borttagen (variant A)
 
@@ -519,3 +576,208 @@ fångar `get-event`/`get-registrations` med RIKTIG server-hämtad data mot
 avbokade-öppnad, avgifter-öppnad) genom att logga alla icke-GET
 `/functions/v1/*`-anrop per sida. `npm run test:visual`: 94/94 (den skarpa
 vyn, som inte läser `?variant=`, opåverkad).
+
+---
+
+## KONVERGENS-PASSET (S93 Del 3, 2026-08-03) — variant A byggs ut till HELA strukturen
+
+Marcus 8/8-kvitterade beslut (Del 3 § Grillad samsyn, se
+`tasks/sessions/2026-08-02-session-93.md` Del 3 + Tillägget — kravkällan för
+detta pass) tar variant A från "toppens tre rader" till hela den grillade
+eventsida-strukturen. **Allt uttrycks i BEFINTLIGT formspråk** (Marcus-krav,
+Del 3 beslut 3): inga nya tokens, ingen ny radgrammatik, inga nya
+§19-intent-kombinationer — enbart återanvändning av redan etablerade
+komponenter/klasser i nya monteringspunkter.
+
+### 1. Betalningar-toppblocket försvinner — arbetsytan flyttar in
+
+`Betalningar({event})` (`Betalningar.tsx`) returnerar nu `null` när
+`protoAktiv` (variant A) — blocket försvinner HELT från sidan i variant-läge
+(`EventDetail.tsx`s ovillkorliga `<Betalningar event={event} />` renderar
+inget). Dess "Öppna detaljer"-arbetsyta (flikarna Saknar/Klara, deadline-
+badgen, `BetalningsPersonRad` med kryss/notering/påminn/historik) är
+INTE omskriven — `BetalningsDetaljer` och `DetaljRad` exporterades (var
+oexporterade privata funktioner) och monteras OFÖRÄNDRADE i `Deltagare.tsx`s
+`ArbetsKo`, fällbara under det enade registret, bakom samma K27-form
+(`DetaljRad`-disclosure). Deadline-badgen renderas INUTI `BetalningsDetaljer`
+och följer därför automatiskt med utan extra kod. `BetalningsInnehall`
+(räknerad-`<dl>` + toggle-wrapper) är KVAR i `Betalningar.tsx`, oförändrad,
+men bara skarpa vyn når den nu (variant A:s motsvarande räknerader kommer i
+stället från `HallplatsToppA`, se punkt 2 nedan — de två `<dl>`-raderna hade
+annars dubblats).
+
+**Öppet bokfört, lågrisk-kvarleva:** `BetalningsInnehall`s egna
+`protoAktiv`/`protoDataMode`-grenar (påminnelse-räknaren, "fråga 7"-pillarna)
+är nu strukturellt ONÅBARA via skarpa `Betalningar()`-anropet (som alltid
+skickar `protoAktiv=false` sedan `if (protoAktiv) return null` infördes) —
+de rördes INTE, eftersom `BetalningsInnehall` inte är vad som flyttades in
+(bara `BetalningsDetaljer`/`DetaljRad` är). Städning av den vestigiala koden
+är avsiktligt UTANFÖR detta pass (samma "rör bara det som byggs om"-princip
+som resten av byggkravs-historiken ovan).
+
+### 2. Registret blir EN lista (Del 3 beslut 2/3)
+
+"Obekräftade (N)"-rubriken (varningstriangel) och "Bekräftade (N)"-
+dropdownen (`GruppRubrik`-parets fällbara arkiv) är RIVNA för variant A.
+I deras ställe: en enda `DeltagarListan` sorterad på FYRA steg-hinkar
+(`registerOrdning()`, ny export i `hallplats-steg-prototyp.ts`) — väntar på
+bekräftelse → avgift-saknare → slut-saknare → klara (installt/
+till-väntelista sist, öppet designval, se funktionens docblock) — och INOM
+varje hink i anmälningsordning (äldst-registrerad-först, samma FIFO-semantik
+som gamla Obekräftade-kön hade, nu tillämpad enhetligt i stället för bara på
+kön). Steg-märkena (`HallplatsMarke`, befintlig, oförändrad) ÄR
+grupperingen — inga textrubriker.
+
+Inline-scrollen (`rullande`-propen på `DeltagarListan`, byggkrav 4:s
+`max-h-[25.5rem]`) är ÅTERANVÄND OFÖRÄNDRAD på den enade listan, inte en ny
+klipphöjd — "behåll registrets nuvarande scroll-beteende" (uppdraget) tolkat
+bokstavligt.
+
+Skarpa vyn (`protoVariant == null`) och dess Obekräftade/Bekräftade-gren är
+STRUKTURELLT ORÖRDA — variant A:s enade lista är en helt ny gren i
+`ArbetsKo`s render, inte en ombyggnad av den gamla.
+
+**Genomresa av EN pre-existing bugg, fixad i förbigående:** när en
+`hallplatsFilter`/`protoBetalningsFilter`/`protoAvbokadeAktiv` var det som
+gjorde `traffar` icke-null (inte `filter`), gjorde den GAMLA "Rensa
+filtret"-knappen (`onClick={() => setFilter(null)}`) ingenting — den nollade
+bara `filter`, aldrig de tre andra. Bugen var alltid latent men harmlös för
+skarpa vyn (de tre andra state-variablerna är alltid `null`/`false` där).
+Variant A:s EGNA "Rensa filtret" (`rensaAllaFilterA`) nollar alla fyra
+explicit; den gamla knappen lämnas OFÖRÄNDRAD (fortfarande korrekt för sitt
+enda kvarvarande användningsfall, skarpa vyn).
+
+### 3. Markera-läget verkar över visad lista (Del 3 beslut 3)
+
+`useMarkeringsLage`s kandidatlista är nu DYNAMISK för variant A: den
+filtrerade vyn (`traffar`) när ett steg-räknar-/logistik-filter är valt,
+annars HELA den enade sorterade listan — "Lotta filtrerar först via en
+steg-räknare, markerar hon inom filtret" (uppdraget), men Markera är INTE
+låst till att kräva ett filter (fungerar över hela listan också). Skarpa
+vyns kandidatlista (`obekraftadeIds`, Obekräftade-kön) är OFÖRÄNDRAD.
+
+Batch-barens primärknapp byter text till **"Åtgärder"** (Del 3 beslut 5) för
+variant A — `MarkeringsBatchBar` fick en ny `valdaNamn?: string[]`-prop:
+satt ⇒ "Åtgärder"-knappen ersätter "Bekräfta"-`DialogTrigger`n helt (ingen
+kontrollfråga, ingen `useConfirmAll`-mutation — det gamla bekräfta-flödet är
+RIVET ur variant-läget, inte bara dolt: utskicket hör hemma på
+åtgärds-sidan, byggs i ett eget senare pass per Del 3 beslut 1/4). Klick
+öppnar en inline-platshållare — litet kort: "Åtgärds-sidan — eget
+prototyp-pass; N mottagare medtagna" + de valda namnen i visningsordning —
+INTE en riktig sida. Skarpa vyns `onBekrafta`-väg (samma komponent, samma
+fil) är BYTE-IDENTISK: `valdaNamn` är `undefined` där, `onBekrafta` styr
+grenvalet.
+
+**Namnkollision, öppet bokförd (inte en bugg, men värd Marcus uppmärksamhet):**
+sidan har sedan tidigare (task-18.3) en EGEN "Åtgärder"-rubricerad grupp
+längst upp (statiska länkar: "Lägg till manuell anmälan" · "Skicka
+bekräftelsemail till obekräftade" · … · "Skriv ut denna detaljsida" — se
+`Atgarder.tsx`, orört av detta pass). Batch-barens nya knapp bär SAMMA ord i
+en annan betydelse (en handlings-yta för det MARKERADE urvalet, inte en
+statisk länklista). Uppdraget specade ordet explicit (Del 3 beslut 5) och
+det följdes bokstavligt — men två "Åtgärder"-ytor på samma sida är värt att
+väga in när den riktiga åtgärds-sidan designas.
+
+### 4. Auto-kryssen riven (Del 3 beslut 2-rivning 1)
+
+`AutoKryss` (task-18.6, event-info-radens auto-utskicks-checkbox) monteras
+INTE längre i variant A:s eventinfo-rad-signal — slotten visar ENDAST
+"Dags att skicka"-badgen när den är tänd, annars tomt (reserverad höjd,
+`signalSlot` oförändrad). Skarpa vyns motsvarande rad (en helt annan JSX-
+gren, `protoVariant == null`) behåller `AutoKryss`-fallbacken OFÖRÄNDRAD.
+
+### 5. Variant B/C rivna — ensam-variant-formen
+
+`HallplatsToppB`, `HallplatsHarnastPanel`, `STATION_LABEL`, `STEG_ORDNING`
+och den gamla `<details>`-formen `AvbokadeRad` är BORTA ur
+`DeltagareHallplatsPrototyp.tsx`. `HallplatsVariant`-typen i
+`hallplats-steg-prototyp.ts` är smalnad till `'a'` (var `'a' | 'b' | 'c'`);
+`isHallplatsVariant()` känner bara igen `'a'`. `EventDetail.tsx`s
+`HALLPLATS_PROTO_VARIANTS`-array bär nu EN post (`key: 'a'`, oförändrad
+nyckel — "vinnaren behåller sin nyckel", Marcus beslut) — `steg` bumpat
+1→2 och `stegLabel` `'Divergens'`→`'Konvergens'` (S72-identitetsmodellen:
+STEG = konvergens-axeln). `PrototypeSwitcher.tsx` självt är ORÖRT (stående
+komponent, ADR-074) — dess egen `endaVarianten`-gren (prototyp-ikon i
+stället för bokstavsknapp) triggas automatiskt av array-längden 1, ingen
+kod i den filen ändrad.
+
+En stale `?variant=b`/`?variant=c`-URL degraderar numera till skarpa vyn
+(både railen och `protoVariant` läser `isHallplatsVariant`, som nu är
+`false` för dem) — inget krasch, ingen halvbyggd yta.
+
+## Bilderna — KONVERGENS-PASSET (AKTUELLA, `konvergens-a-*.png`)
+
+Tagna med samma metod som review-fix-vågorna (fristående Node-skript,
+`chromium.launch()` — bypassar `playwright.config.ts` helt, se
+`docs/reference/prototyp-verifiering-runbook.md`), mot en EGEN dev-server på
+port **5188** i DENNA worktree (inte 5173 — annan cwd än huvudträdet).
+`get-event`/`get-registrations`/`get-event-notes` hämtades RIKTIGT
+server-sidan (Node, ingen CORS-policy) mot det levande seed-eventet
+`reco44UBx6GXcxwu5` (ZZ-GRANSKNING-FIXTUR, Event-3905 — existens + data
+verifierad LIVE via Airtable MCP 2026-08-03 innan skriptet skrevs) och
+matades in via `page.route()`. Mutations-endpoints intercepterades ALDRIG.
+
+- `konvergens-a-fixtur.png` — default-läge (`?variant=a`, fixturdata):
+  Betalningar-blocket BORTA, HallplatsToppA:s fyra rader, unified register
+  (Anna Ek/Erik Larsson väntar på bekräftelse, Maria Holm med
+  "Manuellt tillagd"), "Öppna detaljer" stängd längst ner.
+- `konvergens-a-markera-atgarder.png` — Markera-läget aktivt, Anna Ek +
+  Erik Larsson valda (gröna kort), "Åtgärder"-knappen klickad: platshållaren
+  visar "Åtgärds-sidan — eget prototyp-pass; 2 mottagare medtagna" + båda
+  namnen.
+- `konvergens-a-avgiftsfilter.png` — Anmälningsavgifter-filtret aktivt:
+  flat lista utan sektionsrubriker, "Rensa filtret" synlig, Markera
+  tillgänglig även i filtrerat läge.
+- `konvergens-a-avbokade-oppnad.png` — Avbokade-filtret aktivt: Lisa
+  Fransson + Tomas Berggren, "Avbokad"-märket på båda.
+- `konvergens-a-oppna-detaljer.png` — den inflyttade arbetsytan öppen:
+  "Saknar betalning (9)/Klara (3)"-flikar, "Deadline passerad · 27 juli"-
+  badgen, "Förhandsvisning (proto)"-texten, per-person-rader med
+  Obekräftad-/kategori-pillar (fråga 7, oförändrad) och kryss/notering/
+  påminn SYNLIGT inaktiverade.
+- `konvergens-a-verklig.png` — `?variant=a&data=verklig` mot
+  `reco44UBx6GXcxwu5`: RIKTIGA tal ("Anmälningsavgifter 9 av 16 mottagna
+  −7" / "Slutbetalningar 3 mottagna −13" / "Väntar på bekräftelse 8") —
+  identiska med basens egna fält (`Antal mottagna anmälningsavgifter: 9`,
+  `Antal mottagna slutbetalningar: 3`, `Antal slutbetalning saknas: 13`,
+  verifierat via Airtable MCP samma dag) — tal-koherensen håller mot
+  källan, inte bara internt mellan komponenterna.
+- `skarp-utan-variant.png` — RETAGEN mot den aktuella koden (samma fil,
+  ersätter divergensens version): `PrototypeSwitcher`-rail count = 0,
+  Betalningar-blocket NÄRVARANDE (skarp vy orörd).
+
+### Verifiering (AC-lista, konvergens-passet)
+
+- **`npm run typecheck`:** 0 fel.
+- **`npx @biomejs/biome check .`:** 0 fel/varningar i rörda filer (6
+  varningar + 27 infos kvarstår, samtliga i ORÖRDA filer — `base.css`,
+  `tests/support/test-bas.ts`, `tests/api/*.staging.test.ts` — verifierat
+  identiska före/efter denna gren).
+- **`npm run build`:** grönt.
+- **`npm run test:api`:** 450 passed (api-pure + api-staging; en första
+  körning blockerades av `MM_STAGING_PREFLIGHT` medan `post-merge.yml`
+  (run 30826680395) höll staging — väntade ut den, retry grönt).
+- **`npm run test:visual` — DUBBEL mätning, inte antagen:** `git stash`
+  (ren `origin/main`-kod) → `test:visual` → 94/94, föder `-darwin.png`-
+  baselines för PRISTINE kod → `git stash pop` (denna grens kod) →
+  `test:visual` igen → **94/94, EXIT 0** mot SAMMA baselines. Skarpa vyns
+  pixlar är alltså bevisat BYTE-IDENTISKA före/efter, inte bara resonerat
+  fram (de lokala `-darwin.png`-filerna är `.gitignore`:ade, `git status`
+  visar noll ändringar i `__screenshots__/`).
+- **Interceptions-passet (0 mutationer, fixtur-läge):** Markera → 2 valda →
+  Åtgärder → platshållare-text verifierad ordagrant → Avbryt →
+  Anmälningsavgifter-filter → Avbokade-filter → Öppna detaljer →
+  betalnings-kryssruta (`isDisabled(): true`, klick timeoutar efter 30 s —
+  Playwright vägrar klicka ett disabled element) → noteringsfält
+  (`isDisabled(): true`, `fill()` kastar `TimeoutError`) → Påminn (`0`
+  `mailto:`-länkar funna, `aria-disabled="true"`-span i stället). **Sneda
+  nätverksanrop under HELA fixtur-passet: 16, samtliga `GET
+  .../get-events`** (den separata event-LISTANS bakgrundsläsning, en
+  pre-existing, ogated `useQuery` som körs oavsett `?variant=` — se
+  `EventValjare`/`useForberedEventDetalj` — INTE en mutation, INTE en
+  regression: samma bakgrundsläsning skulle ha triggat identiskt före
+  denna gren). **Noll POST/PATCH till `update-record`/`update-event`/
+  `send-registration-confirmation`/`create-event-note` under hela passet.**
+- **Tal-koherens:** `konvergens-a-verklig.png`s tre räknerader matchar
+  Eventplanering-radens egna fält exakt (se § Bilderna ovan) —
+  cross-verifierat mot Airtable MCP, inte bara mot sig själv.
