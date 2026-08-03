@@ -15,6 +15,38 @@
 
 ## Aktuellt fokus
 
+**Session 96 ⏸️ PAUSAD (2026-08-03, `lifecycle: paused` — parkerad, ej
+avslutad; återupptas via `session-resume` med BEHÅLLET nummer)** —
+**AFK-BATCHEN + MORGONENS GENOMGÅNG** (egen worktree per ADR-090, parallell med
+aktiva S93 som äger huvudkatalogen): `TASK-119` **Done** (heartbeat-svepet
+mekaniserat, config-driven, 22 tvåsidiga testfall — i skarp drift samma natt och
+bar alla fyra vägar) · `TASK-126.1` + `TASK-127.1` **granskningsfärdiga**
+(manifest-kompletteringen med egen mekanisk grind; `ADR-092` + `ADR-093` mintade,
+SECURITY-SPEC:s passkey-plan öppet riven) · `TASK-126.2` **byggd men stoppad** —
+`hermetik-sjalvtest.mjs` fällde 11 datalösa tester i acceptance-klassen (164
+passerade, vakten fällde), PR `#628` röd + dirty. **Marcus batch-order lyfte
+halt-first-filten för natten** (ADR-053:s triage gällde inuti batchen), med rutan
+*blockerar + utanför scope* undantagen — den utlöstes exakt en gång, av `126.2`.
+**SEX FYND registrerade + klassade:** `TASK-128` (heartbeat-larmets falskpositiv,
+åtta mätta instanser, `isInMergeQueue` verifierad som fix) · `129` (ADR-091:s
+CSP-rivning täcker 15 rader men ytan är 27 förekomster) · `130` (preview-skarven
+anropas aldrig av CI) · `131` (**beslut A taget** — egen klass för datalösa
+webbläsartester; arbetet kvar) · `132` (**DEADLOCK:** `/to-issues` stämplade
+spårets DoD på varje barn; `127.1` Done kräver `127.9` → `127.5` → `127.1` Done)
+· tråd `T114` (landningsvakten blind för post-merge-rött). **TVÅ EGNA FEL
+BOKFÖRDA:** taket sades vara sju kort när DoD-strukturen bara tillät tre, och
+post-merge-röda klassades som "transienta" ur körningar som aldrig instansierade
+staging-jobbet (rättad i `T114`). Staging-regressionen överlämnad till S93 som
+hypotes → **de fixade den** (`ca350397`, post-merge grön 10:48Z); larm-ärendena
+`#616`/`#619`/`#636` står dock kvar öppna. 22 PR:er landade, samtliga
+merge_group-verifierade. Worktree-städning: 3 agent-träd bort, grenar 93→87.
+**Numrering efter pausen: S96 behålls/ADR-094/L444 (+1 nummerlöst
+fragment)/T115/task-133/f47 (hypotes).** **NÄSTA (Marcus-sekvens): `TASK-132`
+FÖRST — den låser upp fyra kort · sedan `TASK-131`:s klassbygge (löser ut `#628`)
+· Grind 0 (Vercel + DNS) parallellt · `TASK-127.2` sist, full effekt först efter
+132. Fyra dependabot-PR:er `#632`–`#635` öppna och oarmerade.** Full narrativ:
+sessionsdok S96 Del 1–5 + PAUSLÄGE-blocket. *(Föregående fokus-text nedan.)*
+
 **Session 95 ✅ AVSLUTAD (2026-08-02, `lifecycle: closed` på Marcus
 coverage-kvittens "Jag kvitterar!" — post 3 inget-att-säkra i samma
 kvittens, S91/S94-prejudikatformen)** — **T95 ROGER & LOTTA-SPÅRET:
