@@ -44,7 +44,13 @@ export default defineConfig(({ mode }) => {
         injectRegister: false,
         injectManifest: {
           // offline.html måste in i precache — förutsättning för ADR-047 B2.
-          globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+          // webp tillagt 2026-08-03 (S96): login-vyns porträttbild ligger i det
+          // formatet, och utan ändelsen i mönstret hamnar den UTANFÖR precachen
+          // — då laddas den över nätet vid varje besök i stället för ur appens
+          // egen cache. Mätt, inte antaget: mönstret bar tidigare varken webp
+          // eller jpg, så vilket bildformat som helst utöver png/svg hade fallit
+          // utanför tyst.
+          globPatterns: ['**/*.{js,css,html,svg,png,webp,ico,woff2}'],
         },
         // Manifest per ADR-047 B4. Färger ur design-tokens:
         // theme = --mm-primary (--p-gold-500), background = --mm-bg (--p-neutral-0).
