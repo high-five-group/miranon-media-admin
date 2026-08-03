@@ -4,7 +4,7 @@ title: 'Skiva: Accept-sidan — lösenord enligt ASVS-golvet'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:33'
-updated_date: '2026-08-03 13:13'
+updated_date: '2026-08-03 15:54'
 labels:
   - ready-for-agent
 dependencies:
@@ -45,6 +45,17 @@ ROTORSAK: React Arias default validationBehavior="native" speglar isInvalid/erro
 VARFÖR DETTA STÅR HÄR: prototypkod befordras aldrig (throwaway-kontraktets klausul iv) — den skarpa implementationen skrivs nyskriven i denna skiva. Utan denna not återintroduceras buggen med hög sannolikhet, eftersom den bara syns vid ANDRA försöket och inte fångas av ett test som prövar ett enda felaktigt försök.
 
 TESTKRAV SOM FÖLJER: sviten ska pröva sekvensen fel → rätt, inte bara fel. Ett test som slutar vid det första felmeddelandet hade varit grönt genom hela buggen.
+
+BYGGKRAV UR KONVERGENSFASEN (Marcus, 2026-08-03), verbatim: "Och i den skarpa versionen så ska man INTE behöva scrolla, ALLT ska synas på skärmen."
+
+GÄLLER DEN SKARPA IMPLEMENTATIONEN, inte bara prototypen. Hela innehållet ska rymmas inom viewporten utan vertikal scroll.
+
+VAD SOM GÖR KRAVET SVÅRT, och som måste mätas i stället för antas:
+- Accept-sidan bär mest innehåll (rubrik, kontextstycke, tre punkter, fyra formulärfält, knapp) och spränger höjden först.
+- På mobil staplas spalterna; bild + text + formulär i en kolumn ryms sannolikt inte utan att något ger vika.
+- Med mjukt tangentbord uppe krymper synlig yta ofta till omkring halva viewporten. Ett falt som "syns" i tom viewport gor det inte nar anvandaren skriver. Detta ar det verkliga testfallet, inte den tomma sidan.
+
+GRÄNSEN: kravet far ALDRIG uppfyllas genom att bryta ett annat golv - typsnitt under lasbarhetsgransen, borttagna fokusmarkeringar eller komprimerade traffytor under 44px. Ryms det inte: eskalera till Marcus med matt underlag om vad som sprangs, inte en tyst kompromiss.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
