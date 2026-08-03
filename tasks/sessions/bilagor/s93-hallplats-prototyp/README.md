@@ -29,12 +29,17 @@ fixturer) + minimala hook-punkter i `Deltagare.tsx`/`Betalningar.tsx`/
 ```bash
 npm run dev
 # och sedan i webbläsaren, på valfritt event:
-#   /event/<eventId>?variant=a               ← RADBYTET
-#   /event/<eventId>?variant=b               ← STATIONS-RAILEN
-#   /event/<eventId>?variant=c               ← NÄSTA STEG-PANELEN
-#   /event/<eventId>?variant=a&data=proto    ← samma variant, IN-MEMORY-fixtur
+#   /event/<eventId>?variant=a                ← RADBYTET, IN-MEMORY-fixtur (default i variant-läge)
+#   /event/<eventId>?variant=b                ← STATIONS-RAILEN, fixtur
+#   /event/<eventId>?variant=c                ← NÄSTA STEG-PANELEN, fixtur
+#   /event/<eventId>?variant=a&data=verklig   ← samma variant, RIKTIG staging-data
 #   /event/<eventId>                          ← skarpa vyn, orörd
 ```
+
+**Data-kontraktet (S93 fix-våg, 2026-08-03):** fixturerna är DEFAULT i
+variant-läge — `?data=verklig` växlar TILL riktig staging-data (S90-
+kontraktet, PrototypeSwitcher-railens egen `?data=` null↔'verklig'-toggel).
+Se § Review-fix-våg 3 nedan för varför raden ovan bytte riktning.
 
 Växlaren (ikon-railen) finns i vyn som vanligt, monterad EN gång i
 `EventDetail.tsx` (både Deltagare- och Betalningar-blocket lyssnar
@@ -357,3 +362,56 @@ generell nog att vara värd en framtida runbook-not (se separat commit i
 
 Alla tio snapshots i katalogen är omtagna (samma filnamn, samma
 Playwright-metod).
+
+---
+
+## Review-fix-våg 3 (2026-08-03) — rail-gating + data-kontraktet inverterat
+
+Två fynd ur Marcus granskning, hanterade i samma fix-våg som nattens
+CI-röda (fristående av dessa två — ingen gemensam grundorsak).
+
+### Rail-gating (skarpa vyns pixel-drift)
+
+`npm run test:visual` fällde eventsidan: `PrototypeSwitcher` monterades i
+`EventDetail.tsx` bakom ENDAST `import.meta.env.DEV` — ingen `?variant=`-
+kontroll. Railen läckte därför in på den SKARPA vyns pixlar i varje DEV-
+körning (inklusive visual-riggens fixtur-server, som kör DEV-läge).
+
+**Fix:** `EventDetail.tsx` läser nu `?variant=` självständigt (samma
+oberoende `useQueryState('variant')` som `Belaggning.tsx`/`Deltagare.tsx`/
+`Betalningar.tsx`/`Gruppdynamik.tsx`/`Anteckningar.tsx`) och monterar
+railen ENDAST när `isHallplatsVariant(variantParam)` — URL:en är ingången
+till prototyp-läget, inte DEV-läget ensamt. `npm run test:visual` grönt
+efteråt (mätt, se slutrapporten).
+
+### Data-växlarens kontrakt (Marcus punkt 3 — knappen gjorde inget)
+
+`PrototypeSwitcher`s data-knapp togglar `?data=` mellan `null` och
+`'verklig'` (S90-kontraktet — fixturerna är DEFAULT i variant-läge,
+knappen växlar TILL riktig data). Samtliga fem filer som läser
+`?data=` (`Belaggning.tsx`, `Gruppdynamik.tsx`, `Anteckningar.tsx`,
+`Deltagare.tsx`, `Betalningar.tsx`) läste i stället `dataParam === 'proto'`
+— ett värde växlaren aldrig sätter. Knappen träffade därför ingenting i
+NÅGON av de fem filerna, inte bara en.
+
+**Fix:** samtliga fem invertera till `dataParam !== 'verklig'` (Deltagare/
+Betalningar: samma predikat, andra lokala variabelnamn). `PrototypeSwitcher.tsx`
+självt är ORÖRT (stående delad komponent, ADR-074) — bara konsumenterna
+konformerade till dess redan etablerade kontrakt. § Så här kör du dem ovan
+uppdaterad till den nya URL-formen.
+
+### Bevis-snapshot (Marcus punkt 1 — "skarpa vyn saknar Markera/inline-scroll")
+
+`skarp-seed-event-markera.png` — SKARP vy (INGEN `?variant`) av seed-eventet
+`reco44UBx6GXcxwu5` (Fjärrskådning, ZZ-GRANSKNING-FIXTUR, 16 anmälningar/8
+obekräftade — live-verifierat mot staging samma dag). Tagen med
+prototyp-verifiering-runbookens proxy-fetch-mönster (egen dev-server på
+port 5174, `page.route()` fångar `get-event`/`get-registrations` och fyller
+dem med RIKTIG data hämtad server-sidan i Node — CORS kringgås, staging
+rörs aldrig skrivande). Bilden visar Obekräftade-kön (röd "Obekräftade
+(8)"-rad) med **Markera**-knappen intakt till höger, och kön avklippt efter
+tre kort (Ingrid Rehn/Johan Dahlgren/Karin Olsson) med "Bekräftade (8)"
+hopfälld direkt under — den fasta scrollhöjden (task-48 byggkrav 4) syns
+alltså i skärmdumpen. 0 sidfel, 0 console-fel. Ingen `PrototypeSwitcher`-rail
+i bild (bekräftar samtidigt § Rail-gating ovan — skarpa vyn är fri från
+railen även i DEV).

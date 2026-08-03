@@ -200,7 +200,7 @@ varför, inte implementations-prosan.
   development som recept
   ([abseil.io/resources/swe-book/html/ch16.html](https://abseil.io/resources/swe-book/html/ch16.html)).
 - **Uber SubmitQueue** — 52 % → 99 % trunk-grönhet
-  ([eng.uber.com/ios-monorepo](https://eng.uber.com/ios-monorepo/)).
+  ([eng.uber.com/ios-monorepo](https://web.archive.org/web/20230605070547/https://www.uber.com/blog/ios-monorepo/)).
 - **Rails migrationstidsstämplar, Django `--merge`, git
   `--force-with-lease`** — optimistisk konkurrens + sen mekanisk reparation,
   samma mönsterfamilj som repots räknar-/ID-form.

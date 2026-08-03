@@ -268,8 +268,13 @@ export function Belaggning({ event }: { event: Event }) {
   // ?variant renderas EXAKT dagens träd.
   const [variantParam] = useQueryState('variant');
   const [dataParam] = useQueryState('data');
+  // [PROTOTYPE] [S93] fix-våg (uppdraget § D, Marcus punkt 3 — knappen gjorde
+  // inget): PrototypeSwitcher togglar `?data=` mellan null och 'verklig'
+  // (S90-kontraktet) — i variant-läge är FIXTURERNA default, `?data=verklig`
+  // ger riktig data. Den inverterade `=== 'proto'`-kontrollen läste ett
+  // värde växlaren aldrig satte.
   const protoDataMode =
-    import.meta.env.DEV && isHallplatsVariant(variantParam) && dataParam === 'proto';
+    import.meta.env.DEV && isHallplatsVariant(variantParam) && dataParam !== 'verklig';
   const protoDelar = protoDataMode ? protoBelaggningsDelar(HALLPLATS_PROTO_FIXTURES) : null;
 
   // Fokus-retur: när morfen just stängts (redigerar true → false) fokuseras
@@ -315,10 +320,18 @@ export function Belaggning({ event }: { event: Event }) {
               {String(protoDelar ? protoDelar.formular : (event.viaFormular ?? 0))}
             </EtikettVardeRad>
             <EtikettVardeRad term="Manuellt tillagda" streck={KATEGORI.manuell}>
-              {String(protoDelar ? protoDelar.manuell : (event.manuelltTillagda ?? 0))}
+              {protoDelar
+                ? String(protoDelar.manuell)
+                : event.manuelltTillagda != null
+                  ? String(event.manuelltTillagda)
+                  : null}
             </EtikettVardeRad>
             <EtikettVardeRad term="Medföljande" streck={KATEGORI.medfoljande}>
-              {String(protoDelar ? protoDelar.medfoljande : (event.medfoljande ?? 0))}
+              {protoDelar
+                ? String(protoDelar.medfoljande)
+                : event.medfoljande != null
+                  ? String(event.medfoljande)
+                  : null}
             </EtikettVardeRad>
             {/* K22: Väntelistan ALLTID med — det är alternativet när taket är
                 nått. UTAN streck: väntande upptar inga platser (aldrig segment
