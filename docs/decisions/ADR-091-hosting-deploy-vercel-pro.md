@@ -100,3 +100,30 @@ research-filen):
 - T46-kartan § Grind 0-paketet (operativ exekveringslista).
 - [ADR-047](ADR-047-pwa-arkitektur-fas-5.md) (PWA-grunden som deployen gör
   publikt installerbar).
+
+## Updates
+
+### 2026-08-03 (S96) — `miranon.se` är kundens publika sajt, inte en konkurrent till domänvalet
+
+Frågan uppstod i `TASK-127.2`:s konvergensfas: en prototyp-platshållare bar
+`lotta@miranon.se`, vilket såg ut att motsäga detta besluts `miranon.dev`.
+
+Marcus, verbatim: *"Allt går på miranon.dev just nu. Miranon.se är deras
+publika sajt och denna app kanske hamnar på den domänen i framtiden, inget att
+tänka på nu."*
+
+**Ingen ändring av beslutet.** De två domänerna har olika roll och lever
+parallellt: `miranon.dev` bär appen (`admin.miranon.dev`) och den sändande
+subdomänen (`send.miranon.dev`, `ADR-092`/`TASK-127.4`), medan `miranon.se`
+är Miranon Medias publika webbplats — utanför detta repos scope.
+
+Att auth-mail går FRÅN `send.miranon.dev` TILL adresser på en annan domän är
+normalfallet, inte en inkonsekvens. DMARC-, SPF- och DKIM-arbetet i Grind
+0-paketet gäller därför `miranon.dev` och ska inte utvidgas till `.se`.
+
+**Noterat som möjlig framtida flytt, ej beslutad:** appen kan komma att bo på
+`miranon.se`. Det vore en omdirigerings- och DNS-fråga som rör
+`additional_redirect_urls`, `CORS_ALLOWED_ORIGINS` och den sändande
+subdomänen — men den är uttryckligen inte i scope nu, och ingen förberedelse
+byggs för den (över-engineering-vakten). Raden finns för att nästa läsare som
+stöter på `miranon.se` ska slippa dra slutsatsen att domänvalet är fel.
