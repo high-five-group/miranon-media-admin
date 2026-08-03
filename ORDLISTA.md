@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-02
+updated: 2026-08-03
 review_by: 2027-01-02
 status: stable
 ---
@@ -108,6 +108,22 @@ Psionautics saknar ännu ett. Skiljs från de öppna Skool-kurserna, som alla
 medlemmar når.
 *Undvik:* mentalt ankare (singular), material, kurs (tvetydigt mot event-domänens
 kurs), klassrum.
+
+**Bilaga** — en PDF som Lotta väljer att bifoga i ett utskick. Tre
+dokumentklasser (grillad samsyn S93): **A — uppladdad** (statisk fil, t.ex.
+hörlursinfo, meny), **B — event-mallad** (systemmall där eventfälten fylls i,
+t.ex. deltagarinformations-brevet), **C — person-genererad** (skapas ur
+person- + betalningsdata, t.ex. betalningskvittot). Bytesen bor i Storage,
+metadatat och eventkopplingen i basen (delad hemvist, ADR vid bygget).
+*Undvik:* dokument (tvetydigt — Dokument är YTAN i Mer där bilagor hanteras),
+attachment.
+
+**Åtgärds-sida** — den event-knutna sida där Lotta verkställer utskick:
+mottagarna hon markerat och "dragit med", åtgärdsval (utskickstyp),
+redigerbar meddelandetext, bilageväljare och skick med förhandsvisning.
+Ersätter batch-barens direktutskick och Åtgärds-radernas grå löften; alla
+utskick är riktiga server-utskick (grillad samsyn S93, fråga 4–5).
+*Undvik:* utskickssida, mailsida, compose (engelska).
 
 ## Flöden och distinktioner
 
@@ -238,3 +254,17 @@ event-sida) är webbplatsens kontrakt, inte appens (tråd T79).
 *Undvik:* publik, live, synlig (otydliga om vad som blir synligt var).
 *I koden:* `publicera` (create-event-inputen); basfältet
 `Publicerad på miranon.se`.
+
+**Steg-räknare** — de klickbara raderna i Anmälda deltagares topp som räknar
+personer per hållplats-steg (Väntar på bekräftelse · Anmälningsavgifter ·
+Slutbetalningar · Klara) och filtrerar registret vid klick. Räknarna ÄR
+Lottas att-göra-lista, i hennes arbetsordning (grillad samsyn S93).
+*Undvik:* summeringsrad (den äldre fem-raders-formen), statistikrad.
+
+**Steg-märke** — etiketten på ett deltagarkort som visar personens längst bak
+liggande ofärdiga hållplats-steg — en person, ett märke, även när datat är
+ett nät. Undantagen bär egna ärliga märken (Avbokad, Inställt, På väg till
+väntelistan). Märket är härlett, aldrig lagrat (hållplats-modellen,
+alternativ C).
+*Undvik:* status-pill (den ersatta formen), badge (upptaget av
+Erfarenhetsbadge).
