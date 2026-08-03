@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // scripts/check-manifest-fields.mjs — mekanisk grind för app-butiks-manifestet
-// (TASK-126.1, AC #1–#2).
+// (TASK-126.1, AC #1–#2 + TASK-126.4, AC #1).
 //
 // ═══ VAD DEN PRÖVAR ═══
 // Att den BYGGDA `dist/manifest.webmanifest` bär alla fält som ger den rika
@@ -13,6 +13,12 @@
 //     pekar på en BEFINTLIG route (korsläst mot `src/routeTree.gen.ts`,
 //     TanStack Routers genererade fullPath-lista — samma sanningskälla
 //     routern själv navigerar mot).
+//   · `screenshots` (TASK-126.4) — minst en post med `form_factor: 'narrow'`
+//     och minst en med `'wide'`, var och en med giltig `sizes`
+//     ('BREDDxHÖJD'), och `sizes` MÅSTE matcha den faktiskt byggda PNG-
+//     filens verkliga pixeldimensioner (läst ur filens egen IHDR-header,
+//     inte litat på som text). Flera poster inom SAMMA form_factor måste
+//     dessutom dela identisk aspect ratio (kortets AC #1-formulering).
 //
 // ═══ VARFÖR HÄR OCH INTE I preview-skarven (tests/preview/) ═══
 // PRD-textens ordval ("preview-skarven som redan bygger appen och granskar
@@ -34,6 +40,14 @@
 // automatiskt körande "faller rött om ett fält saknas" — vilket är AC #3:s
 // FUNKTIONELLA krav. Se PR-beskrivningen för fullständig divergensnot.
 //
+// TASK-126.4 ÄRVDE SAMMA FELAKTIGA PREMISS (registrerat som TASK-130): dess
+// AC #3 sade ordagrant "Preview-skarven verifierar screenshots-fälten" — samma
+// obefintliga CI-koppling. AC #3:s TEXT ÄR RÄTTAD (backlog-CLI:t) till att
+// namnge DENNA grind i stället: ci-suite.yml Pure+Build är den stående
+// hemvisten för mekaniska manifest-/bundle-grindar, beslutat av
+// orkestreraren 2026-08-03 (TASK-130 § Implementation Notes) — 126.4 bygger
+// därför ingen parallell grind, den utökar denna.
+//
 // ═══ TVÅSIDIGT BEVIS ═══
 // scripts/test-check-manifest-fields.mjs importerar `validateManifest`
 // direkt (ingen sandlåda, inget riktigt bygge behövs) och bevisar per fält:
@@ -52,6 +66,61 @@ const ROUTE_TREE_PATH = resolve(REPO, 'src/routeTree.gen.ts');
 const MIN_SHORTCUTS = 2;
 const MAX_SHORTCUTS = 3;
 const REQUIRED_LAUNCH_HANDLER_MODE = 'focus-existing';
+const REQUIRED_FORM_FACTORS = /** @type {const} */ (['narrow', 'wide']);
+
+/** PNG-signaturen (8 byte) enligt spec — samma 8 byte i varje giltig PNG-fil. */
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+/**
+ * Läser en PNG-fils faktiska pixeldimensioner direkt ur IHDR-chunken —
+ * ingen bildavkodning, bara PNG-spec-headern (signaturens 8 byte, sedan
+ * 4-byte chunk-längd, 4-byte chunk-typ "IHDR", sedan bredd + höjd som
+ * big-endian uint32). Samma teknik som `file`/`sips` använder, utan att dra
+ * in ett bildbibliotek för fyra tal.
+ *
+ * @param {Buffer} buffer
+ * @returns {{ width: number, height: number } | undefined}
+ */
+export function readPngDimensions(buffer) {
+  if (buffer.length < 24) return undefined;
+  for (let i = 0; i < PNG_SIGNATURE.length; i += 1) {
+    if (buffer[i] !== PNG_SIGNATURE[i]) return undefined;
+  }
+  // IHDR-chunken börjar direkt efter signaturen (byte 8): 4-byte längd + 4-byte
+  // typ ("IHDR") + data. Bredd = byte 16–19, höjd = byte 20–23 (big-endian).
+  const chunkType = buffer.toString('ascii', 12, 16);
+  if (chunkType !== 'IHDR') return undefined;
+  return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+}
+
+/**
+ * Tolkar manifestets `sizes`-strängform ('BREDDxHÖJD', case-insensitive x).
+ *
+ * @param {unknown} sizes
+ * @returns {{ width: number, height: number } | undefined}
+ */
+export function parseSizes(sizes) {
+  if (typeof sizes !== 'string') return undefined;
+  const match = /^(\d+)x(\d+)$/i.exec(sizes.trim());
+  if (!match) return undefined;
+  const width = Number.parseInt(match[1], 10);
+  const height = Number.parseInt(match[2], 10);
+  if (width <= 0 || height <= 0) return undefined;
+  return { width, height };
+}
+
+/**
+ * Jämför två dimensioner för IDENTISK aspect ratio via korsmultiplikation —
+ * inga flyttal, inga avrundningsfel (`a.w/a.h === b.w/b.h` skrivet utan
+ * division).
+ *
+ * @param {{ width: number, height: number }} a
+ * @param {{ width: number, height: number }} b
+ * @returns {boolean}
+ */
+export function harIdentiskAspectRatio(a, b) {
+  return a.width * b.height === b.width * a.height;
+}
 
 /**
  * Normaliserar en route-path för jämförelse: TanStack Routers `fullPath` för
@@ -86,17 +155,19 @@ export function extraherRoutePaths(routeTreeSource) {
 }
 
 /**
- * Validerar ett parsat manifest-objekt mot AC #1 + #2. Ren funktion — tar
- * emot route-mängden som parameter så testsviten kan pröva den utan att röra
- * disk eller ett riktigt bygge.
+ * Validerar ett parsat manifest-objekt mot TASK-126.1 AC #1–#2 samt
+ * TASK-126.4 AC #1 (screenshots). Ren funktion — tar emot route-mängden OCH
+ * de uppmätta skärmbilds-dimensionerna som parametrar så testsviten kan pröva
+ * den utan att röra disk eller ett riktigt bygge.
  *
  * @param {unknown} manifest
- * @param {{ routePaths?: Set<string> }} [options]
+ * @param {{ routePaths?: Set<string>, screenshotDimensions?: Map<string, { width: number, height: number }> }} [options]
  * @returns {{ ok: boolean, errors: string[] }}
  */
 export function validateManifest(manifest, options = {}) {
   const errors = [];
   const routePaths = options.routePaths;
+  const screenshotDimensions = options.screenshotDimensions;
 
   if (typeof manifest !== 'object' || manifest === null || Array.isArray(manifest)) {
     return { ok: false, errors: ['manifestet är inte ett JSON-objekt'] };
@@ -159,6 +230,87 @@ export function validateManifest(manifest, options = {}) {
     });
   }
 
+  // ═══ screenshots (TASK-126.4, AC #1) ═══
+  if (!Array.isArray(m.screenshots) || m.screenshots.length === 0) {
+    errors.push(
+      "'screenshots' saknas eller är tom — minst en stående (narrow) och en " +
+        'liggande (wide) krävs (TASK-126.4 AC #1)',
+    );
+  } else {
+    /** @type {Record<'narrow' | 'wide', Array<{ index: number, width: number, height: number }>>} */
+    const perFormFactor = { narrow: [], wide: [] };
+
+    m.screenshots.forEach((entry, index) => {
+      if (typeof entry !== 'object' || entry === null) {
+        errors.push(`screenshots[${index}] är inte ett objekt (AC #1)`);
+        return;
+      }
+      const s = /** @type {Record<string, unknown>} */ (entry);
+
+      if (!nonEmptyString(s.src)) {
+        errors.push(`screenshots[${index}].src saknas eller är tom (AC #1)`);
+      }
+      if (!nonEmptyString(s.type)) {
+        errors.push(`screenshots[${index}].type saknas eller är tom (AC #1)`);
+      }
+      if (s.form_factor !== 'narrow' && s.form_factor !== 'wide') {
+        errors.push(
+          `screenshots[${index}].form_factor måste vara 'narrow' eller 'wide', fick ` +
+            `${JSON.stringify(s.form_factor)} (AC #1)`,
+        );
+      }
+
+      const declared = parseSizes(s.sizes);
+      if (!declared) {
+        errors.push(
+          `screenshots[${index}].sizes saknas eller har fel format — förväntat 'BREDDxHÖJD' ` +
+            `(AC #1), fick ${JSON.stringify(s.sizes)}`,
+        );
+      }
+
+      if (declared && screenshotDimensions && nonEmptyString(s.src)) {
+        const actual = screenshotDimensions.get(String(s.src));
+        if (!actual) {
+          errors.push(
+            `screenshots[${index}].src ('${s.src}') hittades inte som byggd PNG-fil i dist/ ` +
+              '(AC #1/#2 — reproducerbar generering ska producera denna fil)',
+          );
+        } else if (actual.width !== declared.width || actual.height !== declared.height) {
+          errors.push(
+            `screenshots[${index}].sizes ('${s.sizes}') matchar inte den faktiskt byggda ` +
+              `bildens dimensioner (${actual.width}x${actual.height}) (AC #1)`,
+          );
+        }
+      }
+
+      if (declared && (s.form_factor === 'narrow' || s.form_factor === 'wide')) {
+        perFormFactor[s.form_factor].push({ index, ...declared });
+      }
+    });
+
+    for (const formFactor of REQUIRED_FORM_FACTORS) {
+      if (perFormFactor[formFactor].length === 0) {
+        errors.push(
+          `ingen skärmbild med form_factor '${formFactor}' — minst en krävs per format (AC #1)`,
+        );
+      }
+    }
+
+    for (const formFactor of REQUIRED_FORM_FACTORS) {
+      const entries = perFormFactor[formFactor];
+      for (let i = 1; i < entries.length; i += 1) {
+        if (!harIdentiskAspectRatio(entries[0], entries[i])) {
+          errors.push(
+            `screenshots med form_factor '${formFactor}' har olika aspect ratio: ` +
+              `[${entries[0].index}] ${entries[0].width}x${entries[0].height} vs ` +
+              `[${entries[i].index}] ${entries[i].width}x${entries[i].height} — ` +
+              'kräver identisk ratio inom respektive format (AC #1)',
+          );
+        }
+      }
+    }
+  }
+
   return { ok: errors.length === 0, errors };
 }
 
@@ -186,7 +338,26 @@ async function main() {
     );
   }
 
-  const { ok, errors } = validateManifest(manifest, { routePaths });
+  // TASK-126.4: läs varje deklarerad screenshots[].src RELATIVT dist/ (samma
+  // rot som manifest.webmanifest självt bor i — manifestets fält-URL:er
+  // upplöses mot manifestets egen plats) och mät den FAKTISKA PNG-filens
+  // pixeldimensioner. Ett saknat/oläsbart src ger helt enkelt ingen post i
+  // kartan — validateManifest() rapporterar då "hittades inte som byggd
+  // PNG-fil" i stället för att krascha här.
+  /** @type {Map<string, { width: number, height: number }>} */
+  const screenshotDimensions = new Map();
+  if (Array.isArray(manifest?.screenshots)) {
+    for (const entry of manifest.screenshots) {
+      const src = entry && typeof entry === 'object' ? entry.src : undefined;
+      if (typeof src !== 'string' || src.trim().length === 0) continue;
+      const filePath = resolve(dirname(MANIFEST_PATH), src);
+      if (!existsSync(filePath)) continue;
+      const dims = readPngDimensions(readFileSync(filePath));
+      if (dims) screenshotDimensions.set(src, dims);
+    }
+  }
+
+  const { ok, errors } = validateManifest(manifest, { routePaths, screenshotDimensions });
 
   if (!ok) {
     console.error(`FEL: manifest.webmanifest saknar ${errors.length} krävda fält:`);
@@ -196,7 +367,8 @@ async function main() {
 
   console.log(
     `OK: ${MANIFEST_PATH} bär stabil identitet, svensk beskrivning, kategorier, ` +
-      `launch_handler och ${manifest.shortcuts.length} shortcuts mot befintliga routes.`,
+      `launch_handler, ${manifest.shortcuts.length} shortcuts mot befintliga routes, och ` +
+      `${manifest.screenshots.length} skärmbilder (narrow+wide) med verifierade dimensioner.`,
   );
   return 0;
 }

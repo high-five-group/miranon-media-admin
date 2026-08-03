@@ -99,6 +99,32 @@ export default defineConfig(({ mode }) => {
               url: '/personer',
             },
           ],
+          // Skärmbilder i stående + liggande format (TASK-126.4, AC #1) — tas
+          // ur appens VERKLIGA vyer via Playwright mot den hermetiska
+          // fixturvärlden (npm run generate:manifest-screenshots,
+          // tests/manifest-screenshots/), aldrig handbeskurna. Vyerna är
+          // valda för att vara STABILA under S93:s pågående UI-arbete på
+          // eventsidan (EventDetail.tsx + detail/*): Hem och Eventlistan rör
+          // ingen av de filerna. `sizes` speglar den FAKTISKT genererade
+          // PNG-filens pixeldimensioner (viewport × deviceScaleFactor 2, se
+          // spec-filerna) — mekaniskt korsläst mot den byggda dist/-filen av
+          // scripts/check-manifest-fields.mjs (samma grind som AC #2/#3).
+          screenshots: [
+            {
+              src: 'screenshots/narrow-hem.png',
+              sizes: '750x1624',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Miranon Media Admin — Hem-översikten på mobil',
+            },
+            {
+              src: 'screenshots/wide-event-lista.png',
+              sizes: '2880x1800',
+              type: 'image/png',
+              form_factor: 'wide',
+              label: 'Miranon Media Admin — Eventlistan på desktop',
+            },
+          ],
           icons: [
             { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
             { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

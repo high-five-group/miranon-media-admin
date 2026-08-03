@@ -37,7 +37,9 @@
       "namn": "staging-preview",
       "klass": "konsument",
       "viaSetupProjekt": "preview-setup",
-      "env": { "PLAYWRIGHT_STAGING_PREVIEW": "1" }
+      "env": {
+        "PLAYWRIGHT_STAGING_PREVIEW": "1"
+      }
     },
     {
       "namn": "api-pure",
@@ -58,6 +60,11 @@
       "namn": "webblasarbeteende",
       "klass": "undantagen",
       "skäl": "Noll nätverksanrop, per konstruktion (TASK-131, ADR-094): plattformsdetektering läser navigator/matchMedia, prompt-flödet lyssnar på webbläsar-events — aldrig ett HTTP-anrop, inte ens mot en fixturvärld. Appen bootar mot samma fiktiva fixtur-URL som acceptance/visual enbart för att src/env.ts:s URL-format-krav ska vara uppfyllt (z.string().url()); ingen skarp/staging-koppling finns att preflighta."
+    },
+    {
+      "namn": "manifest-screenshots",
+      "klass": "undantagen",
+      "skäl": "Genererar manifestets skärmbilder ur den hermetiska fixturvärlden (TASK-126.4). Delar VISUAL_DEV_PORT och fixtur-env med visual-klassen och gör aldrig ett anrop mot staging-basen — samma grund som visual-desktop/visual-mobile."
     },
     {
       "namn": "visual-desktop",
