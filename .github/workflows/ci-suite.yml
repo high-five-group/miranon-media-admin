@@ -2,12 +2,15 @@
 name: CI Suite (reusable)
 
 # Reusable tung testsvit (task-36.2 / T85 våg 2a, ADR-077). EN KÄLLA för de
-# fem tunga jobben (fyra + acceptance sedan task-59.3) — anropad av TRE
-# workflows, och vilken av dem som anropar avgör numera vad som faktiskt körs:
+# sex tunga jobben (fyra + acceptance sedan task-59.3 + webblasarbeteende
+# sedan TASK-131) — anropad av TRE workflows, och vilken av dem som anropar
+# avgör numera vad som faktiskt körs:
 #   · ci.yml       — presubmit, villkorat på should_skip_tests. Skickar
 #                    `run_staging: false` (A7:5) och `run_a11y: false` (A7:6),
-#                    båda VILLKORSLÖST ⇒ endast TVÅ av de fem instansieras här
-#                    (`Pure + Build` och `Acceptance (hermetisk)`).
+#                    båda VILLKORSLÖST ⇒ endast TRE av de sex instansieras här
+#                    (`Pure + Build`, `Acceptance (hermetisk)` och
+#                    `Webblasarbeteende` — inget av de tre bär ett `run_x`-
+#                    villkor eller ett dependabot-skip, se resp. jobb).
 #   · post-merge.yml — det mergade trädet på main. Skickar INGA inputs.
 #   · nightly.yml  — schemalagd fullsvit. Skickar INGA inputs.
 # De två sistnämnda får därmed defaulterna (allt true) och är de ytor där
@@ -343,6 +346,94 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-acceptance-artefakter
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # Webbläsarbeteende — TASK-131, ADR-094. MUTEXFRITT och secret-fritt, samma
+  # placeringsmotivering som Acceptance ovan: jobbet har ingen
+  # `concurrency`-grupp och inget `needs: [purge]`, så det köar aldrig bakom
+  # `staging-tests`.
+  #
+  # VARFÖR ETT EGET JOBB OCH INTE EN GREN AV ACCEPTANCE. De två klasserna
+  # bevisar olika saker. Acceptance bevisar att appen renderar rätt GIVET ett
+  # svar av en viss FORM — och bär därför fixturvärlden (MSW) plus
+  # hermetik-självtestet som bevisar att varje test faktiskt hänger på den
+  # (steget ovan, `Acceptance-klassens tvåsidiga bevis`). Webbläsarbeteende-
+  # klassen har inget svar att bevisa ett beroende av: dess tester rör sig
+  # ALDRIG över nätverket (plattformsdetektering läser `navigator`/
+  # `matchMedia`, prompt-flödet lyssnar på webbläsar-events) — per
+  # konstruktion, inte av tur. Att lägga dem i Acceptance-jobbet är precis det
+  # TASK-131 löste: `scripts/hermetik-sjalvtest.mjs` fällde alla 11 med
+  # "Testet överlever utan fixturens svar och bevisar därför inget om appens
+  # databeteende" — vakten gjorde rätt (ADR-080 beslut 3, VILLKOR för
+  # klassens existens, inte förhandlingsbart), placeringen var fel. Att bygga
+  # ett eget hermetik-självtest HÄR hade varit teater: det finns ingen
+  # fixturvärld att ta bort för att bevisa att testet fäller.
+  #
+  # INGET dependabot-skip, av samma skäl som Acceptance: jobbet kräver INGA
+  # secrets — fixtur-env:en i playwright.config.ts (`VITE_SUPABASE_URL`/
+  # `ANON_KEY`) är en litteral platshållare som appen aldrig faktiskt anropar
+  # (se konstantens kommentar i playwright.config.ts), inte ett `secrets.*`-
+  # värde.
+  #
+  # `continue-on-error` FÖREKOMMER INTE, av samma skäl som Acceptance: flaggan
+  # hade gjort `needs`-resultatet till `success` oavsett utfall och tystat
+  # paraply-checken (`ci-passed`) på en röd svit.
+  webblasarbeteende:
+    name: Webblasarbeteende
+    runs-on: ubuntu-latest
+    # Mätt lokalt (macOS, 11 tester): 18,1–29,2 s helsvit. INTE en CI-mätning
+    # — se § i CONTRIBUTING.md. 8 min matchar a11y-jobbets tak för en svit av
+    # jämförbar (liten) storleksordning; ingen egen mätserie i CI finns ännu
+    # för att sätta ett tightare tak, och ett för snävt tak riskerar precis
+    # den falska-röd-på-timeout-signal-förstörelse Acceptance-jobbets
+    # kommentar varnar för.
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        # Medvetet UTAN fetch-depth-config — utanför bärar-mängden (ADR-039).
+
+      - name: Setup Node
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Samma cache-nyckel som acceptance/a11y/test-staging (ADR-029 §1c) —
+      # först färdiga jobbet värmer, de andra hit:ar.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6.1.0
+        id: playwright-cache-webblasarbeteende
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      # INGEN `env:` — samma skäl som Acceptance: scriptets env-flagga startar
+      # dev-servern med fixtur-env ur playwright.config.ts; ingen secret
+      # behövs eftersom appen aldrig gör ett nätverksanrop dit (se
+      # playwright.config.ts § WEBBLASARBETEENDE_DEV_PORT).
+      - name: Webblasarbeteende-tester (fixturfritt, noll nätverksanrop)
+        run: npm run test:webblasarbeteende
+
+      - name: Ladda upp Playwright-artefakter vid rött
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-webblasarbeteende-artefakter
           path: |
             test-results/
             playwright-report/

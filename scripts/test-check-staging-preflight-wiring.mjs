@@ -380,7 +380,13 @@ fall(
       });
     },
     kod: 0,
-    kravText: ['13 projekt klassade, 0 oklassade'],
+    // Talet är EGEN repots reella projektantal (policyn) + 1 testfixtur-
+    // projekt som `forbered()` lägger till ovan — inte handplockat.
+    // TASK-131/ADR-094 lade `webblasarbeteende` till policyn (12 → 13 reella
+    // projekt), vilket höjde detta tal 13 → 14 → 15 (TASK-126.4 la manifest-screenshots). Räkna om ur
+    // `.staging-preflight-wiring-policy.json`s `playwrightProjekt`-lista vid
+    // nästa klassad tillskott i stället för att ärva talet.
+    kravText: ['15 projekt klassade, 0 oklassade'],
   },
 );
 
